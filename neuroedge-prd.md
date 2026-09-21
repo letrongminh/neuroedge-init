@@ -36,6 +36,7 @@
 - [A — Ma trận truy vết yêu cầu](#phụ-lục-a--ma-trận-truy-vết-yêu-cầu)
 - [B — Danh mục mã lỗi chuẩn](#phụ-lục-b--danh-mục-mã-lỗi-chuẩn)
 - [C — Quy ước định danh và phiên bản](#phụ-lục-c--quy-ước-định-danh-và-phiên-bản)
+- [D — Cấu trúc Monorepo và Giao thức Truyền dẫn](#phụ-lục-d--cấu-trúc-monorepo-và-giao-thức-truyền-dẫn)
 
 ---
 
@@ -230,7 +231,7 @@ Các hạng mục sau **BẮT BUỘC** bị loại khỏi Khối 1b để bảo 
 | Hạng mục | Trạng thái trong v1.0 |
 |:---|:---|
 | Huấn luyện wake-word tùy biến | Không hỗ trợ — chỉ dùng wake-word pre-trained *"Hey Neuro"* |
-| Độ phủ bo mạch | Duy nhất **một bo mạch tham chiếu**: ESP32-S3-DevKitC hoặc ESP32-S3-Box-3 |
+| Độ phủ bo mạch | Duy nhất **một bo mạch tham chiếu chính thức**: **ESP32-S3-Box-3** (tích hợp sẵn màn hình LCD ST7789, dual-mic ES7210, loa ES8311, dock I/O; DevKitC chuyển thành bo mạch thứ cấp do cộng đồng duy trì) |
 | Thị giác máy tính | Không thuộc phạm vi |
 | Dịch vụ đám mây, hệ thống tài khoản | Không thuộc phạm vi |
 | Jetson, Matter, HomeKit | Không thuộc phạm vi |
@@ -539,7 +540,7 @@ Năm lớp phòng thủ, hoạt động theo chế độ mặc định.
 | **NFR-COMP-02** | Không tính năng an toàn cốt lõi nào bị khóa sau tài khoản trả phí | P0 |
 | **NFR-COMP-03** | Mọi dịch vụ đám mây truy cập qua interface thay thế được (pluggable backend) | P0 |
 | **NFR-COMP-04** | Lược đồ gate và vết ghi là chuẩn mở, quản trị theo quy trình RFC công khai | P0 |
-| **NFR-COMP-05** | Phiên bản Python hỗ trợ tối thiểu — *cần chốt, xem §15 Q-1* | P0 |
+| **NFR-COMP-05** | Phiên bản Python hỗ trợ tối thiểu: **Python 3.11+** (tận dụng `tomllib` tích hợp, `asyncio.TaskGroup` và tối ưu tốc độ bytecode) | P0 |
 | **NFR-COMP-06** | Hệ điều hành hỗ trợ cho môi trường `linux`: Debian/Ubuntu trên ARM64 và x86-64 | P0 |
 
 ---
@@ -716,19 +717,19 @@ Danh mục loại trừ tường minh. Mọi đề xuất thuộc danh mục nà
 
 ---
 
-## 15. Quyết định cần chốt
+## 15. Quyết định kỹ thuật đã chốt
 
-Các tham số sau chưa được xác định trong tài liệu nguồn nhưng **bắt buộc phải chốt trước khi bắt đầu hiện thực** hạng mục tương ứng.
+Các quyết định nền tảng đã được chốt chính thức làm cơ sở bắt đầu hiện thực:
 
-| # | Câu hỏi | Ảnh hưởng | Hạn chốt | Người quyết |
-|:---:|:---|:---|:---:|:---|
-| **Q-1** | Phiên bản Python tối thiểu được hỗ trợ | NFR-COMP-05; ảnh hưởng tới cú pháp và thư viện dùng được | Trước Tuần 1 | Kỹ thuật trưởng |
-| **Q-2** | Bo mạch tham chiếu chính thức: ESP32-S3-DevKitC hay ESP32-S3-Box-3 | §3.4; ảnh hưởng tới toàn bộ kiểm thử nightly và tài liệu | Trước Tuần 6 | Kỹ thuật trưởng |
-| **Q-3** | Ngân sách SRAM/PSRAM và kích thước firmware tối đa | NFR-RES-02, NFR-RES-03; quyết định phạm vi voice pipeline trên MCU | Trước Tuần 6 | Kỹ thuật nhúng |
-| **Q-4** | Danh sách nhà cung cấp `SystemOne` hỗ trợ chính thức ở v1.0 | FR-MDL-02; ảnh hưởng tới tài liệu và bộ kiểm thử | Trước Tuần 3 | Sản phẩm |
-| **Q-5** | Cơ chế xác thực và chống lạm dụng cho Registry công khai | FR-REG-01; ảnh hưởng tới thiết kế hạ tầng v1.1 | Trước Tháng 4 | Kỹ thuật nền tảng |
-| **Q-6** | Chính sách lưu trữ vết ghi trên Fleet OS: thời hạn và hạn mức dung lượng | FR-FLT-05; ảnh hưởng tới chi phí vận hành và cam kết SLA | Trước Tháng 4 | Sản phẩm |
-| **Q-7** | Từ khóa kích hoạt mặc định và ngôn ngữ hỗ trợ ở v1.0 | FR-PER-01; ảnh hưởng tới lựa chọn mô hình wake-word | Trước Tuần 6 | Sản phẩm |
+| # | Hạng mục | Trạng thái | Nội dung đã chốt chính thức |
+|:---:|:---|:---:|:---|
+| **Q-1** | Phiên bản Python tối thiểu | **ĐÃ CHỐT** | **Python 3.11+** (NFR-COMP-05: tích hợp sẵn `tomllib`, TaskGroup/ExceptionGroup, tốc độ bytecode nhanh hơn 25%). |
+| **Q-2** | Bo mạch tham chiếu chính thức | **ĐÃ CHỐT** | **ESP32-S3-Box-3** (§3.4: tích hợp sẵn LCD ST7789, dual-mic ES7210, loa ES8311, dock GPIO; tránh nhiễu clock I2S do câu dây). |
+| **Q-3** | Ngân sách SRAM/PSRAM & firmware | **ĐÃ CHỐT** | **SRAM tự do $\ge 120$ KB**, **PSRAM $\ge 2$ MB** (ringbuffer + VAD/wake-word), **Firmware $\le 3.5$ MB** (vừa phân vùng kép A/B 16MB Flash). |
+| **Q-4** | Nhà cung cấp System 1/2 ở v1.0 | **ĐÃ CHỐT** | **System 1:** Jev (cloud) & Local SLM fallback (Sherpa-ONNX intent extractor); **System 2:** Claude Sonnet 3.5 & GPT-4o-mini qua LiteLLM proxy. |
+| **Q-5** | Xác thực & chống lạm dụng Registry | Chờ v1.1 | Thiết kế trước Tháng 4 theo chuẩn CNCF ORAS và GitHub token. |
+| **Q-6** | Chính sách lưu trữ vết ghi Fleet OS | Chờ v1.1 | Quyết định trước Tháng 4 theo các gói dịch vụ Fleet Standard / Enterprise. |
+| **Q-7** | Từ khóa kích hoạt mặc định v1.0 | **ĐÃ CHỐT** | *"Hey Neuro"* (tiếng Anh) qua mô hình `microWakeWord` (tối ưu cho Box-3) và `openWakeWord` (Linux/Sim). |
 
 ---
 
@@ -770,7 +771,7 @@ Mọi mã lỗi **BẮT BUỘC** nêu đủ ba thành phần: sai ở đâu, vì
 | `TraceSchemaError` | `neuroedge trace validate` | Tệp vết ghi không hợp lệ theo JSON Schema | Báo lỗi kèm đường dẫn trường sai |
 | `ModelUnavailableError` | Chạy | Nhà cung cấp chính và fallback đều không phản hồi | Áp dụng chính sách `fail` của gate liên quan |
 
-## Phụ lục C — Quy ước định danh và phiên bản
+## Phụ lục C — Quyước định danh và phiên bản
 
 | Đối tượng | Quy ước | Ví dụ |
 |:---|:---|:---|
@@ -783,6 +784,44 @@ Mọi mã lỗi **BẮT BUỘC** nêu đủ ba thành phần: sai ở đâu, vì
 | Vết ghi sự cố | `traces/incidents/<session_id>.json` | `traces/incidents/sess_8f9a2b1c.json` |
 | Golden Reference | `traces/golden/<kịch-bản>.json` | `traces/golden/unlock-denied.json` |
 | Lược đồ công khai | `https://schema.neuroedge.dev/<loại>/v<n>.json` | `https://schema.neuroedge.dev/trace/v1.json` |
+
+## Phụ lục D — Cấu trúc Monorepo và Giao thức Truyền dẫn
+
+### D.1 Bố cục Monorepo tiêu chuẩn
+
+```text
+neuroedge/
+├── schemas/                     # Nguồn sự thật duy nhất (Single Source of Truth)
+│   ├── trace.v1.json            # JSON Schema draft 2020-12 cho tệp Vết ghi
+│   ├── gate.v1.json             # JSON Schema cho Cổng an toàn (Gate)
+│   └── board.v1.json            # JSON Schema đối chiếu năng lực bo mạch HAL
+├── python/                      # Gói mã nguồn mở PyPI (pip install neuroedge)
+│   ├── pyproject.toml           # Cấu hình Python 3.11+, Hatchling/Poetry
+│   ├── neuroedge/
+│   │   ├── cli/                 # CLI Surface: Typer + Rich + Copier
+│   │   ├── hal/                 # 5 nguyên thủy HAL & Capability Matcher
+│   │   ├── engine/              # Action Contract Engine & Google CEL Compiler
+│   │   ├── perception/          # Voice pipeline, VAD (Silero), Barge-in (Pipecat)
+│   │   ├── testing/             # Action CI Engine (pytest-neuroedge, replay)
+│   │   └── sim/                 # Web Simulator Server + Wokwi Elements UI
+│   └── tests/                   # Test suite cho Python SDK
+├── targets/                     # Hiện thực HAL cho từng môi trường
+│   ├── sim/                     # Backend mô phỏng ảo trong bộ nhớ (Python)
+│   ├── linux/                   # Backend Linux: gpiod v2 + ALSA (Python)
+│   └── esp32s3/                 # Firmware ESP-IDF (C/C++, port driver XiaoZhi)
+│       ├── sdkconfig.defaults   # Cấu hình tối ưu PSRAM, I2S, FreeRTOS 1000Hz
+│       ├── partitions.csv       # Phân vùng nạp kép A/B OTA 16MB Flash
+│       └── components/          # Audio codec ES8311/ES7210, LCD ST7789, OTA agent
+├── fixtures/                    # Dữ liệu kiểm thử mẫu dùng chung (Test Vectors)
+│   └── traces/                  # happy-path.json, unverified_attempt.json, ...
+└── NOTICE                       # Ghi nhận bản quyền các dự án OSS đã port
+```
+
+### D.2 Giao thức Truyền dẫn & Định dạng Vết ghi (Wire Protocol)
+
+1. **Giao thức mạng Wi-Fi / LAN:** `WebSocket` bảo mật truyền luồng âm thanh Opus (Binary Frame) và sự kiện vết ghi JSON (Text Frame).
+2. **Giao thức cổng nối tiếp UART:** Đóng gói khung nhị phân chuẩn `SLIP` hoặc dòng văn bản phân cách bằng ký tự xuống dòng (JSON Lines) ở tốc độ baud 921600.
+3. **Định dạng âm thanh nén:** Opus Voice Mode (16 kbps, 16 kHz mono, kích thước khung 20 ms = 320 mẫu).
 
 ---
 

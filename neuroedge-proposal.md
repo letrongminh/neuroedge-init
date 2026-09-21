@@ -1143,7 +1143,7 @@ neuroedge run --target sim
 
 **De-scope tường minh trong Khối 1b:**
 - *Wake-word tùy biến:* Chưa hỗ trợ quy trình huấn luyện wake-word riêng biệt; chỉ tích hợp sẵn wake-word chuẩn pre-trained (ví dụ: *"Hey Neuro"*).
-- *Độ phủ phần cứng:* Giới hạn duy nhất trên **1 bo mạch tham chiếu chuẩn (Reference Board: ESP32-S3-DevKitC / Box-3)** để tối ưu hóa triệt để độ ổn định bộ nhớ SRAM/PSRAM, không hỗ trợ dàn trải các biến thể phần cứng khác nhau.
+- *Độ phủ phần cứng:* Giới hạn duy nhất trên **1 bo mạch tham chiếu chính thức: ESP32-S3-Box-3** (tích hợp sẵn màn hình LCD ST7789, dual-mic ES7210, loa ES8311, dock I/O; tránh câu dây gây nhiễu I2S) để tối ưu hóa triệt để độ ổn định bộ nhớ SRAM/PSRAM, không hỗ trợ dàn trải các biến thể phần cứng khác nhau.
 - *Phạm vi chưa thực hiện:* Thị giác máy tính · Dịch vụ đám mây · Hệ thống tài khoản người dùng · Sàn thương mại · Hỗ trợ Jetson/Matter/HomeKit · Tự tinh chỉnh (fine-tune) mô hình AI.
 
 ### 8.3 Giai đoạn đệm: Developer Beta & Xây dựng cộng đồng (Tuần 12–16)
@@ -1462,8 +1462,8 @@ Quá trình đối chiếu Golden trả lời chính xác câu hỏi: **Với c�
 |:---|:---|:---:|:---|
 | `sim` | Môi trường mô phỏng cục bộ trên máy tính cá nhân | Miễn phí | Nền tảng chính thức (First-class) |
 | Raspberry Pi 5 / x86 | BCM2712 / Kiến trúc x86-64 | ~$80 | Nền tảng chính thức (`linux`) |
-| ESP32-S3 | Xtensa LX7 lõi kép | ~$5 | Nền tảng chính thức (`esp32s3`) |
-| M5Stack CoreS3 | ESP32-S3 tích hợp sẵn màn hình & micro | ~$50 | Thiết bị mẫu tham chiếu cho `esp32s3` |
+| ESP32-S3-Box-3 | ESP32-S3 tích hợp sẵn màn hình ST7789, dual-mic & loa | ~$50 | Bo mạch tham chiếu chính thức (`esp32s3`) |
+| ESP32-S3-DevKitC / CoreS3 | ESP32-S3 tiêu chuẩn / M5Stack | ~$5–$50 | Bo mạch thứ cấp (Hỗ trợ từ cộng đồng) |
 | Seeed XIAO ESP32S3 | ESP32-S3 kích thước siêu nhỏ | ~$8 | Hỗ trợ từ cộng đồng |
 | NVIDIA Jetson Orin | ARM Cortex-A78AE + Tăng tốc GPU | ~$150–$500 | Kế hoạch mở rộng sau 12 tháng (§9) |
 
