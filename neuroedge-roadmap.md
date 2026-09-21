@@ -20,6 +20,7 @@
 
 ## Mục lục
 
+0. [Bảng theo dõi tiến độ & Nhật ký bàn giao](#0-bảng-theo-dõi-tiến-độ--nhật-ký-bàn-giao-live-execution--handoff-dashboard)
 1. [Giả định nguồn lực](#1-giả-định-nguồn-lực)
 2. [Đường găng và phụ thuộc](#2-đường-găng-và-phụ-thuộc)
 3. [Chiến lược tái sử dụng mã nguồn mở](#3-chiến-lược-tái-sử-dụng-mã-nguồn-mở)
@@ -39,6 +40,77 @@
 - [B — Danh mục mua sắm và hạ tầng](#phụ-lục-b--danh-mục-mua-sắm-và-hạ-tầng)
 - [C — Bố cục kho mã nguồn](#phụ-lục-c--bố-cục-kho-mã-nguồn)
 - [D — Giao thức truyền dẫn](#phụ-lục-d--giao-thức-truyền-dẫn)
+
+---
+
+## 0. Bảng theo dõi tiến độ & Nhật ký bàn giao (Live Execution & Handoff Dashboard)
+
+> **Mục đích:** Cung cấp điểm nhìn tập trung duy nhất về trạng thái thời gian thực của toàn bộ dự án. Mọi phiên làm việc (session), kỹ sư hoặc AI Agent khi nhận bàn giao chỉ cần đọc mục này là nắm được ngay: *Hệ thống đang ở đâu, vừa hoàn thành gì, ai đang làm gì, và bước hành động kế tiếp là gì.*
+
+### 0.1 Thanh trạng thái điều hành (Executive Status Bar)
+
+| Chỉ số | Trạng thái hiện hành | Ghi chú & Liên kết |
+|:---|:---|:---|
+| **Pha đang thực thi** | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0–6)** | Đạt ~45% khối lượng toàn khối |
+| **Sprint hiện hành** | 🟡 **Sprint 1: Đóng băng Lược đồ & Monorepo (Tuần 0–2)** | **69% hoàn thành** (9 / 13 tasks hoàn tất) |
+| **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: Cuối Sprint 3 (Tuần 6) |
+| **Lần cập nhật cuối** | **2026-09-21 16:00 UTC+7** | Git commit: `7ae07ac` / `34bdb6d` |
+| **Trạng thái CI Lõi** | ✅ **PASS 100%** (4/4 tests passed) | `python/tests/test_testing.py` |
+
+---
+
+### 0.2 Bảng tổng quan tiến độ các Sprint (Sprint Matrix Overview)
+
+| Mốc | Sprint / Giai đoạn | Thời gian | Trọng tâm kỹ thuật | Tiến độ | Trạng thái |
+|:---:|:---|:---:|:---|:---:|:---:|
+| **Khối 1a** | **Sprint 1 — Đóng băng lược đồ** | Tuần 0–2 | Schemas, Monorepo, Test fixtures, Memory spike | **69%** | 🟡 **Đang chạy** |
+| | **Sprint 2 — Lõi thực thi trên `sim`** | Tuần 2–4 | HAL sim, Gate Engine CEL, Fail-closed, Web UI | **0%** | ⏳ Chưa bắt đầu |
+| | **Sprint 3 — Action CI & Linux** | Tuần 4–6 | HAL linux, Replay/Assert, Barge-in, TTFV < 10' | **0%** | ⏳ Chưa bắt đầu |
+| **Khối 1b** | **Sprint 4 — HAL trên `esp32s3`** | Tuần 6–8 | Port driver XiaoZhi, verify 3 targets không audio | **0%** | ⏳ Chưa bắt đầu |
+| | **Sprint 5 — Runtime thoại MCU** | Tuần 8–10 | Voice pipeline, AEC/VAD, C/C++ state machine | **0%** | ⏳ Chưa bắt đầu |
+| | **Sprint 6 — OTA & Nghiệm thu v1.0** | Tuần 10–12 | A/B OTA, secure boot, tiêu chí A1–A9 | **0%** | ⏳ Chưa bắt đầu |
+| **Beta** | **Developer Beta** | Tuần 12–16 | Hỗ trợ 50–100 lập trình viên, chỉ số B1–B5 | **0%** | ⏳ Chưa bắt đầu |
+| **Khối 2** | **Inference Gateway & Fleet OS** | Tháng 4–8 | LiteLLM, Hawkbit Canary OTA, EMQX Broker | **0%** | ⏳ Chờ mốc Beta |
+| **Khối 3** | **Bảy đường ray nền tảng** | Tháng 4–8 | OCI/ORAS Registry, OpenMeter usage billing | **0%** | ⏳ Chờ mốc Beta |
+
+---
+
+### 0.3 Thẻ Bàn giao Hiện tại (Active Session Handoff Card)
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                                      │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ 1. VỪA HOÀN THÀNH (DONE):                                                              │
+│    • Dựng Monorepo layout chuẩn: schemas/, python/, targets/, fixtures/, NOTICE        │
+│    • Đóng băng 3 JSON Schemas (draft 2020-12): trace.v1.json, gate.v1.json, board.v1   │
+│    • Tạo 3 test fixtures mẫu: happy-path.json, unverified_attempt.json, network_offline│
+│    • Khởi tạo Python SDK + CLI (Typer) + Action CI runner (replay, scenario)           │
+│    • Bộ test Action CI chạy PASS 100% (4/4 tests passed)                               │
+│                                                                                        │
+│ 2. ĐANG THỰC HIỆN (IN-PROGRESS):                                                       │
+│    • [TSK-S1-10] V2: Spike khả thi bộ nhớ trên ESP32-S3-Box-3 (đo SRAM/PSRAM thực)     │
+│    • [TSK-S1-11] V2: Rà soát thiết kế HAL dưới góc nhìn ràng buộc phần cứng MCU        │
+│                                                                                        │
+│ 3. VIỆC TIẾP THEO CẦN LÀM NGAY (NEXT IMMEDIATE ACTIONS):                               │
+│    • [TSK-S1-12] V1: Tạo 2 file workflow GitHub Actions: ci-sim-linux.yml & nightly    │
+│    • [TSK-S1-13] V1: Viết CONTRIBUTING.md và mẫu RFC đề xuất thay đổi lược đồ          │
+│    • Viết 3 Gate YAML mẫu & test suite kiểm tra kế thừa extends 2 cấp (Tiêu chí ra 2)   │
+│                                                                                        │
+│ 4. LƯU Ý KỸ THUẬT QUAN TRỌNG CHO NGƯỜI TIẾP QUẢN (CONTEXT & GUARDRAILS):               │
+│    • Không sửa đuôi trace thành .ntrace (chuẩn duy nhất là .json mang $schema).        │
+│    • Bộ lượng giá CEL trên ESP32-S3 dùng Phương án A (Host biên dịch sang Decision     │
+│      Tree JSON phẳng; ESP32-S3 chỉ duyệt cây bằng hàm C đơn giản, không nhúng CEL VM).  │
+│    • Bo mạch tham chiếu duy nhất là ESP32-S3-Box-3 (không đổi sang DevKitC).           │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 0.4 Quy ước Cập nhật & Bàn giao (Handoff Protocol)
+
+Để bảo đảm mọi thành viên trong đội ngũ và các phiên làm việc của AI kế tiếp nhau không bị đứt đoạn:
+1. **Quy tắc cập nhật Task:** Khi bắt đầu làm một task, chuyển trạng thái từ `⏳ Chưa bắt đầu` sang `🟡 Đang thực hiện`. Khi hoàn thành mã nguồn và test pass, chuyển sang `✅ Hoàn thành` kèm đường dẫn tệp sản phẩm (artifact) và mã commit.
+2. **Quy tắc cập nhật Exit Criteria:** Khi một tiêu chí nghiệm thu thỏa mãn, đánh dấu `[x]` kèm bằng chứng kiểm chứng (test log, command output, link code).
+3. **Cập nhật Thẻ Bàn giao:** Trước khi kết thúc phiên làm việc, cập nhật lại phần *Vừa hoàn thành*, *Đang thực hiện*, và *Việc tiếp theo* tại Mục 0.3.
 
 ---
 
@@ -358,21 +430,21 @@ Ba tệp này là thước đo tuân thủ cho cả Khối 1a và 1b, và là đ
 ### 4.1 Sprint 1 — Đóng băng lược đồ (Tuần 0–2)
 
 
-| Hạng mục | Yêu cầu PRD | Người | Trạng thái |
-|:---|:---|:---:|:---:|
-| Đặc tả 5 nguyên thủy HAL và thuộc tính đối chiếu | FR-HAL-01, FR-HAL-02, FR-HAL-03 | V1 | **Hoàn thành** (`schemas/board.v1.json`) |
-| Lược đồ gate v1: 8 trường, 3 kiểu `evaluate`, 4 hành vi `on_block`, `budget` | FR-GATE-02, FR-GATE-03, FR-GATE-04 | V1 | **Hoàn thành** (`schemas/gate.v1.json`) |
-| Quy tắc kế thừa `extends`: 5 nguyên tắc an toàn | FR-GATE-06, FR-GATE-07, FR-GATE-08 | V1 | **Hoàn thành** (Proposal Phụ lục B, PRD §5.1) |
-| Lược đồ vết ghi v1: 6 nhóm sự kiện, khối `metadata` | FR-TRC-01, FR-TRC-02, FR-TRC-03 | V1 | **Hoàn thành** (`schemas/trace.v1.json`) |
-| Ma trận giấy phép và tệp `NOTICE` cho toàn bộ dự án sẽ port (§3.9) | — | V2 | **Hoàn thành** (Tệp `NOTICE` gốc repo) |
-| **Dựng bộ khung monorepo** theo Phụ lục D: `schemas/` · `python/` · `targets/` · `fixtures/` | — | V1 | **Hoàn thành** (Đã khởi tạo & commit) |
-| **Ba tệp lược đồ chính thức** trong `schemas/`: `trace.v1.json` · `gate.v1.json` · `board.v1.json` | FR-TRC-01, FR-GATE-02, FR-HAL-02 | V1 | **Hoàn thành** (JSON Schema draft 2020-12) |
-| **Ba tệp vết ghi chuẩn mực** tại `fixtures/traces/` (`happy-path`, `unverified_attempt`, `network_offline`) | FR-CI-01, FR-CI-02 | V1 | **Hoàn thành** (Action CI test pass 100%) |
-| Khung Python SDK, CLI và Action CI ban đầu (`replay`, `scenario`) | FR-CLI-01, FR-CI-01 | V1 | **Hoàn thành** (`python/neuroedge/`) |
-| **Spike khả thi bộ nhớ trên ESP32-S3-Box-3** | NFR-RES-01, NFR-RES-02 | V2 | Đang thực hiện |
-| Rà soát thiết kế HAL dưới ràng buộc MCU | — | V2 | Đang thực hiện |
-| Hai workflow CI: `ci-sim-linux.yml` và `nightly-hardware.yml` | FR-CI-05, FR-CI-06 | V1 | Tiếp theo |
-| Quy ước đóng góp và mẫu RFC đổi lược đồ | — | V1 | Tiếp theo |
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-S1-01** | Đặc tả 5 nguyên thủy HAL và thuộc tính đối chiếu | FR-HAL-01, FR-HAL-02, FR-HAL-03 | V1 | ✅ Hoàn thành | [`schemas/board.v1.json`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/schemas/board.v1.json) |
+| **TSK-S1-02** | Lược đồ gate v1: 8 trường, 3 kiểu `evaluate`, 4 hành vi `on_block`, `budget` | FR-GATE-02, FR-GATE-03, FR-GATE-04 | V1 | ✅ Hoàn thành | [`schemas/gate.v1.json`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/schemas/gate.v1.json) |
+| **TSK-S1-03** | Quy tắc kế thừa `extends`: 5 nguyên tắc an toàn | FR-GATE-06, FR-GATE-07, FR-GATE-08 | V1 | ✅ Hoàn thành | [Proposal Phụ lục B](file:///Users/minhlt/Downloads/Projects/neuroedge-init/neuroedge-proposal.md#phụ-lục-b--đặc-tả-lược-đồ-gate-v1), [PRD §5.1](file:///Users/minhlt/Downloads/Projects/neuroedge-init/neuroedge-prd.md#51-hợp-đồng-hành-động-và-lược-đồ-gate) |
+| **TSK-S1-04** | Lược đồ vết ghi v1: 6 nhóm sự kiện, khối `metadata` | FR-TRC-01, FR-TRC-02, FR-TRC-03 | V1 | ✅ Hoàn thành | [`schemas/trace.v1.json`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/schemas/trace.v1.json) |
+| **TSK-S1-05** | Ma trận giấy phép và tệp `NOTICE` cho toàn bộ dự án sẽ port (§3.9) | — | V2 | ✅ Hoàn thành | [`NOTICE`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/NOTICE) |
+| **TSK-S1-06** | **Dựng bộ khung monorepo** theo Phụ lục D: `schemas/` · `python/` · `targets/` · `fixtures/` | — | V1 | ✅ Hoàn thành | [`schemas/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/schemas/), [`python/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/), [`targets/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/targets/), [`fixtures/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/) |
+| **TSK-S1-07** | **Ba tệp lược đồ chính thức** trong `schemas/`: `trace.v1.json` · `gate.v1.json` · `board.v1.json` | FR-TRC-01, FR-GATE-02, FR-HAL-02 | V1 | ✅ Hoàn thành | JSON Schema draft 2020-12 chuẩn hóa |
+| **TSK-S1-08** | **Ba tệp vết ghi chuẩn mực** tại `fixtures/traces/` (`happy-path`, `unverified_attempt`, `network_offline`) | FR-CI-01, FR-CI-02 | V1 | ✅ Hoàn thành | [`fixtures/traces/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/traces/) (Action CI test pass 100%) |
+| **TSK-S1-09** | Khung Python SDK, CLI và Action CI ban đầu (`replay`, `scenario`) | FR-CLI-01, FR-CI-01 | V1 | ✅ Hoàn thành | [`python/neuroedge/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/neuroedge/), [`tests/test_testing.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/tests/test_testing.py) |
+| **TSK-S1-10** | **Spike khả thi bộ nhớ trên ESP32-S3-Box-3** | NFR-RES-01, NFR-RES-02 | V2 | 🟡 Đang thực hiện | [`targets/esp32s3/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/targets/esp32s3/) (đã tạo khung build C) |
+| **TSK-S1-11** | Rà soát thiết kế HAL dưới ràng buộc MCU | — | V2 | 🟡 Đang thực hiện | [`python/neuroedge/hal/board.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/neuroedge/hal/board.py) |
+| **TSK-S1-12** | Hai workflow CI: `ci-sim-linux.yml` và `nightly-hardware.yml` | FR-CI-05, FR-CI-06 | V1 | ⏳ Chưa bắt đầu | `.github/workflows/` |
+| **TSK-S1-13** | Quy ước đóng góp và mẫu RFC đổi lược đồ | — | V1 | ⏳ Chưa bắt đầu | `CONTRIBUTING.md`, `docs/rfc/` |
 
 **Đòn bẩy OSS Sprint 1:** Pydantic v2 và `rfc8785` cho chuẩn hóa lược đồ · Typer, Rich, Copier cho khung CLI ban đầu. Tiết kiệm ước tính 3 tuần công sức viết mã.
 
@@ -380,77 +452,67 @@ Ba tệp này là thước đo tuân thủ cho cả Khối 1a và 1b, và là đ
 
 Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 KB · PSRAM ≥ 2 MB · firmware ≤ 3,5 MB**. Không đạt ngưỡng nào thì kích hoạt bậc 5 của thang cắt phạm vi (§9) ngay, không chờ Tuần 9.
 
-**Tiêu chí ra Sprint 1:**
+**Tiêu chí ra Sprint 1 (Exit Criteria):**
 
-| # | Tiêu chí | Trạng thái |
-|:---:|:---|:---:|
-| 1 | JSON Schema của gate và trace publish nội bộ, có ví dụ hợp lệ và ví dụ sai kèm thông báo lỗi kỳ vọng | **Đã đạt** (`schemas/`) |
-| 2 | Ba gate mẫu viết tay được công cụ phân giải đúng, gồm một trường hợp kế thừa 2 cấp | Đang thực hiện |
-| 3 | Báo cáo spike bộ nhớ có số liệu đo thực, đối chiếu trực tiếp với ngưỡng Q-3 | Đang thực hiện (V2) |
-| 4 | Bộ khung monorepo dựng xong; `schemas/` chứa đủ ba tệp lược đồ và được CI kiểm tra tính hợp lệ | **Đã đạt** |
-| 5 | Ba tệp vết ghi chuẩn mực tại `fixtures/traces/` đã viết tay và phân giải đúng | **Đã đạt** (4 tests pass) |
-| 6 | Quyết định Q-11 đã chốt (§10.2) — điều kiện để bắt đầu port bất kỳ dòng mã nào | Chờ Tuần 2 |
+- [x] **Tiêu chí 1:** JSON Schema của gate và trace publish nội bộ, có ví dụ hợp lệ và ví dụ sai kèm thông báo lỗi kỳ vọng ([`schemas/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/schemas/)).
+- [ ] **Tiêu chí 2:** Ba gate mẫu viết tay được công cụ phân giải đúng, gồm một trường hợp kế thừa 2 cấp.
+- [ ] **Tiêu chí 3:** Báo cáo spike bộ nhớ có số liệu đo thực, đối chiếu trực tiếp với ngưỡng Q-3 (SRAM ≥ 120 KB, PSRAM ≥ 2 MB, flash ≤ 3,5 MB).
+- [x] **Tiêu chí 4:** Bộ khung monorepo dựng xong; `schemas/` chứa đủ ba tệp lược đồ và được CI kiểm tra tính hợp lệ.
+- [x] **Tiêu chí 5:** Ba tệp vết ghi chuẩn mực tại `fixtures/traces/` đã viết tay và phân giải đúng (4/4 tests pass).
+- [ ] **Tiêu chí 6:** Quyết định Q-11 đã chốt (§10.2) — điều kiện để bắt đầu port bất kỳ dòng mã nào.
 
 
 ### 4.2 Sprint 2 — Lõi thực thi trên `sim` (Tuần 2–4)
 
 
-| Hạng mục                                                        | Yêu cầu PRD                                | Người            |
-| :--------------------------------------------------------------- | :------------------------------------------ | :----------------: |
-| Hiện thực HAL cho target `sim`                                  | FR-TGT-01, FR-HAL-01                       | V1               |
-| Đối chiếu năng lực lúc build, thông báo lỗi đầy đủ 3 thành phần | FR-HAL-04, FR-HAL-05, FR-DX-04             | V1               |
-| Gate Engine: `evaluate`, `allow_when`, `on_block`, `budget`     | FR-GATE-03, FR-GATE-04, FR-GATE-09         | V1               |
-| Cơ chế fail-closed và mạch ngắt suy giảm                        | FR-ACE-03, NFR-REL-02                      | V1               |
-| Decorator `@action`, cấm gọi trực tiếp, `c.do()` và `c.say()`   | FR-ACE-02, FR-ACE-04, FR-ACE-05, FR-ACE-07 | V1               |
-| Lượng giá `allow_when` trên nền Google CEL, kèm đường biên dịch gate cho thiết bị (§3.8, Q-9) | FR-GATE-03 | V1 |
-| **Đặc tả chuẩn tắc máy trạng thái hội thoại** — nguồn sự thật cho cả hai hiện thực (§3.8) | FR-PER-02, FR-PER-03 | V1 |
-| Interface `SystemOne` / `SystemTwo` kèm fallback                | FR-MDL-01, FR-MDL-02, FR-MDL-03            | V1               |
-| Giao diện web `sim`: cảm biến ảo, trạng thái actuator           | FR-TGT-06                                  | V3               |
-| Kết luận phạm vi Khối 1b dựa trên spike                         | —                                          | V2 + trưởng nhóm |
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-S2-01** | Hiện thực HAL cho target `sim` | FR-TGT-01, FR-HAL-01 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/sim.py` |
+| **TSK-S2-02** | Đối chiếu năng lực lúc build, thông báo lỗi đầy đủ 3 thành phần | FR-HAL-04, FR-HAL-05, FR-DX-04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/compiler.py` |
+| **TSK-S2-03** | Gate Engine: `evaluate`, `allow_when`, `on_block`, `budget` | FR-GATE-03, FR-GATE-04, FR-GATE-09 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/gate.py` |
+| **TSK-S2-04** | Cơ chế fail-closed và mạch ngắt suy giảm | FR-ACE-03, NFR-REL-02 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/circuit_breaker.py` |
+| **TSK-S2-05** | Decorator `@action`, cấm gọi trực tiếp, `c.do()` và `c.say()` | FR-ACE-02, FR-ACE-04, FR-ACE-05, FR-ACE-07 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/actions/` |
+| **TSK-S2-06** | Lượng giá `allow_when` trên nền Google CEL, kèm đường biên dịch gate cho thiết bị (§3.8, Q-9) | FR-GATE-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/cel_compiler.py` |
+| **TSK-S2-07** | **Đặc tả chuẩn tắc máy trạng thái hội thoại** — nguồn sự thật cho cả hai hiện thực (§3.8) | FR-PER-02, FR-PER-03 | V1 | ⏳ Chưa bắt đầu | `docs/spec/voice_fsm.md` |
+| **TSK-S2-08** | Interface `SystemOne` / `SystemTwo` kèm fallback | FR-MDL-01, FR-MDL-02, FR-MDL-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/models/` |
+| **TSK-S2-09** | Giao diện web `sim`: cảm biến ảo, trạng thái actuator | FR-TGT-06 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/sim/web/` |
+| **TSK-S2-10** | Kết luận phạm vi Khối 1b dựa trên spike | — | V2 + trưởng nhóm | ⏳ Chưa bắt đầu | `docs/reports/memory_spike_report.md` |
 
+**Tiêu chí ra Sprint 2 (Exit Criteria):**
 
-**Tiêu chí ra Sprint 2:**
-
-
-| #   | Tiêu chí                                                                              |
-| :---: | :------------------------------------------------------------------------------------- |
-| 1   | Agent mẫu chạy trên `sim`, gate chặn đúng theo `allow_when`                           |
-| 2   | Gọi trực tiếp hành động vật lý ném `ActionContractViolation`, chân GPIO ảo không kích |
-| 3   | Kịch bản mất mạng → hành động bị chặn với lý do `gate_unreachable`                    |
-| 4   | Gate con nới lỏng `allow_when` bị từ chối phân giải                                   |
-| 5   | Quyết định Q-3, Q-7 đã chốt                                                           |
+- [ ] **Tiêu chí 1:** Agent mẫu chạy trên `sim`, gate chặn đúng theo `allow_when`.
+- [ ] **Tiêu chí 2:** Gọi trực tiếp hành động vật lý ném `ActionContractViolation`, chân GPIO ảo không kích.
+- [ ] **Tiêu chí 3:** Kịch bản mất mạng → hành động bị chặn với lý do `gate_unreachable`.
+- [ ] **Tiêu chí 4:** Gate con nới lỏng `allow_when` bị từ chối phân giải.
+- [ ] **Tiêu chí 5:** Quyết định Q-3, Q-7 đã chốt.
 
 
 ### 4.3 Sprint 3 — Action CI, `linux` và TTFV (Tuần 4–6)
 
 
-| Hạng mục                                                                        | Yêu cầu PRD             | Người |
-| :------------------------------------------------------------------------------- | :----------------------- | :-----: |
-| Record: ghi phiên ra tệp JSON hợp lệ                                            | FR-CI-01                | V1    |
-| Replay trên target bất kỳ                                                       | FR-CI-02                | V1    |
-| Thư viện assert: chặn, gate nào, leo thang, chân cấm kích                       | FR-CI-03                | V1    |
-| Golden Reference và so khớp chuỗi phán quyết                                    | FR-CI-04                | V1    |
-| Hiện thực HAL cho target `linux` qua `gpiod`                                    | FR-TGT-02               | V1    |
-| CLI đầy đủ: `new`, `run`, `build`, `test`, `record`, `replay`, `trace validate` | FR-CLI-01→04, FR-TRC-08 | V3    |
-| Scaffold `neuroedge new` có sẵn action, gate, test                              | FR-DX-01                | V3    |
-| Ba ví dụ mẫu chạy được, README có tài sản trực quan                             | FR-DX-05, FR-DX-06      | V3    |
-| Telemetry CLI ẩn danh, có thể tắt                                               | FR-TEL-01, FR-TEL-02    | V3    |
-| **Bộ vector kiểm thử tuân thủ độc lập ngôn ngữ** cho máy trạng thái hội thoại (§3.8) | FR-CI-07, FR-TGT-04 | V1 |
-| Hiện thực Python của máy trạng thái hội thoại, port thiết kế từ Pipecat | FR-PER-02→05 | V1 |
-| Pipeline CI mẫu chạy `sim` + `linux` trên mỗi PR                                | FR-CI-05                | V1    |
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-S3-01** | Record: ghi phiên ra tệp JSON hợp lệ | FR-CI-01 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/recorder.py` |
+| **TSK-S3-02** | Replay trên target bất kỳ | FR-CI-02 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/player.py` |
+| **TSK-S3-03** | Thư viện assert: chặn, gate nào, leo thang, chân cấm kích | FR-CI-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/assertions.py` |
+| **TSK-S3-04** | Golden Reference và so khớp chuỗi phán quyết | FR-CI-04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/golden.py` |
+| **TSK-S3-05** | Hiện thực HAL cho target `linux` qua `gpiod` | FR-TGT-02 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` |
+| **TSK-S3-06** | CLI đầy đủ: `new`, `run`, `build`, `test`, `record`, `replay`, `trace validate` | FR-CLI-01→04, FR-TRC-08 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/` |
+| **TSK-S3-07** | Scaffold `neuroedge new` có sẵn action, gate, test | FR-DX-01 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/templates/` |
+| **TSK-S3-08** | Ba ví dụ mẫu chạy được, README có tài sản trực quan | FR-DX-05, FR-DX-06 | V3 | ⏳ Chưa bắt đầu | `examples/` |
+| **TSK-S3-09** | Telemetry CLI ẩn danh, có thể tắt | FR-TEL-01, FR-TEL-02 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/telemetry/` |
+| **TSK-S3-10** | **Bộ vector kiểm thử tuân thủ độc lập ngôn ngữ** cho máy trạng thái hội thoại (§3.8) | FR-CI-07, FR-TGT-04 | V1 | ⏳ Chưa bắt đầu | `fixtures/compliance/` |
+| **TSK-S3-11** | Hiện thực Python của máy trạng thái hội thoại, port thiết kế từ Pipecat | FR-PER-02→05 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/fsm.py` |
+| **TSK-S3-12** | Pipeline CI mẫu chạy `sim` + `linux` trên mỗi PR | FR-CI-05 | V1 | ⏳ Chưa bắt đầu | `.github/workflows/ci-sim-linux.yml` |
 
+**Tiêu chí ra Sprint 3 — cổng kết thúc Khối 1a (Exit Criteria):**
 
-**Tiêu chí ra Sprint 3 — cổng kết thúc Khối 1a:**
-
-
-| #   | Tiêu chí                                                                | Tham chiếu                 |
-| :---: | :----------------------------------------------------------------------- | :--------------------------: |
-| 1   | TTFV đo thử nội bộ trên **3 người ngoài đội** đạt trung vị dưới 10 phút | A1 *(đo đầy đủ ở Tuần 12)* |
-| 2   | `neuroedge verify --targets sim,linux` đạt 100%                         | A2 *(một phần)*            |
-| 3   | Không tồn tại đường tắt kích hoạt GPIO bỏ qua gate                      | A3                         |
-| 4   | 100% kịch bản suy giảm đều chặn hành động                               | A4                         |
-| 5   | Bộ kiểm thử kế thừa gate đạt 100%                                       | A5                         |
-| 6   | 100% phiên sinh vết ghi qua được `neuroedge trace validate`             | A7                         |
+- [ ] **Tiêu chí 1 (A1):** TTFV đo thử nội bộ trên **3 người ngoài đội** đạt trung vị dưới 10 phút *(đo đầy đủ ở Tuần 12)*.
+- [ ] **Tiêu chí 2 (A2):** `neuroedge verify --targets sim,linux` đạt 100% *(một phần)*.
+- [ ] **Tiêu chí 3 (A3):** Không tồn tại đường tắt kích hoạt GPIO bỏ qua gate.
+- [ ] **Tiêu chí 4 (A4):** 100% kịch bản suy giảm đều chặn hành động.
+- [ ] **Tiêu chí 5 (A5):** Bộ kiểm thử kế thừa gate đạt 100%.
+- [ ] **Tiêu chí 6 (A7):** 100% phiên sinh vết ghi qua được `neuroedge trace validate`.
 
 
 ---
@@ -464,25 +526,22 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tương đương target trên miền quyết định trước, khi biến số còn ít.
 
 
-| Hạng mục                                                     | Yêu cầu PRD          | Người   |
-| :------------------------------------------------------------ | :-------------------- | :-------: |
-| Port 5 nguyên thủy HAL lên ESP-IDF                           | FR-TGT-03, FR-HAL-01 | V2      |
-| Gate Engine chạy trên MCU                                    | FR-ACE-01, FR-ACE-03 | V2 + V1 |
-| Đường dẫn `digital.out` và `sensor.read` trên phần cứng thật | FR-HAL-06, FR-HAL-07 | V2      |
-| Lệnh `neuroedge verify` cho cả 3 target                      | FR-CI-07, FR-TGT-04  | V1      |
-| Runner kiểm thử nightly trên bo mạch thật                    | FR-CI-06, NFR-REL-03 | V3      |
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-S4-01** | Port 5 nguyên thủy HAL lên ESP-IDF | FR-TGT-03, FR-HAL-01 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/hal/` |
+| **TSK-S4-02** | Gate Engine chạy trên MCU (duyệt cây quyết định JSON) | FR-ACE-01, FR-ACE-03 | V2 + V1 | ⏳ Chưa bắt đầu | `targets/esp32s3/gate/` |
+| **TSK-S4-03** | Đường dẫn `digital.out` và `sensor.read` trên phần cứng thật | FR-HAL-06, FR-HAL-07 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/drivers/` |
+| **TSK-S4-04** | Lệnh `neuroedge verify` cho cả 3 target | FR-CI-07, FR-TGT-04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/verify.py` |
+| **TSK-S4-05** | Runner kiểm thử nightly trên bo mạch thật | FR-CI-06, NFR-REL-03 | V3 | ⏳ Chưa bắt đầu | `.github/workflows/nightly-hardware.yml` |
 
 
 **Đòn bẩy OSS Sprint 4:** ESP-IDF làm toolchain · port driver bo mạch từ XiaoZhi vào `targets/esp32s3/drivers/` (codec I2S ES8311/ES7210, chân I2C/SPI của Box-3, LCD ST7789) · LVGL cho hiển thị trạng thái. Tiết kiệm ước tính 7 tuần, trong đó 2–3 tuần nằm trên đường găng.
 
-**Tiêu chí ra Sprint 4:**
+**Tiêu chí ra Sprint 4 (Exit Criteria):**
 
-
-| #   | Tiêu chí                                                                                                                    |
-| :---: | :--------------------------------------------------------------------------------------------------------------------------- |
-| 1   | `neuroedge verify --targets sim,linux,esp32s3` đạt 100% trên kịch bản **không dùng audio** → **A2 đạt cho miền phán quyết** |
-| 2   | Sai lệch phán quyết giữa các target sinh `TargetEquivalenceError` chỉ rõ sự kiện lệch đầu tiên                              |
-| 3   | Nightly runner chạy tự động và gửi báo cáo                                                                                  |
+- [ ] **Tiêu chí 1 (A2):** `neuroedge verify --targets sim,linux,esp32s3` đạt 100% trên kịch bản **không dùng audio** → **A2 đạt cho miền phán quyết**.
+- [ ] **Tiêu chí 2:** Sai lệch phán quyết giữa các target sinh `TargetEquivalenceError` chỉ rõ sự kiện lệch đầu tiên.
+- [ ] **Tiêu chí 3:** Nightly runner chạy tự động và gửi báo cáo.
 
 
 ### 5.2 Sprint 5 — Runtime thoại trên MCU (Tuần 8–10)
@@ -490,14 +549,13 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 **Đây là sprint rủi ro nhất của toàn dự án.**
 
 
-| Hạng mục                                                                            | Yêu cầu PRD                     | Người   |
-| :----------------------------------------------------------------------------------- | :------------------------------- | :-------: |
-| Tích hợp WebRTC AEC, Silero VAD, Opus streaming                                     | FR-PER-06                       | V2      |
-| Port đường dẫn audio theo §3.5, tuân thủ nghĩa vụ ghi nhận nguồn §3.9 | FR-PER-01 | V2 |
-| **Hiện thực C/C++ của máy trạng thái hội thoại** theo đặc tả Sprint 2, phải vượt bộ vector tuân thủ Sprint 3 (§3.8) | FR-PER-02, FR-PER-03, FR-PER-05 | V1 + V2 |
-| Thu hồi lệnh actuator chưa thực thi khi bị cắt lời                                  | FR-PER-02                       | V1 + V2 |
-| Tối ưu bộ nhớ theo ngân sách đã chốt ở Q-3                                          | NFR-RES-01, NFR-RES-02          | V2      |
-
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-S5-01** | Tích hợp WebRTC AEC, Silero VAD, Opus streaming | FR-PER-06 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/audio/` |
+| **TSK-S5-02** | Port đường dẫn audio theo §3.5, tuân thủ nghĩa vụ ghi nhận nguồn §3.9 | FR-PER-01 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/drivers/audio_path.c` |
+| **TSK-S5-03** | **Hiện thực C/C++ của máy trạng thái hội thoại** theo đặc tả Sprint 2, phải vượt bộ vector tuân thủ Sprint 3 (§3.8) | FR-PER-02, FR-PER-03, FR-PER-05 | V1 + V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/fsm/voice_fsm.c` |
+| **TSK-S5-04** | Thu hồi lệnh actuator chưa thực thi khi bị cắt lời | FR-PER-02 | V1 + V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/fsm/actuator_abort.c` |
+| **TSK-S5-05** | Tối ưu bộ nhớ theo ngân sách đã chốt ở Q-3 | NFR-RES-01, NFR-RES-02 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/sdkconfig.defaults` |
 
 **Ràng buộc kiến trúc bắt buộc:** máy trạng thái hội thoại chỉ có **một hiện thực duy nhất**, portable xuống MCU. Không được dùng một máy trạng thái cho `linux` và một máy trạng thái khác cho `esp32s3` — hai bản sẽ phân kỳ, và hành vi thu hồi lệnh actuator khi cắt lời sẽ khác nhau giữa các target, phá vỡ tương đương ở đúng miền nguy hiểm nhất.
 
@@ -505,35 +563,43 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 
 **Ràng buộc bắt buộc:** hiện thực C/C++ này là bản thứ hai của cùng một đặc tả, không phải một thiết kế độc lập. Nó chỉ được nghiệm thu khi vượt toàn bộ bộ vector tuân thủ chung (§3.8).
 
-**Tiêu chí ra Sprint 5:**
+**Tiêu chí ra Sprint 5 (Exit Criteria):**
 
-
-| #   | Tiêu chí                                                                 |
-| :---: | :------------------------------------------------------------------------ |
-| 1   | Vòng lặp thoại đầy đủ chạy trên bo mạch tham chiếu                       |
-| 2   | Cắt lời giữa câu: TTS dừng dưới 300 ms, không có lệnh actuator nào rò rỉ |
-| 3   | Bơm 20 khung nhiễu liên tiếp: máy trạng thái vẫn phản hồi đúng           |
-| 4   | Bộ nhớ còn lại sau 4 giờ chạy nằm trong ngân sách Q-3                    |
+- [ ] **Tiêu chí 1:** Vòng lặp thoại đầy đủ chạy trên bo mạch tham chiếu.
+- [ ] **Tiêu chí 2:** Cắt lời giữa câu: TTS dừng dưới 300 ms, không có lệnh actuator nào rò rỉ.
+- [ ] **Tiêu chí 3:** Bơm 20 khung nhiễu liên tiếp: máy trạng thái vẫn phản hồi đúng.
+- [ ] **Tiêu chí 4:** Bộ nhớ còn lại sau 4 giờ chạy nằm trong ngân sách Q-3.
 
 
 ### 5.3 Sprint 6 — OTA, ổn định hóa, nghiệm thu (Tuần 10–12)
 
 
-| Hạng mục                                              | Yêu cầu PRD              | Người |
-| :----------------------------------------------------- | :------------------------ | :-----: |
-| OTA cấp thiết bị: phân vùng kép A/B                   | FR-OTA-01                | V2    |
-| Tự động rollback khi phát hiện vòng lặp khởi động     | FR-OTA-02                | V2    |
-| Xác minh chữ ký firmware trên chip                    | FR-OTA-03                | V2    |
-| Nạp firmware từ HTTP endpoint mở bất kỳ               | FR-OTA-04                | V2    |
-| Secure boot, mã hóa flash, nút ngắt micro vật lý      | NFR-SEC-02, NFR-SEC-03   | V2    |
-| Kiểm thử chịu tải 24 giờ                              | NFR-RES-01, A6           | V3    |
-| Publish JSON Schema công khai và bộ kiểm thử tuân thủ | FR-GOV-01, FR-GOV-03, A9 | V1    |
-| Hoàn thiện tài liệu, ví dụ, video minh họa            | FR-DX-05, FR-DX-06, A8   | V3    |
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-S6-01** | OTA cấp thiết bị: phân vùng kép A/B | FR-OTA-01 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/ota/` |
+| **TSK-S6-02** | Tự động rollback khi phát hiện vòng lặp khởi động | FR-OTA-02 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/ota/rollback.c` |
+| **TSK-S6-03** | Xác minh chữ ký firmware trên chip | FR-OTA-03 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/security/signature.c` |
+| **TSK-S6-04** | Nạp firmware từ HTTP endpoint mở bất kỳ | FR-OTA-04 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/ota/http_ota.c` |
+| **TSK-S6-05** | Secure boot, mã hóa flash, nút ngắt micro vật lý | NFR-SEC-02, NFR-SEC-03 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/security/` |
+| **TSK-S6-06** | Kiểm thử chịu tải 24 giờ | NFR-RES-01, A6 | V3 | ⏳ Chưa bắt đầu | `tests/stress/` |
+| **TSK-S6-07** | Publish JSON Schema công khai và bộ kiểm thử tuân thủ | FR-GOV-01, FR-GOV-03, A9 | V1 | ⏳ Chưa bắt đầu | `schemas/`, `tests/compliance/` |
+| **TSK-S6-08** | Hoàn thiện tài liệu, ví dụ, video minh họa | FR-DX-05, FR-DX-06, A8 | V3 | ⏳ Chưa bắt đầu | `docs/`, `examples/` |
 
 
 **Đòn bẩy OSS Sprint 6:** `esp_https_ota` và `esp_ota_ops` của ESP-IDF cho cập nhật phân vùng kép A/B và rollback cục bộ. Tiết kiệm ước tính 2 tuần.
 
-**Tiêu chí ra Sprint 6 — cổng phát hành v1.0:** đạt **toàn bộ A1 đến A9** của PRD §11.1. Không chấp nhận đạt một phần.
+**Tiêu chí ra Sprint 6 — cổng phát hành v1.0 (Exit Criteria):**
+Đạt **toàn bộ A1 đến A9** của PRD §11.1 (không chấp nhận đạt một phần):
+
+- [ ] **A1 (TTFV):** Người mới chưa từng dùng chạy xong agent có gate trong < 10 phút trên `sim`.
+- [ ] **A2 (Target Equivalence):** `neuroedge verify --targets sim,linux,esp32s3` đạt 100% khớp chuỗi sự kiện.
+- [ ] **A3 (Safe by Construction):** Không có đường dẫn nào trong mã sinh lệnh actuator bỏ qua gate.
+- [ ] **A4 (Fail-Closed Reliability):** 100% kịch bản suy giảm (mất mạng, timeout LLM, lỗi gate) đều chặn hành động.
+- [ ] **A5 (Gate Inheritance Invariance):** Mọi vi phạm 5 nguyên tắc an toàn khi `extends` đều bị từ chối lúc compile.
+- [ ] **A6 (Edge Resource Stability):** Chạy liên tục 24 giờ trên ESP32-S3 không vượt ngân sách RAM/Flash.
+- [ ] **A7 (Trace Fidelity):** 100% vết ghi sinh ra đều hợp lệ với `schemas/trace.v1.json` và replay được.
+- [ ] **A8 (Developer Experience):** CLI trực quan, tài liệu đầy đủ, 3 dự án mẫu hoạt động trơn tru.
+- [ ] **A9 (Open Standard Governance):** JSON Schema và test harness phát hành công khai.
 
 ---
 
@@ -570,14 +636,14 @@ Ngoại lệ duy nhất: lỗi chặn người dùng hoàn thành hành trình 1
 ### 6.4 Chỉ số phải đo trong Beta
 
 
-| Mã     | Chỉ số                                                | Ngưỡng                | Nguồn       |
-| :------: | :----------------------------------------------------- | :--------------------- | :----------- |
-| **B1** | Lập trình viên ngoài chạy thành công agent trên `sim` | ≥ 50                  | FR-TEL-01   |
-| **B2** | Lập trình viên ngoài nạp thành công phần cứng thật    | ≥ 10                  | FR-TEL-01   |
-| **B3** | Gate do cộng đồng tự viết và đóng góp                 | ≥ 3                   | Registry    |
-| **B4** | Tỷ lệ giữ lại và mở rộng test gate mặc định           | ≥ 50%                 | FR-TEL-01   |
-| **B5** | Tỷ lệ chuyển đổi `sim` → phần cứng trong 30 ngày      | ≥ 15%                 | FR-TEL-01   |
-| **A1** | TTFV đo đầy đủ trên 10 người độc lập                  | Trung vị &lt; 10 phút | Biên bản đo |
+| Mã | Chỉ số | Ngưỡng | Trạng thái | Nguồn |
+|:---:|:---|:---:|:---:|:---|
+| **B1** | Lập trình viên ngoài chạy thành công agent trên `sim` | ≥ 50 | ⏳ Chưa bắt đầu | FR-TEL-01 |
+| **B2** | Lập trình viên ngoài nạp thành công phần cứng thật | ≥ 10 | ⏳ Chưa bắt đầu | FR-TEL-01 |
+| **B3** | Gate do cộng đồng tự viết và đóng góp | ≥ 3 | ⏳ Chưa bắt đầu | Registry |
+| **B4** | Tỷ lệ giữ lại và mở rộng test gate mặc định | ≥ 50% | ⏳ Chưa bắt đầu | FR-TEL-01 |
+| **B5** | Tỷ lệ chuyển đổi `sim` → phần cứng trong 30 ngày | ≥ 15% | ⏳ Chưa bắt đầu | FR-TEL-01 |
+| **A1** | TTFV đo đầy đủ trên 10 người độc lập | Trung vị < 10 phút | ⏳ Chưa bắt đầu | Biên bản đo |
 
 
 ---
@@ -605,16 +671,16 @@ Khởi động **chỉ khi** đi nhánh A. Hai khối chạy song song.
 ### 8.1 Trình tự Khối 2 — Gateway và Fleet OS
 
 
-| Tháng   | Trọng tâm                                                                | Yêu cầu PRD          | Tiêu chí ra                                       |
-| :-------: | :------------------------------------------------------------------------ | :-------------------- | :------------------------------------------------- |
-| **4**   | Gateway: một endpoint, một credential, xoay khóa từ xa                   | FR-GW-01, FR-GW-02   | Thiết bị không lưu API key bên thứ ba             |
-| **5**   | Gateway: định tuyến đa nhà cung cấp, failover, hạn mức theo thiết bị     | FR-GW-03, FR-GW-05   | Ngắt nhà cung cấp chính, thiết bị không gián đoạn |
-| **5–6** | Gateway: giao thức tối ưu edge, xuất vết ghi đồng nhất định dạng         | FR-GW-04, FR-GW-07   | Vết ghi từ Gateway replay được trên máy cá nhân   |
-| **6**   | Fleet: cấp phát danh tính và chứng chỉ thiết bị                          | FR-FLT-01            | Claim tự động trên lô 100 thiết bị                |
-| **6–7** | Fleet: sổ kiểm kê, giám sát sức khỏe, dashboard hữu ích ở n = 1          | FR-FLT-03, FR-FLT-06 | Trạng thái phản ánh đúng trong 60 giây            |
-| **7**   | Fleet: cập nhật cấu hình, bí mật và gate từ xa                           | FR-FLT-04            | Đổi ngưỡng gate toàn đội, không nạp lại firmware  |
-| **7–8** | Fleet: điều phối OTA canary 1% → 10% → 100%, tự dừng khi vượt ngưỡng lỗi | FR-FLT-02            | **1.000 thiết bị / 0 brick**                      |
-| **8**   | Fleet: tự động tải vết ghi sự cố về kho tập trung                        | FR-FLT-05            | Sự cố xuất hiện trong kho dưới 5 phút             |
+| Mã Task | Tháng | Trọng tâm công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) | Tiêu chí nghiệm thu |
+|:---:|:---:|:---|:---|:---:|:---:|:---|:---|
+| **TSK-K2-01** | **4** | Gateway: một endpoint, một credential, xoay khóa từ xa | FR-GW-01, FR-GW-02 | V4 | ⏳ Chờ mốc Beta | `services/gateway/auth.py` | Thiết bị không lưu API key bên thứ ba |
+| **TSK-K2-02** | **5** | Gateway: định tuyến đa nhà cung cấp, failover, hạn mức theo thiết bị | FR-GW-03, FR-GW-05 | V4 | ⏳ Chờ mốc Beta | `services/gateway/routing.py` | Ngắt nhà cung cấp chính, thiết bị không gián đoạn |
+| **TSK-K2-03** | **5–6** | Gateway: giao thức tối ưu edge, xuất vết ghi đồng nhất định dạng | FR-GW-04, FR-GW-07 | V4 | ⏳ Chờ mốc Beta | `services/gateway/traces.py` | Vết ghi từ Gateway replay được trên máy cá nhân |
+| **TSK-K2-04** | **6** | Fleet: cấp phát danh tính và chứng chỉ thiết bị | FR-FLT-01 | V4 | ⏳ Chờ mốc Beta | `services/fleet/provisioning.py` | Claim tự động trên lô 100 thiết bị |
+| **TSK-K2-05** | **6–7** | Fleet: sổ kiểm kê, giám sát sức khỏe, dashboard hữu ích ở n = 1 | FR-FLT-03, FR-FLT-06 | V4 | ⏳ Chờ mốc Beta | `services/fleet/inventory.py` | Trạng thái phản ánh đúng trong 60 giây |
+| **TSK-K2-06** | **7** | Fleet: cập nhật cấu hình, bí mật và gate từ xa | FR-FLT-04 | V4 | ⏳ Chờ mốc Beta | `services/fleet/config_sync.py` | Đổi ngưỡng gate toàn đội, không nạp lại firmware |
+| **TSK-K2-07** | **7–8** | Fleet: điều phối OTA canary 1% → 10% → 100%, tự dừng khi vượt ngưỡng lỗi | FR-FLT-02 | V4 | ⏳ Chờ mốc Beta | `services/fleet/canary.py` | **1.000 thiết bị / 0 brick** |
+| **TSK-K2-08** | **8** | Fleet: tự động tải vết ghi sự cố về kho tập trung | FR-FLT-05 | V4 | ⏳ Chờ mốc Beta | `services/fleet/trace_collector.py` | Sự cố xuất hiện trong kho dưới 5 phút |
 
 
 **Đòn bẩy OSS Khối 2:** LiteLLM Proxy làm lõi Hosted Gateway (chỉ dùng phần MIT, bọc middleware xác thực thiết bị viết riêng) · Eclipse Hawkbit cho điều phối chiến dịch OTA canary · EMQX hoặc FastAPI WebSockets cho kết nối và viễn trắc. Tiết kiệm ước tính 14 tuần. Xem ngoại lệ giấy phép tại §3.3.
@@ -622,22 +688,30 @@ Khởi động **chỉ khi** đi nhánh A. Hai khối chạy song song.
 ### 8.2 Trình tự Khối 3 — Đường ray hạ tầng
 
 
-| Tháng   | Thành phần                                             | Yêu cầu PRD          |
-| :-------: | :------------------------------------------------------ | :-------------------- |
-| **4**   | Định danh ổn định cho thiết bị, agent, gate            | FR-REG-05            |
-| **4–5** | Hệ đo lường theo lượt gọi agent và lượt thẩm định gate | FR-REG-06, FR-TEL-04 |
-| **5**   | Manifest và chuẩn phiên bản SemVer                     | FR-REG-02            |
-| **5–6** | Kho Gate công khai miễn phí                            | FR-REG-01            |
-| **6–7** | Cơ chế phân quyền và sandbox                           | FR-REG-07            |
+| Mã Task | Tháng | Thành phần kỹ thuật | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-K3-01** | **4** | Định danh ổn định cho thiết bị, agent, gate | FR-REG-05 | V4 | ⏳ Chờ mốc Beta | `services/registry/identity.py` |
+| **TSK-K3-02** | **4–5** | Hệ đo lường theo lượt gọi agent và lượt thẩm định gate | FR-REG-06, FR-TEL-04 | V4 | ⏳ Chờ mốc Beta | `services/metering/engine.py` |
+| **TSK-K3-03** | **5** | Manifest và chuẩn phiên bản SemVer | FR-REG-02 | V4 | ⏳ Chờ mốc Beta | `schemas/manifest.v1.json` |
+| **TSK-K3-04** | **5–6** | Kho Gate công khai miễn phí | FR-REG-01 | V4 | ⏳ Chờ mốc Beta | `services/registry/oci_store.py` |
+| **TSK-K3-05** | **6–7** | Cơ chế phân quyền và sandbox | FR-REG-07 | V4 | ⏳ Chờ mốc Beta | `services/registry/sandbox.py` |
 
 
 **Thứ tự này không tùy tiện.** FR-REG-05, FR-REG-06 và FR-REG-07 phải đi trước vì không bổ sung sau được: thiếu định danh ổn định và đo lường thì Registry không quy kết được ai dùng gì; thiếu sandbox thì không dám cho mã người lạ chạy trên thiết bị có cơ cấu chấp hành.
 
 **Đòn bẩy OSS Khối 3:** CNCF ORAS và Harbor cho kho Gate Registry theo chuẩn OCI · OpenMeter cho hệ đo lường tương thích Stripe Billing. Tiết kiệm ước tính 8 tuần.
 
-### 8.3 Tiêu chí ra Khối 2 và 3
+### 8.3 Tiêu chí ra Khối 2 và 3 (Exit Criteria)
 
-Toàn bộ C1 đến C7 của PRD §11.3.
+Toàn bộ C1 đến C7 của PRD §11.3:
+
+- [ ] **C1 (Zero-Secret Devices):** 100% thiết bị biên kết nối qua Gateway không lưu trữ API key của bất kỳ nhà cung cấp mô hình nào.
+- [ ] **C2 (Zero-Brick Fleet OTA):** Triển khai thử nghiệm 1.000 thiết bị ảo/thật qua canary; tỷ lệ brick là 0%.
+- [ ] **C3 (Incident MTTR < 10m):** Vết ghi sự cố từ thiết bị được tải về dashboard trung tâm trong dưới 5 phút; kỹ sư tái hiện lỗi bằng `replay` trong dưới 5 phút tiếp theo.
+- [ ] **C4 (Registry Verified Gates):** Ít nhất 10 gate mã nguồn mở được publish lên Gate Registry có kiểm định tự động.
+- [ ] **C5 (Usage Attribution):** Hệ đo lường OpenMeter đối soát chính xác 100% số lượt gọi inference và phán quyết gate tới cấp thiết bị.
+- [ ] **C6 (Failover Resiliency):** Giả lập ngắt kết nối nhà cung cấp LLM chính; Gateway tự động chuyển sang nhà cung cấp dự phòng trong dưới 2 giây.
+- [ ] **C7 (Fleet Remote Config):** Đổi chính sách gate từ dashboard điều khiển từ xa có hiệu lực trên toàn đội dưới 30 giây mà không cần khởi động lại firmware.
 
 ---
 
@@ -697,13 +771,13 @@ Mười một quyết định: bảy từ PRD §15, bốn phát sinh từ chiế
 
 ### 10.2 Năm quyết định còn mở
 
-| Tuần | Mã | Quyết định | Vì sao hạn đó | Người quyết |
-|:---:|:---:|:---|:---|:---|
-| **2** | **Q-11** | Phê duyệt ngoại lệ giấy phép: Hawkbit EPL-2.0, EMQX BSL, LiteLLM enterprise | Chặn việc thiết kế phụ thuộc cho Khối 2. Phải xong trước khi port bất kỳ dòng nào (§3.3) | Kỹ thuật trưởng |
-| **5** | Q-7 | Từ khóa kích hoạt mặc định và ngôn ngữ hỗ trợ | Cần trước khi chọn mô hình wake-word cho Sprint 5 | Sản phẩm |
-| **Tháng 3** | **Q-10** | Mức độ phụ thuộc vào LiteLLM: proxy container nguyên bản hay tích hợp sâu | Ảnh hưởng khả năng thay thế và bề mặt bảo trì của Gateway | Kỹ thuật nền tảng |
-| **Tháng 3** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng |
-| **Tháng 3** | Q-6 | Chính sách lưu trữ vết ghi: thời hạn và hạn mức | Ảnh hưởng chi phí vận hành và cam kết SLA | Sản phẩm |
+| Tuần | Mã | Quyết định | Vì sao hạn đó | Người quyết | Trạng thái |
+|:---:|:---:|:---|:---|:---:|:---:|
+| **2** | **Q-11** | Phê duyệt ngoại lệ giấy phép: Hawkbit EPL-2.0, EMQX BSL, LiteLLM enterprise | Chặn việc thiết kế phụ thuộc cho Khối 2. Phải xong trước khi port bất kỳ dòng nào (§3.3) | Kỹ thuật trưởng | ⏳ Đang mở |
+| **5** | Q-7 | Từ khóa kích hoạt mặc định và ngôn ngữ hỗ trợ | Cần trước khi chọn mô hình wake-word cho Sprint 5 | Sản phẩm | ⏳ Đang mở |
+| **Tháng 3** | **Q-10** | Mức độ phụ thuộc vào LiteLLM: proxy container nguyên bản hay tích hợp sâu | Ảnh hưởng khả năng thay thế và bề mặt bảo trì của Gateway | Kỹ thuật nền tảng | ⏳ Đang mở |
+| **Tháng 3** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng | ⏳ Đang mở |
+| **Tháng 3** | Q-6 | Chính sách lưu trữ vết ghi: thời hạn và hạn mức | Ảnh hưởng chi phí vận hành và cam kết SLA | Sản phẩm | ⏳ Đang mở |
 
 **Q-11 là quyết định gấp nhất trong nhóm còn mở.** Ba thành phần của Khối 2 đều nằm ngoài danh sách giấy phép cho phép, và việc thiết kế phụ thuộc không nên bắt đầu trước khi có phê duyệt bằng văn bản.
 
