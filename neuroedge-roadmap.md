@@ -358,20 +358,21 @@ Ba tệp này là thước đo tuân thủ cho cả Khối 1a và 1b, và là đ
 ### 4.1 Sprint 1 — Đóng băng lược đồ (Tuần 0–2)
 
 
-| Hạng mục                                                                     | Yêu cầu PRD                        | Người |
-| :---------------------------------------------------------------------------- | :---------------------------------- | :-----: |
-| Đặc tả 5 nguyên thủy HAL và thuộc tính đối chiếu                             | FR-HAL-01, FR-HAL-02, FR-HAL-03    | V1    |
-| Lược đồ gate v1: 8 trường, 3 kiểu `evaluate`, 4 hành vi `on_block`, `budget` | FR-GATE-02, FR-GATE-03, FR-GATE-04 | V1    |
-| Quy tắc kế thừa `extends`: 5 nguyên tắc an toàn                              | FR-GATE-06, FR-GATE-07, FR-GATE-08 | V1    |
-| Lược đồ vết ghi v1: 6 nhóm sự kiện, khối `metadata`                          | FR-TRC-01, FR-TRC-02, FR-TRC-03    | V1    |
-| Ma trận giấy phép và tệp `NOTICE` cho toàn bộ dự án sẽ port (§3.9) | — | V2 |
-| **Spike khả thi bộ nhớ trên ESP32-S3**                                       | NFR-RES-01, NFR-RES-02             | V2    |
-| Rà soát thiết kế HAL dưới ràng buộc MCU                                      | —                                  | V2    |
-| **Dựng bộ khung monorepo** theo Phụ lục C: `schemas/` · `python/` · `targets/` · `fixtures/` · `examples/` | — | V1 |
-| **Ba tệp lược đồ chính thức** trong `schemas/`: `trace.v1.json` · `gate.v1.json` · `board.v1.json` | FR-TRC-01, FR-GATE-02, FR-HAL-02 | V1 |
-| Hai workflow CI: `ci-sim-linux.yml` và `nightly-hardware.yml` | FR-CI-05, FR-CI-06 | V1 |
-| Quy ước đóng góp và mẫu RFC đổi lược đồ | — | V1 |
-
+| Hạng mục | Yêu cầu PRD | Người | Trạng thái |
+|:---|:---|:---:|:---:|
+| Đặc tả 5 nguyên thủy HAL và thuộc tính đối chiếu | FR-HAL-01, FR-HAL-02, FR-HAL-03 | V1 | **Hoàn thành** (`schemas/board.v1.json`) |
+| Lược đồ gate v1: 8 trường, 3 kiểu `evaluate`, 4 hành vi `on_block`, `budget` | FR-GATE-02, FR-GATE-03, FR-GATE-04 | V1 | **Hoàn thành** (`schemas/gate.v1.json`) |
+| Quy tắc kế thừa `extends`: 5 nguyên tắc an toàn | FR-GATE-06, FR-GATE-07, FR-GATE-08 | V1 | **Hoàn thành** (Proposal Phụ lục B, PRD §5.1) |
+| Lược đồ vết ghi v1: 6 nhóm sự kiện, khối `metadata` | FR-TRC-01, FR-TRC-02, FR-TRC-03 | V1 | **Hoàn thành** (`schemas/trace.v1.json`) |
+| Ma trận giấy phép và tệp `NOTICE` cho toàn bộ dự án sẽ port (§3.9) | — | V2 | **Hoàn thành** (Tệp `NOTICE` gốc repo) |
+| **Dựng bộ khung monorepo** theo Phụ lục D: `schemas/` · `python/` · `targets/` · `fixtures/` | — | V1 | **Hoàn thành** (Đã khởi tạo & commit) |
+| **Ba tệp lược đồ chính thức** trong `schemas/`: `trace.v1.json` · `gate.v1.json` · `board.v1.json` | FR-TRC-01, FR-GATE-02, FR-HAL-02 | V1 | **Hoàn thành** (JSON Schema draft 2020-12) |
+| **Ba tệp vết ghi chuẩn mực** tại `fixtures/traces/` (`happy-path`, `unverified_attempt`, `network_offline`) | FR-CI-01, FR-CI-02 | V1 | **Hoàn thành** (Action CI test pass 100%) |
+| Khung Python SDK, CLI và Action CI ban đầu (`replay`, `scenario`) | FR-CLI-01, FR-CI-01 | V1 | **Hoàn thành** (`python/neuroedge/`) |
+| **Spike khả thi bộ nhớ trên ESP32-S3-Box-3** | NFR-RES-01, NFR-RES-02 | V2 | Đang thực hiện |
+| Rà soát thiết kế HAL dưới ràng buộc MCU | — | V2 | Đang thực hiện |
+| Hai workflow CI: `ci-sim-linux.yml` và `nightly-hardware.yml` | FR-CI-05, FR-CI-06 | V1 | Tiếp theo |
+| Quy ước đóng góp và mẫu RFC đổi lược đồ | — | V1 | Tiếp theo |
 
 **Đòn bẩy OSS Sprint 1:** Pydantic v2 và `rfc8785` cho chuẩn hóa lược đồ · Typer, Rich, Copier cho khung CLI ban đầu. Tiết kiệm ước tính 3 tuần công sức viết mã.
 
@@ -381,15 +382,14 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 
 **Tiêu chí ra Sprint 1:**
 
-
-| #   | Tiêu chí                                                                                             |
-| :---: | :---------------------------------------------------------------------------------------------------- |
-| 1   | JSON Schema của gate và trace publish nội bộ, có ví dụ hợp lệ và ví dụ sai kèm thông báo lỗi kỳ vọng |
-| 2   | Ba gate mẫu viết tay được công cụ phân giải đúng, gồm một trường hợp kế thừa 2 cấp                   |
-| 3   | Báo cáo spike bộ nhớ có số liệu đo thực, đối chiếu trực tiếp với ngưỡng Q-3 |
-| 4   | Bộ khung monorepo dựng xong; `schemas/` chứa đủ ba tệp lược đồ và được CI kiểm tra tính hợp lệ |
-| 5   | Ba tệp vết ghi chuẩn mực tại `fixtures/traces/` đã viết tay và phân giải đúng |
-| 6   | Quyết định Q-11 đã chốt (§10.2) — điều kiện để bắt đầu port bất kỳ dòng mã nào |
+| # | Tiêu chí | Trạng thái |
+|:---:|:---|:---:|
+| 1 | JSON Schema của gate và trace publish nội bộ, có ví dụ hợp lệ và ví dụ sai kèm thông báo lỗi kỳ vọng | **Đã đạt** (`schemas/`) |
+| 2 | Ba gate mẫu viết tay được công cụ phân giải đúng, gồm một trường hợp kế thừa 2 cấp | Đang thực hiện |
+| 3 | Báo cáo spike bộ nhớ có số liệu đo thực, đối chiếu trực tiếp với ngưỡng Q-3 | Đang thực hiện (V2) |
+| 4 | Bộ khung monorepo dựng xong; `schemas/` chứa đủ ba tệp lược đồ và được CI kiểm tra tính hợp lệ | **Đã đạt** |
+| 5 | Ba tệp vết ghi chuẩn mực tại `fixtures/traces/` đã viết tay và phân giải đúng | **Đã đạt** (4 tests pass) |
+| 6 | Quyết định Q-11 đã chốt (§10.2) — điều kiện để bắt đầu port bất kỳ dòng mã nào | Chờ Tuần 2 |
 
 
 ### 4.2 Sprint 2 — Lõi thực thi trên `sim` (Tuần 2–4)
