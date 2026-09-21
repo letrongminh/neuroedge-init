@@ -37,6 +37,8 @@
 
 - [A — Bảng mốc tổng hợp](#phụ-lục-a--bảng-mốc-tổng-hợp)
 - [B — Danh mục mua sắm và hạ tầng](#phụ-lục-b--danh-mục-mua-sắm-và-hạ-tầng)
+- [C — Bố cục kho mã nguồn](#phụ-lục-c--bố-cục-kho-mã-nguồn)
+- [D — Giao thức truyền dẫn](#phụ-lục-d--giao-thức-truyền-dẫn)
 
 ---
 
@@ -239,7 +241,7 @@ Tổng tiết kiệm công sức viết mã khoảng 50 tuần-người. **Nhưn
 
 Đây là hệ quả nghiêm trọng nhất của việc port, và cần xử lý tường minh.
 
-Quyết định Q-8 (§10) chọn **C/C++ trên ESP-IDF cho firmware** và **Python cho `sim` và `linux`**. Hệ quả: máy trạng thái hội thoại **buộc phải có hai hiện thực**. Không thể chia sẻ mã giữa hai bên.
+Quyết định **Q-8 đã chốt**: C/C++ trên ESP-IDF cho firmware, Python cho `sim` và `linux`. Hệ quả: máy trạng thái hội thoại **buộc phải có hai hiện thực**. Không thể chia sẻ mã giữa hai bên.
 
 Điều này va thẳng vào P-2. FR-PER-02 yêu cầu barge-in thu hồi lệnh actuator chưa thực thi — nghĩa là hành vi cắt lời rò trực tiếp vào miền hành động vật lý. Hai hiện thực barge-in khác nhau cho ra hai hành vi thu hồi khác nhau.
 
@@ -247,25 +249,79 @@ Quyết định Q-8 (§10) chọn **C/C++ trên ESP-IDF cho firmware** và **Pyt
 
 | # | Thành phần | Nội dung | Sprint |
 |:---:|:---|:---|:---:|
-| 1 | **Đặc tả máy trạng thái** | Văn bản chuẩn tắc mô tả trạng thái, chuyển tiếp, và điều kiện thu hồi lệnh actuator. Là nguồn sự thật duy nhất, không phải mã Python | Sprint 2 |
-| 2 | **Bộ vector kiểm thử tuân thủ** | Tập tệp vết ghi đầu vào kèm chuỗi phán quyết và trạng thái GPIO kỳ vọng, độc lập với ngôn ngữ | Sprint 3 |
+| 1 | **Đặc tả máy trạng thái** | Năm trạng thái và hợp đồng thu hồi lệnh, đặc tả bên dưới. Là nguồn sự thật duy nhất, không phải mã Python | Sprint 2 |
+| 2 | **Bộ vector kiểm thử tuân thủ** | Ba tệp vết ghi chuẩn tại `fixtures/traces/`, kèm chuỗi phán quyết và trạng thái GPIO kỳ vọng, độc lập với ngôn ngữ | Sprint 3 |
 | 3 | **Hiện thực Python** | Cho `sim` và `linux`, port thiết kế từ Pipecat | Sprint 3 |
 | 4 | **Hiện thực C/C++** | Cho `esp32s3`, port driver từ XiaoZhi | Sprint 5 |
 | 5 | **`neuroedge verify` chạy bộ vector trên cả ba target** | Lệch nhau sinh `TargetEquivalenceError` | Sprint 4–5 |
 
 **Không có bước 1 và 2 thì việc port Pipecat là một rủi ro, không phải một đòn bẩy.** Đặc tả và bộ vector phải có trước khi viết hiện thực thứ hai.
 
+#### Đặc tả chuẩn tắc: năm trạng thái
+
+```text
+                    ┌──────────┐
+         ┌─────────►│   IDLE   │◄─────────┐
+         │          └────┬─────┘          │
+         │               │ wake-word hoặc │ phát xong
+         │               │ VAD kích hoạt  │
+         │               ▼                │
+         │          ┌───────────┐         │
+         │          │ LISTENING │         │
+         │          └────┬──────┘         │
+         │               │ kết thúc câu   │
+         │               │ (khoảng lặng)  │
+         │               ▼                │
+         │          ┌──────────┐          │
+         │          │ THINKING │          │
+         │          └────┬─────┘          │
+         │               │ token đầu tiên │
+         │               ▼                │
+         │          ┌──────────┐          │
+         │          │ SPEAKING ├──────────┘
+         │          └────┬─────┘
+         │               │ phát hiện người dùng nói
+         │               ▼
+         │       ┌────────────────┐
+         │       │    BARGE_IN    │
+         │       │ 1. xả đệm DAC  │
+         │       │ 2. huỷ actuator│
+         │       │    đang chờ    │
+         │       │ 3. ghi sự kiện │
+         │       └───────┬────────┘
+         │               │ thu câu nói mới
+         └───────────────┘  →  LISTENING
+```
+
+**Hợp đồng thu hồi lệnh vật lý (Actuator Abort Contract).** Mọi lệnh actuator có độ trễ thực thi — ví dụ `pulse` chốt cửa sau 1.000 ms — nếu gặp sự kiện `barge_in` trong lúc đang chờ cấp xung thì **HAL bắt buộc huỷ lệnh ngay lập tức** và ghi mã trạng thái `ACTUATOR_ABORTED_BY_BARGE_IN` vào tệp vết ghi.
+
+Đây là mệnh đề mà cả hai hiện thực phải thoả, và là mệnh đề mà bộ vector tuân thủ kiểm tra trực tiếp.
+
 #### Hệ quả tương tự với CEL
 
 Nếu `allow_when` dùng Google CEL, thì gate phải lượng giá được **trên cả vi điều khiển**, vì gate chạy on-device và fail-closed khi mất mạng. `cel-python` không chạy trên ESP32-S3.
 
-Ba phương án, cần chốt tại Q-9:
+**Q-9 đã chốt: phương án A.**
 
 | Phương án | Nội dung | Đánh giá |
 |:---|:---|:---|
-| **A. Biên dịch gate lúc build** | Host dịch biểu thức CEL thành dạng quyết định tất định; thiết bị lượng giá dạng đã biên dịch | **Khuyến nghị** — giữ một nguồn sự thật, hai bên lượng giá cùng một artifact, và củng cố luôn câu chuyện golden |
-| B. Bộ lượng giá CEL rút gọn bằng C | Tự viết evaluator cho tập con CEL | Thêm một hiện thực cần giữ đồng bộ |
-| C. CEL trên host, biểu thức đơn giản trên thiết bị | Hai cú pháp khác nhau | **Bác bỏ** — phá tương đương target ở đúng tầng an toàn |
+| **A. Biên dịch gate lúc build** | `neuroedge build` trên máy tính dịch biểu thức CEL thành cây quyết định tất định dạng JSON phẳng; firmware chỉ cần một hàm C khoảng 100 dòng để duyệt cây | **ĐÃ CHỐT** — một nguồn sự thật, hai bên lượng giá cùng một artifact, không tốn RAM vi điều khiển, củng cố luôn câu chuyện golden |
+| B. Bộ lượng giá CEL rút gọn bằng C | Tự viết evaluator cho tập con CEL | Bác bỏ — thêm một hiện thực cần giữ đồng bộ |
+| C. CEL trên host, biểu thức đơn giản trên thiết bị | Hai cú pháp khác nhau | Bác bỏ — phá tương đương target ở đúng tầng an toàn |
+
+**Ranh giới tài sản lõi trong phương án A:** `cel-python` chỉ làm nhiệm vụ **phân tích cú pháp** trên máy tính. **Trình biên dịch sang cây quyết định và bộ duyệt cây trên thiết bị là mã của NeuroEdge** — đây là ngữ nghĩa an toàn, thuộc nhóm không nhận phụ thuộc tại §3.1.
+
+#### Ba tệp vết ghi chuẩn mực
+
+Bộ vector tuân thủ khởi đầu bằng đúng ba kịch bản, cố định tại `fixtures/traces/`:
+
+| Tệp | Kịch bản | Kết quả kỳ vọng |
+|:---|:---|:---|
+| `happy-path.json` | Khách đã xác thực yêu cầu mở cửa | Gate `ALLOW` · chân `door_lock` nhận xung 30.000 ms |
+| `unverified_attempt.json` | Người chưa xác thực yêu cầu mở cửa | Gate `BLOCK` · `escalate` tới lễ tân · chân `door_lock` **không bao giờ** nhận xung |
+| `network_offline.json` | Mất kết nối khi đang thẩm định gate | Fail-closed kích hoạt · hành động bị từ chối · lý do `gate_unreachable` |
+
+Ba tệp này là thước đo tuân thủ cho cả Khối 1a và 1b, và là đầu vào trực tiếp của `neuroedge verify`.
 
 ### 3.9 Nghĩa vụ ghi nhận nguồn
 
@@ -311,12 +367,17 @@ Ba phương án, cần chốt tại Q-9:
 | Ma trận giấy phép và tệp `NOTICE` cho toàn bộ dự án sẽ port (§3.9) | — | V2 |
 | **Spike khả thi bộ nhớ trên ESP32-S3**                                       | NFR-RES-01, NFR-RES-02             | V2    |
 | Rà soát thiết kế HAL dưới ràng buộc MCU                                      | —                                  | V2    |
-| Dựng kho mã, CI cơ bản, quy ước đóng góp                                     | —                                  | V1    |
+| **Dựng bộ khung monorepo** theo Phụ lục C: `schemas/` · `python/` · `targets/` · `fixtures/` · `examples/` | — | V1 |
+| **Ba tệp lược đồ chính thức** trong `schemas/`: `trace.v1.json` · `gate.v1.json` · `board.v1.json` | FR-TRC-01, FR-GATE-02, FR-HAL-02 | V1 |
+| Hai workflow CI: `ci-sim-linux.yml` và `nightly-hardware.yml` | FR-CI-05, FR-CI-06 | V1 |
+| Quy ước đóng góp và mẫu RFC đổi lược đồ | — | V1 |
 
 
 **Đòn bẩy OSS Sprint 1:** Pydantic v2 và `rfc8785` cho chuẩn hóa lược đồ · Typer, Rich, Copier cho khung CLI ban đầu. Tiết kiệm ước tính 3 tuần công sức viết mã.
 
-**Nội dung spike bộ nhớ:** nạp thử AEC + VAD + Opus streaming lên bo mạch tham chiếu, đo dung lượng SRAM/PSRAM còn lại sau khi trừ ngăn xếp mạng và hệ điều hành. Kết quả là **một con số**, không phải một nhận định.
+**Nội dung spike bộ nhớ:** nạp thử AEC + VAD + Opus streaming lên ESP32-S3-Box-3, đo dung lượng SRAM và PSRAM còn lại sau khi trừ ngăn xếp mạng và hệ điều hành. Kết quả là **một con số**, không phải một nhận định.
+
+Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 KB · PSRAM ≥ 2 MB · firmware ≤ 3,5 MB**. Không đạt ngưỡng nào thì kích hoạt bậc 5 của thang cắt phạm vi (§9) ngay, không chờ Tuần 9.
 
 **Tiêu chí ra Sprint 1:**
 
@@ -325,8 +386,10 @@ Ba phương án, cần chốt tại Q-9:
 | :---: | :---------------------------------------------------------------------------------------------------- |
 | 1   | JSON Schema của gate và trace publish nội bộ, có ví dụ hợp lệ và ví dụ sai kèm thông báo lỗi kỳ vọng |
 | 2   | Ba gate mẫu viết tay được công cụ phân giải đúng, gồm một trường hợp kế thừa 2 cấp                   |
-| 3   | Báo cáo spike bộ nhớ có số liệu đo thực, kèm khuyến nghị phạm vi cho Khối 1b                         |
-| 4   | Quyết định Q-1, Q-2, Q-4 đã chốt (§10)                                                                |
+| 3   | Báo cáo spike bộ nhớ có số liệu đo thực, đối chiếu trực tiếp với ngưỡng Q-3 |
+| 4   | Bộ khung monorepo dựng xong; `schemas/` chứa đủ ba tệp lược đồ và được CI kiểm tra tính hợp lệ |
+| 5   | Ba tệp vết ghi chuẩn mực tại `fixtures/traces/` đã viết tay và phân giải đúng |
+| 6   | Quyết định Q-11 đã chốt (§10.2) — điều kiện để bắt đầu port bất kỳ dòng mã nào |
 
 
 ### 4.2 Sprint 2 — Lõi thực thi trên `sim` (Tuần 2–4)
@@ -615,27 +678,34 @@ Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho
 
 ## 10. Lịch chốt quyết định
 
-Bảy quyết định mở của PRD §15, cộng bốn quyết định phát sinh từ chiến lược tái sử dụng mã nguồn mở (§3), xếp theo thời điểm bắt buộc phải chốt.
+Mười một quyết định: bảy từ PRD §15, bốn phát sinh từ chiến lược tái sử dụng mã nguồn mở (§3). Sáu quyết định đã chốt; năm còn lại xếp theo hạn bắt buộc.
 
+### 10.1 Sáu quyết định đã chốt
 
-| Tuần        | Mã      | Quyết định                                        | Vì sao hạn đó                                                                            | Người quyết       |
-| :-----------: | :-------: | :------------------------------------------------- | :---------------------------------------------------------------------------------------- | :----------------- |
-| **1**       | **Q-2** | Bo mạch tham chiếu chính thức                     | **Phải đặt hàng ngay** — thời gian giao hàng có thể 2–4 tuần, chặn cả spike lẫn Sprint 4 | Kỹ thuật trưởng   |
-| **1**       | Q-1     | Phiên bản Python tối thiểu                        | Quyết định cú pháp và thư viện dùng được, ảnh hưởng ngay dòng mã đầu tiên                | Kỹ thuật trưởng   |
-| **2**       | Q-4     | Danh sách nhà cung cấp `SystemOne` hỗ trợ ở v1.0  | Cần trước khi viết interface và bộ kiểm thử                                              | Sản phẩm          |
-| **4**       | Q-3     | Ngân sách SRAM/PSRAM và kích thước firmware       | Chốt **sau** khi có số liệu spike, trước khi lập phạm vi Sprint 5                        | Kỹ sư nhúng       |
-| **5**       | Q-7     | Từ khóa kích hoạt mặc định và ngôn ngữ hỗ trợ     | Cần trước khi chọn mô hình wake-word cho Sprint 5                                        | Sản phẩm          |
-| **1** | **Q-8** | Ngôn ngữ lõi firmware ESP32-S3 | Quyết định có hay không hai hiện thực máy trạng thái (§3.8). Khuyến nghị C/C++ trên ESP-IDF để thừa hưởng trọn vẹn driver XiaoZhi | Kỹ thuật trưởng |
+| Mã | Quyết định | Giá trị chốt | Cơ sở |
+|:---:|:---|:---|:---|
+| **Q-1** | Phiên bản Python tối thiểu | **Python 3.11+** | `tomllib` có sẵn trong thư viện chuẩn nên không cần `tomli` · `TaskGroup` và `ExceptionGroup` trong `asyncio` · bytecode nhanh hơn khoảng 25% so với 3.10 |
+| **Q-2** | Bo mạch tham chiếu chính thức | **ESP32-S3-Box-3** | Tích hợp sẵn LCD ST7789, dual-mic ES7210, loa ES8311, dock GPIO. Loại bỏ hoàn toàn việc câu dây thủ công vốn gây nhiễu clock I2S trên DevKitC. DevKitC hạ xuống bo mạch thứ cấp do cộng đồng hỗ trợ |
+| **Q-3** | Ngân sách bộ nhớ và firmware | **SRAM cho ứng dụng ≥ 120 KB · PSRAM ≥ 2 MB · firmware ≤ 3,5 MB** | Bảo đảm nạp vừa phân vùng kép A/B trên flash 16 MB của Box-3. PSRAM dành cho ring buffer âm thanh, VAD và wake-word |
+| **Q-4** | Nhà cung cấp mô hình ở v1.0 | **System 1:** Jev qua đám mây + bộ trích xuất intent cục bộ trên Sherpa-ONNX làm fallback<br>**System 2:** Claude Sonnet 5 và GPT-4o-mini qua LiteLLM | Bảo đảm nguyên tắc fallback cục bộ khi mất mạng thực sự khả thi, không chỉ là tuyên bố kiến trúc |
+| **Q-8** | Ngôn ngữ lõi firmware | **C/C++ trên ESP-IDF** cho `esp32s3`; Python cho `sim` và `linux` | Thừa hưởng trọn vẹn driver XiaoZhi và hệ sinh thái ESP-IDF. Kéo theo nghĩa vụ đặc tả chuẩn tắc và bộ vector tuân thủ tại §3.8 |
+| **Q-9** | Lượng giá CEL trên vi điều khiển | **Phương án A — biên dịch gate lúc build** | `neuroedge build` dịch CEL thành cây quyết định JSON phẳng; firmware duyệt cây bằng một hàm C khoảng 100 dòng. Phán quyết đồng nhất trên cả ba target, không tốn RAM |
+
+**Hệ quả trực tiếp lên Sprint 1:** Q-1, Q-2 và Q-3 đã chốt nghĩa là đội có thể đặt bo mạch, dựng kho mã và bắt đầu spike ngay Tuần 0 mà không chờ quyết định nào.
+
+**Một điều chỉnh so với đề xuất gốc:** Q-4 ghi Claude Sonnet 5 thay vì Sonnet 3.5. Thế hệ 3.5 đã bị thay thế; chốt một định danh mô hình lỗi thời vào tài liệu nền sẽ tạo nợ ngay từ ngày đầu.
+
+### 10.2 Năm quyết định còn mở
+
+| Tuần | Mã | Quyết định | Vì sao hạn đó | Người quyết |
+|:---:|:---:|:---|:---|:---|
 | **2** | **Q-11** | Phê duyệt ngoại lệ giấy phép: Hawkbit EPL-2.0, EMQX BSL, LiteLLM enterprise | Chặn việc thiết kế phụ thuộc cho Khối 2. Phải xong trước khi port bất kỳ dòng nào (§3.3) | Kỹ thuật trưởng |
-| **3** | **Q-9** | Cách lượng giá CEL trên vi điều khiển: biên dịch gate lúc build, evaluator C rút gọn, hay hai cú pháp | Quyết định kiến trúc Gate Engine. Khuyến nghị phương án A — biên dịch lúc build (§3.8) | Kỹ thuật trưởng |
+| **5** | Q-7 | Từ khóa kích hoạt mặc định và ngôn ngữ hỗ trợ | Cần trước khi chọn mô hình wake-word cho Sprint 5 | Sản phẩm |
 | **Tháng 3** | **Q-10** | Mức độ phụ thuộc vào LiteLLM: proxy container nguyên bản hay tích hợp sâu | Ảnh hưởng khả năng thay thế và bề mặt bảo trì của Gateway | Kỹ thuật nền tảng |
-| **Tháng 3** | Q-5     | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3                                                    | Kỹ thuật nền tảng |
-| **Tháng 3** | Q-6     | Chính sách lưu trữ vết ghi: thời hạn và hạn mức   | Ảnh hưởng chi phí vận hành và cam kết SLA                                                | Sản phẩm          |
+| **Tháng 3** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng |
+| **Tháng 3** | Q-6 | Chính sách lưu trữ vết ghi: thời hạn và hạn mức | Ảnh hưởng chi phí vận hành và cam kết SLA | Sản phẩm |
 
-
-**Q-8 và Q-9 là hai quyết định nặng nhất.** Q-8 quyết định có tồn tại hai hiện thực máy trạng thái hay không; nếu có, đặc tả chuẩn tắc và bộ vector tuân thủ (§3.8) trở thành hạng mục bắt buộc của Sprint 2 và Sprint 3. Q-9 quyết định kiến trúc lượng giá của Gate Engine — tầng an toàn cốt lõi — nên không được để trôi quá Tuần 3.
-
-**Q-2 được đẩy lên Tuần 1** so với PRD (vốn ghi "trước Tuần 6"). Lý do thuần túy vận hành: bo mạch phải có trong tay trước khi spike bắt đầu, và thời gian mua sắm không nằm dưới quyền kiểm soát của đội.
+**Q-11 là quyết định gấp nhất trong nhóm còn mở.** Ba thành phần của Khối 2 đều nằm ngoài danh sách giấy phép cho phép, và việc thiết kế phụ thuộc không nên bắt đầu trước khi có phê duyệt bằng văn bản.
 
 ---
 
@@ -724,8 +794,8 @@ Cần chuẩn bị trước Tuần 1 để không chặn đường găng.
 
 | Hạng mục                                       | Số lượng | Cần trước  | Ghi chú                                              |
 | :---------------------------------------------- | :--------: | :----------: | :---------------------------------------------------- |
-| Bo mạch tham chiếu ESP32-S3                    | 5–8      | **Tuần 1** | Chốt ở Q-2; dư ra cho nightly runner và bo mạch hỏng |
-| Mảng micro 2 kênh có AEC                       | 3        | Tuần 1     | Phục vụ spike và Sprint 5                            |
+| **ESP32-S3-Box-3** (bo mạch tham chiếu chính thức) | 5–8 | **Tuần 1** | Chốt tại Q-2. Đã tích hợp LCD, dual-mic và loa nên không cần mua rời. Dư ra cho nightly runner và bo mạch hỏng |
+| ESP32-S3-DevKitC (bo mạch thứ cấp) | 2 | Tuần 3 | Kiểm chứng tính di động của HAL ngoài Box-3; hỗ trợ ở mức cộng đồng |
 | Raspberry Pi 5                                 | 2        | Tuần 3     | Target `linux` trên ARM64                            |
 | Máy Linux x86-64                               | 1        | Tuần 3     | Target `linux` trên x86, có thể dùng máy ảo          |
 | Mạch nạp và cáp JTAG                           | 2 bộ     | Tuần 1     | Gỡ lỗi cấp thanh ghi                                 |
@@ -733,6 +803,80 @@ Cần chuẩn bị trước Tuần 1 để không chặn đường găng.
 | Tên miền và hạ tầng cho `schema.neuroedge.dev` | —        | Tuần 10    | Phục vụ FR-GOV-01 và A9                              |
 | Máy chủ Discord và kho GitHub công khai        | —        | Tuần 10    | Phục vụ giai đoạn Beta                               |
 
+
+---
+
+## Phụ lục C — Bố cục kho mã nguồn
+
+Cấu trúc monorepo chính thức, dựng trong Sprint 1. Mọi đường dẫn nêu trong tài liệu này và trong PRD đều tham chiếu tới cây thư mục dưới đây.
+
+```text
+neuroedge/
+├── .github/workflows/
+│   ├── ci-sim-linux.yml        # Action CI trên sim và linux, chạy mỗi pull request
+│   └── nightly-hardware.yml    # Kiểm thử hằng đêm trên bo mạch Box-3 thật
+├── schemas/                    # NGUỒN SỰ THẬT DUY NHẤT
+│   ├── trace.v1.json           # JSON Schema draft 2020-12 cho tệp vết ghi
+│   ├── gate.v1.json            # JSON Schema cho cổng an toàn
+│   └── board.v1.json           # JSON Schema đối chiếu năng lực bo mạch
+├── python/                     # Gói phân phối qua PyPI
+│   ├── pyproject.toml          # Python 3.11+
+│   ├── neuroedge/
+│   │   ├── cli/                # Typer · Rich · Copier
+│   │   ├── hal/                # 5 nguyên thủy và bộ đối chiếu năng lực lúc build
+│   │   ├── engine/             # Action Contract Engine · trình biên dịch CEL sang cây quyết định
+│   │   ├── perception/         # Voice pipeline · VAD · barge-in
+│   │   ├── testing/            # Action CI: pytest-neuroedge · replay · assert
+│   │   └── sim/                # Máy chủ mô phỏng web · Wokwi Elements
+│   └── tests/
+├── targets/                    # Hiện thực HAL cho từng môi trường
+│   ├── sim/                    # Backend mô phỏng trong bộ nhớ (Python)
+│   ├── linux/                  # gpiod v2 · ALSA (Python)
+│   └── esp32s3/                # Firmware ESP-IDF (C/C++)
+│       ├── CMakeLists.txt
+│       ├── sdkconfig.defaults  # PSRAM · FreeRTOS 1000 Hz · I2S
+│       ├── partitions.csv      # Phân vùng kép A/B trên flash 16 MB
+│       ├── main/               # Vòng lặp FreeRTOS · action dispatcher
+│       └── components/         # Codec ES8311/ES7210 · LCD ST7789 · OTA agent
+├── fixtures/traces/            # Bộ vector tuân thủ dùng chung
+│   ├── happy-path.json
+│   ├── unverified_attempt.json
+│   └── network_offline.json
+├── examples/villa-concierge/   # Dự án mẫu sinh bởi `neuroedge new`
+└── NOTICE                      # Ghi nhận bản quyền các dự án đã port
+```
+
+**Ba quy ước bắt buộc:**
+
+| # | Quy ước | Lý do |
+|:---:|:---|:---|
+| 1 | `schemas/` là nguồn sự thật duy nhất; mã Python và firmware C đều sinh hoặc kiểm tra theo nó, không định nghĩa lại | Chống trôi lược đồ giữa hai ngôn ngữ |
+| 2 | `fixtures/traces/` dùng chung cho cả ba target, không có bản riêng theo ngôn ngữ | Là cơ sở của `neuroedge verify` |
+| 3 | `targets/` chỉ chứa hiện thực HAL, không chứa logic nghiệp vụ hay chính sách an toàn | Giữ ranh giới tài sản lõi tại §3.1 |
+
+---
+
+## Phụ lục D — Giao thức truyền dẫn
+
+Chuẩn trao đổi dữ liệu giữa thiết bị và máy tính phát triển, cần thiết cho `record`, `replay` và luồng thoại thời gian thực.
+
+### D.1 Kênh truyền
+
+| Kênh | Giao thức | Nội dung truyền |
+|:---|:---|:---|
+| **Wi-Fi / LAN** | WebSocket trên TLS | Khung nhị phân cho luồng âm thanh Opus · khung văn bản cho sự kiện vết ghi JSON |
+| **Cáp nạp / UART** | SLIP đóng khung nhị phân, hoặc JSON Lines phân cách bằng ký tự xuống dòng | Tốc độ 921600 baud để tránh nghẽn băng thông |
+
+### D.2 Định dạng âm thanh
+
+| Tham số | Giá trị |
+|:---|:---|
+| Bộ mã hóa | Opus, chế độ voice |
+| Băng thông | 16 kbps |
+| Tần số lấy mẫu | 16 kHz, một kênh |
+| Kích thước khung | 20 ms, tương đương 320 mẫu |
+
+Cùng một định dạng dùng cho cả ba target. Môi trường `sim` phát lại tệp WAV qua đúng đường dẫn mã hóa này để giữ tương đương với phần cứng thật.
 
 ---
 
