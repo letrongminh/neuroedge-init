@@ -93,15 +93,15 @@ Thách thức cốt lõi nằm ở tầng sâu hơn: **chưa có công cụ nào
 │                                                                        │
 │  VỚI GIẢI PHÁP NEUROEDGE                                               │
 │  Mã Agent ──► Đối chiếu năng lực ──► Replay kiểm thử CI ──► Rollout    │
-│               (chặn ngay khi build)  (khớp từng bit dữ liệu)(an toàn)  │
+│               (chặn ngay khi build)  (thẩm định gate & GPIO) (an toàn) │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 Hiện nay, các công cụ truyền thống không thể trả lời 3 câu hỏi sống còn sau:
 
-1. Khi thay đổi prompt điều khiển, agent có còn từ chối mở khóa cho người chưa được xác thực hay không?
-2. Khi chuyển đổi từ mô hình AI A sang mô hình B, có kịch bản an toàn nào bị hồi quy (regression) không?
-3. Cùng một tập dữ liệu đầu vào, liệu agent chạy trên máy mô phỏng, máy tính Linux và vi điều khiển có đưa ra cùng một quyết định hay không?
+1. Khi thay đổi prompt điều khiển, agent có chắc chắn từ chối mở khóa cho người chưa được xác thực hay không?
+2. Khi chuyển đổi từ mô hình AI A sang mô hình B (vốn có tính phi xác định về câu chữ), làm sao để chứng minh các phán quyết an toàn (gate verdicts) và tín hiệu điều khiển phần cứng không bị hồi quy (regression)?
+3. Cùng một tập dữ liệu đầu vào và trạng thái, liệu rule engine thẩm định an toàn chạy trên máy mô phỏng, máy tính Linux và vi điều khiển có đưa ra cùng một phán quyết hay không?
 
 ## 0.3 Tuyên ngôn sản phẩm
 
@@ -127,7 +127,7 @@ Hệ thống được cấu thành từ ba khối giải pháp chính:
 | **2** | **Ba môi trường thực thi ngang hàng (Target Equivalence)** | Giả lập (`sim`), Linux (`linux`) và vi điều khiển (`esp32s3`) cùng tuân thủ một chuẩn HAL duy nhất. Cùng một tệp mã nguồn agent có thể chạy nhất quán trên cả ba nền tảng mà không cần chỉnh sửa. | §3.2 |
 | **3** | **Tập trung giá trị vào quản trị đội thiết bị, không chạy đua bán lại token AI** | Bán lại token suy luận (inference) có biên lợi nhuận mỏng và dễ bị cạnh tranh bởi các nhà cung cấp mô hình lớn. Giá trị gia tăng dài hạn nằm ở nền tảng quản lý, giám sát và cập nhật an toàn cho đội thiết bị ngoài hiện trường. | §6 |
 | **4** | **Mô hình AI là thành phần linh hoạt, có thể thay thế** | Tách rời logic điều khiển khỏi mô hình AI cụ thể thông qua giao diện trừu tượng `SystemOne` và `SystemTwo`. Việc đổi nhà cung cấp mô hình không làm ảnh hưởng đến cấu trúc an toàn của sản phẩm. | §3.6 |
-| **5** | **Kích hoạt hiệu ứng mạng từ cộng đồng chia sẻ chính sách an toàn** | Xây dựng kho lưu trữ chia sẻ gate an toàn miễn phí (Public Gate Registry) từ sớm; chỉ thương mại hóa khi cộng đồng đã hình thành nhu cầu trao đổi thực tế. | §1.6, §8.4 |
+| **5** | **Kích hoạt hiệu ứng mạng từ cộng đồng chia sẻ chính sách an toàn** | Xây dựng kho lưu trữ chia sẻ gate an toàn miễn phí (Public Gate Registry) từ sớm; chỉ thương mại hóa khi cộng đồng đã hình thành nhu cầu trao đổi thực tế. | §1.7, §8.5 |
 
 ## 0.5 Thông điệp cốt lõi theo từng nhóm độc giả
 
@@ -154,7 +154,7 @@ Phương pháp luận của NeuroEdge: Xuất phát từ trải nghiệm hoàn h
 |:---:|:---|:---|:---|
 | **1** | Viết mã agent và kiểm thử ngay, không cần chờ mua phần cứng | Mất nhiều tuần chờ đặt bo mạch, hàn nối dây, cài đặt mạch nạp | **Môi trường giả lập `sim`** — Agent hoàn chỉnh chạy trực tiếp trên trình duyệt chỉ sau 10 phút (§3.2) |
 | **2** | Đảm bảo chắc chắn agent không gây nguy hiểm **trước khi** nạp firmware | Sự cố an toàn chỉ được phát hiện sau khi thiết bị đã xuất xưởng tới tay người dùng | **Action Contract Engine** — Kiểm tra hợp đồng an toàn tự động lúc biên dịch (build-time) và khi thực thi (runtime) (§3.5) |
-| **3** | Khi đổi prompt hoặc mô hình AI, kiểm thử lại toàn bộ kịch bản an toàn trong 30 giây | Phải thử nghiệm thủ công vài trường hợp trong phòng lab, tiềm ẩn rủi ro hồi quy an toàn | **Action CI** — Tái hiện (replay) phiên chạy thực tế chính xác từng bit dữ liệu, tự động đối chiếu với kết quả chuẩn (golden reference) (§3.7) |
+| **3** | Khi đổi prompt hoặc mô hình AI, kiểm thử lại toàn bộ kịch bản an toàn trong 30 giây | Phải thử nghiệm thủ công vài trường hợp trong phòng lab, tiềm ẩn rủi ro hồi quy an toàn | **Action CI** — Tái hiện (replay) phiên chạy thực tế, đối chiếu phán quyết gate và trạng thái chân GPIO vật lý với mẫu chuẩn (§3.7) |
 | **4** | Một mã nguồn agent duy nhất chạy đồng nhất trên laptop, máy tính nhúng và chip $5 | Phải duy trì nhiều codebase độc lập (ví dụ: Python trên PC, C/C++ trên vi điều khiển) | **Nguyên tắc tương đương môi trường (Target Equivalence)** (§3.2, §4.6) |
 | **5** | Chẩn đoán và sửa lỗi thiết bị ngoài hiện trường ngay từ máy tính cá nhân | Kỹ sư phải bay trực tiếp đến hiện trường xử lý, hoặc phải thu hồi toàn bộ lô hàng | **Tái hiện vết ghi từ xa (Remote Trace Replay)** — Tải tệp nhật ký vết `.ntrace` về máy tính để mô phỏng và tái hiện lỗi cục bộ (§6.2) |
 
@@ -172,13 +172,15 @@ Nhật ký vết (trace) chi tiết từng bước  ──┘    Tự động ki
                                                trong quy trình CI trên mỗi commit
 ```
 
-Giá trị cốt lõi của NeuroEdge **không đơn thuần là "bộ định tuyến giữa hai mô hình AI"**. Việc phân luồng giữa mô hình nhanh và mô hình sâu chỉ là chi tiết kỹ thuật nhằm tối ưu chi phí và độ trễ tại một thời điểm. Khách hàng doanh nghiệp không trả tiền cho "bộ định tuyến", họ trả tiền để **"cánh tay robot không va chạm vào con người, và chốt cửa không tự ý mở sai đối tượng"**.
+Giá trị cốt lõi của NeuroEdge **không đơn thuần là "bộ định tuyến giữa hai mô hình AI"**. Việc phân luồng giữa mô hình nhanh và mô hình sâu chỉ là chi tiết kỹ thuật nhằm tối ưu chi phí và độ trễ tại một thời điểm. Khách hàng doanh nghiệp không trả tiền cho "bộ định tuyến", họ trả tiền để **"chốt cửa không tự ý mở sai cho người lạ, rơ-le nhiệt không kích hoạt quá ngưỡng, và cơ cấu chấp hành không gây tổn hại tài sản"**.
 
 Tuyên ngôn giá trị cũng **không chỉ dừng lại ở "framework hợp nhất cho Physical AI"** — vì một danh sách tính năng thuần túy luôn có thể bị sao chép bởi các đối thủ có tiềm lực lớn hơn.
 
 Khác biệt cốt lõi, bền vững của NeuroEdge là:
 
 > **Mọi hành động vật lý đều bắt buộc đi qua một hợp đồng chuẩn kiểu (type-safe), kiểm thử tự động được trong quy trình CI — hoàn toàn độc lập với mô hình suy luận AI phía sau.**
+
+Dù mô hình ngôn ngữ lớn (LLM) là phi xác định về mặt câu chữ tự nhiên, tầng thẩm định Gate của NeuroEdge là một rule engine xác định 100%. Action CI không assert trên văn bản sinh ra của LLM, mà assert trên **phán quyết của Gate (ALLOW/BLOCK)** và **trạng thái tác động vật lý (chân GPIO có kích hoạt hay không)**.
 
 Giải pháp này đòi hỏi sự đồng bộ chặt chẽ về mặt kiến trúc ngay từ đầu: **Môi trường mô phỏng (simulator) là môi trường thực thi chính thức; Cổng kiểm soát (gate) là tài nguyên có phiên bản; và Nhật ký vết (trace) là đối tượng dữ liệu hạng nhất.** Một hệ thống phần mềm thông thường nếu không thiết kế theo hướng này từ đầu sẽ buộc phải đập đi xây lại toàn bộ cấu trúc để có được năng lực tương tự.
 
@@ -220,7 +222,36 @@ Chiến lược mã nguồn mở của NeuroEdge hoạt động hiệu quả vì
 
 Bản quyền mã nguồn mở MIT cho toàn bộ HAL, Action Contract Engine, Voice pipeline và Action CI giúp loại bỏ hoàn toàn rào cản ứng dụng của cộng đồng kỹ sư nhúng.
 
-### 1.6 Vòng lặp giá trị và hiệu ứng mạng từ chia sẻ cấu hình an toàn
+#### Quản trị chuẩn mở và Cam kết chuyển giao cho tổ chức trung lập
+Để định dạng Gate và `.ntrace` thực sự trở thành tiêu chuẩn chung không bị chi phối bởi lợi ích cục bộ của bất kỳ công ty nào, NeuroEdge thiết lập cơ chế quản trị chuẩn mực ngay từ ngày đầu:
+- **Quy trình RFC (Request for Comments) minh bạch:** Mọi thay đổi về schema của `@action`, cú pháp của Gate hoặc cấu trúc dữ liệu của `.ntrace` đều phải qua tài liệu RFC công khai trên GitHub, cho phép cộng đồng thảo luận và phản biện trước khi hợp nhất.
+- **Tuân thủ Semantic Versioning (SemVer 2.0):** Cam kết tuyệt đối không phá vỡ khả năng tương thích ngược (backward compatibility) đối với các Gate an toàn đã phát hành.
+- **Cam kết chuyển giao cho tổ chức trung lập:** Khi đạt Cột mốc xác thực thị trường G1 (10.000 thiết bị active, cộng đồng nhà phát triển ổn định), NeuroEdge cam kết **chuyển giao toàn bộ quyền quản trị đặc tả kỹ thuật Gate và định dạng `.ntrace` cho một tổ chức trung lập** (như Linux Foundation hoặc Eclipse Foundation). NeuroEdge sẽ tiếp tục cạnh tranh và tạo ra giá trị thương mại thông qua chất lượng dịch vụ của Hosted Gateway và Fleet OS, thay vì độc quyền nắm giữ định dạng chuẩn.
+
+### 1.6 Chiến lược phân phối và chinh phục 1.000 lập trình viên đầu tiên
+
+Physical AI là một lĩnh vực phần cứng nơi sự hoài nghi của kỹ sư là rất cao. Để chinh phục 1.000 lập trình viên và kỹ sư nhúng đầu tiên, NeuroEdge tập trung vào tính trực quan tức thì và ứng dụng thực chiến:
+
+#### 1. Trải nghiệm "Aha Moment" trong 15 giây (Demo Video/GIF)
+Không dùng các bài trình chiếu trừu tượng. Thông điệp phân phối cốt lõi gói gọn trong một video/GIF 15 giây quay cận cảnh không cắt ghép:
+- Nửa màn hình trái: Cửa sổ Terminal gõ `neuroedge run` gửi lệnh giọng nói *"Mở khóa cửa phòng villa"*.
+- Nửa màn hình phải: Bo mạch thật ESP32-S3 chớp đèn LED trạng thái, rơ-le phát ra tiếng "click" đóng mở khóa vật lý thật.
+- Cửa sổ bên cạnh: Action CI lập tức hiển thị trace xanh đối soát gate thành công.
+*Hiệu ứng tâm lý:* Kỹ sư nhúng thấy ngay đây không phải là một thư viện chatbot giả lập trên web, mà là công cụ điều khiển và kiểm soát phần cứng thực sự.
+
+#### 2. Kênh phát hành trọng điểm của cộng đồng kỹ thuật
+- **Hacker News (Show HN):** Giới thiệu giải pháp giải quyết bài toán "Làm sao kiểm thử an toàn cho AI tác động vào thế giới vật lý trước khi nạp chip".
+- **Reddit:** Tiếp cận trực diện các subreddit chuyên sâu: `r/embedded`, `r/esp32`, `r/rust`, `r/robotics`.
+- **Cộng đồng Hardware Hackers & Maker trên X:** Chia sẻ các clip ngắn ghi lại các ca lỗi thực tế bị Action CI chặn đứng (fail-closed).
+- **Diễn đàn Hackaday & ESP32 Community Forum:** Đăng tải các bài phân tích kỹ thuật chuyên sâu về quản lý bộ nhớ PSRAM và xử lý âm thanh không độ trễ.
+
+#### 3. Bộ ba ứng dụng mẫu tham chiếu chuẩn mực (Reference Sample Apps)
+Lập trình viên không bắt đầu từ trang trắng. NeuroEdge cung cấp sẵn 3 mã nguồn ứng dụng hoàn chỉnh có thể chạy ngay:
+1. **Khóa thông minh Villa (Villa Smart Lock):** Ứng dụng nhận diện giọng nói, thẩm định gate chốt kép trước khi cấp xung mở rơ-le cửa.
+2. **Trợ lý giọng nói bàn làm việc (Desk Voice Assistant):** Nhận diện từ khóa kích hoạt on-device, streaming đàm thoại hai chiều, điều khiển an toàn nguồn điện và âm lượng qua gate.
+3. **Giám sát môi trường công nghiệp (Industrial Environmental Watcher):** Thu thập dữ liệu cảm biến khí ga/nhiệt độ, tự động kích hoạt van xả an toàn hoặc còi báo động qua gate an toàn.
+
+### 1.7 Vòng lặp giá trị và hiệu ứng mạng từ chia sẻ cấu hình an toàn
 
 ```
 Chạy thử agent trong môi trường mô phỏng sau 10 phút, không cần mua phần cứng
@@ -248,24 +279,24 @@ Hai điểm then chốt trong vòng lặp:
 1. **Bước 2 và 3** tạo ra giá trị kỹ thuật khác biệt mà các giải pháp khác chưa đáp ứng được.
 2. **Bước 6 tạo ra hiệu ứng mạng tự nhiên trước khi mở Marketplace thương mại.** Gate an toàn là tài nguyên lý tưởng để chia sẻ: dung lượng nhẹ (tệp YAML), minh bạch, không rủi ro pháp lý, và giúp nâng cao tiêu chuẩn an toàn cho toàn bộ cộng đồng sử dụng.
 
-### 1.7 Kinh tế học của khách hàng và bài toán tối ưu tổng chi phí sở hữu (TCO)
+### 1.8 Kinh tế học của khách hàng và mô hình chi phí TCO giả định
 
-So sánh tổng chi phí sở hữu (TCO) cho một đội ngũ vận hành **500 thiết bị trong vòng 1 năm**:
+Mô hình so sánh tổng chi phí sở hữu (TCO) giả định cho một đội ngũ vận hành **500 thiết bị trong vòng 1 năm**:
 
 | Hạng mục chi phí | Tự phát triển từ đầu | Dùng SDK chính hãng | Dùng Cloud Agent Stack | **Dùng NeuroEdge** |
 |:---|:---:|:---:|:---:|:---:|
 | **Nhân sự kỹ thuật chuyên trách** | 3 kỹ sư — $180k<br>*(firmware + audio + AI)* | 2 kỹ sư — $120k<br>*(chuyên sâu 1 dòng chip)* | 1.5 kỹ sư — $90k<br>*(WebRTC/cloud)* | **0.5 kỹ sư — $30k**<br>*(tập trung logic nghiệp vụ)* |
 | **Thời gian tích hợp bo mạch mới** | 12 tuần | 8 tuần | Không hỗ trợ MCU | **1 tuần** *(chỉ cần cấu hình `--target`)* |
-| **Chi phí xử lý sự cố tại hiện trường** | ~$30k<br>*(cử kỹ sư on-site)* | ~$15k<br>*(phân tích log thủ công qua UART)* | ~$10k<br>*(phụ thuộc đường truyền)* | **~$0**<br>*(tải `.ntrace` về mô phỏng cục bộ)* |
+| **Chi phí xử lý sự cố tại hiện trường** | ~$30k<br>*(cử kỹ sư on-site)* | ~$15k<br>*(phân tích log thủ công qua UART)* | ~$10k<br>*(phụ thuộc đường truyền)* | **~$9k**<br>*(giảm ~70% chuyến đi nhờ tải `.ntrace` chẩn đoán lỗi phần mềm từ xa; giữ ngân sách $9k cho hỏng hóc vật lý)* |
 | **Chi phí bản quyền nền tảng** | $0 | $0 | ~$8k | **$6k** *($1/thiết bị/tháng)* |
 | **Rủi ro thu hồi sản phẩm do lỗi logic** | Cao — thiếu công cụ CI cho tác vụ vật lý | Cao — thiếu công cụ CI cho tác vụ vật lý | Trung bình — thiếu cơ chế fail-closed | **Thấp** — các lỗi logic xác định được chặn từ khâu commit |
-| **TỔNG CHI PHÍ NĂM ĐẦU** | **~$250k** | **~$160k** | **~$120k** | **~$36k** |
+| **TỔNG CHI PHÍ NĂM ĐẦU** | **~$250k** | **~$160k** | **~$120k** | **~$48k** |
 
-**Cơ sở giả định của bảng TCO:**
-- Quy mô: 500 thiết bị, 1 thiết kế phần cứng, vận hành 12 tháng.
+**Cơ sở giả định của mô hình TCO:**
+- Quy mô kịch bản: 500 thiết bị, 1 thiết kế phần cứng tham chiếu, vận hành trong 12 tháng.
 - Chi phí nhân sự: $60.000/kỹ sư/năm (đã bao gồm chi phí vận hành chung).
-- Chi phí dịch vụ NeuroEdge: Gói quản trị Fleet $1/thiết bị/tháng + chi phí suy luận (inference) tính sát giá vốn.
-- Chi phí xử lý sự cố tại chỗ (on-site): Ước tính $500/chuyến công tác thực địa.
+- Chi phí dịch vụ NeuroEdge: Gói quản trị Fleet $1/thiết bị/tháng ($6.000/năm) + chi phí suy luận (inference) tính sát giá vốn.
+- Chi phí xử lý sự cố tại chỗ (on-site): Ước tính $500/chuyến công tác thực địa (tương đương 60 chuyến/năm ở phương án tự làm). Giải pháp NeuroEdge không xóa bỏ hoàn toàn chi phí này vì các hư hỏng vật lý (cháy nguồn, đứt cáp, vỡ kính cảm biến) bắt buộc phải có mặt kỹ thuật viên; con số ~$9k phản ánh việc loại bỏ ~70% các chuyến đi do lỗi logic, sai cấu hình hoặc cập nhật firmware hỏng nhờ khả năng tái hiện lỗi từ xa qua `.ntrace` (giả định G-e tại Phụ lục G).
 - Chi phí phần cứng (BOM): Đồng nhất giữa các phương án nên không đưa vào so sánh.
 
 *Lưu ý về phạm vi kiểm thử của Action CI:* Action CI giải quyết triệt để các lỗi logic có thể xác định trước (sai điều kiện gate, prompt gây hồi quy, lệch quyết định giữa các target). Các yếu tố vật lý đặc thù như phản xạ âm học phòng, chất lượng thu âm mảng micro, hoặc giới hạn bộ nhớ vi điều khiển sẽ được kiểm chứng bổ sung qua quy trình tự động chạy trên thiết bị thật (nightly hardware tests) nêu tại §3.2.
@@ -404,9 +435,9 @@ Nếu điều kiện an toàn bị viết cứng bằng mã nguồn (ví dụ h�
 | Giá trị mang lại | Ý nghĩa thực tiễn |
 |:---|:---|
 | **Đơn vị kiểm thử tiêu chuẩn** | Dễ dàng đưa vào quy trình tự động hóa Action CI (§4.7). |
-| **Đơn vị chia sẻ trong cộng đồng** | Tạo nền tảng cho hiệu ứng mạng trước khi triển khai Marketplace (§1.6). |
+| **Đơn vị chia sẻ trong cộng đồng** | Tạo nền tảng cho hiệu ứng mạng trước khi triển khai Marketplace (§1.7). |
 | **Minh bạch với người quản lý nghiệp vụ** | Quản lý vận hành hoặc kiểm soát rủi ro có thể đọc, hiểu và phê duyệt điều kiện an toàn mà không cần đọc mã nguồn. |
-| **Mô-đun thương mại hóa độc lập** | Trở thành tài sản cấu hình có thể chuyển giao và thương mại hóa trong hệ sinh thái (§8.7). |
+| **Mô-đun thương mại hóa độc lập** | Trở thành tài sản cấu hình có thể chuyển giao và thương mại hóa trong hệ sinh thái (§8.8). |
 
 ### 3.6 Trừu tượng hóa mô hình AI (Model Abstraction)
 
@@ -500,7 +531,19 @@ Chi tiết các nhóm sự kiện và thuộc tính bắt buộc: **Phụ lục 
 | **Ghi nhận (Record)** | Ghi lại toàn bộ chuỗi sự kiện và tín hiệu của một phiên chạy thực tế ra tệp `.ntrace`. |
 | **Tái hiện (Replay)** | Tái hiện chuẩn xác chuỗi sự kiện đó trên bất kỳ môi trường nào (`sim`, `linux`, `esp32s3`). |
 | **Khẳng định (Assert)** | Thư viện kiểm tra hành vi: xác thực hành động có bị chặn đúng cổng hay không, quy trình chuyển tiếp ra sao, chân GPIO nào bị cấm kích hoạt. |
-| **Mẫu chuẩn (Golden Reference)** | Cố định chuỗi quyết định chuẩn mực tham chiếu. Mọi thay đổi prompt hoặc đổi mô hình làm lệch kết quả golden sẽ khiến quy trình CI báo lỗi (đỏ). |
+| **Mẫu chuẩn (Golden Reference)** | Cố định chuỗi phán quyết chuẩn mực tham chiếu. Mọi thay đổi prompt hoặc đổi mô hình làm lệch phán quyết an toàn sẽ khiến quy trình CI báo lỗi (đỏ). |
+
+#### Phân tách ba cấp độ đảm bảo của Action CI trong môi trường AI
+
+Lỗ hổng tín nhiệm lớn nhất của việc áp dụng CI vào AI là coi mô hình ngôn ngữ như một hàm toán học thuần túy có thể tái hiện từng bit kết quả. Trên thực tế, **System 2 (LLM) có bản chất phi xác định**: cùng một prompt đầu vào có thể sinh ra hai phản hồi văn bản khác nhau.
+
+Để đảm bảo độ tin cậy kỹ thuật tuyệt đối, Action CI phân định rõ ràng 3 cấp độ đảm bảo:
+
+| Cấp độ kiểm thử | Bản chất kỹ thuật | Tính xác định | Action CI khẳng định điều gì |
+|:---|:---|:---:|:---|
+| **1. Thẩm định Gate (Rule Engine)** | Biểu thức logic `allow_when`, so sánh giá trị tĩnh và biến phiên, ngân sách độ trễ | **100% Xác định** | Replay chuẩn xác từng bit dữ liệu. Kết quả phán quyết đối chiếu tuyệt đối với mẫu chuẩn (Golden Reference). |
+| **2. Quyết định System 1 có cấu trúc** | Bộ phân loại intent, trích xuất thực thể cục bộ, schema cố định, ngưỡng tự tin | **Gần như xác định** | Replay với kiểm tra khớp schema JSON và xác thực vượt ngưỡng tự tin (`confidence >= threshold`). |
+| **3. Suy luận mở của System 2 (LLM)** | Mô hình ngôn ngữ lớn sinh văn bản tự do, hội thoại phức tạp | **Phi xác định** | **Action CI KHÔNG assert trên chuỗi văn bản tự nhiên sinh ra.** Thay vào đó, Action CI assert trên **Phán quyết của Gate (ALLOW hay BLOCK)** và **Tác động phần cứng cuối cùng (chân GPIO có kích hoạt hay không)**. Cho dù LLM diễn đạt câu từ khác đi khi đổi phiên bản mô hình, chốt cửa phòng villa tuyệt đối không bị mở sai đối tượng, và rơ-le không bị kích hoạt trái phép. |
 
 *Phạm vi giới hạn kỹ thuật:* Môi trường `sim` không mô phỏng các biến thiên phức tạp về phản xạ âm học phòng thực tế, nhiễu micro hoặc sự suy giảm bộ nhớ do phân mảnh trên vi điều khiển. Tuy nhiên, việc chuyển đổi sang kiểm thử bo mạch thật bằng `--target esp32s3` chỉ tốn một lệnh duy nhất, giúp kiểm soát mọi lỗi logic trước khi xuất bản bản dựng.
 
@@ -730,17 +773,22 @@ def test_gate_fail_closed_khi_mat_mang():
     s = scenario("traces/happy-path.ntrace", network="offline")
     assert s.action("unlock_door").blocked
     assert s.reason == "gate_unreachable"
+    assert s.pin("door_lock").never_pulsed()
 
 def test_doi_model_khong_lam_hoi_quy_an_toan():
-    """Thay thế System 1 bằng mô hình cục bộ không làm thay đổi chuỗi quyết định chuẩn."""
-    s = replay("traces/happy-path.ntrace", fast="local/intent-distil-8m")
-    assert s.decisions == s.golden("traces/happy-path.golden")
+    """Đổi mô hình LLM System 2: Dù câu từ sinh ra phi xác định, Gate verdict và GPIO vẫn an toàn tuyệt đối."""
+    s = replay("traces/unverified_attempt.ntrace", slow="claude-3-5-haiku")
+    # Action CI KHÔNG assert trên chuỗi văn bản của LLM (phi xác định)
+    # mà assert trên phán quyết của Gate và trạng thái vật lý của chân chốt cửa:
+    assert s.action("unlock_door").blocked
+    assert s.pin("door_lock").never_pulsed()
 
 @scenario.parametrize(target=["sim", "linux", "esp32s3"])
-def test_ba_target_cho_cung_mot_quyet_dinh(target):
-    """Xác thực nguyên tắc tương đương môi trường trên cả 3 nền tảng."""
+def test_ba_target_cho_cung_mot_quyet_dinh_gate(target):
+    """Xác thực tính tương đương môi trường: Gate rule engine cho phán quyết và lệnh GPIO đồng nhất 100%."""
     s = replay("traces/happy-path.ntrace", target=target)
-    assert s.decisions == s.golden("traces/happy-path.golden")
+    assert s.gate("unlock_door").verdict == "ALLOW"
+    assert s.pin("door_lock").pulsed_once(duration_ms=30000)
 ```
 
 Quy trình kiểm thử tự động trên biến các cam kết an toàn thành các bài test thực thi tự động. Nếu có sự cố hồi quy, hệ thống CI sẽ lập tức báo đỏ và chặn quá trình phát hành.
@@ -766,7 +814,7 @@ neuroedge replay traces/incident.ntrace --target sim  # Tái hiện lỗi trên 
 
 # Quản trị hệ sinh thái cổng an toàn
 neuroedge gate publish gates/unlock_door@1.2.0.yaml
-neuroedge gate add     neuroedge://gates/robotics/arm-collision@2.0.0
+neuroedge gate add     neuroedge://gates/hospitality/dual-auth-lock@1.0.0
 ```
 
 Hai lệnh `record` và `replay` giúp việc tái hiện và xử lý lỗi hiện trường trở nên đơn giản: Một sự cố xảy ra ngoài thực tế được đưa về tái hiện chính xác trên máy tính cá nhân của kỹ sư chỉ bằng một câu lệnh.
@@ -814,23 +862,11 @@ Hệ thống thiết lập 5 lớp phòng thủ toàn diện, hoạt động the
 | **An toàn thiết bị** | Firmware & Phần cứng | Kích hoạt Secure Boot và mã hóa bộ nhớ flash trên ESP32-S3 · Tích hợp nút ngắt micro vật lý trên thiết bị mẫu · Hỗ trợ chip bảo mật TPM trên Linux. |
 | **Bảo mật kết nối** | Mạng truyền dẫn | Áp dụng TLS 1.3 toàn tuyến · Xác thực mTLS hai chiều giữa thiết bị và đám mây · Cơ chế Certificate Pinning · Mỗi thiết bị có chứng chỉ mật mã riêng. |
 | **Quyền riêng tư dữ liệu** | Dữ liệu người dùng | Luồng âm thanh xử lý trực tiếp không lưu trữ · Ưu tiên xử lý on-device khi phần cứng cho phép · Nhật ký vết chỉ ghi nhận quyết định, không lưu dữ liệu thô trừ khi được bật tường minh. |
-| **Cập nhật an toàn** | Cơ chế OTA | Firmware được ký số mật mã · Triển khai cập nhật theo từng đợt (staged rollout) · Tự động rollback khi phát hiện tỷ lệ lỗi hoặc vòng lặp khởi động lại (bootloop). |
+| **Cập nhật an toàn** | Cơ chế OTA | Firmware được ký số mật mã · Cơ chế nạp phân vùng kép A/B tự động rollback on-device khi phát hiện bootloop · Triển khai cập nhật theo đợt an toàn trên mặt phẳng quản trị Fleet. |
 
 **Nguyên tắc bao trùm:** An toàn trong Physical AI là tài sản có thể đọc, kiểm toán và đối soát độc lập, không dựa vào cam kết suông. Mọi tác vụ vật lý đều có tệp định nghĩa điều kiện phê duyệt minh bạch và có nhật ký vết chứng minh quy trình thẩm định trước khi thực thi.
 
 ---
-
----
-
-# Phần III — Thương mại và thực thi
-
-## 6. Mặt phẳng thương mại
-
-Một mặt phẳng duy nhất, hai nhóm năng lực, một nguyên tắc phân định biên lợi nhuận: **inference là phễu, fleet là nơi có giá trị gia tăng.**
-
-> Bán quá rẻ thì mất tín hiệu mà khách hàng gửi bằng việc trả tiền. Vì vậy inference đặt **sát giá vốn (cost-plus 5–10%)**, không miễn phí — con số phải đủ để việc ai trả và ai không trả vẫn nói lên điều gì đó.
-
-#---
 
 # Phần III — Mô hình thương mại & Lộ trình triển khai
 
@@ -886,14 +922,19 @@ Dự phóng doanh thu quản trị đội thiết bị theo quy mô (với mức
 
 ### 6.4 Phân định ranh giới giữa Lõi nguồn mở và Dịch vụ thương mại
 
-| Tiêu chí | Lõi mã nguồn mở (MIT) | Dịch vụ thương mại đám mây |
-|:---|:---|:---|
-| Vận hành đầy đủ khi ngoại tuyến (offline) | Đầy đủ 100% | Không áp dụng |
-| Yêu cầu tạo tài khoản | Hoàn toàn không | Yêu cầu tài khoản xác thực |
-| Khả năng tự dựng hạ tầng thay thế | Hỗ trợ đầy đủ qua các interface mở | Khách hàng tự duy trì hạ tầng riêng |
-| Bản quyền định dạng gate và `.ntrace` | Chuẩn mở theo định nghĩa tại đây | Tái sử dụng chuẩn mở, không phân nhánh riêng |
+Để loại bỏ hoàn toàn sự mập mờ "open-core" gây lo ngại cho cộng đồng kỹ thuật, NeuroEdge phân định tường minh ranh giới kiến trúc giữa Lõi mã nguồn mở (MIT) và Dịch vụ quản trị thương mại (Fleet OS):
 
-**Cam kết sản phẩm:** Không có bất kỳ tính năng cốt lõi nào bị khóa sau bức tường tài khoản trả phí. Mặt phẳng thương mại tập trung cung cấp giải pháp vận hành tập trung và dịch vụ quy mô lớn, không bán quyền sử dụng phần mềm cơ bản.
+| Tiêu chí | Lõi mã nguồn mở (Giấy phép MIT) | Dịch vụ thương mại Fleet OS (Cloud) |
+|:---|:---|:---|
+| **Định nghĩa tính năng cốt lõi** | Toàn bộ logic chạy trên thiết bị, cơ chế an toàn, runtime nhận thức và kiểm thử CI | Hạ tầng điều phối từ xa, lưu trữ tập trung và bảng điều khiển quản trị đội thiết bị |
+| **Cơ chế cập nhật OTA** | **Cấp thiết bị (On-device OTA Agent):**<br>• Tự nạp firmware qua HTTP endpoint mở<br>• Phân vùng kép A/B (Dual-partition scheme)<br>• Tự động rollback cục bộ khi phát hiện bootloop<br>• Kiểm tra chữ ký mật mã (RSA/ECDSA) trên chip | **Cấp đội thiết bị (Fleet Rollout Orchestration):**<br>• Phân phối theo từng đợt (Canary 1% → 10% → 100%)<br>• Quản lý chiến dịch phát hành (Campaign management)<br>• Tự động dừng chiến dịch và khôi phục khi tỷ lệ lỗi toàn fleet vượt ngưỡng<br>• Kho lưu trữ firmware tập trung |
+| **Ghi nhận & Tái hiện lỗi** | Ghi vết ra tệp nhị phân cục bộ `.ntrace`; chạy lệnh `neuroedge replay` trên máy tính cá nhân | Tự động tải `.ntrace` khi có sự cố từ xa; kho lưu trữ vết tập trung và công cụ phân tích hồi quy đám mây |
+| **Vận hành ngoại tuyến (Offline)** | Đầy đủ 100%, không cần kết nối Internet | Yêu cầu kết nối để đồng bộ viễn trắc và nhận lệnh điều phối |
+| **Yêu cầu tài khoản** | Hoàn toàn không, cài đặt và chạy ngay | Yêu cầu tài khoản xác thực tổ chức |
+| **Khả năng tự dựng hạ tầng** | Hỗ trợ đầy đủ qua các interface mở (pluggable backend) | Khách hàng tự duy trì hạ tầng riêng hoặc sử dụng dịch vụ đám mây trọn gói |
+| **Bản quyền định dạng gate & trace** | Chuẩn mở theo quy trình RFC, cam kết chuyển giao trung lập | Kế thừa chuẩn mở, không tạo biến thể đóng |
+
+**Cam kết sản phẩm:** Không có bất kỳ tính năng cốt lõi nào cần thiết để một thiết bị vận hành an toàn và độc lập bị khóa sau bức tường trả phí. Nhà phát triển hoàn toàn có thể tự xây dựng máy chủ OTA riêng để cập nhật cho thiết bị của mình mà không cần trả phí cho NeuroEdge. Mặt phẳng thương mại chỉ thương mại hóa **năng lực quản trị quy mô lớn, tự động hóa chiến dịch phát hành và công cụ tiết kiệm thời gian vận hành cho doanh nghiệp**.
 
 ---
 
@@ -933,28 +974,31 @@ Mọi vướng mắc kỹ thuật phát sinh trong quá trình vận hành AURA 
 
 ## 8. Lộ trình phát triển sản phẩm
 
-Lộ trình được cấu trúc thành 5 khối công việc và một cột mốc xác thực thị trường định lượng. Sự chuyển giao giữa các khối thể hiện **điều kiện kích hoạt dựa trên kết quả kiểm chứng**, không phải sự dịch chuyển thuần túy theo mốc thời gian.
+Lộ trình được cấu trúc thành các khối công việc kỹ thuật, giai đoạn đệm cộng đồng và các cột mốc xác thực thị trường định lượng. **Quy tắc kỷ luật thực thi: Mọi sự chuyển giao giữa các khối đều là milestone-gated (phụ thuộc vào kết quả kiểm chứng thực tế), tuyệt đối không chạy theo lịch cố định trên giấy.**
 
 ```
 [ KHỐI 1a: SIM + LINUX + ACTION CI ]  (Tuần 0–6)
               │
               ▼
-[ KHỐI 1b: ESP32-S3 + VOICE RUNTIME ] (Tuần 6–10) ──► [ HOÀN TẤT LÕI MIT ]
-              │                                                │
-              ├────────────────────────────────────────────────┘
-              ▼
-┌─────────────────────────────────┬─────────────────────────────────┐
+[ KHỐI 1b: ESP32-S3 REF BOARD + VOICE ] (Tuần 6–12) ──► [ HOÀN TẤT LÕI MIT ]
+              │                                                 │
+              ▼                                                 │
+[ GIAI ĐOẠN ĐỆM: DEVELOPER BETA & CỘNG ĐỒNG ] (Tuần 12–16)     │
+(Onboard 50–100 dev đầu tiên · Đóng băng tính năng mới)         │
+              │                                                 │
+              ▼ (Chỉ kích hoạt khi đạt đủ 3 tiêu chí Beta)      │
+┌─────────────────────────────────┬─────────────────────────────┴───┐
 │ KHỐI 2: TẦNG DỊCH VỤ THƯƠNG MẠI │ KHỐI 3: HẠ TẦNG NỀN TẢNG        │
-│ (Tháng 2.5–6)                   │ (Tháng 2.5–6, thực hiện song song)│
+│ (Tháng 4–8)                     │ (Tháng 4–8, thực hiện song song)│
 │ • Hosted Inference Gateway      │ • Gate Registry & Phiên bản hóa │
 │ • Fleet Management OS           │ • Đo lường, Định danh & Sandbox │
 └──────────────┬──────────────────┴────────────────┬────────────────┘
                └──────────────────┬────────────────┘
                                   ▼
-                [ KHỐI 4: ỨNG DỤNG DỌC AURA ]  (Tháng 6–12)
+                [ KHỐI 4: ỨNG DỤNG DỌC AURA ]  (Tháng 8–14)
                                   │
                                   ▼
-                [ CỘT MỐC XÁC THỰC THỊ TRƯỜNG ĐỊNH LƯỢNG ] (Đo lường thực tế)
+                [ CỘT MỐC XÁC THỰC THỊ TRƯỜNG ĐỊNH LƯỢNG (G1–G4) ]
                                   │
                                   ▼
                 [ KHỐI 5: MARKETPLACE & HỆ THỐNG THANH TOÁN ] (Tháng 18+)
@@ -964,7 +1008,7 @@ Lộ trình được cấu trúc thành 5 khối công việc và một cột m�
 
 **Mục tiêu trọng tâm:** Một lập trình viên mới có thể đạt trải nghiệm nhận giá trị đầu tiên (Time-to-first-value) **dưới 10 phút** trên máy tính cá nhân mà không cần mua bất kỳ phần cứng nào.
 
-```
+```bash
 pip install neuroedge
 neuroedge new my-agent
 neuroedge run --target sim
@@ -980,24 +1024,44 @@ neuroedge run --target sim
 | Bộ công cụ dòng lệnh (CLI) cơ bản | §4.8 |
 | Ứng dụng mẫu hoàn chỉnh chạy thử nghiệm | §7 |
 
-### 8.2 Khối 1b — Hiện thực hóa trên vi điều khiển biên (Tuần 6–10)
+### 8.2 Khối 1b — Hiện thực hóa trên vi điều khiển biên (Tuần 6–12)
 
-**Mục tiêu trọng tâm:** Chứng minh nguyên tắc tương đương môi trường trên vi điều khiển giá $5.
+**Mục tiêu trọng tâm:** Chứng minh nguyên tắc tương đương môi trường trên vi điều khiển giá $5 với độ ổn định cao.
 
 | Hạng mục bàn giao | Nội dung kỹ thuật |
 |:---|:---|
 | Chuyển đổi chuẩn HAL lên `esp32s3` | Sử dụng bộ công cụ tiêu chuẩn ESP-IDF |
 | Runtime giọng nói tối ưu hóa bộ nhớ | Tích hợp WebRTC AEC · Silero VAD · Bộ mã hóa Opus streaming |
-| Lệnh kiểm thử `neuroedge verify` | Kiểm tra tính nhất quán từng bit quyết định giữa cả 3 môi trường |
+| Lệnh kiểm thử `neuroedge verify` | Kiểm tra tính nhất quán phán quyết gate và GPIO giữa cả 3 môi trường |
 | Client MCP tinh gọn | Tối ưu hóa giao tiếp công cụ với mức tiêu thụ tài nguyên tối thiểu |
+| Client OTA cấp thiết bị (On-device OTA) | Nạp firmware phân vùng kép A/B, tự động rollback cục bộ khi bootloop |
 
-*Phạm vi chưa thực hiện trong Khối 1:* Xử lý thị giác máy tính · Dịch vụ đám mây · Hệ thống tài khoản người dùng · Sàn thương mại · Hỗ trợ Jetson/Matter/HomeKit · Tự tinh chỉnh (fine-tune) mô hình AI.
+**De-scope tường minh trong Khối 1b:**
+- *Wake-word tùy biến:* Chưa hỗ trợ quy trình huấn luyện wake-word riêng biệt; chỉ tích hợp sẵn wake-word chuẩn pre-trained (ví dụ: *"Hey Neuro"*).
+- *Độ phủ phần cứng:* Giới hạn duy nhất trên **1 bo mạch tham chiếu chuẩn (Reference Board: ESP32-S3-DevKitC / Box-3)** để tối ưu hóa triệt để độ ổn định bộ nhớ SRAM/PSRAM, không hỗ trợ dàn trải các biến thể phần cứng khác nhau.
+- *Phạm vi chưa thực hiện:* Thị giác máy tính · Dịch vụ đám mây · Hệ thống tài khoản người dùng · Sàn thương mại · Hỗ trợ Jetson/Matter/HomeKit · Tự tinh chỉnh (fine-tune) mô hình AI.
 
-### 8.3 Khối 2 — Tầng dịch vụ thương mại (Tháng 2.5–6)
+### 8.3 Giai đoạn đệm: Developer Beta & Xây dựng cộng đồng (Tuần 12–16)
 
-Triển khai Hosted Inference Gateway và Fleet Management OS như mô tả tại §6. Điều kiện kích hoạt: Khối 1 đã có người dùng bên ngoài chạy thử nghiệm ứng dụng thành công trên môi trường `linux` hoặc `esp32s3`.
+**Nguyên tắc vận hành: Đóng băng toàn bộ việc phát triển tính năng mới (Feature Freeze).** Đội ngũ tập trung 100% nguồn lực vào việc hỗ trợ kỹ thuật trực tiếp, onboarding và làm mượt trải nghiệm cho 50–100 lập trình viên bên ngoài đầu tiên.
 
-### 8.4 Khối 3 — Bảy đường ray hạ tầng nền tảng (Tháng 2.5–6, thực hiện song song)
+| Trọng tâm công việc | Mục tiêu đạt được |
+|:---|:---|
+| **Hỗ trợ 1:1 qua Discord & GitHub** | Giúp các nhà phát triển vượt qua các khúc mắc về toolchain ESP-IDF và nạp bo mạch |
+| **Hoàn thiện tài liệu và hướng dẫn bắt đầu** | Loại bỏ toàn bộ các bước gây khó hiểu trong tài liệu API và các ứng dụng mẫu tham chiếu |
+| **Xác thực trải nghiệm Action CI thực tế** | Đo lường tỷ lệ các bài kiểm thử CI chạy thành công trên máy lập trình viên bên ngoài |
+
+### 8.4 Khối 2 — Tầng dịch vụ thương mại: Inference Gateway & Fleet OS (Tháng 4–8)
+
+**Điều kiện kích hoạt (Milestone-Gated — Bắt buộc thỏa mãn mới khởi động):**
+Khối 2 **tuyệt đối không bắt đầu theo lịch cố định**, mà chỉ được kích hoạt khi Giai đoạn Developer Beta đạt đủ cả 3 tiêu chí định lượng:
+1. **≥ 50 lập trình viên bên ngoài** chạy thành công agent trên môi trường mô phỏng `sim`.
+2. **≥ 10 lập trình viên bên ngoài** nạp và điều khiển thành công trên phần cứng thật (`linux` hoặc bo mạch tham chiếu `esp32s3`).
+3. **≥ 3 gate an toàn** do cộng đồng bên ngoài tự viết và đóng góp vào kho Registry.
+
+Nội dung triển khai: Hosted Inference Gateway và Fleet Management OS như mô tả chi tiết tại §6.
+
+### 8.5 Khối 3 — Bảy đường ray hạ tầng nền tảng (Tháng 4–8, thực hiện song song Khối 2)
 
 Xây dựng 7 thành phần hạ tầng cốt lõi phục vụ vận hành an toàn và chuẩn bị sẵn cho việc mở rộng Marketplace sau này:
 
@@ -1013,11 +1077,11 @@ Xây dựng 7 thành phần hạ tầng cốt lõi phục vụ vận hành an to
 
 Các thành phần 5, 6 và 7 là nền tảng bắt buộc phải thiết kế sớm: nếu thiếu chúng, hệ thống sẽ không thể đối soát doanh thu hoặc bảo đảm an toàn khi người dùng cài đặt mã nguồn của nhau trên thiết bị có cơ cấu chấp hành vật lý.
 
-### 8.5 Khối 4 — Triển khai ứng dụng thực địa AURA (Tháng 6–12)
+### 8.6 Khối 4 — Triển khai ứng dụng thực địa AURA (Tháng 8–14)
 
 Chi tiết triển khai tại §7. Điều kiện kích hoạt: Giao diện API của framework đã đạt mức ổn định cao và đã có đối tác bên ngoài ứng dụng thành công trên thiết bị thực tế.
 
-### 8.6 Cột mốc xác thực thị trường định lượng (Market Validation Gates)
+### 8.7 Cột mốc xác thực thị trường định lượng (Market Validation Gates)
 
 **Đây là bộ tiêu chí kiểm chứng thực tế, không phải hạng mục công việc tùy ý.** Việc mở rộng sang Khối 5 chỉ được kích hoạt khi thỏa mãn **toàn bộ cả 4 chỉ số sau**:
 
@@ -1030,11 +1094,11 @@ Chi tiết triển khai tại §7. Điều kiện kích hoạt: Giao diện API 
 
 *Trong đó, G3 là chỉ số then chốt nhất:* G1 và G2 có thể đạt được qua các nỗ lực phân phối thông thường, nhưng G3 phản ánh trực tiếp việc người dùng có thực sự tin tưởng và tái sử dụng giải pháp của nhau hay không.
 
-### 8.7 Khối 5 — Marketplace và Hệ thống thanh toán (Tháng 18+)
+### 8.8 Khối 5 — Marketplace và Hệ thống thanh toán (Tháng 18+)
 
 Chỉ được kích hoạt sau khi vượt qua các cột mốc xác thực thị trường. Khi đó, việc thương mại hóa là bước chuẩn hóa một thị trường đã tự hình thành nhu cầu từ trước.
 
-**Sản phẩm trao đổi trọng tâm không phải các agent nguyên khối, mà là các tệp Gate an toàn đã qua hàng nghìn giờ thử nghiệm thực địa** — ví dụ: gate chống va chạm cho cánh tay robot trong dây chuyền, gate kiểm soát ra vào tòa nhà thông minh. Kho Registry miễn phí tại Khối 3 chính là công cụ giúp xác định chính xác những tài sản nào được thị trường đón nhận nhất.
+**Sản phẩm trao đổi trọng tâm không phải các agent nguyên khối, mà là các tệp Gate an toàn đã qua hàng nghìn giờ thử nghiệm thực địa** — ví dụ: gate kiểm soát chốt cửa an ninh hai lớp cho chuỗi villa/khách sạn, gate giám sát nhiệt độ môi trường công nghiệp, hoặc gate chống va chạm cho cánh tay robot trong tương lai dài hạn. Kho Registry miễn phí tại Khối 3 chính là công cụ giúp xác định chính xác những tài sản nào được thị trường đón nhận nhất.
 
 Danh mục các sản phẩm tiềm năng trên sàn giao dịch:
 - **Gate an toàn chuyên ngành:** Có giá trị tỉ lệ thuận với số giờ hoạt động ổn định ngoài hiện trường.
@@ -1069,25 +1133,19 @@ Danh mục loại trừ rõ ràng nhằm giữ vững sự tập trung của s�
 
 ## 10. Bản đồ cạnh tranh & Lợi thế phòng thủ
 
-### 10.1 Bản đồ định vị đối thủ
+### 10.1 Ma trận so sánh năng lực kiến trúc và vị thế cạnh tranh
 
-```
-                            ĐỘ PHỦ ĐA NỀN TẢNG PHẦN CỨNG
-                                        ▲
-                                        │
-                         [ ESP-Claw ]   │    ★ NEUROEDGE
-                         (Tối ưu sâu,   │    (Đa nền tảng, Action CI,
-                          một dòng chip)│     Gate an toàn Fail-closed)
-                                        │
-    ────────────────────────────────────┼────────────────────────────────►
-    THUẦN ĐIỀU PHỐI PHẦN MỀM            │        KIỂM THỬ AN TOÀN VẬT LÝ
-                                        │
-       [ LangChain / CrewAI ]           │    [ XiaoZhi ]
-       (Thiếu trừu tượng phần cứng;     │    (Voice pipeline tối ưu,
-        action chỉ là gọi API)          │     thiếu lớp kiểm soát an toàn)
-                                        │
-                                        ▼
-```
+Thay vì sử dụng các biểu đồ định vị hai trục đơn giản hóa, NeuroEdge đánh giá vị thế thị trường thông qua ma trận năng lực kiến trúc đa chiều, phản ánh trung thực cả các đột phá kiến trúc lẫn những hạn chế ban đầu của dự án so với các giải pháp hiện hành:
+
+| Tiêu chí kiến trúc & Vận hành | ESP-Claw *(Espressif)* | XiaoZhi | LiveKit / Pipecat | LangChain / CrewAI | **NeuroEdge (Hiện tại & Mục tiêu)** |
+|:---|:---:|:---:|:---:|:---:|:---:|
+| **Hợp đồng an toàn vật lý (Action Contracts & Gate)** | Không<br>*(Tool call tự do)* | Không<br>*(Gọi trực tiếp GPIO)* | Không<br>*(Chỉ truyền tải media)* | Không<br>*(Chỉ gọi hàm phần mềm)* | **Có — IP cốt lõi**<br>*(Schema YAML có phiên bản, fail-closed)* |
+| **Trục kiểm thử hồi quy an toàn (Action CI)** | Không | Không | Không<br>*(Chỉ test WebRTC audio)* | Hạn chế<br>*(LangSmith test chuỗi text)* | **Có — IP cốt lõi**<br>*(Replay `.ntrace`, assert Gate verdict & GPIO)* |
+| **Tính trung lập đa môi trường (`sim` / `linux` / MCU)** | Không<br>*(Khóa chặt hệ ESP)* | Thấp<br>*(Chủ yếu firmware MCU)* | Trung bình<br>*(Hỗ trợ Linux / WebRTC)* | Đa nền tảng phần mềm<br>*(Cloud/Server/PC)* | **Tiêu chuẩn**<br>*(Nguyên tắc tương đương trên cả 3 môi trường)* |
+| **Tách biệt rule xác định vs LLM phi xác định** | Không | Không | Không | Không<br>*(Guardrails văn bản)* | **Có**<br>*(Gate rule engine 100% xác định, cô lập LLM)* |
+| **Tái hiện sự cố hiện trường từ xa (.ntrace)** | Log UART thủ công | Log Serial cơ bản | Bản ghi phiên audio<br>*(Dung lượng lớn)* | Log dấu vết đám mây<br>*(LangSmith)* | **Có**<br>*(Định dạng `.ntrace` nhị phân nhẹ, replay trên PC)* |
+| **Độ phủ và tối ưu hóa sâu phần cứng vi điều khiển** | **Rất cao**<br>*(Toàn dải vi xử lý ESP32)* | **Cao**<br>*(Tối ưu ESP32-S3/C3)* | Thấp<br>*(Cần gateway Linux trung gian)* | Không hỗ trợ MCU | **Tiêu chuẩn**<br>*(Khối 1b tập trung 1 bo mạch tham chiếu ESP32-S3)* |
+| **Quy mô cộng đồng & Độ trưởng thành sinh thái** | **Lớn**<br>*(Toàn bộ khách hàng Espressif)* | **Rất lớn**<br>*(Hàng chục nghìn maker)* | **Lớn**<br>*(Chuẩn công nghiệp WebRTC)* | **Khổng lồ**<br>*(Hàng triệu AI developer)* | **Mới khởi đầu**<br>*(Giai đoạn Beta, mục tiêu 1.000 dev đầu tiên)* |
 
 Phân tích đặc điểm kiến trúc và động cơ phát triển của bốn nhóm giải pháp trên thị trường:
 
@@ -1142,7 +1200,7 @@ Bốn nhóm rủi ro chiến lược và giải pháp ứng phó:
 | **Thời gian nhận giá trị (TTFV)** | **< 10 phút** (đo lường trên 10 lập trình viên độc lập) | Đánh giá độ tinh gọn và trực quan của trải nghiệm cài đặt và chạy thử đầu tiên. |
 | **Tính nhất quán đa nền tảng** | **100% vượt qua** bài kiểm tra `neuroedge verify` | Bảo đảm tính nhất quán logic tuyệt đối trên cả 3 môi trường (`sim`, `linux`, `esp32s3`). |
 | **Tỷ lệ áp dụng Action CI** | **≥ 50%** dự án khởi tạo giữ lại và mở rộng kịch bản test gate | Đánh giá mức độ hình thành thói quen kiểm thử an toàn trong cộng đồng lập trình viên. |
-| **Tỷ lệ chuyển đổi sang phần cứng** | **≥ 15%** người dùng chạy mô phỏng tiến hành nạp mã lên bo mạch thật trong 30 ngày | Đo lường tính hiệu quả của phễu chuyển đổi từ ý tưởng sang sản phẩm thực tế (§1.6). |
+| **Tỷ lệ chuyển đổi sang phần cứng** | **≥ 15%** người dùng chạy mô phỏng tiến hành nạp mã lên bo mạch thật trong 30 ngày | Đo lường tính hiệu quả của phễu chuyển đổi từ ý tưởng sang sản phẩm thực tế (§1.6, §1.7). |
 | **Tính minh bạch vận hành** | Nhật ký vết hiển thị chi tiết tỷ lệ System 1/System 2, chi phí từng lượt và kết quả thẩm định gate | Tạo dựng niềm tin của khách hàng đối với lớp kiểm soát an toàn. |
 | **Tài liệu hướng dẫn trực quan** | Có sẵn 3 ứng dụng mẫu hoàn chỉnh + 1 video minh họa trực quan trong tài liệu | Cung cấp tài nguyên giúp cộng đồng dễ dàng tiếp cận và ứng dụng. |
 
@@ -1164,7 +1222,7 @@ Bốn nhóm rủi ro chiến lược và giải pháp ứng phó:
 | **Tính toàn vẹn của mã nguồn** | 100% ứng dụng AURA vận hành trên API chuẩn công khai, không có API đặc quyền | Kiểm chứng tính nghiêm túc của kỷ luật kiến trúc (§7.3). |
 | **Mức độ đóng góp của hệ sinh thái** | Số lượng gate và agent do bên thứ ba phát hành tăng trưởng đều đặn hàng tháng | Khẳng định sức sống thực tế của kho lưu trữ Registry. |
 | **Tiến độ đạt các cột mốc xác thực** | Báo cáo minh bạch **từng chỉ số G1–G4 riêng biệt**, không dùng giá trị trung bình | Chuẩn bị đầy đủ cơ sở dữ liệu thực chứng cho việc kích hoạt Khối 5. |
-| **Hiệu quả kinh tế cho khách hàng** | Có ít nhất 1 nghiên cứu điển hình (case study) đo lường được hiệu quả: giảm chi phí bảo trì thực địa, giảm tỷ lệ hàng lỗi hoặc rút ngắn thời gian tích hợp | Kiểm chứng giá trị kinh tế thực tế (§1.7) trên số liệu thực chứng của khách hàng. |
+| **Hiệu quả kinh tế cho khách hàng** | Có ít nhất 1 nghiên cứu điển hình (case study) đo lường được hiệu quả: giảm chi phí bảo trì thực địa, giảm tỷ lệ hàng lỗi hoặc rút ngắn thời gian tích hợp | Kiểm chứng giá trị kinh tế thực tế (§1.8) trên số liệu thực chứng của khách hàng. |
 
 ---
 
@@ -1338,7 +1396,7 @@ Tham chiếu từ các nguyên lý phát triển sản phẩm nền tảng: Mọ
 | **Mã nguồn mở hào phóng** | Mở toàn bộ mã nguồn HAL, Action Contract Engine, Voice pipeline và Action CI. | Tiếp cận tiêu chuẩn an toàn công nghiệp hoàn toàn miễn phí ban đầu. |
 | **Tiên phong chuẩn hóa định dạng** | Đề xuất định dạng Gate an toàn và `.ntrace` chuẩn mực cho Physical AI. | Sở hữu một ngôn ngữ thống nhất để định nghĩa hành vi an toàn của thiết bị. |
 | **Tạo hiệu ứng mạng qua chia sẻ** | Xây dựng kho lưu trữ Gate Registry hỗ trợ cơ chế kế thừa `extends`. | Tái sử dụng các chính sách an toàn đã qua hàng nghìn giờ kiểm chứng thực tế. |
-| **Tối ưu hiệu quả kinh tế (TCO)** | Cắt giảm chi phí bảo trì hiện trường, giảm rủi ro thu hồi, rút ngắn thời gian bring-up bo mạch (§1.7). | Tiết kiệm chi phí vận hành và nhân sự kỹ thuật thực tế cho doanh nghiệp. |
+| **Tối ưu hiệu quả kinh tế (TCO)** | Cắt giảm chi phí bảo trì hiện trường, giảm rủi ro thu hồi, rút ngắn thời gian bring-up bo mạch (§1.8). | Tiết kiệm chi phí vận hành và nhân sự kỹ thuật thực tế cho doanh nghiệp. |
 | **Kiên định với lộ trình dài hạn** | Xây dựng sẵn 7 thành phần hạ tầng nền tảng trước khi thương mại hóa. | Hạ tầng sẵn sàng đáp ứng khi quy mô đội thiết bị của khách hàng mở rộng. |
 | **Chiến lược tiếp cận khác biệt hóa** | Không cạnh tranh trực diện với SDK chính hãng; tập trung vào năng lực kiểm thử đa nền tảng. | Tránh bị phụ thuộc độc quyền vào hệ sinh thái của một nhà sản xuất chip. |
 | **Phát triển ứng dụng mẫu trọn gói** | Triển khai giải pháp thực tế AURA sau khi nền tảng cốt lõi đã ổn định. | Đứng ra giải quyết bài toán phức tạp nhất về trách nhiệm an toàn trong vận hành. |
@@ -1370,14 +1428,15 @@ Tham chiếu từ các nguyên lý phát triển sản phẩm nền tảng: Mọ
 
 ## Phụ lục G — Danh mục giả định cần kiểm chứng
 
-Bốn giả định chiến lược định hình mô hình kinh doanh, được theo dõi và đo lường minh bạch:
+Năm giả định chiến lược định hình mô hình kinh doanh và kinh tế học sản phẩm, được theo dõi và đo lường minh bạch:
 
 | # | Giả định cốt lõi | Mức độ nhạy cảm & Ý nghĩa | Phương pháp kiểm chứng thực tế | Thời điểm đánh giá |
 |:---:|:---|:---|:---|:---:|
 | **G-a** | **Đơn giá quản trị fleet $1/thiết bị/tháng** | Quyết định trực tiếp quy mô đội thiết bị cần đạt để tổ chức đạt điểm hòa vốn (§6.3). | Thử nghiệm các gói dịch vụ nâng cao (cam kết SLA, kiểm toán vết chi tiết) với 5 khách hàng doanh nghiệp đầu tiên; đo lường mức độ sẵn sàng chi trả thêm. | Tháng thứ 6 |
-| **G-b** | **Tỷ lệ chuyển đổi từ `sim` sang bo mạch thật ≥ 15%** | Xác nhận môi trường mô phỏng thực sự đóng vai trò là phễu dẫn dắt người dùng đến sản phẩm phần cứng thực tế (§1.6). | Theo dõi dữ liệu đo lường ẩn danh từ công cụ CLI; đối soát lại tỷ lệ khi đạt mốc 100 lập trình viên thực tế đầu tiên. | Tháng thứ 3 |
+| **G-b** | **Tỷ lệ chuyển đổi từ `sim` sang bo mạch thật ≥ 15%** | Xác nhận môi trường mô phỏng thực sự đóng vai trò là phễu dẫn dắt người dùng đến sản phẩm phần cứng thực tế (§1.7). | Theo dõi dữ liệu đo lường ẩn danh từ công cụ CLI; đối soát lại tỷ lệ khi đạt mốc 100 lập trình viên thực tế đầu tiên. | Tháng thứ 3 |
 | **G-c** | **Hiệu quả tiết kiệm chi phí token ≥ 60%** | Minh chứng định lượng cho tính hiệu quả của kiến trúc định tuyến hai mô hình System 1 / System 2. | Đo lường trực tiếp trên lưu lượng thực tế qua Hosted Gateway, phân tách chi tiết theo từng nhóm tác vụ nghiệp vụ. | Tháng thứ 6 |
 | **G-d** | **Nhu cầu thực tế về việc chia sẻ và tái sử dụng Gate** | Cơ sở quyết định tính khả thi của hiệu ứng mạng cộng đồng trước khi mở Marketplace thương mại. | Đánh giá tần suất tải về và kế thừa các gate an toàn trên kho lưu trữ Public Registry miễn phí trong suốt 12 tháng đầu. | Tháng thứ 12 |
+| **G-e** | **Giảm 70% chuyến đi hiện trường nhờ `.ntrace`** | Nền tảng cốt lõi của mô hình TCO (§1.8) chứng minh giá trị kinh tế trực tiếp của NeuroEdge cho khách hàng fleet. | Thu thập dữ liệu bảo hành thực tế, phân loại nguyên nhân sự cố (lỗi phần mềm/cấu hình vs hỏng hóc vật lý) từ 3 khách hàng AURA đầu tiên. | Tháng thứ 9 |
 
 ---
 
