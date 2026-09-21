@@ -2,13 +2,13 @@
 
 ## Kế hoạch triển khai từ Tuần 0 đến Tháng 8
 
-**Phiên bản:** 1.0
+**Phiên bản:** 1.1
 
 
 **Ngày lập:** 21 tháng 9, 2026
 
 
-**Tài liệu nguồn:** `neuroedge-proposal.md` v5.2 · `neuroedge-prd.md` v1.0
+**Tài liệu nguồn:** `neuroedge-proposal.md` v5.3 · `neuroedge-prd.md` v1.1
 
 
 **Phạm vi:** Khối 1a · Khối 1b · Developer Beta · Khối 2 và 3
@@ -54,7 +54,7 @@
 | **Pha đang thực thi** | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0–6)** | Đạt ~55% khối lượng toàn khối |
 | **Sprint hiện hành** | 🟡 **Sprint 1: Đóng băng Lược đồ & Monorepo (Tuần 0–2)** | **92% hoàn thành** (12 / 13 tasks hoàn tất; TSK-S1-10 chờ bo mạch) |
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: Cuối Sprint 3 (Tuần 6) |
-| **Lần cập nhật cuối** | **2026-09-21 18:30 UTC+7** | Hoàn tất Khối 1a / Sprint 1 — phần không phụ thuộc phần cứng |
+| **Lần cập nhật cuối** | **2026-09-21 23:30 UTC+7** | Áp dụng CR-1.0 cloud-first vào proposal v5.3 · PRD v1.1 · roadmap v1.1 |
 | **Trạng thái CI Lõi** | ✅ **PASS 210/210 · SKIP 0** | `python/tests/` — 9 bộ test; cổng CI chặn mọi test bị skip |
 | **Chặn ngoài tầm kỹ thuật** | 🔴 **2 hạng mục** | TSK-S1-10 chờ bo mạch vật lý · Tiêu chí ra 6 chờ quyết định **Q-11** |
 
@@ -65,13 +65,13 @@
 | Mốc | Sprint / Giai đoạn | Thời gian | Trọng tâm kỹ thuật | Tiến độ | Trạng thái |
 |:---:|:---|:---:|:---|:---:|:---:|
 | **Khối 1a** | **Sprint 1 — Đóng băng lược đồ** | Tuần 0–2 | Schemas, Monorepo, Test fixtures, Memory spike | **92%** | 🟡 **Chờ phần cứng** |
-| | **Sprint 2 — Lõi thực thi trên `sim`** | Tuần 2–4 | HAL sim, Gate Engine CEL, Fail-closed, Web UI | **0%** | ⏳ Chưa bắt đầu |
-| | **Sprint 3 — Action CI & Linux** | Tuần 4–6 | HAL linux, Replay/Assert, Barge-in, TTFV < 10' | **0%** | ⏳ Chưa bắt đầu |
+| | **Sprint 2 — Lõi thực thi trên `sim`** | Tuần 2–4 | HAL sim, Gate Engine CEL, Fail-closed, Lớp provider (LiteLLM), Web UI | **0%** | ⏳ Chưa bắt đầu |
+| | **Sprint 3 — Action CI & Linux** | Tuần 4–6 | HAL linux, Replay/Assert, Barge-in, ASR/TTS qua provider, TTFV < 10' | **0%** | ⏳ Chưa bắt đầu |
 | **Khối 1b** | **Sprint 4 — HAL trên `esp32s3`** | Tuần 6–8 | Port driver XiaoZhi, verify 3 targets không audio | **0%** | ⏳ Chưa bắt đầu |
-| | **Sprint 5 — Runtime thoại MCU** | Tuần 8–10 | Voice pipeline, AEC/VAD, C/C++ state machine | **0%** | ⏳ Chưa bắt đầu |
+| | **Sprint 5 — Runtime thoại MCU** | Tuần 8–10 | Thu/phát âm thanh, AEC/VAD, C/C++ state machine, stream lên provider | **0%** | ⏳ Chưa bắt đầu |
 | | **Sprint 6 — OTA & Nghiệm thu v1.0** | Tuần 10–12 | A/B OTA, secure boot, tiêu chí A1–A9 | **0%** | ⏳ Chưa bắt đầu |
 | **Beta** | **Developer Beta** | Tuần 12–16 | Hỗ trợ 50–100 lập trình viên, chỉ số B1–B5 | **0%** | ⏳ Chưa bắt đầu |
-| **Khối 2** | **Inference Gateway & Fleet OS** | Tháng 4–8 | LiteLLM, Hawkbit Canary OTA, EMQX Broker | **0%** | ⏳ Chờ mốc Beta |
+| **Khối 2** | **Fleet OS** *(dịch vụ thương mại duy nhất)* | Tháng 4–8 | Hawkbit Canary OTA, EMQX Broker, Provisioning | **0%** | ⏳ Chờ mốc Beta |
 | **Khối 3** | **Bảy đường ray nền tảng** | Tháng 4–8 | OCI/ORAS Registry, OpenMeter usage billing | **0%** | ⏳ Chờ mốc Beta |
 
 ---
@@ -105,8 +105,19 @@
 │    • 🔴 Đặt bo mạch ESP32-S3-BOX-3 — chặn TSK-S1-10 và Tiêu chí ra 3                   │
 │    • Đồng bộ Phụ lục B.1/B.3/B.4 của proposal theo RFC-0001 §9                         │
 │    • Mở Sprint 2: [TSK-S2-01] HAL cho `sim`, [TSK-S2-07] đặc tả chuẩn tắc FSM thoại    │
+│    • [MỚI] [TSK-S2-11] Lớp trừu tượng provider (OpenAI-compatible + adapter) —         │
+│      hạng mục phát sinh từ CR-1.0 cloud-first, nằm trong Khối 1a chứ không phải Khối 2  │
 │                                                                                        │
 │ 4. LƯU Ý KỸ THUẬT QUAN TRỌNG CHO NGƯỜI TIẾP QUẢN (CONTEXT & GUARDRAILS):               │
+│    • [CR-1.0] Kiến trúc nay là CLOUD-FIRST: STT/TTS/LLM chạy trên provider cloud,      │
+│      `esp32s3` chỉ thu/phát âm thanh + AEC/VAD + FSM + thẩm định gate. Sprint 5 giảm    │
+│      phạm vi tương ứng; R-1 hạ từ Cao xuống Trung bình.                                 │
+│    • [CR-1.0] KHÔNG có doanh thu inference. Gateway thương mại bị bỏ; lớp provider là   │
+│      OSS self-host. Fleet OS là dịch vụ thương mại duy nhất.                            │
+│    • [CR-1.0] Fail-closed KHÔNG đổi: gate và FSM chạy hoàn toàn trên thiết bị, mất      │
+│      mạng vẫn chặn hành động vật lý (NFR-RES-04 giữ nguyên 100%).                       │
+│    • [CR-1.0] LiteLLM chuyển từ dịch vụ máy chủ sang thư viện PHÂN PHỐI KÈM sản phẩm    │
+│      (proposal Phụ lục H.1) → Q-11 phải xét lại nghĩa vụ giấy phép ở phạm vi mới.       │
 │    • Không sửa đuôi trace thành .ntrace (chuẩn duy nhất là .json mang $schema).        │
 │    • Bộ lượng giá CEL trên ESP32-S3 dùng Phương án A (Host biên dịch sang Decision     │
 │      Tree JSON phẳng; ESP32-S3 chỉ duyệt cây bằng hàm C đơn giản, không nhúng CEL VM).  │
@@ -144,7 +155,7 @@
 | **V1 — Kỹ sư lõi nền tảng**               | HAL, Action Contract Engine, lược đồ gate và trace, Action CI           | Tuần 0                              |
 | **V2 — Kỹ sư nhúng**                      | Port `esp32s3`, runtime thoại trên MCU, OTA cấp thiết bị, tối ưu bộ nhớ | Tuần 0 *(bán thời gian tới Tuần 6)* |
 | **V3 — Kỹ sư trải nghiệm lập trình viên** | Giao diện `sim`, CLI, scaffold, tài liệu, ví dụ mẫu                     | Tuần 2                              |
-| **V4 — Kỹ sư hạ tầng dịch vụ**            | Gateway, Fleet OS, Registry, hệ đo lường                                | Tháng 3                             |
+| **V4 — Kỹ sư hạ tầng dịch vụ**            | Fleet OS, Registry, hệ đo lường, hoàn thiện lớp provider OSS            | Tháng 3                             |
 
 
 **Cấu hình tối thiểu khả thi: 3 người cho Khối 1**, trong đó một người kiêm vai trò kỹ thuật trưởng và vẫn viết mã. Vai trò V4 tuyển trước Khối 2 một tháng để có thời gian làm quen kiến trúc.
@@ -202,10 +213,12 @@ Tuần 0 ──► LƯỢC ĐỒ GATE v1 ──┐
 | 2   | Gate Engine với fail-closed     | 2–4  | Mọi thành phần khác gọi vào nó                                                                                |
 | 3   | Record và replay                | 4–5  | Là điều kiện để có assert và golden                                                                           |
 | 4   | Port HAL lên `esp32s3`          | 6–8  | Không có target thứ ba thì không chứng minh được tương đương                                                  |
-| 5   | Runtime thoại trên MCU          | 8–10 | Mắt xích rủi ro nhất; xem §9                                                                                  |
+| 5   | Runtime thoại trên MCU          | 8–10 | Vẫn là mắt xích khó nhất nhưng **rủi ro đã giảm** từ CR-1.0: STT/TTS chuyển lên provider cloud, MCU chỉ thu/phát + FSM + gate; xem §9 |
 
 
 **Đòn bẩy mã nguồn mở trên đường găng:** mắt xích 2 rút ngắn nhờ Google CEL, mắt xích 4 nhờ driver XiaoZhi, mắt xích 5 nhờ Pipecat và bộ mô hình âm thanh. Chi tiết và mức rút ngắn thực tế tại §3.7.
+
+**Phụ thuộc mới từ CR-1.0:** lớp trừu tượng provider (TSK-S2-11) là điều kiện tiên quyết cho ASR/TTS qua cloud ở Sprint 3 (TSK-S3-13) và cho vòng lặp thoại ở Sprint 5 (TSK-S5-06). Nó **không** nằm trên đường găng của mắt xích 2 và 3 nên làm song song được, nhưng phải xong trước Tuần 6.
 
 **Không nằm trên đường găng, làm song song:** giao diện `sim`, CLI, tài liệu, ví dụ mẫu, hạ tầng CI.
 
@@ -278,7 +291,7 @@ Ranh giới này quyết định mọi mục còn lại. Một thành phần n�
 | **1b** | Barge-in, VAD, xử lý khung âm thanh | Pipecat · microWakeWord · libfvad | **Port mô hình pipeline** | 4 tuần |
 | **1b** | OTA cấp thiết bị | ESP-IDF `esp_https_ota`, `esp_ota_ops` | Tận dụng SDK chuẩn | 2 tuần |
 | **1b** | Hiển thị trạng thái trên màn hình | LVGL v8/v9 | Thư viện đồ họa nhúng | 2 tuần |
-| **2** | Hosted Inference Gateway | LiteLLM Proxy | Dịch vụ backend | 6 tuần |
+| **1a** | Lớp trừu tượng nhà cung cấp (OpenAI-compatible + adapter) | LiteLLM | **Thư viện trong lõi MIT** | 6 tuần |
 | **2** | Điều phối OTA canary | Eclipse Hawkbit | Backend điều phối | 5 tuần |
 | **2** | Kết nối thiết bị và viễn trắc | EMQX · FastAPI WebSockets | Hạ tầng kết nối | 3 tuần |
 | **3** | Kho Gate Registry công khai | CNCF ORAS · Harbor | Chuẩn lưu trữ OCI | 4 tuần |
@@ -296,7 +309,7 @@ Năm dự án này không dừng ở `pip install`. Chúng cần trích xuất m
 | 1 | **XiaoZhi ESP32** | `targets/esp32s3/drivers/` | Khởi tạo codec I2S (ES8311, ES7210) · cấu hình chân I2C/SPI của ESP32-S3-Box-3 · driver LCD ST7789 · vòng lặp streaming WebSocket nhị phân |
 | 2 | **Pipecat** | `neuroedge/perception/pipeline/` | Frame processor theo khung âm thanh · thuật toán khoảng lặng động · **cơ chế barge-in**: ngắt hàng đợi phát và phát tín hiệu hủy lệnh actuator chưa hoàn tất |
 | 3 | **Wokwi Elements** | `neuroedge/sim/web/` | `<wokwi-led>` · `<wokwi-pushbutton>` · `<wokwi-solenoid-lock>` · `<wokwi-servo>` · `<wokwi-lcd1602>` |
-| 4 | **LiteLLM** | Lõi Hosted Gateway | Chuyển đổi I/O về một chuẩn chung · cân bằng tải · failover · hạn mức theo khóa định danh |
+| 4 | **LiteLLM** | `neuroedge/models/providers/` | Chuyển đổi I/O về một chuẩn chung · cân bằng tải · failover · hạn mức theo khóa định danh. **Từ CR-1.0: thư viện trong lõi MIT phân phối kèm sản phẩm**, không phải lõi của một dịch vụ do NeuroEdge vận hành — xem Q-11 |
 | 5 | **OpenMeter** | Lõi metering Khối 3 | Engine gom cụm sự kiện · đối soát số lượt gọi agent và lượt thẩm định gate |
 
 **Giá trị lớn nhất nằm ở mục 1 và 2** vì chúng nằm trên đường găng: loại bỏ rủi ro kẹt thanh ghi, lỗi clock I2S, méo tiếng, và toàn bộ vòng thử sai của các ca biên hội thoại.
@@ -500,9 +513,10 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 | **TSK-S2-05** | Decorator `@action`, cấm gọi trực tiếp, `c.do()` và `c.say()` | FR-ACE-02, FR-ACE-04, FR-ACE-05, FR-ACE-07 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/actions/` |
 | **TSK-S2-06** | Lượng giá `allow_when` trên nền Google CEL, kèm đường biên dịch gate cho thiết bị (§3.8, Q-9) | FR-GATE-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/cel_compiler.py` |
 | **TSK-S2-07** | **Đặc tả chuẩn tắc máy trạng thái hội thoại** — nguồn sự thật cho cả hai hiện thực (§3.8) | FR-PER-02, FR-PER-03 | V1 | ⏳ Chưa bắt đầu | `docs/spec/voice_fsm.md` |
-| **TSK-S2-08** | Interface `SystemOne` / `SystemTwo` kèm fallback | FR-MDL-01, FR-MDL-02, FR-MDL-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/models/` |
+| **TSK-S2-08** | Interface `SystemOne` / `SystemTwo` kèm fallback, giao diện kết nối mặc định tuân chuẩn OpenAI API | FR-MDL-01, FR-MDL-02, FR-MDL-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/models/` |
 | **TSK-S2-09** | Giao diện web `sim`: cảm biến ảo, trạng thái actuator | FR-TGT-06 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/sim/web/` |
 | **TSK-S2-10** | Kết luận phạm vi Khối 1b dựa trên spike | — | V2 + trưởng nhóm | ⏳ Chưa bắt đầu | `docs/reports/memory_spike_report.md` |
+| **TSK-S2-11** | **Lớp trừu tượng nhà cung cấp**: hợp đồng kết nối OpenAI-compatible + cơ chế adapter tùy chỉnh, áp dụng chung cho LLM/ASR/TTS (CR-1.0) | FR-MDL-07, FR-MDL-08, FR-GW-01, FR-GW-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/models/providers/` |
 
 **Tiêu chí ra Sprint 2 (Exit Criteria):**
 
@@ -511,6 +525,7 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 - [ ] **Tiêu chí 3:** Kịch bản mất mạng → hành động bị chặn với lý do `gate_unreachable`.
 - [ ] **Tiêu chí 4:** Gate con nới lỏng `allow_when` bị từ chối phân giải.
 - [ ] **Tiêu chí 5:** Quyết định Q-3, Q-7 đã chốt.
+- [ ] **Tiêu chí 6:** Đổi nhà cung cấp mô hình chỉ bằng thay đổi cấu hình, không sửa mã agent và không sửa gate; một adapter tùy chỉnh mẫu chạy được mà không sửa lõi.
 
 
 ### 4.3 Sprint 3 — Action CI, `linux` và TTFV (Tuần 4–6)
@@ -530,6 +545,7 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 | **TSK-S3-10** | **Bộ vector kiểm thử tuân thủ độc lập ngôn ngữ** cho máy trạng thái hội thoại (§3.8) | FR-CI-07, FR-TGT-04 | V1 | ⏳ Chưa bắt đầu | `fixtures/compliance/` |
 | **TSK-S3-11** | Hiện thực Python của máy trạng thái hội thoại, port thiết kế từ Pipecat | FR-PER-02→05 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/fsm.py` |
 | **TSK-S3-12** | Pipeline CI mẫu chạy `sim` + `linux` trên mỗi PR | FR-CI-05 | V1 | ⏳ Chưa bắt đầu | `.github/workflows/ci-sim-linux.yml` |
+| **TSK-S3-13** | **Tích hợp ASR/TTS qua provider cloud** cho `sim` và `linux`, kèm tùy chọn mô hình cục bộ (CR-1.0) | FR-MDL-09, FR-PER-07 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/providers/` |
 
 **Tiêu chí ra Sprint 3 — cổng kết thúc Khối 1a (Exit Criteria):**
 
@@ -572,29 +588,31 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 
 ### 5.2 Sprint 5 — Runtime thoại trên MCU (Tuần 8–10)
 
-**Đây là sprint rủi ro nhất của toàn dự án.**
+**Đây vẫn là sprint khó nhất của toàn dự án, nhưng rủi ro đã giảm một bậc kể từ CR-1.0.** Kiến trúc cloud-first đưa STT, TTS và suy luận ngôn ngữ ra khỏi vi điều khiển; `esp32s3` chỉ còn thu/phát âm thanh, AEC/VAD, máy trạng thái hội thoại và thẩm định gate. Áp lực bộ nhớ SRAM/PSRAM giảm đáng kể, và rủi ro R-1 của PRD hạ từ Cao xuống Trung bình.
 
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S5-01** | Tích hợp WebRTC AEC, Silero VAD, Opus streaming | FR-PER-06 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/audio/` |
-| **TSK-S5-02** | Port đường dẫn audio theo §3.5, tuân thủ nghĩa vụ ghi nhận nguồn §3.9 | FR-PER-01 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/drivers/audio_path.c` |
+| **TSK-S5-02** | Port đường dẫn audio thu/phát theo §3.5, tuân thủ nghĩa vụ ghi nhận nguồn §3.9. **Không hiện thực STT/TTS trên thiết bị** | FR-PER-01 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/drivers/audio_path.c` |
 | **TSK-S5-03** | **Hiện thực C/C++ của máy trạng thái hội thoại** theo đặc tả Sprint 2, phải vượt bộ vector tuân thủ Sprint 3 (§3.8) | FR-PER-02, FR-PER-03, FR-PER-05 | V1 + V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/fsm/voice_fsm.c` |
 | **TSK-S5-04** | Thu hồi lệnh actuator chưa thực thi khi bị cắt lời | FR-PER-02 | V1 + V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/fsm/actuator_abort.c` |
 | **TSK-S5-05** | Tối ưu bộ nhớ theo ngân sách đã chốt ở Q-3 | NFR-RES-01, NFR-RES-02 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/sdkconfig.defaults` |
+| **TSK-S5-06** | **Client streaming âm thanh lên provider cloud**: đẩy khung Opus lên STT, nhận luồng TTS về, tái dùng hợp đồng kết nối của TSK-S2-11 (CR-1.0) | FR-PER-07, FR-GW-04 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/audio/provider_client.c` |
 
 **Ràng buộc kiến trúc bắt buộc:** máy trạng thái hội thoại chỉ có **một hiện thực duy nhất**, portable xuống MCU. Không được dùng một máy trạng thái cho `linux` và một máy trạng thái khác cho `esp32s3` — hai bản sẽ phân kỳ, và hành vi thu hồi lệnh actuator khi cắt lời sẽ khác nhau giữa các target, phá vỡ tương đương ở đúng miền nguy hiểm nhất.
 
-**Đòn bẩy OSS Sprint 5:** microWakeWord trên MCU và openWakeWord trên Linux · Silero VAD và libfvad · WebRTC AEC3 · Opus · port mô hình frame processor và barge-in từ Pipecat. Tiết kiệm ước tính 4 tuần, phần lớn nằm trên đường găng.
+**Đòn bẩy OSS Sprint 5:** microWakeWord trên MCU và openWakeWord trên Linux · Silero VAD và libfvad · WebRTC AEC3 · Opus · port mô hình frame processor và barge-in từ Pipecat. Không còn hạng mục STT/TTS trên thiết bị. Tiết kiệm ước tính 4 tuần, phần lớn nằm trên đường găng.
 
 **Ràng buộc bắt buộc:** hiện thực C/C++ này là bản thứ hai của cùng một đặc tả, không phải một thiết kế độc lập. Nó chỉ được nghiệm thu khi vượt toàn bộ bộ vector tuân thủ chung (§3.8).
 
 **Tiêu chí ra Sprint 5 (Exit Criteria):**
 
-- [ ] **Tiêu chí 1:** Vòng lặp thoại đầy đủ chạy trên bo mạch tham chiếu.
+- [ ] **Tiêu chí 1:** Vòng lặp thoại chạy end-to-end trên bo mạch tham chiếu với STT, TTS và suy luận ngôn ngữ đặt ở provider cloud.
 - [ ] **Tiêu chí 2:** Cắt lời giữa câu: TTS dừng dưới 300 ms, không có lệnh actuator nào rò rỉ.
 - [ ] **Tiêu chí 3:** Bơm 20 khung nhiễu liên tiếp: máy trạng thái vẫn phản hồi đúng.
 - [ ] **Tiêu chí 4:** Bộ nhớ còn lại sau 4 giờ chạy nằm trong ngân sách Q-3.
+- [ ] **Tiêu chí 5:** Mất kết nối tới provider giữa phiên → hành động vật lý bị chặn với lý do fail-closed, thiết bị không treo và phục hồi được khi có mạng trở lại.
 
 
 ### 5.3 Sprint 6 — OTA, ổn định hóa, nghiệm thu (Tuần 10–12)
@@ -681,12 +699,12 @@ Kết thúc Beta, dự án đi theo đúng một trong ba nhánh. **Quyết đ�
 
 | Nhánh                               | Điều kiện                                                | Hành động                                                                                                               |
 | :----------------------------------- | :-------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------- |
-| **Nhánh A — Khởi động Khối 2**      | Đạt đồng thời B1, B2, B3                                 | Tuyển V4, bắt đầu Gateway và Fleet OS theo §8                                                                           |
+| **Nhánh A — Khởi động Khối 2**      | Đạt đồng thời B1, B2, B3                                 | Tuyển V4, bắt đầu **Fleet OS** (thương mại) theo §8; song song hoàn thiện lớp provider OSS                                                                           |
 | **Nhánh B — Kéo dài Beta 4–6 tuần** | Đạt 2 trên 3 tiêu chí, tiêu chí còn lại đạt ≥ 60% ngưỡng | Giữ đóng băng tính năng, tập trung vào tiêu chí yếu nhất, đánh giá lại ở Tuần 22                                        |
 | **Nhánh C — Xem xét lại luận điểm** | Không đạt hoặc chỉ đạt 1 trên 3                          | Dừng lộ trình thương mại. Phỏng vấn sâu 20 người dùng đã thử và bỏ. Xác định luận điểm sai ở đâu trước khi viết thêm mã |
 
 
-**Chỉ báo quan trọng nhất là B2** (10 người ngoài nạp được phần cứng thật). B1 đo sự tò mò; B2 đo cam kết. Một dự án có B1 cao nhưng B2 thấp là một dự án mà simulator hấp dẫn còn đường lên phần cứng bị nghẽn — khi đó việc cần làm là sửa đường lên phần cứng, không phải xây Gateway.
+**Chỉ báo quan trọng nhất là B2** (10 người ngoài nạp được phần cứng thật). B1 đo sự tò mò; B2 đo cam kết. Một dự án có B1 cao nhưng B2 thấp là một dự án mà simulator hấp dẫn còn đường lên phần cứng bị nghẽn — khi đó việc cần làm là sửa đường lên phần cứng, không phải xây Fleet OS.
 
 ---
 
@@ -694,14 +712,16 @@ Kết thúc Beta, dự án đi theo đúng một trong ba nhánh. **Quyết đ�
 
 Khởi động **chỉ khi** đi nhánh A. Hai khối chạy song song.
 
-### 8.1 Trình tự Khối 2 — Gateway và Fleet OS
+### 8.1 Trình tự Khối 2 — Fleet OS
+
+Khối 2 chỉ còn **một dịch vụ thương mại: Fleet OS**. Ba hạng mục đầu (TSK-K2-01→03) là phần **hoàn thiện lớp trừu tượng provider OSS** đã dựng từ Khối 1a — giữ nguyên mã task để không vỡ truy vết, nhưng không thương mại hóa.
 
 
 | Mã Task | Tháng | Trọng tâm công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) | Tiêu chí nghiệm thu |
 |:---:|:---:|:---|:---|:---:|:---:|:---|:---|
-| **TSK-K2-01** | **4** | Gateway: một endpoint, một credential, xoay khóa từ xa | FR-GW-01, FR-GW-02 | V4 | ⏳ Chờ mốc Beta | `services/gateway/auth.py` | Thiết bị không lưu API key bên thứ ba |
-| **TSK-K2-02** | **5** | Gateway: định tuyến đa nhà cung cấp, failover, hạn mức theo thiết bị | FR-GW-03, FR-GW-05 | V4 | ⏳ Chờ mốc Beta | `services/gateway/routing.py` | Ngắt nhà cung cấp chính, thiết bị không gián đoạn |
-| **TSK-K2-03** | **5–6** | Gateway: giao thức tối ưu edge, xuất vết ghi đồng nhất định dạng | FR-GW-04, FR-GW-07 | V4 | ⏳ Chờ mốc Beta | `services/gateway/traces.py` | Vết ghi từ Gateway replay được trên máy cá nhân |
+| **TSK-K2-01** | **4** | Lớp provider OSS: gom một endpoint, một credential, xoay khóa do người dùng tự quản lý | FR-GW-01, FR-GW-02 | V4 | ⏳ Chờ mốc Beta | `python/neuroedge/models/providers/auth.py` | Một cấu hình phục vụ nhiều provider; xoay khóa không nạp lại firmware |
+| **TSK-K2-02** | **5** | Lớp provider OSS: định tuyến đa nhà cung cấp, failover, hạn mức theo thiết bị *(tùy chọn)* | FR-GW-03, FR-GW-05 | V4 | ⏳ Chờ mốc Beta | `python/neuroedge/models/providers/routing.py` | Ngắt nhà cung cấp chính, thiết bị không gián đoạn |
+| **TSK-K2-03** | **5–6** | Lớp provider OSS: giao thức tối ưu edge, xuất vết ghi đồng nhất định dạng | FR-GW-04, FR-GW-07 | V4 | ⏳ Chờ mốc Beta | `python/neuroedge/models/providers/traces.py` | Vết ghi từ lớp provider replay được trên máy cá nhân |
 | **TSK-K2-04** | **6** | Fleet: cấp phát danh tính và chứng chỉ thiết bị | FR-FLT-01 | V4 | ⏳ Chờ mốc Beta | `services/fleet/provisioning.py` | Claim tự động trên lô 100 thiết bị |
 | **TSK-K2-05** | **6–7** | Fleet: sổ kiểm kê, giám sát sức khỏe, dashboard hữu ích ở n = 1 | FR-FLT-03, FR-FLT-06 | V4 | ⏳ Chờ mốc Beta | `services/fleet/inventory.py` | Trạng thái phản ánh đúng trong 60 giây |
 | **TSK-K2-06** | **7** | Fleet: cập nhật cấu hình, bí mật và gate từ xa | FR-FLT-04 | V4 | ⏳ Chờ mốc Beta | `services/fleet/config_sync.py` | Đổi ngưỡng gate toàn đội, không nạp lại firmware |
@@ -709,7 +729,7 @@ Khởi động **chỉ khi** đi nhánh A. Hai khối chạy song song.
 | **TSK-K2-08** | **8** | Fleet: tự động tải vết ghi sự cố về kho tập trung | FR-FLT-05 | V4 | ⏳ Chờ mốc Beta | `services/fleet/trace_collector.py` | Sự cố xuất hiện trong kho dưới 5 phút |
 
 
-**Đòn bẩy OSS Khối 2:** LiteLLM Proxy làm lõi Hosted Gateway (chỉ dùng phần MIT, bọc middleware xác thực thiết bị viết riêng) · Eclipse Hawkbit cho điều phối chiến dịch OTA canary · EMQX hoặc FastAPI WebSockets cho kết nối và viễn trắc. Tiết kiệm ước tính 14 tuần. Xem ngoại lệ giấy phép tại §3.3.
+**Đòn bẩy OSS Khối 2:** Eclipse Hawkbit cho điều phối chiến dịch OTA canary · EMQX hoặc FastAPI WebSockets cho kết nối và viễn trắc. **LiteLLM không còn là lõi của một gateway do NeuroEdge vận hành** — nó là thư viện của lớp trừu tượng provider self-host, đã dùng từ Sprint 2 và nay thuộc phần phân phối kèm sản phẩm (proposal Phụ lục H.1). Tiết kiệm ước tính 14 tuần. Xem ngoại lệ giấy phép tại §3.3.
 
 ### 8.2 Trình tự Khối 3 — Đường ray hạ tầng
 
@@ -725,18 +745,20 @@ Khởi động **chỉ khi** đi nhánh A. Hai khối chạy song song.
 
 **Thứ tự này không tùy tiện.** FR-REG-05, FR-REG-06 và FR-REG-07 phải đi trước vì không bổ sung sau được: thiếu định danh ổn định và đo lường thì Registry không quy kết được ai dùng gì; thiếu sandbox thì không dám cho mã người lạ chạy trên thiết bị có cơ cấu chấp hành.
 
+| **TSK-K3-06** | **6–7** | Kho chia sẻ adapter kết nối provider do cộng đồng đóng góp, dùng chung hạ tầng Registry của TSK-K3-04 (CR-1.0) | FR-REG-08 | V4 | ⏳ Chờ mốc Beta | `services/registry/adapters.py` |
+
 **Đòn bẩy OSS Khối 3:** CNCF ORAS và Harbor cho kho Gate Registry theo chuẩn OCI · OpenMeter cho hệ đo lường tương thích Stripe Billing. Tiết kiệm ước tính 8 tuần.
 
 ### 8.3 Tiêu chí ra Khối 2 và 3 (Exit Criteria)
 
-Toàn bộ C1 đến C7 của PRD §11.3:
+Toàn bộ C1 đến C7 dưới đây là **tiêu chí ra cấp thực thi của Khối 2 và 3**, diễn giải chi tiết bộ C1–C7 của PRD §11.3 chứ không trùng nguyên văn với nó:
 
-- [ ] **C1 (Zero-Secret Devices):** 100% thiết bị biên kết nối qua Gateway không lưu trữ API key của bất kỳ nhà cung cấp mô hình nào.
+- [ ] **C1 (Provider Layer Self-Host):** Lớp trừu tượng provider chạy tự vận hành trên hạ tầng của người dùng; thiết bị biên không nhúng cứng API key của từng nhà cung cấp, và khóa xoay được mà không nạp lại firmware.
 - [ ] **C2 (Zero-Brick Fleet OTA):** Triển khai thử nghiệm 1.000 thiết bị ảo/thật qua canary; tỷ lệ brick là 0%.
 - [ ] **C3 (Incident MTTR < 10m):** Vết ghi sự cố từ thiết bị được tải về dashboard trung tâm trong dưới 5 phút; kỹ sư tái hiện lỗi bằng `replay` trong dưới 5 phút tiếp theo.
 - [ ] **C4 (Registry Verified Gates):** Ít nhất 10 gate mã nguồn mở được publish lên Gate Registry có kiểm định tự động.
-- [ ] **C5 (Usage Attribution):** Hệ đo lường OpenMeter đối soát chính xác 100% số lượt gọi inference và phán quyết gate tới cấp thiết bị.
-- [ ] **C6 (Failover Resiliency):** Giả lập ngắt kết nối nhà cung cấp LLM chính; Gateway tự động chuyển sang nhà cung cấp dự phòng trong dưới 2 giây.
+- [ ] **C5 (Usage Attribution):** Hệ đo lường OpenMeter đối soát chính xác 100% số lượt gọi mô hình và phán quyết gate tới cấp thiết bị *(phục vụ vận hành và đối soát nội bộ — NeuroEdge không thu phí trên lượt gọi mô hình)*.
+- [ ] **C6 (Failover Resiliency):** Giả lập ngắt kết nối nhà cung cấp LLM chính; lớp trừu tượng provider tự động chuyển sang nhà cung cấp dự phòng trong dưới 2 giây.
 - [ ] **C7 (Fleet Remote Config):** Đổi chính sách gate từ dashboard điều khiển từ xa có hiệu lực trên toàn đội dưới 30 giây mà không cần khởi động lại firmware.
 
 ---
@@ -780,7 +802,7 @@ Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho
 
 Mười một quyết định: bảy từ PRD §15, bốn phát sinh từ chiến lược tái sử dụng mã nguồn mở (§3). Sáu quyết định đã chốt; năm còn lại xếp theo hạn bắt buộc.
 
-### 10.1 Sáu quyết định đã chốt
+### 10.1 Bảy quyết định đã chốt
 
 | Mã | Quyết định | Giá trị chốt | Cơ sở |
 |:---:|:---|:---|:---|
@@ -790,6 +812,7 @@ Mười một quyết định: bảy từ PRD §15, bốn phát sinh từ chiế
 | **Q-4** | Nhà cung cấp mô hình ở v1.0 | **System 1:** Jev qua đám mây + bộ trích xuất intent cục bộ trên Sherpa-ONNX làm fallback<br>**System 2:** Claude Sonnet 5 và GPT-4o-mini qua LiteLLM | Bảo đảm nguyên tắc fallback cục bộ khi mất mạng thực sự khả thi, không chỉ là tuyên bố kiến trúc |
 | **Q-8** | Ngôn ngữ lõi firmware | **C/C++ trên ESP-IDF** cho `esp32s3`; Python cho `sim` và `linux` | Thừa hưởng trọn vẹn driver XiaoZhi và hệ sinh thái ESP-IDF. Kéo theo nghĩa vụ đặc tả chuẩn tắc và bộ vector tuân thủ tại §3.8 |
 | **Q-9** | Lượng giá CEL trên vi điều khiển | **Phương án A — biên dịch gate lúc build** | `neuroedge build` dịch CEL thành cây quyết định JSON phẳng; firmware duyệt cây bằng một hàm C khoảng 100 dòng. Phán quyết đồng nhất trên cả ba target, không tốn RAM |
+| **Q-12** | Chuẩn kết nối nhà cung cấp AI | **OpenAI API là chuẩn mặc định**; provider chưa tương thích đi qua **adapter do người dùng tự viết**. Áp dụng chung cho LLM, ASR và TTS | Chốt theo CR-1.0 (PRD §15, FR-MDL-07→09). Tận dụng hệ sinh thái đã quen chuẩn OpenAI thay vì phát minh hợp đồng riêng; adapter giữ đường thoát khi chuẩn bên ngoài thay đổi |
 
 **Hệ quả trực tiếp lên Sprint 1:** Q-1, Q-2 và Q-3 đã chốt nghĩa là đội có thể đặt bo mạch, dựng kho mã và bắt đầu spike ngay Tuần 0 mà không chờ quyết định nào.
 
@@ -799,13 +822,13 @@ Mười một quyết định: bảy từ PRD §15, bốn phát sinh từ chiế
 
 | Tuần | Mã | Quyết định | Vì sao hạn đó | Người quyết | Trạng thái |
 |:---:|:---:|:---|:---|:---:|:---:|
-| **2** | **Q-11** | Phê duyệt ngoại lệ giấy phép: Hawkbit EPL-2.0, EMQX BSL, LiteLLM enterprise | Chặn việc thiết kế phụ thuộc cho Khối 2. Phải xong trước khi port bất kỳ dòng nào (§3.3) | Kỹ thuật trưởng | ⏳ Đang mở |
+| **2** | **Q-11** | Phê duyệt ngoại lệ giấy phép: Hawkbit EPL-2.0, EMQX BSL, LiteLLM enterprise | Chặn việc thiết kế phụ thuộc cho Khối 2. Phải xong trước khi port bất kỳ dòng nào (§3.3). **CR-1.0 làm phần LiteLLM gấp hơn:** nó chuyển từ dịch vụ máy chủ sang thư viện **phân phối kèm sản phẩm** trong lõi MIT, nên nghĩa vụ giấy phép phải xét lại ở phạm vi phân phối, và cần xong trước Sprint 2 chứ không phải trước Khối 2 | Kỹ thuật trưởng | ⏳ Đang mở |
 | **5** | Q-7 | Từ khóa kích hoạt mặc định và ngôn ngữ hỗ trợ | Cần trước khi chọn mô hình wake-word cho Sprint 5 | Sản phẩm | ⏳ Đang mở |
-| **Tháng 3** | **Q-10** | Mức độ phụ thuộc vào LiteLLM: proxy container nguyên bản hay tích hợp sâu | Ảnh hưởng khả năng thay thế và bề mặt bảo trì của Gateway | Kỹ thuật nền tảng | ⏳ Đang mở |
+| **2** | **Q-10** | Mức độ phụ thuộc vào LiteLLM: dùng như thư viện định tuyến hay tích hợp sâu | **Hạn đẩy sớm từ Tháng 3 lên Tuần 2 theo CR-1.0:** lớp provider nay thuộc lõi OSS và làm ngay ở Sprint 2 (TSK-S2-11), không còn chờ Khối 2 | Kỹ thuật nền tảng | ⏳ Đang mở |
 | **Tháng 3** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng | ⏳ Đang mở |
 | **Tháng 3** | Q-6 | Chính sách lưu trữ vết ghi: thời hạn và hạn mức | Ảnh hưởng chi phí vận hành và cam kết SLA | Sản phẩm | ⏳ Đang mở |
 
-**Q-11 là quyết định gấp nhất trong nhóm còn mở.** Ba thành phần của Khối 2 đều nằm ngoài danh sách giấy phép cho phép, và việc thiết kế phụ thuộc không nên bắt đầu trước khi có phê duyệt bằng văn bản. Q-11 cũng là **Tiêu chí ra số 6 của Sprint 1**, nên nó đang chặn việc đóng Sprint 1 chứ không chỉ chặn Khối 2.
+**Q-11 là quyết định gấp nhất trong nhóm còn mở.** Ba thành phần của Khối 2 đều nằm ngoài danh sách giấy phép cho phép, và việc thiết kế phụ thuộc không nên bắt đầu trước khi có phê duyệt bằng văn bản. Q-11 cũng là **Tiêu chí ra số 6 của Sprint 1**, nên nó đang chặn việc đóng Sprint 1 chứ không chỉ chặn Khối 2. Sau CR-1.0, phần LiteLLM của Q-11 còn chặn thêm **TSK-S2-11 ở Sprint 2**: không được viết một dòng nào của lớp provider trước khi ranh giới giấy phép ở phạm vi phân phối được phê duyệt.
 
 #### Phát hiện giấy phép trong Sprint 1 (đã xử lý, ghi lại để không tái diễn)
 
@@ -894,11 +917,11 @@ Một hạng mục chỉ được coi là hoàn thành khi đủ **cả năm** �
 | Lõi chạy trên `sim`  | Tuần 4      | Gate Engine, fail-closed, `@action`     | Tiêu chí ra Sprint 2                   |
 | **Kết thúc Khối 1a** | **Tuần 6**  | Action CI, `linux`, CLI, TTFV           | A1 nội bộ, A2 một phần, A3, A4, A5, A7 |
 | Tương đương 3 target | Tuần 8      | `esp32s3` chạy gate và GPIO             | **A2 đầy đủ** trên miền phán quyết     |
-| Thoại trên MCU       | Tuần 10     | Voice runtime tối ưu bộ nhớ             | Tiêu chí ra Sprint 5                   |
+| Thoại trên MCU       | Tuần 10     | Thu/phát + gate trên MCU, STT/TTS cloud | Tiêu chí ra Sprint 5                   |
 | **Phát hành v1.0**   | **Tuần 12** | OTA, bảo mật thiết bị, tài liệu         | **Toàn bộ A1–A9**                      |
 | Kết thúc Beta        | Tuần 16     | 50–100 lập trình viên ngoài             | B1–B5                                  |
 | **Điểm rẽ**          | **Tuần 16** | Chọn nhánh A, B hoặc C                  | §7                                     |
-| Gateway hoàn chỉnh   | Tháng 6     | Định tuyến, failover, vết ghi đồng nhất | C7                                     |
+| Lớp provider OSS xong| Tháng 6     | Định tuyến, failover, vết ghi đồng nhất | C6                                     |
 | **Phát hành v1.1**   | **Tháng 8** | Fleet OS, OTA canary, Registry          | **Toàn bộ C1–C7**                      |
 
 
@@ -940,7 +963,8 @@ neuroedge/
 │   │   ├── cli/                # Typer · Rich · Copier
 │   │   ├── hal/                # 5 nguyên thủy và bộ đối chiếu năng lực lúc build
 │   │   ├── engine/             # Action Contract Engine · trình biên dịch CEL sang cây quyết định
-│   │   ├── perception/         # Voice pipeline · VAD · barge-in
+│   │   ├── models/             # SystemOne/SystemTwo · lớp provider (OpenAI-compatible + adapter)
+│   │   ├── perception/         # Voice pipeline · VAD · barge-in · provider ASR/TTS
 │   │   ├── testing/            # Action CI: pytest-neuroedge · replay · assert
 │   │   └── sim/                # Máy chủ mô phỏng web · Wokwi Elements
 │   └── tests/
@@ -968,6 +992,7 @@ neuroedge/
 | 1 | `schemas/` là nguồn sự thật duy nhất; mã Python và firmware C đều sinh hoặc kiểm tra theo nó, không định nghĩa lại | Chống trôi lược đồ giữa hai ngôn ngữ |
 | 2 | `fixtures/traces/` dùng chung cho cả ba target, không có bản riêng theo ngôn ngữ | Là cơ sở của `neuroedge verify` |
 | 3 | `targets/` chỉ chứa hiện thực HAL, không chứa logic nghiệp vụ hay chính sách an toàn | Giữ ranh giới tài sản lõi tại §3.1 |
+| 4 | Lớp kết nối nhà cung cấp nằm trong `python/neuroedge/models/providers/`, **không** nằm trong `services/` | Nó thuộc lõi mã nguồn mở phân phối kèm sản phẩm, không phải dịch vụ do NeuroEdge vận hành (CR-1.0) |
 
 ---
 

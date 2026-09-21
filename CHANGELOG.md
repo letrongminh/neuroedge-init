@@ -20,6 +20,82 @@ Toàn bộ thay đổi đáng kể của dự án được ghi tại đây, theo
 
 ## 1. Nhật ký phiên bản
 
+### [0.2.0] — 2026-09-21 — CR-1.0: Chuyển định hướng cloud-first
+
+Thay đổi **chỉ ở tầng tài liệu**, không đụng một dòng mã nguồn nào và không đụng
+ba lược đồ đã đóng băng trong `schemas/`. Nguồn thay đổi là yêu cầu tinh chỉnh
+tài liệu **CR-1.0 — chuyển định hướng cloud-first** (hồ sơ lưu ngoài kho mã), đã
+áp dụng vào proposal v5.3 · PRD v1.1 · roadmap v1.1.
+
+#### Đã đổi — Định hướng kiến trúc
+
+- **Cloud-first, provider-pluggable.** Toàn bộ tầng AI (LLM, ASR, TTS) trở thành
+  nhà cung cấp thay thế được, kết nối qua **chuẩn OpenAI API** hoặc **adapter do
+  người dùng tự viết**. Phần nặng về xử lý ngôn ngữ chạy trên cloud hoặc host;
+  `esp32s3` chỉ còn thu/phát âm thanh, AEC/VAD, máy trạng thái hội thoại và thẩm
+  định gate.
+- Ghi nhận bằng cách **mở rộng nguyên tắc P-4** (proposal §0.4 nguyên tắc 4 ·
+  PRD §1.5) thay vì thêm nguyên tắc thứ sáu — số nguyên tắc bất biến vẫn là năm.
+- **Fail-closed không đổi.** Gate và máy trạng thái chạy hoàn toàn trên thiết bị;
+  `NFR-RES-04` (100% tính năng an toàn hoạt động ngoại tuyến) giữ nguyên tuyệt đối.
+
+#### Đã đổi — Mô hình thương mại
+
+- **Bỏ hoàn toàn doanh thu inference.** Mô hình cost-plus 5–10% trên token bị xóa
+  khỏi proposal §6.3. **Fleet OS là dòng doanh thu duy nhất.**
+- **Inference Gateway → Lớp trừu tượng nhà cung cấp (Provider Abstraction Layer).**
+  Chuyển từ dịch vụ thương mại sang **lõi mã nguồn mở MIT tự vận hành**
+  (proposal §6.1, §6.4). Người dùng tự chạy, tự giữ khóa, tự trả phí cho nhà
+  cung cấp. Đánh số mục §6.1–§6.4 giữ nguyên nên mọi tham chiếu chéo còn đúng.
+- Nhóm **FR-GW-01→07** của PRD chuyển từ mốc v1.1 (thương mại) sang **lõi OSS
+  v1.0**; FR-GW-05 hạ từ P0 xuống P1.
+
+#### Đã thêm — Yêu cầu mới trong PRD
+
+| Mã | Nội dung | Ưu tiên |
+|:---|:---|:---:|
+| `FR-MDL-07` | Provider pluggable cho LLM, ASR và TTS | P0 |
+| `FR-MDL-08` | Adapter kết nối do người dùng tự viết | P0 |
+| `FR-MDL-09` | ASR/TTS thay thế được qua cấu hình | P0 |
+| `FR-PER-07` | Cloud-first voice — MCU chỉ stream âm thanh | P0 |
+| `FR-REG-08` | Kho chia sẻ adapter kết nối provider | P1 |
+| `NFR-SEC-08` | TLS 1.3 cho dữ liệu gửi tới provider cloud | P0 |
+| `NFR-PERF-07` | Độ trễ thoại với provider request-response: P95 < 1.500 ms | P1 |
+| `R-6` | Rủi ro phụ thuộc provider cloud khi mất kết nối | — |
+| `Q-12` | Chuẩn kết nối mặc định là OpenAI API *(ĐÃ CHỐT)* | — |
+
+#### Đã đổi — Phạm vi thực thi
+
+- **Sprint 2** nhận thêm `TSK-S2-11` (lớp trừu tượng provider) và **Sprint 3**
+  nhận `TSK-S3-13` (ASR/TTS qua provider cloud) — lớp provider dựng ở **Khối 1a**
+  chứ không chờ Khối 2.
+- **Sprint 5 giảm phạm vi:** không hiện thực STT/TTS trên thiết bị; thêm
+  `TSK-S5-06` (client streaming lên provider). Rủi ro **R-1 hạ từ Cao xuống
+  Trung bình**. Bốn ràng buộc RB-1→RB-4 cho Sprint 4 **vẫn giữ nguyên hiệu lực**
+  vì đường dẫn âm thanh thu/phát không đổi.
+- **Khối 2** chỉ còn Fleet OS. `TSK-K2-01→03` đổi từ dịch vụ Gateway sang hoàn
+  thiện lớp provider OSS, giữ nguyên mã task để không vỡ truy vết.
+
+#### Cần chú ý — Hệ quả giấy phép
+
+**LiteLLM chuyển từ H.2 (dịch vụ máy chủ, không phân phối) sang H.1 (phân phối
+kèm sản phẩm)** trong proposal Phụ lục H. Nghĩa vụ giấy phép đổi theo phạm vi
+phân phối, nên **Q-11 phải được xét lại và chốt trước khi bắt đầu `TSK-S2-11`**,
+không phải trước Khối 2 như trước đây. Hạn của **Q-10** cũng đẩy từ Tháng 3 lên
+Tuần 2 vì cùng lý do.
+
+#### Đã sửa — Lỗi tồn đọng phát hiện khi rà soát
+
+- PRD: `NFR-RES-02/03` vẫn ghi *"Cần chốt — xem §15, Q-3"* trong khi Q-3 đã chốt
+  — nay điền số liệu thật.
+- PRD: mục lục ghi *"15. Quyết định cần chốt"* lệch với tiêu đề thật
+  *"15. Quyết định kỹ thuật đã chốt"*; typo *"Quyước"* ở Phụ lục C; Q-3 dùng cú
+  pháp LaTeX lẫn trong Markdown.
+- Proposal: rủi ro #4 tham chiếu §8.6 trong khi cột mốc G1–G4 nằm ở §8.7; đoạn
+  *"Nền tảng hiện thực"* của §6.1 thiếu dòng trống nên bị nuốt vào bảng.
+- Proposal: `Phụ lục D.2` và bảng Voice Pipeline `§3.4` lệch nhau về danh mục
+  STT/TTS — nay đồng bộ.
+
 ### [0.1.0] — 2026-09-21 — Sprint 1: Đóng băng lược đồ (Khối 1a)
 
 Sprint đầu tiên đóng băng ba lược đồ lõi và hiện thực hóa ngữ nghĩa kế thừa
@@ -494,6 +570,8 @@ Ghi lại ở đây để Sprint 4 không phải suy luận lại. Đầy đủ 
 | RB-2 | Đệm âm thanh cấp phát tĩnh trong PSRAM, đặt tên và **đo được** | Q-3 dành ≥ 2 MB PSRAM; không đo được thì không đối chiếu được |
 | RB-3 | `digital.out` hủy được lệnh đang chờ trong ≤ 1 khung âm thanh | Hợp đồng thu hồi lệnh vật lý — xem nợ thiết kế #1 |
 | RB-4 | Bảng năng lực là `const` trong flash | Tiết kiệm SRAM, và loại bỏ đường tắt vòng qua gate (A3) |
+
+*Cập nhật CR-1.0:* cả bốn ràng buộc **vẫn giữ nguyên hiệu lực** sau khi chuyển sang cloud-first. Đường dẫn âm thanh thu/phát trên thiết bị không đổi; chỉ phần STT/TTS rời khỏi vi điều khiển, nên áp lực bộ nhớ giảm chứ ràng buộc không mất.
 
 ### 3.9 Thêm một fixture phản chứng
 
