@@ -82,7 +82,7 @@ Thách thức cốt lõi nằm ở tầng sâu hơn: **chưa có công cụ nào
 - Khi một chatbot phần mềm phản hồi sai, người dùng có thể yêu cầu tạo lại câu trả lời.
 - Nhưng khi một Agent vật lý ra quyết định sai, **động cơ servo đã quay, rơ-le đã đóng, chốt cửa đã mở.** Các hành vi tác động vào thế giới vật lý là bất khả nghịch và tiềm ẩn rủi ro tai nạn, hư hại tài sản.
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │               NGHỊCH LÝ KIỂM THỬ TRONG PHÁT TRIỂN PHYSICAL AI           │
 ├────────────────────────────────────────────────────────────────────────┤
@@ -165,7 +165,7 @@ Trong các bài toán trên, NeuroEdge tập trung tạo khác biệt phòng th�
 
 Bằng cách kết hợp bốn trụ cột kỹ thuật chuẩn mực, NeuroEdge định hình một chuẩn phát triển mới cho Physical AI:
 
-```
+```text
 Schema cổng an toàn (gate) có phiên bản ──┐
 Ghi lại phiên chạy thực tế trên phần cứng ──┤
 Tái hiện (replay) chuẩn xác trong sim   ──┼─►  ACTION CI
@@ -204,7 +204,7 @@ Các hãng sản xuất bán dẫn (silicon vendors) thường phát hành SDK m
 
 **Hướng đi khác biệt hóa của NeuroEdge: Tập trung vào tính kiểm thử và an toàn của hành động vật lý, hoạt động độc lập và xuyên suốt trên mọi nền tảng phần cứng.**
 
-SDK chính hãng khó có thể theo đuổi hướng đi này, vì điều đó đòi hỏi họ phải đối xử với chip của các đối thủ khác hoàn toàn bình đẳng. 
+SDK chính hãng khó có thể theo đuổi hướng đi này, vì điều đó đòi hỏi họ phải đối xử với chip của các đối thủ khác hoàn toàn bình đẳng.
 
 Đây là lý do môi trường `linux` được đưa vào như một mục tiêu hỗ trợ ngang hàng (first-class citizen) ngay từ Khối 1: **Môi trường thực thi thứ hai chính là bằng chứng xác thực rằng tầng trừu tượng phần cứng của NeuroEdge là độc lập và trung lập**, giúp sản phẩm không bị đóng khung thành một công cụ phụ thuộc vào một dòng chip cụ thể.
 
@@ -254,7 +254,7 @@ Lập trình viên không bắt đầu từ trang trắng. NeuroEdge cung cấp 
 
 ### 1.7 Vòng lặp giá trị và hiệu ứng mạng từ chia sẻ cấu hình an toàn
 
-```
+```text
 Chạy thử agent trong môi trường mô phỏng sau 10 phút, không cần mua phần cứng
                               │
                               ▼
@@ -315,7 +315,7 @@ Bộ nguyên tắc rõ ràng giúp định hướng phát triển sản phẩm, 
 | **R3** | **Dựa trên nhu cầu thực tế đã xác thực** | Đã có phản hồi và yêu cầu từ người dùng thực tế chưa, hay chỉ là phán đoán chủ quan về tương lai? |
 | **R4** | **Kiểm soát an toàn pháp lý và tuân thủ** | Tính năng có làm phát sinh các giấy phép tài chính phức tạp, lưu giữ tiền gửi, KYC hoặc trách nhiệm pháp lý vượt khả năng kiểm soát không? |
 
-**Thứ tự áp dụng:** 
+**Thứ tự áp dụng:**
 - Vi phạm R4 → **Loại bỏ hoàn toàn**.
 - Thỏa mãn R1 hoặc R2 → **Ưu tiên thực hiện ngay**.
 - Chưa rõ R3 → **Tạm hoãn để kiểm chứng thêm**.
@@ -332,14 +332,11 @@ Bộ nguyên tắc rõ ràng giúp định hướng phát triển sản phẩm, 
 
 # Phần II — Kiến trúc & Thiết kế sản phẩm
 
-
 ## 3. Kiến trúc hệ thống 5 lớp
 
 ### 3.1 Sơ đồ khối tổng thể và trục Action CI
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │  L4: AGENT LAYER (Tầng ứng dụng Agent)                                 │
 │      Máy trạng thái hội thoại · Bộ nhớ ngữ cảnh · Điều phối công cụ MCP │
@@ -860,7 +857,7 @@ Hai lệnh `record` và `replay` giúp việc tái hiện và xử lý lỗi hi�
 
 ### 4.9 Báo cáo lỗi đối chiếu năng lực lúc biên dịch
 
-```
+```text
 $ neuroedge build --target esp32s3 --board villa-panel
 
 ✗ CAPABILITY MISMATCH — Dừng quá trình build, từ chối nạp firmware
@@ -1014,7 +1011,7 @@ Mọi vướng mắc kỹ thuật phát sinh trong quá trình vận hành AURA 
 
 Lộ trình được cấu trúc thành các khối công việc kỹ thuật, giai đoạn đệm cộng đồng và các cột mốc xác thực thị trường định lượng. **Quy tắc kỷ luật thực thi: Mọi sự chuyển giao giữa các khối đều là milestone-gated (phụ thuộc vào kết quả kiểm chứng thực tế), tuyệt đối không chạy theo lịch cố định trên giấy.**
 
-```
+```text
 [ KHỐI 1a: SIM + LINUX + ACTION CI ]  (Tuần 0–6)
               │
               ▼
@@ -1234,7 +1231,7 @@ Bốn nhóm rủi ro chiến lược và giải pháp ứng phó:
 ### 12.1 Khối 1 — Lõi mã nguồn mở (Mốc 2.5 tháng)
 
 | Chỉ số hiệu suất | Ngưỡng cam kết | Ý nghĩa thực tiễn |
-|:---|:---:|:---|
+|:---|:---|:---|
 | **Thời gian nhận giá trị (TTFV)** | **< 10 phút** (đo lường trên 10 lập trình viên độc lập) | Đánh giá độ tinh gọn và trực quan của trải nghiệm cài đặt và chạy thử đầu tiên. |
 | **Tính nhất quán đa nền tảng** | **100% vượt qua** bài kiểm tra `neuroedge verify` | Bảo đảm tính nhất quán logic tuyệt đối trên cả 3 môi trường (`sim`, `linux`, `esp32s3`). |
 | **Tỷ lệ áp dụng Action CI** | **≥ 50%** dự án khởi tạo giữ lại và mở rộng kịch bản test gate | Đánh giá mức độ hình thành thói quen kiểm thử an toàn trong cộng đồng lập trình viên. |
@@ -1245,7 +1242,7 @@ Bốn nhóm rủi ro chiến lược và giải pháp ứng phó:
 ### 12.2 Khối 2 và 3 — Tầng dịch vụ thương mại và Hạ tầng nền tảng (Mốc 6 tháng)
 
 | Chỉ số hiệu suất | Ngưỡng cam kết | Ý nghĩa thực tiễn |
-|:---|:---:|:---|
+|:---|:---|:---|
 | **Độ tin cậy cập nhật OTA** | **1.000 thiết bị / 0 sự cố brick máy** | Thước đo an toàn sống còn để khách hàng doanh nghiệp yên tâm giao phó đội thiết bị. |
 | **Độ trễ phản hồi thoại (P95 SLA)** | **< 850 ms** thời gian phản hồi qua kết nối Wi-Fi | Bảo đảm trải nghiệm giao tiếp giọng nói tự nhiên, không gián đoạn. |
 | **Độ trễ thẩm định Gate (P95 SLA)** | **< 120 ms** khi xử lý cục bộ · **< 450 ms** qua Gateway đám mây | Bảo đảm quy trình kiểm soát an toàn không gây trễ tương tác của thiết bị. |
@@ -1256,7 +1253,7 @@ Bốn nhóm rủi ro chiến lược và giải pháp ứng phó:
 ### 12.3 Khối 4 — Triển khai ứng dụng thực địa AURA (Mốc 12 tháng)
 
 | Chỉ số hiệu suất | Ngưỡng cam kết | Ý nghĩa thực tiễn |
-|:---|:---:|:---|
+|:---|:---|:---|
 | **Tính toàn vẹn của mã nguồn** | 100% ứng dụng AURA vận hành trên API chuẩn công khai, không có API đặc quyền | Kiểm chứng tính nghiêm túc của kỷ luật kiến trúc (§7.3). |
 | **Mức độ đóng góp của hệ sinh thái** | Số lượng gate và agent do bên thứ ba phát hành tăng trưởng đều đặn hàng tháng | Khẳng định sức sống thực tế của kho lưu trữ Registry. |
 | **Tiến độ đạt các cột mốc xác thực** | Báo cáo minh bạch **từng chỉ số G1–G4 riêng biệt**, không dùng giá trị trung bình | Chuẩn bị đầy đủ cơ sở dữ liệu thực chứng cho việc kích hoạt Khối 5. |
@@ -1425,7 +1422,7 @@ Quá trình đối chiếu Golden trả lời chính xác câu hỏi: **Với c�
 Tham chiếu từ các nguyên lý phát triển sản phẩm nền tảng: Mọi giải pháp chỉ có giá trị thực sự khi giúp giải quyết bài toán cốt lõi và mang lại lợi ích đo lường được cho khách hàng.
 
 | Nguyên lý định hướng | Hiện thực hóa tại NeuroEdge | Lợi ích thiết thực mang lại cho khách hàng |
-|:---|:---:|:---|:---|
+|:---|:---|:---|
 | **Làm chủ điểm tiếp xúc trực tiếp** | Hosted Gateway đứng giữa ứng dụng và các nhà cung cấp mô hình AI. | Linh hoạt chuyển đổi mô hình từ xa mà không cần nạp lại firmware. |
 | **Quy tụ chi phí vận hành tập trung** | Tập trung chi phí suy luận và quản lý đội thiết bị qua một kênh đối soát. | Nhận một hóa đơn hợp nhất thay vì quản lý nhiều tài khoản riêng lẻ. |
 | **Hiện diện tại điểm khởi tạo dữ liệu** | Chuẩn hóa lược đồ vết ghi JSON ngay từ môi trường mô phỏng. | Sở hữu công cụ ghi nhận và tái hiện chính xác hành vi vật lý của thiết bị. |
