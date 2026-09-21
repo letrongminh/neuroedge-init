@@ -1,0 +1,31 @@
+# Level 1 of 3 — industry baseline access policy for hospitality deployments.
+#
+# This is the gate a property operator inherits rather than writes. It encodes
+# the two conditions no guest-facing access decision may skip, and nothing
+# property-specific. Derived gates tighten it; by Appendix B.5 principle 2 they
+# can never widen it.
+schema:  neuroedge.gate/v1
+name:    base-access
+version: 1.0.0
+
+evaluate:
+  guest_authenticated:
+    type: bool
+    instructions: "Khách đã hoàn tất xác thực danh tính hợp lệ trong phiên hiện tại"
+  risk_level:
+    type: level
+    levels: [low, medium, high]
+    instructions: "Mức độ rủi ro bất thường tại thời điểm phát sinh yêu cầu"
+
+allow_when:
+  guest_authenticated: true
+  risk_level:          { lte: medium }
+
+on_block:
+  action:  escalate
+  to:      human_receptionist
+  message: "Yêu cầu truy cập cần được nhân viên lễ tân xác nhận trực tiếp."
+
+budget:
+  p95_latency_ms: 200
+  fail:           closed      # Mất kết nối hoặc quá thời gian chờ → CHẶN HÀNH ĐỘNG

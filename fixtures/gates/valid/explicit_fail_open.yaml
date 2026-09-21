@@ -1,0 +1,10 @@
+# Principle 4, the other direction — `fail: open` declared explicitly at this
+# level does take effect. Appendix B.4 permits it only for actions that can be
+# undone safely, and it must be written out at every level that wants it.
+schema:  neuroedge.gate/v1
+name:    explicit-fail-open
+version: 1.0.0
+extends: neuroedge://gates/strict-base@1.0.0
+budget:
+  p95_latency_ms: 100
+  fail:           open

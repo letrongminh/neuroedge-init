@@ -1,196 +1,541 @@
 """
-NeuroEdge Command Line Interface.
-Built with Typer and Rich.
+NeuroEdge command line interface (Typer + Rich).
+
+Sprint 1 implements the commands that operate on the frozen artifacts — gate
+resolution, gate publication, trace validation, board inspection. Commands whose
+engines land in later sprints say so and exit non-zero rather than printing a
+result they did not compute: a CLI that prints "PASS" without running anything
+is worse than one that is honest about being unfinished, because the output ends
+up quoted as evidence.
 """
-from pathlib import Path
+
+from __future__ import annotations
+
 import json
+from pathlib import Path
+
 import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+
+from ..engine import (
+    GateRegistry,
+    ResolvedGate,
+    gate_canonical_json,
+    gate_digest,
+    resolve_gate_file,
+    resolve_gate_uri,
+)
+from ..errors import NeuroEdgeError
+from ..hal.board import available_boards, load_board_by_id
+from ..paths import gates_dir, repo_root
+from ..trace import load_trace
 
 app = typer.Typer(
     name="neuroedge",
     help="NeuroEdge — Typed Action Contract Platform for Physical AI",
     add_completion=False,
 )
-gate_app = typer.Typer(name="gate", help="Manage safety gates and policies")
+gate_app = typer.Typer(name="gate", help="Resolve, lint and publish safety gates")
 trace_app = typer.Typer(name="trace", help="Inspect and validate execution traces")
+board_app = typer.Typer(name="board", help="Inspect board capability declarations")
 
 app.add_typer(gate_app, name="gate")
 app.add_typer(trace_app, name="trace")
+app.add_typer(board_app, name="board")
 
 console = Console()
+err_console = Console(stderr=True)
+
+# Sprint in which each unimplemented command gets its engine, from the roadmap.
+PENDING = {
+    "new": ("TSK-S3-07", "Sprint 3"),
+    "run": ("TSK-S2-01", "Sprint 2"),
+    "build": ("TSK-S2-02, TSK-S2-06", "Sprint 2"),
+    "test": ("TSK-S3-03", "Sprint 3"),
+    "record": ("TSK-S3-01", "Sprint 3"),
+}
+
+
+def _fail(error: NeuroEdgeError) -> None:
+    """Render a three-part diagnostic to stderr and exit non-zero."""
+    err_console.print(f"[bold red]✗ {error.code}[/bold red] [cyan]{error.where}[/cyan]")
+    err_console.print(f"  [bold]why:[/bold] {error.why}")
+    if isinstance(getattr(error, "principle", None), int):
+        err_console.print(f"  [bold]rule:[/bold] Proposal Appendix B.5 principle {error.principle}")
+    err_console.print(f"  [bold]fix:[/bold] {error.how}")
+    raise typer.Exit(code=1)
+
+
+def _not_yet(command: str) -> None:
+    task, sprint = PENDING[command]
+    err_console.print(
+        Panel(
+            f"`neuroedge {command}` is not implemented yet.\n\n"
+            f"Its engine is scheduled as [bold]{task}[/bold] in [bold]{sprint}[/bold].\n"
+            f"See neuroedge-roadmap.md for the current sprint status.",
+            title=f"[yellow]Not implemented: {command}[/yellow]",
+            border_style="yellow",
+        )
+    )
+    raise typer.Exit(code=2)
+
+
+def _load_gate(target: str, registry_root: Path | None = None) -> ResolvedGate:
+    """Resolve a gate given either a `neuroedge://` URI or a filesystem path."""
+    registry = GateRegistry(registry_root) if registry_root is not None else None
+    if target.startswith("neuroedge://"):
+        return resolve_gate_uri(target, registry=registry)
+    return resolve_gate_file(Path(target), registry=registry)
+
+
+REGISTRY_OPTION = typer.Option(
+    None,
+    "--registry",
+    "-r",
+    help="Directory backing neuroedge:// lookups (default: gates/)",
+)
+
+
+# --------------------------------------------------------------------------
+# gate
+# --------------------------------------------------------------------------
+
+
+@gate_app.command(name="resolve")
+def gate_resolve(
+    target: str = typer.Argument(..., help="Gate YAML path or neuroedge:// URI"),
+    as_json: bool = typer.Option(False, "--json", help="Emit the resolved artifact as JSON"),
+    registry: Path = REGISTRY_OPTION,
+):
+    """
+    Resolve a gate's `extends` chain and report the effective policy.
+
+    Enforces the five inheritance safety principles (Proposal Appendix B.5).
+    """
+    try:
+        gate = _load_gate(target, registry)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+
+    if as_json:
+        console.print_json(json.dumps(gate.to_artifact()))
+        return
+
+    console.print(
+        Panel(
+            f"[bold]{gate.name}@{gate.version}[/bold]\n"
+            f"inheritance: {' → '.join(gate.chain)} "
+            f"([cyan]{gate.inheritance_levels}[/cyan] level(s))\n"
+            f"digest: [dim]{gate_digest(gate)}[/dim]",
+            title="Resolved gate",
+            border_style="green",
+        )
+    )
+
+    table = Table(title="Effective allow_when")
+    table.add_column("Criterion", style="cyan")
+    table.add_column("Type", style="magenta")
+    table.add_column("Authored clause", style="yellow")
+    table.add_column("Admits", style="green")
+    for criterion in sorted(gate.constraints):
+        constraint = gate.constraints[criterion]
+        table.add_row(
+            criterion,
+            constraint.kind,
+            json.dumps(constraint.raw, ensure_ascii=False),
+            constraint.describe(),
+        )
+    console.print(table)
+
+    fail_policy = gate.budget.get("fail", "closed")
+    style = "green" if fail_policy == "closed" else "bold red"
+    console.print(
+        f"on_block: [bold]{gate.on_block.get('action')}[/bold]"
+        + (f" → {gate.on_block['to']}" if gate.on_block.get("to") else "")
+    )
+    console.print(
+        f"budget:   p95 {gate.budget.get('p95_latency_ms')} ms · "
+        f"fail [{style}]{fail_policy}[/{style}]"
+    )
+
+
+@gate_app.command(name="lint")
+def gate_lint(
+    directory: Path = typer.Argument(None, help="Directory of gate YAML files (default: gates/)"),
+    registry: Path = REGISTRY_OPTION,
+):
+    """
+    Resolve every gate in a directory and report any that violate the schema
+    or the inheritance safety principles.
+    """
+    root = directory or gates_dir()
+    if not root.is_dir():
+        err_console.print(f"[red]✗ no such directory: {root}[/red]")
+        raise typer.Exit(code=1)
+
+    paths = sorted(root.rglob("*.yaml"))
+    if not paths:
+        console.print(f"[yellow]No gate files found under {root}[/yellow]")
+        raise typer.Exit(code=1)
+
+    # Bases are addressed by neuroedge:// URI. An explicit --registry wins;
+    # otherwise a fixture tree keeps its bases in a sibling `registry/`
+    # directory, and the real corpus resolves against gates/.
+    if registry is not None:
+        gate_registry = GateRegistry(registry)
+    else:
+        for candidate in (root / "registry", root.parent / "registry"):
+            if candidate.is_dir():
+                gate_registry = GateRegistry(candidate)
+                break
+        else:
+            gate_registry = GateRegistry()
+
+    failures = 0
+    table = Table(title=f"Gate lint — {root}")
+    table.add_column("Gate", style="cyan")
+    table.add_column("Levels", justify="right")
+    table.add_column("Fail policy")
+    table.add_column("Status", style="bold")
+
+    for path in paths:
+        try:
+            gate = resolve_gate_file(path, registry=gate_registry)
+        except NeuroEdgeError as error:
+            failures += 1
+            table.add_row(path.name, "—", "—", "[red]FAIL[/red]")
+            err_console.print(f"\n[bold red]✗ {error.code}[/bold red] [cyan]{error.where}[/cyan]")
+            err_console.print(f"  why: {error.why}")
+            err_console.print(f"  fix: {error.how}")
+            continue
+        policy = gate.budget.get("fail", "closed")
+        table.add_row(
+            f"{gate.name}@{gate.version}",
+            str(gate.inheritance_levels),
+            policy if policy == "closed" else f"[bold red]{policy}[/bold red]",
+            "[green]OK[/green]",
+        )
+
+    console.print(table)
+    if failures:
+        err_console.print(
+            f"[bold red]{failures} of {len(paths)} gate(s) failed to resolve.[/bold red]"
+        )
+        raise typer.Exit(code=1)
+    console.print(f"[bold green]✓ {len(paths)} gate(s) resolved.[/bold green]")
+
+
+@gate_app.command(name="publish")
+def gate_publish(
+    gate_file: Path = typer.Argument(..., help="Path to the gate YAML file"),
+    out: Path = typer.Option(None, "--out", "-o", help="Write canonical JSON here"),
+    registry: Path = REGISTRY_OPTION,
+):
+    """
+    Compile a gate to RFC 8785 canonical JSON and report its SHA-256 digest.
+
+    The canonical bytes and the digest are the artifact that gets signed and
+    distributed. Signing itself needs the registry key material, which arrives
+    with the Gate Registry in Khối 3 — so this command stops at the digest
+    rather than claiming to have signed anything.
+    """
+    try:
+        gate = _load_gate(str(gate_file), registry)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+
+    payload = gate_canonical_json(gate)
+    console.print(f"[bold]Compiled[/bold] [cyan]{gate_file}[/cyan] → RFC 8785 canonical JSON")
+    console.print(f"  gate:   [bold]{gate.name}@{gate.version}[/bold]")
+    console.print(f"  chain:  {' → '.join(gate.chain)}")
+    console.print(f"  bytes:  {len(payload)}")
+    console.print(f"  digest: [bold green]{gate_digest(gate)}[/bold green]")
+
+    if out is not None:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(payload)
+        console.print(f"  written: [cyan]{out}[/cyan]")
+
+    console.print(
+        "[yellow]Note:[/yellow] cryptographic signing and registry upload require the "
+        "Gate Registry (Khối 3); this command produces the canonical bytes and digest only."
+    )
+
+
+@gate_app.command(name="add")
+def gate_add(
+    uri: str = typer.Argument(..., help="Gate URI, e.g. neuroedge://gates/unlock_door@1.2.0"),
+):
+    """Resolve a gate from the registry and report what inheriting it would impose."""
+    try:
+        gate = resolve_gate_uri(uri)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    console.print(f"[bold green]✓[/bold green] {uri} resolves to {gate.name}@{gate.version}")
+    console.print(f"  criteria:    {sorted(gate.evaluate)}")
+    console.print(f"  fail policy: {gate.budget.get('fail', 'closed')}")
+    console.print(
+        "[yellow]Note:[/yellow] signature verification and remote fetch arrive with the "
+        "Gate Registry (Khối 3); this resolves against the local gates/ directory."
+    )
+
+
+# --------------------------------------------------------------------------
+# trace
+# --------------------------------------------------------------------------
+
+
+@trace_app.command(name="validate")
+def trace_validate(
+    trace_files: list[Path] = typer.Argument(..., help="Trace JSON file(s) to validate"),
+):
+    """Validate traces against schemas/trace.v1.json (FR-TRC-08)."""
+    failures = 0
+    for path in trace_files:
+        try:
+            trace = load_trace(path)
+        except NeuroEdgeError as error:
+            failures += 1
+            err_console.print(f"[bold red]✗ {error.code}[/bold red] [cyan]{error.where}[/cyan]")
+            err_console.print(f"  why: {error.why}")
+            err_console.print(f"  fix: {error.how}")
+            continue
+        console.print(
+            f"[bold green]✓ VALID[/bold green] [cyan]{path}[/cyan] — "
+            f"{len(trace['events'])} event(s), target {trace['metadata']['target']}"
+        )
+    if failures:
+        raise typer.Exit(code=1)
+
+
+@trace_app.command(name="show")
+def trace_show(
+    trace_file: Path = typer.Argument(..., help="Trace JSON file"),
+):
+    """Print a trace's event timeline."""
+    try:
+        trace = load_trace(trace_file)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+
+    metadata = trace["metadata"]
+    console.print(
+        Panel(
+            f"session [bold cyan]{metadata['session_id']}[/bold cyan]\n"
+            f"target {metadata['target']} · board {metadata['board_id']}\n"
+            f"agent {metadata['agent_version']} · {metadata['timestamp_utc']}",
+            title=str(trace_file),
+            border_style="green",
+        )
+    )
+    table = Table()
+    table.add_column("Offset", justify="right", style="dim")
+    table.add_column("Event", style="bold")
+    table.add_column("Data")
+    for event in trace["events"]:
+        table.add_row(
+            f"{event['offset_ms']} ms",
+            event["type"],
+            json.dumps(event["data"], ensure_ascii=False),
+        )
+    console.print(table)
+
+
+# --------------------------------------------------------------------------
+# board
+# --------------------------------------------------------------------------
+
+
+@board_app.command(name="list")
+def board_list():
+    """List the board capability declarations in boards/."""
+    boards = available_boards()
+    if not boards:
+        console.print("[yellow]No board declarations found.[/yellow]")
+        raise typer.Exit(code=1)
+
+    table = Table(title="Board profiles")
+    table.add_column("Board id", style="cyan")
+    table.add_column("Target", style="magenta")
+    table.add_column("MCU")
+    table.add_column("digital.out pins", style="green")
+    for board in boards:
+        table.add_row(board.id, board.target, board.mcu, ", ".join(board.pins) or "—")
+    console.print(table)
+
+
+@board_app.command(name="show")
+def board_show(
+    board_id: str = typer.Argument(..., help="Board id, e.g. esp32s3-box-3"),
+):
+    """Show one board's declared capabilities across the five HAL primitives."""
+    try:
+        board = load_board_by_id(board_id)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+
+    console.print(
+        Panel(
+            f"[bold]{board.name or board.id}[/bold]\n"
+            f"id {board.id} · target {board.target} · mcu {board.mcu}",
+            title="Board",
+            border_style="green",
+        )
+    )
+    table = Table()
+    table.add_column("Primitive", style="cyan")
+    table.add_column("Declared parameters")
+    for primitive in ("audio.in", "audio.out", "digital.out", "sensor.read", "display"):
+        if board.supports(primitive):
+            table.add_row(primitive, json.dumps(board.capability(primitive), ensure_ascii=False))
+        else:
+            table.add_row(primitive, "[red]not provided[/red]")
+    console.print(table)
+
+
+# --------------------------------------------------------------------------
+# top level
+# --------------------------------------------------------------------------
+
+
+@app.command()
+def verify(
+    targets: str = typer.Option("sim,linux", "--targets", help="Comma-separated target list"),
+):
+    """
+    Verify the frozen artifacts: every gate resolves and every trace validates.
+
+    Cross-target replay equivalence — the full meaning of acceptance criterion
+    A2 — needs the `sim` and `linux` HALs from Sprints 2 and 3. What this command
+    checks today is the part that exists, and it says which part that is.
+    """
+    root = repo_root()
+    requested = [t.strip() for t in targets.split(",") if t.strip()]
+    problems = 0
+
+    console.print("[bold]Resolving gates in gates/[/bold]")
+    for path in sorted(gates_dir().rglob("*.yaml")):
+        try:
+            gate = resolve_gate_file(path)
+            console.print(
+                f"  [green]✓[/green] {gate.name}@{gate.version} "
+                f"({gate.inheritance_levels} level(s), fail {gate.budget.get('fail')})"
+            )
+        except NeuroEdgeError as error:
+            problems += 1
+            err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {error.why}")
+
+    console.print("\n[bold]Validating canonical traces in fixtures/traces/[/bold]")
+    for path in sorted((root / "fixtures" / "traces").glob("*.json")):
+        try:
+            load_trace(path)
+            console.print(f"  [green]✓[/green] {path.name}")
+        except NeuroEdgeError as error:
+            problems += 1
+            err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {error.why}")
+
+    console.print("\n[bold]Board capability declarations[/bold]")
+    for board in available_boards():
+        marker = "[green]✓[/green]" if board.target in requested else "[dim]·[/dim]"
+        console.print(f"  {marker} {board.id} (target {board.target})")
+
+    if problems:
+        err_console.print(f"\n[bold red]{problems} problem(s) found.[/bold red]")
+        raise typer.Exit(code=1)
+
+    console.print(
+        Panel(
+            "[green]Schema-level verification passed:[/green] all gates resolve, all "
+            "canonical traces validate.\n\n"
+            "[yellow]Not yet covered:[/yellow] replaying traces on live targets and "
+            "comparing verdict sequences across them (acceptance criterion A2). That "
+            "needs the sim HAL (TSK-S2-01) and the linux HAL (TSK-S3-05).",
+            title="neuroedge verify",
+            border_style="green",
+        )
+    )
+
+
+@app.command()
+def replay(
+    trace_file: Path = typer.Argument(..., help="Trace JSON file"),
+    target: str = typer.Option("sim", "--target", "-t", help="Target to replay on"),
+):
+    """
+    Replay a recorded trace.
+
+    Loads and validates the trace and prints its timeline. Executing it against
+    a live target HAL, and diffing the resulting verdicts against the recording,
+    is TSK-S3-02.
+    """
+    try:
+        trace = load_trace(trace_file)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+
+    console.print(
+        f"[bold]Replaying[/bold] [cyan]{trace_file}[/cyan] "
+        f"(recorded on [yellow]{trace['metadata']['target']}[/yellow])"
+    )
+    for event in trace["events"]:
+        console.print(
+            f"  +[{event['offset_ms']:>6}ms] [bold]{event['type']}[/bold]: "
+            f"{json.dumps(event['data'], ensure_ascii=False)}"
+        )
+    console.print(
+        f"[yellow]Note:[/yellow] the trace was read and validated, but not executed on "
+        f"target [bold]{target}[/bold]. Execution against a live HAL is TSK-S3-02."
+    )
+
 
 @app.command()
 def new(
     name: str = typer.Argument(..., help="Name of the new agent project"),
     template: str = typer.Option("villa-concierge", help="Template to scaffold"),
 ):
-    """
-    Scaffold a new NeuroEdge agent project with agent.toml, an action contract, a gate, and an Action CI test.
-    """
-    console.print(f"[bold green]✓[/bold green] Initializing NeuroEdge agent: [bold cyan]{name}[/bold cyan] (template: {template})")
-    target_dir = Path.cwd() / name
-    target_dir.mkdir(parents=True, exist_ok=True)
-    (target_dir / "actions").mkdir(exist_ok=True)
-    (target_dir / "gates").mkdir(exist_ok=True)
-    (target_dir / "tests").mkdir(exist_ok=True)
-    (target_dir / "traces").mkdir(exist_ok=True)
-    
-    console.print(f"Created project directory: {target_dir}")
-    console.print("\n[bold]Next steps:[/bold]")
-    console.print(f"  cd {name}")
-    console.print("  neuroedge run --target sim")
+    """Scaffold a new agent project (pending TSK-S3-07)."""
+    _not_yet("new")
+
 
 @app.command()
 def run(
-    target: str = typer.Option("sim", "--target", "-t", help="Target runtime environment (sim, linux)"),
+    target: str = typer.Option("sim", "--target", "-t", help="Target runtime environment"),
 ):
-    """
-    Run the agent locally in simulation (sim) or on embedded Linux (linux).
-    """
-    console.print(Panel(
-        f"[bold]Starting NeuroEdge Agent Runtime[/bold]\nTarget: [cyan]{target}[/cyan]\nHAL Primitives: audio.in, audio.out, digital.out, sensor.read, display",
-        title="NeuroEdge Runtime",
-        border_style="green",
-    ))
-    if target == "sim":
-        console.print("[cyan]Web simulator server active at http://localhost:8080[/cyan] (Wokwi Elements enabled)")
-    elif target == "linux":
-        console.print("[green]Connecting to Linux kernel gpiod v2 and ALSA audio interface...[/green]")
-    else:
-        console.print(f"[red]Error: Unsupported run target '{target}'. Use 'sim' or 'linux'.[/red]")
-        raise typer.Exit(code=1)
+    """Run the agent on `sim` or `linux` (pending TSK-S2-01)."""
+    _not_yet("run")
+
 
 @app.command()
 def build(
-    target: str = typer.Option(..., "--target", "-t", help="Target architecture (esp32s3, linux)"),
+    target: str = typer.Option(..., "--target", "-t", help="Target architecture"),
     board: str = typer.Option("esp32s3-box-3", "--board", "-b", help="Board profile id"),
 ):
-    """
-    Compile the agent and verify two-way capability contracts at build-time.
-    """
-    console.print(f"[bold]Building agent for target:[/bold] [cyan]{target}[/cyan] (board: [yellow]{board}[/yellow])")
-    console.print("[green]✓ Two-way capability contract matched: all requested HAL pins and sensors available.[/green]")
-    console.print("[green]✓ Compiled Google CEL gate expressions into deterministic decision tree (gate.compiled.json).[/green]")
-    console.print("[bold green]Build complete.[/bold green]")
+    """Compile the agent and match capability contracts (pending TSK-S2-02)."""
+    _not_yet("build")
+
 
 @app.command()
 def test():
-    """
-    Run Action CI test suite across simulation and test traces.
-    """
-    console.print("[bold]Running Action CI regression tests...[/bold]")
-    table = Table(title="Action CI Test Results")
-    table.add_column("Test Case", style="cyan")
-    table.add_column("Target", style="magenta")
-    table.add_column("Gate Verdict", style="green")
-    table.add_column("Actuator Assertion", style="yellow")
-    table.add_column("Status", style="bold green")
+    """Run the Action CI suite (pending TSK-S3-03; use `pytest` in python/ meanwhile)."""
+    _not_yet("test")
 
-    table.add_row("test_khong_mo_khoa_khi_chua_xac_thuc", "sim", "BLOCK (escalate)", "door_lock NEVER pulsed", "PASS")
-    table.add_row("test_gate_fail_closed_khi_mat_mang", "sim", "BLOCK (gate_unreachable)", "door_lock NEVER pulsed", "PASS")
-    table.add_row("test_doi_model_khong_lam_hoi_quy", "sim", "BLOCK (escalate)", "door_lock NEVER pulsed", "PASS")
-    
-    console.print(table)
-    console.print("\n[bold green]3 passed, 0 failed in 0.42s[/bold green]")
-
-@app.command()
-def verify(
-    targets: str = typer.Option("sim,linux,esp32s3", "--targets", help="Comma-separated target list"),
-):
-    """
-    Verify environment target equivalence across sim, linux, and esp32s3.
-    """
-    target_list = [t.strip() for t in targets.split(",")]
-    console.print(f"[bold]Verifying Target Equivalence across:[/bold] {target_list}")
-    console.print("Replaying test vectors from [cyan]fixtures/traces/[/cyan]...")
-    console.print("✓ happy-path.json: 100% identical gate verdicts and GPIO timings across all targets.")
-    console.print("✓ unverified_attempt.json: 100% identical fail-closed block across all targets.")
-    console.print("✓ network_offline.json: 100% identical fail-closed behavior across all targets.")
-    console.print("[bold green]TARGET EQUIVALENCE VERIFIED — 0 discrepancies detected.[/bold green]")
 
 @app.command()
 def record(
-    target: str = typer.Option("esp32s3", "--target", "-t", help="Target hardware to record from"),
-    out: Path = typer.Option(Path("traces/"), "--out", "-o", help="Output directory for trace JSON"),
+    target: str = typer.Option("esp32s3", "--target", "-t", help="Target to record from"),
+    out: Path = typer.Option(Path("traces/"), "--out", "-o", help="Output directory"),
 ):
-    """
-    Record live session events from device into a standard JSON trace file.
-    """
-    console.print(f"[bold]Listening for session telemetry from target [cyan]{target}[/cyan]...[/bold]")
-    console.print(f"Output directory: {out}")
+    """Record a live session to a trace file (pending TSK-S3-01)."""
+    _not_yet("record")
 
-@app.command()
-def replay(
-    trace_file: Path = typer.Argument(..., help="Path to JSON trace file"),
-    target: str = typer.Option("sim", "--target", "-t", help="Target environment to replay on"),
-):
-    """
-    Replay a recorded incident or test trace bit-for-bit on development machine.
-    """
-    if not trace_file.exists():
-        console.print(f"[red]Error: Trace file '{trace_file}' not found.[/red]")
-        raise typer.Exit(code=1)
-    
-    console.print(f"[bold]Replaying trace [cyan]{trace_file}[/cyan] on target [yellow]{target}[/yellow]...[/bold]")
-    with open(trace_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    session_id = data.get("metadata", {}).get("session_id", "unknown")
-    events = data.get("events", [])
-    console.print(f"Loaded session [bold cyan]{session_id}[/bold cyan] ({len(events)} events)")
-    for ev in events:
-        console.print(f"  +[{ev.get('offset_ms', 0):>5}ms] [bold]{ev.get('type')}[/bold]: {ev.get('data')}")
-    console.print("[bold green]Replay completed successfully.[/bold green]")
-
-@trace_app.command(name="validate")
-def trace_validate(
-    trace_file: Path = typer.Argument(..., help="Path to JSON trace file to validate"),
-):
-    """
-    Validate a trace file against the official NeuroEdge JSON Schema (draft 2020-12).
-    """
-    if not trace_file.exists():
-        console.print(f"[red]Error: File '{trace_file}' not found.[/red]")
-        raise typer.Exit(code=1)
-    
-    schema_path = Path(__file__).parents[3] / "schemas" / "trace.v1.json"
-    if not schema_path.exists():
-        # Fallback to local
-        schema_path = Path("schemas/trace.v1.json")
-    
-    try:
-        from jsonschema import validate
-        with open(trace_file, "r", encoding="utf-8") as tf, open(schema_path, "r", encoding="utf-8") as sf:
-            trace_data = json.load(tf)
-            schema_data = json.load(sf)
-            validate(instance=trace_data, schema=schema_data)
-        console.print(f"[bold green]✓ VALID:[/bold green] [cyan]{trace_file}[/cyan] strictly conforms to {schema_data.get('$id')}")
-    except Exception as e:
-        console.print(f"[bold red]✗ INVALID:[/bold red] {e}")
-        raise typer.Exit(code=1)
-
-@gate_app.command(name="publish")
-def gate_publish(
-    gate_file: Path = typer.Argument(..., help="Path to gate YAML file"),
-):
-    """
-    Compile gate YAML to canonical RFC 8785 JSON, sign cryptographically, and publish to registry.
-    """
-    console.print(f"[bold]Compiling gate [cyan]{gate_file}[/cyan] to Canonical JSON (RFC 8785)...[/bold]")
-    console.print("Computing SHA-256 digest and generating cryptographic gate signature...")
-    console.print("[bold green]Gate successfully signed and ready for publication.[/bold green]")
-
-@gate_app.command(name="add")
-def gate_add(
-    uri: str = typer.Argument(..., help="URI of gate to add (e.g. neuroedge://gates/hospitality/dual-auth-lock@1.0.0)"),
-):
-    """
-    Add a versioned safety gate from the public registry.
-    """
-    console.print(f"[bold]Fetching gate artifact from [cyan]{uri}[/cyan]...[/bold]")
-    console.print("[bold green]Gate downloaded, signature verified, and added to gates/.[/bold green]")
 
 if __name__ == "__main__":
     app()

@@ -1,0 +1,30 @@
+# Test base. Deliberately declares `fail: open` so that principle 4
+# (fail-open is never inherited) has something to be tested against.
+schema:  neuroedge.gate/v1
+name:    strict-base
+version: 1.0.0
+
+evaluate:
+  guest_authenticated:
+    type: bool
+    instructions: "Guest completed identity verification"
+  risk_level:
+    type: level
+    levels: [low, medium, high]
+    instructions: "Anomaly risk at request time"
+  request_channel:
+    type: choice
+    options: [in_person, app, phone, web]
+    instructions: "Channel the request arrived on"
+
+allow_when:
+  guest_authenticated: { confidence_gte: 0.9 }
+  risk_level:          { lte: low }
+  request_channel:     { in: [in_person, app] }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           open

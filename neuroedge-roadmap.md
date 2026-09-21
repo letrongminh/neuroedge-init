@@ -51,11 +51,12 @@
 
 | Chỉ số | Trạng thái hiện hành | Ghi chú & Liên kết |
 |:---|:---|:---|
-| **Pha đang thực thi** | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0–6)** | Đạt ~45% khối lượng toàn khối |
-| **Sprint hiện hành** | 🟡 **Sprint 1: Đóng băng Lược đồ & Monorepo (Tuần 0–2)** | **69% hoàn thành** (9 / 13 tasks hoàn tất) |
+| **Pha đang thực thi** | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0–6)** | Đạt ~55% khối lượng toàn khối |
+| **Sprint hiện hành** | 🟡 **Sprint 1: Đóng băng Lược đồ & Monorepo (Tuần 0–2)** | **92% hoàn thành** (12 / 13 tasks hoàn tất; TSK-S1-10 chờ bo mạch) |
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: Cuối Sprint 3 (Tuần 6) |
-| **Lần cập nhật cuối** | **2026-09-21 16:00 UTC+7** | Git commit: `7ae07ac` / `34bdb6d` |
-| **Trạng thái CI Lõi** | ✅ **PASS 100%** (4/4 tests passed) | `python/tests/test_testing.py` |
+| **Lần cập nhật cuối** | **2026-09-21 18:30 UTC+7** | Hoàn tất Khối 1a / Sprint 1 — phần không phụ thuộc phần cứng |
+| **Trạng thái CI Lõi** | ✅ **PASS 210/210 · SKIP 0** | `python/tests/` — 9 bộ test; cổng CI chặn mọi test bị skip |
+| **Chặn ngoài tầm kỹ thuật** | 🔴 **2 hạng mục** | TSK-S1-10 chờ bo mạch vật lý · Tiêu chí ra 6 chờ quyết định **Q-11** |
 
 ---
 
@@ -63,7 +64,7 @@
 
 | Mốc | Sprint / Giai đoạn | Thời gian | Trọng tâm kỹ thuật | Tiến độ | Trạng thái |
 |:---:|:---|:---:|:---|:---:|:---:|
-| **Khối 1a** | **Sprint 1 — Đóng băng lược đồ** | Tuần 0–2 | Schemas, Monorepo, Test fixtures, Memory spike | **69%** | 🟡 **Đang chạy** |
+| **Khối 1a** | **Sprint 1 — Đóng băng lược đồ** | Tuần 0–2 | Schemas, Monorepo, Test fixtures, Memory spike | **92%** | 🟡 **Chờ phần cứng** |
 | | **Sprint 2 — Lõi thực thi trên `sim`** | Tuần 2–4 | HAL sim, Gate Engine CEL, Fail-closed, Web UI | **0%** | ⏳ Chưa bắt đầu |
 | | **Sprint 3 — Action CI & Linux** | Tuần 4–6 | HAL linux, Replay/Assert, Barge-in, TTFV < 10' | **0%** | ⏳ Chưa bắt đầu |
 | **Khối 1b** | **Sprint 4 — HAL trên `esp32s3`** | Tuần 6–8 | Port driver XiaoZhi, verify 3 targets không audio | **0%** | ⏳ Chưa bắt đầu |
@@ -79,29 +80,46 @@
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                                      │
+│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)              Cập nhật: 2026-09-21    │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ 1. VỪA HOÀN THÀNH (DONE):                                                              │
-│    • Dựng Monorepo layout chuẩn: schemas/, python/, targets/, fixtures/, NOTICE        │
-│    • Đóng băng 3 JSON Schemas (draft 2020-12): trace.v1.json, gate.v1.json, board.v1   │
-│    • Tạo 3 test fixtures mẫu: happy-path.json, unverified_attempt.json, network_offline│
-│    • Khởi tạo Python SDK + CLI (Typer) + Action CI runner (replay, scenario)           │
-│    • Bộ test Action CI chạy PASS 100% (4/4 tests passed)                               │
+│    • [RFC-0001] Đóng băng lược đồ gate: bắt buộc trường có điều kiện theo `extends`,   │
+│      `budget.fail` thành tùy chọn (vắng = closed), tham số `on_block` theo hành vi      │
+│    • [TSK-S1-03] Cưỡng chế ĐẦY ĐỦ 5 nguyên tắc kế thừa B.5 trong gate_resolver.py      │
+│      — nguyên tắc 2 quyết định được nhờ chuẩn hóa allow_when thành tập giá trị          │
+│    • [Tiêu chí 2] 3 gate mẫu viết tay + chuỗi kế thừa 2 cấp phân giải đúng              │
+│    • [Tiêu chí 1] 15 fixture gate sai + 6 fixture trace sai, kèm thông báo lỗi kỳ vọng │
+│    • [TSK-S1-11] Rà soát HAL dưới ràng buộc MCU: 5 kết luận + 4 ràng buộc cho Sprint 4 │
+│    • [TSK-S1-12] 2 workflow CI: ci-sim-linux.yml (4 job) + nightly-hardware.yml (4 job)│
+│    • [TSK-S1-13] CONTRIBUTING.md + quy trình RFC + mẫu RFC + RFC-0001                  │
+│    • [TSK-S1-10] Khung đo bộ nhớ (memory_probe.c) + scripts/check_firmware_size.py     │
+│    • Chuẩn tắc hóa RFC 8785 + băm SHA-256 cho gate; CLI: gate/trace/board đã thực thi  │
+│    • Test: 208 PASS / 0 SKIP (trước đó 4 test conformance lược đồ bị skip trong im lặng)│
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN (IN-PROGRESS):                                                       │
-│    • [TSK-S1-10] V2: Spike khả thi bộ nhớ trên ESP32-S3-Box-3 (đo SRAM/PSRAM thực)     │
-│    • [TSK-S1-11] V2: Rà soát thiết kế HAL dưới góc nhìn ràng buộc phần cứng MCU        │
+│    • [TSK-S1-10] V2: CHỜ BO MẠCH. Khung đo xong, chưa có số đo thực. Vị trí chèn đã     │
+│      đánh dấu TODO trong targets/esp32s3/main/main.c (nạp AEC + VAD + Opus)             │
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO CẦN LÀM NGAY (NEXT IMMEDIATE ACTIONS):                               │
-│    • [TSK-S1-12] V1: Tạo 2 file workflow GitHub Actions: ci-sim-linux.yml & nightly    │
-│    • [TSK-S1-13] V1: Viết CONTRIBUTING.md và mẫu RFC đề xuất thay đổi lược đồ          │
-│    • Viết 3 Gate YAML mẫu & test suite kiểm tra kế thừa extends 2 cấp (Tiêu chí ra 2)   │
+│    • 🔴 CHỐT Q-11 (ngoại lệ giấy phép Hawkbit/EMQX/LiteLLM) — chặn Tiêu chí ra 6        │
+│    • 🔴 Đặt bo mạch ESP32-S3-BOX-3 — chặn TSK-S1-10 và Tiêu chí ra 3                   │
+│    • Đồng bộ Phụ lục B.1/B.3/B.4 của proposal theo RFC-0001 §9                         │
+│    • Mở Sprint 2: [TSK-S2-01] HAL cho `sim`, [TSK-S2-07] đặc tả chuẩn tắc FSM thoại    │
 │                                                                                        │
 │ 4. LƯU Ý KỸ THUẬT QUAN TRỌNG CHO NGƯỜI TIẾP QUẢN (CONTEXT & GUARDRAILS):               │
 │    • Không sửa đuôi trace thành .ntrace (chuẩn duy nhất là .json mang $schema).        │
 │    • Bộ lượng giá CEL trên ESP32-S3 dùng Phương án A (Host biên dịch sang Decision     │
 │      Tree JSON phẳng; ESP32-S3 chỉ duyệt cây bằng hàm C đơn giản, không nhúng CEL VM).  │
 │    • Bo mạch tham chiếu duy nhất là ESP32-S3-Box-3 (không đổi sang DevKitC).           │
+│    • THẨM ĐỊNH LƯỢC ĐỒ KHÔNG ĐỦ để kết luận gate an toàn. Nguyên tắc 2 là mệnh đề về   │
+│      HAI tài liệu, nằm ngoài khả năng của JSON Schema → cổng kiểm tra là                │
+│      `neuroedge gate lint` (phân giải), không phải thẩm định lược đồ.                  │
+│    • `allow_when` dạng chuỗi CEL bị TỪ CHỐI trong chuỗi kế thừa: không chứng minh được  │
+│      phép siết chặt cho biểu thức đục → fail-closed thay vì xấp xỉ.                     │
+│    • `copier` ĐÃ CHUYỂN sang extra `scaffold`: nó kéo theo jinja2-ansible-filters GPL3, │
+│      không được phép nằm trong phần phân phối của lõi MIT (§3.10).                      │
+│    • jsonschema phải ghim extra `[format-nongpl]` (extra `[format]` kéo rfc3987 GPL).   │
+│    • Lệnh CLI chưa có engine PHẢI thoát mã 2, không in bảng "PASS" giả.                │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -433,18 +451,18 @@ Ba tệp này là thước đo tuân thủ cho cả Khối 1a và 1b, và là đ
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S1-01** | Đặc tả 5 nguyên thủy HAL và thuộc tính đối chiếu | FR-HAL-01, FR-HAL-02, FR-HAL-03 | V1 | ✅ Hoàn thành | [`schemas/board.v1.json`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/schemas/board.v1.json) |
-| **TSK-S1-02** | Lược đồ gate v1: 8 trường, 3 kiểu `evaluate`, 4 hành vi `on_block`, `budget` | FR-GATE-02, FR-GATE-03, FR-GATE-04 | V1 | ✅ Hoàn thành | [`schemas/gate.v1.json`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/schemas/gate.v1.json) |
-| **TSK-S1-03** | Quy tắc kế thừa `extends`: 5 nguyên tắc an toàn | FR-GATE-06, FR-GATE-07, FR-GATE-08 | V1 | ✅ Hoàn thành | [Proposal Phụ lục B](file:///Users/minhlt/Downloads/Projects/neuroedge-init/neuroedge-proposal.md#phụ-lục-b--đặc-tả-lược-đồ-gate-v1), [PRD §5.1](file:///Users/minhlt/Downloads/Projects/neuroedge-init/neuroedge-prd.md#51-hợp-đồng-hành-động-và-lược-đồ-gate) |
+| **TSK-S1-02** | Lược đồ gate v1: 8 trường, 3 kiểu `evaluate`, 4 hành vi `on_block`, `budget` | FR-GATE-02, FR-GATE-03, FR-GATE-04 | V1 | ✅ Hoàn thành | [`schemas/gate.v1.json`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/schemas/gate.v1.json) · sửa theo [RFC-0001](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/0001-gate-schema-conditional-requirements.md) (bắt buộc có điều kiện) |
+| **TSK-S1-03** | Quy tắc kế thừa `extends`: 5 nguyên tắc an toàn | FR-GATE-06, FR-GATE-07, FR-GATE-08 | V1 | ✅ Hoàn thành | **Đã cưỡng chế bằng mã:** [`gate_resolver.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/neuroedge/engine/gate_resolver.py), [`constraints.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/neuroedge/engine/constraints.py) · 35 test tại [`test_gate_resolver.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/tests/test_gate_resolver.py) |
 | **TSK-S1-04** | Lược đồ vết ghi v1: 6 nhóm sự kiện, khối `metadata` | FR-TRC-01, FR-TRC-02, FR-TRC-03 | V1 | ✅ Hoàn thành | [`schemas/trace.v1.json`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/schemas/trace.v1.json) |
-| **TSK-S1-05** | Ma trận giấy phép và tệp `NOTICE` cho toàn bộ dự án sẽ port (§3.9) | — | V2 | ✅ Hoàn thành | [`NOTICE`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/NOTICE) |
+| **TSK-S1-05** | Ma trận giấy phép và tệp `NOTICE` cho toàn bộ dự án sẽ port (§3.9) | — | V2 | ✅ Hoàn thành | [`NOTICE`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/NOTICE) 4 mục A–D · cổng CI chặn copyleft mạnh · [`requirements-lock.txt`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/requirements-lock.txt) (nghĩa vụ 5) |
 | **TSK-S1-06** | **Dựng bộ khung monorepo** theo Phụ lục D: `schemas/` · `python/` · `targets/` · `fixtures/` | — | V1 | ✅ Hoàn thành | [`schemas/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/schemas/), [`python/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/), [`targets/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/targets/), [`fixtures/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/) |
-| **TSK-S1-07** | **Ba tệp lược đồ chính thức** trong `schemas/`: `trace.v1.json` · `gate.v1.json` · `board.v1.json` | FR-TRC-01, FR-GATE-02, FR-HAL-02 | V1 | ✅ Hoàn thành | JSON Schema draft 2020-12 chuẩn hóa |
-| **TSK-S1-08** | **Ba tệp vết ghi chuẩn mực** tại `fixtures/traces/` (`happy-path`, `unverified_attempt`, `network_offline`) | FR-CI-01, FR-CI-02 | V1 | ✅ Hoàn thành | [`fixtures/traces/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/traces/) (Action CI test pass 100%) |
-| **TSK-S1-09** | Khung Python SDK, CLI và Action CI ban đầu (`replay`, `scenario`) | FR-CLI-01, FR-CI-01 | V1 | ✅ Hoàn thành | [`python/neuroedge/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/neuroedge/), [`tests/test_testing.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/tests/test_testing.py) |
-| **TSK-S1-10** | **Spike khả thi bộ nhớ trên ESP32-S3-Box-3** | NFR-RES-01, NFR-RES-02 | V2 | 🟡 Đang thực hiện | [`targets/esp32s3/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/targets/esp32s3/) (đã tạo khung build C) |
-| **TSK-S1-11** | Rà soát thiết kế HAL dưới ràng buộc MCU | — | V2 | 🟡 Đang thực hiện | [`python/neuroedge/hal/board.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/neuroedge/hal/board.py) |
-| **TSK-S1-12** | Hai workflow CI: `ci-sim-linux.yml` và `nightly-hardware.yml` | FR-CI-05, FR-CI-06 | V1 | ⏳ Chưa bắt đầu | `.github/workflows/` |
-| **TSK-S1-13** | Quy ước đóng góp và mẫu RFC đổi lược đồ | — | V1 | ⏳ Chưa bắt đầu | `CONTRIBUTING.md`, `docs/rfc/` |
+| **TSK-S1-07** | **Ba tệp lược đồ chính thức** trong `schemas/`: `trace.v1.json` · `gate.v1.json` · `board.v1.json` | FR-TRC-01, FR-GATE-02, FR-HAL-02 | V1 | ✅ Hoàn thành | JSON Schema draft 2020-12 · CI thẩm định `$id` và `check_schema` · 18 test tại [`test_schemas.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/tests/test_schemas.py) |
+| **TSK-S1-08** | **Ba tệp vết ghi chuẩn mực** tại `fixtures/traces/` (`happy-path`, `unverified_attempt`, `network_offline`) | FR-CI-01, FR-CI-02 | V1 | ✅ Hoàn thành | [`fixtures/traces/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/traces/) + [6 fixture phản chứng](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/traces/invalid/) kèm [`expected_errors.yaml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/traces/expected_errors.yaml) · thẩm định cả `format: date-time` |
+| **TSK-S1-09** | Khung Python SDK, CLI và Action CI ban đầu (`replay`, `scenario`) | FR-CLI-01, FR-CI-01 | V1 | ✅ Hoàn thành | [`python/neuroedge/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/neuroedge/) · CLI thực thi `gate resolve/lint/publish`, `trace validate/show`, `board list/show`, `verify` · lệnh chưa có engine thoát mã 2 |
+| **TSK-S1-10** | **Spike khả thi bộ nhớ trên ESP32-S3-Box-3** | NFR-RES-01, NFR-RES-02 | V2 | 🔴 **Chờ bo mạch** | Khung đo xong: [`memory_probe.c`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/targets/esp32s3/main/memory_probe.c) (4 checkpoint, dòng JSON máy đọc), [`check_firmware_size.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/scripts/check_firmware_size.py) · **chưa có số đo thực** → [báo cáo](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/reports/memory_spike_report.md) |
+| **TSK-S1-11** | Rà soát thiết kế HAL dưới ràng buộc MCU | — | V2 | ✅ Hoàn thành | [`docs/spec/hal_mcu_review.md`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/spec/hal_mcu_review.md) (5 kết luận + 4 ràng buộc cho Sprint 4) · hiện thực tại [`hal/board.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/neuroedge/hal/board.py) + [`boards/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/boards/) 3 target |
+| **TSK-S1-12** | Hai workflow CI: `ci-sim-linux.yml` và `nightly-hardware.yml` | FR-CI-05, FR-CI-06 | V1 | ✅ Hoàn thành | [`ci-sim-linux.yml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/.github/workflows/ci-sim-linux.yml) (lược đồ · phân giải gate · vết ghi · test 3 bản Python · lint · cổng giấy phép · **cổng chặn test skip**) · [`nightly-hardware.yml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/.github/workflows/nightly-hardware.yml) (dựng IDF · ngân sách flash Q-3 · thu số đo · trôi phụ thuộc) |
+| **TSK-S1-13** | Quy ước đóng góp và mẫu RFC đổi lược đồ | — | V1 | ✅ Hoàn thành | [`CONTRIBUTING.md`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/CONTRIBUTING.md) (7 mục) · [`docs/rfc/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/): [quy trình](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/README.md), [mẫu](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/0000-template.md), [RFC-0001](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/0001-gate-schema-conditional-requirements.md) |
 
 **Đòn bẩy OSS Sprint 1:** Pydantic v2 và `rfc8785` cho chuẩn hóa lược đồ · Typer, Rich, Copier cho khung CLI ban đầu. Tiết kiệm ước tính 3 tuần công sức viết mã.
 
@@ -452,14 +470,22 @@ Ba tệp này là thước đo tuân thủ cho cả Khối 1a và 1b, và là đ
 
 Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 KB · PSRAM ≥ 2 MB · firmware ≤ 3,5 MB**. Không đạt ngưỡng nào thì kích hoạt bậc 5 của thang cắt phạm vi (§9) ngay, không chờ Tuần 9.
 
-**Tiêu chí ra Sprint 1 (Exit Criteria):**
+**Tiêu chí ra Sprint 1 (Exit Criteria):** — **4 / 6 đạt · 2 bị chặn ngoài tầm kỹ thuật**
 
-- [x] **Tiêu chí 1:** JSON Schema của gate và trace publish nội bộ, có ví dụ hợp lệ và ví dụ sai kèm thông báo lỗi kỳ vọng ([`schemas/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/schemas/)).
-- [ ] **Tiêu chí 2:** Ba gate mẫu viết tay được công cụ phân giải đúng, gồm một trường hợp kế thừa 2 cấp.
-- [ ] **Tiêu chí 3:** Báo cáo spike bộ nhớ có số liệu đo thực, đối chiếu trực tiếp với ngưỡng Q-3 (SRAM ≥ 120 KB, PSRAM ≥ 2 MB, flash ≤ 3,5 MB).
+- [x] **Tiêu chí 1:** JSON Schema của gate và trace publish nội bộ, có ví dụ hợp lệ và ví dụ sai kèm thông báo lỗi kỳ vọng.
+  *Bằng chứng:* [`schemas/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/schemas/) 3 tệp · hợp lệ: [`gates/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/gates/) 3 gate + [`fixtures/gates/valid/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/gates/valid/) 5 tệp · **sai kèm lỗi kỳ vọng:** [`fixtures/gates/invalid/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/gates/invalid/) 15 tệp + [`expected_errors.yaml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/gates/expected_errors.yaml), [`fixtures/traces/invalid/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/traces/invalid/) 6 tệp + [`expected_errors.yaml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/traces/expected_errors.yaml). Test cưỡng chế corpus khép kín cả hai chiều (mỗi tệp có một mục, mỗi mục có một tệp) và mọi lỗi đủ 3 thành phần FR-DX-04.
+- [x] **Tiêu chí 2:** Ba gate mẫu viết tay được công cụ phân giải đúng, gồm một trường hợp kế thừa 2 cấp.
+  *Bằng chứng:* chuỗi `base-access@1.0.0` → `unlock_door@1.2.0` → `unlock_door_night@1.0.0` (đúng 3 cấp, tức **kế thừa 2 cấp**). `neuroedge gate lint` → *✓ 3 gate(s) resolved*. 26 test tại [`test_sample_gates.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/tests/test_sample_gates.py) kiểm tra từng nguyên tắc trên corpus thật, gồm mệnh đề **điều kiện chỉ siết chặt đơn điệu xuống chuỗi**.
+- [ ] 🔴 **Tiêu chí 3:** Báo cáo spike bộ nhớ có số liệu đo thực, đối chiếu trực tiếp với ngưỡng Q-3 (SRAM ≥ 120 KB, PSRAM ≥ 2 MB, flash ≤ 3,5 MB).
+  **CHƯA ĐẠT — chặn bởi phần cứng vật lý, không thể xử lý bằng công việc trên máy tính.** Khung đo đã xong và ngưỡng Q-3 đã ghim thành hằng số; [báo cáo](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/reports/memory_spike_report.md) nêu rõ 5 việc còn lại. Hàm đối chiếu trả `INCONCLUSIVE` khi checkpoint `audio_ready` chưa được lấy, để số đo sàn không bị đọc thành một kết quả đạt.
 - [x] **Tiêu chí 4:** Bộ khung monorepo dựng xong; `schemas/` chứa đủ ba tệp lược đồ và được CI kiểm tra tính hợp lệ.
-- [x] **Tiêu chí 5:** Ba tệp vết ghi chuẩn mực tại `fixtures/traces/` đã viết tay và phân giải đúng (4/4 tests pass).
-- [ ] **Tiêu chí 6:** Quyết định Q-11 đã chốt (§10.2) — điều kiện để bắt đầu port bất kỳ dòng mã nào.
+  *Bằng chứng:* job `frozen-artifacts` của [`ci-sim-linux.yml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/.github/workflows/ci-sim-linux.yml) chạy `check_schema` draft 2020-12, đối chiếu `$id`, và **khẳng định nghịch đảo**: corpus phản chứng phải tiếp tục thất bại, nếu phân giải được thì job đỏ.
+- [x] **Tiêu chí 5:** Ba tệp vết ghi chuẩn mực tại `fixtures/traces/` đã viết tay và phân giải đúng.
+  *Bằng chứng:* `neuroedge trace validate fixtures/traces/*.json` → 3/3 VALID. 19 test tại [`test_trace_fixtures.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/tests/test_trace_fixtures.py) kiểm tra **nội dung kịch bản**, không chỉ tính hợp lệ lược đồ (happy-path cấp xung 30 000 ms; hai kịch bản còn lại **không sinh lệnh actuator nào**).
+- [ ] 🔴 **Tiêu chí 6:** Quyết định Q-11 đã chốt (§10.2) — điều kiện để bắt đầu port bất kỳ dòng mã nào.
+  **CHƯA ĐẠT — chặn bởi quyết định quản trị, chủ trì: kỹ thuật trưởng.** Không có dòng mã nào từ Hawkbit/EMQX/LiteLLM được port; phần D của [`NOTICE`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/NOTICE) ghi rõ phạm vi phơi nhiễm. Phát hiện phát sinh trong Sprint 1: `copier` kéo theo `jinja2-ansible-filters` **GPL3** — đã chuyển sang extra `scaffold` để lõi MIT không bị lây nhiễm, và cổng CI giấy phép chặn tái diễn.
+
+**Ghi chú về phạm vi đã đóng:** toàn bộ khối lượng Sprint 1 **không phụ thuộc phần cứng hay quyết định quản trị** đã hoàn tất (12/13 task). Hai hạng mục còn lại không thể đóng bằng nỗ lực kỹ thuật thêm nữa.
 
 
 ### 4.2 Sprint 2 — Lõi thực thi trên `sim` (Tuần 2–4)
@@ -779,7 +805,22 @@ Mười một quyết định: bảy từ PRD §15, bốn phát sinh từ chiế
 | **Tháng 3** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng | ⏳ Đang mở |
 | **Tháng 3** | Q-6 | Chính sách lưu trữ vết ghi: thời hạn và hạn mức | Ảnh hưởng chi phí vận hành và cam kết SLA | Sản phẩm | ⏳ Đang mở |
 
-**Q-11 là quyết định gấp nhất trong nhóm còn mở.** Ba thành phần của Khối 2 đều nằm ngoài danh sách giấy phép cho phép, và việc thiết kế phụ thuộc không nên bắt đầu trước khi có phê duyệt bằng văn bản.
+**Q-11 là quyết định gấp nhất trong nhóm còn mở.** Ba thành phần của Khối 2 đều nằm ngoài danh sách giấy phép cho phép, và việc thiết kế phụ thuộc không nên bắt đầu trước khi có phê duyệt bằng văn bản. Q-11 cũng là **Tiêu chí ra số 6 của Sprint 1**, nên nó đang chặn việc đóng Sprint 1 chứ không chỉ chặn Khối 2.
+
+#### Phát hiện giấy phép trong Sprint 1 (đã xử lý, ghi lại để không tái diễn)
+
+Khi dựng cổng giấy phép cho CI (TSK-S1-12), rà soát phụ thuộc phát hiện **hai đường lây nhiễm copyleft mạnh vào lõi MIT** — cả hai đều là phụ thuộc bắc cầu, không ai chủ ý thêm:
+
+| Đường lây nhiễm | Giấy phép | Cách xử lý |
+|:---|:---|:---|
+| `neuroedge` → `copier` → `jinja2-ansible-filters` | **GPL3** | `copier` chuyển khỏi tập phụ thuộc lõi sang extra `scaffold`. Nó chỉ cần cho `neuroedge new` (TSK-S3-07), chưa hiện thực, nên không mất gì |
+| `neuroedge` → `jsonschema[format]` → `rfc3987` | **GPL** | Ghim extra `[format-nongpl]`, dùng `rfc3987-syntax` (MIT). Extra này là **bắt buộc**, không phải tùy chọn: thiếu bộ kiểm tra format thì `format: date-time` trong `trace.v1.json` chỉ là chú thích, và một vết ghi có mốc thời gian không phân tích được vẫn thẩm định đạt |
+
+Cả hai đều trực tiếp hiện thực hóa rủi ro mà §3.10 nêu: *"Nhúng mã GPLv3 vào phần phân phối → Lây nhiễm bản quyền sang lõi MIT và sang dự án của khách hàng."* Điều đáng chú ý là **không ai thêm một phụ thuộc GPL nào một cách chủ ý** — cả hai đến qua phụ thuộc bắc cầu của một thư viện hoàn toàn permissive. Rà soát giấy phép bằng mắt ở tầng phụ thuộc trực tiếp sẽ bỏ sót cả hai.
+
+Vì vậy job `licence-obligations` trong [`ci-sim-linux.yml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/.github/workflows/ci-sim-linux.yml) chạy `pip-licenses --fail-on` trên **toàn bộ cây phụ thuộc** ở mỗi pull request, và lưu bảng giấy phép đầy đủ làm artifact. Đây là nghĩa vụ 1 và 5 của §3.9 được tự động hóa, thay cho một lần rà soát thủ công.
+
+**Hệ quả cho Q-11:** quyết định Q-11 nên bao gồm luôn một chính sách rõ ràng cho phụ thuộc bắc cầu, không chỉ phê duyệt ba thành phần đã nêu tên.
 
 ---
 

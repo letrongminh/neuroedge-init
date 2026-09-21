@@ -1,0 +1,7 @@
+# Operator error — `gt` is not in the Appendix B.2 level operator set.
+schema:  neuroedge.gate/v1
+name:    unknown-operator
+version: 1.0.0
+extends: neuroedge://gates/strict-base@1.0.0
+allow_when:
+  risk_level: { gt: low }

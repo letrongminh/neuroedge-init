@@ -1,0 +1,33 @@
+# Target `linux` — embedded Linux via kernel gpiod v2 and ALSA.
+#
+# This target is first-class on purpose (§3.10): if `linux` were second-rate,
+# the two-way capability contract would never be exercised across genuinely
+# different backends, and the flanking argument against MCU-only stacks would
+# have no evidence behind it.
+[board]
+id     = "linux-rpi5"
+name   = "Raspberry Pi 5 + I2S HAT"
+target = "linux"
+mcu    = "bcm2712"
+
+[capabilities.audio_in]
+channels       = 2
+sample_rate_hz = 48000
+aec            = false      # no hardware reference channel; AEC runs in software
+vad            = true
+
+[capabilities.audio_out]
+channels       = 2
+sample_rate_hz = 48000
+
+[capabilities.digital_out]
+pins    = ["door_lock", "porch_light", "gate_relay"]
+backend = "libgpiod_v2"
+
+[capabilities.sensor_read]
+sensors = ["temperature", "humidity", "door_contact", "motion"]
+
+[capabilities.display]
+width  = 800
+height = 480
+color  = "rgb888"

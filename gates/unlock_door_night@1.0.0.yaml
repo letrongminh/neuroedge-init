@@ -1,0 +1,39 @@
+# Level 3 of 3 — night-shift variant, and the two-level inheritance case
+# required by the Sprint 1 exit criteria.
+#
+# Resolution walks base-access@1.0.0 -> unlock_door@1.2.0 -> here, which sits
+# exactly at the Appendix B.5 principle 5 depth cap. Every tightening below is
+# checked mechanically by the resolver:
+#
+#   guest_authenticated  true            -> { confidence_gte: 0.95 }  (raises the floor)
+#   risk_level           inherited { lte: low }                       (unchanged)
+#   room_matches         inherited true                               (unchanged)
+#
+# `staff_co_authorized` and `request_channel` are new criteria (principle 3).
+schema:  neuroedge.gate/v1
+name:    unlock_door_night
+version: 1.0.0
+extends: neuroedge://gates/unlock_door@1.2.0
+
+evaluate:
+  staff_co_authorized:
+    type: bool
+    instructions: "Nhân viên trực đêm đã đồng phê duyệt yêu cầu mở khóa này"
+  request_channel:
+    type: choice
+    options: [in_person, app, phone, web]
+    instructions: "Kênh phát sinh yêu cầu mở khóa"
+
+allow_when:
+  guest_authenticated: { confidence_gte: 0.95 }
+  staff_co_authorized: true
+  request_channel:     { in: [in_person, app] }
+
+on_block:
+  action:  escalate
+  to:      night_duty_manager
+  message: "Ngoài giờ hành chính, yêu cầu mở khóa cần quản lý trực đêm phê duyệt."
+
+budget:
+  p95_latency_ms: 90
+  fail:           closed

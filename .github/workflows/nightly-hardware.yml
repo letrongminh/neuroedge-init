@@ -1,0 +1,229 @@
+# Nightly hardware pipeline (TSK-S1-12, FR-CI-06)
+#
+# Two purposes:
+#   1. Build the ESP32-S3 firmware and check it against the Q-3 flash budget.
+#      This runs on a hosted runner and needs no board.
+#   2. Flash the reference board, capture the memory spike measurement, and
+#      replay the canonical traces on real hardware. This needs a self-hosted
+#      runner with an ESP32-S3-BOX-3 attached.
+#
+# Stage 2 is skipped while no such runner exists, and it reports the skip
+# explicitly. It must never report success from a run that did not happen —
+# the memory spike feeds a scope decision (R-1, scope-cut tier 5), and a
+# false pass there is worse than no data.
+name: nightly-hardware
+
+on:
+  schedule:
+    - cron: "0 18 * * *"   # 01:00 UTC+7
+  workflow_dispatch:
+    inputs:
+      run_on_hardware:
+        description: "Run the on-device stage (needs a self-hosted runner with a Box-3)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  IDF_VERSION: v5.2.1     # pinned — §3.9 obligation 5
+  NEUROEDGE_ROOT: ${{ github.workspace }}
+
+jobs:
+  firmware-build:
+    name: Build firmware and check the Q-3 flash budget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build with ESP-IDF ${{ env.IDF_VERSION }}
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ env.IDF_VERSION }}
+          target: esp32s3
+          path: targets/esp32s3
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Locate the built image
+        id: image
+        run: |
+          image="$(find targets/esp32s3/build -maxdepth 1 -name '*.bin' \
+                     -not -name 'bootloader*' -not -name 'partition*' | head -n1)"
+          if [ -z "$image" ]; then
+            echo "::error::no application image found under targets/esp32s3/build"
+            exit 1
+          fi
+          echo "path=$image" >> "$GITHUB_OUTPUT"
+          echo "Found $image"
+
+      - name: "Firmware must fit an A/B OTA slot (Q-3: <= 3.5 MB)"
+        run: python scripts/check_firmware_size.py "${{ steps.image.outputs.path }}"
+
+      - name: Component size breakdown
+        # Recorded every night so that growth is attributable to a change rather
+        # than discovered as a cliff at the end of Khối 1b.
+        uses: espressif/esp-idf-ci-action@v1
+        continue-on-error: true
+        with:
+          esp_idf_version: ${{ env.IDF_VERSION }}
+          target: esp32s3
+          path: targets/esp32s3
+          command: idf.py size-components
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: firmware-esp32s3
+          path: |
+            targets/esp32s3/build/*.bin
+            targets/esp32s3/build/*.map
+
+  upstream-drift:
+    name: Upstream dependency drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compare the resolved set against the pinned set
+        # §3.9 obligation 5: nightly is where an upstream breaking change should
+        # surface, not a release. This reports drift without failing the build,
+        # because upstream moving is information, not a defect in this repo.
+        continue-on-error: true
+        run: |
+          python -m pip install --upgrade pip >/dev/null
+          python -m pip install -e 'python[dev]' >/dev/null
+          python -m pip freeze --exclude-editable | sort > resolved.txt
+          # The lock file carries a comment header explaining how to regenerate
+          # it; strip comments and blanks so the diff is about versions only.
+          grep -Ev '^\s*(#|$)' python/requirements-lock.txt | sort > pinned.txt
+          if diff -u pinned.txt resolved.txt > drift.diff; then
+            echo "  ok  the resolved set matches python/requirements-lock.txt"
+          else
+            echo "::warning::dependency drift detected against the pinned set"
+            cat drift.diff
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-drift
+          path: |
+            pinned.txt
+            resolved.txt
+            drift.diff
+
+  memory-spike:
+    name: Memory spike on the reference board (TSK-S1-10)
+    needs: firmware-build
+    # Gated on a self-hosted runner labelled for the reference board. Until one
+    # is registered, the job does not run and the summary below says so.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_on_hardware }}
+    runs-on: [self-hosted, esp32s3-box-3]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: firmware-esp32s3
+          path: build-artifacts
+
+      - name: Flash the reference board
+        run: |
+          python -m esptool --chip esp32s3 --port "${NEUROEDGE_SERIAL_PORT:-/dev/ttyUSB0}" \
+            write_flash 0x10000 build-artifacts/*.bin
+
+      - name: Capture the measurement
+        # The firmware prints one machine-readable line, so nobody transcribes
+        # a number by hand. See targets/esp32s3/main/memory_probe.c.
+        run: |
+          timeout 120 python -m serial.tools.miniterm \
+            "${NEUROEDGE_SERIAL_PORT:-/dev/ttyUSB0}" 115200 --raw \
+            | tee monitor.log || true
+
+          if ! grep -q 'NEUROEDGE_MEMORY_JSON' monitor.log; then
+            echo "::error::the probe emitted no measurement — treat this run as INCONCLUSIVE, not as a pass"
+            exit 1
+          fi
+          grep -o 'NEUROEDGE_MEMORY_JSON .*' monitor.log | tail -n1 \
+            | sed 's/^NEUROEDGE_MEMORY_JSON //' > memory_spike.json
+          cat memory_spike.json
+
+      - name: Check the measurement against Q-3
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+
+          data = json.loads(pathlib.Path("memory_spike.json").read_text())
+
+          if not data.get("audio_checkpoint_reached"):
+              sys.exit(
+                  "::error::the audio_ready checkpoint was never reached. The "
+                  "pre-audio baseline answers a different question — see "
+                  "docs/reports/memory_spike_report.md §2. Verdict: INCONCLUSIVE."
+              )
+
+          checks = [
+              ("internal SRAM", data["internal_free_bytes"], data["q3_min_internal_sram_bytes"]),
+              ("PSRAM", data["psram_free_bytes"], data["q3_min_psram_bytes"]),
+          ]
+          failed = False
+          for label, measured, floor in checks:
+              ok = measured >= floor
+              failed |= not ok
+              print(f"{label}: {measured:,} B vs >= {floor:,} B -> {'PASS' if ok else 'FAIL'}")
+
+          if failed:
+              sys.exit(
+                  "::error::Q-3 budget missed. Roadmap §4.1 requires scope-cut "
+                  "tier 5 (§9) to be triggered now, not watched until Week 9."
+              )
+          print("Q-3 runtime budget met.")
+          PY
+
+      - name: Replay the canonical traces on hardware
+        continue-on-error: true
+        run: |
+          # Cross-target replay equivalence is TSK-S4-03; recorded here as a
+          # placeholder so the hardware stage has the right shape when it lands.
+          echo "::notice::on-device replay equivalence is not implemented yet (TSK-S4-03)"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: memory-spike-measurement
+          path: |
+            memory_spike.json
+            monitor.log
+
+  report:
+    name: Summary
+    needs: [firmware-build, upstream-drift, memory-spike]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write the run summary
+        run: |
+          {
+            echo "## Nightly hardware pipeline"
+            echo
+            echo "| Stage | Result |"
+            echo "|:---|:---|"
+            echo "| Firmware build + Q-3 flash budget | ${{ needs.firmware-build.result }} |"
+            echo "| Upstream dependency drift | ${{ needs.upstream-drift.result }} |"
+            echo "| Memory spike on hardware | ${{ needs.memory-spike.result }} |"
+            echo
+            if [ "${{ needs.memory-spike.result }}" = "skipped" ]; then
+              echo "> **Memory spike did not run.** No self-hosted runner labelled"
+              echo "> \`esp32s3-box-3\` is registered, so TSK-S1-10 has no measured"
+              echo "> figure and Sprint 1 exit criterion 3 remains open. This is a"
+              echo "> skip, not a pass — see \`docs/reports/memory_spike_report.md\`."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,5 @@
+# Principle 5 — enters the cycle-a <-> cycle-b dependency loop.
+schema:  neuroedge.gate/v1
+name:    cycle-entry
+version: 1.0.0
+extends: neuroedge://gates/cycle-a@1.0.0

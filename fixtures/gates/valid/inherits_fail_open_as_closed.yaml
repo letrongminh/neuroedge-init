@@ -1,0 +1,10 @@
+# Principle 4 — the base declares `fail: open`; this gate says nothing about
+# `fail`. It must resolve to `closed`. This is the case that stops a community
+# base gate from handing fail-open permission to a device that never asked for
+# it (FR-GATE-07).
+schema:  neuroedge.gate/v1
+name:    inherits-fail-open-as-closed
+version: 1.0.0
+extends: neuroedge://gates/strict-base@1.0.0
+budget:
+  p95_latency_ms: 100

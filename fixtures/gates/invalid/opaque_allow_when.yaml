@@ -1,0 +1,7 @@
+# Principle 2 — an opaque CEL expression inside an inheritance chain cannot be
+# proven to be a tightening, so resolution fails closed.
+schema:  neuroedge.gate/v1
+name:    opaque-allow-when
+version: 1.0.0
+extends: neuroedge://gates/strict-base@1.0.0
+allow_when: "guest_authenticated == true && risk_level <= 'low'"

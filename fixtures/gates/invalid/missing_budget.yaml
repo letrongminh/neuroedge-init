@@ -1,0 +1,12 @@
+# Schema error — a root gate must declare the full contract, budget included.
+schema:  neuroedge.gate/v1
+name:    missing-budget
+version: 1.0.0
+evaluate:
+  ok:
+    type: bool
+    instructions: "Placeholder criterion"
+allow_when:
+  ok: true
+on_block:
+  action: deny

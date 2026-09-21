@@ -1,0 +1,7 @@
+# Principle 2 — drops the inherited confidence floor from 0.9 to 0.5.
+schema:  neuroedge.gate/v1
+name:    loosens-confidence
+version: 1.0.0
+extends: neuroedge://gates/strict-base@1.0.0
+allow_when:
+  guest_authenticated: { confidence_gte: 0.5 }

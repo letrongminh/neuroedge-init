@@ -2,27 +2,34 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schema.neuroedge.dev/gate/v1.json",
   "title": "NeuroEdge Gate Configuration Schema v1",
-  "description": "Standard schema for NeuroEdge Safety Gate configuration defining evaluation rules, fail-closed behavior, and actuator constraints.",
+  "description": "Standard schema for NeuroEdge Safety Gate configuration defining evaluation rules, fail-closed behavior, and actuator constraints. Authored as YAML (Proposal §4.5), compiled to RFC 8785 canonical JSON for hashing and signing.",
   "type": "object",
-  "required": ["schema", "name", "version", "evaluate", "allow_when", "on_block", "budget"],
+  "required": ["schema", "name", "version"],
   "properties": {
     "schema": {
+      "description": "Schema version identifier. Frozen at neuroedge.gate/v1.",
       "type": "string",
       "const": "neuroedge.gate/v1"
     },
     "name": {
+      "description": "Logical gate name. Must match the gate key declared in agent.toml.",
       "type": "string",
       "pattern": "^[a-z0-9_-]+$"
     },
     "version": {
+      "description": "SemVer version. Any change to allow_when is a breaking change (Appendix B.1).",
       "type": "string",
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
     },
     "extends": {
-      "type": "string"
+      "description": "URI of the base gate to inherit from. Resolution is governed by the five extends safety principles (Appendix B.5).",
+      "type": "string",
+      "pattern": "^neuroedge://gates/[a-z0-9_/-]+@(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
     },
     "evaluate": {
+      "description": "Quantities that must be adjudicated before an action is authorised.",
       "type": "object",
+      "minProperties": 1,
       "additionalProperties": {
         "type": "object",
         "required": ["type", "instructions"],
@@ -32,23 +39,47 @@
             "enum": ["bool", "level", "choice"]
           },
           "instructions": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "levels": {
+            "description": "Ordered low-to-high ranking. Required when type is level.",
             "type": "array",
-            "items": { "type": "string" }
+            "items": { "type": "string" },
+            "minItems": 2,
+            "uniqueItems": true
           },
           "options": {
+            "description": "Permitted choices. Required when type is choice.",
             "type": "array",
-            "items": { "type": "string" }
+            "items": { "type": "string" },
+            "minItems": 2,
+            "uniqueItems": true
           }
-        }
+        },
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": { "properties": { "type": { "const": "level" } }, "required": ["type"] },
+            "then": { "required": ["type", "instructions", "levels"] }
+          },
+          {
+            "if": { "properties": { "type": { "const": "choice" } }, "required": ["type"] },
+            "then": { "required": ["type", "instructions", "options"] }
+          },
+          {
+            "if": { "properties": { "type": { "const": "bool" } }, "required": ["type"] },
+            "then": { "not": { "anyOf": [{ "required": ["levels"] }, { "required": ["options"] }] } }
+          }
+        ]
       }
     },
     "allow_when": {
+      "description": "Authorisation condition. Every clause must hold simultaneously. The structured object form (Appendix B.2 operators) is required whenever the gate participates in an extends chain, because tightening cannot be proven for an opaque CEL string (RFC-0001).",
       "type": ["string", "object", "array"]
     },
     "on_block": {
+      "description": "Behaviour when the gate denies the request (Appendix B.3).",
       "type": "object",
       "required": ["action"],
       "properties": {
@@ -57,31 +88,62 @@
           "enum": ["deny", "escalate", "ask", "degrade"]
         },
         "to": {
-          "type": "string"
+          "description": "Escalation recipient: human, slow, or another agent. Required for action escalate.",
+          "type": "string",
+          "minLength": 1
         },
         "message": {
-          "type": "string"
+          "description": "Explanation shown to the user. Required for action ask.",
+          "type": "string",
+          "minLength": 1
         },
         "fallback_action": {
-          "type": "string"
+          "description": "Pre-registered safer alternative. Required for action degrade.",
+          "type": "string",
+          "minLength": 1
         }
-      }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "action": { "const": "escalate" } }, "required": ["action"] },
+          "then": { "required": ["action", "to"] }
+        },
+        {
+          "if": { "properties": { "action": { "const": "ask" } }, "required": ["action"] },
+          "then": { "required": ["action", "message"] }
+        },
+        {
+          "if": { "properties": { "action": { "const": "degrade" } }, "required": ["action"] },
+          "then": { "required": ["action", "fallback_action"] }
+        }
+      ]
     },
     "budget": {
+      "description": "Adjudication time budget and connectivity failure policy (Appendix B.4).",
       "type": "object",
-      "required": ["p95_latency_ms", "fail"],
+      "required": ["p95_latency_ms"],
       "properties": {
         "p95_latency_ms": {
           "type": "integer",
           "minimum": 1
         },
         "fail": {
+          "description": "closed denies the action; open permits it. Optional, and absence means closed (Appendix B.4) — so a gate can only become fail-open by saying so, at every level (Appendix B.5 principle 4).",
           "type": "string",
           "enum": ["closed", "open"],
           "default": "closed"
         }
-      }
+      },
+      "additionalProperties": false
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "$comment": "RFC-0001 — a root gate (no extends) must declare the full contract; a derived gate may inherit evaluate, allow_when, on_block and budget from its base.",
+      "if": { "not": { "required": ["extends"] } },
+      "then": { "required": ["schema", "name", "version", "evaluate", "allow_when", "on_block", "budget"] }
+    }
+  ]
 }

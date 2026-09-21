@@ -1,37 +1,145 @@
 NeuroEdge
 Copyright 2026 NeuroEdge Contributors
 
-This product includes software developed by third parties, distributed under open-source licenses:
+Licensed under the MIT License.
 
-1. XiaoZhi ESP32 (esp32-xiaozhi)
-   - Source: https://github.com/78/xiaozhi-esp32
-   - License: Apache License 2.0 / MIT
-   - Components ported: I2S audio codec initializations (ES8311, ES7210), LCD ST7789 drivers,
-     and ESP32-S3-Box-3 hardware pin definitions in targets/esp32s3/.
+This file discharges obligations 1, 2 and 4 of roadmap §3.9 (nghĩa vụ ghi nhận
+nguồn): the licence matrix, the repository NOTICE, and public attribution.
+Obligation 3 (in-code attribution at the head of every ported file) is enforced
+by review — see CONTRIBUTING.md §4. Obligation 5 (version pinning) lives in
+python/requirements-lock.txt.
+
+Licence policy for the distributed core: PERMISSIVE ONLY (MIT, BSD, Apache-2.0,
+ISC, MPL-2.0, PSF). Strong copyleft — GPLv2, GPLv3, AGPL — must not appear in
+anything shipped to users. Roadmap §3.10 states the reason: it would spread
+from the MIT core into customer projects. Enforced on every pull request by the
+`licence-obligations` job in .github/workflows/ci-sim-linux.yml.
+
+
+================================================================================
+SECTION A — PORTED AND ADAPTED SOURCE
+================================================================================
+
+Components whose source is, or will be, copied or adapted into this repository.
+Each ported file must additionally name its upstream file and commit at the head
+of the file itself.
+
+1. XiaoZhi ESP32 (xiaozhi-esp32)
+   - Source:    https://github.com/78/xiaozhi-esp32
+   - Licence:   Apache License 2.0 / MIT
+   - Verified:  2026-09-21
+   - Scope:     I2S audio codec initialisation (ES8311, ES7210), ST7789 LCD
+                driver, ESP32-S3-BOX-3 pin definitions.
+   - Lands in:  targets/esp32s3/
+   - Status:    APPROVED — not yet ported (Sprint 4, TSK-S4-01)
 
 2. Pipecat AI
-   - Source: https://github.com/pipecat-ai/pipecat
-   - License: MIT License
-   - Components adapted: Frame-based audio pipeline architecture, Dynamic silence handling,
-     and Barge-in state machine in python/neuroedge/perception/.
+   - Source:    https://github.com/pipecat-ai/pipecat
+   - Licence:   MIT License
+   - Verified:  2026-09-21
+   - Scope:     Frame-based audio pipeline architecture, dynamic silence
+                handling, barge-in state machine design.
+   - Lands in:  python/neuroedge/perception/
+   - Status:    APPROVED — not yet ported (Sprint 3, TSK-S3-11). Roadmap §3.10
+                requires the canonical FSM spec (TSK-S2-07) and the compliance
+                vector set (TSK-S3-10) to exist FIRST; porting before that makes
+                this a risk rather than a leverage.
 
 3. Wokwi Elements
-   - Source: https://github.com/wokwi/wokwi-elements
-   - License: MIT License
-   - Components used: Hardware simulation web components (<wokwi-led>, <wokwi-pushbutton>,
-     <wokwi-solenoid-lock>) for the local web simulator in python/neuroedge/sim/.
+   - Source:    https://github.com/wokwi/wokwi-elements
+   - Licence:   MIT License
+   - Verified:  2026-09-21
+   - Scope:     Hardware simulation web components (<wokwi-led>,
+                <wokwi-pushbutton>, <wokwi-solenoid-lock>).
+   - Lands in:  python/neuroedge/sim/web/
+   - Status:    APPROVED — not yet used (Sprint 2, TSK-S2-09)
 
 4. Google Common Expression Language (CEL)
-   - Source: https://github.com/google/cel-spec
-   - License: Apache License 2.0
-   - Components used: cel-python for gate expression parsing and deterministic evaluation.
+   - Source:    https://github.com/google/cel-spec
+   - Licence:   Apache License 2.0
+   - Verified:  2026-09-21
+   - Scope:     Expression language specification. `cel-python` performs
+                PARSING ON THE WORKSTATION ONLY.
+   - Lands in:  python/neuroedge/engine/cel_compiler.py
+   - Status:    APPROVED — not yet used (Sprint 2, TSK-S2-06)
+   - Boundary:  Per decision Q-9 option A, the decision-tree compiler and the
+                on-device tree walker are NeuroEdge code, not ported code. They
+                are safety semantics and take no third-party dependency (§3.1).
+                No CEL evaluator is embedded in firmware.
 
-5. LiteLLM
-   - Source: https://github.com/BerriAI/litellm
-   - License: MIT License
-   - Components referenced: Multi-provider proxy routing and failover patterns for Hosted Gateway.
 
-6. OpenMeter
-   - Source: https://github.com/openmeterio/openmeter
-   - License: Apache License 2.0
-   - Components referenced: Event-based metering architecture for agent token and gate auditing.
+================================================================================
+SECTION B — RUNTIME DEPENDENCIES OF THE DISTRIBUTED CORE
+================================================================================
+
+Installed alongside the `neuroedge` package. Versions pinned in
+python/requirements-lock.txt. All permissive.
+
+| Package                  | Licence        | Verified   | Used for                          |
+|--------------------------|----------------|------------|-----------------------------------|
+| typer                    | MIT            | 2026-09-21 | CLI framework                     |
+| rich                     | MIT            | 2026-09-21 | Terminal rendering                |
+| pydantic                 | MIT            | 2026-09-21 | Typed models                      |
+| jsonschema               | MIT            | 2026-09-21 | Schema validation (draft 2020-12) |
+| pyyaml                   | MIT            | 2026-09-21 | Gate document parsing             |
+| rfc8785                  | Apache-2.0     | 2026-09-21 | RFC 8785 canonical JSON (JCS)     |
+| deepdiff                 | MIT            | 2026-09-21 | Golden-reference diffing          |
+
+Transitive dependencies and their licences are recorded in full by the
+`licences` artifact of every `ci-sim-linux` run.
+
+Two deliberate choices in this section, both to keep GPL out of the core:
+
+  * jsonschema is declared as `jsonschema[format-nongpl]`, NOT `jsonschema[format]`.
+    The default `format` extra pulls in `rfc3987`, which is GPL-licensed. The
+    `format-nongpl` extra uses `rfc3987-syntax` (MIT) instead. The extra is
+    required, not cosmetic: without a format checker, `format: date-time` and
+    `format: uri` in trace.v1.json are annotations only, and a trace with an
+    unparseable timestamp would validate.
+
+  * copier is NOT a core dependency. It is needed only by `neuroedge new`
+    (Sprint 3, TSK-S3-07) and depends on `jinja2-ansible-filters`, which is
+    GPL3. It therefore sits in the optional `scaffold` extra. Installing that
+    extra brings GPL3 code into the environment; do not promote it to the core
+    dependency set without a written licence decision.
+
+
+================================================================================
+SECTION C — DEVELOPMENT AND CI DEPENDENCIES
+================================================================================
+
+Not distributed to users; present only in developer and CI environments.
+
+| Package        | Licence    | Verified   | Used for                     |
+|----------------|------------|------------|------------------------------|
+| pytest         | MIT        | 2026-09-21 | Test runner                  |
+| pytest-asyncio | Apache-2.0 | 2026-09-21 | Async test support           |
+| ruff           | MIT        | 2026-09-21 | Lint and format              |
+| pip-licenses   | MIT        | 2026-09-21 | Licence gate in CI           |
+
+ESP-IDF (Apache-2.0, pinned at v5.2.1 in the nightly workflow) is a build
+toolchain, used but not redistributed.
+
+
+================================================================================
+SECTION D — PLANNED SERVER-SIDE COMPONENTS (LICENCE DECISION STILL OPEN)
+================================================================================
+
+The three components below are scheduled for Khối 2 and all fall OUTSIDE the
+permissive-only policy stated at the head of this file. They are listed here so
+the exposure is visible, not because they are approved.
+
+| Component | Licence            | Distributed to users? | Status         |
+|-----------|--------------------|-----------------------|----------------|
+| Eclipse Hawkbit | EPL-2.0      | No — server-side only | ⏳ Q-11 OPEN   |
+| EMQX            | BSL          | No — server-side only | ⏳ Q-11 OPEN   |
+| LiteLLM         | MIT core, enterprise features under a separate licence | No — server-side only | ⏳ Q-11 OPEN |
+
+>>> DECISION Q-11 IS OPEN AND BLOCKING. <<<
+>>> Do not port a single line from these three projects until written approval
+>>> exists. Owner: engineering lead. Roadmap §10.2 records Q-11 as the most
+>>> urgent of the open decisions, and it is a Sprint 1 exit criterion (no. 6).
+
+Their server-only deployment is what makes an exception arguable at all — none
+of the three is shipped with the product or into customer projects. That
+argument still has to be made and recorded, not assumed.

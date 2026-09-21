@@ -1,0 +1,108 @@
+# Expected diagnostics for fixtures/gates/invalid/.
+#
+# Sprint 1 exit criterion 1 requires the frozen schemas to ship with valid
+# examples *and* invalid examples carrying their expected error. This file is
+# that contract, and tests/test_gate_fixtures.py enforces it: every entry must
+# fail exactly this way, and every file in invalid/ must have an entry.
+#
+# `why_contains` and `where_contains` are substring assertions, so wording can
+# be improved without editing this file — but the error class, the stable code
+# and the cited Appendix B.5 principle may not drift silently.
+
+loosens_level.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.risk_level"
+  why_contains: "loosens the inherited condition"
+
+loosens_confidence.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.guest_authenticated"
+  why_contains: "confidence >= 0.9"
+
+loosens_choice.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.request_channel"
+  why_contains: "loosens the inherited condition"
+
+loosens_via_not_in.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.request_channel"
+  why_contains: "loosens the inherited condition"
+
+redefines_criterion.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 1
+  where_contains: "evaluate.risk_level"
+  why_contains: "redefines a criterion inherited from the base gate"
+
+depth_four.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 5
+  where_contains: "extends chain"
+  why_contains: "exceeding the limit of 3"
+
+cycle_entry.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 5
+  where_contains: "extends chain"
+  why_contains: "dependency cycle detected"
+
+opaque_allow_when.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when"
+  why_contains: "tightening cannot be proven"
+
+unknown_criterion.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "allow_when.risk_lvl"
+  why_contains: "is declared in evaluate"
+
+unknown_operator.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "allow_when.risk_level"
+  why_contains: "not defined for a 'level' criterion"
+
+escalate_without_to.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "on_block"
+  why_contains: "'to' is a required property"
+
+missing_budget.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "missing_budget.yaml"
+  why_contains: "'budget' is a required property"
+
+level_without_levels.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.risk_level"
+  why_contains: "'levels' is a required property"
+
+bad_on_block_action.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "on_block.action"
+  why_contains: "is not one of ['deny', 'escalate', 'ask', 'degrade']"
+
+missing_base@1.0.0.yaml:
+  error: GateNotFoundError
+  code: NE2001
+  where_contains: "neuroedge://gates/does-not-exist@9.9.9"
+  why_contains: "no gate document at"

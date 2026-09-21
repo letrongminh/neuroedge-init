@@ -1,0 +1,34 @@
+# Target `esp32s3` — the single reference board (Q-1, Q-2). Not interchangeable
+# with a DevKitC: the Box-3 has the codec, PSRAM and display the voice runtime
+# assumes, and the memory spike (TSK-S1-10) is measured on this part.
+#
+# ESP32-S3-WROOM-1-N16R8: 16 MB flash, 8 MB octal PSRAM, 512 KB internal SRAM.
+# The Q-3 budget carves out of that: >= 120 KB SRAM and >= 2 MB PSRAM for the
+# application, firmware <= 3.5 MB to fit the dual A/B partitions.
+[board]
+id     = "esp32s3-box-3"
+name   = "Espressif ESP32-S3-BOX-3"
+target = "esp32s3"
+mcu    = "esp32s3"
+
+[capabilities.audio_in]
+channels       = 2          # ES7210 quad ADC, two channels populated on Box-3
+sample_rate_hz = 16000
+aec            = true       # ES7210 provides the reference channel for AEC
+vad            = true
+
+[capabilities.audio_out]
+channels       = 1          # ES8311 mono codec into the onboard speaker
+sample_rate_hz = 16000
+
+[capabilities.digital_out]
+pins    = ["door_lock", "porch_light", "gate_relay"]
+backend = "esp_driver_gpio"
+
+[capabilities.sensor_read]
+sensors = ["temperature", "humidity", "door_contact", "motion"]
+
+[capabilities.display]
+width  = 320
+height = 240
+color  = "rgb565"           # ST7789 over SPI

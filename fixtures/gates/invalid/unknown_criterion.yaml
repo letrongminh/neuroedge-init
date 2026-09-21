@@ -1,0 +1,9 @@
+# Schema/operator error — clause names a criterion no `evaluate` block declares
+# (here, a typo). Left permissive this clause would never fire, and the gate
+# would look stricter than it is.
+schema:  neuroedge.gate/v1
+name:    unknown-criterion
+version: 1.0.0
+extends: neuroedge://gates/strict-base@1.0.0
+allow_when:
+  risk_lvl: { lte: low }

@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "neuroedge"
 version = "0.1.0"
 description = "Typed Action Contract Platform for Physical AI"
-readme = "../neuroedge-proposal.md"
+readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [
@@ -21,13 +21,18 @@ classifiers = [
     "Topic :: Software Development :: Embedded Systems",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
+# Runtime dependencies of the distributed core. Every entry must carry a
+# permissive licence: the core is MIT, and §3.10 warns that strong copyleft
+# here would spread into customer projects. The `format-nongpl` extra on
+# jsonschema is deliberate — its default `format` extra pulls in the
+# GPL-licensed rfc3987, whereas `format-nongpl` uses the MIT rfc3987-syntax.
 dependencies = [
     "typer>=0.12.0",
     "rich>=13.7.0",
     "pydantic>=2.7.0",
-    "jsonschema>=4.21.0",
-    "canonicaljson>=2.0.0",
-    "copier>=9.0.0",
+    "jsonschema[format-nongpl]>=4.21.0",
+    "pyyaml>=6.0.1",
+    "rfc8785>=0.1.2",
     "deepdiff>=7.0.0",
 ]
 
@@ -36,6 +41,20 @@ dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
     "ruff>=0.3.0",
+    "pip-licenses>=5.0.0",
+]
+# Project scaffolding for `neuroedge new` (TSK-S3-07).
+#
+# NOT in the core dependency set: copier depends on jinja2-ansible-filters,
+# which is GPL3. Shipping that in the required set would put GPL3 code into
+# every install of an MIT core, and from there into customer projects — the
+# exact contamination §3.10 rules out. Kept optional until TSK-S3-07 either
+# clears it as a developer-only tool or replaces it.
+#
+# Installing this extra brings GPL3 code into the environment. Do not add it
+# to the core dependencies without a written licence decision (see Q-11).
+scaffold = [
+    "copier>=9.0.0",
 ]
 
 [project.scripts]
@@ -47,3 +66,31 @@ packages = ["neuroedge"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".venv", "build", "dist"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "I",      # import sorting
+    "B",      # bugbear
+    "UP",     # pyupgrade
+    "C4",     # comprehensions
+    "SIM",    # simplify
+    "RET",    # return
+]
+ignore = [
+    "E501",   # line length is handled by the formatter
+    "B008",   # Typer declares defaults via function calls in signatures
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests deliberately assert on private-ish shapes and repeat fixtures.
+"tests/*" = ["B011"]
+
+[tool.ruff.format]
+quote-style = "double"

@@ -1,0 +1,7 @@
+# Principle 2 — widens the inherited risk tolerance from {low} to {low,medium,high}.
+schema:  neuroedge.gate/v1
+name:    loosens-level
+version: 1.0.0
+extends: neuroedge://gates/strict-base@1.0.0
+allow_when:
+  risk_level: { lte: high }
