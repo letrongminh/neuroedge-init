@@ -113,6 +113,8 @@ Tuần 0 ──► LƯỢC ĐỒ GATE v1 ──┐
 | 5   | Runtime thoại trên MCU          | 8–10 | Mắt xích rủi ro nhất; xem §9                                                                                  |
 
 
+**Đòn bẩy mã nguồn mở trên đường găng:** mắt xích 2 rút ngắn nhờ Google CEL, mắt xích 4 nhờ driver XiaoZhi, mắt xích 5 nhờ Pipecat và bộ mô hình âm thanh. Chi tiết và mức rút ngắn thực tế tại §3.7.
+
 **Không nằm trên đường găng, làm song song:** giao diện `sim`, CLI, tài liệu, ví dụ mẫu, hạ tầng CI.
 
 ### 2.3 Quy tắc đóng băng lược đồ
@@ -126,16 +128,22 @@ Từ **cuối Tuần 2**, mọi thay đổi đối với lược đồ gate ho�
 Đây là quy tắc nghiêm ngặt nhất của toàn bộ dự án. Lược đồ trôi nổi làm sụp đổ mệnh đề trung tâm.
 
 ---
-
 ## 3. Chiến lược tái sử dụng mã nguồn mở
 
-**Nguyên tắc bao trùm: tái sử dụng tối đa ở dưới ranh giới HAL, tự xây tại và trên ranh giới đó.**
+**Nguyên tắc bao trùm: xây thứ tạo khác biệt, mượn thứ đã là hàng hóa.**
 
-§3.4 của proposal đã chốt chính sách bọc thư viện xử lý tín hiệu thay vì tự viết. Mục này mở rộng chính sách đó thành quyết định cụ thể cho từng dự án mã nguồn mở đang tồn tại, và gắn từng quyết định vào sprint tiêu thụ nó.
+Mục tiêu là rút ngắn tối đa thời gian ra thị trường bằng cách tái sử dụng và port các dự án mã nguồn mở hàng đầu vào mọi khâu — đồng thời bảo vệ tuyệt đối phần tài sản trí tuệ lõi.
 
-### 3.1 Phép thử quyết định
+### 3.1 Ranh giới bất di bất dịch
 
-Với mỗi dự án bên ngoài, hỏi đúng một câu trước khi cân nhắc bất cứ điều gì khác:
+| Nhóm | Thành phần | Chính sách |
+|:---|:---|:---|
+| **Tài sản lõi — tự xây 100%** | Hợp đồng hành động · Lược đồ gate có phiên bản · Mạch ngắt fail-closed · Trục Action CI · Lược đồ vết ghi JSON mở · Đối chiếu năng lực lúc biên dịch | **Không nhận bất kỳ phụ thuộc kiến trúc nào** |
+| **Hàng hóa — mượn tối đa** | Driver bo mạch · Codec âm thanh · VAD/AEC · Wake-word · Parser CLI · Web component mô phỏng · Rule engine biểu thức · Proxy định tuyến LLM · Metering · Hạ tầng OTA | **Tái sử dụng hoặc port, không tự viết** |
+
+Ranh giới này quyết định mọi mục còn lại. Một thành phần nằm ở nhóm trên thì dù có thư viện sẵn cũng không dùng; nằm ở nhóm dưới thì dù viết được cũng không viết.
+
+### 3.2 Phép thử quyết định
 
 > **Phụ thuộc vào nó có buộc ta vi phạm P-1, P-2, hoặc ba quyết định kiến trúc tuần 1 không?**
 
@@ -145,88 +153,145 @@ Với mỗi dự án bên ngoài, hỏi đúng một câu trước khi cân nh�
 | **P-2** | Ba môi trường thực thi ngang hàng |
 | **Tuần 1** | `sim` là target thật · gate là artifact có phiên bản · trace là công dân hạng nhất |
 
-**Có** → không phụ thuộc, chỉ liên thông hoặc tham khảo. **Không** → tái sử dụng tối đa.
+**Có** → chỉ liên thông hoặc tham khảo thiết kế. **Không** → tái sử dụng tối đa.
 
-Đây không phải chủ nghĩa tự viết hết. Phép thử này loại bỏ đúng những phụ thuộc phá kiến trúc, và cho phép mọi phụ thuộc còn lại.
+### 3.3 Kỷ luật giấy phép
 
-### 3.2 Ba tầng tái sử dụng
-
-| Tầng | Nội dung | Quyết định |
-|:---|:---|:---|
-| **Tín hiệu** | AEC, VAD, wake-word, STT/TTS, codec | **Tái sử dụng hoàn toàn** — đã là chính sách từ proposal |
-| **Pipeline thoại** | Máy trạng thái hội thoại, barge-in, partial streaming | **Tham khảo thiết kế, tự hiện thực một bản duy nhất** |
-| **Kiến trúc** | HAL, hợp đồng hành động, trace, tương đương target | **Bắt buộc tự xây** — đây là lợi thế phòng thủ |
-
-### 3.3 Đánh giá từng dự án
-
-| Dự án | Tài sản đáng giá | Quyết định | Cách khai thác đúng |
-|:---|:---|:---|:---|
-| **XiaoZhi** | Đường dẫn audio ESP32-S3 đã tinh chỉnh: I2S, AEC phần cứng, Opus streaming, quản lý bộ nhớ chật | **Không fork — port có chọn lọc** | Port phần `audio.in` / `audio.out` thành hiện thực HAL cho `esp32s3`, kèm ghi nhận nguồn đầy đủ |
-| **ESP-Claw** | Hỗ trợ chính hãng, MCP-native, tối ưu sâu trên ESP32 | **Không phụ thuộc — chỉ liên thông** | Tương thích ở tầng MCP: agent NeuroEdge gọi được tool do ESP-Claw expose và ngược lại |
-| **Pipecat · LiveKit Agents · TEN** | Cách xử lý bốn ca biên hội thoại: barge-in, khoảng lặng, partial streaming, phục hồi STT | **Không lấy làm runtime — khai thác thiết kế** | Đọc kỹ cách họ giải bốn ca biên, tự viết một hiện thực portable xuống MCU |
-| **Sherpa-ONNX · Silero VAD · WebRTC AEC · Opus** | Thuật toán xử lý tín hiệu đã trưởng thành | **Tái sử dụng trực tiếp** | Bọc sau interface nội bộ để thay thế được từng thành phần |
-| **ESP-IDF · `gpiod`** | Toolchain và truy cập phần cứng | **Tái sử dụng trực tiếp** | Ghim phiên bản; nightly phát hiện sớm thay đổi phá vỡ tương thích |
-
-#### Vì sao không fork XiaoZhi
-
-XiaoZhi là **một ứng dụng firmware, không phải thư viện**. Logic hội thoại gắn thẳng vào lệnh phần cứng, không có HAL và không có khái niệm hợp đồng hành động. Fork nghĩa là kế thừa đúng kiến trúc mà proposal §1.2 nói là không retrofit được, rồi phải gỡ ra để chèn gate vào giữa. Chi phí gỡ lớn hơn chi phí viết mới, và kèm theo nghĩa vụ theo dõi nhánh thượng nguồn vĩnh viễn.
-
-**Điểm chiến lược cần khai thác thay vì fork:** cộng đồng XiaoZhi là kênh phân phối. Việc **tương thích** với các bo mạch XiaoZhi phổ biến có giá trị cao hơn nhiều so với việc dùng lại mã của họ — người dùng đã có sẵn phần cứng, cắm NeuroEdge vào chạy được ngay là đòn bẩy trực tiếp cho chỉ tiêu B2.
-
-#### Vì sao không xây trên ESP-Claw
-
-Lý do mang tính cấu trúc, không phải kỹ thuật. Proposal §1.4 đã chỉ ra: một SDK chính hãng không thể coi chip của đối thủ là ngang hàng. Xây trên nó thì `linux` vĩnh viễn là công dân hạng hai, luận điểm đánh sườn sụp đổ, và lộ trình phần cứng do nhà sản xuất chip quyết định.
-
-#### Vì sao không lấy Pipecat làm runtime cho `linux`
-
-Đây là cái bẫy tinh vi nhất trong ba trường hợp, vì Pipecat giải rất tốt đúng bốn ca biên mà FR-PER-02 đến FR-PER-05 yêu cầu.
-
-Vấn đề là **hai hiện thực sẽ phân kỳ**. Nếu `linux` dùng máy trạng thái của Pipecat còn `esp32s3` dùng bản C tự viết, hai bản sẽ lệch nhau trong khoảng sáu tuần — đúng cơ chế hỏng mà proposal §3.7 cảnh báo cho sim-as-mock.
-
-Có thể phản biện rằng tương đương target chỉ định nghĩa trên phán quyết gate và trạng thái GPIO, nên khác biệt về nhịp hội thoại là chấp nhận được. Phản biện đó **sai ở một điểm cụ thể**: FR-PER-02 yêu cầu barge-in phải thu hồi lệnh actuator chưa thực thi. Hành vi cắt lời rò trực tiếp vào miền hành động vật lý. Hai hiện thực barge-in khác nhau cho ra hai hành vi thu hồi khác nhau, phá vỡ tương đương ở đúng miền nguy hiểm nhất.
-
-Nếu về sau cần phục vụ đội đã đầu tư vào LiveKit hoặc Pipecat, làm **adapter tùy chọn** cho target `linux`; bản chuẩn tắc vẫn phải là hiện thực của NeuroEdge.
-
-### 3.4 Bảng quyết định theo thành phần
-
-| Thành phần | Quyết định | Nguồn | Sprint tiêu thụ |
-|:---|:---|:---|:---:|
-| AEC, VAD, wake-word, STT/TTS, Opus | Tái sử dụng | Sherpa-ONNX, Silero, WebRTC AEC | Sprint 5 |
-| Đường dẫn audio ESP32-S3 | Port có chọn lọc | XiaoZhi | Sprint 5 |
-| Toolchain vi điều khiển | Tái sử dụng | ESP-IDF | Sprint 4 |
-| Truy cập GPIO trên Linux | Tái sử dụng | `gpiod` | Sprint 3 |
-| Giao tiếp công cụ | Tái sử dụng chuẩn | MCP | Sprint 4 |
-| Máy trạng thái hội thoại | **Tự viết một bản duy nhất** | Tham khảo Pipecat, LiveKit, TEN | Sprint 5 |
-| **Hợp đồng năng lực HAL** | **Tự xây** | — | Sprint 1–2 |
-| **Action Contract Engine và gate** | **Tự xây** | — | Sprint 2 |
-| **Lược đồ trace và Action CI** | **Tự xây** | — | Sprint 1, 3 |
-| **Simulator** | **Tự xây** | — | Sprint 2 |
-
-Bốn dòng cuối là toàn bộ lý do sản phẩm tồn tại. Không dự án nào trong danh sách tham khảo có chúng.
-
-### 3.5 Nghĩa vụ giấy phép và ghi nhận nguồn
-
-**Hạn chót: hoàn tất rà soát trước khi port bất kỳ dòng mã nào — chậm nhất cuối Tuần 2.**
-
-| # | Nghĩa vụ | Nội dung thực hiện |
+| # | Quy tắc | Nội dung |
 |:---:|:---|:---|
-| 1 | Xác minh giấy phép từng dự án | Đọc tệp giấy phép trong kho gốc, không suy đoán theo thông lệ. Ghi lại phiên bản và ngày kiểm tra |
-| 2 | Kiểm tra tính tương thích với MIT | Giấy phép copyleft mạnh không tương thích với lõi MIT — nếu gặp, chuyển sang tự hiện thực |
-| 3 | Tệp `NOTICE` ở gốc kho | Liệt kê từng thành phần, tác giả, giấy phép và phạm vi sử dụng |
-| 4 | Ghi nhận nguồn tại chỗ | Chú thích trong mã, nêu rõ tệp gốc và commit tham chiếu |
-| 5 | Ghi vào tài liệu công khai | Mục "Ghi nhận đóng góp" trong tài liệu, không giấu trong mã |
+| 1 | **Danh sách cho phép** | MIT · Apache-2.0 · BSD-2-Clause · BSD-3-Clause · ISC |
+| 2 | **Vùng cách ly GPL** | Tuyệt đối không nhúng hoặc sao chép mã GPLv3 vào phần phân phối của NeuroEdge, để tránh lây nhiễm sang lõi MIT và sang dự án của khách hàng |
+| 3 | **LGPL chỉ qua liên kết động** | `libgpiod` (LGPL-2.1) gọi qua dynamic link ở không gian người dùng, không tĩnh hóa, không sao chép mã |
+| 4 | **Giấy phép ngoài danh sách cần phê duyệt** | EPL-2.0, MPL-2.0, BSL và tương tự chỉ dùng cho **dịch vụ phía máy chủ không phân phối**, và phải có quyết định ghi thành văn bản |
+| 5 | **Xác minh tại nguồn** | Đọc tệp giấy phép trong kho gốc, ghi lại phiên bản và ngày kiểm tra. Không suy đoán theo thông lệ |
 
-Đây là nghĩa vụ pháp lý, không phải phép lịch sự. Một vi phạm giấy phép phát hiện sau khi phát hành công khai gây thiệt hại lớn hơn nhiều so với vài ngày rà soát trước.
+**Hai ngoại lệ đã biết cần quyết định trước khi dùng — xem Q-11 tại §10:**
 
-### 3.6 Rủi ro khi làm ngược
+| Dự án | Giấy phép dự kiến | Vấn đề |
+|:---|:---|:---|
+| Eclipse Hawkbit | EPL-2.0 | Nằm ngoài danh sách cho phép. Chấp nhận được cho dịch vụ máy chủ không phân phối, nhưng phải ghi rõ ranh giới triển khai |
+| EMQX | Apache-2.0 với phần thương mại theo BSL | Phải xác định chính xác tính năng nào thuộc phần Apache trước khi thiết kế phụ thuộc |
+| LiteLLM | MIT với phần enterprise riêng | Chỉ dùng phần MIT; middleware xác thực thiết bị viết riêng |
+
+### 3.4 Ma trận tích hợp theo khối
+
+| Khối | Hạng mục kỹ thuật | Dự án tái sử dụng | Hình thức | Tiết kiệm |
+|:---|:---|:---|:---|:---:|
+| **1a** | CLI `new` / `run` / `test` | Typer · Rich · Copier | Thư viện Python | 2 tuần |
+| **1a** | Lượng giá biểu thức `allow_when` | Google CEL (`cel-python`) | Rule engine lõi | 3 tuần |
+| **1a** | Giao diện web môi trường `sim` | Wokwi Elements | Web components | 3 tuần |
+| **1a** | Khung kiểm thử Action CI | Pytest · DeepDiff | Plugin `pytest-neuroedge` | 2 tuần |
+| **1a** | Chuẩn hóa lược đồ gate và trace | Pydantic v2 · `rfc8785` canonical JSON | Thư viện chuẩn hóa | 1 tuần |
+| **1b** | Bo mạch tham chiếu ESP32-S3 | XiaoZhi ESP32 | **Port trực tiếp driver** | 5 tuần |
+| **1b** | Barge-in, VAD, xử lý khung âm thanh | Pipecat · microWakeWord · libfvad | **Port mô hình pipeline** | 4 tuần |
+| **1b** | OTA cấp thiết bị | ESP-IDF `esp_https_ota`, `esp_ota_ops` | Tận dụng SDK chuẩn | 2 tuần |
+| **1b** | Hiển thị trạng thái trên màn hình | LVGL v8/v9 | Thư viện đồ họa nhúng | 2 tuần |
+| **2** | Hosted Inference Gateway | LiteLLM Proxy | Dịch vụ backend | 6 tuần |
+| **2** | Điều phối OTA canary | Eclipse Hawkbit | Backend điều phối | 5 tuần |
+| **2** | Kết nối thiết bị và viễn trắc | EMQX · FastAPI WebSockets | Hạ tầng kết nối | 3 tuần |
+| **3** | Kho Gate Registry công khai | CNCF ORAS · Harbor | Chuẩn lưu trữ OCI | 4 tuần |
+| **3** | Hệ đo lường sử dụng | OpenMeter | Hạ tầng metering | 4 tuần |
+| **4** | Điều khiển phòng cho AURA | Home Assistant Core API | Integration adapter | 4 tuần |
+
+**Cách đọc cột "Tiết kiệm":** đây là công sức *viết mã* tránh được, không phải thời gian lịch rút ngắn. Xem §3.7 để biết phần nào thật sự chạm vào đường găng.
+
+### 3.5 Năm dự án port trực tiếp
+
+Năm dự án này không dừng ở `pip install`. Chúng cần trích xuất mã hoặc kiến trúc và đưa thẳng vào codebase.
+
+| # | Dự án | Đích đến | Phần trích xuất |
+|:---:|:---|:---|:---|
+| 1 | **XiaoZhi ESP32** | `targets/esp32s3/drivers/` | Khởi tạo codec I2S (ES8311, ES7210) · cấu hình chân I2C/SPI của ESP32-S3-Box-3 · driver LCD ST7789 · vòng lặp streaming WebSocket nhị phân |
+| 2 | **Pipecat** | `neuroedge/perception/pipeline/` | Frame processor theo khung âm thanh · thuật toán khoảng lặng động · **cơ chế barge-in**: ngắt hàng đợi phát và phát tín hiệu hủy lệnh actuator chưa hoàn tất |
+| 3 | **Wokwi Elements** | `neuroedge/sim/web/` | `<wokwi-led>` · `<wokwi-pushbutton>` · `<wokwi-solenoid-lock>` · `<wokwi-servo>` · `<wokwi-lcd1602>` |
+| 4 | **LiteLLM** | Lõi Hosted Gateway | Chuyển đổi I/O về một chuẩn chung · cân bằng tải · failover · hạn mức theo khóa định danh |
+| 5 | **OpenMeter** | Lõi metering Khối 3 | Engine gom cụm sự kiện · đối soát số lượt gọi agent và lượt thẩm định gate |
+
+**Giá trị lớn nhất nằm ở mục 1 và 2** vì chúng nằm trên đường găng: loại bỏ rủi ro kẹt thanh ghi, lỗi clock I2S, méo tiếng, và toàn bộ vòng thử sai của các ca biên hội thoại.
+
+### 3.6 Ba dự án chỉ liên thông, không phụ thuộc
+
+| Dự án | Quyết định | Lý do |
+|:---|:---|:---|
+| **ESP-Claw** | Liên thông qua MCP | Một SDK chính hãng về cấu trúc không thể coi chip đối thủ là ngang hàng. Phụ thuộc vào nó biến `linux` thành công dân hạng hai và làm sụp luận điểm đánh sườn (proposal §1.4) |
+| **LiveKit Agents** | Tham khảo thiết kế | Lấy cloud làm trung tâm; mô hình hạ tầng mâu thuẫn với yêu cầu chạy đầy đủ khi offline |
+| **TEN Framework** | Tham khảo thiết kế | Như trên |
+
+Riêng **XiaoZhi tuyệt đối không fork toàn bộ**: đó là một ứng dụng firmware, logic hội thoại gắn thẳng vào lệnh phần cứng, không có HAL và không có khái niệm hợp đồng hành động. Chỉ port tầng driver theo §3.5, phần còn lại không đụng tới.
+
+**Điểm chiến lược:** cộng đồng XiaoZhi là kênh phân phối. Tương thích với bo mạch XiaoZhi phổ biến có giá trị cao hơn nhiều so với dùng lại mã — người dùng đã có sẵn phần cứng, cắm vào chạy được ngay là đòn bẩy trực tiếp cho chỉ tiêu B2.
+
+### 3.7 Tác động thật lên đường găng
+
+Tổng tiết kiệm công sức viết mã khoảng 50 tuần-người. **Nhưng phần lớn không nằm trên đường găng.**
+
+| Mắt xích đường găng | Có đòn bẩy OSS không | Mức rút ngắn thực tế |
+|:---|:---|:---|
+| Đóng băng lược đồ gate và trace | Một phần — Pydantic và canonical JSON | Không đáng kể, vì đây là công việc thiết kế |
+| Gate Engine với fail-closed | **Có — CEL thay cho tự viết bộ lượng giá** | Khoảng 1–2 tuần |
+| Record và replay | Một phần — DeepDiff cho so khớp golden | Dưới 1 tuần |
+| **Port HAL lên `esp32s3`** | **Có — driver XiaoZhi** | **2–3 tuần** |
+| **Runtime thoại trên MCU** | **Có — Pipecat, microWakeWord, libfvad** | **2–3 tuần** |
+
+**Kết luận thực tế:** đòn bẩy OSS rút ngắn Khối 1b nhiều hơn Khối 1a, và quan trọng hơn cả là nó **hạ rủi ro R-1 từ mức Cao xuống Trung bình**. Tuy vậy chi phí tích hợp, rà soát giấy phép và ghim phiên bản là chi phí mới phát sinh. Lịch trình trong tài liệu này **giữ nguyên**; phần tiết kiệm được chuyển thành vùng đệm cho Sprint 5, nơi rủi ro tập trung.
+
+### 3.8 Bảo toàn tương đương target khi có hai ngôn ngữ
+
+Đây là hệ quả nghiêm trọng nhất của việc port, và cần xử lý tường minh.
+
+Quyết định Q-8 (§10) chọn **C/C++ trên ESP-IDF cho firmware** và **Python cho `sim` và `linux`**. Hệ quả: máy trạng thái hội thoại **buộc phải có hai hiện thực**. Không thể chia sẻ mã giữa hai bên.
+
+Điều này va thẳng vào P-2. FR-PER-02 yêu cầu barge-in thu hồi lệnh actuator chưa thực thi — nghĩa là hành vi cắt lời rò trực tiếp vào miền hành động vật lý. Hai hiện thực barge-in khác nhau cho ra hai hành vi thu hồi khác nhau.
+
+**Giải pháp bắt buộc: một đặc tả chuẩn tắc, hai hiện thực tuân thủ, một bộ kiểm thử tuân thủ dùng chung.**
+
+| # | Thành phần | Nội dung | Sprint |
+|:---:|:---|:---|:---:|
+| 1 | **Đặc tả máy trạng thái** | Văn bản chuẩn tắc mô tả trạng thái, chuyển tiếp, và điều kiện thu hồi lệnh actuator. Là nguồn sự thật duy nhất, không phải mã Python | Sprint 2 |
+| 2 | **Bộ vector kiểm thử tuân thủ** | Tập tệp vết ghi đầu vào kèm chuỗi phán quyết và trạng thái GPIO kỳ vọng, độc lập với ngôn ngữ | Sprint 3 |
+| 3 | **Hiện thực Python** | Cho `sim` và `linux`, port thiết kế từ Pipecat | Sprint 3 |
+| 4 | **Hiện thực C/C++** | Cho `esp32s3`, port driver từ XiaoZhi | Sprint 5 |
+| 5 | **`neuroedge verify` chạy bộ vector trên cả ba target** | Lệch nhau sinh `TargetEquivalenceError` | Sprint 4–5 |
+
+**Không có bước 1 và 2 thì việc port Pipecat là một rủi ro, không phải một đòn bẩy.** Đặc tả và bộ vector phải có trước khi viết hiện thực thứ hai.
+
+#### Hệ quả tương tự với CEL
+
+Nếu `allow_when` dùng Google CEL, thì gate phải lượng giá được **trên cả vi điều khiển**, vì gate chạy on-device và fail-closed khi mất mạng. `cel-python` không chạy trên ESP32-S3.
+
+Ba phương án, cần chốt tại Q-9:
+
+| Phương án | Nội dung | Đánh giá |
+|:---|:---|:---|
+| **A. Biên dịch gate lúc build** | Host dịch biểu thức CEL thành dạng quyết định tất định; thiết bị lượng giá dạng đã biên dịch | **Khuyến nghị** — giữ một nguồn sự thật, hai bên lượng giá cùng một artifact, và củng cố luôn câu chuyện golden |
+| B. Bộ lượng giá CEL rút gọn bằng C | Tự viết evaluator cho tập con CEL | Thêm một hiện thực cần giữ đồng bộ |
+| C. CEL trên host, biểu thức đơn giản trên thiết bị | Hai cú pháp khác nhau | **Bác bỏ** — phá tương đương target ở đúng tầng an toàn |
+
+### 3.9 Nghĩa vụ ghi nhận nguồn
+
+**Hạn chót: hoàn tất trước khi port bất kỳ dòng mã nào — chậm nhất cuối Tuần 2.**
+
+| # | Nghĩa vụ | Nội dung |
+|:---:|:---|:---|
+| 1 | Ma trận giấy phép | Bảng đầy đủ: dự án, phiên bản, giấy phép, ngày xác minh, phạm vi sử dụng, trạng thái phê duyệt |
+| 2 | Tệp `NOTICE` ở gốc kho | Liệt kê từng thành phần, tác giả và giấy phép |
+| 3 | Ghi nhận tại chỗ trong mã | Chú thích nêu rõ tệp gốc và commit tham chiếu, đặt ngay đầu tệp đã port |
+| 4 | Mục ghi nhận trong tài liệu công khai | Không giấu trong mã nguồn |
+| 5 | Ghim phiên bản cho mọi phụ thuộc | Nightly phát hiện sớm thay đổi phá vỡ tương thích ở thượng nguồn |
+
+Đây là nghĩa vụ pháp lý. Một vi phạm phát hiện sau khi phát hành công khai tốn kém hơn nhiều so với vài ngày rà soát trước.
+
+### 3.10 Rủi ro khi làm ngược
 
 | Nếu | Hậu quả |
 |:---|:---|
-| Fork XiaoZhi làm nền | Kế thừa kiến trúc không có HAL; phải gỡ để chèn gate; gánh nhánh fork vĩnh viễn |
+| Fork toàn bộ XiaoZhi làm nền | Kế thừa kiến trúc không có HAL; phải gỡ để chèn gate; gánh nhánh fork vĩnh viễn |
 | Xây trên ESP-Claw | `linux` thành hạng hai → mất bằng chứng hợp đồng năng lực → mất luận điểm đánh sườn |
-| Lấy Pipecat làm runtime `linux` | Hai hiện thực barge-in phân kỳ → tương đương target vỡ ở miền thu hồi lệnh actuator |
-| Tự viết cả AEC và VAD | Đốt Sprint 5 vào bài toán đã có lời giải tốt, trễ mốc mà không tạo khác biệt |
+| Port Pipecat mà không có đặc tả và bộ vector tuân thủ | Hai hiện thực barge-in phân kỳ → tương đương target vỡ ở miền thu hồi lệnh actuator |
+| Dùng CEL trên host nhưng cú pháp khác trên thiết bị | Gate cho phán quyết khác nhau giữa hai target ở đúng tầng an toàn |
+| Nhúng mã GPLv3 vào phần phân phối | Lây nhiễm bản quyền sang lõi MIT và sang dự án của khách hàng |
 | Port mã trước khi rà soát giấy phép | Rủi ro pháp lý phát hiện sau khi công khai, chi phí khắc phục rất cao |
+| Tự viết AEC, VAD, codec, rule engine | Đốt Sprint 2 và 5 vào bài toán đã có lời giải tốt, trễ mốc mà không tạo khác biệt |
 
 ---
 
@@ -243,11 +308,13 @@ Bốn dòng cuối là toàn bộ lý do sản phẩm tồn tại. Không dự �
 | Lược đồ gate v1: 8 trường, 3 kiểu `evaluate`, 4 hành vi `on_block`, `budget` | FR-GATE-02, FR-GATE-03, FR-GATE-04 | V1    |
 | Quy tắc kế thừa `extends`: 5 nguyên tắc an toàn                              | FR-GATE-06, FR-GATE-07, FR-GATE-08 | V1    |
 | Lược đồ vết ghi v1: 6 nhóm sự kiện, khối `metadata`                          | FR-TRC-01, FR-TRC-02, FR-TRC-03    | V1    |
-| Rà soát giấy phép và lập tệp `NOTICE` (§3.5) | — | V2 |
+| Ma trận giấy phép và tệp `NOTICE` cho toàn bộ dự án sẽ port (§3.9) | — | V2 |
 | **Spike khả thi bộ nhớ trên ESP32-S3**                                       | NFR-RES-01, NFR-RES-02             | V2    |
 | Rà soát thiết kế HAL dưới ràng buộc MCU                                      | —                                  | V2    |
 | Dựng kho mã, CI cơ bản, quy ước đóng góp                                     | —                                  | V1    |
 
+
+**Đòn bẩy OSS Sprint 1:** Pydantic v2 và `rfc8785` cho chuẩn hóa lược đồ · Typer, Rich, Copier cho khung CLI ban đầu. Tiết kiệm ước tính 3 tuần công sức viết mã.
 
 **Nội dung spike bộ nhớ:** nạp thử AEC + VAD + Opus streaming lên bo mạch tham chiếu, đo dung lượng SRAM/PSRAM còn lại sau khi trừ ngăn xếp mạng và hệ điều hành. Kết quả là **một con số**, không phải một nhận định.
 
@@ -272,6 +339,8 @@ Bốn dòng cuối là toàn bộ lý do sản phẩm tồn tại. Không dự �
 | Gate Engine: `evaluate`, `allow_when`, `on_block`, `budget`     | FR-GATE-03, FR-GATE-04, FR-GATE-09         | V1               |
 | Cơ chế fail-closed và mạch ngắt suy giảm                        | FR-ACE-03, NFR-REL-02                      | V1               |
 | Decorator `@action`, cấm gọi trực tiếp, `c.do()` và `c.say()`   | FR-ACE-02, FR-ACE-04, FR-ACE-05, FR-ACE-07 | V1               |
+| Lượng giá `allow_when` trên nền Google CEL, kèm đường biên dịch gate cho thiết bị (§3.8, Q-9) | FR-GATE-03 | V1 |
+| **Đặc tả chuẩn tắc máy trạng thái hội thoại** — nguồn sự thật cho cả hai hiện thực (§3.8) | FR-PER-02, FR-PER-03 | V1 |
 | Interface `SystemOne` / `SystemTwo` kèm fallback                | FR-MDL-01, FR-MDL-02, FR-MDL-03            | V1               |
 | Giao diện web `sim`: cảm biến ảo, trạng thái actuator           | FR-TGT-06                                  | V3               |
 | Kết luận phạm vi Khối 1b dựa trên spike                         | —                                          | V2 + trưởng nhóm |
@@ -303,6 +372,8 @@ Bốn dòng cuối là toàn bộ lý do sản phẩm tồn tại. Không dự �
 | Scaffold `neuroedge new` có sẵn action, gate, test                              | FR-DX-01                | V3    |
 | Ba ví dụ mẫu chạy được, README có tài sản trực quan                             | FR-DX-05, FR-DX-06      | V3    |
 | Telemetry CLI ẩn danh, có thể tắt                                               | FR-TEL-01, FR-TEL-02    | V3    |
+| **Bộ vector kiểm thử tuân thủ độc lập ngôn ngữ** cho máy trạng thái hội thoại (§3.8) | FR-CI-07, FR-TGT-04 | V1 |
+| Hiện thực Python của máy trạng thái hội thoại, port thiết kế từ Pipecat | FR-PER-02→05 | V1 |
 | Pipeline CI mẫu chạy `sim` + `linux` trên mỗi PR                                | FR-CI-05                | V1    |
 
 
@@ -339,6 +410,8 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 | Runner kiểm thử nightly trên bo mạch thật                    | FR-CI-06, NFR-REL-03 | V3      |
 
 
+**Đòn bẩy OSS Sprint 4:** ESP-IDF làm toolchain · port driver bo mạch từ XiaoZhi vào `targets/esp32s3/drivers/` (codec I2S ES8311/ES7210, chân I2C/SPI của Box-3, LCD ST7789) · LVGL cho hiển thị trạng thái. Tiết kiệm ước tính 7 tuần, trong đó 2–3 tuần nằm trên đường găng.
+
 **Tiêu chí ra Sprint 4:**
 
 
@@ -357,13 +430,17 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 | Hạng mục                                                                            | Yêu cầu PRD                     | Người   |
 | :----------------------------------------------------------------------------------- | :------------------------------- | :-------: |
 | Tích hợp WebRTC AEC, Silero VAD, Opus streaming                                     | FR-PER-06                       | V2      |
-| Port có chọn lọc đường dẫn audio tham khảo theo §3.3, tuân thủ §3.5 | FR-PER-01                       | V2      |
-| Máy trạng thái hội thoại: barge-in, khoảng lặng động, tự phục hồi STT               | FR-PER-02, FR-PER-03, FR-PER-05 | V1      |
+| Port đường dẫn audio theo §3.5, tuân thủ nghĩa vụ ghi nhận nguồn §3.9 | FR-PER-01 | V2 |
+| **Hiện thực C/C++ của máy trạng thái hội thoại** theo đặc tả Sprint 2, phải vượt bộ vector tuân thủ Sprint 3 (§3.8) | FR-PER-02, FR-PER-03, FR-PER-05 | V1 + V2 |
 | Thu hồi lệnh actuator chưa thực thi khi bị cắt lời                                  | FR-PER-02                       | V1 + V2 |
 | Tối ưu bộ nhớ theo ngân sách đã chốt ở Q-3                                          | NFR-RES-01, NFR-RES-02          | V2      |
 
 
 **Ràng buộc kiến trúc bắt buộc:** máy trạng thái hội thoại chỉ có **một hiện thực duy nhất**, portable xuống MCU. Không được dùng một máy trạng thái cho `linux` và một máy trạng thái khác cho `esp32s3` — hai bản sẽ phân kỳ, và hành vi thu hồi lệnh actuator khi cắt lời sẽ khác nhau giữa các target, phá vỡ tương đương ở đúng miền nguy hiểm nhất.
+
+**Đòn bẩy OSS Sprint 5:** microWakeWord trên MCU và openWakeWord trên Linux · Silero VAD và libfvad · WebRTC AEC3 · Opus · port mô hình frame processor và barge-in từ Pipecat. Tiết kiệm ước tính 4 tuần, phần lớn nằm trên đường găng.
+
+**Ràng buộc bắt buộc:** hiện thực C/C++ này là bản thứ hai của cùng một đặc tả, không phải một thiết kế độc lập. Nó chỉ được nghiệm thu khi vượt toàn bộ bộ vector tuân thủ chung (§3.8).
 
 **Tiêu chí ra Sprint 5:**
 
@@ -390,6 +467,8 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 | Publish JSON Schema công khai và bộ kiểm thử tuân thủ | FR-GOV-01, FR-GOV-03, A9 | V1    |
 | Hoàn thiện tài liệu, ví dụ, video minh họa            | FR-DX-05, FR-DX-06, A8   | V3    |
 
+
+**Đòn bẩy OSS Sprint 6:** `esp_https_ota` và `esp_ota_ops` của ESP-IDF cho cập nhật phân vùng kép A/B và rollback cục bộ. Tiết kiệm ước tính 2 tuần.
 
 **Tiêu chí ra Sprint 6 — cổng phát hành v1.0:** đạt **toàn bộ A1 đến A9** của PRD §11.1. Không chấp nhận đạt một phần.
 
@@ -475,6 +554,8 @@ Khởi động **chỉ khi** đi nhánh A. Hai khối chạy song song.
 | **8**   | Fleet: tự động tải vết ghi sự cố về kho tập trung                        | FR-FLT-05            | Sự cố xuất hiện trong kho dưới 5 phút             |
 
 
+**Đòn bẩy OSS Khối 2:** LiteLLM Proxy làm lõi Hosted Gateway (chỉ dùng phần MIT, bọc middleware xác thực thiết bị viết riêng) · Eclipse Hawkbit cho điều phối chiến dịch OTA canary · EMQX hoặc FastAPI WebSockets cho kết nối và viễn trắc. Tiết kiệm ước tính 14 tuần. Xem ngoại lệ giấy phép tại §3.3.
+
 ### 8.2 Trình tự Khối 3 — Đường ray hạ tầng
 
 
@@ -488,6 +569,8 @@ Khởi động **chỉ khi** đi nhánh A. Hai khối chạy song song.
 
 
 **Thứ tự này không tùy tiện.** FR-REG-05, FR-REG-06 và FR-REG-07 phải đi trước vì không bổ sung sau được: thiếu định danh ổn định và đo lường thì Registry không quy kết được ai dùng gì; thiếu sandbox thì không dám cho mã người lạ chạy trên thiết bị có cơ cấu chấp hành.
+
+**Đòn bẩy OSS Khối 3:** CNCF ORAS và Harbor cho kho Gate Registry theo chuẩn OCI · OpenMeter cho hệ đo lường tương thích Stripe Billing. Tiết kiệm ước tính 8 tuần.
 
 ### 8.3 Tiêu chí ra Khối 2 và 3
 
@@ -532,7 +615,7 @@ Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho
 
 ## 10. Lịch chốt quyết định
 
-Bảy quyết định mở của PRD §15, xếp theo thời điểm bắt buộc phải chốt.
+Bảy quyết định mở của PRD §15, cộng bốn quyết định phát sinh từ chiến lược tái sử dụng mã nguồn mở (§3), xếp theo thời điểm bắt buộc phải chốt.
 
 
 | Tuần        | Mã      | Quyết định                                        | Vì sao hạn đó                                                                            | Người quyết       |
@@ -542,9 +625,15 @@ Bảy quyết định mở của PRD §15, xếp theo thời điểm bắt buộ
 | **2**       | Q-4     | Danh sách nhà cung cấp `SystemOne` hỗ trợ ở v1.0  | Cần trước khi viết interface và bộ kiểm thử                                              | Sản phẩm          |
 | **4**       | Q-3     | Ngân sách SRAM/PSRAM và kích thước firmware       | Chốt **sau** khi có số liệu spike, trước khi lập phạm vi Sprint 5                        | Kỹ sư nhúng       |
 | **5**       | Q-7     | Từ khóa kích hoạt mặc định và ngôn ngữ hỗ trợ     | Cần trước khi chọn mô hình wake-word cho Sprint 5                                        | Sản phẩm          |
+| **1** | **Q-8** | Ngôn ngữ lõi firmware ESP32-S3 | Quyết định có hay không hai hiện thực máy trạng thái (§3.8). Khuyến nghị C/C++ trên ESP-IDF để thừa hưởng trọn vẹn driver XiaoZhi | Kỹ thuật trưởng |
+| **2** | **Q-11** | Phê duyệt ngoại lệ giấy phép: Hawkbit EPL-2.0, EMQX BSL, LiteLLM enterprise | Chặn việc thiết kế phụ thuộc cho Khối 2. Phải xong trước khi port bất kỳ dòng nào (§3.3) | Kỹ thuật trưởng |
+| **3** | **Q-9** | Cách lượng giá CEL trên vi điều khiển: biên dịch gate lúc build, evaluator C rút gọn, hay hai cú pháp | Quyết định kiến trúc Gate Engine. Khuyến nghị phương án A — biên dịch lúc build (§3.8) | Kỹ thuật trưởng |
+| **Tháng 3** | **Q-10** | Mức độ phụ thuộc vào LiteLLM: proxy container nguyên bản hay tích hợp sâu | Ảnh hưởng khả năng thay thế và bề mặt bảo trì của Gateway | Kỹ thuật nền tảng |
 | **Tháng 3** | Q-5     | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3                                                    | Kỹ thuật nền tảng |
 | **Tháng 3** | Q-6     | Chính sách lưu trữ vết ghi: thời hạn và hạn mức   | Ảnh hưởng chi phí vận hành và cam kết SLA                                                | Sản phẩm          |
 
+
+**Q-8 và Q-9 là hai quyết định nặng nhất.** Q-8 quyết định có tồn tại hai hiện thực máy trạng thái hay không; nếu có, đặc tả chuẩn tắc và bộ vector tuân thủ (§3.8) trở thành hạng mục bắt buộc của Sprint 2 và Sprint 3. Q-9 quyết định kiến trúc lượng giá của Gate Engine — tầng an toàn cốt lõi — nên không được để trôi quá Tuần 3.
 
 **Q-2 được đẩy lên Tuần 1** so với PRD (vốn ghi "trước Tuần 6"). Lý do thuần túy vận hành: bo mạch phải có trong tay trước khi spike bắt đầu, và thời gian mua sắm không nằm dưới quyền kiểm soát của đội.
 
