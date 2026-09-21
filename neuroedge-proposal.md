@@ -68,13 +68,15 @@ Physical AI đang ở điểm hội tụ của ba lực:
 | 2 | **SLM chạy được trên thiết bị** | Model 0,5B–3B tham số phân loại ý định và trích xuất thực thể ngay trên biên, không cần mạng |
 | 3 | **Chuẩn kết nối công cụ** | Model Context Protocol (MCP) thiết lập chuẩn chung nối logic model với công cụ ngoại vi |
 
-Dù vậy, một kỹ sư muốn chế tạo thiết bị vật lý có tương tác giọng nói vẫn phải tự tích hợp sáu thư viện độc lập không tương thích: AEC/VAD, wake-word, STT/TTS, máy trạng thái hội thoại, driver phần cứng, và tầng bảo vệ an toàn. Chu kỳ điển hình: 2–4 tuần cho bản prototype, 3–6 tháng cho bản sản xuất.
+Dù vậy, chưa có lớp phần mềm nào hợp nhất ba lực này thành một nền tảng phát triển duy nhất. Ngay cả workload đơn giản nhất — một thiết bị có tương tác giọng nói — vẫn buộc kỹ sư tự tích hợp sáu thư viện độc lập không tương thích: AEC/VAD, wake-word, STT/TTS, máy trạng thái hội thoại, driver phần cứng, và tầng bảo vệ an toàn. Chu kỳ điển hình: 2–4 tuần cho bản prototype, 3–6 tháng cho bản sản xuất.
 
 ## 0.2 Vấn đề cốt lõi
 
-Mô tả khoảng trống trên là *"thiếu một voice framework"* là nhận định nông. Đó là khoảng trống mà mọi đối thủ có nhiều vốn hơn đều lấp được bằng cách viết thêm tính năng.
+Khoảng trống này thường được mô tả là *"thiếu một Physical AI framework"*. Mô tả đó **đúng về phạm vi**: NeuroEdge chính là lớp hợp nhất (unified layer) đó — HAL, perception, điều phối agent, lớp hành động, chạy trên ba target.
 
-Khoảng trống thật nằm sâu hơn một tầng: **chưa có công cụ nào kiểm thử được hành vi vật lý trước khi nó diễn ra ngoài hiện trường.**
+Nhưng **phạm vi không phải lợi thế**. Một lớp hợp nhất là thứ mọi đối thủ đều vào được bằng cách viết thêm tính năng — và ba trong bốn đối thủ ở §10.1 có nhiều nguồn lực hơn để làm điều đó.
+
+Điều họ không thêm vào được nằm sâu hơn một tầng: **chưa có công cụ nào kiểm thử được hành vi vật lý trước khi nó diễn ra ngoài hiện trường.**
 
 - Khi một chatbot phần mềm trả lời sai, người dùng đọc lại hoặc bấm tạo lại.
 - Khi một agent vật lý quyết định sai, **servo đã quay, rơ-le đã đóng, chốt cửa đã mở.** Hành vi vật lý là bất khả nghịch.
@@ -104,6 +106,8 @@ Ba câu hỏi mà hôm nay không công cụ nào trả lời được:
 ## 0.3 Tuyên ngôn sản phẩm
 
 > **NeuroEdge biến mọi hành động vật lý của AI agent thành một hợp đồng có kiểu, có version, kiểm thử tự động trong CI pipeline, và thực thi nhất quán trên ba target — từ laptop của lập trình viên tới máy tính Linux công nghiệp và vi điều khiển biên $5.**
+
+Tuyên ngôn này chứa hai tầng mà toàn bộ tài liệu giữ tách bạch: **phạm vi** của sản phẩm là lớp hợp nhất cho Physical AI — thứ khách hàng cài đặt và chạy; **lợi thế** là hợp đồng hành động có kiểu — thứ đối thủ không bổ sung được bằng cách viết thêm tính năng. Nhầm hai tầng này với nhau là nguồn gốc của mọi định vị sai.
 
 Hệ thống có ba khối cấu trúc:
 
@@ -168,6 +172,8 @@ Trace đầy đủ mỗi bước quyết định  ─┘    Kiểm thử hành �
 
 Mệnh đề không phải *"hai bộ não"*. Một kiến trúc định tuyến giữa hai hạng model là đặc điểm của một thời điểm: khi model biên đủ rẻ và hỗ trợ constrained decoding thời gian thực, nó thoái hoá thành chi tiết triển khai. Và nó mô tả cơ chế chứ không mô tả giá trị — khách hàng không mua "bộ định tuyến giữa hai model", họ mua **"cánh tay robot không đập vào người dùng"**.
 
+Mệnh đề cũng không phải *"lớp hợp nhất cho Physical AI"*. Đó là mô tả đúng về phạm vi và là thứ bắt buộc phải xây, nhưng nó không phòng thủ được: cả bốn đối thủ ở §10.1 đều tuyên bố được điều đó, và ba trong bốn có nhiều nguồn lực hơn để tuyên bố. Một mệnh đề mà đối thủ mạnh hơn cũng nói được thì không phải một mệnh đề.
+
 Mệnh đề là:
 
 > **Mọi hành động vật lý đều đi qua một hợp đồng có kiểu, kiểm thử được trong CI** — đúng bất kể ai lấp vào vị trí model suy luận.
@@ -216,7 +222,7 @@ Mã nguồn mở chỉ hoạt động như kênh phân phối khi **người pul
 | Demo lan truyền được | Video nói chuyện với con chip và servo quay |
 | Người cài = người quyết định | Nhà phát triển quyết trong vài phút, không qua chu trình mua sắm |
 
-**Chuẩn mà NeuroEdge đề xuất không phải framework, mà là định dạng gate và `.ntrace`.** Framework thì ai cũng viết được cái khác. Định dạng mà cả lĩnh vực dùng để mô tả sự an toàn thì chỉ có một cái thắng — và nền tảng sở hữu công cụ CI cùng hạ tầng fleet quản lý định dạng đó thắng theo.
+**NeuroEdge phân phối một framework, nhưng thứ nó đề xuất làm chuẩn không phải framework — mà là định dạng gate và `.ntrace`.** Framework thì ai cũng viết được cái khác. Định dạng mà cả lĩnh vực dùng để mô tả sự an toàn thì chỉ có một cái thắng — và nền tảng sở hữu công cụ CI cùng hạ tầng fleet quản lý định dạng đó thắng theo.
 
 **Hào phóng có tính toán:** lõi MIT mở toàn bộ HAL, Action Contract Engine, voice pipeline và Action CI. Sự hào phóng loại bỏ ma sát dùng thử ở nhóm khách hàng bảo thủ nhất — kỹ sư nhúng.
 
@@ -1114,7 +1120,7 @@ Bản chất cấu trúc của bốn nhóm đối thủ:
 | # | Khác biệt | Rào cản sao chép |
 |:---:|:---|:---|
 | **1** | **Hợp đồng hành động có kiểu + Action CI** | Đòi hỏi ba quyết định kiến trúc đồng thời ngay từ tuần đầu: sim là target thật, gate là dữ liệu có version, trace là công dân hạng nhất. Đối thủ đã xuất xưởng phải viết lại kiến trúc, không phải thêm tính năng |
-| **2** | **Hợp đồng năng lực HAL trên ba target ngang hàng** | SDK một-chip không thể có khái niệm này vì mâu thuẫn với động cơ bán silicon. Bổ sung sau đòi hỏi thay toàn bộ tầng trừu tượng phần cứng |
+| **2** | **Lớp hợp nhất trên ba target ngang hàng (hợp đồng năng lực HAL)** | SDK một-chip không thể có khái niệm này vì mâu thuẫn với động cơ bán silicon. Bổ sung sau đòi hỏi thay toàn bộ tầng trừu tượng phần cứng |
 | **3** | **Sở hữu định dạng gate và `.ntrace`** | Trong lĩnh vực chưa có chuẩn, đề xuất đầu tiên thường thắng bất kể ai đề xuất. Khi định dạng được chấp nhận, chi phí chuyển đổi của nhà phát triển rất lớn |
 
 **Điều không nằm trong bảng: simulator một mình.** Nó là đòn bẩy TTFV xuất sắc, nhưng một đối thủ khởi động mới sẽ chọn đúng kiến trúc đó miễn phí sau khi thấy nó hiệu quả. Simulator là điều kiện cần của khác biệt số 1, không phải khác biệt tự thân.
@@ -1384,6 +1390,7 @@ Tài liệu này tuyên bố một mệnh đề duy nhất mà chưa ai tuyên b
 
 | Thuật ngữ | Định nghĩa |
 |:---|:---|
+| **Lớp hợp nhất (Unified Layer)** | Phạm vi sản phẩm: HAL, perception, điều phối agent và lớp hành động gộp thành một nền tảng duy nhất chạy trên ba target. Là điều kiện cần, không phải lợi thế phòng thủ |
 | **Hợp đồng hành động** | Ràng buộc bắt buộc giữa một hành động vật lý và gate của nó; HAL từ chối thực thi nếu không có chữ ký gate đã pass |
 | **Gate** | Artifact có schema, có version (`.yaml`), khai báo điều kiện cho phép một hành động vật lý. Là dữ liệu, không phải code |
 | **Action CI** | Trục kiểm thử hồi quy: record phiên thật, replay bit-for-bit trên target bất kỳ, assert về hành động — chạy mỗi commit |
