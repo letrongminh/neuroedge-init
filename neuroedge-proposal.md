@@ -29,6 +29,7 @@
 
 3. [Kiến trúc hệ thống 5 lớp](#3-kiến-trúc-hệ-thống-5-lớp)
    - [3.8 Quản trị lược đồ mở (Open Schema Governance)](#38-quản-trị-lược-đồ-mở-open-schema-governance)
+   - [3.9 Quản trị phụ thuộc mã nguồn mở (Open Source Governance)](#39-quản-trị-phụ-thuộc-mã-nguồn-mở-open-source-governance)
 4. [Đặc tả API và trải nghiệm lập trình](#4-đặc-tả-api-và-trải-nghiệm-lập-trình)
 5. [Thiết kế an toàn và bảo mật mặc định](#5-thiết-kế-an-toàn-và-bảo-mật-mặc-định)
 
@@ -54,6 +55,7 @@
 - [E — Bảng đối chiếu nguyên lý phát triển sản phẩm](#phụ-lục-e--bảng-đối-chiếu-nguyên-lý-phát-triển-sản-phẩm)
 - [F — Từ điển thuật ngữ](#phụ-lục-f--từ-điển-thuật-ngữ)
 - [G — Danh mục giả định cần kiểm chứng](#phụ-lục-g--danh-mục-giả-định-cần-kiểm-chứng)
+- [H — Ma trận phụ thuộc mã nguồn mở](#phụ-lục-h--ma-trận-phụ-thuộc-mã-nguồn-mở)
 
 ---
 
@@ -413,6 +415,25 @@ Giá trị chuyên sâu của NeuroEdge nằm ở **máy trạng thái hội tho
 | **Phản hồi dòng từng phần (Partial Streaming)** | Bắt đầu phát âm thanh ngay từ các token phản hồi đầu tiên nhằm tối ưu độ trễ, nhưng có khả năng điều chỉnh và rút lại an toàn khi mô hình AI cập nhật lại kết luận. |
 | **Tự phục hồi lỗi nhận dạng (STT Self-recovery)** | Xử lý mượt mà các đoạn âm thanh rỗng hoặc nhiễu môi trường, ngăn ngừa nguy cơ treo máy trạng thái hoặc phát sinh chuỗi câu hỏi lặp vô hạn. |
 
+#### Thành phần cấu thành Voice Pipeline
+
+Toàn bộ tầng xử lý tín hiệu được kế thừa từ các dự án mã nguồn mở đã trưởng thành; NeuroEdge chỉ sở hữu phần điều phối trạng thái.
+
+| Chức năng | Trên `esp32s3` | Trên `sim` và `linux` | Giấy phép dự kiến |
+|:---|:---|:---|:---|
+| Nhận diện từ khóa kích hoạt | microWakeWord | openWakeWord | Apache-2.0 |
+| Phát hiện tiếng nói (VAD) | libfvad | Silero VAD | BSD-3-Clause · MIT |
+| Khử vang và tiếng vọng (AEC) | WebRTC AEC3 | WebRTC AEC3 | BSD-3-Clause |
+| Mã hóa truyền âm thanh | Opus | Opus | BSD-3-Clause |
+| Nhận dạng tiếng nói (STT) | Chuyển tiếp lên Gateway | Sherpa-ONNX | Apache-2.0 |
+| Tổng hợp tiếng nói (TTS) | Chuyển tiếp lên Gateway | Piper · Sherpa-ONNX | MIT · Apache-2.0 |
+| Hiển thị trạng thái | LVGL v8/v9 | Giao diện web | MIT |
+| **Máy trạng thái hội thoại** | **Hiện thực NeuroEdge** | **Hiện thực NeuroEdge** | **MIT (tự phát triển)** |
+
+Mô hình xử lý theo khung âm thanh (frame processor) và cơ chế ngắt lời được kế thừa thiết kế từ **Pipecat**: khi phát hiện người dùng bắt đầu nói, hệ thống ngắt ngay hàng đợi phát âm thanh đồng thời phát tín hiệu hủy các lệnh điều khiển cơ cấu chấp hành chưa hoàn tất.
+
+**Ràng buộc kiến trúc:** máy trạng thái hội thoại có hai bản hiện thực — C/C++ cho vi điều khiển và Python cho máy chủ — nhưng chỉ có **một đặc tả chuẩn tắc duy nhất** và **một bộ vector kiểm thử tuân thủ dùng chung**. Đây là điều kiện bắt buộc để giữ nguyên tắc tương đương môi trường ở miền thu hồi lệnh actuator.
+
 Việc tích hợp sẵn máy trạng thái chuẩn mực trong lõi hệ thống giúp các đội ngũ phát triển tiết kiệm nhiều tuần thử nghiệm và tinh chỉnh phức tạp.
 
 ### 3.5 Tầng L3: Động cơ hợp đồng hành động (Action Contract Engine) và cơ chế Fail-Closed
@@ -425,6 +446,19 @@ Việc tích hợp sẵn máy trạng thái chuẩn mực trong lõi hệ thốn
 | 2 | **Định tuyến mô hình linh hoạt** | Áp dụng chính sách định tuyến rõ ràng: Các ý định (intent) cơ bản được phân luồng về System 1; các tình huống phức tạp hoặc có độ tin cậy thấp được chuyển tiếp lên System 2. |
 | 3 | **Cơ chế ngắt mạch an toàn (Fail-closed Circuit Breaker)** | Khi mất kết nối mạng, quá thời gian chờ (timeout) hoặc mô hình trả dữ liệu không hợp lệ → **chặn ngay hành động vật lý**. Mặc định của mọi gate luôn là `fail: closed`. |
 | 4 | **Tự động xuất nhật ký vết (Trace Generation)** | Mỗi phiên tương tác đều xuất một tệp vết ghi JSON đầy đủ: độ trễ từng chặng, chi phí tài nguyên, kết quả đánh giá gate và các lệnh điều khiển thực tế. |
+
+#### Cơ chế lượng giá biểu thức: chuẩn Google CEL
+
+Các mệnh đề `allow_when` được diễn giải bằng **Common Expression Language (CEL)** — chuẩn biểu thức mở của Google, đã được dùng rộng rãi trong Kubernetes và Envoy.
+
+| Thuộc tính | Giá trị mang lại cho tầng an toàn |
+|:---|:---|
+| **Tất định tuyệt đối** | Cùng đầu vào luôn cho cùng kết quả, điều kiện bắt buộc của cấp độ đảm bảo 1 trong Action CI |
+| **Sandbox an toàn** | Không có vòng lặp vô hạn, không truy cập hệ thống tệp hay mạng; biểu thức không thể trở thành lỗ hổng |
+| **Tốc độ micro-giây** | Đáp ứng ngân sách `budget.p95_latency_ms` kể cả trên vi điều khiển |
+| **Chuẩn mở có sẵn công cụ** | Không phải tự phát minh cú pháp; lập trình viên đã quen từ hệ sinh thái khác |
+
+**Trên thiết bị biên:** vì gate phải thẩm định được khi mất kết nối, biểu thức CEL được **biên dịch thành dạng quyết định tất định ngay lúc build**. Máy chủ và thiết bị lượng giá cùng một artifact đã biên dịch, bảo đảm phán quyết giống hệt nhau trên cả ba môi trường.
 
 #### Lợi ích khi chuẩn hóa Gate thành tệp cấu hình (Artifact) thay vì mã nguồn cứng (Hard-coded)
 
@@ -570,6 +604,30 @@ Chuẩn hóa của NeuroEdge được định vị tại **lược đồ dữ li
 | 2 | **Bộ kiểm thử tuân thủ (Compliance Test Suite)** | Công bố tập tệp vết ghi JSON mẫu chuẩn mực kèm kết quả replay kỳ vọng. Bất kỳ bên thứ ba nào tự hiện thực lại runtime, engine hoặc công cụ phân tích đều có thể chạy bộ kiểm thử này để tự kiểm chứng tính tuân thủ mà không cần chứng nhận độc quyền. Đây là công cụ quản trị chuẩn mực có đòn bẩy cao nhất và chi phí thấp nhất. |
 | 3 | **Chính sách thay đổi chuẩn** | Mọi đề xuất thay đổi lược đồ đều phải qua quy trình RFC công khai trên GitHub. Thay đổi gây phá vỡ khả năng tương thích bắt buộc tăng phiên bản chính (major version) và phải có thời gian chuyển tiếp tối thiểu trước khi áp dụng chính thức. |
 | 4 | **Lộ trình trung lập hóa** | NeuroEdge nêu rõ định hướng chuyển giao quyền quản trị đặc tả kỹ thuật và lược đồ chuẩn cho một tổ chức trung lập (như Linux Foundation hoặc Eclipse Foundation) khi hệ sinh thái đạt quy mô ổn định. Không cam kết mốc thời gian cứng mà gắn liền với mức độ trưởng thành thực tế của hệ sinh thái. |
+
+---
+
+### 3.9 Quản trị phụ thuộc mã nguồn mở (Open Source Governance)
+
+NeuroEdge theo nguyên tắc **xây thứ tạo khác biệt, mượn thứ đã là hàng hóa**. Ranh giới được định nghĩa tường minh và không thương lượng.
+
+| Nhóm | Thành phần | Chính sách |
+|:---|:---|:---|
+| **Tài sản lõi — tự phát triển 100%** | Hợp đồng hành động · Lược đồ gate có phiên bản · Mạch ngắt fail-closed · Trục Action CI · Lược đồ vết ghi JSON mở · Đối chiếu năng lực lúc biên dịch | Không nhận bất kỳ phụ thuộc kiến trúc nào |
+| **Hàng hóa — tái sử dụng tối đa** | Driver bo mạch · Codec âm thanh · VAD/AEC · Wake-word · Parser CLI · Web component mô phỏng · Rule engine biểu thức · Proxy định tuyến mô hình · Metering · Hạ tầng OTA | Tái sử dụng hoặc port, không tự viết lại |
+
+#### Bốn quy tắc giấy phép
+
+| # | Quy tắc | Nội dung thực thi |
+|:---:|:---|:---|
+| 1 | **Danh sách cho phép** | MIT · Apache-2.0 · BSD-2-Clause · BSD-3-Clause · ISC |
+| 2 | **Vùng cách ly GPL** | Không nhúng hoặc sao chép mã GPLv3 vào phần phân phối của NeuroEdge, nhằm loại trừ rủi ro lây nhiễm bản quyền sang lõi MIT và sang dự án của khách hàng |
+| 3 | **LGPL chỉ qua liên kết động** | `libgpiod` (LGPL-2.1) được gọi qua liên kết động ở không gian người dùng; không tĩnh hóa, không sao chép mã |
+| 4 | **Giấy phép ngoài danh sách cần phê duyệt** | EPL-2.0, MPL-2.0, BSL và tương tự chỉ dùng cho **dịch vụ phía máy chủ không phân phối**, và phải có quyết định ghi thành văn bản |
+
+Toàn bộ danh mục phụ thuộc, giấy phép tương ứng và trạng thái xác minh: **Phụ lục H**.
+
+**Nghĩa vụ đi kèm mọi hoạt động port:** ma trận giấy phép đã xác minh tại nguồn · tệp `NOTICE` ở gốc kho · chú thích ghi nhận nguồn ngay đầu tệp đã port kèm commit tham chiếu · mục ghi nhận trong tài liệu công khai · ghim phiên bản cho mọi phụ thuộc.
 
 ---
 
@@ -828,6 +886,8 @@ def test_ba_target_cho_cung_mot_quyet_dinh_gate(target):
 
 Quy trình kiểm thử tự động trên biến các cam kết an toàn thành các bài test thực thi tự động. Nếu có sự cố hồi quy, hệ thống CI sẽ lập tức báo đỏ và chặn quá trình phát hành.
 
+**Nền tảng hiện thực:** bộ kiểm thử Action CI được đóng gói dưới dạng **plugin Pytest** (`pytest-neuroedge`), dùng **DeepDiff** để so khớp chuỗi phán quyết với mẫu chuẩn Golden Reference. Lập trình viên chạy nó bằng đúng công cụ họ đã quen, không phải học một trình chạy kiểm thử riêng.
+
 ### 4.8 Giao diện dòng lệnh (CLI Surface)
 
 ```bash
@@ -852,6 +912,10 @@ neuroedge replay traces/incident.json --target sim    # Tái hiện lỗi trên 
 neuroedge gate publish gates/unlock_door@1.2.0.yaml
 neuroedge gate add     neuroedge://gates/hospitality/dual-auth-lock@1.0.0
 ```
+
+**Nền tảng hiện thực CLI:** xây trên **Typer** cho định nghĩa lệnh, **Rich** cho hiển thị và báo lỗi có cấu trúc, **Copier** cho khuôn mẫu dự án của `neuroedge new`.
+
+**Giao diện mô phỏng:** `neuroedge run --target sim` khởi động một máy chủ cục bộ nhúng sẵn thư viện **Wokwi Elements**. Lập trình viên thấy ngay chốt cửa ảo bật mở, đèn báo đổi màu và servo quay trên trình duyệt mà không cần cài thêm phần mềm nào.
 
 Hai lệnh `record` và `replay` giúp việc tái hiện và xử lý lỗi hiện trường trở nên đơn giản: Một sự cố xảy ra ngoài thực tế được đưa về tái hiện chính xác trên máy tính cá nhân của kỹ sư chỉ bằng một câu lệnh.
 
@@ -922,6 +986,8 @@ Mô hình thương mại của NeuroEdge được phân định rõ ràng giữa
 | 4 | **Kiểm soát hạn mức sử dụng (Quota) theo từng thiết bị** | Ngăn ngừa sự cố một thiết bị lỗi lặp vòng gây phát sinh chi phí đột biến trên hóa đơn. |
 | 5 | **Bộ nhớ đệm ngữ nghĩa & Thống kê tỷ lệ System 1/System 2** | Tối ưu hóa chi phí vận hành thông qua cache, đồng thời cung cấp số liệu chứng minh hiệu quả của kiến trúc định tuyến hai mô hình. |
 | 6 | **Tự động xuất tệp vết ghi JSON cho từng phiên tương tác** | Đồng nhất định dạng vết ghi giữa môi trường thực tế và môi trường kiểm thử CI, giúp việc điều tra sự cố diễn ra tức thì. |
+**Nền tảng hiện thực:** Gateway dùng **LiteLLM Proxy** làm lõi định tuyến đa nhà cung cấp, bao gồm cơ chế chuyển đổi định dạng thống nhất, cân bằng tải, failover và kiểm soát hạn mức theo khóa định danh. NeuroEdge bổ sung một lớp middleware mỏng để xác thực chữ ký thiết bị và gắn vết ghi JSON cho từng phiên. Chỉ sử dụng phần mã nguồn mở theo giấy phép MIT; các tính năng thuộc bản thương mại nằm ngoài phạm vi phụ thuộc.
+
 *Rào cản kỹ thuật đặc thù:* Vi điều khiển biên bị hạn chế tài nguyên và không thể liên tục thực hiện quá trình bắt tay TLS cho từng yêu cầu HTTP riêng lẻ. Việc Gateway tối ưu hóa điểm kết thúc luồng âm thanh (audio termination) cho nhóm vi xử lý này là một lợi thế kỹ thuật chuyên sâu.
 
 ### 6.2 Tầng quản trị đội thiết bị (Fleet Management OS) — 5 năng lực chính
@@ -933,6 +999,8 @@ Mô hình thương mại của NeuroEdge được phân định rõ ràng giữa
 | 3 | **Giám sát sức khỏe & Sổ kiểm kê đội thiết bị** | Theo dõi trạng thái online/offline, phiên bản firmware hiện hành, chất lượng sóng RSSI, nhiệt độ chip và cảnh báo nguy cơ lặp khởi động. |
 | 4 | **Cập nhật cấu hình, bí mật và cổng an toàn (Gate) từ xa** | Thay đổi từ khóa kích hoạt, tinh chỉnh prompt và cập nhật điều kiện gate an toàn trên toàn bộ đội thiết bị mà không cần nạp lại firmware. |
 | 5 | **Thu thập nhật ký vết (Trace) sự cố theo thời gian thực** | Tự động tải tệp vết ghi JSON về hệ thống trung tâm khi xảy ra cảnh báo, giúp kỹ sư dễ dàng tái hiện lại lỗi ngay trên máy tính cá nhân. |
+
+**Nền tảng hiện thực:** cơ chế điều phối chiến dịch cập nhật theo đợt kế thừa từ **Eclipse Hawkbit** — một nền tảng quản trị rollout đã được kiểm chứng trong công nghiệp. Kênh kết nối thiết bị và viễn trắc thời gian thực dùng **EMQX** cho giao thức MQTT, kết hợp **FastAPI WebSockets** cho luồng âm thanh. Cả hai thành phần chỉ chạy phía máy chủ, không phân phối kèm sản phẩm tới khách hàng; ranh giới giấy phép được nêu tại Phụ lục H.
 
 **Trải nghiệm liền mạch từ mã nguồn mở đến quản trị thực tế:** Thiết bị ảo trong môi trường mô phỏng (`sim`) xuất hiện ngay trên giao diện Fleet Dashboard. Nền tảng quản trị được thiết kế để mang lại giá trị thiết thực ngay từ thiết bị đầu tiên (n = 1), tạo động lực tự nhiên cho khách hàng mở rộng quy mô lên hàng trăm, hàng nghìn thiết bị.
 
@@ -1049,27 +1117,29 @@ neuroedge new my-agent
 neuroedge run --target sim
 ```
 
-| Hạng mục bàn giao | Mục chiếu |
-|:---|:---:|
-| Chuẩn HAL theo hợp đồng năng lực với 5 nguyên thủy | §3.3 |
-| Action Contract Engine, Gate có phiên bản, cơ chế fail-closed | §3.5 |
-| Giao diện trừu tượng hóa mô hình `SystemOne` và `SystemTwo` | §3.6 |
-| Hai môi trường thực thi đầu tiên: `sim` và `linux` | §3.2 |
-| Trục Action CI: Ghi vết (record), Replay, Đối chiếu (assert), Mẫu chuẩn (golden) | §3.7 |
-| Bộ công cụ dòng lệnh (CLI) cơ bản | §4.8 |
-| Ứng dụng mẫu hoàn chỉnh chạy thử nghiệm | §7 |
+| Hạng mục bàn giao | Mục chiếu | Đòn bẩy mã nguồn mở |
+|:---|:---:|:---|
+| Chuẩn HAL theo hợp đồng năng lực với 5 nguyên thủy | §3.3 | Tự phát triển — tài sản lõi |
+| Action Contract Engine, Gate có phiên bản, cơ chế fail-closed | §3.5 | Tự phát triển — tài sản lõi. Riêng bộ lượng giá biểu thức dùng Google CEL |
+| Giao diện trừu tượng hóa mô hình `SystemOne` và `SystemTwo` | §3.6 | Tự phát triển — tài sản lõi |
+| Chuẩn hóa lược đồ gate và vết ghi | §3.7 | Pydantic v2 · canonical JSON theo RFC 8785 |
+| Hai môi trường thực thi đầu tiên: `sim` và `linux` | §3.2 | `libgpiod` qua liên kết động · Wokwi Elements cho giao diện mô phỏng |
+| Trục Action CI: Ghi vết (record), Replay, Đối chiếu (assert), Mẫu chuẩn (golden) | §3.7 | Tự phát triển — tài sản lõi. Đóng gói dạng plugin Pytest, so khớp bằng DeepDiff |
+| Bộ công cụ dòng lệnh (CLI) cơ bản | §4.8 | Typer · Rich · Copier |
+| Ứng dụng mẫu hoàn chỉnh chạy thử nghiệm | §7 | — |
 
 ### 8.2 Khối 1b — Hiện thực hóa trên vi điều khiển biên (Tuần 6–12)
 
 **Mục tiêu trọng tâm:** Chứng minh nguyên tắc tương đương môi trường trên vi điều khiển giá $5 với độ ổn định cao.
 
-| Hạng mục bàn giao | Nội dung kỹ thuật |
-|:---|:---|
-| Chuyển đổi chuẩn HAL lên `esp32s3` | Sử dụng bộ công cụ tiêu chuẩn ESP-IDF |
-| Runtime giọng nói tối ưu hóa bộ nhớ | Tích hợp WebRTC AEC · Silero VAD · Bộ mã hóa Opus streaming |
-| Lệnh kiểm thử `neuroedge verify` | Kiểm tra tính nhất quán phán quyết gate và GPIO giữa cả 3 môi trường |
-| Client MCP tinh gọn | Tối ưu hóa giao tiếp công cụ với mức tiêu thụ tài nguyên tối thiểu |
-| Client OTA cấp thiết bị (On-device OTA) | Nạp firmware phân vùng kép A/B, tự động rollback cục bộ khi bootloop |
+| Hạng mục bàn giao | Nội dung kỹ thuật | Đòn bẩy mã nguồn mở |
+|:---|:---|:---|
+| Chuyển đổi chuẩn HAL lên `esp32s3` | Sử dụng bộ công cụ tiêu chuẩn ESP-IDF | ESP-IDF · **port driver bo mạch từ XiaoZhi**: codec I2S ES8311/ES7210, chân I2C/SPI của Box-3, màn hình ST7789 |
+| Runtime giọng nói tối ưu hóa bộ nhớ | Tích hợp khử vang, phát hiện tiếng nói và mã hóa luồng | microWakeWord · libfvad · WebRTC AEC3 · Opus · **port mô hình frame processor và barge-in từ Pipecat** |
+| Hiển thị trạng thái trên màn hình thiết bị | Giao diện tại chỗ cho trạng thái agent và gate | LVGL v8/v9 |
+| Lệnh kiểm thử `neuroedge verify` | Kiểm tra tính nhất quán phán quyết gate và GPIO giữa cả 3 môi trường | Tự phát triển — tài sản lõi |
+| Client MCP tinh gọn | Tối ưu hóa giao tiếp công cụ với mức tiêu thụ tài nguyên tối thiểu | Chuẩn MCP |
+| Client OTA cấp thiết bị (On-device OTA) | Nạp firmware phân vùng kép A/B, tự động rollback cục bộ khi bootloop | `esp_https_ota` và `esp_ota_ops` của ESP-IDF |
 
 **De-scope tường minh trong Khối 1b:**
 - *Wake-word tùy biến:* Chưa hỗ trợ quy trình huấn luyện wake-word riêng biệt; chỉ tích hợp sẵn wake-word chuẩn pre-trained (ví dụ: *"Hey Neuro"*).
@@ -1096,6 +1166,8 @@ Khối 2 **tuyệt đối không bắt đầu theo lịch cố định**, mà ch
 
 Nội dung triển khai: Hosted Inference Gateway và Fleet Management OS như mô tả chi tiết tại §6.
 
+**Đòn bẩy mã nguồn mở:** LiteLLM Proxy làm lõi Gateway · Eclipse Hawkbit cho điều phối chiến dịch OTA theo đợt · EMQX và FastAPI WebSockets cho kết nối thiết bị và viễn trắc. Ranh giới giấy phép của từng thành phần nêu tại Phụ lục H.
+
 ### 8.5 Khối 3 — Bảy đường ray hạ tầng nền tảng (Tháng 4–8, thực hiện song song Khối 2)
 
 Xây dựng 7 thành phần hạ tầng cốt lõi phục vụ vận hành an toàn và chuẩn bị sẵn cho việc mở rộng Marketplace sau này:
@@ -1109,6 +1181,8 @@ Xây dựng 7 thành phần hạ tầng cốt lõi phục vụ vận hành an to
 | 5 | **Định danh duy nhất (Stable ID)** | Hỗ trợ gỡ lỗi và tra cứu thiết bị chính xác | Quy kết trách nhiệm và doanh thu giao dịch |
 | 6 | **Hệ thống đo lường (Metering)** | Thống kê tần suất gọi agent và đánh giá gate | Cơ sở phân chia doanh thu công bằng và minh bạch |
 | 7 | **Cơ chế phân quyền & Sandbox** | Bảo vệ thiết bị khi thử nghiệm agent mới | Điều kiện tiên quyết để chạy mã nguồn từ bên thứ ba |
+
+**Đòn bẩy mã nguồn mở:** kho Registry xây trên chuẩn OCI với **ORAS** và **Harbor**; hệ đo lường dùng **OpenMeter** vốn đã tương thích chuẩn Stripe Billing.
 
 Các thành phần 5, 6 và 7 là nền tảng bắt buộc phải thiết kế sớm: nếu thiếu chúng, hệ thống sẽ không thể đối soát doanh thu hoặc bảo đảm an toàn khi người dùng cài đặt mã nguồn của nhau trên thiết bị có cơ cấu chấp hành vật lý.
 
@@ -1472,6 +1546,57 @@ Năm giả định chiến lược định hình mô hình kinh doanh và kinh t
 | **G-c** | **Hiệu quả tiết kiệm chi phí token ≥ 60%** | Minh chứng định lượng cho tính hiệu quả của kiến trúc định tuyến hai mô hình System 1 / System 2. | Đo lường trực tiếp trên lưu lượng thực tế qua Hosted Gateway, phân tách chi tiết theo từng nhóm tác vụ nghiệp vụ. | Tháng thứ 6 |
 | **G-d** | **Nhu cầu thực tế về việc chia sẻ và tái sử dụng Gate** | Cơ sở quyết định tính khả thi của hiệu ứng mạng cộng đồng trước khi mở Marketplace thương mại. | Đánh giá tần suất tải về và kế thừa các gate an toàn trên kho lưu trữ Public Registry miễn phí trong suốt 12 tháng đầu. | Tháng thứ 12 |
 | **G-e** | **Giảm 70% chuyến đi hiện trường nhờ tái hiện vết ghi (Trace Replay)** | Nền tảng cốt lõi của mô hình TCO (§1.8) chứng minh giá trị kinh tế trực tiếp của NeuroEdge cho khách hàng fleet. | Thu thập dữ liệu bảo hành thực tế, phân loại nguyên nhân sự cố (lỗi phần mềm/cấu hình vs hỏng hóc vật lý) từ 3 khách hàng AURA đầu tiên. | Tháng thứ 9 |
+
+---
+
+## Phụ lục H — Ma trận phụ thuộc mã nguồn mở
+
+Danh mục đầy đủ các dự án được tái sử dụng hoặc port, kèm giấy phép và hình thức phụ thuộc.
+
+**Cột "Xác minh"** ghi nhận việc đã đọc tệp giấy phép tại kho gốc hay chưa. Giá trị *chưa* nghĩa là giấy phép nêu trong bảng là giá trị dự kiến, **bắt buộc kiểm tra trước khi đưa vào mã nguồn**.
+
+### H.1 Lõi mã nguồn mở — phân phối kèm sản phẩm
+
+| Dự án | Vai trò | Giấy phép dự kiến | Hình thức | Xác minh |
+|:---|:---|:---|:---|:---:|
+| Typer | Khung định nghĩa lệnh CLI | MIT | Thư viện | Chưa |
+| Rich | Hiển thị và báo lỗi có cấu trúc | MIT | Thư viện | Chưa |
+| Copier | Khuôn mẫu dự án cho `neuroedge new` | MIT | Thư viện | Chưa |
+| Pydantic v2 | Chuẩn hóa và kiểm tra lược đồ | MIT | Thư viện | Chưa |
+| `rfc8785` | Canonical JSON cho Golden Reference | Apache-2.0 | Thư viện | Chưa |
+| `cel-python` | Lượng giá biểu thức `allow_when` | Apache-2.0 | Rule engine | Chưa |
+| Pytest · DeepDiff | Nền tảng Action CI | MIT | Thư viện | Chưa |
+| Wokwi Elements | Giao diện mô phỏng phần cứng | MIT | Web components | Chưa |
+| `libgpiod` | Truy cập GPIO trên Linux | LGPL-2.1 | **Liên kết động** | Chưa |
+| ESP-IDF · `esp_https_ota` | Toolchain và OTA cho vi điều khiển | Apache-2.0 | SDK | Chưa |
+| XiaoZhi ESP32 | Driver codec I2S, LCD, cấu hình bo mạch | MIT | **Port trực tiếp** | Chưa |
+| Pipecat | Mô hình frame processor và barge-in | BSD-2-Clause | **Port thiết kế** | Chưa |
+| microWakeWord · openWakeWord | Nhận diện từ khóa kích hoạt | Apache-2.0 | Mô hình và thư viện | Chưa |
+| Silero VAD · libfvad | Phát hiện tiếng nói | MIT · BSD-3-Clause | Thư viện | Chưa |
+| WebRTC AEC3 | Khử vang và tiếng vọng | BSD-3-Clause | Thư viện | Chưa |
+| Opus | Mã hóa truyền âm thanh | BSD-3-Clause | Codec | Chưa |
+| Sherpa-ONNX · Piper | Nhận dạng và tổng hợp tiếng nói | Apache-2.0 · MIT | Thư viện | Chưa |
+| LVGL | Đồ họa nhúng trên màn hình thiết bị | MIT | Thư viện | Chưa |
+
+### H.2 Dịch vụ phía máy chủ — không phân phối kèm sản phẩm
+
+| Dự án | Vai trò | Giấy phép dự kiến | Trạng thái phê duyệt |
+|:---|:---|:---|:---|
+| LiteLLM Proxy | Lõi Hosted Inference Gateway | MIT cho phần mã nguồn mở; bản thương mại riêng | **Cần quyết định** — chỉ dùng phần MIT |
+| Eclipse Hawkbit | Điều phối chiến dịch OTA theo đợt | EPL-2.0 | **Cần quyết định** — ngoài danh sách cho phép, chỉ chấp nhận cho dịch vụ máy chủ |
+| EMQX | Kết nối thiết bị và viễn trắc MQTT | Apache-2.0 cho broker; một số phần theo BSL | **Cần quyết định** — xác định rõ ranh giới tính năng |
+| ORAS · Harbor | Kho Gate Registry theo chuẩn OCI | Apache-2.0 | Chấp nhận |
+| OpenMeter | Hệ đo lường tương thích Stripe Billing | Apache-2.0 | Chấp nhận |
+| Home Assistant Core API | Tích hợp điều khiển phòng cho AURA | Apache-2.0 | Chấp nhận |
+
+### H.3 Dự án chỉ liên thông, không phụ thuộc
+
+| Dự án | Quyết định | Lý do |
+|:---|:---|:---|
+| ESP-Claw | Liên thông qua MCP | Một SDK chính hãng về cấu trúc không thể coi chip đối thủ là ngang hàng; phụ thuộc vào nó biến `linux` thành môi trường hạng hai (§1.4) |
+| LiveKit Agents · TEN Framework | Tham khảo thiết kế | Kiến trúc lấy đám mây làm trung tâm, mâu thuẫn với yêu cầu vận hành đầy đủ khi ngoại tuyến |
+
+**Lưu ý về XiaoZhi:** chỉ port tầng driver phần cứng. Không sao chép kiến trúc ứng dụng, vì logic hội thoại của dự án này gắn trực tiếp vào lệnh phần cứng, không có HAL và không có khái niệm hợp đồng hành động.
 
 ---
 
