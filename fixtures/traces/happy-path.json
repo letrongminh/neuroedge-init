@@ -1,0 +1,57 @@
+{
+  "$schema": "https://schema.neuroedge.dev/trace/v1.json",
+  "metadata": {
+    "session_id": "sess_a1b2c3d4",
+    "timestamp_utc": "2026-09-21T08:00:00Z",
+    "target": "esp32s3",
+    "board_id": "esp32s3-box-3",
+    "agent_version": "villa-concierge@0.1.0"
+  },
+  "events": [
+    {
+      "offset_ms": 0,
+      "type": "audio_in_vad_start",
+      "data": { "energy_db": -16.5 }
+    },
+    {
+      "offset_ms": 540,
+      "type": "intent_extracted",
+      "data": {
+        "intent": "unlock_door",
+        "confidence": 0.96,
+        "system": "SystemOne"
+      }
+    },
+    {
+      "offset_ms": 550,
+      "type": "gate_evaluation_begin",
+      "data": { "gate": "unlock_door@1.2.0" }
+    },
+    {
+      "offset_ms": 590,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "ALLOW",
+        "evaluations": {
+          "guest_authenticated": true,
+          "room_matches": true,
+          "risk_level": "low"
+        }
+      }
+    },
+    {
+      "offset_ms": 595,
+      "type": "actuator_command",
+      "data": {
+        "pin": "door_lock",
+        "operation": "pulse",
+        "duration_ms": 30000
+      }
+    },
+    {
+      "offset_ms": 620,
+      "type": "tts_stream_start",
+      "data": { "text": "Door unlocked. Welcome home." }
+    }
+  ]
+}

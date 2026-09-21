@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.neuroedge.dev/gate/v1.json",
+  "title": "NeuroEdge Gate Configuration Schema v1",
+  "description": "Standard schema for NeuroEdge Safety Gate configuration defining evaluation rules, fail-closed behavior, and actuator constraints.",
+  "type": "object",
+  "required": ["schema", "name", "version", "evaluate", "allow_when", "on_block", "budget"],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "neuroedge.gate/v1"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+    },
+    "extends": {
+      "type": "string"
+    },
+    "evaluate": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["type", "instructions"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["bool", "level", "choice"]
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "levels": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "options": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "allow_when": {
+      "type": ["string", "object", "array"]
+    },
+    "on_block": {
+      "type": "object",
+      "required": ["action"],
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": ["deny", "escalate", "ask", "degrade"]
+        },
+        "to": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "fallback_action": {
+          "type": "string"
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "required": ["p95_latency_ms", "fail"],
+      "properties": {
+        "p95_latency_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fail": {
+          "type": "string",
+          "enum": ["closed", "open"],
+          "default": "closed"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

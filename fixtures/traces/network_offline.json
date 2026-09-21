@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.neuroedge.dev/trace/v1.json",
+  "metadata": {
+    "session_id": "sess_c3d4e5f6",
+    "timestamp_utc": "2026-09-21T08:10:00Z",
+    "target": "esp32s3",
+    "board_id": "esp32s3-box-3",
+    "agent_version": "villa-concierge@0.1.0"
+  },
+  "events": [
+    {
+      "offset_ms": 0,
+      "type": "audio_in_vad_start",
+      "data": { "energy_db": -15.0 }
+    },
+    {
+      "offset_ms": 500,
+      "type": "intent_extracted",
+      "data": {
+        "intent": "unlock_door",
+        "confidence": 0.88,
+        "system": "SystemOne"
+      }
+    },
+    {
+      "offset_ms": 510,
+      "type": "gate_evaluation_begin",
+      "data": { "gate": "unlock_door@1.2.0" }
+    },
+    {
+      "offset_ms": 630,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "BLOCK",
+        "fail_mode": "closed",
+        "reason": "gate_unreachable",
+        "blocked_by": "unlock_door@1.2.0",
+        "action": "deny"
+      }
+    },
+    {
+      "offset_ms": 650,
+      "type": "tts_stream_start",
+      "data": { "text": "Network unavailable. Door unlock request denied for safety." }
+    }
+  ]
+}

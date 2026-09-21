@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.neuroedge.dev/board/v1.json",
+  "title": "NeuroEdge Board Capability Schema v1",
+  "description": "Standard schema for NeuroEdge Hardware Abstraction Layer board declarations (board.toml).",
+  "type": "object",
+  "required": ["board", "capabilities"],
+  "properties": {
+    "board": {
+      "type": "object",
+      "required": ["id", "target", "mcu"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "target": { "type": "string", "enum": ["sim", "linux", "esp32s3"] },
+        "mcu": { "type": "string" }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "properties": {
+        "audio_in": {
+          "type": "object",
+          "properties": {
+            "channels": { "type": "integer", "minimum": 1 },
+            "sample_rate_hz": { "type": "integer" },
+            "aec": { "type": "boolean" },
+            "vad": { "type": "boolean" }
+          }
+        },
+        "audio_out": {
+          "type": "object",
+          "properties": {
+            "channels": { "type": "integer", "minimum": 1 },
+            "sample_rate_hz": { "type": "integer" }
+          }
+        },
+        "digital_out": {
+          "type": "object",
+          "properties": {
+            "pins": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "backend": { "type": "string" }
+          }
+        },
+        "sensor_read": {
+          "type": "object",
+          "properties": {
+            "sensors": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "display": {
+          "type": "object",
+          "properties": {
+            "width": { "type": "integer" },
+            "height": { "type": "integer" },
+            "color": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

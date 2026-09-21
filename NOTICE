@@ -1,0 +1,37 @@
+NeuroEdge
+Copyright 2026 NeuroEdge Contributors
+
+This product includes software developed by third parties, distributed under open-source licenses:
+
+1. XiaoZhi ESP32 (esp32-xiaozhi)
+   - Source: https://github.com/78/xiaozhi-esp32
+   - License: Apache License 2.0 / MIT
+   - Components ported: I2S audio codec initializations (ES8311, ES7210), LCD ST7789 drivers,
+     and ESP32-S3-Box-3 hardware pin definitions in targets/esp32s3/.
+
+2. Pipecat AI
+   - Source: https://github.com/pipecat-ai/pipecat
+   - License: MIT License
+   - Components adapted: Frame-based audio pipeline architecture, Dynamic silence handling,
+     and Barge-in state machine in python/neuroedge/perception/.
+
+3. Wokwi Elements
+   - Source: https://github.com/wokwi/wokwi-elements
+   - License: MIT License
+   - Components used: Hardware simulation web components (<wokwi-led>, <wokwi-pushbutton>,
+     <wokwi-solenoid-lock>) for the local web simulator in python/neuroedge/sim/.
+
+4. Google Common Expression Language (CEL)
+   - Source: https://github.com/google/cel-spec
+   - License: Apache License 2.0
+   - Components used: cel-python for gate expression parsing and deterministic evaluation.
+
+5. LiteLLM
+   - Source: https://github.com/BerriAI/litellm
+   - License: MIT License
+   - Components referenced: Multi-provider proxy routing and failover patterns for Hosted Gateway.
+
+6. OpenMeter
+   - Source: https://github.com/openmeterio/openmeter
+   - License: Apache License 2.0
+   - Components referenced: Event-based metering architecture for agent token and gate auditing.

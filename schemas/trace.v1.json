@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.neuroedge.dev/trace/v1.json",
+  "title": "NeuroEdge Trace Schema v1",
+  "description": "Standard JSON schema for NeuroEdge execution traces, capturing audio, perception, gate evaluations, and physical actuator commands.",
+  "type": "object",
+  "required": ["$schema", "metadata", "events"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["session_id", "timestamp_utc", "target", "board_id", "agent_version"],
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "pattern": "^sess_[0-9a-fA-F]+$"
+        },
+        "timestamp_utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "target": {
+          "type": "string",
+          "enum": ["sim", "linux", "esp32s3"]
+        },
+        "board_id": {
+          "type": "string"
+        },
+        "agent_version": {
+          "type": "string"
+        },
+        "device_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["offset_ms", "type", "data"],
+        "properties": {
+          "offset_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "type": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
