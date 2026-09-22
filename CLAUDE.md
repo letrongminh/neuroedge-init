@@ -24,6 +24,25 @@ Hai điều dễ sai nhất:
 
 Đọc `CHANGELOG.md` §3 (bàn giao ngữ cảnh) trước khi bắt đầu một phiên mới.
 
+## Testing
+
+```bash
+cd python && .venv/bin/python -m pytest -q      # kỳ vọng: 210 passed, 0 skipped
+```
+
+Framework: **pytest**. `testpaths = ["tests"]` trong `python/pyproject.toml`.
+
+Hai luật không thương lượng:
+
+- **Không test nào được skip.** CI đọc `junit.xml` và fail build nếu có bất kỳ
+  skip nào. Không dùng `pytest.importorskip` cho phụ thuộc đã khai trong
+  `pyproject.toml` — phụ thuộc cần cho conformance là phụ thuộc bắt buộc.
+- **Corpus phản chứng khép kín hai chiều.** Mỗi tệp trong `fixtures/*/invalid/`
+  phải có một mục trong `expected_errors.yaml`, và ngược lại.
+
+Cổng kiểm tra an toàn **không phải** thẩm định lược đồ mà là
+`neuroedge gate lint` (phân giải). Xem lý do ở đầu tệp này.
+
 ## Skill routing
 
 When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.
