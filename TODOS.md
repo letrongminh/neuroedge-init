@@ -1,0 +1,30 @@
+# TODOS — hoãn có chủ ý, kèm mốc kích hoạt
+
+Sổ này ghi những thứ **đã được xem xét và hoãn**, không phải những thứ bị bỏ sót. Mỗi
+dòng có một mốc kích hoạt; không có mốc thì không được vào đây.
+
+Nguồn: `/autoplan` ngày 2026-09-22 — Phase 1 (CEO) · Phase 2.5 (DX) · Phase 3 (Eng, chạy
+cuối nên nó thu hết) — xem `docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`
+§GSTACK CEO / DX / ENG REVIEW REPORT.
+
+## Từ CEO review
+
+| # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
+|:---:|:---|:---|:---|
+| 1 | **Chữ ký mật mã cho vết ghi.** `U4` cần *"nhật ký đối soát được"* (`neuroedge-prd.md:123`); một tệp JSON không ký chỉ đối soát được với chính mình | Cần khoá thiết bị; thuộc Khối 2 | Khối 2, hoặc khách đầu tiên yêu cầu bằng chứng cho bên thứ ba. **Đã xác nhận đường thêm sau:** `trace.v1.json` có `metadata.additionalProperties: true`, nên thêm trường chữ ký **không cần RFC** (`CEO-S3-4`) |
+| 2 | **Chữ ký mật mã cho token phán quyết.** Token = (digest, nonce) trong bộ nhớ, nên bất kỳ mã nào trong cùng tiến trình cũng tự mint được | Mối đe doạ **trong phạm vi** là bỏ qua gate do *nhầm lẫn*, và thế là chứng minh được bằng test. Biên này phải viết vào `docs/spec/threat_model.md` (`TSK-S2-05`) | Khách yêu cầu chống tấn công nội tiến trình, hoặc firmware có secure element |
+| 3 | **Streaming khi ghi vết ghi.** `ReplaySession` giữ cả dict vết ghi + các dict dẫn xuất trong RAM | 10.000 sự kiện không sao; `trace.v1.json` là một object JSON đơn nên streaming cần append-rồi-vá | Vết ghi ≥ **100.000 sự kiện** trong thực tế |
+| 4 | **Xử lý PII trong vết ghi.** Vết ghi chứa intent, tức nội dung người dùng nói | Chưa có người dùng thật | **Người dùng bên ngoài đầu tiên** (tức ngay sau `TSK-S3-14` publish thật) |
+| 5 | **Cache phân giải gate cho đường `gate lint`.** `GateRegistry.load()` đọc tệp + parse YAML + validate mỗi lần, ×3 cấp chuỗi → O(3N) cho N gate *(nửa parse-schema lặp sẽ được vá ở `TSK-S2-13` — `ENG-Q4`; nửa đọc-tệp vẫn còn)* | N=3 hôm nay. Đường **chạy** đã xử ở `CEO-S7-1` (phân giải một lần lúc nạp); đây chỉ là đường lint | Registry ≥ **100 gate** |
+| 6 | **Metric · dashboard · alerting** | Không có dịch vụ nào để alert trong 5 tuần. Vết ghi **là** nền quan sát, và `gate explain` trả lời được câu "vì sao lần đó bị chặn" | Fleet OS |
+| 7 | **`trace why <trace>`** | Trùng `gate explain` sau khi `CEO-S8-2` lưu artifact gate cạnh vết ghi | Nếu `gate explain` hoá ra không trả lời được câu hỏi hậu kiểm |
+| 8 | **`--explain` in đường đi trên cây quyết định** | Rẻ đi hẳn sau `TSK-S2-12` (cây có `criteria_order` root-first + `gate_digest`), khi đó chỉ còn là in node đầu tiên fail | Rà lại ở **Sprint 4**, không phải "không bao giờ" |
+| 9 | **`gate digest <file>`** | `gate publish` đã in digest; `digests.lock` (`TSK-S3-16`) phủ nhu cầu CI | Nếu có người cần digest mà không muốn publish |
+
+## Từ Eng review (Phase 3)
+
+| # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
+|:---:|:---|:---|:---|
+| 10 | **Vector tương đương Python ↔ C trên phần cứng thật.** Trong 5 tuần chỉ phát cây + bảng sự thật host (mô hình C bằng đặc tả), chưa chạy trên silicon | Chưa có bo mạch (`TSK-S1-10`) — cùng rào cản với Approach B | **Bo mạch về**, hoặc Sprint 4–5 (Khối 1b) |
+| 11 | **Bất biến phiên bản phía registry (server-side).** `TSK-S3-21` ghim `extends` bằng digest **phía client**; nó không ngăn được việc tái publish trên một registry không kiểm soát | Chưa có registry (Khối 3) | **Khối 3**, hoặc gate công khai đầu tiên được publish |
+| 12 | **`on_block.ask.message` máy kiểm được.** B.3 cho phép văn bản tự do; `TSK-S2-13` chỉ kiểm `action` + `to:` | Không có ngữ nghĩa kiểm được cho văn bản; `ask` chỉ ghi vết ghi trong A1 | Khi có bề mặt tương tác `ask` (`TSK-S2-07`, Sprint 5) |
