@@ -2,19 +2,19 @@
 
 ## Kế hoạch triển khai từ Tuần 0 đến Tháng 8
 
-**Phiên bản:** 1.1
+**Phiên bản:** 1.2
 
 
 **Ngày lập:** 21 tháng 9, 2026
 
 
-**Tài liệu nguồn:** `neuroedge-proposal.md` v5.3 · `neuroedge-prd.md` v1.1
+**Tài liệu nguồn:** `neuroedge-proposal.md` v5.4 · `neuroedge-prd.md` v1.2
 
 
 **Phạm vi:** Khối 1a · Khối 1b · Developer Beta · Khối 2 và 3
 
 
-**Ngoài phạm vi:** Khối 4 (AURA thực địa) · Khối 5 (Marketplace) — lập kế hoạch riêng khi tới mốc
+**Ngoài phạm vi:** Khối 4 (AURA thực địa) · Khối 5 (Marketplace) · **Giai đoạn 2** (thị giác, phủ rộng phần cứng) — xem [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md)
 
 ---
 
@@ -43,6 +43,20 @@
 
 ---
 
+## Quy ước tài liệu
+
+| Ký hiệu | Ý nghĩa | Nguồn định nghĩa |
+|:---|:---|:---|
+| **§x.y** | Mục trong `neuroedge-proposal.md` | proposal |
+| **§x.y của tài liệu này** | Mục nội bộ của tài liệu này | — |
+| **FR-… · NFR-…** | Yêu cầu chức năng và phi chức năng | `neuroedge-prd.md` §4–§9 |
+| **A1–A9 · B1–B5 · C1–C7** | Tiêu chí **nghiệm thu phát hành** theo mốc v1.0 / Beta / v1.1 | `neuroedge-prd.md` §11 |
+| **TR-1…TR-7** | Tiêu chí **ra cấp thực thi** của Khối 2 và 3 — bộ khác với C1–C7, xem §8.3 của tài liệu này | tài liệu này |
+| **Q-1…Q-13** | Quyết định kỹ thuật. Sổ quyết định là `neuroedge-prd.md` §15; §10 của tài liệu này chỉ theo dõi trạng thái | `neuroedge-prd.md` §15 |
+| **PF-1…PF-4** | Bộ lọc ưu tiên tính năng | proposal §2 |
+| **TSK-…** | Mã hạng mục công việc, cấp phát trong tài liệu này | tài liệu này |
+| **RB-1…RB-4** | Ràng buộc kỹ thuật chuyển giao giữa các sprint | `docs/spec/hal_mcu_review.md` |
+
 ## 0. Bảng theo dõi tiến độ & Nhật ký bàn giao (Live Execution & Handoff Dashboard)
 
 > **Mục đích:** Cung cấp điểm nhìn tập trung duy nhất về trạng thái thời gian thực của toàn bộ dự án. Mọi phiên làm việc (session), kỹ sư hoặc AI Agent khi nhận bàn giao chỉ cần đọc mục này là nắm được ngay: *Hệ thống đang ở đâu, vừa hoàn thành gì, ai đang làm gì, và bước hành động kế tiếp là gì.*
@@ -67,7 +81,7 @@
 | **Khối 1a** | **Sprint 1 — Đóng băng lược đồ** | Tuần 0–2 | Schemas, Monorepo, Test fixtures, Memory spike | **92%** | 🟡 **Chờ phần cứng** |
 | | **Sprint 2 — Lõi thực thi trên `sim`** | Tuần 2–4 | HAL sim, Gate Engine CEL, Fail-closed, Lớp provider (LiteLLM), Web UI | **0%** | ⏳ Chưa bắt đầu |
 | | **Sprint 3 — Action CI & Linux** | Tuần 4–6 | HAL linux, Replay/Assert, Barge-in, ASR/TTS qua provider, TTFV < 10' | **0%** | ⏳ Chưa bắt đầu |
-| **Khối 1b** | **Sprint 4 — HAL trên `esp32s3`** | Tuần 6–8 | Port driver XiaoZhi, verify 3 targets không audio | **0%** | ⏳ Chưa bắt đầu |
+| **Khối 1b** | **Sprint 4 — HAL trên `esp32s3`** | Tuần 6–8 | Port driver XiaoZhi, verify target bậc 1 không audio | **0%** | ⏳ Chưa bắt đầu |
 | | **Sprint 5 — Runtime thoại MCU** | Tuần 8–10 | Thu/phát âm thanh, AEC/VAD, C/C++ state machine, stream lên provider | **0%** | ⏳ Chưa bắt đầu |
 | | **Sprint 6 — OTA & Nghiệm thu v1.0** | Tuần 10–12 | A/B OTA, secure boot, tiêu chí A1–A9 | **0%** | ⏳ Chưa bắt đầu |
 | **Beta** | **Developer Beta** | Tuần 12–16 | Hỗ trợ 50–100 lập trình viên, chỉ số B1–B5 | **0%** | ⏳ Chưa bắt đầu |
@@ -128,7 +142,7 @@
 │    • `allow_when` dạng chuỗi CEL bị TỪ CHỐI trong chuỗi kế thừa: không chứng minh được  │
 │      phép siết chặt cho biểu thức đục → fail-closed thay vì xấp xỉ.                     │
 │    • `copier` ĐÃ CHUYỂN sang extra `scaffold`: nó kéo theo jinja2-ansible-filters GPL3, │
-│      không được phép nằm trong phần phân phối của lõi MIT (§3.10).                      │
+│      không được phép nằm trong phần phân phối của lõi MIT (§3.10 roadmap).              │
 │    • jsonschema phải ghim extra `[format-nongpl]` (extra `[format]` kéo rfc3987 GPL).   │
 │    • Lệnh CLI chưa có engine PHẢI thoát mã 2, không in bảng "PASS" giả.                │
 └────────────────────────────────────────────────────────────────────────────────────────┘
@@ -195,7 +209,7 @@ Tuần 0 ──► LƯỢC ĐỒ GATE v1 ──┐
                                       │         │                       │    (Tuần 6)
                                       │         └──► Target linux ──────┤
                                       │                                 │
-                                      └──► Port esp32s3 ────────────────┴──► verify 3 target
+                                      └──► Port esp32s3 ────────────────┴──► verify bậc 1  
                                            (Tuần 6–8)                        (Tuần 8)
                                                 │
                                                 └──► Runtime thoại MCU ──► OTA ──► v1.0
@@ -232,6 +246,8 @@ Từ **cuối Tuần 2**, mọi thay đổi đối với lược đồ gate ho�
 
 Đây là quy tắc nghiêm ngặt nhất của toàn bộ dự án. Lược đồ trôi nổi làm sụp đổ mệnh đề trung tâm.
 
+**RFC đang mở:** [RFC-0002](docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md) đề xuất mở rộng enum `target` ở `board.v1` và `trace.v1`, và thêm nguyên thủy `vision.in` — phục vụ Giai đoạn 2. RFC ở trạng thái *đang thảo luận*; **lược đồ chưa đổi và không được đổi cho tới khi RFC được phê duyệt**. Roadmap này không phụ thuộc vào kết quả RFC đó.
+
 ---
 ## 3. Chiến lược tái sử dụng mã nguồn mở
 
@@ -252,10 +268,10 @@ Ranh giới này quyết định mọi mục còn lại. Một thành phần n�
 
 > **Phụ thuộc vào nó có buộc ta vi phạm P-1, P-2, hoặc ba quyết định kiến trúc tuần 1 không?**
 
-| Ràng buộc | Nội dung |
+| Ràng buộc | Nội dung *(diễn giải rút gọn — nguyên văn tại `neuroedge-prd.md` §1.5)* |
 |:---|:---|
 | **P-1** | Mọi lệnh tới cơ cấu chấp hành đi qua gate |
-| **P-2** | Ba môi trường thực thi ngang hàng |
+| **P-2** | Các môi trường thực thi ngang hàng |
 | **Tuần 1** | `sim` là target thật · gate là artifact có phiên bản · trace là công dân hạng nhất |
 
 **Có** → chỉ liên thông hoặc tham khảo thiết kế. **Không** → tái sử dụng tối đa.
@@ -356,7 +372,7 @@ Quyết định **Q-8 đã chốt**: C/C++ trên ESP-IDF cho firmware, Python ch
 | 2 | **Bộ vector kiểm thử tuân thủ** | Ba tệp vết ghi chuẩn tại `fixtures/traces/`, kèm chuỗi phán quyết và trạng thái GPIO kỳ vọng, độc lập với ngôn ngữ | Sprint 3 |
 | 3 | **Hiện thực Python** | Cho `sim` và `linux`, port thiết kế từ Pipecat | Sprint 3 |
 | 4 | **Hiện thực C/C++** | Cho `esp32s3`, port driver từ XiaoZhi | Sprint 5 |
-| 5 | **`neuroedge verify` chạy bộ vector trên cả ba target** | Lệch nhau sinh `TargetEquivalenceError` | Sprint 4–5 |
+| 5 | **`neuroedge verify` chạy bộ vector trên mọi target bậc 1** | Lệch nhau sinh `TargetEquivalenceError` | Sprint 4–5 |
 
 **Không có bước 1 và 2 thì việc port Pipecat là một rủi ro, không phải một đòn bẩy.** Đặc tả và bộ vector phải có trước khi viết hiện thực thứ hai.
 
@@ -573,7 +589,7 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 | **TSK-S4-01** | Port 5 nguyên thủy HAL lên ESP-IDF | FR-TGT-03, FR-HAL-01 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/hal/` |
 | **TSK-S4-02** | Gate Engine chạy trên MCU (duyệt cây quyết định JSON) | FR-ACE-01, FR-ACE-03 | V2 + V1 | ⏳ Chưa bắt đầu | `targets/esp32s3/gate/` |
 | **TSK-S4-03** | Đường dẫn `digital.out` và `sensor.read` trên phần cứng thật | FR-HAL-06, FR-HAL-07 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/drivers/` |
-| **TSK-S4-04** | Lệnh `neuroedge verify` cho cả 3 target | FR-CI-07, FR-TGT-04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/verify.py` |
+| **TSK-S4-04** | Lệnh `neuroedge verify` cho cả 3 target bậc 1 | FR-CI-07, FR-TGT-04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/verify.py` |
 | **TSK-S4-05** | Runner kiểm thử nightly trên bo mạch thật | FR-CI-06, NFR-REL-03 | V3 | ⏳ Chưa bắt đầu | `.github/workflows/nightly-hardware.yml` |
 
 
@@ -635,7 +651,7 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 **Tiêu chí ra Sprint 6 — cổng phát hành v1.0 (Exit Criteria):**
 Đạt **toàn bộ A1 đến A9** của PRD §11.1 (không chấp nhận đạt một phần):
 
-- [ ] **A1 (TTFV):** Người mới chưa từng dùng chạy xong agent có gate trong < 10 phút trên `sim`.
+- [ ] **A1 (TTFV):** Trung vị dưới 10 phút trên **10 lập trình viên độc lập** chạy xong agent có gate trên `sim` *(ngưỡng nguyên văn của PRD A1)*.
 - [ ] **A2 (Target Equivalence):** `neuroedge verify --targets sim,linux,esp32s3` đạt 100% khớp chuỗi sự kiện.
 - [ ] **A3 (Safe by Construction):** Không có đường dẫn nào trong mã sinh lệnh actuator bỏ qua gate.
 - [ ] **A4 (Fail-Closed Reliability):** 100% kịch bản suy giảm (mất mạng, timeout LLM, lỗi gate) đều chặn hành động.
@@ -751,15 +767,27 @@ Khối 2 chỉ còn **một dịch vụ thương mại: Fleet OS**. Ba hạng m�
 
 ### 8.3 Tiêu chí ra Khối 2 và 3 (Exit Criteria)
 
-Toàn bộ C1 đến C7 dưới đây là **tiêu chí ra cấp thực thi của Khối 2 và 3**, diễn giải chi tiết bộ C1–C7 của PRD §11.3 chứ không trùng nguyên văn với nó:
+Bảy tiêu chí **TR-1 đến TR-7** dưới đây là tiêu chí ra **cấp thực thi** của Khối 2 và 3. Chúng là một bộ **khác** với bộ nghiệm thu phát hành **C1–C7** của PRD §11.3: TR đo *việc đã làm xong chưa*, C đo *sản phẩm đã đủ điều kiện phát hành chưa*. Cột cuối chỉ rõ mỗi TR phục vụ tiêu chí C nào; TR nào không có C tương ứng là tiêu chí nội bộ của roadmap.
 
-- [ ] **C1 (Provider Layer Self-Host):** Lớp trừu tượng provider chạy tự vận hành trên hạ tầng của người dùng; thiết bị biên không nhúng cứng API key của từng nhà cung cấp, và khóa xoay được mà không nạp lại firmware.
-- [ ] **C2 (Zero-Brick Fleet OTA):** Triển khai thử nghiệm 1.000 thiết bị ảo/thật qua canary; tỷ lệ brick là 0%.
-- [ ] **C3 (Incident MTTR < 10m):** Vết ghi sự cố từ thiết bị được tải về dashboard trung tâm trong dưới 5 phút; kỹ sư tái hiện lỗi bằng `replay` trong dưới 5 phút tiếp theo.
-- [ ] **C4 (Registry Verified Gates):** Ít nhất 10 gate mã nguồn mở được publish lên Gate Registry có kiểm định tự động.
-- [ ] **C5 (Usage Attribution):** Hệ đo lường OpenMeter đối soát chính xác 100% số lượt gọi mô hình và phán quyết gate tới cấp thiết bị *(phục vụ vận hành và đối soát nội bộ — NeuroEdge không thu phí trên lượt gọi mô hình)*.
-- [ ] **C6 (Failover Resiliency):** Giả lập ngắt kết nối nhà cung cấp LLM chính; lớp trừu tượng provider tự động chuyển sang nhà cung cấp dự phòng trong dưới 2 giây.
-- [ ] **C7 (Fleet Remote Config):** Đổi chính sách gate từ dashboard điều khiển từ xa có hiệu lực trên toàn đội dưới 30 giây mà không cần khởi động lại firmware.
+| Mã | Tiêu chí ra Khối 2 và 3 | Phục vụ tiêu chí nghiệm thu PRD |
+|:---|:---|:---:|
+| **TR-1** | Provider Layer Self-Host | — *(nội bộ)* |
+| **TR-2** | Zero-Brick Fleet OTA | **C1** |
+| **TR-3** | Incident MTTR dưới 10 phút | — *(nội bộ)* |
+| **TR-4** | Registry Verified Gates | Tiền đề của **C5** |
+| **TR-5** | Usage Attribution | — *(nội bộ)* |
+| **TR-6** | Failover Resiliency | — *(nội bộ; hiện thực hóa FR-GW-03)* |
+| **TR-7** | Fleet Remote Config | — *(nội bộ)* |
+
+*Tiêu chí PRD **C2, C3, C4, C6, C7** không có TR tương ứng vì chúng được đo ở mức sản phẩm sau khi Khối 2 và 3 hoàn tất, không đo được trong lúc thực thi.*
+
+- [ ] **TR-1 (Provider Layer Self-Host):** Lớp trừu tượng provider chạy tự vận hành trên hạ tầng của người dùng; thiết bị biên không nhúng cứng API key của từng nhà cung cấp, và khóa xoay được mà không nạp lại firmware.
+- [ ] **TR-2 (Zero-Brick Fleet OTA):** Triển khai thử nghiệm 1.000 thiết bị ảo/thật qua canary; tỷ lệ brick là 0%.
+- [ ] **TR-3 (Incident MTTR < 10m):** Vết ghi sự cố từ thiết bị được tải về dashboard trung tâm trong dưới 5 phút; kỹ sư tái hiện lỗi bằng `replay` trong dưới 5 phút tiếp theo.
+- [ ] **TR-4 (Registry Verified Gates):** Ít nhất 10 gate mã nguồn mở được publish lên Gate Registry có kiểm định tự động.
+- [ ] **TR-5 (Usage Attribution):** Hệ đo lường OpenMeter đối soát chính xác 100% số lượt gọi mô hình và phán quyết gate tới cấp thiết bị *(phục vụ vận hành và đối soát nội bộ — NeuroEdge không thu phí trên lượt gọi mô hình)*.
+- [ ] **TR-6 (Failover Resiliency):** Giả lập ngắt kết nối nhà cung cấp LLM chính; lớp trừu tượng provider tự động chuyển sang nhà cung cấp dự phòng trong dưới 2 giây.
+- [ ] **TR-7 (Fleet Remote Config):** Đổi chính sách gate từ dashboard điều khiển từ xa có hiệu lực trên toàn đội dưới 30 giây mà không cần khởi động lại firmware.
 
 ---
 
@@ -800,9 +828,9 @@ Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho
 
 ## 10. Lịch chốt quyết định
 
-Mười một quyết định: bảy từ PRD §15, bốn phát sinh từ chiến lược tái sử dụng mã nguồn mở (§3). Sáu quyết định đã chốt; năm còn lại xếp theo hạn bắt buộc.
+**Sổ quyết định là PRD §15**, nơi định nghĩa đầy đủ mười ba quyết định Q-1 đến Q-13. Mục này **không định nghĩa quyết định mới** — nó chỉ theo dõi hạn chốt, người quyết và trạng thái thực thi. Khi hai tài liệu lệch nhau, PRD §15 đúng.
 
-### 10.1 Bảy quyết định đã chốt
+### 10.1 Chín quyết định đã chốt
 
 | Mã | Quyết định | Giá trị chốt | Cơ sở |
 |:---:|:---|:---|:---|
@@ -811,21 +839,23 @@ Mười một quyết định: bảy từ PRD §15, bốn phát sinh từ chiế
 | **Q-3** | Ngân sách bộ nhớ và firmware | **SRAM cho ứng dụng ≥ 120 KB · PSRAM ≥ 2 MB · firmware ≤ 3,5 MB** | Bảo đảm nạp vừa phân vùng kép A/B trên flash 16 MB của Box-3. PSRAM dành cho ring buffer âm thanh, VAD và wake-word |
 | **Q-4** | Nhà cung cấp mô hình ở v1.0 | **System 1:** Jev qua đám mây + bộ trích xuất intent cục bộ trên Sherpa-ONNX làm fallback<br>**System 2:** Claude Sonnet 5 và GPT-4o-mini qua LiteLLM | Bảo đảm nguyên tắc fallback cục bộ khi mất mạng thực sự khả thi, không chỉ là tuyên bố kiến trúc |
 | **Q-8** | Ngôn ngữ lõi firmware | **C/C++ trên ESP-IDF** cho `esp32s3`; Python cho `sim` và `linux` | Thừa hưởng trọn vẹn driver XiaoZhi và hệ sinh thái ESP-IDF. Kéo theo nghĩa vụ đặc tả chuẩn tắc và bộ vector tuân thủ tại §3.8 |
-| **Q-9** | Lượng giá CEL trên vi điều khiển | **Phương án A — biên dịch gate lúc build** | `neuroedge build` dịch CEL thành cây quyết định JSON phẳng; firmware duyệt cây bằng một hàm C khoảng 100 dòng. Phán quyết đồng nhất trên cả ba target, không tốn RAM |
+| **Q-9** | Lượng giá CEL trên vi điều khiển | **Phương án A — biên dịch gate lúc build** | `neuroedge build` dịch CEL thành cây quyết định JSON phẳng; firmware duyệt cây bằng một hàm C khoảng 100 dòng. Phán quyết đồng nhất trên mọi target, không tốn RAM |
 | **Q-12** | Chuẩn kết nối nhà cung cấp AI | **OpenAI API là chuẩn mặc định**; provider chưa tương thích đi qua **adapter do người dùng tự viết**. Áp dụng chung cho LLM, ASR và TTS | Chốt theo CR-1.0 (PRD §15, FR-MDL-07→09). Tận dụng hệ sinh thái đã quen chuẩn OpenAI thay vì phát minh hợp đồng riêng; adapter giữ đường thoát khi chuẩn bên ngoài thay đổi |
+| **Q-7** | Từ khóa kích hoạt mặc định v1.0 | ***"Hey Neuro"*** qua `microWakeWord` trên Box-3 và `openWakeWord` trên `linux`/`sim` | Chốt sớm để Sprint 5 chọn được mô hình wake-word mà không phải chờ. Tiêu chí ra Sprint 2 đã yêu cầu quyết định này |
+| **Q-13** | Phân tầng cam kết theo bậc target | **Ba bậc:** bậc 1 giữ toàn bộ cam kết chất lượng; bậc 2 đội lõi bảo trì với cam kết hẹp hơn; bậc 3 cộng đồng tự kiểm chứng | Cho phép mở rộng phần cứng ở Giai đoạn 2 mà không pha loãng chất lượng bậc 1 (FR-TGT-08) |
 
 **Hệ quả trực tiếp lên Sprint 1:** Q-1, Q-2 và Q-3 đã chốt nghĩa là đội có thể đặt bo mạch, dựng kho mã và bắt đầu spike ngay Tuần 0 mà không chờ quyết định nào.
 
 **Một điều chỉnh so với đề xuất gốc:** Q-4 ghi Claude Sonnet 5 thay vì Sonnet 3.5. Thế hệ 3.5 đã bị thay thế; chốt một định danh mô hình lỗi thời vào tài liệu nền sẽ tạo nợ ngay từ ngày đầu.
 
-### 10.2 Năm quyết định còn mở
+### 10.2 Bốn quyết định còn mở
 
 | Tuần | Mã | Quyết định | Vì sao hạn đó | Người quyết | Trạng thái |
 |:---:|:---:|:---|:---|:---:|:---:|
 | **2** | **Q-11** | Phê duyệt ngoại lệ giấy phép: Hawkbit EPL-2.0, EMQX BSL, LiteLLM enterprise | Chặn việc thiết kế phụ thuộc cho Khối 2. Phải xong trước khi port bất kỳ dòng nào (§3.3). **CR-1.0 làm phần LiteLLM gấp hơn:** nó chuyển từ dịch vụ máy chủ sang thư viện **phân phối kèm sản phẩm** trong lõi MIT, nên nghĩa vụ giấy phép phải xét lại ở phạm vi phân phối, và cần xong trước Sprint 2 chứ không phải trước Khối 2 | Kỹ thuật trưởng | ⏳ Đang mở |
-| **5** | Q-7 | Từ khóa kích hoạt mặc định và ngôn ngữ hỗ trợ | Cần trước khi chọn mô hình wake-word cho Sprint 5 | Sản phẩm | ⏳ Đang mở |
 | **2** | **Q-10** | Mức độ phụ thuộc vào LiteLLM: dùng như thư viện định tuyến hay tích hợp sâu | **Hạn đẩy sớm từ Tháng 3 lên Tuần 2 theo CR-1.0:** lớp provider nay thuộc lõi OSS và làm ngay ở Sprint 2 (TSK-S2-11), không còn chờ Khối 2 | Kỹ thuật nền tảng | ⏳ Đang mở |
 | **Tháng 3** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng | ⏳ Đang mở |
+| **Tháng 6** | **RFC-0002** | Mở rộng enum `target` và thêm nguyên thủy `vision.in` cho Giai đoạn 2 | Không chặn roadmap này. Chặn Khối V1a của Giai đoạn 2, và phải xong trước khi viết bất kỳ board profile mới nào | Kỹ thuật trưởng | ⏳ Đang mở |
 | **Tháng 3** | Q-6 | Chính sách lưu trữ vết ghi: thời hạn và hạn mức | Ảnh hưởng chi phí vận hành và cam kết SLA | Sản phẩm | ⏳ Đang mở |
 
 **Q-11 là quyết định gấp nhất trong nhóm còn mở.** Ba thành phần của Khối 2 đều nằm ngoài danh sách giấy phép cho phép, và việc thiết kế phụ thuộc không nên bắt đầu trước khi có phê duyệt bằng văn bản. Q-11 cũng là **Tiêu chí ra số 6 của Sprint 1**, nên nó đang chặn việc đóng Sprint 1 chứ không chỉ chặn Khối 2. Sau CR-1.0, phần LiteLLM của Q-11 còn chặn thêm **TSK-S2-11 ở Sprint 2**: không được viết một dòng nào của lớp provider trước khi ranh giới giấy phép ở phạm vi phân phối được phê duyệt.
@@ -839,7 +869,7 @@ Khi dựng cổng giấy phép cho CI (TSK-S1-12), rà soát phụ thuộc phát
 | `neuroedge` → `copier` → `jinja2-ansible-filters` | **GPL3** | `copier` chuyển khỏi tập phụ thuộc lõi sang extra `scaffold`. Nó chỉ cần cho `neuroedge new` (TSK-S3-07), chưa hiện thực, nên không mất gì |
 | `neuroedge` → `jsonschema[format]` → `rfc3987` | **GPL** | Ghim extra `[format-nongpl]`, dùng `rfc3987-syntax` (MIT). Extra này là **bắt buộc**, không phải tùy chọn: thiếu bộ kiểm tra format thì `format: date-time` trong `trace.v1.json` chỉ là chú thích, và một vết ghi có mốc thời gian không phân tích được vẫn thẩm định đạt |
 
-Cả hai đều trực tiếp hiện thực hóa rủi ro mà §3.10 nêu: *"Nhúng mã GPLv3 vào phần phân phối → Lây nhiễm bản quyền sang lõi MIT và sang dự án của khách hàng."* Điều đáng chú ý là **không ai thêm một phụ thuộc GPL nào một cách chủ ý** — cả hai đến qua phụ thuộc bắc cầu của một thư viện hoàn toàn permissive. Rà soát giấy phép bằng mắt ở tầng phụ thuộc trực tiếp sẽ bỏ sót cả hai.
+Cả hai đều trực tiếp hiện thực hóa rủi ro mà §3.10 của tài liệu này nêu: *"Nhúng mã GPLv3 vào phần phân phối → Lây nhiễm bản quyền sang lõi MIT và sang dự án của khách hàng."* Điều đáng chú ý là **không ai thêm một phụ thuộc GPL nào một cách chủ ý** — cả hai đến qua phụ thuộc bắc cầu của một thư viện hoàn toàn permissive. Rà soát giấy phép bằng mắt ở tầng phụ thuộc trực tiếp sẽ bỏ sót cả hai.
 
 Vì vậy job `licence-obligations` trong [`ci-sim-linux.yml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/.github/workflows/ci-sim-linux.yml) chạy `pip-licenses --fail-on` trên **toàn bộ cây phụ thuộc** ở mỗi pull request, và lưu bảng giấy phép đầy đủ làm artifact. Đây là nghĩa vụ 1 và 5 của §3.9 được tự động hóa, thay cho một lần rà soát thủ công.
 
@@ -916,13 +946,13 @@ Một hạng mục chỉ được coi là hoàn thành khi đủ **cả năm** �
 | Đóng băng lược đồ    | Tuần 2      | Gate v1, trace v1, hợp đồng HAL         | Tiêu chí ra Sprint 1                   |
 | Lõi chạy trên `sim`  | Tuần 4      | Gate Engine, fail-closed, `@action`     | Tiêu chí ra Sprint 2                   |
 | **Kết thúc Khối 1a** | **Tuần 6**  | Action CI, `linux`, CLI, TTFV           | A1 nội bộ, A2 một phần, A3, A4, A5, A7 |
-| Tương đương 3 target | Tuần 8      | `esp32s3` chạy gate và GPIO             | **A2 đầy đủ** trên miền phán quyết     |
+| Tương đương bậc 1    | Tuần 8      | `esp32s3` chạy gate và GPIO             | **A2 đầy đủ** trên miền phán quyết     |
 | Thoại trên MCU       | Tuần 10     | Thu/phát + gate trên MCU, STT/TTS cloud | Tiêu chí ra Sprint 5                   |
 | **Phát hành v1.0**   | **Tuần 12** | OTA, bảo mật thiết bị, tài liệu         | **Toàn bộ A1–A9**                      |
 | Kết thúc Beta        | Tuần 16     | 50–100 lập trình viên ngoài             | B1–B5                                  |
 | **Điểm rẽ**          | **Tuần 16** | Chọn nhánh A, B hoặc C                  | §7                                     |
-| Lớp provider OSS xong| Tháng 6     | Định tuyến, failover, vết ghi đồng nhất | C6                                     |
-| **Phát hành v1.1**   | **Tháng 8** | Fleet OS, OTA canary, Registry          | **Toàn bộ C1–C7**                      |
+| Lớp provider OSS xong| Tháng 6     | Định tuyến, failover, vết ghi đồng nhất | TR-6                                   |
+| **Phát hành v1.1**   | **Tháng 8** | Fleet OS, OTA canary, Registry          | **TR-1→TR-7** + PRD **C1–C7**          |
 
 
 ## Phụ lục B — Danh mục mua sắm và hạ tầng
@@ -940,6 +970,8 @@ Cần chuẩn bị trước Tuần 1 để không chặn đường găng.
 | Runner CI tự quản có gắn bo mạch thật          | 1        | **Tuần 6** | Bắt buộc cho nightly từ Tuần 8                       |
 | Tên miền và hạ tầng cho `schema.neuroedge.dev` | —        | Tuần 10    | Phục vụ FR-GOV-01 và A9                              |
 | Máy chủ Discord và kho GitHub công khai        | —        | Tuần 10    | Phục vụ giai đoạn Beta                               |
+| *Giai đoạn 2:* Jetson Orin Nano                | 2        | Tháng 12   | Target `jetson` bậc 2 — chỉ mua sau khi RFC-0002 duyệt |
+| *Giai đoạn 2:* Camera USB/CSI + NPU Hailo-8 hoặc Coral | 2 bộ | Tháng 9 | Nguyên thủy `vision.in` trên `linux` — xem `neuroedge-roadmap-phase2.md` |
 
 
 ---
@@ -990,7 +1022,7 @@ neuroedge/
 | # | Quy ước | Lý do |
 |:---:|:---|:---|
 | 1 | `schemas/` là nguồn sự thật duy nhất; mã Python và firmware C đều sinh hoặc kiểm tra theo nó, không định nghĩa lại | Chống trôi lược đồ giữa hai ngôn ngữ |
-| 2 | `fixtures/traces/` dùng chung cho cả ba target, không có bản riêng theo ngôn ngữ | Là cơ sở của `neuroedge verify` |
+| 2 | `fixtures/traces/` dùng chung cho mọi target, không có bản riêng theo ngôn ngữ | Là cơ sở của `neuroedge verify` |
 | 3 | `targets/` chỉ chứa hiện thực HAL, không chứa logic nghiệp vụ hay chính sách an toàn | Giữ ranh giới tài sản lõi tại §3.1 |
 | 4 | Lớp kết nối nhà cung cấp nằm trong `python/neuroedge/models/providers/`, **không** nằm trong `services/` | Nó thuộc lõi mã nguồn mở phân phối kèm sản phẩm, không phải dịch vụ do NeuroEdge vận hành (CR-1.0) |
 
@@ -1016,7 +1048,7 @@ Chuẩn trao đổi dữ liệu giữa thiết bị và máy tính phát triển
 | Tần số lấy mẫu | 16 kHz, một kênh |
 | Kích thước khung | 20 ms, tương đương 320 mẫu |
 
-Cùng một định dạng dùng cho cả ba target. Môi trường `sim` phát lại tệp WAV qua đúng đường dẫn mã hóa này để giữ tương đương với phần cứng thật.
+Cùng một định dạng dùng cho mọi target. Môi trường `sim` phát lại tệp WAV qua đúng đường dẫn mã hóa này để giữ tương đương với phần cứng thật.
 
 ---
 

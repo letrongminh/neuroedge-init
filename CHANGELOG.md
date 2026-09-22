@@ -20,6 +20,112 @@ Toàn bộ thay đổi đáng kể của dự án được ghi tại đây, theo
 
 ## 1. Nhật ký phiên bản
 
+### [0.3.0] — 2026-09-22 — Giai đoạn 2: thị giác, phủ rộng phần cứng, nền tảng cho maker
+
+Thay đổi **chỉ ở tầng tài liệu**. Ba lược đồ trong `schemas/` **chưa đổi** và
+không được đổi cho tới khi RFC-0002 được phê duyệt; bộ test vẫn 210/210 xanh.
+
+#### Đã thêm — RFC-0002 *(trạng thái: đang thảo luận)*
+
+[`docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md`](docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md)
+đề xuất mở enum `target` ở `board.v1` và `trace.v1`, thêm nguyên thủy tùy chọn
+`vision.in`, và mở trường vết ghi cho bằng chứng thị giác.
+
+**Phát hiện dẫn tới RFC này:** thêm một target **không phải hạng mục roadmap** mà
+là thay đổi lược đồ đã đóng băng. Danh sách `["sim", "linux", "esp32s3"]` bị lặp
+ở bốn nơi — hai lược đồ, `hal/board.py`, và chuỗi thông điệp lỗi trong
+`fixtures/traces/expected_errors.yaml` — trong đó `schemas/` và `fixtures/traces/`
+đều thuộc diện RFC bắt buộc theo `CONTRIBUTING.md` §3.
+
+RFC-0002 cũng phải nới hai bất biến kiểm thử: mọi bo mạch dùng chung tập tên chân,
+và mọi profile khai đủ năm nguyên thủy. §5 của RFC nêu rõ nới thế nào mà không
+làm hệ thống lỏng hơn.
+
+#### Đã thêm — Tài liệu Giai đoạn 2
+
+[`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) — sáu khối V1a, V1b,
+V2, V3, P1, P2 từ Tháng 9 đến Tháng 24, chạy **song song** Khối 4 AURA chứ không
+nối tiếp. AURA là nguồn dữ liệu R3 cho chính thị giác.
+
+#### Đã đổi — Nguyên tắc P-2 bỏ số đếm
+
+*"Ba môi trường thực thi ngang hàng"* → *"Các môi trường thực thi ngang hàng"* ở
+proposal §0.4 và PRD §1.5. **Hệ quả kỹ thuật giữ nguyên nguyên văn** — "không rẽ
+nhánh logic theo target trong mã nguồn agent" không hề bị phá khi thêm target;
+chỉ con số bị phá. Khoảng 42 chỗ viết cứng "3 môi trường" trên ba tài liệu được
+sửa theo cùng một mẫu.
+
+#### Đã thêm — Phân tầng cam kết theo bậc target
+
+| Bậc | Target | Cam kết của đội lõi |
+|:---:|:---|:---|
+| **1 — Chính thức** | `sim` · `linux` · `esp32s3` | `verify` 100%, kiểm thử hằng đêm |
+| **2 — Mở rộng** | `jetson` | Bảo trì, verify trên miền phán quyết |
+| **3 — Cộng đồng** | `stm32` · `rp2350` | Không cam kết; cộng đồng tự kiểm chứng qua Bộ kiểm thử tuân thủ |
+
+Mọi ngưỡng chất lượng trong proposal §12 và PRD §11 nay neo tường minh vào **bậc 1**.
+Ghi nhận bằng `FR-TGT-08` và `Q-13`; rủi ro pha loãng chất lượng ghi ở `R-7` (PRD)
+và rủi ro #6 (proposal §11).
+
+#### Đã đổi — Mở khóa vision và Jetson khỏi danh mục hoãn
+
+proposal §9 và PRD §14: ba dòng chặn vision, Jetson và độ phủ bo mạch chuyển sang
+*"Đưa vào Giai đoạn 2"*. Cột lý do phải **viết lại**, không chỉ đổi trạng thái —
+hai dòng cũ viện dẫn chính con số *"ba môi trường đã đủ"* làm lập luận, nên giữ
+nguyên sẽ khiến tài liệu tự mâu thuẫn.
+
+**Vision trượt bộ lọc R1** (không rút ngắn TTFV) nhưng **thắng R2** (không bổ sung
+muộn được mà không viết lại kiến trúc). Theo proposal §2, thỏa R1 *hoặc* R2 là đủ.
+Vì vậy Giai đoạn 2 tách **V1a đặt chỗ kiến trúc** — chỉ chốt chỗ trong hợp đồng,
+không viết driver, không đụng TTFV — khỏi **V1b hiện thực**, mở khóa khi có nhu
+cầu đo được từ khách hàng AURA thật.
+
+#### Đã thêm — Chính sách cho tài sản do bên thứ ba sở hữu
+
+proposal §6.4 có thêm hàng cho **adapter và HAL port**: tác giả giữ bản quyền, mã
+nằm ở kho riêng, NeuroEdge chỉ lập chỉ mục. §1.7 bổ sung lập luận an toàn riêng
+cho loại tài sản này — lập luận biện minh cho việc chia sẻ gate (*"nhẹ, minh bạch,
+không rủi ro pháp lý"*) **không chuyển sang được** cho mã thực thi chạy gần cơ cấu
+chấp hành. Ba cổng kiểm soát: Bộ kiểm thử tuân thủ, sandbox phân quyền, đối chiếu
+năng lực lúc build.
+
+#### Đã thêm — KPI Giai đoạn 2 (§12.4) và mở rộng G2/G3
+
+§12 trước đây kết thúc ở mốc 12 tháng, để lại vùng trắng cho Giai đoạn 2. Bổ sung
+V-G1 đến V-G5 ở mốc 24 tháng. G2 và G3 mở rộng để **đếm cả adapter và HAL port**,
+không chỉ gate và agent.
+
+**V-G1 được chỉnh so với đề xuất ban đầu** để nối được vào doanh thu: ngoài ngưỡng
+5.000 thiết bị vision, thêm ngưỡng **≥ 500 thiết bị thuộc đội có gói Fleet trả phí**.
+Lý do: usecase consumer thu hút người dùng nhưng người dùng cuối không trả tiền, và
+sau khi bỏ doanh thu inference ở v5.3, Fleet là dòng thu duy nhất và tính theo đội
+thiết bị doanh nghiệp.
+
+#### Đã đổi — Chuẩn hóa hệ ký hiệu và ma trận truy vết
+
+Một đợt rà soát toàn bộ bộ tài liệu tìm ra năm lỗi cascade. Tất cả đã sửa.
+
+| # | Lỗi | Cách sửa |
+|:---:|:---|:---|
+| 1 | **Hai bộ `C1–C7` khác nhau dùng chung nhãn** — PRD §11.3 (nghiệm thu phát hành) và roadmap §8.3 (tiêu chí ra Khối 2/3). Không phải chi tiết hóa của nhau: roadmap C2 = PRD C1, roadmap C4 (≥10 gate) lệch PRD C5 (≥20 gate), năm tiêu chí còn lại không có cặp | Bộ của roadmap đổi thành **TR-1…TR-7** kèm bảng chỉ rõ mỗi TR phục vụ tiêu chí C nào; TR nào không có C tương ứng được đánh dấu *(nội bộ)* |
+| 2 | **Ký hiệu `R` mang hai nghĩa** — `R1–R4` là bộ lọc ưu tiên (proposal §2), `R-1…R-7` là rủi ro sản phẩm (PRD §13.2). Cả hai xuất hiện trong cùng một hàng bảng ở PRD §14 | Bộ lọc đổi thành **PF-1…PF-4**. Hệ mã rủi ro `R-n` giữ nguyên |
+| 3 | **Sổ quyết định bị chẻ đôi** — PRD có Q-1…Q-7, Q-12, Q-13; roadmap có Q-1…Q-12. Không tài liệu nào giữ đủ bộ, và **Q-7 được ghi ĐÃ CHỐT ở PRD nhưng đang mở ở roadmap** | PRD §15 thành sổ duy nhất với đủ **Q-1…Q-13**; roadmap §10 chuyển thành bản theo dõi trạng thái và đã khớp hoàn toàn |
+| 4 | **Hai sổ rủi ro chồng lấn không khai báo ranh giới**, và cả hai đánh số sai thứ tự | Khai báo ranh giới: proposal §11 = rủi ro *chiến lược*, PRD §13.2 = rủi ro *sản phẩm và thực thi*. Ba cặp giao nhau được ánh xạ tường minh. Cả hai sổ sắp lại đúng thứ tự |
+| 5 | **Ký hiệu `§` mang hai nghĩa** — bảng Quy ước PRD nói `§x.y` trỏ proposal, nhưng nhiều chỗ tự trỏ chính nó; roadmap và phase2 không có bảng quy ước nào | Thêm quy ước `§x.y của tài liệu này` cho tham chiếu nội bộ và áp dụng nhất quán. Roadmap và phase2 có bảng **Quy ước tài liệu** riêng |
+
+**Ma trận truy vết PRD mở rộng từ 44% lên 100%.** Phụ lục A trước đây chỉ truy vết theo mục tiêu (A.1) và nguyên tắc (A.2), bỏ trống 85/151 yêu cầu — trong đó có **toàn bộ NFR**. Bổ sung **A.3** (đối chiếu yêu cầu phi chức năng: cách kiểm chứng và tiêu chí nghiệm thu) và **A.4** (các nhóm yêu cầu chức năng không rơi vào trục mục tiêu hay nguyên tắc: HAL, PER, CI, GOV, CLI, DX, TEL…). Mọi hàng ghi rõ tên nhóm để truy vết kiểm được bằng máy.
+
+Ngoài ra: tiêu chí **A1** trong roadmap có hai phát biểu lệch nhau (ngưỡng cá nhân vs trung vị trên 10 người) — đã đồng bộ về nguyên văn PRD.
+
+#### Cần chú ý — Hai bài toán để mở có chủ đích
+
+1. **Ngữ nghĩa gate lượng giá trên bằng chứng thị giác chưa được giải.** Cho tới
+   khi có RFC riêng, kết quả thị giác chỉ được dùng làm thông tin ngữ cảnh; agent
+   muốn hành động dựa trên camera phải quy về `bool` / `level` / `choice` qua
+   `SystemOne`. Rule engine giữ nguyên 100% xác định.
+2. **Ngân sách bộ nhớ cho nguyên thủy thứ sáu trên vi điều khiển** chưa đo được vì
+   chưa có bo mạch. Không chặn RFC, nhưng chặn việc khai `vision_in` cho `esp32s3`.
+
 ### [0.2.0] — 2026-09-21 — CR-1.0: Chuyển định hướng cloud-first
 
 Thay đổi **chỉ ở tầng tài liệu**, không đụng một dòng mã nguồn nào và không đụng
