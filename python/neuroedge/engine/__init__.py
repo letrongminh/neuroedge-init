@@ -1,34 +1,81 @@
 """
-Action Contract Engine (L3) - Core Safety Engine.
-"""
-from dataclasses import dataclass
-from enum import Enum
-from typing import Any, Dict, Optional
+Action Contract Engine (L3) — the core safety engine.
 
-class GateVerdict(str, Enum):
+Sprint 1 freezes the declarative half: gate documents, their inheritance
+semantics, and the canonical form that gets hashed and signed. The evaluating
+half (CEL compilation, circuit breaker, `@action` enforcement) lands in
+Sprint 2.
+"""
+
+from dataclasses import dataclass
+from enum import StrEnum
+from typing import Any
+
+from .canonical import canonicalize, digest, gate_canonical_json, gate_digest
+from .constraints import Constraint, parse_allow_when, parse_constraint
+from .gate_resolver import (
+    MAX_INHERITANCE_LEVELS,
+    GateRegistry,
+    ResolvedGate,
+    load_gate_document,
+    resolve_gate_document,
+    resolve_gate_file,
+    resolve_gate_uri,
+    validate_gate_document,
+)
+
+__all__ = [
+    "MAX_INHERITANCE_LEVELS",
+    "ActionContractEngine",
+    "Constraint",
+    "Gate",
+    "GateRegistry",
+    "GateVerdict",
+    "ResolvedGate",
+    "canonicalize",
+    "digest",
+    "gate_canonical_json",
+    "gate_digest",
+    "load_gate_document",
+    "parse_allow_when",
+    "parse_constraint",
+    "resolve_gate_document",
+    "resolve_gate_file",
+    "resolve_gate_uri",
+    "validate_gate_document",
+]
+
+
+class GateVerdict(StrEnum):
     ALLOW = "ALLOW"
     BLOCK = "BLOCK"
+
 
 @dataclass
 class Gate:
     name: str
     version: str
     verdict: GateVerdict = GateVerdict.BLOCK
-    blocked_by: Optional[str] = None
-    reason: Optional[str] = None
-    escalated_to: Optional[str] = None
+    blocked_by: str | None = None
+    reason: str | None = None
+    escalated_to: str | None = None
+
 
 class ActionContractEngine:
     """
-    Enforces that every physical actuator command must pass through an authorized Gate.
-    Guarantees fail-closed semantics when offline or on error.
+    Enforces that every physical actuator command passes an authorised gate.
+
+    Fail-closed is the default in every direction: an unregistered gate, an
+    unreachable adjudicator or an exceeded budget all deny the action. Full
+    evaluation arrives with TSK-S2-03; what exists here is the safe default it
+    must preserve.
     """
+
     def __init__(self, fail_closed: bool = True):
         self.fail_closed = fail_closed
-        self.gates: Dict[str, Gate] = {}
+        self.gates: dict[str, Gate] = {}
 
-    def evaluate(self, gate_name: str, context: Dict[str, Any]) -> Gate:
-        # Default safety: fail closed if gate not registered or context unverified
+    def evaluate(self, gate_name: str, context: dict[str, Any]) -> Gate:
         if gate_name not in self.gates:
             return Gate(
                 name=gate_name,

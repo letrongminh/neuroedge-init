@@ -1,0 +1,29 @@
+# Expected diagnostics for fixtures/traces/invalid/.
+#
+# The counter-example half of Sprint 1 exit criterion 1 for trace.v1.json.
+# tests/test_trace_fixtures.py requires every entry to fail exactly this way,
+# and every file in invalid/ to have an entry.
+
+bad_session_id.json:
+  where_contains: "metadata.session_id"
+  why_contains: "does not match '^sess_[0-9a-fA-F]+$'"
+
+bad_timestamp.json:
+  where_contains: "metadata.timestamp_utc"
+  why_contains: "is not a 'date-time'"
+
+unknown_target.json:
+  where_contains: "metadata.target"
+  why_contains: "is not one of ['sim', 'linux', 'esp32s3']"
+
+missing_board_id.json:
+  where_contains: "metadata"
+  why_contains: "'board_id' is a required property"
+
+negative_offset.json:
+  where_contains: "events.0.offset_ms"
+  why_contains: "is less than the minimum of 0"
+
+event_extra_field.json:
+  where_contains: "events.0"
+  why_contains: "Additional properties are not allowed ('gate_signature' was unexpected)"

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schema.neuroedge.dev/trace/v1.json",
+  "metadata": {
+    "session_id": "sess_a1b2c3d4",
+    "timestamp_utc": "2026-09-21T08:00:00Z",
+    "target": "sim",
+    "agent_version": "villa-concierge@0.1.0"
+  },
+  "events": [
+    { "offset_ms": 0, "type": "audio_in_vad_start", "data": { "energy_db": -16.5 } }
+  ]
+}

@@ -1,0 +1,20 @@
+# Principle 2 and 3 together — tightens all three criterion kinds at once and
+# adds a new one.
+schema:  neuroedge.gate/v1
+name:    tightens-every-kind
+version: 1.0.0
+extends: neuroedge://gates/strict-base@1.0.0
+
+evaluate:
+  supervisor_present:
+    type: bool
+    instructions: "A supervisor is physically present"
+
+allow_when:
+  guest_authenticated: { confidence_gte: 0.99 }   # 0.9  -> 0.99
+  risk_level:          { eq: low }                # {low} -> {low}
+  request_channel:     { eq: in_person }          # {in_person,app} -> {in_person}
+  supervisor_present:  true                       # new criterion
+
+budget:
+  p95_latency_ms: 80

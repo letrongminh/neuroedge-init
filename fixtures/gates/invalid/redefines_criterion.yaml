@@ -1,0 +1,11 @@
+# Principle 1 — silently re-orders the inherited `levels`, which would flip the
+# meaning of the inherited `{ lte: low }` clause.
+schema:  neuroedge.gate/v1
+name:    redefines-criterion
+version: 1.0.0
+extends: neuroedge://gates/strict-base@1.0.0
+evaluate:
+  risk_level:
+    type: level
+    levels: [high, medium, low]
+    instructions: "Anomaly risk at request time"

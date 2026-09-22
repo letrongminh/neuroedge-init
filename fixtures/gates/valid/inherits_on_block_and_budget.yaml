@@ -1,0 +1,10 @@
+# Principles 1 and 4 — declares nothing but identity. `evaluate`, `allow_when`
+# and `on_block` are inherited whole; `p95_latency_ms` is inherited; `fail`
+# resets to `closed` because it was not restated here.
+#
+# This is the document shape that the original frozen gate.v1.json made
+# impossible to validate, and the reason for RFC-0001.
+schema:  neuroedge.gate/v1
+name:    inherits-everything
+version: 1.0.0
+extends: neuroedge://gates/strict-base@1.0.0

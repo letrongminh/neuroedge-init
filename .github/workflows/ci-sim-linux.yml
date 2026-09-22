@@ -1,0 +1,230 @@
+# Action CI — sim and linux (TSK-S1-12, FR-CI-05)
+#
+# Runs on every pull request and push. This is the gate that must be green
+# before a merge.
+#
+# Ordering is deliberate: the frozen artifacts are checked before the code that
+# consumes them, so a schema break reports as a schema break rather than as a
+# pile of downstream test failures.
+name: ci-sim-linux
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-sim-linux-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: "1"
+  # Language-neutral assets live outside the Python package.
+  NEUROEDGE_ROOT: ${{ github.workspace }}
+
+jobs:
+  frozen-artifacts:
+    name: Frozen artifacts (schemas, gates, traces, boards)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: python/pyproject.toml
+
+      - name: Install
+        working-directory: python
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: The three schemas are valid JSON Schema draft 2020-12
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+          from jsonschema import Draft202012Validator
+
+          expected = {
+              "trace.v1.json": "https://schema.neuroedge.dev/trace/v1.json",
+              "gate.v1.json": "https://schema.neuroedge.dev/gate/v1.json",
+              "board.v1.json": "https://schema.neuroedge.dev/board/v1.json",
+          }
+          found = {p.name for p in pathlib.Path("schemas").glob("*.json")}
+          if found != set(expected):
+              sys.exit(f"schemas/ must hold exactly {sorted(expected)}, found {sorted(found)}")
+
+          for name, schema_id in expected.items():
+              schema = json.loads(pathlib.Path("schemas", name).read_text())
+              Draft202012Validator.check_schema(schema)
+              if schema["$id"] != schema_id:
+                  sys.exit(f"{name}: $id is {schema['$id']!r}, expected {schema_id!r}")
+              print(f"  ok  {name}  {schema_id}")
+          PY
+
+      - name: Every gate resolves (5 inheritance safety principles)
+        run: neuroedge gate lint
+
+      - name: The invalid gate corpus still fails
+        run: |
+          # An inverted assertion: if these ever resolve, the safety checks have
+          # regressed, and a green pipeline would be actively misleading.
+          #
+          # The exit code is matched EXACTLY against 1 ("ran and failed"). A
+          # looser `if ! cmd` would also accept 2 ("usage error") and so would
+          # keep passing if this invocation were ever mistyped — the command
+          # would never run, and nothing would notice.
+          set +e
+          neuroedge gate lint fixtures/gates/invalid --registry fixtures/gates/registry \
+            > lint-invalid.log 2>&1
+          status=$?
+          set -e
+          cat lint-invalid.log
+
+          if [ "$status" -eq 0 ]; then
+            echo "::error::fixtures/gates/invalid/ resolved successfully — inheritance safety checks have regressed"
+            exit 1
+          fi
+          if [ "$status" -ne 1 ]; then
+            echo "::error::expected exit 1 (ran and failed) but got $status — the check did not actually run"
+            exit 1
+          fi
+          echo "  ok  the counter-example corpus is still rejected (exit 1)"
+
+      - name: The three canonical traces validate (FR-TRC-08, A7)
+        run: neuroedge trace validate fixtures/traces/*.json
+
+      - name: Board declarations and the full artifact sweep
+        run: |
+          neuroedge board list
+          neuroedge verify --targets sim,linux
+
+  tests:
+    name: Test suite (python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: python/pyproject.toml
+
+      - name: Install
+        working-directory: python
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Test
+        working-directory: python
+        run: python -m pytest -q --strict-markers --junit-xml=../junit.xml
+
+      - name: No test may be skipped
+        # CONTRIBUTING.md §5. A test skipped for a missing dependency reads as a
+        # pass in the summary line; Sprint 1 shipped a "4/4 passing" claim while
+        # four schema conformance tests were silently skipping.
+        run: |
+          python - <<'PY'
+          import sys, xml.etree.ElementTree as ET
+
+          suite = ET.parse("junit.xml").getroot()
+          totals = {"tests": 0, "skipped": 0, "failures": 0, "errors": 0}
+          for element in suite.iter("testsuite"):
+              for key in totals:
+                  totals[key] += int(element.get(key, 0))
+
+          print(
+              f"tests={totals['tests']} skipped={totals['skipped']} "
+              f"failures={totals['failures']} errors={totals['errors']}"
+          )
+          if totals["skipped"]:
+              names = [
+                  case.get("name")
+                  for case in suite.iter("testcase")
+                  if case.find("skipped") is not None
+              ]
+              print(f"::error::{totals['skipped']} test(s) skipped: {names}")
+              sys.exit(1)
+          if totals["tests"] == 0:
+              sys.exit("::error::no tests ran")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-${{ matrix.python-version }}
+          path: junit.xml
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: python/pyproject.toml
+
+      - name: Install
+        working-directory: python
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Ruff
+        working-directory: python
+        run: |
+          ruff check .
+          ruff format --check .
+
+  licence-obligations:
+    name: Licence obligations (§3.9)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: NOTICE exists and dependency versions are pinned
+        run: |
+          test -s NOTICE || { echo "::error::NOTICE is missing or empty (§3.9 obligation 2)"; exit 1; }
+          test -s python/requirements-lock.txt || {
+            echo "::error::python/requirements-lock.txt is missing (§3.9 obligation 5)"; exit 1; }
+          echo "  ok  NOTICE and the pinned dependency set are present"
+
+      - name: No strong-copyleft dependency reaches the distributed core
+        run: |
+          # §3.10: GPLv3/AGPL contamination would spread from the MIT core into
+          # customer projects. Two real accidents this guards against:
+          #   * jsonschema's default [format] extra pulls in GPL rfc3987
+          #     (hence [format-nongpl] in pyproject.toml);
+          #   * copier pulls in jinja2-ansible-filters, which is GPL3 (hence
+          #     the optional `scaffold` extra rather than a core dependency).
+          python -m pip install --upgrade pip >/dev/null
+          python -m pip install -e 'python[dev]' >/dev/null
+          pip-licenses --format=csv > licences.csv
+          cat licences.csv
+          pip-licenses --partial-match --fail-on="GPL;GNU General Public License;GNU Affero General Public License;AGPL"
+          echo "  ok  no strong-copyleft dependency found"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: licences
+          path: licences.csv

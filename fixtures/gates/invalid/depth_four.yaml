@@ -1,0 +1,11 @@
+# Principle 5 — a fourth level on top of depth-l3 (FR-GATE-08).
+schema:  neuroedge.gate/v1
+name:    depth-four
+version: 1.0.0
+extends: neuroedge://gates/depth-l3@1.0.0
+evaluate:
+  d:
+    type: bool
+    instructions: "One level too deep"
+allow_when:
+  d: true

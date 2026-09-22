@@ -1,0 +1,15 @@
+# Schema error — `warn` is not one of the four Appendix B.3 behaviours.
+schema:  neuroedge.gate/v1
+name:    bad-on-block-action
+version: 1.0.0
+evaluate:
+  ok:
+    type: bool
+    instructions: "Placeholder criterion"
+allow_when:
+  ok: true
+on_block:
+  action: warn
+budget:
+  p95_latency_ms: 100
+  fail:           closed

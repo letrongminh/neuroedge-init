@@ -1,0 +1,15 @@
+# Schema error — a `level` criterion must declare its ordered `levels`.
+schema:  neuroedge.gate/v1
+name:    level-without-levels
+version: 1.0.0
+evaluate:
+  risk_level:
+    type: level
+    instructions: "Ordered ranking, but no ranking was given"
+allow_when:
+  risk_level: { lte: low }
+on_block:
+  action: deny
+budget:
+  p95_latency_ms: 100
+  fail:           closed

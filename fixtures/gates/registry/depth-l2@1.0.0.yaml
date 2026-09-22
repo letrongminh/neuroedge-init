@@ -1,0 +1,10 @@
+schema:  neuroedge.gate/v1
+name:    depth-l2
+version: 1.0.0
+extends: neuroedge://gates/depth-l1@1.0.0
+evaluate:
+  b:
+    type: bool
+    instructions: "Level 2 criterion"
+allow_when:
+  b: true

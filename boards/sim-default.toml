@@ -1,0 +1,33 @@
+# Target `sim` — the browser simulator. No hardware purchase required, which is
+# what makes the sub-10-minute time-to-first-value claim (A1) possible.
+#
+# Capabilities deliberately mirror esp32s3-box-3 rather than exceeding it: if
+# `sim` offered more, an agent could pass in simulation and fail to build for
+# the reference board, and target equivalence would be worthless.
+[board]
+id     = "sim-default"
+name   = "NeuroEdge Web Simulator"
+target = "sim"
+mcu    = "none"
+
+[capabilities.audio_in]
+channels       = 1
+sample_rate_hz = 16000
+aec            = true
+vad            = true
+
+[capabilities.audio_out]
+channels       = 1
+sample_rate_hz = 16000
+
+[capabilities.digital_out]
+pins    = ["door_lock", "porch_light", "gate_relay"]
+backend = "virtual"
+
+[capabilities.sensor_read]
+sensors = ["temperature", "humidity", "door_contact", "motion"]
+
+[capabilities.display]
+width  = 320
+height = 240
+color  = "rgb565"

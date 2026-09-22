@@ -1,0 +1,10 @@
+schema:  neuroedge.gate/v1
+name:    depth-l3
+version: 1.0.0
+extends: neuroedge://gates/depth-l2@1.0.0
+evaluate:
+  c:
+    type: bool
+    instructions: "Level 3 criterion — at the depth cap"
+allow_when:
+  c: true

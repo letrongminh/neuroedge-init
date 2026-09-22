@@ -1,0 +1,9 @@
+# Principle 2 — `not_in: [phone]` admits {in_person, app, web}, a superset of
+# the inherited {in_person, app}. The operator changed but the effect is a
+# widening, which is exactly what set-based normalisation is there to catch.
+schema:  neuroedge.gate/v1
+name:    loosens-via-not-in
+version: 1.0.0
+extends: neuroedge://gates/strict-base@1.0.0
+allow_when:
+  request_channel: { not_in: [phone] }

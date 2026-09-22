@@ -1,0 +1,10 @@
+schema:  neuroedge.gate/v1
+name:    cycle-b
+version: 1.0.0
+extends: neuroedge://gates/cycle-a@1.0.0
+evaluate:
+  b:
+    type: bool
+    instructions: "Cycle probe B"
+allow_when:
+  b: true

@@ -1,0 +1,14 @@
+schema:  neuroedge.gate/v1
+name:    depth-l1
+version: 1.0.0
+evaluate:
+  a:
+    type: bool
+    instructions: "Level 1 criterion"
+allow_when:
+  a: true
+on_block:
+  action: deny
+budget:
+  p95_latency_ms: 100
+  fail:           closed

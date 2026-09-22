@@ -1,0 +1,27 @@
+# Level 2 of 3 — the villa-concierge door gate (Proposal §4.5).
+#
+# Inherits `guest_authenticated` and `risk_level` from the hospitality baseline
+# (principle 1), adds the property-specific `room_matches` check (principle 3),
+# and tightens the inherited risk tolerance from `medium` to `low` (principle 2).
+schema:  neuroedge.gate/v1
+name:    unlock_door
+version: 1.2.0
+extends: neuroedge://gates/hospitality/base-access@1.0.0
+
+evaluate:
+  room_matches:
+    type: bool
+    instructions: "Số phòng yêu cầu trùng khớp hoàn toàn với hồ sơ đặt phòng của khách"
+
+allow_when:
+  room_matches: true
+  risk_level:   { lte: low }    # siết chặt: medium → low
+
+on_block:
+  action:  escalate
+  to:      human_receptionist
+  message: "Yêu cầu cần được nhân viên lễ tân xác nhận trực tiếp trước khi mở khóa."
+
+budget:
+  p95_latency_ms: 120
+  fail:           closed

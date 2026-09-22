@@ -1,0 +1,16 @@
+# Schema error — action `escalate` with no recipient (RFC-0001 conditional).
+schema:  neuroedge.gate/v1
+name:    escalate-without-to
+version: 1.0.0
+evaluate:
+  ok:
+    type: bool
+    instructions: "Placeholder criterion"
+allow_when:
+  ok: true
+on_block:
+  action:  escalate
+  message: "Needs a human, but no `to:` is declared."
+budget:
+  p95_latency_ms: 100
+  fail:           closed

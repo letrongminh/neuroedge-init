@@ -1,0 +1,9 @@
+# Principle 2 — restating an inherited clause verbatim is a no-op, not a
+# loosening. Authors do this to make a policy explicit at the point of use.
+schema:  neuroedge.gate/v1
+name:    restates-identically
+version: 1.0.0
+extends: neuroedge://gates/strict-base@1.0.0
+allow_when:
+  risk_level:      { lte: low }
+  request_channel: { in: [in_person, app] }

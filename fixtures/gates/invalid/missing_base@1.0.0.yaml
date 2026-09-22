@@ -1,0 +1,5 @@
+# Resolution error — the base gate named by `extends` is not in the registry.
+schema:  neuroedge.gate/v1
+name:    missing-base
+version: 1.0.0
+extends: neuroedge://gates/does-not-exist@9.9.9
