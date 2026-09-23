@@ -246,6 +246,86 @@ def test_principle_4_child_inherits_latency_but_not_fail_open():
     assert resolved.budget == {"p95_latency_ms": 150, "fail": "closed"}
 
 
+# --- RFC-0004: budget and on_block may not loosen (principles 2 and 4) -----
+
+
+def test_rfc0004_the_lax_night_gate_is_refused(registry):
+    """The ENG-A2 reconstruction: allow_when untouched, everything else loosened."""
+    document = child(
+        on_block={"action": "degrade", "fallback_action": "unlock_door_no_auth"},
+        budget={"p95_latency_ms": 900_000, "fail": "open"},
+    )
+    with pytest.raises(GateInheritanceError):
+        resolve(document, registry)
+
+
+def test_rfc0004_r1_longer_p95_is_refused(registry):
+    with pytest.raises(GateInheritanceError) as excinfo:
+        resolve(child(budget={"p95_latency_ms": 151}), registry)
+    assert excinfo.value.principle == 2
+    assert "budget.p95_latency_ms" in excinfo.value.where
+
+
+def test_rfc0004_r1_equal_or_shorter_p95_is_allowed(registry):
+    assert resolve(child(budget={"p95_latency_ms": 150}), registry).budget["p95_latency_ms"] == 150
+    assert resolve(child(budget={"p95_latency_ms": 20}), registry).budget["p95_latency_ms"] == 20
+
+
+def test_rfc0004_r2_child_cannot_reopen_a_closed_chain(registry):
+    with pytest.raises(GateInheritanceError) as excinfo:
+        resolve(child(budget={"p95_latency_ms": 100, "fail": "open"}), registry)
+    assert excinfo.value.principle == 4
+
+
+def test_rfc0004_r2_closed_by_default_counts_as_closed():
+    silent_base = dict(BASE, budget={"p95_latency_ms": 150})
+    reg = DictRegistry({BASE_URI: silent_base})
+    with pytest.raises(GateInheritanceError):
+        resolve(child(budget={"p95_latency_ms": 100, "fail": "open"}), reg)
+
+
+def test_rfc0004_r2_reopening_two_levels_down_is_refused():
+    """base open -> mid silent (closed) -> leaf declares open: refused."""
+    open_base = dict(BASE, budget={"p95_latency_ms": 150, "fail": "open"})
+    mid_uri = "neuroedge://gates/mid@1.0.0"
+    mid = child(name="mid")
+    reg = DictRegistry({BASE_URI: open_base, mid_uri: mid})
+    leaf = child(name="leaf", extends=mid_uri, budget={"p95_latency_ms": 100, "fail": "open"})
+    with pytest.raises(GateInheritanceError) as excinfo:
+        resolve(leaf, reg)
+    assert excinfo.value.principle == 4
+
+
+def test_rfc0004_r3_child_cannot_introduce_degrade(registry):
+    document = child(on_block={"action": "degrade", "fallback_action": "unlock_door_no_auth"})
+    with pytest.raises(GateInheritanceError) as excinfo:
+        resolve(document, registry)
+    assert excinfo.value.principle == 2
+    assert "on_block.action" in excinfo.value.where
+
+
+def test_rfc0004_r3_child_cannot_retarget_an_inherited_degrade():
+    degrade_base = dict(BASE, on_block={"action": "degrade", "fallback_action": "notify_desk"})
+    reg = DictRegistry({BASE_URI: degrade_base})
+    document = child(on_block={"action": "degrade", "fallback_action": "unlock_door_no_auth"})
+    with pytest.raises(GateInheritanceError):
+        resolve(document, reg)
+
+
+def test_rfc0004_r3_child_may_keep_degrade_or_switch_to_a_blocking_action():
+    degrade_base = dict(BASE, on_block={"action": "degrade", "fallback_action": "notify_desk"})
+    reg = DictRegistry({BASE_URI: degrade_base})
+    kept = {"action": "degrade", "fallback_action": "notify_desk"}
+    assert resolve(child(on_block=kept), reg).on_block == kept
+    assert resolve(child(on_block={"action": "deny"}), reg).on_block == {"action": "deny"}
+
+
+def test_rfc0004_r3_child_may_change_the_escalation_recipient(registry):
+    """unlock_door_night does exactly this: human_receptionist -> night_duty_manager."""
+    on_block = {"action": "escalate", "to": "night_duty_manager"}
+    assert resolve(child(on_block=on_block), registry).on_block == on_block
+
+
 # --- Principle 5: depth cap and cycles (FR-GATE-08) ------------------------
 
 

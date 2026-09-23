@@ -1,0 +1,21 @@
+# Test base for RFC-0004 R3. Declares `degrade` so that a child keeping it,
+# retargeting it, or introducing one elsewhere all have something to test.
+schema:  neuroedge.gate/v1
+name:    degrade-base
+version: 1.0.0
+
+evaluate:
+  guest_authenticated:
+    type: bool
+    instructions: "Guest completed identity verification"
+
+allow_when:
+  guest_authenticated: true
+
+on_block:
+  action:          degrade
+  fallback_action: notify_front_desk
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

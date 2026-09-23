@@ -1,0 +1,9 @@
+# RFC-0004 R3 (principle 2) — keeps `degrade` but retargets it: the action that
+# runs on block is no longer the one the base approved.
+schema:  neuroedge.gate/v1
+name:    changes-fallback-action
+version: 1.0.0
+extends: neuroedge://gates/degrade-base@1.0.0
+on_block:
+  action:          degrade
+  fallback_action: unlock_door_no_auth

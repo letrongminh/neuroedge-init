@@ -21,6 +21,7 @@ identically on `sim`, `linux` and `esp32s3`.
 
 from __future__ import annotations
 
+import functools
 import json
 import re
 from collections.abc import Mapping
@@ -130,7 +131,10 @@ class GateRegistry:
         return load_gate_document(path), path
 
 
+@functools.lru_cache(maxsize=1)
 def _gate_schema() -> dict[str, Any]:
+    # Parsed once per process: resolving an N-gate registry used to re-read and
+    # re-parse the schema at every level of every chain (TODOS.md #5, ENG-Q4).
     with open(schema_path("gate.v1.json"), encoding="utf-8") as handle:
         return json.load(handle)
 
@@ -334,6 +338,7 @@ def _resolve_budget(
     inherited: Mapping[str, Any] | None,
     child: Mapping[str, Any] | None,
     child_label: str,
+    has_base: bool = False,
 ) -> dict[str, Any]:
     """
     Principle 4: `fail: open` never crosses an inheritance boundary.
@@ -341,12 +346,36 @@ def _resolve_budget(
     A base gate declaring `fail: open` must not hand that permission to a child
     that never asked for it. The child's own document is the only thing that can
     put a resolved gate into `open`; anything else resolves to `closed`.
+
+    RFC-0004 closes the two ways a child could still loosen the budget:
+    R1 (principle 2) — a longer p95 widens the adjudication window, so a child
+    may only shorten it; R2 (principle 4) — once the chain has resolved to
+    `closed`, a child may not reopen it by declaring `open` itself.
     """
     budget: dict[str, Any] = dict(inherited or {})
     child = dict(child or {})
 
     if "p95_latency_ms" in child:
+        base_p95 = budget.get("p95_latency_ms")
+        if has_base and base_p95 is not None and child["p95_latency_ms"] > base_p95:
+            raise GateInheritanceError(
+                where=f"{child_label} -> budget.p95_latency_ms",
+                why=(
+                    f"p95_latency_ms {child['p95_latency_ms']} loosens the inherited "
+                    f"budget of {base_p95} ms; a longer adjudication window is more permissive"
+                ),
+                how=f"declare p95_latency_ms <= {base_p95}, or omit it to inherit",
+                principle=2,
+            )
         budget["p95_latency_ms"] = child["p95_latency_ms"]
+
+    if has_base and child.get("fail") == "open" and budget.get("fail", "closed") == "closed":
+        raise GateInheritanceError(
+            where=f"{child_label} -> budget.fail",
+            why="declares fail: open in a chain that has already resolved to closed",
+            how="omit budget.fail (closed), or start a new root gate that chooses open",
+            principle=4,
+        )
 
     budget["fail"] = "open" if child.get("fail") == "open" else "closed"
 
@@ -357,6 +386,45 @@ def _resolve_budget(
             how="declare budget.p95_latency_ms on this gate or on its base",
         )
     return budget
+
+
+def _resolve_on_block(
+    inherited: Mapping[str, Any],
+    child: Mapping[str, Any] | None,
+    child_label: str,
+    has_base: bool,
+) -> dict[str, Any]:
+    """
+    RFC-0004 R3: a child may not introduce `degrade`.
+
+    `deny`, `escalate` and `ask` only block and report, so a child may switch
+    between them and change the recipient or message freely. `degrade` is the
+    one behaviour that *runs* something — its `fallback_action` — so a child may
+    only keep the exact `degrade` it inherited, never introduce or retarget one.
+    """
+    if not child:
+        return dict(inherited)
+    if has_base and child.get("action") == "degrade":
+        kept = (
+            inherited.get("action") == "degrade"
+            and child.get("fallback_action") == inherited.get("fallback_action")
+        )
+        if not kept:
+            raise GateInheritanceError(
+                where=f"{child_label} -> on_block.action",
+                why=(
+                    "introduces degrade with fallback_action "
+                    f"{child.get('fallback_action')!r}; degrade runs another action, "
+                    "which is more permissive than the inherited "
+                    f"{inherited.get('action')!r}"
+                ),
+                how=(
+                    "use deny, escalate or ask, or omit on_block to inherit; "
+                    "a new fallback_action needs a new root gate"
+                ),
+                principle=2,
+            )
+    return dict(child)
 
 
 def _guard_opaque_allow_when(
@@ -450,13 +518,11 @@ def resolve_gate_document(
             constraints, raw_allow_when, child_constraints, child_raw, label
         )
 
-        # Not governed by B.5: a derived gate may restate on_block freely,
-        # because on_block only takes effect once the action is already denied.
-        if doc.get("on_block"):
-            on_block = dict(doc["on_block"])
+        # RFC-0004 R3 (principle 2).
+        on_block = _resolve_on_block(on_block, doc.get("on_block"), label, has_base)
 
-        # Principle 4.
-        budget = _resolve_budget(budget, doc.get("budget"), label)
+        # Principle 4, plus RFC-0004 R1/R2.
+        budget = _resolve_budget(budget, doc.get("budget"), label, has_base)
 
     leaf, leaf_source = chain[-1]
     leaf_label = _label(leaf, leaf_source)

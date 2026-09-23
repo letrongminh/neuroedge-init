@@ -113,17 +113,17 @@ khả dụng, không phải lỗi an toàn.
 | Thứ bậc đầy đủ cho `on_block` (`deny > escalate > ask > degrade`, so sánh `fallback_action`) | `escalate` có "chặt hơn" `ask` không là câu hỏi không có đáp án kiểm được. Chỉ `degrade` thực thi hành động — đó là ranh giới duy nhất cần kiểm |
 | Hoãn, ghi rủi ro vào threat model | Lời hứa cốt lõi sẽ sai suốt demo 2026-10-25 và bản PyPI đầu tiên (`TSK-S3-14`) |
 
-## 7. Bằng chứng kiểm chứng *(điền trong PR hiện thực, `TSK-S2-13`)*
+## 7. Bằng chứng kiểm chứng *(`TSK-S2-13`)*
 
-- [ ] Ví dụ hợp lệ: 3 gate mẫu + 5 fixture `valid/` vẫn phân giải; thêm `valid/keeps_inherited_degrade.yaml`
-- [ ] Ví dụ sai: `invalid/loosens_p95.yaml` (R1), `invalid/reopens_closed_chain.yaml` (R2), `invalid/introduces_degrade.yaml` (R3), `invalid/changes_fallback_action.yaml` (R3) + mục tương ứng trong `expected_errors.yaml`
-- [ ] Test tự động trong `test_gate_resolver.py`, gồm chính trường hợp `lax-night`
-- [ ] `neuroedge gate lint` xanh trên `gates/`, đỏ trên `fixtures/gates/invalid/`
+- [x] Ví dụ hợp lệ: 3 gate mẫu + 5 fixture `valid/` vẫn phân giải; thêm `valid/keeps_inherited_degrade.yaml`
+- [x] Ví dụ sai: `invalid/loosens_p95.yaml` (R1), `invalid/reopens_closed_chain.yaml` (R2), `invalid/introduces_degrade.yaml` (R3), `invalid/changes_fallback_action.yaml` (R3) + mục tương ứng trong `expected_errors.yaml`
+- [x] Test tự động: 10 test `test_rfc0004_*` trong `test_gate_resolver.py`, gồm chính trường hợp `lax-night`; bộ test 210 → 229, 0 skip
+- [x] `neuroedge gate lint` xanh trên `gates/` (3) và `fixtures/gates/valid/` (6), thoát 1 trên `fixtures/gates/invalid/` (19)
 
 ## 8. Việc phải làm khi chấp thuận
 
-- [ ] Hiện thực R1–R3 trong `python/neuroedge/engine/gate_resolver.py`, sửa comment "on_block không chịu quản trị B.5"
+- [x] Hiện thực R1–R3 trong `python/neuroedge/engine/gate_resolver.py` (`_resolve_budget`, `_resolve_on_block`), bỏ comment "on_block không chịu quản trị B.5"; kèm `lru_cache` cho `_gate_schema()` (TODOS #5, ENG-Q4)
 - [x] Cập nhật Phụ lục B.5 của `neuroedge-proposal.md` *(phiên 2026-09-23)*
 - [x] Cập nhật FR-GATE-06 trong `neuroedge-prd.md` *(phiên 2026-09-23)*
 - [x] Cập nhật `neuroedge-roadmap.md`: `TSK-S2-13` *(phiên 2026-09-23)*
-- [ ] Thêm fixture và test (§7)
+- [x] Thêm fixture và test (§7); registry thêm `degrade-base@1.0.0.yaml`
