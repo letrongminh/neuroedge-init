@@ -267,6 +267,10 @@ class ToolResult:
                     if v is not None
                 }
             )
+        pending = self.action.confirmation if self.action is not None else None
+        if pending is not None:
+            # A person must answer on the device; this caller cannot (Q-26).
+            out["confirmation"] = pending.describe()
         return out
 
 

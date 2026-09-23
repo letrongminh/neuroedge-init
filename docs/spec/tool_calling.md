@@ -152,14 +152,24 @@ một mô hình gửi `{"call_source": "local_grammar"}` bị `REJECTED` ở bư
 - Nguồn `system_two` và `mcp` **KHÔNG ĐƯỢC** phát lời xác nhận. Nếu được, một mô hình bị
   prompt injection, hoặc một agent tự động phía client, sẽ tự trả lời câu hỏi an toàn
   dành cho người.
-- Lời xác nhận gắn với `call_id` và `gate_digest` của lần bị chặn, dùng **một lần**, và
-  hết hạn sau TTL (mặc định bằng TTL của token, `p95 × 3`, tối thiểu 10 giây — con số chốt
-  ở TSK-S3-26).
-- Xác nhận không bỏ qua gate: nó thêm dữ kiện `human_confirmed = true` rồi **lượng giá
-  lại** chính gate đó. Gate phải tự khai `human_confirmed` trong `allow_when` thì xác nhận
-  mới có tác dụng — gate không khai thì `ask` chỉ còn là thông báo.
+- Gate nói trước **điều gì** người được xác nhận thay: `on_block.confirms` (RFC-0006).
+  Không có `confirms` ⇒ `ask` chỉ thông báo, không có câu hỏi nào chờ.
+- Câu hỏi chỉ được mở (`tool_confirm_requested`) khi một lời "có" **đủ** để cho qua — cùng
+  dữ kiện, các tiêu chí trong `confirms` coi như đạt, phải ALLOW. Gate chặn vì tiêu chí
+  khác, hoặc vì giới hạn tham số, thì không hỏi.
+- Lời xác nhận gắn với câu hỏi (`confirm_N`) và `gate_digest` của lần bị chặn; dùng **một
+  lần** (kể cả khi lượng giá lại vẫn chặn); hết hạn sau `max(p95 × 3, 10 s)`; gate đổi giữa
+  chừng ⇒ vô hiệu. Nguồn khác `local_grammar` / `ui` ⇒ `tool_confirm_rejected`, câu hỏi
+  vẫn chờ người.
+- Xác nhận không bỏ qua gate: gate được **lượng giá lại** với dữ kiện **hiện tại** và
+  `call_source` của **yêu cầu gốc**; chỉ tiêu chí trong `confirms` coi như đạt. Mọi tiêu chí
+  khác, giới hạn tham số và fail-closed khi adjudicator suy giảm vẫn áp dụng. Kết quả ghi
+  `confirmed: [...]`.
+- Bên gọi (System 2, client MCP) được báo trong kết quả `BLOCK`: `confirmation: {id, message,
+  expires_in_ms, who}` — để nói với người dùng, không để tự trả lời. Không có tool xác nhận.
 
-Hôm nay (v0): `ask` chặn, nói `message`, ghi sự kiện (Q-17); vòng xác nhận là TSK-S3-26.
+Trên `sim`: REPL — gõ `có` / `không` (hoặc `:confirm` / `:decline`); UI — banner *Thiết bị
+hỏi xác nhận* với nút Đồng ý / Huỷ và thời gian còn lại (`POST /confirm`, cùng nguồn gốc).
 
 ## 7. Vết ghi
 
@@ -167,8 +177,10 @@ Hôm nay (v0): `ask` chặn, nói `message`, ghi sự kiện (Q-17); vòng xác 
 |:---|:---|:---|
 | `tool_call` | `id`, `name`, `arguments`, `source` | v0 |
 | `tool_call_rejected` | `id`, `name`, `problems` | v0 |
-| `tool_confirm_requested` | `id`, `gate`, `message`, `expires_ms` | TSK-S3-26 |
-| `tool_confirmed` | `id`, `source` | TSK-S3-26 |
+| `tool_confirm_requested` | `id`, `action`, `gate`, `message`, `confirms`, `expires_ms` (thời gian vết ghi, như `offset_ms`), `ttl_ms` | TSK-S3-26 ✅ |
+| `tool_confirmed` · `tool_confirm_declined` | `id`, `source` | TSK-S3-26 ✅ |
+| `tool_confirm_rejected` | `id`, `source`, `reason` | TSK-S3-26 ✅ |
+| `tool_confirm_expired` | `id` | TSK-S3-26 ✅ |
 
 Trường `type` của sự kiện trong `trace.v1` là chuỗi mở, nên thêm sự kiện **không** cần
 RFC. Replay (`testing/player.py`) tính lại từng lần lượng giá gate từ `gate_facts` đã

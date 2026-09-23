@@ -1,0 +1,13 @@
+# RFC-0006 — a person cannot stand in for a criterion the gate never checks.
+schema:  neuroedge.gate/v1
+name:    confirms-unknown-criterion
+version: 1.0.0
+evaluate:
+  room_empty: { type: bool, instructions: "Nobody is in the room" }
+allow_when:
+  room_empty: true
+on_block:
+  action:   ask
+  message:  "Go ahead?"
+  confirms: [room_is_empty]
+budget: { p95_latency_ms: 100 }

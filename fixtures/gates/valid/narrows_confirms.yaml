@@ -1,0 +1,9 @@
+# RFC-0006 — a child may let a person stand in for fewer criteria.
+schema:  neuroedge.gate/v1
+name:    narrows-confirms
+version: 1.0.0
+extends: neuroedge://gates/ask-base@1.0.0
+on_block:
+  action:   ask
+  message:  "Go ahead?"
+  confirms: [room_empty]

@@ -58,7 +58,12 @@ def test_light_off_is_refused_while_someone_is_in_the_room(agent):
     assert off.result.gate.on_block_action == "ask"
     # The assistant asks the question aloud; the light stays on.
     assert off.reply_source == "gate_ask"
-    assert session.hal.spoken[-1] == off.result.gate.message
+    # …then says how a person answers (RFC-0006: the gate lets them confirm room_empty).
+    assert session.hal.spoken[-2:] == [
+        off.result.gate.message,
+        "Nói “có” để xác nhận, “không” để huỷ.",
+    ]
+    assert off.confirmation is not None
     assert session.hal.pin("porch_light").commands == [("on", 0)]
 
 
