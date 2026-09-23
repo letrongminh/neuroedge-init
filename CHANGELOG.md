@@ -30,6 +30,9 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 - **Quy tắc hoàn thành task.** `CONTRIBUTING.md` §8: nơi duy nhất cho việc cập nhật
   tiến độ, changelog, đặc tả; bảng "mỗi sự thật một nơi"; mẫu PR có checklist.
   Roadmap §0.4, §11.2 và `CLAUDE.md` nay chỉ dẫn về đó.
+- **Tài liệu cho người dùng (`docs/user/`).** Bản đồ tài liệu, hướng dẫn sử dụng,
+  và trạng thái sinh tự động từ roadmap §0 (`scripts/gen_user_status.py`).
+  Kiểm: `pytest tests/test_user_status_fresh.py`.
 
 #### Đã đổi
 
@@ -37,6 +40,11 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
   bỏ hai việc đã xong còn nằm ở *Việc tiếp theo*, *Lưu ý* chỉ giữ điều chưa có ở §3.3.
 - **Bỏ con số dễ lỗi thời** khỏi `CLAUDE.md` và §2 (số test, số fixture); số test
   hiện hành chỉ còn ở roadmap §0.1.
+
+#### Đã sửa
+
+- **Hai nhãn lỗi thời.** `TODOS.md` #5 ghi thì quá khứ cho phần `lru_cache` đã vá ở
+  `TSK-S2-13`; roadmap §0.2 ghi Sprint 2 `8%` (1/13) thay vì `0%`.
 
 ### [0.4.0] — 2026-09-23 — Gỡ chặn Sprint 2: chốt 9 quyết định, đồng bộ tài liệu
 
