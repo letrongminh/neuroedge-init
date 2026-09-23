@@ -202,6 +202,7 @@ class SimSession:
         knowledge: KnowledgeBase | None = None,
         tools: list[Any] | None = None,
         mcp: Any = None,
+        argument_limits: Mapping[str, Mapping[str, Any]] | None = None,
     ) -> None:
         self.manifest = manifest
         self.hal = hal
@@ -213,7 +214,7 @@ class SimSession:
         self.sensor_facts = dict(sensor_facts or {})
         self.slow = slow if slow is not None else SystemTwo("sim")
         self.knowledge = knowledge
-        self.tools = ToolSet(tools or ())
+        self.tools = ToolSet(tools or (), argument_limits)
         # System 2's MCP servers (Q-27); None = only the device's own tools.
         self.mcp = mcp if mcp is not None else McpConfig()
         # Set while a System 2 turn runs: the turn's text and recognition, and the
@@ -283,6 +284,12 @@ class SimSession:
             knowledge=knowledge,
             tools=actions,
             mcp=load_mcp_config(manifest),
+            # RFC-0005: each tool's schema shows its gate's argument limits.
+            argument_limits={
+                spec.name: gates[spec.gate].arguments
+                for spec in actions
+                if spec.gate in gates and gates[spec.gate].arguments
+            },
         )
 
     @property

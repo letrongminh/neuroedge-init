@@ -1,0 +1,7 @@
+# RFC-0005 (principle 2) — a lower minimum admits more values.
+schema:  neuroedge.gate/v1
+name:    lowers-argument-minimum
+version: 1.0.0
+extends: neuroedge://gates/args-base@1.0.0
+arguments:
+  duration_s: { type: integer, minimum: 0 }

@@ -1,0 +1,7 @@
+# RFC-0005 (principle 2) — integer → number admits 0.5 s.
+schema:  neuroedge.gate/v1
+name:    retypes-argument
+version: 1.0.0
+extends: neuroedge://gates/args-base@1.0.0
+arguments:
+  duration_s: { type: number, maximum: 30 }

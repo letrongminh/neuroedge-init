@@ -1,0 +1,12 @@
+# RFC-0005 — minimum/maximum bound numbers, not strings.
+schema:  neuroedge.gate/v1
+name:    argument-bound-on-string
+version: 1.0.0
+arguments:
+  mode: { type: string, minimum: 1 }
+evaluate:
+  ok: { type: bool, instructions: "Anything" }
+allow_when:
+  ok: true
+on_block: { action: deny }
+budget: { p95_latency_ms: 100 }

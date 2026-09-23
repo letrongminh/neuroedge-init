@@ -58,8 +58,8 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 | **Pha đang thực thi** | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0 → 2026-11-15)** | Tiến độ theo sprint: §0.2 · kế hoạch Sprint 2–3: [`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md) |
 | **Sprint hiện hành** | 🟡 **Sprint 2: Lõi thực thi trên `sim` (≈ A1)** — mã A1 xong sớm, 2026-09-23 | **9 / 10 task trong phạm vi xong** (còn TSK-S2-11, chạy ở A2; TSK-S2-09 kéo lên và xong) · **5 / 6 tiêu chí ra đạt** (còn #6, cùng TSK-S2-11) · Sprint 1 còn TSK-S1-10 chờ bo mạch |
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: cuối Sprint 3 = **2026-11-15** — trễ ~2 tuần so với bản gốc (Tuần 6 gốc = 2026-11-02) (Q-19) |
-| **Lần cập nhật cuối** | **2026-09-23** | Tool call có gate thành chuẩn (Gated Tool Profile, `docs/spec/tool_calling.md`); Q-24, Q-25, Q-26 chốt; RFC-0005 mở — chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 632/632 · SKIP 0** | `python/tests/` — 34 bộ test; wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) |
+| **Lần cập nhật cuối** | **2026-09-24** | TSK-S3-25: gate chặn theo giá trị tham số (RFC-0005 chấp thuận); System 2 làm MCP host (Q-27) — chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Trạng thái CI Lõi** | ✅ **PASS 664/664 · SKIP 0** | `python/tests/` — 35 bộ test; wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn + 1 còn mở** | 🔴 TSK-S1-10 chờ bo mạch vật lý · 🟡 Q-11 phần còn lại (Hawkbit EPL-2.0 / EMQX BSL) — **không chặn cho tới khi mở Khối 2** |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -92,7 +92,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 │ 1. VỪA HOÀN THÀNH — phiên gần nhất (chi tiết: CHANGELOG.md [Chưa phát hành])           │
 │    • TSK-S3-17 ✅ wheel tự chạy được; CI wheel-smoke kiểm bản đã cài                    │
 │    • Q-21, Q-23 chốt; firmware không cần bo mạch kéo lên A2 (§4.3)                     │
-│    • Q-24..26: tool call có gate là chuẩn — docs/spec/tool_calling.md; RFC-0005 mở     │
+│    • TSK-S3-25 ✅ gate chặn theo giá trị tham số (RFC-0005); Q-27 System 2 = MCP host  │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
@@ -100,7 +100,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
 │    1. Đặt 2 Box-3 + 1 RPi 5 nightly (Phụ lục B, Q-16)                                  │
 │    2. V3: TSK-S3-14 (PyPI, TestPyPI trước) · S3-16 · S3-19 · S3-20 → đo TTFV           │
-│    3a. A2 V1: duyệt RFC-0005 → TSK-S3-25 (phải trước TSK-S4-02) · S3-24, S3-26, S3-27  │
+│    3a. A2 V1: TSK-S3-24 (corpus tool call) · S3-26 (xác nhận ask) · S3-27 (mcp --ui)   │
 │    3. A2 V2: TSK-S4-02 + S4-07 (walker C, Q-23) → S4-08, S4-09 (QEMU) · S4-11          │
 │    4. A2 V1: TSK-S2-11 (LiteLLM) → TSK-S2-07 (đặc tả FSM thoại)                        │
 │    5. Kỹ thuật trưởng xác nhận TSK-S3-15 (golden = vết ghi chuẩn mực)                  │
@@ -531,7 +531,7 @@ Phạm vi và thứ tự chạy theo kế hoạch [`docs/designs/giai-doan-1-wed
 | **TSK-S3-22** | **`neuroedge trace view`** — một tệp HTML tĩnh: dòng thời gian, phán quyết + lý do, chân, cảm biến, khung màn hình; mở không cần mạng. Kèm `trace export --format chrome` cho Perfetto *(Q-21)* | FR-CLI-04, FR-DX-04 | V3 | ✅ Hoàn thành (2026-09-23) | [`viz/`](python/neuroedge/viz/) — `trace view` (HTML tự chứa, thanh tua thời gian), `trace export --format chrome`; commit `650a517` · `pytest tests/test_trace_view.py` |
 | **TSK-S3-23** | **`sensor.read` và `display` trên `sim` đủ đường:** `[sim.sensors]` trong `agent.toml`, `:sensor` trong REPL, sự kiện `sensor_read` / `display_frame` (digest + PNG), replay cấp lại giá trị cảm biến đã ghi *(Q-21)* | FR-TGT-01, FR-TGT-06, FR-CI-02 | V3 | ✅ Hoàn thành (2026-09-23) | `hal/sim.py`, `hal/sensor.py`, `hal/display.py`, `sim/session.py`; commit `b3c118e` · `pytest tests/test_sim_sensors_display.py` |
 | **TSK-S3-24** | **Corpus tuân thủ Gated Tool Profile:** `fixtures/tool_calls/{valid,invalid}/` + `expected_results.yaml` khép kín hai chiều; `outputSchema` cho mỗi tool MCP; trường `fallback` trong kết quả `degrade` | FR-MDL-10, FR-ACE-09 | V1 | ⏳ Chưa bắt đầu *(A2)* | `docs/spec/tool_calling.md` §4, §9 |
-| **TSK-S3-25** | **Hiện thực RFC-0005** — khối `arguments:` trong gate: resolver (kế thừa chỉ thu hẹp), `gate lint`, compiler (nút tham số), giới hạn đi vào `inputSchema`. **Phải xong trước TSK-S4-02** | FR-ACE-08, FR-GATE-06 | V1 | ⏳ Chờ RFC-0005 duyệt *(A2)* | `docs/rfc/0005-rang-buoc-tham-so-trong-gate.md` |
+| **TSK-S3-25** | **Hiện thực RFC-0005** — khối `arguments:` trong gate: resolver (kế thừa chỉ thu hẹp), `gate lint`, compiler (nút tham số), giới hạn đi vào `inputSchema`. **Phải xong trước TSK-S4-02** | FR-ACE-08, FR-GATE-06 | V1 | ✅ Hoàn thành (2026-09-24) | `python/neuroedge/engine/arguments.py` · `pytest tests/test_gate_arguments.py` · corpus `fixtures/gates/invalid/` (7 mục mới) |
 | **TSK-S3-26** | **Vòng xác nhận `ask` (Q-26) trên `sim`:** REPL và UI hỏi lại, sự kiện `tool_confirm_requested` / `tool_confirmed`, TTL, dùng một lần, gate lượng giá lại với `human_confirmed` | FR-ACE-10 | V3 | ⏳ Chưa bắt đầu *(A2)* | `docs/spec/tool_calling.md` §6 |
 | **TSK-S3-27** | **`neuroedge mcp serve --ui`:** máy chủ MCP và giao diện web `sim` chung một phiên — điều khiển từ Claude Desktop, thấy đèn/chốt ảo đổi và gate chặn | FR-CLI-10, FR-DX-04 | V3 | ⏳ Chưa bắt đầu *(A2)* | `python/neuroedge/mcp_server.py`, `viz/` |
 | **TSK-S3-28** | **System 2 làm MCP host (Q-27):** `ToolHost` — tool thiết bị qua MCP server của chính agent, MCP server bên ngoài từ `[mcp.servers]` (allowlist, digest trong vết ghi), vòng ReAct `max_rounds`; `mcp tools --external`; tin tức home-voice qua `mcp/news_server.py` | FR-MDL-11, FR-MDL-12 | V1 | ✅ Hoàn thành (2026-09-23) | `python/neuroedge/mcp_host.py` · `pytest tests/test_mcp_host.py` |
@@ -565,7 +565,7 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S4-01** | Port 5 nguyên thủy HAL lên ESP-IDF | FR-TGT-03, FR-HAL-01 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/hal/` |
-| **TSK-S4-02** | Gate Engine chạy trên MCU: walker C99 duyệt **bố cục nhị phân** do `neuroedge build` sinh (Q-23), token dùng một lần; nút tham số `ARG_CMP` (RFC-0005, sau TSK-S3-25) và bảng kiểm tham số cho tool call tổng hợp từ ngữ pháp (`docs/spec/tool_calling.md` §8) | FR-ACE-01, FR-ACE-03, FR-ACE-08 | V2 + V1 | ⏳ **Kéo lên A2 (V2)** *(2026-10-26 → 11-15)* | `targets/esp32s3/gate/` |
+| **TSK-S4-02** | Gate Engine chạy trên MCU: walker C99 duyệt **bố cục nhị phân** do `neuroedge build` sinh (Q-23), token dùng một lần; nút tham số `ARG_CMP` từ khối `arguments` của cây (RFC-0005, TSK-S3-25 ✅) và bảng kiểm tham số cho tool call tổng hợp từ ngữ pháp (`docs/spec/tool_calling.md` §8) | FR-ACE-01, FR-ACE-03, FR-ACE-08 | V2 + V1 | ⏳ **Kéo lên A2 (V2)** *(2026-10-26 → 11-15)* | `targets/esp32s3/gate/` |
 | **TSK-S4-03** | Đường dẫn `digital.out` và `sensor.read` trên phần cứng thật | FR-HAL-06, FR-HAL-07 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/drivers/` |
 | **TSK-S4-04** | Lệnh `neuroedge verify` cho cả 3 target bậc 1 | FR-CI-07, FR-TGT-04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/verify.py` |
 | **TSK-S4-05** | Runner kiểm thử nightly trên bo mạch thật | FR-CI-06, NFR-REL-03 | V3 | ⏳ Chưa bắt đầu | `.github/workflows/nightly-hardware.yml` |
@@ -845,7 +845,7 @@ Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho
 | **Q-22** | AEC phần mềm trên `linux` · ✅ **2026-09-23** (phương án A) | PipeWire `module-echo-cancel` (`aec/libspa-aec-webrtc`); `audio.in` đọc nút `source`, `audio.out` phát vào nút `sink`; `linux-rpi5` khai `aec = true` chỉ khi đo đạt | Đóng khoảng FR-TGT-02 ở TSK-S5-08. Tiêu chí đo: `simulation_coverage.md` §6 |
 | **Q-23** | Định dạng cây quyết định trên MCU · ✅ **2026-09-23** | Bố cục nhị phân cố định (struct C) do `neuroedge build` sinh; v1.0 link vào firmware, sau này đặt ở phân vùng flash riêng (`esp_partition_mmap`) để đổi gate không nạp lại firmware | Không có parser JSON trên MCU, cây nằm trong flash (RB-4). RFC-0003 thu hẹp — `TODOS.md` #15 |
 | **Q-24** | Hành động là tool call · MCP · ✅ **2026-09-23** | Mỗi `@action` là một tool; ngữ pháp cục bộ, System 1/2 và MCP gửi cùng `ToolCall` → kiểm schema → `c.do()` → gate; dữ kiện `call_source` do dispatcher chèn | Hết ánh xạ cứng câu → hàm; mất mạng vẫn chạy bằng tool call tổng hợp (Q-14). `neuroedge mcp serve` (FR-CLI-10). Chuẩn là Gated Tool Profile trên MCP — `docs/spec/tool_calling.md`. PRD §15 |
-| **Q-25** | Ràng buộc tham số trong gate · ✅ **2026-09-23** (hướng; RFC-0005 đang thảo luận) | Khối `arguments:` trong gate, kế thừa chỉ thu hẹp, đi vào `inputSchema`; không làm `argument_facts` ở agent | TSK-S3-25 phải xong trước TSK-S4-02 để bố cục Q-23 có nút tham số từ bản đầu. PRD §15 |
+| **Q-25** | Ràng buộc tham số trong gate · ✅ **2026-09-23** (RFC-0005 chấp thuận 2026-09-24) | Khối `arguments:` trong gate, kế thừa chỉ thu hẹp, đi vào `inputSchema`; không làm `argument_facts` ở agent | TSK-S3-25 phải xong trước TSK-S4-02 để bố cục Q-23 có nút tham số từ bản đầu. PRD §15 |
 | **Q-26** | Ai xác nhận `ask` · ✅ **2026-09-23** | Chỉ người, qua kênh thiết bị; `system_two`/`mcp` không xác nhận được; dùng một lần, có TTL, gate lượng giá lại | TSK-S3-26. Đóng một phần `TODOS.md` #20. PRD §15 |
 | **Q-27** | NeuroEdge làm MCP client · ✅ **2026-09-23** | System 2 là MCP host: tool thiết bị qua MCP server của chính agent (vẫn qua gate), MCP bên ngoài chỉ lấy thông tin (allowlist, dữ liệu không tin cậy) | TSK-S3-28. PRD §15 |
 

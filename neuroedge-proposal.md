@@ -1650,10 +1650,10 @@ flowchart TD
 
 ---
 
-### B.6 Ràng buộc tham số (`arguments`) — *đề xuất, RFC-0005*
+### B.6 Ràng buộc tham số (`arguments`) — *RFC-0005, Q-25*
 
-> **Chưa chuẩn tắc.** Hướng đã chốt ở Q-25; lược đồ và ngữ nghĩa chờ RFC-0005
-> ([`docs/rfc/0005-rang-buoc-tham-so-trong-gate.md`](docs/rfc/0005-rang-buoc-tham-so-trong-gate.md)) được duyệt. Hôm nay `gate.v1` từ chối khối này.
+> Chuẩn tắc từ 2026-09-24 ([`docs/rfc/0005-rang-buoc-tham-so-trong-gate.md`](docs/rfc/0005-rang-buoc-tham-so-trong-gate.md)).
+> Mã: `python/neuroedge/engine/arguments.py`.
 
 Khi hành động đến từ LLM hoặc client MCP, mô hình chọn cả tham số. Gate khai giới hạn cho
 tham số của `@action`, lượng giá tất định **trước** `evaluate`:
@@ -1663,8 +1663,13 @@ arguments:
   duration_s: { type: integer, minimum: 1, maximum: 60 }
 ```
 
-Vi phạm ⇒ BLOCK `argument_out_of_range`. Gate con chỉ thu hẹp khoảng hoặc tập giá trị,
-không bỏ được ràng buộc của cha — cùng hình dạng với nguyên tắc 2 và 4 của B.5. Giới hạn
+Mỗi tham số khai `type` (`string` · `integer` · `number` · `boolean`) và tuỳ chọn `minimum`,
+`maximum` (số), `enum`, `max_length` (chuỗi). Engine kiểm **giá trị thực chạy** — kể cả giá trị
+mặc định của hàm — trước mọi tiêu chí, không hỏi mô hình, không tốn ngân sách. Vi phạm ⇒ BLOCK
+`argument_out_of_range` với `failed_criterion` là tên tham số, rồi `on_block` như mọi lần chặn.
+Gate con chỉ thu hẹp khoảng hoặc tập giá trị; không nhắc lại là kế thừa, nên không bỏ được
+ràng buộc của cha — cùng hình dạng với nguyên tắc 2 và 4 của B.5. `neuroedge build` từ chối
+giới hạn trên tham số mà `@action` không có, hoặc khác kiểu. Giới hạn
 đi vào `inputSchema` của tool để mô hình thấy trước ([`docs/spec/tool_calling.md`](docs/spec/tool_calling.md) §3).
 
 ---

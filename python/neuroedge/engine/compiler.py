@@ -30,7 +30,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from ..errors import AgentManifestError, BoardCapabilityError, BuildFailed, NeuroEdgeError
+from ..errors import (
+    AgentManifestError,
+    BoardCapabilityError,
+    BuildFailed,
+    GateSchemaError,
+    NeuroEdgeError,
+)
 from ..hal.board import PRIMITIVES, BoardProfile, load_board_by_id
 from .canonical import gate_canonical_json, gate_digest
 from .decision_tree import compile_tree, tree_bytes
@@ -271,6 +277,47 @@ def resolve_gates(
     return resolved, problems
 
 
+def check_gate_arguments(
+    gates: Mapping[str, ResolvedGate], actions: Iterable[Any]
+) -> list[NeuroEdgeError]:
+    """
+    Every argument a gate limits is a parameter of the action it guards, with the
+    same JSON type (RFC-0005). A limit on a name the action does not take would
+    never be checked against anything the body uses.
+    """
+    from ..actions.tools import input_schema
+
+    problems: list[NeuroEdgeError] = []
+    for spec in actions:
+        gate = gates.get(spec.gate)
+        if gate is None or not gate.arguments:
+            continue
+        properties = input_schema(spec)["properties"]
+        for name, limit in gate.arguments.items():
+            where = f"{gate.name}@{gate.version} -> arguments.{name}"
+            if name not in properties:
+                problems.append(
+                    GateSchemaError(
+                        where=where,
+                        why=f"@action {spec.name} has no parameter {name!r}; "
+                        f"it takes {sorted(properties)}",
+                        how=f"limit a parameter of {spec.name}, or rename the parameter",
+                    )
+                )
+                continue
+            declared = properties[name].get("type")
+            if declared is not None and declared != limit["type"]:
+                problems.append(
+                    GateSchemaError(
+                        where=where,
+                        why=f"the gate limits {name} as {limit['type']}, "
+                        f"but {spec.name} declares it {declared}",
+                        how=f"declare type: {declared} in the gate, or change the annotation",
+                    )
+                )
+    return problems
+
+
 def check_fallbacks(
     manifest: AgentManifest, gates: Mapping[str, ResolvedGate], actions: Iterable[Any]
 ) -> list[NeuroEdgeError]:
@@ -439,6 +486,7 @@ def build(
     gates, gate_problems = resolve_gates(manifest, registry)
     problems += gate_problems
     problems += check_fallbacks(manifest, gates, actions)
+    problems += check_gate_arguments(gates, actions)
 
     grammar = manifest.root / "commands.toml"
     if grammar.is_file():
