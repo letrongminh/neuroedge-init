@@ -205,6 +205,25 @@ jobs:
           name: junit-linux
           path: junit-linux.xml
 
+  wheel-smoke:
+    name: Installed wheel runs the whole journey (TSK-S3-17)
+    # Every other job installs editable from the checkout, so a wheel missing
+    # boards/, schemas/ or gates/ passes them all — measured 2026-09-23. This
+    # builds sdist -> wheel (what PyPI users get), installs it into a clean venv
+    # and runs new/build/run/record/replay/test/verify outside the repo.
+    runs-on: ubuntu-latest
+    env:
+      NEUROEDGE_ROOT: ""
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Stranger's journey on the installed wheel
+        run: bash scripts/wheel_smoke.sh python
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

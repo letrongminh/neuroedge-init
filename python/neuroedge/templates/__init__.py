@@ -8,8 +8,9 @@ generating a project writes each file with the suffix dropped. The `.tmpl`
 suffix keeps pytest and ruff from treating template code as package code.
 
 `villa-concierge` adds its README and tests to a copy of
-`fixtures/agents/villa-concierge/`, so the sample agent has one source; it is
-therefore available from a source checkout only.
+`fixtures/agents/villa-concierge/`, so the sample agent has one source. A wheel
+carries that directory under `neuroedge/_data/` (TSK-S3-17), so the template
+works from an installed package too.
 """
 
 from __future__ import annotations
@@ -45,7 +46,7 @@ def _villa_files(name: str) -> dict[Path, str]:
         raise AgentManifestError(
             where=f"--template {_VILLA}",
             why=f"the sample agent is read from {source}, which this install does not have",
-            how="run from a NeuroEdge source checkout, or use --template minimal",
+            how="reinstall neuroedge (the wheel ships the sample agent), or use --template minimal",
         )
     files = {
         path.relative_to(source): path.read_text(encoding="utf-8")

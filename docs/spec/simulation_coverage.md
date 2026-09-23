@@ -1,6 +1,6 @@
 # Phủ mô phỏng — 5 nguyên thủy × 3 target bậc 1
 
-**Trạng thái:** đặc tả quy phạm, đi kèm Q-21 (*đề xuất*) và Q-22 (*đã chốt*) — PRD §15. Cập nhật 2026-09-23.
+**Trạng thái:** đặc tả quy phạm, đi kèm Q-21 và Q-22 (*đã chốt*) — PRD §15. Cập nhật 2026-09-23.
 Công cụ và giấy phép: proposal Phụ lục H.4. Chiến lược theo tầng: proposal §3.2.
 
 Tài liệu này trả lời một câu hỏi: **với mỗi nguyên thủy HAL trên mỗi target, cái gì chạy nó,
