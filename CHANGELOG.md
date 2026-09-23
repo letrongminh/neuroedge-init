@@ -51,6 +51,9 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 - **Quy tắc hoàn thành task.** `CONTRIBUTING.md` §8: nơi duy nhất cho việc cập nhật
   tiến độ, changelog, đặc tả; bảng "mỗi sự thật một nơi"; mẫu PR có checklist.
   Roadmap §0.4, §11.2 và `CLAUDE.md` nay chỉ dẫn về đó.
+- **Tài liệu cho người dùng (`docs/user/`).** Bản đồ tài liệu, hướng dẫn sử dụng,
+  và trạng thái sinh tự động từ roadmap §0 (`scripts/gen_user_status.py`).
+  Kiểm: `pytest tests/test_user_status_fresh.py`.
 
 #### Đã đổi
 
@@ -80,6 +83,8 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 - **CLI nuốt mất tên bảng TOML trong chẩn đoán.** `rich` hiểu `[requires]`,
   `[capabilities.digital_out]` là thẻ markup nên lời hướng dẫn in ra thiếu chữ. Mọi trường
   `where`/`why`/`how` nay được escape. Kiểm: `test_cli_build_fails_with_exit_1_and_every_problem`.
+- **Hai nhãn lỗi thời.** `TODOS.md` #5 ghi thì quá khứ cho phần `lru_cache` đã vá ở
+  `TSK-S2-13`; roadmap §0.2 ghi Sprint 2 `8%` (1/13) thay vì `0%`.
 
 ### [0.4.0] — 2026-09-23 — Gỡ chặn Sprint 2: chốt 9 quyết định, đồng bộ tài liệu
 
