@@ -13,7 +13,9 @@ the page is `neuroedge.viz.page(live=True)`, the same renderer as
     POST /command  a typed line — a command, or `:set k v`, `:unset k`, `:sensor n v`
 
 Turns run one at a time under a lock: the session, like a device, handles one
-utterance after another.
+utterance after another. `neuroedge mcp serve --ui` (TSK-S3-27) serves this
+page next to an MCP server over the same session: each MCP tool call takes the
+same `lock` and ends with `notify()`, so the page shows it at once.
 """
 
 from __future__ import annotations
@@ -52,7 +54,14 @@ class SessionServer:
         self.changed = threading.Condition()
         self.version = 0
         handler = type("Handler", (_Handler,), {"server_state": self})
-        self.httpd = ThreadingHTTPServer((host, port), handler)
+        try:
+            self.httpd = ThreadingHTTPServer((host, port), handler)
+        except OSError as error:
+            raise NeuroEdgeError(
+                where=f"sim UI on {host}:{port}",
+                why=f"cannot listen on port {port}: {error.strerror or error}",
+                how=f"stop what holds port {port}, or pass another with --port (0 picks a free one)",
+            ) from error
         self.httpd.daemon_threads = True
         self._thread: threading.Thread | None = None
 
@@ -72,10 +81,14 @@ class SessionServer:
         """Run one typed line and say what happened, in the shape the page shows."""
         with self.lock:
             reply = self._command(line.strip())
+        self.notify()
+        return reply
+
+    def notify(self) -> None:
+        """The session changed: wake every `/events` stream now. Also the hook for MCP calls."""
         with self.changed:
             self.version += 1
             self.changed.notify_all()
-        return reply
 
     def _command(self, line: str) -> dict[str, Any]:
         session = self.session

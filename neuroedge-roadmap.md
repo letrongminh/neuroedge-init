@@ -59,7 +59,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 | **Sprint hiện hành** | 🟡 **Sprint 2: Lõi thực thi trên `sim` (≈ A1)** — mã A1 xong sớm, 2026-09-23 | **9 / 10 task trong phạm vi xong** (còn TSK-S2-11, chạy ở A2; TSK-S2-09 kéo lên và xong) · **5 / 6 tiêu chí ra đạt** (còn #6, cùng TSK-S2-11) · Sprint 1 còn TSK-S1-10 chờ bo mạch |
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: cuối Sprint 3 = **2026-11-15** — trễ ~2 tuần so với bản gốc (Tuần 6 gốc = 2026-11-02) (Q-19) |
 | **Lần cập nhật cuối** | **2026-09-24** | TSK-S3-25: gate chặn theo giá trị tham số (RFC-0005 chấp thuận); System 2 làm MCP host (Q-27) — chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 664/664 · SKIP 0** | `python/tests/` — 35 bộ test; wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) |
+| **Trạng thái CI Lõi** | ✅ **PASS 672/672 · SKIP 0** | `python/tests/` — 36 bộ test; wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn + 1 còn mở** | 🔴 TSK-S1-10 chờ bo mạch vật lý · 🟡 Q-11 phần còn lại (Hawkbit EPL-2.0 / EMQX BSL) — **không chặn cho tới khi mở Khối 2** |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -100,7 +100,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
 │    1. Đặt 2 Box-3 + 1 RPi 5 nightly (Phụ lục B, Q-16)                                  │
 │    2. V3: TSK-S3-14 (PyPI, TestPyPI trước) · S3-16 · S3-19 · S3-20 → đo TTFV           │
-│    3a. A2 V1: TSK-S3-24 (corpus tool call) · S3-26 (xác nhận ask) · S3-27 (mcp --ui)   │
+│    3a. A2 V1: TSK-S3-24 (corpus tool call) · S3-26 (xác nhận ask)                      │
 │    3. A2 V2: TSK-S4-02 + S4-07 (walker C, Q-23) → S4-08, S4-09 (QEMU) · S4-11          │
 │    4. A2 V1: TSK-S2-11 (LiteLLM) → TSK-S2-07 (đặc tả FSM thoại)                        │
 │    5. Kỹ thuật trưởng xác nhận TSK-S3-15 (golden = vết ghi chuẩn mực)                  │
@@ -533,7 +533,7 @@ Phạm vi và thứ tự chạy theo kế hoạch [`docs/designs/giai-doan-1-wed
 | **TSK-S3-24** | **Corpus tuân thủ Gated Tool Profile:** `fixtures/tool_calls/{valid,invalid}/` + `expected_results.yaml` khép kín hai chiều; `outputSchema` cho mỗi tool MCP; trường `fallback` trong kết quả `degrade` | FR-MDL-10, FR-ACE-09 | V1 | ⏳ Chưa bắt đầu *(A2)* | `docs/spec/tool_calling.md` §4, §9 |
 | **TSK-S3-25** | **Hiện thực RFC-0005** — khối `arguments:` trong gate: resolver (kế thừa chỉ thu hẹp), `gate lint`, compiler (nút tham số), giới hạn đi vào `inputSchema`. **Phải xong trước TSK-S4-02** | FR-ACE-08, FR-GATE-06 | V1 | ✅ Hoàn thành (2026-09-24) | `python/neuroedge/engine/arguments.py` · `pytest tests/test_gate_arguments.py` · corpus `fixtures/gates/invalid/` (7 mục mới) |
 | **TSK-S3-26** | **Vòng xác nhận `ask` (Q-26) trên `sim`:** REPL và UI hỏi lại, sự kiện `tool_confirm_requested` / `tool_confirmed`, TTL, dùng một lần, gate lượng giá lại với `human_confirmed` | FR-ACE-10 | V3 | ⏳ Chưa bắt đầu *(A2)* | `docs/spec/tool_calling.md` §6 |
-| **TSK-S3-27** | **`neuroedge mcp serve --ui`:** máy chủ MCP và giao diện web `sim` chung một phiên — điều khiển từ Claude Desktop, thấy đèn/chốt ảo đổi và gate chặn | FR-CLI-10, FR-DX-04 | V3 | ⏳ Chưa bắt đầu *(A2)* | `python/neuroedge/mcp_server.py`, `viz/` |
+| **TSK-S3-27** | **`neuroedge mcp serve --ui`:** máy chủ MCP và giao diện web `sim` chung một phiên — điều khiển từ Claude Desktop, thấy đèn/chốt ảo đổi và gate chặn | FR-CLI-10, FR-DX-04 | V3 | ✅ Hoàn thành (2026-09-24) | `python/neuroedge/mcp_server.py` (móc `lock`/`on_change`), `sim/ui.py`, `viz/` · `pytest tests/test_mcp_serve_ui.py` |
 | **TSK-S3-28** | **System 2 làm MCP host (Q-27):** `ToolHost` — tool thiết bị qua MCP server của chính agent, MCP server bên ngoài từ `[mcp.servers]` (allowlist, digest trong vết ghi), vòng ReAct `max_rounds`; `mcp tools --external`; tin tức home-voice qua `mcp/news_server.py` | FR-MDL-11, FR-MDL-12 | V1 | ✅ Hoàn thành (2026-09-23) | `python/neuroedge/mcp_host.py` · `pytest tests/test_mcp_host.py` |
 
 **Tiêu chí ra Sprint 3 — cổng kết thúc Khối 1a (Exit Criteria):** — **5 / 6 đã đạt**

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -587,10 +588,19 @@ def mcp_serve(
         None, "--trace-out", help="Write the session trace here on exit"
     ),
     registry: Path | None = REGISTRY_OPTION,
+    ui: bool = typer.Option(
+        False, "--ui", help="Also serve this session as the live sim page on 127.0.0.1"
+    ),
+    port: int = typer.Option(8765, "--port", help="Port for --ui (0 picks a free one)"),
+    open_browser: bool = typer.Option(
+        False, "--open", help="With --ui, open the page in a browser"
+    ),
 ):
     """
     Serve the agent as a gated MCP server over stdio: every @action is a tool,
     and every tools/call goes through the tool schema, c.do() and the gate.
+    With --ui the same session is shown live in the browser: a tool call from
+    the MCP client moves the virtual devices on the page at once.
     """
     import anyio
 
@@ -602,16 +612,43 @@ def mcp_serve(
         _fail(error)
         return
     session = _start_session("mcp serve", agent, "sim", board, registry)
+    page = None
+    if ui:
+        from ..sim.ui import SessionServer
+
+        try:
+            page = SessionServer(session, port=port).start()
+        except NeuroEdgeError as error:
+            _fail(error)  # before the MCP loop: the client sees the process exit, code 1
+            return
     # stdout is the protocol channel; anything for people goes to stderr.
     err_console.print(
         f"neuroedge MCP server · {escape(session.manifest.label)} · "
         f"{len(session.tools.specs)} tool(s) · stdio"
     )
+    if page is not None:
+        err_console.print(f"sim UI at {page.url} (same session)", markup=False, highlight=False)
+
+    def on_ready() -> None:
+        if page is not None and open_browser:
+            import webbrowser
+
+            webbrowser.open(page.url)
+
+    serve = partial(
+        serve_stdio,
+        session,
+        lock=page.lock if page is not None else None,
+        on_change=page.notify if page is not None else None,
+        on_ready=on_ready,
+    )
     try:
-        anyio.run(serve_stdio, session)
+        anyio.run(serve)
     except KeyboardInterrupt:
         pass
     finally:
+        if page is not None:
+            page.stop()
         if trace_out is not None:
             trace_out.parent.mkdir(parents=True, exist_ok=True)
             trace_out.write_text(
@@ -907,6 +944,8 @@ def run(
 
         try:
             serve(session, port, console, open_browser=not no_browser)
+        except NeuroEdgeError as error:
+            _fail(error)  # e.g. the port is taken
         finally:
             if trace_out is not None:
                 trace_out.parent.mkdir(parents=True, exist_ok=True)

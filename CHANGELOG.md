@@ -27,6 +27,13 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **TSK-S3-27 — `neuroedge mcp serve --ui`.** Một tiến trình vừa là máy chủ MCP qua stdio (Claude Desktop,
+  Cursor) vừa phục vụ trang `sim` trực tiếp của **cùng phiên**: tool call từ client làm đèn/chốt ảo đổi ngay,
+  thẻ phán quyết ghi `tool_call light_on · mcp` (lời gọi schema từ chối hiện thẻ `REJECTED`). Lời gọi MCP và
+  lệnh gõ trên trang tuần tự hóa trên cùng một khóa; sau mỗi lời gọi luồng SSE đẩy ngay. `build_server` nhận
+  móc `lock` / `on_change` nên `mcp_server.py` không import trang. Cổng bận ⇒ lỗi 3 thành phần, mã 1, trước
+  vòng MCP (cả `run --ui`). Kiểm: `pytest tests/test_mcp_serve_ui.py` (có test tiến trình con chứng minh
+  stdout chỉ mang JSON-RPC). (FR-CLI-10, FR-DX-04)
 - **Bộ chuẩn bị cổng nhu cầu 2026-10-25 (Q-20, `TODOS.md` #19).** `docs/business/cong-nhu-cau-2026-10-25/`:
   10 câu hỏi cổng C1–C10 gắn với `CEO-X*`/`T*` và proposal §8.7, kế hoạch theo ngày, demo ≤ 5 phút cho 4 phân khúc
   (chỉ lệnh đã chạy thật, kèm bảng *không được nói là đã có*), bộ câu hỏi phỏng vấn kiểu The Mom Test, thang chấm
@@ -699,7 +706,7 @@ còn `run` / `record --target linux|esp32s3` thoát mã 2.
 | `test [thư-mục]` | Chạy bộ Action CI (pytest) của agent, mặc định `tests/`. Mọi test đạt ⇒ mã 0; có test trượt hoặc không thu được test nào ⇒ mã 1 |
 | `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2: trên `linux` hôm nay dùng `replay` |
 | `mcp tools [--json\|--openai] [--external]` | Schema của mỗi `@action` — dạng MCP hoặc function-calling OpenAI (Q-24). `--external`: thêm tool thông tin của `[mcp.servers]` mà System 2 được đưa (Q-27) |
-| `mcp serve [--agent a.toml] [--trace-out t.json]` | Máy chủ MCP qua stdio trên `sim`; mọi `tools/call` qua kiểm schema và gate. Cần extra `neuroedge[mcp]` |
+| `mcp serve [--agent a.toml] [--trace-out t.json] [--ui [--port 8765] [--open]]` | Máy chủ MCP qua stdio trên `sim`; mọi `tools/call` qua kiểm schema và gate. `--ui`: cùng phiên trên trang web 127.0.0.1 (`--port 0` chọn cổng trống; chỉ mở trình duyệt khi có `--open`); URL in ra stderr, stdout chỉ là kênh JSON-RPC. Cổng bận ⇒ mã 1 trước khi vào vòng MCP. Cần extra `neuroedge[mcp]` |
 | `gate explain <tệp\|URI>` | Giải thích gate cho người duyệt: tiêu chí từ cấp nào, mệnh đề nào bị siết chặt, ngân sách và `on_block` so với cha. Gate sai ⇒ mã 1, lỗi 3 thành phần |
 | `new <tên> [--template minimal\|villa-concierge\|home-voice]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` (chốt cửa) và `home-voice` (trợ lý giọng nói, có `knowledge.toml`) sao agent mẫu (có trong wheel) |
 
