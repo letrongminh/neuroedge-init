@@ -66,6 +66,7 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **Tool call** | Một lời gọi `@action` dạng `{name, arguments, source}`. Câu khớp ngữ pháp, System 1/2 và MCP đều gửi tool call; mọi tool call qua kiểm schema rồi gate (Q-24) | `python/neuroedge/actions/tools.py` |
 | **MCP** | Model Context Protocol — chuẩn mở để ứng dụng AI gọi tool. `neuroedge mcp serve` đưa các `@action` ra làm tool, vẫn qua gate | `python/neuroedge/mcp_server.py` |
 | **Gated Tool Profile** | Chuẩn của NeuroEdge cho tool call tới thiết bị vật lý, đặt trên MCP: ba trạng thái kết quả, nguồn gọi, xác nhận của người, vết ghi. Tài sản chuẩn thứ ba cạnh lược đồ gate và vết ghi | `docs/spec/tool_calling.md` |
+| **MCP host** | Bên dùng MCP client để gọi tool. System 2 của agent là MCP host: gọi tool thiết bị qua MCP server của chính agent, và tool thông tin của MCP server bên ngoài (Q-27) | `python/neuroedge/mcp_host.py` |
 | **`call_source`** | Dữ kiện do runtime chèn cho gate: tool call đến từ `local_grammar`, `system_one`, `system_two`, `mcp` hay `test`. Bên gọi không tự khai được | `docs/spec/tool_calling.md` §5 |
 | **HAL · 5 nguyên thủy** | Lớp phần cứng: `audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display` | `neuroedge-prd.md` §4.1 (FR-HAL-01) |
 | **Target `sim` · `linux` · `esp32s3`** | Môi trường chạy bậc 1: trình mô phỏng · Linux (RPi 5) · vi điều khiển ESP32-S3-Box-3 | `neuroedge-prd.md` §4.2 (FR-TGT) |

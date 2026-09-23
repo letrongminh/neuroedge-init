@@ -1,9 +1,10 @@
 # Gated Tool Profile v0 — đường từ ngôn ngữ tới hành động thực
 
 **Trạng thái:** chuẩn tắc cho `sim` và `linux` từ v0; `esp32s3` theo §8. Quyết định:
-Q-24, Q-25, Q-26 (`neuroedge-prd.md` §15).
+Q-24, Q-25, Q-26, Q-27 (`neuroedge-prd.md` §15).
 **Mã nguồn:** `python/neuroedge/actions/tools.py` (dispatch), `python/neuroedge/mcp_server.py`
-(MCP), `python/neuroedge/sim/session.py` (ngữ pháp, System 2).
+(MCP server), `python/neuroedge/mcp_host.py` (System 2 làm MCP client),
+`python/neuroedge/sim/session.py` (ngữ pháp, vòng System 2).
 
 Tài liệu này là nơi **duy nhất** định nghĩa tool call trong NeuroEdge. Tài liệu khác dẫn
 tới đây, không chép lại (CONTRIBUTING §8.1). Từ khoá **PHẢI**, **KHÔNG ĐƯỢC**, **NÊN**
@@ -29,6 +30,13 @@ biết lời gọi từ đâu tới; mất mạng thì không có tool call. Pro
 | Mất mạng | Không có | Ngữ pháp cục bộ sinh tool call tổng hợp, cùng đường (§1) |
 | Bằng chứng | Log văn bản | Vết ghi: tool call → phán quyết → lệnh chân, replay được (§7) |
 
+MCP có **hai chiều**, và profile phủ cả hai:
+
+| Chiều | Ai là client | Ai là server | Mục |
+|:---|:---|:---|:---|
+| **B — gọi vào thiết bị** | Agent bên ngoài (Claude Desktop, IDE, agent khác) | `neuroedge mcp serve` | §1–§9 |
+| **A — thiết bị gọi ra** | System 2 của agent (MCP host) | Chính MCP server của agent **và** MCP server bên ngoài | §10 |
+
 Profile là tài sản chuẩn thứ ba của NeuroEdge, cạnh lược đồ gate và lược đồ vết ghi
 (`neuroedge-proposal.md` §1.5).
 
@@ -49,7 +57,7 @@ ToolCall { id: string, name: string, arguments: object, source: string }
 |:---|:---|
 | `local_grammar` | Câu khớp `commands.toml` → tool call **tổng hợp** (Q-14). Chạy không mạng |
 | `system_one` | Mô hình có cấu trúc (§3.6 proposal) |
-| `system_two` | LLM với câu tự do, được đưa danh sách tool |
+| `system_two` | LLM với câu tự do; gọi tool của thiết bị qua kết nối MCP in-process tới chính agent (§10) |
 | `mcp` | Client MCP qua `neuroedge mcp serve` |
 | `test` | Action CI |
 
@@ -128,6 +136,8 @@ evaluate:
 allow_when: call_source in ["local_grammar", "system_one"]   # MCP không mở được cửa
 ```
 
+Nguồn **gắn theo kết nối**, do runtime tạo kết nối đó: `neuroedge mcp serve` là `mcp`; kết nối in-process của System 2 là `system_two` (`build_server(session, source=...)`).
+
 Bên gọi **KHÔNG ĐƯỢC** tự khai nguồn: `call_source` không phải tham số của tool nào, nên
 một mô hình gửi `{"call_source": "local_grammar"}` bị `REJECTED` ở bước 3
 (`test_a_model_cannot_claim_its_own_call_source`). Ví dụ đầy đủ:
@@ -171,7 +181,7 @@ hình. Lời gọi `REJECTED` không tới gate nên không có trong phán quy�
 |:---|:---|:---|
 | `sim` | Đầy đủ (§1–§7) | `neuroedge mcp serve` qua stdio |
 | `linux` | Đầy đủ | Như `sim`, trên máy thiết bị |
-| `esp32s3` | Ngữ pháp → tool call tổng hợp trong C; tham số kiểm bằng bảng do `neuroedge build` sinh cạnh cây quyết định (Q-23); `call_source` là một byte trong ngữ cảnh walker | **Không** chạy trên MCU. MCP cho thiết bị đi qua gateway hoặc một máy `linux` (FR-GW), và thiết bị vẫn tự lượng giá gate |
+| `esp32s3` | Ngữ pháp → tool call tổng hợp trong C; tham số kiểm bằng bảng do `neuroedge build` sinh cạnh cây quyết định (Q-23); `call_source` là một byte trong ngữ cảnh walker | **Không** chạy trên MCU. MCP cho thiết bị đi qua gateway hoặc một máy `linux` (FR-GW), và thiết bị vẫn tự lượng giá gate. MCU **không làm MCP host**: host (§10) đặt ở nơi System 2 chạy |
 
 Transport MCP ở v1.0 chỉ là **stdio**: bên có quyền chạy tiến trình chính là người vận
 hành. Transport HTTP cần xác thực và là việc hoãn (`TODOS.md` #24).
@@ -186,3 +196,59 @@ call, dữ kiện, và kết quả mong đợi (`status`, `failed_criterion`, l�
 Lược đồ phong bì và kết quả sẽ đóng băng thành `schemas/` khi corpus ổn định và có một
 client bên ngoài dùng (`TODOS.md` #23). Cho tới lúc đó, profile là **v0** và đổi được
 bằng PR thường kèm cập nhật tài liệu này.
+
+## 10. NeuroEdge làm MCP client (Q-27)
+
+System 2 là một **MCP host**: mọi tool nó dùng đều đi qua một MCP client
+(`ToolHost`, `python/neuroedge/mcp_host.py`), tới hai loại server.
+
+```text
+                  ┌─────────────────────── ToolHost ───────────────────────┐
+System 2 ─tool──► │ agent: in-process → build_server(source="system_two")   │─► dispatch() → gate → HAL
+ ▲ (≤ max_rounds) │ news:  stdio → [mcp.servers.news], chỉ tool trong allowlist │─► dữ liệu không tin cậy
+ └── kết quả ◄─── └────────────────────────────────────────────────────────┘
+```
+
+Năm quy tắc:
+
+1. **Tool của thiết bị chỉ đến được qua MCP server của chính agent.** Mọi lời gọi vẫn qua
+   §2. `call_source = system_two` gắn theo kết nối (§5). Lỗi hợp đồng ném ra nguyên vẹn
+   qua kết nối in-process, không thành kết quả MCP. Bản cài lõi không có extra `mcp`:
+   kết nối này thành lời gọi trực tiếp — cùng nguồn, cùng `dispatch()`; server bên ngoài
+   bị bỏ qua kèm lý do.
+2. **MCP server bên ngoài chỉ để lấy thông tin.** `agent.toml` liệt kê tường minh tool
+   được dùng (`tools = [...]`) — tác giả agent khẳng định chúng không có hiệu ứng vật lý.
+   Tool ngoài allowlist bị ẩn khỏi mô hình và gọi tới thì `REJECTED`. Annotation
+   `readOnlyHint` do server tự khai **không** được tin. Tool của bên thứ ba có hiệu ứng
+   vật lý (ví dụ Home Assistant) **PHẢI** được bọc thành `@action` có gate; thân hàm gọi
+   MCP đó và chỉ chạy được trong `c.do()`. Tên `server__tool` trùng tên `@action` ⇒
+   `neuroedge build` báo lỗi.
+3. **Kết quả tool bên ngoài là dữ liệu không tin cậy.** Nó chỉ trả lại mô hình, đánh dấu
+   `"trust": "untrusted data …"`, không bao giờ được phân tích thành lệnh. Vết ghi lưu
+   `mcp_tool_result{id, server, tool, status, sha256, bytes}` — không lưu nội dung. Mô
+   hình "nghe lời" một nội dung bị cài lệnh thì lời gọi của nó vẫn qua gate
+   (`test_prompt_injection_in_the_news_still_meets_the_gate`).
+4. **Server không kết nối được thì bỏ qua**, ghi `mcp_server_unavailable{server, reason}`;
+   tool của thiết bị vẫn chạy. Mất mạng hẳn ⇒ không có System 2 ⇒ host không mở; ngữ
+   pháp cục bộ dispatch thẳng (§1, Q-14).
+5. **Vòng có giới hạn** (FR-MDL-11): kết quả mỗi tool quay lại mô hình trong
+   `state["messages"]`, tối đa `max_rounds` vòng (mặc định 4, 1..16); quá ⇒
+   `system_two_rounds_exceeded`. Gate trả `ask` ⇒ dừng vòng, thiết bị nói câu hỏi — mô
+   hình không được trả lời thay người (§6).
+
+Cấu hình (`agent.toml`, không thuộc `schemas/`):
+
+```toml
+[mcp]
+max_rounds = 4
+
+[mcp.servers.news]                # tool của nó đưa cho mô hình là news__<tool>
+command = "python"                # "python" / "python3" = trình thông dịch đang chạy
+args    = ["mcp/news_server.py"]  # tương đối với thư mục agent
+tools   = ["headlines"]           # allowlist — chỉ công cụ thông tin
+# env = { NEWS_FILE = "..." } · timeout_s = 10
+```
+
+Ví dụ chạy được: `fixtures/agents/home-voice/mcp/news_server.py`. Kết nối mở theo từng
+lượt; kết nối bền giữa các lượt và transport HTTP tới server bên ngoài là việc hoãn
+(`TODOS.md` #25).

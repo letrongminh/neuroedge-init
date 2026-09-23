@@ -551,6 +551,8 @@ client MCP (Claude, IDE…) ───┤  mcp — neuroedge mcp serve
           └─ hợp lệ ─► chèn call_source ─► c.do() ─► gate ─► token ─► HAL
 ```
 
+MCP chạy **hai chiều**. Agent bên ngoài gọi *vào* thiết bị qua `neuroedge mcp serve`; còn System 2 của chính agent là một **MCP host** gọi *ra*: tool của thiết bị qua MCP server của chính agent (nên vẫn qua gate), và MCP server bên ngoài — tin tức, lịch, tra cứu — **chỉ để lấy thông tin**, kết quả là dữ liệu không tin cậy (Q-27).
+
 Đường truyền theo đúng chuẩn của hệ sinh thái (MCP, function calling OpenAI, JSON Schema), nên agent nào gọi được tool thì gọi được thiết bị NeuroEdge. Phần NeuroEdge quy định — và là tài sản chuẩn thứ ba (§1.5) — là ngữ nghĩa giữa tool call và hiệu ứng vật lý: ba trạng thái kết quả, nguồn gọi là dữ kiện tin cậy, chỉ người xác nhận `ask` (Q-26), ràng buộc tham số trong gate (Q-25), và vết ghi replay được. Đặc tả chuẩn tắc: **Gated Tool Profile**, [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md).
 
 ### 3.6 Trừu tượng hóa mô hình AI (Model Abstraction)
@@ -821,7 +823,7 @@ door_contact = true
 door_closed = { sensor = "door_contact" }
 ```
 
-Tiêu chí không có trong hai bảng và không do lệnh khớp chứng minh (`facts` trong `commands.toml`) là **chưa xác định** → gate chặn. Trong `commands.toml`, mỗi `[[command]]` làm **đúng một việc**: `tool` (tên `@action`; câu khớp thành một **tool call tổng hợp** nguồn `local_grammar`, kèm `arguments` là tham số ← slot và `default_args` là tham số cố định — Q-24; tên cũ `action` vẫn nhận), `say` (câu trả lời cố định), hoặc `ask` (một tác vụ System 2 như `"news"`, kèm `offline_say` khi System 2 không trả lời được); `neuroedge build` từ chối tool không tồn tại, tham số không có trong chữ ký, và `default_args` sai kiểu. `knowledge.toml` cạnh `agent.toml` là knowledge base: mỗi `[[entry]]` có `questions` và `answer`; câu hỏi khớp được tìm cục bộ làm context cho System 2 (RAG), mất mạng thì nói `answer` (`python/neuroedge/models/knowledge.py`).
+Tiêu chí không có trong hai bảng và không do lệnh khớp chứng minh (`facts` trong `commands.toml`) là **chưa xác định** → gate chặn. Trong `commands.toml`, mỗi `[[command]]` làm **đúng một việc**: `tool` (tên `@action`; câu khớp thành một **tool call tổng hợp** nguồn `local_grammar`, kèm `arguments` là tham số ← slot và `default_args` là tham số cố định — Q-24; tên cũ `action` vẫn nhận), `say` (câu trả lời cố định), hoặc `ask` (một tác vụ System 2 như `"news"`, kèm `offline_say` khi System 2 không trả lời được); `neuroedge build` từ chối tool không tồn tại, tham số không có trong chữ ký, và `default_args` sai kiểu. Bảng `[mcp]` / `[mcp.servers.<tên>]` khai MCP server bên ngoài mà System 2 được dùng — `command`, `args`, và **`tools`: allowlist các tool thông tin**; tool có hiệu ứng vật lý phải là `@action` có gate (Q-27, `docs/spec/tool_calling.md` §10). `knowledge.toml` cạnh `agent.toml` là knowledge base: mỗi `[[entry]]` có `questions` và `answer`; câu hỏi khớp được tìm cục bộ làm context cho System 2 (RAG), mất mạng thì nói `answer` (`python/neuroedge/models/knowledge.py`).
 
 ### 4.4 Định nghĩa hành động chuẩn kiểu — `@action`
 

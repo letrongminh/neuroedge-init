@@ -40,8 +40,18 @@ def _sdk() -> tuple[Any, Any]:
     return types, Server
 
 
-def build_server(session: Any) -> Any:
-    """An MCP `Server` over one agent session. Tool calls run one at a time, like turns."""
+def build_server(session: Any, source: str = "mcp", raised: list | None = None) -> Any:
+    """
+    An MCP `Server` over one agent session. Tool calls run one at a time, like turns.
+
+    `source` is bound to the connection by whoever builds it — ``"mcp"`` for
+    `neuroedge mcp serve`, ``"system_two"`` for System 2's in-process connection
+    (`neuroedge.mcp_host`). A client never states its own `call_source`.
+
+    A contract violation is never an MCP result. It propagates, and for an
+    in-process caller that passes `raised`, the original exception is kept there
+    so the caller re-raises it rather than the protocol's wrapper.
+    """
     import anyio
 
     from . import __version__
@@ -62,9 +72,14 @@ def build_server(session: Any) -> Any:
         )
 
     async def call_tool(ctx: Any, params: Any) -> Any:
-        call = ToolCall(params.name, dict(params.arguments or {}), source="mcp")
+        call = ToolCall(params.name, dict(params.arguments or {}), source=source)
         async with lock:
-            result = await session.call_tool(call)
+            try:
+                result = await session.call_tool(call)
+            except NeuroEdgeError as error:
+                if raised is not None:
+                    raised.append(error)
+                raise
         content = result.content()
         return types.CallToolResult(
             content=[types.TextContent(text=json.dumps(content, ensure_ascii=False))],
