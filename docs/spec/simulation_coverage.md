@@ -1,6 +1,6 @@
 # Phủ mô phỏng — 5 nguyên thủy × 3 target bậc 1
 
-**Trạng thái:** đặc tả quy phạm, đi kèm Q-21 và Q-22 (PRD §15, *đề xuất*). Cập nhật 2026-09-23.
+**Trạng thái:** đặc tả quy phạm, đi kèm Q-21 (*đề xuất*) và Q-22 (*đã chốt*) — PRD §15. Cập nhật 2026-09-23.
 Công cụ và giấy phép: proposal Phụ lục H.4. Chiến lược theo tầng: proposal §3.2.
 
 Tài liệu này trả lời một câu hỏi: **với mỗi nguyên thủy HAL trên mỗi target, cái gì chạy nó,
@@ -110,10 +110,61 @@ kèm (không tải CDN); không có sẵn chốt cửa.
 
 FR-TGT-02 và FR-TGT-03 đòi **agent mẫu chạy thật** trên RPi 5 và Box-3. Hôm nay agent mẫu
 `villa-concierge` khai `audio.in aec = true`, và `linux-rpi5` khai `aec = false`, nên `build
---target linux` từ chối nó — agent mẫu chỉ phủ 2/3 thiết bị. Q-22 (đề xuất) đóng khoảng này:
-`LinuxHAL` cung cấp AEC bằng PipeWire `module-echo-cancel` (webrtc-audio-processing, BSD-3), và
-`linux-rpi5` khai `aec = true` khi TSK-S5-08 xong. Cho tới khi đó, kịch bản tương đương ba thiết bị
-dùng agent chỉ cần `digital.out` (mẫu `minimal` của `neuroedge new`).
+--target linux` từ chối nó — agent mẫu chỉ phủ 2/3 thiết bị. **Q-22 (đã chốt, phương án A)** đóng
+khoảng này bằng AEC phần mềm của PipeWire, làm ở TSK-S5-08. Cho tới khi đó, kịch bản tương đương
+ba thiết bị dùng agent chỉ cần `digital.out` (mẫu `minimal` của `neuroedge new`).
+
+### 6.1 Cách nối
+
+`libpipewire-module-echo-cancel` tạo bốn nút (tài liệu PipeWire, `page_module_echo_cancel`):
+
+```text
+micro ─► capture ─►┌─────────────┐─► source   ─► LinuxHAL.audio_in   (đã khử vang)
+                   │ echo-cancel │
+LinuxHAL.audio_out ─► sink ─────►└─────────────┘─► playback ─► loa
+```
+
+`audio.out` **phải** phát vào nút `sink`: đó là tín hiệu tham chiếu được trừ khỏi micro. Phát
+thẳng ra loa thì AEC không có gì để trừ. Cách khác là `monitor.mode = true`, lấy tham chiếu từ
+monitor của sink mặc định — dùng khi một tiến trình khác cũng phát ra loa.
+
+Cấu hình giao kèm TSK-S5-08, đặt ở `~/.config/pipewire/pipewire.conf.d/` (người dùng) hoặc
+`/etc/pipewire/pipewire.conf.d/` (hệ thống), rồi `systemctl restart --user pipewire.service`:
+
+```text
+# neuroedge-echo-cancel.conf
+context.modules = [
+{   name = libpipewire-module-echo-cancel
+    args = {
+        library.name = "aec/libspa-aec-webrtc"
+        node.description = "NeuroEdge Echo Cancel"
+        capture.props  = { node.name = "neuroedge.ec.capture"
+                           target.object = "<micro của HAT I2S>" }  # chỉ định micro
+        source.props   = { node.name = "neuroedge.ec.source" }      # audio.in đọc ở đây
+        sink.props     = { node.name = "neuroedge.ec.sink" }        # audio.out phát vào đây
+        playback.props = { node.name = "neuroedge.ec.playback"
+                           node.autoconnect = true }
+    }
+}
+]
+```
+
+Chỉ định micro bằng `capture.props.target.object` và tắt tự nối ở những nút không được nối tự do
+là mẫu lấy từ cấu hình tham khảo (gist `fathonix/05de5398…`, micro Android qua ROC). Tên nút của
+micro HAT và việc Raspberry Pi OS có chạy PipeWire mặc định hay không phải kiểm trên Pi khi làm
+TSK-S5-08.
+
+### 6.2 Khi nào `linux-rpi5` được khai `aec = true`
+
+Chỉ khi nightly trên RPi 5 (TSK-S4-05) đạt cả hai, trên cùng HAT và loa của bo tham chiếu:
+
+1. **Không tự nghe mình:** phát 20 lần một câu TTS cố định qua `audio.out` khi không ai nói —
+   VAD trên `audio.in` không kích hoạt lần nào (0/20).
+2. **Mức khử vang:** ERLE (năng lượng micro thô so với sau khử vang, cùng đoạn phát) ≥ 20 dB.
+
+Chưa đạt thì `aec = false` giữ nguyên và `build` tiếp tục từ chối agent cần AEC — không có đường
+nào để khai một năng lực chưa đo. Runner CI không có âm thanh (`CONFIG_SOUND` tắt), nên
+hai phép đo này chỉ chạy trên Pi.
 
 ## 7. Điều tài liệu này không hứa
 

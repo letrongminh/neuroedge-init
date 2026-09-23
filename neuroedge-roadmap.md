@@ -91,14 +91,14 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ 1. VỪA HOÀN THÀNH — phiên gần nhất (chi tiết: CHANGELOG.md [Chưa phát hành])           │
 │    • Trực quan sim ✅: TSK-S2-09 run --ui · S3-22 trace view · S3-23 sensor/display     │
-│    • Q-21, Q-22 đề xuất; phủ 15 ô: docs/spec/simulation_coverage.md                    │
+│    • Q-22 ✅ AEC phần mềm PipeWire (A) · Q-21 còn đề xuất                               │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
 │    1. Đặt 2 Box-3 + 1 RPi 5 nightly (Phụ lục B, Q-16)                                  │
-│    2. Kỹ thuật trưởng duyệt Q-21, Q-22, TSK-S3-15                                      │
+│    2. Kỹ thuật trưởng duyệt Q-21 và TSK-S3-15                                          │
 │    3. A2 từ 2026-10-26: TSK-S2-11 (LiteLLM)                                            │
 │    4. V3: TSK-S3-14 (PyPI) → đo TTFV (Tiêu chí 1) · S3-16, S3-17, S3-19, S3-20         │
 │    5. Cổng nhu cầu mềm 2026-10-25 (Q-20, TODOS.md #19) — demo: run + replay            │
@@ -590,7 +590,7 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 | **TSK-S5-05** | Tối ưu bộ nhớ theo ngân sách đã chốt ở Q-3 | NFR-RES-01, NFR-RES-02 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/sdkconfig.defaults` |
 | **TSK-S5-06** | **Client streaming âm thanh lên provider cloud**: đẩy khung Opus lên STT, nhận luồng TTS về, tái dùng hợp đồng kết nối của TSK-S2-11 (CR-1.0) | FR-PER-07, FR-GW-04 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/audio/provider_client.c` |
 | **TSK-S5-07** | **Fallback cục bộ trên `esp32s3`** (Q-14): bộ nhận diện lệnh cố định dùng **cùng ngữ pháp lệnh** với `sim` (TSK-S2-08). Backend chọn ở Khối 1b giữa **ESP-SR MultiNet** (lệnh offline, vài chục–vài trăm câu) và **TFLite Micro / ESP-NN** (KWS tự train < 500 KB). **Điều kiện trước Sprint 5:** xác minh giấy phép ESP-SR (theo hiểu biết: chỉ cho dùng trên SoC Espressif), ghi vào `NOTICE`, không lọt vào gói Python ([`TODOS.md`](TODOS.md) #17); giấy phép không hợp ⇒ dùng TFLite Micro / ESP-NN (Apache-2.0). Số đo bộ nhớ lấy từ spike TSK-S1-10 | FR-MDL-03, FR-ACE-03, NFR-RES-01 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/fallback/` |
-| **TSK-S5-08** | **`audio.in` / `audio.out` trên `linux`:** `sounddevice` (PortAudio, MIT); AEC phần mềm PipeWire `module-echo-cancel` ⇒ `linux-rpi5` khai `aec = true` và agent mẫu build được cho `linux` (Q-22). CI: backend tệp/PCM (runner không có `snd-aloop`); Pi: `snd-aloop` + HAT I2S hằng đêm | FR-TGT-02, FR-PER-01 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` · `boards/linux-rpi5.toml` |
+| **TSK-S5-08** | **`audio.in` / `audio.out` trên `linux`:** `sounddevice` (PortAudio, MIT); AEC phần mềm PipeWire `module-echo-cancel` (Q-22): `audio.in` đọc nút `source` đã khử vang, `audio.out` phát vào nút `sink` của module; cấu hình drop-in `pipewire.conf.d/neuroedge-echo-cancel.conf` giao kèm; `linux-rpi5` khai `aec = true` **chỉ** khi đạt tiêu chí đo `simulation_coverage.md` §6 ⇒ agent mẫu build được cho `linux`. CI: backend tệp/PCM (runner không có `snd-aloop`); Pi: `snd-aloop` + HAT I2S hằng đêm | FR-TGT-02, FR-PER-01 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` · `boards/linux-rpi5.toml` |
 | **TSK-S5-09** | **`sensor.read` và `display` trên `linux`:** cảm biến qua sysfs hwmon + IIO; CI dùng `i2c-stub` + `lm75` (IIO chỉ trên Pi); màn hình ghi `/dev/fb*` trên Pi, khung trong bộ nhớ + digest trong CI | FR-TGT-02, FR-HAL-01 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` · `scripts/` |
 | **TSK-S3-13** | **Tích hợp ASR/TTS qua provider cloud** cho `sim` và `linux` — **chuyển từ Sprint 3** (wedge `sim` gõ chữ không cần, Q-15), làm cùng TSK-S5-06 | FR-MDL-09, FR-PER-07 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/providers/` |
 
@@ -832,7 +832,7 @@ Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho
 | **Q-19** | Lịch Sprint 2–3 theo ngày tuyệt đối · ✅ **2026-09-23** | A1 **2026-09-28 → 2026-10-25** · A2 **2026-10-26 → 2026-11-15** · Sprint 4 mở **2026-11-16** | Bỏ quy ước "Tuần N ở đây = Tuần N+1". M1 trễ ~2 tuần; Khối 1b lùi tương ứng. V1 ~6,6–7,1 tuần-người trong 7 tuần |
 | **Q-20** | Cổng nhu cầu mềm · ✅ **2026-09-23** | Cổng **2026-10-25** (cuối A1), **không chặn A2** | CEO-X2..X5 và CEO-T1..T4 thành câu hỏi kinh doanh mở, trưởng nhóm chủ trì ([`TODOS.md`](TODOS.md) #19) |
 | **Q-21** | Mô phỏng theo tầng bằng OSS · 🟡 **đề xuất, chờ kỹ thuật trưởng** | SimHAL · gpio-sim · âm thanh tệp/PCM (runner không có `snd-aloop`) · i2c-stub + lm75 · khung hình + digest · C và LVGL build trên host · Espressif QEMU · bo mạch thật; không Renode, không Wokwi | Walker C (TSK-S4-02) kiểm được trên mỗi PR trước khi bo mạch về — thêm TSK-S4-07, S4-08. Proposal §3.2 |
-| **Q-22** | AEC phần mềm trên `linux` · 🟡 **đề xuất, chờ kỹ thuật trưởng** | PipeWire `module-echo-cancel` ⇒ `linux-rpi5` khai `aec = true` | Agent mẫu hôm nay không build được cho `linux` (FR-TGT-02). Làm ở TSK-S5-08 |
+| **Q-22** | AEC phần mềm trên `linux` · ✅ **2026-09-23** (phương án A) | PipeWire `module-echo-cancel` (`aec/libspa-aec-webrtc`); `audio.in` đọc nút `source`, `audio.out` phát vào nút `sink`; `linux-rpi5` khai `aec = true` chỉ khi đo đạt | Đóng khoảng FR-TGT-02 ở TSK-S5-08. Tiêu chí đo: `simulation_coverage.md` §6 |
 
 **Hệ quả trực tiếp lên Sprint 1:** Q-1, Q-2 và Q-3 đã chốt nghĩa là đội có thể đặt bo mạch, dựng kho mã và bắt đầu spike ngay Tuần 0 mà không chờ quyết định nào.
 
