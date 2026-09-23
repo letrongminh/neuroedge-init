@@ -64,13 +64,14 @@ Cài đặt (Python 3.11+): [`python/README.md`](python/README.md). Rồi, từ 
 
 ```bash
 neuroedge gate lint                     # phân giải mọi gate mẫu, kiểm 5 nguyên tắc kế thừa
-neuroedge build --target sim --board sim-default --agent fixtures/agents/villa-concierge/agent.toml
-cd python && python -m pytest -q        # toàn bộ bộ test: 0 failed, 0 skipped
+neuroedge run -c "mở cửa phòng 101"     # gate cho phép: chốt cửa ảo kích 30 giây
+neuroedge run -c "mở cửa phòng 202"     # sai phòng: gate chặn, chân không nhúc nhích, báo lễ tân
 ```
 
-Thử `--target linux --board linux-rpi5` ở lệnh thứ hai: build bị từ chối vì bo mạch
-không có khử vang phần cứng — lỗi nêu ở đâu, vì sao, sửa thế nào. Mọi lệnh và đầu ra kỳ
-vọng: [`CHANGELOG.md`](CHANGELOG.md) §2.
+Bỏ `-c` để vào vòng lặp gõ chữ (`:help` xem lệnh) — không mạng, không khoá API. Thêm
+`--board linux-rpi5`: agent bị từ chối trước khi chạy vì bo mạch không có khử vang phần
+cứng — lỗi nêu ở đâu, vì sao, sửa thế nào. `neuroedge new my-agent` tạo dự án của bạn.
+Mọi lệnh và đầu ra kỳ vọng: [`CHANGELOG.md`](CHANGELOG.md) §2.
 
 ## Đọc gì tiếp theo
 

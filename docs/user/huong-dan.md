@@ -13,8 +13,14 @@ không cần mạng, kết quả tất định (`Q-15`).
 
 ## 2. Hôm nay dùng được gì
 
-Phần **chính sách gate** và **lõi thực thi trên `sim`** đã có (mã A1, 2026-09-23);
-vòng lặp gõ chữ `neuroedge run` là việc còn lại. Cú pháp từng lệnh: `CHANGELOG.md` §2.3.
+Phần **chính sách gate**, **lõi thực thi trên `sim`** và **vòng lặp gõ chữ** đã có.
+Cú pháp từng lệnh: `CHANGELOG.md` §2.3. Thử ngay trong kho:
+
+```bash
+neuroedge run -c "mở cửa phòng 101"    # ✓ ALLOW, door_lock PULSED 30s
+neuroedge run -c "mở cửa phòng 202"    # ✗ BLOCK room_matches → lễ tân
+neuroedge new my-agent                 # dự án mới: build được, test tự qua
+```
 
 | Việc | Lệnh | Trạng thái |
 |:---|:---|:---:|
@@ -26,7 +32,10 @@ vòng lặp gõ chữ `neuroedge run` là việc còn lại. Cú pháp từng l�
 | Liệt kê / xem profile bo mạch | `neuroedge board list` · `neuroedge board show` | ✅ |
 | Đối chiếu năng lực agent ↔ bo mạch, biên dịch gate | `neuroedge build` | ✅ |
 | Chạy agent có gate trên `sim` từ mã Python (`c.do()` trên `SimHAL`) | — (thư viện) | ✅ |
-| Chạy agent có gate trên `sim` từ dòng lệnh | `neuroedge run` | ⏳ TSK-S3-06 |
+| Chạy agent có gate trên `sim` từ dòng lệnh (gõ chữ, không mạng) | `neuroedge run` | ✅ |
+| Đọc một gate bằng lời: tiêu chí từ đâu, điều gì bị siết chặt | `neuroedge gate explain` | ✅ |
+| Tạo dự án agent mới có sẵn gate, action, test | `neuroedge new` | ✅ |
+| Chạy agent trên `linux` | `neuroedge run --target linux` | ⏳ TSK-S3-05 |
 | Hành trình 10 phút (TTFV) | — | ⏳ mốc M1 |
 
 Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.
@@ -35,8 +44,9 @@ Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.
 
 Nói thẳng để bạn không mất thời gian:
 
-- `neuroedge run` **thoát mã 2** — engine và HAL `sim` đã có, vòng lặp gõ chữ trên CLI
-  là `TSK-S3-06`. Không có "PASS" giả (bất biến 10, `CHANGELOG.md` §3.3).
+- `neuroedge run` mới chạy trên `sim`, gõ chữ trên terminal; `--target linux` **thoát mã 2**
+  (`TSK-S3-05`). Không có "PASS" giả (bất biến 10, `CHANGELOG.md` §3.3).
+- `neuroedge test` và `neuroedge record` **thoát mã 2**; test của dự án chạy bằng `pytest`.
 - Chưa có tương đương target: `neuroedge verify` mới kiểm ở mức lược đồ.
 - Danh sách đầy đủ: `CHANGELOG.md` §3.7.
 
