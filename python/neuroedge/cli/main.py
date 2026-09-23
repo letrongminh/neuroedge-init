@@ -52,7 +52,6 @@ err_console = Console(stderr=True)
 # Sprint in which each unimplemented command gets its engine, from the roadmap.
 PENDING = {
     "test": ("TSK-S3-03", "Sprint 3"),
-    "record": ("TSK-S3-01", "Sprint 3"),
 }
 
 
@@ -571,6 +570,35 @@ def _default_agent() -> Path:
     return sample if not here.is_file() and sample.is_file() else here
 
 
+def _start_session(verb: str, agent, target: str, board: str, registry, events=None):
+    """Load the agent for an interactive `sim` session, or exit with the right code."""
+    from ..sim import SimSession
+
+    if target != "sim":
+        err_console.print(
+            Panel(
+                f"`neuroedge {verb} --target {escape(target)}` is not implemented yet.\n\n"
+                "Interactive sessions run on `sim` today. On `linux`, replay a trace "
+                "instead: `neuroedge replay <trace> --target linux` (TSK-S3-05).",
+                title=f"[yellow]Not implemented: {verb} --target {escape(target)}[/yellow]",
+                border_style="yellow",
+            )
+        )
+        raise typer.Exit(code=2)
+    try:
+        return SimSession.load(
+            agent or _default_agent(),
+            board_id=board,
+            registry=GateRegistry(registry) if registry is not None else None,
+            events=events,
+        )
+    except BuildFailed as failed:
+        _fail_build(failed)
+    except NeuroEdgeError as error:
+        _fail(error)
+    raise AssertionError("unreachable")  # _fail* always exit
+
+
 @app.command()
 def run(
     agent: Path = typer.Option(
@@ -595,33 +623,9 @@ def run(
     Input is typed text matched by the agent's commands.toml — no network, no
     key (Q-15). The agent is build-checked against the board first.
     """
-    from ..sim import SimSession
     from .run import run_session
 
-    if target != "sim":
-        err_console.print(
-            Panel(
-                f"`neuroedge run --target {escape(target)}` is not implemented yet.\n\n"
-                "The linux HAL is [bold]TSK-S3-05[/bold] (Sprint 3); `esp32s3` runs are "
-                "Sprint 4. `--target sim` works today.",
-                title=f"[yellow]Not implemented: run --target {escape(target)}[/yellow]",
-                border_style="yellow",
-            )
-        )
-        raise typer.Exit(code=2)
-
-    try:
-        session = SimSession.load(
-            agent or _default_agent(),
-            board_id=board,
-            registry=GateRegistry(registry) if registry is not None else None,
-        )
-    except BuildFailed as failed:
-        _fail_build(failed)
-        return
-    except NeuroEdgeError as error:
-        _fail(error)
-        return
+    session = _start_session("run", agent, target, board, registry)
     code = run_session(session, console, err_console, command=command, trace_out=trace_out)
     raise typer.Exit(code=code)
 
@@ -671,11 +675,32 @@ def test():
 
 @app.command()
 def record(
-    target: str = typer.Option("esp32s3", "--target", "-t", help="Target to record from"),
-    out: Path = typer.Option(Path("traces/"), "--out", "-o", help="Output directory"),
+    agent: Path = typer.Option(
+        None, "--agent", "-a", help="Path to agent.toml (default as for `run`)"
+    ),
+    target: str = typer.Option("sim", "--target", "-t", help="Target to record on"),
+    board: str = typer.Option("sim-default", "--board", "-b", help="Board profile id"),
+    out: Path = typer.Option(Path("traces"), "--out", "-o", help="Directory, or a .json path"),
+    command: str = typer.Option(None, "--command", "-c", help="Record one typed command and exit"),
+    anonymize: bool = typer.Option(
+        False, "--anonymize", help="Hash raw text at the source (FR-TRC-07); verdicts unchanged"
+    ),
+    registry: Path | None = REGISTRY_OPTION,
 ):
-    """Record a live session to a trace file (pending TSK-S3-01)."""
-    _not_yet("record")
+    """
+    Record a session to a trace file that `trace validate` and `replay` accept.
+
+    Same session as `run`; on exit the trace is validated against trace.v1 and
+    written to `--out` (default `traces/<session_id>.json`).
+    """
+    from ..testing.recorder import TraceRecorder
+    from .run import run_session
+
+    recorder = TraceRecorder(anonymize=anonymize)
+    session = _start_session("record", agent, target, board, registry, events=recorder)
+    path = out if out.suffix == ".json" else out / f"{recorder.session_id}.json"
+    code = run_session(session, console, err_console, command=command, trace_out=path)
+    raise typer.Exit(code=code)
 
 
 if __name__ == "__main__":
