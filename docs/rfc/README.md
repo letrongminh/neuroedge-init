@@ -22,4 +22,4 @@ phê duyệt là **kỹ thuật trưởng**, vì đó là tầng an toàn.
 | RFC | Tiêu đề | Lược đồ | Trạng thái |
 |:---|:---|:---|:---:|
 | [0001](0001-gate-schema-conditional-requirements.md) | Yêu cầu trường có điều kiện cho gate kế thừa | `gate.v1` | ✅ Đã chấp thuận |
-| [0002](0002-mo-rong-target-va-nguyen-thuy-thi-giac.md) | Mở rộng danh sách target và nguyên thủy thị giác | `board.v1` · `trace.v1` | 🟡 Đang thảo luận |
+| [0002](0002-mo-rong-target-va-nguyen-thuy-thi-giac.md) | Mở rộng danh sách target | `board.v1` · `trace.v1` (chỉ enum `target`) | 🟡 Đang thảo luận |

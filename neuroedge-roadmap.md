@@ -246,7 +246,7 @@ Từ **cuối Tuần 2**, mọi thay đổi đối với lược đồ gate ho�
 
 Đây là quy tắc nghiêm ngặt nhất của toàn bộ dự án. Lược đồ trôi nổi làm sụp đổ mệnh đề trung tâm.
 
-**RFC đang mở:** [RFC-0002](docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md) đề xuất mở rộng enum `target` ở `board.v1` và `trace.v1`, và thêm nguyên thủy `vision.in` — phục vụ Giai đoạn 2. RFC ở trạng thái *đang thảo luận*; **lược đồ chưa đổi và không được đổi cho tới khi RFC được phê duyệt**. Roadmap này không phụ thuộc vào kết quả RFC đó.
+**RFC đang mở:** [RFC-0002](docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md) đề xuất mở rộng enum `target` ở `board.v1` và `trace.v1`, và đưa bậc target vào mã lõi (`TARGET_TIERS`) — phục vụ Giai đoạn 2. Nguyên thủy `vision.in` đã tách khỏi RFC này, sang một RFC riêng ở Khối V1b (RFC-0002 §9.1). RFC ở trạng thái *đang thảo luận*; **lược đồ chưa đổi và không được đổi cho tới khi RFC được phê duyệt**. Roadmap này không phụ thuộc vào kết quả RFC đó.
 
 ---
 ## 3. Chiến lược tái sử dụng mã nguồn mở
@@ -855,7 +855,7 @@ Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho
 | **2** | **Q-11** | Phê duyệt ngoại lệ giấy phép: Hawkbit EPL-2.0, EMQX BSL, LiteLLM enterprise | Chặn việc thiết kế phụ thuộc cho Khối 2. Phải xong trước khi port bất kỳ dòng nào (§3.3). **CR-1.0 làm phần LiteLLM gấp hơn:** nó chuyển từ dịch vụ máy chủ sang thư viện **phân phối kèm sản phẩm** trong lõi MIT, nên nghĩa vụ giấy phép phải xét lại ở phạm vi phân phối, và cần xong trước Sprint 2 chứ không phải trước Khối 2 | Kỹ thuật trưởng | ⏳ Đang mở |
 | **2** | **Q-10** | Mức độ phụ thuộc vào LiteLLM: dùng như thư viện định tuyến hay tích hợp sâu | **Hạn đẩy sớm từ Tháng 3 lên Tuần 2 theo CR-1.0:** lớp provider nay thuộc lõi OSS và làm ngay ở Sprint 2 (TSK-S2-11), không còn chờ Khối 2 | Kỹ thuật nền tảng | ⏳ Đang mở |
 | **Tháng 3** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng | ⏳ Đang mở |
-| **Tháng 6** | **RFC-0002** | Mở rộng enum `target` và thêm nguyên thủy `vision.in` cho Giai đoạn 2 | Không chặn roadmap này. Chặn Khối V1a của Giai đoạn 2, và phải xong trước khi viết bất kỳ board profile mới nào | Kỹ thuật trưởng | ⏳ Đang mở |
+| **Tháng 6** | **RFC-0002** | Mở rộng enum `target` và đưa bậc target vào mã lõi (`TARGET_TIERS`) cho Giai đoạn 2; `vision.in` tách sang RFC riêng ở V1b | Không chặn roadmap này. Chặn Khối V1a của Giai đoạn 2, và phải xong trước khi viết bất kỳ board profile mới nào | Kỹ thuật trưởng | ⏳ Đang mở |
 | **Tháng 3** | Q-6 | Chính sách lưu trữ vết ghi: thời hạn và hạn mức | Ảnh hưởng chi phí vận hành và cam kết SLA | Sản phẩm | ⏳ Đang mở |
 
 **Q-11 là quyết định gấp nhất trong nhóm còn mở.** Ba thành phần của Khối 2 đều nằm ngoài danh sách giấy phép cho phép, và việc thiết kế phụ thuộc không nên bắt đầu trước khi có phê duyệt bằng văn bản. Q-11 cũng là **Tiêu chí ra số 6 của Sprint 1**, nên nó đang chặn việc đóng Sprint 1 chứ không chỉ chặn Khối 2. Sau CR-1.0, phần LiteLLM của Q-11 còn chặn thêm **TSK-S2-11 ở Sprint 2**: không được viết một dòng nào của lớp provider trước khi ranh giới giấy phép ở phạm vi phân phối được phê duyệt.

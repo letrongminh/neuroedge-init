@@ -1142,7 +1142,7 @@ Lộ trình được cấu trúc thành các khối công việc kỹ thuật, g
                 [ KHỐI 4: ỨNG DỤNG DỌC AURA ]  (Tháng 8–14)
                          │                 │
                          │                 └──► [ GIAI ĐOẠN 2 ] (Tháng 9–24)
-                         │                      • 2a Đặt chỗ kiến trúc (RFC-0002)
+                         │                      • 2a Mở danh sách target (RFC-0002)
                          │                      • 2b Vision, phủ rộng phần cứng
                          │                      (song song; kích hoạt theo mốc AURA)
                          ▼
@@ -1269,8 +1269,8 @@ Giai đoạn 2 **chạy song song Khối 4**, không nối tiếp: AURA triển 
 
 | Khối | Trọng tâm | Điều kiện kích hoạt |
 |:---|:---|:---|
-| **V1a — Đặt chỗ kiến trúc** | RFC-0002: mở enum target, thêm nguyên thủy `vision.in`, mở trường vết ghi cho bằng chứng thị giác. **Không viết driver, không đụng TTFV.** | RFC-0002 được phê duyệt. Không chờ AURA |
-| **V1b — Vision trên `linux`** | HAL thị giác, Action CI cho khung hình, tăng tốc NPU trên bo mạch giá thấp | Có nhu cầu camera **đo được** từ khách hàng AURA thật |
+| **V1a — Mở danh sách target** | RFC-0002: mở enum target theo phân tầng bậc; bậc máy đọc được trong mã lõi. Nguyên thủy `vision.in` và bằng chứng thị giác trong vết ghi đi qua RFC riêng ở V1b. **Không viết driver, không đụng TTFV.** | RFC-0002 được phê duyệt; hợp nhất không trước Tháng 9. Không chờ AURA |
+| **V1b — Vision trên `linux`** | RFC `vision.in`, HAL thị giác, Action CI cho khung hình, tăng tốc NPU trên bo mạch giá thấp | Có nhu cầu camera **đo được** từ khách hàng AURA thật |
 | **V2 — Vision trên `jetson`** | Nâng target `jetson` lên bậc 2, thị giác thời gian thực chất lượng cao | V1b đạt tiêu chí ra |
 | **V3 — Đa phương thức** | Hợp nhất thoại và thị giác trong một máy trạng thái; gate đa phương thức | V2 đạt tiêu chí ra **và** RFC ngữ nghĩa gate thị giác được phê duyệt |
 | **P1 — Bộ công cụ port cộng đồng** | Xuất bản tài liệu, bộ vector tuân thủ và khung port để cộng đồng tự đưa NeuroEdge lên `stm32`, `rp2350` | V1b đạt tiêu chí ra |
@@ -1294,7 +1294,7 @@ Danh mục loại trừ rõ ràng nhằm giữ vững sự tập trung của s�
 | **Marketplace thương mại có thu phí** | Tạm dừng đến khi qua Cột mốc xác thực | PF-3 | **Đánh đổi:** Chưa tạo doanh thu hoa hồng sớm.<br>**Lợi ích:** Tránh lãng phí tài nguyên xây dựng một sàn giao dịch khi cộng đồng chưa có nhu cầu trao đổi thực tế. |
 | **Thanh toán tự động giữa các agent (Agent-to-agent pay)** | Tạm dừng đến khi qua Cột mốc xác thực | PF-4 | **Đánh đổi:** Tạm gác lại một xu hướng công nghệ mới nổi.<br>**Lợi ích:** Loại bỏ hoàn toàn gánh nặng xin giấy phép tài chính và nghĩa vụ phòng chống rửa tiền phức tạp. |
 | **Chương trình chứng nhận phần cứng có thu phí** | Tạm dừng đến khi qua Cột mốc xác thực | PF-3 | **Đánh đổi:** Bỏ qua một nguồn thu nhỏ ban đầu.<br>**Lợi ích:** Tránh cam kết chất lượng khi tổ chức chưa hoàn thiện quy trình kiểm chuẩn độc lập. |
-| **Thị giác máy tính chuyên sâu (Camera, NPU)** | Đưa vào **Giai đoạn 2** (§8.9), tách hai bước | PF-1, PF-2 | **Đánh đổi:** Thị giác không rút ngắn TTFV nên không thỏa PF-1; hiện thực đầy đủ ngay sẽ kéo dài trải nghiệm 10 phút đầu.<br>**Lợi ích:** Tách phần **đặt chỗ kiến trúc** — nguyên thủy `vision.in` và trường vết ghi cho bằng chứng thị giác — ra làm trước, vì đây là thay đổi lược đồ đã đóng băng, thỏa PF-2 (không bổ sung muộn được mà không viết lại). Phần hiện thực chờ nhu cầu đo được từ khách hàng AURA. TTFV của thoại và điều khiển vẫn giữ dưới 10 phút. |
+| **Thị giác máy tính chuyên sâu (Camera, NPU)** | Đưa vào **Giai đoạn 2** (§8.9), tách hai bước | PF-1, PF-3 | **Đánh đổi:** Thị giác không rút ngắn TTFV nên không thỏa PF-1; hiện thực đầy đủ ngay sẽ kéo dài trải nghiệm 10 phút đầu.<br>**Lợi ích:** Danh sách target mở trước (RFC-0002, nới lỏng lược đồ). Nguyên thủy `vision.in` và bằng chứng thị giác trong vết ghi chỉ chốt ở V1b, khi có camera thật: chốt hợp đồng tham số khi chưa có phần cứng là đoán, và sửa về sau là siết chặt. Phần hiện thực chờ nhu cầu đo được từ khách hàng AURA. TTFV của thoại và điều khiển vẫn giữ dưới 10 phút. |
 | **Hỗ trợ thêm Jetson** | Đưa vào **Giai đoạn 2** ở bậc 2 (§3.2, §8.9) | PF-3 | **Đánh đổi:** Mở rộng danh mục phần cứng làm tăng bề mặt bảo trì của đội lõi.<br>**Lợi ích:** Phân tầng bậc giữ nguyên tắc tương đương mà không pha loãng cam kết: bậc 1 vẫn là nơi mọi ngưỡng chất lượng trỏ tới, Jetson ở bậc 2 chỉ cam kết miền phán quyết. Điều kiện kích hoạt vẫn là nhu cầu đo được từ khách hàng thật. |
 | **Chuẩn Matter, Apple HomeKit** | Tạm hoãn sau 12 tháng | PF-3 | **Đánh đổi:** Chưa tích hợp vào hai hệ sinh thái nhà thông minh lớn.<br>**Lợi ích:** Đây là bài toán giao thức ứng dụng, không phải bài toán tương đương môi trường; tách khỏi việc mở rộng target giúp cả hai việc gọn hơn. |
 | **Đăng nhập doanh nghiệp SSO/SAML, chứng chỉ SOC 2** | Tạm hoãn sau 12 tháng | PF-3 | **Đánh đổi:** Chưa tiếp cận ngay các hợp đồng doanh nghiệp lớn có yêu cầu khắt khe.<br>**Lợi ích:** Tập trung tối đa nguồn lực làm mịn sản phẩm trước khi bước vào các chu kỳ bán hàng kéo dài. |

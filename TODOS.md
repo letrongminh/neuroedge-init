@@ -28,3 +28,13 @@ cuối nên nó thu hết) — xem `docs/designs/giai-doan-1-wedge-truoc-mcu-sau
 | 10 | **Vector tương đương Python ↔ C trên phần cứng thật.** Trong 5 tuần chỉ phát cây + bảng sự thật host (mô hình C bằng đặc tả), chưa chạy trên silicon | Chưa có bo mạch (`TSK-S1-10`) — cùng rào cản với Approach B | **Bo mạch về**, hoặc Sprint 4–5 (Khối 1b) |
 | 11 | **Bất biến phiên bản phía registry (server-side).** `TSK-S3-21` ghim `extends` bằng digest **phía client**; nó không ngăn được việc tái publish trên một registry không kiểm soát | Chưa có registry (Khối 3) | **Khối 3**, hoặc gate công khai đầu tiên được publish |
 | 12 | **`on_block.ask.message` máy kiểm được.** B.3 cho phép văn bản tự do; `TSK-S2-13` chỉ kiểm `action` + `to:` | Không có ngữ nghĩa kiểm được cho văn bản; `ask` chỉ ghi vết ghi trong A1 | Khi có bề mặt tương tác `ask` (`TSK-S2-07`, Sprint 5) |
+
+## Từ review RFC-0002 (2026-09-23)
+
+Nguồn: review thủ công theo phương pháp `/autoplan` — xem
+`docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md` §Review record.
+
+| # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
+|:---:|:---|:---|:---|
+| 13 | **`neuroedge board check <file>` báo đạt/thiếu so với bậc**, chạy bộ vector tuân thủ trên một profile bậc 3 (`E4`) | Bộ vector tuân thủ chưa tồn tại; `board validate <path>` (kiểm tĩnh) đã phủ bước đầu | **Khối P1** (bộ công cụ port cộng đồng) mở, hoặc bản port bậc 3 đầu tiên được gửi tới |
+| 14 | **Bất biến `sim` không giàu hơn bo mạch tham chiếu (#7) khi có `vision.in`.** `sim-default` sao Box-3 nên không được khai camera, mà Box-3 chưa có camera, và RFC `vision.in` về sau có thể cấm khai `vision_in` trên esp32s3 tới khi đo ngân sách bộ nhớ (RFC-0002 §9.1) → agent thị giác không chạy được trên target chính thức, Action CI cho khung hình không có đường `sim` (`R6`) | Chưa có agent thị giác nào; cách sửa (mỗi profile `sim` sao đúng một bo mạch tham chiếu, ví dụ `sim-vision` ↔ `linux` có camera) cần bo mạch tham chiếu thị giác | **TSK-V1b-02** (camera ảo trong `sim`) bắt đầu |

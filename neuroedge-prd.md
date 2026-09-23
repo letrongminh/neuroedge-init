@@ -254,7 +254,7 @@ HAL là hợp đồng kiểm tra hai chiều: bo mạch khai báo năng lực cu
 
 | Mã | Yêu cầu | Ưu tiên | Tiêu chí nghiệm thu | Nguồn |
 |:---|:---|:---:|:---|:---:|
-| **FR-HAL-01** | Hệ thống cung cấp đúng 5 nguyên thủy phần cứng: `audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display`. Tập nguyên thủy **đóng cho v1.x**; mở rộng chỉ qua RFC *(RFC-0002 đề xuất `vision.in` là nguyên thủy tùy chọn theo bo mạch cho Giai đoạn 2)* | P0 | Cả 5 nguyên thủy có hiện thực đầy đủ trên các môi trường bậc 1 | §3.3 |
+| **FR-HAL-01** | Hệ thống cung cấp đúng 5 nguyên thủy phần cứng: `audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display`. Tập nguyên thủy **đóng cho v1.x**; mở rộng chỉ qua RFC *(nguyên thủy thị giác `vision.in`, tùy chọn theo bo mạch, dự kiến qua một RFC riêng ở Khối V1b của Giai đoạn 2 — RFC-0002 §9.1)* | P0 | Cả 5 nguyên thủy có hiện thực đầy đủ trên các môi trường bậc 1 | §3.3 |
 | **FR-HAL-02** | Bo mạch khai báo năng lực qua tệp `board.toml` theo schema chuẩn | P0 | Tệp sai schema bị từ chối kèm thông báo chỉ rõ trường lỗi | §4.2 |
 | **FR-HAL-03** | Agent khai báo yêu cầu năng lực qua khối `[requires]` trong `agent.toml` | P0 | Thiếu khối `[requires]` khi agent có hành động vật lý → build dừng | §4.3 |
 | **FR-HAL-04** | Công cụ đối chiếu năng lực chạy **lúc build**, không lúc chạy | P0 | Bất tương thích làm `neuroedge build` thoát với mã lỗi khác 0, không sinh firmware | §4.9 |
@@ -273,7 +273,7 @@ HAL là hợp đồng kiểm tra hai chiều: bo mạch khai báo năng lực cu
 | **FR-TGT-05** | Chuyển môi trường qua tham số `--target`; **cấm** rẽ nhánh logic theo target trong mã agent | P0 | Rà soát mã: không tồn tại biểu thức điều kiện theo tên target trong lớp ứng dụng | §4.1 |
 | **FR-TGT-06** | `sim` cung cấp giao diện web hiển thị cảm biến ảo và trạng thái cơ cấu chấp hành | P0 | Mở được trong trình duyệt, phản ánh đúng trạng thái chân GPIO ảo theo thời gian thực | §4.10 |
 | **FR-TGT-07** | `sim` mô phỏng được kịch bản cảm biến và điều kiện mạng suy giảm | P1 | Khai báo được kịch bản mất mạng để kiểm thử fail-closed | §4.7 |
-| **FR-TGT-08** | **Phân tầng target:** mỗi môi trường thực thi thuộc đúng một bậc cam kết — bậc 1 chính thức (`sim`, `linux`, `esp32s3`), bậc 2 mở rộng do đội lõi bảo trì, bậc 3 do cộng đồng port và tự kiểm chứng. Bậc được khai báo tường minh, không suy diễn | P0 | Mỗi target có bậc ghi trong tài liệu và trong `board.toml`; ngưỡng `verify` 100% chỉ ràng buộc bậc 1; bậc 3 không chặn phát hành | §3.2 |
+| **FR-TGT-08** | **Phân tầng target:** mỗi môi trường thực thi thuộc đúng một bậc cam kết — bậc 1 chính thức (`sim`, `linux`, `esp32s3`), bậc 2 mở rộng do đội lõi bảo trì, bậc 3 do cộng đồng port và tự kiểm chứng. Bậc được khai báo tường minh, không suy diễn | P0 | Mỗi target có bậc ghi trong tài liệu và trong bảng bậc của mã lõi (`TARGET_TIERS`, RFC-0002 §3b); `board.toml` không tự khai bậc; ngưỡng `verify` 100% chỉ ràng buộc bậc 1; bậc 3 không chặn phát hành | §3.2 |
 
 **Giới hạn đã biết, phải nêu rõ trong tài liệu kỹ thuật:** `sim` không mô phỏng phản xạ âm học phòng vang, nhiễu micro, beamforming mảng micro, và phân mảnh bộ nhớ trên vi điều khiển. Các nhóm lỗi này được kiểm soát bằng kiểm thử nightly trên bo mạch thật (NFR-REL-03).
 
@@ -726,7 +726,7 @@ Danh mục loại trừ tường minh. Mọi đề xuất thuộc danh mục nà
 | Marketplace thương mại có thu phí | Chặn | PF-3 | Đạt toàn bộ cột mốc G1–G4 |
 | Thanh toán tự động giữa agent | Chặn | PF-4 | Đạt cột mốc và có đánh giá pháp lý riêng |
 | Chương trình chứng nhận phần cứng có thu phí | Chặn | PF-3 | Đạt cột mốc và có quy trình kiểm chuẩn độc lập |
-| Thị giác máy tính (camera, NPU) | **Đưa vào Giai đoạn 2**, tách hai bước | PF-1, PF-2 | **2a đặt chỗ kiến trúc:** RFC-0002 được phê duyệt · **2b hiện thực:** nhu cầu camera đo được từ khách hàng thật, TTFV thoại vẫn < 10 phút |
+| Thị giác máy tính (camera, NPU) | **Đưa vào Giai đoạn 2**, tách hai bước | PF-1, PF-3 | **2a mở danh sách target:** RFC-0002 được phê duyệt · **2b hiện thực** (gồm RFC nguyên thủy `vision.in`): nhu cầu camera đo được từ khách hàng thật, TTFV thoại vẫn < 10 phút |
 | Jetson | **Đưa vào Giai đoạn 2** ở bậc 2 (FR-TGT-08) | PF-3 | RFC-0002 được phê duyệt và có nhu cầu đo được từ khách hàng thật |
 | Matter, HomeKit | Hoãn sau 12 tháng | PF-3 | Có nhu cầu đo được từ khách hàng thật |
 | SSO/SAML, chứng chỉ SOC 2 | Hoãn sau 12 tháng | PF-3 | Có hợp đồng doanh nghiệp yêu cầu cụ thể |
