@@ -198,10 +198,11 @@ def test_verify_passes_and_states_what_it_did_not_check(invoke):
 # --- replay ---------------------------------------------------------------
 
 
-def test_replay_validates_and_flags_that_it_did_not_execute(invoke, traces_dir):
-    result = invoke("replay", str(traces_dir / "happy-path.json"))
+@pytest.mark.parametrize("name", ["happy-path", "unverified_attempt", "network_offline"])
+def test_replay_executes_each_canonical_trace_and_matches_it(invoke, traces_dir, name):
+    result = invoke("replay", str(traces_dir / f"{name}.json"))
     assert result.exit_code == 0, result.output
-    assert "not executed on target" in result.output.replace("\n", " ")
+    assert "decisions match the recording" in result.output
 
 
 def test_replay_rejects_an_invalid_trace(invoke, traces_dir):

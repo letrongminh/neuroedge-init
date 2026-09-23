@@ -24,6 +24,7 @@ from .assertions import (
     assert_never_pulsed,
     assert_pin_pulsed,
 )
+from .golden import GoldenComparator, GoldenDiffResult, assert_matches_golden, safety_view
 from .player import (
     ActionState,
     GateState,
@@ -72,6 +73,8 @@ def scenario(
 __all__ = [
     "ActionState",
     "GateState",
+    "GoldenComparator",
+    "GoldenDiffResult",
     "RecordedStep",
     "ReplayResult",
     "ReplaySession",
@@ -81,9 +84,11 @@ __all__ = [
     "assert_escalated_to",
     "assert_gate_allowed",
     "assert_gate_blocked",
+    "assert_matches_golden",
     "assert_never_pulsed",
     "assert_pin_pulsed",
     "recorded_steps",
     "replay",
+    "safety_view",
     "scenario",
 ]

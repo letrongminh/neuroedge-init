@@ -11,6 +11,7 @@ up quoted as evidence.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -488,34 +489,93 @@ def verify(
 @app.command()
 def replay(
     trace_file: Path = typer.Argument(..., help="Trace JSON file"),
-    target: str = typer.Option("sim", "--target", "-t", help="Target to replay on"),
+    target: str = typer.Option("sim", "--target", "-t", help="Target to replay on: sim or linux"),
+    agent: Path = typer.Option(
+        None, "--agent", "-a", help="agent.toml that produced the trace (default: from metadata)"
+    ),
+    board: str = typer.Option(None, "--board", "-b", help="Board profile id (default per target)"),
+    golden: Path = typer.Option(
+        None, "--golden", "-g", help="Golden reference to compare against (default: the trace)"
+    ),
+    trace_out: Path = typer.Option(None, "--trace-out", help="Write the replayed trace here"),
+    registry: Path | None = REGISTRY_OPTION,
 ):
     """
-    Replay a recorded trace.
+    Replay a trace on a live HAL and compare its decisions with a golden reference.
 
-    Loads and validates the trace and prints its timeline. Executing it against
-    a live target HAL, and diffing the resulting verdicts against the recording,
-    is TSK-S3-02.
+    The recorded facts are fed back in; gate verdicts and pin commands are
+    recomputed on `--target`. Exit 0 when they match the golden (by default the
+    trace itself), 1 on any difference (FR-CI-02, FR-CI-04).
     """
+    from ..testing.golden import GoldenComparator, load_golden
+    from ..testing.player import TracePlayer, dump
+
     try:
-        trace = load_trace(trace_file)
+        player = TracePlayer(
+            trace_file,
+            target=target,
+            agent=agent,
+            board_id=board,
+            registry=GateRegistry(registry) if registry is not None else None,
+        )
+        result = asyncio.run(player.replay())
+        reference = load_golden(golden) if golden is not None else player.trace
     except NeuroEdgeError as error:
         _fail(error)
         return
 
+    metadata = player.trace["metadata"]
     console.print(
-        f"[bold]Replaying[/bold] [cyan]{trace_file}[/cyan] "
-        f"(recorded on [yellow]{trace['metadata']['target']}[/yellow])"
+        f"[bold]Replayed[/bold] [cyan]{escape(str(trace_file))}[/cyan] "
+        f"(recorded on {escape(metadata['target'])} / {escape(metadata['board_id'])}) "
+        f"on [bold]{escape(target)}[/bold] / {escape(result.hal.board.id)}"
     )
-    for event in trace["events"]:
-        console.print(
-            f"  +[{event['offset_ms']:>6}ms] [bold]{event['type']}[/bold]: "
-            f"{json.dumps(event['data'], ensure_ascii=False)}"
+    table = Table(title="Gate verdicts")
+    table.add_column("#", justify="right")
+    table.add_column("Gate", style="cyan")
+    table.add_column("Recorded")
+    table.add_column("Replayed", style="bold")
+    table.add_column("Reason")
+    begins = [
+        e["data"]["gate"] for e in result.replayed["events"] if e["type"] == "gate_evaluation_begin"
+    ]
+    for index, replayed in enumerate(result.gate_results):
+        recorded = result.steps[index].result.get("verdict") if index < len(result.steps) else "—"
+        style = "green" if replayed["verdict"] == recorded else "bold red"
+        table.add_row(
+            str(index + 1),
+            escape(begins[index] if index < len(begins) else "?"),
+            str(recorded),
+            f"[{style}]{replayed['verdict']}[/{style}]",
+            escape(str(replayed.get("reason", "—"))),
         )
-    console.print(
-        f"[yellow]Note:[/yellow] the trace was read and validated, but not executed on "
-        f"target [bold]{target}[/bold]. Execution against a live HAL is TSK-S3-02."
+    console.print(table)
+    commands = [e["data"] for e in result.replayed["events"] if e["type"] == "actuator_command"]
+    if commands:
+        for command in commands:
+            console.print(
+                f"  pin {escape(command['pin'])}: {command['operation']} {command['duration_ms']} ms"
+            )
+    else:
+        console.print("  no pin was driven")
+
+    if trace_out is not None:
+        dump(result, trace_out)
+        console.print(f"  replayed trace: {escape(str(trace_out))}")
+
+    diff = GoldenComparator().compare(result, reference)
+    if diff.ok:
+        what = escape(str(golden)) if golden is not None else "the recording"
+        console.print(f"[bold green]✓ decisions match {what}[/bold green]")
+        return
+    err_console.print(
+        f"[bold red]✗ NE4002 {len(diff.differences)} difference(s) from the golden reference"
+        + (" — SAFETY REGRESSION" if diff.unsafe else "")
+        + "[/bold red]"
     )
+    for difference in diff.differences:
+        err_console.print(f"  {escape(str(difference))}")
+    raise typer.Exit(code=1)
 
 
 @app.command()
