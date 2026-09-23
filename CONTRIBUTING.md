@@ -90,7 +90,7 @@ và 1b, đầu vào của `neuroedge verify`, và đối tượng của chữ k�
 | Sửa ngữ nghĩa phân giải gate (`gate_resolver.py`, `constraints.py`) | **RFC bắt buộc** |
 | Sửa ba tệp vết ghi chuẩn mực ở `fixtures/traces/` | **RFC bắt buộc** |
 | Thêm fixture mới (hợp lệ hoặc phản chứng) | PR thường |
-| Thêm profile bo mạch ở `boards/` | PR thường |
+| Thêm profile bo mạch ở `boards/` | PR thường — nhưng cần phần cứng thật để điền tham số. *Hiện `test_boards.py` chỉ nhận đúng ba profile bậc 1; profile bậc 2/3 chờ RFC-0002 hạ cánh (bất biến theo bậc, §5)* |
 | Thêm gate mẫu ở `gates/` | PR thường |
 
 Quy trình RFC: sao `docs/rfc/0000-template.md`, mở PR **chỉ chứa tệp RFC**,
