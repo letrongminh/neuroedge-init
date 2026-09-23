@@ -387,16 +387,18 @@ Mỗi môi trường được mô tả theo năm tiêu chí dưới đây:
 
 #### Mô phỏng theo tầng — mượn công cụ chuẩn, không tự viết emulator *(Q-21)*
 
-Không một bộ mô phỏng nào phủ cả năm nguyên thủy trên cả ba target. Mỗi tầng kiểm thử dùng công cụ mở đã được cộng đồng kiểm chứng cho đúng phần nó làm tốt, và ghi rõ phần nó **không** kiểm được — phần đó rơi xuống tầng dưới, cuối cùng là bo mạch thật. Giấy phép và phiên bản từng công cụ: Phụ lục H.4.
+Không một bộ mô phỏng nào phủ cả năm nguyên thủy trên cả ba target. Ô nào (nguyên thủy × target) do task nào phủ, và phần nào chỉ kiểm được trên bo mạch: [`docs/spec/simulation_coverage.md`](docs/spec/simulation_coverage.md). Mỗi tầng kiểm thử dùng công cụ mở đã được cộng đồng kiểm chứng cho đúng phần nó làm tốt, và ghi rõ phần nó **không** kiểm được — phần đó rơi xuống tầng dưới, cuối cùng là bo mạch thật. Giấy phép và phiên bản từng công cụ: Phụ lục H.4.
 
 | Tầng kiểm thử | Công cụ | Kiểm được | Không kiểm được | Chạy khi | Trạng thái |
 |:---|:---|:---|:---|:---|:---:|
 | Logic an toàn: gate, token, `@action` | `SimHAL` trong tiến trình Python | Phán quyết, lệnh chân, vết ghi, replay/golden | Timing thật, áp lực RAM vi điều khiển | Mỗi commit — khởi động ~0,6 s (gồm kiểm năng lực), ~11 ms mỗi lượt *(đo 2026-09-23)* | ✅ |
 | `digital.out` trên Linux | **gpio-sim** (kernel) + libgpiod v2 | Đường dẫn chardev, tìm line theo tên, pulse/cancel, `verify --targets sim,linux` | Điện áp, timing phần cứng | Mỗi PR (job `linux-hal`) | ✅ (Q-16) |
 | `display` | Khung hình trong bộ nhớ + digest golden | Nội dung khung, đúng độ phân giải khai báo | Panel, driver SPI | Mỗi PR | Đề xuất — khi hiện thực `display` |
-| `audio.in` / `audio.out` trên Linux | **`snd-aloop`** (ALSA loopback) hoặc PulseAudio null-sink | Bơm WAV vào mic ảo, thu luồng loa | Âm học phòng, AEC phần cứng | Mỗi PR | Đề xuất — cùng TSK-S3-13; thử `modprobe snd-aloop` trên runner trước |
+| `audio.in` / `audio.out` trên Linux | `sounddevice` với backend tệp/PCM trong CI · `snd-aloop` chỉ trên Pi (runner GitHub tắt `CONFIG_SOUND`) · AEC phần mềm PipeWire (Q-22) | Bơm WAV vào mic ảo, thu luồng loa | Âm học phòng, micro/loa thật | Mỗi PR (tệp) · hằng đêm trên Pi | Đề xuất — TSK-S5-08 |
+| `sensor.read` trên Linux | `i2c-stub` + driver `lm75` → sysfs hwmon | Đường đọc sysfs, đơn vị, giá trị theo kịch bản | Cảm biến thật; IIO (runner tắt `CONFIG_IIO`) | Mỗi PR | Đề xuất — TSK-S5-09 |
 | Mã C thuần của firmware (walker cây quyết định) | Biên dịch trên host (gcc) + bảng sự thật `fixtures/decision_trees/` | Walker C cho cùng phán quyết với walker Python, từng hàng | ISA Xtensa, bộ nhớ, ngắt | Mỗi PR | Đề xuất — TSK-S4-07 |
-| Firmware `esp32s3` khởi động | **Espressif QEMU** (`idf.py qemu`, ESP-IDF ≥ 5.4) | Boot, UART, flash/PSRAM, logic, GDB | **I2S, Wi-Fi, LCD SPI, GPIO thường, LEDC**, timing | Hằng đêm | Đề xuất — TSK-S4-08 |
+| Giao diện LVGL (`display` `esp32s3`) | Cùng mã LVGL build trên host, màn hình test `lv_test_display` + `lv_test_screenshot_compare` | Nội dung từng màn hình so ảnh golden | Đường SPI tới panel | Mỗi PR | Đề xuất — TSK-S4-10 |
+| Firmware `esp32s3` khởi động | **Espressif QEMU** (`idf.py qemu`, ESP-IDF ≥ 5.4) | Boot, UART, flash/PSRAM, logic, GDB; vết ghi qua UART (TSK-S4-09) | **I2S, I2C, Wi-Fi, LCD SPI, GPIO matrix, LEDC**, timing | Hằng đêm | Đề xuất — TSK-S4-08 |
 | Mọi thứ còn lại | ESP32-S3-BOX-3 · RPi 5 | Âm thanh, màn hình, GPIO thật, bộ nhớ, 24 giờ | — | Hằng đêm (TSK-S4-05) | Chờ bo mạch |
 
 **Không dùng, và vì sao:** Renode — không có nền tảng ESP32-S3 upstream (chỉ có ISA Xtensa). Trình mô phỏng Wokwi — mã đóng, cần token và hạn mức phút CI, không có I2S trên S3 (`TODOS.md`). Mock GPIO kiểu `gpiozero.MockFactory` — `SimHAL` đã giữ trạng thái chân trong bộ nhớ và gắn với token. `iio_simple_dummy` — không có trong kernel Ubuntu dựng sẵn. `snd-dummy` — không thu, không phát được âm thanh.
@@ -1584,6 +1586,8 @@ flowchart TD
 
 ### C.1 Sáu nhóm sự kiện trong tệp vết
 
+Tên sự kiện cụ thể cho từng nguyên thủy HAL (`sensor_read`, `display_frame`, `audio_in_segment`…) và vai trò của chúng khi replay: [`docs/spec/simulation_coverage.md`](docs/spec/simulation_coverage.md) §3.
+
 | Nhóm sự kiện | Dữ liệu ghi nhận chi tiết |
 |:---|:---|
 | `input` | Khung âm thanh đầu vào (hoặc mã băm hash khi bật chế độ bảo mật), dữ liệu đọc cảm biến, tín hiệu ngắt hệ thống. |
@@ -1750,7 +1754,7 @@ Danh mục đầy đủ các dự án được tái sử dụng hoặc port, kè
 | WebRTC AEC3 | Khử vang và tiếng vọng | BSD-3-Clause | Thư viện | Chưa |
 | Opus | Mã hóa truyền âm thanh | BSD-3-Clause | Codec | Chưa |
 | Sherpa-ONNX · Piper | Nhận dạng và tổng hợp tiếng nói | Apache-2.0 · MIT | Thư viện | Chưa |
-| LVGL | Đồ họa nhúng trên màn hình thiết bị | MIT | Thư viện | Chưa |
+| LVGL | Đồ họa nhúng trên màn hình thiết bị; cùng mã build trên host để so ảnh (TSK-S4-10) | MIT | Thư viện | Có |
 | LiteLLM | Định tuyến đa nhà cung cấp cho lớp trừu tượng provider (§6.1), sau giao diện `neuroedge.models.providers` | MIT cho phần mã nguồn mở; bản thương mại riêng | Thư viện (SDK) qua extra `neuroedge[cloud]` — **chỉ dùng phần MIT**, không chạy proxy server *(Q-10)* | Có *(`litellm==1.102.0`: wheel không chứa `enterprise/`; phụ thuộc bắc cầu MIT/BSD/Apache-2.0/PSF/MPL-2.0 — Q-11, 2026-09-23)* |
 
 ### H.2 Dịch vụ phía máy chủ — không phân phối kèm sản phẩm
@@ -1781,9 +1785,12 @@ Chạy như công cụ riêng hoặc mô-đun kernel; không có dòng mã nào 
 | Công cụ | Dùng cho | Giấy phép | Trạng thái | Xác minh |
 |:---|:---|:---|:---|:---:|
 | Linux `gpio-sim` | `digital.out` trên `linux` trong CI | GPL-2.0 (kernel, không liên kết) | **Đang dùng** — `scripts/setup_gpio_sim.sh`, job `linux-hal` | Có *(runner GitHub, kernel 6.17 azure + `linux-modules-extra`)* |
-| ALSA `snd-aloop` · PulseAudio null-sink | Bơm/thu âm thanh trên `linux` trong CI | GPL-2.0 (kernel) · LGPL-2.1 (PulseAudio, công cụ) | Đề xuất — TSK-S3-13 | Chưa thử trên runner 6.17 |
+| ALSA `snd-aloop` | Bơm/thu âm thanh trên **RPi 5** (nightly) | GPL-2.0 (kernel) | Đề xuất — TSK-S5-08 | Có — **không có trên runner GitHub** (`CONFIG_SOUND` tắt ở kernel 6.17 azure); CI dùng backend tệp/PCM |
+| PipeWire `module-echo-cancel` (webrtc-audio-processing) | AEC phần mềm cho `audio.in` trên `linux` (Q-22) | MIT (PipeWire) · BSD-3 (webrtc-audio-processing) — dịch vụ của hệ điều hành, không đóng gói | Đề xuất — TSK-S5-08 | Có *(tài liệu PipeWire)*; chưa thử trên Pi |
+| LVGL `lv_test_display` · `lv_test_screenshot_compare` | Ảnh golden cho màn hình `esp32s3`, build trên host | MIT | Đề xuất — TSK-S4-10 | Có *(tài liệu LVGL; lodepng kèm LVGL)* |
+| Perfetto UI | Xem timing vết ghi xuất sang Chrome Trace Event | Apache-2.0 | Đề xuất — TSK-S3-22 | Có |
 | Espressif QEMU (`qemu-xtensa`) | Boot + logic firmware `esp32s3` không cần bo mạch | GPL-2.0 (tệp nhị phân riêng) | Đề xuất — TSK-S4-08 | Có *(S3 từ `esp-develop-9.0.0`, tài liệu `idf.py qemu` cho S3 từ ESP-IDF v5.4; không I2S/Wi-Fi/LCD SPI/GPIO thường)* |
-| `i2c-stub` | `sensor.read` mức thanh ghi trên `linux` | GPL-2.0 (kernel) | Tuỳ chọn — khi hiện thực `sensor.read` trên `linux` | Chưa thử trên runner |
+| `i2c-stub` + driver `lm75` | `sensor.read` trên `linux` trong CI, đọc qua sysfs hwmon | GPL-2.0 (kernel) | Đề xuất — TSK-S5-09 | Có *(`i2c-stub.ko`, `lm75.ko` trong `linux-modules-extra` 6.17 azure)*; chưa chạy |
 | Renode | — | MIT | **Không dùng** — không có nền tảng ESP32-S3 upstream | Có |
 | Trình mô phỏng Wokwi · `wokwi-ci-action` | — | Mã đóng; CLI/action MIT, cần token, hạn mức phút | **Không dùng mặc định** — `TODOS.md` | Có *(S3 có GPIO/I2C/SPI/Wi-Fi, không I2S)* |
 | `espressif/esp-emulator` | — | Apache-2.0 | **Theo dõi** — quá mới để dựa vào | Có |
