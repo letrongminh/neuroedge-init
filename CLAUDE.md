@@ -31,7 +31,7 @@ Hai điều dễ sai nhất:
 ## Testing
 
 ```bash
-cd python && .venv/bin/python -m pytest -q      # kỳ vọng: 210 passed, 0 skipped
+cd python && .venv/bin/python -m pytest -q      # kỳ vọng: 229 passed, 0 skipped
 ```
 
 Framework: **pytest**. `testpaths = ["tests"]` trong `python/pyproject.toml`.

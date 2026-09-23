@@ -1,0 +1,12 @@
+# RFC-0004 R1 + R3 — restates the inherited degrade exactly and shortens p95.
+# Both are allowed: nothing runs that the base did not approve, and a shorter
+# adjudication window is stricter.
+schema:  neuroedge.gate/v1
+name:    keeps-inherited-degrade
+version: 1.0.0
+extends: neuroedge://gates/degrade-base@1.0.0
+on_block:
+  action:          degrade
+  fallback_action: notify_front_desk
+budget:
+  p95_latency_ms: 100

@@ -106,3 +106,33 @@ missing_base@1.0.0.yaml:
   code: NE2001
   where_contains: "neuroedge://gates/does-not-exist@9.9.9"
   why_contains: "no gate document at"
+
+# --- RFC-0004: budget and on_block may not loosen ---------------------------
+
+loosens_p95.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "budget.p95_latency_ms"
+  why_contains: "loosens the inherited budget of 150 ms"
+
+reopens_closed_chain.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 4
+  where_contains: "budget.fail"
+  why_contains: "already resolved to closed"
+
+introduces_degrade.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "on_block.action"
+  why_contains: "introduces degrade"
+
+changes_fallback_action.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "on_block.action"
+  why_contains: "'unlock_door_no_auth'"

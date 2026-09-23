@@ -1,0 +1,9 @@
+# RFC-0004 R2 (principle 4) — depth-l1 resolves to `closed`; a child may not
+# reopen the chain by declaring `fail: open` itself.
+schema:  neuroedge.gate/v1
+name:    reopens-closed-chain
+version: 1.0.0
+extends: neuroedge://gates/depth-l1@1.0.0
+budget:
+  p95_latency_ms: 50
+  fail:           open

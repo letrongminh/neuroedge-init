@@ -1,0 +1,8 @@
+# RFC-0004 R1 (principle 2) — the `lax-night` budget: 150 ms → 15 minutes.
+# A longer adjudication window is more permissive, so it must be refused.
+schema:  neuroedge.gate/v1
+name:    loosens-p95
+version: 1.0.0
+extends: neuroedge://gates/strict-base@1.0.0
+budget:
+  p95_latency_ms: 900000
