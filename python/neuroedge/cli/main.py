@@ -682,7 +682,9 @@ def replay(
 def new(
     name: str = typer.Argument(..., help="Name of the new agent project (and its directory)"),
     template: str = typer.Option(
-        "minimal", "--template", help="minimal (1 action, 1 gate, tests) or villa-concierge"
+        "minimal",
+        "--template",
+        help="minimal (1 action, 1 gate, tests), villa-concierge or home-voice",
     ),
 ):
     """Scaffold an agent project: agent.toml, commands.toml, a gate, an @action, tests."""

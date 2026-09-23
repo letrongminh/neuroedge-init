@@ -1,0 +1,25 @@
+# Fixed-command grammar for the home-voice sample (Q-14, Q-15). Knowledge-base
+# questions live in knowledge.toml next to this file.
+[grammar]
+version   = 1
+threshold = 0.80
+
+[[command]]
+intent   = "light_on"
+patterns = ["bật đèn", "bật đèn lên", "mở đèn", "turn on the light"]
+facts    = { command_recognized = true }
+action   = "light_on"
+
+[[command]]
+intent   = "light_off"
+patterns = ["tắt đèn", "tắt đèn đi", "turn off the light"]
+facts    = { command_recognized = true }
+action   = "light_off"
+
+# News needs the internet: System 2 (a cloud provider, TSK-S2-11) answers it.
+# Without one — offline, or no provider configured — the assistant says so.
+[[command]]
+intent      = "news"
+patterns    = ["đọc tin tức", "hôm nay có tin gì", "tin tức mới nhất", "read the news"]
+ask         = "news"
+offline_say = "Hiện không có mạng, mình chưa lấy được tin tức."

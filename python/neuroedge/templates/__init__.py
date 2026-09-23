@@ -7,8 +7,8 @@ is a directory of `*.tmpl` files whose only placeholder is ``{{name}}``;
 generating a project writes each file with the suffix dropped. The `.tmpl`
 suffix keeps pytest and ruff from treating template code as package code.
 
-`villa-concierge` adds its README and tests to a copy of
-`fixtures/agents/villa-concierge/`, so the sample agent has one source. A wheel
+`villa-concierge` and `home-voice` add their README and tests to a copy of
+`fixtures/agents/<template>/`, so each sample agent has one source. A wheel
 carries that directory under `neuroedge/_data/` (TSK-S3-17), so the template
 works from an installed package too.
 """
@@ -21,11 +21,12 @@ from pathlib import Path
 from ..errors import AgentManifestError
 from ..paths import fixtures_dir
 
-TEMPLATES = ("minimal", "villa-concierge")
+TEMPLATES = ("minimal", "villa-concierge", "home-voice")
 PLACEHOLDER = "{{name}}"
 NAME = re.compile(r"^[a-z][a-z0-9_-]{0,62}$")
 _HERE = Path(__file__).parent
-_VILLA = "villa-concierge"
+# Templates that add README + tests to a copy of the sample agent of the same name.
+SAMPLES = ("villa-concierge", "home-voice")
 
 
 def _render(files: dict[Path, str], name: str) -> dict[Path, str]:
@@ -40,13 +41,14 @@ def _template_files(template: str) -> dict[Path, str]:
     }
 
 
-def _villa_files(name: str) -> dict[Path, str]:
-    source = fixtures_dir() / "agents" / _VILLA
+def _sample_files(sample: str, name: str) -> dict[Path, str]:
+    """A copy of `fixtures/agents/<sample>/` with its [agent] name replaced."""
+    source = fixtures_dir() / "agents" / sample
     if not (source / "agent.toml").is_file():
         raise AgentManifestError(
-            where=f"--template {_VILLA}",
+            where=f"--template {sample}",
             why=f"the sample agent is read from {source}, which this install does not have",
-            how="reinstall neuroedge (the wheel ships the sample agent), or use --template minimal",
+            how="reinstall neuroedge (the wheel ships the sample agents), or use --template minimal",
         )
     files = {
         path.relative_to(source): path.read_text(encoding="utf-8")
@@ -55,7 +57,7 @@ def _villa_files(name: str) -> dict[Path, str]:
     }
     manifest = Path("agent.toml")
     files[manifest] = re.sub(
-        rf'^(name\s*=\s*)"{_VILLA}"', rf'\g<1>"{name}"', files[manifest], count=1, flags=re.M
+        rf'^(name\s*=\s*)"{sample}"', rf'\g<1>"{name}"', files[manifest], count=1, flags=re.M
     )
     return files
 
@@ -73,7 +75,7 @@ def scaffold(name: str, template: str = "minimal", parent: str | Path = ".") -> 
         raise AgentManifestError(
             where=f"--template {template}",
             why=f"unknown template; available: {list(TEMPLATES)}",
-            how="use --template minimal (one action, one gate, one test) or villa-concierge",
+            how="use --template minimal (one action, one gate, tests), villa-concierge or home-voice",
         )
     target = Path(parent) / name
     if target.exists() and any(target.iterdir()):
@@ -84,8 +86,8 @@ def scaffold(name: str, template: str = "minimal", parent: str | Path = ".") -> 
         )
 
     files = _template_files(template)
-    if template == _VILLA:
-        files = {**_villa_files(name), **files}
+    if template in SAMPLES:
+        files = {**_sample_files(template, name), **files}
     for relative, text in _render(files, name).items():
         path = target / relative
         path.parent.mkdir(parents=True, exist_ok=True)

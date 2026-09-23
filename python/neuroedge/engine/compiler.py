@@ -12,8 +12,8 @@ problem so one run reports them all, each with where / why / how:
    that `[gates]` declares;
 4. every gate resolves (lint semantics) and compiles to a decision tree, and
    every `degrade` fallback names a declared action;
-5. the command grammar, if the agent ships one, loads, and every `action` a
-   command names is a declared @action.
+5. the command grammar (and `knowledge.toml`, if the agent ships one) loads,
+   and every `action` a command names is a declared @action.
 
 On success it writes each gate's decision tree and canonical artifact.
 """
@@ -388,10 +388,10 @@ def build(
 
     grammar = manifest.root / "commands.toml"
     if grammar.is_file():
-        from ..models import CommandGrammar
+        from ..models.knowledge import load_agent_grammar
 
         try:
-            problems += check_commands(CommandGrammar.load(grammar), actions)
+            problems += check_commands(load_agent_grammar(manifest.root)[0], actions)
         except NeuroEdgeError as error:
             problems.append(error)
 

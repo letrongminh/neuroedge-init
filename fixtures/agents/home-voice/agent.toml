@@ -1,0 +1,33 @@
+# Sample agent: an in-home voice assistant (proposal §0.2, §1.6 #3).
+#
+# One agent, three kinds of behaviour, each with its own contract:
+#   * answers from a local knowledge base — System 2 phrases them from the
+#     retrieved entries (RAG); offline, the local answer is said as is. Speech:
+#     can be corrected, no gate;
+#   * news from the internet — speech that needs the network; offline it says
+#     so instead of making something up;
+#   * lights on / off — physical, through c.do() and a gate: the light is never
+#     switched off while the motion sensor still sees someone.
+# Offline, the lights keep working through the local command grammar (Q-14).
+[agent]
+name    = "home-voice"
+version = "0.1.0"
+
+[requires]
+"audio.out"   = {}
+"digital.out" = { pins = ["porch_light"] }
+"sensor.read" = { sensors = ["motion"] }
+
+[gates]
+light_on  = "gates/light_on@1.0.0.yaml"
+light_off = "gates/light_off@1.0.0.yaml"
+
+[targets]
+supported = ["sim", "linux", "esp32s3"]
+
+# `sim`: nobody is moving in the room until you say so (`:sensor motion true`).
+[sim.sensors]
+motion = false
+
+[sim.sensor_facts]
+room_empty = { sensor = "motion", equals = false }

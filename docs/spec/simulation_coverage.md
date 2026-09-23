@@ -31,7 +31,7 @@ mỗi PR, không cần phần cứng.
 |:---|:---|:---|:---:|:---|
 | `digital.out` | `SimHAL`, token dùng một lần | PR | ✅ | TSK-S2-01, S2-05 |
 | `audio.in` | Gõ chữ → ngữ pháp lệnh (Q-15) · tệp WAV → VAD + STT provider | PR (gõ chữ, WAV fixture) | 🟡 gõ chữ | WAV: TSK-S3-13 |
-| `audio.out` | Chữ sẽ nói (`tts_stream_start`) · âm thanh TTS ra WAV | PR | 🟡 chữ | WAV: TSK-S3-13 |
+| `audio.out` | Chữ sẽ nói (`tts_stream_start`): câu trả lời knowledge base (RAG qua System 2, cục bộ khi mất mạng), lời hỏi lại của `on_block: ask` · âm thanh TTS ra WAV | PR | 🟡 chữ | WAV: TSK-S3-13 · câu trả lời System 2 thật: TSK-S2-11 |
 | `sensor.read` | Giá trị kịch bản: `[sim.sensors]` trong `agent.toml`, `:sensor` trong REPL và UI; dữ kiện gate từ cảm biến: `[sim.sensor_facts]`; `sensor.read()` trong `@action` | PR | ✅ | TSK-S3-23 |
 | `display` | Khung chữ hoặc điểm ảnh RGB565/RGB888 trong bộ nhớ, kiểm độ phân giải; digest SHA-256; `display.show()` trong `@action` | PR | ✅ | TSK-S3-23 |
 | *Trực quan* | Terminal · `trace view` HTML tĩnh · `run --ui` web cục bộ (FR-TGT-06) | PR | ✅ | TSK-S3-22, S2-09 |
@@ -68,7 +68,7 @@ Tên và trường dưới đây là quy phạm; mọi target phát cùng tên.
 | Nguyên thủy | Sự kiện | `data` | Vai trò khi replay |
 |:---|:---|:---|:---|
 | `audio.in` | `text_input` *(có)* · `audio_in_vad_start` *(có)* · `audio_in_segment` | `{text}` · `{energy_db}` · `{sha256, duration_ms, sample_rate_hz}` | **Đầu vào.** Replay bắt đầu từ kết quả nhận thức đã ghi (`intent_extracted`), không chạy lại âm thanh (L2) |
-| `audio.out` | `tts_stream_start` *(có)* · `tts_stream_end` | `{text}` · `{duration_ms, sha256?}` | **Đầu ra L3** — không so |
+| `audio.out` | `tts_stream_start` *(có)* · `tts_stream_end` · `knowledge_retrieved` · `system_two_unavailable` | `{text}` · `{duration_ms, sha256?}` · `{entries: [{id, score}]}` · `{task, reason}` | **Đầu ra L3** — chữ không so; `knowledge_retrieved` cho biết câu trả lời dựa trên tri thức nào |
 | `digital.out` | `actuator_command` *(có)* · `actuator_aborted` *(có)* | `{pin, operation, duration_ms}` · `{pin, reason}` | **Quyết định** — so golden (L1) |
 | `sensor.read` | `sensor_read` · `sensor_set` | `{sensor, value, unit?, use?}` · `{sensor, value}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI |
 | `display` | `display_frame` | `{width, height, format, sha256, text?}` (`text` khi `format = "text"`) | **Đầu ra** — so digest khi golden có ghi (L2), không chặn tương đương quyết định |

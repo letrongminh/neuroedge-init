@@ -44,11 +44,12 @@ from ..engine.compiler import resolve_gates as _resolve_gates
 from ..engine.gate import ActionContractEngine
 from ..engine.gate_resolver import GateRegistry
 from ..engine.trace_sink import Clock, EventLog, monotonic_ms
-from ..errors import AgentManifestError
+from ..errors import AgentManifestError, PerceptionUnavailableError
 from ..hal.board import load_board_by_id
 from ..hal.sim import SimHAL
-from ..models import CommandGrammar, SystemOne
-from ..models.grammar import Recognition
+from ..models import CommandGrammar, SystemOne, SystemTwo
+from ..models.grammar import OFFLINE_SAY, Recognition
+from ..models.knowledge import KNOWLEDGE_INTENT, KnowledgeBase, load_agent_grammar
 from ..trace import validate_trace
 
 
@@ -59,6 +60,9 @@ class Turn:
     text: str
     recognition: Recognition
     result: ActionResult | None = None
+    reply: str | None = None
+    # command | knowledge_rag | knowledge_local | system_two | offline | gate_ask
+    reply_source: str | None = None
 
     @property
     def recognised(self) -> bool:
@@ -168,6 +172,8 @@ class SimSession:
         facts: Mapping[str, Any],
         slot_facts: Mapping[str, tuple[str, Any]],
         sensor_facts: Mapping[str, SensorFact] | None = None,
+        slow: SystemTwo | None = None,
+        knowledge: KnowledgeBase | None = None,
     ) -> None:
         self.manifest = manifest
         self.hal = hal
@@ -177,6 +183,8 @@ class SimSession:
         self.facts: dict[str, Any] = dict(facts)
         self.slot_facts = dict(slot_facts)
         self.sensor_facts = dict(sensor_facts or {})
+        self.slow = slow if slow is not None else SystemTwo("sim")
+        self.knowledge = knowledge
 
     @classmethod
     def load(
@@ -188,6 +196,7 @@ class SimSession:
         registry: GateRegistry | None = None,
         clock: Clock = monotonic_ms,
         events: EventLog | None = None,
+        slow: SystemTwo | None = None,
     ) -> SimSession:
         """
         Build-check the agent for `sim`, then wire it up.
@@ -206,7 +215,7 @@ class SimSession:
                 why="`sim` takes typed text, which needs the agent's command grammar (Q-15)",
                 how="add commands.toml next to agent.toml (see `neuroedge new`)",
             )
-        grammar = CommandGrammar.load(grammar_path)
+        grammar, knowledge = load_agent_grammar(manifest.root)
         sim_facts, slot_facts = _sim_tables(manifest)
         sim_table = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
         sensors, sensor_facts = _sim_sensors(manifest, sim_table)
@@ -235,6 +244,8 @@ class SimSession:
             facts={**sim_facts, **(facts or {})},
             slot_facts=slot_facts,
             sensor_facts=sensor_facts,
+            slow=slow,
+            knowledge=knowledge,
         )
 
     @property
@@ -284,13 +295,70 @@ class SimSession:
             },
         )
         turn = Turn(utterance, recognition)
+        command = recognition.command
+        if command is not None and command.say is not None:
+            return await self._speak(turn, command.say, "command")
+        if (
+            command is not None
+            and command.intent == KNOWLEDGE_INTENT
+            and self.knowledge is not None
+        ):
+            return await self._answer_from_knowledge(turn, command.offline_say or OFFLINE_SAY)
+        if command is not None and command.ask is not None:
+            return await self._ask(turn, command.ask, command.offline_say or OFFLINE_SAY, utterance)
         if turn.action is None:
             return turn
         c = self.conversation
         c.utterance = utterance
         c.facts = self.gate_facts(recognition)
         result = await c.do(turn.action, **turn.arguments)
+        gate = result.gate
+        if result.blocked and gate is not None and gate.on_block_action == "ask" and gate.message:
+            # on_block: ask — the device asks the question out loud (Q-17); still no pin moves.
+            await c.say(gate.message)
+            return Turn(utterance, recognition, result, reply=gate.message, reply_source="gate_ask")
         return Turn(utterance, recognition, result)
+
+    async def _speak(self, turn: Turn, text: str, source: str) -> Turn:
+        """Speech goes through `c.say()`: never a gate, never a token (proposal §4.6)."""
+        await self.conversation.say(text)
+        return Turn(turn.text, turn.recognition, reply=text, reply_source=source)
+
+    async def _answer_from_knowledge(self, turn: Turn, local_answer: str) -> Turn:
+        """
+        RAG: retrieve the relevant entries locally, then ask System 2 to answer from
+        them in its own words. Offline (or no provider), say the matched entry's
+        answer — the knowledge is local, so the question is still answered.
+        """
+        retrieved = self.knowledge.retrieve(turn.text)
+        self.events.emit(
+            "knowledge_retrieved",
+            {"entries": [{"id": entry.id, "score": score} for entry, score in retrieved]},
+        )
+        state = {
+            "task": "knowledge",
+            "utterance": turn.text,
+            "context": [entry.context() for entry, _ in retrieved],
+            "instructions": "Trả lời tự nhiên, ngắn gọn, chỉ dựa trên context; không có thì nói không biết.",
+        }
+        try:
+            text = await self.slow.reply(state)
+        except PerceptionUnavailableError as exc:
+            self.events.emit("system_two_unavailable", {"task": "knowledge", "reason": exc.why})
+            return await self._speak(turn, local_answer, "knowledge_local")
+        return await self._speak(turn, text, "knowledge_rag")
+
+    async def _ask(self, turn: Turn, task: str, offline: str, utterance: str) -> Turn:
+        """
+        A System 2 task (news, open questions). Without a reachable provider the
+        agent says so — it never makes an answer up (TSK-S2-11 brings providers).
+        """
+        try:
+            text = await self.slow.reply({"task": task, "utterance": utterance})
+        except PerceptionUnavailableError as exc:
+            self.events.emit("system_two_unavailable", {"task": task, "reason": exc.why})
+            return await self._speak(turn, offline, "offline")
+        return await self._speak(turn, text, "system_two")
 
     def trace(self) -> dict[str, Any]:
         """The session so far as a `trace.v1` document, validated before it is returned."""

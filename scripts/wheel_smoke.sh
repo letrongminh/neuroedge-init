@@ -57,4 +57,10 @@ step new villa --template villa-concierge
 cd "$WORK/villa"
 step run -c "mở cửa phòng 101"
 step test
+cd "$WORK"
+step new nha --template home-voice
+cd "$WORK/nha"
+step run -c "bật đèn"
+step run -c "wifi nhà mình là gì"
+step test
 echo "✓ the installed wheel runs the whole journey"

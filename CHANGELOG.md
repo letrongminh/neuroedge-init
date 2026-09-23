@@ -27,6 +27,10 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **Mẫu `home-voice` — trợ lý giọng nói trong nhà.** Hỏi đáp knowledge base theo RAG (tìm cục bộ, System 2 diễn đạt;
+  mất mạng thì trả lời cục bộ), tin tức qua System 2 (mất mạng thì nói rõ, không bịa), đèn qua gate có cảm biến
+  `motion`. `commands.toml` có `say` / `ask` / `offline_say`; `knowledge.toml`; UI có panel *Trợ lý nói*.
+  Kiểm: `pytest tests/test_home_voice.py` · `neuroedge new nha --template home-voice`. (FR-DX-05)
 - **TSK-S3-17 — wheel tự chạy được.** Trước: wheel cài từ pip gãy ở `build`, `run`, `test`, `gate lint` (thiếu `boards/`,
   `schemas/`, `gates/`). Nay `neuroedge/_data/` mang theo asset, cả khi build từ sdist; `paths.py` báo lỗi thay vì đoán.
   Kiểm: `pytest tests/test_paths.py` · `scripts/wheel_smoke.sh` (job CI `wheel-smoke`). (FR-DX-02, FR-DX-04)
@@ -668,7 +672,7 @@ còn `run` / `record --target linux|esp32s3` thoát mã 2.
 | `test [thư-mục]` | Chạy bộ Action CI (pytest) của agent, mặc định `tests/`. Mọi test đạt ⇒ mã 0; có test trượt hoặc không thu được test nào ⇒ mã 1 |
 | `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2: trên `linux` hôm nay dùng `replay` |
 | `gate explain <tệp\|URI>` | Giải thích gate cho người duyệt: tiêu chí từ cấp nào, mệnh đề nào bị siết chặt, ngân sách và `on_block` so với cha. Gate sai ⇒ mã 1, lỗi 3 thành phần |
-| `new <tên> [--template minimal\|villa-concierge]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` sao agent mẫu (có trong wheel) |
+| `new <tên> [--template minimal\|villa-concierge\|home-voice]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` (chốt cửa) và `home-voice` (trợ lý giọng nói, có `knowledge.toml`) sao agent mẫu (có trong wheel) |
 
 > `gate publish` **không ký số**. Nó dừng ở mã băm, vì ký cần khóa của Gate
 > Registry (Khối 3). Lệnh tự nói rõ điều đó trong đầu ra — đừng đọc nó như đã làm nhiều hơn.
