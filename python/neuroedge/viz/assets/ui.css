@@ -1,0 +1,52 @@
+/* NeuroEdge session view — shared by `trace view` and `run --ui`. No external assets. */
+:root {
+  --bg: #0f1419; --panel: #171e26; --line: #26313d; --text: #d8dee6; --dim: #7d8a99;
+  --allow: #3fb950; --block: #f85149; --warn: #d29922; --accent: #58a6ff;
+}
+@media (prefers-color-scheme: light) {
+  :root { --bg: #f6f8fa; --panel: #ffffff; --line: #d0d7de; --text: #1f2328; --dim: #636c76; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; gap: 16px;
+  flex-wrap: wrap; align-items: baseline; }
+header h1 { font-size: 16px; margin: 0; }
+header .meta { color: var(--dim); font-size: 12px; }
+main { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 16px; padding: 16px 20px; }
+@media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); margin: 0 0 10px; }
+.stack > * + * { margin-top: 16px; }
+.devices { display: flex; flex-wrap: wrap; gap: 14px; }
+.device { width: 96px; text-align: center; font-size: 12px; }
+.device svg { width: 64px; height: 64px; display: block; margin: 0 auto 4px; }
+.device .state { color: var(--dim); }
+.device.on .state { color: var(--allow); font-weight: 600; }
+.sensor { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--line); padding: 4px 0; }
+.sensor span:last-child { font-variant-numeric: tabular-nums; }
+.screen { background: #000; color: #9be89b; font-family: ui-monospace, Menlo, monospace; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px;
+  aspect-ratio: 4 / 3; white-space: pre-wrap; }
+.screen.empty { color: #555; }
+.verdict { border-left: 4px solid var(--line); padding: 6px 10px; margin-bottom: 8px; border-radius: 4px;
+  background: color-mix(in srgb, var(--panel) 85%, var(--line)); cursor: pointer; }
+.verdict.ALLOW { border-left-color: var(--allow); }
+.verdict.BLOCK { border-left-color: var(--block); }
+.verdict.future { opacity: .35; }
+.badge { font-weight: 700; font-size: 12px; }
+.ALLOW .badge { color: var(--allow); } .BLOCK .badge { color: var(--block); }
+.verdict .why { color: var(--dim); font-size: 12px; }
+.scrub { display: flex; gap: 10px; align-items: center; }
+.scrub input { flex: 1; }
+.scrub output { font-variant-numeric: tabular-nums; min-width: 80px; text-align: right; color: var(--dim); }
+table.events { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.events td { padding: 3px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.events td:first-child { color: var(--dim); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.events tr { cursor: pointer; } table.events tr.future { opacity: .35; }
+table.events tr.current { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+table.events code { color: var(--accent); }
+.data { color: var(--dim); word-break: break-word; }
+form.say { display: flex; gap: 8px; } form.say input { flex: 1; padding: 8px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; }
+form.say button { padding: 8px 14px; border-radius: 6px; border: 0; background: var(--accent); color: #fff; font: inherit; cursor: pointer; }
