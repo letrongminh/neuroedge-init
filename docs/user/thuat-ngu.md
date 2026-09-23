@@ -67,6 +67,8 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **SystemOne · SystemTwo** | Mô hình trả lời có cấu trúc (bool/level/choice) · mô hình sinh văn bản tự do | `neuroedge-proposal.md` §3.6 |
 | **Ngữ pháp lệnh cố định** | Fallback khi mất mạng: danh sách câu lệnh → intent, không mạng, tất định (Q-14) | `fixtures/agents/villa-concierge/commands.toml` |
 | **Action CI** | Kiểm thử hồi quy hành vi vật lý bằng vết ghi (record / replay / assert) | `neuroedge-proposal.md` §4.7 |
+| **Golden Reference** | Vết ghi có quyết định là quyết định kỳ vọng; replay được so với nó theo phán quyết gate + lệnh chân, bỏ qua timing và chữ | `python/neuroedge/testing/golden.py` (FR-CI-04) |
+| **gpio-sim** | Mô-đun kernel Linux tạo chip GPIO ảo qua configfs; CI chạy HAL `linux` trên nó, không cần bo mạch | `scripts/setup_gpio_sim.sh` (Q-16) |
 | **Vết ghi (trace)** | Tệp JSON `trace.v1` ghi mọi sự kiện một phiên | `schemas/trace.v1.json` |
 | **Wedge** | Lát cắt hẹp nhất chứng minh giá trị trước: `sim` trước, vi điều khiển sau | `docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md` |
 | **TTFV** | Time-to-first-value — thời gian từ cài đặt tới lần đầu thấy agent chạy (mục tiêu < 10 phút) | `neuroedge-prd.md` §2.3 (hành trình 1) |

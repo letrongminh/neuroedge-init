@@ -13,13 +13,16 @@ không cần mạng, kết quả tất định (`Q-15`).
 
 ## 2. Hôm nay dùng được gì
 
-Phần **chính sách gate**, **lõi thực thi trên `sim`** và **vòng lặp gõ chữ** đã có.
+Phần **chính sách gate**, **lõi thực thi trên `sim`**, **vòng lặp gõ chữ** và **Action CI**
+(ghi → phát lại → khẳng định → so golden) đã có.
 Cú pháp từng lệnh: `CHANGELOG.md` §2.3. Thử ngay trong kho:
 
 ```bash
 neuroedge run -c "mở cửa phòng 101"    # ✓ ALLOW, door_lock PULSED 30s
 neuroedge run -c "mở cửa phòng 202"    # ✗ BLOCK room_matches → lễ tân
-neuroedge new my-agent                 # dự án mới: build được, test tự qua
+neuroedge new my-agent                 # dự án mới: build được, `neuroedge test` tự qua
+neuroedge record -c "mở cửa phòng 101" # ghi phiên ra traces/<session_id>.json
+neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyết, so với bản ghi
 ```
 
 | Việc | Lệnh | Trạng thái |
@@ -35,7 +38,11 @@ neuroedge new my-agent                 # dự án mới: build được, test t�
 | Chạy agent có gate trên `sim` từ dòng lệnh (gõ chữ, không mạng) | `neuroedge run` | ✅ |
 | Đọc một gate bằng lời: tiêu chí từ đâu, điều gì bị siết chặt | `neuroedge gate explain` | ✅ |
 | Tạo dự án agent mới có sẵn gate, action, test | `neuroedge new` | ✅ |
-| Chạy agent trên `linux` | `neuroedge run --target linux` | ⏳ TSK-S3-05 |
+| Ghi một phiên ra vết ghi (có chế độ ẩn danh) | `neuroedge record` | ✅ |
+| Phát lại vết ghi trên `sim` / `linux`, so golden | `neuroedge replay` | ✅ |
+| Chạy test an toàn của agent (Action CI) | `neuroedge test` | ✅ |
+| Kiểm cùng quyết định trên `sim` và `linux` (A2) | `neuroedge verify --targets sim,linux` | ✅ cần line GPIO |
+| Phiên gõ chữ tương tác trên `linux` | `neuroedge run --target linux` | ⏳ |
 | Hành trình 10 phút (TTFV) | — | ⏳ mốc M1 |
 
 Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.
@@ -44,10 +51,11 @@ Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.
 
 Nói thẳng để bạn không mất thời gian:
 
-- `neuroedge run` mới chạy trên `sim`, gõ chữ trên terminal; `--target linux` **thoát mã 2**
-  (`TSK-S3-05`). Không có "PASS" giả (bất biến 10, `CHANGELOG.md` §3.3).
-- `neuroedge test` và `neuroedge record` **thoát mã 2**; test của dự án chạy bằng `pytest`.
-- Chưa có tương đương target: `neuroedge verify` mới kiểm ở mức lược đồ.
+- `neuroedge run` / `record` mới chạy trên `sim`, gõ chữ trên terminal; `--target linux`
+  **thoát mã 2** — trên `linux` dùng `replay`. Không có "PASS" giả (bất biến 10, `CHANGELOG.md` §3.3).
+- `--target linux` cần line GPIO thật hoặc ảo (`scripts/setup_gpio_sim.sh`) và
+  `pip install 'neuroedge[linux]'`; thiếu thì lệnh báo lỗi, không giả vờ chạy.
+- Tương đương target mới so **quyết định** (phán quyết + lệnh chân), chưa so timing.
 - Danh sách đầy đủ: `CHANGELOG.md` §3.7.
 
 ## 4. Khi gặp lỗi
