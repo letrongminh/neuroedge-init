@@ -305,6 +305,31 @@ def check_fallbacks(
 # --- 5. the command grammar -------------------------------------------------------
 
 
+def check_mcp_servers(manifest: AgentManifest, actions: Iterable[Any]) -> list[NeuroEdgeError]:
+    """
+    `[mcp]` of agent.toml is well formed, and no external tool name
+    (`server__tool`) shadows one of the agent's @actions (Q-27).
+    """
+    from ..mcp_host import load_mcp_config
+
+    try:
+        config = load_mcp_config(manifest)
+    except NeuroEdgeError as error:
+        return [error]
+    declared = {spec.name for spec in actions}
+    return [
+        AgentManifestError(
+            where=f"{manifest.source} -> [mcp.servers.{server.name}] tools",
+            why=f"external tool {server.tool_name(tool)!r} has the name of an @action; "
+            "a device action must never be reachable through an external server",
+            how="rename the server table or the @action",
+        )
+        for server in config.servers
+        for tool in server.tools
+        if server.tool_name(tool) in declared
+    ]
+
+
 def check_commands(grammar: Any, actions: Iterable[Any]) -> list[NeuroEdgeError]:
     """
     Every `tool` a command calls is a declared @action, and its slot-mapped and
@@ -423,6 +448,7 @@ def build(
             problems += check_commands(load_agent_grammar(manifest.root)[0], actions)
         except NeuroEdgeError as error:
             problems.append(error)
+    problems += check_mcp_servers(manifest, actions)
 
     if problems:
         raise BuildFailed(where=f"{manifest.label} for {target} on {board.id}", problems=problems)

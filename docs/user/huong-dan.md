@@ -44,6 +44,7 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Thử một trợ lý giọng nói: hỏi đáp knowledge base, tin tức, bật/tắt đèn qua gate | `neuroedge new nha --template home-voice` | ✅ |
 | Xem các `@action` dưới dạng tool (schema cho LLM / MCP) | `neuroedge mcp tools` | ✅ |
 | Cho Claude Desktop hoặc agent khác gọi thiết bị qua MCP — vẫn qua gate | `neuroedge mcp serve` (cấu hình mẫu ở `README.md`) | ✅ cần `neuroedge[mcp]` |
+| Cho System 2 dùng MCP server bên ngoài (tin tức, tra cứu) — chỉ lấy thông tin | `[mcp.servers]` trong `agent.toml` · `neuroedge mcp tools --external` | ✅ cần `neuroedge[mcp]` |
 | Người xác nhận khi gate hỏi lại (`ask`) | — | ⏳ TSK-S3-26 |
 | Ghi một phiên ra vết ghi (có chế độ ẩn danh) | `neuroedge record` | ✅ |
 | Phát lại vết ghi trên `sim` / `linux`, so golden | `neuroedge replay` | ✅ |

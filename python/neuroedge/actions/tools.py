@@ -247,13 +247,18 @@ class ToolResult:
         return out
 
 
+def next_call_id(conversation: Conversation) -> str:
+    """`call_1`, `call_2`… per session — deterministic, so traces and goldens are stable."""
+    count = getattr(conversation, "_tool_calls", 0) + 1
+    conversation._tool_calls = count
+    return f"call_{count}"
+
+
 async def dispatch(conversation: Conversation, tools: ToolSet, call: ToolCall) -> ToolResult:
     """The only road from a tool call to a pin: check, then `c.do()` through the gate."""
     events = conversation.events
     if not call.id:
-        count = getattr(conversation, "_tool_calls", 0) + 1
-        conversation._tool_calls = count
-        call = ToolCall(call.name, dict(call.arguments), call.source, f"call_{count}")
+        call = ToolCall(call.name, dict(call.arguments), call.source, next_call_id(conversation))
     events.emit(
         "tool_call",
         {

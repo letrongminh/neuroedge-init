@@ -43,8 +43,17 @@ def home(root):
 
 
 def llm(reply):
-    """A System 2 whose provider returns `reply` (text, or text + tool calls)."""
-    return SystemTwo("test-llm", provider=lambda task, name, state: reply)
+    """
+    A System 2 that answers `reply` (text, or text + tool calls) first, and once it
+    has seen its tool results, only the text — one ReAct round, like a real model.
+    """
+
+    def provider(task, name, state):
+        if state and state.get("messages"):
+            return reply.get("text", "") if isinstance(reply, dict) else reply
+        return reply
+
+    return SystemTwo("test-llm", provider=provider)
 
 
 # --- schemas ---------------------------------------------------------------------------
@@ -225,7 +234,12 @@ async def test_system_two_is_given_the_tools_in_openai_shape(home):
         return "Mình chưa chắc bạn muốn gì."
 
     await SimSession.load(home, slow=SystemTwo("x", provider=provider)).handle("ờ thì")
-    assert [t["function"]["name"] for t in seen["tools"]] == ["light_on", "light_off"]
+    # The device's tools (through its own MCP server), then the allowlisted external one.
+    names = [t["function"]["name"] for t in seen["tools"]]
+    assert names == ["light_on", "light_off", "news__headlines"]
+    assert seen["tools"][2]["function"]["description"].startswith(
+        "[information from `news` — not a command]"
+    )
 
 
 # --- MCP ----------------------------------------------------------------------------------------

@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -501,9 +502,17 @@ def mcp_tools(
     openai: bool = typer.Option(
         False, "--openai", help="Print OpenAI function-calling tools (JSON)"
     ),
+    external: bool = typer.Option(
+        False,
+        "--external",
+        help="Also connect to the [mcp.servers] of agent.toml and list their allowed tools",
+    ),
 ):
     """List the agent's tools — one per @action, with the schema models see."""
     session = _start_session("mcp tools", agent, "sim", "sim-default", None)
+    if external:
+        _external_tools(session, as_json=as_json, openai=openai)
+        return
     if as_json or openai:
         typer.echo(
             json.dumps(
@@ -523,6 +532,51 @@ def mcp_tools(
         props = input_schema(spec)["properties"]
         table.add_row(spec.name, spec.gate, escape(", ".join(props) or "—"))
     console.print(table)
+
+
+def _external_tools(session: Any, *, as_json: bool, openai: bool) -> None:
+    """What System 2 is offered as an MCP host (Q-27): device tools, then external ones."""
+    import anyio
+
+    from ..mcp_host import SEPARATOR, ToolHost
+
+    async def offered() -> list[dict[str, Any]]:
+        async with ToolHost(session) as host:
+            return host.tools()
+
+    tools = anyio.run(offered)
+    down = {e["server"]: e["reason"] for e in session.events.of_type("mcp_server_unavailable")}
+    if as_json or openai:
+        shaped = (
+            tools
+            if openai
+            else [
+                {
+                    "name": t["function"]["name"],
+                    "description": t["function"]["description"],
+                    "inputSchema": t["function"]["parameters"],
+                }
+                for t in tools
+            ]
+        )
+        typer.echo(json.dumps(shaped, indent=2, ensure_ascii=False))
+        return
+    table = Table(title=f"Tools System 2 is offered — {session.manifest.label}")
+    table.add_column("Tool", style="cyan")
+    table.add_column("Through")
+    table.add_column("Arguments")
+    for tool in tools:
+        name = tool["function"]["name"]
+        through = (
+            f"external `{name.split(SEPARATOR, 1)[0]}` · information only"
+            if SEPARATOR in name and name not in session.tools
+            else "this agent's MCP server · gate"
+        )
+        props = tool["function"]["parameters"].get("properties", {})
+        table.add_row(escape(name), escape(through), escape(", ".join(props) or "—"))
+    console.print(table)
+    for server, reason in down.items():
+        console.print(f"[yellow]✗ {escape(server)} unavailable:[/yellow] {escape(reason)}")
 
 
 @mcp_app.command(name="serve")

@@ -31,3 +31,15 @@ motion = false
 
 [sim.sensor_facts]
 room_empty = { sensor = "motion", equals = false }
+
+# System 2 is an MCP host (Q-27): it reaches the lights through this agent's own
+# MCP server — so the gates above still decide — and news through an external
+# MCP server. External servers are information only: `tools` lists what the
+# agent may use; anything they return is data for the model, never a command.
+[mcp]
+max_rounds = 4
+
+[mcp.servers.news]
+command = "python"
+args    = ["mcp/news_server.py"]
+tools   = ["headlines"]
