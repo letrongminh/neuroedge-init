@@ -176,6 +176,30 @@ def gate_resolve(
     )
 
 
+@gate_app.command(name="explain")
+def gate_explain(
+    target: str = typer.Argument(..., help="Gate YAML path or neuroedge:// URI"),
+    registry: Path = REGISTRY_OPTION,
+):
+    """
+    Explain a gate for a reviewer who does not read YAML: where each criterion
+    comes from, what a child tightened, and what happens when it blocks.
+    """
+    from ..engine.gate_explain import explain_gate_file, explain_gate_uri
+    from .explain import render
+
+    gate_registry = GateRegistry(registry) if registry is not None else None
+    try:
+        if target.startswith("neuroedge://"):
+            explanation = explain_gate_uri(target, gate_registry)
+        else:
+            explanation = explain_gate_file(Path(target), gate_registry)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    render(explanation, console)
+
+
 @gate_app.command(name="lint")
 def gate_lint(
     directory: Path = typer.Argument(None, help="Directory of gate YAML files (default: gates/)"),
