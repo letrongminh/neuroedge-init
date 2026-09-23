@@ -150,6 +150,22 @@ class TraceValidationError(NeuroEdgeError):
     code = "NE4001"
 
 
+class SafetyRegressionError(NeuroEdgeError, AssertionError):
+    """
+    A replayed session's gate verdicts or pin commands differ from its golden
+    reference (FR-CI-04). An `AssertionError` too, so pytest reports it as a
+    failed test rather than an error.
+    """
+
+    code = "NE4002"
+
+
+class ReplayError(NeuroEdgeError):
+    """A trace cannot be replayed against this agent — not a verdict difference."""
+
+    code = "NE4003"
+
+
 class PerceptionUnavailableError(NeuroEdgeError):
     """
     A perception component cannot be constructed: a missing or malformed command
