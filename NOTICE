@@ -97,11 +97,10 @@ Two deliberate choices in this section, both to keep GPL out of the core:
     `format: uri` in trace.v1.json are annotations only, and a trace with an
     unparseable timestamp would validate.
 
-  * copier is NOT a core dependency. It is needed only by `neuroedge new`
-    (Sprint 3, TSK-S3-07) and depends on `jinja2-ansible-filters`, which is
-    GPL3. It therefore sits in the optional `scaffold` extra. Installing that
-    extra brings GPL3 code into the environment; do not promote it to the core
-    dependency set without a written licence decision.
+  * copier is NOT a dependency. It depends on `jinja2-ansible-filters`, which
+    is GPL3, so `neuroedge new` (TSK-S3-07) uses a plain-Python generator
+    (python/neuroedge/templates/) instead. Do not add copier, or any template
+    engine with a copyleft dependency, without a written licence decision.
 
 
 ================================================================================

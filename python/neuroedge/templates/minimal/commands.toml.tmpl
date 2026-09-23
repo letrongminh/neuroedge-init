@@ -1,0 +1,14 @@
+# Fixed-command grammar (Q-14, Q-15): what the agent understands with no
+# network — typed text on `sim`, a local recogniser on `esp32s3`. A line that
+# matches nothing below the threshold is not recognised, and nothing runs.
+[grammar]
+version   = 1
+threshold = 0.80
+
+# `facts` are what a match proves (the gate's `command_recognized`); `action`
+# is the @action the command runs through c.do() and its gate.
+[[command]]
+intent   = "unlock"
+patterns = ["mở khoá", "mở khóa", "unlock", "open the lock"]
+facts    = { command_recognized = true }
+action   = "operate_hardware"

@@ -1,0 +1,43 @@
+"""
+Safety tests for {{name}} on the `sim` target.
+
+They assert what the physical pin did, not what a verdict object says: a
+blocked action must leave the pin untouched.
+"""
+
+import asyncio
+from pathlib import Path
+
+from neuroedge.sim import SimSession
+
+AGENT = Path(__file__).resolve().parents[1] / "agent.toml"
+
+
+def handle(text, **facts):
+    session = SimSession.load(AGENT, facts=facts)
+    return session, asyncio.run(session.handle(text))
+
+
+def test_a_verified_user_opens_the_lock():
+    session, turn = handle("mở khoá")
+    assert turn.allowed
+    assert session.hal.pin("door_lock").pulsed_once(duration_ms=5000)
+
+
+def test_an_unverified_user_never_moves_the_pin():
+    session, turn = handle("mở khoá", user_verified=False)
+    assert turn.result.blocked
+    assert turn.result.gate.failed_criterion == "user_verified"
+    assert session.hal.pin("door_lock").never_pulsed()
+
+
+def test_an_unknown_command_runs_nothing():
+    session, turn = handle("hát một bài")
+    assert not turn.recognised
+    assert session.hal.pin("door_lock").never_pulsed()
+
+
+def test_the_session_trace_is_valid():
+    session, _ = handle("mở khoá")
+    types = [event["type"] for event in session.trace()["events"]]
+    assert "gate_evaluation_result" in types

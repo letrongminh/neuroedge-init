@@ -9,8 +9,8 @@
 #   /tmp/lockenv/bin/python -m pip freeze --exclude-editable | sort
 #
 # Every licence below is permissive. `copier` is deliberately absent: it pulls
-# in jinja2-ansible-filters (GPL3) and lives in the optional `scaffold` extra
-# instead (see pyproject.toml and NOTICE §B).
+# in jinja2-ansible-filters (GPL3), so `neuroedge new` uses a plain-Python
+# generator instead (TSK-S3-07, NOTICE §B).
 PyYAML==6.0.3
 Pygments==2.21.0
 annotated-doc==0.0.5

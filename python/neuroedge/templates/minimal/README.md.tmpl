@@ -1,0 +1,31 @@
+# {{name}}
+
+Agent NeuroEdge sinh bởi `neuroedge new`. Một action vật lý (`operate_hardware`
+kích chân `door_lock`), một gate đứng trước nó, và bộ test khẳng định chân
+không nhúc nhích khi gate chặn.
+
+## Chạy thử trên `sim` — không cần mạng, không cần key
+
+```bash
+neuroedge build --target sim --board sim-default   # đối chiếu năng lực với bo mạch
+neuroedge run -c "mở khoá"                          # ✓ ALLOW, door_lock PULSED 5s
+neuroedge run                                       # REPL: gõ lệnh, :help, exit
+```
+
+Trong REPL, `:set user_verified false` rồi gõ lại `mở khoá` để thấy gate chặn.
+
+## Kiểm thử
+
+```bash
+python -m pytest -q tests
+```
+
+## Tệp
+
+| Tệp | Vai trò |
+|:---|:---|
+| `agent.toml` | Agent cần gì từ bo mạch (`[requires]`), gate nào (`[gates]`), dữ kiện phiên trên `sim` (`[sim.facts]`) |
+| `commands.toml` | Ngữ pháp lệnh cố định: câu nào → intent nào → action nào |
+| `gates/custom_lock@1.0.0.yaml` | Điều kiện cho phép (`allow_when`) và việc xảy ra khi bị chặn (`on_block`). Xem bằng lời: `neuroedge gate explain gates/custom_lock@1.0.0.yaml` |
+| `actions/operate_hardware.py` | Hàm `@action` — chỉ `c.do()` chạy được, sau khi gate cho phép |
+| `tests/test_agent.py` | Test an toàn: khẳng định trạng thái chân, không chỉ phán quyết |

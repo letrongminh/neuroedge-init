@@ -51,7 +51,6 @@ err_console = Console(stderr=True)
 
 # Sprint in which each unimplemented command gets its engine, from the roadmap.
 PENDING = {
-    "new": ("TSK-S3-07", "Sprint 3"),
     "test": ("TSK-S3-03", "Sprint 3"),
     "record": ("TSK-S3-01", "Sprint 3"),
 }
@@ -541,11 +540,28 @@ def replay(
 
 @app.command()
 def new(
-    name: str = typer.Argument(..., help="Name of the new agent project"),
-    template: str = typer.Option("villa-concierge", help="Template to scaffold"),
+    name: str = typer.Argument(..., help="Name of the new agent project (and its directory)"),
+    template: str = typer.Option(
+        "minimal", "--template", help="minimal (1 action, 1 gate, tests) or villa-concierge"
+    ),
 ):
-    """Scaffold a new agent project (pending TSK-S3-07)."""
-    _not_yet("new")
+    """Scaffold an agent project: agent.toml, commands.toml, a gate, an @action, tests."""
+    from ..templates import scaffold
+
+    try:
+        files = scaffold(name, template)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    console.print(f"[bold green]✓[/bold green] created {escape(name)}/ from template {template}")
+    for path in files:
+        console.print(f"  {escape(str(path))}")
+    console.print(
+        f"\nNext:\n  cd {escape(name)}\n"
+        "  neuroedge build --target sim --board sim-default\n"
+        "  neuroedge run\n"
+        "  python -m pytest -q tests"
+    )
 
 
 def _default_agent() -> Path:

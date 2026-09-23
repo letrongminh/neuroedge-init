@@ -1,0 +1,27 @@
+# The gate in front of `operate_hardware`. The action runs only when every
+# `allow_when` clause holds; an undecided criterion blocks (fail-closed).
+#
+#   neuroedge gate explain gates/custom_lock@1.0.0.yaml   # the policy in plain words
+schema:  neuroedge.gate/v1
+name:    custom_lock
+version: 1.0.0
+
+evaluate:
+  user_verified:
+    type: bool
+    instructions: "Người dùng đã được xác minh trong phiên hiện tại"
+  command_recognized:
+    type: bool
+    instructions: "Câu lệnh khớp ngữ pháp lệnh cố định trong commands.toml"
+
+allow_when:
+  user_verified:      true
+  command_recognized: true
+
+on_block:
+  action:  ask
+  message: "Cần xác minh người dùng trước khi mở khoá."
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

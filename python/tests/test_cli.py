@@ -219,8 +219,6 @@ def test_unimplemented_command_exits_two_and_names_its_task(invoke, command):
     these distinguishable from genuine failures in CI.
     """
     args = [command]
-    if command == "new":
-        args.append("demo")
     if command == "build":
         args += ["--target", "esp32s3"]
     result = invoke(*args)
