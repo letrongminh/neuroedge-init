@@ -6,7 +6,7 @@ Nguồn sự thật, theo thứ tự ưu tiên khi hai tài liệu lệch nhau:
 
 | Tệp | Vai trò |
 |:---|:---|
-| [`neuroedge-prd.md`](neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`. **Sổ quyết định là §15** (Q-1 → Q-13) |
+| [`neuroedge-prd.md`](neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`. **Sổ quyết định là §15** (mã `Q-N`) |
 | [`neuroedge-proposal.md`](neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** |
 | [`neuroedge-roadmap.md`](neuroedge-roadmap.md) | Tiến độ Giai đoạn 1. **§0 là bảng điều khiển** |
 | [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) | Giai đoạn 2 (Tháng 9–24) |

@@ -27,6 +27,9 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **Q-21 (đề xuất) — mô phỏng theo tầng bằng OSS đã kiểm chứng.** Mỗi tầng kiểm thử một công cụ mở, kèm phần nó
+  không kiểm được; thêm TSK-S4-07 (walker C trên host, mỗi PR) và TSK-S4-08 (Espressif QEMU, hằng đêm) để kiểm
+  logic firmware trước khi bo mạch về. Proposal §3.2, Phụ lục H.4; PRD §15.
 - **TSK-S3-01 — `TraceRecorder` + `neuroedge record`.** Ghi phiên ra `trace.v1` đã thẩm định; phiên nay
   có `action_requested` và `gate_facts` (dữ kiện + độ tin cậy) để replay; `--anonymize` băm chữ thô tại
   nguồn. `testing/recorder.py`. Kiểm: `pytest tests/test_recorder.py`. (FR-CI-01, FR-TRC-07)
@@ -92,6 +95,10 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã đổi
 
+- **Phụ lục H.1 xác minh giấy phép tại nguồn** cho Wokwi Elements, `gpiod`, XiaoZhi, Pipecat, Silero/libfvad, Pytest/DeepDiff;
+  thêm dòng **ESP-SR/ESP-ADF** — giấy phép chỉ cho chip Espressif, chỉ nằm trong firmware. Sửa hai nhận định sai: Wokwi
+  Elements không có chốt cửa và không mô phỏng gì; Renode không chạy ESP32-S3.
+- **Sprint 4 tiêu chí 2** dùng `SafetyRegressionError` (NE4002) thay `TargetEquivalenceError` dự kiến.
 - **`verify` replay ba vết ghi chuẩn mực trên từng target** thay vì chỉ thẩm định lược đồ; mặc định
   `--targets sim` (trước: `sim,linux` nhưng không chạy gì trên `linux`). PRD Phụ lục B thêm NE4002,
   NE4003.

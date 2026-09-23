@@ -385,6 +385,24 @@ Mỗi môi trường được mô tả theo năm tiêu chí dưới đây:
 | **`linux`** | Thiết bị máy tính nhúng, RPi, máy tính công nghiệp x86 | Tự động trên từng Pull Request | Phần cứng thật qua giao tiếp `gpiod` chuẩn Linux | Tài nguyên CPU/RAM dồi dào |
 | **`esp32s3`** | Thiết bị biên tối ưu chi phí ($5) | Chạy tự động hàng đêm (Nightly) trên bo mạch thật | Ghi trực tiếp thanh ghi và chân GPIO vật lý | Tài nguyên SRAM/PSRAM giới hạn nghiêm ngặt |
 
+#### Mô phỏng theo tầng — mượn công cụ chuẩn, không tự viết emulator *(Q-21)*
+
+Không một bộ mô phỏng nào phủ cả năm nguyên thủy trên cả ba target. Mỗi tầng kiểm thử dùng công cụ mở đã được cộng đồng kiểm chứng cho đúng phần nó làm tốt, và ghi rõ phần nó **không** kiểm được — phần đó rơi xuống tầng dưới, cuối cùng là bo mạch thật. Giấy phép và phiên bản từng công cụ: Phụ lục H.4.
+
+| Tầng kiểm thử | Công cụ | Kiểm được | Không kiểm được | Chạy khi | Trạng thái |
+|:---|:---|:---|:---|:---|:---:|
+| Logic an toàn: gate, token, `@action` | `SimHAL` trong tiến trình Python | Phán quyết, lệnh chân, vết ghi, replay/golden | Timing thật, áp lực RAM vi điều khiển | Mỗi commit — khởi động ~0,6 s (gồm kiểm năng lực), ~11 ms mỗi lượt *(đo 2026-09-23)* | ✅ |
+| `digital.out` trên Linux | **gpio-sim** (kernel) + libgpiod v2 | Đường dẫn chardev, tìm line theo tên, pulse/cancel, `verify --targets sim,linux` | Điện áp, timing phần cứng | Mỗi PR (job `linux-hal`) | ✅ (Q-16) |
+| `display` | Khung hình trong bộ nhớ + digest golden | Nội dung khung, đúng độ phân giải khai báo | Panel, driver SPI | Mỗi PR | Đề xuất — khi hiện thực `display` |
+| `audio.in` / `audio.out` trên Linux | **`snd-aloop`** (ALSA loopback) hoặc PulseAudio null-sink | Bơm WAV vào mic ảo, thu luồng loa | Âm học phòng, AEC phần cứng | Mỗi PR | Đề xuất — cùng TSK-S3-13; thử `modprobe snd-aloop` trên runner trước |
+| Mã C thuần của firmware (walker cây quyết định) | Biên dịch trên host (gcc) + bảng sự thật `fixtures/decision_trees/` | Walker C cho cùng phán quyết với walker Python, từng hàng | ISA Xtensa, bộ nhớ, ngắt | Mỗi PR | Đề xuất — TSK-S4-07 |
+| Firmware `esp32s3` khởi động | **Espressif QEMU** (`idf.py qemu`, ESP-IDF ≥ 5.4) | Boot, UART, flash/PSRAM, logic, GDB | **I2S, Wi-Fi, LCD SPI, GPIO thường, LEDC**, timing | Hằng đêm | Đề xuất — TSK-S4-08 |
+| Mọi thứ còn lại | ESP32-S3-BOX-3 · RPi 5 | Âm thanh, màn hình, GPIO thật, bộ nhớ, 24 giờ | — | Hằng đêm (TSK-S4-05) | Chờ bo mạch |
+
+**Không dùng, và vì sao:** Renode — không có nền tảng ESP32-S3 upstream (chỉ có ISA Xtensa). Trình mô phỏng Wokwi — mã đóng, cần token và hạn mức phút CI, không có I2S trên S3 (`TODOS.md`). Mock GPIO kiểu `gpiozero.MockFactory` — `SimHAL` đã giữ trạng thái chân trong bộ nhớ và gắn với token. `iio_simple_dummy` — không có trong kernel Ubuntu dựng sẵn. `snd-dummy` — không thu, không phát được âm thanh.
+
+**Hệ quả lên tiến độ:** mã C thuần của Sprint 4 (walker, TSK-S4-02) được kiểm trên mỗi PR **trước khi bo mạch về**; bo mạch chỉ còn là điều kiện cho phần thật sự cần phần cứng — âm thanh, màn hình, bộ nhớ (TSK-S1-10). QEMU không thay được spike bộ nhớ: nó không giả lập đường âm thanh I2S/AFE, nơi áp lực bộ nhớ nằm.
+
 #### Phân tầng cam kết theo bậc target
 
 Nguyên tắc tương đương là mệnh đề về **giao diện**, không phải về số lượng môi trường. Để mở rộng danh mục phần cứng mà không pha loãng chất lượng, mức cam kết của đội lõi được phân thành ba bậc tường minh:
@@ -1720,14 +1738,15 @@ Danh mục đầy đủ các dự án được tái sử dụng hoặc port, kè
 | Pydantic v2 | Chuẩn hóa và kiểm tra lược đồ | MIT | Thư viện | Chưa |
 | `rfc8785` | Canonical JSON cho Golden Reference | Apache-2.0 | Thư viện | Chưa |
 | `cel-python` | Lượng giá biểu thức `allow_when` | Apache-2.0 | Rule engine | Chưa |
-| Pytest · DeepDiff | Nền tảng Action CI | MIT | Thư viện | Chưa |
-| Wokwi Elements | Giao diện mô phỏng phần cứng | MIT | Web components | Chưa |
-| `libgpiod` | Truy cập GPIO trên Linux | LGPL-2.1 | **Liên kết động** | Chưa |
+| Pytest · DeepDiff | Nền tảng Action CI | MIT | Thư viện | Có *(đang dùng: `testing/golden.py`)* |
+| Wokwi Elements | Giao diện mô phỏng phần cứng — **chỉ hiển thị, không mô phỏng gì** | MIT | Web components | Có *(0.48.3; có `led`, `pushbutton`, `servo`, `lcd1602`, `ssd1306`, `ili9341`, `buzzer`; **không có** chốt cửa `solenoid-lock` — chốt cửa của TSK-S2-09 là web component tự vẽ nhỏ)* |
+| `libgpiod` | Truy cập GPIO trên Linux | LGPL-2.1 | **Liên kết động** — gói Python `gpiod` qua extra `[linux]` | Có *(`gpiod` 2.5.0, dùng từ TSK-S3-05; `NOTICE` §B)* |
 | ESP-IDF · `esp_https_ota` | Toolchain và OTA cho vi điều khiển | Apache-2.0 | SDK | Chưa |
-| XiaoZhi ESP32 | Driver codec I2S, LCD, cấu hình bo mạch | MIT | **Port trực tiếp** | Chưa |
-| Pipecat | Mô hình frame processor và barge-in | BSD-2-Clause | **Port thiết kế** | Chưa |
+| XiaoZhi ESP32 | Driver codec I2S, LCD, cấu hình bo mạch | MIT | **Port trực tiếp** | Có *(hỗ trợ S3-BOX-3; lưu ý nó kéo theo ESP-SR — xem dòng dưới)* |
+| ESP-SR · ESP-ADF | AFE/AEC, WakeNet, MultiNet (Q-14) trên `esp32s3` | **"ESPRESSIF MIT"** — chỉ cấp quyền dùng trên sản phẩm của Espressif | Chỉ trong firmware `targets/esp32s3/`; **không** vendoring vào lõi Python | Có *(đọc `LICENSE` của esp-sr và esp-adf, 2026-09-23)* |
+| Pipecat | Mô hình frame processor và barge-in | BSD-2-Clause | **Port thiết kế** | Có *(1.11.0; `pipecat.flows` nay nằm trong gói chính)* |
 | microWakeWord · openWakeWord | Nhận diện từ khóa kích hoạt | Apache-2.0 | Mô hình và thư viện | Chưa |
-| Silero VAD · libfvad | Phát hiện tiếng nói | MIT · BSD-3-Clause | Thư viện | Chưa |
+| Silero VAD · libfvad | Phát hiện tiếng nói | MIT · BSD-3-Clause | Thư viện | Có *(không dùng `webrtcvad` Python: bản cuối 2017)* |
 | WebRTC AEC3 | Khử vang và tiếng vọng | BSD-3-Clause | Thư viện | Chưa |
 | Opus | Mã hóa truyền âm thanh | BSD-3-Clause | Codec | Chưa |
 | Sherpa-ONNX · Piper | Nhận dạng và tổng hợp tiếng nói | Apache-2.0 · MIT | Thư viện | Chưa |
@@ -1754,6 +1773,20 @@ Danh mục đầy đủ các dự án được tái sử dụng hoặc port, kè
 | LiveKit Agents · TEN Framework | Tham khảo thiết kế | Agent chạy phía máy chủ như một thành viên phòng media WebRTC; phụ thuộc vào chúng sẽ kéo máy trạng thái hội thoại và việc thu hồi lệnh actuator ra khỏi thiết bị, trái ràng buộc phân tầng §3.4 (gate và máy trạng thái chạy trên thiết bị), và thêm ngăn xếp WebRTC lên vi điều khiển trong khi lớp provider chỉ cần client WebSocket tinh gọn *(lý do viết lại theo CR-1.0, v5.5; quyết định giữ nguyên)* |
 
 **Lưu ý về XiaoZhi:** chỉ port tầng driver phần cứng. Không sao chép kiến trúc ứng dụng, vì logic hội thoại của dự án này gắn trực tiếp vào lệnh phần cứng, không có HAL và không có khái niệm hợp đồng hành động.
+
+### H.4 Công cụ mô phỏng và kiểm thử — dùng trong CI, không phân phối *(Q-21)*
+
+Chạy như công cụ riêng hoặc mô-đun kernel; không có dòng mã nào của chúng vào gói `neuroedge`, nên giấy phép copyleft của công cụ (QEMU, kernel) không chạm lõi MIT. Vai trò từng công cụ trong chiến lược kiểm thử: §3.2 *Mô phỏng theo tầng*.
+
+| Công cụ | Dùng cho | Giấy phép | Trạng thái | Xác minh |
+|:---|:---|:---|:---|:---:|
+| Linux `gpio-sim` | `digital.out` trên `linux` trong CI | GPL-2.0 (kernel, không liên kết) | **Đang dùng** — `scripts/setup_gpio_sim.sh`, job `linux-hal` | Có *(runner GitHub, kernel 6.17 azure + `linux-modules-extra`)* |
+| ALSA `snd-aloop` · PulseAudio null-sink | Bơm/thu âm thanh trên `linux` trong CI | GPL-2.0 (kernel) · LGPL-2.1 (PulseAudio, công cụ) | Đề xuất — TSK-S3-13 | Chưa thử trên runner 6.17 |
+| Espressif QEMU (`qemu-xtensa`) | Boot + logic firmware `esp32s3` không cần bo mạch | GPL-2.0 (tệp nhị phân riêng) | Đề xuất — TSK-S4-08 | Có *(S3 từ `esp-develop-9.0.0`, tài liệu `idf.py qemu` cho S3 từ ESP-IDF v5.4; không I2S/Wi-Fi/LCD SPI/GPIO thường)* |
+| `i2c-stub` | `sensor.read` mức thanh ghi trên `linux` | GPL-2.0 (kernel) | Tuỳ chọn — khi hiện thực `sensor.read` trên `linux` | Chưa thử trên runner |
+| Renode | — | MIT | **Không dùng** — không có nền tảng ESP32-S3 upstream | Có |
+| Trình mô phỏng Wokwi · `wokwi-ci-action` | — | Mã đóng; CLI/action MIT, cần token, hạn mức phút | **Không dùng mặc định** — `TODOS.md` | Có *(S3 có GPIO/I2C/SPI/Wi-Fi, không I2S)* |
+| `espressif/esp-emulator` | — | Apache-2.0 | **Theo dõi** — quá mới để dựa vào | Có |
 
 ---
 
