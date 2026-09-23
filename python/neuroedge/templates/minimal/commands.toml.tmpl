@@ -5,10 +5,11 @@
 version   = 1
 threshold = 0.80
 
-# `facts` are what a match proves (the gate's `command_recognized`); `action`
-# is the @action the command runs through c.do() and its gate.
+# `facts` are what a match proves (the gate's `command_recognized`); `tool` is
+# the tool (@action) the command calls — the same tool call an LLM or an MCP
+# client would send — through c.do() and its gate.
 [[command]]
 intent   = "unlock"
 patterns = ["mở khoá", "mở khóa", "unlock", "open the lock"]
 facts    = { command_recognized = true }
-action   = "operate_hardware"
+tool     = "operate_hardware"

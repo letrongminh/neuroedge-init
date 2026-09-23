@@ -306,34 +306,63 @@ def check_fallbacks(
 
 
 def check_commands(grammar: Any, actions: Iterable[Any]) -> list[NeuroEdgeError]:
-    """Every `action` a command names is a declared @action taking those arguments."""
+    """
+    Every `tool` a command calls is a declared @action, and its slot-mapped and
+    default arguments fit that tool's schema (Q-24).
+    """
+    from ..actions.tools import input_schema
+
     declared = {spec.name: spec for spec in actions}
     problems: list[NeuroEdgeError] = []
     for index, command in enumerate(grammar.commands):
-        if command.action is None:
+        if command.tool is None:
             continue
         where = f"{grammar.source} -> command[{index}] ({command.intent})"
-        spec = declared.get(command.action)
+        spec = declared.get(command.tool)
         if spec is None:
             problems.append(
                 AgentManifestError(
-                    where=f"{where}.action",
-                    why=f"{command.action!r} is not an @action of this agent; it has {sorted(declared)}",
-                    how=f"define @action(name={command.action!r}, ...) in actions/, or fix the name",
+                    where=f"{where}.tool",
+                    why=f"{command.tool!r} is not an @action of this agent; it has {sorted(declared)}",
+                    how=f"define @action(name={command.tool!r}, ...) in actions/, or fix the name",
                 )
             )
             continue
-        parameters = inspect.signature(spec.fn).parameters
-        unknown = sorted(set(command.arguments) - set(parameters))
-        if unknown:
-            problems.append(
-                AgentManifestError(
-                    where=f"{where}.arguments",
-                    why=f"{spec.name} has no parameter(s) {unknown}; it takes {list(parameters)}",
-                    how=f"map only parameters of {spec.name} to slots",
+        properties = input_schema(spec)["properties"]
+        for field_name, names in (
+            ("arguments", command.arguments),
+            ("default_args", command.default_args),
+        ):
+            unknown = sorted(set(names) - set(properties))
+            if unknown:
+                problems.append(
+                    AgentManifestError(
+                        where=f"{where}.{field_name}",
+                        why=f"{spec.name} has no parameter(s) {unknown}; it takes {sorted(properties)}",
+                        how=f"use only parameters of {spec.name}",
+                    )
                 )
-            )
+        from ..actions.tools import check_arguments
+
+        _, bad = check_arguments(
+            spec, {**dict.fromkeys(spec_required(spec), "x"), **command.default_args}
+        )
+        for problem in bad:
+            if problem.startswith("argument "):
+                problems.append(
+                    AgentManifestError(
+                        where=f"{where}.default_args",
+                        why=problem,
+                        how=f"give {spec.name} a value of the declared type",
+                    )
+                )
     return problems
+
+
+def spec_required(spec: Any) -> list[str]:
+    from ..actions.tools import input_schema
+
+    return list(input_schema(spec).get("required", []))
 
 
 # --- the build -------------------------------------------------------------------

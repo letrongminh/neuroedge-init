@@ -110,6 +110,13 @@ Two deliberate choices in this section, both to keep GPL out of the core:
     environment only. The CI licence gate installs `dev` alone and still
     rejects any GPL-family licence in the core set.
 
+  * mcp (the official Model Context Protocol Python SDK, MIT) is NOT a core
+    dependency. It sits in the optional `mcp` extra, needed only by
+    `neuroedge mcp serve` (python/neuroedge/mcp_server.py, Q-24). Every
+    transitive dependency is MIT, BSD, Apache-2.0 or PSF (checked 2026-09-23).
+    It is also in `dev`, so the MCP server is tested in CI and the licence
+    gate sees its dependency set.
+
 
 ================================================================================
 SECTION C — DEVELOPMENT AND CI DEPENDENCIES

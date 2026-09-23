@@ -59,7 +59,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 | **Sprint hiện hành** | 🟡 **Sprint 2: Lõi thực thi trên `sim` (≈ A1)** — mã A1 xong sớm, 2026-09-23 | **9 / 10 task trong phạm vi xong** (còn TSK-S2-11, chạy ở A2; TSK-S2-09 kéo lên và xong) · **5 / 6 tiêu chí ra đạt** (còn #6, cùng TSK-S2-11) · Sprint 1 còn TSK-S1-10 chờ bo mạch |
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: cuối Sprint 3 = **2026-11-15** — trễ ~2 tuần so với bản gốc (Tuần 6 gốc = 2026-11-02) (Q-19) |
 | **Lần cập nhật cuối** | **2026-09-23** | TSK-S3-17 (wheel tự chạy được, CI `wheel-smoke`); Q-21, Q-23 chốt; kéo firmware không cần bo mạch lên A2 — chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 597/597 · SKIP 0** | `python/tests/` — 32 bộ test; wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) |
+| **Trạng thái CI Lõi** | ✅ **PASS 614/614 · SKIP 0** | `python/tests/` — 33 bộ test; wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn + 1 còn mở** | 🔴 TSK-S1-10 chờ bo mạch vật lý · 🟡 Q-11 phần còn lại (Hawkbit EPL-2.0 / EMQX BSL) — **không chặn cho tới khi mở Khối 2** |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -836,6 +836,7 @@ Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho
 | **Q-21** | Mô phỏng theo tầng bằng OSS · ✅ **2026-09-23** | SimHAL · gpio-sim · âm thanh tệp/PCM (runner không có `snd-aloop`) · i2c-stub + lm75 · khung hình + digest · C và LVGL build trên host · Espressif QEMU · bo mạch thật; không Renode, không Wokwi | Walker C (TSK-S4-02) kiểm được trên mỗi PR trước khi bo mạch về — thêm TSK-S4-07, S4-08. Proposal §3.2 |
 | **Q-22** | AEC phần mềm trên `linux` · ✅ **2026-09-23** (phương án A) | PipeWire `module-echo-cancel` (`aec/libspa-aec-webrtc`); `audio.in` đọc nút `source`, `audio.out` phát vào nút `sink`; `linux-rpi5` khai `aec = true` chỉ khi đo đạt | Đóng khoảng FR-TGT-02 ở TSK-S5-08. Tiêu chí đo: `simulation_coverage.md` §6 |
 | **Q-23** | Định dạng cây quyết định trên MCU · ✅ **2026-09-23** | Bố cục nhị phân cố định (struct C) do `neuroedge build` sinh; v1.0 link vào firmware, sau này đặt ở phân vùng flash riêng (`esp_partition_mmap`) để đổi gate không nạp lại firmware | Không có parser JSON trên MCU, cây nằm trong flash (RB-4). RFC-0003 thu hẹp — `TODOS.md` #15 |
+| **Q-24** | Hành động là tool call · MCP · ✅ **2026-09-23** | Mỗi `@action` là một tool; ngữ pháp cục bộ, System 1/2 và MCP gửi cùng `ToolCall` → kiểm schema → `c.do()` → gate; dữ kiện `call_source` do dispatcher chèn | Hết ánh xạ cứng câu → hàm; mất mạng vẫn chạy bằng tool call tổng hợp (Q-14). `neuroedge mcp serve` (FR-CLI-10). PRD §15 |
 
 **Hệ quả trực tiếp lên Sprint 1:** Q-1, Q-2 và Q-3 đã chốt nghĩa là đội có thể đặt bo mạch, dựng kho mã và bắt đầu spike ngay Tuần 0 mà không chờ quyết định nào.
 

@@ -1,0 +1,92 @@
+"""
+The agent as a **gated MCP server** (Q-24): `neuroedge mcp serve`.
+
+Every `@action` of the agent is listed as an MCP tool, with the JSON schema
+derived from its signature (`neuroedge.actions.tools`). A `tools/call` from any
+MCP client — an IDE assistant, another agent, a cloud LLM — becomes a
+`ToolCall` with ``source = "mcp"`` and takes the one road to hardware:
+arguments checked against the schema, then `c.do()`, the gate, a single-use
+verdict token, the HAL. A client that was prompt-injected or hallucinates a
+call is refused by the gate exactly like anyone else.
+
+What the client gets back is the verdict, as JSON text and structured content:
+``{"tool": "light_off", "status": "BLOCK", "reason": "condition_not_met", …}``.
+A BLOCK is the gate working, not an error (`isError` stays false); a call the
+schema rejects is an error (`isError` true), and nothing moved.
+
+Needs the official MCP Python SDK: ``pip install 'neuroedge[mcp]'`` (MIT, every
+transitive dependency permissive — NOTICE §B).
+"""
+
+from __future__ import annotations
+
+import json
+from typing import Any
+
+from .actions.tools import ToolCall
+from .errors import NeuroEdgeError
+
+
+def _sdk() -> tuple[Any, Any]:
+    try:
+        import mcp.types as types
+        from mcp.server.lowlevel import Server
+    except ImportError as exc:
+        raise NeuroEdgeError(
+            where="neuroedge mcp serve",
+            why="the MCP Python SDK (`mcp`) is not installed",
+            how="pip install 'neuroedge[mcp]'",
+        ) from exc
+    return types, Server
+
+
+def build_server(session: Any) -> Any:
+    """An MCP `Server` over one agent session. Tool calls run one at a time, like turns."""
+    import anyio
+
+    from . import __version__
+
+    types, Server = _sdk()
+    lock = anyio.Lock()
+
+    async def list_tools(ctx: Any, params: Any) -> Any:
+        return types.ListToolsResult(
+            tools=[
+                types.Tool(
+                    name=tool["name"],
+                    description=tool["description"],
+                    input_schema=tool["inputSchema"],
+                )
+                for tool in session.tools.mcp()
+            ]
+        )
+
+    async def call_tool(ctx: Any, params: Any) -> Any:
+        call = ToolCall(params.name, dict(params.arguments or {}), source="mcp")
+        async with lock:
+            result = await session.call_tool(call)
+        content = result.content()
+        return types.CallToolResult(
+            content=[types.TextContent(text=json.dumps(content, ensure_ascii=False))],
+            structured_content=content,
+            is_error=result.status == "REJECTED",
+        )
+
+    return Server(
+        f"neuroedge:{session.manifest.label}",
+        version=__version__,
+        instructions=(
+            "Each tool is a physical action behind a NeuroEdge safety gate. Calling a tool asks "
+            "for it; the gate decides. A BLOCK result says why and what happens instead."
+        ),
+        on_list_tools=list_tools,
+        on_call_tool=call_tool,
+    )
+
+
+async def serve_stdio(session: Any) -> None:
+    from mcp.server.stdio import stdio_server
+
+    server = build_server(session)
+    async with stdio_server() as (read_stream, write_stream):
+        await server.run(read_stream, write_stream, server.create_initialization_options())

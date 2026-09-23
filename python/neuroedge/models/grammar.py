@@ -12,8 +12,13 @@ A grammar is a TOML file listing commands and the phrases that trigger them:
     intent   = "unlock"
     patterns = ["mở cửa phòng {room}", "mở cửa"]
     facts    = { command_recognized = true }   # optional
-    action   = "unlock_door"                   # optional: the @action to run
+    tool      = "unlock_door"                  # optional: the tool (@action) to call
     arguments = { guest_id = "room" }          # optional: parameter <- {slot}
+    default_args = { duration_s = 30 }         # optional: fixed arguments
+
+A matched command with a `tool` becomes a *synthetic tool call* — the same
+`ToolCall` an LLM or an MCP client would send (Q-24); `action` is accepted as
+the older name of `tool`.
 
 A command does at most one thing: run an `action` (through `c.do()` and its
 gate), `say` a fixed answer, or `ask` System 2 for a task (e.g. `"news"`) and
@@ -63,6 +68,12 @@ class Command:
     say: str | None = None
     ask: str | None = None
     offline_say: str | None = None
+    default_args: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def tool(self) -> str | None:
+        """The tool this command calls (stored as `action`, its older name)."""
+        return self.action
 
 
 OFFLINE_SAY = "Hiện mình chưa trả lời được câu này."
@@ -158,7 +169,27 @@ class CommandGrammar:
                     why="every command needs a string `intent` and a non-empty `patterns` list",
                     how='write intent = "unlock" and patterns = ["mở cửa"]',
                 )
-            action, arguments = raw.get("action"), raw.get("arguments", {})
+            if raw.get("tool") is not None and raw.get("action") is not None:
+                raise PerceptionUnavailableError(
+                    where=f"{source} -> command[{index}]",
+                    why="both `tool` and `action` are set; `action` is the older name of `tool`",
+                    how='keep only tool = "..."',
+                )
+            action = raw.get("tool", raw.get("action"))
+            arguments = raw.get("arguments", {})
+            default_args = raw.get("default_args", {})
+            if not isinstance(default_args, dict):
+                raise PerceptionUnavailableError(
+                    where=f"{source} -> command[{index}].default_args",
+                    why=f"default_args must be a table of parameter = value, found {default_args!r}",
+                    how="write default_args = { duration_s = 30 }",
+                )
+            if default_args and action is None:
+                raise PerceptionUnavailableError(
+                    where=f"{source} -> command[{index}].default_args",
+                    why="default_args are arguments of a tool call; this command calls no tool",
+                    how='add tool = "<action>", or remove default_args',
+                )
             if action is not None and not isinstance(action, str):
                 raise PerceptionUnavailableError(
                     where=f"{source} -> command[{index}].action",
@@ -182,7 +213,7 @@ class CommandGrammar:
                         why=f"`{key}` must be non-empty text, found {value!r}",
                         how=f'write {key} = "..." or remove it',
                     )
-            doing = [key for key in ("action", "say", "ask") if raw.get(key) is not None]
+            doing = [key for key in ("tool", "action", "say", "ask") if raw.get(key) is not None]
             if len(doing) > 1:
                 raise PerceptionUnavailableError(
                     where=f"{source} -> command[{index}]",
@@ -205,6 +236,7 @@ class CommandGrammar:
                     speech["say"],
                     speech["ask"],
                     speech["offline_say"],
+                    dict(default_args),
                 )
             )
         return cls(commands, float(threshold), source)

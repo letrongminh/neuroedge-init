@@ -191,7 +191,22 @@ class SystemTwo:
         self.provider = provider
         self.fallback = fallback
 
-    async def _run(self, task: str, name: str | None, state: Mapping | None) -> str:
+    @property
+    def available(self) -> bool:
+        """A provider or a fallback is configured (it may still fail when asked)."""
+        return self.provider is not None or self.fallback is not None
+
+    async def respond(self, state: Mapping | None = None) -> Any:
+        """
+        A reply that may carry tool calls: text, or ``{"text": ..., "tool_calls": [...]}``
+        (flat or OpenAI shape). The caller parses it with
+        `neuroedge.actions.tools.parse_tool_calls` and dispatches every call through a gate.
+        """
+        return await self._run("respond", None, state, raw=True)
+
+    async def _run(
+        self, task: str, name: str | None, state: Mapping | None, raw: bool = False
+    ) -> Any:
         for candidate in (self.provider, self.fallback):
             if candidate is None:
                 continue
@@ -199,7 +214,7 @@ class SystemTwo:
                 answer = candidate(task, name, state)
                 if hasattr(answer, "__await__"):
                     answer = await answer
-                return str(answer)
+                return answer if raw else str(answer)
             except Exception:  # try the next candidate; the last failure is reported
                 continue
         raise PerceptionUnavailableError(

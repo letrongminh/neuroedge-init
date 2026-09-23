@@ -62,5 +62,6 @@ step new nha --template home-voice
 cd "$WORK/nha"
 step run -c "bật đèn"
 step run -c "wifi nhà mình là gì"
+step mcp tools
 step test
 echo "✓ the installed wheel runs the whole journey"

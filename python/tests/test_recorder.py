@@ -48,6 +48,7 @@ async def test_a_recorded_unlock_validates_and_carries_the_replay_inputs(villa, 
     assert types == [
         "text_input",
         "intent_extracted",
+        "tool_call",
         "action_requested",
         "gate_evaluation_begin",
         "gate_facts",
