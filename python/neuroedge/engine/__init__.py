@@ -8,11 +8,11 @@ Sprint 2.
 """
 
 from dataclasses import dataclass
-from enum import StrEnum
 from typing import Any
 
 from .canonical import canonicalize, digest, gate_canonical_json, gate_digest
 from .constraints import Constraint, parse_allow_when, parse_constraint
+from .decision_tree import TREE_SCHEMA, TreeResult, compile_tree, tree_bytes, validate_tree, walk
 from .gate_resolver import (
     MAX_INHERITANCE_LEVELS,
     GateRegistry,
@@ -23,9 +23,19 @@ from .gate_resolver import (
     resolve_gate_uri,
     validate_gate_document,
 )
+from .verdict import DEGRADED_REASONS, Fact, GateVerdict, Reason
 
 __all__ = [
+    "DEGRADED_REASONS",
     "MAX_INHERITANCE_LEVELS",
+    "TREE_SCHEMA",
+    "Fact",
+    "Reason",
+    "TreeResult",
+    "compile_tree",
+    "tree_bytes",
+    "validate_tree",
+    "walk",
     "ActionContractEngine",
     "Constraint",
     "Gate",
@@ -44,11 +54,6 @@ __all__ = [
     "resolve_gate_uri",
     "validate_gate_document",
 ]
-
-
-class GateVerdict(StrEnum):
-    ALLOW = "ALLOW"
-    BLOCK = "BLOCK"
 
 
 @dataclass

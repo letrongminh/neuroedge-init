@@ -1,0 +1,148 @@
+{
+ "gate": "base-access@1.0.0",
+ "gate_digest": "sha256:914e2724e1f2807c9e59332b2f65698281feb19a943d0cbc07dbac4b86566c9b",
+ "rows": [
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    }
+   },
+   "failed_criterion": null,
+   "reason": null,
+   "verdict": "ALLOW"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    }
+   },
+   "failed_criterion": null,
+   "reason": null,
+   "verdict": "ALLOW"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "criterion_unavailable",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": "__out_of_domain__"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "criterion_unavailable",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "criterion_unavailable",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "__out_of_domain__"
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "criterion_unavailable",
+   "verdict": "BLOCK"
+  }
+ ]
+}

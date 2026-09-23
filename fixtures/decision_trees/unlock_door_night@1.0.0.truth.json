@@ -1,0 +1,2929 @@
+{
+ "gate": "unlock_door_night@1.0.0",
+ "gate_digest": "sha256:d35267adbe9c0dbec2d8823a0eed5e5f6932a60911b3be7dfabfb25b3a2f8a13",
+ "rows": [
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "room_matches",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "room_matches",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "room_matches",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "room_matches",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "room_matches",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "room_matches",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "room_matches",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "room_matches",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "staff_co_authorized",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "staff_co_authorized",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "staff_co_authorized",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "staff_co_authorized",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": null,
+   "reason": null,
+   "verdict": "ALLOW"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": null,
+   "reason": null,
+   "verdict": "ALLOW"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "request_channel",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "request_channel",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "medium"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": false
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": false
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "in_person"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "phone"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "web"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "high"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "criterion_unavailable",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": "__out_of_domain__"
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "criterion_unavailable",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": null,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "confidence_unavailable",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 0.949,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "guest_authenticated",
+   "reason": "condition_not_met",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 0.95,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": null,
+   "reason": null,
+   "verdict": "ALLOW"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "criterion_unavailable",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "__out_of_domain__"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "risk_level",
+   "reason": "criterion_unavailable",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "room_matches",
+   "reason": "criterion_unavailable",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": "__out_of_domain__"
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "room_matches",
+   "reason": "criterion_unavailable",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "staff_co_authorized",
+   "reason": "criterion_unavailable",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "app"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": "__out_of_domain__"
+    }
+   },
+   "failed_criterion": "staff_co_authorized",
+   "reason": "criterion_unavailable",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "request_channel",
+   "reason": "criterion_unavailable",
+   "verdict": "BLOCK"
+  },
+  {
+   "facts": {
+    "guest_authenticated": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "request_channel": {
+     "confidence": 1.0,
+     "value": "__out_of_domain__"
+    },
+    "risk_level": {
+     "confidence": 1.0,
+     "value": "low"
+    },
+    "room_matches": {
+     "confidence": 1.0,
+     "value": true
+    },
+    "staff_co_authorized": {
+     "confidence": 1.0,
+     "value": true
+    }
+   },
+   "failed_criterion": "request_channel",
+   "reason": "criterion_unavailable",
+   "verdict": "BLOCK"
+  }
+ ]
+}
