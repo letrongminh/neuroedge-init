@@ -6,6 +6,9 @@ Five immutable primitives (FR-HAL-01): `audio.in`, `audio.out`, `digital.out`,
 docs/spec/hal_mcu_review.md for what that buys on the microcontroller.
 """
 
+from collections.abc import Callable
+from typing import Any
+
 from ..errors import ActionContractViolation
 from .board import (
     PRIMITIVES,
@@ -55,17 +58,44 @@ class PinAssertion:
         return f"<PinAssertion {self.pin_name} {state}>"
 
 
+Authorizer = Callable[[Any, str, str], None]
+
+
+def _require_signature(signature: Any, pin: str, called_from: str) -> None:
+    """Default check: some proof must be present. `c.do()` installs the token check."""
+    if not signature:
+        raise ActionContractViolation(
+            where=f"{called_from} -> digital.out {pin!r}",
+            why=(
+                "actuator command carries no gate signature; every digital.out "
+                "must prove which gate authorised it (Proposal Appendix A.2)"
+            ),
+            how=(
+                "route the command through an @action function so the Action "
+                "Contract Engine attaches the resolved gate signature"
+            ),
+        )
+
+
 class HardwareAbstractionLayer:
     """
     Standard interface across `sim`, `linux` and `esp32s3`.
 
-    Target-specific backends land in Sprint 2 (`hal/sim.py`) and Sprint 3
-    (`hal/linux.py`); this base class holds the contract they share.
+    `digital_out` is the only way a pin changes state, and it always asks
+    `authorize` first. The default only demands that proof is present; the
+    Action Contract layer (TSK-S2-05) installs the single-use token check.
     """
 
-    def __init__(self, target: str = "sim", board: BoardProfile | None = None):
+    def __init__(
+        self,
+        target: str = "sim",
+        board: BoardProfile | None = None,
+        *,
+        authorize: Authorizer = _require_signature,
+    ):
         self.target = target
         self.board = board
+        self.authorize = authorize
         self.pins: dict[str, PinAssertion] = {}
 
     def digital_out(
@@ -73,7 +103,7 @@ class HardwareAbstractionLayer:
         pin: str,
         operation: str,
         duration_ms: int = 0,
-        signature: str = "",
+        signature: Any = "",
         called_from: str = "<unknown>",
     ) -> None:
         """
@@ -82,25 +112,19 @@ class HardwareAbstractionLayer:
         Appendix A.2 makes the gate signature non-optional: there is no code
         path from agent logic to a physical pin that does not carry proof of an
         authorising gate. An unsigned command is a contract violation, not a
-        permission error to be retried.
+        permission error to be retried. The pin is checked before the proof is
+        spent, so a typo never consumes a verdict token.
         """
-        if not signature:
-            raise ActionContractViolation(
-                where=f"{called_from} -> digital.out {pin!r}",
-                why=(
-                    "actuator command carries no gate signature; every digital.out "
-                    "must prove which gate authorised it (Proposal Appendix A.2)"
-                ),
-                how=(
-                    "route the command through an @action function so the Action "
-                    "Contract Engine attaches the resolved gate signature"
-                ),
-            )
-
         if self.board is not None:
             self.board.require_pin(pin, called_from=called_from)
-
+        self.authorize(signature, pin, called_from)
         self.pins[pin] = PinAssertion(pin, pulsed=(operation == "pulse"), duration_ms=duration_ms)
 
     def pin(self, name: str) -> PinAssertion:
+        """
+        Observed state of a pin. A name the board does not declare raises, so a
+        misspelled assertion can never pass as "never pulsed" (CEO-S5-2).
+        """
+        if self.board is not None:
+            self.board.require_pin(name, called_from="hal.pin()")
         return self.pins.get(name, PinAssertion(name, pulsed=False))
