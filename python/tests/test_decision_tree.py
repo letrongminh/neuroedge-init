@@ -131,6 +131,8 @@ def _oracle(gate, facts: dict[str, Fact]) -> tuple[GateVerdict, Reason | None]:
         key = str(fact.value).lower() if constraint.kind == "bool" else fact.value
         if key not in domain:
             return GateVerdict.BLOCK, Reason.CRITERION_UNAVAILABLE
+        if fact.confidence is not None and not 0.0 <= fact.confidence <= 1.0:
+            return GateVerdict.BLOCK, Reason.CRITERION_UNAVAILABLE
         if constraint.confidence_floor and fact.confidence is None:
             return GateVerdict.BLOCK, Reason.CONFIDENCE_UNAVAILABLE
         if key not in constraint.admitted or (

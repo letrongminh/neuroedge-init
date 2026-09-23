@@ -67,6 +67,16 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã sửa
 
+- **Sáu lỗ an toàn từ review đối kháng mã A1** — hai trong số đó kích được chân GPIO.
+  Kiểm: `pytest tests/test_safety_regressions.py` (15/16 test fail trên mã trước khi sửa).
+  - Độ tin cậy `NaN`, `True`, ngoài `[0, 1]` từng lọt ngưỡng `confidence_gte` ⇒ nay `criterion_unavailable`.
+  - `fail: open` từng biến một dữ kiện đã biết là "không" thành ALLOW khi thẩm định suy giảm ⇒
+    `open` chỉ tha điều không quyết được.
+  - Nhà cung cấp ném lỗi hoặc treo ⇒ nay là phán quyết suy giảm (mạch ngắt ghi nhận, fallback
+    được hỏi, timeout theo ngân sách còn lại), không còn là exception không có vết ghi.
+  - `fallback_action` cần tham số ⇒ `build` từ chối, lúc chạy bỏ qua thay vì `TypeError`.
+  - `never_pulsed()` từng đúng sau `on()`; lệnh sau từng xoá lệnh trước ⇒ chân lưu lịch sử lệnh.
+  - Task sinh trong thân hành động từng gọi lại được hành động sau khi `c.do()` trả về.
 - **CLI nuốt mất tên bảng TOML trong chẩn đoán.** `rich` hiểu `[requires]`,
   `[capabilities.digital_out]` là thẻ markup nên lời hướng dẫn in ra thiếu chữ. Mọi trường
   `where`/`why`/`how` nay được escape. Kiểm: `test_cli_build_fails_with_exit_1_and_every_problem`.

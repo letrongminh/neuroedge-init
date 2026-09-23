@@ -107,6 +107,11 @@ class Conversation:
             problem = "fallback cycle"
         elif len(visited) >= MAX_FALLBACK_DEPTH:
             problem = f"fallback depth exceeds {MAX_FALLBACK_DEPTH}"
+        else:
+            try:
+                inspect.signature(self.registry[name].fn).bind()
+            except TypeError:
+                problem = "fallback requires arguments"
         if problem is not None:
             self.events.emit("fallback_skipped", {"action": name, "reason": problem})
             return None

@@ -70,7 +70,7 @@
 | **Sprint hiện hành** | 🟡 **Sprint 2: Lõi thực thi trên `sim` (≈ A1)** — mã A1 xong sớm, 2026-09-23 | **8 / 9 task trong phạm vi xong** (còn TSK-S2-11, chạy ở A2) · **5 / 6 tiêu chí ra đạt** (còn #6, cùng TSK-S2-11) · Sprint 1 còn TSK-S1-10 chờ bo mạch |
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: cuối Sprint 3 = **2026-11-15** — trễ ~2 tuần so với bản gốc (Tuần 6 gốc = 2026-11-02) (Q-19) |
 | **Lần cập nhật cuối** | **2026-09-23** | Mã A1: TSK-S2-12, S2-03, S2-08, S2-01, S2-04, S2-05, S2-02 — chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 405/405 · SKIP 0** | `python/tests/` — 9 bộ test; cổng CI chặn mọi test bị skip |
+| **Trạng thái CI Lõi** | ✅ **PASS 421/421 · SKIP 0** | `python/tests/` — 9 bộ test; cổng CI chặn mọi test bị skip |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn + 1 còn mở** | 🔴 TSK-S1-10 chờ bo mạch vật lý · 🟡 Q-11 phần còn lại (Hawkbit EPL-2.0 / EMQX BSL) — **không chặn cho tới khi mở Khối 2** |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 

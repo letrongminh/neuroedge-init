@@ -130,6 +130,11 @@ class TreeResult:
     evaluations: dict[str, bool | str] = field(default_factory=dict)
 
 
+def _valid_confidence(value: Any) -> bool:
+    """A probability: a real number (not a bool) in [0, 1]. NaN fails the range test."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and 0.0 <= value <= 1.0
+
+
 def _classify(
     node: Mapping[str, Any], fact: Fact | None
 ) -> tuple[Reason | None, bool | str | None]:
@@ -144,8 +149,12 @@ def _classify(
     if key not in node["domain"]:
         return Reason.CRITERION_UNAVAILABLE, None
 
+    confidence = fact.confidence
+    if confidence is not None and not _valid_confidence(confidence):
+        # NaN compares False with everything, so `nan < floor` would pass the floor.
+        return Reason.CRITERION_UNAVAILABLE, None
     floor = node["confidence_floor"]
-    if floor > 0 and fact.confidence is None:
+    if floor > 0 and confidence is None:
         return Reason.CONFIDENCE_UNAVAILABLE, fact.value
     if key not in node["admitted"] or (floor > 0 and fact.confidence < floor):
         return Reason.CONDITION_NOT_MET, fact.value
@@ -163,7 +172,7 @@ def truth_cases(tree: Mapping[str, Any]) -> list[dict[str, dict[str, Any]]]:
     * every combination of in-domain values, at confidence 1.0;
     * from an all-admitted baseline, one fault at a time: the fact missing,
       out of domain, and — on nodes with a floor — confidence absent, just
-      below, and exactly at the floor.
+      below, exactly at the floor, and outside [0, 1].
 
     Each row maps criterion → ``{"value", "confidence"}``; a missing fact is
     simply absent. The C walker replays these rows (ENG-T1).
@@ -193,6 +202,7 @@ def truth_cases(tree: Mapping[str, Any]) -> list[dict[str, dict[str, Any]]]:
                 fact(node, admitted, None),
                 fact(node, admitted, round(floor - 0.001, 6)),
                 fact(node, admitted, floor),
+                fact(node, admitted, 1.5),  # not a probability: unavailable, never a pass
             ]
         for fault in faults:
             row = dict(baseline)
@@ -222,6 +232,23 @@ def truth_table(tree: Mapping[str, Any]) -> dict[str, Any]:
             }
         )
     return {"gate": tree["gate"], "gate_digest": tree["gate_digest"], "rows": rows}
+
+
+def known_failure(tree: Mapping[str, Any], facts: Mapping[str, Fact]) -> tuple[Reason, str] | None:
+    """
+    The first criterion whose fact is *present* and fails, ignoring missing facts.
+
+    Used when adjudication degraded under `fail: open`: open may excuse what
+    could not be decided, never a fact that was decided and said no.
+    """
+    for node in tree["nodes"]:
+        fact = facts.get(node["criterion"])
+        if fact is None or fact.value is None:
+            continue
+        reason, _ = _classify(node, fact)
+        if reason is not None:
+            return reason, node["criterion"]
+    return None
 
 
 def walk(tree: Mapping[str, Any], facts: Mapping[str, Fact]) -> TreeResult:

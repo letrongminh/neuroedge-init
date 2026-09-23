@@ -18,6 +18,7 @@ core imports no provider SDK.
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -83,7 +84,7 @@ class SystemOne:
         elif self.breaker is not None and not self.breaker.allow_primary():
             answer = Unavailable("offline", f"circuit breaker open for {self.model}")
         else:
-            answer = await self.primary.adjudicate(criterion, definition, state, deadline_ms)
+            answer = await self._ask_primary(criterion, definition, state, deadline_ms)
             if self.breaker is not None:
                 if isinstance(answer, Fact):
                     self.breaker.record_success()
@@ -107,6 +108,26 @@ class SystemOne:
         except PerceptionUnavailableError as exc:
             # An unrunnable fallback is the Q-14 case for gate_unreachable.
             return Unavailable("offline", exc.why)
+        except Exception as exc:
+            return Unavailable("offline", f"fallback failed: {type(exc).__name__}: {exc}")
+
+    async def _ask_primary(
+        self,
+        criterion: str,
+        definition: Mapping[str, Any],
+        state: Mapping[str, Any] | None,
+        deadline_ms: float | None,
+    ) -> Fact | Unavailable:
+        """A primary that raises or hangs is an answer, not a crash: route to the fallback."""
+        timeout = None if deadline_ms is None else max(deadline_ms, 0) / 1000.0
+        try:
+            return await asyncio.wait_for(
+                self.primary.adjudicate(criterion, definition, state, deadline_ms), timeout
+            )
+        except TimeoutError:
+            return Unavailable("timeout", f"{self.model} exceeded {deadline_ms:g} ms")
+        except Exception as exc:
+            return Unavailable("offline", f"{self.model} failed: {type(exc).__name__}: {exc}")
 
     # -- the agent-facing API (proposal §4.6) --------------------------------
     async def bool(

@@ -40,18 +40,44 @@ class PinAssertion:
     verdict object said BLOCK.
     """
 
-    def __init__(self, pin_name: str, pulsed: bool = False, duration_ms: int = 0):
+    def __init__(
+        self,
+        pin_name: str,
+        pulsed: bool = False,
+        duration_ms: int = 0,
+        commands: list[tuple[str, int]] | None = None,
+    ):
         self.pin_name = pin_name
-        self.pulsed = pulsed
-        self.duration_ms = duration_ms
+        # Every accepted command, in order. The history — not the last write —
+        # is what the assertions read, so an `on()` or an `off()` after a pulse
+        # can never make a touched pin look untouched.
+        self.commands: list[tuple[str, int]] = (
+            list(commands) if commands is not None else ([("pulse", duration_ms)] if pulsed else [])
+        )
+
+    def record(self, operation: str, duration_ms: int) -> None:
+        self.commands.append((operation, duration_ms))
+
+    @property
+    def pulses(self) -> list[int]:
+        return [duration for operation, duration in self.commands if operation == "pulse"]
+
+    @property
+    def pulsed(self) -> bool:
+        return bool(self.pulses)
+
+    @property
+    def duration_ms(self) -> int:
+        return self.pulses[-1] if self.pulses else 0
 
     def never_pulsed(self) -> bool:
-        return not self.pulsed
+        """True only if the pin never accepted *any* command."""
+        return not self.commands
 
     def pulsed_once(self, duration_ms: int = 0) -> bool:
-        if duration_ms > 0:
-            return self.pulsed and self.duration_ms == duration_ms
-        return self.pulsed
+        if len(self.commands) != 1 or not self.pulsed:
+            return False
+        return duration_ms <= 0 or self.pulses[0] == duration_ms
 
     def __repr__(self) -> str:  # pragma: no cover - diagnostic aid
         state = f"pulse {self.duration_ms}ms" if self.pulsed else "idle"
@@ -125,7 +151,7 @@ class HardwareAbstractionLayer:
         if self.board is not None:
             self.board.require_pin(pin, called_from=called_from)
         self.authorize(signature, pin, called_from)
-        self.pins[pin] = PinAssertion(pin, pulsed=(operation == "pulse"), duration_ms=duration_ms)
+        self.pins.setdefault(pin, PinAssertion(pin)).record(operation, duration_ms)
 
     def pin(self, name: str) -> PinAssertion:
         """

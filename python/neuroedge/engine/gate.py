@@ -24,12 +24,13 @@ can be slow or unreachable. Perception (audio → intent) is outside it.
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
-from .decision_tree import compile_tree, walk
+from .decision_tree import TreeResult, compile_tree, known_failure, walk
 from .gate_resolver import GateRegistry, ResolvedGate, resolve_gate_file, resolve_gate_uri
 from .trace_sink import Clock, EventLog, monotonic_ms
 from .verdict import DEGRADED_REASONS, Fact, GateVerdict, Reason, Unavailable
@@ -44,7 +45,9 @@ class FactSource(Protocol):
         definition: Mapping[str, Any],
         state: Mapping[str, Any] | None,
         deadline_ms: float,
-    ) -> Fact | Unavailable: ...
+    ) -> Fact | Unavailable:
+        """`deadline_ms` is the budget still left, in ms; the engine enforces it."""
+        ...
 
 
 Hook = Callable[["GateResult"], None]
@@ -204,7 +207,7 @@ class ActionContractEngine:
             degraded = Reason.BUDGET_EXCEEDED
 
         if degraded is not None:
-            result = self._degraded(registered, degraded, walked, elapsed)
+            result = self._degraded(registered, degraded, walked, facts, elapsed)
         elif walked.verdict is GateVerdict.ALLOW:
             result = GateResult(
                 gate=registered.label,
@@ -228,38 +231,72 @@ class ActionContractEngine:
         state: Mapping[str, Any] | None,
         t0: float,
     ) -> tuple[dict[str, Fact], Reason | None]:
-        """Facts for every criterion, and the degraded reason if gathering failed."""
+        """
+        Facts for every criterion, and the degraded reason if the source failed.
+
+        Once the source degrades it is not asked again, but facts already in the
+        context are still collected: under `fail: open` a known "no" must still
+        block. A source that raises or overruns the budget is a degraded verdict,
+        never an exception out of `evaluate()`.
+        """
         tree = registered.tree
         p95 = tree["budget"]["p95_latency_ms"]
         facts: dict[str, Fact] = {}
+        degraded: Reason | None = None
         for criterion in tree["criteria_order"]:
             if criterion in context:
                 facts[criterion] = _as_fact(context[criterion])
                 continue
-            if self.facts_source is None:
+            if self.facts_source is None or degraded is not None:
                 continue  # walk() reports criterion_unavailable
-            answer = await self.facts_source.adjudicate(
-                criterion,
-                registered.gate.evaluate[criterion],
-                state,
-                deadline_ms=t0 + p95,
-            )
+            remaining = t0 + p95 - self.clock()
+            try:
+                answer = await asyncio.wait_for(
+                    self.facts_source.adjudicate(
+                        criterion,
+                        registered.gate.evaluate[criterion],
+                        state,
+                        deadline_ms=remaining,
+                    ),
+                    timeout=max(remaining, 0) / 1000.0,
+                )
+            except TimeoutError:
+                degraded = Reason.BUDGET_EXCEEDED
+                continue
+            except Exception as exc:  # an adjudicator failure is a verdict, not a crash
+                self.events.emit(
+                    "fact_source_error",
+                    {"criterion": criterion, "error": f"{type(exc).__name__}: {exc}"},
+                )
+                degraded = Reason.GATE_UNREACHABLE
+                continue
             if self.clock() - t0 > p95:
-                return facts, Reason.BUDGET_EXCEEDED
+                degraded = Reason.BUDGET_EXCEEDED
+                continue
             if isinstance(answer, Unavailable):
                 reason = answer.as_reason()
                 if reason in DEGRADED_REASONS:
-                    return facts, reason
+                    degraded = reason
                 continue  # criterion_unavailable, reported by walk()
             facts[criterion] = answer
-        return facts, None
+        return facts, degraded
 
     def _degraded(
-        self, registered: _Registered, reason: Reason, walked, elapsed: float
+        self,
+        registered: _Registered,
+        reason: Reason,
+        walked,
+        facts: Mapping[str, Fact],
+        elapsed: float,
     ) -> GateResult:
         tree = registered.tree
         if tree["budget"]["fail"] == "open":
-            # Only a gate that itself declares `fail: open` gets here (principle 4).
+            # Only a gate that itself declares `fail: open` gets here (principle 4),
+            # and open excuses only what could not be decided.
+            failure = known_failure(tree, facts)
+            if failure is not None:
+                known = TreeResult(GateVerdict.BLOCK, failure[0], failure[1], walked.evaluations)
+                return self._on_block(registered, known, elapsed)
             return GateResult(
                 gate=registered.label,
                 verdict=GateVerdict.ALLOW,

@@ -63,16 +63,30 @@ class ActionSpec:
 
 REGISTRY: dict[str, ActionSpec] = {}
 
-_running: ContextVar[str | None] = ContextVar("neuroedge_running_action", default=None)
+
+@dataclass
+class _Run:
+    name: str
+    open: bool = True
+
+
+_running: ContextVar[_Run | None] = ContextVar("neuroedge_running_action", default=None)
 
 
 @contextmanager
 def running(spec: ActionSpec) -> Iterator[None]:
-    """Used by `c.do()` only: permit `spec` to execute inside this block."""
-    handle = _running.set(spec.name)
+    """
+    Used by `c.do()` only: permit `spec` to execute inside this block.
+
+    The permission is a shared flag closed on exit, so a task spawned inside the
+    body — which inherits this context — cannot run the action after c.do() returns.
+    """
+    run = _Run(spec.name)
+    handle = _running.set(run)
     try:
         yield
     finally:
+        run.open = False
         _running.reset(handle)
 
 
@@ -107,7 +121,8 @@ def action(
 
         @functools.wraps(fn)
         def guarded(*args: Any, **kwargs: Any) -> Any:
-            if _running.get() != action_name:
+            run = _running.get()
+            if run is None or run.name != action_name or not run.open:
                 caller = inspect.stack()[1]
                 raise ActionContractViolation(
                     where=f"{caller.filename}:{caller.lineno} -> {action_name}",

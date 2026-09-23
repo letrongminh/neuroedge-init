@@ -20,6 +20,7 @@ On success it writes each gate's decision tree and canonical artifact.
 from __future__ import annotations
 
 import importlib.util
+import inspect
 import sys
 import tomllib
 from collections.abc import Iterable, Mapping
@@ -272,7 +273,19 @@ def check_fallbacks(
     problems: list[NeuroEdgeError] = []
     for key, gate in gates.items():
         fallback = gate.on_block.get("fallback_action")
-        if gate.on_block.get("action") != "degrade" or fallback in declared:
+        if gate.on_block.get("action") != "degrade":
+            continue
+        if fallback in declared:
+            try:
+                inspect.signature(declared[fallback].fn).bind()
+            except TypeError:
+                problems.append(
+                    AgentManifestError(
+                        where=f"{declared[fallback].where} -> {fallback}",
+                        why="a degrade fallback is called with no arguments, but this action requires some",
+                        how="give every parameter of the fallback action a default value",
+                    )
+                )
             continue
         problems.append(
             AgentManifestError(
