@@ -176,8 +176,8 @@
       if (!all.length) verdicts.appendChild(el("div", { class: "why", text: "Chưa có lần thẩm định gate nào." }));
       for (const g of all) {
         const r = g.result;
-        const why = [r.reason, r.failed_criterion && "tiêu chí " + r.failed_criterion,
-          r.action && "→ " + r.action + (r.escalated_to ? " " + r.escalated_to : "")].filter(Boolean).join(" · ");
+        const why = [r.reason, r.failed_criterion && "tiêu chí " + r.failed_criterion].filter(Boolean).join(" · ")
+          + (r.action ? " → " + r.action + (r.escalated_to ? " " + r.escalated_to : "") : "");
         const card = el("div", { class: "verdict " + r.verdict + (g.offset_ms > t ? " future" : "") }, [
           el("span", { class: "badge", text: r.verdict }), document.createTextNode(" "),
           el("span", { text: g.gate || "" }),

@@ -166,7 +166,7 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
     elif name == "sensor" and len(rest.split(maxsplit=1)) == 2:
         sensor, value = rest.split(maxsplit=1)
         try:
-            session.hal.set_sensor(sensor, parse_value(value))
+            session.set_sensor(sensor, parse_value(value))
         except NeuroEdgeError as error:
             console.print(f"[red]{escape(error.why)}[/red]")
             return

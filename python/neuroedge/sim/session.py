@@ -242,6 +242,11 @@ class SimSession:
         """The digital outputs this agent declares, in manifest order."""
         return tuple(self.manifest.requires.get("digital.out", {}).get("pins", ()))
 
+    def set_sensor(self, sensor: str, value: Any) -> None:
+        """Change a simulated reading (REPL `:sensor`, the UI) and record that it changed."""
+        self.hal.set_sensor(sensor, value)
+        self.events.emit("sensor_set", {"sensor": sensor, "value": value})
+
     def gate_facts(self, recognition: Recognition) -> dict[str, Any]:
         facts = dict(self.facts)
         for criterion, (slot, expected) in self.slot_facts.items():

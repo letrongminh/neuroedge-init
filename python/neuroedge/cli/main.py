@@ -756,10 +756,16 @@ def run(
     trace_out: Path = typer.Option(
         None, "--trace-out", help="Write the session trace (trace.v1 JSON) here on exit"
     ),
+    ui: bool = typer.Option(
+        False, "--ui", help="Serve the session as a live page on 127.0.0.1 (FR-TGT-06)"
+    ),
+    port: int = typer.Option(8765, "--port", help="Port for --ui"),
+    no_browser: bool = typer.Option(False, "--no-browser", help="With --ui, do not open a browser"),
     registry: Path | None = REGISTRY_OPTION,
 ):
     """
     Run the agent on `sim`: type a command, see the gate verdict and the pins.
+    With --ui the same session is shown live in the browser.
 
     Input is typed text matched by the agent's commands.toml — no network, no
     key (Q-15). The agent is build-checked against the board first.
@@ -767,6 +773,19 @@ def run(
     from .run import run_session
 
     session = _start_session("run", agent, target, board, registry)
+    if ui:
+        from ..sim.ui import serve
+
+        try:
+            serve(session, port, console, open_browser=not no_browser)
+        finally:
+            if trace_out is not None:
+                trace_out.parent.mkdir(parents=True, exist_ok=True)
+                trace_out.write_text(
+                    json.dumps(session.trace(), indent=2, ensure_ascii=False) + "\n",
+                    encoding="utf-8",
+                )
+        return
     code = run_session(session, console, err_console, command=command, trace_out=trace_out)
     raise typer.Exit(code=code)
 
