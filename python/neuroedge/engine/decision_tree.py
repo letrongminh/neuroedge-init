@@ -15,8 +15,8 @@ Two properties carry the weight:
 * **The tree carries `gate_digest`**, so a tree can always be traced back to
   the exact signed policy it was compiled from (ENG-T2).
 
-The format is internal and not frozen; RFC-0003 freezes it before the first C
-walker exists (TODOS.md #15).
+This JSON form is internal to the host and not frozen. The device reads the
+same tree in the binary layout RFC-0003 freezes (`NETR` v1, `binary_tree.py`).
 """
 
 from __future__ import annotations
