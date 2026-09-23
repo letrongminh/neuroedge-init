@@ -27,6 +27,10 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **Bộ chuẩn bị cổng nhu cầu 2026-10-25 (Q-20, `TODOS.md` #19).** `docs/business/cong-nhu-cau-2026-10-25/`:
+  10 câu hỏi cổng C1–C10 gắn với `CEO-X*`/`T*` và proposal §8.7, kế hoạch theo ngày, demo ≤ 5 phút cho 4 phân khúc
+  (chỉ lệnh đã chạy thật, kèm bảng *không được nói là đã có*), bộ câu hỏi phỏng vấn kiểu The Mom Test, thang chấm
+  go / adjust / stop, và `survey.json` — dựng thành trang ghi phiếu nội bộ (link trong README của thư mục).
 - **Q-27 — System 2 làm MCP host (TSK-S3-28).** Mọi tool System 2 dùng đi qua MCP client (`neuroedge/mcp_host.py`):
   tool của thiết bị qua MCP server của **chính agent** (in-process, `call_source = system_two`, vẫn qua gate; lỗi hợp
   đồng ném ra nguyên vẹn), MCP server bên ngoài khai ở `[mcp.servers]` **chỉ lấy thông tin** (allowlist `tools`, kết
