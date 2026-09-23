@@ -4,6 +4,7 @@ NeuroEdge — Typed Action Contract Platform for Physical AI.
 
 __version__ = "0.1.0"
 
+from .actions import Conversation, action
 from .engine import (
     ActionContractEngine,
     Gate,
@@ -23,6 +24,7 @@ from .errors import (
     TraceValidationError,
 )
 from .hal import BoardProfile, HardwareAbstractionLayer, load_board_by_id
+from .models import SystemOne, SystemTwo
 from .testing import replay, scenario
 from .trace import load_trace, validate_trace
 
@@ -32,6 +34,7 @@ __all__ = [
     "ActionContractViolation",
     "BoardCapabilityError",
     "BoardProfile",
+    "Conversation",
     "Gate",
     "GateInheritanceError",
     "GateNotFoundError",
@@ -41,7 +44,10 @@ __all__ = [
     "HardwareAbstractionLayer",
     "NeuroEdgeError",
     "ResolvedGate",
+    "SystemOne",
+    "SystemTwo",
     "TraceValidationError",
+    "action",
     "load_board_by_id",
     "load_trace",
     "replay",

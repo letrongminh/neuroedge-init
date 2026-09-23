@@ -1,0 +1,22 @@
+# Fixed-command grammar for the villa-concierge sample agent (Q-14, Q-15).
+#
+# This is what the agent understands with no network: typed text on `sim`,
+# ESP-SR MultiNet / TFLite Micro on `esp32s3`. Anything not listed here is
+# not recognised, and a gate that needs it blocks.
+[grammar]
+version   = 1
+threshold = 0.80
+
+[[command]]
+intent   = "unlock"
+patterns = ["mở cửa phòng {room}", "mở cửa", "unlock the door", "open the door"]
+facts    = { command_recognized = true }
+
+[[command]]
+intent   = "light_on"
+patterns = ["bật đèn hiên", "bật đèn", "turn on the light"]
+facts    = { command_recognized = true }
+
+[[command]]
+intent   = "faq"
+patterns = ["mấy giờ trả phòng", "wifi là gì", "what time is checkout"]

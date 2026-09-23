@@ -13,8 +13,8 @@ không cần mạng, kết quả tất định (`Q-15`).
 
 ## 2. Hôm nay dùng được gì
 
-Phần **chính sách gate** đã dùng được trọn vẹn; phần **chạy agent** mới bắt đầu
-ở Sprint 2 (mở 2026-09-28). Cú pháp từng lệnh: `CHANGELOG.md` §2.3.
+Phần **chính sách gate** và **lõi thực thi trên `sim`** đã có (mã A1, 2026-09-23);
+vòng lặp gõ chữ `neuroedge run` là việc còn lại. Cú pháp từng lệnh: `CHANGELOG.md` §2.3.
 
 | Việc | Lệnh | Trạng thái |
 |:---|:---|:---:|
@@ -24,7 +24,9 @@ Phần **chính sách gate** đã dùng được trọn vẹn; phần **chạy a
 | Thẩm định vết ghi theo `trace.v1` | `neuroedge trace validate` | ✅ |
 | Xem nội dung một vết ghi | `neuroedge trace show` | ✅ |
 | Liệt kê / xem profile bo mạch | `neuroedge board list` · `neuroedge board show` | ✅ |
-| Chạy agent có gate trên `sim` | `neuroedge run` | ⏳ Sprint 2–3 |
+| Đối chiếu năng lực agent ↔ bo mạch, biên dịch gate | `neuroedge build` | ✅ |
+| Chạy agent có gate trên `sim` từ mã Python (`c.do()` trên `SimHAL`) | — (thư viện) | ✅ |
+| Chạy agent có gate trên `sim` từ dòng lệnh | `neuroedge run` | ⏳ TSK-S3-06 |
 | Hành trình 10 phút (TTFV) | — | ⏳ mốc M1 |
 
 Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.
@@ -33,8 +35,8 @@ Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.
 
 Nói thẳng để bạn không mất thời gian:
 
-- `neuroedge run` **thoát mã 2** — engine chưa nối, HAL `sim` chưa có
-  (`TSK-S2-01`, `TSK-S2-03`). Không có "PASS" giả (bất biến 10, `CHANGELOG.md` §3.3).
+- `neuroedge run` **thoát mã 2** — engine và HAL `sim` đã có, vòng lặp gõ chữ trên CLI
+  là `TSK-S3-06`. Không có "PASS" giả (bất biến 10, `CHANGELOG.md` §3.3).
 - Chưa có tương đương target: `neuroedge verify` mới kiểm ở mức lược đồ.
 - Danh sách đầy đủ: `CHANGELOG.md` §3.7.
 

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.neuroedge.dev/internal/decision_tree/v1.json",
+  "title": "NeuroEdge decision tree (internal, not frozen)",
+  "$comment": "Internal to the host compiler until RFC-0003 freezes it before the first C walker (TODOS.md #15). Deliberately not in schemas/.",
+  "type": "object",
+  "required": ["schema", "gate", "gate_digest", "criteria_order", "nodes", "on_block", "budget"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "neuroedge.decision_tree/v1" },
+    "gate": { "type": "string", "pattern": "^[a-z0-9_-]+@\\d+\\.\\d+\\.\\d+$" },
+    "gate_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "criteria_order": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string" }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["criterion", "kind", "domain", "admitted", "confidence_floor"],
+        "additionalProperties": false,
+        "properties": {
+          "criterion": { "type": "string" },
+          "kind": { "enum": ["bool", "level", "choice"] },
+          "domain": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "admitted": { "type": "array", "items": { "type": "string" } },
+          "confidence_floor": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "on_block": { "type": "object", "required": ["action"] },
+    "budget": {
+      "type": "object",
+      "required": ["p95_latency_ms", "fail"],
+      "properties": {
+        "p95_latency_ms": { "type": "integer", "minimum": 1 },
+        "fail": { "enum": ["closed", "open"] }
+      }
+    }
+  }
+}

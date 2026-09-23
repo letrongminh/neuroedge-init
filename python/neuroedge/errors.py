@@ -50,6 +50,25 @@ class ActionContractViolation(NeuroEdgeError):
     code = "NE1001"
 
 
+class TokenReplayError(ActionContractViolation):
+    """
+    A verdict token was used again, after its TTL, or by another process
+    instance. `reason` is ``token_replayed`` or ``token_expired``. A contract
+    violation, never a retryable denial.
+    """
+
+    code = "NE1002"
+
+    def __init__(self, where: str, why: str, how: str, reason: str) -> None:
+        self.reason = reason
+        super().__init__(where, why, how)
+
+    def as_dict(self) -> dict[str, str]:
+        data = super().as_dict()
+        data["reason"] = self.reason
+        return data
+
+
 class GateError(NeuroEdgeError):
     """Base class for gate authoring, schema and resolution failures."""
 
@@ -102,7 +121,40 @@ class BoardCapabilityError(NeuroEdgeError):
     code = "NE3001"
 
 
+class AgentManifestError(NeuroEdgeError):
+    """`agent.toml` is malformed, or an `@action` disagrees with it (FR-ACE-04/05)."""
+
+    code = "NE3002"
+
+
+class BuildFailed(NeuroEdgeError):
+    """
+    `neuroedge build` found one or more problems. Carries every problem so one
+    run reports them all, each with its own three-part diagnostic.
+    """
+
+    code = "NE3003"
+
+    def __init__(self, where: str, problems: list[NeuroEdgeError]) -> None:
+        self.problems = list(problems)
+        super().__init__(
+            where=where,
+            why=f"{len(self.problems)} problem(s) found; the build produced no artifacts",
+            how="fix each problem listed below, then build again",
+        )
+
+
 class TraceValidationError(NeuroEdgeError):
     """A trace file violates schemas/trace.v1.json."""
 
     code = "NE4001"
+
+
+class PerceptionUnavailableError(NeuroEdgeError):
+    """
+    A perception component cannot be constructed: a missing or malformed command
+    grammar, an unknown model reference. Raised at build or load time; at run time
+    the engine turns an unrunnable fallback into a `gate_unreachable` verdict.
+    """
+
+    code = "NE5001"

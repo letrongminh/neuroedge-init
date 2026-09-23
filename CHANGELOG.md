@@ -27,6 +27,27 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **TSK-S2-12 — cây quyết định phía host.** `engine/decision_tree.py`: `compile_tree`
+  (`criteria_order` root-first + `gate_digest`), `walk` trả phán quyết + `reason` đầu tiên.
+  Bảng sự thật cho walker C: `fixtures/decision_trees/`. Kiểm: `pytest tests/test_decision_tree.py`.
+- **TSK-S2-03 — Gate Engine trả phán quyết.** `engine/gate.py`: `ActionContractEngine.evaluate()`
+  lấy dữ kiện trong ngân sách `p95`, đi cây, phân phát `on_block` theo Q-17; tái tạo đúng
+  3 vết ghi chuẩn mực. Kiểm: `pytest tests/test_gate_engine.py`. (FR-GATE-03/04/09)
+- **TSK-S2-08 — SystemOne/SystemTwo + ngữ pháp lệnh cố định.** `models/`: mất mạng thì
+  hỏi `CommandGrammar` (`commands.toml`, khớp mẫu + `difflib`, giữ dấu tiếng Việt); không có
+  fallback ⇒ `gate_unreachable`. Kiểm: `pytest tests/test_models.py`. (Q-14, Q-15, FR-MDL-01/02/03)
+- **TSK-S2-01 — HAL `sim`.** `hal/sim.py`: `SimHAL` phủ 5 nguyên thủy trên `sim-default`,
+  gõ chữ là đầu vào mặc định (Q-15), `digital_out` trả `PendingCommand.cancel()` (RB-3).
+  Kiểm: `pytest tests/test_hal_sim.py`. (FR-TGT-01, FR-HAL-01)
+- **TSK-S2-04 — mạch ngắt suy giảm.** `engine/circuit_breaker.py` bọc nguồn chính của
+  SystemOne: lỗi liên tiếp ⇒ mở, đi thẳng fallback; không bao giờ sinh ALLOW. Ma trận A4
+  đạt. Kiểm: `pytest tests/test_fail_closed.py`. (FR-ACE-03, NFR-REL-02)
+- **TSK-S2-05 — `@action`, `c.do()`/`c.say()`, token phán quyết dùng một lần.** `actions/`,
+  `hal/digital.py`: chỉ `c.do()` chạy được hành động; token TTL = p95 × 3, mỗi chân tiêu một
+  lần (NE1002). Kiểm: `pytest tests/test_actions.py`; ranh giới: `docs/spec/threat_model.md`.
+- **TSK-S2-02 — `neuroedge build`.** `engine/compiler.py` đối chiếu `agent.toml` + `@action` với
+  bo mạch (Phụ lục A.1), báo **mọi** vấn đề trong một lần, ghi cây quyết định. Agent mẫu
+  `fixtures/agents/villa-concierge/`. Kiểm: `pytest tests/test_compiler.py`. (FR-HAL-04/05)
 - **Quy tắc hoàn thành task.** `CONTRIBUTING.md` §8: nơi duy nhất cho việc cập nhật
   tiến độ, changelog, đặc tả; bảng "mỗi sự thật một nơi"; mẫu PR có checklist.
   Roadmap §0.4, §11.2 và `CLAUDE.md` nay chỉ dẫn về đó.
@@ -36,6 +57,12 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã đổi
 
+- **HAL chưa gắn `Conversation` từ chối mọi lệnh,** kể cả chuỗi trông như bằng chứng — chỉ
+  token do `c.do()` phát hành điều khiển được chân (A3).
+- **HAL kiểm tên chân trước khi tiêu bằng chứng,** và `hal.pin()` ném lỗi với tên chân không
+  có trên bo mạch — một assertion gõ sai không còn "đạt" được (CEO-S5-2).
+- **`ActionContractEngine` bỏ tham số `fail_closed`.** Gate chỉ fail-open khi chính tài liệu
+  của nó khai `fail: open`. PRD Phụ lục B: fail-closed là phán quyết, không phải exception.
 - **Thẻ bàn giao (roadmap §0.3) rút gọn** theo §8.3: bỏ lịch sử đã có trong changelog,
   bỏ hai việc đã xong còn nằm ở *Việc tiếp theo*, *Lưu ý* chỉ giữ điều chưa có ở §3.3.
 - **Bỏ con số dễ lỗi thời** khỏi `CLAUDE.md` và §2 (số test, số fixture); số test
@@ -43,6 +70,19 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã sửa
 
+- **Sáu lỗ an toàn từ review đối kháng mã A1** — hai trong số đó kích được chân GPIO.
+  Kiểm: `pytest tests/test_safety_regressions.py` (15/16 test fail trên mã trước khi sửa).
+  - Độ tin cậy `NaN`, `True`, ngoài `[0, 1]` từng lọt ngưỡng `confidence_gte` ⇒ nay `criterion_unavailable`.
+  - `fail: open` từng biến một dữ kiện đã biết là "không" thành ALLOW khi thẩm định suy giảm ⇒
+    `open` chỉ tha điều không quyết được.
+  - Nhà cung cấp ném lỗi hoặc treo ⇒ nay là phán quyết suy giảm (mạch ngắt ghi nhận, fallback
+    được hỏi, timeout theo ngân sách còn lại), không còn là exception không có vết ghi.
+  - `fallback_action` cần tham số ⇒ `build` từ chối, lúc chạy bỏ qua thay vì `TypeError`.
+  - `never_pulsed()` từng đúng sau `on()`; lệnh sau từng xoá lệnh trước ⇒ chân lưu lịch sử lệnh.
+  - Task sinh trong thân hành động từng gọi lại được hành động sau khi `c.do()` trả về.
+- **CLI nuốt mất tên bảng TOML trong chẩn đoán.** `rich` hiểu `[requires]`,
+  `[capabilities.digital_out]` là thẻ markup nên lời hướng dẫn in ra thiếu chữ. Mọi trường
+  `where`/`why`/`how` nay được escape. Kiểm: `test_cli_build_fails_with_exit_1_and_every_problem`.
 - **Hai nhãn lỗi thời.** `TODOS.md` #5 ghi thì quá khứ cho phần `lru_cache` đã vá ở
   `TSK-S2-13`; roadmap §0.2 ghi Sprint 2 `8%` (1/13) thay vì `0%`.
 
@@ -540,6 +580,7 @@ Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏn
 | `trace show <tệp>` | In dòng thời gian sự kiện |
 | `board list` / `board show <id>` | Liệt kê / xem năng lực bo mạch theo 5 nguyên thủy |
 | `verify` | Quét toàn bộ artifact đã đóng băng |
+| `build --target <t> --board <id>` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate. `--agent` (mặc định `agent.toml`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
 | `replay <tệp>` | Đọc và thẩm định vết ghi rồi in dòng thời gian |
 
 > `gate publish` **không ký số**. Nó dừng ở mã băm, vì ký cần khóa của Gate
@@ -550,8 +591,7 @@ Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏn
 
 | Lệnh | Sẽ có ở |
 |:---|:---|
-| `run` | TSK-S2-01 |
-| `build` | TSK-S2-02, TSK-S2-06 |
+| `run` | TSK-S3-06 — HAL `sim` đã có (TSK-S2-01), còn vòng lặp gõ chữ |
 | `test` | TSK-S3-03 — hiện dùng `pytest` trong `python/` |
 | `record` | TSK-S3-01 |
 | `new` | TSK-S3-07 |
@@ -644,13 +684,18 @@ neuroedge-init/
 │   ├── traces/           ⚠️  3 vết ghi chuẩn mực — sửa phải có RFC
 │   │   ├── invalid/          6 phản chứng
 │   │   └── expected_errors.yaml
-│   └── gates/            valid/ · invalid/ · registry/
-│       └── expected_errors.yaml
+│   ├── gates/            valid/ · invalid/ · registry/
+│   │   └── expected_errors.yaml
+│   ├── decision_trees/   Bảng sự thật cho walker C — sinh bằng scripts/generate_truth_tables.py
+│   └── agents/villa-concierge/   Agent mẫu: agent.toml · actions/ · commands.toml
 ├── python/neuroedge/
-│   ├── engine/           L3 — phân giải gate, ràng buộc, chuẩn tắc hóa
-│   ├── hal/              L1 — 5 nguyên thủy, mô hình bo mạch
+│   ├── engine/           L3 — phân giải gate · cây quyết định · Gate Engine (gate.py)
+│   │                         · mạch ngắt · trình biên dịch build (compiler.py) · EventLog
+│   ├── actions/          L3 — @action · c.do()/c.say() · token phán quyết dùng một lần
+│   ├── models/           L2 — SystemOne/SystemTwo · ngữ pháp lệnh cố định · double
+│   ├── hal/              L1 — 5 nguyên thủy, mô hình bo mạch, sim.py, digital.out()
 │   ├── perception/       L2 — khung, chưa hiện thực
-│   ├── sim/              L1 — khung, chưa hiện thực
+│   ├── sim/              L0 — web simulator, khung, chưa hiện thực (TSK-S2-09)
 │   ├── testing/          Action CI — replay(), scenario()
 │   ├── cli/              CLI Typer
 │   ├── errors.py         Hợp đồng lỗi 3 thành phần
@@ -719,22 +764,22 @@ nó trong bảng task.
 
 | # | Nợ | Phải giải quyết ở |
 |:---:|:---|:---|
-| 1 | **`digital_out()` chưa hủy được lệnh đang chờ.** Hợp đồng thu hồi lệnh vật lý (§3.8) yêu cầu `barge_in` hủy xung chốt cửa đang chờ trong ≤ 1 khung âm thanh. Chữ ký hiện tại nhận `duration_ms` và ghi trạng thái ngay — đủ cho `sim`, không đủ cho `esp32s3` | **TSK-S4-01**, cùng lúc với hợp đồng thu hồi — không phải sau |
+| 1 | **Hủy lệnh đang chờ mới có ở `sim`.** Hợp đồng thu hồi lệnh vật lý (§3.8) yêu cầu `barge_in` hủy xung chốt cửa đang chờ trong ≤ 1 khung âm thanh. `SimHAL.digital_out()` đã trả `PendingCommand.cancel()` (TSK-S2-01); `esp32s3` phải hủy được thật ở tầng firmware | **TSK-S4-01**, cùng lúc với hợp đồng thu hồi — không phải sau |
 | 2 | `ReplaySession._parse_events()` suy luận `blocked_by` theo lối tạm, ghim cứng tên hành động `unlock_door` | TSK-S3-02 / TSK-S3-03 |
 | 3 | `gate publish` dừng ở mã băm, chưa ký số | Khối 3 (Gate Registry) |
 | 4 | `perception/` và `sim/` chỉ là khung | TSK-S3-11 / TSK-S2-09 |
 
 ### 3.7 Điều hệ thống chưa làm được
 
-Nói rõ để không ai đọc mốc 0.1.0 quá lên:
+Nói rõ để không ai đọc các mốc đã đạt quá lên:
 
-- ❌ **Chưa chạy được tác tử nào.** Không có HAL cho target nào; `run` thoát mã 2.
-- ❌ **Chưa lượng giá gate.** Phân giải xong chính sách, nhưng chưa có engine
-  nhận ngữ cảnh và trả phán quyết (TSK-S2-03).
+- ❌ **Chưa có `neuroedge run`.** Agent chạy được trên `sim` qua `Conversation` (test), nhưng
+  vòng lặp gõ chữ trên CLI là TSK-S3-06.
+- ❌ **Chưa có nhà cung cấp cloud thật.** SystemOne/SystemTwo chạy với double và ngữ pháp lệnh
+  cục bộ; connector LiteLLM là TSK-S2-11 (A2).
 - ❌ **Chưa có tương đương target.** `verify` kiểm ở mức lược đồ. Phát lại trên
   target thật và so khớp chuỗi phán quyết là TSK-S3-02 / TSK-S4-03.
-- ❌ **Chưa có `@action`.** Việc cấm gọi trực tiếp hành động vật lý (FR-ACE-02)
-  là TSK-S2-05. Hiện `digital_out()` chỉ từ chối khi thiếu chữ ký.
+- ❌ **Chưa ghi vết ghi ra tệp.** `EventLog` giữ trong bộ nhớ; bộ ghi tệp là TSK-S3-01.
 - ❌ **Chưa có CEL.** `allow_when` chỉ nhận dạng mapping toán tử.
 - ❌ **Chưa có số đo bộ nhớ.** Xem §3.4.
 

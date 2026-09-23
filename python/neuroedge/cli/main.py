@@ -16,6 +16,7 @@ from pathlib import Path
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 
@@ -51,8 +52,7 @@ err_console = Console(stderr=True)
 # Sprint in which each unimplemented command gets its engine, from the roadmap.
 PENDING = {
     "new": ("TSK-S3-07", "Sprint 3"),
-    "run": ("TSK-S2-01", "Sprint 2"),
-    "build": ("TSK-S2-02, TSK-S2-06", "Sprint 2"),
+    "run": ("TSK-S3-06", "Sprint 3"),
     "test": ("TSK-S3-03", "Sprint 3"),
     "record": ("TSK-S3-01", "Sprint 3"),
 }
@@ -60,11 +60,11 @@ PENDING = {
 
 def _fail(error: NeuroEdgeError) -> None:
     """Render a three-part diagnostic to stderr and exit non-zero."""
-    err_console.print(f"[bold red]✗ {error.code}[/bold red] [cyan]{error.where}[/cyan]")
-    err_console.print(f"  [bold]why:[/bold] {error.why}")
+    err_console.print(f"[bold red]✗ {error.code}[/bold red] [cyan]{escape(error.where)}[/cyan]")
+    err_console.print(f"  [bold]why:[/bold] {escape(error.why)}")
     if isinstance(getattr(error, "principle", None), int):
         err_console.print(f"  [bold]rule:[/bold] Proposal Appendix B.5 principle {error.principle}")
-    err_console.print(f"  [bold]fix:[/bold] {error.how}")
+    err_console.print(f"  [bold]fix:[/bold] {escape(error.how)}")
     raise typer.Exit(code=1)
 
 
@@ -209,9 +209,11 @@ def gate_lint(
         except NeuroEdgeError as error:
             failures += 1
             table.add_row(path.name, "—", "—", "[red]FAIL[/red]")
-            err_console.print(f"\n[bold red]✗ {error.code}[/bold red] [cyan]{error.where}[/cyan]")
-            err_console.print(f"  why: {error.why}")
-            err_console.print(f"  fix: {error.how}")
+            err_console.print(
+                f"\n[bold red]✗ {error.code}[/bold red] [cyan]{escape(error.where)}[/cyan]"
+            )
+            err_console.print(f"  why: {escape(error.why)}")
+            err_console.print(f"  fix: {escape(error.how)}")
             continue
         policy = gate.budget.get("fail", "closed")
         table.add_row(
@@ -304,9 +306,11 @@ def trace_validate(
             trace = load_trace(path)
         except NeuroEdgeError as error:
             failures += 1
-            err_console.print(f"[bold red]✗ {error.code}[/bold red] [cyan]{error.where}[/cyan]")
-            err_console.print(f"  why: {error.why}")
-            err_console.print(f"  fix: {error.how}")
+            err_console.print(
+                f"[bold red]✗ {error.code}[/bold red] [cyan]{escape(error.where)}[/cyan]"
+            )
+            err_console.print(f"  why: {escape(error.why)}")
+            err_console.print(f"  fix: {escape(error.how)}")
             continue
         console.print(
             f"[bold green]✓ VALID[/bold green] [cyan]{path}[/cyan] — "
@@ -433,7 +437,7 @@ def verify(
             )
         except NeuroEdgeError as error:
             problems += 1
-            err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {error.why}")
+            err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {escape(error.why)}")
 
     console.print("\n[bold]Validating canonical traces in fixtures/traces/[/bold]")
     for path in sorted((root / "fixtures" / "traces").glob("*.json")):
@@ -442,7 +446,7 @@ def verify(
             console.print(f"  [green]✓[/green] {path.name}")
         except NeuroEdgeError as error:
             problems += 1
-            err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {error.why}")
+            err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {escape(error.why)}")
 
     console.print("\n[bold]Board capability declarations[/bold]")
     for board in available_boards():
@@ -512,17 +516,55 @@ def new(
 def run(
     target: str = typer.Option("sim", "--target", "-t", help="Target runtime environment"),
 ):
-    """Run the agent on `sim` or `linux` (pending TSK-S2-01)."""
+    """Run the agent on `sim` or `linux` (pending TSK-S3-06; the sim HAL exists)."""
     _not_yet("run")
 
 
 @app.command()
 def build(
-    target: str = typer.Option(..., "--target", "-t", help="Target architecture"),
+    target: str = typer.Option(..., "--target", "-t", help="Target runtime environment"),
     board: str = typer.Option("esp32s3-box-3", "--board", "-b", help="Board profile id"),
+    agent: Path = typer.Option(Path("agent.toml"), "--agent", "-a", help="Path to agent.toml"),
+    out: Path = typer.Option(Path("build"), "--out", "-o", help="Directory for build artifacts"),
+    registry: Path | None = REGISTRY_OPTION,
 ):
-    """Compile the agent and match capability contracts (pending TSK-S2-02)."""
-    _not_yet("build")
+    """Match the agent's capability needs against the board and compile its gates."""
+    from ..engine.compiler import build as run_build
+    from ..errors import BuildFailed
+
+    try:
+        report = run_build(
+            agent,
+            target=target,
+            board_id=board,
+            out_dir=out,
+            registry=GateRegistry(registry) if registry is not None else None,
+        )
+    except BuildFailed as failed:
+        err_console.print(
+            f"[bold red]✗ {failed.code} build failed[/bold red] {escape(failed.where)}"
+        )
+        for problem in failed.problems:
+            err_console.print(
+                f"\n[bold red]✗ {problem.code}[/bold red] [cyan]{escape(problem.where)}[/cyan]"
+            )
+            err_console.print(f"  why: {escape(problem.why)}")
+            err_console.print(f"  fix: {escape(problem.how)}")
+        err_console.print(f"\n[bold red]{len(failed.problems)} problem(s).[/bold red]")
+        raise typer.Exit(code=1) from None
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+
+    console.print(
+        f"[bold green]✓[/bold green] {report.agent} builds for {report.target} on {report.board}"
+    )
+    console.print(
+        f"  checked: {report.requirements} requirement(s), {report.actions} action(s), "
+        f"{report.gates} gate(s)"
+    )
+    for artifact in report.artifacts:
+        console.print(f"  wrote:   {artifact}")
 
 
 @app.command()
