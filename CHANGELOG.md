@@ -20,6 +20,24 @@ Toàn bộ thay đổi đáng kể của dự án được ghi tại đây, theo
 
 ## 1. Nhật ký phiên bản
 
+Mỗi task xong thêm một mục vào `[Chưa phát hành]`, theo `CONTRIBUTING.md` §8.2
+bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngày.
+
+### [Chưa phát hành]
+
+#### Đã thêm
+
+- **Quy tắc hoàn thành task.** `CONTRIBUTING.md` §8: nơi duy nhất cho việc cập nhật
+  tiến độ, changelog, đặc tả; bảng "mỗi sự thật một nơi"; mẫu PR có checklist.
+  Roadmap §0.4, §11.2 và `CLAUDE.md` nay chỉ dẫn về đó.
+
+#### Đã đổi
+
+- **Thẻ bàn giao (roadmap §0.3) rút gọn** theo §8.3: bỏ lịch sử đã có trong changelog,
+  bỏ hai việc đã xong còn nằm ở *Việc tiếp theo*, *Lưu ý* chỉ giữ điều chưa có ở §3.3.
+- **Bỏ con số dễ lỗi thời** khỏi `CLAUDE.md` và §2 (số test, số fixture); số test
+  hiện hành chỉ còn ở roadmap §0.1.
+
 ### [0.4.0] — 2026-09-23 — Gỡ chặn Sprint 2: chốt 9 quyết định, đồng bộ tài liệu
 
 Rà soát toàn bộ tài liệu ngày 2026-09-23 kết luận **chưa triển khai được**: bốn
@@ -455,7 +473,7 @@ Chi tiết và hợp đồng mã thoát: [§2.3](#23-tham-chiếu-lệnh-cli).
 cd python
 python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[dev]'
-.venv/bin/python -m pytest -q          # kỳ vọng: 229 passed, 0 skipped
+.venv/bin/python -m pytest -q          # kỳ vọng: 0 failed, 0 skipped
 ```
 
 Yêu cầu **Python 3.11+**. Bản dựng tái lập được:
@@ -484,7 +502,7 @@ Khẳng định nghịch đảo — corpus phản chứng **phải** tiếp tụ
 
 ```bash
 $V/neuroedge gate lint fixtures/gates/invalid --registry fixtures/gates/registry
-# kỳ vọng: 15 of 15 gate(s) failed to resolve · mã thoát 1
+# kỳ vọng: mọi tệp trong invalid/ đều failed to resolve · mã thoát 1
 ```
 
 Nếu lệnh trên **thành công**, các phép kiểm tra an toàn kế thừa đã hồi quy, và
@@ -618,7 +636,7 @@ neuroedge-init/
 │   ├── traces/           ⚠️  3 vết ghi chuẩn mực — sửa phải có RFC
 │   │   ├── invalid/          6 phản chứng
 │   │   └── expected_errors.yaml
-│   └── gates/            valid/ (6) · invalid/ (19) · registry/ (7)
+│   └── gates/            valid/ · invalid/ · registry/
 │       └── expected_errors.yaml
 ├── python/neuroedge/
 │   ├── engine/           L3 — phân giải gate, ràng buộc, chuẩn tắc hóa
@@ -683,24 +701,11 @@ trong allowlist, wheel không chứa `enterprise/`. Cưỡng chế bằng bướ
 phép trong CI, làm cùng `TSK-S2-11`. Hai phát hiện GPL trong Sprint 1 đều đến qua
 bắc cầu — đó là lý do phải có bước này.
 
-### 3.5 Việc tiếp theo — thứ tự đề xuất
+### 3.5 Việc tiếp theo
 
-Thứ tự lấy từ kế hoạch đã duyệt (`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`
-§Thứ tự task đầu tiên) và quyết định Q-14 → Q-20. Chi tiết task: roadmap §4.2–§4.3.
-
-1. **Mua sắm, ngay:** 2 bo mạch ESP32-S3-Box-3 (chặn `TSK-S1-10`) · 1 RPi 5 (Q-16).
-2. **A1 — wedge trên `sim`, 2026-09-28 → 2026-10-25:** `TSK-S2-03` Gate Engine →
-   `TSK-S2-08` `SystemOne` + độ tin cậy + fallback ngữ pháp lệnh (Q-14) →
-   `TSK-S2-01` HAL `sim` (V2) → `TSK-S2-04` fail-closed → `TSK-S2-05` token phán
-   quyết → `TSK-S2-02` đối chiếu năng lực; song song `TSK-S2-12` và `TSK-S2-13`
-   (hiện thực RFC-0004).
-3. **Trước khi mở A2:** thí nghiệm `gpio-sim` 2 giờ trên runner GitHub (Q-16).
-4. **A2 — `linux` + Action CI, 2026-10-26 → 2026-11-15:** `TSK-S3-01..04`,
-   `TSK-S3-15`, `TSK-S3-05` (V2), `TSK-S2-11` lớp provider (Q-10).
-
-**Không làm `TSK-S2-07` trước.** Bản trước của mục này gọi nó là đường găng. Nó
-nằm trên đường găng của *Sprint 2*, không trên đường găng của *wedge* (wedge
-không chạm âm thanh), nên hoãn cùng `TSK-S3-10`/`TSK-S3-11` để giữ thứ tự §3.10.
+Xem **Thẻ bàn giao** ở `neuroedge-roadmap.md` §0.3 — nơi duy nhất ghi việc tiếp
+theo và thứ tự làm (`CONTRIBUTING.md` §8.1). Lý do một task bị hoãn nằm ở dòng của
+nó trong bảng task.
 
 ### 3.6 Nợ thiết kế đã biết
 

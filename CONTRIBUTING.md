@@ -47,9 +47,8 @@ Kiểm tra nhanh toàn bộ artifact đã đóng băng:
    TSK-S1-02, TSK-S1-03. Hiện thực FR-GATE-06 → FR-GATE-08.
    ```
 
-5. Cập nhật `neuroedge-roadmap.md` theo §0.4 của chính tài liệu đó: chuyển trạng
-   thái task, đánh dấu tiêu chí ra kèm **bằng chứng kiểm chứng**, và cập nhật
-   Thẻ Bàn giao ở §0.3.
+5. Hoàn tất theo **§8**: tiến độ trong roadmap, mục changelog, đặc tả nếu hành vi
+   đổi — cùng PR với mã.
 
 ### Thông báo lỗi: hợp đồng ba thành phần
 
@@ -203,3 +202,74 @@ Khi đọc kết quả test, đọc cả cột skip.
 `ci-sim-linux.yml` phải xanh trước khi hợp nhất. `nightly-hardware.yml` có phần
 chạy trên runner tự quản có bo mạch thật; phần đó bỏ qua khi chưa có runner, và
 nói rõ là đã bỏ qua thay vì báo đạt.
+
+## 8. Hoàn thành một task — cập nhật tài liệu, tiến độ, changelog
+
+Đây là **nơi duy nhất** định nghĩa việc phải làm khi xong một task. Roadmap §0.4,
+roadmap §11.2, `CLAUDE.md` và mẫu PR chỉ dẫn về đây.
+
+Một task **chưa xong** cho tới khi các cập nhật dưới đây nằm **trong cùng PR** với mã.
+
+### 8.1 Mỗi sự thật có đúng một nơi
+
+| Sự thật | Nơi duy nhất | Nơi khác được phép |
+|:---|:---|:---|
+| Trạng thái task, artifact, commit | Bảng task của sprint trong `neuroedge-roadmap.md` §4–§8 | Dẫn mã task |
+| Tiêu chí ra đạt hay chưa, kèm bằng chứng | Danh sách tiêu chí ra ngay dưới bảng task của sprint | Dẫn mã sprint + số tiêu chí |
+| Tổng quan tiến độ, số test hiện hành, hạng mục bị chặn | Roadmap §0.1–§0.2 | Không chép con số |
+| Việc tiếp theo, đang làm gì | Roadmap §0.3 (Thẻ bàn giao) | Không |
+| Đã thay đổi gì | `CHANGELOG.md` §1 | Không |
+| Cách chạy, lệnh, đầu ra kỳ vọng | `CHANGELOG.md` §2 | Không |
+| Bất biến không được phá | `CHANGELOG.md` §3.3 | Dẫn số bất biến |
+| Quyết định | `neuroedge-prd.md` §15 (mã `Q-N`) | Dẫn mã `Q-N` |
+| Yêu cầu và đặc tả | PRD (`FR-*`, `NFR-*`) · proposal (Phụ lục) · `docs/rfc/` | Dẫn mã |
+| Việc hoãn có chủ ý | `TODOS.md`, kèm mốc kích hoạt | Dẫn số mục |
+
+Nơi khác **dẫn mã** (`TSK-S2-03`, `Q-17`, `RFC-0004`, `TODOS.md #15`), không chép
+lại nội dung. Khi cần chép một câu để câu văn đọc được, đó là dấu hiệu nên dẫn mã.
+
+### 8.2 Checklist, theo thứ tự
+
+1. **Máy xanh.** `pytest -q` → 0 failed, 0 skipped · `ruff check .` và
+   `ruff format --check .` (trong `python/`) sạch · `neuroedge gate lint` xanh.
+   Đây là đúng những gì CI chạy (§7).
+2. **Tiến độ, trong roadmap.**
+   - Dòng task: `✅ Hoàn thành (YYYY-MM-DD)` + đường dẫn artifact + commit hoặc PR.
+     Làm dở thì `🟡`. Hoãn thì `⏸ Hoãn` + lý do một dòng + mốc (và một mục `TODOS.md`).
+   - Tiêu chí ra: `[x]` + **bằng chứng chạy lại được** (lệnh + kết quả, hoặc tên test).
+   - §0.1–§0.2: sửa con số (tỷ lệ sprint, số test, hạng mục bị chặn).
+   - §0.3: **thay** các mục đã lỗi thời, không nối thêm. Xem §8.3.
+3. **Changelog.** Thêm một mục vào `## [Chưa phát hành]` ở đầu `CHANGELOG.md` §1,
+   dưới đúng nhóm *Đã thêm / Đã đổi / Đã sửa / Đã bỏ*:
+
+   ```markdown
+   - **TSK-S2-03 — Gate Engine trả phán quyết.** `python/neuroedge/engine/gate.py`.
+     Kiểm: `pytest tests/test_gate_engine.py`. (FR-GATE-03, Q-17)
+   ```
+
+   Tối đa 3 dòng. Câu đầu là thay đổi **quan sát được**; sau đó là nơi của nó và
+   cách kiểm. Lý do dài và bối cảnh thuộc PR hoặc RFC, không thuộc changelog.
+   Nếu lệnh hoặc đầu ra kỳ vọng đổi, sửa `CHANGELOG.md` §2. Nếu thêm một bất biến,
+   sửa §3.3.
+4. **Đặc tả, chỉ khi hành vi khác đặc tả.** Sửa FR/NFR hoặc Phụ lục cho khớp. Sửa
+   `schemas/`, ngữ nghĩa phân giải gate, hoặc ba vết ghi chuẩn mực thì **bắt buộc RFC**
+   (§3). Có quyết định mới thì cấp mã `Q-N` ở PRD §15.
+5. **Hoãn.** Việc cắt ra khỏi task vào `TODOS.md`, kèm mốc kích hoạt. Mục `TODOS.md`
+   mà task vừa làm xong thì **xoá**, và ghi vào changelog.
+6. **Quét tham chiếu lỗi thời.** Với mỗi sự thật vừa đổi (trạng thái, số liệu, tên),
+   `grep` mã hoặc con số cũ trong `*.md` và sửa. Một câu đúng hôm qua mà sai hôm nay
+   tệ hơn không có câu nào.
+
+### 8.3 Quy tắc viết
+
+- **Thay, đừng nối.** Bảng trạng thái và Thẻ bàn giao mô tả *hiện tại*. Lịch sử
+  thuộc `CHANGELOG.md` và git.
+- **Thẻ bàn giao ngắn.** *Vừa hoàn thành* chỉ gồm mã task hoặc quyết định của
+  **phiên gần nhất**, mỗi mục một dòng. *Việc tiếp theo* tối đa 5 mục, đúng thứ
+  tự làm. *Lưu ý* chỉ giữ điều chưa có ở `CHANGELOG.md` §3.3, mỗi điều một dòng kèm mã.
+- **Không ghi con số dễ lỗi thời ngoài nơi của nó.** Số test, số fixture, phần trăm
+  tiến độ chỉ nằm ở roadmap §0.1. Nơi khác viết điều kiện (*"0 failed, 0 skipped"*,
+  *"mọi tệp trong `invalid/` đều bị từ chối"*), không viết số.
+- **Ngày tuyệt đối** (`2026-09-28`), không viết "tuần sau" hay "Tuần N ở đây".
+- **Câu ngắn, một ý.** Bảng khi có từ ba mục cùng cấu trúc trở lên. Tiếng Việt;
+  mã, lệnh, đường dẫn giữ nguyên.

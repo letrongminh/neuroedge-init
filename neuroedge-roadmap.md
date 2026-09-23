@@ -98,84 +98,37 @@
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)              Cập nhật: 2026-09-23    │
+│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-23 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. VỪA HOÀN THÀNH (DONE):                                                              │
-│    • [2026-09-23] Chốt Q-10, Q-11 (phần LiteLLM), Q-14 → Q-20 — sổ quyết định PRD §15: │
-│      fallback cục bộ = bộ nhận diện lệnh cố định (Q-14) · `sim` mặc định gõ chữ (Q-15) │
-│      · `gpio-sim` + 1 RPi 5 (Q-16) · `on_block` v1.0 fail-closed, không waiver (Q-17)  │
-│      · kế thừa `budget`/`on_block` (Q-18) · lịch ngày tuyệt đối (Q-19) · cổng nhu cầu  │
-│      mềm 2026-10-25 (Q-20)                                                             │
-│    • [2026-09-23] RFC-0004 kế thừa `budget`/`on_block` (Q-18) → hiện thực ở TSK-S2-13  │
-│    • [2026-09-23] RFC-0002 thu hẹp: chỉ mở enum `target` + `TARGET_TIERS`;             │
-│      `vision.in` tách sang RFC riêng ở Khối V1b                                        │
-│    • [2026-09-22] Kế hoạch Sprint 2–3 `docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`│
-│      + review /autoplan (CEO · Eng · DX); owner theo ENG-T3 (option A)                 │
-│    • [RFC-0001] Đóng băng lược đồ gate: bắt buộc trường có điều kiện theo `extends`,   │
-│      `budget.fail` tùy chọn (vắng = closed), tham số `on_block` theo hành vi           │
-│    • [TSK-S1-03] Cưỡng chế ĐẦY ĐỦ 5 nguyên tắc kế thừa B.5 trong gate_resolver.py      │
-│    • [Tiêu chí 1–2] 3 gate mẫu + kế thừa 2 cấp; 15 fixture gate + 6 fixture trace sai  │
-│    • [TSK-S1-10..13] Khung đo bộ nhớ · rà HAL-MCU · 2 workflow CI · CONTRIBUTING + RFC │
-│    • Chuẩn tắc hóa RFC 8785 + băm SHA-256 cho gate; CLI: gate/trace/board đã thực thi  │
-│    • Test: 229 PASS / 0 SKIP (210 + 19 test RFC-0004; chạy cả khi FORCE_COLOR bật)     │
+│ 1. VỪA HOÀN THÀNH — phiên gần nhất (chi tiết: CHANGELOG.md §1)                         │
+│    • Q-10, Q-11 (LiteLLM), Q-14 → Q-20 — PRD §15                                       │
+│    • RFC-0004 + TSK-S2-13 ✅ — kế thừa budget/on_block                                  │
+│    • Quy tắc hoàn thành task — CONTRIBUTING.md §8                                      │
 │                                                                                        │
-│ 2. ĐANG THỰC HIỆN (IN-PROGRESS):                                                       │
-│    • [TSK-S1-10] V2: CHỜ BO MẠCH. Khung đo xong, chưa có số đo thực. Phải đo thêm      │
-│      MultiNet (+ WakeNet nếu cân nhắc thay microWakeWord) theo Q-14. Vị trí chèn đã    │
-│      đánh dấu TODO trong targets/esp32s3/main/main.c (nạp AEC + VAD + Opus)            │
-│    • Chuẩn bị mở Sprint 2 (A1, wedge `sim`) ngày 2026-09-28 (Q-19)                     │
+│ 2. ĐANG THỰC HIỆN                                                                      │
+│    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
 │                                                                                        │
-│ 3. VIỆC TIẾP THEO CẦN LÀM NGAY (NEXT IMMEDIATE ACTIONS):                               │
-│    • 🔴 Đặt 2 bo mạch ESP32-S3-Box-3 (ĐẶT NGAY) + 1 Raspberry Pi 5 (Q-16) — Phụ lục B  │
-│    • A1 (2026-09-28 → 2026-10-25), đúng thứ tự:                                        │
-│      TSK-S2-03 Gate Engine → S2-08 SystemOne/Two + fallback ngữ pháp lệnh trên `sim`   │
-│      → S2-01 HAL `sim` (V2) → S2-04 fail-closed → S2-05 `@action` + token → S2-02      │
-│      đối chiếu năng lực · kèm S2-12 cây quyết định host · S2-13 kế thừa (RFC-0004)     │
-│    • Thí nghiệm `gpio-sim` 2 giờ trên runner GitHub Ubuntu TRƯỚC khi mở A2 (Q-16)      │
-│    • V3 từ 2026-10-05: TSK-S3-06, S3-07, S3-14, S3-16 → S3-20                          │
-│    • Cổng nhu cầu mềm 2026-10-25 (Q-20) — rà câu hỏi kinh doanh mở, không chặn A2      │
-│    • Đồng bộ Phụ lục B.1/B.3/B.4 của proposal theo RFC-0001 §9                         │
-│    • TSK-S2-07 (đặc tả FSM thoại) ĐÃ HOÃN sang Khối 1b cùng S3-10, S3-11: nằm trên     │
-│      đường găng Sprint 2 nhưng không trên đường găng wedge — wedge không chạm âm thanh │
+│ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
+│    1. Đặt 2 Box-3 + 1 RPi 5 (Phụ lục B, Q-16)                                          │
+│    2. A1 từ 2026-09-28: TSK-S2-03 → S2-08 → S2-01 (V2) → S2-04 → S2-05 → S2-02         │
+│       · song song TSK-S2-12                                                            │
+│    3. V3 từ 2026-10-05: TSK-S3-06, S3-07, S3-14, S3-16 → S3-20                         │
+│    4. Cổng nhu cầu mềm 2026-10-25 (Q-20, TODOS.md #19)                                 │
+│    5. Thí nghiệm gpio-sim 2 giờ trước khi mở A2 ngày 2026-10-26 (Q-16)                 │
 │                                                                                        │
-│ 4. LƯU Ý KỸ THUẬT QUAN TRỌNG CHO NGƯỜI TIẾP QUẢN (CONTEXT & GUARDRAILS):               │
-│    • [CR-1.0] Kiến trúc nay là CLOUD-FIRST: STT/TTS/LLM chạy trên provider cloud,      │
-│      `esp32s3` chỉ thu/phát âm thanh + AEC/VAD + FSM + thẩm định gate. Sprint 5 giảm   │
-│      phạm vi tương ứng; R-1 hạ từ Cao xuống Trung bình.                                │
-│    • [CR-1.0] KHÔNG có doanh thu inference. Gateway thương mại bị bỏ; lớp provider là  │
-│      OSS self-host. Fleet OS là dịch vụ thương mại duy nhất.                           │
-│    • [CR-1.0 · Q-14] Fail-closed KHÔNG đổi: gate chạy hoàn toàn trên thiết bị. Mất mạng│
-│      ⇒ gate VẪN lượng giá bằng bộ nhận diện lệnh cố định cục bộ; chỉ BLOCK với         │
-│      `gate_unreachable` khi fallback không có / không chạy được (NFR-RES-04 giữ 100%). │
-│    • [Q-17] Mọi `on_block` đều chặn hành động vật lý; `degrade` chạy `fallback_action` │
-│      QUA GATE CỦA CHÍNH NÓ. Đã đặc tả + test 100% ⇒ không phải nợ, không cần waiver.   │
-│    • [Q-10 · Q-11] LiteLLM là THƯ VIỆN định tuyến (SDK), KHÔNG chạy proxy server, luôn │
-│      nằm sau `neuroedge.models.providers` (adapter Q-12 là đường thoát). Cài qua extra │
-│      `neuroedge[cloud]` — `pip install neuroedge` không kéo LiteLLM (FR-DX-02). Đã     │
-│      duyệt `litellm==1.102.0` (MIT, wheel không có `enterprise/`); CI kiểm giấy phép   │
-│      phụ thuộc bắc cầu làm cùng TSK-S2-11. Hawkbit/EMQX vẫn mở tới trước Khối 2.       │
-│    • Không sửa đuôi trace thành .ntrace (chuẩn duy nhất là .json mang $schema).        │
-│    • Bộ lượng giá CEL trên ESP32-S3 dùng Phương án A (Host biên dịch sang Decision     │
-│      Tree JSON phẳng; ESP32-S3 chỉ duyệt cây bằng hàm C đơn giản, không nhúng CEL VM). │
-│    • Bo mạch tham chiếu duy nhất là ESP32-S3-Box-3 (không đổi sang DevKitC).           │
-│    • THẨM ĐỊNH LƯỢC ĐỒ KHÔNG ĐỦ để kết luận gate an toàn. Nguyên tắc 2 là mệnh đề về   │
-│      HAI tài liệu, nằm ngoài khả năng của JSON Schema → cổng kiểm tra là               │
-│      `neuroedge gate lint` (phân giải), không phải thẩm định lược đồ.                  │
-│    • `allow_when` dạng chuỗi CEL bị TỪ CHỐI trong chuỗi kế thừa: không chứng minh được │
-│      phép siết chặt cho biểu thức đục → fail-closed thay vì xấp xỉ.                    │
-│    • `copier` ĐÃ CHUYỂN sang extra `scaffold`: nó kéo theo jinja2-ansible-filters GPL3,│
-│      không được phép nằm trong phần phân phối của lõi MIT (§3.10 roadmap).             │
-│    • jsonschema phải ghim extra `[format-nongpl]` (extra `[format]` kéo rfc3987 GPL).  │
-│    • Lệnh CLI chưa có engine PHẢI thoát mã 2, không in bảng "PASS" giả.                │
+│ 4. LƯU Ý — bất biến ở CHANGELOG.md §3.3; dưới đây chỉ điều chưa có ở đó                │
+│    • Cloud-first: STT/TTS/LLM trên provider; không bán lại inference (CR-1.0)          │
+│    • Mất mạng ⇒ gate vẫn lượng giá bằng ngữ pháp lệnh cục bộ (Q-14)                    │
+│    • Mọi on_block đều chặn hành động vật lý; không cần waiver §11.3 (Q-17)             │
+│    • LiteLLM là SDK sau neuroedge.models.providers, extra [cloud] (Q-10, Q-11)         │
+│    • Chạy ruff check + ruff format --check trước khi commit (CI chặn)                  │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 0.4 Quy ước Cập nhật & Bàn giao (Handoff Protocol)
 
-Để bảo đảm mọi thành viên trong đội ngũ và các phiên làm việc của AI kế tiếp nhau không bị đứt đoạn:
-1. **Quy tắc cập nhật Task:** Khi bắt đầu làm một task, chuyển trạng thái từ `⏳ Chưa bắt đầu` sang `🟡 Đang thực hiện`. Khi hoàn thành mã nguồn và test pass, chuyển sang `✅ Hoàn thành` kèm đường dẫn tệp sản phẩm (artifact) và mã commit.
-2. **Quy tắc cập nhật Exit Criteria:** Khi một tiêu chí nghiệm thu thỏa mãn, đánh dấu `[x]` kèm bằng chứng kiểm chứng (test log, command output, link code).
-3. **Cập nhật Thẻ Bàn giao:** Trước khi kết thúc phiên làm việc, cập nhật lại phần *Vừa hoàn thành*, *Đang thực hiện*, và *Việc tiếp theo* tại Mục 0.3.
+Khi xong một task: làm theo [`CONTRIBUTING.md` §8](CONTRIBUTING.md#8-hoàn-thành-một-task--cập-nhật-tài-liệu-tiến-độ-changelog) —
+nơi duy nhất định nghĩa việc cập nhật trạng thái task, tiêu chí ra, §0.1–§0.3 và changelog.
 
 ---
 
@@ -951,7 +904,7 @@ Một hạng mục chỉ được coi là hoàn thành khi đủ **cả năm** �
 | 1   | Mã đã review và hợp nhất                                                       |
 | 2   | Có kiểm thử tự động chạy trong CI, bao gồm ít nhất một ca thất bại             |
 | 3   | Tiêu chí nghiệm thu của yêu cầu PRD tương ứng đã đạt và ghi nhận               |
-| 4   | Tài liệu và `--help` cập nhật                                                  |
+| 4   | `--help` cập nhật; tài liệu, tiến độ, changelog cập nhật theo `CONTRIBUTING.md` §8 |
 | 5   | Thông báo lỗi liên quan nêu đủ ba thành phần: sai ở đâu, vì sao, xử lý thế nào |
 
 

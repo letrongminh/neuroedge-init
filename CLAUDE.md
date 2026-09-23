@@ -31,7 +31,7 @@ Hai điều dễ sai nhất:
 ## Testing
 
 ```bash
-cd python && .venv/bin/python -m pytest -q      # kỳ vọng: 229 passed, 0 skipped
+cd python && .venv/bin/python -m pytest -q      # kỳ vọng: 0 failed, 0 skipped
 ```
 
 Framework: **pytest**. `testpaths = ["tests"]` trong `python/pyproject.toml`.
@@ -46,6 +46,15 @@ Hai luật không thương lượng:
 
 Cổng kiểm tra an toàn **không phải** thẩm định lược đồ mà là
 `neuroedge gate lint` (phân giải). Xem lý do ở đầu tệp này.
+
+Số test hiện hành ở `neuroedge-roadmap.md` §0.1, không ghi ở đây.
+
+## Khi xong một task
+
+Làm theo **`CONTRIBUTING.md` §8**, trong cùng PR với mã: tiến độ ở roadmap, một mục
+trong `CHANGELOG.md` `[Chưa phát hành]`, đặc tả nếu hành vi đổi. Mỗi sự thật có
+đúng một nơi (§8.1) — nơi khác dẫn mã, không chép lại. Chạy `ruff check .` và
+`ruff format --check .` trước khi commit; CI chặn cả hai.
 
 ## Skill routing
 
