@@ -31,6 +31,12 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
   10 câu hỏi cổng C1–C10 gắn với `CEO-X*`/`T*` và proposal §8.7, kế hoạch theo ngày, demo ≤ 5 phút cho 4 phân khúc
   (chỉ lệnh đã chạy thật, kèm bảng *không được nói là đã có*), bộ câu hỏi phỏng vấn kiểu The Mom Test, thang chấm
   go / adjust / stop, và `survey.json` — dựng thành trang ghi phiếu nội bộ (link trong README của thư mục).
+- **TSK-S3-25 — gate chặn theo giá trị tham số (RFC-0005 chấp thuận, Q-25).** Khối `arguments:` trong gate
+  (`type`, `minimum`/`maximum`, `enum`, `max_length`) — thêm vào `schemas/gate.v1.json` theo RFC. Engine kiểm
+  giá trị thực chạy (kể cả mặc định) **trước** mọi dữ kiện ⇒ `BLOCK argument_out_of_range`, rồi `on_block`.
+  Gate con chỉ thu hẹp (`GateInheritanceError`); `build` từ chối giới hạn trên tham số không có hoặc khác
+  kiểu; giới hạn đi vào `inputSchema`; `gate explain` hiện chúng. Gate không có `arguments` giữ nguyên digest.
+  Kiểm: `pytest tests/test_gate_arguments.py tests/test_gate_fixtures.py`. (FR-ACE-08)
 - **Q-27 — System 2 làm MCP host (TSK-S3-28).** Mọi tool System 2 dùng đi qua MCP client (`neuroedge/mcp_host.py`):
   tool của thiết bị qua MCP server của **chính agent** (in-process, `call_source = system_two`, vẫn qua gate; lỗi hợp
   đồng ném ra nguyên vẹn), MCP server bên ngoài khai ở `[mcp.servers]` **chỉ lấy thông tin** (allowlist `tools`, kết

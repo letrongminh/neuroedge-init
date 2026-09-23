@@ -1,0 +1,7 @@
+# RFC-0005 (principle 2) — an enum value the base never admitted.
+schema:  neuroedge.gate/v1
+name:    widens-argument-enum
+version: 1.0.0
+extends: neuroedge://gates/args-base@1.0.0
+arguments:
+  mode: { type: string, enum: [eco, turbo] }

@@ -147,7 +147,7 @@ class _ReplayEngine(ActionContractEngine):
             return None
         return step
 
-    async def evaluate(self, key, context=None, *, state=None) -> GateResult:
+    async def evaluate(self, key, context=None, *, state=None, arguments=None) -> GateResult:
         step = self._next(key)
         facts: dict[str, Fact] = {}
         source = None
@@ -160,7 +160,7 @@ class _ReplayEngine(ActionContractEngine):
             elif step.degraded:
                 source = _Unreachable(_DEGRADED_AS[step.degraded])
         self.facts_source = source
-        return await super().evaluate(key, facts, state=state)
+        return await super().evaluate(key, facts, state=state, arguments=arguments)
 
 
 # --- the result ------------------------------------------------------------------

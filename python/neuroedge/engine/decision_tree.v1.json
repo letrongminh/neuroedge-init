@@ -32,6 +32,24 @@
         }
       }
     },
+    "arguments": {
+      "$comment": "RFC-0005 argument limits, checked before the nodes; absent when the gate declares none.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "enum": ["string", "integer", "number", "boolean"] },
+          "minimum": { "type": "number" },
+          "maximum": { "type": "number" },
+          "enum": { "type": "array", "minItems": 1 },
+          "max_length": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
     "on_block": { "type": "object", "required": ["action"] },
     "budget": {
       "type": "object",

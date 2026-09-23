@@ -136,3 +136,51 @@ changes_fallback_action.yaml:
   principle: 2
   where_contains: "on_block.action"
   why_contains: "'unlock_door_no_auth'"
+
+# --- RFC-0005: argument limits ---------------------------------------------------------
+
+widens_argument_maximum.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "arguments.duration_s"
+  why_contains: "loosens the inherited maximum"
+
+lowers_argument_minimum.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "arguments.duration_s"
+  why_contains: "loosens the inherited minimum"
+
+widens_argument_enum.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "arguments.mode"
+  why_contains: "which the inherited enum"
+
+retypes_argument.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "arguments.duration_s"
+  why_contains: "retypes an inherited argument"
+
+argument_empty_range.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "arguments.duration_s"
+  why_contains: "range is empty"
+
+argument_bound_on_string.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "arguments.mode"
+  why_contains: "bound a number"
+
+argument_unknown_keyword.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "arguments.duration_s"
+  why_contains: "Additional properties"

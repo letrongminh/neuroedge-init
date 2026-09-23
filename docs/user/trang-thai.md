@@ -4,7 +4,7 @@
 # Trạng thái dự án
 
 > Sinh tự động từ [`neuroedge-roadmap.md`](../../neuroedge-roadmap.md) §0 —
-> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-09-23**.
+> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-09-24**.
 
 ## Điều hành
 
@@ -13,9 +13,9 @@
 | Pha đang thực thi | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0 → 2026-11-15)** |
 | Sprint hiện hành | 🟡 **Sprint 2: Lõi thực thi trên `sim` (≈ A1)** — mã A1 xong sớm, 2026-09-23 |
 | Cột mốc tiếp theo | **M1: Time-to-first-value < 10 phút trên `sim`** |
-| Trạng thái CI Lõi | ✅ **PASS 632/632 · SKIP 0** |
+| Trạng thái CI Lõi | ✅ **PASS 664/664 · SKIP 0** |
 | Chặn ngoài tầm kỹ thuật | 🟡 **1 hạng mục chặn + 1 còn mở** |
-| Lần cập nhật cuối | **2026-09-23** |
+| Lần cập nhật cuối | **2026-09-24** |
 
 ## Tiến độ các mốc
 

@@ -66,8 +66,19 @@ def _description(spec: ActionSpec) -> str:
     return f"{first} (Guarded by gate `{spec.gate}`: the call may be blocked.)"
 
 
-def input_schema(spec: ActionSpec) -> dict[str, Any]:
-    """JSON Schema of the action's parameters, from its signature and type hints."""
+def input_schema(
+    spec: ActionSpec, limits: Mapping[str, Mapping[str, Any]] | None = None
+) -> dict[str, Any]:
+    """
+    JSON Schema of the action's parameters, from its signature and type hints.
+
+    `limits` are the gate's `arguments` (RFC-0005): their bounds are added so a
+    model sees them before it calls. That is a hint to the model; the gate still
+    checks — `check_arguments` stays a type check, a value out of range is the
+    gate's BLOCK, not a schema rejection (docs/spec/tool_calling.md §3).
+    """
+    from ..engine.arguments import schema_hint
+
     hints = typing.get_type_hints(spec.fn)
     properties: dict[str, Any] = {}
     required: list[str] = []
@@ -82,6 +93,8 @@ def input_schema(spec: ActionSpec) -> dict[str, Any]:
             required.append(name)
         else:
             prop["default"] = parameter.default
+        if limits and name in limits:
+            prop.update(schema_hint(limits[name]))
         properties[name] = prop
     schema: dict[str, Any] = {
         "type": "object",
@@ -93,17 +106,21 @@ def input_schema(spec: ActionSpec) -> dict[str, Any]:
     return schema
 
 
-def mcp_tool(spec: ActionSpec) -> dict[str, Any]:
-    return {"name": spec.name, "description": _description(spec), "inputSchema": input_schema(spec)}
+def mcp_tool(spec: ActionSpec, limits: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    return {
+        "name": spec.name,
+        "description": _description(spec),
+        "inputSchema": input_schema(spec, limits),
+    }
 
 
-def openai_tool(spec: ActionSpec) -> dict[str, Any]:
+def openai_tool(spec: ActionSpec, limits: Mapping[str, Any] | None = None) -> dict[str, Any]:
     return {
         "type": "function",
         "function": {
             "name": spec.name,
             "description": _description(spec),
-            "parameters": input_schema(spec),
+            "parameters": input_schema(spec, limits),
         },
     }
 
@@ -168,17 +185,23 @@ def _coerce(value: Any, kind: str | None) -> tuple[bool, Any]:
 class ToolSet:
     """The agent's @actions, exposed as tools. Nothing outside it can be called."""
 
-    def __init__(self, specs: Iterable[ActionSpec]) -> None:
+    def __init__(
+        self,
+        specs: Iterable[ActionSpec],
+        limits: Mapping[str, Mapping[str, Any]] | None = None,
+    ) -> None:
         self.specs = {spec.name: spec for spec in specs}
+        # action name -> its gate's `arguments` limits (RFC-0005), for the schemas.
+        self.limits = {name: dict(value) for name, value in (limits or {}).items()}
 
     def __contains__(self, name: str) -> bool:
         return name in self.specs
 
     def mcp(self) -> list[dict[str, Any]]:
-        return [mcp_tool(spec) for spec in self.specs.values()]
+        return [mcp_tool(spec, self.limits.get(spec.name)) for spec in self.specs.values()]
 
     def openai(self) -> list[dict[str, Any]]:
-        return [openai_tool(spec) for spec in self.specs.values()]
+        return [openai_tool(spec, self.limits.get(spec.name)) for spec in self.specs.values()]
 
 
 def parse_tool_calls(payload: Any, source: str) -> tuple[str | None, list[ToolCall]]:

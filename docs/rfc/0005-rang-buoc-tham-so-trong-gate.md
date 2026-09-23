@@ -8,8 +8,8 @@
 | **Yêu cầu PRD liên quan** | FR-ACE-08, FR-GATE-06, FR-MDL-10 |
 | **Người đề xuất** | V1 — Kỹ sư lõi nền tảng *(theo quyết định Q-25)* |
 | **Ngày mở** | 2026-09-23 |
-| **Trạng thái** | 🟡 Đang thảo luận — hướng đã chốt ở Q-25, chi tiết chờ duyệt |
-| **Người phê duyệt** | *(kỹ thuật trưởng — thay đổi `gate.v1` và ngữ nghĩa phân giải)* |
+| **Trạng thái** | ✅ Đã chấp thuận — hiện thực ở TSK-S3-25 |
+| **Người phê duyệt** | minhlt (kỹ thuật trưởng), 2026-09-24 — quyết định **Q-25** (`neuroedge-prd.md` §15); không có `arguments_closed` ở v1 |
 
 > **Khi nào cần RFC:** mọi thay đổi trong `schemas/`, và mọi thay đổi ngữ nghĩa
 > phân giải gate. Xem `CONTRIBUTING.md` §3 để biết ranh giới chính xác.
@@ -84,7 +84,7 @@ nhau).
 | `enum` | Tập con của cha |
 | `max_length` | Nhỏ hơn hoặc bằng |
 | `type` | Giữ nguyên |
-| Bỏ ràng buộc cha đã khai | **Không** — `GateInheritanceError` |
+| Bỏ ràng buộc cha đã khai | **Không thể** — không nhắc lại nghĩa là kế thừa nguyên vẹn, giống `allow_when`; không có cú pháp để xoá |
 
 Khoảng rỗng sau khi giao (`minimum > maximum`) ⇒ `GateSchemaError`: gate không bao giờ
 cho qua được là gate viết sai.
@@ -113,13 +113,13 @@ thiết bị nào phải nạp lại.
 Thay đổi này chỉ thêm cách **chặn**; không có đường nào làm một gate lỏng hơn:
 
 - Gate không có `arguments` giữ nguyên ngữ nghĩa.
-- Kế thừa chỉ thu hẹp, và bỏ ràng buộc là lỗi — cùng hình dạng với Q-18 cho `budget`.
+- Kế thừa chỉ thu hẹp, và không nhắc lại nghĩa là kế thừa nên không bỏ được ràng buộc — cùng hình dạng với Q-18 cho `budget`.
 - Ràng buộc chạy tất định trước mô hình, nên không có lý do suy giảm mới
   (`gate_unreachable` / `budget_exceeded` không áp dụng).
 
 Một điểm cần duyệt: tham số **không** khai trong `arguments` thì không bị giới hạn ngoài
 kiểu của chữ ký. Có nên có chế độ `arguments_closed: true` buộc mọi tham số phải khai?
-Đề xuất: **không** ở v1 — thêm sau nếu gate chia sẻ đầu tiên cần.
+**Quyết định (2026-09-24): không** ở v1 — thêm sau nếu gate chia sẻ đầu tiên cần.
 
 ## 6. Phương án đã xem xét và bác bỏ
 
@@ -131,15 +131,21 @@ kiểu của chữ ký. Có nên có chế độ `arguments_closed: true` buộc
 
 ## 7. Bằng chứng kiểm chứng
 
-- [ ] Ví dụ hợp lệ: `gates/unlock_door@1.3.0.yaml` có `duration_s ≤ 60`
-- [ ] Phản chứng trong `fixtures/gates/invalid/` + `expected_errors.yaml`: con nới `maximum`, con bỏ ràng buộc, khoảng rỗng, enum không phải tập con
-- [ ] Test: `ToolCall` với `duration_s = 3600` từ `system_two` ⇒ BLOCK `argument_out_of_range`, chân không đổi
-- [ ] `neuroedge verify` vẫn xanh; ba vết ghi chuẩn mực không đổi
+- [x] Ví dụ hợp lệ: `fixtures/gates/valid/narrows_arguments.yaml` thu hẹp cả bốn loại giới hạn của
+  `fixtures/gates/registry/args-base@1.0.0.yaml`. *(Không sửa `gates/unlock_door@1.2.0.yaml`: đổi nó là đổi
+  digest của ba vết ghi chuẩn mực.)*
+- [x] Phản chứng trong `fixtures/gates/invalid/` + `expected_errors.yaml`: nới `maximum`, hạ `minimum`, enum
+  không phải tập con, đổi kiểu, khoảng rỗng, cận trên chuỗi, từ khoá lạ
+- [x] Test (`python/tests/test_gate_arguments.py`): `ToolCall` với `duration_s = 3600` từ `system_two` ⇒ BLOCK
+  `argument_out_of_range`, chân không đổi, không dữ kiện nào được hỏi; giá trị mặc định cũng được kiểm; agent
+  trên `sim` ghi rồi replay ra cùng phán quyết
+- [x] `neuroedge verify` vẫn xanh; ba vết ghi chuẩn mực không đổi
 
 ## 8. Việc phải làm khi chấp thuận
 
-- [ ] Cập nhật `schemas/gate.v1.json`
-- [ ] Phụ lục B.6 trong `neuroedge-proposal.md` từ "đề xuất" thành chuẩn tắc
-- [ ] `neuroedge-prd.md` FR-ACE-08 từ P1 chờ RFC thành P0 nếu cần cho A2
-- [ ] `neuroedge-roadmap.md` TSK-S3-25 · TSK-S4-02 (loại nút `ARG_CMP`)
-- [ ] Resolver, lint, compiler, `input_schema()`; fixture và test
+- [x] Cập nhật `schemas/gate.v1.json`
+- [x] Phụ lục B.6 trong `neuroedge-proposal.md` từ "đề xuất" thành chuẩn tắc
+- [x] `neuroedge-prd.md` FR-ACE-08 thành P0
+- [x] `neuroedge-roadmap.md` TSK-S3-25 ✅ · TSK-S4-02 (walker C đọc khối `arguments` của cây)
+- [x] Resolver, `gate lint`, compiler (`check_gate_arguments`), cây quyết định, engine, `c.do()` (giá trị mặc
+  định), `input_schema()`, `gate explain`; fixture và test

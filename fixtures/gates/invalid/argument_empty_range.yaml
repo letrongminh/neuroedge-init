@@ -1,0 +1,12 @@
+# RFC-0005 — a range that admits nothing is an authoring mistake.
+schema:  neuroedge.gate/v1
+name:    argument-empty-range
+version: 1.0.0
+arguments:
+  duration_s: { type: integer, minimum: 10, maximum: 5 }
+evaluate:
+  ok: { type: bool, instructions: "Anything" }
+allow_when:
+  ok: true
+on_block: { action: deny }
+budget: { p95_latency_ms: 100 }

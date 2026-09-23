@@ -74,6 +74,23 @@
         ]
       }
     },
+    "arguments": {
+      "description": "RFC-0005 — limits on the arguments of the gated action, checked deterministically before evaluate. A derived gate may only narrow them (Appendix B.6).",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": { "type": "string", "enum": ["string", "integer", "number", "boolean"] },
+          "minimum": { "type": "number" },
+          "maximum": { "type": "number" },
+          "enum": { "type": "array", "minItems": 1, "uniqueItems": true },
+          "max_length": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
     "allow_when": {
       "description": "Authorisation condition. Every clause must hold simultaneously. The structured object form (Appendix B.2 operators) is required whenever the gate participates in an extends chain, because tightening cannot be proven for an opaque CEL string (RFC-0001).",
       "type": ["string", "object", "array"]

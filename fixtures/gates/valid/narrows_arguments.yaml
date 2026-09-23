@@ -1,0 +1,9 @@
+# RFC-0005 — every argument limit narrowed: shorter pulse, fewer modes, shorter note.
+schema:  neuroedge.gate/v1
+name:    narrows-arguments
+version: 1.0.0
+extends: neuroedge://gates/args-base@1.0.0
+arguments:
+  duration_s: { type: integer, maximum: 30 }
+  mode:       { type: string, enum: [eco] }
+  note:       { type: string, max_length: 16 }

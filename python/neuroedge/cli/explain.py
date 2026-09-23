@@ -73,6 +73,23 @@ def render(explanation: GateExplanation, console: Console) -> None:
     console.print(
         "  [dim]Tiêu chí không xác định được (mất mạng, không nhận ra lệnh) → CHẶN.[/dim]"
     )
+    if gate.arguments:
+        parent = explanation.parent.arguments if explanation.parent is not None else {}
+        console.print(
+            "\n[bold]Giới hạn tham số (arguments, RFC-0005)[/bold] — kiểm trước mọi tiêu chí:"
+        )
+        for name, limit in gate.arguments.items():
+            bounds = ", ".join(f"{key}={value}" for key, value in limit.items() if key != "type")
+            note = ""
+            if name in parent and parent[name] != limit:
+                note = " [yellow](con đã thu hẹp so với cha)[/yellow]"
+            elif name in parent:
+                note = " [dim](kế thừa nguyên từ cha)[/dim]"
+            console.print(
+                f"  [green]✓[/green] {escape(name)}: {escape(limit['type'])}"
+                f"{escape(' · ' + bounds) if bounds else ''}{note}"
+            )
+        console.print("  [dim]Ngoài giới hạn → CHẶN argument_out_of_range, rồi on_block.[/dim]")
 
     console.print("\n[bold]3. Ngân sách & Hành vi khi bị chặn:[/bold]")
     p95, parent_p95 = explanation.p95, explanation.parent_p95

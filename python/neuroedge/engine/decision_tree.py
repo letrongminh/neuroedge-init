@@ -77,7 +77,7 @@ def compile_tree(gate: ResolvedGate) -> dict[str, Any]:
             }
         )
 
-    return {
+    tree = {
         "schema": TREE_SCHEMA,
         "gate": f"{gate.name}@{gate.version}",
         "gate_digest": gate_digest(gate),
@@ -86,6 +86,10 @@ def compile_tree(gate: ResolvedGate) -> dict[str, Any]:
         "on_block": dict(gate.on_block),
         "budget": dict(gate.budget),
     }
+    if gate.arguments:
+        # RFC-0005: checked before any node, in declaration order (root first).
+        tree["arguments"] = [{"name": name, **limit} for name, limit in gate.arguments.items()]
+    return tree
 
 
 def tree_bytes(tree: Mapping[str, Any]) -> bytes:
