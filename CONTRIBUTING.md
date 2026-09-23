@@ -189,6 +189,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `python/neuroedge/hal/` | HAL và model bo mạch | PR thường; xem [rà soát MCU](docs/spec/hal_mcu_review.md) |
 | `targets/esp32s3/` | Firmware ESP-IDF | PR thường |
 | `docs/rfc/`, `docs/spec/`, `docs/reports/`, `docs/designs/` | RFC, đặc tả chuẩn tắc, báo cáo đo, kế hoạch thiết kế | PR thường |
+| `docs/user/` | Tài liệu cho người dùng; `trang-thai.md` sinh tự động từ roadmap §0 | PR thường — chạy `python3 scripts/gen_user_status.py` |
 | `TODOS.md` | Việc đã xem xét và hoãn có chủ ý, kèm mốc kích hoạt | PR thường |
 | `scripts/` | Công cụ CI | PR thường |
 
