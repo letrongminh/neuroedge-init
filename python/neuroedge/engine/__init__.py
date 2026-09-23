@@ -7,6 +7,7 @@ This module is a façade; the implementations live in the submodules.
 """
 
 from .canonical import canonicalize, digest, gate_canonical_json, gate_digest
+from .circuit_breaker import BreakerState, DegradationBreaker
 from .constraints import Constraint, parse_allow_when, parse_constraint
 from .decision_tree import TREE_SCHEMA, TreeResult, compile_tree, tree_bytes, validate_tree, walk
 from .gate import ActionContractEngine, FactSource, Gate, GateResult
@@ -25,6 +26,8 @@ from .verdict import DEGRADED_REASONS, Fact, GateVerdict, Reason, Unavailable
 
 __all__ = [
     "DEGRADED_REASONS",
+    "BreakerState",
+    "DegradationBreaker",
     "EventLog",
     "FactSource",
     "GateResult",

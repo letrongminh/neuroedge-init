@@ -39,6 +39,9 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 - **TSK-S2-01 — HAL `sim`.** `hal/sim.py`: `SimHAL` phủ 5 nguyên thủy trên `sim-default`,
   gõ chữ là đầu vào mặc định (Q-15), `digital_out` trả `PendingCommand.cancel()` (RB-3).
   Kiểm: `pytest tests/test_hal_sim.py`. (FR-TGT-01, FR-HAL-01)
+- **TSK-S2-04 — mạch ngắt suy giảm.** `engine/circuit_breaker.py` bọc nguồn chính của
+  SystemOne: lỗi liên tiếp ⇒ mở, đi thẳng fallback; không bao giờ sinh ALLOW. Ma trận A4
+  đạt. Kiểm: `pytest tests/test_fail_closed.py`. (FR-ACE-03, NFR-REL-02)
 - **Quy tắc hoàn thành task.** `CONTRIBUTING.md` §8: nơi duy nhất cho việc cập nhật
   tiến độ, changelog, đặc tả; bảng "mỗi sự thật một nơi"; mẫu PR có checklist.
   Roadmap §0.4, §11.2 và `CLAUDE.md` nay chỉ dẫn về đó.

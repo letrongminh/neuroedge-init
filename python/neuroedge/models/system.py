@@ -22,6 +22,7 @@ from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from ..engine.circuit_breaker import DegradationBreaker
 from ..engine.gate import FactSource
 from ..engine.trace_sink import EventLog
 from ..engine.verdict import Fact, Unavailable
@@ -57,12 +58,14 @@ class SystemOne:
         grammar: str | Path | None = None,
         network: str = "online",
         events: EventLog | None = None,
+        breaker: DegradationBreaker | None = None,
     ) -> None:
         self.model = model
         self.primary = primary
         self.fallback = _fallback_source(fallback, grammar)
         self.network = network
         self.events = events
+        self.breaker = breaker
 
     async def adjudicate(
         self,
@@ -77,8 +80,15 @@ class SystemOne:
 
         if self.network == "offline" or self.primary is None:
             answer: Fact | Unavailable = Unavailable("offline", f"{self.model} not reachable")
+        elif self.breaker is not None and not self.breaker.allow_primary():
+            answer = Unavailable("offline", f"circuit breaker open for {self.model}")
         else:
             answer = await self.primary.adjudicate(criterion, definition, state, deadline_ms)
+            if self.breaker is not None:
+                if isinstance(answer, Fact):
+                    self.breaker.record_success()
+                else:
+                    self.breaker.record_failure(answer.reason)
         if isinstance(answer, Fact) or self.fallback is None:
             return answer
 
