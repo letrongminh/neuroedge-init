@@ -8,7 +8,7 @@
 | **Người đề xuất** | V1 — Kỹ sư lõi nền tảng |
 | **Ngày mở** | 2026-09-22 · thu hẹp phạm vi 2026-09-23 sau review (xem *Review record*) |
 | **Trạng thái** | 🟡 Đang thảo luận |
-| **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc.** RFC không làm gate lỏng hơn, nhưng chạm hai bất biến kiểm thử đang bảo vệ tương đương target (§5), và tiêu chí ra Khối V1a số 1 đòi chữ ký kỹ thuật trưởng (`neuroedge-roadmap-phase2.md`) |
+| **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc.** RFC không làm gate lỏng hơn, nhưng chạm ba bất biến kiểm thử đang bảo vệ tương đương target (§5), và tiêu chí ra Khối V1a số 1 đòi chữ ký kỹ thuật trưởng (`neuroedge-roadmap-phase2.md`) |
 | **Kiểm chứng** | *(chưa có — thuộc pull request thứ hai, **không hợp nhất trước Tháng 9**, xem §8)* |
 
 > **Phạm vi pull request này:** chỉ tệp RFC, **chưa sửa lược đồ**, đúng quy trình
@@ -223,7 +223,7 @@ trước khi cổng đó tồn tại là để một khoảng không ai canh.
 
 | | |
 |:---|:---|
-| **Vì sao bất biến này tồn tại** | Cách rẻ nhất để bảo đảm cùng một agent chạy được trên các target mà không rẽ nhánh — P-2, KL-2 của `docs/spec/hal_mcu_review.md` |
+| **Vì sao bất biến này tồn tại** | Cách rẻ nhất để bảo đảm cùng một agent chạy được trên các target mà không rẽ nhánh — nguyên tắc P-2 (PRD §1.5), KL-2 của `docs/spec/hal_mcu_review.md` |
 | **Vì sao dạng hiện tại không còn đúng** | Nó nhầm *tập tên chân của một lớp usecase* (khóa cửa villa) với *hợp đồng toàn cục*. Bắt một bo mạch STM32 khai `porch_light` giả để qua test là **tệ hơn** cho an toàn |
 | **Đổi thành** | Khẳng định giữ nguyên, **áp cho các bo mạch bậc 1**. Bất biến theo agent (*mọi bo mạch được một agent nhắm tới phải khai đủ tập chân mà agent yêu cầu*) chỉ thay vào khi TSK-S2-02 hạ cánh kèm test riêng — không sớm hơn |
 
@@ -347,8 +347,9 @@ suy luận lại:
      định, không phải mọi khung (30 fps ≈ 13 MB/giờ vết ghi).
    - Lint ngữ nghĩa trong `trace.py`: `sha256` khớp `^[0-9a-f]{64}$`; `uri` chỉ được
      có khi `metadata.raw_capture == true`; từ chối blob base64 trong `data`. Kèm
-     fixture phản chứng trong `fixtures/traces/invalid/` (thuộc diện RFC theo
-     `CONTRIBUTING.md` §3, nên đi cùng một RFC nhỏ hoặc RFC ở mục 1).
+     fixture phản chứng trong `fixtures/traces/invalid/` và mục tương ứng trong
+     `expected_errors.yaml` — PR thường (`CONTRIBUTING.md` §3 chỉ đòi RFC cho ba vết
+     ghi chuẩn mực).
 3. **Ngữ nghĩa gate cho bằng chứng thị giác** — bài toán riêng, chạm `gate.v1`, cần
    kỹ thuật trưởng duyệt, thuộc **một RFC riêng (số cấp khi mở)**; hai số RFC kế tiếp
    đã được giữ cho hai thay đổi `gate.v1` ở design doc Giai đoạn 1. **Cho

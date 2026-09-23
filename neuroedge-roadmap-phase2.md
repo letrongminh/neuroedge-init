@@ -124,9 +124,10 @@ Giai đoạn 2 **không được rút người khỏi Khối 4 (AURA)**. AURA l�
             │
             ▼
 [ V1a: mở enum target + bậc trong mã lõi ]  (Tháng 9–11)
-            │
-            ├──────────────────────────┐
-            ▼                          ▼
+            │                          [ nhu cầu camera AURA đo được ]
+            │                                       │
+            ├──────────────────────────┐            │  (V1b không chờ V1a;
+            ▼                          ▼            ▼   V2 và P1 cần cả hai)
 [ V1b: vision trên linux ]      [ P1: bộ công cụ port ]
    (Tháng 11–16)                    (Tháng 16–20)
             │                          │
@@ -184,14 +185,14 @@ Giai đoạn 2 **không được rút người khỏi Khối 4 (AURA)**. AURA l�
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-V1b-01** | Hiện thực `vision.in` cho `linux`: luồng khung hình, độ phân giải, FPS | FR-HAL-01 | V5 | ⏳ Chưa bắt đầu | `targets/linux/vision/` |
+| **TSK-V1b-01** | Hiện thực `vision.in` cho `linux`: luồng khung hình, độ phân giải, FPS. Cần TSK-V1b-07 | FR-HAL-01 | V5 | ⏳ Chưa bắt đầu | `targets/linux/vision/` |
 | **TSK-V1b-02** | Camera ảo trong `sim`: phát lại chuỗi ảnh, giữ tương đương với phần cứng thật | FR-TGT-01, FR-TGT-06 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/sim/vision/` |
 | **TSK-V1b-03** | Giao diện trừu tượng mô hình thị giác, đổi model bằng cấu hình | FR-MDL-04, FR-MDL-07 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/vision/` |
 | **TSK-V1b-04** | Action CI cho khung hình: record, replay, assert trên chuỗi phán quyết | FR-CI-01→04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/vision.py` |
 | **TSK-V1b-05** | Tích hợp NPU rời (Hailo-8, Coral) sau giao diện trừu tượng | FR-MDL-04 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/vision/accel/` |
+| **TSK-V1b-06** | Ba gate mẫu có yếu tố thị giác, tuân thủ ràng buộc §2.2 của tài liệu này | FR-GATE-03 | V1 + V5 | ⏳ Chưa bắt đầu | `gates/vision/` |
 | **TSK-V1b-07** | RFC nguyên thủy `vision.in`: hình dạng tham số có bằng chứng phần cứng (`fps` số thực, `modes[]`, enum `pixel_format`) và quy tắc so khớp với `[requires]` (RFC-0002 §9.1). Cần TSK-S2-02 | FR-HAL-01, FR-HAL-04 | V1 | ⏳ Chưa bắt đầu | `docs/rfc/` · `schemas/board.v1.json` |
 | **TSK-V1b-08** | Bằng chứng thị giác trong vết ghi: kết quả nhận diện qua sự kiện nhóm `perception`; `vision_ref` (băm + kích thước) chỉ là danh tính; lint `uri` chỉ khi `metadata.raw_capture` (RFC-0002 §9.2) | FR-CI-02, NFR-PRIV-01, NFR-PRIV-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/trace.py` · `fixtures/traces/invalid/` |
-| **TSK-V1b-06** | Ba gate mẫu có yếu tố thị giác, tuân thủ ràng buộc §2.2 của tài liệu này | FR-GATE-03 | V1 + V5 | ⏳ Chưa bắt đầu | `gates/vision/` |
 
 **Đòn bẩy OSS Khối V1b:** GStreamer và V4L2 cho luồng khung hình · Ultralytics YOLO và ONNX Runtime cho mô hình · HailoRT và Edge TPU runtime cho NPU. Tiết kiệm ước tính 10 tuần, phần lớn nằm trên đường găng.
 
@@ -308,7 +309,7 @@ Bộ V-G1 đến V-G5, đặc tả đầy đủ tại proposal §12.4. Ba chỉ 
 | **3** | Không tuyển được V5 | Cao | Quá Tháng 11 chưa có người | Dừng sau V1a. Danh sách target đã mở vẫn giữ nguyên giá trị cho cộng đồng port bậc 3 |
 | **4** | Mô hình thị giác phi xác định làm loãng mệnh đề an toàn | Cao | Xuất hiện đề xuất cho gate lượng giá trực tiếp trên đầu ra model | Ràng buộc §2.2 của tài liệu này: kết quả thị giác phải quy về `bool` / `level` / `choice` trước khi tới gate. Rule engine giữ nguyên 100% xác định |
 | **5** | Tăng người dùng mà không tăng doanh thu | Cao | V-G1 vế một đạt nhưng vế hai không đạt | Xem §10. Nếu sau Tháng 20 tỷ lệ này vẫn thấp, xem lại giả định consumer-first thay vì tiếp tục đổ nguồn lực |
-| **6** | RFC-0002 bị bác | Trung bình | Phản biện tập trung vào việc nới hai bất biến kiểm thử | Toàn bộ Giai đoạn 2 dừng. Đây là lý do RFC-0002 phải đối chất trực diện với tuyên bố `v2` của RFC-0001, không né |
+| **6** | RFC-0002 bị bác | Trung bình | Phản biện tập trung vào việc thu hẹp ba bất biến kiểm thử theo bậc | V2 và P1 dừng; V1b không bị ảnh hưởng (nguyên thủy thị giác đi qua RFC riêng). Đây là lý do RFC-0002 phải đối chất trực diện với tuyên bố `v2` của RFC-0001, không né |
 
 ---
 
@@ -324,7 +325,7 @@ Cắt theo thứ tự này khi trượt tiến độ. Bậc càng cao cắt càn
 | **4** | Khối P1 bộ công cụ port | Mất mệnh đề nền tảng cho maker. Cắt tới đây là đã cắt vào phần chiến lược |
 | **5** | Khối V1b hiện thực thị giác | Giai đoạn 2 chỉ còn danh sách target đã mở; nguyên thủy thị giác không được chốt |
 
-**Tuyệt đối không cắt:** Khối V1a. Nó rẻ nhất trong Giai đoạn 2 (một RFC nới lỏng, khoảng chín tệp) và là điều kiện của V2 và P1. *(Bản trước viện dẫn PF-2 cho V1a; review RFC-0002 ngày 2026-09-23 bác lập luận đó, xem §5.)*
+**Tuyệt đối không cắt:** Khối V1a. Nó rẻ nhất trong Giai đoạn 2 (một RFC nới lỏng, khoảng mười tệp) và là điều kiện của V2 và P1. *(Bản trước viện dẫn PF-2 cho V1a; review RFC-0002 ngày 2026-09-23 bác lập luận đó, xem §5.)*
 
 ---
 
