@@ -43,19 +43,7 @@
 
 ## Quy ước tài liệu
 
-| Ký hiệu | Ý nghĩa |
-|:---|:---|
-| **FR-xxx-nn** | Yêu cầu chức năng (Functional Requirement) |
-| **NFR-xxx-nn** | Yêu cầu phi chức năng (Non-Functional Requirement) |
-| **P0** | Bắt buộc — không đạt thì không phát hành |
-| **P1** | Quan trọng — được phép trượt sang bản vá kế tiếp, phải có phương án tạm thời |
-| **P2** | Mong muốn — thực hiện nếu còn nguồn lực |
-| **§x.y** | Tham chiếu tới mục tương ứng trong `neuroedge-proposal.md` v5.4 |
-| **§x.y của tài liệu này** | Tham chiếu nội bộ trong PRD — luôn viết kèm cụm *"của tài liệu này"* để không nhầm với tham chiếu proposal |
-| **PF-1…PF-4** | Bộ lọc ưu tiên tính năng (`neuroedge-proposal.md` §2). **Khác** hệ mã rủi ro `R-n` |
-| **R-1…R-7** | Rủi ro sản phẩm (§13.2 của tài liệu này). **Khác** bộ lọc `PF-n` |
-| **A / B / C** | Tiêu chí nghiệm thu theo mốc: A = v1.0, B = Developer Beta, C = v1.1 (§11 của tài liệu này) |
-| **Q-1…Q-20** | Sổ quyết định kỹ thuật (§15 của tài liệu này) — nguồn duy nhất; roadmap chỉ theo dõi trạng thái |
+Mọi mã và ký hiệu dùng trong tài liệu này (`FR-*`, `NFR-*`, `P0`–`P2`, `A1`–`C7`, `Q-N`, `PF-N`, `R-N`, `U`/`J`, `§x.y`…) được giải mã ở **[`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md)** — nơi duy nhất, kèm chỗ định nghĩa đầy đủ.
 
 Từ khóa **BẮT BUỘC**, **NÊN**, **CÓ THỂ** được hiểu theo nghĩa của RFC 2119.
 

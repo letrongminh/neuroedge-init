@@ -4,7 +4,7 @@ Sổ này ghi những thứ **đã được xem xét và hoãn**, không phải 
 dòng có một mốc kích hoạt; không có mốc thì không được vào đây.
 
 Nguồn: `/autoplan` ngày 2026-09-22 — Phase 1 (CEO) · Phase 2.5 (DX) · Phase 3 (Eng, chạy
-cuối nên nó thu hết) — xem `docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`
+cuối nên nó thu hết) — xem `docs/archive/giai-doan-1-review-log.md`
 §GSTACK CEO / DX / ENG REVIEW REPORT.
 
 ## Từ CEO review
@@ -49,5 +49,5 @@ Nguồn: quyết định Q-14 → Q-20 (`neuroedge-prd.md` §15), `CHANGELOG.md`
 | 16 | **Q-11 phần còn lại: Hawkbit EPL-2.0, EMQX BSL** | Chỉ Khối 2 dùng; Giai đoạn 1 không phân phối chúng | **Trước khi mở Khối 2** — không viết thiết kế phụ thuộc nào của Fleet OS trước khi có phê duyệt bằng văn bản |
 | 17 | **Xác minh giấy phép ESP-SR (WakeNet/MultiNet)** cho fallback cục bộ trên `esp32s3` (Q-14). Theo hiểu biết hiện tại, giấy phép chỉ cho dùng trên SoC Espressif — ổn cho `esp32s3`, nhưng phải ghi vào `NOTICE` và không được lọt vào gói Python | Chưa vendoring `esp-sr`; `TSK-S1-10` sẽ vendoring khi bo mạch về | **Bo mạch về (`TSK-S1-10`)**, muộn nhất trước Sprint 5. Nếu giấy phép không hợp: chuyển sang TFLite Micro / ESP-NN (Apache-2.0) |
 | 18 | **Backend fallback cục bộ cho `linux`** (KWS / TFLite, cùng ngữ pháp lệnh với `sim`) | A2 chỉ cần HAL `linux` + Action CI; fallback trên `linux` dùng tạm backend chữ của `sim` trong test | **Khối 1b**, hoặc đối tác đầu tiên chạy `linux` không có mạng |
-| 19 | **Câu hỏi kinh doanh mở (Q-20):** `CEO-X2` (premise $1/thiết bị/tháng chưa kiểm) · `CEO-X4` (Approach C/D/E) · `CEO-X5` (doanh thu ở cuối chuỗi 4 bên; AURA ngoài phạm vi) · `CEO-T1` (P3 có phải moat) · `CEO-T2` (chứng nhận an toàn chức năng in/out) · `CEO-T3` (bảng đối thủ thật) · `CEO-T4` (thứ tự quyết định/code). Chi tiết: design doc §USER CHALLENGE, §TASTE DECISION | Không chặn code; cổng nhu cầu là **mềm** theo Q-20 | **Cổng nhu cầu 2026-10-25** (cuối A1) — trưởng nhóm rà từng mục, ghi quyết định vào PRD §15 hoặc đóng có lý do |
+| 19 | **Câu hỏi kinh doanh mở (Q-20):** `CEO-X2` (premise $1/thiết bị/tháng chưa kiểm) · `CEO-X4` (Approach C/D/E) · `CEO-X5` (doanh thu ở cuối chuỗi 4 bên; AURA ngoài phạm vi) · `CEO-T1` (P3 có phải moat) · `CEO-T2` (chứng nhận an toàn chức năng in/out) · `CEO-T3` (bảng đối thủ thật) · `CEO-T4` (thứ tự quyết định/code). Chi tiết: `docs/archive/giai-doan-1-review-log.md` §USER CHALLENGE, §TASTE DECISION | Không chặn code; cổng nhu cầu là **mềm** theo Q-20 | **Cổng nhu cầu 2026-10-25** (cuối A1) — trưởng nhóm rà từng mục, ghi quyết định vào PRD §15 hoặc đóng có lý do |
 | 20 | **Bề mặt tương tác thật cho `escalate`/`ask`** (người nhận, UI hỏi lại). Q-17 đặc tả v1.0 là chặn + vết ghi + hook no-op | Cần FSM thoại (`TSK-S2-07`) và sim web UI (`TSK-S2-09`), cả hai hoãn | **Sprint 5**, hoặc khách đầu tiên cần escalation tới người thật |

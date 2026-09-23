@@ -387,7 +387,7 @@ suy luận lại:
   cho 3 U2 có tên. Roadmap §0: Sprint 1 ở 92 %, Sprint 2 ở 0 %.
 - `neuroedge-roadmap-phase2.md:152–171`: Khối V1a (chính là RFC-0002) xếp ở
   **Tháng 9–11** của chương trình, kích hoạt bởi "RFC-0002 được phê duyệt".
-- `docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md:1499–1523` đã **giữ số** RFC-0003
+- `docs/archive/giai-doan-1-review-log.md` §Decision Audit Trail — Phase 3 đã **giữ số** RFC-0003
   (ghim `extends` bằng `#sha256`, cây quyết định chạy xuống silicon) và RFC-0004
   (kế thừa `budget`/`on_block` — lỗ `lax-night` đã chứng minh bằng chạy thật).
   Chưa RFC nào trong hai cái đó được viết.
@@ -683,7 +683,7 @@ hình dạng `vision_in` có bằng chứng phần cứng, vết ghi replay đư
 |:---:|:---|:---|:---|
 | R1 | Không có đối chiếu lúc build; §5a/§5b đổi cổng thật lấy khoảng trống | Đúng — `cli/main.py:522`; `missing_primitives` chỉ test gọi | Trùng A1 → accepted CEO |
 | R2 | Thêm `vision.in` vào `PRIMITIVES` làm đỏ cả ba bo mạch bậc 1 | Đúng — `test_boards.py:41` so với `PRIMITIVES`; §9.2 cấm `vision_in` trên esp32s3 | Tách hằng → accepted Eng |
-| R3 | Tiền đề PF-2 tự mâu thuẫn; design doc Giai đoạn 1 **đã chủ động giữ RFC-0002 ở Tháng 9** | Đúng — `giai-doan-1-wedge-truoc-mcu-sau.md:359–361`: *"kéo lên Tuần 4 sẽ nạp thêm cho đường găng đúng lúc A2 đang chạy. Giữ Tháng 9."* | Củng cố P1; PR2 không hợp nhất trước Tháng 9 → **User Challenge** ở cổng cuối cùng với việc tách |
+| R3 | Tiền đề PF-2 tự mâu thuẫn; design doc Giai đoạn 1 **đã chủ động giữ RFC-0002 ở Tháng 9** | Đúng — `giai-doan-1-wedge-truoc-mcu-sau.md` §Open Questions: *"kéo lên Tuần 4 sẽ nạp thêm cho đường găng đúng lúc A2 đang chạy. Giữ Tháng 9."* | Củng cố P1; PR2 không hợp nhất trước Tháng 9 → **User Challenge** ở cổng cuối cùng với việc tách |
 | R4 | Danh sách vỡ đầy đủ | Đúng, thêm được `_CAPABILITY_KEYS` (`board.py:50–56`), `--target` của `run/build/record/replay` không kiểm | Gộp vào Eng |
 | R5 | Bậc vừa "không ở lược đồ" vừa "ở `board.toml`" | Đúng — trùng P3 | Taste #1 ở cổng cuối |
 | R6 | Vision không test được trên `sim` nếu giữ bất biến #7 | Đúng — KL-3 + §9.2 | Ghi vào §9 → TODOS |
@@ -1169,7 +1169,7 @@ Tháng 9** và **không trước TSK-S2-02** nếu có bất kỳ thay đổi n�
 <!-- autoplan-accepted:gate -->
 - RFC-0002 thu hẹp còn **mở enum `target` + bậc máy đọc được**. `vision.in` (§3b) rời khỏi RFC này, thành một RFC riêng mở ở Khối V1b khi đã có camera và bộ đối chiếu `[requires]` (TSK-S2-02). ENG-6 là đầu vào của RFC đó. Kiểm: §3b và các mục `vision_in` ở §7/§8 được chuyển sang §9 "Việc còn treo" kèm mốc kích hoạt.
 - `vision_ref` (§3c) không cần RFC lược đồ: nó thành luật lint trong `trace.py` (`sha256` đúng dạng; `uri` chỉ khi `metadata.raw_capture == true`; không blob base64), còn kết quả thị giác đi qua sự kiện nhóm `perception` (Phụ lục C.1). Làm khi có vết ghi thị giác đầu tiên. Kiểm: §3c chuyển sang §9 kèm mốc kích hoạt đó.
-- PR2 (phần target) **không hợp nhất trước Tháng 9** của chương trình, theo `docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md:359–361`, hoặc sớm hơn chỉ khi có một profile bậc 2/3 thật đang được viết. Kiểm: §8 ghi mốc này.
+- PR2 (phần target) **không hợp nhất trước Tháng 9** của chương trình, theo `docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md` §Open Questions, hoặc sớm hơn chỉ khi có một profile bậc 2/3 thật đang được viết. Kiểm: §8 ghi mốc này.
 - Tiêu chí ra Khối V1a số 2, 4, 5 (`neuroedge-roadmap-phase2.md:172–175`) viết lại theo phạm vi mới: số 2 chỉ còn `target = "jetson"`; số 4 và 5 chuyển sang RFC `vision.in` / khối V1b. Kiểm: đọc lại `phase2:169–175`.
 - Mọi khối accepted của CEO, DX, Eng ở trên vẫn giữ nguyên, trừ các mục chỉ áp cho gói A (E5, T7), nay chuyển theo hai gạch đầu dòng trên.
 <!-- /autoplan-accepted:gate -->

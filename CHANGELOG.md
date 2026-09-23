@@ -27,6 +27,14 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **Cửa trước cho người mới.** `README.md` gốc: sản phẩm là gì, sơ đồ 30 giây, một gate và
+  một `@action` trích từ tệp thật, 3 lệnh chạy thử. `tests/test_readme_quickstart.py` chạy đúng
+  các lệnh đó và kiểm hai đoạn trích khớp tệp gốc.
+- **Bảng thuật ngữ** `docs/user/thuat-ngu.md` — nơi duy nhất giải mã `FR-*`, `Q-N`, `A1`, `CEO-X1`…,
+  cảnh báo hai mã trùng chữ (`A1`, `V1`). Ba bảng "Quy ước tài liệu" ở PRD và hai roadmap nay dẫn về đó.
+- **Sơ đồ Mermaid** tại chỗ của từng khái niệm: luồng `c.do()` → gate → token → HAL
+  (`docs/spec/threat_model.md` §1), cây kế thừa ba gate mẫu (proposal Phụ lục B.5), FSM hội thoại
+  (roadmap §3.8, thay bản ASCII).
 - **TSK-S2-12 — cây quyết định phía host.** `engine/decision_tree.py`: `compile_tree`
   (`criteria_order` root-first + `gate_digest`), `walk` trả phán quyết + `reason` đầu tiên.
   Bảng sự thật cho walker C: `fixtures/decision_trees/`. Kiểm: `pytest tests/test_decision_tree.py`.
@@ -57,6 +65,9 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã đổi
 
+- **Design doc Giai đoạn 1 tách biên bản review** sang `docs/archive/giai-doan-1-review-log.md`
+  (~1 000 dòng, lưu trữ, không quy phạm); design doc còn ~600 dòng, thêm khối "Đọc nhanh" chỉ nơi
+  thiết kế đang chạy. Tham chiếu theo số dòng trong RFC-0002 đổi sang tên mục.
 - **HAL chưa gắn `Conversation` từ chối mọi lệnh,** kể cả chuỗi trông như bằng chứng — chỉ
   token do `c.do()` phát hành điều khiển được chân (A3).
 - **HAL kiểm tên chân trước khi tiêu bằng chứng,** và `hal.pin()` ném lỗi với tên chân không
@@ -662,7 +673,7 @@ Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc 
 | [`neuroedge-prd.md`](neuroedge-prd.md) | Yêu cầu chức năng `FR-*` / `NFR-*` | Khi cần biết *phải* làm gì |
 | [`neuroedge-proposal.md`](neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** | Khi cần biết *tại sao* |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quy ước, và việc gì cần RFC | Trước khi sửa `schemas/` |
-| [`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md) | Kế hoạch Giai đoạn 1 đã duyệt + báo cáo review | Khi cần biết *vì sao* một task bị cắt/hoãn |
+| [`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md) | Kế hoạch Giai đoạn 1 đã duyệt (biên bản review: `docs/archive/`) | Khi cần biết *vì sao* một task bị cắt/hoãn |
 | [`TODOS.md`](TODOS.md) | Việc hoãn có chủ ý, mỗi mục kèm mốc kích hoạt | Trước khi đề xuất việc "còn thiếu" |
 
 **Sổ quyết định duy nhất** là `neuroedge-prd.md` §15 (Q-1 → Q-20).

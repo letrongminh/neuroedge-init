@@ -189,6 +189,8 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `python/neuroedge/hal/` | HAL và model bo mạch | PR thường; xem [rà soát MCU](docs/spec/hal_mcu_review.md) |
 | `targets/esp32s3/` | Firmware ESP-IDF | PR thường |
 | `docs/rfc/`, `docs/spec/`, `docs/reports/`, `docs/designs/` | RFC, đặc tả chuẩn tắc, báo cáo đo, kế hoạch thiết kế | PR thường |
+| `docs/archive/` | Biên bản review đã khép — lưu để truy nguồn, không quy phạm | Chỉ thêm, không sửa nội dung |
+| `docs/user/` | Tài liệu người dùng; `thuat-ngu.md` là nơi duy nhất giải mã ký hiệu | PR thường; `trang-thai.md` do máy sinh |
 | `docs/user/` | Tài liệu cho người dùng; `trang-thai.md` sinh tự động từ roadmap §0 | PR thường — chạy `python3 scripts/gen_user_status.py` |
 | `TODOS.md` | Việc đã xem xét và hoãn có chủ ý, kèm mốc kích hoạt | PR thường |
 | `scripts/` | Công cụ CI | PR thường |
@@ -220,9 +222,10 @@ Một task **chưa xong** cho tới khi các cập nhật dưới đây nằm **
 | Tổng quan tiến độ, số test hiện hành, hạng mục bị chặn | Roadmap §0.1–§0.2 | Không chép con số |
 | Việc tiếp theo, đang làm gì | Roadmap §0.3 (Thẻ bàn giao) | Không |
 | Đã thay đổi gì | `CHANGELOG.md` §1 | Không |
-| Cách chạy, lệnh, đầu ra kỳ vọng | `CHANGELOG.md` §2 | Không |
+| Cách chạy, lệnh, đầu ra kỳ vọng | `CHANGELOG.md` §2 | `README.md` gốc: tối đa 3 lệnh bắt đầu nhanh, kèm link §2 — `tests/test_readme_quickstart.py` chạy đúng các lệnh đó |
 | Bất biến không được phá | `CHANGELOG.md` §3.3 | Dẫn số bất biến |
 | Quyết định | `neuroedge-prd.md` §15 (mã `Q-N`) | Dẫn mã `Q-N` |
+| Ý nghĩa của một mã / ký hiệu | `docs/user/thuat-ngu.md` | Dẫn mã |
 | Yêu cầu và đặc tả | PRD (`FR-*`, `NFR-*`) · proposal (Phụ lục) · `docs/rfc/` | Dẫn mã |
 | Việc hoãn có chủ ý | `TODOS.md`, kèm mốc kích hoạt | Dẫn số mục |
 

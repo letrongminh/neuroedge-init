@@ -1,0 +1,85 @@
+# NeuroEdge
+
+**Hợp đồng hành động chuẩn kiểu cho Physical AI.** Khi chatbot trả lời sai, ta bấm
+*Regenerate*; khi một agent vật lý sai, chốt cửa đã mở, rơ-le đã đóng — không bấm lại
+được. NeuroEdge đặt một **gate** — chính sách an toàn dạng YAML, có phiên bản, kế thừa
+được — trước mọi lệnh ra phần cứng, và chạy **cùng một mã agent** trên trình mô phỏng,
+Linux và vi điều khiển ESP32-S3.
+
+> Trạng thái: đang phát triển, chưa phát hành. Lõi thực thi trên `sim` đã chạy
+> (Sprint 2); chi tiết ở [`docs/user/trang-thai.md`](docs/user/trang-thai.md).
+
+## Kiến trúc trong 30 giây
+
+```mermaid
+flowchart LR
+    A["Mã agent<br/>await c.do(unlock_door)"] --> G{"Gate Engine<br/>gate YAML đã phân giải"}
+    M["SystemOne<br/>cloud · ngữ pháp lệnh khi mất mạng"] -. dữ kiện .-> G
+    G -->|ALLOW| T["Token dùng một lần"]
+    G -->|BLOCK| X["Hành động không chạy<br/>on_block: deny · escalate · ask<br/>degrade → fallback qua gate riêng"]
+    T --> H["HAL<br/>5 nguyên thủy"]
+    H --> S["sim"] & L["linux"] & E["esp32s3"]
+    G -. mọi phán quyết .-> V[("Vết ghi trace.v1<br/>phát lại được")]
+```
+
+Không có đường nào tới chân GPIO bỏ qua gate. Luồng chi tiết từng bước:
+[`docs/spec/threat_model.md`](docs/spec/threat_model.md) §1.
+
+## Một gate và một hành động
+
+Gate — [`gates/unlock_door@1.2.0.yaml`](gates/unlock_door@1.2.0.yaml) (trích):
+
+```yaml
+name:    unlock_door
+version: 1.2.0
+extends: neuroedge://gates/hospitality/base-access@1.0.0   # chỉ được siết chặt gate cha
+
+evaluate:
+  room_matches:
+    type: bool
+    instructions: "Số phòng yêu cầu trùng khớp hoàn toàn với hồ sơ đặt phòng của khách"
+
+allow_when:
+  room_matches: true
+  risk_level:   { lte: low }        # cha cho tới medium — con siết xuống low
+
+on_block: { action: escalate, to: human_receptionist }
+budget:   { p95_latency_ms: 120, fail: closed }   # không thẩm định kịp ⇒ CHẶN
+```
+
+Hành động — [`fixtures/agents/villa-concierge/actions/unlock_door.py`](fixtures/agents/villa-concierge/actions/unlock_door.py):
+
+```python
+from neuroedge import action
+from neuroedge.hal import digital
+
+@action(name="unlock_door", requires="digital.out:door_lock", gate="unlock_door")
+def unlock_door(guest_id: str = "", duration_s: int = 30) -> None:
+    digital.out("door_lock").pulse(seconds=duration_s)   # chỉ chạy được bên trong c.do()
+```
+
+## Chạy thử
+
+Cài đặt (Python 3.11+): [`python/README.md`](python/README.md). Rồi, từ thư mục gốc:
+
+```bash
+neuroedge gate lint                     # phân giải mọi gate mẫu, kiểm 5 nguyên tắc kế thừa
+neuroedge build --target sim --board sim-default --agent fixtures/agents/villa-concierge/agent.toml
+cd python && python -m pytest -q        # toàn bộ bộ test: 0 failed, 0 skipped
+```
+
+Thử `--target linux --board linux-rpi5` ở lệnh thứ hai: build bị từ chối vì bo mạch
+không có khử vang phần cứng — lỗi nêu ở đâu, vì sao, sửa thế nào. Mọi lệnh và đầu ra kỳ
+vọng: [`CHANGELOG.md`](CHANGELOG.md) §2.
+
+## Đọc gì tiếp theo
+
+| Bạn là | Đọc |
+|:---|:---|
+| Người mới — cần biết đọc tệp nào | [`docs/user/README.md`](docs/user/README.md) |
+| Gặp mã lạ (`FR-GATE-03`, `Q-14`, `A1`…) | [`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md) |
+| Muốn hiểu sản phẩm và kiến trúc | [`neuroedge-proposal.md`](neuroedge-proposal.md) · [`neuroedge-prd.md`](neuroedge-prd.md) |
+| Muốn đóng góp | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
+| Tiếp quản để build tiếp | [`CHANGELOG.md`](CHANGELOG.md) §3 · thẻ bàn giao `neuroedge-roadmap.md` §0.3 |
+
+Giấy phép lõi: MIT — xem [`NOTICE`](NOTICE).

@@ -45,18 +45,7 @@
 
 ## Quy ước tài liệu
 
-| Ký hiệu | Ý nghĩa | Nguồn định nghĩa |
-|:---|:---|:---|
-| **§x.y** | Mục trong `neuroedge-proposal.md` | proposal |
-| **§x.y của tài liệu này** | Mục nội bộ của tài liệu này | — |
-| **FR-… · NFR-…** | Yêu cầu chức năng và phi chức năng | `neuroedge-prd.md` §4–§9 |
-| **A1–A9 · B1–B5 · C1–C7** | Tiêu chí **nghiệm thu phát hành** theo mốc v1.0 / Beta / v1.1 | `neuroedge-prd.md` §11 |
-| **TR-1…TR-7** | Tiêu chí **ra cấp thực thi** của Khối 2 và 3 — bộ khác với C1–C7, xem §8.3 của tài liệu này | tài liệu này |
-| **Q-1…Q-20** | Quyết định kỹ thuật. Sổ quyết định là `neuroedge-prd.md` §15; §10 của tài liệu này chỉ theo dõi trạng thái | `neuroedge-prd.md` §15 |
-| **PF-1…PF-4** | Bộ lọc ưu tiên tính năng | proposal §2 |
-| **TSK-…** | Mã hạng mục công việc, cấp phát trong tài liệu này | tài liệu này |
-| **RB-1…RB-4** | Ràng buộc kỹ thuật chuyển giao giữa các sprint | `docs/spec/hal_mcu_review.md` |
-| **Tuần N · Tháng N** | Tuần/tháng thứ N của chương trình, tính từ **Tuần 0 = 2026-09-21**. Từ Sprint 2, lịch ghi thêm **ngày tuyệt đối** (Q-19); khi tuần và ngày lệch nhau, ngày đúng | `neuroedge-prd.md` §15 (Q-19) |
+Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR-N`, `Q-N`, `RB-N`, `V1`–`V4`, `Tuần N` · `Tháng N`, `§x.y`…) được giải mã ở **[`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md)** — nơi duy nhất, kèm chỗ định nghĩa đầy đủ.
 
 ## 0. Bảng theo dõi tiến độ & Nhật ký bàn giao (Live Execution & Handoff Dashboard)
 
@@ -70,7 +59,7 @@
 | **Sprint hiện hành** | 🟡 **Sprint 2: Lõi thực thi trên `sim` (≈ A1)** — mã A1 xong sớm, 2026-09-23 | **8 / 9 task trong phạm vi xong** (còn TSK-S2-11, chạy ở A2) · **5 / 6 tiêu chí ra đạt** (còn #6, cùng TSK-S2-11) · Sprint 1 còn TSK-S1-10 chờ bo mạch |
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: cuối Sprint 3 = **2026-11-15** — trễ ~2 tuần so với bản gốc (Tuần 6 gốc = 2026-11-02) (Q-19) |
 | **Lần cập nhật cuối** | **2026-09-23** | Mã A1: TSK-S2-12, S2-03, S2-08, S2-01, S2-04, S2-05, S2-02 — chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 422/422 · SKIP 0** | `python/tests/` — 18 bộ test; cổng CI chặn mọi test bị skip |
+| **Trạng thái CI Lõi** | ✅ **PASS 427/427 · SKIP 0** | `python/tests/` — 19 bộ test; cổng CI chặn mọi test bị skip |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn + 1 còn mở** | 🔴 TSK-S1-10 chờ bo mạch vật lý · 🟡 Q-11 phần còn lại (Hawkbit EPL-2.0 / EMQX BSL) — **không chặn cho tới khi mở Khối 2** |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -351,38 +340,20 @@ Quyết định **Q-8 đã chốt**: C/C++ trên ESP-IDF cho firmware, Python ch
 
 #### Đặc tả chuẩn tắc: năm trạng thái
 
-```text
-                    ┌──────────┐
-         ┌─────────►│   IDLE   │◄─────────┐
-         │          └────┬─────┘          │
-         │               │ wake-word hoặc │ phát xong
-         │               │ VAD kích hoạt  │
-         │               ▼                │
-         │          ┌───────────┐         │
-         │          │ LISTENING │         │
-         │          └────┬──────┘         │
-         │               │ kết thúc câu   │
-         │               │ (khoảng lặng)  │
-         │               ▼                │
-         │          ┌──────────┐          │
-         │          │ THINKING │          │
-         │          └────┬─────┘          │
-         │               │ token đầu tiên │
-         │               ▼                │
-         │          ┌──────────┐          │
-         │          │ SPEAKING ├──────────┘
-         │          └────┬─────┘
-         │               │ phát hiện người dùng nói
-         │               ▼
-         │       ┌────────────────┐
-         │       │    BARGE_IN    │
-         │       │ 1. xả đệm DAC  │
-         │       │ 2. huỷ actuator│
-         │       │    đang chờ    │
-         │       │ 3. ghi sự kiện │
-         │       └───────┬────────┘
-         │               │ thu câu nói mới
-         └───────────────┘  →  LISTENING
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> LISTENING: wake-word hoặc VAD kích hoạt
+    LISTENING --> THINKING: kết thúc câu (khoảng lặng)
+    THINKING --> SPEAKING: token đầu tiên
+    SPEAKING --> IDLE: phát xong
+    SPEAKING --> BARGE_IN: phát hiện người dùng nói
+    BARGE_IN --> LISTENING: thu câu nói mới
+    note right of BARGE_IN
+        1. xả đệm DAC
+        2. huỷ actuator đang chờ
+        3. ghi sự kiện
+    end note
 ```
 
 **Hợp đồng thu hồi lệnh vật lý (Actuator Abort Contract).** Mọi lệnh actuator có độ trễ thực thi — ví dụ `pulse` chốt cửa sau 1.000 ms — nếu gặp sự kiện `barge_in` trong lúc đang chờ cấp xung thì **HAL bắt buộc huỷ lệnh ngay lập tức** và ghi mã trạng thái `ACTUATOR_ABORTED_BY_BARGE_IN` vào tệp vết ghi.
