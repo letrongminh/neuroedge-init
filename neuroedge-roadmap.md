@@ -56,10 +56,10 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 | Chỉ số | Trạng thái hiện hành | Ghi chú & Liên kết |
 |:---|:---|:---|
 | **Pha đang thực thi** | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0 → 2026-11-15)** | Tiến độ theo sprint: §0.2 · kế hoạch Sprint 2–3: [`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md) |
-| **Sprint hiện hành** | 🟡 **Sprint 2: Lõi thực thi trên `sim` (≈ A1)** — mã A1 xong sớm, 2026-09-23 | **9 / 10 task trong phạm vi xong** (còn TSK-S2-11, chạy ở A2; TSK-S2-09 kéo lên và xong) · **5 / 6 tiêu chí ra đạt** (còn #6, cùng TSK-S2-11) · Sprint 1 còn TSK-S1-10 chờ bo mạch |
+| **Sprint hiện hành** | 🟡 **Sprint 2: Lõi thực thi trên `sim` (≈ A1)** — mã xong sớm, 2026-09-24 | **10 / 10 task trong phạm vi xong** (TSK-S2-09 kéo lên và xong; TSK-S2-11 xong 2026-09-24) · **6 / 6 tiêu chí ra đạt** · Sprint 1 còn TSK-S1-10 chờ bo mạch |
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: cuối Sprint 3 = **2026-11-15** — trễ ~2 tuần so với bản gốc (Tuần 6 gốc = 2026-11-02) (Q-19) |
-| **Lần cập nhật cuối** | **2026-09-24** | TSK-S3-25: gate chặn theo giá trị tham số (RFC-0005 chấp thuận); System 2 làm MCP host (Q-27) — chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 664/664 · SKIP 0** | `python/tests/` — 35 bộ test; wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) |
+| **Lần cập nhật cuối** | **2026-09-24** | TSK-S2-11: System 2 trên model thật qua LiteLLM (extra `neuroedge[cloud]`) — chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Trạng thái CI Lõi** | ✅ **PASS 720/720 · SKIP 0** | `python/tests/` — 36 bộ test; wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn + 1 còn mở** | 🔴 TSK-S1-10 chờ bo mạch vật lý · 🟡 Q-11 phần còn lại (Hawkbit EPL-2.0 / EMQX BSL) — **không chặn cho tới khi mở Khối 2** |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -70,7 +70,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 | Mốc | Sprint / Giai đoạn | Thời gian | Trọng tâm kỹ thuật | Tiến độ | Trạng thái |
 |:---:|:---|:---:|:---|:---:|:---:|
 | **Khối 1a** | **Sprint 1 — Đóng băng lược đồ** | Tuần 0–2<br>2026-09-21 → 2026-09-27 | Schemas, Monorepo, Test fixtures, Memory spike | **12 / 13** | 🟡 **Chờ phần cứng** (chỉ TSK-S1-10) |
-| | **Sprint 2 — Lõi thực thi trên `sim`** *(≈ A1, wedge `sim`)* | **2026-09-28 → 2026-10-25** (Q-19) | Gate Engine, cây quyết định host, HAL sim, fail-closed + fallback ngữ pháp lệnh (Q-14), `@action` + token, kế thừa `budget`/`on_block` (Q-18) | **9 / 10** | 🟡 Mã A1 + web UI `sim` xong 2026-09-23; còn TSK-S2-11 (A2) |
+| | **Sprint 2 — Lõi thực thi trên `sim`** *(≈ A1, wedge `sim`)* | **2026-09-28 → 2026-10-25** (Q-19) | Gate Engine, cây quyết định host, HAL sim, fail-closed + fallback ngữ pháp lệnh (Q-14), `@action` + token, kế thừa `budget`/`on_block` (Q-18) | **10 / 10** | ✅ Mã A1 + web UI `sim` xong 2026-09-23; TSK-S2-11 (LiteLLM) xong 2026-09-24 |
 | | **Sprint 3 — Action CI & Linux** *(≈ A2)* | **2026-10-26 → 2026-11-15** (Q-19) | HAL linux (`gpio-sim`, Q-16), Record/Replay/Assert/Golden, lớp provider LiteLLM, release PyPI, TTFV < 10' | **12 / 17** | 🟡 Action CI + HAL `linux` xong (2026-09-23); tiêu chí ra 5/6 |
 | **Khối 1b** | **Sprint 4 — HAL trên `esp32s3`** | **Từ 2026-11-16** (Q-19) · gốc Tuần 6–8 | Port driver XiaoZhi, verify target bậc 1 không audio, ghim `extends` (RFC-0003) | **0%** | ⏳ Chưa bắt đầu |
 | | **Sprint 5 — Runtime thoại MCU** | Tuần 8–10 | Thu/phát âm thanh, AEC/VAD, C/C++ state machine, stream lên provider | **0%** | ⏳ Chưa bắt đầu |
@@ -87,12 +87,11 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-23 │
+│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-24 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ 1. VỪA HOÀN THÀNH — phiên gần nhất (chi tiết: CHANGELOG.md [Chưa phát hành])           │
-│    • TSK-S3-17 ✅ wheel tự chạy được; CI wheel-smoke kiểm bản đã cài                    │
-│    • Q-21, Q-23 chốt; firmware không cần bo mạch kéo lên A2 (§4.3)                     │
-│    • TSK-S3-25 ✅ gate chặn theo giá trị tham số (RFC-0005); Q-27 System 2 = MCP host  │
+│    • TSK-S2-11 ✅ System 2 trên model thật qua LiteLLM (extra cloud, Q-10/Q-11)         │
+│      → Sprint 2 đủ 10/10 task, 6/6 tiêu chí ra                                         │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
@@ -102,7 +101,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 │    2. V3: TSK-S3-14 (PyPI, TestPyPI trước) · S3-16 · S3-19 · S3-20 → đo TTFV           │
 │    3a. A2 V1: TSK-S3-24 (corpus tool call) · S3-26 (xác nhận ask) · S3-27 (mcp --ui)   │
 │    3. A2 V2: TSK-S4-02 + S4-07 (walker C, Q-23) → S4-08, S4-09 (QEMU) · S4-11          │
-│    4. A2 V1: TSK-S2-11 (LiteLLM) → TSK-S2-07 (đặc tả FSM thoại)                        │
+│    4. A2 V1: TSK-S2-07 (đặc tả FSM thoại) — TSK-S2-11 đã xong                          │
 │    5. Kỹ thuật trưởng xác nhận TSK-S3-15 (golden = vết ghi chuẩn mực)                  │
 │                                                                                        │
 │ 4. LƯU Ý — bất biến ở CHANGELOG.md §3.3; dưới đây chỉ điều chưa có ở đó                │
@@ -480,11 +479,11 @@ Phạm vi và thứ tự chạy theo kế hoạch [`docs/designs/giai-doan-1-wed
 | **TSK-S2-08** | Interface `SystemOne` / `SystemTwo` + trường độ tin cậy + test double tất định + **fallback cục bộ = bộ nhận diện lệnh cố định** (ngữ pháp lệnh → intent + độ tin cậy) chạy trên chữ gõ ở `sim` (**Q-14**, Q-15). Connector cloud thật đi cùng TSK-S2-11. Q-17: ✅ khi xong phạm vi đã đặc tả | FR-MDL-01, FR-MDL-02, FR-MDL-03, FR-ACE-03 | V1 | ✅ Hoàn thành (2026-09-23) | `python/neuroedge/models/` (`system.py`, `grammar.py`, `doubles.py`) · ngữ pháp mẫu `fixtures/agents/villa-concierge/commands.toml` · `tests/test_models.py` |
 | **TSK-S2-09** | Giao diện web `sim`: cảm biến ảo, trạng thái actuator — `neuroedge run --ui` | FR-TGT-06 | V3 | ✅ Hoàn thành (2026-09-23) | [`sim/ui.py`](python/neuroedge/sim/ui.py) — `run --ui`: trang cục bộ 127.0.0.1, SSE, không mạng, từ chối POST khác nguồn; commit `8a023f3` · `pytest tests/test_sim_ui.py` |
 | **TSK-S2-10** | Kết luận phạm vi Khối 1b dựa trên spike | — | V2 + trưởng nhóm | ⏸ **Hoãn → Sprint 5** *(hoặc sớm hơn khi bo mạch về)* | Chặn bởi bo mạch (TSK-S1-10). `docs/reports/memory_spike_report.md` |
-| **TSK-S2-11** | **Lớp trừu tượng nhà cung cấp**: hợp đồng kết nối OpenAI-compatible + adapter tùy chỉnh, áp dụng chung cho LLM/ASR/TTS (CR-1.0). **LiteLLM làm thư viện định tuyến (SDK)** sau `neuroedge.models.providers`, cài qua extra **`neuroedge[cloud]`** (Q-10) · **bước kiểm giấy phép phụ thuộc bắc cầu trong CI** (Q-11). **Không còn bị chặn** — chạy trong A2, hạn **2026-11-15** (Q-19). Kèm **vòng tool của System 2**: kết quả tool call (cả BLOCK và lý do) trả lại mô hình, giới hạn số vòng (FR-MDL-11, `docs/spec/tool_calling.md`) — vòng và MCP host đã có trên `sim` với provider giả (TSK-S3-28); còn lại là nối provider thật vào `SystemTwo.respond` | FR-MDL-07, FR-MDL-08, FR-MDL-11, FR-GW-01, FR-GW-03 | V1 | ⏳ Chưa bắt đầu *(A2)* | `python/neuroedge/models/providers/` · `python/pyproject.toml` (extra `cloud`) · `.github/workflows/ci-sim-linux.yml` (job giấy phép) |
+| **TSK-S2-11** | **Lớp trừu tượng nhà cung cấp**: hợp đồng kết nối OpenAI-compatible + adapter tùy chỉnh, áp dụng chung cho LLM/ASR/TTS (CR-1.0). **LiteLLM làm thư viện định tuyến (SDK)** sau `neuroedge.models.providers`, cài qua extra **`neuroedge[cloud]`** (Q-10) · **bước kiểm giấy phép phụ thuộc bắc cầu trong CI** (Q-11). **Không còn bị chặn** — chạy trong A2, hạn **2026-11-15** (Q-19). Kèm **vòng tool của System 2**: kết quả tool call (cả BLOCK và lý do) trả lại mô hình, giới hạn số vòng (FR-MDL-11, `docs/spec/tool_calling.md`) — vòng và MCP host đã có trên `sim` với provider giả (TSK-S3-28); còn lại là nối provider thật vào `SystemTwo.respond`. **Phạm vi đã giao: LLM của System 2**; ASR/TTS dùng lại hợp đồng ở TSK-S3-13/S5-06, provider cloud cho SystemOne và failover nhiều provider hoãn ([`TODOS.md`](TODOS.md) #26, #27) | FR-MDL-06, FR-MDL-07, FR-MDL-08, FR-MDL-11, FR-GW-01, FR-GW-03 | V1 | ✅ Hoàn thành (2026-09-24) | `python/neuroedge/models/providers/` (`LiteLLMProvider`, adapter `python:pkg.mod:factory`, bảng `[system_two]`) · `python/pyproject.toml` (extra `cloud = litellm==1.102.0`) · job CI `cloud-extra` (`scripts/check_licences.py`, `scripts/cloud_smoke.py` trên litellm thật) · `scripts/live_llm_smoke.py` (chạy tay) · `pytest tests/test_providers.py` · PR `feat/litellm-provider` |
 | **TSK-S2-12** | **Đặc tả ngữ nghĩa quyết định:** trình biên dịch phía host `import parse_constraint` (không sửa `constraints.py`, không RFC) → cây quyết định mang `criteria_order` + `gate_digest`; `evaluate()` đi cây, trả phán quyết + `reason`. **Định dạng nội bộ, chưa đóng băng** — đóng băng ở RFC-0003 (Sprint 4) | FR-GATE-03, FR-ACE-01, FR-TGT-04 | V1 | ✅ Hoàn thành (2026-09-23) | `python/neuroedge/engine/decision_tree.py` · `decision_tree.v1.json` (nội bộ) · bảng sự thật `fixtures/decision_trees/*.truth.json` (sinh bằng `scripts/generate_truth_tables.py`) · `tests/test_decision_tree.py` |
 | **TSK-S2-13** | **Kế thừa `budget`/`on_block`** (RFC-0004, **Q-18**): `p95_latency_ms` của con ≤ cha · chuỗi đã `closed` thì con không khai `fail: open` · con không tự đưa vào `degrade`/`fallback_action` mới. Vi phạm ⇒ `GateInheritanceError`. Đóng lỗ `lax-night` (ENG-A2) | FR-GATE-06, FR-GATE-07, FR-GATE-09 | V1 | ✅ Hoàn thành (2026-09-23) | `python/neuroedge/engine/gate_resolver.py` · 4 fixture phản chứng tại `fixtures/gates/invalid/` + `expected_errors.yaml` · 10 test `test_rfc0004_*` · commit `87890c8` |
 
-**Tiêu chí ra Sprint 2 (Exit Criteria):** — **5 / 6 đã đạt** *(còn #6, đóng cùng TSK-S2-11 trong A2)*
+**Tiêu chí ra Sprint 2 (Exit Criteria):** — **6 / 6 đã đạt**
 
 - [x] **Tiêu chí 1:** Agent mẫu chạy trên `sim`, gate chặn đúng theo `allow_when`.
   *Bằng chứng:* `pytest tests/test_compiler.py -k sample_agent_runs` — agent `fixtures/agents/villa-concierge/` qua `c.do()` trên `SimHAL`: ALLOW ⇒ `door_lock` kích 30 000 ms, `risk_level: high` ⇒ `never_pulsed()`.
@@ -496,7 +495,8 @@ Phạm vi và thứ tự chạy theo kế hoạch [`docs/designs/giai-doan-1-wed
   *Bằng chứng (ĐÃ ĐÓNG ở Sprint 1):* [`test_gate_resolver.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/tests/test_gate_resolver.py) + 4 fixture nới `allow_when` (`loosens_choice`, `loosens_confidence`, `loosens_level`, `loosens_via_not_in`) tại [`fixtures/gates/invalid/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/gates/invalid/).
 - [x] **Tiêu chí 5:** Quyết định Q-3, Q-7 đã chốt.
   *Bằng chứng (ĐÃ THOẢ SẴN):* Q-3 và Q-7 tại §10.1 của tài liệu này và `neuroedge-prd.md` §15.
-- [ ] **Tiêu chí 6:** Đổi nhà cung cấp mô hình chỉ bằng thay đổi cấu hình, không sửa mã agent và không sửa gate; một adapter tùy chỉnh mẫu chạy được mà không sửa lõi. **Nay đạt được** — Q-11 phần LiteLLM đã duyệt 2026-09-23, TSK-S2-11 hết bị chặn; đóng trong A2, hạn 2026-11-15 (Q-19).
+- [x] **Tiêu chí 6:** Đổi nhà cung cấp mô hình chỉ bằng thay đổi cấu hình, không sửa mã agent và không sửa gate; một adapter tùy chỉnh mẫu chạy được mà không sửa lõi.
+  *Bằng chứng (2026-09-24):* agent `home-voice` không đổi mã hay gate, chỉ thêm `[system_two]` — `pytest tests/test_providers.py -k "light_on_through_the_gate or custom_adapter"`: LiteLLM (`anthropic/claude-sonnet-5`) gọi `light_on` → ALLOW → chân bật; adapter viết ngoài lõi (`provider = "python:my_llm.echo:make_provider"`) trả lời mà không import gì từ NeuroEdge. Trên litellm 1.102.0 thật: job CI `cloud-extra` (`python scripts/cloud_smoke.py`). Phạm vi là System 2; SystemOne vẫn chạy ngữ pháp cục bộ (`TODOS.md` #26).
 
 
 ### 4.3 Sprint 3 — Action CI, `linux` và TTFV (≈ A2 · 2026-10-26 → 2026-11-15, Q-19)

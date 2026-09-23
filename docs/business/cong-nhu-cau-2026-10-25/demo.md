@@ -36,7 +36,7 @@ Nói thẳng nếu bị hỏi. Mỗi dòng dẫn nguồn trong kho.
 |:---|:---|:---|
 | Chạy trên phần cứng thật | Không có bo mạch ESP32-S3-BOX-3; mọi demo chạy trên `sim` (chân ảo) | `CHANGELOG.md` §3.4 (TSK-S1-10) |
 | Nói bằng giọng | `sim` là **gõ chữ** (Q-15); chưa có giọng nói | `docs/user/huong-dan.md` §3 |
-| LLM hiểu câu tự do | System 2 chưa nối nhà cung cấp; chỉ câu khớp `commands.toml` mới chạy | TSK-S2-11 (hạn 2026-11-15) · `CHANGELOG.md` §3.7 |
+| LLM hiểu câu tự do | Có từ TSK-S2-11 nhưng cần `neuroedge[cloud]` + key thật; demo không khai `[system_two]`, nên chỉ câu khớp `commands.toml` chạy. CI chỉ thử LiteLLM bằng `mock_response`, chưa bằng key thật | TSK-S2-11 · `CHANGELOG.md` §3.7 |
 | Gate giới hạn **giá trị** tham số (ví dụ `duration_s ≤ 60`) | Chưa; dispatcher chỉ kiểm tên và kiểu tham số | RFC-0005 · TSK-S3-25 |
 | Người xác nhận khi gate hỏi lại (`ask`) | Gate trả `ask` và câu hỏi; vòng xác nhận chưa có | TSK-S3-26 · Q-26 |
 | Chuyển cho lễ tân thật (`escalate`) | Chặn + ghi vết ghi + hook không làm gì | Q-17 · `TODOS.md` #20 |
@@ -142,7 +142,7 @@ fail-closed, không phải lỗi; nhưng đừng nói "agent ngoài mở đượ
 
 **Không tuyên bố:** tất cả §0.1, thêm: AURA chưa được xây (roadmap ghi ngoài phạm vi, `CEO-X5`);
 không có Zalo OA; câu hỏi FAQ (`mấy giờ trả phòng`) trả lời `no physical action for this intent;
-spoken replies need SystemTwo (TSK-S2-11)` — đừng gõ nó trong demo nếu không định nói điều này.
+spoken replies need System 2 ([system_two] in agent.toml)` — đừng gõ nó trong demo nếu không định nói điều này.
 
 **Hỏi sau demo:** "Lần gần nhất khóa hay thiết bị trong phòng làm sai, ai chịu trách nhiệm, và chuyện
 đó tốn bao nhiêu?" · "Tệp `sess.html` này, anh/chị sẽ gửi cho ai?"
@@ -318,7 +318,7 @@ kiện gate đọc (đã kiểm bằng `ne trace show $DEMO/mcp-home.json`). `ne
 `http://127.0.0.1:<port>/` trả HTTP 200; phần nhìn trên trình duyệt chưa được kiểm trong phiên này.
 
 **Không tuyên bố:** tất cả §0.1, thêm: "đọc tin tức" trong demo **không** gọi MCP server tin tức,
-vì System 2 chưa có nhà cung cấp (TSK-S2-11) — nó nói câu offline. Server tin tức mẫu đọc
+vì demo không khai `[system_two]` (TSK-S2-11 cần extra `cloud` và key) — nó nói câu offline. Server tin tức mẫu đọc
 `mcp/news.json` cục bộ, không lên internet. Qua MCP, cảm biến lấy từ `[sim.sensors]` trong
 `agent.toml`, không đổi được giữa chừng (vì `mcp serve` và `--ui` là hai phiên, TSK-S3-27). Cấu hình
 Claude Desktop trong `README.md` **chưa được chạy** trong phiên kiểm này; client ở Phụ lục A đóng vai.

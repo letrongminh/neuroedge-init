@@ -249,6 +249,11 @@ tools   = ["headlines"]           # allowlist — chỉ công cụ thông tin
 # env = { NEWS_FILE = "..." } · timeout_s = 10
 ```
 
+Model đứng sau System 2 khai ở bảng `[system_two]` của `agent.toml` (LiteLLM hoặc adapter tự viết,
+TSK-S2-11, `python/neuroedge/models/providers/`): `tools` và các vòng `state["messages"]` được gửi
+đúng dạng function calling OpenAI; tham số tool không phải JSON được chuyển nguyên cho dispatch, nên
+lời gọi đó `REJECTED` (§2) — không đoán. Model không trả lời được ⇒ `system_two_unavailable`.
+
 Ví dụ chạy được: `fixtures/agents/home-voice/mcp/news_server.py`. Kết nối mở theo từng
 lượt; kết nối bền giữa các lượt và transport HTTP tới server bên ngoài là việc hoãn
 (`TODOS.md` #25).

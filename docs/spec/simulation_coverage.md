@@ -75,6 +75,11 @@ Tên và trường dưới đây là quy phạm; mọi target phát cùng tên.
 
 Chế độ ẩn danh (FR-TRC-07) băm `text`; `audio_in_segment` và `display_frame` vốn chỉ mang digest.
 
+Ngoài nguyên thủy, mỗi lượt gọi model của System 2 ghi `system_two_call`
+`{provider, model, task, latency_ms, status, prompt_tokens?, completion_tokens?, cost_usd?, error?}`
+(FR-MDL-06, TSK-S2-11) — không prompt, không key. Replay bỏ qua nó: System 2 không đổi phán quyết,
+nên phiên ghi online replay được mà không cần model hay key.
+
 ## 4. Vết ghi từ `esp32s3` về máy tính
 
 Firmware ghi mỗi sự kiện thành **một dòng JSON trên UART0 / USB-CDC**, tiền tố `NE1 `, cùng

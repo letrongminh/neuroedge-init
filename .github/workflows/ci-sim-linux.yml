@@ -285,3 +285,44 @@ jobs:
         with:
           name: licences
           path: licences.csv
+
+  cloud-extra:
+    name: Cloud extra — LiteLLM licences and the real library (TSK-S2-11, Q-11)
+    # `neuroedge[cloud]` is litellm==1.102.0 and ~55 transitive packages (~120 MB),
+    # never in `dev`, so the test suite uses a fake `litellm`. This job installs
+    # the real extra, holds its whole dependency set to the Q-11 policy, and
+    # drives the adapter on real LiteLLM response objects (mock_response: no
+    # network, no key).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the cloud extra
+        run: |
+          python -m pip install --upgrade pip >/dev/null
+          python -m pip install -e 'python[cloud]' 'pip-licenses>=5.0.0'
+          python -m pip show litellm | head -2
+
+      - name: Transitive licences follow the Q-11 policy
+        run: |
+          # Forbidden families first, in the style of the licence-obligations job;
+          # then every package must be MIT / BSD / Apache-2.0 / ISC / PSF / MPL-2.0 —
+          # unknown and commercial licences fail too (scripts/check_licences.py).
+          pip-licenses --format=csv > licences-cloud.csv
+          cat licences-cloud.csv
+          pip-licenses --partial-match --fail-on="GPL;GNU General Public License;GNU Lesser General Public License;GNU Affero General Public License;AGPL;SSPL;Server Side Public License;BUSL;Business Source License;Commercial;Proprietary"
+          pip-licenses --format=json > licences-cloud.json
+          python scripts/check_licences.py licences-cloud.json
+
+      - name: The adapter on the real LiteLLM (offline, no key)
+        run: python scripts/cloud_smoke.py
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: licences-cloud
+          path: licences-cloud.csv

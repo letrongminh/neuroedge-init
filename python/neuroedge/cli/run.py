@@ -142,7 +142,8 @@ def render_turn(turn: Turn, session: SimSession, console: Console, frames_before
     if not turn.tool_results:
         if turn.reply is None:
             console.print(
-                "  no physical action for this intent; spoken replies need SystemTwo (TSK-S2-11)"
+                "  no physical action for this intent; spoken replies need System 2 "
+                "([system_two] in agent.toml)"
             )
         return
     for frame in session.hal.frames[frames_before:]:
@@ -216,12 +217,26 @@ def _turn(text: str, session: SimSession, console: Console, err_console: Console
 def banner(session: SimSession, console: Console) -> None:
     manifest = session.manifest
     gates = ", ".join(f"{key} → {ref}" for key, ref in manifest.gates.items()) or "none"
+    mode = "offline, typed text (Q-15)" if not session.slow.available else "typed text"
     console.print(
         f"[bold]{escape(manifest.label)}[/bold] on [cyan]sim[/cyan] "
-        f"([cyan]{escape(session.hal.board.id)}[/cyan]) · offline, typed text (Q-15)"
+        f"([cyan]{escape(session.hal.board.id)}[/cyan]) · {mode}"
     )
     console.print(f"  gates: {escape(gates)}")
     console.print(f"  grammar: {escape(session.grammar.source)}")
+    if session.slow.available:
+        console.print(f"  system 2: {escape(system_two_line(session.slow))}")
+
+
+def system_two_line(slow) -> str:
+    """Which model answers free phrasing, and where its key comes from — never the key."""
+    provider = slow.provider
+    config = getattr(provider, "config", None)
+    name = getattr(provider, "name", "custom")
+    if config is None:
+        return f"{name} {slow.model}"
+    key = f"key from ${config.api_key_env}" if config.api_key_env else f"no key, {config.api_base}"
+    return f"{name} {config.model} ({key}; offline line if it cannot answer)"
 
 
 def run_session(

@@ -58,6 +58,13 @@ Nguồn: quyết định Q-14 → Q-20 (`neuroedge-prd.md` §15), `CHANGELOG.md`
 
 | # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
 |:---:|:---|:---|:---|
-| 23 | **Đóng băng Gated Tool Profile vào `schemas/`** (lược đồ phong bì `ToolCall` và kết quả) — `docs/spec/tool_calling.md` | Profile còn đổi: vòng ReAct (TSK-S2-11), xác nhận `ask` (TSK-S3-26) chưa xong; đóng băng sớm là mở RFC sửa ngay | Corpus `fixtures/tool_calls/` (TSK-S3-24) ổn định **và** một client bên ngoài dùng profile |
+| 23 | **Đóng băng Gated Tool Profile vào `schemas/`** (lược đồ phong bì `ToolCall` và kết quả) — `docs/spec/tool_calling.md` | Profile còn đổi: xác nhận `ask` (TSK-S3-26) chưa xong (vòng ReAct với provider thật xong ở TSK-S2-11); đóng băng sớm là mở RFC sửa ngay | Corpus `fixtures/tool_calls/` (TSK-S3-24) ổn định **và** một client bên ngoài dùng profile |
 | 24 | **Transport MCP qua mạng** (HTTP của MCP) có xác thực — TSK-P2-04 | Mở cổng mạng tới hành động vật lý cần xác thực theo thiết bị và mTLS (NFR-SEC-04); v1.0 chỉ stdio (NFR-SEC-09) | Khách đầu tiên cần điều khiển thiết bị từ xa qua MCP, hoặc gateway (TSK-P2-05) cần transport mạng |
 | 25 | **Kết nối MCP bền giữa các lượt** và **transport HTTP tới MCP server bên ngoài** (Q-27) | `sim` mở kết nối theo từng lượt vì REPL chạy mỗi lượt trong một event loop riêng; HTTP cần xác thực như #24 | Runtime `linux` chạy một event loop dài, hoặc độ trễ mở kết nối vượt ngân sách lượt |
+
+## Từ TSK-S2-11 — provider thật cho System 2 (2026-09-24)
+
+| # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
+|:---:|:---|:---|:---|
+| 26 | **Provider cloud cho SystemOne** (Jev hoặc LiteLLM làm `FactSource` trả `bool`/`level`/`choice` kèm độ tin cậy, Q-4). TSK-S2-11 chỉ nối System 2 | Dữ kiện của gate do model cloud suy ra cần ngữ nghĩa riêng cho độ tin cậy, từ chối và hết giờ (→ `Unavailable`, fail theo gate); wedge `sim` lượng giá bằng ngữ pháp cục bộ (Q-14) nên chưa cần | Có endpoint Jev, hoặc agent đầu tiên cần một tiêu chí gate do model suy ra từ câu tự do |
+| 27 | **Failover nhiều provider khai trong `[system_two]`** (FR-GW-03) và **dùng lại hợp đồng provider cho ASR/TTS** (FR-MDL-09). Hôm nay failover chỉ có trong mã (`SystemTwo(provider=…, fallback=…)`); `agent.toml` khai một provider | Một provider đủ cho `sim`; ASR/TTS chưa có (TSK-S3-13 hoãn sang Sprint 5) | TSK-S3-13 / TSK-S5-06 bắt đầu, hoặc người dùng đầu tiên cần provider dự phòng khi cloud chính sập |

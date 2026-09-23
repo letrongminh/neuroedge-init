@@ -13,7 +13,8 @@ problem so one run reports them all, each with where / why / how:
 4. every gate resolves (lint semantics) and compiles to a decision tree, and
    every `degrade` fallback names a declared action;
 5. the command grammar (and `knowledge.toml`, if the agent ships one) loads,
-   and every `action` a command names is a declared @action.
+   and every `action` a command names is a declared @action;
+6. `[mcp]` and `[system_two]` are well formed — no API key in agent.toml.
 
 On success it writes each gate's decision tree and canonical artifact.
 """
@@ -377,6 +378,22 @@ def check_mcp_servers(manifest: AgentManifest, actions: Iterable[Any]) -> list[N
     ]
 
 
+def check_system_two(manifest: AgentManifest) -> list[NeuroEdgeError]:
+    """
+    `[system_two]` of agent.toml is well formed — never an API key in it — and a
+    custom adapter it names can be imported (TSK-S2-11, Q-10, Q-12).
+    """
+    from ..models.providers import load_adapter, load_system_two_config
+
+    try:
+        config = load_system_two_config(manifest)
+        if config is not None and config.adapter is not None:
+            load_adapter(config, manifest.root)
+    except NeuroEdgeError as error:
+        return [error]
+    return []
+
+
 def check_commands(grammar: Any, actions: Iterable[Any]) -> list[NeuroEdgeError]:
     """
     Every `tool` a command calls is a declared @action, and its slot-mapped and
@@ -497,6 +514,7 @@ def build(
         except NeuroEdgeError as error:
             problems.append(error)
     problems += check_mcp_servers(manifest, actions)
+    problems += check_system_two(manifest)
 
     if problems:
         raise BuildFailed(where=f"{manifest.label} for {target} on {board.id}", problems=problems)

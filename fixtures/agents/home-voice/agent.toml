@@ -43,3 +43,12 @@ max_rounds = 4
 command = "python"
 args    = ["mcp/news_server.py"]
 tools   = ["headlines"]
+
+# System 2 on a real model (TSK-S2-11): uncomment, `pip install 'neuroedge[cloud]'`
+# and export the key. Only the variable's NAME goes here — a key in this file
+# fails the build. Without the extra or the key, the assistant says its offline line.
+# [system_two]
+# provider    = "litellm"                    # or "python:my_adapter:make_provider"
+# model       = "anthropic/claude-sonnet-5"  # or "openai/gpt-4o-mini"
+# api_key_env = "ANTHROPIC_API_KEY"
+# timeout_s   = 20

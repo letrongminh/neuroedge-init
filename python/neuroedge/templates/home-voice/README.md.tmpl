@@ -20,6 +20,20 @@ neuroedge run --ui                                  # trình duyệt: gõ lệnh
 
 Trong REPL hoặc UI: `:sensor motion true` rồi `tắt đèn` — gate chặn, trợ lý hỏi lại, đèn vẫn sáng.
 
+## Online — System 2 trên model thật
+
+Bỏ dấu `#` ở khối `[system_two]` cuối `agent.toml`, rồi:
+
+```bash
+pip install 'neuroedge[cloud]'                      # LiteLLM (Q-10), không có trong bản cài lõi
+export ANTHROPIC_API_KEY=...                        # key chỉ nằm trong biến môi trường
+neuroedge run -c "trời tối quá"                     # model gọi light_on → gate → đèn sáng
+```
+
+`agent.toml` chỉ ghi **tên** biến (`api_key_env`); ghi key vào đó thì `neuroedge build` từ chối.
+Thiếu extra, thiếu key, mất mạng, hết giờ ⇒ trợ lý nói câu offline, đèn vẫn đi qua gate như cũ.
+Mỗi lượt gọi model ghi một sự kiện `system_two_call` (token, chi phí) — không ghi prompt, không ghi key.
+
 ## Kiểm thử
 
 ```bash

@@ -578,6 +578,8 @@ Trừu tượng hóa mô hình không dừng ở `SystemOne` và `SystemTwo`. L�
 
 Toàn bộ lớp kết nối này thuộc **lõi mã nguồn mở MIT** và chạy tự vận hành (self-host). NeuroEdge không đứng giữa luồng suy luận và không bán lại token (§6).
 
+*Hiện thực cho LLM của `SystemTwo`:* bảng `[system_two]` của `agent.toml` và gói `neuroedge.models.providers` (TSK-S2-11) — cấu hình và hợp đồng adapter ở docstring của gói; trạng thái ở `neuroedge-roadmap.md` TSK-S2-11.
+
 #### Chuẩn giao tiếp tối thiểu cho một nhà cung cấp `SystemOne`
 
 Chỉ cần đáp ứng 3 kiểu nguyên thủy sau, bất kỳ mô hình AI nào cũng có thể tích hợp trực tiếp vào hệ sinh thái:
@@ -1134,7 +1136,7 @@ Mô hình thương mại của NeuroEdge có **đúng một trụ cột: Hệ đ
 | 5 | **Bộ nhớ đệm ngữ nghĩa & Thống kê tỷ lệ System 1/System 2** *(tùy chọn)* | Tối ưu hóa chi phí vận hành thông qua cache, đồng thời cung cấp số liệu chứng minh hiệu quả của kiến trúc định tuyến hai mô hình. |
 | 6 | **Tự động xuất tệp vết ghi JSON cho từng phiên tương tác** | Đồng nhất định dạng vết ghi giữa môi trường thực tế và môi trường kiểm thử CI, giúp việc điều tra sự cố diễn ra tức thì. |
 
-**Nền tảng hiện thực** *(Q-10, chốt 2026-09-23)*: lớp trừu tượng dùng **LiteLLM như một thư viện định tuyến (SDK)** đa nhà cung cấp — chuyển đổi định dạng thống nhất, định tuyến và failover — gọi trực tiếp trong tiến trình; **không chạy LiteLLM proxy server**. LiteLLM luôn nằm sau giao diện nội bộ `neuroedge.models.providers`, nên adapter tùy chỉnh (§3.6) vẫn là đường thoát nếu phải thay thư viện. LiteLLM chỉ được cài qua **extra `neuroedge[cloud]`**: `pip install neuroedge` không kéo LiteLLM (bản cài ra ~120 MB do phụ thuộc bắc cầu), giữ bản cài mặc định nhẹ và không cần khóa. Kiểm soát hạn mức theo thiết bị (năng lực 4) do NeuroEdge hiện thực ở lớp này, không dựa vào tính năng khóa ảo của proxy. NeuroEdge bổ sung hợp đồng kết nối chuẩn (OpenAI-compatible + adapter tùy chỉnh) và cơ chế gắn vết ghi JSON cho từng phiên. Chỉ sử dụng phần mã nguồn mở theo giấy phép MIT. **Đây là thành phần OSS do người dùng tự vận hành, không phải dịch vụ do NeuroEdge vận hành và thu phí.**
+**Nền tảng hiện thực** *(Q-10, chốt 2026-09-23)*: lớp trừu tượng dùng **LiteLLM như một thư viện định tuyến (SDK)** đa nhà cung cấp — chuyển đổi định dạng thống nhất, định tuyến và failover — gọi trực tiếp trong tiến trình; **không chạy LiteLLM proxy server**. LiteLLM luôn nằm sau giao diện nội bộ `neuroedge.models.providers`, nên adapter tùy chỉnh (§3.6) vẫn là đường thoát nếu phải thay thư viện. LiteLLM chỉ được cài qua **extra `neuroedge[cloud]`**: `pip install neuroedge` không kéo LiteLLM (bản cài ra ~120 MB do phụ thuộc bắc cầu), giữ bản cài mặc định nhẹ và không cần khóa. Kiểm soát hạn mức theo thiết bị (năng lực 4) do NeuroEdge hiện thực ở lớp này, không dựa vào tính năng khóa ảo của proxy. NeuroEdge bổ sung hợp đồng kết nối chuẩn (OpenAI-compatible + adapter tùy chỉnh) và cơ chế gắn vết ghi JSON cho từng phiên. Chỉ sử dụng phần mã nguồn mở theo giấy phép MIT. **Đây là thành phần OSS do người dùng tự vận hành, không phải dịch vụ do NeuroEdge vận hành và thu phí.** Hiện thực: TSK-S2-11 (`neuroedge.models.providers`, job CI `cloud-extra` cưỡng chế chính sách giấy phép Q-11).
 
 *Rào cản kỹ thuật đặc thù:* Vi điều khiển biên bị hạn chế tài nguyên và không thể liên tục thực hiện quá trình bắt tay TLS cho từng yêu cầu HTTP riêng lẻ. Việc lớp trừu tượng tối ưu hóa điểm kết thúc luồng âm thanh (audio termination) cho nhóm vi xử lý này là một lợi thế kỹ thuật chuyên sâu — và nay là lợi thế thuộc về lõi mã nguồn mở.
 

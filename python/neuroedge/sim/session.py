@@ -271,6 +271,13 @@ class SimSession:
             events=events,
         )
         conversation = Conversation(engine=engine, hal=hal)
+        if slow is None:
+            # `[system_two]` of agent.toml (TSK-S2-11); none ⇒ System 2 stays offline.
+            from ..models.providers import system_two_for
+
+            slow = system_two_for(manifest, events)
+        elif slow.events is None:
+            slow.events = events  # FR-MDL-06: every model call is traced
         return cls(
             manifest,
             hal=hal,
