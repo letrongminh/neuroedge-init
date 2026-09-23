@@ -405,10 +405,9 @@ def _resolve_on_block(
     if not child:
         return dict(inherited)
     if has_base and child.get("action") == "degrade":
-        kept = (
-            inherited.get("action") == "degrade"
-            and child.get("fallback_action") == inherited.get("fallback_action")
-        )
+        kept = inherited.get("action") == "degrade" and child.get(
+            "fallback_action"
+        ) == inherited.get("fallback_action")
         if not kept:
             raise GateInheritanceError(
                 where=f"{child_label} -> on_block.action",
