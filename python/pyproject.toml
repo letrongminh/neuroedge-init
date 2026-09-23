@@ -56,6 +56,10 @@ neuroedge = "neuroedge.cli.main:app"
 [tool.hatch.build.targets.wheel]
 packages = ["neuroedge"]
 
+# Copies schemas/, boards/, gates/ and the canonical fixtures into
+# neuroedge/_data/ for both the sdist and the wheel (TSK-S3-17, hatch_build.py).
+[tool.hatch.build.hooks.custom]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
