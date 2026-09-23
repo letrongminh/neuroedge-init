@@ -27,6 +27,9 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **Q-22 chốt — AEC phần mềm trên `linux` (phương án A).** PipeWire `module-echo-cancel`: `audio.in` đọc nút `source`,
+  `audio.out` phát vào nút `sink`; `linux-rpi5` chỉ khai `aec = true` khi nightly trên Pi đạt 0/20 tự kích VAD và
+  ERLE ≥ 20 dB. Cách nối, cấu hình mẫu, tiêu chí: `docs/spec/simulation_coverage.md` §6. PRD §15.
 - **TSK-S2-09 — `neuroedge run --ui`.** Phiên `sim` trực tiếp trên trình duyệt: chốt cửa, đèn, relay, cảm biến, màn hình,
   phán quyết; gõ lệnh và đặt cảm biến từ trang. Chỉ 127.0.0.1, không mạng. `sim/ui.py`.
   Kiểm: `pytest tests/test_sim_ui.py`. (FR-TGT-06)

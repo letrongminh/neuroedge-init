@@ -1793,7 +1793,7 @@ Chạy như công cụ riêng hoặc mô-đun kernel; không có dòng mã nào 
 |:---|:---|:---|:---|:---:|
 | Linux `gpio-sim` | `digital.out` trên `linux` trong CI | GPL-2.0 (kernel, không liên kết) | **Đang dùng** — `scripts/setup_gpio_sim.sh`, job `linux-hal` | Có *(runner GitHub, kernel 6.17 azure + `linux-modules-extra`)* |
 | ALSA `snd-aloop` | Bơm/thu âm thanh trên **RPi 5** (nightly) | GPL-2.0 (kernel) | Đề xuất — TSK-S5-08 | Có — **không có trên runner GitHub** (`CONFIG_SOUND` tắt ở kernel 6.17 azure); CI dùng backend tệp/PCM |
-| PipeWire `module-echo-cancel` (webrtc-audio-processing) | AEC phần mềm cho `audio.in` trên `linux` (Q-22) | MIT (PipeWire) · BSD-3 (webrtc-audio-processing) — dịch vụ của hệ điều hành, không đóng gói | Đề xuất — TSK-S5-08 | Có *(tài liệu PipeWire)*; chưa thử trên Pi |
+| PipeWire `module-echo-cancel` (webrtc-audio-processing) | AEC phần mềm cho `audio.in` trên `linux` (Q-22) | MIT (PipeWire) · BSD-3 (webrtc-audio-processing) — dịch vụ của hệ điều hành, không đóng gói | Đã chốt (Q-22) — TSK-S5-08 | Có *(tài liệu PipeWire: 4 nút capture/source/sink/playback, `library.name = aec/libspa-aec-webrtc`)*; chưa thử trên Pi |
 | LVGL `lv_test_display` · `lv_test_screenshot_compare` | Ảnh golden cho màn hình `esp32s3`, build trên host | MIT | Đề xuất — TSK-S4-10 | Có *(tài liệu LVGL; lodepng kèm LVGL)* |
 | Perfetto UI | Xem timing vết ghi xuất sang Chrome Trace Event | Apache-2.0 | Đề xuất — TSK-S3-22 | Có |
 | Espressif QEMU (`qemu-xtensa`) | Boot + logic firmware `esp32s3` không cần bo mạch | GPL-2.0 (tệp nhị phân riêng) | Đề xuất — TSK-S4-08 | Có *(S3 từ `esp-develop-9.0.0`, tài liệu `idf.py qemu` cho S3 từ ESP-IDF v5.4; không I2S/Wi-Fi/LCD SPI/GPIO thường)* |
