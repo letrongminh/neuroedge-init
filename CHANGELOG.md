@@ -27,6 +27,11 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **TSK-S3-17 — wheel tự chạy được.** Trước: wheel cài từ pip gãy ở `build`, `run`, `test`, `gate lint` (thiếu `boards/`,
+  `schemas/`, `gates/`). Nay `neuroedge/_data/` mang theo asset, cả khi build từ sdist; `paths.py` báo lỗi thay vì đoán.
+  Kiểm: `pytest tests/test_paths.py` · `scripts/wheel_smoke.sh` (job CI `wheel-smoke`). (FR-DX-02, FR-DX-04)
+- **Q-23 — cây quyết định trên MCU là bố cục nhị phân** do `neuroedge build` sinh, không có parser JSON trên thiết bị.
+  RFC-0003 thu hẹp (`TODOS.md` #15). PRD §15.
 - **Q-22 chốt — AEC phần mềm trên `linux` (phương án A).** PipeWire `module-echo-cancel`: `audio.in` đọc nút `source`,
   `audio.out` phát vào nút `sink`; `linux-rpi5` chỉ khai `aec = true` khi nightly trên Pi đạt 0/20 tự kích VAD và
   ERLE ≥ 20 dB. Cách nối, cấu hình mẫu, tiêu chí: `docs/spec/simulation_coverage.md` §6. PRD §15.
@@ -110,6 +115,8 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã đổi
 
+- **Kế hoạch lấp khoảng trống kỹ thuật:** firmware không cần bo mạch (TSK-S4-02, S4-07, S4-08, S4-09, S4-11 mới) kéo lên A2
+  cho V2; TSK-S2-07 lên A2 cho V1; thêm TSK-S4-12 (kiểm ngày đầu có bo mạch). Q-21 chốt. Roadmap §4.3.
 - **TSK-S2-09 (`run --ui`, FR-TGT-06 P0 của M1) kéo từ Sprint 5 lên Sprint 3 (V3)** — đề xuất theo Q-21.
 - **Đính chính Q-21:** runner GitHub **không có `snd-aloop`** (`CONFIG_SOUND`, `CONFIG_IIO`, `CONFIG_FB_VIRTUAL` tắt ở
   kernel 6.17 azure); CI âm thanh dùng backend tệp/PCM, `snd-aloop` chỉ trên Pi. `i2c-stub` + `lm75` có trên runner.
