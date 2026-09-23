@@ -199,7 +199,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 
 | Workflow | Khi nào chạy | Nội dung |
 |:---|:---|:---|
-| [`ci-sim-linux.yml`](.github/workflows/ci-sim-linux.yml) | Mỗi PR và push | Lược đồ, phân giải gate, vết ghi, test, lint, kiểm tra skip |
+| [`ci-sim-linux.yml`](.github/workflows/ci-sim-linux.yml) | Mỗi PR và push | Lược đồ, phân giải gate, vết ghi, test, lint, kiểm tra skip · job `linux-hal`: dựng gpio-sim, chạy `python/tests_linux/`, `verify --targets sim,linux` |
 | [`nightly-hardware.yml`](.github/workflows/nightly-hardware.yml) | Hằng đêm | Dựng ESP-IDF, kiểm tra dung lượng firmware theo Q-3, thu số đo bộ nhớ |
 
 `ci-sim-linux.yml` phải xanh trước khi hợp nhất. `nightly-hardware.yml` có phần

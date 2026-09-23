@@ -27,6 +27,21 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **TSK-S3-01 — `TraceRecorder` + `neuroedge record`.** Ghi phiên ra `trace.v1` đã thẩm định; phiên nay
+  có `action_requested` và `gate_facts` (dữ kiện + độ tin cậy) để replay; `--anonymize` băm chữ thô tại
+  nguồn. `testing/recorder.py`. Kiểm: `pytest tests/test_recorder.py`. (FR-CI-01, FR-TRC-07)
+- **TSK-S3-02 — replay thật trên HAL.** Dữ kiện đã ghi vào lại; phán quyết gate và lệnh chân **tính lại**
+  trên `SimHAL`/`LinuxHAL`, fallback `degrade` tự tiêu bước của nó. `testing/player.py`; `replay()` /
+  `scenario()` thay stub Sprint 1. Kiểm: `pytest tests/test_player.py`. (FR-CI-02)
+- **TSK-S3-03 — thư viện assert + `neuroedge test`.** `assert_gate_blocked`, `assert_never_pulsed`…
+  đọc phán quyết và chân, từ chối chữ (L3); `test` thoát 0/1. `testing/assertions.py`.
+  Kiểm: `pytest tests/test_assertions.py`. (FR-CI-03, FR-CLI-03)
+- **TSK-S3-04 — so khớp Golden Reference.** So chuỗi phán quyết + lệnh chân, bỏ qua timing và chữ;
+  lệch ⇒ `SafetyRegressionError` (NE4002). `replay` thoát 1 khi lệch golden. `testing/golden.py`.
+  Kiểm: `pytest tests/test_golden.py`. (FR-CI-04)
+- **TSK-S3-05 — `LinuxHAL` + gpio-sim trong CI; `verify --targets sim,linux` (A2).** `hal/linux.py` qua
+  libgpiod v2 (extra `[linux]`), ném lỗi khi không có `/dev/gpiochip*` (Q-16). Job CI `linux-hal`
+  chạy trên line ảo. Kiểm: `pytest tests/test_hal_linux.py` · `tests_linux/` trên gpio-sim. (FR-TGT-02)
 - **Cửa trước cho người mới.** `README.md` gốc: sản phẩm là gì, sơ đồ 30 giây, một gate và
   một `@action` trích từ tệp thật, 3 lệnh chạy thử. `tests/test_readme_quickstart.py` chạy đúng
   các lệnh đó và kiểm hai đoạn trích khớp tệp gốc.
@@ -77,6 +92,9 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã đổi
 
+- **`verify` replay ba vết ghi chuẩn mực trên từng target** thay vì chỉ thẩm định lược đồ; mặc định
+  `--targets sim` (trước: `sim,linux` nhưng không chạy gì trên `linux`). PRD Phụ lục B thêm NE4002,
+  NE4003.
 - **README gốc chạy thử bằng `neuroedge run -c`** (một ALLOW, một BLOCK) thay cho `build`. Đặc tả
   khớp hành vi mới: PRD FR-CLI-02 (`-c`, kiểm năng lực trước khi chạy), FR-CLI-05 (`gate explain`),
   proposal §4.3 (`[sim.facts]`, `action` trong `commands.toml`).
@@ -593,9 +611,10 @@ một pipeline xanh lúc đó là thông tin sai. CI có đúng một bước ch
 |:---:|:---|
 | `0` | Phép kiểm tra đã chạy và **đạt** |
 | `1` | Phép kiểm tra đã chạy và **không đạt** |
-| `2` | Lệnh **chưa được hiện thực** |
+| `2` | Lệnh (hoặc `--target` đó của lệnh) **chưa được hiện thực** |
 
-Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏng" và "chưa có".
+Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏng" và "chưa có". Hôm nay chỉ
+còn `run` / `record --target linux|esp32s3` thoát mã 2.
 
 #### Lệnh đã hiện thực
 
@@ -608,23 +627,17 @@ Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏn
 | `trace validate <tệp…>` | Thẩm định theo `trace.v1.json`. Một tệp sai làm cả lệnh thất bại |
 | `trace show <tệp>` | In dòng thời gian sự kiện |
 | `board list` / `board show <id>` | Liệt kê / xem năng lực bo mạch theo 5 nguyên thủy |
-| `verify` | Quét toàn bộ artifact đã đóng băng |
+| `verify [--targets sim,linux]` | Mọi gate phân giải, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`). So quyết định, chưa so timing |
 | `build --target <t> --board <id>` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate. `--agent` (mặc định `agent.toml`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
-| `replay <tệp>` | Đọc và thẩm định vết ghi rồi in dòng thời gian |
-| `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:help`; `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2 (TSK-S3-05) |
+| `replay <tệp> [--target sim\|linux]` | Replay trên HAL thật: dữ kiện đã ghi vào lại, phán quyết gate và lệnh chân **tính lại**, rồi so với golden (`--golden <tệp>`, mặc định chính vết ghi). Khớp ⇒ mã 0; lệch ⇒ mã 1, `NE4002`, dòng lệch đầu tiên. `--agent`, `--board`, `--trace-out` |
+| `record [--out traces/] [-c "<lệnh>"] [--anonymize]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`), phán quyết giữ nguyên (FR-TRC-07) |
+| `test [thư-mục]` | Chạy bộ Action CI (pytest) của agent, mặc định `tests/`. Mọi test đạt ⇒ mã 0; có test trượt hoặc không thu được test nào ⇒ mã 1 |
+| `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:help`; `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2: trên `linux` hôm nay dùng `replay` |
 | `gate explain <tệp\|URI>` | Giải thích gate cho người duyệt: tiêu chí từ cấp nào, mệnh đề nào bị siết chặt, ngân sách và `on_block` so với cha. Gate sai ⇒ mã 1, lỗi 3 thành phần |
 | `new <tên> [--template minimal\|villa-concierge]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` sao agent mẫu, chỉ chạy từ kho mã nguồn |
 
 > `gate publish` **không ký số**. Nó dừng ở mã băm, vì ký cần khóa của Gate
-> Registry (Khối 3). `replay` **không thực thi** vết ghi trên target. Cả hai
-> lệnh tự nói rõ điều đó trong đầu ra — đừng đọc chúng như đã làm nhiều hơn.
-
-#### Lệnh chưa hiện thực (thoát mã 2)
-
-| Lệnh | Sẽ có ở |
-|:---|:---|
-| `test` | TSK-S3-03 — hiện dùng `pytest` trong `python/` |
-| `record` | TSK-S3-01 |
+> Registry (Khối 3). Lệnh tự nói rõ điều đó trong đầu ra — đừng đọc nó như đã làm nhiều hơn.
 
 ### 2.4 Đọc một thông báo lỗi
 
@@ -727,7 +740,7 @@ neuroedge-init/
 │   ├── perception/       L2 — khung, chưa hiện thực
 │   ├── sim/              L0 — SimSession: agent chạy trên sim, gõ chữ (web UI: TSK-S2-09)
 │   ├── templates/        Mẫu dự án cho `neuroedge new` (*.tmpl, không copier)
-│   ├── testing/          Action CI — replay(), scenario()
+│   ├── testing/          Action CI — recorder · player (replay) · assertions · golden
 │   ├── cli/              CLI Typer · run.py (REPL) · explain.py (gate explain)
 │   ├── errors.py         Hợp đồng lỗi 3 thành phần
 │   ├── trace.py          Thẩm định vết ghi
@@ -796,24 +809,23 @@ nó trong bảng task.
 
 | # | Nợ | Phải giải quyết ở |
 |:---:|:---|:---|
-| 1 | **Hủy lệnh đang chờ mới có ở `sim`.** Hợp đồng thu hồi lệnh vật lý (§3.8) yêu cầu `barge_in` hủy xung chốt cửa đang chờ trong ≤ 1 khung âm thanh. `SimHAL.digital_out()` đã trả `PendingCommand.cancel()` (TSK-S2-01); `esp32s3` phải hủy được thật ở tầng firmware | **TSK-S4-01**, cùng lúc với hợp đồng thu hồi — không phải sau |
-| 2 | `ReplaySession._parse_events()` suy luận `blocked_by` theo lối tạm, ghim cứng tên hành động `unlock_door` | TSK-S3-02 / TSK-S3-03 |
-| 3 | `gate publish` dừng ở mã băm, chưa ký số | Khối 3 (Gate Registry) |
-| 4 | `perception/` chỉ là khung; `sim/` mới có phiên terminal (`SimSession`), chưa có giao diện web | TSK-S3-11 / TSK-S2-09 |
+| 1 | **Hủy lệnh đang chờ mới có ở `sim`.** Hợp đồng thu hồi lệnh vật lý (§3.8) yêu cầu `barge_in` hủy xung chốt cửa đang chờ trong ≤ 1 khung âm thanh. `SimHAL` và `LinuxHAL` đã trả `PendingCommand.cancel()` (TSK-S2-01, TSK-S3-05 — `linux` hạ line ngay); `esp32s3` phải hủy được thật ở tầng firmware | **TSK-S4-01**, cùng lúc với hợp đồng thu hồi — không phải sau |
+| 2 | `gate publish` dừng ở mã băm, chưa ký số | Khối 3 (Gate Registry) |
+| 3 | `perception/` chỉ là khung; `sim/` mới có phiên terminal (`SimSession`), chưa có giao diện web | TSK-S3-11 / TSK-S2-09 |
 
 ### 3.7 Điều hệ thống chưa làm được
 
 Nói rõ để không ai đọc các mốc đã đạt quá lên:
 
-- ❌ **`neuroedge run` mới có `--target sim`, gõ chữ trên terminal.** `linux` là TSK-S3-05; giao
-  diện web mô phỏng và giọng nói chưa có (Q-15); intent không có action (`faq`) chưa được trả lời
+- ❌ **Phiên tương tác (`run`, `record`) mới có trên `sim`, gõ chữ trên terminal.** Trên `linux`
+  hôm nay chỉ `replay` / `verify`; giao diện web mô phỏng và giọng nói chưa có (Q-15); intent không có action (`faq`) chưa được trả lời
   vì SystemTwo cần provider (TSK-S2-11).
 - ❌ **Chưa có nhà cung cấp cloud thật.** SystemOne/SystemTwo chạy với double và ngữ pháp lệnh
   cục bộ; connector LiteLLM là TSK-S2-11 (A2).
-- ❌ **Chưa có tương đương target.** `verify` kiểm ở mức lược đồ. Phát lại trên
-  target thật và so khớp chuỗi phán quyết là TSK-S3-02 / TSK-S4-03.
-- ❌ **Chưa ghi vết ghi từ target thật.** `run --trace-out` ghi một phiên `sim`; `record` từ
-  `linux` / `esp32s3` là TSK-S3-01.
+- ❌ **Tương đương target mới ở mức quyết định, trên `sim` + `linux`.** `verify --targets sim,linux`
+  so chuỗi phán quyết và lệnh chân; so timing và target `esp32s3` là TSK-S4-04.
+- ❌ **`LinuxHAL` mới có `digital.out`.** `audio.in/out`, `sensor.read`, `display` trên `linux`
+  chưa hiện thực; chân Pi thật cần `line_names` (vd `door_lock` → `GPIO17`).
 - ❌ **Chưa có CEL.** `allow_when` chỉ nhận dạng mapping toán tử.
 - ❌ **Chưa có số đo bộ nhớ.** Xem §3.4.
 

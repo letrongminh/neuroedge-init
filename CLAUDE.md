@@ -36,6 +36,8 @@ cd python && .venv/bin/python -m pytest -q      # kỳ vọng: 0 failed, 0 skipp
 ```
 
 Framework: **pytest**. `testpaths = ["tests"]` trong `python/pyproject.toml`.
+`python/tests_linux/` chạy riêng, chỉ trên máy có gpio-sim (`scripts/setup_gpio_sim.sh`,
+job CI `linux-hal`) — nó không nằm trong `testpaths` để bộ chính không phải skip.
 
 Hai luật không thương lượng:
 

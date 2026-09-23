@@ -132,12 +132,15 @@ class SimSession:
         facts: Mapping[str, Any] | None = None,
         registry: GateRegistry | None = None,
         clock: Clock = monotonic_ms,
+        events: EventLog | None = None,
     ) -> SimSession:
         """
         Build-check the agent for `sim`, then wire it up.
 
-        `facts` overrides entries of `[sim.facts]`. Raises `BuildFailed` with
-        every problem when the agent does not fit the board.
+        `facts` overrides entries of `[sim.facts]`. `events` is where the session
+        writes — a `TraceRecorder` to record it; its metadata is set from the
+        agent and board. Raises `BuildFailed` with every problem when the agent
+        does not fit the board.
         """
         build(agent_toml, target="sim", board_id=board_id, registry=registry)
         manifest = load_agent_manifest(agent_toml)
@@ -151,7 +154,9 @@ class SimSession:
         grammar = CommandGrammar.load(grammar_path)
         sim_facts, slot_facts = _sim_tables(manifest)
 
-        events = EventLog(clock, target="sim", board_id=board_id, agent_version=manifest.label)
+        if events is None:
+            events = EventLog(clock)
+        events.metadata.update(target="sim", board_id=board_id, agent_version=manifest.label)
         hal = SimHAL(load_board_by_id(board_id), events=events)
         load_actions(manifest)
         gates, _ = _resolve_gates(manifest, registry)  # build() has already vetted them

@@ -1,106 +1,94 @@
 """
-Action CI Testing Framework.
-Implements replay() and scenario() for bit-for-bit regression tests.
+Action CI (FR-CI-01→04): record a session, replay it on a live HAL, assert the
+gate verdicts and the pins, compare against a golden reference.
+
+    from neuroedge.testing import replay, scenario
+
+    s = replay("traces/unverified_attempt.json")
+    assert s.action("unlock_door").blocked
+    assert s.pin("door_lock").never_pulsed()
+
+`replay()` and `scenario()` are the synchronous entry points of proposal §4.7;
+`TracePlayer` is the async one. Both recompute verdicts and pin commands — see
+`player.py`.
 """
 
-import json
 from pathlib import Path
 from typing import Any
 
-from ..hal import PinAssertion
+from .assertions import (
+    assert_action_aborted,
+    assert_escalated_to,
+    assert_gate_allowed,
+    assert_gate_blocked,
+    assert_never_pulsed,
+    assert_pin_pulsed,
+)
+from .golden import GoldenComparator, GoldenDiffResult, assert_matches_golden, safety_view
+from .player import (
+    ActionState,
+    GateState,
+    RecordedStep,
+    ReplayResult,
+    TracePlayer,
+    recorded_steps,
+    replay_sync,
+)
+from .recorder import TraceRecorder
+
+# Kept for code written against the Sprint 1 stub.
+ReplaySession = ReplayResult
 
 
-class ActionState:
-    def __init__(self, action_name: str, blocked: bool = True):
-        self.action_name = action_name
-        self.blocked = blocked
-
-
-class GateState:
-    def __init__(self, name: str, verdict: str = "BLOCK"):
-        self.name = name
-        self.verdict = verdict
-
-
-class ReplaySession:
+def replay(
+    trace: str | Path | dict[str, Any],
+    slow: str | None = None,
+    target: str = "sim",
+    **kwargs: Any,
+) -> ReplayResult:
     """
-    Session object returned by replay() and scenario().
-    Allows asserting gate verdicts and physical pin states.
+    Replay a trace on `target` and return what the gate and the pins did.
+
+    `slow` names a System 2 model to swap in. It is accepted so a test can say
+    what it varied, and it never changes a verdict: System 2 text is not replayed
+    or asserted on (FR-CI-LVL, L3).
     """
-
-    def __init__(
-        self,
-        trace_data: dict[str, Any],
-        network: str = "online",
-        slow: str | None = None,
-        target: str = "sim",
-    ):
-        self.trace_data = trace_data
-        self.network = network
-        self.slow_model = slow
-        self.target = target
-
-        # Analyze events
-        self.blocked_by: str | None = None
-        self.escalated_to: str | None = None
-        self.reason: str | None = None
-        self._actions: dict[str, ActionState] = {}
-        self._gates: dict[str, GateState] = {}
-        self._pins: dict[str, PinAssertion] = {}
-
-        self._parse_events()
-
-    def _parse_events(self):
-        events = self.trace_data.get("events", [])
-        for ev in events:
-            ev_type = ev.get("type")
-            data = ev.get("data", {})
-
-            if ev_type == "gate_evaluation_result":
-                verdict = data.get("verdict", "BLOCK")
-                gate_id = data.get("blocked_by", "unknown_gate")
-                self.blocked_by = gate_id
-                self.escalated_to = data.get("escalated_to")
-                self.reason = data.get("reason")
-                self._gates["unlock_door"] = GateState("unlock_door", verdict=verdict)
-                self._actions["unlock_door"] = ActionState(
-                    "unlock_door", blocked=(verdict == "BLOCK")
-                )
-
-            elif ev_type == "actuator_command":
-                pin = data.get("pin")
-                op = data.get("operation")
-                dur = data.get("duration_ms", 0)
-                self._pins[pin] = PinAssertion(pin, pulsed=(op == "pulse"), duration_ms=dur)
-
-    def action(self, name: str) -> ActionState:
-        return self._actions.get(name, ActionState(name, blocked=True))
-
-    def gate(self, name: str) -> GateState:
-        return self._gates.get(name, GateState(name, verdict="BLOCK"))
-
-    def pin(self, name: str) -> PinAssertion:
-        return self._pins.get(name, PinAssertion(name, pulsed=False))
+    return replay_sync(trace, slow=slow, target=target, **kwargs)
 
 
-def replay(trace_path: str, slow: str | None = None, target: str = "sim") -> ReplaySession:
-    p = Path(trace_path)
-    if not p.exists():
-        # Check in fixtures/traces/
-        fixture_p = Path(__file__).parents[3] / "fixtures" / "traces" / p.name
-        if fixture_p.exists():
-            p = fixture_p
-    with open(p, encoding="utf-8") as f:
-        data = json.load(f)
-    return ReplaySession(data, slow=slow, target=target)
+def scenario(
+    trace: str | Path | dict[str, Any],
+    network: str = "online",
+    target: str = "sim",
+    **kwargs: Any,
+) -> ReplayResult:
+    """
+    Replay a trace under a changed condition. ``network="offline"`` keeps only
+    the session-context facts and makes every model answer unreachable, so a
+    fail-closed gate blocks with `gate_unreachable` (Q-14).
+    """
+    return replay_sync(trace, network=network, target=target, **kwargs)
 
 
-def scenario(trace_path: str, network: str = "online", target: str = "sim") -> ReplaySession:
-    p = Path(trace_path)
-    if not p.exists():
-        fixture_p = Path(__file__).parents[3] / "fixtures" / "traces" / p.name
-        if fixture_p.exists():
-            p = fixture_p
-    with open(p, encoding="utf-8") as f:
-        data = json.load(f)
-    return ReplaySession(data, network=network, target=target)
+__all__ = [
+    "ActionState",
+    "GateState",
+    "GoldenComparator",
+    "GoldenDiffResult",
+    "RecordedStep",
+    "ReplayResult",
+    "ReplaySession",
+    "TracePlayer",
+    "TraceRecorder",
+    "assert_action_aborted",
+    "assert_escalated_to",
+    "assert_gate_allowed",
+    "assert_gate_blocked",
+    "assert_matches_golden",
+    "assert_never_pulsed",
+    "assert_pin_pulsed",
+    "recorded_steps",
+    "replay",
+    "safety_view",
+    "scenario",
+]

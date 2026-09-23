@@ -18,7 +18,7 @@ import json
 import pytest
 from typer.testing import CliRunner
 
-from neuroedge.cli.main import PENDING, app
+from neuroedge.cli.main import app
 
 runner = CliRunner()
 
@@ -187,21 +187,43 @@ def test_board_show_unknown_id_exits_one(invoke):
 # --- verify ---------------------------------------------------------------
 
 
-def test_verify_passes_and_states_what_it_did_not_check(invoke):
+def test_verify_replays_every_canonical_trace_and_states_what_it_did_not_check(invoke):
     result = invoke("verify")
     assert result.exit_code == 0, result.output
     assert "all gates resolve" in result.output
-    # A2 is only partly discharged; the command must not imply otherwise.
-    assert "Not yet covered" in result.output
+    for name in ("happy-path.json", "unverified_attempt.json", "network_offline.json"):
+        assert name in result.output
+    # Timing is not compared yet; the command must not imply otherwise.
+    assert "not timing" in result.output
+
+
+def test_verify_on_linux_without_gpio_lines_fails_and_says_how_to_fix(
+    invoke, monkeypatch, tmp_path
+):
+    import neuroedge.hal.linux as linux
+
+    monkeypatch.setattr(linux, "CHIP_GLOB", str(tmp_path / "gpiochip*"))
+    monkeypatch.setattr(linux, "_import_gpiod", lambda: object())
+    result = invoke("verify", "--targets", "sim,linux")
+    assert result.exit_code == 1
+    assert "no GPIO chip" in result.output
+    assert "setup_gpio_sim.sh" in result.output
+
+
+def test_verify_on_a_target_without_a_live_hal_fails(invoke):
+    result = invoke("verify", "--targets", "esp32s3")
+    assert result.exit_code == 1
+    assert "Sprint 4" in result.output
 
 
 # --- replay ---------------------------------------------------------------
 
 
-def test_replay_validates_and_flags_that_it_did_not_execute(invoke, traces_dir):
-    result = invoke("replay", str(traces_dir / "happy-path.json"))
+@pytest.mark.parametrize("name", ["happy-path", "unverified_attempt", "network_offline"])
+def test_replay_executes_each_canonical_trace_and_matches_it(invoke, traces_dir, name):
+    result = invoke("replay", str(traces_dir / f"{name}.json"))
     assert result.exit_code == 0, result.output
-    assert "not executed on target" in result.output.replace("\n", " ")
+    assert "decisions match the recording" in result.output
 
 
 def test_replay_rejects_an_invalid_trace(invoke, traces_dir):
@@ -209,22 +231,17 @@ def test_replay_rejects_an_invalid_trace(invoke, traces_dir):
     assert result.exit_code == 1
 
 
-# --- unimplemented commands ----------------------------------------------
+# --- not-yet-implemented paths ----------------------------------------------
 
 
-@pytest.mark.parametrize("command", sorted(PENDING))
-def test_unimplemented_command_exits_two_and_names_its_task(invoke, command):
+def test_a_target_without_a_live_session_exits_two_and_names_what_works():
     """
-    A scaffold must not print a result it did not compute. Exit code 2 keeps
-    these distinguishable from genuine failures in CI.
+    A command must not print a result it did not compute. Exit code 2 keeps
+    "not implemented" distinguishable from a genuine failure in CI.
     """
-    args = [command]
-    if command == "build":
-        args += ["--target", "esp32s3"]
-    result = invoke(*args)
+    result = runner.invoke(app, ["run", "--target", "linux", "-c", "x"])
     assert result.exit_code == 2, result.output
-    task, _ = PENDING[command]
-    assert task.split(",")[0] in result.output + result.stderr
+    assert "replay" in result.output
 
 
 def test_help_lists_the_implemented_command_groups(invoke):

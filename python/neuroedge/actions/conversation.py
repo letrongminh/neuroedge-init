@@ -29,6 +29,12 @@ from .token import TokenLedger
 MAX_FALLBACK_DEPTH = 3
 
 
+def _json_safe(values: dict[str, Any]) -> dict[str, Any]:
+    """Arguments as the trace can hold them: JSON scalars kept, anything else by repr."""
+    scalar = (str, int, float, bool, type(None))
+    return {k: v if isinstance(v, scalar) else repr(v) for k, v in values.items()}
+
+
 @dataclass(frozen=True)
 class ActionResult:
     action: str
@@ -74,6 +80,11 @@ class Conversation:
         self, spec: ActionSpec, kwargs: dict[str, Any], visited: tuple[str, ...]
     ) -> ActionResult:
         state = {"utterance": self.utterance, "action": spec.name, "arguments": dict(kwargs)}
+        # Which action asked for which gate: a replay (TSK-S3-02) re-runs exactly this.
+        self.events.emit(
+            "action_requested",
+            {"action": spec.name, "gate": spec.gate, "arguments": _json_safe(kwargs)},
+        )
         result = await self.engine.evaluate(spec.gate, self.facts, state=state)
         if result.verdict is GateVerdict.BLOCK:
             fallback = None

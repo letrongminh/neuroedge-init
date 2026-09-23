@@ -102,6 +102,14 @@ Two deliberate choices in this section, both to keep GPL out of the core:
     (python/neuroedge/templates/) instead. Do not add copier, or any template
     engine with a copyleft dependency, without a written licence decision.
 
+  * gpiod (libgpiod v2 Python bindings) is NOT a core dependency. It is
+    LGPL-2.1-or-later and sits in the optional `linux` extra, needed only by
+    target `linux` (python/neuroedge/hal/linux.py, TSK-S3-05). It is imported
+    at run time and never vendored or statically linked, so the MIT core
+    carries no LGPL code; installing the extra brings LGPL code into that
+    environment only. The CI licence gate installs `dev` alone and still
+    rejects any GPL-family licence in the core set.
+
 
 ================================================================================
 SECTION C — DEVELOPMENT AND CI DEPENDENCIES

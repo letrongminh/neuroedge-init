@@ -11,6 +11,7 @@ up quoted as evidence.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -49,12 +50,6 @@ app.add_typer(board_app, name="board")
 console = Console()
 err_console = Console(stderr=True)
 
-# Sprint in which each unimplemented command gets its engine, from the roadmap.
-PENDING = {
-    "test": ("TSK-S3-03", "Sprint 3"),
-    "record": ("TSK-S3-01", "Sprint 3"),
-}
-
 
 def _fail(error: NeuroEdgeError) -> None:
     """Render a three-part diagnostic to stderr and exit non-zero."""
@@ -77,20 +72,6 @@ def _fail_build(failed: BuildFailed) -> None:
         err_console.print(f"  fix: {escape(problem.how)}")
     err_console.print(f"\n[bold red]{len(failed.problems)} problem(s).[/bold red]")
     raise typer.Exit(code=1)
-
-
-def _not_yet(command: str) -> None:
-    task, sprint = PENDING[command]
-    err_console.print(
-        Panel(
-            f"`neuroedge {command}` is not implemented yet.\n\n"
-            f"Its engine is scheduled as [bold]{task}[/bold] in [bold]{sprint}[/bold].\n"
-            f"See neuroedge-roadmap.md for the current sprint status.",
-            title=f"[yellow]Not implemented: {command}[/yellow]",
-            border_style="yellow",
-        )
-    )
-    raise typer.Exit(code=2)
 
 
 def _load_gate(target: str, registry_root: Path | None = None) -> ResolvedGate:
@@ -449,15 +430,21 @@ def board_show(
 
 @app.command()
 def verify(
-    targets: str = typer.Option("sim,linux", "--targets", help="Comma-separated target list"),
+    targets: str = typer.Option(
+        "sim", "--targets", help="Comma-separated targets to replay on: sim, linux"
+    ),
 ):
     """
-    Verify the frozen artifacts: every gate resolves and every trace validates.
+    Verify the frozen artifacts and target equivalence (A2).
 
-    Cross-target replay equivalence — the full meaning of acceptance criterion
-    A2 — needs the `sim` and `linux` HALs from Sprints 2 and 3. What this command
-    checks today is the part that exists, and it says which part that is.
+    Every gate resolves, every canonical trace validates, and every canonical
+    trace replays on each requested target to the decisions it records —
+    verdict sequence and pin commands (FR-CI-07). `linux` needs GPIO lines:
+    a board, or `scripts/setup_gpio_sim.sh`.
     """
+    from ..testing.golden import GoldenComparator
+    from ..testing.player import TracePlayer
+
     root = repo_root()
     requested = [t.strip() for t in targets.split(",") if t.strip()]
     problems = 0
@@ -475,18 +462,48 @@ def verify(
             err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {escape(error.why)}")
 
     console.print("\n[bold]Validating canonical traces in fixtures/traces/[/bold]")
-    for path in sorted((root / "fixtures" / "traces").glob("*.json")):
+    traces = sorted((root / "fixtures" / "traces").glob("*.json"))
+    valid = []
+    for path in traces:
         try:
             load_trace(path)
+            valid.append(path)
             console.print(f"  [green]✓[/green] {path.name}")
         except NeuroEdgeError as error:
             problems += 1
             err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {escape(error.why)}")
 
-    console.print("\n[bold]Board capability declarations[/bold]")
-    for board in available_boards():
-        marker = "[green]✓[/green]" if board.target in requested else "[dim]·[/dim]"
-        console.print(f"  {marker} {board.id} (target {board.target})")
+    console.print(f"\n[bold]Replaying canonical traces on {', '.join(requested)}[/bold]")
+    table = Table()
+    table.add_column("Trace", style="cyan")
+    for target in requested:
+        table.add_column(target, justify="center")
+    rows: dict[str, list[str]] = {path.name: [] for path in valid}
+    for target in requested:
+        for path in valid:
+            try:
+                result = asyncio.run(TracePlayer(path, target=target).replay())
+                diff = GoldenComparator().compare(result, load_trace(path))
+            except NeuroEdgeError as error:
+                problems += 1
+                rows[path.name].append("[red]✗[/red]")
+                err_console.print(
+                    f"  [red]✗[/red] {path.name} on {escape(target)}: [{error.code}] "
+                    f"{escape(error.why)}\n    fix: {escape(error.how)}"
+                )
+                continue
+            if diff.ok:
+                rows[path.name].append(f"[green]✓[/green] {' '.join(result.verdicts)}")
+            else:
+                problems += 1
+                rows[path.name].append("[red]✗ differs[/red]")
+                for difference in diff.differences:
+                    err_console.print(
+                        f"  [red]✗[/red] {path.name} on {escape(target)}: {escape(str(difference))}"
+                    )
+    for name, cells in rows.items():
+        table.add_row(name, *cells)
+    console.print(table)
 
     if problems:
         err_console.print(f"\n[bold red]{problems} problem(s) found.[/bold red]")
@@ -494,11 +511,11 @@ def verify(
 
     console.print(
         Panel(
-            "[green]Schema-level verification passed:[/green] all gates resolve, all "
-            "canonical traces validate.\n\n"
-            "[yellow]Not yet covered:[/yellow] replaying traces on live targets and "
-            "comparing verdict sequences across them (acceptance criterion A2). That "
-            "needs the sim HAL (TSK-S2-01) and the linux HAL (TSK-S3-05).",
+            "[green]Passed:[/green] all gates resolve, all canonical traces validate, and "
+            f"each replays on {', '.join(requested)} to the verdicts and pin commands it "
+            "records.\n\n"
+            "[yellow]Compared:[/yellow] decisions only — not timing. Timing equivalence and "
+            "the esp32s3 target arrive with Sprint 4 (TSK-S4-04).",
             title="neuroedge verify",
             border_style="green",
         )
@@ -508,34 +525,93 @@ def verify(
 @app.command()
 def replay(
     trace_file: Path = typer.Argument(..., help="Trace JSON file"),
-    target: str = typer.Option("sim", "--target", "-t", help="Target to replay on"),
+    target: str = typer.Option("sim", "--target", "-t", help="Target to replay on: sim or linux"),
+    agent: Path = typer.Option(
+        None, "--agent", "-a", help="agent.toml that produced the trace (default: from metadata)"
+    ),
+    board: str = typer.Option(None, "--board", "-b", help="Board profile id (default per target)"),
+    golden: Path = typer.Option(
+        None, "--golden", "-g", help="Golden reference to compare against (default: the trace)"
+    ),
+    trace_out: Path = typer.Option(None, "--trace-out", help="Write the replayed trace here"),
+    registry: Path | None = REGISTRY_OPTION,
 ):
     """
-    Replay a recorded trace.
+    Replay a trace on a live HAL and compare its decisions with a golden reference.
 
-    Loads and validates the trace and prints its timeline. Executing it against
-    a live target HAL, and diffing the resulting verdicts against the recording,
-    is TSK-S3-02.
+    The recorded facts are fed back in; gate verdicts and pin commands are
+    recomputed on `--target`. Exit 0 when they match the golden (by default the
+    trace itself), 1 on any difference (FR-CI-02, FR-CI-04).
     """
+    from ..testing.golden import GoldenComparator, load_golden
+    from ..testing.player import TracePlayer, dump
+
     try:
-        trace = load_trace(trace_file)
+        player = TracePlayer(
+            trace_file,
+            target=target,
+            agent=agent,
+            board_id=board,
+            registry=GateRegistry(registry) if registry is not None else None,
+        )
+        result = asyncio.run(player.replay())
+        reference = load_golden(golden) if golden is not None else player.trace
     except NeuroEdgeError as error:
         _fail(error)
         return
 
+    metadata = player.trace["metadata"]
     console.print(
-        f"[bold]Replaying[/bold] [cyan]{trace_file}[/cyan] "
-        f"(recorded on [yellow]{trace['metadata']['target']}[/yellow])"
+        f"[bold]Replayed[/bold] [cyan]{escape(str(trace_file))}[/cyan] "
+        f"(recorded on {escape(metadata['target'])} / {escape(metadata['board_id'])}) "
+        f"on [bold]{escape(target)}[/bold] / {escape(result.hal.board.id)}"
     )
-    for event in trace["events"]:
-        console.print(
-            f"  +[{event['offset_ms']:>6}ms] [bold]{event['type']}[/bold]: "
-            f"{json.dumps(event['data'], ensure_ascii=False)}"
+    table = Table(title="Gate verdicts")
+    table.add_column("#", justify="right")
+    table.add_column("Gate", style="cyan")
+    table.add_column("Recorded")
+    table.add_column("Replayed", style="bold")
+    table.add_column("Reason")
+    begins = [
+        e["data"]["gate"] for e in result.replayed["events"] if e["type"] == "gate_evaluation_begin"
+    ]
+    for index, replayed in enumerate(result.gate_results):
+        recorded = result.steps[index].result.get("verdict") if index < len(result.steps) else "—"
+        style = "green" if replayed["verdict"] == recorded else "bold red"
+        table.add_row(
+            str(index + 1),
+            escape(begins[index] if index < len(begins) else "?"),
+            str(recorded),
+            f"[{style}]{replayed['verdict']}[/{style}]",
+            escape(str(replayed.get("reason", "—"))),
         )
-    console.print(
-        f"[yellow]Note:[/yellow] the trace was read and validated, but not executed on "
-        f"target [bold]{target}[/bold]. Execution against a live HAL is TSK-S3-02."
+    console.print(table)
+    commands = [e["data"] for e in result.replayed["events"] if e["type"] == "actuator_command"]
+    if commands:
+        for command in commands:
+            console.print(
+                f"  pin {escape(command['pin'])}: {command['operation']} {command['duration_ms']} ms"
+            )
+    else:
+        console.print("  no pin was driven")
+
+    if trace_out is not None:
+        dump(result, trace_out)
+        console.print(f"  replayed trace: {escape(str(trace_out))}")
+
+    diff = GoldenComparator().compare(result, reference)
+    if diff.ok:
+        what = escape(str(golden)) if golden is not None else "the recording"
+        console.print(f"[bold green]✓ decisions match {what}[/bold green]")
+        return
+    err_console.print(
+        f"[bold red]✗ NE4002 {len(diff.differences)} difference(s) from the golden reference"
+        + (" — SAFETY REGRESSION" if diff.unsafe else "")
+        + "[/bold red]"
     )
+    for difference in diff.differences:
+        err_console.print(f"  {escape(str(difference))}")
+    raise typer.Exit(code=1)
 
 
 @app.command()
@@ -560,7 +636,7 @@ def new(
         f"\nNext:\n  cd {escape(name)}\n"
         "  neuroedge build --target sim --board sim-default\n"
         "  neuroedge run\n"
-        "  python -m pytest -q tests"
+        "  neuroedge test"
     )
 
 
@@ -569,6 +645,35 @@ def _default_agent() -> Path:
     here = Path("agent.toml")
     sample = repo_root() / "fixtures" / "agents" / "villa-concierge" / "agent.toml"
     return sample if not here.is_file() and sample.is_file() else here
+
+
+def _start_session(verb: str, agent, target: str, board: str, registry, events=None):
+    """Load the agent for an interactive `sim` session, or exit with the right code."""
+    from ..sim import SimSession
+
+    if target != "sim":
+        err_console.print(
+            Panel(
+                f"`neuroedge {verb} --target {escape(target)}` is not implemented yet.\n\n"
+                "Interactive sessions run on `sim` today. On `linux`, replay a trace "
+                "instead: `neuroedge replay <trace> --target linux` (TSK-S3-05).",
+                title=f"[yellow]Not implemented: {verb} --target {escape(target)}[/yellow]",
+                border_style="yellow",
+            )
+        )
+        raise typer.Exit(code=2)
+    try:
+        return SimSession.load(
+            agent or _default_agent(),
+            board_id=board,
+            registry=GateRegistry(registry) if registry is not None else None,
+            events=events,
+        )
+    except BuildFailed as failed:
+        _fail_build(failed)
+    except NeuroEdgeError as error:
+        _fail(error)
+    raise AssertionError("unreachable")  # _fail* always exit
 
 
 @app.command()
@@ -595,33 +700,9 @@ def run(
     Input is typed text matched by the agent's commands.toml — no network, no
     key (Q-15). The agent is build-checked against the board first.
     """
-    from ..sim import SimSession
     from .run import run_session
 
-    if target != "sim":
-        err_console.print(
-            Panel(
-                f"`neuroedge run --target {escape(target)}` is not implemented yet.\n\n"
-                "The linux HAL is [bold]TSK-S3-05[/bold] (Sprint 3); `esp32s3` runs are "
-                "Sprint 4. `--target sim` works today.",
-                title=f"[yellow]Not implemented: run --target {escape(target)}[/yellow]",
-                border_style="yellow",
-            )
-        )
-        raise typer.Exit(code=2)
-
-    try:
-        session = SimSession.load(
-            agent or _default_agent(),
-            board_id=board,
-            registry=GateRegistry(registry) if registry is not None else None,
-        )
-    except BuildFailed as failed:
-        _fail_build(failed)
-        return
-    except NeuroEdgeError as error:
-        _fail(error)
-        return
+    session = _start_session("run", agent, target, board, registry)
     code = run_session(session, console, err_console, command=command, trace_out=trace_out)
     raise typer.Exit(code=code)
 
@@ -664,18 +745,73 @@ def build(
 
 
 @app.command()
-def test():
-    """Run the Action CI suite (pending TSK-S3-03; use `pytest` in python/ meanwhile)."""
-    _not_yet("test")
+def test(
+    path: Path = typer.Argument(None, help="Test directory or file (default: tests/ if present)"),
+    pytest_args: list[str] = typer.Option(
+        None, "--pytest-arg", help="Extra argument passed to pytest (repeatable)"
+    ),
+):
+    """
+    Run the agent's Action CI suite (pytest) and exit 0 only if every test passed.
+
+    Exit codes (FR-CLI-03): 0 all passed · 1 a test failed, nothing was collected,
+    or pytest could not run.
+    """
+    try:
+        import pytest
+    except ImportError:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge test",
+                why="pytest is not installed in this environment",
+                how="pip install pytest (or pip install 'neuroedge[dev]')",
+            )
+        )
+        return
+    target = path if path is not None else (Path("tests") if Path("tests").is_dir() else Path("."))
+    if not target.exists():
+        _fail(
+            NeuroEdgeError(
+                where=str(target),
+                why="no such test directory or file",
+                how="pass the directory holding the agent's tests, e.g. neuroedge test tests/",
+            )
+        )
+        return
+    code = int(pytest.main([str(target), "-q", *(pytest_args or [])]))
+    if code == pytest.ExitCode.NO_TESTS_COLLECTED:
+        err_console.print(f"[bold red]✗ no tests collected under {escape(str(target))}[/bold red]")
+    raise typer.Exit(code=0 if code == pytest.ExitCode.OK else 1)
 
 
 @app.command()
 def record(
-    target: str = typer.Option("esp32s3", "--target", "-t", help="Target to record from"),
-    out: Path = typer.Option(Path("traces/"), "--out", "-o", help="Output directory"),
+    agent: Path = typer.Option(
+        None, "--agent", "-a", help="Path to agent.toml (default as for `run`)"
+    ),
+    target: str = typer.Option("sim", "--target", "-t", help="Target to record on"),
+    board: str = typer.Option("sim-default", "--board", "-b", help="Board profile id"),
+    out: Path = typer.Option(Path("traces"), "--out", "-o", help="Directory, or a .json path"),
+    command: str = typer.Option(None, "--command", "-c", help="Record one typed command and exit"),
+    anonymize: bool = typer.Option(
+        False, "--anonymize", help="Hash raw text at the source (FR-TRC-07); verdicts unchanged"
+    ),
+    registry: Path | None = REGISTRY_OPTION,
 ):
-    """Record a live session to a trace file (pending TSK-S3-01)."""
-    _not_yet("record")
+    """
+    Record a session to a trace file that `trace validate` and `replay` accept.
+
+    Same session as `run`; on exit the trace is validated against trace.v1 and
+    written to `--out` (default `traces/<session_id>.json`).
+    """
+    from ..testing.recorder import TraceRecorder
+    from .run import run_session
+
+    recorder = TraceRecorder(anonymize=anonymize)
+    session = _start_session("record", agent, target, board, registry, events=recorder)
+    path = out if out.suffix == ".json" else out / f"{recorder.session_id}.json"
+    code = run_session(session, console, err_console, command=command, trace_out=path)
+    raise typer.Exit(code=code)
 
 
 if __name__ == "__main__":

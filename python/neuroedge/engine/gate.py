@@ -201,6 +201,20 @@ class ActionContractEngine:
         )
         t0 = self.clock()
         facts, degraded = await self._gather(registered, dict(context or {}), state, t0)
+        if facts:
+            # The inputs of the verdict, with confidence and source: what a replay
+            # feeds back in (TSK-S3-02). `evaluations` in the result keeps only values.
+            self.events.emit(
+                "gate_facts",
+                {
+                    criterion: {
+                        "value": fact.value,
+                        "confidence": fact.confidence,
+                        "source": fact.source,
+                    }
+                    for criterion, fact in facts.items()
+                },
+            )
         walked = walk(tree, facts)
         elapsed = self.clock() - t0
         if degraded is None and elapsed > tree["budget"]["p95_latency_ms"]:
