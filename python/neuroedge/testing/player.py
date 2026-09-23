@@ -347,6 +347,7 @@ class TracePlayer:
         hal = self.hal if self.hal is not None else make_hal(self.target, self.board_id, events)
         if self.hal is not None and hasattr(hal, "events"):
             hal.events = events
+        _script_sensors(hal, self.trace)
         actions = load_actions(self.manifest)
         gates, problems = resolve_gates(self.manifest, self.registry)
         if problems:
@@ -372,6 +373,31 @@ class TracePlayer:
             target=self.target,
             slow=self.slow,
         )
+
+
+def _script_sensors(hal: Any, trace: Mapping[str, Any]) -> None:
+    """
+    Feed the recorded readings back, in order (docs/spec/simulation_coverage.md §3).
+    Reads made to compute a gate fact (`use: fact`) are not replayed: their result
+    is already in `gate_facts`.
+    """
+    readings: dict[str, list[Any]] = {}
+    units: dict[str, str] = {}
+    for event in trace.get("events", []):
+        data = event.get("data", {})
+        if event.get("type") == "sensor_read" and "use" not in data:
+            readings.setdefault(data["sensor"], []).append(data.get("value"))
+            if "unit" in data:
+                units[data["sensor"]] = data["unit"]
+    script = getattr(hal, "script_sensor", None)
+    if readings and script is None:
+        raise ReplayError(
+            where=f"replay on {getattr(hal, 'target', '?')}",
+            why="the trace reads sensors, and this HAL cannot be fed recorded readings",
+            how="replay on sim, or wait for sensor.read on this target (simulation_coverage.md)",
+        )
+    for sensor, values in readings.items():
+        script(sensor, values, units.get(sensor))
 
 
 def replay_sync(trace, **kwargs) -> ReplayResult:

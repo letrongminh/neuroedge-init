@@ -20,7 +20,11 @@ decided by, in order:
    supplies and which is never inferred from what the guest typed;
 2. `[sim.slot_facts]` — a fact computed from a slot the grammar extracted,
    e.g. ``room_matches = { slot = "room", equals = "101" }``;
-3. the grammar, through `SystemOne`'s local fallback, for the facts a matched
+3. `[sim.sensor_facts]` — a fact read from a sensor at the start of the turn,
+   e.g. ``door_closed = { sensor = "door_contact" }`` (the reading itself) or
+   ``too_hot = { sensor = "temperature", gte = 30 }``; sensor values come from
+   `[sim.sensors]` and change with `:sensor` in the REPL;
+4. the grammar, through `SystemOne`'s local fallback, for the facts a matched
    command declares (``command_recognized``).
 
 Anything else is undecided, and the gate blocks.
@@ -78,6 +82,55 @@ class Turn:
         return self.result is not None and not self.result.blocked
 
 
+@dataclass(frozen=True)
+class SensorFact:
+    """A gate fact read from a sensor: the reading, or a comparison of it."""
+
+    sensor: str
+    equals: Any = None
+    gte: float | None = None
+    lte: float | None = None
+
+    def evaluate(self, reading: Any) -> Any:
+        if self.equals is not None:
+            return reading == self.equals
+        if self.gte is not None or self.lte is not None:
+            return (self.gte is None or reading >= self.gte) and (
+                self.lte is None or reading <= self.lte
+            )
+        return reading
+
+
+def _sim_sensors(manifest: AgentManifest, sim: dict[str, Any]):
+    sensors: dict[str, tuple[Any, str | None]] = {}
+    for name, entry in sim.get("sensors", {}).items():
+        if isinstance(entry, dict):
+            if "value" not in entry:
+                raise AgentManifestError(
+                    where=f"{manifest.source} -> [sim.sensors] {name}",
+                    why="a sensor table needs a `value`",
+                    how=f'write {name} = 24.5, or {name} = {{ value = 24.5, unit = "C" }}',
+                )
+            sensors[name] = (entry["value"], entry.get("unit"))
+        else:
+            sensors[name] = (entry, None)
+    sensor_facts: dict[str, SensorFact] = {}
+    for criterion, rule in sim.get("sensor_facts", {}).items():
+        known = {"sensor", "equals", "gte", "lte"}
+        if (
+            not isinstance(rule, dict)
+            or not isinstance(rule.get("sensor"), str)
+            or set(rule) - known
+        ):
+            raise AgentManifestError(
+                where=f"{manifest.source} -> [sim.sensor_facts] {criterion}",
+                why="a sensor fact needs a string `sensor`, and optionally `equals`, `gte` or `lte`",
+                how=f'write {criterion} = {{ sensor = "door_contact" }}',
+            )
+        sensor_facts[criterion] = SensorFact(**rule)
+    return sensors, sensor_facts
+
+
 def _sim_tables(manifest: AgentManifest) -> tuple[dict[str, Any], dict[str, tuple[str, Any]]]:
     sim = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
     facts = sim.get("facts", {})
@@ -114,6 +167,7 @@ class SimSession:
         conversation: Conversation,
         facts: Mapping[str, Any],
         slot_facts: Mapping[str, tuple[str, Any]],
+        sensor_facts: Mapping[str, SensorFact] | None = None,
     ) -> None:
         self.manifest = manifest
         self.hal = hal
@@ -122,6 +176,7 @@ class SimSession:
         self.conversation = conversation
         self.facts: dict[str, Any] = dict(facts)
         self.slot_facts = dict(slot_facts)
+        self.sensor_facts = dict(sensor_facts or {})
 
     @classmethod
     def load(
@@ -153,11 +208,15 @@ class SimSession:
             )
         grammar = CommandGrammar.load(grammar_path)
         sim_facts, slot_facts = _sim_tables(manifest)
+        sim_table = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
+        sensors, sensor_facts = _sim_sensors(manifest, sim_table)
 
         if events is None:
             events = EventLog(clock)
         events.metadata.update(target="sim", board_id=board_id, agent_version=manifest.label)
         hal = SimHAL(load_board_by_id(board_id), events=events)
+        for name, (value, unit) in sensors.items():
+            hal.set_sensor(name, value, unit)
         load_actions(manifest)
         gates, _ = _resolve_gates(manifest, registry)  # build() has already vetted them
         engine = ActionContractEngine(
@@ -175,6 +234,7 @@ class SimSession:
             conversation=conversation,
             facts={**sim_facts, **(facts or {})},
             slot_facts=slot_facts,
+            sensor_facts=sensor_facts,
         )
 
     @property
@@ -187,6 +247,11 @@ class SimSession:
         for criterion, (slot, expected) in self.slot_facts.items():
             if slot in recognition.slots:
                 facts[criterion] = str(recognition.slots[slot]) == str(expected)
+        for criterion, rule in self.sensor_facts.items():
+            reading = self.hal.sensor_read(
+                rule.sensor, called_from=f"[sim.sensor_facts] {criterion}", use="fact"
+            )
+            facts[criterion] = rule.evaluate(reading)
         return facts
 
     async def handle(self, text: str) -> Turn:

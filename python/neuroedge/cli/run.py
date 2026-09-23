@@ -36,6 +36,9 @@ Type a command the agent's grammar knows, e.g. "mở cửa phòng 101".
   :set <name> <value> set a fact (true/false, a number, or text)
   :unset <name>       forget a fact — the gate then treats it as undecided
   :pins               show the virtual pins
+  :sensors            show the simulated sensor values
+  :sensor <name> <v>  set a sensor value (what sensor.read returns)
+  :screen             show the last display frame
   :help               this help
   exit | quit | Ctrl-D  leave"""
 
@@ -94,7 +97,13 @@ def _verdict_line(result: ActionResult, indent: str = "", call: str = "()") -> s
     return line
 
 
-def render_turn(turn: Turn, session: SimSession, console: Console) -> None:
+def frame_line(frame) -> str:
+    if frame.text is not None:
+        return f"  [bold]screen[/bold] ({frame.width}x{frame.height}): {escape(frame.text)}"
+    return f"  [bold]screen[/bold] {frame.format} {frame.width}x{frame.height} {frame.sha256[:19]}…"
+
+
+def render_turn(turn: Turn, session: SimSession, console: Console, frames_before: int = 0) -> None:
     recognition = turn.recognition
     if not turn.recognised:
         console.print(
@@ -119,6 +128,8 @@ def render_turn(turn: Turn, session: SimSession, console: Console) -> None:
     while fallback is not None:
         console.print(_verdict_line(fallback, indent="  fallback: "))
         fallback = fallback.fallback
+    for frame in session.hal.frames[frames_before:]:
+        console.print(frame_line(frame))
     console.print(pin_table(session))
 
 
@@ -142,6 +153,29 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
         console.print(f"  {escape(rest.strip())} is now undecided")
     elif name == "pins":
         console.print(pin_table(session))
+    elif name == "sensors":
+        table = Table(title="Simulated sensors", title_justify="left")
+        table.add_column("Sensor", style="cyan")
+        table.add_column("Value")
+        for sensor, (value, unit) in session.hal.sensor_values().items():
+            shown = (
+                "[dim]not set[/dim]" if value is None else escape(f"{value} {unit or ''}".strip())
+            )
+            table.add_row(sensor, shown)
+        console.print(table)
+    elif name == "sensor" and len(rest.split(maxsplit=1)) == 2:
+        sensor, value = rest.split(maxsplit=1)
+        try:
+            session.hal.set_sensor(sensor, parse_value(value))
+        except NeuroEdgeError as error:
+            console.print(f"[red]{escape(error.why)}[/red]")
+            return
+        console.print(f"  {escape(sensor)} = {escape(value)}")
+    elif name == "screen":
+        if not session.hal.frames:
+            console.print("  nothing has been drawn yet")
+        else:
+            console.print(frame_line(session.hal.frames[-1]))
     elif name == "help":
         console.print(escape(HELP))
     else:
@@ -150,6 +184,7 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
 
 def _turn(text: str, session: SimSession, console: Console, err_console: Console) -> bool:
     """Run one line. False when it raised a contract violation."""
+    frames_before = len(session.hal.frames)
     try:
         turn = asyncio.run(session.handle(text))
     except NeuroEdgeError as error:
@@ -157,7 +192,7 @@ def _turn(text: str, session: SimSession, console: Console, err_console: Console
         err_console.print(f"  why: {escape(error.why)}")
         err_console.print(f"  fix: {escape(error.how)}")
         return False
-    render_turn(turn, session, console)
+    render_turn(turn, session, console, frames_before)
     return True
 
 
