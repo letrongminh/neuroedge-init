@@ -70,7 +70,7 @@
 | **Sprint hiện hành** | 🟡 **Sprint 1: Đóng băng Lược đồ & Monorepo (Tuần 0–2)** | **92% hoàn thành** (12 / 13 tasks; TSK-S1-10 chờ bo mạch) · **5 / 6 tiêu chí ra đạt** — Tiêu chí 6 (Q-11) thoả cho phạm vi Giai đoạn 1 từ 2026-09-23 · Sprint 2 mở **2026-09-28** (Q-19) |
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: cuối Sprint 3 = **2026-11-15** — trễ ~2 tuần so với bản gốc (Tuần 6 gốc = 2026-11-02) (Q-19) |
 | **Lần cập nhật cuối** | **2026-09-23** | Áp dụng quyết định Q-10, Q-11 (LiteLLM), Q-14 → Q-20 vào roadmap v1.3 · RFC-0002 thu hẹp · mở RFC-0004 |
-| **Trạng thái CI Lõi** | ✅ **PASS 257/257 · SKIP 0** | `python/tests/` — 9 bộ test; cổng CI chặn mọi test bị skip |
+| **Trạng thái CI Lõi** | ✅ **PASS 277/277 · SKIP 0** | `python/tests/` — 9 bộ test; cổng CI chặn mọi test bị skip |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn + 1 còn mở** | 🔴 TSK-S1-10 chờ bo mạch vật lý · 🟡 Q-11 phần còn lại (Hawkbit EPL-2.0 / EMQX BSL) — **không chặn cho tới khi mở Khối 2** |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -500,7 +500,7 @@ Phạm vi và thứ tự chạy theo kế hoạch [`docs/designs/giai-doan-1-wed
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S2-01** | Hiện thực HAL cho target `sim` | FR-TGT-01, FR-HAL-01 | **V2** *(ENG-T3)* | ⏳ Chưa bắt đầu | `python/neuroedge/hal/sim.py` |
 | **TSK-S2-02** | Đối chiếu năng lực lúc build, thông báo lỗi đầy đủ 3 thành phần | FR-HAL-04, FR-HAL-05, FR-DX-04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/compiler.py` |
-| **TSK-S2-03** | Gate Engine: `evaluate`, `allow_when`, `on_block`, `budget`. `on_block` v1.0 theo **Q-17**: mọi hành vi đều chặn hành động vật lý; `escalate`/`ask` ghi sự kiện + gọi hook (mặc định no-op); `degrade` chạy `fallback_action` qua gate của chính nó. ✅ khi xong phạm vi đã đặc tả | FR-GATE-03, FR-GATE-04, FR-GATE-09 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/gate.py` |
+| **TSK-S2-03** | Gate Engine: `evaluate`, `allow_when`, `on_block`, `budget`. `on_block` v1.0 theo **Q-17**: mọi hành vi đều chặn hành động vật lý; `escalate`/`ask` ghi sự kiện + gọi hook (mặc định no-op); `degrade` chạy `fallback_action` qua gate của chính nó. ✅ khi xong phạm vi đã đặc tả | FR-GATE-03, FR-GATE-04, FR-GATE-09 | V1 | ✅ Hoàn thành (2026-09-23) | `python/neuroedge/engine/gate.py` · `engine/trace_sink.py` (`EventLog`) · `tests/test_gate_engine.py` |
 | **TSK-S2-04** | Cơ chế fail-closed và mạch ngắt suy giảm | FR-ACE-03, NFR-REL-02 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/circuit_breaker.py` |
 | **TSK-S2-05** | Decorator `@action`, cấm gọi trực tiếp, `c.do()` và `c.say()`, **token phán quyết dùng một lần** | FR-ACE-02, FR-ACE-04, FR-ACE-05, FR-ACE-07 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/actions/` |
 | **TSK-S2-06** | Lượng giá `allow_when` trên nền Google CEL, kèm đường biên dịch gate cho thiết bị (§3.8, Q-9) | FR-GATE-03 | V1 | ⏸ **Hoãn → Sprint 5** | Dạng mapping đủ cho wedge; CEL là front-end biên dịch xuống *cùng* cây quyết định của TSK-S2-12 (Q-9 phương án A) |

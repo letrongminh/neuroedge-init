@@ -42,6 +42,32 @@ class Reason(StrEnum):
 DEGRADED_REASONS = frozenset({Reason.GATE_UNREACHABLE, Reason.BUDGET_EXCEEDED})
 
 
+UNAVAILABLE_REASONS = ("offline", "timeout", "rate_limited", "malformed", "refused", "empty")
+
+
+@dataclass(frozen=True)
+class Unavailable:
+    """
+    A fact source could not answer. Not an exception: the engine turns it into a
+    verdict reason — ``offline`` ⇒ `gate_unreachable`, ``timeout`` ⇒
+    `budget_exceeded`, anything else ⇒ `criterion_unavailable`.
+    """
+
+    reason: str
+    detail: str = ""
+
+    def __post_init__(self) -> None:
+        if self.reason not in UNAVAILABLE_REASONS:
+            raise ValueError(f"unknown Unavailable reason {self.reason!r}")
+
+    def as_reason(self) -> Reason:
+        if self.reason == "offline":
+            return Reason.GATE_UNREACHABLE
+        if self.reason == "timeout":
+            return Reason.BUDGET_EXCEEDED
+        return Reason.CRITERION_UNAVAILABLE
+
+
 @dataclass(frozen=True)
 class Fact:
     """

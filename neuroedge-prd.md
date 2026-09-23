@@ -872,7 +872,7 @@ Tên lớp và mã `NE…` khớp `python/neuroedge/errors.py`; mọi lớp kế
 | `GateInheritanceError` | NE2003 | Build, `gate lint`, `gate resolve` | Chuỗi `extends` vi phạm nguyên tắc B.5: nới lỏng `allow_when`/`budget`/`on_block` (Q-18), `allow_when` dạng chuỗi trong chuỗi kế thừa, vượt 3 cấp, hoặc vòng lặp | Từ chối phân giải, nêu chuỗi kế thừa và dòng `rule` chỉ nguyên tắc B.5 bị vi phạm |
 | `BoardCapabilityError` | NE3001 | Build | Khai báo bo mạch sai, hoặc agent yêu cầu năng lực bo mạch không cung cấp | Dừng build, không sinh firmware, chỉ rõ dòng mã gọi |
 | `TraceValidationError` | NE4001 | `neuroedge trace validate` | Tệp vết ghi không hợp lệ theo `schemas/trace.v1.json` | Báo lỗi kèm đường dẫn trường sai |
-| `GateFailClosedException` *(dự kiến, TSK-S2-04)* | — | Chạy | Gate không thẩm định được trong ngân sách và `fail: closed` | Chặn hành động, ghi lý do vào vết ghi |
+| *(không phải exception — phán quyết)* | — | Chạy | Gate không thẩm định được trong ngân sách hoặc bộ thẩm định không tới được, và `fail: closed` | `BLOCK` với `reason: budget_exceeded` / `gate_unreachable`, `action: deny`, ghi vào vết ghi (TSK-S2-03). Fail-closed là phán quyết để phát lại được, không phải lỗi |
 | `TargetEquivalenceError` *(dự kiến)* | — | `neuroedge verify` | Phán quyết gate hoặc trạng thái GPIO lệch giữa các môi trường | Báo lỗi, chỉ rõ sự kiện lệch đầu tiên |
 | `ModelUnavailableError` *(dự kiến)* | — | Chạy | Nhà cung cấp chính và fallback đều không phản hồi | Áp dụng chính sách `fail` của gate liên quan |
 

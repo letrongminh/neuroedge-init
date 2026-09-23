@@ -30,13 +30,17 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 - **TSK-S2-12 — cây quyết định phía host.** `engine/decision_tree.py`: `compile_tree`
   (`criteria_order` root-first + `gate_digest`), `walk` trả phán quyết + `reason` đầu tiên.
   Bảng sự thật cho walker C: `fixtures/decision_trees/`. Kiểm: `pytest tests/test_decision_tree.py`.
-
+- **TSK-S2-03 — Gate Engine trả phán quyết.** `engine/gate.py`: `ActionContractEngine.evaluate()`
+  lấy dữ kiện trong ngân sách `p95`, đi cây, phân phát `on_block` theo Q-17; tái tạo đúng
+  3 vết ghi chuẩn mực. Kiểm: `pytest tests/test_gate_engine.py`. (FR-GATE-03/04/09)
 - **Quy tắc hoàn thành task.** `CONTRIBUTING.md` §8: nơi duy nhất cho việc cập nhật
   tiến độ, changelog, đặc tả; bảng "mỗi sự thật một nơi"; mẫu PR có checklist.
   Roadmap §0.4, §11.2 và `CLAUDE.md` nay chỉ dẫn về đó.
 
 #### Đã đổi
 
+- **`ActionContractEngine` bỏ tham số `fail_closed`.** Gate chỉ fail-open khi chính tài liệu
+  của nó khai `fail: open`. PRD Phụ lục B: fail-closed là phán quyết, không phải exception.
 - **Thẻ bàn giao (roadmap §0.3) rút gọn** theo §8.3: bỏ lịch sử đã có trong changelog,
   bỏ hai việc đã xong còn nằm ở *Việc tiếp theo*, *Lưu ý* chỉ giữ điều chưa có ở §3.3.
 - **Bỏ con số dễ lỗi thời** khỏi `CLAUDE.md` và §2 (số test, số fixture); số test
