@@ -18,7 +18,7 @@ mirrors the reference board rather than exceeding it (CHANGELOG §3.3 #7).
 from __future__ import annotations
 
 from collections import deque
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
@@ -47,11 +47,15 @@ class PendingCommand:
     duration_ms: int
     events: EventSink = field(repr=False)
     cancelled: bool = False
+    # What the target must do to stop the command physically (LinuxHAL drops the line).
+    on_cancel: Callable[[], None] | None = field(default=None, repr=False)
 
     def cancel(self, reason: str = ABORTED_BY_BARGE_IN) -> None:
         if self.cancelled:
             return
         self.cancelled = True
+        if self.on_cancel is not None:
+            self.on_cancel()
         self.events.emit("actuator_aborted", {"pin": self.pin, "reason": reason})
 
 

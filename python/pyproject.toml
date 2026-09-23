@@ -43,6 +43,12 @@ dev = [
     "ruff>=0.3.0",
     "pip-licenses>=5.0.0",
 ]
+# Target `linux` (TSK-S3-05): the libgpiod v2 Python bindings, imported at run
+# time by neuroedge.hal.linux. LGPL-2.1-or-later, so optional and never in the
+# core set; the licence gate in CI installs `dev` only. See NOTICE §B.
+linux = [
+    "gpiod>=2.2",
+]
 
 [project.scripts]
 neuroedge = "neuroedge.cli.main:app"

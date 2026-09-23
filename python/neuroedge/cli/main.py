@@ -430,15 +430,21 @@ def board_show(
 
 @app.command()
 def verify(
-    targets: str = typer.Option("sim,linux", "--targets", help="Comma-separated target list"),
+    targets: str = typer.Option(
+        "sim", "--targets", help="Comma-separated targets to replay on: sim, linux"
+    ),
 ):
     """
-    Verify the frozen artifacts: every gate resolves and every trace validates.
+    Verify the frozen artifacts and target equivalence (A2).
 
-    Cross-target replay equivalence — the full meaning of acceptance criterion
-    A2 — needs the `sim` and `linux` HALs from Sprints 2 and 3. What this command
-    checks today is the part that exists, and it says which part that is.
+    Every gate resolves, every canonical trace validates, and every canonical
+    trace replays on each requested target to the decisions it records —
+    verdict sequence and pin commands (FR-CI-07). `linux` needs GPIO lines:
+    a board, or `scripts/setup_gpio_sim.sh`.
     """
+    from ..testing.golden import GoldenComparator
+    from ..testing.player import TracePlayer
+
     root = repo_root()
     requested = [t.strip() for t in targets.split(",") if t.strip()]
     problems = 0
@@ -456,18 +462,48 @@ def verify(
             err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {escape(error.why)}")
 
     console.print("\n[bold]Validating canonical traces in fixtures/traces/[/bold]")
-    for path in sorted((root / "fixtures" / "traces").glob("*.json")):
+    traces = sorted((root / "fixtures" / "traces").glob("*.json"))
+    valid = []
+    for path in traces:
         try:
             load_trace(path)
+            valid.append(path)
             console.print(f"  [green]✓[/green] {path.name}")
         except NeuroEdgeError as error:
             problems += 1
             err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {escape(error.why)}")
 
-    console.print("\n[bold]Board capability declarations[/bold]")
-    for board in available_boards():
-        marker = "[green]✓[/green]" if board.target in requested else "[dim]·[/dim]"
-        console.print(f"  {marker} {board.id} (target {board.target})")
+    console.print(f"\n[bold]Replaying canonical traces on {', '.join(requested)}[/bold]")
+    table = Table()
+    table.add_column("Trace", style="cyan")
+    for target in requested:
+        table.add_column(target, justify="center")
+    rows: dict[str, list[str]] = {path.name: [] for path in valid}
+    for target in requested:
+        for path in valid:
+            try:
+                result = asyncio.run(TracePlayer(path, target=target).replay())
+                diff = GoldenComparator().compare(result, load_trace(path))
+            except NeuroEdgeError as error:
+                problems += 1
+                rows[path.name].append("[red]✗[/red]")
+                err_console.print(
+                    f"  [red]✗[/red] {path.name} on {escape(target)}: [{error.code}] "
+                    f"{escape(error.why)}\n    fix: {escape(error.how)}"
+                )
+                continue
+            if diff.ok:
+                rows[path.name].append(f"[green]✓[/green] {' '.join(result.verdicts)}")
+            else:
+                problems += 1
+                rows[path.name].append("[red]✗ differs[/red]")
+                for difference in diff.differences:
+                    err_console.print(
+                        f"  [red]✗[/red] {path.name} on {escape(target)}: {escape(str(difference))}"
+                    )
+    for name, cells in rows.items():
+        table.add_row(name, *cells)
+    console.print(table)
 
     if problems:
         err_console.print(f"\n[bold red]{problems} problem(s) found.[/bold red]")
@@ -475,11 +511,11 @@ def verify(
 
     console.print(
         Panel(
-            "[green]Schema-level verification passed:[/green] all gates resolve, all "
-            "canonical traces validate.\n\n"
-            "[yellow]Not yet covered:[/yellow] replaying traces on live targets and "
-            "comparing verdict sequences across them (acceptance criterion A2). That "
-            "needs the sim HAL (TSK-S2-01) and the linux HAL (TSK-S3-05).",
+            "[green]Passed:[/green] all gates resolve, all canonical traces validate, and "
+            f"each replays on {', '.join(requested)} to the verdicts and pin commands it "
+            "records.\n\n"
+            "[yellow]Compared:[/yellow] decisions only — not timing. Timing equivalence and "
+            "the esp32s3 target arrive with Sprint 4 (TSK-S4-04).",
             title="neuroedge verify",
             border_style="green",
         )

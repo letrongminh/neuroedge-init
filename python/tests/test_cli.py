@@ -187,12 +187,33 @@ def test_board_show_unknown_id_exits_one(invoke):
 # --- verify ---------------------------------------------------------------
 
 
-def test_verify_passes_and_states_what_it_did_not_check(invoke):
+def test_verify_replays_every_canonical_trace_and_states_what_it_did_not_check(invoke):
     result = invoke("verify")
     assert result.exit_code == 0, result.output
     assert "all gates resolve" in result.output
-    # A2 is only partly discharged; the command must not imply otherwise.
-    assert "Not yet covered" in result.output
+    for name in ("happy-path.json", "unverified_attempt.json", "network_offline.json"):
+        assert name in result.output
+    # Timing is not compared yet; the command must not imply otherwise.
+    assert "not timing" in result.output
+
+
+def test_verify_on_linux_without_gpio_lines_fails_and_says_how_to_fix(
+    invoke, monkeypatch, tmp_path
+):
+    import neuroedge.hal.linux as linux
+
+    monkeypatch.setattr(linux, "CHIP_GLOB", str(tmp_path / "gpiochip*"))
+    monkeypatch.setattr(linux, "_import_gpiod", lambda: object())
+    result = invoke("verify", "--targets", "sim,linux")
+    assert result.exit_code == 1
+    assert "no GPIO chip" in result.output
+    assert "setup_gpio_sim.sh" in result.output
+
+
+def test_verify_on_a_target_without_a_live_hal_fails(invoke):
+    result = invoke("verify", "--targets", "esp32s3")
+    assert result.exit_code == 1
+    assert "Sprint 4" in result.output
 
 
 # --- replay ---------------------------------------------------------------
