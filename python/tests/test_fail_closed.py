@@ -12,6 +12,8 @@ from pathlib import Path
 
 import pytest
 
+from neuroedge import action
+from neuroedge.actions import Conversation
 from neuroedge.engine import (
     ActionContractEngine,
     BreakerState,
@@ -24,6 +26,7 @@ from neuroedge.engine import (
     resolve_gate_file,
 )
 from neuroedge.errors import PerceptionUnavailableError
+from neuroedge.hal import digital
 from neuroedge.hal.sim import SimHAL
 from neuroedge.models import ScriptedSource, SystemOne
 from neuroedge.trace import validate_trace
@@ -97,14 +100,24 @@ DEGRADATIONS = {
 }
 
 
+@action(name="fc_unlock_door", requires="digital.out:door_lock", gate="door")
+def _unlock_door() -> None:
+    digital.out("door_lock").pulse(seconds=30)
+
+
+@action(name="fc_open_safe", requires="digital.out:door_lock", gate="safe")
+def _open_safe() -> None:
+    digital.out("door_lock").pulse(seconds=30)
+
+
 async def _attempt(gates_dir: Path, gate: str, system_one, clock, events, key="door"):
+    """The full path: c.do() → gate → token → digital.out, on the sim HAL."""
     engine = ActionContractEngine(facts_source=system_one, clock=clock, events=events)
     engine.register("door", resolve_gate_file(gates_dir / SAMPLE_GATES[gate]))
     hal = SimHAL(events=events)
-    result = await engine.evaluate(key, PASSING_CONTEXT)
-    if result.allowed:
-        hal.digital_out("door_lock", "pulse", 30_000, signature=result.gate_digest)
-    return result, hal
+    c = Conversation(engine=engine, hal=hal, facts=PASSING_CONTEXT)
+    done = await c.do(_unlock_door if key == "door" else _open_safe)
+    return done.gate, hal
 
 
 # --- The A4 matrix ------------------------------------------------------------------

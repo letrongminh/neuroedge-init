@@ -785,8 +785,8 @@ Hệ thống ngoại lệ an toàn chuẩn mực:
 | Ngoại lệ | Điều kiện phát sinh |
 |:---|:---|
 | `ActionContractViolation` | Phát sinh khi cố ý kích hoạt cơ cấu chấp hành mà không thông qua `c.do()`. |
-| `GateFailClosedException` | Phát sinh khi gate không hoàn thành thẩm định trong thời gian quy định và kích hoạt chế độ `fail: closed`. |
-| `CapabilityMismatchError` | Phát sinh khi agent yêu cầu năng lực phần cứng mà bo mạch không cung cấp. |
+| `TokenReplayError` | Phát sinh khi token phán quyết bị dùng lại, quá hạn, hoặc do tiến trình khác phát hành. Fail-closed khi quá ngân sách **không** là ngoại lệ mà là phán quyết `BLOCK` ghi vào vết ghi (PRD Phụ lục B). |
+| `BoardCapabilityError` | Phát sinh khi agent yêu cầu năng lực phần cứng mà bo mạch không cung cấp. |
 | `TargetEquivalenceError` | Phát sinh khi lệnh `neuroedge verify` phát hiện có sự lệch pha quyết định giữa các môi trường. |
 
 ### 4.5 Cấu trúc tệp cổng an toàn (Gate Artifact) và cơ chế kế thừa `extends`

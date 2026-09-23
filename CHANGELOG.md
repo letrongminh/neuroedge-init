@@ -42,12 +42,17 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 - **TSK-S2-04 — mạch ngắt suy giảm.** `engine/circuit_breaker.py` bọc nguồn chính của
   SystemOne: lỗi liên tiếp ⇒ mở, đi thẳng fallback; không bao giờ sinh ALLOW. Ma trận A4
   đạt. Kiểm: `pytest tests/test_fail_closed.py`. (FR-ACE-03, NFR-REL-02)
+- **TSK-S2-05 — `@action`, `c.do()`/`c.say()`, token phán quyết dùng một lần.** `actions/`,
+  `hal/digital.py`: chỉ `c.do()` chạy được hành động; token TTL = p95 × 3, mỗi chân tiêu một
+  lần (NE1002). Kiểm: `pytest tests/test_actions.py`; ranh giới: `docs/spec/threat_model.md`.
 - **Quy tắc hoàn thành task.** `CONTRIBUTING.md` §8: nơi duy nhất cho việc cập nhật
   tiến độ, changelog, đặc tả; bảng "mỗi sự thật một nơi"; mẫu PR có checklist.
   Roadmap §0.4, §11.2 và `CLAUDE.md` nay chỉ dẫn về đó.
 
 #### Đã đổi
 
+- **HAL chưa gắn `Conversation` từ chối mọi lệnh,** kể cả chuỗi trông như bằng chứng — chỉ
+  token do `c.do()` phát hành điều khiển được chân (A3).
 - **HAL kiểm tên chân trước khi tiêu bằng chứng,** và `hal.pin()` ném lỗi với tên chân không
   có trên bo mạch — một assertion gõ sai không còn "đạt" được (CEO-S5-2).
 - **`ActionContractEngine` bỏ tham số `fail_closed`.** Gate chỉ fail-open khi chính tài liệu

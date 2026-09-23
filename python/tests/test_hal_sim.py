@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import pytest
 
+from neuroedge import action
+from neuroedge.actions import Conversation
 from neuroedge.engine import ActionContractEngine, EventLog, resolve_gate_file
 from neuroedge.errors import ActionContractViolation, BoardCapabilityError
-from neuroedge.hal import load_board_by_id
+from neuroedge.hal import digital, load_board_by_id
 from neuroedge.hal.sim import ABORTED_BY_BARGE_IN, SimHAL
 from neuroedge.trace import validate_trace
 
@@ -21,9 +23,13 @@ def events() -> EventLog:
     return EventLog()
 
 
+def _accept(signature, pin, called_from) -> None:
+    """Primitive-level tests only: the token check itself is covered in test_actions.py."""
+
+
 @pytest.fixture
 def hal(events: EventLog) -> SimHAL:
-    return SimHAL(events=events)
+    return SimHAL(events=events, authorize=_accept)
 
 
 # --- The five primitives on sim-default --------------------------------------
@@ -91,9 +97,11 @@ def test_every_trace_the_sim_writes_validates(hal, events):
 # --- Contract checks -----------------------------------------------------------
 
 
-def test_an_unsigned_command_is_a_contract_violation(hal):
+@pytest.mark.parametrize("signature", ["", "proof", "sha256:" + "0" * 64])
+def test_a_hal_without_a_ledger_refuses_every_command(events, signature):
+    hal = SimHAL(events=events)
     with pytest.raises(ActionContractViolation):
-        hal.digital_out("door_lock", "pulse", 30_000)
+        hal.digital_out("door_lock", "pulse", 30_000, signature=signature)
     assert hal.pin("door_lock").never_pulsed()
 
 
@@ -137,6 +145,11 @@ def test_a_board_for_another_target_is_refused():
 # --- Seam with the Gate Engine (shared with TSK-S2-03) ---------------------------
 
 
+@action(name="hal_unlock_door", requires="digital.out:door_lock", gate="unlock_door")
+def _unlock_door() -> None:
+    digital.out("door_lock").pulse(seconds=30)
+
+
 @pytest.mark.parametrize(
     ("facts", "pulsed"),
     [
@@ -150,9 +163,7 @@ async def test_only_an_allowed_verdict_reaches_the_pin(gates_dir, facts, pulsed)
     engine.register("unlock_door", resolve_gate_file(gates_dir / "unlock_door@1.2.0.yaml"))
     hal = SimHAL(events=events)
 
-    result = await engine.evaluate("unlock_door", facts)
-    if result.allowed:
-        hal.digital_out("door_lock", "pulse", 30_000, signature=result.gate_digest)
+    await Conversation(engine=engine, hal=hal, facts=facts).do(_unlock_door)
 
     assert hal.pin("door_lock").pulsed_once(duration_ms=30_000) is pulsed
     assert hal.pin("door_lock").never_pulsed() is not pulsed

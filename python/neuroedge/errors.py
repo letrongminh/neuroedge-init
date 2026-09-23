@@ -50,6 +50,25 @@ class ActionContractViolation(NeuroEdgeError):
     code = "NE1001"
 
 
+class TokenReplayError(ActionContractViolation):
+    """
+    A verdict token was used again, after its TTL, or by another process
+    instance. `reason` is ``token_replayed`` or ``token_expired``. A contract
+    violation, never a retryable denial.
+    """
+
+    code = "NE1002"
+
+    def __init__(self, where: str, why: str, how: str, reason: str) -> None:
+        self.reason = reason
+        super().__init__(where, why, how)
+
+    def as_dict(self) -> dict[str, str]:
+        data = super().as_dict()
+        data["reason"] = self.reason
+        return data
+
+
 class GateError(NeuroEdgeError):
     """Base class for gate authoring, schema and resolution failures."""
 

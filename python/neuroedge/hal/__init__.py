@@ -62,19 +62,26 @@ Authorizer = Callable[[Any, str, str], None]
 
 
 def _require_signature(signature: Any, pin: str, called_from: str) -> None:
-    """Default check: some proof must be present. `c.do()` installs the token check."""
+    """
+    Default check: refuse everything. Only a token ledger — installed by `c.do()`'s
+    `Conversation` — can authorise a pin, so a HAL that nobody wired up cannot be
+    driven by any string that merely looks like proof (A3).
+    """
     if not signature:
-        raise ActionContractViolation(
-            where=f"{called_from} -> digital.out {pin!r}",
-            why=(
-                "actuator command carries no gate signature; every digital.out "
-                "must prove which gate authorised it (Proposal Appendix A.2)"
-            ),
-            how=(
-                "route the command through an @action function so the Action "
-                "Contract Engine attaches the resolved gate signature"
-            ),
+        why = (
+            "actuator command carries no gate signature; every digital.out "
+            "must prove which gate authorised it (Proposal Appendix A.2)"
         )
+    else:
+        why = "no verdict-token ledger is installed on this HAL, so no proof can be checked"
+    raise ActionContractViolation(
+        where=f"{called_from} -> digital.out {pin!r}",
+        why=why,
+        how=(
+            "route the command through an @action function run by c.do(), which "
+            "installs the ledger and attaches a single-use verdict token"
+        ),
+    )
 
 
 class HardwareAbstractionLayer:
@@ -82,8 +89,8 @@ class HardwareAbstractionLayer:
     Standard interface across `sim`, `linux` and `esp32s3`.
 
     `digital_out` is the only way a pin changes state, and it always asks
-    `authorize` first. The default only demands that proof is present; the
-    Action Contract layer (TSK-S2-05) installs the single-use token check.
+    `authorize` first. The default refuses every command; `Conversation`
+    (TSK-S2-05) installs the single-use verdict-token check.
     """
 
     def __init__(
