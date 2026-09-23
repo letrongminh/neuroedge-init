@@ -262,7 +262,7 @@ Ranh giới này quyết định mọi mục còn lại. Một thành phần n�
 
 | Khối | Hạng mục kỹ thuật | Dự án tái sử dụng | Hình thức | Tiết kiệm |
 |:---|:---|:---|:---|:---:|
-| **1a** | CLI `new` / `run` / `test` | Typer · Rich · Copier | Thư viện Python | 2 tuần |
+| **1a** | CLI `new` / `run` / `test` | Typer · Rich · generator mẫu Python (không Copier — TSK-S3-07) | Thư viện Python | 2 tuần |
 | **1a** | Lượng giá biểu thức `allow_when` | Google CEL (`cel-python`) | Rule engine lõi | 3 tuần |
 | **1a** | Giao diện web môi trường `sim` | Wokwi Elements | Web components | 3 tuần |
 | **1a** | Khung kiểm thử Action CI | Pytest · DeepDiff | Plugin `pytest-neuroedge` | 2 tuần |
@@ -439,7 +439,7 @@ Ba tệp này là thước đo tuân thủ cho cả Khối 1a và 1b, và là đ
 | **TSK-S1-12** | Hai workflow CI: `ci-sim-linux.yml` và `nightly-hardware.yml` | FR-CI-05, FR-CI-06 | V1 | ✅ Hoàn thành | [`ci-sim-linux.yml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/.github/workflows/ci-sim-linux.yml) (lược đồ · phân giải gate · vết ghi · test 3 bản Python · lint · cổng giấy phép · **cổng chặn test skip**) · [`nightly-hardware.yml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/.github/workflows/nightly-hardware.yml) (dựng IDF · ngân sách flash Q-3 · thu số đo · trôi phụ thuộc) |
 | **TSK-S1-13** | Quy ước đóng góp và mẫu RFC đổi lược đồ | — | V1 | ✅ Hoàn thành | [`CONTRIBUTING.md`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/CONTRIBUTING.md) (7 mục) · [`docs/rfc/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/): [quy trình](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/README.md), [mẫu](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/0000-template.md), [RFC-0001](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/0001-gate-schema-conditional-requirements.md) |
 
-**Đòn bẩy OSS Sprint 1:** Pydantic v2 và `rfc8785` cho chuẩn hóa lược đồ · Typer, Rich, Copier cho khung CLI ban đầu. Tiết kiệm ước tính 3 tuần công sức viết mã.
+**Đòn bẩy OSS Sprint 1:** Pydantic v2 và `rfc8785` cho chuẩn hóa lược đồ · Typer, Rich cho khung CLI ban đầu (Copier dùng lúc dựng khung, bỏ hẳn ở TSK-S3-07 vì GPL3 bắc cầu). Tiết kiệm ước tính 3 tuần công sức viết mã.
 
 **Nội dung spike bộ nhớ:** nạp thử AEC + VAD + Opus streaming **+ ESP-SR MultiNet** (bộ nhận diện lệnh cố định làm fallback cục bộ, Q-14; thêm WakeNet nếu cân nhắc thay microWakeWord) lên ESP32-S3-Box-3, đo dung lượng SRAM và PSRAM còn lại sau khi trừ ngăn xếp mạng và hệ điều hành. Kết quả là **một con số**, không phải một nhận định.
 
@@ -973,13 +973,13 @@ neuroedge/
 ├── python/                     # Gói phân phối qua PyPI
 │   ├── pyproject.toml          # Python 3.11+
 │   ├── neuroedge/
-│   │   ├── cli/                # Typer · Rich · Copier
+│   │   ├── cli/                # Typer · Rich · run/explain; mẫu dự án: templates/
 │   │   ├── hal/                # 5 nguyên thủy và bộ đối chiếu năng lực lúc build
 │   │   ├── engine/             # Action Contract Engine · trình biên dịch CEL sang cây quyết định
 │   │   ├── models/             # SystemOne/SystemTwo · lớp provider (OpenAI-compatible + adapter)
 │   │   ├── perception/         # Voice pipeline · VAD · barge-in · provider ASR/TTS
 │   │   ├── testing/            # Action CI: pytest-neuroedge · replay · assert
-│   │   └── sim/                # Máy chủ mô phỏng web · Wokwi Elements
+│   │   └── sim/                # SimSession (gõ chữ) · web UI: TSK-S2-09
 │   └── tests/
 ├── targets/                    # Hiện thực HAL cho từng môi trường
 │   ├── sim/                    # Backend mô phỏng trong bộ nhớ (Python)

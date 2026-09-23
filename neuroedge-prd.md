@@ -899,7 +899,7 @@ neuroedge/
 │   │   ├── engine/              # Action Contract Engine & Google CEL Compiler
 │   │   ├── perception/          # Voice pipeline, VAD (Silero), Barge-in (Pipecat)
 │   │   ├── testing/             # Action CI Engine (pytest-neuroedge, replay)
-│   │   └── sim/                 # Web Simulator Server + Wokwi Elements UI
+│   │   └── sim/                 # SimSession (gõ chữ trên terminal) · web UI: TSK-S2-09
 │   └── tests/                   # Test suite cho Python SDK
 ├── targets/                     # Hiện thực HAL cho từng môi trường
 │   ├── sim/                     # Backend mô phỏng ảo trong bộ nhớ (Python)

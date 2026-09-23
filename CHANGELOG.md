@@ -100,6 +100,8 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 - **Hai dự án cùng tên agent dùng chung một module `actions/` đã import.** `load_actions` nay đặt
   tên module theo cả thư mục dự án. Kiểm: `pytest tests/test_cli_new.py`.
+- **Tham chiếu Copier/Wokwi còn sót** ở roadmap §3 (ma trận OSS, cây thư mục), PRD Phụ lục D và
+  proposal §4.3 — nay ghi theo trạng thái hiện tại: generator Python thuần, `run --target sim` là REPL gõ chữ.
 - **Sáu lỗ an toàn từ review đối kháng mã A1** — hai trong số đó kích được chân GPIO.
   Kiểm: `pytest tests/test_safety_regressions.py` (15/16 test fail trên mã trước khi sửa).
   - Độ tin cậy `NaN`, `True`, ngoài `[0, 1]` từng lọt ngưỡng `confidence_gte` ⇒ nay `criterion_unavailable`.

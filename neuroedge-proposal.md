@@ -975,7 +975,7 @@ neuroedge gate add     neuroedge://gates/hospitality/dual-auth-lock@1.0.0
 
 **Nền tảng hiện thực CLI:** xây trên **Typer** cho định nghĩa lệnh, **Rich** cho hiển thị và báo lỗi có cấu trúc. Khuôn mẫu dự án của `neuroedge new` là **generator Python thuần** trong gói — không dùng Copier, vì nó kéo theo `jinja2-ansible-filters` GPL3 (TSK-S3-07).
 
-**Giao diện mô phỏng:** `neuroedge run --target sim` khởi động một máy chủ cục bộ nhúng sẵn thư viện **Wokwi Elements**. Lập trình viên thấy ngay chốt cửa ảo bật mở, đèn báo đổi màu và servo quay trên trình duyệt mà không cần cài thêm phần mềm nào.
+**Giao diện mô phỏng:** `neuroedge run --target sim` khởi động một máy chủ cục bộ nhúng sẵn thư viện **Wokwi Elements**. Lập trình viên thấy ngay chốt cửa ảo bật mở, đèn báo đổi màu và servo quay trên trình duyệt mà không cần cài thêm phần mềm nào. *(Hôm nay `run --target sim` là vòng lặp gõ chữ trên terminal — TSK-S3-06; giao diện web là TSK-S2-09.)*
 
 Hai lệnh `record` và `replay` giúp việc tái hiện và xử lý lỗi hiện trường trở nên đơn giản: Một sự cố xảy ra ngoài thực tế được đưa về tái hiện chính xác trên máy tính cá nhân của kỹ sư chỉ bằng một câu lệnh.
 
