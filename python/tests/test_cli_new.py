@@ -2,7 +2,7 @@
 `neuroedge new` (TSK-S3-07): the scaffold must produce a project that builds,
 runs on `sim` and whose own tests pass — the first minutes of the TTFV journey.
 
-The generated project's pytest runs in a subprocess: its @action is registered
+The generated project's `neuroedge test` runs in a subprocess: its @action is registered
 process-wide, and a fresh interpreter is what a user gets anyway.
 """
 
@@ -43,8 +43,16 @@ def _env() -> dict[str, str]:
 
 
 def _pytest(project: Path) -> subprocess.CompletedProcess:
+    """`neuroedge test` in the project, as FR-DX-01 states it: no edits, exit 0."""
     return subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests"],
+        [
+            sys.executable,
+            "-c",
+            "from neuroedge.cli.main import app; app()",
+            "test",
+            "--pytest-arg=-p",
+            "--pytest-arg=no:cacheprovider",
+        ],
         cwd=project,
         env=_env(),
         capture_output=True,

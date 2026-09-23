@@ -16,6 +16,14 @@ gate verdicts and the pins, compare against a golden reference.
 from pathlib import Path
 from typing import Any
 
+from .assertions import (
+    assert_action_aborted,
+    assert_escalated_to,
+    assert_gate_allowed,
+    assert_gate_blocked,
+    assert_never_pulsed,
+    assert_pin_pulsed,
+)
 from .player import (
     ActionState,
     GateState,
@@ -69,6 +77,12 @@ __all__ = [
     "ReplaySession",
     "TracePlayer",
     "TraceRecorder",
+    "assert_action_aborted",
+    "assert_escalated_to",
+    "assert_gate_allowed",
+    "assert_gate_blocked",
+    "assert_never_pulsed",
+    "assert_pin_pulsed",
     "recorded_steps",
     "replay",
     "scenario",

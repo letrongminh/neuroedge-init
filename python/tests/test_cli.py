@@ -18,7 +18,7 @@ import json
 import pytest
 from typer.testing import CliRunner
 
-from neuroedge.cli.main import PENDING, app
+from neuroedge.cli.main import app
 
 runner = CliRunner()
 
@@ -209,22 +209,17 @@ def test_replay_rejects_an_invalid_trace(invoke, traces_dir):
     assert result.exit_code == 1
 
 
-# --- unimplemented commands ----------------------------------------------
+# --- not-yet-implemented paths ----------------------------------------------
 
 
-@pytest.mark.parametrize("command", sorted(PENDING))
-def test_unimplemented_command_exits_two_and_names_its_task(invoke, command):
+def test_a_target_without_a_live_session_exits_two_and_names_what_works():
     """
-    A scaffold must not print a result it did not compute. Exit code 2 keeps
-    these distinguishable from genuine failures in CI.
+    A command must not print a result it did not compute. Exit code 2 keeps
+    "not implemented" distinguishable from a genuine failure in CI.
     """
-    args = [command]
-    if command == "build":
-        args += ["--target", "esp32s3"]
-    result = invoke(*args)
+    result = runner.invoke(app, ["run", "--target", "linux", "-c", "x"])
     assert result.exit_code == 2, result.output
-    task, _ = PENDING[command]
-    assert task.split(",")[0] in result.output + result.stderr
+    assert "replay" in result.output
 
 
 def test_help_lists_the_implemented_command_groups(invoke):

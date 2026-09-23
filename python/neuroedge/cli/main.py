@@ -49,11 +49,6 @@ app.add_typer(board_app, name="board")
 console = Console()
 err_console = Console(stderr=True)
 
-# Sprint in which each unimplemented command gets its engine, from the roadmap.
-PENDING = {
-    "test": ("TSK-S3-03", "Sprint 3"),
-}
-
 
 def _fail(error: NeuroEdgeError) -> None:
     """Render a three-part diagnostic to stderr and exit non-zero."""
@@ -76,20 +71,6 @@ def _fail_build(failed: BuildFailed) -> None:
         err_console.print(f"  fix: {escape(problem.how)}")
     err_console.print(f"\n[bold red]{len(failed.problems)} problem(s).[/bold red]")
     raise typer.Exit(code=1)
-
-
-def _not_yet(command: str) -> None:
-    task, sprint = PENDING[command]
-    err_console.print(
-        Panel(
-            f"`neuroedge {command}` is not implemented yet.\n\n"
-            f"Its engine is scheduled as [bold]{task}[/bold] in [bold]{sprint}[/bold].\n"
-            f"See neuroedge-roadmap.md for the current sprint status.",
-            title=f"[yellow]Not implemented: {command}[/yellow]",
-            border_style="yellow",
-        )
-    )
-    raise typer.Exit(code=2)
 
 
 def _load_gate(target: str, registry_root: Path | None = None) -> ResolvedGate:
@@ -559,7 +540,7 @@ def new(
         f"\nNext:\n  cd {escape(name)}\n"
         "  neuroedge build --target sim --board sim-default\n"
         "  neuroedge run\n"
-        "  python -m pytest -q tests"
+        "  neuroedge test"
     )
 
 
@@ -668,9 +649,43 @@ def build(
 
 
 @app.command()
-def test():
-    """Run the Action CI suite (pending TSK-S3-03; use `pytest` in python/ meanwhile)."""
-    _not_yet("test")
+def test(
+    path: Path = typer.Argument(None, help="Test directory or file (default: tests/ if present)"),
+    pytest_args: list[str] = typer.Option(
+        None, "--pytest-arg", help="Extra argument passed to pytest (repeatable)"
+    ),
+):
+    """
+    Run the agent's Action CI suite (pytest) and exit 0 only if every test passed.
+
+    Exit codes (FR-CLI-03): 0 all passed · 1 a test failed, nothing was collected,
+    or pytest could not run.
+    """
+    try:
+        import pytest
+    except ImportError:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge test",
+                why="pytest is not installed in this environment",
+                how="pip install pytest (or pip install 'neuroedge[dev]')",
+            )
+        )
+        return
+    target = path if path is not None else (Path("tests") if Path("tests").is_dir() else Path("."))
+    if not target.exists():
+        _fail(
+            NeuroEdgeError(
+                where=str(target),
+                why="no such test directory or file",
+                how="pass the directory holding the agent's tests, e.g. neuroedge test tests/",
+            )
+        )
+        return
+    code = int(pytest.main([str(target), "-q", *(pytest_args or [])]))
+    if code == pytest.ExitCode.NO_TESTS_COLLECTED:
+        err_console.print(f"[bold red]✗ no tests collected under {escape(str(target))}[/bold red]")
+    raise typer.Exit(code=0 if code == pytest.ExitCode.OK else 1)
 
 
 @app.command()
