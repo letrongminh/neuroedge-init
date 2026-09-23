@@ -7,14 +7,15 @@
 version   = 1
 threshold = 0.80
 
-# `action` names the @action the command runs through c.do(); `arguments` maps
-# its parameters to slots of the patterns. A command without `action` (faq)
+# `tool` names the tool (@action) a matched command calls — a synthetic tool
+# call, the same thing an LLM or an MCP client sends (Q-24) — and `arguments`
+# maps its parameters to slots of the patterns. A command without `tool` (faq)
 # moves nothing.
 [[command]]
 intent    = "unlock"
 patterns  = ["mở cửa phòng {room}", "mở cửa", "unlock the door", "open the door"]
 facts     = { command_recognized = true }
-action    = "unlock_door"
+tool      = "unlock_door"
 arguments = { guest_id = "room" }
 
 [[command]]

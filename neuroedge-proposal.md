@@ -803,7 +803,7 @@ door_contact = true
 door_closed = { sensor = "door_contact" }
 ```
 
-Tiêu chí không có trong hai bảng và không do lệnh khớp chứng minh (`facts` trong `commands.toml`) là **chưa xác định** → gate chặn. Trong `commands.toml`, mỗi `[[command]]` làm **đúng một việc**: `action` (tên `@action` chạy qua `c.do()`, kèm `arguments` là tham số ← slot), `say` (câu trả lời cố định), hoặc `ask` (một tác vụ System 2 như `"news"`, kèm `offline_say` khi System 2 không trả lời được); `neuroedge build` từ chối action không tồn tại. `knowledge.toml` cạnh `agent.toml` là knowledge base: mỗi `[[entry]]` có `questions` và `answer`; câu hỏi khớp được tìm cục bộ làm context cho System 2 (RAG), mất mạng thì nói `answer` (`python/neuroedge/models/knowledge.py`).
+Tiêu chí không có trong hai bảng và không do lệnh khớp chứng minh (`facts` trong `commands.toml`) là **chưa xác định** → gate chặn. Trong `commands.toml`, mỗi `[[command]]` làm **đúng một việc**: `tool` (tên `@action`; câu khớp thành một **tool call tổng hợp** nguồn `local_grammar`, kèm `arguments` là tham số ← slot và `default_args` là tham số cố định — Q-24; tên cũ `action` vẫn nhận), `say` (câu trả lời cố định), hoặc `ask` (một tác vụ System 2 như `"news"`, kèm `offline_say` khi System 2 không trả lời được); `neuroedge build` từ chối tool không tồn tại, tham số không có trong chữ ký, và `default_args` sai kiểu. `knowledge.toml` cạnh `agent.toml` là knowledge base: mỗi `[[entry]]` có `questions` và `answer`; câu hỏi khớp được tìm cục bộ làm context cho System 2 (RAG), mất mạng thì nói `answer` (`python/neuroedge/models/knowledge.py`).
 
 ### 4.4 Định nghĩa hành động chuẩn kiểu — `@action`
 
@@ -829,6 +829,8 @@ Ba ràng buộc an toàn bắt buộc từ decorator `@action`:
 | 1 | Không thể gọi hàm trực tiếp từ mã nguồn agent mà bắt buộc phải qua `c.do()` | Báo lỗi `ActionContractViolation` lúc runtime |
 | 2 | Năng lực khai báo tại `requires` tham gia đối chiếu tự động lúc biên dịch | Dừng quá trình build, chặn nạp firmware (§4.9) |
 | 3 | Tham số `gate` phải khớp với cổng an toàn đã khai báo trong `agent.toml` | Dừng quá trình build |
+
+**Mỗi `@action` là một tool (Q-24).** Chữ ký hàm sinh ra schema (`str`/`int`/`float`/`bool`, tham số không mặc định là bắt buộc, không nhận tham số lạ), mô tả lấy từ docstring kèm tên gate. Cùng một schema phục vụ ba nguồn gọi: ngữ pháp lệnh cục bộ (tool call tổng hợp — chạy khi mất mạng), System 1/2 (dạng function-calling OpenAI, Q-12) và client MCP (`neuroedge mcp serve`). Mọi lời gọi qua `dispatch()` (`python/neuroedge/actions/tools.py`): tool lạ hoặc tham số sai ⇒ `REJECTED` trước khi tới gate; hợp lệ ⇒ `c.do()` → gate → token. Dispatcher chèn dữ kiện `call_source` (`local_grammar` · `system_one` · `system_two` · `mcp` · `test`) để gate giới hạn nguồn gọi — ví dụ `fixtures/agents/home-voice/gates/`.
 
 Hệ thống ngoại lệ an toàn chuẩn mực:
 
@@ -1031,6 +1033,10 @@ neuroedge replay traces/incident.json --target sim    # Tái hiện lỗi trên 
 # Quản trị hệ sinh thái cổng an toàn
 neuroedge gate publish gates/unlock_door@1.2.0.yaml
 neuroedge gate add     neuroedge://gates/hospitality/dual-auth-lock@1.0.0
+
+# Hành động là tool (Q-24)
+neuroedge mcp tools --openai        # Schema mỗi @action cho function-calling
+neuroedge mcp serve                 # Máy chủ MCP qua stdio — mọi tools/call qua gate
 ```
 
 **Nền tảng hiện thực CLI:** xây trên **Typer** cho định nghĩa lệnh, **Rich** cho hiển thị và báo lỗi có cấu trúc. Khuôn mẫu dự án của `neuroedge new` là **generator Python thuần** trong gói — không dùng Copier, vì nó kéo theo `jinja2-ansible-filters` GPL3 (TSK-S3-07).
@@ -1796,6 +1802,7 @@ Danh mục đầy đủ các dự án được tái sử dụng hoặc port, kè
 | Sherpa-ONNX · Piper | Nhận dạng và tổng hợp tiếng nói | Apache-2.0 · MIT | Thư viện | Chưa |
 | LVGL | Đồ họa nhúng trên màn hình thiết bị; cùng mã build trên host để so ảnh (TSK-S4-10) | MIT | Thư viện | Có |
 | LiteLLM | Định tuyến đa nhà cung cấp cho lớp trừu tượng provider (§6.1), sau giao diện `neuroedge.models.providers` | MIT cho phần mã nguồn mở; bản thương mại riêng | Thư viện (SDK) qua extra `neuroedge[cloud]` — **chỉ dùng phần MIT**, không chạy proxy server *(Q-10)* | Có *(`litellm==1.102.0`: wheel không chứa `enterprise/`; phụ thuộc bắc cầu MIT/BSD/Apache-2.0/PSF/MPL-2.0 — Q-11, 2026-09-23)* |
+| MCP Python SDK (`mcp`) | Máy chủ MCP cho `neuroedge mcp serve` (Q-24) | MIT | Thư viện qua extra `neuroedge[mcp]` | Có *(2.2.0; mọi phụ thuộc bắc cầu MIT/BSD/Apache-2.0/PSF; `NOTICE` §B)* |
 
 ### H.2 Dịch vụ phía máy chủ — không phân phối kèm sản phẩm
 

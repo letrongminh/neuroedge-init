@@ -1,21 +1,23 @@
 # Turning a light off in the dark while someone is on the stairs cannot be
 # taken back the way a wrong answer can. The motion sensor decides: someone
-# moving ⇒ the light stays on and the assistant asks to confirm.
+# moving ⇒ the light stays on and the assistant asks to confirm. This holds
+# for every caller — an LLM that decides to switch off is refused the same way.
 schema:  neuroedge.gate/v1
 name:    light_off
 version: 1.0.0
 
 evaluate:
-  command_recognized:
-    type: bool
-    instructions: "Câu lệnh khớp ngữ pháp lệnh cố định trong commands.toml"
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
   room_empty:
     type: bool
     instructions: "Cảm biến chuyển động không thấy ai trong phòng"
 
 allow_when:
-  command_recognized: true
-  room_empty:         true
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
+  room_empty:  true
 
 on_block:
   action:  ask

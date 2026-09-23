@@ -42,10 +42,12 @@ app = typer.Typer(
 gate_app = typer.Typer(name="gate", help="Resolve, lint and publish safety gates")
 trace_app = typer.Typer(name="trace", help="Inspect and validate execution traces")
 board_app = typer.Typer(name="board", help="Inspect board capability declarations")
+mcp_app = typer.Typer(name="mcp", help="Serve the agent's gated tools over MCP")
 
 app.add_typer(gate_app, name="gate")
 app.add_typer(trace_app, name="trace")
 app.add_typer(board_app, name="board")
+app.add_typer(mcp_app, name="mcp")
 
 console = Console()
 err_console = Console(stderr=True)
@@ -490,6 +492,77 @@ def board_show(
 # --------------------------------------------------------------------------
 # top level
 # --------------------------------------------------------------------------
+
+
+@mcp_app.command(name="tools")
+def mcp_tools(
+    agent: Path = typer.Option(None, "--agent", "-a", help="agent.toml (default as for `run`)"),
+    as_json: bool = typer.Option(False, "--json", help="Print the MCP tool list as JSON"),
+    openai: bool = typer.Option(
+        False, "--openai", help="Print OpenAI function-calling tools (JSON)"
+    ),
+):
+    """List the agent's tools — one per @action, with the schema models see."""
+    session = _start_session("mcp tools", agent, "sim", "sim-default", None)
+    if as_json or openai:
+        typer.echo(
+            json.dumps(
+                session.tools.openai() if openai else session.tools.mcp(),
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
+        return
+    table = Table(title=f"Tools of {session.manifest.label}")
+    table.add_column("Tool", style="cyan")
+    table.add_column("Gate")
+    table.add_column("Arguments")
+    for spec in session.tools.specs.values():
+        from ..actions.tools import input_schema
+
+        props = input_schema(spec)["properties"]
+        table.add_row(spec.name, spec.gate, escape(", ".join(props) or "—"))
+    console.print(table)
+
+
+@mcp_app.command(name="serve")
+def mcp_serve(
+    agent: Path = typer.Option(None, "--agent", "-a", help="agent.toml (default as for `run`)"),
+    board: str = typer.Option("sim-default", "--board", "-b", help="Board profile id"),
+    trace_out: Path = typer.Option(
+        None, "--trace-out", help="Write the session trace here on exit"
+    ),
+    registry: Path | None = REGISTRY_OPTION,
+):
+    """
+    Serve the agent as a gated MCP server over stdio: every @action is a tool,
+    and every tools/call goes through the tool schema, c.do() and the gate.
+    """
+    import anyio
+
+    from ..mcp_server import _sdk, serve_stdio
+
+    try:
+        _sdk()
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    session = _start_session("mcp serve", agent, "sim", board, registry)
+    # stdout is the protocol channel; anything for people goes to stderr.
+    err_console.print(
+        f"neuroedge MCP server · {escape(session.manifest.label)} · "
+        f"{len(session.tools.specs)} tool(s) · stdio"
+    )
+    try:
+        anyio.run(serve_stdio, session)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if trace_out is not None:
+            trace_out.parent.mkdir(parents=True, exist_ok=True)
+            trace_out.write_text(
+                json.dumps(session.trace(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+            )
 
 
 @app.command()

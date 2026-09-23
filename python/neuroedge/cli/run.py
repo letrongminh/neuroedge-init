@@ -105,34 +105,46 @@ def frame_line(frame) -> str:
 
 def render_turn(turn: Turn, session: SimSession, console: Console, frames_before: int = 0) -> None:
     recognition = turn.recognition
-    if not turn.recognised:
+    if turn.recognised:
+        slots = ", ".join(f"{k}={v}" for k, v in recognition.slots.items())
+        console.print(
+            f"[dim]intent[/dim] [bold]{escape(recognition.intent)}[/bold] "
+            f"({recognition.confidence:.2f}){escape(f' [{slots}]') if slots else ''}"
+        )
+    elif turn.tool_results or turn.reply:
+        console.print("[dim]System 2 handled free phrasing[/dim]")
+    else:
         console.print(
             f"[bold red]✗ BLOCK[/bold red] command not recognized "
             f"(best match {recognition.confidence:.2f} < threshold {session.grammar.threshold:.2f})"
             " — no action ran, no pin moved (Q-14)"
         )
         return
-    slots = ", ".join(f"{k}={v}" for k, v in recognition.slots.items())
-    console.print(
-        f"[dim]intent[/dim] [bold]{escape(recognition.intent)}[/bold] "
-        f"({recognition.confidence:.2f}){escape(f' [{slots}]') if slots else ''}"
-    )
-    if turn.reply is not None:
-        console.print(f"  [bold]says[/bold] [dim]({turn.reply_source})[/dim]: {escape(turn.reply)}")
-        return
-    if turn.result is None:
+    for result in turn.tool_results:
+        call = result.call
+        arguments = ", ".join(f"{k}={v!r}" for k, v in call.arguments.items())
         console.print(
-            "  no physical action for this intent; spoken replies need SystemTwo (TSK-S2-11)"
+            f"  [dim]tool_call[/dim] {escape(call.name)}({escape(arguments)}) "
+            f"[dim]· {escape(call.source)}[/dim]"
         )
-        return
-    call = ", ".join(f"{k}={v!r}" for k, v in turn.arguments.items())
-    console.print(_verdict_line(turn.result, call=f"({call})"))
+        if result.status == "REJECTED":
+            console.print(
+                f"[bold red]✗ REJECTED[/bold red] {escape('; '.join(result.problems))} — nothing ran"
+            )
+            continue
+        console.print(_verdict_line(result.action, call=f"({arguments})"))
+        fallback = result.action.fallback
+        while fallback is not None:
+            console.print(_verdict_line(fallback, indent="  fallback: "))
+            fallback = fallback.fallback
     if turn.reply is not None:
         console.print(f"  [bold]says[/bold] [dim]({turn.reply_source})[/dim]: {escape(turn.reply)}")
-    fallback = turn.result.fallback
-    while fallback is not None:
-        console.print(_verdict_line(fallback, indent="  fallback: "))
-        fallback = fallback.fallback
+    if not turn.tool_results:
+        if turn.reply is None:
+            console.print(
+                "  no physical action for this intent; spoken replies need SystemTwo (TSK-S2-11)"
+            )
+        return
     for frame in session.hal.frames[frames_before:]:
         console.print(frame_line(frame))
     console.print(pin_table(session))

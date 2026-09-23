@@ -27,6 +27,11 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **Q-24 — hành động là tool call, có máy chủ MCP.** Mỗi `@action` là một tool (schema sinh từ chữ ký). Ngữ pháp cục bộ
+  (tool call tổng hợp — vẫn chạy khi mất mạng), System 2 (câu tự do, được đưa danh sách tool) và client MCP gửi cùng
+  `ToolCall` → kiểm schema (tool/tham số lạ ⇒ `REJECTED`) → `c.do()` → gate. Dữ kiện `call_source` do dispatcher chèn.
+  `commands.toml`: `tool` (thay `action`, tên cũ vẫn nhận) và `default_args`. Lệnh `neuroedge mcp tools`, `neuroedge mcp serve`;
+  extra `neuroedge[mcp]`. Kiểm: `pytest tests/test_tools.py`. (FR-MDL-10, FR-CLI-10)
 - **Mẫu `home-voice` — trợ lý giọng nói trong nhà.** Hỏi đáp knowledge base theo RAG (tìm cục bộ, System 2 diễn đạt;
   mất mạng thì trả lời cục bộ), tin tức qua System 2 (mất mạng thì nói rõ, không bịa), đèn qua gate có cảm biến
   `motion`. `commands.toml` có `say` / `ask` / `offline_say`; `knowledge.toml`; UI có panel *Trợ lý nói*.
@@ -671,6 +676,8 @@ còn `run` / `record --target linux|esp32s3` thoát mã 2.
 | `record [--out traces/] [-c "<lệnh>"] [--anonymize]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`), phán quyết giữ nguyên (FR-TRC-07) |
 | `test [thư-mục]` | Chạy bộ Action CI (pytest) của agent, mặc định `tests/`. Mọi test đạt ⇒ mã 0; có test trượt hoặc không thu được test nào ⇒ mã 1 |
 | `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2: trên `linux` hôm nay dùng `replay` |
+| `mcp tools [--json\|--openai]` | Schema của mỗi `@action` — dạng MCP hoặc function-calling OpenAI (Q-24) |
+| `mcp serve [--agent a.toml] [--trace-out t.json]` | Máy chủ MCP qua stdio trên `sim`; mọi `tools/call` qua kiểm schema và gate. Cần extra `neuroedge[mcp]` |
 | `gate explain <tệp\|URI>` | Giải thích gate cho người duyệt: tiêu chí từ cấp nào, mệnh đề nào bị siết chặt, ngân sách và `on_block` so với cha. Gate sai ⇒ mã 1, lỗi 3 thành phần |
 | `new <tên> [--template minimal\|villa-concierge\|home-voice]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` (chốt cửa) và `home-voice` (trợ lý giọng nói, có `knowledge.toml`) sao agent mẫu (có trong wheel) |
 

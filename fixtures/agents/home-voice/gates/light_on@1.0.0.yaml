@@ -1,16 +1,18 @@
 # Turning a light on is low risk, and still goes through a gate: no path to a
-# pin skips one (A3). It only has to be a command the agent actually heard.
+# pin skips one (A3). Any caller may ask — the fixed grammar, System 2, an MCP
+# client — and `call_source` is set by the dispatcher, never by the caller.
 schema:  neuroedge.gate/v1
 name:    light_on
 version: 1.0.0
 
 evaluate:
-  command_recognized:
-    type: bool
-    instructions: "Câu lệnh khớp ngữ pháp lệnh cố định trong commands.toml"
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
 
 allow_when:
-  command_recognized: true
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
 
 on_block:
   action: deny

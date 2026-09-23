@@ -39,6 +39,7 @@ from pathlib import Path
 from typing import Any
 
 from ..actions import ActionResult, Conversation
+from ..actions.tools import ToolCall, ToolResult, ToolSet, dispatch, parse_tool_calls
 from ..engine.compiler import AgentManifest, build, load_actions, load_agent_manifest
 from ..engine.compiler import resolve_gates as _resolve_gates
 from ..engine.gate import ActionContractEngine
@@ -61,6 +62,7 @@ class Turn:
     recognition: Recognition
     result: ActionResult | None = None
     reply: str | None = None
+    tool_results: tuple[ToolResult, ...] = ()
     # command | knowledge_rag | knowledge_local | system_two | offline | gate_ask
     reply_source: str | None = None
 
@@ -74,12 +76,13 @@ class Turn:
         return None if command is None else command.action
 
     @property
-    def arguments(self) -> dict[str, str]:
-        """The action's keyword arguments, taken from the recognised slots."""
+    def arguments(self) -> dict[str, Any]:
+        """The tool's arguments: its `default_args`, then the recognised slots."""
         command, slots = self.recognition.command, self.recognition.slots
         if command is None:
             return {}
-        return {param: slots[slot] for param, slot in command.arguments.items() if slot in slots}
+        mapped = {param: slots[slot] for param, slot in command.arguments.items() if slot in slots}
+        return {**command.default_args, **mapped}
 
     @property
     def allowed(self) -> bool:
@@ -174,6 +177,7 @@ class SimSession:
         sensor_facts: Mapping[str, SensorFact] | None = None,
         slow: SystemTwo | None = None,
         knowledge: KnowledgeBase | None = None,
+        tools: list[Any] | None = None,
     ) -> None:
         self.manifest = manifest
         self.hal = hal
@@ -185,6 +189,7 @@ class SimSession:
         self.sensor_facts = dict(sensor_facts or {})
         self.slow = slow if slow is not None else SystemTwo("sim")
         self.knowledge = knowledge
+        self.tools = ToolSet(tools or ())
 
     @classmethod
     def load(
@@ -226,7 +231,7 @@ class SimSession:
         hal = SimHAL(load_board_by_id(board_id), events=events)
         for name, (value, unit) in sensors.items():
             hal.set_sensor(name, value, unit)
-        load_actions(manifest)
+        actions = load_actions(manifest)
         gates, _ = _resolve_gates(manifest, registry)  # build() has already vetted them
         engine = ActionContractEngine(
             gates,
@@ -246,6 +251,7 @@ class SimSession:
             sensor_facts=sensor_facts,
             slow=slow,
             knowledge=knowledge,
+            tools=actions,
         )
 
     @property
@@ -275,6 +281,11 @@ class SimSession:
         self.hal.type_text(text)
         utterance = self.hal.audio_in(called_from="SimSession.handle()") or ""
         recognition = self.grammar.recognize(utterance)
+        if not recognition.recognised and self.slow.available:
+            # Free phrasing the fixed grammar does not know: System 2 may call tools.
+            handled = await self._converse(Turn(utterance, recognition), utterance)
+            if handled is not None:
+                return handled
         if not recognition.recognised:
             self.events.emit(
                 "command_not_recognized",
@@ -308,16 +319,72 @@ class SimSession:
             return await self._ask(turn, command.ask, command.offline_say or OFFLINE_SAY, utterance)
         if turn.action is None:
             return turn
+        # A matched command is a synthetic tool call — the same path as an LLM's (Q-24).
+        call = ToolCall(turn.action, turn.arguments, source="local_grammar")
+        return await self._call_tools(turn, [call], recognition)
+
+    async def call_tool(self, call: ToolCall) -> ToolResult:
+        """One tool call from outside a turn (an MCP client): same facts, same gate."""
+        empty = self.grammar.recognize("")
+        self.conversation.utterance = ""
+        self.conversation.facts = self.gate_facts(empty)
+        return await dispatch(self.conversation, self.tools, call)
+
+    async def _call_tools(
+        self, turn: Turn, calls: list[ToolCall], recognition: Recognition, reply: str | None = None
+    ) -> Turn:
         c = self.conversation
-        c.utterance = utterance
+        c.utterance = turn.text
         c.facts = self.gate_facts(recognition)
-        result = await c.do(turn.action, **turn.arguments)
-        gate = result.gate
-        if result.blocked and gate is not None and gate.on_block_action == "ask" and gate.message:
+        results = tuple([await dispatch(c, self.tools, call) for call in calls])
+        last = next((r.action for r in reversed(results) if r.action is not None), None)
+        gate = last.gate if last is not None else None
+        if (
+            last is not None
+            and last.blocked
+            and gate is not None
+            and gate.on_block_action == "ask"
+            and gate.message
+        ):
             # on_block: ask — the device asks the question out loud (Q-17); still no pin moves.
             await c.say(gate.message)
-            return Turn(utterance, recognition, result, reply=gate.message, reply_source="gate_ask")
-        return Turn(utterance, recognition, result)
+            return Turn(
+                turn.text,
+                recognition,
+                last,
+                reply=gate.message,
+                reply_source="gate_ask",
+                tool_results=results,
+            )
+        if reply:
+            await c.say(reply)
+            return Turn(
+                turn.text,
+                recognition,
+                last,
+                reply=reply,
+                reply_source="system_two",
+                tool_results=results,
+            )
+        return Turn(turn.text, recognition, last, tool_results=results)
+
+    async def _converse(self, turn: Turn, utterance: str) -> Turn | None:
+        """System 2 with the agent's tools; None when it cannot answer (then: not recognised)."""
+        state = {
+            "task": "converse",
+            "utterance": utterance,
+            "tools": self.tools.openai(),
+            "instructions": "Gọi tool khi người dùng muốn một hành động; mọi tool đều qua gate và có thể bị chặn.",
+        }
+        try:
+            payload = await self.slow.respond(state)
+        except PerceptionUnavailableError as exc:
+            self.events.emit("system_two_unavailable", {"task": "converse", "reason": exc.why})
+            return None
+        text, calls = parse_tool_calls(payload, source="system_two")
+        if not calls and not text:
+            return None
+        return await self._call_tools(turn, calls, turn.recognition, reply=text)
 
     async def _speak(self, turn: Turn, text: str, source: str) -> Turn:
         """Speech goes through `c.say()`: never a gate, never a token (proposal §4.6)."""

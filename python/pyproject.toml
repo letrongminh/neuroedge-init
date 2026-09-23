@@ -42,6 +42,12 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "ruff>=0.3.0",
     "pip-licenses>=5.0.0",
+    "mcp>=2.2",  # so the MCP server is tested in CI (no test may skip)
+]
+# `neuroedge mcp serve` (Q-24): the official MCP Python SDK. MIT, and every
+# transitive dependency MIT/BSD/Apache-2.0/PSF (checked 2026-09-23, NOTICE §B).
+mcp = [
+    "mcp>=2.2",
 ]
 # Target `linux` (TSK-S3-05): the libgpiod v2 Python bindings, imported at run
 # time by neuroedge.hal.linux. LGPL-2.1-or-later, so optional and never in the
