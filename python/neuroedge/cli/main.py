@@ -121,7 +121,9 @@ def gate_resolve(
         return
 
     if as_json:
-        console.print_json(json.dumps(gate.to_artifact()))
+        # Plain stdout, not rich: FORCE_COLOR would otherwise inject ANSI
+        # codes and the "machine-readable" output would stop being JSON.
+        typer.echo(json.dumps(gate.to_artifact(), indent=2, ensure_ascii=False))
         return
 
     console.print(
@@ -253,7 +255,8 @@ def gate_publish(
     console.print(f"  gate:   [bold]{gate.name}@{gate.version}[/bold]")
     console.print(f"  chain:  {' → '.join(gate.chain)}")
     console.print(f"  bytes:  {len(payload)}")
-    console.print(f"  digest: [bold green]{gate_digest(gate)}[/bold green]")
+    # Plain stdout so the digest is copyable byte-for-byte under any terminal.
+    typer.echo(f"  digest: {gate_digest(gate)}")
 
     if out is not None:
         out.parent.mkdir(parents=True, exist_ok=True)

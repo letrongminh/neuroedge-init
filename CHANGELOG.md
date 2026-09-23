@@ -20,6 +20,50 @@ Toàn bộ thay đổi đáng kể của dự án được ghi tại đây, theo
 
 ## 1. Nhật ký phiên bản
 
+### [0.4.0] — 2026-09-23 — Gỡ chặn Sprint 2: chốt 9 quyết định, đồng bộ tài liệu
+
+Rà soát toàn bộ tài liệu ngày 2026-09-23 kết luận **chưa triển khai được**: bốn
+quyết định Tuần 1 chưa ai chốt, roadmap chưa nhận kế hoạch đã duyệt ở
+`docs/designs/`, hai RFC bắt buộc chưa có, và PRD/proposal mâu thuẫn ở ba điểm
+P0. Phiên này chốt quyết định với người phụ trách (minhlt) và đồng bộ lại.
+
+#### Quyết định — ghi ở `neuroedge-prd.md` §15
+
+| Mã | Quyết định | Gỡ chặn gì |
+|:---|:---|:---|
+| **Q-10** | LiteLLM là **thư viện định tuyến (SDK)** sau `neuroedge.models.providers`, cài qua extra `neuroedge[cloud]`; không chạy proxy | `TSK-S2-11` |
+| **Q-11** *(một phần)* | **LiteLLM đã duyệt** + chính sách phụ thuộc bắc cầu (allowlist giấy phép, kiểm trong CI). Hawkbit/EMQX vẫn mở tới trước Khối 2 | Tiêu chí ra 6 Sprint 1, `TSK-S2-11` |
+| **Q-14** | Mất mạng ⇒ gate **vẫn lượng giá** bằng bộ nhận diện **lệnh cố định** cục bộ; chỉ `gate_unreachable` khi fallback không chạy. Backend theo target, chung một ngữ pháp lệnh (`sim`: chữ gõ · `esp32s3`: ESP-SR MultiNet hoặc TFLite Micro/ESP-NN) | `CEO-X1` (FR-ACE-03 ↔ FR-MDL-03) |
+| **Q-15** | `sim` mặc định **gõ chữ**, không mạng, không key; giọng nói là tuỳ chọn | FR-DX-02 ↔ FR-PER-07 |
+| **Q-16** | GPIO `linux`: `gpio-sim` trong CI + mua 1 RPi 5 dự phòng | F1, `TSK-S3-05` |
+| **Q-17** | `on_block` v1.0 được **đặc tả** (luôn chặn; `escalate`/`ask` ghi vết ghi + hook; `degrade` chạy `fallback_action` qua gate riêng) ⇒ **không cần waiver §11.3** | Cổng merge A1 |
+| **Q-18** | Kế thừa `budget`/`on_block`: `p95` chỉ giảm · chuỗi `closed` không khai `open` · con không tự đưa vào `degrade` ([RFC-0004](docs/rfc/0004-ke-thua-budget-on-block.md)) | Lỗ `lax-night` (`ENG-A2`), `TSK-S2-13` |
+| **Q-19** | Lịch bằng ngày tuyệt đối: A1 2026-09-28 → 10-25 · A2 10-26 → 11-15 · Sprint 4 mở 2026-11-16 | Mâu thuẫn 5 ↔ 6,5 tuần |
+| **Q-20** | Cổng nhu cầu 2026-10-25 là **cổng mềm**; câu hỏi kinh doanh `CEO-X2..X5`, `CEO-T1..T4` vào `TODOS.md` | `CEO-X3` |
+
+Tự chốt kèm theo, ghi để người đọc biết: RFC-0003 (ghim `extends` + đóng băng
+`decision_tree.v1.json`) và `TSK-S3-21` hoãn tới Sprint 4; `TSK-S2-07`/`S3-10`/`S3-11`
+hoãn cùng nhau; `TSK-S3-13` sang Sprint 5; đổi chủ trì theo `ENG-T3`.
+
+#### Đã sửa
+
+- **Bộ test phụ thuộc môi trường.** Shell có `FORCE_COLOR` làm 7 test CLI fail,
+  và `gate resolve --json` in ra **không phải JSON**. `--json` và dòng digest của
+  `gate publish` nay ghi thẳng stdout; `tests/conftest.py` gỡ `FORCE_COLOR` trước
+  khi import CLI. Bộ test xanh ở cả hai môi trường.
+- **Tài liệu:** PRD 1.3 (FR-ACE-03, FR-DX-02, FR-GATE-02/03/06, FR-CLI thêm
+  `gate lint`/`gate resolve`, danh mục lỗi theo tên trong mã), proposal Phụ lục B
+  theo RFC-0001 §9 + Q-17/Q-18, roadmap 1.3 (34 task, chủ trì mới, ngày tuyệt đối),
+  `CONTRIBUTING.md` §5 ghi đúng lệnh CI.
+
+#### Đã thêm — RFC-0004 + `TSK-S2-13`
+
+[`docs/rfc/0004-ke-thua-budget-on-block.md`](docs/rfc/0004-ke-thua-budget-on-block.md)
+(✅ chấp thuận, Q-18) và hiện thực trong `engine/gate_resolver.py`: `p95` của con ≤
+cha (nguyên tắc 2), chuỗi `closed` không mở lại (nguyên tắc 4), con không tự đưa vào
+`degrade` (nguyên tắc 2). Vẫn **năm** nguyên tắc. Corpus phản chứng: +4 invalid,
++1 valid, +1 registry. Test **210 → 229**, 0 skip.
+
 ### [0.3.0] — 2026-09-22 — Giai đoạn 2: thị giác, phủ rộng phần cứng, nền tảng cho maker
 
 Thay đổi **chỉ ở tầng tài liệu**. Ba lược đồ trong `schemas/` **chưa đổi** và
@@ -28,6 +72,8 @@ không được đổi cho tới khi RFC-0002 được phê duyệt; bộ test v
 #### Đã thêm — RFC-0002 *(trạng thái: đang thảo luận)*
 
 [`docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md`](docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md)
+*(Ghi chú 2026-09-23: RFC-0002 đã **thu hẹp** chỉ còn mở enum `target` +
+`TARGET_TIERS`; `vision.in` chuyển sang V1b. Đoạn dưới giữ nguyên như bản gốc.)*
 đề xuất mở enum `target` ở `board.v1` và `trace.v1`, thêm nguyên thủy tùy chọn
 `vision.in`, và mở trường vết ghi cho bằng chứng thị giác.
 
@@ -409,7 +455,7 @@ Chi tiết và hợp đồng mã thoát: [§2.3](#23-tham-chiếu-lệnh-cli).
 cd python
 python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[dev]'
-.venv/bin/python -m pytest -q          # kỳ vọng: 210 passed, 0 skipped
+.venv/bin/python -m pytest -q          # kỳ vọng: 229 passed, 0 skipped
 ```
 
 Yêu cầu **Python 3.11+**. Bản dựng tái lập được:
@@ -542,7 +588,7 @@ Tìm dòng `NEUROEDGE_MEMORY_JSON` trong đầu ra monitor — đó là số đo
 Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc hết mục này là đủ
 để build tiếp mà không phải đọc lại ba tài liệu gốc.
 
-### 3.1 Bốn tài liệu là nguồn sự thật
+### 3.1 Các tài liệu là nguồn sự thật
 
 | Tệp | Vai trò | Khi nào đọc |
 |:---|:---|:---|
@@ -550,6 +596,10 @@ Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc 
 | [`neuroedge-prd.md`](neuroedge-prd.md) | Yêu cầu chức năng `FR-*` / `NFR-*` | Khi cần biết *phải* làm gì |
 | [`neuroedge-proposal.md`](neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** | Khi cần biết *tại sao* |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quy ước, và việc gì cần RFC | Trước khi sửa `schemas/` |
+| [`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md) | Kế hoạch Giai đoạn 1 đã duyệt + báo cáo review | Khi cần biết *vì sao* một task bị cắt/hoãn |
+| [`TODOS.md`](TODOS.md) | Việc hoãn có chủ ý, mỗi mục kèm mốc kích hoạt | Trước khi đề xuất việc "còn thiếu" |
+
+**Sổ quyết định duy nhất** là `neuroedge-prd.md` §15 (Q-1 → Q-20).
 
 **Thứ tự ưu tiên khi lệch nhau:** PRD/Proposal (hợp đồng) → roadmap (tiến độ) →
 mã nguồn → tệp này. Nếu mã lệch hợp đồng, mã sai.
@@ -568,12 +618,13 @@ neuroedge-init/
 │   ├── traces/           ⚠️  3 vết ghi chuẩn mực — sửa phải có RFC
 │   │   ├── invalid/          6 phản chứng
 │   │   └── expected_errors.yaml
-│   └── gates/            valid/ (5) · invalid/ (15) · registry/ (6)
+│   └── gates/            valid/ (6) · invalid/ (19) · registry/ (7)
 │       └── expected_errors.yaml
 ├── python/neuroedge/
 │   ├── engine/           L3 — phân giải gate, ràng buộc, chuẩn tắc hóa
 │   ├── hal/              L1 — 5 nguyên thủy, mô hình bo mạch
 │   ├── perception/       L2 — khung, chưa hiện thực
+│   ├── sim/              L1 — khung, chưa hiện thực
 │   ├── testing/          Action CI — replay(), scenario()
 │   ├── cli/              CLI Typer
 │   ├── errors.py         Hợp đồng lỗi 3 thành phần
@@ -617,7 +668,7 @@ này sẽ làm hỏng những thứ trông không liên quan.
 | Hạng mục | Chặn bởi | Cần ai | Mở ra điều gì |
 |:---|:---|:---|:---|
 | **TSK-S1-10** · Tiêu chí ra 3 | **Bo mạch ESP32-S3-BOX-3 vật lý** | Đặt hàng | Kết luận phạm vi Khối 1b (TSK-S2-10) |
-| **Tiêu chí ra 6** · Q-11 | **Quyết định quản trị** | Kỹ thuật trưởng | Bắt đầu port mã Khối 2 |
+| **Tiêu chí ra 6** · Q-11 | ~~Quyết định quản trị~~ — **phần LiteLLM đã duyệt 2026-09-23**; Hawkbit/EMQX còn mở, hạn trước Khối 2 | Kỹ thuật trưởng | Bắt đầu port mã Khối 2 |
 
 **TSK-S1-10 — việc còn lại sau khi có bo mạch:** vendoring `esp-sr` (AEC/AFE +
 VAD) và `opus` kèm rà soát giấy phép §3.9, nạp chúng tại `TODO(TSK-S1-10, V2)`
@@ -625,22 +676,31 @@ trong `main.c`, gọi checkpoint `audio_ready`, điền báo cáo. Quy tắc quy
 đã chốt **trước khi đo** để kết quả không bị giải thích lại: trượt bất kỳ một
 ngưỡng Q-3 → kích hoạt **bậc 5 thang cắt phạm vi (§9) ngay**, không chờ Tuần 9.
 
-**Q-11 — nên bao gồm chính sách phụ thuộc bắc cầu,** không chỉ phê duyệt ba
-thành phần đã nêu tên. Hai phát hiện GPL trong Sprint 1 đều đến qua bắc cầu.
+**Q-11 — chính sách phụ thuộc bắc cầu đã chốt (2026-09-23):** cho phép MIT,
+BSD, Apache-2.0, ISC, PSF, MPL-2.0 (dùng nguyên bản); cấm GPL/LGPL/AGPL, SSPL, BSL,
+thương mại hoặc không rõ. `litellm==1.102.0` đã kiểm: 55 phụ thuộc bắc cầu đều
+trong allowlist, wheel không chứa `enterprise/`. Cưỡng chế bằng bước kiểm giấy
+phép trong CI, làm cùng `TSK-S2-11`. Hai phát hiện GPL trong Sprint 1 đều đến qua
+bắc cầu — đó là lý do phải có bước này.
 
 ### 3.5 Việc tiếp theo — thứ tự đề xuất
 
-1. 🔴 **Chốt Q-11** và **đặt bo mạch** — hai việc này chặn, và không ai trong
-   đội kỹ thuật tự mở được.
-2. **Đồng bộ Phụ lục B.1 / B.3 / B.4 của proposal** theo RFC-0001 §9. Lược đồ và
-   mã đã đúng; văn bản đề xuất còn ghi bốn trường là bắt buộc vô điều kiện. Đây
-   là sửa văn bản, không sửa mã.
-3. **Mở Sprint 2** — đường găng là **TSK-S2-07** (đặc tả chuẩn tắc máy trạng thái
-   hội thoại). Roadmap §3.10 nói rõ: port Pipecat *trước khi* có đặc tả và bộ
-   vector tuân thủ là **rủi ro, không phải đòn bẩy**. Làm TSK-S2-07 trước
-   TSK-S3-11, không ngược lại.
-4. **TSK-S2-01** (HAL `sim`) và **TSK-S2-06** (biên dịch CEL → cây quyết định).
-   TSK-S2-06 mở khóa việc dùng `allow_when` dạng biểu thức cho gate độc lập.
+Thứ tự lấy từ kế hoạch đã duyệt (`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`
+§Thứ tự task đầu tiên) và quyết định Q-14 → Q-20. Chi tiết task: roadmap §4.2–§4.3.
+
+1. **Mua sắm, ngay:** 2 bo mạch ESP32-S3-Box-3 (chặn `TSK-S1-10`) · 1 RPi 5 (Q-16).
+2. **A1 — wedge trên `sim`, 2026-09-28 → 2026-10-25:** `TSK-S2-03` Gate Engine →
+   `TSK-S2-08` `SystemOne` + độ tin cậy + fallback ngữ pháp lệnh (Q-14) →
+   `TSK-S2-01` HAL `sim` (V2) → `TSK-S2-04` fail-closed → `TSK-S2-05` token phán
+   quyết → `TSK-S2-02` đối chiếu năng lực; song song `TSK-S2-12` và `TSK-S2-13`
+   (hiện thực RFC-0004).
+3. **Trước khi mở A2:** thí nghiệm `gpio-sim` 2 giờ trên runner GitHub (Q-16).
+4. **A2 — `linux` + Action CI, 2026-10-26 → 2026-11-15:** `TSK-S3-01..04`,
+   `TSK-S3-15`, `TSK-S3-05` (V2), `TSK-S2-11` lớp provider (Q-10).
+
+**Không làm `TSK-S2-07` trước.** Bản trước của mục này gọi nó là đường găng. Nó
+nằm trên đường găng của *Sprint 2*, không trên đường găng của *wedge* (wedge
+không chạm âm thanh), nên hoãn cùng `TSK-S3-10`/`TSK-S3-11` để giữ thứ tự §3.10.
 
 ### 3.6 Nợ thiết kế đã biết
 

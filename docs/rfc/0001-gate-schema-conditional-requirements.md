@@ -207,7 +207,7 @@ một phép kiểm tra an toàn. Gate độc lập (không `extends`, không gat
 - [x] Hiện thực cưỡng chế 5 nguyên tắc tại `python/neuroedge/engine/gate_resolver.py`
 - [x] Thêm fixture và test
 - [x] Cập nhật `neuroedge-roadmap.md` (TSK-S1-02, TSK-S1-03, Tiêu chí ra 1 và 2)
-- [ ] Đồng bộ Phụ lục B.1 và B.4 của `neuroedge-proposal.md` — *việc kế tiếp, xem §9*
+- [x] Đồng bộ Phụ lục B.1, B.3 và B.4 của `neuroedge-proposal.md` — *xong 2026-09-23, proposal v5.5*
 
 ## 9. Việc còn treo
 

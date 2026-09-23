@@ -1,6 +1,15 @@
 """Shared fixtures for the NeuroEdge test suite."""
 
+import os
 from pathlib import Path
+
+# CLI output is asserted as plain text. A developer shell with FORCE_COLOR set
+# makes rich emit ANSI codes and wrap lines, which fails those asserts for
+# reasons unrelated to the code. The CLI consoles are created at import time,
+# so this must run before anything imports neuroedge.cli.
+os.environ.pop("FORCE_COLOR", None)
+os.environ["NO_COLOR"] = "1"
+os.environ["COLUMNS"] = "200"
 
 import pytest
 import yaml
