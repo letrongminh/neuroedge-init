@@ -11,7 +11,7 @@
 
   function stateAt(events, t) {
     const pins = {}, sensors = {}, gates = [];
-    let frame = null, begin = null;
+    let frame = null, begin = null, speech = null, heard = null;
     for (const [i, e] of events.entries()) {
       if (e.offset_ms > t) break;
       const d = e.data || {};
@@ -26,6 +26,10 @@
         sensors[d.sensor] = { value: d.value, unit: d.unit };
       } else if (e.type === "display_frame") {
         frame = d;
+      } else if (e.type === "tts_stream_start") {
+        speech = { text: d.text, offset_ms: e.offset_ms };
+      } else if (e.type === "text_input") {
+        heard = d.text;
       } else if (e.type === "gate_evaluation_begin") {
         begin = d.gate;
       } else if (e.type === "gate_evaluation_result") {
@@ -34,7 +38,7 @@
       }
     }
     for (const name in pins) pins[name].on = t < pins[name].until;
-    return { pins: pins, sensors: sensors, frame: frame, gates: gates };
+    return { pins: pins, sensors: sensors, frame: frame, gates: gates, speech: speech, heard: heard };
   }
 
   function horizon(events) {
@@ -103,6 +107,8 @@
     const devices = el("div", { class: "devices" });
     const sensors = el("div");
     const screen = el("div", { class: "screen empty", text: "—" });
+    const heard = el("div", { class: "why", text: "" });
+    const said = el("div", { class: "speech", text: "—" });
     const verdicts = el("div");
     const rows = el("tbody");
     const slider = el("input", { type: "range", min: "0", step: "1", value: "0" });
@@ -110,11 +116,12 @@
     const left = el("div", { class: "stack" }, [
       el("section", { class: "panel" }, [el("h2", { text: "Thiết bị" }), devices]),
       el("section", { class: "panel" }, [el("h2", { text: "Cảm biến" }), sensors]),
+      el("section", { class: "panel" }, [el("h2", { text: "Trợ lý nói" }), heard, said]),
       el("section", { class: "panel" }, [el("h2", { text: "Màn hình" }), screen]),
     ]);
     const right = el("div", { class: "stack" });
     if (opts.onCommand) {
-      const input = el("input", { placeholder: "Gõ lệnh, vd: mở cửa phòng 101 — hoặc :sensor temperature 31", autocomplete: "off" });
+      const input = el("input", { placeholder: "Gõ lệnh cho agent — hoặc :sensor <tên> <giá trị>, :set <dữ kiện> <giá trị>", autocomplete: "off" });
       const form = el("form", { class: "say" }, [input, el("button", { type: "submit", text: "Gửi" })]);
       form.addEventListener("submit", function (ev) {
         ev.preventDefault();
@@ -170,6 +177,8 @@
         screen.textContent = s.frame.text !== undefined ? s.frame.text
           : s.frame.format + " " + s.frame.width + "×" + s.frame.height + "\n" + String(s.frame.sha256).slice(0, 23) + "…";
       } else { screen.className = "screen empty"; screen.textContent = "—"; }
+      heard.textContent = s.heard ? "Bạn: " + s.heard : "";
+      said.textContent = s.speech ? s.speech.text : "—";
 
       verdicts.textContent = "";
       const all = stateAt(view.events, Infinity).gates;

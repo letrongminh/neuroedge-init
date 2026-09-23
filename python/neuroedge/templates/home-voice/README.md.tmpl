@@ -1,0 +1,37 @@
+# {{name}}
+
+Trợ lý giọng nói trong nhà, sinh từ mẫu `home-voice`. Một agent, ba loại hành vi, ba hợp đồng khác nhau:
+
+| Hành vi | Loại | Hợp đồng |
+|:---|:---|:---|
+| Trả lời từ `knowledge.toml` | Lời nói — sai thì sửa được | `c.say`, không qua gate |
+| Đọc tin tức | Lời nói cần mạng | Mất mạng thì nói rõ, không bịa (`offline_say`) |
+| Bật / tắt đèn `porch_light` | Hành động vật lý | `c.do` qua gate; **không tắt đèn khi cảm biến `motion` còn thấy người** |
+
+Mất mạng, đèn vẫn điều khiển được bằng ngữ pháp lệnh cục bộ.
+
+## Chạy thử trên `sim` — không cần mạng, không cần key
+
+```bash
+neuroedge run -c "bật đèn"                          # ✓ ALLOW, porch_light HIGH
+neuroedge run -c "wifi nhà mình là gì"              # says (knowledge): ...
+neuroedge run --ui                                  # trình duyệt: gõ lệnh, xem đèn và lời trợ lý
+```
+
+Trong REPL hoặc UI: `:sensor motion true` rồi `tắt đèn` — gate chặn, trợ lý hỏi lại, đèn vẫn sáng.
+
+## Kiểm thử
+
+```bash
+neuroedge test                                      # Action CI: 0 = mọi test đạt
+```
+
+## Tệp
+
+| Tệp | Vai trò |
+|:---|:---|
+| `agent.toml` | Năng lực cần (`digital.out`, `sensor.read`, `audio.out`), gate, cảm biến giả lập |
+| `commands.toml` | Lệnh → action (`light_on`, `light_off`) hoặc → System 2 (`news`, kèm `offline_say`) |
+| `knowledge.toml` | Knowledge base cục bộ: câu hỏi mẫu → câu trả lời |
+| `gates/` | `light_on@1.0.0`, `light_off@1.0.0` (cần `room_empty`) |
+| `actions/lights.py` | Hai hàm `@action` bật / tắt `porch_light` |

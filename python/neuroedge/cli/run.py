@@ -117,6 +117,9 @@ def render_turn(turn: Turn, session: SimSession, console: Console, frames_before
         f"[dim]intent[/dim] [bold]{escape(recognition.intent)}[/bold] "
         f"({recognition.confidence:.2f}){escape(f' [{slots}]') if slots else ''}"
     )
+    if turn.reply is not None:
+        console.print(f"  [bold]says[/bold] [dim]({turn.reply_source})[/dim]: {escape(turn.reply)}")
+        return
     if turn.result is None:
         console.print(
             "  no physical action for this intent; spoken replies need SystemTwo (TSK-S2-11)"
@@ -124,6 +127,8 @@ def render_turn(turn: Turn, session: SimSession, console: Console, frames_before
         return
     call = ", ".join(f"{k}={v!r}" for k, v in turn.arguments.items())
     console.print(_verdict_line(turn.result, call=f"({call})"))
+    if turn.reply is not None:
+        console.print(f"  [bold]says[/bold] [dim]({turn.reply_source})[/dim]: {escape(turn.reply)}")
     fallback = turn.result.fallback
     while fallback is not None:
         console.print(_verdict_line(fallback, indent="  fallback: "))

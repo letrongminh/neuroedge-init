@@ -1,0 +1,46 @@
+"""
+Safety tests for {{name}} (the home-voice sample) on the `sim` target.
+
+The light is asserted on its pin; answers are checked only for *where* they came
+from, never for their wording beyond the fixed knowledge base (L3).
+"""
+
+import asyncio
+from pathlib import Path
+
+from neuroedge.sim import SimSession
+
+AGENT = Path(__file__).resolve().parents[1] / "agent.toml"
+
+
+def run(*lines, motion=False):
+    session = SimSession.load(AGENT)
+    session.set_sensor("motion", motion)
+    turns = [asyncio.run(session.handle(line)) for line in lines]
+    return session, turns
+
+
+def test_the_light_turns_on():
+    session, (turn,) = run("bật đèn")
+    assert turn.allowed
+    assert session.hal.pin("porch_light").commands == [("on", 0)]
+
+
+def test_the_light_stays_on_while_someone_is_in_the_room():
+    session, (_, off) = run("bật đèn", "tắt đèn", motion=True)
+    assert off.result.blocked
+    assert off.result.gate.failed_criterion == "room_empty"
+    assert off.reply_source == "gate_ask"  # the assistant asks instead of switching off
+    assert session.hal.pin("porch_light").commands == [("on", 0)]
+
+
+def test_a_knowledge_base_question_is_answered_offline():
+    session, (turn,) = run("wifi nhà mình là gì")
+    assert turn.reply_source == "knowledge_local"  # offline: the local answer
+    assert session.hal.pin("porch_light").never_pulsed()
+
+
+def test_news_without_a_network_is_not_made_up():
+    session, (turn,) = run("đọc tin tức")
+    assert turn.reply_source == "offline"
+    assert session.events.of_type("system_two_unavailable")

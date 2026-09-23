@@ -15,6 +15,11 @@ A grammar is a TOML file listing commands and the phrases that trigger them:
     action   = "unlock_door"                   # optional: the @action to run
     arguments = { guest_id = "room" }          # optional: parameter <- {slot}
 
+A command does at most one thing: run an `action` (through `c.do()` and its
+gate), `say` a fixed answer, or `ask` System 2 for a task (e.g. `"news"`) and
+fall back to `offline_say` when System 2 cannot answer. `knowledge.toml` adds
+knowledge-base questions (`neuroedge.models.knowledge`).
+
 Matching is deterministic and needs no network and no model: normalise the
 text, try every pattern as a template (``{slot}`` matches one word) — an exact
 match scores 1.0 — otherwise score by `difflib` similarity. Below `threshold`
@@ -55,6 +60,12 @@ class Command:
     facts: dict[str, Any] = field(default_factory=dict)
     action: str | None = None
     arguments: dict[str, str] = field(default_factory=dict)
+    say: str | None = None
+    ask: str | None = None
+    offline_say: str | None = None
+
+
+OFFLINE_SAY = "Hiện mình chưa trả lời được câu này."
 
 
 @dataclass(frozen=True)
@@ -163,10 +174,44 @@ class CommandGrammar:
                     why=f"arguments must map parameters to slots of the patterns {sorted(slots)}",
                     how='write arguments = { guest_id = "room" } for a pattern "mở cửa phòng {room}"',
                 )
+            speech = {key: raw.get(key) for key in ("say", "ask", "offline_say")}
+            for key, value in speech.items():
+                if value is not None and (not isinstance(value, str) or not value.strip()):
+                    raise PerceptionUnavailableError(
+                        where=f"{source} -> command[{index}].{key}",
+                        why=f"`{key}` must be non-empty text, found {value!r}",
+                        how=f'write {key} = "..." or remove it',
+                    )
+            doing = [key for key in ("action", "say", "ask") if raw.get(key) is not None]
+            if len(doing) > 1:
+                raise PerceptionUnavailableError(
+                    where=f"{source} -> command[{index}]",
+                    why=f"a command does one thing, this one declares {doing}",
+                    how="keep one of action / say / ask; split the rest into separate commands",
+                )
+            if speech["offline_say"] is not None and speech["ask"] is None:
+                raise PerceptionUnavailableError(
+                    where=f"{source} -> command[{index}].offline_say",
+                    why="`offline_say` is what an `ask` says when System 2 cannot answer; there is no `ask`",
+                    how='add ask = "<task>", or use say = "..." for a fixed answer',
+                )
             commands.append(
-                Command(intent, tuple(patterns), dict(raw.get("facts", {})), action, arguments)
+                Command(
+                    intent,
+                    tuple(patterns),
+                    dict(raw.get("facts", {})),
+                    action,
+                    arguments,
+                    speech["say"],
+                    speech["ask"],
+                    speech["offline_say"],
+                )
             )
         return cls(commands, float(threshold), source)
+
+    def extended(self, extra: list[Command]) -> CommandGrammar:
+        """This grammar with more commands after its own (they lose ties)."""
+        return CommandGrammar(self.commands + extra, self.threshold, self.source)
 
     def recognize(self, text: str) -> Recognition:
         """Best command for `text`; unrecognised below the threshold. Ties go to file order."""

@@ -1,0 +1,20 @@
+# Turning a light on is low risk, and still goes through a gate: no path to a
+# pin skips one (A3). It only has to be a command the agent actually heard.
+schema:  neuroedge.gate/v1
+name:    light_on
+version: 1.0.0
+
+evaluate:
+  command_recognized:
+    type: bool
+    instructions: "Câu lệnh khớp ngữ pháp lệnh cố định trong commands.toml"
+
+allow_when:
+  command_recognized: true
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

@@ -1,0 +1,24 @@
+# Local knowledge base for the home-voice sample (RAG).
+#
+# Online, the relevant entries are retrieved locally and System 2 answers from
+# them in its own words. Offline — or with no provider — the matched entry's
+# `answer` is said as is: the knowledge is local, so the question is still
+# answered. Answers are speech — no gate, never asserted on (FR-CI-LVL, L3).
+[knowledge]
+version   = 1
+threshold = 0.55
+
+[[entry]]
+id        = "wifi"
+questions = ["wifi nhà mình là gì", "mật khẩu wifi", "wifi là gì"]
+answer    = "Mạng wifi là NhaMinh, mật khẩu dán ở mặt dưới router."
+
+[[entry]]
+id        = "rac"
+questions = ["mấy giờ đổ rác", "khi nào đổ rác", "lịch đổ rác"]
+answer    = "Xe rác qua lúc 19 giờ các tối thứ Hai, thứ Tư và thứ Sáu."
+
+[[entry]]
+id        = "loc-nuoc"
+questions = ["cách reset máy lọc nước", "máy lọc nước báo đỏ", "reset máy lọc nước"]
+answer    = "Giữ nút lọc 5 giây tới khi đèn nháy xanh, rồi thay lõi lọc theo nhãn."
