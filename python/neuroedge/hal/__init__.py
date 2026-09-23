@@ -9,7 +9,7 @@ docs/spec/hal_mcu_review.md for what that buys on the microcontroller.
 from collections.abc import Callable
 from typing import Any
 
-from ..errors import ActionContractViolation
+from ..errors import ActionContractViolation, BoardCapabilityError
 from .board import (
     PRIMITIVES,
     SUPPORTED_TARGETS,
@@ -152,6 +152,19 @@ class HardwareAbstractionLayer:
             self.board.require_pin(pin, called_from=called_from)
         self.authorize(signature, pin, called_from)
         self.pins.setdefault(pin, PinAssertion(pin)).record(operation, duration_ms)
+
+    def _not_on_target(self, primitive: str, called_from: str) -> None:
+        raise BoardCapabilityError(
+            where=f"{called_from} -> {primitive}",
+            why=f"{primitive} is not implemented on target {self.target!r} yet",
+            how="see docs/spec/simulation_coverage.md for the task that adds it; `sim` has it",
+        )
+
+    def sensor_read(self, sensor: str, called_from: str = "<unknown>") -> Any:
+        self._not_on_target("sensor.read", called_from)
+
+    def display(self, frame: Any, *, called_from: str = "<unknown>", **_: Any) -> Any:
+        self._not_on_target("display", called_from)
 
     def pin(self, name: str) -> PinAssertion:
         """

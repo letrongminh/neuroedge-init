@@ -27,6 +27,14 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **TSK-S2-09 — `neuroedge run --ui`.** Phiên `sim` trực tiếp trên trình duyệt: chốt cửa, đèn, relay, cảm biến, màn hình,
+  phán quyết; gõ lệnh và đặt cảm biến từ trang. Chỉ 127.0.0.1, không mạng. `sim/ui.py`.
+  Kiểm: `pytest tests/test_sim_ui.py`. (FR-TGT-06)
+- **TSK-S3-22 — `neuroedge trace view` + `trace export --format chrome`.** Một tệp HTML tự chứa có thanh tua thời gian;
+  xuất Perfetto cho timing. `viz/`. Kiểm: `pytest tests/test_trace_view.py`. (FR-CLI-04)
+- **TSK-S3-23 — `sensor.read` và `display` trên `sim`.** `[sim.sensors]`, `[sim.sensor_facts]`, `sensor.read()` /
+  `display.show()` trong `@action`, sự kiện `sensor_read` / `display_frame`, replay cấp lại số đọc.
+  Kiểm: `pytest tests/test_sim_sensors_display.py`. (FR-TGT-01)
 - **Đặc tả phủ mô phỏng 5 nguyên thủy × 3 target** `docs/spec/simulation_coverage.md`: mỗi ô có backend, nơi kiểm,
   phần chỉ phần cứng và task chịu trách nhiệm; tên sự kiện vết ghi cho `sensor.read` / `display` / `audio`; vết ghi
   từ firmware qua UART (cả trên QEMU); bốn bề mặt trực quan. Task mới: TSK-S3-22, S3-23, S4-09, S4-10, S5-08, S5-09.
@@ -640,13 +648,15 @@ còn `run` / `record --target linux|esp32s3` thoát mã 2.
 | `gate add <URI>` | Phân giải một gate từ registry và cho biết việc kế thừa nó sẽ áp đặt gì |
 | `trace validate <tệp…>` | Thẩm định theo `trace.v1.json`. Một tệp sai làm cả lệnh thất bại |
 | `trace show <tệp>` | In dòng thời gian sự kiện |
+| `trace view <tệp> [-o x.html] [--open]` | Ghi một tệp HTML tự chứa: thiết bị, cảm biến, màn hình, phán quyết, dòng sự kiện, thanh tua thời gian. Mở không cần mạng |
+| `trace export <tệp> --format chrome` | Chrome Trace Event JSON cho Perfetto (`ui.perfetto.dev`) — gate và xung thành slice |
 | `board list` / `board show <id>` | Liệt kê / xem năng lực bo mạch theo 5 nguyên thủy |
 | `verify [--targets sim,linux]` | Mọi gate phân giải, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`). So quyết định, chưa so timing |
 | `build --target <t> --board <id>` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate. `--agent` (mặc định `agent.toml`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
 | `replay <tệp> [--target sim\|linux]` | Replay trên HAL thật: dữ kiện đã ghi vào lại, phán quyết gate và lệnh chân **tính lại**, rồi so với golden (`--golden <tệp>`, mặc định chính vết ghi). Khớp ⇒ mã 0; lệch ⇒ mã 1, `NE4002`, dòng lệch đầu tiên. `--agent`, `--board`, `--trace-out` |
 | `record [--out traces/] [-c "<lệnh>"] [--anonymize]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`), phán quyết giữ nguyên (FR-TRC-07) |
 | `test [thư-mục]` | Chạy bộ Action CI (pytest) của agent, mặc định `tests/`. Mọi test đạt ⇒ mã 0; có test trượt hoặc không thu được test nào ⇒ mã 1 |
-| `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:help`; `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2: trên `linux` hôm nay dùng `replay` |
+| `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2: trên `linux` hôm nay dùng `replay` |
 | `gate explain <tệp\|URI>` | Giải thích gate cho người duyệt: tiêu chí từ cấp nào, mệnh đề nào bị siết chặt, ngân sách và `on_block` so với cha. Gate sai ⇒ mã 1, lỗi 3 thành phần |
 | `new <tên> [--template minimal\|villa-concierge]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` sao agent mẫu, chỉ chạy từ kho mã nguồn |
 
@@ -752,7 +762,8 @@ neuroedge-init/
 │   ├── models/           L2 — SystemOne/SystemTwo · ngữ pháp lệnh cố định · double
 │   ├── hal/              L1 — 5 nguyên thủy, mô hình bo mạch, sim.py, digital.out()
 │   ├── perception/       L2 — khung, chưa hiện thực
-│   ├── sim/              L0 — SimSession: agent chạy trên sim, gõ chữ (web UI: TSK-S2-09)
+│   ├── sim/              L0 — SimSession (gõ chữ) · ui.py (run --ui, web cục bộ)
+│   ├── viz/              trace view · export Perfetto · bộ hiển thị dùng chung
 │   ├── templates/        Mẫu dự án cho `neuroedge new` (*.tmpl, không copier)
 │   ├── testing/          Action CI — recorder · player (replay) · assertions · golden
 │   ├── cli/              CLI Typer · run.py (REPL) · explain.py (gate explain)
@@ -825,14 +836,14 @@ nó trong bảng task.
 |:---:|:---|:---|
 | 1 | **Hủy lệnh đang chờ mới có ở `sim`.** Hợp đồng thu hồi lệnh vật lý (§3.8) yêu cầu `barge_in` hủy xung chốt cửa đang chờ trong ≤ 1 khung âm thanh. `SimHAL` và `LinuxHAL` đã trả `PendingCommand.cancel()` (TSK-S2-01, TSK-S3-05 — `linux` hạ line ngay); `esp32s3` phải hủy được thật ở tầng firmware | **TSK-S4-01**, cùng lúc với hợp đồng thu hồi — không phải sau |
 | 2 | `gate publish` dừng ở mã băm, chưa ký số | Khối 3 (Gate Registry) |
-| 3 | `perception/` chỉ là khung; `sim/` mới có phiên terminal (`SimSession`), chưa có giao diện web | TSK-S3-11 / TSK-S2-09 |
+| 3 | `perception/` chỉ là khung | TSK-S3-11 |
 
 ### 3.7 Điều hệ thống chưa làm được
 
 Nói rõ để không ai đọc các mốc đã đạt quá lên:
 
 - ❌ **Phiên tương tác (`run`, `record`) mới có trên `sim`, gõ chữ trên terminal.** Trên `linux`
-  hôm nay chỉ `replay` / `verify`; giao diện web mô phỏng và giọng nói chưa có (Q-15); intent không có action (`faq`) chưa được trả lời
+  hôm nay chỉ `replay` / `verify`; giọng nói chưa có (Q-15); intent không có action (`faq`) chưa được trả lời
   vì SystemTwo cần provider (TSK-S2-11).
 - ❌ **Chưa có nhà cung cấp cloud thật.** SystemOne/SystemTwo chạy với double và ngữ pháp lệnh
   cục bộ; connector LiteLLM là TSK-S2-11 (A2).

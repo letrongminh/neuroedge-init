@@ -10,13 +10,17 @@ mirrors the reference board rather than exceeding it (CHANGELOG §3.3 #7).
   pending pulse, so the handle exists on every target from day one).
 * `audio_in` — Q-15: typed text by default, queued with `type_text()`.
 * `audio_out` — records `tts_stream_start`.
-* `sensor_read` — values scripted with `set_sensor()`; an unscripted sensor
-  raises instead of inventing a reading.
-* `display` — a virtual frame, checked against the declared resolution.
+* `sensor_read` — values scripted with `set_sensor()` (or a sequence with
+  `script_sensor()`, which replay uses); records `sensor_read`. An unscripted
+  sensor raises instead of inventing a reading.
+* `display` — a virtual frame (text, or raw RGB565 / RGB888 pixels) checked
+  against the declared resolution; records `display_frame` with its digest
+  (docs/spec/simulation_coverage.md §3).
 """
 
 from __future__ import annotations
 
+import hashlib
 from collections import deque
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -59,6 +63,77 @@ class PendingCommand:
         self.events.emit("actuator_aborted", {"pin": self.pin, "reason": reason})
 
 
+BYTES_PER_PIXEL = {"rgb565": 2, "rgb888": 3}
+
+
+@dataclass(frozen=True)
+class Frame:
+    """One frame shown on `display`: text, or raw pixels in a declared format."""
+
+    width: int
+    height: int
+    format: str
+    data: bytes
+
+    @classmethod
+    def make(cls, frame: str | bytes, width: int, height: int, fmt: str | None, where: str):
+        if isinstance(frame, str):
+            if fmt not in (None, "text"):
+                raise BoardCapabilityError(
+                    where=where,
+                    why=f"a text frame cannot have format {fmt!r}",
+                    how="pass bytes for pixel formats, or omit format for text",
+                )
+            return cls(width, height, "text", frame.encode("utf-8"))
+        fmt = fmt or "rgb565"
+        if fmt not in BYTES_PER_PIXEL:
+            raise BoardCapabilityError(
+                where=where,
+                why=f"unknown pixel format {fmt!r}",
+                how=f"use one of {sorted(BYTES_PER_PIXEL)}, or pass a str for a text frame",
+            )
+        expected = width * height * BYTES_PER_PIXEL[fmt]
+        if len(frame) != expected:
+            raise BoardCapabilityError(
+                where=where,
+                why=f"{fmt} frame of {width}x{height} needs {expected} bytes, got {len(frame)}",
+                how="pass width and height matching the pixel buffer",
+            )
+        return cls(width, height, fmt, bytes(frame))
+
+    @property
+    def sha256(self) -> str:
+        return "sha256:" + hashlib.sha256(self.data).hexdigest()
+
+    @property
+    def text(self) -> str | None:
+        return self.data.decode("utf-8") if self.format == "text" else None
+
+    def event_data(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
+            "width": self.width,
+            "height": self.height,
+            "format": self.format,
+            "sha256": self.sha256,
+        }
+        if self.format == "text":
+            data["text"] = self.text  # hashed by the recorder under --anonymize
+        return data
+
+    def rgb888(self) -> bytes:
+        """Pixels as RGB888, for export; text frames have none."""
+        if self.format == "rgb888":
+            return self.data
+        if self.format != "rgb565":
+            raise ValueError("a text frame has no pixels")
+        out = bytearray()
+        for i in range(0, len(self.data), 2):
+            v = (self.data[i] << 8) | self.data[i + 1]  # big-endian, as SPI panels take it
+            r, g, b = (v >> 11) & 0x1F, (v >> 5) & 0x3F, v & 0x1F
+            out += bytes(((r << 3) | (r >> 2), (g << 2) | (g >> 4), (b << 3) | (b >> 2)))
+        return bytes(out)
+
+
 class SimHAL(HardwareAbstractionLayer):
     def __init__(
         self,
@@ -78,8 +153,11 @@ class SimHAL(HardwareAbstractionLayer):
         super().__init__(target="sim", board=board, authorize=authorize)
         self.events: EventSink = events if events is not None else _NullSink()
         self._sensors: dict[str, Any] = dict(sensors or {})
+        self._units: dict[str, str] = {}
+        self._scripted: dict[str, deque[Any]] = {}
         self._typed: deque[str] = deque()
         self.frame: str | bytes | None = None
+        self.frames: list[Frame] = []
         self.spoken: list[str] = []
 
     def _require(self, primitive: str, called_from: str) -> dict[str, Any]:
@@ -113,19 +191,47 @@ class SimHAL(HardwareAbstractionLayer):
         return PendingCommand(pin, operation, duration_ms, self.events)
 
     # -- sensor.read -------------------------------------------------------------
-    def set_sensor(self, sensor: str, value: Any) -> None:
+    def set_sensor(self, sensor: str, value: Any, unit: str | None = None) -> None:
         self.board.require_sensor(sensor, called_from="SimHAL.set_sensor()")
         self._sensors[sensor] = value
+        if unit is not None:
+            self._units[sensor] = unit
 
-    def sensor_read(self, sensor: str, called_from: str = "<unknown>") -> Any:
+    def sensor_values(self) -> dict[str, tuple[Any, str | None]]:
+        """Current value and unit of every declared sensor (None when not set)."""
+        return {
+            name: (self._sensors.get(name), self._units.get(name)) for name in self.board.sensors
+        }
+
+    def script_sensor(self, sensor: str, values: list[Any], unit: str | None = None) -> None:
+        """Readings returned in order, one per read — how replay feeds a recorded session."""
+        self.board.require_sensor(sensor, called_from="SimHAL.script_sensor()")
+        self._scripted[sensor] = deque(values)
+        if unit is not None:
+            self._units[sensor] = unit
+
+    def sensor_read(
+        self, sensor: str, called_from: str = "<unknown>", use: str | None = None
+    ) -> Any:
+        """`use="fact"` marks a read made to compute a gate fact rather than by an action."""
         self.board.require_sensor(sensor, called_from=called_from)
+        queue = self._scripted.get(sensor)
+        if queue and use is None:
+            self._sensors[sensor] = queue.popleft()
         if sensor not in self._sensors:
             raise BoardCapabilityError(
                 where=f"{called_from} -> sensor.read {sensor!r}",
                 why="the simulator has no scripted value for this sensor",
                 how=f"call hal.set_sensor({sensor!r}, value) in the scenario first",
             )
-        return self._sensors[sensor]
+        value = self._sensors[sensor]
+        data = {"sensor": sensor, "value": value}
+        if sensor in self._units:
+            data["unit"] = self._units[sensor]
+        if use is not None:
+            data["use"] = use
+        self.events.emit("sensor_read", data)
+        return value
 
     # -- audio -------------------------------------------------------------------
     def type_text(self, text: str) -> None:
@@ -152,8 +258,9 @@ class SimHAL(HardwareAbstractionLayer):
         *,
         width: int | None = None,
         height: int | None = None,
+        format: str | None = None,
         called_from: str = "<unknown>",
-    ) -> None:
+    ) -> Frame:
         declared = self._require("display", called_from)
         for axis, value in (("width", width), ("height", height)):
             if value is not None and value > declared[axis]:
@@ -162,4 +269,14 @@ class SimHAL(HardwareAbstractionLayer):
                     why=f"frame {axis} {value} exceeds the board's {declared[axis]}",
                     how=f"render at most {declared['width']}x{declared['height']}",
                 )
+        shown = Frame.make(
+            frame,
+            width if width is not None else declared["width"],
+            height if height is not None else declared["height"],
+            format,
+            where=f"{called_from} -> display",
+        )
         self.frame = frame
+        self.frames.append(shown)
+        self.events.emit("display_frame", shown.event_data())
+        return shown

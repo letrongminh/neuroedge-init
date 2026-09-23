@@ -45,6 +45,10 @@ class EventLog:
         }
         self.events: list[dict[str, Any]] = []
 
+    def elapsed_ms(self) -> int:
+        """Milliseconds since the log started, on the same clock as `offset_ms`."""
+        return max(0, int(self.clock() - self._t0))
+
     @property
     def session_id(self) -> str:
         return self.metadata["session_id"]

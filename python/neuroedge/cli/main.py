@@ -336,6 +336,70 @@ def trace_validate(
         raise typer.Exit(code=1)
 
 
+@trace_app.command(name="view")
+def trace_view(
+    trace_file: Path = typer.Argument(..., help="Trace JSON file"),
+    out: Path = typer.Option(
+        None, "--out", "-o", help="HTML file to write (default: next to the trace)"
+    ),
+    open_browser: bool = typer.Option(False, "--open", help="Open the page in the default browser"),
+):
+    """
+    Write a self-contained HTML view of a trace: devices, sensors, screen,
+    gate verdicts and a timeline you can scrub. Opens offline, no server.
+    """
+    from ..viz import render_trace_html
+
+    try:
+        trace = load_trace(trace_file)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    target = out or trace_file.with_suffix(".html")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(render_trace_html(trace), encoding="utf-8")
+    console.print(
+        f"[bold green]✓[/bold green] {escape(str(target))} ({len(trace['events'])} events)"
+    )
+    if open_browser:
+        import webbrowser
+
+        webbrowser.open(target.resolve().as_uri())
+
+
+@trace_app.command(name="export")
+def trace_export(
+    trace_file: Path = typer.Argument(..., help="Trace JSON file"),
+    format: str = typer.Option("chrome", "--format", "-f", help="Export format: chrome"),
+    out: Path = typer.Option(
+        None, "--out", "-o", help="Output file (default: <trace>.chrome.json)"
+    ),
+):
+    """
+    Export a trace for timing analysis. `chrome` writes Chrome Trace Event JSON
+    that Perfetto (ui.perfetto.dev) and chrome://tracing open.
+    """
+    from ..viz import to_chrome_trace
+
+    if format != "chrome":
+        _fail(
+            NeuroEdgeError(
+                where=f"--format {format}",
+                why="unknown export format",
+                how="use --format chrome",
+            )
+        )
+        return
+    try:
+        trace = load_trace(trace_file)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    target = out or trace_file.with_suffix(".chrome.json")
+    target.write_text(json.dumps(to_chrome_trace(trace), ensure_ascii=False), encoding="utf-8")
+    console.print(f"[bold green]✓[/bold green] {escape(str(target))} — open it in ui.perfetto.dev")
+
+
 @trace_app.command(name="show")
 def trace_show(
     trace_file: Path = typer.Argument(..., help="Trace JSON file"),
@@ -692,10 +756,16 @@ def run(
     trace_out: Path = typer.Option(
         None, "--trace-out", help="Write the session trace (trace.v1 JSON) here on exit"
     ),
+    ui: bool = typer.Option(
+        False, "--ui", help="Serve the session as a live page on 127.0.0.1 (FR-TGT-06)"
+    ),
+    port: int = typer.Option(8765, "--port", help="Port for --ui"),
+    no_browser: bool = typer.Option(False, "--no-browser", help="With --ui, do not open a browser"),
     registry: Path | None = REGISTRY_OPTION,
 ):
     """
     Run the agent on `sim`: type a command, see the gate verdict and the pins.
+    With --ui the same session is shown live in the browser.
 
     Input is typed text matched by the agent's commands.toml — no network, no
     key (Q-15). The agent is build-checked against the board first.
@@ -703,6 +773,19 @@ def run(
     from .run import run_session
 
     session = _start_session("run", agent, target, board, registry)
+    if ui:
+        from ..sim.ui import serve
+
+        try:
+            serve(session, port, console, open_browser=not no_browser)
+        finally:
+            if trace_out is not None:
+                trace_out.parent.mkdir(parents=True, exist_ok=True)
+                trace_out.write_text(
+                    json.dumps(session.trace(), indent=2, ensure_ascii=False) + "\n",
+                    encoding="utf-8",
+                )
+        return
     code = run_session(session, console, err_console, command=command, trace_out=trace_out)
     raise typer.Exit(code=code)
 
