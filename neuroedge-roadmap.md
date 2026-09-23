@@ -2,13 +2,13 @@
 
 ## Kế hoạch triển khai từ Tuần 0 đến Tháng 8
 
-**Phiên bản:** 1.2
+**Phiên bản:** 1.3
 
 
-**Ngày lập:** 21 tháng 9, 2026
+**Ngày lập:** 21 tháng 9, 2026 · **Cập nhật:** 23 tháng 9, 2026 (áp dụng quyết định Q-10, Q-11 phần LiteLLM, Q-14 → Q-20)
 
 
-**Tài liệu nguồn:** `neuroedge-proposal.md` v5.4 · `neuroedge-prd.md` v1.2
+**Tài liệu nguồn:** `neuroedge-proposal.md` v5.4 · `neuroedge-prd.md` v1.2 · kế hoạch Sprint 2–3 [`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md) · việc hoãn có chủ ý [`TODOS.md`](TODOS.md)
 
 
 **Phạm vi:** Khối 1a · Khối 1b · Developer Beta · Khối 2 và 3
@@ -52,10 +52,11 @@
 | **FR-… · NFR-…** | Yêu cầu chức năng và phi chức năng | `neuroedge-prd.md` §4–§9 |
 | **A1–A9 · B1–B5 · C1–C7** | Tiêu chí **nghiệm thu phát hành** theo mốc v1.0 / Beta / v1.1 | `neuroedge-prd.md` §11 |
 | **TR-1…TR-7** | Tiêu chí **ra cấp thực thi** của Khối 2 và 3 — bộ khác với C1–C7, xem §8.3 của tài liệu này | tài liệu này |
-| **Q-1…Q-13** | Quyết định kỹ thuật. Sổ quyết định là `neuroedge-prd.md` §15; §10 của tài liệu này chỉ theo dõi trạng thái | `neuroedge-prd.md` §15 |
+| **Q-1…Q-20** | Quyết định kỹ thuật. Sổ quyết định là `neuroedge-prd.md` §15; §10 của tài liệu này chỉ theo dõi trạng thái | `neuroedge-prd.md` §15 |
 | **PF-1…PF-4** | Bộ lọc ưu tiên tính năng | proposal §2 |
 | **TSK-…** | Mã hạng mục công việc, cấp phát trong tài liệu này | tài liệu này |
 | **RB-1…RB-4** | Ràng buộc kỹ thuật chuyển giao giữa các sprint | `docs/spec/hal_mcu_review.md` |
+| **Tuần N · Tháng N** | Tuần/tháng thứ N của chương trình, tính từ **Tuần 0 = 2026-09-21**. Từ Sprint 2, lịch ghi thêm **ngày tuyệt đối** (Q-19); khi tuần và ngày lệch nhau, ngày đúng | `neuroedge-prd.md` §15 (Q-19) |
 
 ## 0. Bảng theo dõi tiến độ & Nhật ký bàn giao (Live Execution & Handoff Dashboard)
 
@@ -65,12 +66,13 @@
 
 | Chỉ số | Trạng thái hiện hành | Ghi chú & Liên kết |
 |:---|:---|:---|
-| **Pha đang thực thi** | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0–6)** | Đạt ~55% khối lượng toàn khối |
-| **Sprint hiện hành** | 🟡 **Sprint 1: Đóng băng Lược đồ & Monorepo (Tuần 0–2)** | **92% hoàn thành** (12 / 13 tasks hoàn tất; TSK-S1-10 chờ bo mạch) |
-| **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: Cuối Sprint 3 (Tuần 6) |
-| **Lần cập nhật cuối** | **2026-09-21 23:30 UTC+7** | Áp dụng CR-1.0 cloud-first vào proposal v5.3 · PRD v1.1 · roadmap v1.1 |
-| **Trạng thái CI Lõi** | ✅ **PASS 210/210 · SKIP 0** | `python/tests/` — 9 bộ test; cổng CI chặn mọi test bị skip |
-| **Chặn ngoài tầm kỹ thuật** | 🔴 **2 hạng mục** | TSK-S1-10 chờ bo mạch vật lý · Tiêu chí ra 6 chờ quyết định **Q-11** |
+| **Pha đang thực thi** | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0 → 2026-11-15)** | Đạt ~55% khối lượng toàn khối · kế hoạch Sprint 2–3: [`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md) |
+| **Sprint hiện hành** | 🟡 **Sprint 1: Đóng băng Lược đồ & Monorepo (Tuần 0–2)** | **92% hoàn thành** (12 / 13 tasks; TSK-S1-10 chờ bo mạch) · **5 / 6 tiêu chí ra đạt** — Tiêu chí 6 (Q-11) thoả cho phạm vi Giai đoạn 1 từ 2026-09-23 · Sprint 2 mở **2026-09-28** (Q-19) |
+| **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: cuối Sprint 3 = **2026-11-15** — trễ ~2 tuần so với bản gốc (Tuần 6 gốc = 2026-11-02) (Q-19) |
+| **Lần cập nhật cuối** | **2026-09-23** | Áp dụng quyết định Q-10, Q-11 (LiteLLM), Q-14 → Q-20 vào roadmap v1.3 · RFC-0002 thu hẹp · mở RFC-0004 |
+| **Trạng thái CI Lõi** | ✅ **PASS 229/229 · SKIP 0** | `python/tests/` — 9 bộ test; cổng CI chặn mọi test bị skip |
+| **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn + 1 còn mở** | 🔴 TSK-S1-10 chờ bo mạch vật lý · 🟡 Q-11 phần còn lại (Hawkbit EPL-2.0 / EMQX BSL) — **không chặn cho tới khi mở Khối 2** |
+| **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
 ---
 
@@ -78,15 +80,17 @@
 
 | Mốc | Sprint / Giai đoạn | Thời gian | Trọng tâm kỹ thuật | Tiến độ | Trạng thái |
 |:---:|:---|:---:|:---|:---:|:---:|
-| **Khối 1a** | **Sprint 1 — Đóng băng lược đồ** | Tuần 0–2 | Schemas, Monorepo, Test fixtures, Memory spike | **92%** | 🟡 **Chờ phần cứng** |
-| | **Sprint 2 — Lõi thực thi trên `sim`** | Tuần 2–4 | HAL sim, Gate Engine CEL, Fail-closed, Lớp provider (LiteLLM), Web UI | **0%** | ⏳ Chưa bắt đầu |
-| | **Sprint 3 — Action CI & Linux** | Tuần 4–6 | HAL linux, Replay/Assert, Barge-in, ASR/TTS qua provider, TTFV < 10' | **0%** | ⏳ Chưa bắt đầu |
-| **Khối 1b** | **Sprint 4 — HAL trên `esp32s3`** | Tuần 6–8 | Port driver XiaoZhi, verify target bậc 1 không audio | **0%** | ⏳ Chưa bắt đầu |
+| **Khối 1a** | **Sprint 1 — Đóng băng lược đồ** | Tuần 0–2<br>2026-09-21 → 2026-09-27 | Schemas, Monorepo, Test fixtures, Memory spike | **92%** | 🟡 **Chờ phần cứng** (chỉ TSK-S1-10) |
+| | **Sprint 2 — Lõi thực thi trên `sim`** *(≈ A1, wedge `sim`)* | **2026-09-28 → 2026-10-25** (Q-19) | Gate Engine, cây quyết định host, HAL sim, fail-closed + fallback ngữ pháp lệnh (Q-14), `@action` + token, kế thừa `budget`/`on_block` (Q-18) | **0%** | ⏳ Mở 2026-09-28 |
+| | **Sprint 3 — Action CI & Linux** *(≈ A2)* | **2026-10-26 → 2026-11-15** (Q-19) | HAL linux (`gpio-sim`, Q-16), Record/Replay/Assert/Golden, lớp provider LiteLLM, release PyPI, TTFV < 10' | **0%** | ⏳ Chưa bắt đầu |
+| **Khối 1b** | **Sprint 4 — HAL trên `esp32s3`** | **Từ 2026-11-16** (Q-19) · gốc Tuần 6–8 | Port driver XiaoZhi, verify target bậc 1 không audio, ghim `extends` (RFC-0003) | **0%** | ⏳ Chưa bắt đầu |
 | | **Sprint 5 — Runtime thoại MCU** | Tuần 8–10 | Thu/phát âm thanh, AEC/VAD, C/C++ state machine, stream lên provider | **0%** | ⏳ Chưa bắt đầu |
 | | **Sprint 6 — OTA & Nghiệm thu v1.0** | Tuần 10–12 | A/B OTA, secure boot, tiêu chí A1–A9 | **0%** | ⏳ Chưa bắt đầu |
 | **Beta** | **Developer Beta** | Tuần 12–16 | Hỗ trợ 50–100 lập trình viên, chỉ số B1–B5 | **0%** | ⏳ Chưa bắt đầu |
 | **Khối 2** | **Fleet OS** *(dịch vụ thương mại duy nhất)* | Tháng 4–8 | Hawkbit Canary OTA, EMQX Broker, Provisioning | **0%** | ⏳ Chờ mốc Beta |
 | **Khối 3** | **Bảy đường ray nền tảng** | Tháng 4–8 | OCI/ORAS Registry, OpenMeter usage billing | **0%** | ⏳ Chờ mốc Beta |
+
+**Lịch theo ngày tuyệt đối (Q-19).** Sprint 2 và 3 ghi bằng ngày, thay cho quy ước cũ *"Tuần N ở kế hoạch = Tuần N+1 roadmap"* (đã bỏ). M1 trễ **~2 tuần** so với roadmap gốc (Tuần 6 gốc = 2026-11-02), và **Khối 1b cùng mọi mốc sau nó (Sprint 5, Sprint 6, Beta, Điểm rẽ Tuần 16) lùi tương ứng**; cột "Thời gian" của các dòng đó vẫn ghi tuần của lịch gốc cho tới khi ngày tuyệt đối được chốt lúc mở Sprint 4. Ước lượng V1 ~6,6–7,1 tuần-người trong 7 tuần — sát, không có đệm lớn.
 
 ---
 
@@ -94,56 +98,74 @@
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)              Cập nhật: 2026-09-21    │
+│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)              Cập nhật: 2026-09-23    │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ 1. VỪA HOÀN THÀNH (DONE):                                                              │
+│    • [2026-09-23] Chốt Q-10, Q-11 (phần LiteLLM), Q-14 → Q-20 — sổ quyết định PRD §15: │
+│      fallback cục bộ = bộ nhận diện lệnh cố định (Q-14) · `sim` mặc định gõ chữ (Q-15) │
+│      · `gpio-sim` + 1 RPi 5 (Q-16) · `on_block` v1.0 fail-closed, không waiver (Q-17)  │
+│      · kế thừa `budget`/`on_block` (Q-18) · lịch ngày tuyệt đối (Q-19) · cổng nhu cầu  │
+│      mềm 2026-10-25 (Q-20)                                                             │
+│    • [2026-09-23] RFC-0004 kế thừa `budget`/`on_block` (Q-18) → hiện thực ở TSK-S2-13  │
+│    • [2026-09-23] RFC-0002 thu hẹp: chỉ mở enum `target` + `TARGET_TIERS`;             │
+│      `vision.in` tách sang RFC riêng ở Khối V1b                                        │
+│    • [2026-09-22] Kế hoạch Sprint 2–3 `docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`│
+│      + review /autoplan (CEO · Eng · DX); owner theo ENG-T3 (option A)                 │
 │    • [RFC-0001] Đóng băng lược đồ gate: bắt buộc trường có điều kiện theo `extends`,   │
-│      `budget.fail` thành tùy chọn (vắng = closed), tham số `on_block` theo hành vi      │
+│      `budget.fail` tùy chọn (vắng = closed), tham số `on_block` theo hành vi           │
 │    • [TSK-S1-03] Cưỡng chế ĐẦY ĐỦ 5 nguyên tắc kế thừa B.5 trong gate_resolver.py      │
-│      — nguyên tắc 2 quyết định được nhờ chuẩn hóa allow_when thành tập giá trị          │
-│    • [Tiêu chí 2] 3 gate mẫu viết tay + chuỗi kế thừa 2 cấp phân giải đúng              │
-│    • [Tiêu chí 1] 15 fixture gate sai + 6 fixture trace sai, kèm thông báo lỗi kỳ vọng │
-│    • [TSK-S1-11] Rà soát HAL dưới ràng buộc MCU: 5 kết luận + 4 ràng buộc cho Sprint 4 │
-│    • [TSK-S1-12] 2 workflow CI: ci-sim-linux.yml (4 job) + nightly-hardware.yml (4 job)│
-│    • [TSK-S1-13] CONTRIBUTING.md + quy trình RFC + mẫu RFC + RFC-0001                  │
-│    • [TSK-S1-10] Khung đo bộ nhớ (memory_probe.c) + scripts/check_firmware_size.py     │
+│    • [Tiêu chí 1–2] 3 gate mẫu + kế thừa 2 cấp; 15 fixture gate + 6 fixture trace sai  │
+│    • [TSK-S1-10..13] Khung đo bộ nhớ · rà HAL-MCU · 2 workflow CI · CONTRIBUTING + RFC │
 │    • Chuẩn tắc hóa RFC 8785 + băm SHA-256 cho gate; CLI: gate/trace/board đã thực thi  │
-│    • Test: 208 PASS / 0 SKIP (trước đó 4 test conformance lược đồ bị skip trong im lặng)│
+│    • Test: 229 PASS / 0 SKIP (210 + 19 test RFC-0004; chạy cả khi FORCE_COLOR bật)     │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN (IN-PROGRESS):                                                       │
-│    • [TSK-S1-10] V2: CHỜ BO MẠCH. Khung đo xong, chưa có số đo thực. Vị trí chèn đã     │
-│      đánh dấu TODO trong targets/esp32s3/main/main.c (nạp AEC + VAD + Opus)             │
+│    • [TSK-S1-10] V2: CHỜ BO MẠCH. Khung đo xong, chưa có số đo thực. Phải đo thêm      │
+│      MultiNet (+ WakeNet nếu cân nhắc thay microWakeWord) theo Q-14. Vị trí chèn đã    │
+│      đánh dấu TODO trong targets/esp32s3/main/main.c (nạp AEC + VAD + Opus)            │
+│    • Chuẩn bị mở Sprint 2 (A1, wedge `sim`) ngày 2026-09-28 (Q-19)                     │
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO CẦN LÀM NGAY (NEXT IMMEDIATE ACTIONS):                               │
-│    • 🔴 CHỐT Q-11 (ngoại lệ giấy phép Hawkbit/EMQX/LiteLLM) — chặn Tiêu chí ra 6        │
-│    • 🔴 Đặt bo mạch ESP32-S3-BOX-3 — chặn TSK-S1-10 và Tiêu chí ra 3                   │
+│    • 🔴 Đặt 2 bo mạch ESP32-S3-Box-3 (ĐẶT NGAY) + 1 Raspberry Pi 5 (Q-16) — Phụ lục B  │
+│    • A1 (2026-09-28 → 2026-10-25), đúng thứ tự:                                        │
+│      TSK-S2-03 Gate Engine → S2-08 SystemOne/Two + fallback ngữ pháp lệnh trên `sim`   │
+│      → S2-01 HAL `sim` (V2) → S2-04 fail-closed → S2-05 `@action` + token → S2-02      │
+│      đối chiếu năng lực · kèm S2-12 cây quyết định host · S2-13 kế thừa (RFC-0004)     │
+│    • Thí nghiệm `gpio-sim` 2 giờ trên runner GitHub Ubuntu TRƯỚC khi mở A2 (Q-16)      │
+│    • V3 từ 2026-10-05: TSK-S3-06, S3-07, S3-14, S3-16 → S3-20                          │
+│    • Cổng nhu cầu mềm 2026-10-25 (Q-20) — rà câu hỏi kinh doanh mở, không chặn A2      │
 │    • Đồng bộ Phụ lục B.1/B.3/B.4 của proposal theo RFC-0001 §9                         │
-│    • Mở Sprint 2: [TSK-S2-01] HAL cho `sim`, [TSK-S2-07] đặc tả chuẩn tắc FSM thoại    │
-│    • [MỚI] [TSK-S2-11] Lớp trừu tượng provider (OpenAI-compatible + adapter) —         │
-│      hạng mục phát sinh từ CR-1.0 cloud-first, nằm trong Khối 1a chứ không phải Khối 2  │
+│    • TSK-S2-07 (đặc tả FSM thoại) ĐÃ HOÃN sang Khối 1b cùng S3-10, S3-11: nằm trên     │
+│      đường găng Sprint 2 nhưng không trên đường găng wedge — wedge không chạm âm thanh │
 │                                                                                        │
 │ 4. LƯU Ý KỸ THUẬT QUAN TRỌNG CHO NGƯỜI TIẾP QUẢN (CONTEXT & GUARDRAILS):               │
 │    • [CR-1.0] Kiến trúc nay là CLOUD-FIRST: STT/TTS/LLM chạy trên provider cloud,      │
-│      `esp32s3` chỉ thu/phát âm thanh + AEC/VAD + FSM + thẩm định gate. Sprint 5 giảm    │
-│      phạm vi tương ứng; R-1 hạ từ Cao xuống Trung bình.                                 │
-│    • [CR-1.0] KHÔNG có doanh thu inference. Gateway thương mại bị bỏ; lớp provider là   │
-│      OSS self-host. Fleet OS là dịch vụ thương mại duy nhất.                            │
-│    • [CR-1.0] Fail-closed KHÔNG đổi: gate và FSM chạy hoàn toàn trên thiết bị, mất      │
-│      mạng vẫn chặn hành động vật lý (NFR-RES-04 giữ nguyên 100%).                       │
-│    • [CR-1.0] LiteLLM chuyển từ dịch vụ máy chủ sang thư viện PHÂN PHỐI KÈM sản phẩm    │
-│      (proposal Phụ lục H.1) → Q-11 phải xét lại nghĩa vụ giấy phép ở phạm vi mới.       │
+│      `esp32s3` chỉ thu/phát âm thanh + AEC/VAD + FSM + thẩm định gate. Sprint 5 giảm   │
+│      phạm vi tương ứng; R-1 hạ từ Cao xuống Trung bình.                                │
+│    • [CR-1.0] KHÔNG có doanh thu inference. Gateway thương mại bị bỏ; lớp provider là  │
+│      OSS self-host. Fleet OS là dịch vụ thương mại duy nhất.                           │
+│    • [CR-1.0 · Q-14] Fail-closed KHÔNG đổi: gate chạy hoàn toàn trên thiết bị. Mất mạng│
+│      ⇒ gate VẪN lượng giá bằng bộ nhận diện lệnh cố định cục bộ; chỉ BLOCK với         │
+│      `gate_unreachable` khi fallback không có / không chạy được (NFR-RES-04 giữ 100%). │
+│    • [Q-17] Mọi `on_block` đều chặn hành động vật lý; `degrade` chạy `fallback_action` │
+│      QUA GATE CỦA CHÍNH NÓ. Đã đặc tả + test 100% ⇒ không phải nợ, không cần waiver.   │
+│    • [Q-10 · Q-11] LiteLLM là THƯ VIỆN định tuyến (SDK), KHÔNG chạy proxy server, luôn │
+│      nằm sau `neuroedge.models.providers` (adapter Q-12 là đường thoát). Cài qua extra │
+│      `neuroedge[cloud]` — `pip install neuroedge` không kéo LiteLLM (FR-DX-02). Đã     │
+│      duyệt `litellm==1.102.0` (MIT, wheel không có `enterprise/`); CI kiểm giấy phép   │
+│      phụ thuộc bắc cầu làm cùng TSK-S2-11. Hawkbit/EMQX vẫn mở tới trước Khối 2.       │
 │    • Không sửa đuôi trace thành .ntrace (chuẩn duy nhất là .json mang $schema).        │
 │    • Bộ lượng giá CEL trên ESP32-S3 dùng Phương án A (Host biên dịch sang Decision     │
-│      Tree JSON phẳng; ESP32-S3 chỉ duyệt cây bằng hàm C đơn giản, không nhúng CEL VM).  │
+│      Tree JSON phẳng; ESP32-S3 chỉ duyệt cây bằng hàm C đơn giản, không nhúng CEL VM). │
 │    • Bo mạch tham chiếu duy nhất là ESP32-S3-Box-3 (không đổi sang DevKitC).           │
 │    • THẨM ĐỊNH LƯỢC ĐỒ KHÔNG ĐỦ để kết luận gate an toàn. Nguyên tắc 2 là mệnh đề về   │
-│      HAI tài liệu, nằm ngoài khả năng của JSON Schema → cổng kiểm tra là                │
+│      HAI tài liệu, nằm ngoài khả năng của JSON Schema → cổng kiểm tra là               │
 │      `neuroedge gate lint` (phân giải), không phải thẩm định lược đồ.                  │
-│    • `allow_when` dạng chuỗi CEL bị TỪ CHỐI trong chuỗi kế thừa: không chứng minh được  │
-│      phép siết chặt cho biểu thức đục → fail-closed thay vì xấp xỉ.                     │
-│    • `copier` ĐÃ CHUYỂN sang extra `scaffold`: nó kéo theo jinja2-ansible-filters GPL3, │
-│      không được phép nằm trong phần phân phối của lõi MIT (§3.10 roadmap).              │
-│    • jsonschema phải ghim extra `[format-nongpl]` (extra `[format]` kéo rfc3987 GPL).   │
+│    • `allow_when` dạng chuỗi CEL bị TỪ CHỐI trong chuỗi kế thừa: không chứng minh được │
+│      phép siết chặt cho biểu thức đục → fail-closed thay vì xấp xỉ.                    │
+│    • `copier` ĐÃ CHUYỂN sang extra `scaffold`: nó kéo theo jinja2-ansible-filters GPL3,│
+│      không được phép nằm trong phần phân phối của lõi MIT (§3.10 roadmap).             │
+│    • jsonschema phải ghim extra `[format-nongpl]` (extra `[format]` kéo rfc3987 GPL).  │
 │    • Lệnh CLI chưa có engine PHẢI thoát mã 2, không in bảng "PASS" giả.                │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -232,7 +254,7 @@ Tuần 0 ──► LƯỢC ĐỒ GATE v1 ──┐
 
 **Đòn bẩy mã nguồn mở trên đường găng:** mắt xích 2 rút ngắn nhờ Google CEL, mắt xích 4 nhờ driver XiaoZhi, mắt xích 5 nhờ Pipecat và bộ mô hình âm thanh. Chi tiết và mức rút ngắn thực tế tại §3.7.
 
-**Phụ thuộc mới từ CR-1.0:** lớp trừu tượng provider (TSK-S2-11) là điều kiện tiên quyết cho ASR/TTS qua cloud ở Sprint 3 (TSK-S3-13) và cho vòng lặp thoại ở Sprint 5 (TSK-S5-06). Nó **không** nằm trên đường găng của mắt xích 2 và 3 nên làm song song được, nhưng phải xong trước Tuần 6.
+**Phụ thuộc mới từ CR-1.0:** lớp trừu tượng provider (TSK-S2-11) là điều kiện tiên quyết cho ASR/TTS qua cloud (TSK-S3-13, nay hoãn sang Sprint 5) và cho vòng lặp thoại ở Sprint 5 (TSK-S5-06). Nó **không** nằm trên đường găng của mắt xích 2 và 3 nên làm song song được, chạy trong A2 và **hạn 2026-11-15** (Q-19; thay cho "trước Tuần 6"). Q-11 phần LiteLLM đã duyệt 2026-09-23 nên TSK-S2-11 không còn bị chặn.
 
 **Không nằm trên đường găng, làm song song:** giao diện `sim`, CLI, tài liệu, ví dụ mẫu, hạ tầng CI.
 
@@ -292,7 +314,7 @@ Ranh giới này quyết định mọi mục còn lại. Một thành phần n�
 |:---|:---|:---|
 | Eclipse Hawkbit | EPL-2.0 | Nằm ngoài danh sách cho phép. Chấp nhận được cho dịch vụ máy chủ không phân phối, nhưng phải ghi rõ ranh giới triển khai |
 | EMQX | Apache-2.0 với phần thương mại theo BSL | Phải xác định chính xác tính năng nào thuộc phần Apache trước khi thiết kế phụ thuộc |
-| LiteLLM | MIT với phần enterprise riêng | Chỉ dùng phần MIT; middleware xác thực thiết bị viết riêng |
+| LiteLLM | MIT với phần enterprise riêng | Chỉ dùng phần MIT; middleware xác thực thiết bị viết riêng. **✅ Đã duyệt 2026-09-23** (Q-11): `litellm==1.102.0`, wheel không chứa `enterprise/`; dùng như SDK qua extra `neuroedge[cloud]` (Q-10) |
 
 ### 3.4 Ma trận tích hợp theo khối
 
@@ -488,18 +510,18 @@ Ba tệp này là thước đo tuân thủ cho cả Khối 1a và 1b, và là đ
 | **TSK-S1-07** | **Ba tệp lược đồ chính thức** trong `schemas/`: `trace.v1.json` · `gate.v1.json` · `board.v1.json` | FR-TRC-01, FR-GATE-02, FR-HAL-02 | V1 | ✅ Hoàn thành | JSON Schema draft 2020-12 · CI thẩm định `$id` và `check_schema` · 18 test tại [`test_schemas.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/tests/test_schemas.py) |
 | **TSK-S1-08** | **Ba tệp vết ghi chuẩn mực** tại `fixtures/traces/` (`happy-path`, `unverified_attempt`, `network_offline`) | FR-CI-01, FR-CI-02 | V1 | ✅ Hoàn thành | [`fixtures/traces/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/traces/) + [6 fixture phản chứng](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/traces/invalid/) kèm [`expected_errors.yaml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/traces/expected_errors.yaml) · thẩm định cả `format: date-time` |
 | **TSK-S1-09** | Khung Python SDK, CLI và Action CI ban đầu (`replay`, `scenario`) | FR-CLI-01, FR-CI-01 | V1 | ✅ Hoàn thành | [`python/neuroedge/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/neuroedge/) · CLI thực thi `gate resolve/lint/publish`, `trace validate/show`, `board list/show`, `verify` · lệnh chưa có engine thoát mã 2 |
-| **TSK-S1-10** | **Spike khả thi bộ nhớ trên ESP32-S3-Box-3** | NFR-RES-01, NFR-RES-02 | V2 | 🔴 **Chờ bo mạch** | Khung đo xong: [`memory_probe.c`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/targets/esp32s3/main/memory_probe.c) (4 checkpoint, dòng JSON máy đọc), [`check_firmware_size.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/scripts/check_firmware_size.py) · **chưa có số đo thực** → [báo cáo](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/reports/memory_spike_report.md) |
+| **TSK-S1-10** | **Spike khả thi bộ nhớ trên ESP32-S3-Box-3** | NFR-RES-01, NFR-RES-02 | V2 | 🔴 **Chờ bo mạch** | Khung đo xong: [`memory_probe.c`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/targets/esp32s3/main/memory_probe.c) (4 checkpoint, dòng JSON máy đọc), [`check_firmware_size.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/scripts/check_firmware_size.py) · **chưa có số đo thực** → [báo cáo](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/reports/memory_spike_report.md) · danh sách đo **thêm ESP-SR MultiNet** (và WakeNet nếu cân nhắc thay microWakeWord của Q-7) theo **Q-14** |
 | **TSK-S1-11** | Rà soát thiết kế HAL dưới ràng buộc MCU | — | V2 | ✅ Hoàn thành | [`docs/spec/hal_mcu_review.md`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/spec/hal_mcu_review.md) (5 kết luận + 4 ràng buộc cho Sprint 4) · hiện thực tại [`hal/board.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/neuroedge/hal/board.py) + [`boards/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/boards/) 3 target |
 | **TSK-S1-12** | Hai workflow CI: `ci-sim-linux.yml` và `nightly-hardware.yml` | FR-CI-05, FR-CI-06 | V1 | ✅ Hoàn thành | [`ci-sim-linux.yml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/.github/workflows/ci-sim-linux.yml) (lược đồ · phân giải gate · vết ghi · test 3 bản Python · lint · cổng giấy phép · **cổng chặn test skip**) · [`nightly-hardware.yml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/.github/workflows/nightly-hardware.yml) (dựng IDF · ngân sách flash Q-3 · thu số đo · trôi phụ thuộc) |
 | **TSK-S1-13** | Quy ước đóng góp và mẫu RFC đổi lược đồ | — | V1 | ✅ Hoàn thành | [`CONTRIBUTING.md`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/CONTRIBUTING.md) (7 mục) · [`docs/rfc/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/): [quy trình](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/README.md), [mẫu](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/0000-template.md), [RFC-0001](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/0001-gate-schema-conditional-requirements.md) |
 
 **Đòn bẩy OSS Sprint 1:** Pydantic v2 và `rfc8785` cho chuẩn hóa lược đồ · Typer, Rich, Copier cho khung CLI ban đầu. Tiết kiệm ước tính 3 tuần công sức viết mã.
 
-**Nội dung spike bộ nhớ:** nạp thử AEC + VAD + Opus streaming lên ESP32-S3-Box-3, đo dung lượng SRAM và PSRAM còn lại sau khi trừ ngăn xếp mạng và hệ điều hành. Kết quả là **một con số**, không phải một nhận định.
+**Nội dung spike bộ nhớ:** nạp thử AEC + VAD + Opus streaming **+ ESP-SR MultiNet** (bộ nhận diện lệnh cố định làm fallback cục bộ, Q-14; thêm WakeNet nếu cân nhắc thay microWakeWord) lên ESP32-S3-Box-3, đo dung lượng SRAM và PSRAM còn lại sau khi trừ ngăn xếp mạng và hệ điều hành. Kết quả là **một con số**, không phải một nhận định.
 
 Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 KB · PSRAM ≥ 2 MB · firmware ≤ 3,5 MB**. Không đạt ngưỡng nào thì kích hoạt bậc 5 của thang cắt phạm vi (§9) ngay, không chờ Tuần 9.
 
-**Tiêu chí ra Sprint 1 (Exit Criteria):** — **4 / 6 đạt · 2 bị chặn ngoài tầm kỹ thuật**
+**Tiêu chí ra Sprint 1 (Exit Criteria):** — **5 / 6 đạt · 1 bị chặn bởi phần cứng**
 
 - [x] **Tiêu chí 1:** JSON Schema của gate và trace publish nội bộ, có ví dụ hợp lệ và ví dụ sai kèm thông báo lỗi kỳ vọng.
   *Bằng chứng:* [`schemas/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/schemas/) 3 tệp · hợp lệ: [`gates/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/gates/) 3 gate + [`fixtures/gates/valid/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/gates/valid/) 5 tệp · **sai kèm lỗi kỳ vọng:** [`fixtures/gates/invalid/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/gates/invalid/) 15 tệp + [`expected_errors.yaml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/gates/expected_errors.yaml), [`fixtures/traces/invalid/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/traces/invalid/) 6 tệp + [`expected_errors.yaml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/traces/expected_errors.yaml). Test cưỡng chế corpus khép kín cả hai chiều (mỗi tệp có một mục, mỗi mục có một tệp) và mọi lỗi đủ 3 thành phần FR-DX-04.
@@ -511,41 +533,47 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
   *Bằng chứng:* job `frozen-artifacts` của [`ci-sim-linux.yml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/.github/workflows/ci-sim-linux.yml) chạy `check_schema` draft 2020-12, đối chiếu `$id`, và **khẳng định nghịch đảo**: corpus phản chứng phải tiếp tục thất bại, nếu phân giải được thì job đỏ.
 - [x] **Tiêu chí 5:** Ba tệp vết ghi chuẩn mực tại `fixtures/traces/` đã viết tay và phân giải đúng.
   *Bằng chứng:* `neuroedge trace validate fixtures/traces/*.json` → 3/3 VALID. 19 test tại [`test_trace_fixtures.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/tests/test_trace_fixtures.py) kiểm tra **nội dung kịch bản**, không chỉ tính hợp lệ lược đồ (happy-path cấp xung 30 000 ms; hai kịch bản còn lại **không sinh lệnh actuator nào**).
-- [ ] 🔴 **Tiêu chí 6:** Quyết định Q-11 đã chốt (§10.2) — điều kiện để bắt đầu port bất kỳ dòng mã nào.
-  **CHƯA ĐẠT — chặn bởi quyết định quản trị, chủ trì: kỹ thuật trưởng.** Không có dòng mã nào từ Hawkbit/EMQX/LiteLLM được port; phần D của [`NOTICE`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/NOTICE) ghi rõ phạm vi phơi nhiễm. Phát hiện phát sinh trong Sprint 1: `copier` kéo theo `jinja2-ansible-filters` **GPL3** — đã chuyển sang extra `scaffold` để lõi MIT không bị lây nhiễm, và cổng CI giấy phép chặn tái diễn.
+- [x] **Tiêu chí 6:** Quyết định Q-11 đã chốt (§10.2) — điều kiện để bắt đầu port bất kỳ dòng mã nào.
+  **ĐẠT cho phạm vi Giai đoạn 1 (2026-09-23).** Phần LiteLLM của Q-11 đã duyệt: `litellm==1.102.0` là MIT, wheel không chứa `enterprise/`, 55 phụ thuộc bắc cầu đều MIT/BSD/Apache-2.0/PSF + MPL-2.0; kèm chính sách phụ thuộc bắc cầu cưỡng chế bằng CI (làm cùng TSK-S2-11). **Phần Hawkbit EPL-2.0 / EMQX BSL chuyển thành cổng mở Khối 2** ([`TODOS.md`](TODOS.md) #16) — chưa có dòng mã nào của chúng được port; phần D của [`NOTICE`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/NOTICE) ghi rõ phạm vi phơi nhiễm. Phát hiện phát sinh trong Sprint 1: `copier` kéo theo `jinja2-ansible-filters` **GPL3** — đã chuyển sang extra `scaffold` để lõi MIT không bị lây nhiễm, và cổng CI giấy phép chặn tái diễn.
 
-**Ghi chú về phạm vi đã đóng:** toàn bộ khối lượng Sprint 1 **không phụ thuộc phần cứng hay quyết định quản trị** đã hoàn tất (12/13 task). Hai hạng mục còn lại không thể đóng bằng nỗ lực kỹ thuật thêm nữa.
+**Ghi chú về phạm vi đã đóng:** toàn bộ khối lượng Sprint 1 **không phụ thuộc phần cứng** đã hoàn tất (12/13 task, 5/6 tiêu chí ra). Hạng mục còn lại (TSK-S1-10, Tiêu chí 3) không thể đóng bằng nỗ lực kỹ thuật thêm nữa — nó chờ bo mạch.
 
 
-### 4.2 Sprint 2 — Lõi thực thi trên `sim` (Tuần 2–4)
+### 4.2 Sprint 2 — Lõi thực thi trên `sim` (≈ A1 · 2026-09-28 → 2026-10-25, Q-19)
 
+Phạm vi và thứ tự chạy theo kế hoạch [`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md) (wedge `sim`). **Thứ tự bắt buộc:** TSK-S2-03 → S2-08 → S2-01 → S2-04 → S2-05 → S2-02; TSK-S2-12 và S2-13 chạy kèm. Việc hoãn ghi `⏸ Hoãn` kèm lý do và đích đến; mốc kích hoạt ở [`TODOS.md`](TODOS.md).
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-S2-01** | Hiện thực HAL cho target `sim` | FR-TGT-01, FR-HAL-01 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/sim.py` |
+| **TSK-S2-01** | Hiện thực HAL cho target `sim` | FR-TGT-01, FR-HAL-01 | **V2** *(ENG-T3)* | ⏳ Chưa bắt đầu | `python/neuroedge/hal/sim.py` |
 | **TSK-S2-02** | Đối chiếu năng lực lúc build, thông báo lỗi đầy đủ 3 thành phần | FR-HAL-04, FR-HAL-05, FR-DX-04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/compiler.py` |
-| **TSK-S2-03** | Gate Engine: `evaluate`, `allow_when`, `on_block`, `budget` | FR-GATE-03, FR-GATE-04, FR-GATE-09 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/gate.py` |
+| **TSK-S2-03** | Gate Engine: `evaluate`, `allow_when`, `on_block`, `budget`. `on_block` v1.0 theo **Q-17**: mọi hành vi đều chặn hành động vật lý; `escalate`/`ask` ghi sự kiện + gọi hook (mặc định no-op); `degrade` chạy `fallback_action` qua gate của chính nó. ✅ khi xong phạm vi đã đặc tả | FR-GATE-03, FR-GATE-04, FR-GATE-09 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/gate.py` |
 | **TSK-S2-04** | Cơ chế fail-closed và mạch ngắt suy giảm | FR-ACE-03, NFR-REL-02 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/circuit_breaker.py` |
-| **TSK-S2-05** | Decorator `@action`, cấm gọi trực tiếp, `c.do()` và `c.say()` | FR-ACE-02, FR-ACE-04, FR-ACE-05, FR-ACE-07 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/actions/` |
-| **TSK-S2-06** | Lượng giá `allow_when` trên nền Google CEL, kèm đường biên dịch gate cho thiết bị (§3.8, Q-9) | FR-GATE-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/cel_compiler.py` |
-| **TSK-S2-07** | **Đặc tả chuẩn tắc máy trạng thái hội thoại** — nguồn sự thật cho cả hai hiện thực (§3.8) | FR-PER-02, FR-PER-03 | V1 | ⏳ Chưa bắt đầu | `docs/spec/voice_fsm.md` |
-| **TSK-S2-08** | Interface `SystemOne` / `SystemTwo` kèm fallback, giao diện kết nối mặc định tuân chuẩn OpenAI API | FR-MDL-01, FR-MDL-02, FR-MDL-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/models/` |
-| **TSK-S2-09** | Giao diện web `sim`: cảm biến ảo, trạng thái actuator | FR-TGT-06 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/sim/web/` |
-| **TSK-S2-10** | Kết luận phạm vi Khối 1b dựa trên spike | — | V2 + trưởng nhóm | ⏳ Chưa bắt đầu | `docs/reports/memory_spike_report.md` |
-| **TSK-S2-11** | **Lớp trừu tượng nhà cung cấp**: hợp đồng kết nối OpenAI-compatible + cơ chế adapter tùy chỉnh, áp dụng chung cho LLM/ASR/TTS (CR-1.0) | FR-MDL-07, FR-MDL-08, FR-GW-01, FR-GW-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/models/providers/` |
+| **TSK-S2-05** | Decorator `@action`, cấm gọi trực tiếp, `c.do()` và `c.say()`, **token phán quyết dùng một lần** | FR-ACE-02, FR-ACE-04, FR-ACE-05, FR-ACE-07 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/actions/` |
+| **TSK-S2-06** | Lượng giá `allow_when` trên nền Google CEL, kèm đường biên dịch gate cho thiết bị (§3.8, Q-9) | FR-GATE-03 | V1 | ⏸ **Hoãn → Sprint 5** | Dạng mapping đủ cho wedge; CEL là front-end biên dịch xuống *cùng* cây quyết định của TSK-S2-12 (Q-9 phương án A) |
+| **TSK-S2-07** | **Đặc tả chuẩn tắc máy trạng thái hội thoại** — nguồn sự thật cho cả hai hiện thực (§3.8) | FR-PER-02, FR-PER-03 | V1 | ⏸ **Hoãn → Sprint 5** | Hoãn **cùng** TSK-S3-10, S3-11 để giữ thứ tự §3.10: nằm trên đường găng Sprint 2 nhưng không trên đường găng wedge — wedge không chạm âm thanh. Phải xong trước TSK-S5-03 |
+| **TSK-S2-08** | Interface `SystemOne` / `SystemTwo` + trường độ tin cậy + test double tất định + **fallback cục bộ = bộ nhận diện lệnh cố định** (ngữ pháp lệnh → intent + độ tin cậy) chạy trên chữ gõ ở `sim` (**Q-14**, Q-15). Connector cloud thật đi cùng TSK-S2-11. Q-17: ✅ khi xong phạm vi đã đặc tả | FR-MDL-01, FR-MDL-02, FR-MDL-03, FR-ACE-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/models/` |
+| **TSK-S2-09** | Giao diện web `sim`: cảm biến ảo, trạng thái actuator | FR-TGT-06 | V3 | ⏸ **Hoãn → Sprint 5** | Không cần để đo wedge; `sim` mặc định là CLI gõ chữ (Q-15) |
+| **TSK-S2-10** | Kết luận phạm vi Khối 1b dựa trên spike | — | V2 + trưởng nhóm | ⏸ **Hoãn → Sprint 5** *(hoặc sớm hơn khi bo mạch về)* | Chặn bởi bo mạch (TSK-S1-10). `docs/reports/memory_spike_report.md` |
+| **TSK-S2-11** | **Lớp trừu tượng nhà cung cấp**: hợp đồng kết nối OpenAI-compatible + adapter tùy chỉnh, áp dụng chung cho LLM/ASR/TTS (CR-1.0). **LiteLLM làm thư viện định tuyến (SDK)** sau `neuroedge.models.providers`, cài qua extra **`neuroedge[cloud]`** (Q-10) · **bước kiểm giấy phép phụ thuộc bắc cầu trong CI** (Q-11). **Không còn bị chặn** — chạy trong A2, hạn **2026-11-15** (Q-19) | FR-MDL-07, FR-MDL-08, FR-GW-01, FR-GW-03 | V1 | ⏳ Chưa bắt đầu *(A2)* | `python/neuroedge/models/providers/` · `python/pyproject.toml` (extra `cloud`) · `.github/workflows/ci-sim-linux.yml` (job giấy phép) |
+| **TSK-S2-12** | **Đặc tả ngữ nghĩa quyết định:** trình biên dịch phía host `import parse_constraint` (không sửa `constraints.py`, không RFC) → cây quyết định mang `criteria_order` + `gate_digest`; `evaluate()` đi cây, trả phán quyết + `reason`. **Định dạng nội bộ, chưa đóng băng** — đóng băng ở RFC-0003 (Sprint 4) | FR-GATE-03, FR-ACE-01, FR-TGT-04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/decision_tree.py` · `decision_tree.v1.json` (nội bộ) |
+| **TSK-S2-13** | **Kế thừa `budget`/`on_block`** (RFC-0004, **Q-18**): `p95_latency_ms` của con ≤ cha · chuỗi đã `closed` thì con không khai `fail: open` · con không tự đưa vào `degrade`/`fallback_action` mới. Vi phạm ⇒ `GateInheritanceError`. Đóng lỗ `lax-night` (ENG-A2) | FR-GATE-06, FR-GATE-07, FR-GATE-09 | V1 | ✅ Hoàn thành (2026-09-23) | `python/neuroedge/engine/gate_resolver.py` · 4 fixture phản chứng tại `fixtures/gates/invalid/` + `expected_errors.yaml` · 10 test `test_rfc0004_*` · commit `87890c8` |
 
-**Tiêu chí ra Sprint 2 (Exit Criteria):**
+**Tiêu chí ra Sprint 2 (Exit Criteria):** — **2 / 6 đã đạt từ Sprint 1**
 
 - [ ] **Tiêu chí 1:** Agent mẫu chạy trên `sim`, gate chặn đúng theo `allow_when`.
 - [ ] **Tiêu chí 2:** Gọi trực tiếp hành động vật lý ném `ActionContractViolation`, chân GPIO ảo không kích.
-- [ ] **Tiêu chí 3:** Kịch bản mất mạng → hành động bị chặn với lý do `gate_unreachable`.
-- [ ] **Tiêu chí 4:** Gate con nới lỏng `allow_when` bị từ chối phân giải.
-- [ ] **Tiêu chí 5:** Quyết định Q-3, Q-7 đã chốt.
-- [ ] **Tiêu chí 6:** Đổi nhà cung cấp mô hình chỉ bằng thay đổi cấu hình, không sửa mã agent và không sửa gate; một adapter tùy chỉnh mẫu chạy được mà không sửa lõi.
+- [ ] **Tiêu chí 3 (Q-14):** Kịch bản mất mạng → gate **vẫn lượng giá** bằng bộ nhận diện lệnh cố định cục bộ; câu không khớp ngữ pháp hoặc độ tin cậy dưới ngưỡng → BLOCK theo tiêu chí bình thường; fallback không có / không chạy được → hành động bị chặn với lý do `gate_unreachable`.
+- [x] **Tiêu chí 4:** Gate con nới lỏng `allow_when` bị từ chối phân giải.
+  *Bằng chứng (ĐÃ ĐÓNG ở Sprint 1):* [`test_gate_resolver.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/tests/test_gate_resolver.py) + 4 fixture nới `allow_when` (`loosens_choice`, `loosens_confidence`, `loosens_level`, `loosens_via_not_in`) tại [`fixtures/gates/invalid/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/fixtures/gates/invalid/).
+- [x] **Tiêu chí 5:** Quyết định Q-3, Q-7 đã chốt.
+  *Bằng chứng (ĐÃ THOẢ SẴN):* Q-3 và Q-7 tại §10.1 của tài liệu này và `neuroedge-prd.md` §15.
+- [ ] **Tiêu chí 6:** Đổi nhà cung cấp mô hình chỉ bằng thay đổi cấu hình, không sửa mã agent và không sửa gate; một adapter tùy chỉnh mẫu chạy được mà không sửa lõi. **Nay đạt được** — Q-11 phần LiteLLM đã duyệt 2026-09-23, TSK-S2-11 hết bị chặn; đóng trong A2, hạn 2026-11-15 (Q-19).
 
 
-### 4.3 Sprint 3 — Action CI, `linux` và TTFV (Tuần 4–6)
+### 4.3 Sprint 3 — Action CI, `linux` và TTFV (≈ A2 · 2026-10-26 → 2026-11-15, Q-19)
 
+**Điều kiện mở A2:** thí nghiệm `gpio-sim` 2 giờ trên runner GitHub Ubuntu đã chạy (Q-16). V3 chạy từ **2026-10-05 → 2026-11-15**, song song A1 và A2.
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
@@ -553,23 +581,32 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 | **TSK-S3-02** | Replay trên target bất kỳ | FR-CI-02 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/player.py` |
 | **TSK-S3-03** | Thư viện assert: chặn, gate nào, leo thang, chân cấm kích | FR-CI-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/assertions.py` |
 | **TSK-S3-04** | Golden Reference và so khớp chuỗi phán quyết | FR-CI-04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/golden.py` |
-| **TSK-S3-05** | Hiện thực HAL cho target `linux` qua `gpiod` | FR-TGT-02 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` |
-| **TSK-S3-06** | CLI đầy đủ: `new`, `run`, `build`, `test`, `record`, `replay`, `trace validate` | FR-CLI-01→04, FR-TRC-08 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/` |
-| **TSK-S3-07** | Scaffold `neuroedge new` có sẵn action, gate, test | FR-DX-01 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/templates/` |
-| **TSK-S3-08** | Ba ví dụ mẫu chạy được, README có tài sản trực quan | FR-DX-05, FR-DX-06 | V3 | ⏳ Chưa bắt đầu | `examples/` |
-| **TSK-S3-09** | Telemetry CLI ẩn danh, có thể tắt | FR-TEL-01, FR-TEL-02 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/telemetry/` |
-| **TSK-S3-10** | **Bộ vector kiểm thử tuân thủ độc lập ngôn ngữ** cho máy trạng thái hội thoại (§3.8) | FR-CI-07, FR-TGT-04 | V1 | ⏳ Chưa bắt đầu | `fixtures/compliance/` |
-| **TSK-S3-11** | Hiện thực Python của máy trạng thái hội thoại, port thiết kế từ Pipecat | FR-PER-02→05 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/fsm.py` |
-| **TSK-S3-12** | Pipeline CI mẫu chạy `sim` + `linux` trên mỗi PR | FR-CI-05 | V1 | ⏳ Chưa bắt đầu | `.github/workflows/ci-sim-linux.yml` |
-| **TSK-S3-13** | **Tích hợp ASR/TTS qua provider cloud** cho `sim` và `linux`, kèm tùy chọn mô hình cục bộ (CR-1.0) | FR-MDL-09, FR-PER-07 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/providers/` |
+| **TSK-S3-05** | Hiện thực HAL cho target `linux` qua `gpiod`; CI dùng **`gpio-sim`** (kernel ≥ 5.19, configfs), **1 RPi 5** làm nightly phần cứng và phương án B; **ném lỗi** khi không có `/dev/gpiochip*`, không no-op (Q-16) | FR-TGT-02 | **V2** *(ENG-T3)* | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` |
+| **TSK-S3-06** | Vỏ CLI + `--help` + **hợp đồng mã thoát** cho `new`, `run`, `build`, `test`, `record`, `replay`, `trace validate`; nối engine theo từng tuần khi A1/A2 xong | FR-CLI-01→04, FR-CLI-06, FR-TRC-08 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/` |
+| **TSK-S3-07** | Scaffold `neuroedge new` có sẵn action, gate, test — **không dùng `copier`** (tránh GPL3 `jinja2-ansible-filters`) | FR-DX-01 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/templates/` |
+| **TSK-S3-08** | Ba ví dụ mẫu chạy được, README có tài sản trực quan | FR-DX-05, FR-DX-06 | V3 | ⏸ **Hoãn → Sprint 5** | V3 dồn cho đường phân phối; không đo wedge |
+| **TSK-S3-09** | Telemetry CLI ẩn danh, có thể tắt | FR-TEL-01, FR-TEL-02 | V3 | ⏸ **Hoãn → Sprint 5** | Không đo wedge; cần trước Beta (B1–B5) |
+| **TSK-S3-10** | **Bộ vector kiểm thử tuân thủ độc lập ngôn ngữ** cho máy trạng thái hội thoại (§3.8) | FR-CI-07, FR-TGT-04 | V1 | ⏸ **Hoãn → Sprint 5** | Hoãn cùng TSK-S2-07 (thứ tự §3.10); phải có trước TSK-S5-03 |
+| **TSK-S3-11** | Hiện thực Python của máy trạng thái hội thoại, port thiết kế từ Pipecat | FR-PER-02→05 | V1 | ⏸ **Hoãn → Sprint 5** | Hoãn cùng TSK-S2-07; wedge không chạm âm thanh |
+| **TSK-S3-12** | Pipeline CI mẫu chạy `sim` + `linux` trên mỗi PR | FR-CI-05 | V1 | 🟡 **Một phần** | [`ci-sim-linux.yml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/.github/workflows/ci-sim-linux.yml) đã có (4 job, 6 lượt chạy). Còn lại: runner `gpio-sim` cho HAL `linux` (cùng TSK-S3-05) |
+| **TSK-S3-13** | **Tích hợp ASR/TTS qua provider cloud** cho `sim` và `linux`, kèm tùy chọn mô hình cục bộ (CR-1.0) | FR-MDL-09, FR-PER-07 | V1 | ⏸ **Hoãn → Sprint 5** | Wedge `sim` gõ chữ không cần (Q-15); làm cùng TSK-S5-06, xem §5.2 |
+| **TSK-S3-14** | **Workflow release lên PyPI**; nghiệm thu `pip install neuroedge==<tag>` rồi **chạy** `gate lint` + `trace validate` từ bản cài | FR-DX-02, FR-GOV-01 | V3 | ⏳ Chưa bắt đầu | `.github/workflows/release-pypi.yml` |
+| **TSK-S3-15** | **RFC golden reference:** ba vết ghi chuẩn mực khai `"target": "esp32s3"` nhưng replay ở Tiêu chí 4 chạy trên `sim`/`linux` thật; `fixtures/traces/` là RFC-gated | FR-CI-04, FR-TRC-05 | V1 | ⏳ Chưa bắt đầu | `docs/rfc/` (RFC mới) · `fixtures/traces/` |
+| **TSK-S3-16** | **Cổng CI `digests.lock`:** khoá digest của `gates/**` + `fixtures/gates/valid/**` + `fixtures/gates/registry/**`; phân biệt *digest mới* với *digest đổi* (cần RFC) | FR-GATE-01, FR-GOV-02, FR-CI-05 | **V3** *(ENG-T3)* | ⏳ Chưa bắt đầu | `digests.lock` · `.github/workflows/ci-sim-linux.yml` |
+| **TSK-S3-17** | **Đóng gói asset vào wheel:** `force-include` lược đồ + vết ghi chuẩn mực; `paths.py` đọc từ gói; `repo_root()` ném lỗi 3 thành phần nêu `NEUROEDGE_ROOT` | FR-DX-02, FR-DX-04 | **V3** *(ENG-T3)* | ⏳ Chưa bắt đầu | `python/pyproject.toml` · `python/neuroedge/paths.py` |
+| **TSK-S3-18** | **`neuroedge gate explain`:** giải thích gate đã phân giải cho người duyệt không đọc mã (J6) | FR-GATE-01, FR-CLI-05 | **V3** *(ENG-T3)* | ⏳ Chưa bắt đầu | `python/neuroedge/cli/` |
+| **TSK-S3-19** | **`verify` đếm artifact, ném khi = 0** (lỗi 3 thành phần) + test phản chứng cây rỗng | FR-CI-07, FR-CLI-06, FR-DX-04 | **V3** *(ENG-T3)* | ⏳ Chưa bắt đầu | `python/neuroedge/cli/` · `python/tests/` |
+| **TSK-S3-20** | **`README.md` gốc** một màn hình, thành trang PyPI; liên kết tuyệt đối, không hướng dẫn cài editable | FR-DX-02, FR-DX-05 | **V3** *(ENG-T3)* | ⏳ Chưa bắt đầu | `README.md` |
+| **TSK-S3-21** | **Ghim `extends` bằng digest** (`@<ver>#sha256:…`) + `digests.lock` thành lock của `extends` + kiểm danh tính `URI ↔ name/version` | FR-GATE-05, FR-GATE-06 | V1 | ⏸ **Hoãn → Sprint 4** | Cần RFC-0003 (đổi `pattern` của `gate.v1.json`, đóng băng `decision_tree.v1.json`); chỉ cần khi firmware C đọc cây hoặc có registry ([`TODOS.md`](TODOS.md) #15) |
 
-**Tiêu chí ra Sprint 3 — cổng kết thúc Khối 1a (Exit Criteria):**
+**Tiêu chí ra Sprint 3 — cổng kết thúc Khối 1a (Exit Criteria):** — **1 / 6 đã đạt từ Sprint 1**
 
-- [ ] **Tiêu chí 1 (A1):** TTFV đo thử nội bộ trên **3 người ngoài đội** đạt trung vị dưới 10 phút *(đo đầy đủ ở Tuần 12)*.
+- [ ] **Tiêu chí 1 (A1):** TTFV đo thử nội bộ trên **3 người ngoài đội** đạt trung vị dưới 10 phút *(đo đầy đủ ở Tuần 12)*. Cần TSK-S3-14 publish và TSK-S3-07 scaffold trước, rồi mới có thời gian đo.
 - [ ] **Tiêu chí 2 (A2):** `neuroedge verify --targets sim,linux` đạt 100% *(một phần)*.
 - [ ] **Tiêu chí 3 (A3):** Không tồn tại đường tắt kích hoạt GPIO bỏ qua gate.
 - [ ] **Tiêu chí 4 (A4):** 100% kịch bản suy giảm đều chặn hành động.
-- [ ] **Tiêu chí 5 (A5):** Bộ kiểm thử kế thừa gate đạt 100%.
+- [x] **Tiêu chí 5 (A5):** Bộ kiểm thử kế thừa gate đạt 100%.
+  *Bằng chứng (ĐÃ ĐÓNG ở Sprint 1):* 35 test tại [`test_gate_resolver.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/tests/test_gate_resolver.py) + 26 test tại [`test_sample_gates.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/tests/test_sample_gates.py); `neuroedge gate lint` → *✓ 3 gate(s) resolved*. TSK-S2-13 mở rộng bộ này cho `budget`/`on_block` (Q-18) và phải giữ 100%.
 - [ ] **Tiêu chí 6 (A7):** 100% phiên sinh vết ghi qua được `neuroedge trace validate`.
 
 
@@ -615,6 +652,10 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 | **TSK-S5-04** | Thu hồi lệnh actuator chưa thực thi khi bị cắt lời | FR-PER-02 | V1 + V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/fsm/actuator_abort.c` |
 | **TSK-S5-05** | Tối ưu bộ nhớ theo ngân sách đã chốt ở Q-3 | NFR-RES-01, NFR-RES-02 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/sdkconfig.defaults` |
 | **TSK-S5-06** | **Client streaming âm thanh lên provider cloud**: đẩy khung Opus lên STT, nhận luồng TTS về, tái dùng hợp đồng kết nối của TSK-S2-11 (CR-1.0) | FR-PER-07, FR-GW-04 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/audio/provider_client.c` |
+| **TSK-S5-07** | **Fallback cục bộ trên `esp32s3`** (Q-14): bộ nhận diện lệnh cố định dùng **cùng ngữ pháp lệnh** với `sim` (TSK-S2-08). Backend chọn ở Khối 1b giữa **ESP-SR MultiNet** (lệnh offline, vài chục–vài trăm câu) và **TFLite Micro / ESP-NN** (KWS tự train < 500 KB). **Điều kiện trước Sprint 5:** xác minh giấy phép ESP-SR (theo hiểu biết: chỉ cho dùng trên SoC Espressif), ghi vào `NOTICE`, không lọt vào gói Python ([`TODOS.md`](TODOS.md) #17); giấy phép không hợp ⇒ dùng TFLite Micro / ESP-NN (Apache-2.0). Số đo bộ nhớ lấy từ spike TSK-S1-10 | FR-MDL-03, FR-ACE-03, NFR-RES-01 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/fallback/` |
+| **TSK-S3-13** | **Tích hợp ASR/TTS qua provider cloud** cho `sim` và `linux` — **chuyển từ Sprint 3** (wedge `sim` gõ chữ không cần, Q-15), làm cùng TSK-S5-06 | FR-MDL-09, FR-PER-07 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/providers/` |
+
+**Việc hoãn từ Sprint 2–3 đổ về Sprint 5:** TSK-S2-06 (CEL), TSK-S2-07 + TSK-S3-10 + TSK-S3-11 (đặc tả FSM thoại · vector tuân thủ · FSM Python — phải xong **trước** TSK-S5-03), TSK-S2-09 (web UI `sim`), TSK-S2-10 (kết luận phạm vi 1b, sớm hơn nếu bo mạch về), TSK-S3-08 (ví dụ mẫu), TSK-S3-09 (telemetry), TSK-S3-13 (bảng trên). Lý do từng task ở §4.2 và §4.3. Đây là tải thật của Khối 1b — phải tính vào khi chốt ngày tuyệt đối cho Sprint 5 (Q-19).
 
 **Ràng buộc kiến trúc bắt buộc:** máy trạng thái hội thoại chỉ có **một hiện thực duy nhất**, portable xuống MCU. Không được dùng một máy trạng thái cho `linux` và một máy trạng thái khác cho `esp32s3` — hai bản sẽ phân kỳ, và hành vi thu hồi lệnh actuator khi cắt lời sẽ khác nhau giữa các target, phá vỡ tương đương ở đúng miền nguy hiểm nhất.
 
@@ -628,7 +669,7 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 - [ ] **Tiêu chí 2:** Cắt lời giữa câu: TTS dừng dưới 300 ms, không có lệnh actuator nào rò rỉ.
 - [ ] **Tiêu chí 3:** Bơm 20 khung nhiễu liên tiếp: máy trạng thái vẫn phản hồi đúng.
 - [ ] **Tiêu chí 4:** Bộ nhớ còn lại sau 4 giờ chạy nằm trong ngân sách Q-3.
-- [ ] **Tiêu chí 5:** Mất kết nối tới provider giữa phiên → hành động vật lý bị chặn với lý do fail-closed, thiết bị không treo và phục hồi được khi có mạng trở lại.
+- [ ] **Tiêu chí 5 (Q-14):** Mất kết nối tới provider giữa phiên → gate lượng giá bằng fallback cục bộ của TSK-S5-07; fallback không có / không chạy được → hành động vật lý bị chặn với lý do `gate_unreachable`; thiết bị không treo và phục hồi được khi có mạng trở lại.
 
 
 ### 5.3 Sprint 6 — OTA, ổn định hóa, nghiệm thu (Tuần 10–12)
@@ -828,37 +869,46 @@ Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho
 
 ## 10. Lịch chốt quyết định
 
-**Sổ quyết định là PRD §15**, nơi định nghĩa đầy đủ mười ba quyết định Q-1 đến Q-13. Mục này **không định nghĩa quyết định mới** — nó chỉ theo dõi hạn chốt, người quyết và trạng thái thực thi. Khi hai tài liệu lệch nhau, PRD §15 đúng.
+**Sổ quyết định là PRD §15**, nơi định nghĩa đầy đủ các quyết định Q-1 đến Q-20. Mục này **không định nghĩa quyết định mới** — nó chỉ theo dõi hạn chốt, người quyết và trạng thái thực thi. Khi hai tài liệu lệch nhau, PRD §15 đúng.
 
-### 10.1 Chín quyết định đã chốt
+### 10.1 Mười bảy quyết định đã chốt
 
 | Mã | Quyết định | Giá trị chốt | Cơ sở |
 |:---:|:---|:---|:---|
 | **Q-1** | Phiên bản Python tối thiểu | **Python 3.11+** | `tomllib` có sẵn trong thư viện chuẩn nên không cần `tomli` · `TaskGroup` và `ExceptionGroup` trong `asyncio` · bytecode nhanh hơn khoảng 25% so với 3.10 |
 | **Q-2** | Bo mạch tham chiếu chính thức | **ESP32-S3-Box-3** | Tích hợp sẵn LCD ST7789, dual-mic ES7210, loa ES8311, dock GPIO. Loại bỏ hoàn toàn việc câu dây thủ công vốn gây nhiễu clock I2S trên DevKitC. DevKitC hạ xuống bo mạch thứ cấp do cộng đồng hỗ trợ |
 | **Q-3** | Ngân sách bộ nhớ và firmware | **SRAM cho ứng dụng ≥ 120 KB · PSRAM ≥ 2 MB · firmware ≤ 3,5 MB** | Bảo đảm nạp vừa phân vùng kép A/B trên flash 16 MB của Box-3. PSRAM dành cho ring buffer âm thanh, VAD và wake-word |
-| **Q-4** | Nhà cung cấp mô hình ở v1.0 | **System 1:** Jev qua đám mây + bộ trích xuất intent cục bộ trên Sherpa-ONNX làm fallback<br>**System 2:** Claude Sonnet 5 và GPT-4o-mini qua LiteLLM | Bảo đảm nguyên tắc fallback cục bộ khi mất mạng thực sự khả thi, không chỉ là tuyên bố kiến trúc |
+| **Q-4** | Nhà cung cấp mô hình ở v1.0 *(sửa 2026-09-23)* | **System 1:** Jev qua đám mây + **fallback cục bộ = bộ nhận diện lệnh cố định** theo Q-14 (thay Sherpa-ONNX)<br>**System 2:** `claude-sonnet-5` và GPT-4o-mini **qua LiteLLM** (Q-10) | Bảo đảm nguyên tắc fallback cục bộ khi mất mạng thực sự khả thi, không chỉ là tuyên bố kiến trúc |
 | **Q-8** | Ngôn ngữ lõi firmware | **C/C++ trên ESP-IDF** cho `esp32s3`; Python cho `sim` và `linux` | Thừa hưởng trọn vẹn driver XiaoZhi và hệ sinh thái ESP-IDF. Kéo theo nghĩa vụ đặc tả chuẩn tắc và bộ vector tuân thủ tại §3.8 |
 | **Q-9** | Lượng giá CEL trên vi điều khiển | **Phương án A — biên dịch gate lúc build** | `neuroedge build` dịch CEL thành cây quyết định JSON phẳng; firmware duyệt cây bằng một hàm C khoảng 100 dòng. Phán quyết đồng nhất trên mọi target, không tốn RAM |
 | **Q-12** | Chuẩn kết nối nhà cung cấp AI | **OpenAI API là chuẩn mặc định**; provider chưa tương thích đi qua **adapter do người dùng tự viết**. Áp dụng chung cho LLM, ASR và TTS | Chốt theo CR-1.0 (PRD §15, FR-MDL-07→09). Tận dụng hệ sinh thái đã quen chuẩn OpenAI thay vì phát minh hợp đồng riêng; adapter giữ đường thoát khi chuẩn bên ngoài thay đổi |
 | **Q-7** | Từ khóa kích hoạt mặc định v1.0 | ***"Hey Neuro"*** qua `microWakeWord` trên Box-3 và `openWakeWord` trên `linux`/`sim` | Chốt sớm để Sprint 5 chọn được mô hình wake-word mà không phải chờ. Tiêu chí ra Sprint 2 đã yêu cầu quyết định này |
 | **Q-13** | Phân tầng cam kết theo bậc target | **Ba bậc:** bậc 1 giữ toàn bộ cam kết chất lượng; bậc 2 đội lõi bảo trì với cam kết hẹp hơn; bậc 3 cộng đồng tự kiểm chứng | Cho phép mở rộng phần cứng ở Giai đoạn 2 mà không pha loãng chất lượng bậc 1 (FR-TGT-08) |
+| **Q-10** | Mức độ phụ thuộc vào LiteLLM · ✅ **2026-09-23** | **Thư viện định tuyến (SDK)**, không chạy LiteLLM proxy server, luôn sau `neuroedge.models.providers`; cài qua extra **`neuroedge[cloud]`** | `pip install neuroedge` không kéo LiteLLM (wheel ~120 MB do boto3, huggingface_hub) → FR-DX-02 nhẹ và keyless. Adapter Q-12 vẫn là đường thoát |
+| **Q-14** | Mất mạng + fallback cục bộ · ✅ **2026-09-23** | Offline ⇒ gate **vẫn lượng giá** bằng bộ nhận diện **lệnh cố định**; BLOCK `gate_unreachable` chỉ khi fallback không chạy được. Fallback lên **P0**. Backend theo target, cùng ngữ pháp: `sim` khớp chữ gõ · `esp32s3` ESP-SR MultiNet hoặc TFLite Micro/ESP-NN · `linux` TFLite/KWS | Giải CEO-X1. Thay Sherpa-ONNX. Kéo theo: TSK-S2-08, TSK-S5-07, spike TSK-S1-10 đo MultiNet, xác minh giấy phép ESP-SR trước Sprint 5 |
+| **Q-15** | Đầu vào mặc định của `sim` · ✅ **2026-09-23** | **Gõ chữ** (CLI/UI) → bộ khớp ngữ pháp lệnh Q-14: không mạng, không key, tất định. Giọng nói tùy chọn (STT cloud khi có key) | FR-DX-02. Hành trình 10 phút bước 2–4: `neuroedge run --target sim`, gõ một lệnh, thấy actuator ảo và phán quyết gate |
+| **Q-16** | GPIO cho `linux` · ✅ **2026-09-23** | CI dùng **`gpio-sim`** (kernel ≥ 5.19, configfs); thí nghiệm 2 giờ trước A2; **mua 1 RPi 5** làm nightly + phương án B; HAL `linux` ném lỗi khi không có `/dev/gpiochip*` | Giải F1. Xem TSK-S3-05, Phụ lục B |
+| **Q-17** | Hành vi `on_block` ở v1.0 · ✅ **2026-09-23** | Mọi `on_block` chặn hành động vật lý; `escalate`/`ask` ghi sự kiện + gọi hook (mặc định no-op); `degrade` chạy `fallback_action` qua gate của chính nó | Hành vi đặc tả, fail-closed, test 100% ⇒ **không phải nợ, không cần waiver** (§11.3). Bề mặt tương tác thật thuộc TSK-S2-07/S2-09/Sprint 5 |
+| **Q-18** | Kế thừa `budget`/`on_block` · ✅ **2026-09-23** | `p95` con ≤ cha · chuỗi `closed` thì con không khai `fail: open` · con không tự đưa vào `degrade`/`fallback_action` mới; vi phạm ⇒ `GateInheritanceError` | RFC-0004, sửa ngữ nghĩa phân giải; đóng lỗ `lax-night` (ENG-A2). Task: TSK-S2-13. Mở rộng FR-GATE-06 và Phụ lục B.5 |
+| **Q-19** | Lịch Sprint 2–3 theo ngày tuyệt đối · ✅ **2026-09-23** | A1 **2026-09-28 → 2026-10-25** · A2 **2026-10-26 → 2026-11-15** · Sprint 4 mở **2026-11-16** | Bỏ quy ước "Tuần N ở đây = Tuần N+1". M1 trễ ~2 tuần; Khối 1b lùi tương ứng. V1 ~6,6–7,1 tuần-người trong 7 tuần |
+| **Q-20** | Cổng nhu cầu mềm · ✅ **2026-09-23** | Cổng **2026-10-25** (cuối A1), **không chặn A2** | CEO-X2..X5 và CEO-T1..T4 thành câu hỏi kinh doanh mở, trưởng nhóm chủ trì ([`TODOS.md`](TODOS.md) #19) |
 
 **Hệ quả trực tiếp lên Sprint 1:** Q-1, Q-2 và Q-3 đã chốt nghĩa là đội có thể đặt bo mạch, dựng kho mã và bắt đầu spike ngay Tuần 0 mà không chờ quyết định nào.
 
 **Một điều chỉnh so với đề xuất gốc:** Q-4 ghi Claude Sonnet 5 thay vì Sonnet 3.5. Thế hệ 3.5 đã bị thay thế; chốt một định danh mô hình lỗi thời vào tài liệu nền sẽ tạo nợ ngay từ ngày đầu.
 
-### 10.2 Bốn quyết định còn mở
+### 10.2 Ba quyết định còn mở và một RFC
 
-| Tuần | Mã | Quyết định | Vì sao hạn đó | Người quyết | Trạng thái |
+| Hạn | Mã | Quyết định | Vì sao hạn đó | Người quyết | Trạng thái |
 |:---:|:---:|:---|:---|:---:|:---:|
-| **2** | **Q-11** | Phê duyệt ngoại lệ giấy phép: Hawkbit EPL-2.0, EMQX BSL, LiteLLM enterprise | Chặn việc thiết kế phụ thuộc cho Khối 2. Phải xong trước khi port bất kỳ dòng nào (§3.3). **CR-1.0 làm phần LiteLLM gấp hơn:** nó chuyển từ dịch vụ máy chủ sang thư viện **phân phối kèm sản phẩm** trong lõi MIT, nên nghĩa vụ giấy phép phải xét lại ở phạm vi phân phối, và cần xong trước Sprint 2 chứ không phải trước Khối 2 | Kỹ thuật trưởng | ⏳ Đang mở |
-| **2** | **Q-10** | Mức độ phụ thuộc vào LiteLLM: dùng như thư viện định tuyến hay tích hợp sâu | **Hạn đẩy sớm từ Tháng 3 lên Tuần 2 theo CR-1.0:** lớp provider nay thuộc lõi OSS và làm ngay ở Sprint 2 (TSK-S2-11), không còn chờ Khối 2 | Kỹ thuật nền tảng | ⏳ Đang mở |
+| **Trước Khối 2** | **Q-11** | Phê duyệt ngoại lệ giấy phép: Hawkbit EPL-2.0, EMQX BSL, LiteLLM | **Phần LiteLLM ✅ ĐÃ DUYỆT 2026-09-23:** `litellm==1.102.0` MIT, wheel không có `enterprise/`, 55 phụ thuộc bắc cầu đều MIT/BSD/Apache-2.0/PSF + MPL-2.0 (`certifi`, `tqdm`), kèm chính sách phụ thuộc bắc cầu (dưới bảng). **Phần Hawkbit / EMQX còn mở**, chỉ Khối 2 dùng — không viết thiết kế phụ thuộc nào của Fleet OS trước khi có phê duyệt bằng văn bản ([`TODOS.md`](TODOS.md) #16) | Kỹ thuật trưởng | 🟡 **Một phần** |
 | **Tháng 3** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng | ⏳ Đang mở |
 | **Tháng 6** | **RFC-0002** | Mở rộng enum `target` và đưa bậc target vào mã lõi (`TARGET_TIERS`) cho Giai đoạn 2; `vision.in` tách sang RFC riêng ở V1b | Không chặn roadmap này. Chặn Khối V1a của Giai đoạn 2, và phải xong trước khi viết bất kỳ board profile mới nào | Kỹ thuật trưởng | ⏳ Đang mở |
 | **Tháng 3** | Q-6 | Chính sách lưu trữ vết ghi: thời hạn và hạn mức | Ảnh hưởng chi phí vận hành và cam kết SLA | Sản phẩm | ⏳ Đang mở |
 
-**Q-11 là quyết định gấp nhất trong nhóm còn mở.** Ba thành phần của Khối 2 đều nằm ngoài danh sách giấy phép cho phép, và việc thiết kế phụ thuộc không nên bắt đầu trước khi có phê duyệt bằng văn bản. Q-11 cũng là **Tiêu chí ra số 6 của Sprint 1**, nên nó đang chặn việc đóng Sprint 1 chứ không chỉ chặn Khối 2. Sau CR-1.0, phần LiteLLM của Q-11 còn chặn thêm **TSK-S2-11 ở Sprint 2**: không được viết một dòng nào của lớp provider trước khi ranh giới giấy phép ở phạm vi phân phối được phê duyệt.
+**Q-11 không còn chặn Giai đoạn 1.** Phần LiteLLM — phần duy nhất Giai đoạn 1 phân phối kèm sản phẩm sau CR-1.0 — đã duyệt 2026-09-23, nên Tiêu chí ra 6 của Sprint 1 thoả và **TSK-S2-11 hết bị chặn** (chạy trong A2, hạn 2026-11-15). Phần còn lại (Hawkbit, EMQX) chỉ Khối 2 dùng; hạn chốt là **trước khi mở Khối 2**.
+
+**Chính sách phụ thuộc bắc cầu (Q-11):** cho phép MIT, BSD-2/3-Clause, Apache-2.0, ISC, PSF, MPL-2.0 (MPL chỉ dùng nguyên bản, không sửa); cấm GPL/LGPL/AGPL, SSPL, BSL, giấy phép thương mại hoặc không xác định. Cưỡng chế bằng bước kiểm giấy phép trong CI, làm cùng TSK-S2-11. *(Ngoại lệ LGPL qua liên kết động của `libgpiod` tại §3.3 quy tắc 3 là thư viện hệ thống C, không phải phụ thuộc Python bắc cầu.)*
 
 #### Phát hiện giấy phép trong Sprint 1 (đã xử lý, ghi lại để không tái diễn)
 
@@ -873,7 +923,7 @@ Cả hai đều trực tiếp hiện thực hóa rủi ro mà §3.10 của tài 
 
 Vì vậy job `licence-obligations` trong [`ci-sim-linux.yml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/.github/workflows/ci-sim-linux.yml) chạy `pip-licenses --fail-on` trên **toàn bộ cây phụ thuộc** ở mỗi pull request, và lưu bảng giấy phép đầy đủ làm artifact. Đây là nghĩa vụ 1 và 5 của §3.9 được tự động hóa, thay cho một lần rà soát thủ công.
 
-**Hệ quả cho Q-11:** quyết định Q-11 nên bao gồm luôn một chính sách rõ ràng cho phụ thuộc bắc cầu, không chỉ phê duyệt ba thành phần đã nêu tên.
+**Hệ quả cho Q-11 (đã thực hiện 2026-09-23):** quyết định Q-11 bao gồm luôn chính sách phụ thuộc bắc cầu ở trên, không chỉ phê duyệt các thành phần đã nêu tên.
 
 ---
 
@@ -911,7 +961,7 @@ Một hạng mục chỉ được coi là hoàn thành khi đủ **cả năm** �
 | Quy tắc                              | Nội dung                                                                         |
 | :------------------------------------ | :-------------------------------------------------------------------------------- |
 | **Đóng băng lược đồ**                | Sau Tuần 2, mọi thay đổi lược đồ cần RFC, phê duyệt và kịch bản di trú           |
-| **Không nợ kỹ thuật ở tầng an toàn** | Gate Engine và HAL không được hợp nhất kèm ghi chú "sẽ sửa sau"                  |
+| **Không nợ kỹ thuật ở tầng an toàn** | Gate Engine và HAL không được hợp nhất kèm ghi chú "sẽ sửa sau". **Làm rõ (Q-17):** một hành vi **đã đặc tả, fail-closed và được test đầy đủ** — ví dụ `on_block` ở v1.0, nơi mọi hành vi đều chặn hành động vật lý còn bề mặt tương tác thật (người nhận escalate, UI hỏi lại) để sau — **không phải** nợ "sẽ sửa sau" và không cần waiver. Nợ là hành vi chưa đặc tả, fail-open, hoặc chưa có test |
 | **Sai lệch tương đương là lỗi chặn** | `TargetEquivalenceError` trong nightly dừng mọi việc khác cho tới khi xử lý xong |
 | **Đóng băng tính năng trong Beta**   | Không ngoại lệ ngoài lỗi chặn hành trình 10 phút                                 |
 
@@ -962,9 +1012,11 @@ Cần chuẩn bị trước Tuần 1 để không chặn đường găng.
 
 | Hạng mục                                       | Số lượng | Cần trước  | Ghi chú                                              |
 | :---------------------------------------------- | :--------: | :----------: | :---------------------------------------------------- |
-| **ESP32-S3-Box-3** (bo mạch tham chiếu chính thức) | 5–8 | **Tuần 1** | Chốt tại Q-2. Đã tích hợp LCD, dual-mic và loa nên không cần mua rời. Dư ra cho nightly runner và bo mạch hỏng |
+| **ESP32-S3-Box-3** (bo mạch tham chiếu chính thức) — **đợt 1** | **2** | **ĐẶT NGAY** (2026-09-23) | Chặn TSK-S1-10 (spike bộ nhớ, đo cả MultiNet theo Q-14) và Tiêu chí ra Sprint 1 #3. Giá và lead time còn mở (design doc Open Q4) |
+| **ESP32-S3-Box-3** — đợt 2 | 3–6 | Sprint 4 (từ 2026-11-16) | Chốt tại Q-2. Đã tích hợp LCD, dual-mic và loa nên không cần mua rời. Tổng 5–8; dư ra cho nightly runner và bo mạch hỏng |
+| **Raspberry Pi 5** — cho `gpio-sim` / nightly (Q-16) | **1** | **ĐẶT NGAY**, về trước A2 (2026-10-26) | Nightly phần cứng cho HAL `linux` (TSK-S3-05) và **phương án B** nếu runner GitHub không có `gpio-sim` |
 | ESP32-S3-DevKitC (bo mạch thứ cấp) | 2 | Tuần 3 | Kiểm chứng tính di động của HAL ngoài Box-3; hỗ trợ ở mức cộng đồng |
-| Raspberry Pi 5                                 | 2        | Tuần 3     | Target `linux` trên ARM64                            |
+| Raspberry Pi 5                                 | 2        | Tuần 3     | Target `linux` trên ARM64 *(ngoài chiếc của Q-16 ở trên)* |
 | Máy Linux x86-64                               | 1        | Tuần 3     | Target `linux` trên x86, có thể dùng máy ảo          |
 | Mạch nạp và cáp JTAG                           | 2 bộ     | Tuần 1     | Gỡ lỗi cấp thanh ghi                                 |
 | Runner CI tự quản có gắn bo mạch thật          | 1        | **Tuần 6** | Bắt buộc cho nightly từ Tuần 8                       |

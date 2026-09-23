@@ -6,7 +6,7 @@ Revised again after /plan-eng-review (8 issue) và outside voice (14 phát hiệ
 Revised again through `/autoplan` (CEO → DX → Eng, 2026-09-22) — xem §GSTACK CEO / DX / ENG REVIEW REPORT
 Branch: docs/autoplan-ceo-dx-review
 Repo: letrongminh/neuroedge-init
-Status: **BLOCKED** — chờ 4 quyết định Tuần 1 (xem §GSTACK CEO REVIEW REPORT, `CEO-X6`). `/autoplan` Final Gate đã **duyệt** 2026-09-22 (option A — `ENG-T1..T3` theo khuyến nghị)
+Status: **UNBLOCKED 2026-09-23** — bốn quyết định Tuần 1 (`CEO-X6`) và `CEO-X1` đã chốt, xem §Quyết định 2026-09-23 ngay dưới. `/autoplan` Final Gate đã **duyệt** 2026-09-22 (option A — `ENG-T1..T3` theo khuyến nghị). *(Trước đó: BLOCKED.)*
 Mode: Startup
 
 > Chạy inline như tiền đề của `/plan-eng-review`. Tài liệu này **không thay** ba
@@ -31,6 +31,31 @@ Mode: Startup
 > **không tồn tại trong kho**; mọi kết luận dựa vào chúng đều nêu nguyên văn
 > ngay tại chỗ. Quyết định phạm vi ghi ở sổ quyết định gstack
 > `77b13ef8-974c-4fe9-9bea-38127539621a` (trong `~/.gstack`, không thuộc kho).
+
+## Quyết định 2026-09-23 — gỡ chặn
+
+Chốt bởi minhlt. Sổ quyết định là `neuroedge-prd.md` §15; bảng này chỉ nối từng
+câu hỏi mở của tài liệu này tới quyết định đã giải nó. **Mọi mốc dưới đây nay
+đọc theo ngày tuyệt đối của Q-19**, không theo quy ước "Tuần N ở đây".
+
+| Câu hỏi trong tài liệu này | Quyết định | Tóm tắt |
+|:---|:---|:---|
+| Open Q2 · Q-11 | **Q-11** (một phần) | LiteLLM đã duyệt + chính sách phụ thuộc bắc cầu; Hawkbit/EMQX mở tới Khối 2 (`TODOS.md` #16). §Nhánh Q-11 bị từ chối **không kích hoạt** |
+| Open Q3 · Q-10 | **Q-10** | LiteLLM là SDK định tuyến sau `neuroedge.models.providers`, extra `neuroedge[cloud]` |
+| Open Q5 · F1 | **Q-16** | `gpio-sim` trong CI + 1 RPi 5 dự phòng |
+| Open Q6 · Waiver §11.3 | **Q-17** | Không cần waiver: `on_block` v1.0 là hành vi được đặc tả, fail-closed, test đủ. `TSK-S2-03`/`S2-08` được ✅ khi xong phạm vi đặc tả |
+| Open Q8 · 5 hay 6,5 tuần | **Q-19** | **7 tuần**: A1 2026-09-28 → 10-25 · A2 10-26 → 11-15 · Sprint 4 mở 11-16 |
+| `CEO-X1` · offline | **Q-14** | Offline ⇒ lượng giá bằng bộ nhận diện **lệnh cố định** cục bộ (không phải Sherpa-ONNX); `gate_unreachable` chỉ khi fallback không chạy. Fallback lên P0 |
+| FR-DX-02 ↔ cloud STT | **Q-15** | `sim` mặc định gõ chữ, keyless |
+| `ENG-A2` · lỗ `lax-night` | **Q-18** / RFC-0004 | Ba luật kế thừa `budget`/`on_block` |
+| `CEO-X3` · cổng nhu cầu | **Q-20** | Cổng mềm 2026-10-25; `CEO-X2..X5`, `CEO-T1..T4` vào `TODOS.md` #19 |
+| `CEO-X6` · hạn `TSK-S2-11` | Q-10 + Q-11 + Q-19 | `TSK-S2-11` mở lại, chạy trong A2, hạn 2026-11-15 |
+| RFC-0003 (`TSK-S3-21`, `decision_tree.v1.json`) | Tự chốt | Hoãn tới Sprint 4 (`TODOS.md` #15) |
+
+**Còn mở:** Open Q1 (tên 3 U2), Q4 (giá + lead time Box-3 — việc mua đã quyết,
+chỉ còn thực hiện), Q7 (ngân sách R&D), Q9 (`neuroedge build` khi CEL hoãn — V3
+chốt trong `TSK-S3-06`), Q10 (`evaluate.type: numeric` — cần RFC riêng, chưa chặn
+wedge vì ba gate mẫu không dùng ngưỡng số).
 
 ## Problem Statement
 

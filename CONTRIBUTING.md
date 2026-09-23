@@ -168,8 +168,12 @@ Vì vậy:
 
 - Không dùng `pytest.importorskip` cho phụ thuộc đã khai trong `pyproject.toml`.
 - Phụ thuộc cần cho conformance là phụ thuộc **bắt buộc**, không phải tùy chọn.
-- CI chạy `pytest -q -p no:randomly --strict-markers` và **kiểm tra số test
-  skip bằng 0**.
+- CI chạy `python -m pytest -q --strict-markers --junit-xml=../junit.xml`
+  (`.github/workflows/ci-sim-linux.yml`), rồi đọc `junit.xml` và **fail nếu số
+  test skip khác 0 hoặc số test bằng 0**.
+- Output CLI được assert dưới dạng văn bản thuần. `tests/conftest.py` gỡ
+  `FORCE_COLOR` và đặt `NO_COLOR` trước khi import CLI; đầu ra máy đọc (`--json`,
+  digest) phải ghi thẳng stdout, không qua `rich`.
 
 Khi đọc kết quả test, đọc cả cột skip.
 
