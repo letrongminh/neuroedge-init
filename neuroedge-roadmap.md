@@ -56,10 +56,10 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 | Chỉ số | Trạng thái hiện hành | Ghi chú & Liên kết |
 |:---|:---|:---|
 | **Pha đang thực thi** | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0 → 2026-11-15)** | Tiến độ theo sprint: §0.2 · kế hoạch Sprint 2–3: [`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md) |
-| **Sprint hiện hành** | 🟡 **Sprint 2: Lõi thực thi trên `sim` (≈ A1)** — mã A1 xong sớm, 2026-09-23 | **8 / 9 task trong phạm vi xong** (còn TSK-S2-11, chạy ở A2) · **5 / 6 tiêu chí ra đạt** (còn #6, cùng TSK-S2-11) · Sprint 1 còn TSK-S1-10 chờ bo mạch |
+| **Sprint hiện hành** | 🟡 **Sprint 2: Lõi thực thi trên `sim` (≈ A1)** — mã A1 xong sớm, 2026-09-23 | **9 / 10 task trong phạm vi xong** (còn TSK-S2-11, chạy ở A2; TSK-S2-09 kéo lên và xong) · **5 / 6 tiêu chí ra đạt** (còn #6, cùng TSK-S2-11) · Sprint 1 còn TSK-S1-10 chờ bo mạch |
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: cuối Sprint 3 = **2026-11-15** — trễ ~2 tuần so với bản gốc (Tuần 6 gốc = 2026-11-02) (Q-19) |
-| **Lần cập nhật cuối** | **2026-09-23** | Q-21 đề xuất (mô phỏng theo tầng bằng OSS); Action CI TSK-S3-01 → S3-05 — chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 546/546 · SKIP 0** | `python/tests/` — 27 bộ test; cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) |
+| **Lần cập nhật cuối** | **2026-09-23** | Trực quan `sim`: TSK-S2-09 (`run --ui`), S3-22 (`trace view`), S3-23 (cảm biến, màn hình) — chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Trạng thái CI Lõi** | ✅ **PASS 573/573 · SKIP 0** | `python/tests/` — 30 bộ test; cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn + 1 còn mở** | 🔴 TSK-S1-10 chờ bo mạch vật lý · 🟡 Q-11 phần còn lại (Hawkbit EPL-2.0 / EMQX BSL) — **không chặn cho tới khi mở Khối 2** |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -70,8 +70,8 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 | Mốc | Sprint / Giai đoạn | Thời gian | Trọng tâm kỹ thuật | Tiến độ | Trạng thái |
 |:---:|:---|:---:|:---|:---:|:---:|
 | **Khối 1a** | **Sprint 1 — Đóng băng lược đồ** | Tuần 0–2<br>2026-09-21 → 2026-09-27 | Schemas, Monorepo, Test fixtures, Memory spike | **12 / 13** | 🟡 **Chờ phần cứng** (chỉ TSK-S1-10) |
-| | **Sprint 2 — Lõi thực thi trên `sim`** *(≈ A1, wedge `sim`)* | **2026-09-28 → 2026-10-25** (Q-19) | Gate Engine, cây quyết định host, HAL sim, fail-closed + fallback ngữ pháp lệnh (Q-14), `@action` + token, kế thừa `budget`/`on_block` (Q-18) | **8 / 9** | 🟡 Mã A1 xong 2026-09-23; còn TSK-S2-11 (A2) |
-| | **Sprint 3 — Action CI & Linux** *(≈ A2)* | **2026-10-26 → 2026-11-15** (Q-19) | HAL linux (`gpio-sim`, Q-16), Record/Replay/Assert/Golden, lớp provider LiteLLM, release PyPI, TTFV < 10' | **9 / 17** | 🟡 Action CI + HAL `linux` xong (2026-09-23); tiêu chí ra 5/6 |
+| | **Sprint 2 — Lõi thực thi trên `sim`** *(≈ A1, wedge `sim`)* | **2026-09-28 → 2026-10-25** (Q-19) | Gate Engine, cây quyết định host, HAL sim, fail-closed + fallback ngữ pháp lệnh (Q-14), `@action` + token, kế thừa `budget`/`on_block` (Q-18) | **9 / 10** | 🟡 Mã A1 + web UI `sim` xong 2026-09-23; còn TSK-S2-11 (A2) |
+| | **Sprint 3 — Action CI & Linux** *(≈ A2)* | **2026-10-26 → 2026-11-15** (Q-19) | HAL linux (`gpio-sim`, Q-16), Record/Replay/Assert/Golden, lớp provider LiteLLM, release PyPI, TTFV < 10' | **11 / 17** | 🟡 Action CI + HAL `linux` xong (2026-09-23); tiêu chí ra 5/6 |
 | **Khối 1b** | **Sprint 4 — HAL trên `esp32s3`** | **Từ 2026-11-16** (Q-19) · gốc Tuần 6–8 | Port driver XiaoZhi, verify target bậc 1 không audio, ghim `extends` (RFC-0003) | **0%** | ⏳ Chưa bắt đầu |
 | | **Sprint 5 — Runtime thoại MCU** | Tuần 8–10 | Thu/phát âm thanh, AEC/VAD, C/C++ state machine, stream lên provider | **0%** | ⏳ Chưa bắt đầu |
 | | **Sprint 6 — OTA & Nghiệm thu v1.0** | Tuần 10–12 | A/B OTA, secure boot, tiêu chí A1–A9 | **0%** | ⏳ Chưa bắt đầu |
@@ -90,15 +90,15 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 │ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-23 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ 1. VỪA HOÀN THÀNH — phiên gần nhất (chi tiết: CHANGELOG.md [Chưa phát hành])           │
-│    • Q-21, Q-22 đề xuất; phủ 5 nguyên thủy × 3 target: docs/spec/simulation_coverage.md│
-│    • Action CI + LinuxHAL (TSK-S3-01..05) đã merge — PR #13                            │
+│    • Trực quan sim ✅: TSK-S2-09 run --ui · S3-22 trace view · S3-23 sensor/display     │
+│    • Q-21, Q-22 đề xuất; phủ 15 ô: docs/spec/simulation_coverage.md                    │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
 │    1. Đặt 2 Box-3 + 1 RPi 5 nightly (Phụ lục B, Q-16)                                  │
-│    2. Duyệt Q-21, Q-22, S3-15; rồi V3: S2-09 (run --ui), S3-22 (trace view), S3-23     │
+│    2. Kỹ thuật trưởng duyệt Q-21, Q-22, TSK-S3-15                                      │
 │    3. A2 từ 2026-10-26: TSK-S2-11 (LiteLLM)                                            │
 │    4. V3: TSK-S3-14 (PyPI) → đo TTFV (Tiêu chí 1) · S3-16, S3-17, S3-19, S3-20         │
 │    5. Cổng nhu cầu mềm 2026-10-25 (Q-20, TODOS.md #19) — demo: run + replay            │
@@ -477,7 +477,7 @@ Phạm vi và thứ tự chạy theo kế hoạch [`docs/designs/giai-doan-1-wed
 | **TSK-S2-06** | Lượng giá `allow_when` trên nền Google CEL, kèm đường biên dịch gate cho thiết bị (§3.8, Q-9) | FR-GATE-03 | V1 | ⏸ **Hoãn → Sprint 5** | Dạng mapping đủ cho wedge; CEL là front-end biên dịch xuống *cùng* cây quyết định của TSK-S2-12 (Q-9 phương án A) |
 | **TSK-S2-07** | **Đặc tả chuẩn tắc máy trạng thái hội thoại** — nguồn sự thật cho cả hai hiện thực (§3.8) | FR-PER-02, FR-PER-03 | V1 | ⏸ **Hoãn → Sprint 5** | Hoãn **cùng** TSK-S3-10, S3-11 để giữ thứ tự §3.10: nằm trên đường găng Sprint 2 nhưng không trên đường găng wedge — wedge không chạm âm thanh. Phải xong trước TSK-S5-03 |
 | **TSK-S2-08** | Interface `SystemOne` / `SystemTwo` + trường độ tin cậy + test double tất định + **fallback cục bộ = bộ nhận diện lệnh cố định** (ngữ pháp lệnh → intent + độ tin cậy) chạy trên chữ gõ ở `sim` (**Q-14**, Q-15). Connector cloud thật đi cùng TSK-S2-11. Q-17: ✅ khi xong phạm vi đã đặc tả | FR-MDL-01, FR-MDL-02, FR-MDL-03, FR-ACE-03 | V1 | ✅ Hoàn thành (2026-09-23) | `python/neuroedge/models/` (`system.py`, `grammar.py`, `doubles.py`) · ngữ pháp mẫu `fixtures/agents/villa-concierge/commands.toml` · `tests/test_models.py` |
-| **TSK-S2-09** | Giao diện web `sim`: cảm biến ảo, trạng thái actuator — `neuroedge run --ui` | FR-TGT-06 | V3 | ⏳ **Kéo lên Sprint 3 (V3)** *(Q-21, đề xuất)* | FR-TGT-06 là **P0 của M1** nên không thể nằm sau hạn M1 (2026-11-15). Trang cục bộ, không mạng, cập nhật trực tiếp từ `SimSession`; dùng chung thành phần SVG với TSK-S3-22. Wokwi Elements chỉ hiển thị, không có chốt cửa |
+| **TSK-S2-09** | Giao diện web `sim`: cảm biến ảo, trạng thái actuator — `neuroedge run --ui` | FR-TGT-06 | V3 | ✅ Hoàn thành (2026-09-23) | [`sim/ui.py`](python/neuroedge/sim/ui.py) — `run --ui`: trang cục bộ 127.0.0.1, SSE, không mạng, từ chối POST khác nguồn; commit `8a023f3` · `pytest tests/test_sim_ui.py` |
 | **TSK-S2-10** | Kết luận phạm vi Khối 1b dựa trên spike | — | V2 + trưởng nhóm | ⏸ **Hoãn → Sprint 5** *(hoặc sớm hơn khi bo mạch về)* | Chặn bởi bo mạch (TSK-S1-10). `docs/reports/memory_spike_report.md` |
 | **TSK-S2-11** | **Lớp trừu tượng nhà cung cấp**: hợp đồng kết nối OpenAI-compatible + adapter tùy chỉnh, áp dụng chung cho LLM/ASR/TTS (CR-1.0). **LiteLLM làm thư viện định tuyến (SDK)** sau `neuroedge.models.providers`, cài qua extra **`neuroedge[cloud]`** (Q-10) · **bước kiểm giấy phép phụ thuộc bắc cầu trong CI** (Q-11). **Không còn bị chặn** — chạy trong A2, hạn **2026-11-15** (Q-19) | FR-MDL-07, FR-MDL-08, FR-GW-01, FR-GW-03 | V1 | ⏳ Chưa bắt đầu *(A2)* | `python/neuroedge/models/providers/` · `python/pyproject.toml` (extra `cloud`) · `.github/workflows/ci-sim-linux.yml` (job giấy phép) |
 | **TSK-S2-12** | **Đặc tả ngữ nghĩa quyết định:** trình biên dịch phía host `import parse_constraint` (không sửa `constraints.py`, không RFC) → cây quyết định mang `criteria_order` + `gate_digest`; `evaluate()` đi cây, trả phán quyết + `reason`. **Định dạng nội bộ, chưa đóng băng** — đóng băng ở RFC-0003 (Sprint 4) | FR-GATE-03, FR-ACE-01, FR-TGT-04 | V1 | ✅ Hoàn thành (2026-09-23) | `python/neuroedge/engine/decision_tree.py` · `decision_tree.v1.json` (nội bộ) · bảng sự thật `fixtures/decision_trees/*.truth.json` (sinh bằng `scripts/generate_truth_tables.py`) · `tests/test_decision_tree.py` |
@@ -525,8 +525,8 @@ Phạm vi và thứ tự chạy theo kế hoạch [`docs/designs/giai-doan-1-wed
 | **TSK-S3-19** | **`verify` đếm artifact, ném khi = 0** (lỗi 3 thành phần) + test phản chứng cây rỗng | FR-CI-07, FR-CLI-06, FR-DX-04 | **V3** *(ENG-T3)* | ⏳ Chưa bắt đầu | `python/neuroedge/cli/` · `python/tests/` |
 | **TSK-S3-20** | **`README.md` gốc** một màn hình, thành trang PyPI; liên kết tuyệt đối, không hướng dẫn cài editable | FR-DX-02, FR-DX-05 | **V3** *(ENG-T3)* | ⏳ Chưa bắt đầu | `README.md` |
 | **TSK-S3-21** | **Ghim `extends` bằng digest** (`@<ver>#sha256:…`) + `digests.lock` thành lock của `extends` + kiểm danh tính `URI ↔ name/version` | FR-GATE-05, FR-GATE-06 | V1 | ⏸ **Hoãn → Sprint 4** | Cần RFC-0003 (đổi `pattern` của `gate.v1.json`, đóng băng `decision_tree.v1.json`); chỉ cần khi firmware C đọc cây hoặc có registry ([`TODOS.md`](TODOS.md) #15) |
-| **TSK-S3-22** | **`neuroedge trace view`** — một tệp HTML tĩnh: dòng thời gian, phán quyết + lý do, chân, cảm biến, khung màn hình; mở không cần mạng. Kèm `trace export --format chrome` cho Perfetto *(Q-21, đề xuất)* | FR-CLI-04, FR-DX-04 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/` · `python/neuroedge/viz/` |
-| **TSK-S3-23** | **`sensor.read` và `display` trên `sim` đủ đường:** `[sim.sensors]` trong `agent.toml`, `:sensor` trong REPL, sự kiện `sensor_read` / `display_frame` (digest + PNG), replay cấp lại giá trị cảm biến đã ghi *(Q-21, đề xuất)* | FR-TGT-01, FR-TGT-06, FR-CI-02 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/sim.py` · `python/neuroedge/sim/` · `python/neuroedge/testing/player.py` |
+| **TSK-S3-22** | **`neuroedge trace view`** — một tệp HTML tĩnh: dòng thời gian, phán quyết + lý do, chân, cảm biến, khung màn hình; mở không cần mạng. Kèm `trace export --format chrome` cho Perfetto *(Q-21, đề xuất)* | FR-CLI-04, FR-DX-04 | V3 | ✅ Hoàn thành (2026-09-23) | [`viz/`](python/neuroedge/viz/) — `trace view` (HTML tự chứa, thanh tua thời gian), `trace export --format chrome`; commit `650a517` · `pytest tests/test_trace_view.py` |
+| **TSK-S3-23** | **`sensor.read` và `display` trên `sim` đủ đường:** `[sim.sensors]` trong `agent.toml`, `:sensor` trong REPL, sự kiện `sensor_read` / `display_frame` (digest + PNG), replay cấp lại giá trị cảm biến đã ghi *(Q-21, đề xuất)* | FR-TGT-01, FR-TGT-06, FR-CI-02 | V3 | ✅ Hoàn thành (2026-09-23) | `hal/sim.py`, `hal/sensor.py`, `hal/display.py`, `sim/session.py`; commit `b3c118e` · `pytest tests/test_sim_sensors_display.py` |
 
 **Tiêu chí ra Sprint 3 — cổng kết thúc Khối 1a (Exit Criteria):** — **5 / 6 đã đạt**
 

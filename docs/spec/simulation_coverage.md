@@ -32,9 +32,9 @@ mỗi PR, không cần phần cứng.
 | `digital.out` | `SimHAL`, token dùng một lần | PR | ✅ | TSK-S2-01, S2-05 |
 | `audio.in` | Gõ chữ → ngữ pháp lệnh (Q-15) · tệp WAV → VAD + STT provider | PR (gõ chữ, WAV fixture) | 🟡 gõ chữ | WAV: TSK-S3-13 |
 | `audio.out` | Chữ sẽ nói (`tts_stream_start`) · âm thanh TTS ra WAV | PR | 🟡 chữ | WAV: TSK-S3-13 |
-| `sensor.read` | Giá trị kịch bản: `[sim.sensors]` trong `agent.toml`, `:sensor` trong REPL | PR | 🟡 HAL có, agent/REPL chưa | TSK-S3-23 |
-| `display` | Khung hình trong bộ nhớ, kiểm độ phân giải; digest SHA-256 + PNG | PR | 🟡 lưu khung, chưa xuất | TSK-S3-23 |
-| *Trực quan* | Terminal (có) · `trace view` HTML tĩnh · `run --ui` web cục bộ (FR-TGT-06) | PR | 🟡 terminal | TSK-S3-22, S2-09 |
+| `sensor.read` | Giá trị kịch bản: `[sim.sensors]` trong `agent.toml`, `:sensor` trong REPL và UI; dữ kiện gate từ cảm biến: `[sim.sensor_facts]`; `sensor.read()` trong `@action` | PR | ✅ | TSK-S3-23 |
+| `display` | Khung chữ hoặc điểm ảnh RGB565/RGB888 trong bộ nhớ, kiểm độ phân giải; digest SHA-256; `display.show()` trong `@action` | PR | ✅ | TSK-S3-23 |
+| *Trực quan* | Terminal · `trace view` HTML tĩnh · `run --ui` web cục bộ (FR-TGT-06) | PR | ✅ | TSK-S3-22, S2-09 |
 
 ### `linux` — `linux-rpi5`
 
@@ -56,7 +56,7 @@ mỗi PR, không cần phần cứng.
 | `sensor.read` | Driver I2C của ESP-IDF | QEMU — driver giả qua cùng giao diện HAL (QEMU không có I2C) | Bus I2C, cảm biến | ⏳ | TSK-S4-03 |
 | `display` | `esp_lcd` + LVGL | PR — **cùng mã giao diện LVGL** build trên host với màn hình test LVGL, so ảnh golden · QEMU — `esp_lcd_qemu_rgb` | Đường SPI tới ILI9342C/ST7789 | ⏳ | TSK-S4-10 |
 
-**Tổng:** 15 ô — 2 ✅, 4 🟡, 9 ⏳ — mỗi ô có task. Ba ô chỉ kiểm được trên bo mạch (`audio.in`,
+**Tổng:** 15 ô — 4 ✅, 2 🟡, 9 ⏳ — mỗi ô có task. Ba ô chỉ kiểm được trên bo mạch (`audio.in`,
 `audio.out` của `esp32s3`, và phần âm học của `linux`); chúng nằm ở nightly TSK-S4-05 và tiêu chí
 Sprint 5–6.
 
@@ -70,8 +70,8 @@ Tên và trường dưới đây là quy phạm; mọi target phát cùng tên.
 | `audio.in` | `text_input` *(có)* · `audio_in_vad_start` *(có)* · `audio_in_segment` | `{text}` · `{energy_db}` · `{sha256, duration_ms, sample_rate_hz}` | **Đầu vào.** Replay bắt đầu từ kết quả nhận thức đã ghi (`intent_extracted`), không chạy lại âm thanh (L2) |
 | `audio.out` | `tts_stream_start` *(có)* · `tts_stream_end` | `{text}` · `{duration_ms, sha256?}` | **Đầu ra L3** — không so |
 | `digital.out` | `actuator_command` *(có)* · `actuator_aborted` *(có)* | `{pin, operation, duration_ms}` · `{pin, reason}` | **Quyết định** — so golden (L1) |
-| `sensor.read` | `sensor_read` | `{sensor, value, unit}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi |
-| `display` | `display_frame` | `{width, height, format, sha256}` | **Đầu ra** — so digest khi golden có ghi (L2), không chặn tương đương quyết định |
+| `sensor.read` | `sensor_read` · `sensor_set` | `{sensor, value, unit?, use?}` · `{sensor, value}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI |
+| `display` | `display_frame` | `{width, height, format, sha256, text?}` (`text` khi `format = "text"`) | **Đầu ra** — so digest khi golden có ghi (L2), không chặn tương đương quyết định |
 
 Chế độ ẩn danh (FR-TRC-07) băm `text`; `audio_in_segment` và `display_frame` vốn chỉ mang digest.
 
@@ -99,9 +99,9 @@ hình). Không phụ thuộc CDN: `sim` phải chạy không mạng (FR-DX-02).
 | Bề mặt | Dùng khi | Đáp ứng | Task |
 |:---|:---|:---|:---|
 | Terminal (`run`, `replay`, `gate explain`) | Hằng ngày, CI | Có | TSK-S3-06, S3-18 |
-| `neuroedge trace view <tệp>` → một tệp HTML tĩnh | Xem lại, gửi đồng nghiệp, debug sự cố | Dòng thời gian, phán quyết + lý do, chân, cảm biến, khung màn hình; mở không cần server | TSK-S3-22 |
-| `neuroedge run --ui` → trang web cục bộ, cập nhật trực tiếp | Demo, hành trình 10 phút | FR-TGT-06: trạng thái chân ảo theo thời gian thực; gõ lệnh, đặt cảm biến | TSK-S2-09 |
-| `neuroedge trace export --format chrome` → Perfetto | Phân tích timing | Mở trong Perfetto UI (Apache-2.0) | TSK-S3-22 |
+| `neuroedge trace view <tệp>` → một tệp HTML tĩnh | Xem lại, gửi đồng nghiệp, debug sự cố | Dòng thời gian, phán quyết + lý do, chân, cảm biến, khung màn hình; mở không cần server | ✅ TSK-S3-22 |
+| `neuroedge run --ui` → trang web cục bộ, cập nhật trực tiếp | Demo, hành trình 10 phút | FR-TGT-06: trạng thái chân ảo theo thời gian thực; gõ lệnh, đặt cảm biến | ✅ TSK-S2-09 |
+| `neuroedge trace export --format chrome` → Perfetto | Phân tích timing | Mở trong Perfetto UI (Apache-2.0) | ✅ TSK-S3-22 |
 
 Wokwi Elements (MIT) có thể thay phần hiển thị đèn, servo, relay, màn hình `ili9341` nếu đóng gói
 kèm (không tải CDN); không có sẵn chốt cửa.

@@ -784,6 +784,13 @@ risk_level          = "low"
 
 [sim.slot_facts]            # dữ kiện tính từ slot mà ngữ pháp lệnh trích được
 room_matches = { slot = "room", equals = "101" }
+
+[sim.sensors]               # giá trị cảm biến giả lập — đổi bằng `:sensor` trong REPL hoặc UI
+temperature  = { value = 24.5, unit = "C" }
+door_contact = true
+
+[sim.sensor_facts]          # dữ kiện gate đọc từ cảm biến: giá trị, hoặc equals / gte / lte
+door_closed = { sensor = "door_contact" }
 ```
 
 Tiêu chí không có trong hai bảng và không do lệnh khớp chứng minh (`facts` trong `commands.toml`) là **chưa xác định** → gate chặn. Trong `commands.toml`, mỗi `[[command]]` có thể khai `action` (tên `@action` chạy qua `c.do()`) và `arguments` (tham số ← slot); `neuroedge build` từ chối action không tồn tại.

@@ -68,7 +68,7 @@ neuroedge run -c "mở cửa phòng 101"     # gate cho phép: chốt cửa ảo
 neuroedge run -c "mở cửa phòng 202"     # sai phòng: gate chặn, chân không nhúc nhích, báo lễ tân
 ```
 
-Bỏ `-c` để vào vòng lặp gõ chữ (`:help` xem lệnh) — không mạng, không khoá API. Thêm
+Bỏ `-c` để vào vòng lặp gõ chữ (`:help` xem lệnh), thêm `--ui` để xem chốt cửa, đèn và phán quyết trực tiếp trên trình duyệt — không mạng, không khoá API. Thêm
 `--board linux-rpi5`: agent bị từ chối trước khi chạy vì bo mạch không có khử vang phần
 cứng — lỗi nêu ở đâu, vì sao, sửa thế nào. `neuroedge new my-agent` tạo dự án của bạn.
 Mọi lệnh và đầu ra kỳ vọng: [`CHANGELOG.md`](CHANGELOG.md) §2.

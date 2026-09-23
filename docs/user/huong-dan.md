@@ -36,6 +36,9 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Đối chiếu năng lực agent ↔ bo mạch, biên dịch gate | `neuroedge build` | ✅ |
 | Chạy agent có gate trên `sim` từ mã Python (`c.do()` trên `SimHAL`) | — (thư viện) | ✅ |
 | Chạy agent có gate trên `sim` từ dòng lệnh (gõ chữ, không mạng) | `neuroedge run` | ✅ |
+| Xem phiên `sim` trực tiếp trên trình duyệt: chốt cửa, đèn, cảm biến, màn hình | `neuroedge run --ui` | ✅ |
+| Mở một vết ghi thành trang HTML để xem lại, tua thời gian, gửi đồng nghiệp | `neuroedge trace view` | ✅ |
+| Giả lập cảm biến và màn hình trên `sim` | `[sim.sensors]` · `:sensor` · `display.show()` | ✅ |
 | Đọc một gate bằng lời: tiêu chí từ đâu, điều gì bị siết chặt | `neuroedge gate explain` | ✅ |
 | Tạo dự án agent mới có sẵn gate, action, test | `neuroedge new` | ✅ |
 | Ghi một phiên ra vết ghi (có chế độ ẩn danh) | `neuroedge record` | ✅ |
