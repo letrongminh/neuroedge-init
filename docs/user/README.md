@@ -19,7 +19,9 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | **Hiểu sản phẩm** | | |
 | Yêu cầu `FR-*` / `NFR-*` | [`neuroedge-prd.md`](../../neuroedge-prd.md) | sổ quyết định là §15 (`Q-1`…`Q-20`) |
 | Kiến trúc và Phụ lục B (đặc tả gate) | [`neuroedge-proposal.md`](../../neuroedge-proposal.md) | |
-| Thiết kế Giai đoạn 1 + báo cáo review | [`docs/designs/`](../designs/) | |
+| Giải mã mã viết tắt (`FR-*`, `Q-N`, `A1`, `CEO-X1`…) | [`thuat-ngu.md`](thuat-ngu.md) | nơi duy nhất |
+| Thiết kế Giai đoạn 1 | [`docs/designs/`](../designs/) | *vì sao* của wedge `sim` |
+| Biên bản các vòng review | [`docs/archive/`](../archive/) | lưu trữ, không quy phạm |
 | Kế hoạch Giai đoạn 2 | [`neuroedge-roadmap-phase2.md`](../../neuroedge-roadmap-phase2.md) | Khối V1a → P2 |
 | **Đóng góp** | | |
 | Quy ước, quy trình, hoàn thành task | [`CONTRIBUTING.md`](../../CONTRIBUTING.md) | §8 là checklist bắt buộc |
@@ -47,7 +49,8 @@ neuroedge-init/
     ├── rfc/            thay đổi lược đồ
     ├── spec/           đặc tả và ràng buộc
     ├── reports/        báo cáo đo
-    └── designs/        thiết kế và báo cáo review
+    ├── designs/        thiết kế
+    └── archive/        biên bản review đã khép
 ```
 
 ## Quy ước

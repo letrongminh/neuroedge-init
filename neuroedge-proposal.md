@@ -1522,6 +1522,19 @@ Ngoài `action` và các tham số trên, `on_block` không nhận trường nà
 
 ### B.5 Năm nguyên tắc kế thừa an toàn (`extends`)
 
+Ba gate mẫu trong `gates/` là một chuỗi kế thừa 3 cấp. Mỗi cấp chỉ **siết chặt** thêm:
+
+```mermaid
+flowchart TD
+    B["<b>base-access@1.0.0</b> — chuẩn ngành<br/>guest_authenticated: true<br/>risk_level ≤ medium<br/>p95 200 ms · fail: closed<br/>on_block: escalate → human_receptionist"]
+    U["<b>unlock_door@1.2.0</b><br/>+ room_matches: true (thêm tiêu chí — nguyên tắc 3)<br/>risk_level ≤ <b>low</b> (siết — nguyên tắc 2)<br/>p95 <b>120 ms</b> (chỉ giảm — nguyên tắc 2)"]
+    N["<b>unlock_door_night@1.0.0</b><br/>guest_authenticated: confidence ≥ <b>0.95</b> (siết)<br/>+ staff_co_authorized · request_channel ∈ {in_person, app}<br/>p95 <b>90 ms</b> · escalate → night_duty_manager (đổi người nhận — được phép)"]
+    X["<b>gate con nới lỏng</b> — ví dụ lax-night<br/>p95 900 000 ms · fail: open · degrade → mở cửa không xác thực"]
+    B -->|extends| U -->|extends| N
+    U -. extends .-> X
+    X -->|gate lint| R["❌ GateInheritanceError NE2003<br/>nguyên tắc 2 và 4"]
+```
+
 | # | Nguyên tắc kế thừa |
 |:---:|:---|
 | 1 | Gate con **tự động kế thừa toàn bộ** các mục đánh giá `evaluate` từ gate cha. |

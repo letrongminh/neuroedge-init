@@ -38,15 +38,7 @@
 
 ## Quy ước tài liệu
 
-| Ký hiệu | Ý nghĩa | Nguồn định nghĩa |
-|:---|:---|:---|
-| **§x.y** | Mục trong `neuroedge-proposal.md` | proposal |
-| **§x.y của tài liệu này** | Mục nội bộ của tài liệu này | — |
-| **FR-… · NFR-…** | Yêu cầu chức năng và phi chức năng | `neuroedge-prd.md` |
-| **V-G1…V-G5** | Cột mốc xác thực Giai đoạn 2 | proposal §12.4 |
-| **PF-1…PF-4** | Bộ lọc ưu tiên tính năng | proposal §2 |
-| **TSK-V… · TSK-P…** | Mã hạng mục công việc, cấp phát trong tài liệu này | tài liệu này |
-| **Tháng N** | Tháng thứ N của chương trình, tính từ **2026-09-21** (Tuần 0 của roadmap Giai đoạn 1); **không phải tháng dương lịch**. Vd "Tháng 9" là tháng thứ chín của chương trình, không phải tháng 9/2026 | `neuroedge-roadmap.md` (Quy ước tài liệu) |
+Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-V*` · `TSK-P*`, `V-G1`–`V-G5`, `PF-N`, **`Tháng N` = tháng thứ N của chương trình, không phải tháng dương lịch**, `§x.y`…) được giải mã ở **[`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md)** — nơi duy nhất, kèm chỗ định nghĩa đầy đủ.
 
 ## 1. Định vị và nguyên tắc
 

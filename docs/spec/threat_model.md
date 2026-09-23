@@ -5,10 +5,37 @@
 
 ## 1. Đường hợp lệ duy nhất
 
-```
-c.do(action) → engine.evaluate(gate) ─ALLOW→ TokenLedger.issue ─┐
-                                                                  ▼
-        @action body → digital.out(pin) → hal.digital_out(pin, token) → TokenLedger.authorize
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as Mã agent
+    participant C as c.do()
+    participant E as Gate Engine
+    participant S as SystemOne
+    participant L as TokenLedger
+    participant B as Thân @action
+    participant H as HAL
+
+    A->>C: await c.do(unlock_door)
+    C->>E: evaluate(gate, facts)
+    E->>S: dữ kiện còn thiếu (trong ngân sách p95)
+    S-->>E: Fact / Unavailable
+    alt BLOCK — mọi on_block, mọi lý do suy giảm
+        E-->>C: BLOCK + reason
+        Note over C,H: Không phát token · thân hàm không chạy · chân không đổi
+        C-->>A: ActionResult(blocked)
+    else ALLOW
+        E-->>C: ALLOW + gate_digest
+        C->>L: issue(token, TTL = p95 × 3)
+        C->>B: chạy thân hàm (token cấp qua ContextVar)
+        B->>H: digital.out("door_lock").pulse()
+        H->>H: kiểm tên chân trên bo mạch
+        H->>L: authorize(token, pin)
+        L-->>H: đúng sổ · đúng chân · chưa dùng · còn hạn
+        H-->>B: actuator_command (ghi vết ghi)
+        C->>L: close(token)
+        C-->>A: ActionResult(allowed)
+    end
 ```
 
 HAL không có bộ kiểm nào khác: khi chưa gắn `Conversation`, HAL **từ chối mọi lệnh**,

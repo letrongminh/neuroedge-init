@@ -14,8 +14,9 @@ Nguồn sự thật, theo thứ tự ưu tiên khi hai tài liệu lệch nhau:
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quy ước, và việc gì cần RFC |
 
 Việc **đã xem xét và hoãn có chủ ý** nằm ở [`TODOS.md`](TODOS.md) — mỗi mục phải
-kèm một mốc kích hoạt. Kế hoạch Giai đoạn 1 và các báo cáo review của nó ở
-[`docs/designs/`](docs/designs/).
+kèm một mốc kích hoạt. Kế hoạch Giai đoạn 1 ở [`docs/designs/`](docs/designs/); biên
+bản các vòng review ở [`docs/archive/`](docs/archive/). Giải mã mọi mã viết tắt
+(`FR-*`, `Q-N`, `A1`, `CEO-X1`…): [`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md).
 
 Hai điều dễ sai nhất:
 
