@@ -32,6 +32,8 @@ class Reason(StrEnum):
     BUDGET_EXCEEDED = "budget_exceeded"
     # The action names a gate the engine does not hold.
     GATE_NOT_FOUND = "gate_not_found"
+    # An argument of the call lies outside the gate's `arguments` limits (RFC-0005).
+    ARGUMENT_OUT_OF_RANGE = "argument_out_of_range"
     # Verdict-token failures, kept apart so a trace says which one happened.
     TOKEN_REPLAYED = "token_replayed"
     TOKEN_EXPIRED = "token_expired"

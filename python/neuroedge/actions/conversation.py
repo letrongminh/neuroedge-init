@@ -35,6 +35,20 @@ def _json_safe(values: dict[str, Any]) -> dict[str, Any]:
     return {k: v if isinstance(v, scalar) else repr(v) for k, v in values.items()}
 
 
+def _effective(spec: ActionSpec, kwargs: dict[str, Any]) -> dict[str, Any]:
+    """
+    The arguments the body will actually run with — defaults applied — which is
+    what a gate's `arguments` limits must see (RFC-0005): a call that omits
+    `duration_s` still pulses for the default.
+    """
+    try:
+        bound = inspect.signature(spec.fn).bind(**kwargs)
+    except TypeError:
+        return dict(kwargs)  # the body call raises; the gate sees what was given
+    bound.apply_defaults()
+    return dict(bound.arguments)
+
+
 @dataclass(frozen=True)
 class ActionResult:
     action: str
@@ -85,7 +99,9 @@ class Conversation:
             "action_requested",
             {"action": spec.name, "gate": spec.gate, "arguments": _json_safe(kwargs)},
         )
-        result = await self.engine.evaluate(spec.gate, self.facts, state=state)
+        result = await self.engine.evaluate(
+            spec.gate, self.facts, state=state, arguments=_effective(spec, kwargs)
+        )
         if result.verdict is GateVerdict.BLOCK:
             fallback = None
             if result.on_block_action == "degrade" and result.fallback_action:

@@ -64,7 +64,7 @@ Nói thẳng để bạn không mất thời gian:
 - `--target linux` cần line GPIO thật hoặc ảo (`scripts/setup_gpio_sim.sh`) và
   `pip install 'neuroedge[linux]'`; thiếu thì lệnh báo lỗi, không giả vờ chạy.
 - `mcp serve` và `run --ui` hôm nay là **hai phiên riêng**: gọi từ Claude Desktop không hiện
-  trên giao diện web (TSK-S3-27). Gate chưa chặn theo giá trị tham số (RFC-0005).
+  trên giao diện web (TSK-S3-27).
 - Tương đương target mới so **quyết định** (phán quyết + lệnh chân), chưa so timing.
 - Danh sách đầy đủ: `CHANGELOG.md` §3.7.
 

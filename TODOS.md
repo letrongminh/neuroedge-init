@@ -58,6 +58,6 @@ Nguồn: quyết định Q-14 → Q-20 (`neuroedge-prd.md` §15), `CHANGELOG.md`
 
 | # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
 |:---:|:---|:---|:---|
-| 23 | **Đóng băng Gated Tool Profile vào `schemas/`** (lược đồ phong bì `ToolCall` và kết quả) — `docs/spec/tool_calling.md` | Profile còn đổi: vòng ReAct (TSK-S2-11), xác nhận `ask` (TSK-S3-26), ràng buộc tham số (RFC-0005) chưa xong; đóng băng sớm là mở RFC sửa ngay | Corpus `fixtures/tool_calls/` (TSK-S3-24) ổn định **và** một client bên ngoài dùng profile |
+| 23 | **Đóng băng Gated Tool Profile vào `schemas/`** (lược đồ phong bì `ToolCall` và kết quả) — `docs/spec/tool_calling.md` | Profile còn đổi: vòng ReAct (TSK-S2-11), xác nhận `ask` (TSK-S3-26) chưa xong; đóng băng sớm là mở RFC sửa ngay | Corpus `fixtures/tool_calls/` (TSK-S3-24) ổn định **và** một client bên ngoài dùng profile |
 | 24 | **Transport MCP qua mạng** (HTTP của MCP) có xác thực — TSK-P2-04 | Mở cổng mạng tới hành động vật lý cần xác thực theo thiết bị và mTLS (NFR-SEC-04); v1.0 chỉ stdio (NFR-SEC-09) | Khách đầu tiên cần điều khiển thiết bị từ xa qua MCP, hoặc gateway (TSK-P2-05) cần transport mạng |
 | 25 | **Kết nối MCP bền giữa các lượt** và **transport HTTP tới MCP server bên ngoài** (Q-27) | `sim` mở kết nối theo từng lượt vì REPL chạy mỗi lượt trong một event loop riêng; HTTP cần xác thực như #24 | Runtime `linux` chạy một event loop dài, hoặc độ trễ mở kết nối vượt ngân sách lượt |

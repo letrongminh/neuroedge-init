@@ -1,0 +1,12 @@
+# RFC-0005 — `max` is not a limit keyword (maximum is); schema-level rejection.
+schema:  neuroedge.gate/v1
+name:    argument-unknown-keyword
+version: 1.0.0
+arguments:
+  duration_s: { type: integer, max: 5 }
+evaluate:
+  ok: { type: bool, instructions: "Anything" }
+allow_when:
+  ok: true
+on_block: { action: deny }
+budget: { p95_latency_ms: 100 }

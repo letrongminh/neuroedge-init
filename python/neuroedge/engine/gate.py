@@ -9,6 +9,9 @@ Evaluation, in order:
 
 1. Gather a `Fact` for every criterion: the caller's context first, then the
    fact source (SystemOne, TSK-S2-08), within the gate's latency budget.
+   Before that, the call's arguments meet the gate's `arguments` limits
+   (RFC-0005): deterministic, no fact source, no budget. Out of range ⇒ BLOCK
+   `argument_out_of_range`, dispatched through `on_block` like any refusal.
 2. Walk the compiled decision tree (TSK-S2-12).
 3. **Degraded** — the source was unreachable or the budget was exceeded:
    apply `budget.fail`. `closed` blocks with action `deny` and runs no hooks,
@@ -30,6 +33,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
+from . import arguments as argument_limits
 from .decision_tree import TreeResult, compile_tree, known_failure, walk
 from .gate_resolver import GateRegistry, ResolvedGate, resolve_gate_file, resolve_gate_uri
 from .trace_sink import Clock, EventLog, monotonic_ms
@@ -182,7 +186,12 @@ class ActionContractEngine:
         context: Mapping[str, Any] | None = None,
         *,
         state: Mapping[str, Any] | None = None,
+        arguments: Mapping[str, Any] | None = None,
     ) -> GateResult:
+        """
+        `arguments` are the action's effective arguments — defaults applied — as
+        `c.do()` will call it; a gate with `arguments` limits checks them first.
+        """
         registered = self._gates.get(key)
         if registered is None:
             result = GateResult(
@@ -200,6 +209,17 @@ class ActionContractEngine:
             "gate_evaluation_begin", {"gate": registered.label, "gate_digest": tree["gate_digest"]}
         )
         t0 = self.clock()
+        limits = tree.get("arguments")
+        if limits:
+            violation = argument_limits.check(limits, dict(arguments or {}))
+            if violation is not None:
+                name, why = violation
+                self.events.emit("argument_out_of_range", {"argument": name, "why": why})
+                refused = TreeResult(GateVerdict.BLOCK, Reason.ARGUMENT_OUT_OF_RANGE, name, {})
+                result = self._on_block(registered, refused, self.clock() - t0)
+                self.events.emit("gate_evaluation_result", result.to_event_data())
+                self._call_hook(result)
+                return result
         facts, degraded = await self._gather(registered, dict(context or {}), state, t0)
         if facts:
             # The inputs of the verdict, with confidence and source: what a replay

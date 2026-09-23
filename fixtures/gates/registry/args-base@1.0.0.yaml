@@ -1,0 +1,23 @@
+# RFC-0005 test base: argument limits a derived gate may only narrow.
+schema:  neuroedge.gate/v1
+name:    args-base
+version: 1.0.0
+
+arguments:
+  duration_s: { type: integer, minimum: 1, maximum: 60 }
+  mode:       { type: string, enum: [eco, normal, boost] }
+  note:       { type: string, max_length: 32 }
+
+evaluate:
+  guest_authenticated:
+    type: bool
+    instructions: "Guest completed identity verification"
+
+allow_when:
+  guest_authenticated: true
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150

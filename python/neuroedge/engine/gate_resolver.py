@@ -31,6 +31,7 @@ from typing import Any
 
 from ..errors import GateInheritanceError, GateNotFoundError, GateSchemaError
 from ..paths import gates_dir, schema_path
+from .arguments import merge_arguments
 from .constraints import Constraint, parse_allow_when
 
 # Appendix B.5 principle 5. A "level" is one document in the chain: the root
@@ -60,6 +61,8 @@ class ResolvedGate:
     on_block: dict[str, Any]
     budget: dict[str, Any]
     chain: list[str] = field(default_factory=list)
+    # RFC-0005: limits on the action's arguments, root-first; empty when none.
+    arguments: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     @property
     def fails_closed(self) -> bool:
@@ -78,7 +81,7 @@ class ResolvedGate:
         canonical JSON, hashed and signed, and what the device-side decision
         tree is compiled from.
         """
-        return {
+        artifact = {
             "schema": "neuroedge.gate/v1",
             "name": self.name,
             "version": self.version,
@@ -88,6 +91,10 @@ class ResolvedGate:
             "on_block": self.on_block,
             "budget": self.budget,
         }
+        # Only when declared: a gate without limits keeps the digest it always had.
+        if self.arguments:
+            artifact["arguments"] = self.arguments
+        return artifact
 
 
 class GateRegistry:
@@ -500,6 +507,7 @@ def resolve_gate_document(
     raw_allow_when: dict[str, Any] = {}
     on_block: dict[str, Any] = {}
     budget: dict[str, Any] | None = None
+    arguments: dict[str, dict[str, Any]] = {}
     provenance: list[str] = []
 
     for level, (doc, doc_source) in enumerate(chain, start=1):
@@ -522,6 +530,9 @@ def resolve_gate_document(
 
         # Principle 4, plus RFC-0004 R1/R2.
         budget = _resolve_budget(budget, doc.get("budget"), label, has_base)
+
+        # RFC-0005 (principle 2 for arguments): only narrowed, never dropped.
+        arguments = merge_arguments(arguments, doc.get("arguments"), label)
 
     leaf, leaf_source = chain[-1]
     leaf_label = _label(leaf, leaf_source)
@@ -557,6 +568,7 @@ def resolve_gate_document(
         on_block=on_block,
         budget=budget or {},
         chain=provenance,
+        arguments=arguments,
     )
 
 

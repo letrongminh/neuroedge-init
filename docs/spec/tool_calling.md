@@ -93,7 +93,7 @@ Schema sinh từ chữ ký `@action` (`input_schema()`): `str` → `string`, `in
 Cùng một schema xuất ra hai dạng: MCP `inputSchema` (`neuroedge mcp tools --json`) và
 `parameters` của function calling OpenAI (`--openai`, Q-12).
 
-Khi RFC-0005 được chấp thuận (Q-25), schema là **giao** của chữ ký và ràng buộc tham số
+Từ RFC-0005 (Q-25, TSK-S3-25), schema là **giao** của chữ ký và ràng buộc tham số
 của gate: `minimum`, `maximum`, `enum`, `maxLength` từ gate đi vào `inputSchema`, để mô
 hình thấy giới hạn trước khi gọi. Gate vẫn kiểm lại — schema là gợi ý cho mô hình, gate
 là cưỡng chế.
