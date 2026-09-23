@@ -872,6 +872,8 @@ Tên lớp và mã `NE…` khớp `python/neuroedge/errors.py`; mọi lớp kế
 | `GateSchemaError` | NE2002 | Build, `gate lint`, `gate resolve` | Gate vi phạm `schemas/gate.v1.json` hoặc tập toán tử Phụ lục B | Từ chối, nêu trường sai |
 | `GateInheritanceError` | NE2003 | Build, `gate lint`, `gate resolve` | Chuỗi `extends` vi phạm nguyên tắc B.5: nới lỏng `allow_when`/`budget`/`on_block` (Q-18), `allow_when` dạng chuỗi trong chuỗi kế thừa, vượt 3 cấp, hoặc vòng lặp | Từ chối phân giải, nêu chuỗi kế thừa và dòng `rule` chỉ nguyên tắc B.5 bị vi phạm |
 | `BoardCapabilityError` | NE3001 | Build | Khai báo bo mạch sai, hoặc agent yêu cầu năng lực bo mạch không cung cấp | Dừng build, không sinh firmware, chỉ rõ dòng mã gọi |
+| `AgentManifestError` | NE3002 | Build | `agent.toml` sai cấu trúc, thiếu `[requires]`, hoặc một `@action` cần năng lực / gate mà manifest không khai | Dừng build, nêu `file:line` của hành động (TSK-S2-02) |
+| `BuildFailed` | NE3003 | Build | `neuroedge build` gặp ≥ 1 vấn đề | Gom **mọi** vấn đề, in từng cái đủ 3 thành phần, thoát mã 1, không ghi artifact nào |
 | `TraceValidationError` | NE4001 | `neuroedge trace validate` | Tệp vết ghi không hợp lệ theo `schemas/trace.v1.json` | Báo lỗi kèm đường dẫn trường sai |
 | *(không phải exception — phán quyết)* | — | Chạy | Gate không thẩm định được trong ngân sách hoặc bộ thẩm định không tới được, và `fail: closed` | `BLOCK` với `reason: budget_exceeded` / `gate_unreachable`, `action: deny`, ghi vào vết ghi (TSK-S2-03). Fail-closed là phán quyết để phát lại được, không phải lỗi |
 | `TargetEquivalenceError` *(dự kiến)* | — | `neuroedge verify` | Phán quyết gate hoặc trạng thái GPIO lệch giữa các môi trường | Báo lỗi, chỉ rõ sự kiện lệch đầu tiên |

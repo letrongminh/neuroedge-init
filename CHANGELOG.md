@@ -45,6 +45,9 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 - **TSK-S2-05 — `@action`, `c.do()`/`c.say()`, token phán quyết dùng một lần.** `actions/`,
   `hal/digital.py`: chỉ `c.do()` chạy được hành động; token TTL = p95 × 3, mỗi chân tiêu một
   lần (NE1002). Kiểm: `pytest tests/test_actions.py`; ranh giới: `docs/spec/threat_model.md`.
+- **TSK-S2-02 — `neuroedge build`.** `engine/compiler.py` đối chiếu `agent.toml` + `@action` với
+  bo mạch (Phụ lục A.1), báo **mọi** vấn đề trong một lần, ghi cây quyết định. Agent mẫu
+  `fixtures/agents/villa-concierge/`. Kiểm: `pytest tests/test_compiler.py`. (FR-HAL-04/05)
 - **Quy tắc hoàn thành task.** `CONTRIBUTING.md` §8: nơi duy nhất cho việc cập nhật
   tiến độ, changelog, đặc tả; bảng "mỗi sự thật một nơi"; mẫu PR có checklist.
   Roadmap §0.4, §11.2 và `CLAUDE.md` nay chỉ dẫn về đó.
@@ -61,6 +64,12 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
   bỏ hai việc đã xong còn nằm ở *Việc tiếp theo*, *Lưu ý* chỉ giữ điều chưa có ở §3.3.
 - **Bỏ con số dễ lỗi thời** khỏi `CLAUDE.md` và §2 (số test, số fixture); số test
   hiện hành chỉ còn ở roadmap §0.1.
+
+#### Đã sửa
+
+- **CLI nuốt mất tên bảng TOML trong chẩn đoán.** `rich` hiểu `[requires]`,
+  `[capabilities.digital_out]` là thẻ markup nên lời hướng dẫn in ra thiếu chữ. Mọi trường
+  `where`/`why`/`how` nay được escape. Kiểm: `test_cli_build_fails_with_exit_1_and_every_problem`.
 
 ### [0.4.0] — 2026-09-23 — Gỡ chặn Sprint 2: chốt 9 quyết định, đồng bộ tài liệu
 
@@ -556,6 +565,7 @@ Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏn
 | `trace show <tệp>` | In dòng thời gian sự kiện |
 | `board list` / `board show <id>` | Liệt kê / xem năng lực bo mạch theo 5 nguyên thủy |
 | `verify` | Quét toàn bộ artifact đã đóng băng |
+| `build --target <t> --board <id>` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate. `--agent` (mặc định `agent.toml`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
 | `replay <tệp>` | Đọc và thẩm định vết ghi rồi in dòng thời gian |
 
 > `gate publish` **không ký số**. Nó dừng ở mã băm, vì ký cần khóa của Gate
@@ -566,8 +576,7 @@ Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏn
 
 | Lệnh | Sẽ có ở |
 |:---|:---|
-| `run` | TSK-S2-01 |
-| `build` | TSK-S2-02, TSK-S2-06 |
+| `run` | TSK-S3-06 — HAL `sim` đã có (TSK-S2-01), còn vòng lặp gõ chữ |
 | `test` | TSK-S3-03 — hiện dùng `pytest` trong `python/` |
 | `record` | TSK-S3-01 |
 | `new` | TSK-S3-07 |
@@ -660,13 +669,18 @@ neuroedge-init/
 │   ├── traces/           ⚠️  3 vết ghi chuẩn mực — sửa phải có RFC
 │   │   ├── invalid/          6 phản chứng
 │   │   └── expected_errors.yaml
-│   └── gates/            valid/ · invalid/ · registry/
-│       └── expected_errors.yaml
+│   ├── gates/            valid/ · invalid/ · registry/
+│   │   └── expected_errors.yaml
+│   ├── decision_trees/   Bảng sự thật cho walker C — sinh bằng scripts/generate_truth_tables.py
+│   └── agents/villa-concierge/   Agent mẫu: agent.toml · actions/ · commands.toml
 ├── python/neuroedge/
-│   ├── engine/           L3 — phân giải gate, ràng buộc, chuẩn tắc hóa
-│   ├── hal/              L1 — 5 nguyên thủy, mô hình bo mạch
+│   ├── engine/           L3 — phân giải gate · cây quyết định · Gate Engine (gate.py)
+│   │                         · mạch ngắt · trình biên dịch build (compiler.py) · EventLog
+│   ├── actions/          L3 — @action · c.do()/c.say() · token phán quyết dùng một lần
+│   ├── models/           L2 — SystemOne/SystemTwo · ngữ pháp lệnh cố định · double
+│   ├── hal/              L1 — 5 nguyên thủy, mô hình bo mạch, sim.py, digital.out()
 │   ├── perception/       L2 — khung, chưa hiện thực
-│   ├── sim/              L1 — khung, chưa hiện thực
+│   ├── sim/              L0 — web simulator, khung, chưa hiện thực (TSK-S2-09)
 │   ├── testing/          Action CI — replay(), scenario()
 │   ├── cli/              CLI Typer
 │   ├── errors.py         Hợp đồng lỗi 3 thành phần
@@ -742,15 +756,15 @@ nó trong bảng task.
 
 ### 3.7 Điều hệ thống chưa làm được
 
-Nói rõ để không ai đọc mốc 0.1.0 quá lên:
+Nói rõ để không ai đọc các mốc đã đạt quá lên:
 
-- ❌ **Chưa chạy được tác tử nào.** Không có HAL cho target nào; `run` thoát mã 2.
-- ❌ **Chưa lượng giá gate.** Phân giải xong chính sách, nhưng chưa có engine
-  nhận ngữ cảnh và trả phán quyết (TSK-S2-03).
+- ❌ **Chưa có `neuroedge run`.** Agent chạy được trên `sim` qua `Conversation` (test), nhưng
+  vòng lặp gõ chữ trên CLI là TSK-S3-06.
+- ❌ **Chưa có nhà cung cấp cloud thật.** SystemOne/SystemTwo chạy với double và ngữ pháp lệnh
+  cục bộ; connector LiteLLM là TSK-S2-11 (A2).
 - ❌ **Chưa có tương đương target.** `verify` kiểm ở mức lược đồ. Phát lại trên
   target thật và so khớp chuỗi phán quyết là TSK-S3-02 / TSK-S4-03.
-- ❌ **Chưa có `@action`.** Việc cấm gọi trực tiếp hành động vật lý (FR-ACE-02)
-  là TSK-S2-05. Hiện `digital_out()` chỉ từ chối khi thiếu chữ ký.
+- ❌ **Chưa ghi vết ghi ra tệp.** `EventLog` giữ trong bộ nhớ; bộ ghi tệp là TSK-S3-01.
 - ❌ **Chưa có CEL.** `allow_when` chỉ nhận dạng mapping toán tử.
 - ❌ **Chưa có số đo bộ nhớ.** Xem §3.4.
 

@@ -1,0 +1,20 @@
+# Sample agent for `neuroedge build` (TSK-S2-02) and the A1 wedge.
+#
+# It needs hardware echo cancellation, so it builds for `sim-default` and
+# `esp32s3-box-3` and is refused on `linux-rpi5` (aec = false) — the board drift
+# the build check exists to catch before anything reaches a device.
+[agent]
+name    = "villa-concierge"
+version = "0.1.0"
+
+[requires]
+"audio.in"    = { aec = true, sample_rate_hz = 16000 }
+"audio.out"   = {}
+"display"     = { min_width = 240 }
+"digital.out" = { pins = ["door_lock"] }
+
+[gates]
+unlock_door = "neuroedge://gates/unlock_door@1.2.0"
+
+[targets]
+supported = ["sim", "linux", "esp32s3"]

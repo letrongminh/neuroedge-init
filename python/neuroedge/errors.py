@@ -121,6 +121,29 @@ class BoardCapabilityError(NeuroEdgeError):
     code = "NE3001"
 
 
+class AgentManifestError(NeuroEdgeError):
+    """`agent.toml` is malformed, or an `@action` disagrees with it (FR-ACE-04/05)."""
+
+    code = "NE3002"
+
+
+class BuildFailed(NeuroEdgeError):
+    """
+    `neuroedge build` found one or more problems. Carries every problem so one
+    run reports them all, each with its own three-part diagnostic.
+    """
+
+    code = "NE3003"
+
+    def __init__(self, where: str, problems: list[NeuroEdgeError]) -> None:
+        self.problems = list(problems)
+        super().__init__(
+            where=where,
+            why=f"{len(self.problems)} problem(s) found; the build produced no artifacts",
+            how="fix each problem listed below, then build again",
+        )
+
+
 class TraceValidationError(NeuroEdgeError):
     """A trace file violates schemas/trace.v1.json."""
 
