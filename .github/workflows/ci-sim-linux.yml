@@ -215,7 +215,7 @@ jobs:
           #   * jsonschema's default [format] extra pulls in GPL rfc3987
           #     (hence [format-nongpl] in pyproject.toml);
           #   * copier pulls in jinja2-ansible-filters, which is GPL3 (hence
-          #     the optional `scaffold` extra rather than a core dependency).
+          #     `neuroedge new` uses a plain-Python generator, TSK-S3-07).
           python -m pip install --upgrade pip >/dev/null
           python -m pip install -e 'python[dev]' >/dev/null
           pip-licenses --format=csv > licences.csv

@@ -56,6 +56,18 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 - **TSK-S2-02 — `neuroedge build`.** `engine/compiler.py` đối chiếu `agent.toml` + `@action` với
   bo mạch (Phụ lục A.1), báo **mọi** vấn đề trong một lần, ghi cây quyết định. Agent mẫu
   `fixtures/agents/villa-concierge/`. Kiểm: `pytest tests/test_compiler.py`. (FR-HAL-04/05)
+- **TSK-S3-06 — `neuroedge run --target sim`.** REPL gõ chữ `neuroedge>`: lệnh khớp `commands.toml`
+  → `c.do()` → phán quyết gate + bảng chân ảo; `-c` cho CI, `--trace-out` ghi vết ghi đã thẩm định.
+  `sim/session.py` (`SimSession`), `cli/run.py`. Kiểm: `pytest tests/test_cli_run.py`. (FR-CLI-02, Q-15)
+- **TSK-S3-18 — `neuroedge gate explain`.** Tiêu chí từ cấp nào, mệnh đề nào con siết chặt, p95 và
+  `on_block` so với cha, bằng tiếng Việt cho người duyệt (J6). `engine/gate_explain.py`, `cli/explain.py`.
+  Kiểm: `pytest tests/test_cli_explain.py`. (FR-CLI-05)
+- **TSK-S3-07 — `neuroedge new <tên> [--template minimal|villa-concierge]`.** Sinh dự án build được,
+  chạy được trên `sim`, test tự qua; generator Python thuần ở `neuroedge/templates/`, không `copier`.
+  Kiểm: `pytest tests/test_cli_new.py`. (FR-DX-01)
+- **`commands.toml` gắn lệnh với action; `agent.toml` có `[sim.facts]` / `[sim.slot_facts]`.** Trường
+  `action` + `arguments` (tham số ← slot), `build` kiểm action tồn tại; dữ kiện phiên trên `sim` không
+  bao giờ suy từ chữ gõ. Kiểm: `test_a_command_naming_an_unknown_action_fails_the_build`.
 - **Quy tắc hoàn thành task.** `CONTRIBUTING.md` §8: nơi duy nhất cho việc cập nhật
   tiến độ, changelog, đặc tả; bảng "mỗi sự thật một nơi"; mẫu PR có checklist.
   Roadmap §0.4, §11.2 và `CLAUDE.md` nay chỉ dẫn về đó.
@@ -65,6 +77,11 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã đổi
 
+- **README gốc chạy thử bằng `neuroedge run -c`** (một ALLOW, một BLOCK) thay cho `build`. Đặc tả
+  khớp hành vi mới: PRD FR-CLI-02 (`-c`, kiểm năng lực trước khi chạy), FR-CLI-05 (`gate explain`),
+  proposal §4.3 (`[sim.facts]`, `action` trong `commands.toml`).
+- **Bỏ extra `scaffold` (`copier`).** `neuroedge new` không cần nó nữa, nên không còn đường cài nào
+  kéo `jinja2-ansible-filters` (GPL3) vào môi trường. `NOTICE` §B, `requirements-lock.txt` cập nhật.
 - **Design doc Giai đoạn 1 tách biên bản review** sang `docs/archive/giai-doan-1-review-log.md`
   (~1 000 dòng, lưu trữ, không quy phạm); design doc còn ~600 dòng, thêm khối "Đọc nhanh" chỉ nơi
   thiết kế đang chạy. Tham chiếu theo số dòng trong RFC-0002 đổi sang tên mục.
@@ -81,6 +98,10 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã sửa
 
+- **Hai dự án cùng tên agent dùng chung một module `actions/` đã import.** `load_actions` nay đặt
+  tên module theo cả thư mục dự án. Kiểm: `pytest tests/test_cli_new.py`.
+- **Tham chiếu Copier/Wokwi còn sót** ở roadmap §3 (ma trận OSS, cây thư mục), PRD Phụ lục D và
+  proposal §4.3 — nay ghi theo trạng thái hiện tại: generator Python thuần, `run --target sim` là REPL gõ chữ.
 - **Sáu lỗ an toàn từ review đối kháng mã A1** — hai trong số đó kích được chân GPIO.
   Kiểm: `pytest tests/test_safety_regressions.py` (15/16 test fail trên mã trước khi sửa).
   - Độ tin cậy `NaN`, `True`, ngoài `[0, 1]` từng lọt ngưỡng `confidence_gte` ⇒ nay `criterion_unavailable`.
@@ -541,9 +562,6 @@ Yêu cầu **Python 3.11+**. Bản dựng tái lập được:
 .venv/bin/python -m pip install -r requirements-lock.txt
 ```
 
-> **Đừng cài extra `scaffold`** trừ khi bạn thực sự cần `copier`: nó kéo
-> `jinja2-ansible-filters` (GPL3) vào môi trường. Xem `NOTICE` mục B.
-
 ### 2.2 Kiểm tra nhanh toàn bộ artifact
 
 Chạy từ **gốc kho** (mọi lệnh đều cần thấy `schemas/`, `gates/`, `fixtures/`):
@@ -593,6 +611,9 @@ Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏn
 | `verify` | Quét toàn bộ artifact đã đóng băng |
 | `build --target <t> --board <id>` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate. `--agent` (mặc định `agent.toml`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
 | `replay <tệp>` | Đọc và thẩm định vết ghi rồi in dòng thời gian |
+| `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:help`; `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2 (TSK-S3-05) |
+| `gate explain <tệp\|URI>` | Giải thích gate cho người duyệt: tiêu chí từ cấp nào, mệnh đề nào bị siết chặt, ngân sách và `on_block` so với cha. Gate sai ⇒ mã 1, lỗi 3 thành phần |
+| `new <tên> [--template minimal\|villa-concierge]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` sao agent mẫu, chỉ chạy từ kho mã nguồn |
 
 > `gate publish` **không ký số**. Nó dừng ở mã băm, vì ký cần khóa của Gate
 > Registry (Khối 3). `replay` **không thực thi** vết ghi trên target. Cả hai
@@ -602,10 +623,8 @@ Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏn
 
 | Lệnh | Sẽ có ở |
 |:---|:---|
-| `run` | TSK-S3-06 — HAL `sim` đã có (TSK-S2-01), còn vòng lặp gõ chữ |
 | `test` | TSK-S3-03 — hiện dùng `pytest` trong `python/` |
 | `record` | TSK-S3-01 |
-| `new` | TSK-S3-07 |
 
 ### 2.4 Đọc một thông báo lỗi
 
@@ -706,9 +725,10 @@ neuroedge-init/
 │   ├── models/           L2 — SystemOne/SystemTwo · ngữ pháp lệnh cố định · double
 │   ├── hal/              L1 — 5 nguyên thủy, mô hình bo mạch, sim.py, digital.out()
 │   ├── perception/       L2 — khung, chưa hiện thực
-│   ├── sim/              L0 — web simulator, khung, chưa hiện thực (TSK-S2-09)
+│   ├── sim/              L0 — SimSession: agent chạy trên sim, gõ chữ (web UI: TSK-S2-09)
+│   ├── templates/        Mẫu dự án cho `neuroedge new` (*.tmpl, không copier)
 │   ├── testing/          Action CI — replay(), scenario()
-│   ├── cli/              CLI Typer
+│   ├── cli/              CLI Typer · run.py (REPL) · explain.py (gate explain)
 │   ├── errors.py         Hợp đồng lỗi 3 thành phần
 │   ├── trace.py          Thẩm định vết ghi
 │   └── paths.py          Định vị gốc monorepo
@@ -741,7 +761,8 @@ này sẽ làm hỏng những thứ trông không liên quan.
    hứa "TTFV dưới 10 phút" thành cái bẫy: rút ngắn 10 phút đầu, thêm hai ngày gỡ lỗi.
 8. **Đuôi vết ghi là `.json` mang `$schema`.** Không đổi sang `.ntrace`.
 9. **Không copyleft mạnh trong phần phân phối.** Ghim
-   `jsonschema[format-nongpl]`; giữ `copier` ở extra `scaffold`.
+   `jsonschema[format-nongpl]`; không dùng `copier` — `neuroedge new` là generator
+   Python thuần (TSK-S3-07).
 10. **Lệnh CLI chưa có engine phải thoát mã 2, không in "PASS" giả.** Đầu ra CLI
     bị dán vào báo cáo như bằng chứng.
 
@@ -778,19 +799,21 @@ nó trong bảng task.
 | 1 | **Hủy lệnh đang chờ mới có ở `sim`.** Hợp đồng thu hồi lệnh vật lý (§3.8) yêu cầu `barge_in` hủy xung chốt cửa đang chờ trong ≤ 1 khung âm thanh. `SimHAL.digital_out()` đã trả `PendingCommand.cancel()` (TSK-S2-01); `esp32s3` phải hủy được thật ở tầng firmware | **TSK-S4-01**, cùng lúc với hợp đồng thu hồi — không phải sau |
 | 2 | `ReplaySession._parse_events()` suy luận `blocked_by` theo lối tạm, ghim cứng tên hành động `unlock_door` | TSK-S3-02 / TSK-S3-03 |
 | 3 | `gate publish` dừng ở mã băm, chưa ký số | Khối 3 (Gate Registry) |
-| 4 | `perception/` và `sim/` chỉ là khung | TSK-S3-11 / TSK-S2-09 |
+| 4 | `perception/` chỉ là khung; `sim/` mới có phiên terminal (`SimSession`), chưa có giao diện web | TSK-S3-11 / TSK-S2-09 |
 
 ### 3.7 Điều hệ thống chưa làm được
 
 Nói rõ để không ai đọc các mốc đã đạt quá lên:
 
-- ❌ **Chưa có `neuroedge run`.** Agent chạy được trên `sim` qua `Conversation` (test), nhưng
-  vòng lặp gõ chữ trên CLI là TSK-S3-06.
+- ❌ **`neuroedge run` mới có `--target sim`, gõ chữ trên terminal.** `linux` là TSK-S3-05; giao
+  diện web mô phỏng và giọng nói chưa có (Q-15); intent không có action (`faq`) chưa được trả lời
+  vì SystemTwo cần provider (TSK-S2-11).
 - ❌ **Chưa có nhà cung cấp cloud thật.** SystemOne/SystemTwo chạy với double và ngữ pháp lệnh
   cục bộ; connector LiteLLM là TSK-S2-11 (A2).
 - ❌ **Chưa có tương đương target.** `verify` kiểm ở mức lược đồ. Phát lại trên
   target thật và so khớp chuỗi phán quyết là TSK-S3-02 / TSK-S4-03.
-- ❌ **Chưa ghi vết ghi ra tệp.** `EventLog` giữ trong bộ nhớ; bộ ghi tệp là TSK-S3-01.
+- ❌ **Chưa ghi vết ghi từ target thật.** `run --trace-out` ghi một phiên `sim`; `record` từ
+  `linux` / `esp32s3` là TSK-S3-01.
 - ❌ **Chưa có CEL.** `allow_when` chỉ nhận dạng mapping toán tử.
 - ❌ **Chưa có số đo bộ nhớ.** Xem §3.4.
 

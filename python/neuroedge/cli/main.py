@@ -28,7 +28,7 @@ from ..engine import (
     resolve_gate_file,
     resolve_gate_uri,
 )
-from ..errors import NeuroEdgeError
+from ..errors import BuildFailed, NeuroEdgeError
 from ..hal.board import available_boards, load_board_by_id
 from ..paths import gates_dir, repo_root
 from ..trace import load_trace
@@ -51,8 +51,6 @@ err_console = Console(stderr=True)
 
 # Sprint in which each unimplemented command gets its engine, from the roadmap.
 PENDING = {
-    "new": ("TSK-S3-07", "Sprint 3"),
-    "run": ("TSK-S3-06", "Sprint 3"),
     "test": ("TSK-S3-03", "Sprint 3"),
     "record": ("TSK-S3-01", "Sprint 3"),
 }
@@ -65,6 +63,19 @@ def _fail(error: NeuroEdgeError) -> None:
     if isinstance(getattr(error, "principle", None), int):
         err_console.print(f"  [bold]rule:[/bold] Proposal Appendix B.5 principle {error.principle}")
     err_console.print(f"  [bold]fix:[/bold] {escape(error.how)}")
+    raise typer.Exit(code=1)
+
+
+def _fail_build(failed: BuildFailed) -> None:
+    """Render every problem a build check collected, then exit 1."""
+    err_console.print(f"[bold red]✗ {failed.code} build failed[/bold red] {escape(failed.where)}")
+    for problem in failed.problems:
+        err_console.print(
+            f"\n[bold red]✗ {problem.code}[/bold red] [cyan]{escape(problem.where)}[/cyan]"
+        )
+        err_console.print(f"  why: {escape(problem.why)}")
+        err_console.print(f"  fix: {escape(problem.how)}")
+    err_console.print(f"\n[bold red]{len(failed.problems)} problem(s).[/bold red]")
     raise typer.Exit(code=1)
 
 
@@ -162,6 +173,30 @@ def gate_resolve(
         f"budget:   p95 {gate.budget.get('p95_latency_ms')} ms · "
         f"fail [{style}]{fail_policy}[/{style}]"
     )
+
+
+@gate_app.command(name="explain")
+def gate_explain(
+    target: str = typer.Argument(..., help="Gate YAML path or neuroedge:// URI"),
+    registry: Path = REGISTRY_OPTION,
+):
+    """
+    Explain a gate for a reviewer who does not read YAML: where each criterion
+    comes from, what a child tightened, and what happens when it blocks.
+    """
+    from ..engine.gate_explain import explain_gate_file, explain_gate_uri
+    from .explain import render
+
+    gate_registry = GateRegistry(registry) if registry is not None else None
+    try:
+        if target.startswith("neuroedge://"):
+            explanation = explain_gate_uri(target, gate_registry)
+        else:
+            explanation = explain_gate_file(Path(target), gate_registry)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    render(explanation, console)
 
 
 @gate_app.command(name="lint")
@@ -505,19 +540,90 @@ def replay(
 
 @app.command()
 def new(
-    name: str = typer.Argument(..., help="Name of the new agent project"),
-    template: str = typer.Option("villa-concierge", help="Template to scaffold"),
+    name: str = typer.Argument(..., help="Name of the new agent project (and its directory)"),
+    template: str = typer.Option(
+        "minimal", "--template", help="minimal (1 action, 1 gate, tests) or villa-concierge"
+    ),
 ):
-    """Scaffold a new agent project (pending TSK-S3-07)."""
-    _not_yet("new")
+    """Scaffold an agent project: agent.toml, commands.toml, a gate, an @action, tests."""
+    from ..templates import scaffold
+
+    try:
+        files = scaffold(name, template)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    console.print(f"[bold green]✓[/bold green] created {escape(name)}/ from template {template}")
+    for path in files:
+        console.print(f"  {escape(str(path))}")
+    console.print(
+        f"\nNext:\n  cd {escape(name)}\n"
+        "  neuroedge build --target sim --board sim-default\n"
+        "  neuroedge run\n"
+        "  python -m pytest -q tests"
+    )
+
+
+def _default_agent() -> Path:
+    """`agent.toml` here, else the sample agent of a source checkout."""
+    here = Path("agent.toml")
+    sample = repo_root() / "fixtures" / "agents" / "villa-concierge" / "agent.toml"
+    return sample if not here.is_file() and sample.is_file() else here
 
 
 @app.command()
 def run(
+    agent: Path = typer.Option(
+        None,
+        "--agent",
+        "-a",
+        help="Path to agent.toml (default: ./agent.toml, else the villa-concierge sample)",
+    ),
     target: str = typer.Option("sim", "--target", "-t", help="Target runtime environment"),
+    board: str = typer.Option("sim-default", "--board", "-b", help="Board profile id"),
+    command: str = typer.Option(
+        None, "--command", "-c", help="Run one typed command and exit (for scripts and CI)"
+    ),
+    trace_out: Path = typer.Option(
+        None, "--trace-out", help="Write the session trace (trace.v1 JSON) here on exit"
+    ),
+    registry: Path | None = REGISTRY_OPTION,
 ):
-    """Run the agent on `sim` or `linux` (pending TSK-S3-06; the sim HAL exists)."""
-    _not_yet("run")
+    """
+    Run the agent on `sim`: type a command, see the gate verdict and the pins.
+
+    Input is typed text matched by the agent's commands.toml — no network, no
+    key (Q-15). The agent is build-checked against the board first.
+    """
+    from ..sim import SimSession
+    from .run import run_session
+
+    if target != "sim":
+        err_console.print(
+            Panel(
+                f"`neuroedge run --target {escape(target)}` is not implemented yet.\n\n"
+                "The linux HAL is [bold]TSK-S3-05[/bold] (Sprint 3); `esp32s3` runs are "
+                "Sprint 4. `--target sim` works today.",
+                title=f"[yellow]Not implemented: run --target {escape(target)}[/yellow]",
+                border_style="yellow",
+            )
+        )
+        raise typer.Exit(code=2)
+
+    try:
+        session = SimSession.load(
+            agent or _default_agent(),
+            board_id=board,
+            registry=GateRegistry(registry) if registry is not None else None,
+        )
+    except BuildFailed as failed:
+        _fail_build(failed)
+        return
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    code = run_session(session, console, err_console, command=command, trace_out=trace_out)
+    raise typer.Exit(code=code)
 
 
 @app.command()
@@ -530,7 +636,6 @@ def build(
 ):
     """Match the agent's capability needs against the board and compile its gates."""
     from ..engine.compiler import build as run_build
-    from ..errors import BuildFailed
 
     try:
         report = run_build(
@@ -541,17 +646,8 @@ def build(
             registry=GateRegistry(registry) if registry is not None else None,
         )
     except BuildFailed as failed:
-        err_console.print(
-            f"[bold red]✗ {failed.code} build failed[/bold red] {escape(failed.where)}"
-        )
-        for problem in failed.problems:
-            err_console.print(
-                f"\n[bold red]✗ {problem.code}[/bold red] [cyan]{escape(problem.where)}[/cyan]"
-            )
-            err_console.print(f"  why: {escape(problem.why)}")
-            err_console.print(f"  fix: {escape(problem.how)}")
-        err_console.print(f"\n[bold red]{len(failed.problems)} problem(s).[/bold red]")
-        raise typer.Exit(code=1) from None
+        _fail_build(failed)
+        return
     except NeuroEdgeError as error:
         _fail(error)
         return

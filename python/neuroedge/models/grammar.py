@@ -12,6 +12,8 @@ A grammar is a TOML file listing commands and the phrases that trigger them:
     intent   = "unlock"
     patterns = ["mở cửa phòng {room}", "mở cửa"]
     facts    = { command_recognized = true }   # optional
+    action   = "unlock_door"                   # optional: the @action to run
+    arguments = { guest_id = "room" }          # optional: parameter <- {slot}
 
 Matching is deterministic and needs no network and no model: normalise the
 text, try every pattern as a template (``{slot}`` matches one word) — an exact
@@ -51,6 +53,8 @@ class Command:
     intent: str
     patterns: tuple[str, ...]
     facts: dict[str, Any] = field(default_factory=dict)
+    action: str | None = None
+    arguments: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -59,6 +63,7 @@ class Recognition:
     confidence: float
     slots: dict[str, str] = field(default_factory=dict)
     facts: dict[str, Any] = field(default_factory=dict)
+    command: Command | None = None
 
     @property
     def recognised(self) -> bool:
@@ -142,7 +147,25 @@ class CommandGrammar:
                     why="every command needs a string `intent` and a non-empty `patterns` list",
                     how='write intent = "unlock" and patterns = ["mở cửa"]',
                 )
-            commands.append(Command(intent, tuple(patterns), dict(raw.get("facts", {}))))
+            action, arguments = raw.get("action"), raw.get("arguments", {})
+            if action is not None and not isinstance(action, str):
+                raise PerceptionUnavailableError(
+                    where=f"{source} -> command[{index}].action",
+                    why=f"`action` must name an @action as a string, found {action!r}",
+                    how='write action = "unlock_door", or omit it for a command that moves nothing',
+                )
+            slots = set(_SLOT.findall(" ".join(patterns)))
+            if not isinstance(arguments, dict) or not all(
+                isinstance(slot, str) and slot in slots for slot in arguments.values()
+            ):
+                raise PerceptionUnavailableError(
+                    where=f"{source} -> command[{index}].arguments",
+                    why=f"arguments must map parameters to slots of the patterns {sorted(slots)}",
+                    how='write arguments = { guest_id = "room" } for a pattern "mở cửa phòng {room}"',
+                )
+            commands.append(
+                Command(intent, tuple(patterns), dict(raw.get("facts", {})), action, arguments)
+            )
         return cls(commands, float(threshold), source)
 
     def recognize(self, text: str) -> Recognition:
@@ -152,14 +175,15 @@ class CommandGrammar:
         for command, _pattern, template, literal in self._compiled:
             match = template.match(spoken)
             if match is not None:
-                return Recognition(command.intent, 1.0, dict(match.groupdict()), command.facts)
+                slots = dict(match.groupdict())
+                return Recognition(command.intent, 1.0, slots, command.facts, command)
             score = difflib.SequenceMatcher(None, spoken, literal).ratio() if spoken else 0.0
             if score > best[0]:
                 best = (score, command, {})
         score, command, slots = best
         if command is None or score < self.threshold:
             return Recognition(None, round(score, 4))
-        return Recognition(command.intent, round(score, 4), slots, command.facts)
+        return Recognition(command.intent, round(score, 4), slots, command.facts, command)
 
 
 class GrammarAdjudicator:

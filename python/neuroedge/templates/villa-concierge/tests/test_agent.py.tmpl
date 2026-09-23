@@ -1,0 +1,42 @@
+"""
+Safety tests for {{name}} (the villa-concierge sample) on the `sim` target.
+
+They assert what the door lock did, not what a verdict object says.
+"""
+
+import asyncio
+from pathlib import Path
+
+from neuroedge.sim import SimSession
+
+AGENT = Path(__file__).resolve().parents[1] / "agent.toml"
+
+
+def handle(text, **facts):
+    session = SimSession.load(AGENT, facts=facts)
+    return session, asyncio.run(session.handle(text))
+
+
+def test_the_booked_room_opens():
+    session, turn = handle("mở cửa phòng 101")
+    assert turn.allowed
+    assert session.hal.pin("door_lock").pulsed_once(duration_ms=30000)
+
+
+def test_another_room_is_escalated_and_the_lock_stays_shut():
+    session, turn = handle("mở cửa phòng 202")
+    assert turn.result.blocked
+    assert turn.result.gate.escalated_to == "human_receptionist"
+    assert session.hal.pin("door_lock").never_pulsed()
+
+
+def test_an_unauthenticated_guest_never_moves_the_pin():
+    session, turn = handle("mở cửa phòng 101", guest_authenticated=False)
+    assert turn.result.blocked
+    assert session.hal.pin("door_lock").never_pulsed()
+
+
+def test_an_unknown_command_runs_nothing():
+    session, turn = handle("hát một bài")
+    assert not turn.recognised
+    assert session.hal.pin("door_lock").never_pulsed()

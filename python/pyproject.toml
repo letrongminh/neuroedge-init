@@ -43,19 +43,6 @@ dev = [
     "ruff>=0.3.0",
     "pip-licenses>=5.0.0",
 ]
-# Project scaffolding for `neuroedge new` (TSK-S3-07).
-#
-# NOT in the core dependency set: copier depends on jinja2-ansible-filters,
-# which is GPL3. Shipping that in the required set would put GPL3 code into
-# every install of an MIT core, and from there into customer projects — the
-# exact contamination §3.10 rules out. Kept optional until TSK-S3-07 either
-# clears it as a developer-only tool or replaces it.
-#
-# Installing this extra brings GPL3 code into the environment. Do not add it
-# to the core dependencies without a written licence decision (see Q-11).
-scaffold = [
-    "copier>=9.0.0",
-]
 
 [project.scripts]
 neuroedge = "neuroedge.cli.main:app"

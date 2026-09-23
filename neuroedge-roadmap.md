@@ -58,8 +58,8 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 | **Pha đang thực thi** | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0 → 2026-11-15)** | Tiến độ theo sprint: §0.2 · kế hoạch Sprint 2–3: [`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md) |
 | **Sprint hiện hành** | 🟡 **Sprint 2: Lõi thực thi trên `sim` (≈ A1)** — mã A1 xong sớm, 2026-09-23 | **8 / 9 task trong phạm vi xong** (còn TSK-S2-11, chạy ở A2) · **5 / 6 tiêu chí ra đạt** (còn #6, cùng TSK-S2-11) · Sprint 1 còn TSK-S1-10 chờ bo mạch |
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: cuối Sprint 3 = **2026-11-15** — trễ ~2 tuần so với bản gốc (Tuần 6 gốc = 2026-11-02) (Q-19) |
-| **Lần cập nhật cuối** | **2026-09-23** | Mã A1: TSK-S2-12, S2-03, S2-08, S2-01, S2-04, S2-05, S2-02 — chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 427/427 · SKIP 0** | `python/tests/` — 19 bộ test; cổng CI chặn mọi test bị skip |
+| **Lần cập nhật cuối** | **2026-09-23** | V3: TSK-S3-06 (`run --target sim`), S3-18, S3-07 — chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Trạng thái CI Lõi** | ✅ **PASS 469/469 · SKIP 0** | `python/tests/` — 22 bộ test; cổng CI chặn mọi test bị skip |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn + 1 còn mở** | 🔴 TSK-S1-10 chờ bo mạch vật lý · 🟡 Q-11 phần còn lại (Hawkbit EPL-2.0 / EMQX BSL) — **không chặn cho tới khi mở Khối 2** |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -71,7 +71,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 |:---:|:---|:---:|:---|:---:|:---:|
 | **Khối 1a** | **Sprint 1 — Đóng băng lược đồ** | Tuần 0–2<br>2026-09-21 → 2026-09-27 | Schemas, Monorepo, Test fixtures, Memory spike | **12 / 13** | 🟡 **Chờ phần cứng** (chỉ TSK-S1-10) |
 | | **Sprint 2 — Lõi thực thi trên `sim`** *(≈ A1, wedge `sim`)* | **2026-09-28 → 2026-10-25** (Q-19) | Gate Engine, cây quyết định host, HAL sim, fail-closed + fallback ngữ pháp lệnh (Q-14), `@action` + token, kế thừa `budget`/`on_block` (Q-18) | **8 / 9** | 🟡 Mã A1 xong 2026-09-23; còn TSK-S2-11 (A2) |
-| | **Sprint 3 — Action CI & Linux** *(≈ A2)* | **2026-10-26 → 2026-11-15** (Q-19) | HAL linux (`gpio-sim`, Q-16), Record/Replay/Assert/Golden, lớp provider LiteLLM, release PyPI, TTFV < 10' | **0%** | ⏳ Chưa bắt đầu |
+| | **Sprint 3 — Action CI & Linux** *(≈ A2)* | **2026-10-26 → 2026-11-15** (Q-19) | HAL linux (`gpio-sim`, Q-16), Record/Replay/Assert/Golden, lớp provider LiteLLM, release PyPI, TTFV < 10' | **2 / 15** | 🟡 V3 mở sớm: S3-07, S3-18 xong; S3-06 phần `sim` |
 | **Khối 1b** | **Sprint 4 — HAL trên `esp32s3`** | **Từ 2026-11-16** (Q-19) · gốc Tuần 6–8 | Port driver XiaoZhi, verify target bậc 1 không audio, ghim `extends` (RFC-0003) | **0%** | ⏳ Chưa bắt đầu |
 | | **Sprint 5 — Runtime thoại MCU** | Tuần 8–10 | Thu/phát âm thanh, AEC/VAD, C/C++ state machine, stream lên provider | **0%** | ⏳ Chưa bắt đầu |
 | | **Sprint 6 — OTA & Nghiệm thu v1.0** | Tuần 10–12 | A/B OTA, secure boot, tiêu chí A1–A9 | **0%** | ⏳ Chưa bắt đầu |
@@ -90,8 +90,9 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 │ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-23 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ 1. VỪA HOÀN THÀNH — phiên gần nhất (chi tiết: CHANGELOG.md [Chưa phát hành])           │
-│    • Mã A1 ✅: TSK-S2-12 → S2-03 → S2-08 → S2-01 → S2-04 → S2-05 → S2-02                │
-│    • Tiêu chí ra Sprint 2 #1–#5 · Sprint 3 A3, A4, A5 đạt (bằng chứng: §4.2, §4.3)     │
+│    • V3 mở sớm ✅: TSK-S3-07 (neuroedge new) · S3-18 (gate explain)                     │
+│    • TSK-S3-06 🟡: neuroedge run --target sim (REPL gõ chữ); còn test/record/replay     │
+│    • Bỏ extra scaffold (copier, GPL3); README chạy thử bằng run -c                     │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
@@ -100,13 +101,14 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 │    1. Đặt 2 Box-3 + 1 RPi 5 (Phụ lục B, Q-16)                                          │
 │    2. Thí nghiệm gpio-sim 2 giờ trên runner GitHub, trước khi mở A2 (Q-16)             │
 │    3. A2 từ 2026-10-26: TSK-S2-11 (LiteLLM) · S3-01..04 · S3-15 · S3-05 (V2)           │
-│    4. V3 từ 2026-10-05: TSK-S3-06 (run REPL), S3-07, S3-14, S3-16 → S3-20              │
-│    5. Cổng nhu cầu mềm 2026-10-25 (Q-20, TODOS.md #19) — có demo sim để xem            │
+│    4. V3: TSK-S3-14 (PyPI) → đo TTFV (Tiêu chí 1) · S3-16, S3-17, S3-19, S3-20         │
+│    5. Cổng nhu cầu mềm 2026-10-25 (Q-20, TODOS.md #19) — demo: neuroedge run           │
 │                                                                                        │
 │ 4. LƯU Ý — bất biến ở CHANGELOG.md §3.3; dưới đây chỉ điều chưa có ở đó                │
 │    • Cloud-first: STT/TTS/LLM trên provider; không bán lại inference (CR-1.0)          │
 │    • Mất mạng ⇒ gate vẫn lượng giá bằng ngữ pháp lệnh cục bộ (Q-14)                    │
 │    • Chỉ c.do() điều khiển được chân: HAL chưa gắn ledger từ chối mọi lệnh             │
+│    • Dữ kiện phiên trên sim ở [sim.facts] của agent.toml, không suy từ chữ gõ          │
 │    • LiteLLM là SDK sau neuroedge.models.providers, extra [cloud] (Q-10, Q-11)         │
 │    • Chạy ruff check + ruff format --check trước khi commit (CI chặn)                  │
 └────────────────────────────────────────────────────────────────────────────────────────┘
@@ -260,7 +262,7 @@ Ranh giới này quyết định mọi mục còn lại. Một thành phần n�
 
 | Khối | Hạng mục kỹ thuật | Dự án tái sử dụng | Hình thức | Tiết kiệm |
 |:---|:---|:---|:---|:---:|
-| **1a** | CLI `new` / `run` / `test` | Typer · Rich · Copier | Thư viện Python | 2 tuần |
+| **1a** | CLI `new` / `run` / `test` | Typer · Rich · generator mẫu Python (không Copier — TSK-S3-07) | Thư viện Python | 2 tuần |
 | **1a** | Lượng giá biểu thức `allow_when` | Google CEL (`cel-python`) | Rule engine lõi | 3 tuần |
 | **1a** | Giao diện web môi trường `sim` | Wokwi Elements | Web components | 3 tuần |
 | **1a** | Khung kiểm thử Action CI | Pytest · DeepDiff | Plugin `pytest-neuroedge` | 2 tuần |
@@ -437,7 +439,7 @@ Ba tệp này là thước đo tuân thủ cho cả Khối 1a và 1b, và là đ
 | **TSK-S1-12** | Hai workflow CI: `ci-sim-linux.yml` và `nightly-hardware.yml` | FR-CI-05, FR-CI-06 | V1 | ✅ Hoàn thành | [`ci-sim-linux.yml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/.github/workflows/ci-sim-linux.yml) (lược đồ · phân giải gate · vết ghi · test 3 bản Python · lint · cổng giấy phép · **cổng chặn test skip**) · [`nightly-hardware.yml`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/.github/workflows/nightly-hardware.yml) (dựng IDF · ngân sách flash Q-3 · thu số đo · trôi phụ thuộc) |
 | **TSK-S1-13** | Quy ước đóng góp và mẫu RFC đổi lược đồ | — | V1 | ✅ Hoàn thành | [`CONTRIBUTING.md`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/CONTRIBUTING.md) (7 mục) · [`docs/rfc/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/): [quy trình](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/README.md), [mẫu](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/0000-template.md), [RFC-0001](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfc/0001-gate-schema-conditional-requirements.md) |
 
-**Đòn bẩy OSS Sprint 1:** Pydantic v2 và `rfc8785` cho chuẩn hóa lược đồ · Typer, Rich, Copier cho khung CLI ban đầu. Tiết kiệm ước tính 3 tuần công sức viết mã.
+**Đòn bẩy OSS Sprint 1:** Pydantic v2 và `rfc8785` cho chuẩn hóa lược đồ · Typer, Rich cho khung CLI ban đầu (Copier dùng lúc dựng khung, bỏ hẳn ở TSK-S3-07 vì GPL3 bắc cầu). Tiết kiệm ước tính 3 tuần công sức viết mã.
 
 **Nội dung spike bộ nhớ:** nạp thử AEC + VAD + Opus streaming **+ ESP-SR MultiNet** (bộ nhận diện lệnh cố định làm fallback cục bộ, Q-14; thêm WakeNet nếu cân nhắc thay microWakeWord) lên ESP32-S3-Box-3, đo dung lượng SRAM và PSRAM còn lại sau khi trừ ngăn xếp mạng và hệ điều hành. Kết quả là **một con số**, không phải một nhận định.
 
@@ -456,7 +458,7 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 - [x] **Tiêu chí 5:** Ba tệp vết ghi chuẩn mực tại `fixtures/traces/` đã viết tay và phân giải đúng.
   *Bằng chứng:* `neuroedge trace validate fixtures/traces/*.json` → 3/3 VALID. 19 test tại [`test_trace_fixtures.py`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/tests/test_trace_fixtures.py) kiểm tra **nội dung kịch bản**, không chỉ tính hợp lệ lược đồ (happy-path cấp xung 30 000 ms; hai kịch bản còn lại **không sinh lệnh actuator nào**).
 - [x] **Tiêu chí 6:** Quyết định Q-11 đã chốt (§10.2) — điều kiện để bắt đầu port bất kỳ dòng mã nào.
-  **ĐẠT cho phạm vi Giai đoạn 1 (2026-09-23).** Phần LiteLLM của Q-11 đã duyệt: `litellm==1.102.0` là MIT, wheel không chứa `enterprise/`, 55 phụ thuộc bắc cầu đều MIT/BSD/Apache-2.0/PSF + MPL-2.0; kèm chính sách phụ thuộc bắc cầu cưỡng chế bằng CI (làm cùng TSK-S2-11). **Phần Hawkbit EPL-2.0 / EMQX BSL chuyển thành cổng mở Khối 2** ([`TODOS.md`](TODOS.md) #16) — chưa có dòng mã nào của chúng được port; phần D của [`NOTICE`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/NOTICE) ghi rõ phạm vi phơi nhiễm. Phát hiện phát sinh trong Sprint 1: `copier` kéo theo `jinja2-ansible-filters` **GPL3** — đã chuyển sang extra `scaffold` để lõi MIT không bị lây nhiễm, và cổng CI giấy phép chặn tái diễn.
+  **ĐẠT cho phạm vi Giai đoạn 1 (2026-09-23).** Phần LiteLLM của Q-11 đã duyệt: `litellm==1.102.0` là MIT, wheel không chứa `enterprise/`, 55 phụ thuộc bắc cầu đều MIT/BSD/Apache-2.0/PSF + MPL-2.0; kèm chính sách phụ thuộc bắc cầu cưỡng chế bằng CI (làm cùng TSK-S2-11). **Phần Hawkbit EPL-2.0 / EMQX BSL chuyển thành cổng mở Khối 2** ([`TODOS.md`](TODOS.md) #16) — chưa có dòng mã nào của chúng được port; phần D của [`NOTICE`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/NOTICE) ghi rõ phạm vi phơi nhiễm. Phát hiện phát sinh trong Sprint 1: `copier` kéo theo `jinja2-ansible-filters` **GPL3** — đã chuyển sang extra `scaffold` để lõi MIT không bị lây nhiễm, và cổng CI giấy phép chặn tái diễn; TSK-S3-07 thay `copier` bằng generator Python thuần và bỏ hẳn extra đó.
 
 **Ghi chú về phạm vi đã đóng:** toàn bộ khối lượng Sprint 1 **không phụ thuộc phần cứng** đã hoàn tất (12/13 task, 5/6 tiêu chí ra). Hạng mục còn lại (TSK-S1-10, Tiêu chí 3) không thể đóng bằng nỗ lực kỹ thuật thêm nữa — nó chờ bo mạch.
 
@@ -507,8 +509,8 @@ Phạm vi và thứ tự chạy theo kế hoạch [`docs/designs/giai-doan-1-wed
 | **TSK-S3-03** | Thư viện assert: chặn, gate nào, leo thang, chân cấm kích | FR-CI-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/assertions.py` |
 | **TSK-S3-04** | Golden Reference và so khớp chuỗi phán quyết | FR-CI-04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/golden.py` |
 | **TSK-S3-05** | Hiện thực HAL cho target `linux` qua `gpiod`; CI dùng **`gpio-sim`** (kernel ≥ 5.19, configfs), **1 RPi 5** làm nightly phần cứng và phương án B; **ném lỗi** khi không có `/dev/gpiochip*`, không no-op (Q-16) | FR-TGT-02 | **V2** *(ENG-T3)* | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` |
-| **TSK-S3-06** | Vỏ CLI + `--help` + **hợp đồng mã thoát** cho `new`, `run`, `build`, `test`, `record`, `replay`, `trace validate`; nối engine theo từng tuần khi A1/A2 xong | FR-CLI-01→04, FR-CLI-06, FR-TRC-08 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/` |
-| **TSK-S3-07** | Scaffold `neuroedge new` có sẵn action, gate, test — **không dùng `copier`** (tránh GPL3 `jinja2-ansible-filters`) | FR-DX-01 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/templates/` |
+| **TSK-S3-06** | Vỏ CLI + `--help` + **hợp đồng mã thoát** cho `new`, `run`, `build`, `test`, `record`, `replay`, `trace validate`; nối engine theo từng tuần khi A1/A2 xong | FR-CLI-01→04, FR-CLI-06, FR-TRC-08 | V3 | 🟡 **Phần A1 xong (2026-09-23)** | `run --target sim`: [`cli/run.py`](python/neuroedge/cli/run.py) + [`sim/session.py`](python/neuroedge/sim/session.py), commit `190b241`. Còn: `test` / `record` / `replay` thực thi nối cùng TSK-S3-01..03; `run --target linux` cùng TSK-S3-05 |
+| **TSK-S3-07** | Scaffold `neuroedge new` có sẵn action, gate, test — **không dùng `copier`** (tránh GPL3 `jinja2-ansible-filters`) | FR-DX-01 | V3 | ✅ Hoàn thành (2026-09-23) | [`python/neuroedge/templates/`](python/neuroedge/templates/) — mẫu `minimal`, `villa-concierge`; commit `e03e206` · `pytest tests/test_cli_new.py` |
 | **TSK-S3-08** | Ba ví dụ mẫu chạy được, README có tài sản trực quan | FR-DX-05, FR-DX-06 | V3 | ⏸ **Hoãn → Sprint 5** | V3 dồn cho đường phân phối; không đo wedge |
 | **TSK-S3-09** | Telemetry CLI ẩn danh, có thể tắt | FR-TEL-01, FR-TEL-02 | V3 | ⏸ **Hoãn → Sprint 5** | Không đo wedge; cần trước Beta (B1–B5) |
 | **TSK-S3-10** | **Bộ vector kiểm thử tuân thủ độc lập ngôn ngữ** cho máy trạng thái hội thoại (§3.8) | FR-CI-07, FR-TGT-04 | V1 | ⏸ **Hoãn → Sprint 5** | Hoãn cùng TSK-S2-07 (thứ tự §3.10); phải có trước TSK-S5-03 |
@@ -519,14 +521,14 @@ Phạm vi và thứ tự chạy theo kế hoạch [`docs/designs/giai-doan-1-wed
 | **TSK-S3-15** | **RFC golden reference:** ba vết ghi chuẩn mực khai `"target": "esp32s3"` nhưng replay ở Tiêu chí 4 chạy trên `sim`/`linux` thật; `fixtures/traces/` là RFC-gated | FR-CI-04, FR-TRC-05 | V1 | ⏳ Chưa bắt đầu | `docs/rfc/` (RFC mới) · `fixtures/traces/` |
 | **TSK-S3-16** | **Cổng CI `digests.lock`:** khoá digest của `gates/**` + `fixtures/gates/valid/**` + `fixtures/gates/registry/**`; phân biệt *digest mới* với *digest đổi* (cần RFC) | FR-GATE-01, FR-GOV-02, FR-CI-05 | **V3** *(ENG-T3)* | ⏳ Chưa bắt đầu | `digests.lock` · `.github/workflows/ci-sim-linux.yml` |
 | **TSK-S3-17** | **Đóng gói asset vào wheel:** `force-include` lược đồ + vết ghi chuẩn mực; `paths.py` đọc từ gói; `repo_root()` ném lỗi 3 thành phần nêu `NEUROEDGE_ROOT` | FR-DX-02, FR-DX-04 | **V3** *(ENG-T3)* | ⏳ Chưa bắt đầu | `python/pyproject.toml` · `python/neuroedge/paths.py` |
-| **TSK-S3-18** | **`neuroedge gate explain`:** giải thích gate đã phân giải cho người duyệt không đọc mã (J6) | FR-GATE-01, FR-CLI-05 | **V3** *(ENG-T3)* | ⏳ Chưa bắt đầu | `python/neuroedge/cli/` |
+| **TSK-S3-18** | **`neuroedge gate explain`:** giải thích gate đã phân giải cho người duyệt không đọc mã (J6) | FR-GATE-01, FR-CLI-05 | **V3** *(ENG-T3)* | ✅ Hoàn thành (2026-09-23) | [`engine/gate_explain.py`](python/neuroedge/engine/gate_explain.py) + [`cli/explain.py`](python/neuroedge/cli/explain.py); commit `d80964e` · `pytest tests/test_cli_explain.py` |
 | **TSK-S3-19** | **`verify` đếm artifact, ném khi = 0** (lỗi 3 thành phần) + test phản chứng cây rỗng | FR-CI-07, FR-CLI-06, FR-DX-04 | **V3** *(ENG-T3)* | ⏳ Chưa bắt đầu | `python/neuroedge/cli/` · `python/tests/` |
 | **TSK-S3-20** | **`README.md` gốc** một màn hình, thành trang PyPI; liên kết tuyệt đối, không hướng dẫn cài editable | FR-DX-02, FR-DX-05 | **V3** *(ENG-T3)* | ⏳ Chưa bắt đầu | `README.md` |
 | **TSK-S3-21** | **Ghim `extends` bằng digest** (`@<ver>#sha256:…`) + `digests.lock` thành lock của `extends` + kiểm danh tính `URI ↔ name/version` | FR-GATE-05, FR-GATE-06 | V1 | ⏸ **Hoãn → Sprint 4** | Cần RFC-0003 (đổi `pattern` của `gate.v1.json`, đóng băng `decision_tree.v1.json`); chỉ cần khi firmware C đọc cây hoặc có registry ([`TODOS.md`](TODOS.md) #15) |
 
 **Tiêu chí ra Sprint 3 — cổng kết thúc Khối 1a (Exit Criteria):** — **3 / 6 đã đạt**
 
-- [ ] **Tiêu chí 1 (A1):** TTFV đo thử nội bộ trên **3 người ngoài đội** đạt trung vị dưới 10 phút *(đo đầy đủ ở Tuần 12)*. Cần TSK-S3-14 publish và TSK-S3-07 scaffold trước, rồi mới có thời gian đo.
+- [ ] **Tiêu chí 1 (A1):** TTFV đo thử nội bộ trên **3 người ngoài đội** đạt trung vị dưới 10 phút *(đo đầy đủ ở Tuần 12)*. Scaffold TSK-S3-07 đã có (2026-09-23); còn cần TSK-S3-14 publish, rồi mới có thời gian đo.
 - [ ] **Tiêu chí 2 (A2):** `neuroedge verify --targets sim,linux` đạt 100% *(một phần)*.
 - [x] **Tiêu chí 3 (A3):** Không tồn tại đường tắt kích hoạt GPIO bỏ qua gate.
   *Bằng chứng:* `docs/spec/threat_model.md` §2 liệt kê mọi đường tắt và test chặn nó — `test_no_path_reaches_a_pin_without_a_valid_token`, `test_a_hal_without_a_ledger_refuses_every_command`, các test `token_replayed` / `token_expired` trong `tests/test_actions.py`.
@@ -843,7 +845,7 @@ Khi dựng cổng giấy phép cho CI (TSK-S1-12), rà soát phụ thuộc phát
 
 | Đường lây nhiễm | Giấy phép | Cách xử lý |
 |:---|:---|:---|
-| `neuroedge` → `copier` → `jinja2-ansible-filters` | **GPL3** | `copier` chuyển khỏi tập phụ thuộc lõi sang extra `scaffold`. Nó chỉ cần cho `neuroedge new` (TSK-S3-07), chưa hiện thực, nên không mất gì |
+| `neuroedge` → `copier` → `jinja2-ansible-filters` | **GPL3** | `copier` rời tập phụ thuộc lõi; TSK-S3-07 hiện thực `neuroedge new` bằng generator Python thuần nên bỏ hẳn extra `scaffold` |
 | `neuroedge` → `jsonschema[format]` → `rfc3987` | **GPL** | Ghim extra `[format-nongpl]`, dùng `rfc3987-syntax` (MIT). Extra này là **bắt buộc**, không phải tùy chọn: thiếu bộ kiểm tra format thì `format: date-time` trong `trace.v1.json` chỉ là chú thích, và một vết ghi có mốc thời gian không phân tích được vẫn thẩm định đạt |
 
 Cả hai đều trực tiếp hiện thực hóa rủi ro mà §3.10 của tài liệu này nêu: *"Nhúng mã GPLv3 vào phần phân phối → Lây nhiễm bản quyền sang lõi MIT và sang dự án của khách hàng."* Điều đáng chú ý là **không ai thêm một phụ thuộc GPL nào một cách chủ ý** — cả hai đến qua phụ thuộc bắc cầu của một thư viện hoàn toàn permissive. Rà soát giấy phép bằng mắt ở tầng phụ thuộc trực tiếp sẽ bỏ sót cả hai.
@@ -971,13 +973,13 @@ neuroedge/
 ├── python/                     # Gói phân phối qua PyPI
 │   ├── pyproject.toml          # Python 3.11+
 │   ├── neuroedge/
-│   │   ├── cli/                # Typer · Rich · Copier
+│   │   ├── cli/                # Typer · Rich · run/explain; mẫu dự án: templates/
 │   │   ├── hal/                # 5 nguyên thủy và bộ đối chiếu năng lực lúc build
 │   │   ├── engine/             # Action Contract Engine · trình biên dịch CEL sang cây quyết định
 │   │   ├── models/             # SystemOne/SystemTwo · lớp provider (OpenAI-compatible + adapter)
 │   │   ├── perception/         # Voice pipeline · VAD · barge-in · provider ASR/TTS
 │   │   ├── testing/            # Action CI: pytest-neuroedge · replay · assert
-│   │   └── sim/                # Máy chủ mô phỏng web · Wokwi Elements
+│   │   └── sim/                # SimSession (gõ chữ) · web UI: TSK-S2-09
 │   └── tests/
 ├── targets/                    # Hiện thực HAL cho từng môi trường
 │   ├── sim/                    # Backend mô phỏng trong bộ nhớ (Python)

@@ -1,0 +1,10 @@
+"""The agent's physical action. Only `c.do()` can run it, and only after its gate allows."""
+
+from neuroedge import action
+from neuroedge.hal import digital
+
+
+@action(name="operate_hardware", requires="digital.out:door_lock", gate="custom_lock")
+def operate_hardware(duration_s: int = 5) -> None:
+    """Pulse the lock for `duration_s` seconds."""
+    digital.out("door_lock").pulse(seconds=duration_s)

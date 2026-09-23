@@ -1,0 +1,23 @@
+# {{name}}
+
+Agent NeuroEdge sinh từ mẫu `villa-concierge`: lễ tân villa mở cửa phòng cho
+khách qua gate `unlock_door@1.2.0` (kế thừa `hospitality/base-access@1.0.0`).
+Gate lấy từ registry `neuroedge://gates/…`, nên dự án này cần kho NeuroEdge.
+
+## Chạy thử trên `sim` — không cần mạng, không cần key
+
+```bash
+neuroedge build --target sim --board sim-default   # đối chiếu năng lực với bo mạch
+neuroedge run -c "mở cửa phòng 101"                 # ✓ ALLOW, door_lock PULSED 30s
+neuroedge run                                       # REPL: gõ lệnh, :help, exit
+```
+
+`mở cửa phòng 202` bị chặn và chuyển lễ tân (`room_matches`); trong REPL,
+`:set guest_authenticated false` cho thấy gate chặn khách chưa xác thực.
+Chính sách gate bằng lời: `neuroedge gate explain neuroedge://gates/unlock_door@1.2.0`.
+
+## Kiểm thử
+
+```bash
+python -m pytest -q tests
+```

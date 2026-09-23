@@ -755,6 +755,19 @@ supported = ["sim", "linux", "esp32s3"]
 
 *Điểm nhấn:* Cú pháp `neuroedge://` cho phép kế thừa các gói gate chuẩn đã được kiểm định từ cộng đồng về sử dụng trực tiếp theo phiên bản mong muốn.
 
+**Chạy trên `sim` (TSK-S3-06).** Hai bảng tuỳ chọn cấp dữ kiện phiên cho gate khi chạy `neuroedge run --target sim`; trên thiết bị, dữ kiện này đến từ hệ thống của khách hàng:
+
+```toml
+[sim.facts]                 # dữ kiện phiên — không bao giờ suy từ chữ người dùng gõ
+guest_authenticated = true
+risk_level          = "low"
+
+[sim.slot_facts]            # dữ kiện tính từ slot mà ngữ pháp lệnh trích được
+room_matches = { slot = "room", equals = "101" }
+```
+
+Tiêu chí không có trong hai bảng và không do lệnh khớp chứng minh (`facts` trong `commands.toml`) là **chưa xác định** → gate chặn. Trong `commands.toml`, mỗi `[[command]]` có thể khai `action` (tên `@action` chạy qua `c.do()`) và `arguments` (tham số ← slot); `neuroedge build` từ chối action không tồn tại.
+
 ### 4.4 Định nghĩa hành động chuẩn kiểu — `@action`
 
 ```python
@@ -960,9 +973,9 @@ neuroedge gate publish gates/unlock_door@1.2.0.yaml
 neuroedge gate add     neuroedge://gates/hospitality/dual-auth-lock@1.0.0
 ```
 
-**Nền tảng hiện thực CLI:** xây trên **Typer** cho định nghĩa lệnh, **Rich** cho hiển thị và báo lỗi có cấu trúc, **Copier** cho khuôn mẫu dự án của `neuroedge new`.
+**Nền tảng hiện thực CLI:** xây trên **Typer** cho định nghĩa lệnh, **Rich** cho hiển thị và báo lỗi có cấu trúc. Khuôn mẫu dự án của `neuroedge new` là **generator Python thuần** trong gói — không dùng Copier, vì nó kéo theo `jinja2-ansible-filters` GPL3 (TSK-S3-07).
 
-**Giao diện mô phỏng:** `neuroedge run --target sim` khởi động một máy chủ cục bộ nhúng sẵn thư viện **Wokwi Elements**. Lập trình viên thấy ngay chốt cửa ảo bật mở, đèn báo đổi màu và servo quay trên trình duyệt mà không cần cài thêm phần mềm nào.
+**Giao diện mô phỏng:** `neuroedge run --target sim` khởi động một máy chủ cục bộ nhúng sẵn thư viện **Wokwi Elements**. Lập trình viên thấy ngay chốt cửa ảo bật mở, đèn báo đổi màu và servo quay trên trình duyệt mà không cần cài thêm phần mềm nào. *(Hôm nay `run --target sim` là vòng lặp gõ chữ trên terminal — TSK-S3-06; giao diện web là TSK-S2-09.)*
 
 Hai lệnh `record` và `replay` giúp việc tái hiện và xử lý lỗi hiện trường trở nên đơn giản: Một sự cố xảy ra ngoài thực tế được đưa về tái hiện chính xác trên máy tính cá nhân của kỹ sư chỉ bằng một câu lệnh.
 
@@ -1179,7 +1192,7 @@ neuroedge run --target sim
 | Chuẩn hóa lược đồ gate và vết ghi | §3.7 | Pydantic v2 · canonical JSON theo RFC 8785 |
 | Hai môi trường thực thi đầu tiên: `sim` và `linux` | §3.2 | `libgpiod` qua liên kết động · Wokwi Elements cho giao diện mô phỏng |
 | Trục Action CI: Ghi vết (record), Replay, Đối chiếu (assert), Mẫu chuẩn (golden) | §3.7 | Tự phát triển — tài sản lõi. Đóng gói dạng plugin Pytest, so khớp bằng DeepDiff |
-| Bộ công cụ dòng lệnh (CLI) cơ bản | §4.8 | Typer · Rich · Copier |
+| Bộ công cụ dòng lệnh (CLI) cơ bản | §4.8 | Typer · Rich · generator mẫu tự viết |
 | Ứng dụng mẫu hoàn chỉnh chạy thử nghiệm | §7 | — |
 
 ### 8.2 Khối 1b — Hiện thực hóa trên vi điều khiển biên (Tuần 6–12)
@@ -1704,7 +1717,6 @@ Danh mục đầy đủ các dự án được tái sử dụng hoặc port, kè
 |:---|:---|:---|:---|:---:|
 | Typer | Khung định nghĩa lệnh CLI | MIT | Thư viện | Chưa |
 | Rich | Hiển thị và báo lỗi có cấu trúc | MIT | Thư viện | Chưa |
-| Copier | Khuôn mẫu dự án cho `neuroedge new` | MIT | Thư viện | Chưa |
 | Pydantic v2 | Chuẩn hóa và kiểm tra lược đồ | MIT | Thư viện | Chưa |
 | `rfc8785` | Canonical JSON cho Golden Reference | Apache-2.0 | Thư viện | Chưa |
 | `cel-python` | Lượng giá biểu thức `allow_when` | Apache-2.0 | Rule engine | Chưa |
