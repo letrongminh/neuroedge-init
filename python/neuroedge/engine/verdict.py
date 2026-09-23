@@ -60,6 +60,11 @@ class Unavailable:
         if self.reason not in UNAVAILABLE_REASONS:
             raise ValueError(f"unknown Unavailable reason {self.reason!r}")
 
+    # Read like an answer, so agent code such as `intent.top` degrades to None.
+    value = None
+    top = None
+    confidence = None
+
     def as_reason(self) -> Reason:
         if self.reason == "offline":
             return Reason.GATE_UNREACHABLE
@@ -81,3 +86,8 @@ class Fact:
     value: bool | str | None
     confidence: float | None = None
     source: str = "context"
+
+    @property
+    def top(self) -> bool | str | None:
+        """The chosen option, for `choice` answers (`intent.top`, proposal §4.6)."""
+        return self.value

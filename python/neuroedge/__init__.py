@@ -23,6 +23,7 @@ from .errors import (
     TraceValidationError,
 )
 from .hal import BoardProfile, HardwareAbstractionLayer, load_board_by_id
+from .models import SystemOne, SystemTwo
 from .testing import replay, scenario
 from .trace import load_trace, validate_trace
 
@@ -41,6 +42,8 @@ __all__ = [
     "HardwareAbstractionLayer",
     "NeuroEdgeError",
     "ResolvedGate",
+    "SystemOne",
+    "SystemTwo",
     "TraceValidationError",
     "load_board_by_id",
     "load_trace",

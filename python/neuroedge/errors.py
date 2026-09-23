@@ -106,3 +106,13 @@ class TraceValidationError(NeuroEdgeError):
     """A trace file violates schemas/trace.v1.json."""
 
     code = "NE4001"
+
+
+class PerceptionUnavailableError(NeuroEdgeError):
+    """
+    A perception component cannot be constructed: a missing or malformed command
+    grammar, an unknown model reference. Raised at build or load time; at run time
+    the engine turns an unrunnable fallback into a `gate_unreachable` verdict.
+    """
+
+    code = "NE5001"
