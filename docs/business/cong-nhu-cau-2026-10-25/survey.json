@@ -1,0 +1,190 @@
+{
+  "title": "Khi thiết bị tự động làm sai — khảo sát 7 phút",
+  "intro": "Chúng tôi đang tìm hiểu cách các đội vận hành và phát triển xử lý khi thiết bị có cơ cấu chấp hành (khóa, đèn, bơm, rơ-le...) làm một việc sai ngoài đời thật. Khảo sát này không bán gì. Mọi câu hỏi là về những gì đã xảy ra trong 12 tháng qua, không hỏi ý kiến về sản phẩm. Khoảng 7 phút. Không cần nêu tên người hay tên công ty; câu để lại liên hệ ở cuối là tùy chọn. Kết quả chỉ dùng trong nhóm, ở dạng tổng hợp không định danh.",
+  "segments": [
+    { "id": "hospitality", "label": "Khách sạn / nghỉ dưỡng" },
+    { "id": "fleet", "label": "Vận hành đội thiết bị (Fleet Operators)" },
+    { "id": "smart_home", "label": "Nhà thông minh (Smart Home)" },
+    { "id": "industrial", "label": "Công nghiệp (Industrial IoT)" }
+  ],
+  "questions": [
+    {
+      "id": "segment",
+      "text": "Công việc của anh/chị gần nhất với lĩnh vực nào?",
+      "type": "single",
+      "options": ["Khách sạn / nghỉ dưỡng", "Vận hành đội thiết bị (Fleet Operators)", "Nhà thông minh (Smart Home)", "Công nghiệp (Industrial IoT)"],
+      "segments": ["all"],
+      "hypothesis": "PROFILE",
+      "required": true
+    },
+    {
+      "id": "role",
+      "text": "Vai trò của anh/chị?",
+      "type": "single",
+      "options": ["Chủ / giám đốc", "Quản lý vận hành", "Trưởng kỹ thuật / bảo trì", "Kỹ sư firmware / nhúng", "Kỹ sư phần mềm / AI", "Phụ trách an toàn / QA", "Mua hàng", "Khác"],
+      "segments": ["all"],
+      "hypothesis": "PROFILE",
+      "required": true
+    },
+    {
+      "id": "budget_role",
+      "text": "Trong 12 tháng qua, anh/chị đã duyệt hoặc đề xuất khoản chi nào cho thiết bị hay công cụ quản lý thiết bị chưa?",
+      "type": "single",
+      "options": ["Đã duyệt", "Đã đề xuất, người khác duyệt", "Chưa"],
+      "segments": ["all"],
+      "hypothesis": "CEO-X5",
+      "required": true
+    },
+    {
+      "id": "device_count",
+      "text": "Tổ chức của anh/chị hiện đang vận hành (hoặc đã bán ra) bao nhiêu thiết bị có cơ cấu chấp hành?",
+      "type": "single",
+      "options": ["Chưa có thiết bị ngoài đời (đang làm mẫu)", "1–99", "100–999", "1.000–9.999", "Từ 10.000 trở lên", "Không rõ"],
+      "segments": ["all"],
+      "hypothesis": "CEO-X2",
+      "required": true
+    },
+    {
+      "id": "actuator_types",
+      "text": "Những thiết bị đó điều khiển gì? (chọn nhiều)",
+      "type": "multi",
+      "options": ["Khóa cửa", "Đèn", "Điều hòa / HVAC", "Rèm, cổng, barrier", "Bơm, van", "Motor, băng tải", "Rơ-le khác", "Còi, cảnh báo", "Khác"],
+      "segments": ["all"],
+      "hypothesis": "CEO-X2",
+      "required": false
+    },
+    {
+      "id": "incident_count",
+      "text": "Trong 12 tháng qua, bao nhiêu lần thiết bị làm một việc vật lý sai (mở sai, tắt sai, chạy khi không nên chạy) hoặc không làm khi cần?",
+      "type": "single",
+      "options": ["0", "1–2", "3–10", "Hơn 10", "Không theo dõi"],
+      "segments": ["all"],
+      "hypothesis": "P1",
+      "required": true
+    },
+    {
+      "id": "incident_cause",
+      "text": "Lần gần nhất, nguyên nhân là gì? (chọn nhiều)",
+      "type": "multi",
+      "options": ["Lệnh bị hiểu sai", "Lỗi logic hoặc cấu hình", "Sau một bản cập nhật firmware / phần mềm", "Mất mạng", "Hỏng phần cứng", "Người thao tác sai", "Chưa có sự cố nào", "Không rõ"],
+      "segments": ["all"],
+      "hypothesis": "CEO-T1",
+      "required": false
+    },
+    {
+      "id": "incident_cost",
+      "text": "Lần gần nhất đó tốn khoảng bao nhiêu (đền bù, hoàn tiền, giờ công, sửa chữa, dừng máy)?",
+      "type": "single",
+      "options": ["Chưa có sự cố nào", "Không đáng kể", "Dưới 5 triệu đồng", "5–50 triệu đồng", "50–500 triệu đồng", "Trên 500 triệu đồng", "Không biết"],
+      "segments": ["all"],
+      "hypothesis": "P1",
+      "required": false
+    },
+    {
+      "id": "field_trips",
+      "text": "Tháng trước, có bao nhiêu lần phải cử người tới tận nơi vì thiết bị?",
+      "type": "single",
+      "options": ["0", "1–5", "6–20", "21–100", "Hơn 100", "Không đếm"],
+      "segments": ["hospitality", "fleet", "industrial"],
+      "hypothesis": "G-e",
+      "required": false
+    },
+    {
+      "id": "field_trips_software",
+      "text": "Trong các chuyến đó, khoảng bao nhiêu phần hóa ra là lỗi phần mềm hoặc cấu hình, không phải hỏng vật lý?",
+      "type": "single",
+      "options": ["Gần như không", "Dưới 25%", "25–50%", "50–75%", "Trên 75%", "Không biết"],
+      "segments": ["hospitality", "fleet", "industrial"],
+      "hypothesis": "G-e",
+      "required": false
+    },
+    {
+      "id": "change_testing",
+      "text": "Lần gần nhất đổi logic, cấu hình hoặc firmware trước khi đưa ra thiết bị thật, đội đã kiểm bằng cách nào? (chọn nhiều)",
+      "type": "multi",
+      "options": ["Không kiểm có hệ thống", "Thử tay trên 1–2 thiết bị", "Phòng lab / thiết bị mẫu", "Mô phỏng / giả lập", "Test tự động trong CI", "Triển khai theo đợt (canary)", "Nhà cung cấp lo", "Chưa từng đổi"],
+      "segments": ["all"],
+      "hypothesis": "CEO-X4",
+      "required": true
+    },
+    {
+      "id": "current_tools",
+      "text": "Hôm nay đội dùng gì để cập nhật, giám sát và xem nhật ký thiết bị? (chọn nhiều)",
+      "type": "multi",
+      "options": ["Tự viết", "Dịch vụ IoT của nhà cung cấp đám mây", "Nền tảng quản lý thiết bị chuyên dụng (OTA, giám sát)", "Nền tảng của hãng chip / hãng thiết bị", "PLC / SCADA", "Phần mềm của nhà cung cấp khóa / PMS", "Chưa có", "Khác"],
+      "segments": ["all"],
+      "hypothesis": "CEO-T3",
+      "required": true
+    },
+    {
+      "id": "tool_spend",
+      "text": "12 tháng qua, tổ chức đã chi khoảng bao nhiêu cho công cụ quản lý, cập nhật, giám sát hoặc kiểm thử thiết bị (không tính phần cứng)?",
+      "type": "single",
+      "options": ["Không chi", "Dưới 20 triệu đồng", "20–200 triệu đồng", "200 triệu – 1 tỷ đồng", "Trên 1 tỷ đồng", "Không biết"],
+      "segments": ["all"],
+      "hypothesis": "CEO-X2",
+      "required": true
+    },
+    {
+      "id": "pricing_unit",
+      "text": "Khoản chi đó đang được tính theo gì?",
+      "type": "single",
+      "options": ["Theo thiết bị mỗi tháng / năm", "Theo site / tòa nhà", "Theo dự án", "Theo người dùng / theo đội", "Mua một lần", "Không chi", "Không biết"],
+      "segments": ["all"],
+      "hypothesis": "CEO-X2",
+      "required": false
+    },
+    {
+      "id": "offline_incident",
+      "text": "Trong 12 tháng qua, mất kết nối mạng đã gây sự cố cho thiết bị chưa?",
+      "type": "single",
+      "options": ["Có, và có thiệt hại", "Có, nhưng không thiệt hại", "Không", "Thiết bị không dùng mạng", "Không biết"],
+      "segments": ["all"],
+      "hypothesis": "CEO-T1",
+      "required": false
+    },
+    {
+      "id": "certification",
+      "text": "Để được dùng hoặc bán thiết bị, có bắt buộc chứng nhận an toàn (ví dụ IEC 61508, ISO 13849 hoặc tiêu chuẩn ngành) không?",
+      "type": "single",
+      "options": ["Bắt buộc", "Ưu tiên, không bắt buộc", "Không liên quan", "Không biết"],
+      "segments": ["all"],
+      "hypothesis": "CEO-T2",
+      "required": true
+    },
+    {
+      "id": "reuse_policy",
+      "text": "Đội đã từng dùng lại quy tắc hoặc cấu hình an toàn do bên khác viết (nhà cung cấp, cộng đồng, công ty khác) chưa?",
+      "type": "single",
+      "options": ["Đã từng, từ bên ngoài", "Chỉ dùng lại trong nội bộ", "Chưa, và không muốn", "Chưa, nhưng không phản đối"],
+      "segments": ["all"],
+      "hypothesis": "G-d",
+      "required": false
+    },
+    {
+      "id": "ai_control",
+      "text": "Hiện có trợ lý giọng nói, LLM hoặc hệ thống bên ngoài nào ra lệnh trực tiếp cho thiết bị không?",
+      "type": "single",
+      "options": ["Đang chạy thật", "Đang thử nghiệm", "Có kế hoạch và đã có ngân sách", "Không"],
+      "segments": ["all"],
+      "hypothesis": "CEO-X4",
+      "required": true
+    },
+    {
+      "id": "incident_story",
+      "text": "Nếu được, kể ngắn sự cố gần nhất: chuyện gì xảy ra, ai phát hiện, tốn gì. Không cần tên công ty.",
+      "type": "text",
+      "segments": ["all"],
+      "hypothesis": "P1",
+      "required": false
+    },
+    {
+      "id": "contact",
+      "text": "Tùy chọn: để lại email hoặc số điện thoại nếu anh/chị đồng ý cho chúng tôi liên hệ một cuộc trò chuyện 45 phút về câu trả lời của mình. Khi điền, anh/chị đồng ý để nhóm lưu thông tin liên hệ này chỉ cho mục đích đó, không chia sẻ với bên thứ ba, và xóa khi anh/chị yêu cầu hoặc sau 2026-12-31.",
+      "type": "text",
+      "segments": ["all"],
+      "hypothesis": "PROFILE",
+      "required": false
+    }
+  ]
+}

@@ -27,6 +27,10 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **Bộ chuẩn bị cổng nhu cầu 2026-10-25 (Q-20, `TODOS.md` #19).** `docs/business/cong-nhu-cau-2026-10-25/`:
+  10 câu hỏi cổng C1–C10 gắn với `CEO-X*`/`T*` và proposal §8.7, kế hoạch theo ngày, demo ≤ 5 phút cho 4 phân khúc
+  (chỉ lệnh đã chạy thật, kèm bảng *không được nói là đã có*), bộ câu hỏi phỏng vấn kiểu The Mom Test, thang chấm
+  go / adjust / stop, và `survey.json` — dựng thành trang ghi phiếu nội bộ (link trong README của thư mục).
 - **TSK-S3-25 — gate chặn theo giá trị tham số (RFC-0005 chấp thuận, Q-25).** Khối `arguments:` trong gate
   (`type`, `minimum`/`maximum`, `enum`, `max_length`) — thêm vào `schemas/gate.v1.json` theo RFC. Engine kiểm
   giá trị thực chạy (kể cả mặc định) **trước** mọi dữ kiện ⇒ `BLOCK argument_out_of_range`, rồi `on_block`.
