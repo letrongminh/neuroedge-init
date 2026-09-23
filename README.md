@@ -76,6 +76,18 @@ cứng — lỗi nêu ở đâu, vì sao, sửa thế nào. `neuroedge new my-ag
 `neuroedge new nha --template home-voice` tạo trợ lý giọng nói mẫu (hỏi đáp, tin tức, đèn).
 Mọi lệnh và đầu ra kỳ vọng: [`CHANGELOG.md`](CHANGELOG.md) §2.
 
+**Gọi từ agent khác qua MCP.** Mỗi `@action` là một tool; `neuroedge mcp serve` là máy chủ
+MCP có gate — Claude Desktop, IDE hay agent của bạn gọi được thiết bị, nhưng tool call chỉ
+là *yêu cầu*: gate vẫn quyết định, lời gọi sai tham số bị từ chối trước khi tới phần cứng.
+Cấu hình Claude Desktop (cần `pip install 'neuroedge[mcp]'`):
+
+```json
+{ "mcpServers": { "home-voice": { "command": "neuroedge",
+    "args": ["mcp", "serve", "--agent", "/đường/dẫn/fixtures/agents/home-voice/agent.toml"] } } }
+```
+
+Quy tắc đầy đủ: [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md).
+
 ## Đọc gì tiếp theo
 
 | Bạn là | Đọc |

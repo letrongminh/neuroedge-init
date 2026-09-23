@@ -27,6 +27,12 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **Tool call có gate thành chuẩn giao tiếp ngôn ngữ → hành động: Gated Tool Profile v0.** Đường truyền giữ đúng MCP /
+  function calling OpenAI; NeuroEdge quy định ngữ nghĩa giữa tool call và hiệu ứng vật lý (ba trạng thái kết quả,
+  `call_source`, xác nhận của người, vết ghi, corpus tuân thủ). Đặc tả `docs/spec/tool_calling.md` là tài sản chuẩn thứ
+  ba cạnh lược đồ gate và vết ghi (proposal §1.5, §3.5). Quyết định **Q-25** (ràng buộc tham số nằm trong gate —
+  RFC-0005, đang thảo luận) và **Q-26** (chỉ người xác nhận `ask`, qua kênh thiết bị). Threat model §2b *bên gọi
+  không tin cậy*. Task mới TSK-S3-24..27, TSK-P2-04..06; TODOS #23, #24. Chỉ tài liệu — chưa đổi mã.
 - **Q-24 — hành động là tool call, có máy chủ MCP.** Mỗi `@action` là một tool (schema sinh từ chữ ký). Ngữ pháp cục bộ
   (tool call tổng hợp — vẫn chạy khi mất mạng), System 2 (câu tự do, được đưa danh sách tool) và client MCP gửi cùng
   `ToolCall` → kiểm schema (tool/tham số lạ ⇒ `REJECTED`) → `c.do()` → gate. Dữ kiện `call_source` do dispatcher chèn.
