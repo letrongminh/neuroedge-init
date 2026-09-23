@@ -273,6 +273,9 @@ Phân biệt này quyết định việc khối có vượt được bộ lọc 
 | **TSK-P2-01** | Kho adapter và HAL port do cộng đồng đóng góp, dùng chung hạ tầng Registry | FR-REG-08 | V3 | ⏳ Chưa bắt đầu | `services/registry/ports.py` |
 | **TSK-P2-02** | Hiển thị trạng thái tuân thủ của adapter đang chạy trên Fleet Dashboard | FR-FLT-03 | V3 | ⏳ Chưa bắt đầu | `services/fleet/compliance_view.py` |
 | **TSK-P2-03** | Chứng nhận phần cứng **miễn phí, tự kiểm chứng** — công bố kết quả, không bảo chứng | FR-GOV-02 | V3 | ⏳ Chưa bắt đầu | `docs/porting/certification.md` |
+| **TSK-P2-04** | **MCP qua mạng có xác thực** (transport HTTP của MCP, token theo thiết bị, mTLS như NFR-SEC-04); mặc định tắt, stdio vẫn là mặc định | NFR-SEC-09, FR-CLI-10 | V1 | ⏳ Chưa bắt đầu — mốc `TODOS.md` #24 | `docs/spec/tool_calling.md` §8 |
+| **TSK-P2-05** | **MCP cho thiết bị MCU qua gateway:** gateway đưa tool của `esp32s3` ra MCP, chuyển tool call xuống thiết bị; **thiết bị vẫn tự lượng giá gate**, gateway không cấp token | FR-GW-01, FR-MDL-10 | V1 + V2 | ⏳ Chưa bắt đầu | `docs/spec/tool_calling.md` §8 |
+| **TSK-P2-06** | **Chứng nhận tự kiểm "NeuroEdge-gated"** cho runtime/MCP server bên thứ ba: chạy corpus `fixtures/tool_calls/`, công bố kết quả — cùng nguyên tắc với TSK-P2-03 | FR-GOV-02 | V3 | ⏳ Chưa bắt đầu | `docs/spec/tool_calling.md` §9 |
 
 **Hai ranh giới của P2:**
 

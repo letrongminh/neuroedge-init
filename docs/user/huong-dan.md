@@ -42,6 +42,9 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Đọc một gate bằng lời: tiêu chí từ đâu, điều gì bị siết chặt | `neuroedge gate explain` | ✅ |
 | Tạo dự án agent mới có sẵn gate, action, test | `neuroedge new` | ✅ |
 | Thử một trợ lý giọng nói: hỏi đáp knowledge base, tin tức, bật/tắt đèn qua gate | `neuroedge new nha --template home-voice` | ✅ |
+| Xem các `@action` dưới dạng tool (schema cho LLM / MCP) | `neuroedge mcp tools` | ✅ |
+| Cho Claude Desktop hoặc agent khác gọi thiết bị qua MCP — vẫn qua gate | `neuroedge mcp serve` (cấu hình mẫu ở `README.md`) | ✅ cần `neuroedge[mcp]` |
+| Người xác nhận khi gate hỏi lại (`ask`) | — | ⏳ TSK-S3-26 |
 | Ghi một phiên ra vết ghi (có chế độ ẩn danh) | `neuroedge record` | ✅ |
 | Phát lại vết ghi trên `sim` / `linux`, so golden | `neuroedge replay` | ✅ |
 | Chạy test an toàn của agent (Action CI) | `neuroedge test` | ✅ |
@@ -59,6 +62,8 @@ Nói thẳng để bạn không mất thời gian:
   **thoát mã 2** — trên `linux` dùng `replay`. Không có "PASS" giả (bất biến 10, `CHANGELOG.md` §3.3).
 - `--target linux` cần line GPIO thật hoặc ảo (`scripts/setup_gpio_sim.sh`) và
   `pip install 'neuroedge[linux]'`; thiếu thì lệnh báo lỗi, không giả vờ chạy.
+- `mcp serve` và `run --ui` hôm nay là **hai phiên riêng**: gọi từ Claude Desktop không hiện
+  trên giao diện web (TSK-S3-27). Gate chưa chặn theo giá trị tham số (RFC-0005).
 - Tương đương target mới so **quyết định** (phán quyết + lệnh chân), chưa so timing.
 - Danh sách đầy đủ: `CHANGELOG.md` §3.7.
 

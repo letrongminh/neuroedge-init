@@ -120,6 +120,8 @@ Hiện nay, các công cụ truyền thống không thể trả lời 3 câu h�
 
 > **NeuroEdge chuẩn hóa mọi tác vụ vật lý của AI Agent thành hợp đồng có kiểu (type-safe), có phiên bản rõ ràng, kiểm thử tự động trong quy trình CI/CD, và thực thi nhất quán trên mọi môi trường — từ laptop của lập trình viên, máy tính Linux công nghiệp đến vi điều khiển biên giá $5.**
 
+Cụ thể hơn: **mọi đường từ ngôn ngữ tới hành động thực — giọng nói offline, LLM, hay agent bên ngoài qua MCP — là một tool call có kiểu, đi qua cùng một gate** (§3.5, Q-24).
+
 Tuyên ngôn này thể hiện rõ hai trụ cột chiến lược:
 - **Phạm vi sản phẩm (Scope):** Nền tảng hợp nhất cho Physical AI — bộ công cụ hoàn chỉnh để kỹ sư cài đặt, lập trình và đưa vào vận hành.
 - **Lợi thế cạnh tranh cốt lõi (Moat):** Cơ chế hợp đồng hành động chuẩn kiểu (Type-safe Action Contracts) kết hợp CI kiểm thử hành vi vật lý — giải pháp mang tính kiến trúc nền tảng mà đối thủ không thể sao chép đơn thuần bằng cách thêm tính năng.
@@ -136,7 +138,7 @@ Hệ thống được cấu thành từ ba khối giải pháp chính:
 
 | # | Nguyên tắc | Tác động kiến trúc & Hiệu quả vận hành | Mục chiếu |
 |:---:|:---|:---|:---:|
-| **1** | **Hành động vật lý là hợp đồng chuẩn kiểu, không phải lời gọi hàm tự do** | Mọi lệnh điều khiển cơ cấu chấp hành (actuator) đều phải đi qua một cổng kiểm soát an toàn (gate) có phiên bản và có thể phân tích tĩnh. HAL sẽ từ chối mọi yêu cầu hành động nếu chưa vượt qua gate an toàn. | §3.5, §4.4 |
+| **1** | **Hành động vật lý là hợp đồng chuẩn kiểu, không phải lời gọi hàm tự do** | Mọi lệnh điều khiển cơ cấu chấp hành (actuator) đều phải đi qua một cổng kiểm soát an toàn (gate) có phiên bản và có thể phân tích tĩnh. HAL sẽ từ chối mọi yêu cầu hành động nếu chưa vượt qua gate an toàn. Nguồn gọi không tạo ngoại lệ: câu lệnh cục bộ, LLM và client MCP đều gửi cùng một tool call qua cùng gate. | §3.5, §4.4 |
 | **2** | **Các môi trường thực thi ngang hàng (Target Equivalence)** | Mọi môi trường thực thi cùng tuân thủ một chuẩn HAL duy nhất. Cùng một tệp mã nguồn agent chạy nhất quán trên mọi môi trường mà không cần chỉnh sửa và không rẽ nhánh logic theo target. Cam kết kiểm chứng phân theo ba bậc target (§3.2): bậc 1 chính thức, bậc 2 mở rộng, bậc 3 do cộng đồng duy trì. | §3.2 |
 | **3** | **Tập trung giá trị vào quản trị đội thiết bị, không chạy đua bán lại token AI** | Bán lại token suy luận (inference) có biên lợi nhuận mỏng và dễ bị cạnh tranh bởi các nhà cung cấp mô hình lớn. Giá trị gia tăng dài hạn nằm ở nền tảng quản lý, giám sát và cập nhật an toàn cho đội thiết bị ngoài hiện trường. | §6 |
 | **4** | **Mô hình AI là thành phần linh hoạt, có thể thay thế — cloud-first, provider-pluggable** | Tách rời logic điều khiển khỏi mô hình AI cụ thể thông qua giao diện trừu tượng `SystemOne` và `SystemTwo`. Mọi tác vụ AI (LLM, ASR, TTS) là nhà cung cấp (provider) có thể thay thế, kết nối qua **chuẩn OpenAI API** hoặc **adapter do người dùng tự viết**. Phần nặng về xử lý ngôn ngữ chạy trên cloud hoặc host; vi điều khiển chỉ đảm nhiệm thu/phát âm thanh và thẩm định gate. Việc đổi nhà cung cấp mô hình không làm ảnh hưởng đến cấu trúc an toàn của sản phẩm. | §3.4, §3.6, §6 |
@@ -231,7 +233,7 @@ Chiến lược mã nguồn mở của NeuroEdge hoạt động hiệu quả vì
 | Trực quan, dễ lan tỏa | Bản demo tương tác giọng nói với vi điều khiển và cơ cấu chấp hành chuyển động rõ ràng, ấn tượng. |
 | Người dùng là người quyết định | Kỹ sư có thể tự cài đặt, trải nghiệm trong vài phút mà không cần qua quy trình mua sắm phức tạp. |
 
-**NeuroEdge phân phối một framework mã nguồn mở, nhưng tài sản chuẩn hóa cốt lõi chính là lược đồ gate và lược đồ vết ghi JSON.** Framework có thể có nhiều biến thể, nhưng chuẩn lược đồ mô tả độ an toàn vật lý và quy trình kiểm thử CI đi kèm sẽ tạo nên hiệu ứng tiêu chuẩn công nghiệp lâu dài.
+**NeuroEdge phân phối một framework mã nguồn mở, nhưng tài sản chuẩn hóa cốt lõi là ba đặc tả: lược đồ gate, lược đồ vết ghi JSON, và Gated Tool Profile** — ngữ nghĩa của một tool call tới thiết bị vật lý, đặt trên đường truyền MCP sẵn có thay vì phát minh giao thức mới ([`docs/spec/tool_calling.md`](docs/spec/tool_calling.md)). Framework có thể có nhiều biến thể, nhưng chuẩn lược đồ mô tả độ an toàn vật lý và quy trình kiểm thử CI đi kèm sẽ tạo nên hiệu ứng tiêu chuẩn công nghiệp lâu dài.
 
 Bản quyền mã nguồn mở MIT cho toàn bộ HAL, Action Contract Engine, Voice pipeline và Action CI giúp loại bỏ hoàn toàn rào cản ứng dụng của cộng đồng kỹ sư nhúng.
 
@@ -362,7 +364,7 @@ Bộ nguyên tắc rõ ràng giúp định hướng phát triển sản phẩm, 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │  L4: AGENT LAYER (Tầng ứng dụng Agent)                                 │
-│      Máy trạng thái hội thoại · Bộ nhớ ngữ cảnh · Điều phối công cụ MCP │
+│      Máy trạng thái hội thoại · Bộ nhớ ngữ cảnh · Tool call có gate (MCP)│
 ├────────────────────────────────────────────────────────────────────────┤
 │  L3: ACTION CONTRACT ENGINE (Động cơ hợp đồng hành động)   ← IP cốt lõi │
 │      Xác thực cổng chuẩn kiểu · Kế thừa chính sách · Mạch ngắt Fail-closed │
@@ -534,6 +536,22 @@ Nếu điều kiện an toàn bị viết cứng bằng mã nguồn (ví dụ h�
 | **Đơn vị chia sẻ trong cộng đồng** | Tạo nền tảng cho hiệu ứng mạng trước khi triển khai Marketplace (§1.7). |
 | **Minh bạch với người quản lý nghiệp vụ** | Quản lý vận hành hoặc kiểm soát rủi ro có thể đọc, hiểu và phê duyệt điều kiện an toàn mà không cần đọc mã nguồn. |
 | **Mô-đun thương mại hóa độc lập** | Trở thành tài sản cấu hình có thể chuyển giao và thương mại hóa trong hệ sinh thái (§8.8). |
+
+#### Đường từ ngôn ngữ tới hành động: tool call có gate *(Q-24)*
+
+Mọi hành động vật lý — dù đến từ câu lệnh cục bộ khi mất mạng, từ LLM, hay từ một agent bên ngoài qua MCP — đi vào Động cơ hợp đồng hành động bằng **một** hình dạng: tool call có kiểu.
+
+```text
+câu khớp ngữ pháp (offline) ─┐  local_grammar  — tool call tổng hợp, không cần mạng
+System 1 / System 2 ─────────┤  system_one · system_two — mô hình được đưa danh sách tool
+client MCP (Claude, IDE…) ───┤  mcp — neuroedge mcp serve
+                             ▼
+      ToolCall{name, arguments, source} ─► dispatch()
+          ├─ tool lạ / tham số sai ─► REJECTED  (không có phán quyết, chân không đổi)
+          └─ hợp lệ ─► chèn call_source ─► c.do() ─► gate ─► token ─► HAL
+```
+
+Đường truyền theo đúng chuẩn của hệ sinh thái (MCP, function calling OpenAI, JSON Schema), nên agent nào gọi được tool thì gọi được thiết bị NeuroEdge. Phần NeuroEdge quy định — và là tài sản chuẩn thứ ba (§1.5) — là ngữ nghĩa giữa tool call và hiệu ứng vật lý: ba trạng thái kết quả, nguồn gọi là dữ kiện tin cậy, chỉ người xác nhận `ask` (Q-26), ràng buộc tham số trong gate (Q-25), và vết ghi replay được. Đặc tả chuẩn tắc: **Gated Tool Profile**, [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md).
 
 ### 3.6 Trừu tượng hóa mô hình AI (Model Abstraction)
 
@@ -830,7 +848,7 @@ Ba ràng buộc an toàn bắt buộc từ decorator `@action`:
 | 2 | Năng lực khai báo tại `requires` tham gia đối chiếu tự động lúc biên dịch | Dừng quá trình build, chặn nạp firmware (§4.9) |
 | 3 | Tham số `gate` phải khớp với cổng an toàn đã khai báo trong `agent.toml` | Dừng quá trình build |
 
-**Mỗi `@action` là một tool (Q-24).** Chữ ký hàm sinh ra schema (`str`/`int`/`float`/`bool`, tham số không mặc định là bắt buộc, không nhận tham số lạ), mô tả lấy từ docstring kèm tên gate. Cùng một schema phục vụ ba nguồn gọi: ngữ pháp lệnh cục bộ (tool call tổng hợp — chạy khi mất mạng), System 1/2 (dạng function-calling OpenAI, Q-12) và client MCP (`neuroedge mcp serve`). Mọi lời gọi qua `dispatch()` (`python/neuroedge/actions/tools.py`): tool lạ hoặc tham số sai ⇒ `REJECTED` trước khi tới gate; hợp lệ ⇒ `c.do()` → gate → token. Dispatcher chèn dữ kiện `call_source` (`local_grammar` · `system_one` · `system_two` · `mcp` · `test`) để gate giới hạn nguồn gọi — ví dụ `fixtures/agents/home-voice/gates/`.
+**Mỗi `@action` là một tool (Q-24).** Chữ ký hàm sinh ra schema của tool; ngữ pháp cục bộ, System 1/2 và client MCP gọi nó bằng cùng một tool call qua cùng gate (§3.5). Quy tắc đầy đủ: [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md).
 
 Hệ thống ngoại lệ an toàn chuẩn mực:
 
@@ -1080,11 +1098,12 @@ $ neuroedge build --target esp32s3 --board villa-panel
 
 ## 5. Thiết kế an toàn và bảo mật mặc định
 
-Hệ thống thiết lập 5 lớp phòng thủ toàn diện, hoạt động theo chế độ mặc định:
+Hệ thống thiết lập 6 lớp phòng thủ toàn diện, hoạt động theo chế độ mặc định:
 
 | Lớp phòng vệ | Thành phần cốt lõi | Cơ chế bảo vệ |
 |:---|:---|:---|
 | **Hành động vật lý** | Action Contract Engine | Không có đường tắt đến cơ cấu chấp hành ngoài gate · Cơ chế mặc định `fail: closed` · Mọi đánh giá gate đều được ghi vết chi tiết. |
+| **Bên gọi không tin cậy** | Dispatcher tool call | LLM (prompt injection, ảo giác) và client MCP chỉ gửi được *yêu cầu*: tool lạ hoặc tham số sai bị từ chối trước gate · nguồn gọi do runtime gắn, không tự khai được · không tự xác nhận được `ask` (Q-26) · MCP v1.0 chỉ qua stdio. Chi tiết: `docs/spec/threat_model.md` §2b. |
 | **An toàn thiết bị** | Firmware & Phần cứng | Kích hoạt Secure Boot và mã hóa bộ nhớ flash trên ESP32-S3 · Tích hợp nút ngắt micro vật lý trên thiết bị mẫu · Hỗ trợ chip bảo mật TPM trên Linux. |
 | **Bảo mật kết nối** | Mạng truyền dẫn | Áp dụng TLS 1.3 toàn tuyến · Xác thực mTLS hai chiều giữa thiết bị và đám mây · Cơ chế Certificate Pinning · Mỗi thiết bị có chứng chỉ mật mã riêng. |
 | **Quyền riêng tư dữ liệu** | Dữ liệu người dùng | Luồng âm thanh xử lý trực tiếp không lưu trữ · Ưu tiên xử lý on-device khi phần cứng cho phép · Nhật ký vết chỉ ghi nhận quyết định, không lưu dữ liệu thô trừ khi được bật tường minh. |
@@ -1408,6 +1427,7 @@ Thay vì sử dụng các biểu đồ định vị hai trục đơn giản hóa
 | **Hợp đồng an toàn vật lý (Action Contracts & Gate)** | Không<br>*(Tool call tự do)* | Không<br>*(Gọi trực tiếp GPIO)* | Không<br>*(Chỉ truyền tải media)* | Không<br>*(Chỉ gọi hàm phần mềm)* | **Có — IP cốt lõi**<br>*(Schema YAML có phiên bản, fail-closed)* |
 | **Trục kiểm thử hồi quy an toàn (Action CI)** | Không | Không | Không<br>*(Chỉ test WebRTC audio)* | Hạn chế<br>*(LangSmith test chuỗi text)* | **Có — IP cốt lõi**<br>*(Replay tệp trace JSON, assert Gate verdict & GPIO)* |
 | **Tính trung lập đa môi trường (`sim` / `linux` / MCU)** | Không<br>*(Khóa chặt hệ ESP)* | Thấp<br>*(Chủ yếu firmware MCU)* | Trung bình<br>*(Hỗ trợ Linux / WebRTC)* | Đa nền tảng phần mềm<br>*(Cloud/Server/PC)* | **Tiêu chuẩn**<br>*(Nguyên tắc tương đương trên mọi môi trường thực thi)* |
+| **Tool call / MCP tới thiết bị** | Có MCP<br>*(tool call thực thi ngay)* | Tool call tự do | Function calling<br>*(không gate)* | Tool / MCP phần mềm<br>*(không gate)* | **Có gate**<br>*(Gated Tool Profile: REJECTED/BLOCK có cấu trúc, `call_source`, xác nhận của người)* |
 | **Tách biệt rule xác định vs LLM phi xác định** | Không | Không | Không | Không<br>*(Guardrails văn bản)* | **Có**<br>*(Gate rule engine 100% xác định, cô lập LLM)* |
 | **Tái hiện sự cố hiện trường từ xa (Trace)** | Log UART thủ công | Log Serial cơ bản | Bản ghi phiên audio<br>*(Dung lượng lớn)* | Log dấu vết đám mây<br>*(LangSmith)* | **Có**<br>*(Lược đồ trace JSON mở, replay trực tiếp trên PC)* |
 | **Độ phủ và tối ưu hóa sâu phần cứng vi điều khiển** | **Rất cao**<br>*(Toàn dải vi xử lý ESP32)* | **Cao**<br>*(Tối ưu ESP32-S3/C3)* | Thấp<br>*(Cần gateway Linux trung gian)* | Không hỗ trợ MCU | **Tiêu chuẩn**<br>*(Khối 1b tập trung 1 bo mạch tham chiếu ESP32-S3)* |
@@ -1429,7 +1449,7 @@ Phân tích đặc điểm kiến trúc và động cơ phát triển của bố
 |:---:|:---|:---|
 | **1** | **Hợp đồng hành động chuẩn kiểu + Trục kiểm thử Action CI** | Đòi hỏi sự đồng bộ của 3 quyết định kiến trúc ngay từ đầu: Môi trường mô phỏng (`sim`) là target thực thi chuẩn, gate an toàn là tài nguyên có phiên bản, và nhật ký vết (trace) là đối tượng dữ liệu hạng nhất. Một sản phẩm thông thường nếu đã xuất bản sẽ phải viết lại toàn bộ kiến trúc để tích hợp năng lực này. |
 | **2** | **Lớp tích hợp độc lập trên các môi trường thực thi ngang hàng** | Bộ công cụ chính hãng thường gắn chặt với một dòng chip cụ thể. Kiến trúc trung lập của NeuroEdge cho phép một ứng dụng chạy không đổi giữa máy mô phỏng, máy tính Linux và vi điều khiển biên. |
-| **3** | **Chuẩn hóa lược đồ Gate và lược đồ vết ghi JSON** | Trong một thị trường mới nổi, định dạng mở được công nhận đầu tiên sẽ trở thành chuẩn mực công nghiệp. Khi hệ sinh thái đã xây dựng các bộ test và chính sách an toàn dựa trên định dạng này, chi phí chuyển đổi của nhà phát triển là rất lớn. |
+| **3** | **Chuẩn hóa lược đồ Gate, lược đồ vết ghi JSON và Gated Tool Profile** | Profile đặt trên MCP nên không bắt hệ sinh thái đổi đường truyền — nó bổ sung phần MCP để trống: tool call tới phần cứng là yêu cầu, không phải lệnh. Trong một thị trường mới nổi, định dạng mở được công nhận đầu tiên sẽ trở thành chuẩn mực công nghiệp. Khi hệ sinh thái đã xây dựng các bộ test và chính sách an toàn dựa trên định dạng này, chi phí chuyển đổi của nhà phát triển là rất lớn. |
 
 *Lưu ý:* Môi trường mô phỏng (`sim`) là công cụ tuyệt vời giúp tối ưu thời gian tiếp cận ban đầu (TTFV), nhưng không phải là rào cản phòng thủ độc lập. Giá trị phòng thủ thực sự chỉ hình thành khi môi trường mô phỏng được kết hợp chặt chẽ với cơ chế kiểm thử Action CI và tệp vết ghi chuẩn xác.
 
@@ -1625,6 +1645,25 @@ flowchart TD
 *Ý nghĩa an toàn:* Nguyên tắc 2 và 4 bảo đảm việc kế thừa các gate an toàn từ cộng đồng sẽ không bao giờ làm suy giảm tiêu chuẩn bảo vệ của hệ thống. Phần mở rộng của RFC-0004 đóng lỗ hổng một gate con hợp lệ về `allow_when` nhưng nới lỏng qua ngân sách thời gian hoặc hành vi khi bị chặn (ENG-A2). Vi phạm ⇒ `GateInheritanceError` (`NE2003`), kèm số nguyên tắc.
 
 **Cổng kiểm tra an toàn là `neuroedge gate lint` (phân giải), không phải thẩm định lược đồ.** Các nguyên tắc 2, 4 và 5 là mệnh đề về quan hệ giữa **hai** (hoặc nhiều) tài liệu trong chuỗi kế thừa; JSON Schema chỉ thẩm định **một** tài liệu. Một gate con hợp lệ theo `gate.v1.json` vẫn có thể nới lỏng gate cha — chỉ bước phân giải mới phát hiện được.
+
+---
+
+### B.6 Ràng buộc tham số (`arguments`) — *đề xuất, RFC-0005*
+
+> **Chưa chuẩn tắc.** Hướng đã chốt ở Q-25; lược đồ và ngữ nghĩa chờ RFC-0005
+> ([`docs/rfc/0005-rang-buoc-tham-so-trong-gate.md`](docs/rfc/0005-rang-buoc-tham-so-trong-gate.md)) được duyệt. Hôm nay `gate.v1` từ chối khối này.
+
+Khi hành động đến từ LLM hoặc client MCP, mô hình chọn cả tham số. Gate khai giới hạn cho
+tham số của `@action`, lượng giá tất định **trước** `evaluate`:
+
+```yaml
+arguments:
+  duration_s: { type: integer, minimum: 1, maximum: 60 }
+```
+
+Vi phạm ⇒ BLOCK `argument_out_of_range`. Gate con chỉ thu hẹp khoảng hoặc tập giá trị,
+không bỏ được ràng buộc của cha — cùng hình dạng với nguyên tắc 2 và 4 của B.5. Giới hạn
+đi vào `inputSchema` của tool để mô hình thấy trước ([`docs/spec/tool_calling.md`](docs/spec/tool_calling.md) §3).
 
 ---
 

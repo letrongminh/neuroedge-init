@@ -63,6 +63,28 @@ trình viên gọi thẳng hàm, dùng lại token cũ, sao chép một lệnh t
 Mọi lần từ chối ghi `actuator_command_rejected{pin, reason, code}` vào vết ghi **trước**
 khi ném lỗi; chân không đổi trạng thái. Nonce không bao giờ vào vết ghi.
 
+## 2b. Trong phạm vi: bên gọi không tin cậy (Q-24)
+
+Từ Q-24, hành động còn đến từ LLM (System 2) và client MCP, không chỉ từ mã agent. Cả hai
+là bên gọi **không tin cậy**: mô hình có thể ảo giác hoặc bị prompt injection qua nội dung
+nó đọc; client MCP có thể là một agent tự động. Chúng chỉ gửi được *yêu cầu* — một
+`ToolCall` — và mọi yêu cầu đi qua `dispatch()` (`docs/spec/tool_calling.md` §2) trước
+đường §1.
+
+| Đường tắt | Chặn bởi | Kết quả | Test |
+|:---|:---|:---|:---|
+| Gọi tool không tồn tại | `dispatch()` bước 2 | `REJECTED`, chân không đổi | `test_a_hallucinated_tool_or_argument_moves_nothing` |
+| Tham số lạ hoặc sai kiểu | `check_arguments()` | `REJECTED` | `test_a_hallucinated_tool_or_argument_moves_nothing` · `test_arguments_are_checked_and_coerced` |
+| Tự khai `call_source` để giả làm câu lệnh cục bộ | `call_source` không phải tham số; dispatcher tự chèn | `REJECTED` | `test_a_model_cannot_claim_its_own_call_source` |
+| Gọi hành động gate đã cấm cho nguồn đó | Gate đọc `call_source` | `BLOCK` | ví dụ `fixtures/agents/home-voice/gates/`; ⏳ test riêng ở corpus TSK-S3-24 |
+| Tham số trong kiểu nhưng nguy hiểm (`duration_s = 3600`) | Ràng buộc tham số trong gate (Q-25, RFC-0005) | `BLOCK argument_out_of_range` | ⏳ TSK-S3-25 |
+| Tự trả lời câu hỏi `ask` dành cho người | Chỉ kênh thiết bị xác nhận được (Q-26) | Xác nhận bị từ chối | ⏳ TSK-S3-26 |
+| Lặp lời gọi bị chặn tới khi lọt | Gate tất định: cùng dữ kiện ⇒ cùng phán quyết; mỗi lần đều ghi vết | `BLOCK` lặp lại | ⏳ corpus TSK-S3-24 |
+
+**Ngoài phạm vi ở v1.0:** MCP chỉ qua **stdio**, nên bên chạy được `neuroedge mcp serve`
+là người vận hành, có quyền ngang runtime (§3). Transport mạng cần xác thực trước khi mở
+(`TODOS.md` #24, NFR-SEC-09).
+
 ## 3. Ngoài phạm vi: kẻ giả mạo trong cùng tiến trình
 
 Token là `(nonce, digest)` trong bộ nhớ. Mã chạy **trong cùng tiến trình** đọc được
