@@ -1,10 +1,10 @@
 """
-Web Simulator Backend (L0 sim).
-Serves Wokwi Elements UI and WebSocket audio streaming.
+Target `sim` (L0): an agent run against `SimHAL` with typed-text input (Q-15).
+
+The browser simulator (Wokwi elements, audio over WebSocket) is later work; the
+terminal session behind `neuroedge run --target sim` is what exists.
 """
 
-__all__ = ["start_simulator"]
+from .session import SimSession, Turn
 
-
-def start_simulator(port: int = 8080):
-    print(f"Starting NeuroEdge web simulator at http://localhost:{port}")
+__all__ = ["SimSession", "Turn"]

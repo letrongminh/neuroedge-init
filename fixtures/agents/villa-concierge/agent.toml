@@ -18,3 +18,17 @@ unlock_door = "neuroedge://gates/unlock_door@1.2.0"
 
 [targets]
 supported = ["sim", "linux", "esp32s3"]
+
+# Session facts for `neuroedge run --target sim`. On a device they come from the
+# property system (booking, identity check); the simulator reads them from here
+# and the REPL changes them with `:set` / `:unset`. They are never inferred from
+# what the guest typed.
+[sim.facts]
+guest_authenticated = true
+risk_level          = "low"
+
+# A fact derived from a slot the grammar extracted: "mở cửa phòng 101" matches
+# the booking, "mở cửa phòng 202" does not, and a bare "mở cửa" leaves
+# room_matches undecided, which blocks.
+[sim.slot_facts]
+room_matches = { slot = "room", equals = "101" }

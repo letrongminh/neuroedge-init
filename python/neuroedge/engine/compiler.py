@@ -12,13 +12,15 @@ problem so one run reports them all, each with where / why / how:
    that `[gates]` declares;
 4. every gate resolves (lint semantics) and compiles to a decision tree, and
    every `degrade` fallback names a declared action;
-5. the command grammar, if the agent ships one, loads.
+5. the command grammar, if the agent ships one, loads, and every `action` a
+   command names is a declared @action.
 
 On success it writes each gate's decision tree and canonical artifact.
 """
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import inspect
 import sys
@@ -202,8 +204,11 @@ def load_actions(manifest: AgentManifest) -> list[Any]:
     from ..actions import REGISTRY
 
     folder = manifest.root / "actions"
+    # The folder is part of the module name: two projects with the same agent
+    # name (two `neuroedge new` runs) must not share one cached module.
+    project = hashlib.sha256(str(folder.resolve()).encode()).hexdigest()[:8]
     for path in sorted(folder.glob("*.py")) if folder.is_dir() else []:
-        module_name = f"neuroedge_agent_{manifest.name.replace('-', '_')}.{path.stem}"
+        module_name = f"neuroedge_agent_{manifest.name.replace('-', '_')}_{project}.{path.stem}"
         if module_name in sys.modules:
             continue
         spec = importlib.util.spec_from_file_location(module_name, path)
@@ -297,6 +302,40 @@ def check_fallbacks(
     return problems
 
 
+# --- 5. the command grammar -------------------------------------------------------
+
+
+def check_commands(grammar: Any, actions: Iterable[Any]) -> list[NeuroEdgeError]:
+    """Every `action` a command names is a declared @action taking those arguments."""
+    declared = {spec.name: spec for spec in actions}
+    problems: list[NeuroEdgeError] = []
+    for index, command in enumerate(grammar.commands):
+        if command.action is None:
+            continue
+        where = f"{grammar.source} -> command[{index}] ({command.intent})"
+        spec = declared.get(command.action)
+        if spec is None:
+            problems.append(
+                AgentManifestError(
+                    where=f"{where}.action",
+                    why=f"{command.action!r} is not an @action of this agent; it has {sorted(declared)}",
+                    how=f"define @action(name={command.action!r}, ...) in actions/, or fix the name",
+                )
+            )
+            continue
+        parameters = inspect.signature(spec.fn).parameters
+        unknown = sorted(set(command.arguments) - set(parameters))
+        if unknown:
+            problems.append(
+                AgentManifestError(
+                    where=f"{where}.arguments",
+                    why=f"{spec.name} has no parameter(s) {unknown}; it takes {list(parameters)}",
+                    how=f"map only parameters of {spec.name} to slots",
+                )
+            )
+    return problems
+
+
 # --- the build -------------------------------------------------------------------
 
 
@@ -352,7 +391,7 @@ def build(
         from ..models import CommandGrammar
 
         try:
-            CommandGrammar.load(grammar)
+            problems += check_commands(CommandGrammar.load(grammar), actions)
         except NeuroEdgeError as error:
             problems.append(error)
 
