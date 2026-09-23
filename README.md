@@ -2,9 +2,11 @@
 
 **Hợp đồng hành động chuẩn kiểu cho Physical AI.** Khi chatbot trả lời sai, ta bấm
 *Regenerate*; khi một agent vật lý sai, chốt cửa đã mở, rơ-le đã đóng — không bấm lại
-được. NeuroEdge đặt một **gate** — chính sách an toàn dạng YAML, có phiên bản, kế thừa
-được — trước mọi lệnh ra phần cứng, và chạy **cùng một mã agent** trên trình mô phỏng,
-Linux và vi điều khiển ESP32-S3.
+được. Một trợ lý giọng nói trong nhà cũng vậy: nó trả lời câu hỏi, đọc tin tức và tắt đèn —
+câu trả lời sai thì sửa được, còn tắt đèn khi vẫn còn người trên cầu thang thì không.
+NeuroEdge đặt một **gate** — chính sách an toàn dạng YAML, có phiên bản, kế thừa được —
+trước mọi lệnh ra phần cứng, để lời nói đi đường lời nói, hành động đi đường hành động, và
+chạy **cùng một mã agent** trên trình mô phỏng, Linux và vi điều khiển ESP32-S3.
 
 > Trạng thái: đang phát triển, chưa phát hành. Lõi thực thi trên `sim` đã chạy
 > (Sprint 2); chi tiết ở [`docs/user/trang-thai.md`](docs/user/trang-thai.md).
@@ -70,7 +72,8 @@ neuroedge run -c "mở cửa phòng 202"     # sai phòng: gate chặn, chân kh
 
 Bỏ `-c` để vào vòng lặp gõ chữ (`:help` xem lệnh), thêm `--ui` để xem chốt cửa, đèn và phán quyết trực tiếp trên trình duyệt — không mạng, không khoá API. Thêm
 `--board linux-rpi5`: agent bị từ chối trước khi chạy vì bo mạch không có khử vang phần
-cứng — lỗi nêu ở đâu, vì sao, sửa thế nào. `neuroedge new my-agent` tạo dự án của bạn.
+cứng — lỗi nêu ở đâu, vì sao, sửa thế nào. `neuroedge new my-agent` tạo dự án của bạn;
+`neuroedge new nha --template home-voice` tạo trợ lý giọng nói mẫu (hỏi đáp, tin tức, đèn).
 Mọi lệnh và đầu ra kỳ vọng: [`CHANGELOG.md`](CHANGELOG.md) §2.
 
 ## Đọc gì tiếp theo

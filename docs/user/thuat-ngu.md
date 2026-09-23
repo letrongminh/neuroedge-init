@@ -60,7 +60,9 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **Kế thừa gate (`extends`)** | Gate con dùng lại gate cha và **chỉ được siết chặt** (năm nguyên tắc B.5) | `neuroedge-proposal.md` Phụ lục B.5 |
 | **Fail-closed / fail-open** | Khi không thẩm định được: chặn (mặc định) / cho qua (chỉ khi gate tự khai `fail: open`) | `neuroedge-proposal.md` Phụ lục B.4 |
 | **Token phán quyết** | Bằng chứng dùng một lần mà `c.do()` cấp sau một ALLOW; HAL chỉ đổi chân khi có nó | `docs/spec/threat_model.md` |
+| **Physical AI** | AI điều khiển thứ trong thế giới thật — chốt cửa, đèn, rơ-le, động cơ. Lời nói sai thì sửa được; hành động vật lý sai thì không, nên mọi hành động đi qua gate | `neuroedge-proposal.md` §0.2 |
 | **`c.do()` · `c.say()`** | Cổng duy nhất tới thế giới vật lý · lời nói (không qua gate) | `python/neuroedge/actions/` |
+| **RAG** | Retrieval-augmented generation: tìm đoạn tri thức liên quan (cục bộ, tất định) rồi để System 2 trả lời dựa trên chúng. Mất mạng thì nói câu trả lời cục bộ | `python/neuroedge/models/knowledge.py` |
 | **HAL · 5 nguyên thủy** | Lớp phần cứng: `audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display` | `neuroedge-prd.md` §4.1 (FR-HAL-01) |
 | **Target `sim` · `linux` · `esp32s3`** | Môi trường chạy bậc 1: trình mô phỏng · Linux (RPi 5) · vi điều khiển ESP32-S3-Box-3 | `neuroedge-prd.md` §4.2 (FR-TGT) |
 | **Bậc target (1 · 2 · 3)** | Mức cam kết chất lượng theo target (Q-13) | `neuroedge-prd.md` §15 |

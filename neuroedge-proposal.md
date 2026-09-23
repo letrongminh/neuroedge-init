@@ -100,6 +100,16 @@ Thách thức cốt lõi nằm ở tầng sâu hơn: **chưa có công cụ nào
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
+**Ví dụ thứ hai — một trợ lý giọng nói trong nhà.** Chốt cửa chỉ minh hoạ một loại hành vi. Một trợ lý thật trộn ba loại, và mỗi loại cần một hợp đồng khác:
+
+| Hành vi | Loại | Cơ chế NeuroEdge |
+|:---|:---|:---|
+| Trả lời câu hỏi từ knowledge base của gia đình | Lời nói — sai thì sửa được | Tìm tri thức cục bộ, System 2 diễn đạt lại (RAG); mất mạng thì nói câu trả lời cục bộ. `c.say`, không qua gate, không assert trên chữ (L3) |
+| Đọc tin tức từ internet | Lời nói **cần mạng** | Mất mạng thì nói rõ là chưa lấy được, **không bịa** |
+| Bật / tắt đèn | **Hành động vật lý** | `c.do` qua gate: không tắt đèn khi cảm biến chuyển động còn thấy người — gate hỏi lại thay vì làm. Mất mạng, đèn vẫn điều khiển được bằng ngữ pháp lệnh cục bộ (Q-14) |
+
+Bản chạy được: `fixtures/agents/home-voice/` (`neuroedge new <tên> --template home-voice`).
+
 Hiện nay, các công cụ truyền thống không thể trả lời 3 câu hỏi sống còn sau:
 
 1. Khi thay đổi prompt điều khiển, agent có chắc chắn từ chối mở khóa cho người chưa được xác thực hay không?
@@ -251,7 +261,7 @@ Không dùng các bài trình chiếu trừu tượng. Thông điệp phân ph�
 #### 3. Bộ ba ứng dụng mẫu tham chiếu chuẩn mực (Reference Sample Apps)
 Lập trình viên không bắt đầu từ trang trắng. NeuroEdge cung cấp sẵn 3 mã nguồn ứng dụng hoàn chỉnh có thể chạy ngay:
 1. **Khóa thông minh Villa (Villa Smart Lock):** Ứng dụng nhận diện giọng nói, thẩm định gate chốt kép trước khi cấp xung mở rơ-le cửa.
-2. **Trợ lý giọng nói bàn làm việc (Desk Voice Assistant):** Nhận diện từ khóa kích hoạt on-device, streaming đàm thoại hai chiều, điều khiển an toàn nguồn điện và âm lượng qua gate.
+2. **Trợ lý giọng nói trong nhà (Home Voice Assistant):** Hỏi đáp trên knowledge base của gia đình theo mô hình RAG (mất mạng thì trả lời cục bộ), đọc tin tức qua System 2, bật / tắt đèn qua gate có cảm biến chuyển động. Bản chạy được trên `sim`: `fixtures/agents/home-voice/` (§0.2).
 3. **Giám sát môi trường công nghiệp (Industrial Environmental Watcher):** Thu thập dữ liệu cảm biến khí ga/nhiệt độ, tự động kích hoạt van xả an toàn hoặc còi báo động qua gate an toàn.
 
 ### 1.7 Vòng lặp giá trị và hiệu ứng mạng từ chia sẻ cấu hình an toàn
@@ -793,7 +803,7 @@ door_contact = true
 door_closed = { sensor = "door_contact" }
 ```
 
-Tiêu chí không có trong hai bảng và không do lệnh khớp chứng minh (`facts` trong `commands.toml`) là **chưa xác định** → gate chặn. Trong `commands.toml`, mỗi `[[command]]` có thể khai `action` (tên `@action` chạy qua `c.do()`) và `arguments` (tham số ← slot); `neuroedge build` từ chối action không tồn tại.
+Tiêu chí không có trong hai bảng và không do lệnh khớp chứng minh (`facts` trong `commands.toml`) là **chưa xác định** → gate chặn. Trong `commands.toml`, mỗi `[[command]]` làm **đúng một việc**: `action` (tên `@action` chạy qua `c.do()`, kèm `arguments` là tham số ← slot), `say` (câu trả lời cố định), hoặc `ask` (một tác vụ System 2 như `"news"`, kèm `offline_say` khi System 2 không trả lời được); `neuroedge build` từ chối action không tồn tại. `knowledge.toml` cạnh `agent.toml` là knowledge base: mỗi `[[entry]]` có `questions` và `answer`; câu hỏi khớp được tìm cục bộ làm context cho System 2 (RAG), mất mạng thì nói `answer` (`python/neuroedge/models/knowledge.py`).
 
 ### 4.4 Định nghĩa hành động chuẩn kiểu — `@action`
 
@@ -933,6 +943,29 @@ Ba đặc điểm quan trọng trong thiết kế mã nguồn:
 - **Không tồn tại các nhánh kiểm tra điều kiện nền tảng:** Cùng một tệp mã nguồn chạy trực tiếp trên `sim`, `linux` và `esp32s3`.
 - **`c.do()` là cổng kiểm soát duy nhất:** Không có bất kỳ đường tắt nào để tác động vào thế giới vật lý mà bỏ qua thẩm định gate.
 - **Tách bạch rõ giữa phản hồi thông tin (`c.say`) và tác vụ vật lý (`c.do`):** Lời nói có thể thu hồi và sửa đổi, còn hành vi vật lý tác động trực tiếp ra môi trường thực tế nên đòi hỏi mức độ kiểm soát nghiêm ngặt hơn.
+
+Cùng API cho trợ lý giọng nói trong nhà (§0.2) — hỏi đáp RAG, tin tức, đèn:
+
+```python
+@agent.on_turn
+async def turn(c: Conversation):
+    intent = await c.fast.choice("intent", options=["knowledge", "news", "light_on", "light_off", "other"])
+
+    if intent.top == "knowledge":
+        passages = c.recall(k=3)                      # tìm cục bộ, tất định
+        try:
+            await c.say(await c.slow.reply(context=passages))   # System 2 diễn đạt lại (RAG)
+        except PerceptionUnavailableError:
+            await c.say(passages[0].answer)           # mất mạng: câu trả lời cục bộ
+    elif intent.top == "news":
+        await c.say(await c.slow.reply(task="news"))  # cần mạng; không có thì nói rõ, không bịa
+    elif intent.top == "light_off":
+        await c.do(light_off)                         # gate: room_empty từ cảm biến motion
+    elif intent.top == "light_on":
+        await c.do(light_on)
+```
+
+Hôm nay trên `sim`, bản chạy được của đoạn này khai bằng dữ liệu thay vì mã: `commands.toml` nối lệnh với `action` hoặc `ask`, `knowledge.toml` là knowledge base (§4.3, `fixtures/agents/home-voice/`).
 
 ### 4.7 Bộ kịch bản kiểm thử hồi quy Action CI
 

@@ -41,6 +41,7 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Giả lập cảm biến và màn hình trên `sim` | `[sim.sensors]` · `:sensor` · `display.show()` | ✅ |
 | Đọc một gate bằng lời: tiêu chí từ đâu, điều gì bị siết chặt | `neuroedge gate explain` | ✅ |
 | Tạo dự án agent mới có sẵn gate, action, test | `neuroedge new` | ✅ |
+| Thử một trợ lý giọng nói: hỏi đáp knowledge base, tin tức, bật/tắt đèn qua gate | `neuroedge new nha --template home-voice` | ✅ |
 | Ghi một phiên ra vết ghi (có chế độ ẩn danh) | `neuroedge record` | ✅ |
 | Phát lại vết ghi trên `sim` / `linux`, so golden | `neuroedge replay` | ✅ |
 | Chạy test an toàn của agent (Action CI) | `neuroedge test` | ✅ |
