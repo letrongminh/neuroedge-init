@@ -118,6 +118,13 @@
           "description": "Pre-registered safer alternative. Required for action degrade.",
           "type": "string",
           "minLength": 1
+        },
+        "confirms": {
+          "description": "RFC-0006 — for action ask only: the allow_when criteria a person's confirmation on the device may stand in for. Every other criterion still applies.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "uniqueItems": true
         }
       },
       "additionalProperties": false,
@@ -133,6 +140,11 @@
         {
           "if": { "properties": { "action": { "const": "degrade" } }, "required": ["action"] },
           "then": { "required": ["action", "fallback_action"] }
+        },
+        {
+          "$comment": "RFC-0006 — only a question can be answered.",
+          "if": { "required": ["confirms"] },
+          "then": { "properties": { "action": { "const": "ask" } } }
         }
       ]
     },

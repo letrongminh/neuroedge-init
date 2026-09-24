@@ -110,6 +110,12 @@ def render(explanation: GateExplanation, console: Console) -> None:
     console.print(f"  • Hành vi on_block: [bold]{behaviour}[/bold]")
     if on_block.get("message"):
         console.print(f'    Lời nhắn: "{escape(on_block["message"])}"')
+    if on_block.get("confirms"):
+        console.print(
+            "    Người xác nhận trên thiết bị được thay cho: "
+            f"[bold]{escape(', '.join(on_block['confirms']))}[/bold] — mọi điều kiện khác vẫn "
+            "phải đạt; System 2 và client MCP không xác nhận được (RFC-0006)"
+        )
     if explanation.on_block_changed:
         parent = explanation.parent.on_block
         was = escape(str(parent.get("action")))

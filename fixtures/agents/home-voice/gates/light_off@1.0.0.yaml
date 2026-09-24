@@ -19,9 +19,12 @@ allow_when:
   call_source: { in: [local_grammar, system_one, system_two, mcp] }
   room_empty:  true
 
+# A person who answers "có" on the device stands in for room_empty only
+# (RFC-0006): the caller must still be one the gate admits. The model cannot answer.
 on_block:
-  action:  ask
-  message: "Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?"
+  action:   ask
+  message:  "Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?"
+  confirms: [room_empty]
 
 budget:
   p95_latency_ms: 150

@@ -78,6 +78,10 @@ class GateResult:
     fail_mode: str | None = None
     evaluations: dict[str, bool | str] = field(default_factory=dict)
     elapsed_ms: float = 0.0
+    # RFC-0006: criteria a person's confirmation stood in for on this verdict.
+    confirmed: tuple[str, ...] = ()
+    # RFC-0006: what a person may answer, when this BLOCK asks one.
+    confirms: tuple[str, ...] = ()
 
     @property
     def allowed(self) -> bool:
@@ -109,6 +113,8 @@ class GateResult:
             "fallback_action": self.fallback_action,
         }
         data.update({key: value for key, value in optional.items() if value is not None})
+        if self.confirmed:
+            data["confirmed"] = list(self.confirmed)
         return data
 
 
@@ -187,10 +193,15 @@ class ActionContractEngine:
         *,
         state: Mapping[str, Any] | None = None,
         arguments: Mapping[str, Any] | None = None,
+        confirmed: bool = False,
     ) -> GateResult:
         """
         `arguments` are the action's effective arguments — defaults applied — as
         `c.do()` will call it; a gate with `arguments` limits checks them first.
+
+        `confirmed` is True only when a person answered this gate's `ask` on the
+        device (`ConfirmationBook.take`): the criteria of `on_block.confirms`
+        then count as satisfied — nothing else changes (RFC-0006).
         """
         registered = self._gates.get(key)
         if registered is None:
@@ -235,13 +246,14 @@ class ActionContractEngine:
                     for criterion, fact in facts.items()
                 },
             )
-        walked = walk(tree, facts)
+        waived = self._waived(registered) if confirmed else frozenset()
+        walked = walk(tree, facts, waived)
         elapsed = self.clock() - t0
         if degraded is None and elapsed > tree["budget"]["p95_latency_ms"]:
             degraded = Reason.BUDGET_EXCEEDED
 
         if degraded is not None:
-            result = self._degraded(registered, degraded, walked, facts, elapsed)
+            result = self._degraded(registered, degraded, walked, facts, elapsed, waived)
         elif walked.verdict is GateVerdict.ALLOW:
             result = GateResult(
                 gate=registered.label,
@@ -249,9 +261,16 @@ class ActionContractEngine:
                 gate_digest=tree["gate_digest"],
                 evaluations=walked.evaluations,
                 elapsed_ms=elapsed,
+                confirmed=tuple(sorted(waived)),
             )
         else:
-            result = self._on_block(registered, walked, elapsed)
+            # A question is answerable only if a person's yes would be enough (RFC-0006):
+            # the same facts, with `confirms` stood in for, must then allow.
+            answerable = (
+                not confirmed
+                and walk(tree, facts, self._waived(registered)).verdict is GateVerdict.ALLOW
+            )
+            result = self._on_block(registered, walked, elapsed, answerable=answerable)
 
         self.events.emit("gate_evaluation_result", result.to_event_data())
         if result.verdict is GateVerdict.BLOCK and not result.degraded:
@@ -315,6 +334,13 @@ class ActionContractEngine:
             facts[criterion] = answer
         return facts, degraded
 
+    @staticmethod
+    def _waived(registered: _Registered) -> frozenset[str]:
+        on_block = registered.gate.on_block
+        if on_block.get("action") != "ask":
+            return frozenset()
+        return frozenset(on_block.get("confirms") or ())
+
     def _degraded(
         self,
         registered: _Registered,
@@ -322,12 +348,13 @@ class ActionContractEngine:
         walked,
         facts: Mapping[str, Fact],
         elapsed: float,
+        waived: frozenset[str] = frozenset(),
     ) -> GateResult:
         tree = registered.tree
         if tree["budget"]["fail"] == "open":
             # Only a gate that itself declares `fail: open` gets here (principle 4),
             # and open excuses only what could not be decided.
-            failure = known_failure(tree, facts)
+            failure = known_failure(tree, facts, waived)
             if failure is not None:
                 known = TreeResult(GateVerdict.BLOCK, failure[0], failure[1], walked.evaluations)
                 return self._on_block(registered, known, elapsed)
@@ -351,7 +378,9 @@ class ActionContractEngine:
             elapsed_ms=elapsed,
         )
 
-    def _on_block(self, registered: _Registered, walked, elapsed: float) -> GateResult:
+    def _on_block(
+        self, registered: _Registered, walked, elapsed: float, answerable: bool = False
+    ) -> GateResult:
         on_block = registered.gate.on_block
         action = on_block["action"]
         return GateResult(
@@ -367,6 +396,9 @@ class ActionContractEngine:
             fallback_action=on_block.get("fallback_action") if action == "degrade" else None,
             evaluations=walked.evaluations,
             elapsed_ms=elapsed,
+            confirms=tuple(on_block.get("confirms") or ())
+            if answerable and action == "ask"
+            else (),
         )
 
     def _call_hook(self, result: GateResult) -> None:
