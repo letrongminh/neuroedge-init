@@ -65,6 +65,13 @@ Mọi mã và ký hiệu (`TSK-N*`, `N0`–`N7`, `§x.y`…) được giải mã
 
 ## 1. Định vị và nguyên tắc
 
+### Định vị (đề xuất — chờ `Q-N`)
+
+> **NeuroBrain — Copilot for building Physical AI.**
+> *Trợ lý hội thoại giúp dựng mạch: quét bus, sinh mã, chứng minh an toàn trong CI rồi mới cho chạy trên bo mạch. Không C, không hàn.*
+
+*Rủi ro tên gọi (2026-09-24): "Copilot" thuộc họ nhãn Microsoft/GitHub; va chạm đã kiểm chứng — navigate.ai ("the trusted AI copilot for the physical world") và Bench Copilot (bring-up embedded) — nên **xem lại trước Beta công khai**; phương án dự phòng: "Đồng đội bring-up". Chưa đưa vào README/PRD trước `Q-31`.*
+
 **NeuroBrain là "ESP-Claw có hợp đồng".**
 
 - [ESP-Claw](https://github.com/espressif/esp-claw) làm theo chuỗi: nói chuyện → LLM viết Lua → Lua chạy ngay trên chip.

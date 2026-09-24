@@ -1,6 +1,6 @@
 # NeuroEdge — Product Requirements Document
 
-## Nền tảng Hợp đồng Hành động Chuẩn kiểu cho Physical AI
+## NeuroEdge — Hợp đồng vào Physical AI
 
 **Phiên bản PRD:** 1.4
 **Ngày phát hành:** 24 tháng 9, 2026
@@ -65,7 +65,7 @@ Ba câu hỏi mà công cụ hiện tại không trả lời được:
 
 ### 1.2 Tuyên ngôn sản phẩm
 
-> NeuroEdge chuẩn hóa mọi tác vụ vật lý của AI agent thành hợp đồng có kiểu, có phiên bản, kiểm thử tự động trong CI, và thực thi nhất quán trên mọi môi trường — từ laptop lập trình viên tới vi điều khiển biên $5.
+> **NeuroEdge — Hợp đồng vào Physical AI.** Không hợp đồng, không hành động: mọi hành động vật lý của AI agent (chốt cửa, rơ-le, van, đèn) muốn ra thế giới thực đều phải qua một **hợp đồng an toàn có kiểu, có phiên bản** — lớp bảo vệ gần nhất đứng ngay trên 5 nguyên thủy HAL. Hợp đồng được kiểm thử tự động trong CI bằng replay + assert trên phán quyết gate và trạng thái chân, và thực thi nhất quán trên mọi môi trường — từ laptop lập trình viên tới vi điều khiển biên $5.
 
 ### 1.3 Mục tiêu sản phẩm
 
@@ -779,6 +779,7 @@ Mọi quyết định kỹ thuật, đã chốt hoặc còn mở — xem cột T
 | **Q-27** | NeuroEdge làm MCP client | **ĐÃ CHỐT** *(2026-09-23)* | System 2 là **MCP host**: tool thiết bị qua MCP server của chính agent (vẫn qua gate); MCP server bên ngoài chỉ để lấy thông tin, theo allowlist trong `agent.toml`, kết quả là dữ liệu không tin cậy. MCU không làm host. Đặc tả: [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md) §10 |
 | **Q-28** | Mốc giao lớp trừu tượng provider (FR-GW) | **ĐÃ CHỐT** *(2026-09-24)* | FR-GW là lõi OSS nhưng **không** giao trọn ở v1.0. **v1.0 (Khối 1a) giao FR-GW-01 và FR-GW-03 ở mức tối thiểu**, đúng phạm vi đã có (TSK-S2-11): FR-GW-01 = một bảng `[system_two]` trong `agent.toml` (`provider`, `model`, `api_base`, `api_key_env`) phục vụ mọi provider mà LiteLLM hoặc một adapter tùy chỉnh hỗ trợ; khóa đọc từ biến môi trường, không bao giờ nằm trong `agent.toml`, mã agent hay gate. FR-GW-03 = hợp đồng failover trong mã (`SystemTwo(provider=…, fallback=…)`): provider chính lỗi ⇒ hỏi fallback; không còn đường nào ⇒ `Unavailable`, gate áp `fail` của nó. **Thuộc v1.1 (Khối 2, TSK-K2-01→03):** khai nhiều provider và failover trong `agent.toml` (`TODOS.md` #28); một endpoint và một credential dùng chung cho cả đội thiết bị; FR-GW-02, FR-GW-04 phía máy chủ (client streaming trên MCU là TSK-S5-06, Khối 1b), FR-GW-05, FR-GW-06, FR-GW-07. Tiêu chí TR-1 và TR-6 đo phần v1.1. Lý do: v1.0 chạy trên `sim`/`linux` với một provider do người dùng giữ khóa; phần dành cho đội thiết bị chỉ có nghĩa khi có Fleet OS. §3.2 và §8 theo quyết định này. |
 | **Q-29** | Định vị trước MHS (Anthropic) | **ĐÃ CHỐT** *(2026-09-24)* | **Theo dõi, không đầu tư ở v1.0:** MHS mới ở research preview (2026-08-27), chưa công bố schema/giấy phép/bộ kiểm thử tuân thủ, khác phân khúc (lab/nhà máy qua máy tính đầy đủ, không phải thiết bị biên) và chưa có nhu cầu đo được ⇒ trượt PF-3. **Khi MHS mở mã nguồn và ổn định:** adapter HAL host trên `linux` theo mô hình cộng đồng/đối tác port — **không** bậc 1, **không** đụng `schemas/`, không cần RFC-0002 (không thêm target). **Định vị:** nếu MHS thành chuẩn kết nối, NeuroEdge là tầng an toàn/kiểm thử trên thiết bị MHS. Bối cảnh và nguồn: proposal §10.1–§10.2, Phụ lục H.3; theo dõi: [`TODOS.md`](TODOS.md) #32–#33. |
+| **Q-30** | Định vị "Hợp đồng vào Physical AI" (engine-first) | **ĐÃ CHỐT** *(2026-09-24)* | **VI:** *"NeuroEdge — Hợp đồng vào Physical AI. Không hợp đồng, không hành động."* **EN (master quốc tế):** *"NeuroEdge — Physical AI, under contract. No contract, no action."* Contract là **lớp bảo vệ gần nhất, đứng ngay trên 5 nguyên thủy HAL**: mọi lệnh tới `audio.in/out`, `digital.out`, `sensor.read`, `display` đều qua gate — kiểm thử trong CI, viết một lần, chạy mọi phần cứng. **Không đổi** sản phẩm, người mua (U1/U2 primary), mô hình doanh thu (Fleet OS), lộ trình. **Lý do:** kiểm chứng Sequoia *Services: The New Software* + Paul Graham *Making Startups Powerful* — luận điểm mạnh nhưng đổi cả mô hình sang autopilot/agency là quyết định cần bằng chứng ⇒ hoãn ở [`TODOS.md`](TODOS.md) #34. **NeuroBrain** đề xuất *"Copilot for building Physical AI"* trong [`neuroedge-roadmap-phase1-5.md`](neuroedge-roadmap-phase1-5.md) §1 (đề xuất, chờ **Q-31**; rủi ro tên gọi đã ghi). Nguồn khảo sát đối thủ: [`docs/archive/tai-dinh-vi-messaging-review.md`](docs/archive/tai-dinh-vi-messaging-review.md). |
 
 ---
 
