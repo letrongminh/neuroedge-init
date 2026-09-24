@@ -1,0 +1,12 @@
+# RFC-0006 — only a question can be answered; deny with confirms is meaningless.
+schema:  neuroedge.gate/v1
+name:    confirms-without-ask
+version: 1.0.0
+evaluate:
+  room_empty: { type: bool, instructions: "Nobody is in the room" }
+allow_when:
+  room_empty: true
+on_block:
+  action:   deny
+  confirms: [room_empty]
+budget: { p95_latency_ms: 100 }

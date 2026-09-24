@@ -1,0 +1,9 @@
+# RFC-0006 (principle 2) — deny → ask with confirms makes the chain waivable.
+schema:  neuroedge.gate/v1
+name:    introduces-confirms
+version: 1.0.0
+extends: neuroedge://gates/deny-base@1.0.0
+on_block:
+  action:   ask
+  message:  "Go ahead?"
+  confirms: [room_empty]

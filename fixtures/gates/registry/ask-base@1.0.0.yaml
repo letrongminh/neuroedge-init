@@ -1,0 +1,28 @@
+# RFC-0006 test base: a question a person may answer for two criteria.
+schema:  neuroedge.gate/v1
+name:    ask-base
+version: 1.0.0
+
+evaluate:
+  room_empty:
+    type: bool
+    instructions: "Nobody is in the room"
+  quiet_hours:
+    type: bool
+    instructions: "It is outside quiet hours"
+  device_ok:
+    type: bool
+    instructions: "The device reports no fault"
+
+allow_when:
+  room_empty:  true
+  quiet_hours: true
+  device_ok:   true
+
+on_block:
+  action:   ask
+  message:  "Someone may still be here — go ahead?"
+  confirms: [room_empty, quiet_hours]
+
+budget:
+  p95_latency_ms: 150

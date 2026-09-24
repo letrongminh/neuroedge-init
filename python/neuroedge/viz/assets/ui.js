@@ -10,7 +10,7 @@
   "use strict";
 
   function stateAt(events, t) {
-    const pins = {}, sensors = {}, gates = [];
+    const pins = {}, sensors = {}, gates = [], asks = {};
     let frame = null, begin = null, speech = null, heard = null;
     for (const [i, e] of events.entries()) {
       if (e.offset_ms > t) break;
@@ -30,6 +30,11 @@
         speech = { text: d.text, offset_ms: e.offset_ms };
       } else if (e.type === "text_input") {
         heard = d.text;
+      } else if (e.type === "tool_confirm_requested") {
+        asks[d.id] = d;  // RFC-0006: the device asked a person
+      } else if (e.type === "tool_confirmed" || e.type === "tool_confirm_declined"
+                 || e.type === "tool_confirm_expired") {
+        delete asks[d.id];
       } else if (e.type === "gate_evaluation_begin") {
         begin = d.gate;
       } else if (e.type === "gate_evaluation_result") {
@@ -38,7 +43,11 @@
       }
     }
     for (const name in pins) pins[name].on = t < pins[name].until;
-    return { pins: pins, sensors: sensors, frame: frame, gates: gates, speech: speech, heard: heard };
+    // The newest question still open at t, and not past its expiry.
+    let pending = null;
+    for (const id in asks) if (asks[id].expires_ms > t) pending = asks[id];
+    return { pins: pins, sensors: sensors, frame: frame, gates: gates, speech: speech, heard: heard,
+             pending: pending };
   }
 
   function horizon(events) {
@@ -120,6 +129,23 @@
       el("section", { class: "panel" }, [el("h2", { text: "Màn hình" }), screen]),
     ]);
     const right = el("div", { class: "stack" });
+    // RFC-0006 — the device's question to a person, with the time left to answer.
+    const askText = el("div", { class: "ask-text" });
+    const askLeft = el("div", { class: "ask-left" });
+    const askButtons = el("div", { class: "ask-buttons" });
+    const ask = el("section", { class: "panel ask", role: "alertdialog", "aria-live": "assertive" },
+      [el("h2", { text: "Thiết bị hỏi xác nhận" }), askText, askLeft, askButtons]);
+    ask.hidden = true;
+    let askId = null;
+    if (opts.onConfirm) {
+      const yes = el("button", { type: "button", class: "yes", text: "Đồng ý" });
+      const no = el("button", { type: "button", class: "no", text: "Huỷ" });
+      yes.addEventListener("click", function () { if (askId) opts.onConfirm(askId, true); });
+      no.addEventListener("click", function () { if (askId) opts.onConfirm(askId, false); });
+      askButtons.appendChild(yes);
+      askButtons.appendChild(no);
+    }
+    right.appendChild(ask);
     if (opts.onCommand) {
       const input = el("input", { placeholder: "Gõ lệnh cho agent — hoặc :sensor <tên> <giá trị>, :set <dữ kiện> <giá trị>", autocomplete: "off" });
       const form = el("form", { class: "say" }, [input, el("button", { type: "submit", text: "Gửi" })]);
@@ -178,6 +204,14 @@
           : s.frame.format + " " + s.frame.width + "×" + s.frame.height + "\n" + String(s.frame.sha256).slice(0, 23) + "…";
       } else { screen.className = "screen empty"; screen.textContent = "—"; }
       heard.textContent = s.heard ? "Bạn: " + s.heard : "";
+      if (s.pending) {
+        askId = s.pending.id;
+        ask.hidden = false;
+        askText.textContent = s.pending.message + " (" + s.pending.action + ")";
+        askLeft.textContent = "Còn " + Math.max(0, Math.ceil((s.pending.expires_ms - t) / 1000))
+          + " s · chỉ người trên thiết bị trả lời được — trợ lý và client MCP không xác nhận thay";
+        askButtons.hidden = !opts.onConfirm;
+      } else { askId = null; ask.hidden = true; }
       said.textContent = s.speech ? s.speech.text : "—";
 
       verdicts.textContent = "";

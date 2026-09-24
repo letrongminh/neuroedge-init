@@ -26,3 +26,4 @@ phê duyệt là **kỹ thuật trưởng**, vì đó là tầng an toàn.
 | 0003 | Ghim `extends` bằng digest + đóng băng `decision_tree.v1.json` | `gate.v1` · lược đồ mới | ⏳ Đã đặt số, hoãn tới Sprint 4 (`TODOS.md` #15) |
 | [0004](0004-ke-thua-budget-on-block.md) | Gate con không được nới `budget` và `on_block` | *(không — ngữ nghĩa phân giải)* | ✅ Đã chấp thuận |
 | [0005](0005-rang-buoc-tham-so-trong-gate.md) | Gate tự khai ràng buộc tham số của hành động (Q-25) | `gate.v1` · ngữ nghĩa phân giải · bố cục Q-23 | ✅ Đã chấp thuận |
+| [0006](0006-xac-nhan-ask-confirms.md) | `on_block.confirms` — tiêu chí người trên thiết bị được xác nhận thay (Q-26) | `gate.v1` · ngữ nghĩa phân giải · lượng giá | ✅ Đã chấp thuận |

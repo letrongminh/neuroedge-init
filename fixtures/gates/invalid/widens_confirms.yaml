@@ -1,0 +1,9 @@
+# RFC-0006 (principle 2) — a person may not stand in for device_ok: the base never let them.
+schema:  neuroedge.gate/v1
+name:    widens-confirms
+version: 1.0.0
+extends: neuroedge://gates/ask-base@1.0.0
+on_block:
+  action:   ask
+  message:  "Go ahead?"
+  confirms: [room_empty, device_ok]

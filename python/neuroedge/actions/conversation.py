@@ -23,6 +23,7 @@ from typing import Any
 from ..engine.gate import ActionContractEngine, GateResult
 from ..engine.verdict import GateVerdict
 from ..hal import digital
+from .confirmation import ConfirmationBook, ConfirmationRefused, PendingConfirmation
 from .spec import REGISTRY, ActionSpec, running, spec_of
 from .token import TokenLedger
 
@@ -56,6 +57,8 @@ class ActionResult:
     gate: GateResult | None = None
     value: Any = None
     fallback: ActionResult | None = None
+    # RFC-0006: the question a person may answer, when the gate asked one.
+    confirmation: PendingConfirmation | None = None
 
     @property
     def blocked(self) -> bool:
@@ -86,12 +89,46 @@ class Conversation:
         self.ledger = ledger or TokenLedger(engine.clock, events=self.events)
         # From here on the HAL accepts only tokens from this ledger.
         hal.authorize = self.ledger.authorize
+        self.confirmations = ConfirmationBook(engine.clock, self.events)
 
     async def do(self, target: Any, /, **kwargs: Any) -> ActionResult:
         return await self._do(spec_of(target), kwargs, visited=())
 
+    async def confirm(self, confirm_id: str, source: str) -> ActionResult:
+        """
+        A person answered "yes" on the device (`source` in `HUMAN_SOURCES`):
+        evaluate the same gate again with its `confirms` criteria stood in for,
+        and run the action only if it now allows. Raises `ConfirmationRefused`
+        for any other source, an unknown / used / expired question, or a gate
+        that changed since it asked.
+        """
+        pending = self.confirmations.get(confirm_id)
+        tree = self.engine.tree(pending.gate_key) if pending is not None else None
+        taken = self.confirmations.take(
+            confirm_id, source, None if tree is None else tree["gate_digest"]
+        )
+        spec = self.registry.get(taken.action)
+        if spec is None:
+            raise ConfirmationRefused(f"no @action {taken.action!r} to run")
+        facts = dict(self.facts)
+        source_of_request = taken.context.get("call_source")
+        if source_of_request is not None:
+            self.facts = {**facts, "call_source": source_of_request}
+        try:
+            return await self._do(spec, dict(taken.arguments), visited=(), confirmed=True)
+        finally:
+            self.facts = facts
+
+    def decline(self, confirm_id: str, source: str) -> PendingConfirmation:
+        """A person answered "no": the question closes, nothing runs."""
+        return self.confirmations.decline(confirm_id, source)
+
     async def _do(
-        self, spec: ActionSpec, kwargs: dict[str, Any], visited: tuple[str, ...]
+        self,
+        spec: ActionSpec,
+        kwargs: dict[str, Any],
+        visited: tuple[str, ...],
+        confirmed: bool = False,
     ) -> ActionResult:
         state = {"utterance": self.utterance, "action": spec.name, "arguments": dict(kwargs)}
         # Which action asked for which gate: a replay (TSK-S3-02) re-runs exactly this.
@@ -100,13 +137,39 @@ class Conversation:
             {"action": spec.name, "gate": spec.gate, "arguments": _json_safe(kwargs)},
         )
         result = await self.engine.evaluate(
-            spec.gate, self.facts, state=state, arguments=_effective(spec, kwargs)
+            spec.gate,
+            self.facts,
+            state=state,
+            arguments=_effective(spec, kwargs),
+            confirmed=confirmed,
         )
         if result.verdict is GateVerdict.BLOCK:
             fallback = None
             if result.on_block_action == "degrade" and result.fallback_action:
                 fallback = await self._fallback(result.fallback_action, visited + (spec.name,))
-            return ActionResult(spec.name, GateVerdict.BLOCK, result, fallback=fallback)
+            pending = None
+            if result.on_block_action == "ask" and result.confirms and not confirmed:
+                # RFC-0006: the gate asked a question a person may answer. Nothing
+                # runs now; `confirm()` evaluates the gate again if they say yes.
+                tree = self.engine.tree(spec.gate)
+                pending = self.confirmations.open(
+                    action=spec.name,
+                    arguments=_json_safe(kwargs),
+                    gate=result.gate,
+                    gate_key=spec.gate,
+                    gate_digest=result.gate_digest,
+                    message=result.message or "",
+                    confirms=result.confirms,
+                    p95_ms=tree["budget"]["p95_latency_ms"],
+                    # The re-evaluation must see who asked originally, not who answered.
+                    context={
+                        "utterance": self.utterance,
+                        "call_source": self.facts.get("call_source"),
+                    },
+                )
+            return ActionResult(
+                spec.name, GateVerdict.BLOCK, result, fallback=fallback, confirmation=pending
+            )
 
         tree = self.engine.tree(spec.gate)
         token = self.ledger.issue(
