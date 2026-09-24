@@ -32,6 +32,9 @@ bản gói.
 
 #### Đã thêm
 
+- **Giai đoạn 1.5 — kế hoạch NeuroBrain (bản nháp, chờ `Q-N`).** `neuroedge-roadmap-phase1-5.md`: khối N0–N7,
+  bring-up phần cứng có gate, song song Khối 1b tới Developer Beta; wireframe Lab Monitor ở `wireframe/`. Chỉ tài liệu,
+  chưa có mã. Quyết định chuyển vào PRD §15 ở TSK-N0-01.
 - **TSK-S3-14 — workflow phát hành PyPI, chưa đẩy lên index nào.** `release-pypi.yml`: sdist → wheel từ sdist →
   `twine check --strict` → smoke trên đúng wheel đó → trusted publishing (OIDC), chỉ với tag **và** `PUBLISH_ENABLED`.
   `LICENSE` (MIT) nằm trong wheel/sdist. Go-live: `docs/release.md`.
@@ -766,6 +769,7 @@ Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc 
 |:---|:---|:---|
 | [`neuroedge-roadmap.md`](neuroedge-roadmap.md) | **Tiến độ, task, tiêu chí ra.** §0 là bảng điều khiển | **Luôn đọc trước** |
 | [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) | Giai đoạn 2 (Tháng 9–24) | Khi việc thuộc Khối 1b trở đi |
+| [`neuroedge-roadmap-phase1-5.md`](neuroedge-roadmap-phase1-5.md) | Giai đoạn 1.5 — NeuroBrain (bản nháp, chờ `Q-N`) | Khi việc thuộc Khối N0–N7 |
 | [`neuroedge-prd.md`](neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`; **§15 là sổ quyết định duy nhất** (`Q-N`); Phụ lục B là mã lỗi | Khi cần biết *phải* làm gì, và đã chốt gì |
 | [`neuroedge-proposal.md`](neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** | Khi cần biết *tại sao* |
 | [`docs/spec/`](docs/spec/) | Đặc tả chuẩn tắc: Gated Tool Profile, mô hình mối đe doạ, phủ mô phỏng, rà soát MCU | Trước khi đổi hành vi ở tầng tương ứng |

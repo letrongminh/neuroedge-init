@@ -1,0 +1,122 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>(1) Cần xác nhận · villa-lab</title>
+<style>
+/* NeuroEdge session view — shared by `trace view` and `run --ui`. No external assets. */
+:root {
+  --bg: #0f1419; --panel: #171e26; --line: #26313d; --text: #d8dee6; --dim: #7d8a99;
+  --allow: #3fb950; --block: #f85149; --warn: #d29922; --accent: #58a6ff;
+}
+@media (prefers-color-scheme: light) {
+  :root { --bg: #f6f8fa; --panel: #ffffff; --line: #d0d7de; --text: #1f2328; --dim: #636c76; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; gap: 16px;
+  flex-wrap: wrap; align-items: baseline; }
+header h1 { font-size: 16px; margin: 0; }
+header .meta { color: var(--dim); font-size: 12px; }
+main { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 16px; padding: 16px 20px; }
+@media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); margin: 0 0 10px; }
+.stack > * + * { margin-top: 16px; }
+.devices { display: flex; flex-wrap: wrap; gap: 14px; }
+.device { width: 96px; text-align: center; font-size: 12px; }
+.device svg { width: 64px; height: 64px; display: block; margin: 0 auto 4px; }
+.device .state { color: var(--dim); }
+.device.on .state { color: var(--allow); font-weight: 600; }
+.sensor { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--line); padding: 4px 0; }
+.sensor span:last-child { font-variant-numeric: tabular-nums; }
+.screen { background: #000; color: #9be89b; font-family: ui-monospace, Menlo, monospace; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px;
+  aspect-ratio: 4 / 3; white-space: pre-wrap; }
+.screen.empty { color: #555; }
+.speech { font-size: 15px; padding: 8px 10px; border-radius: 8px; margin-top: 6px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.verdict { border-left: 4px solid var(--line); padding: 6px 10px; margin-bottom: 8px; border-radius: 4px;
+  background: color-mix(in srgb, var(--panel) 85%, var(--line)); cursor: pointer; }
+.verdict.ALLOW { border-left-color: var(--allow); }
+.verdict.BLOCK { border-left-color: var(--block); }
+.verdict.REJECTED { border-left-color: var(--warn); }
+.verdict.future { opacity: .35; }
+.badge { font-weight: 700; font-size: 12px; }
+.ALLOW .badge { color: var(--allow); } .BLOCK .badge { color: var(--block); }
+.REJECTED .badge { color: var(--warn); }
+.verdict .via { font-family: ui-monospace, Menlo, monospace; }
+.verdict .why { color: var(--dim); font-size: 12px; }
+.scrub { display: flex; gap: 10px; align-items: center; }
+.scrub input { flex: 1; }
+.scrub output { font-variant-numeric: tabular-nums; min-width: 80px; text-align: right; color: var(--dim); }
+table.events { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.events td { padding: 3px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.events td:first-child { color: var(--dim); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.events tr { cursor: pointer; } table.events tr.future { opacity: .35; }
+table.events tr.current { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+table.events code { color: var(--accent); }
+.data { color: var(--dim); word-break: break-word; }
+form.say { display: flex; gap: 8px; } form.say input { flex: 1; padding: 8px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; }
+.ask { border-color: var(--warn); }
+.ask[hidden] { display: none; }
+.ask .ask-text { font-size: 15px; font-weight: 600; }
+.ask .ask-left { color: var(--dim); font-size: 12px; margin: 4px 0 10px; font-variant-numeric: tabular-nums; }
+.ask .ask-buttons { display: flex; gap: 8px; }
+.ask button { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line); font: inherit; cursor: pointer;
+  background: var(--bg); color: var(--text); }
+.ask button.yes { background: var(--warn); border-color: var(--warn); color: #111; font-weight: 600; }
+.ask button:focus-visible, form.say button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+form.say button { padding: 8px 14px; border-radius: 6px; border: 0; background: var(--accent); color: #fff; font: inherit; cursor: pointer; }
+/* v2: font thật sẽ là IBM Plex Sans/Mono (D14, chờ Q-11); tạm dùng stack hệ thống trong wireframe */
+body{font-family:"IBM Plex Sans",system-ui,sans-serif}
+code,.mono,.explain,.lane span:first-child{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+/* D13: bỏ viền trái — dùng huy hiệu trạng thái */
+.verdict{border-left:1px solid var(--line)!important}
+.st{display:inline-block;min-width:74px;text-align:center;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.04em}
+.st.allow{background:color-mix(in srgb,var(--allow) 20%,transparent);color:var(--allow)}
+.st.block{background:color-mix(in srgb,var(--block) 20%,transparent);color:var(--block)}
+.st.env{background:color-mix(in srgb,var(--warn) 22%,transparent);color:var(--warn)}
+.st.rej{background:color-mix(in srgb,var(--dim) 22%,transparent);color:var(--dim)}
+.st.human{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--accent)}
+.badge-lab{background:var(--warn);color:#111;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.banner{background:color-mix(in srgb,var(--warn) 18%,var(--panel));border:1px solid var(--warn);padding:8px 14px;margin:12px 20px 0;border-radius:6px}
+.live{border-color:var(--allow)}.live .row{display:flex;justify-content:space-between;font-variant-numeric:tabular-nums}
+.queue{color:var(--dim);font-size:12px;margin-top:8px}.queue li{margin:2px 0}
+.lane{display:grid;grid-template-columns:110px 1fr 190px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line);font-size:12px}
+.track{position:relative;height:24px;background:color-mix(in srgb,var(--line) 40%,transparent);border-radius:3px}
+.hit{position:absolute;top:0;width:24px;height:24px;margin-left:-12px;background:transparent;border:0;padding:0;cursor:pointer}
+.hit i{position:absolute;left:10px;top:4px;width:4px;height:16px;border-radius:1px}
+.hit.allow i{background:var(--allow)}.hit.block i{background:var(--block)}.hit.env i{background:var(--warn)}.hit.rej i{background:var(--dim)}
+.hit.sel{outline:2px solid var(--accent);outline-offset:1px;border-radius:3px}
+.hit:focus-visible{outline:2px solid var(--accent)}
+.meter{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:3px}.meter i{display:block;height:6px}
+.m-ok i{background:var(--allow)}.m-hot i{background:var(--warn)}.m-full i{background:var(--block)}
+.axis{display:flex;justify-content:space-between;color:var(--dim);font-size:11px;margin-left:120px;margin-right:200px}
+.explain{font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin-top:6px}
+.dimrow{color:var(--dim)}
+.scrubbar{background:color-mix(in srgb,var(--accent) 14%,transparent);padding:6px 10px;border-radius:6px;font-size:12px}
+</style></head><body>
+<div class="banner" role="status">⚠ Mất kết nối tới <code>mcp serve</code>, đang nối lại… Thiết bị và nút xác nhận tạm khoá. <span class="dimrow">(trạng thái 4A — chỉ hiện khi SSE lỗi)</span></div>
+<header><h1>villa-lab · sim-default</h1><span class="badge-lab">LAB MODE</span><span class="meta">mcp serve --ui · 127.0.0.1:8765</span></header>
+<main>
+<div class="stack">
+ <section class="panel"><h2>Thiết bị</h2><div class="devices"><div class="device on">▣<div>gate_relay</div><div class="state">ON · 180 ms</div></div><div class="device">▢<div>door_lock</div><div class="state">off</div></div><div class="device">▢<div>porch_light</div><div class="state">off</div></div></div></section>
+ <section class="panel"><h2>Bus I2C · phát lại từ trace <span class="mono">bringup-0924.json</span> lúc 14:02:11</h2><div class="sensor dimrow"><span class="mono">0x76</span><span>BME280 (chip id 0x60)</span></div><div class="sensor dimrow"><span class="mono">0x48</span><span>không nhận diện</span></div></section>
+</div>
+<div class="stack">
+ <section class="panel ask" role="alertdialog" aria-live="assertive"><h2>Thiết bị hỏi xác nhận · 1/3</h2><div class="ask-text">Claude muốn xung <b>gate_relay</b> 300 ms. Cho phép?</div><div class="ask-left">còn 12 s · nguồn: mcp</div><div class="ask-buttons"><button class="yes">Đồng ý</button><button class="no" autofocus>Huỷ</button></div><ul class="queue"><li>2/3 · porch_light 500 ms · còn 20 s</li><li>3/3 · gate_relay 300 ms · còn 26 s</li></ul><div class="why">Focus mặc định ở "Huỷ"; Tab → "Đồng ý" → Enter (12A). 🔔 Âm báo: tắt</div></section>
+ <section class="panel live"><h2>Đang bật ngay lúc này</h2><div class="row"><span class="mono">gate_relay</span><span>ON · còn 180 ms</span></div></section>
+ <section class="panel"><h2>Timeline xung · cửa sổ phong bì 60 s (board.v1)</h2>
+  <div class="scrubbar">Đang xem trực tiếp · kéo thanh thời gian để tua (ask và "đang bật" luôn hiện tại — 14A)</div>
+  <div class="lane"><span>gate_relay</span><div class="track"><button class="hit allow" style="left:12%" aria-label="gate_relay, ALLOW, 300 ms, 14:01:22"><i></i></button><button class="hit allow sel" style="left:40%" aria-label="gate_relay, ALLOW, 300 ms, 14:01:40"><i></i></button><button class="hit block" style="left:55%" aria-label="gate_relay, BLOCK, 2500 ms"><i></i></button><button class="hit env" style="left:70%" aria-label="gate_relay, ENVELOPE"><i></i></button></div><span>4.2 / 5.0 s · 2/giây<div class="meter m-hot"><i style="width:84%"></i></div></span></div>
+  <div class="lane"><span>door_lock</span><div class="track"><button class="hit rej" style="left:30%" aria-label="door_lock, REJECTED"><i></i></button></div><span>5.0 / 5.0 s · khoá tới 14:02:41<div class="meter m-full"><i style="width:100%"></i></div></span></div>
+  <div class="lane"><span>porch_light</span><div class="track"></div><span style="color:var(--warn)">chưa khai phong bì (6A)</span></div>
+  <div class="axis"><span>-60 s</span><span>-30 s</span><span>bây giờ</span></div>
+ </section>
+ <section class="panel"><h2>Phán quyết</h2>
+  <div class="verdict"><span class="st block">BLOCK ×4</span> <span class="via">lab_pulse(gate_relay, 2500 ms)</span> · mcp · lần cuối 14:01:58<div class="explain">argument_out_of_range: duration_ms 2500 &gt; max 2000 · gates/lab/lab_pulse@1.0.0 › arguments.duration_ms</div></div>
+  <div class="verdict"><span class="st allow">ALLOW</span> <span class="st human">người: Đồng ý</span> <span class="via">lab_pulse(gate_relay, 300 ms)</span> · 14:01:40<div class="why">phong bì còn 0.8 s</div></div>
+  <div class="verdict"><span class="st env">ENVELOPE</span> <span class="via">lab_pulse(gate_relay, 300 ms)</span> · mcp<div class="why">vượt 2 lần/giây (board.v1 envelope.rate) · thử lại sau 0.4 s</div></div>
+  <div class="verdict"><span class="st human">người: hết hạn sau 30 s</span> <span class="via">lab_pulse(porch_light, 500 ms)</span></div>
+  <div class="verdict"><span class="st rej">REJECTED</span> <span class="via">lab_pulse(door_lock, "abc")</span><div class="why">duration_ms phải là số nguyên</div></div>
+ </section>
+</div></main></body></html>

@@ -1,0 +1,116 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Lab Monitor wireframe</title>
+<style>
+/* NeuroEdge session view — shared by `trace view` and `run --ui`. No external assets. */
+:root {
+  --bg: #0f1419; --panel: #171e26; --line: #26313d; --text: #d8dee6; --dim: #7d8a99;
+  --allow: #3fb950; --block: #f85149; --warn: #d29922; --accent: #58a6ff;
+}
+@media (prefers-color-scheme: light) {
+  :root { --bg: #f6f8fa; --panel: #ffffff; --line: #d0d7de; --text: #1f2328; --dim: #636c76; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; gap: 16px;
+  flex-wrap: wrap; align-items: baseline; }
+header h1 { font-size: 16px; margin: 0; }
+header .meta { color: var(--dim); font-size: 12px; }
+main { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 16px; padding: 16px 20px; }
+@media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); margin: 0 0 10px; }
+.stack > * + * { margin-top: 16px; }
+.devices { display: flex; flex-wrap: wrap; gap: 14px; }
+.device { width: 96px; text-align: center; font-size: 12px; }
+.device svg { width: 64px; height: 64px; display: block; margin: 0 auto 4px; }
+.device .state { color: var(--dim); }
+.device.on .state { color: var(--allow); font-weight: 600; }
+.sensor { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--line); padding: 4px 0; }
+.sensor span:last-child { font-variant-numeric: tabular-nums; }
+.screen { background: #000; color: #9be89b; font-family: ui-monospace, Menlo, monospace; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px;
+  aspect-ratio: 4 / 3; white-space: pre-wrap; }
+.screen.empty { color: #555; }
+.speech { font-size: 15px; padding: 8px 10px; border-radius: 8px; margin-top: 6px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.verdict { border-left: 4px solid var(--line); padding: 6px 10px; margin-bottom: 8px; border-radius: 4px;
+  background: color-mix(in srgb, var(--panel) 85%, var(--line)); cursor: pointer; }
+.verdict.ALLOW { border-left-color: var(--allow); }
+.verdict.BLOCK { border-left-color: var(--block); }
+.verdict.REJECTED { border-left-color: var(--warn); }
+.verdict.future { opacity: .35; }
+.badge { font-weight: 700; font-size: 12px; }
+.ALLOW .badge { color: var(--allow); } .BLOCK .badge { color: var(--block); }
+.REJECTED .badge { color: var(--warn); }
+.verdict .via { font-family: ui-monospace, Menlo, monospace; }
+.verdict .why { color: var(--dim); font-size: 12px; }
+.scrub { display: flex; gap: 10px; align-items: center; }
+.scrub input { flex: 1; }
+.scrub output { font-variant-numeric: tabular-nums; min-width: 80px; text-align: right; color: var(--dim); }
+table.events { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.events td { padding: 3px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.events td:first-child { color: var(--dim); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.events tr { cursor: pointer; } table.events tr.future { opacity: .35; }
+table.events tr.current { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+table.events code { color: var(--accent); }
+.data { color: var(--dim); word-break: break-word; }
+form.say { display: flex; gap: 8px; } form.say input { flex: 1; padding: 8px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; }
+.ask { border-color: var(--warn); }
+.ask[hidden] { display: none; }
+.ask .ask-text { font-size: 15px; font-weight: 600; }
+.ask .ask-left { color: var(--dim); font-size: 12px; margin: 4px 0 10px; font-variant-numeric: tabular-nums; }
+.ask .ask-buttons { display: flex; gap: 8px; }
+.ask button { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line); font: inherit; cursor: pointer;
+  background: var(--bg); color: var(--text); }
+.ask button.yes { background: var(--warn); border-color: var(--warn); color: #111; font-weight: 600; }
+.ask button:focus-visible, form.say button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+form.say button { padding: 8px 14px; border-radius: 6px; border: 0; background: var(--accent); color: #fff; font: inherit; cursor: pointer; }
+.variant{border:2px dashed var(--line);margin:16px 20px;border-radius:10px}
+.vlabel{padding:6px 12px;font-weight:700;color:var(--accent)}
+.badge-lab{background:var(--warn);color:#111;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.tabs{display:flex;gap:4px;padding:0 20px;border-bottom:1px solid var(--line)}
+.tabs a{padding:8px 12px;color:var(--dim);text-decoration:none;border-bottom:2px solid transparent}
+.tabs a.on{color:var(--text);border-bottom-color:var(--accent)}
+.lane{display:grid;grid-template-columns:110px 1fr 150px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line);font-size:12px}
+.track{position:relative;height:18px;background:color-mix(in srgb,var(--line) 40%,transparent);border-radius:3px}
+.bar{position:absolute;top:2px;height:14px;background:var(--allow);border-radius:2px}
+.tick{position:absolute;top:0;width:3px;height:18px;background:var(--block)}
+.meter{height:6px;background:var(--line);border-radius:3px;overflow:hidden}.meter i{display:block;height:6px;background:var(--allow)}
+.meter.hot i{background:var(--warn)}
+.axis{display:flex;justify-content:space-between;color:var(--dim);font-size:11px;margin-left:120px;margin-right:160px}
+.explain{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin-top:6px}
+.replay{color:var(--warn);font-size:11px;font-weight:600}
+</style></head><body>
+<div class="variant"><div class="vlabel">Biến thể A — panel trong trang hiện có (không có tab)</div>
+<header><h1>villa-lab · sim-default</h1><span class="badge-lab">LAB MODE</span><span class="meta">mcp serve --ui · 127.0.0.1:8765</span></header>
+<main>
+<div class="stack">
+ <div class="panel ask"><h2>Cần bạn xác nhận</h2><div class="ask-text">Claude muốn xung <b>gate_relay</b> 300 ms. Cho phép?</div><div class="ask-left">còn 12 s · nguồn: mcp</div><div class="ask-buttons"><button class="yes">Có (Enter)</button><button>Không (Esc)</button></div></div>
+ <div class="panel"><h2>Thiết bị</h2><div class="devices"><div class="device on">▣<div>gate_relay</div><div class="state">ON</div></div><div class="device">▢<div>door_lock</div><div class="state">off</div></div><div class="device">▢<div>porch_light</div><div class="state">off</div></div></div></div>
+ <div class="panel"><h2>Bus I2C <span class="replay">· REPLAY từ trace, không trực tiếp</span></h2><div class="sensor"><span>0x76</span><span>BME280 (chip id 0x60)</span></div><div class="sensor"><span>0x48</span><span>không nhận diện</span></div></div>
+</div>
+<div class="stack">
+ <div class="panel"><h2>Timeline xung theo chân · phong bì 60 s</h2>
+  <div class="lane"><span>gate_relay</span><div class="track"><div class="bar" style="left:10%;width:6%"></div><div class="bar" style="left:40%;width:6%"></div><div class="tick" style="left:62%" title="envelope_refused"></div></div><span>2.3 / 5.0 s<div class="meter hot"><i style="width:46%"></i></div></span></div>
+  <div class="lane"><span>door_lock</span><div class="track"><div class="tick" style="left:30%" title="BLOCK"></div></div><span>0 / 5.0 s<div class="meter"><i style="width:0"></i></div></span></div>
+  <div class="lane"><span>porch_light</span><div class="track"></div><span>0 / 5.0 s<div class="meter"><i style="width:0"></i></div></span></div>
+  <div class="axis"><span>-60 s</span><span>-30 s</span><span>bây giờ</span></div>
+  <p class="why">▮ xanh = xung được phép · ▎ đỏ = bị chặn / phong bì từ chối · bấm để xem lý do</p>
+ </div>
+ <div class="panel"><h2>Phán quyết</h2>
+  <div class="verdict BLOCK"><span class="badge">BLOCK</span> <span class="via">lab_pulse(gate_relay, 2500 ms)</span> · mcp<div class="explain">argument_out_of_range: duration_ms 2500 &gt; max 2000 (gates/lab/lab_pulse@1.0.0 · arguments.duration_ms)</div></div>
+  <div class="verdict ALLOW"><span class="badge">ALLOW</span> <span class="via">lab_pulse(gate_relay, 300 ms)</span> · mcp<div class="why">phong bì còn 2.7 s</div></div>
+  <div class="verdict REJECTED"><span class="badge">ENVELOPE</span> <span class="via">lab_pulse(gate_relay, 300 ms)</span> · mcp<div class="why">vượt 2 lần/giây (board.v1 envelope.rate)</div></div>
+ </div>
+</div></main></div>
+
+<div class="variant"><div class="vlabel">Biến thể B — tab riêng "Lab"</div>
+<header><h1>villa-lab · sim-default</h1><span class="meta">mcp serve --ui</span></header>
+<nav class="tabs"><a href="#">Phiên</a><a class="on" href="#">Lab <span class="badge-lab">3</span></a></nav>
+<main style="grid-template-columns:1fr"><div class="stack">
+ <div class="panel"><h2>Timeline xung theo chân</h2><div class="lane"><span>gate_relay</span><div class="track"><div class="bar" style="left:10%;width:6%"></div><div class="tick" style="left:62%"></div></div><span>2.3 / 5.0 s<div class="meter hot"><i style="width:46%"></i></div></span></div></div>
+ <div class="panel"><h2>Bus I2C <span class="replay">· REPLAY</span></h2><div class="sensor"><span>0x76</span><span>BME280</span></div></div>
+ <p class="why" style="padding:0 4px">Rủi ro: thẻ xác nhận "ask" nằm ở tab Phiên; người đứng cạnh bo ở tab Lab có thể không thấy → cần huy hiệu đếm trên tab.</p>
+</div></main></div>
+</body></html>

@@ -24,6 +24,7 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | Biên bản các vòng review | [`docs/archive/`](../archive/) | lưu trữ, không quy phạm |
 | Cổng nhu cầu 2026-10-25 (phỏng vấn, demo, chấm điểm) | [`docs/business/cong-nhu-cau-2026-10-25/`](../business/cong-nhu-cau-2026-10-25/README.md) | tài liệu kinh doanh, Q-20 |
 | Kế hoạch Giai đoạn 2 | [`neuroedge-roadmap-phase2.md`](../../neuroedge-roadmap-phase2.md) | Khối V1a → P2 |
+| Kế hoạch Giai đoạn 1.5 — NeuroBrain | [`neuroedge-roadmap-phase1-5.md`](../../neuroedge-roadmap-phase1-5.md) | Khối N0 → N7, bản nháp chờ `Q-N`; wireframe ở [`wireframe/`](../../wireframe/README.md) |
 | **Đóng góp** | | |
 | Quy ước, quy trình, hoàn thành task | [`CONTRIBUTING.md`](../../CONTRIBUTING.md) | §8 là checklist bắt buộc |
 | Đổi `schemas/` (lược đồ đã đóng băng) | [`docs/rfc/README.md`](../rfc/README.md) | quy trình RFC |
