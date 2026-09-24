@@ -2,8 +2,10 @@ idf_component_register(
     SRCS
         "main.c"
         "memory_probe.c"
+        "gate_selftest.c"
     INCLUDE_DIRS "."
     REQUIRES
+        ne_gate
         esp_system
         esp_wifi
         esp_netif

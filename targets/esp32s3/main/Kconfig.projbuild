@@ -1,0 +1,12 @@
+menu "NeuroEdge"
+
+    config NEUROEDGE_SKIP_NETWORK
+        bool "Do not bring up the Wi-Fi / TCP-IP stack"
+        default n
+        help
+            For Espressif QEMU (sdkconfig.qemu, TSK-S4-08), which does not
+            emulate Wi-Fi. The boot gate self-test still runs; the
+            network_ready memory checkpoint is not taken. Leave this off on
+            the board: the Q-3 measurement needs the network stack's cost.
+
+endmenu
