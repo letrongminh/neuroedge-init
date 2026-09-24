@@ -2,11 +2,11 @@
 
 ## Nền tảng Hợp đồng Hành động Chuẩn kiểu cho Physical AI
 
-**Phiên bản PRD:** 1.3
-**Ngày phát hành:** 23 tháng 9, 2026
-**Tài liệu nguồn:** `neuroedge-proposal.md` v5.4
+**Phiên bản PRD:** 1.4
+**Ngày phát hành:** 24 tháng 9, 2026
+**Tài liệu nguồn:** `neuroedge-proposal.md`
 **Trạng thái:** Bản thảo chờ phê duyệt kỹ thuật
-**Thay đổi ở 1.3 (2026-09-23):** ghi các quyết định Q-14 → Q-20 và RFC-0004; cập nhật Q-4, Q-10, Q-11 · fallback lệnh cố định cục bộ lên P0 (Q-14) · đầu vào mặc định của `sim` là gõ chữ (Q-15) · FR-GATE-02/03/06 khớp RFC-0001 và RFC-0004 · FR-CLI bổ sung `gate lint`, `gate resolve`, `board` và tiêu chí nghiệm thu từng dòng · Phụ lục B khớp tên lớp lỗi trong mã · sửa ma trận truy vết Phụ lục A
+**Lịch sử thay đổi:** `CHANGELOG.md` — tài liệu này chỉ mô tả hiện trạng.
 **Đối tượng sử dụng:** Kỹ sư phát triển · Quản lý kỹ thuật · QA · Kỹ thuật viên tài liệu · Đối tác OEM
 
 **Phạm vi tài liệu:** Yêu cầu chức năng và phi chức năng · Tiêu chí nghiệm thu · Đặc tả giao diện dữ liệu · Kế hoạch phát hành theo cột mốc · Hệ chỉ số và yêu cầu đo đạc
@@ -30,7 +30,7 @@
 12. [Hệ chỉ số và yêu cầu đo đạc](#12-hệ-chỉ-số-và-yêu-cầu-đo-đạc)
 13. [Phụ thuộc, rủi ro và giả định](#13-phụ-thuộc-rủi-ro-và-giả-định)
 14. [Ngoài phạm vi](#14-ngoài-phạm-vi)
-15. [Quyết định kỹ thuật đã chốt](#15-quyết-định-kỹ-thuật-đã-chốt)
+15. [Sổ quyết định](#15-sổ-quyết-định)
 
 **Phụ lục**
 
@@ -43,7 +43,7 @@
 
 ## Quy ước tài liệu
 
-Mọi mã và ký hiệu dùng trong tài liệu này (`FR-*`, `NFR-*`, `P0`–`P2`, `A1`–`C7`, `Q-N`, `PF-N`, `R-N`, `U`/`J`, `§x.y`…) được giải mã ở **[`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md)** — nơi duy nhất, kèm chỗ định nghĩa đầy đủ.
+Mọi mã và ký hiệu dùng trong tài liệu này (`FR-*`, `NFR-*`, `P0`–`P2`, `A1`–`C8`, `Q-N`, `PF-N`, `R-N`, `U`/`J`, `§x.y`…) được giải mã ở **[`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md)** — nơi duy nhất, kèm chỗ định nghĩa đầy đủ.
 
 Từ khóa **BẮT BUỘC**, **NÊN**, **CÓ THỂ** được hiểu theo nghĩa của RFC 2119.
 
@@ -135,7 +135,7 @@ Mọi yêu cầu trong tài liệu này phải tuân thủ năm nguyên tắc sa
 | 2–4 | `neuroedge run --target sim`, gõ một lệnh (vd *"mở cửa phòng 101"*) | Không mạng, không key, tất định: bộ khớp ngữ pháp lệnh cục bộ nhận lệnh; thấy actuator ảo chuyển động và phán quyết gate. Giọng nói là tuỳ chọn — cần key STT cloud *(Q-15)* | FR-TGT-01, FR-DX-02 |
 | 4–6 | Sửa `allow_when` trong gate | Agent từ chối hành động, hiển thị nguyên nhân trong vết ghi | FR-ACE-02 |
 | 6–8 | `neuroedge test` | CI xanh; phá điều kiện → CI đỏ, chỉ đích danh gate vi phạm | FR-CI-03 |
-| 8–10 | `neuroedge run --target linux` | Cùng mã nguồn, chạy trên phần cứng thật | FR-TGT-02 |
+| 8–10 | `neuroedge run --target linux` | Cùng mã nguồn, chạy trên phần cứng thật *(chờ TSK-S5-10 — hôm nay lệnh thoát mã 2; `replay --target linux` đã chạy)* | FR-TGT-02, FR-CLI-02 |
 
 **Ràng buộc bắt buộc:** trong toàn bộ hành trình này, hệ thống **KHÔNG ĐƯỢC** yêu cầu mua phần cứng, tạo tài khoản, hay nhập thông tin thanh toán.
 
@@ -196,14 +196,14 @@ Khối 4 (AURA thực địa, tháng 8–14) và Khối 5 (Marketplace, tháng 1
 | Môi trường `esp32s3` (FR-TGT) | — | ● | — |
 | Action Contract Engine (FR-ACE) | ● | — | — |
 | Định dạng gate (FR-GATE) | ● | — | ◐ registry |
-| Trừu tượng hóa mô hình (FR-MDL) | ● | — | — |
-| Runtime nhận thức & hội thoại (FR-PER) | ◐ cơ bản | ● thu/phát + gate | — |
+| Trừu tượng hóa mô hình (FR-MDL) | ◐ trừ FR-MDL-09 | ● FR-MDL-09 ASR/TTS | — |
+| Runtime nhận thức & hội thoại (FR-PER) | ◐ đặc tả FSM (TSK-S2-07) | ● thu/phát + FSM + gate | — |
 | Action CI (FR-CI) | ● | ◐ `verify` môi trường bậc 1 | — |
 | Lược đồ vết ghi (FR-TRC) | ● | — | — |
 | CLI (FR-CLI) | ● | ◐ bổ sung | — |
 | Trải nghiệm lập trình viên (FR-DX) | ● | — | — |
 | OTA cấp thiết bị (FR-OTA) | — | ● | — |
-| Lớp trừu tượng provider (FR-GW) | ● | — | ◐ tối ưu |
+| Lớp trừu tượng provider (FR-GW) | ◐ FR-GW-01, 03 tối thiểu (Q-28) | ◐ client streaming MCU của FR-GW-04 (TSK-S5-06) | ● phần còn lại (Q-28) |
 | Fleet Management OS (FR-FLT) | — | — | ● |
 | Đường ray hạ tầng (FR-REG) | — | — | ● |
 
@@ -211,13 +211,7 @@ Khối 4 (AURA thực địa, tháng 8–14) và Khối 5 (Marketplace, tháng 1
 
 ### 3.3 Điều kiện kích hoạt v1.1
 
-v1.1 **KHÔNG ĐƯỢC** khởi động theo lịch cố định. Chỉ khởi động khi giai đoạn Developer Beta đạt **đồng thời** cả ba tiêu chí:
-
-| # | Tiêu chí | Ngưỡng |
-|:---:|:---|:---|
-| **B1** | Lập trình viên bên ngoài chạy thành công agent trên `sim` | ≥ 50 người |
-| **B2** | Lập trình viên bên ngoài nạp và điều khiển thành công phần cứng thật | ≥ 10 người |
-| **B3** | Gate an toàn do cộng đồng bên ngoài tự viết và đóng góp | ≥ 3 gate |
+v1.1 **KHÔNG ĐƯỢC** khởi động theo lịch cố định. Chỉ khởi động khi Developer Beta đạt **đồng thời** B1, B2 và B3 — ngưỡng ở §11.2.
 
 ### 3.4 Đóng băng phạm vi Khối 1b
 
@@ -275,13 +269,13 @@ HAL là hợp đồng kiểm tra hai chiều: bo mạch khai báo năng lực cu
 | **FR-MDL-03** | Cả hai interface bắt buộc khai báo được đường dẫn dự phòng (`fallback`). Với `SystemOne`, fallback cục bộ là **bộ nhận diện lệnh cố định** (ngữ pháp lệnh → intent kèm độ tin cậy) và là P0 *(Q-14)* | P0 | Ngắt nhà cung cấp chính → hệ thống tự chuyển fallback, ghi sự kiện vào vết; mất mạng → `SystemOne` lượng giá bằng ngữ pháp lệnh cục bộ *(Q-14)* | §3.6 |
 | **FR-MDL-04** | Thay nhà cung cấp mô hình không yêu cầu sửa mã agent hay sửa gate | P0 | Đổi `SystemOne` sang mô hình cục bộ chỉ bằng thay đổi cấu hình | §3.6 |
 | **FR-MDL-05** | Chính sách định tuyến System 1 / System 2 là cấu hình khai báo, không viết cứng | P1 | Đổi ngưỡng tự tin leo thang bằng cấu hình, không biên dịch lại | §3.5 |
-| **FR-MDL-06** | Hệ thống ghi nhận tỷ lệ sử dụng System 1 / System 2 và chi phí từng lượt | P0 *(System 2: mỗi lượt gọi model một sự kiện `system_two_call` — provider, model, độ trễ, token, `cost_usd`; không prompt, không key — TSK-S2-11. Tỷ lệ S1/S2 đọc từ `intent_extracted` và `system_two_call`, chưa có tổng hợp)* | Số liệu xuất hiện trong tệp vết ghi của mỗi phiên | §12.1 |
-| **FR-MDL-07** | **Provider pluggable:** LLM, ASR và TTS kết nối qua chuẩn OpenAI API hoặc adapter do người dùng tự viết | P0 *(LLM của System 2 đạt: bảng `[system_two]`, LiteLLM, `api_base` cho endpoint tương thích OpenAI — TSK-S2-11; ASR/TTS: TSK-S3-13)* | Thêm một provider tương thích OpenAI chỉ bằng cấu hình endpoint và khóa, không sửa mã | §3.6, §6.1 |
-| **FR-MDL-08** | **Adapter tùy chỉnh:** người dùng viết được logic kết nối riêng cho provider chưa hỗ trợ chuẩn OpenAI | P0 *(LLM đạt: `provider = "python:pkg.mod:factory"`, hợp đồng `neuroedge/models/providers/base.py` — TSK-S2-11)* | Một adapter mẫu do bên ngoài viết chạy được mà không sửa lõi NeuroEdge | §3.6 |
-| **FR-MDL-10** | **Hành động là tool call (Q-24):** mọi `@action` là một tool có schema sinh từ chữ ký; `SystemOne`, `SystemTwo`, ngữ pháp lệnh cục bộ và client MCP gọi hành động bằng cùng một `ToolCall`, qua cùng một gate — theo `docs/spec/tool_calling.md` | P0 | Tool lạ hoặc tham số lạ/sai kiểu ⇒ `REJECTED`, không chân nào đổi; cùng một lời gọi từ nguồn khác nhau nhận cùng phán quyết trừ khi gate đọc `call_source`; mất mạng thì câu khớp ngữ pháp vẫn thành tool call; runtime qua corpus `fixtures/tool_calls/` (`docs/spec/tool_calling.md` §9) | §3.6, Q-24 |
-| **FR-MDL-12** | **System 2 là MCP host (Q-27):** gọi tool của thiết bị qua MCP server của chính agent (vẫn qua gate) và tool **thông tin** của MCP server bên ngoài khai trong `[mcp.servers]` (allowlist); kết quả bên ngoài là dữ liệu không tin cậy | P0 | Tool ngoài allowlist ⇒ `REJECTED`; server không chạy ⇒ `mcp_server_unavailable`, tool thiết bị vẫn chạy; nội dung bên ngoài bị cài lệnh không vượt được gate; vết ghi chỉ có digest | `docs/spec/tool_calling.md` §10 |
-| **FR-MDL-11** | **Vòng tool của System 2:** kết quả mỗi tool call (kể cả BLOCK và lý do) trả lại cho System 2 để trả lời người dùng; số vòng có giới hạn khai báo | P0 *(có trên `sim` — TSK-S3-28; với provider thật — TSK-S2-11)* | Gate chặn ⇒ System 2 nói lý do thay vì lặp lại lời gọi; quá giới hạn vòng ⇒ dừng, ghi sự kiện | `docs/spec/tool_calling.md` §4 |
+| **FR-MDL-06** | Hệ thống ghi nhận tỷ lệ sử dụng System 1 / System 2 và chi phí từng lượt | P0 | Số liệu xuất hiện trong tệp vết ghi của mỗi phiên: mỗi lượt gọi System 2 là một sự kiện `system_two_call` (provider, model, độ trễ, token, `cost_usd`; không prompt, không key); tỷ lệ S1/S2 đọc từ `intent_extracted` và `system_two_call` | §12.1 |
+| **FR-MDL-07** | **Provider pluggable:** LLM, ASR và TTS kết nối qua chuẩn OpenAI API hoặc adapter do người dùng tự viết | P0 | Thêm một provider tương thích OpenAI chỉ bằng cấu hình endpoint và khóa (bảng `[system_two]`: `model`, `api_base`, `api_key_env`), không sửa mã | §3.6, §6.1 |
+| **FR-MDL-08** | **Adapter tùy chỉnh:** người dùng viết được logic kết nối riêng cho provider chưa hỗ trợ chuẩn OpenAI | P0 | Một adapter mẫu do bên ngoài viết (`provider = "python:pkg.mod:factory"`, hợp đồng `neuroedge/models/providers/base.py`) chạy được mà không sửa lõi NeuroEdge | §3.6 |
 | **FR-MDL-09** | **ASR/TTS là provider:** STT và TTS không gắn cứng vào một thư viện, thay thế được qua cấu hình | P0 | Đổi nhà cung cấp STT và TTS chỉ bằng cấu hình; agent và gate không đổi | §3.4, §3.6 |
+| **FR-MDL-10** | **Hành động là tool call (Q-24):** mọi `@action` là một tool có schema sinh từ chữ ký; `SystemOne`, `SystemTwo`, ngữ pháp lệnh cục bộ và client MCP gọi hành động bằng cùng một `ToolCall`, qua cùng một gate — theo `docs/spec/tool_calling.md` | P0 | Tool lạ hoặc tham số lạ/sai kiểu ⇒ `REJECTED`, không chân nào đổi; cùng một lời gọi từ nguồn khác nhau nhận cùng phán quyết trừ khi gate đọc `call_source`; mất mạng thì câu khớp ngữ pháp vẫn thành tool call; runtime qua corpus `fixtures/tool_calls/` (`docs/spec/tool_calling.md` §9) | §3.6, Q-24 |
+| **FR-MDL-11** | **Vòng tool của System 2:** kết quả mỗi tool call (kể cả BLOCK và lý do) trả lại cho System 2 để trả lời người dùng; số vòng có giới hạn khai báo | P0 | Gate chặn ⇒ System 2 nói lý do thay vì lặp lại lời gọi; quá giới hạn vòng ⇒ dừng, ghi sự kiện | `docs/spec/tool_calling.md` §4 |
+| **FR-MDL-12** | **System 2 là MCP host (Q-27):** gọi tool của thiết bị qua MCP server của chính agent (vẫn qua gate) và tool **thông tin** của MCP server bên ngoài khai trong `[mcp.servers]` (allowlist); kết quả bên ngoài là dữ liệu không tin cậy | P0 | Tool ngoài allowlist ⇒ `REJECTED`; server không chạy ⇒ `mcp_server_unavailable`, tool thiết bị vẫn chạy; nội dung bên ngoài bị cài lệnh không vượt được gate; vết ghi chỉ có digest | `docs/spec/tool_calling.md` §10 |
 
 ### 4.4 Tầng nhận thức và runtime hội thoại (FR-PER)
 
@@ -311,10 +305,10 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-ACE-04** | Decorator `@action` ràng buộc `requires` tham gia đối chiếu năng lực lúc build | P0 | Thiếu năng lực → build dừng, chỉ rõ dòng mã gọi | §4.4 |
 | **FR-ACE-05** | Decorator `@action` bắt buộc trỏ tới một gate đã khai báo trong `agent.toml` | P0 | Thiếu khai báo gate → build dừng | §4.4 |
 | **FR-ACE-06** | Mỗi phiên tương tác sinh một tệp vết ghi JSON đầy đủ | P0 | Tệp chứa độ trễ từng chặng, kết quả đánh giá gate, lệnh actuator | §3.5 |
-| **FR-ACE-08** | **Ràng buộc tham số trong gate (Q-25):** gate khai khoảng/tập giá trị cho tham số của hành động; kế thừa chỉ thu hẹp | P0 *(✅ TSK-S3-25)* | Tool call với tham số ngoài khoảng ⇒ BLOCK `argument_out_of_range`, chân không đổi; gate con nới khoảng ⇒ `GateInheritanceError` | RFC-0005 |
-| **FR-ACE-09** | **Nguồn gọi là dữ kiện tin cậy:** dispatcher chèn `call_source`; bên gọi không tự khai được | P0 | Tool call mang tham số `call_source` ⇒ `REJECTED`; gate giới hạn được nguồn gọi | `docs/spec/tool_calling.md` §5 |
-| **FR-ACE-10** | **Chỉ người xác nhận `ask` (Q-26):** lời xác nhận đến từ kênh thiết bị, gắn với lần bị chặn, dùng một lần, có hạn | P0 *(✅ TSK-S3-26)* | Xác nhận từ `system_two` hoặc `mcp` bị từ chối; xác nhận quá hạn hoặc dùng lại ⇒ không có tác dụng; xác nhận hợp lệ ⇒ gate lượng giá lại, chỉ thay tiêu chí trong `confirms` (RFC-0006) | `docs/spec/tool_calling.md` §6 |
 | **FR-ACE-07** | Tách biệt kiểu giữa hành vi phát ngôn (`c.say()`) và hành vi vật lý (`c.do()`) | P0 | `c.say()` không đi qua gate; `c.do()` luôn đi qua gate | §4.6 |
+| **FR-ACE-08** | **Ràng buộc tham số trong gate (Q-25):** gate khai khoảng/tập giá trị cho tham số của hành động; kế thừa chỉ thu hẹp | P0 | Tool call với tham số ngoài khoảng ⇒ BLOCK `argument_out_of_range`, chân không đổi; gate con nới khoảng ⇒ `GateInheritanceError` | RFC-0005 |
+| **FR-ACE-09** | **Nguồn gọi là dữ kiện tin cậy:** dispatcher chèn `call_source`; bên gọi không tự khai được | P0 | Tool call mang tham số `call_source` ⇒ `REJECTED`; gate giới hạn được nguồn gọi | `docs/spec/tool_calling.md` §5 |
+| **FR-ACE-10** | **Chỉ người xác nhận `ask` (Q-26):** lời xác nhận đến từ kênh thiết bị, gắn với lần bị chặn, dùng một lần, có hạn | P0 | Xác nhận từ `system_two` hoặc `mcp` bị từ chối; xác nhận quá hạn hoặc dùng lại ⇒ không có tác dụng; xác nhận hợp lệ ⇒ gate lượng giá lại, chỉ thay tiêu chí trong `confirms` (RFC-0006) | `docs/spec/tool_calling.md` §6 |
 
 ### 5.2 Định dạng cổng an toàn (FR-GATE)
 
@@ -323,7 +317,7 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-GATE-01** | Gate là tệp YAML có schema `neuroedge.gate/v1`, **không phải mã nguồn** | P0 | Gate đọc, diff và review được trong pull request | §3.5 |
 | **FR-GATE-02** | Gate có 8 trường cấp cao: `schema`, `name`, `version`, `extends`, `evaluate`, `allow_when`, `on_block`, `budget`. Chỉ `schema`, `name`, `version` **luôn bắt buộc**; `evaluate`, `allow_when`, `on_block`, `budget` bắt buộc khi gate **không có** `extends` *(RFC-0001)*. `budget.fail` tuỳ chọn — vắng mặt nghĩa là `closed` | P0 | Thiếu trường bắt buộc theo điều kiện trên → `GateSchemaError`; gate có `extends` lược bốn trường kế thừa vẫn hợp lệ | Phụ lục B.1, RFC-0001 |
 | **FR-GATE-03** | Khối `evaluate` hỗ trợ 3 kiểu: `bool`, `level`, `choice`, kèm toán tử điều kiện tương ứng. `allow_when` **dạng ánh xạ toán tử là dạng v1**; dạng chuỗi CEL chỉ được phép ở gate không có `extends` — trong chuỗi kế thừa bị từ chối, fail-closed, vì không chứng minh được con chặt hơn cha. *Cho tới khi trình biên dịch CEL xong (TSK-S2-06, đang hoãn), `gate lint` từ chối cả CEL ở gate độc lập (`GateSchemaError`) — fail-closed, không phải lượng giá thiếu* | P0 | Ba kiểu chạy đúng với toán tử `eq`, `lte`, `gte`, `in`, `not_in`, `confidence_gte`; `allow_when` dạng chuỗi trong chuỗi `extends` → `GateInheritanceError` | Phụ lục B.2, Q-9 |
-| **FR-GATE-04** | Khối `on_block` hỗ trợ 4 hành vi: `escalate`, `deny`, `ask`, `degrade`. Ở v1.0, **mọi** `on_block` đều chặn hành động vật lý; `escalate`/`ask` ghi sự kiện + gọi hook (mặc định no-op); `degrade` chạy `fallback_action` qua gate của chính nó *(Q-17)* | P0 | Bốn hành vi chạy đúng và được ghi vào vết | Phụ lục B.3 |
+| **FR-GATE-04** | Khối `on_block` hỗ trợ 4 hành vi: `escalate`, `deny`, `ask`, `degrade`. Ở v1.0, **mọi** `on_block` đều chặn hành động vật lý; `escalate`/`ask` ghi sự kiện + gọi hook (mặc định no-op); `degrade` chạy `fallback_action` qua gate của chính nó *(Q-17)*. `ask` có `confirms`: lời xác nhận của người trên kênh thiết bị làm gate lượng giá lại *(Q-26, RFC-0006)* | P0 | Bốn hành vi chạy đúng và được ghi vào vết | Phụ lục B.3 |
 | **FR-GATE-05** | Gate kế thừa được qua `extends` từ URI gate cơ sở | P0 | Kéo gate cộng đồng về, ghi đè phần riêng, chạy đúng | Phụ lục B.5 |
 | **FR-GATE-06** | **Gate con chỉ được siết chặt, tuyệt đối không được nới lỏng** (B.5 nguyên tắc 2) — với `allow_when`, và từ RFC-0004 cả với `budget`/`on_block` *(Q-18)*: `p95_latency_ms` của con ≤ của cha; con không được tự đưa vào `degrade`/`fallback_action` mới (chỉ giữ nguyên của cha), được đổi sang `deny`/`escalate`/`ask` và đổi `to`/`message` | P0 | Gate con nới lỏng `allow_when`, `budget` hoặc `on_block` của cha → `GateInheritanceError` (NE2003, nguyên tắc 2), từ chối phân giải *(phần `budget`/`on_block`: TSK-S2-13)* | Phụ lục B.5, RFC-0004 |
 | **FR-GATE-07** | `fail: open` **không kế thừa**; phải khai báo tường minh tại từng cấp (B.5 nguyên tắc 4). Từ RFC-0004: chuỗi đã phân giải thành `closed` (khai hoặc mặc định) thì gate con **không được** mở lại bằng `fail: open` *(Q-18)* | P0 | Gate cha `fail: open`, gate con không khai báo → gate con là `closed`; chuỗi đã `closed`, con khai `fail: open` → `GateInheritanceError` (NE2003, nguyên tắc 4) | Phụ lục B.5, RFC-0004 |
@@ -358,7 +352,7 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-CI-04** | **Golden Reference:** cố định chuỗi phán quyết chuẩn; lệch mẫu chuẩn làm CI báo đỏ | P0 | Đổi prompt gây lệch phán quyết → CI thất bại, chỉ rõ điểm lệch | §3.7 |
 | **FR-CI-05** | Action CI chạy tự động trên `sim` và `linux` với mỗi pull request | P0 | Pipeline CI mẫu có sẵn trong dự án scaffold | §3.2 |
 | **FR-CI-06** | Action CI chạy tự động hàng đêm trên bo mạch `esp32s3` thật | P0 | Có cấu hình runner nightly và báo cáo kết quả | §3.2 |
-| **FR-CI-07** | Lệnh `neuroedge verify` kiểm tra tính nhất quán phán quyết gate và trạng thái GPIO giữa các môi trường bậc 1 | P0 | Sai lệch sinh `TargetEquivalenceError` chỉ rõ sự kiện lệch đầu tiên | §8.2 |
+| **FR-CI-07** | Lệnh `neuroedge verify` kiểm tra tính nhất quán phán quyết gate và trạng thái GPIO giữa các môi trường bậc 1 | P0 | Sai lệch sinh `SafetyRegressionError` (NE4002) chỉ rõ sự kiện lệch đầu tiên | §8.2 |
 
 ### 6.2 Ba cấp độ đảm bảo (FR-CI-LVL)
 
@@ -408,7 +402,7 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-DX-02** | Cài đặt và chạy `sim` **không yêu cầu** tài khoản, API key hay thẻ thanh toán. Đầu vào mặc định của `sim` là **gõ chữ** → bộ khớp ngữ pháp lệnh; giọng nói là tuỳ chọn *(Q-15)* | P0 | Máy sạch, không mạng nội bộ đặc biệt, không key: hoàn thành hành trình 10 phút bằng lệnh gõ chữ. `pip install neuroedge` không kéo LiteLLM — phụ thuộc cloud nằm ở extra `neuroedge[cloud]` *(Q-10)* | §4.10 |
 | **FR-DX-03** | Time-to-first-value trung vị dưới 10 phút, đo trên 10 lập trình viên độc lập | P0 | Biên bản đo có mốc thời gian từng bước của 10 người | §12.1 |
 | **FR-DX-04** | Mọi thông báo lỗi nêu rõ: cái gì sai, ở đâu, và cách xử lý | P0 | Rà soát toàn bộ mã lỗi tại Phụ lục B đạt đủ 3 thành phần | §4.9 |
-| **FR-DX-05** | Tài liệu có ít nhất 3 ứng dụng mẫu hoàn chỉnh chạy được | P0 | Ba mẫu chạy thành công trên máy sạch theo hướng dẫn. Hiện có: `villa-concierge` (chốt cửa), `home-voice` (trợ lý giọng nói: RAG, tin tức, đèn) | §12.1 |
+| **FR-DX-05** | Tài liệu có ít nhất 3 ứng dụng mẫu hoàn chỉnh chạy được | P0 | Ba mẫu chạy thành công trên máy sạch theo hướng dẫn *(tiến độ: TSK-S3-08)* | §12.1 |
 | **FR-DX-06** | Tài liệu có ít nhất 1 video hoặc ảnh động minh họa trực quan trong README | P0 | Có tài sản trực quan dưới 30 giây thể hiện vòng lặp giá trị | §12.1 |
 | **FR-DX-07** | Công cụ lint của dự án mẫu chặn khẳng định so khớp văn bản do System 2 sinh ra | P1 | Test vi phạm FR-CI-L3 bị lint báo lỗi | §3.7 |
 
@@ -423,10 +417,10 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-CLI-03** | Kiểm thử | `neuroedge test` · `neuroedge verify --targets sim,linux,esp32s3` | P0 | `test` thoát 0 khi mọi khẳng định đạt, 1 khi có khẳng định sai; `verify` lệch giữa các target → mã 1, chỉ rõ sự kiện lệch đầu tiên (FR-CI-07); quét được 0 artifact (gate, vết ghi chuẩn mực hoặc lượt replay) → `VerificationError` (NE4004), mã 1, không thoát 0 (TSK-S3-19) | §4.8 |
 | **FR-CLI-04** | Chẩn đoán | `neuroedge record --target <t> --out <thư-mục>` · `neuroedge trace validate <tệp>` · `neuroedge replay <tệp> --target <t>` · `neuroedge trace view <tệp>` · `neuroedge trace export --format chrome <tệp>` | P0 · `view`/`export`: P1 | `record` sinh tệp qua được `trace validate`; `trace validate` có một tệp sai → cả lệnh mã 1 kèm `TraceValidationError`; `replay` cho cùng chuỗi phán quyết (FR-CI-02); `record --target esp32s3 --port <cổng>` đọc vết ghi từ UART (cả trên QEMU); `trace view` sinh một tệp HTML tĩnh mở không cần mạng | §4.8 |
 | **FR-CLI-05** | Hệ sinh thái gate | `neuroedge gate publish <tệp>` · `neuroedge gate add <uri>` · `neuroedge gate explain <tệp\|uri>` | P1 | `publish` in mã băm SHA-256 của JSON chuẩn tắc RFC 8785, hai lần chạy cho cùng mã băm; `add` phân giải gate từ registry và nêu ràng buộc kế thừa sẽ áp đặt; `explain` nêu mỗi tiêu chí do cấp nào đưa vào, mệnh đề nào con siết chặt so với cha, ngân sách và `on_block` — gate phân giải lỗi → mã 1 kèm lỗi 3 thành phần | §4.8 |
-| **FR-CLI-10** | Tích hợp tool | `neuroedge mcp tools [--json\|--openai] [--external]` · `neuroedge mcp serve [--agent a.toml] [--ui]` · `neuroedge mcp desktop-config [--agent a.toml] [--ui] [--write]` | P1 | `tools` in schema mỗi `@action`; `serve` là máy chủ MCP qua stdio (`--ui`: cùng phiên với giao diện web `sim`), mỗi `tools/call` đi qua `dispatch()` và gate (Q-24); `desktop-config` in (hoặc ghi, có sao lưu, chỉ đúng một mục `mcpServers`) cấu hình Claude Desktop bằng đường dẫn tuyệt đối; thiếu extra `mcp` ⇒ mã 1 kèm cách cài | §4.8 |
 | **FR-CLI-09** | Cổng an toàn gate | `neuroedge gate lint [thư-mục] [--registry <dir>]` | P0 | **Đây là cổng kiểm tra an toàn**, không phải thẩm định lược đồ: phân giải toàn bộ chuỗi `extends` của mọi gate và cưỡng chế các nguyên tắc Phụ lục B.5 (kể cả phần mở rộng Q-18). Vi phạm → mã 1 kèm `GateInheritanceError` hoặc `GateSchemaError`; corpus phản chứng `fixtures/gates/invalid/` BẮT BUỘC thoát **đúng** mã 1 trong CI. Thẩm định lược đồ đơn lẻ không đủ để kết luận gate an toàn | Phụ lục B.5 |
 | **FR-CLI-10** | Phân giải gate | `neuroedge gate resolve <tệp\|URI> [--json] [--registry <dir>]` | P0 | In chính sách hiệu dụng và mã băm; chuỗi vi phạm → mã 1 với cùng lỗi như `gate lint`; cùng đầu vào cho cùng mã băm | Phụ lục B.5 |
 | **FR-CLI-11** | Bo mạch | `neuroedge board list` · `neuroedge board show <id>` · `neuroedge board validate <path>` *(RFC-0002 PR2, Giai đoạn 2)* | P0 · `validate`: Giai đoạn 2 | `board show` in năng lực theo 5 nguyên thủy (FR-HAL-01); `board validate` tệp sai lược đồ → mã 1 kèm `BoardCapabilityError`; trước RFC-0002 PR2, `board validate` thoát mã 2 | §4.2, RFC-0002 |
+| **FR-CLI-12** | Tích hợp tool | `neuroedge mcp tools [--json\|--openai] [--external]` · `neuroedge mcp serve [--agent a.toml] [--ui]` · `neuroedge mcp desktop-config [--agent a.toml] [--ui] [--write]` | P1 | `tools` in schema mỗi `@action`; `serve` là máy chủ MCP qua stdio (`--ui`: cùng phiên với giao diện web `sim`), mỗi `tools/call` đi qua `dispatch()` và gate (Q-24); `desktop-config` in (hoặc ghi, có sao lưu, chỉ đúng một mục `mcpServers`) cấu hình Claude Desktop bằng đường dẫn tuyệt đối; thiếu extra `mcp` ⇒ mã 1 kèm cách cài | §4.8 |
 
 **Yêu cầu chung cho toàn bộ CLI:**
 
@@ -440,11 +434,11 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 
 ## 8. Yêu cầu chức năng — Tầng dịch vụ thương mại
 
-**§8.1 (FR-GW) là lõi mã nguồn mở thuộc mốc v1.0** — lớp trừu tượng nhà cung cấp do người dùng tự vận hành, không thu phí. **§8.2 (FR-FLT) và §8.3 (FR-REG) thuộc mốc v1.1**, chỉ khởi động khi đạt điều kiện §3.3. Fleet OS là dịch vụ thương mại duy nhất.
+**§8.1 (FR-GW) là lõi mã nguồn mở**, giao theo hai mốc (Q-28: FR-GW-01 và 03 ở mức tối thiểu trong v1.0, phần còn lại ở v1.1) — lớp trừu tượng nhà cung cấp do người dùng tự vận hành, không thu phí. **§8.2 (FR-FLT) và §8.3 (FR-REG) thuộc mốc v1.1**, chỉ khởi động khi đạt điều kiện §3.3. Fleet OS là dịch vụ thương mại duy nhất.
 
 ### 8.1 Lớp trừu tượng nhà cung cấp (FR-GW)
 
-Nhóm FR-GW chuyển từ dịch vụ thương mại mốc v1.1 sang **lõi mã nguồn mở mốc v1.0** (xem §3.2). Người dùng tự chạy lớp này, tự cấu hình provider và tự giữ khóa; NeuroEdge không vận hành cổng trung gian và không bán lại token.
+Nhóm FR-GW chuyển từ dịch vụ thương mại sang **lõi mã nguồn mở** (CR-1.0); mốc giao của từng yêu cầu theo Q-28 và §3.2. Người dùng tự chạy lớp này, tự cấu hình provider và tự giữ khóa; NeuroEdge không vận hành cổng trung gian và không bán lại token.
 
 | Mã | Yêu cầu | Ưu tiên | Tiêu chí nghiệm thu | Nguồn |
 |:---|:---|:---:|:---|:---:|
@@ -520,7 +514,7 @@ Bảy đường ray (FR-REG-01→07, khớp proposal §8.5) rẻ ở giai đoạ
 
 ### 9.4 Bảo mật (NFR-SEC)
 
-Năm lớp phòng thủ theo proposal §5 — hành động vật lý, thiết bị, mạng, quyền riêng tư *(đặc tả riêng ở §9.5 của tài liệu này)*, cập nhật — hoạt động theo chế độ mặc định. Bảng dưới thêm hai nhóm yêu cầu ngoài năm lớp đó: mã bên thứ ba (đường ray 7, proposal §8.5) và nhà cung cấp bên ngoài (hệ quả của P-4).
+Các lớp phòng thủ theo proposal §5 — hành động vật lý, bên gọi không tin cậy (NFR-SEC-09), thiết bị, mạng, quyền riêng tư *(đặc tả riêng ở §9.5 của tài liệu này)*, cập nhật — hoạt động theo chế độ mặc định. Bảng dưới thêm hai nhóm yêu cầu ngoài các lớp đó: mã bên thứ ba (đường ray 7, proposal §8.5) và nhà cung cấp bên ngoài (hệ quả của P-4).
 
 | Mã | Lớp | Yêu cầu | Ưu tiên |
 |:---|:---|:---|:---:|
@@ -531,8 +525,8 @@ Năm lớp phòng thủ theo proposal §5 — hành động vật lý, thiết b
 | **NFR-SEC-05** | Mạng | Mỗi thiết bị có chứng chỉ mật mã riêng, thu hồi được | P0 |
 | **NFR-SEC-06** | Cập nhật | Firmware ký số; xác minh chữ ký trên chip trước khi áp dụng | P0 |
 | **NFR-SEC-07** | Mã bên thứ ba | Sandbox giới hạn quyền truy cập chân actuator nhạy cảm | P0 (v1.1) |
-| **NFR-SEC-09** | Bên gọi tool | MCP ở v1.0 chỉ qua **stdio** (bên chạy tiến trình là người vận hành); transport mạng cần xác thực và là việc hoãn (`TODOS.md` #24). LLM và client MCP là bên gọi **không tin cậy** — `docs/spec/threat_model.md` §2b | P0 |
 | **NFR-SEC-08** | Nhà cung cấp bên ngoài | Dữ liệu âm thanh và văn bản gửi tới provider cloud phải đi qua kênh mã hóa TLS 1.3; hệ thống ghi nhận provider đang dùng trong vết ghi. Việc chọn provider tuân thủ quy định là trách nhiệm của người dùng | P0 |
+| **NFR-SEC-09** | Bên gọi tool | MCP ở v1.0 chỉ qua **stdio** (bên chạy tiến trình là người vận hành); transport mạng cần xác thực và là việc hoãn (`TODOS.md` #24). LLM và client MCP là bên gọi **không tin cậy** — `docs/spec/threat_model.md` §2b | P0 |
 
 ### 9.5 Quyền riêng tư (NFR-PRIV)
 
@@ -611,7 +605,7 @@ Mỗi mốc chỉ được công bố khi đạt **toàn bộ** tiêu chí tươ
 | **A2** | Tương đương môi trường | `neuroedge verify` đạt **100%** trên các target bậc 1: `sim`, `linux`, `esp32s3` | Chạy trong CI, lưu nhật ký |
 | **A3** | Không có đường tắt tới actuator | **0** lối đi kích hoạt GPIO bỏ qua gate | Rà soát mã và kiểm thử thâm nhập |
 | **A4** | Fail-closed | **100%** kịch bản suy giảm đều chặn hành động — riêng mất mạng: lượng giá qua fallback lệnh cục bộ, chặn khi fallback không chạy *(Q-14)* | Bộ kịch bản: mất mạng (có và không có fallback), timeout, dữ liệu mô hình không hợp lệ |
-| **A5** | Kế thừa gate an toàn | Gate con nới lỏng `allow_when` bị từ chối trong **100%** trường hợp | Bộ kiểm thử phân giải kế thừa |
+| **A5** | Kế thừa gate an toàn | Gate con nới lỏng gate cha — `allow_when`, `budget`, `on_block` (Q-18) hoặc `arguments` (Q-25) — bị từ chối trong **100%** trường hợp | Bộ kiểm thử phân giải kế thừa · corpus `fixtures/gates/invalid/` qua `neuroedge gate lint` |
 | **A6** | Độ ổn định trên vi điều khiển | **24 giờ** chạy liên tục không tràn bộ nhớ, với pipeline thu/phát âm thanh + máy trạng thái hội thoại + thẩm định gate *(STT/TTS đặt ở provider cloud)* | Kiểm thử chịu tải trên bo mạch tham chiếu |
 | **A7** | Vết ghi hợp lệ | **100%** phiên sinh tệp qua được `neuroedge trace validate` | Chạy tự động trong CI |
 | **A8** | Tài liệu | 3 ứng dụng mẫu chạy được + 1 tài sản trực quan trong README | Kiểm chứng trên máy sạch |
@@ -633,14 +627,14 @@ Mỗi mốc chỉ được công bố khi đạt **toàn bộ** tiêu chí tươ
 
 | # | Tiêu chí | Ngưỡng |
 |:---:|:---|:---|
-| **C1** | Độ tin cậy OTA | 1.000 thiết bị / 0 sự cố brick |
-| **C2** | Độ trễ thoại *(đo trọn vòng qua provider cloud)* | P95 < 850 ms với provider streaming · P95 < 1.500 ms với provider request-response, qua Wi-Fi |
-| **C3** | Độ trễ thẩm định gate | P95 < 120 ms cục bộ · < 450 ms khi cần dữ liệu từ provider cloud |
-| **C4** | Hiệu quả định tuyến | Tiết kiệm ≥ 60% chi phí token |
+| **C1** | Độ tin cậy OTA | Đạt NFR-REL-01 |
+| **C2** | Độ trễ thoại *(đo trọn vòng qua provider cloud)* | Đạt NFR-PERF-01 và NFR-PERF-07 |
+| **C3** | Độ trễ thẩm định gate | Đạt NFR-PERF-02 và NFR-PERF-03 |
+| **C4** | Hiệu quả định tuyến | Đạt NFR-PERF-05 |
 | **C5** | Chia sẻ gate cộng đồng | ≥ 20 gate đạt từ 5 lượt cài đặt bởi người dùng độc lập |
 | **C6** | Cơ cấu doanh thu | Doanh thu Fleet đạt ngưỡng hòa vốn theo mô hình chỉ-Fleet *(NeuroEdge không còn doanh thu inference)* |
 | **C7** | Đồng nhất định dạng vết ghi | Vết ghi từ lớp trừu tượng provider replay được trên máy cá nhân, không chuyển đổi |
-| **C8** | Độ trễ quyết định `SystemOne` có cấu trúc | < 100 ms (NFR-PERF-04), đo trên lưu lượng thực qua FR-TEL-06 |
+| **C8** | Độ trễ quyết định `SystemOne` có cấu trúc | Đạt NFR-PERF-04, đo trên lưu lượng thực qua FR-TEL-06 |
 
 ---
 
@@ -655,25 +649,27 @@ Nguyên tắc: **mọi chỉ số trong mục này phải có một yêu cầu �
 | **FR-TEL-01** | CLI thu thập số liệu **ẩn danh, có thể tắt (opt-out)** về các mốc: cài đặt, khởi tạo dự án, lần chạy `sim` đầu tiên, lần build phần cứng đầu tiên | TTFV, tỷ lệ chuyển đổi sim → phần cứng | P0 |
 | **FR-TEL-02** | Chính sách thu thập số liệu công bố rõ ràng; lệnh tắt nêu ngay trong lần chạy đầu | Niềm tin cộng đồng | P0 |
 | **FR-TEL-03** | Vết ghi ghi nhận tỷ lệ System 1 / System 2 và chi phí từng lượt | Hiệu quả định tuyến | P0 |
-| **FR-TEL-04** | Registry ghi nhận số lượt tải và lượt kế thừa từng gate, phân biệt tác giả và người dùng khác | Chia sẻ gate cộng đồng, chỉ số G2/G3 | P0 (v1.1) |
+| **FR-TEL-04** | Registry ghi nhận số lượt tải và lượt kế thừa từng gate, phân biệt tác giả và người dùng khác | Chia sẻ gate cộng đồng, cột mốc G2/G3 (proposal §8.7) | P0 (v1.1) |
 | **FR-TEL-05** | Fleet OS ghi nhận kết quả từng chiến dịch OTA: số thiết bị, tỷ lệ lỗi, số ca rollback | Độ tin cậy OTA | P0 (v1.1) |
 | **FR-TEL-06** | Lớp trừu tượng provider ghi nhận độ trễ từng chặng đủ để tính P95 theo từng nhóm tác vụ | SLA độ trễ | P0 |
 
 ### 12.2 Bảng chỉ số theo mốc
 
-| Chỉ số | Mốc | Ngưỡng | Nguồn dữ liệu |
+Ngưỡng nằm ở §11 và §9; bảng này chỉ nối mỗi chỉ số với tiêu chí và nguồn dữ liệu.
+
+| Chỉ số | Mốc | Tiêu chí | Nguồn dữ liệu |
 |:---|:---:|:---|:---|
-| Time-to-first-value | v1.0 | Trung vị < 10 phút | Biên bản đo trực tiếp 10 người |
-| Tương đương môi trường | v1.0 | 100% pass `neuroedge verify` | Nhật ký CI |
-| Tỷ lệ áp dụng Action CI | Beta | ≥ 50% dự án | FR-TEL-01 |
-| Tỷ lệ chuyển đổi sang phần cứng | Beta | ≥ 15% trong 30 ngày | FR-TEL-01 |
-| Độ tin cậy OTA | v1.1 | 1.000 / 0 brick | FR-TEL-05 |
-| Độ trễ thoại P95 | v1.1 | < 850 ms *(provider streaming)* · < 1.500 ms *(provider request-response)* | FR-TEL-06 |
-| Độ trễ gate P95 | v1.1 | < 120 ms cục bộ · < 450 ms cloud | FR-TEL-06 |
-| Độ trễ quyết định `SystemOne` | v1.1 | < 100 ms | FR-TEL-06 |
-| Tiết kiệm chi phí token | v1.1 | ≥ 60% | FR-TEL-03 |
-| Chia sẻ gate cộng đồng | v1.1 | ≥ 20 gate có ≥ 5 lượt cài | FR-TEL-04 |
-| Cơ cấu doanh thu | v1.1 | Fleet đạt ngưỡng hòa vốn theo mô hình chỉ-Fleet | Hệ thống hóa đơn |
+| Time-to-first-value | v1.0 | A1 | Biên bản đo trực tiếp 10 người |
+| Tương đương môi trường | v1.0 | A2 | Nhật ký CI |
+| Tỷ lệ áp dụng Action CI | Beta | B4 | FR-TEL-01 |
+| Tỷ lệ chuyển đổi sang phần cứng | Beta | B5 | FR-TEL-01 |
+| Độ tin cậy OTA | v1.1 | C1 (NFR-REL-01) | FR-TEL-05 |
+| Độ trễ thoại P95 | v1.1 | C2 (NFR-PERF-01, 07) | FR-TEL-06 |
+| Độ trễ gate P95 | v1.1 | C3 (NFR-PERF-02, 03) | FR-TEL-06 |
+| Độ trễ quyết định `SystemOne` | v1.1 | C8 (NFR-PERF-04) | FR-TEL-06 |
+| Tiết kiệm chi phí token | v1.1 | C4 (NFR-PERF-05) | FR-TEL-03 |
+| Chia sẻ gate cộng đồng | v1.1 | C5 | FR-TEL-04 |
+| Cơ cấu doanh thu | v1.1 | C6 | Hệ thống hóa đơn |
 
 **Chỉ số bị loại bỏ có chủ ý:** số sao GitHub, lượt tải trang, lượt xem tài liệu. Các chỉ số này đo sự chú ý, không đo giá trị sử dụng.
 
@@ -700,35 +696,35 @@ Mục này ghi rủi ro **sản phẩm và thực thi**. Rủi ro **chiến lư�
 
 | # | Rủi ro | Mức độ | Dấu hiệu cảnh báo sớm | Phương án ứng phó |
 |:---:|:---|:---:|:---|:---|
-| **R-1** | Phạm vi Khối 1b vượt thời hạn do tối ưu bộ nhớ vi điều khiển | Trung bình *(hạ từ Cao ở v1.1)* | Tuần 9 chưa chạy được vòng lặp thu/phát âm thanh trên bo mạch | Kiến trúc cloud-first đã đưa STT/TTS ra khỏi vi điều khiển, giảm đáng kể áp lực bộ nhớ (P-4, FR-PER-07). Nếu vẫn trượt: cắt phạm vi theo §3.4, giữ `esp32s3` ở mức phán quyết gate |
+| **R-1** | Phạm vi Khối 1b vượt thời hạn do tối ưu bộ nhớ vi điều khiển | Trung bình *(hạ từ Cao theo CR-1.0)* | Tuần 9 chưa chạy được vòng lặp thu/phát âm thanh trên bo mạch | Kiến trúc cloud-first đã đưa STT/TTS ra khỏi vi điều khiển, giảm đáng kể áp lực bộ nhớ (P-4, FR-PER-07). Nếu vẫn trượt: bậc 5 của thang cắt phạm vi (roadmap §9) — giữ `esp32s3` ở mức phán quyết gate |
 | **R-2** | Môi trường `sim` lệch khỏi phần cứng theo thời gian | Cao | `neuroedge verify` bắt đầu có sai lệch lẻ tẻ | Nightly trên bo mạch thật (NFR-REL-03); coi mọi sai lệch là lỗi chặn phát hành |
 | **R-3** | Lập trình viên bỏ qua Action CI, chỉ dùng framework như thư viện thoại | Trung bình | Tỷ lệ áp dụng Action CI dưới 50% ở Beta | Đưa test gate vào scaffold mặc định; tài liệu lấy Action CI làm trung tâm |
 | **R-4** | Nhà cung cấp mô hình thay đổi điều kiện truy cập | Trung bình | Thay đổi điều khoản API, vendor công bố SDK thiết bị | Mở rộng fallback cục bộ vượt ngữ pháp lệnh cố định của Q-14 |
 | **R-5** | Hiệu ứng mạng chia sẻ gate không hình thành | Trung bình | Dưới 3 gate cộng đồng ở cuối Beta | Chuyển trọng tâm sang giá trị đơn lẻ (Action CI + Fleet), hoãn Marketplace vô thời hạn |
-| **R-6** | Phụ thuộc provider cloud khi mất kết nối | Trung bình | Tỷ lệ phiên kết thúc với lý do `gate_unreachable` tăng bất thường · Gián đoạn tích lũy của provider vượt cam kết | Fail-closed đã chặn mọi hành động vật lý khi không thẩm định được gate (NFR-RES-04, A4); gate và máy trạng thái chạy hoàn toàn trên thiết bị. **Fallback cục bộ là P0** *(Q-14)*: bộ nhận diện lệnh cố định giữ gate lượng giá được khi mất mạng; `gate_unreachable` chỉ khi fallback không có hoặc không chạy được |
+| **R-6** | Phụ thuộc provider cloud khi mất kết nối | Trung bình | Tỷ lệ phiên kết thúc với lý do `gate_unreachable` tăng bất thường · Gián đoạn tích lũy của provider vượt cam kết | Fail-closed đã chặn mọi hành động vật lý khi không thẩm định được gate (NFR-RES-04, A4); gate và máy trạng thái chạy hoàn toàn trên thiết bị. **Fallback cục bộ là P0** (Q-14, FR-ACE-03): gate vẫn lượng giá được khi mất mạng |
 | **R-7** | Phủ rộng phần cứng ở Giai đoạn 2 làm loãng chất lượng bậc 1 | Trung bình | Thời gian sửa lỗi trên bo mạch bậc 1 kéo dài · Kiểm thử hằng đêm thất bại thường xuyên hơn · Hỗ trợ bậc 3 chiếm quá 10% thời gian đội lõi | Phân tầng FR-TGT-08: đội lõi chỉ cam kết bậc 1 và bậc 2; bậc 3 do cộng đồng tự port và tự kiểm chứng. Mọi ngưỡng trong §9 và §11 vẫn neo vào bậc 1. Mỗi khối Giai đoạn 2 chỉ thêm tối đa một bo mạch tham chiếu |
 
 ### 13.3 Giả định cần kiểm chứng
 
-Kế thừa từ Phụ lục G của tài liệu nguồn. Mỗi giả định có phương pháp đo và mốc đánh giá.
+**Nơi duy nhất** của danh mục giả định; proposal Phụ lục G dẫn về đây. Mỗi giả định có lý do quan trọng, phương pháp đo và mốc đánh giá.
 
-| # | Giả định | Phương pháp kiểm chứng | Mốc |
-|:---:|:---|:---|:---:|
-| **G-a** | Đơn giá quản trị fleet $1/thiết bị/tháng là mức thị trường chấp nhận | Thử nghiệm gói nâng cao với 5 khách hàng đầu; đo mức sẵn sàng chi trả thêm | Tháng 6 |
-| **G-b** | Tỷ lệ chuyển đổi `sim` → phần cứng ≥ 15% | Số liệu ẩn danh từ CLI (FR-TEL-01); rà soát ở mốc 100 lập trình viên | Tháng 3 |
-| **G-c** | Định tuyến hai mô hình tiết kiệm ≥ 60% chi phí token | Đo trên lưu lượng thực qua lớp trừu tượng provider, tách theo nhóm tác vụ | Tháng 6 |
-| **G-d** | Cộng đồng thực sự muốn chia sẻ và tái sử dụng gate | Tần suất tải và kế thừa trên Registry miễn phí trong 12 tháng | Tháng 12 |
-| **G-e** | Tái hiện vết ghi giảm 70% chuyến đi hiện trường | Dữ liệu bảo hành thực tế từ 3 khách hàng AURA đầu tiên, phân loại nguyên nhân sự cố | Tháng 9 |
+| # | Giả định | Vì sao quan trọng | Phương pháp kiểm chứng | Mốc |
+|:---:|:---|:---|:---|:---:|
+| **G-a** | Đơn giá quản trị fleet $1/thiết bị/tháng là mức thị trường chấp nhận | Quyết định quy mô đội thiết bị cần đạt để hòa vốn (proposal §6.3) | Thử nghiệm gói nâng cao (cam kết SLA, kiểm toán vết) với 5 khách hàng doanh nghiệp đầu; đo mức sẵn sàng chi trả thêm | Tháng 6 |
+| **G-b** | Tỷ lệ chuyển đổi `sim` → phần cứng ≥ 15% | Xác nhận `sim` thật sự là phễu dẫn tới phần cứng (proposal §1.7) | Số liệu ẩn danh từ CLI (FR-TEL-01); rà soát ở mốc 100 lập trình viên | Tháng 3 |
+| **G-c** | Định tuyến hai mô hình tiết kiệm ≥ 60% chi phí token | Minh chứng định lượng cho kiến trúc System 1 / System 2 | Đo trên lưu lượng thực qua lớp trừu tượng provider, tách theo nhóm tác vụ | Tháng 6 |
+| **G-d** | Cộng đồng thực sự muốn chia sẻ và tái sử dụng gate | Cơ sở của hiệu ứng mạng trước khi mở Marketplace | Tần suất tải và kế thừa trên Registry miễn phí trong 12 tháng | Tháng 12 |
+| **G-e** | Tái hiện vết ghi giảm 70% chuyến đi hiện trường | Nền của mô hình TCO (proposal §1.8) | Dữ liệu bảo hành thực tế từ 3 khách hàng AURA đầu tiên, phân loại nguyên nhân sự cố (phần mềm/cấu hình vs hỏng vật lý) | Tháng 9 |
 
 ---
 
 ## 14. Ngoài phạm vi
 
-Danh mục loại trừ tường minh. Mọi đề xuất thuộc danh mục này bị bác bỏ trừ khi có quyết định thay đổi phạm vi chính thức.
+Danh mục loại trừ tường minh — **nơi duy nhất** của trạng thái và điều kiện xem xét lại; phân tích đánh đổi từng dòng ở proposal §9. Mọi đề xuất thuộc danh mục này bị bác bỏ trừ khi có quyết định thay đổi phạm vi chính thức.
 
 | Hạng mục | Trạng thái | Tiêu chí | Điều kiện xem xét lại |
 |:---|:---|:---:|:---|
-| Marketplace thương mại có thu phí | Chặn | PF-3 | Đạt toàn bộ cột mốc G1–G4 |
+| Marketplace thương mại có thu phí | Chặn | PF-3 | Đạt toàn bộ cột mốc G1–G4 (proposal §8.7) |
 | Thanh toán tự động giữa agent | Chặn | PF-4 | Đạt cột mốc và có đánh giá pháp lý riêng |
 | Chương trình chứng nhận phần cứng có thu phí | Chặn | PF-3 | Đạt cột mốc và có quy trình kiểm chuẩn độc lập |
 | Thị giác máy tính (camera, NPU) | **Đưa vào Giai đoạn 2**, tách hai bước | PF-1, PF-3 | **2a mở danh sách target:** RFC-0002 được phê duyệt · **2b hiện thực** (gồm RFC nguyên thủy `vision.in`): nhu cầu camera đo được từ khách hàng thật, TTFV thoại vẫn < 10 phút |
@@ -746,9 +742,9 @@ Danh mục loại trừ tường minh. Mọi đề xuất thuộc danh mục nà
 
 ---
 
-## 15. Quyết định kỹ thuật đã chốt
+## 15. Sổ quyết định
 
-Các quyết định nền tảng đã được chốt chính thức làm cơ sở bắt đầu hiện thực.
+Mọi quyết định kỹ thuật, đã chốt hoặc còn mở — xem cột Trạng thái.
 
 **Đây là sổ quyết định duy nhất của dự án.** Mọi quyết định kỹ thuật, kể cả quyết định phát sinh trong lúc thực thi, đều được cấp mã và ghi tại đây. `neuroedge-roadmap.md` §10 không định nghĩa quyết định mới — nó chỉ theo dõi **hạn chốt, người quyết và trạng thái** của cùng bộ mã này.
 
@@ -762,15 +758,15 @@ Các quyết định nền tảng đã được chốt chính thức làm cơ s�
 | **Q-6** | Chính sách lưu trữ vết ghi Fleet OS | Chờ v1.1 | Quyết định trước Tháng 4 theo các gói dịch vụ Fleet Standard / Enterprise. |
 | **Q-7** | Từ khóa kích hoạt mặc định v1.0 | **ĐÃ CHỐT** | *"Hey Neuro"* (tiếng Anh) qua mô hình `microWakeWord` (tối ưu cho Box-3) và `openWakeWord` (Linux/Sim). |
 | **Q-8** | Ngôn ngữ lõi firmware | **ĐÃ CHỐT** | **C/C++ trên ESP-IDF** cho `esp32s3`; Python cho `sim` và `linux`. Kéo theo nghĩa vụ đặc tả chuẩn tắc và bộ vector tuân thủ dùng chung cho hai hiện thực. |
-| **Q-9** | Lượng giá CEL trên vi điều khiển | **ĐÃ CHỐT** | **Phương án A** — `neuroedge build` biên dịch CEL thành cây quyết định JSON phẳng; firmware chỉ duyệt cây. Không nhúng CEL VM trên thiết bị. |
+| **Q-9** | Lượng giá CEL trên vi điều khiển | **ĐÃ CHỐT** | **Phương án A** — `neuroedge build` biên dịch gate thành cây quyết định tất định; firmware chỉ duyệt cây, không nhúng CEL VM trên thiết bị. Trình biên dịch và bộ duyệt cây là mã NeuroEdge (ngữ nghĩa an toàn, không nhận phụ thuộc); `cel-python` nếu dùng chỉ phân tích cú pháp trên máy tính. Dạng `allow_when` được biên dịch hôm nay là ánh xạ toán tử; chuỗi CEL là front-end tùy chọn về sau (TSK-S2-06, hoãn). *Định dạng cây trên MCU: bố cục nhị phân — Q-23 (thay "JSON phẳng" của bản chốt đầu).* Đã cân nhắc: B — tự viết bộ lượng giá CEL rút gọn bằng C (thêm một hiện thực phải giữ đồng bộ); C — CEL trên host, cú pháp đơn giản hơn trên thiết bị (phá tương đương target ở đúng tầng an toàn). |
 | **Q-10** | Mức độ phụ thuộc vào LiteLLM | **ĐÃ CHỐT** *(2026-09-23)* | LiteLLM dùng như **thư viện định tuyến (SDK)**, không chạy LiteLLM proxy server; luôn nằm sau giao diện nội bộ `neuroedge.models.providers` (adapter Q-12 vẫn là đường thoát). Cài qua **extra `neuroedge[cloud]`** — `pip install neuroedge` không kéo LiteLLM (wheel cài ra ~120 MB do boto3, huggingface_hub), giữ FR-DX-02 nhẹ và keyless. |
-| **Q-11** | Ngoại lệ giấy phép: Hawkbit EPL-2.0, EMQX BSL, LiteLLM | **MỘT PHẦN** | **LiteLLM: ĐÃ DUYỆT** (2026-09-23) — `litellm==1.102.0` giấy phép MIT, wheel không chứa thư mục `enterprise/`, 55 phụ thuộc bắc cầu đều MIT/BSD/Apache-2.0/PSF + MPL-2.0 (`certifi`, `tqdm`) + CNRI-Python (`regex`). **Chính sách phụ thuộc bắc cầu:** cho phép MIT, BSD-2/3-Clause, Apache-2.0, ISC, PSF, CNRI-Python, MPL-2.0 (chỉ dùng nguyên bản, không sửa); *CNRI-Python ghi thêm 2026-09-24:* giấy phép lịch sử của Python 1.6, OSI duyệt, không copyleft, chỉ buộc giữ thông báo bản quyền — đến qua `regex` (litellm → tiktoken → regex), pip tự cài, không đóng gói lại nên không phát sinh nghĩa vụ; cấm GPL/LGPL/AGPL, SSPL, BSL, giấy phép thương mại hoặc không xác định; cưỡng chế bằng bước kiểm giấy phép trong CI (cùng TSK-S2-11). Tiêu chí ra 6 của Sprint 1 nay thoả cho phạm vi Giai đoạn 1; `TSK-S2-11` **không còn bị chặn**. **Hawkbit EPL-2.0 / EMQX BSL: vẫn MỞ**, hạn trước khi mở Khối 2. |
+| **Q-11** | Ngoại lệ giấy phép: Hawkbit EPL-2.0, EMQX BSL, LiteLLM | **MỘT PHẦN** | **LiteLLM: ĐÃ DUYỆT** (2026-09-23) — `litellm==1.102.0` giấy phép MIT, wheel không chứa thư mục `enterprise/`, 55 phụ thuộc bắc cầu đều MIT/BSD/Apache-2.0/PSF + MPL-2.0 (`certifi`, `tqdm`) + CNRI-Python (`regex`). **Chính sách phụ thuộc bắc cầu:** cho phép MIT, BSD-2/3-Clause, Apache-2.0, ISC, PSF, CNRI-Python, MPL-2.0 (chỉ dùng nguyên bản, không sửa); *CNRI-Python ghi thêm 2026-09-24:* giấy phép lịch sử của Python 1.6, OSI duyệt, không copyleft, chỉ buộc giữ thông báo bản quyền — đến qua `regex` (litellm → tiktoken → regex), pip tự cài, không đóng gói lại nên không phát sinh nghĩa vụ; cấm GPL/LGPL/AGPL, SSPL, BSL, giấy phép thương mại hoặc không xác định; cưỡng chế bằng `scripts/check_licences.py` trong job CI `cloud-extra`. **Hawkbit EPL-2.0 / EMQX BSL: vẫn MỞ**, hạn trước khi mở Khối 2. |
 | **Q-12** | Chuẩn kết nối nhà cung cấp AI | **ĐÃ CHỐT** | Chuẩn mặc định là **OpenAI API**; provider chưa tương thích kết nối qua **adapter do người dùng tự viết**. Áp dụng đồng nhất cho LLM, ASR và TTS (FR-MDL-07→09). |
 | **Q-13** | Phân tầng cam kết theo bậc target | **ĐÃ CHỐT** | Ba bậc: **bậc 1** (`sim`, `linux`, `esp32s3`) giữ toàn bộ cam kết chất lượng hiện hành; **bậc 2** do đội lõi bảo trì với cam kết hẹp hơn; **bậc 3** do cộng đồng port và tự kiểm chứng qua Bộ kiểm thử tuân thủ. Nguyên tắc P-2 giữ nguyên hệ quả kỹ thuật ở mọi bậc (FR-TGT-08). |
 | **Q-14** | Hành vi khi mất mạng + fallback cục bộ | **ĐÃ CHỐT** *(2026-09-23)* | Offline ⇒ gate **vẫn lượng giá** bằng bộ nhận diện **lệnh cố định** cục bộ (ngữ pháp lệnh: danh sách câu lệnh → intent, kèm độ tin cậy). Chỉ BLOCK với `gate_unreachable` khi fallback không có / không chạy được; câu không khớp hoặc dưới ngưỡng ⇒ BLOCK theo tiêu chí bình thường. Fallback **lên P0** (FR-ACE-03, FR-MDL-03, R-6). Backend theo target, cùng một ngữ pháp: `sim` = khớp trên chữ gõ (A1, TSK-S2-08); `esp32s3` = ESP-SR MultiNet hoặc TFLite Micro / ESP-NN (KWS tự train < 500 KB), chọn ở Khối 1b; `linux` = TFLite / KWS tương đương (Khối 1b). Thay Sherpa-ONNX. Phải xác minh giấy phép ESP-SR trước Sprint 5; spike TSK-S1-10 đo thêm MultiNet (và WakeNet nếu cân nhắc thay microWakeWord). Q-7 giữ nguyên. |
 | **Q-15** | Đầu vào mặc định của `sim` | **ĐÃ CHỐT** *(2026-09-23)* | Mặc định **gõ chữ** (CLI/UI) → bộ khớp ngữ pháp lệnh của Q-14: không mạng, không key, tất định. Giọng nói là tuỳ chọn (STT cloud khi có key). WakeNet/MultiNet/TFLite Micro chỉ chạy trên chip Espressif ⇒ thuộc `esp32s3`. Hành trình 10 phút bước 2–4 đổi theo (§2.3 của tài liệu này, FR-DX-02). |
 | **Q-16** | GPIO cho `linux` trong CI | **ĐÃ CHỐT** *(2026-09-23)* | CI dùng **`gpio-sim`** (kernel ≥ 5.19, configfs); thí nghiệm 2 giờ trên runner GitHub Ubuntu **trước khi mở A2**. **Mua 1 RPi 5** làm nightly phần cứng và phương án B nếu runner không có `gpio-sim`. HAL `linux` phải ném lỗi khi không có `/dev/gpiochip*`. **Kết quả 2026-09-23:** thí nghiệm đạt — runner GitHub (kernel 6.17 azure) nạp `gpio-sim` từ `linux-modules-extra`; job CI `linux-hal` (TSK-S3-05). Phương án B không cần; RPi 5 chỉ còn cho nightly. |
-| **Q-17** | Hành vi `on_block` ở v1.0 | **ĐÃ CHỐT** *(2026-09-23)* | Với **mọi** `on_block`, hành động vật lý bị chặn. `deny`: chặn. `escalate`/`ask`: chặn + ghi sự kiện vào vết + gọi hook (`on_escalate`/`on_ask`, mặc định no-op). `degrade`: chặn hành động gốc, chạy `fallback_action` **qua gate của chính nó**. Hành vi đặc tả, fail-closed, test 100% ⇒ không phải nợ kỹ thuật, **không cần waiver** (thay waiver roadmap §11.3). Bề mặt tương tác thật thuộc TSK-S2-07 / TSK-S2-09 / Sprint 5. |
+| **Q-17** | Hành vi `on_block` ở v1.0 | **ĐÃ CHỐT** *(2026-09-23)* | Với **mọi** `on_block`, hành động vật lý bị chặn. `deny`: chặn. `escalate`/`ask`: chặn + ghi sự kiện vào vết + gọi hook (`on_escalate`/`on_ask`, mặc định no-op). `degrade`: chặn hành động gốc, chạy `fallback_action` **qua gate của chính nó**. Hành vi đặc tả, fail-closed, test 100% ⇒ không phải nợ kỹ thuật, **không cần waiver** (thay waiver roadmap §11.3). Ai xác nhận `ask` và việc lượng giá lại: Q-26. Người nhận `escalate` thật: `TODOS.md` #20. |
 | **Q-18** | Kế thừa `budget`/`on_block` | **ĐÃ CHỐT** *(2026-09-23, RFC-0004)* | Sửa ngữ nghĩa phân giải: (1) `p95_latency_ms` của con ≤ của cha; (2) chuỗi đã `closed` (khai hoặc mặc định) thì con không được khai `fail: open`; (3) con không được tự đưa vào `degrade`/`fallback_action` mới (chỉ giữ nguyên của cha), được đổi sang `deny`/`escalate`/`ask`, được đổi `to`/`message`. Vi phạm ⇒ `GateInheritanceError`. Đóng lỗ `lax-night`. Task TSK-S2-13. Mở rộng nguyên tắc 2 (mục 1, 3) và nguyên tắc 4 (mục 2) của Phụ lục B.5 proposal — **vẫn năm nguyên tắc**, không thêm nguyên tắc thứ sáu; sửa FR-GATE-06/07. Hồ sơ: `docs/rfc/0004-ke-thua-budget-on-block.md`. |
 | **Q-19** | Lịch Sprint 2–3 | **ĐÃ CHỐT** *(2026-09-23)* | A1 (wedge `sim`, ≈ Sprint 2) **2026-09-28 → 2026-10-25**; A2 (`linux` + Action CI, ≈ Sprint 3) **2026-10-26 → 2026-11-15**; Sprint 4 mở **2026-11-16**. M1 (TTFV < 10') trễ ~2 tuần so với roadmap gốc; Khối 1b lùi tương ứng. Bỏ quy ước "Tuần N ở đây = Tuần N+1 roadmap". Ước lượng V1 ~6,6–7,1 tuần-người trong 7 tuần — sát, không đệm lớn. |
 | **Q-20** | Cổng nhu cầu mềm | **ĐÃ CHỐT** *(2026-09-23)* | Cổng ngày **2026-10-25** (cuối A1), **không chặn A2**. Các thách thức kinh doanh CEO-X2..X5 và TASTE CEO-T1..T4 ghi thành câu hỏi kinh doanh mở, chủ trì trưởng nhóm, rà lại tại cổng (`TODOS.md`). |
@@ -781,6 +777,7 @@ Các quyết định nền tảng đã được chốt chính thức làm cơ s�
 | **Q-25** | Ràng buộc tham số của tool call | **ĐÃ CHỐT** *(2026-09-23; RFC-0005 chấp thuận 2026-09-24, không có `arguments_closed` ở v1)* | Ràng buộc tham số (khoảng, tập giá trị, độ dài) nằm **trong gate**, không trong `agent.toml`: đi cùng gate khi chia sẻ qua registry, kế thừa chỉ thu hẹp, `gate lint` chứng minh được, và đi vào `inputSchema` để mô hình thấy trước. Làm **trước** walker C (TSK-S4-02) để bố cục nhị phân Q-23 có nút tham số ngay từ bản đầu. Bác bỏ `argument_facts` ở agent: tác giả agent nới lỏng được mà lint không thấy. |
 | **Q-26** | Ai xác nhận `on_block: ask` | **ĐÃ CHỐT** *(2026-09-23)* | Chỉ **người, qua kênh thiết bị** (giọng nói/chữ khớp ngữ pháp, nút UI). Nguồn `system_two` và `mcp` không phát được lời xác nhận. Xác nhận gắn câu hỏi + `gate_digest`, dùng một lần, có TTL, và làm gate **lượng giá lại**; chỉ tiêu chí gate tự khai trong `on_block.confirms` được thay (RFC-0006, chấp thuận 2026-09-24) — không bỏ qua gate. Đóng một phần `TODOS.md` #20. `docs/spec/tool_calling.md` §6 |
 | **Q-27** | NeuroEdge làm MCP client | **ĐÃ CHỐT** *(2026-09-23)* | System 2 là **MCP host**: gọi tool của thiết bị qua MCP server của **chính agent** (kết nối in-process, `call_source = system_two` gắn theo kết nối, vẫn qua gate) và gọi MCP server bên ngoài **chỉ để lấy thông tin** — `agent.toml` liệt kê allowlist; kết quả bên ngoài là dữ liệu không tin cậy, vết ghi chỉ lưu digest. Tool bên thứ ba có hiệu ứng vật lý phải bọc thành `@action` có gate. Vòng ReAct có giới hạn `max_rounds`. MCU không làm host. `docs/spec/tool_calling.md` §10 |
+| **Q-28** | Mốc giao lớp trừu tượng provider (FR-GW) | **ĐÃ CHỐT** *(2026-09-24)* | FR-GW là lõi OSS nhưng **không** giao trọn ở v1.0. **v1.0 (Khối 1a) giao FR-GW-01 và FR-GW-03 ở mức tối thiểu**, đúng phạm vi đã có (TSK-S2-11): FR-GW-01 = một bảng `[system_two]` trong `agent.toml` (`provider`, `model`, `api_base`, `api_key_env`) phục vụ mọi provider mà LiteLLM hoặc một adapter tùy chỉnh hỗ trợ; khóa đọc từ biến môi trường, không bao giờ nằm trong `agent.toml`, mã agent hay gate. FR-GW-03 = hợp đồng failover trong mã (`SystemTwo(provider=…, fallback=…)`): provider chính lỗi ⇒ hỏi fallback; không còn đường nào ⇒ `Unavailable`, gate áp `fail` của nó. **Thuộc v1.1 (Khối 2, TSK-K2-01→03):** khai nhiều provider và failover trong `agent.toml` (`TODOS.md` #28); một endpoint và một credential dùng chung cho cả đội thiết bị; FR-GW-02, FR-GW-04 phía máy chủ (client streaming trên MCU là TSK-S5-06, Khối 1b), FR-GW-05, FR-GW-06, FR-GW-07. Tiêu chí TR-1 và TR-6 đo phần v1.1. Lý do: v1.0 chạy trên `sim`/`linux` với một provider do người dùng giữ khóa; phần dành cho đội thiết bị chỉ có nghĩa khi có Fleet OS. §3.2 và §8 theo quyết định này. |
 
 ---
 
@@ -788,21 +785,23 @@ Các quyết định nền tảng đã được chốt chính thức làm cơ s�
 
 ## Phụ lục A — Ma trận truy vết yêu cầu
 
+### A.1 Đối chiếu mục tiêu sản phẩm
+
 Đối chiếu từ mục tiêu sản phẩm tới yêu cầu và tiêu chí nghiệm thu.
 
 | Mục tiêu | Yêu cầu chi phối | Chỉ số | Tiêu chí nghiệm thu |
 |:---|:---|:---|:---|
 | **M1** — TTFV dưới 10 phút | FR-DX-01, FR-DX-02, FR-TGT-01, FR-TGT-06, FR-CLI-01 | TTFV trung vị | A1 |
-| **M2** — Mọi hành động qua hợp đồng | FR-ACE-01→10, FR-MDL-10, FR-GATE-01→10, FR-HAL-07 | Số đường tắt tới actuator | A3, A4, A5 |
+| **M2** — Mọi hành động qua hợp đồng | FR-ACE-01→10, FR-MDL-10→12, FR-GATE-01→10, FR-HAL-07, FR-CLI-12 | Số đường tắt tới actuator | A3, A4, A5 |
 | **M3** — Nhất quán các môi trường bậc 1 | FR-TGT-01→05, FR-CI-07, FR-HAL-06 | Kết quả `neuroedge verify` | A2 |
 | **M4** — Tái hiện sự cố hiện trường | FR-CI-01, FR-CI-02, FR-TRC-01→08, FR-FLT-05 | Thời gian từ sự cố tới tái hiện | A7, C7 |
 | **M5** — Cập nhật quy mô lớn an toàn | FR-OTA-01→04, FR-FLT-02 | Số thiết bị brick | C1 |
 
-### Đối chiếu nguyên tắc bất biến
+### A.2 Đối chiếu nguyên tắc bất biến
 
 | Nguyên tắc | Yêu cầu hiện thực hóa | Yêu cầu kiểm chứng |
 |:---|:---|:---|
-| **P-1** Hợp đồng chuẩn kiểu | FR-ACE-01, FR-ACE-02, FR-ACE-08→10, FR-MDL-10, FR-HAL-07 | A3 |
+| **P-1** Hợp đồng chuẩn kiểu | FR-ACE-01, FR-ACE-02, FR-ACE-08→10, FR-MDL-10→12, FR-HAL-07 | A3 |
 | **P-2** Các môi trường ngang hàng | FR-TGT-01→05, FR-TGT-08 | A2 *(ràng buộc ở bậc 1)* |
 | **P-3** Giá trị ở quản trị fleet | FR-OTA-04, NFR-COMP-02, NFR-COMP-03 | Rà soát ranh giới §6.4 tài liệu nguồn |
 | **P-4** Mô hình thay thế được — cloud-first, provider-pluggable | FR-MDL-01→04, FR-MDL-07→09, FR-PER-07, FR-GW-01→07 | Bài kiểm thử đổi mô hình và đổi provider STT/TTS chỉ bằng cấu hình, không sửa mã agent |
@@ -828,8 +827,9 @@ Yêu cầu phi chức năng **không được truy vết qua task roadmap** mà 
 | **NFR-SEC** | 02, 03 | Rà soát cấu hình Secure Boot, mã hóa flash, TPM và nút ngắt micro trên bo mạch tham chiếu | **cần tiêu chí** *(chưa có tiêu chí mốc A/C nào đo được)* |
 | **NFR-SEC** | 06 | Nạp firmware không chữ ký hoặc sai chữ ký → bị từ chối | Tiêu chí của FR-OTA-03 · **cần tiêu chí mốc** |
 | **NFR-SEC** | 04, 05 | Rà soát TLS 1.3, mTLS, certificate pinning và chứng chỉ riêng từng thiết bị (gắn FR-FLT-01, v1.1) | **cần tiêu chí** |
-| **NFR-SEC** | 08 | Rà soát kênh TLS 1.3 tới provider; kiểm provider được ghi trong vết ghi | **cần tiêu chí** *(`trace.v1.json` hiện chưa có trường provider)* |
+| **NFR-SEC** | 08 | Rà soát kênh TLS 1.3 tới provider; kiểm provider được ghi trong vết ghi | **cần tiêu chí** *(provider nằm trong dữ liệu sự kiện `system_two_call`; `trace.v1.json` không có trường provider riêng)* |
 | **NFR-SEC** | 07 | Kiểm thử sandbox với mã bên thứ ba | — *(v1.1, gắn FR-REG-07)* |
+| **NFR-SEC** | 09 | Test bên gọi không tin cậy (`docs/spec/threat_model.md` §2b) và corpus `fixtures/tool_calls/` | A3 |
 | **NFR-PRIV** | 01, 03, 04 | Rà soát nội dung tệp vết ghi sinh ra ở chế độ mặc định | A7 |
 | **NFR-PRIV** | 02 | Rà soát ranh giới xử lý on-device và cloud theo P-4 | — *(rà soát kiến trúc)* |
 | **NFR-OBS** | 01→03 | Thẩm định tệp vết ghi bằng `neuroedge trace validate` | A7 |
@@ -846,15 +846,16 @@ A.1 truy vết theo **mục tiêu sản phẩm**, A.2 theo **nguyên tắc bất
 | **FR-PER** | 01→06 | Chuỗi xử lý giọng nói và máy trạng thái hội thoại | A6, C2 |
 | **FR-CI** | 03→06 | Thư viện assert, mẫu chuẩn, chạy trong CI, nightly | A2, A7 |
 | **FR-CI-LVL** | L1→L3 | Ba cấp độ đảm bảo: L1 replay chuẩn xác, L2 khớp schema + `confidence`, L3 chỉ assert phán quyết gate và GPIO | A2 *(L1, L2)* · lint FR-DX-07 *(L3)* |
-| **FR-TRC** | 09, 10 | Lệnh thẩm định và quy ước đường dẫn vết ghi | A7 |
+| **FR-TRC** | 09, 10 | Quy ước đường dẫn vết ghi; đăng ký SchemaStore | A7 · A9 *(10)* |
 | **FR-GOV** | 01→04 | Quản trị lược đồ mở và quy trình RFC | A9 |
 | **FR-CLI** | 02→08 | Bề mặt dòng lệnh | A1, A8 |
-| **FR-CLI** | 09→11 | `gate lint`, `gate resolve`, `board` | A5 *(09, 10)* · A2 *(11)* |
+| **FR-CLI** | 09→12 | `gate lint`, `gate resolve`, `board`, `mcp` | A5 *(09, 10)* · A2 *(11)* · A3 *(12)* |
 | **FR-DX** | 03→07 | Khuôn mẫu dự án, ví dụ mẫu, thông báo lỗi | A1, A8 |
 | **FR-TGT** | 07 | Mô phỏng kịch bản suy giảm trong `sim` | A4 |
 | **FR-MDL** | 05, 06 | Định tuyến khai báo và ghi nhận tỷ lệ S1/S2 | C4 |
 | **FR-FLT** | 01, 03, 04, 06 | Provisioning, giám sát, cấu hình từ xa, thiết bị ảo | C1, roadmap TR-7 |
 | **FR-REG** | 02, 03, 05, 06 | Manifest, khai báo năng lực, định danh, đo lường | C5, roadmap TR-4, TR-5 |
+| **FR-REG** | 07 | Phân quyền và sandbox cho mã bên thứ ba | — *(v1.1, kiểm qua NFR-SEC-07)* |
 | **FR-TEL** | 01→06 | Viễn trắc và đo đạc | B4, B5, §12.2 của tài liệu này |
 
 **Độ phủ truy vết:** sau A.1 đến A.4, mọi yêu cầu FR và NFR trong tài liệu này đều có ít nhất một đường kiểm chứng, **trừ các dòng ghi "cần tiêu chí"** (NFR-SEC-02→06, 08) — nợ truy vết đã biết, phải bổ sung tiêu chí trước khi đóng v1.0. Ba phụ lục sau A.1 tồn tại vì ba trục truy vết khác nhau — mục tiêu, nguyên tắc, và thuộc tính hệ thống — và một yêu cầu có thể xuất hiện ở nhiều trục.
@@ -902,39 +903,13 @@ Tên lớp và mã `NE…` khớp `python/neuroedge/errors.py`; mọi lớp kế
 
 ### D.1 Bố cục Monorepo tiêu chuẩn
 
-```text
-neuroedge/
-├── schemas/                     # Nguồn sự thật duy nhất (Single Source of Truth)
-│   ├── trace.v1.json            # JSON Schema draft 2020-12 cho tệp Vết ghi
-│   ├── gate.v1.json             # JSON Schema cho Cổng an toàn (Gate)
-│   └── board.v1.json            # JSON Schema đối chiếu năng lực bo mạch HAL
-├── python/                      # Gói mã nguồn mở PyPI (pip install neuroedge)
-│   ├── pyproject.toml           # Cấu hình Python 3.11+, Hatchling/Poetry
-│   ├── neuroedge/
-│   │   ├── cli/                 # CLI Surface: Typer + Rich (mẫu dự án: templates/)
-│   │   ├── hal/                 # 5 nguyên thủy HAL & Capability Matcher
-│   │   ├── engine/              # Action Contract Engine & Google CEL Compiler
-│   │   ├── perception/          # Voice pipeline, VAD (Silero), Barge-in (Pipecat)
-│   │   ├── testing/             # Action CI Engine (pytest-neuroedge, replay)
-│   │   └── sim/                 # SimSession (gõ chữ trên terminal) · web UI: TSK-S2-09
-│   └── tests/                   # Test suite cho Python SDK
-├── targets/                     # Hiện thực HAL cho từng môi trường
-│   ├── sim/                     # Backend mô phỏng ảo trong bộ nhớ (Python)
-│   ├── linux/                   # Backend Linux: gpiod v2 + ALSA (Python)
-│   └── esp32s3/                 # Firmware ESP-IDF (C/C++, port driver XiaoZhi)
-│       ├── sdkconfig.defaults   # Cấu hình tối ưu PSRAM, I2S, FreeRTOS 1000Hz
-│       ├── partitions.csv       # Phân vùng nạp kép A/B OTA 16MB Flash
-│       └── components/          # Audio codec ES8311/ES7210, LCD ST7789, OTA agent
-├── fixtures/                    # Dữ liệu kiểm thử mẫu dùng chung (Test Vectors)
-│   └── traces/                  # happy-path.json, unverified_attempt.json, ...
-└── NOTICE                       # Ghi nhận bản quyền các dự án OSS đã port
-```
+Bố cục kho và thủ tục sửa từng thư mục: **[`CONTRIBUTING.md` §6](CONTRIBUTING.md#6-cấu-trúc-kho)** — nơi duy nhất.
 
 ### D.2 Giao thức Truyền dẫn & Định dạng Vết ghi (Wire Protocol)
 
 1. **Giao thức mạng Wi-Fi / LAN:** `WebSocket` bảo mật truyền luồng âm thanh Opus (Binary Frame) và sự kiện vết ghi JSON (Text Frame).
-2. **Giao thức cổng nối tiếp UART:** Đóng gói khung nhị phân chuẩn `SLIP` hoặc dòng văn bản phân cách bằng ký tự xuống dòng (JSON Lines) ở tốc độ baud 921600.
-3. **Định dạng âm thanh nén:** Opus Voice Mode (16 kbps, 16 kHz mono, kích thước khung 20 ms = 320 mẫu).
+2. **Giao thức cổng nối tiếp UART** (921600 baud): vết ghi là JSON Lines, mỗi dòng mang tiền tố `NE1 ` để tách khỏi log firmware (TSK-S4-09); khung nhị phân, nếu cần, đóng gói `SLIP`.
+3. **Định dạng âm thanh nén:** Opus Voice Mode (16 kbps, 16 kHz mono, kích thước khung 20 ms = 320 mẫu). Cùng một định dạng cho mọi target; `sim` phát lại tệp WAV qua đúng đường mã hóa này để giữ tương đương với phần cứng thật.
 
 ---
 
