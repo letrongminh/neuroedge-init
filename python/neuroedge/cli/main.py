@@ -656,6 +656,70 @@ def mcp_serve(
             )
 
 
+@mcp_app.command(name="desktop-config")
+def mcp_desktop_config(
+    agent: Path = typer.Option(None, "--agent", "-a", help="agent.toml (default as for `run`)"),
+    ui: bool = typer.Option(False, "--ui", help="Serve with --ui: the live sim page too"),
+    port: int = typer.Option(8765, "--port", help="Port for --ui"),
+    trace_out: Path = typer.Option(
+        None, "--trace-out", help="Have the server write its session trace here on exit"
+    ),
+    name: str = typer.Option(None, "--name", help="Key under mcpServers (default: agent name)"),
+    write: bool = typer.Option(
+        False, "--write", help="Write the entry into Claude Desktop's config (with a backup)"
+    ),
+    config_path: Path = typer.Option(
+        None, "--config-path", help="Config file for --write (default: Claude Desktop's)"
+    ),
+):
+    """
+    Print the Claude Desktop `mcpServers` entry for `mcp serve` — absolute paths only,
+    because Desktop starts the server from `/` with a minimal PATH, not from your shell.
+    With --write, set that one entry in Desktop's config file and keep everything else.
+    """
+    import importlib.util
+
+    from ..mcp_desktop import default_config_path, server_entry, write_entry
+
+    if importlib.util.find_spec("mcp") is None:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge mcp desktop-config",
+                why="the MCP Python SDK (`mcp`) is not installed, so Desktop's "
+                "`mcp serve` would exit at once",
+                how="pip install 'neuroedge[mcp]'",
+            )
+        )
+        return
+    agent_path = (agent or _default_agent()).expanduser().resolve()
+    session = _start_session("mcp desktop-config", agent_path, "sim", "sim-default", None)
+    key = name or session.manifest.name
+    entry = server_entry(agent_path, ui=ui, port=port, trace_out=trace_out)
+    if "env" in entry:
+        typer.echo(
+            "note: this interpreter does not import this neuroedge on its own; "
+            f"env.PYTHONPATH pins {entry['env']['PYTHONPATH']}",
+            err=True,
+        )
+    if not write:
+        # Plain stdout, not rich: the output is meant to be pasted or piped.
+        typer.echo(json.dumps({"mcpServers": {key: entry}}, indent=2, ensure_ascii=False))
+        return
+    target = config_path or default_config_path()
+    try:
+        changed, backup = write_entry(target, key, entry)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    if not changed:
+        typer.echo(f"mcpServers[{key!r}] in {target} is already up to date.")
+        return
+    typer.echo(f"Wrote mcpServers[{key!r}] to {target}")
+    if backup is not None:
+        typer.echo(f"Backup of the previous file: {backup}")
+    typer.echo("Quit Claude Desktop completely (not just close the window), then reopen it.")
+
+
 @app.command()
 def verify(
     targets: str = typer.Option(

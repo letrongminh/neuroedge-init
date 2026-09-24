@@ -79,11 +79,16 @@ Mọi lệnh và đầu ra kỳ vọng: [`CHANGELOG.md`](CHANGELOG.md) §2.
 **Gọi từ agent khác qua MCP.** Mỗi `@action` là một tool; `neuroedge mcp serve` là máy chủ
 MCP có gate — Claude Desktop, IDE hay agent của bạn gọi được thiết bị, nhưng tool call chỉ
 là *yêu cầu*: gate vẫn quyết định, lời gọi sai tham số bị từ chối trước khi tới phần cứng.
-Cấu hình Claude Desktop (cần `pip install 'neuroedge[mcp]'`):
+Cấu hình Claude Desktop (cần `pip install 'neuroedge[mcp]'`): chạy
+`neuroedge mcp desktop-config --agent fixtures/agents/home-voice/agent.toml --ui --write`, rồi thoát
+hẳn Claude Desktop và mở lại. Lệnh chỉ đặt đúng mục `mcpServers["home-voice"]`, sao lưu tệp cũ
+thành `.bak-<giờ>`; bỏ `--write` để chỉ in ra. Desktop tự khởi động server từ `/` với `PATH` tối
+giản, không thấy venv của shell — nên `"command": "neuroedge"` trần không chạy được; mục được in
+dùng toàn đường dẫn tuyệt đối:
 
 ```json
-{ "mcpServers": { "home-voice": { "command": "neuroedge",
-    "args": ["mcp", "serve", "--agent", "/đường/dẫn/fixtures/agents/home-voice/agent.toml", "--ui"] } } }
+{ "mcpServers": { "home-voice": { "command": "/đường/dẫn/.venv/bin/python",
+    "args": ["-m", "neuroedge", "mcp", "serve", "--agent", "/đường/dẫn/agent.toml", "--ui", "--port", "8765"] } } }
 ```
 
 Với `--ui`, cùng phiên đó hiện trực tiếp ở http://127.0.0.1:8765: nhờ Claude bật đèn là thấy đèn

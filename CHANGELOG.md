@@ -27,6 +27,15 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **`neuroedge mcp desktop-config` — cấu hình Claude Desktop chạy được thật (TSK-S3-27).** Desktop tự khởi
+  động server từ `/` với `PATH` tối giản, nên mẫu cũ trong README (`"command": "neuroedge"`) không tìm thấy
+  lệnh. Lệnh mới in mục `mcpServers` bằng đường dẫn tuyệt đối (`sys.executable -m neuroedge mcp serve --agent
+  <tuyệt đối>`, thêm `--ui`, `--port`, `--trace-out`); nếu trình thông dịch tự nó import một neuroedge khác
+  (bản nguồn nạp qua `PYTHONPATH`) thì ghim `env.PYTHONPATH`. `--write` chỉ đặt đúng mục đó, giữ mọi khoá
+  khác, sao lưu `<tệp>.bak-<YYYYmmdd-HHMMSS>`, ghi nguyên tử; JSON hỏng ⇒ từ chối, không ghi gì; chạy lại
+  không đổi gì. Kiểm trước: agent build được, có SDK `mcp`. Thêm `python -m neuroedge`. Kiểm: `pytest
+  tests/test_mcp_desktop.py` (khởi động đúng như Desktop, và ca hồi quy: `neuroedge` trần không chạy được với
+  `PATH` tối giản). Chưa chạy trên Claude Desktop thật. (FR-CLI-10)
 - **TSK-S3-27 — `neuroedge mcp serve --ui`.** Một tiến trình vừa là máy chủ MCP qua stdio (Claude Desktop,
   Cursor) vừa phục vụ trang `sim` trực tiếp của **cùng phiên**: tool call từ client làm đèn/chốt ảo đổi ngay,
   thẻ phán quyết ghi `tool_call light_on · mcp` (lời gọi schema từ chối hiện thẻ `REJECTED`). Lời gọi MCP và
@@ -707,6 +716,7 @@ còn `run` / `record --target linux|esp32s3` thoát mã 2.
 | `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2: trên `linux` hôm nay dùng `replay` |
 | `mcp tools [--json\|--openai] [--external]` | Schema của mỗi `@action` — dạng MCP hoặc function-calling OpenAI (Q-24). `--external`: thêm tool thông tin của `[mcp.servers]` mà System 2 được đưa (Q-27) |
 | `mcp serve [--agent a.toml] [--trace-out t.json] [--ui [--port 8765] [--open]]` | Máy chủ MCP qua stdio trên `sim`; mọi `tools/call` qua kiểm schema và gate. `--ui`: cùng phiên trên trang web 127.0.0.1 (`--port 0` chọn cổng trống; chỉ mở trình duyệt khi có `--open`); URL in ra stderr, stdout chỉ là kênh JSON-RPC. Cổng bận ⇒ mã 1 trước khi vào vòng MCP. Cần extra `neuroedge[mcp]` |
+| `mcp desktop-config [--agent a.toml] [--ui [--port 8765]] [--trace-out t.json] [--name N] [--write [--config-path P]]` | In mục `mcpServers` cho Claude Desktop, toàn đường dẫn tuyệt đối (trình thông dịch hiện tại, `-m neuroedge mcp serve`). `--write`: đặt đúng mục đó trong `claude_desktop_config.json` của Desktop (macOS `~/Library/Application Support/Claude/`, Windows `%APPDATA%\Claude\`), sao lưu `.bak-<giờ>`, giữ mọi khoá khác; JSON hỏng ⇒ mã 1, không ghi gì. Sau đó thoát hẳn Desktop rồi mở lại. Cần extra `neuroedge[mcp]` |
 | `gate explain <tệp\|URI>` | Giải thích gate cho người duyệt: tiêu chí từ cấp nào, mệnh đề nào bị siết chặt, ngân sách và `on_block` so với cha. Gate sai ⇒ mã 1, lỗi 3 thành phần |
 | `new <tên> [--template minimal\|villa-concierge\|home-voice]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` (chốt cửa) và `home-voice` (trợ lý giọng nói, có `knowledge.toml`) sao agent mẫu (có trong wheel) |
 

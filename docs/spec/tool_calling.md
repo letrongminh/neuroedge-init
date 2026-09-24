@@ -184,7 +184,9 @@ hình. Lời gọi `REJECTED` không tới gate nên không có trong phán quy�
 | `esp32s3` | Ngữ pháp → tool call tổng hợp trong C; tham số kiểm bằng bảng do `neuroedge build` sinh cạnh cây quyết định (Q-23); `call_source` là một byte trong ngữ cảnh walker | **Không** chạy trên MCU. MCP cho thiết bị đi qua gateway hoặc một máy `linux` (FR-GW), và thiết bị vẫn tự lượng giá gate. MCU **không làm MCP host**: host (§10) đặt ở nơi System 2 chạy |
 
 Transport MCP ở v1.0 chỉ là **stdio**: bên có quyền chạy tiến trình chính là người vận
-hành. Transport HTTP cần xác thực và là việc hoãn (`TODOS.md` #24).
+hành. Transport HTTP cần xác thực và là việc hoãn (`TODOS.md` #24). Mục cấu hình cho
+Claude Desktop do `neuroedge mcp desktop-config` sinh — đường dẫn tuyệt đối, vì Desktop khởi
+động server từ `/` với `PATH` tối giản.
 
 ## 9. Tuân thủ
 
