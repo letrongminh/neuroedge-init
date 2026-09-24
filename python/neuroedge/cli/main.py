@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import sys
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -53,6 +55,10 @@ app.add_typer(mcp_app, name="mcp")
 
 console = Console()
 err_console = Console(stderr=True)
+
+# `mcp serve` exits when no client initializes within this window (a leaked, orphaned
+# spawn). Clients send `initialize` at once, so 30 s only has to beat a slow start.
+MCP_INIT_TIMEOUT_S = 30.0
 
 
 def _fail(error: NeuroEdgeError) -> None:
@@ -595,12 +601,18 @@ def mcp_serve(
     open_browser: bool = typer.Option(
         False, "--open", help="With --ui, open the page in a browser"
     ),
+    init_timeout: float = typer.Option(
+        MCP_INIT_TIMEOUT_S,
+        "--init-timeout",
+        help="Exit if no client sends `initialize` within this many seconds (0: wait forever)",
+    ),
 ):
     """
     Serve the agent as a gated MCP server over stdio: every @action is a tool,
     and every tools/call goes through the tool schema, c.do() and the gate.
     With --ui the same session is shown live in the browser: a tool call from
-    the MCP client moves the virtual devices on the page at once.
+    the MCP client moves the virtual devices on the page at once. The page never
+    takes the MCP server down: a taken port falls back to a free one (URL on stderr).
     """
     import anyio
 
@@ -612,15 +624,7 @@ def mcp_serve(
         _fail(error)
         return
     session = _start_session("mcp serve", agent, "sim", board, registry)
-    page = None
-    if ui:
-        from ..sim.ui import SessionServer
-
-        try:
-            page = SessionServer(session, port=port).start()
-        except NeuroEdgeError as error:
-            _fail(error)  # before the MCP loop: the client sees the process exit, code 1
-            return
+    page = _mcp_page(session, port) if ui else None
     # stdout is the protocol channel; anything for people goes to stderr.
     err_console.print(
         f"neuroedge MCP server · {escape(session.manifest.label)} · "
@@ -635,18 +639,7 @@ def mcp_serve(
 
             webbrowser.open(page.url)
 
-    serve = partial(
-        serve_stdio,
-        session,
-        lock=page.lock if page is not None else None,
-        on_change=page.notify if page is not None else None,
-        on_ready=on_ready,
-    )
-    try:
-        anyio.run(serve)
-    except KeyboardInterrupt:
-        pass
-    finally:
+    def close() -> None:
         if page is not None:
             page.stop()
         if trace_out is not None:
@@ -654,6 +647,137 @@ def mcp_serve(
             trace_out.write_text(
                 json.dumps(session.trace(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
             )
+
+    def on_no_initialize() -> None:
+        # The client started us and let go without closing stdin (Claude Desktop does
+        # this when it restarts a server before the handshake). Nothing will ever
+        # arrive, and the SDK's stdin thread cannot be cancelled: free the port, exit.
+        err_console.print(
+            f"no MCP client sent `initialize` within {init_timeout:g} s; exiting so an "
+            "orphaned server does not hold the UI port (--init-timeout 0 waits forever)",
+            markup=False,
+            highlight=False,
+        )
+        close()
+        sys.stderr.flush()
+        os._exit(0)
+
+    serve = partial(
+        serve_stdio,
+        session,
+        lock=page.lock if page is not None else None,
+        on_change=page.notify if page is not None else None,
+        on_ready=on_ready,
+        init_timeout=init_timeout or None,
+        on_no_initialize=on_no_initialize,
+    )
+    try:
+        anyio.run(serve)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        close()
+
+
+def _mcp_page(session: Any, port: int) -> Any:
+    """
+    The `--ui` page for `mcp serve`, which must never cost the MCP server itself.
+
+    The port is taken most often by an older server of the same agent that Claude
+    Desktop left running. Exiting would only show "Server disconnected" in Desktop,
+    so a taken port — the default or one passed with --port — falls back to a free
+    one, and the real URL goes to stderr (Desktop's server log). Only when no port
+    at all can be had does the server run without the page.
+    """
+    from ..sim.ui import SessionServer
+
+    try:
+        return SessionServer(session, port=port).start()
+    except NeuroEdgeError as error:
+        taken = error
+    if port != 0:
+        try:
+            page = SessionServer(session, port=0).start()
+        except NeuroEdgeError as error:
+            taken = error
+        else:
+            err_console.print(
+                f"warning: sim UI port {port} is taken ({taken.why}) — an older server may "
+                f"still be running; the page is at {page.url} instead",
+                markup=False,
+                highlight=False,
+            )
+            return page
+    err_console.print(
+        f"warning: no sim UI ({taken.why}); serving MCP without the page",
+        markup=False,
+        highlight=False,
+    )
+    return None
+
+
+@mcp_app.command(name="desktop-config")
+def mcp_desktop_config(
+    agent: Path = typer.Option(None, "--agent", "-a", help="agent.toml (default as for `run`)"),
+    ui: bool = typer.Option(False, "--ui", help="Serve with --ui: the live sim page too"),
+    port: int = typer.Option(8765, "--port", help="Port for --ui"),
+    trace_out: Path = typer.Option(
+        None, "--trace-out", help="Have the server write its session trace here on exit"
+    ),
+    name: str = typer.Option(None, "--name", help="Key under mcpServers (default: agent name)"),
+    write: bool = typer.Option(
+        False, "--write", help="Write the entry into Claude Desktop's config (with a backup)"
+    ),
+    config_path: Path = typer.Option(
+        None, "--config-path", help="Config file for --write (default: Claude Desktop's)"
+    ),
+):
+    """
+    Print the Claude Desktop `mcpServers` entry for `mcp serve` — absolute paths only,
+    because Desktop starts the server from `/` with a minimal PATH, not from your shell.
+    With --write, set that one entry in Desktop's config file and keep everything else.
+    """
+    import importlib.util
+
+    from ..mcp_desktop import default_config_path, server_entry, write_entry
+
+    if importlib.util.find_spec("mcp") is None:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge mcp desktop-config",
+                why="the MCP Python SDK (`mcp`) is not installed, so Desktop's "
+                "`mcp serve` would exit at once",
+                how="pip install 'neuroedge[mcp]'",
+            )
+        )
+        return
+    agent_path = (agent or _default_agent()).expanduser().resolve()
+    session = _start_session("mcp desktop-config", agent_path, "sim", "sim-default", None)
+    key = name or session.manifest.name
+    entry = server_entry(agent_path, ui=ui, port=port, trace_out=trace_out)
+    if "env" in entry:
+        typer.echo(
+            "note: this interpreter does not import this neuroedge on its own; "
+            f"env.PYTHONPATH pins {entry['env']['PYTHONPATH']}",
+            err=True,
+        )
+    if not write:
+        # Plain stdout, not rich: the output is meant to be pasted or piped.
+        typer.echo(json.dumps({"mcpServers": {key: entry}}, indent=2, ensure_ascii=False))
+        return
+    target = config_path or default_config_path()
+    try:
+        changed, backup = write_entry(target, key, entry)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    if not changed:
+        typer.echo(f"mcpServers[{key!r}] in {target} is already up to date.")
+        return
+    typer.echo(f"Wrote mcpServers[{key!r}] to {target}")
+    if backup is not None:
+        typer.echo(f"Backup of the previous file: {backup}")
+    typer.echo("Quit Claude Desktop completely (not just close the window), then reopen it.")
 
 
 @app.command()

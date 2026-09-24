@@ -16,7 +16,6 @@ import json
 import os
 import re
 import socket
-import subprocess
 import sys
 import threading
 import time
@@ -283,22 +282,47 @@ def test_the_real_command_serves_mcp_on_stdout_and_the_page_on_127_0_0_1(home, t
         urllib.request.urlopen(url + "state", timeout=2)
 
 
-def test_a_taken_port_fails_before_the_mcp_loop_with_nothing_on_stdout(home):
+def test_a_taken_port_moves_the_page_and_keeps_serving_mcp(home, tmp_path):
+    # Claude Desktop can leave an older server holding the port; exiting would only
+    # show "Server disconnected". The page moves to a free port, named on stderr, and
+    # an explicit --port falls back the same way (Desktop's entry passes one).
+    errlog_path = tmp_path / "stderr.txt"
+    garbage: list[Exception] = []
+
+    async def on_message(message):
+        if isinstance(message, Exception):
+            garbage.append(message)
+
+    def ui_url() -> str | None:
+        found = re.search(r"page is at (http://127\.0\.0\.1:\d+/)", errlog_path.read_text("utf-8"))
+        return found.group(1) if found else None
+
     with socket.socket() as taken:
         taken.bind(("127.0.0.1", 0))
         taken.listen()
         port = taken.getsockname()[1]
-        done = subprocess.run(
-            [sys.executable, *serve_args(home, "--port", str(port))],
-            env=child_env(),
-            stdin=subprocess.DEVNULL,
-            capture_output=True,
-            timeout=60,
+        params = StdioServerParameters(
+            command=sys.executable, args=serve_args(home, "--port", str(port)), env=child_env()
         )
-    assert done.returncode == 1
-    assert done.stdout == b""
-    stderr = done.stderr.decode("utf-8")
-    assert f"sim UI on 127.0.0.1:{port}" in stderr
-    assert "why:" in stderr and f"cannot listen on port {port}" in stderr
-    assert "fix:" in stderr and "--port" in stderr
-    assert "neuroedge MCP server" not in stderr  # the banner comes only once serving
+
+        async def main():
+            with errlog_path.open("w", encoding="utf-8") as errlog:
+                async with (
+                    stdio_client(params, errlog=errlog) as (read, write),
+                    ClientSession(read, write, message_handler=on_message) as client,
+                ):
+                    with anyio.fail_after(TIMEOUT):
+                        await client.initialize()
+                        result = await client.call_tool("light_on", {})
+                        url = poll(ui_url)
+                        state = await anyio.to_thread.run_sync(get_json, url + "state")
+            return result, url, state
+
+        result, url, state = anyio.run(main)
+    assert garbage == []  # the warning went to stderr, not into the protocol
+    assert (result.is_error, result.structured_content["status"]) == (False, "ALLOW")
+    assert url != f"http://127.0.0.1:{port}/"
+    assert [c["source"] for c in of_type(state["events"], "tool_call")] == ["mcp"]
+    stderr = errlog_path.read_text(encoding="utf-8")
+    assert f"warning: sim UI port {port} is taken" in stderr
+    assert f"sim UI at {url} (same session)" in stderr
