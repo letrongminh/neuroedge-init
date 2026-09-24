@@ -73,6 +73,12 @@ Nói thẳng để bạn không mất thời gian:
 Mọi thông báo lỗi đủ **3 thành phần** (ở đâu · vì sao · cách xử lý) — cách đọc
 một thông báo lỗi: `CHANGELOG.md` §2.4.
 
+**Claude Desktop và `mcp serve --ui`.** Desktop có thể khởi động server vài lần liền và bỏ lại
+một tiến trình cũ. Tiến trình không nhận `initialize` sau 30 giây sẽ tự thoát và nhả cổng
+(`--init-timeout`). Nếu cổng 8765 vẫn bận, trang chuyển sang cổng trống, còn MCP vẫn chạy.
+URL thật của trang nằm ở dòng `sim UI at http://127.0.0.1:…` trong log của Desktop, trên macOS là
+`~/Library/Logs/Claude/mcp-server-<tên>.log`.
+
 ## 5. Tiếp theo
 
 - Việc đang làm và thứ tự tiếp theo: thẻ bàn giao `neuroedge-roadmap.md` §0.3.

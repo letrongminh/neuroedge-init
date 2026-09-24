@@ -15,7 +15,9 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import shutil
+import socket
 import subprocess
 import sys
 from pathlib import Path
@@ -152,6 +154,59 @@ def test_desktop_starts_the_printed_entry_from_slash_with_a_minimal_path(home, t
     validate_trace(trace)
     (call,) = [e["data"] for e in trace["events"] if e["type"] == "tool_call"]
     assert (call["name"], call["source"]) == ("light_on", "mcp")
+
+
+def test_a_spawn_desktop_lets_go_of_before_initialize_exits_and_frees_the_port(home):
+    # Seen on Claude Desktop: it restarts a server before the handshake but keeps its
+    # end of the old one's stdin open, so that one never reads EOF. Without the
+    # watchdog it held 127.0.0.1:8765 forever and every later spawn lost the page.
+    entry = entry_for(home, "--ui", "--port", "0")
+    server = subprocess.Popen(
+        [entry["command"], *entry["args"], "--init-timeout", "1"],
+        env={"HOME": os.environ.get("HOME", "/"), **desktop_env(entry)},
+        cwd="/",
+        stdin=subprocess.PIPE,  # held open and never written: the leaked pipe
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        server.wait(timeout=TIMEOUT)
+        stdout, stderr = server.communicate()
+    finally:
+        server.kill()
+        server.stdin.close()
+    stderr_text = stderr.decode("utf-8")
+    assert server.returncode == 0, stderr_text
+    assert stdout == b""
+    assert "no MCP client sent `initialize` within 1 s" in stderr_text
+    port = int(re.search(r"sim UI at http://127\.0\.0\.1:(\d+)/", stderr_text).group(1))
+    with socket.socket() as probe:  # the port is free again
+        probe.bind(("127.0.0.1", port))
+
+
+def test_a_session_that_initialized_may_idle_past_the_watchdog(home, tmp_path):
+    entry = entry_for(home)
+    params = StdioServerParameters(
+        command=entry["command"],
+        args=[*entry["args"], "--init-timeout", "1"],
+        env=desktop_env(entry),
+        cwd="/",
+    )
+
+    async def main():
+        with (tmp_path / "stderr.txt").open("w", encoding="utf-8") as errlog:
+            async with (
+                stdio_client(params, errlog=errlog) as (read, write),
+                ClientSession(read, write) as client,
+            ):
+                with anyio.fail_after(TIMEOUT):
+                    await client.initialize()
+                    await anyio.sleep(2.5)
+                    return await client.call_tool("light_on", {})
+
+    result = anyio.run(main)
+    assert (result.is_error, result.structured_content["status"]) == (False, "ALLOW")
+    assert "no MCP client sent" not in (tmp_path / "stderr.txt").read_text(encoding="utf-8")
 
 
 def test_the_old_readme_entry_bare_neuroedge_is_not_found_by_desktop(home):

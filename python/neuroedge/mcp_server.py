@@ -143,6 +143,8 @@ async def serve_stdio(
     lock: ThreadLock | None = None,
     on_change: Callable[[], None] | None = None,
     on_ready: Callable[[], None] | None = None,
+    init_timeout: float | None = None,
+    on_no_initialize: Callable[[], None] | None = None,
 ) -> None:
     """
     Serve until the client closes stdin. `lock` and `on_change` as for `build_server`.
@@ -150,11 +152,44 @@ async def serve_stdio(
     `on_ready` runs once the SDK holds stdout: from then on fd 1 points at stderr
     for everything but the protocol, so nothing it starts (a browser) can write
     into the JSON-RPC channel.
+
+    `init_timeout`: when no `initialize` request has arrived that many seconds after
+    the transport opened, `on_no_initialize` runs. A client that let go of the
+    process without closing its end of stdin (Claude Desktop does, when it restarts
+    a server before the handshake) would otherwise leave it running forever. The
+    SDK reads stdin in a thread that cancellation cannot interrupt, so the callback
+    is expected to end the process; if it returns, serving goes on. Once
+    initialized, a session may idle as long as it likes.
     """
+    import anyio
     from mcp.server.stdio import stdio_server
+    from mcp.shared.message import SessionMessage
 
     server = build_server(session, lock=lock, on_change=on_change)
+    initialized = anyio.Event()
+
+    async def watch(source: Any, sink: Any) -> None:
+        async with source, sink:
+            async for item in source:
+                message = item.message if isinstance(item, SessionMessage) else None
+                message = getattr(message, "root", message)  # older SDKs wrap it in a RootModel
+                if getattr(message, "method", None) == "initialize":
+                    initialized.set()
+                await sink.send(item)
+
+    async def watchdog() -> None:
+        with anyio.move_on_after(init_timeout):
+            await initialized.wait()
+        if not initialized.is_set() and on_no_initialize is not None:
+            on_no_initialize()
+
     async with stdio_server() as (read_stream, write_stream):
         if on_ready is not None:
             on_ready()
-        await server.run(read_stream, write_stream, server.create_initialization_options())
+        sink, seen = anyio.create_memory_object_stream[Any](0)
+        async with anyio.create_task_group() as group:
+            group.start_soon(watch, read_stream, sink)
+            if init_timeout:
+                group.start_soon(watchdog)
+            await server.run(seen, write_stream, server.create_initialization_options())
+            group.cancel_scope.cancel()

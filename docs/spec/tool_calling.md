@@ -188,6 +188,14 @@ hành. Transport HTTP cần xác thực và là việc hoãn (`TODOS.md` #24). M
 Claude Desktop do `neuroedge mcp desktop-config` sinh — đường dẫn tuyệt đối, vì Desktop khởi
 động server từ `/` với `PATH` tối giản.
 
+Hai quy tắc giữ cho `mcp serve` sống sót khi client bỏ rơi nó. Claude Desktop có thể bỏ một tiến
+trình trước `initialize` mà vẫn giữ stdin của nó, nên tiến trình không bao giờ nhận được EOF.
+
+- Không có `initialize` sau `--init-timeout` giây (mặc định 30) thì tiến trình thoát 0 và nhả
+  cổng. Phiên đã `initialize` không bị giới hạn thời gian.
+- Trang `--ui` không bao giờ làm sập MCP. Cổng bận, kể cả `--port` ghi rõ, thì trang chạy ở cổng
+  trống và URL thật được in ra stderr.
+
 ## 9. Tuân thủ
 
 Một runtime được gọi là **NeuroEdge-gated** khi nó qua corpus
