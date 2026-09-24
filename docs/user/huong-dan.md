@@ -15,9 +15,8 @@ không cần mạng, kết quả tất định (`Q-15`).
 
 ## 2. Hôm nay dùng được gì
 
-Phần **chính sách gate**, **lõi thực thi trên `sim`**, **vòng lặp gõ chữ** và **Action CI**
-(ghi → phát lại → khẳng định → so golden) đã có.
-Cú pháp từng lệnh: `CHANGELOG.md` §2.3. Thử ngay trong kho:
+Bảng dưới là từng việc làm được hôm nay; cú pháp từng lệnh ở `CHANGELOG.md` §2.3.
+Thử ngay trong kho:
 
 ```bash
 neuroedge run -c "mở cửa phòng 101"    # ✓ ALLOW, door_lock PULSED 30s
@@ -35,11 +34,12 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Thẩm định vết ghi theo `trace.v1` | `neuroedge trace validate` | ✅ |
 | Xem nội dung một vết ghi | `neuroedge trace show` | ✅ |
 | Liệt kê / xem profile bo mạch | `neuroedge board list` · `neuroedge board show` | ✅ |
-| Đối chiếu năng lực agent ↔ bo mạch, biên dịch gate | `neuroedge build` | ✅ |
+| Đối chiếu năng lực agent ↔ bo mạch, biên dịch gate (cả cây nhị phân `.netree` cho thiết bị, RFC-0003) | `neuroedge build` | ✅ |
 | Chạy agent có gate trên `sim` từ mã Python (`c.do()` trên `SimHAL`) | — (thư viện) | ✅ |
 | Chạy agent có gate trên `sim` từ dòng lệnh (gõ chữ, không mạng) | `neuroedge run` | ✅ |
 | Xem phiên `sim` trực tiếp trên trình duyệt: chốt cửa, đèn, cảm biến, màn hình | `neuroedge run --ui` | ✅ |
 | Mở một vết ghi thành trang HTML để xem lại, tua thời gian, gửi đồng nghiệp | `neuroedge trace view` | ✅ |
+| Xuất vết ghi để phân tích thời gian trong Perfetto | `neuroedge trace export --format chrome` | ✅ |
 | Giả lập cảm biến và màn hình trên `sim` | `[sim.sensors]` · `:sensor` · `display.show()` | ✅ |
 | Đọc một gate bằng lời: tiêu chí từ đâu, điều gì bị siết chặt | `neuroedge gate explain` | ✅ |
 | Tạo dự án agent mới có sẵn gate, action, test | `neuroedge new` | ✅ |
@@ -49,12 +49,14 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Ghi cấu hình Claude Desktop cho `mcp serve` (đường dẫn tuyệt đối, có sao lưu) | `neuroedge mcp desktop-config --agent … [--ui] --write` | ✅ cần `neuroedge[mcp]` |
 | Điều khiển từ Claude Desktop và thấy đèn/chốt ảo đổi trên trình duyệt — cùng một phiên | `neuroedge mcp serve --ui` (trang ở http://127.0.0.1:8765) | ✅ cần `neuroedge[mcp]` |
 | Cho System 2 dùng MCP server bên ngoài (tin tức, tra cứu) — chỉ lấy thông tin | `[mcp.servers]` trong `agent.toml` · `neuroedge mcp tools --external` | ✅ cần `neuroedge[mcp]` |
-| Dùng LLM thật cho System 2 (Claude, GPT, DeepSeek qua OpenRouter…): câu tự do thành tool call — vẫn qua gate; mất mạng thì thiết bị nói các lệnh cục bộ vẫn dùng được | `[system_two]` trong `agent.toml` · key trong biến môi trường (`api_key_env`), **không** ghi vào tệp | ✅ cần `neuroedge[cloud]` |
+| Dùng LLM thật cho System 2 (Claude, GPT, DeepSeek qua OpenRouter…): câu tự do thành tool call, vẫn qua gate | `[system_two]` trong `agent.toml` · key ở biến môi trường (`api_key_env`), **không** ghi vào tệp | ✅ cần `neuroedge[cloud]` |
+| Mất mạng hoặc System 2 không trả lời: thiết bị nói các lệnh cục bộ còn dùng được (`offline_help`) | — (tự động) | ✅ |
 | Nối model chưa theo chuẩn OpenAI bằng adapter tự viết | `provider = "python:pkg.mod:factory"` trong `[system_two]` | ✅ |
 | Người xác nhận khi gate hỏi lại (`ask`): gõ `có` / `không`, hoặc nút Đồng ý / Huỷ trên `run --ui` | `neuroedge run` · `neuroedge run --ui` | ✅ gate phải khai `confirms` |
 | Ghi một phiên ra vết ghi (có chế độ ẩn danh) | `neuroedge record` | ✅ |
 | Phát lại vết ghi trên `sim` / `linux`, so golden | `neuroedge replay` | ✅ |
 | Chạy test an toàn của agent (Action CI) | `neuroedge test` | ✅ |
+| Kiểm cả kho: gate, vết ghi chuẩn mực, corpus tool call, replay | `neuroedge verify` | ✅ |
 | Kiểm cùng quyết định trên `sim` và `linux` (A2) | `neuroedge verify --targets sim,linux` | ✅ cần line GPIO |
 | Phiên gõ chữ tương tác trên `linux` | `neuroedge run --target linux` | ⏳ |
 | Hành trình 10 phút (TTFV) | — | ⏳ mốc M1 |
@@ -69,6 +71,9 @@ Nói thẳng để bạn không mất thời gian:
   **thoát mã 2** — trên `linux` dùng `replay`. Không có "PASS" giả (bất biến 10, `CHANGELOG.md` §3.3).
 - `--target linux` cần line GPIO thật hoặc ảo (`scripts/setup_gpio_sim.sh`) và
   `pip install 'neuroedge[linux]'`; thiếu thì lệnh báo lỗi, không giả vờ chạy.
+- Trên `linux` mới có `digital.out`; `sensor.read`, `display` và âm thanh chưa hiện thực.
+- Chưa có bo mạch `esp32s3`: walker gate và sổ token C chỉ chạy trên máy tính và QEMU;
+  `record --target esp32s3` chưa có.
 - Tương đương target mới so **quyết định** (phán quyết + lệnh chân), chưa so timing.
 - Danh sách đầy đủ: `CHANGELOG.md` §3.7.
 
@@ -77,15 +82,13 @@ Nói thẳng để bạn không mất thời gian:
 Mọi thông báo lỗi đủ **3 thành phần** (ở đâu · vì sao · cách xử lý) — cách đọc
 một thông báo lỗi: `CHANGELOG.md` §2.4.
 
-**Claude Desktop và `mcp serve --ui`.** Desktop có thể khởi động server vài lần liền và bỏ lại
-một tiến trình cũ. Tiến trình không nhận `initialize` sau 30 giây sẽ tự thoát và nhả cổng
-(`--init-timeout`). Nếu cổng 8765 vẫn bận, trang chuyển sang cổng trống, còn MCP vẫn chạy.
-URL thật của trang nằm ở dòng `sim UI at http://127.0.0.1:…` trong log của Desktop, trên macOS là
-`~/Library/Logs/Claude/mcp-server-<tên>.log`. Desktop thường chạy vài tiến trình cùng lúc: một cho
-cuộc trò chuyện, thêm vài tiến trình cho nhóm dùng chung "Cowork and Code". Mỗi tiến trình có trang
-riêng. Tiến trình nào khởi động trước thì giữ cổng 8765; các tiến trình kia ghi
-`warning: sim UI port 8765 is taken … the page is at …`. Nếu gọi từ cuộc trò chuyện mà trang 8765
-không đổi, hãy mở các URL trong những dòng cảnh báo đó.
+**Claude Desktop và `mcp serve --ui`: trang không đổi khi gọi từ Desktop.** Desktop thường chạy
+vài tiến trình server cùng lúc, mỗi tiến trình có trang riêng, và chỉ một giữ cổng 8765 (quy tắc:
+`docs/spec/tool_calling.md` §8). Cách tìm đúng trang:
+
+1. Mở log của Desktop — trên macOS là `~/Library/Logs/Claude/mcp-server-<tên>.log`.
+2. Tìm các dòng `sim UI at http://127.0.0.1:…` và `warning: sim UI port 8765 is taken … the page is at …`.
+3. Mở từng URL trong các dòng đó; trang của cuộc trò chuyện là trang đổi khi bạn gọi.
 
 ## 5. Tiếp theo
 

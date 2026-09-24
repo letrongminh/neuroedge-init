@@ -7,7 +7,7 @@
 | **Yêu cầu PRD liên quan** | FR-GATE-02, FR-GATE-06, FR-GATE-07, FR-GATE-08, FR-DX-04 |
 | **Người đề xuất** | V1 — Kỹ sư lõi nền tảng |
 | **Ngày mở** | 2026-09-21 |
-| **Trạng thái** | ✅ Đã chấp thuận |
+| **Trạng thái** | ✅ Đã chấp thuận · ✅ Đã hiện thực (TSK-S1-02, commit `de411c5`) |
 | **Kiểm chứng** | `python/tests/test_gate_fixtures.py`, `python/tests/test_gate_resolver.py` |
 
 ## 1. Vấn đề

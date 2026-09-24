@@ -8,7 +8,7 @@
 | **Rủi ro liên quan** | R-1 (phạm vi Khối 1b vượt hạn do tối ưu bộ nhớ) — mức **Cao** |
 | **Người thực hiện** | V2 — Kỹ sư nhúng |
 | **Trạng thái** | 🟡 **Khung đo đã xong · CHƯA CÓ SỐ ĐO THỰC** |
-| **Cập nhật lần cuối** | 2026-09-21 |
+| **Cập nhật lần cuối** | 2026-09-24 — vẫn chưa có số đo |
 
 > **Trạng thái trung thực của báo cáo này.** Khung đo (`targets/esp32s3/main/memory_probe.c`)
 > đã viết xong và đã nối vào `app_main`. Chưa có một con số đo thực nào, vì
@@ -89,6 +89,13 @@ Workflow [`nightly-hardware.yml`](../../.github/workflows/nightly-hardware.yml)
 grep đúng tiền tố này, lưu payload thành artifact, và kiểm tra dung lượng
 firmware bằng
 [`scripts/check_firmware_size.py`](../../scripts/check_firmware_size.py).
+
+### 4.1 Vì sao QEMU không thay được phép đo này
+
+Firmware đã boot trên Espressif QEMU (TSK-S4-08), nhưng QEMU không giả lập I2S, AFE hay PSRAM
+octal của Box-3 (Q-21), nên mốc `audio_ready` không lấy được ở đó. TSK-S4-11 sẽ in heap còn
+trống lúc boot trên QEMU và kiểm `.bss`/`.data` mỗi PR; đó là sàn tĩnh, **không** thay số đo
+của báo cáo này.
 
 ## 5. Kết luận và hệ quả phạm vi
 

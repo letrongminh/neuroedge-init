@@ -24,7 +24,7 @@ Cổng không quyết code A2. Nó quyết ba việc:
    (Approach C / E) có bằng chứng.
 3. Phân khúc nào là phân khúc đầu tiên để làm tiếp (tối đa hai).
 
-Rủi ro số một là nhu cầu chưa kiểm chứng (premise P4, `docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`).
+Rủi ro số một là nhu cầu chưa kiểm chứng (premise P4, `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`).
 Tới hôm nay: `U1`–`U5` và `J1`–`J7` (PRD §2) là giả định của chính đội, **chưa người thật nào
 xác nhận** (premise P1). Không có con số thị trường nào trong bộ tài liệu này; mọi con số
 cần có là thứ đi thu.
@@ -48,7 +48,7 @@ tóm tắt; định nghĩa chấm điểm ở `cham-diem.md`.
 | **C10** | Thứ tự quyết định / code: bằng chứng có về **trước** các cam kết code Khối 1b không? | `CEO-T4` | thiết kế GĐ1 §Nhánh quyết định | Trưởng nhóm tự trả lời tại cổng từ kết quả C1–C9 | — (không hỏi khách hàng) |
 
 `CEO-X3` (tỷ lệ discovery 40:1) được Q-20 xử bằng chính cổng này và **không** nằm trong
-`TODOS.md` #19; `docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md` dòng 65 ghi `CEO-X3 → Q-20`.
+`TODOS.md` #19; `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` §Quyết định 2026-09-23, dòng `CEO-X3`, ghi `CEO-X3 → Q-20`.
 Kế hoạch dưới đây chính là câu trả lời cho nó: khoảng 40 giờ của trưởng nhóm thay vì 8.
 
 ## 3. Phân khúc và số lượng mục tiêu (đề xuất)

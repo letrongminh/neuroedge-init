@@ -8,8 +8,9 @@
 | **Yêu cầu PRD liên quan** | FR-ACE-10, FR-GATE-06, NFR-SEC-09 |
 | **Người đề xuất** | V1 — Kỹ sư lõi nền tảng *(theo TSK-S3-26)* |
 | **Ngày mở** | 2026-09-24 |
-| **Trạng thái** | ✅ Đã chấp thuận — hiện thực ở TSK-S3-26 |
+| **Trạng thái** | ✅ Đã chấp thuận · ✅ Đã hiện thực (TSK-S3-26, PR #25; walker C: TSK-S4-02, PR #27) |
 | **Người phê duyệt** | minhlt (kỹ thuật trưởng), 2026-09-24 — chọn "gate ghi rõ" (phương án A) trong ba phương án ở §6 |
+| **Kiểm chứng** | §7 — `python/tests/test_tool_confirm.py`, corpus `fixtures/gates/invalid/` |
 
 > **Khi nào cần RFC:** mọi thay đổi trong `schemas/`, và mọi thay đổi ngữ nghĩa
 > phân giải gate. Xem `CONTRIBUTING.md` §3 để biết ranh giới chính xác.
@@ -115,4 +116,4 @@ tiêu chí, hoặc chuyển từ `deny`/`escalate` sang `ask` có `confirms`, l�
 - [x] Phụ lục B.3 trong `neuroedge-proposal.md`; `docs/spec/tool_calling.md` §6
 - [x] `neuroedge-prd.md` Q-26, FR-ACE-10 · `neuroedge-roadmap.md` TSK-S3-26
 - [x] Resolver, walker Python (`waived`), engine (`confirmed`), `c.do()`/`c.confirm()`, REPL, UI, `gate explain`, replay
-- [ ] Walker C (TSK-S4-02) nhận tập tiêu chí được thay — bố cục nhị phân RFC-0003 mang `confirms`
+- [x] Walker C (TSK-S4-02) nhận tập tiêu chí được thay — bố cục nhị phân RFC-0003 mang `confirms` (`confirm_mask`, PR #27)

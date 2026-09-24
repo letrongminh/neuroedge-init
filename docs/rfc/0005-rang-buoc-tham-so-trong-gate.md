@@ -8,8 +8,9 @@
 | **Yêu cầu PRD liên quan** | FR-ACE-08, FR-GATE-06, FR-MDL-10 |
 | **Người đề xuất** | V1 — Kỹ sư lõi nền tảng *(theo quyết định Q-25)* |
 | **Ngày mở** | 2026-09-23 |
-| **Trạng thái** | ✅ Đã chấp thuận — hiện thực ở TSK-S3-25 |
+| **Trạng thái** | ✅ Đã chấp thuận · ✅ Đã hiện thực (TSK-S3-25, PR #22; walker C: TSK-S4-02, PR #27) |
 | **Người phê duyệt** | minhlt (kỹ thuật trưởng), 2026-09-24 — quyết định **Q-25** (`neuroedge-prd.md` §15); không có `arguments_closed` ở v1 |
+| **Kiểm chứng** | §7 — `python/tests/test_gate_arguments.py`, corpus `fixtures/gates/invalid/`, `fixtures/tool_calls/invalid/` |
 
 > **Khi nào cần RFC:** mọi thay đổi trong `schemas/`, và mọi thay đổi ngữ nghĩa
 > phân giải gate. Xem `CONTRIBUTING.md` §3 để biết ranh giới chính xác.
