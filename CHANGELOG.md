@@ -27,6 +27,16 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **TSK-S3-24 — corpus tuân thủ Gated Tool Profile.** `fixtures/tool_calls/{valid,invalid}/` (16 + 12 ca) với
+  `expected_results.yaml` khép kín hai chiều: tệp ca nêu đầu vào (`agent`, `call`, `facts`, `sensors`), tệp đáp án nêu
+  `status`, các trường phán quyết, `confirmation`, `fallback` và lệnh chân. `valid/` = khớp `inputSchema` (gate quyết
+  định); `invalid/` = không khớp (`REJECTED`, hoặc `BLOCK argument_out_of_range` cho giới hạn RFC-0005) — định nghĩa ở
+  `docs/spec/tool_calling.md` §9. Runner `neuroedge.testing.tool_corpus` chạy từng ca qua `dispatch()` thật của
+  `SimSession`; `neuroedge verify` chạy cả corpus, và wheel mang nó (`hatch_build.py`). Agent nhỏ mới
+  `fixtures/agents/driveway/` phủ giới hạn tham số, `call_source` chặn MCP và `degrade`. Kết quả `degrade` có trường
+  `fallback` (kết quả của `fallback_action`, đệ quy); mỗi tool MCP khai `outputSchema` (`result_schema()`, cũng in ở
+  `mcp tools --json`), và client MCP kiểm kết quả theo nó. Kiểm: `pytest tests/test_tool_corpus.py` (mỗi ca cả qua
+  client MCP thật) · `bash scripts/wheel_smoke.sh`. (FR-MDL-10, FR-ACE-09)
 - **Khi mô hình hoặc nguồn bên ngoài vắng mặt (chạy thử LLM thật 2026-09-24).** (1) Chữ của mô hình được cắt khoảng
   trắng đầu/cuối trước khi nói. (2) MCP server bên ngoài bị tắt (thiếu SDK `mcp`, không chạy, thiếu tool) được
   nói ra: mô hình được báo trong `instructions` để nói *tạm thời không lấy được* thay vì *không có công cụ*; REPL in
@@ -748,7 +758,7 @@ còn `run` / `record --target linux|esp32s3` thoát mã 2.
 | `trace view <tệp> [-o x.html] [--open]` | Ghi một tệp HTML tự chứa: thiết bị, cảm biến, màn hình, phán quyết, dòng sự kiện, thanh tua thời gian. Mở không cần mạng |
 | `trace export <tệp> --format chrome` | Chrome Trace Event JSON cho Perfetto (`ui.perfetto.dev`) — gate và xung thành slice |
 | `board list` / `board show <id>` | Liệt kê / xem năng lực bo mạch theo 5 nguyên thủy |
-| `verify [--targets sim,linux]` | Mọi gate phân giải, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`). So quyết định, chưa so timing |
+| `verify [--targets sim,linux]` | Mọi gate phân giải, mọi ca của corpus tool call (`fixtures/tool_calls/`, trên `sim`) ra đúng đáp án, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`). So quyết định, chưa so timing |
 | `build --target <t> --board <id>` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate; kiểm `[mcp]` và `[system_two]` (API key ghi trong `agent.toml` ⇒ lỗi, không in lại key). `--agent` (mặc định `agent.toml`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
 | `replay <tệp> [--target sim\|linux]` | Replay trên HAL thật: dữ kiện đã ghi vào lại, phán quyết gate và lệnh chân **tính lại**, rồi so với golden (`--golden <tệp>`, mặc định chính vết ghi). Khớp ⇒ mã 0; lệch ⇒ mã 1, `NE4002`, dòng lệch đầu tiên. `--agent`, `--board`, `--trace-out` |
 | `record [--out traces/] [-c "<lệnh>"] [--anonymize]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`), phán quyết giữ nguyên (FR-TRC-07) |
@@ -854,6 +864,7 @@ neuroedge-init/
 │   │   └── expected_errors.yaml
 │   ├── gates/            valid/ · invalid/ · registry/
 │   │   └── expected_errors.yaml
+│   ├── tool_calls/       Corpus Gated Tool Profile: valid/ · invalid/ · expected_results.yaml
 │   ├── decision_trees/   Bảng sự thật cho walker C — sinh bằng scripts/generate_truth_tables.py
 │   └── agents/villa-concierge/   Agent mẫu: agent.toml · actions/ · commands.toml
 ├── python/neuroedge/
@@ -866,7 +877,7 @@ neuroedge-init/
 │   ├── sim/              L0 — SimSession (gõ chữ) · ui.py (run --ui, web cục bộ)
 │   ├── viz/              trace view · export Perfetto · bộ hiển thị dùng chung
 │   ├── templates/        Mẫu dự án cho `neuroedge new` (*.tmpl, không copier)
-│   ├── testing/          Action CI — recorder · player (replay) · assertions · golden
+│   ├── testing/          Action CI — recorder · player (replay) · assertions · golden · tool_corpus
 │   ├── cli/              CLI Typer · run.py (REPL) · explain.py (gate explain)
 │   ├── errors.py         Hợp đồng lỗi 3 thành phần
 │   ├── trace.py          Thẩm định vết ghi
@@ -988,6 +999,9 @@ Việc thường gặp nhất khi build tiếp, nên ghi rõ quy trình:
 
 3. Chạy `pytest -q`. Test cưỡng chế corpus khép kín **hai chiều**, nên thiếu một
    trong hai bước sẽ đỏ.
+
+Corpus tool call (`fixtures/tool_calls/`) cũng khép kín hai chiều, nhưng đáp án nằm ở
+`expected_results.yaml` cho cả `valid/` lẫn `invalid/` — luật ở `docs/spec/tool_calling.md` §9.
 
 `where_contains` và `why_contains` là so khớp chuỗi con, nên có thể cải thiện
 cách diễn đạt lỗi mà không phải sửa tệp này — nhưng **lớp lỗi, mã ổn định và

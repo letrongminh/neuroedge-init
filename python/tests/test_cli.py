@@ -191,6 +191,7 @@ def test_verify_replays_every_canonical_trace_and_states_what_it_did_not_check(i
     result = invoke("verify")
     assert result.exit_code == 0, result.output
     assert "all gates resolve" in result.output
+    assert "give the recorded result" in result.output  # the tool-call corpus (§9)
     for name in ("happy-path.json", "unverified_attempt.json", "network_offline.json"):
         assert name in result.output
     # Timing is not compared yet; the command must not imply otherwise.

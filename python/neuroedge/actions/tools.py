@@ -111,6 +111,7 @@ def mcp_tool(spec: ActionSpec, limits: Mapping[str, Any] | None = None) -> dict[
         "name": spec.name,
         "description": _description(spec),
         "inputSchema": input_schema(spec, limits),
+        "outputSchema": result_schema(spec.name),
     }
 
 
@@ -247,31 +248,115 @@ class ToolResult:
         return self.status == "ALLOW"
 
     def content(self) -> dict[str, Any]:
-        """What the caller (an LLM, an MCP client) is told back."""
+        """What the caller (an LLM, an MCP client) is told back — `result_schema()`."""
         out: dict[str, Any] = {"tool": self.call.name, "status": self.status}
         if self.problems:
             out["problems"] = list(self.problems)
-        gate = self.action.gate if self.action is not None else None
-        if gate is not None and self.status == "BLOCK":
-            out.update(
-                {
-                    k: v
-                    for k, v in {
-                        "gate": gate.gate,
-                        "reason": str(gate.reason) if gate.reason else None,
-                        "failed_criterion": gate.failed_criterion,
-                        "on_block": gate.on_block_action,
-                        "message": gate.message,
-                        "escalated_to": gate.escalated_to,
-                    }.items()
-                    if v is not None
-                }
-            )
-        pending = self.action.confirmation if self.action is not None else None
-        if pending is not None:
-            # A person must answer on the device; this caller cannot (Q-26).
-            out["confirmation"] = pending.describe()
+        if self.action is not None:
+            out.update(_verdict_fields(self.action))
         return out
+
+
+def _verdict_fields(result: ActionResult) -> dict[str, Any]:
+    """
+    Why a BLOCK blocked and what happened instead; nothing for an ALLOW.
+
+    `fallback` is the `on_block: degrade` action that ran through its own gate
+    (Q-17), told back in the same shape, so a caller knows the porch light came
+    on instead of the gate opening — or that the fallback was blocked too.
+    """
+    out: dict[str, Any] = {}
+    gate = result.gate
+    if gate is not None and result.blocked:
+        out.update(
+            {
+                k: v
+                for k, v in {
+                    "gate": gate.gate,
+                    "reason": str(gate.reason) if gate.reason else None,
+                    "failed_criterion": gate.failed_criterion,
+                    "on_block": gate.on_block_action,
+                    "message": gate.message,
+                    "escalated_to": gate.escalated_to,
+                }.items()
+                if v is not None
+            }
+        )
+    if result.fallback is not None:
+        fallback = result.fallback
+        out["fallback"] = {
+            "tool": fallback.action,
+            "status": "BLOCK" if fallback.blocked else "ALLOW",
+            **_verdict_fields(fallback),
+        }
+    if result.confirmation is not None:
+        # A person must answer on the device; this caller cannot (Q-26).
+        out["confirmation"] = result.confirmation.describe()
+    return out
+
+
+def result_schema(tool: str | None = None) -> dict[str, Any]:
+    """
+    JSON Schema of `ToolResult.content()` — the MCP `outputSchema` of every tool
+    (docs/spec/tool_calling.md §4). `tool` pins the `tool` field to that name.
+    """
+    from ..engine.binary_tree import ACTIONS as ON_BLOCK_ACTIONS
+    from ..engine.verdict import Reason
+
+    text = {"type": "string"}
+    verdict = {
+        "tool": text,
+        "status": {"enum": ["ALLOW", "BLOCK"]},
+        "gate": text,
+        "reason": {"enum": [str(reason) for reason in Reason]},
+        "failed_criterion": text,
+        "on_block": {"enum": list(ON_BLOCK_ACTIONS)},
+        "message": text,
+        "escalated_to": text,
+        "fallback": {"$ref": "#/$defs/fallback"},
+        "confirmation": {"$ref": "#/$defs/confirmation"},
+    }
+    # A BLOCK always names its gate and what it did; a REJECTED always says why.
+    block = {
+        "if": {"properties": {"status": {"const": "BLOCK"}}, "required": ["status"]},
+        "then": {"required": ["gate", "on_block"]},
+    }
+    rejected = {
+        "if": {"properties": {"status": {"const": "REJECTED"}}, "required": ["status"]},
+        "then": {"required": ["problems"]},
+    }
+    return {
+        "type": "object",
+        "properties": {
+            **verdict,
+            "tool": {"type": "string", "const": tool} if tool else text,
+            "status": {"enum": ["ALLOW", "BLOCK", "REJECTED"]},
+            "problems": {"type": "array", "items": text, "minItems": 1},
+        },
+        "required": ["tool", "status"],
+        "additionalProperties": False,
+        "allOf": [block, rejected],
+        "$defs": {
+            "fallback": {
+                "type": "object",
+                "properties": verdict,
+                "required": ["tool", "status"],
+                "additionalProperties": False,
+                "allOf": [block],
+            },
+            "confirmation": {
+                "type": "object",
+                "properties": {
+                    "id": text,
+                    "message": text,
+                    "expires_in_ms": {"type": "number"},
+                    "who": text,
+                },
+                "required": ["id", "message", "expires_in_ms", "who"],
+                "additionalProperties": False,
+            },
+        },
+    }
 
 
 def next_call_id(conversation: Conversation) -> str:

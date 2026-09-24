@@ -1,0 +1,3 @@
+# Lệnh nói trên thiết bị (`local_grammar`) mở được cổng.
+agent: driveway
+call:  { name: open_gate, arguments: {}, source: local_grammar }

@@ -1,0 +1,3 @@
+# RFC-0005: zone ngoài enum [front, side] ⇒ gate chặn.
+agent: driveway
+call:  { name: buzz_in, arguments: { zone: garage }, source: system_two }

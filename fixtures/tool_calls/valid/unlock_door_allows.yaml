@@ -1,0 +1,4 @@
+# Đủ dữ kiện đặt phòng: mở khoá, xung đúng `duration_s` bên gọi chọn.
+agent: villa-concierge
+call:  { name: unlock_door, arguments: { guest_id: "101", duration_s: 5 }, source: mcp }
+facts: { room_matches: true }

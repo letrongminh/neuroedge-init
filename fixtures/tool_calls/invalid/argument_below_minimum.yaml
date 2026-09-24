@@ -1,0 +1,3 @@
+# RFC-0005: seconds 0 dưới minimum 1 ⇒ gate chặn.
+agent: driveway
+call:  { name: buzz_in, arguments: { zone: front, seconds: 0 }, source: mcp }

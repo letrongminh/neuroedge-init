@@ -1,0 +1,4 @@
+# Rủi ro medium vượt `lte: low` đã siết ⇒ escalate.
+agent: villa-concierge
+call:  { name: unlock_door, arguments: {}, source: system_two }
+facts: { room_matches: true, risk_level: medium }

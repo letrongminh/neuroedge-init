@@ -1,0 +1,4 @@
+# RFC-0005: một lần mở khoá dài một giờ do prompt injection. inputSchema nói
+# maximum 60; gate cưỡng chế: BLOCK argument_out_of_range, không phải REJECTED (§3).
+agent: driveway
+call:  { name: buzz_in, arguments: { zone: front, seconds: 3600 }, source: mcp }

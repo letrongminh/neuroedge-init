@@ -1,0 +1,19 @@
+# Fallback của open_gate — vẫn là một hành động vật lý, nên vẫn có gate (A3).
+schema:  neuroedge.gate/v1
+name:    porch_light_on
+version: 1.0.0
+
+evaluate:
+  light_allowed:
+    type: bool
+    instructions: "Công tắc đèn hiên không bị khoá tay"
+
+allow_when:
+  light_allowed: true
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

@@ -1,0 +1,190 @@
+# Kết quả mong đợi của corpus Gated Tool Profile (docs/spec/tool_calling.md §9).
+#
+# Mỗi tệp trong valid/ và invalid/ có đúng một mục ở đây, và mỗi mục có đúng một
+# tệp: python/tests/test_tool_corpus.py (và `neuroedge verify`) fail khi lệch.
+# Tệp ca chỉ nêu đầu vào (agent, call, facts, sensors); tệp này nêu đáp án.
+# Nghĩa của valid/ – invalid/ và luật so sánh: docs/spec/tool_calling.md §9.
+
+valid:
+  light_on_from_mcp.yaml:
+    status: ALLOW
+    pins: [{ pin: porch_light, operation: "on", duration_ms: 0 }]
+
+  light_off_room_empty.yaml:
+    status: ALLOW
+    pins: [{ pin: porch_light, operation: "off", duration_ms: 0 }]
+
+  light_off_asks_a_person.yaml:
+    status: BLOCK
+    gate: light_off@1.0.0
+    reason: condition_not_met
+    failed_criterion: room_empty
+    on_block: ask
+    message: "Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?"
+    confirmation:
+      id: confirm_1
+      message: "Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?"
+      expires_in_ms: 10000      # max(p95 150 × 3, 10 s)
+    pins: []
+
+  light_off_ask_without_question.yaml:
+    status: BLOCK
+    reason: condition_not_met
+    failed_criterion: call_source
+    on_block: ask
+    pins: []
+
+  light_on_source_denied.yaml:
+    status: BLOCK
+    gate: light_on@1.0.0
+    reason: condition_not_met
+    failed_criterion: call_source
+    on_block: deny
+    pins: []
+
+  unlock_door_allows.yaml:
+    status: ALLOW
+    pins: [{ pin: door_lock, operation: pulse, duration_ms: 5000 }]
+
+  unlock_door_escalates_undecided.yaml:
+    status: BLOCK
+    gate: unlock_door@1.2.0
+    reason: criterion_unavailable
+    failed_criterion: room_matches
+    on_block: escalate
+    escalated_to: human_receptionist
+    pins: []
+
+  unlock_door_escalates_on_risk.yaml:
+    status: BLOCK
+    reason: condition_not_met
+    failed_criterion: risk_level
+    on_block: escalate
+    escalated_to: human_receptionist
+    pins: []
+
+  open_gate_from_grammar.yaml:
+    status: ALLOW
+    pins: [{ pin: gate_relay, operation: pulse, duration_ms: 20000 }]
+
+  open_gate_mcp_degrades.yaml:
+    status: BLOCK
+    gate: open_gate@1.0.0
+    reason: condition_not_met
+    failed_criterion: call_source
+    on_block: degrade
+    fallback: { tool: porch_light_on, status: ALLOW }
+    pins: [{ pin: porch_light, operation: "on", duration_ms: 0 }]
+
+  open_gate_degrade_fallback_blocked.yaml:
+    status: BLOCK
+    reason: condition_not_met
+    failed_criterion: call_source
+    on_block: degrade
+    fallback:
+      tool: porch_light_on
+      status: BLOCK
+      gate: porch_light_on@1.0.0
+      reason: condition_not_met
+      failed_criterion: light_allowed
+      on_block: deny
+    pins: []
+
+  open_gate_no_visitor_degrades.yaml:
+    status: BLOCK
+    reason: condition_not_met
+    failed_criterion: visitor_expected
+    on_block: degrade
+    fallback: { tool: porch_light_on, status: ALLOW }
+    pins: [{ pin: porch_light, operation: "on", duration_ms: 0 }]
+
+  buzz_in_defaults.yaml:
+    status: ALLOW
+    pins: [{ pin: door_lock, operation: pulse, duration_ms: 5000 }]
+
+  buzz_in_at_the_limits.yaml:
+    status: ALLOW
+    pins: [{ pin: door_lock, operation: pulse, duration_ms: 60000 }]
+
+  buzz_in_coerces_a_text_slot.yaml:
+    status: ALLOW
+    pins: [{ pin: door_lock, operation: pulse, duration_ms: 8000 }]
+
+  buzz_in_no_visitor_denied.yaml:
+    status: BLOCK
+    reason: condition_not_met
+    failed_criterion: visitor_expected
+    on_block: deny
+    pins: []
+
+invalid:
+  unknown_tool.yaml:
+    status: REJECTED
+    problems: ["no tool named 'unlock_everything'"]
+    pins: []
+
+  unknown_argument.yaml:
+    status: REJECTED
+    problems: ["unknown argument 'brightness'"]
+    pins: []
+
+  caller_declares_call_source.yaml:
+    status: REJECTED
+    problems: ["unknown argument 'call_source'"]
+    pins: []
+
+  wrong_type_text.yaml:
+    status: REJECTED
+    problems: ["argument 'duration_s' must be integer"]
+    pins: []
+
+  wrong_type_boolean.yaml:
+    status: REJECTED
+    problems: ["argument 'seconds' must be integer"]
+    pins: []
+
+  wrong_type_fraction.yaml:
+    status: REJECTED
+    problems: ["argument 'seconds' must be integer"]
+    pins: []
+
+  missing_required_argument.yaml:
+    status: REJECTED
+    problems: ["missing required argument 'zone'"]
+    pins: []
+
+  argument_above_maximum.yaml:
+    status: BLOCK
+    gate: buzz_in@1.0.0
+    reason: argument_out_of_range
+    failed_criterion: seconds
+    on_block: deny
+    pins: []
+
+  argument_below_minimum.yaml:
+    status: BLOCK
+    reason: argument_out_of_range
+    failed_criterion: seconds
+    on_block: deny
+    pins: []
+
+  argument_not_in_enum.yaml:
+    status: BLOCK
+    reason: argument_out_of_range
+    failed_criterion: zone
+    on_block: deny
+    pins: []
+
+  argument_too_long.yaml:
+    status: BLOCK
+    reason: argument_out_of_range
+    failed_criterion: note
+    on_block: deny
+    pins: []
+
+  argument_limit_before_facts.yaml:
+    status: BLOCK
+    reason: argument_out_of_range
+    failed_criterion: seconds
+    on_block: deny
+    pins: []

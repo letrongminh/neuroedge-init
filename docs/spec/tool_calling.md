@@ -103,7 +103,7 @@ là cưỡng chế.
 | `status` | Nghĩa | Chân | MCP `isError` |
 |:---|:---|:---|:---:|
 | `ALLOW` | Gate cho qua, thân `@action` đã chạy | Có thể đổi | `false` |
-| `BLOCK` | Gate chặn (mọi `on_block`, Q-17) | Không đổi | `false` |
+| `BLOCK` | Gate chặn (mọi `on_block`, Q-17) | Không đổi — trừ chân của `fallback_action` khi `degrade` và fallback được gate của nó cho qua | `false` |
 | `REJECTED` | Tool lạ hoặc tham số sai; không có phán quyết | Không đổi | `true` |
 
 `BLOCK` **không** là lỗi giao thức: gate làm đúng việc của nó, và bên gọi cần đọc lý do
@@ -117,10 +117,14 @@ Nội dung trả về (`ToolResult.content()`; MCP gửi ở cả `structuredCon
 | `tool`, `status` | Luôn có |
 | `problems` | `REJECTED` — danh sách lý do, mỗi lý do một câu |
 | `gate`, `reason`, `failed_criterion`, `on_block`, `message`, `escalated_to` | `BLOCK` — các trường có giá trị |
-| `fallback` | `BLOCK` với `on_block: degrade` — kết quả của `fallback_action` *(chưa có — TSK-S3-24)* |
+| `fallback` | `BLOCK` với `on_block: degrade` — kết quả của `fallback_action` đã chạy qua gate riêng của nó: `{tool, status}` và, nếu nó cũng bị chặn, các trường `BLOCK` của nó (đệ quy) |
+| `confirmation` | `BLOCK` với `on_block: ask` khi có câu hỏi chờ người (§6) |
 
-Máy chủ MCP **NÊN** khai lược đồ này ở `outputSchema` của mỗi tool *(chưa có —
-TSK-S3-24)*.
+Máy chủ MCP khai lược đồ này ở `outputSchema` của mỗi tool (`result_schema()` trong
+`actions/tools.py`; `neuroedge mcp tools --json` in ra cùng `inputSchema`). Client MCP kiểm
+`structuredContent` của mọi kết quả **không** lỗi theo lược đồ đó; kết quả `REJECTED`
+(`isError: true`) không được SDK kiểm, nhưng vẫn khớp lược đồ (tool lạ thì khớp lược đồ không
+ghim tên `tool`).
 
 ## 5. `call_source`
 
@@ -141,7 +145,8 @@ Nguồn **gắn theo kết nối**, do runtime tạo kết nối đó: `neuroedg
 Bên gọi **KHÔNG ĐƯỢC** tự khai nguồn: `call_source` không phải tham số của tool nào, nên
 một mô hình gửi `{"call_source": "local_grammar"}` bị `REJECTED` ở bước 3
 (`test_a_model_cannot_claim_its_own_call_source`). Ví dụ đầy đủ:
-`fixtures/agents/home-voice/gates/`.
+`fixtures/agents/home-voice/gates/`, và `fixtures/agents/driveway/gates/open_gate@1.0.0.yaml`
+(client MCP không mở được cổng).
 
 ## 6. Xác nhận `on_block: ask` (Q-26)
 
@@ -212,8 +217,26 @@ trình trước `initialize` mà vẫn giữ stdin của nó, nên tiến trình
 
 Một runtime được gọi là **NeuroEdge-gated** khi nó qua corpus
 `fixtures/tool_calls/{valid,invalid}/` với `expected_results.yaml` — khép kín hai chiều
-như corpus gate: mỗi tệp có một mục, mỗi mục có một tệp (TSK-S3-24). Mỗi mục nêu tool
-call, dữ kiện, và kết quả mong đợi (`status`, `failed_criterion`, lệnh chân).
+như corpus gate: mỗi tệp có một mục, mỗi mục có một tệp (TSK-S3-24).
+
+- **Tệp ca** nêu đầu vào: `agent` (một thư mục của `fixtures/agents/`), `call`
+  (`name`, `arguments`, `source` — nguồn do runtime gán như một kết nối), `facts` (ghi đè
+  `[sim.facts]`) và `sensors` (số đọc giả lập trước lời gọi).
+- **`expected_results.yaml`** nêu đáp án theo từng tệp: `status`, các trường của §4 (`reason`,
+  `failed_criterion`, `on_block`, `escalated_to` phải khớp đúng; `problems` so chuỗi con;
+  `confirmation`, `fallback` có/không phải khớp) và `pins` — mọi lệnh chân, đúng thứ tự.
+- **`valid/`** là lời gọi khớp `inputSchema` tool khai ra (sau phép ép chuỗi của §2): gate quyết
+  định, `ALLOW` hoặc `BLOCK`. **`invalid/`** là lời gọi không khớp: tool lạ, tham số lạ, sai kiểu,
+  thiếu tham số bắt buộc, tự khai `call_source` ⇒ `REJECTED`; giá trị ngoài giới hạn tham số
+  (`minimum`, `maximum`, `enum`, `maxLength` — RFC-0005) ⇒ gate chặn, `BLOCK`
+  `argument_out_of_range` (§3). Không lời gọi `invalid/` nào được `ALLOW`. Runner kiểm cả
+  phép chia này, nên một ca không nằm nhầm nửa được.
+
+Runner `neuroedge.testing.tool_corpus` chạy mỗi ca qua `dispatch()` thật của một `SimSession`
+mới — đúng đường của client MCP và System 2 — rồi so với đáp án. `neuroedge verify` chạy cả
+corpus; `pytest tests/test_tool_corpus.py` chạy thêm từng ca qua một client MCP thật và kiểm kết
+quả khớp `outputSchema` (§4). Wheel mang corpus (`neuroedge/_data/fixtures/tool_calls/`), nên
+bản đã cài cũng tự kiểm được.
 
 Lược đồ phong bì và kết quả sẽ đóng băng thành `schemas/` khi corpus ổn định và có một
 client bên ngoài dùng (`TODOS.md` #23). Cho tới lúc đó, profile là **v0** và đổi được

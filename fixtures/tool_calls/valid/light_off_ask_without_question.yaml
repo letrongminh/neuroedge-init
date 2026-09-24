@@ -1,0 +1,5 @@
+# RFC-0006: gate chặn vì `call_source`, không vì room_empty — lời "có" không đủ
+# để cho qua, nên `ask` chỉ thông báo, không mở câu hỏi nào.
+agent: home-voice
+call:  { name: light_off, arguments: {}, source: test }
+sensors: { motion: true }

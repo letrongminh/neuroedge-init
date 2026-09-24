@@ -1,0 +1,4 @@
+# Tham số hợp lệ nhưng không có khách hẹn ⇒ deny, không chân nào đổi.
+agent: driveway
+call:  { name: buzz_in, arguments: { zone: front, seconds: 3 }, source: mcp }
+facts: { visitor_expected: false }

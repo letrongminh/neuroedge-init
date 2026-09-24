@@ -780,6 +780,31 @@ def mcp_desktop_config(
     typer.echo("Quit Claude Desktop completely (not just close the window), then reopen it.")
 
 
+def _verify_tool_corpus() -> int:
+    """The Gated Tool Profile corpus (docs/spec/tool_calling.md §9); the number of problems."""
+    from ..testing.tool_corpus import run_corpus
+
+    console.print("\n[bold]Running the tool-call corpus in fixtures/tool_calls/ on sim[/bold]")
+    try:
+        outcomes, closure = run_corpus()
+    except NeuroEdgeError as error:
+        err_console.print(f"  [red]✗[/red] [{error.code}] {escape(error.why)}")
+        return 1
+    for problem in closure:
+        err_console.print(f"  [red]✗[/red] {escape(problem)}")
+    failed = [outcome for outcome in outcomes if not outcome.ok]
+    for outcome in failed:
+        for difference in outcome.differences:
+            err_console.print(f"  [red]✗[/red] {outcome.case.name}: {escape(difference)}")
+    valid = sum(outcome.case.kind == "valid" for outcome in outcomes)
+    if not failed and not closure:
+        console.print(
+            f"  [green]✓[/green] {len(outcomes)} tool calls ({valid} valid, "
+            f"{len(outcomes) - valid} invalid) give the recorded result"
+        )
+    return len(failed) + len(closure)
+
+
 @app.command()
 def verify(
     targets: str = typer.Option(
@@ -789,9 +814,10 @@ def verify(
     """
     Verify the frozen artifacts and target equivalence (A2).
 
-    Every gate resolves, every canonical trace validates, and every canonical
-    trace replays on each requested target to the decisions it records —
-    verdict sequence and pin commands (FR-CI-07). `linux` needs GPIO lines:
+    Every gate resolves, every canonical trace validates, every case of the
+    Gated Tool Profile corpus (fixtures/tool_calls/) gives its recorded result,
+    and every canonical trace replays on each requested target to the decisions
+    it records — verdict sequence and pin commands (FR-CI-07). `linux` needs GPIO lines:
     a board, or `scripts/setup_gpio_sim.sh`.
     """
     from ..testing.golden import GoldenComparator
@@ -824,6 +850,8 @@ def verify(
         except NeuroEdgeError as error:
             problems += 1
             err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {escape(error.why)}")
+
+    problems += _verify_tool_corpus()
 
     console.print(f"\n[bold]Replaying canonical traces on {', '.join(requested)}[/bold]")
     table = Table()
@@ -863,8 +891,9 @@ def verify(
 
     console.print(
         Panel(
-            "[green]Passed:[/green] all gates resolve, all canonical traces validate, and "
-            f"each replays on {', '.join(requested)} to the verdicts and pin commands it "
+            "[green]Passed:[/green] all gates resolve, all canonical traces validate, "
+            "every tool call of the corpus gives its recorded result, and each trace "
+            f"replays on {', '.join(requested)} to the verdicts and pin commands it "
             "records.\n\n"
             "[yellow]Compared:[/yellow] decisions only — not timing. Timing equivalence and "
             "the esp32s3 target arrive with Sprint 4 (TSK-S4-04).",

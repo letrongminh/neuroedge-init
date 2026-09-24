@@ -1,0 +1,4 @@
+# Nguồn được nhận nhưng không có khách hẹn ⇒ degrade, fallback được phép.
+agent: driveway
+call:  { name: open_gate, arguments: {}, source: system_two }
+facts: { visitor_expected: false }
