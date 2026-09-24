@@ -15,8 +15,8 @@ Two properties carry the weight:
 * **The tree carries `gate_digest`**, so a tree can always be traced back to
   the exact signed policy it was compiled from (ENG-T2).
 
-The format is internal and not frozen; RFC-0003 freezes it before the first C
-walker exists (TODOS.md #15).
+This JSON form is internal to the host and not frozen. The device reads the
+same tree in the binary layout RFC-0003 freezes (`NETR` v1, `binary_tree.py`).
 """
 
 from __future__ import annotations
@@ -238,7 +238,9 @@ def truth_table(tree: Mapping[str, Any]) -> dict[str, Any]:
     return {"gate": tree["gate"], "gate_digest": tree["gate_digest"], "rows": rows}
 
 
-def known_failure(tree: Mapping[str, Any], facts: Mapping[str, Fact]) -> tuple[Reason, str] | None:
+def known_failure(
+    tree: Mapping[str, Any], facts: Mapping[str, Fact], waived: frozenset[str] = frozenset()
+) -> tuple[Reason, str] | None:
     """
     The first criterion whose fact is *present* and fails, ignoring missing facts.
 
@@ -246,6 +248,8 @@ def known_failure(tree: Mapping[str, Any], facts: Mapping[str, Fact]) -> tuple[R
     could not be decided, never a fact that was decided and said no.
     """
     for node in tree["nodes"]:
+        if node["criterion"] in waived:
+            continue
         fact = facts.get(node["criterion"])
         if fact is None or fact.value is None:
             continue
@@ -255,13 +259,19 @@ def known_failure(tree: Mapping[str, Any], facts: Mapping[str, Fact]) -> tuple[R
     return None
 
 
-def walk(tree: Mapping[str, Any], facts: Mapping[str, Fact]) -> TreeResult:
+def walk(
+    tree: Mapping[str, Any], facts: Mapping[str, Fact], waived: frozenset[str] = frozenset()
+) -> TreeResult:
     """
     Walk a tree. Pure: no clock, no I/O.
 
     Every criterion is evaluated so the trace lists them all; the verdict is
     ALLOW only if every node is satisfied, and the reason is the first failure
     in `criteria_order`.
+
+    `waived` are criteria a person confirmed (RFC-0006): they count as
+    satisfied whatever their fact says. The engine passes only criteria the
+    gate's own `on_block.confirms` lists, and only after a confirmation.
     """
     first: tuple[Reason, str] | None = None
     evaluations: dict[str, bool | str] = {}
@@ -270,6 +280,8 @@ def walk(tree: Mapping[str, Any], facts: Mapping[str, Fact]) -> TreeResult:
         reason, value = _classify(node, facts.get(criterion))
         if value is not None:
             evaluations[criterion] = value
+        if criterion in waived:
+            reason = None
         if reason is not None and first is None:
             first = (reason, criterion)
 

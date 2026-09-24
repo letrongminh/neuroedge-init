@@ -47,7 +47,7 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Ghi cấu hình Claude Desktop cho `mcp serve` (đường dẫn tuyệt đối, có sao lưu) | `neuroedge mcp desktop-config --agent … [--ui] --write` | ✅ cần `neuroedge[mcp]` |
 | Điều khiển từ Claude Desktop và thấy đèn/chốt ảo đổi trên trình duyệt — cùng một phiên | `neuroedge mcp serve --ui` (trang ở http://127.0.0.1:8765) | ✅ cần `neuroedge[mcp]` |
 | Cho System 2 dùng MCP server bên ngoài (tin tức, tra cứu) — chỉ lấy thông tin | `[mcp.servers]` trong `agent.toml` · `neuroedge mcp tools --external` | ✅ cần `neuroedge[mcp]` |
-| Người xác nhận khi gate hỏi lại (`ask`) | — | ⏳ TSK-S3-26 |
+| Người xác nhận khi gate hỏi lại (`ask`): gõ `có` / `không`, hoặc nút Đồng ý / Huỷ trên `run --ui` | `neuroedge run` · `neuroedge run --ui` | ✅ gate phải khai `confirms` |
 | Ghi một phiên ra vết ghi (có chế độ ẩn danh) | `neuroedge record` | ✅ |
 | Phát lại vết ghi trên `sim` / `linux`, so golden | `neuroedge replay` | ✅ |
 | Chạy test an toàn của agent (Action CI) | `neuroedge test` | ✅ |

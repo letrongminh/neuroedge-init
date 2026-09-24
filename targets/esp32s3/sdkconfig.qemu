@@ -1,0 +1,9 @@
+# Espressif QEMU smoke build (TSK-S4-08), layered on sdkconfig.defaults:
+#
+#   SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.qemu" idf.py set-target esp32s3 build
+#
+# QEMU does not emulate Wi-Fi: boot, UART, flash and the gate self-test only.
+CONFIG_NEUROEDGE_SKIP_NETWORK=y
+
+# Boot on without PSRAM when the emulator does not provide it, instead of aborting.
+CONFIG_SPIRAM_IGNORE_NOTFOUND=y

@@ -43,6 +43,21 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
   móc `lock` / `on_change` nên `mcp_server.py` không import trang. Với `run --ui`, cổng bận ⇒ lỗi 3 thành phần,
   mã 1; `mcp serve --ui` thì chuyển trang sang cổng trống (mục *Đã sửa*). Kiểm: `pytest tests/test_mcp_serve_ui.py` (có test tiến trình con chứng minh
   stdout chỉ mang JSON-RPC). (FR-CLI-10, FR-DX-04)
+- **TSK-S4-02 (sổ token) + TSK-S4-08 — sổ token dùng một lần bằng C, self-test gate lúc khởi động, QEMU.**
+  `ne_gate/src/ne_token.c`: cùng lý do, mã và thứ tự kiểm với `TokenLedger` host; 4 ô do bên gọi cấp phát, sổ đầy ⇒ `NE_TOKEN_ERR_FULL` (đóng an toàn); `boot_id` thay `process_instance_id`. Firmware chạy walker + sổ token trên gate home-voice sau NVS, trước mạng, in `NE_SELFTEST PASS`; job `firmware-qemu` boot nó trên Espressif QEMU. Kiểm: `pytest tests/test_c_token.py` · `make -C targets/esp32s3/components/ne_gate check-static`.
+- **TSK-S4-02 (walker) + TSK-S4-07 — walker C99 và bố cục nhị phân `NETR` v1 (RFC-0003 chấp thuận, thu hẹp).**
+  `neuroedge build` ghi `<gate>.netree` và `<gate>.netree.h` (mảng `const`, link vào flash). Walker
+  `targets/esp32s3/components/ne_gate/`: không cấp phát, không biến toàn cục, không đệ quy, kiểm CRC và mọi
+  offset; stack lớn nhất 176 B; hiểu giới hạn tham số (RFC-0005) và `confirms` (RFC-0006). Trên mỗi PR, walker
+  biên dịch trên host với ASan/UBSan khớp engine host trên mọi gate (truth rows + ca ngẫu nhiên) và bảng sự thật
+  đã ghi; fuzz tệp cây. Kiểm:
+  `pytest tests/test_c_walker.py` · `make -C targets/esp32s3/components/ne_gate check-static`.
+- **TSK-S3-26 — người xác nhận `on_block: ask` (Q-26, RFC-0006 chấp thuận).** Gate khai `on_block.confirms`:
+  tiêu chí lời "có" của người trên thiết bị được thay. Gate chặn ⇒ câu hỏi chờ (`tool_confirm_requested`, TTL
+  `max(p95×3, 10 s)`) chỉ khi "có" đủ để cho qua; người gõ `có` / bấm Đồng ý (`local_grammar` / `ui`) ⇒ gate
+  lượng giá lại với dữ kiện hiện tại và nguồn gọi gốc ⇒ token. System 2 / MCP không xác nhận được; dùng một lần;
+  gate đổi ⇒ vô hiệu; adjudicator suy giảm vẫn chặn. REPL `:confirm`/`:decline`, UI banner + `POST /confirm`, replay
+  tất định. `light_off` của home-voice khai `confirms: [room_empty]`. Kiểm: `pytest tests/test_tool_confirm.py`. (FR-ACE-10)
 - **Bộ chuẩn bị cổng nhu cầu 2026-10-25 (Q-20, `TODOS.md` #19).** `docs/business/cong-nhu-cau-2026-10-25/`:
   10 câu hỏi cổng C1–C10 gắn với `CEO-X*`/`T*` và proposal §8.7, kế hoạch theo ngày, demo ≤ 5 phút cho 4 phân khúc
   (chỉ lệnh đã chạy thật, kèm bảng *không được nói là đã có*), bộ câu hỏi phỏng vấn kiểu The Mom Test, thang chấm

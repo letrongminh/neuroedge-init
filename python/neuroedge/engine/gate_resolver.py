@@ -411,6 +411,20 @@ def _resolve_on_block(
     """
     if not child:
         return dict(inherited)
+    if has_base and child.get("confirms"):
+        # RFC-0006: what a person may stand in for can only shrink down a chain.
+        base = set(inherited.get("confirms") or ()) if inherited.get("action") == "ask" else set()
+        extra = sorted(set(child["confirms"]) - base)
+        if extra:
+            raise GateInheritanceError(
+                where=f"{child_label} -> on_block.confirms",
+                why=(
+                    f"lets a person's confirmation stand in for {extra}, which the inherited "
+                    f"on_block does not ({sorted(base) or 'nothing'}); that is more permissive"
+                ),
+                how="list a subset of the inherited confirms, or omit confirms",
+                principle=2,
+            )
     if has_base and child.get("action") == "degrade":
         kept = inherited.get("action") == "degrade" and child.get(
             "fallback_action"
@@ -557,6 +571,13 @@ def resolve_gate_document(
             where=f"{leaf_label} -> on_block",
             why="no on_block behaviour is declared anywhere in the inheritance chain",
             how="declare on_block with one of: deny, escalate, ask, degrade (Appendix B.3)",
+        )
+    unknown = [c for c in on_block.get("confirms", ()) if c not in constraints]
+    if unknown:
+        raise GateSchemaError(
+            where=f"{leaf_label} -> on_block.confirms",
+            why=f"{unknown} are not allow_when criteria of this gate, so there is nothing to confirm",
+            how=f"list only criteria of allow_when: {sorted(constraints)}",
         )
 
     return ResolvedGate(
