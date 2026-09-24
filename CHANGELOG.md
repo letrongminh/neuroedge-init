@@ -50,7 +50,7 @@ bản gói.
   `system_two_call`. Kiểm: `pytest tests/test_providers.py tests/test_offline_fallback.py` · job `cloud-extra`.
 - **TSK-S3-27 — `neuroedge mcp serve --ui` và `neuroedge mcp desktop-config`.** Một tiến trình phục vụ MCP qua stdio và
   trang `sim` của cùng phiên; `desktop-config --write` ghi mục Claude Desktop bằng đường dẫn tuyệt đối. Đã chạy trên
-  Desktop thật. Kiểm: `pytest tests/test_mcp_serve_ui.py tests/test_mcp_desktop.py`. (FR-CLI-10)
+  Desktop thật. Kiểm: `pytest tests/test_mcp_serve_ui.py tests/test_mcp_desktop.py`. (FR-CLI-12)
 - **TSK-S4-07 — walker C99 cho bố cục `NETR` v1 (RFC-0003, Q-23).** `build` ghi `<gate>.netree` + `.netree.h`; walker
   `targets/esp32s3/components/ne_gate/` khớp engine host trên mọi gate, mỗi PR, dưới ASan/UBSan. Kiểm: `pytest
   tests/test_c_walker.py`.
@@ -68,7 +68,10 @@ bản gói.
   (FR-MDL-11, FR-MDL-12)
 - **Q-24 — hành động là tool call; Gated Tool Profile v0.** Mỗi `@action` là một tool; ngữ pháp cục bộ, System 2 và MCP
   gửi cùng `ToolCall` → kiểm schema → `c.do()` → gate; `mcp tools`, `mcp serve`, extra `neuroedge[mcp]`. Đặc tả:
-  `docs/spec/tool_calling.md`. Kiểm: `pytest tests/test_tools.py`. (FR-MDL-10, FR-CLI-10)
+  `docs/spec/tool_calling.md`. Kiểm: `pytest tests/test_tools.py`. (FR-MDL-10, FR-CLI-12)
+- **Q-28 — mốc giao FR-GW; TSK-S5-10 nhận `run --target linux`.** FR-GW-01/03 ở dạng tối thiểu trong v1.0 (đúng như
+  TSK-S2-11 đã giao), phần còn lại v1.1 (K2-01→03); phiên tương tác linux có chủ ở Sprint 5. PRD §15, roadmap §5.2.
+  (FR-GW-01, FR-GW-03, FR-CLI-02)
 - **FR-DX-05 — mẫu `home-voice`.** Trợ lý giọng nói trong nhà: hỏi đáp knowledge base, tin tức qua System 2, đèn qua gate
   có cảm biến; `neuroedge new --template home-voice`. Kiểm: `pytest tests/test_home_voice.py`.
 - **TSK-S3-17 — wheel tự chạy được.** `neuroedge/_data/` mang `boards/`, `schemas/`, `gates/`, fixture, cả khi build từ
@@ -121,7 +124,9 @@ bản gói.
 
 - **Rà soát tài liệu MECE — mỗi sự thật một nơi.** Chủ sở hữu mới: danh sách cần RFC và cấu trúc kho ở
   `CONTRIBUTING.md` §3, §6; lệnh và job CI ở §2 tệp này; mã lỗi ở PRD Phụ lục B; allowlist giấy phép ở Q-11. Các mốc
-  `[0.1.0]`–`[0.4.0]` đổi tên thành mốc tài liệu; `TODOS.md` xếp theo chủ đề, số mục giữ nguyên.
+  `[0.1.0]`–`[0.4.0]` đổi tên thành mốc tài liệu; `TODOS.md` xếp theo chủ đề, số mục giữ nguyên. PRD sở hữu nguyên tắc,
+  tiêu chí A/B/C, ngưỡng NFR, giả định, ngoài phạm vi, giao thức; roadmap §10.1 chỉ còn mã | tên | ngày | task; proposal
+  chỉ giữ "vì sao"; thuật ngữ về `docs/user/thuat-ngu.md`; FR-CLI MCP đổi mã thành FR-CLI-12.
 - **Q-21 — kế hoạch lấp khoảng trống kỹ thuật.** Firmware không cần bo mạch (TSK-S4-02, S4-07 → S4-09, S4-11) kéo lên
   A2; TSK-S2-07 lên A2; TSK-S2-09 từ Sprint 5 lên Sprint 3; thêm TSK-S4-12. CI âm thanh dùng backend tệp/PCM vì runner
   GitHub không có `snd-aloop`. Roadmap §4.3.
