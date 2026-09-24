@@ -140,6 +140,11 @@ bản gói.
   replay (TSK-S4-04) là "chưa hiện thực". Kiểm: `pytest tests/test_cli.py -k esp32s3`.
 - **`mcp tools --help` mất chữ `[mcp.servers]`** vì `rich` đọc nó là thẻ markup. Escape trong `help=`; mọi `--help`
   được kiểm không nuốt chữ trong ngoặc vuông. Kiểm: `pytest tests/test_cli_help.py`.
+- **TSK-S3-26 — REPL in lời "có" như một lượt đã xác nhận.** Trước: in "System 2 handled free phrasing", không có
+  dòng ALLOW và bảng chân, dù vết ghi có `tool_confirmed` + ALLOW. Nay in phán quyết lần hai và chân. Kiểm: `pytest
+  tests/test_cli_run.py -k confirmed_answer`.
+- **`neuroedge build --target sim` không có `--board` chọn nhầm `esp32s3-box-3`** và fail NE3003. Bo mạch mặc định
+  nay theo target (`sim` → `sim-default`, `linux` → `linux-rpi5`). Kiểm: `pytest tests/test_compiler.py -k reference_board`.
 - **TSK-S3-27 — `mcp serve` bị client bỏ rơi không còn giữ cổng.** Không có `initialize` trong `--init-timeout` giây ⇒
   nhả cổng, thoát 0; cổng `--ui` bận ⇒ trang sang cổng trống, MCP vẫn chạy. Kiểm: `pytest tests/test_mcp_desktop.py`.
 - **Hai dự án cùng tên agent dùng chung một module `actions/` đã import.** `load_actions` đặt tên module theo cả thư
@@ -669,7 +674,7 @@ Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://
 | `trace export <tệp> --format chrome [-o]` | Chrome Trace Event JSON cho Perfetto (`ui.perfetto.dev`) — gate và xung thành slice |
 | `board list` / `board show <id>` | Liệt kê / xem năng lực bo mạch theo 5 nguyên thủy |
 | `verify [--targets sim,linux]` | Mọi gate phân giải, mọi ca của corpus tool call (`fixtures/tool_calls/`, trên `sim`) ra đúng đáp án, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`); `esp32s3` ⇒ mã 2. So quyết định, chưa so timing. Loại artifact nào quét được 0 ⇒ `NE4004`, mã 1 |
-| `build --target <t> [--board id]` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate (ghi cả `<gate>.netree`/`.netree.h`); kiểm `[mcp]` và `[system_two]` (API key ghi trong `agent.toml` ⇒ lỗi, không in lại key). `--agent` (mặc định `agent.toml`), `--board` (mặc định `esp32s3-box-3`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
+| `build --target <t> [--board id]` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate (ghi cả `<gate>.netree`/`.netree.h`); kiểm `[mcp]` và `[system_two]` (API key ghi trong `agent.toml` ⇒ lỗi, không in lại key). `--agent` (mặc định `agent.toml`), `--board` (mặc định bo mạch tham chiếu của target: `sim-default`, `linux-rpi5`, `esp32s3-box-3`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
 | `replay <tệp> [--target sim\|linux]` | Replay trên HAL thật: dữ kiện đã ghi vào lại, phán quyết gate và lệnh chân **tính lại**, rồi so với golden (`--golden <tệp>`, mặc định chính vết ghi). Khớp ⇒ mã 0; lệch ⇒ mã 1, `NE4002`, dòng lệch đầu tiên; `--target esp32s3` ⇒ mã 2. `--agent`, `--board`, `--trace-out` |
 | `record [--out traces/] [-c "<lệnh>"] [--anonymize]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`), phán quyết giữ nguyên (FR-TRC-07) |
 | `test [thư-mục] [--pytest-arg A]` | Chạy bộ Action CI (pytest) của agent, mặc định `tests/`. Mọi test đạt ⇒ mã 0; có test trượt hoặc không thu được test nào ⇒ mã 1 |
@@ -756,7 +761,7 @@ Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc 
 | [`neuroedge-proposal.md`](neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** | Khi cần biết *tại sao* |
 | [`docs/spec/`](docs/spec/) | Đặc tả chuẩn tắc: Gated Tool Profile, mô hình mối đe doạ, phủ mô phỏng, rà soát MCU | Trước khi đổi hành vi ở tầng tương ứng |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quy ước; §3 việc gì cần RFC; §6 cấu trúc kho; §8 khi xong task | Trước khi sửa |
-| [`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md) | Kế hoạch Giai đoạn 1 đã duyệt (biên bản review: `docs/archive/`) | Khi cần biết *vì sao* một task bị cắt/hoãn |
+| [`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md) | Kế hoạch Giai đoạn 1 đã duyệt, nay lưu trữ (biên bản review cùng thư mục) | Khi cần biết *vì sao* một task bị cắt/hoãn |
 | [`TODOS.md`](TODOS.md) | Việc hoãn có chủ ý, mỗi mục kèm mốc kích hoạt | Trước khi đề xuất việc "còn thiếu" |
 
 **Thứ tự ưu tiên khi lệch nhau:** PRD và proposal (hợp đồng) → roadmap (tiến độ) →

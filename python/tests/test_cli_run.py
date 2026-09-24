@@ -233,3 +233,19 @@ def test_a_malformed_slot_fact_is_a_manifest_error(tmp_path):
     agent = _agent(tmp_path, sim='\n[sim.slot_facts]\nok = "yes"\n')
     with pytest.raises(AgentManifestError, match="slot fact"):
         SimSession.load(agent)
+
+
+# --- answering the device's question (RFC-0006) ------------------------------------
+
+
+def test_a_confirmed_answer_prints_the_allow_and_the_pins(root):
+    # "có" is the person's answer, not free phrasing: show the gate's second verdict.
+    home = root / "fixtures" / "agents" / "home-voice" / "agent.toml"
+    stdin = ":sensor motion true\nbật đèn\ntắt đèn\ncó\nexit\n"
+    result = runner.invoke(app, ["run", "--agent", str(home)], input=stdin)
+    assert result.exit_code == 0, result.output
+    answer = result.output.split("tắt đèn")[-1].split("? xác nhận")[-1]
+    assert "System 2 handled free phrasing" not in answer
+    assert "answer to the pending question (confirmed)" in answer
+    assert "✓ ALLOW light_off" in answer
+    assert "porch_light" in answer and "LOW" in answer

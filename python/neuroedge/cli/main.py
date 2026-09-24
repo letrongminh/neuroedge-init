@@ -71,6 +71,9 @@ def _fail(error: NeuroEdgeError) -> None:
     raise typer.Exit(code=1)
 
 
+# The board each target builds and runs on when `--board` is not given.
+REFERENCE_BOARD = {"sim": "sim-default", "linux": "linux-rpi5", "esp32s3": "esp32s3-box-3"}
+
 # Targets the CLI knows but cannot replay on yet, and the task that brings each.
 # Asking for one exits 2 ("not implemented"), not 1 ("ran and failed").
 PLANNED_TARGETS = {"esp32s3": "TSK-S4-04"}
@@ -1193,7 +1196,12 @@ def run(
 @app.command()
 def build(
     target: str = typer.Option(..., "--target", "-t", help="Target runtime environment"),
-    board: str = typer.Option("esp32s3-box-3", "--board", "-b", help="Board profile id"),
+    board: str = typer.Option(
+        None,
+        "--board",
+        "-b",
+        help="Board profile id (default: the target's reference board, e.g. sim → sim-default)",
+    ),
     agent: Path = typer.Option(Path("agent.toml"), "--agent", "-a", help="Path to agent.toml"),
     out: Path = typer.Option(Path("build"), "--out", "-o", help="Directory for build artifacts"),
     registry: Path | None = REGISTRY_OPTION,
@@ -1205,7 +1213,7 @@ def build(
         report = run_build(
             agent,
             target=target,
-            board_id=board,
+            board_id=board or REFERENCE_BOARD.get(target, "esp32s3-box-3"),
             out_dir=out,
             registry=GateRegistry(registry) if registry is not None else None,
         )

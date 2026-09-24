@@ -32,6 +32,7 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 | 8 | **`--explain` in đường đi trên cây quyết định** | Rẻ đi hẳn sau `TSK-S2-12` (cây có `criteria_order` root-first + `gate_digest`), khi đó chỉ còn là in node đầu tiên fail | Rà lại ở **Sprint 4**, không phải "không bao giờ" |
 | 9 | **`gate digest <file>`** | `gate publish` đã in digest; `digests.lock` (`TSK-S3-16`) phủ nhu cầu CI | Nếu có người cần digest mà không muốn publish |
 | 11 | **Bất biến phiên bản phía registry (server-side).** Ghim `extends` bằng digest (#15) chỉ chặn **phía client**; nó không ngăn được việc tái publish trên một registry không kiểm soát | Chưa có registry (Khối 3) | **Khối 3**, hoặc gate công khai đầu tiên được publish |
+| 30 | **`evaluate.type: numeric`** — tiêu chí số so với ngưỡng (`pressure < 8 bar`). `schemas/gate.v1.json` chỉ nhận `bool` · `level` · `choice`, nên không gate nào diễn đạt được ngưỡng số (câu hỏi mở #10 của `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`, `DX-H4`) | Đổi enum đã đóng băng ⇒ **cần RFC** (thêm vào `gate.v1` hay để `v2`), kèm ngữ nghĩa siết chặt cho nguyên tắc 2 và nút trong bố cục `NETR`; wedge `sim` chưa có gate nào cần | Gate đầu tiên cần ngưỡng cảm biến dạng số, hoặc đối tác đầu tiên đưa nó lên đường găng |
 | 15 | **Ghim `extends` bằng digest (`TSK-S3-21`).** Tái publish base cùng version vẫn nới được mọi hậu duệ (`ENG-A1`/Failure mode 5). Cần một RFC riêng vì đổi `pattern` của `gate.v1.json`; bố cục nhị phân của cây đã tách ra và đóng băng ở RFC-0003 (`NETR` v1) | Chưa có registry; trong kho, `digests.lock` (`TSK-S3-16`) đã phủ nhu cầu CI. Firmware hôm nay link cây vào flash cùng bản build, nên host và firmware không lệch phiên bản | Cây được cập nhật qua **phân vùng flash riêng** (host và firmware lệch phiên bản được) — hoặc gate đầu tiên publish ra ngoài kho |
 
 ## Firmware, mô phỏng và bo mạch
@@ -66,6 +67,7 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 |:---:|:---|:---|:---|
 | 23 | **Đóng băng Gated Tool Profile vào `schemas/`** (lược đồ phong bì `ToolCall` và kết quả) — `docs/spec/tool_calling.md` | Corpus tuân thủ đã có (`fixtures/tool_calls/`, TSK-S3-24) nhưng chưa client bên ngoài nào dùng profile; đóng băng trước đó là mở RFC sửa ngay khi client đầu tiên đòi đổi | Một client bên ngoài dùng profile, và corpus không đổi đáp án qua một sprint |
 | 24 | **Transport MCP qua mạng** (HTTP của MCP) có xác thực — TSK-P2-04 | Mở cổng mạng tới hành động vật lý cần xác thực theo thiết bị và mTLS (NFR-SEC-04); v1.0 chỉ stdio (NFR-SEC-09) | Khách đầu tiên cần điều khiển thiết bị từ xa qua MCP, hoặc gateway (TSK-P2-05) cần transport mạng |
+| 29 | **Test riêng cho "lặp lời gọi bị chặn tới khi lọt"** (`docs/spec/threat_model.md` §2b: *chưa có test riêng*). Lập luận hiện có: gate tất định — cùng dữ kiện ⇒ cùng phán quyết, mỗi lần đều ghi vết | Tính tất định đã được phủ gián tiếp (replay tính lại phán quyết, `tests/test_player.py`); chưa có bên gọi nào lặp tự động | Trước khi mở MCP qua mạng (#24), hoặc khi vòng ReAct của System 2 (`max_rounds`) được nới — thêm một ca vào `fixtures/tool_calls/` gọi N lần cùng dữ kiện và đòi N lần `BLOCK`, N sự kiện vết ghi |
 | 25 | **Kết nối MCP bền giữa các lượt** và **transport HTTP tới MCP server bên ngoài** (Q-27) | `sim` mở kết nối theo từng lượt vì REPL chạy mỗi lượt trong một event loop riêng; HTTP cần xác thực như #24 | Runtime `linux` chạy một event loop dài, hoặc độ trễ mở kết nối vượt ngân sách lượt |
 
 ## Kinh doanh
@@ -80,8 +82,9 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 |:---|:---|
 | #1–#9 | `/autoplan` 2026-09-22, Phase 1 (CEO) — `docs/archive/giai-doan-1-review-log.md` §GSTACK CEO / DX / ENG REVIEW REPORT |
 | #10, #11 | `/autoplan` 2026-09-22, Phase 3 (Eng) — cùng biên bản |
-| #13, #14 | Review RFC-0002 (2026-09-23) — `docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md` §Review record |
+| #13, #14 | Review RFC-0002 (2026-09-23) — `docs/archive/rfc-0002-review-record.md` |
 | #15–#22 | Phiên gỡ chặn Sprint 2 (2026-09-23) — quyết định Q-14 → Q-21 (`neuroedge-prd.md` §15) |
 | #23–#25 | Phiên chuẩn hoá tool call (2026-09-23) — Q-24 → Q-27 |
 | #26 | Sổ token C (TSK-S4-02, 2026-09-24) |
 | #27, #28 | Provider thật cho System 2 (TSK-S2-11, 2026-09-24) |
+| #29, #30 | Rà soát tài liệu MECE (2026-09-24) — `docs/spec/threat_model.md` §2b; câu hỏi mở #10 của kế hoạch Giai đoạn 1 |
