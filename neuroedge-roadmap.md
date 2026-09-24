@@ -59,7 +59,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 | **Sprint hiện hành** | 🟡 **Sprint 2: Lõi thực thi trên `sim` (≈ A1)** — mã A1 xong sớm, 2026-09-23 | **9 / 10 task trong phạm vi xong** (còn TSK-S2-11, chạy ở A2; TSK-S2-09 kéo lên và xong) · **5 / 6 tiêu chí ra đạt** (còn #6, cùng TSK-S2-11) · Sprint 1 còn TSK-S1-10 chờ bo mạch |
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: cuối Sprint 3 = **2026-11-15** — trễ ~2 tuần so với bản gốc (Tuần 6 gốc = 2026-11-02) (Q-19) |
 | **Lần cập nhật cuối** | **2026-09-24** | TSK-S3-25: gate chặn theo giá trị tham số (RFC-0005 chấp thuận); System 2 làm MCP host (Q-27) — chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 709/709 · SKIP 0** | `python/tests/` — 37 bộ test; wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) |
+| **Trạng thái CI Lõi** | ✅ **PASS 724/724 · SKIP 0** | `python/tests/` — 38 bộ test; wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn + 1 còn mở** | 🔴 TSK-S1-10 chờ bo mạch vật lý · 🟡 Q-11 phần còn lại (Hawkbit EPL-2.0 / EMQX BSL) — **không chặn cho tới khi mở Khối 2** |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -101,7 +101,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C7`, `TR
 │    1. Đặt 2 Box-3 + 1 RPi 5 nightly (Phụ lục B, Q-16)                                  │
 │    2. V3: TSK-S3-14 (PyPI, TestPyPI trước) · S3-16 · S3-19 · S3-20 → đo TTFV           │
 │    3a. A2 V1: TSK-S3-24 (corpus tool call) · S3-26 (xác nhận ask) · S3-27 (mcp --ui)   │
-│    3. A2 V2: TSK-S4-02 + S4-07 (walker C, Q-23) → S4-08, S4-09 (QEMU) · S4-11          │
+│    3. A2 V2: TSK-S4-09 (vết ghi UART, chạy trên QEMU của S4-08) · S4-11                │
 │    4. A2 V1: TSK-S2-11 (LiteLLM) → TSK-S2-07 (đặc tả FSM thoại)                        │
 │    5. Kỹ thuật trưởng xác nhận TSK-S3-15 (golden = vết ghi chuẩn mực)                  │
 │                                                                                        │
@@ -565,15 +565,15 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S4-01** | Port 5 nguyên thủy HAL lên ESP-IDF | FR-TGT-03, FR-HAL-01 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/hal/` |
-| **TSK-S4-02** | Gate Engine chạy trên MCU: walker C99 duyệt **bố cục nhị phân `NETR` v1** do `neuroedge build` sinh (Q-23, RFC-0003), kể cả giới hạn tham số (RFC-0005) và `confirms` (RFC-0006); token dùng một lần | FR-ACE-01, FR-ACE-03, FR-ACE-08 | V2 + V1 | 🟡 **Walker xong trên host (2026-09-24)** — còn sổ token dùng một lần bằng C và gắn vào `app_main`, cùng TSK-S4-08 (QEMU) | `targets/esp32s3/components/ne_gate/` · `python/neuroedge/engine/binary_tree.py` · RFC-0003 |
+| **TSK-S4-02** | Gate Engine chạy trên MCU: walker C99 duyệt **bố cục nhị phân `NETR` v1** do `neuroedge build` sinh (Q-23, RFC-0003), kể cả giới hạn tham số (RFC-0005) và `confirms` (RFC-0006); token dùng một lần | FR-ACE-01, FR-ACE-03, FR-ACE-08 | V2 + V1 | ✅ Hoàn thành (2026-09-24) — trên host và QEMU; bo mạch thật ở TSK-S4-03 | `targets/esp32s3/components/ne_gate/` (walker + `ne_token.c`) · `targets/esp32s3/main/gate_selftest.c` · `python/neuroedge/engine/binary_tree.py` · RFC-0003 · `pytest tests/test_c_walker.py tests/test_c_token.py` · PR #27, #29 |
 | **TSK-S4-03** | Đường dẫn `digital.out` và `sensor.read` trên phần cứng thật | FR-HAL-06, FR-HAL-07 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/drivers/` |
 | **TSK-S4-04** | Lệnh `neuroedge verify` cho cả 3 target bậc 1 | FR-CI-07, FR-TGT-04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/verify.py` |
 | **TSK-S4-05** | Runner kiểm thử nightly trên bo mạch thật | FR-CI-06, NFR-REL-03 | V3 | ⏳ Chưa bắt đầu | `.github/workflows/nightly-hardware.yml` |
 | **TSK-S4-07** | **Walker C biên dịch trên host** (gcc/clang, ASan + UBSan) chạy trên mỗi PR: khớp engine host trên mọi gate + bảng sự thật `fixtures/decision_trees/`, fuzz tệp cây, RAM tĩnh 0, stack ≤ 512 B — kiểm TSK-S4-02 **không cần bo mạch** *(Q-21)* | FR-ACE-01, FR-CI-07 | V2 | ✅ Hoàn thành (2026-09-24) | `python/tests/test_c_walker.py` · `targets/esp32s3/components/ne_gate/Makefile` |
-| **TSK-S4-08** | **Smoke test firmware trên Espressif QEMU** (`idf.py qemu`, ESP-IDF ≥ 5.4): boot, UART, flash/PSRAM, gate walker; hằng đêm. Không phủ I2S, Wi-Fi, LCD SPI, GPIO thường *(Q-21)* | FR-CI-06, FR-TGT-03 | V2 | ⏳ **Kéo lên A2 (V2)** *(2026-10-26 → 11-15)* | `.github/workflows/nightly-hardware.yml` |
+| **TSK-S4-08** | **Smoke test firmware trên Espressif QEMU** (ESP-IDF 5.4, `sdkconfig.qemu`): boot, UART, flash, self-test gate lúc khởi động (walker + sổ token trên gate home-voice, dòng `NE_SELFTEST PASS`); mỗi PR đụng `targets/**` và hằng đêm. Không phủ I2S, Wi-Fi (`NEUROEDGE_SKIP_NETWORK`), PSRAM octal (QEMU không có; `SPIRAM_IGNORE_NOTFOUND`), LCD SPI, GPIO thường *(Q-21)* | FR-CI-06, FR-TGT-03 | V2 | ✅ Hoàn thành (2026-09-24) | `.github/workflows/firmware-qemu.yml` · PR #29 |
 | **TSK-S4-09** | **Vết ghi từ firmware qua UART** (JSON-lines, tiền tố `NE1 `) + `neuroedge record --target esp32s3 --port`; chạy cả trên QEMU ⇒ `verify --targets esp32s3` trên miền quyết định trước khi bo mạch về *(Q-21)* | FR-CI-01, FR-TGT-04, FR-CLI-04 | V2 + V1 | ⏳ **Kéo lên A2 (V2)** *(2026-10-26 → 11-15)* | `targets/esp32s3/trace/` · `python/neuroedge/testing/` |
 | **TSK-S4-10** | **Ảnh golden cho giao diện LVGL:** cùng mã màn hình của firmware build trên host, `lv_test_display` + `lv_test_screenshot_compare`, mỗi PR *(Q-21)* | FR-HAL-01, FR-CI-05 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/ui/` · `.github/workflows/ci-sim-linux.yml` |
-| **TSK-S4-11** | **Ngân sách RAM tĩnh trên mỗi PR:** `idf.py size` của firmware có link ESP-SR AFE; fail khi `.bss`/`.data` làm SRAM còn lại dưới Q-3 (≥ 120 KB). QEMU (có PSRAM) in heap trống lúc boot. Phần áp lực lúc chạy âm thanh vẫn chờ TSK-S1-10 | NFR-RES-01, NFR-RES-02 | V2 | ⏳ **Kéo lên A2 (V2)** *(2026-10-26 → 11-15)* | `scripts/check_firmware_size.py` · `.github/workflows/` |
+| **TSK-S4-11** | **Ngân sách RAM tĩnh trên mỗi PR:** `idf.py size` của firmware có link ESP-SR AFE; fail khi `.bss`/`.data` làm SRAM còn lại dưới Q-3 (≥ 120 KB). QEMU in heap trong còn trống lúc boot (QEMU không giả lập PSRAM octal của Box-3, TSK-S4-08). Phần áp lực lúc chạy âm thanh vẫn chờ TSK-S1-10 | NFR-RES-01, NFR-RES-02 | V2 | ⏳ **Kéo lên A2 (V2)** *(2026-10-26 → 11-15)* | `scripts/check_firmware_size.py` · `.github/workflows/` |
 | **TSK-S4-12** | **Bài kiểm ngày đầu có bo mạch:** codec ES8311/ES7210 port nguyên văn từ XiaoZhi; vòng loa → micro so tín hiệu mẫu, GPIO `door_lock` đo bằng đầu dò; chạy trong ngày Box-3 về | FR-PER-06, FR-HAL-06 | V2 | ⏳ Khi bo mạch về | `targets/esp32s3/tests/bringup/` |
 
 

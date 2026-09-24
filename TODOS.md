@@ -61,3 +61,9 @@ Nguồn: quyết định Q-14 → Q-20 (`neuroedge-prd.md` §15), `CHANGELOG.md`
 | 23 | **Đóng băng Gated Tool Profile vào `schemas/`** (lược đồ phong bì `ToolCall` và kết quả) — `docs/spec/tool_calling.md` | Profile còn đổi: vòng ReAct (TSK-S2-11), chưa xong; đóng băng sớm là mở RFC sửa ngay | Corpus `fixtures/tool_calls/` (TSK-S3-24) ổn định **và** một client bên ngoài dùng profile |
 | 24 | **Transport MCP qua mạng** (HTTP của MCP) có xác thực — TSK-P2-04 | Mở cổng mạng tới hành động vật lý cần xác thực theo thiết bị và mTLS (NFR-SEC-04); v1.0 chỉ stdio (NFR-SEC-09) | Khách đầu tiên cần điều khiển thiết bị từ xa qua MCP, hoặc gateway (TSK-P2-05) cần transport mạng |
 | 25 | **Kết nối MCP bền giữa các lượt** và **transport HTTP tới MCP server bên ngoài** (Q-27) | `sim` mở kết nối theo từng lượt vì REPL chạy mỗi lượt trong một event loop riêng; HTTP cần xác thực như #24 | Runtime `linux` chạy một event loop dài, hoặc độ trễ mở kết nối vượt ngân sách lượt |
+
+## Từ phiên sổ token C (2026-09-24)
+
+| # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
+|:---:|:---|:---|:---|
+| 26 | **Chất lượng RNG phần cứng cho nonce và `boot_id` của sổ token C** (`ne_token.c`, TSK-S4-02). `esp_fill_random` chỉ là ngẫu nhiên thật khi RF (Wi-Fi/BT) bật hoặc bootloader đã cấp entropy; self-test chạy **trước** mạng, và trên QEMU thì không có nguồn nào | Mối đe dọa trong phạm vi là bỏ qua gate do nhầm lẫn (`docs/spec/threat_model.md` §2): nonce chỉ cần khác nhau giữa các token, không cần bí mật. Kẻ đoán nonce trong cùng tiến trình đã ngoài phạm vi (§3, #2) | **Bo mạch thật (TSK-S4-01)**: bật `bootloader_random_enable()` hoặc đo entropy trước khi cấp token đầu tiên; ghi kết quả vào `docs/spec/threat_model.md` §4 |
