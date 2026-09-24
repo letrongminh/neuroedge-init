@@ -35,6 +35,7 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 | **Khối 1a · 1b · 2 · 3 · 4 · 5** | Khối công việc Giai đoạn 1: 1a lõi + Action CI · 1b vi điều khiển · 2 Fleet OS · 3 các đường ray nền tảng | `neuroedge-roadmap.md` mục lục |
 | **Khối V1a · V1b · P1 · P2** | Khối công việc Giai đoạn 2 (thị giác, phủ rộng phần cứng) | `neuroedge-roadmap-phase2.md` |
 | **Khối N0 … N7 · N5b** | Khối công việc Giai đoạn 1.5 — NeuroBrain (bring-up phần cứng có gate); task `TSK-Nk-mm` | `neuroedge-roadmap-phase1-5.md` |
+| **NeuroBrain** | Trợ lý hội thoại dựng mạch cho Physical AI — "Copilot for building Physical AI"; định vị đề xuất, chờ `Q-31` | `neuroedge-roadmap-phase1-5.md` §1 |
 | **B-1** | Bất biến: gói `neuroedge.brain` không gọi HAL trực tiếp, chỉ qua `dispatch()` → gate | `neuroedge-roadmap-phase1-5.md` §1 |
 | **Sprint 1…6** | Các sprint 2 tuần của Khối 1a và 1b | `neuroedge-roadmap.md` §4–§5 |
 | **M1** | Cột mốc kế tiếp: time-to-first-value < 10 phút trên `sim` | `neuroedge-roadmap.md` §0.1 |

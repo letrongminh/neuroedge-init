@@ -125,6 +125,10 @@ bản gói.
 
 #### Đã đổi
 
+- **Q-30 — định vị "Hợp đồng vào Physical AI" / "Physical AI, under contract" (engine-first không đổi).** Contract là
+  lớp bảo vệ gần nhất trên 5 nguyên thủy HAL; `neuroedge-prd.md` §1.2/§15 + masthead, `neuroedge-proposal.md`
+  §0.3 + masthead, `README.md` hero EN-first; định vị NeuroBrain đề xuất ở `neuroedge-roadmap-phase1-5.md` §1
+  (chờ Q-31); lưu vết `docs/archive/tai-dinh-vi-messaging-review.md`; theo dõi `TODOS.md` #32, #34. Không đổi mã; không cần RFC.
 - **Q-29 — định vị trước MHS + bối cảnh cạnh tranh MHS/DCP.** `neuroedge-proposal.md`
   §10.1–§10.2 (hai cột + hai hàng MHS/DCP, kèm nguồn), Phụ lục H.3; quyết định ở
   `neuroedge-prd.md` §15; theo dõi `TODOS.md` #32–#33. Không đổi mã; không cần RFC

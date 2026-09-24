@@ -1,6 +1,10 @@
 # NeuroEdge
 
-**Hợp đồng hành động chuẩn kiểu cho Physical AI.** Chatbot trả lời sai thì bấm
+**Physical AI, under contract.** No contract, no action: every command to the hardware
+passes the gate — CI-tested, write once, run anywhere.
+*Hợp đồng vào Physical AI — không hợp đồng, không hành động.*
+
+Chatbot trả lời sai thì bấm
 *Regenerate*; agent vật lý sai thì chốt cửa đã mở, đèn cầu thang đã tắt — không bấm lại
 được. NeuroEdge đặt một **gate** (chính sách an toàn dạng YAML, có phiên bản, kế thừa được)
 trước mọi lệnh ra phần cứng. Lời gọi từ LLM hay từ agent khác chỉ là *yêu cầu*: gate quyết

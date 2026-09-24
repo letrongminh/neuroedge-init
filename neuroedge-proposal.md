@@ -1,6 +1,6 @@
 # NeuroEdge
 
-## Nền tảng Hợp đồng Hành động Chuẩn kiểu (Type-Safe Action Contracts) cho Physical AI
+## NeuroEdge — Hợp đồng vào Physical AI
 
 **Phiên bản:** 5.6  
 **Ngày cập nhật:** 24 tháng 9, 2026 · lịch sử thay đổi: `CHANGELOG.md`  
@@ -118,7 +118,9 @@ Hiện nay, các công cụ truyền thống không thể trả lời 3 câu h�
 
 ## 0.3 Tuyên ngôn sản phẩm
 
-> **NeuroEdge chuẩn hóa mọi tác vụ vật lý của AI Agent thành hợp đồng có kiểu (type-safe), có phiên bản rõ ràng, kiểm thử tự động trong quy trình CI/CD, và thực thi nhất quán trên mọi môi trường — từ laptop của lập trình viên, máy tính Linux công nghiệp đến vi điều khiển biên giá $5.**
+> **NeuroEdge — Hợp đồng vào Physical AI.** *"Physical AI, under contract — no contract, no action."*
+>
+> Không hợp đồng, không hành động: mọi hành động vật lý của AI Agent (chốt cửa, rơ-le, van, đèn) muốn ra thế giới thực đều phải qua một **hợp đồng an toàn có kiểu (type-safe), có phiên bản rõ ràng** — **lớp bảo vệ gần nhất, đứng ngay trên 5 nguyên thủy HAL**. Hợp đồng được kiểm thử tự động trong quy trình CI/CD bằng replay + assert trên phán quyết gate và trạng thái chân, và thực thi nhất quán trên mọi môi trường — từ laptop của lập trình viên, máy tính Linux công nghiệp đến vi điều khiển biên giá $5.
 
 Cụ thể hơn: **mọi đường từ ngôn ngữ tới hành động thực — giọng nói offline, LLM, hay agent bên ngoài qua MCP — là một tool call có kiểu, đi qua cùng một gate** (§3.5, Q-24).
 
@@ -177,7 +179,7 @@ Trong các bài toán trên, NeuroEdge tập trung tạo khác biệt phòng th�
 
 ### 1.2 Tuyên ngôn giá trị cốt lõi (Core Value Proposition)
 
-Bằng cách kết hợp bốn trụ cột kỹ thuật chuẩn mực, NeuroEdge định hình một chuẩn phát triển mới cho Physical AI:
+*"Không hợp đồng, không hành động"* (§0.3) chỉ đứng vững nếu hành động vật lý trở thành thứ kiểm thử được. Bằng cách kết hợp bốn trụ cột kỹ thuật chuẩn mực, NeuroEdge định hình một chuẩn phát triển mới cho Physical AI:
 
 ```text
 Schema cổng an toàn (gate) có phiên bản ──┐
