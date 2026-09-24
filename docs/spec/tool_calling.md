@@ -191,7 +191,7 @@ hình. Lời gọi `REJECTED` không tới gate nên không có trong phán quy�
 
 | Target | Tool call | Máy chủ MCP |
 |:---|:---|:---|
-| `sim` | Đầy đủ (§1–§7) | `neuroedge mcp serve` qua stdio |
+| `sim` | Đầy đủ (§1–§7) | `neuroedge mcp serve` qua stdio; `--ui` phục vụ thêm trang web của **cùng phiên** trên 127.0.0.1, lời gọi MCP và lệnh gõ trên trang chạy lần lượt dưới một khóa |
 | `linux` | Đầy đủ | Như `sim`, trên máy thiết bị |
 | `esp32s3` | Ngữ pháp → tool call tổng hợp trong C; tham số kiểm bằng bảng do `neuroedge build` sinh cạnh cây quyết định (Q-23); `call_source` là một byte trong ngữ cảnh walker | **Không** chạy trên MCU. MCP cho thiết bị đi qua gateway hoặc một máy `linux` (FR-GW), và thiết bị vẫn tự lượng giá gate. MCU **không làm MCP host**: host (§10) đặt ở nơi System 2 chạy |
 

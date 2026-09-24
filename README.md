@@ -83,8 +83,11 @@ Cấu hình Claude Desktop (cần `pip install 'neuroedge[mcp]'`):
 
 ```json
 { "mcpServers": { "home-voice": { "command": "neuroedge",
-    "args": ["mcp", "serve", "--agent", "/đường/dẫn/fixtures/agents/home-voice/agent.toml"] } } }
+    "args": ["mcp", "serve", "--agent", "/đường/dẫn/fixtures/agents/home-voice/agent.toml", "--ui"] } } }
 ```
+
+Với `--ui`, cùng phiên đó hiện trực tiếp ở http://127.0.0.1:8765: nhờ Claude bật đèn là thấy đèn
+ảo sáng và phán quyết gate ngay trên trang.
 
 Quy tắc đầy đủ: [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md).
 
