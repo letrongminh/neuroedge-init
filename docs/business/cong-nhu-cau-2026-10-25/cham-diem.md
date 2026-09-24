@@ -114,7 +114,7 @@ chọn. Phân khúc không đủ dữ liệu ghi "chưa kết luận", không ph
 ## 5. Mẫu quyết định (điền ngày 2026-10-25)
 
 ```text
-QUYẾT ĐỊNH CỔNG NHU CẦU — 2026-10-25                    (đề xuất mã: Q-28, neuroedge-prd.md §15)
+QUYẾT ĐỊNH CỔNG NHU CẦU — 2026-10-25      (mã Q-N kế tiếp chưa dùng, neuroedge-prd.md §15)
 Chủ trì: <trưởng nhóm>         Người chấm thứ hai: <tên>        Sponsor đã đọc: <có/không, ngày>
 
 1. DỮ LIỆU
@@ -157,7 +157,7 @@ Chủ trì: <trưởng nhóm>         Người chấm thứ hai: <tên>        S
    3. ______________________________________________________________
 
 8. VIỆC SAU CỔNG (README.md §6)
-   [ ] PRD §15 Q-28   [ ] TODOS.md #19   [ ] roadmap §0   [ ] CHANGELOG [Chưa phát hành]
+   [ ] PRD §15 (Q-N của cổng)   [ ] TODOS.md #19   [ ] roadmap §0   [ ] CHANGELOG [Chưa phát hành]
    [ ] docs/archive/ bản tổng hợp ẩn danh   [ ] proposal (chỉ nếu đổi giả định)
 
 Ký: ____________________ (trưởng nhóm)        ____________________ (sponsor)

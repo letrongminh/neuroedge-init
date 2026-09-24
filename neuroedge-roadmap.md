@@ -58,7 +58,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C8`, `TR
 | **Pha đang thực thi** | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0 → 2026-11-15)** | Tiến độ theo sprint: §0.2 |
 | **Sprint hiện hành** | 🟡 **Sprint 2 theo lịch (≈ A1, 2026-09-28 → 2026-10-25)** — mã đã xong trước lịch; việc đang làm thuộc A2 (Sprint 3) và phần firmware không cần bo mạch kéo lên từ Sprint 4 | Sprint 2: **10 / 10** task trong phạm vi, **6 / 6** tiêu chí ra · Sprint 3–4: §0.2 · Sprint 1 còn TSK-S1-10 chờ bo mạch |
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: cuối Sprint 3 = **2026-11-15** — trễ ~2 tuần so với bản gốc (Tuần 6 gốc = 2026-11-02) (Q-19) |
-| **Lần cập nhật cuối** | **2026-09-24** | Phiên gần nhất: §0.3 (rà soát tài liệu MECE) · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Lần cập nhật cuối** | **2026-09-24** | Phiên gần nhất: §0.3 (rà soát cạnh tranh MHS/DCP, Q-29) · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
 | **Trạng thái CI Lõi** | ✅ **PASS 958/958 · SKIP 0** | `python/tests/` — 46 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn + 1 còn mở** | 🔴 TSK-S1-10 chờ bo mạch vật lý · 🟡 Q-11 phần còn lại (Hawkbit EPL-2.0 / EMQX BSL) — **không chặn cho tới khi mở Khối 2** |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
@@ -90,12 +90,8 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C8`, `TR
 │ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-24 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ 1. VỪA HOÀN THÀNH — phiên gần nhất (chi tiết: CHANGELOG.md [Chưa phát hành])           │
-│    • TSK-S3-20 ✅ README gốc một màn hình = trang PyPI                                  │
-│    • TSK-S3-14 🟡 workflow release-pypi sẵn; chưa đẩy index nào (docs/release.md)       │
-│    • TSK-S3-24 ✅ Corpus Gated Tool Profile (fixtures/tool_calls/, outputSchema MCP)   │
-│    • TSK-S3-19 ✅ verify quét 0 artifact ⇒ NE4004, mã 1 (không còn "xanh giả")          │
-│    • TSK-S3-16 ✅ digests.lock: sửa/xoá gate chuẩn mực ⇒ CI đỏ tới khi có RFC           │
-│    • Rà soát tài liệu MECE ✅ mỗi sự thật một nơi · Q-28 · TSK-S5-10 mới                │
+│    • Q-29 + CEO-T3 — bối cảnh cạnh tranh MHS/DCP; thế đứng tích hợp (proposal §10,     │
+│      Phụ lục H.3; TODOS.md #32–#33)                                                     │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
@@ -811,6 +807,7 @@ Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho
 | **Q-26** | Chỉ người xác nhận `ask` (RFC-0006, 2026-09-24) | 2026-09-23 | TSK-S3-26 |
 | **Q-27** | System 2 làm MCP host | 2026-09-23 | TSK-S3-28 |
 | **Q-28** | Mốc giao FR-GW: 01, 03 tối thiểu ở v1.0 | 2026-09-24 | TSK-S2-11, K2-01→03 |
+| **Q-29** | Định vị trước MHS: theo dõi, adapter cộng đồng khi chuẩn mở | 2026-09-24 | `TODOS.md` #32–#33, Phụ lục H.3 |
 
 **Hệ quả trực tiếp lên Sprint 1:** Q-1, Q-2 và Q-3 đã chốt nghĩa là đội có thể đặt bo mạch, dựng kho mã và bắt đầu spike ngay Tuần 0 mà không chờ quyết định nào.
 

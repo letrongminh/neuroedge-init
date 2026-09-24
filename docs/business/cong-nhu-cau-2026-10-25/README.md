@@ -112,12 +112,12 @@ Mô tả việc cần làm sau cổng; bộ tài liệu này **không sửa** t�
 
 | Nơi | Ghi gì |
 |:---|:---|
-| `neuroedge-prd.md` §15 | Một dòng quyết định mới (số tiếp theo sau Q-27, hôm nay là **Q-28**): *"Kết quả cổng nhu cầu 2026-10-25"* — số cuộc theo phân khúc, điểm C1–C9, nhánh đã chọn (go / adjust / stop), phân khúc đầu tiên, và mỗi mục `CEO-*` thành quyết định con hoặc đóng |
-| `TODOS.md` #19 | Từng mã (`CEO-X2`, `X4`, `X5`, `T1`, `T2`, `T3`, `T4`) gạch và dẫn tới Q-28; mục nào còn mở phải có **mốc kích hoạt mới** (luật của `TODOS.md`) |
-| `neuroedge-roadmap.md` §0 | Dòng cổng nhu cầu ở bảng điều khiển: trạng thái, dẫn Q-28 |
+| `neuroedge-prd.md` §15 | Một dòng quyết định mới (mã `Q-N` kế tiếp chưa dùng): *"Kết quả cổng nhu cầu 2026-10-25"* — số cuộc theo phân khúc, điểm C1–C9, nhánh đã chọn (go / adjust / stop), phân khúc đầu tiên, và mỗi mục `CEO-*` thành quyết định con hoặc đóng |
+| `TODOS.md` #19 | Từng mã (`CEO-X2`, `X4`, `X5`, `T1`, `T2`, `T3`, `T4`) gạch và dẫn tới quyết định cổng; mục nào còn mở phải có **mốc kích hoạt mới** (luật của `TODOS.md`) |
+| `neuroedge-roadmap.md` §0 | Dòng cổng nhu cầu ở bảng điều khiển: trạng thái, dẫn quyết định cổng |
 | `CHANGELOG.md` `[Chưa phát hành]` | Một mục ngắn (CLAUDE.md "Khi xong một task", `CONTRIBUTING.md` §8) |
 | `docs/archive/` | Bản tổng hợp **ẩn danh** (vai trò + phân khúc, không tên người, không tên tổ chức nếu chưa được đồng ý). Bản ghi thô **không vào kho** — `TODOS.md` #4 (PII) |
-| `neuroedge-proposal.md` §1.8, §8.7, §10, Phụ lục G | Chỉ sửa nếu Q-28 đổi một giả định; mỗi con số thị trường mới phải dẫn nguồn là cuộc phỏng vấn nào (mã ẩn danh) |
+| `neuroedge-proposal.md` §1.8, §8.7, §10, Phụ lục G | Chỉ sửa nếu quyết định cổng đổi một giả định; mỗi con số thị trường mới phải dẫn nguồn là cuộc phỏng vấn nào (mã ẩn danh) |
 
 Nếu kết quả là **stop** cho Khối 1b, đó là đổi phạm vi: theo `CONTRIBUTING.md` xem việc nào cần
 RFC; đổi hướng sản phẩm không đụng `schemas/` thì không cần RFC, nhưng phải có dòng PRD §15.
