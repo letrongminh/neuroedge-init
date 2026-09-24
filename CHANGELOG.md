@@ -122,6 +122,10 @@ bản gói.
 
 #### Đã đổi
 
+- **Q-29 — định vị trước MHS + bối cảnh cạnh tranh MHS/DCP.** `neuroedge-proposal.md`
+  §10.1–§10.2 (hai cột + hai hàng MHS/DCP, kèm nguồn), Phụ lục H.3; quyết định ở
+  `neuroedge-prd.md` §15; theo dõi `TODOS.md` #32–#33. Không đổi mã; không cần RFC
+  (`CONTRIBUTING.md` §3).
 - **Rà soát tài liệu MECE — mỗi sự thật một nơi.** Chủ sở hữu mới: danh sách cần RFC và cấu trúc kho ở
   `CONTRIBUTING.md` §3, §6; lệnh và job CI ở §2 tệp này; mã lỗi ở PRD Phụ lục B; allowlist giấy phép ở Q-11. Các mốc
   `[0.1.0]`–`[0.4.0]` đổi tên thành mốc tài liệu; `TODOS.md` xếp theo chủ đề, số mục giữ nguyên. PRD sở hữu nguyên tắc,

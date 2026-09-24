@@ -82,6 +82,13 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 |:---:|:---|:---|:---|
 | 19 | **Câu hỏi kinh doanh mở (Q-20):** `CEO-X2` (premise $1/thiết bị/tháng chưa kiểm) · `CEO-X4` (Approach C/D/E) · `CEO-X5` (doanh thu ở cuối chuỗi 4 bên; AURA ngoài phạm vi) · `CEO-T1` (P3 có phải moat) · `CEO-T2` (chứng nhận an toàn chức năng in/out) · `CEO-T3` (bảng đối thủ thật) · `CEO-T4` (thứ tự quyết định/code). Chi tiết: `docs/archive/giai-doan-1-review-log.md` §USER CHALLENGE, §TASTE DECISION | Không chặn code; cổng nhu cầu là **mềm** theo Q-20 | **Cổng nhu cầu 2026-10-25** (cuối A1) — trưởng nhóm rà từng mục, ghi quyết định vào PRD §15 hoặc đóng có lý do. Bộ chuẩn bị: `docs/business/cong-nhu-cau-2026-10-25/` |
 
+## Chuẩn ngoài và hệ sinh thái
+
+| # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
+|:---:|:---|:---|:---|
+| 32 | **Chuyển bối cảnh §10.1 thành phân tích cạnh tranh; theo dõi MHS (Anthropic) và DCP.** Đã có trong bối cảnh: proposal §10.1–§10.2 (hai hàng + hai cột MHS/DCP), Phụ lục H.3; quyết định Q-29 | Luật C7 (`docs/business/cong-nhu-cau-2026-10-25/README.md`): chưa có cuộc phỏng vấn nào; dưới 5 cuộc nêu đối thủ thì §10 giữ nhãn *bối cảnh* | **Cổng nhu cầu 2026-10-25 (C7)**; hoặc MHS công bố open source / DCP ra spec v0.4 đổi ngữ nghĩa an toàn — đọc lại §10.1–§10.2 |
+| 33 | **Adapter HAL host cho MHS** (Anthropic): kết nối thiết bị MHS qua MCP. Điểm hấp dẫn nếu mở: tag đặc tính thiết bị + giới hạn an toàn đã chuẩn hóa là nguồn dữ liệu tiềm năng cho gate | MHS chưa công bố schema/giấy phép/bộ kiểm thử tuân thủ; trượt PF-3 (chưa có nhu cầu thật); khác phân khúc (lab/nhà máy qua máy tính đầy đủ, không phải thiết bị biên). Q-29: theo dõi, không đầu tư ở v1.0 | **MHS công bố open source (schema + giấy phép + conformance)** **và** có người dùng thật hỏi hoặc đối tác port; làm theo mô hình cộng đồng — không bậc 1, không RFC-0002 |
+
 ## Nguồn
 
 | Mục | Nguồn |
@@ -94,3 +101,4 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 | #26 | Sổ token C (TSK-S4-02, 2026-09-24) |
 | #27, #28 | Provider thật cho System 2 (TSK-S2-11, 2026-09-24) |
 | #29–#31 | Rà soát tài liệu MECE (2026-09-24) — `docs/spec/threat_model.md` §2b; câu hỏi mở #10 của kế hoạch Giai đoạn 1; truy vết PRD Phụ lục A ↔ roadmap |
+| #32–#33 | Rà soát cạnh tranh MHS/DCP (2026-09-24) — `neuroedge-proposal.md` §10.1–§10.2, Phụ lục H.3; Q-29 (`neuroedge-prd.md` §15) |
