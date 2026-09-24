@@ -7,7 +7,7 @@
 | **Đầu vào** | `schemas/board.v1.json`, `python/neuroedge/hal/board.py`, `boards/*.toml` |
 | **Trạng thái** | ✅ Rà soát xong · các kết luận đã hiện thực hóa trong mã |
 
-## 0. Vì sao rà soát này phải xảy ra ở Sprint 1
+## 0. Vì sao rà soát này phải xảy ra ở Sprint 1 *(bối cảnh lúc rà soát)*
 
 Roadmap §1.2 nêu thẳng: *"Một HAL thiết kế mà không có tiếng nói của kỹ sư nhúng
 sẽ phải viết lại ở Tuần 6."* Tài liệu này là tiếng nói đó, đặt trước khi có bất
@@ -83,20 +83,29 @@ chiếu năng lực hai chiều phải đáng tin.
 chứng: `test_profile_filename_matches_its_declared_id`,
 `test_profile_validates_against_board_schema`.
 
-### KL-5 — Không có gate engine nào chạy trên MCU
+### KL-5 — Trên MCU không có evaluator CEL, không có parser JSON
 
-Đây là hệ quả trực tiếp của **Q-9 phương án A** và là kết luận có ảnh hưởng lớn
-nhất tới thiết kế HAL.
+Đây là hệ quả trực tiếp của **Q-9 phương án A** (và Q-23 về định dạng) và là kết luận
+có ảnh hưởng lớn nhất tới thiết kế HAL. Thiết bị **có** lượng giá gate — bằng một walker
+duyệt cây đã biên dịch sẵn (TSK-S4-02) — nhưng mọi phần phân tích và biên dịch ở máy tính.
 
 | Chạy trên máy tính | Chạy trên thiết bị |
 |:---|:---|
-| Phân giải `extends` (5 nguyên tắc B.5) | Duyệt cây quyết định phẳng |
+| Phân giải `extends` (5 nguyên tắc B.5) | — |
 | Phân tích cú pháp CEL | — |
-| Biên dịch sang cây quyết định JSON | — |
-| Chuẩn tắc hóa RFC 8785, băm, ký số | Đối soát chữ ký |
+| Biên dịch sang cây quyết định, mã hoá bố cục nhị phân `NETR` v1 (Q-23, RFC-0003) | Walker C99 duyệt cây `NETR` tại chỗ trong flash |
+| Chuẩn tắc hóa RFC 8785, băm | Kiểm magic, phiên bản bố cục, CRC của cây trước khi dùng |
+| Ký số gate (Khối 3, Gate Registry) | Đối soát chữ ký — cũng thuộc Khối 3, chưa có |
 
-**Ngân sách phía thiết bị:** một hàm C khoảng 100 dòng duyệt cây, không cấp phát
-heap, không phân tích cú pháp, không máy ảo CEL. Model bo mạch trong
+**Ngân sách phía thiết bị:** walker không cấp phát heap, không dùng RAM tĩnh, không đệ
+quy, không phân tích cú pháp, không máy ảo CEL; stack ≤ 512 byte
+(`targets/esp32s3/components/ne_gate/src/ne_walker.c`,
+`test_the_walker_uses_no_static_ram_and_a_small_stack`).
+
+*Ghi chú 2026-09-24:* bản rà soát đầu (Sprint 1) viết KL-5 là "không có gate engine nào
+chạy trên MCU" và dự kiến "cây quyết định JSON" + "một hàm C khoảng 100 dòng"; Q-23 và
+RFC-0003 thay bằng bố cục nhị phân. Ý của kết luận — thiết bị không phân tích, chỉ duyệt
+— giữ nguyên. Model bo mạch trong
 `board.py` **chỉ đọc trên máy tính** — đó là lý do nó được phép dùng Pydantic,
 `jsonschema`, `tomllib` mà không tạo ra nợ kỹ thuật nào cho firmware.
 

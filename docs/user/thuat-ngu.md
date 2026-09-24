@@ -10,16 +10,21 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 | **FR-xxx-nn** | Yêu cầu chức năng, ví dụ `FR-GATE-03` (nhóm `GATE`, số 03) | `neuroedge-prd.md` §4–§8 |
 | **NFR-xxx-nn** | Yêu cầu phi chức năng (hiệu năng, bảo mật, độ bền…) | `neuroedge-prd.md` §9 |
 | **P0 · P1 · P2** | Độ ưu tiên: P0 bắt buộc để phát hành · P1 trượt được sang bản vá · P2 nếu còn nguồn lực | tệp này |
-| **A1–A9 · B1–B5 · C1–C7** | Tiêu chí **nghiệm thu phát hành**: A = v1.0 · B = Developer Beta · C = v1.1 | `neuroedge-prd.md` §11 |
+| **A1–A9 · B1–B5 · C1–C8** | Tiêu chí **nghiệm thu phát hành**: A = v1.0 · B = Developer Beta · C = v1.1 (vd C8: độ trễ `SystemOne` < 100 ms) | `neuroedge-prd.md` §11 |
 | **TR-1…TR-7** | Tiêu chí ra cấp thực thi của Khối 2 và 3 — **khác** bộ C | `neuroedge-roadmap.md` §8.3 |
-| **Q-1…Q-20** | Quyết định kỹ thuật đã chốt hoặc đang mở | `neuroedge-prd.md` §15 — **sổ quyết định duy nhất** |
+| **Q-N** | Quyết định kỹ thuật đã chốt hoặc đang mở, đánh số tăng dần, không có số cuối | `neuroedge-prd.md` §15 — **sổ quyết định duy nhất** |
 | **PF-1…PF-4** | Bộ lọc ưu tiên tính năng — **khác** mã rủi ro `R-n` | `neuroedge-proposal.md` §2 |
 | **R-1…R-7** | Rủi ro sản phẩm | `neuroedge-prd.md` §13.2 |
 | **U1–U5** | Nhóm người dùng (U1 = maker độc lập…) | `neuroedge-prd.md` §2 |
 | **J1–J7** | Hành trình người dùng (J1 = "thử agent giọng nói tối nay khi chưa có bo mạch") | `neuroedge-prd.md` §2 |
+| **G1–G4** | Cột mốc xác thực thị trường Giai đoạn 1 (G1 = 10.000 thiết bị active/tháng…); đạt đủ mới mở Marketplace thu phí | `neuroedge-proposal.md` §8.7 · `neuroedge-prd.md` §14 |
+| **G-a…G-e** | Giả định kinh doanh cần kiểm chứng (vd G-e: tỷ lệ chuyến hiện trường do phần mềm) — **khác** G1–G4 | `neuroedge-proposal.md` Phụ lục G |
 | **V-G1…V-G5** | Cột mốc xác thực Giai đoạn 2 | `neuroedge-proposal.md` §12.4 |
 | **RFC-NNNN** | Đề xuất sửa lược đồ hoặc ngữ nghĩa phân giải gate | `docs/rfc/` |
-| **RB-1…RB-4** | Ràng buộc kỹ thuật HAL chuyển cho Sprint 4 (vd RB-3: lệnh chân phải huỷ được) | `docs/spec/hal_mcu_review.md` |
+| **KL-1…KL-5** | Kết luận rà soát HAL dưới ràng buộc vi điều khiển | `docs/spec/hal_mcu_review.md` §1 |
+| **RB-1…RB-4** | Ràng buộc kỹ thuật HAL chuyển cho Sprint 4 (vd RB-3: lệnh chân phải huỷ được) | `docs/spec/hal_mcu_review.md` §2 |
+| **Bất biến N** | Một trong mười điều không được phá (vd bất biến 7: `sim` không giàu hơn bo mạch tham chiếu) | `CHANGELOG.md` §3.3 |
+| **L1 · L2 · L3** | Cấp đảm bảo của Action CI: L1 replay chuẩn xác · L2 khớp schema + `confidence` · L3 chỉ khẳng định phán quyết gate và lệnh chân | `neuroedge-prd.md` FR-CI-LVL |
 | **TODOS #n** | Việc đã xem xét và hoãn có chủ ý, kèm mốc kích hoạt | `TODOS.md` |
 | **§x.y** | Mục trong `neuroedge-proposal.md`. Viết *"§x.y của tài liệu này"* khi là mục nội bộ | tệp này |
 
@@ -30,6 +35,7 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 | **Khối 1a · 1b · 2 · 3 · 4 · 5** | Khối công việc Giai đoạn 1: 1a lõi + Action CI · 1b vi điều khiển · 2 Fleet OS · 3 các đường ray nền tảng | `neuroedge-roadmap.md` mục lục |
 | **Khối V1a · V1b · P1 · P2** | Khối công việc Giai đoạn 2 (thị giác, phủ rộng phần cứng) | `neuroedge-roadmap-phase2.md` |
 | **Sprint 1…6** | Các sprint 2 tuần của Khối 1a và 1b | `neuroedge-roadmap.md` §4–§5 |
+| **M1** | Cột mốc kế tiếp: time-to-first-value < 10 phút trên `sim` | `neuroedge-roadmap.md` §0.1 |
 | **TSK-Sn-mm** | Một task, ví dụ `TSK-S2-03` = Sprint 2, task 03. Giai đoạn 2 dùng `TSK-V…` · `TSK-P…` | bảng task trong roadmap |
 | **Tuần N · Tháng N** | Tuần/tháng thứ N **của chương trình**, tính từ Tuần 0 = **2026-09-21**. "Tháng 9" **không** phải tháng 9/2026. Khi tuần và ngày lệch nhau, ngày tuyệt đối đúng | tệp này · lịch ngày tuyệt đối: `neuroedge-prd.md` §15 (Q-19) |
 | **V1–V4** | Vai trò trong đội: V1 kỹ sư lõi · V2 kỹ sư nhúng · V3 trải nghiệm lập trình viên · V4 hạ tầng dịch vụ | `neuroedge-roadmap.md` §1.1 |
@@ -39,6 +45,11 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 >   design doc Giai đoạn 1; A2 tương tự (cửa sổ `linux` + Action CI). Roadmap viết *"Sprint 2 ≈ A1"*
 >   theo nghĩa thứ hai.
 > - **V1** là vai trò kỹ sư lõi, **và** là tiền tố Khối V1a/V1b của Giai đoạn 2.
+> - **P1** là độ ưu tiên (P0 · P1 · P2), **và** là tiền đề P1 của design doc Giai đoạn 1 (P1–P4).
+>   Bảng chấm của cổng nhu cầu dùng `P1` theo nghĩa thứ hai (điểm cho tiền đề P1).
+> - **C1…C8** là tiêu chí nghiệm thu v1.1 trong PRD, **và** C1…C10 là câu hỏi của cổng nhu cầu
+>   2026-10-25. Ngữ cảnh kinh doanh (`docs/business/`) luôn theo nghĩa thứ hai.
+> - **G1–G4** (cột mốc thị trường) khác **G-a…G-e** (giả định Phụ lục G) và khác **V-G1…V-G5**.
 
 ## 3. Mã từ các phiên review
 
@@ -47,9 +58,12 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | Mã | Là gì | Định nghĩa ở |
 |:---|:---|:---|
 | **CEO-X1…X6 · CEO-T1…T4 · CEO-Sn-m** | Phát hiện của review góc nhìn CEO (X = cần người quyết, T = lựa chọn khẩu vị) | `docs/archive/giai-doan-1-review-log.md` |
-| **ENG-A1…A3 · ENG-T1…T3 · ENG-Qn** | Phát hiện của review kỹ thuật (A = kiến trúc, T = test, Q = chất lượng mã) | như trên |
+| **ENG-A1…A3 · ENG-T1…T3 · ENG-Qn** | Phát hiện của review kỹ thuật (A = kiến trúc, T = test, Q = chất lượng mã). Vd `ENG-T3`: thiếu phản chứng cho `budget`/`on_block`/`extends` → TSK-S2-13, TSK-S3-21 | như trên |
 | **DX-C1… · DX-Hn · DX-Mn** | Phát hiện của review trải nghiệm lập trình viên (C = critical, H = high, M = medium) | như trên |
-| **D6–D11** | Câu hỏi trong phiên /office-hours 2026-09-22 — không có trong kho | `docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md` (đầu tệp) |
+| **D6–D11** | Câu hỏi trong phiên /office-hours 2026-09-22 — không có trong kho | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` (đầu tệp) |
+| **P1–P4** | Bốn tiền đề của design doc Giai đoạn 1 (P1 điểm đau thuộc U2 · P2 khoảng gate không trống · P3 khác biệt là tương đương target + fail-closed · P4 rủi ro số một là nhu cầu) | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` §Premises |
+| **Approach A · B · C · D · E** | Các hướng đi Giai đoạn 1: A wedge `sim` trước (đã chọn) · B spike xuyên tầng · C bán Action CI rời · D bán memo + bản ghi màn hình · E gate/Action CI cho hành động của agent thoại trên cloud | A–C: `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` §Approaches · D, E: `docs/archive/giai-doan-1-review-log.md` (`CEO-X4`) |
+| **C1…C10** (cổng nhu cầu) | Mười câu hỏi cổng nhu cầu 2026-10-25 phải trả lời — **khác** tiêu chí C1–C8 của PRD | `docs/business/cong-nhu-cau-2026-10-25/README.md` §2 |
 
 ## 4. Thuật ngữ sản phẩm
 
@@ -60,6 +74,10 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **Kế thừa gate (`extends`)** | Gate con dùng lại gate cha và **chỉ được siết chặt** (năm nguyên tắc B.5) | `neuroedge-proposal.md` Phụ lục B.5 |
 | **Fail-closed / fail-open** | Khi không thẩm định được: chặn (mặc định) / cho qua (chỉ khi gate tự khai `fail: open`) | `neuroedge-proposal.md` Phụ lục B.4 |
 | **Token phán quyết** | Bằng chứng dùng một lần mà `c.do()` cấp sau một ALLOW; HAL chỉ đổi chân khi có nó | `docs/spec/threat_model.md` |
+| **Sổ token (token ledger)** | Nơi phát, kiểm và đóng token phán quyết. Bản host: `TokenLedger` (Python); bản thiết bị: `ne_token.c`, cùng luật, sổ đầy thì đóng an toàn | `python/neuroedge/actions/token.py` · `targets/esp32s3/components/ne_gate/` |
+| **`NETR` · `.netree`** | Bố cục nhị phân cố định của cây quyết định trên thiết bị (magic `NETR`, v1); `neuroedge build` ghi `<gate>.netree` và `<gate>.netree.h` | `docs/rfc/0003-bo-cuc-nhi-phan-cay.md` |
+| **Walker C** | Hàm C99 duyệt cây `NETR` tại chỗ trong flash, không cấp phát, ra cùng phán quyết với engine host | `targets/esp32s3/components/ne_gate/` (TSK-S4-02) |
+| **`digests.lock`** | Danh sách digest của gate chuẩn mực; CI chặn mọi thay đổi digest không kèm RFC | `CONTRIBUTING.md` §8.2 bước 4 |
 | **Physical AI** | AI điều khiển thứ trong thế giới thật — chốt cửa, đèn, rơ-le, động cơ. Lời nói sai thì sửa được; hành động vật lý sai thì không, nên mọi hành động đi qua gate | `neuroedge-proposal.md` §0.2 |
 | **`c.do()` · `c.say()`** | Cổng duy nhất tới thế giới vật lý · lời nói (không qua gate) | `python/neuroedge/actions/` |
 | **RAG** | Retrieval-augmented generation: tìm đoạn tri thức liên quan (cục bộ, tất định) rồi để System 2 trả lời dựa trên chúng. Mất mạng thì nói câu trả lời cục bộ | `python/neuroedge/models/knowledge.py` |
@@ -67,19 +85,25 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **MCP** | Model Context Protocol — chuẩn mở để ứng dụng AI gọi tool. `neuroedge mcp serve` đưa các `@action` ra làm tool, vẫn qua gate | `python/neuroedge/mcp_server.py` |
 | **Gated Tool Profile** | Chuẩn của NeuroEdge cho tool call tới thiết bị vật lý, đặt trên MCP: ba trạng thái kết quả, nguồn gọi, xác nhận của người, vết ghi. Tài sản chuẩn thứ ba cạnh lược đồ gate và vết ghi | `docs/spec/tool_calling.md` |
 | **MCP host** | Bên dùng MCP client để gọi tool. System 2 của agent là MCP host: gọi tool thiết bị qua MCP server của chính agent, và tool thông tin của MCP server bên ngoài (Q-27) | `python/neuroedge/mcp_host.py` |
+| **`mcp serve --ui`** | Máy chủ MCP qua stdio kèm trang web `sim` của **cùng phiên**: lời gọi MCP, lệnh gõ và nút xác nhận trên trang dùng chung một phiên | `docs/spec/tool_calling.md` §8 |
+| **`mcp desktop-config`** | Lệnh in (hoặc ghi, có sao lưu) mục cấu hình Claude Desktop cho `mcp serve`, bằng đường dẫn tuyệt đối | `docs/spec/tool_calling.md` §8 |
+| **Corpus tool call · NeuroEdge-gated** | `fixtures/tool_calls/{valid,invalid}/` + `expected_results.yaml`; runtime qua corpus này mới được gọi là *NeuroEdge-gated* | `docs/spec/tool_calling.md` §9 |
+| **`offline_help`** | Câu trả lời khi System 2 không trả lời được: thiết bị nói các lệnh cục bộ còn dùng được, không đoán hành động | `docs/spec/tool_calling.md` §10 |
 | **`confirms` (RFC-0006)** | Trong `on_block: ask`: các tiêu chí mà lời "có" của người trên thiết bị được thay khi gate lượng giá lại. Mọi tiêu chí khác vẫn phải đạt; mô hình và client MCP không xác nhận được | `docs/spec/tool_calling.md` §6 |
 | **`call_source`** | Dữ kiện do runtime chèn cho gate: tool call đến từ `local_grammar`, `system_one`, `system_two`, `mcp` hay `test`. Bên gọi không tự khai được | `docs/spec/tool_calling.md` §5 |
+| **Nguồn xác nhận (`local_grammar` · `ui`)** | Hai kênh duy nhất được trả lời câu hỏi `ask`: lời gõ/nói khớp ngữ pháp, và nút trên trang của thiết bị. `ui` không phải `call_source` | `docs/spec/tool_calling.md` §6 |
 | **HAL · 5 nguyên thủy** | Lớp phần cứng: `audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display` | `neuroedge-prd.md` §4.1 (FR-HAL-01) |
 | **Target `sim` · `linux` · `esp32s3`** | Môi trường chạy bậc 1: trình mô phỏng · Linux (RPi 5) · vi điều khiển ESP32-S3-Box-3 | `neuroedge-prd.md` §4.2 (FR-TGT) |
 | **Bậc target (1 · 2 · 3)** | Mức cam kết chất lượng theo target (Q-13) | `neuroedge-prd.md` §15 |
 | **SystemOne · SystemTwo** | Mô hình trả lời có cấu trúc (bool/level/choice) · mô hình sinh văn bản tự do | `neuroedge-proposal.md` §3.6 |
+| **Jev** | Mô hình cloud cho System 1 ở v1.0, kèm fallback ngữ pháp lệnh cục bộ (Q-4). Chưa có adapter trong mã | `neuroedge-prd.md` §15 (Q-4) |
 | **Provider · `[system_two]` · `neuroedge[cloud]`** | Model thật đứng sau SystemTwo, khai trong bảng `[system_two]` của `agent.toml`: LiteLLM (cài bằng extra `cloud`, Q-10) hoặc adapter tự viết `python:pkg.mod:factory`. Chỉ ghi **tên** biến môi trường chứa key | `python/neuroedge/models/providers/` (TSK-S2-11) |
 | **Ngữ pháp lệnh cố định** | Fallback khi mất mạng: danh sách câu lệnh → intent, không mạng, tất định (Q-14) | `fixtures/agents/villa-concierge/commands.toml` |
 | **Action CI** | Kiểm thử hồi quy hành vi vật lý bằng vết ghi (record / replay / assert) | `neuroedge-proposal.md` §4.7 |
 | **Golden Reference** | Vết ghi có quyết định là quyết định kỳ vọng; replay được so với nó theo phán quyết gate + lệnh chân, bỏ qua timing và chữ | `python/neuroedge/testing/golden.py` (FR-CI-04) |
 | **gpio-sim** | Mô-đun kernel Linux tạo chip GPIO ảo qua configfs; CI chạy HAL `linux` trên nó, không cần bo mạch | `scripts/setup_gpio_sim.sh` (Q-16) |
 | **Vết ghi (trace)** | Tệp JSON `trace.v1` ghi mọi sự kiện một phiên | `schemas/trace.v1.json` |
-| **Wedge** | Lát cắt hẹp nhất chứng minh giá trị trước: `sim` trước, vi điều khiển sau | `docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md` |
+| **Wedge** | Lát cắt hẹp nhất chứng minh giá trị trước: `sim` trước, vi điều khiển sau | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` |
 | **TTFV** | Time-to-first-value — thời gian từ cài đặt tới lần đầu thấy agent chạy (mục tiêu < 10 phút) | `neuroedge-prd.md` §2.3 (hành trình 1) |
-| **CR-1.0** | Change Request 2026-09-21: chuyển kiến trúc sang cloud-first, provider-pluggable | `CHANGELOG.md` [0.2.0] |
+| **CR-1.0** | Change Request 2026-09-21: chuyển kiến trúc sang cloud-first, provider-pluggable | `CHANGELOG.md`, mốc CR-1.0 (2026-09-21) |
 | **NE1001…NE5001** | Mã lỗi ổn định, mỗi lỗi có 3 phần: ở đâu · vì sao · cách sửa | `neuroedge-prd.md` Phụ lục B |

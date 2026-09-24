@@ -153,7 +153,9 @@ một mô hình gửi `{"call_source": "local_grammar"}` bị `REJECTED` ở bư
 `ask` nghĩa là *hỏi lại người*. Vì vậy:
 
 - Chỉ **người, qua kênh của thiết bị**, được xác nhận: giọng nói hoặc chữ gõ khớp ngữ
-  pháp (`local_grammar`), hoặc nút trên UI của thiết bị.
+  pháp (`local_grammar`), hoặc nút trên trang của thiết bị (`ui`). Đây là tập **nguồn xác
+  nhận** (`HUMAN_SOURCES`, `actions/confirmation.py`), khác năm giá trị `source` của §1: `ui`
+  không phát tool call, và `call_source` không bao giờ bằng `ui`.
 - Nguồn `system_two` và `mcp` **KHÔNG ĐƯỢC** phát lời xác nhận. Nếu được, một mô hình bị
   prompt injection, hoặc một agent tự động phía client, sẽ tự trả lời câu hỏi an toàn
   dành cho người.
@@ -178,14 +180,27 @@ hỏi xác nhận* với nút Đồng ý / Huỷ và thời gian còn lại (`PO
 
 ## 7. Vết ghi
 
+Đây là danh mục **duy nhất** của sự kiện tool call, xác nhận, MCP host và System 2. Sự kiện
+theo nguyên thủy HAL (`actuator_command`, `sensor_read`, `display_frame`…) ở
+`docs/spec/simulation_coverage.md` §3.
+
 | Sự kiện | Dữ liệu | Có từ |
 |:---|:---|:---|
 | `tool_call` | `id`, `name`, `arguments`, `source` | v0 |
 | `tool_call_rejected` | `id`, `name`, `problems` | v0 |
-| `tool_confirm_requested` | `id`, `action`, `gate`, `message`, `confirms`, `expires_ms` (thời gian vết ghi, như `offset_ms`), `ttl_ms` | TSK-S3-26 ✅ |
-| `tool_confirmed` · `tool_confirm_declined` | `id`, `source` | TSK-S3-26 ✅ |
-| `tool_confirm_rejected` | `id`, `source`, `reason` | TSK-S3-26 ✅ |
-| `tool_confirm_expired` | `id` | TSK-S3-26 ✅ |
+| `tool_confirm_requested` | `id`, `action`, `gate`, `message`, `confirms`, `expires_ms` (thời gian vết ghi, như `offset_ms`), `ttl_ms` | RFC-0006 |
+| `tool_confirmed` · `tool_confirm_declined` | `id`, `source` | RFC-0006 |
+| `tool_confirm_rejected` | `id`, `source`, `reason` | RFC-0006 |
+| `tool_confirm_expired` | `id` | RFC-0006 |
+| `mcp_tool_result` | `id`, `server`, `tool`, `status`, `sha256`, `bytes` — không lưu nội dung (§10 quy tắc 3) | Q-27 |
+| `mcp_server_unavailable` | `server`, `reason` (§10 quy tắc 4) | Q-27 |
+| `system_two_call` | `provider`, `model`, `task`, `latency_ms`, `status`, `prompt_tokens?`, `completion_tokens?`, `cost_usd?`, `error?` — không prompt, không key; replay bỏ qua | FR-MDL-06 |
+| `system_two_unavailable` | `task`, `reason` — model không trả lời được | FR-MDL-06 |
+| `system_two_rounds_exceeded` | `task`, `rounds` — quá `max_rounds` (§10 quy tắc 6) | FR-MDL-11 |
+
+Câu thiết bị nói ghi ở `tts_stream_start` (simulation_coverage §3); nguồn của câu nằm ở
+`reply_source` của lượt (vd `gate_ask`, `confirmed`, `offline_help` — §10 quy tắc 5; danh sách đủ ở
+`Turn.reply_source`, `python/neuroedge/sim/session.py`).
 
 Trường `type` của sự kiện trong `trace.v1` là chuỗi mở, nên thêm sự kiện **không** cần
 RFC. Replay (`testing/player.py`) tính lại từng lần lượng giá gate từ `gate_facts` đã
@@ -196,9 +211,9 @@ hình. Lời gọi `REJECTED` không tới gate nên không có trong phán quy�
 
 | Target | Tool call | Máy chủ MCP |
 |:---|:---|:---|
-| `sim` | Đầy đủ (§1–§7) | `neuroedge mcp serve` qua stdio; `--ui` phục vụ thêm trang web của **cùng phiên** trên 127.0.0.1, lời gọi MCP và lệnh gõ trên trang chạy lần lượt dưới một khóa |
+| `sim` | Đầy đủ (§1–§7) | `neuroedge mcp serve` qua stdio; `--ui` phục vụ thêm trang web của **cùng phiên** trên 127.0.0.1: lời gọi MCP, lệnh gõ trên trang (kể cả `:sensor`) và nút xác nhận (§6) chạy lần lượt dưới một khóa, nên người trên trang đổi được cảm biến và trả lời câu hỏi `ask` mà lời gọi MCP mở ra |
 | `linux` | Đầy đủ | Như `sim`, trên máy thiết bị |
-| `esp32s3` | Ngữ pháp → tool call tổng hợp trong C; tham số kiểm bằng bảng do `neuroedge build` sinh cạnh cây quyết định (Q-23); `call_source` là một byte trong ngữ cảnh walker | **Không** chạy trên MCU. MCP cho thiết bị đi qua gateway hoặc một máy `linux` (FR-GW), và thiết bị vẫn tự lượng giá gate. MCU **không làm MCP host**: host (§10) đặt ở nơi System 2 chạy |
+| `esp32s3` | Gate: walker C99 đọc cây `NETR` v1 do `neuroedge build` sinh (Q-23, RFC-0003). Giới hạn tham số (RFC-0005) và `confirms` (RFC-0006) nằm **trong** bố cục đó; `call_source` là một dữ kiện `choice` như mọi tiêu chí, chỉ số của nó do `neuroedge build` sinh (`<gate>.netree.h`). Ngữ pháp → tool call tổng hợp trong C: chưa có (TSK-S5-07) | **Không** chạy trên MCU. MCP cho thiết bị đi qua gateway hoặc một máy `linux` (FR-GW), và thiết bị vẫn tự lượng giá gate. MCU **không làm MCP host**: host (§10) đặt ở nơi System 2 chạy |
 
 Transport MCP ở v1.0 chỉ là **stdio**: bên có quyền chạy tiến trình chính là người vận
 hành. Transport HTTP cần xác thực và là việc hoãn (`TODOS.md` #24). Mục cấu hình cho
@@ -254,7 +269,7 @@ System 2 ─tool──► │ agent: in-process → build_server(source="system_
  └── kết quả ◄─── └────────────────────────────────────────────────────────┘
 ```
 
-Năm quy tắc:
+Sáu quy tắc:
 
 1. **Tool của thiết bị chỉ đến được qua MCP server của chính agent.** Mọi lời gọi vẫn qua
    §2. `call_source = system_two` gắn theo kết nối (§5). Lỗi hợp đồng ném ra nguyên vẹn
@@ -270,24 +285,24 @@ Năm quy tắc:
    `neuroedge build` báo lỗi.
 3. **Kết quả tool bên ngoài là dữ liệu không tin cậy.** Nó chỉ trả lại mô hình, đánh dấu
    `"trust": "untrusted data …"`, không bao giờ được phân tích thành lệnh. Vết ghi lưu
-   `mcp_tool_result{id, server, tool, status, sha256, bytes}` — không lưu nội dung. Mô
+   `mcp_tool_result` (trường ở §7) — không lưu nội dung. Mô
    hình "nghe lời" một nội dung bị cài lệnh thì lời gọi của nó vẫn qua gate
    (`test_prompt_injection_in_the_news_still_meets_the_gate`).
-4. **Server không kết nối được thì bỏ qua, và nói ra**: ghi `mcp_server_unavailable{server,
-   reason}`; tool của thiết bị vẫn chạy. Mô hình được báo trong `instructions` nguồn nào
+4. **Server không kết nối được thì bỏ qua, và nói ra**: ghi `mcp_server_unavailable` (§7); tool của thiết bị vẫn chạy. Mô hình được báo trong `instructions` nguồn nào
    đang tắt và vì sao (kể cả thiếu SDK `mcp`), để nói với người dùng là *tạm thời không lấy
    được* — không nói "không có công cụ", không bịa. REPL in cảnh báo; banner của `run` liệt
    kê server và trạng thái. Mất mạng hẳn ⇒ không có System 2 ⇒ host không mở; ngữ pháp cục
    bộ dispatch thẳng (§1, Q-14).
-6. **Dự phòng cục bộ cho hành động**: System 2 không trả lời được một câu tự do ⇒ thiết bị
+5. **Dự phòng cục bộ cho hành động**: System 2 không trả lời được một câu tự do ⇒ thiết bị
    **nói các lệnh cục bộ vẫn dùng được** (một câu mẫu mỗi lệnh có `tool` trong
    `commands.toml`, `reply_source = offline_help`). Không bao giờ đoán hành động từ một câu
    gần giống — đoán sai là hành động vật lý sai; người nói lại lệnh và lệnh đó đi qua gate
    như mọi lần.
-5. **Vòng có giới hạn** (FR-MDL-11): kết quả mỗi tool quay lại mô hình trong
+6. **Vòng có giới hạn** (FR-MDL-11): kết quả mỗi tool quay lại mô hình trong
    `state["messages"]`, tối đa `max_rounds` vòng (mặc định 4, 1..16); quá ⇒
-   `system_two_rounds_exceeded`. Gate trả `ask` ⇒ dừng vòng, thiết bị nói câu hỏi — mô
-   hình không được trả lời thay người (§6).
+   `system_two_rounds_exceeded`. Gate trả `ask` ⇒ dừng vòng và thiết bị nói `message` của
+   gate; câu hỏi chỉ được mở khi §6 cho phép (có `confirms` và một lời "có" là đủ). Mô hình
+   không được trả lời thay người (§6).
 
 Cấu hình (`agent.toml`, không thuộc `schemas/`):
 

@@ -64,7 +64,7 @@ người để phỏng vấn thêm.
 
 ### 4.1 Khối 1b — giữ nguyên nhánh của thiết kế GĐ1
 
-Ngưỡng này là bảng "Cổng nhu cầu — Tuần 3" trong `docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`,
+Ngưỡng này là bảng "Cổng nhu cầu — Tuần 3" trong `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`,
 đếm theo `N2(P1)`. Theo Q-20 nó **không chặn A2**.
 
 | Kết quả | Nhánh | Hành động |
@@ -76,7 +76,11 @@ Ngưỡng này là bảng "Cổng nhu cầu — Tuần 3" trong `docs/designs/gi
 
 Kèm điều kiện hướng (`CEO-X4`): nếu nhãn **C** ≥ 50% và **A** < 25% ⇒ dù `P1` đạt Go, nhánh là
 **Adjust**: đặt Approach C song song trước khi cam kết Khối 1b. Nếu nhãn **E** ≥ 50% ⇒ ghi Approach E
-thành phương án chính thức để sponsor chọn.
+thành phương án chính thức để sponsor chọn. (Approach A–E: `docs/user/thuat-ngu.md` §3.)
+
+Một phần Khối 1b đã làm sớm, không cần bo mạch: walker gate và sổ token C, self-test trên QEMU
+(TSK-S4-02, S4-07, S4-08). Nhánh **Stop** dừng phần còn lại (driver, thoại, OTA); phần đã có giữ
+nguyên trong kho; có tiếp tục bảo trì nó hay không thì ghi trong quyết định cổng (§5).
 
 ### 4.2 Mô hình thương mại (`CEO-X2`, `CEO-X5`)
 

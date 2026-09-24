@@ -8,8 +8,9 @@
 | **Yêu cầu PRD liên quan** | FR-ACE-01, FR-ACE-03, FR-ACE-08, FR-ACE-10, FR-CI-07, NFR-RES-01 |
 | **Người đề xuất** | V1 + V2 *(theo TSK-S4-02)* |
 | **Ngày mở** | 2026-09-24 |
-| **Trạng thái** | ✅ Đã chấp thuận — **thu hẹp**: chỉ bố cục nhị phân. Phần ghim `extends` bằng digest (TSK-S3-21) vẫn hoãn, `TODOS.md` #15 |
+| **Trạng thái** | ✅ Đã chấp thuận — **thu hẹp**: chỉ bố cục nhị phân. Phần ghim `extends` bằng digest (TSK-S3-21) vẫn hoãn, `TODOS.md` #15 · ✅ Đã hiện thực (TSK-S4-02, S4-07, S4-08; PR #27, #29) |
 | **Người phê duyệt** | minhlt (kỹ thuật trưởng), 2026-09-24 |
+| **Kiểm chứng** | §7 — `python/tests/test_c_walker.py`, `python/tests/test_c_token.py`, job CI `firmware-qemu` |
 
 > **Khi nào cần RFC:** `TODOS.md` #15 và `decision_tree.py` yêu cầu đóng băng bố cục
 > **trước khi có walker C đầu tiên**. Đổi bố cục sau RFC này cần RFC mới và tăng
@@ -134,6 +135,6 @@ cấu trúc sai — không đọc gì ngoài bộ đệm.
 ## 8. Việc phải làm khi chấp thuận
 
 - [x] `python/neuroedge/engine/binary_tree.py` (bộ mã hoá) · `targets/esp32s3/components/ne_gate/` (walker, component ESP-IDF, Makefile host)
-- [x] `neuroedge-roadmap.md` TSK-S4-02 🟡 (walker xong; sổ token C + tích hợp firmware còn lại), TSK-S4-07 ✅
+- [x] `neuroedge-roadmap.md` TSK-S4-02, TSK-S4-07
 - [x] `TODOS.md` #15 thu hẹp còn phần ghim `extends`
-- [ ] Sổ token dùng một lần bằng C và gắn walker vào `app_main` — cùng TSK-S4-08 (QEMU)
+- [x] Sổ token dùng một lần bằng C (`ne_token.c`) và gắn walker vào `app_main` (self-test lúc boot, `gate_selftest.c`) — TSK-S4-08, PR #29

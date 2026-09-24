@@ -17,11 +17,12 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | Hôm nay dùng được gì | [`huong-dan.md`](huong-dan.md) | hướng dẫn sử dụng cho maker |
 | Trạng thái hiện tại | [`trang-thai.md`](trang-thai.md) | máy sinh từ roadmap §0 |
 | **Hiểu sản phẩm** | | |
-| Yêu cầu `FR-*` / `NFR-*` | [`neuroedge-prd.md`](../../neuroedge-prd.md) | sổ quyết định là §15 (`Q-1`…`Q-20`) |
+| Yêu cầu `FR-*` / `NFR-*` | [`neuroedge-prd.md`](../../neuroedge-prd.md) | sổ quyết định là §15 (mã `Q-N`) |
 | Kiến trúc và Phụ lục B (đặc tả gate) | [`neuroedge-proposal.md`](../../neuroedge-proposal.md) | |
 | Giải mã mã viết tắt (`FR-*`, `Q-N`, `A1`, `CEO-X1`…) | [`thuat-ngu.md`](thuat-ngu.md) | nơi duy nhất |
-| Thiết kế Giai đoạn 1 | [`docs/designs/`](../designs/) | *vì sao* của wedge `sim` |
+| Vì sao Giai đoạn 1 đi "wedge `sim` trước" | [`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`](../archive/giai-doan-1-wedge-truoc-mcu-sau.md) | lịch sử, đóng băng 2026-09-23 — kế hoạch hiện hành ở roadmap |
 | Biên bản các vòng review | [`docs/archive/`](../archive/) | lưu trữ, không quy phạm |
+| Cổng nhu cầu 2026-10-25 (phỏng vấn, demo, chấm điểm) | [`docs/business/cong-nhu-cau-2026-10-25/`](../business/cong-nhu-cau-2026-10-25/README.md) | tài liệu kinh doanh, Q-20 |
 | Kế hoạch Giai đoạn 2 | [`neuroedge-roadmap-phase2.md`](../../neuroedge-roadmap-phase2.md) | Khối V1a → P2 |
 | **Đóng góp** | | |
 | Quy ước, quy trình, hoàn thành task | [`CONTRIBUTING.md`](../../CONTRIBUTING.md) | §8 là checklist bắt buộc |
@@ -31,8 +32,11 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | Agent AI đọc gì trước | [`CLAUDE.md`](../../CLAUDE.md) | |
 | **Tham chiếu** | | |
 | Lược đồ, gate mẫu, vết ghi, bo mạch | `schemas/` · `gates/` · `fixtures/` · `boards/` | artifact máy đọc |
+| Tool call, MCP, xác nhận `ask` (Gated Tool Profile) | [`docs/spec/tool_calling.md`](../spec/tool_calling.md) | nơi duy nhất cho tool call |
+| Đường tắt qua gate đã chặn, và điều ngoài phạm vi | [`docs/spec/threat_model.md`](../spec/threat_model.md) | kèm tên test |
+| Mỗi nguyên thủy HAL × target: chạy bằng gì, kiểm ở đâu | [`docs/spec/simulation_coverage.md`](../spec/simulation_coverage.md) | Q-21, Q-22 |
 | Ràng buộc MCU cho HAL | [`docs/spec/hal_mcu_review.md`](../spec/hal_mcu_review.md) | RB-1…RB-4 |
-| Số đo bộ nhớ trên `esp32s3` | [`docs/reports/memory_spike_report.md`](../reports/memory_spike_report.md) | chờ bo mạch — chưa có số |
+| Số đo bộ nhớ trên `esp32s3` | [`docs/reports/memory_spike_report.md`](../reports/memory_spike_report.md) | TSK-S1-10 |
 
 ## Bố cục kho
 
@@ -50,8 +54,9 @@ neuroedge-init/
     ├── rfc/            thay đổi lược đồ
     ├── spec/           đặc tả và ràng buộc
     ├── reports/        báo cáo đo
-    ├── designs/        thiết kế
-    └── archive/        biên bản review đã khép
+    ├── business/       tài liệu kinh doanh (cổng nhu cầu)
+    ├── release.md      quy trình phát hành PyPI
+    └── archive/        lưu trữ: biên bản review, thiết kế đã đóng băng
 ```
 
 ## Quy ước

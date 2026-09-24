@@ -17,7 +17,7 @@ nói về NeuroEdge trước khi xong phần câu hỏi vấn đề. Mã giả t
 
 **Người ghi** ghi nguyên văn và đánh dấu: (a) **thời điểm con số đầu tiên** xuất hiện, (b) **ai nói
 trước** (người được phỏng vấn hay người hỏi). Đó là điều kiện "không gợi ý" của C1
-(`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md` §Success Criteria).
+(`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` §Success Criteria).
 
 Thời lượng: 45 phút. Mở đầu 5' · câu hỏi phân khúc 25' · kết 5' · demo 10' (tuỳ chọn, `demo.md`).
 Không cần hỏi hết; ưu tiên các câu có dấu ★.

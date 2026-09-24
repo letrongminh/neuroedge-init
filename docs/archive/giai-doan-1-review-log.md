@@ -2,7 +2,7 @@
 
 > **Lưu trữ, không quy phạm.** Đây là biên bản các vòng review kế hoạch Giai đoạn 1
 > ngày 2026-09-22 (adversarial spec review, `/plan-eng-review`, `/autoplan` CEO → DX → Eng),
-> tách khỏi [`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`](../designs/giai-doan-1-wedge-truoc-mcu-sau.md)
+> tách khỏi [`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`](giai-doan-1-wedge-truoc-mcu-sau.md) *(trước 2026-09-24 ở `docs/designs/`)*
 > để tài liệu thiết kế đọc được. Giữ lại để truy nguồn *vì sao* một quyết định được chọn.
 >
 > Kết luận của các vòng review đã thành quyết định `Q-10`, `Q-11`, `Q-14` → `Q-20`
