@@ -27,6 +27,13 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **TSK-S4-02 (walker) + TSK-S4-07 — walker C99 và bố cục nhị phân `NETR` v1 (RFC-0003 chấp thuận, thu hẹp).**
+  `neuroedge build` ghi `<gate>.netree` và `<gate>.netree.h` (mảng `const`, link vào flash). Walker
+  `targets/esp32s3/components/ne_gate/`: không cấp phát, không biến toàn cục, không đệ quy, kiểm CRC và mọi
+  offset; stack lớn nhất 176 B; hiểu giới hạn tham số (RFC-0005) và `confirms` (RFC-0006). Trên mỗi PR, walker
+  biên dịch trên host với ASan/UBSan khớp engine host trên mọi gate (truth rows + ca ngẫu nhiên) và bảng sự thật
+  đã ghi; fuzz tệp cây. Còn lại: sổ token bằng C và gắn vào `app_main` (cùng TSK-S4-08). Kiểm:
+  `pytest tests/test_c_walker.py` · `make -C targets/esp32s3/components/ne_gate check-static`.
 - **TSK-S3-26 — người xác nhận `on_block: ask` (Q-26, RFC-0006 chấp thuận).** Gate khai `on_block.confirms`:
   tiêu chí lời "có" của người trên thiết bị được thay. Gate chặn ⇒ câu hỏi chờ (`tool_confirm_requested`, TTL
   `max(p95×3, 10 s)`) chỉ khi "có" đủ để cho qua; người gõ `có` / bấm Đồng ý (`local_grammar` / `ui`) ⇒ gate
