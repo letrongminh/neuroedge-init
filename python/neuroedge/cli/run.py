@@ -111,6 +111,13 @@ def render_turn(turn: Turn, session: SimSession, console: Console, frames_before
             f"[dim]intent[/dim] [bold]{escape(recognition.intent)}[/bold] "
             f"({recognition.confidence:.2f}){escape(f' [{slots}]') if slots else ''}"
         )
+    elif turn.reply_source == "offline_help":
+        console.print(
+            "[bold red]✗ BLOCK[/bold red] command not recognized and System 2 unreachable "
+            "— no action ran, no pin moved (Q-14)"
+        )
+        console.print(f"  [bold]says[/bold] [dim](offline_help)[/dim]: {escape(turn.reply)}")
+        return
     elif turn.tool_results or turn.reply:
         console.print("[dim]System 2 handled free phrasing[/dim]")
     else:
@@ -203,6 +210,7 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
 def _turn(text: str, session: SimSession, console: Console, err_console: Console) -> bool:
     """Run one line. False when it raised a contract violation."""
     frames_before = len(session.hal.frames)
+    down_before = len(session.events.of_type("mcp_server_unavailable"))
     try:
         turn = asyncio.run(session.handle(text))
     except NeuroEdgeError as error:
@@ -211,6 +219,11 @@ def _turn(text: str, session: SimSession, console: Console, err_console: Console
         err_console.print(f"  fix: {escape(error.how)}")
         return False
     render_turn(turn, session, console, frames_before)
+    for event in session.events.of_type("mcp_server_unavailable")[down_before:]:
+        console.print(
+            f"  [yellow]! {escape(event['server'])} không dùng được:[/yellow] "
+            f"{escape(event['reason'])}"
+        )
     return True
 
 
@@ -226,6 +239,26 @@ def banner(session: SimSession, console: Console) -> None:
     console.print(f"  grammar: {escape(session.grammar.source)}")
     if session.slow.available:
         console.print(f"  system 2: {escape(system_two_line(session.slow))}")
+    for line in mcp_lines(session):
+        console.print(f"  {line}")
+
+
+def mcp_lines(session: SimSession) -> list[str]:
+    """The external information servers System 2 may use — and, before any turn, why not."""
+    servers = getattr(getattr(session, "mcp", None), "servers", ())
+    if not servers:
+        return []
+    import importlib.util
+
+    names = ", ".join(escape(f"{s.name} ({', '.join(s.tools)})") for s in servers)
+    if importlib.util.find_spec("mcp") is None:
+        return [
+            f"mcp: {names} — [yellow]tắt: chưa cài SDK[/yellow] (pip install 'neuroedge[mcp]'); "
+            "tool của thiết bị vẫn chạy"
+        ]
+    if not session.slow.available:
+        return [f"mcp: {names} — chỉ dùng khi có System 2"]
+    return [f"mcp: {names} — thông tin, không phải lệnh (Q-27)"]
 
 
 def system_two_line(slow) -> str:

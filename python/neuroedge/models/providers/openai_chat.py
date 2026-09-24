@@ -153,7 +153,9 @@ def from_response(response: Any, *, where: str = "SystemTwo") -> dict[str, Any]:
                 "arguments": _arguments(_get(function, "arguments")),
             }
         )
-    return {"text": content or None, "tool_calls": calls}
+    # Some models open with blank lines or trail spaces; speech and the REPL get the text.
+    text = content.strip() if content else ""
+    return {"text": text or None, "tool_calls": calls}
 
 
 def usage_of(response: Any) -> dict[str, Any]:

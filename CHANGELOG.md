@@ -27,6 +27,12 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **Khi mô hình hoặc nguồn bên ngoài vắng mặt (chạy thử LLM thật 2026-09-24).** (1) Chữ của mô hình được cắt khoảng
+  trắng đầu/cuối trước khi nói. (2) MCP server bên ngoài bị tắt (thiếu SDK `mcp`, không chạy, thiếu tool) được
+  nói ra: mô hình được báo trong `instructions` để nói *tạm thời không lấy được* thay vì *không có công cụ*; REPL in
+  cảnh báo; banner `run` liệt kê server. (3) Dự phòng cục bộ cho hành động: System 2 không kết nối được ⇒ thiết bị
+  nói các lệnh cục bộ vẫn dùng được (`offline_help`), không đoán hành động từ câu gần giống. Kiểm:
+  `pytest tests/test_offline_fallback.py` · `scripts/live_llm_smoke.py` (DeepSeek qua OpenRouter).
 - **TSK-S2-11 — System 2 trên model thật qua LiteLLM (extra `neuroedge[cloud]`, Q-10/Q-11/Q-12).** Bảng `[system_two]` trong
   `agent.toml` chọn `litellm` (`model`, **tên** biến key `api_key_env`) hoặc adapter tự viết `python:pkg.mod:factory`; key ghi vào
   tệp ⇒ `build` từ chối. Thiếu extra/key, lỗi mạng, hết giờ ⇒ câu offline, không gửi gì khi thiếu key. Mỗi lượt gọi model ghi
