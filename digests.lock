@@ -1,0 +1,48 @@
+# digests.lock — digest của gate chuẩn mực (TSK-S3-16). Sinh bởi
+# scripts/check_digests.py; không sửa tay. Digest là canonical.digest() của
+# YAML đã parse: đổi định dạng hay comment không đổi digest.
+# Tệp mới: --update. Tệp đổi hoặc bị xoá: cần RFC, --accept <tệp> --rfc NNNN.
+version: 1
+files:
+  fixtures/gates/registry/args-base@1.0.0.yaml:
+    digest: sha256:29cadc94193ffe17b51ccb9adf665b25577070e00336fa280aea795c74ba26bb
+  fixtures/gates/registry/ask-base@1.0.0.yaml:
+    digest: sha256:6d1e6b663490d1b0ca8e513d453cdb56477b94c2d7e6d8891afc5bbd37926034
+  fixtures/gates/registry/cycle-a@1.0.0.yaml:
+    digest: sha256:6c7a99ec69c2681e415eaf8e4c8faa9afff8b89d29ef46f4262d400fa6aca183
+  fixtures/gates/registry/cycle-b@1.0.0.yaml:
+    digest: sha256:0cb6c78930d04254b077bdc0085c6e15db8a9f14b06a6ff97dadaaab99f73ea4
+  fixtures/gates/registry/degrade-base@1.0.0.yaml:
+    digest: sha256:907016afa9fdbd927bde7f571a9736185b07a59be9f00c8768065fb865eb77b2
+  fixtures/gates/registry/deny-base@1.0.0.yaml:
+    digest: sha256:cc5d2d7347ef34c49be2797016d52fdb4252cf4b2bee20d23c5b0f82b91be472
+  fixtures/gates/registry/depth-l1@1.0.0.yaml:
+    digest: sha256:d3cd29d143681f0468a3f2df4c8e60e2953d277181a1efb70c5be646f26e4b03
+  fixtures/gates/registry/depth-l2@1.0.0.yaml:
+    digest: sha256:79c9ed2903128e8d7eb39f5c8e4bc101afaffcd5ed3145ec3961a99469965a36
+  fixtures/gates/registry/depth-l3@1.0.0.yaml:
+    digest: sha256:28bb8377bae4b16418882d305ee6d3d49d10582b52dc2d64b8bfa5d30204d264
+  fixtures/gates/registry/strict-base@1.0.0.yaml:
+    digest: sha256:e0de9e5d966d971d8a945ba434cb4c4fd3e8bf29b626c2995f77b738a96d25b4
+  fixtures/gates/valid/explicit_fail_open.yaml:
+    digest: sha256:a0f847db2f12827874da86c03bb6c7f2d96024b79664f9c00e4ffb990874442f
+  fixtures/gates/valid/inherits_fail_open_as_closed.yaml:
+    digest: sha256:3f6f21e04c897dbd02f296d5fa7ddd3807ce554f00b441a10ee23b65f3500be8
+  fixtures/gates/valid/inherits_on_block_and_budget.yaml:
+    digest: sha256:039af3b1dcb1bf8ab277bc062c7d52e632a3da5b606a381a7dd80417026bf8e7
+  fixtures/gates/valid/keeps_inherited_degrade.yaml:
+    digest: sha256:8e692a3c034a9843c3edacccf8c0e9a10326c83b32a80b3138f1e82d2a2908e8
+  fixtures/gates/valid/narrows_arguments.yaml:
+    digest: sha256:c1a3c459b33fae7791ff85906ebe9828bb983a19c098e306aba3ff7eab546ecc
+  fixtures/gates/valid/narrows_confirms.yaml:
+    digest: sha256:04b34d38e57d90c4071cfff9031e7ad4f1d2f8f96e10a9b49774ea0b5ff82495
+  fixtures/gates/valid/restates_identically.yaml:
+    digest: sha256:9fdab8a924461744d4e6ccb3c94182a4d1d4ac00cd5066f25319ff85ea6ff019
+  fixtures/gates/valid/tightens_every_kind.yaml:
+    digest: sha256:7f5948bb668f56be4f2841318d58491c27e202a7a2f653737666b3751e2f25cc
+  gates/hospitality/base-access@1.0.0.yaml:
+    digest: sha256:8b6a1795fd93694fd5f799c1812fee447757ee6a8d58ab926b386af02ce5d8e7
+  gates/unlock_door@1.2.0.yaml:
+    digest: sha256:11fab1b70c28dfe8020e64ff0622b08dbac2a3600611fa0e14140fbaaf40225f
+  gates/unlock_door_night@1.0.0.yaml:
+    digest: sha256:0da1a33fb1c5ee2378ba60800deb7d8ab0447a9b39e35204c92ee97bc70e55a7

@@ -166,6 +166,16 @@ class ReplayError(NeuroEdgeError):
     code = "NE4003"
 
 
+class VerificationError(NeuroEdgeError):
+    """
+    `neuroedge verify` found nothing to verify in one category — no gate, no
+    canonical trace, or no replay — or the directory is missing (FR-CLI-03).
+    A sweep over zero artifacts must never read as a pass.
+    """
+
+    code = "NE4004"
+
+
 class PerceptionUnavailableError(NeuroEdgeError):
     """
     A perception component cannot be constructed: a missing or malformed command

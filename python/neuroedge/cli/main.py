@@ -33,7 +33,7 @@ from ..engine import (
     resolve_gate_file,
     resolve_gate_uri,
 )
-from ..errors import BuildFailed, NeuroEdgeError
+from ..errors import BuildFailed, NeuroEdgeError, VerificationError
 from ..hal.board import available_boards, load_board_by_id
 from ..paths import gates_dir, repo_root
 from ..trace import load_trace
@@ -780,6 +780,28 @@ def mcp_desktop_config(
     typer.echo("Quit Claude Desktop completely (not just close the window), then reopen it.")
 
 
+def _empty_categories(counts: dict[str, tuple[int, Path, str]]) -> VerificationError | None:
+    """
+    A `VerificationError` naming every category `verify` counted zero of, or
+    None. Zero artifacts is a failure, never a pass (FR-CLI-03, TSK-S3-19).
+    """
+    empty = [(label, where, state) for label, (n, where, state) in counts.items() if n == 0]
+    if not empty:
+        return None
+    reasons = []
+    for label, where, state in empty:
+        reasons.append(f"0 {label}: {where} {state if where.is_dir() else 'does not exist'}")
+    return VerificationError(
+        where=", ".join(dict.fromkeys(str(where) for _, where, _ in empty)),
+        why="; ".join(reasons) + " — a sweep over zero artifacts proves nothing",
+        how=(
+            "run from a NeuroEdge checkout or an installed wheel, or point NEUROEDGE_ROOT "
+            f"(now {repo_root()}) at a tree with gates/ and fixtures/traces/; "
+            "pass at least one target to --targets"
+        ),
+    )
+
+
 @app.command()
 def verify(
     targets: str = typer.Option(
@@ -798,13 +820,18 @@ def verify(
     from ..testing.player import TracePlayer
 
     root = repo_root()
+    gates_root = gates_dir()
+    traces_root = root / "fixtures" / "traces"
     requested = [t.strip() for t in targets.split(",") if t.strip()]
     problems = 0
+    resolved = 0
+    replayed = 0
 
     console.print("[bold]Resolving gates in gates/[/bold]")
-    for path in sorted(gates_dir().rglob("*.yaml")):
+    for path in sorted(gates_root.rglob("*.yaml")):
         try:
             gate = resolve_gate_file(path)
+            resolved += 1
             console.print(
                 f"  [green]✓[/green] {gate.name}@{gate.version} "
                 f"({gate.inheritance_levels} level(s), fail {gate.budget.get('fail')})"
@@ -814,7 +841,7 @@ def verify(
             err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {escape(error.why)}")
 
     console.print("\n[bold]Validating canonical traces in fixtures/traces/[/bold]")
-    traces = sorted((root / "fixtures" / "traces").glob("*.json"))
+    traces = sorted(traces_root.glob("*.json"))
     valid = []
     for path in traces:
         try:
@@ -844,6 +871,7 @@ def verify(
                     f"{escape(error.why)}\n    fix: {escape(error.how)}"
                 )
                 continue
+            replayed += 1
             if diff.ok:
                 rows[path.name].append(f"[green]✓[/green] {' '.join(result.verdicts)}")
             else:
@@ -857,15 +885,32 @@ def verify(
         table.add_row(name, *cells)
     console.print(table)
 
+    empty = _empty_categories(
+        {
+            "gates resolved": (resolved, gates_root, "has no *.yaml gate that resolves"),
+            "canonical traces validated": (
+                len(valid),
+                traces_root,
+                "has no *.json trace that validates",
+            ),
+            "replays compared": (
+                replayed,
+                traces_root,
+                f"had no trace replayed on targets {targets!r}",
+            ),
+        }
+    )
+    if empty is not None:
+        _fail(empty)
     if problems:
         err_console.print(f"\n[bold red]{problems} problem(s) found.[/bold red]")
         raise typer.Exit(code=1)
 
     console.print(
         Panel(
-            "[green]Passed:[/green] all gates resolve, all canonical traces validate, and "
-            f"each replays on {', '.join(requested)} to the verdicts and pin commands it "
-            "records.\n\n"
+            f"[green]Passed:[/green] all {resolved} gate(s) resolve, all {len(valid)} "
+            f"canonical trace(s) validate, and {replayed} replay(s) on "
+            f"{', '.join(requested)} match the verdicts and pin commands they record.\n\n"
             "[yellow]Compared:[/yellow] decisions only — not timing. Timing equivalence and "
             "the esp32s3 target arrive with Sprint 4 (TSK-S4-04).",
             title="neuroedge verify",

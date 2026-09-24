@@ -68,6 +68,12 @@ jobs:
               print(f"  ok  {name}  {schema_id}")
           PY
 
+      - name: Canonical gates match digests.lock (TSK-S3-16)
+        # Resolving proves a gate is safe to load, not that it is the gate that
+        # was reviewed: an edited-but-valid gate resolves too. A new file needs
+        # `--update`; a changed or deleted one needs an RFC (`--accept --rfc`).
+        run: python scripts/check_digests.py --check
+
       - name: Every gate resolves (5 inheritance safety principles)
         run: neuroedge gate lint
 
