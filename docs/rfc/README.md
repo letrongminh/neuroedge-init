@@ -1,21 +1,20 @@
-# RFC — Đề xuất thay đổi lược đồ
+# RFC — Đề xuất thay đổi hợp đồng đã đóng băng
 
-Ba tệp trong `schemas/` là **lược đồ đã đóng băng** kể từ cuối Sprint 1. Chúng
-là thước đo tuân thủ cho cả Khối 1a và 1b, đầu vào trực tiếp của
-`neuroedge verify`, và đối tượng của chữ ký số gate. Vì vậy chúng không thay
-đổi bằng một pull request thông thường.
+Lược đồ trong `schemas/`, ngữ nghĩa phân giải gate, ba vết ghi chuẩn mực, gate đã khoá
+trong `digests.lock` và bố cục nhị phân `NETR` là thước đo tuân thủ và đối tượng của chữ
+ký số gate, nên chúng không thay đổi bằng một pull request thông thường. Danh sách chính
+xác những gì cần RFC: [`CONTRIBUTING.md` §3](../../CONTRIBUTING.md#3-thay-đổi-cần-rfc).
 
 ## Quy trình
 
 1. Sao `0000-template.md` thành `NNNN-<tên-ngắn>.md` với số kế tiếp.
-2. Mở pull request **chỉ chứa tệp RFC**, chưa sửa lược đồ.
+2. Mở pull request **chỉ chứa tệp RFC**, chưa sửa hợp đồng.
 3. Thảo luận trên pull request đó. Mục 4 (tương thích) và mục 5 (an toàn) là hai
    mục không được để trống.
-4. Khi được chấp thuận, sửa lược đồ trong một pull request thứ hai, dẫn chiếu
-   số RFC trong thông điệp commit.
+4. Khi được chấp thuận, sửa trong một pull request thứ hai, dẫn chiếu số RFC trong
+   thông điệp commit, và cập nhật dòng của RFC trong danh mục dưới đây.
 
-Thay đổi ảnh hưởng tới `gate.v1` hoặc tới ngữ nghĩa phân giải gate cần người
-phê duyệt là **kỹ thuật trưởng**, vì đó là tầng an toàn.
+Người phê duyệt: `CONTRIBUTING.md` §3.
 
 ## Danh mục
 

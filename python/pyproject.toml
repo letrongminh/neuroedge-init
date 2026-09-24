@@ -57,8 +57,8 @@ mcp = [
 # System 2 on a real cloud model (TSK-S2-11, Q-10): LiteLLM as a library, never
 # its proxy, only behind neuroedge.models.providers. Pinned exactly as approved
 # in Q-11: litellm 1.102.0 is MIT and its wheel has no enterprise/ directory;
-# transitive licences must be MIT, BSD, Apache-2.0, ISC, PSF or MPL-2.0 — the
-# CI job `cloud-extra` fails on any other (NOTICE §B). ~120 MB installed, so
+# every transitive licence must be on the Q-11 allowlist (neuroedge-prd.md §15) —
+# the CI job `cloud-extra` fails on any other (NOTICE §B). ~120 MB installed, so
 # never in `dev`: tests use a fake `litellm` module.
 cloud = [
     "litellm==1.102.0",
