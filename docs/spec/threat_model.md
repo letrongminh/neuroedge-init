@@ -116,8 +116,7 @@ Token là `(nonce, digest)` trong bộ nhớ. Mã chạy **trong cùng tiến tr
 ledger, nên tự mint được token. Khối 1a **không** chống lại điều đó — đó là mã độc có
 quyền ngang runtime, không phải nhầm lẫn.
 
-Mốc kích hoạt để đưa vào phạm vi: khách yêu cầu chống tấn công nội tiến trình, hoặc
-firmware có secure element (`TODOS.md` #2).
+Việc này hoãn có chủ ý; mốc kích hoạt để đưa vào phạm vi ở [`TODOS.md`](../../TODOS.md) #2.
 
 ## 4. Giả định
 

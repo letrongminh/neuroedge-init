@@ -105,5 +105,5 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **Vết ghi (trace)** | Tệp JSON `trace.v1` ghi mọi sự kiện một phiên | `schemas/trace.v1.json` |
 | **Wedge** | Lát cắt hẹp nhất chứng minh giá trị trước: `sim` trước, vi điều khiển sau | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` |
 | **TTFV** | Time-to-first-value — thời gian từ cài đặt tới lần đầu thấy agent chạy (mục tiêu < 10 phút) | `neuroedge-prd.md` §2.3 (hành trình 1) |
-| **CR-1.0** | Change Request 2026-09-21: chuyển kiến trúc sang cloud-first, provider-pluggable | `CHANGELOG.md` [0.2.0] |
+| **CR-1.0** | Change Request 2026-09-21: chuyển kiến trúc sang cloud-first, provider-pluggable | `CHANGELOG.md`, mốc CR-1.0 (2026-09-21) |
 | **NE1001…NE5001** | Mã lỗi ổn định, mỗi lỗi có 3 phần: ở đâu · vì sao · cách sửa | `neuroedge-prd.md` Phụ lục B |
