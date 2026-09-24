@@ -1,54 +1,93 @@
 """
-The root README is the front door, so it must never lie.
+The root README is the front door, and the PyPI page (TSK-S3-20), so it must never lie.
 
-Its quickstart commands are run exactly as written, and its two excerpts — a
-gate and an @action — must match the files they quote (CONTRIBUTING.md §8.1
-allows the README at most three quickstart commands on that condition).
+Its quickstart commands are run exactly as written, its gate excerpt must match the
+file it quotes (CONTRIBUTING.md §8.1 allows the README at most three quickstart
+commands on that condition), and every link is an absolute GitHub URL that resolves in
+this tree: on PyPI a relative link points nowhere. Whether the page *renders* on PyPI
+is `twine check --strict` in `.github/workflows/release-pypi.yml`.
 """
 
 from __future__ import annotations
 
+import json
 import re
 import shlex
+import tomllib
 from pathlib import Path
 
+import pytest
 import yaml
 from typer.testing import CliRunner
 
 from neuroedge.cli.main import app
 
 runner = CliRunner()
+BLOB = "https://github.com/letrongminh/neuroedge-init/blob/main/"
+
+
+def _text(root: Path) -> str:
+    return (root / "README.md").read_text(encoding="utf-8")
 
 
 def _blocks(root: Path, language: str) -> list[str]:
-    text = (root / "README.md").read_text(encoding="utf-8")
-    return re.findall(rf"```{language}\n(.*?)```", text, re.S)
+    return re.findall(rf"```{language}\n(.*?)```", _text(root), re.S)
 
 
-def _quickstart(root: Path) -> list[list[str]]:
+def _quickstart_lines(root: Path) -> list[str]:
     (block,) = _blocks(root, "bash")
-    commands = []
-    for line in block.splitlines():
-        line = line.split("#", 1)[0].strip()
-        if line.startswith("neuroedge "):
-            commands.append(shlex.split(line)[1:])
-    return commands
+    return [line.split("#", 1)[0].strip() for line in block.splitlines() if line.strip()]
 
 
 def test_the_quickstart_has_at_most_three_commands(root):
+    assert len(_quickstart_lines(root)) <= 3
+
+
+def test_the_quickstart_installs_extras_the_package_declares(root):
+    install = _quickstart_lines(root)[0]
+    assert install == "pip install 'neuroedge[mcp]'"
+    declared = tomllib.loads((root / "python" / "pyproject.toml").read_text("utf-8"))
+    extras = declared["project"]["optional-dependencies"]
+    # The comment on that line names the extras for a real LLM; both must exist.
     (block,) = _blocks(root, "bash")
-    assert len([line for line in block.splitlines() if line.strip()]) <= 3
+    for group in re.findall(r"neuroedge\[([a-z,]+)\]", block):
+        assert set(group.split(",")) <= set(extras), group
 
 
-def test_every_quickstart_command_runs_and_succeeds(root, tmp_path, monkeypatch):
-    commands = _quickstart(root)
+@pytest.fixture
+def fresh_actions():
+    """The scaffold defines home-voice's @action names at a new path: isolate the registry."""
+    from neuroedge.actions import spec
+
+    saved = dict(spec.REGISTRY)
+    spec.REGISTRY.clear()
+    yield
+    spec.REGISTRY.clear()
+    spec.REGISTRY.update(saved)
+
+
+def test_every_quickstart_command_runs_and_succeeds(root, tmp_path, monkeypatch, fresh_actions):
+    monkeypatch.chdir(tmp_path)  # a stranger's empty directory, not the checkout
+    config = tmp_path / "claude_desktop_config.json"
+    lines = _quickstart_lines(root)
+    commands = [shlex.split(line)[1:] for line in lines if line.startswith("neuroedge ")]
     assert commands, "the README quickstart lost its neuroedge commands"
-    monkeypatch.chdir(root)
     for argv in commands:
-        if argv[0] == "build":
-            argv = [*argv, "--out", str(tmp_path)]
+        if argv[:2] == ["mcp", "desktop-config"]:
+            assert "--write" in argv
+            argv = [*argv, "--config-path", str(config)]  # never the real Desktop config
         result = runner.invoke(app, argv)
         assert result.exit_code == 0, f"neuroedge {' '.join(argv)}\n{result.output}"
+    (entry,) = json.loads(config.read_text("utf-8"))["mcpServers"].values()
+    assert str((tmp_path / "my-home" / "agent.toml").resolve()) in entry["args"]
+    assert entry["args"][-3:] == ["--ui", "--port", "8765"]
+
+
+def test_the_command_for_people_without_desktop_exists(root):
+    assert "`cd my-home && neuroedge run --ui`" in _text(root)
+    # Click rejects an unknown option before it reaches --help, so exit 0 proves --ui.
+    result = runner.invoke(app, ["run", "--ui", "--help"])
+    assert result.exit_code == 0, result.output
 
 
 def _subset(excerpt, actual) -> bool:
@@ -66,21 +105,16 @@ def test_the_gate_excerpt_matches_the_gate_file(root):
     assert _subset(excerpt, actual)
 
 
-def test_the_action_excerpt_matches_the_action_file(root):
-    (block,) = _blocks(root, "python")
-    source = (
-        root / "fixtures" / "agents" / "villa-concierge" / "actions" / "unlock_door.py"
-    ).read_text(encoding="utf-8")
-    code = [line.split("#", 1)[0].rstrip() for line in source.splitlines()]
-    for line in block.splitlines():
-        stripped = line.split("#", 1)[0].rstrip()
-        if stripped:
-            assert stripped in code, f"README quotes a line the file does not have: {line!r}"
-
-
-def test_every_relative_link_in_the_readme_resolves(root):
-    text = (root / "README.md").read_text(encoding="utf-8")
-    targets = [t for t in re.findall(r"\]\(([^)#]+)", text) if "://" not in t]
+def test_the_readme_has_no_relative_link(root):
+    targets = re.findall(r"\]\(([^)]+)\)", _text(root))
     assert targets
-    missing = [t for t in targets if not (root / t).exists()]
+    relative = [t for t in targets if not t.startswith("https://")]
+    assert relative == [], "PyPI shows the README outside the repo: use absolute URLs"
+
+
+def test_every_github_link_in_the_readme_resolves_in_this_tree(root):
+    targets = re.findall(r"\]\((https://github\.com/[^)#]+)", _text(root))
+    blobs = [t for t in targets if t.startswith(BLOB)]
+    assert blobs == targets, "links go to this repository's main branch"
+    missing = [t for t in blobs if not (root / t.removeprefix(BLOB)).exists()]
     assert missing == []

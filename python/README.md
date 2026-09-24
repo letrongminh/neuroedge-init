@@ -1,8 +1,12 @@
-# NeuroEdge Python SDK
+# NeuroEdge Python SDK — for contributors
 
 Typed Action Contract Platform for Physical AI — reference implementation of the
 NeuroEdge core: the Hardware Abstraction Layer (HAL), the Action Contract Engine,
 the gate resolver, and the Action CI test harness.
+
+This page is for working on NeuroEdge from a checkout. To *use* it, install from
+PyPI as the root [`README.md`](../README.md) says — that file is also the package's
+PyPI page (`hatch_build.py` reads it in). Releasing: [`docs/release.md`](../docs/release.md).
 
 The full product narrative lives in the repository root:
 
@@ -10,7 +14,7 @@ The full product narrative lives in the repository root:
 - [`neuroedge-prd.md`](../neuroedge-prd.md) — functional requirements (FR-*/NFR-*)
 - [`neuroedge-roadmap.md`](../neuroedge-roadmap.md) — sprint plan and live status
 
-## Install
+## Install from a checkout (editable)
 
 ```bash
 python3 -m venv .venv

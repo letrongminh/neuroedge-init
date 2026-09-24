@@ -223,7 +223,7 @@ Một task **chưa xong** cho tới khi các cập nhật dưới đây nằm **
 | Tổng quan tiến độ, số test hiện hành, hạng mục bị chặn | Roadmap §0.1–§0.2 | Không chép con số |
 | Việc tiếp theo, đang làm gì | Roadmap §0.3 (Thẻ bàn giao) | Không |
 | Đã thay đổi gì | `CHANGELOG.md` §1 | Không |
-| Cách chạy, lệnh, đầu ra kỳ vọng | `CHANGELOG.md` §2 | `README.md` gốc: tối đa 3 lệnh bắt đầu nhanh, kèm link §2 — `tests/test_readme_quickstart.py` chạy đúng các lệnh đó |
+| Cách chạy, lệnh, đầu ra kỳ vọng | `CHANGELOG.md` §2 | `README.md` gốc (cũng là trang PyPI, nên mọi link tuyệt đối): tối đa 3 lệnh bắt đầu nhanh, kèm link §2 — `tests/test_readme_quickstart.py` chạy đúng các lệnh đó |
 | Bất biến không được phá | `CHANGELOG.md` §3.3 | Dẫn số bất biến |
 | Quyết định | `neuroedge-prd.md` §15 (mã `Q-N`) | Dẫn mã `Q-N` |
 | Ý nghĩa của một mã / ký hiệu | `docs/user/thuat-ngu.md` | Dẫn mã |
