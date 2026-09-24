@@ -106,8 +106,9 @@ nguyên tắc B.5 thì không được trôi trong im lặng**.
 
 ## 4. Port mã nguồn mở — nghĩa vụ trước khi viết dòng đầu tiên
 
-§3.9 của roadmap là **nghĩa vụ pháp lý**, không phải thủ tục giấy tờ. Năm việc,
-làm xong trước khi port:
+Năm nghĩa vụ ghi nhận nguồn là **nghĩa vụ pháp lý**, không phải thủ tục giấy tờ
+(đặc tả: proposal §3.9; hạn chót: roadmap §3.9). Cách làm từng việc trong kho này,
+xong trước khi port:
 
 | # | Nghĩa vụ | Cách làm trong kho này |
 |:---:|:---|:---|
@@ -126,7 +127,7 @@ Mẫu ghi nhận tại chỗ:
 ```
 
 Giấy phép nào được vào phần phân phối: chính sách **Q-11**
-([PRD §15](neuroedge-prd.md#15-quyết-định-kỹ-thuật-đã-chốt)); không copyleft mạnh là
+([PRD §15](neuroedge-prd.md#15-sổ-quyết-định)); không copyleft mạnh là
 bất biến `CHANGELOG.md` §3.3 #9. Phần Q-11 còn mở (Hawkbit, EMQX): `TODOS.md` #16 —
 không port dòng nào từ hai dự án đó khi chưa có phê duyệt bằng văn bản.
 
@@ -183,6 +184,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `python/tests/` | Bộ test chính (`testpaths`) | PR thường |
 | `python/tests_linux/` | Test trên gpio-sim, job `linux-hal` | PR thường |
 | `python/hatch_build.py`, `pyproject.toml`, `requirements-lock.txt`, `LICENSE` | Đóng gói (asset vào `neuroedge/_data/`, README gốc vào metadata) · phụ thuộc ghim · bản sao `LICENSE` gốc | PR thường; chạy `scripts/wheel_smoke.sh` |
+| `targets/esp32s3/` (gốc) | Dự án ESP-IDF: `CMakeLists.txt`, `sdkconfig.defaults` (flash 16 MB, PSRAM, FreeRTOS 1000 Hz), `sdkconfig.qemu` (lớp phủ cho QEMU), `partitions.csv` (factory + OTA A/B) | PR thường; job `firmware-qemu` |
 | `targets/esp32s3/main/` | Firmware ESP-IDF: `main.c`, khung đo bộ nhớ, self-test gate; `gates/` sinh bằng `scripts/gen_firmware_gates.py` | PR thường |
 | `targets/esp32s3/components/ne_gate/` | Walker C99 và sổ token C | PR thường; bố cục `NETR`: **RFC** |
 | `scripts/` | Công cụ CI và phát hành | PR thường |

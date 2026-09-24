@@ -70,6 +70,12 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 | 29 | **Test riêng cho "lặp lời gọi bị chặn tới khi lọt"** (`docs/spec/threat_model.md` §2b: *chưa có test riêng*). Lập luận hiện có: gate tất định — cùng dữ kiện ⇒ cùng phán quyết, mỗi lần đều ghi vết | Tính tất định đã được phủ gián tiếp (replay tính lại phán quyết, `tests/test_player.py`); chưa có bên gọi nào lặp tự động | Trước khi mở MCP qua mạng (#24), hoặc khi vòng ReAct của System 2 (`max_rounds`) được nới — thêm một ca vào `fixtures/tool_calls/` gọi N lần cùng dữ kiện và đòi N lần `BLOCK`, N sự kiện vết ghi |
 | 25 | **Kết nối MCP bền giữa các lượt** và **transport HTTP tới MCP server bên ngoài** (Q-27) | `sim` mở kết nối theo từng lượt vì REPL chạy mỗi lượt trong một event loop riêng; HTTP cần xác thực như #24 | Runtime `linux` chạy một event loop dài, hoặc độ trễ mở kết nối vượt ngân sách lượt |
 
+## Truy vết yêu cầu
+
+| # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
+|:---:|:---|:---|:---|
+| 31 | **Yêu cầu FR chưa có task nhận.** P0: FR-TRC-06, FR-TRC-07 (ẩn danh tại nguồn — A7, NFR-PRIV-04 phụ thuộc), FR-TGT-05, FR-MDL-04 (task Giai đoạn 2 chỉ phủ thị giác; phía SystemOne của v1.0 chưa ai nhận), FR-ACE-06, FR-CLI-07, FR-TEL-03, FR-TEL-06. P1: FR-TGT-07, FR-TRC-09, FR-TRC-10, FR-DX-07, FR-CLI-08, FR-GATE-10, FR-GW-06, FR-GOV-04 | Rà soát MECE chỉ phát hiện khoảng trống, không tự đặt người làm: gán mỗi yêu cầu vào task có sẵn, thêm task mới, hay hạ ưu tiên là quyết định lập kế hoạch | **Lập kế hoạch Sprint 4 (2026-11-16)** — trưởng nhóm gán từng mục vào `neuroedge-roadmap.md` (task có sẵn hoặc mới) hoặc hạ ưu tiên trong PRD; P0 nào còn trống thì chặn tiêu chí A tương ứng |
+
 ## Kinh doanh
 
 | # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
@@ -87,4 +93,4 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 | #23–#25 | Phiên chuẩn hoá tool call (2026-09-23) — Q-24 → Q-27 |
 | #26 | Sổ token C (TSK-S4-02, 2026-09-24) |
 | #27, #28 | Provider thật cho System 2 (TSK-S2-11, 2026-09-24) |
-| #29, #30 | Rà soát tài liệu MECE (2026-09-24) — `docs/spec/threat_model.md` §2b; câu hỏi mở #10 của kế hoạch Giai đoạn 1 |
+| #29–#31 | Rà soát tài liệu MECE (2026-09-24) — `docs/spec/threat_model.md` §2b; câu hỏi mở #10 của kế hoạch Giai đoạn 1; truy vết PRD Phụ lục A ↔ roadmap |

@@ -72,7 +72,15 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **Gate** | Chính sách an toàn dạng YAML cho một hành động vật lý: tiêu chí `evaluate`, điều kiện `allow_when`, hành vi khi bị chặn `on_block`, ngân sách `budget` | `neuroedge-proposal.md` Phụ lục B |
 | **Phán quyết (verdict)** | Kết quả lượng giá một gate: `ALLOW` hoặc `BLOCK` kèm `reason` | `python/neuroedge/engine/verdict.py` |
 | **Kế thừa gate (`extends`)** | Gate con dùng lại gate cha và **chỉ được siết chặt** (năm nguyên tắc B.5) | `neuroedge-proposal.md` Phụ lục B.5 |
-| **Fail-closed / fail-open** | Khi không thẩm định được: chặn (mặc định) / cho qua (chỉ khi gate tự khai `fail: open`) | `neuroedge-proposal.md` Phụ lục B.4 |
+| **Fail-closed / fail-open** | Khi không thẩm định được gate — lỗi, timeout, hoặc mất mạng mà fallback ngữ pháp lệnh cục bộ không có hay không chạy (Q-14) — thì chặn (mặc định) / cho qua (chỉ khi gate tự khai `fail: open`) | `neuroedge-proposal.md` Phụ lục B.4 |
+| **Hợp đồng hành động (Action Contract)** | Ràng buộc bắt buộc giữa một hành động vật lý và gate của nó: HAL không thực thi hành động nào chưa qua gate | `neuroedge-proposal.md` §3.5 |
+| **Lớp hợp nhất (unified layer)** | Phạm vi của NeuroEdge: HAL, nhận thức âm thanh, điều phối agent và kiểm soát hành động trong một nền tảng | `neuroedge-proposal.md` §0.2 |
+| **HAL theo hợp đồng năng lực** | HAL đối chiếu hai chiều yêu cầu của agent với năng lực của bo mạch lúc build | `neuroedge-proposal.md` §3.3 · Phụ lục A |
+| **HAL port** | Bản hiện thực HAL cho một môi trường mới, có thể do bên thứ ba viết; đúng hay không chứng minh bằng bộ kiểm thử tuân thủ | `neuroedge-proposal.md` §1.7 |
+| **Nguyên tắc tương đương môi trường** | Cùng mã agent cho cùng chuỗi quyết định trên mọi target; mức cam kết theo bậc target | `neuroedge-proposal.md` §3.2 |
+| **OpenAI-compatible · adapter** | Chuẩn kết nối mặc định của lớp trừu tượng nhà cung cấp: dịch vụ theo OpenAI API chỉ cần cấu hình; dịch vụ khác cần một adapter mỏng do người dùng viết (`python:pkg.mod:factory`) | `neuroedge-proposal.md` §6.1 · Q-12 |
+| **Lớp trừu tượng nhà cung cấp** | Lõi MIT người dùng tự vận hành, chuẩn hoá kết nối tới LLM, ASR, TTS (FR-GW; tên cũ *Inference Gateway*) | `neuroedge-prd.md` §8.1 |
+| **Fleet Management OS (Fleet OS)** | Dịch vụ thương mại duy nhất: quản trị, giám sát, chứng thực và OTA cho đội thiết bị | `neuroedge-proposal.md` §6.2 |
 | **Token phán quyết** | Bằng chứng dùng một lần mà `c.do()` cấp sau một ALLOW; HAL chỉ đổi chân khi có nó | `docs/spec/threat_model.md` |
 | **Sổ token (token ledger)** | Nơi phát, kiểm và đóng token phán quyết. Bản host: `TokenLedger` (Python); bản thiết bị: `ne_token.c`, cùng luật, sổ đầy thì đóng an toàn | `python/neuroedge/actions/token.py` · `targets/esp32s3/components/ne_gate/` |
 | **`NETR` · `.netree`** | Bố cục nhị phân cố định của cây quyết định trên thiết bị (magic `NETR`, v1); `neuroedge build` ghi `<gate>.netree` và `<gate>.netree.h` | `docs/rfc/0003-bo-cuc-nhi-phan-cay.md` |
