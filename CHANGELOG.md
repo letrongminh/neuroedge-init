@@ -35,7 +35,7 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
   khác, sao lưu `<tệp>.bak-<YYYYmmdd-HHMMSS>`, ghi nguyên tử; JSON hỏng ⇒ từ chối, không ghi gì; chạy lại
   không đổi gì. Kiểm trước: agent build được, có SDK `mcp`. Thêm `python -m neuroedge`. Kiểm: `pytest
   tests/test_mcp_desktop.py` (khởi động đúng như Desktop, và ca hồi quy: `neuroedge` trần không chạy được với
-  `PATH` tối giản). Chưa chạy trên Claude Desktop thật. (FR-CLI-10)
+  `PATH` tối giản). Đã chạy trên Claude Desktop thật (2026-09-24, bằng chứng ở TSK-S3-27). (FR-CLI-10)
 - **TSK-S3-27 — `neuroedge mcp serve --ui`.** Một tiến trình vừa là máy chủ MCP qua stdio (Claude Desktop,
   Cursor) vừa phục vụ trang `sim` trực tiếp của **cùng phiên**: tool call từ client làm đèn/chốt ảo đổi ngay,
   thẻ phán quyết ghi `tool_call light_on · mcp` (lời gọi schema từ chối hiện thẻ `REJECTED`). Lời gọi MCP và

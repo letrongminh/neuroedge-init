@@ -77,7 +77,11 @@ một thông báo lỗi: `CHANGELOG.md` §2.4.
 một tiến trình cũ. Tiến trình không nhận `initialize` sau 30 giây sẽ tự thoát và nhả cổng
 (`--init-timeout`). Nếu cổng 8765 vẫn bận, trang chuyển sang cổng trống, còn MCP vẫn chạy.
 URL thật của trang nằm ở dòng `sim UI at http://127.0.0.1:…` trong log của Desktop, trên macOS là
-`~/Library/Logs/Claude/mcp-server-<tên>.log`.
+`~/Library/Logs/Claude/mcp-server-<tên>.log`. Desktop thường chạy vài tiến trình cùng lúc: một cho
+cuộc trò chuyện, thêm vài tiến trình cho nhóm dùng chung "Cowork and Code". Mỗi tiến trình có trang
+riêng. Tiến trình nào khởi động trước thì giữ cổng 8765; các tiến trình kia ghi
+`warning: sim UI port 8765 is taken … the page is at …`. Nếu gọi từ cuộc trò chuyện mà trang 8765
+không đổi, hãy mở các URL trong những dòng cảnh báo đó.
 
 ## 5. Tiếp theo
 
