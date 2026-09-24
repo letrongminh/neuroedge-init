@@ -4,10 +4,11 @@
 *Regenerate*; agent vật lý sai thì chốt cửa đã mở, đèn cầu thang đã tắt — không bấm lại
 được. NeuroEdge đặt một **gate** (chính sách an toàn dạng YAML, có phiên bản, kế thừa được)
 trước mọi lệnh ra phần cứng. Lời gọi từ LLM hay từ agent khác chỉ là *yêu cầu*: gate quyết
-định, mọi phán quyết vào một vết ghi phát lại được. Cùng một mã agent chạy trên trình mô
-phỏng, Linux và ESP32-S3.
+định, mọi phán quyết vào một vết ghi phát lại được. Cùng một gate chạy trên trình mô
+phỏng, Linux và ESP32-S3 — hôm nay agent chạy đầy đủ trên trình mô phỏng; Linux mới
+phát lại vết ghi, ESP32-S3 mới chạy logic gate.
 
-> Alpha. Trình mô phỏng `sim` chạy đầy đủ; tiến độ ở
+> Alpha. Tiến độ ở
 > [trạng thái dự án](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/trang-thai.md).
 
 ## Bắt đầu nhanh (Python 3.11+)
@@ -19,9 +20,9 @@ neuroedge mcp desktop-config --agent my-home/agent.toml --ui --write
 ```
 
 Thoát hẳn Claude Desktop rồi mở lại, nhờ nó *"bật đèn"*: đèn ảo sáng và phán
-quyết của gate hiện ngay ở http://127.0.0.1:8765. Không dùng Claude Desktop thì
-`cd my-home && neuroedge run --ui` — gõ lệnh, xem cùng trang đó. Không cần mạng, không cần
-khoá API.
+quyết của gate hiện ngay ở http://127.0.0.1:8765 (cổng bận thì URL thật nằm trong log
+MCP của Desktop). Không dùng Claude Desktop thì `cd my-home && neuroedge run --ui` — gõ
+lệnh, xem cùng trang đó. Không cần mạng, không cần khoá API.
 
 ## Gate trông thế nào
 

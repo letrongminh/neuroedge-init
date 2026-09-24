@@ -71,6 +71,28 @@ def _fail(error: NeuroEdgeError) -> None:
     raise typer.Exit(code=1)
 
 
+# The board each target builds and runs on when `--board` is not given.
+REFERENCE_BOARD = {"sim": "sim-default", "linux": "linux-rpi5", "esp32s3": "esp32s3-box-3"}
+
+# Targets the CLI knows but cannot replay on yet, and the task that brings each.
+# Asking for one exits 2 ("not implemented"), not 1 ("ran and failed").
+PLANNED_TARGETS = {"esp32s3": "TSK-S4-04"}
+
+
+def _not_implemented_target(verb: str, target: str) -> None:
+    """Say which task brings `target` to `verb`, then exit 2 (CONTRIBUTING.md §2)."""
+    err_console.print(
+        Panel(
+            f"`neuroedge {verb}` on `{escape(target)}` is not implemented yet: it needs the "
+            f"live HAL on the board ({PLANNED_TARGETS[target]}, Sprint 4).\n\n"
+            "Replay on `sim` or `linux` today.",
+            title=f"[yellow]Not implemented: {verb} on {escape(target)}[/yellow]",
+            border_style="yellow",
+        )
+    )
+    raise typer.Exit(code=2)
+
+
 def _fail_build(failed: BuildFailed) -> None:
     """Render every problem a build check collected, then exit 1."""
     err_console.print(f"[bold red]✗ {failed.code} build failed[/bold red] {escape(failed.where)}")
@@ -512,7 +534,7 @@ def mcp_tools(
     external: bool = typer.Option(
         False,
         "--external",
-        help="Also connect to the [mcp.servers] of agent.toml and list their allowed tools",
+        help="Also connect to the \\[mcp.servers] of agent.toml and list their allowed tools",
     ),
 ):
     """List the agent's tools — one per @action, with the schema models see."""
@@ -852,6 +874,9 @@ def verify(
     gates_root = gates_dir()
     traces_root = root / "fixtures" / "traces"
     requested = [t.strip() for t in targets.split(",") if t.strip()]
+    for target in requested:
+        if target in PLANNED_TARGETS:
+            _not_implemented_target("verify", target)
     problems = 0
     resolved = 0
     replayed = 0
@@ -976,11 +1001,14 @@ def replay(
 
     The recorded facts are fed back in; gate verdicts and pin commands are
     recomputed on `--target`. Exit 0 when they match the golden (by default the
-    trace itself), 1 on any difference (FR-CI-02, FR-CI-04).
+    trace itself), 1 on any difference (FR-CI-02, FR-CI-04), 2 on a target that
+    has no replay yet (esp32s3).
     """
     from ..testing.golden import GoldenComparator, load_golden
     from ..testing.player import TracePlayer, dump
 
+    if target in PLANNED_TARGETS:
+        _not_implemented_target("replay", target)
     try:
         player = TracePlayer(
             trace_file,
@@ -1168,7 +1196,12 @@ def run(
 @app.command()
 def build(
     target: str = typer.Option(..., "--target", "-t", help="Target runtime environment"),
-    board: str = typer.Option("esp32s3-box-3", "--board", "-b", help="Board profile id"),
+    board: str = typer.Option(
+        None,
+        "--board",
+        "-b",
+        help="Board profile id (default: the target's reference board, e.g. sim → sim-default)",
+    ),
     agent: Path = typer.Option(Path("agent.toml"), "--agent", "-a", help="Path to agent.toml"),
     out: Path = typer.Option(Path("build"), "--out", "-o", help="Directory for build artifacts"),
     registry: Path | None = REGISTRY_OPTION,
@@ -1180,7 +1213,7 @@ def build(
         report = run_build(
             agent,
             target=target,
-            board_id=board,
+            board_id=board or REFERENCE_BOARD.get(target, "esp32s3-box-3"),
             out_dir=out,
             registry=GateRegistry(registry) if registry is not None else None,
         )

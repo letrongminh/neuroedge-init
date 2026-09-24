@@ -263,10 +263,17 @@ def test_verify_on_linux_without_gpio_lines_fails_and_says_how_to_fix(
     assert "setup_gpio_sim.sh" in result.output
 
 
-def test_verify_on_a_target_without_a_live_hal_fails(invoke):
-    result = invoke("verify", "--targets", "esp32s3")
+@pytest.mark.parametrize("targets", ["esp32s3", "sim,esp32s3"])
+def test_verify_on_a_target_not_implemented_yet_exits_2(invoke, targets):
+    # Exit-code contract: 2 is "not implemented", 1 is "ran and failed".
+    result = invoke("verify", "--targets", targets)
+    assert result.exit_code == 2, result.output
+    assert "TSK-S4-04" in result.output
+
+
+def test_verify_on_an_unknown_target_fails(invoke):
+    result = invoke("verify", "--targets", "nosuchtarget")
     assert result.exit_code == 1
-    assert "Sprint 4" in result.output
 
 
 # --- replay ---------------------------------------------------------------
@@ -277,6 +284,12 @@ def test_replay_executes_each_canonical_trace_and_matches_it(invoke, traces_dir,
     result = invoke("replay", str(traces_dir / f"{name}.json"))
     assert result.exit_code == 0, result.output
     assert "decisions match the recording" in result.output
+
+
+def test_replay_on_esp32s3_is_not_implemented_yet(invoke, traces_dir):
+    result = invoke("replay", str(traces_dir / "happy-path.json"), "--target", "esp32s3")
+    assert result.exit_code == 2, result.output
+    assert "TSK-S4-04" in result.output
 
 
 def test_replay_rejects_an_invalid_trace(invoke, traces_dir):

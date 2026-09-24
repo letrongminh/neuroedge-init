@@ -14,266 +14,157 @@ Toàn bộ thay đổi đáng kể của dự án được ghi tại đây, theo
 >
 > **Nguồn sự thật về tiến độ** vẫn là [`neuroedge-roadmap.md`](neuroedge-roadmap.md)
 > §0 (bảng theo dõi và thẻ bàn giao). Tệp này kể *đã xây gì và chạy thế nào*;
-> roadmap kể *còn gì phải xây*. Khi hai tệp lệch nhau, roadmap đúng.
+> roadmap kể *còn gì phải xây*. Thứ tự ưu tiên khi lệch nhau: §3.1.
 
 ---
 
 ## 1. Nhật ký phiên bản
 
-Mỗi task xong thêm một mục vào `[Chưa phát hành]`, theo `CONTRIBUTING.md` §8.2
-bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngày.
+Mỗi task xong thêm hoặc sửa **một** mục trong `[Chưa phát hành]`, theo
+`CONTRIBUTING.md` §8.2 bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngày
+(`docs/release.md`).
+
+Gói chưa phát hành phiên bản nào; phiên bản đầu tiên trên PyPI sẽ là `0.1.0`. Các mục
+**Mốc …** dưới `[Chưa phát hành]` là mốc tài liệu của Giai đoạn 1, không phải phiên
+bản gói.
 
 ### [Chưa phát hành]
 
 #### Đã thêm
 
-- **TSK-S3-14 — workflow phát hành PyPI, chưa đẩy lên index nào.** `.github/workflows/release-pypi.yml`: sdist → wheel từ
-  sdist → `twine check --strict` → smoke trên đúng wheel đó (`scripts/wheel_smoke.sh --wheel`) → trusted publishing (OIDC,
-  không token), chỉ khi có tag và `PUBLISH_ENABLED == 'true'`. Có `LICENSE` (MIT) trong wheel/sdist. Go-live: `docs/release.md`.
+- **TSK-S3-14 — workflow phát hành PyPI, chưa đẩy lên index nào.** `release-pypi.yml`: sdist → wheel từ sdist →
+  `twine check --strict` → smoke trên đúng wheel đó → trusted publishing (OIDC), chỉ với tag **và** `PUBLISH_ENABLED`.
+  `LICENSE` (MIT) nằm trong wheel/sdist. Go-live: `docs/release.md`.
 - **TSK-S3-20 — `README.md` gốc là trang PyPI.** Một màn hình, link tuyệt đối, ba lệnh `pip install` → `new --template
-  home-voice` → `mcp desktop-config --write`; `hatch_build.py` đọc nó vào metadata. Kiểm: `pytest tests/test_readme_quickstart.py
-  tests/test_packaging.py` · `wheel_smoke.sh` chạy đúng các lệnh đó trên wheel đã cài. (FR-DX-02)
-- **TSK-S3-24 — corpus tuân thủ Gated Tool Profile.** `fixtures/tool_calls/{valid,invalid}/` (16 + 12 ca) với
-  `expected_results.yaml` khép kín hai chiều: tệp ca nêu đầu vào (`agent`, `call`, `facts`, `sensors`), tệp đáp án nêu
-  `status`, các trường phán quyết, `confirmation`, `fallback` và lệnh chân. `valid/` = khớp `inputSchema` (gate quyết
-  định); `invalid/` = không khớp (`REJECTED`, hoặc `BLOCK argument_out_of_range` cho giới hạn RFC-0005) — định nghĩa ở
-  `docs/spec/tool_calling.md` §9. Runner `neuroedge.testing.tool_corpus` chạy từng ca qua `dispatch()` thật của
-  `SimSession`; `neuroedge verify` chạy cả corpus, và wheel mang nó (`hatch_build.py`). Agent nhỏ mới
-  `fixtures/agents/driveway/` phủ giới hạn tham số, `call_source` chặn MCP và `degrade`. Kết quả `degrade` có trường
-  `fallback` (kết quả của `fallback_action`, đệ quy); mỗi tool MCP khai `outputSchema` (`result_schema()`, cũng in ở
-  `mcp tools --json`), và client MCP kiểm kết quả theo nó. Kiểm: `pytest tests/test_tool_corpus.py` (mỗi ca cả qua
-  client MCP thật) · `bash scripts/wheel_smoke.sh`. (FR-MDL-10, FR-ACE-09)
-- **TSK-S3-19 — `neuroedge verify` quét được 0 artifact thì thất bại.** Panel in số gate đã phân giải, số vết ghi
-  đã thẩm định, số lượt replay đã so; loại nào bằng 0 hoặc thiếu thư mục ⇒ `VerificationError` (NE4004), lỗi 3
-  thành phần, mã 1. Kiểm: `pytest tests/test_cli.py -k verify` (cây rỗng, có gate mà không vết ghi). (FR-CLI-03)
-- **TSK-S3-16 — `digests.lock` khoá gate chuẩn mực.** `gates/**`, `fixtures/gates/{valid,registry}/**`: digest JCS
-  của YAML đã parse (đổi định dạng không tính). `scripts/check_digests.py --check` chạy trong job Frozen artifacts:
-  tệp mới ⇒ `--update`; đổi hoặc xoá ⇒ cần RFC (`--accept <tệp> --rfc NNNN`). Kiểm: `pytest tests/test_digests_lock.py`.
-- **Khi mô hình hoặc nguồn bên ngoài vắng mặt (chạy thử LLM thật 2026-09-24).** (1) Chữ của mô hình được cắt khoảng
-  trắng đầu/cuối trước khi nói. (2) MCP server bên ngoài bị tắt (thiếu SDK `mcp`, không chạy, thiếu tool) được
-  nói ra: mô hình được báo trong `instructions` để nói *tạm thời không lấy được* thay vì *không có công cụ*; REPL in
-  cảnh báo; banner `run` liệt kê server. (3) Dự phòng cục bộ cho hành động: System 2 không kết nối được ⇒ thiết bị
-  nói các lệnh cục bộ vẫn dùng được (`offline_help`), không đoán hành động từ câu gần giống. Kiểm:
-  `pytest tests/test_offline_fallback.py` · `scripts/live_llm_smoke.py` (DeepSeek qua OpenRouter).
-- **TSK-S2-11 — System 2 trên model thật qua LiteLLM (extra `neuroedge[cloud]`, Q-10/Q-11/Q-12).** Bảng `[system_two]` trong
-  `agent.toml` chọn `litellm` (`model`, **tên** biến key `api_key_env`) hoặc adapter tự viết `python:pkg.mod:factory`; key ghi vào
-  tệp ⇒ `build` từ chối. Thiếu extra/key, lỗi mạng, hết giờ ⇒ câu offline, không gửi gì khi thiếu key. Mỗi lượt gọi model ghi
-  `system_two_call` (token, chi phí, không prompt, không key). `python/neuroedge/models/providers/`. Kiểm: `pytest tests/test_providers.py`
-  · job CI `cloud-extra` (giấy phép bắc cầu theo Q-11 + `scripts/cloud_smoke.py` trên litellm thật). (FR-MDL-06→08, FR-MDL-11)
-- **`neuroedge mcp desktop-config` — cấu hình Claude Desktop chạy được thật (TSK-S3-27).** Desktop tự khởi
-  động server từ `/` với `PATH` tối giản, nên mẫu cũ trong README (`"command": "neuroedge"`) không tìm thấy
-  lệnh. Lệnh mới in mục `mcpServers` bằng đường dẫn tuyệt đối (`sys.executable -m neuroedge mcp serve --agent
-  <tuyệt đối>`, thêm `--ui`, `--port`, `--trace-out`); nếu trình thông dịch tự nó import một neuroedge khác
-  (bản nguồn nạp qua `PYTHONPATH`) thì ghim `env.PYTHONPATH`. `--write` chỉ đặt đúng mục đó, giữ mọi khoá
-  khác, sao lưu `<tệp>.bak-<YYYYmmdd-HHMMSS>`, ghi nguyên tử; JSON hỏng ⇒ từ chối, không ghi gì; chạy lại
-  không đổi gì. Kiểm trước: agent build được, có SDK `mcp`. Thêm `python -m neuroedge`. Kiểm: `pytest
-  tests/test_mcp_desktop.py` (khởi động đúng như Desktop, và ca hồi quy: `neuroedge` trần không chạy được với
-  `PATH` tối giản). Đã chạy trên Claude Desktop thật (2026-09-24, bằng chứng ở TSK-S3-27). (FR-CLI-10)
-- **TSK-S3-27 — `neuroedge mcp serve --ui`.** Một tiến trình vừa là máy chủ MCP qua stdio (Claude Desktop,
-  Cursor) vừa phục vụ trang `sim` trực tiếp của **cùng phiên**: tool call từ client làm đèn/chốt ảo đổi ngay,
-  thẻ phán quyết ghi `tool_call light_on · mcp` (lời gọi schema từ chối hiện thẻ `REJECTED`). Lời gọi MCP và
-  lệnh gõ trên trang tuần tự hóa trên cùng một khóa; sau mỗi lời gọi luồng SSE đẩy ngay. `build_server` nhận
-  móc `lock` / `on_change` nên `mcp_server.py` không import trang. Với `run --ui`, cổng bận ⇒ lỗi 3 thành phần,
-  mã 1; `mcp serve --ui` thì chuyển trang sang cổng trống (mục *Đã sửa*). Kiểm: `pytest tests/test_mcp_serve_ui.py` (có test tiến trình con chứng minh
-  stdout chỉ mang JSON-RPC). (FR-CLI-10, FR-DX-04)
-- **TSK-S4-02 (sổ token) + TSK-S4-08 — sổ token dùng một lần bằng C, self-test gate lúc khởi động, QEMU.**
-  `ne_gate/src/ne_token.c`: cùng lý do, mã và thứ tự kiểm với `TokenLedger` host; 4 ô do bên gọi cấp phát, sổ đầy ⇒ `NE_TOKEN_ERR_FULL` (đóng an toàn); `boot_id` thay `process_instance_id`. Firmware chạy walker + sổ token trên gate home-voice sau NVS, trước mạng, in `NE_SELFTEST PASS`; job `firmware-qemu` boot nó trên Espressif QEMU. Kiểm: `pytest tests/test_c_token.py` · `make -C targets/esp32s3/components/ne_gate check-static`.
-- **TSK-S4-02 (walker) + TSK-S4-07 — walker C99 và bố cục nhị phân `NETR` v1 (RFC-0003 chấp thuận, thu hẹp).**
-  `neuroedge build` ghi `<gate>.netree` và `<gate>.netree.h` (mảng `const`, link vào flash). Walker
-  `targets/esp32s3/components/ne_gate/`: không cấp phát, không biến toàn cục, không đệ quy, kiểm CRC và mọi
-  offset; stack lớn nhất 176 B; hiểu giới hạn tham số (RFC-0005) và `confirms` (RFC-0006). Trên mỗi PR, walker
-  biên dịch trên host với ASan/UBSan khớp engine host trên mọi gate (truth rows + ca ngẫu nhiên) và bảng sự thật
-  đã ghi; fuzz tệp cây. Kiểm:
-  `pytest tests/test_c_walker.py` · `make -C targets/esp32s3/components/ne_gate check-static`.
-- **TSK-S3-26 — người xác nhận `on_block: ask` (Q-26, RFC-0006 chấp thuận).** Gate khai `on_block.confirms`:
-  tiêu chí lời "có" của người trên thiết bị được thay. Gate chặn ⇒ câu hỏi chờ (`tool_confirm_requested`, TTL
-  `max(p95×3, 10 s)`) chỉ khi "có" đủ để cho qua; người gõ `có` / bấm Đồng ý (`local_grammar` / `ui`) ⇒ gate
-  lượng giá lại với dữ kiện hiện tại và nguồn gọi gốc ⇒ token. System 2 / MCP không xác nhận được; dùng một lần;
-  gate đổi ⇒ vô hiệu; adjudicator suy giảm vẫn chặn. REPL `:confirm`/`:decline`, UI banner + `POST /confirm`, replay
-  tất định. `light_off` của home-voice khai `confirms: [room_empty]`. Kiểm: `pytest tests/test_tool_confirm.py`. (FR-ACE-10)
-- **Bộ chuẩn bị cổng nhu cầu 2026-10-25 (Q-20, `TODOS.md` #19).** `docs/business/cong-nhu-cau-2026-10-25/`:
-  10 câu hỏi cổng C1–C10 gắn với `CEO-X*`/`T*` và proposal §8.7, kế hoạch theo ngày, demo ≤ 5 phút cho 4 phân khúc
-  (chỉ lệnh đã chạy thật, kèm bảng *không được nói là đã có*), bộ câu hỏi phỏng vấn kiểu The Mom Test, thang chấm
-  go / adjust / stop, và `survey.json` — dựng thành trang ghi phiếu nội bộ (link trong README của thư mục).
-- **TSK-S3-25 — gate chặn theo giá trị tham số (RFC-0005 chấp thuận, Q-25).** Khối `arguments:` trong gate
-  (`type`, `minimum`/`maximum`, `enum`, `max_length`) — thêm vào `schemas/gate.v1.json` theo RFC. Engine kiểm
-  giá trị thực chạy (kể cả mặc định) **trước** mọi dữ kiện ⇒ `BLOCK argument_out_of_range`, rồi `on_block`.
-  Gate con chỉ thu hẹp (`GateInheritanceError`); `build` từ chối giới hạn trên tham số không có hoặc khác
-  kiểu; giới hạn đi vào `inputSchema`; `gate explain` hiện chúng. Gate không có `arguments` giữ nguyên digest.
-  Kiểm: `pytest tests/test_gate_arguments.py tests/test_gate_fixtures.py`. (FR-ACE-08)
-- **Q-27 — System 2 làm MCP host (TSK-S3-28).** Mọi tool System 2 dùng đi qua MCP client (`neuroedge/mcp_host.py`):
-  tool của thiết bị qua MCP server của **chính agent** (in-process, `call_source = system_two`, vẫn qua gate; lỗi hợp
-  đồng ném ra nguyên vẹn), MCP server bên ngoài khai ở `[mcp.servers]` **chỉ lấy thông tin** (allowlist `tools`, kết
-  quả là dữ liệu không tin cậy, vết ghi chỉ lưu digest `mcp_tool_result`). Vòng ReAct `max_rounds`. Tin tức home-voice
-  qua `mcp/news_server.py`. `neuroedge mcp tools --external`. Kiểm: `pytest tests/test_mcp_host.py` (gồm prompt
-  injection bị gate chặn). (FR-MDL-11, FR-MDL-12)
-- **Tool call có gate thành chuẩn giao tiếp ngôn ngữ → hành động: Gated Tool Profile v0.** Đường truyền giữ đúng MCP /
-  function calling OpenAI; NeuroEdge quy định ngữ nghĩa giữa tool call và hiệu ứng vật lý (ba trạng thái kết quả,
-  `call_source`, xác nhận của người, vết ghi, corpus tuân thủ). Đặc tả `docs/spec/tool_calling.md` là tài sản chuẩn thứ
-  ba cạnh lược đồ gate và vết ghi (proposal §1.5, §3.5). Quyết định **Q-25** (ràng buộc tham số nằm trong gate —
-  RFC-0005, đang thảo luận) và **Q-26** (chỉ người xác nhận `ask`, qua kênh thiết bị). Threat model §2b *bên gọi
-  không tin cậy*. Task mới TSK-S3-24..27, TSK-P2-04..06; TODOS #23, #24. Chỉ tài liệu — chưa đổi mã.
-- **Q-24 — hành động là tool call, có máy chủ MCP.** Mỗi `@action` là một tool (schema sinh từ chữ ký). Ngữ pháp cục bộ
-  (tool call tổng hợp — vẫn chạy khi mất mạng), System 2 (câu tự do, được đưa danh sách tool) và client MCP gửi cùng
-  `ToolCall` → kiểm schema (tool/tham số lạ ⇒ `REJECTED`) → `c.do()` → gate. Dữ kiện `call_source` do dispatcher chèn.
-  `commands.toml`: `tool` (thay `action`, tên cũ vẫn nhận) và `default_args`. Lệnh `neuroedge mcp tools`, `neuroedge mcp serve`;
-  extra `neuroedge[mcp]`. Kiểm: `pytest tests/test_tools.py`. (FR-MDL-10, FR-CLI-10)
-- **Mẫu `home-voice` — trợ lý giọng nói trong nhà.** Hỏi đáp knowledge base theo RAG (tìm cục bộ, System 2 diễn đạt;
-  mất mạng thì trả lời cục bộ), tin tức qua System 2 (mất mạng thì nói rõ, không bịa), đèn qua gate có cảm biến
-  `motion`. `commands.toml` có `say` / `ask` / `offline_say`; `knowledge.toml`; UI có panel *Trợ lý nói*.
-  Kiểm: `pytest tests/test_home_voice.py` · `neuroedge new nha --template home-voice`. (FR-DX-05)
-- **TSK-S3-17 — wheel tự chạy được.** Trước: wheel cài từ pip gãy ở `build`, `run`, `test`, `gate lint` (thiếu `boards/`,
-  `schemas/`, `gates/`). Nay `neuroedge/_data/` mang theo asset, cả khi build từ sdist; `paths.py` báo lỗi thay vì đoán.
-  Kiểm: `pytest tests/test_paths.py` · `scripts/wheel_smoke.sh` (job CI `wheel-smoke`). (FR-DX-02, FR-DX-04)
-- **Q-23 — cây quyết định trên MCU là bố cục nhị phân** do `neuroedge build` sinh, không có parser JSON trên thiết bị.
-  RFC-0003 thu hẹp (`TODOS.md` #15). PRD §15.
-- **Q-22 chốt — AEC phần mềm trên `linux` (phương án A).** PipeWire `module-echo-cancel`: `audio.in` đọc nút `source`,
-  `audio.out` phát vào nút `sink`; `linux-rpi5` chỉ khai `aec = true` khi nightly trên Pi đạt 0/20 tự kích VAD và
-  ERLE ≥ 20 dB. Cách nối, cấu hình mẫu, tiêu chí: `docs/spec/simulation_coverage.md` §6. PRD §15.
-- **TSK-S2-09 — `neuroedge run --ui`.** Phiên `sim` trực tiếp trên trình duyệt: chốt cửa, đèn, relay, cảm biến, màn hình,
-  phán quyết; gõ lệnh và đặt cảm biến từ trang. Chỉ 127.0.0.1, không mạng. `sim/ui.py`.
-  Kiểm: `pytest tests/test_sim_ui.py`. (FR-TGT-06)
-- **TSK-S3-22 — `neuroedge trace view` + `trace export --format chrome`.** Một tệp HTML tự chứa có thanh tua thời gian;
-  xuất Perfetto cho timing. `viz/`. Kiểm: `pytest tests/test_trace_view.py`. (FR-CLI-04)
-- **TSK-S3-23 — `sensor.read` và `display` trên `sim`.** `[sim.sensors]`, `[sim.sensor_facts]`, `sensor.read()` /
-  `display.show()` trong `@action`, sự kiện `sensor_read` / `display_frame`, replay cấp lại số đọc.
-  Kiểm: `pytest tests/test_sim_sensors_display.py`. (FR-TGT-01)
-- **Đặc tả phủ mô phỏng 5 nguyên thủy × 3 target** `docs/spec/simulation_coverage.md`: mỗi ô có backend, nơi kiểm,
-  phần chỉ phần cứng và task chịu trách nhiệm; tên sự kiện vết ghi cho `sensor.read` / `display` / `audio`; vết ghi
-  từ firmware qua UART (cả trên QEMU); bốn bề mặt trực quan. Task mới: TSK-S3-22, S3-23, S4-09, S4-10, S5-08, S5-09.
-- **Q-22 (đề xuất) — AEC phần mềm trên `linux`**, để agent mẫu build được cho `linux-rpi5` (FR-TGT-02).
-- **Q-21 (đề xuất) — mô phỏng theo tầng bằng OSS đã kiểm chứng.** Mỗi tầng kiểm thử một công cụ mở, kèm phần nó
-  không kiểm được; thêm TSK-S4-07 (walker C trên host, mỗi PR) và TSK-S4-08 (Espressif QEMU, hằng đêm) để kiểm
-  logic firmware trước khi bo mạch về. Proposal §3.2, Phụ lục H.4; PRD §15.
-- **TSK-S3-01 — `TraceRecorder` + `neuroedge record`.** Ghi phiên ra `trace.v1` đã thẩm định; phiên nay
-  có `action_requested` và `gate_facts` (dữ kiện + độ tin cậy) để replay; `--anonymize` băm chữ thô tại
-  nguồn. `testing/recorder.py`. Kiểm: `pytest tests/test_recorder.py`. (FR-CI-01, FR-TRC-07)
-- **TSK-S3-02 — replay thật trên HAL.** Dữ kiện đã ghi vào lại; phán quyết gate và lệnh chân **tính lại**
-  trên `SimHAL`/`LinuxHAL`, fallback `degrade` tự tiêu bước của nó. `testing/player.py`; `replay()` /
-  `scenario()` thay stub Sprint 1. Kiểm: `pytest tests/test_player.py`. (FR-CI-02)
-- **TSK-S3-03 — thư viện assert + `neuroedge test`.** `assert_gate_blocked`, `assert_never_pulsed`…
-  đọc phán quyết và chân, từ chối chữ (L3); `test` thoát 0/1. `testing/assertions.py`.
-  Kiểm: `pytest tests/test_assertions.py`. (FR-CI-03, FR-CLI-03)
-- **TSK-S3-04 — so khớp Golden Reference.** So chuỗi phán quyết + lệnh chân, bỏ qua timing và chữ;
-  lệch ⇒ `SafetyRegressionError` (NE4002). `replay` thoát 1 khi lệch golden. `testing/golden.py`.
+  home-voice` → `mcp desktop-config --write`; `hatch_build.py` đọc nó vào metadata. Kiểm: `pytest
+  tests/test_readme_quickstart.py tests/test_packaging.py` · `scripts/wheel_smoke.sh`. (FR-DX-02)
+- **TSK-S3-24 — corpus tuân thủ Gated Tool Profile.** `fixtures/tool_calls/{valid,invalid}/` + `expected_results.yaml`,
+  chạy qua `dispatch()` thật và qua client MCP; `verify` chạy cả corpus; mỗi tool MCP khai `outputSchema`. Agent mẫu
+  `fixtures/agents/driveway/`. Kiểm: `pytest tests/test_tool_corpus.py`. (FR-MDL-10, FR-ACE-09)
+- **TSK-S3-19 — `neuroedge verify` quét được 0 artifact thì thất bại.** Loại artifact nào bằng 0 ⇒ `VerificationError`
+  (NE4004), mã 1. Kiểm: `pytest tests/test_cli.py -k verify`. (FR-CLI-03)
+- **TSK-S3-16 — `digests.lock` khoá gate chuẩn mực.** Digest JCS của YAML đã parse; `scripts/check_digests.py --check`
+  trong CI; tệp mới ⇒ `--update`, đổi hoặc xoá ⇒ RFC (`CONTRIBUTING.md` §3). Kiểm: `pytest tests/test_digests_lock.py`.
+- **TSK-S2-11 — System 2 trên model thật qua LiteLLM (extra `neuroedge[cloud]`, Q-10, Q-11, Q-12).** `[system_two]` trong
+  `agent.toml`; key chỉ qua biến môi trường; thiếu key, mất mạng, hết giờ ⇒ câu offline và lệnh cục bộ. Mỗi lượt ghi
+  `system_two_call`. Kiểm: `pytest tests/test_providers.py tests/test_offline_fallback.py` · job `cloud-extra`.
+- **TSK-S3-27 — `neuroedge mcp serve --ui` và `neuroedge mcp desktop-config`.** Một tiến trình phục vụ MCP qua stdio và
+  trang `sim` của cùng phiên; `desktop-config --write` ghi mục Claude Desktop bằng đường dẫn tuyệt đối. Đã chạy trên
+  Desktop thật. Kiểm: `pytest tests/test_mcp_serve_ui.py tests/test_mcp_desktop.py`. (FR-CLI-10)
+- **TSK-S4-07 — walker C99 cho bố cục `NETR` v1 (RFC-0003, Q-23).** `build` ghi `<gate>.netree` + `.netree.h`; walker
+  `targets/esp32s3/components/ne_gate/` khớp engine host trên mọi gate, mỗi PR, dưới ASan/UBSan. Kiểm: `pytest
+  tests/test_c_walker.py`.
+- **TSK-S4-02 + TSK-S4-08 — sổ token C và self-test gate trên QEMU.** `ne_token.c` cùng hợp đồng với `TokenLedger`;
+  firmware in `NE_SELFTEST PASS` trước mạng; workflow `firmware-qemu` boot nó trên Espressif QEMU. Kiểm: `pytest
+  tests/test_c_token.py`.
+- **TSK-S3-26 — xác nhận `on_block: ask` (Q-26, RFC-0006).** `on_block.confirms` khai tiêu chí người trên thiết bị được
+  thay; "có" làm gate lượng giá lại. REPL `:confirm`/`:decline`, UI `POST /confirm`. Kiểm: `pytest
+  tests/test_tool_confirm.py`. (FR-ACE-10)
+- **TSK-S3-25 — gate chặn theo giá trị tham số (RFC-0005, Q-25).** Khối `arguments:` trong gate ⇒ `BLOCK
+  argument_out_of_range` trước mọi dữ kiện; con chỉ thu hẹp; giới hạn đi vào `inputSchema`. Kiểm: `pytest
+  tests/test_gate_arguments.py`. (FR-ACE-08)
+- **TSK-S3-28 — System 2 làm MCP host (Q-27).** Tool thiết bị qua MCP server của chính agent (vẫn qua gate); MCP server
+  ngoài ở `[mcp.servers]` chỉ lấy thông tin; `neuroedge mcp tools --external`. Kiểm: `pytest tests/test_mcp_host.py`.
+  (FR-MDL-11, FR-MDL-12)
+- **Q-24 — hành động là tool call; Gated Tool Profile v0.** Mỗi `@action` là một tool; ngữ pháp cục bộ, System 2 và MCP
+  gửi cùng `ToolCall` → kiểm schema → `c.do()` → gate; `mcp tools`, `mcp serve`, extra `neuroedge[mcp]`. Đặc tả:
+  `docs/spec/tool_calling.md`. Kiểm: `pytest tests/test_tools.py`. (FR-MDL-10, FR-CLI-10)
+- **FR-DX-05 — mẫu `home-voice`.** Trợ lý giọng nói trong nhà: hỏi đáp knowledge base, tin tức qua System 2, đèn qua gate
+  có cảm biến; `neuroedge new --template home-voice`. Kiểm: `pytest tests/test_home_voice.py`.
+- **TSK-S3-17 — wheel tự chạy được.** `neuroedge/_data/` mang `boards/`, `schemas/`, `gates/`, fixture, cả khi build từ
+  sdist; `paths.py` báo lỗi thay vì đoán. Kiểm: `pytest tests/test_paths.py` · job `wheel-smoke`. (FR-DX-02)
+- **TSK-S2-09 — `neuroedge run --ui`.** Phiên `sim` trực tiếp trên trình duyệt, chỉ 127.0.0.1. `sim/ui.py`. Kiểm:
+  `pytest tests/test_sim_ui.py`. (FR-TGT-06)
+- **TSK-S3-22 — `neuroedge trace view` + `trace export --format chrome`.** HTML tự chứa có thanh tua; Perfetto cho
+  timing. `viz/`. Kiểm: `pytest tests/test_trace_view.py`. (FR-CLI-04)
+- **TSK-S3-23 — `sensor.read` và `display` trên `sim`.** `[sim.sensors]`, `[sim.sensor_facts]`, sự kiện `sensor_read` /
+  `display_frame`, replay cấp lại số đọc. Kiểm: `pytest tests/test_sim_sensors_display.py`. (FR-TGT-01)
+- **Q-21, Q-22 — đặc tả phủ mô phỏng** `docs/spec/simulation_coverage.md`: 5 nguyên thủy × 3 target, công cụ mở từng
+  tầng, AEC PipeWire trên `linux` (§6). Task mới TSK-S3-22, S3-23, S4-07 → S4-12, S5-08, S5-09.
+- **TSK-S3-01 — `TraceRecorder` + `neuroedge record`.** Ghi phiên ra `trace.v1` đã thẩm định, kèm `gate_facts` để
+  replay; `--anonymize` băm chữ thô tại nguồn. Kiểm: `pytest tests/test_recorder.py`. (FR-CI-01, FR-TRC-07)
+- **TSK-S3-02 — replay thật trên HAL.** Phán quyết gate và lệnh chân **tính lại** trên `SimHAL`/`LinuxHAL`.
+  `testing/player.py`. Kiểm: `pytest tests/test_player.py`. (FR-CI-02)
+- **TSK-S3-03 — thư viện assert + `neuroedge test`.** `assert_gate_blocked`, `assert_never_pulsed`… đọc phán quyết và
+  chân; `test` thoát 0/1. Kiểm: `pytest tests/test_assertions.py`. (FR-CI-03, FR-CLI-03)
+- **TSK-S3-04 — so khớp Golden Reference.** So phán quyết + lệnh chân, bỏ qua timing; lệch ⇒ NE4002, `replay` mã 1.
   Kiểm: `pytest tests/test_golden.py`. (FR-CI-04)
-- **TSK-S3-05 — `LinuxHAL` + gpio-sim trong CI; `verify --targets sim,linux` (A2).** `hal/linux.py` qua
-  libgpiod v2 (extra `[linux]`), ném lỗi khi không có `/dev/gpiochip*` (Q-16). Job CI `linux-hal`
-  chạy trên line ảo. Kiểm: `pytest tests/test_hal_linux.py` · `tests_linux/` trên gpio-sim. (FR-TGT-02)
-- **Cửa trước cho người mới.** `README.md` gốc: sản phẩm là gì, sơ đồ 30 giây, một gate và
-  một `@action` trích từ tệp thật, 3 lệnh chạy thử. `tests/test_readme_quickstart.py` chạy đúng
-  các lệnh đó và kiểm hai đoạn trích khớp tệp gốc.
-- **Bảng thuật ngữ** `docs/user/thuat-ngu.md` — nơi duy nhất giải mã `FR-*`, `Q-N`, `A1`, `CEO-X1`…,
-  cảnh báo hai mã trùng chữ (`A1`, `V1`). Ba bảng "Quy ước tài liệu" ở PRD và hai roadmap nay dẫn về đó.
-- **Sơ đồ Mermaid** tại chỗ của từng khái niệm: luồng `c.do()` → gate → token → HAL
-  (`docs/spec/threat_model.md` §1), cây kế thừa ba gate mẫu (proposal Phụ lục B.5), FSM hội thoại
-  (roadmap §3.8, thay bản ASCII).
-- **TSK-S2-12 — cây quyết định phía host.** `engine/decision_tree.py`: `compile_tree`
-  (`criteria_order` root-first + `gate_digest`), `walk` trả phán quyết + `reason` đầu tiên.
-  Bảng sự thật cho walker C: `fixtures/decision_trees/`. Kiểm: `pytest tests/test_decision_tree.py`.
-- **TSK-S2-03 — Gate Engine trả phán quyết.** `engine/gate.py`: `ActionContractEngine.evaluate()`
-  lấy dữ kiện trong ngân sách `p95`, đi cây, phân phát `on_block` theo Q-17; tái tạo đúng
-  3 vết ghi chuẩn mực. Kiểm: `pytest tests/test_gate_engine.py`. (FR-GATE-03/04/09)
-- **TSK-S2-08 — SystemOne/SystemTwo + ngữ pháp lệnh cố định.** `models/`: mất mạng thì
-  hỏi `CommandGrammar` (`commands.toml`, khớp mẫu + `difflib`, giữ dấu tiếng Việt); không có
-  fallback ⇒ `gate_unreachable`. Kiểm: `pytest tests/test_models.py`. (Q-14, Q-15, FR-MDL-01/02/03)
-- **TSK-S2-01 — HAL `sim`.** `hal/sim.py`: `SimHAL` phủ 5 nguyên thủy trên `sim-default`,
-  gõ chữ là đầu vào mặc định (Q-15), `digital_out` trả `PendingCommand.cancel()` (RB-3).
-  Kiểm: `pytest tests/test_hal_sim.py`. (FR-TGT-01, FR-HAL-01)
-- **TSK-S2-04 — mạch ngắt suy giảm.** `engine/circuit_breaker.py` bọc nguồn chính của
-  SystemOne: lỗi liên tiếp ⇒ mở, đi thẳng fallback; không bao giờ sinh ALLOW. Ma trận A4
-  đạt. Kiểm: `pytest tests/test_fail_closed.py`. (FR-ACE-03, NFR-REL-02)
-- **TSK-S2-05 — `@action`, `c.do()`/`c.say()`, token phán quyết dùng một lần.** `actions/`,
-  `hal/digital.py`: chỉ `c.do()` chạy được hành động; token TTL = p95 × 3, mỗi chân tiêu một
-  lần (NE1002). Kiểm: `pytest tests/test_actions.py`; ranh giới: `docs/spec/threat_model.md`.
-- **TSK-S2-02 — `neuroedge build`.** `engine/compiler.py` đối chiếu `agent.toml` + `@action` với
-  bo mạch (Phụ lục A.1), báo **mọi** vấn đề trong một lần, ghi cây quyết định. Agent mẫu
-  `fixtures/agents/villa-concierge/`. Kiểm: `pytest tests/test_compiler.py`. (FR-HAL-04/05)
-- **TSK-S3-06 — `neuroedge run --target sim`.** REPL gõ chữ `neuroedge>`: lệnh khớp `commands.toml`
-  → `c.do()` → phán quyết gate + bảng chân ảo; `-c` cho CI, `--trace-out` ghi vết ghi đã thẩm định.
-  `sim/session.py` (`SimSession`), `cli/run.py`. Kiểm: `pytest tests/test_cli_run.py`. (FR-CLI-02, Q-15)
-- **TSK-S3-18 — `neuroedge gate explain`.** Tiêu chí từ cấp nào, mệnh đề nào con siết chặt, p95 và
-  `on_block` so với cha, bằng tiếng Việt cho người duyệt (J6). `engine/gate_explain.py`, `cli/explain.py`.
-  Kiểm: `pytest tests/test_cli_explain.py`. (FR-CLI-05)
-- **TSK-S3-07 — `neuroedge new <tên> [--template minimal|villa-concierge]`.** Sinh dự án build được,
-  chạy được trên `sim`, test tự qua; generator Python thuần ở `neuroedge/templates/`, không `copier`.
-  Kiểm: `pytest tests/test_cli_new.py`. (FR-DX-01)
-- **`commands.toml` gắn lệnh với action; `agent.toml` có `[sim.facts]` / `[sim.slot_facts]`.** Trường
-  `action` + `arguments` (tham số ← slot), `build` kiểm action tồn tại; dữ kiện phiên trên `sim` không
-  bao giờ suy từ chữ gõ. Kiểm: `test_a_command_naming_an_unknown_action_fails_the_build`.
-- **Quy tắc hoàn thành task.** `CONTRIBUTING.md` §8: nơi duy nhất cho việc cập nhật
-  tiến độ, changelog, đặc tả; bảng "mỗi sự thật một nơi"; mẫu PR có checklist.
-  Roadmap §0.4, §11.2 và `CLAUDE.md` nay chỉ dẫn về đó.
-- **Tài liệu cho người dùng (`docs/user/`).** Bản đồ tài liệu, hướng dẫn sử dụng,
-  và trạng thái sinh tự động từ roadmap §0 (`scripts/gen_user_status.py`).
-  Kiểm: `pytest tests/test_user_status_fresh.py`.
+- **TSK-S3-05 — `LinuxHAL` + gpio-sim trong CI; `verify --targets sim,linux` (A2).** Extra `[linux]` (libgpiod v2);
+  job `linux-hal`. Kiểm: `pytest tests/test_hal_linux.py` · `tests_linux/`. (FR-TGT-02, Q-16)
+- **TSK-S3-18 — `neuroedge gate explain`.** Tiêu chí từ cấp nào, con siết gì, p95 và `on_block` so với cha, cho người
+  duyệt (J6). Kiểm: `pytest tests/test_cli_explain.py`. (FR-CLI-05)
+- **TSK-S3-07 — `neuroedge new`.** Dự án build được, chạy được trên `sim`, test tự qua; generator Python thuần, không
+  `copier`. Kiểm: `pytest tests/test_cli_new.py`. (FR-DX-01)
+- **TSK-S3-06 — `neuroedge run --target sim`.** REPL gõ chữ: `commands.toml` → `c.do()` → phán quyết + chân ảo; `-c`
+  cho CI, `--trace-out`; `[sim.facts]` không bao giờ suy từ chữ gõ. Kiểm: `pytest tests/test_cli_run.py`. (FR-CLI-02, Q-15)
+- **TSK-S2-12 — cây quyết định phía host.** `engine/decision_tree.py`; bảng sự thật cho walker C ở
+  `fixtures/decision_trees/`. Kiểm: `pytest tests/test_decision_tree.py`.
+- **TSK-S2-03 — Gate Engine trả phán quyết.** `engine/gate.py`: dữ kiện trong ngân sách `p95`, đi cây, `on_block` theo
+  Q-17; tái tạo 3 vết ghi chuẩn mực. Kiểm: `pytest tests/test_gate_engine.py`. (FR-GATE-03/04/09)
+- **TSK-S2-08 — SystemOne/SystemTwo + ngữ pháp lệnh cố định.** Mất mạng thì hỏi `CommandGrammar` (`commands.toml`);
+  không có fallback ⇒ `gate_unreachable`. Kiểm: `pytest tests/test_models.py`. (Q-14, Q-15, FR-MDL-01/02/03)
+- **TSK-S2-01 — HAL `sim`.** `SimHAL` phủ 5 nguyên thủy trên `sim-default`; `digital_out` trả
+  `PendingCommand.cancel()` (RB-3). Kiểm: `pytest tests/test_hal_sim.py`. (FR-TGT-01, FR-HAL-01)
+- **TSK-S2-04 — mạch ngắt suy giảm.** Lỗi liên tiếp ⇒ mở, đi thẳng fallback; không bao giờ sinh ALLOW. Kiểm: `pytest
+  tests/test_fail_closed.py`. (FR-ACE-03, NFR-REL-02)
+- **TSK-S2-05 — `@action`, `c.do()`/`c.say()`, token phán quyết dùng một lần.** Chỉ `c.do()` chạy được hành động; mỗi
+  chân tiêu token một lần (NE1002). Kiểm: `pytest tests/test_actions.py`; ranh giới: `docs/spec/threat_model.md`.
+- **TSK-S2-02 — `neuroedge build`.** Đối chiếu `agent.toml` + `@action` với bo mạch, báo **mọi** vấn đề một lần, ghi cây
+  quyết định. Kiểm: `pytest tests/test_compiler.py`. (FR-HAL-04/05)
+- **Tài liệu dẫn đường.** `docs/user/` (hướng dẫn, trạng thái sinh từ roadmap §0 — `scripts/gen_user_status.py`);
+  `docs/user/thuat-ngu.md` giải mã mọi ký hiệu; sơ đồ Mermaid tại chỗ (luồng `c.do()`, cây kế thừa, FSM hội thoại);
+  `CONTRIBUTING.md` §8. Kiểm: `pytest tests/test_user_status_fresh.py`.
+- **Q-20 — bộ chuẩn bị cổng nhu cầu 2026-10-25** (`TODOS.md` #19): `docs/business/cong-nhu-cau-2026-10-25/` —
+  câu hỏi cổng, demo ≤ 5 phút chỉ bằng lệnh đã chạy thật, bộ phỏng vấn, thang chấm, trang ghi phiếu.
 
 #### Đã đổi
 
-- **Kế hoạch lấp khoảng trống kỹ thuật:** firmware không cần bo mạch (TSK-S4-02, S4-07, S4-08, S4-09, S4-11 mới) kéo lên A2
-  cho V2; TSK-S2-07 lên A2 cho V1; thêm TSK-S4-12 (kiểm ngày đầu có bo mạch). Q-21 chốt. Roadmap §4.3.
-- **TSK-S2-09 (`run --ui`, FR-TGT-06 P0 của M1) kéo từ Sprint 5 lên Sprint 3 (V3)** — đề xuất theo Q-21.
-- **Đính chính Q-21:** runner GitHub **không có `snd-aloop`** (`CONFIG_SOUND`, `CONFIG_IIO`, `CONFIG_FB_VIRTUAL` tắt ở
-  kernel 6.17 azure); CI âm thanh dùng backend tệp/PCM, `snd-aloop` chỉ trên Pi. `i2c-stub` + `lm75` có trên runner.
-- **Phụ lục H.1 xác minh giấy phép tại nguồn** cho Wokwi Elements, `gpiod`, XiaoZhi, Pipecat, Silero/libfvad, Pytest/DeepDiff;
-  thêm dòng **ESP-SR/ESP-ADF** — giấy phép chỉ cho chip Espressif, chỉ nằm trong firmware. Sửa hai nhận định sai: Wokwi
-  Elements không có chốt cửa và không mô phỏng gì; Renode không chạy ESP32-S3.
-- **Sprint 4 tiêu chí 2** dùng `SafetyRegressionError` (NE4002) thay `TargetEquivalenceError` dự kiến.
-- **`verify` replay ba vết ghi chuẩn mực trên từng target** thay vì chỉ thẩm định lược đồ; mặc định
-  `--targets sim` (trước: `sim,linux` nhưng không chạy gì trên `linux`). PRD Phụ lục B thêm NE4002,
-  NE4003.
-- **README gốc chạy thử bằng `neuroedge run -c`** (một ALLOW, một BLOCK) thay cho `build`. Đặc tả
-  khớp hành vi mới: PRD FR-CLI-02 (`-c`, kiểm năng lực trước khi chạy), FR-CLI-05 (`gate explain`),
-  proposal §4.3 (`[sim.facts]`, `action` trong `commands.toml`).
-- **Bỏ extra `scaffold` (`copier`).** `neuroedge new` không cần nó nữa, nên không còn đường cài nào
-  kéo `jinja2-ansible-filters` (GPL3) vào môi trường. `NOTICE` §B, `requirements-lock.txt` cập nhật.
-- **Design doc Giai đoạn 1 tách biên bản review** sang `docs/archive/giai-doan-1-review-log.md`
-  (~1 000 dòng, lưu trữ, không quy phạm); design doc còn ~600 dòng, thêm khối "Đọc nhanh" chỉ nơi
-  thiết kế đang chạy. Tham chiếu theo số dòng trong RFC-0002 đổi sang tên mục.
-- **HAL chưa gắn `Conversation` từ chối mọi lệnh,** kể cả chuỗi trông như bằng chứng — chỉ
-  token do `c.do()` phát hành điều khiển được chân (A3).
-- **HAL kiểm tên chân trước khi tiêu bằng chứng,** và `hal.pin()` ném lỗi với tên chân không
-  có trên bo mạch — một assertion gõ sai không còn "đạt" được (CEO-S5-2).
-- **`ActionContractEngine` bỏ tham số `fail_closed`.** Gate chỉ fail-open khi chính tài liệu
-  của nó khai `fail: open`. PRD Phụ lục B: fail-closed là phán quyết, không phải exception.
-- **Thẻ bàn giao (roadmap §0.3) rút gọn** theo §8.3: bỏ lịch sử đã có trong changelog,
-  bỏ hai việc đã xong còn nằm ở *Việc tiếp theo*, *Lưu ý* chỉ giữ điều chưa có ở §3.3.
-- **Bỏ con số dễ lỗi thời** khỏi `CLAUDE.md` và §2 (số test, số fixture); số test
-  hiện hành chỉ còn ở roadmap §0.1.
+- **Rà soát tài liệu MECE — mỗi sự thật một nơi.** Chủ sở hữu mới: danh sách cần RFC và cấu trúc kho ở
+  `CONTRIBUTING.md` §3, §6; lệnh và job CI ở §2 tệp này; mã lỗi ở PRD Phụ lục B; allowlist giấy phép ở Q-11. Các mốc
+  `[0.1.0]`–`[0.4.0]` đổi tên thành mốc tài liệu; `TODOS.md` xếp theo chủ đề, số mục giữ nguyên.
+- **Q-21 — kế hoạch lấp khoảng trống kỹ thuật.** Firmware không cần bo mạch (TSK-S4-02, S4-07 → S4-09, S4-11) kéo lên
+  A2; TSK-S2-07 lên A2; TSK-S2-09 từ Sprint 5 lên Sprint 3; thêm TSK-S4-12. CI âm thanh dùng backend tệp/PCM vì runner
+  GitHub không có `snd-aloop`. Roadmap §4.3.
+- **Proposal Phụ lục H.1 xác minh giấy phép tại nguồn**, thêm ESP-SR/ESP-ADF (chỉ chip Espressif, chỉ trong firmware);
+  sửa hai nhận định sai: Wokwi Elements không có chốt cửa, Renode không chạy ESP32-S3.
+- **TSK-S3-02 — `verify` replay ba vết ghi chuẩn mực trên từng target** thay vì chỉ thẩm định lược đồ; mặc định
+  `--targets sim`. Sprint 4 tiêu chí 2 dùng `SafetyRegressionError` (NE4002).
+- **A3 — HAL chưa gắn `Conversation` từ chối mọi lệnh**, và kiểm tên chân trước khi tiêu bằng chứng; `hal.pin()` ném
+  lỗi với tên chân không có trên bo mạch (CEO-S5-2).
+- **Design doc Giai đoạn 1 tách biên bản review** sang `docs/archive/giai-doan-1-review-log.md` (lưu trữ, không quy
+  phạm); thẻ bàn giao roadmap §0.3 rút gọn theo `CONTRIBUTING.md` §8.3.
 
 #### Đã sửa
 
-- **`mcp serve` bị Claude Desktop bỏ rơi không còn giữ cổng mãi (TSK-S3-27).** Chạy thử trên Desktop thật:
-  Desktop khởi động server vài lần liền và bỏ một tiến trình trước `initialize` nhưng vẫn giữ đầu kia của
-  stdin, nên tiến trình đó không bao giờ đọc được EOF và giữ 127.0.0.1:8765; mọi lần khởi động sau thoát
-  mã 1 vì cổng bận, Desktop báo "Server disconnected". Hai sửa: (1) không có `initialize` trong
-  `--init-timeout` giây (mặc định 30, `0` = chờ mãi) ⇒ ghi một dòng stderr, nhả cổng, thoát 0; phiên đã
-  `initialize` thì nghỉ bao lâu cũng được. (2) Trang `--ui` không bao giờ làm sập MCP: cổng bận — kể cả
-  `--port` ghi rõ, vì mục của Desktop luôn có `--port` — ⇒ cảnh báo stderr kèm URL thật và dùng cổng trống;
-  không có cổng nào thì phục vụ MCP không kèm trang. Kiểm: `pytest tests/test_mcp_desktop.py
-  tests/test_mcp_serve_ui.py` (tiến trình bị bỏ rơi thoát và nhả cổng; cổng bận vẫn `light_on` ALLOW;
-  phiên đã initialize nghỉ quá hạn vẫn sống).
-- **Hai dự án cùng tên agent dùng chung một module `actions/` đã import.** `load_actions` nay đặt
-  tên module theo cả thư mục dự án. Kiểm: `pytest tests/test_cli_new.py`.
-- **Tham chiếu Copier/Wokwi còn sót** ở roadmap §3 (ma trận OSS, cây thư mục), PRD Phụ lục D và
-  proposal §4.3 — nay ghi theo trạng thái hiện tại: generator Python thuần, `run --target sim` là REPL gõ chữ.
-- **Sáu lỗ an toàn từ review đối kháng mã A1** — hai trong số đó kích được chân GPIO.
-  Kiểm: `pytest tests/test_safety_regressions.py` (15/16 test fail trên mã trước khi sửa).
-  - Độ tin cậy `NaN`, `True`, ngoài `[0, 1]` từng lọt ngưỡng `confidence_gte` ⇒ nay `criterion_unavailable`.
-  - `fail: open` từng biến một dữ kiện đã biết là "không" thành ALLOW khi thẩm định suy giảm ⇒
-    `open` chỉ tha điều không quyết được.
-  - Nhà cung cấp ném lỗi hoặc treo ⇒ nay là phán quyết suy giảm (mạch ngắt ghi nhận, fallback
-    được hỏi, timeout theo ngân sách còn lại), không còn là exception không có vết ghi.
-  - `fallback_action` cần tham số ⇒ `build` từ chối, lúc chạy bỏ qua thay vì `TypeError`.
-  - `never_pulsed()` từng đúng sau `on()`; lệnh sau từng xoá lệnh trước ⇒ chân lưu lịch sử lệnh.
-  - Task sinh trong thân hành động từng gọi lại được hành động sau khi `c.do()` trả về.
-- **CLI nuốt mất tên bảng TOML trong chẩn đoán.** `rich` hiểu `[requires]`,
-  `[capabilities.digital_out]` là thẻ markup nên lời hướng dẫn in ra thiếu chữ. Mọi trường
-  `where`/`why`/`how` nay được escape. Kiểm: `test_cli_build_fails_with_exit_1_and_every_problem`.
-- **Hai nhãn lỗi thời.** `TODOS.md` #5 ghi thì quá khứ cho phần `lru_cache` đã vá ở
-  `TSK-S2-13`; roadmap §0.2 ghi Sprint 2 `8%` (1/13) thay vì `0%`.
+- **`replay --target esp32s3` và `verify --targets esp32s3` thoát mã 2**, không phải 1: target đã biết nhưng chưa có
+  replay (TSK-S4-04) là "chưa hiện thực". Kiểm: `pytest tests/test_cli.py -k esp32s3`.
+- **`mcp tools --help` mất chữ `[mcp.servers]`** vì `rich` đọc nó là thẻ markup. Escape trong `help=`; mọi `--help`
+  được kiểm không nuốt chữ trong ngoặc vuông. Kiểm: `pytest tests/test_cli_help.py`.
+- **TSK-S3-26 — REPL in lời "có" như một lượt đã xác nhận.** Trước: in "System 2 handled free phrasing", không có
+  dòng ALLOW và bảng chân, dù vết ghi có `tool_confirmed` + ALLOW. Nay in phán quyết lần hai và chân. Kiểm: `pytest
+  tests/test_cli_run.py -k confirmed_answer`.
+- **`neuroedge build --target sim` không có `--board` chọn nhầm `esp32s3-box-3`** và fail NE3003. Bo mạch mặc định
+  nay theo target (`sim` → `sim-default`, `linux` → `linux-rpi5`). Kiểm: `pytest tests/test_compiler.py -k reference_board`.
+- **TSK-S3-27 — `mcp serve` bị client bỏ rơi không còn giữ cổng.** Không có `initialize` trong `--init-timeout` giây ⇒
+  nhả cổng, thoát 0; cổng `--ui` bận ⇒ trang sang cổng trống, MCP vẫn chạy. Kiểm: `pytest tests/test_mcp_desktop.py`.
+- **Hai dự án cùng tên agent dùng chung một module `actions/` đã import.** `load_actions` đặt tên module theo cả thư
+  mục dự án. Kiểm: `pytest tests/test_cli_new.py`.
+- **Sáu lỗ an toàn từ review đối kháng mã A1**, hai trong số đó kích được chân GPIO: độ tin cậy `NaN`/ngoài `[0, 1]`,
+  `fail: open` tha dữ kiện đã biết là "không", provider ném lỗi hoặc treo, `fallback_action` cần tham số, lịch sử chân,
+  task sinh trong hành động. Kiểm: `pytest tests/test_safety_regressions.py`.
+- **CLI nuốt tên bảng TOML trong chẩn đoán** (`[requires]` bị `rich` hiểu là markup). Mọi `where`/`why`/`how` được
+  escape. Kiểm: `test_cli_build_fails_with_exit_1_and_every_problem`.
+- **Tham chiếu Copier/Wokwi còn sót** ở roadmap §3, PRD Phụ lục D và proposal §4.3 — nay ghi generator Python thuần và
+  REPL gõ chữ.
 
-### [0.4.0] — 2026-09-23 — Gỡ chặn Sprint 2: chốt 9 quyết định, đồng bộ tài liệu
+#### Đã bỏ
+
+- **Extra `scaffold` (`copier`).** `neuroedge new` không cần nó, nên không đường cài nào kéo `jinja2-ansible-filters`
+  (GPL3). `NOTICE` §B, `requirements-lock.txt` cập nhật.
+- **Tham số `fail_closed` của `ActionContractEngine`.** Gate chỉ fail-open khi chính tài liệu của nó khai `fail: open`;
+  fail-closed là phán quyết, không phải exception (PRD Phụ lục B).
+
+### Mốc gỡ chặn Sprint 2 — 2026-09-23 — chốt 9 quyết định, đồng bộ tài liệu
 
 Rà soát toàn bộ tài liệu ngày 2026-09-23 kết luận **chưa triển khai được**: bốn
 quyết định Tuần 1 chưa ai chốt, roadmap chưa nhận kế hoạch đã duyệt ở
@@ -317,7 +208,7 @@ cha (nguyên tắc 2), chuỗi `closed` không mở lại (nguyên tắc 4), con
 `degrade` (nguyên tắc 2). Vẫn **năm** nguyên tắc. Corpus phản chứng: +4 invalid,
 +1 valid, +1 registry. Test **210 → 229**, 0 skip.
 
-### [0.3.0] — 2026-09-22 — Giai đoạn 2: thị giác, phủ rộng phần cứng, nền tảng cho maker
+### Mốc tài liệu Giai đoạn 2 — 2026-09-22 — thị giác, phủ rộng phần cứng, nền tảng cho maker
 
 Thay đổi **chỉ ở tầng tài liệu**. Ba lược đồ trong `schemas/` **chưa đổi** và
 không được đổi cho tới khi RFC-0002 được phê duyệt; bộ test vẫn 210/210 xanh.
@@ -425,7 +316,7 @@ Ngoài ra: tiêu chí **A1** trong roadmap có hai phát biểu lệch nhau (ng�
 2. **Ngân sách bộ nhớ cho nguyên thủy thứ sáu trên vi điều khiển** chưa đo được vì
    chưa có bo mạch. Không chặn RFC, nhưng chặn việc khai `vision_in` cho `esp32s3`.
 
-### [0.2.0] — 2026-09-21 — CR-1.0: Chuyển định hướng cloud-first
+### Mốc CR-1.0 — 2026-09-21 — chuyển định hướng cloud-first
 
 Thay đổi **chỉ ở tầng tài liệu**, không đụng một dòng mã nguồn nào và không đụng
 ba lược đồ đã đóng băng trong `schemas/`. Nguồn thay đổi là yêu cầu tinh chỉnh
@@ -501,7 +392,7 @@ Tuần 2 vì cùng lý do.
 - Proposal: `Phụ lục D.2` và bảng Voice Pipeline `§3.4` lệch nhau về danh mục
   STT/TTS — nay đồng bộ.
 
-### [0.1.0] — 2026-09-21 — Sprint 1: Đóng băng lược đồ (Khối 1a)
+### Mốc Sprint 1 — 2026-09-21 — đóng băng lược đồ (Khối 1a)
 
 Sprint đầu tiên đóng băng ba lược đồ lõi và hiện thực hóa ngữ nghĩa kế thừa
 gate. Mốc này **chưa chạy được tác tử nào**; nó thiết lập các hợp đồng mà
@@ -704,6 +595,9 @@ Chi tiết và hợp đồng mã thoát: [§2.3](#23-tham-chiếu-lệnh-cli).
 
 ### 2.1 Dựng môi trường
 
+Yêu cầu **Python 3.11+**. Toàn bộ mã dùng `tomllib` của thư viện chuẩn, nên không có
+phụ thuộc TOML bên ngoài.
+
 ```bash
 cd python
 python3 -m venv .venv
@@ -711,28 +605,30 @@ python3 -m venv .venv
 .venv/bin/python -m pytest -q          # kỳ vọng: 0 failed, 0 skipped
 ```
 
-System 2 trên model thật (tùy chọn, không cần cho test): `.venv/bin/python -m pip install -e '.[cloud]'`,
-thêm `[system_two]` vào `agent.toml` (mẫu có sẵn, đã comment, trong `fixtures/agents/home-voice/agent.toml`) và
-export key. Thử với key thật: `python scripts/live_llm_smoke.py` (tốn vài cent, không chạy trong CI).
-
-Yêu cầu **Python 3.11+**. Bản dựng tái lập được:
+Bản dựng tái lập được (roadmap §3.9, nghĩa vụ 5 — ghim phiên bản):
 
 ```bash
 .venv/bin/python -m pip install -r requirements-lock.txt
 ```
 
+System 2 trên model thật (tùy chọn, không cần cho test): `.venv/bin/python -m pip install -e '.[cloud]'`,
+thêm `[system_two]` vào `agent.toml` (mẫu có sẵn, đã comment, trong `fixtures/agents/home-voice/agent.toml`) và
+export key. Thử với key thật: `python scripts/live_llm_smoke.py` (tốn vài cent, không chạy trong CI).
+
 ### 2.2 Kiểm tra nhanh toàn bộ artifact
 
-Chạy từ **gốc kho** (mọi lệnh đều cần thấy `schemas/`, `gates/`, `fixtures/`):
+Các lệnh dưới viết cho **gốc kho**. `paths.py` tự tìm gốc từ checkout, editable install
+hay wheel (ghi đè bằng `NEUROEDGE_ROOT`), nên `verify` và `gate lint` chạy được cả từ
+`python/`.
 
 ```bash
 V=python/.venv/bin
 
-$V/neuroedge verify                      # kỳ vọng: 3 gate · 3 vết ghi · 3 replay; quét 0 ⇒ NE4004, mã 1
-$V/neuroedge gate lint                   # kỳ vọng: ✓ 3 gate(s) resolved
-$V/neuroedge trace validate fixtures/traces/*.json   # kỳ vọng: 3 × VALID
-$V/neuroedge board list                  # kỳ vọng: 3 profile
-python/.venv/bin/python scripts/check_digests.py --check   # kỳ vọng: ✓ 21 tệp khớp digests.lock
+$V/neuroedge verify                      # kỳ vọng: mọi gate phân giải · mọi vết ghi chuẩn mực thẩm định · corpus tool call khớp · mọi replay khớp; quét được 0 ⇒ NE4004, mã 1
+$V/neuroedge gate lint                   # kỳ vọng: ✓ mọi gate resolved, mã 0
+$V/neuroedge trace validate fixtures/traces/*.json   # kỳ vọng: mỗi tệp VALID
+$V/neuroedge board list                  # kỳ vọng: mỗi profile trong boards/
+$V/python scripts/check_digests.py --check   # kỳ vọng: ✓ … tệp khớp digests.lock
 ```
 
 Khẳng định nghịch đảo — corpus phản chứng **phải** tiếp tục thất bại:
@@ -755,33 +651,40 @@ một pipeline xanh lúc đó là thông tin sai. CI có đúng một bước ch
 | `1` | Phép kiểm tra đã chạy và **không đạt** |
 | `2` | Lệnh (hoặc `--target` đó của lệnh) **chưa được hiện thực** |
 
-Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏng" và "chưa có". Hôm nay chỉ
-còn `run` / `record --target linux|esp32s3` thoát mã 2.
+Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏng" và "chưa có". Hôm nay
+thoát mã 2: `run` / `record --target linux|esp32s3`, `replay --target esp32s3`,
+`verify --targets …esp32s3…` (TSK-S4-04). Target lạ (không phải `sim`, `linux`,
+`esp32s3`) là lỗi, mã 1.
+
+Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://`, mặc định `gates/`.
+`--agent` mặc định là `./agent.toml`, không có thì agent mẫu `villa-concierge` của checkout.
 
 #### Lệnh đã hiện thực
 
 | Lệnh | Chức năng |
 |:---|:---|
-| `gate resolve <tệp\|URI>` | Phân giải chuỗi `extends`, in chính sách hiệu dụng và mã băm. `--json` cho đầu ra máy đọc; `--registry <dir>` đổi nơi tra `neuroedge://` |
-| `gate lint [dir]` | Phân giải mọi gate trong thư mục (mặc định `gates/`). `--registry <dir>` đổi nơi tra `neuroedge://`; nếu không truyền, lệnh tự nhận thư mục `registry/` kế bên |
+| `gate resolve <tệp\|URI>` | Phân giải chuỗi `extends`, in chính sách hiệu dụng và mã băm. `--json` cho đầu ra máy đọc |
+| `gate lint [dir]` | Phân giải mọi gate trong thư mục (mặc định `gates/`). Không có `--registry` thì lệnh tìm `registry/` trong `dir` rồi cạnh `dir`, cuối cùng `gates/` |
 | `gate publish <tệp>` | Biên dịch sang JSON chuẩn tắc RFC 8785, in mã băm SHA-256. `--out` ghi ra tệp |
 | `gate add <URI>` | Phân giải một gate từ registry và cho biết việc kế thừa nó sẽ áp đặt gì |
+| `gate explain <tệp\|URI>` | Giải thích gate cho người duyệt: tiêu chí từ cấp nào, mệnh đề nào bị siết chặt, ngân sách và `on_block` so với cha. Gate sai ⇒ mã 1, lỗi 3 thành phần |
 | `trace validate <tệp…>` | Thẩm định theo `trace.v1.json`. Một tệp sai làm cả lệnh thất bại |
 | `trace show <tệp>` | In dòng thời gian sự kiện |
 | `trace view <tệp> [-o x.html] [--open]` | Ghi một tệp HTML tự chứa: thiết bị, cảm biến, màn hình, phán quyết, dòng sự kiện, thanh tua thời gian. Mở không cần mạng |
-| `trace export <tệp> --format chrome` | Chrome Trace Event JSON cho Perfetto (`ui.perfetto.dev`) — gate và xung thành slice |
+| `trace export <tệp> --format chrome [-o]` | Chrome Trace Event JSON cho Perfetto (`ui.perfetto.dev`) — gate và xung thành slice |
 | `board list` / `board show <id>` | Liệt kê / xem năng lực bo mạch theo 5 nguyên thủy |
-| `verify [--targets sim,linux]` | Mọi gate phân giải, mọi ca của corpus tool call (`fixtures/tool_calls/`, trên `sim`) ra đúng đáp án, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`). So quyết định, chưa so timing. Panel in số gate / vết ghi / ca tool call / replay; loại nào bằng 0 ⇒ `NE4004`, mã 1 |
-| `build --target <t> --board <id>` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate; kiểm `[mcp]` và `[system_two]` (API key ghi trong `agent.toml` ⇒ lỗi, không in lại key). `--agent` (mặc định `agent.toml`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
-| `replay <tệp> [--target sim\|linux]` | Replay trên HAL thật: dữ kiện đã ghi vào lại, phán quyết gate và lệnh chân **tính lại**, rồi so với golden (`--golden <tệp>`, mặc định chính vết ghi). Khớp ⇒ mã 0; lệch ⇒ mã 1, `NE4002`, dòng lệch đầu tiên. `--agent`, `--board`, `--trace-out` |
+| `verify [--targets sim,linux]` | Mọi gate phân giải, mọi ca của corpus tool call (`fixtures/tool_calls/`, trên `sim`) ra đúng đáp án, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`); `esp32s3` ⇒ mã 2. So quyết định, chưa so timing. Loại artifact nào quét được 0 ⇒ `NE4004`, mã 1 |
+| `build --target <t> [--board id]` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate (ghi cả `<gate>.netree`/`.netree.h`); kiểm `[mcp]` và `[system_two]` (API key ghi trong `agent.toml` ⇒ lỗi, không in lại key). `--agent` (mặc định `agent.toml`), `--board` (mặc định bo mạch tham chiếu của target: `sim-default`, `linux-rpi5`, `esp32s3-box-3`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
+| `replay <tệp> [--target sim\|linux]` | Replay trên HAL thật: dữ kiện đã ghi vào lại, phán quyết gate và lệnh chân **tính lại**, rồi so với golden (`--golden <tệp>`, mặc định chính vết ghi). Khớp ⇒ mã 0; lệch ⇒ mã 1, `NE4002`, dòng lệch đầu tiên; `--target esp32s3` ⇒ mã 2. `--agent`, `--board`, `--trace-out` |
 | `record [--out traces/] [-c "<lệnh>"] [--anonymize]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`), phán quyết giữ nguyên (FR-TRC-07) |
-| `test [thư-mục]` | Chạy bộ Action CI (pytest) của agent, mặc định `tests/`. Mọi test đạt ⇒ mã 0; có test trượt hoặc không thu được test nào ⇒ mã 1 |
-| `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2: trên `linux` hôm nay dùng `replay`. Có `[system_two]` ⇒ câu ngoài ngữ pháp do model thật trả lời (banner có dòng `system 2: <provider> <model> (key from $BIẾN…)`); không trả lời được ⇒ câu offline |
+| `test [thư-mục] [--pytest-arg A]` | Chạy bộ Action CI (pytest) của agent, mặc định `tests/`. Mọi test đạt ⇒ mã 0; có test trượt hoặc không thu được test nào ⇒ mã 1 |
+| `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:confirm`, `:decline`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2: trên `linux` hôm nay dùng `replay`. Có `[system_two]` ⇒ câu ngoài ngữ pháp do model thật trả lời (banner có dòng `system 2: <provider> <model> (key from $BIẾN…)`); không trả lời được ⇒ câu offline |
 | `mcp tools [--json\|--openai] [--external]` | Schema của mỗi `@action` — dạng MCP hoặc function-calling OpenAI (Q-24). `--external`: thêm tool thông tin của `[mcp.servers]` mà System 2 được đưa (Q-27) |
-| `mcp serve [--agent a.toml] [--trace-out t.json] [--ui [--port 8765] [--open]] [--init-timeout 30]` | Máy chủ MCP qua stdio trên `sim`; mọi `tools/call` qua kiểm schema và gate. `--ui`: cùng phiên trên trang web 127.0.0.1 (`--port 0` chọn cổng trống; chỉ mở trình duyệt khi có `--open`); URL in ra stderr, stdout chỉ là kênh JSON-RPC. Cổng bận ⇒ cảnh báo stderr, trang sang cổng trống (URL thật ở dòng `sim UI at …`), MCP vẫn chạy. Không có `initialize` sau `--init-timeout` giây ⇒ thoát 0 (`0` = chờ mãi). Cần extra `neuroedge[mcp]` |
+| `mcp serve [--agent a.toml] [--board id] [--trace-out t.json] [--ui [--port 8765] [--open]] [--init-timeout 30]` | Máy chủ MCP qua stdio trên `sim`; mọi `tools/call` qua kiểm schema và gate. `--ui`: cùng phiên trên trang web 127.0.0.1 (`--port 0` chọn cổng trống; chỉ mở trình duyệt khi có `--open`); URL in ra stderr, stdout chỉ là kênh JSON-RPC. Cổng bận ⇒ cảnh báo stderr, trang sang cổng trống (URL thật ở dòng `sim UI at …`), MCP vẫn chạy. Không có `initialize` sau `--init-timeout` giây ⇒ thoát 0 (`0` = chờ mãi). Cần extra `neuroedge[mcp]` |
 | `mcp desktop-config [--agent a.toml] [--ui [--port 8765]] [--trace-out t.json] [--name N] [--write [--config-path P]]` | In mục `mcpServers` cho Claude Desktop, toàn đường dẫn tuyệt đối (trình thông dịch hiện tại, `-m neuroedge mcp serve`). `--write`: đặt đúng mục đó trong `claude_desktop_config.json` của Desktop (macOS `~/Library/Application Support/Claude/`, Windows `%APPDATA%\Claude\`), sao lưu `.bak-<giờ>`, giữ mọi khoá khác; JSON hỏng ⇒ mã 1, không ghi gì. Sau đó thoát hẳn Desktop rồi mở lại. Cần extra `neuroedge[mcp]` |
-| `gate explain <tệp\|URI>` | Giải thích gate cho người duyệt: tiêu chí từ cấp nào, mệnh đề nào bị siết chặt, ngân sách và `on_block` so với cha. Gate sai ⇒ mã 1, lỗi 3 thành phần |
 | `new <tên> [--template minimal\|villa-concierge\|home-voice]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` (chốt cửa) và `home-voice` (trợ lý giọng nói, có `knowledge.toml`) sao agent mẫu (có trong wheel) |
+
+`python -m neuroedge …` tương đương `neuroedge …`.
 
 > `gate publish` **không ký số**. Nó dừng ở mã băm, vì ký cần khóa của Gate
 > Registry (Khối 3). Lệnh tự nói rõ điều đó trong đầu ra — đừng đọc nó như đã làm nhiều hơn.
@@ -798,33 +701,30 @@ Lỗi kế thừa có thêm dòng `rule` chỉ ra nguyên tắc B.5 bị vi ph�
   fix: narrow allow_when.risk_level to a subset of the base condition (base clause: {'lte': 'low'}), …
 ```
 
-| Mã | Lớp lỗi | Nghĩa |
-|:---:|:---|:---|
-| `NE1001` | `ActionContractViolation` | Lệnh actuator không mang chữ ký gate |
-| `NE2001` | `GateNotFoundError` | Không tìm thấy gate theo URI hoặc đường dẫn |
-| `NE2002` | `GateSchemaError` | Vi phạm `gate.v1.json` hoặc bộ toán tử Phụ lục B.2 |
-| `NE2003` | `GateInheritanceError` | Vi phạm một trong năm nguyên tắc B.5 |
-| `NE3001` | `BoardCapabilityError` | Khai báo bo mạch sai, hoặc thiếu năng lực được yêu cầu |
-| `NE4001` | `TraceValidationError` | Vi phạm `trace.v1.json` |
-| `NE4004` | `VerificationError` | `verify` quét được 0 gate, 0 vết ghi hoặc 0 replay |
+Nghĩa của từng mã `NE…`, lớp lỗi và lúc nó xuất hiện: PRD
+[Phụ lục B](neuroedge-prd.md#phụ-lục-b--danh-mục-mã-lỗi-chuẩn).
 
 ### 2.5 CI
 
+Đây là **danh sách duy nhất** của workflow và job.
+
 | Workflow | Khi nào | Job |
 |:---|:---|:---|
-| `ci-sim-linux.yml` | Mỗi PR và push | `frozen-artifacts` · `tests` (Python 3.11/3.12/3.13) · `linux-hal` · `wheel-smoke` · `lint` · `licence-obligations` · `cloud-extra` |
+| `ci-sim-linux.yml` | Mỗi PR và push lên `main` | `frozen-artifacts` · `tests` (Python 3.11/3.12/3.13, gồm walker và sổ token C biên dịch trên host) · `linux-hal` · `wheel-smoke` · `lint` · `licence-obligations` · `cloud-extra` |
+| `firmware-qemu.yml` | PR và push đụng `targets/**` hoặc `engine/binary_tree.py` · 01:30 UTC+7 hằng đêm · chạy tay | `firmware-qemu`: build `esp32s3` với `sdkconfig.qemu` (ESP-IDF 5.4), boot trên Espressif QEMU, đòi dòng `NE_SELFTEST PASS` trên UART |
 | `release-pypi.yml` | Tag `v*.*.*` · PR đổi tệp đóng gói · chạy tay | `build` · `smoke` (Python 3.11/3.13) · `publish-testpypi` · `publish-pypi` — hai job cuối chỉ chạy với tag **và** `PUBLISH_ENABLED == 'true'` ([`docs/release.md`](docs/release.md)) |
-| `nightly-hardware.yml` | 01:00 UTC+7 hằng đêm | `firmware-build` · `upstream-drift` · `memory-spike` · `report` |
+| `nightly-hardware.yml` | 01:00 UTC+7 hằng đêm · chạy tay | `firmware-build` (ESP-IDF 5.2.1, ngân sách flash Q-3) · `upstream-drift` · `memory-spike` · `report` |
 
-`ci-sim-linux.yml` phải xanh trước khi hợp nhất. Bốn cổng đáng chú ý:
+`ci-sim-linux.yml` phải xanh trước khi hợp nhất. Năm cổng đáng chú ý:
 
 - **Cổng chặn test skip** — đọc `junit.xml`, thất bại nếu có bất kỳ test nào
-  skip. Lý do ở [§1 mục Đã sửa](#đã-sửa).
-- **Khẳng định nghịch đảo** — corpus phản chứng phải tiếp tục thất bại.
+  skip hoặc không có test nào. Lý do ở `CONTRIBUTING.md` §5.
+- **Khẳng định nghịch đảo** — corpus phản chứng phải tiếp tục thất bại, đúng mã 1 (§2.2).
 - **`digests.lock`** — sửa hay xoá một gate chuẩn mực mà không có RFC ⇒ đỏ
   (`scripts/check_digests.py --check`; thủ tục ở `CONTRIBUTING.md` §3).
-- **Cổng giấy phép** — `pip-licenses --fail-on` trên toàn bộ cây phụ thuộc; job `cloud-extra` thêm
-  danh sách cho phép của Q-11 cho extra `cloud` (`scripts/check_licences.py`: giấy phép lạ hoặc không rõ ⇒ đỏ).
+- **Cổng giấy phép** — `licence-obligations`: `pip-licenses --fail-on` trên toàn bộ cây phụ thuộc lõi; `cloud-extra`:
+  chính sách Q-11 cho extra `cloud` (`scripts/check_licences.py`: giấy phép lạ hoặc không rõ ⇒ đỏ).
+- **`ruff check .` và `ruff format --check .`** — job `lint`.
 
 Job `memory-spike` cần runner tự quản gắn nhãn `esp32s3-box-3`. Khi chưa có,
 nó **bị bỏ qua và nói rõ là bỏ qua** trong phần summary, không bao giờ báo đạt.
@@ -841,6 +741,8 @@ idf.py -p /dev/ttyUSB0 flash monitor
 
 Tìm dòng `NEUROEDGE_MEMORY_JSON` trong đầu ra monitor — đó là số đo. Điền vào
 [`docs/reports/memory_spike_report.md`](docs/reports/memory_spike_report.md).
+Chưa có bo mạch: walker C chạy trên host với `make -C targets/esp32s3/components/ne_gate
+check-static`, và firmware boot trên QEMU theo `firmware-qemu.yml`.
 
 ---
 
@@ -853,57 +755,23 @@ Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc 
 
 | Tệp | Vai trò | Khi nào đọc |
 |:---|:---|:---|
-| [`neuroedge-roadmap.md`](neuroedge-roadmap.md) | **Tiến độ, task, tiêu chí ra, quyết định.** §0 là bảng điều khiển | **Luôn đọc trước** |
-| [`neuroedge-prd.md`](neuroedge-prd.md) | Yêu cầu chức năng `FR-*` / `NFR-*` | Khi cần biết *phải* làm gì |
+| [`neuroedge-roadmap.md`](neuroedge-roadmap.md) | **Tiến độ, task, tiêu chí ra.** §0 là bảng điều khiển | **Luôn đọc trước** |
+| [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) | Giai đoạn 2 (Tháng 9–24) | Khi việc thuộc Khối 1b trở đi |
+| [`neuroedge-prd.md`](neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`; **§15 là sổ quyết định duy nhất** (`Q-N`); Phụ lục B là mã lỗi | Khi cần biết *phải* làm gì, và đã chốt gì |
 | [`neuroedge-proposal.md`](neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** | Khi cần biết *tại sao* |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quy ước, và việc gì cần RFC | Trước khi sửa `schemas/` |
-| [`docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/designs/giai-doan-1-wedge-truoc-mcu-sau.md) | Kế hoạch Giai đoạn 1 đã duyệt (biên bản review: `docs/archive/`) | Khi cần biết *vì sao* một task bị cắt/hoãn |
+| [`docs/spec/`](docs/spec/) | Đặc tả chuẩn tắc: Gated Tool Profile, mô hình mối đe doạ, phủ mô phỏng, rà soát MCU | Trước khi đổi hành vi ở tầng tương ứng |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quy ước; §3 việc gì cần RFC; §6 cấu trúc kho; §8 khi xong task | Trước khi sửa |
+| [`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md) | Kế hoạch Giai đoạn 1 đã duyệt, nay lưu trữ (biên bản review cùng thư mục) | Khi cần biết *vì sao* một task bị cắt/hoãn |
 | [`TODOS.md`](TODOS.md) | Việc hoãn có chủ ý, mỗi mục kèm mốc kích hoạt | Trước khi đề xuất việc "còn thiếu" |
 
-**Sổ quyết định duy nhất** là `neuroedge-prd.md` §15 (Q-1 → Q-20).
-
-**Thứ tự ưu tiên khi lệch nhau:** PRD/Proposal (hợp đồng) → roadmap (tiến độ) →
+**Thứ tự ưu tiên khi lệch nhau:** PRD và proposal (hợp đồng) → roadmap (tiến độ) →
 mã nguồn → tệp này. Nếu mã lệch hợp đồng, mã sai.
 
 ### 3.2 Bản đồ kiến trúc — cái gì ở đâu
 
-```
-neuroedge-init/
-├── schemas/              ⚠️  ĐÃ ĐÓNG BĂNG — sửa phải có RFC
-│   ├── gate.v1.json          Hợp đồng gate (Phụ lục B)
-│   ├── trace.v1.json         Hợp đồng vết ghi (Phụ lục C)
-│   └── board.v1.json         Hợp đồng năng lực bo mạch
-├── gates/                3 gate mẫu, gồm chuỗi kế thừa 2 cấp
-├── boards/               3 profile: sim-default · esp32s3-box-3 · linux-rpi5
-├── fixtures/
-│   ├── traces/           ⚠️  3 vết ghi chuẩn mực — sửa phải có RFC
-│   │   ├── invalid/          6 phản chứng
-│   │   └── expected_errors.yaml
-│   ├── gates/            valid/ · invalid/ · registry/
-│   │   └── expected_errors.yaml
-│   ├── tool_calls/       Corpus Gated Tool Profile: valid/ · invalid/ · expected_results.yaml
-│   ├── decision_trees/   Bảng sự thật cho walker C — sinh bằng scripts/generate_truth_tables.py
-│   └── agents/villa-concierge/   Agent mẫu: agent.toml · actions/ · commands.toml
-├── python/neuroedge/
-│   ├── engine/           L3 — phân giải gate · cây quyết định · Gate Engine (gate.py)
-│   │                         · mạch ngắt · trình biên dịch build (compiler.py) · EventLog
-│   ├── actions/          L3 — @action · c.do()/c.say() · token phán quyết dùng một lần
-│   ├── models/           L2 — SystemOne/SystemTwo · ngữ pháp lệnh cố định · double · providers/ (LiteLLM, adapter)
-│   ├── hal/              L1 — 5 nguyên thủy, mô hình bo mạch, sim.py, digital.out()
-│   ├── perception/       L2 — khung, chưa hiện thực
-│   ├── sim/              L0 — SimSession (gõ chữ) · ui.py (run --ui, web cục bộ)
-│   ├── viz/              trace view · export Perfetto · bộ hiển thị dùng chung
-│   ├── templates/        Mẫu dự án cho `neuroedge new` (*.tmpl, không copier)
-│   ├── testing/          Action CI — recorder · player (replay) · assertions · golden · tool_corpus
-│   ├── cli/              CLI Typer · run.py (REPL) · explain.py (gate explain)
-│   ├── errors.py         Hợp đồng lỗi 3 thành phần
-│   ├── trace.py          Thẩm định vết ghi
-│   └── paths.py          Định vị gốc monorepo
-├── targets/esp32s3/      Firmware ESP-IDF + khung đo bộ nhớ
-├── docs/rfc/ spec/ reports/
-├── scripts/              Công cụ CI
-└── .github/workflows/    2 pipeline
-```
+Bản đồ kho, kèm thủ tục sửa từng phần: `CONTRIBUTING.md` §6. Bốn tầng: L0 `sim/`
+(phiên gõ chữ, trang cục bộ) · L1 `hal/` (năm nguyên thủy) · L2 `models/`, `perception/` ·
+L3 `engine/`, `actions/` (gate, token). Firmware ở `targets/esp32s3/`.
 
 ### 3.3 Mười điều bất biến — đừng phá
 
@@ -912,7 +780,8 @@ này sẽ làm hỏng những thứ trông không liên quan.
 
 1. **Thẩm định lược đồ KHÔNG đủ để kết luận một gate an toàn.** Nguyên tắc 2 là
    mệnh đề về **hai** tài liệu; JSON Schema thẩm định **một**. Cổng kiểm tra là
-   `neuroedge gate lint` (phân giải), không phải thẩm định lược đồ.
+   `neuroedge gate lint` (phân giải), không phải thẩm định lược đồ. CI chạy lint, và
+   một gate chưa phân giải được thì chưa được nạp lên thiết bị.
 2. **Fail-closed là mặc định ở mọi hướng.** Vắng `fail` → `closed`. Gate cha
    `fail: open` + gate con im lặng → `closed`. Không đo được → `INCONCLUSIVE`.
 3. **`allow_when` dạng chuỗi CEL không được xuất hiện trong chuỗi kế thừa.**
@@ -927,31 +796,25 @@ này sẽ làm hỏng những thứ trông không liên quan.
 7. **`sim` không được giàu năng lực hơn bo mạch tham chiếu.** Nếu giàu hơn, lời
    hứa "TTFV dưới 10 phút" thành cái bẫy: rút ngắn 10 phút đầu, thêm hai ngày gỡ lỗi.
 8. **Đuôi vết ghi là `.json` mang `$schema`.** Không đổi sang `.ntrace`.
-9. **Không copyleft mạnh trong phần phân phối.** Ghim
+9. **Không copyleft mạnh trong phần phân phối.** Chính sách giấy phép là Q-11; ghim
    `jsonschema[format-nongpl]`; không dùng `copier` — `neuroedge new` là generator
    Python thuần (TSK-S3-07).
 10. **Lệnh CLI chưa có engine phải thoát mã 2, không in "PASS" giả.** Đầu ra CLI
-    bị dán vào báo cáo như bằng chứng.
+    bị dán vào báo cáo tiến độ như bằng chứng, và một dòng "VERIFIED" từ một lệnh chưa
+    làm gì là thông tin sai cho người ra quyết định phạm vi. Bảng mã thoát: §2.3.
 
 ### 3.4 Hai hạng mục bị chặn — không đóng được bằng nỗ lực kỹ thuật
 
 | Hạng mục | Chặn bởi | Cần ai | Mở ra điều gì |
 |:---|:---|:---|:---|
 | **TSK-S1-10** · Tiêu chí ra 3 | **Bo mạch ESP32-S3-BOX-3 vật lý** | Đặt hàng | Kết luận phạm vi Khối 1b (TSK-S2-10) |
-| **Tiêu chí ra 6** · Q-11 | ~~Quyết định quản trị~~ — **phần LiteLLM đã duyệt 2026-09-23**; Hawkbit/EMQX còn mở, hạn trước Khối 2 | Kỹ thuật trưởng | Bắt đầu port mã Khối 2 |
+| **Q-11** phần Hawkbit/EMQX (`TODOS.md` #16) | Quyết định quản trị, hạn trước Khối 2 | Kỹ thuật trưởng | Bắt đầu port mã Khối 2 |
 
 **TSK-S1-10 — việc còn lại sau khi có bo mạch:** vendoring `esp-sr` (AEC/AFE +
 VAD) và `opus` kèm rà soát giấy phép §3.9, nạp chúng tại `TODO(TSK-S1-10, V2)`
 trong `main.c`, gọi checkpoint `audio_ready`, điền báo cáo. Quy tắc quyết định
 đã chốt **trước khi đo** để kết quả không bị giải thích lại: trượt bất kỳ một
 ngưỡng Q-3 → kích hoạt **bậc 5 thang cắt phạm vi (§9) ngay**, không chờ Tuần 9.
-
-**Q-11 — chính sách phụ thuộc bắc cầu đã chốt (2026-09-23):** cho phép MIT,
-BSD, Apache-2.0, ISC, PSF, MPL-2.0 (dùng nguyên bản); cấm GPL/LGPL/AGPL, SSPL, BSL,
-thương mại hoặc không rõ. `litellm==1.102.0` đã kiểm: 55 phụ thuộc bắc cầu đều
-trong allowlist, wheel không chứa `enterprise/`. Cưỡng chế bằng bước kiểm giấy
-phép trong CI, làm cùng `TSK-S2-11`. Hai phát hiện GPL trong Sprint 1 đều đến qua
-bắc cầu — đó là lý do phải có bước này.
 
 ### 3.5 Việc tiếp theo
 
@@ -963,9 +826,9 @@ nó trong bảng task.
 
 | # | Nợ | Phải giải quyết ở |
 |:---:|:---|:---|
-| 1 | **Hủy lệnh đang chờ mới có ở `sim`.** Hợp đồng thu hồi lệnh vật lý (§3.8) yêu cầu `barge_in` hủy xung chốt cửa đang chờ trong ≤ 1 khung âm thanh. `SimHAL` và `LinuxHAL` đã trả `PendingCommand.cancel()` (TSK-S2-01, TSK-S3-05 — `linux` hạ line ngay); `esp32s3` phải hủy được thật ở tầng firmware | **TSK-S4-01**, cùng lúc với hợp đồng thu hồi — không phải sau |
+| 1 | **Hủy lệnh đang chờ mới có ở `sim` và `linux`.** Hợp đồng thu hồi lệnh vật lý (roadmap §3.8) yêu cầu `barge_in` hủy xung chốt cửa đang chờ trong ≤ 1 khung âm thanh. `SimHAL` và `LinuxHAL` đã trả `PendingCommand.cancel()`; `esp32s3` phải hủy được thật ở tầng firmware | **TSK-S4-01**, cùng lúc với hợp đồng thu hồi — không phải sau |
 | 2 | `gate publish` dừng ở mã băm, chưa ký số | Khối 3 (Gate Registry) |
-| 3 | `perception/` chỉ là khung | TSK-S3-11 |
+| 3 | `perception/` chỉ là khung | TSK-S3-11 (hoãn sang Sprint 5) |
 
 ### 3.7 Điều hệ thống chưa làm được
 
@@ -974,56 +837,26 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
 - ❌ **Phiên tương tác (`run`, `record`) mới có trên `sim`, gõ chữ trên terminal.** Trên `linux`
   hôm nay chỉ `replay` / `verify`; giọng nói chưa có (Q-15); intent không có action (`faq`) chỉ được trả lời
   khi agent khai `[system_two]`.
-- ❌ **SystemOne chưa có nhà cung cấp cloud thật.** SystemTwo đã có LiteLLM và adapter tự viết (TSK-S2-11);
-  SystemOne vẫn chạy với double và ngữ pháp lệnh cục bộ. Model thật mới được thử bằng `mock_response`
-  trong CI — lượt gọi bằng key thật chỉ chạy tay (`scripts/live_llm_smoke.py`).
+- ❌ **`esp32s3` mới chạy logic gate, chưa chạy agent.** Walker và sổ token C khớp engine host trên host và
+  boot trên QEMU (TSK-S4-07, S4-08); HAL firmware, âm thanh và replay trên bo mạch là Sprint 4 (TSK-S4-01, S4-04).
+- ❌ **SystemOne chưa có nhà cung cấp cloud thật** (`TODOS.md` #27). SystemTwo đã có LiteLLM và adapter tự
+  viết (TSK-S2-11); CI chỉ thử bằng `mock_response`, lượt gọi bằng key thật chạy tay (`scripts/live_llm_smoke.py`).
 - ❌ **Tương đương target mới ở mức quyết định, trên `sim` + `linux`.** `verify --targets sim,linux`
   so chuỗi phán quyết và lệnh chân; so timing và target `esp32s3` là TSK-S4-04.
 - ❌ **`LinuxHAL` mới có `digital.out`.** `audio.in/out`, `sensor.read`, `display` trên `linux`
   chưa hiện thực; chân Pi thật cần `line_names` (vd `door_lock` → `GPIO17`).
+- ❌ **MCP chỉ qua stdio** (`TODOS.md` #24, #25). Không có transport mạng.
+- ❌ **Chưa phát hành lên PyPI.** Workflow sẵn, chờ go-live (TSK-S3-14, `docs/release.md`).
 - ❌ **Chưa có CEL.** `allow_when` chỉ nhận dạng mapping toán tử.
 - ❌ **Chưa có số đo bộ nhớ.** Xem §3.4.
 
 ### 3.8 Bốn ràng buộc chuyển cho Sprint 4 (từ rà soát HAL)
 
-Ghi lại ở đây để Sprint 4 không phải suy luận lại. Đầy đủ tại
-[`docs/spec/hal_mcu_review.md`](docs/spec/hal_mcu_review.md) §2.
-
-| # | Ràng buộc | Lý do |
-|:---:|:---|:---|
-| RB-1 | Không `malloc` trong đường dẫn âm thanh sau khởi tạo | Phân mảnh heap gây rớt khung; Tiêu chí 4 Sprint 5 đo bộ nhớ sau 4 giờ chạy |
-| RB-2 | Đệm âm thanh cấp phát tĩnh trong PSRAM, đặt tên và **đo được** | Q-3 dành ≥ 2 MB PSRAM; không đo được thì không đối chiếu được |
-| RB-3 | `digital.out` hủy được lệnh đang chờ trong ≤ 1 khung âm thanh | Hợp đồng thu hồi lệnh vật lý — xem nợ thiết kế #1 |
-| RB-4 | Bảng năng lực là `const` trong flash | Tiết kiệm SRAM, và loại bỏ đường tắt vòng qua gate (A3) |
-
-*Cập nhật CR-1.0:* cả bốn ràng buộc **vẫn giữ nguyên hiệu lực** sau khi chuyển sang cloud-first. Đường dẫn âm thanh thu/phát trên thiết bị không đổi; chỉ phần STT/TTS rời khỏi vi điều khiển, nên áp lực bộ nhớ giảm chứ ràng buộc không mất.
+RB-1 → RB-4 (không `malloc` trên đường âm thanh, đệm tĩnh đo được trong PSRAM,
+`digital.out` hủy được trong ≤ 1 khung, bảng năng lực `const` trong flash) ở
+[`docs/spec/hal_mcu_review.md`](docs/spec/hal_mcu_review.md) §2. Cả bốn vẫn hiệu lực
+sau CR-1.0.
 
 ### 3.9 Thêm một fixture phản chứng
 
-Việc thường gặp nhất khi build tiếp, nên ghi rõ quy trình:
-
-1. Thêm tệp vào `fixtures/gates/invalid/` (hoặc `fixtures/traces/invalid/`).
-2. Thêm mục tương ứng vào `expected_errors.yaml` cùng cấp:
-
-   ```yaml
-   ten_fixture.yaml:
-     error: GateInheritanceError    # lớp lỗi
-     code: NE2003                   # mã ổn định
-     principle: 2                   # nguyên tắc B.5 bị vi phạm
-     where_contains: "allow_when.risk_level"
-     why_contains: "loosens the inherited condition"
-   ```
-
-3. Chạy `pytest -q`. Test cưỡng chế corpus khép kín **hai chiều**, nên thiếu một
-   trong hai bước sẽ đỏ.
-
-Corpus tool call (`fixtures/tool_calls/`) cũng khép kín hai chiều, nhưng đáp án nằm ở
-`expected_results.yaml` cho cả `valid/` lẫn `invalid/` — luật ở `docs/spec/tool_calling.md` §9.
-
-`where_contains` và `why_contains` là so khớp chuỗi con, nên có thể cải thiện
-cách diễn đạt lỗi mà không phải sửa tệp này — nhưng **lớp lỗi, mã ổn định và
-nguyên tắc B.5 thì không được trôi trong im lặng**.
-
----
-
-[0.1.0]: https://github.com/letrongminh/neuroedge-init/releases/tag/v0.1.0
+Quy trình và luật khép kín của cả ba corpus (gate, vết ghi, tool call): `CONTRIBUTING.md` §3.

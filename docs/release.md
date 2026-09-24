@@ -43,7 +43,7 @@ Làm theo đúng thứ tự. Bước 1–4 là cấu hình; chưa bước nào p
 ## Mỗi lần phát hành
 
 5. **Tập trên TestPyPI trước.** Mở PR đổi `version` trong `python/pyproject.toml` thành
-   `0.1.0rc1`, chờ CI xanh, merge. Rồi:
+   `0.1.0rc1`, chờ CI xanh, merge. Bản pre-release không đổi `CHANGELOG.md`. Rồi:
 
    ```bash
    git switch main && git pull
@@ -59,7 +59,10 @@ Làm theo đúng thứ tự. Bước 1–4 là cấu hình; chưa bước nào p
    neuroedge gate lint && neuroedge new my-home --template home-voice
    ```
 
-6. **Bản chính.** PR đổi `version` thành `0.1.0`, merge, rồi
+6. **Bản chính.** Một PR đổi `version` thành `0.1.0` **và** đổi tiêu đề
+   `### [Chưa phát hành]` trong `CHANGELOG.md` §1 thành `### [0.1.0] — YYYY-MM-DD`, thêm một
+   `### [Chưa phát hành]` rỗng phía trên, và link cuối tệp
+   `[0.1.0]: https://github.com/letrongminh/neuroedge-init/releases/tag/v0.1.0`. Merge, rồi
    `git tag v0.1.0 && git push origin v0.1.0`. Duyệt environment `pypi` khi GitHub hỏi.
    Nghiệm thu `TSK-S3-14`: `pip install 'neuroedge[mcp]==0.1.0'` trong venv sạch, rồi
    `neuroedge gate lint` và `neuroedge trace validate` chạy xanh từ bản cài.

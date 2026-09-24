@@ -9,11 +9,13 @@ Obligation 3 (in-code attribution at the head of every ported file) is enforced
 by review — see CONTRIBUTING.md §4. Obligation 5 (version pinning) lives in
 python/requirements-lock.txt.
 
-Licence policy for the distributed core: PERMISSIVE ONLY (MIT, BSD, Apache-2.0,
-ISC, MPL-2.0, PSF). Strong copyleft — GPLv2, GPLv3, AGPL — must not appear in
-anything shipped to users. Roadmap §3.10 states the reason: it would spread
-from the MIT core into customer projects. Enforced on every pull request by the
-`licence-obligations` job in .github/workflows/ci-sim-linux.yml.
+Licence policy for the distributed core: PERMISSIVE ONLY. The allowlist is decision
+Q-11 in neuroedge-prd.md §15 (today MIT, BSD-2/3-Clause, Apache-2.0, ISC, PSF,
+CNRI-Python, and MPL-2.0 used unmodified); that entry is the one place it is kept.
+Strong copyleft — GPLv2, GPLv3, AGPL — must not appear in anything shipped to users.
+Roadmap §3.10 states the reason: it would spread from the MIT core into customer
+projects. Enforced on every pull request by the `licence-obligations` and
+`cloud-extra` jobs in .github/workflows/ci-sim-linux.yml.
 
 
 ================================================================================
@@ -40,7 +42,7 @@ of the file itself.
    - Scope:     Frame-based audio pipeline architecture, dynamic silence
                 handling, barge-in state machine design.
    - Lands in:  python/neuroedge/perception/
-   - Status:    APPROVED — not yet ported (Sprint 3, TSK-S3-11). Roadmap §3.10
+   - Status:    APPROVED — not yet ported (TSK-S3-11, deferred to Sprint 5). Roadmap §3.10
                 requires the canonical FSM spec (TSK-S2-07) and the compliance
                 vector set (TSK-S3-10) to exist FIRST; porting before that makes
                 this a risk rather than a leverage.
@@ -49,10 +51,12 @@ of the file itself.
    - Source:    https://github.com/wokwi/wokwi-elements
    - Licence:   MIT License
    - Verified:  2026-09-21
-   - Scope:     Hardware simulation web components (<wokwi-led>,
-                <wokwi-pushbutton>, <wokwi-solenoid-lock>).
-   - Lands in:  python/neuroedge/sim/web/
-   - Status:    APPROVED — not yet used (Sprint 2, TSK-S2-09)
+   - Scope:     Visual web components only (<wokwi-led>, <wokwi-pushbutton>…);
+                they simulate nothing, and there is no door-lock element
+                (proposal Appendix H.1).
+   - Lands in:  nothing today. `neuroedge run --ui` (TSK-S2-09,
+                python/neuroedge/sim/ui.py) shipped without them.
+   - Status:    APPROVED — not used
 
 4. Google Common Expression Language (CEL)
    - Source:    https://github.com/google/cel-spec
@@ -61,7 +65,7 @@ of the file itself.
    - Scope:     Expression language specification. `cel-python` performs
                 PARSING ON THE WORKSTATION ONLY.
    - Lands in:  python/neuroedge/engine/cel_compiler.py
-   - Status:    APPROVED — not yet used (Sprint 2, TSK-S2-06)
+   - Status:    APPROVED — not yet used (TSK-S2-06, deferred to Sprint 5)
    - Boundary:  Per decision Q-9 option A, the decision-tree compiler and the
                 on-device tree walker are NeuroEdge code, not ported code. They
                 are safety semantics and take no third-party dependency (§3.1).
@@ -88,7 +92,7 @@ python/requirements-lock.txt. All permissive.
 Transitive dependencies and their licences are recorded in full by the
 `licences` artifact of every `ci-sim-linux` run.
 
-Two deliberate choices in this section, both to keep GPL out of the core:
+Five deliberate choices in this section, all to keep copyleft out of the core:
 
   * jsonschema is declared as `jsonschema[format-nongpl]`, NOT `jsonschema[format]`.
     The default `format` extra pulls in `rfc3987`, which is GPL-licensed. The
@@ -121,10 +125,9 @@ Two deliberate choices in this section, both to keep GPL out of the core:
     `cloud` extra, pinned at litellm==1.102.0 (Q-10, Q-11), and is imported
     only by python/neuroedge/models/providers/ when an agent declares
     [system_two] (TSK-S2-11). Used as a library, never its proxy server; the
-    wheel has no `enterprise/` directory. Its transitive set is held to the
-    Q-11 policy — MIT, BSD-2/3-Clause, Apache-2.0, ISC, PSF, MPL-2.0 used
-    unmodified — by the CI job `cloud-extra` (scripts/check_licences.py);
-    GPL/LGPL/AGPL, SSPL, BSL, commercial and unknown licences fail it.
+    wheel has no `enterprise/` directory. Approved under Q-11 (2026-09-23); its
+    transitive set is held to the Q-11 allowlist by the CI job `cloud-extra`
+    (scripts/check_licences.py), and any other licence, or none, fails it.
     Checked 2026-09-24: MPL-2.0 packages are certifi, fqdn and tqdm
     (tqdm: MPL-2.0 AND MIT); regex is Apache-2.0 AND CNRI-Python. Not in
     `dev` (~120 MB): the tests use a fake `litellm` module.
@@ -143,29 +146,30 @@ Not distributed to users; present only in developer and CI environments.
 | ruff           | MIT        | 2026-09-21 | Lint and format              |
 | pip-licenses   | MIT        | 2026-09-21 | Licence gate in CI           |
 
-ESP-IDF (Apache-2.0, pinned at v5.2.1 in the nightly workflow) is a build
-toolchain, used but not redistributed.
+ESP-IDF (Apache-2.0) is a build toolchain, used but not redistributed. Pinned at
+v5.2.1 in nightly-hardware.yml, and at v5.4 (the espressif/idf container) in
+firmware-qemu.yml, because Espressif QEMU needs ESP-IDF >= 5.4 (Q-21).
 
 
 ================================================================================
 SECTION D — PLANNED SERVER-SIDE COMPONENTS (LICENCE DECISION STILL OPEN)
 ================================================================================
 
-The three components below are scheduled for Khối 2 and all fall OUTSIDE the
+The two components below are scheduled for Khối 2 and fall OUTSIDE the
 permissive-only policy stated at the head of this file. They are listed here so
-the exposure is visible, not because they are approved.
+the exposure is visible, not because they are approved. (LiteLLM, once listed
+here, was approved under Q-11 on 2026-09-23 and moved to Section B.)
 
-| Component | Licence            | Distributed to users? | Status         |
-|-----------|--------------------|-----------------------|----------------|
-| Eclipse Hawkbit | EPL-2.0      | No — server-side only | ⏳ Q-11 OPEN   |
-| EMQX            | BSL          | No — server-side only | ⏳ Q-11 OPEN   |
-| LiteLLM         | MIT core, enterprise features under a separate licence | No — server-side only | ⏳ Q-11 OPEN |
+| Component       | Licence | Distributed to users? | Status             |
+|-----------------|---------|-----------------------|--------------------|
+| Eclipse Hawkbit | EPL-2.0 | No — server-side only | ⏳ Q-11 still open |
+| EMQX            | BSL     | No — server-side only | ⏳ Q-11 still open |
 
->>> DECISION Q-11 IS OPEN AND BLOCKING. <<<
->>> Do not port a single line from these three projects until written approval
->>> exists. Owner: engineering lead. Roadmap §10.2 records Q-11 as the most
->>> urgent of the open decisions, and it is a Sprint 1 exit criterion (no. 6).
+>>> THIS PART OF DECISION Q-11 IS OPEN. <<<
+>>> Do not port a single line from these two projects until written approval
+>>> exists. Owner: engineering lead. Deadline: before Khối 2 opens
+>>> (TODOS.md #16).
 
-Their server-only deployment is what makes an exception arguable at all — none
-of the three is shipped with the product or into customer projects. That
-argument still has to be made and recorded, not assumed.
+Their server-only deployment is what makes an exception arguable at all —
+neither is shipped with the product or into customer projects. That argument
+still has to be made and recorded, not assumed.

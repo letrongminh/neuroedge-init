@@ -266,6 +266,16 @@ def test_cli_build_succeeds_and_writes_the_trees(sample, tmp_path):
     assert (tmp_path / "gates" / "unlock_door.tree.json").is_file()
 
 
+@pytest.mark.parametrize(("target", "board"), [("sim", "sim-default"), ("linux", "linux-rpi5")])
+def test_cli_build_without_board_uses_the_targets_reference_board(sample, tmp_path, target, board):
+    # `--target sim` alone once picked esp32s3-box-3 and failed: the board follows the target.
+    result = runner.invoke(
+        app, ["build", "--target", target, "--agent", str(sample), "--out", str(tmp_path)]
+    )
+    assert f"on {board}" in result.output or f"'{board}'" in result.output, result.output
+    assert "esp32s3-box-3" not in result.output
+
+
 def test_cli_build_fails_with_exit_1_and_every_problem(sample, tmp_path):
     result = runner.invoke(
         app,

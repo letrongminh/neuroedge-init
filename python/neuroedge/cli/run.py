@@ -119,6 +119,17 @@ def render_turn(turn: Turn, session: SimSession, console: Console, frames_before
         )
         console.print(f"  [bold]says[/bold] [dim](offline_help)[/dim]: {escape(turn.reply)}")
         return
+    elif turn.reply_source in ("confirmed", "declined", "confirm_refused"):
+        # The person's answer to the device's own question (RFC-0006), not free phrasing.
+        console.print(f"[dim]answer to the pending question ({turn.reply_source})[/dim]")
+        if turn.result is not None:
+            console.print(_verdict_line(turn.result, indent="  "))
+        console.print(f"  [bold]says[/bold] [dim]({turn.reply_source})[/dim]: {escape(turn.reply)}")
+        if turn.result is not None:
+            for frame in session.hal.frames[frames_before:]:
+                console.print(frame_line(frame))
+            console.print(pin_table(session))
+        return
     elif turn.tool_results or turn.reply:
         console.print("[dim]System 2 handled free phrasing[/dim]")
     else:

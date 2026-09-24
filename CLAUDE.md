@@ -2,32 +2,19 @@
 
 Hướng dẫn cho coding agent làm việc trên kho này.
 
-Nguồn sự thật, theo thứ tự ưu tiên khi hai tài liệu lệch nhau:
-
-| Tệp | Vai trò |
-|:---|:---|
-| [`neuroedge-prd.md`](neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`. **Sổ quyết định là §15** (mã `Q-N`) |
-| [`neuroedge-proposal.md`](neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** |
-| [`neuroedge-roadmap.md`](neuroedge-roadmap.md) | Tiến độ Giai đoạn 1. **§0 là bảng điều khiển** |
-| [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) | Giai đoạn 2 (Tháng 9–24) |
-| [`CHANGELOG.md`](CHANGELOG.md) | Đã xây gì, chạy thế nào, bàn giao ngữ cảnh |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quy ước, và việc gì cần RFC |
-
-Việc **đã xem xét và hoãn có chủ ý** nằm ở [`TODOS.md`](TODOS.md) — mỗi mục phải
-kèm một mốc kích hoạt. Kế hoạch Giai đoạn 1 ở [`docs/designs/`](docs/designs/); biên
-bản các vòng review ở [`docs/archive/`](docs/archive/). Giải mã mọi mã viết tắt
-(`FR-*`, `Q-N`, `A1`, `CEO-X1`…): [`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md).
+**Đọc `CHANGELOG.md` §3 (bàn giao ngữ cảnh) trước khi bắt đầu một phiên mới.** Nguồn
+sự thật và thứ tự ưu tiên khi lệch nhau: §3.1 của tệp đó. Tiến độ: `neuroedge-roadmap.md`
+§0. Quyết định: `neuroedge-prd.md` §15 (`Q-N`). Việc hoãn có chủ ý: `TODOS.md`. Giải mã
+mọi ký hiệu (`FR-*`, `Q-N`, `A1`, `CEO-X1`…): `docs/user/thuat-ngu.md`. Cấu trúc kho:
+`CONTRIBUTING.md` §6.
 
 Hai điều dễ sai nhất:
 
-- **`schemas/` đã đóng băng.** Sửa ba lược đồ, sửa ngữ nghĩa phân giải gate,
-  sửa ba vết ghi chuẩn mực ở `fixtures/traces/`, hoặc sửa/xoá gate đã khoá trong
-  `digests.lock` đều **bắt buộc có RFC** (`docs/rfc/`; gate: `scripts/check_digests.py`).
-- **Thẩm định lược đồ không đủ để kết luận một gate an toàn.** Nguyên tắc kế thừa
-  số 2 là mệnh đề về *hai* tài liệu; JSON Schema thẩm định *một*. Cổng kiểm tra là
-  `neuroedge gate lint` (phân giải), không phải thẩm định lược đồ.
-
-Đọc `CHANGELOG.md` §3 (bàn giao ngữ cảnh) trước khi bắt đầu một phiên mới.
+- **Một số thay đổi bắt buộc có RFC** — `schemas/`, ngữ nghĩa phân giải gate, ba vết
+  ghi chuẩn mực, gate đã khoá trong `digests.lock`, bố cục `NETR`. Danh sách đầy đủ, duy
+  nhất: `CONTRIBUTING.md` §3.
+- **Thẩm định lược đồ không đủ để kết luận một gate an toàn.** Cổng kiểm tra là
+  `neuroedge gate lint` (phân giải) — bất biến `CHANGELOG.md` §3.3 #1.
 
 ## Testing
 
@@ -35,22 +22,16 @@ Hai điều dễ sai nhất:
 cd python && .venv/bin/python -m pytest -q      # kỳ vọng: 0 failed, 0 skipped
 ```
 
-Framework: **pytest**. `testpaths = ["tests"]` trong `python/pyproject.toml`.
-`python/tests_linux/` chạy riêng, chỉ trên máy có gpio-sim (`scripts/setup_gpio_sim.sh`,
-job CI `linux-hal`) — nó không nằm trong `testpaths` để bộ chính không phải skip.
-Bản đã cài (wheel, không phải editable) được kiểm bằng `scripts/wheel_smoke.sh` — chạy nó
-khi đụng tới `paths.py`, `hatch_build.py` hay đường dẫn tới `schemas/`, `boards/`, `gates/`.
+Framework: **pytest**. `testpaths = ["tests"]` trong `python/pyproject.toml`;
+`python/tests_linux/` chạy riêng trên gpio-sim (job `linux-hal`). Bản đã cài (wheel, không
+phải editable) được kiểm bằng `scripts/wheel_smoke.sh` — chạy nó khi đụng tới `paths.py`,
+`hatch_build.py`, `README.md` hay đường dẫn tới `schemas/`, `boards/`, `gates/`.
 
-Hai luật không thương lượng:
+Hai luật không thương lượng, chi tiết ở `CONTRIBUTING.md`:
 
-- **Không test nào được skip.** CI đọc `junit.xml` và fail build nếu có bất kỳ
-  skip nào. Không dùng `pytest.importorskip` cho phụ thuộc đã khai trong
-  `pyproject.toml` — phụ thuộc cần cho conformance là phụ thuộc bắt buộc.
-- **Corpus phản chứng khép kín hai chiều.** Mỗi tệp trong `fixtures/*/invalid/`
-  phải có một mục trong `expected_errors.yaml`, và ngược lại.
-
-Cổng kiểm tra an toàn **không phải** thẩm định lược đồ mà là
-`neuroedge gate lint` (phân giải). Xem lý do ở đầu tệp này.
+- **Không test nào được skip** (§5). CI fail build nếu có bất kỳ skip nào.
+- **Mọi corpus khép kín hai chiều** (§3): mỗi tệp một mục đáp án, mỗi mục một tệp —
+  `expected_errors.yaml` cho gate và vết ghi, `expected_results.yaml` cho tool call.
 
 Số test hiện hành ở `neuroedge-roadmap.md` §0.1, không ghi ở đây.
 
@@ -59,7 +40,7 @@ Số test hiện hành ở `neuroedge-roadmap.md` §0.1, không ghi ở đây.
 Làm theo **`CONTRIBUTING.md` §8**, trong cùng PR với mã: tiến độ ở roadmap, một mục
 trong `CHANGELOG.md` `[Chưa phát hành]`, đặc tả nếu hành vi đổi. Mỗi sự thật có
 đúng một nơi (§8.1) — nơi khác dẫn mã, không chép lại. Chạy `ruff check .` và
-`ruff format --check .` trước khi commit; CI chặn cả hai.
+`ruff format --check .` (trong `python/`) trước khi commit; CI chặn cả hai.
 
 ## Skill routing
 
