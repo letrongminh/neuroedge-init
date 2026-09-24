@@ -2,17 +2,33 @@
 # The stranger's journey on an installed package, outside any checkout (TSK-S3-17).
 #
 # Builds the sdist and the wheel *from* it (what PyPI users get), installs the
-# wheel into a clean venv, and runs the M1 path from a temporary directory with
-# NEUROEDGE_ROOT unset. Every step must exit 0; the canonical traces must
-# replay to their golden decisions from the packaged copies.
+# wheel with the `mcp` extra into a clean venv, and runs the M1 path and the
+# README quickstart from a temporary directory with NEUROEDGE_ROOT unset. Every
+# step must exit 0; the canonical traces must replay to their golden decisions
+# from the packaged copies.
 #
-#   scripts/wheel_smoke.sh [python]      # default: python3
+#   scripts/wheel_smoke.sh [python]                 # default: python3
+#   scripts/wheel_smoke.sh --wheel dist/X.whl [python]
+#
+# `--wheel` skips the build and tests that exact file: the release workflow
+# (.github/workflows/release-pypi.yml) passes the artifact it would publish.
 #
 # Measured 2026-09-23 before this existed: `build`, `run`, `test` and
 # `gate lint` all failed on an installed wheel while 573 editable tests passed.
 set -euo pipefail
 
-PY=${1:-python3}
+PY=python3
+WHEEL=
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --wheel)
+      [ -f "${2:-}" ] || { echo "::error::--wheel needs an existing .whl file"; exit 2; }
+      WHEEL=$(cd "$(dirname "$2")" && pwd)/$(basename "$2")
+      shift 2
+      ;;
+    *) PY=$1; shift ;;
+  esac
+done
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
@@ -20,11 +36,15 @@ unset NEUROEDGE_ROOT
 
 step() { echo "::group::neuroedge $*"; "$NE" "$@"; echo "::endgroup::"; }
 
-"$PY" -m venv "$WORK/build-env"
-"$WORK/build-env/bin/pip" install -q build
-"$WORK/build-env/bin/python" -m build -q --outdir "$WORK/dist" "$REPO/python" >/dev/null
-WHEEL=$(ls "$WORK"/dist/*.whl)
-echo "wheel (built from the sdist): $(basename "$WHEEL")"
+if [ -z "$WHEEL" ]; then
+  "$PY" -m venv "$WORK/build-env"
+  "$WORK/build-env/bin/pip" install -q build
+  "$WORK/build-env/bin/python" -m build -q --outdir "$WORK/dist" "$REPO/python" >/dev/null
+  WHEEL=$(ls "$WORK"/dist/*.whl)
+  echo "wheel (built from the sdist): $(basename "$WHEEL")"
+else
+  echo "wheel (given): $WHEEL"
+fi
 
 LISTING=$(unzip -l "$WHEEL")  # listed once: `unzip | grep -q` trips pipefail on SIGPIPE
 for asset in schemas/trace.v1.json boards/sim-default.toml gates/unlock_door@1.2.0.yaml \
@@ -34,11 +54,28 @@ for asset in schemas/trace.v1.json boards/sim-default.toml gates/unlock_door@1.2
     *) echo "::error::wheel lacks $asset"; exit 1 ;;
   esac
 done
+case "$LISTING" in
+  *".dist-info/licenses/LICENSE"*) ;;
+  *) echo "::error::wheel lacks its LICENSE"; exit 1 ;;
+esac
 
 "$PY" -m venv "$WORK/venv"
-"$WORK/venv/bin/pip" install -q "$WHEEL" pytest
+"$WORK/venv/bin/pip" install -q "$WHEEL[mcp]" pytest
 NE="$WORK/venv/bin/neuroedge"
 cd "$WORK"
+
+# The PyPI page is the root README (TSK-S3-20), byte for byte.
+"$WORK/venv/bin/python" - "$REPO/README.md" <<'PY'
+import sys
+from importlib.metadata import metadata
+from pathlib import Path
+
+page = metadata("neuroedge").get_payload()
+readme = Path(sys.argv[1]).read_text(encoding="utf-8")
+if page.strip() != readme.strip():
+    sys.exit("::error::the wheel's long description is not the root README.md")
+print("long description = root README.md")
+PY
 
 step board list
 step gate lint
@@ -58,10 +95,28 @@ cd "$WORK/villa"
 step run -c "mở cửa phòng 101"
 step test
 cd "$WORK"
-step new nha --template home-voice
-cd "$WORK/nha"
+
+# The README quickstart, as written (Desktop's config replaced by a scratch file).
+step new my-home --template home-voice
+cd "$WORK/my-home"
+step build --target sim --board sim-default
 step run -c "bật đèn"
 step run -c "wifi nhà mình là gì"
+step gate lint gates
 step mcp tools
 step test
+cd "$WORK"
+DESKTOP="$WORK/claude_desktop_config.json"
+step mcp desktop-config --agent my-home/agent.toml --ui --write --config-path "$DESKTOP"
+"$WORK/venv/bin/python" - "$DESKTOP" "$WORK/my-home/agent.toml" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+(entry,) = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["mcpServers"].values()
+agent = str(Path(sys.argv[2]).resolve())
+if agent not in entry["args"] or "env" in entry:
+    sys.exit(f"::error::unexpected Desktop entry: {entry}")
+print("Desktop entry: absolute agent path, no PYTHONPATH pin")
+PY
 echo "✓ the installed wheel runs the whole journey"

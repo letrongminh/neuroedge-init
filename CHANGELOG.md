@@ -27,6 +27,12 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **TSK-S3-14 — workflow phát hành PyPI, chưa đẩy lên index nào.** `.github/workflows/release-pypi.yml`: sdist → wheel từ
+  sdist → `twine check --strict` → smoke trên đúng wheel đó (`scripts/wheel_smoke.sh --wheel`) → trusted publishing (OIDC,
+  không token), chỉ khi có tag và `PUBLISH_ENABLED == 'true'`. Có `LICENSE` (MIT) trong wheel/sdist. Go-live: `docs/release.md`.
+- **TSK-S3-20 — `README.md` gốc là trang PyPI.** Một màn hình, link tuyệt đối, ba lệnh `pip install` → `new --template
+  home-voice` → `mcp desktop-config --write`; `hatch_build.py` đọc nó vào metadata. Kiểm: `pytest tests/test_readme_quickstart.py
+  tests/test_packaging.py` · `wheel_smoke.sh` chạy đúng các lệnh đó trên wheel đã cài. (FR-DX-02)
 - **Khi mô hình hoặc nguồn bên ngoài vắng mặt (chạy thử LLM thật 2026-09-24).** (1) Chữ của mô hình được cắt khoảng
   trắng đầu/cuối trước khi nói. (2) MCP server bên ngoài bị tắt (thiếu SDK `mcp`, không chạy, thiếu tool) được
   nói ra: mô hình được báo trong `instructions` để nói *tạm thời không lấy được* thay vì *không có công cụ*; REPL in
@@ -789,6 +795,7 @@ Lỗi kế thừa có thêm dòng `rule` chỉ ra nguyên tắc B.5 bị vi ph�
 | Workflow | Khi nào | Job |
 |:---|:---|:---|
 | `ci-sim-linux.yml` | Mỗi PR và push | `frozen-artifacts` · `tests` (Python 3.11/3.12/3.13) · `linux-hal` · `wheel-smoke` · `lint` · `licence-obligations` · `cloud-extra` |
+| `release-pypi.yml` | Tag `v*.*.*` · PR đổi tệp đóng gói · chạy tay | `build` · `smoke` (Python 3.11/3.13) · `publish-testpypi` · `publish-pypi` — hai job cuối chỉ chạy với tag **và** `PUBLISH_ENABLED == 'true'` ([`docs/release.md`](docs/release.md)) |
 | `nightly-hardware.yml` | 01:00 UTC+7 hằng đêm | `firmware-build` · `upstream-drift` · `memory-spike` · `report` |
 
 `ci-sim-linux.yml` phải xanh trước khi hợp nhất. Ba cổng đáng chú ý:

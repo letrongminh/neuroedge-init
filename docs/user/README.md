@@ -27,6 +27,7 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | Quy ước, quy trình, hoàn thành task | [`CONTRIBUTING.md`](../../CONTRIBUTING.md) | §8 là checklist bắt buộc |
 | Đổi `schemas/` (lược đồ đã đóng băng) | [`docs/rfc/README.md`](../rfc/README.md) | quy trình RFC |
 | Việc đã xem xét và hoãn | [`TODOS.md`](../../TODOS.md) | mỗi mục kèm mốc kích hoạt |
+| Phát hành lên PyPI / TestPyPI | [`docs/release.md`](../release.md) | bật công tắc, đẩy tag |
 | Agent AI đọc gì trước | [`CLAUDE.md`](../../CLAUDE.md) | |
 | **Tham chiếu** | | |
 | Lược đồ, gate mẫu, vết ghi, bo mạch | `schemas/` · `gates/` · `fixtures/` · `boards/` | artifact máy đọc |

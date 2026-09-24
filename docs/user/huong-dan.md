@@ -5,7 +5,9 @@
 
 ## 1. Cài đặt
 
-Chưa có bản phát hành trên PyPI (`TSK-S3-14`). Cài từ mã nguồn theo
+Chưa có bản phát hành trên PyPI: workflow đã sẵn, việc đẩy lên index chờ các bước ở
+[`docs/release.md`](../release.md) (`TSK-S3-14`). Khi đã phát hành, cài như
+[`README.md`](../../README.md) gốc. Trước đó, cài từ mã nguồn theo
 [`python/README.md`](../../python/README.md).
 
 Yêu cầu: Python 3.11+ (`Q-1`). `sim` mặc định **gõ chữ** — không cần khoá API,
@@ -43,7 +45,7 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Tạo dự án agent mới có sẵn gate, action, test | `neuroedge new` | ✅ |
 | Thử một trợ lý giọng nói: hỏi đáp knowledge base, tin tức, bật/tắt đèn qua gate | `neuroedge new nha --template home-voice` | ✅ |
 | Xem các `@action` dưới dạng tool (schema cho LLM / MCP) | `neuroedge mcp tools` | ✅ |
-| Cho Claude Desktop hoặc agent khác gọi thiết bị qua MCP — vẫn qua gate | `neuroedge mcp serve` (cấu hình mẫu ở `README.md`) | ✅ cần `neuroedge[mcp]` |
+| Cho Claude Desktop hoặc agent khác gọi thiết bị qua MCP — vẫn qua gate | `neuroedge mcp serve` (cấu hình Claude Desktop: dòng dưới, `desktop-config`) | ✅ cần `neuroedge[mcp]` |
 | Ghi cấu hình Claude Desktop cho `mcp serve` (đường dẫn tuyệt đối, có sao lưu) | `neuroedge mcp desktop-config --agent … [--ui] --write` | ✅ cần `neuroedge[mcp]` |
 | Điều khiển từ Claude Desktop và thấy đèn/chốt ảo đổi trên trình duyệt — cùng một phiên | `neuroedge mcp serve --ui` (trang ở http://127.0.0.1:8765) | ✅ cần `neuroedge[mcp]` |
 | Cho System 2 dùng MCP server bên ngoài (tin tức, tra cứu) — chỉ lấy thông tin | `[mcp.servers]` trong `agent.toml` · `neuroedge mcp tools --external` | ✅ cần `neuroedge[mcp]` |
