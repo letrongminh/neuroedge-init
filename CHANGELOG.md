@@ -37,6 +37,12 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
   `fallback` (kết quả của `fallback_action`, đệ quy); mỗi tool MCP khai `outputSchema` (`result_schema()`, cũng in ở
   `mcp tools --json`), và client MCP kiểm kết quả theo nó. Kiểm: `pytest tests/test_tool_corpus.py` (mỗi ca cả qua
   client MCP thật) · `bash scripts/wheel_smoke.sh`. (FR-MDL-10, FR-ACE-09)
+- **TSK-S3-19 — `neuroedge verify` quét được 0 artifact thì thất bại.** Panel in số gate đã phân giải, số vết ghi
+  đã thẩm định, số lượt replay đã so; loại nào bằng 0 hoặc thiếu thư mục ⇒ `VerificationError` (NE4004), lỗi 3
+  thành phần, mã 1. Kiểm: `pytest tests/test_cli.py -k verify` (cây rỗng, có gate mà không vết ghi). (FR-CLI-03)
+- **TSK-S3-16 — `digests.lock` khoá gate chuẩn mực.** `gates/**`, `fixtures/gates/{valid,registry}/**`: digest JCS
+  của YAML đã parse (đổi định dạng không tính). `scripts/check_digests.py --check` chạy trong job Frozen artifacts:
+  tệp mới ⇒ `--update`; đổi hoặc xoá ⇒ cần RFC (`--accept <tệp> --rfc NNNN`). Kiểm: `pytest tests/test_digests_lock.py`.
 - **Khi mô hình hoặc nguồn bên ngoài vắng mặt (chạy thử LLM thật 2026-09-24).** (1) Chữ của mô hình được cắt khoảng
   trắng đầu/cuối trước khi nói. (2) MCP server bên ngoài bị tắt (thiếu SDK `mcp`, không chạy, thiếu tool) được
   nói ra: mô hình được báo trong `instructions` để nói *tạm thời không lấy được* thay vì *không có công cụ*; REPL in
@@ -716,10 +722,11 @@ Chạy từ **gốc kho** (mọi lệnh đều cần thấy `schemas/`, `gates/`
 ```bash
 V=python/.venv/bin
 
-$V/neuroedge verify                      # phân giải mọi gate + thẩm định mọi vết ghi
+$V/neuroedge verify                      # kỳ vọng: 3 gate · 3 vết ghi · 3 replay; quét 0 ⇒ NE4004, mã 1
 $V/neuroedge gate lint                   # kỳ vọng: ✓ 3 gate(s) resolved
 $V/neuroedge trace validate fixtures/traces/*.json   # kỳ vọng: 3 × VALID
 $V/neuroedge board list                  # kỳ vọng: 3 profile
+python/.venv/bin/python scripts/check_digests.py --check   # kỳ vọng: ✓ 21 tệp khớp digests.lock
 ```
 
 Khẳng định nghịch đảo — corpus phản chứng **phải** tiếp tục thất bại:
@@ -758,7 +765,7 @@ còn `run` / `record --target linux|esp32s3` thoát mã 2.
 | `trace view <tệp> [-o x.html] [--open]` | Ghi một tệp HTML tự chứa: thiết bị, cảm biến, màn hình, phán quyết, dòng sự kiện, thanh tua thời gian. Mở không cần mạng |
 | `trace export <tệp> --format chrome` | Chrome Trace Event JSON cho Perfetto (`ui.perfetto.dev`) — gate và xung thành slice |
 | `board list` / `board show <id>` | Liệt kê / xem năng lực bo mạch theo 5 nguyên thủy |
-| `verify [--targets sim,linux]` | Mọi gate phân giải, mọi ca của corpus tool call (`fixtures/tool_calls/`, trên `sim`) ra đúng đáp án, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`). So quyết định, chưa so timing |
+| `verify [--targets sim,linux]` | Mọi gate phân giải, mọi ca của corpus tool call (`fixtures/tool_calls/`, trên `sim`) ra đúng đáp án, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`). So quyết định, chưa so timing. Panel in số gate / vết ghi / ca tool call / replay; loại nào bằng 0 ⇒ `NE4004`, mã 1 |
 | `build --target <t> --board <id>` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate; kiểm `[mcp]` và `[system_two]` (API key ghi trong `agent.toml` ⇒ lỗi, không in lại key). `--agent` (mặc định `agent.toml`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
 | `replay <tệp> [--target sim\|linux]` | Replay trên HAL thật: dữ kiện đã ghi vào lại, phán quyết gate và lệnh chân **tính lại**, rồi so với golden (`--golden <tệp>`, mặc định chính vết ghi). Khớp ⇒ mã 0; lệch ⇒ mã 1, `NE4002`, dòng lệch đầu tiên. `--agent`, `--board`, `--trace-out` |
 | `record [--out traces/] [-c "<lệnh>"] [--anonymize]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`), phán quyết giữ nguyên (FR-TRC-07) |
@@ -793,6 +800,7 @@ Lỗi kế thừa có thêm dòng `rule` chỉ ra nguyên tắc B.5 bị vi ph�
 | `NE2003` | `GateInheritanceError` | Vi phạm một trong năm nguyên tắc B.5 |
 | `NE3001` | `BoardCapabilityError` | Khai báo bo mạch sai, hoặc thiếu năng lực được yêu cầu |
 | `NE4001` | `TraceValidationError` | Vi phạm `trace.v1.json` |
+| `NE4004` | `VerificationError` | `verify` quét được 0 gate, 0 vết ghi hoặc 0 replay |
 
 ### 2.5 CI
 
@@ -801,11 +809,13 @@ Lỗi kế thừa có thêm dòng `rule` chỉ ra nguyên tắc B.5 bị vi ph�
 | `ci-sim-linux.yml` | Mỗi PR và push | `frozen-artifacts` · `tests` (Python 3.11/3.12/3.13) · `linux-hal` · `wheel-smoke` · `lint` · `licence-obligations` · `cloud-extra` |
 | `nightly-hardware.yml` | 01:00 UTC+7 hằng đêm | `firmware-build` · `upstream-drift` · `memory-spike` · `report` |
 
-`ci-sim-linux.yml` phải xanh trước khi hợp nhất. Ba cổng đáng chú ý:
+`ci-sim-linux.yml` phải xanh trước khi hợp nhất. Bốn cổng đáng chú ý:
 
 - **Cổng chặn test skip** — đọc `junit.xml`, thất bại nếu có bất kỳ test nào
   skip. Lý do ở [§1 mục Đã sửa](#đã-sửa).
 - **Khẳng định nghịch đảo** — corpus phản chứng phải tiếp tục thất bại.
+- **`digests.lock`** — sửa hay xoá một gate chuẩn mực mà không có RFC ⇒ đỏ
+  (`scripts/check_digests.py --check`; thủ tục ở `CONTRIBUTING.md` §3).
 - **Cổng giấy phép** — `pip-licenses --fail-on` trên toàn bộ cây phụ thuộc; job `cloud-extra` thêm
   danh sách cho phép của Q-11 cho extra `cloud` (`scripts/check_licences.py`: giấy phép lạ hoặc không rõ ⇒ đỏ).
 

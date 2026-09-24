@@ -20,9 +20,9 @@ bản các vòng review ở [`docs/archive/`](docs/archive/). Giải mã mọi m
 
 Hai điều dễ sai nhất:
 
-- **`schemas/` đã đóng băng.** Sửa ba lược đồ, sửa ngữ nghĩa phân giải gate, hoặc
-  sửa ba vết ghi chuẩn mực ở `fixtures/traces/` đều **bắt buộc có RFC**
-  (`docs/rfc/`).
+- **`schemas/` đã đóng băng.** Sửa ba lược đồ, sửa ngữ nghĩa phân giải gate,
+  sửa ba vết ghi chuẩn mực ở `fixtures/traces/`, hoặc sửa/xoá gate đã khoá trong
+  `digests.lock` đều **bắt buộc có RFC** (`docs/rfc/`; gate: `scripts/check_digests.py`).
 - **Thẩm định lược đồ không đủ để kết luận một gate an toàn.** Nguyên tắc kế thừa
   số 2 là mệnh đề về *hai* tài liệu; JSON Schema thẩm định *một*. Cổng kiểm tra là
   `neuroedge gate lint` (phân giải), không phải thẩm định lược đồ.

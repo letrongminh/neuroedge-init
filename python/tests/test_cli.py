@@ -190,12 +190,64 @@ def test_board_show_unknown_id_exits_one(invoke):
 def test_verify_replays_every_canonical_trace_and_states_what_it_did_not_check(invoke):
     result = invoke("verify")
     assert result.exit_code == 0, result.output
-    assert "all gates resolve" in result.output
+    # The panel states what was counted, so "passed" over nothing cannot hide.
+    assert "all 3 gate(s) resolve" in result.output
+    assert "all 3 canonical trace(s) validate" in result.output
+    assert "3 replay(s) on sim" in result.output
     assert "give the recorded result" in result.output  # the tool-call corpus (§9)
     for name in ("happy-path.json", "unverified_attempt.json", "network_offline.json"):
         assert name in result.output
     # Timing is not compared yet; the command must not imply otherwise.
     assert "not timing" in result.output
+
+
+def _assert_three_part(result, *fragments: str) -> None:
+    combined = " ".join((result.output + result.stderr).split())
+    assert result.exit_code == 1, combined
+    assert "NE4004" in combined
+    assert "why:" in combined and "fix:" in combined
+    for fragment in fragments:
+        assert fragment in combined
+
+
+def test_verify_on_an_empty_tree_fails_instead_of_passing_over_nothing(
+    invoke, monkeypatch, tmp_path
+):
+    # TSK-S3-19, FR-CLI-03: NEUROEDGE_ROOT at a tree with nothing in it once
+    # printed three empty sections and exited 0.
+    monkeypatch.setenv("NEUROEDGE_ROOT", str(tmp_path))
+    result = invoke("verify")
+    _assert_three_part(result, "0 gates resolved", "0 canonical traces validated", "does not exist")
+    assert "Passed" not in result.output
+
+
+def test_verify_without_the_tool_call_corpus_fails(invoke, monkeypatch, tmp_path, root):
+    # The corpus counts like gates and traces: none run is a failure, not a pass.
+    import shutil
+
+    for part in ("schemas", "gates", "boards", "fixtures/traces", "fixtures/agents"):
+        shutil.copytree(root / part, tmp_path / part)
+    monkeypatch.setenv("NEUROEDGE_ROOT", str(tmp_path))
+    result = invoke("verify")
+    _assert_three_part(result, "0 tool calls compared")
+    assert "0 gates resolved" not in " ".join(result.stderr.split())
+
+
+def test_verify_with_gates_but_no_traces_fails(invoke, monkeypatch, tmp_path, root):
+    import shutil
+
+    for part in ("schemas", "gates"):
+        shutil.copytree(root / part, tmp_path / part)
+    (tmp_path / "fixtures" / "traces").mkdir(parents=True)
+    monkeypatch.setenv("NEUROEDGE_ROOT", str(tmp_path))
+    result = invoke("verify")
+    _assert_three_part(result, "0 canonical traces validated", "0 replays compared")
+    assert "0 gates resolved" not in " ".join(result.stderr.split())
+
+
+def test_verify_with_no_target_fails(invoke):
+    result = invoke("verify", "--targets", ",")
+    _assert_three_part(result, "0 replays compared", "--targets")
 
 
 def test_verify_on_linux_without_gpio_lines_fails_and_says_how_to_fix(
