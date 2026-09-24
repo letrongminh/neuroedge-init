@@ -1,0 +1,25 @@
+# RFC-0005: tool call chọn cả tham số, và gate nói tham số được đi xa tới đâu.
+# Các giới hạn này cũng đi vào `inputSchema` để mô hình thấy trước khi gọi (§3).
+schema:  neuroedge.gate/v1
+name:    buzz_in
+version: 1.0.0
+
+arguments:
+  seconds: { type: integer, minimum: 1, maximum: 60 }
+  zone:    { type: string, enum: [front, side] }
+  note:    { type: string, max_length: 16 }
+
+evaluate:
+  visitor_expected:
+    type: bool
+    instructions: "Có khách đã hẹn trước trong khung giờ này"
+
+allow_when:
+  visitor_expected: true
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

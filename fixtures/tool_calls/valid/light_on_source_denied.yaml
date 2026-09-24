@@ -1,0 +1,3 @@
+# `call_source` do dispatcher chèn: nguồn `test` không nằm trong danh sách của gate ⇒ deny.
+agent: home-voice
+call:  { name: light_on, arguments: {}, source: test }

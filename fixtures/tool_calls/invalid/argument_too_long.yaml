@@ -1,0 +1,3 @@
+# RFC-0005: note 17 ký tự vượt maxLength 16 ⇒ gate chặn.
+agent: driveway
+call:  { name: buzz_in, arguments: { zone: front, note: "0123456789abcdefg" }, source: mcp }

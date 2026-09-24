@@ -1,0 +1,5 @@
+# RFC-0006: còn người trong phòng ⇒ `ask`, và một lời "có" của người trên thiết bị
+# là đủ (confirms: [room_empty]), nên câu hỏi được mở. Bên gọi chỉ được báo.
+agent: home-voice
+call:  { name: light_off, arguments: {}, source: mcp }
+sensors: { motion: true }

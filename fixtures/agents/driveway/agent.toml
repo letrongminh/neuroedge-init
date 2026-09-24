@@ -1,0 +1,28 @@
+# Agent mẫu cho corpus Gated Tool Profile (TSK-S3-24, docs/spec/tool_calling.md §9).
+#
+# Nhỏ, và mỗi action phủ một hành vi mà hai agent mẫu kia không có:
+#   * buzz_in        — giới hạn tham số của gate (RFC-0005): số, enum, độ dài chuỗi,
+#                      và một tham số bắt buộc;
+#   * open_gate      — `call_source` bị gate giới hạn (client MCP không mở được cổng),
+#                      và `on_block: degrade` với `fallback_action`;
+#   * porch_light_on — fallback của open_gate, đi qua gate riêng của nó (Q-17).
+[agent]
+name    = "driveway"
+version = "0.1.0"
+
+[requires]
+"digital.out" = { pins = ["door_lock", "gate_relay", "porch_light"] }
+
+[gates]
+buzz_in        = "gates/buzz_in@1.0.0.yaml"
+open_gate      = "gates/open_gate@1.0.0.yaml"
+porch_light_on = "gates/porch_light_on@1.0.0.yaml"
+
+[targets]
+supported = ["sim", "linux"]
+
+# Trên thiết bị, lịch hẹn khách và công tắc đèn hiên cung cấp các dữ kiện này;
+# `sim` đọc chúng ở đây, và mỗi ca của corpus ghi đè dữ kiện nó cần.
+[sim.facts]
+visitor_expected = true
+light_allowed    = true

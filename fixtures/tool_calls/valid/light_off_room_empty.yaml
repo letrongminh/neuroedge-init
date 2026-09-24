@@ -1,0 +1,4 @@
+# Không ai trong phòng: System 2 tắt được đèn.
+agent: home-voice
+call:  { name: light_off, arguments: {}, source: system_two }
+sensors: { motion: false }

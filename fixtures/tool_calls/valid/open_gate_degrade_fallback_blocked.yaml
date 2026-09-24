@@ -1,0 +1,4 @@
+# degrade, và fallback cũng bị gate của nó chặn: không chân nào đổi, và bên gọi biết vì sao.
+agent: driveway
+call:  { name: open_gate, arguments: {}, source: mcp }
+facts: { light_allowed: false }

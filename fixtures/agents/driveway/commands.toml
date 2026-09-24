@@ -1,0 +1,20 @@
+# Ngữ pháp lệnh cố định của agent driveway (Q-14, Q-15).
+[grammar]
+version   = 1
+threshold = 0.80
+
+[[command]]
+intent       = "buzz_in"
+patterns     = ["mở cửa ngách", "buzz me in"]
+tool         = "buzz_in"
+default_args = { zone = "side" }
+
+[[command]]
+intent   = "open_gate"
+patterns = ["mở cổng", "open the gate"]
+tool     = "open_gate"
+
+[[command]]
+intent   = "porch_light_on"
+patterns = ["bật đèn hiên", "turn on the porch light"]
+tool     = "porch_light_on"

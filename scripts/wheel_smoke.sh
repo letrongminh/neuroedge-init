@@ -48,7 +48,8 @@ fi
 
 LISTING=$(unzip -l "$WHEEL")  # listed once: `unzip | grep -q` trips pipefail on SIGPIPE
 for asset in schemas/trace.v1.json boards/sim-default.toml gates/unlock_door@1.2.0.yaml \
-  fixtures/traces/happy-path.json fixtures/agents/villa-concierge/agent.toml; do
+  fixtures/traces/happy-path.json fixtures/agents/villa-concierge/agent.toml \
+  fixtures/tool_calls/expected_results.yaml; do
   case "$LISTING" in
     *"neuroedge/_data/$asset"*) ;;
     *) echo "::error::wheel lacks $asset"; exit 1 ;;

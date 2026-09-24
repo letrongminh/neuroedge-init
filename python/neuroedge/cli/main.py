@@ -33,7 +33,7 @@ from ..engine import (
     resolve_gate_file,
     resolve_gate_uri,
 )
-from ..errors import BuildFailed, NeuroEdgeError
+from ..errors import BuildFailed, NeuroEdgeError, VerificationError
 from ..hal.board import available_boards, load_board_by_id
 from ..paths import gates_dir, repo_root
 from ..trace import load_trace
@@ -780,6 +780,55 @@ def mcp_desktop_config(
     typer.echo("Quit Claude Desktop completely (not just close the window), then reopen it.")
 
 
+def _verify_tool_corpus() -> tuple[int, int]:
+    """The Gated Tool Profile corpus (docs/spec/tool_calling.md §9): (problems, cases run)."""
+    from ..testing.tool_corpus import corpus_dir, run_corpus
+
+    console.print("\n[bold]Running the tool-call corpus in fixtures/tool_calls/ on sim[/bold]")
+    if not corpus_dir().is_dir():
+        return 0, 0  # zero cases: verify's count check reports it (NE4004)
+    try:
+        outcomes, closure = run_corpus()
+    except NeuroEdgeError as error:
+        err_console.print(f"  [red]✗[/red] [{error.code}] {escape(error.why)}")
+        return 1, 0
+    for problem in closure:
+        err_console.print(f"  [red]✗[/red] {escape(problem)}")
+    failed = [outcome for outcome in outcomes if not outcome.ok]
+    for outcome in failed:
+        for difference in outcome.differences:
+            err_console.print(f"  [red]✗[/red] {outcome.case.name}: {escape(difference)}")
+    valid = sum(outcome.case.kind == "valid" for outcome in outcomes)
+    if not failed and not closure:
+        console.print(
+            f"  [green]✓[/green] {len(outcomes)} tool calls ({valid} valid, "
+            f"{len(outcomes) - valid} invalid) give the recorded result"
+        )
+    return len(failed) + len(closure), len(outcomes)
+
+
+def _empty_categories(counts: dict[str, tuple[int, Path, str]]) -> VerificationError | None:
+    """
+    A `VerificationError` naming every category `verify` counted zero of, or
+    None. Zero artifacts is a failure, never a pass (FR-CLI-03, TSK-S3-19).
+    """
+    empty = [(label, where, state) for label, (n, where, state) in counts.items() if n == 0]
+    if not empty:
+        return None
+    reasons = []
+    for label, where, state in empty:
+        reasons.append(f"0 {label}: {where} {state if where.is_dir() else 'does not exist'}")
+    return VerificationError(
+        where=", ".join(dict.fromkeys(str(where) for _, where, _ in empty)),
+        why="; ".join(reasons) + " — a sweep over zero artifacts proves nothing",
+        how=(
+            "run from a NeuroEdge checkout or an installed wheel, or point NEUROEDGE_ROOT "
+            f"(now {repo_root()}) at a tree with gates/ and fixtures/traces/; "
+            "pass at least one target to --targets"
+        ),
+    )
+
+
 @app.command()
 def verify(
     targets: str = typer.Option(
@@ -789,22 +838,29 @@ def verify(
     """
     Verify the frozen artifacts and target equivalence (A2).
 
-    Every gate resolves, every canonical trace validates, and every canonical
-    trace replays on each requested target to the decisions it records —
-    verdict sequence and pin commands (FR-CI-07). `linux` needs GPIO lines:
+    Every gate resolves, every canonical trace validates, every case of the
+    Gated Tool Profile corpus (fixtures/tool_calls/) gives its recorded result,
+    and every canonical trace replays on each requested target to the decisions
+    it records — verdict sequence and pin commands (FR-CI-07). `linux` needs GPIO lines:
     a board, or `scripts/setup_gpio_sim.sh`.
     """
     from ..testing.golden import GoldenComparator
     from ..testing.player import TracePlayer
+    from ..testing.tool_corpus import corpus_dir as tool_corpus_dir
 
     root = repo_root()
+    gates_root = gates_dir()
+    traces_root = root / "fixtures" / "traces"
     requested = [t.strip() for t in targets.split(",") if t.strip()]
     problems = 0
+    resolved = 0
+    replayed = 0
 
     console.print("[bold]Resolving gates in gates/[/bold]")
-    for path in sorted(gates_dir().rglob("*.yaml")):
+    for path in sorted(gates_root.rglob("*.yaml")):
         try:
             gate = resolve_gate_file(path)
+            resolved += 1
             console.print(
                 f"  [green]✓[/green] {gate.name}@{gate.version} "
                 f"({gate.inheritance_levels} level(s), fail {gate.budget.get('fail')})"
@@ -814,7 +870,7 @@ def verify(
             err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {escape(error.why)}")
 
     console.print("\n[bold]Validating canonical traces in fixtures/traces/[/bold]")
-    traces = sorted((root / "fixtures" / "traces").glob("*.json"))
+    traces = sorted(traces_root.glob("*.json"))
     valid = []
     for path in traces:
         try:
@@ -824,6 +880,9 @@ def verify(
         except NeuroEdgeError as error:
             problems += 1
             err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {escape(error.why)}")
+
+    corpus_problems, tool_calls = _verify_tool_corpus()
+    problems += corpus_problems
 
     console.print(f"\n[bold]Replaying canonical traces on {', '.join(requested)}[/bold]")
     table = Table()
@@ -844,6 +903,7 @@ def verify(
                     f"{escape(error.why)}\n    fix: {escape(error.how)}"
                 )
                 continue
+            replayed += 1
             if diff.ok:
                 rows[path.name].append(f"[green]✓[/green] {' '.join(result.verdicts)}")
             else:
@@ -857,15 +917,38 @@ def verify(
         table.add_row(name, *cells)
     console.print(table)
 
+    empty = _empty_categories(
+        {
+            "gates resolved": (resolved, gates_root, "has no *.yaml gate that resolves"),
+            "canonical traces validated": (
+                len(valid),
+                traces_root,
+                "has no *.json trace that validates",
+            ),
+            "tool calls compared": (
+                tool_calls,
+                tool_corpus_dir(),
+                "has no tool-call case with a recorded result",
+            ),
+            "replays compared": (
+                replayed,
+                traces_root,
+                f"had no trace replayed on targets {targets!r}",
+            ),
+        }
+    )
+    if empty is not None:
+        _fail(empty)
     if problems:
         err_console.print(f"\n[bold red]{problems} problem(s) found.[/bold red]")
         raise typer.Exit(code=1)
 
     console.print(
         Panel(
-            "[green]Passed:[/green] all gates resolve, all canonical traces validate, and "
-            f"each replays on {', '.join(requested)} to the verdicts and pin commands it "
-            "records.\n\n"
+            f"[green]Passed:[/green] all {resolved} gate(s) resolve, all {len(valid)} "
+            "canonical trace(s) validate, every tool call of the corpus gives its recorded "
+            f"result, and {replayed} replay(s) on {', '.join(requested)} match the verdicts "
+            "and pin commands they record.\n\n"
             "[yellow]Compared:[/yellow] decisions only — not timing. Timing equivalence and "
             "the esp32s3 target arrive with Sprint 4 (TSK-S4-04).",
             title="neuroedge verify",

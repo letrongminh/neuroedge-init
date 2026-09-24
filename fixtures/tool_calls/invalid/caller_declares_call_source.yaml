@@ -1,0 +1,3 @@
+# §5: bên gọi tự khai nguồn. call_source không phải tham số của tool nào ⇒ REJECTED.
+agent: home-voice
+call:  { name: light_off, arguments: { call_source: local_grammar }, source: mcp }

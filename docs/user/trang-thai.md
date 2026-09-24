@@ -13,7 +13,7 @@
 | Pha đang thực thi | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0 → 2026-11-15)** |
 | Sprint hiện hành | 🟡 **Sprint 2: Lõi thực thi trên `sim` (≈ A1)** — mã xong sớm, 2026-09-24 |
 | Cột mốc tiếp theo | **M1: Time-to-first-value < 10 phút trên `sim`** |
-| Trạng thái CI Lõi | ✅ **PASS 822/822 · SKIP 0** |
+| Trạng thái CI Lõi | ✅ **PASS 926/926 · SKIP 0** |
 | Chặn ngoài tầm kỹ thuật | 🟡 **1 hạng mục chặn + 1 còn mở** |
 | Lần cập nhật cuối | **2026-09-24** |
 
@@ -23,7 +23,7 @@
 |:---:|:---|:---|:---:|:---:|
 | **Khối 1a** | **Sprint 1 — Đóng băng lược đồ** | Tuần 0–2<br>2026-09-21 → 2026-09-27 | **12 / 13** | 🟡 **Chờ phần cứng** (chỉ TSK-S1-10) |
 |  | **Sprint 2 — Lõi thực thi trên `sim`** *(≈ A1, wedge `sim`)* | **2026-09-28 → 2026-10-25** (Q-19) | **10 / 10** | ✅ Mã A1 + web UI `sim` xong 2026-09-23; TSK-S2-11 (LiteLLM) xong 2026-09-24 |
-|  | **Sprint 3 — Action CI & Linux** *(≈ A2)* | **2026-10-26 → 2026-11-15** (Q-19) | **13 / 17** | 🟡 Action CI + HAL `linux` xong (2026-09-23); TSK-S3-14 chờ go-live; tiêu chí ra 5/6 |
+|  | **Sprint 3 — Action CI & Linux** *(≈ A2)* | **2026-10-26 → 2026-11-15** (Q-19) | **20 / 23** | 🟡 Action CI + HAL `linux` xong (2026-09-23); TSK-S3-14 chờ go-live; tiêu chí ra 5/6 |
 | **Khối 1b** | **Sprint 4 — HAL trên `esp32s3`** | **Từ 2026-11-16** (Q-19) · gốc Tuần 6–8 | **0%** | ⏳ Chưa bắt đầu |
 |  | **Sprint 5 — Runtime thoại MCU** | Tuần 8–10 | **0%** | ⏳ Chưa bắt đầu |
 |  | **Sprint 6 — OTA & Nghiệm thu v1.0** | Tuần 10–12 | **0%** | ⏳ Chưa bắt đầu |

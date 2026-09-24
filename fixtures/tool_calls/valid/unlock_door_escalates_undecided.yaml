@@ -1,0 +1,3 @@
+# Client MCP không có slot phòng ⇒ room_matches chưa quyết ⇒ chặn, chuyển lễ tân.
+agent: villa-concierge
+call:  { name: unlock_door, arguments: { guest_id: "101" }, source: mcp }

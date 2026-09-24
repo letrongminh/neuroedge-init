@@ -1,0 +1,5 @@
+# RFC-0005: giới hạn tham số được kiểm trước mọi dữ kiện. Khách có hẹn và lệnh
+# nói trên thiết bị cũng không cứu được seconds 61.
+agent: driveway
+call:  { name: buzz_in, arguments: { zone: side, seconds: 61 }, source: local_grammar }
+facts: { visitor_expected: true }

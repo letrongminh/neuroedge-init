@@ -1,0 +1,3 @@
+# `zone` không có mặc định nên bắt buộc ⇒ REJECTED.
+agent: driveway
+call:  { name: buzz_in, arguments: { seconds: 5 }, source: mcp }

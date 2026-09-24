@@ -88,9 +88,10 @@ và 1b, đầu vào của `neuroedge verify`, và đối tượng của chữ k�
 | Sửa `schemas/*.json` | **RFC bắt buộc** — xem [`docs/rfc/`](docs/rfc/) |
 | Sửa ngữ nghĩa phân giải gate (`gate_resolver.py`, `constraints.py`) | **RFC bắt buộc** |
 | Sửa ba tệp vết ghi chuẩn mực ở `fixtures/traces/` | **RFC bắt buộc** |
-| Thêm fixture mới (hợp lệ hoặc phản chứng) | PR thường |
+| Thêm fixture mới (hợp lệ hoặc phản chứng) | PR thường (fixture gate hợp lệ / registry: `check_digests.py --update`) |
 | Thêm profile bo mạch ở `boards/` | PR thường — nhưng cần phần cứng thật để điền tham số. *Hiện `test_boards.py` chỉ nhận đúng ba profile bậc 1; profile bậc 2/3 chờ RFC-0002 hạ cánh (bất biến theo bậc, §5)* |
-| Thêm gate mẫu ở `gates/` | PR thường |
+| Thêm gate mẫu ở `gates/` | PR thường — chạy `python scripts/check_digests.py --update` để khoá digest |
+| Sửa hoặc xoá gate chuẩn mực đã khoá trong `digests.lock` (`gates/`, `fixtures/gates/valid/`, `fixtures/gates/registry/`) | **RFC bắt buộc** — rồi `python scripts/check_digests.py --accept <tệp> --rfc NNNN`; thiếu RFC thì CI đỏ (TSK-S3-16) |
 
 Quy trình RFC: sao `docs/rfc/0000-template.md`, mở PR **chỉ chứa tệp RFC**,
 thảo luận, rồi sửa lược đồ trong PR thứ hai dẫn chiếu số RFC. Thay đổi chạm
@@ -181,7 +182,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | Đường dẫn | Nội dung | Thủ tục sửa |
 |:---|:---|:---|
 | `schemas/` | Ba lược đồ đã đóng băng | **RFC** |
-| `gates/` | Gate mẫu, phân giải được | PR thường |
+| `gates/` | Gate mẫu, phân giải được | PR thường để thêm; sửa hoặc xoá: **RFC** (§3, `digests.lock`) |
 | `boards/` | Khai báo năng lực bo mạch (TOML) | PR thường |
 | `fixtures/traces/` | Ba vết ghi chuẩn mực | **RFC** |
 | `fixtures/traces/invalid/`, `fixtures/gates/` | Corpus phản chứng | PR thường |
@@ -199,7 +200,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 
 | Workflow | Khi nào chạy | Nội dung |
 |:---|:---|:---|
-| [`ci-sim-linux.yml`](.github/workflows/ci-sim-linux.yml) | Mỗi PR và push | Lược đồ, phân giải gate, vết ghi, test, lint, kiểm tra skip · job `linux-hal`: dựng gpio-sim, chạy `python/tests_linux/`, `verify --targets sim,linux` · job `wheel-smoke`: build sdist → wheel, cài vào venv sạch, chạy cả hành trình ngoài kho (`scripts/wheel_smoke.sh`) |
+| [`ci-sim-linux.yml`](.github/workflows/ci-sim-linux.yml) | Mỗi PR và push | Lược đồ, `digests.lock`, phân giải gate, vết ghi, test, lint, kiểm tra skip · job `linux-hal`: dựng gpio-sim, chạy `python/tests_linux/`, `verify --targets sim,linux` · job `wheel-smoke`: build sdist → wheel, cài vào venv sạch, chạy cả hành trình ngoài kho (`scripts/wheel_smoke.sh`) |
 | [`nightly-hardware.yml`](.github/workflows/nightly-hardware.yml) | Hằng đêm | Dựng ESP-IDF, kiểm tra dung lượng firmware theo Q-3, thu số đo bộ nhớ |
 
 `ci-sim-linux.yml` phải xanh trước khi hợp nhất. `nightly-hardware.yml` có phần
@@ -256,8 +257,8 @@ lại nội dung. Khi cần chép một câu để câu văn đọc được, đ
    Nếu lệnh hoặc đầu ra kỳ vọng đổi, sửa `CHANGELOG.md` §2. Nếu thêm một bất biến,
    sửa §3.3.
 4. **Đặc tả, chỉ khi hành vi khác đặc tả.** Sửa FR/NFR hoặc Phụ lục cho khớp. Sửa
-   `schemas/`, ngữ nghĩa phân giải gate, hoặc ba vết ghi chuẩn mực thì **bắt buộc RFC**
-   (§3). Có quyết định mới thì cấp mã `Q-N` ở PRD §15.
+   `schemas/`, ngữ nghĩa phân giải gate, ba vết ghi chuẩn mực, hoặc gate đã khoá trong
+   `digests.lock` thì **bắt buộc RFC** (§3). Có quyết định mới thì cấp mã `Q-N` ở PRD §15.
 5. **Hoãn.** Việc cắt ra khỏi task vào `TODOS.md`, kèm mốc kích hoạt. Mục `TODOS.md`
    mà task vừa làm xong thì **xoá**, và ghi vào changelog.
 6. **Quét tham chiếu lỗi thời.** Với mỗi sự thật vừa đổi (trạng thái, số liệu, tên),
