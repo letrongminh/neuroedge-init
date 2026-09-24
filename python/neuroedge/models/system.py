@@ -11,9 +11,9 @@ primary provider and a local fallback (FR-MDL-03):
 * when there is no fallback, or it cannot run, the `Unavailable` answer reaches
   the engine, which turns ``offline`` into `gate_unreachable`.
 
-Real cloud connectors arrive with TSK-S2-11 behind `neuroedge.models.providers`
-(Q-10); until then a primary is any `FactSource`, such as a test double. The
-core imports no provider SDK.
+`SystemTwo`'s cloud providers (LiteLLM, custom adapters) live behind
+`neuroedge.models.providers` (TSK-S2-11, Q-10); a `SystemOne` primary is any
+`FactSource`, such as a test double. The core imports no provider SDK.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ from ..engine.circuit_breaker import DegradationBreaker
 from ..engine.gate import FactSource
 from ..engine.trace_sink import EventLog
 from ..engine.verdict import Fact, Unavailable
-from ..errors import PerceptionUnavailableError
+from ..errors import NeuroEdgeError, PerceptionUnavailableError
 from .grammar import BACKEND, CommandGrammar, GrammarAdjudicator
 
 TYPES = ("bool", "level", "choice")
@@ -173,9 +173,15 @@ class SystemTwo:
     """
     Open-ended generation — replies and free-text extraction (FR-MDL-01).
 
-    A provider is a callable ``(task, name, state) -> str``. With none configured,
-    or when it fails, the fallback is used; with neither, `PerceptionUnavailableError`.
-    Cloud providers arrive with TSK-S2-11.
+    A provider is a callable ``(task, name, state) -> answer`` — the contract is
+    `neuroedge.models.providers.base`; the real ones (LiteLLM, a custom adapter)
+    are built from `agent.toml` `[system_two]` by `providers.system_two_for`.
+    With none configured, or when it fails, the fallback is used; with neither,
+    `PerceptionUnavailableError` whose `why` is the last failure's reason.
+
+    With `events`, every model call is traced as ``system_two_call`` — provider,
+    model, task, latency and, when the provider reports them, tokens and cost;
+    never the prompt, never a key (FR-MDL-06).
     """
 
     Provider = Callable[[str, str | None, Mapping | None], Any]
@@ -186,10 +192,12 @@ class SystemTwo:
         *,
         provider: SystemTwo.Provider | None = None,
         fallback: SystemTwo.Provider | None = None,
+        events: EventLog | None = None,
     ) -> None:
         self.model = model
         self.provider = provider
         self.fallback = fallback
+        self.events = events
 
     @property
     def available(self) -> bool:
@@ -207,21 +215,62 @@ class SystemTwo:
     async def _run(
         self, task: str, name: str | None, state: Mapping | None, raw: bool = False
     ) -> Any:
+        failure: Exception | None = None
         for candidate in (self.provider, self.fallback):
             if candidate is None:
                 continue
+            started = self.events.clock() if self.events is not None else 0.0
             try:
                 answer = candidate(task, name, state)
                 if hasattr(answer, "__await__"):
                     answer = await answer
-                return answer if raw else str(answer)
-            except Exception:  # try the next candidate; the last failure is reported
+            except Exception as exc:  # try the next candidate; the last failure is reported
+                failure = exc
+                self._trace(candidate, task, state, started, exc)
                 continue
+            self._trace(candidate, task, state, started, None)
+            return answer if raw else str(answer)
+        if isinstance(failure, NeuroEdgeError):
+            why, how = failure.why, failure.how
+        elif failure is not None:
+            why = f"{self.model} failed: {type(failure).__name__}: {failure}"[:300]
+            how = "check the provider; meanwhile the agent answers offline"
+        else:
+            why = "no provider or fallback produced an answer"
+            how = "add [system_two] to agent.toml, or pass SystemTwo a provider or a fallback"
         raise PerceptionUnavailableError(
-            where=f"SystemTwo({self.model!r}).{task}",
-            why="no provider or fallback produced an answer",
-            how="configure a provider (TSK-S2-11) or a fallback for SystemTwo",
+            where=f"SystemTwo({self.model!r}).{task}", why=why, how=how
         )
+
+    def _trace(
+        self,
+        candidate: Any,
+        task: str,
+        state: Mapping | None,
+        started: float,
+        failure: Exception | None,
+    ) -> None:
+        """
+        One `system_two_call` per model call. A provider that gave up before
+        calling (``called = False``: no extra, no key) made no call.
+        """
+        if self.events is None or getattr(failure, "called", True) is False:
+            return
+        data: dict[str, Any] = {
+            "provider": str(getattr(candidate, "name", "custom")),
+            "model": str(getattr(candidate, "model", self.model)),
+            "task": str((state or {}).get("task") or task),
+            "latency_ms": max(0, int(self.events.clock() - started)),
+            "status": "ok" if failure is None else "error",
+        }
+        usage = getattr(candidate, "last_usage", None) if failure is None else None
+        if isinstance(usage, Mapping):
+            for key in ("prompt_tokens", "completion_tokens", "cost_usd"):
+                if usage.get(key) is not None:
+                    data[key] = usage[key]
+        if failure is not None:
+            data["error"] = type(failure).__name__
+        self.events.emit("system_two_call", data)
 
     async def reply(self, state: Mapping | None = None) -> str:
         return await self._run("reply", None, state)

@@ -179,6 +179,8 @@ class ToolHost:
         self._external: dict[str, tuple[ExternalServer, Any, dict[str, Any]]] = {}
         self._tools: list[dict[str, Any]] = []
         self._raised: list[Exception] = []
+        # server -> why it is not offered this turn (said to the model and the REPL)
+        self.unavailable: dict[str, str] = {}
 
     async def __aenter__(self) -> ToolHost:
         try:
@@ -191,9 +193,8 @@ class ToolHost:
                 self._own_names.add(tool["name"])
                 self._tools.append(_openai(tool["name"], tool["description"], tool["inputSchema"]))
             for server in self.config.servers:
-                self.session.events.emit(
-                    "mcp_server_unavailable",
-                    {"server": server.name, "reason": "pip install 'neuroedge[mcp]'"},
+                self._unavailable(
+                    server.name, "the MCP SDK is not installed — pip install 'neuroedge[mcp]'"
                 )
             return self
 
@@ -220,7 +221,6 @@ class ToolHost:
     async def _connect(self, server: ExternalServer) -> None:
         from mcp import Client, StdioServerParameters
 
-        events = self.session.events
         command = sys.executable if server.command in ("python", "python3") else server.command
         root: Path = Path(self.session.manifest.root).resolve()
         args = [str(root / a) if (root / a).is_file() else a for a in server.args]
@@ -240,16 +240,13 @@ class ToolHost:
                 await stack.aclose()
             if not isinstance(exc, Exception):
                 raise
-            events.emit("mcp_server_unavailable", {"server": server.name, "reason": _reason(exc)})
+            self._unavailable(server.name, _reason(exc))
             return
         await self._stack.enter_async_context(stack)
         offered = {tool.name: tool for tool in listed if tool.name in server.tools}
         missing = sorted(set(server.tools) - set(offered))
         if missing:
-            events.emit(
-                "mcp_server_unavailable",
-                {"server": server.name, "reason": f"server does not offer {missing}"},
-            )
+            self._unavailable(server.name, f"server does not offer {missing}")
         for name, tool in offered.items():
             schema = dict(tool.input_schema or {"type": "object", "properties": {}})
             full = server.tool_name(name)
@@ -261,6 +258,20 @@ class ToolHost:
                     schema,
                 )
             )
+
+    def _unavailable(self, server: str, reason: str) -> None:
+        self.unavailable[server] = reason
+        self.session.events.emit("mcp_server_unavailable", {"server": server, "reason": reason})
+
+    def notice(self) -> str | None:
+        """For the model: which declared information sources it cannot use now, and why."""
+        if not self.unavailable:
+            return None
+        listed = "; ".join(f"{name}: {why}" for name, why in self.unavailable.items())
+        return (
+            f"Không dùng được lúc này: {listed}. Nếu người dùng hỏi tới, nói rõ là tạm thời "
+            "không lấy được, đừng nói là không có công cụ và đừng bịa nội dung."
+        )
 
     def tools(self) -> list[dict[str, Any]]:
         """What System 2 is offered: the device's tools, then the allowlisted external ones."""

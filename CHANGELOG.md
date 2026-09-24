@@ -27,6 +27,17 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã thêm
 
+- **Khi mô hình hoặc nguồn bên ngoài vắng mặt (chạy thử LLM thật 2026-09-24).** (1) Chữ của mô hình được cắt khoảng
+  trắng đầu/cuối trước khi nói. (2) MCP server bên ngoài bị tắt (thiếu SDK `mcp`, không chạy, thiếu tool) được
+  nói ra: mô hình được báo trong `instructions` để nói *tạm thời không lấy được* thay vì *không có công cụ*; REPL in
+  cảnh báo; banner `run` liệt kê server. (3) Dự phòng cục bộ cho hành động: System 2 không kết nối được ⇒ thiết bị
+  nói các lệnh cục bộ vẫn dùng được (`offline_help`), không đoán hành động từ câu gần giống. Kiểm:
+  `pytest tests/test_offline_fallback.py` · `scripts/live_llm_smoke.py` (DeepSeek qua OpenRouter).
+- **TSK-S2-11 — System 2 trên model thật qua LiteLLM (extra `neuroedge[cloud]`, Q-10/Q-11/Q-12).** Bảng `[system_two]` trong
+  `agent.toml` chọn `litellm` (`model`, **tên** biến key `api_key_env`) hoặc adapter tự viết `python:pkg.mod:factory`; key ghi vào
+  tệp ⇒ `build` từ chối. Thiếu extra/key, lỗi mạng, hết giờ ⇒ câu offline, không gửi gì khi thiếu key. Mỗi lượt gọi model ghi
+  `system_two_call` (token, chi phí, không prompt, không key). `python/neuroedge/models/providers/`. Kiểm: `pytest tests/test_providers.py`
+  · job CI `cloud-extra` (giấy phép bắc cầu theo Q-11 + `scripts/cloud_smoke.py` trên litellm thật). (FR-MDL-06→08, FR-MDL-11)
 - **`neuroedge mcp desktop-config` — cấu hình Claude Desktop chạy được thật (TSK-S3-27).** Desktop tự khởi
   động server từ `/` với `PATH` tối giản, nên mẫu cũ trong README (`"command": "neuroedge"`) không tìm thấy
   lệnh. Lệnh mới in mục `mcpServers` bằng đường dẫn tuyệt đối (`sys.executable -m neuroedge mcp serve --agent
@@ -252,7 +263,7 @@ P0. Phiên này chốt quyết định với người phụ trách (minhlt) và 
 | Mã | Quyết định | Gỡ chặn gì |
 |:---|:---|:---|
 | **Q-10** | LiteLLM là **thư viện định tuyến (SDK)** sau `neuroedge.models.providers`, cài qua extra `neuroedge[cloud]`; không chạy proxy | `TSK-S2-11` |
-| **Q-11** *(một phần)* | **LiteLLM đã duyệt** + chính sách phụ thuộc bắc cầu (allowlist giấy phép, kiểm trong CI). Hawkbit/EMQX vẫn mở tới trước Khối 2 | Tiêu chí ra 6 Sprint 1, `TSK-S2-11` |
+| **Q-11** *(một phần)* | **LiteLLM đã duyệt** + chính sách phụ thuộc bắc cầu (allowlist giấy phép, kiểm trong CI). Allowlist ghi tên **CNRI-Python** (2026-09-24, của `regex` qua tiktoken); test giữ script và Q-11 khớp nhau. Hawkbit/EMQX vẫn mở tới trước Khối 2 | Tiêu chí ra 6 Sprint 1, `TSK-S2-11` |
 | **Q-14** | Mất mạng ⇒ gate **vẫn lượng giá** bằng bộ nhận diện **lệnh cố định** cục bộ; chỉ `gate_unreachable` khi fallback không chạy. Backend theo target, chung một ngữ pháp lệnh (`sim`: chữ gõ · `esp32s3`: ESP-SR MultiNet hoặc TFLite Micro/ESP-NN) | `CEO-X1` (FR-ACE-03 ↔ FR-MDL-03) |
 | **Q-15** | `sim` mặc định **gõ chữ**, không mạng, không key; giọng nói là tuỳ chọn | FR-DX-02 ↔ FR-PER-07 |
 | **Q-16** | GPIO `linux`: `gpio-sim` trong CI + mua 1 RPi 5 dự phòng | F1, `TSK-S3-05` |
@@ -678,6 +689,10 @@ python3 -m venv .venv
 .venv/bin/python -m pytest -q          # kỳ vọng: 0 failed, 0 skipped
 ```
 
+System 2 trên model thật (tùy chọn, không cần cho test): `.venv/bin/python -m pip install -e '.[cloud]'`,
+thêm `[system_two]` vào `agent.toml` (mẫu có sẵn, đã comment, trong `fixtures/agents/home-voice/agent.toml`) và
+export key. Thử với key thật: `python scripts/live_llm_smoke.py` (tốn vài cent, không chạy trong CI).
+
 Yêu cầu **Python 3.11+**. Bản dựng tái lập được:
 
 ```bash
@@ -734,11 +749,11 @@ còn `run` / `record --target linux|esp32s3` thoát mã 2.
 | `trace export <tệp> --format chrome` | Chrome Trace Event JSON cho Perfetto (`ui.perfetto.dev`) — gate và xung thành slice |
 | `board list` / `board show <id>` | Liệt kê / xem năng lực bo mạch theo 5 nguyên thủy |
 | `verify [--targets sim,linux]` | Mọi gate phân giải, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`). So quyết định, chưa so timing |
-| `build --target <t> --board <id>` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate. `--agent` (mặc định `agent.toml`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
+| `build --target <t> --board <id>` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate; kiểm `[mcp]` và `[system_two]` (API key ghi trong `agent.toml` ⇒ lỗi, không in lại key). `--agent` (mặc định `agent.toml`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
 | `replay <tệp> [--target sim\|linux]` | Replay trên HAL thật: dữ kiện đã ghi vào lại, phán quyết gate và lệnh chân **tính lại**, rồi so với golden (`--golden <tệp>`, mặc định chính vết ghi). Khớp ⇒ mã 0; lệch ⇒ mã 1, `NE4002`, dòng lệch đầu tiên. `--agent`, `--board`, `--trace-out` |
 | `record [--out traces/] [-c "<lệnh>"] [--anonymize]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`), phán quyết giữ nguyên (FR-TRC-07) |
 | `test [thư-mục]` | Chạy bộ Action CI (pytest) của agent, mặc định `tests/`. Mọi test đạt ⇒ mã 0; có test trượt hoặc không thu được test nào ⇒ mã 1 |
-| `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2: trên `linux` hôm nay dùng `replay` |
+| `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2: trên `linux` hôm nay dùng `replay`. Có `[system_two]` ⇒ câu ngoài ngữ pháp do model thật trả lời (banner có dòng `system 2: <provider> <model> (key from $BIẾN…)`); không trả lời được ⇒ câu offline |
 | `mcp tools [--json\|--openai] [--external]` | Schema của mỗi `@action` — dạng MCP hoặc function-calling OpenAI (Q-24). `--external`: thêm tool thông tin của `[mcp.servers]` mà System 2 được đưa (Q-27) |
 | `mcp serve [--agent a.toml] [--trace-out t.json] [--ui [--port 8765] [--open]] [--init-timeout 30]` | Máy chủ MCP qua stdio trên `sim`; mọi `tools/call` qua kiểm schema và gate. `--ui`: cùng phiên trên trang web 127.0.0.1 (`--port 0` chọn cổng trống; chỉ mở trình duyệt khi có `--open`); URL in ra stderr, stdout chỉ là kênh JSON-RPC. Cổng bận ⇒ cảnh báo stderr, trang sang cổng trống (URL thật ở dòng `sim UI at …`), MCP vẫn chạy. Không có `initialize` sau `--init-timeout` giây ⇒ thoát 0 (`0` = chờ mãi). Cần extra `neuroedge[mcp]` |
 | `mcp desktop-config [--agent a.toml] [--ui [--port 8765]] [--trace-out t.json] [--name N] [--write [--config-path P]]` | In mục `mcpServers` cho Claude Desktop, toàn đường dẫn tuyệt đối (trình thông dịch hiện tại, `-m neuroedge mcp serve`). `--write`: đặt đúng mục đó trong `claude_desktop_config.json` của Desktop (macOS `~/Library/Application Support/Claude/`, Windows `%APPDATA%\Claude\`), sao lưu `.bak-<giờ>`, giữ mọi khoá khác; JSON hỏng ⇒ mã 1, không ghi gì. Sau đó thoát hẳn Desktop rồi mở lại. Cần extra `neuroedge[mcp]` |
@@ -773,7 +788,7 @@ Lỗi kế thừa có thêm dòng `rule` chỉ ra nguyên tắc B.5 bị vi ph�
 
 | Workflow | Khi nào | Job |
 |:---|:---|:---|
-| `ci-sim-linux.yml` | Mỗi PR và push | `frozen-artifacts` · `tests` (Python 3.11/3.12/3.13) · `lint` · `licence-obligations` |
+| `ci-sim-linux.yml` | Mỗi PR và push | `frozen-artifacts` · `tests` (Python 3.11/3.12/3.13) · `linux-hal` · `wheel-smoke` · `lint` · `licence-obligations` · `cloud-extra` |
 | `nightly-hardware.yml` | 01:00 UTC+7 hằng đêm | `firmware-build` · `upstream-drift` · `memory-spike` · `report` |
 
 `ci-sim-linux.yml` phải xanh trước khi hợp nhất. Ba cổng đáng chú ý:
@@ -781,7 +796,8 @@ Lỗi kế thừa có thêm dòng `rule` chỉ ra nguyên tắc B.5 bị vi ph�
 - **Cổng chặn test skip** — đọc `junit.xml`, thất bại nếu có bất kỳ test nào
   skip. Lý do ở [§1 mục Đã sửa](#đã-sửa).
 - **Khẳng định nghịch đảo** — corpus phản chứng phải tiếp tục thất bại.
-- **Cổng giấy phép** — `pip-licenses --fail-on` trên toàn bộ cây phụ thuộc.
+- **Cổng giấy phép** — `pip-licenses --fail-on` trên toàn bộ cây phụ thuộc; job `cloud-extra` thêm
+  danh sách cho phép của Q-11 cho extra `cloud` (`scripts/check_licences.py`: giấy phép lạ hoặc không rõ ⇒ đỏ).
 
 Job `memory-spike` cần runner tự quản gắn nhãn `esp32s3-box-3`. Khi chưa có,
 nó **bị bỏ qua và nói rõ là bỏ qua** trong phần summary, không bao giờ báo đạt.
@@ -844,7 +860,7 @@ neuroedge-init/
 │   ├── engine/           L3 — phân giải gate · cây quyết định · Gate Engine (gate.py)
 │   │                         · mạch ngắt · trình biên dịch build (compiler.py) · EventLog
 │   ├── actions/          L3 — @action · c.do()/c.say() · token phán quyết dùng một lần
-│   ├── models/           L2 — SystemOne/SystemTwo · ngữ pháp lệnh cố định · double
+│   ├── models/           L2 — SystemOne/SystemTwo · ngữ pháp lệnh cố định · double · providers/ (LiteLLM, adapter)
 │   ├── hal/              L1 — 5 nguyên thủy, mô hình bo mạch, sim.py, digital.out()
 │   ├── perception/       L2 — khung, chưa hiện thực
 │   ├── sim/              L0 — SimSession (gõ chữ) · ui.py (run --ui, web cục bộ)
@@ -928,10 +944,11 @@ nó trong bảng task.
 Nói rõ để không ai đọc các mốc đã đạt quá lên:
 
 - ❌ **Phiên tương tác (`run`, `record`) mới có trên `sim`, gõ chữ trên terminal.** Trên `linux`
-  hôm nay chỉ `replay` / `verify`; giọng nói chưa có (Q-15); intent không có action (`faq`) chưa được trả lời
-  vì SystemTwo cần provider (TSK-S2-11).
-- ❌ **Chưa có nhà cung cấp cloud thật.** SystemOne/SystemTwo chạy với double và ngữ pháp lệnh
-  cục bộ; connector LiteLLM là TSK-S2-11 (A2).
+  hôm nay chỉ `replay` / `verify`; giọng nói chưa có (Q-15); intent không có action (`faq`) chỉ được trả lời
+  khi agent khai `[system_two]`.
+- ❌ **SystemOne chưa có nhà cung cấp cloud thật.** SystemTwo đã có LiteLLM và adapter tự viết (TSK-S2-11);
+  SystemOne vẫn chạy với double và ngữ pháp lệnh cục bộ. Model thật mới được thử bằng `mock_response`
+  trong CI — lượt gọi bằng key thật chỉ chạy tay (`scripts/live_llm_smoke.py`).
 - ❌ **Tương đương target mới ở mức quyết định, trên `sim` + `linux`.** `verify --targets sim,linux`
   so chuỗi phán quyết và lệnh chân; so timing và target `esp32s3` là TSK-S4-04.
 - ❌ **`LinuxHAL` mới có `digital.out`.** `audio.in/out`, `sensor.read`, `display` trên `linux`

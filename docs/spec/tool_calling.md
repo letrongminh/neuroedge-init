@@ -250,9 +250,17 @@ Năm quy tắc:
    `mcp_tool_result{id, server, tool, status, sha256, bytes}` — không lưu nội dung. Mô
    hình "nghe lời" một nội dung bị cài lệnh thì lời gọi của nó vẫn qua gate
    (`test_prompt_injection_in_the_news_still_meets_the_gate`).
-4. **Server không kết nối được thì bỏ qua**, ghi `mcp_server_unavailable{server, reason}`;
-   tool của thiết bị vẫn chạy. Mất mạng hẳn ⇒ không có System 2 ⇒ host không mở; ngữ
-   pháp cục bộ dispatch thẳng (§1, Q-14).
+4. **Server không kết nối được thì bỏ qua, và nói ra**: ghi `mcp_server_unavailable{server,
+   reason}`; tool của thiết bị vẫn chạy. Mô hình được báo trong `instructions` nguồn nào
+   đang tắt và vì sao (kể cả thiếu SDK `mcp`), để nói với người dùng là *tạm thời không lấy
+   được* — không nói "không có công cụ", không bịa. REPL in cảnh báo; banner của `run` liệt
+   kê server và trạng thái. Mất mạng hẳn ⇒ không có System 2 ⇒ host không mở; ngữ pháp cục
+   bộ dispatch thẳng (§1, Q-14).
+6. **Dự phòng cục bộ cho hành động**: System 2 không trả lời được một câu tự do ⇒ thiết bị
+   **nói các lệnh cục bộ vẫn dùng được** (một câu mẫu mỗi lệnh có `tool` trong
+   `commands.toml`, `reply_source = offline_help`). Không bao giờ đoán hành động từ một câu
+   gần giống — đoán sai là hành động vật lý sai; người nói lại lệnh và lệnh đó đi qua gate
+   như mọi lần.
 5. **Vòng có giới hạn** (FR-MDL-11): kết quả mỗi tool quay lại mô hình trong
    `state["messages"]`, tối đa `max_rounds` vòng (mặc định 4, 1..16); quá ⇒
    `system_two_rounds_exceeded`. Gate trả `ask` ⇒ dừng vòng, thiết bị nói câu hỏi — mô
@@ -270,6 +278,11 @@ args    = ["mcp/news_server.py"]  # tương đối với thư mục agent
 tools   = ["headlines"]           # allowlist — chỉ công cụ thông tin
 # env = { NEWS_FILE = "..." } · timeout_s = 10
 ```
+
+Model đứng sau System 2 khai ở bảng `[system_two]` của `agent.toml` (LiteLLM hoặc adapter tự viết,
+TSK-S2-11, `python/neuroedge/models/providers/`): `tools` và các vòng `state["messages"]` được gửi
+đúng dạng function calling OpenAI; tham số tool không phải JSON được chuyển nguyên cho dispatch, nên
+lời gọi đó `REJECTED` (§2) — không đoán. Model không trả lời được ⇒ `system_two_unavailable`.
 
 Ví dụ chạy được: `fixtures/agents/home-voice/mcp/news_server.py`. Kết nối mở theo từng
 lượt; kết nối bền giữa các lượt và transport HTTP tới server bên ngoài là việc hoãn

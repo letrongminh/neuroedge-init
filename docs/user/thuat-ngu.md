@@ -73,6 +73,7 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **Target `sim` · `linux` · `esp32s3`** | Môi trường chạy bậc 1: trình mô phỏng · Linux (RPi 5) · vi điều khiển ESP32-S3-Box-3 | `neuroedge-prd.md` §4.2 (FR-TGT) |
 | **Bậc target (1 · 2 · 3)** | Mức cam kết chất lượng theo target (Q-13) | `neuroedge-prd.md` §15 |
 | **SystemOne · SystemTwo** | Mô hình trả lời có cấu trúc (bool/level/choice) · mô hình sinh văn bản tự do | `neuroedge-proposal.md` §3.6 |
+| **Provider · `[system_two]` · `neuroedge[cloud]`** | Model thật đứng sau SystemTwo, khai trong bảng `[system_two]` của `agent.toml`: LiteLLM (cài bằng extra `cloud`, Q-10) hoặc adapter tự viết `python:pkg.mod:factory`. Chỉ ghi **tên** biến môi trường chứa key | `python/neuroedge/models/providers/` (TSK-S2-11) |
 | **Ngữ pháp lệnh cố định** | Fallback khi mất mạng: danh sách câu lệnh → intent, không mạng, tất định (Q-14) | `fixtures/agents/villa-concierge/commands.toml` |
 | **Action CI** | Kiểm thử hồi quy hành vi vật lý bằng vết ghi (record / replay / assert) | `neuroedge-proposal.md` §4.7 |
 | **Golden Reference** | Vết ghi có quyết định là quyết định kỳ vọng; replay được so với nó theo phán quyết gate + lệnh chân, bỏ qua timing và chữ | `python/neuroedge/testing/golden.py` (FR-CI-04) |

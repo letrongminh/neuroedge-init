@@ -279,10 +279,12 @@ async def test_systemtwo_with_nothing_configured_is_a_three_part_error():
 
 
 def test_the_core_imports_no_provider_sdk(root):
+    """Q-10: a provider SDK is named only behind `neuroedge.models.providers`."""
     pattern = re.compile(r"^\s*(import|from)\s+(openai|litellm|anthropic)\b", re.MULTILINE)
+    providers = root / "python" / "neuroedge" / "models" / "providers"
     offenders = [
         str(path.relative_to(root))
         for path in (root / "python" / "neuroedge").rglob("*.py")
-        if pattern.search(path.read_text(encoding="utf-8"))
+        if providers not in path.parents and pattern.search(path.read_text(encoding="utf-8"))
     ]
     assert offenders == []

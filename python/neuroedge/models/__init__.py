@@ -1,8 +1,8 @@
 """
 Model interfaces (L2): SystemOne, SystemTwo and the local command grammar.
 
-Provider connectors (LiteLLM behind `neuroedge.models.providers`, extra
-`neuroedge[cloud]`) arrive with TSK-S2-11; this package imports no provider SDK.
+SystemTwo's providers (LiteLLM, extra `neuroedge[cloud]`, or a custom adapter)
+live in `neuroedge.models.providers` (TSK-S2-11); nothing here imports a provider SDK.
 """
 
 from .doubles import ScriptedSource

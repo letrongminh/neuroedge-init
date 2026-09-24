@@ -294,6 +294,13 @@ class SimSession:
             events=events,
         )
         conversation = Conversation(engine=engine, hal=hal)
+        if slow is None:
+            # `[system_two]` of agent.toml (TSK-S2-11); none ⇒ System 2 stays offline.
+            from ..models.providers import system_two_for
+
+            slow = system_two_for(manifest, events)
+        elif slow.events is None:
+            slow.events = events  # FR-MDL-06: every model call is traced
         return cls(
             manifest,
             hal=hal,
@@ -314,6 +321,24 @@ class SimSession:
                 if spec.gate in gates and gates[spec.gate].arguments
             },
         )
+
+    def local_commands(self) -> list[str]:
+        """One example phrase per grammar command that calls a tool — what works offline."""
+        seen: list[str] = []
+        for command in self.grammar.commands:
+            if command.tool is None or not command.patterns:
+                continue
+            phrase = command.patterns[0]
+            if phrase not in seen:
+                seen.append(phrase)
+        return seen
+
+    def offline_help(self) -> str:
+        phrases = self.local_commands()
+        if not phrases:
+            return "Hiện mình không kết nối được mô hình và chưa hiểu câu này."
+        listed = ", ".join(f"“{p}”" for p in phrases)
+        return f"Hiện mình không kết nối được mô hình. Mình vẫn làm được các lệnh: {listed}."
 
     @property
     def pins(self) -> tuple[str, ...]:
@@ -347,11 +372,14 @@ class SimSession:
             # "có" / "không" to the device's own question: a person, on the device.
             return await self._answer(pending.id, answer, "local_grammar", utterance)
         recognition = self.grammar.recognize(utterance)
+        system_two_down = False
         if not recognition.recognised and self.slow.available:
             # Free phrasing the fixed grammar does not know: System 2 may call tools.
+            before = len(self.events.of_type("system_two_unavailable"))
             handled = await self._converse(Turn(utterance, recognition), utterance)
             if handled is not None:
                 return handled
+            system_two_down = len(self.events.of_type("system_two_unavailable")) > before
         if not recognition.recognised:
             self.events.emit(
                 "command_not_recognized",
@@ -361,6 +389,14 @@ class SimSession:
                     "threshold": self.grammar.threshold,
                 },
             )
+            if system_two_down:
+                # Local fallback (Q-14): the model is unreachable, so say which commands
+                # still work on the device. Never guess an action from a near miss — a
+                # wrong guess is a wrong physical act; the person repeats a command, and
+                # it meets its gate like any other.
+                return await self._speak(
+                    Turn(utterance, recognition), self.offline_help(), "offline_help"
+                )
             return Turn(utterance, recognition)
         self.events.emit(
             "intent_extracted",
@@ -513,13 +549,15 @@ class SimSession:
         try:
             async with ToolHost(self) as host:
                 tools = host.tools()
+                notice = host.notice()
+                instructions = CONVERSE_INSTRUCTIONS + (f" {notice}" if notice else "")
                 for _ in range(self.mcp.max_rounds):
                     state = {
                         "task": task,
                         "utterance": utterance,
                         "tools": tools,
                         "messages": list(messages),
-                        "instructions": CONVERSE_INSTRUCTIONS,
+                        "instructions": instructions,
                     }
                     try:
                         payload = await self.slow.respond(state)

@@ -117,6 +117,18 @@ Two deliberate choices in this section, both to keep GPL out of the core:
     It is also in `dev`, so the MCP server is tested in CI and the licence
     gate sees its dependency set.
 
+  * litellm (BerriAI, MIT) is NOT a core dependency. It sits in the optional
+    `cloud` extra, pinned at litellm==1.102.0 (Q-10, Q-11), and is imported
+    only by python/neuroedge/models/providers/ when an agent declares
+    [system_two] (TSK-S2-11). Used as a library, never its proxy server; the
+    wheel has no `enterprise/` directory. Its transitive set is held to the
+    Q-11 policy — MIT, BSD-2/3-Clause, Apache-2.0, ISC, PSF, MPL-2.0 used
+    unmodified — by the CI job `cloud-extra` (scripts/check_licences.py);
+    GPL/LGPL/AGPL, SSPL, BSL, commercial and unknown licences fail it.
+    Checked 2026-09-24: MPL-2.0 packages are certifi, fqdn and tqdm
+    (tqdm: MPL-2.0 AND MIT); regex is Apache-2.0 AND CNRI-Python. Not in
+    `dev` (~120 MB): the tests use a fake `litellm` module.
+
 
 ================================================================================
 SECTION C — DEVELOPMENT AND CI DEPENDENCIES
