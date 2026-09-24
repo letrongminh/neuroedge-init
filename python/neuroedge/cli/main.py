@@ -780,6 +780,33 @@ def mcp_desktop_config(
     typer.echo("Quit Claude Desktop completely (not just close the window), then reopen it.")
 
 
+def _verify_tool_corpus() -> tuple[int, int]:
+    """The Gated Tool Profile corpus (docs/spec/tool_calling.md §9): (problems, cases run)."""
+    from ..testing.tool_corpus import corpus_dir, run_corpus
+
+    console.print("\n[bold]Running the tool-call corpus in fixtures/tool_calls/ on sim[/bold]")
+    if not corpus_dir().is_dir():
+        return 0, 0  # zero cases: verify's count check reports it (NE4004)
+    try:
+        outcomes, closure = run_corpus()
+    except NeuroEdgeError as error:
+        err_console.print(f"  [red]✗[/red] [{error.code}] {escape(error.why)}")
+        return 1, 0
+    for problem in closure:
+        err_console.print(f"  [red]✗[/red] {escape(problem)}")
+    failed = [outcome for outcome in outcomes if not outcome.ok]
+    for outcome in failed:
+        for difference in outcome.differences:
+            err_console.print(f"  [red]✗[/red] {outcome.case.name}: {escape(difference)}")
+    valid = sum(outcome.case.kind == "valid" for outcome in outcomes)
+    if not failed and not closure:
+        console.print(
+            f"  [green]✓[/green] {len(outcomes)} tool calls ({valid} valid, "
+            f"{len(outcomes) - valid} invalid) give the recorded result"
+        )
+    return len(failed) + len(closure), len(outcomes)
+
+
 def _empty_categories(counts: dict[str, tuple[int, Path, str]]) -> VerificationError | None:
     """
     A `VerificationError` naming every category `verify` counted zero of, or
@@ -811,13 +838,15 @@ def verify(
     """
     Verify the frozen artifacts and target equivalence (A2).
 
-    Every gate resolves, every canonical trace validates, and every canonical
-    trace replays on each requested target to the decisions it records —
-    verdict sequence and pin commands (FR-CI-07). `linux` needs GPIO lines:
+    Every gate resolves, every canonical trace validates, every case of the
+    Gated Tool Profile corpus (fixtures/tool_calls/) gives its recorded result,
+    and every canonical trace replays on each requested target to the decisions
+    it records — verdict sequence and pin commands (FR-CI-07). `linux` needs GPIO lines:
     a board, or `scripts/setup_gpio_sim.sh`.
     """
     from ..testing.golden import GoldenComparator
     from ..testing.player import TracePlayer
+    from ..testing.tool_corpus import corpus_dir as tool_corpus_dir
 
     root = repo_root()
     gates_root = gates_dir()
@@ -851,6 +880,9 @@ def verify(
         except NeuroEdgeError as error:
             problems += 1
             err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {escape(error.why)}")
+
+    corpus_problems, tool_calls = _verify_tool_corpus()
+    problems += corpus_problems
 
     console.print(f"\n[bold]Replaying canonical traces on {', '.join(requested)}[/bold]")
     table = Table()
@@ -893,6 +925,11 @@ def verify(
                 traces_root,
                 "has no *.json trace that validates",
             ),
+            "tool calls compared": (
+                tool_calls,
+                tool_corpus_dir(),
+                "has no tool-call case with a recorded result",
+            ),
             "replays compared": (
                 replayed,
                 traces_root,
@@ -909,8 +946,9 @@ def verify(
     console.print(
         Panel(
             f"[green]Passed:[/green] all {resolved} gate(s) resolve, all {len(valid)} "
-            f"canonical trace(s) validate, and {replayed} replay(s) on "
-            f"{', '.join(requested)} match the verdicts and pin commands they record.\n\n"
+            "canonical trace(s) validate, every tool call of the corpus gives its recorded "
+            f"result, and {replayed} replay(s) on {', '.join(requested)} match the verdicts "
+            "and pin commands they record.\n\n"
             "[yellow]Compared:[/yellow] decisions only — not timing. Timing equivalence and "
             "the esp32s3 target arrive with Sprint 4 (TSK-S4-04).",
             title="neuroedge verify",

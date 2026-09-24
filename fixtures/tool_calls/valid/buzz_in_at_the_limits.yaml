@@ -1,0 +1,3 @@
+# RFC-0005: đúng biên — maximum 60, giá trị trong enum, chuỗi đúng max_length 16.
+agent: driveway
+call:  { name: buzz_in, arguments: { zone: side, seconds: 60, note: "0123456789abcdef" }, source: system_two }

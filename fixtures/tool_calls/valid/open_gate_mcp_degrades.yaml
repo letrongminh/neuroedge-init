@@ -1,0 +1,4 @@
+# Client MCP không mở được cổng (`call_source`) ⇒ degrade: fallback porch_light_on
+# chạy qua gate riêng và được phép; kết quả nói điều đó ở `fallback`.
+agent: driveway
+call:  { name: open_gate, arguments: {}, source: mcp }

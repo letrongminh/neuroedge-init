@@ -1,0 +1,3 @@
+# §2 bước 3: slot ngữ pháp là chữ, "8" được ép sang integer theo schema.
+agent: driveway
+call:  { name: buzz_in, arguments: { zone: side, seconds: "8" }, source: local_grammar }

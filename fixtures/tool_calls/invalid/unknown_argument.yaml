@@ -1,0 +1,3 @@
+# Tham số lạ ⇒ REJECTED; không đoán (bước 3).
+agent: home-voice
+call:  { name: light_on, arguments: { brightness: 100 }, source: system_two }

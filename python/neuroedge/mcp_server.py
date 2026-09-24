@@ -12,7 +12,9 @@ call is refused by the gate exactly like anyone else.
 What the client gets back is the verdict, as JSON text and structured content:
 ``{"tool": "light_off", "status": "BLOCK", "reason": "condition_not_met", …}``.
 A BLOCK is the gate working, not an error (`isError` stays false); a call the
-schema rejects is an error (`isError` true), and nothing moved.
+schema rejects is an error (`isError` true), and nothing moved. Every tool
+declares that shape as its `outputSchema` (`neuroedge.actions.tools.result_schema`),
+which an MCP client checks the structured content of every non-error result against.
 
 `neuroedge mcp serve --ui` (TSK-S3-27) also serves the session as the live
 `sim` page (`neuroedge.sim.ui`); the two share one session through the hooks of
@@ -95,6 +97,7 @@ def build_server(
                     name=tool["name"],
                     description=tool["description"],
                     input_schema=tool["inputSchema"],
+                    output_schema=tool["outputSchema"],
                 )
                 for tool in session.tools.mcp()
             ]

@@ -1,0 +1,3 @@
+# bool không phải integer, dù Python coi là int ⇒ REJECTED.
+agent: driveway
+call:  { name: buzz_in, arguments: { zone: front, seconds: true }, source: mcp }

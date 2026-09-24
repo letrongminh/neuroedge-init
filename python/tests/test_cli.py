@@ -194,6 +194,7 @@ def test_verify_replays_every_canonical_trace_and_states_what_it_did_not_check(i
     assert "all 3 gate(s) resolve" in result.output
     assert "all 3 canonical trace(s) validate" in result.output
     assert "3 replay(s) on sim" in result.output
+    assert "give the recorded result" in result.output  # the tool-call corpus (§9)
     for name in ("happy-path.json", "unverified_attempt.json", "network_offline.json"):
         assert name in result.output
     # Timing is not compared yet; the command must not imply otherwise.
@@ -218,6 +219,18 @@ def test_verify_on_an_empty_tree_fails_instead_of_passing_over_nothing(
     result = invoke("verify")
     _assert_three_part(result, "0 gates resolved", "0 canonical traces validated", "does not exist")
     assert "Passed" not in result.output
+
+
+def test_verify_without_the_tool_call_corpus_fails(invoke, monkeypatch, tmp_path, root):
+    # The corpus counts like gates and traces: none run is a failure, not a pass.
+    import shutil
+
+    for part in ("schemas", "gates", "boards", "fixtures/traces", "fixtures/agents"):
+        shutil.copytree(root / part, tmp_path / part)
+    monkeypatch.setenv("NEUROEDGE_ROOT", str(tmp_path))
+    result = invoke("verify")
+    _assert_three_part(result, "0 tool calls compared")
+    assert "0 gates resolved" not in " ".join(result.stderr.split())
 
 
 def test_verify_with_gates_but_no_traces_fails(invoke, monkeypatch, tmp_path, root):

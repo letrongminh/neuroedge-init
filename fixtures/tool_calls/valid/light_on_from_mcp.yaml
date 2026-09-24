@@ -1,0 +1,3 @@
+# Gate light_on nhận mọi nguồn trừ `test`: một client MCP bật được đèn.
+agent: home-voice
+call:  { name: light_on, arguments: {}, source: mcp }

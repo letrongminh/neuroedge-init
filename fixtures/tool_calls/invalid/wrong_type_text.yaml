@@ -1,0 +1,4 @@
+# Chuỗi không ép được sang integer ("forever") ⇒ REJECTED.
+agent: villa-concierge
+call:  { name: unlock_door, arguments: { duration_s: "forever" }, source: system_two }
+facts: { room_matches: true }

@@ -1,0 +1,3 @@
+# RFC-0005: tham số bỏ trống lấy mặc định, và gate kiểm chính giá trị mặc định đó.
+agent: driveway
+call:  { name: buzz_in, arguments: { zone: front }, source: mcp }

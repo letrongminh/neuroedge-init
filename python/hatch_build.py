@@ -1,7 +1,8 @@
 """
 Hatch build hook: ship the language-neutral assets inside the package (TSK-S3-17).
 
-`schemas/`, `boards/`, `gates/`, `fixtures/traces/` and `fixtures/agents/` live at
+`schemas/`, `boards/`, `gates/`, `fixtures/traces/`, `fixtures/agents/` and
+`fixtures/tool_calls/` (the Gated Tool Profile corpus `neuroedge verify` runs) live at
 the monorepo root, outside `python/`. A wheel without them installs, but
 `neuroedge build`, `run`, `test` and `gate lint` all fail — measured 2026-09-23.
 This hook copies them to `neuroedge/_data/`, where `neuroedge.paths` finds them
@@ -17,7 +18,14 @@ from pathlib import Path
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
-ASSETS = ("schemas", "boards", "gates", "fixtures/traces", "fixtures/agents")
+ASSETS = (
+    "schemas",
+    "boards",
+    "gates",
+    "fixtures/traces",
+    "fixtures/agents",
+    "fixtures/tool_calls",
+)
 TARGET = "neuroedge/_data"
 
 

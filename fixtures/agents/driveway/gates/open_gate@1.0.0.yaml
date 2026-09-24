@@ -1,0 +1,27 @@
+# Cổng xe mở được từ lệnh nói trên thiết bị và từ System 1/2 của chính agent, nhưng
+# không từ một client MCP bên ngoài. Bị chặn thì bật đèn hiên thay (degrade, Q-17):
+# fallback chạy qua gate riêng của nó.
+schema:  neuroedge.gate/v1
+name:    open_gate
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+  visitor_expected:
+    type: bool
+    instructions: "Có khách đã hẹn trước trong khung giờ này"
+
+allow_when:
+  call_source:      { in: [local_grammar, system_one, system_two] }
+  visitor_expected: true
+
+on_block:
+  action:          degrade
+  fallback_action: porch_light_on
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed
