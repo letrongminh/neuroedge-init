@@ -637,6 +637,20 @@ def test_the_licence_policy_refuses_everything_else(licences, licence):
     assert licences.offenders([{"Name": "p", "Version": "1", "License": licence}])
 
 
+def test_the_script_allows_exactly_what_q11_names(licences, root):
+    """One fact, one place: every family the script lets through is named in PRD Q-11."""
+    q11 = next(
+        line
+        for line in (root / "neuroedge-prd.md").read_text(encoding="utf-8").splitlines()
+        if line.startswith("| **Q-11** |")
+    )
+    policy = q11[q11.index("Chính sách phụ thuộc bắc cầu") :]
+    for family in ("MIT", "BSD", "Apache-2.0", "ISC", "PSF", "CNRI-Python", "MPL-2.0"):
+        assert family in policy, family
+    for family in ("MIT", "BSD-3-Clause", "Apache-2.0", "ISC", "PSF-2.0", "CNRI-Python", "MPL-2.0"):
+        assert licences.ALLOWED_RE.match(family), family
+
+
 # --- the CLI says which model answers, never the key -------------------------------------------
 
 

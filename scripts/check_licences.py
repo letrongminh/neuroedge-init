@@ -5,8 +5,8 @@ Every installed package carries a licence the Q-11 policy allows (TSK-S2-11).
     pip-licenses --format=json > licences.json
     python scripts/check_licences.py licences.json
 
-Allowed: MIT, BSD-2/3-Clause, Apache-2.0, ISC, PSF (and CNRI-Python, part of
-Python's own licence stack), MPL-2.0 (used unmodified). Everything else fails —
+Allowed: MIT, BSD-2/3-Clause, Apache-2.0, ISC, PSF, CNRI-Python (`regex`, via
+tiktoken), MPL-2.0 (used unmodified) — the list in PRD §15 Q-11. Everything else fails —
 GPL/LGPL/AGPL, SSPL, BSL, commercial, and *unknown*. Stricter than
 `pip-licenses --allow-only --partial-match`, whose substring test lets
 "Limited" pass as "MIT" and passes "X AND <anything>" when X is allowed: here
@@ -88,7 +88,7 @@ def main(argv: list[str]) -> int:
     print(f"  {len(packages)} packages checked; MPL-2.0 (use unmodified): {sorted(mpl) or 'none'}")
     if bad:
         return 1
-    print("  ok  every licence is MIT / BSD / Apache-2.0 / ISC / PSF / MPL-2.0")
+    print("  ok  every licence is MIT / BSD / Apache-2.0 / ISC / PSF / CNRI-Python / MPL-2.0")
     return 0
 
 
