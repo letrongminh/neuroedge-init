@@ -2,11 +2,11 @@
 
 ## Perception thị giác và phủ rộng phần cứng (Tháng 9 – Tháng 24)
 
-**Phiên bản:** 1.0
+**Phiên bản:** 1.1
 
-**Ngày lập:** 22 tháng 9, 2026
+**Ngày lập:** 22 tháng 9, 2026 · **Cập nhật:** 24 tháng 9, 2026 · lịch sử thay đổi: `CHANGELOG.md`
 
-**Tài liệu nguồn:** `neuroedge-proposal.md` v5.4 §8.9 · `neuroedge-prd.md` v1.2 · `docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md`
+**Tài liệu nguồn:** `neuroedge-proposal.md` §8.9 · `neuroedge-prd.md` · `docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md`
 
 **Phạm vi:** Khối V1a · V1b · V2 · V3 · P1 · P2
 
@@ -77,12 +77,12 @@ Mục này đứng trước mọi kế hoạch công việc vì nó là điều 
 | Thành phần | Vì sao |
 |:---|:---|
 | **Gate engine và ngữ nghĩa phân giải** | Đây là tài sản lõi. Thị giác là đầu vào nhận thức (L2), không phải thẩm quyền phán quyết (L3) |
-| **Cơ chế fail-closed** | Mất camera, mất NPU, model trả kết quả rác — tất cả đều phải dẫn tới chặn hành động, giống hệt mất mạng ở kiến trúc cloud-first |
+| **Cơ chế fail-closed** | Mất camera, mất NPU, model trả kết quả rác — tất cả đều phải dẫn tới chặn hành động, như khi mất mạng mà không có fallback cục bộ chạy được (Q-14) |
 | **Năm nguyên tắc kế thừa gate (Phụ lục B.5)** | Không thay đổi, không thêm ngoại lệ cho gate có yếu tố thị giác |
 
 ### 2.2 Bài toán để mở, có chủ đích
 
-**Ngữ nghĩa gate lượng giá trên bằng chứng thị giác chưa được giải.** CEL hiện lượng giá giá trị cảm biến rời rạc. Mệnh đề *"camera thấy người trong vùng cấm"* chưa có cách diễn đạt trong gate, và việc bịa ra một cách diễn đạt vội vàng sẽ làm hỏng tính xác định của rule engine — thứ đang là khác biệt cạnh tranh số một.
+**Ngữ nghĩa gate lượng giá trên bằng chứng thị giác chưa được giải.** Gate hiện lượng giá tiêu chí rời rạc (`bool` / `level` / `choice`) qua cây quyết định biên dịch lúc build (Q-9, Q-23). Mệnh đề *"camera thấy người trong vùng cấm"* chưa có cách diễn đạt trong gate, và việc bịa ra một cách diễn đạt vội vàng sẽ làm hỏng tính xác định của rule engine — thứ đang là khác biệt cạnh tranh số một.
 
 **Ràng buộc tạm thời cho tới khi có RFC riêng về việc này:**
 
@@ -178,7 +178,7 @@ Giai đoạn 2 **không được rút người khỏi Khối 4 (AURA)**. AURA l�
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-V1b-01** | Hiện thực `vision.in` cho `linux`: luồng khung hình, độ phân giải, FPS. Cần TSK-V1b-07 | FR-HAL-01 | V5 | ⏳ Chưa bắt đầu | `targets/linux/vision/` |
+| **TSK-V1b-01** | Hiện thực `vision.in` cho `linux`: luồng khung hình, độ phân giải, FPS. Cần TSK-V1b-07 | FR-HAL-01 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` (nguyên thủy `vision.in`) |
 | **TSK-V1b-02** | Camera ảo trong `sim`: phát lại chuỗi ảnh, giữ tương đương với phần cứng thật | FR-TGT-01, FR-TGT-06 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/sim/vision/` |
 | **TSK-V1b-03** | Giao diện trừu tượng mô hình thị giác, đổi model bằng cấu hình | FR-MDL-04, FR-MDL-07 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/vision/` |
 | **TSK-V1b-04** | Action CI cho khung hình: record, replay, assert trên chuỗi phán quyết | FR-CI-01→04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/vision.py` |
@@ -210,7 +210,7 @@ Giai đoạn 2 **không được rút người khỏi Khối 4 (AURA)**. AURA l�
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-V2-01** | Port HAL lên Jetson Orin qua JetPack | FR-TGT-08, FR-HAL-01 | V5 | ⏳ Chưa bắt đầu | `targets/jetson/hal/` |
 | **TSK-V2-02** | Đường dẫn thị giác tăng tốc GPU, giữ nguyên giao diện trừu tượng | FR-MDL-04 | V5 | ⏳ Chưa bắt đầu | `targets/jetson/vision/` |
-| **TSK-V2-03** | `neuroedge verify` cho `jetson` trên miền phán quyết | FR-CI-07, FR-TGT-08 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/verify.py` |
+| **TSK-V2-03** | `neuroedge verify` cho `jetson` trên miền phán quyết | FR-CI-07, FR-TGT-08 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` (`verify`) |
 | **TSK-V2-04** | Profile bo mạch `jetson-orin-nano` | FR-HAL-02 | V5 | ⏳ Chưa bắt đầu | `boards/jetson-orin-nano.toml` |
 
 **Đòn bẩy OSS Khối V2:** JetPack và TensorRT · DeepStream cho pipeline đa camera. Tiết kiệm ước tính 5 tuần.
@@ -255,8 +255,8 @@ Phân biệt này quyết định việc khối có vượt được bộ lọc 
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-P1-01** | Bộ vector tuân thủ độc lập ngôn ngữ, đóng gói chạy được ngoài repo | FR-GOV-02 | V1 | ⏳ Chưa bắt đầu | `fixtures/compliance/portable/` |
-| **TSK-P1-02** | Hướng dẫn port HAL: hợp đồng tối thiểu, cạm bẫy, cách tự kiểm chứng | FR-DX-05 | V3 | ⏳ Chưa bắt đầu | `docs/porting/` |
+| **TSK-P1-01** | Bộ vector tuân thủ độc lập ngôn ngữ, đóng gói chạy được ngoài repo | FR-GOV-03 | V1 | ⏳ Chưa bắt đầu | `fixtures/compliance/portable/` |
+| **TSK-P1-02** | Hướng dẫn port HAL: hợp đồng tối thiểu, cạm bẫy, cách tự kiểm chứng | FR-TGT-08, FR-GOV-03 | V3 | ⏳ Chưa bắt đầu | `docs/porting/` |
 | **TSK-P1-03** | Khung port mẫu cho một vi điều khiển không phải ESP32 | FR-TGT-08 | V3 | ⏳ Chưa bắt đầu | `targets/_template/` |
 | **TSK-P1-04** | Quy trình công nhận bậc 3: bên đóng góp tự chạy và công bố kết quả | FR-TGT-08 | V3 | ⏳ Chưa bắt đầu | `docs/porting/tier3.md` |
 
@@ -272,10 +272,10 @@ Phân biệt này quyết định việc khối có vượt được bộ lọc 
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-P2-01** | Kho adapter và HAL port do cộng đồng đóng góp, dùng chung hạ tầng Registry | FR-REG-08 | V3 | ⏳ Chưa bắt đầu | `services/registry/ports.py` |
 | **TSK-P2-02** | Hiển thị trạng thái tuân thủ của adapter đang chạy trên Fleet Dashboard | FR-FLT-03 | V3 | ⏳ Chưa bắt đầu | `services/fleet/compliance_view.py` |
-| **TSK-P2-03** | Chứng nhận phần cứng **miễn phí, tự kiểm chứng** — công bố kết quả, không bảo chứng | FR-GOV-02 | V3 | ⏳ Chưa bắt đầu | `docs/porting/certification.md` |
-| **TSK-P2-04** | **MCP qua mạng có xác thực** (transport HTTP của MCP, token theo thiết bị, mTLS như NFR-SEC-04); mặc định tắt, stdio vẫn là mặc định | NFR-SEC-09, FR-CLI-10 | V1 | ⏳ Chưa bắt đầu — mốc `TODOS.md` #24 | `docs/spec/tool_calling.md` §8 |
+| **TSK-P2-03** | Chứng nhận phần cứng **miễn phí, tự kiểm chứng** — công bố kết quả, không bảo chứng | FR-GOV-03 | V3 | ⏳ Chưa bắt đầu | `docs/porting/certification.md` |
+| **TSK-P2-04** | **MCP qua mạng có xác thực** (transport HTTP của MCP, token theo thiết bị, mTLS như NFR-SEC-04); mặc định tắt, stdio vẫn là mặc định | NFR-SEC-09, FR-CLI-12 | V1 | ⏳ Chưa bắt đầu — mốc `TODOS.md` #24 | `docs/spec/tool_calling.md` §8 |
 | **TSK-P2-05** | **MCP cho thiết bị MCU qua gateway:** gateway đưa tool của `esp32s3` ra MCP, chuyển tool call xuống thiết bị; **thiết bị vẫn tự lượng giá gate**, gateway không cấp token | FR-GW-01, FR-MDL-10 | V1 + V2 | ⏳ Chưa bắt đầu | `docs/spec/tool_calling.md` §8 |
-| **TSK-P2-06** | **Chứng nhận tự kiểm "NeuroEdge-gated"** cho runtime/MCP server bên thứ ba: chạy corpus `fixtures/tool_calls/`, công bố kết quả — cùng nguyên tắc với TSK-P2-03 | FR-GOV-02 | V3 | ⏳ Chưa bắt đầu | `docs/spec/tool_calling.md` §9 |
+| **TSK-P2-06** | **Chứng nhận tự kiểm "NeuroEdge-gated"** cho runtime/MCP server bên thứ ba: chạy corpus `fixtures/tool_calls/`, công bố kết quả — cùng nguyên tắc với TSK-P2-03 | FR-GOV-03 | V3 | ⏳ Chưa bắt đầu | `docs/spec/tool_calling.md` §9 |
 
 **Hai ranh giới của P2:**
 
@@ -286,13 +286,13 @@ Phân biệt này quyết định việc khối có vượt được bộ lọc 
 
 ## 10. Cột mốc xác thực
 
-Bộ V-G1 đến V-G5, đặc tả đầy đủ tại proposal §12.4. Ba chỉ số then chốt:
+Bộ V-G1 đến V-G5 — ngưỡng chuẩn tắc ở proposal §12.4. Ba chỉ số then chốt và vì sao:
 
-| # | Chỉ số | Ngưỡng | Vì sao then chốt |
-|:---:|:---|:---|:---|
-| **V-G1** *(vế hai)* | Thiết bị vision thuộc đội có gói Fleet trả phí | **≥ 500** | Đây là chỗ Giai đoạn 2 dễ đi sai nhất. Usecase consumer thu hút người dùng, nhưng **người dùng cuối không trả tiền** — sau khi bỏ doanh thu inference, Fleet là dòng thu duy nhất và nó tính theo đội thiết bị doanh nghiệp. Một hộ gia đình hai camera không mua gói Fleet. Nếu tăng trưởng thiết bị không nối được vào fleet trả phí, Giai đoạn 2 tăng chi phí vận hành mà không tăng doanh thu |
-| **V-G3** | Tỷ lệ thiết bị chạy tài sản của bên khác | **> 25%** | Đo thứ không mua được bằng marketing: người dùng có tin nhau đủ để chạy mã của nhau không |
-| **V-G5** | Adapter và bản port cộng đồng | **≥ 10**, trong đó ≥ 3 bản port bậc 3 | Kiểm chứng trực tiếp mệnh đề nền tảng cho maker |
+| # | Chỉ số | Vì sao then chốt |
+|:---:|:---|:---|
+| **V-G1** *(vế hai)* | Thiết bị vision thuộc đội có gói Fleet trả phí | Đây là chỗ Giai đoạn 2 dễ đi sai nhất. Usecase consumer thu hút người dùng, nhưng **người dùng cuối không trả tiền** — sau khi bỏ doanh thu inference, Fleet là dòng thu duy nhất và nó tính theo đội thiết bị doanh nghiệp. Một hộ gia đình hai camera không mua gói Fleet. Nếu tăng trưởng thiết bị không nối được vào fleet trả phí, Giai đoạn 2 tăng chi phí vận hành mà không tăng doanh thu |
+| **V-G3** | Tỷ lệ thiết bị chạy tài sản của bên khác | Đo thứ không mua được bằng marketing: người dùng có tin nhau đủ để chạy mã của nhau không |
+| **V-G5** | Adapter và bản port cộng đồng | Kiểm chứng trực tiếp mệnh đề nền tảng cho maker |
 
 ---
 
@@ -301,7 +301,7 @@ Bộ V-G1 đến V-G5, đặc tả đầy đủ tại proposal §12.4. Ba chỉ 
 | # | Rủi ro | Mức độ | Dấu hiệu sớm | Phương án ứng phó |
 |:---:|:---|:---:|:---|:---|
 | **1** | Thị giác làm chậm TTFV của luồng thoại | Trung bình | TTFV đo được vượt 10 phút ở bản có cài thị giác | Thị giác là gói tùy chọn, không nằm trong đường cài đặt mặc định. Tiêu chí ra V1b số 6 là cổng chặn |
-| **2** | Phủ rộng phần cứng làm loãng chất lượng bậc 1 | Trung bình | Kiểm thử hằng đêm trên `esp32s3` thất bại thường xuyên hơn; hỗ trợ bậc 3 chiếm quá 10% thời gian đội lõi | Phân tầng FR-TGT-08. Đội lõi chỉ cam kết bậc 1 và bậc 2. Tiêu chí ra V2 số 3 là cổng chặn *(đồng bộ PRD R-7)* |
+| **2** | Phủ rộng phần cứng làm loãng chất lượng bậc 1 | Trung bình | Kiểm thử hằng đêm trên `esp32s3` thất bại thường xuyên hơn; hỗ trợ bậc 3 chiếm quá 10% thời gian đội lõi | Ứng phó chung: PRD R-7. Riêng Giai đoạn 2: Tiêu chí ra V2 số 3 là cổng chặn |
 | **3** | Không tuyển được V5 | Cao | Quá Tháng 11 chưa có người | Dừng sau V1a. Danh sách target đã mở vẫn giữ nguyên giá trị cho cộng đồng port bậc 3 |
 | **4** | Mô hình thị giác phi xác định làm loãng mệnh đề an toàn | Cao | Xuất hiện đề xuất cho gate lượng giá trực tiếp trên đầu ra model | Ràng buộc §2.2 của tài liệu này: kết quả thị giác phải quy về `bool` / `level` / `choice` trước khi tới gate. Rule engine giữ nguyên 100% xác định |
 | **5** | Tăng người dùng mà không tăng doanh thu | Cao | V-G1 vế một đạt nhưng vế hai không đạt | Xem §10. Nếu sau Tháng 20 tỷ lệ này vẫn thấp, xem lại giả định consumer-first thay vì tiếp tục đổ nguồn lực |
