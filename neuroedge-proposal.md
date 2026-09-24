@@ -1609,10 +1609,10 @@ Ba kiểu dữ liệu này tương thích trực tiếp với hợp đồng chu�
 |:---|:---|:---|
 | `escalate` | `to` | Chuyển tiếp yêu cầu xử lý đến đối tượng tiếp nhận `to:`, kèm thông báo giải thích `message` (tùy chọn). `to` là **định danh tự do** của một đối tượng tiếp nhận do bản triển khai đăng ký — ví dụ `human_receptionist` ở §4.5; `human`, `slow` (System 2) hoặc tên một agent khác là các giá trị quy ước. Lược đồ chỉ ràng buộc chuỗi không rỗng; đối chiếu với danh sách người nhận đã đăng ký là trách nhiệm của bản triển khai. |
 | `deny` | — | Từ chối thực thi trong im lặng và ghi nhận sự kiện vào tệp nhật ký vết. |
-| `ask` | `message` | Chủ động yêu cầu người dùng xác nhận lại theo nội dung câu hỏi định sẵn `message`. |
+| `ask` | `message` | Chủ động yêu cầu người dùng xác nhận lại theo nội dung câu hỏi định sẵn `message`. Tuỳ chọn `confirms: [tiêu chí…]` *(RFC-0006)*: những tiêu chí mà lời "có" của **người trên thiết bị** được thay khi gate lượng giá lại; mọi tiêu chí khác vẫn phải đạt, gate con chỉ được bớt phần tử. Không có `confirms` ⇒ chỉ thông báo. |
 | `degrade` | `fallback_action` | Chuyển sang thực thi `fallback_action` — một phương án thay thế an toàn hơn đã được đăng ký trước. |
 
-Ngoài `action` và các tham số trên, `on_block` không nhận trường nào khác *(v5.5 — RFC-0001)*.
+Ngoài `action`, các tham số trên và `confirms` *(RFC-0006)*, `on_block` không nhận trường nào khác *(v5.5 — RFC-0001)*.
 
 **Hành vi ở v1.0** *(Q-17)*: với **mọi** `on_block`, hành động vật lý gốc bị chặn. `deny`: chặn. `escalate` / `ask`: chặn, ghi sự kiện vào vết ghi và gọi hook `on_escalate` / `on_ask` (mặc định no-op). `degrade`: chặn hành động gốc, chạy `fallback_action` **qua gate của chính nó** — không có đường tắt nào bỏ qua thẩm định. Đây là hành vi được đặc tả, fail-closed và được kiểm thử đầy đủ, không phải nợ kỹ thuật. Bề mặt tương tác thật (người nhận escalate, giao diện hỏi lại) thuộc TSK-S2-07, TSK-S2-09 và Sprint 5.
 

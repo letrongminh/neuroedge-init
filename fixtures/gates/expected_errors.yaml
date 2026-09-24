@@ -184,3 +184,31 @@ argument_unknown_keyword.yaml:
   code: NE2002
   where_contains: "arguments.duration_s"
   why_contains: "Additional properties"
+
+# --- RFC-0006: on_block.confirms ----------------------------------------------------------
+
+widens_confirms.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "on_block.confirms"
+  why_contains: "device_ok"
+
+introduces_confirms.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "on_block.confirms"
+  why_contains: "more permissive"
+
+confirms_without_ask.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "on_block"
+  why_contains: "'ask' was expected"
+
+confirms_unknown_criterion.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "on_block.confirms"
+  why_contains: "room_is_empty"

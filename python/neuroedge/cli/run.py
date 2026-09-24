@@ -39,6 +39,7 @@ Type a command the agent's grammar knows, e.g. "mở cửa phòng 101".
   :sensors            show the simulated sensor values
   :sensor <name> <v>  set a sensor value (what sensor.read returns)
   :screen             show the last display frame
+  :confirm | :decline answer the device's pending question (same as typing "có" / "không")
   :help               this help
   exit | quit | Ctrl-D  leave"""
 
@@ -146,6 +147,14 @@ def render_turn(turn: Turn, session: SimSession, console: Console, frames_before
             fallback = fallback.fallback
     if turn.reply is not None:
         console.print(f"  [bold]says[/bold] [dim]({turn.reply_source})[/dim]: {escape(turn.reply)}")
+    if turn.confirmation is not None:
+        pending = turn.confirmation
+        left = max(0.0, (pending.expires_offset_ms - session.events.elapsed_ms()) / 1000)
+        console.print(
+            f"  [bold yellow]? xác nhận[/bold yellow] {escape(pending.id)}: gõ [bold]có[/bold] để "
+            f"tiếp tục, [bold]không[/bold] để huỷ · còn {left:.0f} s · chỉ người trên thiết bị "
+            "trả lời được"
+        )
     if not turn.tool_results:
         if turn.reply is None:
             console.print(
@@ -201,6 +210,10 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
             console.print("  nothing has been drawn yet")
         else:
             console.print(frame_line(session.hal.frames[-1]))
+    elif name in ("confirm", "decline"):
+        call = session.confirm if name == "confirm" else session.decline
+        turn = asyncio.run(call(rest.strip() or None, source="local_grammar"))
+        render_turn(turn, session, console)
     elif name == "help":
         console.print(escape(HELP))
     else:

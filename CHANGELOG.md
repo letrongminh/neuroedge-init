@@ -38,6 +38,37 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
   tệp ⇒ `build` từ chối. Thiếu extra/key, lỗi mạng, hết giờ ⇒ câu offline, không gửi gì khi thiếu key. Mỗi lượt gọi model ghi
   `system_two_call` (token, chi phí, không prompt, không key). `python/neuroedge/models/providers/`. Kiểm: `pytest tests/test_providers.py`
   · job CI `cloud-extra` (giấy phép bắc cầu theo Q-11 + `scripts/cloud_smoke.py` trên litellm thật). (FR-MDL-06→08, FR-MDL-11)
+- **`neuroedge mcp desktop-config` — cấu hình Claude Desktop chạy được thật (TSK-S3-27).** Desktop tự khởi
+  động server từ `/` với `PATH` tối giản, nên mẫu cũ trong README (`"command": "neuroedge"`) không tìm thấy
+  lệnh. Lệnh mới in mục `mcpServers` bằng đường dẫn tuyệt đối (`sys.executable -m neuroedge mcp serve --agent
+  <tuyệt đối>`, thêm `--ui`, `--port`, `--trace-out`); nếu trình thông dịch tự nó import một neuroedge khác
+  (bản nguồn nạp qua `PYTHONPATH`) thì ghim `env.PYTHONPATH`. `--write` chỉ đặt đúng mục đó, giữ mọi khoá
+  khác, sao lưu `<tệp>.bak-<YYYYmmdd-HHMMSS>`, ghi nguyên tử; JSON hỏng ⇒ từ chối, không ghi gì; chạy lại
+  không đổi gì. Kiểm trước: agent build được, có SDK `mcp`. Thêm `python -m neuroedge`. Kiểm: `pytest
+  tests/test_mcp_desktop.py` (khởi động đúng như Desktop, và ca hồi quy: `neuroedge` trần không chạy được với
+  `PATH` tối giản). Đã chạy trên Claude Desktop thật (2026-09-24, bằng chứng ở TSK-S3-27). (FR-CLI-10)
+- **TSK-S3-27 — `neuroedge mcp serve --ui`.** Một tiến trình vừa là máy chủ MCP qua stdio (Claude Desktop,
+  Cursor) vừa phục vụ trang `sim` trực tiếp của **cùng phiên**: tool call từ client làm đèn/chốt ảo đổi ngay,
+  thẻ phán quyết ghi `tool_call light_on · mcp` (lời gọi schema từ chối hiện thẻ `REJECTED`). Lời gọi MCP và
+  lệnh gõ trên trang tuần tự hóa trên cùng một khóa; sau mỗi lời gọi luồng SSE đẩy ngay. `build_server` nhận
+  móc `lock` / `on_change` nên `mcp_server.py` không import trang. Với `run --ui`, cổng bận ⇒ lỗi 3 thành phần,
+  mã 1; `mcp serve --ui` thì chuyển trang sang cổng trống (mục *Đã sửa*). Kiểm: `pytest tests/test_mcp_serve_ui.py` (có test tiến trình con chứng minh
+  stdout chỉ mang JSON-RPC). (FR-CLI-10, FR-DX-04)
+- **TSK-S4-02 (sổ token) + TSK-S4-08 — sổ token dùng một lần bằng C, self-test gate lúc khởi động, QEMU.**
+  `ne_gate/src/ne_token.c`: cùng lý do, mã và thứ tự kiểm với `TokenLedger` host; 4 ô do bên gọi cấp phát, sổ đầy ⇒ `NE_TOKEN_ERR_FULL` (đóng an toàn); `boot_id` thay `process_instance_id`. Firmware chạy walker + sổ token trên gate home-voice sau NVS, trước mạng, in `NE_SELFTEST PASS`; job `firmware-qemu` boot nó trên Espressif QEMU. Kiểm: `pytest tests/test_c_token.py` · `make -C targets/esp32s3/components/ne_gate check-static`.
+- **TSK-S4-02 (walker) + TSK-S4-07 — walker C99 và bố cục nhị phân `NETR` v1 (RFC-0003 chấp thuận, thu hẹp).**
+  `neuroedge build` ghi `<gate>.netree` và `<gate>.netree.h` (mảng `const`, link vào flash). Walker
+  `targets/esp32s3/components/ne_gate/`: không cấp phát, không biến toàn cục, không đệ quy, kiểm CRC và mọi
+  offset; stack lớn nhất 176 B; hiểu giới hạn tham số (RFC-0005) và `confirms` (RFC-0006). Trên mỗi PR, walker
+  biên dịch trên host với ASan/UBSan khớp engine host trên mọi gate (truth rows + ca ngẫu nhiên) và bảng sự thật
+  đã ghi; fuzz tệp cây. Kiểm:
+  `pytest tests/test_c_walker.py` · `make -C targets/esp32s3/components/ne_gate check-static`.
+- **TSK-S3-26 — người xác nhận `on_block: ask` (Q-26, RFC-0006 chấp thuận).** Gate khai `on_block.confirms`:
+  tiêu chí lời "có" của người trên thiết bị được thay. Gate chặn ⇒ câu hỏi chờ (`tool_confirm_requested`, TTL
+  `max(p95×3, 10 s)`) chỉ khi "có" đủ để cho qua; người gõ `có` / bấm Đồng ý (`local_grammar` / `ui`) ⇒ gate
+  lượng giá lại với dữ kiện hiện tại và nguồn gọi gốc ⇒ token. System 2 / MCP không xác nhận được; dùng một lần;
+  gate đổi ⇒ vô hiệu; adjudicator suy giảm vẫn chặn. REPL `:confirm`/`:decline`, UI banner + `POST /confirm`, replay
+  tất định. `light_off` của home-voice khai `confirms: [room_empty]`. Kiểm: `pytest tests/test_tool_confirm.py`. (FR-ACE-10)
 - **Bộ chuẩn bị cổng nhu cầu 2026-10-25 (Q-20, `TODOS.md` #19).** `docs/business/cong-nhu-cau-2026-10-25/`:
   10 câu hỏi cổng C1–C10 gắn với `CEO-X*`/`T*` và proposal §8.7, kế hoạch theo ngày, demo ≤ 5 phút cho 4 phân khúc
   (chỉ lệnh đã chạy thật, kèm bảng *không được nói là đã có*), bộ câu hỏi phỏng vấn kiểu The Mom Test, thang chấm
@@ -190,6 +221,16 @@ bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngà
 
 #### Đã sửa
 
+- **`mcp serve` bị Claude Desktop bỏ rơi không còn giữ cổng mãi (TSK-S3-27).** Chạy thử trên Desktop thật:
+  Desktop khởi động server vài lần liền và bỏ một tiến trình trước `initialize` nhưng vẫn giữ đầu kia của
+  stdin, nên tiến trình đó không bao giờ đọc được EOF và giữ 127.0.0.1:8765; mọi lần khởi động sau thoát
+  mã 1 vì cổng bận, Desktop báo "Server disconnected". Hai sửa: (1) không có `initialize` trong
+  `--init-timeout` giây (mặc định 30, `0` = chờ mãi) ⇒ ghi một dòng stderr, nhả cổng, thoát 0; phiên đã
+  `initialize` thì nghỉ bao lâu cũng được. (2) Trang `--ui` không bao giờ làm sập MCP: cổng bận — kể cả
+  `--port` ghi rõ, vì mục của Desktop luôn có `--port` — ⇒ cảnh báo stderr kèm URL thật và dùng cổng trống;
+  không có cổng nào thì phục vụ MCP không kèm trang. Kiểm: `pytest tests/test_mcp_desktop.py
+  tests/test_mcp_serve_ui.py` (tiến trình bị bỏ rơi thoát và nhả cổng; cổng bận vẫn `light_on` ALLOW;
+  phiên đã initialize nghỉ quá hạn vẫn sống).
 - **Hai dự án cùng tên agent dùng chung một module `actions/` đã import.** `load_actions` nay đặt
   tên module theo cả thư mục dự án. Kiểm: `pytest tests/test_cli_new.py`.
 - **Tham chiếu Copier/Wokwi còn sót** ở roadmap §3 (ma trận OSS, cây thư mục), PRD Phụ lục D và
@@ -714,7 +755,8 @@ còn `run` / `record --target linux|esp32s3` thoát mã 2.
 | `test [thư-mục]` | Chạy bộ Action CI (pytest) của agent, mặc định `tests/`. Mọi test đạt ⇒ mã 0; có test trượt hoặc không thu được test nào ⇒ mã 1 |
 | `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2: trên `linux` hôm nay dùng `replay`. Có `[system_two]` ⇒ câu ngoài ngữ pháp do model thật trả lời (banner có dòng `system 2: <provider> <model> (key from $BIẾN…)`); không trả lời được ⇒ câu offline |
 | `mcp tools [--json\|--openai] [--external]` | Schema của mỗi `@action` — dạng MCP hoặc function-calling OpenAI (Q-24). `--external`: thêm tool thông tin của `[mcp.servers]` mà System 2 được đưa (Q-27) |
-| `mcp serve [--agent a.toml] [--trace-out t.json]` | Máy chủ MCP qua stdio trên `sim`; mọi `tools/call` qua kiểm schema và gate. Cần extra `neuroedge[mcp]` |
+| `mcp serve [--agent a.toml] [--trace-out t.json] [--ui [--port 8765] [--open]] [--init-timeout 30]` | Máy chủ MCP qua stdio trên `sim`; mọi `tools/call` qua kiểm schema và gate. `--ui`: cùng phiên trên trang web 127.0.0.1 (`--port 0` chọn cổng trống; chỉ mở trình duyệt khi có `--open`); URL in ra stderr, stdout chỉ là kênh JSON-RPC. Cổng bận ⇒ cảnh báo stderr, trang sang cổng trống (URL thật ở dòng `sim UI at …`), MCP vẫn chạy. Không có `initialize` sau `--init-timeout` giây ⇒ thoát 0 (`0` = chờ mãi). Cần extra `neuroedge[mcp]` |
+| `mcp desktop-config [--agent a.toml] [--ui [--port 8765]] [--trace-out t.json] [--name N] [--write [--config-path P]]` | In mục `mcpServers` cho Claude Desktop, toàn đường dẫn tuyệt đối (trình thông dịch hiện tại, `-m neuroedge mcp serve`). `--write`: đặt đúng mục đó trong `claude_desktop_config.json` của Desktop (macOS `~/Library/Application Support/Claude/`, Windows `%APPDATA%\Claude\`), sao lưu `.bak-<giờ>`, giữ mọi khoá khác; JSON hỏng ⇒ mã 1, không ghi gì. Sau đó thoát hẳn Desktop rồi mở lại. Cần extra `neuroedge[mcp]` |
 | `gate explain <tệp\|URI>` | Giải thích gate cho người duyệt: tiêu chí từ cấp nào, mệnh đề nào bị siết chặt, ngân sách và `on_block` so với cha. Gate sai ⇒ mã 1, lỗi 3 thành phần |
 | `new <tên> [--template minimal\|villa-concierge\|home-voice]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` (chốt cửa) và `home-voice` (trợ lý giọng nói, có `knowledge.toml`) sao agent mẫu (có trong wheel) |
 

@@ -1,0 +1,93 @@
+# Firmware smoke test on Espressif QEMU (TSK-S4-08, Q-21)
+#
+# Builds the ESP32-S3 firmware with sdkconfig.qemu layered on sdkconfig.defaults,
+# boots it in Espressif's QEMU, and requires the boot gate self-test line on the
+# UART: the C walker and the single-use token ledger, on the home-voice gates
+# linked into flash (targets/esp32s3/main/gate_selftest.c).
+#
+# Covers boot, UART, flash and the gate runtime. Not I2S, Wi-Fi, the LCD or GPIO:
+# QEMU does not emulate them, so CONFIG_NEUROEDGE_SKIP_NETWORK leaves Wi-Fi out.
+# No NE_SELFTEST PASS within the timeout is a failure, never a pass.
+name: firmware-qemu
+
+on:
+  pull_request:
+    paths:
+      - "targets/**"
+      - "python/neuroedge/engine/binary_tree.py"
+      - "scripts/gen_firmware_gates.py"
+      - ".github/workflows/firmware-qemu.yml"
+  push:
+    branches: [main]
+    paths:
+      - "targets/**"
+      - "python/neuroedge/engine/binary_tree.py"
+  schedule:
+    - cron: "30 18 * * *"   # 01:30 UTC+7, after nightly-hardware
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firmware-qemu-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  firmware-qemu:
+    name: Firmware boots on QEMU and passes the gate self-test
+    runs-on: ubuntu-latest
+    container: espressif/idf:v5.4   # Espressif QEMU needs ESP-IDF >= 5.4 (Q-21)
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build esp32s3 with sdkconfig.qemu
+        working-directory: targets/esp32s3
+        run: |
+          git config --global --add safe.directory '*'
+          . "$IDF_PATH/export.sh"
+          idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.qemu" set-target esp32s3
+          idf.py build
+          grep -q '^CONFIG_NEUROEDGE_SKIP_NETWORK=y' sdkconfig
+
+      - name: Install Espressif QEMU
+        run: python "$IDF_PATH/tools/idf_tools.py" install qemu-xtensa
+
+      - name: Boot on QEMU and read the UART (120 s)
+        working-directory: targets/esp32s3/build
+        run: |
+          . "$IDF_PATH/export.sh"
+          esptool.py --chip esp32s3 merge_bin --fill-flash-size 16MB -o flash.bin @flash_args
+          qemu-system-xtensa -machine esp32s3 -display none -monitor none -no-reboot \
+            -drive file=flash.bin,if=mtd,format=raw \
+            -serial file:uart.log &
+          qemu=$!
+          verdict=""
+          for _ in $(seq 1 120); do
+            if grep -q 'NE_SELFTEST PASS' uart.log 2>/dev/null; then verdict=pass; break; fi
+            if grep -q 'NE_SELFTEST FAIL' uart.log 2>/dev/null; then verdict=fail; break; fi
+            if ! kill -0 "$qemu" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          sleep 2
+          kill "$qemu" 2>/dev/null || true
+          cat uart.log || true
+          line="$(grep -o 'NE_SELFTEST .*' uart.log | head -n1 || true)"
+          echo "### Firmware on QEMU" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`${line:-no NE_SELFTEST line}\`" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$verdict" != pass ]; then
+            echo "::error::no NE_SELFTEST PASS on the UART (${line:-nothing within 120 s})"
+            exit 1
+          fi
+          echo "  ok  $line"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: firmware-qemu-uart
+          path: |
+            targets/esp32s3/build/uart.log
+            targets/esp32s3/sdkconfig

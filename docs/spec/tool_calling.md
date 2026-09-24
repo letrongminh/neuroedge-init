@@ -152,14 +152,24 @@ một mô hình gửi `{"call_source": "local_grammar"}` bị `REJECTED` ở bư
 - Nguồn `system_two` và `mcp` **KHÔNG ĐƯỢC** phát lời xác nhận. Nếu được, một mô hình bị
   prompt injection, hoặc một agent tự động phía client, sẽ tự trả lời câu hỏi an toàn
   dành cho người.
-- Lời xác nhận gắn với `call_id` và `gate_digest` của lần bị chặn, dùng **một lần**, và
-  hết hạn sau TTL (mặc định bằng TTL của token, `p95 × 3`, tối thiểu 10 giây — con số chốt
-  ở TSK-S3-26).
-- Xác nhận không bỏ qua gate: nó thêm dữ kiện `human_confirmed = true` rồi **lượng giá
-  lại** chính gate đó. Gate phải tự khai `human_confirmed` trong `allow_when` thì xác nhận
-  mới có tác dụng — gate không khai thì `ask` chỉ còn là thông báo.
+- Gate nói trước **điều gì** người được xác nhận thay: `on_block.confirms` (RFC-0006).
+  Không có `confirms` ⇒ `ask` chỉ thông báo, không có câu hỏi nào chờ.
+- Câu hỏi chỉ được mở (`tool_confirm_requested`) khi một lời "có" **đủ** để cho qua — cùng
+  dữ kiện, các tiêu chí trong `confirms` coi như đạt, phải ALLOW. Gate chặn vì tiêu chí
+  khác, hoặc vì giới hạn tham số, thì không hỏi.
+- Lời xác nhận gắn với câu hỏi (`confirm_N`) và `gate_digest` của lần bị chặn; dùng **một
+  lần** (kể cả khi lượng giá lại vẫn chặn); hết hạn sau `max(p95 × 3, 10 s)`; gate đổi giữa
+  chừng ⇒ vô hiệu. Nguồn khác `local_grammar` / `ui` ⇒ `tool_confirm_rejected`, câu hỏi
+  vẫn chờ người.
+- Xác nhận không bỏ qua gate: gate được **lượng giá lại** với dữ kiện **hiện tại** và
+  `call_source` của **yêu cầu gốc**; chỉ tiêu chí trong `confirms` coi như đạt. Mọi tiêu chí
+  khác, giới hạn tham số và fail-closed khi adjudicator suy giảm vẫn áp dụng. Kết quả ghi
+  `confirmed: [...]`.
+- Bên gọi (System 2, client MCP) được báo trong kết quả `BLOCK`: `confirmation: {id, message,
+  expires_in_ms, who}` — để nói với người dùng, không để tự trả lời. Không có tool xác nhận.
 
-Hôm nay (v0): `ask` chặn, nói `message`, ghi sự kiện (Q-17); vòng xác nhận là TSK-S3-26.
+Trên `sim`: REPL — gõ `có` / `không` (hoặc `:confirm` / `:decline`); UI — banner *Thiết bị
+hỏi xác nhận* với nút Đồng ý / Huỷ và thời gian còn lại (`POST /confirm`, cùng nguồn gốc).
 
 ## 7. Vết ghi
 
@@ -167,8 +177,10 @@ Hôm nay (v0): `ask` chặn, nói `message`, ghi sự kiện (Q-17); vòng xác 
 |:---|:---|:---|
 | `tool_call` | `id`, `name`, `arguments`, `source` | v0 |
 | `tool_call_rejected` | `id`, `name`, `problems` | v0 |
-| `tool_confirm_requested` | `id`, `gate`, `message`, `expires_ms` | TSK-S3-26 |
-| `tool_confirmed` | `id`, `source` | TSK-S3-26 |
+| `tool_confirm_requested` | `id`, `action`, `gate`, `message`, `confirms`, `expires_ms` (thời gian vết ghi, như `offset_ms`), `ttl_ms` | TSK-S3-26 ✅ |
+| `tool_confirmed` · `tool_confirm_declined` | `id`, `source` | TSK-S3-26 ✅ |
+| `tool_confirm_rejected` | `id`, `source`, `reason` | TSK-S3-26 ✅ |
+| `tool_confirm_expired` | `id` | TSK-S3-26 ✅ |
 
 Trường `type` của sự kiện trong `trace.v1` là chuỗi mở, nên thêm sự kiện **không** cần
 RFC. Replay (`testing/player.py`) tính lại từng lần lượng giá gate từ `gate_facts` đã
@@ -179,12 +191,22 @@ hình. Lời gọi `REJECTED` không tới gate nên không có trong phán quy�
 
 | Target | Tool call | Máy chủ MCP |
 |:---|:---|:---|
-| `sim` | Đầy đủ (§1–§7) | `neuroedge mcp serve` qua stdio |
+| `sim` | Đầy đủ (§1–§7) | `neuroedge mcp serve` qua stdio; `--ui` phục vụ thêm trang web của **cùng phiên** trên 127.0.0.1, lời gọi MCP và lệnh gõ trên trang chạy lần lượt dưới một khóa |
 | `linux` | Đầy đủ | Như `sim`, trên máy thiết bị |
 | `esp32s3` | Ngữ pháp → tool call tổng hợp trong C; tham số kiểm bằng bảng do `neuroedge build` sinh cạnh cây quyết định (Q-23); `call_source` là một byte trong ngữ cảnh walker | **Không** chạy trên MCU. MCP cho thiết bị đi qua gateway hoặc một máy `linux` (FR-GW), và thiết bị vẫn tự lượng giá gate. MCU **không làm MCP host**: host (§10) đặt ở nơi System 2 chạy |
 
 Transport MCP ở v1.0 chỉ là **stdio**: bên có quyền chạy tiến trình chính là người vận
-hành. Transport HTTP cần xác thực và là việc hoãn (`TODOS.md` #24).
+hành. Transport HTTP cần xác thực và là việc hoãn (`TODOS.md` #24). Mục cấu hình cho
+Claude Desktop do `neuroedge mcp desktop-config` sinh — đường dẫn tuyệt đối, vì Desktop khởi
+động server từ `/` với `PATH` tối giản.
+
+Hai quy tắc giữ cho `mcp serve` sống sót khi client bỏ rơi nó. Claude Desktop có thể bỏ một tiến
+trình trước `initialize` mà vẫn giữ stdin của nó, nên tiến trình không bao giờ nhận được EOF.
+
+- Không có `initialize` sau `--init-timeout` giây (mặc định 30) thì tiến trình thoát 0 và nhả
+  cổng. Phiên đã `initialize` không bị giới hạn thời gian.
+- Trang `--ui` không bao giờ làm sập MCP. Cổng bận, kể cả `--port` ghi rõ, thì trang chạy ở cổng
+  trống và URL thật được in ra stderr.
 
 ## 9. Tuân thủ
 

@@ -147,8 +147,12 @@ class _ReplayEngine(ActionContractEngine):
             return None
         return step
 
-    async def evaluate(self, key, context=None, *, state=None, arguments=None) -> GateResult:
+    async def evaluate(
+        self, key, context=None, *, state=None, arguments=None, confirmed=False
+    ) -> GateResult:
         step = self._next(key)
+        # A person's "yes" is an input the trace recorded (RFC-0006), replayed as such.
+        confirmed = bool(step is not None and step.result.get("confirmed"))
         facts: dict[str, Fact] = {}
         source = None
         if step is not None:
@@ -160,7 +164,9 @@ class _ReplayEngine(ActionContractEngine):
             elif step.degraded:
                 source = _Unreachable(_DEGRADED_AS[step.degraded])
         self.facts_source = source
-        return await super().evaluate(key, facts, state=state, arguments=arguments)
+        return await super().evaluate(
+            key, facts, state=state, arguments=arguments, confirmed=confirmed
+        )
 
 
 # --- the result ------------------------------------------------------------------

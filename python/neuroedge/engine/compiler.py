@@ -530,10 +530,19 @@ def build(
     if out_dir is not None:
         folder = Path(out_dir) / "gates"
         folder.mkdir(parents=True, exist_ok=True)
+        from .binary_tree import c_header, encode
+
         for key, gate in gates.items():
+            tree = compile_tree(gate)
             tree_path = folder / f"{key}.tree.json"
-            tree_path.write_bytes(tree_bytes(compile_tree(gate)))
+            tree_path.write_bytes(tree_bytes(tree))
             artifact_path = folder / f"{gate_digest(gate).removeprefix('sha256:')}.json"
             artifact_path.write_bytes(gate_canonical_json(gate))
-            report.artifacts += [tree_path, artifact_path]
+            # The device's form of the same tree (Q-23, RFC-0003): NETR v1 bytes, and a
+            # C header that links them into the firmware image as const (flash).
+            binary_path = folder / f"{key}.netree"
+            binary_path.write_bytes(encode(tree))
+            header_path = folder / f"{key}.netree.h"
+            header_path.write_text(c_header(tree, key), encoding="utf-8")
+            report.artifacts += [tree_path, artifact_path, binary_path, header_path]
     return report

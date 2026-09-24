@@ -1,0 +1,18 @@
+# RFC-0006 test base: blocks without asking; nothing is confirmable.
+schema:  neuroedge.gate/v1
+name:    deny-base
+version: 1.0.0
+
+evaluate:
+  room_empty:
+    type: bool
+    instructions: "Nobody is in the room"
+
+allow_when:
+  room_empty: true
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150

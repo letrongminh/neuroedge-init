@@ -11,9 +11,13 @@ the page is `neuroedge.viz.page(live=True)`, the same renderer as
     GET  /events   Server-Sent Events: {"events": [...], "now_ms": n} on change
     GET  /state    the same, once, as JSON
     POST /command  a typed line — a command, or `:set k v`, `:unset k`, `:sensor n v`
+    POST /confirm  {"id": "confirm_1", "answer": "yes"|"no"} — a person's answer to the
+                   device's question (RFC-0006), source `ui`; same-origin only
 
 Turns run one at a time under a lock: the session, like a device, handles one
-utterance after another.
+utterance after another. `neuroedge mcp serve --ui` (TSK-S3-27) serves this
+page next to an MCP server over the same session: each MCP tool call takes the
+same `lock` and ends with `notify()`, so the page shows it at once.
 """
 
 from __future__ import annotations
@@ -52,7 +56,14 @@ class SessionServer:
         self.changed = threading.Condition()
         self.version = 0
         handler = type("Handler", (_Handler,), {"server_state": self})
-        self.httpd = ThreadingHTTPServer((host, port), handler)
+        try:
+            self.httpd = ThreadingHTTPServer((host, port), handler)
+        except OSError as error:
+            raise NeuroEdgeError(
+                where=f"sim UI on {host}:{port}",
+                why=f"cannot listen on port {port}: {error.strerror or error}",
+                how=f"stop what holds port {port}, or pass another with --port (0 picks a free one)",
+            ) from error
         self.httpd.daemon_threads = True
         self._thread: threading.Thread | None = None
 
@@ -72,10 +83,14 @@ class SessionServer:
         """Run one typed line and say what happened, in the shape the page shows."""
         with self.lock:
             reply = self._command(line.strip())
+        self.notify()
+        return reply
+
+    def notify(self) -> None:
+        """The session changed: wake every `/events` stream now. Also the hook for MCP calls."""
         with self.changed:
             self.version += 1
             self.changed.notify_all()
-        return reply
 
     def _command(self, line: str) -> dict[str, Any]:
         session = self.session
@@ -109,6 +124,30 @@ class SessionServer:
         if turn.result is not None:
             reply["verdict"] = str(turn.result.verdict)
             reply["action"] = turn.result.action
+        return reply
+
+    def confirm(self, body: str) -> dict[str, Any]:
+        """A click on "Đồng ý" / "Huỷ": the page is the device's own screen (source `ui`)."""
+        try:
+            request = json.loads(body)
+            confirm_id, answer = str(request["id"]), request["answer"]
+            if answer not in ("yes", "no"):
+                raise ValueError(answer)
+        except (ValueError, KeyError, TypeError):
+            return {"ok": False, "error": {"why": 'expected {"id": "...", "answer": "yes"|"no"}'}}
+        with self.lock:
+            call = self.session.confirm if answer == "yes" else self.session.decline
+            try:
+                turn = asyncio.run(call(confirm_id, source="ui"))
+            except NeuroEdgeError as error:
+                reply: dict[str, Any] = {"ok": False, "error": error.as_dict()}
+            else:
+                reply = {"ok": turn.reply_source != "confirm_refused", "reply": turn.reply}
+                if turn.result is not None:
+                    reply["verdict"] = str(turn.result.verdict)
+        with self.changed:
+            self.version += 1
+            self.changed.notify_all()
         return reply
 
     def wait_for_change(self, seen: int, timeout: float) -> int:
@@ -192,7 +231,7 @@ class _Handler(BaseHTTPRequestHandler):
         if not self._same_origin():
             self._send(HTTPStatus.FORBIDDEN, b"cross-origin request refused", "text/plain")
             return
-        if self.path != "/command":
+        if self.path not in ("/command", "/confirm"):
             self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain")
             return
         length = int(self.headers.get("Content-Length") or 0)
@@ -200,7 +239,10 @@ class _Handler(BaseHTTPRequestHandler):
             self._send(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, b"too long", "text/plain")
             return
         line = self.rfile.read(length).decode("utf-8", errors="replace")
-        reply = self.server_state.command(line)
+        if self.path == "/confirm":
+            reply = self.server_state.confirm(line)
+        else:
+            reply = self.server_state.command(line)
         self._send(
             HTTPStatus.OK, json.dumps(reply, ensure_ascii=False).encode(), "application/json"
         )

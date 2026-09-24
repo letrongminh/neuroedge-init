@@ -40,7 +40,6 @@ Nói thẳng nếu bị hỏi. Mỗi dòng dẫn nguồn trong kho.
 | Gate giới hạn **giá trị** tham số (ví dụ `duration_s ≤ 60`) | Chưa; dispatcher chỉ kiểm tên và kiểu tham số | RFC-0005 · TSK-S3-25 |
 | Người xác nhận khi gate hỏi lại (`ask`) | Gate trả `ask` và câu hỏi; vòng xác nhận chưa có | TSK-S3-26 · Q-26 |
 | Chuyển cho lễ tân thật (`escalate`) | Chặn + ghi vết ghi + hook không làm gì | Q-17 · `TODOS.md` #20 |
-| Điều khiển từ Claude Desktop và thấy trên giao diện web | `mcp serve` và `run --ui` là hai phiên riêng | TSK-S3-27 |
 | Phiên tương tác trên Linux | `run --target linux` thoát mã 2; trên Linux chỉ `replay` / `verify` | `CHANGELOG.md` §2.3 |
 | So thời gian giữa target | `verify` so **quyết định**, chưa so timing; chưa có `esp32s3` | TSK-S4-04 |
 | Fleet OS (OTA theo đợt, dashboard, tải vết ghi từ xa) | Chưa có dòng mã nào; Khối 2 | proposal §6 · `TODOS.md` #6, #16 |
@@ -320,8 +319,12 @@ kiện gate đọc (đã kiểm bằng `ne trace show $DEMO/mcp-home.json`). `ne
 **Không tuyên bố:** tất cả §0.1, thêm: "đọc tin tức" trong demo **không** gọi MCP server tin tức,
 vì demo không khai `[system_two]` (TSK-S2-11 cần extra `cloud` và key) — nó nói câu offline. Server tin tức mẫu đọc
 `mcp/news.json` cục bộ, không lên internet. Qua MCP, cảm biến lấy từ `[sim.sensors]` trong
-`agent.toml`, không đổi được giữa chừng (vì `mcp serve` và `--ui` là hai phiên, TSK-S3-27). Cấu hình
-Claude Desktop trong `README.md` **chưa được chạy** trong phiên kiểm này; client ở Phụ lục A đóng vai.
+`agent.toml`, không đổi được giữa chừng (vì `mcp serve` và `--ui` là hai phiên, TSK-S3-27). Claude
+Desktop **đã chạy thật** (2026-09-24, macOS, Claude Desktop 2.7032.0). Mục cấu hình do
+`neuroedge mcp desktop-config --ui --write` ghi. Gõ "bật đèn lên" thì Desktop gọi `light_on` và nhận
+`ALLOW`; trang `sim` của cùng phiên hiện `tool_call light_on · mcp` rồi lệnh chân `porch_light on`
+(bằng chứng: TSK-S3-27 trong roadmap). Trong demo vẫn dùng client ở Phụ lục A làm kịch bản dự phòng:
+nó chạy tất định, không cần tài khoản Claude hay mạng.
 
 **Hỏi sau demo:** "Sản phẩm của anh/chị đã có lần nào làm một việc vật lý sai vì hiểu nhầm lệnh
 hoặc mất mạng chưa? Chuyện gì xảy ra sau đó?" · "Nếu đổi chip, phần nào phải viết lại?"

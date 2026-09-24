@@ -44,10 +44,12 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Thử một trợ lý giọng nói: hỏi đáp knowledge base, tin tức, bật/tắt đèn qua gate | `neuroedge new nha --template home-voice` | ✅ |
 | Xem các `@action` dưới dạng tool (schema cho LLM / MCP) | `neuroedge mcp tools` | ✅ |
 | Cho Claude Desktop hoặc agent khác gọi thiết bị qua MCP — vẫn qua gate | `neuroedge mcp serve` (cấu hình mẫu ở `README.md`) | ✅ cần `neuroedge[mcp]` |
+| Ghi cấu hình Claude Desktop cho `mcp serve` (đường dẫn tuyệt đối, có sao lưu) | `neuroedge mcp desktop-config --agent … [--ui] --write` | ✅ cần `neuroedge[mcp]` |
+| Điều khiển từ Claude Desktop và thấy đèn/chốt ảo đổi trên trình duyệt — cùng một phiên | `neuroedge mcp serve --ui` (trang ở http://127.0.0.1:8765) | ✅ cần `neuroedge[mcp]` |
 | Cho System 2 dùng MCP server bên ngoài (tin tức, tra cứu) — chỉ lấy thông tin | `[mcp.servers]` trong `agent.toml` · `neuroedge mcp tools --external` | ✅ cần `neuroedge[mcp]` |
 | Dùng LLM thật cho System 2 (Claude, GPT, DeepSeek qua OpenRouter…): câu tự do thành tool call — vẫn qua gate; mất mạng thì thiết bị nói các lệnh cục bộ vẫn dùng được | `[system_two]` trong `agent.toml` · key trong biến môi trường (`api_key_env`), **không** ghi vào tệp | ✅ cần `neuroedge[cloud]` |
 | Nối model chưa theo chuẩn OpenAI bằng adapter tự viết | `provider = "python:pkg.mod:factory"` trong `[system_two]` | ✅ |
-| Người xác nhận khi gate hỏi lại (`ask`) | — | ⏳ TSK-S3-26 |
+| Người xác nhận khi gate hỏi lại (`ask`): gõ `có` / `không`, hoặc nút Đồng ý / Huỷ trên `run --ui` | `neuroedge run` · `neuroedge run --ui` | ✅ gate phải khai `confirms` |
 | Ghi một phiên ra vết ghi (có chế độ ẩn danh) | `neuroedge record` | ✅ |
 | Phát lại vết ghi trên `sim` / `linux`, so golden | `neuroedge replay` | ✅ |
 | Chạy test an toàn của agent (Action CI) | `neuroedge test` | ✅ |
@@ -65,8 +67,6 @@ Nói thẳng để bạn không mất thời gian:
   **thoát mã 2** — trên `linux` dùng `replay`. Không có "PASS" giả (bất biến 10, `CHANGELOG.md` §3.3).
 - `--target linux` cần line GPIO thật hoặc ảo (`scripts/setup_gpio_sim.sh`) và
   `pip install 'neuroedge[linux]'`; thiếu thì lệnh báo lỗi, không giả vờ chạy.
-- `mcp serve` và `run --ui` hôm nay là **hai phiên riêng**: gọi từ Claude Desktop không hiện
-  trên giao diện web (TSK-S3-27).
 - Tương đương target mới so **quyết định** (phán quyết + lệnh chân), chưa so timing.
 - Danh sách đầy đủ: `CHANGELOG.md` §3.7.
 
@@ -74,6 +74,16 @@ Nói thẳng để bạn không mất thời gian:
 
 Mọi thông báo lỗi đủ **3 thành phần** (ở đâu · vì sao · cách xử lý) — cách đọc
 một thông báo lỗi: `CHANGELOG.md` §2.4.
+
+**Claude Desktop và `mcp serve --ui`.** Desktop có thể khởi động server vài lần liền và bỏ lại
+một tiến trình cũ. Tiến trình không nhận `initialize` sau 30 giây sẽ tự thoát và nhả cổng
+(`--init-timeout`). Nếu cổng 8765 vẫn bận, trang chuyển sang cổng trống, còn MCP vẫn chạy.
+URL thật của trang nằm ở dòng `sim UI at http://127.0.0.1:…` trong log của Desktop, trên macOS là
+`~/Library/Logs/Claude/mcp-server-<tên>.log`. Desktop thường chạy vài tiến trình cùng lúc: một cho
+cuộc trò chuyện, thêm vài tiến trình cho nhóm dùng chung "Cowork and Code". Mỗi tiến trình có trang
+riêng. Tiến trình nào khởi động trước thì giữ cổng 8765; các tiến trình kia ghi
+`warning: sim UI port 8765 is taken … the page is at …`. Nếu gọi từ cuộc trò chuyện mà trang 8765
+không đổi, hãy mở các URL trong những dòng cảnh báo đó.
 
 ## 5. Tiếp theo
 
