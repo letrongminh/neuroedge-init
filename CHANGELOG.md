@@ -147,6 +147,9 @@ bản gói.
 
 #### Đã đổi
 
+- **Proposal 5.7 và PRD §14 căn theo quyết định (2026-09-25).** EMQX thay bằng broker giấy phép dễ dãi, Hawkbit đã duyệt (Q-11);
+  RP2350 làm node do đội lõi port (Q-33); miễn trừ chứng nhận an toàn ở §5 (Q-38); thêm §8.10 NeuroBrain, §8.11 robot phân tầng;
+  dẫn đường tự hành: dòng mới ở PRD §14 và proposal §9 với ngoại lệ Q-34; 5 nguyên thủy "đóng cho v1.x" (FR-HAL-01).
 - **Không còn nhãn tuần/tháng đánh số và tham chiếu số dòng (R6, R11, Q-39).** Proposal §8 và §12, RFC-0002 §8,
   `hal_mcu_review.md`, báo cáo spike và `memory_probe.h` ghi theo increment. Kiểm: `pytest tests/test_plan_contract.py`
   (thêm R6, R11 và kiểm mọi chỗ dẫn `roadmap §x` trỏ tới mục có thật).

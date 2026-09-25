@@ -735,6 +735,7 @@ Danh mục loại trừ tường minh — **nơi duy nhất** của trạng thá
 | Chương trình chứng nhận phần cứng có thu phí | Chặn | PF-3 | Đạt cột mốc và có quy trình kiểm chuẩn độc lập |
 | Thị giác máy tính (camera, NPU) | **Đưa vào Giai đoạn 2**, tách hai bước | PF-1, PF-3 | **2a mở danh sách target:** RFC-0002 được phê duyệt · **2b hiện thực** (gồm RFC nguyên thủy `vision.in`): nhu cầu camera đo được từ khách hàng thật, TTFV thoại vẫn < 10 phút |
 | Jetson | **Đưa vào Giai đoạn 2** ở bậc 2 (FR-TGT-08) | PF-3 | RFC-0002 được phê duyệt và có nhu cầu đo được từ khách hàng thật |
+| Tự phát triển SLAM, tránh vật cản, dẫn đường tự hành, drone | Chặn — **ngoại lệ Q-34:** tích hợp nguyên bản ROS 2/Nav2, gate xét mọi lệnh tốc độ (roadmap I14) | PF-1, PF-3 | Không có — dẫn đường thuộc ROS 2/Nav2 |
 | Matter, HomeKit | Hoãn sau 12 tháng | PF-3 | Có nhu cầu đo được từ khách hàng thật |
 | SSO/SAML, chứng chỉ SOC 2 | Hoãn sau 12 tháng | PF-3 | Có hợp đồng doanh nghiệp yêu cầu cụ thể |
 | Chứng nhận an toàn chức năng (SIL theo IEC 61508, PL theo ISO 13849, ISO 13482) | Chặn tạm thời (Q-38) | PF-3 | Câu C6: một phân khúc của cổng 2026-10-25 có nhãn **R** ≥ 3/5 (`CEO-T2`), hoặc người mua robot trả lời như vậy (`TODOS.md` #40) |
