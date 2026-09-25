@@ -233,3 +233,16 @@ def test_sigterm_ends_a_linux_session_with_every_line_dropped(sysfs):
         child.kill()
     assert child.returncode == 143, output
     assert kernel_value(sysfs, "porch_light") == 0, "SIGTERM runs close(): every line inactive"
+
+
+def test_sigterm_ends_mcp_serve_on_linux_even_with_stdin_still_open(sysfs):
+    """The SDK's stdin thread is not a daemon: SIGTERM must still end the server, lines dropped."""
+    child = neuroedge("mcp", "serve", "--target", "linux", "--agent", str(DRIVEWAY))
+    try:
+        time.sleep(3)  # the server holds the lines and waits on stdin
+        child.terminate()
+        output, _ = child.communicate(timeout=10)
+    finally:
+        child.kill()
+    assert child.returncode == 143, output
+    assert all(kernel_value(sysfs, pin) == 0 for pin in PINS)

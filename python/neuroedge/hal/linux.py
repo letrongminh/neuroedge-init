@@ -115,17 +115,21 @@ class LinuxHAL(HardwareAbstractionLayer):
         self._requests = self._request_outputs(consumer)
 
     def _find(self, chips: list[str], name: str) -> tuple[str, int] | None:
+        denied: tuple[str, OSError] | None = None
         for path in chips:
             try:
                 chip = self._gpiod.Chip(path)
             except OSError as exc:
-                raise _chip_error(path, exc) from exc
+                denied = denied or (path, exc)  # another chip may carry the line
+                continue
             try:
                 return path, int(chip.line_offset_from_id(name))
             except (OSError, ValueError, KeyError):
                 continue
             finally:
                 chip.close()
+        if denied is not None:
+            raise _chip_error(*denied) from denied[1]
         return None
 
     def _request_outputs(self, consumer: str) -> dict[str, Any]:
@@ -172,7 +176,7 @@ class LinuxHAL(HardwareAbstractionLayer):
             self._timers.pop(pin, None)
             if not self._requests:
                 return  # close() has already dropped and released every line
-        self._set(pin, False)
+            self._set(pin, False)
 
     # -- digital.out -----------------------------------------------------------------
     def digital_out(
@@ -222,7 +226,8 @@ class LinuxHAL(HardwareAbstractionLayer):
                 self._set(pin, False)
             except OSError as exc:
                 errors.append(exc)
-        requests, self._requests = self._requests, {}
+        with self._lock:  # a pulse ending now sees no requests and leaves the line alone
+            requests, self._requests = self._requests, {}
         for request in requests.values():
             try:
                 request.release()

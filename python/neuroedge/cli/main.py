@@ -71,8 +71,6 @@ def _fail(error: NeuroEdgeError) -> None:
     raise typer.Exit(code=1)
 
 
-# The board each target builds and runs on when `--board` is not given.
-
 # Targets `replay` knows but cannot replay an arbitrary trace on yet, and the task that
 # brings each. Asking for one exits 2 ("not implemented"), not 1 ("ran and failed").
 # `verify --targets esp32s3` runs: the device replays the canonical traces (TSK-S4-09).
@@ -715,6 +713,12 @@ def mcp_serve(
         anyio.run(serve)
     except KeyboardInterrupt:
         pass
+    except SystemExit as stop:
+        # SIGTERM / SIGHUP (`_exit_on_signals`): drop the lines, then leave at once —
+        # the SDK's stdin thread is not a daemon and would hold the exit (as above).
+        close()
+        sys.stderr.flush()
+        os._exit(stop.code if isinstance(stop.code, int) else 1)
     finally:
         close()
 
@@ -1244,12 +1248,16 @@ def _exit_on_signals() -> None:
     """
     import signal
 
+    names = [name for name in ("SIGTERM", "SIGHUP") if hasattr(signal, name)]
+
     def _exit(signum: int, _frame: Any) -> None:
+        # A second signal must not cut the cleanup short between two lines.
+        for name in names:
+            signal.signal(getattr(signal, name), signal.SIG_IGN)
         raise SystemExit(128 + signum)
 
-    for name in ("SIGTERM", "SIGHUP"):
-        if hasattr(signal, name):
-            signal.signal(getattr(signal, name), _exit)
+    for name in names:
+        signal.signal(getattr(signal, name), _exit)
 
 
 def _start_session(

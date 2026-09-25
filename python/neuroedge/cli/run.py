@@ -317,12 +317,15 @@ def canned_fact_warning(session: SimSession) -> str | None:
 def _dropped_at_exit(session: SimSession, console: Console) -> None:
     """On `linux`, say which lines are still `on` when the session ends and drops them."""
     driven = getattr(session.hal, "driven", None)
-    lines = driven() if driven is not None else []
-    if lines:
-        console.print(
-            f"[yellow]! the session ends: {escape(', '.join(lines))} "
-            "dropped inactive (a line stays on only while the session runs)[/yellow]"
-        )
+    try:
+        lines = driven() if driven is not None else []
+        if lines:
+            console.print(
+                f"[yellow]! the session ends: {escape(', '.join(lines))} "
+                "dropped inactive (a line stays on only while the session runs)[/yellow]"
+            )
+    except OSError:
+        pass  # a gone chip or terminal (SIGHUP) must not keep close() from running
 
 
 def _settle(session: SimSession, console: Console) -> bool:
@@ -393,5 +396,7 @@ def run_session(
                     f"trace: {escape(str(trace_out))} ({len(session.events.events)} events)"
                 )
         finally:
-            _dropped_at_exit(session, console)
-            session.close()  # on linux: every line inactive and released
+            try:
+                _dropped_at_exit(session, console)
+            finally:
+                session.close()  # on linux: every line inactive and released

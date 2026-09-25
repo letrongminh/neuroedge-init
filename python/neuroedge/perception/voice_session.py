@@ -56,6 +56,10 @@ class VoiceSession:
         self.hal = session.hal
         # A provider is configured and answers asynchronously (`system_two_reply`).
         self.system_two = system_two
+        # The TTL check of a scheduled command compares the HAL's clock with the one
+        # that stamped the token: they must be the same clock.
+        if session.conversation.ledger.clock is not clock:
+            raise ValueError("VoiceSession: `clock` must be the clock the session was loaded with")
         self.hal.enable_scheduling(clock)
         self.fsm = VoiceStateMachine(
             params,

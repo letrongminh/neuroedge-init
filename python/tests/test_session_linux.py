@@ -278,8 +278,9 @@ def test_a_failure_after_the_lines_are_requested_releases_them(driveway, gpio, m
     assert gpio.requests and all(request.released for request in gpio.requests)
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def restore_signals():
+    """Every linux session installs process-wide SIGTERM/SIGHUP handlers: put them back."""
     import signal
 
     saved = {name: signal.getsignal(getattr(signal, name)) for name in ("SIGTERM", "SIGHUP")}
@@ -294,9 +295,9 @@ def test_a_linux_session_ends_on_sigterm_and_sighup_through_its_finally(
     signal = restore_signals
     result = invoke("run", "--target", "linux", "--agent", str(driveway), "-c", "bật đèn hiên")
     assert result.exit_code == 0, result.output
-    for name in ("SIGTERM", "SIGHUP"):
+    handlers = {name: signal.getsignal(getattr(signal, name)) for name in ("SIGTERM", "SIGHUP")}
+    for name, handler in handlers.items():
         number = getattr(signal, name)
-        handler = signal.getsignal(number)
         assert callable(handler), f"{name} must not end the process without close()"
         with pytest.raises(SystemExit) as caught:
             handler(number, None)
@@ -363,3 +364,25 @@ def test_a_line_left_on_is_reported_when_the_session_drops_it(driveway, gpio):
     assert result.exit_code == 0, result.output
     assert "porch_light dropped inactive" in result.output
     assert line(gpio, "porch_light") == Value.INACTIVE
+
+
+def test_a_second_signal_during_cleanup_is_ignored(driveway, gpio, restore_signals):
+    signal = restore_signals
+    assert (
+        invoke("run", "--target", "linux", "--agent", str(driveway), "-c", "bật đèn hiên").exit_code
+        == 0
+    )
+    handler = signal.getsignal(signal.SIGTERM)
+    with pytest.raises(SystemExit):
+        handler(signal.SIGTERM, None)
+    assert signal.getsignal(signal.SIGTERM) is signal.SIG_IGN
+    assert signal.getsignal(signal.SIGHUP) is signal.SIG_IGN
+
+
+def test_a_voice_session_refuses_a_clock_other_than_the_sessions(root):
+    from neuroedge.perception import VirtualClock, VoiceSession
+
+    agent = root / "fixtures" / "agents" / "voice-door" / "agent.toml"
+    session = SimSession.load(agent, clock=VirtualClock())
+    with pytest.raises(ValueError, match="clock the session was loaded with"):
+        VoiceSession(session, clock=VirtualClock())
