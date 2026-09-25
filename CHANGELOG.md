@@ -32,10 +32,9 @@ bản gói.
 
 #### Đã thêm
 
-- **TSK-S4-09 — `verify --targets esp32s3` chạy trên QEMU; vết ghi firmware qua UART.** Firmware ghi sự kiện thành dòng
-  `NE1 ` (`ne_trace`) và replay 3 vết ghi chuẩn mực bằng walker C (`ne_decide`, có đường suy giảm) + sổ token C; `record`
-  / `verify --port` đọc tệp log, `tcp://` hoặc serial (`neuroedge[serial]`); job `uart-trace`. Đặc tả `simulation_coverage.md`
-  §4. Kiểm: `pytest tests/test_c_trace.py tests/test_uart_trace.py tests/test_trace_vectors.py`. (FR-CI-01, FR-CLI-03/04)
+- **TSK-S2-07 — đặc tả chuẩn tắc máy trạng thái hội thoại.** `docs/spec/voice_fsm.md`: năm trạng thái, bảng chuyển
+  trạng thái, hợp đồng thu hồi lệnh (chỉ lệnh chưa giao tới chân, ≤ 20 ms, đóng token; lệnh đã giao chạy hết), sự kiện,
+  kịch bản tuân thủ cho TSK-S3-10. Chỉ tài liệu. (FR-PER-02→05)
 - **Giai đoạn 1.5 — kế hoạch NeuroBrain (bản nháp, chờ `Q-N`).** `neuroedge-roadmap-phase1-5.md`: khối N0–N7,
   bring-up phần cứng có gate, song song Khối 1b tới Developer Beta; wireframe Lab Monitor ở `wireframe/`. Chỉ tài liệu,
   chưa có mã. Quyết định chuyển vào PRD §15 ở TSK-N0-01.
@@ -156,6 +155,8 @@ bản gói.
 
 #### Đã sửa
 
+- **Giấy phép Pipecat ghi sai là MIT** ở `NOTICE` và mẫu ghi nhận `CONTRIBUTING.md` §4. Xác minh tại nguồn
+  2026-09-25: BSD 2-Clause (Copyright Daily), khớp proposal Phụ lục H.1.
 - **`replay --target esp32s3` thoát mã 2**, không phải 1: target đã biết nhưng chưa replay được vết ghi tuỳ ý
   (TSK-S4-04) là "chưa hiện thực". `verify --targets esp32s3` nay chạy (TSK-S4-09). Kiểm: `pytest tests/test_cli.py -k esp32s3`.
 - **`mcp tools --help` mất chữ `[mcp.servers]`** vì `rich` đọc nó là thẻ markup. Escape trong `help=`; mọi `--help`
@@ -784,7 +785,7 @@ Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc 
 | [`neuroedge-roadmap-phase1-5.md`](neuroedge-roadmap-phase1-5.md) | Giai đoạn 1.5 — NeuroBrain (bản nháp, chờ `Q-N`) | Khi việc thuộc Khối N0–N7 |
 | [`neuroedge-prd.md`](neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`; **§15 là sổ quyết định duy nhất** (`Q-N`); Phụ lục B là mã lỗi | Khi cần biết *phải* làm gì, và đã chốt gì |
 | [`neuroedge-proposal.md`](neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** | Khi cần biết *tại sao* |
-| [`docs/spec/`](docs/spec/) | Đặc tả chuẩn tắc: Gated Tool Profile, mô hình mối đe doạ, phủ mô phỏng, rà soát MCU | Trước khi đổi hành vi ở tầng tương ứng |
+| [`docs/spec/`](docs/spec/) | Đặc tả chuẩn tắc: Gated Tool Profile, mô hình mối đe doạ, phủ mô phỏng, rà soát MCU, máy trạng thái hội thoại | Trước khi đổi hành vi ở tầng tương ứng |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quy ước; §3 việc gì cần RFC; §6 cấu trúc kho; §8 khi xong task | Trước khi sửa |
 | [`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md) | Kế hoạch Giai đoạn 1 đã duyệt, nay lưu trữ (biên bản review cùng thư mục) | Khi cần biết *vì sao* một task bị cắt/hoãn |
 | [`TODOS.md`](TODOS.md) | Việc hoãn có chủ ý, mỗi mục kèm mốc kích hoạt | Trước khi đề xuất việc "còn thiếu" |
@@ -851,7 +852,7 @@ nó trong bảng task.
 
 | # | Nợ | Phải giải quyết ở |
 |:---:|:---|:---|
-| 1 | **Hủy lệnh đang chờ mới có ở `sim` và `linux`.** Hợp đồng thu hồi lệnh vật lý (roadmap §3.8) yêu cầu `barge_in` hủy xung chốt cửa đang chờ trong ≤ 1 khung âm thanh. `SimHAL` và `LinuxHAL` đã trả `PendingCommand.cancel()`; `esp32s3` phải hủy được thật ở tầng firmware | **TSK-S4-01**, cùng lúc với hợp đồng thu hồi — không phải sau |
+| 1 | **Hủy lệnh đang chờ mới có ở `sim` và `linux`.** Hợp đồng thu hồi lệnh vật lý (`docs/spec/voice_fsm.md` §5) yêu cầu cắt lời hủy xung chốt cửa đang chờ trong ≤ 1 khung âm thanh. `SimHAL` và `LinuxHAL` đã trả `PendingCommand.cancel()`; `esp32s3` phải hủy được thật ở tầng firmware | **TSK-S4-01**, cùng lúc với hợp đồng thu hồi — không phải sau |
 | 2 | `gate publish` dừng ở mã băm, chưa ký số | Khối 3 (Gate Registry) |
 | 3 | `perception/` chỉ là khung | TSK-S3-11 (hoãn sang Sprint 5) |
 

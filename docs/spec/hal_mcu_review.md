@@ -125,7 +125,7 @@ Sprint 4 không phải suy luận lại:
 |:---:|:---|:---|
 | RB-1 | Không `malloc` trong đường dẫn âm thanh sau khi khởi tạo xong | Phân mảnh heap sau nhiều giờ chạy gây rớt khung; Tiêu chí 4 Sprint 5 đo bộ nhớ còn lại sau 4 giờ |
 | RB-2 | Đệm âm thanh cấp phát tĩnh trong PSRAM, đặt tên và đo được | Q-3 dành ≥ 2 MB PSRAM cho ring buffer, VAD và wake-word; không đo được thì không đối chiếu được |
-| RB-3 | `digital.out` phải hủy được lệnh đang chờ trong ≤ 1 khung âm thanh | Hợp đồng thu hồi lệnh vật lý (§3.8): `barge_in` phải hủy xung chốt cửa đang chờ, ghi `ACTUATOR_ABORTED_BY_BARGE_IN` |
+| RB-3 | `digital.out` phải hủy được lệnh đang chờ trong ≤ 1 khung âm thanh | Hợp đồng thu hồi lệnh vật lý ([`voice_fsm.md`](voice_fsm.md) §5): cắt lời phải hủy xung chốt cửa đang chờ, ghi `ACTUATOR_ABORTED_BY_BARGE_IN` |
 | RB-4 | Bảng năng lực là `const` trong flash, không phải cấu trúc dựng lúc chạy | Tiết kiệm SRAM và loại bỏ khả năng năng lực bị sửa lúc chạy — một đường tắt vòng qua gate (A3) |
 
 **RB-3 là ràng buộc khó nhất.** Nó nói rằng `digital_out` không thể là một lời
