@@ -94,7 +94,7 @@ Mọi yêu cầu trong tài liệu này phải tuân thủ năm nguyên tắc sa
 |:---:|:---|:---|
 | **P-1** | Hành động vật lý là hợp đồng chuẩn kiểu, không phải lời gọi hàm tự do | HAL từ chối mọi lệnh actuator thiếu chữ ký gate đã pass. Mọi đường từ ngôn ngữ tới hành động — giọng nói offline, LLM, client MCP — là một **tool call có kiểu** đi qua cùng gate (Q-24, `docs/spec/tool_calling.md`) |
 | **P-2** | Các môi trường thực thi ngang hàng | Không được rẽ nhánh logic theo target trong mã nguồn agent. Mức cam kết kiểm chứng phân theo ba bậc target (FR-TGT-08); hệ quả kỹ thuật này áp dụng như nhau ở mọi bậc |
-| **P-3** | Giá trị tập trung ở quản trị đội thiết bị | Tính năng an toàn cốt lõi không được khóa sau tài khoản trả phí |
+| **P-3** | Giá trị tập trung ở quản trị đội thiết bị và license thương mại | Người dùng phi thương mại có toàn bộ lõi miễn phí; với doanh nghiệp, tính năng an toàn cốt lõi luôn nằm trong license thương mại, không bao giờ bị tách thành gói trả thêm (Q-45) |
 | **P-4** | Mô hình AI là thành phần thay thế được — cloud-first, provider-pluggable | Mọi truy cập mô hình đi qua interface `SystemOne` / `SystemTwo`; chuẩn kết nối mặc định là OpenAI API, provider không tương thích đi qua adapter tự viết; ASR và TTS cũng là provider thay thế được. Phần nặng xử lý ngôn ngữ chạy trên cloud/host, `esp32s3` chỉ thu/phát âm thanh và thẩm định gate |
 | **P-5** | Hiệu ứng mạng từ chia sẻ chính sách an toàn và thành phần mở rộng | Gate là tệp dữ liệu có phiên bản, chia sẻ và kế thừa được. Adapter kết nối nhà cung cấp và bản port HAL là loại tài sản chia sẻ thứ hai; chúng là mã thực thi nên đi kèm cổng kiểm soát riêng — Bộ kiểm thử tuân thủ, sandbox phân quyền và đối chiếu năng lực lúc build |
 
@@ -111,6 +111,7 @@ Mọi yêu cầu trong tài liệu này phải tuân thủ năm nguyên tắc sa
 | **U3** | **Kỹ sư vận hành đội thiết bị (Fleet Ops)** | Quản lý 100–10.000 thiết bị đã lắp đặt | Cập nhật an toàn, chẩn đoán từ xa, không mất thiết bị | Chính (từ v1.1) |
 | **U4** | **Chuyên gia an toàn & QA** | Chịu trách nhiệm phê duyệt hành vi thiết bị | Điều kiện an toàn đọc được, nhật ký đối soát được | Phụ |
 | **U5** | **Đối tác sản xuất phần cứng (OEM/ODM)** | Bán bo mạch, muốn kèm lớp agent | Tích hợp không khóa khách vào một dòng chip | Phụ |
+| **U6** | **Đội tích hợp robot phân tầng** | Robot một não (Pi 5) và nhiều bộ điều khiển MCU: motor, tay máy, dẫn đường qua ROS 2/Nav2 (Q-32, Q-34) | Mọi lệnh chuyển động qua gate trên từng node; mất liên lạc thì từng cơ cấu về trạng thái an toàn (Q-35) | Phụ — từ I14; giả thuyết, kiểm bằng phỏng vấn ở `TODOS.md` #40 |
 
 ### 2.2 Nhiệm vụ cần hoàn thành (Jobs To Be Done)
 
@@ -185,7 +186,7 @@ nói mốc nào gồm increment nào.
 |:---|:---|:---:|:---|:---|
 | **0.x** | Bản increment nội bộ | I1–I5 | Mỗi increment một tag nội bộ và một tín hiệu đo; **không phát hành ra ngoài** (Q-39) | — |
 | **Công khai** | Repo công khai + PyPI | I6 | Demo thoại chạy trên `sim`, `linux` và ESP32-S3-Box-3 | I5 phát hành |
-| **v1.0** | Lõi mã nguồn mở | I7 | Khối 1a + Khối 1b | Đạt toàn bộ tiêu chí §11.1 |
+| **v1.0** | Lõi (source-available, Q-45) | I7 | Khối 1a + Khối 1b | Đạt toàn bộ tiêu chí §11.1 |
 | **Developer Beta** | Beta trên dòng `1.0.x` | I8 | Đóng băng tính năng trên dòng `1.0.x`, hỗ trợ 50–100 lập trình viên | v1.0 phát hành |
 | **v1.1** | Tầng dịch vụ thương mại | I9–I10 | Khối 2 + Khối 3 | **Cột mốc định lượng** — xem §3.3 |
 | **v2.0** | Giai đoạn 2 — thị giác và phủ rộng phần cứng | I11, I13, I15–I18 | Khối V1a/V1b/V2/V3 + P1/P2 *(proposal §8.9)* | **2a:** RFC-0002 được phê duyệt · **2b:** nhu cầu camera đo được từ khách hàng AURA thật |
@@ -341,7 +342,7 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-OTA-03** | Thiết bị xác minh chữ ký mật mã (RSA hoặc ECDSA) của firmware trước khi áp dụng | P0 | Firmware không chữ ký hoặc sai chữ ký bị từ chối | §6.4 |
 | **FR-OTA-04** | Thiết bị nạp được firmware từ một HTTP endpoint mở bất kỳ, **không bắt buộc dùng dịch vụ của NeuroEdge** | P0 | Tự dựng máy chủ firmware và cập nhật thành công mà không có tài khoản | §6.4 |
 
-**Ràng buộc nguyên tắc P-3:** FR-OTA-01 đến FR-OTA-04 thuộc lõi mã nguồn mở. Phần thương mại hóa chỉ là điều phối chiến dịch quy mô lớn (FR-FLT-02).
+**Ràng buộc nguyên tắc P-3:** FR-OTA-01 đến FR-OTA-04 thuộc lõi, không tách thành gói trả thêm (Q-45). Phần thương mại hóa chỉ là điều phối chiến dịch quy mô lớn (FR-FLT-02).
 
 ---
 
@@ -390,7 +391,7 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 
 | Mã | Yêu cầu | Ưu tiên | Tiêu chí nghiệm thu | Nguồn |
 |:---|:---|:---:|:---|:---:|
-| **FR-GOV-01** | Lược đồ gate và vết ghi xuất bản công khai theo giấy phép MIT hoặc Apache-2.0 | P0 | Kho lược đồ công khai, có tệp giấy phép | §3.8 |
+| **FR-GOV-01** | Lược đồ gate và vết ghi xuất bản công khai theo giấy phép Apache-2.0 (Q-45) | P0 | Kho lược đồ công khai, có tệp giấy phép | §3.8 |
 | **FR-GOV-02** | Phiên bản lược đồ quản lý theo đường dẫn URL (`/v1`, `/v2`); thay đổi phá vỡ tương thích bắt buộc tăng phiên bản chính | P0 | Có văn bản chính sách phiên bản kèm kho lược đồ | §3.8 |
 | **FR-GOV-03** | **Bộ kiểm thử tuân thủ:** công bố tập vết ghi mẫu kèm kết quả replay kỳ vọng để bên thứ ba tự kiểm chứng | P0 | Bên thứ ba chạy được bộ kiểm thử mà không cần chứng nhận độc quyền | §3.8 |
 | **FR-GOV-04** | Mọi thay đổi lược đồ đi qua quy trình RFC công khai trên GitHub | P1 | Có mẫu RFC và ít nhất một RFC đã qua quy trình | §3.8 |
@@ -439,20 +440,20 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 
 ## 8. Yêu cầu chức năng — Tầng dịch vụ thương mại
 
-**§8.1 (FR-GW) là lõi mã nguồn mở**, giao theo hai mốc (Q-28: FR-GW-01 và 03 ở mức tối thiểu trong v1.0, phần còn lại ở v1.1) — lớp trừu tượng nhà cung cấp do người dùng tự vận hành, không thu phí. **§8.2 (FR-FLT) và §8.3 (FR-REG) thuộc mốc v1.1**, chỉ khởi động khi đạt điều kiện §3.3. Fleet OS là dịch vụ thương mại duy nhất.
+**§8.1 (FR-GW) thuộc lõi**, giao theo hai mốc (Q-28: FR-GW-01 và 03 ở mức tối thiểu trong v1.0, phần còn lại ở v1.1) — lớp trừu tượng nhà cung cấp do người dùng tự vận hành, không thu phí dịch vụ (dùng thương mại vẫn cần license lõi — Q-45). **§8.2 (FR-FLT) và §8.3 (FR-REG) thuộc mốc v1.1**, chỉ khởi động khi đạt điều kiện §3.3. Fleet OS là dịch vụ thương mại duy nhất; dòng thu còn lại là license thương mại cho lõi (Q-45).
 
 ### 8.1 Lớp trừu tượng nhà cung cấp (FR-GW)
 
-Nhóm FR-GW chuyển từ dịch vụ thương mại sang **lõi mã nguồn mở** (CR-1.0); mốc giao của từng yêu cầu theo Q-28 và §3.2. Người dùng tự chạy lớp này, tự cấu hình provider và tự giữ khóa; NeuroEdge không vận hành cổng trung gian và không bán lại token.
+Nhóm FR-GW chuyển từ dịch vụ thương mại sang **lõi** (CR-1.0); mốc giao của từng yêu cầu theo Q-28 và §3.2. Người dùng tự chạy lớp này, tự cấu hình provider và tự giữ khóa; NeuroEdge không vận hành cổng trung gian và không bán lại token.
 
 | Mã | Yêu cầu | Ưu tiên | Tiêu chí nghiệm thu | Nguồn |
 |:---|:---|:---:|:---|:---:|
 | **FR-GW-01** | Lớp trừu tượng self-host cung cấp một điểm kết nối và một thông tin xác thực duy nhất cho mọi nhà cung cấp mô hình | P0 | Một cấu hình duy nhất phục vụ nhiều provider; thiết bị không nhúng cứng khóa của từng nhà cung cấp | §6.1 |
 | **FR-GW-02** | Khóa bảo mật do người dùng tự quản lý trong lớp self-host, xoay vòng được mà không cần nạp lại firmware | P0 | Xoay khóa trên 10 thiết bị đang chạy, không gián đoạn dịch vụ | §6.1 |
-| **FR-GW-03** | Định tuyến đa nhà cung cấp kèm chuyển đổi dự phòng tự động — tính năng thuộc lõi OSS | P0 | Ngắt nhà cung cấp chính → thiết bị không thấy gián đoạn | §6.1 |
-| **FR-GW-04** | Giao thức tối ưu cho thiết bị biên: WebSocket liên tục, khung âm thanh nhị phân, phản hồi theo luồng — tính năng OSS, không phải dịch vụ trả phí | P0 | Vi điều khiển không phải bắt tay TLS cho từng yêu cầu | §6.1 |
+| **FR-GW-03** | Định tuyến đa nhà cung cấp kèm chuyển đổi dự phòng tự động — tính năng thuộc lõi | P0 | Ngắt nhà cung cấp chính → thiết bị không thấy gián đoạn | §6.1 |
+| **FR-GW-04** | Giao thức tối ưu cho thiết bị biên: WebSocket liên tục, khung âm thanh nhị phân, phản hồi theo luồng — tính năng thuộc lõi, không phải dịch vụ trả phí | P0 | Vi điều khiển không phải bắt tay TLS cho từng yêu cầu | §6.1 |
 | **FR-GW-05** | Hạn mức sử dụng cứng theo từng thiết bị — tùy chọn trong lớp self-host | P1 | Thiết bị lỗi lặp vòng bị chặn khi chạm hạn mức, có cảnh báo | §6.1 |
-| **FR-GW-06** | Bộ nhớ đệm ngữ nghĩa và thống kê tỷ lệ System 1 / System 2 — tùy chọn OSS | P1 | Báo cáo tỷ lệ và mức tiết kiệm chi phí theo nhóm tác vụ | §6.1 |
+| **FR-GW-06** | Bộ nhớ đệm ngữ nghĩa và thống kê tỷ lệ System 1 / System 2 — tùy chọn của lõi | P1 | Báo cáo tỷ lệ và mức tiết kiệm chi phí theo nhóm tác vụ | §6.1 |
 | **FR-GW-07** | Lớp trừu tượng xuất tệp vết ghi JSON **cùng định dạng** với Action CI cho mỗi phiên | P0 | Vết ghi từ lớp provider replay được trên máy cá nhân, không cần chuyển đổi | §6.1 |
 
 ### 8.2 Hệ điều hành quản trị đội thiết bị (FR-FLT)
@@ -506,7 +507,7 @@ Bảy đường ray (FR-REG-01→07, khớp proposal §8.5) rẻ ở giai đoạ
 | **NFR-RES-01** | Runtime trên `esp32s3` chạy ổn định trên bo mạch tham chiếu với pipeline thu/phát âm thanh, máy trạng thái hội thoại và thẩm định gate *(STT/TTS đặt ở provider cloud)* | Không tràn bộ nhớ trong 24 giờ chạy liên tục | P0 |
 | **NFR-RES-02** | Ngân sách SRAM/PSRAM tối thiểu còn tự do cho runtime | SRAM ≥ 120 KB · PSRAM ≥ 2 MB *(đã chốt tại §15 của tài liệu này, Q-3; dễ đạt hơn từ v1.0 nhờ cloud-first theo CR-1.0 — Change Request 1.0, 2026-09-21: chuyển sang cloud-first, provider-pluggable; bản ghi đầy đủ ở `CHANGELOG.md`)* | P0 |
 | **NFR-RES-03** | Kích thước firmware tối đa cho bo mạch tham chiếu | ≤ 3,5 MB *(đã chốt tại §15 của tài liệu này, Q-3 — vừa phân vùng kép A/B trên 16 MB Flash)* | P1 |
-| **NFR-RES-04** | Hệ thống hoạt động đầy đủ khi mất kết nối Internet trên lõi mã nguồn mở | 100% tính năng an toàn hoạt động offline | P0 |
+| **NFR-RES-04** | Hệ thống hoạt động đầy đủ khi mất kết nối Internet trên lõi | 100% tính năng an toàn hoạt động offline | P0 |
 
 ### 9.3 Độ tin cậy (NFR-REL)
 
@@ -554,7 +555,7 @@ Các lớp phòng thủ theo proposal §5 — hành động vật lý, bên gọ
 
 | Mã | Yêu cầu | Ưu tiên |
 |:---|:---|:---:|
-| **NFR-COMP-01** | Lõi phát hành theo giấy phép MIT | P0 |
+| **NFR-COMP-01** | Lõi phát hành theo PolyForm Noncommercial 1.0.0; lược đồ, đặc tả và bộ kiểm tuân thủ theo Apache-2.0 (Q-45, `LICENSING.md`) | P0 |
 | **NFR-COMP-02** | Không tính năng an toàn cốt lõi nào bị khóa sau tài khoản trả phí | P0 |
 | **NFR-COMP-03** | Mọi dịch vụ đám mây truy cập qua interface thay thế được (pluggable backend) | P0 |
 | **NFR-COMP-04** | Lược đồ gate và vết ghi là chuẩn mở, quản trị theo quy trình RFC công khai | P0 |
@@ -603,7 +604,7 @@ Bốn tệp định dạng tạo thành toàn bộ bề mặt dữ liệu của 
 Mỗi mốc chỉ được công bố khi đạt **toàn bộ** tiêu chí tương ứng. Không chấp nhận đạt một phần hoặc lấy giá trị trung bình.
 Các bản increment nội bộ trước khi công khai (I1–I5) không được công bố là đạt tiêu chí nào của mục này (Q-39).
 
-### 11.1 Nghiệm thu v1.0 — Lõi mã nguồn mở
+### 11.1 Nghiệm thu v1.0 — Lõi
 
 | # | Tiêu chí | Ngưỡng | Phương pháp kiểm chứng |
 |:---:|:---|:---|:---|
@@ -638,7 +639,7 @@ Các bản increment nội bộ trước khi công khai (I1–I5) không đượ
 | **C3** | Độ trễ thẩm định gate | Đạt NFR-PERF-02 và NFR-PERF-03 |
 | **C4** | Hiệu quả định tuyến | Đạt NFR-PERF-05 |
 | **C5** | Chia sẻ gate cộng đồng | ≥ 20 gate đạt từ 5 lượt cài đặt bởi người dùng độc lập |
-| **C6** | Cơ cấu doanh thu | **Chỉ số theo dõi, không là điều kiện phát hành (Q-42):** doanh thu Fleet so với đường hòa vốn của mô hình chỉ-Fleet, báo cáo hằng tháng *(NeuroEdge không còn doanh thu inference)* |
+| **C6** | Cơ cấu doanh thu | **Chỉ số theo dõi, không là điều kiện phát hành (Q-42):** doanh thu Fleet OS và license thương mại (Q-45) so với đường hòa vốn, báo cáo hằng tháng *(NeuroEdge không còn doanh thu inference)* |
 | **C7** | Đồng nhất định dạng vết ghi | Vết ghi từ lớp trừu tượng provider replay được trên máy cá nhân, không chuyển đổi |
 | **C8** | Độ trễ quyết định `SystemOne` có cấu trúc | Đạt NFR-PERF-04, đo trên lưu lượng thực qua FR-TEL-06 |
 
@@ -802,6 +803,7 @@ Mọi quyết định kỹ thuật, đã chốt hoặc còn mở — xem cột T
 | **Q-42** | C6 ở v1.1 | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **C6 thành chỉ số theo dõi**, không là điều kiện phát hành: v1.1 công bố khi đạt C1–C5, C7, C8. Doanh thu Fleet so với đường hòa vốn báo cáo hằng tháng. Lý do: hòa vốn cần hàng chục nghìn thiết bị (proposal §6.3), tức mức G1, nên giữ C6 làm điều kiện thì v1.1 không bao giờ công bố được. |
 | **Q-43** | Mốc kiểm chứng giả định G-a..G-e | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **Neo theo increment**, không theo tháng: mỗi giả định chỉ đo sau khi thứ nó đo đã tồn tại. G-b khi Beta (I8) đóng — cùng chỉ số với B5; G-a và G-c 90 ngày sau khi I9 phát hành; G-d 12 tháng sau khi I10 phát hành, tín hiệu sớm là B3; G-e 6 tháng sau ba site AURA đầu tiên. Cột "Mốc" ở §13.3 theo quyết định này. |
 | **Q-44** | Bậc cắt 5 — tách thoại khỏi MCU | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **Bỏ bậc 5**: thoại trên ESP32-S3 là **bắt buộc** cho v1.0; A6 giữ nguyên. Hệ quả đã chấp nhận: rủi ro bộ nhớ R-1 không còn lối thoát bằng cắt phạm vi — spike TSK-S1-10 trượt một ngưỡng Q-3 thì không cắt thoại, mà mở ngay một `Q-N` lập lại kế hoạch I5 (TSK-S5-05 tối ưu bộ nhớ, TSK-S5-07 chọn backend fallback) và dời dự báo v1.0. Thang cắt ở roadmap §9 còn bốn bậc. |
+| **Q-45** | Giấy phép của NeuroEdge và kho công khai | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **Mã NeuroEdge theo PolyForm Noncommercial 1.0.0**, thay MIT: dùng miễn phí cho mục đích phi thương mại; **mọi sử dụng thương mại, kể cả dùng nội bộ doanh nghiệp, cần license thương mại** do NeuroEdge cấp. **Chuẩn giữ mở theo Apache-2.0:** `schemas/`, `docs/spec/`, `fixtures/compliance/` — để bên thứ ba hiện thực chuẩn và chạy bộ kiểm tuân thủ (A9), và để chuyển giao đặc tả cho tổ chức trung lập ở G1 (proposal §1.5). **Hệ quả đã chấp nhận:** (1) NeuroEdge không còn là mã nguồn mở theo OSI — gọi là *source-available*; (2) **P-3 sửa theo:** người dùng phi thương mại có toàn bộ lõi miễn phí; với doanh nghiệp, tính năng an toàn cốt lõi luôn nằm trong license thương mại, không tách thành gói trả thêm; (3) doanh thu có **hai dòng**: license thương mại cho lõi và Fleet OS (dịch vụ thương mại duy nhất); AURA là ứng dụng dọc, doanh thu dự án nằm ngoài mô hình nền tảng; (4) U2 — khách hàng chính — cần license thương mại để đưa sản phẩm vào sản xuất; (5) PR từ người ngoài cần CLA trước khi merge (`TODOS.md` #43); điều khoản license thương mại: `TODOS.md` #44; (6) bản phát hành tới commit `f68a47f` (2026-09-25) vẫn là MIT với người đã nhận; mã port từ bên thứ ba giữ giấy phép gốc (`NOTICE`); bất biến #9 (không copyleft mạnh trong phần phân phối) và allowlist phụ thuộc của Q-11 giữ nguyên. **Kho công khai:** kho chuyển public từ 2026-09-25, **toàn bộ kho** (chốt `TODOS.md` #41, lúc đầu để CI không tốn phút); PyPI và lần ra mắt vẫn ở I6 (Q-39). Bảng phạm vi: `LICENSING.md`. |
 
 ---
 
@@ -857,7 +859,7 @@ Yêu cầu phi chức năng **không được truy vết qua task roadmap** mà 
 | **NFR-PRIV** | 01, 03, 04 | Rà soát nội dung tệp vết ghi sinh ra ở chế độ mặc định | A7 |
 | **NFR-PRIV** | 02 | Rà soát ranh giới xử lý on-device và cloud theo P-4 | — *(rà soát kiến trúc)* |
 | **NFR-OBS** | 01→03 | Thẩm định tệp vết ghi bằng `neuroedge trace validate` | A7 |
-| **NFR-COMP** | 01→04 | Rà soát ranh giới mã nguồn mở và thương mại (proposal §6.4) | A9 |
+| **NFR-COMP** | 01→04 | Rà soát ranh giới giữa lõi và dịch vụ thương mại (proposal §6.4) | A9 |
 | **NFR-COMP** | 05, 06 | Ma trận nền tảng chạy trong CI | A2 |
 
 ### A.4 Đối chiếu các nhóm yêu cầu chức năng còn lại

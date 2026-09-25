@@ -61,3 +61,6 @@ dependencies.lock
 *.bin
 *.elf
 *.map
+
+# Agent worktrees (Claude Code) — local only
+.claude/worktrees/

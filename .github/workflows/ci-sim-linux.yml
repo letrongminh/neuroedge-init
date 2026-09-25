@@ -273,8 +273,9 @@ jobs:
 
       - name: No strong-copyleft dependency reaches the distributed core
         run: |
-          # §3.10: GPLv3/AGPL contamination would spread from the MIT core into
-          # customer projects. Two real accidents this guards against:
+          # §3.10: GPLv3/AGPL code would conflict with the core's licence (Q-45)
+          # and spread from the core into customer projects. Two real accidents
+          # this guards against:
           #   * jsonschema's default [format] extra pulls in GPL rfc3987
           #     (hence [format-nongpl] in pyproject.toml);
           #   * copier pulls in jinja2-ansible-filters, which is GPL3 (hence
@@ -283,7 +284,8 @@ jobs:
           python -m pip install -e 'python[dev]' >/dev/null
           pip-licenses --format=csv > licences.csv
           cat licences.csv
-          pip-licenses --partial-match --fail-on="GPL;GNU General Public License;GNU Affero General Public License;AGPL"
+          # `neuroedge` is the product, not a dependency: its own licence is Q-45.
+          pip-licenses --partial-match --ignore-packages neuroedge --fail-on="GPL;GNU General Public License;GNU Affero General Public License;AGPL"
           echo "  ok  no strong-copyleft dependency found"
 
       - uses: actions/upload-artifact@v4
@@ -320,7 +322,9 @@ jobs:
           # unknown and commercial licences fail too (scripts/check_licences.py).
           pip-licenses --format=csv > licences-cloud.csv
           cat licences-cloud.csv
-          pip-licenses --partial-match --fail-on="GPL;GNU General Public License;GNU Lesser General Public License;GNU Affero General Public License;AGPL;SSPL;Server Side Public License;BUSL;Business Source License;Commercial;Proprietary"
+          # `neuroedge` is the product: "Commercial" would match its own
+          # "PolyForm-Noncommercial-1.0.0" (Q-45); check_licences.py skips it too.
+          pip-licenses --partial-match --ignore-packages neuroedge --fail-on="GPL;GNU General Public License;GNU Lesser General Public License;GNU Affero General Public License;AGPL;SSPL;Server Side Public License;BUSL;Business Source License;Commercial;Proprietary"
           pip-licenses --format=json > licences-cloud.json
           python scripts/check_licences.py licences-cloud.json
 

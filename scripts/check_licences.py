@@ -13,6 +13,9 @@ GPL/LGPL/AGPL, SSPL, BSL, commercial, and *unknown*. Stricter than
 each licence string is split into its parts (``;``, ``AND``, ``OR``,
 SPDX grouping) and **every** part must be an allowed licence.
 
+The product itself is skipped: `neuroedge` carries its own licence (PolyForm
+Noncommercial 1.0.0 AND Apache-2.0, Q-45), and Q-11 governs its dependencies.
+
 Standard library only: it runs in the environment it inspects.
 """
 
@@ -41,6 +44,7 @@ ALLOWED = [
 ]
 ALLOWED_RE = re.compile(r"^(?:" + "|".join(ALLOWED) + r")$", re.IGNORECASE)
 SPLIT = re.compile(r";|\s+AND\s+|\s+OR\s+", re.IGNORECASE)
+PRODUCT = "neuroedge"  # the package under test, not a dependency (Q-45)
 
 
 def parts(licence: str) -> list[str]:
@@ -62,6 +66,8 @@ def parts(licence: str) -> list[str]:
 def offenders(packages: list[dict]) -> list[tuple[str, str, str]]:
     bad = []
     for package in packages:
+        if str(package.get("Name", "")).lower() == PRODUCT:
+            continue
         licence = str(package.get("License", ""))
         pieces = parts(licence)
         rejected = [p for p in pieces if not ALLOWED_RE.match(p)] or ([] if pieces else ["UNKNOWN"])

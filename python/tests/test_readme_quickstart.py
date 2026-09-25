@@ -43,9 +43,10 @@ def test_the_quickstart_has_at_most_three_commands(root):
     assert len(_quickstart_lines(root)) <= 3
 
 
-def test_the_quickstart_installs_extras_the_package_declares(root):
+def test_the_quickstart_installs_the_bare_package(root):
+    """PRD Hành trình 1: no key, no account — the extras are named, not required."""
     install = _quickstart_lines(root)[0]
-    assert install == "pip install 'neuroedge[mcp]'"
+    assert install == "pip install neuroedge"
     declared = tomllib.loads((root / "python" / "pyproject.toml").read_text("utf-8"))
     extras = declared["project"]["optional-dependencies"]
     # The comment on that line names the extras for a real LLM; both must exist.
@@ -68,16 +69,25 @@ def fresh_actions():
 
 def test_every_quickstart_command_runs_and_succeeds(root, tmp_path, monkeypatch, fresh_actions):
     monkeypatch.chdir(tmp_path)  # a stranger's empty directory, not the checkout
-    config = tmp_path / "claude_desktop_config.json"
     lines = _quickstart_lines(root)
     commands = [shlex.split(line)[1:] for line in lines if line.startswith("neuroedge ")]
     assert commands, "the README quickstart lost its neuroedge commands"
     for argv in commands:
-        if argv[:2] == ["mcp", "desktop-config"]:
-            assert "--write" in argv
-            argv = [*argv, "--config-path", str(config)]  # never the real Desktop config
         result = runner.invoke(app, argv)
         assert result.exit_code == 0, f"neuroedge {' '.join(argv)}\n{result.output}"
+    assert "ALLOW" in result.output, "the last quickstart command should show the gate allow"
+
+
+def test_the_claude_desktop_path_runs(root, tmp_path, monkeypatch, fresh_actions):
+    """The README's second path: the exact `desktop-config` command it quotes."""
+    monkeypatch.chdir(tmp_path)
+    assert runner.invoke(app, ["new", "my-home", "--template", "home-voice"]).exit_code == 0
+    (quoted,) = re.findall(r"`(neuroedge mcp desktop-config [^`]+)`", _text(root))
+    argv = shlex.split(quoted)[1:]
+    assert "--write" in argv
+    config = tmp_path / "claude_desktop_config.json"  # never the real Desktop config
+    result = runner.invoke(app, [*argv, "--config-path", str(config)])
+    assert result.exit_code == 0, result.output
     (entry,) = json.loads(config.read_text("utf-8"))["mcpServers"].values()
     assert str((tmp_path / "my-home" / "agent.toml").resolve()) in entry["args"]
     assert entry["args"][-3:] == ["--ui", "--port", "8765"]

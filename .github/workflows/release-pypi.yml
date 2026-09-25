@@ -20,9 +20,11 @@ on:
       - python/pyproject.toml
       - python/hatch_build.py
       - python/LICENSE
+      - python/LICENSES/**
       - python/neuroedge/paths.py
       - README.md
       - LICENSE
+      - LICENSES/**
       - scripts/wheel_smoke.sh
       - .github/workflows/release-pypi.yml
   workflow_dispatch:

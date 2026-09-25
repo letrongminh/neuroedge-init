@@ -19,15 +19,19 @@ phát lại vết ghi, ESP32-S3 mới chạy logic gate.
 ## Bắt đầu nhanh (Python 3.11+)
 
 ```bash
-pip install 'neuroedge[mcp]'    # muốn trả lời bằng LLM thật: 'neuroedge[mcp,cloud]'
+pip install neuroedge    # qua Claude Desktop hoặc LLM thật: 'neuroedge[mcp,cloud]'
 neuroedge new my-home --template home-voice
-neuroedge mcp desktop-config --agent my-home/agent.toml --ui --write
+neuroedge run --agent my-home/agent.toml -c "bật đèn"
 ```
 
-Thoát hẳn Claude Desktop rồi mở lại, nhờ nó *"bật đèn"*: đèn ảo sáng và phán
-quyết của gate hiện ngay ở http://127.0.0.1:8765 (cổng bận thì URL thật nằm trong log
-MCP của Desktop). Không dùng Claude Desktop thì `cd my-home && neuroedge run --ui` — gõ
-lệnh, xem cùng trang đó. Không cần mạng, không cần khoá API.
+Không cần mạng, không cần khoá API, không cần tài khoản: câu *"bật đèn"* đi qua ngữ pháp
+lệnh cục bộ, gate `light_on` cho ALLOW và đèn ảo `porch_light` bật. Gõ tiếp nhiều lệnh và
+xem phán quyết trên trang cục bộ: `cd my-home && neuroedge run --ui`.
+
+Muốn nhờ Claude Desktop *"bật đèn"*: `pip install 'neuroedge[mcp]'`, rồi
+`neuroedge mcp desktop-config --agent my-home/agent.toml --ui --write`, thoát hẳn Claude
+Desktop rồi mở lại — phán quyết hiện ở http://127.0.0.1:8765 (cổng bận thì URL thật nằm
+trong log MCP của Desktop).
 
 ## Gate trông thế nào
 
@@ -54,4 +58,13 @@ Không đường nào tới chân GPIO bỏ qua gate.
   · [mô hình mối đe doạ](https://github.com/letrongminh/neuroedge-init/blob/main/docs/spec/threat_model.md)
 - [Kiến trúc](https://github.com/letrongminh/neuroedge-init/blob/main/neuroedge-proposal.md)
   · [đóng góp](https://github.com/letrongminh/neuroedge-init/blob/main/CONTRIBUTING.md)
-  · [giấy phép MIT](https://github.com/letrongminh/neuroedge-init/blob/main/LICENSE)
+  · [giấy phép](https://github.com/letrongminh/neuroedge-init/blob/main/LICENSING.md)
+
+## Giấy phép
+
+Mã theo [PolyForm Noncommercial 1.0.0](https://github.com/letrongminh/neuroedge-init/blob/main/LICENSE):
+dùng miễn phí cho mục đích phi thương mại; **dùng thương mại cần license thương mại**. Lược đồ,
+đặc tả và bộ kiểm tuân thủ theo
+[Apache-2.0](https://github.com/letrongminh/neuroedge-init/blob/main/LICENSES/Apache-2.0.txt), để ai
+cũng hiện thực được chuẩn. Phạm vi từng phần:
+[`LICENSING.md`](https://github.com/letrongminh/neuroedge-init/blob/main/LICENSING.md).

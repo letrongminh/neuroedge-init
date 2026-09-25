@@ -11,10 +11,10 @@
 | Chỉ số | Trạng thái hiện hành |
 |:---|:---|
 | Pha đang thực thi | 🟡 **I1 — Preview nội bộ trên `sim`** (I2, I3 phần không cần bo mạch và I4 làm song song) |
-| Increment đang mở | 🟡 **I1** — còn TSK-S3-08, S3-15, I1-01, I1-02, I1-03 |
+| Increment đang mở | 🟡 **I1** — còn TSK-S3-08, I1-01, I1-02, I1-03 |
 | Cột mốc tiếp theo | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** |
-| Trạng thái CI Lõi | ✅ **PASS 1039/1039 · SKIP 0** |
-| Chặn ngoài tầm kỹ thuật | 🟡 **3 hạng mục chặn** |
+| Trạng thái CI Lõi | ✅ **PASS 1041/1041 · SKIP 0** |
+| Chặn ngoài tầm kỹ thuật | 🟡 **2 hạng mục chặn** |
 | Lần cập nhật cuối | **2026-09-25** |
 
 ## Increment
@@ -23,12 +23,12 @@
 |:---:|:---|:---|:---:|:---|:---|
 | **0.x nội bộ** | **I0 — Lõi hợp đồng trên `sim`** | ✅ 2026-09-24 | **42 / 42** | ✅ Xong | lịch sử |
 |  | **Cổng nhu cầu (Q-20)** | 2026-10-25 | — | ⏳ Đang phỏng vấn | — |
-|  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | **0 / 5** | 🟡 Đang làm | tag `v0.1.0` (nội bộ) |
+|  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | **1 / 5** | 🟡 Đang làm | tag `v0.1.0` (nội bộ) |
 |  | **I2 — `linux` ngang `sim`** | 2026-11-29 | **0 / 4** | ⏳ Chưa bắt đầu | tag `v0.2.0` (nội bộ) |
 |  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | **4 / 14** | 🟡 Phần không cần bo mạch đã xong; chờ bo mạch | tag `v0.3.0` + firmware (nội bộ) |
 |  | **I4 — Thoại trên host** | 2026-12-13 | **1 / 8** | 🟡 Đặc tả xong; vector và FSM Python làm song song (Q-39) | tag `v0.4.0` (nội bộ) |
 |  | **I5 — Thoại trên Box-3** | 2027-01-03 | **0 / 7** | ⏳ Chưa bắt đầu | tag `v0.5.0` + firmware (nội bộ) |
-| **Công khai** | **I6 — Công khai** | 2027-01-10 | **0 / 8** | ⏳ Chưa bắt đầu | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
+| **Công khai** | **I6 — Công khai** | 2027-01-10 | **1 / 8** | ⏳ Chưa bắt đầu | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
 | **v1.0** | **I7 — v1.0** | 2027-01-24 | **0 / 12** | ⏳ Chưa bắt đầu | `v1.0.0` |
 | **Beta** | **I8 — Developer Beta** | 2027-02-21 | **0 / 1** | ⏳ Chưa bắt đầu | `1.0.x` (chỉ bản vá) |
 | **v1.1** | **I9 — Lớp provider v1.1 và Fleet OS** | sau I8 (nhánh A) | **0 / 9** | ⏳ Chờ nhánh A | `1.1.0` + dịch vụ |

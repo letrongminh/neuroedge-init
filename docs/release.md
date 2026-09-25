@@ -46,10 +46,8 @@ người đo được đội đưa tận tay (I1: buổi đo TTFV tại chỗ, `
 
 Làm theo đúng thứ tự, khi I6 mở. Bước 1–4 là cấu hình; chưa bước nào phát hành gì.
 
-1. **Repo công khai theo `TODOS.md` #41** (`TSK-I6-01`), sau khi gitleaks quét toàn lịch sử
-   sạch (`TSK-W0-03`). Công khai repo này: GitHub → Settings → General → Danger Zone →
-   *Change visibility*. Nếu CPO chọn repo mới, sửa Owner / Repository name ở bước 2 và mọi
-   link tuyệt đối trong `README.md` cho khớp. Trang PyPI dẫn người đọc về các link
+1. **Repo đã công khai** từ 2026-09-25 — toàn bộ kho (Q-45, `TSK-I6-01` ✅). Trước khi phát hành,
+   gitleaks quét toàn lịch sử phải sạch (`TSK-W0-03`, I6 tiêu chí 1). Trang PyPI dẫn người đọc về các link
    `https://github.com/letrongminh/neuroedge-init/...` trong `README.md`; repo private thì
    mọi link đó trả 404.
 2. **Tạo pending trusted publisher** trên cả hai index. Vào
