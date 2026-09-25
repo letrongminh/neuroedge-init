@@ -58,6 +58,8 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Chạy test an toàn của agent (Action CI) | `neuroedge test` | ✅ |
 | Kiểm cả kho: gate, vết ghi chuẩn mực, corpus tool call, replay | `neuroedge verify` | ✅ |
 | Kiểm cùng quyết định trên `sim` và `linux` (A2) | `neuroedge verify --targets sim,linux` | ✅ cần line GPIO |
+| Ghi vết ghi từ firmware `esp32s3` qua UART | `neuroedge record --target esp32s3 --port <log · tcp://… · /dev/tty…>` | ✅ trên QEMU · bo mạch ⏳ |
+| Kiểm cùng quyết định trên `esp32s3`: firmware replay các vết ghi chuẩn mực | `neuroedge verify --targets esp32s3 --port …` | ✅ trên QEMU · bo mạch ⏳ |
 | Phiên gõ chữ tương tác trên `linux` | `neuroedge run --target linux` | ⏳ |
 | Hành trình 10 phút (TTFV) | — | ⏳ mốc M1 |
 
@@ -72,8 +74,9 @@ Nói thẳng để bạn không mất thời gian:
 - `--target linux` cần line GPIO thật hoặc ảo (`scripts/setup_gpio_sim.sh`) và
   `pip install 'neuroedge[linux]'`; thiếu thì lệnh báo lỗi, không giả vờ chạy.
 - Trên `linux` mới có `digital.out`; `sensor.read`, `display` và âm thanh chưa hiện thực.
-- Chưa có bo mạch `esp32s3`: walker gate và sổ token C chỉ chạy trên máy tính và QEMU;
-  `record --target esp32s3` chưa có.
+- Chưa có bo mạch `esp32s3`: firmware (walker gate, sổ token C, replay vết ghi chuẩn mực) mới chạy
+  trên máy tính và QEMU. Trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng
+  trên host; `replay --target esp32s3` cho vết ghi tuỳ ý **thoát mã 2**.
 - Tương đương target mới so **quyết định** (phán quyết + lệnh chân), chưa so timing.
 - Danh sách đầy đủ: `CHANGELOG.md` §3.7.
 

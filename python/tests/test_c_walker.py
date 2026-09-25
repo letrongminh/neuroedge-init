@@ -8,7 +8,9 @@ with AddressSanitizer and UndefinedBehaviorSanitizer and run against:
   failing criterion as recorded — independent of today's Python);
 * for every gate in `gates/`, the fixture corpus and the sample agents: the
   truth-table rows and seeded random facts and arguments, each decided by the
-  real `ActionContractEngine` (with and without a person's confirmation);
+  real `ActionContractEngine` (with and without a person's confirmation), and
+  again with gathering degraded — a source offline, a source timing out, the
+  evaluation overrunning its budget — through `ne_decide` (`fail: open|closed`);
 * byte-level fuzzing of every tree (truncation, corruption, hostile structure).
 
 Plus the static budget: no `.data`/`.bss` in the walker object, and every
@@ -41,7 +43,7 @@ from neuroedge.engine.binary_tree import (
 )
 from neuroedge.engine.decision_tree import compile_tree, truth_cases
 from neuroedge.engine.gate_resolver import GateRegistry, resolve_gate_document, resolve_gate_file
-from neuroedge.engine.verdict import Fact
+from neuroedge.engine.verdict import Fact, Unavailable
 from neuroedge.errors import GateSchemaError
 
 STACK_LIMIT = 512  # bytes per function; the walker has no recursion
@@ -51,7 +53,11 @@ REASONS = {
     "criterion_unavailable": 2,
     "confidence_unavailable": 3,
     "argument_out_of_range": 4,
+    "gate_unreachable": 5,
+    "budget_exceeded": 6,
 }
+FAIL_MODES = {None: 0, "open": 1, "closed": 2}
+DEGRADED_NONE, DEGRADED_UNREACHABLE, DEGRADED_BUDGET = 0, 1, 2
 T_STRING, T_INTEGER, T_NUMBER, T_BOOLEAN, T_OTHER = 0, 1, 2, 3, 7
 
 
@@ -230,11 +236,53 @@ def _in_range(limit):
     }[limit["type"]]
 
 
-async def engine_decision(tree_gate, facts, args, confirmed):
+class _Down:
+    """A fact source that cannot answer: offline (gate_unreachable) or timing out."""
+
+    def __init__(self, reason: str) -> None:
+        self.answer = Unavailable(reason, "test")
+
+    async def adjudicate(self, criterion, definition, state, deadline_ms=None):
+        return self.answer
+
+
+def _overrun_clock(p95):
+    """t0, then every later reading past the budget: the evaluation overran p95."""
+    readings = iter([0.0])
+    return lambda: next(readings, p95 + 1.0)
+
+
+async def engine_decision(tree_gate, facts, args, confirmed, source=None, clock=None):
     """What the real host engine decides — the reference the C walker must match."""
-    engine = ActionContractEngine(events=EventLog())
+    kwargs = {} if clock is None else {"clock": clock}
+    engine = ActionContractEngine(events=EventLog(), facts_source=source, **kwargs)
     engine.register("g", tree_gate)
     return await engine.evaluate("g", facts, arguments=args, confirmed=confirmed)
+
+
+def degraded_cases(tree, rng: random.Random, rows: int = 120):
+    """
+    (facts, args, confirmed, degraded, source, clock): gathering that failed, as the
+    engine meets it. A source is asked only for a fact the context lacks, so an
+    offline or timing-out source degrades only then; an overrun budget degrades
+    even with every fact given. When the host would not degrade, neither does C.
+    """
+    out = []
+    names = [node["criterion"] for node in tree["nodes"]]
+    for facts, args, confirmed in cases(tree, rng, random_rows=rows)[-rows:]:
+        if rng.random() < 0.6 and names:
+            facts = {k: v for k, v in facts.items() if k != rng.choice(names)}
+        missing = any(name not in facts for name in names)
+        kind = rng.choice(["offline", "timeout", "overrun"])
+        if kind == "overrun":
+            p95 = tree["budget"]["p95_latency_ms"]
+            out.append((facts, args, confirmed, DEGRADED_BUDGET, None, _overrun_clock(p95)))
+        elif missing:
+            degraded = DEGRADED_UNREACHABLE if kind == "offline" else DEGRADED_BUDGET
+            out.append((facts, args, confirmed, degraded, _Down(kind), None))
+        else:
+            out.append((facts, args, confirmed, DEGRADED_NONE, _Down(kind), None))
+    return out
 
 
 def expected_from_engine(tree, result):
@@ -243,14 +291,14 @@ def expected_from_engine(tree, result):
     verdict = 0 if str(result.verdict) == "ALLOW" else 1
     reason = REASONS[None if result.reason is None else str(result.reason)]
     kind = index = 0
-    if verdict == 1:
+    if verdict == 1 and result.failed_criterion is not None:
         if reason == REASONS["argument_out_of_range"]:
             kind, index = 2, arg_names.index(result.failed_criterion)
         else:
             kind, index = 1, names.index(result.failed_criterion)
     confirmed_mask = sum(1 << names.index(c) for c in result.confirmed)
     answerable = 1 if result.confirms else 0
-    return verdict, reason, kind, index, answerable, confirmed_mask
+    return verdict, reason, kind, index, answerable, confirmed_mask, FAIL_MODES[result.fail_mode]
 
 
 # --- encoding a case for the C runner ---------------------------------------------------------
@@ -289,16 +337,28 @@ def encode_arg(args, name) -> bytes:
 
 
 def write_cases(path: Path, tree, rows) -> None:
+    """Rows are (facts, args, confirmed, expected[, degraded]); `expected` may omit fail_mode."""
     limits = tree.get("arguments") or []
-    body = bytearray(struct.pack("<4sIIII", b"NEVC", 1, len(tree["nodes"]), len(limits), len(rows)))
-    for facts, args, confirmed, expected in rows:
+    body = bytearray(struct.pack("<4sIIII", b"NEVC", 2, len(tree["nodes"]), len(limits), len(rows)))
+    for facts, args, confirmed, expected, *rest in rows:
+        degraded = rest[0] if rest else DEGRADED_NONE
         for node in tree["nodes"]:
             body += encode_fact(node, facts.get(node["criterion"]))
         for limit in limits:
             body += encode_arg(args, limit["name"])
-        verdict, reason, kind, index, answerable, mask = expected
+        verdict, reason, kind, index, answerable, mask, *mode = expected
+        fail_mode = mode[0] if mode else 0
         body += struct.pack(
-            "<BBBBBBHI", 1 if confirmed else 0, verdict, reason, kind, index, answerable, 0, mask
+            "<BBBBBBBBI",
+            1 if confirmed else 0,
+            verdict,
+            reason,
+            kind,
+            index,
+            answerable,
+            degraded,
+            fail_mode,
+            mask,
         )
     path.write_bytes(bytes(body))
 
@@ -310,12 +370,23 @@ def test_the_c_walker_matches_the_host_engine_on_every_gate(root, runner, tmp_pa
     rng = random.Random(20260924)
     argv = [str(runner)]
     total = 0
+    degraded_rows = {"open": 0, "closed": 0, "None": 0}
     for name, tree in trees(root).items():
         gate = _gate_for(root, name)
         rows = []
         for facts, args, confirmed in cases(tree, rng):
             result = asyncio.run(engine_decision(gate, facts, args, confirmed))
             rows.append((facts, args, confirmed, expected_from_engine(tree, result)))
+        # Few gates declare `fail: open`, and open is where degraded verdicts differ most.
+        many = 1500 if tree["budget"]["fail"] == "open" else 120
+        for facts, args, confirmed, degraded, source, clock in degraded_cases(tree, rng, many):
+            result = asyncio.run(engine_decision(gate, facts, args, confirmed, source, clock))
+            degrades = result.fail_mode is not None or (
+                degraded != DEGRADED_NONE and not result.allowed and result.reason is not None
+            )
+            assert degrades or degraded == DEGRADED_NONE, (name, facts, result)
+            rows.append((facts, args, confirmed, expected_from_engine(tree, result), degraded))
+            degraded_rows[str(result.fail_mode)] += degraded != DEGRADED_NONE
         stem = re.sub(r"[^a-z0-9_.-]", "_", name.lower())
         (tmp_path / f"{stem}.netree").write_bytes(encode(tree))
         write_cases(tmp_path / f"{stem}.nevc", tree, rows)
@@ -325,6 +396,8 @@ def test_the_c_walker_matches_the_host_engine_on_every_gate(root, runner, tmp_pa
     assert result.returncode == 0, result.stdout[-4000:] + result.stderr[-4000:]
     assert "ALL OK" in result.stdout
     assert total > 5000
+    # Both fail modes met, and a fail-open known "no" that still blocks (fail_mode None).
+    assert min(degraded_rows.values()) > 50, degraded_rows
 
 
 def _gate_for(root, name):

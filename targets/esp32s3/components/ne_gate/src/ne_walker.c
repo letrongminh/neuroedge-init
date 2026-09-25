@@ -195,6 +195,22 @@ const char *ne_argument_name(const ne_tree *tree, uint32_t i) {
     return (const char *)strings_of(tree) + rd16(arg_at(tree, i) + A_NAME);
 }
 
+int ne_criterion_kind(const ne_tree *tree, uint32_t i) {
+    if (tree == NULL || tree->base == NULL || i >= tree->node_count) return -1;
+    return node_at(tree, i)[N_KIND];
+}
+
+const char *ne_domain_value(const ne_tree *tree, uint32_t i, uint32_t j) {
+    if (tree == NULL || tree->base == NULL || i >= tree->node_count) return NULL;
+    const uint8_t *node = node_at(tree, i);
+    if (j >= node[N_DOMAIN_SIZE]) return NULL;
+    /* ne_tree_load checked that the domain's strings are consecutive and terminated. */
+    const uint8_t *strings = strings_of(tree);
+    uint32_t off = rd16(node + N_DOMAIN_OFF);
+    for (uint32_t v = 0; v < j; v++) off = (uint32_t)string_end(strings, tree->strings_size, off) + 1u;
+    return (const char *)strings + off;
+}
+
 /* --- deciding ---------------------------------------------------------------------- */
 
 static int valid_confidence(double c) { return c >= 0.0 && c <= 1.0; } /* false for NaN */
@@ -305,5 +321,55 @@ ne_status ne_evaluate(const ne_tree *tree, const ne_fact *facts, const ne_arg_va
         uint8_t ignored = 0;
         out->answerable = walk(tree, facts, confirmable, &ignored) == NE_REASON_NONE;
     }
+    return NE_OK;
+}
+
+/* decision_tree.known_failure: the first criterion not waived whose fact is present and fails. */
+static ne_reason known_failure(const ne_tree *t, const ne_fact *facts, uint32_t waived,
+                               uint8_t *failed) {
+    for (uint32_t i = 0; i < t->node_count; i++) {
+        if (((waived >> i) & 1u) != 0u || facts == NULL || !facts[i].present) continue;
+        ne_reason r = classify(node_at(t, i), &facts[i]);
+        if (r != NE_REASON_NONE) {
+            *failed = (uint8_t)i;
+            return r;
+        }
+    }
+    return NE_REASON_NONE;
+}
+
+ne_status ne_decide(const ne_tree *tree, const ne_fact *facts, const ne_arg_value *args,
+                    int confirmed, ne_degraded degraded, ne_result *out) {
+    if (degraded != NE_DEGRADED_NONE && degraded != NE_DEGRADED_UNREACHABLE &&
+        degraded != NE_DEGRADED_BUDGET)
+        return NE_ERR_ARGUMENT;
+    ne_status status = ne_evaluate(tree, facts, args, confirmed, out);
+    if (status != NE_OK || degraded == NE_DEGRADED_NONE) return status;
+    /* RFC-0005: the limits decided before any source was asked. */
+    if (out->reason == NE_REASON_ARGUMENT_OUT_OF_RANGE) return NE_OK;
+
+    const ne_reason why =
+        degraded == NE_DEGRADED_BUDGET ? NE_REASON_BUDGET_EXCEEDED : NE_REASON_GATE_UNREACHABLE;
+    uint32_t confirmable = tree->on_block_action == ACTION_ASK ? tree->confirm_mask : 0u;
+    uint32_t waived = confirmed ? confirmable : 0u;
+    memset(out, 0, sizeof *out);
+    if (tree->fail_open) {
+        uint8_t failed = 0;
+        ne_reason known = known_failure(tree, facts, waived, &failed);
+        if (known != NE_REASON_NONE) { /* on_block, and no question: a person cannot answer it */
+            out->verdict = NE_BLOCK;
+            out->reason = known;
+            out->failed_kind = NE_FAILED_CRITERION;
+            out->failed_index = failed;
+            return NE_OK;
+        }
+        out->verdict = NE_ALLOW;
+        out->reason = why;
+        out->fail_mode = NE_FAIL_MODE_OPEN;
+        return NE_OK;
+    }
+    out->verdict = NE_BLOCK;
+    out->reason = why;
+    out->fail_mode = NE_FAIL_MODE_CLOSED;
     return NE_OK;
 }

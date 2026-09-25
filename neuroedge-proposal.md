@@ -412,7 +412,7 @@ Không một bộ mô phỏng nào phủ cả năm nguyên thủy trên cả ba 
 | `sensor.read` trên Linux | `i2c-stub` + driver `lm75` → sysfs hwmon | Đường đọc sysfs, đơn vị, giá trị theo kịch bản | Cảm biến thật; IIO (runner tắt `CONFIG_IIO`) | Mỗi PR |
 | Mã C thuần của firmware (walker cây quyết định, sổ token) | Biên dịch trên host (gcc/clang, ASan + UBSan) + bảng sự thật `fixtures/decision_trees/` | Walker C cho cùng phán quyết với walker Python, từng hàng | ISA Xtensa, bộ nhớ, ngắt | Mỗi PR |
 | Giao diện LVGL (`display` `esp32s3`) | Cùng mã LVGL build trên host, màn hình test `lv_test_display` + `lv_test_screenshot_compare` | Nội dung từng màn hình so ảnh golden | Đường SPI tới panel | Mỗi PR |
-| Firmware `esp32s3` khởi động | **Espressif QEMU** (`idf.py qemu`, ESP-IDF ≥ 5.4) | Boot, UART, flash, logic, self-test gate lúc khởi động, GDB; vết ghi qua UART | **I2S, I2C, Wi-Fi, LCD SPI, GPIO matrix, LEDC, PSRAM octal của Box-3**, timing | Mỗi PR đụng `targets/**` và hằng đêm |
+| Firmware `esp32s3` khởi động | **Espressif QEMU** (`qemu-system-xtensa`, cài bằng `idf_tools.py install qemu-xtensa`, ESP-IDF ≥ 5.4) | Boot, UART, flash, logic, self-test gate lúc khởi động, GDB; vết ghi qua UART | **I2S, I2C, Wi-Fi, LCD SPI, GPIO matrix, LEDC, PSRAM octal của Box-3**, timing | Mỗi PR đụng `targets/**` và hằng đêm |
 | Mọi thứ còn lại | ESP32-S3-BOX-3 · RPi 5 | Âm thanh, màn hình, GPIO thật, bộ nhớ, 24 giờ | — | Hằng đêm |
 
 Tầng nào đã chạy và task nào sở hữu tầng còn lại: roadmap (TSK-S4-05, S4-07, S4-08, S4-10, S5-08, S5-09).

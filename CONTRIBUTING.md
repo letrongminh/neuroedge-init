@@ -123,7 +123,7 @@ Mẫu ghi nhận tại chỗ:
 ```python
 # Ported from Pipecat (https://github.com/pipecat-ai/pipecat)
 # Source file: src/pipecat/processors/frame_processor.py @ commit <sha>
-# License: MIT. See NOTICE entry 2.
+# License: BSD-2-Clause (Copyright Daily). See NOTICE entry 2.
 ```
 
 Giấy phép nào được vào phần phân phối: chính sách **Q-11**
@@ -176,7 +176,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `python/neuroedge/perception/` | L2 — khung rỗng (TSK-S3-11, Sprint 5) | PR thường |
 | `python/neuroedge/sim/` | `SimSession` (REPL gõ chữ), `ui.py` (trang `--ui` cục bộ) | PR thường |
 | `python/neuroedge/mcp_server.py`, `mcp_host.py`, `mcp_desktop.py` | Máy chủ MCP · System 2 làm MCP host · cấu hình Claude Desktop | PR thường |
-| `python/neuroedge/testing/` | Action CI — recorder, player (replay), assertions, golden, `tool_corpus` | PR thường |
+| `python/neuroedge/testing/` | Action CI — recorder, player (replay), assertions, golden, `tool_corpus`, `uart` (vết ghi từ UART thiết bị) | PR thường |
 | `python/neuroedge/viz/` | `trace view`, xuất Perfetto | PR thường |
 | `python/neuroedge/templates/` | Mẫu dự án cho `neuroedge new` (`*.tmpl`, generator Python thuần) | PR thường |
 | `python/neuroedge/cli/` | CLI Typer: `main.py`, `run.py` (REPL), `explain.py` | PR thường |
@@ -185,8 +185,9 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `python/tests_linux/` | Test trên gpio-sim, job `linux-hal` | PR thường |
 | `python/hatch_build.py`, `pyproject.toml`, `requirements-lock.txt`, `LICENSE` | Đóng gói (asset vào `neuroedge/_data/`, README gốc vào metadata) · phụ thuộc ghim · bản sao `LICENSE` gốc | PR thường; chạy `scripts/wheel_smoke.sh` |
 | `targets/esp32s3/` (gốc) | Dự án ESP-IDF: `CMakeLists.txt`, `sdkconfig.defaults` (flash 16 MB, PSRAM, FreeRTOS 1000 Hz), `sdkconfig.qemu` (lớp phủ cho QEMU), `partitions.csv` (factory + OTA A/B) | PR thường; job `firmware-qemu` |
-| `targets/esp32s3/main/` | Firmware ESP-IDF: `main.c`, khung đo bộ nhớ, self-test gate; `gates/` sinh bằng `scripts/gen_firmware_gates.py` | PR thường |
+| `targets/esp32s3/main/` | Firmware ESP-IDF: `main.c`, khung đo bộ nhớ, self-test gate (ghi vết ghi `NE1`), replay vết ghi chuẩn mực (`trace_vectors.c`); `gates/` sinh bằng `scripts/gen_firmware_gates.py`, `vectors/` bằng `scripts/gen_firmware_vectors.py` | PR thường; đổi vết ghi chuẩn mực, gate hay action ⇒ sinh lại `vectors/` |
 | `targets/esp32s3/components/ne_gate/` | Walker C99 và sổ token C | PR thường; bố cục `NETR`: **RFC** |
+| `targets/esp32s3/components/ne_trace/` | Dòng vết ghi `NE1` trên UART — định dạng C99, không biến toàn cục ([`simulation_coverage.md`](docs/spec/simulation_coverage.md) §4) | PR thường; job `firmware-qemu` |
 | `scripts/` | Công cụ CI và phát hành | PR thường |
 | `.github/workflows/` | Bốn workflow — danh sách job: `CHANGELOG.md` §2.5 | PR thường |
 | `docs/rfc/`, `docs/spec/`, `docs/reports/` | RFC, đặc tả chuẩn tắc, báo cáo đo | PR thường |

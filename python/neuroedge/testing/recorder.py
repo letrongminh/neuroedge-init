@@ -74,6 +74,11 @@ class TraceRecorder(EventLog):
     def emit(self, type: str, data: dict[str, Any]) -> None:
         super().emit(type, anonymise(data) if self.anonymize else data)
 
+    def append(self, offset_ms: int, type: str, data: dict[str, Any]) -> None:
+        """An event recorded elsewhere — on a device (TSK-S4-09) — kept at its own offset."""
+        payload = anonymise(data) if self.anonymize else dict(data)
+        self.events.append({"offset_ms": int(offset_ms), "type": type, "data": payload})
+
     def save(self, path: str | Path | None = None) -> dict[str, Any]:
         """Validate against `trace.v1.json` and write; a trace that fails is never written."""
         target = Path(path) if path is not None else self.path

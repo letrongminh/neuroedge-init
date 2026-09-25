@@ -489,7 +489,7 @@ static void fill(void *buf, size_t len) {
 }
 int main(void) {
     char line[96];
-    int rc = neuroedge_gate_selftest(fill, 0x2468u, 4294967000u, line, sizeof line);
+    int rc = neuroedge_gate_selftest(fill, 0x2468u, 4294967000u, line, sizeof line, NULL);
     puts(line);
     return rc;
 }
@@ -498,6 +498,7 @@ int main(void) {
 
 def test_the_boot_self_test_passes_on_the_host(root, component, tmp_path):
     main_dir = root / "targets" / "esp32s3" / "main"
+    trace_dir = root / "targets" / "esp32s3" / "components" / "ne_trace"
     driver = tmp_path / "driver.c"
     driver.write_text(SELFTEST_MAIN)
     exe = tmp_path / "selftest"
@@ -509,9 +510,12 @@ def test_the_boot_self_test_passes_on_the_host(root, component, tmp_path):
         "-I",
         str(component / "include"),
         "-I",
+        str(trace_dir / "include"),
+        "-I",
         str(main_dir),
         str(component / "src" / "ne_walker.c"),
         str(component / "src" / "ne_token.c"),
+        str(trace_dir / "src" / "ne_trace.c"),
         str(main_dir / "gate_selftest.c"),
         str(driver),
         "-o",

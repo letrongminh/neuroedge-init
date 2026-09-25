@@ -6,6 +6,10 @@
  * walker, and runs one token through the ledger: issued, authorised once,
  * refused as `token_replayed` the second time. Pure C99 with no ESP-IDF
  * dependency, so python/tests/test_c_token.py also runs it on the host.
+ *
+ * With a trace sink, every gate evaluation is also written as `NE1` trace
+ * lines (gate_evaluation_begin, gate_facts, gate_evaluation_result — TSK-S4-09)
+ * inside the caller's session; token checks write none.
  */
 #ifndef NEUROEDGE_GATE_SELFTEST_H
 #define NEUROEDGE_GATE_SELFTEST_H
@@ -14,6 +18,7 @@
 #include <stdint.h>
 
 #include "ne_token.h"
+#include "ne_trace.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,9 +29,10 @@ extern "C" {
  * prints on the UART, which the QEMU job greps for:
  *   "NE_SELFTEST PASS walker=<n> token=<n>"   n = checks passed
  *   "NE_SELFTEST FAIL <what>"
+ * `sink` may be NULL: nothing but `line` is written.
  */
 int neuroedge_gate_selftest(ne_random_fn fill_random, uint32_t boot_id, uint32_t now_ms,
-                            char *line, size_t cap);
+                            char *line, size_t cap, ne_trace_sink *sink);
 
 #ifdef __cplusplus
 }

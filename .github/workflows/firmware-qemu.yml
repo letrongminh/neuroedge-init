@@ -5,6 +5,13 @@
 # UART: the C walker and the single-use token ledger, on the home-voice gates
 # linked into flash (targets/esp32s3/main/gate_selftest.c).
 #
+# The self-test's gate evaluations also go out as NE1 trace lines, and the
+# device then replays the canonical traces, one session each (TSK-S4-09). The
+# job `uart-trace` reads the captured UART with the installed CLI: `record`
+# writes and validates the sessions, `verify --targets esp32s3 --port` compares
+# the device's decisions with the golden references. The boot waits for
+# NE_TRACE DONE, the device's last line.
+#
 # Covers boot, UART, flash and the gate runtime. Not I2S, Wi-Fi, the LCD or GPIO:
 # QEMU does not emulate them, so CONFIG_NEUROEDGE_SKIP_NETWORK leaves Wi-Fi out.
 # No NE_SELFTEST PASS within the timeout is a failure, never a pass.
@@ -16,12 +23,18 @@ on:
       - "targets/**"
       - "python/neuroedge/engine/binary_tree.py"
       - "scripts/gen_firmware_gates.py"
+      - "scripts/gen_firmware_vectors.py"
+      - "fixtures/traces/*.json"
+      - "python/neuroedge/testing/uart.py"
+      - "python/neuroedge/testing/recorder.py"
       - ".github/workflows/firmware-qemu.yml"
   push:
     branches: [main]
     paths:
       - "targets/**"
       - "python/neuroedge/engine/binary_tree.py"
+      - "python/neuroedge/testing/uart.py"
+      - "fixtures/traces/*.json"
   schedule:
     - cron: "30 18 * * *"   # 01:30 UTC+7, after nightly-hardware
   workflow_dispatch:
@@ -52,6 +65,8 @@ jobs:
           idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.qemu" set-target esp32s3
           idf.py build
           grep -q '^CONFIG_NEUROEDGE_SKIP_NETWORK=y' sdkconfig
+          grep -q '^CONFIG_NEUROEDGE_QEMU=y' sdkconfig
+          grep -q '^CONFIG_NEUROEDGE_REPLAY_VECTORS=y' sdkconfig
 
       - name: Install Espressif QEMU
         run: python "$IDF_PATH/tools/idf_tools.py" install qemu-xtensa
@@ -67,19 +82,22 @@ jobs:
           qemu=$!
           verdict=""
           for _ in $(seq 1 120); do
-            if grep -q 'NE_SELFTEST PASS' uart.log 2>/dev/null; then verdict=pass; break; fi
             if grep -q 'NE_SELFTEST FAIL' uart.log 2>/dev/null; then verdict=fail; break; fi
+            # PASS comes first; NE_TRACE DONE is the device's last line (TSK-S4-09).
+            if grep -q 'NE_TRACE DONE' uart.log 2>/dev/null; then
+              grep -q 'NE_SELFTEST PASS' uart.log && verdict=pass
+              break
+            fi
             if ! kill -0 "$qemu" 2>/dev/null; then break; fi
             sleep 1
           done
-          sleep 2
           kill "$qemu" 2>/dev/null || true
           cat uart.log || true
           line="$(grep -o 'NE_SELFTEST .*' uart.log | head -n1 || true)"
           echo "### Firmware on QEMU" >> "$GITHUB_STEP_SUMMARY"
           echo "\`${line:-no NE_SELFTEST line}\`" >> "$GITHUB_STEP_SUMMARY"
           if [ "$verdict" != pass ]; then
-            echo "::error::no NE_SELFTEST PASS on the UART (${line:-nothing within 120 s})"
+            echo "::error::no NE_SELFTEST PASS then NE_TRACE DONE on the UART (${line:-nothing within 120 s})"
             exit 1
           fi
           echo "  ok  $line"
@@ -91,3 +109,52 @@ jobs:
           path: |
             targets/esp32s3/build/uart.log
             targets/esp32s3/sdkconfig
+
+  uart-trace:
+    name: The UART trace validates, and verify --targets esp32s3 passes (TSK-S4-09)
+    needs: firmware-qemu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install neuroedge
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ./python
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: firmware-qemu-uart
+          path: qemu
+
+      - name: Record the device's sessions and validate them
+        run: |
+          neuroedge record --target esp32s3 --port qemu/build/uart.log --out traces/
+          neuroedge trace validate traces/*.json
+          python - <<'PY'
+          import json, pathlib
+          for path in sorted(pathlib.Path("traces").glob("*.json")):
+              trace = json.loads(path.read_text())
+              assert trace["metadata"]["device_id"] == "qemu", path
+              results = [e for e in trace["events"] if e["type"] == "gate_evaluation_result"]
+              assert results, f"{path}: no gate evaluation"
+              print(f"  ok  {path.name}: {len(results)} gate evaluation(s), device qemu")
+          PY
+          {
+            echo "### UART trace from QEMU"
+            for f in traces/*.json; do echo "- \`$(basename "$f")\`"; done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: The device's replay of the canonical traces matches their golden
+        run: |
+          neuroedge verify --targets esp32s3 --port qemu/build/uart.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: firmware-qemu-traces
+          path: traces/
