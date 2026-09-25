@@ -32,6 +32,9 @@ bản gói.
 
 #### Đã thêm
 
+- **Dashboard sản phẩm cho CPO.** `docs/business/cpo-dashboard.html` — một trang tự chứa (mở thẳng bằng trình duyệt):
+  tiến độ sprint, mốc, việc chờ người, quyết định còn mở, TODOS, thay đổi gần đây; sinh từ roadmap/TODOS/PRD/CHANGELOG
+  bằng `python3 scripts/gen_cpo_dashboard.py`. Kiểm: `pytest tests/test_cpo_dashboard.py`.
 - **Mở rộng cho robot phân tầng FOFOCA (bản nháp, chờ `Q-N`).** `draft-ke-hoach-mo-rong-robot-fofoca.md` (chặng W0–W4:
   nguyên thủy HAL mới, multi-node với gate từng node qua black channel) + `draft-rfc-node-giao-thuc-dieu-phoi.md` (RFC chưa
   cấp số); điểm lệch với đặc tả và phạm vi hiện hành chờ quyết ở Phụ lục C. Chỉ tài liệu, chưa có mã.
@@ -658,6 +661,7 @@ $V/neuroedge verify                      # kỳ vọng: mọi gate phân giải 
 $V/neuroedge gate lint                   # kỳ vọng: ✓ mọi gate resolved, mã 0
 $V/neuroedge trace validate fixtures/traces/*.json   # kỳ vọng: mỗi tệp VALID
 $V/neuroedge board list                  # kỳ vọng: mỗi profile trong boards/
+python3 scripts/gen_cpo_dashboard.py     # sinh lại dashboard CPO (docs/business/cpo-dashboard.html) sau khi đổi roadmap/TODOS/PRD/CHANGELOG
 $V/python scripts/check_digests.py --check   # kỳ vọng: ✓ … tệp khớp digests.lock
 ```
 

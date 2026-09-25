@@ -192,7 +192,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `.github/workflows/` | Bốn workflow — danh sách job: `CHANGELOG.md` §2.5 | PR thường |
 | `docs/rfc/`, `docs/spec/`, `docs/reports/` | RFC, đặc tả chuẩn tắc, báo cáo đo | PR thường |
 | `docs/archive/` | Lịch sử đã khép, lưu để truy nguồn, không quy phạm: kế hoạch Giai đoạn 1 đã duyệt, biên bản review Giai đoạn 1 và RFC-0002 | Chỉ thêm, không sửa nội dung |
-| `docs/business/` | Bộ chuẩn bị cổng nhu cầu (Q-20) | PR thường |
+| `docs/business/` | Bộ chuẩn bị cổng nhu cầu (Q-20); `cpo-dashboard.html` sinh từ roadmap, `TODOS.md`, PRD §15, `CHANGELOG.md` | PR thường — đổi các nguồn đó thì chạy `python3 scripts/gen_cpo_dashboard.py` |
 | `wireframe/` | Wireframe HTML tham chiếu cho UI (bản chụp `ui.css`, không đóng gói) — hiện có Lab Monitor của Khối N5b | PR thường |
 | `docs/user/` | Tài liệu người dùng; `thuat-ngu.md` là nơi duy nhất giải mã ký hiệu; `trang-thai.md` sinh từ roadmap §0 | PR thường — `python3 scripts/gen_user_status.py` |
 | `docs/release.md` | Thủ tục phát hành PyPI | PR thường |
