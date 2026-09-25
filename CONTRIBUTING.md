@@ -15,6 +15,11 @@ Lệnh dựng môi trường, bản dựng tái lập và kiểm nhanh artifact:
 
 ## 2. Vòng đóng góp thông thường
 
+**Giấy phép của đóng góp (Q-45).** Mã theo PolyForm Noncommercial 1.0.0; lược đồ, đặc tả và bộ kiểm
+tuân thủ theo Apache-2.0 — bảng phạm vi ở [`LICENSING.md`](LICENSING.md). PR từ người ngoài cần
+CLA ký trước khi merge, để NeuroEdge cấp được license thương mại cho cả phần đóng góp; chưa có CLA
+thì PR được review nhưng không merge (`TODOS.md` #43).
+
 1. Nhánh từ `main`, tên `<loại>/<mã-task>-<mô-tả-ngắn>`, ví dụ
    `feat/TSK-S2-03-gate-engine`.
 2. Viết test trước khi viết hiện thực, nếu thay đổi có thể quan sát được.

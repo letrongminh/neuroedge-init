@@ -51,7 +51,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-V*` · `TSK-P*`, `V-
 
 Giai đoạn 2 làm hai việc: mở tầng nhận thức từ thoại sang **thị giác**, và mở danh mục phần cứng từ ba target lên sáu. Cả hai đều là mở rộng tầng L2 và L0 — **không đụng tầng L3**, nơi chứa toàn bộ tài sản lõi.
 
-Về định vị sản phẩm, cần nói thẳng một điều để tài liệu không tự mâu thuẫn: **"nền tảng cho maker" không phải một hướng đi mới.** Nó đã nằm trong tài liệu từ v5.0 dưới các tên khác — cam kết không khóa tính năng cốt lõi sau tường phí (proposal §6.4), quy trình RFC công khai và cam kết chuyển giao lược đồ cho tổ chức trung lập (§1.5, §3.8), Bộ kiểm thử tuân thủ cho bên thứ ba tự hiện thực lại runtime (§3.8 trụ cột 2), Public Gate Registry miễn phí (§1.7), và mô hình "chuẩn mặc định + adapter tự viết" đã áp cho nhà cung cấp AI (PRD P-4, Q-12).
+Về định vị sản phẩm, cần nói thẳng một điều để tài liệu không tự mâu thuẫn: **"nền tảng cho maker" không phải một hướng đi mới.** Nó đã nằm trong tài liệu từ v5.0 dưới các tên khác — cam kết không tách tính năng cốt lõi thành gói trả phí (proposal §6.4, P-3), quy trình RFC công khai và cam kết chuyển giao lược đồ cho tổ chức trung lập (§1.5, §3.8), Bộ kiểm thử tuân thủ cho bên thứ ba tự hiện thực lại runtime (§3.8 trụ cột 2), Public Gate Registry miễn phí (§1.7), và mô hình "chuẩn mặc định + adapter tự viết" đã áp cho nhà cung cấp AI (PRD P-4, Q-12).
 
 Giai đoạn 2 **đặt tên và hoàn tất** những thứ đó, đồng thời bổ sung phần còn thiếu thật sự:
 
@@ -105,7 +105,7 @@ Vết ghi **không nhúng khung hình thô**. Mặc định chỉ lưu băm SHA-
 
 ## 3. Giả định nguồn lực
 
-Giai đoạn 2 **không được rút người khỏi Khối 4 (AURA)**. AURA là nguồn dòng tiền sớm duy nhất sau khi doanh thu inference bị bỏ ở v5.3, đồng thời là nguồn dữ liệu PF-3 cho chính thị giác.
+Giai đoạn 2 **không được rút người khỏi Khối 4 (AURA)**. AURA mang dòng tiền dự án sớm cho tổ chức — nằm ngoài mô hình nền tảng (proposal §6.3) — đồng thời là nguồn dữ liệu PF-3 cho chính thị giác.
 
 Chỉ V5 (kỹ sư thị giác) là tuyển mới. Không có V5 thì danh sách target đã mở (V1a) vẫn có giá trị độc lập, vì cộng đồng port được bậc 3 mà không cần V5.
 
@@ -190,7 +190,7 @@ Bộ V-G1 đến V-G5 — ngưỡng chuẩn tắc ở proposal §12.4. Ba chỉ 
 
 | # | Chỉ số | Vì sao then chốt |
 |:---:|:---|:---|
-| **V-G1** *(vế hai)* | Thiết bị vision thuộc đội có gói Fleet trả phí | Đây là chỗ Giai đoạn 2 dễ đi sai nhất. Usecase consumer thu hút người dùng, nhưng **người dùng cuối không trả tiền** — sau khi bỏ doanh thu inference, Fleet là dòng thu duy nhất và nó tính theo đội thiết bị doanh nghiệp. Một hộ gia đình hai camera không mua gói Fleet. Nếu tăng trưởng thiết bị không nối được vào fleet trả phí, Giai đoạn 2 tăng chi phí vận hành mà không tăng doanh thu |
+| **V-G1** *(vế hai)* | Thiết bị vision thuộc đội có gói Fleet trả phí | Đây là chỗ Giai đoạn 2 dễ đi sai nhất. Usecase consumer thu hút người dùng, nhưng **người dùng cuối không trả tiền** — sau khi bỏ doanh thu inference, nền tảng chỉ thu từ license thương mại và Fleet (Q-45), và cả hai đều đến từ doanh nghiệp. Một hộ gia đình hai camera dùng lõi miễn phí, không mua license hay gói Fleet. Nếu tăng trưởng thiết bị không nối được vào fleet trả phí, Giai đoạn 2 tăng chi phí vận hành mà không tăng doanh thu |
 | **V-G3** | Tỷ lệ thiết bị chạy tài sản của bên khác | Đo thứ không mua được bằng marketing: người dùng có tin nhau đủ để chạy mã của nhau không |
 | **V-G5** | Adapter và bản port cộng đồng | Kiểm chứng trực tiếp mệnh đề nền tảng cho maker |
 

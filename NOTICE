@@ -1,7 +1,12 @@
 NeuroEdge
 Copyright 2026 NeuroEdge Contributors
 
-Licensed under the MIT License; the full text is in LICENSE.
+Code: PolyForm Noncommercial License 1.0.0 — full text in LICENSE. Any commercial use
+needs a separate commercial licence from NeuroEdge. Standards — schemas/, docs/spec/ and
+fixtures/compliance/ — are licensed under the Apache License 2.0, full text in
+LICENSES/Apache-2.0.txt. Decision Q-45 in neuroedge-prd.md §15; details in LICENSING.md.
+Versions released up to 2026-09-25 (commit f68a47f) were MIT-licensed and stay MIT for
+whoever received them.
 
 This file discharges obligations 1, 2 and 4 of roadmap §3.9 (nghĩa vụ ghi nhận
 nguồn): the licence matrix, the repository NOTICE, and public attribution.
@@ -13,8 +18,8 @@ Licence policy for the distributed core: PERMISSIVE ONLY. The allowlist is decis
 Q-11 in neuroedge-prd.md §15 (today MIT, BSD-2/3-Clause, Apache-2.0, ISC, PSF,
 CNRI-Python, and MPL-2.0 used unmodified); that entry is the one place it is kept.
 Strong copyleft — GPLv2, GPLv3, AGPL — must not appear in anything shipped to users.
-Roadmap §3.10 states the reason: it would spread from the MIT core into customer
-projects. Enforced on every pull request by the `licence-obligations` and
+Roadmap §3.10 states the reason: it would spread from the core into customer
+projects, and it cannot be combined with the core's licence (Q-45). Enforced on every pull request by the `licence-obligations` and
 `cloud-extra` jobs in .github/workflows/ci-sim-linux.yml.
 
 
@@ -110,7 +115,7 @@ Six deliberate choices in this section, all to keep copyleft out of the core:
   * gpiod (libgpiod v2 Python bindings) is NOT a core dependency. It is
     LGPL-2.1-or-later and sits in the optional `linux` extra, needed only by
     target `linux` (python/neuroedge/hal/linux.py, TSK-S3-05). It is imported
-    at run time and never vendored or statically linked, so the MIT core
+    at run time and never vendored or statically linked, so the core
     carries no LGPL code; installing the extra brings LGPL code into that
     environment only. The CI licence gate installs `dev` alone and still
     rejects any GPL-family licence in the core set.

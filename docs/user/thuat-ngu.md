@@ -16,7 +16,7 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 | **Q-N** | Quyết định kỹ thuật đã chốt hoặc đang mở, đánh số tăng dần, không có số cuối | `neuroedge-prd.md` §15 — **sổ quyết định duy nhất** |
 | **PF-1…PF-4** | Bộ lọc ưu tiên tính năng — **khác** mã rủi ro `R-n` | `neuroedge-proposal.md` §2 |
 | **R-1…R-7** | Rủi ro sản phẩm — **khác** luật chống lệch R1–R12 (không gạch nối) | `neuroedge-prd.md` §13.2 |
-| **U1–U5** | Nhóm người dùng (U1 = maker độc lập…) | `neuroedge-prd.md` §2 |
+| **U1–U6** | Nhóm người dùng (U1 = maker độc lập…; U6 = đội tích hợp robot phân tầng, từ I14) | `neuroedge-prd.md` §2 |
 | **J1–J7** | Nhiệm vụ cần hoàn thành — Jobs To Be Done (J1 = "thử agent giọng nói tối nay khi chưa có bo mạch") — **khác** hành trình | `neuroedge-prd.md` §2.2 |
 | **Hành trình 1–3** | Ba hành trình người dùng chính: 1 mười phút đầu tiên (U1) · 2 từ sự cố hiện trường về máy lập trình viên · 3 mở rộng từ 1 lên 1.000 thiết bị | `neuroedge-prd.md` §2.3 |
 | **G1–G4** | Cột mốc xác thực thị trường Giai đoạn 1 (G1 = 10.000 thiết bị active/tháng…); đạt đủ mới mở Marketplace thu phí | `neuroedge-proposal.md` §8.7 · `neuroedge-prd.md` §14 |
@@ -99,8 +99,12 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **HAL port** | Bản hiện thực HAL cho một môi trường mới, có thể do bên thứ ba viết; đúng hay không chứng minh bằng bộ kiểm thử tuân thủ | `neuroedge-proposal.md` §1.7 |
 | **Nguyên tắc tương đương môi trường** | Cùng mã agent cho cùng chuỗi quyết định trên mọi target; mức cam kết theo bậc target | `neuroedge-proposal.md` §3.2 |
 | **OpenAI-compatible · adapter** | Chuẩn kết nối mặc định của lớp trừu tượng nhà cung cấp: dịch vụ theo OpenAI API chỉ cần cấu hình; dịch vụ khác cần một adapter mỏng do người dùng viết (`python:pkg.mod:factory`) | `neuroedge-proposal.md` §6.1 · Q-12 |
-| **Lớp trừu tượng nhà cung cấp** | Lõi MIT người dùng tự vận hành, chuẩn hoá kết nối tới LLM, ASR, TTS (FR-GW; tên cũ *Inference Gateway*) | `neuroedge-prd.md` §8.1 |
+| **Lớp trừu tượng nhà cung cấp** | Phần của lõi do người dùng tự vận hành, chuẩn hoá kết nối tới LLM, ASR, TTS (FR-GW; tên cũ *Inference Gateway*) | `neuroedge-prd.md` §8.1 |
 | **Fleet Management OS (Fleet OS)** | Dịch vụ thương mại duy nhất: quản trị, giám sát, chứng thực và OTA cho đội thiết bị | `neuroedge-proposal.md` §6.2 |
+| **Source-available · mã nguồn công khai** | Mã ai cũng đọc được nhưng giấy phép giới hạn cách dùng — **không** phải *open source* theo OSI. Lõi NeuroEdge là source-available; lược đồ, đặc tả và bộ kiểm thử tuân thủ là **chuẩn mở** | `LICENSING.md` · Q-45 |
+| **PolyForm Noncommercial 1.0.0** | Giấy phép của mã NeuroEdge từ Q-45 (thay MIT): miễn phí cho mục đích phi thương mại; dùng thương mại cần license thương mại | `LICENSE` · `LICENSING.md` |
+| **License thương mại** | Giấy phép riêng cho doanh nghiệp dùng NeuroEdge vào mục đích thương mại, kể cả nội bộ. Luôn gồm trọn lõi (P-3); cùng Fleet OS là hai dòng doanh thu của nền tảng | `LICENSING.md` · `neuroedge-proposal.md` §6.3 · `TODOS.md` #44 |
+| **CLA** | Contributor License Agreement — thỏa thuận người đóng góp bên ngoài ký trước khi PR được merge, để NeuroEdge cấp được license thương mại cho cả phần đóng góp | `CONTRIBUTING.md` §2 · `TODOS.md` #43 |
 | **Token phán quyết** | Bằng chứng dùng một lần mà `c.do()` cấp sau một ALLOW; HAL chỉ đổi chân khi có nó | `docs/spec/threat_model.md` |
 | **Sổ token (token ledger)** | Nơi phát, kiểm và đóng token phán quyết. Bản host: `TokenLedger` (Python); bản thiết bị: `ne_token.c`, cùng luật, sổ đầy thì đóng an toàn | `python/neuroedge/actions/token.py` · `targets/esp32s3/components/ne_gate/` |
 | **`NETR` · `.netree`** | Bố cục nhị phân cố định của cây quyết định trên thiết bị (magic `NETR`, v1); `neuroedge build` ghi `<gate>.netree` và `<gate>.netree.h` | `docs/rfc/0003-bo-cuc-nhi-phan-cay.md` |

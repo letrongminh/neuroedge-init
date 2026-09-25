@@ -21,6 +21,10 @@
 > `vision.in` và bằng chứng thị giác trong vết ghi chuyển sang §9 kèm mốc kích
 > hoạt. Tên tệp giữ nguyên để không vỡ các liên kết tới nó.
 
+> **Thời điểm hợp nhất (2026-09-25, đã xác nhận).** Câu chữ về thời điểm ở phần đầu và §8 được cập nhật
+> theo PRD Q-40: pull request thứ hai thuộc increment I11, sau Developer Beta. Nội dung đề xuất không đổi;
+> RFC vẫn đang thảo luận và vẫn cần chữ ký kỹ thuật trưởng trước khi chấp thuận.
+
 ---
 
 ## 1. Vấn đề

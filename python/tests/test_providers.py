@@ -637,6 +637,18 @@ def test_the_licence_policy_refuses_everything_else(licences, licence):
     assert licences.offenders([{"Name": "p", "Version": "1", "License": licence}])
 
 
+def test_the_product_itself_is_not_held_to_the_dependency_policy(licences):
+    """Q-45: neuroedge carries its own licence; Q-11 governs what it depends on."""
+    own = {
+        "Name": "neuroedge",
+        "Version": "0.1.0",
+        "License": "PolyForm-Noncommercial-1.0.0 AND Apache-2.0",
+    }
+    assert licences.offenders([own]) == []
+    dependency = {**own, "Name": "some-dependency"}
+    assert licences.offenders([dependency]), "a noncommercial dependency must still fail"
+
+
 def test_the_script_allows_exactly_what_q11_names(licences, root):
     """One fact, one place: every family the script lets through is named in PRD Q-11."""
     q11 = next(

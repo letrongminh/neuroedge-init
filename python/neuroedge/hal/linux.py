@@ -4,7 +4,7 @@ HAL backend for target `linux` (TSK-S3-05, FR-TGT-02, Q-16).
 `digital.out` drives real GPIO lines through the kernel character device, via
 the libgpiod v2 Python bindings (`pip install 'neuroedge[linux]'`). The
 bindings are LGPL-2.1-or-later: they are an optional extra, imported at run
-time and never vendored, so the MIT core carries no LGPL code (NOTICE §B).
+time and never vendored, so the core carries no LGPL code (NOTICE §B).
 
 In CI the lines are **gpio-sim** virtual lines (`scripts/setup_gpio_sim.sh`);
 on the nightly rig they are a Raspberry Pi 5's. Each board pin is found by

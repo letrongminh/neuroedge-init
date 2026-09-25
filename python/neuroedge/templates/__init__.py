@@ -2,7 +2,7 @@
 Project scaffolding for `neuroedge new` (TSK-S3-07, FR-DX-01).
 
 Plain Python, deliberately: `copier` depends on the GPL3
-`jinja2-ansible-filters`, which must not reach an MIT core (§3.10). A template
+`jinja2-ansible-filters`, which must not reach the core (§3.10). A template
 is a directory of `*.tmpl` files whose only placeholder is ``{{name}}``;
 generating a project writes each file with the suffix dropped. The `.tmpl`
 suffix keeps pytest and ruff from treating template code as package code.

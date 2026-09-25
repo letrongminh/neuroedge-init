@@ -147,6 +147,14 @@ bản gói.
 
 #### Đã đổi
 
+- **Q-45 — giấy phép: PolyForm Noncommercial 1.0.0 cho mã, Apache-2.0 cho chuẩn (2026-09-25).** `LICENSE`, `LICENSES/Apache-2.0.txt`,
+  `LICENSING.md`; wheel khai `PolyForm-Noncommercial-1.0.0 AND Apache-2.0`; P-3 sửa theo; hai dòng doanh thu; CLA (`TODOS.md` #43).
+  Bản tới `f68a47f` vẫn là MIT. Kho public toàn bộ (đóng #41). Kiểm: `pytest tests/test_packaging.py`.
+- **README dẫn đúng Hành trình 1 của PRD:** `pip install neuroedge` → `new` → `run -c "bật đèn"` — không mạng, không khoá,
+  không tài khoản; Claude Desktop thành bước tiếp theo. PRD–proposal: persona U6, PF-4 "Chặn", metering thiết kế ngay và
+  hiện thực ở v1.1, chuyển giao chuẩn ở G1. Kiểm: `pytest tests/test_readme_quickstart.py`.
+- **TSK-S3-15 đóng; V6 đã quyết tuyển; câu chữ RFC-0002 và phạm vi TSK-I7-01 được xác nhận (2026-09-25).** Golden là ba vết
+  ghi chuẩn mực nguyên trạng, không cần RFC; I1 tiêu chí 3 đạt.
 - **Proposal 5.7 và PRD §14 căn theo quyết định (2026-09-25).** EMQX thay bằng broker giấy phép dễ dãi, Hawkbit đã duyệt (Q-11);
   RP2350 làm node do đội lõi port (Q-33); miễn trừ chứng nhận an toàn ở §5 (Q-38); thêm §8.10 NeuroBrain, §8.11 robot phân tầng;
   dẫn đường tự hành: dòng mới ở PRD §14 và proposal §9 với ngoại lệ Q-34; 5 nguyên thủy "đóng cho v1.x" (FR-HAL-01).
@@ -871,9 +879,8 @@ này sẽ làm hỏng những thứ trông không liên quan.
 |:---|:---|:---|:---|
 | **TSK-S1-10** · I3 tiêu chí 1 | **Bo mạch ESP32-S3-BOX-3 vật lý** | Đặt hàng (roadmap Phụ lục B) | Kết luận kế hoạch thoại trên chip (TSK-S2-10) → I3, I5 |
 | **TSK-I2-01** · I2 tiêu chí 4 | **RPi 5 cho nightly `linux`** | Đặt hàng (roadmap Phụ lục B) | Nightly trên phần cứng thật → I2 |
-| **V6 — kỹ sư nhúng thứ hai** | Chưa tuyển; cần từ 2026-11-16 | Tuyển người (Q-39) | Âm thanh trên chip song song với HAL của V2 (TSK-S5-01, S5-02, S5-06, S5-07) — giả định của dự báo I5, I7 (roadmap §1.3) |
-| **TSK-S3-15** · I1 tiêu chí 3 | Xác nhận golden = ba vết ghi chuẩn mực, hoặc mở RFC | Kỹ thuật trưởng | Đóng I1 |
-| **`TODOS.md` #41** — repo công khai chứa gì | Quyết định của CPO | CPO, trước khi I6 mở | TSK-I6-01 → I6 (Công khai) |
+| **V6 — kỹ sư nhúng thứ hai** | CPO đã quyết tuyển (2026-09-25); chưa có người, cần vào trước 2026-11-16 | Tuyển người (Q-39) | Âm thanh trên chip song song với HAL của V2 (TSK-S5-01, S5-02, S5-06, S5-07) — giả định của dự báo I5, I7 (roadmap §1.3) |
+| **`TODOS.md` #43** — CLA cho người đóng góp | Chưa có văn bản CLA (cần rà soát pháp lý) | CPO | Merge PR đầu tiên từ người ngoài (Q-45) |
 | **RFC-0002** | Phê duyệt | Kỹ thuật trưởng, trước khi I11 mở | I11 và mọi board profile mới |
 
 **TSK-S1-10 — việc còn lại sau khi có bo mạch:** vendoring `esp-sr` (AEC/AFE +
