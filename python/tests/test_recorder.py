@@ -159,10 +159,12 @@ def test_record_anonymize_flag_reaches_the_file(villa, tmp_path):
     assert "mở cửa" not in out.read_text(encoding="utf-8")
 
 
-def test_record_on_another_target_exits_two(villa, tmp_path):
+def test_record_on_linux_build_checks_the_agent_against_the_linux_board(villa, tmp_path):
+    # villa-concierge needs hardware AEC, which linux-rpi5 does not have: refused before
+    # any GPIO line is looked for (the linux session itself: test_session_linux.py).
     result = runner.invoke(app, ["record", "--agent", str(villa), "--target", "linux", "-c", "x"])
-    assert result.exit_code == 2
-    assert "replay" in result.output
+    assert result.exit_code == 1
+    assert "build failed" in result.output and "aec" in result.output
 
 
 def test_record_on_an_unknown_target_exits_one(villa):

@@ -306,9 +306,9 @@ def test_a_target_without_a_live_session_exits_two_and_names_what_works():
     A command must not print a result it did not compute. Exit code 2 keeps
     "not implemented" distinguishable from a genuine failure in CI.
     """
-    result = runner.invoke(app, ["run", "--target", "linux", "-c", "x"])
+    result = runner.invoke(app, ["run", "--target", "esp32s3", "-c", "x"])
     assert result.exit_code == 2, result.output
-    assert "replay" in result.output
+    assert "sim" in result.output and "linux" in result.output
 
 
 def test_help_lists_the_implemented_command_groups(invoke):

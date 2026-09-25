@@ -1,5 +1,6 @@
 """
-`neuroedge run --target sim` — the typed-text REPL (TSK-S3-06, FR-CLI-02, Q-15).
+`neuroedge run` — the typed-text REPL (TSK-S3-06, FR-CLI-02, Q-15), on `sim` and,
+since TSK-S5-10, on `linux`, where the pins are real GPIO lines.
 
 Each line typed at ``neuroedge>`` goes through `SimSession.handle()`: the local
 command grammar recognises it, the command's @action runs through `c.do()`,
@@ -67,7 +68,8 @@ def pin_state(session: SimSession, pin: str) -> str:
 
 
 def pin_table(session: SimSession) -> Table:
-    table = Table(title="Virtual pins", title_justify="left")
+    title = "Virtual pins" if session.hal.target == "sim" else "GPIO lines"
+    table = Table(title=title, title_justify="left")
     table.add_column("Pin", style="cyan")
     table.add_column("State", style="bold")
     table.add_column("Commands", justify="right")
@@ -256,7 +258,7 @@ def banner(session: SimSession, console: Console) -> None:
     gates = ", ".join(f"{key} → {ref}" for key, ref in manifest.gates.items()) or "none"
     mode = "offline, typed text (Q-15)" if not session.slow.available else "typed text"
     console.print(
-        f"[bold]{escape(manifest.label)}[/bold] on [cyan]sim[/cyan] "
+        f"[bold]{escape(manifest.label)}[/bold] on [cyan]{escape(session.hal.target)}[/cyan] "
         f"([cyan]{escape(session.hal.board.id)}[/cyan]) · {mode}"
     )
     console.print(f"  gates: {escape(gates)}")
@@ -296,6 +298,26 @@ def system_two_line(slow) -> str:
     return f"{name} {config.model} ({key}; offline line if it cannot answer)"
 
 
+def _settle(session: SimSession, console: Console) -> bool:
+    """
+    On linux, let the pulse `-c` started run its whole duration before the lines
+    drop. False when Ctrl-C cut it short.
+    """
+    pulsing = getattr(session.hal, "pulsing", None)
+    if pulsing is None or not pulsing():
+        return True
+    console.print(
+        f"[dim]waiting for the pulse on {escape(', '.join(pulsing()))} to end "
+        "(Ctrl-C drops the line now)[/dim]"
+    )
+    try:
+        session.hal.settle()
+    except KeyboardInterrupt:
+        console.print()
+        return False
+    return True
+
+
 def run_session(
     session: SimSession,
     console: Console,
@@ -307,7 +329,10 @@ def run_session(
     """Drive the session and return the exit code."""
     try:
         if command is not None:
-            return 0 if _turn(command, session, console, err_console) else 1
+            ok = _turn(command, session, console, err_console)
+            if not _settle(session, console):
+                return 130
+            return 0 if ok else 1
         banner(session, console)
         console.print(pin_table(session))
         console.print("[dim]:help for commands · exit to leave[/dim]")
@@ -329,9 +354,15 @@ def run_session(
             else:
                 _turn(line, session, console, err_console)
     finally:
-        if trace_out is not None:
-            trace_out.parent.mkdir(parents=True, exist_ok=True)
-            trace_out.write_text(
-                json.dumps(session.trace(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-            )
-            console.print(f"trace: {escape(str(trace_out))} ({len(session.events.events)} events)")
+        try:
+            if trace_out is not None:
+                trace_out.parent.mkdir(parents=True, exist_ok=True)
+                trace_out.write_text(
+                    json.dumps(session.trace(), indent=2, ensure_ascii=False) + "\n",
+                    encoding="utf-8",
+                )
+                console.print(
+                    f"trace: {escape(str(trace_out))} ({len(session.events.events)} events)"
+                )
+        finally:
+            session.close()  # on linux: every line inactive and released

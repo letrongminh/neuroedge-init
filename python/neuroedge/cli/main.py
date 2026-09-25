@@ -79,9 +79,9 @@ REFERENCE_BOARD = {"sim": "sim-default", "linux": "linux-rpi5", "esp32s3": "esp3
 # `verify --targets esp32s3` runs: the device replays the canonical traces (TSK-S4-09).
 PLANNED_TARGETS = {"esp32s3": "TSK-S4-04"}
 
-# Targets an interactive session (`run`, `record`) knows but does not run on yet, and the
-# task that brings each. Same exit-2 contract as `PLANNED_TARGETS`.
-PLANNED_SESSIONS = {"linux": "TSK-S5-10", "esp32s3": "TSK-S4-01"}
+# Targets an interactive session (`run`, `record`, `mcp serve`) knows but does not run
+# on yet, and the task that brings each. Same exit-2 contract as `PLANNED_TARGETS`.
+PLANNED_SESSIONS = {"esp32s3": "TSK-S4-01"}
 
 
 def _not_implemented_target(verb: str, target: str) -> None:
@@ -618,7 +618,12 @@ def _external_tools(session: Any, *, as_json: bool, openai: bool) -> None:
 @mcp_app.command(name="serve")
 def mcp_serve(
     agent: Path = typer.Option(None, "--agent", "-a", help="agent.toml (default as for `run`)"),
-    board: str = typer.Option("sim-default", "--board", "-b", help="Board profile id"),
+    target: str = typer.Option(
+        "sim", "--target", "-t", help="Target to serve on: sim, or linux (real GPIO lines)"
+    ),
+    board: str = typer.Option(
+        None, "--board", "-b", help="Board profile id (default: the target's reference board)"
+    ),
     trace_out: Path = typer.Option(
         None, "--trace-out", help="Write the session trace here on exit"
     ),
@@ -639,7 +644,8 @@ def mcp_serve(
     """
     Serve the agent as a gated MCP server over stdio: every @action is a tool,
     and every tools/call goes through the tool schema, c.do() and the gate.
-    With --ui the same session is shown live in the browser: a tool call from
+    On `--target linux` a tool call drives real GPIO lines (as `run --target linux`).
+    With --ui (sim only) the same session is shown live in the browser: a tool call from
     the MCP client moves the virtual devices on the page at once. The page never
     takes the MCP server down: a taken port falls back to a free one (URL on stderr).
     """
@@ -652,11 +658,12 @@ def mcp_serve(
     except NeuroEdgeError as error:
         _fail(error)
         return
-    session = _start_session("mcp serve", agent, "sim", board, registry)
+    session = _start_session("mcp serve", agent, target, board, registry, ui=ui)
     page = _mcp_page(session, port) if ui else None
     # stdout is the protocol channel; anything for people goes to stderr.
     err_console.print(
         f"neuroedge MCP server · {escape(session.manifest.label)} · "
+        f"{escape(session.target)}/{escape(session.hal.board.id)} · "
         f"{len(session.tools.specs)} tool(s) · stdio"
     )
     if page is not None:
@@ -671,11 +678,15 @@ def mcp_serve(
     def close() -> None:
         if page is not None:
             page.stop()
-        if trace_out is not None:
-            trace_out.parent.mkdir(parents=True, exist_ok=True)
-            trace_out.write_text(
-                json.dumps(session.trace(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-            )
+        try:
+            if trace_out is not None:
+                trace_out.parent.mkdir(parents=True, exist_ok=True)
+                trace_out.write_text(
+                    json.dumps(session.trace(), indent=2, ensure_ascii=False) + "\n",
+                    encoding="utf-8",
+                )
+        finally:
+            session.close()  # on linux: every line inactive and released
 
     def on_no_initialize() -> None:
         # The client started us and let go without closing stdin (Claude Desktop does
@@ -1223,8 +1234,14 @@ def _default_agent() -> Path:
     return sample if not here.is_file() and sample.is_file() else here
 
 
-def _start_session(verb: str, agent, target: str, board: str, registry, events=None):
-    """Load the agent for an interactive `sim` session, or exit with the right code."""
+def _start_session(
+    verb: str, agent, target: str, board: str | None, registry, events=None, ui: bool = False
+):
+    """
+    Load the agent for an interactive session on `sim` or `linux`, or exit with the
+    right code: 2 for a target (or `--ui` on it) with no session yet, 1 when the agent
+    does not fit the board or `linux` cannot run (no `gpiod`, no GPIO chip — Q-16).
+    """
     from ..sim import SimSession
 
     if target not in SUPPORTED_TARGETS:
@@ -1232,17 +1249,27 @@ def _start_session(verb: str, agent, target: str, board: str, registry, events=N
             BoardCapabilityError(
                 where=f"--target {target}",
                 why=f"{target!r} is not a target; the targets are {', '.join(SUPPORTED_TARGETS)}",
-                how="pass --target sim: interactive sessions run on sim today",
+                how="pass --target sim or --target linux: interactive sessions run on those",
             )
         )
-    if target != "sim":
+    if target in PLANNED_SESSIONS:
         err_console.print(
             Panel(
                 f"`neuroedge {verb} --target {escape(target)}` is not implemented yet "
                 f"({PLANNED_SESSIONS[target]}).\n\n"
-                "Interactive sessions run on `sim` today. On `linux`, replay a trace "
-                "instead: `neuroedge replay <trace> --target linux`.",
+                "Interactive sessions run on `sim` and `linux` today.",
                 title=f"[yellow]Not implemented: {verb} --target {escape(target)}[/yellow]",
+                border_style="yellow",
+            )
+        )
+        raise typer.Exit(code=2)
+    if ui and target != "sim":
+        err_console.print(
+            Panel(
+                f"`neuroedge {verb} --ui --target {escape(target)}` is not implemented: the "
+                "live page shows the simulator's virtual devices.\n\n"
+                f"On `{escape(target)}` the session runs in the terminal: drop --ui.",
+                title=f"[yellow]Not implemented: {verb} --ui --target {escape(target)}[/yellow]",
                 border_style="yellow",
             )
         )
@@ -1250,7 +1277,8 @@ def _start_session(verb: str, agent, target: str, board: str, registry, events=N
     try:
         return SimSession.load(
             agent or _default_agent(),
-            board_id=board,
+            target=target,
+            board_id=board or REFERENCE_BOARD[target],
             registry=GateRegistry(registry) if registry is not None else None,
             events=events,
         )
@@ -1269,8 +1297,12 @@ def run(
         "-a",
         help="Path to agent.toml (default: ./agent.toml, else the villa-concierge sample)",
     ),
-    target: str = typer.Option("sim", "--target", "-t", help="Target runtime environment"),
-    board: str = typer.Option("sim-default", "--board", "-b", help="Board profile id"),
+    target: str = typer.Option(
+        "sim", "--target", "-t", help="Target to run on: sim, or linux (real GPIO lines)"
+    ),
+    board: str = typer.Option(
+        None, "--board", "-b", help="Board profile id (default: the target's reference board)"
+    ),
     command: str = typer.Option(
         None, "--command", "-c", help="Run one typed command and exit (for scripts and CI)"
     ),
@@ -1285,15 +1317,17 @@ def run(
     registry: Path | None = REGISTRY_OPTION,
 ):
     """
-    Run the agent on `sim`: type a command, see the gate verdict and the pins.
-    With --ui the same session is shown live in the browser.
+    Run the agent: type a command, see the gate verdict and the pins.
+    With --ui (sim only) the same session is shown live in the browser.
 
     Input is typed text matched by the agent's commands.toml — no network, no
-    key (Q-15). The agent is build-checked against the board first.
+    key (Q-15). The agent is build-checked against the board first. On `linux`
+    the pins are real GPIO lines (the `linux` extra; a board, or
+    scripts/setup_gpio_sim.sh) and the agent may need `digital.out` only.
     """
     from .run import run_session
 
-    session = _start_session("run", agent, target, board, registry)
+    session = _start_session("run", agent, target, board, registry, ui=ui)
     if ui:
         from ..sim.ui import serve
 
@@ -1400,7 +1434,12 @@ def record(
     agent: Path = typer.Option(
         None, "--agent", "-a", help="Path to agent.toml (default as for `run`)"
     ),
-    target: str = typer.Option("sim", "--target", "-t", help="Target to record on"),
+    target: str = typer.Option(
+        "sim",
+        "--target",
+        "-t",
+        help="Target to record on: sim, linux (real GPIO lines), or esp32s3 with --port",
+    ),
     board: str = typer.Option(
         None, "--board", "-b", help="Board profile id (default: the target's reference board)"
     ),
@@ -1431,8 +1470,9 @@ def record(
     """
     Record a session to a trace file that `trace validate` and `replay` accept.
 
-    Same session as `run`; on exit the trace is validated against trace.v1 and
-    written to `--out` (default `traces/<session_id>.json`).
+    Same session as `run`, on `sim` or `linux`; on exit the trace is validated
+    against trace.v1 and written to `--out` (default `traces/<session_id>.json`).
+    A trace recorded on `linux` replays on `sim` to the same decisions.
 
     With `--target esp32s3 --port`, the device records: every `NE1` session it
     writes on its UART becomes one trace file, validated before it is written
