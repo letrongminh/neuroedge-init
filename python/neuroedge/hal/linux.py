@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import glob
 import threading
+from collections import deque
 from collections.abc import Mapping
 from typing import Any
 
@@ -197,3 +198,68 @@ class LinuxHAL(HardwareAbstractionLayer):
         for request in self._requests.values():
             request.release()
         self._requests = {}
+
+
+# Primitives `LinuxHAL` does not implement yet, and the task that brings each. An
+# interactive session refuses an agent that needs one before any line is requested,
+# rather than failing mid-session on the first turn that reaches it (Q-16).
+MISSING_ON_LINUX = {
+    "audio.in": "TSK-S5-08",
+    "audio.out": "TSK-S5-08",
+    "sensor.read": "TSK-S5-09",
+    "display": "TSK-S5-09",
+}
+
+
+class TypedLinuxHAL(LinuxHAL):
+    """
+    `LinuxHAL` for an interactive session — `run`, `record`, `mcp serve` (TSK-S5-10).
+
+    The pins are real kernel lines. The person types on the terminal, as on `sim`
+    (Q-15): a typed line is the session's input and a reply is printed, with the
+    same `text_input` / `tts_stream_start` events `SimHAL` writes, so a session
+    recorded here has the shape of a `sim` one and replays on either target.
+    Nothing is heard or spoken: microphone and speaker are TSK-S5-08.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._typed: deque[str] = deque()
+        self.spoken: list[str] = []
+        self.frames: list[Any] = []  # no `display` on linux yet (TSK-S5-09)
+
+    def type_text(self, text: str) -> None:
+        self._typed.append(text)
+
+    def audio_in(self, called_from: str = "<unknown>") -> str | None:
+        if not self._typed:
+            return None
+        text = self._typed.popleft()
+        self.events.emit("text_input", {"text": text})
+        return text
+
+    def audio_out(self, text: str, called_from: str = "<unknown>") -> None:
+        self.spoken.append(text)
+        self.events.emit("tts_stream_start", {"text": text})
+
+    def pulsing(self) -> list[str]:
+        """The pins whose pulse is still in flight."""
+        with self._lock:
+            return sorted(self._timers)
+
+    def settle(self) -> None:
+        """
+        Wait for every pulse in flight to end on its own. `run -c` does, so the one
+        command it ran drives its line for the whole duration the gate allowed
+        before `close()` drops every line; Ctrl-C drops them at once.
+        """
+        with self._lock:
+            timers = list(self._timers.values())
+        for timer in timers:
+            timer.join()
+
+    def sensor_values(self) -> dict[str, tuple[Any, str | None]]:
+        return {}
+
+    def set_sensor(self, sensor: str, value: Any, unit: str | None = None) -> None:
+        self._not_on_target("sensor.read", "LinuxHAL.set_sensor()")

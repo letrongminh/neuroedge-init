@@ -60,7 +60,7 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Kiểm cùng quyết định trên `sim` và `linux` (A2) | `neuroedge verify --targets sim,linux` | ✅ cần line GPIO |
 | Ghi vết ghi từ firmware `esp32s3` qua UART | `neuroedge record --target esp32s3 --port <log · tcp://… · /dev/tty…>` | ✅ trên QEMU · bo mạch ⏳ |
 | Kiểm cùng quyết định trên `esp32s3`: firmware replay các vết ghi chuẩn mực | `neuroedge verify --targets esp32s3 --port …` | ✅ trên QEMU · bo mạch ⏳ |
-| Phiên gõ chữ tương tác trên `linux` | `neuroedge run --target linux` | ⏳ I2 |
+| Phiên gõ chữ tương tác trên `linux`: chân là line GPIO thật | `neuroedge run` / `record` / `mcp serve --target linux` | ✅ cần line GPIO + `neuroedge[linux]`; agent chỉ `digital.out` |
 | Hành trình 10 phút (TTFV) | — | ⏳ I1 |
 
 Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.
@@ -69,8 +69,9 @@ Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.
 
 Nói thẳng để bạn không mất thời gian:
 
-- `neuroedge run` / `record` mới chạy trên `sim`, gõ chữ trên terminal; `--target linux`
-  **thoát mã 2** — trên `linux` dùng `replay`. Không có "PASS" giả (bất biến 10, `CHANGELOG.md` §3.3).
+- `neuroedge run` / `record` / `mcp serve` mới gõ chữ trên terminal. Trên `linux` agent chỉ được cần
+  `digital.out` (âm thanh, cảm biến, màn hình chưa có — lệnh báo lỗi, mã 1) và chưa có trang `--ui`
+  (**thoát mã 2**). Không có "PASS" giả (bất biến 10, `CHANGELOG.md` §3.3).
 - `--target linux` cần line GPIO thật hoặc ảo (`scripts/setup_gpio_sim.sh`) và
   `pip install 'neuroedge[linux]'`; thiếu thì lệnh báo lỗi, không giả vờ chạy.
 - Trên `linux` mới có `digital.out`; `sensor.read`, `display` và âm thanh chưa hiện thực.

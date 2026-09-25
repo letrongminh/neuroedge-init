@@ -2,7 +2,9 @@
 `SimSession` — one agent wired up on target `sim` (TSK-S3-06, FR-CLI-02, Q-15).
 
 This is what `neuroedge run --target sim` drives and what a scaffolded
-project's tests import. It assembles the Sprint 2 parts, nothing new:
+project's tests import. `load(target="linux")` wires the same session to real
+GPIO lines through `TypedLinuxHAL` (TSK-S5-10). It assembles the Sprint 2 parts,
+nothing new:
 
     typed text ─► SimHAL.audio_in ─► CommandGrammar ─► intent + slots
                                         │
@@ -52,7 +54,7 @@ from ..engine.compiler import resolve_gates as _resolve_gates
 from ..engine.gate import ActionContractEngine
 from ..engine.gate_resolver import GateRegistry
 from ..engine.trace_sink import Clock, EventLog, monotonic_ms
-from ..errors import AgentManifestError, PerceptionUnavailableError
+from ..errors import AgentManifestError, BoardCapabilityError, PerceptionUnavailableError
 from ..hal.board import load_board_by_id
 from ..hal.sim import SimHAL
 from ..mcp_host import McpConfig, load_mcp_config
@@ -198,6 +200,30 @@ def _sim_tables(manifest: AgentManifest) -> tuple[dict[str, Any], dict[str, tupl
     return dict(facts), slot_facts
 
 
+# The targets an interactive session runs on, and the board each uses by default.
+SESSION_BOARD = {"sim": "sim-default", "linux": "linux-rpi5"}
+
+
+def _require_linux_primitives(manifest: AgentManifest, sensor_facts: Mapping[str, Any]) -> None:
+    """Refuse, before a line is requested, an agent that needs what `LinuxHAL` lacks."""
+    from ..hal.linux import MISSING_ON_LINUX
+
+    missing = [name for name in manifest.requires if name in MISSING_ON_LINUX]
+    if sensor_facts and "sensor.read" not in missing:
+        missing.append("sensor.read")
+    if not missing:
+        return
+    tasks = ", ".join(f"{name} ({MISSING_ON_LINUX[name]})" for name in missing)
+    raise BoardCapabilityError(
+        where=f"{manifest.source} -> [requires] on target 'linux'",
+        why=(
+            f"the agent needs {tasks}, which LinuxHAL does not implement yet; "
+            "on linux an interactive session has digital.out only"
+        ),
+        how="run it on sim (--target sim) until those tasks bring the primitives to linux",
+    )
+
+
 def _asks(result: ToolResult) -> bool:
     """A device tool the gate blocked with `on_block: ask` and a question to say."""
     gate = result.action.gate if result.action is not None else None
@@ -214,7 +240,7 @@ class SimSession:
         self,
         manifest: AgentManifest,
         *,
-        hal: SimHAL,
+        hal: SimHAL | Any,  # a `TypedLinuxHAL` on target linux
         events: EventLog,
         grammar: CommandGrammar,
         conversation: Conversation,
@@ -250,22 +276,35 @@ class SimSession:
         cls,
         agent_toml: str | Path = "agent.toml",
         *,
-        board_id: str = "sim-default",
+        board_id: str | None = None,
         facts: Mapping[str, Any] | None = None,
         registry: GateRegistry | None = None,
         clock: Clock = monotonic_ms,
         events: EventLog | None = None,
         slow: SystemTwo | None = None,
+        target: str = "sim",
     ) -> SimSession:
         """
-        Build-check the agent for `sim`, then wire it up.
+        Build-check the agent for `target`, then wire it up.
 
-        `facts` overrides entries of `[sim.facts]`. `events` is where the session
-        writes — a `TraceRecorder` to record it; its metadata is set from the
-        agent and board. Raises `BuildFailed` with every problem when the agent
-        does not fit the board.
+        `target` is `sim` (a `SimHAL`) or `linux` (a `TypedLinuxHAL`: real GPIO
+        lines, typed text on the terminal — TSK-S5-10); `board_id` defaults to the
+        target's reference board. `facts` overrides entries of `[sim.facts]`, which
+        is where the session facts come from on either target until a property
+        system supplies them. `events` is where the session writes — a
+        `TraceRecorder` to record it; its metadata is set from the agent and board.
+        Raises `BuildFailed` with every problem when the agent does not fit the
+        board, and `BoardCapabilityError` when `linux` cannot run it (a primitive
+        `LinuxHAL` lacks, no `gpiod`, no GPIO chip — Q-16).
         """
-        build(agent_toml, target="sim", board_id=board_id, registry=registry)
+        if target not in SESSION_BOARD:
+            raise BoardCapabilityError(
+                where=f"SimSession.load(target={target!r})",
+                why=f"an interactive session runs on {' or '.join(SESSION_BOARD)}",
+                how="pass target='sim' or target='linux'",
+            )
+        board_id = board_id or SESSION_BOARD[target]
+        build(agent_toml, target=target, board_id=board_id, registry=registry)
         manifest = load_agent_manifest(agent_toml)
         grammar_path = manifest.root / "commands.toml"
         if not grammar_path.is_file():
@@ -279,14 +318,24 @@ class SimSession:
         sim_table = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
         sensors, sensor_facts = _sim_sensors(manifest, sim_table)
 
-        if events is None:
-            events = EventLog(clock)
-        events.metadata.update(target="sim", board_id=board_id, agent_version=manifest.label)
-        hal = SimHAL(load_board_by_id(board_id), events=events)
-        for name, (value, unit) in sensors.items():
-            hal.set_sensor(name, value, unit)
+        if target == "linux":
+            _require_linux_primitives(manifest, sensor_facts)
         actions = load_actions(manifest)
         gates, _ = _resolve_gates(manifest, registry)  # build() has already vetted them
+
+        if events is None:
+            events = EventLog(clock)
+        events.metadata.update(target=target, board_id=board_id, agent_version=manifest.label)
+        board = load_board_by_id(board_id)
+        if target == "linux":
+            from ..hal.linux import TypedLinuxHAL
+
+            # Last: requesting the lines is the one step that holds anything.
+            hal = TypedLinuxHAL(board, events=events)
+        else:
+            hal = SimHAL(board, events=events)
+            for name, (value, unit) in sensors.items():
+                hal.set_sensor(name, value, unit)
         engine = ActionContractEngine(
             gates,
             facts_source=SystemOne("sim", fallback=grammar, network="offline", events=events),
@@ -655,6 +704,16 @@ class SimSession:
             self.events.emit("system_two_unavailable", {"task": task, "reason": exc.why})
             return await self._speak(turn, offline, "offline")
         return await self._speak(turn, text, "system_two")
+
+    @property
+    def target(self) -> str:
+        return self.hal.target
+
+    def close(self) -> None:
+        """End the session: on linux every line is dropped inactive and released."""
+        close = getattr(self.hal, "close", None)
+        if close is not None:
+            close()
 
     def trace(self) -> dict[str, Any]:
         """The session so far as a `trace.v1` document, validated before it is returned."""
