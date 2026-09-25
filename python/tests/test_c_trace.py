@@ -31,7 +31,7 @@ import pytest
 from neuroedge.engine import ActionContractEngine
 from neuroedge.engine.binary_tree import ACTIONS
 from neuroedge.engine.gate_resolver import resolve_gate_file
-from neuroedge.engine.verdict import Fact, Reason
+from neuroedge.engine.verdict import Fact, Reason, Unavailable
 from neuroedge.errors import TraceValidationError
 from neuroedge.testing.player import TracePlayer
 from neuroedge.testing.uart import LINE_MAX, parse_line, read_sessions, sessions_from_lines
@@ -143,10 +143,17 @@ def data(harness, case: str) -> dict:
     return event["data"]
 
 
-def host_result(root, gate: str, facts: dict[str, Fact], confirmed: bool = False) -> dict:
+class _Offline:
+    async def adjudicate(self, criterion, definition, state, deadline_ms=None):
+        return Unavailable("offline", "test")
+
+
+def host_result(
+    root, gate: str, facts: dict[str, Fact], confirmed: bool = False, source=None
+) -> dict:
     """What the host engine writes as `gate_evaluation_result` for these facts."""
     path = root / "fixtures" / "agents" / "home-voice" / "gates" / f"{gate}@1.0.0.yaml"
-    engine = ActionContractEngine({gate: resolve_gate_file(path)})
+    engine = ActionContractEngine({gate: resolve_gate_file(path)}, facts_source=source)
     asyncio.run(engine.evaluate(gate, facts, confirmed=confirmed))
     return engine.events.of_type("gate_evaluation_result")[-1]
 
@@ -158,12 +165,12 @@ def test_every_line_fits_whole_or_is_refused_whole(harness):
     result = harness["result"]
     assert result.returncode == 0, result.stdout[-3000:] + result.stderr[-3000:]
     assert result.stdout.rstrip().endswith("ALL OK")
-    assert len(harness["cases"]) == 16
+    assert len(harness["cases"]) == 18
 
 
 def test_every_line_is_one_trace_v1_event_within_the_line_limit(harness):
     lines = [line for length, line in harness["cases"].values() if length > 0]
-    assert len(lines) == 13
+    assert len(lines) == 15
     for line in lines:
         assert len(line.encode("utf-8")) <= LINE_MAX
         event = parse_line(line, "harness")
@@ -208,6 +215,25 @@ def test_a_verdict_line_is_what_the_host_engine_writes(root, harness):
     assert blocked["message"] and blocked["action"] == "ask"
 
 
+def test_a_degraded_verdict_applies_fail_not_on_block(root, harness):
+    # room_empty is missing and its source is offline: light_off is `fail: closed`.
+    closed = host_result(root, "light_off", {"call_source": "local_grammar"}, source=_Offline())
+    assert data(harness, "result_closed") == closed
+    assert closed == {
+        "verdict": "BLOCK",
+        "fail_mode": "closed",
+        "reason": "gate_unreachable",
+        "blocked_by": "light_off@1.0.0",
+        "action": "deny",  # not the gate's `ask`: a degraded verdict skips on_block (Q-17)
+    }
+    # `fail: open` (no home-voice gate declares it): ALLOW, the reason, no evaluations.
+    assert data(harness, "result_open") == {
+        "verdict": "ALLOW",
+        "fail_mode": "open",
+        "reason": "budget_exceeded",
+    }
+
+
 def test_confirmed_criteria_are_sorted_as_the_host_writes_them(harness):
     assert data(harness, "result_confirmed")["confirmed"] == ["call_source", "room_empty"]
 
@@ -237,11 +263,13 @@ def test_reason_and_on_block_names_are_the_hosts(harness):
         Reason.CRITERION_UNAVAILABLE,
         Reason.CONFIDENCE_UNAVAILABLE,
         Reason.ARGUMENT_OUT_OF_RANGE,
+        Reason.GATE_UNREACHABLE,
+        Reason.BUDGET_EXCEEDED,
     ]
     assert harness["reasons"] == {
         0: "-",
         **{i + 1: str(reason) for i, reason in enumerate(walker_reasons)},
-        5: "-",
+        7: "-",
     }
     assert harness["actions"] == {**{code: name for name, code in ACTIONS.items()}, 4: "-"}
 

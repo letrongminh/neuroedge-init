@@ -264,11 +264,12 @@ def test_verify_on_linux_without_gpio_lines_fails_and_says_how_to_fix(
 
 
 @pytest.mark.parametrize("targets", ["esp32s3", "sim,esp32s3"])
-def test_verify_on_a_target_not_implemented_yet_exits_2(invoke, targets):
-    # Exit-code contract: 2 is "not implemented", 1 is "ran and failed".
+def test_verify_on_esp32s3_without_the_devices_uart_fails(invoke, targets):
+    # Implemented (TSK-S4-09): the device replays the canonical traces, so without
+    # --port there is nothing to compare — a failure (1), not "not implemented" (2).
     result = invoke("verify", "--targets", targets)
-    assert result.exit_code == 2, result.output
-    assert "TSK-S4-04" in result.output
+    assert result.exit_code == 1, result.output
+    assert "--port" in result.output and "NE0000" in result.output
 
 
 def test_verify_on_an_unknown_target_fails(invoke):

@@ -74,8 +74,9 @@ def _fail(error: NeuroEdgeError) -> None:
 # The board each target builds and runs on when `--board` is not given.
 REFERENCE_BOARD = {"sim": "sim-default", "linux": "linux-rpi5", "esp32s3": "esp32s3-box-3"}
 
-# Targets the CLI knows but cannot replay on yet, and the task that brings each.
-# Asking for one exits 2 ("not implemented"), not 1 ("ran and failed").
+# Targets `replay` knows but cannot replay an arbitrary trace on yet, and the task that
+# brings each. Asking for one exits 2 ("not implemented"), not 1 ("ran and failed").
+# `verify --targets esp32s3` runs: the device replays the canonical traces (TSK-S4-09).
 PLANNED_TARGETS = {"esp32s3": "TSK-S4-04"}
 
 
@@ -83,9 +84,11 @@ def _not_implemented_target(verb: str, target: str) -> None:
     """Say which task brings `target` to `verb`, then exit 2 (CONTRIBUTING.md §2)."""
     err_console.print(
         Panel(
-            f"`neuroedge {verb}` on `{escape(target)}` is not implemented yet: it needs the "
-            f"live HAL on the board ({PLANNED_TARGETS[target]}, Sprint 4).\n\n"
-            "Replay on `sim` or `linux` today.",
+            f"`neuroedge {verb}` on `{escape(target)}` is not implemented yet: replaying any "
+            "trace needs its facts sent to the device and the live HAL on the board "
+            f"({PLANNED_TARGETS[target]}, Sprint 4).\n\n"
+            "Replay on `sim` or `linux` today. The canonical traces already replay on the "
+            "device: `neuroedge verify --targets esp32s3 --port <uart>`.",
             title=f"[yellow]Not implemented: {verb} on {escape(target)}[/yellow]",
             border_style="yellow",
         )
@@ -854,7 +857,19 @@ def _empty_categories(counts: dict[str, tuple[int, Path, str]]) -> VerificationE
 @app.command()
 def verify(
     targets: str = typer.Option(
-        "sim", "--targets", help="Comma-separated targets to replay on: sim, linux"
+        "sim", "--targets", help="Comma-separated targets to replay on: sim, linux, esp32s3"
+    ),
+    port: str = typer.Option(
+        None,
+        "--port",
+        help=(
+            "esp32s3: the device's UART, where the firmware replays the canonical traces at "
+            "boot — a log file (QEMU -serial file:…), tcp://host:port or /dev/ttyACM0"
+        ),
+    ),
+    baud: int = typer.Option(921600, "--baud", help="Serial baud rate for --port"),
+    timeout: float = typer.Option(
+        30.0, "--timeout", help="Seconds to wait for NE_TRACE DONE on a live --port"
     ),
 ):
     """
@@ -864,19 +879,41 @@ def verify(
     Gated Tool Profile corpus (fixtures/tool_calls/) gives its recorded result,
     and every canonical trace replays on each requested target to the decisions
     it records — verdict sequence and pin commands (FR-CI-07). `linux` needs GPIO lines:
-    a board, or `scripts/setup_gpio_sim.sh`.
+    a board, or `scripts/setup_gpio_sim.sh`. `esp32s3` replays on the device itself and
+    needs `--port` (docs/spec/simulation_coverage.md §4).
     """
     from ..testing.golden import GoldenComparator
     from ..testing.player import TracePlayer
     from ..testing.tool_corpus import corpus_dir as tool_corpus_dir
+    from ..testing.uart import read_sessions
 
     root = repo_root()
     gates_root = gates_dir()
     traces_root = root / "fixtures" / "traces"
     requested = [t.strip() for t in targets.split(",") if t.strip()]
-    for target in requested:
-        if target in PLANNED_TARGETS:
-            _not_implemented_target("verify", target)
+    device = None
+    if "esp32s3" in requested:
+        if port is None:
+            _fail(
+                NeuroEdgeError(
+                    where=f"neuroedge verify --targets {targets}",
+                    why=(
+                        "on esp32s3 the device replays the canonical traces itself; "
+                        "the host reads the sessions it writes on its UART"
+                    ),
+                    how=(
+                        "boot the firmware and pass --port: build/uart.log (QEMU "
+                        "-serial file:), tcp://localhost:5555 (QEMU -serial tcp::5555,server), "
+                        "or /dev/ttyACM0 (board)"
+                    ),
+                )
+            )
+            return
+        try:
+            device = read_sessions(port, baud=baud, timeout_s=timeout)
+        except NeuroEdgeError as error:
+            _fail(error)
+            return
     problems = 0
     resolved = 0
     replayed = 0
@@ -918,7 +955,16 @@ def verify(
     for target in requested:
         for path in valid:
             try:
-                result = asyncio.run(TracePlayer(path, target=target).replay())
+                if target == "esp32s3":
+                    result = _device_replay(device, path, port)
+                    verdicts = [
+                        e["data"]["verdict"]
+                        for e in result["events"]
+                        if e["type"] == "gate_evaluation_result"
+                    ]
+                else:
+                    result = asyncio.run(TracePlayer(path, target=target).replay())
+                    verdicts = result.verdicts
                 diff = GoldenComparator().compare(result, load_trace(path))
             except NeuroEdgeError as error:
                 problems += 1
@@ -930,7 +976,7 @@ def verify(
                 continue
             replayed += 1
             if diff.ok:
-                rows[path.name].append(f"[green]✓[/green] {' '.join(result.verdicts)}")
+                rows[path.name].append(f"[green]✓[/green] {' '.join(verdicts)}")
             else:
                 problems += 1
                 rows[path.name].append("[red]✗ differs[/red]")
@@ -968,18 +1014,79 @@ def verify(
         err_console.print(f"\n[bold red]{problems} problem(s) found.[/bold red]")
         raise typer.Exit(code=1)
 
+    on_device = ""
+    if device is not None:
+        ids = ", ".join(sorted({s.info["device_id"] for s in device if s.replay_of}))
+        on_device = (
+            f"\n\n[yellow]esp32s3 (device {escape(ids)}):[/yellow] the verdicts, and whether "
+            "and which pin is driven, are computed on the device (C walker + token ledger); "
+            "operation and duration come from the action table built on the host — no HAL "
+            "yet (TSK-S4-01)."
+        )
     console.print(
         Panel(
             f"[green]Passed:[/green] all {resolved} gate(s) resolve, all {len(valid)} "
             "canonical trace(s) validate, every tool call of the corpus gives its recorded "
             f"result, and {replayed} replay(s) on {', '.join(requested)} match the verdicts "
-            "and pin commands they record.\n\n"
-            "[yellow]Compared:[/yellow] decisions only — not timing. Timing equivalence and "
-            "the esp32s3 target arrive with Sprint 4 (TSK-S4-04).",
+            "and pin commands they record."
+            f"{on_device}\n\n"
+            "[yellow]Compared:[/yellow] decisions only — not timing. Timing equivalence "
+            "arrives with Sprint 4 (TSK-S4-04).",
             title="neuroedge verify",
             border_style="green",
         )
     )
+
+
+def _device_replay(sessions, path: Path, port: str) -> dict[str, Any]:
+    """
+    The session in which the device replayed the canonical trace `path`, as a trace.
+    Refused, never compared, when the firmware replays an older trace or gate than
+    this checkout holds: that would be a pass (or a failure) about something else.
+    """
+    from ..engine.canonical import digest
+    from ..engine.compiler import load_agent_manifest, resolve_gates
+    from ..engine.decision_tree import compile_tree
+    from ..errors import ReplayError
+    from ..paths import fixtures_dir
+
+    stale = "the firmware is stale: python/.venv/bin/python scripts/gen_firmware_vectors.py, "
+    stale += "then build and flash again (QEMU: firmware-qemu.yml)"
+    matches = [s for s in sessions if s.replay_of == path.name]
+    if not matches:
+        raise ReplayError(
+            where=port,
+            why=f"the device wrote no session replaying {path.name}",
+            how="flash a firmware with CONFIG_NEUROEDGE_REPLAY_VECTORS and main/vectors/ for "
+            "the canonical traces, and capture from boot to NE_TRACE DONE",
+        )
+    session = matches[-1]
+    golden = load_trace(path)
+    if session.info.get("trace_digest") != digest(golden):
+        raise ReplayError(
+            where=f"{port}:{session.line}",
+            why=f"the device replays {path.name} as {session.info.get('trace_digest')}, "
+            f"this checkout holds {digest(golden)}",
+            how=stale,
+        )
+    trace = session.trace()
+    agent = fixtures_dir() / "agents" / session.info["agent_version"].partition("@")[0]
+    gates, problems = resolve_gates(load_agent_manifest(agent / "agent.toml"), None)
+    if problems:
+        raise problems[0]
+    digests = {tree["gate"]: tree["gate_digest"] for tree in map(compile_tree, gates.values())}
+    for event in trace["events"]:
+        data = event["data"]
+        if event["type"] == "gate_evaluation_begin" and digests.get(data["gate"]) != data.get(
+            "gate_digest"
+        ):
+            raise ReplayError(
+                where=f"{port}: {path.name} {data['gate']}",
+                why=f"the device decides {data['gate']} as {data.get('gate_digest')}, "
+                f"this checkout compiles it to {digests.get(data['gate'])}",
+                how=stale,
+            )
+    return trace
 
 
 @app.command()

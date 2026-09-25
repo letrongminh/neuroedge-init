@@ -3,6 +3,7 @@ idf_component_register(
         "main.c"
         "memory_probe.c"
         "gate_selftest.c"
+        "trace_vectors.c"
     INCLUDE_DIRS "."
     REQUIRES
         ne_gate
