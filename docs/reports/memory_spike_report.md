@@ -12,7 +12,7 @@
 
 > **Trạng thái trung thực của báo cáo này.** Khung đo (`targets/esp32s3/main/memory_probe.c`)
 > đã viết xong và đã nối vào `app_main`. Chưa có một con số đo thực nào, vì
-> chưa chạy trên bo mạch vật lý. Roadmap §4.1 yêu cầu kết quả spike là **một
+> chưa chạy trên bo mạch vật lý. Roadmap §4.4 (I3) yêu cầu kết quả spike là **một
 > con số, không phải một nhận định** — nên mọi ô "Giá trị đo" dưới đây để
 > trống, và `neuroedge_memory_meets_q3_budget()` trả về `false` /
 > `INCONCLUSIVE` cho tới khi checkpoint `audio_ready` được lấy thật.

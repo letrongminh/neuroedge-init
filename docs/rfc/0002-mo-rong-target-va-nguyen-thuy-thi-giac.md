@@ -9,7 +9,7 @@
 | **Ngày mở** | 2026-09-22 · thu hẹp phạm vi 2026-09-23 sau review (biên bản: [`docs/archive/rfc-0002-review-record.md`](../archive/rfc-0002-review-record.md)) |
 | **Trạng thái** | 🟡 Đang thảo luận |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc.** RFC không làm gate lỏng hơn, nhưng chạm ba bất biến kiểm thử đang bảo vệ tương đương target (§5), và tiêu chí ra Khối V1a số 1 đòi chữ ký kỹ thuật trưởng (`neuroedge-roadmap-phase2.md`) |
-| **Kiểm chứng** | *(chưa có — thuộc pull request thứ hai, **không hợp nhất trước Tháng 9**, xem §8)* |
+| **Kiểm chứng** | *(chưa có — thuộc pull request thứ hai, hợp nhất trong increment I11 sau Developer Beta (PRD Q-40), xem §8)* |
 
 > **Phạm vi pull request này:** chỉ tệp RFC, **chưa sửa lược đồ**, đúng quy trình
 > `docs/rfc/README.md` bước 2. Ba lược đồ trong `schemas/` giữ nguyên; bộ test
@@ -196,7 +196,7 @@ nó **có** siết chặt. RFC-0002 không cần lý do đặc cách nào.
 
 Hệ quả cùng lập luận đó: vì là nới lỏng, thay đổi này **làm được vào bất kỳ lúc
 nào** trong `v1` mà không vỡ tài liệu nào. Không có "chi phí viết lại" nào buộc phải
-làm sớm — đó là lý do §8 cho phép chờ tới Tháng 9.
+làm sớm — đó là lý do §8 cho phép chờ tới I11 (PRD Q-40).
 
 Ghi thêm cho minh bạch: nếu hội đồng vẫn muốn `board.v2`/`trace.v2`, chi phí là
 hai tệp lược đồ mới, hai `$id` mới, và một kịch bản di trú cho các vết ghi đã
@@ -292,9 +292,9 @@ Phân tầng này **đã được ghi** vào proposal §3.2, Phụ lục D.1, KP
 
 ## 8. Việc phải làm khi chấp thuận
 
-**Thời điểm:** pull request thứ hai **không hợp nhất trước Tháng 9** của chương
-trình, theo quyết định ở `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` (kéo lên
-sớm sẽ nạp thêm việc cho đường găng Sprint 2–3). Ngoại lệ duy nhất: sớm hơn khi có
+**Thời điểm:** pull request thứ hai hợp nhất trong increment **I11**, sau Developer Beta
+(PRD Q-40; quyết định trước đó ở `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` đã hoãn nó
+sang Giai đoạn 2 để khỏi nạp thêm việc cho đường găng v1.0). Ngoại lệ duy nhất: sớm hơn khi có
 một profile bậc 2/3 **thật** đang được viết.
 
 **Thứ tự: tài liệu trước, mã sau.**

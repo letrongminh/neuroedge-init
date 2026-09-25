@@ -147,6 +147,9 @@ bản gói.
 
 #### Đã đổi
 
+- **Không còn nhãn tuần/tháng đánh số và tham chiếu số dòng (R6, R11, Q-39).** Proposal §8 và §12, RFC-0002 §8,
+  `hal_mcu_review.md`, báo cáo spike và `memory_probe.h` ghi theo increment. Kiểm: `pytest tests/test_plan_contract.py`
+  (thêm R6, R11 và kiểm mọi chỗ dẫn `roadmap §x` trỏ tới mục có thật).
 - **Roadmap viết lại theo increment I0–I18 (Q-39, Q-40).** Một roadmap: bảng increment §0.2 (dự báo, phụ thuộc,
   phát hành); 171 mã task giữ nguyên, 38 mã mới; phase1-5, phase2 và bản nháp robot thành ghi chú thiết kế. Luật R1–R12
   (§2.4) kiểm bằng `tests/test_plan_contract.py`. `TODOS.md`: bỏ #4, #13, #18, #28, #31 (đã thành task), thêm #42.
