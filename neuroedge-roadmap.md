@@ -149,7 +149,7 @@ V2 làm bán thời gian trong Khối 1a: một phần cho spike, phần còn l�
 
 | Cấu hình                       | Tác động lên lịch trình                                                                                                             |
 | :------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------- |
-| **2 người**                    | Khối 1a giãn sang 8–9 tuần; Khối 1b sang 14–16 tuần. Bắt buộc áp dụng bậc 5 của thang cắt phạm vi (§9) ngay từ đầu                  |
+| **2 người**                    | Khối 1a giãn sang 8–9 tuần; Khối 1b sang 14–16 tuần. Không còn bậc cắt 5 (Q-44), nên v1.0 dời theo |
 | **3 người** *(giả định cơ sở)* | Lịch trình như tài liệu này                                                                                                         |
 | **4–5 người**                  | Khối 1a rút còn 5 tuần; Khối 1b song song hóa nhiều hơn. Không rút được dưới 4 tuần vì đường găng là chuỗi thiết kế lược đồ tuần tự |
 
@@ -384,7 +384,7 @@ Năm nghĩa vụ — (1) ma trận giấy phép, (2) tệp `NOTICE` ở gốc kh
 
 **Nội dung spike bộ nhớ:** nạp thử AEC + VAD + Opus streaming **+ ESP-SR MultiNet** (bộ nhận diện lệnh cố định làm fallback cục bộ, Q-14; thêm WakeNet nếu cân nhắc thay microWakeWord) lên ESP32-S3-Box-3, đo dung lượng SRAM và PSRAM còn lại sau khi trừ ngăn xếp mạng và hệ điều hành. Kết quả là **một con số**, không phải một nhận định.
 
-Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 KB · PSRAM ≥ 2 MB · firmware ≤ 3,5 MB**. Không đạt ngưỡng nào thì kích hoạt bậc 5 của thang cắt phạm vi (§9) ngay, không chờ Tuần 9.
+Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 KB · PSRAM ≥ 2 MB · firmware ≤ 3,5 MB**. Trượt một ngưỡng thì **không cắt thoại** (Q-44): mở ngay một `Q-N` lập lại kế hoạch I5 (TSK-S5-05, TSK-S5-07) và dời dự báo v1.0.
 
 **Tiêu chí ra Sprint 1 (Exit Criteria):** — **5 / 6 đạt · 1 bị chặn bởi phần cứng**
 
@@ -651,9 +651,9 @@ Kết thúc Beta, dự án đi theo đúng một trong ba nhánh. **Quyết đ�
 
 | Nhánh                               | Điều kiện                                                | Hành động                                                                                                               |
 | :----------------------------------- | :-------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------- |
-| **Nhánh A — Khởi động Khối 2**      | Đạt đồng thời B1, B2, B3                                 | Tuyển V4, bắt đầu **Fleet OS** (thương mại) theo §8; song song hoàn thiện lớp provider OSS                                                                           |
-| **Nhánh B — Kéo dài Beta 4–6 tuần** | Đạt 2 trên 3 tiêu chí, tiêu chí còn lại đạt ≥ 60% ngưỡng | Giữ đóng băng tính năng, tập trung vào tiêu chí yếu nhất, đánh giá lại ở Tuần 22                                        |
-| **Nhánh C — Xem xét lại luận điểm** | Không đạt hoặc chỉ đạt 1 trên 3                          | Dừng lộ trình thương mại. Phỏng vấn sâu 20 người dùng đã thử và bỏ. Xác định luận điểm sai ở đâu trước khi viết thêm mã |
+| **Nhánh A — Khởi động Khối 2**      | Đạt đồng thời B1, B2 (Q-41)                              | Tuyển V4, bắt đầu **Fleet OS** (thương mại) theo §8; song song hoàn thiện lớp provider OSS |
+| **Nhánh B — Kéo dài Beta 4–6 tuần** | Đạt 1 trên 2 tiêu chí, tiêu chí còn lại đạt ≥ 60% ngưỡng | Giữ đóng băng tính năng, tập trung vào tiêu chí yếu nhất, đánh giá lại sau 6 tuần kể từ lúc kéo dài |
+| **Nhánh C — Xem xét lại luận điểm** | Không đạt tiêu chí nào, hoặc đạt 1 mà tiêu chí kia < 60% | Dừng lộ trình thương mại. Phỏng vấn sâu 20 người dùng đã thử và bỏ. Xác định luận điểm sai ở đâu trước khi viết thêm mã |
 
 
 **Chỉ báo quan trọng nhất là B2** (10 người ngoài nạp được phần cứng thật). B1 đo sự tò mò; B2 đo cam kết. Một dự án có B1 cao nhưng B2 thấp là một dự án mà simulator hấp dẫn còn đường lên phần cứng bị nghẽn — khi đó việc cần làm là sửa đường lên phần cứng, không phải xây Fleet OS.
@@ -737,7 +737,6 @@ Khi tiến độ trượt, cắt theo đúng thứ tự sau. **Không cắt nh�
 | **2** | Chính sách định tuyến khai báo được → viết cứng `fast_first`                       | Mất tính linh hoạt cấu hình                                                     | FR-MDL-05 *(P1)*     |
 | **3** | MCP server bên ngoài của System 2 (`[mcp.servers]`, Q-27) — tool thiết bị qua MCP vẫn giữ | Mất tin tức / tra cứu qua MCP bên ngoài | FR-MDL-12 |
 | **4** | Phản hồi dòng từng phần                                                            | Độ trễ cảm nhận tăng                                                            | FR-PER-04 *(P1)*     |
-| **5** | **Tách Khối 1b:** `esp32s3` chỉ chạy gate và GPIO; runtime thoại đẩy sang sau Beta | Chứng minh tương đương target trên miền quyết định nhưng chưa có thoại trên MCU | FR-PER-06            |
 
 
 ### 9.1 Tuyệt đối không cắt
@@ -753,11 +752,11 @@ Khi tiến độ trượt, cắt theo đúng thứ tự sau. **Không cắt nh�
 | Nguyên tắc kế thừa gate an toàn       | Thiếu nó, `extends` là rủi ro chứ không phải tính năng          |
 
 
-### 9.2 Ghi chú về bậc 5
+### 9.2 Không còn bậc 5
 
-Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho rủi ro **R-1**. Nó giữ được luận điểm tương đương target — vốn được chứng minh trên phán quyết gate và trạng thái GPIO, không phải trên chất lượng thoại — đồng thời giữ được mốc phát hành. Cái mất là sức thuyết phục của bản demo, vì video "nói chuyện với con chip $5" là tài sản phân phối mạnh nhất (§1.5 của proposal).
-
-**Quyết định áp dụng bậc 5 phải đưa ra chậm nhất ở Tuần 9.** Muộn hơn thì vừa mất thoại vừa mất mốc.
+Bậc 5 cũ (tách thoại khỏi MCU) đã bị bỏ (Q-44): thoại trên ESP32-S3 là bắt buộc cho v1.0, vì A6 đo trên
+pipeline âm thanh và vì demo thoại trên chip là điều kiện công khai (Q-39). Rủi ro **R-1** vì vậy không còn lối
+thoát bằng cắt phạm vi: trượt ngân sách bộ nhớ thì mở một `Q-N` lập lại kế hoạch I5 và dời dự báo v1.0.
 
 ---
 
@@ -806,6 +805,12 @@ Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho
 | **Q-36** | Wire node: Zenoh-pico mặc định, spike W3-1 là phép thử loại (p99 ≤ 20 ms, SRAM ≤ 40 KB, nối lại ≤ 2 s) | 2026-09-25 | RFC-node, W3-1 |
 | **Q-37** | Token `motion.*` thuê có hạn, mỗi lệnh qua gate gia hạn | 2026-09-25 | RFC-motion |
 | **Q-38** | Chứng nhận an toàn: OUT tạm thời, dừng khẩn phần cứng bắt buộc cho robot di động | 2026-09-25 | Cổng 2026-10-25, `TODOS.md` #40 |
+| **Q-39** | Roadmap theo increment; không phát hành ra ngoài tới khi công khai (I6: demo thoại trên `sim`, `linux`, Box-3); thêm một kỹ sư nhúng | 2026-09-25 | Toàn roadmap |
+| **Q-40** | NeuroBrain và các hướng mở rộng xếp sau Beta, theo phụ thuộc | 2026-09-25 | I11–I18 |
+| **Q-41** | v1.1 mở khi Beta đạt B1 và B2; B3 đo nhưng không là điều kiện | 2026-09-25 | §7 |
+| **Q-42** | C6 là chỉ số theo dõi, không là điều kiện phát hành v1.1 | 2026-09-25 | §8.3 |
+| **Q-43** | Giả định G-a..G-e neo theo increment | 2026-09-25 | PRD §13.3 |
+| **Q-44** | Bỏ bậc cắt 5: thoại trên MCU bắt buộc cho v1.0 | 2026-09-25 | §9 |
 
 **Hệ quả trực tiếp lên Sprint 1:** Q-1, Q-2 và Q-3 đã chốt nghĩa là đội có thể đặt bo mạch, dựng kho mã và bắt đầu spike ngay Tuần 0 mà không chờ quyết định nào.
 
@@ -815,7 +820,7 @@ Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho
 
 | Hạn | Mã | Quyết định | Vì sao hạn đó | Người quyết | Trạng thái |
 |:---:|:---:|:---|:---|:---:|:---:|
-| **Trước Tháng 4** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng | ⏳ Đang mở |
+| **Trước khi I10 mở** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng | ⏳ Đang mở |
 | **Tháng 9** | **RFC-0002** | Mở rộng enum `target` và đưa bậc target vào mã lõi (`TARGET_TIERS`); `vision.in` tách sang RFC riêng ở V1b | Không chặn roadmap này. Chặn Khối V1a của Giai đoạn 2 và mọi board profile mới — lịch ở `neuroedge-roadmap-phase2.md` §5 | Kỹ thuật trưởng | ⏳ Đang mở |
 
 **Chính sách phụ thuộc bắc cầu** là một phần của Q-11: nguyên văn ở PRD §15, cưỡng chế bằng `scripts/check_licences.py` (job `cloud-extra`) và `pip-licenses --fail-on` (job `licence-obligations`). *(Ngoại lệ LGPL qua liên kết động của `libgpiod` — proposal §3.9 quy tắc 3 — là thư viện hệ thống C, không phải phụ thuộc Python bắc cầu.)*
@@ -884,9 +889,9 @@ Một hạng mục chỉ được coi là hoàn thành khi đủ **cả năm** �
 | #     | Chỉ báo                              | Ngưỡng vàng                              | Ngưỡng đỏ                           | Hành động khi đỏ                                                          |
 | :-----: | :------------------------------------ | :---------------------------------------- | :----------------------------------- | :------------------------------------------------------------------------- |
 | **1** | Tiến độ Sprint 1 — đóng băng lược đồ | Chậm 3 ngày                              | Chậm 1 tuần                         | Cắt phạm vi lược đồ về mức tối thiểu chạy được; hoãn `choice` sang bản vá |
-| **2** | Kết quả spike bộ nhớ                 | Còn dư dưới 30% ngân sách                | **Không đủ chỗ cho voice pipeline** | Kích hoạt bậc 5 thang cắt ngay, không chờ Tuần 9                          |
+| **2** | Kết quả spike bộ nhớ                 | Còn dư dưới 30% ngân sách                | **Không đủ chỗ cho voice pipeline** | Mở ngay một `Q-N` lập lại kế hoạch I5 và dời dự báo v1.0 — không cắt thoại (Q-44) |
 | **3** | Sai lệch `neuroedge verify`          | 1 ca lệch                                | Từ 3 ca lệch trở lên                | Dừng phát triển tính năng, truy nguyên gốc kiến trúc                      |
-| **4** | Tiến độ Sprint 5 — thoại trên MCU    | Tuần 9 chưa có vòng lặp thoại hoàn chỉnh | Tuần 10 chưa có                     | Kích hoạt bậc 5                                                           |
+| **4** | Tiến độ thoại trên MCU (I5)          | 2 tuần sau khi I3 phát hành chưa có vòng lặp thoại hoàn chỉnh | 3 tuần sau vẫn chưa có | Mở `Q-N` lập lại kế hoạch I5 (Q-44) |
 | **5** | Số người dùng Beta ngoài đội         | Tuần 14 dưới 25 người                    | Tuần 14 dưới 10 người               | Dừng tuyển thêm, phỏng vấn sâu 10 người đã thử để tìm điểm nghẽn          |
 | **6** | Tỷ lệ B2 — nạp phần cứng thật        | Dưới 20% của B1                          | Dưới 10% của B1                     | Điều tra đường lên phần cứng; đây là chỉ báo sớm của nhánh C              |
 | **7** | Tỷ lệ áp dụng Action CI              | Dưới 40%                                 | Dưới 25%                            | Xem lại scaffold và tài liệu: Action CI chưa được đặt làm trung tâm       |

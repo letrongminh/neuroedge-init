@@ -108,11 +108,10 @@ theo hướng có lợi:
 | Kết quả đo | Hành động bắt buộc |
 |:---|:---|
 | Đạt cả ba ngưỡng Q-3 | Giữ nguyên phạm vi Khối 1b. Ghi số đo làm đường cơ sở cho Tiêu chí 4 của Sprint 5 (bộ nhớ còn lại sau 4 giờ chạy) |
-| Trượt bất kỳ **một** ngưỡng | **Kích hoạt bậc 5 của thang cắt phạm vi (§9) ngay**, không chờ Tuần 9: `esp32s3` chỉ chạy gate và GPIO, runtime thoại đẩy sang sau Beta |
+| Trượt bất kỳ **một** ngưỡng | **Không cắt thoại** (Q-44): mở ngay một `Q-N` lập lại kế hoạch I5 (TSK-S5-05 tối ưu bộ nhớ, TSK-S5-07 chọn backend fallback) và dời dự báo v1.0 |
 
-Roadmap §4.1 nói rõ: *"Không đạt ngưỡng nào thì kích hoạt bậc 5 của thang cắt
-phạm vi (§9) ngay, không chờ Tuần 9."* Giá trị của việc chạy spike ở Tuần 2 là
-còn đủ thời gian để đổi phạm vi; hoãn quyết định sẽ xóa sạch giá trị đó.
+Quy tắc đã chốt trước khi đo (Q-44): trượt một ngưỡng thì lập lại kế hoạch ngay, không đợi. Giá trị của việc
+chạy spike sớm là còn đủ thời gian để đổi kế hoạch; hoãn quyết định sẽ xóa sạch giá trị đó.
 
 ## 6. Ảnh hưởng tới Tiêu chí ra Sprint 1
 

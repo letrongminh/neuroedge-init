@@ -143,5 +143,5 @@ số đo trên bo mạch thật — đó là TSK-S1-10, và trạng thái của 
 [`docs/reports/memory_spike_report.md`](../reports/memory_spike_report.md):
 **chưa có số đo**.
 
-Hai hạng mục độc lập với nhau: thiết kế HAL có thể đúng trong khi phạm vi Khối
-1b vẫn phải cắt theo bậc 5 của thang §9.
+Hai hạng mục độc lập với nhau: thiết kế HAL có thể đúng trong khi ngân sách bộ
+nhớ vẫn trượt — khi đó lập lại kế hoạch I5 theo Q-44, không cắt thoại.

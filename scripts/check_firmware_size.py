@@ -105,7 +105,7 @@ def main() -> int:
             "  This is not a warning: the image cannot be flashed to an A/B OTA "
             "slot at this size.\n"
             "  Q-3 requires firmware <= 3.5 MB. Reduce the image, or escalate as "
-            "a scope decision (roadmap §9) — do not raise the budget here.",
+            "a re-plan decision (Q-N, Q-44) — do not raise the budget here.",
             file=sys.stderr,
         )
         return 1

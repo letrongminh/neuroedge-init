@@ -1290,7 +1290,7 @@ neuroedge run --target sim
 ### 8.4 Khối 2 — Tầng dịch vụ thương mại: Fleet OS (Tháng 4–8)
 
 **Điều kiện kích hoạt (Milestone-Gated — Bắt buộc thỏa mãn mới khởi động):**
-Khối 2 **tuyệt đối không bắt đầu theo lịch cố định**, mà chỉ được kích hoạt khi Developer Beta đạt đồng thời B1, B2 và B3 — ngưỡng ở [PRD §11.2](neuroedge-prd.md#112-nghiệm-thu-developer-beta). Ba tiêu chí đo lần lượt sự tò mò (B1), cam kết lên phần cứng thật — `linux` hoặc bo mạch tham chiếu (B2) — và mầm hiệu ứng mạng (B3).
+Khối 2 **tuyệt đối không bắt đầu theo lịch cố định**, mà chỉ được kích hoạt khi Developer Beta đạt đồng thời B1 và B2 — ngưỡng ở [PRD §11.2](neuroedge-prd.md#112-nghiệm-thu-developer-beta). Hai tiêu chí đo lần lượt sự tò mò (B1) và cam kết lên phần cứng thật — `linux` hoặc bo mạch tham chiếu (B2). Mầm hiệu ứng mạng (B3) vẫn được đo nhưng không là điều kiện (PRD Q-41).
 
 Nội dung triển khai: **Fleet Management OS** như mô tả chi tiết tại §6.2 — dịch vụ thương mại duy nhất của Khối 2. Lớp trừu tượng nhà cung cấp (§6.1) là mã nguồn mở và đã được xây từ Khối 1a (§8.1); Khối 2 chỉ hoàn thiện và tối ưu nó, không thương mại hóa.
 
@@ -1351,11 +1351,11 @@ Giai đoạn 2 **chạy song song Khối 4**, không nối tiếp: AURA triển 
 
 | Khối | Trọng tâm | Điều kiện kích hoạt |
 |:---|:---|:---|
-| **V1a — Mở danh sách target** | RFC-0002: mở enum target theo phân tầng bậc; bậc máy đọc được trong mã lõi. Nguyên thủy `vision.in` và bằng chứng thị giác trong vết ghi đi qua RFC riêng ở V1b. **Không viết driver, không đụng TTFV.** | RFC-0002 được phê duyệt; hợp nhất không trước Tháng 9. Không chờ AURA |
+| **V1a — Mở danh sách target** | RFC-0002: mở enum target theo phân tầng bậc; bậc máy đọc được trong mã lõi. Nguyên thủy `vision.in` và bằng chứng thị giác trong vết ghi đi qua RFC riêng ở V1b. **Không viết driver, không đụng TTFV.** | RFC-0002 được phê duyệt; hợp nhất trong increment mở target I11 sau Beta (PRD Q-40). Không chờ AURA |
 | **V1b — Vision trên `linux`** | RFC `vision.in`, HAL thị giác, Action CI cho khung hình, tăng tốc NPU trên bo mạch giá thấp | Có nhu cầu camera **đo được** từ khách hàng AURA thật |
 | **V2 — Vision trên `jetson`** | Nâng target `jetson` lên bậc 2, thị giác thời gian thực chất lượng cao | V1b đạt tiêu chí ra |
 | **V3 — Đa phương thức** | Hợp nhất thoại và thị giác trong một máy trạng thái; gate đa phương thức | V2 đạt tiêu chí ra **và** RFC ngữ nghĩa gate thị giác được phê duyệt |
-| **P1 — Bộ công cụ port cộng đồng** | Xuất bản tài liệu, bộ vector tuân thủ và khung port để cộng đồng tự đưa NeuroEdge lên `stm32`, `rp2350` | V1b đạt tiêu chí ra |
+| **P1 — Bộ công cụ port cộng đồng** | Xuất bản tài liệu, bộ vector tuân thủ và khung port để cộng đồng tự đưa NeuroEdge lên `stm32`, `rp2350` | I11 (mở target) phát hành — không chờ thị giác (PRD Q-40) |
 | **P2 — Hệ sinh thái thiết bị** | SDK đa thiết bị, kho adapter và HAL port, chứng nhận miễn phí tự kiểm chứng | ≥ 3 bản port bậc 3 do cộng đồng hoàn thành |
 
 **Hai ranh giới không được vượt trong Giai đoạn 2:**
@@ -1474,7 +1474,7 @@ Vì sao là các chỉ số này: TTFV đo độ tinh gọn của lần tiếp x
 
 ### 12.2 Khối 2 và 3 — Tầng dịch vụ thương mại và Hạ tầng nền tảng (Mốc 6 tháng)
 
-Ngưỡng chuẩn tắc ở PRD §11.3: **C1** (độ tin cậy OTA), **C2** (độ trễ thoại), **C3** (độ trễ gate), **C4** (tiết kiệm chi phí token), **C5** (chia sẻ gate cộng đồng), **C6** (cơ cấu doanh thu chỉ-Fleet), **C8** (độ trễ quyết định `SystemOne`).
+Ngưỡng chuẩn tắc ở PRD §11.3: **C1** (độ tin cậy OTA), **C2** (độ trễ thoại), **C3** (độ trễ gate), **C4** (tiết kiệm chi phí token), **C5** (chia sẻ gate cộng đồng), **C8** (độ trễ quyết định `SystemOne`). **C6** (cơ cấu doanh thu chỉ-Fleet) là chỉ số theo dõi, không là điều kiện phát hành (PRD Q-42).
 
 Vì sao: 0 brick trên 1.000 thiết bị là điều kiện để doanh nghiệp giao phó đội thiết bị; độ trễ thoại và gate quyết định trải nghiệm tự nhiên; tiết kiệm token minh chứng kiến trúc hai mô hình; gate cộng đồng có người cài xác nhận hiệu ứng mạng trước khi mở sàn; Fleet đạt hòa vốn khẳng định mô hình kinh doanh sau khi bỏ doanh thu inference (v5.3).
 
