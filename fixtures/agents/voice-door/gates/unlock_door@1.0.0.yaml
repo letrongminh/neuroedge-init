@@ -17,5 +17,7 @@ on_block:
   message: "Mình chưa mở cửa được: khách chưa được xác thực."
 
 budget:
-  p95_latency_ms: 120
+  # 700 ms ⇒ verdict TTL 2100 ms (p95 × 3): `open_door_later` hẹn lệnh 2000 ms sau
+  # phán quyết, và lệnh hẹn giờ phải được giao trong TTL của phán quyết đó.
+  p95_latency_ms: 700
   fail:           closed

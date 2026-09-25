@@ -185,6 +185,13 @@ class Conversation:
                 value = spec.fn(**kwargs)
                 if inspect.isawaitable(value):
                     value = await value
+        except BaseException:
+            # A command the action scheduled before it raised never runs: the verdict
+            # authorised the whole action, not the half that got through.
+            cancel = getattr(self.hal, "cancel_scheduled", None)
+            if cancel is not None:
+                cancel(token)
+            raise
         finally:
             self.ledger.close(token)
         return ActionResult(spec.name, GateVerdict.ALLOW, result, value=value)

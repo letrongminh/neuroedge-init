@@ -218,3 +218,18 @@ def test_mcp_serve_on_linux_drives_the_kernel_line_through_the_gate(sysfs, tmp_p
     trace = json.loads(trace_out.read_text(encoding="utf-8"))
     validate_trace(trace)
     assert trace["metadata"]["target"] == "linux"
+
+
+def test_sigterm_ends_a_linux_session_with_every_line_dropped(sysfs):
+    """An MCP host stops its server with SIGTERM: the line must not stay driven."""
+    child = neuroedge("run", "--target", "linux", "--agent", str(DRIVEWAY))
+    try:
+        child.stdin.write("bật đèn hiên\n")
+        child.stdin.flush()
+        assert wait_for(sysfs, "porch_light", 1, timeout=10), "the ALLOW must reach the line"
+        child.terminate()
+        output, _ = child.communicate(timeout=10)
+    finally:
+        child.kill()
+    assert child.returncode == 143, output
+    assert kernel_value(sysfs, "porch_light") == 0, "SIGTERM runs close(): every line inactive"

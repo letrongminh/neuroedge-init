@@ -321,6 +321,29 @@ def coverage_problems(root: Path | None = None) -> list[str]:
     return problems
 
 
+def _reuse_token(voice: VoiceSession, pin: str) -> None:
+    """
+    V1: drive `pin` again with the token of the last command barge-in cancelled on
+    it. A corpus input, not a device one: it calls the HAL directly, which only a
+    test may do. The ledger must refuse it (`actuator_command_rejected`).
+    """
+    aborted = [c for c in voice.fsm.aborted if c.pin == pin]
+    if not aborted:
+        raise ValueError(f"reuse_token: no cancelled command on {pin!r} to reuse")
+    command = aborted[-1]
+    try:
+        voice.hal.digital_out(
+            pin,
+            command.operation,
+            command.duration_ms,
+            signature=command.token,
+            called_from="reuse_token",
+        )
+    except NeuroEdgeError:
+        return
+    raise AssertionError(f"the token of a command barge-in cancelled drove {pin!r} again")
+
+
 async def execute(case: VoiceCase) -> VoiceSession:
     """The case through a fresh `VoiceSession`, input by input, in virtual time."""
     world = case.world
@@ -336,7 +359,11 @@ async def execute(case: VoiceCase) -> VoiceSession:
     )
     for event in case.inputs:
         await voice.advance(event["offset_ms"])
-        await voice.feed(event["type"], event["data"])
+        if event["type"] == "reuse_token":
+            voice.events.emit(event["type"], dict(event["data"]))
+            _reuse_token(voice, str(event["data"]["pin"]))
+        else:
+            await voice.feed(event["type"], event["data"])
     await voice.advance(case.until_ms, inclusive=True)
     validate_trace(voice.session.events.to_trace(), label=f"voice case {case.name}")
     return voice

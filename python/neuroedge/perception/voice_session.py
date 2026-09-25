@@ -19,13 +19,11 @@ wake words and VAD edges arrive as the events of §8.
 
 from __future__ import annotations
 
-import contextlib
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
 from ..actions.tools import ToolCall
-from ..errors import NeuroEdgeError
 from ..models import SystemOne
 from ..sim.session import SimSession, Turn, _answer_word
 from .voice_fsm import VoiceParams, VoiceStateMachine
@@ -143,8 +141,6 @@ class VoiceSession:
                 await self._offline_reply()  # T09
         elif type == "tts_stream_end":
             self.fsm.reply_ended()
-        elif type == "reuse_token":
-            self._reuse_token(str(data["pin"]))
         else:
             raise ValueError(f"not a voice input event: {type!r}")
 
@@ -193,20 +189,3 @@ class VoiceSession:
         self._awaiting = None
         await self.session.conversation.say(self.session.offline_help())
         self.fsm.reply_started(ask=False)
-
-    def _reuse_token(self, pin: str) -> None:
-        """Try the token of the last command barge-in cancelled on `pin` again (V1)."""
-        aborted = [c for c in self.fsm.aborted if c.pin == pin]
-        if not aborted:
-            raise ValueError(f"reuse_token: no cancelled command on {pin!r} to reuse")
-        command = aborted[-1]
-        # Refused, and the ledger records `actuator_command_rejected`; a success would
-        # record `actuator_command`, which no answer of the corpus accepts.
-        with contextlib.suppress(NeuroEdgeError):
-            self.hal.digital_out(
-                pin,
-                command.operation,
-                command.duration_ms,
-                signature=command.token,
-                called_from="reuse_token",
-            )

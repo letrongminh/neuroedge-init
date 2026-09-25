@@ -1234,6 +1234,24 @@ def _default_agent() -> Path:
     return sample if not here.is_file() and sample.is_file() else here
 
 
+def _exit_on_signals() -> None:
+    """
+    SIGTERM and SIGHUP end the process through `SystemExit`, so the session's
+    `finally: session.close()` runs and every line drops inactive. Python's default
+    for both ends the process at once: a door-lock pulse in flight, or a line left
+    `on`, would stay driven after the process is gone (an MCP host stops its server
+    with SIGTERM; closing the terminal sends SIGHUP). SIGKILL cannot be caught.
+    """
+    import signal
+
+    def _exit(signum: int, _frame: Any) -> None:
+        raise SystemExit(128 + signum)
+
+    for name in ("SIGTERM", "SIGHUP"):
+        if hasattr(signal, name):
+            signal.signal(getattr(signal, name), _exit)
+
+
 def _start_session(
     verb: str, agent, target: str, board: str | None, registry, events=None, ui: bool = False
 ):
@@ -1274,6 +1292,8 @@ def _start_session(
             )
         )
         raise typer.Exit(code=2)
+    if target == "linux":
+        _exit_on_signals()  # before the lines are requested
     try:
         return SimSession.load(
             agent or _default_agent(),

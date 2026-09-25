@@ -30,11 +30,13 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-from ..errors import BoardCapabilityError
+from ..errors import ActionContractViolation, BoardCapabilityError
 from . import Authorizer, HardwareAbstractionLayer, PinAssertion, _require_signature
 from .board import BoardProfile, load_board_by_id
 
 ABORTED_BY_BARGE_IN = "ACTUATOR_ABORTED_BY_BARGE_IN"
+# The @action that scheduled the command raised: its verdict never completed (review of TSK-S3-11).
+ABORTED_BY_ACTION_ERROR = "ACTUATOR_ABORTED_BY_ACTION_ERROR"
 
 
 class EventSink(Protocol):
@@ -239,6 +241,21 @@ class SimHAL(HardwareAbstractionLayer):
         if self.board is not None:
             self.board.require_pin(pin, called_from=called_from)
         self.authorize(signature, pin, called_from)
+        # A verdict is fresh for its TTL (actions/token.py); a command delivered after
+        # that would move the pin on facts the gate never saw, so it is refused now.
+        issued_at = getattr(signature, "issued_at_ms", None)
+        ttl = getattr(signature, "ttl_ms", None)
+        if issued_at is not None and ttl is not None:
+            deliver_at = self._clock() + delay_ms
+            if deliver_at - issued_at > ttl:
+                raise ActionContractViolation(
+                    where=where,
+                    why=(
+                        f"after_ms {delay_ms} delivers the command {deliver_at - issued_at:g} ms "
+                        f"after the verdict, past its TTL of {ttl:g} ms"
+                    ),
+                    how="schedule within the verdict's TTL (p95_latency_ms x 3 of the gate)",
+                )
         command = PendingCommand(
             pin,
             operation,
@@ -250,6 +267,12 @@ class SimHAL(HardwareAbstractionLayer):
         )
         self._scheduled.append(command)
         return command
+
+    def cancel_scheduled(self, token: Any, reason: str = ABORTED_BY_ACTION_ERROR) -> None:
+        """Cancel every pending command `token` authorised (its @action raised)."""
+        for command in self.pending_commands():
+            if command.token is token:
+                command.cancel(reason)
 
     def pending_commands(self) -> list[PendingCommand]:
         """Scheduled commands not yet delivered and not cancelled, oldest first."""

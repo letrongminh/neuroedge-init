@@ -13,7 +13,7 @@ import pytest
 from neuroedge import action
 from neuroedge.actions import Conversation
 from neuroedge.engine import ActionContractEngine, EventLog, resolve_gate_file
-from neuroedge.errors import BoardCapabilityError
+from neuroedge.errors import ActionContractViolation, BoardCapabilityError
 from neuroedge.hal import digital
 from neuroedge.hal.linux import LinuxHAL
 from neuroedge.hal.sim import PendingCommand, SimHAL
@@ -242,3 +242,37 @@ async def test_a_negative_delay_is_refused_before_anything_is_scheduled():
     with pytest.raises(BoardCapabilityError, match="negative"):
         await conversation.do(_unlock_in_the_past)
     assert hal.pending_commands() == [] and hal.pin("door_lock").never_pulsed()
+
+
+@action(name="fsm_unlock_past_ttl", requires="digital.out:door_lock", gate="unlock_door")
+def _unlock_past_ttl() -> None:
+    digital.out("door_lock").pulse(seconds=1, after_ms=2101)  # TTL of unlock_door: 2100 ms
+
+
+@action(
+    name="fsm_unlock_then_fail",
+    requires=["digital.out:door_lock", "digital.out:porch_light"],
+    gate="unlock_door",
+)
+def _unlock_then_fail() -> None:
+    digital.out("door_lock").pulse(seconds=1, after_ms=500)
+    raise RuntimeError("the second half of the action failed")
+
+
+async def test_a_scheduled_command_past_the_verdict_ttl_is_refused():
+    _, hal, conversation = _scheduling_conversation()
+    with pytest.raises(ActionContractViolation, match="past its TTL"):
+        await conversation.do(_unlock_past_ttl)
+    assert hal.pending_commands() == [] and hal.pin("door_lock").never_pulsed()
+
+
+async def test_an_action_that_raises_after_scheduling_never_moves_the_pin():
+    clock, hal, conversation = _scheduling_conversation()
+    with pytest.raises(RuntimeError, match="second half"):
+        await conversation.do(_unlock_then_fail)
+    assert hal.pending_commands() == []
+    clock.now = 10_000
+    assert hal.run_due() == [] and hal.pin("door_lock").never_pulsed()
+    assert conversation.events.of_type("actuator_aborted") == [
+        {"pin": "door_lock", "reason": "ACTUATOR_ABORTED_BY_ACTION_ERROR"}
+    ]

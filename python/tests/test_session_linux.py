@@ -275,3 +275,69 @@ def test_a_failure_after_the_lines_are_requested_releases_them(driveway, gpio, m
     with pytest.raises(RuntimeError, match="mcp config broke"):
         SimSession.load(driveway, target="linux")
     assert gpio.requests and all(request.released for request in gpio.requests)
+
+
+@pytest.fixture
+def restore_signals():
+    import signal
+
+    saved = {name: signal.getsignal(getattr(signal, name)) for name in ("SIGTERM", "SIGHUP")}
+    yield signal
+    for name, handler in saved.items():
+        signal.signal(getattr(signal, name), handler)
+
+
+def test_a_linux_session_ends_on_sigterm_and_sighup_through_its_finally(
+    driveway, gpio, restore_signals
+):
+    signal = restore_signals
+    result = invoke("run", "--target", "linux", "--agent", str(driveway), "-c", "bật đèn hiên")
+    assert result.exit_code == 0, result.output
+    for name in ("SIGTERM", "SIGHUP"):
+        number = getattr(signal, name)
+        handler = signal.getsignal(number)
+        assert callable(handler), f"{name} must not end the process without close()"
+        with pytest.raises(SystemExit) as caught:
+            handler(number, None)
+        assert caught.value.code == 128 + number
+
+
+def test_a_sim_session_leaves_the_signal_handlers_alone(root, restore_signals):
+    signal = restore_signals
+    before = signal.getsignal(signal.SIGTERM)
+    agent = root / "fixtures" / "agents" / "driveway" / "agent.toml"
+    assert invoke("run", "--agent", str(agent), "-c", "bật đèn hiên").exit_code == 0
+    assert signal.getsignal(signal.SIGTERM) is before
+
+
+def test_ctrl_c_while_run_c_waits_for_its_pulse_exits_130_and_drops_the_line(
+    driveway, gpio, monkeypatch
+):
+    def interrupt(self):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(TypedLinuxHAL, "settle", interrupt)
+    result = invoke("run", "--target", "linux", "--agent", str(driveway), "-c", "mở cửa ngách")
+    assert result.exit_code == 130, result.output
+    assert ("door_lock", 1) in gpio.history, "the pulse started"
+    assert line(gpio, "door_lock") == Value.INACTIVE, "Ctrl-C drops the line at once"
+    assert all(request.released for request in gpio.requests)
+
+
+def test_sensor_facts_without_sensor_read_in_requires_are_still_refused_on_linux(
+    root, gpio, tmp_path
+):
+    import shutil
+
+    agent = tmp_path / "factory"
+    shutil.copytree(root / "fixtures" / "agents" / "factory-monitor", agent)
+    toml = agent / "agent.toml"
+    toml.write_text(
+        toml.read_text(encoding="utf-8").replace(
+            '"sensor.read" = { sensors = ["temperature"] }\n', ""
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(BoardCapabilityError, match=r"sensor\.read \(TSK-S5-09\)"):
+        SimSession.load(toml, target="linux")
+    assert gpio.requests == [], "refused before any line is requested"
