@@ -9,7 +9,7 @@
 #
 # Stage 2 is skipped while no such runner exists, and it reports the skip
 # explicitly. It must never report success from a run that did not happen —
-# the memory spike feeds a scope decision (R-1, scope-cut tier 5), and a
+# the memory spike feeds a re-plan decision (R-1, Q-44), and a
 # false pass there is worse than no data.
 name: nightly-hardware
 
@@ -182,8 +182,8 @@ jobs:
 
           if failed:
               sys.exit(
-                  "::error::Q-3 budget missed. Roadmap §4.1 requires scope-cut "
-                  "tier 5 (§9) to be triggered now, not watched until Week 9."
+                  "::error::Q-3 budget missed. Voice on the chip is required for "
+                  "v1.0 (Q-44): open a Q-N to re-plan I5 now (TSK-S1-10)."
               )
           print("Q-3 runtime budget met.")
           PY

@@ -135,9 +135,9 @@ bool neuroedge_memory_meets_q3_budget(void)
              psram_ok ? "PASS" : "FAIL");
 
     if (!sram_ok || !psram_ok) {
-        /* Roadmap §4.1: a miss triggers scope-cut tier 5 immediately, not a
-         * watch item for Week 9. */
-        ESP_LOGE(TAG, "Q-3 VERDICT: FAIL — trigger scope-cut tier 5 (roadmap §9) now.");
+        /* Q-44: voice on the chip is required for v1.0, so a miss is not a
+         * scope cut: it opens a Q-N to re-plan I5 at once (TSK-S1-10). */
+        ESP_LOGE(TAG, "Q-3 VERDICT: FAIL — open a Q-N to re-plan I5 now (Q-44).");
         return false;
     }
 

@@ -32,6 +32,9 @@ bản gói.
 
 #### Đã thêm
 
+- **Q-39 → Q-44 — roadmap theo increment (2026-09-25).** Một roadmap, thời gian đo bằng increment `I0…`, không phát hành
+  ra ngoài tới khi công khai ở I6 (demo thoại trên `sim`, `linux`, Box-3), thêm một kỹ sư nhúng (Q-39); mở rộng sau Beta
+  (Q-40); v1.1 mở trên B1 và B2 (Q-41); C6 thành chỉ số theo dõi (Q-42); G-* neo theo increment (Q-43); bỏ bậc cắt 5 (Q-44).
 - **Q-6, Q-36 → Q-38 — CPO chốt 4 quyết định (2026-09-25).** Lưu vết Fleet Standard 90 ngày, Enterprise 3 năm (Q-6); wire
   node Zenoh-pico, spike W3-1 là phép thử loại (Q-36); token `motion.*` thuê có hạn (Q-37); chứng nhận an toàn OUT tạm thời,
   miễn trừ ở `README.md` và `threat_model.md` §3b (Q-38, `TODOS.md` #40). Q-5 hoãn tới trước Tháng 4. PRD §14/§15, roadmap §10.
@@ -862,7 +865,7 @@ này sẽ làm hỏng những thứ trông không liên quan.
 VAD) và `opus` kèm rà soát giấy phép §3.9, nạp chúng tại `TODO(TSK-S1-10, V2)`
 trong `main.c`, gọi checkpoint `audio_ready`, điền báo cáo. Quy tắc quyết định
 đã chốt **trước khi đo** để kết quả không bị giải thích lại: trượt bất kỳ một
-ngưỡng Q-3 → kích hoạt **bậc 5 thang cắt phạm vi (§9) ngay**, không chờ Tuần 9.
+ngưỡng Q-3 → **không cắt thoại** (Q-44): mở ngay một `Q-N` lập lại kế hoạch I5 và dời dự báo v1.0.
 
 ### 3.5 Việc tiếp theo
 

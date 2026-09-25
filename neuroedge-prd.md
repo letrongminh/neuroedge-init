@@ -178,18 +178,23 @@ Bổ sung tệp vết ghi thành kịch bản hồi quy vĩnh viễn         ←
 
 ### 3.1 Ba mốc phát hành
 
-| Mốc | Tên | Thời gian | Nội dung | Điều kiện khởi động |
-|:---|:---|:---:|:---|:---|
-| **v1.0** | Lõi mã nguồn mở | Tuần 0–12 | Khối 1a + Khối 1b | Không điều kiện |
-| **v1.0-beta** | Developer Beta | Tuần 12–16 | Đóng băng tính năng, hỗ trợ 50–100 lập trình viên | v1.0 đạt toàn bộ tiêu chí §11.1 của tài liệu này |
-| **v1.1** | Tầng dịch vụ thương mại | Tháng 4–8 | Khối 2 + Khối 3 | **Cột mốc định lượng** — xem §3.3 |
-| **v2.0** | Giai đoạn 2 — thị giác và phủ rộng phần cứng | Tháng 9–24 | Khối V1a/V1b/V2/V3 + P1/P2 *(proposal §8.9)* | **2a:** RFC-0002 được phê duyệt · **2b:** nhu cầu camera đo được từ khách hàng AURA thật |
+Thứ tự và ngày dự báo của từng mốc nằm ở **một nơi**: bảng increment của roadmap (§0.2), theo Q-39. Bảng dưới chỉ
+nói mốc nào gồm increment nào.
 
-Khối 4 (AURA thực địa, tháng 8–14) và Khối 5 (Marketplace, tháng 18+) nằm ngoài phạm vi PRD này; chúng được đặc tả trong tài liệu sản phẩm riêng khi tới mốc. Giai đoạn 2 chạy **song song** Khối 4 và có kế hoạch thực thi riêng tại `neuroedge-roadmap-phase2.md`; PRD này chỉ đặc tả các hợp đồng mà Giai đoạn 2 phải tuân thủ (FR-TGT-08, FR-HAL-01), không đặc tả yêu cầu chi tiết của nó.
+| Mốc | Tên | Increment (roadmap §0.2) | Nội dung | Điều kiện khởi động |
+|:---|:---|:---:|:---|:---|
+| **0.x** | Bản increment nội bộ | I1–I5 | Mỗi increment một tag nội bộ và một tín hiệu đo; **không phát hành ra ngoài** (Q-39) | — |
+| **Công khai** | Repo công khai + PyPI | I6 | Demo thoại chạy trên `sim`, `linux` và ESP32-S3-Box-3 | I5 phát hành |
+| **v1.0** | Lõi mã nguồn mở | I7 | Khối 1a + Khối 1b | Đạt toàn bộ tiêu chí §11.1 |
+| **Developer Beta** | Beta trên dòng `1.0.x` | I8 | Đóng băng tính năng trên dòng `1.0.x`, hỗ trợ 50–100 lập trình viên | v1.0 phát hành |
+| **v1.1** | Tầng dịch vụ thương mại | I9–I10 | Khối 2 + Khối 3 | **Cột mốc định lượng** — xem §3.3 |
+| **v2.0** | Giai đoạn 2 — thị giác và phủ rộng phần cứng | I11, I13, I15–I18 | Khối V1a/V1b/V2/V3 + P1/P2 *(proposal §8.9)* | **2a:** RFC-0002 được phê duyệt · **2b:** nhu cầu camera đo được từ khách hàng AURA thật |
+
+Khối 4 (AURA thực địa, sau Beta — điều kiện ở proposal §8.6) và Khối 5 (Marketplace, khi đạt G1–G4) nằm ngoài phạm vi PRD này; chúng được đặc tả trong tài liệu sản phẩm riêng khi tới mốc. Theo Q-39, kế hoạch thực thi của Giai đoạn 2, NeuroBrain (I12) và robot phân tầng (I14) nằm trong roadmap chung; PRD này chỉ đặc tả các hợp đồng mà Giai đoạn 2 phải tuân thủ (FR-TGT-08, FR-HAL-01), không đặc tả yêu cầu chi tiết của nó.
 
 ### 3.2 Nội dung từng mốc
 
-| Nhóm yêu cầu | v1.0 Khối 1a<br>(Tuần 0–6) | v1.0 Khối 1b<br>(Tuần 6–12) | v1.1<br>(Tháng 4–8) |
+| Nhóm yêu cầu | v1.0 Khối 1a<br>(I0–I2) | v1.0 Khối 1b<br>(I3–I7) | v1.1<br>(I9–I10) |
 |:---|:---:|:---:|:---:|
 | HAL hợp đồng năng lực (FR-HAL) | ● | ● | — |
 | Môi trường `sim` + `linux` (FR-TGT) | ● | — | — |
@@ -211,7 +216,7 @@ Khối 4 (AURA thực địa, tháng 8–14) và Khối 5 (Marketplace, tháng 1
 
 ### 3.3 Điều kiện kích hoạt v1.1
 
-v1.1 **KHÔNG ĐƯỢC** khởi động theo lịch cố định. Chỉ khởi động khi Developer Beta đạt **đồng thời** B1, B2 và B3 — ngưỡng ở §11.2.
+v1.1 **KHÔNG ĐƯỢC** khởi động theo lịch cố định. Chỉ khởi động khi Developer Beta đạt **đồng thời** B1 và B2 — ngưỡng ở §11.2. B3 vẫn được đo nhưng không là điều kiện (Q-41).
 
 ### 3.4 Đóng băng phạm vi Khối 1b
 
@@ -596,6 +601,7 @@ Bốn tệp định dạng tạo thành toàn bộ bề mặt dữ liệu của 
 ## 11. Tiêu chí nghiệm thu phát hành
 
 Mỗi mốc chỉ được công bố khi đạt **toàn bộ** tiêu chí tương ứng. Không chấp nhận đạt một phần hoặc lấy giá trị trung bình.
+Các bản increment nội bộ trước khi công khai (I1–I5) không được công bố là đạt tiêu chí nào của mục này (Q-39).
 
 ### 11.1 Nghiệm thu v1.0 — Lõi mã nguồn mở
 
@@ -617,11 +623,11 @@ Mỗi mốc chỉ được công bố khi đạt **toàn bộ** tiêu chí tươ
 |:---:|:---|:---|
 | **B1** | Lập trình viên bên ngoài chạy thành công agent trên `sim` | ≥ 50 người |
 | **B2** | Lập trình viên bên ngoài nạp và điều khiển thành công phần cứng thật | ≥ 10 người |
-| **B3** | Gate an toàn do cộng đồng bên ngoài tự viết và đóng góp | ≥ 3 gate |
+| **B3** | Gate an toàn do cộng đồng bên ngoài tự viết và đóng góp | ≥ 3 gate *(đo và báo cáo, không là điều kiện mở v1.1 — Q-41)* |
 | **B4** | Tỷ lệ áp dụng Action CI | ≥ 50% dự án khởi tạo giữ lại và mở rộng kịch bản test gate |
 | **B5** | Tỷ lệ chuyển đổi sang phần cứng thật | ≥ 15% người chạy `sim` nạp lên bo mạch trong 30 ngày |
 
-**Nguyên tắc vận hành giai đoạn Beta:** đóng băng hoàn toàn việc phát triển tính năng mới. Toàn bộ nguồn lực dành cho hỗ trợ kỹ thuật trực tiếp, hoàn thiện tài liệu và làm mượt trải nghiệm.
+**Nguyên tắc vận hành giai đoạn Beta:** đóng băng tính năng mới trên dòng `1.0.x` (Q-39). Toàn bộ nguồn lực dành cho hỗ trợ kỹ thuật trực tiếp, hoàn thiện tài liệu và làm mượt trải nghiệm.
 
 ### 11.3 Nghiệm thu v1.1 — Tầng dịch vụ thương mại
 
@@ -632,7 +638,7 @@ Mỗi mốc chỉ được công bố khi đạt **toàn bộ** tiêu chí tươ
 | **C3** | Độ trễ thẩm định gate | Đạt NFR-PERF-02 và NFR-PERF-03 |
 | **C4** | Hiệu quả định tuyến | Đạt NFR-PERF-05 |
 | **C5** | Chia sẻ gate cộng đồng | ≥ 20 gate đạt từ 5 lượt cài đặt bởi người dùng độc lập |
-| **C6** | Cơ cấu doanh thu | Doanh thu Fleet đạt ngưỡng hòa vốn theo mô hình chỉ-Fleet *(NeuroEdge không còn doanh thu inference)* |
+| **C6** | Cơ cấu doanh thu | **Chỉ số theo dõi, không là điều kiện phát hành (Q-42):** doanh thu Fleet so với đường hòa vốn của mô hình chỉ-Fleet, báo cáo hằng tháng *(NeuroEdge không còn doanh thu inference)* |
 | **C7** | Đồng nhất định dạng vết ghi | Vết ghi từ lớp trừu tượng provider replay được trên máy cá nhân, không chuyển đổi |
 | **C8** | Độ trễ quyết định `SystemOne` có cấu trúc | Đạt NFR-PERF-04, đo trên lưu lượng thực qua FR-TEL-06 |
 
@@ -696,7 +702,7 @@ Mục này ghi rủi ro **sản phẩm và thực thi**. Rủi ro **chiến lư�
 
 | # | Rủi ro | Mức độ | Dấu hiệu cảnh báo sớm | Phương án ứng phó |
 |:---:|:---|:---:|:---|:---|
-| **R-1** | Phạm vi Khối 1b vượt thời hạn do tối ưu bộ nhớ vi điều khiển | Trung bình *(hạ từ Cao theo CR-1.0)* | Tuần 9 chưa chạy được vòng lặp thu/phát âm thanh trên bo mạch | Kiến trúc cloud-first đã đưa STT/TTS ra khỏi vi điều khiển, giảm đáng kể áp lực bộ nhớ (P-4, FR-PER-07). Nếu vẫn trượt: bậc 5 của thang cắt phạm vi (roadmap §9) — giữ `esp32s3` ở mức phán quyết gate |
+| **R-1** | Phạm vi Khối 1b vượt thời hạn do tối ưu bộ nhớ vi điều khiển | Trung bình *(hạ từ Cao theo CR-1.0)* | Spike TSK-S1-10 trượt một ngưỡng Q-3, hoặc 3 tuần sau khi I3 phát hành vẫn chưa có vòng thu/phát âm thanh trên bo mạch | Kiến trúc cloud-first đã đưa STT/TTS ra khỏi vi điều khiển, giảm đáng kể áp lực bộ nhớ (P-4, FR-PER-07). Nếu vẫn trượt: **không cắt thoại** (Q-44) — mở ngay một `Q-N` lập lại kế hoạch I5 (TSK-S5-05, TSK-S5-07) và dời dự báo v1.0 |
 | **R-2** | Môi trường `sim` lệch khỏi phần cứng theo thời gian | Cao | `neuroedge verify` bắt đầu có sai lệch lẻ tẻ | Nightly trên bo mạch thật (NFR-REL-03); coi mọi sai lệch là lỗi chặn phát hành |
 | **R-3** | Lập trình viên bỏ qua Action CI, chỉ dùng framework như thư viện thoại | Trung bình | Tỷ lệ áp dụng Action CI dưới 50% ở Beta | Đưa test gate vào scaffold mặc định; tài liệu lấy Action CI làm trung tâm |
 | **R-4** | Nhà cung cấp mô hình thay đổi điều kiện truy cập | Trung bình | Thay đổi điều khoản API, vendor công bố SDK thiết bị | Mở rộng fallback cục bộ vượt ngữ pháp lệnh cố định của Q-14 |
@@ -710,11 +716,11 @@ Mục này ghi rủi ro **sản phẩm và thực thi**. Rủi ro **chiến lư�
 
 | # | Giả định | Vì sao quan trọng | Phương pháp kiểm chứng | Mốc |
 |:---:|:---|:---|:---|:---:|
-| **G-a** | Đơn giá quản trị fleet $1/thiết bị/tháng là mức thị trường chấp nhận | Quyết định quy mô đội thiết bị cần đạt để hòa vốn (proposal §6.3) | Thử nghiệm gói nâng cao (cam kết SLA, kiểm toán vết) với 5 khách hàng doanh nghiệp đầu; đo mức sẵn sàng chi trả thêm | Tháng 6 |
-| **G-b** | Tỷ lệ chuyển đổi `sim` → phần cứng ≥ 15% | Xác nhận `sim` thật sự là phễu dẫn tới phần cứng (proposal §1.7) | Số liệu ẩn danh từ CLI (FR-TEL-01); rà soát ở mốc 100 lập trình viên | Tháng 3 |
-| **G-c** | Định tuyến hai mô hình tiết kiệm ≥ 60% chi phí token | Minh chứng định lượng cho kiến trúc System 1 / System 2 | Đo trên lưu lượng thực qua lớp trừu tượng provider, tách theo nhóm tác vụ | Tháng 6 |
-| **G-d** | Cộng đồng thực sự muốn chia sẻ và tái sử dụng gate | Cơ sở của hiệu ứng mạng trước khi mở Marketplace | Tần suất tải và kế thừa trên Registry miễn phí trong 12 tháng | Tháng 12 |
-| **G-e** | Tái hiện vết ghi giảm 70% chuyến đi hiện trường | Nền của mô hình TCO (proposal §1.8) | Dữ liệu bảo hành thực tế từ 3 khách hàng AURA đầu tiên, phân loại nguyên nhân sự cố (phần mềm/cấu hình vs hỏng vật lý) | Tháng 9 |
+| **G-a** | Đơn giá quản trị fleet $1/thiết bị/tháng là mức thị trường chấp nhận | Quyết định quy mô đội thiết bị cần đạt để hòa vốn (proposal §6.3) | Thử nghiệm gói nâng cao (cam kết SLA, kiểm toán vết) với 5 khách hàng doanh nghiệp đầu; đo mức sẵn sàng chi trả thêm | 90 ngày sau khi I9 phát hành (Q-43) |
+| **G-b** | Tỷ lệ chuyển đổi `sim` → phần cứng ≥ 15% | Xác nhận `sim` thật sự là phễu dẫn tới phần cứng (proposal §1.7) | Số liệu ẩn danh từ CLI (FR-TEL-01); rà soát ở mốc 100 lập trình viên | Khi I8 (Beta) đóng — cùng chỉ số với B5 (Q-43) |
+| **G-c** | Định tuyến hai mô hình tiết kiệm ≥ 60% chi phí token | Minh chứng định lượng cho kiến trúc System 1 / System 2 | Đo trên lưu lượng thực qua lớp trừu tượng provider, tách theo nhóm tác vụ | 90 ngày sau khi I9 phát hành (Q-43) |
+| **G-d** | Cộng đồng thực sự muốn chia sẻ và tái sử dụng gate | Cơ sở của hiệu ứng mạng trước khi mở Marketplace | Tần suất tải và kế thừa trên Registry miễn phí trong 12 tháng | 12 tháng sau khi I10 phát hành; tín hiệu sớm: B3 (Q-43) |
+| **G-e** | Tái hiện vết ghi giảm 70% chuyến đi hiện trường | Nền của mô hình TCO (proposal §1.8) | Dữ liệu bảo hành thực tế từ 3 khách hàng AURA đầu tiên, phân loại nguyên nhân sự cố (phần mềm/cấu hình vs hỏng vật lý) | 6 tháng sau ba site AURA đầu tiên (Q-43) |
 
 ---
 
@@ -755,7 +761,7 @@ Mọi quyết định kỹ thuật, đã chốt hoặc còn mở — xem cột T
 | **Q-2** | Bo mạch tham chiếu chính thức | **ĐÃ CHỐT** | **ESP32-S3-Box-3** (§3.4: tích hợp sẵn LCD ST7789, dual-mic ES7210, loa ES8311, dock GPIO; tránh nhiễu clock I2S do câu dây). |
 | **Q-3** | Ngân sách SRAM/PSRAM & firmware | **ĐÃ CHỐT** | **SRAM tự do ≥ 120 KB**, **PSRAM ≥ 2 MB** (ringbuffer + VAD/wake-word), **Firmware ≤ 3,5 MB** (vừa phân vùng kép A/B 16MB Flash). |
 | **Q-4** | Nhà cung cấp System 1/2 ở v1.0 | **ĐÃ CHỐT** *(sửa 2026-09-23)* | **System 1:** Jev (cloud) + **fallback cục bộ = bộ nhận diện lệnh cố định** theo Q-14 (thay Sherpa-ONNX intent extractor); **System 2:** **`claude-sonnet-5`** & GPT-4o-mini, **qua LiteLLM** (Q-10). Kết nối qua lớp trừu tượng provider OSS (OpenAI-compatible, Q-12). |
-| **Q-5** | Xác thực & chống lạm dụng Registry | Chờ v1.1 | Thiết kế trước Tháng 4 theo chuẩn CNCF ORAS và GitHub token. |
+| **Q-5** | Xác thực & chống lạm dụng Registry | Chờ v1.1 | Thiết kế trước khi I10 (Registry) mở, theo chuẩn CNCF ORAS và GitHub token. |
 | **Q-6** | Chính sách lưu trữ vết ghi Fleet OS | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **Fleet Standard giữ vết 90 ngày; Fleet Enterprise giữ 3 năm.** Vết lên kho theo FR-FLT-05 và chỉ chứa quyết định, không dữ liệu thô (NFR-PRIV-03). Chi phí lưu trữ không phải ràng buộc: một phiên ~1,3 KB (`fixtures/traces/happy-path.json`), 1.000 thiết bị × 50 phiên/ngày × 1 năm ≈ 23 GB *(ước lượng)*. Ràng buộc thật là dữ liệu cá nhân (ai mở cửa lúc nào), nên thời hạn là mức trần, không phải mức sàn. Hạn mức theo thiết bị chỉ để chặn thiết bị chạy vòng, không là đòn bẩy giá — kỹ thuật đặt khi dựng Khối 2. |
 | **Q-7** | Từ khóa kích hoạt mặc định v1.0 | **ĐÃ CHỐT** | *"Hey Neuro"* (tiếng Anh) qua mô hình `microWakeWord` (tối ưu cho Box-3) và `openWakeWord` (Linux/Sim). |
 | **Q-8** | Ngôn ngữ lõi firmware | **ĐÃ CHỐT** | **C/C++ trên ESP-IDF** cho `esp32s3`; Python cho `sim` và `linux`. Kéo theo nghĩa vụ đặc tả chuẩn tắc và bộ vector tuân thủ dùng chung cho hai hiện thực. |
@@ -769,7 +775,7 @@ Mọi quyết định kỹ thuật, đã chốt hoặc còn mở — xem cột T
 | **Q-16** | GPIO cho `linux` trong CI | **ĐÃ CHỐT** *(2026-09-23)* | CI dùng **`gpio-sim`** (kernel ≥ 5.19, configfs); thí nghiệm 2 giờ trên runner GitHub Ubuntu **trước khi mở A2**. **Mua 1 RPi 5** làm nightly phần cứng và phương án B nếu runner không có `gpio-sim`. HAL `linux` phải ném lỗi khi không có `/dev/gpiochip*`. **Kết quả 2026-09-23:** thí nghiệm đạt — runner GitHub (kernel 6.17 azure) nạp `gpio-sim` từ `linux-modules-extra`; job CI `linux-hal` (TSK-S3-05). Phương án B không cần; RPi 5 chỉ còn cho nightly. |
 | **Q-17** | Hành vi `on_block` ở v1.0 | **ĐÃ CHỐT** *(2026-09-23)* | Với **mọi** `on_block`, hành động vật lý bị chặn. `deny`: chặn. `escalate`/`ask`: chặn + ghi sự kiện vào vết + gọi hook (`on_escalate`/`on_ask`, mặc định no-op). `degrade`: chặn hành động gốc, chạy `fallback_action` **qua gate của chính nó**. Hành vi đặc tả, fail-closed, test 100% ⇒ không phải nợ kỹ thuật, **không cần waiver** (thay waiver roadmap §11.3). Ai xác nhận `ask` và việc lượng giá lại: Q-26. Người nhận `escalate` thật: `TODOS.md` #20. |
 | **Q-18** | Kế thừa `budget`/`on_block` | **ĐÃ CHỐT** *(2026-09-23, RFC-0004)* | Sửa ngữ nghĩa phân giải: (1) `p95_latency_ms` của con ≤ của cha; (2) chuỗi đã `closed` (khai hoặc mặc định) thì con không được khai `fail: open`; (3) con không được tự đưa vào `degrade`/`fallback_action` mới (chỉ giữ nguyên của cha), được đổi sang `deny`/`escalate`/`ask`, được đổi `to`/`message`. Vi phạm ⇒ `GateInheritanceError`. Đóng lỗ `lax-night`. Task TSK-S2-13. Mở rộng nguyên tắc 2 (mục 1, 3) và nguyên tắc 4 (mục 2) của Phụ lục B.5 proposal — **vẫn năm nguyên tắc**, không thêm nguyên tắc thứ sáu; sửa FR-GATE-06/07. Hồ sơ: `docs/rfc/0004-ke-thua-budget-on-block.md`. |
-| **Q-19** | Lịch Sprint 2–3 | **ĐÃ CHỐT** *(2026-09-23)* | A1 (wedge `sim`, ≈ Sprint 2) **2026-09-28 → 2026-10-25**; A2 (`linux` + Action CI, ≈ Sprint 3) **2026-10-26 → 2026-11-15**; Sprint 4 mở **2026-11-16**. M1 (TTFV < 10') trễ ~2 tuần so với roadmap gốc; Khối 1b lùi tương ứng. Bỏ quy ước "Tuần N ở đây = Tuần N+1 roadmap". Ước lượng V1 ~6,6–7,1 tuần-người trong 7 tuần — sát, không đệm lớn. |
+| **Q-19** | Lịch Sprint 2–3 | **ĐÃ CHỐT** *(2026-09-23)* | A1 (wedge `sim`, ≈ Sprint 2) **2026-09-28 → 2026-10-25**; A2 (`linux` + Action CI, ≈ Sprint 3) **2026-10-26 → 2026-11-15**; Sprint 4 mở **2026-11-16**. M1 (TTFV < 10') trễ ~2 tuần so với roadmap gốc; Khối 1b lùi tương ứng. Bỏ quy ước "Tuần N ở đây = Tuần N+1 roadmap". Ước lượng V1 ~6,6–7,1 tuần-người trong 7 tuần — sát, không đệm lớn. *Từ Q-39, các cửa sổ này là lịch sử; ngày I1 = 2026-11-15 giữ mốc M1.* |
 | **Q-20** | Cổng nhu cầu mềm | **ĐÃ CHỐT** *(2026-09-23)* | Cổng ngày **2026-10-25** (cuối A1), **không chặn A2**. Các thách thức kinh doanh CEO-X2..X5 và TASTE CEO-T1..T4 ghi thành câu hỏi kinh doanh mở, chủ trì trưởng nhóm, rà lại tại cổng (`TODOS.md`). |
 | **Q-21** | Mô phỏng theo tầng bằng OSS đã kiểm chứng | **ĐÃ CHỐT** *(2026-09-23, cùng kế hoạch lấp khoảng trống kỹ thuật)* | Không tự viết emulator. Mỗi tầng kiểm thử một công cụ mở: `SimHAL` (logic, mỗi commit) · `gpio-sim` (GPIO `linux`, mỗi PR — đang dùng) · `sounddevice` với backend tệp/PCM (âm thanh `linux` trong CI — runner GitHub không có `snd-aloop`; `snd-aloop` chỉ trên Pi) · `i2c-stub` + `lm75` (cảm biến `linux`) · LVGL build trên host so ảnh (màn hình `esp32s3`) · khung hình trong bộ nhớ + digest (`display`) · **mã C thuần của firmware biên dịch trên host** và chạy bảng sự thật mỗi PR (TSK-S4-07) · **Espressif QEMU** cho boot/logic `esp32s3` hằng đêm (TSK-S4-08) · bo mạch thật cho âm thanh, màn hình, bộ nhớ. **Không dùng:** Renode (không có ESP32-S3), trình mô phỏng Wokwi (mã đóng, token, không I2S), `iio_simple_dummy`. Lý do: kiểm được walker C trước khi bo mạch về, không thêm phụ thuộc vào lõi MIT (công cụ chạy riêng, Phụ lục H.4 của proposal). Không thay được spike bộ nhớ TSK-S1-10 (QEMU không giả lập I2S/AFE). Chi tiết: proposal §3.2 *Mô phỏng theo tầng*; từng ô nguyên thủy × target: `docs/spec/simulation_coverage.md`. |
 | **Q-22** | AEC phần mềm trên `linux` | **ĐÃ CHỐT** *(2026-09-23, phương án A)* | `LinuxHAL` lấy `audio.in` đã khử vang qua PipeWire `libpipewire-module-echo-cancel` với `library.name = "aec/libspa-aec-webrtc"` (webrtc-audio-processing, BSD-3 — dịch vụ hệ điều hành, NeuroEdge không đóng gói). Module tạo 4 nút: `capture` (micro) → **`source` — `audio.in` đọc ở đây**; **`sink` — `audio.out` phát vào đây**, làm tín hiệu tham chiếu → `playback` (loa). Phát ra ngoài `sink` thì AEC không có tham chiếu và không khử gì, trừ khi bật `monitor.mode`. `boards/linux-rpi5.toml` **chỉ** khai `aec = true` khi nightly trên Pi đạt tiêu chí đo ở `docs/spec/simulation_coverage.md` §6; chưa đạt thì giữ `false` và `build` vẫn từ chối agent cần AEC. Nguồn: tài liệu PipeWire `page_module_echo_cancel`; mẫu cấu hình tham khảo gist `fathonix/05de5398…` (chỉ định micro bằng `capture.props.target.object`, `node.autoconnect = false`). Đã cân nhắc: B giữ `aec = false` (vi phạm FR-TGT-02), C HAT có AEC phần cứng (tốn tiền, đổi bo tham chiếu), D tách nghĩa `aec` ba mức (cần RFC sửa `board.v1.json`). |
@@ -789,6 +795,12 @@ Mọi quyết định kỹ thuật, đã chốt hoặc còn mở — xem cột T
 | **Q-36** | Wire protocol giữa Pi và node MCU | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **Zenoh-pico** trên MCU + `zenohd` trên Pi, nhánh giấy phép **Apache-2.0**. Spike W3-1 thành **phép thử loại** trên bo mạch thật, ba ngưỡng: độ trễ p99 Pi → node **≤ 20 ms** (ngân sách cắt lời xuyên chip); SRAM nội **≤ 40 KB** (một phần ba khoản 120 KB của Q-3); tự nối lại **≤ 2 s** sau khi mất WiFi. Trượt một ngưỡng ⇒ đo micro-ROS cùng điều kiện; chỉ đổi khi micro-ROS đạt. RFC-node viết theo Zenoh ngay, không chờ spike. Micro-ROS bị xếp sau vì ROS 2 chỉ nói ở Pi (Q-34), không ở MCU, và cần thêm một tiến trình agent trên Pi. |
 | **Q-37** | Token cho lệnh `motion.*` | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **Token thuê có hạn (lease)**: kênh + biên độ tối đa (tốc độ, góc) + thời hạn ngắn (cỡ 200 ms). Mỗi lệnh mới qua gate gia hạn; không còn lệnh ⇒ hết hạn ⇒ cơ cấu về trạng thái an toàn của nó (Q-35). Mất liên lạc vì vậy tự dẫn tới dừng, như `cmd_vel` timeout của ROS hay watchdog của biến tần. Khác token hôm nay (tập chân, mỗi chân một lần trong TTL — `ne_token.h`) ⇒ chi tiết, con số và bố cục `NETR` ở RFC-motion. Gate vẫn thuần: đếm hạn ở HAL/runtime (bất biến 4). |
 | **Q-38** | Chứng nhận an toàn chức năng (IEC 61508, ISO 13849, ISO 13482) | **ĐÃ CHỐT — tạm thời** *(2026-09-25, CPO)* | **OUT cho tới khi có dữ liệu.** Tài liệu và marketing ghi rõ NeuroEdge **không** phải chức năng an toàn được chứng nhận (không SIL, không PL). Robot di động (Q-34) **bắt buộc** nút dừng khẩn bằng phần cứng, cắt nguồn motor không qua phần mềm. Ngày 2026-10-25 áp luật `CEO-T2` cho bốn phân khúc của cổng như đã định. Cổng không phỏng vấn người mua robot, nên câu C6 cho robot được hỏi riêng trước khi mở RFC an toàn di động (`TODOS.md` #40). |
+| **Q-39** | Roadmap theo increment và chính sách phát hành | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **Một roadmap duy nhất** (`neuroedge-roadmap.md`); `neuroedge-roadmap-phase1-5.md`, `neuroedge-roadmap-phase2.md` và bản nháp robot thành ghi chú thiết kế — không lịch, không trạng thái. **Thời gian đo bằng increment** `I0…`: mỗi increment là một năng lực người dùng thấy được, có điều kiện vào, bằng chứng ra và **một** ngày dự báo; thứ tự do phụ thuộc quyết định; bỏ nhãn Tuần N/Tháng N; mã TSK giữ nguyên; cửa sổ sprint của Q-19 thành lịch sử. **Phát hành:** mỗi increment kết thúc bằng một tag và một tín hiệu đo; **không phát hành ra ngoài cho tới khi công khai** — trước đó A1 đo bằng buổi ngồi cùng người dùng với wheel. **Công khai** (repo công khai, PyPI, URL lược đồ cho A9) khi demo thoại chạy trên `sim`, `linux` và ESP32-S3-Box-3 — increment I6, trước v1.0 (I7); repo công khai chứa gì thì quyết khi tới lúc (`TODOS.md` #41). Đóng băng Beta áp cho dòng `1.0.x`; RFC, đặc tả và ghi chú thiết kế vẫn được merge. **Kéo v1.0 sớm hơn:** thoại trên host làm song song ngay; thêm **một kỹ sư nhúng** để làm âm thanh song song với HAL; OTA làm trước trên QEMU. Dự báo v1.0 ≈ 2027-01-24, Beta ≈ 2027-02-21 — giả định bo mạch về trước 2026-11-01 và kỹ sư nhúng thứ hai vào từ 2026-11-16. Ngày từng increment: roadmap §0.2. |
+| **Q-40** | Thứ tự các hướng mở rộng sau Beta | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **NeuroBrain (Giai đoạn 1.5) chuyển sau Developer Beta**, thành increment riêng (I12); trước đó chỉ làm phần quản trị (khối N0) nếu cần; bỏ luật cổng nhu cầu riêng của NeuroBrain — cổng 2026-10-25 dùng `docs/business/cong-nhu-cau-2026-10-25/cham-diem.md`. Lý do: bảo vệ đường găng v1.0 và công của V2 (R-7). Thứ tự sau Beta, theo phụ thuộc: mở danh sách target (I11: RFC-0002 PR2, khối V1a — không còn khoá theo tháng) → NeuroBrain (I12) → bộ port cộng đồng (I13, P1: sau I11, không chờ thị giác) → robot phân tầng (I14, Q-32). Thị giác (I15–I17) chờ nhu cầu camera đo được; hệ sinh thái thiết bị (I18, P2) sau P1 và Registry. |
+| **Q-41** | Điều kiện mở v1.1 và B3 | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **B3 bỏ khỏi điều kiện mở v1.1**: v1.1 mở khi Beta đạt đồng thời **B1 và B2** (§3.3); roadmap đổi ba nhánh của điểm rẽ theo. B3 vẫn đo và báo cáo trong Beta, rồi nối vào C5. Lý do: B3 ghi "đo qua Registry", nhưng Registry chỉ có ở v1.1 — phụ thuộc vòng. B4 vẫn cần một sự kiện đo (thêm vào TSK-S3-09), ngưỡng không đổi. |
+| **Q-42** | C6 ở v1.1 | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **C6 thành chỉ số theo dõi**, không là điều kiện phát hành: v1.1 công bố khi đạt C1–C5, C7, C8. Doanh thu Fleet so với đường hòa vốn báo cáo hằng tháng. Lý do: hòa vốn cần hàng chục nghìn thiết bị (proposal §6.3), tức mức G1, nên giữ C6 làm điều kiện thì v1.1 không bao giờ công bố được. |
+| **Q-43** | Mốc kiểm chứng giả định G-a..G-e | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **Neo theo increment**, không theo tháng: mỗi giả định chỉ đo sau khi thứ nó đo đã tồn tại. G-b khi Beta (I8) đóng — cùng chỉ số với B5; G-a và G-c 90 ngày sau khi I9 phát hành; G-d 12 tháng sau khi I10 phát hành, tín hiệu sớm là B3; G-e 6 tháng sau ba site AURA đầu tiên. Cột "Mốc" ở §13.3 theo quyết định này. |
+| **Q-44** | Bậc cắt 5 — tách thoại khỏi MCU | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **Bỏ bậc 5**: thoại trên ESP32-S3 là **bắt buộc** cho v1.0; A6 giữ nguyên. Hệ quả đã chấp nhận: rủi ro bộ nhớ R-1 không còn lối thoát bằng cắt phạm vi — spike TSK-S1-10 trượt một ngưỡng Q-3 thì không cắt thoại, mà mở ngay một `Q-N` lập lại kế hoạch I5 (TSK-S5-05 tối ưu bộ nhớ, TSK-S5-07 chọn backend fallback) và dời dự báo v1.0. Thang cắt ở roadmap §9 còn bốn bậc. |
 
 ---
 
