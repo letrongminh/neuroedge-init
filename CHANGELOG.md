@@ -24,7 +24,7 @@ Mỗi task xong thêm hoặc sửa **một** mục trong `[Chưa phát hành]`, 
 `CONTRIBUTING.md` §8.2 bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngày
 (`docs/release.md`).
 
-Gói chưa phát hành phiên bản nào; phiên bản đầu tiên trên PyPI sẽ là `0.1.0`. Các mục
+Gói chưa phát hành phiên bản nào ra ngoài; trước khi công khai chỉ có tag nội bộ (Q-39), và phiên bản đầu tiên trên PyPI sẽ là `0.6.0` ở I6. Các mục
 **Mốc …** dưới `[Chưa phát hành]` là mốc tài liệu của Giai đoạn 1, không phải phiên
 bản gói.
 
@@ -147,6 +147,9 @@ bản gói.
 
 #### Đã đổi
 
+- **Roadmap viết lại theo increment I0–I18 (Q-39, Q-40).** Một roadmap: bảng increment §0.2 (dự báo, phụ thuộc,
+  phát hành); 171 mã task giữ nguyên, 38 mã mới; phase1-5, phase2 và bản nháp robot thành ghi chú thiết kế. Luật R1–R12
+  (§2.4) kiểm bằng `tests/test_plan_contract.py`. `TODOS.md`: bỏ #4, #13, #18, #28, #31 (đã thành task), thêm #42.
 - **Q-30 — định vị "Hợp đồng vào Physical AI" / "Physical AI, under contract" (engine-first không đổi).** Contract là
   lớp bảo vệ gần nhất trên 5 nguyên thủy HAL; `neuroedge-prd.md` §1.2/§15 + masthead, `neuroedge-proposal.md`
   §0.3 + masthead, `README.md` hero EN-first; định vị NeuroBrain đề xuất ở `neuroedge-roadmap-phase1-5.md` §1
@@ -805,10 +808,10 @@ Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc 
 
 | Tệp | Vai trò | Khi nào đọc |
 |:---|:---|:---|
-| [`neuroedge-roadmap.md`](neuroedge-roadmap.md) | **Tiến độ, task, tiêu chí ra.** §0 là bảng điều khiển | **Luôn đọc trước** |
-| [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) | Giai đoạn 2 (Tháng 9–24) | Khi việc thuộc Khối 1b trở đi |
-| [`neuroedge-roadmap-phase1-5.md`](neuroedge-roadmap-phase1-5.md) | Giai đoạn 1.5 — NeuroBrain (bản nháp, chờ `Q-N`) | Khi việc thuộc Khối N0–N7 |
-| [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) · [`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) | Mở rộng cho robot phân tầng FOFOCA (bản nháp, chờ `Q-N`) · RFC nháp điều phối node (chưa cấp số) | Khi việc chạm nguyên thủy HAL mới, robot nhiều MCU hoặc multi-node |
+| [`neuroedge-roadmap.md`](neuroedge-roadmap.md) | **Roadmap duy nhất (Q-39):** increment I0–I18, trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành. §0 là bảng điều khiển | **Luôn đọc trước** |
+| [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) | Ghi chú thiết kế — thị giác, phủ rộng phần cứng (I11, I13, I15–I18); không lịch, không trạng thái | Khi làm task của các increment đó |
+| [`neuroedge-roadmap-phase1-5.md`](neuroedge-roadmap-phase1-5.md) | Ghi chú thiết kế — NeuroBrain (I12) | Khi làm task `TSK-N*` |
+| [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) · [`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) | Ghi chú thiết kế — robot phân tầng FOFOCA (I14; `TSK-W0-*` rải ở I2, I6, I7) · RFC nháp điều phối node (chưa cấp số) | Khi việc chạm nguyên thủy HAL mới, robot nhiều MCU hoặc multi-node |
 | [`neuroedge-prd.md`](neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`; **§15 là sổ quyết định duy nhất** (`Q-N`); Phụ lục B là mã lỗi | Khi cần biết *phải* làm gì, và đã chốt gì |
 | [`neuroedge-proposal.md`](neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** | Khi cần biết *tại sao* |
 | [`docs/spec/`](docs/spec/) | Đặc tả chuẩn tắc: Gated Tool Profile, mô hình mối đe doạ, phủ mô phỏng, rà soát MCU, máy trạng thái hội thoại | Trước khi đổi hành vi ở tầng tương ứng |
@@ -816,8 +819,9 @@ Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc 
 | [`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md) | Kế hoạch Giai đoạn 1 đã duyệt, nay lưu trữ (biên bản review cùng thư mục) | Khi cần biết *vì sao* một task bị cắt/hoãn |
 | [`TODOS.md`](TODOS.md) | Việc hoãn có chủ ý, mỗi mục kèm mốc kích hoạt | Trước khi đề xuất việc "còn thiếu" |
 
-**Thứ tự ưu tiên khi lệch nhau:** PRD và proposal (hợp đồng) → roadmap (tiến độ) →
-mã nguồn → tệp này. Nếu mã lệch hợp đồng, mã sai.
+**Thứ tự ưu tiên khi lệch nhau:** PRD và proposal (hợp đồng) → roadmap (tiến độ, lịch) →
+ghi chú thiết kế → mã nguồn → tệp này. Nếu mã lệch hợp đồng, mã sai. Ghi chú thiết kế nói gì
+về lịch, trạng thái hay tiêu chí ra thì roadmap đúng (R1).
 
 ### 3.2 Bản đồ kiến trúc — cái gì ở đâu
 
@@ -859,7 +863,12 @@ này sẽ làm hỏng những thứ trông không liên quan.
 
 | Hạng mục | Chặn bởi | Cần ai | Mở ra điều gì |
 |:---|:---|:---|:---|
-| **TSK-S1-10** · Tiêu chí ra 3 | **Bo mạch ESP32-S3-BOX-3 vật lý** | Đặt hàng | Kết luận phạm vi Khối 1b (TSK-S2-10) |
+| **TSK-S1-10** · I3 tiêu chí 1 | **Bo mạch ESP32-S3-BOX-3 vật lý** | Đặt hàng (roadmap Phụ lục B) | Kết luận kế hoạch thoại trên chip (TSK-S2-10) → I3, I5 |
+| **TSK-I2-01** · I2 tiêu chí 4 | **RPi 5 cho nightly `linux`** | Đặt hàng (roadmap Phụ lục B) | Nightly trên phần cứng thật → I2 |
+| **V6 — kỹ sư nhúng thứ hai** | Chưa tuyển; cần từ 2026-11-16 | Tuyển người (Q-39) | Âm thanh trên chip song song với HAL của V2 (TSK-S5-01, S5-02, S5-06, S5-07) — giả định của dự báo I5, I7 (roadmap §1.3) |
+| **TSK-S3-15** · I1 tiêu chí 3 | Xác nhận golden = ba vết ghi chuẩn mực, hoặc mở RFC | Kỹ thuật trưởng | Đóng I1 |
+| **`TODOS.md` #41** — repo công khai chứa gì | Quyết định của CPO | CPO, trước khi I6 mở | TSK-I6-01 → I6 (Công khai) |
+| **RFC-0002** | Phê duyệt | Kỹ thuật trưởng, trước khi I11 mở | I11 và mọi board profile mới |
 
 **TSK-S1-10 — việc còn lại sau khi có bo mạch:** vendoring `esp-sr` (AEC/AFE +
 VAD) và `opus` kèm rà soát giấy phép §3.9, nạp chúng tại `TODO(TSK-S1-10, V2)`
@@ -877,33 +886,34 @@ nó trong bảng task.
 
 | # | Nợ | Phải giải quyết ở |
 |:---:|:---|:---|
-| 1 | **Hủy lệnh đang chờ mới có ở `sim` và `linux`.** Hợp đồng thu hồi lệnh vật lý (`docs/spec/voice_fsm.md` §5) yêu cầu cắt lời hủy xung chốt cửa đang chờ trong ≤ 1 khung âm thanh. `SimHAL` và `LinuxHAL` đã trả `PendingCommand.cancel()`; `esp32s3` phải hủy được thật ở tầng firmware | **TSK-S4-01**, cùng lúc với hợp đồng thu hồi — không phải sau |
-| 2 | `gate publish` dừng ở mã băm, chưa ký số | Khối 3 (Gate Registry) |
-| 3 | `perception/` chỉ là khung | TSK-S3-11 (hoãn sang Sprint 5) |
+| 1 | **Hủy lệnh đang chờ mới có ở `sim` và `linux`.** Hợp đồng thu hồi lệnh vật lý (`docs/spec/voice_fsm.md` §5) yêu cầu cắt lời hủy xung chốt cửa đang chờ trong ≤ 1 khung âm thanh. `SimHAL` và `LinuxHAL` đã trả `PendingCommand.cancel()`; `esp32s3` phải hủy được thật ở tầng firmware | **TSK-S4-01** (I3), cùng lúc với hợp đồng thu hồi — không phải sau |
+| 2 | `gate publish` dừng ở mã băm, chưa ký số | I10 (Registry) |
+| 3 | `perception/` chỉ là khung | TSK-S3-11 (I4) |
 
 ### 3.7 Điều hệ thống chưa làm được
 
 Nói rõ để không ai đọc các mốc đã đạt quá lên:
 
 - ❌ **Phiên tương tác (`run`, `record`) mới có trên `sim`, gõ chữ trên terminal.** Trên `linux`
-  hôm nay chỉ `replay` / `verify`; giọng nói chưa có (Q-15); intent không có action (`faq`) chỉ được trả lời
-  khi agent khai `[system_two]`.
+  hôm nay chỉ `replay` / `verify` (phiên tương tác: I2); giọng nói chưa có (Q-15; thoại: I4); intent không
+  có action (`faq`) chỉ được trả lời khi agent khai `[system_two]`.
 - ❌ **`esp32s3` mới chạy logic gate, chưa chạy agent.** Walker và sổ token C khớp engine host trên host và
   boot trên QEMU (TSK-S4-07, S4-08); thiết bị replay 3 vết ghi chuẩn mực và ghi vết ghi qua UART (TSK-S4-09). HAL
-  firmware, âm thanh, replay vết ghi tuỳ ý và mọi thứ trên bo mạch là Sprint 4 (TSK-S4-01, S4-04).
-- ❌ **SystemOne chưa có nhà cung cấp cloud thật** (`TODOS.md` #27). SystemTwo đã có LiteLLM và adapter tự
-  viết (TSK-S2-11); CI chỉ thử bằng `mock_response`, lượt gọi bằng key thật chạy tay (`scripts/live_llm_smoke.py`).
+  firmware, replay vết ghi tuỳ ý và mọi thứ trên bo mạch là I3 (TSK-S4-01, S4-04); âm thanh trên chip là I5.
+- ❌ **SystemOne chưa có nhà cung cấp cloud thật** (`TODOS.md` #27; đổi bằng cấu hình là TSK-I4-02). SystemTwo
+  đã có LiteLLM và adapter tự viết (TSK-S2-11); CI chỉ thử bằng `mock_response`, lượt gọi bằng key thật chạy tay (`scripts/live_llm_smoke.py`).
 - ❌ **Tương đương target mới ở mức quyết định, trên `sim` + `linux` + `esp32s3` trên QEMU.** `verify` so chuỗi
   phán quyết và lệnh chân; trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng trên host
-  (`TODOS.md` #37). So timing và bo mạch là TSK-S4-04.
-- ❌ **`LinuxHAL` mới có `digital.out`.** `audio.in/out`, `sensor.read`, `display` trên `linux`
+  (`TODOS.md` #37). So timing và bo mạch là TSK-S4-04 (I3).
+- ❌ **`LinuxHAL` mới có `digital.out`.** `sensor.read`, `display` (I2) và `audio.in/out` (I4) trên `linux`
   chưa hiện thực; chân Pi thật cần `line_names` (vd `door_lock` → `GPIO17`).
 - ❌ **MCP chỉ qua stdio** (`TODOS.md` #24, #25). Không có transport mạng.
-- ❌ **Chưa phát hành lên PyPI.** Workflow sẵn, chờ go-live (TSK-S3-14, `docs/release.md`).
-- ❌ **Chưa có CEL.** `allow_when` chỉ nhận dạng mapping toán tử.
+- ❌ **Chưa phát hành ra ngoài.** Tag trước I6 là nội bộ; PyPI và repo công khai mở ở I6 (Q-39,
+  TSK-S3-14, `docs/release.md`).
+- ❌ **Chưa có CEL.** `allow_when` chỉ nhận dạng mapping toán tử (TSK-S2-06 hoãn, `TODOS.md` #42).
 - ❌ **Chưa có số đo bộ nhớ.** Xem §3.4.
 
-### 3.8 Bốn ràng buộc chuyển cho Sprint 4 (từ rà soát HAL)
+### 3.8 Bốn ràng buộc cho bản port HAL lên chip ở I3 (từ rà soát HAL)
 
 RB-1 → RB-4 (không `malloc` trên đường âm thanh, đệm tĩnh đo được trong PSRAM,
 `digital.out` hủy được trong ≤ 1 khung, bảng năng lực `const` trong flash) ở

@@ -62,25 +62,27 @@ người để phỏng vấn thêm.
 
 ## 4. Ngưỡng quyết định
 
-### 4.1 Khối 1b — giữ nguyên nhánh của thiết kế GĐ1
+### 4.1 I3–I7 — giữ nguyên nhánh của thiết kế GĐ1
 
-Ngưỡng này là bảng "Cổng nhu cầu — Tuần 3" trong `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`,
-đếm theo `N2(P1)`. Theo Q-20 nó **không chặn A2**.
+Ngưỡng này là bảng cổng nhu cầu của thiết kế GĐ1 (`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`),
+đếm theo `N2(P1)`. Nhánh áp cho các increment **I3–I7** (roadmap §0.2; tên lịch sử: Khối 1b). Theo
+Q-20 nó **không chặn** I1 và I2.
 
 | Kết quả | Nhánh | Hành động |
 |:---|:---:|:---|
-| `N2(P1) ≥ 2` | **Go** | Sprint 4 / Khối 1b mở 2026-11-16 theo kế hoạch |
-| `N2(P1) = 1` | **Adjust** | Thêm 5 cuộc trước 2026-11-16, chấm lại |
-| `N2(P1) = 0` | **Stop** | Dừng Khối 1b. Đưa Approach C ra sponsor như đổi hướng có bằng chứng |
-| Toàn cổng < 12 cuộc | **Hoãn** | Cổng lùi, A2 chạy tiếp, trưởng nhóm báo sponsor tiếp cận là rủi ro mới |
+| `N2(P1) ≥ 2` | **Go** | I3–I7 đi tiếp theo roadmap §0.2 |
+| `N2(P1) = 1` | **Adjust** | Thêm 5 cuộc, chấm lại trước **2026-11-16** (hạn chấm lại) |
+| `N2(P1) = 0` | **Stop** | I3–I7 đóng băng, I1 và I2 làm tiếp; một PR lập lại kế hoạch (roadmap §0.2). Đưa Approach C ra sponsor như đổi hướng có bằng chứng |
+| Toàn cổng < 12 cuộc | **Hoãn** | Cổng lùi, I1 và I2 chạy tiếp, trưởng nhóm báo sponsor tiếp cận là rủi ro mới |
 
 Kèm điều kiện hướng (`CEO-X4`): nếu nhãn **C** ≥ 50% và **A** < 25% ⇒ dù `P1` đạt Go, nhánh là
-**Adjust**: đặt Approach C song song trước khi cam kết Khối 1b. Nếu nhãn **E** ≥ 50% ⇒ ghi Approach E
+**Adjust**: đặt Approach C song song trước khi cam kết I3–I7. Nếu nhãn **E** ≥ 50% ⇒ ghi Approach E
 thành phương án chính thức để sponsor chọn. (Approach A–E: `docs/user/thuat-ngu.md` §3.)
 
-Một phần Khối 1b đã làm sớm, không cần bo mạch: walker gate và sổ token C, self-test trên QEMU
-(TSK-S4-02, S4-07, S4-08). Nhánh **Stop** dừng phần còn lại (driver, thoại, OTA); phần đã có giữ
-nguyên trong kho; có tiếp tục bảo trì nó hay không thì ghi trong quyết định cổng (§5).
+Một phần I3–I7 đã làm sớm, không cần bo mạch: walker gate và sổ token C, self-test và vết ghi UART
+trên QEMU (TSK-S4-02, S4-07, S4-08, S4-09), đặc tả FSM thoại (TSK-S2-07). Nhánh **Stop** dừng phần
+còn lại (driver, thoại, công khai, OTA); phần đã có giữ nguyên trong kho; có tiếp tục bảo trì nó hay
+không thì ghi trong quyết định cổng (§5).
 
 ### 4.2 Mô hình thương mại (`CEO-X2`, `CEO-X5`)
 
@@ -97,7 +99,7 @@ nguyên trong kho; có tiếp tục bảo trì nó hay không thì ghi trong quy
 | `CEO-T1` | `N2(T1) ≥ 3` ⇒ giữ P3 là moat, nhánh (a); ngược lại nhánh (b): moat là thư viện gate từ sự cố thật + corpus phát lại |
 | `CEO-T2` | Phân khúc có nhãn **R** ≥ 3/5 ⇒ quyết IN (mức, ai làm) hoặc OUT (ghi rõ phân khúc đó bị loại khỏi Giai đoạn 1, viết P3 hẹp thành *"chính sách như dữ liệu có phiên bản, thay cho interlock viết cứng"*). Không để trống |
 | `CEO-T3` | Dựng bảng đối thủ (tên · động cơ · kênh · thời gian để copy) từ các cuộc `T3 ≥ 1`. `≥ 3` ước lượng "tự viết" ⇒ ghi trung vị làm "thời gian để copy" của đối thủ số 3. `< 5` cuộc nêu giải pháp ⇒ nhánh (b): giữ proposal §10 làm bối cảnh, ghi rõ không phải phân tích cạnh tranh |
-| `CEO-T4` | Trưởng nhóm trả lời: kết quả có trước 2026-11-16 (Sprint 4 mở) không. Có ⇒ đóng. Cổng hoãn ⇒ ghi mốc mới |
+| `CEO-T4` | Trưởng nhóm trả lời: kết quả có trước khi I3 mở không. Có ⇒ đóng. Cổng hoãn ⇒ ghi mốc mới |
 
 ### 4.4 Giả định Phụ lục G
 
@@ -129,7 +131,7 @@ Chủ trì: <trưởng nhóm>         Người chấm thứ hai: <tên>        S
    Quy mô: số tổ chức ≥ 1.000 thiết bị có actuator: __ ; đơn vị tính đa số: ________
 
 3. NHÁNH
-   Khối 1b (§4.1):            [ Go | Adjust | Stop | Hoãn ]   vì: __________________________
+   I3–I7 (§4.1):              [ Go | Adjust | Stop | Hoãn ]   vì: __________________________
    Thương mại (§4.2):         [ Go | Adjust | Stop ]          đường chọn: (i) / (ii) / (iii)
    Phân khúc đầu tiên (§4.5): 1. ______________   2. ______________ (nếu có)
 

@@ -5,10 +5,10 @@
 
 ## 1. Cài đặt
 
-Chưa có bản phát hành trên PyPI: workflow đã sẵn, việc đẩy lên index chờ các bước ở
-[`docs/release.md`](../release.md) (`TSK-S3-14`). Khi đã phát hành, cài như
-[`README.md`](../../README.md) gốc. Trước đó, cài từ mã nguồn theo
-[`python/README.md`](../../python/README.md).
+Chưa có bản phát hành ra ngoài: PyPI mở ở I6 — Công khai (`Q-39`, `TSK-S3-14`,
+[`docs/release.md`](../release.md)). Trước đó, cài từ mã nguồn theo
+[`python/README.md`](../../python/README.md), hoặc từ wheel nội bộ của increment gần nhất
+khi đội đưa cho bạn (tag: roadmap §0.2). Từ I6, cài như [`README.md`](../../README.md) gốc.
 
 Yêu cầu: Python 3.11+ (`Q-1`). `sim` mặc định **gõ chữ** — không cần khoá API,
 không cần mạng, kết quả tất định (`Q-15`).
@@ -60,8 +60,8 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Kiểm cùng quyết định trên `sim` và `linux` (A2) | `neuroedge verify --targets sim,linux` | ✅ cần line GPIO |
 | Ghi vết ghi từ firmware `esp32s3` qua UART | `neuroedge record --target esp32s3 --port <log · tcp://… · /dev/tty…>` | ✅ trên QEMU · bo mạch ⏳ |
 | Kiểm cùng quyết định trên `esp32s3`: firmware replay các vết ghi chuẩn mực | `neuroedge verify --targets esp32s3 --port …` | ✅ trên QEMU · bo mạch ⏳ |
-| Phiên gõ chữ tương tác trên `linux` | `neuroedge run --target linux` | ⏳ |
-| Hành trình 10 phút (TTFV) | — | ⏳ mốc M1 |
+| Phiên gõ chữ tương tác trên `linux` | `neuroedge run --target linux` | ⏳ I2 |
+| Hành trình 10 phút (TTFV) | — | ⏳ I1 |
 
 Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.
 

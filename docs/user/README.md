@@ -24,14 +24,15 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | Biên bản các vòng review | [`docs/archive/`](../archive/) | lưu trữ, không quy phạm |
 | Dashboard sản phẩm cho CPO (tiến độ, mốc, việc chờ người, quyết định) | [`docs/business/cpo-dashboard.html`](../business/cpo-dashboard.html) | mở bằng trình duyệt; sinh từ roadmap — đừng sửa tay |
 | Cổng nhu cầu 2026-10-25 (phỏng vấn, demo, chấm điểm) | [`docs/business/cong-nhu-cau-2026-10-25/`](../business/cong-nhu-cau-2026-10-25/README.md) | tài liệu kinh doanh, Q-20 |
-| Kế hoạch Giai đoạn 2 | [`neuroedge-roadmap-phase2.md`](../../neuroedge-roadmap-phase2.md) | Khối V1a → P2 |
-| Kế hoạch Giai đoạn 1.5 — NeuroBrain | [`neuroedge-roadmap-phase1-5.md`](../../neuroedge-roadmap-phase1-5.md) | Khối N0 → N7, bản nháp chờ `Q-N`; wireframe ở [`wireframe/`](../../wireframe/README.md) |
-| Mở rộng cho robot phân tầng (FOFOCA) | [`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../draft-ke-hoach-mo-rong-robot-fofoca.md) · RFC nháp [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../draft-rfc-node-giao-thuc-dieu-phoi.md) | chặng W0–W4, bản nháp chờ `Q-N` — chưa phải quyết định |
+| Kế hoạch: increment I0–I18, việc gì làm khi nào, ngày dự báo | [`neuroedge-roadmap.md`](../../neuroedge-roadmap.md) | roadmap duy nhất (Q-39); bảng increment ở §0.2 |
+| Ghi chú thiết kế — thị giác, phủ rộng phần cứng | [`neuroedge-roadmap-phase2.md`](../../neuroedge-roadmap-phase2.md) | Khối V1a → P2; không lịch, không trạng thái — increment ở roadmap (I11, I13, I15–I18) |
+| Ghi chú thiết kế — NeuroBrain | [`neuroedge-roadmap-phase1-5.md`](../../neuroedge-roadmap-phase1-5.md) | Khối N0 → N7; increment I12 ở roadmap; wireframe ở [`wireframe/`](../../wireframe/README.md) |
+| Ghi chú thiết kế — robot phân tầng (FOFOCA) | [`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../draft-ke-hoach-mo-rong-robot-fofoca.md) · RFC nháp [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../draft-rfc-node-giao-thuc-dieu-phoi.md) | chặng W0–W4; increment I14 ở roadmap (Q-32); RFC node chưa cấp số |
 | **Đóng góp** | | |
 | Quy ước, quy trình, hoàn thành task | [`CONTRIBUTING.md`](../../CONTRIBUTING.md) | §8 là checklist bắt buộc |
 | Đổi `schemas/` (lược đồ đã đóng băng) | [`docs/rfc/README.md`](../rfc/README.md) | quy trình RFC |
 | Việc đã xem xét và hoãn | [`TODOS.md`](../../TODOS.md) | mỗi mục kèm mốc kích hoạt |
-| Phát hành lên PyPI / TestPyPI | [`docs/release.md`](../release.md) | bật công tắc, đẩy tag |
+| Phát hành: tag nội bộ trước I6, PyPI từ I6 | [`docs/release.md`](../release.md) | đẩy tag; công tắc PyPI chỉ bật ở I6 |
 | Agent AI đọc gì trước | [`CLAUDE.md`](../../CLAUDE.md) | |
 | **Tham chiếu** | | |
 | Lược đồ, gate mẫu, vết ghi, bo mạch | `schemas/` · `gates/` · `fixtures/` · `boards/` | artifact máy đọc |
@@ -58,7 +59,7 @@ neuroedge-init/
     ├── spec/           đặc tả và ràng buộc
     ├── reports/        báo cáo đo
     ├── business/       tài liệu kinh doanh (cổng nhu cầu)
-    ├── release.md      quy trình phát hành PyPI
+    ├── release.md      quy trình phát hành (tag nội bộ, PyPI từ I6)
     └── archive/        lưu trữ: biên bản review, thiết kế đã đóng băng
 ```
 
@@ -67,6 +68,7 @@ neuroedge-init/
 - Tiếng Việt; mã, lệnh, đường dẫn giữ nguyên.
 - Dẫn mã khi nhắc một sự thật (`TSK-S2-03`, `Q-17`, `RFC-0004`, `FR-GATE-03`,
   `TODOS.md #15`) — không chép lại nội dung.
-- Ngày tuyệt đối (`2026-09-28`), không dùng "tuần sau".
+- Lịch bằng increment (`I3`) hoặc ngày tuyệt đối (`2026-09-28`); không dùng "tuần sau"
+  hay nhãn tuần/tháng đánh số (`CONTRIBUTING.md` §8.3).
 - `trang-thai.md` do máy sinh: sửa [`neuroedge-roadmap.md`](../../neuroedge-roadmap.md)
   §0 rồi chạy `python3 scripts/gen_user_status.py`, **đừng sửa tay**.

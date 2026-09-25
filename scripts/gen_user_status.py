@@ -25,15 +25,15 @@ TARGET = ROOT / "docs" / "user" / "trang-thai.md"
 
 STATUS_LABELS = (
     "Pha đang thực thi",
-    "Sprint hiện hành",
+    "Increment đang mở",
     "Cột mốc tiếp theo",
     "Trạng thái CI Lõi",
     "Chặn ngoài tầm kỹ thuật",
     "Lần cập nhật cuối",
 )
 
-MATRIX_HEADER = "| Mốc | Sprint / Giai đoạn |"
-MATRIX_COLUMNS = (0, 1, 2, 4, 5)
+MATRIX_HEADER = "| Mốc | Increment |"
+MATRIX_COLUMNS = (0, 1, 2, 4, 5, 7)
 
 LINK = re.compile(r"\[([^\]]+)\]\([^)]*\)")
 
@@ -103,16 +103,16 @@ def render() -> str:
         out.append(f"| {label} | {status[label]} |")
     out += [
         "",
-        "## Tiến độ các mốc",
+        "## Increment",
         "",
-        "| Mốc | Sprint / Giai đoạn | Thời gian | Tiến độ | Trạng thái |",
-        "|:---:|:---|:---|:---:|:---:|",
+        "| Mốc | Increment | Dự báo | Tiến độ | Trạng thái | Phát hành |",
+        "|:---:|:---|:---|:---:|:---|:---|",
     ]
-    for milestone, sprint, period, progress, state in matrix:
-        out.append(f"| {milestone} | {sprint} | {period} | {progress} | {state} |")
+    for milestone, increment, forecast, progress, state, release in matrix:
+        out.append(f"| {milestone} | {increment} | {forecast} | {progress} | {state} | {release} |")
     out += [
         "",
-        "Chi tiết, ghi chú và caveat về lịch: "
+        "Năng lực, phụ thuộc và giả định của các ngày dự báo: "
         "[`neuroedge-roadmap.md`](../../neuroedge-roadmap.md) §0.",
         "",
     ]
