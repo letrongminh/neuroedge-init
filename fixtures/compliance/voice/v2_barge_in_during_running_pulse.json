@@ -1,0 +1,36 @@
+{
+  "description": "§5.3: cửa đã mở (xung 30 s đã giao), khách nói \"cảm ơn\" một giây sau — TTS dừng, xung chạy hết, không có actuator_aborted.",
+  "scenario": "V2",
+  "covers": [
+    "T01",
+    "T02",
+    "T04",
+    "T07",
+    "T12",
+    "T13",
+    "T14"
+  ],
+  "agent": "voice-door",
+  "params": {
+    "end_of_turn_silence_ms": 700,
+    "listen_timeout_ms": 8000,
+    "think_timeout_ms": 5000,
+    "max_reprompts": 1
+  },
+  "world": {
+    "system_two": true
+  },
+  "inputs": [
+    {"offset_ms": 0, "type": "wake_word_detected", "data": {"word": "hey_neuro", "score": 0.93}},
+    {"offset_ms": 200, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 1200, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 2000, "type": "stt_result", "data": {"turn": 1, "text": "cho mình vào nhà với"}},
+    {"offset_ms": 2300, "type": "system_two_reply", "data": {"turn": 1, "text": "Door unlocked. Welcome home.", "tool_calls": [{"name": "open_door", "arguments": {}}]}},
+    {"offset_ms": 3300, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 3800, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 4600, "type": "stt_result", "data": {"turn": 2, "text": "cảm ơn"}},
+    {"offset_ms": 4900, "type": "system_two_reply", "data": {"turn": 2, "text": "Không có gì."}},
+    {"offset_ms": 5900, "type": "tts_stream_end", "data": {"reason": "done"}}
+  ],
+  "until_ms": 40000
+}

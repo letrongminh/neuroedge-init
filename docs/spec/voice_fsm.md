@@ -74,24 +74,25 @@ stateDiagram-v2
 ## 4. Bảng chuyển trạng thái
 
 Bảng là quy phạm: một cặp (trạng thái, sự kiện) không có ở đây thì **không** đổi trạng thái. Tên sự
-kiện ở §8; tham số (`end_of_turn_silence_ms`…) ở §6.
+kiện ở §8; tham số (`end_of_turn_silence_ms`…) ở §6. Mã dòng `T01`…`T14` là thứ bộ vector §9 khai
+trong `covers`.
 
-| Từ | Sự kiện hoặc điều kiện | Sang | Hiệu ứng |
-|:---|:---|:---|:---|
-| `IDLE` | `wake_word_detected`; hoặc `audio_in_vad_start` khi hiện thực bật kích hoạt bằng VAD | `LISTENING` | Mở lượt mới |
-| `LISTENING` | `audio_in_vad_end` | `LISTENING` | Bắt đầu đếm `end_of_turn_silence_ms` |
-| `LISTENING` | `audio_in_vad_start` trong lúc đang đếm | `LISTENING` | Hủy bộ đếm: người nói dừng để nghĩ, không bị cắt (FR-PER-03) |
-| `LISTENING` | Bộ đếm hết | `THINKING` | Đóng lượt, gửi âm thanh đi STT |
-| `LISTENING` | Không có `audio_in_vad_start` nào trong `listen_timeout_ms` kể từ khi vào | `IDLE` | Đóng lượt, không làm gì |
-| `THINKING` | `stt_result` với `text` rỗng | `IDLE` | Tối đa `max_reprompts` lượt hỏi lại liên tiếp, rồi im (FR-PER-05) |
-| `THINKING` | `tts_stream_start` của lượt hiện tại | `SPEAKING` | — |
-| `THINKING` | Lượt kết thúc mà không có gì để phát | `IDLE` | — |
-| `THINKING` | Hết `think_timeout`, hoặc `system_two_unavailable` | `THINKING` | Theo §7: câu offline, rồi phát nó như mọi câu trả lời |
-| `THINKING` | `audio_in_vad_start` | `BARGE_IN` | Người dùng nói tiếp: lượt đang nghĩ bị thay |
-| `SPEAKING` | `tts_stream_end`, câu vừa phát là câu hỏi `ask` (RFC-0006) | `LISTENING` | Mở lượt mới cho câu trả lời |
-| `SPEAKING` | `tts_stream_end` | `IDLE` | — |
-| `SPEAKING` | `audio_in_vad_start` | `BARGE_IN` | — |
-| `BARGE_IN` | (ngay khi vào) | `LISTENING` | §5, rồi mở lượt mới |
+| # | Từ | Sự kiện hoặc điều kiện | Sang | Hiệu ứng |
+|:---:|:---|:---|:---|:---|
+| T01 | `IDLE` | `wake_word_detected`; hoặc `audio_in_vad_start` khi hiện thực bật kích hoạt bằng VAD | `LISTENING` | Mở lượt mới |
+| T02 | `LISTENING` | `audio_in_vad_end` | `LISTENING` | Bắt đầu đếm `end_of_turn_silence_ms` |
+| T03 | `LISTENING` | `audio_in_vad_start` trong lúc đang đếm | `LISTENING` | Hủy bộ đếm: người nói dừng để nghĩ, không bị cắt (FR-PER-03) |
+| T04 | `LISTENING` | Bộ đếm hết | `THINKING` | Đóng lượt, gửi âm thanh đi STT |
+| T05 | `LISTENING` | Không có `audio_in_vad_start` nào trong `listen_timeout_ms` kể từ khi vào | `IDLE` | Đóng lượt, không làm gì |
+| T06 | `THINKING` | `stt_result` với `text` rỗng | `IDLE` | Tối đa `max_reprompts` lượt hỏi lại liên tiếp, rồi im (FR-PER-05) |
+| T07 | `THINKING` | `tts_stream_start` của lượt hiện tại | `SPEAKING` | — |
+| T08 | `THINKING` | Lượt kết thúc mà không có gì để phát | `IDLE` | — |
+| T09 | `THINKING` | Hết `think_timeout`, hoặc `system_two_unavailable` | `THINKING` | Theo §7: câu offline, rồi phát nó như mọi câu trả lời |
+| T10 | `THINKING` | `audio_in_vad_start` | `BARGE_IN` | Người dùng nói tiếp: lượt đang nghĩ bị thay |
+| T11 | `SPEAKING` | `tts_stream_end`, câu vừa phát là câu hỏi `ask` (RFC-0006) | `LISTENING` | Mở lượt mới cho câu trả lời |
+| T12 | `SPEAKING` | `tts_stream_end` | `IDLE` | — |
+| T13 | `SPEAKING` | `audio_in_vad_start` | `BARGE_IN` | — |
+| T14 | `BARGE_IN` | (ngay khi vào) | `LISTENING` | §5, rồi mở lượt mới |
 
 Mỗi lần đổi trạng thái **PHẢI** ghi `voice_state_changed` (§8).
 
@@ -139,10 +140,13 @@ chạy" cần RFC, vì `gate.v1` không nhận trường lạ (`TODOS.md` #39).
 
 ### 5.5 Hiện thực hôm nay
 
-`digital.out` hôm nay giao lệnh ngay, không có lệnh hẹn giờ hay xếp sau câu nói, nên chưa lệnh nào
-thật sự "đang chờ". Hợp đồng chỉ có hiệu lực khi hiện thực thêm các lệnh đó: TSK-S3-11 cho Python
-(`PendingCommand` của `hal/sim.py`, `hal/linux.py`), TSK-S4-01 và S5-04 cho `esp32s3` (handle hủy được
-— RB-3). Hiện thực nào thêm lệnh hẹn giờ mà không thêm §5.2 là sai đặc tả.
+Python (TSK-S3-11): `digital.out(pin).pulse(…, after_ms=N)` là **lệnh hẹn giờ**. Trên `sim`
+(`SimHAL`), gate lượng giá và token được tiêu ngay; chân chỉ được ghi và `actuator_command` chỉ được
+ghi khi tới hạn (`PendingCommand.delivered`), do `perception.VoiceSession` giao trên đồng hồ tiêm vào.
+Không có driver đó thì lệnh hẹn giờ bị từ chối. `LinuxHAL` chưa có lệnh hẹn giờ: nó **từ chối**
+`after_ms` (`BoardCapabilityError`), không bao giờ giao sớm thay. Lệnh "xếp sau câu nói" chưa có ở
+hiện thực nào. `esp32s3`: TSK-S4-01 và S5-04 (handle hủy được — RB-3). Hiện thực nào thêm lệnh hẹn giờ
+mà không thêm §5.2 là sai đặc tả.
 
 ## 6. Tham số
 
@@ -181,12 +185,14 @@ Thêm sự kiện không cần RFC.
 | `wake_word_detected` | `{word, score}` | Đầu vào | Mới |
 | `audio_in_vad_start` | `{energy_db}` | Đầu vào | simulation_coverage §3 |
 | `audio_in_vad_end` | `{}` | Đầu vào | Mới |
-| `stt_result` | `{text}` — `""` là không nghe ra gì | Đầu vào | Mới |
+| `stt_result` | `{text, turn}` — `""` là không nghe ra gì; `turn` là lượt đã gửi âm thanh đi | Đầu vào | Mới |
 | `tts_stream_start` | `{text}` | Đầu vào của máy trạng thái (câu trả lời bắt đầu phát) | simulation_coverage §3 |
 | `tts_stream_end` | `{duration_ms, sha256?, reason?}` — `reason`: `done` · `barge_in` · `error` | Đầu vào khi `done`; **đầu ra** khi `barge_in` (§5.2 bước 3) | simulation_coverage §3; `reason` mới |
 | `system_two_unavailable` | `{task, reason}` | Đầu vào | tool_calling §7 |
 | `voice_state_changed` | `{from, to, trigger, turn}` | Đầu ra | Mới |
 | `actuator_aborted` | `{pin, reason}` | Đầu ra (§5.2 bước 1) | simulation_coverage §3 |
+| `voice_reprompt` | `{turn, count}` — `count` là số lượt STT rỗng liên tiếp, ≤ `max_reprompts` | Đầu ra (T06) | Mới (TSK-S3-11) |
+| `voice_late_result_dropped` | `{turn, input}` — `input`: `stt_result` · `system_two_reply` | Đầu ra (§5.2 bước 4) | Mới (TSK-S3-11) |
 
 `trigger` là một trong: `wake_word`, `speech_start`, `turn_end`, `listen_timeout`, `transcript_empty`,
 `reply_start`, `reply_empty`, `reply_end`, `ask_asked`, `barge_in`.
@@ -228,9 +234,51 @@ Kịch bản bắt buộc:
 Hai ngân sách thời gian thực (20 ms, 300 ms) **không** kiểm được trong thời gian ảo. Chúng được đo trên
 bo mạch, ở tiêu chí ra 2 của Sprint 5 và job hằng đêm TSK-S4-05.
 
+### 9.1 Quy ước của bộ vector (TSK-S3-10)
+
+Mỗi ca là một tệp JSON; khoá của nó, và đáp án `{proves, events}` trong `expected_results.yaml`, được
+`neuroedge/testing/voice_corpus.py` thẩm định. Agent của corpus là `fixtures/agents/voice-door/`.
+
+- **Ca:** `scenario` (`V1`…`V7`), `covers` (dòng §4), `agent`, `params` (§6, phần không ghi lấy mặc
+  định gợi ý; `think_timeout_ms` và `vad_activation` — bật T01 bằng VAD — cũng là tham số), `world`
+  (`facts`, `unset_facts`, `sensors`, `system_two` — có provider hay không, `facts_source` —
+  `local_grammar` hoặc `unreachable`: model quyết dữ kiện mất mạng và không có fallback cục bộ),
+  `inputs`, `until_ms`.
+- **Đầu vào:** các sự kiện đầu vào §8, cộng hai đầu vào chỉ của corpus: `system_two_reply {turn,
+  text?, tool_calls?}` — câu trả lời kịch bản hoá của provider cho một lượt; `reuse_token {pin}` — lái
+  lại chân bằng token của lệnh vừa bị hủy (V1). `tts_stream_start` không phải đầu vào của ca: thiết bị
+  tự phát câu trả lời. `tts_stream_end` đầu vào chỉ mang `done` hoặc `error`.
+- **Đáp án so được:** `voice_state_changed`, `action_requested` (tức `c.do()` được gọi),
+  `gate_evaluation_result` (`verdict`, `reason`, `action`), `actuator_command`, `actuator_aborted`,
+  `actuator_command_rejected`, `tts_stream_start` (`text` chỉ khi đáp án ghi), `tts_stream_end` với
+  `barge_in`, `tool_confirm_requested` / `tool_confirmed` / `tool_confirm_declined` /
+  `tool_confirm_expired`, `voice_reprompt`, `voice_late_result_dropped` — đủ, đúng thứ tự, đúng
+  `offset_ms`.
+- **Thứ tự trong cùng một ms.** Hạn chót có offset **nhỏ hơn** một đầu vào được xử lý trước đầu vào đó,
+  sớm trước; trong cùng một hạn, lệnh hẹn giờ được giao trước bộ đếm của máy trạng thái. Đầu vào ở
+  **đúng** ms của một hạn chót đi **trước** hạn đó: cắt lời đúng ms lệnh hẹn giờ tới hạn thì lệnh bị
+  hủy (fail-closed); tiếng nói đúng ms hết `end_of_turn_silence_ms` thì lượt tiếp tục. Ở `until_ms`,
+  mọi hạn chót tới và bằng nó đều chạy.
+- **Hiệu ứng trước trạng thái.** Sự kiện hiệu ứng của một dòng được ghi trước `voice_state_changed` của
+  dòng đó, như §5.2 đặt bước 1–4 trước bước 5. Dòng ở lại trạng thái cũ (T02, T03, T09) không ghi
+  `voice_state_changed`.
+- **Lượt.** `turn` của `X → BARGE_IN` là lượt bị thay; `BARGE_IN → LISTENING` mang lượt mới. Bộ đếm
+  `think_timeout` chạy từ lúc vào `THINKING`. Chỉ một kết quả cho lượt đang `THINKING` được tác động;
+  mọi kết quả khác ghi `voice_late_result_dropped` và không làm gì.
+
 ## 10. Để mở
 
 - Cờ theo từng hành động "vẫn cắt khi đã chạy" (§5.3): cần RFC — `TODOS.md` #39.
 - FR-PER-04 (P1, rút lại lời khi model đổi kết luận): quan hệ giữa lời bị rút lại và lệnh đang chờ của
-  lượt đó chưa chốt. Chốt ở TSK-S3-11, kèm `Q-N` nếu cần.
+  lượt đó chưa chốt. TSK-S3-11 **không** chốt: hiện thực Python chưa phát từng phần, nên chưa có lời
+  nào để rút. Chốt cùng TSK-S3-13 (TTS dòng), kèm `Q-N` nếu cần.
+- **Lời hỏi lại của T06 được phát thế nào.** T06 sang `IDLE` (loa im, §3) nhưng hiệu ứng là "hỏi lại".
+  TSK-S3-11 chọn cách hẹp: máy trạng thái chỉ ghi `voice_reprompt` (đếm, cưỡng chế `max_reprompts`) và
+  không phát gì, không đổi trạng thái. Phát lời hỏi lại, và cắt lời nó, chốt ở TSK-S3-13.
+- **Cắt lời lúc `THINKING`** không ghi `tts_stream_end`: không có luồng nào đang phát (§3). Bước 1, 2,
+  4, 5 của §5.2 vẫn chạy đủ.
+- **`system_two_unavailable`** chỉ kích T09 khi lượt đang chờ provider; lượt đã có câu trả lời từ ngữ
+  pháp cục bộ không bị câu offline chen vào. `tts_stream_end` với `error` kết thúc câu như `done`.
+- **Lệnh hẹn giờ trên `linux`** và lệnh "xếp sau câu nói": chưa có (§5.5). Phiên thoại trên `linux`
+  (`VoiceSession` ngoài `sim`) đến cùng TSK-S5-08.
 - Giá trị mặc định của §6: đo và chốt trên bo mạch (TSK-S5-01, S5-03).

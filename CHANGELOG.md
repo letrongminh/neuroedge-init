@@ -32,6 +32,12 @@ bản gói.
 
 #### Đã thêm
 
+- **I4 · TSK-S3-11 — máy trạng thái hội thoại chạy trên `sim`, cắt lời hủy lệnh chưa giao.** `perception/`
+  (`VoiceStateMachine`, `VoiceSession`, đồng hồ tiêm vào); lệnh hẹn giờ `pulse(after_ms=…)` trên `SimHAL`, `LinuxHAL`
+  từ chối. Kiểm: `pytest tests/test_voice_corpus.py tests/test_voice_fsm.py`. (FR-PER-02→05, `voice_fsm.md` §5, §10)
+- **I4 · TSK-S3-10 — bộ vector tuân thủ máy trạng thái hội thoại, độc lập ngôn ngữ.** `fixtures/compliance/voice/`:
+  ca JSON cho V1–V7 và mọi dòng §4, đáp án `expected_results.yaml` khép kín hai chiều, agent `voice-door`; quy ước
+  `voice_fsm.md` §9.1. Kiểm: `pytest tests/test_voice_corpus.py`. (FR-CI-07, FR-TGT-04)
 - **Q-39 → Q-44 — roadmap theo increment (2026-09-25).** Một roadmap, thời gian đo bằng increment `I0…`, không phát hành
   ra ngoài tới khi công khai ở I6 (demo thoại trên `sim`, `linux`, Box-3), thêm một kỹ sư nhúng (Q-39); mở rộng sau Beta
   (Q-40); v1.1 mở trên B1 và B2 (Q-41); C6 thành chỉ số theo dõi (Q-42); G-* neo theo increment (Q-43); bỏ bậc cắt 5 (Q-44).

@@ -1,0 +1,301 @@
+# Đáp án của bộ vector tuân thủ máy trạng thái hội thoại (TSK-S3-10, docs/spec/voice_fsm.md §9).
+#
+# Mỗi tệp *.json trong thư mục này có đúng một mục ở đây, và mỗi mục có đúng một tệp:
+# python/tests/test_voice_corpus.py fail khi lệch. Tệp ca chỉ nêu đầu vào (agent, tham số §6,
+# thế giới, sự kiện đầu vào ở offset_ms ảo); tệp này nêu đáp án.
+#
+# `events` là MỌI sự kiện quan sát được, đúng thứ tự, mỗi sự kiện ở đúng offset_ms. Loại nào
+# quan sát được và trường nào được so: §9.1 (và OBSERVED trong neuroedge/testing/voice_corpus.py).
+# Trường strict vắng mặt nghĩa là null. `text` của tts_stream_start chỉ được so khi ghi ở đây:
+# câu do vector kịch bản hoá (system_two_reply) hoặc do gate khai thì ghi; câu thiết bị tự nói
+# (câu offline, lời nhắc xác nhận) thì không.
+#
+# Hiện thực C/C++ (TSK-S5-03) phải cho đúng các sự kiện này từ đúng các tệp đó.
+
+v1_barge_in_cancels_scheduled_unlock.json:
+  proves: >-
+    V1: lệnh hẹn giờ đã được gate ALLOW và cấp token nhưng chưa tới chân bị hủy ngay khi cắt lời,
+    trước khi TTS dừng; chân door_lock không bao giờ nhận xung (hạn giao 4600 trôi qua im lặng);
+    dùng lại token của lệnh bị hủy bị từ chối token_replayed.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 2200, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 2600, type: action_requested, data: {action: open_door_later}}
+    - {offset_ms: 2600, type: gate_evaluation_result, data: {verdict: ALLOW}}
+    - {offset_ms: 2600, type: tts_stream_start, data: {text: "Cửa sẽ mở sau hai giây."}}
+    - {offset_ms: 2600, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 1}}
+    - {offset_ms: 3100, type: actuator_aborted, data: {pin: door_lock, reason: ACTUATOR_ABORTED_BY_BARGE_IN}}
+    - {offset_ms: 3100, type: tts_stream_end, data: {reason: barge_in, duration_ms: 500}}
+    - {offset_ms: 3100, type: voice_state_changed, data: {from: SPEAKING, to: BARGE_IN, trigger: barge_in, turn: 1}}
+    - {offset_ms: 3100, type: voice_state_changed, data: {from: BARGE_IN, to: LISTENING, trigger: barge_in, turn: 2}}
+    - {offset_ms: 5000, type: actuator_command_rejected, data: {pin: door_lock, reason: token_replayed}}
+    - {offset_ms: 5900, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 2}}
+    - {offset_ms: 6200, type: tts_stream_start, data: {text: "Vâng."}}
+    - {offset_ms: 6200, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 2}}
+    - {offset_ms: 7500, type: voice_state_changed, data: {from: SPEAKING, to: IDLE, trigger: reply_end, turn: 2}}
+
+v1_barge_in_while_thinking_cancels_earlier_turn.json:
+  proves: >-
+    V1, §5.2 bước 1 "các lượt tới lượt hiện tại": lệnh hẹn của lượt 1 vẫn chờ khi lượt 2 nghĩ; cắt
+    lời ở THINKING đúng ms lệnh tới hạn hủy nó (đầu vào đi trước hạn chót cùng offset — §9.1,
+    fail-closed); THINKING im nên không có tts_stream_end; chân không bao giờ nhận xung.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1500, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 1600, type: action_requested, data: {action: open_door_later}}
+    - {offset_ms: 1600, type: gate_evaluation_result, data: {verdict: ALLOW}}
+    - {offset_ms: 1600, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 1}}
+    - {offset_ms: 2000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 2}}
+    - {offset_ms: 3500, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 2}}
+    - {offset_ms: 3600, type: actuator_aborted, data: {pin: door_lock, reason: ACTUATOR_ABORTED_BY_BARGE_IN}}
+    - {offset_ms: 3600, type: voice_state_changed, data: {from: THINKING, to: BARGE_IN, trigger: barge_in, turn: 2}}
+    - {offset_ms: 3600, type: voice_state_changed, data: {from: BARGE_IN, to: LISTENING, trigger: barge_in, turn: 3}}
+    - {offset_ms: 4700, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 3}}
+    - {offset_ms: 4800, type: voice_reprompt, data: {turn: 3, count: 1}}
+    - {offset_ms: 4800, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 3}}
+
+v1_scheduled_unlock_delivered_on_time.json:
+  proves: >-
+    Đối chứng của V1: không ai cắt lời thì lệnh hẹn được giao đúng hạn (1600 + 2000), một lần —
+    hai ca hủy ở trên không đạt được chỉ vì lệnh hẹn không bao giờ chạy.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1500, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 1600, type: action_requested, data: {action: open_door_later}}
+    - {offset_ms: 1600, type: gate_evaluation_result, data: {verdict: ALLOW}}
+    - {offset_ms: 1600, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 1}}
+    - {offset_ms: 3600, type: actuator_command, data: {pin: door_lock, operation: pulse, duration_ms: 30000}}
+
+v2_barge_in_during_running_pulse.json:
+  proves: >-
+    V2, §5.3: xung 30 s đã giao tới chân lúc 2300; khách nói chen lúc 3300 — TTS dừng sau 1000 ms,
+    nhưng không có actuator_aborted: lệnh đã giao chạy hết.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1900, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 2300, type: action_requested, data: {action: open_door}}
+    - {offset_ms: 2300, type: gate_evaluation_result, data: {verdict: ALLOW}}
+    - {offset_ms: 2300, type: actuator_command, data: {pin: door_lock, operation: pulse, duration_ms: 30000}}
+    - {offset_ms: 2300, type: tts_stream_start, data: {text: "Door unlocked. Welcome home."}}
+    - {offset_ms: 2300, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 1}}
+    - {offset_ms: 3300, type: tts_stream_end, data: {reason: barge_in, duration_ms: 1000}}
+    - {offset_ms: 3300, type: voice_state_changed, data: {from: SPEAKING, to: BARGE_IN, trigger: barge_in, turn: 1}}
+    - {offset_ms: 3300, type: voice_state_changed, data: {from: BARGE_IN, to: LISTENING, trigger: barge_in, turn: 2}}
+    - {offset_ms: 4500, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 2}}
+    - {offset_ms: 4900, type: tts_stream_start, data: {text: "Không có gì."}}
+    - {offset_ms: 4900, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 2}}
+    - {offset_ms: 5900, type: voice_state_changed, data: {from: SPEAKING, to: IDLE, trigger: reply_end, turn: 2}}
+
+v3_speech_while_thinking_drops_late_reply.json:
+  proves: >-
+    V3: người dùng nói tiếp lúc THINKING thay lượt 1; câu trả lời của model (có tool call
+    open_door) và bản chép lời đến muộn của lượt 1 bị bỏ — không action_requested, không gate,
+    không chân, không phát.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1700, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 2000, type: voice_state_changed, data: {from: THINKING, to: BARGE_IN, trigger: barge_in, turn: 1}}
+    - {offset_ms: 2000, type: voice_state_changed, data: {from: BARGE_IN, to: LISTENING, trigger: barge_in, turn: 2}}
+    - {offset_ms: 2500, type: voice_late_result_dropped, data: {turn: 1, input: system_two_reply}}
+    - {offset_ms: 2600, type: voice_late_result_dropped, data: {turn: 1, input: stt_result}}
+    - {offset_ms: 3700, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 2}}
+    - {offset_ms: 4000, type: tts_stream_start, data: {text: "Vâng, để sau nhé."}}
+    - {offset_ms: 4000, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 2}}
+    - {offset_ms: 5000, type: voice_state_changed, data: {from: SPEAKING, to: IDLE, trigger: reply_end, turn: 2}}
+
+v4_barge_in_mid_ask_keeps_question.json:
+  proves: >-
+    V4, §5.4: cắt lời giữa câu hỏi ask không tiêu câu hỏi; "có" ở lượt 2, trong TTL (hết hạn
+    11600), xác nhận confirm_1 bằng local_grammar, gate lượng giá lại và cho tắt đèn.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1500, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 1600, type: action_requested, data: {action: lights_out}}
+    - {offset_ms: 1600, type: gate_evaluation_result, data: {verdict: BLOCK, reason: condition_not_met, action: ask}}
+    - {offset_ms: 1600, type: tool_confirm_requested, data: {id: confirm_1}}
+    - {offset_ms: 1600, type: tts_stream_start, data: {text: "Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?"}}
+    - {offset_ms: 1600, type: tts_stream_start, data: {}}
+    - {offset_ms: 1600, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 1}}
+    - {offset_ms: 2400, type: tts_stream_end, data: {reason: barge_in, duration_ms: 800}}
+    - {offset_ms: 2400, type: voice_state_changed, data: {from: SPEAKING, to: BARGE_IN, trigger: barge_in, turn: 1}}
+    - {offset_ms: 2400, type: voice_state_changed, data: {from: BARGE_IN, to: LISTENING, trigger: barge_in, turn: 2}}
+    - {offset_ms: 3400, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 2}}
+    - {offset_ms: 3500, type: tool_confirmed, data: {id: confirm_1, source: local_grammar}}
+    - {offset_ms: 3500, type: action_requested, data: {action: lights_out}}
+    - {offset_ms: 3500, type: gate_evaluation_result, data: {verdict: ALLOW}}
+    - {offset_ms: 3500, type: actuator_command, data: {pin: porch_light, operation: "off", duration_ms: 0}}
+    - {offset_ms: 3500, type: tts_stream_start, data: {}}
+    - {offset_ms: 3500, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 2}}
+    - {offset_ms: 4500, type: voice_state_changed, data: {from: SPEAKING, to: IDLE, trigger: reply_end, turn: 2}}
+
+v4_ask_played_to_end_opens_answer_turn.json:
+  proves: >-
+    Dòng T11: câu hỏi ask phát hết thì mở lượt 2 cho câu trả lời (ask_asked); "không" huỷ câu
+    hỏi, không action nào được yêu cầu, không chân nào động.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1500, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 1600, type: action_requested, data: {action: lights_out}}
+    - {offset_ms: 1600, type: gate_evaluation_result, data: {verdict: BLOCK, reason: condition_not_met, action: ask}}
+    - {offset_ms: 1600, type: tool_confirm_requested, data: {id: confirm_1}}
+    - {offset_ms: 1600, type: tts_stream_start, data: {text: "Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?"}}
+    - {offset_ms: 1600, type: tts_stream_start, data: {}}
+    - {offset_ms: 1600, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 1}}
+    - {offset_ms: 3000, type: voice_state_changed, data: {from: SPEAKING, to: LISTENING, trigger: ask_asked, turn: 2}}
+    - {offset_ms: 4400, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 2}}
+    - {offset_ms: 4500, type: tool_confirm_declined, data: {id: confirm_1, source: local_grammar}}
+    - {offset_ms: 4500, type: tts_stream_start, data: {}}
+    - {offset_ms: 4500, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 2}}
+    - {offset_ms: 5500, type: voice_state_changed, data: {from: SPEAKING, to: IDLE, trigger: reply_end, turn: 2}}
+
+v4_ask_unanswered_expires.json:
+  proves: >-
+    Dòng T05 và giới hạn TTL của V4: không ai nói trong listen_timeout_ms sau câu hỏi thì về IDLE;
+    câu hỏi hết hạn ở 11600 (max(p95 × 3, 10 s)), nên "có" lúc 13300 không xác nhận được gì.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1500, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 1600, type: action_requested, data: {action: lights_out}}
+    - {offset_ms: 1600, type: gate_evaluation_result, data: {verdict: BLOCK, reason: condition_not_met, action: ask}}
+    - {offset_ms: 1600, type: tool_confirm_requested, data: {id: confirm_1}}
+    - {offset_ms: 1600, type: tts_stream_start, data: {text: "Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?"}}
+    - {offset_ms: 1600, type: tts_stream_start, data: {}}
+    - {offset_ms: 1600, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 1}}
+    - {offset_ms: 3000, type: voice_state_changed, data: {from: SPEAKING, to: LISTENING, trigger: ask_asked, turn: 2}}
+    - {offset_ms: 11000, type: voice_state_changed, data: {from: LISTENING, to: IDLE, trigger: listen_timeout, turn: 2}}
+    - {offset_ms: 12000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 3}}
+    - {offset_ms: 13200, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 3}}
+    - {offset_ms: 13300, type: tool_confirm_expired, data: {id: confirm_1}}
+    - {offset_ms: 13300, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 3}}
+
+v6_think_timeout_says_offline_line.json:
+  proves: >-
+    V6: provider không trả lời trong think_timeout (5000 từ 1700) — câu offline lúc 6700, rồi IDLE;
+    câu trả lời đến lúc 7000 kèm tool call open_door bị bỏ: hết giờ không bao giờ thành ALLOW;
+    "mở cửa" ở lượt sau vẫn được gate lượng giá bằng ngữ pháp cục bộ và ALLOW.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1700, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 6700, type: tts_stream_start, data: {}}
+    - {offset_ms: 6700, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 1}}
+    - {offset_ms: 7000, type: voice_late_result_dropped, data: {turn: 1, input: system_two_reply}}
+    - {offset_ms: 9000, type: voice_state_changed, data: {from: SPEAKING, to: IDLE, trigger: reply_end, turn: 1}}
+    - {offset_ms: 10000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 2}}
+    - {offset_ms: 11500, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 2}}
+    - {offset_ms: 11600, type: action_requested, data: {action: open_door}}
+    - {offset_ms: 11600, type: gate_evaluation_result, data: {verdict: ALLOW}}
+    - {offset_ms: 11600, type: actuator_command, data: {pin: door_lock, operation: pulse, duration_ms: 30000}}
+    - {offset_ms: 11600, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 2}}
+
+v6_system_two_unavailable_says_offline_line.json:
+  proves: >-
+    V6: system_two_unavailable trong lúc chờ provider — câu offline ngay, rồi IDLE; câu trả lời đến
+    sau đó (kèm tool call) bị bỏ, không c.do().
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1600, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 2000, type: tts_stream_start, data: {}}
+    - {offset_ms: 2000, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 1}}
+    - {offset_ms: 4000, type: voice_state_changed, data: {from: SPEAKING, to: IDLE, trigger: reply_end, turn: 1}}
+    - {offset_ms: 4500, type: voice_late_result_dropped, data: {turn: 1, input: system_two_reply}}
+
+v6_facts_unreachable_blocks_gate_unreachable.json:
+  proves: >-
+    V6, Q-14: nguồn dữ kiện của gate mất mạng và không có fallback cục bộ — BLOCK gate_unreachable
+    (fail: closed), chân không động.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1400, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 1500, type: action_requested, data: {action: open_door}}
+    - {offset_ms: 1500, type: gate_evaluation_result, data: {verdict: BLOCK, reason: gate_unreachable, action: deny}}
+    - {offset_ms: 1500, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 1}}
+
+v7_slow_speaker_pauses_are_not_turn_ends.json:
+  proves: >-
+    V7, FR-PER-03: khoảng lặng 500, 600 và đúng 700 ms giữa câu không đóng lượt (tiếng nói ở đúng
+    ms hết khoảng lặng đi trước hạn chót, §9.1); lượt chỉ đóng ở 5500 + 700.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 6200, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 6300, type: action_requested, data: {action: open_door}}
+    - {offset_ms: 6300, type: gate_evaluation_result, data: {verdict: ALLOW}}
+    - {offset_ms: 6300, type: actuator_command, data: {pin: door_lock, operation: pulse, duration_ms: 30000}}
+    - {offset_ms: 6300, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 1}}
+
+v5_twenty_noise_bursts_then_a_command.json:
+  proves: >-
+    V5, FR-PER-05: 20 khung nhiễu liên tiếp (VAD kích từ IDLE, STT rỗng) — mỗi lần về IDLE, chỉ
+    max_reprompts = 1 lần hỏi lại; "mở cửa" sau đó vẫn chạy; một câu nghe ra đặt lại bộ đếm, nên
+    lần nhiễu kế tiếp lại được hỏi lại một lần.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 1}}
+    - {offset_ms: 800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 900, type: voice_reprompt, data: {turn: 1, count: 1}}
+    - {offset_ms: 900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 1}}
+    - {offset_ms: 2000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 2}}
+    - {offset_ms: 2800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 2}}
+    - {offset_ms: 2900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 2}}
+    - {offset_ms: 4000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 3}}
+    - {offset_ms: 4800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 3}}
+    - {offset_ms: 4900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 3}}
+    - {offset_ms: 6000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 4}}
+    - {offset_ms: 6800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 4}}
+    - {offset_ms: 6900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 4}}
+    - {offset_ms: 8000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 5}}
+    - {offset_ms: 8800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 5}}
+    - {offset_ms: 8900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 5}}
+    - {offset_ms: 10000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 6}}
+    - {offset_ms: 10800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 6}}
+    - {offset_ms: 10900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 6}}
+    - {offset_ms: 12000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 7}}
+    - {offset_ms: 12800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 7}}
+    - {offset_ms: 12900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 7}}
+    - {offset_ms: 14000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 8}}
+    - {offset_ms: 14800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 8}}
+    - {offset_ms: 14900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 8}}
+    - {offset_ms: 16000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 9}}
+    - {offset_ms: 16800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 9}}
+    - {offset_ms: 16900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 9}}
+    - {offset_ms: 18000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 10}}
+    - {offset_ms: 18800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 10}}
+    - {offset_ms: 18900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 10}}
+    - {offset_ms: 20000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 11}}
+    - {offset_ms: 20800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 11}}
+    - {offset_ms: 20900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 11}}
+    - {offset_ms: 22000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 12}}
+    - {offset_ms: 22800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 12}}
+    - {offset_ms: 22900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 12}}
+    - {offset_ms: 24000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 13}}
+    - {offset_ms: 24800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 13}}
+    - {offset_ms: 24900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 13}}
+    - {offset_ms: 26000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 14}}
+    - {offset_ms: 26800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 14}}
+    - {offset_ms: 26900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 14}}
+    - {offset_ms: 28000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 15}}
+    - {offset_ms: 28800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 15}}
+    - {offset_ms: 28900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 15}}
+    - {offset_ms: 30000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 16}}
+    - {offset_ms: 30800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 16}}
+    - {offset_ms: 30900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 16}}
+    - {offset_ms: 32000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 17}}
+    - {offset_ms: 32800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 17}}
+    - {offset_ms: 32900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 17}}
+    - {offset_ms: 34000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 18}}
+    - {offset_ms: 34800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 18}}
+    - {offset_ms: 34900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 18}}
+    - {offset_ms: 36000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 19}}
+    - {offset_ms: 36800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 19}}
+    - {offset_ms: 36900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 19}}
+    - {offset_ms: 38000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 20}}
+    - {offset_ms: 38800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 20}}
+    - {offset_ms: 38900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 20}}
+    - {offset_ms: 40000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 21}}
+    - {offset_ms: 41500, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 21}}
+    - {offset_ms: 41600, type: action_requested, data: {action: open_door}}
+    - {offset_ms: 41600, type: gate_evaluation_result, data: {verdict: ALLOW}}
+    - {offset_ms: 41600, type: actuator_command, data: {pin: door_lock, operation: pulse, duration_ms: 30000}}
+    - {offset_ms: 41600, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 21}}
+    - {offset_ms: 43000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: speech_start, turn: 22}}
+    - {offset_ms: 43800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 22}}
+    - {offset_ms: 43900, type: voice_reprompt, data: {turn: 22, count: 1}}
+    - {offset_ms: 43900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 22}}

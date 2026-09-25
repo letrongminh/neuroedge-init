@@ -1,0 +1,35 @@
+# Agent mẫu cho bộ vector tuân thủ máy trạng thái hội thoại (TSK-S3-10,
+# docs/spec/voice_fsm.md §9). Mỗi action phủ một hành vi mà §5 đòi kiểm:
+#   * open_door         — xung 30 s giao ngay: cắt lời không được cắt nó (§5.3, V2);
+#   * open_door_later   — cùng xung, hẹn sau 2 s: đó là một lệnh đang chờ, và cắt
+#                         lời phải hủy nó, đóng token của nó (§5.1, §5.2, V1);
+#   * lights_out        — `on_block: ask` (RFC-0006): cắt lời giữa câu hỏi không
+#                         được tiêu câu hỏi (§5.4, V4).
+[agent]
+name    = "voice-door"
+version = "0.1.0"
+
+[requires]
+"audio.in"    = { sample_rate_hz = 16000 }
+"audio.out"   = {}
+"digital.out" = { pins = ["door_lock", "porch_light"] }
+"sensor.read" = { sensors = ["motion"] }
+
+[gates]
+unlock_door = "gates/unlock_door@1.0.0.yaml"
+light_off   = "gates/light_off@1.0.0.yaml"
+
+# Lệnh hẹn giờ mới có trên `sim` (voice_fsm.md §5.5): LinuxHAL từ chối `after_ms`.
+[targets]
+supported = ["sim"]
+
+# Trên thiết bị, hệ thống đặt phòng cho biết khách đã xác thực; `sim` đọc ở đây.
+# Một ca của corpus có thể bỏ dữ kiện này (`unset_facts`) để gate phải hỏi nguồn dữ kiện.
+[sim.facts]
+guest_authenticated = true
+
+[sim.sensors]
+motion = false
+
+[sim.sensor_facts]
+room_empty = { sensor = "motion", equals = false }

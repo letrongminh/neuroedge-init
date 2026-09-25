@@ -1,0 +1,25 @@
+{
+  "description": "Không ai cắt lời: lệnh hẹn 2 s được giao đúng lúc tới hạn — đối chứng cho hai ca V1 kia.",
+  "scenario": "V1",
+  "covers": [
+    "T01",
+    "T02",
+    "T04",
+    "T08"
+  ],
+  "agent": "voice-door",
+  "params": {
+    "end_of_turn_silence_ms": 700,
+    "listen_timeout_ms": 8000,
+    "think_timeout_ms": 5000,
+    "max_reprompts": 1
+  },
+  "world": {},
+  "inputs": [
+    {"offset_ms": 0, "type": "wake_word_detected", "data": {"word": "hey_neuro", "score": 0.93}},
+    {"offset_ms": 200, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 800, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 1600, "type": "stt_result", "data": {"turn": 1, "text": "mở cửa sau hai giây"}}
+  ],
+  "until_ms": 5000
+}

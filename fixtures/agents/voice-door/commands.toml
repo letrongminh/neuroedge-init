@@ -1,0 +1,21 @@
+# Ngữ pháp lệnh cố định của agent voice-door (Q-14, Q-15): thứ agent hiểu khi
+# không có mạng. Câu nói tự do đi System 2, mà corpus kịch bản hoá bằng
+# `system_two_reply` (docs/spec/voice_fsm.md §9.1).
+[grammar]
+version   = 1
+threshold = 0.80
+
+[[command]]
+intent   = "unlock"
+patterns = ["mở cửa", "unlock the door"]
+tool     = "open_door"
+
+[[command]]
+intent   = "unlock_later"
+patterns = ["mở cửa sau hai giây", "unlock the door in two seconds"]
+tool     = "open_door_later"
+
+[[command]]
+intent   = "light_off"
+patterns = ["tắt đèn", "turn off the light"]
+tool     = "lights_out"

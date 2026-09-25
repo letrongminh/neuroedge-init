@@ -1,0 +1,32 @@
+{
+  "description": "Người nói chậm: khoảng lặng 500 ms, 600 ms và đúng 700 ms (tiếng nói ở đúng ms hết hạn đi trước, §9.1) không cắt lượt; một lượt duy nhất.",
+  "scenario": "V7",
+  "covers": [
+    "T01",
+    "T02",
+    "T03",
+    "T04",
+    "T08"
+  ],
+  "agent": "voice-door",
+  "params": {
+    "end_of_turn_silence_ms": 700,
+    "listen_timeout_ms": 8000,
+    "think_timeout_ms": 5000,
+    "max_reprompts": 1
+  },
+  "world": {},
+  "inputs": [
+    {"offset_ms": 0, "type": "wake_word_detected", "data": {"word": "hey_neuro", "score": 0.93}},
+    {"offset_ms": 200, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 1000, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 1500, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 2500, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 3100, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 4000, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 4700, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 5500, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 6300, "type": "stt_result", "data": {"turn": 1, "text": "mở cửa"}}
+  ],
+  "until_ms": 7000
+}
