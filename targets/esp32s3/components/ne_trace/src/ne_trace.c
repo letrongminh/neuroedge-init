@@ -134,6 +134,8 @@ const char *ne_reason_name(ne_reason reason) {
     case NE_REASON_CRITERION_UNAVAILABLE: return "criterion_unavailable";
     case NE_REASON_CONFIDENCE_UNAVAILABLE: return "confidence_unavailable";
     case NE_REASON_ARGUMENT_OUT_OF_RANGE: return "argument_out_of_range";
+    case NE_REASON_GATE_UNREACHABLE: return "gate_unreachable";
+    case NE_REASON_BUDGET_EXCEEDED: return "budget_exceeded";
     case NE_REASON_NONE:
     default: return NULL;
     }
@@ -277,31 +279,44 @@ int ne_trace_gate_result(char *buf, size_t cap, uint32_t offset_ms, const char *
     w_init(&w, buf, cap);
     if (gate == NULL || tree == NULL || tree->base == NULL || result == NULL) return w_refuse(&w);
     const int block = result->verdict == NE_BLOCK;
-    const char *action = ne_on_block_name(tree->on_block_action);
+    /* A degraded verdict applies `fail`, not `on_block` (Q-17): closed is a plain deny. */
+    const int closed = result->fail_mode == NE_FAIL_MODE_CLOSED;
+    const int degraded = result->reason == NE_REASON_GATE_UNREACHABLE ||
+                         result->reason == NE_REASON_BUDGET_EXCEEDED;
+    const char *action = closed ? "deny" : ne_on_block_name(tree->on_block_action);
     w_event(&w, offset_ms, "gate_evaluation_result");
     w_key(&w, &n, "verdict");
     w_str(&w, block ? "BLOCK" : "ALLOW");
+    if (result->fail_mode != NE_FAIL_MODE_NONE) {
+        w_key(&w, &n, "fail_mode");
+        w_str(&w, closed ? "closed" : "open");
+    }
     if (ne_reason_name(result->reason) != NULL) {
         w_key(&w, &n, "reason");
         w_str(&w, ne_reason_name(result->reason));
     }
-    /* An argument refusal decides before any fact: the host records no evaluations. */
-    w_key(&w, &n, "evaluations");
-    w_char(&w, '{');
-    if (result->failed_kind != NE_FAILED_ARGUMENT) {
-        int m = 0;
-        for (uint32_t i = 0; facts != NULL && i < tree->node_count; i++) {
-            if (!evaluated(tree, i, &facts[i])) continue;
-            w_key(&w, &m, ne_criterion_name(tree, i));
-            w_value(&w, tree, i, &facts[i]);
+    /* No evaluations after a degraded gathering; an argument refusal decides before
+     * any fact, so the host records them empty. */
+    if (!degraded) {
+        w_key(&w, &n, "evaluations");
+        w_char(&w, '{');
+        if (result->failed_kind != NE_FAILED_ARGUMENT) {
+            int m = 0;
+            for (uint32_t i = 0; facts != NULL && i < tree->node_count; i++) {
+                if (!evaluated(tree, i, &facts[i])) continue;
+                w_key(&w, &m, ne_criterion_name(tree, i));
+                w_value(&w, tree, i, &facts[i]);
+            }
         }
+        w_char(&w, '}');
     }
-    w_char(&w, '}');
     if (block) {
         w_key(&w, &n, "blocked_by");
         w_str(&w, gate);
         w_key(&w, &n, "action");
         w_str(&w, action);
+    }
+    if (block && !closed) {
         const char *failed = result->failed_kind == NE_FAILED_ARGUMENT
                                  ? ne_argument_name(tree, result->failed_index)
                                  : ne_criterion_name(tree, result->failed_index);

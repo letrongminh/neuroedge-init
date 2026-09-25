@@ -9,6 +9,16 @@ menu "NeuroEdge"
             network_ready memory checkpoint is not taken. Leave this off on
             the board: the Q-3 measurement needs the network stack's cost.
 
+    config NEUROEDGE_REPLAY_VECTORS
+        bool "Replay the canonical traces at boot, as NE1 trace sessions"
+        default y
+        help
+            After the gate self-test, decide the recorded inputs of each
+            canonical trace (fixtures/traces/, main/vectors/) with the C
+            walker and token ledger, and write one trace session per trace
+            (TSK-S4-09). No GPIO moves. `neuroedge verify --targets esp32s3
+            --port <uart>` compares them with the golden references.
+
     config NEUROEDGE_QEMU
         bool "This image runs on Espressif QEMU"
         default n

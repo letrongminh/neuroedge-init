@@ -32,11 +32,10 @@ bản gói.
 
 #### Đã thêm
 
-- **TSK-S4-09 phần 1 — vết ghi firmware qua UART, `record --target esp32s3 --port`.** Firmware ghi mỗi sự kiện thành
-  một dòng `NE1 ` (component `ne_trace`, không biến toàn cục), mỗi phiên `device_info` … `trace_end`; self-test gate ghi
-  6 lần lượng giá, khớp nguyên văn engine host khi replay. `--port` nhận tệp log QEMU, `tcp://`, hoặc serial (extra
-  `neuroedge[serial]`); job `uart-trace`. Đặc tả `simulation_coverage.md` §4. Kiểm: `pytest tests/test_c_trace.py
-  tests/test_uart_trace.py`. (FR-CI-01, FR-CLI-04)
+- **TSK-S4-09 — `verify --targets esp32s3` chạy trên QEMU; vết ghi firmware qua UART.** Firmware ghi sự kiện thành dòng
+  `NE1 ` (`ne_trace`) và replay 3 vết ghi chuẩn mực bằng walker C (`ne_decide`, có đường suy giảm) + sổ token C; `record`
+  / `verify --port` đọc tệp log, `tcp://` hoặc serial (`neuroedge[serial]`); job `uart-trace`. Đặc tả `simulation_coverage.md`
+  §4. Kiểm: `pytest tests/test_c_trace.py tests/test_uart_trace.py tests/test_trace_vectors.py`. (FR-CI-01, FR-CLI-03/04)
 - **Giai đoạn 1.5 — kế hoạch NeuroBrain (bản nháp, chờ `Q-N`).** `neuroedge-roadmap-phase1-5.md`: khối N0–N7,
   bring-up phần cứng có gate, song song Khối 1b tới Developer Beta; wireframe Lab Monitor ở `wireframe/`. Chỉ tài liệu,
   chưa có mã. Quyết định chuyển vào PRD §15 ở TSK-N0-01.
@@ -157,8 +156,8 @@ bản gói.
 
 #### Đã sửa
 
-- **`replay --target esp32s3` và `verify --targets esp32s3` thoát mã 2**, không phải 1: target đã biết nhưng chưa có
-  replay (TSK-S4-04) là "chưa hiện thực". Kiểm: `pytest tests/test_cli.py -k esp32s3`.
+- **`replay --target esp32s3` thoát mã 2**, không phải 1: target đã biết nhưng chưa replay được vết ghi tuỳ ý
+  (TSK-S4-04) là "chưa hiện thực". `verify --targets esp32s3` nay chạy (TSK-S4-09). Kiểm: `pytest tests/test_cli.py -k esp32s3`.
 - **`mcp tools --help` mất chữ `[mcp.servers]`** vì `rich` đọc nó là thẻ markup. Escape trong `help=`; mọi `--help`
   được kiểm không nuốt chữ trong ngoặc vuông. Kiểm: `pytest tests/test_cli_help.py`.
 - **TSK-S3-26 — REPL in lời "có" như một lượt đã xác nhận.** Trước: in "System 2 handled free phrasing", không có
@@ -673,8 +672,8 @@ một pipeline xanh lúc đó là thông tin sai. CI có đúng một bước ch
 | `2` | Lệnh (hoặc `--target` đó của lệnh) **chưa được hiện thực** |
 
 Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏng" và "chưa có". Hôm nay
-thoát mã 2: `run --target linux|esp32s3`, `record --target linux`, `replay --target esp32s3`,
-`verify --targets …esp32s3…` (TSK-S4-04). Target lạ (không phải `sim`, `linux`,
+thoát mã 2: `run --target linux|esp32s3`, `record --target linux`, `replay --target esp32s3`
+(TSK-S4-04). Target lạ (không phải `sim`, `linux`,
 `esp32s3`) là lỗi, mã 1.
 
 Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://`, mặc định `gates/`.
@@ -694,7 +693,7 @@ Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://
 | `trace view <tệp> [-o x.html] [--open]` | Ghi một tệp HTML tự chứa: thiết bị, cảm biến, màn hình, phán quyết, dòng sự kiện, thanh tua thời gian. Mở không cần mạng |
 | `trace export <tệp> --format chrome [-o]` | Chrome Trace Event JSON cho Perfetto (`ui.perfetto.dev`) — gate và xung thành slice |
 | `board list` / `board show <id>` | Liệt kê / xem năng lực bo mạch theo 5 nguyên thủy |
-| `verify [--targets sim,linux]` | Mọi gate phân giải, mọi ca của corpus tool call (`fixtures/tool_calls/`, trên `sim`) ra đúng đáp án, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`); `esp32s3` ⇒ mã 2. So quyết định, chưa so timing. Loại artifact nào quét được 0 ⇒ `NE4004`, mã 1 |
+| `verify [--targets sim,linux,esp32s3] [--port <nguồn>]` | Mọi gate phân giải, mọi ca của corpus tool call (`fixtures/tool_calls/`, trên `sim`) ra đúng đáp án, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`); `esp32s3` cần `--port <nguồn>` (như `record`): firmware replay các vết ghi chuẩn mực, lệch ⇒ `NE4002`; firmware replay vết ghi hay gate cũ hơn checkout ⇒ `NE4003`, không so; thiếu `--port` ⇒ mã 1. So quyết định, chưa so timing. Loại artifact nào quét được 0 ⇒ `NE4004`, mã 1 |
 | `build --target <t> [--board id]` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate (ghi cả `<gate>.netree`/`.netree.h`); kiểm `[mcp]` và `[system_two]` (API key ghi trong `agent.toml` ⇒ lỗi, không in lại key). `--agent` (mặc định `agent.toml`), `--board` (mặc định bo mạch tham chiếu của target: `sim-default`, `linux-rpi5`, `esp32s3-box-3`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
 | `replay <tệp> [--target sim\|linux]` | Replay trên HAL thật: dữ kiện đã ghi vào lại, phán quyết gate và lệnh chân **tính lại**, rồi so với golden (`--golden <tệp>`, mặc định chính vết ghi). Khớp ⇒ mã 0; lệch ⇒ mã 1, `NE4002`, dòng lệch đầu tiên; `--target esp32s3` ⇒ mã 2. `--agent`, `--board`, `--trace-out` |
 | `record [--out traces/] [-c "<lệnh>"] [--anonymize]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`), phán quyết giữ nguyên (FR-TRC-07) |
@@ -733,7 +732,7 @@ Nghĩa của từng mã `NE…`, lớp lỗi và lúc nó xuất hiện: PRD
 | Workflow | Khi nào | Job |
 |:---|:---|:---|
 | `ci-sim-linux.yml` | Mỗi PR và push lên `main` | `frozen-artifacts` · `tests` (Python 3.11/3.12/3.13, gồm walker và sổ token C biên dịch trên host) · `linux-hal` · `wheel-smoke` · `lint` · `licence-obligations` · `cloud-extra` |
-| `firmware-qemu.yml` | PR và push đụng `targets/**`, `engine/binary_tree.py` hoặc `testing/uart.py` · 01:30 UTC+7 hằng đêm · chạy tay | `firmware-qemu`: build `esp32s3` với `sdkconfig.qemu` (ESP-IDF 5.4), boot trên Espressif QEMU, đòi `NE_SELFTEST PASS` rồi `NE_TRACE DONE` trên UART · `uart-trace`: `record --target esp32s3 --port uart.log` bằng CLI đã cài, rồi `trace validate`, đòi `device_id = qemu` |
+| `firmware-qemu.yml` | PR và push đụng `targets/**`, `fixtures/traces/`, `engine/binary_tree.py` hoặc `testing/uart.py` · 01:30 UTC+7 hằng đêm · chạy tay | `firmware-qemu`: build `esp32s3` với `sdkconfig.qemu` (ESP-IDF 5.4), boot trên Espressif QEMU, đòi `NE_SELFTEST PASS` rồi `NE_TRACE DONE` trên UART · `uart-trace`: bằng CLI đã cài, `record --target esp32s3 --port uart.log` + `trace validate` (đòi `device_id = qemu`), rồi `verify --targets esp32s3 --port uart.log` |
 | `release-pypi.yml` | Tag `v*.*.*` · PR đổi tệp đóng gói · chạy tay | `build` · `smoke` (Python 3.11/3.13) · `publish-testpypi` · `publish-pypi` — hai job cuối chỉ chạy với tag **và** `PUBLISH_ENABLED == 'true'` ([`docs/release.md`](docs/release.md)) |
 | `nightly-hardware.yml` | 01:00 UTC+7 hằng đêm · chạy tay | `firmware-build` (ESP-IDF 5.2.1, ngân sách flash Q-3) · `upstream-drift` · `memory-spike` · `report` |
 
@@ -765,7 +764,9 @@ Tìm dòng `NEUROEDGE_MEMORY_JSON` trong đầu ra monitor — đó là số đo
 [`docs/reports/memory_spike_report.md`](docs/reports/memory_spike_report.md).
 Chưa có bo mạch: walker C chạy trên host với `make -C targets/esp32s3/components/ne_gate
 check-static` (dòng vết ghi: `…/ne_trace check-static`), và firmware boot trên QEMU theo
-`firmware-qemu.yml`. Vết ghi của phiên: `neuroedge record --target esp32s3 --port build/uart.log`.
+`firmware-qemu.yml`. Vết ghi của phiên: `neuroedge record --target esp32s3 --port build/uart.log`; so với
+golden: `neuroedge verify --targets esp32s3 --port build/uart.log`. Đổi vết ghi chuẩn mực, gate hay action
+thì sinh lại `main/vectors/` (`scripts/gen_firmware_vectors.py`) trước khi build.
 
 ---
 
@@ -862,12 +863,13 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
   hôm nay chỉ `replay` / `verify`; giọng nói chưa có (Q-15); intent không có action (`faq`) chỉ được trả lời
   khi agent khai `[system_two]`.
 - ❌ **`esp32s3` mới chạy logic gate, chưa chạy agent.** Walker và sổ token C khớp engine host trên host và
-  boot trên QEMU (TSK-S4-07, S4-08); self-test ghi vết ghi qua UART, `record --target esp32s3 --port` đọc được
-  (TSK-S4-09 phần 1). HAL firmware, âm thanh và replay trên bo mạch là Sprint 4 (TSK-S4-01, S4-04).
+  boot trên QEMU (TSK-S4-07, S4-08); thiết bị replay 3 vết ghi chuẩn mực và ghi vết ghi qua UART (TSK-S4-09). HAL
+  firmware, âm thanh, replay vết ghi tuỳ ý và mọi thứ trên bo mạch là Sprint 4 (TSK-S4-01, S4-04).
 - ❌ **SystemOne chưa có nhà cung cấp cloud thật** (`TODOS.md` #27). SystemTwo đã có LiteLLM và adapter tự
   viết (TSK-S2-11); CI chỉ thử bằng `mock_response`, lượt gọi bằng key thật chạy tay (`scripts/live_llm_smoke.py`).
-- ❌ **Tương đương target mới ở mức quyết định, trên `sim` + `linux`.** `verify --targets sim,linux`
-  so chuỗi phán quyết và lệnh chân; so timing và target `esp32s3` là TSK-S4-04.
+- ❌ **Tương đương target mới ở mức quyết định, trên `sim` + `linux` + `esp32s3` trên QEMU.** `verify` so chuỗi
+  phán quyết và lệnh chân; trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng trên host
+  (`TODOS.md` #37). So timing và bo mạch là TSK-S4-04.
 - ❌ **`LinuxHAL` mới có `digital.out`.** `audio.in/out`, `sensor.read`, `display` trên `linux`
   chưa hiện thực; chân Pi thật cần `line_names` (vd `door_lock` → `GPIO17`).
 - ❌ **MCP chỉ qua stdio** (`TODOS.md` #24, #25). Không có transport mạng.

@@ -120,8 +120,9 @@ biết nó không còn gì để nói.
 (`GateResult.to_event_data()`). Hai chỗ chưa như host, đều đọc lại được đúng khi replay: giá trị ngoài
 miền, và độ tin cậy NaN, ghi là `null` (thiết bị chỉ biết "không đọc được"). Nhãn gate
 (`light_on@1.0.0`) và chữ `on_block` (`to`, `message`, `fallback_action`) không có trong NETR v1 nên đi
-kèm firmware từ `scripts/gen_firmware_gates.py`. Chưa có `actuator_command` / `actuator_aborted`: chưa
-có HAL firmware (TSK-S4-01).
+kèm firmware, sinh từ cùng gate đã phân giải (`scripts/gen_firmware_gates.py`,
+`scripts/gen_firmware_vectors.py`). Phiên self-test không có lệnh chân; lệnh chân chỉ có trong phiên
+replay dưới đây, và chưa có `actuator_aborted`: chưa có HAL firmware (TSK-S4-01).
 
 **Host.** `neuroedge record --target esp32s3 --port <nguồn>` giữ các dòng `NE1 `, bỏ mọi dòng khác
 (kể cả `NE1001…`, `NE_SELFTEST`, `NEUROEDGE_MEMORY_JSON`), kiểm khung, rồi ghi **mỗi phiên một tệp**
@@ -144,10 +145,35 @@ Không bao giờ đọc một vết ghi ngắn hơn như thể nó là sự th�
 | `tcp://host:port` | QEMU `-serial tcp::5555,server` (QEMU chờ người đọc rồi mới boot, không mất dòng đầu) | `NE_TRACE DONE` hoặc `--timeout` |
 | `/dev/tty…`, `COMn`, URL pyserial (`loop://`, `rfc2217://`…) | bo mạch, qua extra `neuroedge[serial]` | `NE_TRACE DONE` hoặc `--timeout` |
 
-`--baud` mặc định 921600 (PRD Phụ lục D.2); USB-CDC bỏ qua baud. Firmware trên QEMU chạy mỗi PR đụng
-`targets/**`, và job `uart-trace` của `firmware-qemu.yml` ghi lại phiên của nó bằng đúng lệnh trên.
-Nhờ vậy `verify --targets esp32s3` sẽ kiểm được **miền quyết định** trên QEMU trước khi bo mạch về, và
-trên bo mạch sau đó (TSK-S4-09 phần 2, TSK-S4-04).
+`--baud` mặc định 921600 (PRD Phụ lục D.2); USB-CDC bỏ qua baud.
+
+**Thiết bị replay vết ghi chuẩn mực.** Sau self-test, firmware replay từng vết ghi ở
+`fixtures/traces/` (`main/trace_vectors.c`, `CONFIG_NEUROEDGE_REPLAY_VECTORS`), mỗi vết ghi một phiên
+có `replay_of` và `trace_digest` (digest JCS của tệp). Mỗi bước nhận đúng đầu vào mà `replay` cấp lại
+cho engine host — dữ kiện đã ghi, lần thu thập suy giảm đã ghi, xác nhận của người —, sinh vào
+`main/vectors/` bằng `scripts/gen_firmware_vectors.py`. Phần còn lại là của thiết bị:
+
+| Trong phiên replay | Ai tính |
+|:---|:---|
+| Phán quyết, lý do, `fail_mode` (kể cả `gate_unreachable` / `budget_exceeded` theo `fail` của gate) | Thiết bị — walker C `ne_decide`, cùng ngữ nghĩa `engine/gate.py` (TSK-S4-07 kiểm trên mọi gate) |
+| Có phát lệnh chân không, và chân nào | Thiết bị — sổ token C: token cấp cho chân của action, `ne_token_authorize` cho từng lệnh |
+| `operation`, `duration_ms` của lệnh | **Host** — bảng hành động: chạy @action một lần trên `SimHAL` sau engine luôn-ALLOW, lúc sinh vector |
+
+`actuator_command` trong phiên replay nghĩa là sổ token cho phép chân đó; **không chân GPIO nào
+động**. Cách action thật sự chạy trên MCU thay bảng hành động ở TSK-S4-01. Script từ chối, không
+đoán, những gì firmware chưa replay được: tham số có giới hạn, `degrade` + `fallback_action`, số đọc
+cảm biến, độ tin cậy không phải số.
+
+`neuroedge verify --targets esp32s3 --port <nguồn>` đọc các phiên đó và, cho mỗi vết ghi chuẩn mực, so
+phiên có `replay_of` tương ứng với chính vết ghi đó làm golden — như `sim` và `linux` (TSK-S3-04;
+lệch ⇒ NE4002). Trước khi so, nó từ chối (NE4003, "firmware cũ") phiên có `trace_digest` khác tệp
+trong checkout, hoặc `gate_digest` khác gate checkout biên dịch ra: đó sẽ là kết quả về một thứ khác.
+Thiếu `--port` ⇒ mã 1; thiếu phiên cho một vết ghi ⇒ ✗. Kết quả in rõ phần nào do thiết bị tính.
+
+Firmware trên QEMU chạy mỗi PR đụng `targets/**` hoặc `fixtures/traces/`, và job `uart-trace` của
+`firmware-qemu.yml` chạy `record` rồi `verify --targets esp32s3` trên log UART của nó. Bo mạch, replay
+một vết ghi tuỳ ý trên thiết bị (gửi dữ kiện xuống) và so timing là phần còn lại của TSK-S4-04;
+`replay --target esp32s3` vẫn thoát mã 2.
 
 ## 5. Trực quan hoá
 

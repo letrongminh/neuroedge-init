@@ -40,7 +40,7 @@ static ne_fact fact(uint8_t index) {
     return f;
 }
 
-#define CASES 16
+#define CASES 18
 
 /* Case `which` into (buf, cap); its name in *name. */
 static int format(int which, char *buf, size_t cap, const char **name) {
@@ -125,6 +125,19 @@ static int format(int which, char *buf, size_t cap, const char **name) {
     case 15:
         *name = "rejected_authorized";
         return ne_trace_actuator_rejected(buf, cap, 16u, "door_lock", NE_TOKEN_AUTHORIZED);
+    case 16:
+        *name = "result_closed";
+        facts[NE_LIGHT_OFF_CALL_SOURCE] = fact(NE_LIGHT_OFF_CALL_SOURCE_LOCAL_GRAMMAR);
+        r.verdict = NE_BLOCK;
+        r.reason = NE_REASON_GATE_UNREACHABLE;
+        r.fail_mode = NE_FAIL_MODE_CLOSED;
+        return ne_trace_gate_result(buf, cap, 17u, NE_LIGHT_OFF_GATE, &off, facts, &r, &text);
+    case 17:
+        *name = "result_open";
+        facts[NE_LIGHT_OFF_CALL_SOURCE] = fact(NE_LIGHT_OFF_CALL_SOURCE_LOCAL_GRAMMAR);
+        r.reason = NE_REASON_BUDGET_EXCEEDED;
+        r.fail_mode = NE_FAIL_MODE_OPEN;
+        return ne_trace_gate_result(buf, cap, 18u, NE_LIGHT_OFF_GATE, &off, facts, &r, &text);
     default:
         *name = "?";
         return -1;
@@ -179,7 +192,7 @@ int main(void) {
         }
     }
 
-    for (uint32_t i = 0; i <= 5u; i++) {
+    for (uint32_t i = 0; i <= 7u; i++) {
         const char *reason = ne_reason_name((ne_reason)i);
         printf("reason\t%u\t%s\n", (unsigned)i, reason != NULL ? reason : "-");
     }

@@ -3,9 +3,11 @@
  *
  *   test_walker_host <tree.netree> <cases.nevc> [<tree> <cases> ...]
  *
- * For each pair: load the tree, run every case, compare verdict, reason, failing
- * index, answerability and confirmed mask with what the Python engine decided
- * (python/tests/test_c_walker.py writes the cases). Then fuzz the tree:
+ * For each pair: load the tree, run every case through `ne_decide` (with the
+ * case's degraded gathering, if any), compare verdict, reason, failing index,
+ * answerability, fail mode and confirmed mask with what the Python engine
+ * decided (python/tests/test_c_walker.py writes the cases); a case that did not
+ * degrade must also be exactly `ne_evaluate`. Then fuzz the tree:
  * every truncation must be refused; single-byte corruption must be refused by
  * the CRC; and structurally mutated trees with a recomputed CRC must either be
  * refused or walk without reading outside the buffer (built with ASan/UBSan).
@@ -86,8 +88,10 @@ static void exercise(const ne_tree *t, uint32_t *seed) {
             args[i].number = (double)((int32_t)(r >> 8) % 200);
         }
         ne_result out;
-        if (ne_evaluate(t, facts, args, (int)(xorshift(seed) & 1u), &out) != NE_OK) {
-            fprintf(stderr, "ne_evaluate refused a loaded tree\n");
+        if (ne_evaluate(t, facts, args, (int)(xorshift(seed) & 1u), &out) != NE_OK ||
+            ne_decide(t, facts, args, (int)(xorshift(seed) & 1u),
+                      (ne_degraded)(xorshift(seed) % 3u), &out) != NE_OK) {
+            fprintf(stderr, "ne_evaluate / ne_decide refused a loaded tree\n");
             exit(3);
         }
         (void)ne_criterion_name(t, xorshift(seed) % 40u);
@@ -134,7 +138,7 @@ static int fuzz(const uint8_t *tree, uint32_t len, const char *name) {
 }
 
 static int run_cases(const ne_tree *t, const uint8_t *vec, uint32_t vlen, const char *name) {
-    if (vlen < 20u || memcmp(vec, "NEVC", 4) != 0 || rd32(vec + 4) != 1u) {
+    if (vlen < 20u || memcmp(vec, "NEVC", 4) != 0 || rd32(vec + 4) != 2u) {
         fprintf(stderr, "%s: bad case file\n", name);
         return 1;
     }
@@ -167,20 +171,27 @@ static int run_cases(const ne_tree *t, const uint8_t *vec, uint32_t vlen, const 
             values[i].number = rdf64(p + 8);
             values[i].str = (const char *)(p + 16);
         }
-        ne_result out;
-        if (ne_evaluate(t, facts, values, p[0], &out) != NE_OK) {
-            fprintf(stderr, "%s case %u: ne_evaluate failed\n", name, c);
+        ne_result out, plain;
+        if (ne_decide(t, facts, values, p[0], (ne_degraded)p[6], &out) != NE_OK) {
+            fprintf(stderr, "%s case %u: ne_decide failed\n", name, c);
             bad++;
             continue;
         }
         if ((uint8_t)out.verdict != p[1] || (uint8_t)out.reason != p[2] ||
             (uint8_t)out.failed_kind != p[3] || out.failed_index != p[4] ||
-            out.answerable != p[5] || out.confirmed_mask != rd32(p + 8)) {
+            out.answerable != p[5] || out.fail_mode != p[7] || out.confirmed_mask != rd32(p + 8)) {
             fprintf(stderr,
-                    "%s case %u: C says verdict=%d reason=%d kind=%d index=%u answerable=%u "
-                    "confirmed=%x; Python says %u %u %u %u %u %x\n",
-                    name, c, out.verdict, out.reason, out.failed_kind, out.failed_index,
-                    out.answerable, out.confirmed_mask, p[1], p[2], p[3], p[4], p[5], rd32(p + 8));
+                    "%s case %u (degraded %u): C says verdict=%d reason=%d kind=%d index=%u "
+                    "answerable=%u fail_mode=%u confirmed=%x; Python says %u %u %u %u %u %u %x\n",
+                    name, c, p[6], out.verdict, out.reason, out.failed_kind, out.failed_index,
+                    out.answerable, out.fail_mode, out.confirmed_mask, p[1], p[2], p[3], p[4],
+                    p[5], p[7], rd32(p + 8));
+            bad++;
+        }
+        if (p[6] == 0u && (ne_evaluate(t, facts, values, p[0], &plain) != NE_OK ||
+                           memcmp(&plain, &out, sizeof out) != 0)) {
+            fprintf(stderr, "%s case %u: ne_decide without degradation is not ne_evaluate\n",
+                    name, c);
             bad++;
         }
     }

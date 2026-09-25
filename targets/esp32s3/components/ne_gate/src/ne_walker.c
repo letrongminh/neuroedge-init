@@ -323,3 +323,53 @@ ne_status ne_evaluate(const ne_tree *tree, const ne_fact *facts, const ne_arg_va
     }
     return NE_OK;
 }
+
+/* decision_tree.known_failure: the first criterion not waived whose fact is present and fails. */
+static ne_reason known_failure(const ne_tree *t, const ne_fact *facts, uint32_t waived,
+                               uint8_t *failed) {
+    for (uint32_t i = 0; i < t->node_count; i++) {
+        if (((waived >> i) & 1u) != 0u || facts == NULL || !facts[i].present) continue;
+        ne_reason r = classify(node_at(t, i), &facts[i]);
+        if (r != NE_REASON_NONE) {
+            *failed = (uint8_t)i;
+            return r;
+        }
+    }
+    return NE_REASON_NONE;
+}
+
+ne_status ne_decide(const ne_tree *tree, const ne_fact *facts, const ne_arg_value *args,
+                    int confirmed, ne_degraded degraded, ne_result *out) {
+    if (degraded != NE_DEGRADED_NONE && degraded != NE_DEGRADED_UNREACHABLE &&
+        degraded != NE_DEGRADED_BUDGET)
+        return NE_ERR_ARGUMENT;
+    ne_status status = ne_evaluate(tree, facts, args, confirmed, out);
+    if (status != NE_OK || degraded == NE_DEGRADED_NONE) return status;
+    /* RFC-0005: the limits decided before any source was asked. */
+    if (out->reason == NE_REASON_ARGUMENT_OUT_OF_RANGE) return NE_OK;
+
+    const ne_reason why =
+        degraded == NE_DEGRADED_BUDGET ? NE_REASON_BUDGET_EXCEEDED : NE_REASON_GATE_UNREACHABLE;
+    uint32_t confirmable = tree->on_block_action == ACTION_ASK ? tree->confirm_mask : 0u;
+    uint32_t waived = confirmed ? confirmable : 0u;
+    memset(out, 0, sizeof *out);
+    if (tree->fail_open) {
+        uint8_t failed = 0;
+        ne_reason known = known_failure(tree, facts, waived, &failed);
+        if (known != NE_REASON_NONE) { /* on_block, and no question: a person cannot answer it */
+            out->verdict = NE_BLOCK;
+            out->reason = known;
+            out->failed_kind = NE_FAILED_CRITERION;
+            out->failed_index = failed;
+            return NE_OK;
+        }
+        out->verdict = NE_ALLOW;
+        out->reason = why;
+        out->fail_mode = NE_FAIL_MODE_OPEN;
+        return NE_OK;
+    }
+    out->verdict = NE_BLOCK;
+    out->reason = why;
+    out->fail_mode = NE_FAIL_MODE_CLOSED;
+    return NE_OK;
+}

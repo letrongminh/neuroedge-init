@@ -8,8 +8,10 @@
  * tables in fixtures/decision_trees/ and python/tests/test_c_walker.py.
  *
  * What stays outside the walker, as on the host: gathering facts within the
- * budget, and the degraded verdicts (gate_unreachable, budget_exceeded) that
- * apply `fail`. The walker decides from the facts it is given.
+ * budget. The walker decides from the facts it is given — and, through
+ * `ne_decide`, from how gathering them failed: the degraded verdicts
+ * (gate_unreachable, budget_exceeded) that apply the gate's `fail`, exactly as
+ * python/neuroedge/engine/gate.py does after `_gather`.
  */
 #ifndef NE_WALKER_H
 #define NE_WALKER_H
@@ -52,8 +54,20 @@ typedef enum {
     NE_REASON_CONDITION_NOT_MET = 1,
     NE_REASON_CRITERION_UNAVAILABLE = 2,
     NE_REASON_CONFIDENCE_UNAVAILABLE = 3,
-    NE_REASON_ARGUMENT_OUT_OF_RANGE = 4
+    NE_REASON_ARGUMENT_OUT_OF_RANGE = 4,
+    NE_REASON_GATE_UNREACHABLE = 5, /* degraded: the fact source could not answer (Q-14) */
+    NE_REASON_BUDGET_EXCEEDED = 6   /* degraded: gathering overran budget.p95_latency_ms */
 } ne_reason;
+
+/* How gathering the facts went, as `_gather` reports it; the input of `ne_decide`. */
+typedef enum {
+    NE_DEGRADED_NONE = 0,        /* every fact asked for was answered, or none was asked */
+    NE_DEGRADED_UNREACHABLE = 1, /* a source was offline or failed */
+    NE_DEGRADED_BUDGET = 2       /* a source timed out, or the evaluation overran p95 */
+} ne_degraded;
+
+/* `fail_mode` of a degraded verdict, as the host's `GateResult.fail_mode`. */
+typedef enum { NE_FAIL_MODE_NONE = 0, NE_FAIL_MODE_OPEN = 1, NE_FAIL_MODE_CLOSED = 2 } ne_fail_mode;
 
 typedef enum { NE_FAILED_NONE = 0, NE_FAILED_CRITERION = 1, NE_FAILED_ARGUMENT = 2 } ne_failed_kind;
 
@@ -108,6 +122,7 @@ typedef struct {
     ne_failed_kind failed_kind;
     uint8_t failed_index;   /* criterion or argument index */
     uint8_t answerable;     /* BLOCK ask a person's yes would turn into ALLOW (RFC-0006) */
+    uint8_t fail_mode;      /* ne_fail_mode: set only on a degraded verdict */
     uint32_t confirmed_mask;/* criteria stood in for on this verdict */
 } ne_result;
 
@@ -123,6 +138,18 @@ ne_status ne_tree_load(ne_tree *tree, const uint8_t *buf, uint32_t len);
  */
 ne_status ne_evaluate(const ne_tree *tree, const ne_fact *facts, const ne_arg_value *args,
                       int confirmed, ne_result *out);
+
+/*
+ * Decide the gate as the engine does after gathering: `ne_evaluate`, unless
+ * gathering degraded. Then, argument limits still decide first; a gate with
+ * `fail: closed` BLOCKs with the degraded reason (action deny); a gate with
+ * `fail: open` still BLOCKs on a fact that is present and says no, and only
+ * otherwise ALLOWs with the degraded reason — open excuses what could not be
+ * decided, never a known "no". `NE_DEGRADED_NONE` is exactly `ne_evaluate`.
+ * Returns NE_OK, or NE_ERR_ARGUMENT for a NULL tree/out or an unknown `degraded`.
+ */
+ne_status ne_decide(const ne_tree *tree, const ne_fact *facts, const ne_arg_value *args,
+                    int confirmed, ne_degraded degraded, ne_result *out);
 
 /* Name of criterion `i` (NUL-terminated, in the tree), or NULL. For traces. */
 const char *ne_criterion_name(const ne_tree *tree, uint32_t i);
