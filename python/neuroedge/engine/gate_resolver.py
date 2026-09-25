@@ -477,7 +477,7 @@ def _guard_opaque_allow_when(
             ),
             how=(
                 "use the structured operator form from Proposal Appendix B.2; "
-                "CEL compilation lands with the gate compiler in Sprint 2 (TSK-S2-06)"
+                "CEL compilation is deferred (TSK-S2-06)"
             ),
         )
 

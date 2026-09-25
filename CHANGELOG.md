@@ -171,6 +171,9 @@ bản gói.
 
 #### Đã sửa
 
+- **`run`/`record --target` nêu sai task và mã thoát.** `linux` nay chỉ TSK-S5-10, `esp32s3` chỉ TSK-S4-01 (trước in
+  TSK-S3-05, task đã xong); target lạ thoát mã 1 kèm `NE3001`, không còn mã 2. Thông điệp bỏ tên sprint, chỉ giữ mã task.
+  Kiểm: `pytest tests/test_cli_run.py tests/test_recorder.py -k target`.
 - **Proposal §3.2 và dòng TSK-S6-07 lệch với kho.** QEMU chạy bằng `qemu-system-xtensa` (cài qua
   `idf_tools.py`), không phải `idf.py qemu`; bộ vector tuân thủ ở `fixtures/compliance/`, không phải `tests/compliance/`.
 - **Giấy phép Pipecat ghi sai là MIT** ở `NOTICE` và mẫu ghi nhận `CONTRIBUTING.md` §4. Xác minh tại nguồn

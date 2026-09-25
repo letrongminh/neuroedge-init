@@ -292,7 +292,7 @@ def make_hal(target: str, board_id: str | None, events: EventLog):
         raise ReplayError(
             where=f"--target {target}",
             why=f"replay runs on a live HAL; {target!r} has none on this machine",
-            how="replay on sim or linux; esp32s3 replay arrives with Sprint 4 (TSK-S4-04)",
+            how="replay on sim or linux; esp32s3 replay arrives with TSK-S4-04",
         )
     board = load_board_by_id(board_id or DEFAULT_BOARD[target])
     if target == "sim":
