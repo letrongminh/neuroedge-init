@@ -3,14 +3,14 @@
 | | |
 |:---|:---|
 | **Mã task** | TSK-S1-11 |
-| **Người thực hiện** | V2 — Kỹ sư nhúng (bán thời gian tới Tuần 6) |
+| **Người thực hiện** | V2 — Kỹ sư nhúng (bán thời gian tới khi bo mạch về) |
 | **Đầu vào** | `schemas/board.v1.json`, `python/neuroedge/hal/board.py`, `boards/*.toml` |
 | **Trạng thái** | ✅ Rà soát xong · các kết luận đã hiện thực hóa trong mã |
 
 ## 0. Vì sao rà soát này phải xảy ra ở Sprint 1 *(bối cảnh lúc rà soát)*
 
 Roadmap §1.2 nêu thẳng: *"Một HAL thiết kế mà không có tiếng nói của kỹ sư nhúng
-sẽ phải viết lại ở Tuần 6."* Tài liệu này là tiếng nói đó, đặt trước khi có bất
+sẽ phải viết lại ở I3."* Tài liệu này là tiếng nói đó, đặt trước khi có bất
 kỳ hiện thực HAL nào (`sim` ở Sprint 2, `linux` ở Sprint 3, `esp32s3` ở Sprint
 4) — vì sau đó thì mọi kết luận đây đều trở thành việc viết lại.
 

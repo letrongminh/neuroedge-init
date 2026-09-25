@@ -1203,41 +1203,41 @@ Mọi vướng mắc kỹ thuật phát sinh trong quá trình vận hành AURA 
 
 ## 8. Lộ trình phát triển sản phẩm
 
-Lộ trình được cấu trúc thành các khối công việc kỹ thuật, giai đoạn đệm cộng đồng và các cột mốc xác thực thị trường định lượng. **Quy tắc kỷ luật thực thi: Mọi sự chuyển giao giữa các khối đều là milestone-gated (phụ thuộc vào kết quả kiểm chứng thực tế), tuyệt đối không chạy theo lịch cố định trên giấy.**
+Lộ trình được cấu trúc thành các khối công việc kỹ thuật, giai đoạn đệm cộng đồng và các cột mốc xác thực thị trường định lượng. **Quy tắc kỷ luật thực thi: Mọi sự chuyển giao giữa các khối đều là milestone-gated (phụ thuộc vào kết quả kiểm chứng thực tế), tuyệt đối không chạy theo lịch cố định trên giấy.** Các khối dưới đây được thực thi thành increment `I0…I18`; thứ tự, phụ thuộc và ngày dự báo chỉ nằm ở `neuroedge-roadmap.md` §0.2 (PRD Q-39).
 
 ```text
-[ KHỐI 1a: SIM + LINUX + ACTION CI ]  (Tuần 0–6)
+[ KHỐI 1a: SIM + LINUX + ACTION CI ]  (I0–I2)
               │
               ▼
-[ KHỐI 1b: ESP32-S3 REF BOARD + VOICE ] (Tuần 6–12) ──► [ HOÀN TẤT LÕI MIT ]
+[ KHỐI 1b: ESP32-S3 REF BOARD + VOICE ] (I3–I7)     ──► [ HOÀN TẤT LÕI MIT ]
               │                                                 │
               ▼                                                 │
-[ GIAI ĐOẠN ĐỆM: DEVELOPER BETA & CỘNG ĐỒNG ] (Tuần 12–16)     │
+[ GIAI ĐOẠN ĐỆM: DEVELOPER BETA & CỘNG ĐỒNG ] (I8)             │
 (Onboard 50–100 dev đầu tiên · Đóng băng tính năng mới)         │
               │                                                 │
-              ▼ (Chỉ kích hoạt khi đạt đủ 3 tiêu chí Beta)      │
+              ▼ (Chỉ kích hoạt khi đạt B1 và B2 — Q-41)         │
 ┌─────────────────────────────────┬─────────────────────────────┴───┐
 │ KHỐI 2: TẦNG DỊCH VỤ THƯƠNG MẠI │ KHỐI 3: HẠ TẦNG NỀN TẢNG        │
-│ (Tháng 4–8)                     │ (Tháng 4–8, thực hiện song song)│
+│ (I9, sau Beta — nhánh A)        │ (I10, song song I9)             │
 │ • Fleet Management OS           │ • Gate Registry & Phiên bản hóa │
 │   (dịch vụ thương mại duy nhất) │ • Đo lường, Định danh & Sandbox │
 └──────────────┬──────────────────┴────────────────┬────────────────┘
                └──────────────────┬────────────────┘
                                   ▼
-                [ KHỐI 4: ỨNG DỤNG DỌC AURA ]  (Tháng 8–14)
+                [ KHỐI 4: ỨNG DỤNG DỌC AURA ]  (sau Beta, ngoài roadmap)
                          │                 │
-                         │                 └──► [ GIAI ĐOẠN 2 ] (Tháng 9–24)
+                         │                 └──► [ GIAI ĐOẠN 2 ] (I11, I13, I15–I18)
                          │                      • 2a Mở danh sách target (RFC-0002)
                          │                      • 2b Vision, phủ rộng phần cứng
-                         │                      (song song; kích hoạt theo mốc AURA)
+                         │                      (sau Beta; 2b chờ nhu cầu camera AURA — Q-40)
                          ▼
                 [ CỘT MỐC XÁC THỰC THỊ TRƯỜNG ĐỊNH LƯỢNG (G1–G4) ]
                                   │
                                   ▼
-                [ KHỐI 5: MARKETPLACE & HỆ THỐNG THANH TOÁN ] (Tháng 18+)
+                [ KHỐI 5: MARKETPLACE & HỆ THỐNG THANH TOÁN ] (khi đạt G1–G4)
 ```
 
-### 8.1 Khối 1a — Nền tảng logic và Trục kiểm thử Action CI (Tuần 0–6)
+### 8.1 Khối 1a — Nền tảng logic và Trục kiểm thử Action CI (I0–I2)
 
 **Mục tiêu trọng tâm:** Một lập trình viên mới có thể đạt trải nghiệm nhận giá trị đầu tiên (Time-to-first-value) **dưới 10 phút** trên máy tính cá nhân mà không cần mua bất kỳ phần cứng nào.
 
@@ -1259,7 +1259,7 @@ neuroedge run --target sim
 | Bộ công cụ dòng lệnh (CLI) cơ bản | §4.8 | Typer · Rich · generator mẫu tự viết |
 | Ứng dụng mẫu hoàn chỉnh chạy thử nghiệm | §7 | — |
 
-### 8.2 Khối 1b — Hiện thực hóa trên vi điều khiển biên (Tuần 6–12)
+### 8.2 Khối 1b — Hiện thực hóa trên vi điều khiển biên (I3–I7)
 
 **Mục tiêu trọng tâm:** Chứng minh nguyên tắc tương đương môi trường trên vi điều khiển giá $5 với độ ổn định cao.
 
@@ -1277,7 +1277,7 @@ neuroedge run --target sim
 - *MCP trên vi điều khiển:* MCU không làm MCP host (Q-27); đưa tool của thiết bị MCU ra MCP qua gateway là việc của Giai đoạn 2 (`neuroedge-roadmap-phase2.md` TSK-P2-05).
 - *Phạm vi chưa thực hiện:* Thị giác máy tính · Dịch vụ đám mây thương mại *(Fleet OS thuộc Khối 2; kết nối tới provider cloud qua lớp provider **thuộc phạm vi** — CR-1.0)* · Hệ thống tài khoản người dùng · Sàn thương mại · Hỗ trợ Jetson/Matter/HomeKit · Tự tinh chỉnh (fine-tune) mô hình AI.
 
-### 8.3 Giai đoạn đệm: Developer Beta & Xây dựng cộng đồng (Tuần 12–16)
+### 8.3 Giai đoạn đệm: Developer Beta & Xây dựng cộng đồng (I8)
 
 **Nguyên tắc vận hành: Đóng băng toàn bộ việc phát triển tính năng mới (Feature Freeze).** Đội ngũ tập trung 100% nguồn lực vào việc hỗ trợ kỹ thuật trực tiếp, onboarding và làm mượt trải nghiệm cho 50–100 lập trình viên bên ngoài đầu tiên.
 
@@ -1287,7 +1287,7 @@ neuroedge run --target sim
 | **Hoàn thiện tài liệu và hướng dẫn bắt đầu** | Loại bỏ toàn bộ các bước gây khó hiểu trong tài liệu API và các ứng dụng mẫu tham chiếu |
 | **Xác thực trải nghiệm Action CI thực tế** | Đo lường tỷ lệ các bài kiểm thử CI chạy thành công trên máy lập trình viên bên ngoài |
 
-### 8.4 Khối 2 — Tầng dịch vụ thương mại: Fleet OS (Tháng 4–8)
+### 8.4 Khối 2 — Tầng dịch vụ thương mại: Fleet OS (I9)
 
 **Điều kiện kích hoạt (Milestone-Gated — Bắt buộc thỏa mãn mới khởi động):**
 Khối 2 **tuyệt đối không bắt đầu theo lịch cố định**, mà chỉ được kích hoạt khi Developer Beta đạt đồng thời B1 và B2 — ngưỡng ở [PRD §11.2](neuroedge-prd.md#112-nghiệm-thu-developer-beta). Hai tiêu chí đo lần lượt sự tò mò (B1) và cam kết lên phần cứng thật — `linux` hoặc bo mạch tham chiếu (B2). Mầm hiệu ứng mạng (B3) vẫn được đo nhưng không là điều kiện (PRD Q-41).
@@ -1296,7 +1296,7 @@ Nội dung triển khai: **Fleet Management OS** như mô tả chi tiết tại 
 
 **Đòn bẩy mã nguồn mở:** Eclipse Hawkbit cho điều phối chiến dịch OTA theo đợt · EMQX và FastAPI WebSockets cho kết nối thiết bị và viễn trắc. Ranh giới giấy phép của từng thành phần nêu tại Phụ lục H.
 
-### 8.5 Khối 3 — Bảy đường ray hạ tầng nền tảng (Tháng 4–8, thực hiện song song Khối 2)
+### 8.5 Khối 3 — Bảy đường ray hạ tầng nền tảng (I10, song song Khối 2)
 
 Xây dựng 7 thành phần hạ tầng cốt lõi phục vụ vận hành an toàn và chuẩn bị sẵn cho việc mở rộng Marketplace sau này:
 
@@ -1314,7 +1314,7 @@ Xây dựng 7 thành phần hạ tầng cốt lõi phục vụ vận hành an to
 
 Các thành phần 5, 6 và 7 là nền tảng bắt buộc phải thiết kế sớm: nếu thiếu chúng, hệ thống sẽ không thể đối soát doanh thu hoặc bảo đảm an toàn khi người dùng cài đặt mã nguồn của nhau trên thiết bị có cơ cấu chấp hành vật lý.
 
-### 8.6 Khối 4 — Triển khai ứng dụng thực địa AURA (Tháng 8–14)
+### 8.6 Khối 4 — Triển khai ứng dụng thực địa AURA (sau Beta, ngoài roadmap)
 
 Chi tiết triển khai tại §7. Điều kiện kích hoạt: Giao diện API của framework đã đạt mức ổn định cao và đã có đối tác bên ngoài ứng dụng thành công trên thiết bị thực tế.
 
@@ -1331,7 +1331,7 @@ Chi tiết triển khai tại §7. Điều kiện kích hoạt: Giao diện API 
 
 *Trong đó, G3 là chỉ số then chốt nhất:* G1 và G2 có thể đạt được qua các nỗ lực phân phối thông thường, nhưng G3 phản ánh trực tiếp việc người dùng có thực sự tin tưởng và tái sử dụng giải pháp của nhau hay không.
 
-### 8.8 Khối 5 — Marketplace và Hệ thống thanh toán (Tháng 18+)
+### 8.8 Khối 5 — Marketplace và Hệ thống thanh toán (khi đạt G1–G4)
 
 Chỉ được kích hoạt sau khi vượt qua các cột mốc xác thực thị trường. Khi đó, việc thương mại hóa là bước chuẩn hóa một thị trường đã tự hình thành nhu cầu từ trước.
 
@@ -1343,7 +1343,7 @@ Danh mục các sản phẩm tiềm năng trên sàn giao dịch:
 - **Bo mạch phần cứng được chứng nhận:** Phân phối qua kênh đối tác phần cứng liên kết.
 - **Dịch vụ chuyên gia:** Khảo sát, tích hợp và triển khai hệ thống an toàn tại chỗ cho doanh nghiệp.
 
-### 8.9 Giai đoạn 2 — Perception thị giác và phủ rộng phần cứng (Tháng 9–24)
+### 8.9 Giai đoạn 2 — Perception thị giác và phủ rộng phần cứng (I11, I13, I15–I18)
 
 **Mục tiêu:** mở rộng tầng nhận thức từ thoại sang thị giác, và mở rộng danh mục phần cứng từ ba target lên sáu — **mà không đụng tới tầng an toàn hành động**. Kế hoạch thực thi chi tiết tại `neuroedge-roadmap-phase2.md`.
 
@@ -1466,19 +1466,19 @@ Sáu nhóm rủi ro **chiến lược** — cấp thị trường, mô hình kin
 
 Đo lường sự thành công dựa trên kết quả vận hành thực tế của khách hàng, loại bỏ hoàn toàn các chỉ số tương tác ảo.
 
-### 12.1 Khối 1 — Lõi mã nguồn mở (Mốc 2.5 tháng)
+### 12.1 Khối 1 — Lõi mã nguồn mở (đo khi I7 và I8 đóng)
 
 Ngưỡng chuẩn tắc ở PRD: **A1** (TTFV), **A2** (tương đương trên target bậc 1), **A8** (3 ứng dụng mẫu + 1 tài sản trực quan), **B4** (tỷ lệ áp dụng Action CI), **B5** (chuyển đổi sang phần cứng), **NFR-OBS-02** (minh bạch vận hành trong vết ghi).
 
 Vì sao là các chỉ số này: TTFV đo độ tinh gọn của lần tiếp xúc đầu; tương đương bậc 1 là mệnh đề trung tâm (target bậc 2 chỉ kiểm chứng trên miền phán quyết, bậc 3 do cộng đồng tự kiểm chứng — §3.2); tỷ lệ áp dụng Action CI đo việc thói quen kiểm thử an toàn có hình thành không; tỷ lệ chuyển đổi đo phễu từ ý tưởng tới sản phẩm thật (§1.6, §1.7); vết ghi minh bạch tạo niềm tin vào lớp kiểm soát an toàn.
 
-### 12.2 Khối 2 và 3 — Tầng dịch vụ thương mại và Hạ tầng nền tảng (Mốc 6 tháng)
+### 12.2 Khối 2 và 3 — Tầng dịch vụ thương mại và Hạ tầng nền tảng (đo sau khi I9 và I10 phát hành)
 
 Ngưỡng chuẩn tắc ở PRD §11.3: **C1** (độ tin cậy OTA), **C2** (độ trễ thoại), **C3** (độ trễ gate), **C4** (tiết kiệm chi phí token), **C5** (chia sẻ gate cộng đồng), **C8** (độ trễ quyết định `SystemOne`). **C6** (cơ cấu doanh thu chỉ-Fleet) là chỉ số theo dõi, không là điều kiện phát hành (PRD Q-42).
 
 Vì sao: 0 brick trên 1.000 thiết bị là điều kiện để doanh nghiệp giao phó đội thiết bị; độ trễ thoại và gate quyết định trải nghiệm tự nhiên; tiết kiệm token minh chứng kiến trúc hai mô hình; gate cộng đồng có người cài xác nhận hiệu ứng mạng trước khi mở sàn; Fleet đạt hòa vốn khẳng định mô hình kinh doanh sau khi bỏ doanh thu inference (v5.3).
 
-### 12.3 Khối 4 — Triển khai ứng dụng thực địa AURA (Mốc 12 tháng)
+### 12.3 Khối 4 — Triển khai ứng dụng thực địa AURA (đo sau ba site AURA đầu tiên)
 
 | Chỉ số hiệu suất | Ngưỡng cam kết | Ý nghĩa thực tiễn |
 |:---|:---|:---|
@@ -1487,7 +1487,7 @@ Vì sao: 0 brick trên 1.000 thiết bị là điều kiện để doanh nghiệ
 | **Tiến độ đạt các cột mốc xác thực** | Báo cáo minh bạch **từng chỉ số G1–G4 riêng biệt**, không dùng giá trị trung bình | Chuẩn bị đầy đủ cơ sở dữ liệu thực chứng cho việc kích hoạt Khối 5. |
 | **Hiệu quả kinh tế cho khách hàng** | Có ít nhất 1 nghiên cứu điển hình (case study) đo lường được hiệu quả: giảm chi phí bảo trì thực địa, giảm tỷ lệ hàng lỗi hoặc rút ngắn thời gian tích hợp | Kiểm chứng giá trị kinh tế thực tế (§1.8) trên số liệu thực chứng của khách hàng. |
 
-### 12.4 Giai đoạn 2 — Thị giác và phủ rộng phần cứng (Mốc 24 tháng)
+### 12.4 Giai đoạn 2 — Thị giác và phủ rộng phần cứng (đo khi I15–I18 đóng)
 
 | # | Chỉ số hiệu suất | Ngưỡng cam kết | Ý nghĩa thực tiễn |
 |:---:|:---|:---|:---|

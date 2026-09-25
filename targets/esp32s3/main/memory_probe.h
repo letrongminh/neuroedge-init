@@ -1,7 +1,7 @@
 /*
  * NeuroEdge memory feasibility probe — TSK-S1-10.
  *
- * The Sprint 1 spike has to produce a NUMBER, not an opinion (roadmap §4.1).
+ * The memory spike has to produce a NUMBER, not an opinion (roadmap §4.4, I3).
  * This header defines the measurement so the same checkpoints are taken on
  * every run, by every engineer, and so nightly CI can diff them over time.
  *

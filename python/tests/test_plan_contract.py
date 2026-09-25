@@ -172,3 +172,64 @@ def test_matrix_progress_matches_the_task_tables() -> None:
         assert row[4] == f"**{done} / {len(rows)}**", (
             f"{inc}: §0.2 ghi {row[4]}, bảng task là {done}/{len(rows)} (R10)"
         )
+
+
+# --- R6, R11: time labels and cross-references across the repo ------------------------------
+
+SWEPT = {".md", ".py", ".c", ".h", ".yml", ".yaml", ".toml"}
+SKIPPED_DIRS = {
+    ".git",
+    ".venv",
+    "build",
+    "node_modules",
+    "archive",
+    "__pycache__",
+    "managed_components",
+}
+TIME_LABEL = re.compile(r"(?<!\w)(Tuần|Tháng|Week|Month) \d|Mốc \d+([.,]\d)? tháng")
+MD_LINE_REF = re.compile(r"[\w./-]+\.md:\d+")
+ROADMAP_REF = re.compile(r"(?:neuroedge-roadmap\.md`?\)?|[Rr]oadmap) §(\d+(?:\.\d+)?)")
+
+
+def repo_text() -> list[tuple[str, str]]:
+    """(path, text) of every swept file; CHANGELOG.md only from §2 on — §1 is history."""
+    out = []
+    for path in ROOT.rglob("*"):
+        if path.suffix not in SWEPT or not path.is_file():
+            continue
+        parts = path.relative_to(ROOT).parts
+        if SKIPPED_DIRS & set(parts) or any(p.startswith(".") and p != ".github" for p in parts):
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if path.name == "CHANGELOG.md":
+            text = text[text.index("## 2. ") :]
+        out.append((str(path.relative_to(ROOT)), text))
+    return out
+
+
+REPO = repo_text()
+
+
+def test_no_numbered_week_or_month_labels() -> None:
+    """R6: time is measured by increments; a duration counts from when an increment opens."""
+    hits = [f"{path}: {m.group(0)}" for path, text in REPO for m in TIME_LABEL.finditer(text)]
+    assert not hits, f"nhãn tuần/tháng đánh số (R6): {hits[:10]}"
+
+
+def test_no_line_number_references_into_markdown() -> None:
+    """R11: a `file.md:NNN` reference goes stale at the next edit; cite a section or a code."""
+    hits = [f"{path}: {m.group(0)}" for path, text in REPO for m in MD_LINE_REF.finditer(text)]
+    assert not hits, f"tham chiếu số dòng (R11): {hits[:10]}"
+
+
+def test_roadmap_section_references_resolve() -> None:
+    headings = {
+        m.group(1) for line in LINES if (m := re.match(r"#{2,4} (\d+(?:\.\d+)?)[. ]", line))
+    }
+    broken = [
+        f"{path}: §{m.group(1)}"
+        for path, text in REPO
+        for m in ROADMAP_REF.finditer(text)
+        if m.group(1) not in headings
+    ]
+    assert not broken, f"dẫn tới mục roadmap không tồn tại (R11): {broken[:10]}"
