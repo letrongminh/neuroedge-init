@@ -60,7 +60,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C8`, `TR
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: cuối Sprint 3 = **2026-11-15** — trễ ~2 tuần so với bản gốc (Tuần 6 gốc = 2026-11-02) (Q-19) |
 | **Lần cập nhật cuối** | **2026-09-25** | Phiên gần nhất: §0.3 (TSK-S4-09 — `verify --targets esp32s3` trên QEMU; TSK-S2-07 — đặc tả FSM thoại) · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
 | **Trạng thái CI Lõi** | ✅ **PASS 1021/1021 · SKIP 0** | `python/tests/` — 50 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
-| **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn + 1 còn mở** | 🔴 TSK-S1-10 chờ bo mạch vật lý · 🟡 Q-11 phần còn lại (Hawkbit EPL-2.0 / EMQX BSL) — **không chặn cho tới khi mở Khối 2** |
+| **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn** | 🔴 TSK-S1-10 chờ bo mạch vật lý · Q-11 đã chốt hết (2026-09-25): Hawkbit duyệt, EMQX thay bằng broker giấy phép dễ dãi |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
 ---
@@ -76,7 +76,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C8`, `TR
 | | **Sprint 5 — Runtime thoại MCU** | Tuần 8–10 | Thu/phát âm thanh, AEC/VAD, C/C++ state machine, stream lên provider | **0%** | ⏳ Chưa bắt đầu |
 | | **Sprint 6 — OTA & Nghiệm thu v1.0** | Tuần 10–12 | A/B OTA, secure boot, tiêu chí A1–A9 | **0%** | ⏳ Chưa bắt đầu |
 | **Beta** | **Developer Beta** | Tuần 12–16 | Hỗ trợ 50–100 lập trình viên, chỉ số B1–B5 | **0%** | ⏳ Chưa bắt đầu |
-| **Khối 2** | **Fleet OS** *(dịch vụ thương mại duy nhất)* | Tháng 4–8 | Hawkbit Canary OTA, EMQX Broker, Provisioning | **0%** | ⏳ Chờ mốc Beta |
+| **Khối 2** | **Fleet OS** *(dịch vụ thương mại duy nhất)* | Tháng 4–8 | Hawkbit Canary OTA, broker MQTT (Q-11), Provisioning | **0%** | ⏳ Chờ mốc Beta |
 | **Khối 3** | **Bảy đường ray nền tảng** | Tháng 4–8 | OCI/ORAS Registry, OpenMeter usage billing | **0%** | ⏳ Chờ mốc Beta |
 
 **Lịch theo ngày tuyệt đối (Q-19).** Sprint 2 và 3 ghi bằng ngày, thay cho quy ước cũ *"Tuần N ở kế hoạch = Tuần N+1 roadmap"* (đã bỏ). M1 trễ **~2 tuần** so với roadmap gốc (Tuần 6 gốc = 2026-11-02), và **Khối 1b cùng mọi mốc sau nó (Sprint 5, Sprint 6, Beta, Điểm rẽ Tuần 16) lùi tương ứng**; cột "Thời gian" của các dòng đó vẫn ghi tuần của lịch gốc cho tới khi ngày tuyệt đối được chốt lúc mở Sprint 4. Ước lượng V1 ~6,6–7,1 tuần-người trong 7 tuần — sát, không có đệm lớn.
@@ -231,7 +231,7 @@ Ranh giới *tài sản lõi — tự xây 100%* / *hàng hóa — mượn tối
 
 ### 3.3 Kỷ luật giấy phép
 
-Năm quy tắc giấy phép: **proposal §3.9**. Ma trận phụ thuộc và trạng thái xác minh: **proposal Phụ lục H**. Hai ngoại lệ còn chờ quyết định — Hawkbit (EPL-2.0) và EMQX (một phần BSL) — là phần còn mở của Q-11 (§10.2, [`TODOS.md`](TODOS.md) #16). LiteLLM đã duyệt (Q-11) và dùng như SDK qua extra `neuroedge[cloud]` (Q-10).
+Năm quy tắc giấy phép: **proposal §3.9**. Ma trận phụ thuộc và trạng thái xác minh: **proposal Phụ lục H**. Hawkbit (EPL-2.0) đã duyệt, EMQX (BSL) không dùng — Q-11, chốt 2026-09-25. LiteLLM đã duyệt (Q-11) và dùng như SDK qua extra `neuroedge[cloud]` (Q-10).
 
 ### 3.4 Ma trận tích hợp theo khối
 
@@ -248,7 +248,7 @@ Năm quy tắc giấy phép: **proposal §3.9**. Ma trận phụ thuộc và tr�
 | **1b** | Hiển thị trạng thái trên màn hình | LVGL v8/v9 | Thư viện đồ họa nhúng | 2 tuần |
 | **1a** | Lớp trừu tượng nhà cung cấp (OpenAI-compatible + adapter) | LiteLLM | **Thư viện trong lõi MIT** | 6 tuần |
 | **2** | Điều phối OTA canary | Eclipse Hawkbit | Backend điều phối | 5 tuần |
-| **2** | Kết nối thiết bị và viễn trắc | EMQX · FastAPI WebSockets | Hạ tầng kết nối | 3 tuần |
+| **2** | Kết nối thiết bị và viễn trắc | Broker MQTT giấy phép dễ dãi (Mosquitto EDL-1.0 · NanoMQ · VerneMQ — Q-11) · FastAPI WebSockets | Hạ tầng kết nối | 3 tuần |
 | **3** | Kho Gate Registry công khai | CNCF ORAS · Harbor | Chuẩn lưu trữ OCI | 4 tuần |
 | **3** | Hệ đo lường sử dụng | OpenMeter | Hạ tầng metering | 4 tuần |
 | **4** | Điều khiển phòng cho AURA | Home Assistant Core API | Integration adapter | 4 tuần |
@@ -399,7 +399,7 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 - [x] **Tiêu chí 5:** Ba tệp vết ghi chuẩn mực tại `fixtures/traces/` đã viết tay và phân giải đúng.
   *Bằng chứng:* `neuroedge trace validate fixtures/traces/*.json` → 3/3 VALID. [`test_trace_fixtures.py`](python/tests/test_trace_fixtures.py) kiểm tra **nội dung kịch bản**, không chỉ tính hợp lệ lược đồ (happy-path cấp xung 30 000 ms; hai kịch bản còn lại **không sinh lệnh actuator nào**).
 - [x] **Tiêu chí 6:** Quyết định Q-11 đã chốt (§10.2) — điều kiện để bắt đầu port bất kỳ dòng mã nào.
-  **ĐẠT cho phạm vi Giai đoạn 1 (2026-09-23).** Phần LiteLLM của Q-11 đã duyệt: `litellm==1.102.0` là MIT, wheel không chứa `enterprise/`, mọi phụ thuộc bắc cầu đạt chính sách phụ thuộc bắc cầu của Q-11 (PRD §15), cưỡng chế bằng CI (job `cloud-extra`). **Phần Hawkbit EPL-2.0 / EMQX BSL chuyển thành cổng mở Khối 2** ([`TODOS.md`](TODOS.md) #16) — chưa có dòng mã nào của chúng được port; phần D của [`NOTICE`](NOTICE) ghi rõ phạm vi phơi nhiễm. Phát hiện phát sinh trong Sprint 1: `copier` kéo theo `jinja2-ansible-filters` **GPL3** — đã chuyển sang extra `scaffold` để lõi MIT không bị lây nhiễm, và cổng CI giấy phép chặn tái diễn; TSK-S3-07 thay `copier` bằng generator Python thuần và bỏ hẳn extra đó.
+  **ĐẠT cho phạm vi Giai đoạn 1 (2026-09-23).** Phần LiteLLM của Q-11 đã duyệt: `litellm==1.102.0` là MIT, wheel không chứa `enterprise/`, mọi phụ thuộc bắc cầu đạt chính sách phụ thuộc bắc cầu của Q-11 (PRD §15), cưỡng chế bằng CI (job `cloud-extra`). **Phần Hawkbit EPL-2.0 / EMQX BSL** chốt 2026-09-25 (Hawkbit duyệt, EMQX không dùng) — chưa có dòng mã nào của chúng được port; phần D của [`NOTICE`](NOTICE) ghi rõ phạm vi phơi nhiễm. Phát hiện phát sinh trong Sprint 1: `copier` kéo theo `jinja2-ansible-filters` **GPL3** — đã chuyển sang extra `scaffold` để lõi MIT không bị lây nhiễm, và cổng CI giấy phép chặn tái diễn; TSK-S3-07 thay `copier` bằng generator Python thuần và bỏ hẳn extra đó.
 
 **Ghi chú về phạm vi đã đóng:** toàn bộ khối lượng Sprint 1 **không phụ thuộc phần cứng** đã hoàn tất (12/13 task, 5/6 tiêu chí ra). Hạng mục còn lại (TSK-S1-10, Tiêu chí 3) không thể đóng bằng nỗ lực kỹ thuật thêm nữa — nó chờ bo mạch.
 
@@ -681,7 +681,7 @@ Khối 2 chỉ còn **một dịch vụ thương mại: Fleet OS**. Ba hạng m�
 | **TSK-K2-08** | **8** | Fleet: tự động tải vết ghi sự cố về kho tập trung | FR-FLT-05 | V4 | ⏳ Chờ mốc Beta | `services/fleet/trace_collector.py` | Sự cố xuất hiện trong kho dưới 5 phút |
 
 
-**Đòn bẩy OSS Khối 2:** Eclipse Hawkbit cho điều phối chiến dịch OTA canary · EMQX hoặc FastAPI WebSockets cho kết nối và viễn trắc. **LiteLLM không còn là lõi của một gateway do NeuroEdge vận hành** — nó là thư viện của lớp trừu tượng provider self-host, đã dùng từ Sprint 2 và nay thuộc phần phân phối kèm sản phẩm (proposal Phụ lục H.1). Tiết kiệm ước tính 14 tuần. Xem ngoại lệ giấy phép tại §3.3.
+**Đòn bẩy OSS Khối 2:** Eclipse Hawkbit cho điều phối chiến dịch OTA canary · broker MQTT giấy phép dễ dãi (Q-11) hoặc FastAPI WebSockets cho kết nối và viễn trắc. **LiteLLM không còn là lõi của một gateway do NeuroEdge vận hành** — nó là thư viện của lớp trừu tượng provider self-host, đã dùng từ Sprint 2 và nay thuộc phần phân phối kèm sản phẩm (proposal Phụ lục H.1). Tiết kiệm ước tính 14 tuần. Xem ngoại lệ giấy phép tại §3.3.
 
 ### 8.2 Trình tự Khối 3 — Đường ray hạ tầng
 
@@ -796,16 +796,21 @@ Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho
 | **Q-28** | Mốc giao FR-GW: 01, 03 tối thiểu ở v1.0 | 2026-09-24 | TSK-S2-11, K2-01→03 |
 | **Q-29** | Định vị trước MHS: theo dõi, adapter cộng đồng khi chuẩn mở | 2026-09-24 | `TODOS.md` #32–#33, Phụ lục H.3 |
 | **Q-30** | Định vị "Hợp đồng vào Physical AI" (engine-first) | 2026-09-24 | PRD §15; `TODOS.md` #32, #34; phase1-5 §1 |
+| **Q-11** | Hawkbit duyệt, EMQX thay bằng broker giấy phép dễ dãi (phần còn lại) | 2026-09-25 | Khối 2 |
+| **Q-31** | NeuroBrain — "Build Physical AI by conversation, under contract" | 2026-09-25 | phase1-5 §1 |
+| **Q-32** | Nhận hướng robot phân tầng, sau Developer Beta (+ trace `v1`, `motion.*`, MCP OAuth 2.1, drift mở issue) | 2026-09-25 | `draft-ke-hoach-mo-rong-robot-fofoca.md` |
+| **Q-33** | RP2350 do đội lõi port làm node thứ hai | 2026-09-25 | Chặng W3 |
+| **Q-34** | ROS 2 / Nav2 tích hợp, gate mọi lệnh tốc độ (cần RFC + C6) | 2026-09-25 | W4-1 |
+| **Q-35** | Mất liên lạc: trạng thái an toàn theo từng cơ cấu, mặc định dừng | 2026-09-25 | RFC-node |
 
 **Hệ quả trực tiếp lên Sprint 1:** Q-1, Q-2 và Q-3 đã chốt nghĩa là đội có thể đặt bo mạch, dựng kho mã và bắt đầu spike ngay Tuần 0 mà không chờ quyết định nào.
 
 **Một điều chỉnh so với đề xuất gốc:** Q-4 ghi Claude Sonnet 5 thay vì Sonnet 3.5. Thế hệ 3.5 đã bị thay thế; chốt một định danh mô hình lỗi thời vào tài liệu nền sẽ tạo nợ ngay từ ngày đầu.
 
-### 10.2 Ba quyết định còn mở và một RFC
+### 10.2 Hai quyết định còn mở và một RFC
 
 | Hạn | Mã | Quyết định | Vì sao hạn đó | Người quyết | Trạng thái |
 |:---:|:---:|:---|:---|:---:|:---:|
-| **Trước Khối 2** | **Q-11** | Phần còn lại: Hawkbit EPL-2.0, EMQX BSL | Chỉ Khối 2 dùng; không viết thiết kế phụ thuộc nào của Fleet OS trước khi có phê duyệt bằng văn bản ([`TODOS.md`](TODOS.md) #16). Phần LiteLLM đã duyệt 2026-09-23 | Kỹ thuật trưởng | 🟡 **Một phần** |
 | **Trước Tháng 4** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng | ⏳ Đang mở |
 | **Tháng 9** | **RFC-0002** | Mở rộng enum `target` và đưa bậc target vào mã lõi (`TARGET_TIERS`); `vision.in` tách sang RFC riêng ở V1b | Không chặn roadmap này. Chặn Khối V1a của Giai đoạn 2 và mọi board profile mới — lịch ở `neuroedge-roadmap-phase2.md` §5 | Kỹ thuật trưởng | ⏳ Đang mở |
 | **Trước Tháng 4** | Q-6 | Chính sách lưu trữ vết ghi: thời hạn và hạn mức | Ảnh hưởng chi phí vận hành và cam kết SLA | Sản phẩm | ⏳ Đang mở |

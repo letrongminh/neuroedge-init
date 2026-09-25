@@ -54,7 +54,6 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 
 | # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
 |:---:|:---|:---|:---|
-| 16 | **Q-11 phần còn lại: Hawkbit EPL-2.0, EMQX BSL** | Chỉ Khối 2 dùng; Giai đoạn 1 không phân phối chúng | **Trước khi mở Khối 2** — không viết thiết kế phụ thuộc nào của Fleet OS trước khi có phê duyệt bằng văn bản |
 | 17 | **Xác minh giấy phép ESP-SR (WakeNet/MultiNet)** cho fallback cục bộ trên `esp32s3` (Q-14). Theo hiểu biết hiện tại, giấy phép chỉ cho dùng trên SoC Espressif — ổn cho `esp32s3`, nhưng phải ghi vào `NOTICE` và không được lọt vào gói Python | Chưa vendoring `esp-sr`; `TSK-S1-10` sẽ vendoring khi bo mạch về | **Bo mạch về (`TSK-S1-10`)**, muộn nhất trước Sprint 5. Nếu giấy phép không hợp: chuyển sang TFLite Micro / ESP-NN (Apache-2.0) |
 
 ## Tương tác và model

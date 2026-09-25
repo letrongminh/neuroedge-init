@@ -24,7 +24,7 @@ multi-node, hệ sinh thái; kèm khung RFC cho từng thay đổi.
 - MHS ở bậc 1 hoặc chạm `schemas/` (Q-29 giữ nguyên: theo dõi, adapter cộng đồng khi chuẩn mở).
 - Tự huấn luyện/tinh chỉnh mô hình.
 
-> **Trạng thái quản trị.** Đây là kế hoạch đề xuất, **chưa** là quyết định của kho. Các
+> **Trạng thái quản trị.** Hướng đã được nhận (Q-32, 2026-09-25 — bắt đầu sau Developer Beta); chi tiết vẫn là kế hoạch đề xuất. Các
 > điểm cần chốt phải vào `neuroedge-prd.md` §15 dưới mã `Q-N` mới (Phụ lục C); chỉ khi đó
 > kế hoạch mới có hiệu lực. Tệp này **không** cập nhật tiến độ (nguồn duy nhất:
 > `neuroedge-roadmap.md` §0) và **không** tạo sự thật mới — mỗi sự thật có đúng một nơi
@@ -198,7 +198,7 @@ T2: `seq` + epoch/`boot_id`.
 |:--|:--|:--|:--|
 | **Eclipse Zenoh / zenoh-pico** | Một giao thức từ MCU tới cloud; overhead ~5 byte; P2P/routed/brokered; đã chạy ESP32, RP2040/Pico, Zephyr, FreeRTOS; độ trễ WiFi/4G tốt hơn MQTT; có bridge ROS 2 (`zenoh-bridge-dds`); đang thành lựa chọn cho R2X (robot-to-anything) | Trẻ hơn DDS/MQTT; cần spike trên ESP32-S3 thật | **EPL-2.0 OR Apache-2.0** — chọn nhánh Apache-2.0 để qua Q-11 |
 | **micro-ROS / Micro XRCE-DDS** | Chuẩn OMG (DDS-XRCE), ROS 2 native; đội ngũ eProsima | Cần agent trên Pi; nặng hơn; mô hình client–server | Apache-2.0 |
-| **MQTT** | Phổ biến, nhiều broker | "Broker paradox": hai thiết bị cùng LAN vẫn vòng qua broker; EMQX (BSL) còn mở trong Q-11 (`TODOS.md` #16); Mosquitto (EPL-2.0) không nằm trong Q-11, cần ngoại lệ riêng | Broker: vướng giấy phép |
+| **MQTT** | Phổ biến, nhiều broker | "Broker paradox": hai thiết bị cùng LAN vẫn vòng qua broker; EMQX (BSL) không dùng (Q-11, 2026-09-25); Mosquitto (EPL-2.0) không nằm trong Q-11, cần ngoại lệ riêng | Broker: vướng giấy phép |
 | **ROS 2 / DDS làm wire** | Hệ sinh thái robot lớn nhất | Không lên MCU; multicast/UDP nặng; kéo máy trạng thái ra khỏi thiết bị — trái yêu cầu "gate và máy trạng thái chạy trên thiết bị" (`neuroedge-proposal.md` Phụ lục H.3) | Apache-2.0 |
 
 ### 5.2 An toàn phân tán — black channel
@@ -614,27 +614,26 @@ Mỗi khung dưới đây là dàn ý để chuyển thành RFC đầy đủ the
 | W4-3 | FR-REG-01..07; `TODOS.md` #11, #15; TR-4 |
 | W4-4 | TSK-P2-01 |
 | W4-5 | Q-29; `TODOS.md` #33 |
-| W4-6 | Q-11 (`TODOS.md` #16, #17); OFL font (bản nháp Giai đoạn 1.5) |
+| W4-6 | Q-11 (đã chốt); `TODOS.md` #17; OFL font (bản nháp Giai đoạn 1.5) |
 
 ---
 
 ## Phụ lục C — Quyết định chờ cấp mã Q-N
 
-Các điểm dưới đây cần một mục `Q-N` mới trong `neuroedge-prd.md` §15 trước khi kế hoạch
-có hiệu lực:
+Các điểm dưới đây cần một mục `Q-N` trong `neuroedge-prd.md` §15. Hướng kế hoạch đã được nhận (Q-32, 2026-09-25); ✅ là đã chốt:
 
 | # | Câu hỏi quyết định | Gợi ý |
 |:--:|:--|:--|
 | 1 | Wire protocol node: Zenoh-pico hay micro-ROS? | Spike W3-1 quyết; mặc định đề xuất Zenoh (nhánh Apache-2.0) |
-| 2 | Trace đa node: mở rộng `trace.v1` hay `trace.v2`? | A cho v1.x; xem lại khi có fixture vision/đa node chuẩn mực |
-| 3 | RFC-numeric gộp hay tách khỏi RFC-0007? | **Tách** — RFC-0007 (TSK-N0-03) giữ `gate.v1` nguyên byte; không cần `Q-N` |
-| 4 | `motion.*` nguyên thủy riêng hay mở rộng `digital.out`? | Nguyên thủy riêng để hợp đồng rõ |
+| 2 | Trace đa node: mở rộng `trace.v1` hay `trace.v2`? | ✅ **Q-32: mở rộng `trace.v1`** (2026-09-25) |
+| 3 | RFC-numeric gộp hay tách khỏi RFC-0007? | ✅ **Tách** — RFC-0007 (TSK-N0-03) giữ `gate.v1` nguyên byte; không cần `Q-N` |
+| 4 | `motion.*` nguyên thủy riêng hay mở rộng `digital.out`? | ✅ **Q-32: nguyên thủy riêng** (2026-09-25) |
 | 5 | Token theo kênh: phạm vi gồm gì? | Kênh + thời lượng tối đa + một lần dùng |
 | 6 | Chứng nhận an toàn chức năng: IN hay OUT? | Cổng nhu cầu C6 |
-| 7 | Q-11 phần mở: Hawkbit EPL-2.0, EMQX BSL? | Trước Khối 2 |
-| 8 | MCP mạng: OAuth 2.1 theo spec? | Có |
-| 9 | Node tham chiếu: ESP32-S3 + RP2350? | RP2350 tái dùng bậc 3 dự kiến — sau #10 |
-| 10 | Đội lõi có làm node RP2350 không? Hiện trái `neuroedge-roadmap-phase2.md:252`, `neuroedge-proposal.md:1366` và PRD §14 ("đội lõi tự port thêm biến thể ngoài bậc 1 và bậc 2: hoãn vô thời hạn") | Hoặc sửa PRD §14 bằng `Q-N`, hoặc để RP2350 là bản port cộng đồng |
-| 11 | Cầu ROS 2 và demo Nav2 có trong phạm vi không? `neuroedge-roadmap-phase2.md:218` loại dẫn đường tự hành, không ngoại lệ; PRD §14 là sổ ngoài phạm vi duy nhất | Một dòng PRD §14 (cầu tại ranh giới gate trong, dẫn đường ngoài) |
-| 12 | Mất liên lạc có được cắt lệnh **đang chạy** không? `voice_fsm.md` §5.3 hôm nay chỉ cho tắt máy làm vậy | Có, như một lần dừng kiểu tắt máy: sửa `voice_fsm.md` §5 (lý do hủy mới, sự kiện đầu vào replay được, trạng thái an toàn theo cơ cấu) cùng RFC-node |
-| 13 | Nightly drift có chặn build không? Hiện `nightly-hardware.yml:96-99` cố ý chỉ báo | Tự mở issue, không chặn |
+| 7 | Q-11 phần mở: Hawkbit EPL-2.0, EMQX BSL? | ✅ **Q-11 đã chốt** (2026-09-25) |
+| 8 | MCP mạng: OAuth 2.1 theo spec? | ✅ **Q-32: có** (2026-09-25) |
+| 9 | Node tham chiếu: ESP32-S3 + RP2350? | ✅ **Q-33: ESP32-S3 + RP2350 (đội lõi port)** (2026-09-25) |
+| 10 | Đội lõi có làm node RP2350 không? Hiện trái `neuroedge-roadmap-phase2.md:252`, `neuroedge-proposal.md:1366` và PRD §14 ("đội lõi tự port thêm biến thể ngoài bậc 1 và bậc 2: hoãn vô thời hạn") | ✅ **Q-33: đội lõi port** (2026-09-25) |
+| 11 | Cầu ROS 2 và demo Nav2 có trong phạm vi không? `neuroedge-roadmap-phase2.md:218` loại dẫn đường tự hành, không ngoại lệ; PRD §14 là sổ ngoài phạm vi duy nhất | ✅ **Q-34: tích hợp, gate mọi lệnh tốc độ** (2026-09-25) |
+| 12 | Mất liên lạc có được cắt lệnh **đang chạy** không? `voice_fsm.md` §5.3 hôm nay chỉ cho tắt máy làm vậy | ✅ **Q-35: theo từng cơ cấu, mặc định dừng** (2026-09-25) |
+| 13 | Nightly drift có chặn build không? Hiện `nightly-hardware.yml:96-99` cố ý chỉ báo | ✅ **Q-32: mở issue, không chặn** (2026-09-25) |

@@ -251,7 +251,7 @@ def robot_decisions() -> list[str]:
     out = []
     for line in lines[start:]:
         m = re.match(r"\| (\d+) \| (.*)", line)
-        if m:
+        if m and "✅" not in line:  # ✅ = đã chốt bằng một Q-N
             out.append(plain(split_row(line)[1]))
     return out
 

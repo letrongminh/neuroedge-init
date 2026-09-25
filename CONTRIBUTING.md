@@ -128,8 +128,7 @@ Mẫu ghi nhận tại chỗ:
 
 Giấy phép nào được vào phần phân phối: chính sách **Q-11**
 ([PRD §15](neuroedge-prd.md#15-sổ-quyết-định)); không copyleft mạnh là
-bất biến `CHANGELOG.md` §3.3 #9. Phần Q-11 còn mở (Hawkbit, EMQX): `TODOS.md` #16 —
-không port dòng nào từ hai dự án đó khi chưa có phê duyệt bằng văn bản.
+bất biến `CHANGELOG.md` §3.3 #9. Hawkbit đã duyệt với điều kiện ở Q-11 (sửa thì công bố phần sửa); EMQX không dùng.
 
 ## 5. Test không được skip trong im lặng
 

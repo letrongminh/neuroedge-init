@@ -14,7 +14,7 @@
 | Sprint hiện hành | 🟡 **Sprint 2 theo lịch (≈ A1, 2026-09-28 → 2026-10-25)** — mã đã xong trước lịch; việc đang làm thuộc A2 (Sprint 3) và phần firmware không cần bo mạch kéo lên từ Sprint 4 |
 | Cột mốc tiếp theo | **M1: Time-to-first-value < 10 phút trên `sim`** |
 | Trạng thái CI Lõi | ✅ **PASS 1021/1021 · SKIP 0** |
-| Chặn ngoài tầm kỹ thuật | 🟡 **1 hạng mục chặn + 1 còn mở** |
+| Chặn ngoài tầm kỹ thuật | 🟡 **1 hạng mục chặn** |
 | Lần cập nhật cuối | **2026-09-25** |
 
 ## Tiến độ các mốc

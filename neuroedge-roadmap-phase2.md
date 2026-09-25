@@ -215,7 +215,7 @@ Giai đoạn 2 **không được rút người khỏi Khối 4 (AURA)**. AURA l�
 
 **Đòn bẩy OSS Khối V2:** JetPack và TensorRT · DeepStream cho pipeline đa camera. Tiết kiệm ước tính 5 tuần.
 
-**Phạm vi bị loại tường minh:** SLAM, tránh vật cản, dẫn đường tự hành, drone. Đây là những bài toán robot di động, không phải usecase consumer, và chúng kéo theo một tầng an toàn hoàn toàn khác.
+**Phạm vi bị loại tường minh:** tự phát triển SLAM, tránh vật cản, dẫn đường tự hành, drone *(Q-34: tích hợp nguyên bản ROS 2 / Nav2 có gate xét mọi lệnh tốc độ nằm trong hướng robot phân tầng sau Beta — NeuroEdge không tự viết thuật toán dẫn đường)*. Đây là những bài toán robot di động, không phải usecase consumer, và chúng kéo theo một tầng an toàn hoàn toàn khác.
 
 **Tiêu chí ra Khối V2:**
 
@@ -249,7 +249,7 @@ Giai đoạn 2 **không được rút người khỏi Khối 4 (AURA)**. AURA l�
 
 ### 9.1 Khối P1 — Bộ công cụ port cho cộng đồng (Tháng 16–20)
 
-**Đây là khối quan trọng nhất về mặt chiến lược, và nó không phải việc port.** Đội lõi **không** tự đưa NeuroEdge lên STM32 hay RP2350. Đội lõi xuất bản thứ giúp người khác làm việc đó.
+**Đây là khối quan trọng nhất về mặt chiến lược, và nó không phải việc port.** Đội lõi **không** tự đưa NeuroEdge lên STM32 hay RP2350 *(ngoại lệ: RP2350 làm node của robot phân tầng — Q-33; bản port bậc 3 chung vẫn là của cộng đồng)*. Đội lõi xuất bản thứ giúp người khác làm việc đó.
 
 Phân biệt này quyết định việc khối có vượt được bộ lọc PF-1 hay không: đội lõi tự port là dàn trải nguồn lực và trượt PF-1; xuất bản bộ công cụ là việc làm một lần, phục vụ mọi bo mạch về sau.
 
