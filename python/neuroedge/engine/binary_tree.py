@@ -211,6 +211,24 @@ def c_header(tree: Mapping[str, Any], symbol: str) -> str:
     )
 
 
+def c_string(text: str) -> str:
+    """
+    `text` as a C99 string literal: printable ASCII as is, every other UTF-8 byte
+    as a three-digit octal escape (never greedy, unlike `\\x`), `?` escaped so no
+    trigraph can form.
+    """
+    out = []
+    for byte in text.encode("utf-8"):
+        char = chr(byte)
+        if char in '"\\?':
+            out.append("\\" + char)
+        elif 0x20 <= byte < 0x7F:
+            out.append(char)
+        else:
+            out.append(f"\\{byte:03o}")
+    return '"' + "".join(out) + '"'
+
+
 def domain_index(node: Mapping[str, Any], value: Any) -> int | None:
     """
     A fact value as the walker sees it: its index in the node's domain, or None

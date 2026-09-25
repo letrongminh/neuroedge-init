@@ -84,20 +84,70 @@ phiên ghi online replay được mà không cần model hay key.
 
 ## 4. Vết ghi từ `esp32s3` về máy tính
 
-Firmware ghi mỗi sự kiện thành **một dòng JSON trên UART0 / USB-CDC**, tiền tố `NE1 `, cùng
-tên sự kiện ở §3:
+Firmware ghi mỗi sự kiện thành **một dòng trên UART0 / USB-CDC**: tiền tố `NE1 ` rồi đúng một sự
+kiện `trace.v1`, cùng tên và trường ở §3 và ở `docs/spec/tool_calling.md` §7. Đây là đặc tả của
+TSK-S4-09 (trạng thái ở roadmap); định dạng C ở `targets/esp32s3/components/ne_trace/`, bộ đọc ở
+`python/neuroedge/testing/uart.py`.
 
 ```text
-NE1 {"offset_ms":590,"type":"gate_evaluation_result","data":{"verdict":"ALLOW",...}}
+I (312) boot: ESP-IDF v5.4 2nd stage bootloader           ← log thường: bỏ qua
+NE1 {"offset_ms":0,"type":"device_info","data":{"board_id":"esp32s3-box-3","agent_version":"home-voice@0.1.0","device_id":"qemu","boot_id":"9f2c01aa"}}
+NE1 {"offset_ms":3,"type":"gate_evaluation_begin","data":{"gate":"light_on@1.0.0","gate_digest":"sha256:4cc8…"}}
+NE1 {"offset_ms":6,"type":"gate_facts","data":{"call_source":{"value":"local_grammar","confidence":null,"source":"context"}}}
+NE1 {"offset_ms":9,"type":"gate_evaluation_result","data":{"verdict":"ALLOW","evaluations":{"call_source":"local_grammar"}}}
+NE1 {"offset_ms":57,"type":"trace_end","data":{"events":4}}
+NE_SELFTEST PASS walker=6 token=6
+NE_TRACE DONE sessions=1
 ```
 
-Mục này là đặc tả của TSK-S4-09 (trạng thái ở roadmap). `neuroedge record --target esp32s3 --port
-/dev/ttyACM0` đọc các dòng đó, bỏ dòng log khác, dựng
-`trace.v1` và thẩm định trước khi ghi — cùng `TraceRecorder` của TSK-S3-01. Trong QEMU, UART0 ra
-stdio hoặc socket (`-serial tcp::5555,server,nowait`), nên **cùng lệnh chạy trên QEMU** và
-`metadata.device_id = "qemu"` phân biệt bằng chứng giả lập với bằng chứng bo mạch. Nhờ vậy
-`verify --targets esp32s3` kiểm được **miền quyết định** hằng đêm trên QEMU trước khi bo mạch về,
-và trên bo mạch sau đó (TSK-S4-09).
+**Dòng.** `NE1 ` ở cột 0, rồi một object JSON có đúng ba khoá `offset_ms` (số nguyên ≥ 0, đồng hồ
+thiết bị tính từ `device_info`), `type`, `data` — không khoá nào khác (lược đồ cấm). UTF-8, tối đa
+**512 byte** kể cả tiền tố, kết thúc bằng `\n` (host nhận cả `\r\n`). Chuỗi escape theo JSON. Dòng
+không vừa thì thiết bị **không** ghi nửa dòng: nó bỏ dòng và vẫn đếm (xem `trace_end`). Nonce của
+token không bao giờ có trong dòng nào.
+
+**Khung phiên.** Mỗi phiên mở bằng `device_info` ở `offset_ms` 0 và đóng bằng `trace_end`; sau phiên
+cuối, thiết bị in `NE_TRACE DONE sessions=<n>` — dòng log thường, không phải sự kiện — để người đọc
+biết nó không còn gì để nói.
+
+| Sự kiện | `data` | Ý nghĩa |
+|:---|:---|:---|
+| `device_info` | `{board_id, agent_version, device_id, boot_id, replay_of?, trace_digest?}` | Thiết bị tự khai. `device_id = "qemu"` khi build với `sdkconfig.qemu` (`CONFIG_NEUROEDGE_QEMU`), còn trên chip là `esp32s3-<MAC>` — bằng chứng giả lập không bao giờ đọc thành bằng chứng bo mạch. `boot_id` là 8 chữ số hex ngẫu nhiên mỗi lần khởi động. `replay_of` / `trace_digest`: phiên replay một vết ghi chuẩn mực |
+| `trace_end` | `{events}` | Số dòng của phiên trước nó, kể cả `device_info` và kể cả dòng thiết bị không ghi được. Host đếm lệch ⇒ lỗi |
+
+**Firmware chỉ ghi cái nó tự tính.** Hôm nay: `gate_evaluation_begin {gate, gate_digest}`, `gate_facts`
+(đầu vào của phán quyết, như host), `gate_evaluation_result` với đúng khoá của host
+(`GateResult.to_event_data()`). Hai chỗ chưa như host, đều đọc lại được đúng khi replay: giá trị ngoài
+miền, và độ tin cậy NaN, ghi là `null` (thiết bị chỉ biết "không đọc được"). Nhãn gate
+(`light_on@1.0.0`) và chữ `on_block` (`to`, `message`, `fallback_action`) không có trong NETR v1 nên đi
+kèm firmware từ `scripts/gen_firmware_gates.py`. Chưa có `actuator_command` / `actuator_aborted`: chưa
+có HAL firmware (TSK-S4-01).
+
+**Host.** `neuroedge record --target esp32s3 --port <nguồn>` giữ các dòng `NE1 `, bỏ mọi dòng khác
+(kể cả `NE1001…`, `NE_SELFTEST`, `NEUROEDGE_MEMORY_JSON`), kiểm khung, rồi ghi **mỗi phiên một tệp**
+qua `TraceRecorder` (TSK-S3-01), thẩm định trước khi ghi. Sự kiện là của thiết bị, nguyên văn và đúng
+`offset_ms`. Host chỉ dựng `metadata`:
+
+- `session_id = sess_<boot_id><số thứ tự phiên trong lần khởi động>`;
+- `target = esp32s3`;
+- `board_id`, `agent_version`, `device_id` lấy từ `device_info`;
+- `timestamp_utc` là giờ host đọc được `device_info` — với tệp log là giờ đọc tệp, không phải giờ
+  chạy.
+
+Dòng `NE1` hỏng, khoá thừa, `trace_end` đếm lệch, phiên chưa đóng khi nguồn hết, hoặc phiên mới mở
+khi phiên cũ chưa đóng (thiết bị khởi động lại) ⇒ `TraceValidationError` (NE4001) nêu `nguồn:dòng`.
+Không bao giờ đọc một vết ghi ngắn hơn như thể nó là sự thật.
+
+| `--port` | Nguồn | Dừng khi |
+|:---|:---|:---|
+| đường dẫn tệp, hoặc `file:<đường dẫn>` | log QEMU `-serial file:uart.log`, hoặc bản chụp đã lưu | `NE_TRACE DONE` hoặc hết tệp |
+| `tcp://host:port` | QEMU `-serial tcp::5555,server` (QEMU chờ người đọc rồi mới boot, không mất dòng đầu) | `NE_TRACE DONE` hoặc `--timeout` |
+| `/dev/tty…`, `COMn`, URL pyserial (`loop://`, `rfc2217://`…) | bo mạch, qua extra `neuroedge[serial]` | `NE_TRACE DONE` hoặc `--timeout` |
+
+`--baud` mặc định 921600 (PRD Phụ lục D.2); USB-CDC bỏ qua baud. Firmware trên QEMU chạy mỗi PR đụng
+`targets/**`, và job `uart-trace` của `firmware-qemu.yml` ghi lại phiên của nó bằng đúng lệnh trên.
+Nhờ vậy `verify --targets esp32s3` sẽ kiểm được **miền quyết định** trên QEMU trước khi bo mạch về, và
+trên bo mạch sau đó (TSK-S4-09 phần 2, TSK-S4-04).
 
 ## 5. Trực quan hoá
 

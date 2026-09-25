@@ -195,6 +195,22 @@ const char *ne_argument_name(const ne_tree *tree, uint32_t i) {
     return (const char *)strings_of(tree) + rd16(arg_at(tree, i) + A_NAME);
 }
 
+int ne_criterion_kind(const ne_tree *tree, uint32_t i) {
+    if (tree == NULL || tree->base == NULL || i >= tree->node_count) return -1;
+    return node_at(tree, i)[N_KIND];
+}
+
+const char *ne_domain_value(const ne_tree *tree, uint32_t i, uint32_t j) {
+    if (tree == NULL || tree->base == NULL || i >= tree->node_count) return NULL;
+    const uint8_t *node = node_at(tree, i);
+    if (j >= node[N_DOMAIN_SIZE]) return NULL;
+    /* ne_tree_load checked that the domain's strings are consecutive and terminated. */
+    const uint8_t *strings = strings_of(tree);
+    uint32_t off = rd16(node + N_DOMAIN_OFF);
+    for (uint32_t v = 0; v < j; v++) off = (uint32_t)string_end(strings, tree->strings_size, off) + 1u;
+    return (const char *)strings + off;
+}
+
 /* --- deciding ---------------------------------------------------------------------- */
 
 static int valid_confidence(double c) { return c >= 0.0 && c <= 1.0; } /* false for NaN */

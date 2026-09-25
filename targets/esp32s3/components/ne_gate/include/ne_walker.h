@@ -57,6 +57,8 @@ typedef enum {
 
 typedef enum { NE_FAILED_NONE = 0, NE_FAILED_CRITERION = 1, NE_FAILED_ARGUMENT = 2 } ne_failed_kind;
 
+typedef enum { NE_KIND_BOOL = 0, NE_KIND_LEVEL = 1, NE_KIND_CHOICE = 2 } ne_kind;
+
 typedef enum { NE_ARG_STRING = 0, NE_ARG_INTEGER = 1, NE_ARG_NUMBER = 2, NE_ARG_BOOLEAN = 3 } ne_arg_type;
 
 /* A loaded tree: a view onto the caller's bytes (which must outlive it). */
@@ -126,6 +128,10 @@ ne_status ne_evaluate(const ne_tree *tree, const ne_fact *facts, const ne_arg_va
 const char *ne_criterion_name(const ne_tree *tree, uint32_t i);
 /* Name of argument `i`, or NULL. */
 const char *ne_argument_name(const ne_tree *tree, uint32_t i);
+/* Kind of criterion `i` — NE_KIND_BOOL, NE_KIND_LEVEL, NE_KIND_CHOICE — or -1. For traces. */
+int ne_criterion_kind(const ne_tree *tree, uint32_t i);
+/* Value `j` of criterion `i`'s domain ("false"/"true" for a bool), or NULL. For traces. */
+const char *ne_domain_value(const ne_tree *tree, uint32_t i, uint32_t j);
 
 /* CRC-32 (IEEE 802.3, as zlib) — exposed for tests and OTA tooling. */
 uint32_t ne_crc32(const uint8_t *data, uint32_t len, uint32_t skip_from, uint32_t skip_len);

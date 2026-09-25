@@ -880,7 +880,7 @@ Tên lớp và mã `NE…` khớp `python/neuroedge/errors.py`; mọi lớp kế
 | `BoardCapabilityError` | NE3001 | Build | Khai báo bo mạch sai, hoặc agent yêu cầu năng lực bo mạch không cung cấp | Dừng build, không sinh firmware, chỉ rõ dòng mã gọi |
 | `AgentManifestError` | NE3002 | Build | `agent.toml` sai cấu trúc, thiếu `[requires]`, hoặc một `@action` cần năng lực / gate mà manifest không khai | Dừng build, nêu `file:line` của hành động (TSK-S2-02) |
 | `BuildFailed` | NE3003 | Build | `neuroedge build` gặp ≥ 1 vấn đề | Gom **mọi** vấn đề, in từng cái đủ 3 thành phần, thoát mã 1, không ghi artifact nào |
-| `TraceValidationError` | NE4001 | `neuroedge trace validate` | Tệp vết ghi không hợp lệ theo `schemas/trace.v1.json` | Báo lỗi kèm đường dẫn trường sai |
+| `TraceValidationError` | NE4001 | `neuroedge trace validate` · `record --target esp32s3 --port` | Tệp vết ghi không hợp lệ theo `schemas/trace.v1.json`; hoặc dòng `NE1` từ UART hỏng, thiếu khung phiên, đếm lệch (`docs/spec/simulation_coverage.md` §4) | Báo lỗi kèm đường dẫn trường sai, hoặc `nguồn:dòng`; không ghi tệp nào |
 | *(không phải exception — phán quyết)* | — | Chạy | Gate không thẩm định được trong ngân sách hoặc bộ thẩm định không tới được, và `fail: closed` | `BLOCK` với `reason: budget_exceeded` / `gate_unreachable`, `action: deny`, ghi vào vết ghi (TSK-S2-03). Fail-closed là phán quyết để phát lại được, không phải lỗi |
 | `SafetyRegressionError` | NE4002 | `neuroedge replay`, `verify`, `assert_matches_golden` | Phán quyết gate hoặc lệnh chân của phiên replay lệch golden — kể cả lệch giữa các target (thay `TargetEquivalenceError` dự kiến) | Mã 1, chỉ rõ sự kiện và trường lệch đầu tiên; gắn nhãn *SAFETY REGRESSION* khi BLOCK thành ALLOW hoặc có lệnh chân mới (TSK-S3-04). Cũng là `AssertionError` để pytest báo test trượt |
 | `ReplayError` | NE4003 | `neuroedge replay` | Vết ghi không replay được với agent này: không biết action nào sau một gate, hoặc target không có HAL | Mã 1, lỗi 3 thành phần (TSK-S3-02) |
@@ -910,7 +910,7 @@ Bố cục kho và thủ tục sửa từng thư mục: **[`CONTRIBUTING.md` §6
 ### D.2 Giao thức Truyền dẫn & Định dạng Vết ghi (Wire Protocol)
 
 1. **Giao thức mạng Wi-Fi / LAN:** `WebSocket` bảo mật truyền luồng âm thanh Opus (Binary Frame) và sự kiện vết ghi JSON (Text Frame).
-2. **Giao thức cổng nối tiếp UART** (921600 baud): vết ghi là JSON Lines, mỗi dòng mang tiền tố `NE1 ` để tách khỏi log firmware (TSK-S4-09); khung nhị phân, nếu cần, đóng gói `SLIP`.
+2. **Giao thức cổng nối tiếp UART** (921600 baud): vết ghi là JSON Lines, mỗi dòng mang tiền tố `NE1 ` để tách khỏi log firmware (TSK-S4-09); khung phiên, giới hạn dòng và cách host dựng vết ghi: `docs/spec/simulation_coverage.md` §4. Khung nhị phân, nếu cần, đóng gói `SLIP`.
 3. **Định dạng âm thanh nén:** Opus Voice Mode (16 kbps, 16 kHz mono, kích thước khung 20 ms = 320 mẫu). Cùng một định dạng cho mọi target; `sim` phát lại tệp WAV qua đúng đường mã hóa này để giữ tương đương với phần cứng thật.
 
 ---
