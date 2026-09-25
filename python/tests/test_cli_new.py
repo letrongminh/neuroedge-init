@@ -157,6 +157,23 @@ def test_the_home_voice_template_copies_the_sample_and_its_tests_pass(tmp_path):
     assert "4 passed" in result.stdout
 
 
+def test_the_factory_monitor_template_copies_the_sample_and_its_tests_pass(tmp_path):
+    files = scaffold("xuong", "factory-monitor", tmp_path)
+    project = tmp_path / "xuong"
+    for expected in (
+        "actions/plant.py",
+        "gates/vent_off@1.0.0.yaml",
+        "gates/alarm_off@1.0.0.yaml",
+        "tests/test_agent.py",
+    ):
+        assert Path(expected) in files
+    manifest = tomllib.loads((project / "agent.toml").read_text("utf-8"))
+    assert manifest["agent"]["name"] == "xuong"
+    result = _pytest(project)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "4 passed" in result.stdout
+
+
 # --- refusals ------------------------------------------------------------------------
 
 
@@ -185,4 +202,4 @@ def test_an_unknown_template_is_refused(tmp_path):
     result = runner.invoke(app, ["new", "x", "--template", "nope"])
     assert result.exit_code == 1
     assert "minimal" in result.output
-    assert set(TEMPLATES) == {"minimal", "villa-concierge", "home-voice"}
+    assert set(TEMPLATES) == {"minimal", "villa-concierge", "home-voice", "factory-monitor"}
