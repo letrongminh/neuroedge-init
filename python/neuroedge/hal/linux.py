@@ -51,6 +51,18 @@ def _import_gpiod() -> Any:
     return gpiod
 
 
+def _chip_error(path: str, exc: OSError) -> BoardCapabilityError:
+    return BoardCapabilityError(
+        where=f"LinuxHAL.__init__ -> {path}",
+        why=f"cannot open the GPIO chip or its lines: {exc.strerror or exc}",
+        how=(
+            "check the user may read and write the chip (group `gpio`, or "
+            "setup_gpio_sim.sh's chmod), and that no other process holds the lines "
+            "(an earlier `neuroedge mcp serve` still running)"
+        ),
+    )
+
+
 class LinuxHAL(HardwareAbstractionLayer):
     def __init__(
         self,
@@ -104,7 +116,10 @@ class LinuxHAL(HardwareAbstractionLayer):
 
     def _find(self, chips: list[str], name: str) -> tuple[str, int] | None:
         for path in chips:
-            chip = self._gpiod.Chip(path)
+            try:
+                chip = self._gpiod.Chip(path)
+            except OSError as exc:
+                raise _chip_error(path, exc) from exc
             try:
                 return path, int(chip.line_offset_from_id(name))
             except (OSError, ValueError, KeyError):
@@ -121,12 +136,17 @@ class LinuxHAL(HardwareAbstractionLayer):
         by_chip: dict[str, list[int]] = {}
         for path, offset in self.lines.values():
             by_chip.setdefault(path, []).append(offset)
-        return {
-            path: self._gpiod.request_lines(
-                path, consumer=consumer, config={tuple(offsets): settings}
-            )
-            for path, offsets in by_chip.items()
-        }
+        requests: dict[str, Any] = {}
+        for path, offsets in by_chip.items():
+            try:
+                requests[path] = self._gpiod.request_lines(
+                    path, consumer=consumer, config={tuple(offsets): settings}
+                )
+            except OSError as exc:
+                for held in requests.values():
+                    held.release()
+                raise _chip_error(path, exc) from exc
+        return requests
 
     # -- the line itself -------------------------------------------------------------
     def _set(self, pin: str, active: bool) -> None:
@@ -150,6 +170,8 @@ class LinuxHAL(HardwareAbstractionLayer):
             if timer is not None and self._timers.get(pin) is not timer:
                 return  # a newer command owns the line
             self._timers.pop(pin, None)
+            if not self._requests:
+                return  # close() has already dropped and released every line
         self._set(pin, False)
 
     # -- digital.out -----------------------------------------------------------------
@@ -193,11 +215,21 @@ class LinuxHAL(HardwareAbstractionLayer):
             return
         for pin in list(self._timers):
             self._stop_timer(pin)
+        # One line that fails to drop must not leave the others active or held.
+        errors: list[OSError] = []
         for pin in self.lines:
-            self._set(pin, False)
-        for request in self._requests.values():
-            request.release()
-        self._requests = {}
+            try:
+                self._set(pin, False)
+            except OSError as exc:
+                errors.append(exc)
+        requests, self._requests = self._requests, {}
+        for request in requests.values():
+            try:
+                request.release()
+            except OSError as exc:
+                errors.append(exc)
+        if errors:
+            raise errors[0]
 
 
 # Primitives `LinuxHAL` does not implement yet, and the task that brings each. An

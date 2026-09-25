@@ -17,6 +17,7 @@ schedule refuses it — it never delivers early instead.
 from __future__ import annotations
 
 import inspect
+import math
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -67,6 +68,12 @@ class _Pin:
                 how="put the pin change in an @action function and call it with await c.do(...)",
             )
         called_from = f"{where} ({active.action})"
+        if after_ms is not None and after_ms < 0:
+            raise BoardCapabilityError(
+                where=f"{called_from} -> digital.out({self.name!r})",
+                why=f"negative after_ms {after_ms}",
+                how="use after_ms >= 0",
+            )
         if after_ms:
             if not getattr(active.hal, "schedules_commands", False):
                 raise BoardCapabilityError(
@@ -80,7 +87,8 @@ class _Pin:
                 duration_ms,
                 signature=active.token,
                 called_from=called_from,
-                delay_ms=int(after_ms),
+                # Rounded up: a scheduled command is never delivered early (0.5 ms is 1 ms).
+                delay_ms=math.ceil(after_ms),
             )
         return active.hal.digital_out(
             self.name, operation, duration_ms, signature=active.token, called_from=called_from

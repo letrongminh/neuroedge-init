@@ -68,7 +68,7 @@ def pin_state(session: SimSession, pin: str) -> str:
 
 
 def pin_table(session: SimSession) -> Table:
-    title = "Virtual pins" if session.hal.target == "sim" else "GPIO lines"
+    title = "Virtual pins" if session.target == "sim" else "GPIO lines"
     table = Table(title=title, title_justify="left")
     table.add_column("Pin", style="cyan")
     table.add_column("State", style="bold")
@@ -258,7 +258,7 @@ def banner(session: SimSession, console: Console) -> None:
     gates = ", ".join(f"{key} → {ref}" for key, ref in manifest.gates.items()) or "none"
     mode = "offline, typed text (Q-15)" if not session.slow.available else "typed text"
     console.print(
-        f"[bold]{escape(manifest.label)}[/bold] on [cyan]{escape(session.hal.target)}[/cyan] "
+        f"[bold]{escape(manifest.label)}[/bold] on [cyan]{escape(session.target)}[/cyan] "
         f"([cyan]{escape(session.hal.board.id)}[/cyan]) · {mode}"
     )
     console.print(f"  gates: {escape(gates)}")

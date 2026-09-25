@@ -207,3 +207,38 @@ def test_barge_in_never_cuts_a_pulse_linux_has_delivered(tmp_path):
     assert not running.cancelled and hal.line_value("door_lock")
     assert events.of_type("actuator_aborted") == []
     hal.close()
+
+
+@action(name="fsm_unlock_half_ms", requires="digital.out:door_lock", gate="unlock_door")
+def _unlock_half_ms() -> None:
+    digital.out("door_lock").pulse(seconds=1, after_ms=0.5)
+
+
+@action(name="fsm_unlock_in_the_past", requires="digital.out:door_lock", gate="unlock_door")
+def _unlock_in_the_past() -> None:
+    digital.out("door_lock").pulse(seconds=1, after_ms=-5)
+
+
+def _scheduling_conversation():
+    clock = VirtualClock()
+    events = EventLog(clock)
+    hal = SimHAL(events=events)
+    hal.enable_scheduling(clock)
+    engine = ActionContractEngine(events=events, clock=clock)
+    engine.register("unlock_door", resolve_gate_file(GATE))
+    conversation = Conversation(engine=engine, hal=hal, facts={"guest_authenticated": True})
+    return clock, hal, conversation
+
+
+async def test_a_sub_millisecond_delay_is_scheduled_never_delivered_at_once():
+    clock, hal, conversation = _scheduling_conversation()
+    await conversation.do(_unlock_half_ms)
+    (command,) = hal.pending_commands()
+    assert command.deliver_at_ms == clock.now + 1 and hal.pin("door_lock").never_pulsed()
+
+
+async def test_a_negative_delay_is_refused_before_anything_is_scheduled():
+    _, hal, conversation = _scheduling_conversation()
+    with pytest.raises(BoardCapabilityError, match="negative"):
+        await conversation.do(_unlock_in_the_past)
+    assert hal.pending_commands() == [] and hal.pin("door_lock").never_pulsed()

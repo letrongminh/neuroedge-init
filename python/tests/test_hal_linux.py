@@ -268,3 +268,59 @@ def test_replay_on_linux_builds_the_linux_hal(monkeypatch, chips, traces_dir):
     assert result.replayed["metadata"]["target"] == "linux"
     assert fake.history[0] == ("door_lock", 1)
     assert all(request.released for request in fake.requests), "replay closes the HAL"
+
+
+# --- failures of the chip itself (review of TSK-S5-10) ----------------------------------
+
+
+class _DeniedGpiod(FakeGpiod):
+    def Chip(self, path):  # noqa: N802 - mirrors gpiod.Chip
+        raise PermissionError(13, "Permission denied")
+
+
+class _BusyGpiod(FakeGpiod):
+    def request_lines(self, path, consumer, config):
+        raise OSError(16, "Device or resource busy")
+
+
+@pytest.mark.parametrize(
+    ("gpiod", "why"), [(_DeniedGpiod, "Permission denied"), (_BusyGpiod, "busy")]
+)
+def test_a_chip_that_cannot_be_opened_is_a_three_part_error(chips, gpiod, why):
+    glob_, world = chips
+    with pytest.raises(BoardCapabilityError, match=why) as caught:
+        LinuxHAL(chip_glob=glob_, gpiod=gpiod(world))
+    assert "no other process holds the lines" in caught.value.how
+
+
+def test_close_drops_and_releases_every_line_even_when_one_fails(chips):
+    glob_, world = chips
+    fake = FakeGpiod(world)
+    hal = LinuxHAL(chip_glob=glob_, gpiod=fake, authorize=lambda *_: None)
+    hal.digital_out("porch_light", "on", signature="proof")
+    hal.digital_out("gate_relay", "on", signature="proof")
+    (request,) = fake.requests
+    set_value = request.set_value
+
+    def flaky(offset, value):
+        if offset == LINES.index("door_lock"):
+            raise OSError(5, "Input/output error")
+        set_value(offset, value)
+
+    request.set_value = flaky
+    with pytest.raises(OSError, match="Input/output"):
+        hal.close()
+    assert fake.values[(next(iter(world)), LINES.index("porch_light"))] is Value.INACTIVE
+    assert fake.values[(next(iter(world)), LINES.index("gate_relay"))] is Value.INACTIVE
+    assert request.released
+
+
+def test_a_pulse_ending_after_close_does_nothing(chips):
+    glob_, world = chips
+    fake = FakeGpiod(world)
+    hal = LinuxHAL(chip_glob=glob_, gpiod=fake, authorize=lambda *_: None)
+    hal.digital_out("door_lock", "pulse", 60_000, signature="proof")
+    hal.close()
+    after_close = list(fake.history)
+    hal._end_pulse("door_lock")  # the timer's callback, had it already started: no KeyError
+    assert fake.history == after_close

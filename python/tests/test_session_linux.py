@@ -263,3 +263,15 @@ def test_mcp_serve_on_linux_without_a_chip_exits_one(driveway, monkeypatch, tmp_
     result = invoke("mcp", "serve", "--target", "linux", "--agent", str(driveway))
     assert result.exit_code == 1, result.output
     assert "no GPIO chip" in result.output
+
+
+def test_a_failure_after_the_lines_are_requested_releases_them(driveway, gpio, monkeypatch):
+    import neuroedge.sim.session as session_module
+
+    def broken(manifest):
+        raise RuntimeError("mcp config broke")
+
+    monkeypatch.setattr(session_module, "load_mcp_config", broken)
+    with pytest.raises(RuntimeError, match="mcp config broke"):
+        SimSession.load(driveway, target="linux")
+    assert gpio.requests and all(request.released for request in gpio.requests)

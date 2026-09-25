@@ -330,46 +330,53 @@ class SimSession:
         if target == "linux":
             from ..hal.linux import TypedLinuxHAL
 
-            # Last: requesting the lines is the one step that holds anything.
             hal = TypedLinuxHAL(board, events=events)
         else:
             hal = SimHAL(board, events=events)
             for name, (value, unit) in sensors.items():
                 hal.set_sensor(name, value, unit)
-        engine = ActionContractEngine(
-            gates,
-            facts_source=SystemOne("sim", fallback=grammar, network="offline", events=events),
-            clock=clock,
-            events=events,
-        )
-        conversation = Conversation(engine=engine, hal=hal)
-        if slow is None:
-            # `[system_two]` of agent.toml (TSK-S2-11); none ⇒ System 2 stays offline.
-            from ..models.providers import system_two_for
+        # Requesting the lines is the one step that holds anything: if the rest of
+        # the wiring fails, they are released before the error goes up.
+        try:
+            engine = ActionContractEngine(
+                gates,
+                facts_source=SystemOne("sim", fallback=grammar, network="offline", events=events),
+                clock=clock,
+                events=events,
+            )
+            conversation = Conversation(engine=engine, hal=hal)
+            if slow is None:
+                # `[system_two]` of agent.toml (TSK-S2-11); none ⇒ System 2 stays offline.
+                from ..models.providers import system_two_for
 
-            slow = system_two_for(manifest, events)
-        elif slow.events is None:
-            slow.events = events  # FR-MDL-06: every model call is traced
-        return cls(
-            manifest,
-            hal=hal,
-            events=events,
-            grammar=grammar,
-            conversation=conversation,
-            facts={**sim_facts, **(facts or {})},
-            slot_facts=slot_facts,
-            sensor_facts=sensor_facts,
-            slow=slow,
-            knowledge=knowledge,
-            tools=actions,
-            mcp=load_mcp_config(manifest),
-            # RFC-0005: each tool's schema shows its gate's argument limits.
-            argument_limits={
-                spec.name: gates[spec.gate].arguments
-                for spec in actions
-                if spec.gate in gates and gates[spec.gate].arguments
-            },
-        )
+                slow = system_two_for(manifest, events)
+            elif slow.events is None:
+                slow.events = events  # FR-MDL-06: every model call is traced
+            return cls(
+                manifest,
+                hal=hal,
+                events=events,
+                grammar=grammar,
+                conversation=conversation,
+                facts={**sim_facts, **(facts or {})},
+                slot_facts=slot_facts,
+                sensor_facts=sensor_facts,
+                slow=slow,
+                knowledge=knowledge,
+                tools=actions,
+                mcp=load_mcp_config(manifest),
+                # RFC-0005: each tool's schema shows its gate's argument limits.
+                argument_limits={
+                    spec.name: gates[spec.gate].arguments
+                    for spec in actions
+                    if spec.gate in gates and gates[spec.gate].arguments
+                },
+            )
+        except BaseException:
+            close = getattr(hal, "close", None)
+            if close is not None:
+                close()
+            raise
 
     def local_commands(self) -> list[str]:
         """One example phrase per grammar command that calls a tool — what works offline."""
