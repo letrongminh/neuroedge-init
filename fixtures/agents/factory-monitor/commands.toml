@@ -1,0 +1,25 @@
+# Fixed-command grammar for the factory-monitor sample (Q-14, Q-15): what the
+# agent understands with no network. Every command is a physical action.
+[grammar]
+version   = 1
+threshold = 0.80
+
+[[command]]
+intent   = "vent_on"
+patterns = ["bật quạt", "bật quạt thông gió", "turn on the fan"]
+tool     = "vent_on"
+
+[[command]]
+intent   = "vent_off"
+patterns = ["tắt quạt", "tắt quạt thông gió", "turn off the fan"]
+tool     = "vent_off"
+
+[[command]]
+intent   = "alarm_on"
+patterns = ["bật báo động", "bật còi báo động", "sound the alarm"]
+tool     = "alarm_on"
+
+[[command]]
+intent   = "alarm_off"
+patterns = ["tắt báo động", "tắt còi báo động", "silence the alarm"]
+tool     = "alarm_off"

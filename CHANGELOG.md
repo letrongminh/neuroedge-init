@@ -38,6 +38,9 @@ bản gói.
 - **I4 · TSK-S3-10 — bộ vector tuân thủ máy trạng thái hội thoại, độc lập ngôn ngữ.** `fixtures/compliance/voice/`:
   ca JSON cho V1–V7 và mọi dòng §4, đáp án `expected_results.yaml` khép kín hai chiều, agent `voice-door`; quy ước
   `voice_fsm.md` §9.1. Kiểm: `pytest tests/test_voice_corpus.py`. (FR-CI-07, FR-TGT-04)
+- **I1 · TSK-S3-08 — mẫu thứ ba `factory-monitor`.** Quạt thông gió và đèn báo động qua gate đọc fact `level` (dải nhiệt
+  `low…critical` từ cảm biến `sim`): tắt quạt khi nóng thì hỏi xác nhận, tắt báo động thì chặn; `neuroedge new --template
+  factory-monitor`, có trong `wheel-smoke`. Kiểm: `pytest tests/test_factory_monitor.py`. (FR-DX-05, RFC-0006)
 - **Q-39 → Q-44 — roadmap theo increment (2026-09-25).** Một roadmap, thời gian đo bằng increment `I0…`, không phát hành
   ra ngoài tới khi công khai ở I6 (demo thoại trên `sim`, `linux`, Box-3), thêm một kỹ sư nhúng (Q-39); mở rộng sau Beta
   (Q-40); v1.1 mở trên B1 và B2 (Q-41); C6 thành chỉ số theo dõi (Q-42); G-* neo theo increment (Q-43); bỏ bậc cắt 5 (Q-44).
@@ -752,7 +755,7 @@ Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://
 | `mcp tools [--json\|--openai] [--external]` | Schema của mỗi `@action` — dạng MCP hoặc function-calling OpenAI (Q-24). `--external`: thêm tool thông tin của `[mcp.servers]` mà System 2 được đưa (Q-27) |
 | `mcp serve [--agent a.toml] [--board id] [--trace-out t.json] [--ui [--port 8765] [--open]] [--init-timeout 30]` | Máy chủ MCP qua stdio trên `sim`; mọi `tools/call` qua kiểm schema và gate. `--ui`: cùng phiên trên trang web 127.0.0.1 (`--port 0` chọn cổng trống; chỉ mở trình duyệt khi có `--open`); URL in ra stderr, stdout chỉ là kênh JSON-RPC. Cổng bận ⇒ cảnh báo stderr, trang sang cổng trống (URL thật ở dòng `sim UI at …`), MCP vẫn chạy. Không có `initialize` sau `--init-timeout` giây ⇒ thoát 0 (`0` = chờ mãi). Cần extra `neuroedge[mcp]` |
 | `mcp desktop-config [--agent a.toml] [--ui [--port 8765]] [--trace-out t.json] [--name N] [--write [--config-path P]]` | In mục `mcpServers` cho Claude Desktop, toàn đường dẫn tuyệt đối (trình thông dịch hiện tại, `-m neuroedge mcp serve`). `--write`: đặt đúng mục đó trong `claude_desktop_config.json` của Desktop (macOS `~/Library/Application Support/Claude/`, Windows `%APPDATA%\Claude\`), sao lưu `.bak-<giờ>`, giữ mọi khoá khác; JSON hỏng ⇒ mã 1, không ghi gì. Sau đó thoát hẳn Desktop rồi mở lại. Cần extra `neuroedge[mcp]` |
-| `new <tên> [--template minimal\|villa-concierge\|home-voice]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` (chốt cửa) và `home-voice` (trợ lý giọng nói, có `knowledge.toml`) sao agent mẫu (có trong wheel) |
+| `new <tên> [--template minimal\|villa-concierge\|home-voice\|factory-monitor]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` (chốt cửa), `home-voice` (trợ lý giọng nói, có `knowledge.toml`) và `factory-monitor` (quạt, báo động theo dải nhiệt `level`) sao agent mẫu (có trong wheel) |
 
 `python -m neuroedge …` tương đương `neuroedge …`.
 

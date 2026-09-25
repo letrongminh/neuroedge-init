@@ -1,0 +1,21 @@
+# Raising the alarm is safe at any heat band — a false alarm costs a walk to the
+# machine room. Still gated (A3): every path to a pin goes through a gate.
+schema:  neuroedge.gate/v1
+name:    alarm_on
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+
+allow_when:
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

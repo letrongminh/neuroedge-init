@@ -1,0 +1,45 @@
+# {{name}}
+
+Giám sát môi trường phòng máy, sinh từ mẫu `factory-monitor`. Quạt thông gió và đèn báo động là
+hành động vật lý, đi qua gate; mọi gate đọc **một** dữ kiện kiểu `level` — dải nhiệt
+`low · normal · high · critical` do cảm biến `temperature` báo:
+
+| Lệnh | Action | Gate quyết |
+|:---|:---|:---|
+| `bật quạt` | `vent_on` | Luôn cho phép |
+| `tắt quạt` | `vent_off` | Tới `normal`: cho phép · `high`: **hỏi lại**, người trên thiết bị nói “có” thì tắt · `critical`: **chặn**, không hỏi |
+| `bật báo động` | `alarm_on` | Luôn cho phép |
+| `tắt báo động` | `alarm_off` | Trên `normal`: **chặn** — không ai tắt được báo động khi phòng còn nóng |
+
+Gate so dải, không so độ: ngưỡng số cần `evaluate.type: numeric`, chưa có trong `gate.v1`.
+Trên thiết bị, driver cảm biến báo dải; `sim` đọc nó ở `[sim.sensors]` của `agent.toml`.
+
+## Chạy thử trên `sim` — không cần mạng, không cần key
+
+`sim` khởi động ở dải `high`:
+
+```bash
+neuroedge run -c "bật quạt"                         # ✓ ALLOW, gate_relay HIGH
+neuroedge run -c "tắt quạt"                         # ✗ BLOCK ask — hỏi xác nhận
+neuroedge run -c "tắt báo động"                     # ✗ BLOCK deny
+neuroedge run                                       # REPL: gõ lệnh, :help, exit
+```
+
+Trong REPL hoặc UI (`neuroedge run --ui`): `bật quạt`, `tắt quạt`, rồi `có` — quạt tắt.
+`:sensor temperature critical` rồi `tắt quạt` — gate chặn, không hỏi. `:sensor temperature normal`
+rồi `tắt báo động` — cho phép.
+
+## Kiểm thử
+
+```bash
+neuroedge test                                      # Action CI: 0 = mọi test đạt
+```
+
+## Tệp
+
+| Tệp | Vai trò |
+|:---|:---|
+| `agent.toml` | Năng lực cần (`digital.out`, `sensor.read`), gate, cảm biến giả lập và dữ kiện lấy từ nó |
+| `commands.toml` | Lệnh → action |
+| `gates/` | `vent_on`, `vent_off` (ask, `confirms: [heat_level]`), `alarm_on`, `alarm_off` (deny) |
+| `actions/plant.py` | Bốn hàm `@action`: `gate_relay` là rơ-le quạt, `porch_light` là đèn báo động |

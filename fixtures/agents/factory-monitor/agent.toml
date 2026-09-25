@@ -1,0 +1,44 @@
+# Sample agent: environment monitoring on a factory floor (TSK-S3-08).
+#
+# A ventilation fan and an alarm beacon, both physical, both behind gates that
+# read one `level` fact — the heat band of the machine room:
+#
+#   low · normal · high · critical
+#
+#   * vent_on / alarm_on — always allowed: more air and more warning are safe;
+#   * vent_off           — allowed up to `normal`; at `high` the device asks an
+#                          operator to confirm (RFC-0006); at `critical` it
+#                          refuses without asking;
+#   * alarm_off          — refused above `normal`: nobody silences the alarm
+#                          while the room is still hot.
+#
+# The gates compare bands, not degrees: a numeric threshold would need
+# `evaluate.type: numeric`, which gate.v1 does not have (TODOS.md #30). On a
+# device the sensor driver reports the band; `sim` reads it from [sim.sensors].
+[agent]
+name    = "factory-monitor"
+version = "0.1.0"
+
+# `sim-default` and `linux-rpi5` name their relays after other samples: here
+# `gate_relay` drives the fan contactor and `porch_light` the alarm beacon.
+[requires]
+"digital.out" = { pins = ["gate_relay", "porch_light"] }
+"sensor.read" = { sensors = ["temperature"] }
+
+[gates]
+vent_on   = "gates/vent_on@1.0.0.yaml"
+vent_off  = "gates/vent_off@1.0.0.yaml"
+alarm_on  = "gates/alarm_on@1.0.0.yaml"
+alarm_off = "gates/alarm_off@1.0.0.yaml"
+
+[targets]
+supported = ["sim", "linux"]
+
+# `sim` starts hot, so the gates have something to refuse. Change the band with
+# `:sensor temperature normal` (or low / high / critical) in the REPL or the UI.
+[sim.sensors]
+temperature = "high"
+
+[sim.sensor_facts]
+heat_level    = { sensor = "temperature" }
+heat_critical = { sensor = "temperature", equals = "critical" }
