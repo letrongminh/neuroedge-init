@@ -14,6 +14,11 @@
  * QEMU job greps for (TSK-S4-02, TSK-S4-08). A failed self-test stops here:
  * no gate runtime, no action.
  *
+ * The self-test's gate evaluations also go out as `NE1` trace lines, framed as
+ * one session (components/ne_trace, TSK-S4-09); `NE_TRACE DONE` follows the
+ * last session, so a reader knows the device has nothing more to say.
+ * `neuroedge record --target esp32s3 --port <uart>` turns them into trace files.
+ *
  * CONFIG_NEUROEDGE_SKIP_NETWORK (sdkconfig.qemu) leaves the Wi-Fi stack out:
  * QEMU does not emulate it.
  */
@@ -22,6 +27,7 @@
 
 #include "esp_event.h"
 #include "esp_log.h"
+#include "esp_mac.h"
 #include "esp_netif.h"
 #include "esp_random.h"
 #include "esp_system.h"
@@ -32,9 +38,43 @@
 #include "nvs_flash.h"
 
 #include "gate_selftest.h"
+#include "gates/home_voice_indices.h"
 #include "memory_probe.h"
+#include "ne_trace.h"
+
+/* The reference board, fixed by Q-1/Q-2; the only board this image is built for. */
+#define NEUROEDGE_BOARD_ID "esp32s3-box-3"
 
 static const char *TAG = "neuroedge_core";
+
+/* One trace line to the UART: printf, not ESP_LOGI, so the line has no log prefix. */
+static void uart_line(void *ctx, const char *line)
+{
+    (void)ctx;
+    printf("%s\n", line);
+}
+
+static uint32_t uptime_ms(void *ctx)
+{
+    (void)ctx;
+    return (uint32_t)(esp_timer_get_time() / 1000);
+}
+
+/* The application's trace line buffer: a static here, never in the components. */
+static char s_trace_line[NE_TRACE_LINE_MAX + 1];
+
+/* "qemu" under sdkconfig.qemu, so emulated evidence never reads as the board's. */
+static void device_id(char *out, size_t cap)
+{
+#ifdef CONFIG_NEUROEDGE_QEMU
+    snprintf(out, cap, "qemu");
+#else
+    uint8_t mac[6] = {0};
+    esp_efuse_mac_get_default(mac);
+    snprintf(out, cap, "esp32s3-%02x%02x%02x%02x%02x%02x", mac[0], mac[1], mac[2], mac[3],
+             mac[4], mac[5]);
+#endif
+}
 
 static void init_nvs(void)
 {
@@ -68,13 +108,22 @@ static void init_network_stack(void)
 }
 #endif
 
-/* Walker + token ledger on the gates in flash. The line goes to the UART as is. */
-static bool run_gate_selftest(void)
+/*
+ * Walker + token ledger on the gates in flash, traced as one session. The
+ * result line goes to the UART as is, after the session.
+ */
+static bool run_gate_selftest(uint32_t boot_id)
 {
     char line[96];
-    const uint32_t now_ms = (uint32_t)(esp_timer_get_time() / 1000);
-    const int failed = neuroedge_gate_selftest(esp_fill_random, esp_random(), now_ms,
-                                               line, sizeof line);
+    char id[24];
+    ne_trace_sink sink = {uart_line, uptime_ms, NULL, s_trace_line, sizeof s_trace_line, 0, 0, 0};
+    device_id(id, sizeof id);
+    const ne_device_info info = {NEUROEDGE_BOARD_ID, NE_AGENT_VERSION, id, boot_id, NULL, NULL};
+
+    ne_trace_open(&sink, &info);
+    const int failed = neuroedge_gate_selftest(esp_fill_random, boot_id, uptime_ms(NULL), line,
+                                               sizeof line, &sink);
+    ne_trace_close(&sink);
     printf("%s\n", line);
     fflush(stdout);
     return failed == 0;
@@ -92,12 +141,15 @@ void app_main(void)
     init_nvs();
     neuroedge_memory_probe(NEUROEDGE_CP_NVS_READY, "nvs_ready");
 
-    if (!run_gate_selftest()) {
+    const uint32_t boot_id = esp_random();
+    if (!run_gate_selftest(boot_id)) {
         ESP_LOGE(TAG, "gate self-test failed: the gate runtime is not trusted, stopping");
         while (true) {
             vTaskDelay(pdMS_TO_TICKS(10000));
         }
     }
+    printf("NE_TRACE DONE sessions=1\n");
+    fflush(stdout);
 
 #ifdef CONFIG_NEUROEDGE_SKIP_NETWORK
     ESP_LOGW(TAG, "network skipped (CONFIG_NEUROEDGE_SKIP_NETWORK): network_ready not measured");

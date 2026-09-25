@@ -92,7 +92,7 @@ python/requirements-lock.txt. All permissive.
 Transitive dependencies and their licences are recorded in full by the
 `licences` artifact of every `ci-sim-linux` run.
 
-Five deliberate choices in this section, all to keep copyleft out of the core:
+Six deliberate choices in this section, all to keep copyleft out of the core:
 
   * jsonschema is declared as `jsonschema[format-nongpl]`, NOT `jsonschema[format]`.
     The default `format` extra pulls in `rfc3987`, which is GPL-licensed. The
@@ -131,6 +131,13 @@ Five deliberate choices in this section, all to keep copyleft out of the core:
     Checked 2026-09-24: MPL-2.0 packages are certifi, fqdn and tqdm
     (tqdm: MPL-2.0 AND MIT); regex is Apache-2.0 AND CNRI-Python. Not in
     `dev` (~120 MB): the tests use a fake `litellm` module.
+
+  * pyserial (BSD-3-Clause, no dependencies) is NOT a core dependency. It sits
+    in the optional `serial` extra, pinned at pyserial==3.5, and is imported
+    only by python/neuroedge/testing/uart.py when `neuroedge record --target
+    esp32s3 --port` reads a serial device (TSK-S4-09); a QEMU log file or
+    tcp:// needs nothing. Checked 2026-09-25. Also in `dev`, so the serial
+    path is tested in CI.
 
 
 ================================================================================

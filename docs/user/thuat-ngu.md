@@ -88,6 +88,7 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **Sổ token (token ledger)** | Nơi phát, kiểm và đóng token phán quyết. Bản host: `TokenLedger` (Python); bản thiết bị: `ne_token.c`, cùng luật, sổ đầy thì đóng an toàn | `python/neuroedge/actions/token.py` · `targets/esp32s3/components/ne_gate/` |
 | **`NETR` · `.netree`** | Bố cục nhị phân cố định của cây quyết định trên thiết bị (magic `NETR`, v1); `neuroedge build` ghi `<gate>.netree` và `<gate>.netree.h` | `docs/rfc/0003-bo-cuc-nhi-phan-cay.md` |
 | **Walker C** | Hàm C99 duyệt cây `NETR` tại chỗ trong flash, không cấp phát, ra cùng phán quyết với engine host | `targets/esp32s3/components/ne_gate/` (TSK-S4-02) |
+| **Dòng `NE1 `** | Một sự kiện vết ghi trên UART của firmware: tiền tố `NE1 ` (có dấu cách — khác mã lỗi `NE1001`) rồi một sự kiện `trace.v1` dạng JSON; mỗi phiên mở bằng `device_info`, đóng bằng `trace_end` | `docs/spec/simulation_coverage.md` §4 (TSK-S4-09) |
 | **`digests.lock`** | Danh sách digest của gate chuẩn mực; CI chặn mọi thay đổi digest không kèm RFC | `CONTRIBUTING.md` §8.2 bước 4 |
 | **Physical AI** | AI điều khiển thứ trong thế giới thật — chốt cửa, đèn, rơ-le, động cơ. Lời nói sai thì sửa được; hành động vật lý sai thì không, nên mọi hành động đi qua gate | `neuroedge-proposal.md` §0.2 |
 | **`c.do()` · `c.say()`** | Cổng duy nhất tới thế giới vật lý · lời nói (không qua gate) | `python/neuroedge/actions/` |

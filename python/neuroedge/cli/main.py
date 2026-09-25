@@ -1281,11 +1281,30 @@ def record(
         None, "--agent", "-a", help="Path to agent.toml (default as for `run`)"
     ),
     target: str = typer.Option("sim", "--target", "-t", help="Target to record on"),
-    board: str = typer.Option("sim-default", "--board", "-b", help="Board profile id"),
+    board: str = typer.Option(
+        None, "--board", "-b", help="Board profile id (default: the target's reference board)"
+    ),
     out: Path = typer.Option(Path("traces"), "--out", "-o", help="Directory, or a .json path"),
     command: str = typer.Option(None, "--command", "-c", help="Record one typed command and exit"),
     anonymize: bool = typer.Option(
         False, "--anonymize", help="Hash raw text at the source (FR-TRC-07); verdicts unchanged"
+    ),
+    port: str = typer.Option(
+        None,
+        "--port",
+        help=(
+            "esp32s3 only — where the device's UART is: a log file (QEMU -serial file:…), "
+            "tcp://host:port (QEMU -serial tcp::5555,server) or a serial device such as "
+            "/dev/ttyACM0 (needs neuroedge\\[serial]). Not the UI port of `run`."
+        ),
+    ),
+    baud: int = typer.Option(
+        921600,
+        "--baud",
+        help="Serial baud rate (PRD Appendix D.2); ignored for files, tcp, USB-CDC",
+    ),
+    timeout: float = typer.Option(
+        30.0, "--timeout", help="Seconds to wait for NE_TRACE DONE on a live port"
     ),
     registry: Path | None = REGISTRY_OPTION,
 ):
@@ -1294,15 +1313,99 @@ def record(
 
     Same session as `run`; on exit the trace is validated against trace.v1 and
     written to `--out` (default `traces/<session_id>.json`).
+
+    With `--target esp32s3 --port`, the device records: every `NE1` session it
+    writes on its UART becomes one trace file, validated before it is written
+    (docs/spec/simulation_coverage.md §4, TSK-S4-09).
     """
+    if target == "esp32s3" or port is not None:
+        _record_from_device(target, port, baud, timeout, out, anonymize, board, agent, command)
+        return
     from ..testing.recorder import TraceRecorder
     from .run import run_session
 
     recorder = TraceRecorder(anonymize=anonymize)
-    session = _start_session("record", agent, target, board, registry, events=recorder)
+    session = _start_session(
+        "record",
+        agent,
+        target,
+        board or REFERENCE_BOARD.get(target, "sim-default"),
+        registry,
+        events=recorder,
+    )
     path = out if out.suffix == ".json" else out / f"{recorder.session_id}.json"
     code = run_session(session, console, err_console, command=command, trace_out=path)
     raise typer.Exit(code=code)
+
+
+def _record_from_device(target, port, baud, timeout, out, anonymize, board, agent, command) -> None:
+    """`record --target esp32s3 --port`: the device's sessions, one trace file each."""
+    from ..testing.uart import read_sessions
+
+    usage = None
+    if target != "esp32s3":
+        usage = (f"--target {target}", "--port reads a device's UART, and only esp32s3 has one")
+    elif port is None:
+        usage = (
+            "--target esp32s3",
+            "the device records the session and the host only reads its UART: --port is needed",
+        )
+    elif agent is not None or command is not None:
+        usage = (
+            "--agent / --command",
+            "an esp32s3 session is the firmware's: the agent and what runs are on the device",
+        )
+    if usage is not None:
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge record {usage[0]}",
+                why=usage[1],
+                how=(
+                    "neuroedge record --target esp32s3 --port build/uart.log (QEMU), "
+                    "tcp://localhost:5555, or /dev/ttyACM0 (board)"
+                ),
+            )
+        )
+        return
+    try:
+        sessions = read_sessions(port, baud=baud, timeout_s=timeout)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    other = [s for s in sessions if board is not None and s.info["board_id"] != board]
+    if other:
+        _fail(
+            NeuroEdgeError(
+                where=f"{port}:{other[0].line}",
+                why=f"the device says board {other[0].info['board_id']!r}, --board says {board!r}",
+                how="drop --board (the device declares its board), or flash the right image",
+            )
+        )
+        return
+    single = out.suffix == ".json"
+    if single and len(sessions) != 1:
+        _fail(
+            NeuroEdgeError(
+                where=str(out),
+                why=f"the device wrote {len(sessions)} sessions, and a .json path holds one",
+                how="pass a directory to --out: each session becomes <session_id>.json",
+            )
+        )
+        return
+    for session in sessions:
+        path = out if single else out / f"{session.session_id}.json"
+        try:
+            session.recorder(anonymize=anonymize).save(path)
+        except NeuroEdgeError as error:
+            _fail(error)
+            return
+        evaluations = sum(1 for e in session.events if e["type"] == "gate_evaluation_result")
+        what = session.replay_of or session.info["agent_version"]
+        console.print(
+            f"[green]✓[/green] {escape(str(path))} — {evaluations} gate evaluation(s), "
+            f"{escape(what)}, device {escape(session.info['device_id'])}"
+        )
+    raise typer.Exit(code=0)
 
 
 if __name__ == "__main__":

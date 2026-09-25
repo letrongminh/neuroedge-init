@@ -6,6 +6,7 @@ idf_component_register(
     INCLUDE_DIRS "."
     REQUIRES
         ne_gate
+        ne_trace
         esp_system
         esp_wifi
         esp_netif

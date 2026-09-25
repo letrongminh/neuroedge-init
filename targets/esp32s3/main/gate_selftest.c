@@ -27,9 +27,25 @@ static ne_fact fact(uint8_t index) {
     return f;
 }
 
-static int decided(const ne_tree *tree, const ne_fact *facts, int confirmed, ne_verdict verdict,
-                   ne_reason reason, uint8_t failed_index, ne_result *out) {
-    if (ne_evaluate(tree, facts, NULL, confirmed, out) != NE_OK) return 0;
+/* A gate as the self-test holds it: the tree in flash, its label and on_block texts. */
+typedef struct {
+    ne_tree tree;
+    const char *label;
+    ne_on_block_text text;
+} gate;
+
+static int decided(const gate *g, const ne_fact *facts, int confirmed, ne_verdict verdict,
+                   ne_reason reason, uint8_t failed_index, ne_result *out, ne_trace_sink *sink) {
+    if (sink != NULL) {
+        ne_trace_put(sink, ne_trace_gate_begin(sink->buf, sink->cap, ne_trace_offset(sink),
+                                               g->label, &g->tree));
+        ne_trace_put(sink, ne_trace_gate_facts(sink->buf, sink->cap, ne_trace_offset(sink),
+                                               &g->tree, facts, NULL));
+    }
+    if (ne_evaluate(&g->tree, facts, NULL, confirmed, out) != NE_OK) return 0;
+    if (sink != NULL)
+        ne_trace_put(sink, ne_trace_gate_result(sink->buf, sink->cap, ne_trace_offset(sink),
+                                                g->label, &g->tree, facts, out, &g->text));
     if (out->verdict != verdict || out->reason != reason) return 0;
     return verdict == NE_ALLOW || out->failed_index == failed_index;
 }
@@ -40,55 +56,59 @@ static int fail(char *line, size_t cap, const char *what) {
 }
 
 int neuroedge_gate_selftest(ne_random_fn fill_random, uint32_t boot_id, uint32_t now_ms,
-                            char *line, size_t cap) {
-    ne_tree on, off;
+                            char *line, size_t cap, ne_trace_sink *sink) {
+    gate on_gate = {{0}, NE_LIGHT_ON_GATE, NE_LIGHT_ON_ON_BLOCK_TEXT};
+    gate off_gate = {{0}, NE_LIGHT_OFF_GATE, NE_LIGHT_OFF_ON_BLOCK_TEXT};
+    ne_tree *const on = &on_gate.tree, *const off = &off_gate.tree;
     ne_result r;
     ne_fact facts[NE_LIGHT_OFF_NODES];
     unsigned walker = 0, token = 0;
 
     if (line == NULL || cap == 0) return 1;
-    if (ne_tree_load(&on, ne_tree_light_on, (uint32_t)sizeof ne_tree_light_on) != NE_OK)
+    memset(facts, 0, sizeof facts);
+    if (ne_tree_load(on, ne_tree_light_on, (uint32_t)sizeof ne_tree_light_on) != NE_OK)
         return fail(line, cap, "load light_on");
-    if (ne_tree_load(&off, ne_tree_light_off, (uint32_t)sizeof ne_tree_light_off) != NE_OK)
+    if (ne_tree_load(off, ne_tree_light_off, (uint32_t)sizeof ne_tree_light_off) != NE_OK)
         return fail(line, cap, "load light_off");
-    if (on.node_count != NE_LIGHT_ON_NODES || off.node_count != NE_LIGHT_OFF_NODES)
+    if (on->node_count != NE_LIGHT_ON_NODES || off->node_count != NE_LIGHT_OFF_NODES)
         return fail(line, cap, "node count");
 
     /* light_on: the fixed grammar may switch the light on; a `test` caller may not. */
     facts[NE_LIGHT_ON_CALL_SOURCE] = fact(NE_LIGHT_ON_CALL_SOURCE_LOCAL_GRAMMAR);
-    if (!decided(&on, facts, 0, NE_ALLOW, NE_REASON_NONE, 0, &r))
+    if (!decided(&on_gate, facts, 0, NE_ALLOW, NE_REASON_NONE, 0, &r, sink))
         return fail(line, cap, "light_on local_grammar ALLOW");
     walker++;
     facts[NE_LIGHT_ON_CALL_SOURCE] = fact(NE_LIGHT_ON_CALL_SOURCE_TEST);
-    if (!decided(&on, facts, 0, NE_BLOCK, NE_REASON_CONDITION_NOT_MET, NE_LIGHT_ON_CALL_SOURCE, &r))
+    if (!decided(&on_gate, facts, 0, NE_BLOCK, NE_REASON_CONDITION_NOT_MET, NE_LIGHT_ON_CALL_SOURCE,
+                 &r, sink))
         return fail(line, cap, "light_on test BLOCK");
     walker++;
 
     /* light_off: room empty => ALLOW. */
     facts[NE_LIGHT_OFF_CALL_SOURCE] = fact(NE_LIGHT_OFF_CALL_SOURCE_LOCAL_GRAMMAR);
     facts[NE_LIGHT_OFF_ROOM_EMPTY] = fact(NE_LIGHT_OFF_ROOM_EMPTY_TRUE);
-    if (!decided(&off, facts, 0, NE_ALLOW, NE_REASON_NONE, 0, &r))
+    if (!decided(&off_gate, facts, 0, NE_ALLOW, NE_REASON_NONE, 0, &r, sink))
         return fail(line, cap, "light_off room_empty ALLOW");
     walker++;
 
     /* Someone in the room => BLOCK on room_empty, and a person may be asked. */
     facts[NE_LIGHT_OFF_ROOM_EMPTY] = fact(NE_LIGHT_OFF_ROOM_EMPTY_FALSE);
-    if (!decided(&off, facts, 0, NE_BLOCK, NE_REASON_CONDITION_NOT_MET, NE_LIGHT_OFF_ROOM_EMPTY,
-                 &r) ||
-        off.on_block_action != ASK || !r.answerable)
+    if (!decided(&off_gate, facts, 0, NE_BLOCK, NE_REASON_CONDITION_NOT_MET, NE_LIGHT_OFF_ROOM_EMPTY,
+                 &r, sink) ||
+        off->on_block_action != ASK || !r.answerable)
         return fail(line, cap, "light_off occupied BLOCK ask");
     walker++;
 
     /* The person's "có" stands in for room_empty (RFC-0006). */
-    if (!decided(&off, facts, 1, NE_ALLOW, NE_REASON_NONE, 0, &r) ||
+    if (!decided(&off_gate, facts, 1, NE_ALLOW, NE_REASON_NONE, 0, &r, sink) ||
         r.confirmed_mask != (1u << NE_LIGHT_OFF_ROOM_EMPTY))
         return fail(line, cap, "light_off confirmed ALLOW");
     walker++;
 
     /* No motion reading => BLOCK: a missing fact never reads as "empty". */
     memset(&facts[NE_LIGHT_OFF_ROOM_EMPTY], 0, sizeof facts[0]);
-    if (!decided(&off, facts, 0, NE_BLOCK, NE_REASON_CRITERION_UNAVAILABLE,
-                 NE_LIGHT_OFF_ROOM_EMPTY, &r))
+    if (!decided(&off_gate, facts, 0, NE_BLOCK, NE_REASON_CRITERION_UNAVAILABLE,
+                 NE_LIGHT_OFF_ROOM_EMPTY, &r, sink))
         return fail(line, cap, "light_off missing fact BLOCK");
     walker++;
 
@@ -97,7 +117,7 @@ int neuroedge_gate_selftest(ne_random_fn fill_random, uint32_t boot_id, uint32_t
     ne_token t, spare;
     const uint32_t pin = NE_PIN_PORCH_LIGHT, mask = 1u << NE_PIN_PORCH_LIGHT;
     if (ne_ledger_init(&ledger, boot_id) != NE_TOKEN_OK ||
-        ne_token_issue(&ledger, &off, mask, now_ms, fill_random, &t) != NE_TOKEN_OK)
+        ne_token_issue(&ledger, off, mask, now_ms, fill_random, &t) != NE_TOKEN_OK)
         return fail(line, cap, "token issue");
     token++;
     if (ne_token_authorize(&ledger, &t, pin, now_ms) != NE_TOKEN_AUTHORIZED)
@@ -118,9 +138,9 @@ int neuroedge_gate_selftest(ne_random_fn fill_random, uint32_t boot_id, uint32_t
     /* Closed slots are reused; four live tokens fill the ledger, and it fails closed. */
     ne_token_close(&ledger, &t);
     for (uint32_t i = 0; i < NE_TOKEN_SLOTS; i++)
-        if (ne_token_issue(&ledger, &on, mask, now_ms, fill_random, &spare) != NE_TOKEN_OK)
+        if (ne_token_issue(&ledger, on, mask, now_ms, fill_random, &spare) != NE_TOKEN_OK)
             return fail(line, cap, "token slot not reused");
-    if (ne_token_issue(&ledger, &on, mask, now_ms, fill_random, &spare) != NE_TOKEN_ERR_FULL)
+    if (ne_token_issue(&ledger, on, mask, now_ms, fill_random, &spare) != NE_TOKEN_ERR_FULL)
         return fail(line, cap, "full ledger did not fail closed");
     token++;
 

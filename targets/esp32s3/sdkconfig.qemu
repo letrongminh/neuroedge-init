@@ -5,5 +5,8 @@
 # QEMU does not emulate Wi-Fi: boot, UART, flash and the gate self-test only.
 CONFIG_NEUROEDGE_SKIP_NETWORK=y
 
+# Trace sessions say device_id "qemu" (TSK-S4-09): emulated evidence, not the board's.
+CONFIG_NEUROEDGE_QEMU=y
+
 # Boot on without PSRAM when the emulator does not provide it, instead of aborting.
 CONFIG_SPIRAM_IGNORE_NOTFOUND=y
