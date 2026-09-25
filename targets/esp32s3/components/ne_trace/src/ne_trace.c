@@ -85,16 +85,15 @@ static void w_number(writer *w, double d) {
     w_raw(w, tmp);
 }
 
+/* "sha256:<hex>", straight into the line: no local copy, so no large frame to inline. */
 static void w_digest(writer *w, const uint8_t *digest) {
     const char *hex = "0123456789abcdef";
-    char text[7 + 2 * NE_DIGEST_SIZE + 1];
-    memcpy(text, "sha256:", 7u);
+    w_raw(w, "\"sha256:");
     for (uint32_t i = 0; i < NE_DIGEST_SIZE; i++) {
-        text[7u + 2u * i] = hex[digest[i] >> 4];
-        text[8u + 2u * i] = hex[digest[i] & 15u];
+        w_char(w, hex[digest[i] >> 4]);
+        w_char(w, hex[digest[i] & 15u]);
     }
-    text[sizeof text - 1u] = '\0';
-    w_str(w, text);
+    w_char(w, '"');
 }
 
 /* `"key":`, with the comma an object needs before every key but its first. */
