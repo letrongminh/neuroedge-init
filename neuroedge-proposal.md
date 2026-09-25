@@ -2,8 +2,8 @@
 
 ## NeuroEdge — Hợp đồng vào Physical AI
 
-**Phiên bản:** 5.6  
-**Ngày cập nhật:** 24 tháng 9, 2026 · lịch sử thay đổi: `CHANGELOG.md`  
+**Phiên bản:** 5.7  
+**Ngày cập nhật:** 25 tháng 9, 2026 — căn theo PRD Q-6, Q-11, Q-31 → Q-44 · lịch sử thay đổi: `CHANGELOG.md`  
 **Đối tượng tài liệu:** Đội ngũ phát triển sản phẩm · Đối tác phần cứng (OEM/ODM) · Kỹ sư nền tảng · Khách hàng vận hành đội thiết bị (Fleet Operators)  
 **Phạm vi tài liệu:** Định vị sản phẩm · Kiến trúc hệ thống 5 lớp · Đặc tả API & định dạng chuẩn · Mô hình thương mại · Lộ trình triển khai · Ranh giới sản phẩm · Hệ chỉ số đo lường  
 **Ngoài phạm vi:** Cấu trúc sở hữu doanh nghiệp · Kế hoạch gọi vốn đầu tư · Điều khoản pháp lý chi tiết  
@@ -375,7 +375,7 @@ Bộ nguyên tắc rõ ràng giúp định hướng phát triển sản phẩm, 
 │      Nhận diện Wake-word · Neural VAD · Khử vang AEC · STT/TTS độ trễ thấp │
 ├────────────────────────────────────────────────────────────────────────┤
 │  L1: HARDWARE ABSTRACTION LAYER (HAL - Lớp trừu tượng phần cứng)       │
-│      5 nguyên thủy bất biến · Đối chiếu hợp đồng năng lực lúc biên dịch │
+│      5 nguyên thủy cho v1.x · Đối chiếu hợp đồng năng lực lúc biên dịch │
 ├────────────────────────────────────────────────────────────────────────┤
 │  L0: TARGET IMPLEMENTATIONS (Các môi trường thực thi ngang hàng)       │
 │      [ sim (Mô phỏng) ]     [ linux (Công nghiệp) ]   [ esp32s3 (Biên) ]│
@@ -429,7 +429,7 @@ Nguyên tắc tương đương là mệnh đề về **giao diện**, không ph�
 |:---:|:---|:---|:---|
 | **1 — Chính thức** | `sim` · `linux` · `esp32s3` | Đội lõi | `neuroedge verify` đạt **100%**, kiểm thử hằng đêm trên bo mạch thật. Đây là mức mà mọi cam kết chất lượng trong tài liệu này trỏ tới |
 | **2 — Mở rộng** | `jetson` *(Giai đoạn 2)* | Đội lõi | `neuroedge verify` trên miền phán quyết; kiểm thử phần cứng theo đợt phát hành, không hằng đêm |
-| **3 — Cộng đồng** | `stm32` · `rp2350` *(Giai đoạn 2)* | Cộng đồng | Bên đóng góp tự kiểm chứng qua **Bộ kiểm thử tuân thủ** (§3.8 trụ cột 2). Đội lõi không cam kết chất lượng và không chặn phát hành vì bậc này |
+| **3 — Cộng đồng** | `stm32` · `rp2350` *(Giai đoạn 2; `rp2350` làm node robot do đội lõi port — PRD Q-33)* | Cộng đồng | Bên đóng góp tự kiểm chứng qua **Bộ kiểm thử tuân thủ** (§3.8 trụ cột 2). Đội lõi không cam kết chất lượng và không chặn phát hành vì bậc này |
 
 Phân tầng không nới lỏng nguyên tắc: hệ quả kỹ thuật **"không rẽ nhánh logic theo target trong mã nguồn agent"** áp dụng như nhau ở cả ba bậc. Cái khác nhau là ai chịu trách nhiệm chứng minh điều đó. Bậc 3 là con đường để cộng đồng mở rộng phần cứng mà không tiêu nguồn lực đội lõi — tiền lệ đã có với bo mạch thứ cấp ESP32-S3-DevKitC (Phụ lục D.1).
 
@@ -443,13 +443,13 @@ Phân tầng không nới lỏng nguyên tắc: hệ quả kỹ thuật **"khôn
 | 4 | **Đáp ứng nhu cầu thị trường hiện hữu:** Nhiều ứng dụng Physical AI thương mại hiện nay vận hành trên các mô-đun điện toán ARM/Linux thay vì chỉ dùng vi điều khiển độc lập. | PF-3 |
 | 5 | **Phương án dự phòng linh hoạt khi quá tải tài nguyên:** Nếu độ phức tạp của logic nghiệp vụ vượt quá dung lượng bộ nhớ của ESP32-S3, đội ngũ có thể chuyển đổi sang môi trường Linux ngay lập tức mà không phải lập trình lại từ đầu. | PF-2 |
 
-**Trọng tâm ban đầu tập trung vào ba môi trường bậc 1:** Một môi trường ảo mô phỏng (`sim`), một môi trường mở rộng tài nguyên (`linux`), và một môi trường vi điều khiển tối ưu chi phí (`esp32s3`). NVIDIA Jetson được đưa lên bậc 2 và STM32 / RP2350 vào bậc 3 trong **Giai đoạn 2 (§8.9)**; việc mở rộng danh sách target đòi hỏi sửa lược đồ đã đóng băng nên phải đi qua **RFC-0002**. Chuẩn Matter và Apple HomeKit vẫn nằm ở lộ trình sau (§9).
+**Trọng tâm ban đầu tập trung vào ba môi trường bậc 1:** Một môi trường ảo mô phỏng (`sim`), một môi trường mở rộng tài nguyên (`linux`), và một môi trường vi điều khiển tối ưu chi phí (`esp32s3`). NVIDIA Jetson được đưa lên bậc 2 và STM32 / RP2350 vào bậc 3 trong **Giai đoạn 2 (§8.9)** — riêng RP2350 làm node của robot phân tầng do đội lõi port (PRD Q-33, §8.11); việc mở rộng danh sách target đòi hỏi sửa lược đồ đã đóng băng nên phải đi qua **RFC-0002**. Chuẩn Matter và Apple HomeKit vẫn nằm ở lộ trình sau (§9).
 
 ### 3.3 Tầng L1: Lớp trừu tượng phần cứng (HAL) theo hợp đồng năng lực
 
 Lớp trừu tượng phần cứng (HAL) của NeuroEdge không phải là phép thỏa hiệp theo mẫu số chung nhỏ nhất giữa các loại vi mạch. Đây là **hợp đồng kiểm tra hai chiều (two-way capability contract)**: Phần cứng khai báo năng lực cung cấp, Agent khai báo tài nguyên cần sử dụng; mọi điểm không tương thích đều được phát hiện và cảnh báo sớm ngay **tại thời điểm biên dịch (build-time)**.
 
-Hệ thống chuẩn hóa thành 5 nguyên thủy cơ bản bất biến:
+Hệ thống chuẩn hóa thành 5 nguyên thủy cơ bản. Tập này **đóng cho v1.x**; mở rộng chỉ qua RFC (PRD FR-HAL-01) — ví dụ `vision.in` ở Giai đoạn 2 và `motion.*` của hướng robot phân tầng (PRD Q-32):
 
 | Nguyên thủy | Chức năng kỹ thuật | Hiện thực hóa điển hình |
 |:---|:---|:---|
@@ -1088,6 +1088,8 @@ Hệ thống thiết lập 6 lớp phòng thủ toàn diện, hoạt động the
 | **Quyền riêng tư dữ liệu** | Dữ liệu người dùng | Luồng âm thanh xử lý trực tiếp không lưu trữ · Ưu tiên xử lý on-device khi phần cứng cho phép · Nhật ký vết chỉ ghi nhận quyết định, không lưu dữ liệu thô trừ khi được bật tường minh. |
 | **Cập nhật an toàn** | Cơ chế OTA | Firmware được ký số mật mã · Cơ chế nạp phân vùng kép A/B tự động rollback on-device khi phát hiện bootloop · Triển khai cập nhật theo đợt an toàn trên mặt phẳng quản trị Fleet. |
 
+**Không phải chức năng an toàn được chứng nhận (PRD Q-38).** NeuroEdge không có SIL (IEC 61508) hay PL (ISO 13849). Gate chặn lệnh sai do nhầm lẫn của agent; nó không thay nút dừng khẩn hay interlock phần cứng, và phần mềm không cứu được khi tiến trình sập. Robot di động bắt buộc có nút dừng khẩn cắt nguồn motor không qua phần mềm. Chi tiết: `docs/spec/threat_model.md` §3b.
+
 **Nguyên tắc bao trùm:** An toàn trong Physical AI là tài sản có thể đọc, kiểm toán và đối soát độc lập, không dựa vào cam kết suông. Mọi tác vụ vật lý đều có tệp định nghĩa điều kiện phê duyệt minh bạch và có nhật ký vết chứng minh quy trình thẩm định trước khi thực thi.
 
 ---
@@ -1125,7 +1127,7 @@ Mô hình thương mại của NeuroEdge có **đúng một trụ cột: Hệ đ
 | 4 | **Cập nhật cấu hình, bí mật và cổng an toàn (Gate) từ xa** | Thay đổi từ khóa kích hoạt, tinh chỉnh prompt và cập nhật điều kiện gate an toàn trên toàn bộ đội thiết bị mà không cần nạp lại firmware. |
 | 5 | **Thu thập nhật ký vết (Trace) sự cố theo thời gian thực** | Tự động tải tệp vết ghi JSON về hệ thống trung tâm khi xảy ra cảnh báo, giúp kỹ sư dễ dàng tái hiện lại lỗi ngay trên máy tính cá nhân. |
 
-**Nền tảng hiện thực:** cơ chế điều phối chiến dịch cập nhật theo đợt kế thừa từ **Eclipse Hawkbit** — một nền tảng quản trị rollout đã được kiểm chứng trong công nghiệp. Kênh kết nối thiết bị và viễn trắc thời gian thực dùng **EMQX** cho giao thức MQTT, kết hợp **FastAPI WebSockets** cho luồng âm thanh. Cả hai thành phần chỉ chạy phía máy chủ, không phân phối kèm sản phẩm tới khách hàng; ranh giới giấy phép được nêu tại Phụ lục H.
+**Nền tảng hiện thực:** cơ chế điều phối chiến dịch cập nhật theo đợt kế thừa từ **Eclipse Hawkbit** — một nền tảng quản trị rollout đã được kiểm chứng trong công nghiệp. Kênh kết nối thiết bị và viễn trắc thời gian thực dùng **một broker MQTT giấy phép dễ dãi** (Mosquitto theo EDL-1.0, NanoMQ hoặc VerneMQ — chọn bằng đo tải khi mở Khối 2; EMQX không dùng vì BSL — PRD Q-11), kết hợp **FastAPI WebSockets** cho luồng âm thanh. Cả hai thành phần chỉ chạy phía máy chủ, không phân phối kèm sản phẩm tới khách hàng; ranh giới giấy phép được nêu tại Phụ lục H.
 
 **Trải nghiệm liền mạch từ mã nguồn mở đến quản trị thực tế:** Thiết bị ảo trong môi trường mô phỏng (`sim`) xuất hiện ngay trên giao diện Fleet Dashboard. Nền tảng quản trị được thiết kế để mang lại giá trị thiết thực ngay từ thiết bị đầu tiên (n = 1), tạo động lực tự nhiên cho khách hàng mở rộng quy mô lên hàng trăm, hàng nghìn thiết bị.
 
@@ -1134,7 +1136,7 @@ Mô hình thương mại của NeuroEdge có **đúng một trụ cột: Hệ đ
 | Dòng doanh thu | Cơ chế tính phí | Vai trò trong mô hình kinh doanh |
 |:---|:---|:---|
 | **Gói quản trị cơ sở (Fleet Standard)** | $1 / thiết bị hoạt động / tháng | Nguồn doanh thu định kỳ và biên lợi nhuận cốt lõi |
-| **Gói vận hành nâng cao (Fleet Enterprise)** | Phụ phí theo cam kết SLA, kiểm toán vết và lưu trữ trace dài hạn | Đòn bẩy tối ưu biên lợi nhuận với các khách hàng quy mô lớn |
+| **Gói vận hành nâng cao (Fleet Enterprise)** | Phụ phí theo cam kết SLA, kiểm toán vết và lưu trữ trace dài hạn *(thời hạn lưu theo gói: PRD Q-6)* | Đòn bẩy tối ưu biên lợi nhuận với các khách hàng quy mô lớn |
 
 Dự phóng doanh thu quản trị đội thiết bị theo quy mô (với mức giá cơ sở $1/thiết bị/tháng):
 
@@ -1294,7 +1296,7 @@ Khối 2 **tuyệt đối không bắt đầu theo lịch cố định**, mà ch
 
 Nội dung triển khai: **Fleet Management OS** như mô tả chi tiết tại §6.2 — dịch vụ thương mại duy nhất của Khối 2. Lớp trừu tượng nhà cung cấp (§6.1) là mã nguồn mở và đã được xây từ Khối 1a (§8.1); Khối 2 chỉ hoàn thiện và tối ưu nó, không thương mại hóa.
 
-**Đòn bẩy mã nguồn mở:** Eclipse Hawkbit cho điều phối chiến dịch OTA theo đợt · EMQX và FastAPI WebSockets cho kết nối thiết bị và viễn trắc. Ranh giới giấy phép của từng thành phần nêu tại Phụ lục H.
+**Đòn bẩy mã nguồn mở:** Eclipse Hawkbit cho điều phối chiến dịch OTA theo đợt · broker MQTT giấy phép dễ dãi (PRD Q-11) và FastAPI WebSockets cho kết nối thiết bị và viễn trắc. Ranh giới giấy phép của từng thành phần nêu tại Phụ lục H.
 
 ### 8.5 Khối 3 — Bảy đường ray hạ tầng nền tảng (I10, song song Khối 2)
 
@@ -1363,7 +1365,18 @@ Giai đoạn 2 **chạy song song Khối 4**, không nối tiếp: AURA triển 
 1. **Tầng an toàn không đổi.** Gate engine, cơ chế fail-closed, Action CI và năm nguyên tắc kế thừa (Phụ lục B.5) giữ nguyên. Thị giác là đầu vào nhận thức (L2), không phải thẩm quyền phán quyết (L3).
 2. **Thị giác chưa được làm căn cứ trực tiếp cho phán quyết actuator.** Ngữ nghĩa gate lượng giá trên bằng chứng thị giác là bài toán mở, cần một RFC riêng (xem RFC-0002 §9). Cho tới khi có nó, kết quả thị giác chỉ dùng làm thông tin ngữ cảnh.
 
-**Thay đổi trọng tâm so với các khối trước:** P1 không phải là "đội lõi port lên STM32 và RP2350", mà là **xuất bản bộ công cụ để cộng đồng tự port**. Đây là khác biệt quyết định giữa phủ rộng phần cứng và dàn trải nguồn lực — và là lý do hạng mục này vượt được bộ lọc PF-1 (§2).
+*Hướng robot phân tầng (§8.11) thêm một tầng an toàn robot di động — giới hạn tốc độ, vùng cấm, gate trên mọi lệnh tốc độ (PRD Q-34) — qua RFC riêng. Nó nằm ngoài Giai đoạn 2 và không nới tầng an toàn có sẵn.*
+
+**Thay đổi trọng tâm so với các khối trước:** P1 không phải là "đội lõi port lên STM32 và RP2350", mà là **xuất bản bộ công cụ để cộng đồng tự port** *(ngoại lệ duy nhất: RP2350 làm node thứ hai của robot phân tầng, do đội lõi port — PRD Q-33, §8.11)*. Đây là khác biệt quyết định giữa phủ rộng phần cứng và dàn trải nguồn lực — và là lý do hạng mục này vượt được bộ lọc PF-1 (§2).
+
+
+### 8.10 NeuroBrain — bring-up phần cứng bằng hội thoại (I12)
+
+*"NeuroBrain — Build Physical AI by conversation, under contract"* (PRD Q-31): kỹ sư bring-up một bo mạch mới bằng hội thoại, mỗi lệnh chạm chân vẫn đi qua gate, và bản nháp gate sinh ra phải được người duyệt khoá lại trước khi dùng. Làm **sau Developer Beta** (PRD Q-40) để không giành công của đường găng v1.0. Thiết kế: `neuroedge-roadmap-phase1-5.md`; task, tiêu chí ra và ngày: `neuroedge-roadmap.md` I12.
+
+### 8.11 Robot phân tầng (I14)
+
+Hướng nhận ở PRD Q-32, bắt đầu **sau Developer Beta**: Pi 5 làm não, nhiều node MCU (ESP32-S3 và RP2350 — Q-33) tự lượng giá gate của mình; mất liên lạc thì mỗi cơ cấu về trạng thái an toàn nó tự khai, mặc định dừng (Q-35); wire giữa Pi và node là Zenoh-pico (Q-36); motor và servo dùng token thuê có hạn (Q-37). ROS 2 và Nav2 được tích hợp nguyên bản, gate xét mọi lệnh tốc độ (Q-34) — NeuroEdge không tự viết thuật toán dẫn đường. Không có chứng nhận an toàn chức năng (Q-38): robot di động bắt buộc có nút dừng khẩn phần cứng. Thiết kế: `draft-ke-hoach-mo-rong-robot-fofoca.md` và `draft-rfc-node-giao-thuc-dieu-phoi.md`; task và tiêu chí ra: `neuroedge-roadmap.md` I14.
 
 ---
 
@@ -1378,6 +1391,7 @@ Vì sao từng hạng mục bị loại hoặc hoãn. Trạng thái, tiêu chí 
 | **Chương trình chứng nhận phần cứng có thu phí** | **Đánh đổi:** Bỏ qua một nguồn thu nhỏ ban đầu.<br>**Lợi ích:** Tránh cam kết chất lượng khi tổ chức chưa hoàn thiện quy trình kiểm chuẩn độc lập. |
 | **Thị giác máy tính chuyên sâu (Camera, NPU)** | **Đánh đổi:** Thị giác không rút ngắn TTFV nên không thỏa PF-1; hiện thực đầy đủ ngay sẽ kéo dài trải nghiệm 10 phút đầu.<br>**Lợi ích:** Danh sách target mở trước (RFC-0002, nới lỏng lược đồ). Nguyên thủy `vision.in` và bằng chứng thị giác trong vết ghi chỉ chốt ở V1b, khi có camera thật: chốt hợp đồng tham số khi chưa có phần cứng là đoán, và sửa về sau là siết chặt. Phần hiện thực chờ nhu cầu đo được từ khách hàng AURA. TTFV của thoại và điều khiển vẫn giữ dưới 10 phút. |
 | **Hỗ trợ thêm Jetson** | **Đánh đổi:** Mở rộng danh mục phần cứng làm tăng bề mặt bảo trì của đội lõi.<br>**Lợi ích:** Phân tầng bậc giữ nguyên tắc tương đương mà không pha loãng cam kết: bậc 1 vẫn là nơi mọi ngưỡng chất lượng trỏ tới, Jetson ở bậc 2 chỉ cam kết miền phán quyết. Điều kiện kích hoạt vẫn là nhu cầu đo được từ khách hàng thật. |
+| **Tự phát triển dẫn đường tự hành (SLAM, tránh vật cản, drone)** | **Đánh đổi:** NeuroEdge không tự có năng lực robot di động.<br>**Lợi ích:** Dẫn đường là bài toán đã có lời giải mở (ROS 2, Nav2); NeuroEdge tích hợp nguyên bản và chỉ gate lệnh tốc độ (PRD Q-34), không gánh một tầng thuật toán ngoài năng lực lõi. |
 | **Chuẩn Matter, Apple HomeKit** | **Đánh đổi:** Chưa tích hợp vào hai hệ sinh thái nhà thông minh lớn.<br>**Lợi ích:** Đây là bài toán giao thức ứng dụng, không phải bài toán tương đương môi trường; tách khỏi việc mở rộng target giúp cả hai việc gọn hơn. |
 | **Đăng nhập doanh nghiệp SSO/SAML, chứng chỉ SOC 2** | **Đánh đổi:** Chưa tiếp cận ngay các hợp đồng doanh nghiệp lớn có yêu cầu khắt khe.<br>**Lợi ích:** Tập trung tối đa nguồn lực làm mịn sản phẩm trước khi bước vào các chu kỳ bán hàng kéo dài. |
 | **Triển khai đa khu vực (Multi-region) & On-premise** | **Đánh đổi:** Chưa phục vụ một số khách hàng có ràng buộc lưu trữ dữ liệu nội bộ.<br>**Lợi ích:** Duy trì một kiến trúc hạ tầng đồng nhất, tinh gọn. |
@@ -1385,7 +1399,7 @@ Vì sao từng hạng mục bị loại hoặc hoãn. Trạng thái, tiêu chí 
 | **Hệ thống cảnh báo phức tạp, Dashboard BI tùy biến** | **Đánh đổi:** Thiếu một số biểu đồ báo cáo theo yêu cầu doanh nghiệp.<br>**Lợi ích:** Giữ phạm vi sản phẩm gọn gàng, tránh sa đà vào việc tùy biến giao diện. |
 | **Kiến trúc phân tán Kubernetes** | **Đánh đổi:** Chưa sẵn sàng cho quy mô hàng triệu nút mạng cùng lúc.<br>**Lợi ích:** Một cụm cơ sở dữ liệu PostgreSQL, Redis và Event Bus đã đủ đáp ứng vận hành ổn định cho 50.000 thiết bị đầu tiên. |
 | **Tự huấn luyện tinh chỉnh mô hình (Fine-tune)** | **Đánh đổi:** Không can thiệp sâu vào trọng số mô hình cho từng khách hàng riêng biệt.<br>**Lợi ích:** Giữ vững nguyên tắc coi mô hình AI là thành phần linh hoạt, có thể thay thế. |
-| **Dàn trải nhiều loại bo mạch do đội lõi tự port** | **Đánh đổi:** Đội lõi không nhận thêm bo mạch nào ngoài bậc 1 và bậc 2.<br>**Lợi ích:** Giữ chất lượng chuyên sâu ở nơi mọi cam kết trỏ tới. Đây là lý do độ phủ phần cứng mở rộng qua **bậc 3 do cộng đồng duy trì** (§3.2) chứ không qua việc đội lõi ôm thêm việc — cùng một kết quả phủ rộng, không tiêu đường găng. |
+| **Dàn trải nhiều loại bo mạch do đội lõi tự port** | **Đánh đổi:** Đội lõi không nhận thêm bo mạch nào ngoài bậc 1 và bậc 2 — ngoại lệ duy nhất là RP2350 làm node robot (PRD Q-33).<br>**Lợi ích:** Giữ chất lượng chuyên sâu ở nơi mọi cam kết trỏ tới. Đây là lý do độ phủ phần cứng mở rộng qua **bậc 3 do cộng đồng duy trì** (§3.2) chứ không qua việc đội lõi ôm thêm việc — cùng một kết quả phủ rộng, không tiêu đường găng. |
 | **Chương trình chứng nhận phần cứng miễn phí, tự kiểm chứng** | **Đánh đổi:** Không có doanh thu từ chứng nhận, và NeuroEdge không đứng ra bảo chứng chất lượng bo mạch bên thứ ba.<br>**Lợi ích:** Bên đóng góp tự chạy Bộ kiểm thử tuân thủ (§3.8) và công bố kết quả — đủ để người dùng tin cậy mà không tạo nghĩa vụ pháp lý. Phân biệt rõ với **chương trình chứng nhận có thu phí**, vẫn nằm ở dòng tạm dừng phía trên. |
 
 ---
@@ -1689,7 +1703,7 @@ Quá trình đối chiếu Golden trả lời chính xác câu hỏi: **Với c�
 | Seeed XIAO ESP32S3 | ESP32-S3 kích thước siêu nhỏ | ~$8 | Hỗ trợ từ cộng đồng |
 | NVIDIA Jetson Orin Nano / NX | ARM Cortex-A78AE + Tăng tốc GPU | ~$150–$500 | **Bậc 2 — Mở rộng** (`jetson`, Giai đoạn 2 §8.9) |
 | STM32 (dòng H7 / U5) | Vi điều khiển công nghiệp Cortex-M | ~$5–$20 | **Bậc 3 — Cộng đồng** (`stm32`, Giai đoạn 2 §8.9) |
-| Raspberry Pi RP2350 | Vi điều khiển Cortex-M33 lõi kép, giá cực thấp | ~$1–$8 | **Bậc 3 — Cộng đồng** (`rp2350`, Giai đoạn 2 §8.9) |
+| Raspberry Pi RP2350 | Vi điều khiển Cortex-M33 lõi kép, giá cực thấp | ~$1–$8 | **Bậc 3 — Cộng đồng** (`rp2350`, Giai đoạn 2 §8.9); node robot do đội lõi port (PRD Q-33) |
 
 **Phần cứng thị giác bổ trợ** *(Giai đoạn 2, dùng kèm `linux` hoặc `jetson`)*:
 
@@ -1795,8 +1809,8 @@ Danh mục đầy đủ các dự án được tái sử dụng hoặc port, kè
 
 | Dự án | Vai trò | Giấy phép dự kiến | Trạng thái phê duyệt |
 |:---|:---|:---|:---|
-| Eclipse Hawkbit | Điều phối chiến dịch OTA theo đợt | EPL-2.0 | **Cần quyết định** — ngoài danh sách cho phép, chỉ chấp nhận cho dịch vụ máy chủ |
-| EMQX | Kết nối thiết bị và viễn trắc MQTT | Apache-2.0 cho broker; một số phần theo BSL | **Cần quyết định** — xác định rõ ranh giới tính năng |
+| Eclipse Hawkbit | Điều phối chiến dịch OTA theo đợt | EPL-2.0 | **Đã duyệt** (PRD Q-11, 2026-09-25) — dùng nguyên bản làm dịch vụ máy chủ; sửa mã Hawkbit thì công bố phần sửa |
+| Broker MQTT (Mosquitto · NanoMQ · VerneMQ) | Kết nối thiết bị và viễn trắc MQTT | EDL-1.0 · MIT · Apache-2.0 | **Chấp nhận** (PRD Q-11) — chọn bằng đo tải khi mở Khối 2. EMQX không dùng vì BSL |
 | ORAS · Harbor | Kho Gate Registry theo chuẩn OCI | Apache-2.0 | Chấp nhận |
 | OpenMeter | Hệ đo lường tương thích Stripe Billing | Apache-2.0 | Chấp nhận |
 | Home Assistant Core API | Tích hợp điều khiển phòng cho AURA | Apache-2.0 | Chấp nhận |
