@@ -14,12 +14,12 @@ static uint32_t now(const ne_trace_sink *sink) {
 /* One recorded gate evaluation: the device decides, and drives only what its token allows. */
 static int replay_step(ne_trace_sink *sink, const ne_vector_step *step, ne_ledger *ledger,
                        ne_random_fn fill_random) {
-    const ne_vector_gate *g = &ne_vector_gates[step->gate];
     ne_tree tree;
     ne_result r;
     ne_token token;
-    if (step->gate >= NE_VECTOR_GATES || ne_tree_load(&tree, g->tree, g->tree_size) != NE_OK)
-        return 1;
+    if (step->gate >= NE_VECTOR_GATES) return 1;
+    const ne_vector_gate *g = &ne_vector_gates[step->gate];
+    if (ne_tree_load(&tree, g->tree, g->tree_size) != NE_OK) return 1;
     ne_trace_put(sink, ne_trace_gate_begin(sink->buf, sink->cap, ne_trace_offset(sink), g->label,
                                            &tree));
     ne_trace_put(sink, ne_trace_gate_facts(sink->buf, sink->cap, ne_trace_offset(sink), &tree,
