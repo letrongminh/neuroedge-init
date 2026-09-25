@@ -163,3 +163,9 @@ def test_record_on_another_target_exits_two(villa, tmp_path):
     result = runner.invoke(app, ["record", "--agent", str(villa), "--target", "linux", "-c", "x"])
     assert result.exit_code == 2
     assert "replay" in result.output
+
+
+def test_record_on_an_unknown_target_exits_one(villa):
+    result = runner.invoke(app, ["record", "--agent", str(villa), "--target", "stm32", "-c", "x"])
+    assert result.exit_code == 1
+    assert "NE3001" in result.output

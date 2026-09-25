@@ -33,8 +33,8 @@ from ..engine import (
     resolve_gate_file,
     resolve_gate_uri,
 )
-from ..errors import BuildFailed, NeuroEdgeError, VerificationError
-from ..hal.board import available_boards, load_board_by_id
+from ..errors import BoardCapabilityError, BuildFailed, NeuroEdgeError, VerificationError
+from ..hal.board import SUPPORTED_TARGETS, available_boards, load_board_by_id
 from ..paths import gates_dir, repo_root
 from ..trace import load_trace
 
@@ -79,6 +79,10 @@ REFERENCE_BOARD = {"sim": "sim-default", "linux": "linux-rpi5", "esp32s3": "esp3
 # `verify --targets esp32s3` runs: the device replays the canonical traces (TSK-S4-09).
 PLANNED_TARGETS = {"esp32s3": "TSK-S4-04"}
 
+# Targets an interactive session (`run`, `record`) knows but does not run on yet, and the
+# task that brings each. Same exit-2 contract as `PLANNED_TARGETS`.
+PLANNED_SESSIONS = {"linux": "TSK-S5-10", "esp32s3": "TSK-S4-01"}
+
 
 def _not_implemented_target(verb: str, target: str) -> None:
     """Say which task brings `target` to `verb`, then exit 2 (CONTRIBUTING.md §2)."""
@@ -86,7 +90,7 @@ def _not_implemented_target(verb: str, target: str) -> None:
         Panel(
             f"`neuroedge {verb}` on `{escape(target)}` is not implemented yet: replaying any "
             "trace needs its facts sent to the device and the live HAL on the board "
-            f"({PLANNED_TARGETS[target]}, Sprint 4).\n\n"
+            f"({PLANNED_TARGETS[target]}).\n\n"
             "Replay on `sim` or `linux` today. The canonical traces already replay on the "
             "device: `neuroedge verify --targets esp32s3 --port <uart>`.",
             title=f"[yellow]Not implemented: {verb} on {escape(target)}[/yellow]",
@@ -1031,7 +1035,7 @@ def verify(
             "and pin commands they record."
             f"{on_device}\n\n"
             "[yellow]Compared:[/yellow] decisions only — not timing. Timing equivalence "
-            "arrives with Sprint 4 (TSK-S4-04).",
+            "arrives with TSK-S4-04.",
             title="neuroedge verify",
             border_style="green",
         )
@@ -1223,12 +1227,21 @@ def _start_session(verb: str, agent, target: str, board: str, registry, events=N
     """Load the agent for an interactive `sim` session, or exit with the right code."""
     from ..sim import SimSession
 
+    if target not in SUPPORTED_TARGETS:
+        _fail(
+            BoardCapabilityError(
+                where=f"--target {target}",
+                why=f"{target!r} is not a target; the targets are {', '.join(SUPPORTED_TARGETS)}",
+                how="pass --target sim: interactive sessions run on sim today",
+            )
+        )
     if target != "sim":
         err_console.print(
             Panel(
-                f"`neuroedge {verb} --target {escape(target)}` is not implemented yet.\n\n"
+                f"`neuroedge {verb} --target {escape(target)}` is not implemented yet "
+                f"({PLANNED_SESSIONS[target]}).\n\n"
                 "Interactive sessions run on `sim` today. On `linux`, replay a trace "
-                "instead: `neuroedge replay <trace> --target linux` (TSK-S3-05).",
+                "instead: `neuroedge replay <trace> --target linux`.",
                 title=f"[yellow]Not implemented: {verb} --target {escape(target)}[/yellow]",
                 border_style="yellow",
             )

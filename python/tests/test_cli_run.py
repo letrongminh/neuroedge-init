@@ -81,10 +81,18 @@ def test_a_missing_agent_exits_one_with_a_three_part_diagnostic(tmp_path):
     assert "why:" in result.output and "fix:" in result.output
 
 
-def test_other_targets_exit_two_and_name_their_task(villa):
-    result = run(villa, "--target", "linux", "-c", "mở cửa phòng 101")
+@pytest.mark.parametrize(("target", "task"), [("linux", "TSK-S5-10"), ("esp32s3", "TSK-S4-01")])
+def test_other_targets_exit_two_and_name_their_task(villa, target, task):
+    result = run(villa, "--target", target, "-c", "mở cửa phòng 101")
     assert result.exit_code == 2
-    assert "TSK-S3-05" in result.output
+    assert task in result.output
+
+
+def test_an_unknown_target_exits_one_with_a_three_part_diagnostic(villa):
+    result = run(villa, "--target", "stm32", "-c", "mở cửa phòng 101")
+    assert result.exit_code == 1
+    assert "NE3001" in result.output
+    assert "why:" in result.output and "fix:" in result.output
 
 
 def test_the_default_agent_is_the_sample_in_a_checkout(root, monkeypatch):

@@ -235,8 +235,8 @@ Running the tool-call corpus in fixtures/tool_calls/ on sim
 │ happy-path.json         │ ✓ ALLOW │
 │ network_offline.json    │ ✓ BLOCK │
 │ unverified_attempt.json │ ✓ BLOCK │
-│ Compared: decisions only — not timing. Timing equivalence and the esp32s3    │
-│ target arrive with Sprint 4 (TSK-S4-04).                                     │
+│ Compared: decisions only — not timing. Timing equivalence arrives with       │
+│ TSK-S4-04.                                                                   │
 [exit 0]
 ```
 
