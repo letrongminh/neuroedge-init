@@ -32,11 +32,9 @@ bản gói.
 
 #### Đã thêm
 
-- **Kế hoạch mở rộng cho robot phân tầng (bản nháp, chờ `Q-N`).** `draft-ke-hoach-mo-rong-robot-fofoca.md`:
-  chặng W0–W4 — mở nguyên thủy HAL (`motion`/`analog`/`vision`), an toàn actuator (N2, crash-safe), hạ tầng tin cậy,
-  multi-node gate phân tán theo black channel (Zenoh-pico/micro-ROS), hệ sinh thái ROS 2/MHS; khung RFC từng thay đổi.
-  `draft-rfc-node-giao-thuc-dieu-phoi.md`: bản nháp RFC giao thức điều phối node (chưa cấp số). Chỉ tài liệu, chưa có mã.
-  Quyết định chuyển vào PRD §15 khi cấp `Q-N`.
+- **Mở rộng cho robot phân tầng FOFOCA (bản nháp, chờ `Q-N`).** `draft-ke-hoach-mo-rong-robot-fofoca.md` (chặng W0–W4:
+  nguyên thủy HAL mới, multi-node với gate từng node qua black channel) + `draft-rfc-node-giao-thuc-dieu-phoi.md` (RFC chưa
+  cấp số); điểm lệch với đặc tả và phạm vi hiện hành chờ quyết ở Phụ lục C. Chỉ tài liệu, chưa có mã.
 - **TSK-S4-09 — `verify --targets esp32s3` chạy trên QEMU; vết ghi firmware qua UART.** Firmware ghi sự kiện thành dòng
   `NE1 ` (`ne_trace`) và replay 3 vết ghi chuẩn mực bằng walker C (`ne_decide`, có đường suy giảm) + sổ token C; `record`
   / `verify --port` đọc tệp log, `tcp://` hoặc serial (`neuroedge[serial]`); job `uart-trace`. Đặc tả `simulation_coverage.md`
@@ -794,6 +792,7 @@ Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc 
 | [`neuroedge-roadmap.md`](neuroedge-roadmap.md) | **Tiến độ, task, tiêu chí ra.** §0 là bảng điều khiển | **Luôn đọc trước** |
 | [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) | Giai đoạn 2 (Tháng 9–24) | Khi việc thuộc Khối 1b trở đi |
 | [`neuroedge-roadmap-phase1-5.md`](neuroedge-roadmap-phase1-5.md) | Giai đoạn 1.5 — NeuroBrain (bản nháp, chờ `Q-N`) | Khi việc thuộc Khối N0–N7 |
+| [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) · [`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) | Mở rộng cho robot phân tầng FOFOCA (bản nháp, chờ `Q-N`) · RFC nháp điều phối node (chưa cấp số) | Khi việc chạm nguyên thủy HAL mới, robot nhiều MCU hoặc multi-node |
 | [`neuroedge-prd.md`](neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`; **§15 là sổ quyết định duy nhất** (`Q-N`); Phụ lục B là mã lỗi | Khi cần biết *phải* làm gì, và đã chốt gì |
 | [`neuroedge-proposal.md`](neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** | Khi cần biết *tại sao* |
 | [`docs/spec/`](docs/spec/) | Đặc tả chuẩn tắc: Gated Tool Profile, mô hình mối đe doạ, phủ mô phỏng, rà soát MCU, máy trạng thái hội thoại | Trước khi đổi hành vi ở tầng tương ứng |

@@ -26,3 +26,9 @@ Người phê duyệt: `CONTRIBUTING.md` §3.
 | [0004](0004-ke-thua-budget-on-block.md) | Gate con không được nới `budget` và `on_block` | *(không — ngữ nghĩa phân giải)* | ✅ Đã chấp thuận |
 | [0005](0005-rang-buoc-tham-so-trong-gate.md) | Gate tự khai ràng buộc tham số của hành động (Q-25) | `gate.v1` · ngữ nghĩa phân giải · bố cục Q-23 | ✅ Đã chấp thuận |
 | [0006](0006-xac-nhan-ask-confirms.md) | `on_block.confirms` — tiêu chí người trên thiết bị được xác nhận thay (Q-26) | `gate.v1` · ngữ nghĩa phân giải · lượng giá | ✅ Đã chấp thuận |
+| 0007 | *Giữ chỗ:* `digital.in` + bus I2C chỉ đọc + phong bì trong `board.v1` — TSK-N0-03 ([`neuroedge-roadmap-phase1-5.md`](../../neuroedge-roadmap-phase1-5.md)) | `board.v1` (`gate.v1` không đổi) | ⏳ Chưa mở |
+
+**Bản nháp chưa cấp số** (ngoài thư mục này; nhận số kế tiếp khi mở PR RFC):
+[`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../draft-rfc-node-giao-thuc-dieu-phoi.md) — giao thức điều phối
+node cho robot phân tầng; các RFC tạm tên (RFC-numeric, RFC-motion…) ở §2.2 của
+[`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../draft-ke-hoach-mo-rong-robot-fofoca.md).

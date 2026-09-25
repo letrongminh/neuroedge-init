@@ -21,6 +21,7 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 | **G-a…G-e** | Giả định kinh doanh cần kiểm chứng (vd G-e: tỷ lệ chuyến hiện trường do phần mềm) — **khác** G1–G4 | `neuroedge-proposal.md` Phụ lục G |
 | **V-G1…V-G5** | Cột mốc xác thực Giai đoạn 2 | `neuroedge-proposal.md` §12.4 |
 | **RFC-NNNN** | Đề xuất sửa lược đồ hoặc ngữ nghĩa phân giải gate | `docs/rfc/` |
+| **RFC-numeric · RFC-motion · RFC-node · RFC-vision-bậc23 · RFC-pin-extends** | RFC **tạm tên**, chưa cấp số, của bản nháp mở rộng cho robot phân tầng; số cấp khi mở PR RFC | `draft-ke-hoach-mo-rong-robot-fofoca.md` §2.2 |
 | **KL-1…KL-5** | Kết luận rà soát HAL dưới ràng buộc vi điều khiển | `docs/spec/hal_mcu_review.md` §1 |
 | **RB-1…RB-4** | Ràng buộc kỹ thuật HAL chuyển cho Sprint 4 (vd RB-3: lệnh chân phải huỷ được) | `docs/spec/hal_mcu_review.md` §2 |
 | **Bất biến N** | Một trong mười điều không được phá (vd bất biến 7: `sim` không giàu hơn bo mạch tham chiếu) | `CHANGELOG.md` §3.3 |
@@ -34,12 +35,13 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 |:---|:---|:---|
 | **Khối 1a · 1b · 2 · 3 · 4 · 5** | Khối công việc Giai đoạn 1: 1a lõi + Action CI · 1b vi điều khiển · 2 Fleet OS · 3 các đường ray nền tảng | `neuroedge-roadmap.md` mục lục |
 | **Khối V1a · V1b · P1 · P2** | Khối công việc Giai đoạn 2 (thị giác, phủ rộng phần cứng) | `neuroedge-roadmap-phase2.md` |
+| **Chặng W0 … W4 · W-item** | Chặng của bản nháp mở rộng cho robot phân tầng (W0 việc nhẹ · W1 HAL và an toàn actuator · W2 hạ tầng tin cậy · W3 multi-node · W4 hệ sinh thái); `W3-1`… là việc trong chặng — mã cục bộ, cấp `TSK-*` thật khi hạ cánh | `draft-ke-hoach-mo-rong-robot-fofoca.md` |
 | **Khối N0 … N7 · N5b** | Khối công việc Giai đoạn 1.5 — NeuroBrain (bring-up phần cứng có gate); task `TSK-Nk-mm` | `neuroedge-roadmap-phase1-5.md` |
 | **NeuroBrain** | Trợ lý hội thoại dựng mạch cho Physical AI — "Copilot for building Physical AI"; định vị đề xuất, chờ `Q-31` | `neuroedge-roadmap-phase1-5.md` §1 |
 | **B-1** | Bất biến: gói `neuroedge.brain` không gọi HAL trực tiếp, chỉ qua `dispatch()` → gate | `neuroedge-roadmap-phase1-5.md` §1 |
 | **Sprint 1…6** | Các sprint 2 tuần của Khối 1a và 1b | `neuroedge-roadmap.md` §4–§5 |
 | **M1** | Cột mốc kế tiếp: time-to-first-value < 10 phút trên `sim` | `neuroedge-roadmap.md` §0.1 |
-| **TSK-Sn-mm** | Một task, ví dụ `TSK-S2-03` = Sprint 2, task 03. Giai đoạn 2 dùng `TSK-V…` · `TSK-P…` | bảng task trong roadmap |
+| **TSK-Sn-mm** | Một task, ví dụ `TSK-S2-03` = Sprint 2, task 03. Giai đoạn 2 dùng `TSK-V…` · `TSK-P…`; Khối 2/3 dùng `TSK-K…`; Giai đoạn 1.5 dùng `TSK-N…` | bảng task trong roadmap |
 | **Tuần N · Tháng N** | Tuần/tháng thứ N **của chương trình**, tính từ Tuần 0 = **2026-09-21**. "Tháng 9" **không** phải tháng 9/2026. Khi tuần và ngày lệch nhau, ngày tuyệt đối đúng | tệp này · lịch ngày tuyệt đối: `neuroedge-prd.md` §15 (Q-19) |
 | **V1–V4** | Vai trò trong đội: V1 kỹ sư lõi · V2 kỹ sư nhúng · V3 trải nghiệm lập trình viên · V4 hạ tầng dịch vụ | `neuroedge-roadmap.md` §1.1 |
 
@@ -93,6 +95,12 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **Vector replay trên thiết bị** | Firmware replay từng vết ghi chuẩn mực lúc khởi động: đầu vào đã ghi vào, phán quyết và token do thiết bị tính; `verify --targets esp32s3 --port` so với golden. Lệnh chân lấy operation/duration từ **bảng hành động** dựng trên host | `docs/spec/simulation_coverage.md` §4 (TSK-S4-09) |
 | **Dòng `NE1 `** | Một sự kiện vết ghi trên UART của firmware: tiền tố `NE1 ` (có dấu cách — khác mã lỗi `NE1001`) rồi một sự kiện `trace.v1` dạng JSON; mỗi phiên mở bằng `device_info`, đóng bằng `trace_end` | `docs/spec/simulation_coverage.md` §4 (TSK-S4-09) |
 | **`digests.lock`** | Danh sách digest của gate chuẩn mực; CI chặn mọi thay đổi digest không kèm RFC | `CONTRIBUTING.md` §8.2 bước 4 |
+| **FOFOCA** | Robot tham chiếu của bản nháp mở rộng: Pi 5 làm não (`linux`), nhiều MCU (motor, màn hình, tay máy) làm tay chân — mọi hành động vật lý vẫn qua gate, kể cả khi trải trên nhiều chip | `draft-ke-hoach-mo-rong-robot-fofoca.md` §1 |
+| **Node · multi-node** | Node = một môi trường thực thi có HAL và **gate riêng** trong một robot nhiều MCU; multi-node = một robot nhiều node (khác Fleet OS = nhiều thiết bị độc lập). Chưa có trong mã | `draft-rfc-node-giao-thuc-dieu-phoi.md` §3.1 |
+| **Black channel** | Mẫu của IEC 61784-3: truyền thông an toàn trên mạng **không tin cậy** — mỗi thông điệp tự mang trường bảo vệ, mỗi thiết bị tự thực hiện chức năng an toàn. Đề xuất cho wire giữa các node | `draft-rfc-node-giao-thuc-dieu-phoi.md` §3.3 |
+| **Crash-safe** | Chân về trạng thái an toàn cả khi tiến trình sập hoặc bị SIGKILL — chỉ phần cứng bảo đảm được (kéo xuống, watchdog), phần mềm thì không | `neuroedge-roadmap-phase1-5.md` §2.3 |
+| **Phong bì N2** | Giới hạn tổng thời gian bật và tần suất theo chân, khai ở `board.v1` (RFC-0007), cưỡng chế trong HAL trước `authorize` | `neuroedge-roadmap-phase1-5.md` §7 |
+| **MHS** | Chuẩn thiết bị robot của Anthropic (research preview); NeuroEdge theo dõi, không đầu tư ở v1.0 (Q-29) | `neuroedge-proposal.md` §10.1, Phụ lục H.3 |
 | **Physical AI** | AI điều khiển thứ trong thế giới thật — chốt cửa, đèn, rơ-le, động cơ. Lời nói sai thì sửa được; hành động vật lý sai thì không, nên mọi hành động đi qua gate | `neuroedge-proposal.md` §0.2 |
 | **`c.do()` · `c.say()`** | Cổng duy nhất tới thế giới vật lý · lời nói (không qua gate) | `python/neuroedge/actions/` |
 | **RAG** | Retrieval-augmented generation: tìm đoạn tri thức liên quan (cục bộ, tất định) rồi để System 2 trả lời dựa trên chúng. Mất mạng thì nói câu trả lời cục bộ | `python/neuroedge/models/knowledge.py` |
