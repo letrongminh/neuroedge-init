@@ -14,7 +14,7 @@
 **Phạm vi:** Khối 1a · Khối 1b · Developer Beta · Khối 2 và 3
 
 
-**Ngoài phạm vi:** Khối 4 (AURA thực địa) · Khối 5 (Marketplace) · **Giai đoạn 2** (thị giác, phủ rộng phần cứng) — xem [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) · **Giai đoạn 1.5** (NeuroBrain, bản nháp) — xem [`neuroedge-roadmap-phase1-5.md`](neuroedge-roadmap-phase1-5.md)
+**Ngoài phạm vi:** Khối 4 (AURA thực địa) · Khối 5 (Marketplace) · **Giai đoạn 2** (thị giác, phủ rộng phần cứng) — xem [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) · **Giai đoạn 1.5** (NeuroBrain, bản nháp) — xem [`neuroedge-roadmap-phase1-5.md`](neuroedge-roadmap-phase1-5.md) · **mở rộng cho robot phân tầng** (FOFOCA, bản nháp) — xem [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md)
 
 ---
 
