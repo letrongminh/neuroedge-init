@@ -13,15 +13,15 @@ Bộ tài liệu chuẩn bị cho cổng nhu cầu thương mại của NeuroEdg
 
 ## 1. Mục đích
 
-Q-20 (`neuroedge-prd.md` §15) chốt: cổng **mềm**, ngày **2026-10-25** (cuối A1), **không chặn
-A2**. Các thách thức kinh doanh `CEO-X2`, `CEO-X4`, `CEO-X5` và `CEO-T1`..`CEO-T4` là câu hỏi
-mở, trưởng nhóm chủ trì, rà lại tại cổng (`TODOS.md` #19).
+Q-20 (`neuroedge-prd.md` §15) chốt: cổng **mềm**, ngày **2026-10-25**, **không chặn** I1 và I2
+(roadmap §0.2). Các thách thức kinh doanh `CEO-X2`, `CEO-X4`, `CEO-X5` và `CEO-T1`..`CEO-T4` là
+câu hỏi mở, trưởng nhóm chủ trì, rà lại tại cổng (`TODOS.md` #19).
 
-Cổng không quyết code A2. Nó quyết ba việc:
+Cổng không quyết code của I1, I2. Nó quyết ba việc:
 
 1. Mỗi mục của `TODOS.md` #19 được **đóng có lý do** hoặc **thành quyết định** trong PRD §15.
-2. Khối 1b (Sprint 4 mở 2026-11-16, Q-19) có đi tiếp theo kế hoạch không, hay đổi hướng
-   (Approach C / E) có bằng chứng.
+2. Các increment I3–I7 (roadmap §0.2; tên lịch sử: Khối 1b) có đi tiếp theo kế hoạch không, hay
+   đổi hướng (Approach C / E) có bằng chứng — Go / Adjust / Stop ở `cham-diem.md` §4.1.
 3. Phân khúc nào là phân khúc đầu tiên để làm tiếp (tối đa hai).
 
 Rủi ro số một là nhu cầu chưa kiểm chứng (premise P4, `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`).
@@ -45,7 +45,7 @@ tóm tắt; định nghĩa chấm điểm ở `cham-diem.md`.
 | **C7** | Đối thủ thật là ai: họ đang dùng gì hôm nay, và "tự viết" mất bao lâu? | `CEO-T3` | §10.1 | ≥ 10 cuộc nêu giải pháp hiện tại; ≥ 3 cuộc ước lượng thời gian tự viết | < 5 cuộc nêu được ⇒ giữ §10 là bối cảnh, ghi rõ không phải phân tích cạnh tranh |
 | **C8** | Bao nhiêu chuyến đi hiện trường mỗi tháng, và bao nhiêu phần do phần mềm/cấu hình (không phải hỏng vật lý)? | Phụ lục G **G-e** | §1.8 (TCO), §6.2 #5 | ≥ 3 tổ chức cho số chuyến và tỷ lệ nguyên nhân | Không ai đếm ⇒ TCO §1.8 giữ nhãn giả định |
 | **C9** | Họ đã từng dùng lại cấu hình/chính sách an toàn do bên khác viết chưa? | Phụ lục G **G-d** · §8.7 G2–G3 | §1.7 | ≥ 3 cuộc kể một lần dùng lại thật | Không ai ⇒ hiệu ứng mạng §1.7 giữ nhãn giả định |
-| **C10** | Thứ tự quyết định / code: bằng chứng có về **trước** các cam kết code Khối 1b không? | `CEO-T4` | thiết kế GĐ1 §Nhánh quyết định | Trưởng nhóm tự trả lời tại cổng từ kết quả C1–C9 | — (không hỏi khách hàng) |
+| **C10** | Thứ tự quyết định / code: bằng chứng có về **trước** các cam kết code của I3–I7 không? | `CEO-T4` | thiết kế GĐ1 §Nhánh quyết định | Trưởng nhóm tự trả lời tại cổng từ kết quả C1–C9 | — (không hỏi khách hàng) |
 
 `CEO-X3` (tỷ lệ discovery 40:1) được Q-20 xử bằng chính cổng này và **không** nằm trong
 `TODOS.md` #19; `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` §Quyết định 2026-09-23, dòng `CEO-X3`, ghi `CEO-X3 → Q-20`.
@@ -78,10 +78,10 @@ nhà đầu tư.
 | Vai trò | Người | Việc | Giờ ước tính |
 |:---|:---|:---|:---:|
 | Chủ trì (Q-20) | Trưởng nhóm | Duyệt danh sách, phỏng vấn chính, chấm điểm, viết quyết định | ~40 |
-| Người ghi | Đề xuất: một người ngoài đường găng A1 (không phải V1) | Ghi nguyên văn, bấm giờ "con số đầu tiên xuất hiện lúc nào, ai nói trước" | ~20 |
+| Người ghi | Đề xuất: một người không nằm trên đường găng (không phải V1, V2) | Ghi nguyên văn, bấm giờ "con số đầu tiên xuất hiện lúc nào, ai nói trước" | ~20 |
 | Người chấm thứ hai | Đề xuất: V3 hoặc người ghi của phân khúc khác | Chấm độc lập từ bản ghi, không dự phỏng vấn đó | ~6 |
 | Người chạy demo | Trưởng nhóm hoặc V3 | Chạy `demo.md` **sau** phần câu hỏi vấn đề, chỉ khi người được phỏng vấn đồng ý | ~5 |
-| V1, V2 | — | **Không tham gia** (đường găng A1 → A2) | 0 |
+| V1, V2 | — | **Không tham gia** (giữ tiến độ I1–I4, roadmap §0.3) | 0 |
 
 Giờ là ước tính của bộ tài liệu này: 20 cuộc × (45 phút + 30 phút ghi chép) + tuyển + tổng hợp.
 
@@ -91,7 +91,7 @@ Giờ là ước tính của bộ tài liệu này: 20 cuộc × (45 phút + 30 
 |:---|:---|:---|:---|
 | 09-24 → 09-26 | Duyệt bộ tài liệu này; trang khảo sát đã dựng (link ở đầu tệp) — chia sẻ cho người ghi; chạy thử `demo.md` trên máy demo | Trang khảo sát chạy; máy demo đã qua checklist `demo.md` §0 | Trưởng nhóm |
 | 09-26 → 09-30 | Lập danh sách 20 người/phân khúc từ mạng quan hệ, khách hàng hiện có của tổ chức, cộng đồng kỹ thuật | Bảng tiếp cận (tên, tổ chức, phân khúc, kênh, trạng thái) — **không đưa vào kho** | Trưởng nhóm |
-| 09-28 | A1 bắt đầu (Q-19); gửi đợt tiếp cận 1 + link khảo sát | ≥ 40 lời mời đã gửi | Trưởng nhóm |
+| 09-28 | Gửi đợt tiếp cận 1 + link khảo sát | ≥ 40 lời mời đã gửi | Trưởng nhóm |
 | 09-30 → 10-02 | 2 cuộc thử (1 nội bộ ngoài đội, 1 thật); sửa câu hỏi nào gây dẫn dắt | `phong-van.md` bản chỉnh | Trưởng nhóm + người ghi |
 | 10-01 → 10-10 | **Đợt phỏng vấn 1**: mục tiêu 10 cuộc (≥ 2 mỗi phân khúc) | 10 bản ghi + chấm sơ bộ trong 24 giờ sau mỗi cuộc | Trưởng nhóm + người ghi |
 | 10-05 | Đợt tiếp cận 2 (40 lời mời còn lại + người từ khảo sát để lại liên hệ) | | Trưởng nhóm |
@@ -116,10 +116,10 @@ Mô tả việc cần làm sau cổng; bộ tài liệu này **không sửa** t�
 | `TODOS.md` #19 | Từng mã (`CEO-X2`, `X4`, `X5`, `T1`, `T2`, `T3`, `T4`) gạch và dẫn tới quyết định cổng; mục nào còn mở phải có **mốc kích hoạt mới** (luật của `TODOS.md`) |
 | `neuroedge-roadmap.md` §0 | Dòng cổng nhu cầu ở bảng điều khiển: trạng thái, dẫn quyết định cổng |
 | `CHANGELOG.md` `[Chưa phát hành]` | Một mục ngắn (CLAUDE.md "Khi xong một task", `CONTRIBUTING.md` §8) |
-| `docs/archive/` | Bản tổng hợp **ẩn danh** (vai trò + phân khúc, không tên người, không tên tổ chức nếu chưa được đồng ý). Bản ghi thô **không vào kho** — `TODOS.md` #4 (PII) |
+| `docs/archive/` | Bản tổng hợp **ẩn danh** (vai trò + phân khúc, không tên người, không tên tổ chức nếu chưa được đồng ý). Bản ghi thô **không vào kho** (PII) |
 | `neuroedge-proposal.md` §1.8, §8.7, §10, Phụ lục G | Chỉ sửa nếu quyết định cổng đổi một giả định; mỗi con số thị trường mới phải dẫn nguồn là cuộc phỏng vấn nào (mã ẩn danh) |
 
-Nếu kết quả là **stop** cho Khối 1b, đó là đổi phạm vi: theo `CONTRIBUTING.md` xem việc nào cần
+Nếu kết quả là **stop** cho I3–I7, đó là đổi phạm vi: theo `CONTRIBUTING.md` xem việc nào cần
 RFC; đổi hướng sản phẩm không đụng `schemas/` thì không cần RFC, nhưng phải có dòng PRD §15.
 
 ## 7. Điều bộ tài liệu này không làm
@@ -127,5 +127,5 @@ RFC; đổi hướng sản phẩm không đụng `schemas/` thì không cần RF
 - Không đưa ra con số thị trường. Mọi con số trong proposal (§1.8 TCO, §6.3 dự phóng, Phụ lục G)
   vẫn là giả định cho tới khi một cuộc phỏng vấn thay nó.
 - Không hứa tính năng chưa có. `demo.md` liệt kê từng thứ **không** được nói là đã có.
-- Không thay cổng Tuần 3 của thiết kế GĐ1 bằng thứ khác; C1 giữ nguyên ngưỡng của nó, chỉ thêm
+- Không thay cổng nhu cầu của thiết kế GĐ1 bằng thứ khác; C1 giữ nguyên ngưỡng của nó, chỉ thêm
   các câu C2–C10 mà Q-20 giao.

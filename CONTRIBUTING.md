@@ -133,7 +133,7 @@ bất biến `CHANGELOG.md` §3.3 #9. Hawkbit đã duyệt với điều kiện 
 ## 5. Test không được skip trong im lặng
 
 Một test `skip` vì thiếu phụ thuộc trông giống một test đạt trong bản tóm tắt.
-Sprint 1 đã gặp đúng chuyện này: bốn test conformance lược đồ skip vì
+I0 đã gặp đúng chuyện này: bốn test conformance lược đồ skip vì
 `jsonschema` chưa được cài, trong khi bảng tiến độ báo "PASS 100% (4/4)".
 
 Vì vậy:
@@ -172,7 +172,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `python/neuroedge/actions/` | `@action`, `c.do()`/`c.say()`, token phán quyết dùng một lần | PR thường; ranh giới ở [`threat_model.md`](docs/spec/threat_model.md) |
 | `python/neuroedge/hal/` | L1 — năm nguyên thủy, mô hình bo mạch, `sim.py`, `linux.py` | PR thường; xem [rà soát MCU](docs/spec/hal_mcu_review.md) |
 | `python/neuroedge/models/` | L2 — SystemOne/SystemTwo, ngữ pháp lệnh cục bộ, knowledge base, `providers/` (LiteLLM, adapter) | PR thường |
-| `python/neuroedge/perception/` | L2 — khung rỗng (TSK-S3-11, Sprint 5) | PR thường |
+| `python/neuroedge/perception/` | L2 — khung rỗng (TSK-S3-11, I4) | PR thường |
 | `python/neuroedge/sim/` | `SimSession` (REPL gõ chữ), `ui.py` (trang `--ui` cục bộ) | PR thường |
 | `python/neuroedge/mcp_server.py`, `mcp_host.py`, `mcp_desktop.py` | Máy chủ MCP · System 2 làm MCP host · cấu hình Claude Desktop | PR thường |
 | `python/neuroedge/testing/` | Action CI — recorder, player (replay), assertions, golden, `tool_corpus`, `uart` (vết ghi từ UART thiết bị) | PR thường |
@@ -194,8 +194,10 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `docs/business/` | Bộ chuẩn bị cổng nhu cầu (Q-20); `cpo-dashboard.html` sinh từ roadmap, `TODOS.md`, PRD §15, `CHANGELOG.md` | PR thường — đổi các nguồn đó thì chạy `python3 scripts/gen_cpo_dashboard.py` |
 | `wireframe/` | Wireframe HTML tham chiếu cho UI (bản chụp `ui.css`, không đóng gói) — hiện có Lab Monitor của Khối N5b | PR thường |
 | `docs/user/` | Tài liệu người dùng; `thuat-ngu.md` là nơi duy nhất giải mã ký hiệu; `trang-thai.md` sinh từ roadmap §0 | PR thường — `python3 scripts/gen_user_status.py` |
-| `docs/release.md` | Thủ tục phát hành PyPI | PR thường |
+| `docs/release.md` | Thủ tục phát hành: tag nội bộ trước I6, PyPI từ I6 | PR thường |
 | `README.md` | Trang đầu và trang PyPI (link tuyệt đối) | PR thường — `tests/test_readme_quickstart.py` |
+| `neuroedge-roadmap.md` | Roadmap duy nhất (Q-39): increment I0–I18, trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành, thang cắt | PR thường, theo §8; luật chống lệch R1–R12 ở roadmap §2.4 |
+| `neuroedge-roadmap-phase1-5.md`, `neuroedge-roadmap-phase2.md`, `draft-ke-hoach-mo-rong-robot-fofoca.md`, `draft-rfc-node-giao-thuc-dieu-phoi.md` | Ghi chú thiết kế: NeuroBrain · thị giác và phủ phần cứng · robot phân tầng. Không lịch, không trạng thái, không tiêu chí ra; dẫn mã TSK của roadmap (R1, R8) | PR thường; merge được cả khi Beta đóng băng (R12) |
 | `TODOS.md` | Việc đã xem xét và hoãn có chủ ý, kèm mốc kích hoạt | PR thường |
 
 ## 7. CI
@@ -214,10 +216,16 @@ Một task **chưa xong** cho tới khi các cập nhật dưới đây nằm **
 
 | Sự thật | Nơi duy nhất | Nơi khác được phép |
 |:---|:---|:---|
-| Trạng thái task, artifact, commit | Bảng task của sprint trong `neuroedge-roadmap.md` §4–§8 | Dẫn mã task |
-| Tiêu chí ra đạt hay chưa, kèm bằng chứng | Danh sách tiêu chí ra ngay dưới bảng task của sprint | Dẫn mã sprint + số tiêu chí |
+| Trạng thái task, artifact, commit | Bảng task trong mục của increment, `neuroedge-roadmap.md` §4–§8 | Dẫn mã task |
+| Mục tiêu, điều kiện vào, tín hiệu đo, người của một increment | Thẻ ở đầu mục của increment đó (roadmap §4–§7) | Dẫn mã increment (`I3`) |
+| Tiêu chí ra đạt hay chưa, kèm bằng chứng | Danh sách tiêu chí ra ngay dưới bảng task của increment | Dẫn mã increment + số tiêu chí (`I3 tiêu chí 2`) |
+| Lịch: ngày dự báo, phụ thuộc, thẻ phát hành | Roadmap §0.2 (bảng increment) | Dẫn mã increment; không chép ngày hay tag |
 | Tổng quan tiến độ, số test hiện hành, hạng mục bị chặn | Roadmap §0.1–§0.2 | Không chép con số |
 | Việc tiếp theo, đang làm gì | Roadmap §0.3 (Thẻ bàn giao) | Không |
+| Thang cắt phạm vi | Roadmap §9 | Dẫn bậc hoặc increment |
+| Giá trị đo B1–B5 (và A1 đo đầy đủ) | Roadmap §5.5 | Ngưỡng ở PRD §11; nơi khác dẫn mã |
+| Thiết kế (không lịch, không trạng thái) | Ghi chú thiết kế (`neuroedge-roadmap-phase1-5.md`, `neuroedge-roadmap-phase2.md`, `draft-*.md`) · `docs/spec/` · `docs/rfc/` | Roadmap dẫn tới; ghi chú thiết kế dẫn mã TSK, không ghi trạng thái (R1) |
+| Rủi ro sản phẩm (`R-n`) | PRD §13.2 | Dẫn mã |
 | Đã thay đổi gì | `CHANGELOG.md` §1 | Không |
 | Cách chạy, lệnh, đầu ra kỳ vọng, workflow và job CI | `CHANGELOG.md` §2 | `README.md` gốc (cũng là trang PyPI, nên mọi link tuyệt đối): tối đa 3 lệnh bắt đầu nhanh, kèm link §2 — `tests/test_readme_quickstart.py` chạy đúng các lệnh đó |
 | Bất biến không được phá | `CHANGELOG.md` §3.3 | Dẫn số bất biến |
@@ -239,10 +247,18 @@ lại nội dung. Khi cần chép một câu để câu văn đọc được, đ
    `ruff format --check .` (trong `python/`) sạch · `neuroedge gate lint` xanh. CI chạy
    thêm các cổng ở `CHANGELOG.md` §2.5 (digest, corpus nghịch đảo, giấy phép, wheel).
 2. **Tiến độ, trong roadmap.**
-   - Dòng task: `✅ Hoàn thành (YYYY-MM-DD)` + đường dẫn artifact + commit hoặc PR.
-     Làm dở thì `🟡`. Hoãn thì `⏸ Hoãn` + lý do một dòng + mốc (và một mục `TODOS.md`).
+   - Dòng task: ô trạng thái có **đúng một** glyph (R9) — ✅ xong · 🟡 đang làm hoặc xong
+     một phần · ⏳ chưa bắt đầu · ⏸ hoãn · 🔴 bị chặn. Xong: `✅ Hoàn thành (YYYY-MM-DD)` +
+     đường dẫn artifact + commit hoặc PR. Hoãn: `⏸ Hoãn` + lý do một dòng + mốc (và một
+     mục `TODOS.md`). Bị chặn: `🔴` + thứ đang chặn.
+   - Task mới: cấp mã theo họ mã ở roadmap §2.4 — việc thuộc một họ có sẵn thì dùng họ đó,
+     không thì `TSK-I<n>-<nn>` với `n` là increment đầu tiên lên lịch nó. Mã không bao giờ
+     đánh lại; dời task sang increment khác là dời dòng của nó.
    - Tiêu chí ra: `[x]` + **bằng chứng chạy lại được** (lệnh + kết quả, hoặc tên test).
-   - §0.1–§0.2: sửa con số (tỷ lệ sprint, số test, hạng mục bị chặn).
+   - §0.2: sửa cột "Tiến độ" của increment mỗi khi một task của nó đổi trạng thái (số ✅
+     trên tổng số task, R10), và cột "Trạng thái" nếu cần. Cột "Dự báo" chỉ đổi **cùng PR
+     với bằng chứng** làm nó đổi, và dời luôn mọi increment phụ thuộc (R5).
+   - §0.1: sửa con số (số test, hạng mục bị chặn).
    - §0.3: **thay** các mục đã lỗi thời, không nối thêm. Xem §8.3.
 3. **Changelog.** Một mục trong `## [Chưa phát hành]` ở đầu `CHANGELOG.md` §1,
    dưới đúng nhóm *Đã thêm / Đã đổi / Đã sửa / Đã bỏ*:
@@ -252,7 +268,8 @@ lại nội dung. Khi cần chép một câu để câu văn đọc được, đ
      Kiểm: `pytest tests/test_gate_engine.py`. (FR-GATE-03, Q-17)
    ```
 
-   Tối đa 3 dòng, mở đầu bằng mã task (không có task thì mã `Q-N` hoặc `FR-*`). Câu đầu là thay đổi **quan sát
+   Tối đa 3 dòng, mở đầu bằng mã task (không có task thì mã `Q-N` hoặc `FR-*`); được đặt
+   mã increment phía trước (`**I3 · TSK-S4-01 — …**`). Câu đầu là thay đổi **quan sát
    được**; sau đó là nơi của nó và cách kiểm. **Một tính năng một mục:** task đã có
    mục trong `[Chưa phát hành]` thì sửa mục đó cho khớp trạng thái cuối, không thêm
    mục mới. Quyết định chỉ dẫn mã `Q-N` — nội dung ở PRD §15. Lý do dài và bối cảnh
@@ -261,7 +278,8 @@ lại nội dung. Khi cần chép một câu để câu văn đọc được, đ
 4. **Đặc tả, chỉ khi hành vi khác đặc tả.** Sửa FR/NFR hoặc Phụ lục cho khớp. Thay
    đổi nằm trong danh sách §3 thì **bắt buộc RFC**. Có quyết định mới thì cấp mã
    `Q-N` ở PRD §15.
-5. **Hoãn.** Việc cắt ra khỏi task vào `TODOS.md`, kèm mốc kích hoạt. Mục `TODOS.md`
+5. **Hoãn.** Việc cắt ra khỏi task vào `TODOS.md`, kèm mốc kích hoạt — một increment, một
+   mã task hoặc một sự kiện quan sát được, không phải tuần hay tháng. Mục `TODOS.md`
    mà task vừa làm xong thì **xoá**, và ghi vào changelog. Mục nào có mốc kích hoạt
    nhắc tới task vừa xong thì **đọc lại mốc đó** — mốc đã tới thì xử lý hoặc viết lại.
 6. **Quét tham chiếu lỗi thời.** Với mỗi sự thật vừa đổi (trạng thái, số liệu, tên),
@@ -275,9 +293,13 @@ lại nội dung. Khi cần chép một câu để câu văn đọc được, đ
 - **Thẻ bàn giao ngắn.** *Vừa hoàn thành* chỉ gồm mã task hoặc quyết định của
   **phiên gần nhất**, mỗi mục một dòng. *Việc tiếp theo* tối đa 5 mục, đúng thứ
   tự làm. *Lưu ý* chỉ giữ điều chưa có ở `CHANGELOG.md` §3.3, mỗi điều một dòng kèm mã.
-- **Không ghi con số dễ lỗi thời ngoài nơi của nó.** Số test, số fixture, phần trăm
-  tiến độ chỉ nằm ở roadmap §0.1. Nơi khác viết điều kiện (*"0 failed, 0 skipped"*,
-  *"mọi tệp trong `invalid/` đều bị từ chối"*), không viết số.
-- **Ngày tuyệt đối** (`2026-09-28`), không viết "tuần sau" hay "Tuần N ở đây".
+- **Không ghi con số dễ lỗi thời ngoài nơi của nó.** Số test, số fixture, tiến độ
+  chỉ nằm ở roadmap §0.1–§0.2; ngày dự báo chỉ ở §0.2. Nơi khác viết điều kiện
+  (*"0 failed, 0 skipped"*, *"mọi tệp trong `invalid/` đều bị từ chối"*), không viết số.
+- **Lịch bằng increment và ngày tuyệt đối.** Xếp lịch bằng mã increment (`I3`, "sau
+  I8") hoặc ngày tuyệt đối (`2026-11-16`); không dùng `Tuần N`, `Tháng N`, `Sprint N`
+  hay "tuần sau" cho lịch mới (R6). Khoảng thời gian tính từ lúc một increment mở
+  ("2 tuần sau khi I8 mở"). Tên sprint và khối cũ chỉ dùng khi dẫn lịch sử.
+- **Tham chiếu bằng mã hoặc mục**, không bằng số dòng (`tệp.md:NNN`) — R11.
 - **Câu ngắn, một ý.** Bảng khi có từ ba mục cùng cấu trúc trở lên. Tiếng Việt;
   mã, lệnh, đường dẫn giữ nguyên.

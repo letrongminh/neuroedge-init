@@ -40,7 +40,7 @@ Nói thẳng nếu bị hỏi. Mỗi dòng dẫn nguồn trong kho.
 | Chuyển cho lễ tân thật (`escalate`) | Chặn + ghi vết ghi + hook không làm gì | Q-17 · `TODOS.md` #20 |
 | Phiên tương tác trên Linux | `run --target linux` thoát mã 2; trên Linux chỉ `replay` / `verify` | `CHANGELOG.md` §2.3 |
 | So thời gian giữa target | `verify` so **quyết định**, chưa so timing; chưa có `esp32s3` | TSK-S4-04 |
-| Fleet OS (OTA theo đợt, dashboard, tải vết ghi từ xa) | Chưa có dòng mã nào; Khối 2 | proposal §6 · `TODOS.md` #6, #16 |
+| Fleet OS (OTA theo đợt, dashboard, tải vết ghi từ xa) | Chưa có dòng mã nào; I9 (sau Beta, nhánh A) | proposal §6 · `TODOS.md` #6 · PRD Q-11 |
 | Chứng nhận an toàn chức năng | Không có, không nhắm tới (chưa quyết) | `CEO-T2` |
 | Vết ghi có chữ ký, dùng làm bằng chứng cho bên thứ ba | Không ký | `TODOS.md` #1 |
 | Cài bằng `pip install neuroedge` | Chưa lên PyPI; cài từ mã nguồn | TSK-S3-14 |

@@ -1,10 +1,15 @@
-# NeuroEdge — Roadmap Giai đoạn 1.5
+# NeuroEdge — Ghi chú thiết kế NeuroBrain (Giai đoạn 1.5)
 
-## NeuroBrain: bring-up phần cứng có hợp đồng (song song Khối 1b, tới Developer Beta)
+## NeuroBrain: bring-up phần cứng có hợp đồng
 
-**Phiên bản:** 0.1 (bản nháp, chờ mục `Q-N` ở TSK-N0-01)
+> **Ghi chú thiết kế.** Tệp này giữ định vị, nguyên tắc, ranh giới với tầng an toàn và
+> thiết kế từng khối N0–N7. Nó **không** có lịch, trạng thái, tiêu chí ra hay thang cắt:
+> task, tiêu chí ra, phụ thuộc và thang cắt chỉ nằm ở [`neuroedge-roadmap.md`](neuroedge-roadmap.md)
+> increment **I12** (§7.2; thang cắt §9.3). Quyết định chỉ nằm ở `neuroedge-prd.md` §15:
+> **Q-31** (tên và định vị), **Q-40** (NeuroBrain sau Developer Beta). Quyết định còn chờ mã
+> `Q-N`: Phụ lục B.
 
-**Ngày lập:** 24 tháng 9, 2026 · lịch sử thay đổi: `CHANGELOG.md`
+**Cập nhật:** 2026-09-25 · lịch sử thay đổi: `CHANGELOG.md`
 
 **Tài liệu nguồn:**
 - `neuroedge-prd.md` §1.5 (P-1), §15 (Q-24, Q-26, Q-27, Q-11, Q-21)
@@ -21,13 +26,6 @@
 - MCP qua mạng (xem `TODOS.md` #24).
 - Kênh IM (Telegram, Zalo).
 - Sinh ràng buộc gate từ datasheet.
-
-Giai đoạn 1.5 chạy **song song** Khối 1b, không thay thế nó.
-
-> **Trạng thái quản trị.** Hướng đi và phạm vi dưới đây đã qua ba vòng review
-> (CEO, eng, design) ngày 2026-09-24. Chúng **chưa** là quyết định của kho cho tới
-> khi TSK-N0-01 ghi mục `Q-N` vào `neuroedge-prd.md` §15, nơi duy nhất giữ quyết
-> định. Cho tới lúc đó, tệp này là kế hoạch đề xuất.
 
 ---
 
@@ -48,7 +46,7 @@ Giai đoạn 1.5 chạy **song song** Khối 1b, không thay thế nó.
 13. [Khối N7 — NeuroBrain trên ESP32-S3](#13-khối-n7--neurobrain-trên-esp32-s3)
 14. [Cổng nhu cầu và cột mốc](#14-cổng-nhu-cầu-và-cột-mốc)
 15. [Rủi ro và giảm thiểu](#15-rủi-ro-và-giảm-thiểu)
-16. [Thang cắt phạm vi](#16-thang-cắt-phạm-vi)
+16. [Cắt phạm vi](#16-cắt-phạm-vi)
 
 **Phụ lục**
 - [A — Tái dùng có chọn lọc từ ESP-Claw](#phụ-lục-a--tái-dùng-có-chọn-lọc-từ-esp-claw)
@@ -59,7 +57,7 @@ Giai đoạn 1.5 chạy **song song** Khối 1b, không thay thế nó.
 ## Quy ước tài liệu
 
 Mọi mã và ký hiệu (`TSK-N*`, `N0`–`N7`, `§x.y`…) được giải mã ở
-**[`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md)**. Mọi mốc ghi bằng **ngày tuyệt đối**.
+**[`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md)**.
 
 ---
 
@@ -131,98 +129,41 @@ Libgpiod thả line khi tiến trình thoát, và *"it should not be assumed tha
 
 ## 3. Giả định nguồn lực
 
-- **Trước 2026-10-25:** V2 chủ trì N0 và `lab_pulse`. V2 đang nhẹ việc vì bo Box-3 chưa về (TSK-S1-10). Kỹ thuật trưởng duyệt RFC-0007 và mục `Q-N`, không tự viết. Không việc nào của M1 bị lùi.
-- **Từ 2026-11-16:** cần **thêm 1 người**, hoặc tuyển V4 sớm.
-- **Nếu tới 2026-11-16 vẫn chưa có người:** N2–N7 lùi sang sau Developer Beta. Khi đó ghi một mục `TODOS.md` kèm mốc kích hoạt. N1 và N5b không lùi. v1.0 và Beta không bị NeuroBrain làm trễ.
-- **Nếu bo Box-3 về sớm:** TSK-S1-10 (spike bộ nhớ) xếp trước `lab_pulse`.
+→ Người và điều kiện vào của I12: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §1.1 và §7.2.
 
 ---
 
 ## 4. Đường găng và phụ thuộc
 
-```
-2026-10-25 trước  N0 (tài liệu) ─┬─▶ TSK-N1-01 lab_pulse trên sim ─▶ demo cổng nhu cầu
-                                 │
-2026-10-25        Cổng nhu cầu (§14) ─▶ ≥2: toàn bộ · 1: N0–N2 + N5b · 0: TODOS, mốc Beta
-                                 │
-2026-11-16        kiểm nguồn lực (§3) ─▶ RFC-0007 chấp thuận ─▶ lab_read + digital.in
-Sprint 4          N2 phong bì ─▶ N5 Chat Contracting ─▶ N5b Lab Monitor
-Sprint 5          TSK-S5-10 (phiên tương tác linux) ─▶ lab qua MCP trên bo linux thật
-                  TSK-S5-09 (i2c-stub) ─▶ N3 bus I2C (+ ADC nếu spike đạt) ─▶ N4
-Sprint 6 → Beta   N6 trigger ─▶ N7 chip (cần Box-3 + HAL Sprint 4)
-```
-
-| Phụ thuộc | Chặn | Nguồn |
-|:---|:---|:---|
-| **TSK-S5-10** — phiên `run --target linux` | Lab qua MCP trên bo linux thật. Hôm nay `mcp serve` chỉ chạy trên `sim` (`cli/main.py`, `_start_session` thoát mã 2 khi `target != "sim"`) | `neuroedge-roadmap.md` Sprint 5 |
-| **TSK-S5-09** — `sensor.read` trên linux qua `i2c-stub` | N3 | `neuroedge-roadmap.md` Sprint 5 |
-| **HAL `esp32s3` Sprint 4** + bo Box-3 (TSK-S1-10) | N7 | `neuroedge-roadmap.md` Sprint 4 |
-| **RFC-0007** | `lab_read`, N2 (khai phong bì), N3 | TSK-N0-03 |
-| **Q-11 mở rộng cho OFL-1.1** | Restyle trang sim với IBM Plex (TSK-N5b-07) | TSK-N0-06 |
+→ Phụ thuộc của I12 và của từng task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §0.2 và §7.2.
 
 ---
 
 ## 5. Khối N0 — Quản trị
 
-**Trước 2026-10-25. Chủ trì: V2.** Chỉ có tài liệu, không có mã.
+Chỉ có tài liệu, không có mã (nguyên tắc 7, §1).
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N0-01** | Hai mục `Q-N`: "Lab Mode / NeuroBrain" và "Giai đoạn 1.5", chuyển các quyết định ở Phụ lục B vào PRD §15 | — | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` §15 |
-| **TSK-N0-02** | Sửa đổi FR-HAL-01: primitive mới (`digital.in`, bus I2C) là **tuỳ chọn theo board**, như RFC-0002 làm với `vision.in`; sửa FR-CLI-10 cho `mcp desktop-config --lab` | FR-HAL-01, FR-CLI-10 | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` |
-| **TSK-N0-03** | Nháp RFC-0007: `digital.in`; bus I2C chỉ đọc; chỗ cho ADC; trường bus/địa chỉ và khai báo phong bì trong `board.v1`. Phải lý giải vì sao không mở rộng `sensor.read`. `gate.v1` không đổi | FR-HAL-01 | V2 | ⏳ Chưa bắt đầu | `docs/rfc/0007-*.md` |
-| **TSK-N0-04** | Cập nhật threat model §2b: lab action, nguồn `trigger`, `/confirm`, cờ `[lab] enabled` | NFR-SEC-09 | V2 | ⏳ Chưa bắt đầu | `docs/spec/threat_model.md` |
-| **TSK-N0-05** | Quy trình duyệt gate nháp: `-draft` → PR có người review → `gate lint` sạch → bỏ hậu tố → `check_digests.py --update` | FR-GATE-* | V2 | ⏳ Chưa bắt đầu | `CONTRIBUTING.md` §3 |
-| **TSK-N0-06** | Đề xuất mở rộng Q-11 cho OFL-1.1 (**chỉ với font**) và mục `NOTICE` cho IBM Plex; thêm mục `NOTICE` Section A cho ESP-Claw (Phụ lục A) | — | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` Q-11 · `NOTICE` |
-
-**Tiêu chí ra Khối N0:**
-
-- [ ] **Tiêu chí 1:** Hai mục `Q-N` có trạng thái ĐÃ CHỐT, có chữ ký kỹ thuật trưởng.
-- [ ] **Tiêu chí 2:** RFC-0007 ở trạng thái thảo luận, `schemas/gate.v1.json` không đổi byte nào.
-- [ ] **Tiêu chí 3:** Mọi tài liệu khác dẫn mã `Q-N`, không chép lại nội dung (CONTRIBUTING §8.1).
+→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N0.
 
 ---
 
 ## 6. Khối N1 — Gated claw lõi
 
-**`lab_pulse` trước 2026-10-25, trên `sim`.** `lab_read` ra sau khi RFC-0007 được chấp thuận. Lab qua MCP trên bo linux thật chờ TSK-S5-10.
-
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N1-01** | `lab_pulse` là `@action` mẫu + gate `gates/lab/lab_pulse@1.0.0`, với `arguments.duration_ms ≤ 2000` (RFC-0005). Gate không có pin enum: chân giới hạn bằng allow-list của board; dự án muốn hẹp hơn thì viết gate con thu hẹp `pin` | FR-MDL-10 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` · `gates/lab/` |
-| **TSK-N1-02** | Cờ `[lab] enabled` trong `agent.toml`, mặc định **tắt**; tắt thì lab tool không được đăng ký | — | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N1-03** | `neuroedge build --release` từ chối khi `[lab] enabled`, lỗi nêu tên cờ và cách tắt; build thường ghi `lab_enabled: true` trong báo cáo | FR-CLI-02 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` · `engine/compiler.py` · `docs/release.md` |
-| **TSK-N1-04** | Kết quả lab call kèm `gate explain`, để LLM tự sửa lệnh sai | FR-MDL-10 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N1-05** | `mcp desktop-config --lab`: cấu hình Claude Desktop cho agent lab trong một bước, vẫn đúng một mục `mcpServers` | FR-CLI-10 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/mcp_desktop.py` |
-| **TSK-N1-06** | `board show --lab`: chân trong allow-list, giới hạn phong bì từng chân, lý do chân khác bị cấm | FR-HAL-05 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` |
-| **TSK-N1-07** | Test ranh giới **B-1**: quét AST/import của `neuroedge.brain`, fail nếu có gọi phương thức HAL hoặc import `hal.linux` / `hal.sim` | — | V2 | ⏳ Chưa bắt đầu | `python/tests/test_brain_boundary.py` |
-| **TSK-N1-08** | `lab_read` trên primitive `digital.in` (sau RFC-0007) | FR-HAL-01 | — | ⏳ Chờ RFC-0007 | `python/neuroedge/brain/` · `hal/` |
+`lab_pulse` chạy trên `sim`. `lab_read` cần primitive `digital.in` của RFC-0007. Lab qua MCP trên bo `linux` thật cần phiên tương tác `linux` (TSK-S5-10).
 
 **`call_source` của lab action:**
 - **Nhận:** `mcp`, `test`, cùng các nguồn người là `local_grammar` và `ui`.
 - **Từ chối:** `trigger` và `system_two`. Lab là dụng cụ bàn thí nghiệm, không phải hành vi tự động.
 
-**Tiêu chí ra Khối N1:**
-
-- [ ] **Tiêu chí 1:** Trên `sim`, Claude Desktop gọi `lab_pulse(pin, 300)`. Có trace ALLOW và chân về 0.
-- [ ] **Tiêu chí 2:** Gọi `lab_pulse(pin, 2500)` ra `argument_out_of_range`, kèm lý do `gate explain`.
-- [ ] **Tiêu chí 3:** Cờ tắt thì `mcp tools` không liệt kê `lab_pulse`. `build --release` với cờ bật thoát mã khác 0.
-- [ ] **Tiêu chí 4:** Test B-1 fail khi thêm thử một lệnh `hal.digital_out` vào `brain/`.
-- [ ] **Tiêu chí 5:** `pytest` xanh, 0 skipped; `gate lint gates/lab/` sạch; `scripts/wheel_smoke.sh` đạt.
+→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N1.
 
 ---
 
 ## 7. Khối N2 — Phong bì an toàn vật lý
 
-**Từ 2026-11-16.** Phong bì gồm giới hạn tổng thời gian bật và tần suất theo chân, khai ở `board.v1` (RFC-0007).
+Phong bì gồm giới hạn tổng thời gian bật và tần suất theo chân, khai ở `board.v1` (RFC-0007).
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N2-01** | Hook phong bì trong `HardwareAbstractionLayer.digital_out`, được tiêm vào như `authorize`. Thứ tự `require_pin → envelope → authorize → record`. Bị từ chối thì **token không bị tiêu** | FR-HAL-* | — | ⏳ Chưa bắt đầu | `python/neuroedge/hal/__init__.py` |
-| **TSK-N2-02** | Chính sách phong bì trong `brain/`: check-và-reserve **nguyên tử** dưới khoá theo chân; `time.monotonic` được tiêm vào; trace ghi sự kiện `envelope_refused` | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N2-03** | Móc tắt an toàn cho `mcp serve`: `close()` gọi `hal.close()`, bắt SIGTERM, `on_no_initialize` dọn dẹp trước `os._exit` | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` |
-| **TSK-N2-04** | Hợp đồng hồi quy — năm khẳng định (§7.1) | — | — | ⏳ Chưa bắt đầu | `python/tests/test_hal_*.py` · `test_safety_regressions.py` · `test_mcp_serve_ui.py` |
-| **TSK-N2-05** | Cập nhật sơ đồ ở đầu `mcp_server.py` thêm bước phong bì | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/mcp_server.py` |
+→ Hook phong bì và thứ tự kiểm (TSK-N2-01), chính sách check-và-reserve nguyên tử (TSK-N2-02), móc tắt an toàn (TSK-N2-03) và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N2.
 
 ### 7.1 Hợp đồng hồi quy
 
@@ -232,23 +173,11 @@ Sprint 6 → Beta   N6 trigger ─▶ N7 chip (cần Box-3 + HAL Sprint 4)
 4. `verify` giữ nguyên chuỗi phán quyết của ba trace chuẩn mực.
 5. `mcp serve` khi thoát vẫn ghi trace, và có gọi `hal.close()`.
 
-**Tiêu chí ra Khối N2:**
-
-- [ ] **Tiêu chí 1:** Hai lệnh đồng thời cùng chân, chạy cả hai thứ tự bằng điểm dừng điều khiển được, cho đúng một `envelope_refused`.
-- [ ] **Tiêu chí 2:** Test SIGTERM giữa xung trên gpio-sim đưa line về 0 (sau TSK-S5-10). Phần unit của TSK-N2-03 chạy ngay.
-- [ ] **Tiêu chí 3:** Năm khẳng định §7.1 đều xanh.
-
 ---
 
 ## 8. Khối N3 — Bus I2C chỉ đọc
 
-**Sprint 5, cùng TSK-S5-09.**
-
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N3-01** | Quét bus bằng **read-byte**, không bằng quick-write; đọc chip ID; không nhận diện được thì ghi "không nhận diện", không đoán | FR-HAL-01 | — | ⏳ Chờ RFC-0007 | `python/neuroedge/hal/` · `brain/` |
-| **TSK-N3-02** | Test trên `i2c-stub` + `lm75`: có thiết bị, bus trống, NACK, timeout (tối đa 1 lần thử lại) | FR-TGT-02 | — | ⏳ Chưa bắt đầu | `python/tests_linux/` |
-| **TSK-N3-03** | **Spike ADC** trên runner `ubuntu-latest`: chip ADC I2C có driver hwmon (`ads7828` hoặc `ina2xx`) trên `i2c-stub`, đọc lại `in0_input` | — | — | ⏳ Chưa bắt đầu | báo cáo spike trong PR |
+N3 dựng trên `sensor.read` qua `i2c-stub` của TSK-S5-09.
 
 **ADC có điều kiện.**
 - Runner tắt `CONFIG_IIO` (`docs/spec/simulation_coverage.md`), nên `iio_dummy` và `ti-ads1015` bị loại.
@@ -256,36 +185,23 @@ Sprint 6 → Beta   N6 trigger ─▶ N7 chip (cần Box-3 + HAL Sprint 4)
 - **Spike không đạt:** ADC vào `TODOS.md`, mốc kích hoạt là khi có runner tự host gắn ADC thật.
 - `sim` chỉ phát lại giá trị đã ghi, không có quét I2C thật.
 
-**Tiêu chí ra Khối N3:**
-
-- [ ] **Tiêu chí 1:** `tests_linux` phát hiện `0x48` (`lm75`) và báo đúng bus trống.
-- [ ] **Tiêu chí 2:** Kết quả spike ADC được ghi lại, và quyết định ADC đã áp dụng.
+→ Quét bus (TSK-N3-01), test trên `i2c-stub` (TSK-N3-02), spike ADC (TSK-N3-03) và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N3.
 
 ---
 
 ## 9. Khối N4 — Sổ bàn làm việc
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N4-01** | Ghi sự thật phát hiện được, mỗi mục kèm trace nguồn: vai chân, chip ID. Hai vai mâu thuẫn trên cùng chân thì báo lỗi có kiểu, để người quyết | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N4-02** | Sinh profile board **mới** dạng nháp qua mã đọc/ghi `BoardProfile`, không ghi TOML bằng chuỗi. **Không sửa** ba profile tier-1 | FR-HAL-05 | — | ⏳ Chưa bắt đầu | `python/neuroedge/hal/board.py` |
-| **TSK-N4-03** | Cảnh báo chân đặc biệt theo MCU. ESP32-S3: strapping 0, 3, 45, 46; flash/PSRAM 26–32 (33–37 khi dùng PSRAM octal); chân đã bị ngoại vi chiếm (dữ liệu port từ ESP-Claw, Phụ lục A). Đây là cảnh báo, không phải blacklist | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-
 Nếu profile mới cần qua `test_boards.py`, nó phụ thuộc RFC-0002.
+
+→ Sổ sự thật (TSK-N4-01), profile board nháp (TSK-N4-02), cảnh báo chân đặc biệt (TSK-N4-03): [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N4.
 
 ---
 
 ## 10. Khối N5 — Chat Contracting
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N5-01** | Từ trace sinh `@action` + gate `0.1.0-draft` + test replay, bằng `templates.scaffold`/`_render` có sẵn. Chỉ ghi vào thư mục agent của người dùng | FR-DX-01 | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N5-02** | Test **hai chiều** bắt buộc: ít nhất một ALLOW và một BLOCK/`argument_out_of_range`. Bản nháp chỉ có ALLOW thì bị từ chối | FR-CI-* | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N5-03** | Ba lỗi LLM riêng biệt (malformed, empty, refusal), không ghi tệp rác. Chân không truy được về trace thì từ chối sinh. Tên action trùng thì không ghi đè | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` · corpus `expected_results.yaml` |
-| **TSK-N5-04** | PR của bản nháp in `gate explain` bằng lời, cùng diff chính sách và các test ALLOW/BLOCK | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N5-05** | `trace export --report`: báo cáo bring-up Markdown (chân đã thử, kết quả, thiết bị bus, bản nháp đã sinh) | FR-TRC-* | — | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` |
-
 `extends` từ chối version pre-release, nên không gate nào extends được một bản nháp. Đây là hành vi mong muốn.
+
+→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N5.
 
 ---
 
@@ -298,22 +214,7 @@ Là một panel trong trang sim hiện có (`python/neuroedge/viz/assets/ui.js`,
 - Cột trái: thiết bị → bus I2C.
 - Header: huy hiệu LAB MODE.
 
-| Mã Task | Hạng mục công việc | Người | Trạng thái | Sản phẩm bàn giao |
-|:---:|:---|:---:|:---:|:---|
-| **TSK-N5b-01** | Xếp hàng ask "1/3", ask cũ nhất trước (hôm nay `stateAt` chỉ giữ ask mới nhất). Focus mặc định ở "Huỷ"; phím chỉ tác dụng khi thẻ có focus; không cướp focus khi người đang gõ lệnh | — | ⏳ Chưa bắt đầu | `viz/assets/ui.js` · `tests/test_sim_ui.py` |
-| **TSK-N5b-02** | Mất kết nối SSE: banner vàng, làm mờ thiết bị và hàng live, khoá nút ask; gỡ banner khi có tin đầu tiên | — | ⏳ Chưa bắt đầu | `viz/__init__.py` · `ui.js` · `ui.css` |
-| **TSK-N5b-03** | Hàng "đang bật" có thời gian còn lại; làn timeline theo chân với vùng bấm ≥24×24 px, mỗi xung là `<button>` có `aria-label`, mũi tên trái/phải để di chuyển | — | ⏳ Chưa bắt đầu | `ui.js` · `ui.css` |
-| **TSK-N5b-04** | Thước phong bì ghi rõ cửa sổ lấy từ `board.v1`: xanh dưới 80%, vàng từ 80%, đầy thì đỏ kèm "khoá tới HH:MM:SS". Trạng thái rỗng: bo chưa khai chân → thông điệp trỏ tới `board show --lab`; thiếu phong bì → nhãn vàng | — | ⏳ Chưa bắt đầu | `ui.js` · `sim/ui.py` |
-| **TSK-N5b-05** | Thẻ phán quyết: huy hiệu bốn màu theo nghĩa (ALLOW xanh, BLOCK đỏ, ENVELOPE vàng, REJECTED xám, luôn kèm chữ); nhãn "người: Đồng ý/Huỷ/hết hạn"; gộp lặp "×N"; bấm xung thì mở thẻ tương ứng kèm `gate explain` | — | ⏳ Chưa bắt đầu | `ui.js` · `ui.css` |
-| **TSK-N5b-06** | Tiêu đề tab "(1) Cần xác nhận" + favicon vàng; công tắc âm báo mặc định tắt. Khi tua lại, ask và hàng live **luôn là hiện tại**. Nhãn bus: "phát lại từ trace `<tệp>` lúc HH:MM:SS" | — | ⏳ Chưa bắt đầu | `ui.js` · `sim/ui.py` |
-| **TSK-N5b-07** | Restyle **cả trang sim**: bỏ viền trái trên thẻ phán quyết, thay bằng huy hiệu; nhúng IBM Plex Sans 400/600 + Plex Mono 400 (woff2, subset Latin + tiếng Việt); luật hệ thiết kế ghi ở khối chú thích đầu `ui.css`. **Chặn bởi TSK-N0-06** | — | ⏳ Chặn bởi Q-11 | `ui.css` · `NOTICE` |
-
-**Tiêu chí ra Khối N5b:**
-
-- [ ] **Tiêu chí 1:** Ba ask cùng lúc: không ask nào bị che rồi tự hết hạn.
-- [ ] **Tiêu chí 2:** Nhấn Enter trong ô lệnh không bao giờ kích "Đồng ý".
-- [ ] **Tiêu chí 3:** `trace view` vẫn là một tệp tự chứa, chạy offline (FR-DX-02).
-- [ ] **Tiêu chí 4:** Đi hết luồng xác nhận chỉ bằng bàn phím và VoiceOver.
+→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N5b.
 
 ---
 
@@ -321,42 +222,21 @@ Là một panel trong trang sim hiện có (`python/neuroedge/viz/assets/ui.js`,
 
 Luật "khi X thì Y" là **cấu hình agent**, không phải mở rộng gate. Mỗi trigger gọi một `@action` có gate.
 
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N6-01** | Giá trị `call_source` mới `trigger`. `SOURCES` là mã, không nằm trong `schemas/`, nên chỉ cần mục `Q-N` + cập nhật `docs/spec/tool_calling.md`, không cần RFC. Thêm fixture và `expected_results.yaml` | FR-MDL-10 | — | ⏳ Chưa bắt đầu | `actions/tools.py` · `fixtures/tool_calls/` |
-| **TSK-N6-02** | `trigger ∉ HUMAN_SOURCES`; có test khẳng định trigger không trả lời được `ask` | Q-26 | — | ⏳ Chưa bắt đầu | `actions/confirmation.py` |
-| **TSK-N6-03** | Debounce + trần tần suất trigger; action bị BLOCK không được thử lại vô hạn; trigger bị chặn liên tục thì hiện trên N5b | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
+→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N6.
 
 ---
 
 ## 13. Khối N7 — NeuroBrain trên ESP32-S3
 
-**Làm cuối.** Chỉ bắt đầu khi N1–N6 xong, bo Box-3 đã về và HAL Sprint 4 đã xong.
+N7 đưa lab action, gate và phong bì của N1–N6 xuống chip, nên cần bo Box-3 và HAL `esp32s3`.
 
-| Mã Task | Hạng mục công việc | Người | Trạng thái | Sản phẩm bàn giao |
-|:---:|:---|:---:|:---:|:---|
-| **TSK-N7-01** | Lab action + gate trên chip, dùng walker C và sổ token có sẵn | — | ⏳ Chưa bắt đầu | `targets/esp32s3/` |
-| **TSK-N7-02** | Cưỡng chế phong bì trong firmware C. Firmware chưa có phong bì thì action gắn phong bì bị **từ chối trên chip** (fail-closed) | — | ⏳ Chưa bắt đầu | `targets/esp32s3/components/` |
-| **TSK-N7-03** | Port chọn lọc từ ESP-Claw (Phụ lục A). MCP trên chip chỉ làm sau `TODOS.md` #24, hoặc đi qua UART | — | ⏳ Chưa bắt đầu | `targets/esp32s3/` · `NOTICE` |
+→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N7.
 
 ---
 
 ## 14. Cổng nhu cầu và cột mốc
 
-**Cổng nhu cầu 2026-10-25** (theo khuôn Q-20, `docs/business/cong-nhu-cau-2026-10-25/`). Demo `lab_pulse` trên `sim` + UI cho người dùng U2, rồi đếm số người tự hỏi *"dùng thử trên bo của tôi được không"*.
-
-| Kết quả | Hành động |
-|:---|:---|
-| **≥ 2 người** | Làm tiếp toàn bộ Giai đoạn 1.5 |
-| **Đúng 1 người** | Chỉ làm N0–N2 và N5b; gọi thêm 5 cuộc |
-| **0 người** | Đưa Giai đoạn 1.5 vào `TODOS.md`, mốc kích hoạt là Developer Beta |
-| **Dưới 3 buổi demo có bản ghi** | Cổng hoãn 1 tuần. N0 và N1 vẫn tiếp tục; từ N2 trở đi chưa mở |
-
-**Ghép luật.** Luật cổng và luật nguồn lực (§3) **cùng áp dụng**, luật chặt hơn thắng.
-
-**Chỉ số cho Developer Beta:**
-- số lab call, tỉ lệ BLOCK, số `envelope_refused`;
-- **số bản nháp sinh ra so với số bản nháp được khoá**. Đây là chỉ số nhu cầu chính.
+→ Q-40 bỏ luật cổng nhu cầu riêng của NeuroBrain. Tín hiệu đo của I12: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §7.2.
 
 ---
 
@@ -364,28 +244,18 @@ Luật "khi X thì Y" là **cấu hình agent**, không phải mở rộng gate.
 
 | # | Rủi ro | Mức độ | Dấu hiệu sớm | Phương án ứng phó |
 |:---:|:---|:---:|:---|:---|
-| **1** | NeuroBrain kéo V1 khỏi đường găng M1 | Cao | Việc của V1 bị gán cho N0/N1 | N0/N1 do V2 làm (§3). Không task nào của M1 phụ thuộc Giai đoạn 1.5 |
+| **1** | NeuroBrain kéo người khỏi đường găng v1.0 | Cao | Việc của v1.0 bị gán cho N0/N1 | Q-40 xếp I12 sau Developer Beta; không increment nào trước I12 phụ thuộc NeuroBrain |
 | **2** | LLM sinh gate nới lỏng hơn ý người nói | Cao | Bản nháp chỉ có test ALLOW | Test hai chiều (TSK-N5-02), `gate explain` trong PR (TSK-N5-04), người duyệt (TSK-N0-05) |
 | **3** | Chân kẹt HIGH khi tiến trình chết | Trung bình | Relay nóng hoặc kêu sau crash | §2.3: phần mềm không cứu được. README lab và runbook bắt buộc ghi rõ cần điện trở kéo xuống |
 | **4** | Lab lọt vào bản phát hành | Trung bình | Báo cáo build ghi `lab_enabled: true` | Cờ mặc định tắt, `build --release` chặn (TSK-N1-03) |
-| **5** | Không có thêm người từ 2026-11-16 | Cao | Chưa có ứng viên trước 2026-11-01 | §3: N2–N7 lùi sau Beta |
+| **5** | Không có thêm người cho I12 | Cao | Chưa có ứng viên khi I12 sắp mở | Điều kiện vào của I12 (`neuroedge-roadmap.md` §7.2): chưa có người thì I12 chưa mở |
 | **6** | RFC-0007 hoặc mở rộng Q-11 bị bác | Trung bình | Phản biện tập trung vào primitive mới | `lab_read`/N3 dừng, `lab_pulse` không bị ảnh hưởng. Restyle giữ font hệ thống, chỉ bỏ viền trái |
 
 ---
 
-## 16. Thang cắt phạm vi
+## 16. Cắt phạm vi
 
-Cắt theo thứ tự này khi trượt tiến độ. Bậc càng cao cắt càng sớm.
-
-| Bậc | Hạng mục cắt | Hệ quả chấp nhận được |
-|:---:|:---|:---|
-| **1** | N7 trên chip | NeuroBrain chạy trên host; gate vẫn tương đương xuống chip ở phần sản phẩm |
-| **2** | N6 trigger | Bring-up vẫn đủ; hành vi tự động làm sau |
-| **3** | N4 sổ bàn làm việc | Sự thật chỉ nằm trong trace thô |
-| **4** | N3 bus I2C | Chỉ có `digital.out`/`digital.in` |
-| **5** | N5b restyle (TSK-N5b-07) | Panel lab vẫn có, trang giữ phong cách cũ |
-
-**Tuyệt đối không cắt:** N1 cùng cờ lab và test B-1; N2 phong bì. Không có hai khối này thì "secure by design" không đứng được.
+→ Thang cắt của I12 và phần tuyệt đối không cắt: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §9.3.
 
 ---
 
@@ -415,12 +285,12 @@ Các quyết định dưới đây chốt ở ba vòng review ngày 2026-09-24. 
 | # | Quyết định |
 |:---:|:---|
 | 1 | Xây NeuroBrain kiểu ESP-Claw nhưng secure by design; không tool chân thô |
-| 2 | Giai đoạn 1.5 song song Khối 1b tới Developer Beta; N0 + `lab_pulse` trước 2026-10-25, V2 chủ trì |
-| 3 | Phạm vi N1–N7 như tệp này; N7 làm cuối |
+| 2 | *Đã thay:* thời điểm và thứ tự của NeuroBrain là Q-40 (sau Developer Beta, increment I12) |
+| 3 | Phạm vi N0–N7 như tệp này; N7 làm cuối |
 | 4 | Gói `brain/` với bất biến B-1; phong bì là hook trong HAL, kiểm trước `authorize` |
 | 5 | Thêm `digital.in` vào RFC-0007 cùng bus I2C; ADC có điều kiện theo spike |
 | 6 | Cờ `[lab] enabled` mặc định tắt; `build --release` chặn |
-| 7 | Lab qua MCP trên linux thật chờ TSK-S5-10 |
+| 7 | Lab qua MCP trên `linux` thật dùng phiên tương tác `linux` của TSK-S5-10 |
 | 8 | Port chọn lọc từ ESP-Claw theo Phụ lục A |
 | 9 | Restyle trang sim với IBM Plex; mở rộng Q-11 cho OFL-1.1, chỉ với font |
-| 10 | Luật cổng nhu cầu và nguồn lực ở §3 và §14 |
+| 10 | *Đã bỏ:* luật cổng nhu cầu riêng của NeuroBrain (Q-40); người cho I12: `neuroedge-roadmap.md` §1.1 |

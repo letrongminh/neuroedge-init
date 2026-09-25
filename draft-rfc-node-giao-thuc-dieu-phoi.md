@@ -1,13 +1,14 @@
-# RFC (chưa cấp số): Giao thức điều phối node cho robot phân tầng
+# RFC nháp — ghi chú thiết kế (chưa cấp số): Giao thức điều phối node cho robot phân tầng
 
-> **Đây là bản nháp.** Tệp nằm ngoài `docs/rfc/` vì **chưa được cấp số RFC**. Khi mở PR
-> RFC theo `CONTRIBUTING.md` §3 (PR chỉ chứa tệp RFC), bản này sẽ được sao sang
+> **Ghi chú thiết kế — RFC nháp.** Tệp nằm ngoài `docs/rfc/` vì **chưa được cấp số RFC**. Khi mở PR
+> RFC theo `CONTRIBUTING.md` §3 (PR chỉ chứa tệp RFC — TSK-W3-02), bản này được sao sang
 > `docs/rfc/NNNN-<slug>.md` theo `docs/rfc/0000-template.md` với số kế tiếp (`docs/rfc/README.md`;
-> 0007 đã được TSK-N0-03 giữ chỗ).
->
-> **Đối chiếu 2026-09-25** (sau TSK-S4-09 và TSK-S2-07): các ràng buộc mới từ đặc tả đã chốt
-> nằm ở §3.1, §3.3, §3.4, §5 và Phụ lục. Các điểm chờ quyết định đã chốt ngày 2026-09-25
-> (Q-32 → Q-37, `neuroedge-prd.md` §15); câu hỏi còn mở ở Phụ lục.
+> 0007 đã được TSK-N0-03 giữ chỗ). Tệp **không** có lịch, trạng thái task hay tiêu chí ra: chúng chỉ
+> nằm ở [`neuroedge-roadmap.md`](neuroedge-roadmap.md) increment **I14** (§7.4). Quyết định chỉ nằm ở
+> `neuroedge-prd.md` §15: **Q-32** (trace `v1`), **Q-33** (RP2350), **Q-34** (ROS 2/Nav2), **Q-35**
+> (mất liên lạc), **Q-36** (wire), **Q-37** (token `motion.*`), **Q-38** (chứng nhận an toàn), **Q-40**
+> (thứ tự sau Beta). Đối chiếu với đặc tả đã chốt sau TSK-S4-09 và TSK-S2-07 nằm ở §3.1, §3.3, §3.4,
+> §5 và Phụ lục; câu hỏi còn mở ở Phụ lục.
 
 | | |
 |:---|:---|
@@ -20,7 +21,7 @@
 | **Trạng thái** | Bản nháp — chưa thảo luận |
 | **Người phê duyệt** | Kỹ thuật trưởng **nếu** chạm ngữ nghĩa phân giải gate; nếu chỉ chạm trace thì theo quy trình RFC thường |
 
-**Liên quan:** `draft-ke-hoach-mo-rong-robot-fofoca.md` (kế hoạch mẹ, Chặng 3);
+**Liên quan:** `draft-ke-hoach-mo-rong-robot-fofoca.md` (ghi chú thiết kế mẹ, Chặng 3);
 `docs/spec/threat_model.md`; `docs/spec/tool_calling.md`; `docs/spec/voice_fsm.md` (thu hồi lệnh);
 `docs/spec/simulation_coverage.md` §4 (vết ghi từ thiết bị); `docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md`
 (phân tầng target); IEC 61784-3 (black channel).
@@ -34,10 +35,10 @@ motor, display, tay máy. NeuroEdge hôm nay coi mỗi môi trường thực thi
 
 - Mỗi target là một runtime riêng (`sim`, `linux`, `esp32s3`); không có khái niệm một
   agent điều phối nhiều node.
-- `docs/spec/tool_calling.md:216` đã phác "MCP cho thiết bị đi qua gateway hoặc máy
+- `docs/spec/tool_calling.md` §8 (dòng `esp32s3`) đã phác "MCP cho thiết bị đi qua gateway hoặc máy
   `linux`", nhưng đó là **một thiết bị sau gateway**, không phải nhiều MCU phối hợp.
 - `trace.v1` gắn cứng **một** `target`/`board_id` cho cả phiên
-  (`schemas/trace.v1.json:15,25,29`) — không có chỗ cho danh tính node.
+  (`schemas/trace.v1.json`, `metadata.required`) — không có chỗ cho danh tính node.
 - Chưa có transport mạng nào được mở (`TODOS.md` #24; NFR-SEC-09): v1.0 chỉ stdio.
 
 Hệ quả: không thể diễn đạt "cùng một ý định, nhiều node cùng thực hiện", cũng không có
@@ -47,9 +48,9 @@ bằng chứng replay cho một phiên trải trên nhiều chip.
 
 | Mệnh đề hiện tại | Vì sao chặn multi-node |
 |:--|:--|
-| `metadata.target` enum 3 giá trị (`trace.v1.json:27`) | Không có chỗ khai nhiều node; node RP2350 còn chưa có target (chờ RFC-0002) |
-| `events[].additionalProperties: false` (`trace.v1.json:58`) | Không thể thêm `node_id` cấp sự kiện nếu không đổi lược đồ — và cả đặc tả dòng `NE1`, vốn có đúng ba khoá (`simulation_coverage.md` §4) |
-| `board.py` `SUPPORTED_TARGETS = ("sim","linux","esp32s3")` (`python/neuroedge/hal/board.py:58`) | Node mới phải qua RFC-0002 (bậc 3 `rp2350`) |
+| `metadata.target` enum 3 giá trị (`trace.v1.json`) | Không có chỗ khai nhiều node; node RP2350 còn chưa có target (chờ RFC-0002) |
+| `events[].additionalProperties: false` (`trace.v1.json`) | Không thể thêm `node_id` cấp sự kiện nếu không đổi lược đồ — và cả đặc tả dòng `NE1`, vốn có đúng ba khoá (`simulation_coverage.md` §4) |
+| `board.py` `SUPPORTED_TARGETS = ("sim","linux","esp32s3")` (`python/neuroedge/hal/board.py`) | Node mới phải qua RFC-0002 (bậc 3 `rp2350`) |
 | Bất biến fail-closed on-device (`neuroedge-proposal.md` §3.4, Phụ lục H.3) | **Cấm** giải pháp "gate tập trung trên Pi" — nếu Pi mất, actuator phải tự về an toàn |
 | MCP chỉ stdio (`TODOS.md` #24) | Chưa có kênh mạng nào để nói chuyện với node từ xa |
 
@@ -61,7 +62,7 @@ bằng chứng replay cho một phiên trải trên nhiều chip.
   mật mã, và trạng thái an toàn cục bộ.
 - Agent (System 1/2) chạy trên **Pi** phát **ý định** (intent/ToolCall). Mỗi node **tự
   lượng giá gate của nó** với dữ kiện cục bộ rồi mới chạm actuator. **Không có gate tập
-  trung** (luật BT2 của kế hoạch mẹ).
+  trung** (luật BT2 của ghi chú thiết kế mẹ).
 - **Danh tính** dựng trên `device_info` sẵn có của TSK-S4-09 (`device_id`, `boot_id`): mỗi phiên của
   một thiết bị đã tự khai, và host dựng `metadata` từ đó (`simulation_coverage.md` §4).
 - **Ý định trên wire**, không phải ALLOW hay token: node tự lượng giá, tự cấp và tự tiêu token;
@@ -76,7 +77,7 @@ bằng chứng replay cho một phiên trải trên nhiều chip.
   Zenoh; `NOTICE` theo `CONTRIBUTING.md` §4).
 - Transport **không được tin**: là "black channel" theo IEC 61784-3. Mọi bảo đảm an toàn
   nằm ở §3.3 và gate từng node.
-- Phương án B: **micro-ROS / Micro XRCE-DDS** (Apache-2.0). **Đã chốt ở Q-36:** Zenoh-pico; spike W3-1
+- Phương án B: **micro-ROS / Micro XRCE-DDS** (Apache-2.0). **Đã chốt ở Q-36:** Zenoh-pico; spike TSK-W3-01
   là phép thử loại (ba ngưỡng ở PRD §15); chỉ đổi sang micro-ROS khi Zenoh trượt và micro-ROS đạt (§7).
 
 ### 3.3 Lớp an toàn kiểu black channel
@@ -101,8 +102,8 @@ cắt một xung mở chốt đang chạy là khoá cửa lại (`voice_fsm.md` 
 §5.2 của `voice_fsm.md` đòi hủy trong ≤ 20 ms và đóng token (`ne_token_close`); RFC này phải định
 nghĩa thông điệp hủy Pi → node và ngân sách thời gian của nó (RB-3, `hal_mcu_review.md`).
 
-Trạng thái an toàn cục bộ (tầng T0 của kế hoạch mẹ): kéo xuống phần cứng / watchdog / giới hạn dòng — phần
-mềm **không** cứu được khi crash/SIGKILL (`neuroedge-roadmap-phase1-5.md:128,369`).
+Trạng thái an toàn cục bộ (tầng T0 của ghi chú thiết kế mẹ): kéo xuống phần cứng / watchdog / giới hạn dòng — phần
+mềm **không** cứu được khi crash/SIGKILL (`neuroedge-roadmap-phase1-5.md` §2.3, §15 rủi ro 3).
 
 ### 3.4 Trace hợp nhất
 
@@ -111,7 +112,7 @@ mềm **không** cứu được khi crash/SIGKILL (`neuroedge-roadmap-phase1-5.m
 | | Phương án A (khuyến nghị cho v1.x) | Phương án B |
 |:--|:--|:--|
 | Cách làm | `metadata.nodes[]` tùy chọn + quy ước `data.node_id` trong sự kiện | `trace.v2` với `nodes[]` và `node_id` cấp sự kiện |
-| Tương thích | Không phá: `metadata.additionalProperties: true` (`trace.v1.json:39`) | Phá: phải tăng phiên bản lược đồ |
+| Tương thích | Không phá: `metadata.additionalProperties: true` (`trace.v1.json`) | Phá: phải tăng phiên bản lược đồ |
 | Chi phí | Thấp; **không sửa `schemas/`** (`metadata` mở, `data` tự do — tiền lệ RFC-0002, `TODOS.md` #1); tài liệu hoá quy ước ở `simulation_coverage.md` §3–§4 | Cao: migrate corpus; đổi cả đặc tả dòng `NE1` |
 | Rủi ro | Quy ước "mềm" nằm trong `data` | Rõ ràng, chuẩn mực |
 
@@ -122,7 +123,7 @@ gãy test và đổi vector firmware.
 
 ### 3.5 Gateway và MCP
 
-- Tái dùng hướng TSK-P2-05 (MCP gateway — đã lên kế hoạch, chưa bắt đầu) làm điểm vào cho node; **không** dùng MCP làm
+- Tái dùng hướng TSK-P2-05 (MCP gateway) làm điểm vào cho node; **không** dùng MCP làm
   wire protocol MCU (JSON-RPC nặng).
 - MCP qua mạng giữ ở mặt agent: **Streamable HTTP + OAuth 2.1** theo spec MCP 2026-07-28,
   sau khi có mTLS (NFR-SEC-04) và test #29.
@@ -169,7 +170,7 @@ Nếu RFC chạm ngữ nghĩa phân giải gate: cần kỹ thuật trưởng.
 
 | Phương án | Lý do bác bỏ |
 |:---|:---|
-| Gate tập trung trên Pi | Phá fail-closed on-device khi mất mạng (luật BT2 của kế hoạch mẹ; Phụ lục H.3) |
+| Gate tập trung trên Pi | Phá fail-closed on-device khi mất mạng (luật BT2 của ghi chú thiết kế mẹ; Phụ lục H.3) |
 | MQTT làm wire | "Broker paradox" — thêm một broker giữa não và node trong cùng một robot. (Q-11: EMQX không dùng; broker giấy phép dễ dãi chỉ dành cho Fleet OS, Khối 2) |
 | DDS/ROS 2 làm wire | Không lên MCU; multicast nặng; kéo máy trạng thái ra khỏi thiết bị |
 | Giao thức nhị phân tự thiết kế | Chi phí xây + bảo trì cao, không hệ sinh thái; phần "black channel" dù sao vẫn phải tự viết |
@@ -178,7 +179,7 @@ Nếu RFC chạm ngữ nghĩa phân giải gate: cần kỹ thuật trưởng.
 
 ## 7. Bằng chứng kiểm chứng
 
-- [ ] **Spike W3-1 (phép thử loại, Q-36):** Zenoh-pico trên ESP32-S3 và RP2350 (Q-33) ↔ `zenohd` trên Pi:
+- [ ] **Spike TSK-W3-01 (phép thử loại, Q-36):** Zenoh-pico trên ESP32-S3 và RP2350 (Q-33) ↔ `zenohd` trên Pi:
       p99 Pi → node ≤ 20 ms, SRAM nội ≤ 40 KB, nối lại ≤ 2 s, kèm flash; trượt ⇒ đo micro-ROS cùng điều kiện;
       ghi báo cáo vào `docs/reports/`.
 - [ ] Fault injection: drop / delay / replay / tamper → **không ALLOW nào lọt**; mất link
@@ -195,7 +196,7 @@ Nếu RFC chạm ngữ nghĩa phân giải gate: cần kỹ thuật trưởng.
 - [ ] Sửa `docs/spec/voice_fsm.md` §5 (dừng do mất liên lạc, hủy xuyên chip) và §8 (sự kiện mới)
 - [ ] Cập nhật `docs/spec/threat_model.md` §2c và `docs/spec/tool_calling.md`
 - [ ] Cập nhật `neuroedge-prd.md` nếu có FR bị ảnh hưởng; quyết định mới → `Q-N` ở §15
-- [ ] Cập nhật `neuroedge-roadmap.md` với `TSK-*` thật cho W3-1..W3-6
+- [ ] Cập nhật trạng thái TSK-W3-01, W3-02, W3-03, W3-04, W3-06, W3-07 ở `neuroedge-roadmap.md` I14 (§7.4)
 - [ ] Thêm fixture + test: corpus `fixtures/compliance/multinode/` + `expected_results.yaml`, khép kín hai chiều (`digests.lock` chỉ khoá gate, không liên quan)
 - [ ] Cập nhật dòng RFC trong `docs/rfc/README.md` và một mục `CHANGELOG.md`
       `[Chưa phát hành]`
@@ -203,12 +204,12 @@ Nếu RFC chạm ngữ nghĩa phân giải gate: cần kỹ thuật trưởng.
 
 ## Phụ lục — Câu hỏi mở của bản nháp
 
-1. ~~Wire protocol: Zenoh hay micro-ROS?~~ — ✅ Q-36: Zenoh-pico, spike là phép thử loại
-2. ~~Trace: A hay B?~~ — ✅ Q-32: A
+1. ~~Wire protocol: Zenoh hay micro-ROS?~~ — Q-36: Zenoh-pico, spike là phép thử loại
+2. ~~Trace: A hay B?~~ — Q-32: A
 3. Mô hình cấu hình node trong `agent.toml` (`[nodes]`) — hình dạng cụ thể?
-4. ~~Node tham chiếu: ESP32-S3 + RP2350 hay chỉ ESP32-S3 trước?~~ — ✅ Q-33: ESP32-S3 + RP2350
+4. ~~Node tham chiếu: ESP32-S3 + RP2350 hay chỉ ESP32-S3 trước?~~ — Q-33: ESP32-S3 + RP2350
 5. Khoá liên kết node: PSK đối xứng trước hay mTLS ngay?
-6. Mất liên lạc: chính sách ✅ Q-35 (theo từng cơ cấu, mặc định dừng); còn mở: sửa `voice_fsm.md` §5 thế nào?
+6. Mất liên lạc: chính sách Q-35 (theo từng cơ cấu, mặc định dừng); còn mở: sửa `voice_fsm.md` §5 thế nào?
 7. Cắt lời xuyên chip: thông điệp hủy Pi → node, ngân sách thời gian?
 8. `call_source` và xác nhận `ask` qua Pi: node tin nguồn nào?
 9. Mã hoá ý định trên MCU (KL-5: không parser JSON)?

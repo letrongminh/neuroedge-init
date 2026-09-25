@@ -10,25 +10,38 @@
 
 | Chỉ số | Trạng thái hiện hành |
 |:---|:---|
-| Pha đang thực thi | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0 → 2026-11-15)** |
-| Sprint hiện hành | 🟡 **Sprint 2 theo lịch (≈ A1, 2026-09-28 → 2026-10-25)** — mã đã xong trước lịch; việc đang làm thuộc A2 (Sprint 3) và phần firmware không cần bo mạch kéo lên từ Sprint 4 |
-| Cột mốc tiếp theo | **M1: Time-to-first-value < 10 phút trên `sim`** |
-| Trạng thái CI Lõi | ✅ **PASS 1024/1024 · SKIP 0** |
-| Chặn ngoài tầm kỹ thuật | 🟡 **1 hạng mục chặn** |
+| Pha đang thực thi | 🟡 **I1 — Preview nội bộ trên `sim`** (I2, I3 phần không cần bo mạch và I4 làm song song) |
+| Increment đang mở | 🟡 **I1** — còn TSK-S3-08, S3-15, I1-01, I1-02, I1-03 |
+| Cột mốc tiếp theo | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** |
+| Trạng thái CI Lõi | ✅ **PASS 1036/1036 · SKIP 0** |
+| Chặn ngoài tầm kỹ thuật | 🟡 **3 hạng mục chặn** |
 | Lần cập nhật cuối | **2026-09-25** |
 
-## Tiến độ các mốc
+## Increment
 
-| Mốc | Sprint / Giai đoạn | Thời gian | Tiến độ | Trạng thái |
-|:---:|:---|:---|:---:|:---:|
-| **Khối 1a** | **Sprint 1 — Đóng băng lược đồ** | Tuần 0–2<br>2026-09-21 → 2026-09-27 | **12 / 13** | 🟡 **Chờ phần cứng** (chỉ TSK-S1-10) |
-|  | **Sprint 2 — Lõi thực thi trên `sim`** *(≈ A1, wedge `sim`)* | **2026-09-28 → 2026-10-25** (Q-19) | **11 / 11** | ✅ Mã A1 + web UI `sim` xong 2026-09-23; TSK-S2-11 (LiteLLM) xong 2026-09-24; TSK-S2-07 (đặc tả FSM thoại) xong 2026-09-25 |
-|  | **Sprint 3 — Action CI & Linux** *(≈ A2)* | **2026-10-26 → 2026-11-15** (Q-19) | **20 / 23** | 🟡 Action CI + HAL `linux` xong (2026-09-23); TSK-S3-14 chờ go-live; tiêu chí ra 5/6 |
-| **Khối 1b** | **Sprint 4 — HAL trên `esp32s3`** | **Từ 2026-11-16** (Q-19) · gốc Tuần 6–8 | **4 / 11** | 🟡 Phần không cần bo mạch kéo lên A2: TSK-S4-02, S4-07, S4-08 xong (2026-09-24), S4-09 xong (2026-09-25; `verify --targets esp32s3` trên QEMU); còn lại chờ lịch hoặc bo mạch |
-|  | **Sprint 5 — Runtime thoại MCU** | Tuần 8–10 | **0%** | ⏳ Chưa bắt đầu |
-|  | **Sprint 6 — OTA & Nghiệm thu v1.0** | Tuần 10–12 | **0%** | ⏳ Chưa bắt đầu |
-| **Beta** | **Developer Beta** | Tuần 12–16 | **0%** | ⏳ Chưa bắt đầu |
-| **Khối 2** | **Fleet OS** *(dịch vụ thương mại duy nhất)* | Tháng 4–8 | **0%** | ⏳ Chờ mốc Beta |
-| **Khối 3** | **Bảy đường ray nền tảng** | Tháng 4–8 | **0%** | ⏳ Chờ mốc Beta |
+| Mốc | Increment | Dự báo | Tiến độ | Trạng thái | Phát hành |
+|:---:|:---|:---|:---:|:---|:---|
+| **0.x nội bộ** | **I0 — Lõi hợp đồng trên `sim`** | ✅ 2026-09-24 | **42 / 42** | ✅ Xong | lịch sử |
+|  | **Cổng nhu cầu (Q-20)** | 2026-10-25 | — | ⏳ Đang phỏng vấn | — |
+|  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | **0 / 5** | 🟡 Đang làm | tag `v0.1.0` (nội bộ) |
+|  | **I2 — `linux` ngang `sim`** | 2026-11-29 | **0 / 4** | ⏳ Chưa bắt đầu | tag `v0.2.0` (nội bộ) |
+|  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | **4 / 14** | 🟡 Phần không cần bo mạch đã xong; chờ bo mạch | tag `v0.3.0` + firmware (nội bộ) |
+|  | **I4 — Thoại trên host** | 2026-12-13 | **1 / 8** | 🟡 Đặc tả xong; vector và FSM Python làm song song (Q-39) | tag `v0.4.0` (nội bộ) |
+|  | **I5 — Thoại trên Box-3** | 2027-01-03 | **0 / 7** | ⏳ Chưa bắt đầu | tag `v0.5.0` + firmware (nội bộ) |
+| **Công khai** | **I6 — Công khai** | 2027-01-10 | **0 / 8** | ⏳ Chưa bắt đầu | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
+| **v1.0** | **I7 — v1.0** | 2027-01-24 | **0 / 12** | ⏳ Chưa bắt đầu | `v1.0.0` |
+| **Beta** | **I8 — Developer Beta** | 2027-02-21 | **0 / 1** | ⏳ Chưa bắt đầu | `1.0.x` (chỉ bản vá) |
+| **v1.1** | **I9 — Lớp provider v1.1 và Fleet OS** | sau I8 (nhánh A) | **0 / 9** | ⏳ Chờ nhánh A | `1.1.0` + dịch vụ |
+|  | **I10 — Registry và các đường ray** | sau I8 (nhánh A, Q-5) | **0 / 8** | ⏳ Chờ nhánh A | `1.2.0` + registry |
+| **Mở rộng** | **I11 — Mở danh sách target** | sau I8 | **0 / 6** | ⏳ Chưa bắt đầu | 1.x minor |
+|  | **I12 — NeuroBrain** | sau I11 | **0 / 43** | ⏳ Chưa bắt đầu | 1.x + extra `[lab]` |
+|  | **I13 — Bộ port cộng đồng** | sau I11 | **0 / 5** | ⏳ Chưa bắt đầu | bộ port |
+|  | **I14 — Robot phân tầng** | sau I13 | **0 / 16** | ⏳ Chưa bắt đầu | 1.x + firmware node RP2350 |
+|  | **I15 — Thị giác trên `linux`** | sau I8 + nhu cầu camera | **0 / 8** | ⏳ Chưa bắt đầu | 1.x (extra tùy chọn) |
+|  | **I16 — Thị giác trên `jetson`** | sau I15 | **0 / 4** | ⏳ Chưa bắt đầu | 1.x |
+|  | **I17 — Đa phương thức** | sau I16 | **0 / 4** | ⏳ Chưa bắt đầu | 1.x |
+|  | **I18 — Hệ sinh thái thiết bị** | sau I13 | **0 / 4** | ⏳ Chưa bắt đầu | dịch vụ |
+| **Ngoài roadmap** | **Khối 4 — AURA thực địa** | sau I8 | — | ⏳ Ngoài roadmap | — |
+|  | **Khối 5 — Marketplace** | khi đạt G1–G4 | — | ⏸ Chặn | — |
 
-Chi tiết, ghi chú và caveat về lịch: [`neuroedge-roadmap.md`](../../neuroedge-roadmap.md) §0.
+Năng lực, phụ thuộc và giả định của các ngày dự báo: [`neuroedge-roadmap.md`](../../neuroedge-roadmap.md) §0.

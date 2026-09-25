@@ -3,11 +3,11 @@
 
 Một trang HTML tự chứa (không CDN, không mạng), sinh hoàn toàn từ nguồn sự thật:
 
-- `neuroedge-roadmap.md` §0.1–§0.3, bảng task §4–§8, tiêu chí ra, A1–A9;
+- `neuroedge-roadmap.md` §0.1–§0.3, bảng increment §0.2, bảng task và tiêu chí ra của từng
+  increment §4–§8, A1–A9 (Q-39: một roadmap duy nhất);
 - `TODOS.md` (việc hoãn có chủ ý, mốc kích hoạt);
 - `neuroedge-prd.md` §15 (quyết định chưa chốt hẳn);
-- `CHANGELOG.md` `[Chưa phát hành]` (thay đổi gần đây);
-- Phụ lục C của `draft-ke-hoach-mo-rong-robot-fofoca.md` (quyết định chờ `Q-N`).
+- `CHANGELOG.md` `[Chưa phát hành]` (thay đổi gần đây).
 
 Không sửa tay tệp sinh ra. Ngày trên trang lấy từ "Lần cập nhật cuối" của roadmap,
 không lấy đồng hồ máy, nên kết quả tất định và `--check` không báo lệch mỗi ngày.
@@ -31,11 +31,11 @@ ROADMAP = ROOT / "neuroedge-roadmap.md"
 TODOS = ROOT / "TODOS.md"
 PRD = ROOT / "neuroedge-prd.md"
 CHANGELOG = ROOT / "CHANGELOG.md"
-ROBOT_PLAN = ROOT / "draft-ke-hoach-mo-rong-robot-fofoca.md"
 TARGET = ROOT / "docs" / "business" / "cpo-dashboard.html"
 
 DATE = re.compile(r"\b(20\d\d-\d\d-\d\d)\b")
 LINK = re.compile(r"\[([^\]]+)\]\([^)]*\)")
+INC = re.compile(r"\b(I\d+[a-z]?) —")
 
 # Trạng thái task, theo icon của roadmap (CONTRIBUTING.md §8.2).
 STATES = (
@@ -43,6 +43,7 @@ STATES = (
     ("partial", "🟡", "Đang làm / chờ"),
     ("todo", "⏳", "Chưa bắt đầu"),
     ("deferred", "⏸", "Hoãn có chủ ý"),
+    ("blocked", "🔴", "Bị chặn"),
 )
 STATE_LABEL = {key: label for key, _, label in STATES}
 
@@ -74,6 +75,16 @@ def between(lines: list[str], start: str, end: str) -> list[str]:
     return lines[i:j]
 
 
+def inc_id(text: str) -> str | None:
+    """`I3` từ "I3 — Gate trên Box-3" hoặc "4.4 I3 — …"; None nếu không phải increment."""
+    m = INC.search(plain(text))
+    return m.group(1) if m else None
+
+
+def inc_number(inc: str) -> int:
+    return int(re.match(r"I(\d+)", inc).group(1))
+
+
 def state_of(cell: str) -> str:
     for key, icon, _ in STATES:
         if icon in cell:
@@ -91,17 +102,24 @@ class Task:
     state: str
     status: str
     owner: str
-    sprint: str
+    group: str
+    increment: str | None
 
 
 @dataclass
-class Sprint:
+class Increment:
     milestone: str
     name: str
-    period: str
-    focus: str
+    forecast: str
+    capability: str
     progress: str
     state: str
+    deps: str
+    release: str
+
+    @property
+    def id(self) -> str | None:
+        return inc_id(self.name)
 
 
 def roadmap_status(lines: list[str]) -> dict[str, str]:
@@ -114,25 +132,25 @@ def roadmap_status(lines: list[str]) -> dict[str, str]:
     return rows
 
 
-def roadmap_matrix(lines: list[str]) -> list[Sprint]:
+def roadmap_matrix(lines: list[str]) -> list[Increment]:
     part = between(lines, "### 0.2", "### 0.3")
     start = next(i for i, line in enumerate(part) if line.startswith("| Mốc |"))
     out, milestone = [], ""
     for line in part[start + 2 :]:
         if not line.startswith("|"):
             break
-        cells = split_row(line)
+        cells = split_row(line) + [""] * 8
         milestone = plain(cells[0]) or milestone
-        out.append(Sprint(milestone, *cells[1:6]))
+        out.append(Increment(milestone, *cells[1:8]))
     return out
 
 
 def roadmap_tasks(lines: list[str]) -> list[Task]:
     tasks: list[Task] = []
-    sprint, columns = "", {}
+    group, columns = "", {}
     for line in lines:
         if line.startswith("### "):
-            sprint = plain(line[4:])
+            group = plain(line[4:])
             columns = {}
         elif line.startswith("| Mã Task") or line.startswith("| Mã task"):
             columns = {plain(c): i for i, c in enumerate(split_row(line))}
@@ -146,21 +164,22 @@ def roadmap_tasks(lines: list[str]) -> list[Task]:
                     state=state_of(status_cell),
                     status=plain(status_cell)[:140],
                     owner=plain(cells[columns["Người"]]) if "Người" in columns else "",
-                    sprint=sprint,
+                    group=group,
+                    increment=inc_id(group),
                 )
             )
     return tasks
 
 
 def exit_criteria(lines: list[str]) -> list[tuple[str, int, int]]:
-    """(sprint, đạt, tổng) cho mỗi danh sách "Tiêu chí ra"."""
-    out, sprint, done, total = [], "", 0, 0
+    """(tiêu đề mục, đạt, tổng) cho mỗi danh sách "Tiêu chí ra"."""
+    out, group, done, total = [], "", 0, 0
     for line in lines + ["### "]:
         if line.startswith("### "):
             if total:
-                out.append((sprint, done, total))
-            sprint, done, total = plain(line[4:]), 0, 0
-        elif re.match(r"- \[[ x]\] \*\*Tiêu chí", line):
+                out.append((group, done, total))
+            group, done, total = plain(line[4:]), 0, 0
+        elif re.match(r"- \[[ x]\] \*\*(Tiêu chí|A\d\*\* —)", line):
             total += 1
             done += line.startswith("- [x]")
     return out
@@ -243,19 +262,6 @@ def open_decisions() -> list[tuple[str, str, str]]:
     return out
 
 
-def robot_decisions() -> list[str]:
-    if not ROBOT_PLAN.exists():
-        return []
-    lines = ROBOT_PLAN.read_text(encoding="utf-8").splitlines()
-    start = next(i for i, line in enumerate(lines) if line.startswith("## Phụ lục C"))
-    out = []
-    for line in lines[start:]:
-        m = re.match(r"\| (\d+) \| (.*)", line)
-        if m and "✅" not in line:  # ✅ = đã chốt bằng một Q-N
-            out.append(plain(split_row(line)[1]))
-    return out
-
-
 def recent_changes(limit: int = 8) -> list[str]:
     lines = between(
         CHANGELOG.read_text(encoding="utf-8").splitlines(), "### [Chưa phát hành]", "### Mốc"
@@ -274,10 +280,10 @@ def recent_changes(limit: int = 8) -> list[str]:
 
 CSS = """
 :root{--bg:#f6f6f4;--surface:#fcfcfb;--line:#e4e3de;--ink:#0b0b0b;--ink2:#52514e;--ink3:#7a7974;
---done:#0ca30c;--partial:#eda100;--todo:#c9c8c2;--deferred:#9085e9;--critical:#d03b3b;--accent:#2a78d6}
+--done:#0ca30c;--partial:#eda100;--todo:#c9c8c2;--deferred:#9085e9;--critical:#d03b3b;--blocked:#d03b3b;--accent:#2a78d6}
 @media (prefers-color-scheme:dark){:root{--bg:#121211;--surface:#1a1a19;--line:#33332f;--ink:#fff;
 --ink2:#c3c2b7;--ink3:#8f8e86;--done:#0ca30c;--partial:#c98500;--todo:#4a4a45;--deferred:#9085e9;
---critical:#e66767;--accent:#3987e5}}
+--critical:#e66767;--blocked:#e66767;--accent:#3987e5}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
 font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 main{max-width:1180px;margin:0 auto;padding:24px 16px 48px}
@@ -376,47 +382,36 @@ def render() -> str:
     card = handoff(lines)
     todo_items = todos()
     decisions = open_decisions()
-    robot = robot_decisions()
     changes = recent_changes()
 
     updated = DATE.search(status["Lần cập nhật cuối"]).group(1)
     today = date.fromisoformat(updated)
 
-    # Mỗi mã task đếm một lần (một task đổi sprint thì xuất hiện ở cả hai bảng).
-    unique: dict[str, Task] = {}
-    for task in tasks:
-        unique[task.id] = task
-    phase1 = [t for t in unique.values() if re.match(r"TSK-S\d", t.id)]
-    done = sum(t.state == "done" for t in phase1)
+    by_id = {inc.id: inc for inc in matrix if inc.id}
+    v10 = [t for t in tasks if t.increment and inc_number(t.increment) <= 7]
+    done = sum(t.state == "done" for t in v10)
 
     ci = re.search(r"PASS (\d+)/(\d+) · SKIP (\d+)", plain(status["Trạng thái CI Lõi"]))
-    m1_date = DATE.search(status["Cột mốc tiếp theo · ghi chú"] + status["Cột mốc tiếp theo"])
-    m1_days = (date.fromisoformat(m1_date.group(1)) - today).days if m1_date else None
+    next_id = inc_id(status["Cột mốc tiếp theo"])
+    next_date = DATE.search(by_id[next_id].forecast) if next_id in by_id else None
+    next_days = (date.fromisoformat(next_date.group(1)) - today).days if next_date else None
     blockers = plain(status["Chặn ngoài tầm kỹ thuật · ghi chú"])
     passed = sum(ok for _, _, ok in accept)
 
     kpis = [
-        (
-            f"{done}/{len(phase1)}",
-            "Task Giai đoạn 1 đã xong",
-            f"{round(100 * done / len(phase1))}% — Sprint 1→6",
-        ),
+        (f"{done}/{len(v10)}", "Task tới v1.0 đã xong", f"{round(100 * done / len(v10))}% — I0→I7"),
         (
             f"{ci.group(1)}/{ci.group(2)}" if ci else "?",
             "Test CI lõi đạt",
             f"skip {ci.group(3)} — CI chặn mọi skip" if ci else "",
         ),
         (
-            f"{m1_days} ngày" if m1_days is not None else "?",
-            "Tới M1 (TTFV < 10 phút)",
-            f"hạn {m1_date.group(1)}" if m1_date else "",
+            f"{next_days} ngày" if next_days is not None else "?",
+            f"Tới {next_id}" if next_id else "Tới cột mốc tiếp theo",
+            f"dự báo {next_date.group(1)}" if next_date else "",
         ),
-        (f"{passed}/{len(accept)}", "Tiêu chí nghiệm thu v1.0 (A1–A9)", "đạt khi đóng Sprint 6"),
-        (
-            str(len(decisions) + len(robot)),
-            "Quyết định còn chờ",
-            f"PRD §15: {len(decisions)} · bản nháp robot: {len(robot)}",
-        ),
+        (f"{passed}/{len(accept)}", "Tiêu chí nghiệm thu v1.0 (A1–A9)", "đạt khi đóng I7"),
+        (str(len(decisions)), "Quyết định còn chờ", "PRD §15"),
         (str(len(todo_items)), "Việc hoãn có mốc (TODOS)", "mỗi mục có mốc kích hoạt"),
     ]
     kpi_html = "".join(
@@ -425,65 +420,53 @@ def render() -> str:
         for v, label, n in kpis
     )
 
-    # Ma trận sprint: tiến độ chính thức (§0.2) + phân rã theo task.
-    by_sprint: dict[str, dict[str, int]] = {}
+    # Bảng increment: tiến độ chính thức (§0.2) + phân rã theo task, ghép theo mã increment.
+    by_inc: dict[str, dict[str, int]] = {}
     for task in tasks:
-        by_sprint.setdefault(task.sprint, {}).setdefault(task.state, 0)
-        by_sprint[task.sprint][task.state] += 1
-    crit = {name: (d, n) for name, d, n in criteria}
-
-    def sprint_key(sp: Sprint) -> str | None:
-        m = re.search(r"Sprint (\d)", plain(sp.name))
-        needle = f"Sprint {m.group(1)} " if m else None
-        if needle is None and sp.milestone.startswith("Khối ") and sp.milestone[-1] in "23":
-            needle = sp.milestone
-        return next((k for k in by_sprint if needle and needle in k), None)
+        if task.increment:
+            by_inc.setdefault(task.increment, {}).setdefault(task.state, 0)
+            by_inc[task.increment][task.state] += 1
+    crit = {inc_id(name): (d, n) for name, d, n in criteria if inc_id(name)}
 
     rows = []
-    for sp in matrix:
-        key = sprint_key(sp)
-        counts = by_sprint.get(key, {}) if key else {}
-        bar = (
-            stacked_bar(counts, plain(sp.name)) if counts else '<span class="tag">theo khối</span>'
-        )
-        ec = crit.get(key) if key else None
+    for inc in matrix:
+        counts = by_inc.get(inc.id, {}) if inc.id else {}
+        bar = stacked_bar(counts, plain(inc.name)) if counts else "—"
+        ec = crit.get(inc.id) if inc.id else None
         rows.append(
-            f"<tr><td>{inline(sp.milestone)}</td><td>{inline(sp.name)}</td><td>{inline(sp.period)}</td>"
-            f'<td class="num"><b>{inline(sp.progress)}</b></td><td>{bar}</td>'
-            f'<td class="num">{f"{ec[0]}/{ec[1]}" if ec else "—"}</td><td>{inline(sp.state)}</td></tr>'
+            f"<tr><td>{inline(inc.milestone)}</td><td>{inline(inc.name)}</td><td>{inline(inc.forecast)}</td>"
+            f'<td class="num"><b>{inline(inc.progress)}</b></td><td>{bar}</td>'
+            f'<td class="num">{f"{ec[0]}/{ec[1]}" if ec else "—"}</td><td>{inline(inc.state)}</td>'
+            f"<td>{inline(inc.deps)}</td></tr>"
         )
     matrix_html = (
-        '<div class="scroll"><table><thead><tr><th>Khối</th><th>Sprint / giai đoạn</th><th>Thời gian</th>'
+        '<div class="scroll"><table><thead><tr><th>Mốc</th><th>Increment</th><th>Dự báo</th>'
         '<th class="num">Tiến độ (§0.2)</th><th>Task theo trạng thái</th><th class="num">Tiêu chí ra</th>'
-        f"<th>Trạng thái</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>"
+        f"<th>Trạng thái</th><th>Phụ thuộc</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>"
     )
 
-    # Mốc có ngày tuyệt đối.
+    # Mốc có ngày: mọi dòng §0.2 có ngày dự báo. Đỏ = cổng nhu cầu và cột mốc tiếp theo.
     points = []
-    for sp in matrix:
-        found = DATE.findall(sp.period)
+    for inc in matrix:
+        found = DATE.findall(inc.forecast)
         if found:
-            points.append((found[0], f"Mở {plain(sp.name).split(' — ')[0]}", False))
-    if m1_date:
-        points.append((m1_date.group(1), "M1 — TTFV < 10 phút", True))
-    gate = DATE.search(status.get("Hoãn có chủ ý · ghi chú", ""))
-    if gate:
-        points.append((gate.group(1), "Cổng nhu cầu (Q-20)", True))
+            hard = inc.id == next_id or inc.id is None
+            points.append((found[0], plain(inc.name), hard))
     tl_html = timeline(points, updated)
 
-    # Đã làm được, theo sprint.
+    # Đã làm được, theo increment.
     done_groups = []
-    for key in by_sprint:
-        items = [t for t in tasks if t.sprint == key and t.state == "done"]
+    for group in dict.fromkeys(t.group for t in tasks):
+        items = [t for t in tasks if t.group == group and t.state == "done"]
         if items:
             lis = "".join(f"<li><code>{t.id}</code> {html.escape(t.name)}</li>" for t in items)
             done_groups.append(
-                f"<details><summary><b>{html.escape(key)}</b> — {len(items)} task xong</summary>"
+                f"<details><summary><b>{html.escape(group)}</b> — {len(items)} task xong</summary>"
                 f'<ul class="plain">{lis}</ul></details>'
             )
 
     # Pending — cần người.
-    waiting = [t for t in unique.values() if t.state == "partial"]
+    waiting = [t for t in tasks if t.state in ("partial", "blocked")]
     wait_rows = "".join(
         f"<tr><td><code>{t.id}</code></td><td>{html.escape(t.name)}</td><td>{html.escape(t.status)}</td>"
         f"<td>{html.escape(t.owner)}</td></tr>"
@@ -496,7 +479,6 @@ def render() -> str:
         f"{html.escape(s[:60])}</span></td></tr>"
         for c, t, s in decisions
     )
-    robot_items = "".join(f"<li>{html.escape(q)}</li>" for q in robot)
 
     # Hoãn có chủ ý: mốc có ngày lên trước.
     dated = sorted((t for t in todo_items if t["date"]), key=lambda t: t["date"])
@@ -528,10 +510,10 @@ def render() -> str:
 
 <section class="kpis" aria-label="Chỉ số chính">{kpi_html}</section>
 
-<section class="card"><h2>Tiến độ theo sprint và khối</h2>{legend()}{matrix_html}</section>
+<section class="card"><h2>Tiến độ theo increment</h2>{legend()}{matrix_html}</section>
 
 <section class="card"><h2>Dòng thời gian các mốc</h2>
-<p class="sub" style="margin-top:-6px">Đỏ = mốc có hạn cứng. {inline(status["Cột mốc tiếp theo · ghi chú"])}</p>{tl_html}</section>
+<p class="sub" style="margin-top:-6px">Đỏ = cổng nhu cầu và cột mốc tiếp theo. Ngày là dự báo ở roadmap §0.2.</p>{tl_html}</section>
 
 <div class="grid2">
 <section class="card"><h2>Pending — cần người</h2>
@@ -540,7 +522,6 @@ def render() -> str:
 <p><b>Việc tiếp theo (đúng thứ tự):</b></p><ol class="plain">{next_items}</ol></section>
 <section class="card"><h2>Quyết định còn chờ</h2>
 <div class="scroll"><table><thead><tr><th>Mã</th><th>Quyết định</th><th>Trạng thái</th></tr></thead><tbody>{dec_rows}</tbody></table></div>
-<details><summary>Bản nháp robot phân tầng — {len(robot)} câu hỏi chờ <code>Q-N</code></summary><ol class="plain">{robot_items}</ol></details>
 </section></div>
 
 <section class="card"><h2>Task đang dở hoặc chờ người</h2><div class="scroll"><table><thead><tr><th>Mã</th><th>Task</th>
@@ -558,7 +539,7 @@ def render() -> str:
 <section class="card"><h2>Thay đổi gần đây (CHANGELOG, chưa phát hành)</h2><ul class="plain">{changes_html}</ul></section>
 
 <p class="foot">Sinh bởi <code>scripts/gen_cpo_dashboard.py</code> từ <code>neuroedge-roadmap.md</code>, <code>TODOS.md</code>,
-<code>neuroedge-prd.md</code> §15, <code>CHANGELOG.md</code> và <code>draft-ke-hoach-mo-rong-robot-fofoca.md</code>.
+<code>neuroedge-prd.md</code> §15 và <code>CHANGELOG.md</code>.
 Nguồn sự thật là các tệp đó; trang này không được sửa tay.</p>
 </main></body></html>
 """
