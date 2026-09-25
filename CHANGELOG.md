@@ -32,6 +32,11 @@ bản gói.
 
 #### Đã thêm
 
+- **Kế hoạch mở rộng cho robot phân tầng (bản nháp, chờ `Q-N`).** `draft-ke-hoach-mo-rong-robot-fofoca.md`:
+  chặng W0–W4 — mở nguyên thủy HAL (`motion`/`analog`/`vision`), an toàn actuator (N2, crash-safe), hạ tầng tin cậy,
+  multi-node gate phân tán theo black channel (Zenoh-pico/micro-ROS), hệ sinh thái ROS 2/MHS; khung RFC từng thay đổi.
+  `draft-rfc-node-giao-thuc-dieu-phoi.md`: bản nháp RFC giao thức điều phối node (chưa cấp số). Chỉ tài liệu, chưa có mã.
+  Quyết định chuyển vào PRD §15 khi cấp `Q-N`.
 - **Giai đoạn 1.5 — kế hoạch NeuroBrain (bản nháp, chờ `Q-N`).** `neuroedge-roadmap-phase1-5.md`: khối N0–N7,
   bring-up phần cứng có gate, song song Khối 1b tới Developer Beta; wireframe Lab Monitor ở `wireframe/`. Chỉ tài liệu,
   chưa có mã. Quyết định chuyển vào PRD §15 ở TSK-N0-01.
