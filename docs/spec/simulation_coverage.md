@@ -71,7 +71,7 @@ nào đi theo ô tương ứng ở §2. Cột "Vai trò khi replay" nói phần 
 | Nguyên thủy | Sự kiện | `data` | Vai trò khi replay |
 |:---|:---|:---|:---|
 | `audio.in` | `text_input` · `audio_in_vad_start` · `audio_in_segment` | `{text}` · `{energy_db}` · `{sha256, duration_ms, sample_rate_hz}` | **Đầu vào.** Replay bắt đầu từ kết quả nhận thức đã ghi (`intent_extracted`), không chạy lại âm thanh |
-| `audio.out` | `tts_stream_start` · `tts_stream_end` · `knowledge_retrieved` | `{text}` · `{duration_ms, sha256?}` · `{entries: [{id, score}]}` | **Đầu ra** — chữ không vào so khớp quyết định; `knowledge_retrieved` cho biết câu trả lời dựa trên tri thức nào |
+| `audio.out` | `tts_stream_start` · `tts_stream_end` · `knowledge_retrieved` | `{text}` · `{duration_ms, sha256?, reason?}` (`reason`: `docs/spec/voice_fsm.md` §8) · `{entries: [{id, score}]}` | **Đầu ra** — chữ không vào so khớp quyết định; `knowledge_retrieved` cho biết câu trả lời dựa trên tri thức nào |
 | `digital.out` | `actuator_command` · `actuator_aborted` | `{pin, operation, duration_ms}` · `{pin, reason}` | **Quyết định** — so golden ở mọi lần `replay` / `verify` |
 | `sensor.read` | `sensor_read` · `sensor_set` | `{sensor, value, unit?, use?}` · `{sensor, value}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI |
 | `display` | `display_frame` | `{width, height, format, sha256, text?}` (`text` khi `format = "text"`) | **Đầu ra** — so digest khi golden có ghi, không chặn tương đương quyết định |
@@ -79,7 +79,8 @@ nào đi theo ô tương ứng ở §2. Cột "Vai trò khi replay" nói phần 
 Chế độ ẩn danh (FR-TRC-07) băm `text`; `audio_in_segment` và `display_frame` vốn chỉ mang digest.
 
 Sự kiện ngoài nguyên thủy (tool call, xác nhận, MCP host, `system_two_*`) ở danh mục duy nhất
-`docs/spec/tool_calling.md` §7. Replay bỏ qua `system_two_call`: System 2 không đổi phán quyết, nên
+`docs/spec/tool_calling.md` §7; sự kiện của máy trạng thái hội thoại (`voice_state_changed`,
+`wake_word_detected`, `audio_in_vad_end`, `stt_result`) ở `docs/spec/voice_fsm.md` §8. Replay bỏ qua `system_two_call`: System 2 không đổi phán quyết, nên
 phiên ghi online replay được mà không cần model hay key.
 
 ## 4. Vết ghi từ `esp32s3` về máy tính

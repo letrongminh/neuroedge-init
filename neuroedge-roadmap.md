@@ -56,9 +56,9 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C8`, `TR
 | Chỉ số | Trạng thái hiện hành | Ghi chú & Liên kết |
 |:---|:---|:---|
 | **Pha đang thực thi** | 🟡 **Khối 1a: Lõi logic & Action CI (Tuần 0 → 2026-11-15)** | Tiến độ theo sprint: §0.2 |
-| **Sprint hiện hành** | 🟡 **Sprint 2 theo lịch (≈ A1, 2026-09-28 → 2026-10-25)** — mã đã xong trước lịch; việc đang làm thuộc A2 (Sprint 3) và phần firmware không cần bo mạch kéo lên từ Sprint 4 | Sprint 2: **10 / 10** task trong phạm vi, **6 / 6** tiêu chí ra · Sprint 3–4: §0.2 · Sprint 1 còn TSK-S1-10 chờ bo mạch |
+| **Sprint hiện hành** | 🟡 **Sprint 2 theo lịch (≈ A1, 2026-09-28 → 2026-10-25)** — mã đã xong trước lịch; việc đang làm thuộc A2 (Sprint 3) và phần firmware không cần bo mạch kéo lên từ Sprint 4 | Sprint 2: **11 / 11** task trong phạm vi (TSK-S2-07 làm ở A2), **6 / 6** tiêu chí ra · Sprint 3–4: §0.2 · Sprint 1 còn TSK-S1-10 chờ bo mạch |
 | **Cột mốc tiếp theo** | **M1: Time-to-first-value < 10 phút trên `sim`** | Hạn chót: cuối Sprint 3 = **2026-11-15** — trễ ~2 tuần so với bản gốc (Tuần 6 gốc = 2026-11-02) (Q-19) |
-| **Lần cập nhật cuối** | **2026-09-25** | Phiên gần nhất: §0.3 (TSK-S4-09 — vết ghi UART, `verify --targets esp32s3` trên QEMU) · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Lần cập nhật cuối** | **2026-09-25** | Phiên gần nhất: §0.3 (TSK-S4-09 — `verify --targets esp32s3` trên QEMU; TSK-S2-07 — đặc tả FSM thoại) · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
 | **Trạng thái CI Lõi** | ✅ **PASS 1018/1018 · SKIP 0** | `python/tests/` — 49 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **1 hạng mục chặn + 1 còn mở** | 🔴 TSK-S1-10 chờ bo mạch vật lý · 🟡 Q-11 phần còn lại (Hawkbit EPL-2.0 / EMQX BSL) — **không chặn cho tới khi mở Khối 2** |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
@@ -70,7 +70,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C8`, `TR
 | Mốc | Sprint / Giai đoạn | Thời gian | Trọng tâm kỹ thuật | Tiến độ | Trạng thái |
 |:---:|:---|:---:|:---|:---:|:---:|
 | **Khối 1a** | **Sprint 1 — Đóng băng lược đồ** | Tuần 0–2<br>2026-09-21 → 2026-09-27 | Schemas, Monorepo, Test fixtures, Memory spike | **12 / 13** | 🟡 **Chờ phần cứng** (chỉ TSK-S1-10) |
-| | **Sprint 2 — Lõi thực thi trên `sim`** *(≈ A1, wedge `sim`)* | **2026-09-28 → 2026-10-25** (Q-19) | Gate Engine, cây quyết định host, HAL sim, fail-closed + fallback ngữ pháp lệnh (Q-14), `@action` + token, kế thừa `budget`/`on_block` (Q-18) | **10 / 10** | ✅ Mã A1 + web UI `sim` xong 2026-09-23; TSK-S2-11 (LiteLLM) xong 2026-09-24 |
+| | **Sprint 2 — Lõi thực thi trên `sim`** *(≈ A1, wedge `sim`)* | **2026-09-28 → 2026-10-25** (Q-19) | Gate Engine, cây quyết định host, HAL sim, fail-closed + fallback ngữ pháp lệnh (Q-14), `@action` + token, kế thừa `budget`/`on_block` (Q-18) | **11 / 11** | ✅ Mã A1 + web UI `sim` xong 2026-09-23; TSK-S2-11 (LiteLLM) xong 2026-09-24; TSK-S2-07 (đặc tả FSM thoại) xong 2026-09-25 |
 | | **Sprint 3 — Action CI & Linux** *(≈ A2)* | **2026-10-26 → 2026-11-15** (Q-19) | HAL linux (`gpio-sim`, Q-16), Record/Replay/Assert/Golden, lớp provider LiteLLM, release PyPI, TTFV < 10' | **20 / 23** | 🟡 Action CI + HAL `linux` xong (2026-09-23); TSK-S3-14 chờ go-live; tiêu chí ra 5/6 |
 | **Khối 1b** | **Sprint 4 — HAL trên `esp32s3`** | **Từ 2026-11-16** (Q-19) · gốc Tuần 6–8 | Port driver XiaoZhi, verify target bậc 1 không audio, walker C + sổ token (Q-23, RFC-0003), ghim `extends` (TSK-S3-21) | **4 / 11** | 🟡 Phần không cần bo mạch kéo lên A2: TSK-S4-02, S4-07, S4-08 xong (2026-09-24), S4-09 xong (2026-09-25; `verify --targets esp32s3` trên QEMU); còn lại chờ lịch hoặc bo mạch |
 | | **Sprint 5 — Runtime thoại MCU** | Tuần 8–10 | Thu/phát âm thanh, AEC/VAD, C/C++ state machine, stream lên provider | **0%** | ⏳ Chưa bắt đầu |
@@ -92,6 +92,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C8`, `TR
 │ 1. VỪA HOÀN THÀNH — phiên gần nhất (chi tiết: CHANGELOG.md [Chưa phát hành])           │
 │    • TSK-S4-09 — vết ghi NE1 qua UART; record/verify --target(s) esp32s3 --port;       │
 │      firmware replay 3 vết ghi chuẩn mực trên QEMU; ne_decide; TODOS.md #35–#38        │
+│    • TSK-S2-07 — docs/spec/voice_fsm.md (FSM thoại, hợp đồng thu hồi lệnh §5)          │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
@@ -100,7 +101,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-*`, `A1`–`C8`, `TR
 │    1. Đặt 2 Box-3 + 1 RPi 5 nightly (Phụ lục B, Q-16)                                  │
 │    2. V3: go-live TSK-S3-14 theo docs/release.md → đo TTFV                             │
 │    3. A2 V2: TSK-S4-11 (ngân sách RAM tĩnh; firmware-qemu đo heap lúc boot)            │
-│    4. A2 V1: TSK-S2-07 (đặc tả FSM thoại) — TSK-S2-11 đã xong                          │
+│    4. Sprint 5 V1: TSK-S3-10 (vector tuân thủ theo voice_fsm.md §9) → TSK-S3-11        │
 │    5. Kỹ thuật trưởng xác nhận TSK-S3-15 (golden = vết ghi chuẩn mực)                  │
 │                                                                                        │
 │ 4. LƯU Ý — bất biến ở CHANGELOG.md §3.3; dưới đây chỉ điều chưa có ở đó                │
@@ -302,8 +303,8 @@ Quyết định **Q-8 đã chốt**: C/C++ trên ESP-IDF cho firmware, Python ch
 
 | # | Thành phần | Nội dung | Sprint |
 |:---:|:---|:---|:---:|
-| 1 | **Đặc tả máy trạng thái** | Năm trạng thái và hợp đồng thu hồi lệnh, đặc tả bên dưới. Là nguồn sự thật duy nhất, không phải mã Python | A2 (TSK-S2-07) |
-| 2 | **Bộ vector kiểm thử tuân thủ** | Ba tệp vết ghi chuẩn tại `fixtures/traces/`, kèm chuỗi phán quyết và trạng thái GPIO kỳ vọng, độc lập với ngôn ngữ | Sprint 5 (TSK-S3-10) |
+| 1 | **Đặc tả máy trạng thái** | Năm trạng thái và hợp đồng thu hồi lệnh: [`docs/spec/voice_fsm.md`](docs/spec/voice_fsm.md). Là nguồn sự thật duy nhất, không phải mã Python | A2 (TSK-S2-07) ✅ |
+| 2 | **Bộ vector kiểm thử tuân thủ** | Kịch bản thoại ở `voice_fsm.md` §9, tại `fixtures/compliance/voice/`; miền quyết định dùng ba vết ghi chuẩn mực (bên dưới). Độc lập với ngôn ngữ | Sprint 5 (TSK-S3-10) |
 | 3 | **Hiện thực Python** | Cho `sim` và `linux`, port thiết kế từ Pipecat | Sprint 5 (TSK-S3-11) |
 | 4 | **Hiện thực C/C++** | Cho `esp32s3`, port driver từ XiaoZhi | Sprint 5 |
 | 5 | **`neuroedge verify` chạy bộ vector trên mọi target bậc 1** | Lệch nhau sinh `SafetyRegressionError` (NE4002) | Sprint 4–5 |
@@ -312,25 +313,9 @@ Quyết định **Q-8 đã chốt**: C/C++ trên ESP-IDF cho firmware, Python ch
 
 #### Đặc tả chuẩn tắc: năm trạng thái
 
-```mermaid
-stateDiagram-v2
-    [*] --> IDLE
-    IDLE --> LISTENING: wake-word hoặc VAD kích hoạt
-    LISTENING --> THINKING: kết thúc câu (khoảng lặng)
-    THINKING --> SPEAKING: token đầu tiên
-    SPEAKING --> IDLE: phát xong
-    SPEAKING --> BARGE_IN: phát hiện người dùng nói
-    BARGE_IN --> LISTENING: thu câu nói mới
-    note right of BARGE_IN
-        1. xả đệm DAC
-        2. huỷ actuator đang chờ
-        3. ghi sự kiện
-    end note
-```
-
-**Hợp đồng thu hồi lệnh vật lý (Actuator Abort Contract).** Mọi lệnh actuator có độ trễ thực thi — ví dụ `pulse` chốt cửa sau 1.000 ms — nếu gặp sự kiện `barge_in` trong lúc đang chờ cấp xung thì **HAL bắt buộc huỷ lệnh ngay lập tức** và ghi mã trạng thái `ACTUATOR_ABORTED_BY_BARGE_IN` vào tệp vết ghi.
-
-Đây là mệnh đề mà cả hai hiện thực phải thoả, và là mệnh đề mà bộ vector tuân thủ kiểm tra trực tiếp.
+Năm trạng thái, bảng chuyển trạng thái, **hợp đồng thu hồi lệnh vật lý** (Actuator Abort Contract) và
+kịch bản tuân thủ: [`docs/spec/voice_fsm.md`](docs/spec/voice_fsm.md) (TSK-S2-07). Đó là mệnh đề mà cả
+hai hiện thực phải thoả, và là mệnh đề bộ vector tuân thủ kiểm tra trực tiếp.
 
 #### Hệ quả tương tự với tầng lượng giá gate
 
@@ -431,7 +416,7 @@ Phạm vi và thứ tự chạy theo kế hoạch Giai đoạn 1 đã duyệt [`
 | **TSK-S2-04** | Cơ chế fail-closed và mạch ngắt suy giảm | FR-ACE-03, NFR-REL-02 | V1 | ✅ Hoàn thành (2026-09-23) | `python/neuroedge/engine/circuit_breaker.py` · `tests/test_fail_closed.py` |
 | **TSK-S2-05** | Decorator `@action`, cấm gọi trực tiếp, `c.do()` và `c.say()`, **token phán quyết dùng một lần** | FR-ACE-02, FR-ACE-04, FR-ACE-05, FR-ACE-07 | V1 | ✅ Hoàn thành (2026-09-23) | `python/neuroedge/actions/` (`spec.py`, `conversation.py`, `token.py`) · `python/neuroedge/hal/digital.py` · `docs/spec/threat_model.md` · `tests/test_actions.py` |
 | **TSK-S2-06** | Lượng giá `allow_when` trên nền Google CEL, kèm đường biên dịch gate cho thiết bị (§3.8, Q-9) | FR-GATE-03 | V1 | ⏸ **Hoãn → Sprint 5** | Dạng mapping đủ cho wedge; CEL là front-end biên dịch xuống *cùng* cây quyết định của TSK-S2-12 (Q-9 phương án A) |
-| **TSK-S2-07** | **Đặc tả chuẩn tắc máy trạng thái hội thoại** — nguồn sự thật cho cả hai hiện thực (§3.8) | FR-PER-02, FR-PER-03 | V1 | ⏳ **Kéo lên A2 (V1)** — sau TSK-S2-11 | Hoãn **cùng** TSK-S3-10, S3-11 để giữ thứ tự §3.10: nằm trên đường găng Sprint 2 nhưng không trên đường găng wedge — wedge không chạm âm thanh. Phải xong trước TSK-S5-03 |
+| **TSK-S2-07** | **Đặc tả chuẩn tắc máy trạng thái hội thoại** — nguồn sự thật cho cả hai hiện thực (§3.8) | FR-PER-02, FR-PER-03 | V1 | ✅ Hoàn thành (2026-09-25) — làm ở A2 | [`docs/spec/voice_fsm.md`](docs/spec/voice_fsm.md): năm trạng thái, bảng chuyển trạng thái, hợp đồng thu hồi lệnh (§5: chỉ lệnh chưa giao, ≤ 20 ms, đóng token; lệnh đã giao chạy hết), sự kiện (§8), kịch bản tuân thủ cho TSK-S3-10 (§9). Chỉ tài liệu |
 | **TSK-S2-08** | Interface `SystemOne` / `SystemTwo` + trường độ tin cậy + test double tất định + **fallback cục bộ = bộ nhận diện lệnh cố định** (ngữ pháp lệnh → intent + độ tin cậy) chạy trên chữ gõ ở `sim` (**Q-14**, Q-15). Connector cloud thật đi cùng TSK-S2-11. Q-17: ✅ khi xong phạm vi đã đặc tả | FR-MDL-01, FR-MDL-02, FR-MDL-03, FR-ACE-03 | V1 | ✅ Hoàn thành (2026-09-23) | `python/neuroedge/models/` (`system.py`, `grammar.py`, `doubles.py`) · ngữ pháp mẫu `fixtures/agents/villa-concierge/commands.toml` · `tests/test_models.py` |
 | **TSK-S2-09** | Giao diện web `sim`: cảm biến ảo, trạng thái actuator — `neuroedge run --ui` | FR-TGT-06 | V3 | ✅ Hoàn thành (2026-09-23) | [`sim/ui.py`](python/neuroedge/sim/ui.py) — `run --ui`: trang cục bộ 127.0.0.1, SSE, không mạng, từ chối POST khác nguồn; commit `8a023f3` · `pytest tests/test_sim_ui.py` |
 | **TSK-S2-10** | Kết luận phạm vi Khối 1b dựa trên spike | — | V2 + trưởng nhóm | ⏸ **Hoãn → Sprint 5** *(hoặc sớm hơn khi bo mạch về)* | Chặn bởi bo mạch (TSK-S1-10). `docs/reports/memory_spike_report.md` |
@@ -555,8 +540,8 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S5-01** | Tích hợp WebRTC AEC, libfvad (VAD), Opus streaming | FR-PER-06 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/audio/` |
 | **TSK-S5-02** | Port đường dẫn audio thu/phát theo §3.5, tuân thủ nghĩa vụ ghi nhận nguồn §3.9. **Không hiện thực STT/TTS trên thiết bị** | FR-PER-01 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/drivers/audio_path.c` |
-| **TSK-S5-03** | **Hiện thực C/C++ của máy trạng thái hội thoại** theo đặc tả Sprint 2, phải vượt bộ vector tuân thủ Sprint 3 (§3.8) | FR-PER-02, FR-PER-03, FR-PER-05 | V1 + V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/fsm/voice_fsm.c` |
-| **TSK-S5-04** | Thu hồi lệnh actuator chưa thực thi khi bị cắt lời | FR-PER-02 | V1 + V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/fsm/actuator_abort.c` |
+| **TSK-S5-03** | **Hiện thực C/C++ của máy trạng thái hội thoại** theo [`voice_fsm.md`](docs/spec/voice_fsm.md) (TSK-S2-07), phải vượt bộ vector tuân thủ TSK-S3-10 (§3.8) | FR-PER-02, FR-PER-03, FR-PER-05 | V1 + V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/fsm/voice_fsm.c` |
+| **TSK-S5-04** | Thu hồi lệnh actuator chưa thực thi khi bị cắt lời — hợp đồng ở [`voice_fsm.md`](docs/spec/voice_fsm.md) §5 | FR-PER-02 | V1 + V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/fsm/actuator_abort.c` |
 | **TSK-S5-05** | Tối ưu bộ nhớ theo ngân sách đã chốt ở Q-3 | NFR-RES-01, NFR-RES-02 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/sdkconfig.defaults` |
 | **TSK-S5-06** | **Client streaming âm thanh lên provider cloud**: đẩy khung Opus lên STT, nhận luồng TTS về, tái dùng hợp đồng kết nối của TSK-S2-11 (CR-1.0) | FR-PER-07, FR-GW-04 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/audio/provider_client.c` |
 | **TSK-S5-07** | **Fallback cục bộ trên `esp32s3`** (Q-14): bộ nhận diện lệnh cố định dùng **cùng ngữ pháp lệnh** với `sim` (TSK-S2-08). Backend chọn ở Khối 1b giữa **ESP-SR MultiNet** (lệnh offline, vài chục–vài trăm câu) và **TFLite Micro / ESP-NN** (KWS tự train < 500 KB). **Điều kiện trước Sprint 5:** xác minh giấy phép ESP-SR (theo hiểu biết: chỉ cho dùng trên SoC Espressif), ghi vào `NOTICE`, không lọt vào gói Python ([`TODOS.md`](TODOS.md) #17); giấy phép không hợp ⇒ dùng TFLite Micro / ESP-NN (Apache-2.0). Số đo bộ nhớ lấy từ spike TSK-S1-10 | FR-MDL-03, FR-ACE-03, NFR-RES-01 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/fallback/` |
@@ -565,7 +550,7 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 | **TSK-S5-10** | **Phiên tương tác `neuroedge run --target linux`** — REPL và `run -c` trên `LinuxHAL` (gpio-sim trong CI, RPi 5 hằng đêm), cùng hợp đồng mã thoát như `sim`; làm cùng TSK-S5-08. Hôm nay `run --target linux` thoát mã 2, chỉ `replay --target linux` chạy (TSK-S3-06) | FR-CLI-02, FR-TGT-02 | V2 + V3 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/run.py` · `python/neuroedge/hal/linux.py` |
 | **TSK-S3-13** | **Tích hợp ASR/TTS qua provider cloud** cho `sim` và `linux`, kèm tùy chọn mô hình cục bộ (CR-1.0) — **chuyển từ Sprint 3** (wedge `sim` gõ chữ không cần, Q-15); dùng lại hợp đồng provider của TSK-S2-11, làm cùng TSK-S5-06. Âm thanh `linux` là TSK-S5-08 | FR-MDL-09, FR-PER-07 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/providers/` |
 
-**Việc hoãn từ Sprint 2–3 đổ về Sprint 5:** TSK-S2-06 (CEL), TSK-S3-10 + TSK-S3-11 (vector tuân thủ · FSM Python — theo đặc tả TSK-S2-07, đặc tả đã kéo lên A2; cả ba phải xong **trước** TSK-S5-03), TSK-S2-10 (kết luận phạm vi 1b, sớm hơn nếu bo mạch về), TSK-S3-08 (ví dụ mẫu), TSK-S3-09 (telemetry), TSK-S3-13 (bảng trên), và TSK-S5-10 tách từ TSK-S3-06. Lý do từng task ở §4.2 và §4.3. Đây là tải thật của Khối 1b — phải tính vào khi chốt ngày tuyệt đối cho Sprint 5 (Q-19).
+**Việc hoãn từ Sprint 2–3 đổ về Sprint 5:** TSK-S2-06 (CEL), TSK-S3-10 + TSK-S3-11 (vector tuân thủ · FSM Python — theo [`voice_fsm.md`](docs/spec/voice_fsm.md), đặc tả TSK-S2-07 xong 2026-09-25; cả hai phải xong **trước** TSK-S5-03), TSK-S2-10 (kết luận phạm vi 1b, sớm hơn nếu bo mạch về), TSK-S3-08 (ví dụ mẫu), TSK-S3-09 (telemetry), TSK-S3-13 (bảng trên), và TSK-S5-10 tách từ TSK-S3-06. Lý do từng task ở §4.2 và §4.3. Đây là tải thật của Khối 1b — phải tính vào khi chốt ngày tuyệt đối cho Sprint 5 (Q-19).
 
 **Ràng buộc kiến trúc bắt buộc:** máy trạng thái hội thoại có **một đặc tả chuẩn tắc** (TSK-S2-07) và **hai hiện thực** — Python cho `sim`/`linux` (TSK-S3-11), C/C++ cho `esp32s3` (TSK-S5-03) — cùng vượt **một bộ vector tuân thủ** (TSK-S3-10, §3.8). Hiện thực C/C++ là bản thứ hai của cùng đặc tả, không phải thiết kế độc lập, và chỉ được nghiệm thu khi vượt toàn bộ bộ vector. Hai bản mà phân kỳ thì hành vi thu hồi lệnh actuator khi cắt lời sẽ khác nhau giữa các target, phá vỡ tương đương ở đúng miền nguy hiểm nhất.
 
@@ -591,7 +576,7 @@ Sprint này **cố tình chưa làm thoại**. Mục đích là chứng minh tư
 | **TSK-S6-04** | Nạp firmware từ HTTP endpoint mở bất kỳ | FR-OTA-04 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/ota/http_ota.c` |
 | **TSK-S6-05** | Secure boot, mã hóa flash, nút ngắt micro vật lý | NFR-SEC-02, NFR-SEC-03 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/security/` |
 | **TSK-S6-06** | Kiểm thử chịu tải 24 giờ | NFR-RES-01, A6 | V3 | ⏳ Chưa bắt đầu | `tests/stress/` |
-| **TSK-S6-07** | Publish JSON Schema công khai và bộ kiểm thử tuân thủ | FR-GOV-01, FR-GOV-03, A9 | V1 | ⏳ Chưa bắt đầu | `schemas/`, `tests/compliance/` |
+| **TSK-S6-07** | Publish JSON Schema công khai và bộ kiểm thử tuân thủ | FR-GOV-01, FR-GOV-03, A9 | V1 | ⏳ Chưa bắt đầu | `schemas/`, `fixtures/compliance/` (thoại: [`voice_fsm.md`](docs/spec/voice_fsm.md) §9) |
 | **TSK-S6-08** | Hoàn thiện tài liệu, ví dụ, video minh họa | FR-DX-05, FR-DX-06, A8 | V3 | ⏳ Chưa bắt đầu | `docs/`, `examples/` |
 
 

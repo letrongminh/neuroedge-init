@@ -37,14 +37,15 @@ of the file itself.
 
 2. Pipecat AI
    - Source:    https://github.com/pipecat-ai/pipecat
-   - Licence:   MIT License
-   - Verified:  2026-09-21
+   - Licence:   BSD 2-Clause License (Copyright (c) 2024-2026, Daily)
+   - Verified:  2026-09-25 (LICENSE at source; was recorded as MIT)
    - Scope:     Frame-based audio pipeline architecture, dynamic silence
                 handling, barge-in state machine design.
    - Lands in:  python/neuroedge/perception/
    - Status:    APPROVED — not yet ported (TSK-S3-11, deferred to Sprint 5). Roadmap §3.10
-                requires the canonical FSM spec (TSK-S2-07) and the compliance
-                vector set (TSK-S3-10) to exist FIRST; porting before that makes
+                requires the canonical FSM spec (TSK-S2-07, done:
+                docs/spec/voice_fsm.md) and the compliance vector set
+                (TSK-S3-10) to exist FIRST; porting before that makes
                 this a risk rather than a leverage.
 
 3. Wokwi Elements

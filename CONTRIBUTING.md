@@ -123,7 +123,7 @@ Mẫu ghi nhận tại chỗ:
 ```python
 # Ported from Pipecat (https://github.com/pipecat-ai/pipecat)
 # Source file: src/pipecat/processors/frame_processor.py @ commit <sha>
-# License: MIT. See NOTICE entry 2.
+# License: BSD-2-Clause (Copyright Daily). See NOTICE entry 2.
 ```
 
 Giấy phép nào được vào phần phân phối: chính sách **Q-11**
