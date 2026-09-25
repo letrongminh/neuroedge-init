@@ -32,6 +32,10 @@ bản gói.
 
 #### Đã thêm
 
+- **TSK-S4-09 — `verify --targets esp32s3` chạy trên QEMU; vết ghi firmware qua UART.** Firmware ghi sự kiện thành dòng
+  `NE1 ` (`ne_trace`) và replay 3 vết ghi chuẩn mực bằng walker C (`ne_decide`, có đường suy giảm) + sổ token C; `record`
+  / `verify --port` đọc tệp log, `tcp://` hoặc serial (`neuroedge[serial]`); job `uart-trace`. Đặc tả `simulation_coverage.md`
+  §4. Kiểm: `pytest tests/test_c_trace.py tests/test_uart_trace.py tests/test_trace_vectors.py`. (FR-CI-01, FR-CLI-03/04)
 - **TSK-S2-07 — đặc tả chuẩn tắc máy trạng thái hội thoại.** `docs/spec/voice_fsm.md`: năm trạng thái, bảng chuyển
   trạng thái, hợp đồng thu hồi lệnh (chỉ lệnh chưa giao tới chân, ≤ 20 ms, đóng token; lệnh đã giao chạy hết), sự kiện,
   kịch bản tuân thủ cho TSK-S3-10. Chỉ tài liệu. (FR-PER-02→05)
@@ -155,6 +159,8 @@ bản gói.
 
 #### Đã sửa
 
+- **Proposal §3.2 và dòng TSK-S6-07 lệch với kho.** QEMU chạy bằng `qemu-system-xtensa` (cài qua
+  `idf_tools.py`), không phải `idf.py qemu`; bộ vector tuân thủ ở `fixtures/compliance/`, không phải `tests/compliance/`.
 - **Giấy phép Pipecat ghi sai là MIT** ở `NOTICE` và mẫu ghi nhận `CONTRIBUTING.md` §4. Xác minh tại nguồn
   2026-09-25: BSD 2-Clause (Copyright Daily), khớp proposal Phụ lục H.1.
 - **`replay --target esp32s3` thoát mã 2**, không phải 1: target đã biết nhưng chưa replay được vết ghi tuỳ ý
