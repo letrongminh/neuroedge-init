@@ -6,13 +6,14 @@
 > 0007 đã được TSK-N0-03 giữ chỗ).
 >
 > **Đối chiếu 2026-09-25** (sau TSK-S4-09 và TSK-S2-07): các ràng buộc mới từ đặc tả đã chốt
-> nằm ở §3.1, §3.3, §3.4, §5 và Phụ lục; điểm chờ quyết định ở Phụ lục C của kế hoạch mẹ (#10–#13).
+> nằm ở §3.1, §3.3, §3.4, §5 và Phụ lục. Các điểm chờ quyết định đã chốt ngày 2026-09-25
+> (Q-32 → Q-37, `neuroedge-prd.md` §15); câu hỏi còn mở ở Phụ lục.
 
 | | |
 |:---|:---|
 | **Mã RFC** | *(chưa cấp — cấp khi mở PR RFC)* |
 | **Tiêu đề** | Giao thức điều phối node cho robot phân tầng (black channel) |
-| **Hợp đồng bị ảnh hưởng** | `trace.v1` *(chỉ khi chọn phương án B — A không sửa `schemas/`, §3.4)* · đặc tả dòng `NE1` (`simulation_coverage.md` §4) · hợp đồng thu hồi lệnh (`voice_fsm.md` §5) · ngữ nghĩa phân giải gate *(có thể — xem §3.6)* · `NETR` *(không, trừ khi chọn nút mới)* |
+| **Hợp đồng bị ảnh hưởng** | `trace.v1` *(không sửa `schemas/` — Q-32 chọn phương án A, §3.4)* · đặc tả dòng `NE1` (`simulation_coverage.md` §4) · hợp đồng thu hồi lệnh (`voice_fsm.md` §5) · ngữ nghĩa phân giải gate *(có thể — xem §3.6)* · `NETR` *(không, trừ khi chọn nút mới)* |
 | **Yêu cầu PRD liên quan** | FR-TGT-08, FR-HAL-01, FR-CI-07, FR-MDL-10, NFR-SEC-04/05/09 |
 | **Người đề xuất** | *(điền khi mở)* |
 | **Ngày mở** | *(chưa mở)* |
@@ -75,8 +76,8 @@ bằng chứng replay cho một phiên trải trên nhiều chip.
   Zenoh; `NOTICE` theo `CONTRIBUTING.md` §4).
 - Transport **không được tin**: là "black channel" theo IEC 61784-3. Mọi bảo đảm an toàn
   nằm ở §3.3 và gate từng node.
-- Phương án B: **micro-ROS / Micro XRCE-DDS** (Apache-2.0) nếu spike cho kết quả tốt hơn
-  hoặc nếu ưu tiên ROS 2 native. **Chốt bằng spike** (xem §7).
+- Phương án B: **micro-ROS / Micro XRCE-DDS** (Apache-2.0). **Đã chốt ở Q-36:** Zenoh-pico; spike W3-1
+  là phép thử loại (ba ngưỡng ở PRD §15); chỉ đổi sang micro-ROS khi Zenoh trượt và micro-ROS đạt (§7).
 
 ### 3.3 Lớp an toàn kiểu black channel
 
@@ -92,8 +93,9 @@ Mỗi thông điệp điều phối mang thêm trường bảo vệ:
 
 **Mất liên lạc là một lần dừng kiểu tắt máy.** `voice_fsm.md` §5.3 hôm nay chỉ cho tắt máy (SIGTERM) cắt
 một lệnh đã giao. RFC này phải sửa §5 đó: lý do `actuator_aborted.reason` mới, một sự kiện đầu vào
-"mất liên lạc" để replay tính lại được lần hủy, và trạng thái an toàn khai theo từng cơ cấu —
-cắt một xung mở chốt đang chạy là khoá cửa lại (`voice_fsm.md` §5.3).
+"mất liên lạc" để replay tính lại được lần hủy, và trạng thái an toàn khai theo từng cơ cấu (**Q-35**: không khai thì dừng) —
+cắt một xung mở chốt đang chạy là khoá cửa lại (`voice_fsm.md` §5.3). Với `motion.*`, token thuê có hạn
+(**Q-37**) tự hết hạn khi không còn lệnh, nên mất liên lạc dẫn tới dừng mà không cần phát hiện riêng.
 
 **Cắt lời xuyên chip.** Máy trạng thái hội thoại chạy trên Pi, còn lệnh đang chờ có thể nằm ở node.
 §5.2 của `voice_fsm.md` đòi hủy trong ≤ 20 ms và đóng token (`ne_token_close`); RFC này phải định
@@ -104,7 +106,7 @@ mềm **không** cứu được khi crash/SIGKILL (`neuroedge-roadmap-phase1-5.m
 
 ### 3.4 Trace hợp nhất
 
-Hai phương án (quyết định ở đây, trước khi viết RFC đầy đủ):
+**Q-32 (2026-09-25) chọn phương án A.** Bảng giữ lại làm lý do:
 
 | | Phương án A (khuyến nghị cho v1.x) | Phương án B |
 |:--|:--|:--|
@@ -137,9 +139,9 @@ gãy test và đổi vector firmware.
 
 | Hạng mục | Ảnh hưởng |
 |:---|:---|
-| Tệp đang hợp lệ có còn hợp lệ? | Có, nếu chọn A (thêm trường tùy chọn trong `metadata`); Không, nếu chọn B |
+| Tệp đang hợp lệ có còn hợp lệ? | Có — phương án A (Q-32) chỉ thêm trường tùy chọn trong `metadata` |
 | Tệp đang không hợp lệ có trở nên hợp lệ? | Không |
-| Cần tăng phiên bản lược đồ (`v1` → `v2`)? | Chỉ khi chọn B |
+| Cần tăng phiên bản lược đồ (`v1` → `v2`)? | Không (Q-32) |
 | Ảnh hưởng tới mã băm / chữ ký gate đã phát hành? | Không (gate không đổi) |
 | Ảnh hưởng tới ba tệp vết ghi chuẩn mực? | Không — vết ghi đa node ở `fixtures/compliance/multinode/` |
 | Gate nào trong `digests.lock` đổi digest? | Không |
@@ -161,14 +163,14 @@ qua gate từng node. Các mối đe dọa mới cần dòng trong `docs/spec/th
 | Cắt lời trên Pi, lệnh đang chờ ở node | Thông điệp hủy Pi → node trong ngân sách của `voice_fsm.md` §5.2 — chưa thiết kế (§3.3) |
 | Node bị chiếm, tự mint token | Ngoài phạm vi v1 (như threat model §3); mốc ở `TODOS.md` #2 |
 
-Nếu chọn B (trace.v2) hoặc nếu RFC chạm ngữ nghĩa phân giải gate: cần kỹ thuật trưởng.
+Nếu RFC chạm ngữ nghĩa phân giải gate: cần kỹ thuật trưởng.
 
 ## 6. Phương án đã xem xét và bác bỏ
 
 | Phương án | Lý do bác bỏ |
 |:---|:---|
 | Gate tập trung trên Pi | Phá fail-closed on-device khi mất mạng (luật BT2 của kế hoạch mẹ; Phụ lục H.3) |
-| MQTT làm wire | "Broker paradox"; EMQX (BSL) còn mở trong Q-11; Mosquitto (EPL-2.0) không nằm trong Q-11, cần ngoại lệ riêng |
+| MQTT làm wire | "Broker paradox" — thêm một broker giữa não và node trong cùng một robot. (Q-11: EMQX không dùng; broker giấy phép dễ dãi chỉ dành cho Fleet OS, Khối 2) |
 | DDS/ROS 2 làm wire | Không lên MCU; multicast nặng; kéo máy trạng thái ra khỏi thiết bị |
 | Giao thức nhị phân tự thiết kế | Chi phí xây + bảo trì cao, không hệ sinh thái; phần "black channel" dù sao vẫn phải tự viết |
 | MCP làm wire MCU | JSON-RPC nặng; không hợp tài nguyên vi điều khiển |
@@ -176,8 +178,9 @@ Nếu chọn B (trace.v2) hoặc nếu RFC chạm ngữ nghĩa phân giải gate
 
 ## 7. Bằng chứng kiểm chứng
 
-- [ ] **Spike W3-1:** Zenoh-pico trên ESP32-S3 (+ RP2350 nếu Phụ lục C #10 của kế hoạch mẹ được chốt) ↔ `zenohd` trên Pi: độ trễ, RAM,
-      flash, reconnect; so sánh micro-ROS; ghi báo cáo vào `docs/reports/`.
+- [ ] **Spike W3-1 (phép thử loại, Q-36):** Zenoh-pico trên ESP32-S3 và RP2350 (Q-33) ↔ `zenohd` trên Pi:
+      p99 Pi → node ≤ 20 ms, SRAM nội ≤ 40 KB, nối lại ≤ 2 s, kèm flash; trượt ⇒ đo micro-ROS cùng điều kiện;
+      ghi báo cáo vào `docs/reports/`.
 - [ ] Fault injection: drop / delay / replay / tamper → **không ALLOW nào lọt**; mất link
       → node về trạng thái an toàn — kiểm trên bo mạch thật (QEMU không giả lập GPIO, `TODOS.md` #21).
 - [ ] Replay trace hợp nhất đa node xanh trong CI.
@@ -188,7 +191,7 @@ Nếu chọn B (trace.v2) hoặc nếu RFC chạm ngữ nghĩa phân giải gate
 
 ## 8. Việc phải làm khi chấp thuận
 
-- [ ] Phương án A: không sửa `schemas/` — tài liệu hoá quy ước ở `simulation_coverage.md` §3–§4; phương án B: mở `trace.v2`
+- [ ] Phương án A (Q-32): không sửa `schemas/` — tài liệu hoá quy ước ở `simulation_coverage.md` §3–§4
 - [ ] Sửa `docs/spec/voice_fsm.md` §5 (dừng do mất liên lạc, hủy xuyên chip) và §8 (sự kiện mới)
 - [ ] Cập nhật `docs/spec/threat_model.md` §2c và `docs/spec/tool_calling.md`
 - [ ] Cập nhật `neuroedge-prd.md` nếu có FR bị ảnh hưởng; quyết định mới → `Q-N` ở §15
@@ -200,12 +203,12 @@ Nếu chọn B (trace.v2) hoặc nếu RFC chạm ngữ nghĩa phân giải gate
 
 ## Phụ lục — Câu hỏi mở của bản nháp
 
-1. Wire protocol: Zenoh hay micro-ROS? (spike quyết)
-2. Trace: A hay B?
+1. ~~Wire protocol: Zenoh hay micro-ROS?~~ — ✅ Q-36: Zenoh-pico, spike là phép thử loại
+2. ~~Trace: A hay B?~~ — ✅ Q-32: A
 3. Mô hình cấu hình node trong `agent.toml` (`[nodes]`) — hình dạng cụ thể?
-4. Node tham chiếu: ESP32-S3 + RP2350 (khuyến nghị) hay chỉ ESP32-S3 trước?
+4. ~~Node tham chiếu: ESP32-S3 + RP2350 hay chỉ ESP32-S3 trước?~~ — ✅ Q-33: ESP32-S3 + RP2350
 5. Khoá liên kết node: PSK đối xứng trước hay mTLS ngay?
-6. Mất liên lạc: trạng thái an toàn theo từng cơ cấu, và sửa `voice_fsm.md` §5 thế nào?
+6. Mất liên lạc: chính sách ✅ Q-35 (theo từng cơ cấu, mặc định dừng); còn mở: sửa `voice_fsm.md` §5 thế nào?
 7. Cắt lời xuyên chip: thông điệp hủy Pi → node, ngân sách thời gian?
 8. `call_source` và xác nhận `ask` qua Pi: node tin nguồn nào?
 9. Mã hoá ý định trên MCU (KL-5: không parser JSON)?

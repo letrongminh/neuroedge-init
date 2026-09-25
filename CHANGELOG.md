@@ -32,6 +32,9 @@ bản gói.
 
 #### Đã thêm
 
+- **Q-6, Q-36 → Q-38 — CPO chốt 4 quyết định (2026-09-25).** Lưu vết Fleet Standard 90 ngày, Enterprise 3 năm (Q-6); wire
+  node Zenoh-pico, spike W3-1 là phép thử loại (Q-36); token `motion.*` thuê có hạn (Q-37); chứng nhận an toàn OUT tạm thời,
+  miễn trừ ở `README.md` và `threat_model.md` §3b (Q-38, `TODOS.md` #40). Q-5 hoãn tới trước Tháng 4. PRD §14/§15, roadmap §10.
 - **Q-11, Q-31 → Q-35 — CPO chốt 9 quyết định (2026-09-25).** Hawkbit duyệt, EMQX thay (Q-11); tagline NeuroBrain bỏ
   "Copilot" (Q-31); nhận hướng robot phân tầng sau Beta (Q-32), RP2350 do đội lõi port (Q-33), ROS 2/Nav2 gate mọi lệnh
   tốc độ (Q-34), trạng thái an toàn theo từng cơ cấu (Q-35). PRD §14/§15, roadmap §10, phase 2; `TODOS.md` #16 đã đóng.

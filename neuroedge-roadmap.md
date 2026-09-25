@@ -800,20 +800,23 @@ Bậc 5 là bậc nặng nhất và cũng là phương án ứng phó chính cho
 | **Q-31** | NeuroBrain — "Build Physical AI by conversation, under contract" | 2026-09-25 | phase1-5 §1 |
 | **Q-32** | Nhận hướng robot phân tầng, sau Developer Beta (+ trace `v1`, `motion.*`, MCP OAuth 2.1, drift mở issue) | 2026-09-25 | `draft-ke-hoach-mo-rong-robot-fofoca.md` |
 | **Q-33** | RP2350 do đội lõi port làm node thứ hai | 2026-09-25 | Chặng W3 |
-| **Q-34** | ROS 2 / Nav2 tích hợp, gate mọi lệnh tốc độ (cần RFC + C6) | 2026-09-25 | W4-1 |
+| **Q-34** | ROS 2 / Nav2 tích hợp, gate mọi lệnh tốc độ (cần RFC + C6 từ người mua robot) | 2026-09-25 | W4-1 |
 | **Q-35** | Mất liên lạc: trạng thái an toàn theo từng cơ cấu, mặc định dừng | 2026-09-25 | RFC-node |
+| **Q-6** | Lưu vết Fleet OS: Standard 90 ngày, Enterprise 3 năm | 2026-09-25 | Khối 2 |
+| **Q-36** | Wire node: Zenoh-pico mặc định, spike W3-1 là phép thử loại (p99 ≤ 20 ms, SRAM ≤ 40 KB, nối lại ≤ 2 s) | 2026-09-25 | RFC-node, W3-1 |
+| **Q-37** | Token `motion.*` thuê có hạn, mỗi lệnh qua gate gia hạn | 2026-09-25 | RFC-motion |
+| **Q-38** | Chứng nhận an toàn: OUT tạm thời, dừng khẩn phần cứng bắt buộc cho robot di động | 2026-09-25 | Cổng 2026-10-25, `TODOS.md` #40 |
 
 **Hệ quả trực tiếp lên Sprint 1:** Q-1, Q-2 và Q-3 đã chốt nghĩa là đội có thể đặt bo mạch, dựng kho mã và bắt đầu spike ngay Tuần 0 mà không chờ quyết định nào.
 
 **Một điều chỉnh so với đề xuất gốc:** Q-4 ghi Claude Sonnet 5 thay vì Sonnet 3.5. Thế hệ 3.5 đã bị thay thế; chốt một định danh mô hình lỗi thời vào tài liệu nền sẽ tạo nợ ngay từ ngày đầu.
 
-### 10.2 Hai quyết định còn mở và một RFC
+### 10.2 Một quyết định còn mở và một RFC
 
 | Hạn | Mã | Quyết định | Vì sao hạn đó | Người quyết | Trạng thái |
 |:---:|:---:|:---|:---|:---:|:---:|
 | **Trước Tháng 4** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng | ⏳ Đang mở |
 | **Tháng 9** | **RFC-0002** | Mở rộng enum `target` và đưa bậc target vào mã lõi (`TARGET_TIERS`); `vision.in` tách sang RFC riêng ở V1b | Không chặn roadmap này. Chặn Khối V1a của Giai đoạn 2 và mọi board profile mới — lịch ở `neuroedge-roadmap-phase2.md` §5 | Kỹ thuật trưởng | ⏳ Đang mở |
-| **Trước Tháng 4** | Q-6 | Chính sách lưu trữ vết ghi: thời hạn và hạn mức | Ảnh hưởng chi phí vận hành và cam kết SLA | Sản phẩm | ⏳ Đang mở |
 
 **Chính sách phụ thuộc bắc cầu** là một phần của Q-11: nguyên văn ở PRD §15, cưỡng chế bằng `scripts/check_licences.py` (job `cloud-extra`) và `pip-licenses --fail-on` (job `licence-obligations`). *(Ngoại lệ LGPL qua liên kết động của `libgpiod` — proposal §3.9 quy tắc 3 — là thư viện hệ thống C, không phải phụ thuộc Python bắc cầu.)*
 

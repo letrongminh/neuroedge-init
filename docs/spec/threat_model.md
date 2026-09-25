@@ -118,6 +118,14 @@ quyền ngang runtime, không phải nhầm lẫn.
 
 Việc này hoãn có chủ ý; mốc kích hoạt để đưa vào phạm vi ở [`TODOS.md`](../../TODOS.md) #2.
 
+## 3b. Ngoài phạm vi: an toàn chức năng được chứng nhận (Q-38)
+
+NeuroEdge **không** phải chức năng an toàn được chứng nhận: không SIL theo IEC 61508, không PL theo
+ISO 13849. Gate chặn lệnh sai do nhầm lẫn của agent (§2); nó không thay biện pháp an toàn độc lập, và
+phần mềm không cứu được khi tiến trình crash hay bị SIGKILL. Thiết bị có cơ cấu gây hại được cho người
+— motor của robot di động (Q-34) — phải có nút dừng khẩn bằng phần cứng, cắt nguồn không qua phần mềm.
+Tư thế này là tạm thời; IN/OUT thật chốt theo câu C6 của cổng nhu cầu và [`TODOS.md`](../../TODOS.md) #40.
+
 ## 4. Giả định
 
 - Agent chỉ nhận HAL qua runtime (`Conversation`), không tự dựng HAL.
