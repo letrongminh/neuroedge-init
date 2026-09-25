@@ -32,6 +32,15 @@ bản gói.
 
 #### Đã thêm
 
+- **Q-6, Q-36 → Q-38 — CPO chốt 4 quyết định (2026-09-25).** Lưu vết Fleet Standard 90 ngày, Enterprise 3 năm (Q-6); wire
+  node Zenoh-pico, spike W3-1 là phép thử loại (Q-36); token `motion.*` thuê có hạn (Q-37); chứng nhận an toàn OUT tạm thời,
+  miễn trừ ở `README.md` và `threat_model.md` §3b (Q-38, `TODOS.md` #40). Q-5 hoãn tới trước Tháng 4. PRD §14/§15, roadmap §10.
+- **Q-11, Q-31 → Q-35 — CPO chốt 9 quyết định (2026-09-25).** Hawkbit duyệt, EMQX thay (Q-11); tagline NeuroBrain bỏ
+  "Copilot" (Q-31); nhận hướng robot phân tầng sau Beta (Q-32), RP2350 do đội lõi port (Q-33), ROS 2/Nav2 gate mọi lệnh
+  tốc độ (Q-34), trạng thái an toàn theo từng cơ cấu (Q-35). PRD §14/§15, roadmap §10, phase 2; `TODOS.md` #16 đã đóng.
+- **Dashboard sản phẩm cho CPO.** `docs/business/cpo-dashboard.html` — một trang tự chứa (mở thẳng bằng trình duyệt):
+  tiến độ sprint, mốc, việc chờ người, quyết định còn mở, TODOS, thay đổi gần đây; sinh từ roadmap/TODOS/PRD/CHANGELOG
+  bằng `python3 scripts/gen_cpo_dashboard.py`. Kiểm: `pytest tests/test_cpo_dashboard.py`.
 - **Mở rộng cho robot phân tầng FOFOCA (bản nháp, chờ `Q-N`).** `draft-ke-hoach-mo-rong-robot-fofoca.md` (chặng W0–W4:
   nguyên thủy HAL mới, multi-node với gate từng node qua black channel) + `draft-rfc-node-giao-thuc-dieu-phoi.md` (RFC chưa
   cấp số); điểm lệch với đặc tả và phạm vi hiện hành chờ quyết ở Phụ lục C. Chỉ tài liệu, chưa có mã.
@@ -658,6 +667,7 @@ $V/neuroedge verify                      # kỳ vọng: mọi gate phân giải 
 $V/neuroedge gate lint                   # kỳ vọng: ✓ mọi gate resolved, mã 0
 $V/neuroedge trace validate fixtures/traces/*.json   # kỳ vọng: mỗi tệp VALID
 $V/neuroedge board list                  # kỳ vọng: mỗi profile trong boards/
+python3 scripts/gen_cpo_dashboard.py     # sinh lại dashboard CPO (docs/business/cpo-dashboard.html) sau khi đổi roadmap/TODOS/PRD/CHANGELOG
 $V/python scripts/check_digests.py --check   # kỳ vọng: ✓ … tệp khớp digests.lock
 ```
 
@@ -839,12 +849,11 @@ này sẽ làm hỏng những thứ trông không liên quan.
     bị dán vào báo cáo tiến độ như bằng chứng, và một dòng "VERIFIED" từ một lệnh chưa
     làm gì là thông tin sai cho người ra quyết định phạm vi. Bảng mã thoát: §2.3.
 
-### 3.4 Hai hạng mục bị chặn — không đóng được bằng nỗ lực kỹ thuật
+### 3.4 Hạng mục bị chặn — không đóng được bằng nỗ lực kỹ thuật
 
 | Hạng mục | Chặn bởi | Cần ai | Mở ra điều gì |
 |:---|:---|:---|:---|
 | **TSK-S1-10** · Tiêu chí ra 3 | **Bo mạch ESP32-S3-BOX-3 vật lý** | Đặt hàng | Kết luận phạm vi Khối 1b (TSK-S2-10) |
-| **Q-11** phần Hawkbit/EMQX (`TODOS.md` #16) | Quyết định quản trị, hạn trước Khối 2 | Kỹ thuật trưởng | Bắt đầu port mã Khối 2 |
 
 **TSK-S1-10 — việc còn lại sau khi có bo mạch:** vendoring `esp-sr` (AEC/AFE +
 VAD) và `opus` kèm rà soát giấy phép §3.9, nạp chúng tại `TODO(TSK-S1-10, V2)`

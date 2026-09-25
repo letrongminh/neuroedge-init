@@ -19,12 +19,12 @@ multi-node, hệ sinh thái; kèm khung RFC cho từng thay đổi.
 **Ngoài phạm vi:**
 
 - Matter / Apple HomeKit (PRD §14).
-- SLAM, tránh vật cản, dẫn đường tự hành: `neuroedge-roadmap-phase2.md:218` loại **tường minh**, không
-  có ngoại lệ "tích hợp ngoài". Cầu ROS 2 / demo Nav2 của W4-1 vì vậy cần quyết định trước (Phụ lục C #11).
+- **Tự viết** SLAM, tránh vật cản, dẫn đường tự hành (`neuroedge-roadmap-phase2.md:218`). Ngoại lệ **Q-34**
+  (2026-09-25): tích hợp nguyên bản ROS 2/Nav2 cho W4-1, gate xét mọi lệnh tốc độ.
 - MHS ở bậc 1 hoặc chạm `schemas/` (Q-29 giữ nguyên: theo dõi, adapter cộng đồng khi chuẩn mở).
 - Tự huấn luyện/tinh chỉnh mô hình.
 
-> **Trạng thái quản trị.** Đây là kế hoạch đề xuất, **chưa** là quyết định của kho. Các
+> **Trạng thái quản trị.** Hướng đã được nhận (Q-32, 2026-09-25 — bắt đầu sau Developer Beta); chi tiết vẫn là kế hoạch đề xuất. Các
 > điểm cần chốt phải vào `neuroedge-prd.md` §15 dưới mã `Q-N` mới (Phụ lục C); chỉ khi đó
 > kế hoạch mới có hiệu lực. Tệp này **không** cập nhật tiến độ (nguồn duy nhất:
 > `neuroedge-roadmap.md` §0) và **không** tạo sự thật mới — mỗi sự thật có đúng một nơi
@@ -83,8 +83,8 @@ qua gate, kể cả khi hệ thống trải trên nhiều chip, và mọi mở r
 
 | # | Tiêu chí | Cách chứng minh |
 |:--:|:--|:--|
-| DoD-1 | Pi 5 (`linux`) + ≥ 2 node MCU chạy HAL/gate cục bộ, liên lạc qua wire "black channel". Node thứ hai là RP2350 chỉ khi Phụ lục C #10 được chốt | Demo + test CI |
-| DoD-2 | Ý định thoại → gate từng node quyết → actuator chạy; **mất liên lạc → node về trạng thái an toàn** (một lần dừng kiểu tắt máy — phải thêm vào `voice_fsm.md` §5, Phụ lục C #12) | Fault injection: drop/delay/replay/tamper |
+| DoD-1 | Pi 5 (`linux`) + ≥ 2 node MCU chạy HAL/gate cục bộ, liên lạc qua wire "black channel". Node thứ hai là RP2350 (Q-33) | Demo + test CI |
+| DoD-2 | Ý định thoại → gate từng node quyết → actuator chạy; **mất liên lạc → node về trạng thái an toàn** (một lần dừng kiểu tắt máy, theo từng cơ cấu — Q-35; phải thêm vào `voice_fsm.md` §5) | Fault injection: drop/delay/replay/tamper |
 | DoD-3 | Trace hợp nhất đa node replay được trong CI | `neuroedge verify` + replay. Hôm nay đã có `verify --targets esp32s3 --port` (một node, trên QEMU — TSK-S4-09); `replay --target esp32s3` vẫn thoát mã 2 (TSK-S4-04) |
 | DoD-4 | Một bo bậc 3 được port chỉ bằng tài liệu công khai; **thời gian đội lõi hỗ trợ** bản port đầu tiên < 8 giờ | Tiêu chí ra 3 của Khối P1 (`neuroedge-roadmap-phase2.md:267`) |
 | DoD-5 | SBOM + OTA ký + mTLS/cert thiết bị demo được | Chặng 2 |
@@ -104,6 +104,7 @@ qua gate, kể cả khi hệ thống trải trên nhiều chip, và mọi mở r
 | BT5 | Milestone-gated + PF-3 (nhu cầu thật); giữ bậc 1 không pha loãng (R-7) | `neuroedge-roadmap.md` §0, PRD R-7 |
 | BT6 | Nguyên thủy mới: tùy chọn theo bo mạch, `sim` không giàu hơn bo mạch, bậc 1 vẫn đủ 5 nguyên thủy | FR-HAL-01, bất biến 7 (`CHANGELOG.md` §3.3), `TODOS.md` #14 |
 | BT7 | Giấy phép: allowlist Q-11; mọi port theo 5 nghĩa vụ `CONTRIBUTING.md` §4 + `NOTICE`; không copyleft mạnh | `CONTRIBUTING.md` §4 |
+| BT8 | NeuroEdge **không** là chức năng an toàn được chứng nhận; robot di động có nút dừng khẩn phần cứng cắt nguồn motor không qua phần mềm | Q-38 |
 
 ### 2.2 Danh sách RFC dự kiến
 
@@ -198,7 +199,7 @@ T2: `seq` + epoch/`boot_id`.
 |:--|:--|:--|:--|
 | **Eclipse Zenoh / zenoh-pico** | Một giao thức từ MCU tới cloud; overhead ~5 byte; P2P/routed/brokered; đã chạy ESP32, RP2040/Pico, Zephyr, FreeRTOS; độ trễ WiFi/4G tốt hơn MQTT; có bridge ROS 2 (`zenoh-bridge-dds`); đang thành lựa chọn cho R2X (robot-to-anything) | Trẻ hơn DDS/MQTT; cần spike trên ESP32-S3 thật | **EPL-2.0 OR Apache-2.0** — chọn nhánh Apache-2.0 để qua Q-11 |
 | **micro-ROS / Micro XRCE-DDS** | Chuẩn OMG (DDS-XRCE), ROS 2 native; đội ngũ eProsima | Cần agent trên Pi; nặng hơn; mô hình client–server | Apache-2.0 |
-| **MQTT** | Phổ biến, nhiều broker | "Broker paradox": hai thiết bị cùng LAN vẫn vòng qua broker; EMQX (BSL) còn mở trong Q-11 (`TODOS.md` #16); Mosquitto (EPL-2.0) không nằm trong Q-11, cần ngoại lệ riêng | Broker: vướng giấy phép |
+| **MQTT** | Phổ biến, nhiều broker | "Broker paradox": hai thiết bị cùng LAN vẫn vòng qua broker; EMQX (BSL) không dùng (Q-11, 2026-09-25); Mosquitto (EPL-2.0) không nằm trong Q-11, cần ngoại lệ riêng | Broker: vướng giấy phép |
 | **ROS 2 / DDS làm wire** | Hệ sinh thái robot lớn nhất | Không lên MCU; multicast/UDP nặng; kéo máy trạng thái ra khỏi thiết bị — trái yêu cầu "gate và máy trạng thái chạy trên thiết bị" (`neuroedge-proposal.md` Phụ lục H.3) | Apache-2.0 |
 
 ### 5.2 An toàn phân tán — black channel
@@ -236,8 +237,8 @@ không chạm `schemas/`.
 
 ### 5.5 Khuyến nghị
 
-1. **Wire protocol:** Zenoh-pico (mặc định đề xuất), micro-ROS là phương án B; chốt bằng
-   spike W3-1 trên phần cứng thật.
+1. **Wire protocol:** Zenoh-pico, micro-ROS là phương án B — **đã chốt ở Q-36**; spike W3-1
+   trên phần cứng thật là phép thử loại với ba ngưỡng (PRD §15).
 2. **An toàn:** black channel + watchdog + trạng thái an toàn cục bộ; không tin transport.
 3. **MCP:** giữ ở mặt agent; mở mạng bằng Streamable HTTP + OAuth 2.1 sau mTLS.
 4. **ROS 2:** bridge qua Zenoh trên Pi, tại ranh giới gate.
@@ -259,7 +260,7 @@ Không cần RFC, không chạm vùng đóng băng; làm trước để tăng đ
 | W0-1 | Tiêu chí nghiệm thu 6 NFR-SEC (02→06, 08) + rà NFR-SEC-09 | `neuroedge-prd.md` Phụ lục A.3 + test/evidence | Hết dòng "cần tiêu chí" (`neuroedge-prd.md:863`); mỗi mã có ≥ 1 đường kiểm chứng |
 | W0-2 | SBOM (CycloneDX/SPDX) từ `requirements-lock.txt` | `release-pypi.yml` + artifact phát hành | SBOM sinh trong CI phát hành, gắn đúng phiên bản wheel |
 | W0-3 | Quét lỗ hổng/bí mật: `pip-audit`, gitleaks, CodeQL (Python + C firmware) | `.github/workflows/` + `CHANGELOG.md` §2.5 (danh sách duy nhất của workflow) + `CONTRIBUTING.md` §6 ("Bốn workflow") | Job chặn khi có phát hiện mức cao; không còn khoảng trống quét |
-| W0-4 | Nightly drift: cảnh báo → chặn (hoặc tự mở issue). **Đảo** lựa chọn đã ghi ở `nightly-hardware.yml:96-99` (drift là thông tin, không phải lỗi) — chốt trước khi làm (Phụ lục C #13) | `.github/workflows/nightly-hardware.yml:85-121` | Có ít nhất một job đỏ (hoặc một issue) khi resolved lệch lock |
+| W0-4 | Nightly drift: **tự mở issue, không chặn build** (Q-32) — giữ lựa chọn đã ghi ở `nightly-hardware.yml:96-99` (drift là thông tin, không phải lỗi) | `.github/workflows/nightly-hardware.yml:85-121` | Một issue tự mở khi resolved lệch lock |
 | W0-5 | Dọn `TODOS.md` #31 (FR chưa có task) và #17 (giấy phép ESP-SR) — sớm hơn mốc của chúng (2026-11-16; bo mạch về), được phép nhưng phải ghi lý do | `TODOS.md`, roadmap | Có chủ trì hoặc quyết định văn bản |
 
 **Ước lượng:** S (1–2 PR). **Phụ thuộc:** không.
@@ -345,7 +346,7 @@ thật, (b) bo mạch về, (c) mốc Khối 2/3 mở.
 - Đã lên kế hoạch, chưa bắt đầu: MCP gateway cho thiết bị (TSK-P2-05, `docs/spec/tool_calling.md:216`).
 - Danh tính node dựa trên `device_info` sẵn có (`device_id`, `boot_id` — TSK-S4-09). Mỗi thiết bị
   có đồng hồ `offset_ms` riêng, đếm từ `device_info` của nó, nên trace hợp nhất cần căn đồng hồ.
-- **Chưa giải** (Phụ lục C #12–#14):
+- **Chưa giải** (§14 #12–#13; chính sách mất liên lạc đã chốt ở Q-35):
   - node chỉ thấy một kết nối là Pi, nên phân biệt `call_source` và xác nhận `ask`
     (`tool_calling.md` §5, §6) đi qua Pi → node thế nào;
   - MCU không có parser JSON (KL-5, `hal_mcu_review.md`), nên ý định phải có mã hoá không phải JSON;
@@ -373,7 +374,7 @@ thật, (b) bo mạch về, (c) mốc Khối 2/3 mở.
 | **A (khuyến nghị cho v1.x)** | Thêm `metadata.nodes[]` tùy chọn + quy ước `data.node_id` trong sự kiện | Không phá tương thích; **không sửa `schemas/`** (`metadata` mở, `data` tự do — tiền lệ RFC-0002 và `TODOS.md` #1) | Quy ước nằm trong `data`; cần tài liệu hoá ở `simulation_coverage.md` §3–§4 |
 | B | `trace.v2` với `nodes[]` và `node_id` cấp sự kiện | Rõ ràng, chuẩn mực | Phá tương thích; chi phí migrate toàn bộ corpus; đổi cả đặc tả dòng `NE1` |
 
-Quyết định ở RFC-node (Phụ lục C #2). Vết ghi đa node đặt ở `fixtures/compliance/multinode/`
+**Q-32 chọn A** (2026-09-25). Vết ghi đa node đặt ở `fixtures/compliance/multinode/`
 (corpus khép kín), **không** thêm vào `fixtures/traces/`: thư mục đó giữ đúng ba vết ghi chuẩn mực
 (`voice_fsm.md` §9); tệp thứ tư làm gãy test và đổi vector firmware (`scripts/gen_firmware_vectors.py`).
 
@@ -381,7 +382,7 @@ Quyết định ở RFC-node (Phụ lục C #2). Vết ghi đa node đặt ở `
 
 | ID | Việc | Artifact | Điều kiện xong |
 |:--|:--|:--|:--|
-| W3-1 | **Spike Zenoh-pico ↔ Pi** (ESP32-S3; RP2350 nếu Phụ lục C #10 được chốt): độ trễ, RAM/flash, reconnect, giấy phép; so sánh micro-ROS | `docs/reports/` + số đo | Kết luận chọn wire protocol; ghi `NOTICE` nếu nhận mã |
+| W3-1 | **Spike Zenoh-pico ↔ Pi** (ESP32-S3 và RP2350 — Q-33): phép thử loại theo ba ngưỡng của Q-36 (độ trễ, SRAM nội, nối lại), kèm flash và giấy phép | `docs/reports/` + số đo | Đạt cả ba ngưỡng ⇒ giữ Zenoh; trượt ⇒ đo micro-ROS cùng điều kiện, chỉ đổi khi micro-ROS đạt; ghi `NOTICE` nếu nhận mã |
 | W3-2 | **RFC-node**: mô hình node, intent, safety wrapper, heartbeat → safe-state, wire, trace | `docs/rfc/` | RFC approved; threat model §2c; corpus tool-call mở rộng |
 | W3-3 | Lớp black channel: wrapper + watchdog + replay protection | `python/` + firmware | Test drop/delay/replay/tamper: không ALLOW nào lọt; mất link → safe-state |
 | W3-4 | Trace hợp nhất đa node (chọn A/B) | A: quy ước ở `simulation_coverage.md` (không sửa `schemas/`) · B: `trace.v2` | Replay đa node xanh; corpus `fixtures/compliance/multinode/` khép kín (`digests.lock` chỉ khoá gate, không liên quan) |
@@ -389,9 +390,8 @@ Quyết định ở RFC-node (Phụ lục C #2). Vết ghi đa node đặt ở `
 | W3-6 | `verify` mở rộng cho cụm node (tương đương miền phán quyết) | CLI + CI | Lệch → `SafetyRegressionError` (NE4002); chưa hiện thực thì thoát mã 2 (bất biến 10). FR-CI-07 chỉ phủ bậc 1 — node bậc 3 nằm ngoài |
 
 **Lưu ý phần cứng:** `rp2350` có trong danh sách bậc 3 dự kiến (`neuroedge-proposal.md:1692`),
-nên nếu dùng thì chọn **RP2350** thay vì RP2040 cho node tay máy. Nhưng đội lõi **không** tự port
-RP2350 (`neuroedge-roadmap-phase2.md:252`; PRD §14) — node RP2350 do đội lõi làm cần `Q-N` hoặc
-một thay đổi PRD §14, còn không thì đi theo bản port cộng đồng (Phụ lục C #10). Bo mạch tham chiếu
+nên nếu dùng thì chọn **RP2350** thay vì RP2040 cho node tay máy. **Q-33** (2026-09-25): đội lõi port
+RP2350 — ngoại lệ ghi ở PRD §14 cho luật "không tự port" (`neuroedge-roadmap-phase2.md:252`). Bo mạch tham chiếu
 duy nhất vẫn là ESP32-S3-BOX-3 (bất biến 6); ở đây chỉ gọi là "node tham chiếu".
 
 **Ước lượng:** M (spike) + L (RFC + hiện thực). **Đường găng:** có.
@@ -402,7 +402,7 @@ duy nhất vẫn là ESP32-S3-BOX-3 (bất biến 6); ở đây chỉ gọi là 
 
 | ID | Việc | Điều kiện xong | Ước lượng |
 |:--|:--|:--|:--:|
-| W4-1 | **ROS 2 bridge tại ranh giới gate** (chỉ `linux`, qua `zenoh-bridge-dds`): ROS action → ToolCall → gate → HAL. Demo Nav2 chạm phạm vi đã loại (`neuroedge-roadmap-phase2.md:218`) — cần một dòng PRD §14 hoặc `Q-N` trước (Phụ lục C #11) | Demo trong `sim`: ý định → gate → hành động; ROS 2 không chạm actuator trực tiếp | M |
+| W4-1 | **ROS 2 bridge tại ranh giới gate** (chỉ `linux`, qua `zenoh-bridge-dds`): ROS action → ToolCall → gate → HAL. Nav2 tích hợp nguyên bản, gate mọi lệnh tốc độ (Q-34) — trước đó cần RFC an toàn robot di động và câu C6 từ người mua robot (`TODOS.md` #40) | Demo trong `sim`: ý định → gate → hành động; ROS 2 không chạm actuator trực tiếp | M |
 | W4-2 | Bộ kiểm thử tuân thủ portable (P1) + `docs/porting/tier3.md` + `targets/_template/` — là TSK-P1-01..04 | Tiêu chí ra 3 của P1: thời gian đội lõi hỗ trợ bản port đầu tiên < 8 giờ | M |
 | W4-3 | Registry có ký (OCI/ORAS) + bất biến server-side (#11) + ghim `extends` digest (#15) | ≥ 10 gate OSS publish (TR-4); verify chữ ký trên thiết bị | L |
 | W4-4 | Kho HAL port — là TSK-P2-01 (FR-REG-08 là kho adapter **provider**, khác) | HAL port cộng đồng cài được qua registry | M |
@@ -431,6 +431,10 @@ Nếu IN, khung tham chiếu:
 
 Đường gần: tự công bố + bằng chứng trace/Action CI, không phải chứng nhận SIL ngay.
 
+**Tư thế tạm thời (Q-38, 2026-09-25): OUT** cho tới khi có dữ liệu — tài liệu ghi rõ không có SIL/PL, robot
+di động bắt buộc dừng khẩn phần cứng (BT8). Cổng 2026-10-25 không phỏng vấn người mua robot, nên câu C6 cho
+robot hỏi riêng trước khi mở RFC an toàn di động (`TODOS.md` #40).
+
 ---
 
 ## 12. Thứ tự, phụ thuộc, đường găng, ước lượng
@@ -457,11 +461,11 @@ W2 (song song sau Beta; W2-1 trước W2-6)
 | Rủi ro | Mức | Đối sách |
 |:--|:--:|:--|
 | v1.0 kín lịch, mở rộng làm loãng chất lượng bậc 1 | Cao | Tách người/PR; Chặng 1 tách khỏi đường tới hạn A2/Beta; R-7 giữ nguyên |
-| Zenoh trẻ hơn DDS | Trung bình | Spike W3-1 bắt buộc trước khi chốt RFC-node; micro-ROS là phương án B |
+| Zenoh trẻ hơn DDS | Trung bình | Spike W3-1 là phép thử loại (Q-36); micro-ROS là phương án B |
 | Black channel thêm lớp wrapper mới | Trung bình | Fuzz/replay test riêng; tái dùng mẫu `NETR` |
 | Trace đa node phá vỡ tương thích | Trung bình | Chọn A/B trong RFC; corpus `fixtures/compliance/multinode/` khép kín |
 | Token theo kênh phức tạp | Trung bình | Làm cùng W1B-RFC-2, không nhồi vào 1A |
-| Giấy phép (Zenoh nhánh kép, Hawkbit/EMQX) | Trung bình | Chọn nhánh Apache-2.0; ghi `NOTICE`; chốt Q-11 trước Khối 2 |
+| Giấy phép (Zenoh nhánh kép, Hawkbit) | Trung bình | Chọn nhánh Apache-2.0; ghi `NOTICE`; Q-11 đã chốt (EMQX không dùng) |
 | Bo mạch thật về chậm | Cao | Phần không cần bo mạch kéo lên trước (tiền lệ TSK-S4-02/07/08/09 — firmware kiểm trên host và QEMU) |
 | Mở rộng không có nhu cầu thật | Trung bình | Neo vào cổng nhu cầu 2026-10-25 + PF-3; không tự phát triển SLAM |
 
@@ -471,20 +475,20 @@ W2 (song song sau Beta; W2-1 trước W2-6)
 
 | # | Điểm mở | Chốt ở đâu |
 |:--:|:--|:--|
-| 1 | Wire protocol node: Zenoh vs micro-ROS | Spike W3-1 → RFC-node |
-| 2 | Trace: mở rộng `trace.v1` (A) vs `trace.v2` (B) | RFC-node |
+| 1 | ~~Wire protocol node: Zenoh vs micro-ROS~~ | ✅ Q-36 (Zenoh; W3-1 là phép thử loại) |
+| 2 | ~~Trace: mở rộng `trace.v1` (A) vs `trace.v2` (B)~~ | ✅ Q-32 (A) |
 | 3 | ~~RFC-numeric gộp vào RFC-0007 hay tách riêng~~ — **tách riêng**: RFC-0007 (TSK-N0-03) giữ `gate.v1` nguyên byte | Đã rõ từ bản nháp Giai đoạn 1.5 |
-| 4 | `motion.*` là nguyên thủy riêng (khuyến nghị) hay mở rộng `digital.out` | RFC-motion |
-| 5 | Mô hình token theo kênh (kênh + thời lượng + một lần) | RFC-motion |
-| 6 | Chứng nhận an toàn: IN/OUT | Cổng nhu cầu C6 |
-| 7 | Q-11 phần mở (Hawkbit/EMQX) | Trước Khối 2 |
-| 8 | MCP mạng dùng OAuth 2.1 theo spec (khuyến nghị) | W2-6 |
-| 9 | Node tham chiếu multi-node: ESP32-S3 + RP2350 | Spike W3-1, sau khi chốt #10 |
-| 10 | Đội lõi làm node RP2350 — trái `neuroedge-roadmap-phase2.md:252` và PRD §14 | `Q-N` hoặc PRD §14 (Phụ lục C #10) |
-| 11 | Cầu ROS 2 / demo Nav2 — dẫn đường tự hành bị loại tường minh (`neuroedge-roadmap-phase2.md:218`) | PRD §14 hoặc `Q-N` (Phụ lục C #11) |
-| 12 | Mất liên lạc → về trạng thái an toàn cắt cả lệnh đang chạy: mở rộng `voice_fsm.md` §5 (lý do hủy mới, sự kiện đầu vào replay được, trạng thái an toàn theo từng cơ cấu); cắt lời xuyên chip (Pi → node, ngân sách 20 ms) | RFC-node + sửa `voice_fsm.md` |
+| 4 | ~~`motion.*` là nguyên thủy riêng hay mở rộng `digital.out`~~ | ✅ Q-32 (nguyên thủy riêng) |
+| 5 | ~~Mô hình token theo kênh~~ | ✅ Q-37 (thuê có hạn); con số ở RFC-motion |
+| 6 | Chứng nhận an toàn: IN/OUT | ✅ Q-38 tạm thời OUT; IN/OUT thật: cổng C6 + `TODOS.md` #40 |
+| 7 | ~~Q-11 phần mở (Hawkbit/EMQX)~~ | ✅ Q-11 |
+| 8 | ~~MCP mạng dùng OAuth 2.1 theo spec~~ | ✅ Q-32; hiện thực ở W2-6 |
+| 9 | ~~Node tham chiếu multi-node: ESP32-S3 + RP2350~~ | ✅ Q-33 |
+| 10 | ~~Đội lõi làm node RP2350~~ | ✅ Q-33 (ngoại lệ ở PRD §14) |
+| 11 | ~~Cầu ROS 2 / demo Nav2~~ | ✅ Q-34 (tích hợp, gate mọi lệnh tốc độ) |
+| 12 | Mất liên lạc → về trạng thái an toàn cắt cả lệnh đang chạy: mở rộng `voice_fsm.md` §5 (lý do hủy mới, sự kiện đầu vào replay được, trạng thái an toàn theo từng cơ cấu); cắt lời xuyên chip (Pi → node, ngân sách 20 ms) | Chính sách ✅ Q-35; chi tiết ở RFC-node + sửa `voice_fsm.md` |
 | 13 | `call_source` và xác nhận `ask` khi mọi kết nối tới node đều từ Pi; mã hoá ý định không phải JSON (KL-5) | RFC-node |
-| 14 | Nightly drift chặn build (đảo `nightly-hardware.yml:96-99`) | Phụ lục C #13 |
+| 14 | ~~Nightly drift chặn build~~ | ✅ Q-32 (mở issue, không chặn) |
 
 ---
 
@@ -564,8 +568,8 @@ Mỗi khung dưới đây là dàn ý để chuyển thành RFC đầy đủ the
   được vòng phản hồi/duty; token hôm nay mang tập chân, một lần mỗi chân, chưa có kênh và thời
   lượng tối đa.
 - **Đề xuất:** nguyên thủy `motion.*` (motor/servo) + `analog.in`; mở rộng phong bì N2 của
-  RFC-0007 sang `motion.*`; trạng thái an toàn khai theo từng cơ cấu; token thêm kênh + thời
-  lượng tối đa; bố cục `NETR` mới (tăng `layout_version`, gộp với `TODOS.md` #36 để chỉ tăng một
+  RFC-0007 sang `motion.*`; trạng thái an toàn khai theo từng cơ cấu (Q-35); token **thuê có hạn** theo Q-37 (kênh +
+  biên độ tối đa + thời hạn ngắn, mỗi lệnh qua gate gia hạn, hết hạn ⇒ trạng thái an toàn); bố cục `NETR` mới (tăng `layout_version`, gộp với `TODOS.md` #36 để chỉ tăng một
   lần).
 - **Ảnh hưởng:** `board.v1`, `NETR`, walker C, `ne_token.c`, `sim`. Gate vẫn thuần: phong bì và
   tích luỹ thời gian ở HAL/runtime (bất biến 4).
@@ -614,27 +618,26 @@ Mỗi khung dưới đây là dàn ý để chuyển thành RFC đầy đủ the
 | W4-3 | FR-REG-01..07; `TODOS.md` #11, #15; TR-4 |
 | W4-4 | TSK-P2-01 |
 | W4-5 | Q-29; `TODOS.md` #33 |
-| W4-6 | Q-11 (`TODOS.md` #16, #17); OFL font (bản nháp Giai đoạn 1.5) |
+| W4-6 | Q-11 (đã chốt); `TODOS.md` #17; OFL font (bản nháp Giai đoạn 1.5) |
 
 ---
 
 ## Phụ lục C — Quyết định chờ cấp mã Q-N
 
-Các điểm dưới đây cần một mục `Q-N` mới trong `neuroedge-prd.md` §15 trước khi kế hoạch
-có hiệu lực:
+Các điểm dưới đây cần một mục `Q-N` trong `neuroedge-prd.md` §15. Hướng kế hoạch đã được nhận (Q-32, 2026-09-25); ✅ là đã chốt:
 
 | # | Câu hỏi quyết định | Gợi ý |
 |:--:|:--|:--|
-| 1 | Wire protocol node: Zenoh-pico hay micro-ROS? | Spike W3-1 quyết; mặc định đề xuất Zenoh (nhánh Apache-2.0) |
-| 2 | Trace đa node: mở rộng `trace.v1` hay `trace.v2`? | A cho v1.x; xem lại khi có fixture vision/đa node chuẩn mực |
-| 3 | RFC-numeric gộp hay tách khỏi RFC-0007? | **Tách** — RFC-0007 (TSK-N0-03) giữ `gate.v1` nguyên byte; không cần `Q-N` |
-| 4 | `motion.*` nguyên thủy riêng hay mở rộng `digital.out`? | Nguyên thủy riêng để hợp đồng rõ |
-| 5 | Token theo kênh: phạm vi gồm gì? | Kênh + thời lượng tối đa + một lần dùng |
-| 6 | Chứng nhận an toàn chức năng: IN hay OUT? | Cổng nhu cầu C6 |
-| 7 | Q-11 phần mở: Hawkbit EPL-2.0, EMQX BSL? | Trước Khối 2 |
-| 8 | MCP mạng: OAuth 2.1 theo spec? | Có |
-| 9 | Node tham chiếu: ESP32-S3 + RP2350? | RP2350 tái dùng bậc 3 dự kiến — sau #10 |
-| 10 | Đội lõi có làm node RP2350 không? Hiện trái `neuroedge-roadmap-phase2.md:252`, `neuroedge-proposal.md:1366` và PRD §14 ("đội lõi tự port thêm biến thể ngoài bậc 1 và bậc 2: hoãn vô thời hạn") | Hoặc sửa PRD §14 bằng `Q-N`, hoặc để RP2350 là bản port cộng đồng |
-| 11 | Cầu ROS 2 và demo Nav2 có trong phạm vi không? `neuroedge-roadmap-phase2.md:218` loại dẫn đường tự hành, không ngoại lệ; PRD §14 là sổ ngoài phạm vi duy nhất | Một dòng PRD §14 (cầu tại ranh giới gate trong, dẫn đường ngoài) |
-| 12 | Mất liên lạc có được cắt lệnh **đang chạy** không? `voice_fsm.md` §5.3 hôm nay chỉ cho tắt máy làm vậy | Có, như một lần dừng kiểu tắt máy: sửa `voice_fsm.md` §5 (lý do hủy mới, sự kiện đầu vào replay được, trạng thái an toàn theo cơ cấu) cùng RFC-node |
-| 13 | Nightly drift có chặn build không? Hiện `nightly-hardware.yml:96-99` cố ý chỉ báo | Tự mở issue, không chặn |
+| 1 | Wire protocol node: Zenoh-pico hay micro-ROS? | ✅ **Q-36: Zenoh-pico, W3-1 là phép thử loại** (2026-09-25) |
+| 2 | Trace đa node: mở rộng `trace.v1` hay `trace.v2`? | ✅ **Q-32: mở rộng `trace.v1`** (2026-09-25) |
+| 3 | RFC-numeric gộp hay tách khỏi RFC-0007? | ✅ **Tách** — RFC-0007 (TSK-N0-03) giữ `gate.v1` nguyên byte; không cần `Q-N` |
+| 4 | `motion.*` nguyên thủy riêng hay mở rộng `digital.out`? | ✅ **Q-32: nguyên thủy riêng** (2026-09-25) |
+| 5 | Token theo kênh: phạm vi gồm gì? | ✅ **Q-37: thuê có hạn — kênh + biên độ tối đa + thời hạn ngắn, gia hạn mỗi lệnh** (2026-09-25) |
+| 6 | Chứng nhận an toàn chức năng: IN hay OUT? | ✅ **Q-38: OUT tạm thời**, dừng khẩn phần cứng bắt buộc; IN/OUT thật sau C6 và `TODOS.md` #40 (2026-09-25) |
+| 7 | Q-11 phần mở: Hawkbit EPL-2.0, EMQX BSL? | ✅ **Q-11 đã chốt** (2026-09-25) |
+| 8 | MCP mạng: OAuth 2.1 theo spec? | ✅ **Q-32: có** (2026-09-25) |
+| 9 | Node tham chiếu: ESP32-S3 + RP2350? | ✅ **Q-33: ESP32-S3 + RP2350 (đội lõi port)** (2026-09-25) |
+| 10 | Đội lõi có làm node RP2350 không? Hiện trái `neuroedge-roadmap-phase2.md:252`, `neuroedge-proposal.md:1366` và PRD §14 ("đội lõi tự port thêm biến thể ngoài bậc 1 và bậc 2: hoãn vô thời hạn") | ✅ **Q-33: đội lõi port** (2026-09-25) |
+| 11 | Cầu ROS 2 và demo Nav2 có trong phạm vi không? `neuroedge-roadmap-phase2.md:218` loại dẫn đường tự hành, không ngoại lệ; PRD §14 là sổ ngoài phạm vi duy nhất | ✅ **Q-34: tích hợp, gate mọi lệnh tốc độ** (2026-09-25) |
+| 12 | Mất liên lạc có được cắt lệnh **đang chạy** không? `voice_fsm.md` §5.3 hôm nay chỉ cho tắt máy làm vậy | ✅ **Q-35: theo từng cơ cấu, mặc định dừng** (2026-09-25) |
+| 13 | Nightly drift có chặn build không? Hiện `nightly-hardware.yml:96-99` cố ý chỉ báo | ✅ **Q-32: mở issue, không chặn** (2026-09-25) |

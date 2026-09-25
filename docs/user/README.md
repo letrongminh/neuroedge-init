@@ -22,6 +22,7 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | Giải mã mã viết tắt (`FR-*`, `Q-N`, `A1`, `CEO-X1`…) | [`thuat-ngu.md`](thuat-ngu.md) | nơi duy nhất |
 | Vì sao Giai đoạn 1 đi "wedge `sim` trước" | [`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`](../archive/giai-doan-1-wedge-truoc-mcu-sau.md) | lịch sử, đóng băng 2026-09-23 — kế hoạch hiện hành ở roadmap |
 | Biên bản các vòng review | [`docs/archive/`](../archive/) | lưu trữ, không quy phạm |
+| Dashboard sản phẩm cho CPO (tiến độ, mốc, việc chờ người, quyết định) | [`docs/business/cpo-dashboard.html`](../business/cpo-dashboard.html) | mở bằng trình duyệt; sinh từ roadmap — đừng sửa tay |
 | Cổng nhu cầu 2026-10-25 (phỏng vấn, demo, chấm điểm) | [`docs/business/cong-nhu-cau-2026-10-25/`](../business/cong-nhu-cau-2026-10-25/README.md) | tài liệu kinh doanh, Q-20 |
 | Kế hoạch Giai đoạn 2 | [`neuroedge-roadmap-phase2.md`](../../neuroedge-roadmap-phase2.md) | Khối V1a → P2 |
 | Kế hoạch Giai đoạn 1.5 — NeuroBrain | [`neuroedge-roadmap-phase1-5.md`](../../neuroedge-roadmap-phase1-5.md) | Khối N0 → N7, bản nháp chờ `Q-N`; wireframe ở [`wireframe/`](../../wireframe/README.md) |

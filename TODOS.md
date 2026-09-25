@@ -54,7 +54,6 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 
 | # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
 |:---:|:---|:---|:---|
-| 16 | **Q-11 phần còn lại: Hawkbit EPL-2.0, EMQX BSL** | Chỉ Khối 2 dùng; Giai đoạn 1 không phân phối chúng | **Trước khi mở Khối 2** — không viết thiết kế phụ thuộc nào của Fleet OS trước khi có phê duyệt bằng văn bản |
 | 17 | **Xác minh giấy phép ESP-SR (WakeNet/MultiNet)** cho fallback cục bộ trên `esp32s3` (Q-14). Theo hiểu biết hiện tại, giấy phép chỉ cho dùng trên SoC Espressif — ổn cho `esp32s3`, nhưng phải ghi vào `NOTICE` và không được lọt vào gói Python | Chưa vendoring `esp-sr`; `TSK-S1-10` sẽ vendoring khi bo mạch về | **Bo mạch về (`TSK-S1-10`)**, muộn nhất trước Sprint 5. Nếu giấy phép không hợp: chuyển sang TFLite Micro / ESP-NN (Apache-2.0) |
 
 ## Tương tác và model
@@ -87,6 +86,7 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 |:---:|:---|:---|:---|
 | 19 | **Câu hỏi kinh doanh mở (Q-20):** `CEO-X2` (premise $1/thiết bị/tháng chưa kiểm) · `CEO-X4` (Approach C/D/E) · `CEO-X5` (doanh thu ở cuối chuỗi 4 bên; AURA ngoài phạm vi) · `CEO-T1` (P3 có phải moat) · `CEO-T2` (chứng nhận an toàn chức năng in/out) · `CEO-T3` (bảng đối thủ thật) · `CEO-T4` (thứ tự quyết định/code). Chi tiết: `docs/archive/giai-doan-1-review-log.md` §USER CHALLENGE, §TASTE DECISION | Không chặn code; cổng nhu cầu là **mềm** theo Q-20 | **Cổng nhu cầu 2026-10-25** (cuối A1) — trưởng nhóm rà từng mục, ghi quyết định vào PRD §15 hoặc đóng có lý do. Bộ chuẩn bị: `docs/business/cong-nhu-cau-2026-10-25/` |
 | 34 | **Kênh AI-Native Agency & bán theo kết quả** — chưa cam kết; `Q-30` mới chỉ đổi thông điệp, mô hình giữ nguyên (Fleet OS) | Chưa có dữ liệu; dòng tiền thứ hai ngoài Fleet OS chưa qua PF-1..4; luận điểm Sequoia/YC/PG đã kiểm chứng nhưng chưa có agency thật nào | ≥ 3 agency hỏi mua, hoặc **cổng nhu cầu 2026-10-25**; đường dữ liệu rẻ: thêm C11 (kiểm kênh) vào bộ cổng |
+| 40 | **Câu C6 (chứng nhận an toàn chức năng) cho người mua robot** (Q-38). Cổng nhu cầu 2026-10-25 chỉ phỏng vấn khách sạn, fleet, smart home, industrial; Q-34 (gate mọi lệnh tốc độ của robot di động) cần câu trả lời của chính người mua robot | Hướng robot bắt đầu sau Developer Beta (Q-32); tới lúc đó tư thế tạm thời là OUT, kèm nút dừng khẩn phần cứng bắt buộc | **Trước khi mở RFC an toàn robot di động (Q-34)**: phỏng vấn ≥ 5 người mua robot theo thang `CEO-T2` (`docs/business/cong-nhu-cau-2026-10-25/cham-diem.md` §1.2), ghi IN/OUT vào Q-38 |
 
 ## Chuẩn ngoài và hệ sinh thái
 

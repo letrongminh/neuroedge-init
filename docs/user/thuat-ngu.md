@@ -37,7 +37,7 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 | **Khối V1a · V1b · P1 · P2** | Khối công việc Giai đoạn 2 (thị giác, phủ rộng phần cứng) | `neuroedge-roadmap-phase2.md` |
 | **Chặng W0 … W4 · W-item** | Chặng của bản nháp mở rộng cho robot phân tầng (W0 việc nhẹ · W1 HAL và an toàn actuator · W2 hạ tầng tin cậy · W3 multi-node · W4 hệ sinh thái); `W3-1`… là việc trong chặng — mã cục bộ, cấp `TSK-*` thật khi hạ cánh | `draft-ke-hoach-mo-rong-robot-fofoca.md` |
 | **Khối N0 … N7 · N5b** | Khối công việc Giai đoạn 1.5 — NeuroBrain (bring-up phần cứng có gate); task `TSK-Nk-mm` | `neuroedge-roadmap-phase1-5.md` |
-| **NeuroBrain** | Trợ lý hội thoại dựng mạch cho Physical AI — "Copilot for building Physical AI"; định vị đề xuất, chờ `Q-31` | `neuroedge-roadmap-phase1-5.md` §1 |
+| **NeuroBrain** | Trợ lý hội thoại dựng mạch cho Physical AI — "Build Physical AI by conversation, under contract" (Q-31) | `neuroedge-roadmap-phase1-5.md` §1 |
 | **B-1** | Bất biến: gói `neuroedge.brain` không gọi HAL trực tiếp, chỉ qua `dispatch()` → gate | `neuroedge-roadmap-phase1-5.md` §1 |
 | **Sprint 1…6** | Các sprint 2 tuần của Khối 1a và 1b | `neuroedge-roadmap.md` §4–§5 |
 | **M1** | Cột mốc kế tiếp: time-to-first-value < 10 phút trên `sim` | `neuroedge-roadmap.md` §0.1 |
@@ -98,6 +98,9 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **FOFOCA** | Robot tham chiếu của bản nháp mở rộng: Pi 5 làm não (`linux`), nhiều MCU (motor, màn hình, tay máy) làm tay chân — mọi hành động vật lý vẫn qua gate, kể cả khi trải trên nhiều chip | `draft-ke-hoach-mo-rong-robot-fofoca.md` §1 |
 | **Node · multi-node** | Node = một môi trường thực thi có HAL và **gate riêng** trong một robot nhiều MCU; multi-node = một robot nhiều node (khác Fleet OS = nhiều thiết bị độc lập). Chưa có trong mã | `draft-rfc-node-giao-thuc-dieu-phoi.md` §3.1 |
 | **Black channel** | Mẫu của IEC 61784-3: truyền thông an toàn trên mạng **không tin cậy** — mỗi thông điệp tự mang trường bảo vệ, mỗi thiết bị tự thực hiện chức năng an toàn. Đề xuất cho wire giữa các node | `draft-rfc-node-giao-thuc-dieu-phoi.md` §3.3 |
+| **Zenoh-pico** | Giao thức pub/sub nhẹ cho MCU (nhánh giấy phép Apache-2.0), chốt làm wire giữa Pi và node; `zenohd` chạy trên Pi. Spike W3-1 là phép thử loại, micro-ROS là phương án B | `neuroedge-prd.md` §15 Q-36 |
+| **Token thuê có hạn (lease)** | Token cho `motion.*`: kênh + biên độ tối đa + thời hạn ngắn; mỗi lệnh qua gate gia hạn, hết hạn thì cơ cấu về trạng thái an toàn. Chưa có trong mã | `neuroedge-prd.md` §15 Q-37 |
+| **SIL · PL** | Mức toàn vẹn an toàn (IEC 61508) và mức hiệu năng an toàn (ISO 13849) của một chức năng an toàn được chứng nhận. NeuroEdge không có cả hai | `docs/spec/threat_model.md` §3b (Q-38) |
 | **Crash-safe** | Chân về trạng thái an toàn cả khi tiến trình sập hoặc bị SIGKILL — chỉ phần cứng bảo đảm được (kéo xuống, watchdog), phần mềm thì không | `neuroedge-roadmap-phase1-5.md` §2.3 |
 | **Phong bì N2** | Giới hạn tổng thời gian bật và tần suất theo chân, khai ở `board.v1` (RFC-0007), cưỡng chế trong HAL trước `authorize` | `neuroedge-roadmap-phase1-5.md` §7 |
 | **MHS** | Chuẩn thiết bị robot của Anthropic (research preview); NeuroEdge theo dõi, không đầu tư ở v1.0 (Q-29) | `neuroedge-proposal.md` §10.1, Phụ lục H.3 |

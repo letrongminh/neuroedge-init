@@ -12,7 +12,8 @@ trước mọi lệnh ra phần cứng. Lời gọi từ LLM hay từ agent khá
 phỏng, Linux và ESP32-S3 — hôm nay agent chạy đầy đủ trên trình mô phỏng; Linux mới
 phát lại vết ghi, ESP32-S3 mới chạy logic gate.
 
-> Alpha. Tiến độ ở
+> Alpha. NeuroEdge **không** phải chức năng an toàn được chứng nhận (không SIL, không PL): gate
+> không thay nút dừng khẩn hay interlock phần cứng. Tiến độ ở
 > [trạng thái dự án](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/trang-thai.md).
 
 ## Bắt đầu nhanh (Python 3.11+)
