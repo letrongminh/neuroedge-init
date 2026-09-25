@@ -1,0 +1,30 @@
+{
+  "description": "Nguồn dữ kiện của gate mất mạng và không có fallback cục bộ: gate_unreachable, fail-closed, chân không động.",
+  "scenario": "V6",
+  "covers": [
+    "T01",
+    "T02",
+    "T04",
+    "T08"
+  ],
+  "agent": "voice-door",
+  "params": {
+    "end_of_turn_silence_ms": 700,
+    "listen_timeout_ms": 8000,
+    "think_timeout_ms": 5000,
+    "max_reprompts": 1
+  },
+  "world": {
+    "unset_facts": [
+      "guest_authenticated"
+    ],
+    "facts_source": "unreachable"
+  },
+  "inputs": [
+    {"offset_ms": 0, "type": "wake_word_detected", "data": {"word": "hey_neuro", "score": 0.93}},
+    {"offset_ms": 200, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 700, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 1500, "type": "stt_result", "data": {"turn": 1, "text": "mở cửa"}}
+  ],
+  "until_ms": 2000
+}

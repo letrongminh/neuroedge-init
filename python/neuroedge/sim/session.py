@@ -483,6 +483,17 @@ class SimSession:
             self._turn_results.append(result)
         return result
 
+    async def run_tool_calls(
+        self, text: str, calls: list[ToolCall], reply: str | None = None
+    ) -> Turn:
+        """
+        A model's answer to `text` — its tool calls, each through `dispatch()` and
+        its gate, then its reply — as the turn it concludes. The voice driver
+        (`perception.VoiceSession`) calls this when System 2's answer arrives.
+        """
+        recognition = self.grammar.recognize(text)
+        return await self._call_tools(Turn(text, recognition), calls, recognition, reply)
+
     async def _call_tools(
         self, turn: Turn, calls: list[ToolCall], recognition: Recognition, reply: str | None = None
     ) -> Turn:

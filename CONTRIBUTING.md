@@ -67,7 +67,7 @@ nó — bất biến `CHANGELOG.md` §3.3 #10; bảng mã thoát ở §2.3.
 | Sửa hoặc xoá gate đã khoá trong `digests.lock` (`gates/`, `fixtures/gates/valid/`, `fixtures/gates/registry/`) | **RFC**, rồi `python scripts/check_digests.py --accept <tệp> --rfc NNNN`; thiếu RFC thì CI đỏ (TSK-S3-16) |
 | Đổi bố cục nhị phân `NETR` v1 của cây trên thiết bị ([RFC-0003](docs/rfc/0003-bo-cuc-nhi-phan-cay.md)): `engine/binary_tree.py` ↔ walker `targets/esp32s3/components/ne_gate/` | **RFC** (tăng số phiên bản bố cục) |
 | Thêm gate vào `gates/` hoặc `fixtures/gates/{valid,registry}/` | PR thường — `python scripts/check_digests.py --update` để khoá digest |
-| Thêm fixture phản chứng, hoặc ca corpus tool call | PR thường — theo luật khép kín ngay dưới |
+| Thêm fixture phản chứng, hoặc ca corpus tool call / thoại | PR thường — theo luật khép kín ngay dưới |
 | Thêm profile bo mạch ở `boards/` | PR thường — cần phần cứng thật để điền tham số. *Hiện `test_boards.py` chỉ nhận ba profile bậc 1; bậc 2/3 chờ RFC-0002* |
 
 Quy trình: sao `docs/rfc/0000-template.md`, mở PR **chỉ chứa tệp RFC**, thảo luận,
@@ -89,6 +89,7 @@ Test cưỡng chế cả hai chiều, nên không thể thêm fixture mà không
 | Gate | `fixtures/gates/invalid/` | `fixtures/gates/expected_errors.yaml` |
 | Vết ghi | `fixtures/traces/invalid/` | `fixtures/traces/expected_errors.yaml` |
 | Tool call | `fixtures/tool_calls/{valid,invalid}/` | `fixtures/tool_calls/expected_results.yaml` — luật ở [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md) §9 |
+| Máy trạng thái hội thoại | `fixtures/compliance/voice/*.json` | `fixtures/compliance/voice/expected_results.yaml` — luật ở [`docs/spec/voice_fsm.md`](docs/spec/voice_fsm.md) §9 |
 
 ```yaml
 # fixtures/gates/expected_errors.yaml
@@ -167,15 +168,16 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `fixtures/gates/valid/`, `fixtures/gates/registry/` | Gate phân giải đúng; gate cơ sở cho fixture | Thêm: PR thường; sửa/xoá: **RFC** |
 | `fixtures/tool_calls/` | Corpus Gated Tool Profile + `expected_results.yaml` | PR thường, khép kín (§3) |
 | `fixtures/decision_trees/` | Bảng sự thật cho walker C | Sinh bằng `scripts/generate_truth_tables.py`, không sửa tay |
-| `fixtures/agents/` | Agent mẫu `villa-concierge`, `home-voice`, `driveway`; `neuroedge new --template` sao hai cái đầu | PR thường |
+| `fixtures/agents/` | Agent mẫu `villa-concierge`, `home-voice`, `driveway`, `voice-door`; `neuroedge new --template` sao hai cái đầu | PR thường |
+| `fixtures/compliance/voice/` | Bộ vector tuân thủ máy trạng thái hội thoại + `expected_results.yaml`, chung cho hiện thực Python và C | PR thường, khép kín (§3) |
 | `python/neuroedge/engine/` | L3 — phân giải gate, chuẩn tắc hoá, Gate Engine, cây quyết định, bố cục `NETR`, trình biên dịch `build` | **RFC** nếu đổi ngữ nghĩa phân giải hoặc bố cục `NETR` |
 | `python/neuroedge/actions/` | `@action`, `c.do()`/`c.say()`, token phán quyết dùng một lần | PR thường; ranh giới ở [`threat_model.md`](docs/spec/threat_model.md) |
 | `python/neuroedge/hal/` | L1 — năm nguyên thủy, mô hình bo mạch, `sim.py`, `linux.py` | PR thường; xem [rà soát MCU](docs/spec/hal_mcu_review.md) |
 | `python/neuroedge/models/` | L2 — SystemOne/SystemTwo, ngữ pháp lệnh cục bộ, knowledge base, `providers/` (LiteLLM, adapter) | PR thường |
-| `python/neuroedge/perception/` | L2 — khung rỗng (TSK-S3-11, I4) | PR thường |
+| `python/neuroedge/perception/` | L2 — máy trạng thái hội thoại (`voice_fsm.py`) và driver của nó (`voice_session.py`) | PR thường; hành vi theo [`voice_fsm.md`](docs/spec/voice_fsm.md) |
 | `python/neuroedge/sim/` | `SimSession` (REPL gõ chữ), `ui.py` (trang `--ui` cục bộ) | PR thường |
 | `python/neuroedge/mcp_server.py`, `mcp_host.py`, `mcp_desktop.py` | Máy chủ MCP · System 2 làm MCP host · cấu hình Claude Desktop | PR thường |
-| `python/neuroedge/testing/` | Action CI — recorder, player (replay), assertions, golden, `tool_corpus`, `uart` (vết ghi từ UART thiết bị) | PR thường |
+| `python/neuroedge/testing/` | Action CI — recorder, player (replay), assertions, golden, `tool_corpus`, `voice_corpus`, `uart` (vết ghi từ UART thiết bị) | PR thường |
 | `python/neuroedge/viz/` | `trace view`, xuất Perfetto | PR thường |
 | `python/neuroedge/templates/` | Mẫu dự án cho `neuroedge new` (`*.tmpl`, generator Python thuần) | PR thường |
 | `python/neuroedge/cli/` | CLI Typer: `main.py`, `run.py` (REPL), `explain.py` | PR thường |

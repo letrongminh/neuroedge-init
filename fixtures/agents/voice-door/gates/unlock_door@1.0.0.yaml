@@ -1,0 +1,21 @@
+# Cửa chỉ mở cho khách đã xác thực. Mất nguồn dữ kiện mà không có fallback
+# cục bộ ⇒ `gate_unreachable`, đóng (Q-14, voice_fsm.md §7).
+schema:  neuroedge.gate/v1
+name:    unlock_door
+version: 1.0.0
+
+evaluate:
+  guest_authenticated:
+    type: bool
+    instructions: "Khách đã được xác thực bởi hệ thống đặt phòng"
+
+allow_when:
+  guest_authenticated: true
+
+on_block:
+  action:  deny
+  message: "Mình chưa mở cửa được: khách chưa được xác thực."
+
+budget:
+  p95_latency_ms: 120
+  fail:           closed

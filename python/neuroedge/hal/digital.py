@@ -8,6 +8,10 @@
 The call only works while `c.do()` has granted the action a verdict token: the
 grant (HAL + token) travels in a `ContextVar`, so there is no argument an agent
 could forge. Outside a grant every call is an `ActionContractViolation`.
+
+`after_ms` schedules the command: the gate decides now, the pin moves later, and
+until then barge-in cancels it (docs/spec/voice_fsm.md §5). A HAL that cannot
+schedule refuses it — it never delivers early instead.
 """
 
 from __future__ import annotations
@@ -19,7 +23,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any
 
-from ..errors import ActionContractViolation
+from ..errors import ActionContractViolation, BoardCapabilityError
 
 
 @dataclass(frozen=True)
@@ -53,7 +57,7 @@ class _Pin:
     def __init__(self, name: str) -> None:
         self.name = name
 
-    def _drive(self, operation: str, duration_ms: int) -> Any:
+    def _drive(self, operation: str, duration_ms: int, after_ms: int | None = None) -> Any:
         where = _caller()
         active = _active.get()
         if active is None:
@@ -62,23 +66,37 @@ class _Pin:
                 why="no verdict token is active; actuators move only inside c.do()",
                 how="put the pin change in an @action function and call it with await c.do(...)",
             )
+        called_from = f"{where} ({active.action})"
+        if after_ms:
+            if not getattr(active.hal, "schedules_commands", False):
+                raise BoardCapabilityError(
+                    where=f"{called_from} -> digital.out({self.name!r})",
+                    why=f"target {getattr(active.hal, 'target', '?')!r} cannot schedule a command",
+                    how="drive the pin without after_ms; scheduled commands exist on `sim` (TSK-S3-11)",
+                )
+            return active.hal.digital_out(
+                self.name,
+                operation,
+                duration_ms,
+                signature=active.token,
+                called_from=called_from,
+                delay_ms=int(after_ms),
+            )
         return active.hal.digital_out(
-            self.name,
-            operation,
-            duration_ms,
-            signature=active.token,
-            called_from=f"{where} ({active.action})",
+            self.name, operation, duration_ms, signature=active.token, called_from=called_from
         )
 
-    def pulse(self, *, seconds: float | None = None, ms: int | None = None) -> Any:
+    def pulse(
+        self, *, seconds: float | None = None, ms: int | None = None, after_ms: int | None = None
+    ) -> Any:
         duration = ms if ms is not None else round((seconds or 0) * 1000)
-        return self._drive("pulse", int(duration))
+        return self._drive("pulse", int(duration), after_ms)
 
-    def on(self) -> Any:
-        return self._drive("on", 0)
+    def on(self, *, after_ms: int | None = None) -> Any:
+        return self._drive("on", 0, after_ms)
 
-    def off(self) -> Any:
-        return self._drive("off", 0)
+    def off(self, *, after_ms: int | None = None) -> Any:
+        return self._drive("off", 0, after_ms)
 
 
 def out(pin: str) -> _Pin:
