@@ -34,6 +34,7 @@ Anything else is undecided, and the gate blocks.
 
 from __future__ import annotations
 
+import json
 import tomllib
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -55,7 +56,7 @@ from ..engine.gate import ActionContractEngine
 from ..engine.gate_resolver import GateRegistry
 from ..engine.trace_sink import Clock, EventLog, monotonic_ms
 from ..errors import AgentManifestError, BoardCapabilityError, PerceptionUnavailableError
-from ..hal.board import load_board_by_id
+from ..hal.board import REFERENCE_BOARD, load_board_by_id
 from ..hal.sim import SimHAL
 from ..mcp_host import McpConfig, load_mcp_config
 from ..models import CommandGrammar, SystemOne, SystemTwo
@@ -72,7 +73,7 @@ DECLINE_WORDS = frozenset({"không", "khong", "huỷ", "hủy", "huy", "thôi", 
 CONFIRM_HINT = "Nói “có” để xác nhận, “không” để huỷ."
 
 
-def _answer_word(text: str) -> bool | None:
+def answer_word(text: str) -> bool | None:
     """True for a yes, False for a no, None for anything else."""
     word = " ".join(text.casefold().strip(" .!?,…").split())
     if word in CONFIRM_WORDS:
@@ -200,8 +201,8 @@ def _sim_tables(manifest: AgentManifest) -> tuple[dict[str, Any], dict[str, tupl
     return dict(facts), slot_facts
 
 
-# The targets an interactive session runs on, and the board each uses by default.
-SESSION_BOARD = {"sim": "sim-default", "linux": "linux-rpi5"}
+# The targets an interactive session runs on (each defaults to its REFERENCE_BOARD).
+SESSION_TARGETS = ("sim", "linux")
 
 
 def _require_linux_primitives(manifest: AgentManifest, sensor_facts: Mapping[str, Any]) -> None:
@@ -297,13 +298,13 @@ class SimSession:
         board, and `BoardCapabilityError` when `linux` cannot run it (a primitive
         `LinuxHAL` lacks, no `gpiod`, no GPIO chip — Q-16).
         """
-        if target not in SESSION_BOARD:
+        if target not in SESSION_TARGETS:
             raise BoardCapabilityError(
                 where=f"SimSession.load(target={target!r})",
-                why=f"an interactive session runs on {' or '.join(SESSION_BOARD)}",
+                why=f"an interactive session runs on {' or '.join(SESSION_TARGETS)}",
                 how="pass target='sim' or target='linux'",
             )
-        board_id = board_id or SESSION_BOARD[target]
+        board_id = board_id or REFERENCE_BOARD[target]
         build(agent_toml, target=target, board_id=board_id, registry=registry)
         manifest = load_agent_manifest(agent_toml)
         grammar_path = manifest.root / "commands.toml"
@@ -423,7 +424,7 @@ class SimSession:
         self.hal.type_text(text)
         utterance = self.hal.audio_in(called_from="SimSession.handle()") or ""
         pending = self.conversation.confirmations.latest()
-        answer = _answer_word(utterance) if pending is not None else None
+        answer = answer_word(utterance) if pending is not None else None
         if pending is not None and answer is not None:
             # "có" / "không" to the device's own question: a person, on the device.
             return await self._answer(pending.id, answer, "local_grammar", utterance)
@@ -726,6 +727,21 @@ class SimSession:
     @property
     def target(self) -> str:
         return self.hal.target
+
+    def canned_facts(self) -> list[str]:
+        """
+        Gate facts that are the fixed values of `[sim.facts]`. On `sim` that is the
+        simulation; on `linux` they stand in for a property system that does not
+        exist yet, so a gate there decides on them — which a person should know.
+        """
+        return sorted(_sim_tables(self.manifest)[0])
+
+    def write_trace(self, path: Path) -> None:
+        """The session so far as a validated `trace.v1` file at `path`."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(self.trace(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
 
     def close(self) -> None:
         """End the session: on linux every line is dropped inactive and released."""

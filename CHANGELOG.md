@@ -48,6 +48,14 @@ bản gói.
   `linux` ⇒ mã 2. `-c` giữ xung tới hết thời lượng; thoát phiên ⇒ mọi line về inactive. Vết ghi `record --target linux`
   thẩm định được và replay trên `sim` lẫn `linux` ra cùng quyết định. Kiểm: `pytest tests/test_session_linux.py`,
   `tests_linux/` (gpio-sim). (FR-CLI-02, FR-TGT-02)
+- **Rà soát ba task giả lập (review trước khi merge).** Phiên `linux` bắt SIGTERM/SIGHUP để `close()` thả
+  mọi line (trước đó MCP host dừng server là xung khoá cửa còn chạy); `close()` thả hết line kể cả khi một
+  line lỗi; chip không mở được (quyền, line bị giữ) là lỗi 3 phần, không traceback; line được nhả nếu dựng
+  phiên lỗi sau khi đã giữ line. Lệnh hẹn giờ: giao trong TTL của phán quyết, `after_ms` làm tròn lên, action
+  ném lỗi thì lệnh của nó bị hủy (`ACTUATOR_ABORTED_BY_ACTION_ERROR`) — `voice_fsm.md` §5.5; gate
+  `unlock_door` của `voice-door` nâng `p95_latency_ms` lên 700 cho lệnh hẹn 2 s. `reuse_token` là đầu vào
+  riêng của corpus. `linux` cảnh báo khi gate quyết trên `[sim.facts]` và khi line `on` bị thả lúc thoát.
+  Kiểm: `pytest tests/test_session_linux.py tests/test_voice_fsm.py tests/test_hal_linux.py`, `tests_linux/`.
 - **Q-39 → Q-44 — roadmap theo increment (2026-09-25).** Một roadmap, thời gian đo bằng increment `I0…`, không phát hành
   ra ngoài tới khi công khai ở I6 (demo thoại trên `sim`, `linux`, Box-3), thêm một kỹ sư nhúng (Q-39); mở rộng sau Beta
   (Q-40); v1.1 mở trên B1 và B2 (Q-41); C6 thành chỉ số theo dõi (Q-42); G-* neo theo increment (Q-43); bỏ bậc cắt 5 (Q-44).

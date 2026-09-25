@@ -148,6 +148,16 @@ Không có driver đó thì lệnh hẹn giờ bị từ chối. `LinuxHAL` chư
 hiện thực nào. `esp32s3`: TSK-S4-01 và S5-04 (handle hủy được — RB-3). Hiện thực nào thêm lệnh hẹn giờ
 mà không thêm §5.2 là sai đặc tả.
 
+Ba ràng buộc của lệnh hẹn giờ, chốt ở lượt review của TSK-S3-11:
+
+- **Giao trong TTL của phán quyết.** Thời điểm giao cách lúc cấp token không quá TTL của token
+  (`p95_latency_ms` × 3, `actions/token.py`); vượt thì lệnh bị từ chối ngay lúc hẹn
+  (`ActionContractViolation`). Phán quyết không bao giờ kích chân trên dữ kiện gate chưa thấy.
+- **`after_ms` làm tròn lên**, không bao giờ xuống: 0,5 ms là 1 ms, vẫn là lệnh đang chờ. Âm thì bị từ chối.
+- **Action ném lỗi thì lệnh của nó bị hủy.** Lệnh action đã hẹn trước khi ném lỗi được hủy với
+  `actuator_aborted {pin, reason: "ACTUATOR_ABORTED_BY_ACTION_ERROR"}`: phán quyết cho cả action, không
+  cho nửa đã chạy.
+
 ## 6. Tham số
 
 Các giá trị dưới đây chỉnh được, **không** phải hợp đồng an toàn. Hợp đồng là hai ngân sách của §5.2
@@ -281,4 +291,8 @@ Mỗi ca là một tệp JSON; khoá của nó, và đáp án `{proves, events}`
   pháp cục bộ không bị câu offline chen vào. `tts_stream_end` với `error` kết thúc câu như `done`.
 - **Lệnh hẹn giờ trên `linux`** và lệnh "xếp sau câu nói": chưa có (§5.5). Phiên thoại trên `linux`
   (`VoiceSession` ngoài `sim`) đến cùng TSK-S5-08.
+- **Hết lời thì không còn thu hồi được.** Chỉ `THINKING` và `SPEAKING` kích cắt lời (§4). Khi câu trả
+  lời đã phát xong (`IDLE`, rồi `LISTENING` của lượt mới), người dùng nói "thôi, đừng mở" thì lệnh hẹn
+  giờ của lượt trước vẫn được giao. TTL của phán quyết (§5.5) chặn trên khoảng đó, nhưng không thay được
+  ý định thu hồi. Chốt cùng TSK-S3-13 (hủy lệnh đang chờ khi mở lượt mới, hay một intent "hủy"), kèm `Q-N`.
 - Giá trị mặc định của §6: đo và chốt trên bo mạch (TSK-S5-01, S5-03).

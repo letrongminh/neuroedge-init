@@ -13,7 +13,7 @@
 | Pha đang thực thi | 🟡 **I1 — Preview nội bộ trên `sim`** (I2, I3 phần không cần bo mạch và I4 làm song song) |
 | Increment đang mở | 🟡 **I1** — còn I1-01, I1-02, I1-03 |
 | Cột mốc tiếp theo | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** |
-| Trạng thái CI Lõi | ✅ **PASS 1123/1123 · SKIP 0** |
+| Trạng thái CI Lõi | ✅ **PASS 1138/1138 · SKIP 0** |
 | Chặn ngoài tầm kỹ thuật | 🟡 **2 hạng mục chặn** |
 | Lần cập nhật cuối | **2026-09-25** |
 

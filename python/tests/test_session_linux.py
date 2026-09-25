@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import sys
+import tomllib
 
 import anyio
 import pytest
@@ -324,9 +325,7 @@ def test_ctrl_c_while_run_c_waits_for_its_pulse_exits_130_and_drops_the_line(
     assert all(request.released for request in gpio.requests)
 
 
-def test_sensor_facts_without_sensor_read_in_requires_are_still_refused_on_linux(
-    root, gpio, tmp_path
-):
+def test_sensor_facts_without_sensor_read_in_requires_are_still_refused_on_linux(root, tmp_path):
     import shutil
 
     agent = tmp_path / "factory"
@@ -338,6 +337,29 @@ def test_sensor_facts_without_sensor_read_in_requires_are_still_refused_on_linux
         ),
         encoding="utf-8",
     )
+    # The check itself, on the manifest: loading the copy would register its @actions
+    # a second time in the process-wide registry.
+    from neuroedge.engine.compiler import load_agent_manifest
+    from neuroedge.sim.session import _require_linux_primitives, _sim_sensors
+
+    manifest = load_agent_manifest(toml)
+    assert "sensor.read" not in manifest.requires
+    sim_table = tomllib.loads(toml.read_text(encoding="utf-8"))["sim"]
+    _, sensor_facts = _sim_sensors(manifest, sim_table)
     with pytest.raises(BoardCapabilityError, match=r"sensor\.read \(TSK-S5-09\)"):
-        SimSession.load(toml, target="linux")
-    assert gpio.requests == [], "refused before any line is requested"
+        _require_linux_primitives(manifest, sensor_facts)
+
+
+def test_linux_sessions_warn_that_sim_facts_decide_for_real_lines(driveway, gpio):
+    result = invoke("run", "--target", "linux", "--agent", str(driveway), stdin="exit\n")
+    assert result.exit_code == 0, result.output
+    assert "fixed values from [sim.facts]" in result.output
+    on_sim = invoke("run", "--agent", str(driveway), stdin="exit\n")
+    assert "[sim.facts]" not in on_sim.output
+
+
+def test_a_line_left_on_is_reported_when_the_session_drops_it(driveway, gpio):
+    result = invoke("run", "--target", "linux", "--agent", str(driveway), "-c", "bật đèn hiên")
+    assert result.exit_code == 0, result.output
+    assert "porch_light dropped inactive" in result.output
+    assert line(gpio, "porch_light") == Value.INACTIVE

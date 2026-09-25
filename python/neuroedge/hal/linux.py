@@ -279,6 +279,10 @@ class TypedLinuxHAL(LinuxHAL):
         with self._lock:
             return sorted(self._timers)
 
+    def driven(self) -> list[str]:
+        """The pins whose line is active right now."""
+        return [pin for pin in self.lines if self._requests and self.line_value(pin)]
+
     def settle(self) -> None:
         """
         Wait for every pulse in flight to end on its own. `run -c` does, so the one

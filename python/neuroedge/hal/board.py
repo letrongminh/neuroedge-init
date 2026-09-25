@@ -56,6 +56,8 @@ _CAPABILITY_KEYS = {
 }
 
 SUPPORTED_TARGETS: tuple[str, ...] = ("sim", "linux", "esp32s3")
+# The board each target uses when no --board is given.
+REFERENCE_BOARD = {"sim": "sim-default", "linux": "linux-rpi5", "esp32s3": "esp32s3-box-3"}
 
 
 def _normalise(primitive: str) -> str:

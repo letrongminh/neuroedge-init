@@ -298,6 +298,33 @@ def system_two_line(slow) -> str:
     return f"{name} {config.model} ({key}; offline line if it cannot answer)"
 
 
+def canned_fact_warning(session: SimSession) -> str | None:
+    """
+    On `linux`, gate facts from `[sim.facts]` are fixed values deciding for real
+    lines: a gate that is safe on `sim` may ALLOW here only because of one.
+    """
+    if session.target == "sim":
+        return None
+    names = session.canned_facts()
+    if not names:
+        return None
+    return (
+        f"gates on {session.target} decide on fixed values from [sim.facts]: "
+        f"{', '.join(names)} — no property system supplies them yet"
+    )
+
+
+def _dropped_at_exit(session: SimSession, console: Console) -> None:
+    """On `linux`, say which lines are still `on` when the session ends and drops them."""
+    driven = getattr(session.hal, "driven", None)
+    lines = driven() if driven is not None else []
+    if lines:
+        console.print(
+            f"[yellow]! the session ends: {escape(', '.join(lines))} "
+            "dropped inactive (a line stays on only while the session runs)[/yellow]"
+        )
+
+
 def _settle(session: SimSession, console: Console) -> bool:
     """
     On linux, let the pulse `-c` started run its whole duration before the lines
@@ -327,13 +354,18 @@ def run_session(
     trace_out: Path | None = None,
 ) -> int:
     """Drive the session and return the exit code."""
+    warning = canned_fact_warning(session)
     try:
         if command is not None:
+            if warning is not None:
+                err_console.print(f"[yellow]! {escape(warning)}[/yellow]")
             ok = _turn(command, session, console, err_console)
             if not _settle(session, console):
                 return 130
             return 0 if ok else 1
         banner(session, console)
+        if warning is not None:
+            console.print(f"  [yellow]! {escape(warning)}[/yellow]")
         console.print(pin_table(session))
         console.print("[dim]:help for commands · exit to leave[/dim]")
         while True:
@@ -356,13 +388,10 @@ def run_session(
     finally:
         try:
             if trace_out is not None:
-                trace_out.parent.mkdir(parents=True, exist_ok=True)
-                trace_out.write_text(
-                    json.dumps(session.trace(), indent=2, ensure_ascii=False) + "\n",
-                    encoding="utf-8",
-                )
+                session.write_trace(trace_out)
                 console.print(
                     f"trace: {escape(str(trace_out))} ({len(session.events.events)} events)"
                 )
         finally:
+            _dropped_at_exit(session, console)
             session.close()  # on linux: every line inactive and released

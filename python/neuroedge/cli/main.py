@@ -34,7 +34,7 @@ from ..engine import (
     resolve_gate_uri,
 )
 from ..errors import BoardCapabilityError, BuildFailed, NeuroEdgeError, VerificationError
-from ..hal.board import SUPPORTED_TARGETS, available_boards, load_board_by_id
+from ..hal.board import REFERENCE_BOARD, SUPPORTED_TARGETS, available_boards, load_board_by_id
 from ..paths import gates_dir, repo_root
 from ..trace import load_trace
 
@@ -72,7 +72,6 @@ def _fail(error: NeuroEdgeError) -> None:
 
 
 # The board each target builds and runs on when `--board` is not given.
-REFERENCE_BOARD = {"sim": "sim-default", "linux": "linux-rpi5", "esp32s3": "esp32s3-box-3"}
 
 # Targets `replay` knows but cannot replay an arbitrary trace on yet, and the task that
 # brings each. Asking for one exits 2 ("not implemented"), not 1 ("ran and failed").
@@ -666,6 +665,11 @@ def mcp_serve(
         f"{escape(session.target)}/{escape(session.hal.board.id)} · "
         f"{len(session.tools.specs)} tool(s) · stdio"
     )
+    from .run import canned_fact_warning
+
+    warning = canned_fact_warning(session)
+    if warning is not None:
+        err_console.print(f"[yellow]! {escape(warning)}[/yellow]")
     if page is not None:
         err_console.print(f"sim UI at {page.url} (same session)", markup=False, highlight=False)
 
@@ -680,11 +684,7 @@ def mcp_serve(
             page.stop()
         try:
             if trace_out is not None:
-                trace_out.parent.mkdir(parents=True, exist_ok=True)
-                trace_out.write_text(
-                    json.dumps(session.trace(), indent=2, ensure_ascii=False) + "\n",
-                    encoding="utf-8",
-                )
+                session.write_trace(trace_out)
         finally:
             session.close()  # on linux: every line inactive and released
 
@@ -1298,7 +1298,7 @@ def _start_session(
         return SimSession.load(
             agent or _default_agent(),
             target=target,
-            board_id=board or REFERENCE_BOARD[target],
+            board_id=board,  # None: the target's reference board
             registry=GateRegistry(registry) if registry is not None else None,
             events=events,
         )
@@ -1357,11 +1357,7 @@ def run(
             _fail(error)  # e.g. the port is taken
         finally:
             if trace_out is not None:
-                trace_out.parent.mkdir(parents=True, exist_ok=True)
-                trace_out.write_text(
-                    json.dumps(session.trace(), indent=2, ensure_ascii=False) + "\n",
-                    encoding="utf-8",
-                )
+                session.write_trace(trace_out)
         return
     code = run_session(session, console, err_console, command=command, trace_out=trace_out)
     raise typer.Exit(code=code)

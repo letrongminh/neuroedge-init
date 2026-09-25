@@ -25,7 +25,7 @@ from typing import Any
 
 from ..actions.tools import ToolCall
 from ..models import SystemOne
-from ..sim.session import SimSession, Turn, _answer_word
+from ..sim.session import SimSession, Turn, answer_word
 from .voice_fsm import VoiceParams, VoiceStateMachine
 
 FACTS_SOURCES = ("local_grammar", "unreachable")
@@ -156,7 +156,7 @@ class VoiceSession:
             return  # empty: T06
         self._transcript = text
         s = self.session
-        answers = s.pending_confirmation() is not None and _answer_word(text) is not None
+        answers = s.pending_confirmation() is not None and answer_word(text) is not None
         if self.system_two and not answers and not s.grammar.recognize(text).recognised:
             self._awaiting = turn  # free phrasing: System 2 answers later, or times out
             return
