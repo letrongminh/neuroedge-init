@@ -1205,7 +1205,7 @@ def new(
     template: str = typer.Option(
         "minimal",
         "--template",
-        help="minimal (1 action, 1 gate, tests), villa-concierge or home-voice",
+        help="minimal (1 action, 1 gate, tests), villa-concierge, home-voice or factory-monitor",
     ),
 ):
     """Scaffold an agent project: agent.toml, commands.toml, a gate, an @action, tests."""

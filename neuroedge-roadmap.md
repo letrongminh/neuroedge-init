@@ -59,10 +59,10 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | Chỉ số | Trạng thái hiện hành | Ghi chú & Liên kết |
 |:---|:---|:---|
 | **Pha đang thực thi** | 🟡 **I1 — Preview nội bộ trên `sim`** (I2, I3 phần không cần bo mạch và I4 làm song song) | Increment và ngày dự báo: §0.2 |
-| **Increment đang mở** | 🟡 **I1** — còn TSK-S3-08, I1-01, I1-02, I1-03 | I0 đã xong 42 / 42 · chi tiết §0.2 |
+| **Increment đang mở** | 🟡 **I1** — còn I1-01, I1-02, I1-03 | I0 đã xong 42 / 42 · chi tiết §0.2 |
 | **Cột mốc tiếp theo** | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** | Ngày dự báo ở §0.2 · chưa phát hành ra ngoài (Q-39) |
-| **Lần cập nhật cuối** | **2026-09-25** | Phiên gần nhất: roadmap viết lại theo increment (Q-39 → Q-44) · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 1041/1041 · SKIP 0** | `python/tests/` — 51 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 8/8 trên gpio-sim (job `linux-hal`) · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
+| **Lần cập nhật cuối** | **2026-09-25** | Phiên gần nhất: ba task chạy trên giả lập — TSK-S3-08, TSK-S3-10/S3-11, TSK-S5-10 · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Trạng thái CI Lõi** | ✅ **PASS 1123/1123 · SKIP 0** | `python/tests/` — 55 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 13/13 trên gpio-sim (job `linux-hal`) · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · kỹ sư nhúng thứ hai (V6): đã quyết tuyển (2026-09-25), chưa có người — cần vào trước 2026-11-16 (Q-39) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -76,8 +76,8 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 |:---:|:---|:---:|:---|:---:|:---|:---|:---|
 | **0.x nội bộ** | **I0 — Lõi hợp đồng trên `sim`** | ✅ 2026-09-24 | Gate có kiểu và phiên bản (lint, resolve, kế thừa, tham số, `confirms`), `sim` + web UI, Action CI, MCP, System 2 qua LiteLLM, `linux` replay trên gpio-sim; walker C, sổ token và vết ghi UART trên QEMU | **42 / 42** | ✅ Xong | — | lịch sử |
 |  | **Cổng nhu cầu (Q-20)** | 2026-10-25 | Go / Adjust / Stop cho I3–I7 (`docs/business/cong-nhu-cau-2026-10-25/cham-diem.md` §4.1) | — | ⏳ Đang phỏng vấn | I0 | — |
-|  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | Người ngoài đội cài từ wheel nội bộ và chạy agent có gate trong dưới 10 phút, không cần phần cứng | **1 / 5** | 🟡 Đang làm | I0 | tag `v0.1.0` (nội bộ) |
-|  | **I2 — `linux` ngang `sim`** | 2026-11-29 | `run`, `record`, `mcp serve --target linux`; cảm biến và màn hình trên `linux`; nightly trên RPi 5 | **0 / 4** | ⏳ Chưa bắt đầu | I1 | tag `v0.2.0` (nội bộ) |
+|  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | Người ngoài đội cài từ wheel nội bộ và chạy agent có gate trong dưới 10 phút, không cần phần cứng | **2 / 5** | 🟡 Đang làm | I0 | tag `v0.1.0` (nội bộ) |
+|  | **I2 — `linux` ngang `sim`** | 2026-11-29 | `run`, `record`, `mcp serve --target linux`; cảm biến và màn hình trên `linux`; nightly trên RPi 5 | **1 / 4** | 🟡 Phiên tương tác trên gpio-sim xong; cảm biến, màn hình, nightly RPi 5 còn lại | I1 | tag `v0.2.0` (nội bộ) |
 |  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | Gate chạy trên chip, điều khiển chân thật; người dùng tự nạp agent; `verify` ba target bậc 1 cho miền phán quyết | **4 / 14** | 🟡 Phần không cần bo mạch đã xong; chờ bo mạch | I1, cổng Go | tag `v0.3.0` + firmware (nội bộ) |
 |  | **I4 — Thoại trên host** | 2026-12-13 | Nói chuyện với agent trên `sim` và `linux`: wake-word, cắt lời, STT/TTS qua provider cloud, fallback lệnh cục bộ | **3 / 8** | 🟡 Đặc tả, bộ vector và FSM Python xong; STT/TTS, wake-word, âm thanh `linux` còn lại | I2, cổng Go | tag `v0.4.0` (nội bộ) |
 |  | **I5 — Thoại trên Box-3** | 2027-01-03 | Demo "nói chuyện với con chip $5": thoại trên ESP32-S3, gate trên chip, cùng vết ghi replay trong CI | **0 / 7** | ⏳ Chưa bắt đầu | I3, I4 | tag `v0.5.0` + firmware (nội bộ) |
@@ -108,18 +108,18 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 │ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-25 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ 1. VỪA HOÀN THÀNH — phiên gần nhất (chi tiết: CHANGELOG.md [Chưa phát hành])           │
-│    • Roadmap viết lại theo increment I0–I18 (Q-39 → Q-44); ba kế hoạch con thành       │
-│      ghi chú thiết kế; luật chống lệch R1–R12 có test (test_plan_contract.py)          │
-│    • run/record --target nêu đúng task; target lạ thoát mã 1                           │
+│    • TSK-S3-08: mẫu thứ ba factory-monitor (fact level) — I1 tiêu chí 2                │
+│    • TSK-S3-10/S3-11: bộ vector thoại + FSM Python trên sim — I4 tiêu chí 1            │
+│    • TSK-S5-10: run/record/mcp serve --target linux, xanh trên gpio-sim                │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
 │    1. Đặt 2 Box-3 + 1 RPi 5 (Phụ lục B); tuyển V6 — đã quyết, cần trước 2026-11-16     │
-│    2. V3: TSK-S3-08 (mẫu thứ ba, fact level) → TSK-I1-02 → đo TTFV 3 người             │
-│    3. V1: TSK-S3-10 → TSK-S3-11 (thoại trên host, song song — Q-39)                    │
-│    4. V3: TSK-S5-10 · V1: TSK-S5-09 (I2)                                               │
+│    2. V3: TSK-I1-01 (PII), I1-03 → TSK-I1-02 → đo TTFV 3 người                         │
+│    3. V1: TSK-S3-13 (STT/TTS cloud), TSK-I4-01 (thoại trên host, Q-39)                 │
+│    4. V1: TSK-S5-09 (sensor.read, display trên linux — I2)                             │
 │    5. V2: TSK-S4-11; TSK-S6-01, S6-02, S6-04 trên QEMU (Q-39)                          │
 │                                                                                        │
 │ 4. LƯU Ý — bất biến ở CHANGELOG.md §3.3; dưới đây chỉ điều chưa có ở đó                │
@@ -477,7 +477,7 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 | **TSK-S3-03** | Thư viện assert: chặn, gate nào, leo thang, chân cấm kích | FR-CI-03 | V1 | ✅ Hoàn thành (2026-09-23) | [`testing/assertions.py`](python/neuroedge/testing/assertions.py) · `neuroedge test`; commit `89b5bd4`, PR #13 |
 | **TSK-S3-04** | Golden Reference và so khớp chuỗi phán quyết | FR-CI-04 | V1 | ✅ Hoàn thành (2026-09-23) | [`testing/golden.py`](python/neuroedge/testing/golden.py) — so quyết định, bỏ qua timing; commit `cb4fe26`, PR #13 |
 | **TSK-S3-05** | Hiện thực HAL cho target `linux` qua `gpiod`; CI dùng **`gpio-sim`** (kernel ≥ 5.19, configfs), **1 RPi 5** làm nightly phần cứng và phương án B; **ném lỗi** khi không có `/dev/gpiochip*`, không no-op (Q-16) — **chỉ `digital.out`**; `sensor.read`/`display`: TSK-S5-09; âm thanh: TSK-S5-08 | FR-TGT-02 | **V2** *(ENG-T3)* | ✅ Hoàn thành (2026-09-23) | [`hal/linux.py`](python/neuroedge/hal/linux.py) · [`scripts/setup_gpio_sim.sh`](scripts/setup_gpio_sim.sh) · job CI `linux-hal` (gpio-sim trên runner GitHub, kernel 6.17 azure + `linux-modules-extra`); PR #13 |
-| **TSK-S3-06** | Vỏ CLI + `--help` + **hợp đồng mã thoát** cho `new`, `run`, `build`, `test`, `record`, `replay`, `trace validate`; nối engine theo từng tuần khi A1/A2 xong | FR-CLI-01→04, FR-CLI-06, FR-TRC-08 | V3 | ✅ Hoàn thành (2026-09-23) | Cả 7 lệnh có engine: `run` (commit `190b241`), `record` / `replay` / `test` (PR #13). Phiên tương tác trên `linux` chưa có — `run --target linux` thoát mã 2 (→ TSK-S5-10), `replay --target linux` chạy được |
+| **TSK-S3-06** | Vỏ CLI + `--help` + **hợp đồng mã thoát** cho `new`, `run`, `build`, `test`, `record`, `replay`, `trace validate`; nối engine theo từng tuần khi A1/A2 xong | FR-CLI-01→04, FR-CLI-06, FR-TRC-08 | V3 | ✅ Hoàn thành (2026-09-23) | Cả 7 lệnh có engine: `run` (commit `190b241`), `record` / `replay` / `test` (PR #13). Phiên tương tác trên `linux` có từ TSK-S5-10 (2026-09-25) |
 | **TSK-S3-07** | Scaffold `neuroedge new` có sẵn action, gate, test — **không dùng `copier`** (tránh GPL3 `jinja2-ansible-filters`) | FR-DX-01 | V3 | ✅ Hoàn thành (2026-09-23) | [`python/neuroedge/templates/`](python/neuroedge/templates/) — mẫu `minimal`, `villa-concierge`; commit `e03e206` · `pytest tests/test_cli_new.py` |
 | **TSK-S3-12** | Pipeline CI mẫu chạy `sim` + `linux` trên mỗi PR | FR-CI-05 | V1 | ✅ Hoàn thành (2026-09-23) | [`ci-sim-linux.yml`](.github/workflows/ci-sim-linux.yml): job `linux-hal` dựng gpio-sim, chạy `tests_linux/` và `verify --targets sim,linux`; PR #13 |
 | **TSK-S3-16** | **Cổng CI `digests.lock`:** khoá digest của `gates/**` + `fixtures/gates/valid/**` + `fixtures/gates/registry/**`; phân biệt *digest mới* với *digest đổi* (cần RFC) | FR-GATE-01, FR-GOV-02, FR-CI-05 | **V3** *(ENG-T3)* | ✅ Hoàn thành (2026-09-24) | [`digests.lock`](digests.lock) (digest JCS của YAML đã parse) · [`scripts/check_digests.py`](scripts/check_digests.py) `--check` trong job CI Frozen artifacts · `pytest tests/test_digests_lock.py` (mới / đổi / xoá, `--accept` thiếu RFC bị từ chối, đổi định dạng không tính) · PR `feat/ci-gates` |
@@ -524,7 +524,7 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 **Tiêu chí ra I1:**
 
 - [ ] **Tiêu chí 1 (M1):** TTFV đo tại chỗ trên **3 người ngoài đội**, cài từ wheel của tag `v0.1.0`, đạt trung vị dưới 10 phút; biên bản ở `docs/reports/`. A1 đầy đủ (10 người, cài từ PyPI) đo ở I7 (TSK-I7-02).
-- [ ] **Tiêu chí 2:** Mẫu thứ ba chạy được qua `neuroedge new --template`, có test và nằm trong `wheel-smoke` (TSK-S3-08).
+- [x] **Tiêu chí 2:** Mẫu thứ ba chạy được qua `neuroedge new --template`, có test và nằm trong `wheel-smoke` (TSK-S3-08).
 - [x] **Tiêu chí 3:** TSK-S3-15 đóng: golden là ba vết ghi chuẩn mực, hoặc một RFC được mở.
   *Bằng chứng:* xác nhận 2026-09-25 — golden là ba vết ghi chuẩn mực nguyên trạng, không cần RFC (dòng TSK-S3-15); `pytest tests/test_trace_vectors.py -k golden` và job `linux-hal` so quyết định trên ba target.
 - [ ] **Tiêu chí 4:** Vết ghi của buổi đo không chứa chữ thô của người dùng khi chưa bật tường minh (TSK-I1-01).
@@ -542,15 +542,15 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S5-09** | **`sensor.read` và `display` trên `linux`:** cảm biến qua sysfs hwmon + IIO; CI dùng `i2c-stub` + `lm75` (IIO chỉ trên Pi); màn hình ghi `/dev/fb*` trên Pi, khung trong bộ nhớ + digest trong CI | FR-TGT-02, FR-HAL-01 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` · `scripts/` |
-| **TSK-S5-10** | **Phiên tương tác trên `linux`:** `run` (REPL và `-c`), `record` và `mcp serve --target linux` trên `LinuxHAL` (gpio-sim trong CI, RPi 5 hằng đêm), cùng hợp đồng mã thoát như `sim`; thoại trên `linux` là TSK-S5-08 (I4) | FR-CLI-02, FR-TGT-02 | V3 | 🟡 Mã và test xong (2026-09-25); chờ job `linux-hal` chạy `tests_linux/` trên gpio-sim | `TypedLinuxHAL` ([`hal/linux.py`](python/neuroedge/hal/linux.py)) · `SimSession.load(target=)` · [`cli/main.py`](python/neuroedge/cli/main.py) · [`test_session_linux.py`](python/tests/test_session_linux.py) · `tests_linux/` (gpio-sim, job `linux-hal`). Agent chỉ được cần `digital.out` (`audio.*`: TSK-S5-08, `sensor.read`/`display`: TSK-S5-09); `--ui` trên `linux` ⇒ mã 2; RPi 5 hằng đêm chưa chạy |
+| **TSK-S5-10** | **Phiên tương tác trên `linux`:** `run` (REPL và `-c`), `record` và `mcp serve --target linux` trên `LinuxHAL` (gpio-sim trong CI, RPi 5 hằng đêm), cùng hợp đồng mã thoát như `sim`; thoại trên `linux` là TSK-S5-08 (I4) | FR-CLI-02, FR-TGT-02 | V3 | ✅ Hoàn thành (2026-09-25) — `tests_linux/` 13/13 và `verify --targets sim,linux` xanh trên gpio-sim (job `linux-hal`) | `TypedLinuxHAL` ([`hal/linux.py`](python/neuroedge/hal/linux.py)) · `SimSession.load(target=)` · [`cli/main.py`](python/neuroedge/cli/main.py) · [`test_session_linux.py`](python/tests/test_session_linux.py) · `tests_linux/` (gpio-sim, job `linux-hal`). Agent chỉ được cần `digital.out` (`audio.*`: TSK-S5-08, `sensor.read`/`display`: TSK-S5-09); `--ui` trên `linux` ⇒ mã 2; RPi 5 hằng đêm chưa chạy |
 | **TSK-I2-01** | **Nightly `linux` trên RPi 5** (Q-16): `tests_linux/` và `verify --targets linux` trên phần cứng thật | FR-CI-06, FR-TGT-02 | V1 | ⏳ Chưa bắt đầu | `.github/workflows/nightly-hardware.yml` · runner tự quản |
 | **TSK-W0-04** | **Trôi phụ thuộc hằng đêm tự mở issue, không chặn build** (Q-32) | — | V3 | ⏳ Chưa bắt đầu | `.github/workflows/nightly-hardware.yml` |
 
 **Tiêu chí ra I2:**
 
-- [ ] **Tiêu chí 1:** `run --target linux` (REPL và `-c`), `record --target linux` và `mcp serve --target linux` chạy trên gpio-sim trong CI, cùng hợp đồng mã thoát như `sim`.
+- [x] **Tiêu chí 1:** `run --target linux` (REPL và `-c`), `record --target linux` và `mcp serve --target linux` chạy trên gpio-sim trong CI, cùng hợp đồng mã thoát như `sim`.
 - [ ] **Tiêu chí 2:** `sensor.read` và `display` trên `linux` có test trong `tests_linux/`; mọi nguyên thủy mà `boards/linux-rpi5.toml` khai đều chạy được trên HAL, hoặc bị gỡ khỏi hồ sơ cho tới task hiện thực nó.
-- [ ] **Tiêu chí 3:** `neuroedge verify --targets sim,linux` vẫn đạt 100%.
+- [x] **Tiêu chí 3:** `neuroedge verify --targets sim,linux` vẫn đạt 100%.
 - [ ] **Tiêu chí 4:** Nightly trên RPi 5 chạy `tests_linux/` và `verify --targets linux` trên phần cứng thật (TSK-I2-01).
 
 ### 4.4 I3 — Gate trên Box-3 thật
@@ -622,7 +622,7 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 
 **Tiêu chí ra I4:**
 
-- [ ] **Tiêu chí 1:** Bộ vector tuân thủ `fixtures/compliance/voice/` (TSK-S3-10) xanh trên hiện thực Python (TSK-S3-11).
+- [x] **Tiêu chí 1:** Bộ vector tuân thủ `fixtures/compliance/voice/` (TSK-S3-10) xanh trên hiện thực Python (TSK-S3-11).
 - [ ] **Tiêu chí 2:** Vòng thoại end-to-end trên `sim` và `linux`, STT/TTS qua provider cloud (TSK-S3-13); cắt lời giữa câu: TTS dừng dưới 300 ms, không lệnh actuator chưa giao nào rò (`voice_fsm.md` §5).
 - [ ] **Tiêu chí 3 (Q-14):** Mất provider giữa phiên → fallback lệnh cục bộ lượng giá; fallback không có hoặc không chạy → hành động bị chặn với lý do `gate_unreachable`.
 - [ ] **Tiêu chí 4:** `linux-rpi5` khai `aec = true` chỉ khi đạt tiêu chí đo `docs/spec/simulation_coverage.md` §6 (TSK-S5-08).

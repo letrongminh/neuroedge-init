@@ -917,7 +917,6 @@ nó trong bảng task.
 |:---:|:---|:---|
 | 1 | **Hủy lệnh đang chờ mới có ở `sim` và `linux`.** Hợp đồng thu hồi lệnh vật lý (`docs/spec/voice_fsm.md` §5) yêu cầu cắt lời hủy xung chốt cửa đang chờ trong ≤ 1 khung âm thanh. `SimHAL` và `LinuxHAL` đã trả `PendingCommand.cancel()`; `esp32s3` phải hủy được thật ở tầng firmware | **TSK-S4-01** (I3), cùng lúc với hợp đồng thu hồi — không phải sau |
 | 2 | `gate publish` dừng ở mã băm, chưa ký số | I10 (Registry) |
-| 3 | `perception/` chỉ là khung | TSK-S3-11 (I4) |
 
 ### 3.7 Điều hệ thống chưa làm được
 
