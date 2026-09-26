@@ -22,6 +22,7 @@ idf_component_register(
         esp_eth
         esp_netif
         esp_event
+        mbedtls
 )
 
 # The IDF headers are not strict-C99 clean (static assertions, compound

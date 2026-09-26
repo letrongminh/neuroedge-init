@@ -30,6 +30,9 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "nvs.h"
+#if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+#include "esp_crt_bundle.h"
+#endif
 #endif
 
 #if CONFIG_NEUROEDGE_OTA && CONFIG_NEUROEDGE_OTA_ETH
@@ -324,6 +327,11 @@ void ne_ota_run(void) {
         .url = url,
         .timeout_ms = CONFIG_NEUROEDGE_OTA_HTTP_TIMEOUT_MS,
         .keep_alive_enable = false,
+#if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
+        /* HTTPS validates the server against the CA bundle; plain HTTP needs
+         * none of this — the signature is the integrity check either way. */
+        .crt_bundle_attach = esp_crt_bundle_attach,
+#endif
     };
     esp_https_ota_config_t config = {
         .http_config = &http,
