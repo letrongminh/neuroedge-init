@@ -27,10 +27,14 @@ moves (the HAL on the chip is TSK-S4-01), and the pin table has names, not GPIO 
 from __future__ import annotations
 
 import asyncio
+import fnmatch
+import os
 import re
+import tempfile
+import unicodedata
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from ..errors import AgentManifestError, BoardCapabilityError, NeuroEdgeError
@@ -68,6 +72,25 @@ SOURCES = (
     "components/ne_trace/include/*.h",
     "components/ne_trace/src/*.c",
 )
+# The files of the generated component, whatever the agent (gate keys are C identifiers).
+COMPONENT_FILES = (
+    f"{COMPONENT}/CMakeLists.txt",
+    f"{COMPONENT}/ne_agent.c",
+    f"{COMPONENT}/include/*.h",
+    f"{COMPONENT}/gates/*.netree.h",
+)
+# Everything a build may write, remove or list in MANIFEST — nothing else is ever touched —
+# and the directories those files live in.
+OWNED = (*SOURCES, *COMPONENT_FILES, MANIFEST)
+OWNED_DIRS = tuple(
+    sorted(
+        {
+            "/".join(PurePosixPath(pattern).parts[:depth])
+            for pattern in OWNED
+            for depth in range(1, len(PurePosixPath(pattern).parts))
+        }
+    )
+)
 # Without these the copy is not a firmware; `main/idf_component.yml` is optional.
 REQUIRED = (
     "CMakeLists.txt",
@@ -81,8 +104,9 @@ MAX_ENTRIES = 0xFFFF  # the tables index gates with u16
 NO_NODE = 255  # NE_AGENT_NO_NODE: a check that varies no criterion
 _IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
-# ne_walker.h enums, as python/tests/test_c_walker.py pins them against the walker.
-_REASONS = {
+# ne_walker.h enums: the one copy on the host. python/tests/test_c_walker.py imports these
+# to decide every gate with the C walker, so the conformance test pins what ships.
+REASONS = {
     None: 0,
     "condition_not_met": 1,
     "criterion_unavailable": 2,
@@ -91,9 +115,9 @@ _REASONS = {
     "gate_unreachable": 5,
     "budget_exceeded": 6,
 }
-_FAIL_MODES = {None: 0, "open": 1, "closed": 2}
-_DEGRADED_NONE, _DEGRADED_UNREACHABLE = 0, 1
-_ARG_STRING, _ARG_INTEGER, _ARG_NUMBER, _ARG_BOOLEAN = 0, 1, 2, 3
+FAIL_MODES = {None: 0, "open": 1, "closed": 2}
+DEGRADED_NONE, DEGRADED_UNREACHABLE, DEGRADED_BUDGET = 0, 1, 2
+ARG_STRING, ARG_INTEGER, ARG_NUMBER, ARG_BOOLEAN = 0, 1, 2, 3
 
 
 def firmware_root(root: Path | None = None) -> Path:
@@ -111,11 +135,27 @@ def firmware_problems(
 ) -> list[NeuroEdgeError]:
     """
     What makes an agent impossible to link into the firmware, each as a three-part
-    error: gate keys that are not C identifiers (or collide once upper-cased, as the
-    header guards are), a gate without criteria (the walker refuses to load it), more
-    pins than a token mask holds, and missing firmware sources.
+    error: an [agent] name or version with a control or line-break character (it is
+    written into C and into MANIFEST, one entry per line), gate keys that are not C
+    identifiers (or collide once upper-cased, as the header guards are), a gate without
+    criteria (the walker refuses to load it), more pins than a token mask holds, and
+    missing firmware sources.
     """
     problems: list[NeuroEdgeError] = []
+    for field_name in ("name", "version"):
+        value = getattr(manifest, field_name)
+        bad = sorted({f"U+{ord(c):04X}" for c in value if _line_breaking(c)})
+        if bad:
+            problems.append(
+                AgentManifestError(
+                    where=f"{manifest.source} -> [agent] {field_name}",
+                    why=f"{field_name} {value!r} contains {', '.join(bad)}: a control or "
+                    "line-break character, which the firmware's tables and the build's "
+                    f"{MANIFEST} cannot hold",
+                    how=f"write [agent] {field_name} on one line, without control characters "
+                    '(e.g. version = "0.1.0")',
+                )
+            )
     guards: dict[str, str] = {}
     for key, gate in gates.items():
         where = f"{manifest.source} -> [gates] {key}"
@@ -194,6 +234,11 @@ def _source_problems(source: Path) -> list[NeuroEdgeError]:
     ]
 
 
+def _line_breaking(char: str) -> bool:
+    """A control or format character, or one `str.splitlines()` breaks at (U+2028…)."""
+    return unicodedata.category(char) in ("Cc", "Cf", "Zl", "Zp")
+
+
 def _pins(manifest: Any) -> list[str]:
     return list(manifest.requires.get("digital.out", {}).get("pins", []))
 
@@ -237,21 +282,25 @@ def _argument(limit: Mapping[str, Any]) -> Any:
     return int(bound) if kind == "integer" else float(bound)
 
 
-def _expected(tree: Mapping[str, Any], result: GateResult) -> tuple[int, ...]:
-    """The host's verdict in the walker's fields (ne_result), as test_c_walker compares them."""
+def expected(tree: Mapping[str, Any], result: GateResult) -> tuple[int, ...]:
+    """
+    The host's verdict in the walker's fields (`ne_result`): verdict, reason, failed kind,
+    failed index, answerable, fail mode, confirmed mask. The self-test's expected answers,
+    and what python/tests/test_c_walker.py compares the C walker against.
+    """
     names = [node["criterion"] for node in tree["nodes"]]
     arguments = [limit["name"] for limit in tree.get("arguments") or []]
     verdict = 0 if result.allowed else 1
-    reason = _REASONS[None if result.reason is None else str(result.reason)]
+    reason = REASONS[None if result.reason is None else str(result.reason)]
     kind = index = 0
     if verdict == 1 and result.failed_criterion is not None:
-        if reason == _REASONS["argument_out_of_range"]:
+        if reason == REASONS["argument_out_of_range"]:
             kind, index = 2, arguments.index(result.failed_criterion)
         else:
             kind, index = 1, names.index(result.failed_criterion)
     mask = sum(1 << names.index(name) for name in result.confirmed)
     answerable = 1 if result.confirms else 0
-    return verdict, reason, kind, index, answerable, _FAIL_MODES[result.fail_mode], mask
+    return verdict, reason, kind, index, answerable, FAIL_MODES[result.fail_mode], mask
 
 
 def baseline(tree: Mapping[str, Any]) -> dict[str, Fact]:
@@ -317,10 +366,10 @@ def checks(key: str, gate: ResolvedGate) -> list[Check]:
             events=EventLog(lambda: 0.0),
         )
         result = asyncio.run(engine.evaluate(key, facts, arguments=args, confirmed=confirmed))
-        return _expected(tree, result)
+        return expected(tree, result)
 
     rows = [
-        Check(node, fact, False, _DEGRADED_NONE, decide(node, fact, False, False), note)
+        Check(node, fact, False, DEGRADED_NONE, decide(node, fact, False, False), note)
         for node, fact, note in variants
     ]
     removable = next((i for i, n in enumerate(tree["nodes"]) if n["criterion"] in base), None)
@@ -329,7 +378,7 @@ def checks(key: str, gate: ResolvedGate) -> list[Check]:
             removable,
             None,
             False,
-            _DEGRADED_UNREACHABLE,
+            DEGRADED_UNREACHABLE,
             decide(removable, None, False, True),
             "a fact missing and its source offline",
         )
@@ -345,7 +394,7 @@ def checks(key: str, gate: ResolvedGate) -> list[Check]:
                     row.node,
                     row.fact,
                     True,
-                    _DEGRADED_NONE,
+                    DEGRADED_NONE,
                     decide(row.node, row.fact, True, False),
                     f"{row.note}, confirmed",
                 )
@@ -379,11 +428,11 @@ def _fact(node: Mapping[str, Any], fact: Fact | None) -> str:
 def _arg(value: Any) -> str:
     """A `ne_arg_value` initializer: present, type, str_len, str, number."""
     if isinstance(value, bool):
-        return f"{{1u, {_ARG_BOOLEAN}u, 0u, NULL, {1.0 if value else 0.0}}}"
+        return f"{{1u, {ARG_BOOLEAN}u, 0u, NULL, {1.0 if value else 0.0}}}"
     if isinstance(value, str):
-        return f"{{1u, {_ARG_STRING}u, {len(value.encode('utf-8'))}u, {c_string(value)}, 0.0}}"
+        return f"{{1u, {ARG_STRING}u, {len(value.encode('utf-8'))}u, {c_string(value)}, 0.0}}"
     number = float(value)
-    kind = _ARG_INTEGER if number.is_integer() else _ARG_NUMBER
+    kind = ARG_INTEGER if number.is_integer() else ARG_NUMBER
     return f"{{1u, {kind}u, 0u, NULL, {_double(number)}}}"
 
 
@@ -655,6 +704,27 @@ def render_component(
     return files
 
 
+def owned(name: str) -> bool:
+    """
+    Whether `name` (a path relative to the project) is one the build may write, list or
+    remove: it fits a pattern of OWNED part for part — so no `..`, no absolute path, no
+    file outside the firmware layout, whatever an earlier MANIFEST says.
+    """
+    path = PurePosixPath(name)
+    if not name or name != path.as_posix() or path.is_absolute():
+        return False
+    parts = path.parts
+    if any(part in (".", "..") or any(_line_breaking(c) for c in part) for part in parts):
+        return False
+    for pattern in OWNED:
+        wanted = PurePosixPath(pattern).parts
+        if len(wanted) == len(parts) and all(
+            fnmatch.fnmatchcase(part, want) for part, want in zip(parts, wanted, strict=True)
+        ):
+            return True
+    return False
+
+
 def render_project(
     manifest: Any,
     board: str,
@@ -675,58 +745,150 @@ def render_project(
                 files[path.relative_to(source).as_posix()] = path.read_bytes()
     for name, text in render_component(manifest, board, gates, specs).items():
         files[f"{COMPONENT}/{name}"] = text.encode("utf-8")
+    stray = sorted(name for name in files if not owned(name))
+    if stray or any(_line_breaking(c) for c in manifest.label):
+        raise NeuroEdgeError(  # firmware_problems refuses both first: a defect if reached
+            where=str(manifest.source),
+            why=f"files outside the firmware layout {stray}, or a label that breaks a "
+            f"line of {MANIFEST}: {manifest.label!r}",
+            how="this is a defect of the build, not of the agent: report it",
+        )
     listing = [MANIFEST_HEADER, f"agent {manifest.label}", *sorted(files)]
     files[MANIFEST] = ("\n".join(listing) + "\n").encode("utf-8")
     return dict(sorted(files.items()))
 
 
+class _Refused(NeuroEdgeError):
+    """The project directory holds something the build must not write through."""
+
+
+def _refuse(project: Path, where: Path, why: str) -> _Refused:
+    return _Refused(
+        where=str(where),
+        why=why,
+        how=f"remove it, or build with another --out: {project} is written only where "
+        "every path is the build's own",
+    )
+
+
+def _checked(project: Path, name: str, *, create: bool) -> Path:
+    """
+    The path of owned file `name` in `project`, every directory on the way checked: a
+    real directory (created when `create`), never a symbolic link — so no write or
+    remove lands outside the project. The file itself may be missing; if it is there,
+    it is a regular file, not a link.
+    """
+    if not owned(name):
+        raise _refuse(project, project / name, f"{name!r} is not a path of the firmware layout")
+    if project.is_symlink():
+        raise _refuse(project, project, "the project directory is a symbolic link")
+    path = project
+    for part in PurePosixPath(name).parts[:-1]:
+        path = path / part
+        if path.is_symlink():
+            raise _refuse(project, path, "a directory of the project is a symbolic link")
+        if path.exists():
+            if not path.is_dir():
+                raise _refuse(project, path, "a file stands where the build writes a directory")
+        elif create:
+            os.mkdir(path)
+    path = path / PurePosixPath(name).parts[-1]
+    if path.is_symlink():
+        raise _refuse(project, path, "a file of the project is a symbolic link")
+    if path.exists() and not path.is_file():
+        raise _refuse(project, path, "something other than a regular file stands here")
+    return path
+
+
 def previous_files(project: Path) -> list[str] | None:
     """
-    The files an earlier build wrote into `project`, or None when `project` holds
-    anything this build did not write (it is then never touched).
+    The files an earlier build wrote into `project` — only names of the firmware layout;
+    any other MANIFEST line is ignored — or None when `project` holds anything this
+    build did not write (it is then never touched).
     """
+    if project.is_symlink():
+        return None
     if not project.exists():
         return []
     marker = project / MANIFEST
-    if marker.is_file():
-        lines = marker.read_text(encoding="utf-8").splitlines()
-        if lines and lines[0] == MANIFEST_HEADER:
-            return [line for line in lines[2:] if line and not line.startswith("#")]
+    if marker.is_file() and not marker.is_symlink():
+        lines = marker.read_text(encoding="utf-8", errors="replace").split("\n")
+        if len(lines) >= 2 and lines[0] == MANIFEST_HEADER and lines[1].startswith("agent "):
+            return [line for line in lines[2:] if owned(line)]
     if project.is_dir() and not any(project.iterdir()):
         return []
     return None
 
 
 def project_problem(project: Path) -> NeuroEdgeError | None:
-    if previous_files(project) is not None:
-        return None
-    return NeuroEdgeError(
-        where=str(project),
-        why="the directory exists and was not written by `neuroedge build --target esp32s3` "
-        f"(no {MANIFEST}): building would overwrite files that are not the build's",
-        how="pass another --out, or move that directory away",
-    )
+    """
+    Why the build must not write `project`: it exists and no earlier build wrote it,
+    or a directory or file the build owns there is a symbolic link (or not what the
+    build writes there). Checked with the build's other problems, before anything is
+    written; `write_project` checks every path again as it goes.
+    """
+    if previous_files(project) is None:
+        why = (
+            "the project directory is a symbolic link"
+            if project.is_symlink()
+            else "the directory exists and was not written by `neuroedge build --target "
+            f"esp32s3` (no {MANIFEST}): building would overwrite files that are not the build's"
+        )
+        return NeuroEdgeError(
+            where=str(project), why=why, how="pass another --out, or move that directory away"
+        )
+    try:
+        for folder in OWNED_DIRS:
+            path = project / folder
+            if path.is_symlink():
+                raise _refuse(project, path, "a directory of the project is a symbolic link")
+            if path.exists() and not path.is_dir():
+                raise _refuse(project, path, "a file stands where the build writes a directory")
+        # Every entry, dangling links included (a glob would skip those), of the directories
+        # the build writes into.
+        for folder in ("", *OWNED_DIRS):
+            path = project / folder if folder else project
+            if not path.is_dir() or path.is_symlink():
+                continue
+            for entry in sorted(path.iterdir()):
+                name = entry.relative_to(project).as_posix()
+                if owned(name):
+                    _checked(project, name, create=False)
+    except _Refused as refused:
+        return refused
+    return None
 
 
 def write_project(project: Path, files: Mapping[str, bytes]) -> None:
     """
     Write the project; remove only files an earlier build listed and this one does not
     write. Build output (`build/`, `sdkconfig`) and anything else is left alone.
+
+    Every path is checked before anything changes — a name of the firmware layout, no
+    symbolic link on the way (`_checked`) — and again as it is written. Each file goes to
+    a new temporary file in its directory, then is renamed over the old one: a link
+    planted there meanwhile is replaced, never followed.
     """
     earlier = previous_files(project)
     if earlier is None:
         problem = project_problem(project)
-        assert problem is not None
-        raise problem
-    root = project.resolve()
-    for name in earlier:
-        path = project / name
-        if name not in files and path.is_file() and root in path.resolve().parents:
+        raise problem if problem is not None else _refuse(project, project, "not the build's")
+    removed = [name for name in earlier if name not in files]
+    for name in [*removed, *files]:
+        _checked(project, name, create=False)
+    project.mkdir(parents=True, exist_ok=True)
+    for name in removed:
+        path = _checked(project, name, create=False)
+        if path.is_file():
             path.unlink()
-    for name, data in files.items():
-        if name == MANIFEST:
-            continue
-        path = project / name
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(data)
-    (project / MANIFEST).write_bytes(files[MANIFEST])
+    for name in [*(n for n in files if n != MANIFEST), MANIFEST]:  # the manifest last
+        path = _checked(project, name, create=True)
+        handle, temporary = tempfile.mkstemp(dir=path.parent, prefix=".ne-", suffix=".tmp")
+        try:
+            with os.fdopen(handle, "wb") as stream:
+                stream.write(files[name])
+            os.replace(temporary, path)
+        except BaseException:
+            if os.path.lexists(temporary):
+                os.unlink(temporary)
+            raise

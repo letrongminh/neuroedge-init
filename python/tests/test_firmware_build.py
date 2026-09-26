@@ -1,5 +1,5 @@
 """
-TSK-I3-01 — `neuroedge build --target esp32s3` writes the agent's firmware (FR-CLI-02, FR-HAL-04).
+TSK-I3-01 — `neuroedge build --target esp32s3` writes the agent's firmware (FR-CLI-02, FR-TGT-03).
 
 The build writes `<out>/esp32s3/`: the firmware sources of `targets/esp32s3/` and one
 generated component, `components/ne_agent/` — the agent's gates as NETR trees, its pins,
@@ -29,7 +29,7 @@ from neuroedge.cli.main import app
 from neuroedge.engine import firmware
 from neuroedge.engine.compiler import build, load_actions, load_agent_manifest, resolve_gates
 from neuroedge.engine.gate_resolver import resolve_gate_document
-from neuroedge.errors import AgentManifestError, BoardCapabilityError, BuildFailed
+from neuroedge.errors import AgentManifestError, BoardCapabilityError, BuildFailed, NeuroEdgeError
 
 from .test_c_walker import STRICT, cc
 
@@ -435,7 +435,7 @@ def test_a_corrupted_tree_in_flash_stops_the_gate_runtime(fixture_build, tmp_pat
     assert "NE_SELFTEST FAIL load open_door@1.0.0" in result.stdout
 
 
-# --- nothing written when the firmware cannot be built -------------------------------------------
+# --- nothing written when the firmware cannot be built (an incompatible board: FR-HAL-04) --------
 
 
 AGENT = """
@@ -520,16 +520,163 @@ def test_an_index_macro_two_names_would_share_is_defined_for_neither(tmp_path):
     assert "#define NE_GATE_G_ROOM_FULL 1u" in text and "#define NE_PIN_DOOR_LOCK 0u" in text
 
 
-def test_a_listed_file_outside_the_project_is_never_removed(tmp_path):
-    project = tmp_path / "out" / "esp32s3"
-    project.mkdir(parents=True)
-    victim = tmp_path / "out" / "victim.txt"
+# --- the project directory: only the build's own paths, never through a link ------------------
+
+
+def _marked(project: Path, *names: str) -> None:
+    """A project an earlier build wrote: its MANIFEST, listing `names`."""
+    project.mkdir(parents=True, exist_ok=True)
+    listing = [firmware.MANIFEST_HEADER, "agent earlier@1", *names]
+    (project / firmware.MANIFEST).write_text("\n".join(listing) + "\n")
+
+
+def _victim(tmp_path: Path) -> Path:
+    victim = tmp_path / "elsewhere" / "victim.txt"
+    victim.parent.mkdir(parents=True, exist_ok=True)
     victim.write_text("keep")
-    listing = f"{firmware.MANIFEST_HEADER}\nagent x@1\n../victim.txt\n{victim}\n"
-    (project / firmware.MANIFEST).write_text(listing)
-    firmware.write_project(project, {"a.txt": b"a", firmware.MANIFEST: b"m"})
+    return victim
+
+
+@pytest.mark.parametrize(
+    "plant",
+    [
+        "partitions.csv",  # a file the build writes, as a link
+        "main",  # a directory it writes into
+        "components",
+        "components/ne_agent",
+        "components/ne_agent/gates",
+        "main/main.c",
+    ],
+)
+def test_a_link_in_the_project_is_never_written_through(tmp_path, plant):
+    victim = _victim(tmp_path)
+    project = tmp_path / "out" / "esp32s3"
+    _marked(project, "partitions.csv")
+    link = project / plant
+    link.parent.mkdir(parents=True, exist_ok=True)
+    link.symlink_to(victim if "." in plant else victim.parent, target_is_directory="." not in plant)
+    before = sorted(p.name for p in victim.parent.iterdir())
+    with pytest.raises(BuildFailed) as excinfo:
+        build(
+            _tmp_agent(tmp_path), target="esp32s3", board_id="esp32s3-box-3", out_dir=project.parent
+        )
+    (problem,) = excinfo.value.problems
+    assert "symbolic link" in problem.why and problem.how
     assert victim.read_text() == "keep"
-    assert (project / "a.txt").read_bytes() == b"a"
+    assert sorted(p.name for p in victim.parent.iterdir()) == before  # nothing written there
+    assert not (project.parent / "gates").exists()  # nothing written at all
+
+
+def test_a_dangling_link_is_refused_before_anything_is_written(tmp_path):
+    # A link to a file that does not exist yet: writing through it would create that file.
+    target = tmp_path / "elsewhere" / "created-by-the-build.txt"
+    target.parent.mkdir()
+    project = tmp_path / "out" / "esp32s3"
+    _marked(project)
+    (project / "main").mkdir()
+    (project / "main" / "main.c").symlink_to(target)
+    (problem,) = _refused_into(tmp_path, project.parent)
+    assert "symbolic link" in problem.why and "main.c" in problem.where
+    assert not target.exists()
+    assert not (project.parent / "gates").exists()
+
+
+def test_a_linked_project_directory_is_never_written(tmp_path):
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    (tmp_path / "out").mkdir()
+    (tmp_path / "out" / "esp32s3").symlink_to(elsewhere, target_is_directory=True)
+    (problem,) = _refused_into(tmp_path, tmp_path / "out")
+    assert "symbolic link" in problem.why
+    assert list(elsewhere.iterdir()) == []
+
+
+def _refused_into(tmp_path: Path, out: Path) -> list:
+    with pytest.raises(BuildFailed) as excinfo:
+        build(_tmp_agent(tmp_path), target="esp32s3", board_id="esp32s3-box-3", out_dir=out)
+    return excinfo.value.problems
+
+
+def test_a_link_planted_after_the_checks_is_refused_before_anything_changes(root, tmp_path):
+    # The race: project_problem passed, then a link appears. write_project checks again.
+    manifest, gates, specs = _parts(FIXTURE)
+    files = firmware.render_project(manifest, "esp32s3-box-3", gates, specs)
+    project = tmp_path / "out" / "esp32s3"
+    _marked(project, "main/main.c")
+    victim = _victim(tmp_path)
+    (project / "partitions.csv").symlink_to(victim)
+    with pytest.raises(NeuroEdgeError, match="symbolic link"):
+        firmware.write_project(project, files)
+    assert victim.read_text() == "keep"
+    assert not (project / "main").exists()  # checked before the first write
+
+
+def test_a_manifest_names_nothing_outside_the_firmware_layout(tmp_path):
+    project = tmp_path / "out" / "esp32s3"
+    victim = _victim(tmp_path)
+    (project / "main").mkdir(parents=True)
+    (project / "main" / "notes.txt").write_text("mine")
+    (project / "main" / "extra.c").write_text("mine")
+    _marked(
+        project,
+        "../../elsewhere/victim.txt",
+        str(victim),
+        "main/notes.txt",  # in main/, but no source pattern names it
+        "main/sub/extra.c",
+        "main//extra.c",
+        "main/extra.c",  # a source name: an earlier build's file, removed
+    )
+    assert firmware.previous_files(project) == ["main/extra.c"]
+    build(FIXTURE, target="esp32s3", board_id="esp32s3-box-3", out_dir=project.parent)
+    assert victim.read_text() == "keep"
+    assert (project / "main" / "notes.txt").read_text() == "mine"
+    assert not (project / "main" / "extra.c").exists()
+
+
+@pytest.mark.parametrize(
+    ("name", "owned"),
+    [
+        ("main/main.c", True),
+        ("components/ne_agent/gates/open_door.netree.h", True),
+        (firmware.MANIFEST, True),
+        ("main/../main/main.c", False),
+        ("/etc/passwd", False),
+        ("main/notes.txt", False),
+        ("main/vectors/x/y.h", False),
+        ("build/app.bin", False),
+        ("sdkconfig", False),
+        ("components/other/x.c", False),
+        ("main/a .c", False),
+        ("", False),
+    ],
+)
+def test_only_names_of_the_firmware_layout_are_the_builds(name, owned):
+    assert firmware.owned(name) is owned
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("version", "0.0.1\nmain/notes.txt"),
+        ("version", "0.0.1\rmain/notes.txt"),
+        ("name", "tmp agent"),
+        ("name", "tmp\u0085agent"),
+        ("version", "0.0.1‮"),
+    ],
+)
+def test_a_label_that_breaks_a_line_is_refused(tmp_path, field, value):
+    # A newline in [agent] version once put `main/notes.txt` into MANIFEST, and the next
+    # build removed that file of the user's.
+    agent = _tmp_agent(tmp_path)
+    text = agent.read_text()
+    quoted = "".join(c if " " <= c <= "~" and c not in '"\\' else f"\\u{ord(c):04X}" for c in value)
+    old = 'name = "tmp-agent"' if field == "name" else 'version = "0.0.1"'
+    agent.write_text(text.replace(old, f'{field} = "{quoted}"'))
+    assert getattr(load_agent_manifest(agent), field) == value
+    problems = _refused(agent, tmp_path / "out")
+    (problem,) = [p for p in problems if f"[agent] {field}" in p.where]
+    assert isinstance(problem, AgentManifestError)
+    assert "control or line-break character" in problem.why and problem.how
 
 
 @pytest.mark.parametrize(

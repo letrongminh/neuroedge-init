@@ -1,6 +1,6 @@
 # Nạp firmware cho agent của bạn lên `esp32s3`
 
-> **Mã task:** TSK-I3-01 · **Yêu cầu:** FR-CLI-02, FR-TGT-03, FR-HAL-04. Đây là **nơi duy nhất**
+> **Mã task:** TSK-I3-01 · **Yêu cầu:** FR-CLI-02, FR-TGT-03. Đây là **nơi duy nhất**
 > mô tả thủ tục nạp; cú pháp lệnh `build` ở [`CHANGELOG.md`](../../CHANGELOG.md) §2.3.
 
 ## 1. Firmware này làm gì, và chưa làm gì
@@ -48,10 +48,13 @@ Thành công ⇒ dòng `firmware: build/esp32s3 — ESP-IDF project, …`. Trong
 
 **Đừng sửa tay `components/ne_agent/`.** Đổi gate hay action thì chạy lại `build`: cùng agent cho
 cùng từng byte; tệp lần trước ghi mà lần này không còn thì bị xoá; `build/`, `sdkconfig` của
-`idf.py` giữ nguyên. Thư mục `build/esp32s3/` có sẵn mà không do `neuroedge build` ghi ⇒ từ chối.
+`idf.py` giữ nguyên. Thư mục `build/esp32s3/` có sẵn mà không do `neuroedge build` ghi, hay có liên
+kết tượng trưng (symlink) ở một đường dẫn build ghi vào ⇒ từ chối: build không bao giờ ghi xuyên qua
+liên kết ra ngoài project.
 
-Agent không hợp bo mạch (thiếu chân, thiếu năng lực), key gate không phải định danh C (`unlock-door`),
-hay quá 32 chân ⇒ in mọi vấn đề (cách đọc: `CHANGELOG.md` §2.4), **mã 1, không ghi gì**.
+Agent không hợp bo mạch (thiếu chân, thiếu năng lực — FR-HAL-04), key gate không phải định danh C
+(`unlock-door`), `[agent] name`/`version` có ký tự điều khiển hay xuống dòng, hay quá 32 chân ⇒ in mọi
+vấn đề (cách đọc: `CHANGELOG.md` §2.4), **mã 1, không ghi gì**.
 
 ## 4. Build và nạp lên Box-3
 
