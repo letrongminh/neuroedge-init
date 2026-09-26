@@ -1,0 +1,226 @@
+# Vulnerability and secret scanning (TSK-W0-03)
+#
+#   pip-audit    — every pin in python/requirements-lock.txt against the PyPI advisory
+#                  database. A known vulnerability fails the job; the only way past it
+#                  is a bumped pin, or a reviewed entry in python/pip-audit-ignore.txt.
+#   gitleaks     — the WHOLE git history (every branch and tag, fetch-depth 0), not
+#                  just the diff: the repository is public, so a secret in any old
+#                  commit is already published. Weekly and on manual runs, the heads
+#                  of all pull requests are scanned too — they are public refs as well.
+#   actionlint   — every workflow, with shellcheck on each run: block.
+#   codeql       — Python, and the workflows themselves (GitHub Actions), no build.
+#   codeql-c     — the ESP-IDF firmware (targets/esp32s3), traced while it builds in
+#                  the same espressif/idf:v5.4 container as firmware-qemu.yml. On a
+#                  pull request only when it touches targets/ (the build is minutes).
+#
+# Scheduled weekly as well: a new advisory or query turns up without any change here.
+name: security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 19 * * 0"   # Monday 02:00 UTC+7
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pip-audit:
+    name: Known vulnerabilities in the pinned dependency set (pip-audit)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - name: Install pip-audit
+        run: python -m pip install --disable-pip-version-check 'pip-audit==2.10.1'
+
+      - name: Audit python/requirements-lock.txt
+        # --no-deps --disable-pip: audit exactly the pins in the lock, with no resolver
+        # and no install. The lock holds the wheel's whole runtime closure (release-pypi
+        # `build` fails otherwise, scripts/sbom.sh); what it misses of `dev` shows up
+        # as nightly drift (Q-32).
+        run: |
+          args=()
+          while IFS= read -r line; do
+            line="${line#"${line%%[![:space:]]*}"}"   # strip leading whitespace
+            case "$line" in ''|'#'*) continue ;; esac
+            id="${line%%[[:space:]#]*}"
+            if [[ "$line" != *"#"* ]]; then
+              echo "::error file=python/pip-audit-ignore.txt::'$id' has no reason — every ignored vulnerability needs one (see the file header)"
+              exit 1
+            fi
+            echo "  ignoring $id — ${line#*#}"
+            args+=(--ignore-vuln "$id")
+          done < python/pip-audit-ignore.txt
+          pip-audit --requirement python/requirements-lock.txt --no-deps --disable-pip \
+            --progress-spinner off --desc on "${args[@]}"
+
+  gitleaks:
+    name: No secret anywhere in the git history (gitleaks)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      # sha256 of gitleaks_8.30.1_linux_x64.tar.gz, from the release's asset digest.
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0   # every commit of every branch and tag
+          persist-credentials: false
+
+      - name: Also fetch the heads of all pull requests
+        # Public refs too. Only on the weekly and manual runs: a secret-looking string
+        # pushed in one (possibly foreign) pull request must not turn every other
+        # pull request, or main, red.
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: git fetch --no-tags origin '+refs/pull/*/head:refs/remotes/pull/*'
+
+      - name: Install gitleaks (checksum-verified)
+        run: |
+          curl -sSfL -o gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum --check --strict
+          tar -xzf gitleaks.tar.gz gitleaks
+          ./gitleaks version
+
+      - name: Scan the full history
+        # --redact: a finding never prints the secret into the public log. False
+        # positives go in .gitleaks.toml (allowlist, one reason per entry), never
+        # through a history rewrite without a decision.
+        run: |
+          echo "commits: $(git rev-list --all --count) across $(git for-each-ref | wc -l) refs"
+          ./gitleaks git --log-opts='--all' --redact --no-banner --exit-code 1 \
+            --report-format json --report-path gitleaks-report.json .
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: gitleaks-report   # redacted
+          path: gitleaks-report.json
+
+  actionlint:
+    name: Workflows lint clean (actionlint)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      ACTIONLINT_VERSION: 1.7.12
+      # sha256 of actionlint_1.7.12_linux_amd64.tar.gz, from the release's asset digest.
+      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Install actionlint (checksum-verified)
+        run: |
+          curl -sSfL -o actionlint.tar.gz \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  actionlint.tar.gz" | sha256sum --check --strict
+          tar -xzf actionlint.tar.gz actionlint
+
+      - name: actionlint (config .github/actionlint.yaml; shellcheck from the runner image)
+        run: ./actionlint -color
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, actions]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          category: /language:${{ matrix.language }}
+
+  firmware-changed:
+    name: Does this pull request touch the firmware?
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      firmware: ${{ steps.diff.outputs.firmware }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 2   # the merge commit and its first parent, the base
+          persist-credentials: false
+
+      - name: Diff against the base
+        id: diff
+        run: |
+          if git diff --quiet HEAD^1 HEAD -- targets/ .github/workflows/security.yml; then
+            echo "firmware=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "firmware=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  codeql-c:
+    name: CodeQL (c-cpp) — ESP-IDF firmware build
+    needs: firmware-changed
+    # Every push to main, weekly and manual run; a pull request only if it touches
+    # the firmware. A failed diff job is red on its own, and skips this one.
+    if: >-
+      !cancelled()
+      && (github.event_name != 'pull_request' || needs.firmware-changed.outputs.firmware == 'true')
+    runs-on: ubuntu-latest
+    container: espressif/idf:v5.4   # the firmware-qemu.yml toolchain
+    permissions:
+      contents: read
+      security-events: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          languages: c-cpp
+          build-mode: manual
+
+      - name: Build esp32s3 (sdkconfig.qemu, the configuration with the most code)
+        # Traced by CodeQL. ESP-IDF itself lives outside the checkout ($IDF_PATH), so
+        # its sources are compiled but never reported: only targets/esp32s3 is.
+        working-directory: targets/esp32s3
+        run: |
+          git config --global --add safe.directory '*'
+          . "$IDF_PATH/export.sh"
+          idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.qemu" set-target esp32s3
+          idf.py build
+
+      - uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          category: /language:c-cpp

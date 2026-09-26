@@ -32,6 +32,29 @@ bản gói.
 
 #### Đã thêm
 
+- **I2 · TSK-S5-09 — `sensor.read` và `display` trên `linux`.** Cảm biến đọc qua sysfs hwmon và IIO (`hal/sysfs.py`),
+  tìm theo **tên** — nhãn kênh, hoặc nguồn đặt theo máy (`LinuxHAL(sensor_sources=)`, `NEUROEDGE_LINUX_SENSORS`); mỗi lần đọc
+  tới kernel, và không nguồn, tệp lỗi, NaN/inf, cờ `*_fault` hay đơn vị khác đơn vị agent khai đều là `BoardCapabilityError`.
+  Replay chỉ dùng số đọc đã ghi. `display` kiểm và ghi khung bằng mã của `sim` (`make_frame`) rồi tới backend chọn rõ:
+  `memory` hoặc `/dev/fbN` (`hal/framebuffer.py`). Phiên `--target linux` kiểm cảm biến và màn hình **trước khi** xin line.
+  CI `linux-hal`: `i2c-stub` + `lm75`, framebuffer `vfb`/`vkms`. Luật: `simulation_coverage.md` §2. Kiểm: `pytest
+  tests/test_hal_linux_io.py`; `tests_linux/test_sensor_display.py`. (FR-TGT-02, FR-HAL-01)
+- **I4 · TSK-I4-03 — độ trễ từng chặng và tỷ lệ System 1 / System 2 trong vết ghi.** `engine/latency.py`: mỗi lượt của
+  phiên `sim`/`linux` ghi `turn_latency` (chặng `perception`, `system_two`, `gate`, `action`, `other`; `path`
+  `system_1`/`system_2`/`fallback`/`none`; token và chi phí System 2 khi provider báo); vết ghi xuất ra kết thúc bằng một
+  `session_summary`; `neuroedge trace show` in tỷ lệ. Không đổi lược đồ hay vết ghi chuẩn mực; replay và golden bỏ qua cả
+  hai. Đặc tả: `tool_calling.md` §7.1. Kiểm: `pytest tests/test_turn_latency.py`. (FR-ACE-06, FR-TEL-03, NFR-OBS-02)
+- **I1 · TSK-I1-03 — `--help` có ví dụ cho mọi lệnh; `neuroedge new` tạo sẵn `traces/`.** `cli/examples.py`; mọi ví dụ
+  được phân tích bằng parser thật, và chạy trong một dự án vừa tạo khi không mở server/trình duyệt/GPIO. Mẫu scaffold
+  `traces/README.md`, `traces/incidents/`, `traces/golden/`. Kiểm: `pytest tests/test_cli_examples.py tests/test_cli_new.py`,
+  `scripts/wheel_smoke.sh`. (FR-CLI-07, FR-TRC-09)
+- **TSK-W0-02, W0-03, W0-04, W2-07 — chuỗi cung ứng.** SBOM CycloneDX của wheel theo `requirements-lock.txt`
+  (`scripts/sbom.sh`, job `sbom`); `security.yml`: `pip-audit` chặn lỗ hổng đã biết (ngoại lệ ở
+  `python/pip-audit-ignore.txt`), gitleaks toàn lịch sử (0 phát hiện), `actionlint`, CodeQL cho Python, Actions và firmware
+  C; trôi phụ thuộc hằng đêm mở **một** issue nhãn `dependency-drift`, không làm đỏ build (Q-32); mọi `uses:` ghim SHA,
+  Dependabot cho Actions, job `attest` ký provenance cho wheel, sdist, SBOM. Job và điều kiện: `CHANGELOG.md` §2.5,
+  `docs/release.md`.
+
 - **I4 · TSK-S3-11 — máy trạng thái hội thoại chạy trên `sim`, cắt lời hủy lệnh chưa giao.** `perception/`
   (`VoiceStateMachine`, `VoiceSession`, đồng hồ tiêm vào); lệnh hẹn giờ `pulse(after_ms=…)` trên `SimHAL`, `LinuxHAL`
   từ chối. Kiểm: `pytest tests/test_voice_corpus.py tests/test_voice_fsm.py`. (FR-PER-02→05, `voice_fsm.md` §5, §10)
@@ -800,8 +823,9 @@ Nghĩa của từng mã `NE…`, lớp lỗi và lúc nó xuất hiện: PRD
 |:---|:---|:---|
 | `ci-sim-linux.yml` | Mỗi PR và push lên `main` | `frozen-artifacts` · `tests` (Python 3.11/3.12/3.13, gồm walker và sổ token C biên dịch trên host) · `linux-hal` · `wheel-smoke` · `lint` · `licence-obligations` · `cloud-extra` |
 | `firmware-qemu.yml` | PR và push đụng `targets/**`, `fixtures/traces/`, `engine/binary_tree.py` hoặc `testing/uart.py` · 01:30 UTC+7 hằng đêm · chạy tay | `firmware-qemu`: build `esp32s3` với `sdkconfig.qemu` (ESP-IDF 5.4), boot trên Espressif QEMU, đòi `NE_SELFTEST PASS` rồi `NE_TRACE DONE` trên UART · `uart-trace`: bằng CLI đã cài, `record --target esp32s3 --port uart.log` + `trace validate` (đòi `device_id = qemu`), rồi `verify --targets esp32s3 --port uart.log` |
-| `release-pypi.yml` | Tag `v*.*.*` · PR đổi tệp đóng gói · chạy tay | `build` · `smoke` (Python 3.11/3.13) · `publish-testpypi` · `publish-pypi` — hai job cuối chỉ chạy với tag **và** `PUBLISH_ENABLED == 'true'` ([`docs/release.md`](docs/release.md)) |
-| `nightly-hardware.yml` | 01:00 UTC+7 hằng đêm · chạy tay | `firmware-build` (ESP-IDF 5.2.1, ngân sách flash Q-3) · `upstream-drift` · `memory-spike` · `report` |
+| `release-pypi.yml` | Tag `v*.*.*` · PR đổi tệp đóng gói · chạy tay | `build` · `sbom` · `smoke` · `attest` · `publish-testpypi` · `publish-pypi` · `github-release` — khi nào job nào chạy, và cổng phát hành: [`docs/release.md`](docs/release.md) |
+| `nightly-hardware.yml` | 01:00 UTC+7 hằng đêm · chạy tay | `firmware-build` (ESP-IDF 5.2.1, ngân sách flash Q-3) · `upstream-drift` (bản mới nhất được phép so với lock, chạy test; không bao giờ đỏ) · `drift-issue` (mở, cập nhật hoặc đóng **một** issue nhãn `dependency-drift`, cũng không làm đỏ lượt chạy — Q-32) · `memory-spike` · `report` |
+| `security.yml` | Mỗi PR và push lên `main` · hằng tuần · chạy tay | `pip-audit` (mọi pin trong `requirements-lock.txt`; lỗ hổng đã biết ⇒ đỏ, ngoại lệ chỉ qua `python/pip-audit-ignore.txt` có lý do) · `gitleaks` (toàn lịch sử mọi nhánh và tag; lượt hằng tuần và chạy tay thêm head của mọi PR) · `actionlint` · `codeql` (Python, GitHub Actions) · `firmware-changed` + `codeql-c` (firmware, build trong `espressif/idf:v5.4`; với PR chỉ khi đụng `targets/`) |
 
 `ci-sim-linux.yml` phải xanh trước khi hợp nhất. Năm cổng đáng chú ý:
 
@@ -813,6 +837,10 @@ Nghĩa của từng mã `NE…`, lớp lỗi và lúc nó xuất hiện: PRD
 - **Cổng giấy phép** — `licence-obligations`: `pip-licenses --fail-on` trên toàn bộ cây phụ thuộc lõi; `cloud-extra`:
   chính sách Q-11 cho extra `cloud` (`scripts/check_licences.py`: giấy phép lạ hoặc không rõ ⇒ đỏ).
 - **`ruff check .` và `ruff format --check .`** — job `lint`.
+
+Mọi `uses:` ghim theo SHA commit đầy đủ kèm chú thích `# vX.Y.Z`; Dependabot
+(`.github/dependabot.yml`) đề xuất bản mới hằng tuần. Job `actionlint` giữ mọi workflow sạch
+(`.github/actionlint.yaml` khai nhãn runner `esp32s3-box-3`).
 
 Job `memory-spike` cần runner tự quản gắn nhãn `esp32s3-box-3`. Khi chưa có,
 nó **bị bỏ qua và nói rõ là bỏ qua** trong phần summary, không bao giờ báo đạt.
@@ -944,8 +972,9 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
 - ❌ **Tương đương target mới ở mức quyết định, trên `sim` + `linux` + `esp32s3` trên QEMU.** `verify` so chuỗi
   phán quyết và lệnh chân; trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng trên host
   (`TODOS.md` #37). So timing và bo mạch là TSK-S4-04 (I3).
-- ❌ **`LinuxHAL` mới có `digital.out`.** `sensor.read`, `display` (I2) và `audio.in/out` (I4) trên `linux`
-  chưa hiện thực; chân Pi thật cần `line_names` (vd `door_lock` → `GPIO17`).
+- ❌ **`LinuxHAL` chưa có âm thanh** (`audio.in/out`, TSK-S5-08, I4), và chưa đọc cảm biến là đầu vào GPIO
+  (`door_contact`, `motion`). Chân Pi thật cần `line_names` (vd `door_lock` → `GPIO17`); cảm biến hwmon/IIO cần nhãn
+  hoặc `NEUROEDGE_LINUX_SENSORS`. Chưa chạy trên Pi thật (nightly TSK-I2-01).
 - ❌ **MCP chỉ qua stdio** (`TODOS.md` #24, #25). Không có transport mạng.
 - ❌ **Chưa phát hành ra ngoài.** Tag trước I6 là nội bộ; PyPI và repo công khai mở ở I6 (Q-39,
   TSK-S3-14, `docs/release.md`).

@@ -180,7 +180,8 @@ hỏi xác nhận* với nút Đồng ý / Huỷ và thời gian còn lại (`PO
 
 ## 7. Vết ghi
 
-Đây là danh mục **duy nhất** của sự kiện tool call, xác nhận, MCP host và System 2. Sự kiện
+Đây là danh mục **duy nhất** của sự kiện tool call, xác nhận, MCP host, System 2 và đo lượt
+(§7.1). Sự kiện
 theo nguyên thủy HAL (`actuator_command`, `sensor_read`, `display_frame`…) ở
 `docs/spec/simulation_coverage.md` §3.
 
@@ -206,6 +207,49 @@ Trường `type` của sự kiện trong `trace.v1` là chuỗi mở, nên thêm
 RFC. Replay (`testing/player.py`) tính lại từng lần lượng giá gate từ `gate_facts` đã
 ghi — kể cả `call_source` — nên một lời gọi từ LLM replay tất định mà không hỏi lại mô
 hình. Lời gọi `REJECTED` không tới gate nên không có trong phán quyết replay.
+
+### 7.1 Độ trễ từng chặng và tỷ lệ System 1 / System 2 (TSK-I4-03)
+
+FR-ACE-06, FR-TEL-03, NFR-OBS-02. Mỗi lượt của phiên `sim` / `linux` — một dòng gõ hay một
+transcript (`SimSession.handle`), câu trả lời của System 2 mà bộ điều khiển giọng nói chuyển tới
+(`run_tool_calls`), câu `offline_help` khi System 2 không trả lời (`say_offline`), nút xác nhận
+(`confirm` / `decline`) — kết thúc bằng **một** `turn_latency`. Vết ghi xuất từ một log có
+`turn_latency` kết thúc bằng **một** `session_summary`, tính lại từ các `turn_latency` lúc xuất,
+không lưu trong log. Lời gọi tool từ MCP client bên ngoài không phải lượt: không có
+`turn_latency`. Hiện thực: `python/neuroedge/engine/latency.py`.
+
+| Sự kiện | Dữ liệu |
+|:---|:---|
+| `turn_latency` | `turn` (1, 2, …), `path`, `stages_ms` `{perception, system_two, gate, action, other}`, `total_ms`, `reply_source?`, `usage?` `{prompt_tokens?, completion_tokens?, cost_usd?}` — cộng từ các `system_two_call` của lượt, chỉ khi provider báo (FR-TEL-03) |
+| `session_summary` | `turns`, `paths` `{system_1, system_2, fallback, none}` (số lượt), `shares` (tỷ lệ trên tổng số lượt, 4 chữ số), `stages_ms` `{perception, system_two, gate, action, other, total}` — mỗi chặng `{sum, max}`, `usage?` (tổng của các lượt) |
+
+**Chặng** — không chồng lên nhau, cộng lại đúng `total_ms` (ms, số thực 3 chữ số, không âm):
+
+| Chặng | Đo gì |
+|:---|:---|
+| `perception` | Đọc đầu vào và khớp ngữ pháp lệnh (chữ gõ / transcript → lệnh) |
+| `system_two` | Chờ System 2: mọi `respond` / `reply` của lượt; với giọng nói, từ lúc có transcript tới lúc câu trả lời (hoặc hết giờ chờ) tới |
+| `gate` | `ActionContractEngine.evaluate()` — mọi gate của lượt, cộng dồn |
+| `action` | Thân các `@action` chạy sau ALLOW, cộng dồn |
+| `other` | Phần còn lại: lời nói, điều phối, đường ống tool |
+
+Chặng mở bên trong một chặng khác (một `@action` gọi lại `c.do()`) tính cho chặng ngoài.
+Đồng hồ là đồng hồ của `offset_ms` (tiêm được, ảo trong test), nên số đo trong test tất định.
+
+**`path`** — ai phục vụ lượt:
+
+| `path` | Khi nào |
+|:---|:---|
+| `system_1` | Ngữ pháp lệnh / System 1 của thiết bị phục vụ, System 2 không được hỏi — kể cả câu "có" / "không" nói với câu hỏi `ask` của thiết bị |
+| `system_2` | System 2 trả lời (có ít nhất một câu trả lời trong lượt) |
+| `fallback` | System 2 được hỏi mà không trả lời được, thiết bị tự trả lời (Q-14): `reply_source` là `offline`, `offline_help` hoặc `knowledge_local` — cả khi một vòng trước của System 2 đã trả lời. Agent không có System 2 thì những câu trả lời đó là `system_1` hoặc `none`, theo việc lệnh có được nhận ra |
+| `none` | Không mô hình nào phục vụ: không nhận ra lệnh và không có System 2, hoặc người bấm nút xác nhận |
+
+`system_one_fallback` (System 1 chính → ngữ pháp cục bộ, FR-MDL-03) vẫn là sự kiện riêng, không
+đổi `path`. Hai sự kiện này **không mang chữ** — chế độ ẩn danh không cần băm gì thêm — và **không
+vào so khớp quyết định**: replay và golden bỏ qua chúng, nên vết ghi cũ không có chúng vẫn replay,
+và vết ghi mới replay trên bản cũ. `neuroedge trace show` in tỷ lệ và chặng, tính lại từ
+`turn_latency`.
 
 ## 8. Theo target
 

@@ -44,8 +44,33 @@ không ghi ở đây: đọc task ở cột cuối trong bảng task của roadm
 | `digital.out` | `LinuxHAL` qua libgpiod v2 | PR — gpio-sim | Điện áp, timing | TSK-S3-05 |
 | `audio.in` | `sounddevice` (PortAudio) · AEC phần mềm PipeWire `module-echo-cancel` (Q-22) | PR — backend tệp/PCM không cần kernel; **runner không có `snd-aloop`** | Micro, AEC, âm học — RPi 5 + HAT I2S, `snd-aloop` trên Pi | TSK-S5-08 |
 | `audio.out` | `sounddevice` | PR — như trên | Loa, âm lượng | TSK-S5-08 |
-| `sensor.read` | sysfs **hwmon** và **IIO** (`/sys/class/hwmon/*/temp1_input`, `/sys/bus/iio/devices/iio:device*/in_*`) | PR — `i2c-stub` + driver `lm75` → hwmon (module có trên runner) | Cảm biến thật; IIO chỉ trên Pi (`CONFIG_IIO` tắt trên runner) | TSK-S5-09 |
-| `display` | Khung hình → `/dev/fb*` trên Pi; trong bộ nhớ khi không có | PR — khung trong bộ nhớ + digest | Panel HDMI/DSI | TSK-S5-09 |
+| `sensor.read` | sysfs **hwmon** và **IIO** (`/sys/class/hwmon/*/temp1_input`, `/sys/bus/iio/devices/iio:device*/in_*`) — `hal/sysfs.py` | PR — `i2c-stub` + driver `lm75` → hwmon (`scripts/setup_i2c_stub.sh`, `tests_linux/`); IIO trên cây sysfs giả (`tests/test_hal_linux_io.py`) | Cảm biến thật; IIO chỉ trên Pi (`CONFIG_IIO` tắt trên runner) | TSK-S5-09 |
+| `display` | Kiểm và ghi khung bằng đúng mã của `sim` (`make_frame`), rồi → `/dev/fb*` trên Pi, hoặc chỉ trong bộ nhớ — `hal/framebuffer.py` | PR — khung trong bộ nhớ + digest; `/dev/fbN` của `vfb`, hoặc `vkms` trên kernel azure (`scripts/setup_vfb.sh`) | Panel HDMI/DSI | TSK-S5-09 |
+
+**Cảm biến trên `linux` tìm theo tên, không theo số thứ tự** (`hwmon3`, `iio:device0` đổi theo thứ
+tự probe), như chân GPIO tìm theo tên line: kênh có nhãn trùng tên cảm biến của bo mạch, hoặc một
+**nguồn** đặt theo máy — `LinuxHAL(sensor_sources=…)` hoặc biến môi trường `NEUROEDGE_LINUX_SENSORS`.
+Cú pháp nguồn và bảng đơn vị: `python/neuroedge/hal/sysfs.py`. Nguồn không nằm trong `boards/*.toml`
+(`board.v1` chưa có trường cho nó — khai bus I2C trong bo mạch là RFC-0007); khoá của nó phải là cảm
+biến bo mạch khai. Luật an toàn:
+
+- Mỗi lần đọc đi tới kernel; không nguồn, hai nguồn, tệp không đọc được, giá trị không phải số hữu
+  hạn, cờ `*_fault`, hay loại kênh không rõ đơn vị ⇒ `BoardCapabilityError`, không bao giờ trả giá
+  trị mặc định. "Tới kernel" không có nghĩa là mới hơn chu kỳ cập nhật của driver (lm75 ≈ 1,5 s).
+- Agent khai đơn vị cho cảm biến (`[sim.sensors] temperature = { value = …, unit = "C" }`) thì số đọc
+  của kernel khác đơn vị đó bị từ chối, không đem so với ngưỡng viết cho đơn vị kia.
+- Replay chỉ dùng giá trị đã ghi: cảm biến vết ghi không có số đọc thì báo lỗi, không đọc kernel; khung
+  hình vẽ trong bộ nhớ.
+- `door_contact` và `motion` của `linux-rpi5` là đầu vào GPIO, không phải hwmon/IIO: chưa đọc được trên
+  `linux`, agent cần chúng bị từ chối trước khi xin line.
+
+**Màn hình chọn rõ, không đoán:** `LinuxHAL(display="memory" | "/dev/fbN")` hoặc
+`NEUROEDGE_LINUX_DISPLAY`; không chọn thì `display` báo lỗi. Framebuffer đọc bố cục điểm ảnh từ
+kernel (ioctl `FBIOGET_*SCREENINFO`: 16/24/32 bit, vị trí màu; chế độ grayscale/FOURCC/`msb_right` bị
+từ chối), ghi từng hàng từ góc trên trái, mở thiết bị mỗi khung rồi đóng ngay; khung chữ bị từ chối
+(không có font — `memory` nhận). Phiên tương tác (`run`, `record`, `mcp serve --target linux`) kiểm
+mọi cảm biến agent và `[sim.sensor_facts]` cần, và backend màn hình nếu agent cần `display`, **trước
+khi** xin line GPIO nào.
 
 ### `esp32s3` — `esp32s3-box-3`
 
@@ -78,8 +103,8 @@ nào đi theo ô tương ứng ở §2. Cột "Vai trò khi replay" nói phần 
 
 Chế độ ẩn danh (FR-TRC-07) băm `text`; `audio_in_segment` và `display_frame` vốn chỉ mang digest.
 
-Sự kiện ngoài nguyên thủy (tool call, xác nhận, MCP host, `system_two_*`) ở danh mục duy nhất
-`docs/spec/tool_calling.md` §7; sự kiện của máy trạng thái hội thoại (`voice_state_changed`,
+Sự kiện ngoài nguyên thủy (tool call, xác nhận, MCP host, `system_two_*`, đo lượt `turn_latency` /
+`session_summary`) ở danh mục duy nhất `docs/spec/tool_calling.md` §7; sự kiện của máy trạng thái hội thoại (`voice_state_changed`,
 `wake_word_detected`, `audio_in_vad_end`, `stt_result`) ở `docs/spec/voice_fsm.md` §8. Replay bỏ qua `system_two_call`: System 2 không đổi phán quyết, nên
 phiên ghi online replay được mà không cần model hay key.
 

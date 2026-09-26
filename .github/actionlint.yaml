@@ -1,0 +1,5 @@
+# actionlint configuration. The one custom runner label: the self-hosted runner with
+# an ESP32-S3-BOX-3 attached (job `memory-spike`, nightly-hardware.yml).
+self-hosted-runner:
+  labels:
+    - esp32s3-box-3

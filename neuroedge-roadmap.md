@@ -59,10 +59,10 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | Chỉ số | Trạng thái hiện hành | Ghi chú & Liên kết |
 |:---|:---|:---|
 | **Pha đang thực thi** | 🟡 **I1 — Preview nội bộ trên `sim`** (I2, I3 phần không cần bo mạch và I4 làm song song) | Increment và ngày dự báo: §0.2 |
-| **Increment đang mở** | 🟡 **I1** — còn I1-01, I1-02, I1-03 | I0 đã xong 42 / 42 · chi tiết §0.2 |
+| **Increment đang mở** | 🟡 **I1** — còn I1-01, I1-02 (tạm hoãn: phát triển nội bộ) | I0 đã xong 42 / 42 · chi tiết §0.2 |
 | **Cột mốc tiếp theo** | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** | Ngày dự báo ở §0.2 · chưa phát hành ra ngoài (Q-39) |
-| **Lần cập nhật cuối** | **2026-09-26** | Phiên gần nhất: PR #52 — ba task chạy trên giả lập (TSK-S3-08, TSK-S3-10/S3-11, TSK-S5-10) và ba lượt review an toàn · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 1144/1144 · SKIP 0** | `python/tests/` — 55 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 15/15 trên gpio-sim (job `linux-hal`) · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
+| **Lần cập nhật cuối** | **2026-09-26** | Phiên gần nhất: đợt 1 — TSK-I1-03, TSK-I4-03, TSK-S5-09, TSK-W0-02/03/04, TSK-W2-07 và review · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Trạng thái CI Lõi** | ✅ **PASS 1323/1323 · SKIP 0** | `python/tests/` — 58 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 22/22 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · kỹ sư nhúng thứ hai (V6): đã quyết tuyển (2026-09-25), chưa có người — cần vào trước 2026-11-16 (Q-39) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -76,13 +76,13 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 |:---:|:---|:---:|:---|:---:|:---|:---|:---|
 | **0.x nội bộ** | **I0 — Lõi hợp đồng trên `sim`** | ✅ 2026-09-24 | Gate có kiểu và phiên bản (lint, resolve, kế thừa, tham số, `confirms`), `sim` + web UI, Action CI, MCP, System 2 qua LiteLLM, `linux` replay trên gpio-sim; walker C, sổ token và vết ghi UART trên QEMU | **42 / 42** | ✅ Xong | — | lịch sử |
 |  | **Cổng nhu cầu (Q-20)** | 2026-10-25 | Go / Adjust / Stop cho I3–I7 (`docs/business/cong-nhu-cau-2026-10-25/cham-diem.md` §4.1) | — | ⏳ Đang phỏng vấn | I0 | — |
-|  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | Người ngoài đội cài từ wheel nội bộ và chạy agent có gate trong dưới 10 phút, không cần phần cứng | **2 / 5** | 🟡 Đang làm | I0 | tag `v0.1.0` (nội bộ) |
-|  | **I2 — `linux` ngang `sim`** | 2026-11-29 | `run`, `record`, `mcp serve --target linux`; cảm biến và màn hình trên `linux`; nightly trên RPi 5 | **1 / 4** | 🟡 Phiên tương tác trên gpio-sim xong; cảm biến, màn hình, nightly RPi 5 còn lại | I1 | tag `v0.2.0` (nội bộ) |
+|  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | Người ngoài đội cài từ wheel nội bộ và chạy agent có gate trong dưới 10 phút, không cần phần cứng | **3 / 5** | 🟡 Đang làm — TSK-I1-01, I1-02 tạm hoãn (phát triển nội bộ) | I0 | tag `v0.1.0` (nội bộ) |
+|  | **I2 — `linux` ngang `sim`** | 2026-11-29 | `run`, `record`, `mcp serve --target linux`; cảm biến và màn hình trên `linux`; nightly trên RPi 5 | **3 / 4** | 🟡 Phiên tương tác, cảm biến, màn hình xong trên gpio-sim + i2c-stub; nightly RPi 5 còn lại | I1 | tag `v0.2.0` (nội bộ) |
 |  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | Gate chạy trên chip, điều khiển chân thật; người dùng tự nạp agent; `verify` ba target bậc 1 cho miền phán quyết | **4 / 14** | 🟡 Phần không cần bo mạch đã xong; chờ bo mạch | I1, cổng Go | tag `v0.3.0` + firmware (nội bộ) |
-|  | **I4 — Thoại trên host** | 2026-12-13 | Nói chuyện với agent trên `sim` và `linux`: wake-word, cắt lời, STT/TTS qua provider cloud, fallback lệnh cục bộ | **3 / 8** | 🟡 Đặc tả, bộ vector và FSM Python xong; STT/TTS, wake-word, âm thanh `linux` còn lại | I2, cổng Go | tag `v0.4.0` (nội bộ) |
+|  | **I4 — Thoại trên host** | 2026-12-13 | Nói chuyện với agent trên `sim` và `linux`: wake-word, cắt lời, STT/TTS qua provider cloud, fallback lệnh cục bộ | **4 / 8** | 🟡 Đặc tả, bộ vector, FSM Python, độ trễ trong vết ghi xong; STT/TTS, wake-word, âm thanh `linux` còn lại | I2, cổng Go | tag `v0.4.0` (nội bộ) |
 |  | **I5 — Thoại trên Box-3** | 2027-01-03 | Demo "nói chuyện với con chip $5": thoại trên ESP32-S3, gate trên chip, cùng vết ghi replay trong CI | **0 / 7** | ⏳ Chưa bắt đầu | I3, I4 | tag `v0.5.0` + firmware (nội bộ) |
-| **Công khai** | **I6 — Công khai** | 2027-01-10 | Repo công khai, `pip install neuroedge` từ PyPI, lược đồ ở URL công khai, video demo thoại trên `sim`, `linux` và Box-3 | **1 / 8** | ⏳ Chưa bắt đầu | I5 | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
-| **v1.0** | **I7 — v1.0** | 2027-01-24 | OTA A/B có ký, bảo mật thiết bị, ổn định 24 giờ trên chip; đủ A1–A9 | **0 / 12** | ⏳ Chưa bắt đầu | I6 | `v1.0.0` |
+| **Công khai** | **I6 — Công khai** | 2027-01-10 | Repo công khai, `pip install neuroedge` từ PyPI, lược đồ ở URL công khai, video demo thoại trên `sim`, `linux` và Box-3 | **3 / 8** | 🟡 Quét bí mật, SBOM xong; chờ I5 | I5 | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
+| **v1.0** | **I7 — v1.0** | 2027-01-24 | OTA A/B có ký, bảo mật thiết bị, ổn định 24 giờ trên chip; đủ A1–A9 | **1 / 12** | 🟡 Ghim Actions, attestation xong; chờ I6 | I6 | `v1.0.0` |
 | **Beta** | **I8 — Developer Beta** | 2027-02-21 | 50–100 lập trình viên ngoài trên dòng `1.0.x`; đo B1–B5, chọn nhánh | **0 / 1** | ⏳ Chưa bắt đầu | I7 | `1.0.x` (chỉ bản vá) |
 | **v1.1** | **I9 — Lớp provider v1.1 và Fleet OS** | sau I8 (nhánh A) | Một endpoint và credential cho cả đội, failover khai trong cấu hình, cấp phát, OTA canary, tải vết ghi sự cố | **0 / 9** | ⏳ Chờ nhánh A | I8 | `1.1.0` + dịch vụ |
 |  | **I10 — Registry và các đường ray** | sau I8 (nhánh A, Q-5) | `gate add` từ registry có ký, định danh ổn định, đo lường, sandbox | **0 / 8** | ⏳ Chờ nhánh A | I8 | `1.2.0` + registry |
@@ -107,30 +107,32 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-26 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. VỪA HOÀN THÀNH — PR #52 (chi tiết: CHANGELOG.md [Chưa phát hành])                   │
-│    • TSK-S3-08: mẫu thứ ba factory-monitor (fact level) — I1 tiêu chí 2                │
-│    • TSK-S3-10/S3-11: bộ vector thoại + FSM Python trên sim — I4 tiêu chí 1            │
-│    • TSK-S5-10: run/record/mcp serve --target linux, xanh trên gpio-sim                │
-│    • Review: SIGTERM/SIGHUP thả mọi line; lệnh hẹn giờ giao trong TTL                  │
+│ 1. VỪA HOÀN THÀNH — đợt 1 (chi tiết: CHANGELOG.md [Chưa phát hành])                    │
+│    • TSK-I1-03: ví dụ trong --help cho mọi lệnh; new tạo sẵn traces/                   │
+│    • TSK-I4-03: turn_latency + session_summary — tỷ lệ System 1 / System 2             │
+│    • TSK-S5-09: sensor.read (hwmon/IIO) và display (fb/memory) trên linux              │
+│    • TSK-W0-02/03/04, W2-07: SBOM, pip-audit, gitleaks, CodeQL, ghim SHA               │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
 │    1. Đặt 2 Box-3 + 1 RPi 5 (Phụ lục B); tuyển V6 — đã quyết, cần trước 2026-11-16     │
-│    2. V3: TSK-I1-01 (PII), I1-03 → TSK-I1-02 → đo TTFV 3 người                         │
-│    3. V1: TSK-S3-13 (STT/TTS cloud), TSK-I4-01 (thoại trên host, Q-39)                 │
-│    4. V1: TSK-S5-09 (sensor.read, display trên linux — I2)                             │
-│    5. V2: TSK-S4-11; TSK-S6-01, S6-02, S6-04 trên QEMU (Q-39)                          │
-│    6. Kỹ thuật trưởng: chốt chân trời hẹn giờ (voice_fsm.md §10) → Q-N                 │
+│    2. Đợt 2: TSK-I4-02 (Jev typesafe/jev-1.13 qua OpenRouter), TSK-S3-13               │
+│       (STT/TTS chuẩn OpenAI audio), TSK-S4-11 + TSK-I3-01 (QEMU)                       │
+│    3. Đợt 3: TSK-S6-01/02/04 (OTA QEMU), TSK-S4-10 + TSK-I4-01, TSK-S5-08              │
+│    4. Tái sinh requirements-lock.txt (thiếu phụ thuộc của mcp) — đóng #54              │
+│    5. Kỹ thuật trưởng: chốt chân trời hẹn giờ (voice_fsm.md §10) → Q-N                 │
+│    6. TSK-I1-01, I1-02 tạm hoãn: mở lại trước buổi đo TTFV                             │
 │                                                                                        │
 │ 4. LƯU Ý — bất biến ở CHANGELOG.md §3.3; dưới đây chỉ điều chưa có ở đó                │
 │    • Chỉ c.do() điều khiển được chân: HAL chưa gắn ledger từ chối mọi lệnh             │
 │    • Replay tính lại phán quyết từ dữ kiện đã ghi; golden chỉ so quyết định            │
 │    • Mọi hành động đi qua dispatch(): lỗi hợp đồng ném ra, không thành BLOCK           │
 │    • Wheel mang asset ở neuroedge/_data/; paths.py: checkout → gói → lỗi               │
-│    • tests_linux/ chỉ chạy trên gpio-sim (job linux-hal); gpiod là extra [linux]       │
+│    • tests_linux/ chỉ chạy trên CI (job linux-hal): gpio-sim, i2c-stub, vkms           │
 │    • Lệnh chạm line linux phải thả line ở mọi lối ra: finally + SIGTERM/SIGHUP         │
+│    • Cảm biến linux: số hữu hạn, đúng đơn vị agent khai, không bao giờ mặc định        │
 │    • Chạy ruff check + ruff format --check trước khi commit (CI chặn)                  │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -520,9 +522,9 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S3-08** | Ba ví dụ mẫu chạy được, README có tài sản trực quan | FR-DX-05, FR-DX-06 | V3 | ✅ Hoàn thành (2026-09-25) | `villa-concierge`, `home-voice` ([`fixtures/agents/home-voice/`](fixtures/agents/home-voice/): RAG knowledge base, tin tức, đèn qua gate) và `factory-monitor` ([`fixtures/agents/factory-monitor/`](fixtures/agents/factory-monitor/): quạt, báo động qua gate đọc fact `level` — không cần tiêu chí số, `TODOS.md` #30) chạy được qua `neuroedge new --template`, có test (`tests/test_factory_monitor.py`) và nằm trong `wheel-smoke`. Tài sản trực quan cho README chuyển sang TSK-I6-03 |
 | **TSK-S3-15** | **RFC golden reference:** ba vết ghi chuẩn mực khai `"target": "esp32s3"` nhưng replay ở Tiêu chí 4 chạy trên `sim`/`linux` thật; `fixtures/traces/` là RFC-gated | FR-CI-04, FR-TRC-05 | V1 | ✅ Hoàn thành (2026-09-25) — không cần RFC | TSK-S3-04 so **quyết định**, không so `metadata.target`: ba vết ghi chuẩn mực làm golden nguyên trạng trên `sim` và `linux`, không sửa `fixtures/traces/`. **Xác nhận 2026-09-25:** golden là ba vết ghi chuẩn mực nguyên trạng, so quyết định trên `sim`, `linux` và `esp32s3`; không sửa `fixtures/traces/`, không cần RFC |
-| **TSK-I1-01** | **PII trong vết ghi trước khi có người ngoài dùng:** ẩn danh mặc định hoặc chính sách văn bản; `record --anonymize` đã có nhưng chưa là mặc định | FR-TRC-06, FR-TRC-07, NFR-PRIV-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/recorder.py` |
-| **TSK-I1-02** | **Bộ đo TTFV tại chỗ:** kịch bản buổi đo, wheel nội bộ, biểu mẫu mốc thời gian từng bước; 3 người ngoài đội cho M1, 10 người cho A1 (TSK-I7-02) | FR-DX-01 | V3 | ⏳ Chưa bắt đầu | `docs/reports/` — biên bản đo, không ghi danh tính người đo |
-| **TSK-I1-03** | **`--help` có ví dụ cho mọi lệnh; scaffold tạo sẵn `traces/`** | FR-CLI-07, FR-TRC-09 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/` · `python/neuroedge/templates/` |
+| **TSK-I1-01** | **PII trong vết ghi trước khi có người ngoài dùng:** ẩn danh mặc định hoặc chính sách văn bản; `record --anonymize` đã có nhưng chưa là mặc định | FR-TRC-06, FR-TRC-07, NFR-PRIV-03 | V1 | ⏸ Tạm hoãn (2026-09-26) — đang phát triển nội bộ, chưa ưu tiên; mở lại trước buổi đo TTFV (TSK-I1-02) | `python/neuroedge/testing/recorder.py` |
+| **TSK-I1-02** | **Bộ đo TTFV tại chỗ:** kịch bản buổi đo, wheel nội bộ, biểu mẫu mốc thời gian từng bước; 3 người ngoài đội cho M1, 10 người cho A1 (TSK-I7-02) | FR-DX-01 | V3 | ⏸ Tạm hoãn (2026-09-26) — cùng lý do với TSK-I1-01 | `docs/reports/` — biên bản đo, không ghi danh tính người đo |
+| **TSK-I1-03** | **`--help` có ví dụ cho mọi lệnh; scaffold tạo sẵn `traces/`** | FR-CLI-07, FR-TRC-09 | V3 | ✅ Hoàn thành (2026-09-26) | [`cli/examples.py`](python/neuroedge/cli/examples.py): mỗi lệnh có mục `Examples:`, mọi ví dụ phân tích bằng parser thật và chạy trong dự án vừa tạo · [`templates/_common/traces/`](python/neuroedge/templates/_common/traces/) · kiểm: `pytest tests/test_cli_examples.py tests/test_cli_new.py`, `scripts/wheel_smoke.sh` |
 
 **Tiêu chí ra I1:**
 
@@ -544,10 +546,10 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-S5-09** | **`sensor.read` và `display` trên `linux`:** cảm biến qua sysfs hwmon + IIO; CI dùng `i2c-stub` + `lm75` (IIO chỉ trên Pi); màn hình ghi `/dev/fb*` trên Pi, khung trong bộ nhớ + digest trong CI | FR-TGT-02, FR-HAL-01 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` · `scripts/` |
+| **TSK-S5-09** | **`sensor.read` và `display` trên `linux`:** cảm biến qua sysfs hwmon + IIO; CI dùng `i2c-stub` + `lm75` (IIO chỉ trên Pi); màn hình ghi `/dev/fb*` trên Pi, khung trong bộ nhớ + digest trong CI | FR-TGT-02, FR-HAL-01 | V1 | ✅ Hoàn thành (2026-09-26) — IIO chỉ kiểm trên cây sysfs giả; Pi thật chưa chạy | [`hal/sysfs.py`](python/neuroedge/hal/sysfs.py) · [`hal/framebuffer.py`](python/neuroedge/hal/framebuffer.py) · [`hal/linux.py`](python/neuroedge/hal/linux.py) · [`setup_i2c_stub.sh`](scripts/setup_i2c_stub.sh) · [`setup_vfb.sh`](scripts/setup_vfb.sh) · kiểm: `pytest tests/test_hal_linux_io.py`; `tests_linux/test_sensor_display.py` (job `linux-hal`) |
 | **TSK-S5-10** | **Phiên tương tác trên `linux`:** `run` (REPL và `-c`), `record` và `mcp serve --target linux` trên `LinuxHAL` (gpio-sim trong CI, RPi 5 hằng đêm), cùng hợp đồng mã thoát như `sim`; thoại trên `linux` là TSK-S5-08 (I4) | FR-CLI-02, FR-TGT-02 | V3 | ✅ Hoàn thành (2026-09-25) — `tests_linux/` 13/13 và `verify --targets sim,linux` xanh trên gpio-sim (job `linux-hal`) | `TypedLinuxHAL` ([`hal/linux.py`](python/neuroedge/hal/linux.py)) · `SimSession.load(target=)` · [`cli/main.py`](python/neuroedge/cli/main.py) · [`test_session_linux.py`](python/tests/test_session_linux.py) · `tests_linux/` (gpio-sim, job `linux-hal`). Agent chỉ được cần `digital.out` (`audio.*`: TSK-S5-08, `sensor.read`/`display`: TSK-S5-09); `--ui` trên `linux` ⇒ mã 2; RPi 5 hằng đêm chưa chạy |
 | **TSK-I2-01** | **Nightly `linux` trên RPi 5** (Q-16): `tests_linux/` và `verify --targets linux` trên phần cứng thật | FR-CI-06, FR-TGT-02 | V1 | ⏳ Chưa bắt đầu | `.github/workflows/nightly-hardware.yml` · runner tự quản |
-| **TSK-W0-04** | **Trôi phụ thuộc hằng đêm tự mở issue, không chặn build** (Q-32) | — | V3 | ⏳ Chưa bắt đầu | `.github/workflows/nightly-hardware.yml` |
+| **TSK-W0-04** | **Trôi phụ thuộc hằng đêm tự mở issue, không chặn build** (Q-32) | — | V3 | ✅ Hoàn thành (2026-09-26) | [`nightly-hardware.yml`](.github/workflows/nightly-hardware.yml) (`upstream-drift`, `drift-issue`; nhãn `dependency-drift`, issue #54) |
 
 **Tiêu chí ra I2:**
 
@@ -621,7 +623,7 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 | **TSK-S5-08** | **`audio.in` / `audio.out` trên `linux`:** `sounddevice` (PortAudio, MIT); AEC phần mềm PipeWire `module-echo-cancel` (Q-22): `audio.in` đọc nút `source` đã khử vang, `audio.out` phát vào nút `sink` của module; cấu hình drop-in `pipewire.conf.d/neuroedge-echo-cancel.conf` giao kèm; `linux-rpi5` khai `aec = true` **chỉ** khi đạt tiêu chí đo `simulation_coverage.md` §6 ⇒ agent mẫu build được cho `linux`. CI: backend tệp/PCM (runner không có `snd-aloop`); Pi: `snd-aloop` + HAT I2S hằng đêm | FR-TGT-02, FR-PER-01 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` · `boards/linux-rpi5.toml` |
 | **TSK-I4-01** | **Fallback lệnh cục bộ và wake-word trên host:** openWakeWord trên `linux` (Q-7), cùng ngữ pháp lệnh với `sim` (Q-14) | FR-PER-01, FR-MDL-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/` |
 | **TSK-I4-02** | **`SystemOne` đổi được bằng cấu hình** (một phần `TODOS.md` #27) | FR-MDL-04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/models/` |
-| **TSK-I4-03** | **Độ trễ từng chặng và tỷ lệ System 1 / System 2 trong vết ghi** | FR-ACE-06, FR-TEL-03, NFR-OBS-02 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/trace.py` |
+| **TSK-I4-03** | **Độ trễ từng chặng và tỷ lệ System 1 / System 2 trong vết ghi** | FR-ACE-06, FR-TEL-03, NFR-OBS-02 | V1 | ✅ Hoàn thành (2026-09-26) | [`engine/latency.py`](python/neuroedge/engine/latency.py) (`turn_latency`, `session_summary` — [`tool_calling.md`](docs/spec/tool_calling.md) §7.1) · kiểm: `pytest tests/test_turn_latency.py` |
 
 **Tiêu chí ra I4:**
 
@@ -629,7 +631,8 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 - [ ] **Tiêu chí 2:** Vòng thoại end-to-end trên `sim` và `linux`, STT/TTS qua provider cloud (TSK-S3-13); cắt lời giữa câu: TTS dừng dưới 300 ms, không lệnh actuator chưa giao nào rò (`voice_fsm.md` §5).
 - [ ] **Tiêu chí 3 (Q-14):** Mất provider giữa phiên → fallback lệnh cục bộ lượng giá; fallback không có hoặc không chạy → hành động bị chặn với lý do `gate_unreachable`.
 - [ ] **Tiêu chí 4:** `linux-rpi5` khai `aec = true` chỉ khi đạt tiêu chí đo `docs/spec/simulation_coverage.md` §6 (TSK-S5-08).
-- [ ] **Tiêu chí 5:** Vết ghi có độ trễ từng chặng và tỷ lệ System 1 / System 2 (TSK-I4-03).
+- [x] **Tiêu chí 5:** Vết ghi có độ trễ từng chặng và tỷ lệ System 1 / System 2 (TSK-I4-03).
+  *Bằng chứng:* `pytest tests/test_turn_latency.py`; `neuroedge trace show <vết ghi>` in tỷ lệ và chặng.
 
 ### 4.6 I5 — Thoại trên Box-3
 
@@ -677,8 +680,8 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S3-14** | **Workflow release lên PyPI**; nghiệm thu `pip install neuroedge==<tag>` rồi **chạy** `gate lint` + `trace validate` từ bản cài | FR-DX-02, FR-GOV-01 | V3 | 🟡 **Workflow sẵn; go-live khi công khai** (Q-39) | [`release-pypi.yml`](.github/workflows/release-pypi.yml): `build` (sdist → wheel từ sdist, `twine check --strict`, tag = `version`) → `smoke` (runner sạch, `wheel_smoke.sh --wheel` trên đúng wheel sẽ phát hành) → `publish-testpypi` / `publish-pypi` (OIDC, không token; chỉ khi có tag **và** `PUBLISH_ENABLED == 'true'`); [`LICENSE`](LICENSE) MIT trong wheel/sdist. **Còn (ở I6):** người sở hữu repo làm [`docs/release.md`](docs/release.md) (public repo, trusted publisher, environment, biến, tag `v0.6.0rc1` rồi `v0.6.0`), rồi nghiệm thu `pip install neuroedge==0.6.0` |
 | **TSK-S3-09** | Telemetry CLI ẩn danh, có thể tắt | FR-TEL-01, FR-TEL-02 | V3 | ⏳ Chưa bắt đầu | Cần trước khi công khai: đo B1, B4, B5 (thêm sự kiện đo B4 — Q-41); có thông báo lần đầu và tài liệu quyền riêng tư (FR-TEL-02) |
-| **TSK-W0-02** | **SBOM** (CycloneDX/SPDX) từ `requirements-lock.txt`, gắn vào mỗi bản phát hành | — | V3 | ⏳ Chưa bắt đầu | `.github/workflows/release-pypi.yml` |
-| **TSK-W0-03** | **Quét lỗ hổng và bí mật:** `pip-audit`, gitleaks trên **toàn lịch sử** trước khi công khai, CodeQL cho Python và C firmware | — | V3 | ⏳ Chưa bắt đầu | `.github/workflows/` · `CHANGELOG.md` §2.5 |
+| **TSK-W0-02** | **SBOM** (CycloneDX/SPDX) từ `requirements-lock.txt`, gắn vào mỗi bản phát hành | — | V3 | ✅ Hoàn thành (2026-09-26) | [`scripts/sbom.sh`](scripts/sbom.sh) · job `sbom` của [`release-pypi.yml`](.github/workflows/release-pypi.yml) (artifact `sbom`; `github-release` đính kèm) |
+| **TSK-W0-03** | **Quét lỗ hổng và bí mật:** `pip-audit`, gitleaks trên **toàn lịch sử** trước khi công khai, CodeQL cho Python và C firmware | — | V3 | ✅ Hoàn thành (2026-09-26) | [`security.yml`](.github/workflows/security.yml) (`pip-audit`, `gitleaks`, `actionlint`, `codeql`, `codeql-c`) · [`pip-audit-ignore.txt`](python/pip-audit-ignore.txt) |
 | **TSK-I6-01** | **Kho công khai:** toàn bộ kho public từ 2026-09-25 (chốt `TODOS.md` #41 — Q-45); README và CONTRIBUTING trỏ đúng kho | FR-GOV-01 | trưởng nhóm + V3 | ✅ Hoàn thành (2026-09-25) | https://github.com/letrongminh/neuroedge-init — public |
 | **TSK-I6-02** | **Lược đồ ở URL công khai `schema.neuroedge.dev`** và bộ kiểm tuân thủ tải được — điều kiện của A9 | FR-GOV-01, FR-GOV-02 | V3 | ⏳ Chưa bắt đầu | tên miền · `schemas/` |
 | **TSK-I6-03** | **Video demo thoại trên `sim`, `linux` và Box-3:** cùng agent, cùng gate, cùng vết ghi replay trong CI — tài sản trực quan của A8 | FR-DX-06 | V3 + V2 | ⏳ Chưa bắt đầu | `README.md` |
@@ -686,7 +689,8 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 
 **Tiêu chí ra I6:**
 
-- [ ] **Tiêu chí 1:** gitleaks quét toàn lịch sử của repo sẽ công khai, 0 phát hiện (TSK-W0-03).
+- [x] **Tiêu chí 1:** gitleaks quét toàn lịch sử của repo sẽ công khai, 0 phát hiện (TSK-W0-03).
+  *Bằng chứng:* job `gitleaks` của `security.yml` (2026-09-26): 205 commit trên 57 ref, kể cả đầu mọi PR — "no leaks found"; chạy lại mỗi tuần.
 - [x] **Tiêu chí 2:** Repo công khai; README và CONTRIBUTING trỏ đúng repo (TSK-I6-01).
   *Bằng chứng:* kho public từ 2026-09-25, toàn bộ kho (Q-45); `pytest tests/test_readme_quickstart.py -k link` kiểm mọi link GitHub trong README trỏ tới tệp có thật.
 - [ ] **Tiêu chí 3:** `pip install neuroedge==<tag>` từ PyPI, rồi `gate lint` và `trace validate` chạy từ bản cài (TSK-S3-14).
@@ -716,7 +720,7 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 | **TSK-S6-07** | Publish JSON Schema công khai và bộ kiểm thử tuân thủ | FR-GOV-01, FR-GOV-03, FR-TRC-10, A9 | V1 | ⏳ Chưa bắt đầu | `schemas/`, `fixtures/compliance/` (thoại: [`voice_fsm.md`](docs/spec/voice_fsm.md) §9) |
 | **TSK-S6-08** | Hoàn thiện tài liệu, ví dụ, video minh họa | FR-DX-05, FR-DX-06, A8 | V3 | ⏳ Chưa bắt đầu | `docs/`, `examples/` |
 | **TSK-W0-01** | **Tiêu chí nghiệm thu cho NFR-SEC-02→06, 08**; rà NFR-SEC-09 | NFR-SEC | V1 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` Phụ lục A.3 |
-| **TSK-W2-07** | **SBOM kèm phát hành, attestation bản build, ghim GitHub Actions theo SHA** | — | V3 | ⏳ Chưa bắt đầu | `.github/workflows/` |
+| **TSK-W2-07** | **SBOM kèm phát hành, attestation bản build, ghim GitHub Actions theo SHA** | — | V3 | ✅ Hoàn thành (2026-09-26) — còn SBOM firmware | mọi workflow ghim SHA · [`dependabot.yml`](.github/dependabot.yml) · job `attest` của [`release-pypi.yml`](.github/workflows/release-pypi.yml) |
 | **TSK-I7-01** | **Các FR v1.0 chưa có task** (rà soát MECE, trước ghi ở `TODOS.md` #31 — đã xoá): lint cấm rẽ nhánh theo target, FR-DX-07, FR-CLI-08 — phạm vi đã xác nhận 2026-09-25 | FR-TGT-05, FR-TGT-07, FR-DX-07, FR-CLI-08 | V1 + V3 | ⏳ Chưa bắt đầu | — |
 | **TSK-I7-02** | **Đo A1 chính thức** (10 lập trình viên độc lập, cài từ PyPI) và **A9** (bên thứ ba chạy bộ kiểm tuân thủ) | FR-DX-01, FR-GOV-01 | V3 | ⏳ Chưa bắt đầu | `docs/reports/` |
 

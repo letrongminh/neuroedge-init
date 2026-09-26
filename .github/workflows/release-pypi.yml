@@ -1,15 +1,21 @@
 # Release to PyPI (TSK-S3-14, FR-DX-02)
 #
-# build -> smoke -> publish. The smoke job installs the exact wheel that would be
-# published, in a clean runner, and runs the stranger's journey on it
-# (scripts/wheel_smoke.sh --wheel). Publishing uses PyPI trusted publishing (OIDC):
-# no API token exists anywhere in this repository.
+# build -> smoke -> attest -> publish -> github-release. The smoke job installs the
+# exact wheel that would be published, in a clean runner, and runs the stranger's
+# journey on it (scripts/wheel_smoke.sh --wheel). Publishing uses PyPI trusted
+# publishing (OIDC): no API token exists anywhere in this repository.
+#
+# Supply chain (TSK-W0-02, TSK-W2-07): `sbom` writes a CycloneDX SBOM of the
+# wheel as installed against python/requirements-lock.txt (scripts/sbom.sh);
+# `attest` signs build provenance for the wheel, the sdist and the SBOM (Sigstore,
+# `gh attestation verify`); `github-release` attaches all three to the GitHub release.
 #
 # Nothing is published unless BOTH hold:
 #   * the run is a pushed tag v*.*.*  (a pre-release tag such as v0.1.0rc1 goes to
 #     TestPyPI, a final tag such as v0.1.0 goes to PyPI), and
 #   * the repository variable PUBLISH_ENABLED is exactly 'true'.
-# Pull requests and manual runs stop after smoke. Go-live steps: docs/release.md.
+# Pull requests stop after smoke and sbom; manual runs from main stop after attest
+# (the dry run of the supply-chain steps). Go-live steps: docs/release.md.
 name: release-pypi
 
 on:
@@ -25,7 +31,9 @@ on:
       - README.md
       - LICENSE
       - LICENSES/**
+      - python/requirements-lock.txt
       - scripts/wheel_smoke.sh
+      - scripts/sbom.sh
       - .github/workflows/release-pypi.yml
   workflow_dispatch:
 
@@ -46,9 +54,11 @@ jobs:
     outputs:
       channel: ${{ steps.channel.outputs.channel }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
 
@@ -83,10 +93,45 @@ jobs:
             echo "channel=testpypi" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dist
           path: dist/
+          if-no-files-found: error
+
+  sbom:
+    name: SBOM of the wheel against the pinned set (CycloneDX 1.6, TSK-W0-02)
+    # Its own job, after `dist` is uploaded: the SBOM tool and its dependencies are
+    # installed from the index, and nothing they run may touch the wheel that
+    # `attest` signs and `publish-*` uploads. Deterministic: no serial number,
+    # timestamp = commit time.
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist/
+
+      - name: Write the SBOM
+        run: |
+          python -m pip install 'cyclonedx-bom==7.4.0'
+          version=$(python -c 'import tomllib; print(tomllib.load(open("python/pyproject.toml", "rb"))["project"]["version"])')
+          mkdir -p sbom
+          bash scripts/sbom.sh "dist/neuroedge-${version}-py3-none-any.whl" "sbom/neuroedge-${version}.cdx.json"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sbom
+          path: sbom/
           if-no-files-found: error
 
   smoke:
@@ -101,13 +146,15 @@ jobs:
     steps:
       # The checkout supplies scripts/wheel_smoke.sh and README.md to compare against;
       # the journey itself runs in a temporary directory, never in the checkout.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: ${{ matrix.python }}
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
           path: dist/
@@ -115,9 +162,52 @@ jobs:
       - name: Stranger's journey on the wheel that would be published
         run: bash scripts/wheel_smoke.sh --wheel dist/neuroedge-*-py3-none-any.whl python
 
+  attest:
+    name: Build provenance for the wheel, the sdist and the SBOM (TSK-W2-07)
+    # Tags and manual runs, never pull requests (a fork has no OIDC token, and a PR
+    # build is not a release candidate). A manual run is the dry run: it signs and
+    # verifies, then stops — the publish jobs below need a tag.
+    # A manual run signs only from main: provenance names the workflow, not the
+    # branch, so a signed build of an unreviewed branch would verify like a release.
+    needs: [build, sbom, smoke]
+    if: >-
+      github.event_name == 'push'
+      || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write       # Sigstore signing certificate
+      attestations: write   # store the attestation on the repository
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist/
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: sbom
+          path: sbom/
+
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/*
+            sbom/*
+
+      - name: Every artifact verifies against this repository and workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for f in dist/* sbom/*; do
+            gh attestation verify "$f" --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-pypi.yml" \
+              --source-ref "$GITHUB_REF"
+          done
+
   publish-testpypi:
     name: Publish to TestPyPI (pre-release tags)
-    needs: [build, smoke]
+    needs: [build, smoke, attest]
     if: >-
       vars.PUBLISH_ENABLED == 'true'
       && github.event_name == 'push'
@@ -130,18 +220,18 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
           path: dist/
 
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           repository-url: https://test.pypi.org/legacy/
 
   publish-pypi:
     name: Publish to PyPI (final tags)
-    needs: [build, smoke]
+    needs: [build, smoke, attest]
     if: >-
       vars.PUBLISH_ENABLED == 'true'
       && github.event_name == 'push'
@@ -154,9 +244,48 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
           path: dist/
 
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+
+  github-release:
+    name: GitHub release with the wheel, the sdist and the SBOM (TSK-W0-02)
+    # Only after the package reached its index: the same gate as the publish jobs.
+    needs: [build, attest, publish-testpypi, publish-pypi]
+    if: >-
+      always()
+      && vars.PUBLISH_ENABLED == 'true'
+      && github.event_name == 'push'
+      && startsWith(github.ref, 'refs/tags/v')
+      && needs.attest.result == 'success'
+      && (needs.publish-pypi.result == 'success' || needs.publish-testpypi.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create the release, upload its assets
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist/
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: sbom
+          path: sbom/
+
+      - name: Create the release, or refresh its assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANNEL: ${{ needs.build.outputs.channel }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/* sbom/* --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            prerelease=()
+            if [ "$CHANNEL" = testpypi ]; then prerelease=(--prerelease); fi
+            gh release create "$GITHUB_REF_NAME" dist/* sbom/* --verify-tag --generate-notes \
+              --title "$GITHUB_REF_NAME" "${prerelease[@]}" --repo "$GITHUB_REPOSITORY"
+          fi

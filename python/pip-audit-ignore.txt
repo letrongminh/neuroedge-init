@@ -1,0 +1,12 @@
+# Known vulnerabilities that pip-audit may ignore in python/requirements-lock.txt
+# (TSK-W0-03, job `pip-audit` in .github/workflows/security.yml).
+#
+# Empty by design: the fix for a vulnerable pin is to bump it in the lock. An entry is
+# for the rare case where no fixed release exists yet, or the vulnerable code path
+# cannot be reached from neuroedge — and it is reviewed in the PR that adds it.
+#
+# One entry per line: the advisory ID (PYSEC-…, GHSA-… or CVE-…), then a comment with
+# the package, why it does not reach neuroedge, who reviewed it and when. The job
+# fails on an entry without a comment.
+#
+#   GHSA-xxxx-xxxx-xxxx  # somepkg 1.2.3: only its CLI is affected, never imported — reviewer, YYYY-MM-DD

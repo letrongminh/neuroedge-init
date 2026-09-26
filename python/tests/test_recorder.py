@@ -54,6 +54,8 @@ async def test_a_recorded_unlock_validates_and_carries_the_replay_inputs(villa, 
         "gate_facts",
         "gate_evaluation_result",
         "actuator_command",
+        "turn_latency",  # TSK-I4-03
+        "session_summary",
     ]
     by_type = {event["type"]: event["data"] for event in trace["events"]}
     assert by_type["action_requested"] == {
@@ -84,10 +86,17 @@ async def test_anonymize_hashes_raw_text_and_keeps_every_decision(villa, tmp_pat
     assert text_input == {"text": digest_text("mở cửa phòng 101")}
     assert text_input["text"].startswith("sha256:")
 
+    # Timing (TSK-I4-03) is measured, not decided: two runs differ in it, never in path.
+    timing = {"text_input", "turn_latency", "session_summary"}
+
     def decisions(trace):
-        return [(e["type"], e["data"]) for e in trace["events"] if e["type"] != "text_input"]
+        return [(e["type"], e["data"]) for e in trace["events"] if e["type"] not in timing]
+
+    def paths(trace):
+        return [e["data"]["path"] for e in trace["events"] if e["type"] == "turn_latency"]
 
     assert decisions(hidden) == decisions(plain)
+    assert paths(hidden) == paths(plain) == ["system_1"]
 
 
 async def test_unrecognised_text_is_hashed_too(villa):

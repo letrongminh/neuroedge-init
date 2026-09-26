@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import sys
-import tomllib
 
 import anyio
 import pytest
@@ -156,12 +155,12 @@ def test_an_agent_needing_a_primitive_linux_lacks_is_refused_before_any_line(roo
     home = root / "fixtures" / "agents" / "home-voice" / "agent.toml"
     with pytest.raises(BoardCapabilityError) as raised:
         SimSession.load(home, target="linux")
-    assert "sensor.read (TSK-S5-09)" in raised.value.why
     assert "audio.out (TSK-S5-08)" in raised.value.why
+    assert "sensor.read" not in raised.value.why.partition(", which")[0], "TSK-S5-09 brought it"
     assert gpio.requests == []
     result = invoke("run", "--target", "linux", "--agent", str(home), "-c", "bật đèn")
     assert result.exit_code == 1
-    assert "TSK-S5-09" in result.output
+    assert "TSK-S5-08" in result.output
 
 
 def test_ui_on_linux_exits_two(driveway, gpio):
@@ -326,29 +325,58 @@ def test_ctrl_c_while_run_c_waits_for_its_pulse_exits_130_and_drops_the_line(
     assert all(request.released for request in gpio.requests)
 
 
-def test_sensor_facts_without_sensor_read_in_requires_are_still_refused_on_linux(root, tmp_path):
-    import shutil
+@pytest.fixture
+def lm75(monkeypatch, tmp_path):
+    """A fake /sys with one lm75 at 24.5 °C, mapped to the board's `temperature` by name."""
+    import neuroedge.hal.sysfs as sysfs
 
-    agent = tmp_path / "factory"
-    shutil.copytree(root / "fixtures" / "agents" / "factory-monitor", agent)
-    toml = agent / "agent.toml"
-    toml.write_text(
-        toml.read_text(encoding="utf-8").replace(
-            '"sensor.read" = { sensors = ["temperature"] }\n', ""
-        ),
-        encoding="utf-8",
+    device = tmp_path / "sys" / "class" / "hwmon" / "hwmon3"
+    device.mkdir(parents=True)
+    (device / "name").write_text("lm75\n")
+    (device / "temp1_input").write_text("24500\n")
+    monkeypatch.setattr(sysfs, "SYSFS_ROOT", str(tmp_path / "sys"))
+    monkeypatch.setenv(linux.SENSORS_ENV, "temperature=hwmon:lm75/temp1")
+    return device
+
+
+def test_gate_facts_on_linux_are_read_from_the_kernel_sensor(root, gpio, lm75):
+    factory = root / "fixtures" / "agents" / "factory-monitor" / "agent.toml"
+    session = SimSession.load(factory, target="linux")
+    try:
+        turn = anyio.run(session.handle, "bật quạt")
+        assert turn.result is not None and not turn.result.blocked
+        reads = session.events.of_type("sensor_read")
+        assert reads and all(r["value"] == 24.5 and r["unit"] == "C" for r in reads)
+        assert {r["use"] for r in reads} == {"fact"}
+        # The gates compare heat bands; degrees are no band, so vent_off cannot pass.
+        (lm75 / "temp1_input").write_text("31000\n")
+        turn = anyio.run(session.handle, "tắt quạt")
+        assert turn.result is not None and turn.result.blocked
+        assert session.events.of_type("sensor_read")[-1]["value"] == 31.0, "every read is fresh"
+    finally:
+        session.close()
+    assert all(request.released for request in gpio.requests)
+
+
+def test_a_sensor_linux_cannot_find_is_refused_before_any_line(root, gpio, lm75, monkeypatch):
+    factory = root / "fixtures" / "agents" / "factory-monitor" / "agent.toml"
+    monkeypatch.delenv(linux.SENSORS_ENV)
+    with pytest.raises(BoardCapabilityError) as raised:
+        SimSession.load(factory, target="linux")
+    assert "labelled 'temperature'" in raised.value.why
+    assert gpio.requests == [], "no line is requested for a sensor that cannot be read"
+    result = invoke("run", "--target", "linux", "--agent", str(factory), "-c", "bật quạt")
+    assert result.exit_code == 1
+    assert "NEUROEDGE_LINUX_SENSORS" in result.output
+
+
+def test_a_linux_sensor_cannot_be_set_from_the_repl(root, gpio, lm75):
+    factory = root / "fixtures" / "agents" / "factory-monitor" / "agent.toml"
+    result = invoke(
+        "run", "--target", "linux", "--agent", str(factory), stdin=":sensor temperature low\nexit\n"
     )
-    # The check itself, on the manifest: loading the copy would register its @actions
-    # a second time in the process-wide registry.
-    from neuroedge.engine.compiler import load_agent_manifest
-    from neuroedge.sim.session import _require_linux_primitives, _sim_sensors
-
-    manifest = load_agent_manifest(toml)
-    assert "sensor.read" not in manifest.requires
-    sim_table = tomllib.loads(toml.read_text(encoding="utf-8"))["sim"]
-    _, sensor_facts = _sim_sensors(manifest, sim_table)
-    with pytest.raises(BoardCapabilityError, match=r"sensor\.read \(TSK-S5-09\)"):
-        _require_linux_primitives(manifest, sensor_facts)
+    assert result.exit_code == 0, result.output
+    assert "read from the kernel" in result.output
 
 
 def test_linux_sessions_warn_that_sim_facts_decide_for_real_lines(driveway, gpio):

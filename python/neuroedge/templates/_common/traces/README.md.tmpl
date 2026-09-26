@@ -1,0 +1,20 @@
+# Vết ghi của {{name}}
+
+Quy ước đường dẫn (FR-TRC-09). Mọi tệp ở đây là `trace.v1` JSON mà
+`neuroedge trace validate` chấp nhận.
+
+| Đường dẫn | Là gì | Sinh bằng |
+|:---|:---|:---|
+| `traces/<session_id>.json` | Một phiên đã ghi | `neuroedge record` (mặc định ghi vào đây) |
+| `traces/incidents/<session_id>.json` | Phiên cần điều tra — gate chặn sai, chân kích sai | chép phiên từ `traces/` vào đây |
+| `traces/golden/<kịch-bản>.json` | Chuỗi quyết định kỳ vọng của một kịch bản | `neuroedge record --out traces/golden/<kịch-bản>.json` |
+
+```bash
+neuroedge record --out traces/session.json              # REPL: gõ lệnh, exit để ghi
+neuroedge trace view traces/session.json --open
+cp traces/session.json traces/golden/kich-ban-1.json     # khi chuỗi quyết định đã đúng
+neuroedge replay traces/session.json --agent agent.toml --golden traces/golden/kich-ban-1.json
+```
+
+`replay` so **quyết định** (phán quyết gate, lệnh chân), không so thời gian. Vết ghi
+có chữ người dùng gõ hoặc nói; thêm `--anonymize` khi ghi để băm chữ tại nguồn.
