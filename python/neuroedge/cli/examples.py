@@ -99,6 +99,7 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
         "neuroedge run                    # REPL: type a command, :help, exit",
         "neuroedge run --ui",
         "neuroedge run --voice-file turn.wav --voice-out reply.wav   # speech: needs stt/tts tables",
+        "neuroedge run --voice-file turn.wav --target linux   # real lines; the WAV is audio.in",
     ),
     "build": (
         "neuroedge build --target sim --board sim-default",
@@ -112,6 +113,7 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
         'neuroedge record -c "mở khoá"   # writes traces/<session_id>.json',
         'neuroedge record -c "mở khoá" --out traces/session.json --anonymize',
         "neuroedge record --voice-file turn.wav --anonymize   # transcripts hashed in the trace",
+        "neuroedge record --voice-file turn.wav --target linux --out traces/voice.json",
     ),
 }
 

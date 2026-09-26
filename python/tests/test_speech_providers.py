@@ -636,8 +636,19 @@ def test_clean_transcript_keeps_words_and_refuses_what_is_not():
 
 def test_the_speech_layer_imports_no_sdk(tmp_path):
     # FR-DX-02: `pip install neuroedge` gains no dependency — urllib and wave only.
+    # numpy is in the list because the wake-word adapter needs it, but only through
+    # the `wake` extra; a plain install has none, and deepdiff (a core dependency)
+    # imports numpy only when it happens to be installed. So the test runs as such
+    # an install does: numpy is blocked from the import system.
     code = (
-        "import sys, neuroedge.perception.providers, neuroedge.cli.voice\n"
+        "import sys\n"
+        "class NoNumpy:\n"
+        "    def find_spec(self, name, path=None, target=None):\n"
+        "        if name == 'numpy' or name.startswith('numpy.'):\n"
+        "            raise ModuleNotFoundError('numpy is not installed (as on a plain install)')\n"
+        "        return None\n"
+        "sys.meta_path.insert(0, NoNumpy())\n"
+        "import neuroedge.perception.providers, neuroedge.cli.voice\n"
         "bad = sorted({m.split('.')[0] for m in sys.modules} & "
         "{'httpx', 'requests', 'openai', 'sounddevice', 'numpy', 'litellm', 'aiohttp', 'urllib3'})\n"
         "print(bad)\n"
@@ -645,4 +656,4 @@ def test_the_speech_layer_imports_no_sdk(tmp_path):
     result = subprocess.run(
         [sys.executable, "-c", code], capture_output=True, text=True, check=True, cwd=tmp_path
     )
-    assert result.stdout.strip() == "[]"
+    assert result.stdout.strip() == "[]", result.stdout + result.stderr

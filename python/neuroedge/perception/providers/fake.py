@@ -25,7 +25,7 @@ from array import array
 from collections.abc import Callable, Collection, Mapping, Sequence
 from typing import Any
 
-from ...hal.audio import MAX_REPLY_MS, rate_ok, samples_pcm
+from ...hal.audio import MAX_REPLY_MS, AudioFrame, rate_ok, samples_pcm
 from .base import AudioClip, Speech, SpeechUnavailable, Transcript
 
 MAX_MS_PER_CHAR = 1000.0
@@ -129,6 +129,29 @@ class FakeTextToSpeech:
         )
 
 
+class FakeWakeWordDetector:
+    """
+    Scripted and model-free: `frames` are the 0-based indexes of the frames whose
+    detection fires, each returning ``(word, score)``. Deterministic, so a test —
+    or a keyless trial — knows exactly which frame opens the turn. The count is
+    per detector, over every frame `detect()` was handed.
+    """
+
+    name = "fake"
+
+    def __init__(
+        self, frames: Sequence[int] = (), *, word: str = "hey neuro", score: float = 0.9
+    ) -> None:
+        self.frames = set(frames)
+        self.word = word
+        self.score = score
+        self.fed = 0
+
+    def detect(self, frame: AudioFrame) -> tuple[str, float] | None:
+        index, self.fed = self.fed, self.fed + 1
+        return (self.word, self.score) if index in self.frames else None
+
+
 def tone(ms: float, sample_rate_hz: int, hz: float = 440.0, dbfs: float = -20.0) -> bytes:
     """`ms` of a sine at `dbfs`: audible in the output WAV, the same bytes every run."""
     count = int(ms * sample_rate_hz / 1000)
@@ -171,4 +194,17 @@ def tts(config: Any) -> FakeTextToSpeech:
         ms_per_char=options.get("ms_per_char", 60.0),
         latency_ms=options.get("latency_ms", 0.0),
         fail=options.get("fail", False),
+    )
+
+
+def wake(config: Any) -> FakeWakeWordDetector:
+    """Factory for ``provider = "python:neuroedge.perception.providers.fake:wake"``."""
+    options = _options(config, {"frames": list, "word": str, "score": (int, float)})
+    frames = options.get("frames", [])
+    if not all(isinstance(i, int) and not isinstance(i, bool) and i >= 0 for i in frames):
+        raise ValueError("option 'frames' must be a list of frame indexes >= 0")
+    return FakeWakeWordDetector(
+        frames,
+        word=options.get("word", "hey neuro"),
+        score=float(options.get("score", 0.9)),
     )

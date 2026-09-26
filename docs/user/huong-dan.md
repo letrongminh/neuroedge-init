@@ -57,6 +57,10 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Mất mạng hoặc System 2 không trả lời: thiết bị nói các lệnh cục bộ còn dùng được (`offline_help`) | — (tự động) | ✅ |
 | Cho model cloud của System 1 — Jev (`typesafe/jev-1.13` qua OpenRouter, Q-4) — quyết định một tiêu chí gate từ **lời người nói**. Chỉ các tiêu chí bạn liệt kê, và chỉ tiêu chí mà lời nói tự nó xác lập được (vd người dùng muốn gì). **Không bao giờ** giao tiêu chí danh tính, quyền hay đặt phòng (`guest_authenticated`, `staff_co_authorized`, `room_matches`): đó là dữ kiện phiên từ hệ thống quản lý; dữ kiện trong ngữ cảnh luôn thắng model, còn một dữ kiện vắng mặt sẽ bị quyết từ lời người nói. Model không trả lời được (mất mạng, hết giờ, trả sai hợp đồng, dưới ngưỡng) thì ngữ pháp lệnh quyết như cũ, vết ghi có `system_one_fallback` | `[system_one]` trong `agent.toml`: `model = "typesafe/jev-1.13"`, `api_key_env = "OPENROUTER_API_KEY"`, `criteria = ["…"]`, tuỳ chọn `threshold` (0.8, tối thiểu 0.5), `timeout_ms` (1500), `api_base` (https, hoặc máy này) · thử với key thật: `python scripts/live_jev_smoke.py` | ✅ không cần extra. Build từ chối: tiêu chí agent tự tính (`[sim.facts]`, `[sim.slot_facts]`, `[sim.sensor_facts]`), tiêu chí System One API không hỏi được, và gate có `budget.p95_latency_ms` < `timeout_ms` + 50 |
 | Nói với agent trên `sim` bằng tệp WAV (16 kHz mono): STT/TTS qua provider chuẩn OpenAI audio — OpenAI, Groq, faster-whisper, Kokoro… đổi bằng `base_url`; bản chép lời qua gate như lệnh gõ, nói chen thì loa dừng và lệnh chưa giao bị hủy | `[stt]` / `[tts]` trong `agent.toml` (key ở biến môi trường, `api_key_env`) · `neuroedge run --voice-file x.wav [--voice-out tra-loi.wav]` · `record --voice-file … --anonymize` | ✅ cần key STT hoặc server cục bộ; thử không key: provider giả `python:neuroedge.perception.providers.fake:stt` |
+| Nói với agent trên `linux` bằng tệp WAV — chân là line GPIO thật, tệp được đưa về rate của bo mạch (48 kHz), không cần micro và không cần `sounddevice` | `neuroedge run --voice-file x.wav --target linux` · `record --voice-file x.wav --target linux --out traces/voice.json` (WAV: 16-bit PCM, 1–2 kênh, 8–96 kHz) | ✅ cần line GPIO + `neuroedge[linux]`; chạy trên gpio-sim trong CI (job `linux-hal`) |
+| Đánh thức thiết bị bằng **từ khoá của bạn** thay vì để VAD mở lượt theo mọi tiếng nói: cắm mô hình wake-word của bạn (NeuroEdge **không giao và không tải mô hình nào**; giấy phép mô hình của openWakeWord chưa được xác lập/không thương mại, Q-45) | `[wake_word]` trong `agent.toml`: `model`, `melspectrogram`, `embedding` — **cả ba tệp .onnx là của bạn** (đường dẫn tương đối tính từ thư mục agent; build chỉ kiểm hình dạng bảng, phiên thoại kiểm tệp trước khi giữ line nào), `threshold` (0,5), `word` (tuỳ chọn) · `pip install 'neuroedge[wake]'` cho `provider = "openwakeword"` (cần openwakeword ≥ 0.6.0 + onnxruntime), hoặc adapter `python:pkg.mod:factory` | ✅ chạy trên `sim`/`linux` với tệp WAV; mô hình do bạn huấn luyện/được phép dùng và bạn chịu trách nhiệm giấy phép; bộ phát hiện lỗi ⇒ `wake_word_unavailable`, không lượt nào mở, phiên vẫn chạy |
+| STT chính hỏng thì đổi sang endpoint cục bộ (faster-whisper / speaches trên máy) — bản chép lời của fallback đi đúng đường lệnh cũ, vết ghi có `stt_fallback`; chỉ cả hai hỏng mới có câu offline (Q-14) | `[stt.fallback]` cạnh `[stt]`: `base_url = "http://localhost:8000/v1"`, `model`, `timeout_s` (không cần key với server cục bộ) · `neuroedge run --voice-file x.wav` | ✅ cần server cục bộ chạy; endpoint khác máy qua `http://` mà có key bị build từ chối |
+| Micro và loa thật trên `linux` qua PipeWire đã khử vang (Q-22): `audio.in` đọc nút `neuroedge.ec.source`, `audio.out` phát vào `neuroedge.ec.sink` | `pip install 'neuroedge[audio]'` · `NEUROEDGE_LINUX_AUDIO=live` · sao chép `pipewire/neuroedge-echo-cancel.conf` (trong wheel: `neuroedge.paths.echo_cancel_conf()`) vào `~/.config/pipewire/pipewire.conf.d/` rồi `systemctl restart --user pipewire.service`; ghim micro HAT bằng dòng `target.object` duy nhất trong tệp — [`simulation_coverage.md`](../spec/simulation_coverage.md) §6.1 | 🟡 nguyên thủy HAL đã có, chạy thử được; **chưa kiểm trên phần cứng** (PortAudio/ALSA ↔ tên nút PipeWire, micro/loa HAT: nightly TSK-S4-05); phiên thoại thời gian thực: `TODOS.md` #45 |
 | Nối model chưa theo chuẩn OpenAI bằng adapter tự viết | `provider = "python:pkg.mod:factory"` trong `[system_two]` (trả provider) hoặc `[system_one]` (trả `FactSource`, câu trả lời vẫn bị kiểm miền giá trị và ngưỡng) | ✅ |
 | Người xác nhận khi gate hỏi lại (`ask`): gõ `có` / `không`, hoặc nút Đồng ý / Huỷ trên `run --ui` | `neuroedge run` · `neuroedge run --ui` | ✅ gate phải khai `confirms` |
 | Ghi một phiên ra vết ghi (có chế độ ẩn danh) | `neuroedge record` | ✅ |
@@ -66,7 +70,7 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Kiểm cùng quyết định trên `sim` và `linux` (A2) | `neuroedge verify --targets sim,linux` | ✅ cần line GPIO |
 | Ghi vết ghi từ firmware `esp32s3` qua UART | `neuroedge record --target esp32s3 --port <log · tcp://… · /dev/tty…>` | ✅ trên QEMU · bo mạch ⏳ |
 | Kiểm cùng quyết định trên `esp32s3`: firmware replay các vết ghi chuẩn mực | `neuroedge verify --targets esp32s3 --port …` | ✅ trên QEMU · bo mạch ⏳ |
-| Phiên gõ chữ tương tác trên `linux`: chân là line GPIO thật | `neuroedge run` / `record` / `mcp serve --target linux` | ✅ cần line GPIO + `neuroedge[linux]`; agent được cần `digital.out`, `sensor.read`, `display` (chưa âm thanh) |
+| Phiên gõ chữ tương tác trên `linux`: chân là line GPIO thật | `neuroedge run` / `record` / `mcp serve --target linux` | ✅ cần line GPIO + `neuroedge[linux]`; agent được cần cả năm nguyên thủy, gồm `audio.in` / `audio.out` (âm thanh: hai hàng dưới) |
 | Đọc cảm biến thật trên `linux` (hwmon, IIO) và vẽ lên màn hình (`/dev/fb*`, hoặc trong bộ nhớ) | `NEUROEDGE_LINUX_SENSORS="temperature=hwmon:lm75/temp1"` · `NEUROEDGE_LINUX_DISPLAY=/dev/fb0` (hoặc `memory`) — [`simulation_coverage.md`](../spec/simulation_coverage.md) §2 (`linux`) | ✅ trên hwmon ảo (`i2c-stub` + `lm75`) và framebuffer ảo (`vfb`, `vkms`) trong CI · Pi ⏳ |
 | Hành trình 10 phút (TTFV) | — | ⏳ I1 |
 
@@ -76,14 +80,19 @@ Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.
 
 Nói thẳng để bạn không mất thời gian:
 
-- `neuroedge run` / `record` / `mcp serve` mới gõ chữ trên terminal; trên `sim`, `run` / `record` nhận thêm
-  tệp WAV (`--voice-file`). Chưa có micro, loa thật, wake-word: một lượt mở bằng VAD. `--voice-file` trên
-  `linux` hoặc với `--ui` **thoát mã 2** (TSK-S5-08). Trên `linux` agent chưa được cần âm thanh (lệnh báo
-  lỗi, mã 1) và chưa có trang `--ui` (**thoát mã 2**). Không có "PASS" giả (bất biến 10,
-  `CHANGELOG.md` §3.3).
+- `neuroedge run` / `record` / `mcp serve` mới gõ chữ trên terminal; trên `sim` và `linux`, `run` /
+  `record` nhận thêm tệp WAV (`--voice-file`). Không có `[wake_word]` thì một lượt mở bằng VAD; có
+  `[wake_word]` thì mở bằng từ khoá — nhưng **mô hình là của bạn**: không mô hình nào được giao kèm
+  hay tải về (Q-45). `--voice-file` với `--ui` **thoát mã 2**. Micro và loa thật trên `linux` mới ở
+  mức nguyên thủy HAL (chưa có phiên thoại thời gian thực chạy song song provider — `TODOS.md` #45),
+  và **chưa chạy trên Pi thật** (nightly TSK-S4-05). Trên `linux` chưa có trang `--ui` (**thoát mã 2**).
+  Không có "PASS" giả (bất biến 10, `CHANGELOG.md` §3.3).
 - `--target linux` cần line GPIO thật hoặc ảo (`scripts/setup_gpio_sim.sh`) và
-  `pip install 'neuroedge[linux]'`; thiếu thì lệnh báo lỗi, không giả vờ chạy.
-- Trên `linux` có `digital.out`, `sensor.read`, `display`; âm thanh chưa hiện thực. Gate chưa so trực
+  `pip install 'neuroedge[linux]'`; micro/loa thật cần thêm `pip install 'neuroedge[audio]'` và
+  `NEUROEDGE_LINUX_AUDIO=live`. Thiếu thì lệnh báo lỗi, không giả vờ chạy.
+- Trên `linux` đủ năm nguyên thủy: `digital.out`, `sensor.read`, `display`, `audio.in`, `audio.out`.
+  Agent cần `motion`/`door_contact` của `linux-rpi5` vẫn bị từ chối trước khi xin line — chúng là đầu
+  vào GPIO, không phải hwmon/IIO. Gate chưa so trực
   tiếp được số đọc (`evaluate.type: numeric`, `TODOS.md` #30): agent đổi số đọc thành dữ kiện gate ở
   `[sim.sensor_facts]` — ngưỡng `gte`/`lte`, hoặc dải `bands` như `factory-monitor` — như nhau trên
   `sim` và `linux`. Màn hình `/dev/fb*` chỉ nhận khung điểm ảnh; khung chữ cần `display = memory`.

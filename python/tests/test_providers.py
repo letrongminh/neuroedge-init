@@ -637,9 +637,29 @@ def test_the_script_allows_exactly_what_q11_names(licences, root):
         if line.startswith("| **Q-11** |")
     )
     policy = q11[q11.index("Chính sách phụ thuộc bắc cầu") :]
-    for family in ("MIT", "BSD", "Apache-2.0", "ISC", "PSF", "CNRI-Python", "MPL-2.0"):
+    for family in (
+        "MIT",
+        "BSD",
+        "Apache-2.0",
+        "ISC",
+        "PSF",
+        "CNRI-Python",
+        "MPL-2.0",
+        "Zlib",
+        "CC0-1.0",
+    ):
         assert family in policy, family
-    for family in ("MIT", "BSD-3-Clause", "Apache-2.0", "ISC", "PSF-2.0", "CNRI-Python", "MPL-2.0"):
+    for family in (
+        "MIT",
+        "BSD-3-Clause",
+        "Apache-2.0",
+        "ISC",
+        "PSF-2.0",
+        "CNRI-Python",
+        "MPL-2.0",
+        "Zlib",
+        "CC0-1.0",
+    ):
         assert licences.ALLOWED_RE.match(family), family
 
 

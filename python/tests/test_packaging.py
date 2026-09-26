@@ -12,6 +12,7 @@ import tomllib
 from pathlib import Path
 
 from neuroedge.engine import firmware
+from neuroedge.paths import echo_cancel_conf
 
 
 def _project(root) -> dict:
@@ -75,6 +76,30 @@ def test_the_wheel_carries_exactly_the_firmware_sources_a_build_copies(root):
     for pattern in firmware.SOURCES:
         assert ".." not in pattern and not pattern.startswith("components/*"), pattern
         assert pattern.startswith(("main/", "components/ne_")) or "/" not in pattern, pattern
+
+
+def test_the_wheel_ships_the_pipewire_echo_cancel_drop_in(root):
+    """TSK-S5-08, Q-22: the `linux` drop-in travels with the other language-neutral assets."""
+    tree = ast.parse((root / "python" / "hatch_build.py").read_text("utf-8"))
+    assets = next(
+        ast.literal_eval(node.value)
+        for node in tree.body
+        if isinstance(node, ast.Assign)
+        and isinstance(node.targets[0], ast.Name)
+        and node.targets[0].id == "ASSETS"
+    )
+    assert "pipewire" in assets
+    conf = echo_cancel_conf()
+    assert conf.is_file() and conf.name == "neuroedge-echo-cancel.conf"
+    text = conf.read_text("utf-8")
+    # §6.1 of docs/spec/simulation_coverage.md: the four nodes, and the AEC library.
+    for name in (
+        "libpipewire-module-echo-cancel",
+        'library.name = "aec/libspa-aec-webrtc"',
+        'node.name = "neuroedge.ec.source"',
+        'node.name = "neuroedge.ec.sink"',
+    ):
+        assert name in text, name
 
 
 def _hook_filter(root):

@@ -14,7 +14,9 @@ PCM audio for `audio.in` / `audio.out` on a host (TSK-S3-13).
 
 Only the standard library (`wave`, `array`), so `pip install neuroedge` stays as
 it is (FR-DX-02). `linux` brings the same two roles on `sounddevice` (TSK-S5-08):
-a source of `AudioFrame`s, and an output with `play()` / `stop()`.
+a source of `AudioFrame`s, and an output device — `hal/linux.py` owns the live
+backend, this module the board-rate conversions and `open_audio_file`, the file
+backend's tolerant reader (a device resamples; the reference board does not).
 """
 
 from __future__ import annotations
@@ -396,6 +398,67 @@ class Speaker:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(wav_bytes(self.render(), self.sample_rate_hz))
         return path
+
+
+def open_audio_file(
+    path: str | Path, *, sample_rate_hz: int, called_from: str, max_channels: int = 2
+) -> WavSource:
+    """
+    A WAV file as `audio.in` for a board whose device converts sample rates — the
+    `linux` file backend (TSK-S5-08). 16-bit PCM, one or two channels, a rate in
+    `MIN_RATE_HZ`–`MAX_RATE_HZ`; turned into mono at the board's rate with the same
+    downmix and resample a TTS reply gets (`to_mono`, `resample`). `sim` keeps the
+    strict `WavSource.open`: its reference board has no resampler, so a file is
+    taken only exactly as the board takes it.
+    """
+    path = Path(path)
+    where = f"{called_from} -> audio.in {path}"
+    if not rate_ok(sample_rate_hz):
+        raise BoardCapabilityError(
+            where=where,
+            why=f"the board declares audio.in at {sample_rate_hz!r} Hz, outside {_rate_range()}",
+            how="fix sample_rate_hz of audio_in in the board profile (the reference board: 16000)",
+        )
+    convert = f"convert it: ffmpeg -i <in> -ar {sample_rate_hz} -ac 1 -c:a pcm_s16le {path.name}"
+    try:
+        data = path.read_bytes()
+    except FileNotFoundError as exc:
+        raise BoardCapabilityError(
+            where=where, why="no such file", how="pass the path of a .wav file"
+        ) from exc
+    except OSError as exc:
+        raise BoardCapabilityError(
+            where=where,
+            why=f"cannot read the file ({exc.strerror or exc})",
+            how="check the path",
+        ) from exc
+    try:
+        pcm, rate, channels, width = read_wav_bytes(data)
+    except ValueError as exc:
+        raise BoardCapabilityError(
+            where=where, why=f"not a PCM WAV file ({exc})", how=convert
+        ) from exc
+    if width != SAMPLE_WIDTH:
+        raise BoardCapabilityError(
+            where=where,
+            why=f"the file is {8 * width}-bit PCM; audio.in takes 16-bit",
+            how=convert,
+        )
+    if channels > max_channels:
+        raise BoardCapabilityError(
+            where=where,
+            why=f"the file has {channels} channels; audio.in takes at most {max_channels}",
+            how=convert,
+        )
+    length_ms = duration_ms(pcm, rate)
+    if length_ms > MAX_FILE_S * 1000:
+        raise BoardCapabilityError(
+            where=where,
+            why=f"the file is {length_ms / 1000:.0f} s long; a voice file is read whole, up to "
+            f"{MAX_FILE_S} s",
+            how="cut it into shorter files",
+        )
+    return WavSource(path, resample(to_mono(pcm, channels), rate, sample_rate_hz), sample_rate_hz)
 
 
 def wav_bytes(pcm: bytes, sample_rate_hz: int) -> bytes:

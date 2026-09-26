@@ -151,16 +151,19 @@ def test_an_agent_that_does_not_fit_the_linux_board_fails_the_build_check(root, 
     assert gpio.requests == [], "no line is requested for an agent that does not build"
 
 
-def test_an_agent_needing_a_primitive_linux_lacks_is_refused_before_any_line(root, gpio):
+def test_audio_is_no_longer_missing_and_an_unreadable_sensor_still_refuses(root, gpio):
+    # TSK-S5-08 brought audio.in/audio.out to linux; `motion` of home-voice is a GPIO
+    # input, which `linux` does not read as hwmon/IIO, so the session is refused before
+    # any line — and nothing blames audio any more.
     home = root / "fixtures" / "agents" / "home-voice" / "agent.toml"
     with pytest.raises(BoardCapabilityError) as raised:
         SimSession.load(home, target="linux")
-    assert "audio.out (TSK-S5-08)" in raised.value.why
-    assert "sensor.read" not in raised.value.why.partition(", which")[0], "TSK-S5-09 brought it"
+    assert "labelled 'motion'" in raised.value.why and "Q-16" in raised.value.why
+    assert "TSK-S5-08" not in raised.value.why, "audio.* is implemented"
     assert gpio.requests == []
     result = invoke("run", "--target", "linux", "--agent", str(home), "-c", "bật đèn")
     assert result.exit_code == 1
-    assert "TSK-S5-08" in result.output
+    assert "NEUROEDGE_LINUX_SENSORS" in result.output
 
 
 def test_ui_on_linux_exits_two(driveway, gpio):

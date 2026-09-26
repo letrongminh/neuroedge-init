@@ -172,6 +172,16 @@ class VoiceStateMachine:
         if self.state is VoiceState.LISTENING:
             self._end_of_turn_at = self.clock() + self.params.end_of_turn_silence_ms  # T02
 
+    def think_again(self, ms: float) -> None:
+        """
+        The turn is still THINKING, waiting on a new source (the `[stt.fallback]`
+        endpoint after the primary failed): arm a fresh deadline of `ms`, so the
+        fallback cannot hold the turn for its whole transport bound. A turn that is
+        no longer thinking is left alone — it was replaced or concluded meanwhile.
+        """
+        if self.state is VoiceState.THINKING:
+            self._think_until = self.clock() + ms
+
     @property
     def transcript_taken(self) -> bool:
         """The current thinking turn already has its transcript."""
