@@ -297,7 +297,8 @@ void ne_ui_show_confirm(ne_ui_t *ui, const ne_ui_confirm_state_t *state)
         return;
     }
     s = ne_ui_strings(ui->language);
-    truncate_utf8(action, sizeof(action), state->action, NE_UI_TEXT_MAX);
+    /* 32 bytes keeps the chip inside the panel even at ~8 px per ASCII character. */
+    truncate_utf8(action, sizeof(action), state->action, 32);
     truncate_utf8(message, sizeof(message), state->message, NE_UI_TEXT_MAX);
     truncate_utf8(fallback, sizeof(fallback), state->fallback, NE_UI_TEXT_MAX);
     add_title(ui, s->confirm_title, C_WARN);
@@ -348,6 +349,7 @@ void ne_ui_show_verdict(ne_ui_t *ui, const ne_ui_verdict_state_t *state)
 void ne_ui_show_degraded(ne_ui_t *ui, const ne_ui_degraded_state_t *state)
 {
     const ne_ui_strings_t *s;
+    lv_obj_t *box;
     int32_t y = BODY_Y - 6;
     size_t i;
     if (!ready(ui) || state == NULL) {
@@ -373,9 +375,15 @@ void ne_ui_show_degraded(ne_ui_t *ui, const ne_ui_degraded_state_t *state)
     }
     lv_obj_set_pos(add_label(ui->root, s->degraded_commands, &ne_font_12, C_MUTED, CONTENT_W, false),
                    MARGIN, 150);
-    for (i = 0; i < state->command_count && i < 3; i++) {
-        add_badge(ui->root, state->commands[i], MARGIN + (int32_t)i * 96, 172, &ne_font_12, C_SURFACE,
-                  C_TEXT);
+    /* One command per line in a scroll region: a long name is elided (DOTS) at the
+     * panel width, and more than three commands scroll instead of leaving the panel. */
+    box = add_scroll_box(ui->root, MARGIN, 166, CONTENT_W, 58);
+    for (i = 0; state->commands != NULL && i < state->command_count; i++) {
+        char command[NE_UI_TEXT_MAX + 4];
+        lv_obj_t *line;
+        truncate_utf8(command, sizeof(command), state->commands[i], NE_UI_TEXT_MAX);
+        line = add_label(box, command, &ne_font_12, C_TEXT, CONTENT_W, false);
+        lv_obj_set_pos(line, 0, (int32_t)i * 19);
     }
 }
 
@@ -393,18 +401,24 @@ void ne_ui_show_sensor(ne_ui_t *ui, const ne_ui_sensor_state_t *state)
         char name[NE_UI_TEXT_MAX + 4];
         char value[NE_UI_TEXT_MAX + 4];
         lv_obj_t *value_label;
+        char unit[64];
+        char band[64];
         int32_t y = 54 + (int32_t)i * 46;
         truncate_utf8(name, sizeof(name), reading->name, 64);
         truncate_utf8(value, sizeof(value), reading->value, 32);
+        truncate_utf8(unit, sizeof(unit), reading->unit, 12);
+        truncate_utf8(band, sizeof(band), reading->band, 20);
         lv_obj_set_pos(add_label(ui->root, name, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN, y);
         value_label = add_label(ui->root, value, &ne_font_22, C_TEXT, 0, false);
         lv_obj_set_pos(value_label, MARGIN, y + 16);
         if (reading->unit != NULL) {
-            lv_obj_t *unit = add_label(ui->root, reading->unit, &ne_font_12, C_MUTED, 0, false);
-            lv_obj_align_to(unit, value_label, LV_ALIGN_OUT_RIGHT_MID, 6, 0);
+            lv_obj_t *unit_label = add_label(ui->root, unit, &ne_font_12, C_MUTED, 0, false);
+            lv_obj_align_to(unit_label, value_label, LV_ALIGN_OUT_RIGHT_MID, 6, 0);
         }
         if (reading->band != NULL) {
-            add_badge(ui->root, reading->band, 208, y + 16, &ne_font_12, C_SURFACE, C_TEXT);
+            lv_obj_t *badge = add_badge(ui->root, band, 0, 0, &ne_font_12, C_SURFACE, C_TEXT);
+            /* Right-aligned: a long band name grows left, never past the edge. */
+            lv_obj_align(badge, LV_ALIGN_TOP_RIGHT, -MARGIN, y + 16);
         }
     }
 }
