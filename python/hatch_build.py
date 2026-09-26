@@ -47,6 +47,8 @@ FIRMWARE_SOURCES = (
     "partitions.csv",
     "sdkconfig.defaults",
     "sdkconfig.qemu",
+    "sdkconfig.ota",
+    "sdkconfig.qemu_ota",
     "main/CMakeLists.txt",
     "main/Kconfig.projbuild",
     "main/*.c",
@@ -59,6 +61,10 @@ FIRMWARE_SOURCES = (
     "components/ne_trace/CMakeLists.txt",
     "components/ne_trace/include/*.h",
     "components/ne_trace/src/*.c",
+    "components/ne_ota/CMakeLists.txt",
+    "components/ne_ota/Kconfig",
+    "components/ne_ota/include/*.h",
+    "components/ne_ota/src/*.c",
 )
 # Never shipped from any asset: what building in place leaves behind — an agent's
 # `neuroedge build` (build/, its esp32s3/ project) or `idf.py` inside fixtures/agents/<name>/

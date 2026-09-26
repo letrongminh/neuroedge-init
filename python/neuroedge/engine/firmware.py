@@ -59,6 +59,8 @@ SOURCES = (
     "partitions.csv",
     "sdkconfig.defaults",
     "sdkconfig.qemu",
+    "sdkconfig.ota",
+    "sdkconfig.qemu_ota",
     "main/CMakeLists.txt",
     "main/Kconfig.projbuild",
     "main/*.c",
@@ -71,6 +73,10 @@ SOURCES = (
     "components/ne_trace/CMakeLists.txt",
     "components/ne_trace/include/*.h",
     "components/ne_trace/src/*.c",
+    "components/ne_ota/CMakeLists.txt",
+    "components/ne_ota/Kconfig",
+    "components/ne_ota/include/*.h",
+    "components/ne_ota/src/*.c",
 )
 # The files of the generated component, whatever the agent (gate keys are C identifiers).
 COMPONENT_FILES = (

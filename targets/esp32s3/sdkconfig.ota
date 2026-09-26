@@ -1,0 +1,39 @@
+# OTA layer for a board build (FR-OTA-01..04, TSK-S6-01/02/04), layered on
+# sdkconfig.defaults:
+#
+#   idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.ota" set-target esp32s3
+#   idf.py build
+#
+# The app is signed with an RSA-3072 key in Secure Boot v2 format. The key stays
+# outside the repository: the build reads it where CONFIG_SECURE_BOOT_SIGNING_KEY
+# points (relative to the project directory; default secure_boot_signing_key.pem,
+# made with `idf.py secure-generate-signing-key`). The running app's key verifies
+# every update — CONFIG_SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT, without Secure
+# Boot, which is out of scope (TSK-S6-05). Set the update URL with
+# `idf.py menuconfig` (NeuroEdge OTA) or in NVS (namespace ne_ota, key url).
+# Procedure and threat model: docs/user/nap-firmware.md §6.
+
+CONFIG_NEUROEDGE_OTA=y
+CONFIG_NEUROEDGE_OTA_URL=""
+
+# A new image boots as PENDING_VERIFY; main.c marks it valid only after the gate
+# self-test, and marks it invalid — rebooting into the previous app — when the
+# self-test fails (FR-OTA-01/02).
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
+# esp_https_ota writes and verifies the image on the calling task's stack; the
+# default 3584 bytes is not enough (measured: a stack overflow in `main` while
+# image verification mapped a segment).
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# Verify the signature of an image before it is switched to; the public key
+# comes from the running app, so both images must be signed with the same key.
+CONFIG_SECURE_SIGNED_APPS_NO_SECURE_BOOT=y
+CONFIG_SECURE_SIGNED_APPS_RSA_SCHEME=y
+CONFIG_SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT=y
+CONFIG_SECURE_BOOT_BUILD_SIGNED_BINARIES=y
+
+# FR-OTA-04: any open HTTP endpoint, no NeuroEdge service. The signature is the
+# integrity check; TLS is not required for integrity (it would add
+# confidentiality only).
+CONFIG_ESP_HTTPS_OTA_ALLOW_HTTP=y
