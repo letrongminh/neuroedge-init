@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="440" font-family="sans-serif">
+<rect width="960" height="440" fill="#ffffff"/>
+<text x="480" y="30" text-anchor="middle" font-size="20" font-weight="bold">E-07 · Target Equivalence Matrix (5 primitives × 3 tier-1 targets)</text>
+<g font-size="12">
+<rect x="220" y="60" width="170" height="40" fill="#f1f3f4" stroke="#555"/><text x="305" y="85" text-anchor="middle" font-weight="bold">sim</text>
+<rect x="400" y="60" width="170" height="40" fill="#f1f3f4" stroke="#555"/><text x="485" y="85" text-anchor="middle" font-weight="bold">linux</text>
+<rect x="580" y="60" width="170" height="40" fill="#f1f3f4" stroke="#555"/><text x="665" y="85" text-anchor="middle" font-weight="bold">esp32s3</text>
+<rect x="30" y="110" width="180" height="40" fill="#f1f3f4" stroke="#555"/><text x="120" y="135" text-anchor="middle">audio.in/out</text>
+<rect x="220" y="110" width="170" height="40" fill="#ceead6" stroke="#188038"/><text x="305" y="135" text-anchor="middle">typed text</text>
+<rect x="400" y="110" width="170" height="40" fill="#ceead6" stroke="#188038"/><text x="485" y="135" text-anchor="middle">PipeWire/AEC</text>
+<rect x="580" y="110" width="170" height="40" fill="#ceead6" stroke="#188038"/><text x="665" y="135" text-anchor="middle">I2S ES7210/31</text>
+<rect x="30" y="160" width="180" height="40" fill="#f1f3f4" stroke="#555"/><text x="120" y="185" text-anchor="middle">digital.out</text>
+<rect x="220" y="160" width="170" height="40" fill="#ceead6" stroke="#188038"/><text x="305" y="185" text-anchor="middle">SimHAL + cancel</text>
+<rect x="400" y="160" width="170" height="40" fill="#ceead6" stroke="#188038"/><text x="485" y="185" text-anchor="middle">libgpiod v2</text>
+<rect x="580" y="160" width="170" height="40" fill="#feefc3" stroke="#e8930c"/><text x="665" y="185" text-anchor="middle">planned TSK-S4-01</text>
+<rect x="30" y="210" width="180" height="40" fill="#f1f3f4" stroke="#555"/><text x="120" y="235" text-anchor="middle">sensor.read</text>
+<rect x="220" y="210" width="170" height="40" fill="#ceead6" stroke="#188038"/><text x="305" y="235" text-anchor="middle">[sim.sensors]</text>
+<rect x="400" y="210" width="170" height="40" fill="#ceead6" stroke="#188038"/><text x="485" y="235" text-anchor="middle">hwmon / IIO</text>
+<rect x="580" y="210" width="170" height="40" fill="#feefc3" stroke="#e8930c"/><text x="665" y="235" text-anchor="middle">planned TSK-S4-01</text>
+<rect x="30" y="260" width="180" height="40" fill="#f1f3f4" stroke="#555"/><text x="120" y="285" text-anchor="middle">display</text>
+<rect x="220" y="260" width="170" height="40" fill="#ceead6" stroke="#188038"/><text x="305" y="285" text-anchor="middle">make_frame</text>
+<rect x="400" y="260" width="170" height="40" fill="#ceead6" stroke="#188038"/><text x="485" y="285" text-anchor="middle">memory · /dev/fbN</text>
+<rect x="580" y="260" width="170" height="40" fill="#feefc3" stroke="#e8930c"/><text x="665" y="285" text-anchor="middle">LVGL planned</text>
+<rect x="30" y="310" width="180" height="40" fill="#f1f3f4" stroke="#555"/><text x="120" y="335" text-anchor="middle">gate verdict</text>
+<rect x="220" y="310" width="530" height="40" fill="#dbeafe" stroke="#1a73e8"/><text x="485" y="335" text-anchor="middle">identical via verify 100% · walker C ≡ engine host · QEMU + nightly on real boards</text>
+<text x="480" y="395" text-anchor="middle" font-size="12" fill="#555">Green = done · amber = planned · same logical pin names on all boards (KL-2) · Source: E-07.excalidraw</text>
+</g></svg>

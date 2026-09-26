@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="440" font-family="sans-serif">
+<rect width="960" height="440" fill="#ffffff"/>
+<text x="480" y="30" text-anchor="middle" font-size="20" font-weight="bold">E-06 · Trace Lifecycle: record → replay → verify → golden</text>
+<g font-size="13">
+<rect x="30" y="100" width="180" height="90" rx="10" fill="#e8f4ff" stroke="#1a73e8"/><text x="120" y="126" text-anchor="middle" font-weight="bold">1 · record</text><text x="120" y="146" text-anchor="middle" font-size="12">EventLog.emit</text><text x="120" y="164" text-anchor="middle" font-size="12">+ anonymize opt</text>
+<rect x="240" y="100" width="180" height="90" rx="10" fill="#e8f4ff" stroke="#1a73e8"/><text x="330" y="126" text-anchor="middle" font-weight="bold">2 · validate</text><text x="330" y="146" text-anchor="middle" font-size="12">trace.v1 schema</text><text x="330" y="164" text-anchor="middle" font-size="12">trace validate</text>
+<rect x="450" y="100" width="180" height="90" rx="10" fill="#dbeafe" stroke="#1a73e8"/><text x="540" y="126" text-anchor="middle" font-weight="bold">3 · replay</text><text x="540" y="146" text-anchor="middle" font-size="12">recompute verdict</text><text x="540" y="164" text-anchor="middle" font-size="12">+ pins on live HAL</text>
+<rect x="660" y="100" width="180" height="90" rx="10" fill="#dbeafe" stroke="#1a73e8"/><text x="750" y="126" text-anchor="middle" font-weight="bold">4 · golden</text><text x="750" y="146" text-anchor="middle" font-size="12">verdicts + pins</text><text x="750" y="164" text-anchor="middle" font-size="12">timing ignored</text>
+<rect x="240" y="240" width="390" height="80" rx="10" fill="#e9f9ee" stroke="#188038"/><text x="435" y="266" text-anchor="middle" font-weight="bold">verify --targets sim,linux,esp32s3 → 100% (tier 1)</text><text x="435" y="288" text-anchor="middle" font-size="12">drift ⇒ SafetyRegressionError (NE4002) · 0 artifacts ⇒ NE4004</text>
+<rect x="660" y="240" width="180" height="80" rx="10" fill="#fff4e5" stroke="#e8930c"/><text x="750" y="266" text-anchor="middle" font-weight="bold">view / export</text><text x="750" y="288" text-anchor="middle" font-size="12">HTML · Perfetto</text>
+<g stroke="#1a73e8" stroke-width="2"><line x1="210" y1="145" x2="238" y2="145"/><line x1="420" y1="145" x2="448" y2="145"/><line x1="630" y1="145" x2="658" y2="145"/><line x1="750" y1="190" x2="750" y2="238"/><line x1="630" y1="280" x2="540" y2="190"/></g>
+<text x="480" y="370" text-anchor="middle" font-size="12" fill="#555">One language for field diagnosis and CI · device traces arrive via UART NE1 · Source: E-06.excalidraw</text>
+</g></svg>

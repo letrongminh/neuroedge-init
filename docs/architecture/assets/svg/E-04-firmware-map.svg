@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" font-family="sans-serif">
+<rect width="960" height="520" fill="#ffffff"/>
+<text x="480" y="30" text-anchor="middle" font-size="20" font-weight="bold">E-04 · ESP32-S3 Firmware Map (C4 L3)</text>
+<g font-size="13">
+<rect x="30" y="70" width="440" height="120" rx="12" fill="#e9f9ee" stroke="#188038" stroke-width="2"/><text x="250" y="96" text-anchor="middle" font-weight="bold">components/ne_gate (C99, no heap)</text>
+<rect x="50" y="110" width="190" height="60" rx="8" fill="#ceead6" stroke="#188038"/><text x="145" y="132" text-anchor="middle" font-weight="bold">ne_walker</text><text x="145" y="150" text-anchor="middle" font-size="12">ne_tree_load/evaluate</text>
+<rect x="260" y="110" width="190" height="60" rx="8" fill="#ceead6" stroke="#188038"/><text x="355" y="132" text-anchor="middle" font-weight="bold">ne_token</text><text x="355" y="150" text-anchor="middle" font-size="12">ledger · 4 slots · TTL</text>
+<rect x="500" y="70" width="430" height="120" rx="12" fill="#e9f9ee" stroke="#188038" stroke-width="2"/><text x="715" y="96" text-anchor="middle" font-weight="bold">components/ne_trace</text>
+<rect x="520" y="110" width="390" height="60" rx="8" fill="#ceead6" stroke="#188038"/><text x="715" y="132" text-anchor="middle" font-weight="bold">NE1 UART lines · ≤512 B · device_info/trace_end framing</text><text x="715" y="150" text-anchor="middle" font-size="12">prefix "NE1 " + one trace.v1 event as JSON</text>
+<rect x="30" y="210" width="900" height="150" rx="12" fill="#e8f4ff" stroke="#1a73e8" stroke-width="2"/><text x="480" y="236" text-anchor="middle" font-weight="bold">main app (boot order)</text>
+<g font-size="12">
+<rect x="50" y="250" width="150" height="90" rx="8" fill="#dbeafe" stroke="#1a73e8"/><text x="125" y="272" text-anchor="middle" font-weight="bold">1 · memory_probe</text><text x="125" y="290" text-anchor="middle">Q-3 budgets</text><text x="125" y="306" text-anchor="middle">SRAM/PSRAM</text>
+<rect x="215" y="250" width="150" height="90" rx="8" fill="#dbeafe" stroke="#1a73e8"/><text x="290" y="272" text-anchor="middle" font-weight="bold">2 · gate_selftest</text><text x="290" y="290" text-anchor="middle">NE_SELFTEST</text><text x="290" y="306" text-anchor="middle">PASS/FAIL</text>
+<rect x="380" y="250" width="150" height="90" rx="8" fill="#dbeafe" stroke="#1a73e8"/><text x="455" y="272" text-anchor="middle" font-weight="bold">3 · trace_vectors</text><text x="455" y="290" text-anchor="middle">replay 3 golden</text><text x="455" y="306" text-anchor="middle">traces on-device</text>
+<rect x="545" y="250" width="150" height="90" rx="8" fill="#f3f3f3" stroke="#888" stroke-dasharray="6 4"/><text x="620" y="272" text-anchor="middle" font-weight="bold">4 · HAL (planned)</text><text x="620" y="290" text-anchor="middle">GPIO · I2S · sensors</text><text x="620" y="306" text-anchor="middle">TSK-S4-01</text>
+<rect x="710" y="250" width="200" height="90" rx="8" fill="#dbeafe" stroke="#1a73e8"/><text x="810" y="272" text-anchor="middle" font-weight="bold">5 · network/idle</text><text x="810" y="290" text-anchor="middle">Opus streaming</text><text x="810" y="306" text-anchor="middle">OTA A/B partitions</text>
+</g>
+<rect x="30" y="380" width="900" height="60" rx="10" fill="#fff4e5" stroke="#e8930c"/><text x="480" y="402" text-anchor="middle" font-weight="bold">Flash layout · 16 MB: factory + ota_0 + ota_1 (3.5 MB each) + storage · NETR trees linked as const arrays</text><text x="480" y="422" text-anchor="middle" font-size="12">partitions.csv · sdkconfig.defaults · sdkconfig.qemu (CI overlay)</text>
+<g stroke="#555"><line x1="250" y1="190" x2="250" y2="208"/><line x1="715" y1="190" x2="715" y2="208"/><line x1="380" y1="295" x2="500" y2="295"/></g>
+<text x="480" y="478" text-anchor="middle" font-size="12" fill="#555">Self-test FAIL halts boot — device never gates on untested trees · Source: E-04.excalidraw</text>
+</g></svg>

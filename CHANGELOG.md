@@ -32,6 +32,7 @@ bản gói.
 
 #### Đã thêm
 
+- **Kiến trúc sản phẩm `docs/architecture/` (song ngữ VI-EN, Full C4 + ADR + NFR, I0–I18).** `README.md` + hai cây mirror `vi/`/`en/` (14 file: overview, C4 L1→L4, runtime flows, data contracts, NFR, ADR, target equivalence, HAL port guide, quickstart, evolution) + 8 poster SVG (`assets/svg/`, E-01 đến E-08) vẽ từ nguồn Excalidraw (`assets/excalidraw/`); sơ đồ chính xác bằng Mermaid tại chỗ. VI là bản gốc, hình dùng chung (nhãn Anh), sửa `.excalidraw` thì export lại `.svg` cùng commit. Chỉ mô tả cấu trúc + hành vi, mọi yêu cầu/quyết định/trạng thái dẫn mã về PRD/roadmap (MECE). Không đổi lược đồ hay ngữ nghĩa phân giải nên không cần RFC; bản đồ kho cập nhật ở `CONTRIBUTING.md` §6.
 - **I2 · TSK-S5-09 — `sensor.read` và `display` trên `linux`.** Cảm biến đọc qua sysfs hwmon và IIO (`hal/sysfs.py`),
   tìm theo **tên** — nhãn kênh, hoặc nguồn đặt theo máy (`LinuxHAL(sensor_sources=)`, `NEUROEDGE_LINUX_SENSORS`); mỗi lần đọc
   tới kernel, và không nguồn, tệp lỗi, NaN/inf, cờ `*_fault` hay đơn vị khác đơn vị agent khai đều là `BoardCapabilityError`.
