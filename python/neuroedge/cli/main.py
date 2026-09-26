@@ -37,16 +37,26 @@ from ..errors import BoardCapabilityError, BuildFailed, NeuroEdgeError, Verifica
 from ..hal.board import REFERENCE_BOARD, SUPPORTED_TARGETS, available_boards, load_board_by_id
 from ..paths import gates_dir, repo_root
 from ..trace import load_trace
+from .examples import epilog
 
 app = typer.Typer(
     name="neuroedge",
     help="NeuroEdge — Typed Action Contract Platform for Physical AI",
     add_completion=False,
+    epilog=epilog(""),
 )
-gate_app = typer.Typer(name="gate", help="Resolve, lint and publish safety gates")
-trace_app = typer.Typer(name="trace", help="Inspect and validate execution traces")
-board_app = typer.Typer(name="board", help="Inspect board capability declarations")
-mcp_app = typer.Typer(name="mcp", help="Serve the agent's gated tools over MCP")
+gate_app = typer.Typer(
+    name="gate", help="Resolve, lint and publish safety gates", epilog=epilog("gate")
+)
+trace_app = typer.Typer(
+    name="trace", help="Inspect and validate execution traces", epilog=epilog("trace")
+)
+board_app = typer.Typer(
+    name="board", help="Inspect board capability declarations", epilog=epilog("board")
+)
+mcp_app = typer.Typer(
+    name="mcp", help="Serve the agent's gated tools over MCP", epilog=epilog("mcp")
+)
 
 app.add_typer(gate_app, name="gate")
 app.add_typer(trace_app, name="trace")
@@ -131,7 +141,7 @@ REGISTRY_OPTION = typer.Option(
 # --------------------------------------------------------------------------
 
 
-@gate_app.command(name="resolve")
+@gate_app.command(name="resolve", epilog=epilog("gate resolve"))
 def gate_resolve(
     target: str = typer.Argument(..., help="Gate YAML path or neuroedge:// URI"),
     as_json: bool = typer.Option(False, "--json", help="Emit the resolved artifact as JSON"),
@@ -192,7 +202,7 @@ def gate_resolve(
     )
 
 
-@gate_app.command(name="explain")
+@gate_app.command(name="explain", epilog=epilog("gate explain"))
 def gate_explain(
     target: str = typer.Argument(..., help="Gate YAML path or neuroedge:// URI"),
     registry: Path = REGISTRY_OPTION,
@@ -216,7 +226,7 @@ def gate_explain(
     render(explanation, console)
 
 
-@gate_app.command(name="lint")
+@gate_app.command(name="lint", epilog=epilog("gate lint"))
 def gate_lint(
     directory: Path = typer.Argument(None, help="Directory of gate YAML files (default: gates/)"),
     registry: Path = REGISTRY_OPTION,
@@ -284,7 +294,7 @@ def gate_lint(
     console.print(f"[bold green]✓ {len(paths)} gate(s) resolved.[/bold green]")
 
 
-@gate_app.command(name="publish")
+@gate_app.command(name="publish", epilog=epilog("gate publish"))
 def gate_publish(
     gate_file: Path = typer.Argument(..., help="Path to the gate YAML file"),
     out: Path = typer.Option(None, "--out", "-o", help="Write canonical JSON here"),
@@ -323,7 +333,7 @@ def gate_publish(
     )
 
 
-@gate_app.command(name="add")
+@gate_app.command(name="add", epilog=epilog("gate add"))
 def gate_add(
     uri: str = typer.Argument(..., help="Gate URI, e.g. neuroedge://gates/unlock_door@1.2.0"),
 ):
@@ -347,7 +357,7 @@ def gate_add(
 # --------------------------------------------------------------------------
 
 
-@trace_app.command(name="validate")
+@trace_app.command(name="validate", epilog=epilog("trace validate"))
 def trace_validate(
     trace_files: list[Path] = typer.Argument(..., help="Trace JSON file(s) to validate"),
 ):
@@ -372,7 +382,7 @@ def trace_validate(
         raise typer.Exit(code=1)
 
 
-@trace_app.command(name="view")
+@trace_app.command(name="view", epilog=epilog("trace view"))
 def trace_view(
     trace_file: Path = typer.Argument(..., help="Trace JSON file"),
     out: Path = typer.Option(
@@ -403,7 +413,7 @@ def trace_view(
         webbrowser.open(target.resolve().as_uri())
 
 
-@trace_app.command(name="export")
+@trace_app.command(name="export", epilog=epilog("trace export"))
 def trace_export(
     trace_file: Path = typer.Argument(..., help="Trace JSON file"),
     format: str = typer.Option("chrome", "--format", "-f", help="Export format: chrome"),
@@ -436,7 +446,7 @@ def trace_export(
     console.print(f"[bold green]✓[/bold green] {escape(str(target))} — open it in ui.perfetto.dev")
 
 
-@trace_app.command(name="show")
+@trace_app.command(name="show", epilog=epilog("trace show"))
 def trace_show(
     trace_file: Path = typer.Argument(..., help="Trace JSON file"),
 ):
@@ -475,7 +485,7 @@ def trace_show(
 # --------------------------------------------------------------------------
 
 
-@board_app.command(name="list")
+@board_app.command(name="list", epilog=epilog("board list"))
 def board_list():
     """List the board capability declarations in boards/."""
     boards = available_boards()
@@ -493,7 +503,7 @@ def board_list():
     console.print(table)
 
 
-@board_app.command(name="show")
+@board_app.command(name="show", epilog=epilog("board show"))
 def board_show(
     board_id: str = typer.Argument(..., help="Board id, e.g. esp32s3-box-3"),
 ):
@@ -528,7 +538,7 @@ def board_show(
 # --------------------------------------------------------------------------
 
 
-@mcp_app.command(name="tools")
+@mcp_app.command(name="tools", epilog=epilog("mcp tools"))
 def mcp_tools(
     agent: Path = typer.Option(None, "--agent", "-a", help="agent.toml (default as for `run`)"),
     as_json: bool = typer.Option(False, "--json", help="Print the MCP tool list as JSON"),
@@ -612,7 +622,7 @@ def _external_tools(session: Any, *, as_json: bool, openai: bool) -> None:
         console.print(f"[yellow]✗ {escape(server)} unavailable:[/yellow] {escape(reason)}")
 
 
-@mcp_app.command(name="serve")
+@mcp_app.command(name="serve", epilog=epilog("mcp serve"))
 def mcp_serve(
     agent: Path = typer.Option(None, "--agent", "-a", help="agent.toml (default as for `run`)"),
     target: str = typer.Option(
@@ -763,7 +773,7 @@ def _mcp_page(session: Any, port: int) -> Any:
     return None
 
 
-@mcp_app.command(name="desktop-config")
+@mcp_app.command(name="desktop-config", epilog=epilog("mcp desktop-config"))
 def mcp_desktop_config(
     agent: Path = typer.Option(None, "--agent", "-a", help="agent.toml (default as for `run`)"),
     ui: bool = typer.Option(False, "--ui", help="Serve with --ui: the live sim page too"),
@@ -876,7 +886,7 @@ def _empty_categories(counts: dict[str, tuple[int, Path, str]]) -> VerificationE
     )
 
 
-@app.command()
+@app.command(epilog=epilog("verify"))
 def verify(
     targets: str = typer.Option(
         "sim", "--targets", help="Comma-separated targets to replay on: sim, linux, esp32s3"
@@ -1113,7 +1123,7 @@ def _device_replay(sessions, path: Path, port: str) -> dict[str, Any]:
     return trace
 
 
-@app.command()
+@app.command(epilog=epilog("replay"))
 def replay(
     trace_file: Path = typer.Argument(..., help="Trace JSON file"),
     target: str = typer.Option("sim", "--target", "-t", help="Target to replay on: sim or linux"),
@@ -1210,7 +1220,7 @@ def replay(
     raise typer.Exit(code=1)
 
 
-@app.command()
+@app.command(epilog=epilog("new"))
 def new(
     name: str = typer.Argument(..., help="Name of the new agent project (and its directory)"),
     template: str = typer.Option(
@@ -1324,7 +1334,7 @@ def _start_session(
     raise AssertionError("unreachable")  # _fail* always exit
 
 
-@app.command()
+@app.command(epilog=epilog("run"))
 def run(
     agent: Path = typer.Option(
         None,
@@ -1378,7 +1388,7 @@ def run(
     raise typer.Exit(code=code)
 
 
-@app.command()
+@app.command(epilog=epilog("build"))
 def build(
     target: str = typer.Option(..., "--target", "-t", help="Target runtime environment"),
     board: str = typer.Option(
@@ -1420,7 +1430,7 @@ def build(
         console.print(f"  wrote:   {artifact}")
 
 
-@app.command()
+@app.command(epilog=epilog("test"))
 def test(
     path: Path = typer.Argument(None, help="Test directory or file (default: tests/ if present)"),
     pytest_args: list[str] = typer.Option(
@@ -1460,7 +1470,7 @@ def test(
     raise typer.Exit(code=0 if code == pytest.ExitCode.OK else 1)
 
 
-@app.command()
+@app.command(epilog=epilog("record"))
 def record(
     agent: Path = typer.Option(
         None, "--agent", "-a", help="Path to agent.toml (default as for `run`)"

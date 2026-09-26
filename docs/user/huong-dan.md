@@ -42,7 +42,8 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Xuất vết ghi để phân tích thời gian trong Perfetto | `neuroedge trace export --format chrome` | ✅ |
 | Giả lập cảm biến và màn hình trên `sim` | `[sim.sensors]` · `:sensor` · `display.show()` | ✅ |
 | Đọc một gate bằng lời: tiêu chí từ đâu, điều gì bị siết chặt | `neuroedge gate explain` | ✅ |
-| Tạo dự án agent mới có sẵn gate, action, test | `neuroedge new` | ✅ |
+| Tạo dự án agent mới có sẵn gate, action, test, và cây `traces/` (`incidents/`, `golden/` — FR-TRC-09) | `neuroedge new` | ✅ |
+| Xem ví dụ chạy được của một lệnh | `neuroedge <lệnh> --help` (mục `Examples:`) | ✅ |
 | Thử một trợ lý giọng nói: hỏi đáp knowledge base, tin tức, bật/tắt đèn qua gate | `neuroedge new nha --template home-voice` | ✅ |
 | Xem các `@action` dưới dạng tool (schema cho LLM / MCP) | `neuroedge mcp tools` | ✅ |
 | Cho Claude Desktop hoặc agent khác gọi thiết bị qua MCP — vẫn qua gate | `neuroedge mcp serve` (cấu hình Claude Desktop: dòng dưới, `desktop-config`) | ✅ cần `neuroedge[mcp]` |

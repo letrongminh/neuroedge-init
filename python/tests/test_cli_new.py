@@ -31,7 +31,12 @@ MINIMAL = [
     "commands.toml",
     "gates/custom_lock@1.0.0.yaml",
     "tests/test_agent.py",
+    "traces/README.md",
+    "traces/golden/.gitkeep",
+    "traces/incidents/.gitkeep",
 ]
+# The trace path convention every template scaffolds (FR-TRC-09, TSK-I1-03).
+TRACE_TREE = ["traces/README.md", "traces/golden/.gitkeep", "traces/incidents/.gitkeep"]
 
 
 def _env() -> dict[str, str]:
@@ -78,6 +83,34 @@ def test_new_writes_every_file_of_the_minimal_template(project):
     written = sorted(str(p.relative_to(project)) for p in project.rglob("*") if p.is_file())
     assert written == MINIMAL
     assert not list(project.rglob("*.tmpl"))
+
+
+@pytest.mark.parametrize("template", TEMPLATES)
+def test_every_template_scaffolds_the_traces_tree(template, tmp_path):
+    files = scaffold("proj", template, tmp_path)
+    project = tmp_path / "proj"
+    for relative in TRACE_TREE:
+        assert Path(relative) in files, f"{template}: {relative}"
+        assert (project / relative).is_file()
+    for directory in ("traces", "traces/incidents", "traces/golden"):
+        assert (project / directory).is_dir()
+    readme = (project / "traces" / "README.md").read_text("utf-8")
+    assert "{{name}}" not in readme and "proj" in readme
+    assert "traces/incidents/" in readme and "traces/golden/" in readme
+
+
+def test_record_writes_into_the_scaffolded_traces_dir(project):
+    cwd = Path.cwd()
+    os.chdir(project)
+    try:
+        result = runner.invoke(app, ["record", "-c", "mở khoá"])
+    finally:
+        os.chdir(cwd)
+    assert result.exit_code == 0, result.output
+    recorded = sorted((project / "traces").glob("sess_*.json"))
+    assert len(recorded) == 1
+    for path in recorded:
+        path.unlink()  # the module's project stays as `new` wrote it
 
 
 def test_the_project_name_is_the_agent_name(project):
