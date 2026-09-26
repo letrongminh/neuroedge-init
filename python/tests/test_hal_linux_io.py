@@ -8,8 +8,10 @@ The same HAL against a real kernel — `i2c-stub` + `lm75` → hwmon — is in
 
 from __future__ import annotations
 
+import dataclasses
 import os
 import sys
+import time
 
 import pytest
 
@@ -25,7 +27,7 @@ from neuroedge.hal.framebuffer import (
     pack_pixels,
 )
 from neuroedge.hal.linux import MISSING_ON_LINUX, LinuxHAL
-from neuroedge.hal.sim import Frame, SimHAL
+from neuroedge.hal.sim import Frame, SimHAL, make_frame
 
 from .test_hal_linux import LINES, FakeGpiod
 
@@ -58,19 +60,25 @@ def hwmon(root, index, name, files, at=None):
     return device
 
 
-def iio(root, index, name, files):
+def iio(root, index, name, files, at=None):
     device = root / "bus" / "iio" / "devices" / f"iio:device{index}"
-    device.mkdir()
+    if at is None:
+        device.mkdir()
+    else:  # as the kernel lays it out: a child of the device it sits on
+        real = root / "devices" / at / f"iio:device{index}"
+        real.mkdir(parents=True)
+        os.symlink(real, device)
     (device / "name").write_text(f"{name}\n")
     for file, text in files.items():
         (device / file).write_text(f"{text}\n")
     return device
 
 
-def make(tmp_path, **kwargs):
+def make(tmp_path, fake=None, **kwargs):
+    """A LinuxHAL on fake lines. Pass `fake` to look at its requests after a refusal."""
     chip = tmp_path / "gpiochip0"
     chip.write_text("")
-    fake = FakeGpiod({str(chip): LINES})
+    fake = fake if fake is not None else FakeGpiod({str(chip): LINES})
     events = EventLog(target="linux", board_id="linux-rpi5")
     hal = LinuxHAL(
         chip_glob=str(tmp_path / "gpiochip*"),
@@ -208,6 +216,16 @@ def test_a_sensor_the_board_does_not_declare_is_refused_before_sysfs(tmp_path, s
         hal.sensor_read("pressure")
 
 
+def test_a_device_that_is_not_on_the_named_bus_address_is_not_read(tmp_path, sys_root):
+    hwmon(sys_root, 0, "lm75", {"temp1_input": 20000}, at="1-0048")
+    hal, _ = make(
+        tmp_path, sysfs_root=sys_root, sensor_sources={"temperature": "hwmon:lm75@9-0099/temp1"}
+    )
+    with pytest.raises(BoardCapabilityError, match="named 'lm75' on 9-0099"):
+        hal.sensor_read("temperature")
+    assert hal.events.of_type("sensor_read") == []
+
+
 # --- sensor.read: IIO -----------------------------------------------------------------
 
 
@@ -222,6 +240,60 @@ def test_an_iio_raw_channel_applies_offset_and_scale(tmp_path, sys_root):
     assert hal.sensor_read("temperature") == 30.0
     assert hal.sensor_read("humidity") == pytest.approx(1.65, abs=1e-6)
     assert [e["unit"] for e in hal.events.of_type("sensor_read")] == ["C", "V"]
+
+
+@pytest.mark.parametrize("text", ["nan", "inf", "-inf", "NaN", "Infinity"])
+@pytest.mark.parametrize(
+    "file", ["in_temp_input", "in_temp_raw", "in_temp_scale", "in_temp_offset"]
+)
+def test_a_non_finite_iio_value_is_no_reading(tmp_path, sys_root, file, text):
+    # NaN compares False to everything: read as a value, `gte = 80` would be False and allow.
+    files = {"in_temp_raw": 1000, "in_temp_scale": 1, "in_temp_offset": 0}
+    if file == "in_temp_input":
+        files = {"in_temp_input": text}
+    else:
+        files[file] = text
+    iio(sys_root, 0, "tmp117", files)
+    hal, _ = make(tmp_path, sysfs_root=sys_root, sensor_sources={"temperature": "iio:tmp117/temp"})
+    with pytest.raises(BoardCapabilityError, match="not a number"):
+        hal.sensor_read("temperature")
+    assert hal.events.of_type("sensor_read") == []
+
+
+def test_an_iio_value_that_overflows_is_no_reading(tmp_path, sys_root):
+    iio(sys_root, 0, "tmp117", {"in_temp_raw": "1e308", "in_temp_scale": "1e308"})
+    hal, _ = make(tmp_path, sysfs_root=sys_root, sensor_sources={"temperature": "iio:tmp117/temp"})
+    with pytest.raises(BoardCapabilityError, match="not a finite number"):
+        hal.sensor_read("temperature")
+
+
+@pytest.mark.parametrize("attr", ["scale", "offset"])
+def test_an_unreadable_iio_scale_or_offset_fails_rather_than_defaulting(tmp_path, sys_root, attr):
+    device = iio(sys_root, 0, "tmp117", {"in_temp_raw": 1000})
+    (device / f"in_temp_{attr}").write_text("N/A\n")
+    hal, _ = make(tmp_path, sysfs_root=sys_root, sensor_sources={"temperature": "iio:tmp117/temp"})
+    with pytest.raises(BoardCapabilityError, match=f"in_temp_{attr} holds 'N/A'"):
+        hal.sensor_read("temperature")
+    (device / f"in_temp_{attr}").unlink()
+    (device / f"in_temp_{attr}").mkdir()  # exists, but reading it fails
+    with pytest.raises(BoardCapabilityError, match="cannot read"):
+        hal.sensor_read("temperature")
+    assert hal.events.of_type("sensor_read") == []
+
+
+def test_two_iio_devices_of_one_name_are_told_apart_by_the_device_they_sit_on(tmp_path, sys_root):
+    iio(sys_root, 0, "bme280", {"in_temp_input": 20000}, at="1-0076")
+    iio(sys_root, 1, "bme280", {"in_temp_input": 30000}, at="1-0077")
+    hal, _ = make(tmp_path, sysfs_root=sys_root, sensor_sources={"temperature": "iio:bme280/temp"})
+    with pytest.raises(BoardCapabilityError, match=r"2 iio devices .*1-0076.*1-0077"):
+        hal.sensor_read("temperature")
+    hal.close()
+    other = tmp_path / "other"
+    other.mkdir()
+    hal, _ = make(
+        other, sysfs_root=sys_root, sensor_sources={"temperature": "iio:bme280@1-0077/temp"}
+    )
+    assert hal.sensor_read("temperature") == 30.0
 
 
 def test_an_iio_processed_channel_and_labels(tmp_path, sys_root):
@@ -260,21 +332,34 @@ def test_the_mapping_can_come_from_the_environment(tmp_path, sys_root, monkeypat
     assert hal.sensor_read("temperature") == 19.0
 
 
+def fake_lines(tmp_path):
+    return FakeGpiod({str(tmp_path / "gpiochip0"): LINES})
+
+
 @pytest.mark.parametrize(
     ("value", "why"),
     [("temperature", "is not sensor=source"), ("temperature=lm75", "is not a sensor source")],
 )
 def test_a_malformed_mapping_fails_before_any_line(tmp_path, monkeypatch, value, why):
     monkeypatch.setenv(linux.SENSORS_ENV, value)
+    fake = fake_lines(tmp_path)
     with pytest.raises(BoardCapabilityError, match=why):
-        make(tmp_path)
+        make(tmp_path, fake=fake)
+    assert fake.requests == []
 
 
 def test_a_session_preflight_refuses_an_unreadable_sensor_before_any_line(tmp_path, sys_root):
+    fake = fake_lines(tmp_path)
     with pytest.raises(BoardCapabilityError, match="labelled 'temperature'"):
-        make(tmp_path, sysfs_root=sys_root, needs={"sensors": ["temperature"], "where": "agent"})
+        make(
+            tmp_path,
+            fake=fake,
+            sysfs_root=sys_root,
+            needs={"sensors": ["temperature"], "where": "agent"},
+        )
     with pytest.raises(BoardCapabilityError, match="no display backend"):
-        make(tmp_path, needs={"display": True, "where": "agent"})
+        make(tmp_path, fake=fake, needs={"display": True, "where": "agent"})
+    assert fake.requests == [], "a refused preflight requests no line"
     hwmon(sys_root, 0, "lm75", {"temp1_input": 1000, "temp1_label": "temperature"})
     hal, fake = make(
         tmp_path,
@@ -293,12 +378,52 @@ def test_replay_feeds_recorded_readings_and_never_touches_sysfs(tmp_path, sys_ro
     hal.script_sensor("temperature", [24.5, 25.0], "C")
     with pytest.raises(BoardCapabilityError, match="holds no reading"):
         hal.sensor_read("temperature", use="fact")
-    assert [hal.sensor_read("temperature") for _ in range(3)] == [24.5, 25.0, 25.0]
+    assert hal.sensor_read("temperature") == 24.5
+    # A fact read repeats the last replayed reading; it takes nothing from the queue.
+    assert hal.sensor_read("temperature", use="fact") == 24.5
+    assert [hal.sensor_read("temperature") for _ in range(2)] == [25.0, 25.0]
     assert hal.events.of_type("sensor_read")[0] == {
         "sensor": "temperature",
         "value": 24.5,
         "unit": "C",
     }
+
+
+def test_replay_never_reads_a_sensor_the_trace_does_not_hold(tmp_path, sys_root):
+    hwmon(sys_root, 0, "lm75", {"temp1_input": 31000, "temp1_label": "temperature"})
+    hal, _ = make(tmp_path, sysfs_root=sys_root, replay=True)
+    with pytest.raises(BoardCapabilityError, match="holds no reading of this sensor"):
+        hal.sensor_read("temperature")
+    assert hal.events.of_type("sensor_read") == []
+    assert isinstance(hal.display_backend, MemoryDisplay), "a replay draws in memory"
+
+
+def test_a_reading_in_another_unit_than_the_agent_declares_is_refused(tmp_path, sys_root):
+    iio(sys_root, 0, "bme280", {"in_pressure_input": 101.3, "in_pressure_label": "temperature"})
+    hal, fake = make(tmp_path, sysfs_root=sys_root, units={"temperature": "C"})
+    with pytest.raises(BoardCapabilityError, match="in 'kPa'.*declares 'C'"):
+        hal.sensor_read("temperature")
+    assert hal.events.of_type("sensor_read") == []
+    other = tmp_path / "other"
+    other.mkdir()
+    fake = fake_lines(other)
+    with pytest.raises(BoardCapabilityError, match="declares 'C'"):
+        make(
+            other,
+            fake=fake,
+            sysfs_root=sys_root,
+            units={"temperature": "C"},
+            needs={"sensors": ["temperature"], "where": "agent"},
+        )
+    assert fake.requests == []
+
+
+def test_a_mapping_for_a_sensor_the_board_lacks_is_refused(tmp_path, sys_root, monkeypatch):
+    monkeypatch.setenv(linux.SENSORS_ENV, "temprature=hwmon:lm75/temp1")
+    fake = fake_lines(tmp_path)
+    with pytest.raises(BoardCapabilityError, match="declares no sensor named 'temprature'"):
+        make(tmp_path, fake=fake, sysfs_root=sys_root)
+    assert fake.requests == []
 
 
 # --- display --------------------------------------------------------------------------
@@ -341,9 +466,13 @@ def test_the_backend_can_come_from_the_environment(tmp_path, monkeypatch):
     monkeypatch.setenv(linux.DISPLAY_ENV, "memory")
     hal, _ = make(tmp_path)
     assert isinstance(hal.display_backend, MemoryDisplay)
-    monkeypatch.setenv(linux.DISPLAY_ENV, "/dev/fb-that-is-not-there")
+    monkeypatch.setenv(linux.DISPLAY_ENV, "/dev/fb97")
     with pytest.raises(BoardCapabilityError, match="no framebuffer at"):
         make(tmp_path)
+    for path in ("/dev/fb0/../../etc/passwd", "/dev/fb-panel", "/dev/fb"):
+        monkeypatch.setenv(linux.DISPLAY_ENV, path)
+        with pytest.raises(BoardCapabilityError, match="not a display backend"):
+            make(tmp_path)
     monkeypatch.setenv(linux.DISPLAY_ENV, "hdmi")
     with pytest.raises(BoardCapabilityError, match="not a display backend"):
         make(tmp_path)
@@ -418,11 +547,58 @@ def test_bgr_and_24_bit_layouts_use_the_offsets_the_kernel_reports(tmp_path):
     assert data[0:3] == (0x030201).to_bytes(3, sys.byteorder)
 
 
-def test_the_fast_packers_equal_the_general_one():
-    frame565 = Frame(2, 1, "rgb565", bytes([0xF8, 0x00, 0x07, 0xE1]))
-    frame888 = Frame(2, 1, "rgb888", bytes([200, 100, 50, 7, 8, 9]))
-    for frame, geo in ((frame565, geometry(16)), (frame888, geometry(32))):
+def rgb565_by_hand(data):
+    """The widening rule written out per pixel: what `Frame.rgb888` must equal."""
+    out = bytearray()
+    for i in range(0, len(data), 2):
+        v = (data[i] << 8) | data[i + 1]
+        r, g, b = (v >> 11) & 0x1F, (v >> 5) & 0x3F, v & 0x1F
+        out += bytes(((r << 3) | (r >> 2), (g << 2) | (g >> 4), (b << 3) | (b >> 2)))
+    return bytes(out)
+
+
+EVERY_565 = bytes(range(256)) * 2 + bytes(reversed(range(256))) * 2  # every byte, both halves
+EVERY_888 = bytes(range(256)) * 3
+
+
+def test_rgb565_widens_to_rgb888_as_by_hand():
+    frame = Frame(len(EVERY_565) // 2, 1, "rgb565", EVERY_565)
+    assert frame.rgb888() == rgb565_by_hand(EVERY_565)
+
+
+@pytest.mark.parametrize(
+    "geo",
+    [
+        geometry(16),
+        geometry(24),
+        geometry(32),
+        geometry(24, rgb=((0, 8), (8, 8), (16, 8))),
+        geometry(32, rgb=((0, 8), (8, 8), (16, 8))),
+    ],
+    ids=["rgb565", "rgb888", "xrgb8888", "bgr888", "xbgr8888"],
+)
+def test_the_fast_packers_equal_the_general_one(geo):
+    frames = (
+        Frame(len(EVERY_565) // 2, 1, "rgb565", EVERY_565),
+        Frame(len(EVERY_888) // 3, 1, "rgb888", EVERY_888),
+    )
+    for frame in frames:
         assert pack_pixels(frame, geo) == pack_general(frame.rgb888(), geo)
+
+
+@pytest.mark.parametrize("change", [{"grayscale": 1}, {"msb_right": True}])
+def test_a_mode_that_is_not_packed_rgb_is_refused(tmp_path, change):
+    geo = dataclasses.replace(geometry(32), **change)
+    with pytest.raises(BoardCapabilityError, match="grayscale, FOURCC or msb_right"):
+        show(tmp_path, geo, PIXELS_565)
+
+
+def test_a_full_panel_frame_packs_in_well_under_a_second():
+    frame = Frame(800, 480, "rgb888", bytes(range(256)) * (800 * 480 * 3 // 256))
+    started = time.perf_counter()
+    for geo in (geometry(16, 800, 480), geometry(32, 800, 480)):
+        pack_pixels(frame, geo)
+    assert time.perf_counter() - started < 1.0
 
 
 def test_the_framebuffer_is_written_at_the_panned_origin(tmp_path):
@@ -449,6 +625,23 @@ def test_the_framebuffer_refuses_what_it_cannot_show(tmp_path, geo, frame, fmt, 
         hal.display(frame, width=2, height=2, format=fmt)
     assert path.read_bytes() == before, "nothing half-drawn"
     assert hal.frames == [] and hal.events.of_type("display_frame") == []
+
+
+def test_a_row_the_framebuffer_cuts_short_is_an_error(tmp_path):
+    geo = geometry(16)
+    display = FramebufferDisplay(fb_file(tmp_path, geo), geometry=lambda fd: geo)
+
+    class Short:
+        def seek(self, offset):
+            pass
+
+        def write(self, data):
+            return len(data) - 1
+
+    shown = SimHAL(events=EventLog())
+    frame = make_frame(shown.board, PIXELS_565, 2, 2, "rgb565", "test")
+    with pytest.raises(BoardCapabilityError, match="row 0 was cut short"):
+        display._write(Short(), frame, geo, "test")
 
 
 def test_a_framebuffer_that_cannot_be_opened_is_an_error_not_a_skip(tmp_path):

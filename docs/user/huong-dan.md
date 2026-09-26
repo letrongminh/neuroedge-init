@@ -63,7 +63,7 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Ghi vết ghi từ firmware `esp32s3` qua UART | `neuroedge record --target esp32s3 --port <log · tcp://… · /dev/tty…>` | ✅ trên QEMU · bo mạch ⏳ |
 | Kiểm cùng quyết định trên `esp32s3`: firmware replay các vết ghi chuẩn mực | `neuroedge verify --targets esp32s3 --port …` | ✅ trên QEMU · bo mạch ⏳ |
 | Phiên gõ chữ tương tác trên `linux`: chân là line GPIO thật | `neuroedge run` / `record` / `mcp serve --target linux` | ✅ cần line GPIO + `neuroedge[linux]`; agent được cần `digital.out`, `sensor.read`, `display` (chưa âm thanh) |
-| Đọc cảm biến thật trên `linux` (hwmon, IIO) và vẽ lên màn hình (`/dev/fb*`, hoặc trong bộ nhớ) | `NEUROEDGE_LINUX_SENSORS="temperature=hwmon:lm75/temp1"` · `NEUROEDGE_LINUX_DISPLAY=/dev/fb0` (hoặc `memory`) — [`simulation_coverage.md`](../spec/simulation_coverage.md) §2 (`linux`) | ✅ trên hwmon ảo (`i2c-stub` + `lm75`) và `vfb` trong CI · Pi ⏳ |
+| Đọc cảm biến thật trên `linux` (hwmon, IIO) và vẽ lên màn hình (`/dev/fb*`, hoặc trong bộ nhớ) | `NEUROEDGE_LINUX_SENSORS="temperature=hwmon:lm75/temp1"` · `NEUROEDGE_LINUX_DISPLAY=/dev/fb0` (hoặc `memory`) — [`simulation_coverage.md`](../spec/simulation_coverage.md) §2 (`linux`) | ✅ trên hwmon ảo (`i2c-stub` + `lm75`) và framebuffer ảo (`vfb`, `vkms`) trong CI · Pi ⏳ |
 | Hành trình 10 phút (TTFV) | — | ⏳ I1 |
 
 Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.

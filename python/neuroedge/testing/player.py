@@ -301,7 +301,7 @@ def make_hal(target: str, board_id: str | None, events: EventLog):
         return SimHAL(board, events=events)
     from ..hal.linux import LinuxHAL
 
-    return LinuxHAL(board, events=events)
+    return LinuxHAL(board, events=events, replay=True)
 
 
 class TracePlayer:

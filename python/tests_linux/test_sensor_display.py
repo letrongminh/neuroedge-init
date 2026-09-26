@@ -113,6 +113,11 @@ def test_a_sensor_the_kernel_does_not_have_fails_closed(lm75):
         missing.close()
 
 
+def read(path: str) -> str:
+    with open(path, encoding="ascii") as file:
+        return file.read().strip()
+
+
 def test_frames_on_the_memory_backend_are_what_sim_records(hal):
     sim = SimHAL(events=EventLog())
     pixels = bytes(range(8))
@@ -140,6 +145,18 @@ def test_a_frame_reaches_the_kernel_framebuffer():
             os.close(fd)
         assert geometry.bits_per_pixel in (16, 24, 32)
         assert geometry.xres >= 800 and geometry.yres >= 480, "the board's display fits"
+        # The ioctl parse, checked against what sysfs says without it: packing and the
+        # read-back above both use `geometry`, so a misread would agree with itself.
+        sysfs = f"/sys/class/graphics/{os.path.basename(device)}"
+        assert int(read(f"{sysfs}/stride")) == geometry.line_length
+        assert int(read(f"{sysfs}/bits_per_pixel")) == geometry.bits_per_pixel
+        # And one pixel spelled out: pixel 0 is full red (0xF800).
+        with open(device, "rb") as fb:
+            first = fb.read(4)
+        if geometry.bits_per_pixel == 32 and geometry.red == (16, 8):
+            assert first[:3] == bytes([0x00, 0x00, 0xFF]), first  # XRGB8888: B, G, R
+        elif geometry.bits_per_pixel == 16:
+            assert first[:2] == bytes([0x00, 0xF8]), first  # RGB565, little-endian
         assert hal.frames == [shown]
     finally:
         hal.close()

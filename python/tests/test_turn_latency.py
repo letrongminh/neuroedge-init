@@ -23,6 +23,7 @@ from neuroedge.engine.latency import (
     turn_path,
     turn_summary,
 )
+from neuroedge.engine.trace_sink import EventLog
 from neuroedge.models import SystemTwo
 from neuroedge.perception.voice_fsm import VoiceParams
 from neuroedge.perception.voice_session import VirtualClock, VoiceSession
@@ -126,6 +127,23 @@ def test_a_stage_that_raises_still_counts_and_closes():
     assert meter.event_data(1, "fallback", None)["stages_ms"]["gate"] == 1
 
 
+def test_a_clock_that_raises_leaves_no_stage_open():
+    ticks = iter([0.0, 5.0])
+
+    def clock():
+        value = next(ticks, None)
+        if value is None:
+            raise RuntimeError("clock gone")
+        return value
+
+    meter = TurnMeter(clock)
+    with pytest.raises(RuntimeError, match="clock gone"), meter.stage("gate"):
+        pass  # entering reads 5.0; leaving raises
+    with pytest.raises(RuntimeError, match="clock gone"), meter.stage("gate"):
+        pass  # entering raises before the stage opens
+    assert meter._open is None
+
+
 def test_times_are_never_negative():
     clock = VirtualClock(50.0)
     meter = TurnMeter(clock, started_ms=80.0)  # a start in the future is clamped to now
@@ -155,6 +173,8 @@ def test_an_unknown_stage_is_refused():
         ("knowledge_local", False, True, "fallback"),
         ("offline_help", True, False, "fallback"),  # a later round failed: fallback
         ("gate_ask", False, False, "fallback"),
+        ("offline", None, False, "none"),  # no System 2 to ask: nothing served the turn
+        ("knowledge_local", None, True, "system_1"),  # no System 2: the device answered
     ],
 )
 def test_the_path_of_a_turn(reply_source, system_two, local, path):
@@ -281,6 +301,34 @@ def test_a_spoken_yes_is_system_1_and_a_button_is_nobody(home):
     ]
 
 
+def test_a_declined_question_is_nobody(home):
+    session = SimSession.load(home)
+    session.set_sensor("motion", True)
+    for line in ("bật đèn", "tắt đèn"):
+        asyncio.run(session.handle(line))
+    asyncio.run(session.decline(source="ui"))
+    assert [t["path"] for t in turns(session)] == ["system_1", "system_1", "none"]
+
+
+def test_a_turn_that_raises_writes_no_timing_and_the_next_turn_is_timed(villa):
+    session = SimSession.load(villa)
+    engine = session.conversation.engine
+    real = engine.evaluate
+
+    async def broken(*args, **kwargs):
+        raise RuntimeError("engine fault")
+
+    engine.evaluate = broken
+    with pytest.raises(RuntimeError, match="engine fault"):
+        asyncio.run(session.handle("mở cửa phòng 101"))
+    # The meter is let go, or every later turn would look nested and write nothing.
+    assert session.conversation.meter is None
+    assert turns(session) == []
+    engine.evaluate = real
+    asyncio.run(session.handle("mở cửa phòng 101"))
+    assert [t["turn"] for t in turns(session)] == [1]
+
+
 class Billed:
     """A System 2 provider that reports tokens and cost, as the real ones do."""
 
@@ -322,8 +370,19 @@ def test_a_hand_edited_turn_does_not_break_the_summary():
 def test_a_trace_without_turns_has_no_summary(root):
     trace = load_trace(root / "fixtures" / "traces" / "happy-path.json")
     assert turn_summary(trace["events"]) is None
-    session = SimSession.load(root / "fixtures" / "agents" / "villa-concierge" / "agent.toml")
-    assert [e["type"] for e in session.trace()["events"]] == []
+    # A log with events but no turn (a replay, a device session) gets no summary.
+    log = EventLog(clock=lambda: 0.0)
+    log.emit("gate_evaluation_result", {"verdict": "ALLOW"})
+    assert [e["type"] for e in log.to_trace()["events"]] == ["gate_evaluation_result"]
+
+
+def test_an_imported_summary_is_replaced_not_repeated():
+    log = EventLog(clock=lambda: 0.0)
+    log.emit(TURN_EVENT, {"turn": 1, "path": "system_1", "stages_ms": {}, "total_ms": 1})
+    log.emit(SUMMARY_EVENT, {"turns": 99})
+    types = [e["type"] for e in log.to_trace()["events"]]
+    assert types == [TURN_EVENT, SUMMARY_EVENT]
+    assert log.to_trace()["events"][-1]["data"]["turns"] == 1
 
 
 def test_an_export_carries_exactly_one_summary(villa):

@@ -138,12 +138,27 @@ class Frame:
             return self.data
         if self.format != "rgb565":
             raise ValueError("a text frame has no pixels")
-        out = bytearray()
-        for i in range(0, len(self.data), 2):
-            v = (self.data[i] << 8) | self.data[i + 1]  # big-endian, as SPI panels take it
-            r, g, b = (v >> 11) & 0x1F, (v >> 5) & 0x3F, v & 0x1F
-            out += bytes(((r << 3) | (r >> 2), (g << 2) | (g >> 4), (b << 3) | (b >> 2)))
+        # Big-endian, as SPI panels take it: high byte RRRRRGGG, low byte GGGBBBBB.
+        # Each channel widens by repeating its top bits; done per byte with lookup
+        # tables, since a Python loop per pixel takes seconds on a full panel.
+        high, low = self.data[0::2], self.data[1::2]
+        out = bytearray(len(high) * 3)
+        out[0::3] = high.translate(_R565)
+        out[1::3] = _bitor(high.translate(_G565_HIGH), low.translate(_G565_LOW))
+        out[2::3] = low.translate(_B565)
         return bytes(out)
+
+
+def _bitor(a: bytes, b: bytes) -> bytes:
+    """Byte-wise OR of two equal-length byte strings (bits that never overlap)."""
+    return (int.from_bytes(a, "big") | int.from_bytes(b, "big")).to_bytes(len(a), "big")
+
+
+_R565 = bytes(((h >> 3) << 3) | ((h >> 3) >> 2) for h in range(256))
+# g6 = (h & 7) << 3 | l >> 5 widens to g6 << 2 | g6 >> 4, and g6 >> 4 == (h & 7) >> 1.
+_G565_HIGH = bytes(((h & 7) << 5) | ((h & 7) >> 1) for h in range(256))
+_G565_LOW = bytes((low >> 5) << 2 for low in range(256))
+_B565 = bytes(((low & 0x1F) << 3) | ((low & 0x1F) >> 2) for low in range(256))
 
 
 def make_frame(

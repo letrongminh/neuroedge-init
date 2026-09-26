@@ -10,16 +10,17 @@ Workflow là [`.github/workflows/release-pypi.yml`](../.github/workflows/release
 
 | Job | Chạy khi | Làm gì |
 |:---|:---|:---|
-| `build` | mọi lần chạy | sdist, rồi wheel build **từ** sdist; `twine check --strict` (README render được trên PyPI); với tag, kiểm tag bằng `v` + `version` trong `python/pyproject.toml`; SBOM CycloneDX của wheel cài theo `requirements-lock.txt` (`scripts/sbom.sh`, artifact `sbom`, `TSK-W0-02`) |
+| `build` | mọi lần chạy | sdist, rồi wheel build **từ** sdist; `twine check --strict` (README render được trên PyPI); với tag, kiểm tag bằng `v` + `version` trong `python/pyproject.toml` |
+| `sbom` | mọi lần chạy, sau `build` | SBOM CycloneDX của wheel cài theo `requirements-lock.txt` (`scripts/sbom.sh`, artifact `sbom`, `TSK-W0-02`). Job riêng: công cụ SBOM cài từ index không chạm được `dist` mà `attest` ký |
 | `smoke` | mọi lần chạy | runner sạch tải đúng wheel vừa build, chạy `scripts/wheel_smoke.sh --wheel` trên Python 3.11 và 3.13 |
-| `attest` | tag và chạy tay, không bao giờ PR | ký provenance bản build cho wheel, sdist và SBOM (Sigstore), rồi `gh attestation verify` từng tệp (`TSK-W2-07`) — chạy tay là bản chạy thử |
+| `attest` | tag, và chạy tay **từ `main`**; không bao giờ PR | ký provenance bản build cho wheel, sdist và SBOM (Sigstore), rồi `gh attestation verify` từng tệp (`TSK-W2-07`) — chạy tay là bản chạy thử |
 | `publish-testpypi` | tag pre-release (`v0.6.0rc1`, `v0.7.0b1`…) **và** `PUBLISH_ENABLED == 'true'` | đẩy lên test.pypi.org |
 | `publish-pypi` | tag bản chính (`v0.6.0`) **và** `PUBLISH_ENABLED == 'true'` | đẩy lên pypi.org |
 | `github-release` | sau khi một job `publish-*` xanh | tạo GitHub Release của tag, gắn wheel, sdist và SBOM |
 
 Đẩy lên index dùng trusted publishing (OIDC): kho không giữ token PyPI nào. Khi chưa
 đặt biến `PUBLISH_ENABLED`, dù có ai đẩy tag thì hai job `publish-*` và `github-release` cũng bị bỏ qua.
-Pull request đổi tệp đóng gói chạy `build` và `smoke`, không bao giờ tới `attest` hay `publish-*`.
+Pull request đổi tệp đóng gói chạy `build`, `sbom` và `smoke`, không bao giờ tới `attest` hay `publish-*`.
 **Giữ `PUBLISH_ENABLED` chưa đặt cho tới I6.**
 
 ## Tag nội bộ (I1–I5)

@@ -18,6 +18,7 @@ refuses one rather than drawing nothing.
 
 from __future__ import annotations
 
+import re
 import struct
 import sys
 from collections.abc import Callable
@@ -58,6 +59,8 @@ class FbGeometry:
     red: tuple[int, int]  # (offset, length) in bits
     green: tuple[int, int]
     blue: tuple[int, int]
+    grayscale: int = 0  # non-zero: grayscale or a FOURCC mode, not packed RGB
+    msb_right: bool = False  # a colour field stored with its bits reversed
 
 
 def kernel_geometry(fd: int) -> FbGeometry:
@@ -65,12 +68,13 @@ def kernel_geometry(fd: int) -> FbGeometry:
     import fcntl
 
     var = fcntl.ioctl(fd, FBIOGET_VSCREENINFO, bytes(160))
-    xres, yres, _xv, _yv, xoff, yoff, bpp, _gray, *bits = struct.unpack_from("=8I12I", var)
+    xres, yres, _xv, _yv, xoff, yoff, bpp, gray, *bits = struct.unpack_from("=8I12I", var)
     fix_format = "@16sLIIIIHHHI"
     fix = fcntl.ioctl(fd, FBIOGET_FSCREENINFO, bytes(struct.calcsize(fix_format) + 32))
     line_length = struct.unpack_from(fix_format, fix)[-1]
     red, green, blue = (bits[0], bits[1]), (bits[3], bits[4]), (bits[6], bits[7])
-    return FbGeometry(xres, yres, xoff, yoff, bpp, line_length, red, green, blue)
+    msb_right = bool(bits[2] or bits[5] or bits[8])
+    return FbGeometry(xres, yres, xoff, yoff, bpp, line_length, red, green, blue, gray, msb_right)
 
 
 def pack_pixels(frame: Frame, geometry: FbGeometry) -> bytes:
@@ -79,6 +83,9 @@ def pack_pixels(frame: Frame, geometry: FbGeometry) -> bytes:
     little = sys.byteorder == "little"
     if geometry.bits_per_pixel not in (16, 24, 32):
         raise ValueError(f"{geometry.bits_per_pixel} bits per pixel")
+    if geometry.grayscale or geometry.msb_right:
+        # Packing RGB into these would put wrong pixels on the panel, silently.
+        raise ValueError("a grayscale, FOURCC or msb_right mode")
     # Fast paths for the two layouts a Pi uses; `pack_general` is what they must equal.
     if (
         geometry.bits_per_pixel == 16
@@ -91,11 +98,36 @@ def pack_pixels(frame: Frame, geometry: FbGeometry) -> bytes:
         out[0::2], out[1::2] = frame.data[1::2], frame.data[0::2]
         return bytes(out)
     rgb = frame.rgb888()
-    if geometry.bits_per_pixel == 32 and little and (red, green, blue) == ((16, 8), (8, 8), (0, 8)):
-        out = bytearray(len(rgb) // 3 * 4)  # XRGB8888: B, G, R, 0 in memory
-        out[0::4], out[1::4], out[2::4] = rgb[2::3], rgb[1::3], rgb[0::3]
+    r, g, b = rgb[0::3], rgb[1::3], rgb[2::3]
+    layout = (geometry.bits_per_pixel, red, green, blue)
+    if little and layout == (16, (11, 5), (5, 6), (0, 5)):
+        out = bytearray(len(r) * 2)  # RGB565 in memory: GGGBBBBB, RRRRRGGG
+        out[0::2] = _bitor(g.translate(_G_LOW), b.translate(_TOP5))
+        out[1::2] = _bitor(r.translate(_R_HIGH), g.translate(_G_HIGH))
+        return bytes(out)
+    if little and layout[0] in (24, 32) and layout[1:] in _BYTE_ORDERS:
+        size = layout[0] // 8
+        out = bytearray(len(r) * size)
+        for channel, index in zip((r, g, b), _BYTE_ORDERS[layout[1:]], strict=True):
+            out[index::size] = channel
         return bytes(out)
     return pack_general(rgb, geometry)
+
+
+def _bitor(a: bytes, b: bytes) -> bytes:
+    return (int.from_bytes(a, "big") | int.from_bytes(b, "big")).to_bytes(len(a), "big")
+
+
+_TOP5 = bytes(v >> 3 for v in range(256))
+_G_LOW = bytes(((v >> 2) & 7) << 5 for v in range(256))
+_G_HIGH = bytes(v >> 5 for v in range(256))
+_R_HIGH = bytes(v & 0xF8 for v in range(256))
+# 8-bit fields at byte boundaries: the byte of red, green and blue in one pixel,
+# little-endian (XRGB8888 / RGB888 as the kernel names them, and the BGR orders).
+_BYTE_ORDERS = {
+    ((16, 8), (8, 8), (0, 8)): (2, 1, 0),
+    ((0, 8), (8, 8), (16, 8)): (0, 1, 2),
+}
 
 
 def pack_general(rgb: bytes, geometry: FbGeometry) -> bytes:
@@ -181,7 +213,7 @@ def display_backend(choice: Any, where: str) -> DisplayBackend | None:
         return choice
     if choice == "memory":
         return MemoryDisplay()
-    if choice.startswith("/dev/fb"):
+    if re.fullmatch(r"/dev/fb\d+", choice):
         if not Path(choice).exists():
             raise BoardCapabilityError(
                 where=where,

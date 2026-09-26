@@ -14,16 +14,18 @@ A board sensor is found by **name**, never by the kernel's index — `hwmon3` an
   ``humidityrelative``, ``voltage0``). ``<name>@<device>`` picks one of two
   devices with the same name by the kernel device they sit on (``lm75@1-0048``).
 
-Every read goes to the kernel: nothing is cached but the file layout, which is
-looked up again on each read so a device that went away fails instead of
-answering from an old path. Anything that is not one fresh, numeric,
-fault-free value — no source, two sources, an unreadable file, a fault flag, a
-channel type whose unit is unknown — raises `BoardCapabilityError`. A sensor
-never reads as a default (Q-16).
+Every read goes to the kernel, and the file layout is looked up again on each
+read, so a device that went away fails instead of answering from an old path.
+(The kernel's value is as fresh as the driver's own update interval — lm75
+about 1.5 s — and no fresher.) Anything that is not one finite, numeric,
+fault-free value — no source, two sources, an unreadable file, NaN or inf, a
+fault flag, a channel type whose unit is unknown — raises `BoardCapabilityError`.
+A sensor never reads as a default (Q-16).
 """
 
 from __future__ import annotations
 
+import math
 import os
 import re
 from collections.abc import Mapping
@@ -135,6 +137,16 @@ def _read_text(path: Path) -> str | None:
         return None
 
 
+def _sits_on(kind: str, directory: Path) -> str:
+    """
+    The kernel device a sensor sits on (``1-0048``). A hwmon class device points at
+    it through its ``device`` link; an IIO device is a child of it, and has no link.
+    """
+    if kind == "hwmon":
+        return os.path.basename(os.path.realpath(directory / "device"))
+    return os.path.basename(os.path.dirname(os.path.realpath(directory)))
+
+
 def _channel_type(channel: str) -> str:
     match = re.match(r"[a-z]+", channel)
     return match.group(0) if match else channel
@@ -166,9 +178,7 @@ class SysfsSensors:
         devices = self._devices(source.kind)
         named = [d for d in devices if _read_text(d / "name") == source.device]
         if source.at is not None:
-            named = [
-                d for d in named if os.path.basename(os.path.realpath(d / "device")) == source.at
-            ]
+            named = [d for d in named if _sits_on(source.kind, d) == source.at]
         if not named:
             seen = sorted({_read_text(d / "name") or "?" for d in devices})
             raise BoardCapabilityError(
@@ -181,7 +191,7 @@ class SysfsSensors:
                 how="check the driver is bound (dmesg, /sys/bus/i2c/devices), or fix the source",
             )
         if len(named) > 1:
-            ats = [os.path.basename(os.path.realpath(d / "device")) for d in named]
+            ats = [_sits_on(source.kind, d) for d in named]
             raise BoardCapabilityError(
                 where=f"{where} ({source})",
                 why=f"{len(named)} {source.kind} devices are named {source.device!r} (on {ats})",
@@ -260,13 +270,18 @@ class SysfsSensors:
                 how="check the sensor is wired and powered, and the user may read sysfs",
             ) from exc
         try:
-            return cast(text)
+            value = cast(text)
+            # float() takes "nan" and "inf": a comparison against NaN is always False,
+            # so a gate fact such as `gte = 80` would read False and allow.
+            if not math.isfinite(value):
+                raise ValueError(text)
         except ValueError:
             raise BoardCapabilityError(
                 where=f"{where} ({channel.describe()})",
                 why=f"{path} holds {text!r}, not a number",
                 how="check the driver; a sensor that does not report a number is not read",
             ) from None
+        return value
 
     def _units(self, table, kind: str, channel: _Channel, where: str) -> tuple[float, str]:
         kind_type = _channel_type(channel.channel)
@@ -304,7 +319,14 @@ class SysfsSensors:
         shared = _channel_type(name)
         scale = self._attribute(directory, name, shared, "scale", 1.0, where, channel)
         offset = self._attribute(directory, name, shared, "offset", 0.0, where, channel)
-        return Reading(round((raw + offset) * scale / divisor, 9), unit, str(raw_path))
+        value = (raw + offset) * scale / divisor
+        if not math.isfinite(value):  # finite inputs can still overflow
+            raise BoardCapabilityError(
+                where=f"{where} ({channel.describe()})",
+                why=f"({raw} + {offset}) * {scale} is not a finite number",
+                how="check the driver's scale and offset",
+            )
+        return Reading(round(value, 9), unit, str(raw_path))
 
     def _attribute(self, directory, name, shared, attr, absent, where, channel) -> float:
         for candidate in (f"in_{name}_{attr}", f"in_{shared}_{attr}"):

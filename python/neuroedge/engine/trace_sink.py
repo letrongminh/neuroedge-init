@@ -66,9 +66,10 @@ class EventLog:
         The log as a `trace.v1` document. When it holds `turn_latency` events it ends
         with their `session_summary` (TSK-I4-03), computed now and not kept in the log.
         """
-        events = [dict(event) for event in self.events]
+        # A summary already in the log (an imported trace) is replaced, never repeated.
+        events = [dict(event) for event in self.events if event["type"] != SUMMARY_EVENT]
         summary = turn_summary(events)
         if summary is not None:
-            offset = max(events[-1]["offset_ms"], self.elapsed_ms())
+            offset = max(events[-1]["offset_ms"] if events else 0, self.elapsed_ms())
             events.append({"offset_ms": offset, "type": SUMMARY_EVENT, "data": summary})
         return {"$schema": TRACE_SCHEMA_ID, "metadata": dict(self.metadata), "events": events}

@@ -37,7 +37,6 @@ from __future__ import annotations
 import json
 import tomllib
 from collections.abc import Awaitable, Callable, Mapping
-from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -217,10 +216,7 @@ def _require_linux_primitives(manifest: AgentManifest) -> None:
     tasks = ", ".join(f"{name} ({MISSING_ON_LINUX[name]})" for name in missing)
     raise BoardCapabilityError(
         where=f"{manifest.source} -> [requires] on target 'linux'",
-        why=(
-            f"the agent needs {tasks}, which LinuxHAL does not implement yet; "
-            "on linux an interactive session has digital.out, sensor.read and display"
-        ),
+        why=(f"the agent needs {tasks}, which LinuxHAL does not implement yet"),
         how="run it on sim (--target sim) until those tasks bring the primitives to linux",
     )
 
@@ -348,7 +344,12 @@ class SimSession:
         if target == "linux":
             from ..hal.linux import TypedLinuxHAL
 
-            hal = TypedLinuxHAL(board, events=events, needs=_linux_needs(manifest, sensor_facts))
+            hal = TypedLinuxHAL(
+                board,
+                events=events,
+                needs=_linux_needs(manifest, sensor_facts),
+                units={name: unit for name, (_, unit) in sensors.items() if unit is not None},
+            )
         else:
             hal = SimHAL(board, events=events)
             for name, (value, unit) in sensors.items():
@@ -437,10 +438,6 @@ class SimSession:
         return facts
 
     # -- turn timing (TSK-I4-03) ------------------------------------------------------
-    def _stage(self, name: str) -> AbstractContextManager[Any]:
-        meter = self.conversation.meter
-        return meter.stage(name) if meter is not None else nullcontext()
-
     async def _metered(
         self,
         run: Callable[[], Awaitable[Turn]],
@@ -481,7 +478,7 @@ class SimSession:
         """Await a System 2 call as the turn's `system_two` stage, noting if it answered."""
         meter = self.conversation.meter
         try:
-            with self._stage("system_two"):
+            with self.conversation.stage("system_two"):
                 answer = await ask
         except PerceptionUnavailableError:
             if meter is not None:
@@ -496,7 +493,7 @@ class SimSession:
         return await self._metered(lambda: self._handle(text))
 
     async def _handle(self, text: str) -> Turn:
-        with self._stage("perception"):
+        with self.conversation.stage("perception"):
             self.hal.type_text(text)
             utterance = self.hal.audio_in(called_from="SimSession.handle()") or ""
             pending = self.conversation.confirmations.latest()
@@ -640,11 +637,14 @@ class SimSession:
         """
 
         async def run() -> Turn:
-            with self._stage("perception"):
+            # These calls are System 2's answer; a later round that fails, and the
+            # device's own reply to it, make the turn a fallback (`turn_path`).
+            self.conversation.meter.answered(True)
+            with self.conversation.stage("perception"):
                 recognition = self.grammar.recognize(text)
             return await self._call_tools(Turn(text, recognition), calls, recognition, reply)
 
-        return await self._metered(run, started_ms=started_ms, waited="system_two", path="system_2")
+        return await self._metered(run, started_ms=started_ms, waited="system_two")
 
     async def say_offline(self, text: str = "", *, started_ms: float | None = None) -> Turn:
         """

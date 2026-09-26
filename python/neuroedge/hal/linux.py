@@ -42,7 +42,7 @@ from . import Authorizer, HardwareAbstractionLayer, _require_signature
 from .board import BoardProfile, load_board_by_id
 from .framebuffer import DisplayBackend, display_backend
 from .sim import EventSink, Frame, PendingCommand, _NullSink, make_frame
-from .sysfs import SysfsSensors, parse_sources
+from .sysfs import Reading, SysfsSensors, parse_sources
 
 CHIP_GLOB = "/dev/gpiochip*"
 SETUP_HINT = (
@@ -93,6 +93,8 @@ class LinuxHAL(HardwareAbstractionLayer):
         sysfs_root: str | Path | None = None,
         display: str | DisplayBackend | None = None,
         needs: Mapping[str, Any] | None = None,
+        units: Mapping[str, str] | None = None,
+        replay: bool = False,
     ) -> None:
         board = board if board is not None else load_board_by_id("linux-rpi5")
         if board.target != "linux":
@@ -108,13 +110,26 @@ class LinuxHAL(HardwareAbstractionLayer):
         self._lock = threading.Lock()
         # sensor.read and display are settled before any line is requested (Q-16):
         # `needs` = preflight()'s arguments, what the session's agent will read and draw.
+        sources_where = "LinuxHAL(sensor_sources=...)"
         if sensor_sources is None and os.environ.get(SENSORS_ENV):
             sensor_sources = parse_sources(os.environ[SENSORS_ENV], SENSORS_ENV)
+            sources_where = SENSORS_ENV
+        for sensor in sensor_sources or {}:
+            # A misspelt key would leave the real sensor to label discovery, which can
+            # find some other channel labelled after it.
+            board.require_sensor(sensor, called_from=sources_where)
         self.sensors = SysfsSensors(sysfs_root, sensor_sources)
+        # The unit the agent declares for a sensor ([sim.sensors]); a kernel reading
+        # in another unit is refused, not compared against a threshold meant for it.
+        self.expected_units = dict(units or {})
+        # Replay recomputes from the trace alone: a sensor it holds no reading of is
+        # an error, never the room's reading today, and frames stay in memory.
+        self.replay = replay
         where = "LinuxHAL(display=...)" if display is not None else DISPLAY_ENV
-        self.display_backend = display_backend(
-            display if display is not None else os.environ.get(DISPLAY_ENV) or None, where
-        )
+        choice = display if display is not None else os.environ.get(DISPLAY_ENV) or None
+        if choice is None and replay:
+            choice = "memory"
+        self.display_backend = display_backend(choice, where)
         self.frame: str | bytes | None = None
         self.frames: list[Frame] = []
         # Recorded readings replay feeds back (`script_sensor`), in place of the kernel's.
@@ -303,8 +318,14 @@ class LinuxHAL(HardwareAbstractionLayer):
                     how="replay a trace recorded with its sensor_read events",
                 )
             value, unit = self._replayed[sensor], self._units.get(sensor)
+        elif self.replay:
+            raise BoardCapabilityError(
+                where=where,
+                why="the trace being replayed holds no reading of this sensor",
+                how="replay a trace recorded with its sensor_read events",
+            )
         else:
-            reading = self.sensors.read(sensor, where)
+            reading = self._kernel_read(sensor, where)
             value, unit = reading.value, reading.unit
         data: dict[str, Any] = {"sensor": sensor, "value": value}
         if unit is not None:
@@ -313,6 +334,20 @@ class LinuxHAL(HardwareAbstractionLayer):
             data["use"] = use
         self.events.emit("sensor_read", data)
         return value
+
+    def _kernel_read(self, sensor: str, where: str) -> Reading:
+        reading = self.sensors.read(sensor, where)
+        expected = self.expected_units.get(sensor)
+        if expected is not None and reading.unit != expected:
+            raise BoardCapabilityError(
+                where=where,
+                why=(
+                    f"the kernel reports {sensor!r} in {reading.unit!r} ({reading.path}), "
+                    f"and the agent declares {expected!r}"
+                ),
+                how="map the sensor to the channel that measures it, or fix the declared unit",
+            )
+        return reading
 
     def script_sensor(self, sensor: str, values: list[Any], unit: str | None = None) -> None:
         """Readings returned in order, one per read, instead of the kernel's — replay only."""
@@ -362,7 +397,7 @@ class LinuxHAL(HardwareAbstractionLayer):
         """
         for sensor in dict.fromkeys(sensors):
             self.board.require_sensor(sensor, called_from=where)
-            self.sensors.read(sensor, f"{where} -> sensor.read {sensor!r}")
+            self._kernel_read(sensor, f"{where} -> sensor.read {sensor!r}")
         if display:
             self._require_display_backend(f"{where} -> display")
 
@@ -427,7 +462,7 @@ class TypedLinuxHAL(LinuxHAL):
             timer.join()
 
     def sensor_values(self) -> dict[str, tuple[Any, str | None]]:
-        return {}  # the REPL's `:sensors` lists simulated values; these are the kernel's
+        return {}  # `:sensors` lists values set on sim; on linux the kernel owns them
 
     def set_sensor(self, sensor: str, value: Any, unit: str | None = None) -> None:
         raise BoardCapabilityError(

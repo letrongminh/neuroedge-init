@@ -95,7 +95,8 @@ class Conversation:
         # only measures: nothing here reads it to decide.
         self.meter: Any = None
 
-    def _stage(self, name: str) -> AbstractContextManager[Any]:
+    def stage(self, name: str) -> AbstractContextManager[Any]:
+        """Time `name` on the turn's meter, if a session is timing one."""
         return self.meter.stage(name) if self.meter is not None else nullcontext()
 
     async def do(self, target: Any, /, **kwargs: Any) -> ActionResult:
@@ -143,7 +144,7 @@ class Conversation:
             "action_requested",
             {"action": spec.name, "gate": spec.gate, "arguments": _json_safe(kwargs)},
         )
-        with self._stage("gate"):
+        with self.stage("gate"):
             result = await self.engine.evaluate(
                 spec.gate,
                 self.facts,
@@ -189,7 +190,7 @@ class Conversation:
             p95_ms=tree["budget"]["p95_latency_ms"],
         )
         try:
-            with self._stage("action"), running(spec), digital.grant(self.hal, token, spec.name):
+            with self.stage("action"), running(spec), digital.grant(self.hal, token, spec.name):
                 value = spec.fn(**kwargs)
                 if inspect.isawaitable(value):
                     value = await value

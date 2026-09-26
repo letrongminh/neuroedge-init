@@ -104,13 +104,15 @@ class TurnMeter:
         if self._open is not None:
             yield  # nested: the stage already open counts this time
             return
+        start = self.clock()  # before the stage opens: a clock that raises leaves none open
         self._open = name
-        start = self.clock()
         try:
             yield
         finally:
-            self._ms[name] += max(0.0, self.clock() - start)
-            self._open = None
+            try:
+                self._ms[name] += max(0.0, self.clock() - start)
+            finally:
+                self._open = None
 
     def answered(self, ok: bool) -> None:
         """System 2 was asked; `ok` when it answered. One answer in the turn is enough."""
@@ -148,9 +150,10 @@ class TurnMeter:
 def turn_path(reply_source: str | None, *, system_two: bool | None, served_locally: bool) -> str:
     """
     Which path served a turn. A reply the device said because System 2 could not
-    answer is `fallback` even if an earlier round of System 2 did answer.
+    answer is `fallback` even if an earlier round of System 2 did answer; the same
+    reply with no System 2 to ask is `system_1` or `none`, from the recognition.
     """
-    if reply_source in FALLBACK_REPLIES:
+    if reply_source in FALLBACK_REPLIES and system_two is not None:
         return "fallback"
     if system_two is not None:
         return "system_2" if system_two else "fallback"
