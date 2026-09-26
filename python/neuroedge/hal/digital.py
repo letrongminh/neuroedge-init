@@ -74,6 +74,7 @@ class _Pin:
                 why=f"negative after_ms {after_ms}",
                 how="use after_ms >= 0",
             )
+        scheduled: dict[str, int] = {}
         if after_ms:
             if not getattr(active.hal, "schedules_commands", False):
                 raise BoardCapabilityError(
@@ -81,17 +82,15 @@ class _Pin:
                     why=f"target {getattr(active.hal, 'target', '?')!r} cannot schedule a command",
                     how="drive the pin without after_ms; scheduled commands exist on `sim` (TSK-S3-11)",
                 )
-            return active.hal.digital_out(
-                self.name,
-                operation,
-                duration_ms,
-                signature=active.token,
-                called_from=called_from,
-                # Rounded up: a scheduled command is never delivered early (0.5 ms is 1 ms).
-                delay_ms=math.ceil(after_ms),
-            )
+            # Rounded up: a scheduled command is never delivered early (0.5 ms is 1 ms).
+            scheduled["delay_ms"] = math.ceil(after_ms)
         return active.hal.digital_out(
-            self.name, operation, duration_ms, signature=active.token, called_from=called_from
+            self.name,
+            operation,
+            duration_ms,
+            signature=active.token,
+            called_from=called_from,
+            **scheduled,
         )
 
     def pulse(

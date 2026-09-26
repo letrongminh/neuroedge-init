@@ -29,9 +29,10 @@ sentence) and `events` — every observable event, in order, each with its
 from __future__ import annotations
 
 import asyncio
+import itertools
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -117,7 +118,6 @@ class VoiceCase:
     world: dict[str, Any]
     inputs: tuple[dict[str, Any], ...]
     until_ms: int
-    param_values: dict[str, Any] = field(default_factory=dict)
 
     @property
     def name(self) -> str:
@@ -188,7 +188,6 @@ def load_case(path: Path) -> VoiceCase:
         world=world,
         inputs=tuple(inputs),
         until_ms=until,
-        param_values=param_values,
     )
 
 
@@ -261,9 +260,7 @@ def observe(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def compare(expected: list[dict[str, Any]], observed: list[dict[str, Any]]) -> list[str]:
     differences = []
-    for i in range(max(len(expected), len(observed))):
-        want = expected[i] if i < len(expected) else None
-        got = observed[i] if i < len(observed) else None
+    for i, (want, got) in enumerate(itertools.zip_longest(expected, observed)):
         if want is None or got is None:
             differences.append(f"events[{i}]: expected {want}, got {got}")
             continue
