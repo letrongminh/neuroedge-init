@@ -205,13 +205,11 @@ def _sim_tables(manifest: AgentManifest) -> tuple[dict[str, Any], dict[str, tupl
 SESSION_TARGETS = ("sim", "linux")
 
 
-def _require_linux_primitives(manifest: AgentManifest, sensor_facts: Mapping[str, Any]) -> None:
+def _require_linux_primitives(manifest: AgentManifest) -> None:
     """Refuse, before a line is requested, an agent that needs what `LinuxHAL` lacks."""
     from ..hal.linux import MISSING_ON_LINUX
 
     missing = [name for name in manifest.requires if name in MISSING_ON_LINUX]
-    if sensor_facts and "sensor.read" not in missing:
-        missing.append("sensor.read")
     if not missing:
         return
     tasks = ", ".join(f"{name} ({MISSING_ON_LINUX[name]})" for name in missing)
@@ -219,10 +217,24 @@ def _require_linux_primitives(manifest: AgentManifest, sensor_facts: Mapping[str
         where=f"{manifest.source} -> [requires] on target 'linux'",
         why=(
             f"the agent needs {tasks}, which LinuxHAL does not implement yet; "
-            "on linux an interactive session has digital.out only"
+            "on linux an interactive session has digital.out, sensor.read and display"
         ),
         how="run it on sim (--target sim) until those tasks bring the primitives to linux",
     )
+
+
+def _linux_needs(manifest: AgentManifest, sensor_facts: Mapping[str, Any]) -> dict[str, Any]:
+    """
+    What `LinuxHAL` checks before it requests a line: every sensor the agent or a gate
+    fact reads is readable, and a display backend is chosen if the agent draws.
+    """
+    sensors = list(manifest.requires.get("sensor.read", {}).get("sensors", ()))
+    sensors += [rule.sensor for rule in sensor_facts.values()]
+    return {
+        "sensors": sensors,
+        "display": "display" in manifest.requires,
+        "where": f"{manifest.source} on target 'linux'",
+    }
 
 
 def _asks(result: ToolResult) -> bool:
@@ -320,7 +332,7 @@ class SimSession:
         sensors, sensor_facts = _sim_sensors(manifest, sim_table)
 
         if target == "linux":
-            _require_linux_primitives(manifest, sensor_facts)
+            _require_linux_primitives(manifest)
         actions = load_actions(manifest)
         gates, _ = _resolve_gates(manifest, registry)  # build() has already vetted them
 
@@ -331,7 +343,7 @@ class SimSession:
         if target == "linux":
             from ..hal.linux import TypedLinuxHAL
 
-            hal = TypedLinuxHAL(board, events=events)
+            hal = TypedLinuxHAL(board, events=events, needs=_linux_needs(manifest, sensor_facts))
         else:
             hal = SimHAL(board, events=events)
             for name, (value, unit) in sensors.items():
