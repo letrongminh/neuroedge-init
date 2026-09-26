@@ -37,6 +37,37 @@ không ghi ở đây: đọc task ở cột cuối trong bảng task của roadm
 | `display` | Khung chữ hoặc điểm ảnh RGB565/RGB888 trong bộ nhớ, kiểm độ phân giải; digest SHA-256; `display.show()` trong `@action` | PR | TSK-S3-23 |
 | *Trực quan* | Terminal · `trace view` HTML tĩnh · `run --ui` và `mcp serve --ui` web cục bộ (FR-TGT-06) | PR | TSK-S3-22, S2-09, S3-27 |
 
+**Dữ kiện gate từ cảm biến — `[sim.sensor_facts]`.** Mỗi dòng `tiêu_chí = { sensor = "…", <luật> }`
+tính một dữ kiện gate từ số đọc đầu lượt, như nhau trên `sim` (giá trị kịch bản) và `linux` (số đọc
+kernel). Mỗi cảm biến được đọc **một lần mỗi lượt**, nên hai dữ kiện của cùng một cảm biến không bao giờ
+tính trên hai số đọc khác nhau. Hiện thực: `SensorFact` trong `python/neuroedge/sim/session.py`.
+
+| Luật | Dữ kiện | Ví dụ |
+|:---|:---|:---|
+| *(không có)* | Chính số đọc | `door_closed = { sensor = "door_contact" }` |
+| `equals` | `bool`: số đọc bằng giá trị | `room_empty = { sensor = "motion", equals = false }` |
+| `gte` / `lte` (một hoặc cả hai) | `bool`: số đọc ≥ / ≤ ngưỡng — **tính cả ngưỡng** | `too_hot = { sensor = "temperature", gte = 30 }` |
+| `bands` | `level`: dải chứa số đọc | `heat_level = { sensor = "temperature", bands = { low = -40, normal = 25, high = 40, critical = 55 } }` |
+
+Luật `bands` — gate so dải, không so số (`evaluate.type: numeric` chưa có, `TODOS.md` #30):
+
+- Mỗi mục là `mức = ngưỡng dưới`. Một dải bắt đầu **tại** ngưỡng của nó (tính cả ngưỡng) và dừng ngay
+  dưới ngưỡng của mục kế tiếp; dải cuối không có cận trên. Ví dụ trên: 24,999 → `low`, 25 → `normal`,
+  54,999 → `high`, 55 → `critical`.
+- Ngưỡng là số hữu hạn (không phải bool, NaN, inf), **tăng ngặt** theo thứ tự viết. Mức là mức mà gate
+  khai ở `evaluate.<tiêu_chí>.levels`, viết **đúng thứ tự** đó (được bỏ mức): số đọc cao hơn không bao
+  giờ ra mức thấp hơn. Phải có ít nhất một gate đọc tiêu chí đó, và mọi gate đọc nó khai kiểu `level`.
+- Cảm biến phải khai đơn vị ở `[sim.sensors]` (`temperature = { value = 45, unit = "C" }`), để `linux`
+  từ chối số đọc khác đơn vị thay vì đem so với ngưỡng (luật `linux` dưới đây).
+- Mỗi dòng một luật: `bands` đi cùng `equals`, `gte` hay `lte` bị từ chối; `equals` cùng `gte`/`lte` cũng
+  vậy. Ngưỡng `gte`/`lte` cũng phải là số hữu hạn.
+- Sai một điều trên ⇒ `AgentManifestError` (ba phần) khi nạp phiên, **trước khi** xin line GPIO nào.
+- Số đọc dưới ngưỡng đầu tiên, hoặc không phải số hữu hạn (chữ, bool, NaN, inf), cho dữ kiện **chưa
+  xác định** — `null` trong `gate_facts` — mà gate không bao giờ nhận; không bao giờ đoán một dải.
+  `gte`/`lte` trên số đọc không phải số hữu hạn cũng chưa xác định. Replay dùng lại `gate_facts` đã ghi.
+- Tiêu chí chưa xác định vẫn là tiêu chí `on_block.confirms` cho người trên thiết bị đứng thay
+  (RFC-0006): ở -41 °C, `vent_off` của `factory-monitor` hỏi lại, còn `alarm_off` chặn.
+
 ### `linux` — `linux-rpi5`
 
 | Nguyên thủy | Backend | Kiểm ở | Chỉ phần cứng | Task |
@@ -58,7 +89,8 @@ biến bo mạch khai. Luật an toàn:
   hạn, cờ `*_fault`, hay loại kênh không rõ đơn vị ⇒ `BoardCapabilityError`, không bao giờ trả giá
   trị mặc định. "Tới kernel" không có nghĩa là mới hơn chu kỳ cập nhật của driver (lm75 ≈ 1,5 s).
 - Agent khai đơn vị cho cảm biến (`[sim.sensors] temperature = { value = …, unit = "C" }`) thì số đọc
-  của kernel khác đơn vị đó bị từ chối, không đem so với ngưỡng viết cho đơn vị kia.
+  của kernel khác đơn vị đó bị từ chối, không đem so với ngưỡng viết cho đơn vị kia. Dữ kiện gate tính
+  từ số đọc kernel bằng đúng luật `[sim.sensor_facts]` của `sim` (trên), gồm `bands`.
 - Replay chỉ dùng giá trị đã ghi: cảm biến vết ghi không có số đọc thì báo lỗi, không đọc kernel; khung
   hình vẽ trong bộ nhớ.
 - `door_contact` và `motion` của `linux-rpi5` là đầu vào GPIO, không phải hwmon/IIO: chưa đọc được trên

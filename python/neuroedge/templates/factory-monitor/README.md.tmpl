@@ -2,7 +2,7 @@
 
 Giám sát môi trường phòng máy, sinh từ mẫu `factory-monitor`. Quạt thông gió và đèn báo động là
 hành động vật lý, đi qua gate; mọi gate đọc **một** dữ kiện kiểu `level` — dải nhiệt
-`low · normal · high · critical` do cảm biến `temperature` báo:
+`low · normal · high · critical` của phòng máy:
 
 | Lệnh | Action | Gate quyết |
 |:---|:---|:---|
@@ -11,12 +11,16 @@ hành động vật lý, đi qua gate; mọi gate đọc **một** dữ kiện k
 | `bật báo động` | `alarm_on` | Luôn cho phép |
 | `tắt báo động` | `alarm_off` | Trên `normal`: **chặn** — không ai tắt được báo động khi phòng còn nóng |
 
-Gate so dải, không so độ: ngưỡng số cần `evaluate.type: numeric`, chưa có trong `gate.v1`.
-Trên thiết bị, driver cảm biến báo dải; `sim` đọc nó ở `[sim.sensors]` của `agent.toml`.
+Gate so dải, không so độ: tiêu chí số cần `evaluate.type: numeric`, chưa có trong `gate.v1`.
+Cảm biến `temperature` báo độ C — trên `sim` lấy ở `[sim.sensors]`, trên `linux` từ kernel (vd
+`lm75` qua hwmon) — và `bands` ở `[sim.sensor_facts]` của `agent.toml` đổi số đọc thành dải, như
+nhau trên cả hai target. Mỗi dải bắt đầu **đúng tại** ngưỡng của nó (25 °C là `normal`, 24,5 °C là
+`low`); `heat_critical` dùng lại ngưỡng của `critical` nên hai dữ kiện luôn khớp. Số đọc dưới ngưỡng
+thấp nhất, hoặc không phải số hữu hạn (chữ, NaN), thì không thuộc dải nào: gate chặn, không đoán.
 
 ## Chạy thử trên `sim` — không cần mạng, không cần key
 
-`sim` khởi động ở dải `high`:
+`sim` khởi động ở 45 °C (dải `high`):
 
 ```bash
 neuroedge run -c "bật quạt"                         # ✓ ALLOW, gate_relay HIGH
@@ -26,8 +30,20 @@ neuroedge run                                       # REPL: gõ lệnh, :help, e
 ```
 
 Trong REPL hoặc UI (`neuroedge run --ui`): `bật quạt`, `tắt quạt`, rồi `có` — quạt tắt.
-`:sensor temperature critical` rồi `tắt quạt` — gate chặn, không hỏi. `:sensor temperature normal`
+`:sensor temperature 60` rồi `tắt quạt` — gate chặn, không hỏi. `:sensor temperature 30`
 rồi `tắt báo động` — cho phép.
+
+## Chạy trên `linux`
+
+Cùng agent, cùng dải; số đọc đến từ cảm biến thật, tìm theo tên. Cần `pip install 'neuroedge[linux]'`
+và line GPIO `gate_relay`, `porch_light`:
+
+```bash
+NEUROEDGE_LINUX_SENSORS="temperature=hwmon:lm75/temp1" neuroedge run --target linux
+```
+
+Kernel báo đơn vị khác `C` (đơn vị khai ở `[sim.sensors]`) thì số đọc bị từ chối, không đem so với
+ngưỡng; `:sensor` không đổi được cảm biến thật.
 
 ## Kiểm thử
 
@@ -39,7 +55,7 @@ neuroedge test                                      # Action CI: 0 = mọi test 
 
 | Tệp | Vai trò |
 |:---|:---|
-| `agent.toml` | Năng lực cần (`digital.out`, `sensor.read`), gate, cảm biến giả lập và dữ kiện lấy từ nó |
+| `agent.toml` | Năng lực cần (`digital.out`, `sensor.read`), gate, cảm biến giả lập và dải nhiệt (`bands`) lấy từ nó |
 | `commands.toml` | Lệnh → action |
 | `gates/` | `vent_on`, `vent_off` (ask, `confirms: [heat_level]`), `alarm_on`, `alarm_off` (deny) |
 | `actions/plant.py` | Bốn hàm `@action`: `gate_relay` là rơ-le quạt, `porch_light` là đèn báo động |

@@ -42,6 +42,7 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Mở một vết ghi thành trang HTML để xem lại, tua thời gian, gửi đồng nghiệp | `neuroedge trace view` | ✅ |
 | Xuất vết ghi để phân tích thời gian trong Perfetto | `neuroedge trace export --format chrome` | ✅ |
 | Giả lập cảm biến và màn hình trên `sim` | `[sim.sensors]` · `:sensor` · `display.show()` | ✅ |
+| Đổi số đọc cảm biến thành dữ kiện gate: so ngưỡng, hoặc dải cho tiêu chí `level` (25 °C → `normal`) — trên `sim` và `linux` | `[sim.sensor_facts]`: `gte` / `lte` · `bands` — luật ở [`simulation_coverage.md`](../spec/simulation_coverage.md) §2 | ✅ |
 | Đọc một gate bằng lời: tiêu chí từ đâu, điều gì bị siết chặt | `neuroedge gate explain` | ✅ |
 | Tạo dự án agent mới có sẵn gate, action, test, và cây `traces/` (`incidents/`, `golden/` — FR-TRC-09) | `neuroedge new` | ✅ |
 | Xem ví dụ chạy được của một lệnh | `neuroedge <lệnh> --help` (mục `Examples:`) | ✅ |
@@ -77,11 +78,11 @@ Nói thẳng để bạn không mất thời gian:
   (bất biến 10, `CHANGELOG.md` §3.3).
 - `--target linux` cần line GPIO thật hoặc ảo (`scripts/setup_gpio_sim.sh`) và
   `pip install 'neuroedge[linux]'`; thiếu thì lệnh báo lỗi, không giả vờ chạy.
-- Trên `linux` có `digital.out`, `sensor.read`, `display`; âm thanh chưa hiện thực. Cảm biến đọc bằng
-  độ (°C), không bằng "dải" như `[sim.sensors]` của `factory-monitor` (`high`, `critical`): gate so
-  dải thì chặn (fail-closed) cho tới khi có `evaluate.type: numeric` (`TODOS.md` #30). Màn hình
-  `/dev/fb*` chỉ nhận khung điểm ảnh; khung chữ cần `display = memory`. `:sensor` trong REPL không
-  đổi được cảm biến thật.
+- Trên `linux` có `digital.out`, `sensor.read`, `display`; âm thanh chưa hiện thực. Gate chưa so trực
+  tiếp được số đọc (`evaluate.type: numeric`, `TODOS.md` #30): agent đổi số đọc thành dữ kiện gate ở
+  `[sim.sensor_facts]` — ngưỡng `gte`/`lte`, hoặc dải `bands` như `factory-monitor` — như nhau trên
+  `sim` và `linux`. Màn hình `/dev/fb*` chỉ nhận khung điểm ảnh; khung chữ cần `display = memory`.
+  `:sensor` trong REPL không đổi được cảm biến thật.
 - Chưa có bo mạch `esp32s3`: firmware (walker gate, sổ token C, replay vết ghi chuẩn mực) mới chạy
   trên máy tính và QEMU. Trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng
   trên host; `replay --target esp32s3` cho vết ghi tuỳ ý **thoát mã 2**.

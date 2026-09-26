@@ -184,24 +184,65 @@ def neuroedge(*args: str, stdin: str = "", timeout: float = 30) -> subprocess.Co
     )
 
 
-def test_a_session_on_linux_decides_on_the_kernel_reading_and_replays(lm75, tmp_path: Path):
-    set_temperature(26.5)
-    out = tmp_path / "factory.json"
-    done = neuroedge(
-        "record", "--target", "linux", "--agent", str(FACTORY), "--out", str(out),
-        stdin="bật quạt\ntắt quạt\nexit\n",
-    )  # fmt: skip
+def wait_for_kernel(celsius: float, timeout: float = 5.0) -> None:
+    """
+    Wait until the lm75 driver reports the register just written (it refreshes on its
+    own interval), reading sysfs directly: a LinuxHAL here would hold the lines the
+    session under test needs.
+    """
+    path = Path(env("NEUROEDGE_LM75_HWMON")) / "temp1_input"
+    expected = round(celsius * 1000)
+    deadline = time.monotonic() + timeout
+    while (reported := int(path.read_text(encoding="ascii"))) != expected:
+        assert time.monotonic() < deadline, f"{path} reports {reported}, not {expected}"
+        time.sleep(0.05)
+
+
+def events(trace: dict, kind: str) -> list[dict]:
+    return [event["data"] for event in trace["events"] if event["type"] == kind]
+
+
+@pytest.mark.parametrize(
+    ("celsius", "band", "verdicts", "fan"),
+    [
+        # `normal`: vent_off is allowed; the "có" after it answers nothing.
+        (30.0, "normal", ["ALLOW", "ALLOW"], [("on", 0), ("off", 0)]),
+        # `high`: vent_off asks (on_block: ask); the operator's "có" stops the fan.
+        (45.0, "high", ["ALLOW", "BLOCK", "ALLOW"], [("on", 0), ("off", 0)]),
+        (54.5, "high", ["ALLOW", "BLOCK", "ALLOW"], [("on", 0), ("off", 0)]),
+        # `critical` starts at 55 °C, inclusive: refused, nothing asked, "có" is no answer.
+        (55.0, "critical", ["ALLOW", "BLOCK"], [("on", 0)]),
+        (60.0, "critical", ["ALLOW", "BLOCK"], [("on", 0)]),
+    ],
+)
+def test_the_kernel_reading_decides_the_fan_through_its_band_and_replays(
+    lm75, tmp_path: Path, celsius, band, verdicts, fan
+):
+    set_temperature(celsius)
+    try:
+        wait_for_kernel(celsius)
+        out = tmp_path / "factory.json"
+        done = neuroedge(
+            "record", "--target", "linux", "--agent", str(FACTORY), "--out", str(out),
+            stdin="bật quạt\ntắt quạt\ncó\nexit\n",
+        )  # fmt: skip
+    finally:
+        set_temperature(25.0)
     assert done.returncode == 0, done.stdout + done.stderr
     trace = json.loads(out.read_text(encoding="utf-8"))
-    reads = [e["data"] for e in trace["events"] if e["type"] == "sensor_read"]
-    assert reads and all(r == {"sensor": "temperature", "value": 26.5, "unit": "C", "use": "fact"}
+    reads = events(trace, "sensor_read")
+    assert reads and all(r == {"sensor": "temperature", "value": celsius, "unit": "C", "use": "fact"}
                          for r in reads)  # fmt: skip
-    # The gates compare heat bands; a reading in degrees is no band, so vent_off is refused.
-    assert "ALLOW" in done.stdout and "BLOCK" in done.stdout
+    vent_off = [f for f in events(trace, "gate_facts") if "heat_level" in f]
+    assert vent_off and all(f["heat_level"]["value"] == band for f in vent_off)
+    assert all(f["heat_critical"]["value"] is (celsius >= 55) for f in vent_off)
+    assert [r["verdict"] for r in events(trace, "gate_evaluation_result")] == verdicts
+    assert bool(events(trace, "tool_confirm_requested")) is (band == "high")
 
     sim = replay(out, target="sim", agent=FACTORY)
     linux = replay(out, target="linux", agent=FACTORY)
-    assert linux.verdicts == sim.verdicts == sim.recorded_verdicts
+    assert linux.verdicts == sim.verdicts == sim.recorded_verdicts == verdicts
+    assert linux.pin("gate_relay").commands == sim.pin("gate_relay").commands == fan
 
 
 def test_a_session_whose_sensor_is_not_found_exits_before_any_line(lm75):
