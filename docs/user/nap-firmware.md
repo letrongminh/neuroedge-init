@@ -24,8 +24,9 @@ Lệch một chỗ ⇒ `NE_SELFTEST FAIL …` và firmware dừng: không runtim
 - Firmware còn replay ba vết ghi chuẩn mực lúc khởi động (TSK-S4-09) — không liên quan tới agent
   của bạn, nhưng cho `neuroedge verify --targets esp32s3 --port …` kiểm walker trên chính chip đó.
 - **Chưa Secure Boot, chưa mã hóa flash, chưa nút ngắt micro** (TSK-S6-05). OTA xác minh chữ ký
-  bằng khóa nằm trong ảnh đang chạy — đủ để chặn kẻ tấn công qua mạng, **không** chặn người có
-  cáp: ai nạp được qua cáp thì đổi được cả khóa. Xem §6.
+  bằng khóa nằm trong ảnh đang chạy, nên người có cáp vẫn thay được cả khóa lẫn firmware. Hạ cấp bị
+  chặn bằng mốc nước cao phiên bản trong NVS (eFuse anti-rollback chỉ có khi bật Secure Boot —
+  TSK-S6-05). Xem §6.
 
 ## 2. Cần gì
 
@@ -48,6 +49,7 @@ Thành công ⇒ dòng `firmware: build/esp32s3 — ESP-IDF project, …`. Trong
 |:---|:---|
 | `main/`, `components/ne_gate/`, `components/ne_trace/`, `CMakeLists.txt`, `sdkconfig.*`, `partitions.csv` | Mã nguồn firmware, chép nguyên văn — giống nhau cho mọi agent |
 | `components/ne_agent/` | Phần của agent: cây `NETR` mỗi gate (`gates/`), bảng gate, chân, action, phép kiểm self-test kèm phán quyết của engine (`ne_agent.c`) |
+| `version.txt` | Phiên bản app của agent này — ESP-IDF đọc thành `PROJECT_VER`; cách đặt và tăng: §6.6 |
 | `.neuroedge-build` | Danh sách tệp lần build này đã ghi |
 
 **Đừng sửa tay `components/ne_agent/`.** Đổi gate hay action thì chạy lại `build`: cùng agent cho
@@ -104,6 +106,16 @@ Hai khe A/B. Bản mới chỉ được coi là đáng tin **sau khi vượt sel
 trước khi kịp tự kiểm). Không cần dịch vụ hay tài khoản NeuroEdge: chỉ một HTTP(S) endpoint mở.
 Đây là cấu hình **tùy chọn**; bản build mặc định không có đường OTA (§6.5).
 
+Hai ràng buộc cứng của đường OTA:
+
+- **Chữ ký + rollback là bắt buộc.** OTA chỉ được biên dịch khi bật đủ xác minh chữ ký trên bản
+  cập nhật (`CONFIG_SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT`) **và** rollback
+  (`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`); thiếu một trong hai thì Kconfig từ chối bật
+  `CONFIG_NEUROEDGE_OTA`. Lớp `sdkconfig.ota` bật cả hai.
+- **OTA không bao giờ ghi bootloader.** Nó chỉ ghi khe app (`esp_https_ota` →
+  `esp_ota_set_boot_partition`). Bootloader biết rollback phải nạp **một lần bằng cáp** từ project
+  build với lớp OTA (§6.2); các bản OTA về sau không đụng tới nó.
+
 ### 6.1 Máy chủ cập nhật
 
 Máy chủ chỉ cần trả về **một tệp**: ảnh `app` đã ký — trong `build/esp32s3/build/`, tên theo
@@ -154,33 +166,45 @@ espsecure.py sign_data --version 2 --keyfile secure_boot_signing_key.pem \
 đó phải nạp lại qua cáp. Tệp khóa bị `.gitignore` chặn (`secure_boot_signing_key.pem`, `*.pem`);
 đừng gỡ.
 
+OTA chỉ đổi khe app; bootloader (kèm `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`) không bao giờ được
+cập nhật qua mạng. Lần nạp **đầu tiên** bằng cáp phải là bản build có lớp `sdkconfig.ota`
+(`idf.py -p <cổng> flash`), nếu không bootloader không có logic rollback và ảnh OTA hỏng sẽ không
+tự quay về. Các lần OTA sau không đụng tới bootloader.
+
 ### 6.3 Một lần cập nhật diễn ra thế nào
 
-1. Thiết bị tải ảnh, đọc app descriptor và so phiên bản với bản đang chạy; **trùng phiên bản thì
-   bỏ qua**, không ghi khe.
+1. Thiết bị tải ảnh, đọc app descriptor, rồi so phiên bản với **mốc nước cao** lưu trong NVS:
+   phiên bản bằng hoặc **thấp hơn mốc bị bỏ qua** — hạ cấp không bao giờ được ghi vào khe nào.
+   Mốc đơn điệu (chỉ tăng) và so theo số; eFuse anti-rollback chỉ có khi bật Secure Boot
+   (TSK-S6-05).
 2. `esp_https_ota` ghi vào khe còn trống rồi xác minh (cấu trúc + chữ ký). Sai chữ ký ⇒ từ chối,
    **không đổi khe**.
 3. Đặt khe mới làm khe khởi động rồi reset. Ảnh mới khởi động ở trạng thái *chờ xác nhận*.
-4. Self-test gate chạy. Đạt ⇒ `NE_OTA VALID` và ảnh được xác nhận. Không đạt ⇒ `NE_OTA INVALID`,
-   đánh dấu hỏng và reset; bootloader quay về ảnh trước.
+4. Self-test gate chạy. Đạt ⇒ `NE_OTA VALID` và ảnh được xác nhận (mốc nước cao được cập nhật).
+   Không đạt ⇒ `NE_OTA INVALID`, đánh dấu hỏng và reset; bootloader quay về ảnh trước.
 5. Ảnh mới reset/panic trước bước 4 ⇒ bootloader tự quay về ảnh trước ở lần khởi động kế tiếp.
-6. Phiên bản vừa bị quay về **bị chặn**: thiết bị không tự nạp lại nó; muốn sửa thì phát hành
-   phiên bản mới hơn.
+   Nếu ảnh **treo** mà không reset: task watchdog không được cấu hình panic (`CONFIG_ESP_TASK_WDT_PANIC`
+   mặc định `n`), nên máy không tự khởi động lại — rollback chỉ xảy ra ở lần **mất điện rồi bật lại**
+   kế tiếp.
+6. Phiên bản vừa bị quay về **bị chặn**: mốc nước cao không hạ; muốn sửa thì phát hành phiên bản
+   cao hơn (§6.6).
 
 ### 6.4 Đọc dấu vết trên UART
 
-Mỗi sự kiện in đúng một dòng ở cột 0 (`NE_OTA …`); URL in ra đã bỏ `user:password@`:
+Mỗi sự kiện in đúng một dòng ở cột 0, bắt đầu bằng `NE_OTA`. **Định dạng từng dòng do
+[`ne_ota_policy.c`](../../targets/esp32s3/components/ne_ota/src/ne_ota_policy.c) định nghĩa** — nguồn
+duy nhất, gồm tên đầy đủ của mọi trường. Bảng dưới chỉ nói mỗi loại dòng có nghĩa gì:
 
 | Dòng | Nghĩa |
 |:---|:---|
-| `NE_OTA CHECK url=…` | Bắt đầu kiểm tra cập nhật |
-| `NE_OTA DOWNLOADED bytes=… version=…` | Ảnh đã tải và xác minh xong |
-| `NE_OTA SWITCH partition=…` | Khe mới thành khe khởi động; thiết bị reset |
-| `NE_OTA VALID partition=…` | Self-test đạt; ảnh được xác nhận |
-| `NE_OTA INVALID partition=…` | Self-test hỏng; ảnh bị đánh dấu và reset |
-| `NE_OTA ROLLBACK from=… to=…` | Lần cập nhật trước đã bị quay về; thiết bị đang chạy `to` |
-| `NE_OTA REJECTED reason=…` | Từ chối trước khi đổi khe (`signature`, `http`, `descriptor`, …) |
-| `NE_OTA SKIP reason=… version=…` | Không nạp (`same_version`, `rolled_back`, `no_version`) |
+| `NE_OTA CHECK` | Bắt đầu kiểm tra cập nhật (URL in ra đã bỏ `user:password@`) |
+| `NE_OTA DOWNLOADED` | Ảnh đã tải và xác minh chữ ký xong |
+| `NE_OTA SWITCH` | Khe mới thành khe khởi động; thiết bị reset |
+| `NE_OTA VALID` | Self-test đạt; ảnh được xác nhận |
+| `NE_OTA INVALID` | Self-test hỏng; ảnh bị đánh dấu và reset |
+| `NE_OTA ROLLBACK` | Lần cập nhật trước đã bị quay về; thiết bị đang chạy bản ghi ở trường `to` |
+| `NE_OTA REJECTED` | Từ chối trước khi đổi khe (chữ ký, HTTP, descriptor, …) |
+| `NE_OTA SKIP` | Không nạp (trùng phiên bản, hạ cấp, bản vừa bị quay về, không đọc được phiên bản) |
 
 ### 6.5 Build không OTA (mặc định) và thử trên QEMU
 
@@ -194,6 +218,23 @@ của bản OTA ở [`docs/reports/memory_spike_report.md`](../reports/memory_sp
 QEMU chỉ chứng minh logic phân vùng và chữ ký — danh sách đầy đủ ở
 [`docs/spec/simulation_coverage.md`](../spec/simulation_coverage.md) §4.
 
+QEMU chạy đường mạng bằng NIC `open_eth` (`CONFIG_NEUROEDGE_OTA_ETH`, chỉ có trong lớp QEMU).
+Trên **Box-3 thật**, đường Wi-Fi của `main.c` mới chỉ dựng STA (`esp_wifi_set_mode(WIFI_MODE_STA)`
+rồi `esp_wifi_start()`) mà **chưa** gọi `esp_wifi_connect()` và chưa có provisioning (SSID, mật
+khẩu, CA): hôm nay chưa có đường OTA nào chạy trên bo mạch — chỉ đường `open_eth` của QEMU.
+
+### 6.6 Phiên bản app — đặt và tăng
+
+Phiên bản app là `[agent] version` trong `agent.toml`, phải là **MAJOR.MINOR.PATCH**: ba số thập
+phân, không số 0 đứng đầu. Build `--target esp32s3` từ chối mọi thứ khác **trước khi ghi gì**, vì
+thiết bị đọc nó để chặn hạ cấp. `neuroedge build --target esp32s3` ghi nó vào `version.txt` của
+project; ESP-IDF đọc tệp đó thành `PROJECT_VER` — không có nó, project ngoài git báo phiên bản
+`1`. Firmware tham chiếu trong kho: `targets/esp32s3/version.txt` = `0.1.0`.
+
+Mỗi lần phát hành: sửa `[agent] version` trong `agent.toml`, build lại, và tăng ít nhất số cuối —
+`0.1.0` → `0.1.1` (sửa lỗi), `0.1.0` → `0.2.0` (tính năng). Thiết bị chỉ nhận phiên bản **cao
+hơn mốc nước cao** (§6.3 bước 1); phát lại phiên bản cũ không có tác dụng.
+
 ## 7. Khi lỗi
 
 | Thấy | Nghĩa | Làm gì |
@@ -205,5 +246,5 @@ QEMU chỉ chứng minh logic phân vùng và chữ ký — danh sách đầy đ
 | `NE_OTA REJECTED reason=signature` | Ảnh không ký bằng khóa của ảnh đang chạy (hoặc thiếu chữ ký) | Ký lại bằng đúng khóa (§6.2), rồi thử lại |
 | `NE_OTA REJECTED reason=http` | Không mở được URL, hoặc máy chủ trả 404/403 | Kiểm URL và máy chủ từ một máy khác; nhớ HTTP trần chỉ in trong `NE_OTA CHECK` |
 | `NE_OTA REJECTED reason=descriptor` | URL trả về tệp không phải ảnh app | Trỏ URL đúng tệp `.bin` đã ký |
-| `NE_OTA SKIP reason=rolled_back` | Phiên bản này là bản vừa bị quay về | Phát hành phiên bản mới hơn, không phát lại bản cũ |
+| `NE_OTA SKIP` | Không nạp: phiên bản trùng hay **thấp hơn mốc nước cao**, hoặc là bản vừa bị quay về | Phát hành phiên bản **cao hơn** (§6.6), không phát lại bản cũ |
 | `NE_OTA INVALID` rồi `NE_OTA ROLLBACK` | Ảnh mới hỏng self-test (hoặc reset trước khi xác nhận) và đã bị quay về | Sửa firmware, tăng phiên bản, phát hành lại |
