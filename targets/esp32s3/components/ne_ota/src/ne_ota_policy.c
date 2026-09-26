@@ -12,31 +12,27 @@ static bool empty(const char *text) {
     return text == NULL || text[0] == '\0';
 }
 
-static bool same(const char *left, const char *right) {
-    return left != NULL && right != NULL && strcmp(left, right) == 0;
-}
-
 bool ne_ota_parse_version(const char *text, uint32_t out[3]) {
     if (out == NULL) return false;
     out[0] = out[1] = out[2] = 0u;
     if (empty(text)) return false;
-    size_t part = 0;
     const char *cursor = text;
-    while (true) {
+    for (int part = 0; part < 3; part++) {
         if (*cursor < '0' || *cursor > '9') return false;
+        if (*cursor == '0' && cursor[1] >= '0' && cursor[1] <= '9') return false; /* no 01 */
         uint32_t value = 0u;
         while (*cursor >= '0' && *cursor <= '9') {
             if (value > (0xFFFFFFFFu - (uint32_t)(*cursor - '0')) / 10u) return false;
             value = value * 10u + (uint32_t)(*cursor - '0');
             cursor++;
         }
-        if (part > 2u) return false;
         out[part] = value;
-        if (*cursor == '\0') return true;
-        if (*cursor != '.' || part == 2u) return false;
-        cursor++;
-        part++;
+        if (part < 2) {
+            if (*cursor != '.') return false;
+            cursor++;
+        }
     }
+    return *cursor == '\0';
 }
 
 int ne_ota_compare_versions(const uint32_t left[3], const uint32_t right[3]) {
@@ -55,9 +51,14 @@ ne_ota_decision ne_ota_should_install(const char *running_version, const char *r
     if (!ne_ota_parse_version(running_version, running) ||
         !ne_ota_parse_version(remote_version, remote))
         return NE_OTA_SKIP_BAD_VERSION;
-    if (same(running_version, remote_version)) return NE_OTA_SKIP_SAME_VERSION;
-    if (!empty(rolled_back_version) && same(remote_version, rolled_back_version))
-        return NE_OTA_SKIP_ROLLED_BACK;
+    /* Parse first, compare numbers: "0.3" and "0.3.0" are the same version,
+     * and a string compare would let the known-bad one back in. */
+    if (ne_ota_compare_versions(running, remote) == 0) return NE_OTA_SKIP_SAME_VERSION;
+    if (!empty(rolled_back_version)) {
+        uint32_t banned[3];
+        if (!ne_ota_parse_version(rolled_back_version, banned)) return NE_OTA_SKIP_BAD_VERSION;
+        if (ne_ota_compare_versions(remote, banned) == 0) return NE_OTA_SKIP_ROLLED_BACK;
+    }
     if (!empty(high_water_version)) {
         uint32_t mark[3];
         /* A mark that cannot be read refuses everything: a downgrade is worse. */
@@ -67,16 +68,31 @@ ne_ota_decision ne_ota_should_install(const char *running_version, const char *r
     return NE_OTA_INSTALL;
 }
 
-bool ne_ota_resolve_rollback(const char *stored, const char *from_slot, char *out, size_t cap) {
+bool ne_ota_mark_should_rise(const char *running, const char *mark) {
+    uint32_t running_parts[3];
+    if (!ne_ota_parse_version(running, running_parts)) return false;
+    uint32_t mark_parts[3];
+    if (empty(mark)) return true;
+    if (!ne_ota_parse_version(mark, mark_parts)) return false;
+    return ne_ota_compare_versions(running_parts, mark_parts) > 0;
+}
+
+bool ne_ota_resolve_rollback(const char *stored, const char *from_slot, bool slot_valid, char *out,
+                             size_t cap) {
     if (out == NULL || cap == 0) return false;
     out[0] = '\0';
-    const char *source = !empty(from_slot) ? from_slot : (!empty(stored) ? stored : NULL);
+    bool use_slot = slot_valid && !empty(from_slot);
+    const char *source = use_slot ? from_slot : (!empty(stored) ? stored : NULL);
     if (source == NULL) return false;
     size_t length = strlen(source);
     if (length >= cap) length = cap - 1;
     memcpy(out, source, length);
     out[length] = '\0';
     return true;
+}
+
+const char *ne_ota_status_reason(int status) {
+    return status >= 300 && status < 400 ? "redirect" : NULL;
 }
 
 bool ne_ota_download_timed_out(uint32_t now_ms, uint32_t started_ms, uint32_t last_progress_ms,

@@ -16,21 +16,25 @@
 #include <stdio.h>
 #include <string.h>
 
+/* Everything the boot path uses is included outside the OTA guard: the marks
+ * and the rollback state are read and written on every boot, OTA or not
+ * (test_ota_includes.py keeps this from regressing). */
 #include "esp_app_desc.h"
 #include "esp_err.h"
+#include "esp_image_format.h"
 #include "esp_log.h"
 #include "esp_ota_ops.h"
 #include "esp_partition.h"
+#include "esp_system.h"
+#include "nvs.h"
 #include "sdkconfig.h"
 
 #if CONFIG_NEUROEDGE_OTA
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
-#include "esp_system.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "nvs.h"
 #if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
 #include "esp_crt_bundle.h"
 #endif
@@ -89,14 +93,20 @@ static void copy_bounded(char *out, size_t cap, const char *text) {
 }
 
 /* One string from NVS: false when absent; *unreadable when present but not a
- * readable string (wrong type, too long) — the caller then refuses, not guesses. */
+ * readable string (wrong type, too long, a corrupt page) — the caller then
+ * refuses, not guesses. Only ESP_ERR_NVS_NOT_FOUND means absent: reading a
+ * damaged namespace as "no mark" would silently drop downgrade protection. */
 static bool nvs_read(const char *key, char *out, size_t cap, bool *unreadable) {
     *unreadable = false;
     out[0] = '\0';
     nvs_handle_t handle;
-    if (nvs_open(NE_OTA_NVS_NAMESPACE, NVS_READONLY, &handle) != ESP_OK) return false;
+    esp_err_t err = nvs_open(NE_OTA_NVS_NAMESPACE, NVS_READONLY, &handle);
+    if (err != ESP_OK) {
+        if (err != ESP_ERR_NVS_NOT_FOUND) *unreadable = true;
+        return false;
+    }
     size_t length = cap;
-    const esp_err_t err = nvs_get_str(handle, key, out, &length);
+    err = nvs_get_str(handle, key, out, &length);
     nvs_close(handle);
     if (err == ESP_OK) return true;
     if (err != ESP_ERR_NVS_NOT_FOUND) *unreadable = true;
@@ -120,6 +130,16 @@ static void nvs_write(const char *key, const char *value) {
     nvs_close(handle);
 }
 
+/* Whether the slot's bytes are a complete image (structure and, with
+ * signature-on-update, its signature) — the aborted state alone only says the
+ * image was selected once; the descriptor of a half-written one lies. */
+static bool slot_holds_valid_image(const esp_partition_t *partition) {
+    if (partition == NULL) return false;
+    esp_image_metadata_t metadata;
+    const esp_partition_pos_t pos = {.offset = partition->address, .size = partition->size};
+    return esp_image_verify(ESP_IMAGE_VERIFY_SILENT, &pos, &metadata) == ESP_OK;
+}
+
 /*
  * The slot that was abandoned, read from otadata alone.
  *
@@ -138,7 +158,15 @@ static const esp_partition_t *aborted_partition(const esp_partition_t *running) 
         if (candidate == NULL) continue;
         if (running != NULL && candidate->address == running->address) continue;
         esp_ota_img_states_t state;
-        if (esp_ota_get_state_partition(candidate, &state) != ESP_OK) continue;
+        const esp_err_t state_err = esp_ota_get_state_partition(candidate, &state);
+        if (state_err == ESP_ERR_NOT_FOUND) continue; /* no otadata entry: fine */
+        if (state_err != ESP_OK) {
+            /* Not knowing this slot's state is not "it is fine": without it the
+             * device cannot tell which version it must not go back to, so no
+             * update is allowed this boot (NE_OTA SKIP reason=rolled_back). */
+            s_rolled_back_unknown = true;
+            continue;
+        }
         if (state != ESP_OTA_IMG_INVALID && state != ESP_OTA_IMG_ABORTED) continue;
         if (found != NULL) {
             /* Two abandoned slots: no single version to blame. */
@@ -185,6 +213,20 @@ void ne_ota_boot(void) {
         s_high_water[0] = '\0';
     }
 
+    /*
+     * Repair the mark from the running image. A confirmed image records its
+     * version when it is confirmed, but that NVS write can fail or lose power
+     * before it commits: without this repair the device could later accept an
+     * image below the version it is already running. Only a mark that is
+     * absent or readable-but-lower may rise — an unreadable one could have
+     * been higher, and lowering it is the downgrade it exists to stop.
+     */
+    if (!s_pending_verify && !s_high_water_unknown &&
+        ne_ota_mark_should_rise(s_running_version, s_high_water)) {
+        nvs_write(NE_OTA_NVS_BEST, s_running_version);
+        copy_bounded(s_high_water, sizeof s_high_water, s_running_version);
+    }
+
     /* The version the device last rolled back from: the slot's own descriptor
      * when it can be read, else the value recorded when the rollback was first
      * seen — an interrupted later write over that slot must not block every
@@ -193,14 +235,21 @@ void ne_ota_boot(void) {
     if (invalid == NULL) return;
     char from_slot[NE_OTA_VERSION_MAX] = {0};
     esp_app_desc_t broken;
-    if (esp_ota_get_partition_description(invalid, &broken) == ESP_OK)
+    bool slot_valid = false;
+    if (slot_holds_valid_image(invalid) &&
+        esp_ota_get_partition_description(invalid, &broken) == ESP_OK) {
         copy_bounded(from_slot, sizeof from_slot, broken.version);
+        slot_valid = true;
+    }
     char stored[NE_OTA_VERSION_MAX] = {0};
     bool stored_unreadable = false;
     nvs_read(NE_OTA_NVS_ROLLBACK, stored, sizeof stored, &stored_unreadable);
-    if (ne_ota_resolve_rollback(stored, from_slot, s_rolled_back_version,
+    if (ne_ota_resolve_rollback(stored, from_slot, slot_valid, s_rolled_back_version,
                                 sizeof s_rolled_back_version)) {
-        if (from_slot[0] != '\0' && strcmp(stored, from_slot) != 0)
+        /* The record may only be replaced by a complete, valid image: a
+         * truncated write over the slot still answers with a descriptor, and
+         * it must not un-ban the version that actually bootlooped. */
+        if (slot_valid && strcmp(stored, from_slot) != 0)
             nvs_write(NE_OTA_NVS_ROLLBACK, from_slot);
     } else {
         s_rolled_back_unknown = true;
@@ -225,11 +274,13 @@ void ne_ota_boot_confirmed(void) {
         return;
     }
     s_pending_verify = false;
-    /* The mark rises only here: a version counts once its self-test passed. */
-    uint32_t running[3], mark[3];
-    if (ne_ota_parse_version(s_running_version, running) &&
-        (!ne_ota_parse_version(s_high_water, mark) || ne_ota_compare_versions(running, mark) > 0))
+    /* The mark rises only here: a version counts once its self-test passed
+     * (and from a running confirmed image at boot — see ne_ota_boot). */
+    if (ne_ota_mark_should_rise(s_running_version, s_high_water)) {
         nvs_write(NE_OTA_NVS_BEST, s_running_version);
+        copy_bounded(s_high_water, sizeof s_high_water, s_running_version);
+        s_high_water_unknown = false; /* written: the same boot need not refuse */
+    }
     char line[NE_OTA_LINE_MAX + 1];
     if (ne_ota_marker_valid(line, sizeof line, s_running_partition)) emit(line);
 }
@@ -300,6 +351,14 @@ static void reject(const char *reason) {
     } else {
         ESP_LOGE(TAG, "update refused (%s) and the REJECTED marker did not fit", reason);
     }
+}
+
+/* A refusal and the cleanup that must follow it, in one place: an image that
+ * failed verification must never be bootable, and the order (REJECTED, then
+ * ERASED) is part of what the scripts read. */
+static void refuse(const char *reason, const esp_partition_t *target) {
+    reject(reason);
+    erase_slot(reason, target);
 }
 
 #if CONFIG_NEUROEDGE_OTA_ETH
@@ -472,10 +531,11 @@ void ne_ota_run(void) {
     }
 
     const int status = esp_https_ota_get_status_code(handle);
-    if (status >= 300 && status < 400) {
-        ESP_LOGE(TAG, "redirect (%d) refused", status);
+    const char *status_reason = ne_ota_status_reason(status);
+    if (status_reason != NULL) {
+        ESP_LOGE(TAG, "HTTP status %d refused (%s)", status, status_reason);
         esp_https_ota_abort(handle);
-        reject("redirect");
+        reject(status_reason);
         return;
     }
 
@@ -515,25 +575,23 @@ void ne_ota_run(void) {
                                       CONFIG_NEUROEDGE_OTA_STALL_TIMEOUT_MS)) {
             ESP_LOGE(TAG, "download stalled after %d bytes", read);
             esp_https_ota_abort(handle);
-            reject("timeout");
-            erase_slot("timeout", target);
+            refuse("timeout", target);
             return;
         }
     }
     if (err != ESP_OK) {
         esp_https_ota_abort(handle);
         if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
-            reject("signature");
-            erase_slot("signature", target);
+            refuse("signature", target);
         } else {
-            reject("download");
+            /* Bytes may already be in the slot; leave nothing bootable. */
+            refuse("download", target);
         }
         return;
     }
     if (!esp_https_ota_is_complete_data_received(handle)) {
         esp_https_ota_abort(handle);
-        reject("incomplete");
-        erase_slot("incomplete", target);
+        refuse("incomplete", target);
         return;
     }
     const int read = esp_https_ota_get_image_len_read(handle);

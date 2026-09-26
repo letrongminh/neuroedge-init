@@ -115,9 +115,12 @@ trước khi kịp tự kiểm). Không cần dịch vụ hay tài khoản Neuro
 Hai ràng buộc cứng của đường OTA:
 
 - **Chữ ký + rollback là bắt buộc.** OTA chỉ được biên dịch khi bật đủ xác minh chữ ký trên bản
-  cập nhật (`CONFIG_SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT`) **và** rollback
-  (`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`); thiếu một trong hai thì Kconfig từ chối bật
-  `CONFIG_NEUROEDGE_OTA`. Lớp `sdkconfig.ota` bật cả hai.
+  cập nhật **và** rollback. Lớp `sdkconfig.ota` bật
+  `CONFIG_SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT` (không Secure Boot), và nó kéo theo
+  `CONFIG_SECURE_SIGNED_ON_UPDATE` — cổng kiểm trong Kconfig và `#error` trong mã dùng dạng tổng
+  quát đó, nên Secure Boot (TSK-S6-05) sau này cũng thoả; cùng với
+  `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`. Thiếu một trong hai thì Kconfig từ chối bật
+  `CONFIG_NEUROEDGE_OTA`.
 - **OTA không bao giờ ghi bootloader.** Nó chỉ ghi khe app (`esp_https_ota` →
   `esp_ota_set_boot_partition`). Bootloader biết rollback phải nạp **một lần bằng cáp** từ project
   build với lớp OTA (§6.2); các bản OTA về sau không đụng tới nó.
@@ -186,11 +189,12 @@ tự quay về. Các lần OTA sau không đụng tới bootloader.
    số ⇒ `SKIP reason=bad_version`) — hạ cấp không bao giờ được ghi vào khe nào.
    Mốc đơn điệu (chỉ tăng) và so theo số; eFuse anti-rollback chỉ có khi bật Secure Boot
    (TSK-S6-05).
-2. `esp_https_ota` ghi vào khe còn trống rồi xác minh (cấu trúc + chữ ký). Sai chữ ký, tải dở hay
+2. `esp_https_ota` ghi vào khe còn trống rồi xác minh (cấu trúc + chữ ký). Sai chữ ký, lỗi tải, tải dở hay
    quá hạn chót ⇒ từ chối, **không đổi khe**, và sector đầu của khe vừa ghi bị xoá (`NE_OTA ERASED`)
    để không lần khởi động nào rơi vào ảnh đã bị từ chối.
 3. Đặt khe mới làm khe khởi động rồi reset. Ảnh mới khởi động ở trạng thái *chờ xác nhận*.
-4. Self-test gate chạy. Đạt ⇒ `NE_OTA VALID` và ảnh được xác nhận (mốc nước cao được cập nhật).
+4. Self-test gate chạy. Đạt ⇒ `NE_OTA VALID` và ảnh được xác nhận (mốc nước cao được cập nhật; nếu
+   lần ghi đó mất, mỗi lần khởi động sau ảnh đã xác nhận tự nâng lại mốc lên phiên bản của nó).
    Không đạt ⇒ `NE_OTA INVALID`, đánh dấu hỏng và reset; bootloader quay về ảnh trước.
 5. Ảnh mới reset/panic trước bước 4 ⇒ bootloader tự quay về ảnh trước ở lần khởi động kế tiếp.
    Nếu ảnh **treo** mà không reset: task watchdog không được cấu hình panic (`CONFIG_ESP_TASK_WDT_PANIC`

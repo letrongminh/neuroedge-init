@@ -113,10 +113,13 @@ MAX_PINS = 32  # NE_MAX_PINS: a token's pin mask is a u32
 MAX_ENTRIES = 0xFFFF  # the tables index gates with u16
 NO_NODE = 255  # NE_AGENT_NO_NODE: a check that varies no criterion
 _IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
-# One MAJOR.MINOR.PATCH, each part a decimal number without a leading zero. The
-# firmware's OTA code parses the app version to refuse downgrades, so anything
-# it cannot read as three numbers is refused here rather than on the device.
-_RELEASE = re.compile(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\Z")
+# One MAJOR.MINOR.PATCH, each part a decimal number without a leading zero and
+# at most nine digits (the firmware stores each part in a u32 and refuses what
+# it cannot hold). The firmware's OTA code parses the app version to refuse
+# downgrades, so anything it cannot read as three numbers is refused here
+# rather than on the device; tests/test_ota_version_rule.py pins both rules
+# against one case list.
+_RELEASE = re.compile(r"(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\Z")
 
 # The languages the device UI of `targets/esp32s3/ui/` ships: a string table
 # (`ne_ui_strings.c`) and font glyphs for each. `python/tests/test_ui_assets.py`

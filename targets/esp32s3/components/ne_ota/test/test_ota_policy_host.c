@@ -51,6 +51,12 @@ static int check_install(void) {
     CHECK(ne_ota_should_install("0.3.0", "0.2.0", NULL, "") == NE_OTA_INSTALL);
     CHECK(ne_ota_should_install("0.3.0", "0.2.0", NULL, "nonsense") == NE_OTA_SKIP_BAD_VERSION);
     CHECK(ne_ota_should_install("0.3.0", "0.3.1", "0.3.1", "0.3.1") == NE_OTA_SKIP_ROLLED_BACK);
+    /* Versions are compared as parsed triples, never as strings; and a
+     * version that does not parse is refused, not compared loosely — "0.3"
+     * is not "0.3.0" here, it is unusable. */
+    CHECK(ne_ota_should_install("0.2.0", "0.3", "0.3.0", NULL) == NE_OTA_SKIP_BAD_VERSION);
+    CHECK(ne_ota_should_install("0.3", "0.3.0", NULL, NULL) == NE_OTA_SKIP_BAD_VERSION);
+    CHECK(ne_ota_should_install("0.2.0", "0.3.0", "0.3", NULL) == NE_OTA_SKIP_BAD_VERSION);
 
     CHECK(strcmp(ne_ota_decision_reason(NE_OTA_SKIP_SAME_VERSION), "same_version") == 0);
     CHECK(strcmp(ne_ota_decision_reason(NE_OTA_SKIP_NO_VERSION), "no_version") == 0);
@@ -64,35 +70,72 @@ static int check_install(void) {
 static int check_versions(void) {
     uint32_t parts[3];
     CHECK(ne_ota_parse_version("1.2.3", parts) && parts[0] == 1 && parts[1] == 2 && parts[2] == 3);
-    CHECK(ne_ota_parse_version("1", parts) && parts[0] == 1 && parts[1] == 0 && parts[2] == 0);
-    CHECK(ne_ota_parse_version("1.2", parts) && parts[0] == 1 && parts[1] == 2 && parts[2] == 0);
-    CHECK(ne_ota_parse_version("01.002.0003", parts) && parts[2] == 3);
-    CHECK(ne_ota_parse_version("4294967295", parts) && parts[0] == 4294967295u);
+    CHECK(ne_ota_parse_version("0.0.0", parts) && parts[0] == 0 && parts[1] == 0 && parts[2] == 0);
+    CHECK(ne_ota_parse_version("10.20.30", parts) && parts[0] == 10);
+    CHECK(ne_ota_parse_version("4294967295.0.1", parts) && parts[0] == 4294967295u);
+    /* Exactly three parts, no leading zeros: the same rule as _RELEASE in
+     * python/neuroedge/engine/firmware.py (test_ota_version_host.c pins both). */
     CHECK(!ne_ota_parse_version("", parts));
     CHECK(!ne_ota_parse_version(NULL, parts));
+    CHECK(!ne_ota_parse_version("1", parts));
+    CHECK(!ne_ota_parse_version("1.2", parts));
     CHECK(!ne_ota_parse_version("1.2.3.4", parts));
+    CHECK(!ne_ota_parse_version("01.002.0003", parts));
+    CHECK(!ne_ota_parse_version("1.02.3", parts));
+    CHECK(!ne_ota_parse_version("1.2.03", parts));
+    CHECK(!ne_ota_parse_version("00.1.2", parts));
     CHECK(!ne_ota_parse_version("1..2", parts));
     CHECK(!ne_ota_parse_version("1.2.", parts));
     CHECK(!ne_ota_parse_version(".1.2", parts));
     CHECK(!ne_ota_parse_version("a.b.c", parts));
     CHECK(!ne_ota_parse_version("1.2.x", parts));
     CHECK(!ne_ota_parse_version("1.-2", parts));
-    CHECK(!ne_ota_parse_version("4294967296", parts));
+    CHECK(!ne_ota_parse_version("1.2. 3", parts));
+    CHECK(!ne_ota_parse_version("4294967296.0.0", parts));
+    CHECK(!ne_ota_parse_version("999999999999.0.0", parts));
 
     const uint32_t one[3] = {1, 2, 3}, two[3] = {1, 2, 3}, three[3] = {1, 2, 4};
     CHECK(ne_ota_compare_versions(one, two) == 0);
     CHECK(ne_ota_compare_versions(one, three) == -1);
     CHECK(ne_ota_compare_versions(three, two) == 1);
 
+    /* The mark rises only from a parsable running version; an unreadable mark
+     * is never repaired (it may have been higher). */
+    CHECK(ne_ota_mark_should_rise("0.2.0", NULL));
+    CHECK(ne_ota_mark_should_rise("0.2.0", ""));
+    CHECK(ne_ota_mark_should_rise("0.2.0", "0.1.0"));
+    CHECK(!ne_ota_mark_should_rise("0.2.0", "0.2.0"));
+    CHECK(!ne_ota_mark_should_rise("0.2.0", "0.3.0"));
+    CHECK(!ne_ota_mark_should_rise("0.2.0", "garbage"));
+    CHECK(!ne_ota_mark_should_rise("garbage", NULL));
+
+    /* A redirect is refused, whichever 3xx code it is; 2xx/4xx are not. */
+    CHECK(strcmp(ne_ota_status_reason(301), "redirect") == 0);
+    CHECK(strcmp(ne_ota_status_reason(302), "redirect") == 0);
+    CHECK(strcmp(ne_ota_status_reason(308), "redirect") == 0);
+    CHECK(ne_ota_status_reason(200) == NULL);
+    CHECK(ne_ota_status_reason(204) == NULL);
+    CHECK(ne_ota_status_reason(404) == NULL);
+    CHECK(ne_ota_status_reason(0) == NULL);
+    CHECK(ne_ota_status_reason(-1) == NULL);
+
     char out[NE_OTA_VERSION_MAX];
-    CHECK(ne_ota_resolve_rollback("0.3.0", "0.4.0", out, sizeof out) && strcmp(out, "0.4.0") == 0);
-    CHECK(ne_ota_resolve_rollback("0.3.0", NULL, out, sizeof out) && strcmp(out, "0.3.0") == 0);
-    CHECK(ne_ota_resolve_rollback("0.3.0", "", out, sizeof out) && strcmp(out, "0.3.0") == 0);
+    /* A complete slot image wins; a corrupt one (slot_valid false) must not
+     * overwrite the recorded version that bootlooped. */
+    CHECK(ne_ota_resolve_rollback("0.3.0", "0.4.0", true, out, sizeof out) &&
+          strcmp(out, "0.4.0") == 0);
+    CHECK(ne_ota_resolve_rollback("0.3.0", "0.4.0", false, out, sizeof out) &&
+          strcmp(out, "0.3.0") == 0);
+    CHECK(ne_ota_resolve_rollback("0.3.0", NULL, false, out, sizeof out) &&
+          strcmp(out, "0.3.0") == 0);
+    CHECK(ne_ota_resolve_rollback("0.3.0", "", true, out, sizeof out) &&
+          strcmp(out, "0.3.0") == 0);
     out[0] = 'x';
-    CHECK(!ne_ota_resolve_rollback("", NULL, out, sizeof out));
+    CHECK(!ne_ota_resolve_rollback("", NULL, false, out, sizeof out));
     CHECK(out[0] == '\0');
-    CHECK(!ne_ota_resolve_rollback(NULL, NULL, out, sizeof out));
-    CHECK(!ne_ota_resolve_rollback(NULL, NULL, NULL, 0));
+    CHECK(!ne_ota_resolve_rollback(NULL, NULL, false, out, sizeof out));
+    CHECK(!ne_ota_resolve_rollback(NULL, NULL, false, NULL, 0));
+    CHECK(!ne_ota_resolve_rollback(NULL, NULL, true, out, sizeof out));
 
     /* The total deadline and the no-progress limit, wrapping at 2^32 ms. */
     CHECK(!ne_ota_download_timed_out(1000u, 0u, 900u, 300000u, 30000u));
