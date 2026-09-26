@@ -517,16 +517,16 @@ class LinuxHAL(HardwareAbstractionLayer):
         # device is imported only when the live backend is chosen.
         audio_where = "LinuxHAL(audio=...)" if audio is not None else AUDIO_ENV
         if replay:
-            choice = "file"
+            audio_choice: Any = "file"
         else:
-            choice = audio if audio is not None else os.environ.get(AUDIO_ENV) or None
-        if choice is not None and choice not in AUDIO_BACKENDS:
+            audio_choice = audio if audio is not None else os.environ.get(AUDIO_ENV) or None
+        if audio_choice is not None and audio_choice not in AUDIO_BACKENDS:
             raise BoardCapabilityError(
                 where=audio_where,
-                why=f"unknown audio backend {choice!r}; the backends are {list(AUDIO_BACKENDS)}",
+                why=f"unknown audio backend {audio_choice!r}; the backends are {list(AUDIO_BACKENDS)}",
                 how=f"set {AUDIO_ENV}=file for WAV sessions, or =live for sounddevice (Q-22)",
             )
-        self.audio_backend: str | None = choice
+        self.audio_backend: str | None = audio_choice
         self._sounddevice = sounddevice
         self._audio_in: LiveAudioIn | None = None
         self._audio_out: LiveAudioOut | None = None

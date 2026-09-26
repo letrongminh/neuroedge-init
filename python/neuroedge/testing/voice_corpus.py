@@ -471,6 +471,10 @@ async def execute(
         system_two=bool(world.get("system_two")),
         facts_source=world.get("facts_source", "local_grammar"),
         stt=CaseSpeechToText(case, clock) if speech else None,
+        # Wired in both runs, so the driver emits `stt_fallback` alike: with no
+        # provider (the raw run) there is no clip to send, and the case's written
+        # `stt_result` continues the turn — exactly what the fallback provider
+        # produces in the speech run.
         stt_fallback=(
             CaseSpeechToText(case, clock, kinds=("stt_result",)) if fallback_label else None
         ),

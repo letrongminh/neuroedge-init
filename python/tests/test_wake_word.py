@@ -154,6 +154,13 @@ def test_frames_of_any_rate_are_resampled_and_fed_in_80ms_windows():
     assert model.windows == [WAKE_WINDOW * 2, WAKE_WINDOW * 2]
 
 
+def test_a_frame_the_adapter_cannot_resample_fails_closed():
+    detector = OpenWakeWord(FakeModel(), threshold=0.5, word="hey")
+    with pytest.raises(PerceptionUnavailableError) as raised:
+        detector.detect(AudioFrame(b"\x00\x00" * 100, 0, 20, 1000))  # 1 kHz: outside 8–96 kHz
+    assert "16 kHz" in raised.value.why and "8–96 kHz" in raised.value.how
+
+
 def test_a_score_below_the_threshold_never_opens_a_turn():
     detector = OpenWakeWord(FakeModel([0.2]), threshold=0.5, word="hey")
     frames = [AudioFrame(tone(20, WAKE_RATE_HZ), i * 20, 20, WAKE_RATE_HZ) for i in range(4)]
@@ -334,6 +341,13 @@ provider = "python:neuroedge.perception.providers.fake:wake"
     with pytest.raises(BuildFailed) as raised:
         build(agent, target="sim", board_id="sim-default")
     assert any("[wake_word] hears frames through audio.in" in p.why for p in raised.value.problems)
+
+
+def test_the_build_refuses_a_wake_word_for_esp32s3_where_none_runs(project):
+    agent, _ = project()
+    with pytest.raises(BuildFailed) as raised:
+        build(agent, target="esp32s3", board_id="esp32s3-box-3")
+    assert any("no wake-word detector yet" in p.why for p in raised.value.problems)
 
 
 def test_the_voice_cli_opens_the_turn_on_the_wake_word(project, tmp_path):

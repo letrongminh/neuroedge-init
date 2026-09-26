@@ -100,7 +100,15 @@ class OpenWakeWord:
     def detect(self, frame: AudioFrame) -> tuple[str, float] | None:
         pcm = frame.pcm
         if frame.sample_rate_hz != WAKE_RATE_HZ:
-            pcm = resample(pcm, frame.sample_rate_hz, WAKE_RATE_HZ)
+            try:
+                pcm = resample(pcm, frame.sample_rate_hz, WAKE_RATE_HZ)
+            except ValueError as exc:
+                raise PerceptionUnavailableError(
+                    where="wake word -> audio.in frame",
+                    why=f"{exc} — the frame cannot be brought to openWakeWord's 16 kHz",
+                    how="fix the source of frames: audio.in of a board runs in 8–96 kHz "
+                    "(hal/audio.py)",
+                ) from None
         self._buffer += pcm
         size = WAKE_WINDOW * SAMPLE_WIDTH
         hit: tuple[str, float] | None = None
