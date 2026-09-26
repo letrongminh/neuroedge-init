@@ -146,6 +146,42 @@ class Frame:
         return bytes(out)
 
 
+def make_frame(
+    board: BoardProfile,
+    frame: str | bytes,
+    width: int | None,
+    height: int | None,
+    format: str | None,
+    called_from: str,
+) -> Frame:
+    """
+    Check a frame against the board's declared display and build it. Every target
+    that draws goes through here (`sim`, `linux`), so a call is accepted or refused,
+    and recorded with the same `display_frame` data, alike on each.
+    """
+    if not board.supports("display"):
+        raise BoardCapabilityError(
+            where=f"{called_from} -> display",
+            why=f"board {board.id!r} does not declare the 'display' primitive",
+            how=f"add it to {board.source}, or choose a board that provides it",
+        )
+    declared = board.capability("display")
+    for axis, value in (("width", width), ("height", height)):
+        if value is not None and value > declared[axis]:
+            raise BoardCapabilityError(
+                where=f"{called_from} -> display",
+                why=f"frame {axis} {value} exceeds the board's {declared[axis]}",
+                how=f"render at most {declared['width']}x{declared['height']}",
+            )
+    return Frame.make(
+        frame,
+        width if width is not None else declared["width"],
+        height if height is not None else declared["height"],
+        format,
+        where=f"{called_from} -> display",
+    )
+
+
 class SimHAL(HardwareAbstractionLayer):
     def __init__(
         self,
@@ -378,21 +414,7 @@ class SimHAL(HardwareAbstractionLayer):
         format: str | None = None,
         called_from: str = "<unknown>",
     ) -> Frame:
-        declared = self._require("display", called_from)
-        for axis, value in (("width", width), ("height", height)):
-            if value is not None and value > declared[axis]:
-                raise BoardCapabilityError(
-                    where=f"{called_from} -> display",
-                    why=f"frame {axis} {value} exceeds the board's {declared[axis]}",
-                    how=f"render at most {declared['width']}x{declared['height']}",
-                )
-        shown = Frame.make(
-            frame,
-            width if width is not None else declared["width"],
-            height if height is not None else declared["height"],
-            format,
-            where=f"{called_from} -> display",
-        )
+        shown = make_frame(self.board, frame, width, height, format, called_from)
         self.frame = frame
         self.frames.append(shown)
         self.events.emit("display_frame", shown.event_data())

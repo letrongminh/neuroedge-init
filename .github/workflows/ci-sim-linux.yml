@@ -191,6 +191,11 @@ jobs:
       - name: Virtual GPIO lines (gpio-sim)
         run: bash scripts/setup_gpio_sim.sh
 
+      - name: A hwmon sensor (i2c-stub + lm75) and a framebuffer (vfb) — TSK-S5-09
+        run: |
+          bash scripts/setup_i2c_stub.sh
+          bash scripts/setup_vfb.sh
+
       - name: Install, with the optional linux extra (gpiod, LGPL-2.1)
         working-directory: python
         run: |

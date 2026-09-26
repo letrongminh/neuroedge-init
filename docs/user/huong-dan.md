@@ -62,7 +62,8 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Kiểm cùng quyết định trên `sim` và `linux` (A2) | `neuroedge verify --targets sim,linux` | ✅ cần line GPIO |
 | Ghi vết ghi từ firmware `esp32s3` qua UART | `neuroedge record --target esp32s3 --port <log · tcp://… · /dev/tty…>` | ✅ trên QEMU · bo mạch ⏳ |
 | Kiểm cùng quyết định trên `esp32s3`: firmware replay các vết ghi chuẩn mực | `neuroedge verify --targets esp32s3 --port …` | ✅ trên QEMU · bo mạch ⏳ |
-| Phiên gõ chữ tương tác trên `linux`: chân là line GPIO thật | `neuroedge run` / `record` / `mcp serve --target linux` | ✅ cần line GPIO + `neuroedge[linux]`; agent chỉ `digital.out` |
+| Phiên gõ chữ tương tác trên `linux`: chân là line GPIO thật | `neuroedge run` / `record` / `mcp serve --target linux` | ✅ cần line GPIO + `neuroedge[linux]`; agent được cần `digital.out`, `sensor.read`, `display` (chưa âm thanh) |
+| Đọc cảm biến thật trên `linux` (hwmon, IIO) và vẽ lên màn hình (`/dev/fb*`, hoặc trong bộ nhớ) | `NEUROEDGE_LINUX_SENSORS="temperature=hwmon:lm75/temp1"` · `NEUROEDGE_LINUX_DISPLAY=/dev/fb0` (hoặc `memory`) — [`simulation_coverage.md`](../spec/simulation_coverage.md) §2 (`linux`) | ✅ trên hwmon ảo (`i2c-stub` + `lm75`) và `vfb` trong CI · Pi ⏳ |
 | Hành trình 10 phút (TTFV) | — | ⏳ I1 |
 
 Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.
@@ -71,12 +72,16 @@ Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.
 
 Nói thẳng để bạn không mất thời gian:
 
-- `neuroedge run` / `record` / `mcp serve` mới gõ chữ trên terminal. Trên `linux` agent chỉ được cần
-  `digital.out` (âm thanh, cảm biến, màn hình chưa có — lệnh báo lỗi, mã 1) và chưa có trang `--ui`
-  (**thoát mã 2**). Không có "PASS" giả (bất biến 10, `CHANGELOG.md` §3.3).
+- `neuroedge run` / `record` / `mcp serve` mới gõ chữ trên terminal. Trên `linux` agent chưa được cần
+  âm thanh (lệnh báo lỗi, mã 1) và chưa có trang `--ui` (**thoát mã 2**). Không có "PASS" giả
+  (bất biến 10, `CHANGELOG.md` §3.3).
 - `--target linux` cần line GPIO thật hoặc ảo (`scripts/setup_gpio_sim.sh`) và
   `pip install 'neuroedge[linux]'`; thiếu thì lệnh báo lỗi, không giả vờ chạy.
-- Trên `linux` mới có `digital.out`; `sensor.read`, `display` và âm thanh chưa hiện thực.
+- Trên `linux` có `digital.out`, `sensor.read`, `display`; âm thanh chưa hiện thực. Cảm biến đọc bằng
+  độ (°C), không bằng "dải" như `[sim.sensors]` của `factory-monitor` (`high`, `critical`): gate so
+  dải thì chặn (fail-closed) cho tới khi có `evaluate.type: numeric` (`TODOS.md` #30). Màn hình
+  `/dev/fb*` chỉ nhận khung điểm ảnh; khung chữ cần `display = memory`. `:sensor` trong REPL không
+  đổi được cảm biến thật.
 - Chưa có bo mạch `esp32s3`: firmware (walker gate, sổ token C, replay vết ghi chuẩn mực) mới chạy
   trên máy tính và QEMU. Trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng
   trên host; `replay --target esp32s3` cho vết ghi tuỳ ý **thoát mã 2**.
