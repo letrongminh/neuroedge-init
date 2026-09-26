@@ -58,6 +58,7 @@ on:
       - "scripts/qemu_boot.sh"
       - "scripts/qemu_ota.sh"
       - "scripts/ota_markers.sh"
+      - "scripts/build_ota_layer.sh"
       - ".github/workflows/firmware-qemu.yml"
   push:
     branches: [main]
@@ -84,6 +85,7 @@ on:
       - "scripts/qemu_boot.sh"
       - "scripts/qemu_ota.sh"
       - "scripts/ota_markers.sh"
+      - "scripts/build_ota_layer.sh"
       - ".github/workflows/firmware-qemu.yml"
   schedule:
     - cron: "30 18 * * *"   # 01:30 UTC+7, after nightly-hardware

@@ -48,6 +48,7 @@ done
 [ -f "$project/version.txt" ] ||
   fail "$project has no version.txt: \`neuroedge build --target esp32s3\` writes the agent's version"
 version=$(tr -d '[:space:]' < "$project/version.txt")
+[ -n "$version" ] || fail "$project/version.txt is empty"
 if [ -n "$expected" ] && [ "$version" != "$expected" ]; then
   fail "version.txt holds $version, expected $expected"
 fi
