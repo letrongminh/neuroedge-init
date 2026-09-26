@@ -13,6 +13,10 @@ and anonymisation. What a session writes, in order:
     gate_evaluation_result           the verdict
     actuator_command / _aborted      what the pins did
     tts_stream_start                 what the agent said
+    turn_latency                     the turn's stage times and path (TSK-I4-03)
+
+and, when the file is written, one `session_summary` — the System 1 / System 2
+ratio of the session (`engine/latency.py`).
 
 `anonymize=True` (FR-TRC-07) replaces raw text **at the source** — before it
 reaches the in-memory log — with ``sha256:<hex>``, and leaves every decision

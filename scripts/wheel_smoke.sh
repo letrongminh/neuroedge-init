@@ -85,6 +85,10 @@ step trace validate "$("$WORK/venv/bin/python" -c 'import neuroedge.paths as p; 
 step verify
 step new my-agent
 cd "$WORK/my-agent"
+# The trace path convention (FR-TRC-09): `_common/` must ship in the wheel.
+for kept in traces/README.md traces/incidents/.gitkeep traces/golden/.gitkeep; do
+  [ -f "$kept" ] || { echo "::error::neuroedge new did not create $kept"; exit 1; }
+done
 step build --target sim --board sim-default
 step run -c "mở khoá"
 step record -c "mở khoá" --out traces/session.json

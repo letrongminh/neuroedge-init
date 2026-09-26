@@ -11,6 +11,10 @@ suffix keeps pytest and ruff from treating template code as package code.
 `fixtures/agents/<template>/`, so each sample agent has one source. A wheel
 carries that directory under `neuroedge/_data/` (TSK-S3-17), so the template
 works from an installed package too.
+
+Every template also gets `_common/` — today the `traces/` tree of FR-TRC-09:
+`traces/README.md`, and `traces/incidents/` and `traces/golden/` held by an empty
+`.gitkeep` so git and archives keep them (TSK-I1-03).
 """
 
 from __future__ import annotations
@@ -27,6 +31,10 @@ NAME = re.compile(r"^[a-z][a-z0-9_-]{0,62}$")
 _HERE = Path(__file__).parent
 # Templates that add README + tests to a copy of the sample agent of the same name.
 SAMPLES = ("villa-concierge", "home-voice", "factory-monitor")
+# Files every template gets, rendered from `_common/`, plus the empty directories of
+# the trace path convention (FR-TRC-09), each kept by an empty `.gitkeep`.
+COMMON = "_common"
+KEPT_DIRS = ("traces/incidents", "traces/golden")
 
 
 def _render(files: dict[Path, str], name: str) -> dict[Path, str]:
@@ -86,7 +94,11 @@ def scaffold(name: str, template: str = "minimal", parent: str | Path = ".") -> 
             how="choose another name, or remove the directory first",
         )
 
-    files = _template_files(template)
+    files = {
+        **_template_files(COMMON),
+        **{Path(directory) / ".gitkeep": "" for directory in KEPT_DIRS},
+        **_template_files(template),
+    }
     if template in SAMPLES:
         files = {**_sample_files(template, name), **files}
     for relative, text in _render(files, name).items():
