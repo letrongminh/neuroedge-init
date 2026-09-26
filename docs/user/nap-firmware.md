@@ -183,11 +183,12 @@ tự quay về. Các lần OTA sau không đụng tới bootloader.
    số ⇒ `SKIP reason=bad_version`) — hạ cấp không bao giờ được ghi vào khe nào.
    Mốc đơn điệu (chỉ tăng) và so theo số; eFuse anti-rollback chỉ có khi bật Secure Boot
    (TSK-S6-05).
-2. `esp_https_ota` ghi vào khe còn trống rồi xác minh (cấu trúc + chữ ký). Sai chữ ký, tải dở hay
+2. `esp_https_ota` ghi vào khe còn trống rồi xác minh (cấu trúc + chữ ký). Sai chữ ký, lỗi tải, tải dở hay
    quá hạn chót ⇒ từ chối, **không đổi khe**, và sector đầu của khe vừa ghi bị xoá (`NE_OTA ERASED`)
    để không lần khởi động nào rơi vào ảnh đã bị từ chối.
 3. Đặt khe mới làm khe khởi động rồi reset. Ảnh mới khởi động ở trạng thái *chờ xác nhận*.
-4. Self-test gate chạy. Đạt ⇒ `NE_OTA VALID` và ảnh được xác nhận (mốc nước cao được cập nhật).
+4. Self-test gate chạy. Đạt ⇒ `NE_OTA VALID` và ảnh được xác nhận (mốc nước cao được cập nhật; nếu
+   lần ghi đó mất, mỗi lần khởi động sau ảnh đã xác nhận tự nâng lại mốc lên phiên bản của nó).
    Không đạt ⇒ `NE_OTA INVALID`, đánh dấu hỏng và reset; bootloader quay về ảnh trước.
 5. Ảnh mới reset/panic trước bước 4 ⇒ bootloader tự quay về ảnh trước ở lần khởi động kế tiếp.
    Nếu ảnh **treo** mà không reset: task watchdog không được cấu hình panic (`CONFIG_ESP_TASK_WDT_PANIC`

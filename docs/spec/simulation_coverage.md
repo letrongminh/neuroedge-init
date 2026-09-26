@@ -279,8 +279,9 @@ kịch bản QEMU ghi đè `PROJECT_VER` để dựng ảnh mới 0.2.0. QEMU **
   quay về bị chặn (`NE_OTA SKIP reason=rolled_back`). Quyết định nạp hay không là hàm C thuần
   `ne_ota_should_install` (`ne_ota_policy.c`) — QEMU chạy đúng bản bo mạch chạy, gồm cả từ chối hạ
   cấp theo mốc nước cao phiên bản trong NVS (pha g: ảnh ký đúng nhưng thấp hơn mốc ⇒
-  `SKIP reason=downgrade`). Mốc đó chỉ là bảo vệ bằng phần mềm; quá hạn chót, chuyển hướng và phiên
-  bản không đọc được chỉ được kiểm bằng test host (`test_ota_policy_host.c`), không có pha QEMU.
+  `SKIP reason=downgrade`). Mốc đó chỉ là bảo vệ bằng phần mềm; quá hạn chót, lỗi tải, chuyển hướng, phiên
+  bản không đọc được và việc nâng lại mốc lúc khởi động chỉ được kiểm bằng test host
+  (`test_ota_policy_host.c`), không có pha QEMU.
 
 QEMU **không** chứng minh được, chỉ bo mạch mới có:
 
