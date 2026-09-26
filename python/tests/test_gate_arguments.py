@@ -319,3 +319,23 @@ def test_gate_explain_shows_the_limits_and_what_the_child_narrowed(root):
     assert result.exit_code == 0, result.output
     assert "Giới hạn tham số" in result.output
     assert "con đã thu hẹp so với cha" in result.output
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+@pytest.mark.parametrize(
+    "limit",
+    [
+        {"minimum": 0, "maximum": 10},
+        {"minimum": 0},  # a one-sided limit would admit +inf
+        {"maximum": 10},  # … and -inf
+        {"enum": [1.5, 2.5]},
+    ],
+)
+def test_a_non_finite_number_argument_is_out_of_range(limit, value):
+    # NaN compares False with every bound; a JSON tool call (MCP, System 2) can carry it.
+    from neuroedge.engine.arguments import check
+
+    assert check([{"name": "level", "type": "number", **limit}], {"level": value}) == (
+        "level",
+        f"{value!r} is not a finite number",
+    )

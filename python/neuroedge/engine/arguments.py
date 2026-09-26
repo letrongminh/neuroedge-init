@@ -25,6 +25,7 @@ signature (`arguments_closed` is deliberately not in v1 — RFC-0005 §5).
 from __future__ import annotations
 
 import functools
+import math
 from collections.abc import Mapping
 from typing import Any
 
@@ -162,6 +163,10 @@ def check(limits: list[Mapping[str, Any]], arguments: Mapping[str, Any]) -> tupl
             return name, "no value"
         if not _is(kind, value):
             return name, f"{value!r} is not a {kind}"
+        # NaN compares False with every bound, so `minimum`/`maximum` would admit it;
+        # an infinity passes a one-sided limit. Neither is a number an action can take.
+        if kind == "number" and not math.isfinite(value):
+            return name, f"{value!r} is not a finite number"
         if "enum" in limit and value not in limit["enum"]:
             return name, f"{value!r} is not one of {limit['enum']}"
         if "minimum" in limit and value < limit["minimum"]:

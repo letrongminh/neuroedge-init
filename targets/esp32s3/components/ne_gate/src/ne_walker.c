@@ -265,6 +265,9 @@ static int argument_fails(const ne_tree *t, uint32_t i, const ne_arg_value *v) {
     uint32_t kind = a[A_TYPE], flags = a[A_FLAGS];
     if (v == NULL || !v->present) return 1;
     if (!fits_type(kind, v)) return 1;
+    /* NaN compares false with every bound and an infinity passes a one-sided limit:
+     * a number argument must be finite (x - x is 0 only for a finite x). */
+    if (kind == NE_ARG_NUMBER && !(v->number - v->number == 0.0)) return 1;
     if (kind == NE_ARG_STRING && v->str == NULL && v->str_len != 0u) return 1;
     if (flags & F_ENUM) {
         int found = 0;

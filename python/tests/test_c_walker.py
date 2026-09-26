@@ -199,6 +199,8 @@ def random_argument(limit, rng: random.Random):
     value = rng.choice(candidates)
     if kind == "integer":
         return rng.choice([int(value), float(int(value)), value + 0.5])
+    if rng.random() < 0.15:  # NaN compares False with every bound; both sides must refuse it
+        return rng.choice([float("nan"), float("inf"), float("-inf")])
     return value
 
 

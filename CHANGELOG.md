@@ -267,6 +267,14 @@ bản gói.
 
 #### Đã sửa
 
+- **Tham số số NaN/±inf lọt qua giới hạn của gate (RFC-0005).** `nan < minimum` và `nan > maximum` đều sai, nên một tool
+  call JSON (MCP, System 2) mang `NaN` qua được `minimum`/`maximum`; `inf` qua được giới hạn một phía. Nay tham số `number`
+  không hữu hạn là `argument_out_of_range`, như nhau ở `engine/arguments.py` và walker C. Kiểm: `pytest tests/test_gate_arguments.py
+  tests/test_c_walker.py`.
+- **D1 review — cảm biến hỏng hay bị luật từ chối ⇒ mọi dữ kiện của cảm biến đó chưa xác định** (`sensor_unavailable`), gate
+  khác vẫn quyết; `gte` phải trùng ngưỡng dải; dải cuối là mức cao nhất; luật số cần đơn vị; `equals` đúng kiểu; không NaN
+  trong JSON; replay cảnh báo khi `[sim.sensor_facts]` đổi. `simulation_coverage.md` §2–§3. Kiểm: `pytest
+  tests/test_sensor_bands.py tests/test_session_linux.py`.
 - **D1 — `gte`/`lte` trên số đọc NaN, chữ hay bool là chưa xác định, không phải `false`.** Trước đây NaN đọc thành "không
   nóng" và cho phép trên `sim`. Mỗi cảm biến đọc một lần mỗi lượt. `python/neuroedge/sim/session.py`. Kiểm: `pytest
   tests/test_sensor_bands.py`.
