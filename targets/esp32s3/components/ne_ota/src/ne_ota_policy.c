@@ -16,14 +16,73 @@ static bool same(const char *left, const char *right) {
     return left != NULL && right != NULL && strcmp(left, right) == 0;
 }
 
+bool ne_ota_parse_version(const char *text, uint32_t out[3]) {
+    if (out == NULL) return false;
+    out[0] = out[1] = out[2] = 0u;
+    if (empty(text)) return false;
+    size_t part = 0;
+    const char *cursor = text;
+    while (true) {
+        if (*cursor < '0' || *cursor > '9') return false;
+        uint32_t value = 0u;
+        while (*cursor >= '0' && *cursor <= '9') {
+            if (value > (0xFFFFFFFFu - (uint32_t)(*cursor - '0')) / 10u) return false;
+            value = value * 10u + (uint32_t)(*cursor - '0');
+            cursor++;
+        }
+        if (part > 2u) return false;
+        out[part] = value;
+        if (*cursor == '\0') return true;
+        if (*cursor != '.' || part == 2u) return false;
+        cursor++;
+        part++;
+    }
+}
+
+int ne_ota_compare_versions(const uint32_t left[3], const uint32_t right[3]) {
+    for (int part = 0; part < 3; part++) {
+        if (left[part] != right[part]) return left[part] < right[part] ? -1 : 1;
+    }
+    return 0;
+}
+
 ne_ota_decision ne_ota_should_install(const char *running_version, const char *remote_version,
-                                      const char *rolled_back_version) {
+                                      const char *rolled_back_version,
+                                      const char *high_water_version) {
     /* An unreadable version on either side decides nothing: refuse, do not guess. */
     if (empty(running_version) || empty(remote_version)) return NE_OTA_SKIP_NO_VERSION;
+    uint32_t running[3], remote[3];
+    if (!ne_ota_parse_version(running_version, running) ||
+        !ne_ota_parse_version(remote_version, remote))
+        return NE_OTA_SKIP_BAD_VERSION;
     if (same(running_version, remote_version)) return NE_OTA_SKIP_SAME_VERSION;
     if (!empty(rolled_back_version) && same(remote_version, rolled_back_version))
         return NE_OTA_SKIP_ROLLED_BACK;
+    if (!empty(high_water_version)) {
+        uint32_t mark[3];
+        /* A mark that cannot be read refuses everything: a downgrade is worse. */
+        if (!ne_ota_parse_version(high_water_version, mark)) return NE_OTA_SKIP_BAD_VERSION;
+        if (ne_ota_compare_versions(remote, mark) <= 0) return NE_OTA_SKIP_DOWNGRADE;
+    }
     return NE_OTA_INSTALL;
+}
+
+bool ne_ota_resolve_rollback(const char *stored, const char *from_slot, char *out, size_t cap) {
+    if (out == NULL || cap == 0) return false;
+    out[0] = '\0';
+    const char *source = !empty(from_slot) ? from_slot : (!empty(stored) ? stored : NULL);
+    if (source == NULL) return false;
+    size_t length = strlen(source);
+    if (length >= cap) length = cap - 1;
+    memcpy(out, source, length);
+    out[length] = '\0';
+    return true;
+}
+
+bool ne_ota_download_timed_out(uint32_t now_ms, uint32_t started_ms, uint32_t last_progress_ms,
+                               uint32_t total_ms, uint32_t stall_ms) {
+    return (uint32_t)(now_ms - started_ms) >= total_ms ||
+           (uint32_t)(now_ms - last_progress_ms) >= stall_ms;
 }
 
 const char *ne_ota_decision_reason(ne_ota_decision decision) {
@@ -34,6 +93,10 @@ const char *ne_ota_decision_reason(ne_ota_decision decision) {
             return "no_version";
         case NE_OTA_SKIP_ROLLED_BACK:
             return "rolled_back";
+        case NE_OTA_SKIP_DOWNGRADE:
+            return "downgrade";
+        case NE_OTA_SKIP_BAD_VERSION:
+            return "bad_version";
         case NE_OTA_INSTALL:
             break;
     }
@@ -63,9 +126,12 @@ size_t ne_ota_sanitize_url(const char *url, char *out, size_t cap) {
     }
     const size_t drop_from = at != NULL ? (size_t)(authority - url) : 0u;
     const size_t drop_to = at != NULL ? (size_t)(at + 1 - url) : 0u;
+    /* A query string or fragment may carry a secret of its own: never log it. */
+    const char *query = strpbrk(path, "?#");
+    const size_t keep = query != NULL ? (size_t)(query - url) : length;
 
     size_t written = 0;
-    for (size_t i = 0; i < length; i++) {
+    for (size_t i = 0; i < keep; i++) {
         if (i >= drop_from && i < drop_to) continue;
         if (written + 1 < cap) out[written] = url[i];
         written++;
@@ -130,4 +196,9 @@ bool ne_ota_marker_rollback(char *out, size_t cap, const char *from, const char 
 bool ne_ota_marker_skip(char *out, size_t cap, const char *reason, const char *version) {
     if (reason == NULL || version == NULL) return false;
     return marker(out, cap, "NE_OTA SKIP reason=%s version=%s", reason, version);
+}
+
+bool ne_ota_marker_erased(char *out, size_t cap, const char *partition) {
+    if (partition == NULL) return false;
+    return marker(out, cap, "NE_OTA ERASED partition=%s", partition);
 }

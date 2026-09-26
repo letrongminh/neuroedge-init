@@ -3,6 +3,7 @@ menu "NeuroEdge OTA (FR-OTA, TSK-S6-01..04)"
     config NEUROEDGE_OTA
         bool "Enable firmware update (A/B, RSA-signed; off by default)"
         default n
+        depends on SECURE_SIGNED_ON_UPDATE && BOOTLOADER_APP_ROLLBACK_ENABLE
         help
             Links the HTTP(S) update path. Without it the device still honours
             A/B rollback when built with CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE,
@@ -12,7 +13,9 @@ menu "NeuroEdge OTA (FR-OTA, TSK-S6-01..04)"
             An update build layers sdkconfig.ota on sdkconfig.defaults; the RSA
             signing key stays out of the repository (docs/user/nap-firmware.md,
             section 6). The image is verified with the key that signed the
-            running app before anything is switched.
+            running app before anything is switched. The two options this
+            depends on are part of the same layer: an unverified update, or one
+            that could never be rolled back, must not be reachable.
 
     if NEUROEDGE_OTA
 
@@ -30,6 +33,20 @@ menu "NeuroEdge OTA (FR-OTA, TSK-S6-01..04)"
             int "HTTP operation timeout (ms)"
             default 20000
             range 1000 120000
+
+        config NEUROEDGE_OTA_DOWNLOAD_TIMEOUT_MS
+            int "Total download deadline (ms)"
+            default 300000
+            range 10000 3600000
+            help
+                A stalled server must not hang the gate runtime: the download
+                is abandoned after this long in total, or after the stall
+                timeout below with no new byte, and the update is refused.
+
+        config NEUROEDGE_OTA_STALL_TIMEOUT_MS
+            int "No-progress limit while downloading (ms)"
+            default 30000
+            range 5000 600000
 
         config NEUROEDGE_OTA_ETH
             bool "Bring up Ethernet (QEMU open_eth) for the update check"

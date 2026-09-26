@@ -103,6 +103,20 @@ def test_has_after_finds_only_what_follows_the_anchor(root, tmp_path):
     assert run(root, tmp_path, f'ota_has_after "{missing}" "{PASS}" "{ROTATED_ON}"').returncode != 0
 
 
+def test_negative_verdicts_need_a_log(root, tmp_path):
+    # An empty or missing log could hide anything: a "forbid" or a count of 0
+    # on it would pass for the wrong reason.
+    empty = log(tmp_path, "")
+    missing = tmp_path / "missing.log"
+    for path in (empty, missing):
+        assert run(root, tmp_path, f'ota_forbid "{path}" "NE_OTA SWITCH"').returncode == 1
+        assert run(root, tmp_path, f'ota_count_is "{path}" "NE_OTA SWITCH" 0').returncode == 1
+    assert run(root, tmp_path, f'ota_forbid "{empty}" "NE_OTA SWITCH"').returncode == 1
+    real = log(tmp_path, "NE_OTA CHECK url=x\n")
+    assert run(root, tmp_path, f'ota_forbid "{real}" "NE_OTA SWITCH"').returncode == 0
+    assert run(root, tmp_path, f'ota_count_is "{real}" "NE_OTA SWITCH" 0').returncode == 0
+
+
 def test_a_wrong_count_fails(root, tmp_path):
     path = log(tmp_path, "\n".join([PASS, PASS, ""]))
     assert run(root, tmp_path, f'ota_count_is "{path}" "{PASS}" 2').returncode == 0

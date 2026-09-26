@@ -45,8 +45,19 @@ ota_ordered() {
   return 0
 }
 
+# A negative verdict needs a log that could have carried the marker: a missing
+# or empty file proves nothing, so it fails rather than passing quietly.
+ota_absent_ok() {
+  if [ ! -s "$1" ]; then
+    echo "OTA: no log to read $2 from: $1" >&2
+    return 1
+  fi
+  return 0
+}
+
 # The ERE never appears in the file.
 ota_forbid() {
+  ota_absent_ok "$1" "a forbidden marker" || return 1
   if _ota_text "$1" | grep -aqE "$2"; then
     echo "OTA: unexpected /$2/ in $1" >&2
     return 1
@@ -56,6 +67,7 @@ ota_forbid() {
 
 # The ERE appears exactly $3 times in the file.
 ota_count_is() {
+  ota_absent_ok "$1" "a count" || return 1
   local count
   count=$(_ota_text "$1" | grep -acE "$2" || true)
   count=${count:-0}

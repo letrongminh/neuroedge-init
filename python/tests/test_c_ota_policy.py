@@ -47,4 +47,23 @@ def test_the_ota_decisions_pass_their_host_runner(root, tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
     match = re.fullmatch(r"NE_OTA_POLICY OK checks=(\d+)", result.stdout.strip())
     assert match, result.stdout
-    assert int(match.group(1)) >= 60  # the decision table, URL rules and every marker line
+    assert int(match.group(1)) >= 100  # decision table, versions, URL rules, every marker
+
+
+def test_turning_ota_on_requires_signature_and_rollback(root):
+    """
+    The component refuses to build an update path that is not verified and not
+    rollback-able: the Kconfig option depends on both, and the source has an
+    #error for a hand-edited sdkconfig that keeps NEUROEDGE_OTA=y without them
+    (review of wave3/ota, P1).
+    """
+    kconfig = (root / "targets" / "esp32s3" / "components" / "ne_ota" / "Kconfig").read_text(
+        encoding="utf-8"
+    )
+    assert "depends on SECURE_SIGNED_ON_UPDATE && BOOTLOADER_APP_ROLLBACK_ENABLE" in kconfig
+    source = (
+        root / "targets" / "esp32s3" / "components" / "ne_ota" / "src" / "ne_ota.c"
+    ).read_text(encoding="utf-8")
+    assert "#error" in source
+    assert "CONFIG_SECURE_SIGNED_ON_UPDATE" in source
+    assert "CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE" in source

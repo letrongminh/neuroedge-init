@@ -175,7 +175,10 @@ void app_main(void)
     fflush(stdout);
     ne_ota_boot_rejected(); /* pending image: marks it invalid and reboots */
     ESP_LOGE(TAG, "test build (NEUROEDGE_OTA_TEST_FAIL_SELFTEST): stopping");
-    while (true) {
+    /* volatile: the rest of app_main stays reachable and linked, so this is
+     * the ordinary firmware stopped by a test flag, not a stripped stub. */
+    static volatile bool stop = true;
+    while (stop) {
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
 #endif

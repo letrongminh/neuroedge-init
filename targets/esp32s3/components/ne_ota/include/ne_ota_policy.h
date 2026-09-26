@@ -14,6 +14,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,10 +35,40 @@ typedef enum {
     NE_OTA_SKIP_SAME_VERSION, /* the running app is this version already */
     NE_OTA_SKIP_NO_VERSION,   /* the running or the remote version is unreadable */
     NE_OTA_SKIP_ROLLED_BACK,  /* the version the device rolled back from */
+    NE_OTA_SKIP_DOWNGRADE,    /* not newer than the NVS high-water mark */
+    NE_OTA_SKIP_BAD_VERSION,  /* a version (or the mark) is not MAJOR.MINOR.PATCH */
 } ne_ota_decision;
 
+/*
+ * The signed image on the other side may be older than what runs (there is no
+ * eFuse anti-rollback yet — that comes with Secure Boot, TSK-S6-05), so a
+ * software mark in NVS records the newest version that ever passed its gate
+ * self-test. `high_water_version` is that mark, NULL or empty when there is
+ * none; an unparsable mark refuses everything rather than allowing a
+ * downgrade, and so does an unparsable remote version.
+ */
 ne_ota_decision ne_ota_should_install(const char *running_version, const char *remote_version,
-                                      const char *rolled_back_version);
+                                      const char *rolled_back_version,
+                                      const char *high_water_version);
+
+/* MAJOR.MINOR.PATCH, all decimal, missing parts 0; false on anything else. */
+bool ne_ota_parse_version(const char *text, uint32_t out[3]);
+int ne_ota_compare_versions(const uint32_t left[3], const uint32_t right[3]);
+
+/*
+ * The version the device rolled back from: the aborted slot's own descriptor
+ * when it can be read (`from_slot`), otherwise the value recorded in NVS
+ * (`stored`), so an interrupted later write over that slot cannot wipe the
+ * fact. False when neither is readable — the caller then blocks all updates.
+ */
+bool ne_ota_resolve_rollback(const char *stored, const char *from_slot, char *out, size_t cap);
+
+/*
+ * True when a download must be abandoned: over its total deadline, or no byte
+ * read for `stall_ms`. Milliseconds may wrap; only differences are compared.
+ */
+bool ne_ota_download_timed_out(uint32_t now_ms, uint32_t started_ms, uint32_t last_progress_ms,
+                               uint32_t total_ms, uint32_t stall_ms);
 
 /* The reason field of `NE_OTA SKIP`, one word per decision. */
 const char *ne_ota_decision_reason(ne_ota_decision decision);
@@ -79,6 +110,7 @@ bool ne_ota_marker_valid(char *out, size_t cap, const char *partition);
 bool ne_ota_marker_invalid(char *out, size_t cap, const char *partition);
 bool ne_ota_marker_rollback(char *out, size_t cap, const char *from, const char *to);
 bool ne_ota_marker_skip(char *out, size_t cap, const char *reason, const char *version);
+bool ne_ota_marker_erased(char *out, size_t cap, const char *partition);
 
 #ifdef __cplusplus
 }

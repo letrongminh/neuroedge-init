@@ -45,7 +45,15 @@ extern "C" {
 /* The running partition's state, the last rollback if there was one. */
 void ne_ota_boot(void);
 
-/* The gate self-test passed. A pending image is marked valid and named. */
+/*
+ * The gate self-test passed. A pending image is marked valid, named, and its
+ * version becomes the NVS high-water mark (no update at or below it is
+ * installed). If the mark-valid call itself fails the choice is fail-closed:
+ * when the bootloader could roll back, reboot and let it — an image whose
+ * confirmation did not stick must not be the one that keeps running; when no
+ * rollback exists (nothing else to boot), a self-test-passing image is better
+ * than none, so it stays and only the VALID marker is withheld.
+ */
 void ne_ota_boot_confirmed(void);
 
 /*

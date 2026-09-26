@@ -17,19 +17,23 @@
 # and drives the whole story with scripts/ota_markers.sh. Each boot is its own
 # QEMU process: QEMU 9.0's esp32s3 flash model cannot survive a warm reset
 # after an update's flash writes, so the emulator — not the firmware — is
-# restarted wherever the device resets itself (`-no-reboot`); the UART logs
-# still read as one continuous story:
+# restarted wherever the device resets itself; the UART logs still read as one
+# continuous story:
 #
 #   a  factory 0.1.0 boots, self-test passes, the remote is already running
 #      (SKIP same_version) — a failed update could never have lost this slot;
 #   b  0.2.0 is fetched, verified, switched to and marked VALID after its own
-#      self-test;
+#      self-test (the NVS high-water mark);
 #   c  an image signed with a different key is REJECTED before boot: no
-#      switch, no reboot, the device stays on 0.2.0;
-#   d  a broken signed image (panics before it can be marked valid) is rolled
+#      switch, no reboot, the device stays on 0.2.0, and the slot it wrote is
+#      erased so it can never be fallen back to (NE_OTA ERASED);
+#   d  a broken signed image (resets before it can be marked valid) is rolled
 #      back by the bootloader; the device runs 0.2.0 again by itself;
 #   e  an image whose self-test fails marks itself INVALID and reboots into
-#      the previous app (NEUROEDGE_OTA_TEST_FAIL_SELFTEST).
+#      the previous app (NEUROEDGE_OTA_TEST_FAIL_SELFTEST);
+#   f  an unsigned image (no signature block) is REJECTED reason=signature;
+#   g  a correctly signed but lower version is refused as a downgrade
+#      (SKIP reason=downgrade) by the high-water mark from boot b.
 #
 # Any missing marker, wrong order, marker that must not appear, unexpected
 # QEMU exit or timeout is exit 1. The QEMU UART logs and the HTTP server log
@@ -144,6 +148,7 @@ sign_image "$work/key-a.pem" "$work/a/$(app_bin "$work/a")" "$images/b.bin"
 
 printf 'CONFIG_NEUROEDGE_OTA_TEST_BOOTLOOP=y\n' >"$work/sdkconfig.bootloop"
 build_variant c 0.3.0 "$defaults" "$work/sdkconfig.bootloop"
+cp -f "$work/c/$(app_bin "$work/c")" "$images/c-unsigned.bin"
 sign_image "$work/key-a.pem" "$work/c/$(app_bin "$work/c")" "$images/c-good.bin"
 sign_image "$work/key-b.pem" "$work/c/$(app_bin "$work/c")" "$images/c-bad.bin"
 
@@ -345,11 +350,37 @@ assert e ota_ordered "$logs/e.log" \
 assert e ota_forbid "$logs/e.log" '^NE_OTA VALID partition=ota_1'
 assert e ota_count_is "$logs/e.log" '^NE_SELFTEST FAIL test image' 1
 
+# (f) an unsigned image is refused: no signature block, no switch, and the
+# slot it was written to is erased.
+: >"$logs/f.log"
+serve "$images/c-unsigned.bin"
+qemu_once f 1 '^NE_OTA REJECTED reason=signature$' idle 10
+join_boots f
+assert f ota_ordered "$logs/f.log" \
+  "^NE_OTA CHECK url=$URL\$" \
+  '^NE_OTA REJECTED reason=signature$' \
+  '^NE_OTA ERASED partition=ota_1$'
+assert f ota_forbid "$logs/f.log" '^NE_OTA (SWITCH|VALID|ROLLBACK)'
+assert f ota_count_is "$logs/f.log" '^NE_SELFTEST PASS' 1
+
+# (g) a correctly signed lower version is a downgrade: the high-water mark
+# (0.2.0, set when b was confirmed) refuses it, and the device stays put.
+: >"$logs/g.log"
+serve "$images/a.bin"
+qemu_once g 1 '^NE_OTA SKIP reason=downgrade version=0\.1\.0$' idle
+join_boots g
+assert g ota_ordered "$logs/g.log" \
+  '^NE_SELFTEST PASS walker=[0-9]+ token=[0-9]+' \
+  "^NE_OTA CHECK url=$URL\$" \
+  '^NE_OTA SKIP reason=downgrade version=0\.1\.0$'
+assert g ota_forbid "$logs/g.log" '^NE_OTA (DOWNLOADED|SWITCH|REJECTED|ROLLBACK)'
+assert g ota_count_is "$logs/g.log" '^NE_SELFTEST PASS' 1
+
 # --- evidence -----------------------------------------------------------------------------------
 
 echo
 echo "OTA on QEMU: all phases passed (logs in $logs)"
-for phase in a b c d e; do
+for phase in a b c d e f g; do
   echo "--- $phase"
   grep -aE '^(NE_SELFTEST|NE_OTA|Guru Meditation)' "$logs/$phase.log" | tr -d '\r'
 done
