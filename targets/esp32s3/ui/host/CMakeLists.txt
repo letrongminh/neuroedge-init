@@ -28,6 +28,12 @@ if(NE_UI_UPDATE_GOLDEN)
     add_compile_definitions(NE_UI_UPDATE_GOLDEN=1)
 endif()
 
+# Our translation units run under ASan and UBSan by default: the UI handles
+# untrusted agent text, and a renderer that reads past a buffer must fail the
+# build, not the board. LVGL itself is not instrumented (upstream code);
+# ASAN_OPTIONS=detect_leaks=0 at run time, LVGL is never deinitialised here.
+option(NE_UI_SANITIZE "Build the golden runner with ASan+UBSan" ON)
+
 include(FetchContent)
 FetchContent_Declare(
     lvgl
@@ -46,10 +52,16 @@ add_executable(
     ne_ui_golden
     main.c
     ../src/ne_ui.c
+    ../src/ne_ui_text.c
     ../src/ne_ui_strings.c
     ../fonts/ne_font_12.c
     ../fonts/ne_font_16.c
     ../fonts/ne_font_22.c)
 target_include_directories(ne_ui_golden PRIVATE ../include ../src ../fonts ..)
 target_compile_options(ne_ui_golden PRIVATE -Wall -Wextra -Werror)
+if(NE_UI_SANITIZE)
+    target_compile_options(ne_ui_golden PRIVATE
+        -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer)
+    target_link_options(ne_ui_golden PRIVATE -fsanitize=address,undefined)
+endif()
 target_link_libraries(ne_ui_golden PRIVATE lvgl)

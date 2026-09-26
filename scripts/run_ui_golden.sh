@@ -16,8 +16,14 @@
 # cmake is found in PATH, in python/.venv/bin (pip install cmake), or through
 # NE_UI_CMAKE; without one, the script re-runs itself in the espressif/idf:v5.4
 # container, which has cmake 3.30. LVGL v9.6.0 is fetched by the CMake project,
-# pinned by URL and SHA-256.
+# pinned by URL and SHA-256. The runner is built with ASan+UBSan
+# (NE_UI_SANITIZE=ON): the UI handles untrusted agent text, so a read past a
+# buffer must fail here. LVGL is never deinitialised in this harness, so leak
+# detection is off.
 set -euo pipefail
+
+export ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0:abort_on_error=1}"
+export UBSAN_OPTIONS="${UBSAN_OPTIONS:-print_stacktrace=1}"
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 HOST="$ROOT/targets/esp32s3/ui/host"

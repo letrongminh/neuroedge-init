@@ -25,6 +25,7 @@
 #include "lvgl/lvgl.h"
 
 #include "ne_ui.h"
+#include "ne_ui_text.h"
 
 /* LVGL's FS layer wants a drive letter; 'A' is the working directory (lv_conf.h). */
 #define GOLDEN_DIR "A:golden"
@@ -83,6 +84,15 @@ static void case_voice_idle_offline(ne_ui_t *ui, ne_ui_language_t language)
     ne_ui_show_idle(ui, &state);
 }
 
+/* A long agent name with a newline: the title stays one line. */
+static void case_voice_idle_long(ne_ui_t *ui, ne_ui_language_t language)
+{
+    const ne_ui_idle_state_t state = {
+        "home-voice-assistant-for-the-first-floor\nliving-room-and-kitchen", true};
+    (void)language;
+    ne_ui_show_idle(ui, &state);
+}
+
 static void case_voice_listening(ne_ui_t *ui, ne_ui_language_t language)
 {
     const ne_ui_voice_state_t state = {NE_UI_VOICE_LISTENING, 64, false, NULL, NULL};
@@ -102,6 +112,22 @@ static void case_voice_thinking(ne_ui_t *ui, ne_ui_language_t language)
     const ne_ui_voice_state_t state = {
         NE_UI_VOICE_THINKING, 0, false,
         pick(language, "bật đèn ngoài hiên", "turn on the porch light"), NULL};
+    ne_ui_show_voice(ui, &state);
+}
+
+/* A long transcript with agent newlines: the heard box clips and scrolls. */
+static void case_voice_thinking_long(ne_ui_t *ui, ne_ui_language_t language)
+{
+    const ne_ui_voice_state_t state = {
+        NE_UI_VOICE_THINKING,
+        0,
+        false,
+        pick(language,
+             "bật đèn ngoài hiên\nvà kiểm tra nhiệt độ phòng khách tầng một, sau đó báo lại "
+             "nếu quá nóng, còn nếu không thì tắt đèn đi cho đỡ tốn điện",
+             "turn on the porch light\nand check the first-floor living room temperature, "
+             "then tell me if it is too hot in there, and if not switch the light off again"),
+        NULL};
     ne_ui_show_voice(ui, &state);
 }
 
@@ -160,6 +186,23 @@ static void case_confirm(ne_ui_t *ui, ne_ui_language_t language)
     ne_ui_show_confirm(ui, &state);
 }
 
+/* A long action name (the chip must end with a visible …), a message with agent
+ * newlines, and a fallback name: nothing may grow over the yes/no chips or the
+ * spoken-answer line. */
+static void case_confirm_long(ne_ui_t *ui, ne_ui_language_t language)
+{
+    const ne_ui_confirm_state_t state = {
+        "hvac.set_target_temperature_celsius_zone_two",
+        pick(language,
+             "Bạn đang đặt nhiệt độ mục tiêu 31,5 °C cho phòng khách tầng một.\n"
+             "Vẫn còn người trong phòng — bạn chắc muốn thực hiện?",
+             "You are setting the target temperature to 31.5 °C for the first-floor living "
+             "room.\nSomeone is still in the room — do you really want to run it?"),
+        "set_away_mode\nwith_notice",
+    };
+    ne_ui_show_confirm(ui, &state);
+}
+
 static void case_verdict_allow(ne_ui_t *ui, ne_ui_language_t language)
 {
     const ne_ui_verdict_state_t state = {true, NE_UI_REASON_NONE, "light_on", NULL};
@@ -214,6 +257,23 @@ static void case_verdict_block_budget_exceeded(ne_ui_t *ui, ne_ui_language_t lan
                   "Gathering facts took 150 ms, over the 120 ms budget");
 }
 
+/* A long action name and a multi-line detail: both must stay inside their areas,
+ * the detail in its own clipped box. */
+static void case_verdict_block_long(ne_ui_t *ui, ne_ui_language_t language)
+{
+    const ne_ui_verdict_state_t state = {
+        false,
+        NE_UI_REASON_BUDGET_EXCEEDED,
+        "door_lock.unlock_all_side_entrances",
+        pick(language,
+             "Thu thập dữ kiện mất 1.850 ms trong khi ngân sách của cổng là 150 ms.\n"
+             "Lần đọc lại cũng quá hạn, nên cổng fail closed: không chân GPIO nào động.",
+             "Gathering facts took 1,850 ms while the gate's budget is 150 ms.\n"
+             "The retry timed out too, so the gate failed closed: no GPIO pin moved."),
+    };
+    ne_ui_show_verdict(ui, &state);
+}
+
 /* -- degraded, sensors, OTA, fatal ----------------------------------------------------------- */
 
 static void case_degraded(ne_ui_t *ui, ne_ui_language_t language)
@@ -225,6 +285,33 @@ static void case_degraded(ne_ui_t *ui, ne_ui_language_t language)
     ne_ui_show_degraded(ui, &state);
 }
 
+/* More commands than NE_UI_MAX_COMMANDS, some with newlines and long names:
+ * only the cap is drawn, one line each, nothing grows per command. */
+static void case_degraded_long(ne_ui_t *ui, ne_ui_language_t language)
+{
+    static const char *const vi[] = {
+        "bật đèn ngoài hiên\ntầng một",
+        "tắt toàn bộ đèn trong nhà",
+        "đọc tin tức mới nhất",
+        "kiểm tra nhiệt độ",
+        "kiểm tra độ ẩm",
+        "kiểm tra cửa ra vào",
+        "đặt nhiệt độ mục tiêu",
+    };
+    static const char *const en[] = {
+        "turn on the porch light\ndownstairs",
+        "turn off every light in the house",
+        "read the latest news",
+        "check the temperature",
+        "check the humidity",
+        "check the door contact",
+        "set the target temperature",
+    };
+    const ne_ui_degraded_state_t state = {
+        true, true, true, language == NE_UI_LANG_EN ? en : vi, 7};
+    ne_ui_show_degraded(ui, &state);
+}
+
 static void case_sensor(ne_ui_t *ui, ne_ui_language_t language)
 {
     const ne_ui_reading_t readings[] = {
@@ -233,6 +320,24 @@ static void case_sensor(ne_ui_t *ui, ne_ui_language_t language)
         {"door_contact", pick(language, "đóng", "closed"), NULL, NULL},
     };
     const ne_ui_sensor_state_t state = {readings, 3};
+    ne_ui_show_sensor(ui, &state);
+}
+
+/* More readings than NE_UI_MAX_READINGS, with a long name, a newline in a value
+ * and a band longer than its budget: the cap holds, the extras are not drawn. */
+static void case_sensor_long(ne_ui_t *ui, ne_ui_language_t language)
+{
+    const ne_ui_reading_t readings[] = {
+        {"temperature_inside_the_first_floor_living_room", "31.5", "°C",
+         pick(language, "rất cao (cần chú ý ngay)", "very high (act now)")},
+        {"humidity", "68\n%", "%", pick(language, "bình thường", "normal")},
+        {"door_contact", pick(language, "đóng", "closed"), NULL, NULL},
+        {"motion", pick(language, "có người\nđang di chuyển", "someone\nis moving"), NULL,
+         pick(language, "cao", "high")},
+        {"co2", "812", "ppm", pick(language, "trung bình", "medium")},
+        {"pm25", "12", "µg/m³", pick(language, "tốt", "good")},
+    };
+    const ne_ui_sensor_state_t state = {readings, 6};
     ne_ui_show_sensor(ui, &state);
 }
 
@@ -291,6 +396,7 @@ static void case_fatal(ne_ui_t *ui, ne_ui_language_t language)
     ne_ui_show_fatal(ui, &state);
 }
 
+
 /* -- the matrix ----------------------------------------------------------------------------- */
 
 static const ui_case CASES[] = {
@@ -299,12 +405,15 @@ static const ui_case CASES[] = {
     {"boot_failed", case_boot_failed},
     {"voice_idle", case_voice_idle},
     {"voice_idle_offline", case_voice_idle_offline},
+    {"voice_idle_long", case_voice_idle_long},
     {"voice_listening", case_voice_listening},
     {"voice_barge_in", case_voice_barge_in},
     {"voice_thinking", case_voice_thinking},
+    {"voice_thinking_long", case_voice_thinking_long},
     {"voice_speaking", case_voice_speaking},
     {"voice_speaking_long", case_voice_speaking_long},
     {"confirm", case_confirm},
+    {"confirm_long", case_confirm_long},
     {"verdict_allow", case_verdict_allow},
     {"verdict_block_condition_not_met", case_verdict_block_condition_not_met},
     {"verdict_block_criterion_unavailable", case_verdict_block_criterion_unavailable},
@@ -312,8 +421,11 @@ static const ui_case CASES[] = {
     {"verdict_block_argument_out_of_range", case_verdict_block_argument_out_of_range},
     {"verdict_block_gate_unreachable", case_verdict_block_gate_unreachable},
     {"verdict_block_budget_exceeded", case_verdict_block_budget_exceeded},
+    {"verdict_block_long", case_verdict_block_long},
     {"degraded", case_degraded},
+    {"degraded_long", case_degraded_long},
     {"sensor", case_sensor},
+    {"sensor_long", case_sensor_long},
     {"ota_checking", case_ota_checking},
     {"ota_downloading", case_ota_downloading},
     {"ota_verifying", case_ota_verifying},
@@ -364,6 +476,19 @@ static int self_checks(void)
             bad++;
         }
     }
+    if (1) {
+        char out[64];
+        size_t n = ne_ui_text_single_line(out, sizeof(out), "ABCDEFGHIJKLMNOPQRSTUVWXYZ", 20);
+        if (n != 23 || strcmp(out, "ABCDEFGHIJKLMNOPQRST\xE2\x80\xA6") != 0) {
+            printf("FAIL single_line: n=%zu [%s]\n", n, out);
+            bad++;
+        }
+        n = ne_ui_text_truncate(out, sizeof(out), "c\xC3", 320);
+        if (n != 2 || strcmp(out, "c?") != 0) {
+            printf("FAIL truncate tail: n=%zu [%s]\n", n, out);
+            bad++;
+        }
+    }
     for (i = 0; i < 2; i++) {
         ne_ui_language_t language = i == 0 ? NE_UI_LANG_VI : NE_UI_LANG_EN;
         int reason;
@@ -402,6 +527,10 @@ int main(void)
         printf("FAIL lv_test_display_create(%d, %d)\n", NE_UI_WIDTH, NE_UI_HEIGHT);
         return 1;
     }
+    /* Render in the panel's own format, not the XRGB8888 the test display picks:
+     * the goldens then show what the RGB565 ST7789 will draw. The compare
+     * converts to XRGB8888 for the PNG (lv_test_screenshot_compare.c). */
+    lv_display_set_color_format(display, LV_COLOR_FORMAT_RGB565);
 
     for (i = 0; i < sizeof(languages) / sizeof(languages[0]); i++) {
         ne_ui_language_t language = languages[i];

@@ -1,17 +1,21 @@
 /*
  * The screens (TSK-S4-10). Deterministic: no clock, no randomness, no animation
  * (every animation-capable call passes LV_ANIM_OFF) and no automatic scrolling,
- * so the same state renders the same pixels. Agent data is drawn as given and
- * only truncated at whole UTF-8 code points; the UI's own labels come from
- * ne_ui_strings.c.
+ * so the same state renders the same pixels. Agent data is drawn as given, with
+ * two rules that keep it on the panel (docs/spec/ui.md §4):
+ *
+ *  - a single-line label gets one line: `lv_label_set_max_lines(…, 1)`, a fixed
+ *    one-line height and DOTS ellipsis, and its text goes through
+ *    ne_ui_text_single_line(), so an agent newline cannot break the layout;
+ *  - multi-line agent data goes into a fixed-size clipped box (like the reply),
+ *    which scrolls at run time and never grows over its neighbours.
  */
 
 #include "ne_ui.h"
 
 #include "ne_fonts.h"
 #include "ne_ui_strings.h"
-
-#include <string.h>
+#include "ne_ui_text.h"
 
 #define MARGIN 16
 #define CONTENT_W (NE_UI_WIDTH - 2 * MARGIN)
@@ -36,65 +40,10 @@ static int pct(int value)
     return value > 100 ? 100 : value;
 }
 
-/* The byte length of the UTF-8 sequence starting at `c`; 1 for ASCII and for a
- * byte that does not start one (copied as it is, never dropped). */
-static size_t utf8_length(unsigned char c)
-{
-    if (c < 0x80u) {
-        return 1;
-    }
-    if ((c & 0xE0u) == 0xC0u) {
-        return 2;
-    }
-    if ((c & 0xF0u) == 0xE0u) {
-        return 3;
-    }
-    if ((c & 0xF8u) == 0xF0u) {
-        return 4;
-    }
-    return 1;
-}
-
 /*
- * Copy `text` into `out` (size `cap`), at most `max_bytes` bytes of whole UTF-8
- * code points; when the rest did not fit, the copy ends with U+2026 (…), so a
- * cut is visible rather than implied. Always NUL-terminates and never writes
- * more than `cap` bytes, whatever `cap` or `max_bytes` is. Deterministic: byte
- * and code-point boundaries only.
+ * A label. `wrap` labels are for fixed-size boxes and may grow in height inside
+ * one; every other label is exactly one line with a DOTS ellipsis.
  */
-static void truncate_utf8(char *out, size_t cap, const char *text, size_t max_bytes)
-{
-    static const char ellipsis[] = "\xE2\x80\xA6";
-    size_t used = 0;
-    size_t limit;
-
-    if (cap == 0) {
-        return;
-    }
-    if (cap < sizeof(ellipsis) + 1 || text == NULL) {
-        out[0] = '\0';
-        return;
-    }
-    limit = cap - sizeof(ellipsis); /* the ellipsis, three bytes and the NUL, fits below it */
-    if (max_bytes < limit) {
-        limit = max_bytes;
-    }
-    while (text[used] != '\0' && used < limit) {
-        size_t length = utf8_length((unsigned char)text[used]);
-        if (used + length > limit) {
-            break; /* no room for this whole code point */
-        }
-        used += length;
-    }
-    if (text[used] == '\0') {
-        memcpy(out, text, used);
-        out[used] = '\0';
-        return;
-    }
-    memcpy(out, text, used);
-    memcpy(out + used, ellipsis, sizeof(ellipsis));
-}
-
 static lv_obj_t *add_label(lv_obj_t *parent, const char *text, const lv_font_t *font,
                            uint32_t color, int32_t width, bool wrap)
 {
@@ -105,16 +54,24 @@ static lv_obj_t *add_label(lv_obj_t *parent, const char *text, const lv_font_t *
     lv_obj_set_style_text_line_space(label, 2, 0);
     if (width > 0) {
         lv_obj_set_width(label, width);
-        lv_label_set_long_mode(label, wrap ? LV_LABEL_LONG_MODE_WRAP : LV_LABEL_LONG_MODE_DOTS);
+    }
+    if (wrap) {
+        lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_WRAP);
     } else {
+        /* One line, always: without the one-line height, LVGL 9.6's DOTS mode
+         * wraps instead of ellipsizing (docs/spec/ui.md §4). */
         lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
+        lv_label_set_max_lines(label, 1);
+        lv_obj_set_height(label, font->line_height);
     }
     return label;
 }
 
-/* A label with its own background: a chip whose size follows its text. */
+/* A label with its own background: a one-line chip whose size follows its text,
+ * capped at `max_width` so a wide glyph run cannot push it off the panel (LVGL
+ * then ellipsizes inside the cap). */
 static lv_obj_t *add_badge(lv_obj_t *parent, const char *text, int32_t x, int32_t y,
-                           const lv_font_t *font, uint32_t bg, uint32_t fg)
+                           const lv_font_t *font, uint32_t bg, uint32_t fg, int32_t max_width)
 {
     lv_obj_t *label = add_label(parent, text, font, fg, 0, false);
     lv_obj_set_style_bg_color(label, lv_color_hex(bg), 0);
@@ -122,6 +79,13 @@ static lv_obj_t *add_badge(lv_obj_t *parent, const char *text, int32_t x, int32_
     lv_obj_set_style_radius(label, 6, 0);
     lv_obj_set_style_pad_hor(label, 10, 0);
     lv_obj_set_style_pad_ver(label, 4, 0);
+    /* Height = one line + the padding: leave it at one line and the padded
+     * content area is shorter, which makes LVGL's DOTS replace bytes of the
+     * text ("…" or "Z") with dots and corrupt a multi-byte string. */
+    lv_obj_set_height(label, font->line_height + 8);
+    if (max_width > 0) {
+        lv_obj_set_style_max_width(label, max_width, 0);
+    }
     lv_obj_set_pos(label, x, y);
     return label;
 }
@@ -143,7 +107,8 @@ static lv_obj_t *add_bar(lv_obj_t *parent, int32_t value, int32_t x, int32_t y, 
     return bar;
 }
 
-/* A container the runtime may scroll; it clips, so text can never leave the panel. */
+/* A fixed-size container the runtime may scroll; it clips, so text can never
+ * leave the panel. Multi-line agent data always goes in one. */
 static lv_obj_t *add_scroll_box(lv_obj_t *parent, int32_t x, int32_t y, int32_t w, int32_t h)
 {
     lv_obj_t *box = lv_obj_create(parent);
@@ -154,6 +119,16 @@ static lv_obj_t *add_scroll_box(lv_obj_t *parent, int32_t x, int32_t y, int32_t 
     lv_obj_set_scroll_elastic(box, false);
     lv_obj_set_scroll_dir(box, LV_DIR_VER);
     lv_obj_set_scrollbar_mode(box, LV_SCROLLBAR_MODE_OFF);
+    return box;
+}
+
+/* A clipped, scrollable region holding one wrapping label. */
+static lv_obj_t *add_text_box(lv_obj_t *parent, int32_t x, int32_t y, int32_t w, int32_t h,
+                              const char *text, const lv_font_t *font, uint32_t color)
+{
+    lv_obj_t *box = add_scroll_box(parent, x, y, w, h);
+    lv_obj_t *label = add_label(box, text, font, color, w, true);
+    lv_obj_set_pos(label, 0, 0);
     return box;
 }
 
@@ -207,9 +182,8 @@ void ne_ui_show_boot(ne_ui_t *ui, const ne_ui_boot_state_t *state)
             MARGIN, BODY_Y + 44, color);
     if (state->phase == NE_UI_BOOT_FAILED && state->reason != NULL) {
         char text[NE_UI_TEXT_MAX + 4];
-        truncate_utf8(text, sizeof(text), state->reason, NE_UI_TEXT_MAX);
-        lv_obj_t *label = add_label(ui->root, text, &ne_font_16, C_MUTED, CONTENT_W, true);
-        lv_obj_set_pos(label, MARGIN, BODY_Y + 74);
+        ne_ui_text_truncate(text, sizeof(text), state->reason, NE_UI_TEXT_MAX);
+        add_text_box(ui->root, MARGIN, BODY_Y + 70, CONTENT_W, 108, text, &ne_font_16, C_MUTED);
     }
 }
 
@@ -222,7 +196,7 @@ void ne_ui_show_idle(ne_ui_t *ui, const ne_ui_idle_state_t *state)
         return;
     }
     s = ne_ui_strings(ui->language);
-    truncate_utf8(agent, sizeof(agent), state->agent, NE_UI_TEXT_MAX);
+    ne_ui_text_single_line(agent, sizeof(agent), state->agent, NE_UI_TEXT_MAX);
     add_title(ui, agent, C_TEXT);
     lv_obj_set_pos(add_label(ui->root, s->idle_hint, &ne_font_16, C_MUTED, CONTENT_W, true), MARGIN,
                    BODY_Y);
@@ -248,37 +222,31 @@ void ne_ui_show_voice(ne_ui_t *ui, const ne_ui_voice_state_t *state)
         return;
     }
     s = ne_ui_strings(ui->language);
-    truncate_utf8(transcript, sizeof(transcript), state->transcript, NE_UI_TEXT_MAX);
-    truncate_utf8(reply, sizeof(reply), state->reply, NE_UI_TEXT_MAX);
+    ne_ui_text_single_line(transcript, sizeof(transcript), state->transcript, NE_UI_TEXT_MAX);
+    ne_ui_text_truncate(reply, sizeof(reply), state->reply, NE_UI_TEXT_MAX);
     switch (state->phase) {
     case NE_UI_VOICE_THINKING:
         add_title(ui, s->thinking, C_INFO);
         lv_obj_set_pos(add_label(ui->root, s->heard, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
                        BODY_Y);
-        lv_obj_set_pos(add_label(ui->root, transcript, &ne_font_16, C_TEXT, CONTENT_W, true), MARGIN,
-                       BODY_Y + 22);
+        add_text_box(ui->root, MARGIN, BODY_Y + 22, CONTENT_W, 154, transcript, &ne_font_16, C_TEXT);
         break;
-    case NE_UI_VOICE_SPEAKING: {
-        lv_obj_t *box;
-        lv_obj_t *label;
+    case NE_UI_VOICE_SPEAKING:
         add_title(ui, s->speaking, C_ALLOW);
-        lv_obj_set_pos(add_label(ui->root, s->heard, &ne_font_12, C_MUTED, CONTENT_W - 60, false),
-                       MARGIN, BODY_Y - 4);
-        lv_obj_set_pos(add_label(ui->root, transcript, &ne_font_12, C_MUTED, CONTENT_W - 60, false),
-                       MARGIN, BODY_Y + 12);
+        lv_obj_set_pos(add_label(ui->root, s->heard, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
+                       BODY_Y - 4);
+        lv_obj_set_pos(add_label(ui->root, transcript, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
+                       BODY_Y + 12);
         lv_obj_set_pos(add_label(ui->root, s->reply, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
                        BODY_Y + 36);
-        box = add_scroll_box(ui->root, MARGIN, BODY_Y + 56, CONTENT_W, 108);
-        label = add_label(box, reply, &ne_font_16, C_TEXT, CONTENT_W, true);
-        lv_obj_set_pos(label, 0, 0);
+        add_text_box(ui->root, MARGIN, BODY_Y + 56, CONTENT_W, 108, reply, &ne_font_16, C_TEXT);
         break;
-    }
     case NE_UI_VOICE_LISTENING:
     default:
         add_title(ui, s->listening, C_INFO);
         if (state->interrupted) {
             add_badge(ui->root, s->barge_in, NE_UI_WIDTH - MARGIN - 110, BODY_Y - 4, &ne_font_12,
-                      C_SURFACE, C_WARN);
+                      C_SURFACE, C_WARN, 110);
         }
         add_bar(ui->root, state->level_pct, MARGIN, BODY_Y + 54, C_INFO);
         lv_obj_set_pos(add_label(ui->root, s->listening_hint, &ne_font_16, C_MUTED, CONTENT_W, false),
@@ -293,27 +261,31 @@ void ne_ui_show_confirm(ne_ui_t *ui, const ne_ui_confirm_state_t *state)
     char action[NE_UI_TEXT_MAX + 4];
     char message[NE_UI_TEXT_MAX + 4];
     char fallback[NE_UI_TEXT_MAX + 4];
+    char answer[64];
     if (!ready(ui) || state == NULL) {
         return;
     }
     s = ne_ui_strings(ui->language);
-    /* 32 bytes keeps the chip inside the panel even at ~8 px per ASCII character. */
-    truncate_utf8(action, sizeof(action), state->action, 32);
-    truncate_utf8(message, sizeof(message), state->message, NE_UI_TEXT_MAX);
-    truncate_utf8(fallback, sizeof(fallback), state->fallback, NE_UI_TEXT_MAX);
+    /* 20 bytes plus the ellipsis keeps the chip inside the panel: the cap only
+     * bites on a name far longer than any real @action, and its … stays visible. */
+    ne_ui_text_single_line(action, sizeof(action), state->action, 20);
+    ne_ui_text_truncate(message, sizeof(message), state->message, NE_UI_TEXT_MAX);
+    ne_ui_text_single_line(fallback, sizeof(fallback), state->fallback, 64);
     add_title(ui, s->confirm_title, C_WARN);
-    add_badge(ui->root, action, MARGIN, BODY_Y - 4, &ne_font_16, C_SURFACE, C_TEXT);
-    lv_obj_set_pos(add_label(ui->root, message, &ne_font_16, C_TEXT, CONTENT_W, true), MARGIN,
-                   BODY_Y + 40);
+    add_badge(ui->root, action, MARGIN, 52, &ne_font_16, C_SURFACE, C_TEXT, CONTENT_W);
+    add_text_box(ui->root, MARGIN, 86, CONTENT_W, 70, message, &ne_font_16, C_TEXT);
     if (state->fallback != NULL) {
         lv_obj_t *label = add_label(ui->root, s->confirm_fallback, &ne_font_12, C_MUTED, CONTENT_W,
                                     false);
-        lv_obj_set_pos(label, MARGIN, 166);
-        lv_obj_set_pos(add_label(ui->root, fallback, &ne_font_12, C_MUTED, CONTENT_W, false),
-                       MARGIN, 184);
+        lv_obj_set_pos(label, MARGIN, 160);
+        lv_obj_set_pos(add_label(ui->root, fallback, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
+                       176);
     }
-    add_badge(ui->root, s->yes, MARGIN, 204, &ne_font_16, C_ALLOW, C_BG);
-    add_badge(ui->root, s->no, MARGIN + 56, 204, &ne_font_16, C_BLOCK, C_BG);
+    add_badge(ui->root, s->yes, MARGIN, 182, &ne_font_16, C_ALLOW, C_BG, 100);
+    add_badge(ui->root, s->no, MARGIN + 56, 182, &ne_font_16, C_BLOCK, C_BG, 120);
+    /* How to answer out loud: the two spoken forms, one line. */
+    lv_snprintf(answer, sizeof(answer), "%s %s", s->confirm_yes, s->confirm_no);
+    lv_obj_set_pos(add_label(ui->root, answer, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN, 216);
 }
 
 void ne_ui_show_verdict(ne_ui_t *ui, const ne_ui_verdict_state_t *state)
@@ -325,8 +297,8 @@ void ne_ui_show_verdict(ne_ui_t *ui, const ne_ui_verdict_state_t *state)
         return;
     }
     s = ne_ui_strings(ui->language);
-    truncate_utf8(action, sizeof(action), state->action, NE_UI_TEXT_MAX);
-    truncate_utf8(detail, sizeof(detail), state->detail, NE_UI_TEXT_MAX);
+    ne_ui_text_single_line(action, sizeof(action), state->action, 64);
+    ne_ui_text_truncate(detail, sizeof(detail), state->detail, NE_UI_TEXT_MAX);
     add_title(ui, state->allowed ? s->verdict_allowed : s->verdict_blocked,
               state->allowed ? C_ALLOW : C_BLOCK);
     lv_obj_set_pos(add_label(ui->root, s->action, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
@@ -336,13 +308,11 @@ void ne_ui_show_verdict(ne_ui_t *ui, const ne_ui_verdict_state_t *state)
     if (!state->allowed) {
         lv_obj_set_pos(add_label(ui->root, s->reason, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
                        BODY_Y + 44);
-        lv_obj_set_pos(add_label(ui->root, ne_ui_reason_label(ui->language, state->reason),
-                                 &ne_font_16, C_WARN, CONTENT_W, true),
-                       MARGIN, BODY_Y + 62);
+        add_text_box(ui->root, MARGIN, BODY_Y + 60, CONTENT_W, 42,
+                     ne_ui_reason_label(ui->language, state->reason), &ne_font_16, C_WARN);
     }
     if (state->detail != NULL) {
-        lv_obj_set_pos(add_label(ui->root, detail, &ne_font_12, C_MUTED, CONTENT_W, true), MARGIN,
-                       BODY_Y + 108);
+        add_text_box(ui->root, MARGIN, BODY_Y + 106, CONTENT_W, 62, detail, &ne_font_12, C_MUTED);
     }
 }
 
@@ -375,13 +345,14 @@ void ne_ui_show_degraded(ne_ui_t *ui, const ne_ui_degraded_state_t *state)
     }
     lv_obj_set_pos(add_label(ui->root, s->degraded_commands, &ne_font_12, C_MUTED, CONTENT_W, false),
                    MARGIN, 150);
-    /* One command per line in a scroll region: a long name is elided (DOTS) at the
-     * panel width, and more than three commands scroll instead of leaving the panel. */
+    /* Up to NE_UI_MAX_COMMANDS one-line lines in a scroll region: a long name is
+     * elided at the panel width, the rest scrolls, nothing grows a widget per
+     * command however many an agent declares. */
     box = add_scroll_box(ui->root, MARGIN, 166, CONTENT_W, 58);
-    for (i = 0; state->commands != NULL && i < state->command_count; i++) {
+    for (i = 0; state->commands != NULL && i < state->command_count && i < NE_UI_MAX_COMMANDS; i++) {
         char command[NE_UI_TEXT_MAX + 4];
         lv_obj_t *line;
-        truncate_utf8(command, sizeof(command), state->commands[i], NE_UI_TEXT_MAX);
+        ne_ui_text_single_line(command, sizeof(command), state->commands[i], NE_UI_TEXT_MAX);
         line = add_label(box, command, &ne_font_12, C_TEXT, CONTENT_W, false);
         lv_obj_set_pos(line, 0, (int32_t)i * 19);
     }
@@ -396,18 +367,18 @@ void ne_ui_show_sensor(ne_ui_t *ui, const ne_ui_sensor_state_t *state)
     }
     s = ne_ui_strings(ui->language);
     add_title(ui, s->sensor_title, C_TEXT);
-    for (i = 0; i < state->reading_count && i < 4; i++) {
+    for (i = 0; state->readings != NULL && i < state->reading_count && i < NE_UI_MAX_READINGS; i++) {
         const ne_ui_reading_t *reading = &state->readings[i];
         char name[NE_UI_TEXT_MAX + 4];
         char value[NE_UI_TEXT_MAX + 4];
-        lv_obj_t *value_label;
         char unit[64];
         char band[64];
+        lv_obj_t *value_label;
         int32_t y = 54 + (int32_t)i * 46;
-        truncate_utf8(name, sizeof(name), reading->name, 64);
-        truncate_utf8(value, sizeof(value), reading->value, 32);
-        truncate_utf8(unit, sizeof(unit), reading->unit, 12);
-        truncate_utf8(band, sizeof(band), reading->band, 20);
+        ne_ui_text_single_line(name, sizeof(name), reading->name, 64);
+        ne_ui_text_single_line(value, sizeof(value), reading->value, 32);
+        ne_ui_text_single_line(unit, sizeof(unit), reading->unit, 12);
+        ne_ui_text_single_line(band, sizeof(band), reading->band, 20);
         lv_obj_set_pos(add_label(ui->root, name, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN, y);
         value_label = add_label(ui->root, value, &ne_font_22, C_TEXT, 0, false);
         lv_obj_set_pos(value_label, MARGIN, y + 16);
@@ -416,7 +387,7 @@ void ne_ui_show_sensor(ne_ui_t *ui, const ne_ui_sensor_state_t *state)
             lv_obj_align_to(unit_label, value_label, LV_ALIGN_OUT_RIGHT_MID, 6, 0);
         }
         if (reading->band != NULL) {
-            lv_obj_t *badge = add_badge(ui->root, band, 0, 0, &ne_font_12, C_SURFACE, C_TEXT);
+            lv_obj_t *badge = add_badge(ui->root, band, 0, 0, &ne_font_12, C_SURFACE, C_TEXT, 168);
             /* Right-aligned: a long band name grows left, never past the edge. */
             lv_obj_align(badge, LV_ALIGN_TOP_RIGHT, -MARGIN, y + 16);
         }
@@ -462,7 +433,7 @@ void ne_ui_show_ota(ne_ui_t *ui, const ne_ui_ota_state_t *state)
         break;
     }
     with_bar = state->phase == NE_UI_OTA_CHECKING || state->phase == NE_UI_OTA_DOWNLOADING;
-    truncate_utf8(detail, sizeof(detail), state->detail, NE_UI_TEXT_MAX);
+    ne_ui_text_truncate(detail, sizeof(detail), state->detail, NE_UI_TEXT_MAX);
     add_title(ui, s->ota_title, C_TEXT);
     lv_obj_set_pos(add_label(ui->root, phase, &ne_font_22, color, CONTENT_W, false), MARGIN, BODY_Y);
     if (with_bar) {
@@ -471,8 +442,7 @@ void ne_ui_show_ota(ne_ui_t *ui, const ne_ui_ota_state_t *state)
                        MARGIN, BODY_Y + 64);
     }
     if (state->detail != NULL) {
-        lv_obj_set_pos(add_label(ui->root, detail, &ne_font_16, C_MUTED, CONTENT_W, true), MARGIN,
-                       BODY_Y + 90);
+        add_text_box(ui->root, MARGIN, BODY_Y + 90, CONTENT_W, 76, detail, &ne_font_16, C_MUTED);
     }
 }
 
@@ -484,10 +454,9 @@ void ne_ui_show_fatal(ne_ui_t *ui, const ne_ui_fatal_state_t *state)
         return;
     }
     s = ne_ui_strings(ui->language);
-    truncate_utf8(reason, sizeof(reason), state->reason, NE_UI_TEXT_MAX);
+    ne_ui_text_truncate(reason, sizeof(reason), state->reason, NE_UI_TEXT_MAX);
     add_title(ui, s->fatal_title, C_BLOCK);
-    lv_obj_set_pos(add_label(ui->root, reason, &ne_font_16, C_TEXT, CONTENT_W, true), MARGIN,
-                   BODY_Y + 6);
+    add_text_box(ui->root, MARGIN, BODY_Y + 6, CONTENT_W, 120, reason, &ne_font_16, C_TEXT);
     lv_obj_set_pos(add_label(ui->root, s->fatal_hint, &ne_font_16, C_MUTED, CONTENT_W, false), MARGIN,
                    200);
 }

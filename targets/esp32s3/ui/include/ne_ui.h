@@ -43,6 +43,12 @@ extern "C" {
 /* Longest agent-provided text drawn on one screen, truncation included. */
 #define NE_UI_TEXT_MAX 320u
 
+/* At most this many sensor readings / local commands are drawn. The arrays may
+ * be longer; the UI never creates a widget per element an agent declares, so a
+ * hostile count cannot exhaust the heap. */
+#define NE_UI_MAX_READINGS 4u
+#define NE_UI_MAX_COMMANDS 4u
+
 /* The languages the UI ships a string table and font glyphs for (docs/spec/ui.md
  * §Ngôn ngữ). `NE_UI_LANG_NONE` is what an unsupported code resolves to; every
  * show function refuses to draw with it. */
@@ -92,8 +98,17 @@ typedef enum {
     NE_UI_OTA_ROLLED_BACK = 5,
 } ne_ui_ota_phase_t;
 
-/* One screen's state. `const char *` fields are agent data, drawn as given and
- * never translated; a NULL one is drawn as an empty line. */
+/*
+ * One screen's state. `const char *` fields are agent data, drawn as given and
+ * never translated; a NULL one is drawn as an empty line.
+ *
+ * Agent data is untrusted. The UI copies at most NE_UI_TEXT_MAX bytes of it,
+ * turns a byte that is not part of a valid UTF-8 sequence into '?' and never
+ * lets a field wrap over another widget: one-line text has its control bytes
+ * (an agent newline among them) replaced with spaces, multi-line text goes into
+ * a fixed-size clipped box. See docs/spec/ui.md §4. Text should arrive
+ * NFC-normalised: NFD Vietnamese has no glyphs in the fonts and draws as boxes.
+ */
 typedef struct {
     ne_ui_boot_phase_t phase;
     const char *reason; /* NE_UI_BOOT_FAILED: the self-test's own message */
@@ -183,7 +198,15 @@ const char *ne_ui_reason_label(ne_ui_language_t language, ne_ui_reason_t reason)
  */
 bool ne_ui_init(ne_ui_t *ui, lv_display_t *display, ne_ui_language_t language);
 
-/* Draw one screen, replacing the last. A no-op before a successful init. */
+/*
+ * Draw one screen, replacing the last. A no-op before a successful init.
+ *
+ * Threading: every show call touches LVGL objects and must run under the LVGL
+ * lock (`lv_lock()`/`lv_unlock()` when LV_USE_OS is not LV_OS_NONE; a bare-metal
+ * single-task caller needs none). Stack: a call uses about 1 KB for its text
+ * buffers (up to three NE_UI_TEXT_MAX + 4 arrays) plus what LVGL allocates while
+ * building the widgets, so keep at least 2 KB of task stack free for it.
+ */
 void ne_ui_show_boot(ne_ui_t *ui, const ne_ui_boot_state_t *state);
 void ne_ui_show_idle(ne_ui_t *ui, const ne_ui_idle_state_t *state);
 void ne_ui_show_voice(ne_ui_t *ui, const ne_ui_voice_state_t *state);
