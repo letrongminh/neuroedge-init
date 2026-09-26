@@ -61,7 +61,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | **Pha đang thực thi** | 🟡 **I1 — Preview nội bộ trên `sim`** (I2, I3 phần không cần bo mạch và I4 làm song song) | Increment và ngày dự báo: §0.2 |
 | **Increment đang mở** | 🟡 **I1** — còn I1-01, I1-02, I1-03 | I0 đã xong 42 / 42 · chi tiết §0.2 |
 | **Cột mốc tiếp theo** | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** | Ngày dự báo ở §0.2 · chưa phát hành ra ngoài (Q-39) |
-| **Lần cập nhật cuối** | **2026-09-25** | Phiên gần nhất: ba task chạy trên giả lập — TSK-S3-08, TSK-S3-10/S3-11, TSK-S5-10 · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Lần cập nhật cuối** | **2026-09-26** | Phiên gần nhất: PR #52 — ba task chạy trên giả lập (TSK-S3-08, TSK-S3-10/S3-11, TSK-S5-10) và ba lượt review an toàn · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
 | **Trạng thái CI Lõi** | ✅ **PASS 1144/1144 · SKIP 0** | `python/tests/` — 55 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 15/15 trên gpio-sim (job `linux-hal`) · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · kỹ sư nhúng thứ hai (V6): đã quyết tuyển (2026-09-25), chưa có người — cần vào trước 2026-11-16 (Q-39) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
@@ -105,12 +105,13 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-25 │
+│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-26 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. VỪA HOÀN THÀNH — phiên gần nhất (chi tiết: CHANGELOG.md [Chưa phát hành])           │
+│ 1. VỪA HOÀN THÀNH — PR #52 (chi tiết: CHANGELOG.md [Chưa phát hành])                   │
 │    • TSK-S3-08: mẫu thứ ba factory-monitor (fact level) — I1 tiêu chí 2                │
 │    • TSK-S3-10/S3-11: bộ vector thoại + FSM Python trên sim — I4 tiêu chí 1            │
 │    • TSK-S5-10: run/record/mcp serve --target linux, xanh trên gpio-sim                │
+│    • Review: SIGTERM/SIGHUP thả mọi line; lệnh hẹn giờ giao trong TTL                  │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
@@ -121,6 +122,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 │    3. V1: TSK-S3-13 (STT/TTS cloud), TSK-I4-01 (thoại trên host, Q-39)                 │
 │    4. V1: TSK-S5-09 (sensor.read, display trên linux — I2)                             │
 │    5. V2: TSK-S4-11; TSK-S6-01, S6-02, S6-04 trên QEMU (Q-39)                          │
+│    6. Kỹ thuật trưởng: chốt chân trời hẹn giờ (voice_fsm.md §10) → Q-N                 │
 │                                                                                        │
 │ 4. LƯU Ý — bất biến ở CHANGELOG.md §3.3; dưới đây chỉ điều chưa có ở đó                │
 │    • Chỉ c.do() điều khiển được chân: HAL chưa gắn ledger từ chối mọi lệnh             │
@@ -128,6 +130,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 │    • Mọi hành động đi qua dispatch(): lỗi hợp đồng ném ra, không thành BLOCK           │
 │    • Wheel mang asset ở neuroedge/_data/; paths.py: checkout → gói → lỗi               │
 │    • tests_linux/ chỉ chạy trên gpio-sim (job linux-hal); gpiod là extra [linux]       │
+│    • Lệnh chạm line linux phải thả line ở mọi lối ra: finally + SIGTERM/SIGHUP         │
 │    • Chạy ruff check + ruff format --check trước khi commit (CI chặn)                  │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```

@@ -931,8 +931,11 @@ nó trong bảng task.
 Nói rõ để không ai đọc các mốc đã đạt quá lên:
 
 - ❌ **Phiên tương tác (`run`, `record`, `mcp serve`) mới gõ chữ trên terminal, trên `sim` và `linux`.** Trên `linux`
-  agent chỉ được cần `digital.out` và chưa có trang `--ui` (TSK-S5-10); giọng nói chưa có (Q-15; thoại: I4); intent không
-  có action (`faq`) chỉ được trả lời khi agent khai `[system_two]`.
+  agent chỉ được cần `digital.out` và chưa có trang `--ui` (TSK-S5-10); intent không có action (`faq`) chỉ được trả lời
+  khi agent khai `[system_two]`.
+- ❌ **Chưa có giọng nói.** Máy trạng thái hội thoại chạy trên `sim` bằng sự kiện giả lập trong thời gian ảo (TSK-S3-11,
+  corpus `fixtures/compliance/voice/`); chưa có micro, loa, STT/TTS, wake-word (TSK-S3-13, S5-08, I4-01). Lệnh hẹn giờ
+  chỉ có trên `sim`, và khoảng hẹn đang bị chặn bởi TTL của phán quyết cho tới khi chốt `voice_fsm.md` §10.
 - ❌ **`esp32s3` mới chạy logic gate, chưa chạy agent.** Walker và sổ token C khớp engine host trên host và
   boot trên QEMU (TSK-S4-07, S4-08); thiết bị replay 3 vết ghi chuẩn mực và ghi vết ghi qua UART (TSK-S4-09). HAL
   firmware, replay vết ghi tuỳ ý và mọi thứ trên bo mạch là I3 (TSK-S4-01, S4-04); âm thanh trên chip là I5.
