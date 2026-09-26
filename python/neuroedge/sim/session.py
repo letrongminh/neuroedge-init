@@ -76,7 +76,7 @@ from ..mcp_host import McpConfig, load_mcp_config
 from ..models import CommandGrammar, SystemOne, SystemTwo
 from ..models.grammar import OFFLINE_SAY, Recognition
 from ..models.knowledge import KNOWLEDGE_INTENT, KnowledgeBase, load_agent_grammar
-from ..trace import validate_trace
+from ..trace import json_safe, validate_trace
 
 # Words that answer the device's pending question (Q-26): matched on the device,
 # so the answer's source is `local_grammar`. Only while a question is pending.
@@ -406,7 +406,12 @@ def _refuse_shadowed_facts(
 def sensor_facts_digest(sim: Mapping[str, Any]) -> str | None:
     """Digest of `[sim.sensor_facts]` as parsed — recorded with a session, checked by replay."""
     rules = sim.get("sensor_facts")
-    return digest(rules) if rules else None
+    if not rules:
+        return None
+    try:
+        return digest(rules)
+    except ValueError:  # a NaN / inf threshold JCS cannot write — load refuses it anyway
+        return digest(json_safe(rules))
 
 
 def _check_bands(

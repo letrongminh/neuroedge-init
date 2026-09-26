@@ -350,6 +350,10 @@ async def test_replay_warns_when_the_sensor_rules_changed_since_the_recording(tm
     (warning,) = moved.warnings
     assert "[sim.sensor_facts]" in warning and "record the session again" in warning
     assert [e["type"] for e in moved.replayed["events"]].count("sensor_facts_changed") == 1
+    # An agent edited into one that would not even load still replays, with the warning.
+    path.write_text(path.read_text("utf-8").replace("gte = 55", "gte = nan"), "utf-8")
+    broken = await TracePlayer(trace, agent=path).replay()
+    assert broken.verdicts == same.verdicts and len(broken.warnings) == 1
 
 
 # --- a fact a sensor decides cannot also be set ------------------------------------------
