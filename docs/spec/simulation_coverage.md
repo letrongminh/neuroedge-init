@@ -92,8 +92,8 @@ Lúc chạy — fail-closed, không đoán:
 | Nguyên thủy | Backend | Kiểm ở | Chỉ phần cứng | Task |
 |:---|:---|:---|:---|:---|
 | `digital.out` | `LinuxHAL` qua libgpiod v2 | PR — gpio-sim | Điện áp, timing | TSK-S3-05 |
-| `audio.in` | `sounddevice` (PortAudio) · AEC phần mềm PipeWire `module-echo-cancel` (Q-22) | PR — backend tệp/PCM không cần kernel; **runner không có `snd-aloop`** | Micro, AEC, âm học — RPi 5 + HAT I2S, `snd-aloop` trên Pi | TSK-S5-08 |
-| `audio.out` | `sounddevice` | PR — như trên | Loa, âm lượng | TSK-S5-08 |
+| `audio.in` | **Backend tệp**: WAV (`--voice-file`) ở mọi rate 8–96 kHz, 1–2 kênh → mono ở rate bo mạch (`hal/audio.py`, `open_audio_file`) · **Backend sống**: `sounddevice` (PortAudio) đọc nút `neuroedge.ec.source` của `module-echo-cancel` (Q-22) | PR — backend tệp trên fake gpiod + `sounddevice` giả; `tests_linux/test_audio_file.py` trên gpio-sim (**runner không có `snd-aloop`**, nên backend sống chỉ chạy trên máy) | Micro, AEC, âm học — RPi 5 + HAT I2S, `snd-aloop` trên Pi | TSK-S5-08 |
+| `audio.out` | **Backend tệp**: dòng thời gian `Speaker` ghi WAV ở rate bo mạch (`--voice-out`) · **Backend sống**: `sounddevice` phát vào nút `neuroedge.ec.sink` (tín hiệu tham chiếu của AEC) | PR — như trên | Loa, âm lượng | TSK-S5-08 |
 | `sensor.read` | sysfs **hwmon** và **IIO** (`/sys/class/hwmon/*/temp1_input`, `/sys/bus/iio/devices/iio:device*/in_*`) — `hal/sysfs.py` | PR — `i2c-stub` + driver `lm75` → hwmon (`scripts/setup_i2c_stub.sh`, `tests_linux/`); IIO trên cây sysfs giả (`tests/test_hal_linux_io.py`) | Cảm biến thật; IIO chỉ trên Pi (`CONFIG_IIO` tắt trên runner) | TSK-S5-09 |
 | `display` | Kiểm và ghi khung bằng đúng mã của `sim` (`make_frame`), rồi → `/dev/fb*` trên Pi, hoặc chỉ trong bộ nhớ — `hal/framebuffer.py` | PR — khung trong bộ nhớ + digest; `/dev/fbN` của `vfb`, hoặc `vkms` trên kernel azure (`scripts/setup_vfb.sh`) | Panel HDMI/DSI | TSK-S5-09 |
 
@@ -114,6 +114,24 @@ biến bo mạch khai. Luật an toàn:
   hình vẽ trong bộ nhớ.
 - `door_contact` và `motion` của `linux-rpi5` là đầu vào GPIO, không phải hwmon/IIO: chưa đọc được trên
   `linux`, agent cần chúng bị từ chối trước khi xin line.
+
+**Âm thanh chọn rõ, không đoán** (TSK-S5-08): hai backend, không bao giờ đoán.
+
+- **Backend tệp** là mặc định của `--voice-file` (và của replay): WAV đọc cả tệp, 16-bit PCM,
+  1–2 kênh, rate 8–96 kHz, đưa về **mono ở `audio_in.sample_rate_hz` của bo mạch** bằng đúng
+  phép trộn kênh và lấy mẫu lại mà một câu TTS nhận (`to_mono`, `resample`); **không mở micro**.
+  `--voice-out` ghi dòng thời gian `Speaker` ở rate `audio_out` — bo mạch mới là bên lấy mẫu lại,
+  `sim` thì không (bất biến 7). Tệp sai định dạng, quá dài (> 600 s), thiếu tệp ⇒ lỗi ba phần,
+  không có sự kiện nào được ghi.
+- **Backend sống** qua `sounddevice` (PortAudio, extra `neuroedge[audio]`): chỉ được nạp khi
+  `LinuxHAL(audio="live")` hoặc `NEUROEDGE_LINUX_AUDIO=live`; mặc định đọc/ghi đúng hai nút
+  AEC của §6.1 — `audio.in` đọc `neuroedge.ec.source` (đã khử vang), `audio.out` phát vào
+  `neuroedge.ec.sink` (tham chiếu). Đổi nút bằng `NEUROEDGE_LINUX_AUDIO_IN` /
+  `NEUROEDGE_LINUX_AUDIO_OUT`. Thiếu thiết bị, thiết bị biến mất giữa phiên, hay thiết bị từ
+  chối rate/kênh/16-bit của bo mạch ⇒ lỗi ba phần; **im lặng không bao giờ được đọc như đầu vào**.
+- Replay không mở thiết bị nào (backend tệp), như `display` vẽ trong bộ nhớ. Phiên thoại thời
+  gian thực (micro/loa thật chạy song song provider) vẫn là `TODOS.md` #45; ở đây là nguyên thủy
+  HAL mà phiên đó sẽ dùng.
 
 **Màn hình chọn rõ, không đoán:** `LinuxHAL(display="memory" | "/dev/fbN")` hoặc
 `NEUROEDGE_LINUX_DISPLAY`; không chọn thì `display` báo lỗi. Framebuffer đọc bố cục điểm ảnh từ
@@ -278,11 +296,14 @@ kèm (không tải CDN); không có sẵn chốt cửa.
 
 ## 6. Ba thiết bị chạy cùng agent mẫu
 
-FR-TGT-02 và FR-TGT-03 đòi **agent mẫu chạy thật** trên RPi 5 và Box-3. Hôm nay agent mẫu
+FR-TGT-02 và FR-TGT-03 đòi **agent mẫu chạy thật** trên RPi 5 và Box-3. Agent mẫu
 `villa-concierge` khai `audio.in aec = true`, và `linux-rpi5` khai `aec = false`, nên `build
 --target linux` từ chối nó — agent mẫu chỉ phủ 2/3 thiết bị. **Q-22 (đã chốt, phương án A)** đóng
-khoảng này bằng AEC phần mềm của PipeWire, làm ở TSK-S5-08. Cho tới khi đó, kịch bản tương đương
-ba thiết bị dùng agent chỉ cần `digital.out` (mẫu `minimal` của `neuroedge new`).
+khoảng này bằng AEC phần mềm của PipeWire: TSK-S5-08 đã giao backend sống, cấu hình drop-in và
+đường tệp WAV; `linux-rpi5` **vẫn giữ `aec = false`** cho tới khi nightly trên Pi đạt hai phép đo
+§6.2, nên `build` tiếp tục từ chối agent cần AEC — không có đường nào để khai một năng lực chưa
+đo. Kịch bản tương đương ba thiết bị dùng agent chỉ cần `digital.out` (mẫu `minimal` của
+`neuroedge new`) hoặc agent cần âm thanh không AEC (`--voice-file` trên `linux`).
 
 ### 6.1 Cách nối
 
@@ -298,8 +319,11 @@ LinuxHAL.audio_out ─► sink ─────►└─────────�
 thẳng ra loa thì AEC không có gì để trừ. Cách khác là `monitor.mode = true`, lấy tham chiếu từ
 monitor của sink mặc định — dùng khi một tiến trình khác cũng phát ra loa.
 
-Cấu hình giao kèm TSK-S5-08, đặt ở `~/.config/pipewire/pipewire.conf.d/` (người dùng) hoặc
-`/etc/pipewire/pipewire.conf.d/` (hệ thống), rồi `systemctl restart --user pipewire.service`:
+Cấu hình TSK-S5-08 giao kèm ở `pipewire/neuroedge-echo-cancel.conf` (trong wheel:
+`neuroedge/_data/pipewire/`, tìm bằng `neuroedge.paths.echo_cancel_conf()`), **sao chép** vào
+`~/.config/pipewire/pipewire.conf.d/` (người dùng) hoặc `/etc/pipewire/pipewire.conf.d/` (hệ
+thống), rồi `systemctl restart --user pipewire.service`: `LinuxHAL` đọc/ghi hai nút
+`neuroedge.ec.source` / `neuroedge.ec.sink` ở đây khi backend sống được chọn:
 
 ```text
 # neuroedge-echo-cancel.conf

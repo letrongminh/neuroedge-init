@@ -77,6 +77,14 @@ serial = [
 linux = [
     "gpiod>=2.2",
 ]
+# Target `linux`, live audio (TSK-S5-08, Q-22): sounddevice (PortAudio, MIT),
+# imported only when the live backend is chosen (`NEUROEDGE_LINUX_AUDIO=live`,
+# the PipeWire echo-cancel nodes). A `--voice-file` session needs nothing; the
+# core set stays sounddevice-free (see NOTICE §B). Not in `dev`: the tests use a
+# fake sounddevice module.
+audio = [
+    "sounddevice>=0.5.1",
+]
 
 [project.urls]
 Homepage = "https://github.com/letrongminh/neuroedge-init"

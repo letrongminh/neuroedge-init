@@ -1369,8 +1369,9 @@ VOICE_FILE_OPTION = typer.Option(
     None,
     "--voice-file",
     help=(
-        "Speak instead of typing: a WAV file (16 kHz mono 16-bit on sim) heard through the "
-        "agent's \\[stt] provider, replies spoken through \\[tts] (sim only)"
+        "Speak instead of typing: a WAV file (16 kHz mono 16-bit on sim; 8–96 kHz, 1–2 channels "
+        "on linux, converted to the board's rate) heard through the agent's \\[stt] provider, "
+        "replies spoken through \\[tts]"
     ),
 )
 VOICE_OUT_OPTION = typer.Option(
@@ -1393,8 +1394,10 @@ def _voice_session(
     anonymize: bool = False,
 ) -> int:
     """
-    `--voice-file`: the WAV file is the session's `audio.in` (TSK-S3-13). Exit 1 on
-    a flag it cannot combine with, 2 where voice is not implemented yet.
+    `--voice-file`: the WAV file is the session's `audio.in` (TSK-S3-13). On `linux`
+    it goes through `LinuxHAL`'s file backend — converted to the board's rate, no
+    microphone and no `sounddevice` (TSK-S5-08). Exit 1 on a flag it cannot combine
+    with, 2 where voice is not implemented yet.
     """
     if voice_file is None:
         _fail(
@@ -1415,8 +1418,6 @@ def _voice_session(
     planned = None
     if ui:
         planned = ("--ui", "the live page does not play or record audio yet")
-    elif target == "linux":
-        planned = ("--target linux", "audio.in / audio.out on linux arrive with TSK-S5-08")
     elif target in PLANNED_SESSIONS:
         planned = (
             f"--target {target}",
@@ -1485,11 +1486,14 @@ def run(
     Input is typed text matched by the agent's commands.toml — no network, no
     key (Q-15). The agent is build-checked against the board first. On `linux`
     the pins are real GPIO lines (the `linux` extra; a board, or
-    scripts/setup_gpio_sim.sh) and the agent may need `digital.out` only.
+    scripts/setup_gpio_sim.sh).
 
-    With --voice-file (sim) the input is speech: each turn the VAD finds goes to
+    With --voice-file the input is speech: each turn the VAD finds goes to
     the agent's STT provider, its transcript takes the typed line's path through
-    the gate, and replies go to its TTS provider (--voice-out saves them).
+    the gate, and replies go to its TTS provider (--voice-out saves them). On
+    `linux` the file is converted to the board's rate by `LinuxHAL`'s file
+    backend; microphone and speaker (the `audio` extra, Q-22) are a later
+    session (TODOS.md #45).
     """
     if voice_file is not None or voice_out is not None:
         code = _voice_session(

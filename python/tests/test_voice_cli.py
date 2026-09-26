@@ -154,7 +154,6 @@ def test_flags_voice_cannot_combine_with_exit_one(project, args, fragment):
     "args, fragment",
     [
         (["--ui"], "--ui"),
-        (["--target", "linux"], "TSK-S5-08"),
         (["--target", "esp32s3"], "TSK-S4-01"),
     ],
 )

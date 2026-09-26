@@ -138,12 +138,22 @@ Six deliberate choices in this section, all to keep copyleft out of the core:
     (tqdm: MPL-2.0 AND MIT); regex is Apache-2.0 AND CNRI-Python. Not in
     `dev` (~120 MB): the tests use a fake `litellm` module.
 
-  * pyserial (BSD-3-Clause, no dependencies) is NOT a core dependency. It sits
-    in the optional `serial` extra, pinned at pyserial==3.5, and is imported
-    only by python/neuroedge/testing/uart.py when `neuroedge record --target
-    esp32s3 --port` reads a serial device (TSK-S4-09); a QEMU log file or
-    tcp:// needs nothing. Checked 2026-09-25. Also in `dev`, so the serial
-    path is tested in CI.
+   * pyserial (BSD-3-Clause, no dependencies) is NOT a core dependency. It sits
+     in the optional `serial` extra, pinned at pyserial==3.5, and is imported
+     only by python/neuroedge/testing/uart.py when `neuroedge record --target
+     esp32s3 --port` reads a serial device (TSK-S4-09); a QEMU log file or
+     tcp:// needs nothing. Checked 2026-09-25. Also in `dev`, so the serial
+     path is tested in CI.
+
+   * sounddevice (MIT) is NOT a core dependency. It sits in the optional
+     `audio` extra, needed only for the live `audio.in` / `audio.out` backend
+     on target `linux` (python/neuroedge/hal/linux.py, TSK-S5-08, Q-22); a
+     `--voice-file` session and the compliance corpus use the file backend and
+     need nothing. It wraps PortAudio, whose licence is MIT-style
+     (portaudio/portaudio, LICENSE: "Permission is hereby granted, free of
+     charge…"); the wheel vendors no PortAudio binary. Imported at run time and
+     never vendored, and it is not in `dev` — the tests drive a fake
+     `sounddevice` module. Checked 2026-09-26.
 
 
 ================================================================================

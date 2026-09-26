@@ -142,6 +142,11 @@ NOT_RUN = {
     "neuroedge record --voice-file turn.wav --anonymize   # transcripts hashed in the trace": (
         "as above"
     ),
+    "neuroedge run --voice-file turn.wav --target linux   # real lines; the WAV is audio.in": (
+        "needs [stt]/[tts] in agent.toml, a WAV file and GPIO lines; "
+        "tests/test_hal_linux_audio.py runs it on the fake gpiod"
+    ),
+    "neuroedge record --voice-file turn.wav --target linux --out traces/voice.json": "as above",
 }
 
 

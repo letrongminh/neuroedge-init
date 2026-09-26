@@ -39,6 +39,9 @@ ASSETS = (
     "fixtures/traces",
     "fixtures/agents",
     "fixtures/tool_calls",
+    # The PipeWire echo-cancel drop-in `linux` ships to the device (TSK-S5-08, Q-22):
+    # language-neutral, so it travels with the other assets.
+    "pipewire",
 )
 TARGET = "neuroedge/_data"
 FIRMWARE = "targets/esp32s3"
