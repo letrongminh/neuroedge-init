@@ -132,7 +132,9 @@ URL cấu hình trên thiết bị bằng một trong hai cách:
 | Kconfig | `idf.py menuconfig` → **NeuroEdge OTA** → *Update URL* | Lúc build |
 | NVS | namespace `ne_ota`, khóa `url` | Lúc chạy, không cần build lại |
 
-URL rỗng = tắt kiểm tra cập nhật. HTTP trần được phép vì **chữ ký mới là phần toàn vẹn**, không
+Khóa NVS `url` có mặt thì thắng Kconfig. Không có URL nào ⇒ không kiểm tra cập nhật; khóa NVS `url`
+**rỗng nghĩa là tắt hẳn**, không quay về giá trị Kconfig. Khóa NVS không dùng được (sai kiểu, quá
+dài) ⇒ không kiểm tra và in `NE_OTA REJECTED reason=nvs`, không đoán. HTTP trần được phép vì **chữ ký mới là phần toàn vẹn**, không
 phải TLS; HTTP không mã hóa nên đừng đặt bí mật trong URL. HTTPS cũng chạy: client gắn CA bundle
 (`CONFIG_MBEDTLS_CERTIFICATE_BUNDLE`) để xác thực máy chủ.
 
@@ -174,11 +176,13 @@ tự quay về. Các lần OTA sau không đụng tới bootloader.
 ### 6.3 Một lần cập nhật diễn ra thế nào
 
 1. Thiết bị tải ảnh, đọc app descriptor, rồi so phiên bản với **mốc nước cao** lưu trong NVS:
-   phiên bản bằng hoặc **thấp hơn mốc bị bỏ qua** — hạ cấp không bao giờ được ghi vào khe nào.
+   phiên bản bằng hoặc **thấp hơn mốc bị bỏ qua** (`SKIP reason=downgrade`; không đọc được thành ba
+   số ⇒ `SKIP reason=bad_version`) — hạ cấp không bao giờ được ghi vào khe nào.
    Mốc đơn điệu (chỉ tăng) và so theo số; eFuse anti-rollback chỉ có khi bật Secure Boot
    (TSK-S6-05).
-2. `esp_https_ota` ghi vào khe còn trống rồi xác minh (cấu trúc + chữ ký). Sai chữ ký ⇒ từ chối,
-   **không đổi khe**.
+2. `esp_https_ota` ghi vào khe còn trống rồi xác minh (cấu trúc + chữ ký). Sai chữ ký, tải dở hay
+   quá hạn chót ⇒ từ chối, **không đổi khe**, và sector đầu của khe vừa ghi bị xoá (`NE_OTA ERASED`)
+   để không lần khởi động nào rơi vào ảnh đã bị từ chối.
 3. Đặt khe mới làm khe khởi động rồi reset. Ảnh mới khởi động ở trạng thái *chờ xác nhận*.
 4. Self-test gate chạy. Đạt ⇒ `NE_OTA VALID` và ảnh được xác nhận (mốc nước cao được cập nhật).
    Không đạt ⇒ `NE_OTA INVALID`, đánh dấu hỏng và reset; bootloader quay về ảnh trước.
@@ -202,8 +206,9 @@ duy nhất, gồm tên đầy đủ của mọi trường. Bảng dưới chỉ 
 | `NE_OTA SWITCH` | Khe mới thành khe khởi động; thiết bị reset |
 | `NE_OTA VALID` | Self-test đạt; ảnh được xác nhận |
 | `NE_OTA INVALID` | Self-test hỏng; ảnh bị đánh dấu và reset |
-| `NE_OTA ROLLBACK` | Lần cập nhật trước đã bị quay về; thiết bị đang chạy bản ghi ở trường `to` |
-| `NE_OTA REJECTED` | Từ chối trước khi đổi khe (chữ ký, HTTP, descriptor, …) |
+| `NE_OTA ROLLBACK` | Có một khe đã bị huỷ (lần cập nhật trước bị quay về); thiết bị đang chạy bản ghi ở trường `to`. In **mỗi lần khởi động** cho tới khi khe đó được ghi lại, không chỉ lúc quay về |
+| `NE_OTA REJECTED` | Từ chối trước khi đổi khe (chữ ký, HTTP, chuyển hướng, quá hạn chót, NVS, descriptor, …) |
+| `NE_OTA ERASED` | Khe vừa ghi một ảnh bị từ chối đã bị xoá sector đầu |
 | `NE_OTA SKIP` | Không nạp (trùng phiên bản, hạ cấp, bản vừa bị quay về, không đọc được phiên bản) |
 
 ### 6.5 Build không OTA (mặc định) và thử trên QEMU
@@ -213,7 +218,9 @@ nhận OTA — đúng cho phát triển cục bộ. Không có lớp `sdkconfig.
 
 Kịch bản đầy đủ trên QEMU (`scripts/qemu_ota.sh`) dựng máy chủ HTTP, ký bằng khóa dùng-một-lần
 dưới `targets/esp32s3/build/` (bị git bỏ qua), rồi kiểm: bản factory vẫn chạy; bản mới hợp lệ
-được nạp, khởi động và xác nhận; ảnh sai khóa bị từ chối; ảnh hỏng bị quay về. Số đo kích thước
+được nạp, khởi động và xác nhận; ảnh sai khóa bị từ chối; ảnh hỏng bị quay về; ảnh không ký bị từ
+chối; ảnh ký đúng nhưng hạ cấp bị bỏ qua. Mốc nước cao chỉ là bảo vệ bằng phần mềm (NVS) — ai nạp
+được bằng cáp vẫn nạp được mọi ảnh đã ký, cho tới eFuse anti-rollback (TSK-S6-05). Số đo kích thước
 của bản OTA ở [`docs/reports/memory_spike_report.md`](../reports/memory_spike_report.md) §4.1.
 QEMU chỉ chứng minh logic phân vùng và chữ ký — danh sách đầy đủ ở
 [`docs/spec/simulation_coverage.md`](../spec/simulation_coverage.md) §4.

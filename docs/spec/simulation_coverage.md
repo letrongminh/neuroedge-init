@@ -262,7 +262,7 @@ một vết ghi tuỳ ý trên thiết bị (gửi dữ kiện xuống) và so t
 
 ### 4.1 OTA trên QEMU (TSK-S6-01/02/04, FR-OTA-01…04)
 
-`scripts/qemu_ota.sh` (job `ota-rollback`) dựng bốn ảnh (factory, bản mới, sai khóa, ảnh hỏng),
+`scripts/qemu_ota.sh` (job `ota-rollback`) dựng các ảnh factory, bản mới, sai khóa, không ký và ảnh hỏng (pha a–g),
 ký bằng khóa RSA-3072 dùng-một-lần, phục vụ qua HTTP và đọc UART. Phiên bản trong app descriptor —
 thứ OTA so sánh — của một project người dùng build đến từ `version.txt` do `neuroedge build
 --target esp32s3` ghi (`[agent] version`; cách đặt và tăng: `docs/user/nap-firmware.md` §6.6);
@@ -271,13 +271,16 @@ kịch bản QEMU ghi đè `PROJECT_VER` để dựng ảnh mới 0.2.0. QEMU **
 - khe A/B: ảnh factory vẫn chạy, bản mới được nạp rồi khởi động, và một lần cập nhật hỏng không
   làm mất khe đang chạy;
 - chữ ký: ảnh sai khóa bị `NE_OTA REJECTED reason=signature`, không có `SWITCH`, thiết bị ở lại
-  bản cũ; đây là cùng đường xác minh `esp_ota_end` mà bo mạch dùng;
+  bản cũ, khe vừa ghi bị xoá (`NE_OTA ERASED`); ảnh không ký bị từ chối như vậy; đây là cùng
+  đường xác minh `esp_ota_end` mà bo mạch dùng;
 - xác nhận sau self-test: ảnh mới chỉ `NE_OTA VALID` sau khi self-test gate đạt;
 - rollback cục bộ: ảnh hỏng (tự reset trước khi kịp xác nhận, hoặc self-test hỏng ⇒
   `NE_OTA INVALID`) bị bootloader quay về ảnh trước ở lần khởi động kế tiếp, và phiên bản vừa bị
   quay về bị chặn (`NE_OTA SKIP reason=rolled_back`). Quyết định nạp hay không là hàm C thuần
   `ne_ota_should_install` (`ne_ota_policy.c`) — QEMU chạy đúng bản bo mạch chạy, gồm cả từ chối hạ
-  cấp theo mốc nước cao phiên bản trong NVS.
+  cấp theo mốc nước cao phiên bản trong NVS (pha g: ảnh ký đúng nhưng thấp hơn mốc ⇒
+  `SKIP reason=downgrade`). Mốc đó chỉ là bảo vệ bằng phần mềm; quá hạn chót, chuyển hướng và phiên
+  bản không đọc được chỉ được kiểm bằng test host (`test_ota_policy_host.c`), không có pha QEMU.
 
 QEMU **không** chứng minh được, chỉ bo mạch mới có:
 
