@@ -106,7 +106,7 @@ NO_NODE = 255  # NE_AGENT_NO_NODE: a check that varies no criterion
 _IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 # The languages the device UI of `targets/esp32s3/ui/` ships: a string table
-# (`ne_ui_strings.c`) and font glyphs for each. `python/tests/test_ui_language.py`
+# (`ne_ui_strings.c`) and font glyphs for each. `python/tests/test_ui_assets.py`
 # keeps this list equal to what the C sources carry. The resolution rule that picks
 # one for an agent is docs/spec/ui.md §Ngôn ngữ, its one place.
 UI_LANGUAGES = ("vi", "en")

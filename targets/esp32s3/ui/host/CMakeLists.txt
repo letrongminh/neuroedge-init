@@ -50,6 +50,6 @@ add_executable(
     ../fonts/ne_font_12.c
     ../fonts/ne_font_16.c
     ../fonts/ne_font_22.c)
-target_include_directories(ne_ui_golden PRIVATE ../include ../src ..)
+target_include_directories(ne_ui_golden PRIVATE ../include ../src ../fonts ..)
 target_compile_options(ne_ui_golden PRIVATE -Wall -Wextra -Werror)
 target_link_libraries(ne_ui_golden PRIVATE lvgl)

@@ -121,6 +121,32 @@ static void case_voice_speaking(ne_ui_t *ui, ne_ui_language_t language)
     ne_ui_show_voice(ui, &state);
 }
 
+/* Longer than NE_UI_TEXT_MAX: the screen must cut whole code points and end with
+ * an ellipsis, not wrap a split character. */
+static void case_voice_speaking_long(ne_ui_t *ui, ne_ui_language_t language)
+{
+    const ne_ui_voice_state_t state = {
+        NE_UI_VOICE_SPEAKING,
+        0,
+        false,
+        pick(language, "bật đèn ngoài hiên", "turn on the porch light"),
+        pick(language,
+             "Đã bật đèn ngoài hiên. Bạn còn cần gì nữa không? Mình có thể đọc tin tức, "
+             "kiểm tra nhiệt độ trong phòng, xem độ ẩm, kiểm tra cửa ra vào, hoặc tắt đèn "
+             "nếu không còn ai ở đó. Nếu bạn muốn nghe tin mới nhất thì mình cần mạng; khi "
+             "mất mạng mình chỉ nói được các câu trả lời cục bộ và điều khiển đèn trong nhà "
+             "thôi. Bạn cứ nói khi nào cần nhé — mình luôn ở đây, và mọi lệnh bật tắt đèn "
+             "đều đi qua một cổng kiểm tra an toàn trước khi chân GPIO nào đó động.",
+             "The porch light is on. Anything else? I can read the news, check the room "
+             "temperature, look at the humidity, test the door contact, or turn the light "
+             "off again if nobody is there. The latest news needs the network; when the "
+             "network is down I can still answer from the local knowledge base and switch "
+             "the lights in the house. Just say the word — and every light command goes "
+             "through a safety gate before any GPIO pin moves at all."),
+    };
+    ne_ui_show_voice(ui, &state);
+}
+
 /* -- confirm and verdict -------------------------------------------------------------------- */
 
 static void case_confirm(ne_ui_t *ui, ne_ui_language_t language)
@@ -277,6 +303,7 @@ static const ui_case CASES[] = {
     {"voice_barge_in", case_voice_barge_in},
     {"voice_thinking", case_voice_thinking},
     {"voice_speaking", case_voice_speaking},
+    {"voice_speaking_long", case_voice_speaking_long},
     {"confirm", case_confirm},
     {"verdict_allow", case_verdict_allow},
     {"verdict_block_condition_not_met", case_verdict_block_condition_not_met},

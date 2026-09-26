@@ -8,7 +8,7 @@
 
 #include "ne_ui.h"
 
-#include "fonts/ne_fonts.h"
+#include "ne_fonts.h"
 #include "ne_ui_strings.h"
 
 #include <string.h>
@@ -58,26 +58,31 @@ static size_t utf8_length(unsigned char c)
 /*
  * Copy `text` into `out` (size `cap`), at most `max_bytes` bytes of whole UTF-8
  * code points; when the rest did not fit, the copy ends with U+2026 (…), so a
- * cut is visible rather than implied. Always NUL-terminates; `cap` must leave
- * room for four extra bytes. Deterministic: byte and code-point boundaries only.
+ * cut is visible rather than implied. Always NUL-terminates and never writes
+ * more than `cap` bytes, whatever `cap` or `max_bytes` is. Deterministic: byte
+ * and code-point boundaries only.
  */
 static void truncate_utf8(char *out, size_t cap, const char *text, size_t max_bytes)
 {
     static const char ellipsis[] = "\xE2\x80\xA6";
     size_t used = 0;
-    size_t limit = max_bytes + 4 < cap ? max_bytes + 4 : cap;
+    size_t limit;
 
     if (cap == 0) {
         return;
     }
-    if (text == NULL) {
+    if (cap < sizeof(ellipsis) + 1 || text == NULL) {
         out[0] = '\0';
         return;
     }
+    limit = cap - sizeof(ellipsis); /* the ellipsis, three bytes and the NUL, fits below it */
+    if (max_bytes < limit) {
+        limit = max_bytes;
+    }
     while (text[used] != '\0' && used < limit) {
         size_t length = utf8_length((unsigned char)text[used]);
-        if (used + length + 4 > limit) {
-            break; /* no room for the code point and the ellipsis after it */
+        if (used + length > limit) {
+            break; /* no room for this whole code point */
         }
         used += length;
     }
@@ -87,7 +92,7 @@ static void truncate_utf8(char *out, size_t cap, const char *text, size_t max_by
         return;
     }
     memcpy(out, text, used);
-    memcpy(out + used, ellipsis, sizeof(ellipsis)); /* three bytes and the NUL */
+    memcpy(out + used, ellipsis, sizeof(ellipsis));
 }
 
 static lv_obj_t *add_label(lv_obj_t *parent, const char *text, const lv_font_t *font,
