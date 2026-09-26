@@ -227,7 +227,7 @@ không lưu trong log. Lời gọi tool từ MCP client bên ngoài không phả
 
 | Chặng | Đo gì |
 |:---|:---|
-| `perception` | Đọc đầu vào và khớp ngữ pháp lệnh (chữ gõ / transcript → lệnh) |
+| `perception` | Đọc đầu vào và khớp ngữ pháp lệnh (chữ gõ / transcript → lệnh); với giọng nói qua provider STT (TSK-S3-13), cả thời gian chờ STT — từ lúc gửi âm thanh của lượt (T04) tới lúc có transcript, hoặc tới lúc STT hỏng (`stt_unavailable`) |
 | `system_two` | Chờ System 2: mọi `respond` / `reply` của lượt; với giọng nói, từ lúc có transcript tới lúc câu trả lời (hoặc hết giờ chờ) tới |
 | `gate` | `ActionContractEngine.evaluate()` — mọi gate của lượt, cộng dồn |
 | `action` | Thân các `@action` chạy sau ALLOW, cộng dồn |
@@ -243,7 +243,7 @@ Chặng mở bên trong một chặng khác (một `@action` gọi lại `c.do()
 | `system_1` | Ngữ pháp lệnh / System 1 của thiết bị phục vụ, System 2 không được hỏi — kể cả câu "có" / "không" nói với câu hỏi `ask` của thiết bị |
 | `system_2` | System 2 trả lời (có ít nhất một câu trả lời trong lượt) |
 | `fallback` | System 2 được hỏi mà không trả lời được, thiết bị tự trả lời (Q-14): `reply_source` là `offline`, `offline_help` hoặc `knowledge_local` — cả khi một vòng trước của System 2 đã trả lời. Agent không có System 2 thì những câu trả lời đó là `system_1` hoặc `none`, theo việc lệnh có được nhận ra |
-| `none` | Không mô hình nào phục vụ: không nhận ra lệnh và không có System 2, hoặc người bấm nút xác nhận |
+| `none` | Không mô hình nào phục vụ: không nhận ra lệnh và không có System 2, hoặc người bấm nút xác nhận, hoặc STT hỏng và thiết bị nói câu offline (`offline_help`, System 2 không được hỏi — `docs/spec/voice_fsm.md` §7) |
 
 `system_one_fallback` (System 1 chính → ngữ pháp cục bộ, FR-MDL-03) vẫn là sự kiện riêng, không
 đổi `path`. Hai sự kiện này **không mang chữ** — chế độ ẩn danh không cần băm gì thêm — và **không

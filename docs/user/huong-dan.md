@@ -53,6 +53,7 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Cho System 2 dùng MCP server bên ngoài (tin tức, tra cứu) — chỉ lấy thông tin | `[mcp.servers]` trong `agent.toml` · `neuroedge mcp tools --external` | ✅ cần `neuroedge[mcp]` |
 | Dùng LLM thật cho System 2 (Claude, GPT, DeepSeek qua OpenRouter…): câu tự do thành tool call, vẫn qua gate | `[system_two]` trong `agent.toml` · key ở biến môi trường (`api_key_env`), **không** ghi vào tệp | ✅ cần `neuroedge[cloud]` |
 | Mất mạng hoặc System 2 không trả lời: thiết bị nói các lệnh cục bộ còn dùng được (`offline_help`) | — (tự động) | ✅ |
+| Nói với agent trên `sim` bằng tệp WAV (16 kHz mono): STT/TTS qua provider chuẩn OpenAI audio — OpenAI, Groq, faster-whisper, Kokoro… đổi bằng `base_url`; bản chép lời qua gate như lệnh gõ, nói chen thì loa dừng và lệnh chưa giao bị hủy | `[stt]` / `[tts]` trong `agent.toml` (key ở biến môi trường, `api_key_env`) · `neuroedge run --voice-file x.wav [--voice-out tra-loi.wav]` · `record --voice-file … --anonymize` | ✅ cần key STT hoặc server cục bộ; thử không key: provider giả `python:neuroedge.perception.providers.fake:stt` |
 | Nối model chưa theo chuẩn OpenAI bằng adapter tự viết | `provider = "python:pkg.mod:factory"` trong `[system_two]` | ✅ |
 | Người xác nhận khi gate hỏi lại (`ask`): gõ `có` / `không`, hoặc nút Đồng ý / Huỷ trên `run --ui` | `neuroedge run` · `neuroedge run --ui` | ✅ gate phải khai `confirms` |
 | Ghi một phiên ra vết ghi (có chế độ ẩn danh) | `neuroedge record` | ✅ |
@@ -72,9 +73,11 @@ Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.
 
 Nói thẳng để bạn không mất thời gian:
 
-- `neuroedge run` / `record` / `mcp serve` mới gõ chữ trên terminal. Trên `linux` agent chưa được cần
-  âm thanh (lệnh báo lỗi, mã 1) và chưa có trang `--ui` (**thoát mã 2**). Không có "PASS" giả
-  (bất biến 10, `CHANGELOG.md` §3.3).
+- `neuroedge run` / `record` / `mcp serve` mới gõ chữ trên terminal; trên `sim`, `run` / `record` nhận thêm
+  tệp WAV (`--voice-file`). Chưa có micro, loa thật, wake-word: một lượt mở bằng VAD. `--voice-file` trên
+  `linux` hoặc với `--ui` **thoát mã 2** (TSK-S5-08). Trên `linux` agent chưa được cần âm thanh (lệnh báo
+  lỗi, mã 1) và chưa có trang `--ui` (**thoát mã 2**). Không có "PASS" giả (bất biến 10,
+  `CHANGELOG.md` §3.3).
 - `--target linux` cần line GPIO thật hoặc ảo (`scripts/setup_gpio_sim.sh`) và
   `pip install 'neuroedge[linux]'`; thiếu thì lệnh báo lỗi, không giả vờ chạy.
 - Trên `linux` có `digital.out`, `sensor.read`, `display`; âm thanh chưa hiện thực. Cảm biến đọc bằng

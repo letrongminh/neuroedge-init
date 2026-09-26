@@ -14,7 +14,8 @@ problem so one run reports them all, each with where / why / how:
    every `degrade` fallback names a declared action;
 5. the command grammar (and `knowledge.toml`, if the agent ships one) loads,
    and every `action` a command names is a declared @action;
-6. `[mcp]` and `[system_two]` are well formed — no API key in agent.toml.
+6. `[mcp]`, `[system_two]`, `[stt]` and `[tts]` are well formed — no API key in
+   agent.toml.
 
 On success it writes each gate's decision tree and canonical artifact.
 """
@@ -394,6 +395,29 @@ def check_system_two(manifest: AgentManifest) -> list[NeuroEdgeError]:
     return []
 
 
+def check_speech(manifest: AgentManifest) -> list[NeuroEdgeError]:
+    """
+    `[stt]` and `[tts]` of agent.toml are well formed — never an API key in them,
+    never a key over plain http to another machine — and a custom adapter they
+    name can be imported (TSK-S3-13, FR-MDL-09, Q-12). Every bad table is reported.
+    """
+    from ..models.providers import load_adapter
+    from ..perception.providers.config import ROLES, parse_speech
+
+    document = tomllib.loads(manifest.source.read_text(encoding="utf-8"))
+    problems: list[NeuroEdgeError] = []
+    for role in ROLES:
+        if role not in document:
+            continue
+        try:
+            config = parse_speech(role, document[role], manifest.source)
+            if config.adapter is not None:
+                load_adapter(config, manifest.root)
+        except NeuroEdgeError as error:
+            problems.append(error)
+    return problems
+
+
 def check_commands(grammar: Any, actions: Iterable[Any]) -> list[NeuroEdgeError]:
     """
     Every `tool` a command calls is a declared @action, and its slot-mapped and
@@ -515,6 +539,7 @@ def build(
             problems.append(error)
     problems += check_mcp_servers(manifest, actions)
     problems += check_system_two(manifest)
+    problems += check_speech(manifest)
 
     if problems:
         raise BuildFailed(where=f"{manifest.label} for {target} on {board.id}", problems=problems)

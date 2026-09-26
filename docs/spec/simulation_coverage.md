@@ -31,8 +31,8 @@ không ghi ở đây: đọc task ở cột cuối trong bảng task của roadm
 | Nguyên thủy | Backend | Kiểm ở | Task |
 |:---|:---|:---|:---|
 | `digital.out` | `SimHAL`, token dùng một lần | PR | TSK-S2-01, S2-05 |
-| `audio.in` | Gõ chữ → ngữ pháp lệnh (Q-15) · tệp WAV → VAD + STT provider | PR (gõ chữ, WAV fixture) | WAV: TSK-S3-13 |
-| `audio.out` | Chữ sẽ nói (`tts_stream_start`): câu trả lời knowledge base (RAG qua System 2, cục bộ khi mất mạng), lời hỏi lại của `on_block: ask` · âm thanh TTS ra WAV | PR | chữ: TSK-S2-11 · WAV: TSK-S3-13 |
+| `audio.in` | Gõ chữ → ngữ pháp lệnh (Q-15) · tệp WAV PCM 16-bit mono đúng `sample_rate_hz` của bo mạch (`--voice-file`; bo mạch không lấy mẫu lại nên `sim` cũng không) → khung 20 ms → VAD năng lượng → STT provider `[stt]` (`hal/audio.py`, `perception/voice_session.py`) | PR (gõ chữ, tệp WAV sinh trong test, provider giả) | WAV: TSK-S3-13 |
+| `audio.out` | Chữ sẽ nói (`tts_stream_start`): câu trả lời knowledge base (RAG qua System 2, cục bộ khi mất mạng), lời hỏi lại của `on_block: ask` · âm thanh TTS provider `[tts]` lấy mẫu lại về `sample_rate_hz` của bo mạch, đặt trên dòng thời gian ảo, cắt khi bị nói chen, ghi ra WAV (`--voice-out`) | PR (provider giả) | chữ: TSK-S2-11 · WAV: TSK-S3-13 |
 | `sensor.read` | Giá trị kịch bản: `[sim.sensors]` trong `agent.toml`, `:sensor` trong REPL và UI; dữ kiện gate từ cảm biến: `[sim.sensor_facts]`; `sensor.read()` trong `@action` | PR | TSK-S3-23 |
 | `display` | Khung chữ hoặc điểm ảnh RGB565/RGB888 trong bộ nhớ, kiểm độ phân giải; digest SHA-256; `display.show()` trong `@action` | PR | TSK-S3-23 |
 | *Trực quan* | Terminal · `trace view` HTML tĩnh · `run --ui` và `mcp serve --ui` web cục bộ (FR-TGT-06) | PR | TSK-S3-22, S2-09, S3-27 |

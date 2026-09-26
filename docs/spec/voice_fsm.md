@@ -1,9 +1,10 @@
 # Máy trạng thái hội thoại — đặc tả chuẩn tắc
 
-**Trạng thái:** chuẩn tắc (TSK-S2-07). Hiện thực: Python cho `sim`/`linux` (TSK-S3-11), C/C++ cho
-`esp32s3` (TSK-S5-03, S5-04); cả hai phải qua **một** bộ vector tuân thủ (TSK-S3-10, §9). Yêu cầu:
-FR-PER-02 → FR-PER-05 (`neuroedge-prd.md` §4.4). Quyết định: Q-8 (hai ngôn ngữ), Q-14 (mất mạng),
-Q-17 (`on_block`), Q-26 (xác nhận `ask`).
+**Trạng thái:** chuẩn tắc (TSK-S2-07). Hiện thực: Python cho `sim`/`linux` (TSK-S3-11; đường âm thanh
+và provider STT/TTS: TSK-S3-13), C/C++ cho `esp32s3` (TSK-S5-03, S5-04); cả hai phải qua **một** bộ
+vector tuân thủ (TSK-S3-10, §9). Yêu cầu: FR-PER-02 → FR-PER-05 (`neuroedge-prd.md` §4.4), FR-MDL-09,
+FR-PER-07. Quyết định: Q-8 (hai ngôn ngữ), Q-12 (chuẩn OpenAI), Q-14 (mất mạng), Q-17 (`on_block`),
+Q-26 (xác nhận `ask`).
 
 Tài liệu này là nơi **duy nhất** định nghĩa máy trạng thái hội thoại và hợp đồng thu hồi lệnh vật
 lý. Roadmap §3.8 giữ lý do phải có một đặc tả cho hai hiện thực; `docs/spec/hal_mcu_review.md` RB-3
@@ -24,7 +25,9 @@ Máy trạng thái điều phối **lượt nói**: khi nào nghe, khi nào ngh�
   gate → token (`docs/spec/threat_model.md` §2). Máy trạng thái chỉ quyết định lượt nào còn hiệu lực,
   và hủy lệnh đang chờ theo §5.
 - Không thuộc phạm vi: thuật toán AEC, VAD, wake-word (tích hợp thư viện có sẵn — PRD §4.4); STT, TTS
-  và suy luận ngôn ngữ (chạy ở provider cloud — FR-PER-07).
+  và suy luận ngôn ngữ (chạy ở provider cloud — FR-PER-07). Máy trạng thái chỉ thấy **kết quả** của
+  chúng qua các sự kiện §8; hợp đồng provider và cách khai (`[stt]`, `[tts]` trong `agent.toml`) ở
+  `python/neuroedge/perception/providers/` (TSK-S3-13).
 
 ## 2. Mô hình: đầu vào, đồng hồ, tính tất định
 
@@ -87,7 +90,7 @@ trong `covers`.
 | T06 | `THINKING` | `stt_result` với `text` rỗng | `IDLE` | Tối đa `max_reprompts` lượt hỏi lại liên tiếp, rồi im (FR-PER-05) |
 | T07 | `THINKING` | `tts_stream_start` của lượt hiện tại | `SPEAKING` | — |
 | T08 | `THINKING` | Lượt kết thúc mà không có gì để phát | `IDLE` | — |
-| T09 | `THINKING` | Hết `think_timeout`, hoặc `system_two_unavailable` | `THINKING` | Theo §7: câu offline, rồi phát nó như mọi câu trả lời |
+| T09 | `THINKING` | Hết `think_timeout`, `system_two_unavailable`, hoặc `stt_unavailable` của lượt | `THINKING` | Theo §7: câu offline, rồi phát nó như mọi câu trả lời |
 | T10 | `THINKING` | `audio_in_vad_start` | `BARGE_IN` | Người dùng nói tiếp: lượt đang nghĩ bị thay |
 | T11 | `SPEAKING` | `tts_stream_end`, câu vừa phát là câu hỏi `ask` (RFC-0006) | `LISTENING` | Mở lượt mới cho câu trả lời |
 | T12 | `SPEAKING` | `tts_stream_end` | `IDLE` | — |
@@ -183,6 +186,17 @@ Con số đo được trên bo mạch thay các giá trị gợi ý ở TSK-S5-0
 - Hết `think_timeout` hoặc provider không trả lời: thiết bị nói câu offline (`reply_source` =
   `offline_help`, `docs/spec/tool_calling.md` §7) rồi về `IDLE`. Máy trạng thái **KHÔNG ĐƯỢC** biến một
   lần hết giờ thành `ALLOW`, và **KHÔNG ĐƯỢC** tự gọi lại `c.do()` (`threat_model.md` §2b).
+- **STT không dùng được** — lỗi HTTP, hết giờ, không có key, câu trả lời không phải bản chép lời (không
+  phải chữ, ký tự điều khiển, U+FFFD, dài hơn mọi lượt): `stt_unavailable {turn, reason}`, rồi T09 với
+  câu offline nói rằng thiết bị không nghe được và lệnh gõ vẫn chạy (FR-MDL-03). Không bao giờ có bản
+  chép lời bịa ra, không `c.do()`; bản chép lời đến sau của lượt đó bị bỏ (§5.2 bước 4). STT vẫn chưa trả
+  lời khi hết `think_timeout` cũng là STT không dùng được. Bản chép lời **rỗng** từ một STT chạy tốt là
+  "không nghe ra gì" — T06, không phải lỗi (V5).
+- **TTS không dùng được:** `tts_unavailable {reason}` rồi `tts_stream_end {reason: "error"}` — câu vẫn
+  được ghi và hiện (`tts_stream_start`), chỉ không phát thành tiếng; `error` kết thúc câu như `done`.
+  Không thử lại.
+- Hiện thực Python: `python/neuroedge/perception/voice_session.py` (đường âm thanh) và
+  `python/neuroedge/perception/providers/` (adapter OpenAI audio, lỗi → `SpeechUnavailable`).
 - Lỗi liên tiếp mở mạch ngắt (`engine/circuit_breaker.py`), đi thẳng fallback. Độ trễ của gate do
   `budget.p95_latency_ms` của chính gate quy định (FR-GATE-09). Đặc tả này **không** thêm ngưỡng
   P95 nào: NFR-PERF-07 (P95 < 1500 ms) là mục tiêu đo, không phải điều kiện kích hoạt.
@@ -199,16 +213,24 @@ Thêm sự kiện không cần RFC.
 | `audio_in_vad_start` | `{energy_db}` | Đầu vào | simulation_coverage §3 |
 | `audio_in_vad_end` | `{}` | Đầu vào | Mới |
 | `stt_result` | `{text, turn}` — `""` là không nghe ra gì; `turn` là lượt đã gửi âm thanh đi | Đầu vào | Mới |
+| `stt_unavailable` | `{turn, reason}` — provider STT không cho được bản chép lời của lượt đó (§7) | Đầu vào (T09) | Mới (TSK-S3-13) |
+| `audio_in_segment` | `{sha256, duration_ms, sample_rate_hz}` — âm thanh của lượt vừa gửi đi STT (T04), chỉ digest | Đầu ra | simulation_coverage §3 |
 | `tts_stream_start` | `{text}` | Đầu vào của máy trạng thái (câu trả lời bắt đầu phát). Hiện thực Python tự sinh nó từ câu trả lời của lượt, nên `VoiceSession.feed` không nhận nó (§9.1); bản C/C++ nhận nó như đầu vào | simulation_coverage §3 |
-| `tts_stream_end` | `{duration_ms, sha256?, reason?}` — `reason`: `done` · `barge_in` · `error` | Đầu vào khi `done`; **đầu ra** khi `barge_in` (§5.2 bước 3) | simulation_coverage §3; `reason` mới |
+| `tts_stream_end` | `{duration_ms, sha256?, reason?}` — `reason`: `done` · `barge_in` · `error` | Đầu vào khi `done` / `error`; **đầu ra** khi `barge_in` (§5.2 bước 3). Có provider TTS, hiện thực Python tự sinh cả `done` (hết âm thanh, kèm `sha256`) và `error` | simulation_coverage §3; `reason` mới |
+| `tts_unavailable` | `{reason}` — provider TTS không tổng hợp được câu trả lời (§7) | Đầu ra, ngay trước `tts_stream_end` `error` | Mới (TSK-S3-13) |
 | `system_two_unavailable` | `{task, reason}` | Đầu vào | tool_calling §7 |
 | `voice_state_changed` | `{from, to, trigger, turn}` | Đầu ra | Mới |
 | `actuator_aborted` | `{pin, reason}` | Đầu ra (§5.2 bước 1) | simulation_coverage §3 |
 | `voice_reprompt` | `{turn, count}` — `count` là số lượt STT rỗng liên tiếp, ≤ `max_reprompts` | Đầu ra (T06) | Mới (TSK-S3-11) |
-| `voice_late_result_dropped` | `{turn, input}` — `input`: `stt_result` · `system_two_reply` | Đầu ra (§5.2 bước 4) | Mới (TSK-S3-11) |
+| `voice_late_result_dropped` | `{turn, input}` — `input`: `stt_result` · `stt_unavailable` · `system_two_reply` | Đầu ra (§5.2 bước 4) | Mới (TSK-S3-11) |
 
 `trigger` là một trong: `wake_word`, `speech_start`, `turn_end`, `listen_timeout`, `transcript_empty`,
 `reply_start`, `reply_empty`, `reply_end`, `ask_asked`, `barge_in`.
+
+Lời người nói và câu thiết bị nói chỉ nằm ở trường `text`, nên chế độ ẩn danh (FR-TRC-07) băm đủ: bản
+chép lời và câu trả lời thành `sha256:`. `reason` của `stt_unavailable` / `tts_unavailable` **KHÔNG
+ĐƯỢC** mang lời nói: adapter OpenAI audio không trích thân câu trả lời của server vào lỗi, và lỗi lạ của
+một adapter tự viết chỉ để lại tên lớp.
 
 Replay và golden:
 
@@ -261,6 +283,11 @@ Mỗi ca là một tệp JSON; khoá của nó, và đáp án `{proves, events}`
   text?, tool_calls?}` — câu trả lời kịch bản hoá của provider cho một lượt; `reuse_token {pin}` — lái
   lại chân bằng token của lệnh vừa bị hủy (V1). `tts_stream_start` không phải đầu vào của ca: thiết bị
   tự phát câu trả lời. `tts_stream_end` đầu vào chỉ mang `done` hoặc `error`.
+- **Qua provider giả.** Hiện thực Python chạy mỗi ca hai lần, cùng một đáp án (TSK-S3-13): một lần cấp
+  đầu vào như ghi, một lần qua STT và TTS giả kịch bản hoá từ ca — bản chép lời (hoặc `stt_unavailable`)
+  ra từ đường STT, ở đúng `offset_ms` của đầu vào; câu trả lời phát tới đúng `tts_stream_end` của ca.
+  Đầu vào không provider nào sinh được (bản chép lời thứ hai của cùng lượt) vẫn cấp như ghi
+  (`neuroedge/testing/voice_corpus.py`).
 - **Đáp án so được:** `voice_state_changed`, `action_requested` (tức `c.do()` được gọi),
   `gate_evaluation_result` (`verdict`, `reason`, `action`), `actuator_command`, `actuator_aborted`,
   `actuator_command_rejected`, `tts_stream_start` (`text` chỉ khi đáp án ghi), `tts_stream_end` với
@@ -283,21 +310,29 @@ Mỗi ca là một tệp JSON; khoá của nó, và đáp án `{proves, events}`
 
 - Cờ theo từng hành động "vẫn cắt khi đã chạy" (§5.3): cần RFC — `TODOS.md` #39.
 - FR-PER-04 (P1, rút lại lời khi model đổi kết luận): quan hệ giữa lời bị rút lại và lệnh đang chờ của
-  lượt đó chưa chốt. TSK-S3-11 **không** chốt: hiện thực Python chưa phát từng phần, nên chưa có lời
-  nào để rút. Chốt cùng TSK-S3-13 (TTS dòng), kèm `Q-N` nếu cần.
+  lượt đó chưa chốt. TSK-S3-11 và TSK-S3-13 **không** chốt: hiện thực Python tổng hợp cả câu trả lời
+  rồi mới phát, và STT theo chuẩn OpenAI (`/v1/audio/transcriptions`) chỉ trả một bản chép lời cuối mỗi
+  lượt — chưa có lời nào phát từng phần để rút, chưa có bản chép lời từng phần. Khi có (client
+  streaming TSK-S5-06; micro và loa trên máy tính sau TSK-S5-08): bản chép lời từng phần **KHÔNG
+  ĐƯỢC** chạy lượt; chốt kèm `Q-N`.
 - **Lời hỏi lại của T06 được phát thế nào.** T06 sang `IDLE` (loa im, §3) nhưng hiệu ứng là "hỏi lại".
   TSK-S3-11 chọn cách hẹp: máy trạng thái chỉ ghi `voice_reprompt` (đếm, cưỡng chế `max_reprompts`) và
-  không phát gì, không đổi trạng thái. Phát lời hỏi lại, và cắt lời nó, chốt ở TSK-S3-13.
+  không phát gì, không đổi trạng thái. TSK-S3-13 giữ nguyên: phát lời hỏi lại nghĩa là nói trong `IDLE`
+  (trái §3) hoặc cho T06 sang `SPEAKING` — đổi đáp án của V5 và của mọi ca T06, nên cần một `Q-N` trước.
 - **Cắt lời lúc `THINKING`** không ghi `tts_stream_end`: không có luồng nào đang phát (§3). Bước 1, 2,
   4, 5 của §5.2 vẫn chạy đủ.
 - **`system_two_unavailable`** chỉ kích T09 khi lượt đang chờ provider; lượt đã có câu trả lời từ ngữ
   pháp cục bộ không bị câu offline chen vào. `tts_stream_end` với `error` kết thúc câu như `done`.
 - **Lệnh hẹn giờ trên `linux`** và lệnh "xếp sau câu nói": chưa có (§5.5). Phiên thoại trên `linux`
-  (`VoiceSession` ngoài `sim`) đến cùng TSK-S5-08.
+  (`VoiceSession` ngoài `sim`) đến cùng TSK-S5-08; nó cắm nguồn khung âm thanh và loa `sounddevice` vào
+  đúng hai vai `hal/audio.py` định nghĩa cho `sim` (tệp WAV, dòng thời gian WAV).
+- **Hai ngân sách §5.2 trên `sim`** là thời gian ảo: loa dừng đúng ms VAD xác nhận tiếng nói chen (VAD
+  năng lượng cần 60 ms tiếng nói), không đo được độ trễ âm thanh thật. Đo trên bo mạch (§9).
 - **Hết lời thì không còn thu hồi được.** Chỉ `THINKING` và `SPEAKING` kích cắt lời (§4). Khi câu trả
   lời đã phát xong (`IDLE`, rồi `LISTENING` của lượt mới), người dùng nói "thôi, đừng mở" thì lệnh hẹn
   giờ của lượt trước vẫn được giao. TTL của phán quyết (§5.5) chặn trên khoảng đó, nhưng không thay được
-  ý định thu hồi. Chốt cùng TSK-S3-13 (hủy lệnh đang chờ khi mở lượt mới, hay một intent "hủy"), kèm `Q-N`.
+  ý định thu hồi. TSK-S3-13 không chốt — đây là quyết định sản phẩm (hủy lệnh đang chờ khi mở lượt mới,
+  hay một intent "hủy"), cần `Q-N`; hôm nay lệnh hẹn giờ vẫn chỉ có trên `sim`.
 - **Chân trời hẹn giờ đang mượn TTL của phán quyết (§5.5).** Hôm nay khoảng hẹn tối đa = `p95_latency_ms`
   × 3, nên muốn hẹn N ms phải khai p95 ≥ N/3 — nới luôn ngưỡng fail-closed về độ trễ của gate (`voice-door`
   đã phải nâng 120 → 700). Hai tham số này khác nghĩa. Hướng được đề xuất, theo mẫu select-before-operate

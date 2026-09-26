@@ -199,6 +199,25 @@ v6_system_two_unavailable_says_offline_line.json:
     - {offset_ms: 4000, type: voice_state_changed, data: {from: SPEAKING, to: IDLE, trigger: reply_end, turn: 1}}
     - {offset_ms: 4500, type: voice_late_result_dropped, data: {turn: 1, input: system_two_reply}}
 
+v6_stt_unavailable_says_offline_line.json:
+  proves: >-
+    V6, §7 (TSK-S3-13): provider STT không trả lời lượt 1 — câu offline ngay (T09), không bản chép
+    lời nào được bịa ra; bản chép lời "mở cửa" đến sau đó bị bỏ, không c.do(), chân đứng yên.
+    Lượt 2 STT trả lời lại: lệnh cục bộ đi đúng đường thường — gate ALLOW rồi mới có xung.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1600, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 1800, type: tts_stream_start, data: {}}
+    - {offset_ms: 1800, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 1}}
+    - {offset_ms: 1900, type: voice_late_result_dropped, data: {turn: 1, input: stt_result}}
+    - {offset_ms: 3500, type: voice_state_changed, data: {from: SPEAKING, to: IDLE, trigger: reply_end, turn: 1}}
+    - {offset_ms: 4000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 2}}
+    - {offset_ms: 5500, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 2}}
+    - {offset_ms: 5600, type: action_requested, data: {action: open_door}}
+    - {offset_ms: 5600, type: gate_evaluation_result, data: {verdict: ALLOW}}
+    - {offset_ms: 5600, type: actuator_command, data: {pin: door_lock, operation: pulse, duration_ms: 30000}}
+    - {offset_ms: 5600, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 2}}
+
 v6_facts_unreachable_blocks_gate_unreachable.json:
   proves: >-
     V6, Q-14: nguồn dữ kiện của gate mất mạng và không có fallback cục bộ — BLOCK gate_unreachable

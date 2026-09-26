@@ -12,8 +12,12 @@ mirrors the reference board rather than exceeding it (CHANGELOG §3.3 #7).
   `actuator_command` — only when `run_due()` reaches its time on the clock given
   to `enable_scheduling()`. Until then it is a pending command in the sense of
   docs/spec/voice_fsm.md §5.1, and barge-in cancels it (TSK-S3-11).
-* `audio_in` — Q-15: typed text by default, queued with `type_text()`.
-* `audio_out` — records `tts_stream_start`.
+* `audio_in` — Q-15: typed text by default, queued with `type_text()`; or a
+  WAV file (`audio_file()`, TSK-S3-13) at the board's rate, which the voice
+  driver (`perception.VoiceSession.play`) frames, runs through VAD and sends to STT.
+* `audio_out` — records `tts_stream_start`; the audio of a reply, when a TTS
+  provider made one, plays on `speaker()`, a timeline written out as WAV
+  (`hal/audio.py`).
 * `sensor_read` — values scripted with `set_sensor()` (or a sequence with
   `script_sensor()`, which replay uses); records `sensor_read`. An unscripted
   sensor raises instead of inventing a reading.
@@ -32,6 +36,7 @@ from typing import Any, Protocol
 
 from ..errors import ActionContractViolation, BoardCapabilityError
 from . import Authorizer, HardwareAbstractionLayer, PinAssertion, _require_signature
+from .audio import Speaker, WavSource
 from .board import BoardProfile, load_board_by_id
 
 ABORTED_BY_BARGE_IN = "ACTUATOR_ABORTED_BY_BARGE_IN"
@@ -222,6 +227,7 @@ class SimHAL(HardwareAbstractionLayer):
         self.frame: str | bytes | None = None
         self.frames: list[Frame] = []
         self.spoken: list[str] = []
+        self._speaker: Speaker | None = None
         # Scheduled commands (voice_fsm.md §5.1); None = scheduling refused.
         self._clock: Callable[[], float] | None = None
         self._scheduled: list[PendingCommand] = []
@@ -418,6 +424,28 @@ class SimHAL(HardwareAbstractionLayer):
         self._require("audio.out", called_from)
         self.spoken.append(text)
         self.events.emit("tts_stream_start", {"text": text})
+
+    def _rate(self, primitive: str, called_from: str) -> int:
+        rate = self._require(primitive, called_from).get("sample_rate_hz")
+        if isinstance(rate, bool) or not isinstance(rate, int) or rate <= 0:
+            raise BoardCapabilityError(
+                where=f"{called_from} -> {primitive}",
+                why=f"board {self.board.id!r} declares {primitive} without a sample_rate_hz, and "
+                "PCM audio needs one",
+                how=f"add sample_rate_hz = 16000 to {primitive} in {self.board.source}",
+            )
+        return rate
+
+    def audio_file(self, path: Any, called_from: str = "<unknown>") -> WavSource:
+        """A WAV file as `audio.in`: 16-bit mono PCM at the board's `sample_rate_hz` only."""
+        rate = self._rate("audio.in", called_from)
+        return WavSource.open(path, sample_rate_hz=rate, called_from=called_from)
+
+    def speaker(self, called_from: str = "<unknown>") -> Speaker:
+        """`audio.out` as PCM, at the board's `sample_rate_hz` (one timeline per session)."""
+        if self._speaker is None:
+            self._speaker = Speaker(self._rate("audio.out", called_from))
+        return self._speaker
 
     # -- display -----------------------------------------------------------------
     def display(

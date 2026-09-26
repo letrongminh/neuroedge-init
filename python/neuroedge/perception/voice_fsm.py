@@ -83,8 +83,9 @@ class VoiceStateMachine:
 
     `pending_commands` returns the physical commands not yet delivered to a pin
     (`SimHAL.pending_commands`); `close_token` is `TokenLedger.close`;
-    `stop_speech` flushes the audio output. All three are optional: a target with
-    no scheduled commands has nothing to cancel.
+    `stop_speech` flushes the audio output (`VoiceSession` cuts the reply playing
+    on the speaker, TSK-S3-13). All three are optional: a target with no
+    scheduled commands has nothing to cancel.
     """
 
     def __init__(
@@ -127,8 +128,9 @@ class VoiceStateMachine:
     def fire_due(self) -> list[str]:
         """
         Fire every deadline that has passed on the clock, earliest first. Returns
-        what the caller must act on: ``"think_timeout"`` means say the offline
-        line now (T09, §7).
+        what the caller must act on: ``"turn_end"`` means the turn closed — send
+        its audio to STT (T04); ``"think_timeout"`` means say the offline line
+        now (T09, §7).
         """
         signals: list[str] = []
         now = self.clock()
@@ -139,6 +141,7 @@ class VoiceStateMachine:
             if deadline == self._end_of_turn_at:
                 self._end_of_turn_at = None
                 self._to(VoiceState.THINKING, "turn_end")  # T04
+                signals.append("turn_end")
             elif deadline == self._listen_until:
                 self._listen_until = None
                 self._to(VoiceState.IDLE, "listen_timeout")  # T05

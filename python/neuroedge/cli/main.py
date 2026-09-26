@@ -1298,12 +1298,20 @@ def _exit_on_signals() -> None:
 
 
 def _start_session(
-    verb: str, agent, target: str, board: str | None, registry, events=None, ui: bool = False
+    verb: str,
+    agent,
+    target: str,
+    board: str | None,
+    registry,
+    events=None,
+    ui: bool = False,
+    clock=None,
 ):
     """
     Load the agent for an interactive session on `sim` or `linux`, or exit with the
     right code: 2 for a target (or `--ui` on it) with no session yet, 1 when the agent
     does not fit the board or `linux` cannot run (no `gpiod`, no GPIO chip — Q-16).
+    `clock`: the session's clock (a voice session runs on a virtual one).
     """
     from ..sim import SimSession
 
@@ -1346,12 +1354,97 @@ def _start_session(
             board_id=board,  # None: the target's reference board
             registry=GateRegistry(registry) if registry is not None else None,
             events=events,
+            **({"clock": clock} if clock is not None else {}),
         )
     except BuildFailed as failed:
         _fail_build(failed)
     except NeuroEdgeError as error:
         _fail(error)
     raise AssertionError("unreachable")  # _fail* always exit
+
+
+VOICE_FILE_OPTION = typer.Option(
+    None,
+    "--voice-file",
+    help=(
+        "Speak instead of typing: a WAV file (16 kHz mono 16-bit on sim) heard through the "
+        "agent's \\[stt] provider, replies spoken through \\[tts] (sim only)"
+    ),
+)
+VOICE_OUT_OPTION = typer.Option(
+    None, "--voice-out", help="With --voice-file: write what the device said (TTS) as a WAV file"
+)
+
+
+def _voice_session(
+    verb: str,
+    agent,
+    target: str,
+    board: str | None,
+    registry,
+    *,
+    voice_file: Path | None,
+    voice_out: Path | None,
+    command: str | None,
+    ui: bool = False,
+    trace_out: Path | None = None,
+    anonymize: bool = False,
+) -> int:
+    """
+    `--voice-file`: the WAV file is the session's `audio.in` (TSK-S3-13). Exit 1 on
+    a flag it cannot combine with, 2 where voice is not implemented yet.
+    """
+    if voice_file is None:
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge {verb} --voice-out",
+                why="--voice-out writes the replies of a --voice-file session, and none is given",
+                how="add --voice-file <turn.wav>, or drop --voice-out",
+            )
+        )
+    if command is not None:
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge {verb} --voice-file -c",
+                why="-c is one typed command and --voice-file is spoken input: one session, one input",
+                how="drop -c, or drop --voice-file",
+            )
+        )
+    planned = None
+    if ui:
+        planned = ("--ui", "the live page does not play or record audio yet")
+    elif target == "linux":
+        planned = ("--target linux", "audio.in / audio.out on linux arrive with TSK-S5-08")
+    elif target in PLANNED_SESSIONS:
+        planned = (
+            f"--target {target}",
+            f"sessions on {target} arrive with {PLANNED_SESSIONS[target]}",
+        )
+    if planned is not None:
+        err_console.print(
+            Panel(
+                f"`neuroedge {verb} --voice-file {planned[0]}` is not implemented yet: "
+                f"{planned[1]}.\n\nSpoken input runs on `sim` today, in the terminal.",
+                title=f"[yellow]Not implemented: {verb} --voice-file {escape(planned[0])}[/yellow]",
+                border_style="yellow",
+            )
+        )
+        raise typer.Exit(code=2)
+    from ..perception import VirtualClock
+    from .voice import run_voice
+
+    clock = VirtualClock()
+    events = None
+    if trace_out is not None and verb == "record":
+        from ..testing.recorder import TraceRecorder
+
+        events = TraceRecorder(anonymize=anonymize, clock=clock)
+    session = _start_session(verb, agent, target, board, registry, events=events, clock=clock)
+    if events is not None:
+        trace_out = (
+            trace_out if trace_out.suffix == ".json" else trace_out / f"{events.session_id}.json"
+        )
+    return run_voice(session, clock, voice_file, voice_out, trace_out, console, err_console)
 
 
 @app.command(epilog=epilog("run"))
@@ -1379,6 +1472,8 @@ def run(
     ),
     port: int = typer.Option(8765, "--port", help="Port for --ui"),
     no_browser: bool = typer.Option(False, "--no-browser", help="With --ui, do not open a browser"),
+    voice_file: Path = VOICE_FILE_OPTION,
+    voice_out: Path = VOICE_OUT_OPTION,
     registry: Path | None = REGISTRY_OPTION,
 ):
     """
@@ -1389,7 +1484,25 @@ def run(
     key (Q-15). The agent is build-checked against the board first. On `linux`
     the pins are real GPIO lines (the `linux` extra; a board, or
     scripts/setup_gpio_sim.sh) and the agent may need `digital.out` only.
+
+    With --voice-file (sim) the input is speech: each turn the VAD finds goes to
+    the agent's STT provider, its transcript takes the typed line's path through
+    the gate, and replies go to its TTS provider (--voice-out saves them).
     """
+    if voice_file is not None or voice_out is not None:
+        code = _voice_session(
+            "run",
+            agent,
+            target,
+            board,
+            registry,
+            voice_file=voice_file,
+            voice_out=voice_out,
+            command=command,
+            ui=ui,
+            trace_out=trace_out,
+        )
+        raise typer.Exit(code=code)
     from .run import run_session
 
     session = _start_session("run", agent, target, board, registry, ui=ui)
@@ -1526,6 +1639,8 @@ def record(
     timeout: float = typer.Option(
         30.0, "--timeout", help="Seconds to wait for NE_TRACE DONE on a live port"
     ),
+    voice_file: Path = VOICE_FILE_OPTION,
+    voice_out: Path = VOICE_OUT_OPTION,
     registry: Path | None = REGISTRY_OPTION,
 ):
     """
@@ -1540,8 +1655,30 @@ def record(
     (docs/spec/simulation_coverage.md §4, TSK-S4-09).
     """
     if target == "esp32s3" or port is not None:
+        if voice_file is not None or voice_out is not None:
+            _fail(
+                NeuroEdgeError(
+                    where="neuroedge record --port --voice-file",
+                    why="a device session is the firmware's: it hears through its own microphone",
+                    how="drop --voice-file to read the device's UART, or drop --port for sim",
+                )
+            )
         _record_from_device(target, port, baud, timeout, out, anonymize, board, agent, command)
         return
+    if voice_file is not None or voice_out is not None:
+        code = _voice_session(
+            "record",
+            agent,
+            target,
+            board,
+            registry,
+            voice_file=voice_file,
+            voice_out=voice_out,
+            command=command,
+            trace_out=out,
+            anonymize=anonymize,
+        )
+        raise typer.Exit(code=code)
     from ..testing.recorder import TraceRecorder
     from .run import run_session
 
