@@ -361,3 +361,31 @@ v5_twenty_noise_bursts_then_a_command.json:
     - {offset_ms: 43800, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 22}}
     - {offset_ms: 43900, type: voice_reprompt, data: {turn: 22, count: 1}}
     - {offset_ms: 43900, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: transcript_empty, turn: 22}}
+
+i4_wake_word_opens_the_turn.json:
+  proves: >-
+    TSK-I4-01: khi có [wake_word], lượt KHÔNG mở bằng VAD — vad_start/vad_end ở 100/400 trôi qua
+    trong IDLE, không có voice_state_changed nào; wake_word_detected ở 600 mở lượt 1 (T01), âm
+    thanh sau đó mới là của lượt; bản chép lời đi đường ngữ pháp lệnh và mở cửa qua gate.
+  events:
+    - {offset_ms: 600, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 2200, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 2600, type: action_requested, data: {action: open_door}}
+    - {offset_ms: 2600, type: gate_evaluation_result, data: {verdict: ALLOW}}
+    - {offset_ms: 2600, type: actuator_command, data: {pin: door_lock, operation: pulse, duration_ms: 30000}}
+    - {offset_ms: 2600, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 1}}
+
+i4_primary_stt_down_falls_back.json:
+  proves: >-
+    TSK-I4-01, Q-14: STT chính không dùng được ở 1700 ⇒ stt_fallback {from: primary, to: local}
+    và lượt 1 VẪN mở (stt_unavailable của STT chính vẫn được ghi vào vết, rồi tới stt_fallback);
+    bản chép lời của endpoint dự phòng ở 2200 đi đúng đường ngữ pháp lệnh cũ — cùng action, cùng
+    gate, cùng chân — như thể STT chính đã trả lời; không có câu offline.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1600, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 1700, type: stt_fallback, data: {reason: primary STT down, from: primary, to: local}}
+    - {offset_ms: 2200, type: action_requested, data: {action: open_door}}
+    - {offset_ms: 2200, type: gate_evaluation_result, data: {verdict: ALLOW}}
+    - {offset_ms: 2200, type: actuator_command, data: {pin: door_lock, operation: pulse, duration_ms: 30000}}
+    - {offset_ms: 2200, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 1}}

@@ -30,28 +30,45 @@ from .base import (
     Transcript,
     clean_transcript,
 )
-from .config import OPENAI, SpeechConfig, load_speech_configs, parse_speech
-from .fake import FakeSpeechToText, FakeTextToSpeech
+from .config import (
+    OPENAI,
+    SpeechConfig,
+    WakeWordConfig,
+    load_speech_configs,
+    load_wake_word_config,
+    parse_speech,
+    parse_wake_word,
+)
+from .fake import FakeSpeechToText, FakeTextToSpeech, FakeWakeWordDetector
 from .openai_audio import OpenAISpeaker, OpenAITranscriber
+from .wake import OpenWakeWord, WakeWordDetector, make_wake_word
 
 __all__ = [
     "OPENAI",
     "AudioClip",
     "FakeSpeechToText",
     "FakeTextToSpeech",
+    "FakeWakeWordDetector",
     "OpenAISpeaker",
     "OpenAITranscriber",
+    "OpenWakeWord",
     "Speech",
     "SpeechConfig",
     "SpeechToText",
     "SpeechUnavailable",
     "TextToSpeech",
     "Transcript",
+    "WakeWordConfig",
+    "WakeWordDetector",
     "clean_transcript",
     "load_speech_configs",
+    "load_wake_word_config",
     "make_speech",
+    "make_wake_word",
     "parse_speech",
+    "parse_wake_word",
     "speech_for",
+    "wake_word_for",
 ]
 
 METHOD = {"stt": "transcribe", "tts": "synthesize"}
@@ -79,3 +96,9 @@ def speech_for(manifest: Any) -> tuple[Any, Any]:
         None if config is None else make_speech(config, manifest.root)
         for config in (stt_config, tts_config)
     )
+
+
+def wake_word_for(manifest: Any) -> Any:
+    """The agent's wake-word detector from `[wake_word]`, or None (T01 by VAD)."""
+    config = load_wake_word_config(manifest)
+    return None if config is None else make_wake_word(config, manifest.root)

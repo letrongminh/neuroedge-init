@@ -155,6 +155,23 @@ Six deliberate choices in this section, all to keep copyleft out of the core:
      never vendored, and it is not in `dev` — the tests drive a fake
      `sounddevice` module. Checked 2026-09-26.
 
+   * openwakeword (openWakeWord) is NOT a core dependency. It sits in the
+     optional `wake` extra, imported only when an agent declares `[wake_word]`
+     with provider = "openwakeword" (python/neuroedge/perception/providers/
+     wake.py, TSK-I4-01, Q-7). The CODE is Apache-2.0 (verified at source
+     2026-09-26). Its PRE-TRAINED MODELS — including the ones its wheel bundles
+     under openwakeword/resources/models/ — are CC BY-NC-SA 4.0
+     (non-commercial), which conflicts with the core's licence (Q-45), so:
+     NeuroEdge ships no model, never calls openWakeWord's model downloader, and
+     always names the user's own file in `Model(wakeword_models=[...])`; only
+     the code is used. A model file is the user's own responsibility and must
+     not be committed. The extra's transitive dependencies (numpy, tqdm, scipy,
+     requests, onnxruntime, …) are whatever that release pins; the extra is not
+     in `dev`, so the `licence-obligations` job does not see them today — before
+     a nightly rig or a release relies on it, a job like `cloud-extra` must run
+     scripts/check_licences.py over that install (recorded as a follow-up in the
+     pull request; TODOS.md #45 is the activation milestone).
+
 
 ================================================================================
 SECTION C — DEVELOPMENT AND CI DEPENDENCIES

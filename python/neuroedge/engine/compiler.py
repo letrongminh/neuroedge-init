@@ -547,6 +547,62 @@ def check_speech(
     return problems
 
 
+def check_wake_word(
+    manifest: AgentManifest, board: BoardProfile | None = None
+) -> list[NeuroEdgeError]:
+    """
+    `[wake_word]` of agent.toml is well formed (TSK-I4-01, FR-PER-01, Q-7): a
+    provider that is openWakeWord or a `python:` adapter, a model file that exists
+    on this machine (NeuroEdge ships none — openWakeWord's models are not
+    commercial, Q-45), a threshold in (0, 1], and the primitive it needs declared:
+    a detector reads `audio.in`, so a board without it fails here, not when the
+    session starts. A table with no wake word at all is fine: a turn opens on VAD
+    (T01). Every bad table is reported.
+    """
+    from ..models.providers import load_adapter
+    from ..perception.providers.config import parse_wake_word
+
+    document = tomllib.loads(manifest.source.read_text(encoding="utf-8"))
+    if "wake_word" not in document:
+        return []
+    problems: list[NeuroEdgeError] = []
+    if "audio.in" not in manifest.requires:
+        problems.append(
+            AgentManifestError(
+                where=f"{manifest.source} -> [requires]",
+                why="[wake_word] hears frames through audio.in, which [requires] does not declare",
+                how='add "audio.in" = { sample_rate_hz = 16000 } to [requires], or remove '
+                "[wake_word] (a turn then opens on VAD, T01)",
+            )
+        )
+    elif board is not None and not board.supports("audio.in"):
+        problems.append(
+            BoardCapabilityError(
+                where=f"{board.source} -> audio.in",
+                why=f"[wake_word] reads audio.in, and board {board.id!r} does not declare it",
+                how=f"add a [capabilities.audio_in] section to {board.source}, or remove [wake_word]",
+            )
+        )
+    if board is not None and board.target == "esp32s3":
+        # Q-7 plans microWakeWord on Box-3; the device runtime has no detector yet, and
+        # accepting the table would let a firmware build silently ignore the wake word.
+        problems.append(
+            AgentManifestError(
+                where=f"{manifest.source} -> [wake_word]",
+                why="the esp32s3 runtime has no wake-word detector yet (Q-7: microWakeWord on "
+                "Box-3), so a build would silently ignore this table",
+                how="use [wake_word] on sim or linux, or remove it for esp32s3",
+            )
+        )
+    try:
+        config = parse_wake_word(document["wake_word"], manifest.source, manifest.root)
+        if config.adapter is not None:
+            load_adapter(config, manifest.root)
+    except NeuroEdgeError as error:
+        problems.append(error)
+    return problems
+
+
 def check_commands(grammar: Any, actions: Iterable[Any]) -> list[NeuroEdgeError]:
     """
     Every `tool` a command calls is a declared @action, and its slot-mapped and
@@ -673,6 +729,7 @@ def build(
     problems += check_system_two(manifest)
     problems += check_system_one(manifest, gates)
     problems += check_speech(manifest, board)
+    problems += check_wake_word(manifest, board)
     project: Path | None = None
     if target == "esp32s3":
         from . import firmware

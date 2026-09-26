@@ -1,15 +1,17 @@
 """
 `neuroedge run --voice-file` / `record --voice-file` — speak to the agent on
-`sim` (TSK-S3-13, FR-MDL-09, FR-PER-07).
+`sim` or `linux` (TSK-S3-13, TSK-S5-08, FR-MDL-09, FR-PER-07).
 
-The WAV file is `audio.in`: its frames go through VAD and the conversation state
-machine on a virtual clock (`perception.VoiceSession.play`), each turn's audio
-to the `[stt]` provider, each transcript down the typed line's path — command
-grammar or System 2, `c.do()`, the gate — and each reply to the `[tts]` provider
-and the speaker, which `--voice-out` writes as WAV. STT's and TTS's real latency
-is measured and placed on that clock, so barge-in and `turn_latency` see it. A
-`[system_two]` model answers inline, at the transcript's time: its wait is bounded
-by its own `timeout_s`, and neither the clock nor the think timeout sees it.
+The WAV file is `audio.in`: its frames go through the wake word (when `[wake_word]`
+is configured — TSK-I4-01) and VAD, and the conversation state machine on a virtual
+clock (`perception.VoiceSession.play`), each turn's audio to the `[stt]` provider
+(or `[stt.fallback]` when the primary is unavailable, Q-14), each transcript down
+the typed line's path — command grammar or System 2, `c.do()`, the gate — and each
+reply to the `[tts]` provider and the speaker, which `--voice-out` writes as WAV.
+STT's and TTS's real latency is measured and placed on that clock, so barge-in and
+`turn_latency` see it. A `[system_two]` model answers inline, at the transcript's
+time: its wait is bounded by its own `timeout_s`, and neither the clock nor the
+think timeout sees it.
 
 Typed input stays the default and keyless (Q-15): without `[stt]` this exits 1
 and says so. A provider that fails takes voice_fsm.md §7 (the offline line);
@@ -27,7 +29,12 @@ from rich.markup import escape
 
 from ..errors import AgentManifestError, NeuroEdgeError
 from ..perception import VirtualClock, VoiceParams, VoiceSession, VoiceTurn
-from ..perception.providers import load_speech_configs, make_speech
+from ..perception.providers import (
+    load_speech_configs,
+    load_wake_word_config,
+    make_speech,
+    make_wake_word,
+)
 from ..perception.providers.base import NoSpeech
 from ..sim import SimSession
 from .run import render_turn
@@ -111,7 +118,12 @@ def _run(
             )
         # From the configs just read: agent.toml is parsed once per run.
         stt = make_speech(stt_config, manifest.root)
+        stt_fallback = (
+            None if stt_config.fallback is None else make_speech(stt_config.fallback, manifest.root)
+        )
         tts = None if tts_config is None else make_speech(tts_config, manifest.root)
+        wake_config = load_wake_word_config(manifest)
+        wake = None if wake_config is None else make_wake_word(wake_config, manifest.root)
         source = session.hal.audio_file(voice_file, called_from="neuroedge --voice-file")
     except NeuroEdgeError as error:
         return _error(err_console, error)
@@ -121,15 +133,28 @@ def _run(
         f"({source.duration_ms / 1000:.1f} s, {source.sample_rate_hz} Hz)"
     )
     console.print(f"  stt: {escape(stt_config.label)}")
+    if stt_fallback is not None:
+        console.print(f"  stt fallback: {escape(stt_config.fallback.label)}")
     tts_line = tts_config.label if tts_config is not None else "none — replies are shown, not heard"
     console.print(f"  tts: {escape(tts_line)}")
+    wake_line = (
+        "none — a turn opens on speech (VAD, T01)" if wake_config is None else wake_config.label
+    )
+    console.print(f"  wake word: {escape(wake_line)}")
     voice = VoiceSession(
         session,
         clock=clock,
-        # sim has no wake-word model (TSK-I4-01): a voice file opens a turn by VAD (T01).
-        params=VoiceParams(vad_activation=True),
+        # No wake word ⇒ VAD opens a turn (T01); with one, the word does and VAD
+        # never opens one alone (TSK-I4-01).
+        params=VoiceParams(vad_activation=wake is None),
         stt=stt,
+        stt_fallback=stt_fallback,
+        stt_label=f"stt ({stt_config.label})",
+        stt_fallback_label=f"stt.fallback ({stt_config.fallback.label})"
+        if stt_config.fallback is not None
+        else "stt.fallback",
         tts=tts if tts is not None else NoSpeech(),
+        wake_word=wake,
         on_turn=_printer(session, clock, console),
     )
     try:
@@ -170,6 +195,7 @@ def _summary(voice: VoiceSession, console: Console) -> None:
             if e["to"] == "BARGE_IN" and e["from"] == "THINKING"
         ),
         "STT unavailable": len(events.of_type("stt_unavailable")),
+        "STT fallback": len(events.of_type("stt_fallback")),
         "TTS unavailable": len(events.of_type("tts_unavailable")),
         "cancelled commands": len(events.of_type("actuator_aborted")),
     }
