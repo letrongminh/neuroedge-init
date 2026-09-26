@@ -181,7 +181,7 @@ kèm `non_finite: true`, và replay đọc lại thành số thực. Mọi sự 
 
 Sự kiện ngoài nguyên thủy (tool call, xác nhận, MCP host, `system_two_*`, đo lượt `turn_latency` /
 `session_summary`) ở danh mục duy nhất `docs/spec/tool_calling.md` §7; sự kiện của máy trạng thái hội thoại (`voice_state_changed`,
-`wake_word_detected`, `audio_in_vad_end`, `stt_result`) ở `docs/spec/voice_fsm.md` §8. Replay bỏ qua `system_two_call`: System 2 không đổi phán quyết, nên
+`wake_word_detected`, `audio_in_vad_end`, `stt_result`, `stt_unavailable`, `stt_fallback`) ở `docs/spec/voice_fsm.md` §8. Replay bỏ qua `system_two_call`: System 2 không đổi phán quyết, nên
 phiên ghi online replay được mà không cần model hay key.
 
 ## 4. Vết ghi từ `esp32s3` về máy tính
