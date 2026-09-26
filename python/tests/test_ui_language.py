@@ -1,13 +1,14 @@
 """
 The device UI language rule (TSK-S4-10, FR-HAL-01) — docs/spec/ui.md §Ngôn ngữ.
 
-`[agent] language` wins; else `[stt] language`; else `vi`. Both set and different
-is a build error, and so is a code the UI ships no strings or glyphs for. The
-generated `ne_agent` component carries the resolved code as `NE_AGENT_LANGUAGE`
-so the device shows one language, the one its gates' messages are written for.
+`[agent] language` wins; else `[stt] language`; else `vi`. The shape and the
+conflict (both set, different) are checked at manifest load, so **every** target
+refuses them; only the `--target esp32s3` build checks that the UI has strings
+and glyphs for the code. The generated `ne_agent` component carries the resolved
+code as `NE_AGENT_LANGUAGE` so the device shows one language, the one its gates'
+messages are written for.
 
-The C side of the same fact — which languages ship, and that their string tables
-cover the generated fonts — is pinned in `test_ui_assets.py`; the golden render
+The C side of the same fact is pinned in `test_ui_assets.py`; the golden render
 itself is CI's job (`scripts/run_ui_golden.sh`).
 """
 
@@ -17,9 +18,18 @@ from pathlib import Path
 
 import pytest
 
-from neuroedge.engine.compiler import AgentManifest, load_agent_manifest
+from neuroedge.engine.compiler import AgentManifest, build, load_agent_manifest
 from neuroedge.engine.firmware import UI_LANGUAGES, firmware_problems, render_component, ui_language
 from neuroedge.errors import AgentManifestError, NeuroEdgeError
+
+BASE = """
+[agent]
+name    = "language-test"
+version = "0.1.0"
+
+[requires]
+"digital.out" = { pins = ["lamp"] }
+"""
 
 
 def write_agent(
@@ -72,14 +82,23 @@ def test_agent_language_alone_is_used(tmp_path: Path) -> None:
     assert ui_language(agent(tmp_path, raw_agent_language='"vi"')) == "vi"
 
 
-def test_disagreeing_languages_are_a_build_error(tmp_path: Path) -> None:
-    manifest = agent(tmp_path, raw_agent_language='"vi"', stt_language="en")
+def test_disagreeing_languages_are_refused_at_manifest_load(tmp_path: Path) -> None:
+    path = write_agent(tmp_path, raw_agent_language='"vi"', stt_language="en")
     with pytest.raises(AgentManifestError) as info:
-        ui_language(manifest)
+        load_agent_manifest(path)
     where, why, how = parts(info.value)
     assert where.endswith("-> [agent] language")
-    assert '"vi"' in why and '"en"' in why
+    assert "'vi'" in why and "'en'" in why
     assert "[stt] language" in how
+
+
+@pytest.mark.parametrize("target", ["sim", "linux"])
+def test_the_conflict_is_refused_on_every_target(tmp_path: Path, target: str) -> None:
+    # build() loads the manifest before it looks at the board or the target, so a
+    # conflict stops every target, not only the one with a screen.
+    path = write_agent(tmp_path, raw_agent_language='"vi"', stt_language="en")
+    with pytest.raises(AgentManifestError):
+        build(path, target=target, board_id="sim-default" if target == "sim" else "linux-rpi5")
 
 
 @pytest.mark.parametrize(
@@ -89,7 +108,7 @@ def test_disagreeing_languages_are_a_build_error(tmp_path: Path) -> None:
         ({"stt_language": "ja"}, "[stt] language"),
     ],
 )
-def test_unsupported_language_is_a_build_error(
+def test_unsupported_language_is_refused_where_a_ui_exists(
     tmp_path: Path, kwargs: dict[str, str], where: str
 ) -> None:
     manifest = agent(tmp_path, **kwargs)
@@ -102,14 +121,14 @@ def test_unsupported_language_is_a_build_error(
     assert "docs/spec/ui.md" in how
 
 
-@pytest.mark.parametrize("raw", ['"VI"', '"vietnamese"', "3", "true"])
+@pytest.mark.parametrize("raw", ['"VI"', '"vietnamese"', '"vie"', "3", "true"])
 def test_malformed_agent_language_is_refused_at_load(tmp_path: Path, raw: str) -> None:
     path = write_agent(tmp_path, raw_agent_language=raw)
     with pytest.raises(AgentManifestError) as info:
         load_agent_manifest(path)
     where, why, how = parts(info.value)
     assert where.endswith("-> [agent] language")
-    assert "ISO-639-1" in why
+    assert "ISO-639-1" in why and "two lowercase letters" in why
     assert 'language = "vi"' in how
 
 
@@ -145,7 +164,7 @@ def test_the_same_agent_renders_the_same_language_bytes(tmp_path: Path) -> None:
     assert first == second
 
 
-def test_the_loader_keeps_the_written_language(tmp_path: Path) -> None:
-    manifest = agent(tmp_path, raw_agent_language='"en"')
-    assert manifest.language == "en"
+def test_the_loader_resolves_agent_then_stt_then_nothing(tmp_path: Path) -> None:
+    assert agent(tmp_path, raw_agent_language='"en"').language == "en"
+    assert agent(tmp_path, stt_language="en").language == "en"
     assert agent(tmp_path).language is None

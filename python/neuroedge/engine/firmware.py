@@ -141,34 +141,20 @@ def firmware_root(root: Path | None = None) -> Path:
 def ui_language(manifest: Any) -> str:
     """
     The language the device UI shows, and the one the firmware's `NE_AGENT_LANGUAGE`
-    carries (docs/spec/ui.md §Ngôn ngữ, the rule's one place):
-
-    * `[agent] language` when it is set;
-    * else `[stt] language`;
-    * else `vi`;
-    * both set and different is refused: the screen and the recognizer would speak
-      different languages, so the build stops rather than picking one;
-    * a code the UI has no strings or glyphs for is refused: text would come out as
-      missing glyphs (font) or fall back to a language the agent does not speak.
+    carries. The resolution rule (and its conflict error, checked for every target
+    at manifest load) is docs/spec/ui.md §Ngôn ngữ, the rule's one place: what is
+    left here is the UI's own limit — a code the UI has no strings or glyphs for is
+    refused, because text would come out as missing glyphs (font) or fall back to
+    a language the agent does not speak. This check runs only where a UI exists:
+    `--target esp32s3`.
     """
-    document = tomllib.loads(manifest.source.read_text(encoding="utf-8"))
-    stt = document.get("stt")
-    # A malformed `[stt] language` is check_speech()'s to refuse; here it counts as absent.
-    raw = stt.get("language") if isinstance(stt, dict) else None
-    stt_language = raw if isinstance(raw, str) else None
-    if manifest.language and stt_language and manifest.language != stt_language:
-        raise AgentManifestError(
-            where=f"{manifest.source} -> [agent] language",
-            why=f'language = "{manifest.language}" but [stt] language = "{stt_language}": '
-            "the device UI and the recognizer would speak different languages",
-            how=f"make the two equal, or drop [stt] language and write language = "
-            f'"{manifest.language}"; the UI looks for strings and glyphs in docs/spec/ui.md §Ngôn ngữ',
-        )
-    code = manifest.language or stt_language or DEFAULT_UI_LANGUAGE
+    code = manifest.language or DEFAULT_UI_LANGUAGE
     if code not in UI_LANGUAGES:
+        document = tomllib.loads(manifest.source.read_text(encoding="utf-8"))
+        agent = document.get("agent")
         where = (
             f"{manifest.source} -> [agent] language"
-            if manifest.language
+            if isinstance(agent, dict) and agent.get("language")
             else f"{manifest.source} -> [stt] language"
         )
         raise AgentManifestError(
@@ -190,11 +176,12 @@ def firmware_problems(
     """
     What makes an agent impossible to link into the firmware, each as a three-part
     error: an [agent] name or version with a control or line-break character (it is
-    written into C and into MANIFEST, one entry per line), a UI language the agent and
-    its recognizer disagree on or the UI does not ship (`ui_language`), gate keys that
-    are not C identifiers (or collide once upper-cased, as the header guards are), a
-    gate without criteria (the walker refuses to load it), more pins than a token mask
-    holds, and missing firmware sources.
+    written into C and into MANIFEST, one entry per line), a UI language the UI ships
+    no strings or glyphs for (`ui_language`; the [agent]/[stt] conflict is refused for
+    every target at manifest load), gate keys that are not C identifiers (or collide
+    once upper-cased, as the header guards are), a gate without criteria (the walker
+    refuses to load it), more pins than a token mask holds, and missing firmware
+    sources.
     """
     problems: list[NeuroEdgeError] = []
     try:

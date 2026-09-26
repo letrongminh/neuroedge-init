@@ -49,9 +49,32 @@ from .canonical import gate_canonical_json, gate_digest
 from .decision_tree import compile_tree, tree_bytes
 from .gate_resolver import GateRegistry, ResolvedGate, resolve_gate_file, resolve_gate_uri
 
-# The shape of a language code, as `[stt] language` has it: an ISO-639-1 code such
-# as "vi" or "en". What the device UI ships is `firmware.UI_LANGUAGES`.
-LANGUAGE = re.compile(r"^[a-z]{2,3}$")
+# An ISO-639-1 code is exactly two lowercase letters: "vi", "en". What the device
+# UI ships is `firmware.UI_LANGUAGES`; `[stt] language` still accepts three
+# letters on its own (perception/providers/config.py, another worker's file).
+LANGUAGE = re.compile(r"^[a-z]{2}$")
+
+
+def resolve_agent_language(
+    agent_language: str | None, stt_language: str | None, source: Path
+) -> str | None:
+    """
+    The one language the agent speaks: `[agent] language` when set, else a
+    well-formed `[stt] language`, else None (the device UI then takes its
+    default). Two different values stop the build on **every** target — a trace
+    recorded from a session whose recognizer heard one language and whose screen
+    showed another is not a trace of the same agent (docs/spec/ui.md §2).
+    """
+    if agent_language is not None and stt_language is not None and agent_language != stt_language:
+        raise AgentManifestError(
+            where=f"{source} -> [agent] language",
+            why=f"language = {agent_language!r} but [stt] language = {stt_language!r}: the "
+            "device UI and the recognizer would speak different languages",
+            how=f"make the two equal, drop [stt] language and keep language = "
+            f"{agent_language!r}, or drop [agent] language to follow [stt] "
+            "(docs/spec/ui.md §Ngôn ngữ)",
+        )
+    return agent_language if agent_language is not None else stt_language
 
 
 @dataclass(frozen=True)
@@ -62,9 +85,9 @@ class AgentManifest:
     gates: dict[str, str]
     targets: tuple[str, ...]
     source: Path
-    # `[agent] language` as written (ISO-639-1 shape, checked below), or None. The
-    # device UI resolves it against `[stt] language` and its shipped set in
-    # `firmware.ui_language`; the rule is docs/spec/ui.md §Ngôn ngữ.
+    # The language the agent speaks: `[agent] language` else `[stt] language`,
+    # resolved and conflict-checked at load for every target; None means the
+    # device UI takes its default. The rule is docs/spec/ui.md §Ngôn ngữ.
     language: str | None = None
 
     @property
@@ -117,10 +140,17 @@ def load_agent_manifest(path: str | Path) -> AgentManifest:
     if language is not None and (not isinstance(language, str) or not LANGUAGE.fullmatch(language)):
         raise AgentManifestError(
             where=f"{path} -> [agent] language",
-            why='language must be an ISO-639-1 code such as "vi" or "en", and it is not one',
+            why=f"language = {language!r} is not an ISO-639-1 code: exactly two lowercase "
+            'letters, such as "vi" or "en"',
             how='write language = "vi", or remove it; the device UI then takes [stt] '
             'language (default "vi") — docs/spec/ui.md §Ngôn ngữ',
         )
+    # A `[stt] language` of another shape is parse_speech()'s to refuse; only a
+    # string can take part in the conflict check here.
+    stt = document.get("stt")
+    stt_language = stt.get("language") if isinstance(stt, dict) else None
+    if not isinstance(stt_language, str):
+        stt_language = None
     return AgentManifest(
         name=agent["name"],
         version=agent["version"],
@@ -128,7 +158,7 @@ def load_agent_manifest(path: str | Path) -> AgentManifest:
         gates=dict(document.get("gates", {})),
         targets=tuple(targets),
         source=path,
-        language=language,
+        language=resolve_agent_language(language, stt_language, path),
     )
 
 
