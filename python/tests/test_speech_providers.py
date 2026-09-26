@@ -240,6 +240,19 @@ def test_the_build_reports_every_bad_speech_table(agent, fresh_actions):
     assert KEY not in "\n".join(problem.render() for problem in caught.value.problems)
 
 
+def test_speech_needs_the_audio_primitives_declared(agent, fresh_actions):
+    path = agent(f'\n[stt]\nmodel = "whisper-1"\napi_key_env = "{ENV}"\n')
+    text = path.read_text(encoding="utf-8")
+    path.write_text(
+        text.replace('"audio.in"    = { sample_rate_hz = 16000 }\n', ""), encoding="utf-8"
+    )
+    with pytest.raises(BuildFailed) as caught:
+        build(path, target="sim", board_id="sim-default")
+    (problem,) = caught.value.problems
+    assert problem.where.endswith("[requires]") and "[stt] needs audio.in" in problem.why
+    assert '"audio.in" = { sample_rate_hz = 16000 }' in problem.how
+
+
 def test_the_build_imports_a_custom_adapter(agent, fresh_actions):
     path = agent('\n[stt]\nprovider = "python:no_such_speech_module:make"\n')
     with pytest.raises(BuildFailed) as caught:

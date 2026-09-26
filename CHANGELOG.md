@@ -763,8 +763,8 @@ một pipeline xanh lúc đó là thông tin sai. CI có đúng một bước ch
 
 Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏng" và "chưa có". Hôm nay
 thoát mã 2: `run` / `mcp serve --target esp32s3` (TSK-S4-01), `run` / `mcp serve --ui --target linux`,
-`run` / `record --voice-file` với `--target linux` (TSK-S5-08) hoặc `--ui`, `replay --target esp32s3` (TSK-S4-04). Target lạ (không phải `sim`, `linux`,
-`esp32s3`) là lỗi, mã 1.
+`run` / `record --voice-file` với `--target linux` (TSK-S5-08) hoặc với `--ui`, `replay --target esp32s3`
+(TSK-S4-04). Target lạ (không phải `sim`, `linux`, `esp32s3`) là lỗi, mã 1.
 
 Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://`, mặc định `gates/`.
 `--agent` mặc định là `./agent.toml`, không có thì agent mẫu `villa-concierge` của checkout.
@@ -789,7 +789,7 @@ Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://
 | `record [--target sim\|linux] [--out traces/] [-c "<lệnh>"] [--anonymize] [--voice-file x.wav [--voice-out y.wav]]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`) — cả bản chép lời và câu trả lời của phiên thoại —, phán quyết giữ nguyên (FR-TRC-07) |
 | `record --target esp32s3 --port <nguồn> [--out traces/] [--timeout 30] [--baud 921600]` | Thiết bị ghi, host đọc UART: mỗi phiên `NE1` thành một tệp `<session_id>.json` đã thẩm định (`--out x.json` khi chỉ có một phiên). `<nguồn>`: tệp log (QEMU `-serial file:uart.log`), `tcp://host:port` (QEMU `-serial tcp::5555,server`), `/dev/tty…` (cần `neuroedge[serial]`). Dòng hỏng, thiếu khung, đếm lệch ⇒ `NE4001` nêu `nguồn:dòng`, mã 1, không ghi gì. Định dạng: `docs/spec/simulation_coverage.md` §4 |
 | `test [thư-mục] [--pytest-arg A]` | Chạy bộ Action CI (pytest) của agent, mặc định `tests/`. Mọi test đạt ⇒ mã 0; có test trượt hoặc không thu được test nào ⇒ mã 1 |
-| `run [--agent a.toml] [--target sim\|linux] [--board id]` | REPL gõ chữ (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân (ảo trên `sim`). `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:confirm`, `:decline`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux`: chân là line GPIO thật (`neuroedge[linux]`; bo mạch hoặc `scripts/setup_gpio_sim.sh`), `--board` mặc định `linux-rpi5`, agent chỉ được cần `digital.out` (thiếu `gpiod`, không có chip, cần nguyên thủy khác ⇒ lỗi 3 phần, mã 1); `-c` chờ xung hết thời lượng; thoát ⇒ mọi line về inactive; `--ui` ⇒ mã 2. Có `[system_two]` ⇒ câu ngoài ngữ pháp do model thật trả lời (banner có dòng `system 2: <provider> <model> (key from $BIẾN…)`); không trả lời được ⇒ câu offline. `--voice-file x.wav` (chỉ `sim`, TSK-S3-13): tệp WAV 16 kHz mono 16-bit là `audio.in` — VAD mở lượt, âm thanh của lượt đi `[stt]`, bản chép lời đi đúng đường lệnh gõ tới gate, câu trả lời đi `[tts]` (`--voice-out y.wav` ghi lại, cần `[tts]`); in `turn N · t · heard: “…”` mỗi lượt và một dòng tổng `voice: …`. Không `[stt]`, tệp sai định dạng, hay kèm `-c` ⇒ mã 1; STT/TTS hỏng ⇒ câu offline, vẫn mã 0 (`docs/spec/voice_fsm.md` §7) |
+| `run [--agent a.toml] [--target sim\|linux] [--board id]` | REPL gõ chữ (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân (ảo trên `sim`). `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:confirm`, `:decline`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux`: chân là line GPIO thật (`neuroedge[linux]`; bo mạch hoặc `scripts/setup_gpio_sim.sh`), `--board` mặc định `linux-rpi5`, agent chỉ được cần `digital.out` (thiếu `gpiod`, không có chip, cần nguyên thủy khác ⇒ lỗi 3 phần, mã 1); `-c` chờ xung hết thời lượng; thoát ⇒ mọi line về inactive; `--ui` ⇒ mã 2. Có `[system_two]` ⇒ câu ngoài ngữ pháp do model thật trả lời (banner có dòng `system 2: <provider> <model> (key from $BIẾN…)`); không trả lời được ⇒ câu offline. `--voice-file x.wav` (chỉ `sim`, TSK-S3-13): tệp WAV 16 kHz mono 16-bit là `audio.in` — VAD mở lượt, âm thanh của lượt đi `[stt]`, bản chép lời đi đúng đường lệnh gõ tới gate, câu trả lời đi `[tts]` (`--voice-out y.wav` ghi lại, cần `[tts]`); in `turn N · t · heard: “…”` mỗi lượt và một dòng tổng `voice: …`. Không `[stt]`, `--voice-out` mà không `[tts]`, tệp sai định dạng, hay kèm `-c` ⇒ mã 1; STT/TTS hỏng ⇒ câu offline, vẫn mã 0 (`docs/spec/voice_fsm.md` §7) |
 | `mcp tools [--json\|--openai] [--external]` | Schema của mỗi `@action` — dạng MCP hoặc function-calling OpenAI (Q-24). `--external`: thêm tool thông tin của `[mcp.servers]` mà System 2 được đưa (Q-27) |
 | `mcp serve [--agent a.toml] [--target sim\|linux] [--board id] [--trace-out t.json] [--ui [--port 8765] [--open]] [--init-timeout 30]` | Máy chủ MCP qua stdio trên `sim` hoặc `linux` (line GPIO thật, như `run --target linux`; `--ui` chỉ trên `sim`); mọi `tools/call` qua kiểm schema và gate. `--ui`: cùng phiên trên trang web 127.0.0.1 (`--port 0` chọn cổng trống; chỉ mở trình duyệt khi có `--open`); URL in ra stderr, stdout chỉ là kênh JSON-RPC. Cổng bận ⇒ cảnh báo stderr, trang sang cổng trống (URL thật ở dòng `sim UI at …`), MCP vẫn chạy. Không có `initialize` sau `--init-timeout` giây ⇒ thoát 0 (`0` = chờ mãi). Cần extra `neuroedge[mcp]` |
 | `mcp desktop-config [--agent a.toml] [--ui [--port 8765]] [--trace-out t.json] [--name N] [--write [--config-path P]]` | In mục `mcpServers` cho Claude Desktop, toàn đường dẫn tuyệt đối (trình thông dịch hiện tại, `-m neuroedge mcp serve`). `--write`: đặt đúng mục đó trong `claude_desktop_config.json` của Desktop (macOS `~/Library/Application Support/Claude/`, Windows `%APPDATA%\Claude\`), sao lưu `.bak-<giờ>`, giữ mọi khoá khác; JSON hỏng ⇒ mã 1, không ghi gì. Sau đó thoát hẳn Desktop rồi mở lại. Cần extra `neuroedge[mcp]` |
@@ -958,13 +958,13 @@ nó trong bảng task.
 
 Nói rõ để không ai đọc các mốc đã đạt quá lên:
 
-- ❌ **Phiên tương tác (`run`, `record`, `mcp serve`) mới gõ chữ trên terminal, trên `sim` và `linux`.** Trên `linux`
-  agent chỉ được cần `digital.out` và chưa có trang `--ui` (TSK-S5-10); intent không có action (`faq`) chỉ được trả lời
-  khi agent khai `[system_two]`.
+- ❌ **Phiên tương tác (`run`, `record`, `mcp serve`) mới gõ chữ trên terminal, trên `sim` và `linux`** (trên `sim`
+  thêm tệp WAV — mục dưới). Trên `linux` agent chỉ được cần `digital.out` và chưa có trang `--ui` (TSK-S5-10); intent
+  không có action (`faq`) chỉ được trả lời khi agent khai `[system_two]`.
 - ❌ **Giọng nói mới từ tệp, trên `sim`.** `run --voice-file` đưa tệp WAV qua VAD, STT/TTS provider (`[stt]`/`[tts]`,
   TSK-S3-13) và máy trạng thái hội thoại trong thời gian ảo; chưa có micro, loa thật, wake-word, âm thanh trên `linux`
-  (TSK-S5-08, I4-01). Lệnh hẹn giờ chỉ có trên `sim`, và khoảng hẹn đang bị chặn bởi TTL của phán
-  quyết cho tới khi chốt `voice_fsm.md` §10.
+  (TSK-S5-08, I4-01). Lệnh hẹn giờ chỉ có trên `sim`, và khoảng hẹn đang bị chặn bởi TTL của phán quyết cho tới khi
+  chốt `voice_fsm.md` §10.
 - ❌ **`esp32s3` mới chạy logic gate, chưa chạy agent.** Walker và sổ token C khớp engine host trên host và
   boot trên QEMU (TSK-S4-07, S4-08); thiết bị replay 3 vết ghi chuẩn mực và ghi vết ghi qua UART (TSK-S4-09). HAL
   firmware, replay vết ghi tuỳ ý và mọi thứ trên bo mạch là I3 (TSK-S4-01, S4-04); âm thanh trên chip là I5.

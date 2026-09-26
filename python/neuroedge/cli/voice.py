@@ -97,8 +97,8 @@ def _run(
             raise AgentManifestError(
                 where=f"{manifest.source} -> [stt]",
                 why="--voice-file needs a speech-to-text provider, and the agent declares none",
-                how="add [stt] with base_url, model and api_key_env (docs/spec/voice_fsm.md §7), "
-                'or type the command: neuroedge run -c "…" (Q-15)',
+                how="add [stt] with model and api_key_env, or the base_url of a local server "
+                '(docs/user/huong-dan.md); or type the command: neuroedge run -c "…" (Q-15)',
             )
         if voice_out is not None and tts_config is None:
             raise AgentManifestError(
@@ -135,7 +135,17 @@ def _run(
     _summary(voice, console)
     if voice_out is not None:
         speaker = session.hal.speaker(called_from="neuroedge --voice-out")
-        path = speaker.write(voice_out)
+        try:
+            path = speaker.write(voice_out)
+        except OSError as exc:
+            return _error(
+                err_console,
+                NeuroEdgeError(
+                    where=f"--voice-out {voice_out}",
+                    why=f"cannot write the WAV file ({exc.strerror or exc})",
+                    how="pass a writable path to a .wav file",
+                ),
+            )
         seconds = len(speaker.render()) / 2 / speaker.sample_rate_hz
         console.print(
             f"voice out: {escape(str(path))} ({seconds:.1f} s, {speaker.sample_rate_hz} Hz)"

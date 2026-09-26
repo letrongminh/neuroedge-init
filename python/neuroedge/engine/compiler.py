@@ -398,8 +398,11 @@ def check_system_two(manifest: AgentManifest) -> list[NeuroEdgeError]:
 def check_speech(manifest: AgentManifest) -> list[NeuroEdgeError]:
     """
     `[stt]` and `[tts]` of agent.toml are well formed — never an API key in them,
-    never a key over plain http to another machine — and a custom adapter they
-    name can be imported (TSK-S3-13, FR-MDL-09, Q-12). Every bad table is reported.
+    never a key over plain http to another machine — a custom adapter they name
+    can be imported, and the agent declares the primitive each one needs: STT
+    hears through `audio.in`, TTS speaks through `audio.out`, so a board without
+    them fails here, not mid-conversation (TSK-S3-13, FR-MDL-09, Q-12). Every bad
+    table is reported.
     """
     from ..models.providers import load_adapter
     from ..perception.providers.config import ROLES, parse_speech
@@ -409,6 +412,16 @@ def check_speech(manifest: AgentManifest) -> list[NeuroEdgeError]:
     for role in ROLES:
         if role not in document:
             continue
+        primitive = "audio.in" if role == "stt" else "audio.out"
+        if primitive not in manifest.requires:
+            example = "{ sample_rate_hz = 16000 }" if role == "stt" else "{}"
+            problems.append(
+                AgentManifestError(
+                    where=f"{manifest.source} -> [requires]",
+                    why=f"[{role}] needs {primitive}, which [requires] does not declare",
+                    how=f'add "{primitive}" = {example} to [requires], or remove [{role}]',
+                )
+            )
         try:
             config = parse_speech(role, document[role], manifest.source)
             if config.adapter is not None:
