@@ -584,6 +584,15 @@ class SimSession:
         listed = ", ".join(f"“{p}”" for p in phrases)
         return f"Hiện mình không kết nối được mô hình. Mình vẫn làm được các lệnh: {listed}."
 
+    def unheard_help(self) -> str:
+        """The offline line when STT failed: speech is not understood, typing still is."""
+        phrases = self.local_commands()
+        line = "Hiện mình không nghe được: dịch vụ nhận giọng nói không trả lời."
+        if not phrases:
+            return line
+        listed = ", ".join(f"“{p}”" for p in phrases)
+        return f"{line} Bạn vẫn gõ được các lệnh: {listed}."
+
     @property
     def pins(self) -> tuple[str, ...]:
         """The digital outputs this agent declares, in manifest order."""
@@ -620,20 +629,27 @@ class SimSession:
         waited: str | None = None,
         served_locally: bool | None = None,
         path: str | None = None,
+        perceived_ms: float = 0.0,
     ) -> Turn:
         """
         Run one turn and write its `turn_latency` (`engine/latency.py`). `started_ms`:
-        the turn began earlier than this call, and the time since counts as `waited`
-        (the voice driver waiting for System 2). A turn started inside another turn is
-        part of it and writes nothing of its own. A turn that raises writes nothing.
+        the turn began earlier than this call — the voice driver sent its audio to STT
+        then (`perceived_ms` of that time counts as `perception`), and the rest counts
+        as `waited` (waiting for System 2). A turn started inside another turn is part
+        of it and writes nothing of its own. A turn that raises writes nothing.
         """
         if self.conversation.meter is not None:
             return await run()
         meter = TurnMeter(
             self.events.clock, started_ms=started_ms, first_event=len(self.events.events)
         )
+        before = self.events.clock() - meter.started_ms
+        # Of the time before this call, `perceived_ms` was STT hearing the turn (TSK-S3-13).
+        heard = min(max(0.0, float(perceived_ms)), before)
+        if heard:
+            meter.add("perception", heard)
         if waited is not None:
-            meter.add(waited, self.events.clock() - meter.started_ms)
+            meter.add(waited, before - heard)
         meter.served_locally = served_locally
         self.conversation.meter = meter
         try:
@@ -662,9 +678,16 @@ class SimSession:
             meter.answered(True)
         return answer
 
-    async def handle(self, text: str) -> Turn:
-        """Run one typed line: recognise it, and `c.do()` the command's action."""
-        return await self._metered(lambda: self._handle(text))
+    async def handle(self, text: str, *, heard_after_ms: float = 0.0) -> Turn:
+        """
+        Run one typed line: recognise it, and `c.do()` the command's action. A
+        transcript takes exactly this path, gate included; `heard_after_ms` is how
+        long STT took to give it, counted in the turn's `perception` stage.
+        """
+        started = self.events.clock() - heard_after_ms if heard_after_ms > 0 else None
+        return await self._metered(
+            lambda: self._handle(text), started_ms=started, perceived_ms=heard_after_ms
+        )
 
     async def _handle(self, text: str) -> Turn:
         with self.conversation.stage("perception"):
@@ -801,13 +824,14 @@ class SimSession:
         reply: str | None = None,
         *,
         started_ms: float | None = None,
+        perceived_ms: float = 0.0,
     ) -> Turn:
         """
         A model's answer to `text` — its tool calls, each through `dispatch()` and
         its gate, then its reply — as the turn it concludes. The voice driver
         (`perception.VoiceSession`) calls this when System 2's answer arrives;
-        `started_ms` is when the transcript came in, so the wait is the turn's
-        `system_two` stage.
+        `started_ms` is when the turn's wait began — its first `perceived_ms` STT
+        hearing it, the rest the turn's `system_two` stage.
         """
 
         async def run() -> Turn:
@@ -818,20 +842,33 @@ class SimSession:
                 recognition = self.grammar.recognize(text)
             return await self._call_tools(Turn(text, recognition), calls, recognition, reply)
 
-        return await self._metered(run, started_ms=started_ms, waited="system_two")
+        return await self._metered(
+            run, started_ms=started_ms, waited="system_two", perceived_ms=perceived_ms
+        )
 
-    async def say_offline(self, text: str = "", *, started_ms: float | None = None) -> Turn:
+    async def say_offline(
+        self,
+        text: str = "",
+        *,
+        started_ms: float | None = None,
+        perceived_ms: float = 0.0,
+        unheard: bool = False,
+    ) -> Turn:
         """
         System 2 did not answer `text` — unreachable, or too slow — so the device
         says which commands still work (`offline_help`, Q-14): a `fallback` turn.
-        Speech only: never a `c.do()`.
+        `unheard`: it was STT that failed (TSK-S3-13) — there is no text, System 2
+        was never asked, and the line says typing still works. Speech only: never a
+        `c.do()`.
         """
         turn = Turn(text, self.grammar.recognize(""))
+        line = self.unheard_help() if unheard else self.offline_help()
         return await self._metered(
-            lambda: self._speak(turn, self.offline_help(), "offline_help"),
+            lambda: self._speak(turn, line, "offline_help"),
             started_ms=started_ms,
-            waited="system_two",
-            path="fallback",
+            waited=None if unheard else "system_two",
+            path=None if unheard else "fallback",
+            perceived_ms=perceived_ms,
         )
 
     async def _call_tools(

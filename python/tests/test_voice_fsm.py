@@ -88,6 +88,18 @@ def test_events_outside_the_table_change_nothing():
     assert fsm.state is VoiceState.IDLE and _states(events) == []
 
 
+def test_the_end_of_a_turn_tells_the_driver_to_send_its_audio_to_stt():
+    # T04's effect is "send the audio to STT" (§4): `fire_due` says so (TSK-S3-13).
+    clock, _, fsm = _machine(think_timeout_ms=1000)
+    fsm.wake_word()
+    fsm.vad_start()
+    fsm.vad_end()
+    clock.now = 700
+    assert fsm.fire_due() == ["turn_end"] and fsm.state is VoiceState.THINKING
+    clock.now = 1700
+    assert fsm.fire_due() == ["think_timeout"]
+
+
 def _to_speaking(fsm, clock):
     fsm.wake_word()
     fsm.vad_start()

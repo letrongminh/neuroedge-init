@@ -1,0 +1,34 @@
+{
+  "description": "STT mất giữa lượt (stt_unavailable): câu offline ngay, rồi IDLE; bản chép lời đến sau đó bị bỏ, không mở cửa. Lượt sau STT trả lời lại: lệnh cục bộ vẫn qua gate như thường.",
+  "scenario": "V6",
+  "covers": [
+    "T01",
+    "T02",
+    "T04",
+    "T07",
+    "T08",
+    "T09",
+    "T12"
+  ],
+  "agent": "voice-door",
+  "params": {
+    "end_of_turn_silence_ms": 700,
+    "listen_timeout_ms": 8000,
+    "think_timeout_ms": 5000,
+    "max_reprompts": 1
+  },
+  "world": {},
+  "inputs": [
+    {"offset_ms": 0, "type": "wake_word_detected", "data": {"word": "hey_neuro", "score": 0.93}},
+    {"offset_ms": 200, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 900, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 1800, "type": "stt_unavailable", "data": {"turn": 1, "reason": "offline"}},
+    {"offset_ms": 1900, "type": "stt_result", "data": {"turn": 1, "text": "mở cửa"}},
+    {"offset_ms": 3500, "type": "tts_stream_end", "data": {"reason": "done"}},
+    {"offset_ms": 4000, "type": "wake_word_detected", "data": {"word": "hey_neuro", "score": 0.93}},
+    {"offset_ms": 4200, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 4800, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 5600, "type": "stt_result", "data": {"turn": 2, "text": "mở cửa"}}
+  ],
+  "until_ms": 6000
+}

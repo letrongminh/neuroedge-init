@@ -14,9 +14,9 @@ problem so one run reports them all, each with where / why / how:
    every `degrade` fallback names a declared action;
 5. the command grammar (and `knowledge.toml`, if the agent ships one) loads,
    and every `action` a command names is a declared @action;
-6. `[mcp]`, `[system_two]` and `[system_one]` are well formed — no API key in
-   agent.toml — and every criterion `[system_one]` delegates to a model is one the
-   agent's gates evaluate, with a budget longer than the model's `timeout_ms`.
+6. `[mcp]`, `[system_two]`, `[system_one]`, `[stt]` and `[tts]` are well formed — no
+   API key in agent.toml — and every criterion `[system_one]` delegates to a model
+   is one the agent's gates evaluate, with a budget longer than the model's `timeout_ms`.
 7. for `esp32s3`, the agent links into the firmware (`firmware.firmware_problems`).
 
 On success it writes each gate's decision tree and canonical artifact — and, for
@@ -451,6 +451,56 @@ def check_system_one(
     return problems
 
 
+def check_speech(
+    manifest: AgentManifest, board: BoardProfile | None = None
+) -> list[NeuroEdgeError]:
+    """
+    `[stt]` and `[tts]` of agent.toml are well formed — never an API key in them,
+    never a key over plain http to another machine — a custom adapter they name
+    can be imported, and the agent declares the primitive each one needs: STT
+    hears through `audio.in`, TTS speaks through `audio.out`, so a board without
+    them fails here, not mid-conversation (TSK-S3-13, FR-MDL-09, Q-12). With a
+    `board` that declares the primitive, it must also give its `sample_rate_hz`: PCM
+    audio has no meaning without one. Every bad table is reported.
+    """
+    from ..models.providers import load_adapter
+    from ..perception.providers.config import ROLES, parse_speech
+
+    document = tomllib.loads(manifest.source.read_text(encoding="utf-8"))
+    problems: list[NeuroEdgeError] = []
+    for role in ROLES:
+        if role not in document:
+            continue
+        primitive = "audio.in" if role == "stt" else "audio.out"
+        if primitive not in manifest.requires:
+            example = "{ sample_rate_hz = 16000 }" if role == "stt" else "{}"
+            problems.append(
+                AgentManifestError(
+                    where=f"{manifest.source} -> [requires]",
+                    why=f"[{role}] needs {primitive}, which [requires] does not declare",
+                    how=f'add "{primitive}" = {example} to [requires], or remove [{role}]',
+                )
+            )
+        elif board is not None and board.supports(primitive):
+            rate = board.capability(primitive).get("sample_rate_hz")
+            if isinstance(rate, bool) or not isinstance(rate, int) or rate <= 0:
+                problems.append(
+                    BoardCapabilityError(
+                        where=f"{board.source} -> {primitive}",
+                        why=f"[{role}] plays PCM through {primitive}, and board {board.id!r} "
+                        "declares no sample_rate_hz for it",
+                        how=f"add sample_rate_hz = 16000 to {primitive} in {board.source}",
+                    )
+                )
+        try:
+            config = parse_speech(role, document[role], manifest.source)
+            if config.adapter is not None:
+                load_adapter(config, manifest.root)
+        except NeuroEdgeError as error:
+            problems.append(error)
+    return problems
+
+
 def check_commands(grammar: Any, actions: Iterable[Any]) -> list[NeuroEdgeError]:
     """
     Every `tool` a command calls is a declared @action, and its slot-mapped and
@@ -576,6 +626,7 @@ def build(
     problems += check_mcp_servers(manifest, actions)
     problems += check_system_two(manifest)
     problems += check_system_one(manifest, gates)
+    problems += check_speech(manifest, board)
     project: Path | None = None
     if target == "esp32s3":
         from . import firmware

@@ -36,6 +36,35 @@ def test_case_passes(path):
     assert differences == [], "\n".join(differences)
 
 
+@pytest.mark.parametrize("path", CASES, ids=[p.name for p in CASES])
+def test_case_passes_through_fake_speech_providers(path):
+    # TSK-S3-13: the same answer when transcripts come out of the STT path and each
+    # reply's end out of the speaker — not one expected event changes.
+    case = vc.load_case(path)
+    expected = vc.load_expected()[case.name]
+    differences = vc.run_case(case, expected, speech=True)
+    assert differences == [], "\n".join(differences)
+
+
+def test_the_speech_run_really_goes_through_the_providers():
+    # Not the raw inputs under another name: each turn that ended sent its audio to
+    # STT, each transcript came back from it, and every reply was synthesised.
+    import asyncio
+
+    case = vc.load_case(vc.corpus_dir() / "v2_barge_in_during_running_pulse.json")
+    voice = asyncio.run(vc.execute(case, speech=True))
+    assert [clip.turn for clip in voice.stt.clips] == [1, 2]
+    assert voice.tts.texts == voice.hal.spoken == ["Door unlocked. Welcome home.", "Không có gì."]
+    segments = voice.events.of_type("audio_in_segment")
+    assert len(segments) == 2 and all(s["sha256"].startswith("sha256:") for s in segments)
+    # The reply cut by barge-in is cut on the speaker too: 1000 ms of 16 kHz PCM, not 3600.
+    first, second = voice.hal.speaker().playbacks
+    assert len(first.played) == 1000 * 16 * 2 and first.stopped_at_ms == 3300
+    assert second.stopped_at_ms is None
+    ends = voice.events.of_type("tts_stream_end")
+    assert [e["reason"] for e in ends] == ["barge_in", "done"]
+
+
 def test_closure_catches_a_file_without_an_answer(tmp_path):
     (tmp_path / "vx.json").write_text("{}", encoding="utf-8")
     (tmp_path / vc.EXPECTED_FILE).write_text(
