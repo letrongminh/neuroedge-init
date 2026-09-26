@@ -8,6 +8,7 @@ giấy phép nào; nội dung và lý do của quyết định chỉ nằm ở Q
 | Mã NeuroEdge — runtime Python, CLI, firmware, dịch vụ, công cụ, test, tài liệu (mọi thứ không nằm ở hai dòng dưới) | **PolyForm Noncommercial 1.0.0** | [`LICENSE`](LICENSE) |
 | Chuẩn mở — `schemas/`, `docs/spec/`, `fixtures/compliance/` | **Apache-2.0** | [`LICENSES/Apache-2.0.txt`](LICENSES/Apache-2.0.txt) |
 | Mã port hoặc chuyển thể từ bên thứ ba | Giấy phép gốc của nó | [`NOTICE`](NOTICE) |
+| Phông chữ của giao diện thiết bị — `targets/esp32s3/ui/fonts/` (Be Vietnam Pro, sinh bằng `scripts/gen_ui_fonts.sh`) | **OFL-1.1** | [`LICENSES/OFL-1.1.txt`](LICENSES/OFL-1.1.txt) · NOTICE mục A.5 |
 
 **Phi thương mại** — cá nhân, nghiên cứu, học tập, tổ chức phi lợi nhuận, và mọi mục đích khác mà
 PolyForm Noncommercial cho phép — được dùng, sửa và phân phối lại toàn bộ mã miễn phí, theo đúng

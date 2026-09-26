@@ -52,9 +52,15 @@ cùng từng byte; tệp lần trước ghi mà lần này không còn thì bị
 kết tượng trưng (symlink) ở một đường dẫn build ghi vào ⇒ từ chối: build không bao giờ ghi xuyên qua
 liên kết ra ngoài project.
 
+**Ngôn ngữ giao diện.** Firmware mang ngôn ngữ của agent trong `NE_AGENT_LANGUAGE`
+(`components/ne_agent/include/ne_agent.h`); quy tắc chọn và các lỗi build ở
+[`docs/spec/ui.md`](../spec/ui.md) §2 — một nơi duy nhất. Màn hình LVGL đã có mã
+(`targets/esp32s3/ui/`) nhưng **chưa nối vào firmware đang chạy**: driver màn hình là TSK-S4-01.
+
 Agent không hợp bo mạch (thiếu chân, thiếu năng lực — FR-HAL-04), key gate không phải định danh C
-(`unlock-door`), `[agent] name`/`version` có ký tự điều khiển hay xuống dòng, hay quá 32 chân ⇒ in mọi
-vấn đề (cách đọc: `CHANGELOG.md` §2.4), **mã 1, không ghi gì**.
+(`unlock-door`), `[agent] name`/`version` có ký tự điều khiển hay xuống dòng, ngôn ngữ giao diện
+không hợp lệ (trên), hay quá 32 chân ⇒ in mọi vấn đề (cách đọc: `CHANGELOG.md` §2.4), **mã 1,
+không ghi gì**.
 
 ## 4. Build và nạp lên Box-3
 

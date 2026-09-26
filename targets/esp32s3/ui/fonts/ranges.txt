@@ -1,0 +1,20 @@
+# Glyph ranges of the device UI fonts (TSK-S4-10). One `lv_font_conv -r` list:
+# comma-separated hex ranges. scripts/gen_ui_fonts.sh passes this file to
+# lv_font_conv for every size; python/tests/test_ui_assets.py checks every
+# character of the Vietnamese and English string tables is inside it.
+#
+#   Basic Latin          ASCII
+#   Latin-1 Supplement   ° and the accents shared with Vietnamese
+#   Latin Extended-A/B   Đ đ Ơ ơ Ư ư
+#   Latin Extended Add.  the Vietnamese precomposed characters (Ạ … ỹ)
+#   General Punctuation  – — ‘ ’ “ ” • …
+#   Currency Symbols     ₫, kept ahead of any string that shows a price
+0x20-0x7E,
+0xA0-0xFF,
+0x100-0x1EF,
+0x1E00-0x1EFF,
+0x2013-0x2014,
+0x2018-0x201D,
+0x2022,
+0x2026,
+0x20AB
