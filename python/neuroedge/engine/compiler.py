@@ -42,13 +42,11 @@ from ..errors import (
     GateSchemaError,
     NeuroEdgeError,
 )
+from ..hal.audio import MAX_RATE_HZ, MIN_RATE_HZ, rate_ok
 from ..hal.board import PRIMITIVES, BoardProfile, load_board_by_id
 from .canonical import gate_canonical_json, gate_digest
 from .decision_tree import compile_tree, tree_bytes
 from .gate_resolver import GateRegistry, ResolvedGate, resolve_gate_file, resolve_gate_uri
-
-# The PCM rates speech runs at (`[stt]` / `[tts]`) — the bounds the audio path accepts.
-SPEECH_RATES_HZ = (8000, 96000)
 
 
 @dataclass(frozen=True)
@@ -530,12 +528,8 @@ def check_speech(
             rate = board.capability(primitive).get("sample_rate_hz")
             # The rates the audio path runs at (8–96 kHz); outside them PCM is refused at
             # run time, so the build says so first.
-            if (
-                isinstance(rate, bool)
-                or not isinstance(rate, int)
-                or not SPEECH_RATES_HZ[0] <= rate <= SPEECH_RATES_HZ[1]
-            ):
-                low, high = SPEECH_RATES_HZ
+            if not rate_ok(rate):
+                low, high = MIN_RATE_HZ, MAX_RATE_HZ
                 problems.append(
                     BoardCapabilityError(
                         where=f"{board.source} -> {primitive}",
