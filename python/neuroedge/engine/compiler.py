@@ -28,6 +28,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import inspect
+import re
 import sys
 import tomllib
 from collections.abc import Iterable, Mapping
@@ -48,6 +49,10 @@ from .canonical import gate_canonical_json, gate_digest
 from .decision_tree import compile_tree, tree_bytes
 from .gate_resolver import GateRegistry, ResolvedGate, resolve_gate_file, resolve_gate_uri
 
+# The shape of a language code, as `[stt] language` has it: an ISO-639-1 code such
+# as "vi" or "en". What the device UI ships is `firmware.UI_LANGUAGES`.
+LANGUAGE = re.compile(r"^[a-z]{2,3}$")
+
 
 @dataclass(frozen=True)
 class AgentManifest:
@@ -57,6 +62,10 @@ class AgentManifest:
     gates: dict[str, str]
     targets: tuple[str, ...]
     source: Path
+    # `[agent] language` as written (ISO-639-1 shape, checked below), or None. The
+    # device UI resolves it against `[stt] language` and its shipped set in
+    # `firmware.ui_language`; the rule is docs/spec/ui.md §Ngôn ngữ.
+    language: str | None = None
 
     @property
     def root(self) -> Path:
@@ -104,6 +113,14 @@ def load_agent_manifest(path: str | Path) -> AgentManifest:
             how="use the dotted primitive names from FR-HAL-01",
         )
     targets = document.get("targets", {}).get("supported", [])
+    language = agent.get("language")
+    if language is not None and (not isinstance(language, str) or not LANGUAGE.fullmatch(language)):
+        raise AgentManifestError(
+            where=f"{path} -> [agent] language",
+            why='language must be an ISO-639-1 code such as "vi" or "en", and it is not one',
+            how='write language = "vi", or remove it; the device UI then takes [stt] '
+            'language (default "vi") — docs/spec/ui.md §Ngôn ngữ',
+        )
     return AgentManifest(
         name=agent["name"],
         version=agent["version"],
@@ -111,6 +128,7 @@ def load_agent_manifest(path: str | Path) -> AgentManifest:
         gates=dict(document.get("gates", {})),
         targets=tuple(targets),
         source=path,
+        language=language,
     )
 
 
