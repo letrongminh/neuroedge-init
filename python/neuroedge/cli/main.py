@@ -716,9 +716,12 @@ def mcp_serve(
     except SystemExit as stop:
         # SIGTERM / SIGHUP (`_exit_on_signals`): drop the lines, then leave at once —
         # the SDK's stdin thread is not a daemon and would hold the exit (as above).
-        close()
-        sys.stderr.flush()
-        os._exit(stop.code if isinstance(stop.code, int) else 1)
+        # The exit happens even when the cleanup raises.
+        try:
+            close()
+        finally:
+            sys.stderr.flush()
+            os._exit(stop.code if isinstance(stop.code, int) else 1)
     finally:
         close()
 
@@ -982,6 +985,8 @@ def verify(
                         if e["type"] == "gate_evaluation_result"
                     ]
                 else:
+                    if target == "linux":
+                        _exit_on_signals()  # the replay drives real lines
                     result = asyncio.run(TracePlayer(path, target=target).replay())
                     verdicts = result.verdicts
                 diff = GoldenComparator().compare(result, load_trace(path))
@@ -1135,6 +1140,8 @@ def replay(
 
     if target in PLANNED_TARGETS:
         _not_implemented_target("replay", target)
+    if target == "linux":
+        _exit_on_signals()  # the replay drives real lines
     try:
         player = TracePlayer(
             trace_file,

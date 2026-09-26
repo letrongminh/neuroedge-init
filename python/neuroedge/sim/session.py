@@ -746,8 +746,21 @@ class SimSession:
     def close(self) -> None:
         """End the session: on linux every line is dropped inactive and released."""
         close = getattr(self.hal, "close", None)
-        if close is not None:
+        if close is None:
+            return
+        import signal
+        import threading
+
+        if threading.current_thread() is not threading.main_thread():
             close()
+            return
+        # A second Ctrl-C must not stop the lines dropping halfway (SIGTERM/SIGHUP
+        # are already ignored once their handler runs — cli/main.py).
+        previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
+        try:
+            close()
+        finally:
+            signal.signal(signal.SIGINT, previous)
 
     def trace(self) -> dict[str, Any]:
         """The session so far as a `trace.v1` document, validated before it is returned."""

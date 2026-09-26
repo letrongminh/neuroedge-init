@@ -386,3 +386,34 @@ def test_a_voice_session_refuses_a_clock_other_than_the_sessions(root):
     session = SimSession.load(agent, clock=VirtualClock())
     with pytest.raises(ValueError, match="clock the session was loaded with"):
         VoiceSession(session, clock=VirtualClock())
+
+
+def test_ctrl_c_is_ignored_while_the_lines_drop_and_restored_after(driveway, gpio, restore_signals):
+    signal = restore_signals
+    session = SimSession.load(driveway, target="linux")
+    seen: list[object] = []
+    original_close = session.hal.close
+
+    def close():
+        seen.append(signal.getsignal(signal.SIGINT))
+        original_close()
+
+    session.hal.close = close
+    before = signal.getsignal(signal.SIGINT)
+    session.close()
+    assert seen == [signal.SIG_IGN]
+    assert signal.getsignal(signal.SIGINT) is before
+
+
+def test_a_replay_that_fails_on_linux_still_drops_the_lines(root, gpio, tmp_path, monkeypatch):
+    from neuroedge.actions import Conversation
+
+    trace = root / "fixtures" / "traces" / "happy-path.json"
+
+    async def broken(self, *args, **kwargs):
+        raise RuntimeError("divergence mid-replay")
+
+    monkeypatch.setattr(Conversation, "do", broken)
+    with pytest.raises(RuntimeError, match="divergence"):
+        replay(trace, target="linux")
+    assert gpio.requests and all(request.released for request in gpio.requests)

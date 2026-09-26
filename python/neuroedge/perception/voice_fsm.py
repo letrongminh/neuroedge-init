@@ -222,7 +222,9 @@ class VoiceStateMachine:
                 continue  # §5.3: a delivered command runs to the end
             command.cancel(ABORTED_BY_BARGE_IN)
             self.aborted.append(command)
-            # 2. close its token: the same verdict never drives the pin later.
+            # 2. close its token (§5.2). `c.do()` has already closed it when the action
+            # returned, and delivery does not consult the ledger: the barrier that keeps
+            # the pin still is the cancel above (`run_due` skips a cancelled command).
             token = getattr(command, "token", None)
             if token is not None and self._close_token is not None:
                 self._close_token(token)

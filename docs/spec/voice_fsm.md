@@ -154,6 +154,9 @@ Ba ràng buộc của lệnh hẹn giờ, chốt ở lượt review của TSK-S3
   (`p95_latency_ms` × 3, `actions/token.py`); vượt thì lệnh bị từ chối ngay lúc hẹn
   (`ActionContractViolation`). Phán quyết không bao giờ kích chân trên dữ kiện gate chưa thấy.
 - **`after_ms` làm tròn lên**, không bao giờ xuống: 0,5 ms là 1 ms, vẫn là lệnh đang chờ. Âm thì bị từ chối.
+- **Rào chắn là lệnh hủy, không phải token.** Trong Python, `c.do()` đã đóng token khi action trả về và
+  `SimHAL.run_due()` không hỏi lại sổ token: chân đứng yên vì lệnh bị hủy (`run_due` bỏ qua lệnh đã hủy).
+  Bước 2 của §5.2 vẫn chạy để bản C/C++, nơi token có thể còn mở, giữ cùng hợp đồng.
 - **Action ném lỗi thì lệnh của nó bị hủy.** Lệnh action đã hẹn trước khi ném lỗi được hủy với
   `actuator_aborted {pin, reason: "ACTUATOR_ABORTED_BY_ACTION_ERROR"}`: phán quyết cho cả action, không
   cho nửa đã chạy.
@@ -196,7 +199,7 @@ Thêm sự kiện không cần RFC.
 | `audio_in_vad_start` | `{energy_db}` | Đầu vào | simulation_coverage §3 |
 | `audio_in_vad_end` | `{}` | Đầu vào | Mới |
 | `stt_result` | `{text, turn}` — `""` là không nghe ra gì; `turn` là lượt đã gửi âm thanh đi | Đầu vào | Mới |
-| `tts_stream_start` | `{text}` | Đầu vào của máy trạng thái (câu trả lời bắt đầu phát) | simulation_coverage §3 |
+| `tts_stream_start` | `{text}` | Đầu vào của máy trạng thái (câu trả lời bắt đầu phát). Hiện thực Python tự sinh nó từ câu trả lời của lượt, nên `VoiceSession.feed` không nhận nó (§9.1); bản C/C++ nhận nó như đầu vào | simulation_coverage §3 |
 | `tts_stream_end` | `{duration_ms, sha256?, reason?}` — `reason`: `done` · `barge_in` · `error` | Đầu vào khi `done`; **đầu ra** khi `barge_in` (§5.2 bước 3) | simulation_coverage §3; `reason` mới |
 | `system_two_unavailable` | `{task, reason}` | Đầu vào | tool_calling §7 |
 | `voice_state_changed` | `{from, to, trigger, turn}` | Đầu ra | Mới |

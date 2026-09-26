@@ -8,6 +8,7 @@ because a machine without gpio-sim could only skip them, and no test may skip.
 
 from __future__ import annotations
 
+import threading
 import time
 from enum import Enum
 from types import SimpleNamespace
@@ -324,3 +325,28 @@ def test_a_pulse_ending_after_close_does_nothing(chips):
     after_close = list(fake.history)
     hal._end_pulse("door_lock")  # the timer's callback, had it already started: no KeyError
     assert fake.history == after_close
+
+
+def test_a_pulse_whose_timer_cannot_start_drops_the_line(chips, monkeypatch):
+    glob_, world = chips
+    fake = FakeGpiod(world)
+    hal = LinuxHAL(chip_glob=glob_, gpiod=fake, authorize=lambda *_: None)
+
+    def cannot_start(self):
+        raise RuntimeError("can't start new thread")
+
+    monkeypatch.setattr(threading.Timer, "start", cannot_start)
+    with pytest.raises(RuntimeError, match="new thread"):
+        hal.digital_out("door_lock", "pulse", 30_000, signature="proof")
+    assert not hal.line_value("door_lock") and hal._timers == {}
+    hal.close()
+
+
+def test_cancelling_after_close_does_nothing(chips):
+    glob_, world = chips
+    fake = FakeGpiod(world)
+    hal = LinuxHAL(chip_glob=glob_, gpiod=fake, authorize=lambda *_: None)
+    command = hal.digital_out("door_lock", "pulse", 60_000, signature="proof")
+    hal.close()
+    command.cancel()  # no KeyError: every line is already dropped
+    assert command.cancelled

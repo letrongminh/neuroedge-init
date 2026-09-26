@@ -201,7 +201,14 @@ class LinuxHAL(HardwareAbstractionLayer):
             timer.daemon = True
             with self._lock:
                 self._timers[pin] = timer
-            timer.start()
+            try:
+                timer.start()
+            except BaseException:
+                # No timer, no off edge: never leave a pulse line driven without one.
+                with self._lock:
+                    self._timers.pop(pin, None)
+                self._set(pin, False)
+                raise
         self.events.emit(
             "actuator_command", {"pin": pin, "operation": operation, "duration_ms": duration_ms}
         )
@@ -211,7 +218,9 @@ class LinuxHAL(HardwareAbstractionLayer):
 
     def _abort(self, pin: str) -> None:
         self._stop_timer(pin)
-        self._set(pin, False)
+        with self._lock:
+            if self._requests:  # after close() every line is already dropped
+                self._set(pin, False)
 
     def close(self) -> None:
         """Drop every line inactive and release it. The session is over; nothing is recorded."""
