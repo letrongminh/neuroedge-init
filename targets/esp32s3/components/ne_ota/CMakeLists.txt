@@ -14,6 +14,7 @@ idf_component_register(
         "include"
     REQUIRES
         app_update
+        bootloader_support
         nvs_flash
         esp_app_format
         esp_partition

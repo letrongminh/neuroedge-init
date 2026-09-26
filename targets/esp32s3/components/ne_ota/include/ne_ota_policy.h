@@ -51,17 +51,39 @@ ne_ota_decision ne_ota_should_install(const char *running_version, const char *r
                                       const char *rolled_back_version,
                                       const char *high_water_version);
 
-/* MAJOR.MINOR.PATCH, all decimal, missing parts 0; false on anything else. */
+/*
+ * MAJOR.MINOR.PATCH — exactly three parts, each `0` or a decimal without a
+ * leading zero, each fitting a u32. The same rule as `_RELEASE` in
+ * python/neuroedge/engine/firmware.py; test_ota_version_host.c pins both
+ * against one case list. False on anything else.
+ */
 bool ne_ota_parse_version(const char *text, uint32_t out[3]);
 int ne_ota_compare_versions(const uint32_t left[3], const uint32_t right[3]);
 
 /*
- * The version the device rolled back from: the aborted slot's own descriptor
- * when it can be read (`from_slot`), otherwise the value recorded in NVS
- * (`stored`), so an interrupted later write over that slot cannot wipe the
- * fact. False when neither is readable — the caller then blocks all updates.
+ * Whether the high-water mark must rise to `running`: true when `running`
+ * parses and the mark is absent or parses lower. A mark that exists but does
+ * not parse must not be repaired — it may have been higher, and lowering it
+ * would allow the downgrade it exists to stop (the caller keeps refusing).
  */
-bool ne_ota_resolve_rollback(const char *stored, const char *from_slot, char *out, size_t cap);
+bool ne_ota_mark_should_rise(const char *running, const char *mark);
+
+/*
+ * The version the device rolled back from: the aborted slot's own descriptor
+ * when that slot holds a complete, valid image (`slot_valid` and `from_slot`),
+ * otherwise the value recorded in NVS (`stored`), so an interrupted later
+ * write over that slot cannot wipe the fact. False when neither is readable —
+ * the caller then blocks all updates.
+ */
+bool ne_ota_resolve_rollback(const char *stored, const char *from_slot, bool slot_valid, char *out,
+                             size_t cap);
+
+/*
+ * Why an HTTP status refuses the update, or NULL when it does not. A redirect
+ * is a second server the image signature does not cover being trusted by
+ * name; it is refused rather than followed.
+ */
+const char *ne_ota_status_reason(int status);
 
 /*
  * True when a download must be abandoned: over its total deadline, or no byte

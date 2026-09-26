@@ -109,9 +109,12 @@ trước khi kịp tự kiểm). Không cần dịch vụ hay tài khoản Neuro
 Hai ràng buộc cứng của đường OTA:
 
 - **Chữ ký + rollback là bắt buộc.** OTA chỉ được biên dịch khi bật đủ xác minh chữ ký trên bản
-  cập nhật (`CONFIG_SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT`) **và** rollback
-  (`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`); thiếu một trong hai thì Kconfig từ chối bật
-  `CONFIG_NEUROEDGE_OTA`. Lớp `sdkconfig.ota` bật cả hai.
+  cập nhật **và** rollback. Lớp `sdkconfig.ota` bật
+  `CONFIG_SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT` (không Secure Boot), và nó kéo theo
+  `CONFIG_SECURE_SIGNED_ON_UPDATE` — cổng kiểm trong Kconfig và `#error` trong mã dùng dạng tổng
+  quát đó, nên Secure Boot (TSK-S6-05) sau này cũng thoả; cùng với
+  `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`. Thiếu một trong hai thì Kconfig từ chối bật
+  `CONFIG_NEUROEDGE_OTA`.
 - **OTA không bao giờ ghi bootloader.** Nó chỉ ghi khe app (`esp_https_ota` →
   `esp_ota_set_boot_partition`). Bootloader biết rollback phải nạp **một lần bằng cáp** từ project
   build với lớp OTA (§6.2); các bản OTA về sau không đụng tới nó.

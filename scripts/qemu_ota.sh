@@ -224,7 +224,12 @@ qemu_once() { # <phase> <n> <regex> <exit|idle> [grace]
         local reset_deadline=$((SECONDS + 30))
         # The probe is expected to fail until the reset; keep it quiet.
         while ! ota_has_after "$log" "$pattern" '^rst:0[xX]' 2>/dev/null; do
-          qemu_alive || break
+          if ! qemu_alive; then
+            wait "$qemu_pid" 2>/dev/null || true
+            qemu_pid=
+            # An emulator that died is not the reset the device asked for.
+            fail "$phase.$n: QEMU exited without the device's reset line (log: $log)"
+          fi
           [ "$SECONDS" -lt "$reset_deadline" ] ||
             fail "$phase.$n: no reset after /$pattern/ (log: $log)"
           sleep 0.02
