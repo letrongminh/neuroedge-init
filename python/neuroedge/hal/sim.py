@@ -25,6 +25,7 @@ mirrors the reference board rather than exceeding it (CHANGELOG §3.3 #7).
 from __future__ import annotations
 
 import hashlib
+import math
 from collections import deque
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -37,6 +38,30 @@ from .board import BoardProfile, load_board_by_id
 ABORTED_BY_BARGE_IN = "ACTUATOR_ABORTED_BY_BARGE_IN"
 # The @action that scheduled the command raised: its verdict never completed (review of TSK-S3-11).
 ABORTED_BY_ACTION_ERROR = "ACTUATOR_ABORTED_BY_ACTION_ERROR"
+
+
+def reading_data(
+    sensor: str, value: Any, unit: str | None = None, use: str | None = None
+) -> dict[str, Any]:
+    """
+    `sensor_read` / `sensor_set` data, the same on every target. JSON has no NaN or
+    inf: such a reading is written as "nan", "inf" or "-inf" with `non_finite: true`,
+    and `reading_value` gives replay the float back.
+    """
+    data: dict[str, Any] = {"sensor": sensor, "value": value}
+    if isinstance(value, float) and not math.isfinite(value):
+        data["value"], data["non_finite"] = repr(value), True
+    if unit is not None:
+        data["unit"] = unit
+    if use is not None:
+        data["use"] = use
+    return data
+
+
+def reading_value(data: Mapping[str, Any]) -> Any:
+    """The reading a `sensor_read` event recorded (the inverse of `reading_data`)."""
+    value = data.get("value")
+    return float(value) if data.get("non_finite") else value
 
 
 class EventSink(Protocol):
@@ -393,12 +418,7 @@ class SimHAL(HardwareAbstractionLayer):
                 how=f"call hal.set_sensor({sensor!r}, value) in the scenario first",
             )
         value = self._sensors[sensor]
-        data = {"sensor": sensor, "value": value}
-        if sensor in self._units:
-            data["unit"] = self._units[sensor]
-        if use is not None:
-            data["use"] = use
-        self.events.emit("sensor_read", data)
+        self.events.emit("sensor_read", reading_data(sensor, value, self._units.get(sensor), use))
         return value
 
     # -- audio -------------------------------------------------------------------

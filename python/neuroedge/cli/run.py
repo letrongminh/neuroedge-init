@@ -34,7 +34,7 @@ EXIT_WORDS = ("exit", "quit", ":q")
 HELP = """\
 Type a command the agent's grammar knows, e.g. "mở cửa phòng 101".
   :facts              show the session facts the gate reads
-  :set <name> <value> set a fact (true/false, a number, or text)
+  :set <name> <value> set a fact (true/false, a number, or text) — not one a sensor decides
   :unset <name>       forget a fact — the gate then treats it as undecided
   :pins               show the virtual pins
   :sensors            show the simulated sensor values
@@ -190,10 +190,17 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
             table.add_row(key, json.dumps(value, ensure_ascii=False))
         for key, (slot, expected) in sorted(session.slot_facts.items()):
             table.add_row(key, f"[dim]from slot {{{slot}}} == {expected!r}[/dim]")
+        for key, rule in sorted(session.sensor_facts.items()):
+            shown = escape(f"from sensor {rule.sensor} ([sim.sensor_facts])")
+            table.add_row(key, f"[dim]{shown}[/dim]")
         console.print(table)
     elif name == "set" and len(rest.split(maxsplit=1)) == 2:
         key, value = rest.split(maxsplit=1)
-        session.facts[key] = parse_value(value)
+        try:
+            session.set_fact(key, parse_value(value))
+        except NeuroEdgeError as error:
+            console.print(f"[yellow]{escape(error.why)}[/yellow] — {escape(error.how)}")
+            return
         console.print(f"  {escape(key)} = {json.dumps(session.facts[key], ensure_ascii=False)}")
     elif name == "unset" and rest.strip():
         session.facts.pop(rest.strip(), None)

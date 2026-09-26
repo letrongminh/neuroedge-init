@@ -98,8 +98,10 @@ def test_a_reading_falls_in_exactly_its_band(agent, band, reading):
 
 
 @pytest.mark.parametrize("reading", [-40.001, -41, -300])
-def test_below_the_lowest_bound_no_band_is_decided(agent, reading):
-    assert facts_at(session_for(agent), reading)["heat_level"] is None
+def test_below_the_lowest_bound_neither_fact_is_decided(agent, reading):
+    # An open or shorted probe: heat_critical must not read as a confident False.
+    facts = facts_at(session_for(agent), reading)
+    assert facts["heat_level"] is None and facts["heat_critical"] is None
 
 
 def test_heat_level_and_heat_critical_agree_at_and_around_the_critical_bound(agent):
@@ -109,8 +111,11 @@ def test_heat_level_and_heat_critical_agree_at_and_around_the_critical_bound(age
     session = session_for(agent)
     offsets = [-1, -0.5, -0.001, -1e-9, 0, 1e-9, 0.001, 0.5, 1]
     sweep = [bound + offset for offset in offsets] + [math.nextafter(bound, -math.inf)]
-    for reading in sweep + [reading for _, reading in BANDED]:
+    for reading in sweep + [reading for _, reading in BANDED] + [-41, *NOT_A_READING]:
         facts = facts_at(session, reading)
+        if facts["heat_level"] is None:  # undecided together, never one without the other
+            assert facts["heat_critical"] is None, reading
+            continue
         assert (facts["heat_level"] == "critical") is facts["heat_critical"], reading
     at = facts_at(session, bound)
     assert (at["heat_level"], at["heat_critical"]) == ("critical", True)
@@ -118,7 +123,7 @@ def test_heat_level_and_heat_critical_agree_at_and_around_the_critical_bound(age
     assert (below["heat_level"], below["heat_critical"]) == ("high", False)
 
 
-def test_both_facts_come_from_one_reading_per_turn(agent):
+def test_both_facts_come_from_one_reading_per_evaluation(agent):
     session = session_for(agent, 45)
     say(session, "tắt quạt")
     reads = [r for r in session.events.of_type("sensor_read") if r.get("use") == "fact"]
@@ -235,35 +240,37 @@ def test_the_alarm_is_silenced_once_the_room_cools(agent):
 # --- fail closed -------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("reading", NOT_A_READING, ids=repr)
-def test_a_reading_that_is_not_a_finite_number_decides_nothing(agent, reading):
+@pytest.mark.parametrize("reading", [*NOT_A_READING, -40.5, -41, -300], ids=repr)
+def test_a_reading_no_band_can_place_decides_nothing_and_nothing_is_asked(agent, reading):
+    """
+    NaN, a band name, a bool — or a number below -40 °C, an open or shorted probe:
+    both heat facts are undecided, so vent_off and alarm_off refuse without a question
+    (a "yes" could stand in for heat_level only), and vent_on / alarm_on still work.
+    """
     session = session_for(agent, reading)
-    on, fan_off, alarm_off = say(session, "bật quạt", "tắt quạt", "tắt báo động")
-    assert on.allowed, "starting the fan needs no heat fact"
+    turns = say(session, "bật quạt", "bật báo động", "tắt quạt", "có", "tắt báo động")
+    fan_on, alarm_on, fan_off, yes, alarm_off = turns
+    assert fan_on.allowed and alarm_on.allowed, "a gate that reads no heat fact still decides"
     for turn in (fan_off, alarm_off):
         assert turn.result.blocked
         assert turn.result.gate.reason == "criterion_unavailable"
         assert turn.confirmation is None, "heat_critical is undecided too: a yes is not enough"
+    assert not yes.allowed
     assert session.hal.pin("gate_relay").commands == [("on", 0)]
-    assert session.hal.pin("porch_light").never_pulsed()
+    assert session.hal.pin("porch_light").commands == [("on", 0)]
     facts = session.events.of_type("gate_facts")[-1]
     assert facts["heat_level"]["value"] is None
+    assert {e["sensor"] for e in session.events.of_type("sensor_unavailable")} == {"temperature"}
 
 
-def test_below_the_lowest_bound_a_person_stands_in_for_the_band_or_nothing_moves(agent):
-    """
-    -41 °C is a number but no band: heat_level is undecided, never a guessed `low`.
-    alarm_off refuses. vent_off asks, as its gate lets a person on the device stand
-    in for heat_level (`confirms`, RFC-0006) — heat_critical, a comparison, is False.
-    """
-    session = session_for(agent, -41)
-    alarm_off, fan_off = say(session, "tắt báo động", "tắt quạt")
-    assert alarm_off.result.blocked and alarm_off.result.gate.on_block_action == "deny"
-    assert fan_off.result.blocked
-    assert fan_off.result.gate.reason == "criterion_unavailable"
-    assert fan_off.confirmation is not None
-    assert session.hal.pin("porch_light").never_pulsed()
-    assert session.hal.pin("gate_relay").never_pulsed()
+def test_a_probe_that_fails_low_while_asking_refuses_the_yes(agent):
+    session = session_for(agent, 45)
+    _, off = say(session, "bật quạt", "tắt quạt")
+    assert off.confirmation is not None
+    session.set_sensor("temperature", -41)
+    (yes,) = say(session, "có")
+    assert not yes.allowed
+    assert session.hal.pin("gate_relay").commands == [("on", 0)]
 
 
 # --- trace, replay, CLI ------------------------------------------------------------------
