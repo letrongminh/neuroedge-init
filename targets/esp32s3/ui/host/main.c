@@ -506,6 +506,195 @@ static int self_checks(void)
     return bad;
 }
 
+/* -- the layout check ------------------------------------------------------------------------- */
+
+/*
+ * Every case is checked after it renders: the drawn leaves (labels, bars, the
+ * network dot) must not overlap each other, and one outside a scroll region
+ * must not leave the 320x240 panel. Text inside a scroll box is clamped to its
+ * box, the way LVGL clips it, so a deliberately scrollable reply is not an
+ * overlap. A failure names the case and both objects; normal and --update runs
+ * both stop, so an overlapping screen cannot become a golden.
+ */
+#define MAX_DRAWN 64
+
+typedef struct {
+    const lv_obj_t *obj;
+    lv_area_t raw;
+    lv_area_t clipped; /* raw clipped by every ancestor, as LVGL draws it */
+    bool scrollable;   /* inside a scroll region: raw may leave the panel */
+} drawn_t;
+
+static void area_intersect(lv_area_t *area, const lv_area_t *clip)
+{
+    if (area->x1 < clip->x1) {
+        area->x1 = clip->x1;
+    }
+    if (area->y1 < clip->y1) {
+        area->y1 = clip->y1;
+    }
+    if (area->x2 > clip->x2) {
+        area->x2 = clip->x2;
+    }
+    if (area->y2 > clip->y2) {
+        area->y2 = clip->y2;
+    }
+}
+
+static bool area_overlaps(const lv_area_t *a, const lv_area_t *b)
+{
+    if (a->x1 > a->x2 || a->y1 > a->y2 || b->x1 > b->x2 || b->y1 > b->y2) {
+        return false;
+    }
+    return a->x1 < b->x2 && b->x1 < a->x2 && a->y1 < b->y2 && b->y1 < a->y2;
+}
+
+static bool inside_scroll_region(const lv_obj_t *obj)
+{
+    const lv_obj_t *screen = lv_screen_active();
+    const lv_obj_t *parent = lv_obj_get_parent(obj);
+    while (parent != NULL && parent != screen) {
+        if (lv_obj_get_scroll_dir(parent) != LV_DIR_NONE) {
+            return true;
+        }
+        parent = lv_obj_get_parent(parent);
+    }
+    return false;
+}
+
+static void describe(const lv_obj_t *obj, char *out, size_t cap)
+{
+    if (lv_obj_check_type(obj, &lv_label_class)) {
+        char line[64];
+        ne_ui_text_single_line(line, sizeof(line), lv_label_get_text(obj), 32);
+        lv_snprintf(out, cap, "\"%s\"", line);
+    } else if (lv_obj_check_type(obj, &lv_bar_class)) {
+        lv_snprintf(out, cap, "bar");
+    } else {
+        lv_snprintf(out, cap, "dot");
+    }
+}
+
+static void area_text(const lv_area_t *area, char *out, size_t cap)
+{
+    lv_snprintf(out, cap, "[%d,%d %d,%d]", (int)area->x1, (int)area->y1, (int)area->x2,
+                (int)area->y2);
+}
+
+static void collect_drawn(const lv_obj_t *obj, drawn_t *list, size_t *count, int *bad, bool report,
+                          const char *language, const char *case_name)
+{
+    uint32_t children = lv_obj_get_child_count(obj);
+    uint32_t i;
+    for (i = 0; i < children; i++) {
+        lv_obj_t *child = lv_obj_get_child(obj, (int32_t)i);
+        bool leaf = lv_obj_get_child_count(child) == 0;
+        bool drawn = !lv_obj_is_hidden(child) &&
+                     (lv_obj_check_type(child, &lv_label_class) ||
+                      lv_obj_check_type(child, &lv_bar_class) ||
+                      (leaf && lv_obj_get_style_bg_opa(child, 0) > LV_OPA_TRANSP));
+        if (drawn) {
+            drawn_t *entry;
+            const lv_obj_t *ancestor;
+            if (*count >= MAX_DRAWN) {
+                if (report) {
+                    printf("FAIL layout %s/%s: more than %d drawn objects\n", language, case_name,
+                           MAX_DRAWN);
+                }
+                *bad += 1;
+                return;
+            }
+            entry = &list[*count];
+            entry->obj = child;
+            lv_obj_get_coords(child, &entry->raw);
+            entry->clipped = entry->raw;
+            for (ancestor = lv_obj_get_parent(child); ancestor != NULL;
+                 ancestor = lv_obj_get_parent(ancestor)) {
+                lv_area_t area;
+                lv_obj_get_coords(ancestor, &area);
+                area_intersect(&entry->clipped, &area);
+            }
+            entry->scrollable = inside_scroll_region(child);
+            *count += 1;
+            if (!entry->scrollable && (entry->raw.x1 < 0 || entry->raw.y1 < 0 ||
+                                       entry->raw.x2 >= NE_UI_WIDTH ||
+                                       entry->raw.y2 >= NE_UI_HEIGHT)) {
+                char what[64];
+                char where[64];
+                if (report) {
+                    describe(child, what, sizeof(what));
+                    area_text(&entry->raw, where, sizeof(where));
+                    printf("FAIL layout %s/%s: %s %s leaves the %dx%d panel\n", language, case_name,
+                           what, where, NE_UI_WIDTH, NE_UI_HEIGHT);
+                }
+                *bad += 1;
+            }
+        }
+        collect_drawn(child, list, count, bad, report, language, case_name);
+    }
+}
+
+static int check_layout(const ne_ui_t *ui, const char *language, const char *case_name, bool report)
+{
+    static drawn_t list[MAX_DRAWN];
+    size_t count = 0;
+    int bad = 0;
+    size_t i;
+    size_t j;
+    /* Coordinates are computed by a layout pass; do it before measuring. */
+    lv_obj_update_layout((lv_obj_t *)ui->root);
+    collect_drawn(ui->root, list, &count, &bad, report, language, case_name);
+    for (i = 0; i < count; i++) {
+        for (j = i + 1; j < count; j++) {
+            if (!area_overlaps(&list[i].clipped, &list[j].clipped)) {
+                continue;
+            }
+            if (report) {
+                char a[64];
+                char b[64];
+                char wa[64];
+                char wb[64];
+                describe(list[i].obj, a, sizeof(a));
+                describe(list[j].obj, b, sizeof(b));
+                area_text(&list[i].clipped, wa, sizeof(wa));
+                area_text(&list[j].clipped, wb, sizeof(wb));
+                printf("FAIL layout %s/%s: %s %s overlaps %s %s\n", language, case_name, a, wa, b,
+                       wb);
+            }
+            bad += 1;
+        }
+    }
+    return bad;
+}
+
+/*
+ * The checker must be able to fail: draw one deliberate overlap and require it
+ * to be reported. Runs silently, before any case, on the live UI.
+ */
+static int layout_self_test(const ne_ui_t *ui)
+{
+    lv_obj_t *scratch = lv_obj_create(ui->root);
+    lv_obj_t *first;
+    lv_obj_t *second;
+    int bad;
+    lv_obj_remove_style_all(scratch);
+    lv_obj_set_size(scratch, 100, 100);
+    lv_obj_set_pos(scratch, 0, 0);
+    first = lv_label_create(scratch);
+    second = lv_label_create(scratch);
+    lv_label_set_text(first, "self");
+    lv_label_set_text(second, "self");
+    lv_obj_set_pos(first, 10, 10);
+    lv_obj_set_pos(second, 12, 12);
+    bad = check_layout(ui, "self-test", "overlap", false);
+    lv_obj_delete(scratch);
+    if (bad == 0) {
+        printf("FAIL layout self-test: a deliberate overlap was not reported\n");
+        return 1;
+    }
+    return 0;
+}
+
 int main(void)
 {
     static const ne_ui_language_t languages[] = {NE_UI_LANG_VI, NE_UI_LANG_EN};
@@ -540,22 +729,30 @@ int main(void)
             failed++;
             continue;
         }
+        if (i == 0 && layout_self_test(&ui) != 0) {
+            return 1;
+        }
         for (c = 0; c < sizeof(CASES) / sizeof(CASES[0]); c++) {
             char path[128];
+            int layout_bad;
             lv_test_screenshot_result_t result;
             snprintf(path, sizeof(path), GOLDEN_DIR "/%s/%s.png", code, CASES[c].name);
             CASES[c].show(&ui, language);
+            layout_bad = check_layout(&ui, code, CASES[c].name, true);
             result = lv_test_screenshot_compare(path);
             total++;
-            if (result == LV_TEST_SCREENSHOT_RESULT_PASSED) {
+            if (result == LV_TEST_SCREENSHOT_RESULT_PASSED && layout_bad == 0) {
                 printf("ok   %s\n", path);
+                continue;
+            }
+            if (layout_bad != 0) {
+                printf("FAIL %s: the layout check reported above\n", path);
             } else if (result == LV_TEST_SCREENSHOT_RESULT_NO_REFERENCE_IMAGE) {
                 printf("FAIL %s: no golden (run scripts/run_ui_golden.sh --update)\n", path);
-                failed++;
             } else {
                 printf("FAIL %s: differs from the golden\n", path);
-                failed++;
             }
+            failed++;
         }
     }
     printf("ui-golden: %d/%d passed\n", total - failed, total);

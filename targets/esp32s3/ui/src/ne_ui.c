@@ -174,16 +174,16 @@ void ne_ui_show_boot(ne_ui_t *ui, const ne_ui_boot_state_t *state)
         break;
     }
     add_title(ui, s->boot_self_test, C_TEXT);
-    lv_obj_set_pos(add_label(ui->root, phase, &ne_font_22, color, CONTENT_W, false), MARGIN, BODY_Y);
+    lv_obj_set_pos(add_label(ui->root, phase, &ne_font_22, color, CONTENT_W, false), MARGIN, 52);
     add_bar(ui->root,
             state->phase == NE_UI_BOOT_RUNNING ? 60
             : state->phase == NE_UI_BOOT_PASSED ? 100
                                                 : 0,
-            MARGIN, BODY_Y + 44, color);
+            MARGIN, 96, color);
     if (state->phase == NE_UI_BOOT_FAILED && state->reason != NULL) {
         char text[NE_UI_TEXT_MAX + 4];
         ne_ui_text_truncate(text, sizeof(text), state->reason, NE_UI_TEXT_MAX);
-        add_text_box(ui->root, MARGIN, BODY_Y + 70, CONTENT_W, 108, text, &ne_font_16, C_MUTED);
+        add_text_box(ui->root, MARGIN, 120, CONTENT_W, 112, text, &ne_font_16, C_MUTED);
     }
 }
 
@@ -196,7 +196,7 @@ void ne_ui_show_idle(ne_ui_t *ui, const ne_ui_idle_state_t *state)
         return;
     }
     s = ne_ui_strings(ui->language);
-    ne_ui_text_single_line(agent, sizeof(agent), state->agent, NE_UI_TEXT_MAX);
+    ne_ui_text_single_line(agent, sizeof(agent), state->agent, 24);
     add_title(ui, agent, C_TEXT);
     lv_obj_set_pos(add_label(ui->root, s->idle_hint, &ne_font_16, C_MUTED, CONTENT_W, true), MARGIN,
                    BODY_Y);
@@ -216,30 +216,32 @@ void ne_ui_show_idle(ne_ui_t *ui, const ne_ui_idle_state_t *state)
 void ne_ui_show_voice(ne_ui_t *ui, const ne_ui_voice_state_t *state)
 {
     const ne_ui_strings_t *s;
-    char transcript[NE_UI_TEXT_MAX + 4];
+    char transcript[NE_UI_TEXT_MAX + 4]; /* the thinking box: wrap, newlines kept */
+    char preview[NE_UI_TEXT_MAX + 4];    /* the speaking heard row: one line, cut */
     char reply[NE_UI_TEXT_MAX + 4];
     if (!ready(ui) || state == NULL) {
         return;
     }
     s = ne_ui_strings(ui->language);
-    ne_ui_text_single_line(transcript, sizeof(transcript), state->transcript, NE_UI_TEXT_MAX);
+    ne_ui_text_truncate(transcript, sizeof(transcript), state->transcript, NE_UI_TEXT_MAX);
+    ne_ui_text_single_line(preview, sizeof(preview), state->transcript, 40);
     ne_ui_text_truncate(reply, sizeof(reply), state->reply, NE_UI_TEXT_MAX);
     switch (state->phase) {
     case NE_UI_VOICE_THINKING:
         add_title(ui, s->thinking, C_INFO);
         lv_obj_set_pos(add_label(ui->root, s->heard, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
-                       BODY_Y);
-        add_text_box(ui->root, MARGIN, BODY_Y + 22, CONTENT_W, 154, transcript, &ne_font_16, C_TEXT);
+                       50);
+        add_text_box(ui->root, MARGIN, 74, CONTENT_W, 158, transcript, &ne_font_16, C_TEXT);
         break;
     case NE_UI_VOICE_SPEAKING:
         add_title(ui, s->speaking, C_ALLOW);
         lv_obj_set_pos(add_label(ui->root, s->heard, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
-                       BODY_Y - 4);
-        lv_obj_set_pos(add_label(ui->root, transcript, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
-                       BODY_Y + 12);
+                       50);
+        lv_obj_set_pos(add_label(ui->root, preview, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
+                       72);
         lv_obj_set_pos(add_label(ui->root, s->reply, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
-                       BODY_Y + 36);
-        add_text_box(ui->root, MARGIN, BODY_Y + 56, CONTENT_W, 108, reply, &ne_font_16, C_TEXT);
+                       94);
+        add_text_box(ui->root, MARGIN, 116, CONTENT_W, 104, reply, &ne_font_16, C_TEXT);
         break;
     case NE_UI_VOICE_LISTENING:
     default:
@@ -261,7 +263,6 @@ void ne_ui_show_confirm(ne_ui_t *ui, const ne_ui_confirm_state_t *state)
     char action[NE_UI_TEXT_MAX + 4];
     char message[NE_UI_TEXT_MAX + 4];
     char fallback[NE_UI_TEXT_MAX + 4];
-    char answer[64];
     if (!ready(ui) || state == NULL) {
         return;
     }
@@ -270,22 +271,20 @@ void ne_ui_show_confirm(ne_ui_t *ui, const ne_ui_confirm_state_t *state)
      * bites on a name far longer than any real @action, and its … stays visible. */
     ne_ui_text_single_line(action, sizeof(action), state->action, 20);
     ne_ui_text_truncate(message, sizeof(message), state->message, NE_UI_TEXT_MAX);
-    ne_ui_text_single_line(fallback, sizeof(fallback), state->fallback, 64);
+    ne_ui_text_single_line(fallback, sizeof(fallback), state->fallback, 40);
     add_title(ui, s->confirm_title, C_WARN);
-    add_badge(ui->root, action, MARGIN, 52, &ne_font_16, C_SURFACE, C_TEXT, CONTENT_W);
+    add_badge(ui->root, action, MARGIN, 50, &ne_font_16, C_SURFACE, C_TEXT, CONTENT_W);
     add_text_box(ui->root, MARGIN, 86, CONTENT_W, 70, message, &ne_font_16, C_TEXT);
     if (state->fallback != NULL) {
         lv_obj_t *label = add_label(ui->root, s->confirm_fallback, &ne_font_12, C_MUTED, CONTENT_W,
                                     false);
-        lv_obj_set_pos(label, MARGIN, 160);
+        lv_obj_set_pos(label, MARGIN, 158);
         lv_obj_set_pos(add_label(ui->root, fallback, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
-                       176);
+                       179);
     }
-    add_badge(ui->root, s->yes, MARGIN, 182, &ne_font_16, C_ALLOW, C_BG, 100);
-    add_badge(ui->root, s->no, MARGIN + 56, 182, &ne_font_16, C_BLOCK, C_BG, 120);
-    /* How to answer out loud: the two spoken forms, one line. */
-    lv_snprintf(answer, sizeof(answer), "%s %s", s->confirm_yes, s->confirm_no);
-    lv_obj_set_pos(add_label(ui->root, answer, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN, 216);
+    /* The chips are the two spoken answers: no separate hint line to collide with. */
+    add_badge(ui->root, s->confirm_yes, MARGIN, 201, &ne_font_16, C_ALLOW, C_BG, 124);
+    add_badge(ui->root, s->confirm_no, MARGIN + 132, 201, &ne_font_16, C_BLOCK, C_BG, 148);
 }
 
 void ne_ui_show_verdict(ne_ui_t *ui, const ne_ui_verdict_state_t *state)
@@ -297,22 +296,21 @@ void ne_ui_show_verdict(ne_ui_t *ui, const ne_ui_verdict_state_t *state)
         return;
     }
     s = ne_ui_strings(ui->language);
-    ne_ui_text_single_line(action, sizeof(action), state->action, 64);
+    ne_ui_text_single_line(action, sizeof(action), state->action, 30);
     ne_ui_text_truncate(detail, sizeof(detail), state->detail, NE_UI_TEXT_MAX);
     add_title(ui, state->allowed ? s->verdict_allowed : s->verdict_blocked,
               state->allowed ? C_ALLOW : C_BLOCK);
     lv_obj_set_pos(add_label(ui->root, s->action, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
-                   BODY_Y - 6);
-    lv_obj_set_pos(add_label(ui->root, action, &ne_font_16, C_TEXT, CONTENT_W, false), MARGIN,
-                   BODY_Y + 12);
+                   50);
+    lv_obj_set_pos(add_label(ui->root, action, &ne_font_16, C_TEXT, CONTENT_W, false), MARGIN, 72);
     if (!state->allowed) {
         lv_obj_set_pos(add_label(ui->root, s->reason, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN,
-                       BODY_Y + 44);
-        add_text_box(ui->root, MARGIN, BODY_Y + 60, CONTENT_W, 42,
+                       102);
+        add_text_box(ui->root, MARGIN, 124, CONTENT_W, 40,
                      ne_ui_reason_label(ui->language, state->reason), &ne_font_16, C_WARN);
     }
     if (state->detail != NULL) {
-        add_text_box(ui->root, MARGIN, BODY_Y + 106, CONTENT_W, 62, detail, &ne_font_12, C_MUTED);
+        add_text_box(ui->root, MARGIN, 167, CONTENT_W, 61, detail, &ne_font_12, C_MUTED);
     }
 }
 
@@ -320,7 +318,7 @@ void ne_ui_show_degraded(ne_ui_t *ui, const ne_ui_degraded_state_t *state)
 {
     const ne_ui_strings_t *s;
     lv_obj_t *box;
-    int32_t y = BODY_Y - 6;
+    int32_t y = 50;
     size_t i;
     if (!ready(ui) || state == NULL) {
         return;
@@ -330,31 +328,31 @@ void ne_ui_show_degraded(ne_ui_t *ui, const ne_ui_degraded_state_t *state)
     if (state->stt_down) {
         lv_obj_set_pos(add_label(ui->root, s->degraded_stt, &ne_font_16, C_TEXT, CONTENT_W, false),
                        MARGIN + 14, y);
-        y += 24;
+        y += 26;
     }
     if (state->tts_down) {
         lv_obj_set_pos(add_label(ui->root, s->degraded_tts, &ne_font_16, C_TEXT, CONTENT_W, false),
                        MARGIN + 14, y);
-        y += 24;
+        y += 26;
     }
     if (state->system_two_down) {
         lv_obj_set_pos(add_label(ui->root, s->degraded_system_two, &ne_font_16, C_TEXT, CONTENT_W,
                                  false),
                        MARGIN + 14, y);
-        y += 24;
+        y += 26;
     }
     lv_obj_set_pos(add_label(ui->root, s->degraded_commands, &ne_font_12, C_MUTED, CONTENT_W, false),
-                   MARGIN, 150);
+                   MARGIN, 132);
     /* Up to NE_UI_MAX_COMMANDS one-line lines in a scroll region: a long name is
      * elided at the panel width, the rest scrolls, nothing grows a widget per
      * command however many an agent declares. */
-    box = add_scroll_box(ui->root, MARGIN, 166, CONTENT_W, 58);
+    box = add_scroll_box(ui->root, MARGIN, 155, CONTENT_W, 69);
     for (i = 0; state->commands != NULL && i < state->command_count && i < NE_UI_MAX_COMMANDS; i++) {
         char command[NE_UI_TEXT_MAX + 4];
         lv_obj_t *line;
-        ne_ui_text_single_line(command, sizeof(command), state->commands[i], NE_UI_TEXT_MAX);
+        ne_ui_text_single_line(command, sizeof(command), state->commands[i], 40);
         line = add_label(box, command, &ne_font_12, C_TEXT, CONTENT_W, false);
-        lv_obj_set_pos(line, 0, (int32_t)i * 19);
+        lv_obj_set_pos(line, 0, (int32_t)i * 20);
     }
 }
 
@@ -374,17 +372,17 @@ void ne_ui_show_sensor(ne_ui_t *ui, const ne_ui_sensor_state_t *state)
         char unit[64];
         char band[64];
         lv_obj_t *value_label;
-        int32_t y = 54 + (int32_t)i * 46;
-        ne_ui_text_single_line(name, sizeof(name), reading->name, 64);
-        ne_ui_text_single_line(value, sizeof(value), reading->value, 32);
-        ne_ui_text_single_line(unit, sizeof(unit), reading->unit, 12);
+        int32_t y = 48 + (int32_t)i * 48;
+        ne_ui_text_single_line(name, sizeof(name), reading->name, 40);
+        ne_ui_text_single_line(value, sizeof(value), reading->value, 12);
+        ne_ui_text_single_line(unit, sizeof(unit), reading->unit, 6);
         ne_ui_text_single_line(band, sizeof(band), reading->band, 20);
         lv_obj_set_pos(add_label(ui->root, name, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN, y);
         /* Value, unit and band share the row: each has a cap so a long one
          * ellipsizes instead of running into the next. */
-        value_label = add_label(ui->root, value, &ne_font_22, C_TEXT, 0, false);
+        value_label = add_label(ui->root, value, &ne_font_16, C_TEXT, 0, false);
         lv_obj_set_style_max_width(value_label, 100, 0);
-        lv_obj_set_pos(value_label, MARGIN, y + 16);
+        lv_obj_set_pos(value_label, MARGIN, y + 20);
         if (reading->unit != NULL) {
             lv_obj_t *unit_label = add_label(ui->root, unit, &ne_font_12, C_MUTED, 0, false);
             lv_obj_set_style_max_width(unit_label, 40, 0);
@@ -393,7 +391,7 @@ void ne_ui_show_sensor(ne_ui_t *ui, const ne_ui_sensor_state_t *state)
         if (reading->band != NULL) {
             lv_obj_t *badge = add_badge(ui->root, band, 0, 0, &ne_font_12, C_SURFACE, C_TEXT, 140);
             /* Right-aligned: a long band name grows left, never past the edge. */
-            lv_obj_align(badge, LV_ALIGN_TOP_RIGHT, -MARGIN, y + 16);
+            lv_obj_align(badge, LV_ALIGN_TOP_RIGHT, -MARGIN, y + 20);
         }
     }
 }
@@ -460,9 +458,9 @@ void ne_ui_show_fatal(ne_ui_t *ui, const ne_ui_fatal_state_t *state)
     s = ne_ui_strings(ui->language);
     ne_ui_text_truncate(reason, sizeof(reason), state->reason, NE_UI_TEXT_MAX);
     add_title(ui, s->fatal_title, C_BLOCK);
-    add_text_box(ui->root, MARGIN, BODY_Y + 6, CONTENT_W, 120, reason, &ne_font_16, C_TEXT);
+    add_text_box(ui->root, MARGIN, 54, CONTENT_W, 124, reason, &ne_font_16, C_TEXT);
     lv_obj_set_pos(add_label(ui->root, s->fatal_hint, &ne_font_16, C_MUTED, CONTENT_W, false), MARGIN,
-                   200);
+                   196);
 }
 
 /* -- lifecycle ---------------------------------------------------------------------------- */

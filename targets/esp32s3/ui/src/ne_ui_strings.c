@@ -36,7 +36,7 @@ static const ne_ui_strings_t ne_ui_strings_vi = {
 
     .confirm_title = "Cần bạn xác nhận",
     .confirm_yes = "Trả lời “có”",
-    .confirm_no = "hoặc “không”",
+    .confirm_no = "Trả lời “không”",
     .confirm_fallback = "Nếu bạn không trả lời",
 
     .verdict_allowed = "Được phép",
@@ -63,9 +63,6 @@ static const ne_ui_strings_t ne_ui_strings_vi = {
 
     .fatal_title = "Cổng đã dừng",
     .fatal_hint = "Khởi động lại thiết bị",
-
-    .yes = "Có",
-    .no = "Không",
 
     .reason_labels =
         {
@@ -102,7 +99,7 @@ static const ne_ui_strings_t ne_ui_strings_en = {
 
     .confirm_title = "Confirm the action",
     .confirm_yes = "Answer “yes”",
-    .confirm_no = "or “no”",
+    .confirm_no = "Answer “no”",
     .confirm_fallback = "If you do not answer",
 
     .verdict_allowed = "Allowed",
@@ -129,9 +126,6 @@ static const ne_ui_strings_t ne_ui_strings_en = {
 
     .fatal_title = "Gate runtime stopped",
     .fatal_hint = "Restart the device",
-
-    .yes = "Yes",
-    .no = "No",
 
     .reason_labels =
         {

@@ -70,9 +70,6 @@ struct ne_ui_strings {
     const char *fatal_title;
     const char *fatal_hint;
 
-    const char *yes;
-    const char *no;
-
     const char *reason_labels[NE_UI_REASON_COUNT];
 };
 
