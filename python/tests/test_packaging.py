@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ast
 import tomllib
+from pathlib import Path
 
 from neuroedge.engine import firmware
 
@@ -67,6 +68,48 @@ def test_the_wheel_carries_exactly_the_firmware_sources_a_build_copies(root):
     }
     assert values["FIRMWARE"] == "targets/esp32s3"
     assert values["FIRMWARE_SOURCES"] == firmware.SOURCES
+    # A build made inside an asset (an agent's build/esp32s3/, idf.py's output) never ships.
+    assert {"build", "managed_components", "__pycache__"} <= set(values["EXCLUDED_DIRS"])
+    assert {"sdkconfig", "sdkconfig.old", "dependencies.lock"} <= set(values["EXCLUDED_FILES"])
+    assert not {"sdkconfig.defaults", "sdkconfig.qemu"} & set(values["EXCLUDED_FILES"])
     for pattern in firmware.SOURCES:
         assert ".." not in pattern and not pattern.startswith("components/*"), pattern
         assert pattern.startswith(("main/", "components/ne_")) or "/" not in pattern, pattern
+
+
+def _hook_filter(root):
+    """`shipped()` of hatch_build.py, run without hatchling (a build-time dependency only)."""
+    tree = ast.parse((root / "python" / "hatch_build.py").read_text("utf-8"))
+    keep = [
+        node
+        for node in tree.body
+        if (isinstance(node, ast.FunctionDef) and node.name == "shipped")
+        or (
+            isinstance(node, ast.Assign)
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id.startswith("EXCLUDED_")
+        )
+    ]
+    namespace = {"Path": Path}
+    exec(compile(ast.Module(body=keep, type_ignores=[]), "hatch_build.py", "exec"), namespace)
+    return namespace["shipped"]
+
+
+def test_build_output_inside_an_asset_is_never_shipped(root, tmp_path):
+    shipped = _hook_filter(root)
+    agent = tmp_path / "fixtures" / "agents" / "home-voice"
+    keep = [agent / "agent.toml", tmp_path / "targets" / "esp32s3" / "sdkconfig.defaults"]
+    drop = [
+        agent / "build" / "esp32s3" / "main" / "main.c",
+        agent / "build" / "esp32s3" / ".neuroedge-build",
+        agent / "managed_components" / "espressif__esp-sr" / "x.a",
+        agent / "sdkconfig",
+        agent / "sdkconfig.old",
+        agent / "dependencies.lock",
+        agent / "actions" / "__pycache__" / "lights.cpython-311.pyc",
+    ]
+    for path in keep + drop:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("x")
+    assert [p for p in keep if not shipped(p, tmp_path)] == []
+    assert [p for p in drop if shipped(p, tmp_path)] == []
