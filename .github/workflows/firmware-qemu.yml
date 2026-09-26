@@ -350,6 +350,12 @@ jobs:
           PY
           python3 scripts/check_firmware_size.py --heap-log "$log"
 
+      - name: The agent's firmware also builds with the OTA layer (sdkconfig.ota)
+        run: |
+          git config --global --add safe.directory '*'
+          . "$IDF_PATH/export.sh"
+          scripts/build_ota_layer.sh work/ci-agent/build/esp32s3 0.1.0
+
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
