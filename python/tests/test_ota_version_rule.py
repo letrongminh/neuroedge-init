@@ -14,7 +14,6 @@ Python rule's.
 from __future__ import annotations
 
 import subprocess
-from pathlib import Path
 
 from neuroedge.engine.firmware import _RELEASE
 
@@ -79,7 +78,9 @@ def test_the_python_and_c_version_rules_agree_on_every_case(root, tmp_path):
     assert len(c_answers) == len(CASES), result.stdout
     python_answers = [_RELEASE.fullmatch(case) is not None for case in CASES]
     assert c_answers == python_answers, [
-        (case, py, c) for case, py, c in zip(CASES, python_answers, c_answers, strict=True) if py != c
+        (case, py, c)
+        for case, py, c in zip(CASES, python_answers, c_answers, strict=True)
+        if py != c
     ]
     # The corpus proves both directions: it has accepted and refused versions.
     assert any(python_answers) and not all(python_answers)
