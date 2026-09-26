@@ -395,14 +395,17 @@ def check_system_two(manifest: AgentManifest) -> list[NeuroEdgeError]:
     return []
 
 
-def check_speech(manifest: AgentManifest) -> list[NeuroEdgeError]:
+def check_speech(
+    manifest: AgentManifest, board: BoardProfile | None = None
+) -> list[NeuroEdgeError]:
     """
     `[stt]` and `[tts]` of agent.toml are well formed — never an API key in them,
     never a key over plain http to another machine — a custom adapter they name
     can be imported, and the agent declares the primitive each one needs: STT
     hears through `audio.in`, TTS speaks through `audio.out`, so a board without
-    them fails here, not mid-conversation (TSK-S3-13, FR-MDL-09, Q-12). Every bad
-    table is reported.
+    them fails here, not mid-conversation (TSK-S3-13, FR-MDL-09, Q-12). With a
+    `board` that declares the primitive, it must also give its `sample_rate_hz`: PCM
+    audio has no meaning without one. Every bad table is reported.
     """
     from ..models.providers import load_adapter
     from ..perception.providers.config import ROLES, parse_speech
@@ -422,6 +425,17 @@ def check_speech(manifest: AgentManifest) -> list[NeuroEdgeError]:
                     how=f'add "{primitive}" = {example} to [requires], or remove [{role}]',
                 )
             )
+        elif board is not None and board.supports(primitive):
+            rate = board.capability(primitive).get("sample_rate_hz")
+            if isinstance(rate, bool) or not isinstance(rate, int) or rate <= 0:
+                problems.append(
+                    BoardCapabilityError(
+                        where=f"{board.source} -> {primitive}",
+                        why=f"[{role}] plays PCM through {primitive}, and board {board.id!r} "
+                        "declares no sample_rate_hz for it",
+                        how=f"add sample_rate_hz = 16000 to {primitive} in {board.source}",
+                    )
+                )
         try:
             config = parse_speech(role, document[role], manifest.source)
             if config.adapter is not None:
@@ -552,7 +566,7 @@ def build(
             problems.append(error)
     problems += check_mcp_servers(manifest, actions)
     problems += check_system_two(manifest)
-    problems += check_speech(manifest)
+    problems += check_speech(manifest, board)
 
     if problems:
         raise BuildFailed(where=f"{manifest.label} for {target} on {board.id}", problems=problems)

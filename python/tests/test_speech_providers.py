@@ -120,6 +120,34 @@ def test_a_base_url_carrying_credentials_is_refused_without_repeating_it(url):
     assert "credentials" in error.why and KEY not in error.render()
 
 
+@pytest.mark.parametrize(
+    "url",
+    ["http://127.0.0.1.evil.example/v1", "http://localhost.evil.example/v1", "http://10.0.0.5/v1"],
+)
+def test_only_this_machine_counts_as_this_machine(url):
+    # A DNS name that starts with "127." is someone else's host (outside review, 2026-09-26).
+    error = _refused("stt", {"model": "m", "base_url": url, "api_key_env": ENV})
+    assert "clear text" in error.why
+
+
+@pytest.mark.parametrize(
+    "url", ["http://127.8.0.1:8000/v1", "http://[::1]:8000/v1", "http://LOCALHOST/v1"]
+)
+def test_loopback_literals_are_this_machine(url):
+    parse_speech("stt", {"model": "m", "base_url": url, "api_key_env": ENV})
+
+
+def test_a_key_shaped_path_segment_is_refused_without_repeating_it():
+    error = _refused("stt", {"model": "m", "base_url": f"https://proxy.example/{KEY}/v1"})
+    assert "key-shaped" in error.why and KEY not in error.render()
+
+
+@pytest.mark.parametrize("field", ["provider", "language"])
+def test_a_key_pasted_into_another_field_is_not_echoed(field):
+    error = _refused("stt", {"model": "m", "api_key_env": ENV, field: KEY})
+    assert error.where.endswith(field) and KEY not in error.render()
+
+
 def test_a_key_never_crosses_the_network_in_clear_text():
     error = _refused(
         "stt", {"model": "m", "base_url": "http://192.168.1.10:8000/v1", "api_key_env": ENV}
@@ -266,6 +294,31 @@ def test_speech_needs_the_audio_primitives_declared(agent, fresh_actions):
     assert '"audio.in" = { sample_rate_hz = 16000 }' in problem.how
 
 
+def test_a_board_without_a_sample_rate_fails_the_build_not_the_session(agent, root, tmp_path):
+    from neuroedge.hal.board import load_board
+
+    text = (root / "boards" / "sim-default.toml").read_text(encoding="utf-8")
+    board_file = tmp_path / "rateless.toml"
+    board_file.write_text(
+        text.replace("sample_rate_hz = 16000\n", "").replace(
+            'id     = "sim-default"', 'id     = "rateless"'
+        ),
+        encoding="utf-8",
+    )
+    board = load_board(board_file)
+    path = agent(
+        f'\n[stt]\nmodel = "whisper-1"\napi_key_env = "{ENV}"\n'
+        '\n[tts]\nbase_url = "http://localhost:8880/v1"\nmodel = "kokoro"\nvoice = "af_heart"\n'
+    )
+    problems = check_speech(load_agent_manifest(path), board)
+    assert [p.where.rsplit(" -> ", 1)[1] for p in problems] == ["audio.in", "audio.out"]
+    assert all("sample_rate_hz" in p.how for p in problems)
+    assert (
+        check_speech(load_agent_manifest(path), load_board(root / "boards" / "sim-default.toml"))
+        == []
+    )
+
+
 def test_the_build_imports_a_custom_adapter(agent, fresh_actions):
     path = agent('\n[stt]\nprovider = "python:no_such_speech_module:make"\n')
     with pytest.raises(BuildFailed) as caught:
@@ -287,12 +340,14 @@ def test_the_build_accepts_a_good_pair(agent, fresh_actions):
 
 
 class FakeResponse:
+    """What urllib's opener returns: the adapter reads it with `read1`, chunk by chunk."""
+
     def __init__(self, body: bytes) -> None:
-        self.body = body
+        self.stream = io.BytesIO(body)
         self.headers: dict[str, str] = {}
 
-    def read(self, limit: int = -1) -> bytes:
-        return self.body if limit < 0 else self.body[:limit]
+    def read1(self, limit: int = -1) -> bytes:
+        return self.stream.read1(limit)
 
     def __enter__(self):
         return self
@@ -544,6 +599,41 @@ def test_the_key_never_follows_a_redirect(status):
             with pytest.raises(SpeechUnavailable, match="never follows a redirect"):
                 run(provider.transcribe(clip()))
     assert elsewhere.seen == []  # the other host never heard from us, key or not
+
+
+def test_a_trickling_server_cannot_hold_the_call_or_the_process():
+    # Headers at once, then a byte every 50 ms for 10 s: each read is within the socket
+    # timeout, so only the deadline stops it — and nothing waits for the thread after.
+    import time
+
+    stop = threading.Event()
+
+    def handle(handler):
+        handler.send_response(200)
+        handler.send_header("Content-Type", "application/json")
+        handler.send_header("Content-Length", "200")
+        handler.end_headers()
+        for _ in range(200):
+            if stop.wait(0.05):
+                return
+            try:
+                handler.wfile.write(b" ")
+                handler.wfile.flush()
+            except OSError:
+                return
+
+    try:
+        with Server(handle) as server:
+            provider = OpenAITranscriber(
+                stt(base_url=server.url, timeout_s=0.3), environ={ENV: KEY}
+            )
+            started = time.monotonic()
+            with pytest.raises(SpeechUnavailable, match="did not answer within 0.3 s"):
+                run(provider.transcribe(clip()))  # asyncio.run: returns with the thread still out
+            assert time.monotonic() - started < 3
+            stop.set()
+    finally:
+        stop.set()
 
 
 def test_a_server_slower_than_timeout_s_is_unavailable():

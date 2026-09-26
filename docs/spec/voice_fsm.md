@@ -227,10 +227,13 @@ Thêm sự kiện không cần RFC.
 `trigger` là một trong: `wake_word`, `speech_start`, `turn_end`, `listen_timeout`, `transcript_empty`,
 `reply_start`, `reply_empty`, `reply_end`, `ask_asked`, `barge_in`.
 
-Lời người nói và câu thiết bị nói chỉ nằm ở trường `text`, nên chế độ ẩn danh (FR-TRC-07) băm đủ: bản
-chép lời và câu trả lời thành `sha256:`. `reason` của `stt_unavailable` / `tts_unavailable` **KHÔNG
-ĐƯỢC** mang lời nói: adapter OpenAI audio không trích thân câu trả lời của server vào lỗi, và lỗi lạ của
-một adapter tự viết chỉ để lại tên lớp.
+Lời người nói chỉ nằm ở trường `text` (`stt_result`, `text_input`, `command_not_recognized`), và câu
+thiết bị nói ở `text` của `tts_stream_start`, nên chế độ ẩn danh (FR-TRC-07) băm chúng thành `sha256:`.
+Ngoại lệ, có từ trước TSK-S3-13: câu hỏi `ask` của gate còn nằm nguyên trong `message` của
+`tool_confirm_requested` và `gate_evaluation_result` — đó là chữ của gate (tệp gate, có digest), không
+phải của người dùng. `reason` của `stt_unavailable` / `tts_unavailable` **KHÔNG ĐƯỢC** mang lời nói:
+adapter OpenAI audio không trích thân câu trả lời của server vào lỗi, và lỗi lạ của một adapter tự viết
+chỉ để lại tên lớp.
 
 Replay và golden:
 

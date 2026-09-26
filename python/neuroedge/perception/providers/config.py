@@ -27,6 +27,7 @@ The key never goes in `agent.toml` — the same checks as `[system_two]`
 
 from __future__ import annotations
 
+import ipaddress
 import re
 import tomllib
 from dataclasses import dataclass, field
@@ -54,7 +55,8 @@ KEYS = {
 }
 EXAMPLE_MODEL = {"stt": "whisper-1", "tts": "gpt-4o-mini-tts"}
 LANGUAGE = re.compile(r"^[a-z]{2,3}$")
-LOOPBACK = ("localhost", "127.0.0.1", "::1")
+# A path segment shaped like an API key (OpenAI, Anthropic `sk-…`, Groq `gsk_…`).
+KEY_SHAPED = re.compile(r"^(sk|gsk|pk|rk)[-_][A-Za-z0-9_-]{8,}$")
 
 
 @dataclass(frozen=True)
@@ -104,8 +106,15 @@ def _http_url(url: Any) -> bool:
 
 
 def _is_loopback(url: str) -> bool:
-    host = (urlsplit(url).hostname or "").lower()
-    return host in LOOPBACK or host.startswith("127.")
+    """This machine: `localhost`, or an IP literal in 127.0.0.0/8 or ::1 — never a DNS
+    name that merely starts with "127." (``127.0.0.1.example.com`` is someone else)."""
+    host = (urlsplit(url).hostname or "").lower().rstrip(".")
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
 
 
 def parse_speech(role: str, table: Any, source: Path | None = None) -> SpeechConfig:
@@ -146,8 +155,9 @@ def parse_speech(role: str, table: Any, source: Path | None = None) -> SpeechCon
     ):
         raise AgentManifestError(
             where=f"{where} provider",
+            # Not echoed: a value pasted into the wrong field may be a key.
             why=f'provider must be "{OPENAI}" (the OpenAI audio API: OpenAI, Groq, faster-whisper, '
-            f'Kokoro… by base_url) or "{PYTHON_PREFIX}<module>:<factory>", found {provider!r}',
+            f'Kokoro… by base_url) or "{PYTHON_PREFIX}<module>:<factory>", and it is neither',
             how=f'write provider = "{OPENAI}", or provider = "python:my_speech.adapter:make" for '
             "your own adapter (FR-MDL-09)",
         )
@@ -161,12 +171,18 @@ def parse_speech(role: str, table: Any, source: Path | None = None) -> SpeechCon
             '"http://localhost:8000/v1"), or remove it',
         )
     parts = urlsplit(base_url)
-    if parts.username or parts.password or parts.query or parts.fragment:
+    if (
+        parts.username
+        or parts.password
+        or parts.query
+        or parts.fragment
+        or any(KEY_SHAPED.match(segment) for segment in parts.path.split("/"))
+    ):
         # Not echoed: a URL with credentials or a query may carry the key itself.
         raise AgentManifestError(
             where=f"{where} base_url",
-            why="base_url must not carry credentials, a query or a fragment — the URL is shown in "
-            "errors and banners, so a key in it would leak",
+            why="base_url must not carry credentials, a query, a fragment or a key-shaped path "
+            "segment — the URL is shown in errors and banners, so a key in it would leak",
             how='write the plain endpoint ("https://host/v1") and name the key\'s variable in '
             "api_key_env",
         )
@@ -192,7 +208,7 @@ def parse_speech(role: str, table: Any, source: Path | None = None) -> SpeechCon
     if language is not None and (not isinstance(language, str) or not LANGUAGE.match(language)):
         raise AgentManifestError(
             where=f"{where} language",
-            why=f'language must be an ISO-639-1 code such as "vi" or "en", found {language!r}',
+            why='language must be an ISO-639-1 code such as "vi" or "en", and it is not one',
             how='write language = "vi", or remove it to let the model detect it',
         )
     api_key_env = table.get("api_key_env")

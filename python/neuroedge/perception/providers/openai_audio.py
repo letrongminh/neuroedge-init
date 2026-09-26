@@ -22,9 +22,12 @@ only the text fields.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import http.client
 import json
 import os
+import threading
+import time
 import urllib.error
 import urllib.request
 import uuid
@@ -40,6 +43,7 @@ GRACE = 1.25  # the whole call may take timeout_s × GRACE before it is abandone
 MIN_CLIP_MS = 100  # the API refuses shorter audio; a clip this short holds no words
 USER_AGENT = "neuroedge-speech/1"
 MAX_ANSWER_BYTES = {"stt": 1 << 20, "tts": 32 << 20}  # a transcript; ~10 min of 24 kHz speech
+CHUNK = 64 << 10
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -123,8 +127,15 @@ class _OpenAIAudio:
             )
         return key
 
-    def _send(self, path: str, body: bytes, content_type: str, key: str | None) -> bytes:
-        """POST, in a worker thread: the body of a 2xx answer, or `SpeechUnavailable`."""
+    def _send(
+        self, path: str, body: bytes, content_type: str, key: str | None, deadline: float
+    ) -> bytes:
+        """
+        POST, in a worker thread: the body of a 2xx answer, or `SpeechUnavailable`.
+        The body is read a chunk at a time against `deadline` (monotonic s), so a
+        server that trickles bytes cannot keep the thread past it by more than one
+        socket timeout.
+        """
         request = urllib.request.Request(f"{self.config.base_url}{path}", data=body, method="POST")
         request.add_header("Content-Type", content_type)
         request.add_header("User-Agent", USER_AGENT)
@@ -133,7 +144,17 @@ class _OpenAIAudio:
         limit = MAX_ANSWER_BYTES[self.role]
         try:
             with self._opener.open(request, timeout=self.config.timeout_s) as response:
-                data = response.read(limit + 1)
+                chunks: list[bytes] = []
+                size = 0
+                while size <= limit:
+                    if time.monotonic() > deadline:
+                        raise self._timed_out()
+                    chunk = response.read1(CHUNK)
+                    if not chunk:
+                        break
+                    chunks.append(chunk)
+                    size += len(chunk)
+                data = b"".join(chunks)
         except urllib.error.HTTPError as exc:
             exc.close()  # the error body is not read, and never quoted (it may echo speech)
             why, how = _failure(exc.code)
@@ -152,14 +173,39 @@ class _OpenAIAudio:
         return data
 
     async def _post(self, path: str, body: bytes, content_type: str) -> bytes:
+        """
+        The request in a daemon thread, awaited for at most `timeout_s` × GRACE. On
+        a timeout nothing waits for the thread — not this call, not `asyncio.run` at
+        exit (a default-executor thread would hold the CLI until its socket gave up).
+        """
         key = self._key()
+        budget = self.config.timeout_s * GRACE
+        loop = asyncio.get_running_loop()
+        answer: asyncio.Future[bytes] = loop.create_future()
+
+        def settle(result: bytes | None, error: BaseException | None) -> None:
+            if answer.done():
+                return  # abandoned: the caller has moved on
+            if error is not None:
+                answer.set_exception(error)
+            else:
+                answer.set_result(result or b"")
+
+        def work() -> None:
+            try:
+                outcome = (
+                    self._send(path, body, content_type, key, time.monotonic() + budget),
+                    None,
+                )
+            except Exception as exc:
+                outcome = (None, exc)
+            with contextlib.suppress(RuntimeError):  # the loop is closed: nobody waits
+                loop.call_soon_threadsafe(settle, *outcome)
+
+        threading.Thread(target=work, name=f"neuroedge-{self.role}", daemon=True).start()
         try:
-            return await asyncio.wait_for(
-                asyncio.to_thread(self._send, path, body, content_type, key),
-                timeout=self.config.timeout_s * GRACE,
-            )
+            return await asyncio.wait_for(answer, timeout=budget)
         except TimeoutError:
-            # The worker thread ends on its own socket timeout; nothing waits for it.
             raise self._timed_out() from None
 
 

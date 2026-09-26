@@ -6,8 +6,10 @@ The WAV file is `audio.in`: its frames go through VAD and the conversation state
 machine on a virtual clock (`perception.VoiceSession.play`), each turn's audio
 to the `[stt]` provider, each transcript down the typed line's path — command
 grammar or System 2, `c.do()`, the gate — and each reply to the `[tts]` provider
-and the speaker, which `--voice-out` writes as WAV. A provider's real latency is
-measured and placed on that clock, so barge-in and `turn_latency` see it.
+and the speaker, which `--voice-out` writes as WAV. STT's and TTS's real latency
+is measured and placed on that clock, so barge-in and `turn_latency` see it. A
+`[system_two]` model answers inline, at the transcript's time: its wait is bounded
+by its own `timeout_s`, and neither the clock nor the think timeout sees it.
 
 Typed input stays the default and keyless (Q-15): without `[stt]` this exits 1
 and says so. A provider that fails takes voice_fsm.md §7 (the offline line);

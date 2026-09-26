@@ -24,10 +24,12 @@ hears and speaks itself:
     the turn's reply (tts_stream_start) ─► TTS ─► speaker ─► tts_stream_end done | error
     barge-in ─► §5.2: cancel pending commands, close tokens, stop the speaker
 
-A provider call is awaited where it starts, and its answer is delivered as an
-input `latency` ms later on the session's clock — a real call's latency timed on
-`stopwatch`, a simulated one's as it reports. Audio that arrives meanwhile is
-heard first, so speech while STT or System 2 works replaces the turn and the
+An STT or TTS call is awaited where it starts, and its answer is delivered as
+an input `latency` ms later on the session's clock — a real call's latency timed
+on `stopwatch`, a simulated one's as it reports. (System 2 is not: with
+`system_two=True` its answers arrive as `system_two_reply` inputs, as the corpus
+scripts them; otherwise `SimSession.handle` asks the model inline, at the
+transcript's time.) Audio that arrives meanwhile is heard first, so speech while STT or System 2 works replaces the turn and the
 late answer is dropped (§5.2 step 4). Every provider failure takes the degraded
 path of §7 — the offline line, or a reply shown but not heard — and never a
 `c.do()`: a transcript reaches a pin only the way a typed line does. The STT
