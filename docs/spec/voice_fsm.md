@@ -295,4 +295,11 @@ Mỗi ca là một tệp JSON; khoá của nó, và đáp án `{proves, events}`
   lời đã phát xong (`IDLE`, rồi `LISTENING` của lượt mới), người dùng nói "thôi, đừng mở" thì lệnh hẹn
   giờ của lượt trước vẫn được giao. TTL của phán quyết (§5.5) chặn trên khoảng đó, nhưng không thay được
   ý định thu hồi. Chốt cùng TSK-S3-13 (hủy lệnh đang chờ khi mở lượt mới, hay một intent "hủy"), kèm `Q-N`.
+- **Chân trời hẹn giờ đang mượn TTL của phán quyết (§5.5).** Hôm nay khoảng hẹn tối đa = `p95_latency_ms`
+  × 3, nên muốn hẹn N ms phải khai p95 ≥ N/3 — nới luôn ngưỡng fail-closed về độ trễ của gate (`voice-door`
+  đã phải nâng 120 → 700). Hai tham số này khác nghĩa. Hướng được đề xuất, theo mẫu select-before-operate
+  (IEC 61850 `sboTimeout`, DNP3 CROB) và timed interaction của Matter: một **chân trời hẹn giờ riêng**, mặc
+  định nhỏ và có trần cứng theo board, cộng **lượng giá lại gate lúc giao** cho lệnh vượt TTL (điều kiện
+  kiểm lại lúc dùng, như caveat thời gian của macaroon). Khai chân trời trong gate cần RFC (`gate.v1` không
+  nhận trường lạ); khai trong board hay `agent.toml` thì không. Kỹ thuật trưởng chốt, kèm `Q-N`.
 - Giá trị mặc định của §6: đo và chốt trên bo mạch (TSK-S5-01, S5-03).
