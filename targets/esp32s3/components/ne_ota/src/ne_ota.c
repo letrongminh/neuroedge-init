@@ -16,22 +16,25 @@
 #include <stdio.h>
 #include <string.h>
 
+/* Everything the boot path uses is included outside the OTA guard: the marks
+ * and the rollback state are read and written on every boot, OTA or not
+ * (test_ota_includes.py keeps this from regressing). */
 #include "esp_app_desc.h"
 #include "esp_err.h"
 #include "esp_image_format.h"
 #include "esp_log.h"
 #include "esp_ota_ops.h"
 #include "esp_partition.h"
+#include "esp_system.h"
+#include "nvs.h"
 #include "sdkconfig.h"
 
 #if CONFIG_NEUROEDGE_OTA
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
-#include "esp_system.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "nvs.h"
 #if CONFIG_MBEDTLS_CERTIFICATE_BUNDLE
 #include "esp_crt_bundle.h"
 #endif
