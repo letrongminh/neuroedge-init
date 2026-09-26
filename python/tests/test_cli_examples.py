@@ -45,6 +45,9 @@ IDS = [" ".join(path) or "neuroedge" for path, _ in COMMANDS]
 
 
 def _squash(text: str) -> str:
+    # On GitHub Actions typer forces a terminal and rich still bolds options under
+    # NO_COLOR (it drops colour, not style): the escape codes go first.
+    text = re.sub(r"\x1b\[[0-9;]*m", "", text)
     return re.sub(r"[\s│╭╮╰╯─]+", "", text)
 
 

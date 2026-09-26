@@ -33,13 +33,14 @@ người đo được đội đưa tận tay (I1: buổi đo TTFV tại chỗ, `
   một `### [Chưa phát hành]` rỗng phía trên. Không thêm link phiên bản cuối tệp — repo còn
   riêng tư. CI xanh, merge.
 - **Tag.** `git tag v0.1.0 && git push origin v0.1.0`. `PUBLISH_ENABLED` chưa đặt nên chỉ
-  `build`, `smoke` và `attest` chạy; `publish-*` và `github-release` bị bỏ qua.
+  `build`, `sbom`, `smoke` và `attest` chạy; `publish-*` và `github-release` bị bỏ qua.
 - **GitHub Release nội bộ** kèm đúng wheel mà `smoke` đã kiểm, và SBOM của nó:
 
   ```bash
   gh run download <run-id> --name dist --dir dist   # run của tag v0.1.0
   gh run download <run-id> --name sbom --dir sbom
-  gh attestation verify dist/*.whl --repo letrongminh/neuroedge-init
+  # --source-ref: một bản chạy tay từ main cũng có provenance; chỉ tag mới là bản phát hành
+  gh attestation verify dist/*.whl --repo letrongminh/neuroedge-init --source-ref refs/tags/v0.1.0
   gh release create v0.1.0 dist/* sbom/* --title "v0.1.0 — nội bộ (I1)" \
       --notes "Preview nội bộ, chưa phát hành ra ngoài. Thay đổi: CHANGELOG.md [0.1.0]."
   ```

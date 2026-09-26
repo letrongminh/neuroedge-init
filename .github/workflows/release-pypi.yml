@@ -201,7 +201,8 @@ jobs:
         run: |
           for f in dist/* sbom/*; do
             gh attestation verify "$f" --repo "$GITHUB_REPOSITORY" \
-              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-pypi.yml"
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-pypi.yml" \
+              --source-ref "$GITHUB_REF"
           done
 
   publish-testpypi:

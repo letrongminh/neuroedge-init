@@ -398,6 +398,16 @@ def test_replay_never_reads_a_sensor_the_trace_does_not_hold(tmp_path, sys_root)
     assert isinstance(hal.display_backend, MemoryDisplay), "a replay draws in memory"
 
 
+def test_the_machines_wiring_does_not_enter_a_replay(tmp_path, sys_root, monkeypatch):
+    # A Pi set up for a panel and its sensors: replay still draws in memory, and a
+    # stale mapping for a sensor the board lacks does not stop it.
+    monkeypatch.setenv(linux.DISPLAY_ENV, "/dev/fb0")
+    monkeypatch.setenv(linux.SENSORS_ENV, "pressure=hwmon:lm75/temp1")
+    hal, _ = make(tmp_path, sysfs_root=sys_root, replay=True)
+    assert isinstance(hal.display_backend, MemoryDisplay)
+    assert hal.sensors.sources == {}
+
+
 def test_a_reading_in_another_unit_than_the_agent_declares_is_refused(tmp_path, sys_root):
     iio(sys_root, 0, "bme280", {"in_pressure_input": 101.3, "in_pressure_label": "temperature"})
     hal, fake = make(tmp_path, sysfs_root=sys_root, units={"temperature": "C"})

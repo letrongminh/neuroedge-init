@@ -110,8 +110,12 @@ class LinuxHAL(HardwareAbstractionLayer):
         self._lock = threading.Lock()
         # sensor.read and display are settled before any line is requested (Q-16):
         # `needs` = preflight()'s arguments, what the session's agent will read and draw.
+        # Replay recomputes from the trace alone: a sensor it holds no reading of is
+        # an error, never the room's reading today, and frames stay in memory — the
+        # machine's wiring (its environment) does not enter a replay at all.
+        self.replay = replay
         sources_where = "LinuxHAL(sensor_sources=...)"
-        if sensor_sources is None and os.environ.get(SENSORS_ENV):
+        if sensor_sources is None and os.environ.get(SENSORS_ENV) and not replay:
             sensor_sources = parse_sources(os.environ[SENSORS_ENV], SENSORS_ENV)
             sources_where = SENSORS_ENV
         for sensor in sensor_sources or {}:
@@ -122,13 +126,11 @@ class LinuxHAL(HardwareAbstractionLayer):
         # The unit the agent declares for a sensor ([sim.sensors]); a kernel reading
         # in another unit is refused, not compared against a threshold meant for it.
         self.expected_units = dict(units or {})
-        # Replay recomputes from the trace alone: a sensor it holds no reading of is
-        # an error, never the room's reading today, and frames stay in memory.
-        self.replay = replay
         where = "LinuxHAL(display=...)" if display is not None else DISPLAY_ENV
-        choice = display if display is not None else os.environ.get(DISPLAY_ENV) or None
-        if choice is None and replay:
-            choice = "memory"
+        if replay:
+            choice: Any = "memory"
+        else:
+            choice = display if display is not None else os.environ.get(DISPLAY_ENV) or None
         self.display_backend = display_backend(choice, where)
         self.frame: str | bytes | None = None
         self.frames: list[Frame] = []
