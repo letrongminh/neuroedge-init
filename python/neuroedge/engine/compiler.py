@@ -14,9 +14,13 @@ problem so one run reports them all, each with where / why / how:
    every `degrade` fallback names a declared action;
 5. the command grammar (and `knowledge.toml`, if the agent ships one) loads,
    and every `action` a command names is a declared @action;
-6. `[mcp]` and `[system_two]` are well formed — no API key in agent.toml.
+6. `[mcp]`, `[system_two]`, `[system_one]`, `[stt]` and `[tts]` are well formed — no
+   API key in agent.toml — and every criterion `[system_one]` delegates to a model
+   is one the agent's gates evaluate, with a budget longer than the model's `timeout_ms`.
+7. for `esp32s3`, the agent links into the firmware (`firmware.firmware_problems`).
 
-On success it writes each gate's decision tree and canonical artifact.
+On success it writes each gate's decision tree and canonical artifact — and, for
+`esp32s3`, the ESP-IDF project of the agent's firmware (`<out>/esp32s3/`, TSK-I3-01).
 """
 
 from __future__ import annotations
@@ -38,6 +42,7 @@ from ..errors import (
     GateSchemaError,
     NeuroEdgeError,
 )
+from ..hal.audio import MAX_RATE_HZ, MIN_RATE_HZ, rate_ok
 from ..hal.board import PRIMITIVES, BoardProfile, load_board_by_id
 from .canonical import gate_canonical_json, gate_digest
 from .decision_tree import compile_tree, tree_bytes
@@ -394,6 +399,154 @@ def check_system_two(manifest: AgentManifest) -> list[NeuroEdgeError]:
     return []
 
 
+def check_system_one(
+    manifest: AgentManifest, gates: Mapping[str, ResolvedGate]
+) -> list[NeuroEdgeError]:
+    """
+    `[system_one]` of agent.toml is well formed — never an API key in it — a custom
+    adapter it names can be imported, and each criterion it delegates to the model:
+
+    * is evaluated by a gate, as a question the System One API can ask;
+    * is not one the agent computes itself (`[sim.facts]`, `[sim.slot_facts]`,
+      `[sim.sensor_facts]`): session state — identity, a booking, a reading — is never
+      a model's judgment of what a person said, and when the computation leaves it
+      undecided (a slot the guest did not say) the gate must block, not ask a model;
+    * has a gate budget that outlasts `timeout_ms` and the grammar after it.
+
+    (TSK-I4-02, FR-MDL-04.)
+    """
+    from ..models.providers import load_adapter, load_system_one_config
+    from ..models.providers.systemone_api import question_for
+    from ..models.system import FALLBACK_RESERVE_MS
+    from .verdict import Unavailable
+
+    try:
+        config = load_system_one_config(manifest)
+        if config is not None and config.adapter is not None:
+            load_adapter(config, manifest.root)
+    except NeuroEdgeError as error:
+        return [error]
+    if config is None:
+        return []
+    where = f"{config.where} criteria"
+    sim = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
+    sim = sim if isinstance(sim, dict) else {}
+    computed = {
+        f"sim.{table}": set(sim[table])
+        for table in ("facts", "slot_facts", "sensor_facts")
+        if isinstance(sim.get(table), dict)
+    }
+    problems: list[NeuroEdgeError] = []
+    for criterion in config.criteria:
+        owners = [table for table, names in computed.items() if criterion in names]
+        if owners:
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"{criterion!r} is computed by the agent ([{owners[0]}]); a model must "
+                    "never decide it from what a person said — and where the computation leaves "
+                    "it undecided (a room the guest did not say), the gate has to block",
+                    how=f"remove {criterion!r} from [system_one] criteria. Delegate only what the "
+                    "words alone settle; identity, authorization and booking criteria "
+                    "(guest_authenticated, staff_co_authorized, room_matches) are session "
+                    "facts from the property system",
+                )
+            )
+            continue
+        using = [(key, gate) for key, gate in gates.items() if criterion in gate.evaluate]
+        if not using:
+            evaluated = sorted({name for gate in gates.values() for name in gate.evaluate})
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"no gate of this agent evaluates {criterion!r}; they evaluate {evaluated}",
+                    how="list only criteria of the agent's gates, and check the spelling",
+                )
+            )
+            continue
+        for key, gate in using:
+            question = question_for(gate.evaluate[criterion])
+            if isinstance(question, Unavailable):
+                problems.append(
+                    AgentManifestError(
+                        where=where,
+                        why=f"gate {key!r} defines {criterion!r} in a way the System One API "
+                        f"cannot ask: {question.detail}",
+                        how=f"fix {criterion!r} in the gate, or remove it from [system_one] criteria",
+                    )
+                )
+            p95 = gate.budget.get("p95_latency_ms")
+            if isinstance(p95, int | float) and config.timeout_ms + FALLBACK_RESERVE_MS > p95:
+                room = p95 - FALLBACK_RESERVE_MS
+                raise_budget = f"raise the budget of {key!r} for a cloud round trip"
+                problems.append(
+                    AgentManifestError(
+                        where=f"{config.where} timeout_ms",
+                        why=f"gate {key!r} gives all of its facts {p95:g} ms "
+                        f"(budget.p95_latency_ms), but the model may take {config.timeout_ms:g} "
+                        f"ms for {criterion!r} and the grammar needs {FALLBACK_RESERVE_MS:g} ms "
+                        "after it — the gate would cut the model off first",
+                        how=f"lower timeout_ms to {room:g} or less, or {raise_budget}"
+                        if room > 0
+                        else raise_budget,
+                    )
+                )
+    return problems
+
+
+def check_speech(
+    manifest: AgentManifest, board: BoardProfile | None = None
+) -> list[NeuroEdgeError]:
+    """
+    `[stt]` and `[tts]` of agent.toml are well formed — never an API key in them,
+    never a key over plain http to another machine — a custom adapter they name
+    can be imported, and the agent declares the primitive each one needs: STT
+    hears through `audio.in`, TTS speaks through `audio.out`, so a board without
+    them fails here, not mid-conversation (TSK-S3-13, FR-MDL-09, Q-12). With a
+    `board` that declares the primitive, it must also give its `sample_rate_hz`: PCM
+    audio has no meaning without one. Every bad table is reported.
+    """
+    from ..models.providers import load_adapter
+    from ..perception.providers.config import ROLES, parse_speech
+
+    document = tomllib.loads(manifest.source.read_text(encoding="utf-8"))
+    problems: list[NeuroEdgeError] = []
+    for role in ROLES:
+        if role not in document:
+            continue
+        primitive = "audio.in" if role == "stt" else "audio.out"
+        if primitive not in manifest.requires:
+            example = "{ sample_rate_hz = 16000 }" if role == "stt" else "{}"
+            problems.append(
+                AgentManifestError(
+                    where=f"{manifest.source} -> [requires]",
+                    why=f"[{role}] needs {primitive}, which [requires] does not declare",
+                    how=f'add "{primitive}" = {example} to [requires], or remove [{role}]',
+                )
+            )
+        elif board is not None and board.supports(primitive):
+            rate = board.capability(primitive).get("sample_rate_hz")
+            # The rates the audio path runs at (8–96 kHz); outside them PCM is refused at
+            # run time, so the build says so first.
+            if not rate_ok(rate):
+                low, high = MIN_RATE_HZ, MAX_RATE_HZ
+                problems.append(
+                    BoardCapabilityError(
+                        where=f"{board.source} -> {primitive}",
+                        why=f"[{role}] plays PCM through {primitive}, and board {board.id!r} "
+                        f"declares no sample_rate_hz for it from {low} to {high} Hz",
+                        how=f"add sample_rate_hz = 16000 to {primitive} in {board.source}",
+                    )
+                )
+        try:
+            config = parse_speech(role, document[role], manifest.source)
+            if config.adapter is not None:
+                load_adapter(config, manifest.root)
+        except NeuroEdgeError as error:
+            problems.append(error)
+    return problems
+
+
 def check_commands(grammar: Any, actions: Iterable[Any]) -> list[NeuroEdgeError]:
     """
     Every `tool` a command calls is a declared @action, and its slot-mapped and
@@ -466,6 +619,9 @@ class BuildReport:
     gates: int
     requirements: int
     artifacts: list[Path] = field(default_factory=list)
+    # esp32s3: the ESP-IDF project written for the agent, and how many files it has.
+    firmware: Path | None = None
+    firmware_files: int = 0
 
 
 def build(
@@ -515,6 +671,18 @@ def build(
             problems.append(error)
     problems += check_mcp_servers(manifest, actions)
     problems += check_system_two(manifest)
+    problems += check_system_one(manifest, gates)
+    problems += check_speech(manifest, board)
+    project: Path | None = None
+    if target == "esp32s3":
+        from . import firmware
+
+        problems += firmware.firmware_problems(manifest, gates)
+        if out_dir is not None:
+            project = Path(out_dir) / firmware.PROJECT_DIR
+            problem = firmware.project_problem(project)
+            if problem is not None:
+                problems.append(problem)
 
     if problems:
         raise BuildFailed(where=f"{manifest.label} for {target} on {board.id}", problems=problems)
@@ -528,6 +696,12 @@ def build(
         requirements=len(manifest.requires),
     )
     if out_dir is not None:
+        # Rendered before anything is written: a failure here leaves `out_dir` as it was.
+        project_files: dict[str, bytes] = {}
+        if project is not None:
+            from . import firmware
+
+            project_files = firmware.render_project(manifest, board.id, gates, actions)
         folder = Path(out_dir) / "gates"
         folder.mkdir(parents=True, exist_ok=True)
         from .binary_tree import c_header, encode
@@ -545,4 +719,9 @@ def build(
             header_path = folder / f"{key}.netree.h"
             header_path.write_text(c_header(tree, key), encoding="utf-8")
             report.artifacts += [tree_path, artifact_path, binary_path, header_path]
+        if project is not None:
+            from . import firmware
+
+            firmware.write_project(project, project_files)
+            report.firmware, report.firmware_files = project, len(project_files)
     return report

@@ -31,11 +31,61 @@ không ghi ở đây: đọc task ở cột cuối trong bảng task của roadm
 | Nguyên thủy | Backend | Kiểm ở | Task |
 |:---|:---|:---|:---|
 | `digital.out` | `SimHAL`, token dùng một lần | PR | TSK-S2-01, S2-05 |
-| `audio.in` | Gõ chữ → ngữ pháp lệnh (Q-15) · tệp WAV → VAD + STT provider | PR (gõ chữ, WAV fixture) | WAV: TSK-S3-13 |
-| `audio.out` | Chữ sẽ nói (`tts_stream_start`): câu trả lời knowledge base (RAG qua System 2, cục bộ khi mất mạng), lời hỏi lại của `on_block: ask` · âm thanh TTS ra WAV | PR | chữ: TSK-S2-11 · WAV: TSK-S3-13 |
+| `audio.in` | Gõ chữ → ngữ pháp lệnh (Q-15) · tệp WAV PCM 16-bit mono đúng `sample_rate_hz` của bo mạch (`--voice-file`; bo mạch không lấy mẫu lại nên `sim` cũng không) → khung 20 ms → VAD năng lượng → STT provider `[stt]` (`hal/audio.py`, `perception/voice_session.py`) | PR (gõ chữ, tệp WAV sinh trong test, provider giả) | WAV: TSK-S3-13 |
+| `audio.out` | Chữ sẽ nói (`tts_stream_start`): câu trả lời knowledge base (RAG qua System 2, cục bộ khi mất mạng), lời hỏi lại của `on_block: ask` · âm thanh TTS provider `[tts]` lấy mẫu lại về `sample_rate_hz` của bo mạch, đặt trên dòng thời gian ảo, cắt khi bị nói chen, ghi ra WAV (`--voice-out`) | PR (provider giả) | chữ: TSK-S2-11 · WAV: TSK-S3-13 |
 | `sensor.read` | Giá trị kịch bản: `[sim.sensors]` trong `agent.toml`, `:sensor` trong REPL và UI; dữ kiện gate từ cảm biến: `[sim.sensor_facts]`; `sensor.read()` trong `@action` | PR | TSK-S3-23 |
 | `display` | Khung chữ hoặc điểm ảnh RGB565/RGB888 trong bộ nhớ, kiểm độ phân giải; digest SHA-256; `display.show()` trong `@action` | PR | TSK-S3-23 |
 | *Trực quan* | Terminal · `trace view` HTML tĩnh · `run --ui` và `mcp serve --ui` web cục bộ (FR-TGT-06) | PR | TSK-S3-22, S2-09, S3-27 |
+
+**Dữ kiện gate từ cảm biến — `[sim.sensor_facts]`.** Mỗi dòng `tiêu_chí = { sensor = "…", <luật> }`
+tính một dữ kiện gate từ số đọc, như nhau trên `sim` (giá trị kịch bản) và `linux` (số đọc kernel).
+Mỗi cảm biến được đọc **một lần mỗi lần tính dữ kiện gate** (`gate_facts`: các tool call của một lượt
+lệnh, một câu trả lời xác nhận, một tool call qua MCP), nên hai dữ kiện của cùng một cảm biến không bao
+giờ tính trên hai số đọc khác nhau. Hiện thực: `SensorFact` và `SimSession.gate_facts` trong
+`python/neuroedge/sim/session.py`.
+
+| Luật | Dữ kiện | Ví dụ |
+|:---|:---|:---|
+| *(không có)* | Chính số đọc | `door_closed = { sensor = "door_contact" }` |
+| `equals` | `bool`: số đọc bằng giá trị — giá trị là bool, chữ hoặc số hữu hạn | `room_empty = { sensor = "motion", equals = false }` |
+| `gte` / `lte` (một hoặc cả hai) | `bool`: số đọc ≥ / ≤ ngưỡng — **tính cả ngưỡng** | `too_hot = { sensor = "temperature", gte = 30 }` |
+| `bands` | `level`: dải chứa số đọc | `heat_level = { sensor = "temperature", bands = { low = -40, normal = 25, high = 40, critical = 55 } }` |
+
+Kiểm khi nạp phiên — sai ⇒ lỗi ba phần (`AgentManifestError`, cảm biến bo mạch không có ⇒
+`BoardCapabilityError`), **trước khi** xin line GPIO nào:
+
+- Mỗi dòng **một** luật: `bands`, `equals`, `gte`/`lte` không đi chung. Ngưỡng là số hữu hạn (không
+  phải bool, NaN, inf). Cảm biến phải là cảm biến bo mạch khai.
+- Luật số (`gte`, `lte`, `bands`) cần đơn vị khai ở `[sim.sensors]`
+  (`temperature = { value = 45, unit = "C" }`), để `linux` từ chối số đọc khác đơn vị thay vì đem so
+  với ngưỡng (luật `linux` dưới đây).
+- `bands`: mỗi mục là `mức = ngưỡng dưới`, ngưỡng **tăng ngặt** theo thứ tự viết. Một dải bắt đầu
+  **tại** ngưỡng của nó và dừng ngay dưới ngưỡng của mục kế tiếp; dải cuối không có cận trên. Ví dụ
+  trên: 24,999 → `low`, 25 → `normal`, 54,999 → `high`, 55 → `critical`. Phải có ít nhất một gate
+  đọc tiêu chí đó; mọi gate đọc nó khai kiểu `level`, và với từng gate: mức là mức gate khai ở
+  `evaluate.<tiêu_chí>.levels`, viết **đúng thứ tự** đó, và **mục cuối là mức cao nhất** của gate —
+  chỉ được bỏ mức thấp hoặc mức giữa, để số đọc cao tới đâu cũng không dừng dưới mức trên cùng.
+- Trên cảm biến có `bands`, `gte` phải **trùng một ngưỡng** của các `bands` đó (dữ kiện bool là
+  "từ dải này trở lên", không lệch khỏi dải ở số đọc nào); `lte` bị từ chối, vì ngưỡng thuộc dải
+  phía trên nên `lte` sẽ lệch đúng tại ngưỡng.
+- Tiêu chí do cảm biến quyết không được có giá trị cố định ở `[sim.facts]` (hay `SimSession.load(facts=)`):
+  giá trị đó không bao giờ được đọc. `:set` trong REPL và trang `--ui` từ chối nó và chỉ sang `:sensor`.
+
+Lúc chạy — fail-closed, không đoán:
+
+- Một số đọc **không lấy được** (cờ lỗi, NaN hay tệp hỏng trên `linux`, thiết bị biến mất, `sim` chưa có
+  giá trị), hoặc bị **một luật bất kỳ của cảm biến đó** từ chối — luật số trên số đọc không phải số hữu
+  hạn (chữ, bool, NaN, inf), `bands` trên số đọc dưới ngưỡng đầu tiên (đầu dò hở/chập), `equals` trên số
+  đọc khác kiểu (`0` không phải `false`), chính số đọc khi nó rỗng hay không hữu hạn — thì **mọi** dữ kiện
+  của cảm biến đó trong lần tính ấy là **chưa xác định** (`null` trong `gate_facts`), và phiên ghi
+  `sensor_unavailable` (§3). Gate đọc chúng chặn với `criterion_unavailable`; vì cả tiêu chí phủ quyết
+  (`heat_critical`) cũng chưa xác định, một lời "có" không đủ nên thiết bị **không hỏi**. Gate không đọc
+  dữ kiện nào của cảm biến đó quyết như thường (`vent_on` của `factory-monitor` vẫn chạy).
+- Câu trả lời xác nhận tính lại dữ kiện: hỏi lúc 45 °C, cảm biến hỏng trước lời "có" ⇒ vẫn chặn.
+- Replay dùng lại `gate_facts` đã ghi, nên không tính lại được dữ kiện cảm biến. Vết ghi mang digest
+  của `[sim.sensor_facts]` (`metadata.sensor_facts_digest`); luật đổi sau khi ghi thì `replay` cảnh báo
+  (sự kiện `sensor_facts_changed` trong vết ghi phát lại) — phán quyết khi đó không kiểm luật mới, cần
+  ghi lại phiên. Đây là cảnh báo, không phải khác biệt quyết định: mã thoát không đổi.
 
 ### `linux` — `linux-rpi5`
 
@@ -58,7 +108,8 @@ biến bo mạch khai. Luật an toàn:
   hạn, cờ `*_fault`, hay loại kênh không rõ đơn vị ⇒ `BoardCapabilityError`, không bao giờ trả giá
   trị mặc định. "Tới kernel" không có nghĩa là mới hơn chu kỳ cập nhật của driver (lm75 ≈ 1,5 s).
 - Agent khai đơn vị cho cảm biến (`[sim.sensors] temperature = { value = …, unit = "C" }`) thì số đọc
-  của kernel khác đơn vị đó bị từ chối, không đem so với ngưỡng viết cho đơn vị kia.
+  của kernel khác đơn vị đó bị từ chối, không đem so với ngưỡng viết cho đơn vị kia. Dữ kiện gate tính
+  từ số đọc kernel bằng đúng luật `[sim.sensor_facts]` của `sim` (trên), gồm `bands`.
 - Replay chỉ dùng giá trị đã ghi: cảm biến vết ghi không có số đọc thì báo lỗi, không đọc kernel; khung
   hình vẽ trong bộ nhớ.
 - `door_contact` và `motion` của `linux-rpi5` là đầu vào GPIO, không phải hwmon/IIO: chưa đọc được trên
@@ -76,7 +127,7 @@ khi** xin line GPIO nào.
 
 | Nguyên thủy | Backend | Kiểm ở | Chỉ phần cứng | Task |
 |:---|:---|:---|:---|:---|
-| `digital.out` | ESP-IDF `gpio` sau walker cây `NETR` và sổ token C | PR — walker và sổ token C biên dịch trên host (bảng sự thật, ASan/UBSan) · QEMU (`firmware-qemu`, mỗi PR đụng `targets/**` và hằng đêm) — self-test gate lúc boot; lệnh chân qua UART (QEMU không có GPIO matrix) | Chân thật | walker, sổ token, self-test: TSK-S4-02, S4-07, S4-08 · chân: S4-01 · UART: S4-09 |
+| `digital.out` | ESP-IDF `gpio` sau walker cây `NETR` và sổ token C | PR — walker và sổ token C biên dịch trên host (bảng sự thật, ASan/UBSan) · QEMU (`firmware-qemu`, mỗi PR đụng `targets/**` và hằng đêm) — self-test gate lúc boot, cả firmware sinh cho một agent mới (`agent-firmware`); lệnh chân qua UART (QEMU không có GPIO matrix) | Chân thật | walker, sổ token, self-test: TSK-S4-02, S4-07, S4-08 · firmware của agent: I3-01 · chân: S4-01 · UART: S4-09 |
 | `audio.in` | I2S ES7210 + ESP-SR AFE (AEC, VAD) — driver từ XiaoZhi | **Không** — QEMU không có I2S; ESP-SR là thư viện Xtensa dựng sẵn, không chạy trên host | Toàn bộ | TSK-S5-01, S5-02 |
 | `audio.out` | I2S ES8311 | Không | Toàn bộ | TSK-S5-02 |
 | `sensor.read` | Driver I2C của ESP-IDF | QEMU — driver giả qua cùng giao diện HAL (QEMU không có I2C) | Bus I2C, cảm biến | TSK-S4-03 |
@@ -98,10 +149,17 @@ nào đi theo ô tương ứng ở §2. Cột "Vai trò khi replay" nói phần 
 | `audio.in` | `text_input` · `audio_in_vad_start` · `audio_in_segment` | `{text}` · `{energy_db}` · `{sha256, duration_ms, sample_rate_hz}` | **Đầu vào.** Replay bắt đầu từ kết quả nhận thức đã ghi (`intent_extracted`), không chạy lại âm thanh |
 | `audio.out` | `tts_stream_start` · `tts_stream_end` · `knowledge_retrieved` | `{text}` · `{duration_ms, sha256?, reason?}` (`reason`: `docs/spec/voice_fsm.md` §8) · `{entries: [{id, score}]}` | **Đầu ra** — chữ không vào so khớp quyết định; `knowledge_retrieved` cho biết câu trả lời dựa trên tri thức nào |
 | `digital.out` | `actuator_command` · `actuator_aborted` | `{pin, operation, duration_ms}` · `{pin, reason}` | **Quyết định** — so golden ở mọi lần `replay` / `verify` |
-| `sensor.read` | `sensor_read` · `sensor_set` | `{sensor, value, unit?, use?}` · `{sensor, value}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI |
+| `sensor.read` | `sensor_read` · `sensor_set` · `sensor_unavailable` | `{sensor, value, unit?, use?, non_finite?}` · `{sensor, value, non_finite?}` · `{sensor, reason}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI. `sensor_unavailable`: một lần tính dữ kiện gate không lấy được số đọc, hoặc một luật của cảm biến từ chối nó (§2), nên mọi dữ kiện của cảm biến đó là `null`; chỉ để đọc, replay dùng `gate_facts` |
 | `display` | `display_frame` | `{width, height, format, sha256, text?}` (`text` khi `format = "text"`) | **Đầu ra** — so digest khi golden có ghi, không chặn tương đương quyết định |
 
 Chế độ ẩn danh (FR-TRC-07) băm `text`; `audio_in_segment` và `display_frame` vốn chỉ mang digest.
+
+**Không có NaN hay vô cực trong JSON.** JSON không có các số đó (`NaN` trần làm `JSON.parse` của trình
+duyệt dừng, và trang `--ui` dừng theo). Số đọc không hữu hạn ghi thành chuỗi `"nan"`, `"inf"`, `"-inf"`
+kèm `non_finite: true`, và replay đọc lại thành số thực. Mọi sự kiện khác, siêu dữ liệu, trang `--ui` và
+`trace view` cũng không bao giờ mang số không hữu hạn (`json_safe` trong `python/neuroedge/trace.py`);
+`trace validate` từ chối tệp có `NaN`/`Infinity` trần. Siêu dữ liệu `sensor_facts_digest` và sự kiện
+`sensor_facts_changed` (chỉ ở vết ghi phát lại): §2, luật `[sim.sensor_facts]`.
 
 Sự kiện ngoài nguyên thủy (tool call, xác nhận, MCP host, `system_two_*`, đo lượt `turn_latency` /
 `session_summary`) ở danh mục duy nhất `docs/spec/tool_calling.md` §7; sự kiện của máy trạng thái hội thoại (`voice_state_changed`,
@@ -122,7 +180,7 @@ NE1 {"offset_ms":3,"type":"gate_evaluation_begin","data":{"gate":"light_on@1.0.0
 NE1 {"offset_ms":6,"type":"gate_facts","data":{"call_source":{"value":"local_grammar","confidence":null,"source":"context"}}}
 NE1 {"offset_ms":9,"type":"gate_evaluation_result","data":{"verdict":"ALLOW","evaluations":{"call_source":"local_grammar"}}}
 NE1 {"offset_ms":57,"type":"trace_end","data":{"events":4}}
-NE_SELFTEST PASS walker=6 token=6
+NE_SELFTEST PASS walker=<n> token=<n>
 NE_TRACE DONE sessions=1
 ```
 
@@ -146,8 +204,9 @@ biết nó không còn gì để nói.
 (`GateResult.to_event_data()`). Hai chỗ chưa như host, đều đọc lại được đúng khi replay: giá trị ngoài
 miền, và độ tin cậy NaN, ghi là `null` (thiết bị chỉ biết "không đọc được"). Nhãn gate
 (`light_on@1.0.0`) và chữ `on_block` (`to`, `message`, `fallback_action`) không có trong NETR v1 nên đi
-kèm firmware, sinh từ cùng gate đã phân giải (`scripts/gen_firmware_gates.py`,
-`scripts/gen_firmware_vectors.py`). Phiên self-test không có lệnh chân; lệnh chân chỉ có trong phiên
+kèm firmware, sinh từ cùng gate đã phân giải (component `ne_agent` của `neuroedge build --target esp32s3`,
+TSK-I3-01; `scripts/gen_firmware_vectors.py`). Phiên self-test là các phép kiểm của agent đã link, mỗi phép
+kiểm một lần đánh giá gate, cùng dữ kiện và phán quyết engine host đã tính lúc build; không có lệnh chân; lệnh chân chỉ có trong phiên
 replay dưới đây, và chưa có `actuator_aborted`: chưa có HAL firmware (TSK-S4-01).
 
 **Host.** `neuroedge record --target esp32s3 --port <nguồn>` giữ các dòng `NE1 `, bỏ mọi dòng khác

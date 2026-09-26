@@ -24,6 +24,14 @@ The answer, under the file's name in `expected_results.yaml`: `proves` (one
 sentence) and `events` — every observable event, in order, each with its
 `offset_ms`. Which events are observable and which fields are compared is
 `OBSERVED` below (§9.1 of the spec says the same in prose).
+
+Two ways to run a case, one answer (TSK-S3-13): `execute(case)` feeds every
+input as it is written; `execute(case, speech=True)` gives the session a fake
+STT and a fake TTS scripted from the case, so each transcript comes out of the
+STT path (T04 sends the turn's audio, the answer lands at the input's offset) and
+each reply's end out of the speaker (the reply's audio lasts until the input's
+`tts_stream_end`). Inputs no provider can produce — a second transcript for one
+turn — are fed as written. Both must give the same observable events.
 """
 
 from __future__ import annotations
@@ -41,6 +49,8 @@ import yaml
 from ..errors import NeuroEdgeError
 from ..paths import fixtures_dir
 from ..perception import TRIGGERS, VirtualClock, VoiceParams, VoiceSession
+from ..perception.providers.base import AudioClip, Speech, SpeechUnavailable, Transcript
+from ..perception.providers.fake import tone
 from ..perception.voice_session import FACTS_SOURCES
 from ..trace import validate_trace
 
@@ -60,7 +70,7 @@ ROWS: dict[str, tuple[str, str, str] | None] = {
     "T06": ("THINKING", "IDLE", "transcript_empty"),
     "T07": ("THINKING", "SPEAKING", "reply_start"),
     "T08": ("THINKING", "IDLE", "reply_empty"),
-    "T09": None,  # THINKING think_timeout / system_two_unavailable: the offline line
+    "T09": None,  # THINKING think_timeout / system_two_ / stt_unavailable: the offline line
     "T10": ("THINKING", "BARGE_IN", "barge_in"),
     "T11": ("SPEAKING", "LISTENING", "ask_asked"),
     "T12": ("SPEAKING", "IDLE", "reply_end"),
@@ -74,6 +84,7 @@ INPUTS: dict[str, tuple[str, ...]] = {
     "audio_in_vad_start": ("energy_db",),
     "audio_in_vad_end": (),
     "stt_result": ("turn", "text"),
+    "stt_unavailable": ("turn", "reason"),  # the STT provider failed for that turn (§7)
     "system_two_reply": ("turn",),  # text?, tool_calls? — the scripted provider's answer
     "system_two_unavailable": ("task", "reason"),
     "tts_stream_end": ("reason",),  # "done" or "error"; "barge_in" is an output
@@ -341,24 +352,114 @@ def _reuse_token(voice: VoiceSession, pin: str) -> None:
     raise AssertionError(f"the token of a command barge-in cancelled drove {pin!r} again")
 
 
-async def execute(case: VoiceCase) -> VoiceSession:
-    """The case through a fresh `VoiceSession`, input by input, in virtual time."""
+STT_INPUTS = ("stt_result", "stt_unavailable")
+
+
+class CaseSpeechToText:
+    """
+    A fake STT that answers a turn's audio with the case's first transcript (or
+    failure) for that turn after the request, at that input's offset. A turn with
+    none never answers inside the case: its answer lands after `until_ms`.
+    """
+
+    def __init__(self, case: VoiceCase, clock: VirtualClock) -> None:
+        self.case, self.clock = case, clock
+        self.clips: list[AudioClip] = []
+
+    def transcribe(self, clip: AudioClip) -> Transcript:
+        self.clips.append(clip)
+        now = self.clock()
+        answer = next(
+            (
+                e
+                for e in self.case.inputs
+                if e["type"] in STT_INPUTS
+                and int(e["data"]["turn"]) == clip.turn
+                and e["offset_ms"] > now
+            ),
+            None,
+        )
+        if answer is None:
+            return Transcript("", latency_ms=self.case.until_ms + 1 - now)
+        latency = answer["offset_ms"] - now
+        if answer["type"] == "stt_unavailable":
+            raise SpeechUnavailable(
+                where="STT(case)",
+                why=str(answer["data"]["reason"]),
+                how="-",
+                role="stt",
+                latency_ms=latency,
+            )
+        return Transcript(str(answer["data"]["text"]), latency_ms=latency)
+
+
+class CaseTextToSpeech:
+    """
+    A fake TTS whose audio lasts until the case's next `tts_stream_end` after the
+    reply starts (a failure, for `error`); with none, past `until_ms`. A reply of
+    several sentences is synthesised at one instant: the first carries the whole
+    length, the rest none.
+    """
+
+    RATE = 16000
+
+    def __init__(self, case: VoiceCase, clock: VirtualClock) -> None:
+        self.case, self.clock = case, clock
+        self.texts: list[str] = []
+        self._given: dict[float, float] = {}  # reply start -> ms of audio already handed out
+
+    def synthesize(self, text: str) -> Speech:
+        self.texts.append(text)
+        now = self.clock()
+        end = next(
+            (e for e in self.case.inputs if e["type"] == "tts_stream_end" and e["offset_ms"] > now),
+            None,
+        )
+        until = end["offset_ms"] if end is not None else self.case.until_ms + 1
+        if end is not None and end["data"]["reason"] == "error":
+            raise SpeechUnavailable(
+                where="TTS(case)", why="error", how="-", role="tts", latency_ms=until - now
+            )
+        length = max(0.0, until - now - self._given.get(now, 0.0))
+        self._given[now] = self._given.get(now, 0.0) + length
+        return Speech(tone(length, self.RATE), self.RATE, latency_ms=0.0)
+
+
+async def execute(
+    case: VoiceCase, *, speech: bool = False, written: list[dict[str, Any]] | None = None
+) -> VoiceSession:
+    """
+    The case through a fresh `VoiceSession`, input by input, in virtual time —
+    with `speech`, through fake STT and TTS providers scripted from the case.
+    `written` collects the inputs the providers should have produced but did not,
+    so they were fed as written: a speech path that regressed shows up there
+    instead of passing on the scripted inputs.
+    """
     world = case.world
+    clock = VirtualClock()
     voice = VoiceSession.load(
         fixtures_dir() / "agents" / case.agent / "agent.toml",
         params=case.params,
-        clock=VirtualClock(),
+        clock=clock,
         facts=world.get("facts") or {},
         unset_facts=tuple(world.get("unset_facts") or ()),
         sensors=world.get("sensors") or {},
         system_two=bool(world.get("system_two")),
         facts_source=world.get("facts_source", "local_grammar"),
+        stt=CaseSpeechToText(case, clock) if speech else None,
+        tts=CaseTextToSpeech(case, clock) if speech else None,
     )
     for event in case.inputs:
         await voice.advance(event["offset_ms"])
         if event["type"] == "reuse_token":
             voice.events.emit(event["type"], dict(event["data"]))
             _reuse_token(voice, str(event["data"]["pin"]))
+        elif speech and event["type"] in (*STT_INPUTS, "tts_stream_end"):
+            # The providers produce it: take theirs, here. None scheduled: as written.
+            if not await voice.deliver_due(event["type"], event["data"]):
+                if written is not None:
+                    written.append(dict(event))
+                await voice.feed(event["type"], event["data"])
         else:
             await voice.feed(event["type"], event["data"])
     await voice.advance(case.until_ms, inclusive=True)
@@ -366,7 +467,13 @@ async def execute(case: VoiceCase) -> VoiceSession:
     return voice
 
 
-def run_case(case: VoiceCase, expected: Mapping[str, Any]) -> list[str]:
+def run_case(
+    case: VoiceCase,
+    expected: Mapping[str, Any],
+    *,
+    speech: bool = False,
+    written: list[dict[str, Any]] | None = None,
+) -> list[str]:
     """Differences between the case's answer and what the implementation did."""
-    voice = asyncio.run(execute(case))
+    voice = asyncio.run(execute(case, speech=speech, written=written))
     return compare(list(expected["events"] or []), observe(voice.events.events))

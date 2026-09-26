@@ -346,16 +346,107 @@ def test_gate_facts_on_linux_are_read_from_the_kernel_sensor(root, gpio, lm75):
         turn = anyio.run(session.handle, "bật quạt")
         assert turn.result is not None and not turn.result.blocked
         reads = session.events.of_type("sensor_read")
-        assert reads and all(r["value"] == 24.5 and r["unit"] == "C" for r in reads)
-        assert {r["use"] for r in reads} == {"fact"}
-        # The gates compare heat bands; degrees are no band, so vent_off cannot pass.
-        (lm75 / "temp1_input").write_text("31000\n")
-        turn = anyio.run(session.handle, "tắt quạt")
-        assert turn.result is not None and turn.result.blocked
-        assert session.events.of_type("sensor_read")[-1]["value"] == 31.0, "every read is fresh"
+        assert reads == [{"sensor": "temperature", "value": 24.5, "unit": "C", "use": "fact"}]
+        # Degrees become the heat band the gates compare, as on sim; every read is fresh.
+        for millidegrees, band in (
+            (24999, "low"), (25000, "normal"), (39999, "normal"), (40000, "high"),
+            (54999, "high"), (55000, "critical"), (-40001, None),
+        ):  # fmt: skip
+            (lm75 / "temp1_input").write_text(f"{millidegrees}\n")
+            turn = anyio.run(session.handle, "tắt quạt")  # vent_off reads both facts
+            facts = session.events.of_type("gate_facts")[-1]
+            assert facts["heat_level"]["value"] == band, millidegrees
+            critical = None if band is None else millidegrees >= 55000  # undecided together
+            assert facts["heat_critical"]["value"] is critical
+            assert turn.allowed is (band in ("low", "normal"))
+            assert session.events.of_type("sensor_read")[-1]["value"] == millidegrees / 1000
     finally:
         session.close()
     assert all(request.released for request in gpio.requests)
+
+
+def test_on_linux_the_fan_stops_asks_or_is_refused_by_the_kernel_reading(root, gpio, lm75):
+    factory = root / "fixtures" / "agents" / "factory-monitor" / "agent.toml"
+    for millidegrees, allowed, asked in ((30000, True, False), (45000, False, True),
+                                         (60000, False, False)):  # fmt: skip
+        (lm75 / "temp1_input").write_text(f"{millidegrees}\n")
+        session = SimSession.load(factory, target="linux")
+        try:
+            off = anyio.run(session.handle, "tắt quạt")
+        finally:
+            session.close()
+        assert off.allowed is allowed, millidegrees
+        assert (off.confirmation is not None) is asked, millidegrees
+
+
+FAULTS = {  # what breaks → a word of the `sensor_unavailable` reason
+    "the driver's fault flag": (lambda d: (d / "temp1_fault").write_text("1\n"), "temp1_fault"),
+    "NaN from the driver": (lambda d: (d / "temp1_input").write_text("nan\n"), "not a number"),
+    "an unreadable value": (lambda d: (d / "temp1_input").write_text("x\n"), "not a number"),
+    "the device gone": (lambda d: (d / "name").write_text("other\n"), "no hwmon device"),
+    "an open probe": (lambda d: (d / "temp1_input").write_text("-41000\n"), "below -40"),
+}
+FAULT_LINES = ("bật quạt", "bật báo động", "tắt quạt", "có", "tắt báo động")
+
+
+def fault_turns(session):
+    return [anyio.run(session.handle, line) for line in FAULT_LINES]
+
+
+@pytest.mark.parametrize("fault", FAULTS, ids=list(FAULTS))
+def test_a_sensor_that_fails_mid_session_leaves_only_its_facts_undecided(root, gpio, lm75, fault):
+    factory = root / "fixtures" / "agents" / "factory-monitor" / "agent.toml"
+    session = SimSession.load(factory, target="linux")  # preflight read the healthy sensor
+    breaks, why = FAULTS[fault]
+    try:
+        breaks(lm75)
+        fan_on, alarm_on, fan_off, yes, alarm_off = fault_turns(session)
+        (unavailable, *_) = session.events.of_type("sensor_unavailable")
+    finally:
+        session.close()
+    assert fan_on.allowed and alarm_on.allowed, "gates that read no heat fact still decide"
+    for turn in (fan_off, alarm_off):
+        assert turn.result.blocked and turn.result.gate.reason == "criterion_unavailable"
+        assert turn.confirmation is None, "nothing a person could stand in for"
+    assert not yes.allowed
+    assert unavailable["sensor"] == "temperature" and why in unavailable["reason"]
+
+    # The same agent on sim, with a reading no band can place, decides the same.
+    on_sim = SimSession.load(factory)
+    on_sim.set_sensor("temperature", float("nan"))
+    sim_turns = fault_turns(on_sim)
+    assert [t.allowed for t in sim_turns] == [True, True, False, False, False]
+    assert [t.confirmation is None for t in sim_turns] == [True] * 5
+    assert on_sim.events.of_type("sensor_unavailable")
+
+
+def test_a_sensor_that_is_faulty_at_start_is_still_refused_before_any_line(root, gpio, lm75):
+    factory = root / "fixtures" / "agents" / "factory-monitor" / "agent.toml"
+    (lm75 / "temp1_fault").write_text("1\n")
+    with pytest.raises(BoardCapabilityError, match="temp1_fault"):
+        SimSession.load(factory, target="linux")
+    assert gpio.requests == []
+
+
+def test_a_kernel_reading_in_another_unit_is_never_banded(root, gpio, lm75, monkeypatch):
+    factory = root / "fixtures" / "agents" / "factory-monitor" / "agent.toml"
+    (lm75 / "in1_input").write_text("45000\n")  # 45 V, not 45 °C
+    monkeypatch.setenv(linux.SENSORS_ENV, "temperature=hwmon:lm75/in1")
+    with pytest.raises(BoardCapabilityError) as raised:
+        SimSession.load(factory, target="linux")
+    assert "in 'V'" in raised.value.why and "declares 'C'" in raised.value.why
+    assert gpio.requests == [], "refused before any line is requested"
+
+
+def test_bands_the_gates_cannot_use_are_refused_on_linux_before_any_line(gpio, lm75, tmp_path):
+    from neuroedge.errors import AgentManifestError
+
+    from .test_sensor_bands import agent, heat
+
+    broken = agent(tmp_path, heat("{ low = -40, hot = 40, critical = 55 }"))
+    with pytest.raises(AgentManifestError, match="is not a level"):
+        SimSession.load(broken, target="linux")
+    assert gpio.requests == []
 
 
 def test_a_sensor_linux_cannot_find_is_refused_before_any_line(root, gpio, lm75, monkeypatch):

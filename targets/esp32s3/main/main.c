@@ -8,18 +8,21 @@
  *
  * Per decision Q-9 (option A) the device never evaluates CEL: `neuroedge
  * build` compiles gates into a flat decision tree (NETR v1, RFC-0003) on the
- * workstation and the firmware only walks it (components/ne_gate). Before any
- * network comes up, a boot self-test runs the walker and the single-use token
- * ledger on the home-voice gates linked into flash, and prints one line the
- * QEMU job greps for (TSK-S4-02, TSK-S4-08). A failed self-test stops here:
- * no gate runtime, no action.
+ * workstation and the firmware only walks it (components/ne_gate). The agent
+ * is one generated component, components/ne_agent/ (`neuroedge build --target
+ * esp32s3`, TSK-I3-01; the one checked in here is the home-voice sample's).
+ * Before any network comes up, a boot self-test decides the agent's checks with
+ * the walker and runs each action's token through the single-use ledger, and
+ * prints one line the QEMU jobs grep for (TSK-S4-02, TSK-S4-08). A failed
+ * self-test stops here: no gate runtime, no action.
  *
  * The self-test's gate evaluations also go out as `NE1` trace lines, framed as
  * one session (components/ne_trace, TSK-S4-09). Then the device replays the
  * canonical traces, one session each (trace_vectors.c): its own verdicts and
  * token decisions on the recorded inputs, which `neuroedge verify --targets
  * esp32s3 --port <uart>` compares with the golden references. `NE_TRACE DONE`
- * follows the last session, so a reader knows the device has nothing more to say.
+ * follows the last session, so a reader knows the device has nothing more to say;
+ * the line before it is the free heap at that point (NEUROEDGE_HEAP_JSON, TSK-S4-11).
  *
  * CONFIG_NEUROEDGE_SKIP_NETWORK (sdkconfig.qemu) leaves the Wi-Fi stack out:
  * QEMU does not emulate it.
@@ -40,13 +43,10 @@
 #include "nvs_flash.h"
 
 #include "gate_selftest.h"
-#include "gates/home_voice_indices.h"
 #include "memory_probe.h"
+#include "ne_agent.h"
 #include "ne_trace.h"
 #include "trace_vectors.h"
-
-/* The reference board, fixed by Q-1/Q-2; the only board this image is built for. */
-#define NEUROEDGE_BOARD_ID "esp32s3-box-3"
 
 static const char *TAG = "neuroedge_core";
 
@@ -120,8 +120,8 @@ static bool run_gate_selftest(ne_trace_sink *sink, const ne_device_info *info)
 {
     char line[96];
     ne_trace_open(sink, info);
-    const int failed = neuroedge_gate_selftest(esp_fill_random, info->boot_id, uptime_ms(NULL),
-                                               line, sizeof line, sink);
+    const int failed = neuroedge_gate_selftest(&ne_agent_linked, esp_fill_random, info->boot_id,
+                                               uptime_ms(NULL), line, sizeof line, sink);
     ne_trace_close(sink);
     printf("%s\n", line);
     fflush(stdout);
@@ -133,6 +133,9 @@ void app_main(void)
     ESP_LOGI(TAG, "==================================================");
     ESP_LOGI(TAG, "NeuroEdge memory feasibility spike (TSK-S1-10)");
     ESP_LOGI(TAG, "Board: ESP32-S3-BOX-3 · reference board fixed by Q-1/Q-2");
+    ESP_LOGI(TAG, "Agent: %s · %u gate(s), %u action(s), %u pin(s)", ne_agent_linked.version,
+             (unsigned)ne_agent_linked.gate_count, (unsigned)ne_agent_linked.action_count,
+             (unsigned)ne_agent_linked.pin_count);
     ESP_LOGI(TAG, "==================================================");
 
     neuroedge_memory_probe(NEUROEDGE_CP_BOOT, "boot");
@@ -143,7 +146,7 @@ void app_main(void)
     char id[24];
     device_id(id, sizeof id);
     ne_trace_sink sink = {uart_line, uptime_ms, NULL, s_trace_line, sizeof s_trace_line, 0, 0, 0};
-    const ne_device_info info = {NEUROEDGE_BOARD_ID, NE_AGENT_VERSION, id, esp_random(), NULL, NULL};
+    const ne_device_info info = {NE_AGENT_BOARD, NE_AGENT_VERSION, id, esp_random(), NULL, NULL};
     if (!run_gate_selftest(&sink, &info)) {
         ESP_LOGE(TAG, "gate self-test failed: the gate runtime is not trusted, stopping");
         while (true) {
@@ -157,6 +160,9 @@ void app_main(void)
     if (replayed < 0) ESP_LOGE(TAG, "replaying the canonical traces failed");
     sessions += replayed > 0 ? replayed : 0;
 #endif
+    /* Before NE_TRACE DONE, which a reader stops at: the free heap once the gate runtime is
+     * up, before the network and the audio stack (TSK-S4-11). A floor, not the Q-3 figure. */
+    neuroedge_memory_report_heap_json("gate_runtime_ready");
     printf("NE_TRACE DONE sessions=%d\n", sessions);
     fflush(stdout);
 

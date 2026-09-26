@@ -14,27 +14,36 @@ Loading runs the same checks as `neuroedge build` first, so a session never
 starts on a board the agent does not fit. Input is typed text matched by the
 local command grammar (Q-14/Q-15): no network, no key, deterministic.
 
-Where gate facts come from. `SystemOne` is offline here, so a criterion is
-decided by, in order:
+Where gate facts come from. Without `[system_one]` in agent.toml `SystemOne` is
+offline here, so a criterion is decided by, in order:
 
 1. the `[sim.facts]` table of `agent.toml` — session state such as
    "the guest is authenticated", which on a device the property system
    supplies and which is never inferred from what the guest typed;
 2. `[sim.slot_facts]` — a fact computed from a slot the grammar extracted,
    e.g. ``room_matches = { slot = "room", equals = "101" }``;
-3. `[sim.sensor_facts]` — a fact read from a sensor at the start of the turn,
-   e.g. ``door_closed = { sensor = "door_contact" }`` (the reading itself) or
-   ``too_hot = { sensor = "temperature", gte = 30 }``; sensor values come from
-   `[sim.sensors]` and change with `:sensor` in the REPL;
+3. `[sim.sensor_facts]` — a fact read from a sensor each time the gate facts
+   are gathered, e.g. ``door_closed = { sensor = "door_contact" }`` (the reading
+   itself), ``too_hot = { sensor = "temperature", gte = 30 }``, or the `level`
+   band a reading falls in, ``heat = { sensor = "temperature", bands = { low =
+   -40, normal = 25, high = 40, critical = 55 } }`` (`SensorFact`). A numeric rule
+   needs the sensor's unit (``temperature = { value = 24.5, unit = "C" }``).
+   Sensor values come from `[sim.sensors]` on `sim` — changed with `:sensor` in
+   the REPL — and from the kernel on `linux`. A reading that cannot be taken, or
+   that a rule of its sensor rejects, leaves every fact of that sensor undecided
+   (`sensor_unavailable`);
 4. the grammar, through `SystemOne`'s local fallback, for the facts a matched
    command declares (``command_recognized``).
 
-Anything else is undecided, and the gate blocks.
+Anything else is undecided, and the gate blocks. With `[system_one]` (TSK-I4-02),
+step 4 asks the cloud model first for the criteria that table lists — and only
+those — and the grammar whenever the model cannot answer (Q-14, FR-MDL-03).
 """
 
 from __future__ import annotations
 
 import json
+import math
 import tomllib
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
@@ -50,20 +59,26 @@ from ..actions.tools import (
     dispatch,
     parse_tool_calls,
 )
+from ..engine.canonical import digest
 from ..engine.compiler import AgentManifest, build, load_actions, load_agent_manifest
 from ..engine.compiler import resolve_gates as _resolve_gates
 from ..engine.gate import ActionContractEngine
-from ..engine.gate_resolver import GateRegistry
+from ..engine.gate_resolver import GateRegistry, ResolvedGate
 from ..engine.latency import TURN_EVENT, TurnMeter, system_two_usage, turn_path
 from ..engine.trace_sink import Clock, EventLog, monotonic_ms
-from ..errors import AgentManifestError, BoardCapabilityError, PerceptionUnavailableError
+from ..errors import (
+    AgentManifestError,
+    BoardCapabilityError,
+    NeuroEdgeError,
+    PerceptionUnavailableError,
+)
 from ..hal.board import REFERENCE_BOARD, load_board_by_id
-from ..hal.sim import SimHAL
+from ..hal.sim import SimHAL, reading_data
 from ..mcp_host import McpConfig, load_mcp_config
 from ..models import CommandGrammar, SystemOne, SystemTwo
 from ..models.grammar import OFFLINE_SAY, Recognition
 from ..models.knowledge import KNOWLEDGE_INTENT, KnowledgeBase, load_agent_grammar
-from ..trace import validate_trace
+from ..trace import json_safe, validate_trace
 
 # Words that answer the device's pending question (Q-26): matched on the device,
 # so the answer's source is `local_grammar`. Only while a question is pending.
@@ -128,26 +143,230 @@ class Turn:
         return self.result is not None and not self.result.blocked
 
 
+def _finite_number(value: Any) -> float | int | None:
+    """`value` if it is a finite int or float — not a bool, a string, NaN or inf — else None."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
+
+
+def _kind(value: Any) -> str | None:
+    """What `equals` compares like with like: a bool, a string, or a finite number."""
+    if isinstance(value, bool):
+        return "bool"
+    if isinstance(value, str):
+        return "string"
+    return "number" if _finite_number(value) is not None else None
+
+
 @dataclass(frozen=True)
 class SensorFact:
-    """A gate fact read from a sensor: the reading, or a comparison of it."""
+    """
+    A gate fact read from a sensor (`[sim.sensor_facts]`): the reading itself, a
+    match (`equals`), a comparison (`gte` / `lte`, bound included), or the `level`
+    band it falls in.
+
+    `bands` are ``(level, lower bound)`` pairs, bounds strictly ascending: a reading
+    is in the last band whose bound it reaches — a bound belongs to the band it
+    starts — and the last band has no upper end (so it must be the gate's highest
+    level, `_check_bands`).
+
+    `rejects()` says why the rule cannot decide on a reading: a numeric rule on
+    anything but a finite number, a band below the first bound, `equals` on a
+    reading of another type, the reading itself when it is None or not finite.
+    The session then leaves every fact of that sensor undecided (`gate_facts`);
+    `evaluate()` of a rejected reading is None, which no gate admits.
+    """
 
     sensor: str
     equals: Any = None
     gte: float | None = None
     lte: float | None = None
+    bands: tuple[tuple[str, float], ...] | None = None
+
+    @property
+    def numeric(self) -> bool:
+        return self.bands is not None or self.gte is not None or self.lte is not None
+
+    def rejects(self, reading: Any) -> str | None:
+        if self.numeric:
+            number = _finite_number(reading)
+            if number is None:
+                return f"{reading!r} is not a finite number"
+            if self.bands is not None and number < self.bands[0][1]:
+                level, bound = self.bands[0]
+                return f"{number} is below {bound}, where the lowest band ({level!r}) starts"
+            return None
+        if self.equals is not None:
+            if _kind(reading) != _kind(self.equals):
+                return f"{reading!r} is not a {_kind(self.equals)} like {self.equals!r}"
+            return None
+        if reading is None or (isinstance(reading, float) and not math.isfinite(reading)):
+            return f"{reading!r} is not a reading"
+        return None
 
     def evaluate(self, reading: Any) -> Any:
+        if self.rejects(reading) is not None:
+            return None
         if self.equals is not None:
             return reading == self.equals
-        if self.gte is not None or self.lte is not None:
+        if self.bands is not None:
+            level = None
+            for name, bound in self.bands:
+                if reading < bound:
+                    break
+                level = name
+            return level
+        if self.numeric:
             return (self.gte is None or reading >= self.gte) and (
                 self.lte is None or reading <= self.lte
             )
         return reading
 
 
+BANDS_HOW = (
+    "write bands = { low = -40, normal = 25, high = 40, critical = 55 }: each level of "
+    "the gate's criterion, lowest first, with the reading its band starts at"
+)
+
+
+def _sensor_fact(
+    where: str, criterion: str, rule: Any, sensors: Mapping[str, tuple[Any, str | None]]
+) -> SensorFact:
+    if (
+        not isinstance(rule, dict)
+        or not isinstance(rule.get("sensor"), str)
+        or set(rule) - {"sensor", "equals", "gte", "lte", "bands"}
+    ):
+        raise AgentManifestError(
+            where=where,
+            why=(
+                "a sensor fact needs a string `sensor`, and optionally one rule: `equals`, "
+                "`gte` / `lte`, or `bands`"
+            ),
+            how=f'write {criterion} = {{ sensor = "door_contact" }}',
+        )
+    sensor = rule["sensor"]
+    rules = [key for key in ("equals", "bands") if key in rule]
+    comparisons = [key for key in ("gte", "lte") if key in rule]
+    if comparisons:
+        rules.append(" / ".join(comparisons))  # gte and lte together are one range
+    if len(rules) > 1:
+        raise AgentManifestError(
+            where=where,
+            why=f"a sensor fact is one rule, and this one has {len(rules)}: {rules}",
+            how="keep one: `bands` for a level fact, `gte` / `lte` for a bool, `equals` for a match",
+        )
+    if "equals" in rule and _kind(rule["equals"]) is None:
+        raise AgentManifestError(
+            where=f"{where} -> equals",
+            why=f"{rule['equals']!r} is not a bool, a string or a finite number",
+            how=f'write {criterion} = {{ sensor = "{sensor}", equals = true }}',
+        )
+    for key in comparisons:
+        if _finite_number(rule[key]) is None:
+            raise AgentManifestError(
+                where=f"{where} -> {key}",
+                why=f"{rule[key]!r} is not a finite number, so no reading could be compared with it",
+                how=f'write {criterion} = {{ sensor = "{sensor}", {key} = 30 }}',
+            )
+    bands: tuple[tuple[str, float], ...] | None = None
+    if "bands" in rule:
+        bands = _parse_bands(where, rule["bands"])
+    if (comparisons or bands) and sensors.get(sensor, (None, None))[1] is None:
+        raise AgentManifestError(
+            where=where,
+            why=(
+                f"a threshold is a number in a unit, and [sim.sensors] declares none for "
+                f"{sensor!r}; on linux a reading in another unit would be compared as is"
+            ),
+            how=f'declare it: [sim.sensors] {sensor} = {{ value = 30, unit = "C" }}',
+        )
+    if bands is not None:
+        return SensorFact(sensor, bands=bands)
+    return SensorFact(**rule)
+
+
+def _parse_bands(where: str, bands: Any) -> tuple[tuple[str, float], ...]:
+    if not isinstance(bands, dict) or not bands:
+        raise AgentManifestError(
+            where=f"{where} -> bands",
+            why=f"`bands` must be a table of level = lower bound, found {bands!r}",
+            how=BANDS_HOW,
+        )
+    parsed: list[tuple[str, float]] = []
+    for level, bound in bands.items():
+        if _finite_number(bound) is None:
+            raise AgentManifestError(
+                where=f"{where} -> bands.{level}",
+                why=f"band {level!r} starts at {bound!r}, which is not a finite number",
+                how=BANDS_HOW,
+            )
+        if parsed and bound <= parsed[-1][1]:
+            below, start = parsed[-1]
+            raise AgentManifestError(
+                where=f"{where} -> bands.{level}",
+                why=(
+                    f"band {level!r} starts at {bound}, not above {below!r} ({start}): the "
+                    "bounds must be strictly ascending, so a reading falls in one band only"
+                ),
+                how=BANDS_HOW,
+            )
+        parsed.append((level, bound))
+    return tuple(parsed)
+
+
+def _check_thresholds(source: Path, sensor_facts: Mapping[str, SensorFact]) -> None:
+    """
+    A `gte` on a sensor that also has `bands` sits on a band bound, so the bool and
+    the level can never disagree between two hand-copied numbers. `lte` includes its
+    bound, which already belongs to the band above: it would disagree at the bound.
+    """
+    for criterion, rule in sensor_facts.items():
+        if rule.bands is not None or not rule.numeric:
+            continue
+        banded = {
+            other: [bound for _, bound in fact.bands]
+            for other, fact in sensor_facts.items()
+            if fact.sensor == rule.sensor and fact.bands is not None
+        }
+        if not banded:
+            continue
+        where = f"{source} -> [sim.sensor_facts] {criterion}"
+        levels = ", ".join(banded)
+        if rule.lte is not None:
+            raise AgentManifestError(
+                where=f"{where} -> lte",
+                why=(
+                    f"{rule.sensor!r} also has bands ({levels}), and a band starts at its "
+                    f"bound: lte = {rule.lte} is true at {rule.lte}, where the band is already "
+                    "the one above, so the two facts would disagree there"
+                ),
+                how="use gte = <a band bound> and require it false in the gate",
+            )
+        for other, bounds in banded.items():
+            if rule.gte not in bounds:
+                raise AgentManifestError(
+                    where=f"{where} -> gte",
+                    why=(
+                        f"{rule.gte} is not a bound of the bands of {other!r} on the same "
+                        f"sensor ({bounds}): between the two, {other} and {criterion} would "
+                        "disagree"
+                    ),
+                    how=f"use gte = one of {bounds}, the bound of the band it stands for",
+                )
+
+
 def _sim_sensors(manifest: AgentManifest, sim: dict[str, Any]):
+    for table in ("sensors", "sensor_facts"):
+        if not isinstance(sim.get(table, {}), dict):
+            raise AgentManifestError(
+                where=f"{manifest.source} -> [sim.{table}]",
+                why=f"[sim.{table}] must be a table, found {sim[table]!r}",
+                how=f"write [sim.{table}] with one line per entry (docs/spec/simulation_coverage.md §2)",
+            )
     sensors: dict[str, tuple[Any, str | None]] = {}
     for name, entry in sim.get("sensors", {}).items():
         if isinstance(entry, dict):
@@ -160,21 +379,112 @@ def _sim_sensors(manifest: AgentManifest, sim: dict[str, Any]):
             sensors[name] = (entry["value"], entry.get("unit"))
         else:
             sensors[name] = (entry, None)
-    sensor_facts: dict[str, SensorFact] = {}
-    for criterion, rule in sim.get("sensor_facts", {}).items():
-        known = {"sensor", "equals", "gte", "lte"}
-        if (
-            not isinstance(rule, dict)
-            or not isinstance(rule.get("sensor"), str)
-            or set(rule) - known
-        ):
-            raise AgentManifestError(
-                where=f"{manifest.source} -> [sim.sensor_facts] {criterion}",
-                why="a sensor fact needs a string `sensor`, and optionally `equals`, `gte` or `lte`",
-                how=f'write {criterion} = {{ sensor = "door_contact" }}',
-            )
-        sensor_facts[criterion] = SensorFact(**rule)
+    sensor_facts = {
+        criterion: _sensor_fact(
+            f"{manifest.source} -> [sim.sensor_facts] {criterion}", criterion, rule, sensors
+        )
+        for criterion, rule in sim.get("sensor_facts", {}).items()
+    }
+    _check_thresholds(manifest.source, sensor_facts)
     return sensors, sensor_facts
+
+
+def _refuse_shadowed_facts(
+    where: str, facts: Mapping[str, Any], sensor_facts: Mapping[str, SensorFact]
+) -> None:
+    """A fixed value for a criterion a sensor decides would never be read."""
+    for criterion in facts:
+        if criterion in sensor_facts:
+            raise AgentManifestError(
+                where=f"{where} {criterion}",
+                why=(
+                    f"{criterion!r} is read from sensor {sensor_facts[criterion].sensor!r} "
+                    "([sim.sensor_facts]) on every evaluation, so this value would never be used"
+                ),
+                how=f"remove {criterion} here, or its [sim.sensor_facts] rule",
+            )
+
+
+def sensor_facts_digest(sim: Mapping[str, Any]) -> str | None:
+    """Digest of `[sim.sensor_facts]` as parsed — recorded with a session, checked by replay."""
+    rules = sim.get("sensor_facts")
+    if not rules:
+        return None
+    try:
+        return digest(rules)
+    except ValueError:  # a NaN / inf threshold JCS cannot write — load refuses it anyway
+        return digest(json_safe(rules))
+
+
+def _check_bands(
+    manifest: AgentManifest,
+    sensor_facts: Mapping[str, SensorFact],
+    gates: Mapping[str, ResolvedGate],
+) -> None:
+    """
+    Every band of a `bands` fact is a level the gates declare for that criterion, in
+    their order, and the last one is their highest level — so a higher reading never
+    gives a lower level, no reading however high stops below the top, and no band
+    is one a gate would never admit. Checked when the session loads, before any line.
+    """
+    for criterion, rule in sensor_facts.items():
+        if rule.bands is None:
+            continue
+        where = f"{manifest.source} -> [sim.sensor_facts] {criterion} -> bands"
+        names = [name for name, _ in rule.bands]
+        readers = [gate for gate in gates.values() if criterion in gate.evaluate]
+        if not readers:
+            raise AgentManifestError(
+                where=where,
+                why=f"no gate of the agent evaluates {criterion!r}, so its bands match no levels",
+                how=f"name the fact after the gate's `level` criterion, or remove {criterion}",
+            )
+        for gate in readers:
+            label = f"{gate.name}@{gate.version}"
+            spec = gate.evaluate[criterion]
+            if spec.get("type") != "level":
+                raise AgentManifestError(
+                    where=where,
+                    why=(
+                        f"gate {label} evaluates {criterion!r} as {spec.get('type')!r}, and "
+                        "bands give a level"
+                    ),
+                    how="use `gte` / `lte` for a bool criterion, `bands` for a `level` one",
+                )
+            levels = list(spec.get("levels", ()))
+            unknown = [name for name in names if name not in levels]
+            if unknown:
+                raise AgentManifestError(
+                    where=where,
+                    why=(
+                        f"{unknown} {'is not a level' if len(unknown) == 1 else 'are not levels'}"
+                        f" of {criterion!r} in gate {label}, which declares {levels}"
+                    ),
+                    how=f"name each band after one of {levels}",
+                )
+            order = [levels.index(name) for name in names]
+            if order != sorted(order):
+                raise AgentManifestError(
+                    where=where,
+                    why=(
+                        f"the bands {names} are not in the order of gate {label}'s levels "
+                        f"{levels}: a higher reading would give a lower level"
+                    ),
+                    how=f"list the bands in the order {levels}, each with the reading it starts at",
+                )
+            if names[-1] != levels[-1]:
+                raise AgentManifestError(
+                    where=where,
+                    why=(
+                        f"the last band {names[-1]!r} has no upper end, and gate {label} "
+                        f"declares {levels[-1]!r} above it: any reading, however high, would "
+                        f"stay {names[-1]!r}"
+                    ),
+                    how=(
+                        f"end the bands with {levels[-1]} = <the reading it starts at>; only "
+                        "lower or middle levels may be left out"
+                    ),
+                )
 
 
 def _sim_tables(manifest: AgentManifest) -> tuple[dict[str, Any], dict[str, tuple[str, Any]]]:
@@ -259,6 +569,7 @@ class SimSession:
         slot_facts: Mapping[str, tuple[str, Any]],
         sensor_facts: Mapping[str, SensorFact] | None = None,
         slow: SystemTwo | None = None,
+        fast: SystemOne | None = None,
         knowledge: KnowledgeBase | None = None,
         tools: list[Any] | None = None,
         mcp: Any = None,
@@ -273,6 +584,8 @@ class SimSession:
         self.slot_facts = dict(slot_facts)
         self.sensor_facts = dict(sensor_facts or {})
         self.slow = slow if slow is not None else SystemTwo("sim")
+        # System 1 — the gate's fact source: `[system_one]`'s model, or the grammar alone.
+        self.fast = fast if fast is not None else conversation.engine.facts_source
         self.knowledge = knowledge
         self.tools = ToolSet(tools or (), argument_limits)
         # System 2's MCP servers (Q-27); None = only the device's own tools.
@@ -331,16 +644,28 @@ class SimSession:
         sim_facts, slot_facts = _sim_tables(manifest)
         sim_table = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
         sensors, sensor_facts = _sim_sensors(manifest, sim_table)
+        for where, given in (("[sim.facts]", sim_facts), ("SimSession.load(facts=...)", facts)):
+            _refuse_shadowed_facts(f"{manifest.source} -> {where}", given or {}, sensor_facts)
 
         if target == "linux":
             _require_linux_primitives(manifest)
         actions = load_actions(manifest)
         gates, _ = _resolve_gates(manifest, registry)  # build() has already vetted them
+        _check_bands(manifest, sensor_facts, gates)
+        board = load_board_by_id(board_id)
+        for criterion, rule in sensor_facts.items():
+            # Here, not on the first turn: at run time a failed read is only "undecided".
+            board.require_sensor(
+                rule.sensor, called_from=f"{manifest.source} -> [sim.sensor_facts] {criterion}"
+            )
 
         if events is None:
             events = EventLog(clock)
         events.metadata.update(target=target, board_id=board_id, agent_version=manifest.label)
-        board = load_board_by_id(board_id)
+        rules_digest = sensor_facts_digest(sim_table)
+        if rules_digest is not None:
+            # Replay cannot recompute a sensor fact; it can tell the rules changed.
+            events.metadata["sensor_facts_digest"] = rules_digest
         if target == "linux":
             from ..hal.linux import TypedLinuxHAL
 
@@ -357,12 +682,13 @@ class SimSession:
         # Requesting the lines is the one step that holds anything: if the rest of
         # the wiring fails, they are released before the error goes up.
         try:
-            engine = ActionContractEngine(
-                gates,
-                facts_source=SystemOne("sim", fallback=grammar, network="offline", events=events),
-                clock=clock,
-                events=events,
+            # `[system_one]` of agent.toml (TSK-I4-02); none ⇒ the grammar alone (Q-14).
+            from ..models.providers import system_one_for
+
+            fast = system_one_for(manifest, events, fallback=grammar) or SystemOne(
+                "sim", fallback=grammar, network="offline", events=events
             )
+            engine = ActionContractEngine(gates, facts_source=fast, clock=clock, events=events)
             conversation = Conversation(engine=engine, hal=hal)
             if slow is None:
                 # `[system_two]` of agent.toml (TSK-S2-11); none ⇒ System 2 stays offline.
@@ -381,6 +707,7 @@ class SimSession:
                 slot_facts=slot_facts,
                 sensor_facts=sensor_facts,
                 slow=slow,
+                fast=fast,
                 knowledge=knowledge,
                 tools=actions,
                 mcp=load_mcp_config(manifest),
@@ -415,6 +742,15 @@ class SimSession:
         listed = ", ".join(f"“{p}”" for p in phrases)
         return f"Hiện mình không kết nối được mô hình. Mình vẫn làm được các lệnh: {listed}."
 
+    def unheard_help(self) -> str:
+        """The offline line when STT failed: speech is not understood, typing still is."""
+        phrases = self.local_commands()
+        line = "Hiện mình không nghe được: dịch vụ nhận giọng nói không trả lời."
+        if not phrases:
+            return line
+        listed = ", ".join(f"“{p}”" for p in phrases)
+        return f"{line} Bạn vẫn gõ được các lệnh: {listed}."
+
     @property
     def pins(self) -> tuple[str, ...]:
         """The digital outputs this agent declares, in manifest order."""
@@ -423,18 +759,62 @@ class SimSession:
     def set_sensor(self, sensor: str, value: Any) -> None:
         """Change a simulated reading (REPL `:sensor`, the UI) and record that it changed."""
         self.hal.set_sensor(sensor, value)
-        self.events.emit("sensor_set", {"sensor": sensor, "value": value})
+        self.events.emit("sensor_set", reading_data(sensor, value))
+
+    def set_fact(self, criterion: str, value: Any) -> None:
+        """A session fact (REPL `:set`, the UI) — refused for one a sensor decides."""
+        rule = self.sensor_facts.get(criterion)
+        if rule is not None:
+            raise NeuroEdgeError(
+                where=f":set {criterion}",
+                why=(
+                    f"{criterion!r} is read from sensor {rule.sensor!r} ([sim.sensor_facts]) "
+                    "each time the gate facts are gathered; a value set here would never be read"
+                ),
+                how=(
+                    f":sensor {rule.sensor} <value> on sim; on linux, change what the sensor "
+                    "measures"
+                ),
+            )
+        self.facts[criterion] = value
 
     def gate_facts(self, recognition: Recognition) -> dict[str, Any]:
+        """
+        The facts of one gate evaluation — a turn's tool calls, a confirmation, an MCP
+        call. Each sensor is read once here, so two facts of it (a band and a threshold)
+        never straddle a bound between two readings. A read that fails, or a reading a
+        rule of its sensor rejects (`SensorFact.rejects`), leaves every fact of that
+        sensor None — undecided — and writes `sensor_unavailable`; a gate that reads
+        none of them decides as usual.
+        """
         facts = dict(self.facts)
         for criterion, (slot, expected) in self.slot_facts.items():
             if slot in recognition.slots:
                 facts[criterion] = str(recognition.slots[slot]) == str(expected)
+        by_sensor: dict[str, list[tuple[str, SensorFact]]] = {}
         for criterion, rule in self.sensor_facts.items():
-            reading = self.hal.sensor_read(
-                rule.sensor, called_from=f"[sim.sensor_facts] {criterion}", use="fact"
-            )
-            facts[criterion] = rule.evaluate(reading)
+            by_sensor.setdefault(rule.sensor, []).append((criterion, rule))
+        for sensor, rules in by_sensor.items():
+            reading, reason = None, None
+            try:
+                reading = self.hal.sensor_read(
+                    sensor, called_from=f"[sim.sensor_facts] {rules[0][0]}", use="fact"
+                )
+            except (BoardCapabilityError, OSError) as error:  # a fault, a missing device
+                reason = error.why if isinstance(error, NeuroEdgeError) else repr(error)
+            else:
+                reason = next(
+                    (
+                        f"{criterion}: {why}"
+                        for criterion, rule in rules
+                        if (why := rule.rejects(reading)) is not None
+                    ),
+                    None,
+                )
+            if reason is not None:
+                self.events.emit("sensor_unavailable", {"sensor": sensor, "reason": reason})
+            for criterion, rule in rules:
+                facts[criterion] = None if reason is not None else rule.evaluate(reading)
         return facts
 
     # -- turn timing (TSK-I4-03) ------------------------------------------------------
@@ -446,20 +826,27 @@ class SimSession:
         waited: str | None = None,
         served_locally: bool | None = None,
         path: str | None = None,
+        perceived_ms: float = 0.0,
     ) -> Turn:
         """
         Run one turn and write its `turn_latency` (`engine/latency.py`). `started_ms`:
-        the turn began earlier than this call, and the time since counts as `waited`
-        (the voice driver waiting for System 2). A turn started inside another turn is
-        part of it and writes nothing of its own. A turn that raises writes nothing.
+        the turn began earlier than this call — the voice driver sent its audio to STT
+        then (`perceived_ms` of that time counts as `perception`), and the rest counts
+        as `waited` (waiting for System 2). A turn started inside another turn is part
+        of it and writes nothing of its own. A turn that raises writes nothing.
         """
         if self.conversation.meter is not None:
             return await run()
         meter = TurnMeter(
             self.events.clock, started_ms=started_ms, first_event=len(self.events.events)
         )
+        before = self.events.clock() - meter.started_ms
+        # Of the time before this call, `perceived_ms` was STT hearing the turn (TSK-S3-13).
+        heard = min(max(0.0, float(perceived_ms)), before)
+        if heard:
+            meter.add("perception", heard)
         if waited is not None:
-            meter.add(waited, self.events.clock() - meter.started_ms)
+            meter.add(waited, before - heard)
         meter.served_locally = served_locally
         self.conversation.meter = meter
         try:
@@ -488,15 +875,51 @@ class SimSession:
             meter.answered(True)
         return answer
 
-    async def handle(self, text: str) -> Turn:
-        """Run one typed line: recognise it, and `c.do()` the command's action."""
-        return await self._metered(lambda: self._handle(text))
+    async def handle(
+        self,
+        text: str,
+        *,
+        heard_after_ms: float = 0.0,
+        spoken: bool = False,
+        answer_to: str | None = None,
+    ) -> Turn:
+        """
+        Run one typed line: recognise it, and `c.do()` the command's action. A
+        transcript takes exactly this path, gate included; `heard_after_ms` is how
+        long STT took to give it, counted in the turn's `perception` stage.
 
-    async def _handle(self, text: str) -> Turn:
+        A "có" / "không" typed answers the latest question still waiting (RFC-0006).
+        `spoken`: the line is a transcript, and answers only `answer_to` — the
+        question whose answer turn this is (docs/spec/voice_fsm.md §5.4, Q-46 (D3));
+        with None it answers nothing and is an ordinary line.
+        """
+        started = self.events.clock() - heard_after_ms if heard_after_ms > 0 else None
+        return await self._metered(
+            lambda: self._handle(text, spoken=spoken, answer_to=answer_to),
+            started_ms=started,
+            perceived_ms=heard_after_ms,
+        )
+
+    def question_for(self, answer_to: str | None) -> PendingConfirmation | None:
+        """
+        The question a spoken answer may answer: `answer_to` if it still waits, else
+        None. Questions past their TTL are recorded expired first, as for a typed line.
+        """
+        self.conversation.confirmations.latest()  # records `tool_confirm_expired`
+        if answer_to is None:
+            return None
+        pending = self.conversation.confirmations.get(answer_to)
+        return pending if pending is not None and pending.state == "pending" else None
+
+    async def _handle(
+        self, text: str, *, spoken: bool = False, answer_to: str | None = None
+    ) -> Turn:
         with self.conversation.stage("perception"):
             self.hal.type_text(text)
             utterance = self.hal.audio_in(called_from="SimSession.handle()") or ""
-            pending = self.conversation.confirmations.latest()
+            pending = (
+                self.question_for(answer_to) if spoken else self.conversation.confirmations.latest()
+            )
             answer = answer_word(utterance) if pending is not None else None
             answers = pending is not None and answer is not None
             recognition = None if answers else self.grammar.recognize(utterance)
@@ -627,13 +1050,14 @@ class SimSession:
         reply: str | None = None,
         *,
         started_ms: float | None = None,
+        perceived_ms: float = 0.0,
     ) -> Turn:
         """
         A model's answer to `text` — its tool calls, each through `dispatch()` and
         its gate, then its reply — as the turn it concludes. The voice driver
         (`perception.VoiceSession`) calls this when System 2's answer arrives;
-        `started_ms` is when the transcript came in, so the wait is the turn's
-        `system_two` stage.
+        `started_ms` is when the turn's wait began — its first `perceived_ms` STT
+        hearing it, the rest the turn's `system_two` stage.
         """
 
         async def run() -> Turn:
@@ -644,20 +1068,33 @@ class SimSession:
                 recognition = self.grammar.recognize(text)
             return await self._call_tools(Turn(text, recognition), calls, recognition, reply)
 
-        return await self._metered(run, started_ms=started_ms, waited="system_two")
+        return await self._metered(
+            run, started_ms=started_ms, waited="system_two", perceived_ms=perceived_ms
+        )
 
-    async def say_offline(self, text: str = "", *, started_ms: float | None = None) -> Turn:
+    async def say_offline(
+        self,
+        text: str = "",
+        *,
+        started_ms: float | None = None,
+        perceived_ms: float = 0.0,
+        unheard: bool = False,
+    ) -> Turn:
         """
         System 2 did not answer `text` — unreachable, or too slow — so the device
         says which commands still work (`offline_help`, Q-14): a `fallback` turn.
-        Speech only: never a `c.do()`.
+        `unheard`: it was STT that failed (TSK-S3-13) — there is no text, System 2
+        was never asked, and the line says typing still works. Speech only: never a
+        `c.do()`.
         """
         turn = Turn(text, self.grammar.recognize(""))
+        line = self.unheard_help() if unheard else self.offline_help()
         return await self._metered(
-            lambda: self._speak(turn, self.offline_help(), "offline_help"),
+            lambda: self._speak(turn, line, "offline_help"),
             started_ms=started_ms,
-            waited="system_two",
-            path="fallback",
+            waited=None if unheard else "system_two",
+            path=None if unheard else "fallback",
+            perceived_ms=perceived_ms,
         )
 
     async def _call_tools(

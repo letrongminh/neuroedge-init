@@ -83,8 +83,9 @@ class VoiceStateMachine:
 
     `pending_commands` returns the physical commands not yet delivered to a pin
     (`SimHAL.pending_commands`); `close_token` is `TokenLedger.close`;
-    `stop_speech` flushes the audio output. All three are optional: a target with
-    no scheduled commands has nothing to cancel.
+    `stop_speech` flushes the audio output (`VoiceSession` cuts the reply playing
+    on the speaker, TSK-S3-13). All three are optional: a target with no
+    scheduled commands has nothing to cancel.
     """
 
     def __init__(
@@ -111,6 +112,9 @@ class VoiceStateMachine:
         self._transcript_taken = False  # the current THINKING turn has its transcript
         self._reply_is_ask = False
         self._reply_started_at: float | None = None
+        # The turn opened out of speaking a question — T11, or T13 → T14 over it: the one
+        # turn in which a spoken yes / no may answer that question (§5.4, Q-46 (D3)).
+        self.answer_turn: int | None = None
         self._empty_in_a_row = 0
         # Commands this machine cancelled, oldest first (the corpus reuses their tokens).
         self.aborted: list[Any] = []
@@ -127,8 +131,9 @@ class VoiceStateMachine:
     def fire_due(self) -> list[str]:
         """
         Fire every deadline that has passed on the clock, earliest first. Returns
-        what the caller must act on: ``"think_timeout"`` means say the offline
-        line now (T09, §7).
+        what the caller must act on: ``"turn_end"`` means the turn closed — send
+        its audio to STT (T04); ``"think_timeout"`` means say the offline line
+        now (T09, §7).
         """
         signals: list[str] = []
         now = self.clock()
@@ -139,6 +144,7 @@ class VoiceStateMachine:
             if deadline == self._end_of_turn_at:
                 self._end_of_turn_at = None
                 self._to(VoiceState.THINKING, "turn_end")  # T04
+                signals.append("turn_end")
             elif deadline == self._listen_until:
                 self._listen_until = None
                 self._to(VoiceState.IDLE, "listen_timeout")  # T05
@@ -204,12 +210,17 @@ class VoiceStateMachine:
         if self.state is VoiceState.THINKING:
             self._to(VoiceState.IDLE, "reply_empty")
 
-    def reply_ended(self) -> None:
-        """`tts_stream_end` with `done` (or `error`) while speaking (T11, T12)."""
+    def reply_ended(self, reason: str = "done") -> None:
+        """
+        `tts_stream_end` with `done` or `error` while speaking (T11, T12). A question
+        whose stream ended with `error` was never heard: it opens no answer turn (T12,
+        Q-46 (D3)).
+        """
         if self.state is not VoiceState.SPEAKING:
             return
-        if self._reply_is_ask:
+        if self._reply_is_ask and reason != "error":
             self._open_turn("ask_asked", speech=False)  # T11
+            self.answer_turn = self.turn
         else:
             self._to(VoiceState.IDLE, "reply_end")  # T12
 
@@ -241,10 +252,13 @@ class VoiceStateMachine:
         # 5. record the state changes.
         self._to(VoiceState.BARGE_IN, "barge_in")
         self._open_turn("barge_in", speech=True)  # T14
+        if was is VoiceState.SPEAKING and self._reply_is_ask:
+            self.answer_turn = self.turn  # speech over the question may be its answer (§5.4)
 
     # -- transitions -------------------------------------------------------------
     def _open_turn(self, trigger: str, *, speech: bool) -> None:
         self.turn += 1
+        self.answer_turn = None  # T11 and T14 over a question set it again
         self._to(VoiceState.LISTENING, trigger)
         if not speech:
             self._listen_until = self.clock() + self.params.listen_timeout_ms

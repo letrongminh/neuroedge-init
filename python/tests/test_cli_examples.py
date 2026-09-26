@@ -135,6 +135,13 @@ NOT_RUN = {
     "neuroedge verify --targets sim,linux": "linux needs GPIO lines (job linux-hal)",
     "neuroedge test": "pytest inside pytest; tests/test_cli_new.py runs it in a subprocess",
     "neuroedge test tests/ --pytest-arg=-x": "as above",
+    "neuroedge run --voice-file turn.wav --voice-out reply.wav   # speech: needs stt/tts tables": (
+        "needs [stt]/[tts] in agent.toml and a WAV file; tests/test_voice_cli.py runs it on the "
+        "fake providers"
+    ),
+    "neuroedge record --voice-file turn.wav --anonymize   # transcripts hashed in the trace": (
+        "as above"
+    ),
 }
 
 

@@ -36,12 +36,14 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Xem độ trễ từng chặng và tỷ lệ System 1 / System 2 của một phiên | `neuroedge trace show` (sự kiện `turn_latency`, `session_summary`) | ✅ |
 | Liệt kê / xem profile bo mạch | `neuroedge board list` · `neuroedge board show` | ✅ |
 | Đối chiếu năng lực agent ↔ bo mạch, biên dịch gate (cả cây nhị phân `.netree` cho thiết bị, RFC-0003) | `neuroedge build` | ✅ |
+| Sinh firmware ESP-IDF cho agent của mình rồi nạp lên Box-3 — gate chạy và tự kiểm trên chip | `neuroedge build --target esp32s3` → `idf.py flash` ([`nap-firmware.md`](nap-firmware.md)) | ✅ trên QEMU · bo mạch ⏳ · chưa chân GPIO nào động (TSK-S4-01) |
 | Chạy agent có gate trên `sim` từ mã Python (`c.do()` trên `SimHAL`) | — (thư viện) | ✅ |
 | Chạy agent có gate trên `sim` từ dòng lệnh (gõ chữ, không mạng) | `neuroedge run` | ✅ |
 | Xem phiên `sim` trực tiếp trên trình duyệt: chốt cửa, đèn, cảm biến, màn hình | `neuroedge run --ui` | ✅ |
 | Mở một vết ghi thành trang HTML để xem lại, tua thời gian, gửi đồng nghiệp | `neuroedge trace view` | ✅ |
 | Xuất vết ghi để phân tích thời gian trong Perfetto | `neuroedge trace export --format chrome` | ✅ |
 | Giả lập cảm biến và màn hình trên `sim` | `[sim.sensors]` · `:sensor` · `display.show()` | ✅ |
+| Đổi số đọc cảm biến thành dữ kiện gate: so ngưỡng, hoặc dải cho tiêu chí `level` (25 °C → `normal`) — trên `sim` và `linux` | `[sim.sensor_facts]`: `gte` / `lte` · `bands` — luật ở [`simulation_coverage.md`](../spec/simulation_coverage.md) §2 | ✅ |
 | Đọc một gate bằng lời: tiêu chí từ đâu, điều gì bị siết chặt | `neuroedge gate explain` | ✅ |
 | Tạo dự án agent mới có sẵn gate, action, test, và cây `traces/` (`incidents/`, `golden/` — FR-TRC-09) | `neuroedge new` | ✅ |
 | Xem ví dụ chạy được của một lệnh | `neuroedge <lệnh> --help` (mục `Examples:`) | ✅ |
@@ -53,7 +55,9 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Cho System 2 dùng MCP server bên ngoài (tin tức, tra cứu) — chỉ lấy thông tin | `[mcp.servers]` trong `agent.toml` · `neuroedge mcp tools --external` | ✅ cần `neuroedge[mcp]` |
 | Dùng LLM thật cho System 2 (Claude, GPT, DeepSeek qua OpenRouter…): câu tự do thành tool call, vẫn qua gate | `[system_two]` trong `agent.toml` · key ở biến môi trường (`api_key_env`), **không** ghi vào tệp | ✅ cần `neuroedge[cloud]` |
 | Mất mạng hoặc System 2 không trả lời: thiết bị nói các lệnh cục bộ còn dùng được (`offline_help`) | — (tự động) | ✅ |
-| Nối model chưa theo chuẩn OpenAI bằng adapter tự viết | `provider = "python:pkg.mod:factory"` trong `[system_two]` | ✅ |
+| Cho model cloud của System 1 — Jev (`typesafe/jev-1.13` qua OpenRouter, Q-4) — quyết định một tiêu chí gate từ **lời người nói**. Chỉ các tiêu chí bạn liệt kê, và chỉ tiêu chí mà lời nói tự nó xác lập được (vd người dùng muốn gì). **Không bao giờ** giao tiêu chí danh tính, quyền hay đặt phòng (`guest_authenticated`, `staff_co_authorized`, `room_matches`): đó là dữ kiện phiên từ hệ thống quản lý; dữ kiện trong ngữ cảnh luôn thắng model, còn một dữ kiện vắng mặt sẽ bị quyết từ lời người nói. Model không trả lời được (mất mạng, hết giờ, trả sai hợp đồng, dưới ngưỡng) thì ngữ pháp lệnh quyết như cũ, vết ghi có `system_one_fallback` | `[system_one]` trong `agent.toml`: `model = "typesafe/jev-1.13"`, `api_key_env = "OPENROUTER_API_KEY"`, `criteria = ["…"]`, tuỳ chọn `threshold` (0.8, tối thiểu 0.5), `timeout_ms` (1500), `api_base` (https, hoặc máy này) · thử với key thật: `python scripts/live_jev_smoke.py` | ✅ không cần extra. Build từ chối: tiêu chí agent tự tính (`[sim.facts]`, `[sim.slot_facts]`, `[sim.sensor_facts]`), tiêu chí System One API không hỏi được, và gate có `budget.p95_latency_ms` < `timeout_ms` + 50 |
+| Nói với agent trên `sim` bằng tệp WAV (16 kHz mono): STT/TTS qua provider chuẩn OpenAI audio — OpenAI, Groq, faster-whisper, Kokoro… đổi bằng `base_url`; bản chép lời qua gate như lệnh gõ, nói chen thì loa dừng và lệnh chưa giao bị hủy | `[stt]` / `[tts]` trong `agent.toml` (key ở biến môi trường, `api_key_env`) · `neuroedge run --voice-file x.wav [--voice-out tra-loi.wav]` · `record --voice-file … --anonymize` | ✅ cần key STT hoặc server cục bộ; thử không key: provider giả `python:neuroedge.perception.providers.fake:stt` |
+| Nối model chưa theo chuẩn OpenAI bằng adapter tự viết | `provider = "python:pkg.mod:factory"` trong `[system_two]` (trả provider) hoặc `[system_one]` (trả `FactSource`, câu trả lời vẫn bị kiểm miền giá trị và ngưỡng) | ✅ |
 | Người xác nhận khi gate hỏi lại (`ask`): gõ `có` / `không`, hoặc nút Đồng ý / Huỷ trên `run --ui` | `neuroedge run` · `neuroedge run --ui` | ✅ gate phải khai `confirms` |
 | Ghi một phiên ra vết ghi (có chế độ ẩn danh) | `neuroedge record` | ✅ |
 | Phát lại vết ghi trên `sim` / `linux`, so golden | `neuroedge replay` | ✅ |
@@ -72,20 +76,26 @@ Kiểm tra nhanh toàn bộ artifact trong kho: `CHANGELOG.md` §2.2.
 
 Nói thẳng để bạn không mất thời gian:
 
-- `neuroedge run` / `record` / `mcp serve` mới gõ chữ trên terminal. Trên `linux` agent chưa được cần
-  âm thanh (lệnh báo lỗi, mã 1) và chưa có trang `--ui` (**thoát mã 2**). Không có "PASS" giả
-  (bất biến 10, `CHANGELOG.md` §3.3).
+- `neuroedge run` / `record` / `mcp serve` mới gõ chữ trên terminal; trên `sim`, `run` / `record` nhận thêm
+  tệp WAV (`--voice-file`). Chưa có micro, loa thật, wake-word: một lượt mở bằng VAD. `--voice-file` trên
+  `linux` hoặc với `--ui` **thoát mã 2** (TSK-S5-08). Trên `linux` agent chưa được cần âm thanh (lệnh báo
+  lỗi, mã 1) và chưa có trang `--ui` (**thoát mã 2**). Không có "PASS" giả (bất biến 10,
+  `CHANGELOG.md` §3.3).
 - `--target linux` cần line GPIO thật hoặc ảo (`scripts/setup_gpio_sim.sh`) và
   `pip install 'neuroedge[linux]'`; thiếu thì lệnh báo lỗi, không giả vờ chạy.
-- Trên `linux` có `digital.out`, `sensor.read`, `display`; âm thanh chưa hiện thực. Cảm biến đọc bằng
-  độ (°C), không bằng "dải" như `[sim.sensors]` của `factory-monitor` (`high`, `critical`): gate so
-  dải thì chặn (fail-closed) cho tới khi có `evaluate.type: numeric` (`TODOS.md` #30). Màn hình
-  `/dev/fb*` chỉ nhận khung điểm ảnh; khung chữ cần `display = memory`. `:sensor` trong REPL không
-  đổi được cảm biến thật.
-- Chưa có bo mạch `esp32s3`: firmware (walker gate, sổ token C, replay vết ghi chuẩn mực) mới chạy
-  trên máy tính và QEMU. Trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng
+- Trên `linux` có `digital.out`, `sensor.read`, `display`; âm thanh chưa hiện thực. Gate chưa so trực
+  tiếp được số đọc (`evaluate.type: numeric`, `TODOS.md` #30): agent đổi số đọc thành dữ kiện gate ở
+  `[sim.sensor_facts]` — ngưỡng `gte`/`lte`, hoặc dải `bands` như `factory-monitor` — như nhau trên
+  `sim` và `linux`. Màn hình `/dev/fb*` chỉ nhận khung điểm ảnh; khung chữ cần `display = memory`.
+  `:sensor` trong REPL không đổi được cảm biến thật.
+- Chưa có bo mạch `esp32s3`: firmware (walker gate, sổ token C, replay vết ghi chuẩn mực, firmware
+  sinh cho agent của bạn) mới chạy trên máy tính và QEMU, và chưa động chân GPIO nào (TSK-S4-01). Trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng
   trên host; `replay --target esp32s3` cho vết ghi tuỳ ý **thoát mã 2**.
 - Tương đương target mới so **quyết định** (phán quyết + lệnh chân), chưa so timing.
+- `[system_one]` gửi lời người nói lên OpenRouter — chỉ lời nói, không action hay tham số (`--anonymize`
+  chỉ băm vết ghi). Jev đọc tiếng Anh tốt nhất; độ tin cậy trên câu tiếng Việt chưa đo (`TODOS.md` #27),
+  nên đặt `threshold` và `confidence_gte` thận trọng. Chỉ giao cho model tiêu chí mà lời nói tự nó
+  xác lập được — danh tính, đặt phòng vẫn là dữ kiện phiên; `call_source` thì build từ chối.
 - Danh sách đầy đủ: `CHANGELOG.md` §3.7.
 
 ## 4. Khi gặp lỗi

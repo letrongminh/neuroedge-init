@@ -61,8 +61,8 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | **Pha đang thực thi** | 🟡 **I1 — Preview nội bộ trên `sim`** (I2, I3 phần không cần bo mạch và I4 làm song song) | Increment và ngày dự báo: §0.2 |
 | **Increment đang mở** | 🟡 **I1** — còn I1-01, I1-02 (tạm hoãn: phát triển nội bộ) | I0 đã xong 42 / 42 · chi tiết §0.2 |
 | **Cột mốc tiếp theo** | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** | Ngày dự báo ở §0.2 · chưa phát hành ra ngoài (Q-39) |
-| **Lần cập nhật cuối** | **2026-09-26** | Phiên gần nhất: đợt 1 — TSK-I1-03, TSK-I4-03, TSK-S5-09, TSK-W0-02/03/04, TSK-W2-07 và review · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 1323/1323 · SKIP 0** | `python/tests/` — 58 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 22/22 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
+| **Lần cập nhật cuối** | **2026-09-26** | Phiên gần nhất: đợt 2 — TSK-I4-02 (Jev), TSK-S3-13 (STT/TTS trên `sim`), TSK-I3-01 + S4-11 (firmware cho agent, RAM), D1 (`bands`) và review · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Trạng thái CI Lõi** | ✅ **PASS 2135/2135 · SKIP 0** | `python/tests/` — 67 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 27/27 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · kỹ sư nhúng thứ hai (V6): đã quyết tuyển (2026-09-25), chưa có người — cần vào trước 2026-11-16 (Q-39) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -78,8 +78,8 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 |  | **Cổng nhu cầu (Q-20)** | 2026-10-25 | Go / Adjust / Stop cho I3–I7 (`docs/business/cong-nhu-cau-2026-10-25/cham-diem.md` §4.1) | — | ⏳ Đang phỏng vấn | I0 | — |
 |  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | Người ngoài đội cài từ wheel nội bộ và chạy agent có gate trong dưới 10 phút, không cần phần cứng | **3 / 5** | 🟡 Đang làm — TSK-I1-01, I1-02 tạm hoãn (phát triển nội bộ) | I0 | tag `v0.1.0` (nội bộ) |
 |  | **I2 — `linux` ngang `sim`** | 2026-11-29 | `run`, `record`, `mcp serve --target linux`; cảm biến và màn hình trên `linux`; nightly trên RPi 5 | **3 / 4** | 🟡 Phiên tương tác, cảm biến, màn hình xong trên gpio-sim + i2c-stub; nightly RPi 5 còn lại | I1 | tag `v0.2.0` (nội bộ) |
-|  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | Gate chạy trên chip, điều khiển chân thật; người dùng tự nạp agent; `verify` ba target bậc 1 cho miền phán quyết | **4 / 14** | 🟡 Phần không cần bo mạch đã xong; chờ bo mạch | I1, cổng Go | tag `v0.3.0` + firmware (nội bộ) |
-|  | **I4 — Thoại trên host** | 2026-12-13 | Nói chuyện với agent trên `sim` và `linux`: wake-word, cắt lời, STT/TTS qua provider cloud, fallback lệnh cục bộ | **4 / 8** | 🟡 Đặc tả, bộ vector, FSM Python, độ trễ trong vết ghi xong; STT/TTS, wake-word, âm thanh `linux` còn lại | I2, cổng Go | tag `v0.4.0` (nội bộ) |
+|  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | Gate chạy trên chip, điều khiển chân thật; người dùng tự nạp agent; `verify` ba target bậc 1 cho miền phán quyết | **5 / 14** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU); chờ bo mạch | I1, cổng Go | tag `v0.3.0` + firmware (nội bộ) |
+|  | **I4 — Thoại trên host** | 2026-12-13 | Nói chuyện với agent trên `sim` và `linux`: wake-word, cắt lời, STT/TTS qua provider cloud, fallback lệnh cục bộ | **5 / 8** | 🟡 Đặc tả, vector, FSM Python, độ trễ, SystemOne qua Jev xong; STT/TTS xong trên `sim`; wake-word, âm thanh `linux` còn lại | I2, cổng Go | tag `v0.4.0` (nội bộ) |
 |  | **I5 — Thoại trên Box-3** | 2027-01-03 | Demo "nói chuyện với con chip $5": thoại trên ESP32-S3, gate trên chip, cùng vết ghi replay trong CI | **0 / 7** | ⏳ Chưa bắt đầu | I3, I4 | tag `v0.5.0` + firmware (nội bộ) |
 | **Công khai** | **I6 — Công khai** | 2027-01-10 | Repo công khai, `pip install neuroedge` từ PyPI, lược đồ ở URL công khai, video demo thoại trên `sim`, `linux` và Box-3 | **3 / 8** | 🟡 Quét bí mật, SBOM xong; chờ I5 | I5 | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
 | **v1.0** | **I7 — v1.0** | 2027-01-24 | OTA A/B có ký, bảo mật thiết bị, ổn định 24 giờ trên chip; đủ A1–A9 | **1 / 12** | 🟡 Ghim Actions, attestation xong; chờ I6 | I6 | `v1.0.0` |
@@ -107,32 +107,31 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-26 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. VỪA HOÀN THÀNH — đợt 1 (chi tiết: CHANGELOG.md [Chưa phát hành])                    │
-│    • TSK-I1-03: ví dụ trong --help cho mọi lệnh; new tạo sẵn traces/                   │
-│    • TSK-I4-03: turn_latency + session_summary — tỷ lệ System 1 / System 2             │
-│    • TSK-S5-09: sensor.read (hwmon/IIO) và display (fb/memory) trên linux              │
-│    • TSK-W0-02/03/04, W2-07: SBOM, pip-audit, gitleaks, CodeQL, ghim SHA               │
+│ 1. VỪA HOÀN THÀNH — đợt 2 (chi tiết: CHANGELOG.md [Chưa phát hành])                    │
+│    • TSK-I4-02: [system_one] — Jev typesafe/jev-1.13 qua System One API                │
+│    • TSK-S3-13: [stt]/[tts] chuẩn OpenAI audio; --voice-file trên sim                  │
+│    • TSK-I3-01: build --target esp32s3 sinh firmware cho agent (QEMU)                  │
+│    • TSK-S4-11: ngân sách RAM tĩnh + heap QEMU mỗi PR (ESP-SR chưa link)               │
+│    • D1: bands trong [sim.sensor_facts] — factory-monitor đọc °C trên linux            │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
 │    1. Đặt 2 Box-3 + 1 RPi 5 (Phụ lục B); tuyển V6 — đã quyết, cần trước 2026-11-16     │
-│    2. Đợt 2: TSK-I4-02 (Jev typesafe/jev-1.13 qua OpenRouter), TSK-S3-13               │
-│       (STT/TTS chuẩn OpenAI audio), TSK-S4-11 + TSK-I3-01 (QEMU)                       │
-│    3. Đợt 3: TSK-S6-01/02/04 (OTA QEMU), TSK-S4-10 + TSK-I4-01, TSK-S5-08              │
+│    2. Đợt 3: TSK-S6-01/02/04 (OTA QEMU), TSK-S4-10 + TSK-I4-01, TSK-S5-08              │
+│    3. Chạy scripts/live_jev_smoke.py với OPENROUTER_API_KEY; đo Jev tiếng Việt         │
 │    4. Tái sinh requirements-lock.txt (thiếu phụ thuộc của mcp) — đóng #54              │
 │    5. Kỹ thuật trưởng: chốt chân trời hẹn giờ (voice_fsm.md §10) → Q-N                 │
 │    6. TSK-I1-01, I1-02 tạm hoãn: mở lại trước buổi đo TTFV                             │
 │                                                                                        │
 │ 4. LƯU Ý — bất biến ở CHANGELOG.md §3.3; dưới đây chỉ điều chưa có ở đó                │
 │    • Chỉ c.do() điều khiển được chân: HAL chưa gắn ledger từ chối mọi lệnh             │
-│    • Replay tính lại phán quyết từ dữ kiện đã ghi; golden chỉ so quyết định            │
-│    • Mọi hành động đi qua dispatch(): lỗi hợp đồng ném ra, không thành BLOCK           │
-│    • Wheel mang asset ở neuroedge/_data/; paths.py: checkout → gói → lỗi               │
+│    • Replay tính lại phán quyết từ dữ kiện đã ghi; không gọi model, không đọc máy      │
+│    • Model cloud (Jev, STT) là đầu vào không tin cậy: miền, ngưỡng, rồi mới gate       │
+│    • [system_one] chỉ quyết tiêu chí liệt kê trong criteria; call_source thì không     │
 │    • tests_linux/ chỉ chạy trên CI (job linux-hal): gpio-sim, i2c-stub, vkms           │
 │    • Lệnh chạm line linux phải thả line ở mọi lối ra: finally + SIGTERM/SIGHUP         │
-│    • Cảm biến linux: số hữu hạn, đúng đơn vị agent khai, không bao giờ mặc định        │
 │    • Chạy ruff check + ruff format --check trước khi commit (CI chặn)                  │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -586,9 +585,9 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 | **TSK-S4-08** | **Smoke test firmware trên Espressif QEMU** (ESP-IDF 5.4, `sdkconfig.qemu`): boot, UART, flash, self-test gate lúc khởi động (walker + sổ token trên gate home-voice, dòng `NE_SELFTEST PASS`); mỗi PR đụng `targets/**` và hằng đêm. Không phủ I2S, Wi-Fi (`NEUROEDGE_SKIP_NETWORK`), PSRAM octal (QEMU không có; `SPIRAM_IGNORE_NOTFOUND`), LCD SPI, GPIO thường *(Q-21)* | FR-CI-06, FR-TGT-03 | V2 | ✅ Hoàn thành (2026-09-24) | `.github/workflows/firmware-qemu.yml` · PR #29 |
 | **TSK-S4-09** | **Vết ghi từ firmware qua UART** (JSON-lines, tiền tố `NE1 `) + `neuroedge record --target esp32s3 --port`; chạy cả trên QEMU ⇒ `verify --targets esp32s3` trên miền quyết định trước khi bo mạch về *(Q-21)* | FR-CI-01, FR-TGT-04, FR-CLI-04 | V2 + V1 | ✅ Hoàn thành (2026-09-25) — trên host và QEMU; bo mạch ở TSK-S4-04 | [`components/ne_trace/`](targets/esp32s3/components/ne_trace/) (dòng `NE1`) · [`main/trace_vectors.c`](targets/esp32s3/main/trace_vectors.c) + `main/vectors/` (`scripts/gen_firmware_vectors.py`) · `ne_decide` (đường suy giảm C) trong `ne_gate/` · [`testing/uart.py`](python/neuroedge/testing/uart.py) · job `uart-trace` (`firmware-qemu.yml`) · đặc tả [`simulation_coverage.md`](docs/spec/simulation_coverage.md) §4 · `pytest tests/test_c_trace.py tests/test_uart_trace.py tests/test_trace_vectors.py` |
 | **TSK-S4-10** | **Ảnh golden cho giao diện LVGL:** cùng mã màn hình của firmware build trên host, `lv_test_display` + `lv_test_screenshot_compare`, mỗi PR *(Q-21)* | FR-HAL-01, FR-CI-05 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/ui/` · `.github/workflows/ci-sim-linux.yml` |
-| **TSK-S4-11** | **Ngân sách RAM tĩnh trên mỗi PR:** `idf.py size` của firmware có link ESP-SR AFE; fail khi `.bss`/`.data` làm SRAM còn lại dưới Q-3 (≥ 120 KB). QEMU in heap trong còn trống lúc boot (QEMU không giả lập PSRAM octal của Box-3, TSK-S4-08). Phần áp lực lúc chạy âm thanh vẫn chờ TSK-S1-10 | NFR-RES-01, NFR-RES-02 | V2 | ⏳ Chưa bắt đầu — làm được trước khi bo mạch về | `scripts/check_firmware_size.py` · `.github/workflows/` |
+| **TSK-S4-11** | **Ngân sách RAM tĩnh trên mỗi PR:** `idf.py size` của firmware có link ESP-SR AFE; fail khi `.bss`/`.data` làm SRAM còn lại dưới Q-3 (≥ 120 KB). QEMU in heap trong còn trống lúc boot (QEMU không giả lập PSRAM octal của Box-3, TSK-S4-08). Phần áp lực lúc chạy âm thanh vẫn chờ TSK-S1-10 | NFR-RES-01, NFR-RES-02 | V2 | 🟡 Xong một phần (2026-09-26): RAM tĩnh + heap QEMU kiểm mỗi PR, đều trên sàn 120 KB — số đo ở [`memory_spike_report.md`](docs/reports/memory_spike_report.md) §4.1. **Còn:** link ESP-SR AFE (chờ giấy phép, `TODOS.md` #17) rồi bật `--require-esp-sr` | [`check_firmware_size.py`](scripts/check_firmware_size.py) · job `firmware-size` của [`firmware-qemu.yml`](.github/workflows/firmware-qemu.yml) |
 | **TSK-S4-12** | **Bài kiểm ngày đầu có bo mạch:** codec ES8311/ES7210 port nguyên văn từ XiaoZhi; vòng loa → micro so tín hiệu mẫu, GPIO `door_lock` đo bằng đầu dò; chạy trong ngày Box-3 về | FR-PER-06, FR-HAL-06 | V2 | ⏳ Khi bo mạch về | `targets/esp32s3/tests/bringup/` |
-| **TSK-I3-01** | **Đường nạp firmware cho agent của người dùng:** `build --target esp32s3` sinh project ESP-IDF từ agent — thay các header sinh tay của `scripts/gen_firmware_gates.py` — rồi nạp theo tài liệu; CI kiểm trên QEMU | FR-CLI-02, FR-TGT-03 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/engine/compiler.py` · `targets/esp32s3/` · `docs/user/` |
+| **TSK-I3-01** | **Đường nạp firmware cho agent của người dùng:** `build --target esp32s3` sinh project ESP-IDF từ agent — thay các header sinh tay của `scripts/gen_firmware_gates.py` — rồi nạp theo tài liệu; CI kiểm trên QEMU | FR-CLI-02, FR-TGT-03 | V2 | ✅ Hoàn thành (2026-09-26) — trên QEMU; nạp lên Box-3 chờ bo mạch | [`engine/firmware.py`](python/neuroedge/engine/firmware.py) · [`components/ne_agent/`](targets/esp32s3/components/ne_agent/) · [`nap-firmware.md`](docs/user/nap-firmware.md) · job `agent-firmware` |
 
 *Mã TSK-S4-06 chưa từng được cấp; các mã còn lại giữ nguyên để không vỡ truy vết.*
 
@@ -619,10 +618,10 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 | **TSK-S2-07** | **Đặc tả chuẩn tắc máy trạng thái hội thoại** — nguồn sự thật cho cả hai hiện thực (§3.8) | FR-PER-02, FR-PER-03 | V1 | ✅ Hoàn thành (2026-09-25) — chỉ đặc tả; hiện thực ở TSK-S3-11, TSK-S5-03 | [`docs/spec/voice_fsm.md`](docs/spec/voice_fsm.md): năm trạng thái, bảng chuyển trạng thái, hợp đồng thu hồi lệnh (§5: chỉ lệnh chưa giao, ≤ 20 ms, đóng token; lệnh đã giao chạy hết), sự kiện (§8), kịch bản tuân thủ cho TSK-S3-10 (§9). Chỉ tài liệu |
 | **TSK-S3-10** | **Bộ vector kiểm thử tuân thủ độc lập ngôn ngữ** cho máy trạng thái hội thoại (§3.8) | FR-CI-07, FR-TGT-04 | V1 | ✅ Hoàn thành (2026-09-25) | [`fixtures/compliance/voice/`](fixtures/compliance/voice/): mỗi ca một tệp JSON, phủ V1–V7 và mọi dòng T01–T14 của `voice_fsm.md` §4, đáp án `expected_results.yaml` khép kín hai chiều; agent `fixtures/agents/voice-door/`; quy ước ở `voice_fsm.md` §9.1. Kiểm: `pytest tests/test_voice_corpus.py` |
 | **TSK-S3-11** | Hiện thực Python của máy trạng thái hội thoại, port thiết kế từ Pipecat | FR-PER-02→05 | V1 | ✅ Hoàn thành (2026-09-25) — thoại trên `sim`; `linux` chưa có lệnh hẹn giờ (`voice_fsm.md` §10) | `python/neuroedge/perception/` (`voice_fsm.py`, `voice_session.py`): vượt 100% bộ vector TSK-S3-10; lệnh hẹn giờ `pulse(after_ms=…)` trên `SimHAL`, hủy khi cắt lời và đóng token (§5.2). Kiểm: `pytest tests/test_voice_corpus.py tests/test_voice_fsm.py` |
-| **TSK-S3-13** | **Tích hợp ASR/TTS qua provider cloud** cho `sim` và `linux`, kèm tùy chọn mô hình cục bộ (CR-1.0) — **chuyển từ Sprint 3** (wedge `sim` gõ chữ không cần, Q-15); dùng lại hợp đồng provider của TSK-S2-11, làm cùng TSK-S5-06. Âm thanh `linux` là TSK-S5-08 | FR-MDL-09, FR-PER-07 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/providers/` |
+| **TSK-S3-13** | **Tích hợp ASR/TTS qua provider cloud** cho `sim` và `linux`, kèm tùy chọn mô hình cục bộ (CR-1.0) — **chuyển từ Sprint 3** (wedge `sim` gõ chữ không cần, Q-15); dùng lại hợp đồng provider của TSK-S2-11, làm cùng TSK-S5-06. Âm thanh `linux` là TSK-S5-08 | FR-MDL-09, FR-PER-07 | V1 | 🟡 Xong trên `sim` (2026-09-26); `linux` nhận provider khi TSK-S5-08 mang `audio.in/out` | [`perception/providers/`](python/neuroedge/perception/providers/) · [`hal/audio.py`](python/neuroedge/hal/audio.py) · [`cli/voice.py`](python/neuroedge/cli/voice.py) · ca `v6_stt_unavailable_says_offline_line.json` · kiểm: `pytest tests/test_voice_speech.py tests/test_speech_providers.py` |
 | **TSK-S5-08** | **`audio.in` / `audio.out` trên `linux`:** `sounddevice` (PortAudio, MIT); AEC phần mềm PipeWire `module-echo-cancel` (Q-22): `audio.in` đọc nút `source` đã khử vang, `audio.out` phát vào nút `sink` của module; cấu hình drop-in `pipewire.conf.d/neuroedge-echo-cancel.conf` giao kèm; `linux-rpi5` khai `aec = true` **chỉ** khi đạt tiêu chí đo `simulation_coverage.md` §6 ⇒ agent mẫu build được cho `linux`. CI: backend tệp/PCM (runner không có `snd-aloop`); Pi: `snd-aloop` + HAT I2S hằng đêm | FR-TGT-02, FR-PER-01 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` · `boards/linux-rpi5.toml` |
 | **TSK-I4-01** | **Fallback lệnh cục bộ và wake-word trên host:** openWakeWord trên `linux` (Q-7), cùng ngữ pháp lệnh với `sim` (Q-14) | FR-PER-01, FR-MDL-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/` |
-| **TSK-I4-02** | **`SystemOne` đổi được bằng cấu hình** (một phần `TODOS.md` #27) | FR-MDL-04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/models/` |
+| **TSK-I4-02** | **`SystemOne` đổi được bằng cấu hình** (một phần `TODOS.md` #27) | FR-MDL-04 | V1 | ✅ Hoàn thành (2026-09-26) | [`models/providers/systemone_api.py`](python/neuroedge/models/providers/systemone_api.py) (Jev `typesafe/jev-1.13` qua System One API; `[system_one]`: `criteria`, `threshold`, `timeout_ms`; ngữ pháp là fallback) · kiểm: `pytest tests/test_system_one_cloud.py` · [`scripts/live_jev_smoke.py`](scripts/live_jev_smoke.py) chạy tay — chưa chạy, chưa có key |
 | **TSK-I4-03** | **Độ trễ từng chặng và tỷ lệ System 1 / System 2 trong vết ghi** | FR-ACE-06, FR-TEL-03, NFR-OBS-02 | V1 | ✅ Hoàn thành (2026-09-26) | [`engine/latency.py`](python/neuroedge/engine/latency.py) (`turn_latency`, `session_summary` — [`tool_calling.md`](docs/spec/tool_calling.md) §7.1) · kiểm: `pytest tests/test_turn_latency.py` |
 
 **Tiêu chí ra I4:**

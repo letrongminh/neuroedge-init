@@ -41,7 +41,7 @@ from ..errors import BoardCapabilityError
 from . import Authorizer, HardwareAbstractionLayer, _require_signature
 from .board import BoardProfile, load_board_by_id
 from .framebuffer import DisplayBackend, display_backend
-from .sim import EventSink, Frame, PendingCommand, _NullSink, make_frame
+from .sim import EventSink, Frame, PendingCommand, _NullSink, make_frame, reading_data
 from .sysfs import Reading, SysfsSensors, parse_sources
 
 CHIP_GLOB = "/dev/gpiochip*"
@@ -329,12 +329,7 @@ class LinuxHAL(HardwareAbstractionLayer):
         else:
             reading = self._kernel_read(sensor, where)
             value, unit = reading.value, reading.unit
-        data: dict[str, Any] = {"sensor": sensor, "value": value}
-        if unit is not None:
-            data["unit"] = unit
-        if use is not None:
-            data["use"] = use
-        self.events.emit("sensor_read", data)
+        self.events.emit("sensor_read", reading_data(sensor, value, unit, use))
         return value
 
     def _kernel_read(self, sensor: str, where: str) -> Reading:

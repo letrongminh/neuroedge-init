@@ -13,6 +13,7 @@
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_system.h"
+#include "sdkconfig.h"
 
 static const char *TAG = "neuroedge_mem";
 
@@ -107,6 +108,36 @@ void neuroedge_memory_report_json(void)
            (unsigned) NEUROEDGE_Q3_MIN_PSRAM_BYTES,
            (unsigned) NEUROEDGE_Q3_MAX_FIRMWARE_BYTES,
            neuroedge_memory_meets_q3_budget() ? "true" : "false");
+}
+
+void neuroedge_memory_report_heap_json(const char *label)
+{
+#ifdef CONFIG_NEUROEDGE_QEMU
+    const char *qemu = "true";
+#else
+    const char *qemu = "false";
+#endif
+    /* printf, not ESP_LOGI, for the same reason as NEUROEDGE_MEMORY_JSON. */
+    printf("NEUROEDGE_HEAP_JSON {"
+           "\"schema\":\"neuroedge.heap/v1\","
+           "\"checkpoint\":\"%s\","
+           "\"idf_version\":\"%s\","
+           "\"qemu\":%s,"
+           "\"internal_free_bytes\":%u,"
+           "\"internal_largest_block_bytes\":%u,"
+           "\"internal_min_ever_bytes\":%u,"
+           "\"psram_free_bytes\":%u,"
+           "\"q3_min_internal_sram_bytes\":%u"
+           "}\n",
+           label != NULL ? label : "",
+           esp_get_idf_version(),
+           qemu,
+           (unsigned) heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+           (unsigned) heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL),
+           (unsigned) heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL),
+           (unsigned) heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
+           (unsigned) NEUROEDGE_Q3_MIN_INTERNAL_SRAM_BYTES);
+    fflush(stdout);
 }
 
 bool neuroedge_memory_meets_q3_budget(void)

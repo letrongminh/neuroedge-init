@@ -11,15 +11,23 @@ primary provider and a local fallback (FR-MDL-03):
 * when there is no fallback, or it cannot run, the `Unavailable` answer reaches
   the engine, which turns ``offline`` into `gate_unreachable`.
 
-`SystemTwo`'s cloud providers (LiteLLM, custom adapters) live behind
-`neuroedge.models.providers` (TSK-S2-11, Q-10); a `SystemOne` primary is any
-`FactSource`, such as a test double. The core imports no provider SDK.
+With `criteria`, the primary decides only those criteria; every other one goes
+straight to the fallback — no call, no `system_one_fallback`, nothing failed. The
+primary waits at most `timeout_ms`, and when a fallback exists it is cut off
+`FALLBACK_RESERVE_MS` before the gate's deadline, so the fallback still answers
+inside the budget. The breaker counts only a primary that is down, broken, rate
+limiting or slow within its own timeout (`_record`).
+
+The providers — System 2's (LiteLLM, custom adapters, TSK-S2-11) and System 1's
+cloud primary (Jev over the System One API, `[system_one]`, TSK-I4-02) — live
+behind `neuroedge.models.providers`; a `SystemOne` primary is any `FactSource`,
+such as a test double. The core imports no provider SDK.
 """
 
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +39,12 @@ from ..errors import NeuroEdgeError, PerceptionUnavailableError
 from .grammar import BACKEND, CommandGrammar, GrammarAdjudicator
 
 TYPES = ("bool", "level", "choice")
+# What the fallback keeps of the gate's budget when the primary is slow. The
+# command grammar answers in about a millisecond; the rest is room for the event
+# loop to wake up after the primary's deadline.
+FALLBACK_RESERVE_MS = 50.0
+# Unavailable reasons that speak of the provider's health (`SystemOne._record`).
+PROVIDER_FAILURES = frozenset({"offline", "timeout", "rate_limited", "malformed"})
 
 
 def _fallback_source(
@@ -60,6 +74,8 @@ class SystemOne:
         network: str = "online",
         events: EventLog | None = None,
         breaker: DegradationBreaker | None = None,
+        criteria: Iterable[str] | None = None,
+        timeout_ms: float | None = None,
     ) -> None:
         self.model = model
         self.primary = primary
@@ -67,6 +83,13 @@ class SystemOne:
         self.network = network
         self.events = events
         self.breaker = breaker
+        # The criteria the primary may decide; None = every criterion (a test double).
+        self.criteria = None if criteria is None else frozenset(criteria)
+        self.timeout_ms = timeout_ms
+
+    def delegates(self, criterion: str) -> bool:
+        """True when `criterion` is the primary's to decide."""
+        return self.primary is not None and (self.criteria is None or criterion in self.criteria)
 
     async def adjudicate(
         self,
@@ -79,17 +102,23 @@ class SystemOne:
         if kind not in TYPES:
             return Unavailable("refused", f"SystemOne answers {TYPES}, not {kind!r}")
 
+        if self.primary is not None and not self.delegates(criterion):
+            # Not the primary's to decide: the fallback is this criterion's source.
+            if self.fallback is None:
+                return Unavailable("refused", f"{criterion!r} is not delegated to {self.model}")
+            return await self._ask_fallback(criterion, definition, state, deadline_ms)
+        limit = self._primary_limit(deadline_ms)
         if self.network == "offline" or self.primary is None:
             answer: Fact | Unavailable = Unavailable("offline", f"{self.model} not reachable")
         elif self.breaker is not None and not self.breaker.allow_primary():
             answer = Unavailable("offline", f"circuit breaker open for {self.model}")
+        elif limit is not None and limit <= 0:
+            # Not asked, so nothing to hold against the provider's health.
+            answer = Unavailable("timeout", f"no time left in the budget for {self.model}")
         else:
-            answer = await self._ask_primary(criterion, definition, state, deadline_ms)
+            answer = await self._ask_primary(criterion, definition, state, limit)
             if self.breaker is not None:
-                if isinstance(answer, Fact):
-                    self.breaker.record_success()
-                else:
-                    self.breaker.record_failure(answer.reason)
+                self._record(answer, limit)
         if isinstance(answer, Fact) or self.fallback is None:
             return answer
 
@@ -103,6 +132,15 @@ class SystemOne:
                     "criterion": criterion,
                 },
             )
+        return await self._ask_fallback(criterion, definition, state, deadline_ms)
+
+    async def _ask_fallback(
+        self,
+        criterion: str,
+        definition: Mapping[str, Any],
+        state: Mapping[str, Any] | None,
+        deadline_ms: float | None,
+    ) -> Fact | Unavailable:
         try:
             return await self.fallback.adjudicate(criterion, definition, state, deadline_ms)
         except PerceptionUnavailableError as exc:
@@ -110,6 +148,39 @@ class SystemOne:
             return Unavailable("offline", exc.why)
         except Exception as exc:
             return Unavailable("offline", f"fallback failed: {type(exc).__name__}: {exc}")
+
+    def _record(self, answer: Fact | Unavailable, limit: float | None) -> None:
+        """
+        The breaker hears only about the provider's health. A fact closes it; a
+        provider that is down, broken, rate limiting or slow within its own
+        `timeout_ms` counts against it. What says nothing about the provider does not
+        count: a refusal of this one request (``refused`` — a 413 for words too long,
+        a definition it cannot ask), an unsure answer (``empty``), or a timeout when
+        the gate's budget left the model less than its `timeout_ms` — or any caller
+        (an MCP client) could knock the cloud out.
+        """
+        if isinstance(answer, Fact):
+            self.breaker.record_success()
+            return
+        if answer.reason not in PROVIDER_FAILURES:
+            return
+        cut_short = (
+            answer.reason == "timeout"
+            and self.timeout_ms is not None
+            and limit is not None
+            and limit < self.timeout_ms
+        )
+        if not cut_short:
+            self.breaker.record_failure(answer.reason)
+
+    def _primary_limit(self, deadline_ms: float | None) -> float | None:
+        """How long the primary may take: its own timeout, and room left for the fallback."""
+        limit = deadline_ms
+        if self.timeout_ms is not None:
+            limit = self.timeout_ms if limit is None else min(limit, self.timeout_ms)
+        if deadline_ms is not None and self.fallback is not None:
+            limit = min(limit, deadline_ms - FALLBACK_RESERVE_MS)
+        return limit
 
     async def _ask_primary(
         self,

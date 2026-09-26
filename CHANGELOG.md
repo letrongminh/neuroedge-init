@@ -32,6 +32,31 @@ bản gói.
 
 #### Đã thêm
 
+- **I4 · TSK-S3-13 — nói với agent trên `sim`: STT/TTS qua provider chuẩn OpenAI audio.** `[stt]`/`[tts]` trong
+  `agent.toml` (OpenAI, Groq, faster-whisper, Kokoro… đổi bằng `base_url`; key chỉ ở biến môi trường) và `run`/`record
+  --voice-file x.wav [--voice-out y.wav]`: bản chép lời qua gate như lệnh gõ, nói chen thì loa dừng và lệnh chưa giao bị
+  hủy, provider hỏng ⇒ câu offline, không lệnh chân nào. `perception/providers/`, `hal/audio.py`; `linux` chờ TSK-S5-08.
+  Kiểm: `pytest tests/test_speech_providers.py tests/test_voice_speech.py tests/test_voice_cli.py tests/test_voice_corpus.py`.
+  (FR-MDL-09, FR-PER-07, Q-12, Q-15)
+- **I4 · TSK-I4-02 — `SystemOne` đổi được bằng cấu hình: Jev quyết các tiêu chí gate mà `[system_one]` liệt kê, ngữ pháp
+  lệnh là fallback.** Jev (`typesafe/jev-1.13`, OpenRouter) không phải model chat: `models/providers/systemone_api.py` hỏi
+  mỗi tiêu chí một câu có kiểu qua System One API (`POST …/systemone`, thư viện chuẩn, không cần extra). Thiếu key, lỗi
+  mạng/HTTP, hết giờ, trả sai hợp đồng, ngoài miền giá trị hay dưới `threshold` ⇒ `Unavailable` ⇒ ngữ pháp quyết
+  (`system_one_fallback`); mỗi lượt gọi một `system_one_call` (`tool_calling.md` §7). Không có bảng ⇒ như cũ; replay không
+  gọi model. Kiểm: `pytest tests/test_system_one_cloud.py`. (FR-MDL-03, FR-MDL-04, Q-4; thu hẹp `TODOS.md` #27)
+- **I3 · TSK-I3-01 — `build --target esp32s3` sinh firmware cho agent của người dùng.** `<out>/esp32s3/` là project
+  ESP-IDF: mã nguồn `targets/esp32s3/` + component sinh `ne_agent` (cây `NETR`, bảng gate · chân · action, phép kiểm
+  self-test kèm phán quyết của engine host); không hợp bo mạch ⇒ mã 1, không ghi gì; self-test lúc boot chung cho mọi
+  agent, `gen_firmware_gates.py` thành lớp mỏng; wheel mang mã nguồn firmware. Nạp: `docs/user/nap-firmware.md`. Kiểm:
+  `pytest tests/test_firmware_build.py`, job `agent-firmware`. (FR-CLI-02, FR-HAL-04)
+- **I3 · TSK-S4-11 — ngân sách RAM tĩnh Q-3 trên mỗi PR.** `check_firmware_size.py --size-json` đòi `.data` + `.bss` + mã
+  IRAM để lại ≥ 120 KB SRAM trong, `--heap-log` đòi heap lúc boot trên QEMU ≥ 120 KB; đầu vào không đọc được ⇒ đỏ.
+  ESP-SR chưa link (`TODOS.md` #17; móc `--require-esp-sr`). Kiểm: `pytest tests/test_firmware_size.py`, job
+  `firmware-size`. (NFR-RES-02, Q-3)
+- **I2 · D1 — `bands` trong `[sim.sensor_facts]`; `factory-monitor` đọc độ C trên `sim` và `linux`.** Số đọc → fact
+  `level`, mỗi dải bắt đầu tại ngưỡng của nó (tính cả ngưỡng); dưới ngưỡng đầu hay không hữu hạn ⇒ chưa xác định, gate
+  chặn; cấu hình sai ⇒ lỗi ba phần khi nạp phiên. Gate không đổi. Luật: `simulation_coverage.md` §2. Kiểm: `pytest
+  tests/test_sensor_bands.py tests/test_factory_monitor.py`; `tests_linux/test_sensor_display.py`. (FR-TGT-02, `TODOS.md` #30)
 - **I2 · TSK-S5-09 — `sensor.read` và `display` trên `linux`.** Cảm biến đọc qua sysfs hwmon và IIO (`hal/sysfs.py`),
   tìm theo **tên** — nhãn kênh, hoặc nguồn đặt theo máy (`LinuxHAL(sensor_sources=)`, `NEUROEDGE_LINUX_SENSORS`); mỗi lần đọc
   tới kernel, và không nguồn, tệp lỗi, NaN/inf, cờ `*_fault` hay đơn vị khác đơn vị agent khai đều là `BoardCapabilityError`.
@@ -62,7 +87,7 @@ bản gói.
   ca JSON cho V1–V7 và mọi dòng §4, đáp án `expected_results.yaml` khép kín hai chiều, agent `voice-door`; quy ước
   `voice_fsm.md` §9.1. Kiểm: `pytest tests/test_voice_corpus.py`. (FR-CI-07, FR-TGT-04)
 - **I1 · TSK-S3-08 — mẫu thứ ba `factory-monitor`.** Quạt thông gió và đèn báo động qua gate đọc fact `level` (dải nhiệt
-  `low…critical` từ cảm biến `sim`): tắt quạt khi nóng thì hỏi xác nhận, tắt báo động thì chặn; `neuroedge new --template
+  `low…critical`, từ độ C của cảm biến qua `bands` — D1): tắt quạt khi nóng thì hỏi xác nhận, tắt báo động thì chặn; `neuroedge new --template
   factory-monitor`, có trong `wheel-smoke`. Kiểm: `pytest tests/test_factory_monitor.py`. (FR-DX-05, RFC-0006)
 - **I2 · TSK-S5-10 — phiên tương tác trên `linux`.** `run` (REPL và `-c`), `record` và `mcp serve` nhận `--target linux`:
   chân là line GPIO thật qua `LinuxHAL` (`TypedLinuxHAL`, `hal/linux.py`), vẫn gõ chữ trên terminal như `sim`, cùng sổ
@@ -194,6 +219,10 @@ bản gói.
 
 #### Đã đổi
 
+- **Q-12 nới (2026-09-26): chuẩn kết nối là nền tảng tương thích OpenAI, gồm cả endpoint quyết định có kiểu.** Jev
+  chạy trên System One API của OpenRouter (`/api/v1/systemone`), không trên chat completions; Q-4 dẫn sang Q-12. `neuroedge-prd.md` §15.
+- **Q-46 (2026-09-26): "có"/"không" nói ra chỉ trả lời câu hỏi của chính lượt đó; TTS lỗi khi đọc câu hỏi ⇒ không mở lượt
+  trả lời.** Gõ chữ và nút UI giữ nguyên (RFC-0006). Đặc tả: `docs/spec/voice_fsm.md`.
 - **Q-45 — giấy phép: PolyForm Noncommercial 1.0.0 cho mã, Apache-2.0 cho chuẩn (2026-09-25).** `LICENSE`, `LICENSES/Apache-2.0.txt`,
   `LICENSING.md`; wheel khai `PolyForm-Noncommercial-1.0.0 AND Apache-2.0`; P-3 sửa theo; hai dòng doanh thu; CLA (`TODOS.md` #43).
   Bản tới `f68a47f` vẫn là MIT. Kho public toàn bộ (đóng #41). Kiểm: `pytest tests/test_packaging.py`.
@@ -238,6 +267,26 @@ bản gói.
 
 #### Đã sửa
 
+- **Rà soát đợt 2 — Jev chỉ xét lời người nói.** Không có câu nói (MCP, System 2 tự gọi) ⇒ không hỏi model; model không nhận
+  action và tham số bên gọi đưa. Độ tin cậy = `min(confidence, xác suất của đáp án thắng)`, hai đáp án ngang nhau ⇒ chưa quyết;
+  tiêu chí agent tự tính không giao được; `http://` chỉ tới loopback. Một lớp provider chung (`models/providers/common.py`,
+  `neuroedge/net.py`: không redirect, không proxy, đọc theo hạn chót) cho `[system_two]`, `[system_one]`, `[stt]`, `[tts]`.
+  Kiểm: `pytest tests/test_system_one_cloud.py tests/test_provider_common.py`.
+- **Rà soát đợt 2 — thoại và firmware.** TTS khai tần số ngoài 8–96 kHz hay quá dài, ký tự surrogate/bidi trong bản chép lời, WAV
+  tần số 0, adapter treo ⇒ lỗi có kiểm soát, không treo phiên. `build --target esp32s3` không bao giờ ghi xuyên liên kết tượng
+  trưng, nhãn agent không chèn được dòng vào manifest, dấu `NE_SELFTEST PASS` phải ở đầu dòng, kiểm kích thước thiếu bảng
+  phân vùng ⇒ đỏ. Kiểm: `pytest tests/test_voice_speech.py tests/test_firmware_build.py tests/test_qemu_boot.py`.
+- **Tham số số NaN/±inf lọt qua giới hạn của gate (RFC-0005).** `nan < minimum` và `nan > maximum` đều sai, nên một tool
+  call JSON (MCP, System 2) mang `NaN` qua được `minimum`/`maximum`; `inf` qua được giới hạn một phía. Nay tham số `number`
+  không hữu hạn là `argument_out_of_range`, như nhau ở `engine/arguments.py` và walker C. Kiểm: `pytest tests/test_gate_arguments.py
+  tests/test_c_walker.py`.
+- **D1 review — cảm biến hỏng hay bị luật từ chối ⇒ mọi dữ kiện của cảm biến đó chưa xác định** (`sensor_unavailable`), gate
+  khác vẫn quyết; `gte` phải trùng ngưỡng dải; dải cuối là mức cao nhất; luật số cần đơn vị; `equals` đúng kiểu; không NaN
+  trong JSON; replay cảnh báo khi `[sim.sensor_facts]` đổi. `simulation_coverage.md` §2–§3. Kiểm: `pytest
+  tests/test_sensor_bands.py tests/test_session_linux.py`.
+- **D1 — `gte`/`lte` trên số đọc NaN, chữ hay bool là chưa xác định, không phải `false`.** Trước đây NaN đọc thành "không
+  nóng" và cho phép trên `sim`. Mỗi cảm biến đọc một lần mỗi lượt. `python/neuroedge/sim/session.py`. Kiểm: `pytest
+  tests/test_sensor_bands.py`.
 - **`run`/`record --target` nêu sai task và mã thoát.** `linux` nay chỉ TSK-S5-10, `esp32s3` chỉ TSK-S4-01 (trước in
   TSK-S3-05, task đã xong); target lạ thoát mã 1 kèm `NE3001`, không còn mã 2. Thông điệp bỏ tên sprint, chỉ giữ mã task.
   Kiểm: `pytest tests/test_cli_run.py tests/test_recorder.py -k target`.
@@ -724,6 +773,10 @@ System 2 trên model thật (tùy chọn, không cần cho test): `.venv/bin/pyt
 thêm `[system_two]` vào `agent.toml` (mẫu có sẵn, đã comment, trong `fixtures/agents/home-voice/agent.toml`) và
 export key. Thử với key thật: `python scripts/live_llm_smoke.py` (tốn vài cent, không chạy trong CI).
 
+System 1 trên Jev (tùy chọn, không cần extra): thêm `[system_one]` vào `agent.toml` — dạng bảng ở docstring
+`python/neuroedge/models/providers/config.py` — và export `OPENROUTER_API_KEY`. Thử với key thật:
+`python scripts/live_jev_smoke.py` (đúng 3 lượt gọi, không chạy trong CI).
+
 ### 2.2 Kiểm tra nhanh toàn bộ artifact
 
 Các lệnh dưới viết cho **gốc kho**. `paths.py` tự tìm gốc từ checkout, editable install
@@ -763,8 +816,8 @@ một pipeline xanh lúc đó là thông tin sai. CI có đúng một bước ch
 
 Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏng" và "chưa có". Hôm nay
 thoát mã 2: `run` / `mcp serve --target esp32s3` (TSK-S4-01), `run` / `mcp serve --ui --target linux`,
-`replay --target esp32s3` (TSK-S4-04). Target lạ (không phải `sim`, `linux`,
-`esp32s3`) là lỗi, mã 1.
+`run` / `record --voice-file` với `--target linux` (TSK-S5-08) hoặc với `--ui`, `replay --target esp32s3`
+(TSK-S4-04). Target lạ (không phải `sim`, `linux`, `esp32s3`) là lỗi, mã 1.
 
 Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://`, mặc định `gates/`.
 `--agent` mặc định là `./agent.toml`, không có thì agent mẫu `villa-concierge` của checkout.
@@ -784,12 +837,12 @@ Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://
 | `trace export <tệp> --format chrome [-o]` | Chrome Trace Event JSON cho Perfetto (`ui.perfetto.dev`) — gate và xung thành slice |
 | `board list` / `board show <id>` | Liệt kê / xem năng lực bo mạch theo 5 nguyên thủy |
 | `verify [--targets sim,linux,esp32s3] [--port <nguồn>]` | Mọi gate phân giải, mọi ca của corpus tool call (`fixtures/tool_calls/`, trên `sim`) ra đúng đáp án, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`); `esp32s3` cần `--port <nguồn>` (như `record`): firmware replay các vết ghi chuẩn mực, lệch ⇒ `NE4002`; firmware replay vết ghi hay gate cũ hơn checkout ⇒ `NE4003`, không so; thiếu `--port` ⇒ mã 1. So quyết định, chưa so timing. Loại artifact nào quét được 0 ⇒ `NE4004`, mã 1 |
-| `build --target <t> [--board id]` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate (ghi cả `<gate>.netree`/`.netree.h`); kiểm `[mcp]` và `[system_two]` (API key ghi trong `agent.toml` ⇒ lỗi, không in lại key). `--agent` (mặc định `agent.toml`), `--board` (mặc định bo mạch tham chiếu của target: `sim-default`, `linux-rpi5`, `esp32s3-box-3`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
+| `build --target <t> [--board id]` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate (ghi cả `<gate>.netree`/`.netree.h`); kiểm `[mcp]`, `[system_two]`, `[system_one]`, `[stt]` và `[tts]` (API key ghi trong `agent.toml`, trong URL, hay gửi qua `http://` tới máy khác ⇒ lỗi, không in lại key). `--agent` (mặc định `agent.toml`), `--board` (mặc định bo mạch tham chiếu của target: `sim-default`, `linux-rpi5`, `esp32s3-box-3`), `--out` (mặc định `build/`). `--target esp32s3` ghi thêm `<out>/esp32s3/`: project ESP-IDF đầy đủ của firmware cho agent — mã nguồn `targets/esp32s3/` và component sinh `ne_agent` (cây `NETR`, bảng gate · chân · action, phép kiểm self-test kèm phán quyết engine host); key gate không phải định danh C, `[agent] name`/`version` có ký tự điều khiển hay xuống dòng, quá 32 chân, thiếu mã nguồn firmware, `esp32s3/` có sẵn mà không do `build` ghi, hay liên kết tượng trưng ở một đường dẫn build ghi vào ⇒ vấn đề của build (build chỉ ghi, xoá tên của bố cục firmware, không bao giờ xuyên qua liên kết). Nạp: [`docs/user/nap-firmware.md`](docs/user/nap-firmware.md). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
 | `replay <tệp> [--target sim\|linux]` | Replay trên HAL thật: dữ kiện đã ghi vào lại, phán quyết gate và lệnh chân **tính lại**, rồi so với golden (`--golden <tệp>`, mặc định chính vết ghi). Khớp ⇒ mã 0; lệch ⇒ mã 1, `NE4002`, dòng lệch đầu tiên; `--target esp32s3` ⇒ mã 2. `--agent`, `--board`, `--trace-out` |
-| `record [--target sim\|linux] [--out traces/] [-c "<lệnh>"] [--anonymize]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`), phán quyết giữ nguyên (FR-TRC-07) |
+| `record [--target sim\|linux] [--out traces/] [-c "<lệnh>"] [--anonymize] [--voice-file x.wav [--voice-out y.wav]]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`) — cả bản chép lời và câu trả lời của phiên thoại —, phán quyết giữ nguyên (FR-TRC-07) |
 | `record --target esp32s3 --port <nguồn> [--out traces/] [--timeout 30] [--baud 921600]` | Thiết bị ghi, host đọc UART: mỗi phiên `NE1` thành một tệp `<session_id>.json` đã thẩm định (`--out x.json` khi chỉ có một phiên). `<nguồn>`: tệp log (QEMU `-serial file:uart.log`), `tcp://host:port` (QEMU `-serial tcp::5555,server`), `/dev/tty…` (cần `neuroedge[serial]`). Dòng hỏng, thiếu khung, đếm lệch ⇒ `NE4001` nêu `nguồn:dòng`, mã 1, không ghi gì. Định dạng: `docs/spec/simulation_coverage.md` §4 |
 | `test [thư-mục] [--pytest-arg A]` | Chạy bộ Action CI (pytest) của agent, mặc định `tests/`. Mọi test đạt ⇒ mã 0; có test trượt hoặc không thu được test nào ⇒ mã 1 |
-| `run [--agent a.toml] [--target sim\|linux] [--board id]` | REPL gõ chữ (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân (ảo trên `sim`). `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:confirm`, `:decline`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux`: chân là line GPIO thật (`neuroedge[linux]`; bo mạch hoặc `scripts/setup_gpio_sim.sh`), `--board` mặc định `linux-rpi5`, agent chỉ được cần `digital.out` (thiếu `gpiod`, không có chip, cần nguyên thủy khác ⇒ lỗi 3 phần, mã 1); `-c` chờ xung hết thời lượng; thoát ⇒ mọi line về inactive; `--ui` ⇒ mã 2. Có `[system_two]` ⇒ câu ngoài ngữ pháp do model thật trả lời (banner có dòng `system 2: <provider> <model> (key from $BIẾN…)`); không trả lời được ⇒ câu offline |
+| `run [--agent a.toml] [--target sim\|linux] [--board id]` | REPL gõ chữ (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân (ảo trên `sim`). `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:confirm`, `:decline`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux`: chân là line GPIO thật (`neuroedge[linux]`; bo mạch hoặc `scripts/setup_gpio_sim.sh`), `--board` mặc định `linux-rpi5`, agent chỉ được cần `digital.out` (thiếu `gpiod`, không có chip, cần nguyên thủy khác ⇒ lỗi 3 phần, mã 1); `-c` chờ xung hết thời lượng; thoát ⇒ mọi line về inactive; `--ui` ⇒ mã 2. Có `[system_two]` ⇒ câu ngoài ngữ pháp do model thật trả lời (banner có dòng `system 2: <provider> <model> (key from $BIẾN…)`); không trả lời được ⇒ câu offline. `--voice-file x.wav` (chỉ `sim`, TSK-S3-13): tệp WAV 16 kHz mono 16-bit là `audio.in` — VAD mở lượt, âm thanh của lượt đi `[stt]`, bản chép lời đi đúng đường lệnh gõ tới gate, câu trả lời đi `[tts]` (`--voice-out y.wav` ghi lại, cần `[tts]`); in `turn N · t · heard: “…”` mỗi lượt và một dòng tổng `voice: …`. Không `[stt]`, `--voice-out` mà không `[tts]`, tệp sai định dạng, hay kèm `-c` ⇒ mã 1; STT/TTS hỏng ⇒ câu offline, vẫn mã 0 (`docs/spec/voice_fsm.md` §7) |
 | `mcp tools [--json\|--openai] [--external]` | Schema của mỗi `@action` — dạng MCP hoặc function-calling OpenAI (Q-24). `--external`: thêm tool thông tin của `[mcp.servers]` mà System 2 được đưa (Q-27) |
 | `mcp serve [--agent a.toml] [--target sim\|linux] [--board id] [--trace-out t.json] [--ui [--port 8765] [--open]] [--init-timeout 30]` | Máy chủ MCP qua stdio trên `sim` hoặc `linux` (line GPIO thật, như `run --target linux`; `--ui` chỉ trên `sim`); mọi `tools/call` qua kiểm schema và gate. `--ui`: cùng phiên trên trang web 127.0.0.1 (`--port 0` chọn cổng trống; chỉ mở trình duyệt khi có `--open`); URL in ra stderr, stdout chỉ là kênh JSON-RPC. Cổng bận ⇒ cảnh báo stderr, trang sang cổng trống (URL thật ở dòng `sim UI at …`), MCP vẫn chạy. Không có `initialize` sau `--init-timeout` giây ⇒ thoát 0 (`0` = chờ mãi). Cần extra `neuroedge[mcp]` |
 | `mcp desktop-config [--agent a.toml] [--ui [--port 8765]] [--trace-out t.json] [--name N] [--write [--config-path P]]` | In mục `mcpServers` cho Claude Desktop, toàn đường dẫn tuyệt đối (trình thông dịch hiện tại, `-m neuroedge mcp serve`). `--write`: đặt đúng mục đó trong `claude_desktop_config.json` của Desktop (macOS `~/Library/Application Support/Claude/`, Windows `%APPDATA%\Claude\`), sao lưu `.bak-<giờ>`, giữ mọi khoá khác; JSON hỏng ⇒ mã 1, không ghi gì. Sau đó thoát hẳn Desktop rồi mở lại. Cần extra `neuroedge[mcp]` |
@@ -822,7 +875,7 @@ Nghĩa của từng mã `NE…`, lớp lỗi và lúc nó xuất hiện: PRD
 | Workflow | Khi nào | Job |
 |:---|:---|:---|
 | `ci-sim-linux.yml` | Mỗi PR và push lên `main` | `frozen-artifacts` · `tests` (Python 3.11/3.12/3.13, gồm walker và sổ token C biên dịch trên host) · `linux-hal` · `wheel-smoke` · `lint` · `licence-obligations` · `cloud-extra` |
-| `firmware-qemu.yml` | PR và push đụng `targets/**`, `fixtures/traces/`, `engine/binary_tree.py` hoặc `testing/uart.py` · 01:30 UTC+7 hằng đêm · chạy tay | `firmware-qemu`: build `esp32s3` với `sdkconfig.qemu` (ESP-IDF 5.4), boot trên Espressif QEMU, đòi `NE_SELFTEST PASS` rồi `NE_TRACE DONE` trên UART · `uart-trace`: bằng CLI đã cài, `record --target esp32s3 --port uart.log` + `trace validate` (đòi `device_id = qemu`), rồi `verify --targets esp32s3 --port uart.log` |
+| `firmware-qemu.yml` | PR và push (cùng một danh sách) đụng mã nguồn firmware (`targets/**`), bộ sinh và cái nó đọc (`python/neuroedge/{engine,actions,hal,templates}/**`, `cli/main.py`, `paths.py`, `testing/{uart,recorder}.py`, `pyproject.toml`, `hatch_build.py`, `gates/`, `boards/`, `schemas/`, `fixtures/agents/`, `fixtures/traces/`), `scripts/gen_firmware_*.py`, `check_firmware_size.py`, `qemu_boot.sh` hoặc chính workflow · 01:30 UTC+7 hằng đêm · chạy tay | `firmware-qemu`: build `esp32s3` với `sdkconfig.qemu` (ESP-IDF 5.4), boot trên Espressif QEMU (`scripts/qemu_boot.sh`), đòi dòng `NE_SELFTEST PASS walker=<n> token=<n>` rồi `NE_TRACE DONE sessions=<n>` ở cột 0 trên UART (chữ đó nằm trong một dòng vết ghi thì không tính), và heap trong còn trống ≥ 120 KB ở dòng `NEUROEDGE_HEAP_JSON` (checkpoint `gate_runtime_ready`) (sàn trước mạng và âm thanh, không phải phán quyết Q-3) · `firmware-size`: build cấu hình bo mạch (có Wi-Fi), `idf.py size`/`size-components --format json2`, `check_firmware_size.py`: ảnh ≤ khe A/B, `.data` + `.bss` + mã IRAM để lại ≥ 120 KB SRAM trong; nói ESP-SR đã link chưa · `agent-firmware`: CLI đã cài, `new` → `build --target esp32s3` (hai lần cùng byte; agent không hợp bo mạch ⇒ mã 1, không ghi gì) → `idf.py build` → QEMU, đòi `NE_SELFTEST PASS` với ≥ 1 phép kiểm và `agent_version` của agent đó · `uart-trace`: bằng CLI đã cài, `record --target esp32s3 --port uart.log` + `trace validate` (đòi `device_id = qemu`), rồi `verify --targets esp32s3 --port uart.log` |
 | `release-pypi.yml` | Tag `v*.*.*` · PR đổi tệp đóng gói · chạy tay | `build` · `sbom` · `smoke` · `attest` · `publish-testpypi` · `publish-pypi` · `github-release` — khi nào job nào chạy, và cổng phát hành: [`docs/release.md`](docs/release.md) |
 | `nightly-hardware.yml` | 01:00 UTC+7 hằng đêm · chạy tay | `firmware-build` (ESP-IDF 5.2.1, ngân sách flash Q-3) · `upstream-drift` (bản mới nhất được phép so với lock, chạy test; không bao giờ đỏ) · `drift-issue` (mở, cập nhật hoặc đóng **một** issue nhãn `dependency-drift`, cũng không làm đỏ lượt chạy — Q-32) · `memory-spike` · `report` |
 | `security.yml` | Mỗi PR và push lên `main` · hằng tuần · chạy tay | `pip-audit` (mọi pin trong `requirements-lock.txt`; lỗ hổng đã biết ⇒ đỏ, ngoại lệ chỉ qua `python/pip-audit-ignore.txt` có lý do) · `gitleaks` (toàn lịch sử mọi nhánh và tag; lượt hằng tuần và chạy tay thêm head của mọi PR) · `actionlint` · `codeql` (Python, GitHub Actions) · `firmware-changed` + `codeql-c` (firmware, build trong `espressif/idf:v5.4`; với PR chỉ khi đụng `targets/`) |
@@ -847,11 +900,18 @@ nó **bị bỏ qua và nói rõ là bỏ qua** trong phần summary, không bao
 
 ### 2.6 Firmware (khi đã có bo mạch)
 
+Firmware cho agent của mình: [`docs/user/nap-firmware.md`](docs/user/nap-firmware.md). Firmware của
+kho là firmware đó sinh cho agent mẫu `home-voice` (`components/ne_agent/`,
+`scripts/gen_firmware_gates.py`):
+
 ```bash
 cd targets/esp32s3
 idf.py set-target esp32s3
 idf.py build
-python ../../scripts/check_firmware_size.py build/*.bin   # ngân sách flash Q-3
+idf.py size --format json2 --output-file build/size.json
+idf.py size-components --format json2 --output-file build/size-components.json
+python ../../scripts/check_firmware_size.py build/neuroedge-esp32s3-box3.bin \
+  --size-json build/size.json --components-json build/size-components.json   # ngân sách Q-3: flash, RAM tĩnh
 idf.py -p /dev/ttyUSB0 flash monitor
 ```
 
@@ -860,8 +920,10 @@ Tìm dòng `NEUROEDGE_MEMORY_JSON` trong đầu ra monitor — đó là số đo
 Chưa có bo mạch: walker C chạy trên host với `make -C targets/esp32s3/components/ne_gate
 check-static` (dòng vết ghi: `…/ne_trace check-static`), và firmware boot trên QEMU theo
 `firmware-qemu.yml`. Vết ghi của phiên: `neuroedge record --target esp32s3 --port build/uart.log`; so với
-golden: `neuroedge verify --targets esp32s3 --port build/uart.log`. Đổi vết ghi chuẩn mực, gate hay action
-thì sinh lại `main/vectors/` (`scripts/gen_firmware_vectors.py`) trước khi build.
+golden: `neuroedge verify --targets esp32s3 --port build/uart.log`; heap lúc boot so với sàn Q-3:
+`python scripts/check_firmware_size.py --heap-log build/uart.log`. Đổi vết ghi chuẩn mực, gate hay action
+thì sinh lại `main/vectors/` (`scripts/gen_firmware_vectors.py`); đổi agent `home-voice` hay bộ sinh
+firmware thì sinh lại `components/ne_agent/` (`scripts/gen_firmware_gates.py`) — trước khi build.
 
 ---
 
@@ -958,17 +1020,22 @@ nó trong bảng task.
 
 Nói rõ để không ai đọc các mốc đã đạt quá lên:
 
-- ❌ **Phiên tương tác (`run`, `record`, `mcp serve`) mới gõ chữ trên terminal, trên `sim` và `linux`.** Trên `linux`
-  agent chỉ được cần `digital.out` và chưa có trang `--ui` (TSK-S5-10); intent không có action (`faq`) chỉ được trả lời
-  khi agent khai `[system_two]`.
-- ❌ **Chưa có giọng nói.** Máy trạng thái hội thoại chạy trên `sim` bằng sự kiện giả lập trong thời gian ảo (TSK-S3-11,
-  corpus `fixtures/compliance/voice/`); chưa có micro, loa, STT/TTS, wake-word (TSK-S3-13, S5-08, I4-01). Lệnh hẹn giờ
-  chỉ có trên `sim`, và khoảng hẹn đang bị chặn bởi TTL của phán quyết cho tới khi chốt `voice_fsm.md` §10.
+- ❌ **Phiên tương tác (`run`, `record`, `mcp serve`) mới gõ chữ trên terminal, trên `sim` và `linux`** (trên `sim`
+  thêm tệp WAV — mục dưới). Trên `linux` agent chỉ được cần `digital.out` và chưa có trang `--ui` (TSK-S5-10); intent
+  không có action (`faq`) chỉ được trả lời khi agent khai `[system_two]`.
+- ❌ **Giọng nói mới từ tệp, trên `sim`.** `run --voice-file` đưa tệp WAV qua VAD, STT/TTS provider (`[stt]`/`[tts]`,
+  TSK-S3-13) và máy trạng thái hội thoại trong thời gian ảo; chưa có micro, loa thật, wake-word, âm thanh trên `linux`
+  (TSK-S5-08, I4-01). Lệnh hẹn giờ chỉ có trên `sim`, và khoảng hẹn đang bị chặn bởi TTL của phán quyết cho tới khi
+  chốt `voice_fsm.md` §10.
 - ❌ **`esp32s3` mới chạy logic gate, chưa chạy agent.** Walker và sổ token C khớp engine host trên host và
-  boot trên QEMU (TSK-S4-07, S4-08); thiết bị replay 3 vết ghi chuẩn mực và ghi vết ghi qua UART (TSK-S4-09). HAL
-  firmware, replay vết ghi tuỳ ý và mọi thứ trên bo mạch là I3 (TSK-S4-01, S4-04); âm thanh trên chip là I5.
-- ❌ **SystemOne chưa có nhà cung cấp cloud thật** (`TODOS.md` #27; đổi bằng cấu hình là TSK-I4-02). SystemTwo
-  đã có LiteLLM và adapter tự viết (TSK-S2-11); CI chỉ thử bằng `mock_response`, lượt gọi bằng key thật chạy tay (`scripts/live_llm_smoke.py`).
+  boot trên QEMU (TSK-S4-07, S4-08); thiết bị replay 3 vết ghi chuẩn mực và ghi vết ghi qua UART (TSK-S4-09);
+  `build --target esp32s3` sinh firmware cho agent của người dùng, gate của nó tự kiểm lúc boot (TSK-I3-01) nhưng
+  chưa chân nào động. HAL firmware, replay vết ghi tuỳ ý và mọi thứ trên bo mạch là I3 (TSK-S4-01, S4-04); âm thanh
+  trên chip là I5.
+- ❌ **Model cloud chưa được CI gọi thật.** SystemOne có Jev qua System One API (`[system_one]`, TSK-I4-02),
+  SystemTwo có LiteLLM và adapter tự viết (TSK-S2-11); CI chỉ thử bằng transport giả và `mock_response`, lượt gọi
+  bằng key thật chạy tay (`scripts/live_jev_smoke.py`, `scripts/live_llm_smoke.py`). Độ tin cậy của Jev trên câu
+  tiếng Việt chưa đo (`TODOS.md` #27).
 - ❌ **Tương đương target mới ở mức quyết định, trên `sim` + `linux` + `esp32s3` trên QEMU.** `verify` so chuỗi
   phán quyết và lệnh chân; trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng trên host
   (`TODOS.md` #37). So timing và bo mạch là TSK-S4-04 (I3).

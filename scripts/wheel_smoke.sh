@@ -50,7 +50,8 @@ LISTING=$(unzip -l "$WHEEL")  # listed once: `unzip | grep -q` trips pipefail on
 for asset in schemas/trace.v1.json boards/sim-default.toml gates/unlock_door@1.2.0.yaml \
   fixtures/traces/happy-path.json fixtures/agents/villa-concierge/agent.toml \
   fixtures/agents/factory-monitor/agent.toml \
-  fixtures/tool_calls/expected_results.yaml; do
+  fixtures/tool_calls/expected_results.yaml \
+  targets/esp32s3/main/main.c targets/esp32s3/components/ne_gate/src/ne_walker.c; do
   case "$LISTING" in
     *"neuroedge/_data/$asset"*) ;;
     *) echo "::error::wheel lacks $asset"; exit 1 ;;
@@ -60,6 +61,16 @@ case "$LISTING" in
   *".dist-info/licenses/LICENSE"*) ;;
   *) echo "::error::wheel lacks its LICENSE"; exit 1 ;;
 esac
+# The firmware sources ship for `build --target esp32s3` (TSK-I3-01). ESP-SR never does
+# (its licence is for Espressif chips only, TODOS.md #17), nor any build output left in an
+# asset (hatch_build.py EXCLUDED_*): build/, managed_components/, sdkconfig, caches.
+# grep reads the whole listing (no -q), so printf never meets SIGPIPE under pipefail.
+BAD=$(printf '%s\n' "$LISTING" | grep -E 'esp[-_]sr|neuroedge/_data/.*/(build|managed_components|__pycache__)/|neuroedge/_data/.*/(sdkconfig|sdkconfig\.old|dependencies\.lock|\.neuroedge-build)$' || true)
+if [ -n "$BAD" ]; then
+  echo "::error::the wheel carries files it must not:"
+  echo "$BAD"
+  exit 1
+fi
 
 "$PY" -m venv "$WORK/venv"
 "$WORK/venv/bin/pip" install -q "$WHEEL[mcp]" pytest
@@ -115,6 +126,12 @@ cd "$WORK"
 step new my-home --template home-voice
 cd "$WORK/my-home"
 step build --target sim --board sim-default
+# The agent's firmware from the packaged sources: a complete ESP-IDF project (TSK-I3-01).
+step build --target esp32s3 --board esp32s3-box-3
+for kept in CMakeLists.txt main/main.c components/ne_agent/ne_agent.c \
+  components/ne_agent/include/ne_agent.h components/ne_agent/gates/light_on.netree.h; do
+  [ -f "build/esp32s3/$kept" ] || { echo "::error::build --target esp32s3 did not write $kept"; exit 1; }
+done
 step run -c "bật đèn"
 step run -c "wifi nhà mình là gì"
 step gate lint gates

@@ -12,9 +12,11 @@
 #   * alarm_off          — refused above `normal`: nobody silences the alarm
 #                          while the room is still hot.
 #
-# The gates compare bands, not degrees: a numeric threshold would need
-# `evaluate.type: numeric`, which gate.v1 does not have (TODOS.md #30). On a
-# device the sensor driver reports the band; `sim` reads it from [sim.sensors].
+# The gates compare bands, not degrees: a numeric criterion would need
+# `evaluate.type: numeric`, which gate.v1 does not have (TODOS.md #30). The
+# sensor reports degrees Celsius — `sim` from [sim.sensors], `linux` from the
+# kernel (an lm75 through hwmon) — and [sim.sensor_facts] below turns the
+# reading into the band, the same way on both targets.
 [agent]
 name    = "factory-monitor"
 version = "0.1.0"
@@ -34,11 +36,18 @@ alarm_off = "gates/alarm_off@1.0.0.yaml"
 [targets]
 supported = ["sim", "linux"]
 
-# `sim` starts hot, so the gates have something to refuse. Change the band with
-# `:sensor temperature normal` (or low / high / critical) in the REPL or the UI.
+# `sim` starts hot (45 °C, band `high`), so the gates have something to refuse.
+# Change the reading with `:sensor temperature 30` (or 50, 60) in the REPL or the
+# UI. On linux the unit is checked: a kernel reading in another unit is refused.
 [sim.sensors]
-temperature = "high"
+temperature = { value = 45, unit = "C" }
 
+# Each band starts at its bound, inclusive, and ends where the next one starts:
+# 25 °C is `normal`, 24.5 °C `low`, 55 °C `critical`; the last band is the gates'
+# highest level. heat_critical must sit on a band bound (checked at load) — here
+# the `critical` one — and both facts come from one reading. A reading below
+# -40 °C (an open or shorted probe), or none at all, leaves both undecided: every
+# gate that reads them refuses without asking, while vent_on / alarm_on still work.
 [sim.sensor_facts]
-heat_level    = { sensor = "temperature" }
-heat_critical = { sensor = "temperature", equals = "critical" }
+heat_level    = { sensor = "temperature", bands = { low = -40, normal = 25, high = 40, critical = 55 } }
+heat_critical = { sensor = "temperature", gte = 55 }

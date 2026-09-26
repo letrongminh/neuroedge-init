@@ -31,8 +31,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 from ..errors import NeuroEdgeError
+from ..trace import json_safe
 from ..viz import board_info, page
 from .session import SimSession
+
+
+def _json(value: Any) -> str:
+    """Strict JSON for the page: a bare NaN would stop `JSON.parse`, and the page with it."""
+    return json.dumps(json_safe(value), ensure_ascii=False, allow_nan=False)
+
 
 MAX_BODY = 4096
 
@@ -98,7 +105,10 @@ class SessionServer:
             name, _, rest = line[1:].partition(" ")
             parts = rest.split(maxsplit=1)
             if name == "set" and len(parts) == 2:
-                session.facts[parts[0]] = _parse_value(parts[1])
+                try:
+                    session.set_fact(parts[0], _parse_value(parts[1]))
+                except NeuroEdgeError as error:
+                    return {"ok": False, "error": error.as_dict()}
                 return {"ok": True, "fact": parts[0]}
             if name == "unset" and len(parts) == 1:
                 session.facts.pop(parts[0], None)
@@ -193,7 +203,7 @@ class _Handler(BaseHTTPRequestHandler):
             ).encode("utf-8")
             self._send(HTTPStatus.OK, body, "text/html; charset=utf-8")
         elif self.path == "/state":
-            self._send(HTTPStatus.OK, json.dumps(state.state()).encode(), "application/json")
+            self._send(HTTPStatus.OK, _json(state.state()).encode(), "application/json")
         elif self.path == "/events":
             self._stream()
         else:
@@ -208,7 +218,7 @@ class _Handler(BaseHTTPRequestHandler):
         seen = -1
         try:
             while True:
-                payload = json.dumps(state.state(), ensure_ascii=False)
+                payload = _json(state.state())
                 self.wfile.write(f"data: {payload}\n\n".encode())
                 self.wfile.flush()
                 # Wake on a change, or every second so a running pulse can end on screen.
@@ -243,9 +253,7 @@ class _Handler(BaseHTTPRequestHandler):
             reply = self.server_state.confirm(line)
         else:
             reply = self.server_state.command(line)
-        self._send(
-            HTTPStatus.OK, json.dumps(reply, ensure_ascii=False).encode(), "application/json"
-        )
+        self._send(HTTPStatus.OK, _json(reply).encode(), "application/json")
 
 
 def serve(session: SimSession, port: int, console: Any, open_browser: bool = True) -> None:
