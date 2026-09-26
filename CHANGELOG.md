@@ -267,6 +267,15 @@ bản gói.
 
 #### Đã sửa
 
+- **Rà soát đợt 2 — Jev chỉ xét lời người nói.** Không có câu nói (MCP, System 2 tự gọi) ⇒ không hỏi model; model không nhận
+  action và tham số bên gọi đưa. Độ tin cậy = `min(confidence, xác suất của đáp án thắng)`, hai đáp án ngang nhau ⇒ chưa quyết;
+  tiêu chí agent tự tính không giao được; `http://` chỉ tới loopback. Một lớp provider chung (`models/providers/common.py`,
+  `neuroedge/net.py`: không redirect, không proxy, đọc theo hạn chót) cho `[system_two]`, `[system_one]`, `[stt]`, `[tts]`.
+  Kiểm: `pytest tests/test_system_one_cloud.py tests/test_provider_common.py`.
+- **Rà soát đợt 2 — thoại và firmware.** TTS khai tần số ngoài 8–96 kHz hay quá dài, ký tự surrogate/bidi trong bản chép lời, WAV
+  tần số 0, adapter treo ⇒ lỗi có kiểm soát, không treo phiên. `build --target esp32s3` không bao giờ ghi xuyên liên kết tượng
+  trưng, nhãn agent không chèn được dòng vào manifest, dấu `NE_SELFTEST PASS` phải ở đầu dòng, kiểm kích thước thiếu bảng
+  phân vùng ⇒ đỏ. Kiểm: `pytest tests/test_voice_speech.py tests/test_firmware_build.py tests/test_qemu_boot.py`.
 - **Tham số số NaN/±inf lọt qua giới hạn của gate (RFC-0005).** `nan < minimum` và `nan > maximum` đều sai, nên một tool
   call JSON (MCP, System 2) mang `NaN` qua được `minimum`/`maximum`; `inf` qua được giới hạn một phía. Nay tham số `number`
   không hữu hạn là `argument_out_of_range`, như nhau ở `engine/arguments.py` và walker C. Kiểm: `pytest tests/test_gate_arguments.py
