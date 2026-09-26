@@ -678,22 +678,51 @@ class SimSession:
             meter.answered(True)
         return answer
 
-    async def handle(self, text: str, *, heard_after_ms: float = 0.0) -> Turn:
+    async def handle(
+        self,
+        text: str,
+        *,
+        heard_after_ms: float = 0.0,
+        spoken: bool = False,
+        answer_to: str | None = None,
+    ) -> Turn:
         """
         Run one typed line: recognise it, and `c.do()` the command's action. A
         transcript takes exactly this path, gate included; `heard_after_ms` is how
         long STT took to give it, counted in the turn's `perception` stage.
+
+        A "có" / "không" typed answers the latest question still waiting (RFC-0006).
+        `spoken`: the line is a transcript, and answers only `answer_to` — the
+        question whose answer turn this is (docs/spec/voice_fsm.md §5.4, Q-46 (D3));
+        with None it answers nothing and is an ordinary line.
         """
         started = self.events.clock() - heard_after_ms if heard_after_ms > 0 else None
         return await self._metered(
-            lambda: self._handle(text), started_ms=started, perceived_ms=heard_after_ms
+            lambda: self._handle(text, spoken=spoken, answer_to=answer_to),
+            started_ms=started,
+            perceived_ms=heard_after_ms,
         )
 
-    async def _handle(self, text: str) -> Turn:
+    def question_for(self, answer_to: str | None) -> PendingConfirmation | None:
+        """
+        The question a spoken answer may answer: `answer_to` if it still waits, else
+        None. Questions past their TTL are recorded expired first, as for a typed line.
+        """
+        self.conversation.confirmations.latest()  # records `tool_confirm_expired`
+        if answer_to is None:
+            return None
+        pending = self.conversation.confirmations.get(answer_to)
+        return pending if pending is not None and pending.state == "pending" else None
+
+    async def _handle(
+        self, text: str, *, spoken: bool = False, answer_to: str | None = None
+    ) -> Turn:
         with self.conversation.stage("perception"):
             self.hal.type_text(text)
             utterance = self.hal.audio_in(called_from="SimSession.handle()") or ""
-            pending = self.conversation.confirmations.latest()
+            pending = (
+                self.question_for(answer_to) if spoken else self.conversation.confirmations.latest()
+            )
             answer = answer_word(utterance) if pending is not None else None
             answers = pending is not None and answer is not None
             recognition = None if answers else self.grammar.recognize(utterance)

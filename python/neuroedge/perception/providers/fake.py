@@ -25,8 +25,23 @@ from array import array
 from collections.abc import Callable, Collection, Mapping, Sequence
 from typing import Any
 
-from ...hal.audio import samples_pcm
+from ...hal.audio import MAX_REPLY_MS, rate_ok, samples_pcm
 from .base import AudioClip, Speech, SpeechUnavailable, Transcript
+
+MAX_MS_PER_CHAR = 1000.0
+
+
+def _ms(value: Any, name: str, *, most: float = math.inf) -> float:
+    """`value` as a finite number of ms in [0, most], or `ValueError` naming `name`."""
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int | float)
+        or not math.isfinite(value)
+        or not 0 <= value <= most
+    ):
+        bound = "" if most == math.inf else f" and at most {most:g}"
+        raise ValueError(f"{name} must be a finite number of ms ≥ 0{bound}, not {value!r}")
+    return float(value)
 
 
 class FakeSpeechToText:
@@ -47,7 +62,7 @@ class FakeSpeechToText:
         fail: bool | Collection[int] = False,
     ) -> None:
         self.transcripts = transcripts
-        self.latency_ms = float(latency_ms)
+        self.latency_ms = _ms(latency_ms, "latency_ms")
         self.fail = fail
         self.clips: list[AudioClip] = []
 
@@ -89,9 +104,11 @@ class FakeTextToSpeech:
         latency_ms: float = 0.0,
         fail: bool = False,
     ) -> None:
-        self.ms_per_char = float(ms_per_char)
-        self.sample_rate_hz = int(sample_rate_hz)
-        self.latency_ms = float(latency_ms)
+        self.ms_per_char = _ms(ms_per_char, "ms_per_char", most=MAX_MS_PER_CHAR)
+        if not rate_ok(sample_rate_hz):
+            raise ValueError(f"sample_rate_hz must be 8000–96000, not {sample_rate_hz!r}")
+        self.sample_rate_hz = sample_rate_hz
+        self.latency_ms = _ms(latency_ms, "latency_ms")
         self.fail = fail
         self.texts: list[str] = []
 
@@ -105,10 +122,10 @@ class FakeTextToSpeech:
                 role="tts",
                 latency_ms=self.latency_ms,
             )
+        # Never more than a reply may hold (plus a frame, so the session's cap still shows).
+        length = min(len(text) * self.ms_per_char, MAX_REPLY_MS + 20)
         return Speech(
-            tone(len(text) * self.ms_per_char, self.sample_rate_hz),
-            self.sample_rate_hz,
-            latency_ms=self.latency_ms,
+            tone(length, self.sample_rate_hz), self.sample_rate_hz, latency_ms=self.latency_ms
         )
 
 

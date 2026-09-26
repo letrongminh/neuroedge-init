@@ -4,7 +4,7 @@
 và provider STT/TTS: TSK-S3-13), C/C++ cho `esp32s3` (TSK-S5-03, S5-04); cả hai phải qua **một** bộ
 vector tuân thủ (TSK-S3-10, §9). Yêu cầu: FR-PER-02 → FR-PER-05 (`neuroedge-prd.md` §4.4), FR-MDL-09,
 FR-PER-07. Quyết định: Q-8 (hai ngôn ngữ), Q-12 (chuẩn OpenAI), Q-14 (mất mạng), Q-17 (`on_block`),
-Q-26 (xác nhận `ask`).
+Q-26 (xác nhận `ask`), Q-46 (D3) (câu trả lời nói chỉ trong lượt trả lời của chính câu hỏi).
 
 Tài liệu này là nơi **duy nhất** định nghĩa máy trạng thái hội thoại và hợp đồng thu hồi lệnh vật
 lý. Roadmap §3.8 giữ lý do phải có một đặc tả cho hai hiện thực; `docs/spec/hal_mcu_review.md` RB-3
@@ -92,8 +92,8 @@ trong `covers`.
 | T08 | `THINKING` | Lượt kết thúc mà không có gì để phát | `IDLE` | — |
 | T09 | `THINKING` | Hết `think_timeout`, `system_two_unavailable`, hoặc `stt_unavailable` của lượt | `THINKING` | Theo §7: câu offline, rồi phát nó như mọi câu trả lời |
 | T10 | `THINKING` | `audio_in_vad_start` | `BARGE_IN` | Người dùng nói tiếp: lượt đang nghĩ bị thay |
-| T11 | `SPEAKING` | `tts_stream_end`, câu vừa phát là câu hỏi `ask` (RFC-0006) | `LISTENING` | Mở lượt mới cho câu trả lời |
-| T12 | `SPEAKING` | `tts_stream_end` | `IDLE` | — |
+| T11 | `SPEAKING` | `tts_stream_end` `done`, câu vừa phát là câu hỏi `ask` (RFC-0006) | `LISTENING` | Mở **lượt trả lời** của câu hỏi đó (§5.4) |
+| T12 | `SPEAKING` | `tts_stream_end` `done` (không phải câu hỏi), hoặc `error` (kể cả câu hỏi `ask`) | `IDLE` | Câu hỏi không ai nghe thì không mở lượt trả lời — Q-46 (D3) |
 | T13 | `SPEAKING` | `audio_in_vad_start` | `BARGE_IN` | — |
 | T14 | `BARGE_IN` | (ngay khi vào) | `LISTENING` | §5, rồi mở lượt mới |
 
@@ -139,6 +139,13 @@ chạy" cần RFC, vì `gate.v1` không nhận trường lạ (`TODOS.md` #39).
 - **Câu hỏi `ask` đang chờ** (RFC-0006, `docs/spec/tool_calling.md` §6): cắt lời **KHÔNG ĐƯỢC** tiêu
   nó. Câu người dùng vừa nói chen có thể chính là câu trả lời. Câu hỏi chỉ hết theo TTL, hoặc khi được
   trả lời.
+- **Lượt trả lời** — Q-46 (D3). Một lời "có" / "không" **nói ra** chỉ trả lời một câu hỏi `ask` trong
+  đúng một lượt: lượt mở ra từ lúc đang phát chính câu hỏi đó — T11 khi câu hỏi phát hết, hoặc T13 → T14
+  khi người dùng nói chen lúc câu hỏi đang phát. Ở mọi lượt khác, lời đó là câu nói thường (ngữ pháp
+  lệnh hoặc System 2), **không** xác nhận gì, kể cả khi câu hỏi còn trong TTL: câu hỏi của một lượt cũ,
+  hay câu hỏi không ai nghe (`tts_stream_end` `error` ⇒ T12, không có lượt trả lời). Câu hỏi hết TTL vẫn
+  được ghi `tool_confirm_expired` khi lượt kế tiếp xét tới nó, như với chữ gõ. Chữ gõ và nút trên trang
+  (`:confirm`, `run --ui`) giữ nguyên RFC-0006: trả lời câu hỏi mới nhất còn chờ.
 - **Phán quyết đã ghi**: cắt lời không sửa hay xoá sự kiện nào đã ghi; nó chỉ thêm sự kiện.
 
 ### 5.5 Hiện thực hôm nay
@@ -193,8 +200,9 @@ Con số đo được trên bo mạch thay các giá trị gợi ý ở TSK-S5-0
   lời khi hết `think_timeout` cũng là STT không dùng được. Bản chép lời **rỗng** từ một STT chạy tốt là
   "không nghe ra gì" — T06, không phải lỗi (V5).
 - **TTS không dùng được:** `tts_unavailable {reason}` rồi `tts_stream_end {reason: "error"}` — câu vẫn
-  được ghi và hiện (`tts_stream_start`), chỉ không phát thành tiếng; `error` kết thúc câu như `done`.
-  Không thử lại.
+  được ghi và hiện (`tts_stream_start`), chỉ không phát thành tiếng. `error` kết thúc câu như `done`,
+  trừ một điều: câu hỏi `ask` không phát được thì về `IDLE` (T12), không mở lượt trả lời — không ai
+  nghe câu hỏi thì không lời nói nào trả lời nó (§5.4, Q-46 (D3)). Không thử lại.
 - Hiện thực Python: `python/neuroedge/perception/voice_session.py` (đường âm thanh) và
   `python/neuroedge/perception/providers/` (adapter OpenAI audio, lỗi → `SpeechUnavailable`).
 - Lỗi liên tiếp mở mạch ngắt (`engine/circuit_breaker.py`), đi thẳng fallback. Độ trễ của gate do
@@ -264,7 +272,7 @@ Kịch bản bắt buộc:
 | V1 | Cắt lời khi có lệnh hẹn giờ đang chờ | `actuator_aborted` (`ACTUATOR_ABORTED_BY_BARGE_IN`) · chân không bao giờ nhận xung · dùng lại token bị từ chối |
 | V2 | Cắt lời khi xung đang chạy | Xung chạy đủ thời lượng · không có `actuator_aborted` |
 | V3 | Người dùng nói tiếp lúc `THINKING`, trước khi có câu trả lời | Câu trả lời đến muộn không được phát · lượt cũ không gọi `c.do()` |
-| V4 | Cắt lời giữa câu hỏi `ask` | Câu hỏi vẫn mở · "có" ở lượt sau, trong TTL, xác nhận được |
+| V4 | Cắt lời giữa câu hỏi `ask` | Câu hỏi vẫn mở · "có" ở lượt trả lời (§5.4), trong TTL, xác nhận được · "có" ở một lượt khác, hay sau câu hỏi không phát được (`error`), không xác nhận gì (Q-46 (D3)) |
 | V5 | 20 khung nhiễu liên tiếp (VAD kích, STT rỗng) | Mỗi lần về `IDLE` · không quá `max_reprompts` lần hỏi lại liên tiếp · lệnh thật sau đó vẫn chạy (FR-PER-05) |
 | V6 | Provider hết giờ / mất mạng | Câu offline · gate vẫn lượng giá bằng ngữ pháp cục bộ, hoặc `gate_unreachable` · không bao giờ `ALLOW` vì hết giờ |
 | V7 | Người nói chậm: khoảng lặng ngắn hơn `end_of_turn_silence_ms` giữa câu | Không bị cắt lượt (FR-PER-03) |
@@ -325,7 +333,8 @@ Mỗi ca là một tệp JSON; khoá của nó, và đáp án `{proves, events}`
 - **Cắt lời lúc `THINKING`** không ghi `tts_stream_end`: không có luồng nào đang phát (§3). Bước 1, 2,
   4, 5 của §5.2 vẫn chạy đủ.
 - **`system_two_unavailable`** chỉ kích T09 khi lượt đang chờ provider; lượt đã có câu trả lời từ ngữ
-  pháp cục bộ không bị câu offline chen vào. `tts_stream_end` với `error` kết thúc câu như `done`.
+  pháp cục bộ không bị câu offline chen vào. `tts_stream_end` với `error` kết thúc câu như `done`, trừ
+  câu hỏi `ask` (T12, §5.4).
 - **Lệnh hẹn giờ trên `linux`** và lệnh "xếp sau câu nói": chưa có (§5.5). Phiên thoại trên `linux`
   (`VoiceSession` ngoài `sim`) đến cùng TSK-S5-08; nó cắm nguồn khung âm thanh và loa `sounddevice` vào
   đúng hai vai `hal/audio.py` định nghĩa cho `sim` (tệp WAV, dòng thời gian WAV).

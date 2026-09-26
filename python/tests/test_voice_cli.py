@@ -203,3 +203,33 @@ def test_a_real_provider_without_its_key_sends_nothing(project, monkeypatch):
     result = invoke("run", "--agent", agent, "--voice-file", wav)
     assert result.exit_code == 0, result.output
     assert "NEUROEDGE_NO_SUCH_KEY is not set (nothing was sent)" in result.output
+
+
+@pytest.mark.parametrize("text", ["mở\ud800 cửa", "mở \u202ecửa"])
+def test_record_anonymize_survives_a_transcript_that_is_not_text(project, tmp_path, text):
+    # Wave-2 F4: a lone surrogate once made `--anonymize` raise UnicodeEncodeError (and the
+    # trace write in `finally` without it); a bidi override spoofs the console. Both are
+    # garbled now: STT unavailable, the offline line, a trace that writes.
+    agent, wav = project(
+        '\n[stt]\nprovider = "python:neuroedge_test_odd_stt:make"\n'
+        '\n[tts]\nprovider = "python:neuroedge.perception.providers.fake:tts"\n'
+    )
+    (agent.parent / "neuroedge_test_odd_stt.py").write_text(
+        f"def make(config):\n"
+        f"    class Stt:\n"
+        f"        def transcribe(self, clip):\n"
+        f"            return {text!r}\n"
+        f"    return Stt()\n",
+        encoding="utf-8",
+    )
+    import sys
+
+    sys.modules.pop("neuroedge_test_odd_stt", None)
+    out = tmp_path / "odd.json"
+    result = invoke("record", "--agent", agent, "--voice-file", wav, "--out", out, "--anonymize")
+    assert result.exit_code == 0, result.output
+    assert "STT unavailable" in result.output and "garbled" in result.output
+    trace = load_trace(out)  # written, and valid
+    kinds = [e["type"] for e in trace["events"]]
+    assert "stt_unavailable" in kinds and "stt_result" not in kinds
+    assert "\u202e" not in out.read_text(encoding="utf-8")

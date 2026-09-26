@@ -103,12 +103,31 @@ class SpeechUnavailable(PerceptionUnavailableError):
         super().__init__(where=where, why=why, how=how)
 
 
+# Invisible format characters a transcript may keep: the joiners some scripts and
+# emoji need. These four are dropped (soft hyphen, zero-width space, word joiner,
+# BOM). Every other format character — bidi overrides that make a console show text
+# other than what it holds (U+202E), tag characters that hide text from a person but
+# not from a model (U+E0000–U+E007F) — means the transcript is not plain speech.
+KEPT_FORMAT = frozenset("\u200c\u200d")
+DROPPED_FORMAT = frozenset("\u00ad\u200b\u2060\ufeff")
+_REFUSED = {
+    "Cc": "control characters",
+    "Cs": "a lone surrogate — not a character, and not encodable as UTF-8",
+    "Co": "private-use characters",
+    "Cn": "unassigned code points",
+    "Cf": "invisible format characters (bidi overrides, tags)",
+}
+
+
 def clean_transcript(text: object, where: str) -> str:
     """
     The transcript as the session may use it, or `SpeechUnavailable` when what
-    came back is not one: not text, control characters, U+FFFD (bytes that were
-    not text), or longer than any turn. Whitespace is collapsed; an empty result
-    is a valid answer — nothing was heard.
+    came back is not one: not text; U+FFFD (bytes that were not text); control
+    characters but tab and newlines; lone surrogates, which the trace (and
+    `--anonymize`'s digest) could not even encode; private-use or unassigned code
+    points; format characters but the joiners (`KEPT_FORMAT`); or longer than any
+    turn. Whitespace is collapsed; an empty result is a valid answer — nothing was
+    heard.
     """
 
     def garbled(why: str) -> SpeechUnavailable:
@@ -122,12 +141,18 @@ def clean_transcript(text: object, where: str) -> str:
 
     if not isinstance(text, str):
         raise garbled(f"a {type(text).__name__}, not text")
-    text = unicodedata.normalize("NFC", text)
     if "\ufffd" in text:
         raise garbled("it holds U+FFFD, bytes that were not text")
-    if any(unicodedata.category(ch) == "Cc" and ch not in "\t\n\r" for ch in text):
-        raise garbled("it holds control characters")
-    text = " ".join(text.split())
+    for ch in text:
+        category = unicodedata.category(ch)
+        if category not in _REFUSED or ch in "\t\n\r" or ch in KEPT_FORMAT:
+            continue
+        if ch in DROPPED_FORMAT:
+            continue
+        # The character is named by its code point only: never the text around it.
+        raise garbled(f"it holds {_REFUSED[category]} (U+{ord(ch):04X})")
+    text = "".join(ch for ch in text if ch not in DROPPED_FORMAT)
+    text = " ".join(unicodedata.normalize("NFC", text).split())
     if len(text) > MAX_TRANSCRIPT_CHARS:
         raise garbled(f"{len(text)} characters, more than any turn ({MAX_TRANSCRIPT_CHARS})")
     return text
