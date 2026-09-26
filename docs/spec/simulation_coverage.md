@@ -260,6 +260,33 @@ Firmware trên QEMU chạy mỗi PR đụng `targets/**` hoặc `fixtures/traces
 một vết ghi tuỳ ý trên thiết bị (gửi dữ kiện xuống) và so timing là phần còn lại của TSK-S4-04;
 `replay --target esp32s3` vẫn thoát mã 2.
 
+### 4.1 OTA trên QEMU (TSK-S6-01/02/04, FR-OTA-01…04)
+
+`scripts/qemu_ota.sh` (job `ota-rollback`) dựng bốn ảnh (factory, bản mới, sai khóa, ảnh hỏng),
+ký bằng khóa RSA-3072 dùng-một-lần, phục vụ qua HTTP và đọc UART. QEMU **chứng minh**:
+
+- khe A/B: ảnh factory vẫn chạy, bản mới được nạp rồi khởi động, và một lần cập nhật hỏng không
+  làm mất khe đang chạy;
+- chữ ký: ảnh sai khóa bị `NE_OTA REJECTED reason=signature`, không có `SWITCH`, thiết bị ở lại
+  bản cũ; đây là cùng đường xác minh `esp_ota_end` mà bo mạch dùng;
+- xác nhận sau self-test: ảnh mới chỉ `NE_OTA VALID` sau khi self-test gate đạt;
+- rollback cục bộ: ảnh hỏng (tự reset trước khi kịp xác nhận, hoặc self-test hỏng ⇒
+  `NE_OTA INVALID`) bị bootloader quay về ảnh trước ở lần khởi động kế tiếp, và phiên bản vừa bị
+  quay về bị chặn (`NE_OTA SKIP reason=rolled_back`).
+
+QEMU **không** chứng minh được, chỉ bo mạch mới có:
+
+- Wi-Fi và mạng thật: QEMU không có Wi-Fi (Q-21), nên kịch bản dùng NIC `open_eth` (slirp); đường
+  Wi-Fi của bo mạch không được kiểm ở đây.
+- Mất điện giữa lúc ghi hoặc giữa lúc đánh dấu hợp lệ; điện áp, thời gian ghi flash.
+- Secure Boot / khóa trong eFuse (TSK-S6-05, ngoài phạm vi đợt này): khóa xác minh nằm trong ảnh
+  đang chạy, nên người có cáp vẫn đổi được firmware.
+- Hai giới hạn của chính QEMU 9.0, kịch bản phải né: bộ mô hình flash hỏng trạng thái khi reset
+  nóng ngay sau các lần ghi flash của một lần cập nhật, và trình xử lý panic treo thay vì in rồi
+  reset. Vì vậy script chạy **mỗi lần khởi động trong một tiến trình QEMU riêng** (dừng ngay sau
+  dòng `rst:` của thiết bị) và ảnh hỏng dùng reset (`esp_restart`) chứ không panic; trên bo mạch
+  cùng logic otadata đó chạy trong một lần cập nhật duy nhất.
+
 ## 5. Trực quan hoá
 
 Năm bề mặt, cùng một bộ thành phần SVG tự vẽ (chốt cửa, đèn, relay, đồng hồ cảm biến, khung màn

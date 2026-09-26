@@ -109,8 +109,14 @@ ESP-SR **chưa được link** (`TODOS.md` #17), nên cả hai là sàn **không
 |:---|:---:|:---:|:---|
 | SRAM trong còn lại sau cấp phát tĩnh — cấu hình bo mạch | 231 556 B | ≥ 122 880 B | `.data` 20 300 · `.bss` 16 432 · mã IRAM 73 435 trên DIRAM 341 760 |
 | Heap trong còn trống lúc boot — QEMU, không mạng, không PSRAM | 383 664 B | ≥ 122 880 B | checkpoint `gate_runtime_ready` |
+| Ảnh OTA đã ký — QEMU (open_eth, không Wi-Fi) | 724 992 B | ≤ 3 670 016 B | `scripts/qemu_ota.sh`, ảnh RSA-3072 |
+| Ảnh OTA đã ký — cấu hình bo mạch (Wi-Fi, CA bundle cho HTTPS) | 987 136 B | ≤ 3 670 016 B | `scripts/qemu_ota.sh` + `scripts/check_firmware_size.py` |
+| SRAM trong còn lại sau cấp phát tĩnh — bản OTA bo mạch | 229 344 B | ≥ 122 880 B | `.data` 20 624 · `.bss` 18 064 · mã IRAM 73 607 trên DIRAM 341 760 |
 
-*Đo 2026-09-26, ESP-IDF v5.4, firmware của agent mẫu `home-voice`; CI in lại hai số này mỗi lượt chạy.*
+*Hai dòng OTA đo 2026-09-26 với lớp `sdkconfig.ota` (TSK-S6-01/02/04); script in lại mỗi lượt chạy
+`firmware-qemu.yml` job `ota-rollback`. Đây là kích thước tĩnh của ảnh đã ký, không phải phán quyết Q-3.*
+
+*Đo 2026-09-26, ESP-IDF v5.4, firmware của agent mẫu `home-voice`; CI in lại các số này mỗi lượt chạy.*
 
 ## 5. Kết luận và hệ quả phạm vi
 
