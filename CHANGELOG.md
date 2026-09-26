@@ -32,6 +32,39 @@ bản gói.
 
 #### Đã thêm
 
+- **I7 · TSK-S6-01, S6-02, S6-04 (+ S6-03 một phần) — OTA A/B có ký, tự rollback, trên QEMU.** Component
+  `ne_ota` (bật bằng lớp `sdkconfig.ota`; không có lớp đó thì ảnh không có đường tải): tải ảnh app từ một HTTP(S)
+  endpoint bất kỳ, xác minh chữ ký RSA-3072 khi cập nhật (`SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT`), ghi khe A/B, chỉ
+  xác nhận sau self-test gate; hỏng hay reset trước xác nhận ⇒ bootloader quay về. Kconfig từ chối OTA thiếu chữ ký
+  hoặc rollback. Fail closed: sai chữ ký, tải dở, quá hạn chót ⇒ `REJECTED`, không đổi khe, xoá khe vừa ghi; hạ cấp dưới
+  mốc nước cao trong NVS và bản vừa bị quay về ⇒ `SKIP`; NVS không đọc được ⇒ không cập nhật. `build --target esp32s3`
+  ghi `[agent] version` (MAJOR.MINOR.PATCH, từ chối dạng khác) vào `version.txt`. Giới hạn: chưa có Wi-Fi thật trên
+  Box-3, OTA không cập nhật bootloader, anti-rollback eFuse và Secure Boot ở TSK-S6-05 — `docs/user/nap-firmware.md` §6,
+  `simulation_coverage.md` §4.1. Kiểm: `scripts/qemu_ota.sh` (pha a–g, job `ota-rollback`), `pytest
+  tests/test_c_ota_policy.py tests/test_ota_markers.py tests/test_firmware_build.py`, `scripts/build_ota_layer.sh` trong
+  job `agent-firmware`. (FR-OTA-01→04)
+- **I3 · TSK-S4-10 — giao diện thiết bị LVGL, ảnh golden mỗi PR; giao diện nói ngôn ngữ của agent.**
+  `targets/esp32s3/ui/`: 9 màn hình C99 trên LVGL v9.6.0, bảng chữ tiếng Việt và tiếng Anh, phông Be Vietnam Pro
+  (OFL-1.1) sinh sẵn. Ngôn ngữ: `[agent] language` → `[stt] language` → `"vi"`; `[agent]`/`[stt]` khác nhau ⇒ dừng trên
+  mọi target, `esp32s3` từ chối ngôn ngữ giao diện không có chữ hoặc glyph; firmware mang `NE_AGENT_LANGUAGE`. Chữ của
+  agent là dữ liệu: UTF-8 kiểm chặt, cắt có dấu `…`, không widget nào chồng nhau. Chưa nối vào firmware đang chạy (driver
+  màn hình: TSK-S4-01). Đặc tả: `docs/spec/ui.md`. Kiểm: `scripts/run_ui_golden.sh` (66 ảnh RGB565, harness chạy dưới
+  ASan/UBSan, job `ui-golden`), `pytest tests/test_ui_language.py tests/test_ui_assets.py tests/test_ui_text.py`.
+  (FR-HAL-01, FR-CI-05, Q-21)
+- **I4 · TSK-I4-01 — wake-word và STT dự phòng cục bộ trên host.** `[wake_word]`: adapter openWakeWord (extra `wake`,
+  suy luận onnx) hoặc adapter `python:` của người dùng; có `[wake_word]` thì VAD không tự mở lượt. **Người dùng tự cấp cả
+  ba tệp mô hình** — mô hình dựng sẵn của openWakeWord là CC BY-NC-SA 4.0, không đi kèm và trình tải không bao giờ chạy.
+  Bộ phát hiện hỏng ⇒ `wake_word_unavailable`, không lượt nào mở, phiên chạy tiếp. `[stt.fallback]`: STT chính hỏng ⇒ một
+  endpoint cục bộ (faster-whisper…) nhận lượt với hạn chót riêng; kết quả muộn của STT chính bị bỏ
+  (`voice_late_result_dropped`), không bao giờ điều khiển chân. Đặc tả: `voice_fsm.md` §1, §6, §8. Kiểm: `pytest
+  tests/test_wake_word.py tests/test_stt_fallback.py tests/test_voice_corpus.py`. (FR-PER-01, FR-MDL-03, Q-7, Q-14)
+- **I4 · TSK-S5-08 — `audio.in` / `audio.out` trên `linux`.** Backend tệp (mặc định, CI) và backend live qua
+  `sounddevice` (extra `audio`, `NEUROEDGE_LINUX_AUDIO=live`) đọc/phát vào hai nút PipeWire đã khử vang; cấu hình
+  `pipewire/neuroedge-echo-cancel.conf` giao kèm (Q-22). `run`/`record --voice-file --target linux` chạy qua backend tệp
+  và không bao giờ mở thiết bị thật; phiên live mở cả micro và loa **trước khi** xin line; tràn bộ đệm micro là sự kiện
+  ghi vết. **Chưa kiểm trên phần cứng** (tên nút PipeWire ↔ PortAudio/ALSA trên Pi, HAT I2S), `aec` của `linux-rpi5`
+  chưa khai; phiên micro thời gian thực: `TODOS.md` #45. Nối: `simulation_coverage.md` §6.1. Kiểm: `pytest
+  tests/test_hal_linux_audio.py tests/test_voice_linux.py`; `tests_linux/test_audio_file.py`. (FR-TGT-02, FR-PER-01)
 - **I4 · TSK-S3-13 — nói với agent trên `sim`: STT/TTS qua provider chuẩn OpenAI audio.** `[stt]`/`[tts]` trong
   `agent.toml` (OpenAI, Groq, faster-whisper, Kokoro… đổi bằng `base_url`; key chỉ ở biến môi trường) và `run`/`record
   --voice-file x.wav [--voice-out y.wav]`: bản chép lời qua gate như lệnh gõ, nói chen thì loa dừng và lệnh chưa giao bị
@@ -1033,7 +1066,9 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
   boot trên QEMU (TSK-S4-07, S4-08); thiết bị replay 3 vết ghi chuẩn mực và ghi vết ghi qua UART (TSK-S4-09);
   `build --target esp32s3` sinh firmware cho agent của người dùng, gate của nó tự kiểm lúc boot (TSK-I3-01) nhưng
   chưa chân nào động. HAL firmware, replay vết ghi tuỳ ý và mọi thứ trên bo mạch là I3 (TSK-S4-01, S4-04); âm thanh
-  trên chip là I5.
+  trên chip là I5. Giao diện LVGL (TSK-S4-10) mới build trên host để so ảnh golden, chưa nối vào firmware. OTA có ký
+  và rollback chạy trên QEMU qua `open_eth` (TSK-S6-01…04); trên Box-3 chưa có Wi-Fi thật (`TODOS.md` #50), và thiếu
+  Secure Boot + anti-rollback eFuse (TSK-S6-05) thì ai có cáp vẫn nạp được mọi ảnh.
 - ❌ **Model cloud chưa được CI gọi thật.** SystemOne có Jev qua System One API (`[system_one]`, TSK-I4-02),
   SystemTwo có LiteLLM và adapter tự viết (TSK-S2-11); CI chỉ thử bằng transport giả và `mock_response`, lượt gọi
   bằng key thật chạy tay (`scripts/live_jev_smoke.py`, `scripts/live_llm_smoke.py`). Độ tin cậy của Jev trên câu
