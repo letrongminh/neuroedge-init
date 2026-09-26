@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -256,13 +257,18 @@ def _turn(text: str, session: SimSession, console: Console, err_console: Console
 def banner(session: SimSession, console: Console) -> None:
     manifest = session.manifest
     gates = ", ".join(f"{key} → {ref}" for key, ref in manifest.gates.items()) or "none"
-    mode = "offline, typed text (Q-15)" if not session.slow.available else "typed text"
+    fast = getattr(getattr(session.conversation, "engine", None), "facts_source", None)
+    cloud_one = getattr(fast, "primary", None) is not None
+    online = session.slow.available or cloud_one
+    mode = "typed text" if online else "offline, typed text (Q-15)"
     console.print(
         f"[bold]{escape(manifest.label)}[/bold] on [cyan]{escape(session.target)}[/cyan] "
         f"([cyan]{escape(session.hal.board.id)}[/cyan]) · {mode}"
     )
     console.print(f"  gates: {escape(gates)}")
     console.print(f"  grammar: {escape(session.grammar.source)}")
+    if cloud_one:
+        console.print(f"  system 1: {escape(system_one_line(fast))}")
     if session.slow.available:
         console.print(f"  system 2: {escape(system_two_line(session.slow))}")
     for line in mcp_lines(session):
@@ -285,6 +291,21 @@ def mcp_lines(session: SimSession) -> list[str]:
     if not session.slow.available:
         return [f"mcp: {names} — chỉ dùng khi có System 2"]
     return [f"mcp: {names} — thông tin, không phải lệnh (Q-27)"]
+
+
+def system_one_line(fast) -> str:
+    """Which model decides which criteria, and where its key comes from — never the key."""
+    primary = fast.primary
+    config = getattr(primary, "config", None)
+    name = getattr(primary, "name", "custom")
+    if config is None:
+        return f"{name} {fast.model}"
+    criteria = ", ".join(config.criteria)
+    env = config.api_key_env
+    if env and not os.environ.get(env, "").strip():
+        return f"{name} {config.model} for {criteria} (${env} not set: the grammar decides)"
+    key = f"key from ${env}" if env else f"no key, {config.api_base}"
+    return f"{name} {config.model} for {criteria} ({key}; the grammar if it cannot answer)"
 
 
 def system_two_line(slow) -> str:

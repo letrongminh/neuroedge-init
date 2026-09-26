@@ -61,7 +61,7 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 | # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
 |:---:|:---|:---|:---|
 | 20 | **Bề mặt tương tác thật cho `escalate`/`ask`.** Đã có: ai xác nhận `ask` (Q-26) và vòng xác nhận trên `sim` — REPL, trang `--ui` (TSK-S3-26, RFC-0006). Còn hoãn: (a) người nhận `escalate` (Q-17 v1.0 là chặn + vết ghi + hook no-op); (b) `on_block.ask.message` máy kiểm được — B.3 cho phép văn bản tự do, `TSK-S2-13` chỉ kiểm `action` + `to:` *(gộp mục #12 cũ)* | Đặc tả FSM thoại đã có đường cho câu hỏi `ask` qua kênh thoại (`docs/spec/voice_fsm.md` §4, §5.4 — TSK-S2-07); còn cần hiện thực, và chưa có ngữ nghĩa kiểm được cho văn bản | **TSK-S3-11** (FSM Python) hiện thực câu hỏi `ask` qua kênh thoại, hoặc khách đầu tiên cần escalation tới người thật |
-| 27 | **Provider cloud cho SystemOne** (Jev hoặc LiteLLM làm `FactSource` trả `bool`/`level`/`choice` kèm độ tin cậy, Q-4). TSK-S2-11 chỉ nối System 2 | Dữ kiện của gate do model cloud suy ra cần ngữ nghĩa riêng cho độ tin cậy, từ chối và hết giờ (→ `Unavailable`, fail theo gate); wedge `sim` lượng giá bằng ngữ pháp cục bộ (Q-14) nên chưa cần. **TSK-I4-02** (I4) chỉ làm SystemOne đổi được bằng cấu hình (FR-MDL-04); provider cloud thật vẫn hoãn | Có endpoint Jev, hoặc agent đầu tiên cần một tiêu chí gate do model suy ra từ câu tự do — làm cùng hoặc sau **TSK-I4-02** |
+| 27 | **SystemOne cloud: gom câu hỏi của một gate, đo Jev trên tiếng Việt** (Q-4). Đã có: Jev qua System One API, bật bằng `[system_one]` (TSK-I4-02). Còn: (a) mọi tiêu chí ủy quyền của một gate đi **một** lượt gọi — Jev nhận nhiều câu hỏi một lần, engine hôm nay hỏi từng tiêu chí; (b) đo độ tin cậy của Jev trên câu tiếng Việt có nhãn, kèm lượt gọi bằng key thật (`scripts/live_jev_smoke.py`), để chọn `threshold` | (a) đổi hợp đồng `FactSource` (một tiêu chí mỗi lần) và cách `_gather` chia ngân sách; chưa gate nào ủy quyền ≥ 2 tiêu chí. (b) CI không có key; chưa có bộ câu có nhãn; TypeSafe ghi tiếng Anh là ngôn ngữ chính | (a) Gate đầu tiên ủy quyền ≥ 2 tiêu chí cho model, hoặc gate vượt ngân sách vì gọi tuần tự; (b) trước khi agent đầu tiên dùng `[system_one]` ngoài `sim` (buổi đo I8 hoặc thiết bị thật) |
 | 39 | **Cờ theo từng hành động "vẫn cắt khi đã chạy" lúc bị cắt lời.** `docs/spec/voice_fsm.md` §5.3: cắt lời chỉ hủy lệnh chưa giao; lệnh đã giao (xung chốt cửa đang chạy) chạy hết | Thêm trường vào gate hoặc `@action` ⇒ **cần RFC** (`gate.v1` không nhận trường lạ; có thể đổi bố cục `NETR`), kèm ngữ nghĩa kế thừa; chưa cơ cấu chấp hành nào cần | Cơ cấu đầu tiên mà chạy tiếp sau khi người dùng phản đối là nguy hiểm (van, motor), hoặc vector V2 (§9) không đủ cho một agent thật |
 
 ## Tool call và MCP
@@ -98,7 +98,7 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 | #15–#17, #19–#22 | Phiên gỡ chặn Sprint 2 (2026-09-23) — quyết định Q-14 → Q-21 (`neuroedge-prd.md` §15) |
 | #23–#25 | Phiên chuẩn hoá tool call (2026-09-23) — Q-24 → Q-27 |
 | #26 | Sổ token C (TSK-S4-02, 2026-09-24) |
-| #27 | Provider thật cho System 2 (TSK-S2-11, 2026-09-24) |
+| #27 | Provider thật cho System 2 (TSK-S2-11, 2026-09-24); thu hẹp sau TSK-I4-02 (2026-09-26) |
 | #29, #30 | Rà soát tài liệu MECE (2026-09-24) — `docs/spec/threat_model.md` §2b; câu hỏi mở #10 của kế hoạch Giai đoạn 1 |
 | #32–#33 | Rà soát cạnh tranh MHS/DCP (2026-09-24) — `neuroedge-proposal.md` §10.1–§10.2, Phụ lục H.3; Q-29 (`neuroedge-prd.md` §15) |
 | #34 | Đánh giá tái định vị thông điệp (2026-09-24) — `docs/archive/tai-dinh-vi-messaging-review.md`; Q-30 (`neuroedge-prd.md` §15) |

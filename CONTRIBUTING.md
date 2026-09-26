@@ -178,7 +178,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `python/neuroedge/engine/` | L3 — phân giải gate, chuẩn tắc hoá, Gate Engine, cây quyết định, bố cục `NETR`, trình biên dịch `build` | **RFC** nếu đổi ngữ nghĩa phân giải hoặc bố cục `NETR` |
 | `python/neuroedge/actions/` | `@action`, `c.do()`/`c.say()`, token phán quyết dùng một lần | PR thường; ranh giới ở [`threat_model.md`](docs/spec/threat_model.md) |
 | `python/neuroedge/hal/` | L1 — năm nguyên thủy, mô hình bo mạch, `sim.py`, `linux.py` | PR thường; xem [rà soát MCU](docs/spec/hal_mcu_review.md) |
-| `python/neuroedge/models/` | L2 — SystemOne/SystemTwo, ngữ pháp lệnh cục bộ, knowledge base, `providers/` (LiteLLM, adapter) | PR thường |
+| `python/neuroedge/models/` | L2 — SystemOne/SystemTwo, ngữ pháp lệnh cục bộ, knowledge base, `providers/` (LiteLLM, System One API cho Jev, adapter) | PR thường |
 | `python/neuroedge/perception/` | L2 — máy trạng thái hội thoại (`voice_fsm.py`) và driver của nó (`voice_session.py`) | PR thường; hành vi theo [`voice_fsm.md`](docs/spec/voice_fsm.md) |
 | `python/neuroedge/sim/` | `SimSession` (REPL gõ chữ), `ui.py` (trang `--ui` cục bộ) | PR thường |
 | `python/neuroedge/mcp_server.py`, `mcp_host.py`, `mcp_desktop.py` | Máy chủ MCP · System 2 làm MCP host · cấu hình Claude Desktop | PR thường |

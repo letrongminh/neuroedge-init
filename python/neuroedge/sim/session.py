@@ -14,8 +14,8 @@ Loading runs the same checks as `neuroedge build` first, so a session never
 starts on a board the agent does not fit. Input is typed text matched by the
 local command grammar (Q-14/Q-15): no network, no key, deterministic.
 
-Where gate facts come from. `SystemOne` is offline here, so a criterion is
-decided by, in order:
+Where gate facts come from. Without `[system_one]` in agent.toml `SystemOne` is
+offline here, so a criterion is decided by, in order:
 
 1. the `[sim.facts]` table of `agent.toml` — session state such as
    "the guest is authenticated", which on a device the property system
@@ -31,7 +31,9 @@ decided by, in order:
 4. the grammar, through `SystemOne`'s local fallback, for the facts a matched
    command declares (``command_recognized``).
 
-Anything else is undecided, and the gate blocks.
+Anything else is undecided, and the gate blocks. With `[system_one]` (TSK-I4-02),
+step 4 asks the cloud model first for the criteria that table lists — and only
+those — and the grammar whenever the model cannot answer (Q-14, FR-MDL-03).
 """
 
 from __future__ import annotations
@@ -523,12 +525,13 @@ class SimSession:
         # Requesting the lines is the one step that holds anything: if the rest of
         # the wiring fails, they are released before the error goes up.
         try:
-            engine = ActionContractEngine(
-                gates,
-                facts_source=SystemOne("sim", fallback=grammar, network="offline", events=events),
-                clock=clock,
-                events=events,
+            # `[system_one]` of agent.toml (TSK-I4-02); none ⇒ the grammar alone (Q-14).
+            from ..models.providers import system_one_for
+
+            fast = system_one_for(manifest, events, fallback=grammar) or SystemOne(
+                "sim", fallback=grammar, network="offline", events=events
             )
+            engine = ActionContractEngine(gates, facts_source=fast, clock=clock, events=events)
             conversation = Conversation(engine=engine, hal=hal)
             if slow is None:
                 # `[system_two]` of agent.toml (TSK-S2-11); none ⇒ System 2 stays offline.

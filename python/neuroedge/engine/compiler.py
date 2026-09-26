@@ -14,7 +14,9 @@ problem so one run reports them all, each with where / why / how:
    every `degrade` fallback names a declared action;
 5. the command grammar (and `knowledge.toml`, if the agent ships one) loads,
    and every `action` a command names is a declared @action;
-6. `[mcp]` and `[system_two]` are well formed — no API key in agent.toml.
+6. `[mcp]`, `[system_two]` and `[system_one]` are well formed — no API key in
+   agent.toml — and every criterion `[system_one]` delegates to a model is one the
+   agent's gates evaluate, with a budget longer than the model's `timeout_ms`.
 
 On success it writes each gate's decision tree and canonical artifact.
 """
@@ -394,6 +396,59 @@ def check_system_two(manifest: AgentManifest) -> list[NeuroEdgeError]:
     return []
 
 
+def check_system_one(
+    manifest: AgentManifest, gates: Mapping[str, ResolvedGate]
+) -> list[NeuroEdgeError]:
+    """
+    `[system_one]` of agent.toml is well formed — never an API key in it — a custom
+    adapter it names can be imported, and each criterion it delegates to the model
+    is evaluated by a gate whose budget outlasts `timeout_ms` (TSK-I4-02, FR-MDL-04).
+    """
+    from ..models.providers import load_adapter, load_system_one_config
+    from ..models.system import FALLBACK_RESERVE_MS
+
+    try:
+        config = load_system_one_config(manifest)
+        if config is not None and config.adapter is not None:
+            load_adapter(config, manifest.root)
+    except NeuroEdgeError as error:
+        return [error]
+    if config is None:
+        return []
+    where = f"{config.where} criteria"
+    problems: list[NeuroEdgeError] = []
+    for criterion in config.criteria:
+        using = [(key, gate) for key, gate in gates.items() if criterion in gate.evaluate]
+        if not using:
+            evaluated = sorted({name for gate in gates.values() for name in gate.evaluate})
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"no gate of this agent evaluates {criterion!r}; they evaluate {evaluated}",
+                    how="list only criteria of the agent's gates, and check the spelling",
+                )
+            )
+            continue
+        for key, gate in using:
+            p95 = gate.budget.get("p95_latency_ms")
+            if isinstance(p95, int | float) and config.timeout_ms + FALLBACK_RESERVE_MS > p95:
+                room = p95 - FALLBACK_RESERVE_MS
+                raise_budget = f"raise the budget of {key!r} for a cloud round trip"
+                problems.append(
+                    AgentManifestError(
+                        where=f"{config.where} timeout_ms",
+                        why=f"gate {key!r} gives all of its facts {p95:g} ms "
+                        f"(budget.p95_latency_ms), but the model may take {config.timeout_ms:g} "
+                        f"ms for {criterion!r} and the grammar needs {FALLBACK_RESERVE_MS:g} ms "
+                        "after it — the gate would cut the model off first",
+                        how=f"lower timeout_ms to {room:g} or less, or {raise_budget}"
+                        if room > 0
+                        else raise_budget,
+                    )
+                )
+    return problems
+
+
 def check_commands(grammar: Any, actions: Iterable[Any]) -> list[NeuroEdgeError]:
     """
     Every `tool` a command calls is a declared @action, and its slot-mapped and
@@ -515,6 +570,7 @@ def build(
             problems.append(error)
     problems += check_mcp_servers(manifest, actions)
     problems += check_system_two(manifest)
+    problems += check_system_one(manifest, gates)
 
     if problems:
         raise BuildFailed(where=f"{manifest.label} for {target} on {board.id}", problems=problems)
