@@ -32,6 +32,29 @@ bản gói.
 
 #### Đã thêm
 
+- **I2 · TSK-S5-09 — `sensor.read` và `display` trên `linux`.** Cảm biến đọc qua sysfs hwmon và IIO (`hal/sysfs.py`),
+  tìm theo **tên** — nhãn kênh, hoặc nguồn đặt theo máy (`LinuxHAL(sensor_sources=)`, `NEUROEDGE_LINUX_SENSORS`); mỗi lần đọc
+  tới kernel, và không nguồn, tệp lỗi, NaN/inf, cờ `*_fault` hay đơn vị khác đơn vị agent khai đều là `BoardCapabilityError`.
+  Replay chỉ dùng số đọc đã ghi. `display` kiểm và ghi khung bằng mã của `sim` (`make_frame`) rồi tới backend chọn rõ:
+  `memory` hoặc `/dev/fbN` (`hal/framebuffer.py`). Phiên `--target linux` kiểm cảm biến và màn hình **trước khi** xin line.
+  CI `linux-hal`: `i2c-stub` + `lm75`, framebuffer `vfb`/`vkms`. Luật: `simulation_coverage.md` §2. Kiểm: `pytest
+  tests/test_hal_linux_io.py`; `tests_linux/test_sensor_display.py`. (FR-TGT-02, FR-HAL-01)
+- **I4 · TSK-I4-03 — độ trễ từng chặng và tỷ lệ System 1 / System 2 trong vết ghi.** `engine/latency.py`: mỗi lượt của
+  phiên `sim`/`linux` ghi `turn_latency` (chặng `perception`, `system_two`, `gate`, `action`, `other`; `path`
+  `system_1`/`system_2`/`fallback`/`none`; token và chi phí System 2 khi provider báo); vết ghi xuất ra kết thúc bằng một
+  `session_summary`; `neuroedge trace show` in tỷ lệ. Không đổi lược đồ hay vết ghi chuẩn mực; replay và golden bỏ qua cả
+  hai. Đặc tả: `tool_calling.md` §7.1. Kiểm: `pytest tests/test_turn_latency.py`. (FR-ACE-06, FR-TEL-03, NFR-OBS-02)
+- **I1 · TSK-I1-03 — `--help` có ví dụ cho mọi lệnh; `neuroedge new` tạo sẵn `traces/`.** `cli/examples.py`; mọi ví dụ
+  được phân tích bằng parser thật, và chạy trong một dự án vừa tạo khi không mở server/trình duyệt/GPIO. Mẫu scaffold
+  `traces/README.md`, `traces/incidents/`, `traces/golden/`. Kiểm: `pytest tests/test_cli_examples.py tests/test_cli_new.py`,
+  `scripts/wheel_smoke.sh`. (FR-CLI-07, FR-TRC-09)
+- **TSK-W0-02, W0-03, W0-04, W2-07 — chuỗi cung ứng.** SBOM CycloneDX của wheel theo `requirements-lock.txt`
+  (`scripts/sbom.sh`, job `sbom`); `security.yml`: `pip-audit` chặn lỗ hổng đã biết (ngoại lệ ở
+  `python/pip-audit-ignore.txt`), gitleaks toàn lịch sử (0 phát hiện), `actionlint`, CodeQL cho Python, Actions và firmware
+  C; trôi phụ thuộc hằng đêm mở **một** issue nhãn `dependency-drift`, không làm đỏ build (Q-32); mọi `uses:` ghim SHA,
+  Dependabot cho Actions, job `attest` ký provenance cho wheel, sdist, SBOM. Job và điều kiện: `CHANGELOG.md` §2.5,
+  `docs/release.md`.
+
 - **I4 · TSK-S3-11 — máy trạng thái hội thoại chạy trên `sim`, cắt lời hủy lệnh chưa giao.** `perception/`
   (`VoiceStateMachine`, `VoiceSession`, đồng hồ tiêm vào); lệnh hẹn giờ `pulse(after_ms=…)` trên `SimHAL`, `LinuxHAL`
   từ chối. Kiểm: `pytest tests/test_voice_corpus.py tests/test_voice_fsm.py`. (FR-PER-02→05, `voice_fsm.md` §5, §10)
@@ -949,8 +972,9 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
 - ❌ **Tương đương target mới ở mức quyết định, trên `sim` + `linux` + `esp32s3` trên QEMU.** `verify` so chuỗi
   phán quyết và lệnh chân; trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng trên host
   (`TODOS.md` #37). So timing và bo mạch là TSK-S4-04 (I3).
-- ❌ **`LinuxHAL` mới có `digital.out`.** `sensor.read`, `display` (I2) và `audio.in/out` (I4) trên `linux`
-  chưa hiện thực; chân Pi thật cần `line_names` (vd `door_lock` → `GPIO17`).
+- ❌ **`LinuxHAL` chưa có âm thanh** (`audio.in/out`, TSK-S5-08, I4), và chưa đọc cảm biến là đầu vào GPIO
+  (`door_contact`, `motion`). Chân Pi thật cần `line_names` (vd `door_lock` → `GPIO17`); cảm biến hwmon/IIO cần nhãn
+  hoặc `NEUROEDGE_LINUX_SENSORS`. Chưa chạy trên Pi thật (nightly TSK-I2-01).
 - ❌ **MCP chỉ qua stdio** (`TODOS.md` #24, #25). Không có transport mạng.
 - ❌ **Chưa phát hành ra ngoài.** Tag trước I6 là nội bộ; PyPI và repo công khai mở ở I6 (Q-39,
   TSK-S3-14, `docs/release.md`).
