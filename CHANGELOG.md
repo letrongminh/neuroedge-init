@@ -32,6 +32,30 @@ bản gói.
 
 #### Đã thêm
 
+- **I4 · TSK-S3-11 — máy trạng thái hội thoại chạy trên `sim`, cắt lời hủy lệnh chưa giao.** `perception/`
+  (`VoiceStateMachine`, `VoiceSession`, đồng hồ tiêm vào); lệnh hẹn giờ `pulse(after_ms=…)` trên `SimHAL`, `LinuxHAL`
+  từ chối. Kiểm: `pytest tests/test_voice_corpus.py tests/test_voice_fsm.py`. (FR-PER-02→05, `voice_fsm.md` §5, §10)
+- **I4 · TSK-S3-10 — bộ vector tuân thủ máy trạng thái hội thoại, độc lập ngôn ngữ.** `fixtures/compliance/voice/`:
+  ca JSON cho V1–V7 và mọi dòng §4, đáp án `expected_results.yaml` khép kín hai chiều, agent `voice-door`; quy ước
+  `voice_fsm.md` §9.1. Kiểm: `pytest tests/test_voice_corpus.py`. (FR-CI-07, FR-TGT-04)
+- **I1 · TSK-S3-08 — mẫu thứ ba `factory-monitor`.** Quạt thông gió và đèn báo động qua gate đọc fact `level` (dải nhiệt
+  `low…critical` từ cảm biến `sim`): tắt quạt khi nóng thì hỏi xác nhận, tắt báo động thì chặn; `neuroedge new --template
+  factory-monitor`, có trong `wheel-smoke`. Kiểm: `pytest tests/test_factory_monitor.py`. (FR-DX-05, RFC-0006)
+- **I2 · TSK-S5-10 — phiên tương tác trên `linux`.** `run` (REPL và `-c`), `record` và `mcp serve` nhận `--target linux`:
+  chân là line GPIO thật qua `LinuxHAL` (`TypedLinuxHAL`, `hal/linux.py`), vẫn gõ chữ trên terminal như `sim`, cùng sổ
+  token của `c.do()`; `--board` mặc định bo mạch tham chiếu của target. Agent cần nguyên thủy `linux` chưa có (`audio.*`,
+  `sensor.read`, `display`), thiếu `gpiod` hay không có chip ⇒ lỗi 3 phần, mã 1, trước khi giữ line nào; `--ui` trên
+  `linux` ⇒ mã 2. `-c` giữ xung tới hết thời lượng; thoát phiên ⇒ mọi line về inactive. Vết ghi `record --target linux`
+  thẩm định được và replay trên `sim` lẫn `linux` ra cùng quyết định. Kiểm: `pytest tests/test_session_linux.py`,
+  `tests_linux/` (gpio-sim). (FR-CLI-02, FR-TGT-02)
+- **Rà soát ba task giả lập (review trước khi merge).** Phiên `linux` bắt SIGTERM/SIGHUP để `close()` thả
+  mọi line (trước đó MCP host dừng server là xung khoá cửa còn chạy); `close()` thả hết line kể cả khi một
+  line lỗi; chip không mở được (quyền, line bị giữ) là lỗi 3 phần, không traceback; line được nhả nếu dựng
+  phiên lỗi sau khi đã giữ line. Lệnh hẹn giờ: giao trong TTL của phán quyết, `after_ms` làm tròn lên, action
+  ném lỗi thì lệnh của nó bị hủy (`ACTUATOR_ABORTED_BY_ACTION_ERROR`) — `voice_fsm.md` §5.5; gate
+  `unlock_door` của `voice-door` nâng `p95_latency_ms` lên 700 cho lệnh hẹn 2 s. `reuse_token` là đầu vào
+  riêng của corpus. `linux` cảnh báo khi gate quyết trên `[sim.facts]` và khi line `on` bị thả lúc thoát.
+  Kiểm: `pytest tests/test_session_linux.py tests/test_voice_fsm.py tests/test_hal_linux.py`, `tests_linux/`.
 - **Q-39 → Q-44 — roadmap theo increment (2026-09-25).** Một roadmap, thời gian đo bằng increment `I0…`, không phát hành
   ra ngoài tới khi công khai ở I6 (demo thoại trên `sim`, `linux`, Box-3), thêm một kỹ sư nhúng (Q-39); mở rộng sau Beta
   (Q-40); v1.1 mở trên B1 và B2 (Q-41); C6 thành chỉ số theo dõi (Q-42); G-* neo theo increment (Q-43); bỏ bậc cắt 5 (Q-44).
@@ -715,8 +739,8 @@ một pipeline xanh lúc đó là thông tin sai. CI có đúng một bước ch
 | `2` | Lệnh (hoặc `--target` đó của lệnh) **chưa được hiện thực** |
 
 Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏng" và "chưa có". Hôm nay
-thoát mã 2: `run --target linux|esp32s3`, `record --target linux`, `replay --target esp32s3`
-(TSK-S4-04). Target lạ (không phải `sim`, `linux`,
+thoát mã 2: `run` / `mcp serve --target esp32s3` (TSK-S4-01), `run` / `mcp serve --ui --target linux`,
+`replay --target esp32s3` (TSK-S4-04). Target lạ (không phải `sim`, `linux`,
 `esp32s3`) là lỗi, mã 1.
 
 Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://`, mặc định `gates/`.
@@ -739,14 +763,14 @@ Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://
 | `verify [--targets sim,linux,esp32s3] [--port <nguồn>]` | Mọi gate phân giải, mọi ca của corpus tool call (`fixtures/tool_calls/`, trên `sim`) ra đúng đáp án, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`); `esp32s3` cần `--port <nguồn>` (như `record`): firmware replay các vết ghi chuẩn mực, lệch ⇒ `NE4002`; firmware replay vết ghi hay gate cũ hơn checkout ⇒ `NE4003`, không so; thiếu `--port` ⇒ mã 1. So quyết định, chưa so timing. Loại artifact nào quét được 0 ⇒ `NE4004`, mã 1 |
 | `build --target <t> [--board id]` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate (ghi cả `<gate>.netree`/`.netree.h`); kiểm `[mcp]` và `[system_two]` (API key ghi trong `agent.toml` ⇒ lỗi, không in lại key). `--agent` (mặc định `agent.toml`), `--board` (mặc định bo mạch tham chiếu của target: `sim-default`, `linux-rpi5`, `esp32s3-box-3`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
 | `replay <tệp> [--target sim\|linux]` | Replay trên HAL thật: dữ kiện đã ghi vào lại, phán quyết gate và lệnh chân **tính lại**, rồi so với golden (`--golden <tệp>`, mặc định chính vết ghi). Khớp ⇒ mã 0; lệch ⇒ mã 1, `NE4002`, dòng lệch đầu tiên; `--target esp32s3` ⇒ mã 2. `--agent`, `--board`, `--trace-out` |
-| `record [--out traces/] [-c "<lệnh>"] [--anonymize]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`), phán quyết giữ nguyên (FR-TRC-07) |
+| `record [--target sim\|linux] [--out traces/] [-c "<lệnh>"] [--anonymize]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`), phán quyết giữ nguyên (FR-TRC-07) |
 | `record --target esp32s3 --port <nguồn> [--out traces/] [--timeout 30] [--baud 921600]` | Thiết bị ghi, host đọc UART: mỗi phiên `NE1` thành một tệp `<session_id>.json` đã thẩm định (`--out x.json` khi chỉ có một phiên). `<nguồn>`: tệp log (QEMU `-serial file:uart.log`), `tcp://host:port` (QEMU `-serial tcp::5555,server`), `/dev/tty…` (cần `neuroedge[serial]`). Dòng hỏng, thiếu khung, đếm lệch ⇒ `NE4001` nêu `nguồn:dòng`, mã 1, không ghi gì. Định dạng: `docs/spec/simulation_coverage.md` §4 |
 | `test [thư-mục] [--pytest-arg A]` | Chạy bộ Action CI (pytest) của agent, mặc định `tests/`. Mọi test đạt ⇒ mã 0; có test trượt hoặc không thu được test nào ⇒ mã 1 |
-| `run [--agent a.toml] [--board id]` | REPL gõ chữ trên `sim` (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân ảo. `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:confirm`, `:decline`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux` ⇒ mã 2: trên `linux` hôm nay dùng `replay`. Có `[system_two]` ⇒ câu ngoài ngữ pháp do model thật trả lời (banner có dòng `system 2: <provider> <model> (key from $BIẾN…)`); không trả lời được ⇒ câu offline |
+| `run [--agent a.toml] [--target sim\|linux] [--board id]` | REPL gõ chữ (Q-15): lệnh khớp `commands.toml` → `c.do()` → phán quyết + chân (ảo trên `sim`). `:facts`, `:set k v`, `:unset k`, `:pins`, `:sensors`, `:sensor n v`, `:screen`, `:confirm`, `:decline`, `:help`; `--ui` mở cùng phiên trên trình duyệt (127.0.0.1, `--port`, `--no-browser`); `exit` / Ctrl-D ⇒ mã 0. `-c "<lệnh>"` chạy một lệnh rồi thoát (BLOCK vẫn là mã 0); `--trace-out <tệp>` ghi vết ghi `trace.v1`. Agent không hợp bo mạch ⇒ mọi vấn đề, mã 1. `--target linux`: chân là line GPIO thật (`neuroedge[linux]`; bo mạch hoặc `scripts/setup_gpio_sim.sh`), `--board` mặc định `linux-rpi5`, agent chỉ được cần `digital.out` (thiếu `gpiod`, không có chip, cần nguyên thủy khác ⇒ lỗi 3 phần, mã 1); `-c` chờ xung hết thời lượng; thoát ⇒ mọi line về inactive; `--ui` ⇒ mã 2. Có `[system_two]` ⇒ câu ngoài ngữ pháp do model thật trả lời (banner có dòng `system 2: <provider> <model> (key from $BIẾN…)`); không trả lời được ⇒ câu offline |
 | `mcp tools [--json\|--openai] [--external]` | Schema của mỗi `@action` — dạng MCP hoặc function-calling OpenAI (Q-24). `--external`: thêm tool thông tin của `[mcp.servers]` mà System 2 được đưa (Q-27) |
-| `mcp serve [--agent a.toml] [--board id] [--trace-out t.json] [--ui [--port 8765] [--open]] [--init-timeout 30]` | Máy chủ MCP qua stdio trên `sim`; mọi `tools/call` qua kiểm schema và gate. `--ui`: cùng phiên trên trang web 127.0.0.1 (`--port 0` chọn cổng trống; chỉ mở trình duyệt khi có `--open`); URL in ra stderr, stdout chỉ là kênh JSON-RPC. Cổng bận ⇒ cảnh báo stderr, trang sang cổng trống (URL thật ở dòng `sim UI at …`), MCP vẫn chạy. Không có `initialize` sau `--init-timeout` giây ⇒ thoát 0 (`0` = chờ mãi). Cần extra `neuroedge[mcp]` |
+| `mcp serve [--agent a.toml] [--target sim\|linux] [--board id] [--trace-out t.json] [--ui [--port 8765] [--open]] [--init-timeout 30]` | Máy chủ MCP qua stdio trên `sim` hoặc `linux` (line GPIO thật, như `run --target linux`; `--ui` chỉ trên `sim`); mọi `tools/call` qua kiểm schema và gate. `--ui`: cùng phiên trên trang web 127.0.0.1 (`--port 0` chọn cổng trống; chỉ mở trình duyệt khi có `--open`); URL in ra stderr, stdout chỉ là kênh JSON-RPC. Cổng bận ⇒ cảnh báo stderr, trang sang cổng trống (URL thật ở dòng `sim UI at …`), MCP vẫn chạy. Không có `initialize` sau `--init-timeout` giây ⇒ thoát 0 (`0` = chờ mãi). Cần extra `neuroedge[mcp]` |
 | `mcp desktop-config [--agent a.toml] [--ui [--port 8765]] [--trace-out t.json] [--name N] [--write [--config-path P]]` | In mục `mcpServers` cho Claude Desktop, toàn đường dẫn tuyệt đối (trình thông dịch hiện tại, `-m neuroedge mcp serve`). `--write`: đặt đúng mục đó trong `claude_desktop_config.json` của Desktop (macOS `~/Library/Application Support/Claude/`, Windows `%APPDATA%\Claude\`), sao lưu `.bak-<giờ>`, giữ mọi khoá khác; JSON hỏng ⇒ mã 1, không ghi gì. Sau đó thoát hẳn Desktop rồi mở lại. Cần extra `neuroedge[mcp]` |
-| `new <tên> [--template minimal\|villa-concierge\|home-voice]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` (chốt cửa) và `home-voice` (trợ lý giọng nói, có `knowledge.toml`) sao agent mẫu (có trong wheel) |
+| `new <tên> [--template minimal\|villa-concierge\|home-voice\|factory-monitor]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` (chốt cửa), `home-voice` (trợ lý giọng nói, có `knowledge.toml`) và `factory-monitor` (quạt, báo động theo dải nhiệt `level`) sao agent mẫu (có trong wheel) |
 
 `python -m neuroedge …` tương đương `neuroedge …`.
 
@@ -901,14 +925,13 @@ nó trong bảng task.
 |:---:|:---|:---|
 | 1 | **Hủy lệnh đang chờ mới có ở `sim` và `linux`.** Hợp đồng thu hồi lệnh vật lý (`docs/spec/voice_fsm.md` §5) yêu cầu cắt lời hủy xung chốt cửa đang chờ trong ≤ 1 khung âm thanh. `SimHAL` và `LinuxHAL` đã trả `PendingCommand.cancel()`; `esp32s3` phải hủy được thật ở tầng firmware | **TSK-S4-01** (I3), cùng lúc với hợp đồng thu hồi — không phải sau |
 | 2 | `gate publish` dừng ở mã băm, chưa ký số | I10 (Registry) |
-| 3 | `perception/` chỉ là khung | TSK-S3-11 (I4) |
 
 ### 3.7 Điều hệ thống chưa làm được
 
 Nói rõ để không ai đọc các mốc đã đạt quá lên:
 
-- ❌ **Phiên tương tác (`run`, `record`) mới có trên `sim`, gõ chữ trên terminal.** Trên `linux`
-  hôm nay chỉ `replay` / `verify` (phiên tương tác: I2); giọng nói chưa có (Q-15; thoại: I4); intent không
+- ❌ **Phiên tương tác (`run`, `record`, `mcp serve`) mới gõ chữ trên terminal, trên `sim` và `linux`.** Trên `linux`
+  agent chỉ được cần `digital.out` và chưa có trang `--ui` (TSK-S5-10); giọng nói chưa có (Q-15; thoại: I4); intent không
   có action (`faq`) chỉ được trả lời khi agent khai `[system_two]`.
 - ❌ **`esp32s3` mới chạy logic gate, chưa chạy agent.** Walker và sổ token C khớp engine host trên host và
   boot trên QEMU (TSK-S4-07, S4-08); thiết bị replay 3 vết ghi chuẩn mực và ghi vết ghi qua UART (TSK-S4-09). HAL

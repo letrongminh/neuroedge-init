@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import glob
 import threading
+from collections import deque
 from collections.abc import Mapping
 from typing import Any
 
@@ -48,6 +49,18 @@ def _import_gpiod() -> Any:
             how="pip install 'neuroedge[linux]' (LGPL-2.1, optional; see NOTICE §B)",
         ) from exc
     return gpiod
+
+
+def _chip_error(path: str, exc: OSError) -> BoardCapabilityError:
+    return BoardCapabilityError(
+        where=f"LinuxHAL.__init__ -> {path}",
+        why=f"cannot open the GPIO chip or its lines: {exc.strerror or exc}",
+        how=(
+            "check the user may read and write the chip (group `gpio`, or "
+            "setup_gpio_sim.sh's chmod), and that no other process holds the lines "
+            "(an earlier `neuroedge mcp serve` still running)"
+        ),
+    )
 
 
 class LinuxHAL(HardwareAbstractionLayer):
@@ -102,14 +115,21 @@ class LinuxHAL(HardwareAbstractionLayer):
         self._requests = self._request_outputs(consumer)
 
     def _find(self, chips: list[str], name: str) -> tuple[str, int] | None:
+        denied: tuple[str, OSError] | None = None
         for path in chips:
-            chip = self._gpiod.Chip(path)
+            try:
+                chip = self._gpiod.Chip(path)
+            except OSError as exc:
+                denied = denied or (path, exc)  # another chip may carry the line
+                continue
             try:
                 return path, int(chip.line_offset_from_id(name))
             except (OSError, ValueError, KeyError):
                 continue
             finally:
                 chip.close()
+        if denied is not None:
+            raise _chip_error(*denied) from denied[1]
         return None
 
     def _request_outputs(self, consumer: str) -> dict[str, Any]:
@@ -120,12 +140,17 @@ class LinuxHAL(HardwareAbstractionLayer):
         by_chip: dict[str, list[int]] = {}
         for path, offset in self.lines.values():
             by_chip.setdefault(path, []).append(offset)
-        return {
-            path: self._gpiod.request_lines(
-                path, consumer=consumer, config={tuple(offsets): settings}
-            )
-            for path, offsets in by_chip.items()
-        }
+        requests: dict[str, Any] = {}
+        for path, offsets in by_chip.items():
+            try:
+                requests[path] = self._gpiod.request_lines(
+                    path, consumer=consumer, config={tuple(offsets): settings}
+                )
+            except OSError as exc:
+                for held in requests.values():
+                    held.release()
+                raise _chip_error(path, exc) from exc
+        return requests
 
     # -- the line itself -------------------------------------------------------------
     def _set(self, pin: str, active: bool) -> None:
@@ -149,7 +174,9 @@ class LinuxHAL(HardwareAbstractionLayer):
             if timer is not None and self._timers.get(pin) is not timer:
                 return  # a newer command owns the line
             self._timers.pop(pin, None)
-        self._set(pin, False)
+            if not self._requests:
+                return  # close() has already dropped and released every line
+            self._set(pin, False)
 
     # -- digital.out -----------------------------------------------------------------
     def digital_out(
@@ -174,7 +201,14 @@ class LinuxHAL(HardwareAbstractionLayer):
             timer.daemon = True
             with self._lock:
                 self._timers[pin] = timer
-            timer.start()
+            try:
+                timer.start()
+            except BaseException:
+                # No timer, no off edge: never leave a pulse line driven without one.
+                with self._lock:
+                    self._timers.pop(pin, None)
+                self._set(pin, False)
+                raise
         self.events.emit(
             "actuator_command", {"pin": pin, "operation": operation, "duration_ms": duration_ms}
         )
@@ -184,7 +218,9 @@ class LinuxHAL(HardwareAbstractionLayer):
 
     def _abort(self, pin: str) -> None:
         self._stop_timer(pin)
-        self._set(pin, False)
+        with self._lock:
+            if self._requests:  # after close() every line is already dropped
+                self._set(pin, False)
 
     def close(self) -> None:
         """Drop every line inactive and release it. The session is over; nothing is recorded."""
@@ -192,8 +228,88 @@ class LinuxHAL(HardwareAbstractionLayer):
             return
         for pin in list(self._timers):
             self._stop_timer(pin)
+        # One line that fails to drop must not leave the others active or held.
+        errors: list[OSError] = []
         for pin in self.lines:
-            self._set(pin, False)
-        for request in self._requests.values():
-            request.release()
-        self._requests = {}
+            try:
+                self._set(pin, False)
+            except OSError as exc:
+                errors.append(exc)
+        with self._lock:  # a pulse ending now sees no requests and leaves the line alone
+            requests, self._requests = self._requests, {}
+        for request in requests.values():
+            try:
+                request.release()
+            except OSError as exc:
+                errors.append(exc)
+        if errors:
+            raise errors[0]
+
+
+# Primitives `LinuxHAL` does not implement yet, and the task that brings each. An
+# interactive session refuses an agent that needs one before any line is requested,
+# rather than failing mid-session on the first turn that reaches it (Q-16).
+MISSING_ON_LINUX = {
+    "audio.in": "TSK-S5-08",
+    "audio.out": "TSK-S5-08",
+    "sensor.read": "TSK-S5-09",
+    "display": "TSK-S5-09",
+}
+
+
+class TypedLinuxHAL(LinuxHAL):
+    """
+    `LinuxHAL` for an interactive session — `run`, `record`, `mcp serve` (TSK-S5-10).
+
+    The pins are real kernel lines. The person types on the terminal, as on `sim`
+    (Q-15): a typed line is the session's input and a reply is printed, with the
+    same `text_input` / `tts_stream_start` events `SimHAL` writes, so a session
+    recorded here has the shape of a `sim` one and replays on either target.
+    Nothing is heard or spoken: microphone and speaker are TSK-S5-08.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._typed: deque[str] = deque()
+        self.spoken: list[str] = []
+        self.frames: list[Any] = []  # no `display` on linux yet (TSK-S5-09)
+
+    def type_text(self, text: str) -> None:
+        self._typed.append(text)
+
+    def audio_in(self, called_from: str = "<unknown>") -> str | None:
+        if not self._typed:
+            return None
+        text = self._typed.popleft()
+        self.events.emit("text_input", {"text": text})
+        return text
+
+    def audio_out(self, text: str, called_from: str = "<unknown>") -> None:
+        self.spoken.append(text)
+        self.events.emit("tts_stream_start", {"text": text})
+
+    def pulsing(self) -> list[str]:
+        """The pins whose pulse is still in flight."""
+        with self._lock:
+            return sorted(self._timers)
+
+    def driven(self) -> list[str]:
+        """The pins whose line is active right now."""
+        return [pin for pin in self.lines if self._requests and self.line_value(pin)]
+
+    def settle(self) -> None:
+        """
+        Wait for every pulse in flight to end on its own. `run -c` does, so the one
+        command it ran drives its line for the whole duration the gate allowed
+        before `close()` drops every line; Ctrl-C drops them at once.
+        """
+        with self._lock:
+            timers = list(self._timers.values())
+        for timer in timers:
+            timer.join()
+
+    def sensor_values(self) -> dict[str, tuple[Any, str | None]]:
+        return {}
+
+    def set_sensor(self, sensor: str, value: Any, unit: str | None = None) -> None:
+        self._not_on_target("sensor.read", "LinuxHAL.set_sensor()")

@@ -1,0 +1,34 @@
+{
+  "description": "Lệnh hẹn giờ của lượt trước vẫn chờ khi lượt mới đang nghĩ; người dùng nói tiếp đúng ms lệnh tới hạn: lệnh bị hủy (đầu vào trước hạn chót, §9.1), không có tts_stream_end vì THINKING im.",
+  "scenario": "V1",
+  "covers": [
+    "T01",
+    "T02",
+    "T04",
+    "T06",
+    "T08",
+    "T10",
+    "T14"
+  ],
+  "agent": "voice-door",
+  "params": {
+    "end_of_turn_silence_ms": 700,
+    "listen_timeout_ms": 8000,
+    "think_timeout_ms": 5000,
+    "max_reprompts": 1
+  },
+  "world": {},
+  "inputs": [
+    {"offset_ms": 0, "type": "wake_word_detected", "data": {"word": "hey_neuro", "score": 0.93}},
+    {"offset_ms": 200, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 800, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 1600, "type": "stt_result", "data": {"turn": 1, "text": "mở cửa sau hai giây"}},
+    {"offset_ms": 2000, "type": "wake_word_detected", "data": {"word": "hey_neuro", "score": 0.93}},
+    {"offset_ms": 2200, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 2800, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 3600, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 4000, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 4800, "type": "stt_result", "data": {"turn": 3, "text": ""}}
+  ],
+  "until_ms": 40000
+}

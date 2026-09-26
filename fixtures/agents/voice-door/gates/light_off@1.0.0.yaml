@@ -1,0 +1,22 @@
+# Như light_off của home-voice: còn người trong phòng ⇒ hỏi lại (RFC-0006), và
+# một lời "có" của người trên thiết bị đứng thay room_empty.
+schema:  neuroedge.gate/v1
+name:    light_off
+version: 1.0.0
+
+evaluate:
+  room_empty:
+    type: bool
+    instructions: "Cảm biến chuyển động không thấy ai trong phòng"
+
+allow_when:
+  room_empty: true
+
+on_block:
+  action:   ask
+  message:  "Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?"
+  confirms: [room_empty]
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

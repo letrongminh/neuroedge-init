@@ -362,13 +362,16 @@ class TracePlayer:
         conversation = Conversation(engine=engine, hal=hal)
 
         results: list[ActionResult] = []
-        while engine.cursor < len(steps):
-            step = steps[engine.cursor]
-            name = self._action_for(step, actions, gates)
-            results.append(await conversation.do(name, **step.arguments))
-        close = getattr(hal, "close", None)
-        if close is not None:
-            close()
+        try:
+            while engine.cursor < len(steps):
+                step = steps[engine.cursor]
+                name = self._action_for(step, actions, gates)
+                results.append(await conversation.do(name, **step.arguments))
+        finally:
+            # A divergence or a contract error must not leave a real line driven (linux).
+            close = getattr(hal, "close", None)
+            if close is not None:
+                close()
         return ReplayResult(
             recorded=self.trace,
             replayed=events.to_trace(),

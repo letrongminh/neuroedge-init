@@ -2,7 +2,9 @@
 `SimSession` — one agent wired up on target `sim` (TSK-S3-06, FR-CLI-02, Q-15).
 
 This is what `neuroedge run --target sim` drives and what a scaffolded
-project's tests import. It assembles the Sprint 2 parts, nothing new:
+project's tests import. `load(target="linux")` wires the same session to real
+GPIO lines through `TypedLinuxHAL` (TSK-S5-10). It assembles the Sprint 2 parts,
+nothing new:
 
     typed text ─► SimHAL.audio_in ─► CommandGrammar ─► intent + slots
                                         │
@@ -32,6 +34,7 @@ Anything else is undecided, and the gate blocks.
 
 from __future__ import annotations
 
+import json
 import tomllib
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -52,8 +55,8 @@ from ..engine.compiler import resolve_gates as _resolve_gates
 from ..engine.gate import ActionContractEngine
 from ..engine.gate_resolver import GateRegistry
 from ..engine.trace_sink import Clock, EventLog, monotonic_ms
-from ..errors import AgentManifestError, PerceptionUnavailableError
-from ..hal.board import load_board_by_id
+from ..errors import AgentManifestError, BoardCapabilityError, PerceptionUnavailableError
+from ..hal.board import REFERENCE_BOARD, load_board_by_id
 from ..hal.sim import SimHAL
 from ..mcp_host import McpConfig, load_mcp_config
 from ..models import CommandGrammar, SystemOne, SystemTwo
@@ -70,7 +73,7 @@ DECLINE_WORDS = frozenset({"không", "khong", "huỷ", "hủy", "huy", "thôi", 
 CONFIRM_HINT = "Nói “có” để xác nhận, “không” để huỷ."
 
 
-def _answer_word(text: str) -> bool | None:
+def answer_word(text: str) -> bool | None:
     """True for a yes, False for a no, None for anything else."""
     word = " ".join(text.casefold().strip(" .!?,…").split())
     if word in CONFIRM_WORDS:
@@ -198,6 +201,30 @@ def _sim_tables(manifest: AgentManifest) -> tuple[dict[str, Any], dict[str, tupl
     return dict(facts), slot_facts
 
 
+# The targets an interactive session runs on (each defaults to its REFERENCE_BOARD).
+SESSION_TARGETS = ("sim", "linux")
+
+
+def _require_linux_primitives(manifest: AgentManifest, sensor_facts: Mapping[str, Any]) -> None:
+    """Refuse, before a line is requested, an agent that needs what `LinuxHAL` lacks."""
+    from ..hal.linux import MISSING_ON_LINUX
+
+    missing = [name for name in manifest.requires if name in MISSING_ON_LINUX]
+    if sensor_facts and "sensor.read" not in missing:
+        missing.append("sensor.read")
+    if not missing:
+        return
+    tasks = ", ".join(f"{name} ({MISSING_ON_LINUX[name]})" for name in missing)
+    raise BoardCapabilityError(
+        where=f"{manifest.source} -> [requires] on target 'linux'",
+        why=(
+            f"the agent needs {tasks}, which LinuxHAL does not implement yet; "
+            "on linux an interactive session has digital.out only"
+        ),
+        how="run it on sim (--target sim) until those tasks bring the primitives to linux",
+    )
+
+
 def _asks(result: ToolResult) -> bool:
     """A device tool the gate blocked with `on_block: ask` and a question to say."""
     gate = result.action.gate if result.action is not None else None
@@ -214,7 +241,7 @@ class SimSession:
         self,
         manifest: AgentManifest,
         *,
-        hal: SimHAL,
+        hal: SimHAL | Any,  # a `TypedLinuxHAL` on target linux
         events: EventLog,
         grammar: CommandGrammar,
         conversation: Conversation,
@@ -250,22 +277,35 @@ class SimSession:
         cls,
         agent_toml: str | Path = "agent.toml",
         *,
-        board_id: str = "sim-default",
+        board_id: str | None = None,
         facts: Mapping[str, Any] | None = None,
         registry: GateRegistry | None = None,
         clock: Clock = monotonic_ms,
         events: EventLog | None = None,
         slow: SystemTwo | None = None,
+        target: str = "sim",
     ) -> SimSession:
         """
-        Build-check the agent for `sim`, then wire it up.
+        Build-check the agent for `target`, then wire it up.
 
-        `facts` overrides entries of `[sim.facts]`. `events` is where the session
-        writes — a `TraceRecorder` to record it; its metadata is set from the
-        agent and board. Raises `BuildFailed` with every problem when the agent
-        does not fit the board.
+        `target` is `sim` (a `SimHAL`) or `linux` (a `TypedLinuxHAL`: real GPIO
+        lines, typed text on the terminal — TSK-S5-10); `board_id` defaults to the
+        target's reference board. `facts` overrides entries of `[sim.facts]`, which
+        is where the session facts come from on either target until a property
+        system supplies them. `events` is where the session writes — a
+        `TraceRecorder` to record it; its metadata is set from the agent and board.
+        Raises `BuildFailed` with every problem when the agent does not fit the
+        board, and `BoardCapabilityError` when `linux` cannot run it (a primitive
+        `LinuxHAL` lacks, no `gpiod`, no GPIO chip — Q-16).
         """
-        build(agent_toml, target="sim", board_id=board_id, registry=registry)
+        if target not in SESSION_TARGETS:
+            raise BoardCapabilityError(
+                where=f"SimSession.load(target={target!r})",
+                why=f"an interactive session runs on {' or '.join(SESSION_TARGETS)}",
+                how="pass target='sim' or target='linux'",
+            )
+        board_id = board_id or REFERENCE_BOARD[target]
+        build(agent_toml, target=target, board_id=board_id, registry=registry)
         manifest = load_agent_manifest(agent_toml)
         grammar_path = manifest.root / "commands.toml"
         if not grammar_path.is_file():
@@ -279,48 +319,65 @@ class SimSession:
         sim_table = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
         sensors, sensor_facts = _sim_sensors(manifest, sim_table)
 
-        if events is None:
-            events = EventLog(clock)
-        events.metadata.update(target="sim", board_id=board_id, agent_version=manifest.label)
-        hal = SimHAL(load_board_by_id(board_id), events=events)
-        for name, (value, unit) in sensors.items():
-            hal.set_sensor(name, value, unit)
+        if target == "linux":
+            _require_linux_primitives(manifest, sensor_facts)
         actions = load_actions(manifest)
         gates, _ = _resolve_gates(manifest, registry)  # build() has already vetted them
-        engine = ActionContractEngine(
-            gates,
-            facts_source=SystemOne("sim", fallback=grammar, network="offline", events=events),
-            clock=clock,
-            events=events,
-        )
-        conversation = Conversation(engine=engine, hal=hal)
-        if slow is None:
-            # `[system_two]` of agent.toml (TSK-S2-11); none ⇒ System 2 stays offline.
-            from ..models.providers import system_two_for
 
-            slow = system_two_for(manifest, events)
-        elif slow.events is None:
-            slow.events = events  # FR-MDL-06: every model call is traced
-        return cls(
-            manifest,
-            hal=hal,
-            events=events,
-            grammar=grammar,
-            conversation=conversation,
-            facts={**sim_facts, **(facts or {})},
-            slot_facts=slot_facts,
-            sensor_facts=sensor_facts,
-            slow=slow,
-            knowledge=knowledge,
-            tools=actions,
-            mcp=load_mcp_config(manifest),
-            # RFC-0005: each tool's schema shows its gate's argument limits.
-            argument_limits={
-                spec.name: gates[spec.gate].arguments
-                for spec in actions
-                if spec.gate in gates and gates[spec.gate].arguments
-            },
-        )
+        if events is None:
+            events = EventLog(clock)
+        events.metadata.update(target=target, board_id=board_id, agent_version=manifest.label)
+        board = load_board_by_id(board_id)
+        if target == "linux":
+            from ..hal.linux import TypedLinuxHAL
+
+            hal = TypedLinuxHAL(board, events=events)
+        else:
+            hal = SimHAL(board, events=events)
+            for name, (value, unit) in sensors.items():
+                hal.set_sensor(name, value, unit)
+        # Requesting the lines is the one step that holds anything: if the rest of
+        # the wiring fails, they are released before the error goes up.
+        try:
+            engine = ActionContractEngine(
+                gates,
+                facts_source=SystemOne("sim", fallback=grammar, network="offline", events=events),
+                clock=clock,
+                events=events,
+            )
+            conversation = Conversation(engine=engine, hal=hal)
+            if slow is None:
+                # `[system_two]` of agent.toml (TSK-S2-11); none ⇒ System 2 stays offline.
+                from ..models.providers import system_two_for
+
+                slow = system_two_for(manifest, events)
+            elif slow.events is None:
+                slow.events = events  # FR-MDL-06: every model call is traced
+            return cls(
+                manifest,
+                hal=hal,
+                events=events,
+                grammar=grammar,
+                conversation=conversation,
+                facts={**sim_facts, **(facts or {})},
+                slot_facts=slot_facts,
+                sensor_facts=sensor_facts,
+                slow=slow,
+                knowledge=knowledge,
+                tools=actions,
+                mcp=load_mcp_config(manifest),
+                # RFC-0005: each tool's schema shows its gate's argument limits.
+                argument_limits={
+                    spec.name: gates[spec.gate].arguments
+                    for spec in actions
+                    if spec.gate in gates and gates[spec.gate].arguments
+                },
+            )
+        except BaseException:
+            close = getattr(hal, "close", None)
+            if close is not None:
+                close()
+            raise
 
     def local_commands(self) -> list[str]:
         """One example phrase per grammar command that calls a tool — what works offline."""
@@ -367,7 +424,7 @@ class SimSession:
         self.hal.type_text(text)
         utterance = self.hal.audio_in(called_from="SimSession.handle()") or ""
         pending = self.conversation.confirmations.latest()
-        answer = _answer_word(utterance) if pending is not None else None
+        answer = answer_word(utterance) if pending is not None else None
         if pending is not None and answer is not None:
             # "có" / "không" to the device's own question: a person, on the device.
             return await self._answer(pending.id, answer, "local_grammar", utterance)
@@ -482,6 +539,17 @@ class SimSession:
         if self._active is not None:
             self._turn_results.append(result)
         return result
+
+    async def run_tool_calls(
+        self, text: str, calls: list[ToolCall], reply: str | None = None
+    ) -> Turn:
+        """
+        A model's answer to `text` — its tool calls, each through `dispatch()` and
+        its gate, then its reply — as the turn it concludes. The voice driver
+        (`perception.VoiceSession`) calls this when System 2's answer arrives.
+        """
+        recognition = self.grammar.recognize(text)
+        return await self._call_tools(Turn(text, recognition), calls, recognition, reply)
 
     async def _call_tools(
         self, turn: Turn, calls: list[ToolCall], recognition: Recognition, reply: str | None = None
@@ -655,6 +723,44 @@ class SimSession:
             self.events.emit("system_two_unavailable", {"task": task, "reason": exc.why})
             return await self._speak(turn, offline, "offline")
         return await self._speak(turn, text, "system_two")
+
+    @property
+    def target(self) -> str:
+        return self.hal.target
+
+    def canned_facts(self) -> list[str]:
+        """
+        Gate facts that are the fixed values of `[sim.facts]`. On `sim` that is the
+        simulation; on `linux` they stand in for a property system that does not
+        exist yet, so a gate there decides on them — which a person should know.
+        """
+        return sorted(_sim_tables(self.manifest)[0])
+
+    def write_trace(self, path: Path) -> None:
+        """The session so far as a validated `trace.v1` file at `path`."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(self.trace(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+
+    def close(self) -> None:
+        """End the session: on linux every line is dropped inactive and released."""
+        close = getattr(self.hal, "close", None)
+        if close is None:
+            return
+        import signal
+        import threading
+
+        if threading.current_thread() is not threading.main_thread():
+            close()
+            return
+        # A second Ctrl-C must not stop the lines dropping halfway (SIGTERM/SIGHUP
+        # are already ignored once their handler runs — cli/main.py).
+        previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
+        try:
+            close()
+        finally:
+            signal.signal(signal.SIGINT, previous)
 
     def trace(self) -> dict[str, Any]:
         """The session so far as a `trace.v1` document, validated before it is returned."""

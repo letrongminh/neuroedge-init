@@ -7,7 +7,11 @@ mirrors the reference board rather than exceeding it (CHANGELOG §3.3 #7).
 
 * `digital_out` — the only way a pin changes; records `actuator_command` and
   returns a cancellable `PendingCommand` (RB-3: barge-in must be able to abort a
-  pending pulse, so the handle exists on every target from day one).
+  pending pulse, so the handle exists on every target from day one). With
+  `delay_ms` the command is *scheduled*: authorised now, delivered — pin recorded,
+  `actuator_command` — only when `run_due()` reaches its time on the clock given
+  to `enable_scheduling()`. Until then it is a pending command in the sense of
+  docs/spec/voice_fsm.md §5.1, and barge-in cancels it (TSK-S3-11).
 * `audio_in` — Q-15: typed text by default, queued with `type_text()`.
 * `audio_out` — records `tts_stream_start`.
 * `sensor_read` — values scripted with `set_sensor()` (or a sequence with
@@ -26,11 +30,13 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-from ..errors import BoardCapabilityError
-from . import Authorizer, HardwareAbstractionLayer, _require_signature
+from ..errors import ActionContractViolation, BoardCapabilityError
+from . import Authorizer, HardwareAbstractionLayer, PinAssertion, _require_signature
 from .board import BoardProfile, load_board_by_id
 
 ABORTED_BY_BARGE_IN = "ACTUATOR_ABORTED_BY_BARGE_IN"
+# The @action that scheduled the command raised: its verdict never completed (review of TSK-S3-11).
+ABORTED_BY_ACTION_ERROR = "ACTUATOR_ABORTED_BY_ACTION_ERROR"
 
 
 class EventSink(Protocol):
@@ -53,6 +59,12 @@ class PendingCommand:
     cancelled: bool = False
     # What the target must do to stop the command physically (LinuxHAL drops the line).
     on_cancel: Callable[[], None] | None = field(default=None, repr=False)
+    # False while a scheduled command waits for its time (voice_fsm.md §5.1). A
+    # delivered command is no longer pending: barge-in never cancels it (§5.3).
+    delivered: bool = True
+    deliver_at_ms: float | None = None
+    # The verdict token that authorised the command, so barge-in can close it (§5.2 step 2).
+    token: Any = field(default=None, repr=False)
 
     def cancel(self, reason: str = ABORTED_BY_BARGE_IN) -> None:
         if self.cancelled:
@@ -159,6 +171,9 @@ class SimHAL(HardwareAbstractionLayer):
         self.frame: str | bytes | None = None
         self.frames: list[Frame] = []
         self.spoken: list[str] = []
+        # Scheduled commands (voice_fsm.md §5.1); None = scheduling refused.
+        self._clock: Callable[[], float] | None = None
+        self._scheduled: list[PendingCommand] = []
 
     def _require(self, primitive: str, called_from: str) -> dict[str, Any]:
         if not self.board.supports(primitive):
@@ -170,6 +185,14 @@ class SimHAL(HardwareAbstractionLayer):
         return self.board.capability(primitive)
 
     # -- digital.out -----------------------------------------------------------
+    # Scheduled commands are what barge-in cancels (voice_fsm.md §5.2), so they
+    # exist only where a driver delivers them on a clock: `perception.VoiceSession`.
+    schedules_commands = True
+
+    def enable_scheduling(self, clock: Callable[[], float]) -> None:
+        """Accept `delay_ms` commands, delivered by `run_due()` on this clock."""
+        self._clock = clock
+
     def digital_out(
         self,
         pin: str,
@@ -177,6 +200,7 @@ class SimHAL(HardwareAbstractionLayer):
         duration_ms: int = 0,
         signature: Any = "",
         called_from: str = "<unknown>",
+        delay_ms: int = 0,
     ) -> PendingCommand:
         if operation not in ("pulse", "on", "off"):
             raise BoardCapabilityError(
@@ -184,11 +208,104 @@ class SimHAL(HardwareAbstractionLayer):
                 why=f"unknown operation {operation!r}",
                 how="use one of 'pulse', 'on', 'off'",
             )
+        if delay_ms:
+            return self._schedule(pin, operation, duration_ms, signature, called_from, delay_ms)
         super().digital_out(pin, operation, duration_ms, signature, called_from)
         self.events.emit(
             "actuator_command", {"pin": pin, "operation": operation, "duration_ms": duration_ms}
         )
-        return PendingCommand(pin, operation, duration_ms, self.events)
+        return PendingCommand(pin, operation, duration_ms, self.events, token=signature)
+
+    def _schedule(
+        self,
+        pin: str,
+        operation: str,
+        duration_ms: int,
+        signature: Any,
+        called_from: str,
+        delay_ms: int,
+    ) -> PendingCommand:
+        where = f"{called_from} -> digital.out {pin!r}"
+        if self._clock is None:
+            raise BoardCapabilityError(
+                where=where,
+                why="a scheduled command needs a driver that delivers it on a clock, and none runs",
+                how="run the agent in a perception.VoiceSession, or drive the pin without after_ms",
+            )
+        if delay_ms < 0:
+            raise BoardCapabilityError(
+                where=where, why=f"negative delay {delay_ms} ms", how="use after_ms >= 0"
+            )
+        # Checked and authorised now — the verdict is spent when the gate allowed —
+        # but the pin is recorded only on delivery, so a cancelled command never moved it.
+        if self.board is not None:
+            self.board.require_pin(pin, called_from=called_from)
+        self.authorize(signature, pin, called_from)
+        # A verdict is fresh for its TTL (actions/token.py); a command delivered after
+        # that would move the pin on facts the gate never saw, so it is refused now.
+        issued_at = getattr(signature, "issued_at_ms", None)
+        ttl = getattr(signature, "ttl_ms", None)
+        if issued_at is not None and ttl is not None:
+            deliver_at = self._clock() + delay_ms
+            if deliver_at - issued_at > ttl:
+                raise ActionContractViolation(
+                    where=where,
+                    why=(
+                        f"after_ms {delay_ms} delivers the command {deliver_at - issued_at:g} ms "
+                        f"after the verdict, past its TTL of {ttl:g} ms"
+                    ),
+                    how="schedule within the verdict's TTL (p95_latency_ms x 3 of the gate)",
+                )
+        command = PendingCommand(
+            pin,
+            operation,
+            duration_ms,
+            self.events,
+            delivered=False,
+            deliver_at_ms=self._clock() + delay_ms,
+            token=signature,
+        )
+        self._scheduled.append(command)
+        return command
+
+    def cancel_scheduled(self, token: Any, reason: str = ABORTED_BY_ACTION_ERROR) -> None:
+        """Cancel every pending command `token` authorised (its @action raised)."""
+        for command in self.pending_commands():
+            if command.token is token:
+                command.cancel(reason)
+
+    def pending_commands(self) -> list[PendingCommand]:
+        """Scheduled commands not yet delivered and not cancelled, oldest first."""
+        return [c for c in self._scheduled if not c.delivered and not c.cancelled]
+
+    def next_delivery_ms(self) -> float | None:
+        due = [c.deliver_at_ms for c in self.pending_commands() if c.deliver_at_ms is not None]
+        return min(due) if due else None
+
+    def run_due(self) -> list[PendingCommand]:
+        """Deliver every pending command whose time has come on the clock, in time order."""
+        if self._clock is None:
+            return []
+        now = self._clock()
+        due = sorted(
+            (c for c in self.pending_commands() if (c.deliver_at_ms or 0) <= now),
+            key=lambda c: c.deliver_at_ms or 0,
+        )
+        for command in due:
+            command.delivered = True
+            self.pins.setdefault(command.pin, PinAssertion(command.pin)).record(
+                command.operation, command.duration_ms
+            )
+            self.events.emit(
+                "actuator_command",
+                {
+                    "pin": command.pin,
+                    "operation": command.operation,
+                    "duration_ms": command.duration_ms,
+                },
+            )
+        self._scheduled = [c for c in self._scheduled if not c.delivered and not c.cancelled]
+        return due
 
     # -- sensor.read -------------------------------------------------------------
     def set_sensor(self, sensor: str, value: Any, unit: str | None = None) -> None:

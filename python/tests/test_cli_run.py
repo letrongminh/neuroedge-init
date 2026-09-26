@@ -81,11 +81,10 @@ def test_a_missing_agent_exits_one_with_a_three_part_diagnostic(tmp_path):
     assert "why:" in result.output and "fix:" in result.output
 
 
-@pytest.mark.parametrize(("target", "task"), [("linux", "TSK-S5-10"), ("esp32s3", "TSK-S4-01")])
-def test_other_targets_exit_two_and_name_their_task(villa, target, task):
-    result = run(villa, "--target", target, "-c", "mở cửa phòng 101")
+def test_esp32s3_exits_two_and_names_its_task(villa):
+    result = run(villa, "--target", "esp32s3", "-c", "mở cửa phòng 101")
     assert result.exit_code == 2
-    assert task in result.output
+    assert "TSK-S4-01" in result.output
 
 
 def test_an_unknown_target_exits_one_with_a_three_part_diagnostic(villa):

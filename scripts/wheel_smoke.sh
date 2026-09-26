@@ -49,6 +49,7 @@ fi
 LISTING=$(unzip -l "$WHEEL")  # listed once: `unzip | grep -q` trips pipefail on SIGPIPE
 for asset in schemas/trace.v1.json boards/sim-default.toml gates/unlock_door@1.2.0.yaml \
   fixtures/traces/happy-path.json fixtures/agents/villa-concierge/agent.toml \
+  fixtures/agents/factory-monitor/agent.toml \
   fixtures/tool_calls/expected_results.yaml; do
   case "$LISTING" in
     *"neuroedge/_data/$asset"*) ;;
@@ -94,6 +95,15 @@ cd "$WORK"
 step new villa --template villa-concierge
 cd "$WORK/villa"
 step run -c "mở cửa phòng 101"
+step test
+cd "$WORK"
+step new plant --template factory-monitor
+cd "$WORK/plant"
+step build --target sim --board sim-default
+step run -c "bật quạt"
+step run -c "tắt quạt"
+step run -c "tắt báo động"
+step gate lint gates
 step test
 cd "$WORK"
 

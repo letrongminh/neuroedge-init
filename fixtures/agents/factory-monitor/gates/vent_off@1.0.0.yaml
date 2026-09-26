@@ -1,0 +1,36 @@
+# Stopping the fan while the machine room is hot lets heat and fumes build up.
+# Up to `normal` it is allowed. At `high` the device asks, and an operator who
+# answers "có" on the device stands in for heat_level only (RFC-0006). At
+# `critical` heat_critical also fails, a yes would not be enough, so nothing is
+# asked: the fan keeps running. The same holds for every caller — a model that
+# decides to stop the fan is refused the same way, and cannot answer.
+schema:  neuroedge.gate/v1
+name:    vent_off
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+  heat_level:
+    type: level
+    levels: [low, normal, high, critical]
+    instructions: "Dải nhiệt của phòng máy, do cảm biến nhiệt báo"
+  heat_critical:
+    type: bool
+    instructions: "Cảm biến nhiệt báo dải critical"
+
+allow_when:
+  call_source:   { in: [local_grammar, system_one, system_two, mcp] }
+  heat_level:    { lte: normal }
+  heat_critical: false
+
+on_block:
+  action:   ask
+  message:  "Phòng máy đang nóng — bạn chắc muốn tắt quạt thông gió?"
+  confirms: [heat_level]
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

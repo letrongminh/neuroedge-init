@@ -1,0 +1,37 @@
+{
+  "description": "Không ai trả lời câu hỏi: lượt trả lời hết giờ nghe; sau TTL, \"có\" không còn xác nhận được gì.",
+  "scenario": "V4",
+  "covers": [
+    "T01",
+    "T02",
+    "T04",
+    "T05",
+    "T07",
+    "T08",
+    "T11"
+  ],
+  "agent": "voice-door",
+  "params": {
+    "end_of_turn_silence_ms": 700,
+    "listen_timeout_ms": 8000,
+    "think_timeout_ms": 5000,
+    "max_reprompts": 1
+  },
+  "world": {
+    "sensors": {
+      "motion": true
+    }
+  },
+  "inputs": [
+    {"offset_ms": 0, "type": "wake_word_detected", "data": {"word": "hey_neuro", "score": 0.93}},
+    {"offset_ms": 200, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 800, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 1600, "type": "stt_result", "data": {"turn": 1, "text": "tắt đèn"}},
+    {"offset_ms": 3000, "type": "tts_stream_end", "data": {"reason": "done"}},
+    {"offset_ms": 12000, "type": "wake_word_detected", "data": {"word": "hey_neuro", "score": 0.93}},
+    {"offset_ms": 12200, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 12500, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 13300, "type": "stt_result", "data": {"turn": 3, "text": "có"}}
+  ],
+  "until_ms": 14000
+}

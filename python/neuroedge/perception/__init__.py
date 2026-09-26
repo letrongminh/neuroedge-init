@@ -1,11 +1,21 @@
 """
-Voice Pipeline and Perception Layer (L2).
-Port of Pipecat frame-based audio pipeline, microWakeWord, and Silero VAD.
+Perception layer (L2) — the conversation state machine (TSK-S3-11).
+
+`VoiceStateMachine` implements docs/spec/voice_fsm.md and depends on no target;
+`VoiceSession` puts it in front of an agent on `sim` (on `linux` with TSK-S5-08,
+which brings scheduled commands there). Both pass the language-independent
+corpus `fixtures/compliance/voice/` (TSK-S3-10, `neuroedge.testing.voice_corpus`).
+Audio, ASR/TTS and wake-word models arrive with TSK-S3-13, TSK-S5-08, TSK-I4-01.
 """
 
-__all__ = ["VoicePipeline"]
+from .voice_fsm import TRIGGERS, VoiceParams, VoiceState, VoiceStateMachine
+from .voice_session import VirtualClock, VoiceSession
 
-
-class VoicePipeline:
-    def __init__(self, sample_rate: int = 16000):
-        self.sample_rate = sample_rate
+__all__ = [
+    "TRIGGERS",
+    "VirtualClock",
+    "VoiceParams",
+    "VoiceSession",
+    "VoiceState",
+    "VoiceStateMachine",
+]

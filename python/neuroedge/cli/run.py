@@ -1,5 +1,6 @@
 """
-`neuroedge run --target sim` — the typed-text REPL (TSK-S3-06, FR-CLI-02, Q-15).
+`neuroedge run` — the typed-text REPL (TSK-S3-06, FR-CLI-02, Q-15), on `sim` and,
+since TSK-S5-10, on `linux`, where the pins are real GPIO lines.
 
 Each line typed at ``neuroedge>`` goes through `SimSession.handle()`: the local
 command grammar recognises it, the command's @action runs through `c.do()`,
@@ -67,7 +68,8 @@ def pin_state(session: SimSession, pin: str) -> str:
 
 
 def pin_table(session: SimSession) -> Table:
-    table = Table(title="Virtual pins", title_justify="left")
+    title = "Virtual pins" if session.target == "sim" else "GPIO lines"
+    table = Table(title=title, title_justify="left")
     table.add_column("Pin", style="cyan")
     table.add_column("State", style="bold")
     table.add_column("Commands", justify="right")
@@ -256,7 +258,7 @@ def banner(session: SimSession, console: Console) -> None:
     gates = ", ".join(f"{key} → {ref}" for key, ref in manifest.gates.items()) or "none"
     mode = "offline, typed text (Q-15)" if not session.slow.available else "typed text"
     console.print(
-        f"[bold]{escape(manifest.label)}[/bold] on [cyan]sim[/cyan] "
+        f"[bold]{escape(manifest.label)}[/bold] on [cyan]{escape(session.target)}[/cyan] "
         f"([cyan]{escape(session.hal.board.id)}[/cyan]) · {mode}"
     )
     console.print(f"  gates: {escape(gates)}")
@@ -296,6 +298,56 @@ def system_two_line(slow) -> str:
     return f"{name} {config.model} ({key}; offline line if it cannot answer)"
 
 
+def canned_fact_warning(session: SimSession) -> str | None:
+    """
+    On `linux`, gate facts from `[sim.facts]` are fixed values deciding for real
+    lines: a gate that is safe on `sim` may ALLOW here only because of one.
+    """
+    if session.target == "sim":
+        return None
+    names = session.canned_facts()
+    if not names:
+        return None
+    return (
+        f"gates on {session.target} decide on fixed values from [sim.facts]: "
+        f"{', '.join(names)} — no property system supplies them yet"
+    )
+
+
+def _dropped_at_exit(session: SimSession, console: Console) -> None:
+    """On `linux`, say which lines are still `on` when the session ends and drops them."""
+    driven = getattr(session.hal, "driven", None)
+    try:
+        lines = driven() if driven is not None else []
+        if lines:
+            console.print(
+                f"[yellow]! the session ends: {escape(', '.join(lines))} "
+                "dropped inactive (a line stays on only while the session runs)[/yellow]"
+            )
+    except OSError:
+        pass  # a gone chip or terminal (SIGHUP) must not keep close() from running
+
+
+def _settle(session: SimSession, console: Console) -> bool:
+    """
+    On linux, let the pulse `-c` started run its whole duration before the lines
+    drop. False when Ctrl-C cut it short.
+    """
+    pulsing = getattr(session.hal, "pulsing", None)
+    if pulsing is None or not pulsing():
+        return True
+    console.print(
+        f"[dim]waiting for the pulse on {escape(', '.join(pulsing()))} to end "
+        "(Ctrl-C drops the line now)[/dim]"
+    )
+    try:
+        session.hal.settle()
+    except KeyboardInterrupt:
+        console.print()
+        return False
+    return True
+
+
 def run_session(
     session: SimSession,
     console: Console,
@@ -305,10 +357,18 @@ def run_session(
     trace_out: Path | None = None,
 ) -> int:
     """Drive the session and return the exit code."""
+    warning = canned_fact_warning(session)
     try:
         if command is not None:
-            return 0 if _turn(command, session, console, err_console) else 1
+            if warning is not None:
+                err_console.print(f"[yellow]! {escape(warning)}[/yellow]")
+            ok = _turn(command, session, console, err_console)
+            if not _settle(session, console):
+                return 130
+            return 0 if ok else 1
         banner(session, console)
+        if warning is not None:
+            console.print(f"  [yellow]! {escape(warning)}[/yellow]")
         console.print(pin_table(session))
         console.print("[dim]:help for commands · exit to leave[/dim]")
         while True:
@@ -329,9 +389,14 @@ def run_session(
             else:
                 _turn(line, session, console, err_console)
     finally:
-        if trace_out is not None:
-            trace_out.parent.mkdir(parents=True, exist_ok=True)
-            trace_out.write_text(
-                json.dumps(session.trace(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-            )
-            console.print(f"trace: {escape(str(trace_out))} ({len(session.events.events)} events)")
+        try:
+            if trace_out is not None:
+                session.write_trace(trace_out)
+                console.print(
+                    f"trace: {escape(str(trace_out))} ({len(session.events.events)} events)"
+                )
+        finally:
+            try:
+                _dropped_at_exit(session, console)
+            finally:
+                session.close()  # on linux: every line inactive and released
