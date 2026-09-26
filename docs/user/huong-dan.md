@@ -36,6 +36,7 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Xem độ trễ từng chặng và tỷ lệ System 1 / System 2 của một phiên | `neuroedge trace show` (sự kiện `turn_latency`, `session_summary`) | ✅ |
 | Liệt kê / xem profile bo mạch | `neuroedge board list` · `neuroedge board show` | ✅ |
 | Đối chiếu năng lực agent ↔ bo mạch, biên dịch gate (cả cây nhị phân `.netree` cho thiết bị, RFC-0003) | `neuroedge build` | ✅ |
+| Sinh firmware ESP-IDF cho agent của mình rồi nạp lên Box-3 — gate chạy và tự kiểm trên chip | `neuroedge build --target esp32s3` → `idf.py flash` ([`nap-firmware.md`](nap-firmware.md)) | ✅ trên QEMU · bo mạch ⏳ · chưa chân GPIO nào động (TSK-S4-01) |
 | Chạy agent có gate trên `sim` từ mã Python (`c.do()` trên `SimHAL`) | — (thư viện) | ✅ |
 | Chạy agent có gate trên `sim` từ dòng lệnh (gõ chữ, không mạng) | `neuroedge run` | ✅ |
 | Xem phiên `sim` trực tiếp trên trình duyệt: chốt cửa, đèn, cảm biến, màn hình | `neuroedge run --ui` | ✅ |
@@ -82,8 +83,8 @@ Nói thẳng để bạn không mất thời gian:
   dải thì chặn (fail-closed) cho tới khi có `evaluate.type: numeric` (`TODOS.md` #30). Màn hình
   `/dev/fb*` chỉ nhận khung điểm ảnh; khung chữ cần `display = memory`. `:sensor` trong REPL không
   đổi được cảm biến thật.
-- Chưa có bo mạch `esp32s3`: firmware (walker gate, sổ token C, replay vết ghi chuẩn mực) mới chạy
-  trên máy tính và QEMU. Trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng
+- Chưa có bo mạch `esp32s3`: firmware (walker gate, sổ token C, replay vết ghi chuẩn mực, firmware
+  sinh cho agent của bạn) mới chạy trên máy tính và QEMU, và chưa động chân GPIO nào (TSK-S4-01). Trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng
   trên host; `replay --target esp32s3` cho vết ghi tuỳ ý **thoát mã 2**.
 - Tương đương target mới so **quyết định** (phán quyết + lệnh chân), chưa so timing.
 - Danh sách đầy đủ: `CHANGELOG.md` §3.7.

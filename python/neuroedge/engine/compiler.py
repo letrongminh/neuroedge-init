@@ -14,9 +14,11 @@ problem so one run reports them all, each with where / why / how:
    every `degrade` fallback names a declared action;
 5. the command grammar (and `knowledge.toml`, if the agent ships one) loads,
    and every `action` a command names is a declared @action;
-6. `[mcp]` and `[system_two]` are well formed — no API key in agent.toml.
+6. `[mcp]` and `[system_two]` are well formed — no API key in agent.toml;
+7. for `esp32s3`, the agent links into the firmware (`firmware.firmware_problems`).
 
-On success it writes each gate's decision tree and canonical artifact.
+On success it writes each gate's decision tree and canonical artifact — and, for
+`esp32s3`, the ESP-IDF project of the agent's firmware (`<out>/esp32s3/`, TSK-I3-01).
 """
 
 from __future__ import annotations
@@ -466,6 +468,9 @@ class BuildReport:
     gates: int
     requirements: int
     artifacts: list[Path] = field(default_factory=list)
+    # esp32s3: the ESP-IDF project written for the agent, and how many files it has.
+    firmware: Path | None = None
+    firmware_files: int = 0
 
 
 def build(
@@ -515,6 +520,16 @@ def build(
             problems.append(error)
     problems += check_mcp_servers(manifest, actions)
     problems += check_system_two(manifest)
+    project: Path | None = None
+    if target == "esp32s3":
+        from . import firmware
+
+        problems += firmware.firmware_problems(manifest, gates)
+        if out_dir is not None:
+            project = Path(out_dir) / firmware.PROJECT_DIR
+            problem = firmware.project_problem(project)
+            if problem is not None:
+                problems.append(problem)
 
     if problems:
         raise BuildFailed(where=f"{manifest.label} for {target} on {board.id}", problems=problems)
@@ -528,6 +543,12 @@ def build(
         requirements=len(manifest.requires),
     )
     if out_dir is not None:
+        # Rendered before anything is written: a failure here leaves `out_dir` as it was.
+        project_files: dict[str, bytes] = {}
+        if project is not None:
+            from . import firmware
+
+            project_files = firmware.render_project(manifest, board.id, gates, actions)
         folder = Path(out_dir) / "gates"
         folder.mkdir(parents=True, exist_ok=True)
         from .binary_tree import c_header, encode
@@ -545,4 +566,9 @@ def build(
             header_path = folder / f"{key}.netree.h"
             header_path.write_text(c_header(tree, key), encoding="utf-8")
             report.artifacts += [tree_path, artifact_path, binary_path, header_path]
+        if project is not None:
+            from . import firmware
+
+            firmware.write_project(project, project_files)
+            report.firmware, report.firmware_files = project, len(project_files)
     return report

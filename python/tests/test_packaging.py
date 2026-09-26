@@ -7,7 +7,10 @@ The built artifacts themselves are checked by `scripts/wheel_smoke.sh` and
 
 from __future__ import annotations
 
+import ast
 import tomllib
+
+from neuroedge.engine import firmware
 
 
 def _project(root) -> dict:
@@ -48,3 +51,22 @@ def test_the_project_urls_point_at_the_repository(root):
     assert set(urls) == {"Homepage", "Source", "Issues", "Changelog"}
     for url in urls.values():
         assert url.startswith("https://github.com/letrongminh/neuroedge-init")
+
+
+def test_the_wheel_carries_exactly_the_firmware_sources_a_build_copies(root):
+    """
+    TSK-I3-01: `neuroedge build --target esp32s3` from an installed wheel copies the
+    firmware sources the wheel carries — the same patterns, no more: a vendored
+    third-party component (ESP-SR, `TODOS.md` #17) must never reach the package.
+    """
+    tree = ast.parse((root / "python" / "hatch_build.py").read_text("utf-8"))
+    values = {
+        node.targets[0].id: ast.literal_eval(node.value)
+        for node in tree.body
+        if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+    }
+    assert values["FIRMWARE"] == "targets/esp32s3"
+    assert values["FIRMWARE_SOURCES"] == firmware.SOURCES
+    for pattern in firmware.SOURCES:
+        assert ".." not in pattern and not pattern.startswith("components/*"), pattern
+        assert pattern.startswith(("main/", "components/ne_")) or "/" not in pattern, pattern

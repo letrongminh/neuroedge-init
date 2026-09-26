@@ -76,7 +76,7 @@ khi** xin line GPIO nào.
 
 | Nguyên thủy | Backend | Kiểm ở | Chỉ phần cứng | Task |
 |:---|:---|:---|:---|:---|
-| `digital.out` | ESP-IDF `gpio` sau walker cây `NETR` và sổ token C | PR — walker và sổ token C biên dịch trên host (bảng sự thật, ASan/UBSan) · QEMU (`firmware-qemu`, mỗi PR đụng `targets/**` và hằng đêm) — self-test gate lúc boot; lệnh chân qua UART (QEMU không có GPIO matrix) | Chân thật | walker, sổ token, self-test: TSK-S4-02, S4-07, S4-08 · chân: S4-01 · UART: S4-09 |
+| `digital.out` | ESP-IDF `gpio` sau walker cây `NETR` và sổ token C | PR — walker và sổ token C biên dịch trên host (bảng sự thật, ASan/UBSan) · QEMU (`firmware-qemu`, mỗi PR đụng `targets/**` và hằng đêm) — self-test gate lúc boot, cả firmware sinh cho một agent mới (`agent-firmware`); lệnh chân qua UART (QEMU không có GPIO matrix) | Chân thật | walker, sổ token, self-test: TSK-S4-02, S4-07, S4-08 · firmware của agent: I3-01 · chân: S4-01 · UART: S4-09 |
 | `audio.in` | I2S ES7210 + ESP-SR AFE (AEC, VAD) — driver từ XiaoZhi | **Không** — QEMU không có I2S; ESP-SR là thư viện Xtensa dựng sẵn, không chạy trên host | Toàn bộ | TSK-S5-01, S5-02 |
 | `audio.out` | I2S ES8311 | Không | Toàn bộ | TSK-S5-02 |
 | `sensor.read` | Driver I2C của ESP-IDF | QEMU — driver giả qua cùng giao diện HAL (QEMU không có I2C) | Bus I2C, cảm biến | TSK-S4-03 |
@@ -146,8 +146,9 @@ biết nó không còn gì để nói.
 (`GateResult.to_event_data()`). Hai chỗ chưa như host, đều đọc lại được đúng khi replay: giá trị ngoài
 miền, và độ tin cậy NaN, ghi là `null` (thiết bị chỉ biết "không đọc được"). Nhãn gate
 (`light_on@1.0.0`) và chữ `on_block` (`to`, `message`, `fallback_action`) không có trong NETR v1 nên đi
-kèm firmware, sinh từ cùng gate đã phân giải (`scripts/gen_firmware_gates.py`,
-`scripts/gen_firmware_vectors.py`). Phiên self-test không có lệnh chân; lệnh chân chỉ có trong phiên
+kèm firmware, sinh từ cùng gate đã phân giải (component `ne_agent` của `neuroedge build --target esp32s3`,
+TSK-I3-01; `scripts/gen_firmware_vectors.py`). Phiên self-test là các phép kiểm của agent đã link, mỗi phép
+kiểm một lần đánh giá gate, cùng dữ kiện và phán quyết engine host đã tính lúc build; không có lệnh chân; lệnh chân chỉ có trong phiên
 replay dưới đây, và chưa có `actuator_aborted`: chưa có HAL firmware (TSK-S4-01).
 
 **Host.** `neuroedge record --target esp32s3 --port <nguồn>` giữ các dòng `NE1 `, bỏ mọi dòng khác

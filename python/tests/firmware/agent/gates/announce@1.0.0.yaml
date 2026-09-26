@@ -1,0 +1,21 @@
+# Speech only: the action drives no pin, and a BLOCK goes to a person.
+schema:  neuroedge.gate/v1
+name:    announce
+version: 1.0.0
+
+evaluate:
+  quiet_hours:
+    type: bool
+    instructions: "Đang trong giờ yên lặng"
+
+allow_when:
+  quiet_hours: false
+
+on_block:
+  action:  escalate
+  to:      front_desk
+  message: "Giờ yên lặng */ không phát thông báo."
+
+budget:
+  p95_latency_ms: 100
+  fail:           closed

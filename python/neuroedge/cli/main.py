@@ -1421,7 +1421,12 @@ def build(
     out: Path = typer.Option(Path("build"), "--out", "-o", help="Directory for build artifacts"),
     registry: Path | None = REGISTRY_OPTION,
 ):
-    """Match the agent's capability needs against the board and compile its gates."""
+    """
+    Match the agent's capability needs against the board and compile its gates.
+
+    For esp32s3 it also writes the agent's firmware: an ESP-IDF project in
+    <out>/esp32s3/ to build and flash with idf.py. Any problem: exit 1, nothing written.
+    """
     from ..engine.compiler import build as run_build
 
     try:
@@ -1448,6 +1453,11 @@ def build(
     )
     for artifact in report.artifacts:
         console.print(f"  wrote:   {artifact}")
+    if report.firmware is not None:
+        console.print(
+            f"  firmware: {report.firmware} — ESP-IDF project, {report.firmware_files} files; "
+            "build and flash it with idf.py (docs/user/nap-firmware.md)"
+        )
 
 
 @app.command(epilog=epilog("test"))

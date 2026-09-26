@@ -16,6 +16,7 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | Toàn bộ lệnh CLI và đầu ra kỳ vọng | [`CHANGELOG.md`](../../CHANGELOG.md) §2 | nguồn duy nhất cho cú pháp lệnh |
 | Hôm nay dùng được gì | [`huong-dan.md`](huong-dan.md) | hướng dẫn sử dụng cho maker |
 | Trạng thái hiện tại | [`trang-thai.md`](trang-thai.md) | máy sinh từ roadmap §0 |
+| Nạp agent của mình lên ESP32-S3-BOX-3 (hoặc QEMU) | [`nap-firmware.md`](nap-firmware.md) | `build --target esp32s3` → `idf.py flash`; nơi duy nhất của thủ tục nạp |
 | **Hiểu sản phẩm** | | |
 | Yêu cầu `FR-*` / `NFR-*` | [`neuroedge-prd.md`](../../neuroedge-prd.md) | sổ quyết định là §15 (mã `Q-N`) |
 | Kiến trúc và Phụ lục B (đặc tả gate) | [`neuroedge-proposal.md`](../../neuroedge-proposal.md) | |

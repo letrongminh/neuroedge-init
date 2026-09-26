@@ -784,7 +784,7 @@ Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://
 | `trace export <tệp> --format chrome [-o]` | Chrome Trace Event JSON cho Perfetto (`ui.perfetto.dev`) — gate và xung thành slice |
 | `board list` / `board show <id>` | Liệt kê / xem năng lực bo mạch theo 5 nguyên thủy |
 | `verify [--targets sim,linux,esp32s3] [--port <nguồn>]` | Mọi gate phân giải, mọi ca của corpus tool call (`fixtures/tool_calls/`, trên `sim`) ra đúng đáp án, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`); `esp32s3` cần `--port <nguồn>` (như `record`): firmware replay các vết ghi chuẩn mực, lệch ⇒ `NE4002`; firmware replay vết ghi hay gate cũ hơn checkout ⇒ `NE4003`, không so; thiếu `--port` ⇒ mã 1. So quyết định, chưa so timing. Loại artifact nào quét được 0 ⇒ `NE4004`, mã 1 |
-| `build --target <t> [--board id]` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate (ghi cả `<gate>.netree`/`.netree.h`); kiểm `[mcp]` và `[system_two]` (API key ghi trong `agent.toml` ⇒ lỗi, không in lại key). `--agent` (mặc định `agent.toml`), `--board` (mặc định bo mạch tham chiếu của target: `sim-default`, `linux-rpi5`, `esp32s3-box-3`), `--out` (mặc định `build/`). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
+| `build --target <t> [--board id]` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate (ghi cả `<gate>.netree`/`.netree.h`); kiểm `[mcp]` và `[system_two]` (API key ghi trong `agent.toml` ⇒ lỗi, không in lại key). `--agent` (mặc định `agent.toml`), `--board` (mặc định bo mạch tham chiếu của target: `sim-default`, `linux-rpi5`, `esp32s3-box-3`), `--out` (mặc định `build/`). `--target esp32s3` ghi thêm `<out>/esp32s3/`: project ESP-IDF đầy đủ của firmware cho agent — mã nguồn `targets/esp32s3/` và component sinh `ne_agent` (cây `NETR`, bảng gate · chân · action, phép kiểm self-test kèm phán quyết engine host); key gate không phải định danh C, quá 32 chân, thiếu mã nguồn firmware, hay `esp32s3/` có sẵn mà không do `build` ghi ⇒ vấn đề của build. Nạp: [`docs/user/nap-firmware.md`](docs/user/nap-firmware.md). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
 | `replay <tệp> [--target sim\|linux]` | Replay trên HAL thật: dữ kiện đã ghi vào lại, phán quyết gate và lệnh chân **tính lại**, rồi so với golden (`--golden <tệp>`, mặc định chính vết ghi). Khớp ⇒ mã 0; lệch ⇒ mã 1, `NE4002`, dòng lệch đầu tiên; `--target esp32s3` ⇒ mã 2. `--agent`, `--board`, `--trace-out` |
 | `record [--target sim\|linux] [--out traces/] [-c "<lệnh>"] [--anonymize]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`), phán quyết giữ nguyên (FR-TRC-07) |
 | `record --target esp32s3 --port <nguồn> [--out traces/] [--timeout 30] [--baud 921600]` | Thiết bị ghi, host đọc UART: mỗi phiên `NE1` thành một tệp `<session_id>.json` đã thẩm định (`--out x.json` khi chỉ có một phiên). `<nguồn>`: tệp log (QEMU `-serial file:uart.log`), `tcp://host:port` (QEMU `-serial tcp::5555,server`), `/dev/tty…` (cần `neuroedge[serial]`). Dòng hỏng, thiếu khung, đếm lệch ⇒ `NE4001` nêu `nguồn:dòng`, mã 1, không ghi gì. Định dạng: `docs/spec/simulation_coverage.md` §4 |
@@ -822,7 +822,7 @@ Nghĩa của từng mã `NE…`, lớp lỗi và lúc nó xuất hiện: PRD
 | Workflow | Khi nào | Job |
 |:---|:---|:---|
 | `ci-sim-linux.yml` | Mỗi PR và push lên `main` | `frozen-artifacts` · `tests` (Python 3.11/3.12/3.13, gồm walker và sổ token C biên dịch trên host) · `linux-hal` · `wheel-smoke` · `lint` · `licence-obligations` · `cloud-extra` |
-| `firmware-qemu.yml` | PR và push đụng `targets/**`, `fixtures/traces/`, `engine/binary_tree.py` hoặc `testing/uart.py` · 01:30 UTC+7 hằng đêm · chạy tay | `firmware-qemu`: build `esp32s3` với `sdkconfig.qemu` (ESP-IDF 5.4), boot trên Espressif QEMU, đòi `NE_SELFTEST PASS` rồi `NE_TRACE DONE` trên UART · `uart-trace`: bằng CLI đã cài, `record --target esp32s3 --port uart.log` + `trace validate` (đòi `device_id = qemu`), rồi `verify --targets esp32s3 --port uart.log` |
+| `firmware-qemu.yml` | PR và push đụng `targets/**`, `python/neuroedge/engine/**`, `templates/**`, `fixtures/traces/`, `testing/uart.py`, `scripts/check_firmware_size.py` hoặc `scripts/qemu_boot.sh` · 01:30 UTC+7 hằng đêm · chạy tay | `firmware-qemu`: build `esp32s3` với `sdkconfig.qemu` (ESP-IDF 5.4), boot trên Espressif QEMU (`scripts/qemu_boot.sh`), đòi `NE_SELFTEST PASS` rồi `NE_TRACE DONE` trên UART, và heap trong còn trống ≥ 120 KB ở dòng `NEUROEDGE_HEAP_JSON` (sàn trước mạng và âm thanh, không phải phán quyết Q-3) · `firmware-size`: build cấu hình bo mạch (có Wi-Fi), `idf.py size`/`size-components --format json2`, `check_firmware_size.py`: ảnh ≤ khe A/B, `.data` + `.bss` + mã IRAM để lại ≥ 120 KB SRAM trong; nói ESP-SR đã link chưa · `agent-firmware`: CLI đã cài, `new` → `build --target esp32s3` (hai lần cùng byte; agent không hợp bo mạch ⇒ mã 1, không ghi gì) → `idf.py build` → QEMU, đòi `NE_SELFTEST PASS` với ≥ 1 phép kiểm và `agent_version` của agent đó · `uart-trace`: bằng CLI đã cài, `record --target esp32s3 --port uart.log` + `trace validate` (đòi `device_id = qemu`), rồi `verify --targets esp32s3 --port uart.log` |
 | `release-pypi.yml` | Tag `v*.*.*` · PR đổi tệp đóng gói · chạy tay | `build` · `sbom` · `smoke` · `attest` · `publish-testpypi` · `publish-pypi` · `github-release` — khi nào job nào chạy, và cổng phát hành: [`docs/release.md`](docs/release.md) |
 | `nightly-hardware.yml` | 01:00 UTC+7 hằng đêm · chạy tay | `firmware-build` (ESP-IDF 5.2.1, ngân sách flash Q-3) · `upstream-drift` (bản mới nhất được phép so với lock, chạy test; không bao giờ đỏ) · `drift-issue` (mở, cập nhật hoặc đóng **một** issue nhãn `dependency-drift`, cũng không làm đỏ lượt chạy — Q-32) · `memory-spike` · `report` |
 | `security.yml` | Mỗi PR và push lên `main` · hằng tuần · chạy tay | `pip-audit` (mọi pin trong `requirements-lock.txt`; lỗ hổng đã biết ⇒ đỏ, ngoại lệ chỉ qua `python/pip-audit-ignore.txt` có lý do) · `gitleaks` (toàn lịch sử mọi nhánh và tag; lượt hằng tuần và chạy tay thêm head của mọi PR) · `actionlint` · `codeql` (Python, GitHub Actions) · `firmware-changed` + `codeql-c` (firmware, build trong `espressif/idf:v5.4`; với PR chỉ khi đụng `targets/`) |
@@ -847,11 +847,18 @@ nó **bị bỏ qua và nói rõ là bỏ qua** trong phần summary, không bao
 
 ### 2.6 Firmware (khi đã có bo mạch)
 
+Firmware cho agent của mình: [`docs/user/nap-firmware.md`](docs/user/nap-firmware.md). Firmware của
+kho là firmware đó sinh cho agent mẫu `home-voice` (`components/ne_agent/`,
+`scripts/gen_firmware_gates.py`):
+
 ```bash
 cd targets/esp32s3
 idf.py set-target esp32s3
 idf.py build
-python ../../scripts/check_firmware_size.py build/*.bin   # ngân sách flash Q-3
+idf.py size --format json2 --output-file build/size.json
+idf.py size-components --format json2 --output-file build/size-components.json
+python ../../scripts/check_firmware_size.py build/neuroedge-esp32s3-box3.bin \
+  --size-json build/size.json --components-json build/size-components.json   # ngân sách Q-3: flash, RAM tĩnh
 idf.py -p /dev/ttyUSB0 flash monitor
 ```
 
@@ -860,8 +867,10 @@ Tìm dòng `NEUROEDGE_MEMORY_JSON` trong đầu ra monitor — đó là số đo
 Chưa có bo mạch: walker C chạy trên host với `make -C targets/esp32s3/components/ne_gate
 check-static` (dòng vết ghi: `…/ne_trace check-static`), và firmware boot trên QEMU theo
 `firmware-qemu.yml`. Vết ghi của phiên: `neuroedge record --target esp32s3 --port build/uart.log`; so với
-golden: `neuroedge verify --targets esp32s3 --port build/uart.log`. Đổi vết ghi chuẩn mực, gate hay action
-thì sinh lại `main/vectors/` (`scripts/gen_firmware_vectors.py`) trước khi build.
+golden: `neuroedge verify --targets esp32s3 --port build/uart.log`; heap lúc boot so với sàn Q-3:
+`python scripts/check_firmware_size.py --heap-log build/uart.log`. Đổi vết ghi chuẩn mực, gate hay action
+thì sinh lại `main/vectors/` (`scripts/gen_firmware_vectors.py`); đổi agent `home-voice` hay bộ sinh
+firmware thì sinh lại `components/ne_agent/` (`scripts/gen_firmware_gates.py`) — trước khi build.
 
 ---
 
@@ -965,8 +974,10 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
   corpus `fixtures/compliance/voice/`); chưa có micro, loa, STT/TTS, wake-word (TSK-S3-13, S5-08, I4-01). Lệnh hẹn giờ
   chỉ có trên `sim`, và khoảng hẹn đang bị chặn bởi TTL của phán quyết cho tới khi chốt `voice_fsm.md` §10.
 - ❌ **`esp32s3` mới chạy logic gate, chưa chạy agent.** Walker và sổ token C khớp engine host trên host và
-  boot trên QEMU (TSK-S4-07, S4-08); thiết bị replay 3 vết ghi chuẩn mực và ghi vết ghi qua UART (TSK-S4-09). HAL
-  firmware, replay vết ghi tuỳ ý và mọi thứ trên bo mạch là I3 (TSK-S4-01, S4-04); âm thanh trên chip là I5.
+  boot trên QEMU (TSK-S4-07, S4-08); thiết bị replay 3 vết ghi chuẩn mực và ghi vết ghi qua UART (TSK-S4-09);
+  `build --target esp32s3` sinh firmware cho agent của người dùng, gate của nó tự kiểm lúc boot (TSK-I3-01) nhưng
+  chưa chân nào động. HAL firmware, replay vết ghi tuỳ ý và mọi thứ trên bo mạch là I3 (TSK-S4-01, S4-04); âm thanh
+  trên chip là I5.
 - ❌ **SystemOne chưa có nhà cung cấp cloud thật** (`TODOS.md` #27; đổi bằng cấu hình là TSK-I4-02). SystemTwo
   đã có LiteLLM và adapter tự viết (TSK-S2-11); CI chỉ thử bằng `mock_response`, lượt gọi bằng key thật chạy tay (`scripts/live_llm_smoke.py`).
 - ❌ **Tương đương target mới ở mức quyết định, trên `sim` + `linux` + `esp32s3` trên QEMU.** `verify` so chuỗi

@@ -13,7 +13,8 @@
 
 #include "ne_trace.h"
 
-#include "gates/home_voice_indices.h"
+#include "ne_agent.h"
+#include "ne_agent_indices.h"
 #include "gates/light_off.netree.h"
 #include "gates/light_on.netree.h"
 
@@ -27,8 +28,8 @@ static void check(int ok, const char *what) {
 }
 
 static ne_tree on, off;
-static ne_fact facts[NE_LIGHT_OFF_NODES];
-static const char *sources[NE_LIGHT_OFF_NODES] = {NULL, "sensor"};
+static ne_fact facts[NE_GATE_LIGHT_OFF_NODES];
+static const char *sources[NE_GATE_LIGHT_OFF_NODES] = {NULL, "sensor"};
 static char long_text[700];
 
 static ne_fact fact(uint8_t index) {
@@ -45,7 +46,7 @@ static ne_fact fact(uint8_t index) {
 /* Case `which` into (buf, cap); its name in *name. */
 static int format(int which, char *buf, size_t cap, const char **name) {
     ne_device_info info = {"esp32s3-box-3", NE_AGENT_VERSION, "qemu", 0xdeadbeefu, NULL, NULL};
-    ne_on_block_text text = NE_LIGHT_OFF_ON_BLOCK_TEXT;
+    ne_on_block_text text = NE_GATE_LIGHT_OFF_ON_BLOCK_TEXT;
     ne_result r;
     memset(&r, 0, sizeof r);
     memset(facts, 0, sizeof facts);
@@ -64,51 +65,51 @@ static int format(int which, char *buf, size_t cap, const char **name) {
         return ne_trace_device_info(buf, cap, &info);
     case 3:
         *name = "gate_begin";
-        return ne_trace_gate_begin(buf, cap, 7u, NE_LIGHT_OFF_GATE, &off);
+        return ne_trace_gate_begin(buf, cap, 7u, NE_GATE_LIGHT_OFF_GATE, &off);
     case 4:
         *name = "gate_facts";
-        facts[NE_LIGHT_OFF_CALL_SOURCE] = fact(NE_LIGHT_OFF_CALL_SOURCE_LOCAL_GRAMMAR);
-        facts[NE_LIGHT_OFF_ROOM_EMPTY] = fact(NE_LIGHT_OFF_ROOM_EMPTY_TRUE);
-        facts[NE_LIGHT_OFF_ROOM_EMPTY].has_confidence = 1u;
-        facts[NE_LIGHT_OFF_ROOM_EMPTY].confidence = 0.96;
+        facts[NE_GATE_LIGHT_OFF_CALL_SOURCE] = fact(NE_GATE_LIGHT_OFF_CALL_SOURCE_LOCAL_GRAMMAR);
+        facts[NE_GATE_LIGHT_OFF_ROOM_EMPTY] = fact(NE_GATE_LIGHT_OFF_ROOM_EMPTY_TRUE);
+        facts[NE_GATE_LIGHT_OFF_ROOM_EMPTY].has_confidence = 1u;
+        facts[NE_GATE_LIGHT_OFF_ROOM_EMPTY].confidence = 0.96;
         return ne_trace_gate_facts(buf, cap, 8u, &off, facts, sources);
     case 5:
         *name = "gate_facts_unreadable";
-        facts[NE_LIGHT_OFF_CALL_SOURCE] = fact(0u);
-        facts[NE_LIGHT_OFF_CALL_SOURCE].in_domain = 0u; /* a value outside the domain */
-        facts[NE_LIGHT_OFF_ROOM_EMPTY] = fact(NE_LIGHT_OFF_ROOM_EMPTY_FALSE);
-        facts[NE_LIGHT_OFF_ROOM_EMPTY].has_confidence = 1u;
-        facts[NE_LIGHT_OFF_ROOM_EMPTY].confidence = NAN;
+        facts[NE_GATE_LIGHT_OFF_CALL_SOURCE] = fact(0u);
+        facts[NE_GATE_LIGHT_OFF_CALL_SOURCE].in_domain = 0u; /* a value outside the domain */
+        facts[NE_GATE_LIGHT_OFF_ROOM_EMPTY] = fact(NE_GATE_LIGHT_OFF_ROOM_EMPTY_FALSE);
+        facts[NE_GATE_LIGHT_OFF_ROOM_EMPTY].has_confidence = 1u;
+        facts[NE_GATE_LIGHT_OFF_ROOM_EMPTY].confidence = NAN;
         return ne_trace_gate_facts(buf, cap, 9u, &off, facts, NULL);
     case 6:
         *name = "gate_facts_none";
         return ne_trace_gate_facts(buf, cap, 9u, &off, facts, NULL);
     case 7:
         *name = "result_allow";
-        facts[NE_LIGHT_ON_CALL_SOURCE] = fact(NE_LIGHT_ON_CALL_SOURCE_MCP);
-        return ne_trace_gate_result(buf, cap, 10u, NE_LIGHT_ON_GATE, &on, facts, &r, NULL);
+        facts[NE_GATE_LIGHT_ON_CALL_SOURCE] = fact(NE_GATE_LIGHT_ON_CALL_SOURCE_MCP);
+        return ne_trace_gate_result(buf, cap, 10u, NE_GATE_LIGHT_ON_GATE, &on, facts, &r, NULL);
     case 8:
         *name = "result_block_ask";
-        facts[NE_LIGHT_OFF_CALL_SOURCE] = fact(NE_LIGHT_OFF_CALL_SOURCE_SYSTEM_TWO);
-        facts[NE_LIGHT_OFF_ROOM_EMPTY] = fact(NE_LIGHT_OFF_ROOM_EMPTY_FALSE);
+        facts[NE_GATE_LIGHT_OFF_CALL_SOURCE] = fact(NE_GATE_LIGHT_OFF_CALL_SOURCE_SYSTEM_TWO);
+        facts[NE_GATE_LIGHT_OFF_ROOM_EMPTY] = fact(NE_GATE_LIGHT_OFF_ROOM_EMPTY_FALSE);
         r.verdict = NE_BLOCK;
         r.reason = NE_REASON_CONDITION_NOT_MET;
         r.failed_kind = NE_FAILED_CRITERION;
-        r.failed_index = NE_LIGHT_OFF_ROOM_EMPTY;
-        return ne_trace_gate_result(buf, cap, 11u, NE_LIGHT_OFF_GATE, &off, facts, &r, &text);
+        r.failed_index = NE_GATE_LIGHT_OFF_ROOM_EMPTY;
+        return ne_trace_gate_result(buf, cap, 11u, NE_GATE_LIGHT_OFF_GATE, &off, facts, &r, &text);
     case 9:
         *name = "result_confirmed";
-        facts[NE_LIGHT_OFF_CALL_SOURCE] = fact(NE_LIGHT_OFF_CALL_SOURCE_LOCAL_GRAMMAR);
-        facts[NE_LIGHT_OFF_ROOM_EMPTY] = fact(NE_LIGHT_OFF_ROOM_EMPTY_FALSE);
-        r.confirmed_mask = (1u << NE_LIGHT_OFF_ROOM_EMPTY) | (1u << NE_LIGHT_OFF_CALL_SOURCE);
-        return ne_trace_gate_result(buf, cap, 12u, NE_LIGHT_OFF_GATE, &off, facts, &r, &text);
+        facts[NE_GATE_LIGHT_OFF_CALL_SOURCE] = fact(NE_GATE_LIGHT_OFF_CALL_SOURCE_LOCAL_GRAMMAR);
+        facts[NE_GATE_LIGHT_OFF_ROOM_EMPTY] = fact(NE_GATE_LIGHT_OFF_ROOM_EMPTY_FALSE);
+        r.confirmed_mask = (1u << NE_GATE_LIGHT_OFF_ROOM_EMPTY) | (1u << NE_GATE_LIGHT_OFF_CALL_SOURCE);
+        return ne_trace_gate_result(buf, cap, 12u, NE_GATE_LIGHT_OFF_GATE, &off, facts, &r, &text);
     case 10:
         *name = "result_argument";
-        facts[NE_LIGHT_ON_CALL_SOURCE] = fact(NE_LIGHT_ON_CALL_SOURCE_MCP);
+        facts[NE_GATE_LIGHT_ON_CALL_SOURCE] = fact(NE_GATE_LIGHT_ON_CALL_SOURCE_MCP);
         r.verdict = NE_BLOCK;
         r.reason = NE_REASON_ARGUMENT_OUT_OF_RANGE;
         r.failed_kind = NE_FAILED_ARGUMENT;
-        return ne_trace_gate_result(buf, cap, 13u, NE_LIGHT_ON_GATE, &on, facts, &r, NULL);
+        return ne_trace_gate_result(buf, cap, 13u, NE_GATE_LIGHT_ON_GATE, &on, facts, &r, NULL);
     case 11:
         *name = "actuator_command";
         return ne_trace_actuator_command(buf, cap, 14u, "door_lock", "pulse", 30000u);
@@ -127,17 +128,17 @@ static int format(int which, char *buf, size_t cap, const char **name) {
         return ne_trace_actuator_rejected(buf, cap, 16u, "door_lock", NE_TOKEN_AUTHORIZED);
     case 16:
         *name = "result_closed";
-        facts[NE_LIGHT_OFF_CALL_SOURCE] = fact(NE_LIGHT_OFF_CALL_SOURCE_LOCAL_GRAMMAR);
+        facts[NE_GATE_LIGHT_OFF_CALL_SOURCE] = fact(NE_GATE_LIGHT_OFF_CALL_SOURCE_LOCAL_GRAMMAR);
         r.verdict = NE_BLOCK;
         r.reason = NE_REASON_GATE_UNREACHABLE;
         r.fail_mode = NE_FAIL_MODE_CLOSED;
-        return ne_trace_gate_result(buf, cap, 17u, NE_LIGHT_OFF_GATE, &off, facts, &r, &text);
+        return ne_trace_gate_result(buf, cap, 17u, NE_GATE_LIGHT_OFF_GATE, &off, facts, &r, &text);
     case 17:
         *name = "result_open";
-        facts[NE_LIGHT_OFF_CALL_SOURCE] = fact(NE_LIGHT_OFF_CALL_SOURCE_LOCAL_GRAMMAR);
+        facts[NE_GATE_LIGHT_OFF_CALL_SOURCE] = fact(NE_GATE_LIGHT_OFF_CALL_SOURCE_LOCAL_GRAMMAR);
         r.reason = NE_REASON_BUDGET_EXCEEDED;
         r.fail_mode = NE_FAIL_MODE_OPEN;
-        return ne_trace_gate_result(buf, cap, 18u, NE_LIGHT_OFF_GATE, &off, facts, &r, &text);
+        return ne_trace_gate_result(buf, cap, 18u, NE_GATE_LIGHT_OFF_GATE, &off, facts, &r, &text);
     default:
         *name = "?";
         return -1;
@@ -200,7 +201,7 @@ int main(void) {
         const char *action = ne_on_block_name(i);
         printf("on_block\t%u\t%s\n", (unsigned)i, action != NULL ? action : "-");
     }
-    check(ne_domain_value(&off, NE_LIGHT_OFF_ROOM_EMPTY, 2u) == NULL, "domain value out of range");
+    check(ne_domain_value(&off, NE_GATE_LIGHT_OFF_ROOM_EMPTY, 2u) == NULL, "domain value out of range");
     check(ne_domain_value(&off, 9u, 0u) == NULL && ne_criterion_kind(&off, 9u) == -1, "no node 9");
 
     /* The sink: a line that does not fit is still counted, so trace_end tells the host. */
@@ -211,7 +212,7 @@ int main(void) {
     m.clock = 4294967290u; /* the device clock wraps inside the session */
     ne_trace_open(&sink, &info);
     ne_trace_put(&sink, ne_trace_gate_begin(sink.buf, sink.cap, ne_trace_offset(&sink),
-                                            NE_LIGHT_ON_GATE, &on));
+                                            NE_GATE_LIGHT_ON_GATE, &on));
     ne_trace_put(&sink, -1);
     ne_trace_put(&sink, 0);
     ne_trace_close(&sink);

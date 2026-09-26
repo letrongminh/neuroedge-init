@@ -38,6 +38,7 @@ from neuroedge.testing.uart import LINE_MAX, parse_line, read_sessions, sessions
 from neuroedge.trace import validate_trace
 
 from .test_c_walker import STACK_LIMIT, STRICT, cc
+from .test_firmware_build import selftest_counts
 
 SAN = ["-fsanitize=address,undefined", "-fno-sanitize-recover=all", "-fno-omit-frame-pointer"]
 
@@ -46,7 +47,6 @@ GATE_EVENTS = ("gate_evaluation_begin", "gate_facts", "gate_evaluation_result")
 SELFTEST_DRIVER = r"""
 #include <stdio.h>
 #include "gate_selftest.h"
-#include "gates/home_voice_indices.h"
 static unsigned state = 1u;
 static uint32_t clock_ms = 4294967000u;
 static void fill(void *buf, size_t len) {
@@ -62,7 +62,8 @@ int main(void) {
     const ne_device_info info = {"esp32s3-box-3", NE_AGENT_VERSION, "host", 0x2468u, NULL, NULL};
     printf("I (31) boot: ESP-IDF v5.4 2nd stage bootloader\n");
     ne_trace_open(&sink, &info);
-    int rc = neuroedge_gate_selftest(fill, 0x2468u, clock_ms, line, sizeof line, &sink);
+    int rc = neuroedge_gate_selftest(&ne_agent_linked, fill, 0x2468u, clock_ms, line, sizeof line,
+                                     &sink);
     ne_trace_close(&sink);
     puts(line);
     puts("NE_TRACE DONE sessions=1");
@@ -77,6 +78,7 @@ def dirs(root) -> dict[str, Path]:
     return {
         "gate": targets / "components" / "ne_gate",
         "trace": targets / "components" / "ne_trace",
+        "agent": targets / "components" / "ne_agent",
         "main": targets / "main",
     }
 
@@ -92,6 +94,10 @@ def compile_exe(dirs, out: Path, sources: list[Path], strict=False, sanitize=Tru
         str(dirs["gate"] / "include"),
         "-I",
         str(dirs["trace"] / "include"),
+        "-I",
+        str(dirs["agent"] / "include"),
+        "-I",
+        str(dirs["agent"]),  # gates/<key>.netree.h
         "-I",
         str(dirs["main"]),
         *(str(source) for source in sources),
@@ -323,6 +329,7 @@ def traced_selftest(dirs, tmp_path: Path, trace_source: Path | None = None) -> P
             dirs["gate"] / "src" / "ne_token.c",
             trace_source or dirs["trace"] / "src" / "ne_trace.c",
             dirs["main"] / "gate_selftest.c",
+            dirs["agent"] / "ne_agent.c",
             driver,
         ],
         strict=True,
@@ -357,16 +364,17 @@ def differences_from_the_host(log: Path, tmp_path: Path) -> list[str]:
     return out
 
 
-def test_a_traced_self_test_is_the_host_engine_again(dirs, tmp_path):
+def test_a_traced_self_test_is_the_host_engine_again(root, dirs, tmp_path):
+    walker, token = selftest_counts(root / "fixtures" / "agents" / "home-voice" / "agent.toml")
     log = traced_selftest(dirs, tmp_path)
     text = log.read_text()
-    assert "NE_SELFTEST PASS walker=6 token=6" in text
+    assert f"NE_SELFTEST PASS walker={walker} token={token}" in text
     [session] = read_sessions(str(log))
     trace = session.trace()
     assert trace["metadata"]["target"] == "esp32s3"
     assert trace["metadata"]["device_id"] == "host"
     assert trace["metadata"]["agent_version"] == "home-voice@0.1.0"
-    assert [e["type"] for e in trace["events"]].count("gate_evaluation_result") == 6
+    assert [e["type"] for e in trace["events"]].count("gate_evaluation_result") == walker
     assert differences_from_the_host(log, tmp_path) == []
 
 

@@ -93,9 +93,24 @@ firmware bằng
 ### 4.1 Vì sao QEMU không thay được phép đo này
 
 Firmware đã boot trên Espressif QEMU (TSK-S4-08), nhưng QEMU không giả lập I2S, AFE hay PSRAM
-octal của Box-3 (Q-21), nên mốc `audio_ready` không lấy được ở đó. TSK-S4-11 sẽ in heap còn
-trống lúc boot trên QEMU và kiểm `.bss`/`.data` mỗi PR; đó là sàn tĩnh, **không** thay số đo
-của báo cáo này.
+octal của Box-3 (Q-21), nên mốc `audio_ready` không lấy được ở đó. Thay vào đó CI kiểm hai **sàn**
+(TSK-S4-11, `scripts/check_firmware_size.py`, workflow `firmware-qemu.yml`) — điều kiện cần, **không**
+thay số đo của báo cáo này:
+
+- **RAM tĩnh** (job `firmware-size`, cấu hình bo mạch, có Wi-Fi): SRAM trong còn lại sau `.data`,
+  `.bss` và mã IRAM phải ≥ 120 KB — heap không thể lớn hơn con số đó trước khi một task nào chạy.
+- **Heap lúc boot trên QEMU** (dòng `NEUROEDGE_HEAP_JSON` ngay trước `NE_TRACE DONE`, sau self-test
+  gate, trước mạng và âm thanh, không PSRAM): heap trong còn trống phải ≥ 120 KB.
+
+ESP-SR **chưa được link** (`TODOS.md` #17), nên cả hai là sàn **không có** AFE. Khi vendoring
+`esp-sr`, job `firmware-size` thêm `--require-esp-sr`: bản build lặng lẽ thiếu AFE thì không đạt.
+
+| Sàn (không phải phán quyết Q-3) | Đo được | Ngưỡng | Nguồn |
+|:---|:---:|:---:|:---|
+| SRAM trong còn lại sau cấp phát tĩnh — cấu hình bo mạch | 231 556 B | ≥ 122 880 B | `.data` 20 300 · `.bss` 16 432 · mã IRAM 73 435 trên DIRAM 341 760 |
+| Heap trong còn trống lúc boot — QEMU, không mạng, không PSRAM | 383 664 B | ≥ 122 880 B | checkpoint `gate_runtime_ready` |
+
+*Đo 2026-09-26, ESP-IDF v5.4, firmware của agent mẫu `home-voice`; CI in lại hai số này mỗi lượt chạy.*
 
 ## 5. Kết luận và hệ quả phạm vi
 

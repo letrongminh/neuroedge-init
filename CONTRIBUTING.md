@@ -175,7 +175,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `fixtures/decision_trees/` | Bảng sự thật cho walker C | Sinh bằng `scripts/generate_truth_tables.py`, không sửa tay |
 | `fixtures/agents/` | Agent mẫu `villa-concierge`, `home-voice`, `driveway`, `voice-door`; `neuroedge new --template` sao hai cái đầu | PR thường |
 | `fixtures/compliance/voice/` | Bộ vector tuân thủ máy trạng thái hội thoại + `expected_results.yaml`, chung cho hiện thực Python và C | PR thường, khép kín (§3) |
-| `python/neuroedge/engine/` | L3 — phân giải gate, chuẩn tắc hoá, Gate Engine, cây quyết định, bố cục `NETR`, trình biên dịch `build` | **RFC** nếu đổi ngữ nghĩa phân giải hoặc bố cục `NETR` |
+| `python/neuroedge/engine/` | L3 — phân giải gate, chuẩn tắc hoá, Gate Engine, cây quyết định, bố cục `NETR`, trình biên dịch `build`, bộ sinh firmware `esp32s3` của agent (`firmware.py`) | **RFC** nếu đổi ngữ nghĩa phân giải hoặc bố cục `NETR` |
 | `python/neuroedge/actions/` | `@action`, `c.do()`/`c.say()`, token phán quyết dùng một lần | PR thường; ranh giới ở [`threat_model.md`](docs/spec/threat_model.md) |
 | `python/neuroedge/hal/` | L1 — năm nguyên thủy, mô hình bo mạch, `sim.py`, `linux.py` | PR thường; xem [rà soát MCU](docs/spec/hal_mcu_review.md) |
 | `python/neuroedge/models/` | L2 — SystemOne/SystemTwo, ngữ pháp lệnh cục bộ, knowledge base, `providers/` (LiteLLM, adapter) | PR thường |
@@ -191,7 +191,8 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `python/tests_linux/` | Test trên gpio-sim, job `linux-hal` | PR thường |
 | `python/hatch_build.py`, `pyproject.toml`, `requirements-lock.txt`, `pip-audit-ignore.txt`, `LICENSE` | Đóng gói (asset vào `neuroedge/_data/`, README gốc vào metadata) · phụ thuộc ghim · ngoại lệ `pip-audit` đã duyệt (job `pip-audit`) · bản sao `LICENSE` gốc | PR thường; chạy `scripts/wheel_smoke.sh` |
 | `targets/esp32s3/` (gốc) | Dự án ESP-IDF: `CMakeLists.txt`, `sdkconfig.defaults` (flash 16 MB, PSRAM, FreeRTOS 1000 Hz), `sdkconfig.qemu` (lớp phủ cho QEMU), `partitions.csv` (factory + OTA A/B) | PR thường; job `firmware-qemu` |
-| `targets/esp32s3/main/` | Firmware ESP-IDF: `main.c`, khung đo bộ nhớ, self-test gate (ghi vết ghi `NE1`), replay vết ghi chuẩn mực (`trace_vectors.c`); `gates/` sinh bằng `scripts/gen_firmware_gates.py`, `vectors/` bằng `scripts/gen_firmware_vectors.py` | PR thường; đổi vết ghi chuẩn mực, gate hay action ⇒ sinh lại `vectors/` |
+| `targets/esp32s3/main/` | Firmware ESP-IDF, chung cho mọi agent: `main.c`, khung đo bộ nhớ (kể cả dòng heap `NEUROEDGE_HEAP_JSON`), self-test gate trên agent đã link (ghi vết ghi `NE1`), replay vết ghi chuẩn mực (`trace_vectors.c`); `vectors/` sinh bằng `scripts/gen_firmware_vectors.py` | PR thường; đổi vết ghi chuẩn mực, gate hay action ⇒ sinh lại `vectors/` |
+| `targets/esp32s3/components/ne_agent/` | Component agent do `neuroedge build --target esp32s3` sinh, ở đây cho agent mẫu `home-voice`: cây `NETR`, bảng gate · chân · action, phép kiểm self-test kèm phán quyết engine host | Không sửa tay — `scripts/gen_firmware_gates.py` (`--check` chạy trong pytest) |
 | `targets/esp32s3/components/ne_gate/` | Walker C99 và sổ token C | PR thường; bố cục `NETR`: **RFC** |
 | `targets/esp32s3/components/ne_trace/` | Dòng vết ghi `NE1` trên UART — định dạng C99, không biến toàn cục ([`simulation_coverage.md`](docs/spec/simulation_coverage.md) §4) | PR thường; job `firmware-qemu` |
 | `scripts/` | Công cụ CI và phát hành | PR thường |
