@@ -1,0 +1,82 @@
+menu "NeuroEdge OTA (FR-OTA, TSK-S6-01..04)"
+
+    config NEUROEDGE_OTA
+        bool "Enable firmware update (A/B, RSA-signed; off by default)"
+        default n
+        depends on SECURE_SIGNED_ON_UPDATE && BOOTLOADER_APP_ROLLBACK_ENABLE
+        help
+            Links the HTTP(S) update path. Without it the device still honours
+            A/B rollback when built with CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE,
+            but it never fetches an image: an unsigned developer build cannot
+            accept OTA at all.
+
+            An update build layers sdkconfig.ota on sdkconfig.defaults; the RSA
+            signing key stays out of the repository (docs/user/nap-firmware.md,
+            section 6). The image is verified with the key that signed the
+            running app before anything is switched. The two options this
+            depends on are part of the same layer: an unverified update, or one
+            that could never be rolled back, must not be reachable.
+
+    if NEUROEDGE_OTA
+
+        config NEUROEDGE_OTA_URL
+            string "Update URL (http:// or https://; empty disables the check)"
+            default ""
+            help
+                Any open HTTP(S) endpoint serving a signed app image; no
+                NeuroEdge service or account is involved. Plain HTTP is allowed
+                because the image signature is the integrity check; it gives no
+                confidentiality. A URL stored in NVS (namespace ne_ota, key
+                url) overrides this at runtime.
+
+        config NEUROEDGE_OTA_HTTP_TIMEOUT_MS
+            int "HTTP operation timeout (ms)"
+            default 20000
+            range 1000 120000
+
+        config NEUROEDGE_OTA_DOWNLOAD_TIMEOUT_MS
+            int "Total download deadline (ms)"
+            default 300000
+            range 10000 3600000
+            help
+                A stalled server must not hang the gate runtime: the download
+                is abandoned after this long in total, or after the stall
+                timeout below with no new byte, and the update is refused.
+
+        config NEUROEDGE_OTA_STALL_TIMEOUT_MS
+            int "No-progress limit while downloading (ms)"
+            default 30000
+            range 5000 600000
+
+        config NEUROEDGE_OTA_ETH
+            bool "Bring up Ethernet (QEMU open_eth) for the update check"
+            depends on NEUROEDGE_SKIP_NETWORK
+            default n
+            help
+                QEMU emulates no Wi-Fi; sdkconfig.qemu_ota selects this so the
+                check runs over QEMU's user-mode network (the host is
+                10.0.2.2). On the board the Wi-Fi stack main.c brings up is
+                used, and this must stay off.
+
+        config NEUROEDGE_OTA_TEST_BOOTLOOP
+            bool "TEST ONLY: reset before this image can be marked valid"
+            default n
+            help
+                For the rollback test (scripts/qemu_ota.sh): the image boots,
+                resets itself before the gate self-test, and the bootloader
+                rolls back to the previous app on the next boot — the crash /
+                boot-loop path of FR-OTA-02. A reset, not a panic: Espressif
+                QEMU 9.0 hangs in the panic handler before it prints or
+                reboots (measured), so a panic here would prove nothing.
+                Never enable this in a shipped image.
+
+        config NEUROEDGE_OTA_TEST_FAIL_SELFTEST
+            bool "TEST ONLY: fail the boot self-test before marking valid"
+            default n
+            help
+                For the rollback test (scripts/qemu_ota.sh): the image fails
+                the gate self-test, marks itself invalid and reboots into the
+                previous app. Never enable this in a shipped image.
+
+    endif
+endmenu

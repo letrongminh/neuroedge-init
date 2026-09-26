@@ -56,6 +56,9 @@ on:
       - "scripts/gen_firmware_vectors.py"
       - "scripts/check_firmware_size.py"
       - "scripts/qemu_boot.sh"
+      - "scripts/qemu_ota.sh"
+      - "scripts/ota_markers.sh"
+      - "scripts/build_ota_layer.sh"
       - ".github/workflows/firmware-qemu.yml"
   push:
     branches: [main]
@@ -80,6 +83,9 @@ on:
       - "scripts/gen_firmware_vectors.py"
       - "scripts/check_firmware_size.py"
       - "scripts/qemu_boot.sh"
+      - "scripts/qemu_ota.sh"
+      - "scripts/ota_markers.sh"
+      - "scripts/build_ota_layer.sh"
       - ".github/workflows/firmware-qemu.yml"
   schedule:
     - cron: "30 18 * * *"   # 01:30 UTC+7, after nightly-hardware
@@ -210,6 +216,44 @@ jobs:
             targets/esp32s3/build/size-components.json
             targets/esp32s3/build/*.map
 
+  ota-rollback:
+    name: "OTA: signed update, wrong-key refusal and rollback on QEMU (TSK-S6-01/02/04)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container: espressif/idf:v5.4
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Install Espressif QEMU
+        run: python "$IDF_PATH/tools/idf_tools.py" install qemu-xtensa
+
+      # Builds the firmware four times (factory, newer, wrong-key, broken),
+      # signs each with throwaway RSA-3072 keys under the git-ignored build
+      # tree, serves them from 10.0.2.2 and reads the UART: the factory image
+      # keeps working, a signed newer image boots and is marked VALID, a
+      # wrong-key image is REJECTED before anything switches, a broken signed
+      # image is rolled back by the bootloader, and an image whose self-test
+      # fails marks itself INVALID and is rolled back too. It ends by checking
+      # the OTA-enabled board image against the Q-3 flash and static-RAM
+      # budget. Any missing marker, wrong order or timeout is exit 1.
+      - name: OTA end-to-end on QEMU (scripts/qemu_ota.sh)
+        run: |
+          git config --global --add safe.directory '*'
+          . "$IDF_PATH/export.sh"
+          scripts/qemu_ota.sh
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: firmware-ota
+          path: |
+            targets/esp32s3/build/ota-test/logs/
+
   agent-firmware:
     name: A user's agent, built with neuroedge build --target esp32s3, boots on QEMU (TSK-I3-01)
     runs-on: ubuntu-latest
@@ -307,6 +351,12 @@ jobs:
           print(f"  ok  {meta['agent_version']}: {len(results)} gate evaluation(s), device qemu")
           PY
           python3 scripts/check_firmware_size.py --heap-log "$log"
+
+      - name: The agent's firmware also builds with the OTA layer (sdkconfig.ota)
+        run: |
+          git config --global --add safe.directory '*'
+          . "$IDF_PATH/export.sh"
+          scripts/build_ota_layer.sh work/ci-agent/build/esp32s3 0.1.0
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()

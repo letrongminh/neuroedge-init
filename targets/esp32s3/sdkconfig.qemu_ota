@@ -1,0 +1,29 @@
+# OTA end-to-end on Espressif QEMU (scripts/qemu_ota.sh, TSK-S6-01/02/04),
+# layered on sdkconfig.defaults, sdkconfig.qemu and sdkconfig.ota:
+#
+#   SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.qemu;sdkconfig.ota;sdkconfig.qemu_ota" \
+#     idf.py set-target esp32s3 build
+#
+# QEMU's user-mode network gives the guest a DHCP address (10.0.2.15) and
+# reaches the host running QEMU at 10.0.2.2; scripts/qemu_ota.sh serves the
+# test images there. QEMU emulates no Wi-Fi, so the update check uses the
+# emulated OpenCores MAC (open_eth) instead of the Wi-Fi stack main.c brings up.
+
+CONFIG_NEUROEDGE_OTA=y
+CONFIG_NEUROEDGE_OTA_URL="http://10.0.2.2:8070/app.bin"
+CONFIG_NEUROEDGE_OTA_ETH=y
+CONFIG_ETH_USE_OPENETH=y
+CONFIG_ESP_HTTPS_OTA_ALLOW_HTTP=y
+
+# scripts/qemu_ota.sh signs every image itself with espsecure.py (so it can
+# sign the same build with a wrong key on purpose); the build must not sign.
+CONFIG_SECURE_BOOT_BUILD_SIGNED_BINARIES=n
+
+# QEMU 9.0's GDMA model behind the AES/SHA/MPI peripherals is incomplete: the
+# image verification at the end of an update logs "[SHA] Error reading from
+# GDMA buffer" and QEMU then aborts with a double free in its own heap. The
+# board layer (sdkconfig.ota) keeps the hardware accelerators; under the
+# emulator the software implementations do the hashing and the RSA check.
+CONFIG_MBEDTLS_HARDWARE_AES=n
+CONFIG_MBEDTLS_HARDWARE_SHA=n
+CONFIG_MBEDTLS_HARDWARE_MPI=n

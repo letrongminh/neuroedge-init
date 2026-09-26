@@ -283,6 +283,50 @@ Firmware trên QEMU chạy mỗi PR đụng `targets/**` hoặc `fixtures/traces
 một vết ghi tuỳ ý trên thiết bị (gửi dữ kiện xuống) và so timing là phần còn lại của TSK-S4-04;
 `replay --target esp32s3` vẫn thoát mã 2.
 
+### 4.1 OTA trên QEMU (TSK-S6-01/02/04, FR-OTA-01…04)
+
+`scripts/qemu_ota.sh` (job `ota-rollback`) dựng các ảnh factory, bản mới, sai khóa, không ký và ảnh hỏng (pha a–g),
+ký bằng khóa RSA-3072 dùng-một-lần, phục vụ qua HTTP và đọc UART. Phiên bản trong app descriptor —
+thứ OTA so sánh — của một project người dùng build đến từ `version.txt` do `neuroedge build
+--target esp32s3` ghi (`[agent] version`; cách đặt và tăng: `docs/user/nap-firmware.md` §6.6);
+kịch bản QEMU ghi đè `PROJECT_VER` để dựng ảnh mới 0.2.0. QEMU **chứng minh**:
+
+- khe A/B: ảnh factory vẫn chạy, bản mới được nạp rồi khởi động, và một lần cập nhật hỏng không
+  làm mất khe đang chạy;
+- chữ ký: ảnh sai khóa bị `NE_OTA REJECTED reason=signature`, không có `SWITCH`, thiết bị ở lại
+  bản cũ, khe vừa ghi bị xoá (`NE_OTA ERASED`); ảnh không ký bị từ chối như vậy; đây là cùng
+  đường xác minh `esp_ota_end` mà bo mạch dùng;
+- xác nhận sau self-test: ảnh mới chỉ `NE_OTA VALID` sau khi self-test gate đạt;
+- rollback cục bộ: ảnh hỏng (tự reset trước khi kịp xác nhận, hoặc self-test hỏng ⇒
+  `NE_OTA INVALID`) bị bootloader quay về ảnh trước ở lần khởi động kế tiếp, và phiên bản vừa bị
+  quay về bị chặn (`NE_OTA SKIP reason=rolled_back`). Quyết định nạp hay không là hàm C thuần
+  `ne_ota_should_install` (`ne_ota_policy.c`) — QEMU chạy đúng bản bo mạch chạy, gồm cả từ chối hạ
+  cấp theo mốc nước cao phiên bản trong NVS (pha g: ảnh ký đúng nhưng thấp hơn mốc ⇒
+  `SKIP reason=downgrade`). Mốc đó chỉ là bảo vệ bằng phần mềm; quá hạn chót, chuyển hướng và phiên
+  bản không đọc được chỉ được kiểm bằng test host (`test_ota_policy_host.c`), không có pha QEMU.
+
+QEMU **không** chứng minh được, chỉ bo mạch mới có:
+
+- Wi-Fi và mạng thật: QEMU không có Wi-Fi (Q-21), nên kịch bản dùng NIC `open_eth` (slirp). Trên
+  Box-3, `main.c` (`init_network_stack`) mới chỉ dựng STA (`esp_wifi_set_mode(WIFI_MODE_STA)` +
+  `esp_wifi_start()`) mà **chưa** gọi `esp_wifi_connect()` và chưa có provisioning: hôm nay chỉ
+  đường `open_eth` của QEMU chạy được.
+- Mất điện giữa lúc ghi hoặc giữa lúc đánh dấu hợp lệ; điện áp, thời gian ghi flash. Ảnh **treo**
+  trước self-test cũng thuộc nhóm này: task watchdog không panic theo mặc định
+  (`CONFIG_ESP_TASK_WDT_PANIC=n`), nên máy không tự reset — rollback chỉ ở lần khởi động sau.
+- Bootloader: OTA không bao giờ ghi nó (`esp_https_ota` chỉ đổi khe app), nên bản có rollback phải
+  nạp **một lần bằng cáp**; QEMU không kiểm việc nạp đó.
+- Cấu hình thiếu: OTA chỉ được biên dịch khi bật đủ chữ ký-trên-cập-nhật và rollback (Kconfig từ
+  chối `CONFIG_NEUROEDGE_OTA` nếu thiếu); QEMU chỉ chạy lớp `sdkconfig.ota` đầy đủ, không chứng
+  minh gì về một build thiếu.
+- Secure Boot / khóa trong eFuse (TSK-S6-05, ngoài phạm vi đợt này): khóa xác minh nằm trong ảnh
+  đang chạy, nên người có cáp vẫn đổi được firmware; eFuse anti-rollback đi cùng Secure Boot.
+- Hai giới hạn của chính QEMU 9.0, kịch bản phải né: bộ mô hình flash hỏng trạng thái khi reset
+  nóng ngay sau các lần ghi flash của một lần cập nhật, và trình xử lý panic treo thay vì in rồi
+  reset. Vì vậy script chạy **mỗi lần khởi động trong một tiến trình QEMU riêng** (dừng ngay sau
+  dòng `rst:` của thiết bị) và ảnh hỏng dùng reset (`esp_restart`) chứ không panic; trên bo mạch
+  cùng logic otadata đó chạy trong một lần cập nhật duy nhất.
+
 ## 5. Trực quan hoá
 
 Năm bề mặt, cùng một bộ thành phần SVG tự vẽ (chốt cửa, đèn, relay, đồng hồ cảm biến, khung màn

@@ -52,7 +52,8 @@ for asset in schemas/trace.v1.json boards/sim-default.toml gates/unlock_door@1.2
   fixtures/agents/factory-monitor/agent.toml \
   fixtures/tool_calls/expected_results.yaml \
   pipewire/neuroedge-echo-cancel.conf \
-  targets/esp32s3/main/main.c targets/esp32s3/components/ne_gate/src/ne_walker.c; do
+  targets/esp32s3/main/main.c targets/esp32s3/version.txt \
+  targets/esp32s3/components/ne_gate/src/ne_walker.c; do
   case "$LISTING" in
     *"neuroedge/_data/$asset"*) ;;
     *) echo "::error::wheel lacks $asset"; exit 1 ;;

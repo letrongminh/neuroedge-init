@@ -2,7 +2,9 @@
 The ESP-IDF project `neuroedge build --target esp32s3` writes (TSK-I3-01, FR-CLI-02, FR-TGT-03).
 
 The firmware in `targets/esp32s3/` is the same for every agent. What is the
-agent's own is one generated component, `components/ne_agent/`:
+agent's own is one generated component, `components/ne_agent/`, and the project's
+`version.txt` (the agent's `[agent] version`, which ESP-IDF reads as its
+PROJECT_VER):
 
 * each gate as `NETR` v1 bytes linked into flash (`gates/<key>.netree.h`, RFC-0003),
   byte for byte the `<key>.netree.h` the build writes next to the tree;
@@ -58,8 +60,11 @@ MANIFEST_HEADER = "# Written by `neuroedge build --target esp32s3` (TSK-I3-01). 
 SOURCES = (
     "CMakeLists.txt",
     "partitions.csv",
+    "version.txt",
     "sdkconfig.defaults",
     "sdkconfig.qemu",
+    "sdkconfig.ota",
+    "sdkconfig.qemu_ota",
     "main/CMakeLists.txt",
     "main/Kconfig.projbuild",
     "main/*.c",
@@ -72,6 +77,10 @@ SOURCES = (
     "components/ne_trace/CMakeLists.txt",
     "components/ne_trace/include/*.h",
     "components/ne_trace/src/*.c",
+    "components/ne_ota/CMakeLists.txt",
+    "components/ne_ota/Kconfig",
+    "components/ne_ota/include/*.h",
+    "components/ne_ota/src/*.c",
 )
 # The files of the generated component, whatever the agent (gate keys are C identifiers).
 COMPONENT_FILES = (
@@ -104,6 +113,10 @@ MAX_PINS = 32  # NE_MAX_PINS: a token's pin mask is a u32
 MAX_ENTRIES = 0xFFFF  # the tables index gates with u16
 NO_NODE = 255  # NE_AGENT_NO_NODE: a check that varies no criterion
 _IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+# One MAJOR.MINOR.PATCH, each part a decimal number without a leading zero. The
+# firmware's OTA code parses the app version to refuse downgrades, so anything
+# it cannot read as three numbers is refused here rather than on the device.
+_RELEASE = re.compile(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\Z")
 
 # The languages the device UI of `targets/esp32s3/ui/` ships: a string table
 # (`ne_ui_strings.c`) and font glyphs for each. `python/tests/test_ui_assets.py`
@@ -176,7 +189,9 @@ def firmware_problems(
     """
     What makes an agent impossible to link into the firmware, each as a three-part
     error: an [agent] name or version with a control or line-break character (it is
-    written into C and into MANIFEST, one entry per line), a UI language the UI ships
+    written into C and into MANIFEST, one entry per line), a version that is not
+    MAJOR.MINOR.PATCH (the OTA code compares it numerically to refuse downgrades and
+    the build writes it into the project's version.txt), a UI language the UI ships
     no strings or glyphs for (`ui_language`; the [agent]/[stt] conflict is refused for
     every target at manifest load), gate keys that are not C identifiers (or collide
     once upper-cased, as the header guards are), a gate without criteria (the walker
@@ -202,6 +217,19 @@ def firmware_problems(
                     '(e.g. version = "0.1.0")',
                 )
             )
+    if not _RELEASE.fullmatch(manifest.version) and not any(
+        _line_breaking(c) for c in manifest.version
+    ):
+        problems.append(
+            AgentManifestError(
+                where=f"{manifest.source} -> [agent] version",
+                why=f"version {manifest.version!r} is not MAJOR.MINOR.PATCH (three decimal "
+                "numbers, no leading zeros): the firmware's OTA code reads it to tell an "
+                "update from a downgrade, and the build writes it into version.txt",
+                how='write three numbers, e.g. version = "0.1.0", and raise the number for '
+                'every release (e.g. "0.1.1", "0.2.0")',
+            )
+        )
     guards: dict[str, str] = {}
     for key, gate in gates.items():
         where = f"{manifest.source} -> [gates] {key}"
@@ -783,8 +811,9 @@ def render_project(
 ) -> dict[str, bytes]:
     """
     The whole project, keyed by its path under `<out>/esp32s3/`: the firmware
-    sources as they are in `targets/esp32s3/`, the agent's component, and the
-    manifest of what was written. Sorted, so two renders are the same bytes.
+    sources as they are in `targets/esp32s3/`, the agent's component, the agent's
+    `[agent] version` as the project's `version.txt` (ESP-IDF's PROJECT_VER), and
+    the manifest of what was written. Sorted, so two renders are the same bytes.
     """
     source = source or firmware_root()
     files: dict[str, bytes] = {}
@@ -794,12 +823,20 @@ def render_project(
                 files[path.relative_to(source).as_posix()] = path.read_bytes()
     for name, text in render_component(manifest, board, gates, specs).items():
         files[f"{COMPONENT}/{name}"] = text.encode("utf-8")
+    # ESP-IDF reads PROJECT_VER from version.txt when the CMakeLists does not set it:
+    # the generated project outside git reports the agent's [agent] version, not "1".
+    files["version.txt"] = f"{manifest.version}\n".encode()
     stray = sorted(name for name in files if not owned(name))
-    if stray or any(_line_breaking(c) for c in manifest.label):
-        raise NeuroEdgeError(  # firmware_problems refuses both first: a defect if reached
+    if (
+        stray
+        or any(_line_breaking(c) for c in manifest.label)
+        or not _RELEASE.fullmatch(manifest.version)
+    ):
+        raise NeuroEdgeError(  # firmware_problems refuses all three first: a defect if reached
             where=str(manifest.source),
-            why=f"files outside the firmware layout {stray}, or a label that breaks a "
-            f"line of {MANIFEST}: {manifest.label!r}",
+            why=f"files outside the firmware layout {stray}, a label that breaks a line of "
+            f"{MANIFEST}: {manifest.label!r}, or a version that is not MAJOR.MINOR.PATCH: "
+            f"{manifest.version!r}",
             how="this is a defect of the build, not of the agent: report it",
         )
     listing = [MANIFEST_HEADER, f"agent {manifest.label}", *sorted(files)]
