@@ -30,13 +30,13 @@ from neuroedge.cli.main import app
 from neuroedge.errors import NeuroEdgeError
 
 from .test_c_trace import compile_exe
+from .test_firmware_build import selftest_counts
 
 runner = CliRunner()
 
 BOOT_DRIVER = r"""
 #include <stdio.h>
 #include "gate_selftest.h"
-#include "gates/home_voice_indices.h"
 #include "trace_vectors.h"
 static unsigned state = 1u;
 static uint32_t clock_ms = 4294967000u;
@@ -54,7 +54,8 @@ int main(void) {
     const ne_device_info info = {"esp32s3-box-3", NE_AGENT_VERSION, "qemu", 0x2468u, NULL, NULL};
     printf("I (31) boot: ESP-IDF v5.4 2nd stage bootloader\n");
     ne_trace_open(&sink, &info);
-    int rc = neuroedge_gate_selftest(fill, info.boot_id, clock_ms, line, sizeof line, &sink);
+    int rc = neuroedge_gate_selftest(&ne_agent_linked, fill, info.boot_id, clock_ms, line,
+                                     sizeof line, &sink);
     ne_trace_close(&sink);
     puts(line);
     int n = neuroedge_trace_vectors(&sink, &info, &ledger, fill, info.boot_id);
@@ -70,6 +71,7 @@ def dirs(root) -> dict[str, Path]:
     return {
         "gate": targets / "components" / "ne_gate",
         "trace": targets / "components" / "ne_trace",
+        "agent": targets / "components" / "ne_agent",
         "main": targets / "main",
     }
 
@@ -86,6 +88,7 @@ def boot(dirs, work: Path, walker: Path | None = None, vectors: Path | None = No
             dirs["gate"] / "src" / "ne_token.c",
             dirs["trace"] / "src" / "ne_trace.c",
             dirs["main"] / "gate_selftest.c",
+            dirs["agent"] / "ne_agent.c",
             vectors or dirs["main"] / "trace_vectors.c",
             driver,
         ],
@@ -174,9 +177,11 @@ def _event(type: str, data: dict, offset: int = 1) -> dict:
 # --- verify on the device ----------------------------------------------------------------------
 
 
-def test_the_device_replays_every_canonical_trace_to_its_golden(uart):
+def test_the_device_replays_every_canonical_trace_to_its_golden(root, uart):
     text = uart.read_text()
-    assert "NE_SELFTEST PASS walker=6 token=6" in text and "NE_TRACE DONE sessions=4" in text
+    walker, token = selftest_counts(root / "fixtures" / "agents" / "home-voice" / "agent.toml")
+    assert f"NE_SELFTEST PASS walker={walker} token={token}" in text
+    assert "NE_TRACE DONE sessions=4" in text
     result = verify(uart, "sim,esp32s3")
     assert result.exit_code == 0, result.output
     assert "6 replay(s) on sim, esp32s3" in result.output

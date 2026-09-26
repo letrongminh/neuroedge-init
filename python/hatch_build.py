@@ -8,6 +8,13 @@ the monorepo root, outside `python/`. A wheel without them installs, but
 This hook copies them to `neuroedge/_data/`, where `neuroedge.paths` finds them
 when there is no source checkout.
 
+`neuroedge build --target esp32s3` copies the firmware sources into the agent's
+ESP-IDF project (TSK-I3-01), so the wheel carries them too — only the files
+`FIRMWARE_SOURCES` names, the project's own C99 and build files. Never build
+output, and never a vendored third-party component: ESP-SR's licence is for
+Espressif chips only and must not reach the Python package (`TODOS.md` #17).
+`tests/test_packaging.py` keeps the list equal to `neuroedge.engine.firmware.SOURCES`.
+
 It runs for the sdist too, so a wheel built *from* the sdist (what PyPI users
 get) already has `neuroedge/_data/` as ordinary package files and needs no repo.
 
@@ -34,6 +41,25 @@ ASSETS = (
     "fixtures/tool_calls",
 )
 TARGET = "neuroedge/_data"
+FIRMWARE = "targets/esp32s3"
+FIRMWARE_SOURCES = (
+    "CMakeLists.txt",
+    "partitions.csv",
+    "sdkconfig.defaults",
+    "sdkconfig.qemu",
+    "main/CMakeLists.txt",
+    "main/Kconfig.projbuild",
+    "main/*.c",
+    "main/*.h",
+    "main/idf_component.yml",
+    "main/vectors/*.h",
+    "components/ne_gate/CMakeLists.txt",
+    "components/ne_gate/include/*.h",
+    "components/ne_gate/src/*.c",
+    "components/ne_trace/CMakeLists.txt",
+    "components/ne_trace/include/*.h",
+    "components/ne_trace/src/*.c",
+)
 
 
 class CustomBuildHook(BuildHookInterface):
@@ -48,6 +74,11 @@ class CustomBuildHook(BuildHookInterface):
                     continue
                 relative = path.relative_to(repo).as_posix()
                 build_data["force_include"][str(path)] = f"{TARGET}/{relative}"
+        for pattern in FIRMWARE_SOURCES:
+            for path in sorted((repo / FIRMWARE).glob(pattern)):
+                if path.is_file():
+                    relative = path.relative_to(repo).as_posix()
+                    build_data["force_include"][str(path)] = f"{TARGET}/{relative}"
 
 
 class ReadmeHook(MetadataHookInterface):

@@ -99,7 +99,10 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
         "neuroedge run                    # REPL: type a command, :help, exit",
         "neuroedge run --ui",
     ),
-    "build": ("neuroedge build --target sim --board sim-default",),
+    "build": (
+        "neuroedge build --target sim --board sim-default",
+        "neuroedge build --target esp32s3 --board esp32s3-box-3   # + build/esp32s3/",
+    ),
     "test": (
         "neuroedge test",
         "neuroedge test tests/ --pytest-arg=-x",

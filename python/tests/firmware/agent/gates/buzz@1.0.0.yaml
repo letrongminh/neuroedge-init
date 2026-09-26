@@ -1,0 +1,24 @@
+# Argument limits (RFC-0005) and `fail: open`: an unreachable source excuses what it
+# could not decide, never a known "no".
+schema:  neuroedge.gate/v1
+name:    buzz
+version: 1.0.0
+
+arguments:
+  seconds: { type: integer, minimum: 1, maximum: 10 }
+  zone:    { type: string, enum: [front, side] }
+
+evaluate:
+  visitor_expected:
+    type: bool
+    instructions: "Có khách đã hẹn trước"
+
+allow_when:
+  visitor_expected: true
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           open

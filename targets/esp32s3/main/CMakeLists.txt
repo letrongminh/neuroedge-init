@@ -6,6 +6,7 @@ idf_component_register(
         "trace_vectors.c"
     INCLUDE_DIRS "."
     REQUIRES
+        ne_agent
         ne_gate
         ne_trace
         esp_system
