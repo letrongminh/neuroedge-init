@@ -45,6 +45,7 @@ FIRMWARE = "targets/esp32s3"
 FIRMWARE_SOURCES = (
     "CMakeLists.txt",
     "partitions.csv",
+    "version.txt",
     "sdkconfig.defaults",
     "sdkconfig.qemu",
     "sdkconfig.ota",
