@@ -5,11 +5,13 @@
 #                  is a bumped pin, or a reviewed entry in python/pip-audit-ignore.txt.
 #   gitleaks     — the WHOLE git history (every branch and tag, fetch-depth 0), not
 #                  just the diff: the repository is public, so a secret in any old
-#                  commit is already published. Off pull requests, the heads of all
-#                  pull requests are scanned too — they are public refs as well.
+#                  commit is already published. Weekly and on manual runs, the heads
+#                  of all pull requests are scanned too — they are public refs as well.
+#   actionlint   — every workflow, with shellcheck on each run: block.
 #   codeql       — Python, and the workflows themselves (GitHub Actions), no build.
 #   codeql-c     — the ESP-IDF firmware (targets/esp32s3), traced while it builds in
-#                  the same espressif/idf:v5.4 container as firmware-qemu.yml.
+#                  the same espressif/idf:v5.4 container as firmware-qemu.yml. On a
+#                  pull request only when it touches targets/ (the build is minutes).
 #
 # Scheduled weekly as well: a new advisory or query turns up without any change here.
 name: security
@@ -48,10 +50,13 @@ jobs:
 
       - name: Audit python/requirements-lock.txt
         # --no-deps --disable-pip: audit exactly the pins in the lock, with no resolver
-        # and no install — the lock is already the complete set (§3.9 obligation 5).
+        # and no install. The lock holds the wheel's whole runtime closure (release-pypi
+        # `build` fails otherwise, scripts/sbom.sh); what it misses of `dev` shows up
+        # as nightly drift (Q-32).
         run: |
           args=()
           while IFS= read -r line; do
+            line="${line#"${line%%[![:space:]]*}"}"   # strip leading whitespace
             case "$line" in ''|'#'*) continue ;; esac
             id="${line%%[[:space:]#]*}"
             if [[ "$line" != *"#"* ]]; then
@@ -80,9 +85,10 @@ jobs:
           persist-credentials: false
 
       - name: Also fetch the heads of all pull requests
-        # Public refs too. Not on pull requests: a secret-looking string pushed in one
-        # pull request would otherwise turn every other pull request red.
-        if: github.event_name != 'pull_request'
+        # Public refs too. Only on the weekly and manual runs: a secret-looking string
+        # pushed in one (possibly foreign) pull request must not turn every other
+        # pull request, or main, red.
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: git fetch --no-tags origin '+refs/pull/*/head:refs/remotes/pull/*'
 
       - name: Install gitleaks (checksum-verified)
@@ -108,6 +114,30 @@ jobs:
           name: gitleaks-report   # redacted
           path: gitleaks-report.json
 
+  actionlint:
+    name: Workflows lint clean (actionlint)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      ACTIONLINT_VERSION: 1.7.12
+      # sha256 of actionlint_1.7.12_linux_amd64.tar.gz, from the release's asset digest.
+      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Install actionlint (checksum-verified)
+        run: |
+          curl -sSfL -o actionlint.tar.gz \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  actionlint.tar.gz" | sha256sum --check --strict
+          tar -xzf actionlint.tar.gz actionlint
+
+      - name: actionlint (config .github/actionlint.yaml; shellcheck from the runner image)
+        run: ./actionlint -color
+
   codeql:
     name: CodeQL (${{ matrix.language }})
     runs-on: ubuntu-latest
@@ -132,8 +162,37 @@ jobs:
         with:
           category: /language:${{ matrix.language }}
 
+  firmware-changed:
+    name: Does this pull request touch the firmware?
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      firmware: ${{ steps.diff.outputs.firmware }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 2   # the merge commit and its first parent, the base
+          persist-credentials: false
+
+      - name: Diff against the base
+        id: diff
+        run: |
+          if git diff --quiet HEAD^1 HEAD -- targets/ .github/workflows/security.yml; then
+            echo "firmware=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "firmware=true" >> "$GITHUB_OUTPUT"
+          fi
+
   codeql-c:
     name: CodeQL (c-cpp) — ESP-IDF firmware build
+    needs: firmware-changed
+    # Every push to main, weekly and manual run; a pull request only if it touches
+    # the firmware. A failed diff job is red on its own, and skips this one.
+    if: >-
+      !cancelled()
+      && (github.event_name != 'pull_request' || needs.firmware-changed.outputs.firmware == 'true')
     runs-on: ubuntu-latest
     container: espressif/idf:v5.4   # the firmware-qemu.yml toolchain
     permissions:

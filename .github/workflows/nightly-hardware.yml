@@ -69,7 +69,9 @@ jobs:
           echo "Found $image"
 
       - name: "Firmware must fit an A/B OTA slot (Q-3: <= 3.5 MB)"
-        run: python scripts/check_firmware_size.py "${{ steps.image.outputs.path }}"
+        env:
+          IMAGE: ${{ steps.image.outputs.path }}
+        run: python scripts/check_firmware_size.py "$IMAGE"
 
       - name: Component size breakdown
         # Recorded every night so that growth is attributable to a change rather
@@ -210,6 +212,13 @@ jobs:
       needs.upstream-drift.result == 'success'
       && (github.ref == 'refs/heads/main' || inputs.drift_issue)
     runs-on: ubuntu-latest
+    # Q-32 holds here too: a GitHub API hiccup must not turn the night red. Its
+    # result is still a row of the `report` summary.
+    continue-on-error: true
+    # Two overlapping runs must not both find no issue and open two.
+    concurrency:
+      group: drift-issue
+      cancel-in-progress: false
     permissions:
       issues: write
     env:

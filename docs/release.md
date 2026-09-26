@@ -19,7 +19,7 @@ Workflow là [`.github/workflows/release-pypi.yml`](../.github/workflows/release
 
 Đẩy lên index dùng trusted publishing (OIDC): kho không giữ token PyPI nào. Khi chưa
 đặt biến `PUBLISH_ENABLED`, dù có ai đẩy tag thì hai job `publish-*` và `github-release` cũng bị bỏ qua.
-Pull request đổi tệp đóng gói chạy `build` và `smoke`, không bao giờ tới `publish-*`.
+Pull request đổi tệp đóng gói chạy `build` và `smoke`, không bao giờ tới `attest` hay `publish-*`.
 **Giữ `PUBLISH_ENABLED` chưa đặt cho tới I6.**
 
 ## Tag nội bộ (I1–I5)
@@ -32,7 +32,7 @@ người đo được đội đưa tận tay (I1: buổi đo TTFV tại chỗ, `
   một `### [Chưa phát hành]` rỗng phía trên. Không thêm link phiên bản cuối tệp — repo còn
   riêng tư. CI xanh, merge.
 - **Tag.** `git tag v0.1.0 && git push origin v0.1.0`. `PUBLISH_ENABLED` chưa đặt nên chỉ
-  `build` và `smoke` chạy; hai job `publish-*` bị bỏ qua.
+  `build`, `smoke` và `attest` chạy; `publish-*` và `github-release` bị bỏ qua.
 - **GitHub Release nội bộ** kèm đúng wheel mà `smoke` đã kiểm, và SBOM của nó:
 
   ```bash
