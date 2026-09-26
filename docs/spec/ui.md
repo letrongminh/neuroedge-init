@@ -142,7 +142,10 @@ copyright và văn bản OFL (`LICENSES/OFL-1.1.txt`) — chi tiết ở `NOTICE
 Host harness `targets/esp32s3/ui/host/` fetch LVGL **v9.6.0** ghim URL + SHA-256 trong CMake; tải
 lệch ⇒ CMake dừng. Với mỗi **màn hình × ngôn ngữ × trạng thái đại diện** (ma trận trong
 `host/main.c`), harness dựng `lv_test_display` 320×240 rồi so bằng `lv_test_screenshot_compare` với
-`targets/esp32s3/ui/golden/<mã>/<ca>.png`.
+`targets/esp32s3/ui/golden/<mã>/<ca>.png`. Display được đặt về **RGB565** — đúng định dạng panel —
+trước khi vẽ, nên ảnh golden là ảnh của bảng màu thật; `lv_test_screenshot_compare` chuyển khung
+sang XRGB8888 để ghi PNG. Harness build với ASan+UBSan (biến `NE_UI_SANITIZE`, mặc định BẬT): chữ
+của agent là dữ liệu không tin cậy, đọc quá bộ đệm phải đỏ ở đây chứ không phải trên bo mạch.
 
 ```bash
 bash scripts/run_ui_golden.sh            # kiểm; KHÔNG bao giờ ghi golden
