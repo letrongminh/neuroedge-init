@@ -33,6 +33,7 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | In digest để ghim phiên bản gate | `neuroedge gate publish` | ✅ |
 | Thẩm định vết ghi theo `trace.v1` | `neuroedge trace validate` | ✅ |
 | Xem nội dung một vết ghi | `neuroedge trace show` | ✅ |
+| Xem độ trễ từng chặng và tỷ lệ System 1 / System 2 của một phiên | `neuroedge trace show` (sự kiện `turn_latency`, `session_summary`) | ✅ |
 | Liệt kê / xem profile bo mạch | `neuroedge board list` · `neuroedge board show` | ✅ |
 | Đối chiếu năng lực agent ↔ bo mạch, biên dịch gate (cả cây nhị phân `.netree` cho thiết bị, RFC-0003) | `neuroedge build` | ✅ |
 | Chạy agent có gate trên `sim` từ mã Python (`c.do()` trên `SimHAL`) | — (thư viện) | ✅ |

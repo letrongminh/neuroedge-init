@@ -478,6 +478,26 @@ def trace_show(
             json.dumps(event["data"], ensure_ascii=False),
         )
     console.print(table)
+    _print_turn_summary(trace)
+
+
+def _print_turn_summary(trace: dict[str, Any]) -> None:
+    """Turns per System 1 / System 2 path and stage latency (TSK-I4-03), when timed."""
+    from ..engine.latency import turn_summary
+
+    # Recomputed from the `turn_latency` events, not read from `session_summary`.
+    summary = turn_summary(trace["events"])
+    if summary is None:
+        return
+    paths = " · ".join(
+        f"{path} {count} ({summary['shares'][path]:.0%})"
+        for path, count in summary["paths"].items()
+    )
+    console.print(f"[bold]{summary['turns']} turn(s):[/bold] {escape(paths)}")
+    stages = " · ".join(
+        f"{name} {value['sum']:g}/{value['max']:g}" for name, value in summary["stages_ms"].items()
+    )
+    console.print(f"stage ms (sum/max): {escape(stages)}")
 
 
 # --------------------------------------------------------------------------

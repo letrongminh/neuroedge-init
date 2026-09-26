@@ -391,10 +391,8 @@ def run_session(
     finally:
         try:
             if trace_out is not None:
-                session.write_trace(trace_out)
-                console.print(
-                    f"trace: {escape(str(trace_out))} ({len(session.events.events)} events)"
-                )
+                written = session.write_trace(trace_out)
+                console.print(f"trace: {escape(str(trace_out))} ({len(written['events'])} events)")
         finally:
             try:
                 _dropped_at_exit(session, console)

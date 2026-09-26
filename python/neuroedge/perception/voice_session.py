@@ -69,6 +69,9 @@ class VoiceSession:
         )
         self._awaiting: int | None = None  # the turn waiting for System 2
         self._transcript = ""
+        # When the awaited transcript came in: the System 2 wait of that turn's
+        # `turn_latency` runs from here (TSK-I4-03).
+        self._heard_at: float | None = None
 
     @classmethod
     def load(
@@ -163,6 +166,7 @@ class VoiceSession:
         answers = s.pending_confirmation() is not None and answer_word(text) is not None
         if self.system_two and not answers and not s.grammar.recognize(text).recognised:
             self._awaiting = turn  # free phrasing: System 2 answers later, or times out
+            self._heard_at = self.clock.now
             return
         before = len(self.hal.spoken)
         self._conclude(await s.handle(text), before)
@@ -177,8 +181,12 @@ class VoiceSession:
             for c in calls
         ]
         before = len(self.hal.spoken)
+        heard_at, self._heard_at = self._heard_at, None
         self._conclude(
-            await self.session.run_tool_calls(self._transcript, tool_calls, text), before
+            await self.session.run_tool_calls(
+                self._transcript, tool_calls, text, started_ms=heard_at
+            ),
+            before,
         )
 
     def _conclude(self, turn: Turn, spoken_before: int) -> None:
@@ -191,5 +199,6 @@ class VoiceSession:
     async def _offline_reply(self) -> None:
         """§7: provider gone or too slow — say the offline line, as any reply. Never a c.do()."""
         self._awaiting = None
-        await self.session.conversation.say(self.session.offline_help())
+        heard_at, self._heard_at = self._heard_at, None
+        await self.session.say_offline(self._transcript, started_ms=heard_at)
         self.fsm.reply_started(ask=False)

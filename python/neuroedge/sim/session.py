@@ -36,7 +36,8 @@ from __future__ import annotations
 
 import json
 import tomllib
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -54,6 +55,7 @@ from ..engine.compiler import AgentManifest, build, load_actions, load_agent_man
 from ..engine.compiler import resolve_gates as _resolve_gates
 from ..engine.gate import ActionContractEngine
 from ..engine.gate_resolver import GateRegistry
+from ..engine.latency import TURN_EVENT, TurnMeter, system_two_usage, turn_path
 from ..engine.trace_sink import Clock, EventLog, monotonic_ms
 from ..errors import AgentManifestError, BoardCapabilityError, PerceptionUnavailableError
 from ..hal.board import REFERENCE_BOARD, load_board_by_id
@@ -271,6 +273,8 @@ class SimSession:
         # device tool results its in-process MCP calls produced.
         self._active: tuple[str, Recognition] | None = None
         self._turn_results: list[ToolResult] = []
+        # Turns timed so far: the `turn` of the next `turn_latency` (TSK-I4-03).
+        self._turns = 0
 
     @classmethod
     def load(
@@ -419,16 +423,78 @@ class SimSession:
             facts[criterion] = rule.evaluate(reading)
         return facts
 
+    # -- turn timing (TSK-I4-03) ------------------------------------------------------
+    def _stage(self, name: str) -> AbstractContextManager[Any]:
+        meter = self.conversation.meter
+        return meter.stage(name) if meter is not None else nullcontext()
+
+    async def _metered(
+        self,
+        run: Callable[[], Awaitable[Turn]],
+        *,
+        started_ms: float | None = None,
+        waited: str | None = None,
+        served_locally: bool | None = None,
+        path: str | None = None,
+    ) -> Turn:
+        """
+        Run one turn and write its `turn_latency` (`engine/latency.py`). `started_ms`:
+        the turn began earlier than this call, and the time since counts as `waited`
+        (the voice driver waiting for System 2). A turn started inside another turn is
+        part of it and writes nothing of its own. A turn that raises writes nothing.
+        """
+        if self.conversation.meter is not None:
+            return await run()
+        meter = TurnMeter(
+            self.events.clock, started_ms=started_ms, first_event=len(self.events.events)
+        )
+        if waited is not None:
+            meter.add(waited, self.events.clock() - meter.started_ms)
+        meter.served_locally = served_locally
+        self.conversation.meter = meter
+        try:
+            turn = await run()
+        finally:
+            self.conversation.meter = None
+        if path is None:
+            local = turn.recognised if meter.served_locally is None else meter.served_locally
+            path = turn_path(turn.reply_source, system_two=meter.system_two, served_locally=local)
+        self._turns += 1
+        usage = system_two_usage(self.events.events[meter.first_event :])
+        self.events.emit(TURN_EVENT, meter.event_data(self._turns, path, turn.reply_source, usage))
+        return turn
+
+    async def _system_two(self, ask: Awaitable[Any]) -> Any:
+        """Await a System 2 call as the turn's `system_two` stage, noting if it answered."""
+        meter = self.conversation.meter
+        try:
+            with self._stage("system_two"):
+                answer = await ask
+        except PerceptionUnavailableError:
+            if meter is not None:
+                meter.answered(False)
+            raise
+        if meter is not None:
+            meter.answered(True)
+        return answer
+
     async def handle(self, text: str) -> Turn:
         """Run one typed line: recognise it, and `c.do()` the command's action."""
-        self.hal.type_text(text)
-        utterance = self.hal.audio_in(called_from="SimSession.handle()") or ""
-        pending = self.conversation.confirmations.latest()
-        answer = answer_word(utterance) if pending is not None else None
-        if pending is not None and answer is not None:
+        return await self._metered(lambda: self._handle(text))
+
+    async def _handle(self, text: str) -> Turn:
+        with self._stage("perception"):
+            self.hal.type_text(text)
+            utterance = self.hal.audio_in(called_from="SimSession.handle()") or ""
+            pending = self.conversation.confirmations.latest()
+            answer = answer_word(utterance) if pending is not None else None
+            answers = pending is not None and answer is not None
+            recognition = None if answers else self.grammar.recognize(utterance)
+        if recognition is None:
             # "có" / "không" to the device's own question: a person, on the device.
+            if self.conversation.meter is not None:
+                self.conversation.meter.served_locally = True
             return await self._answer(pending.id, answer, "local_grammar", utterance)
-        recognition = self.grammar.recognize(utterance)
         system_two_down = False
         if not recognition.recognised and self.slow.available:
             # Free phrasing the fixed grammar does not know: System 2 may call tools.
@@ -488,10 +554,14 @@ class SimSession:
 
     async def confirm(self, confirm_id: str | None = None, source: str = "ui") -> Turn:
         """A person pressed "Đồng ý" on the device's page (or `:confirm` in the REPL)."""
-        return await self._answer(confirm_id, True, source, "")
+        return await self._metered(
+            lambda: self._answer(confirm_id, True, source, ""), served_locally=False
+        )
 
     async def decline(self, confirm_id: str | None = None, source: str = "ui") -> Turn:
-        return await self._answer(confirm_id, False, source, "")
+        return await self._metered(
+            lambda: self._answer(confirm_id, False, source, ""), served_locally=False
+        )
 
     async def _answer(self, confirm_id: str | None, yes: bool, source: str, text: str) -> Turn:
         c = self.conversation
@@ -541,15 +611,41 @@ class SimSession:
         return result
 
     async def run_tool_calls(
-        self, text: str, calls: list[ToolCall], reply: str | None = None
+        self,
+        text: str,
+        calls: list[ToolCall],
+        reply: str | None = None,
+        *,
+        started_ms: float | None = None,
     ) -> Turn:
         """
         A model's answer to `text` — its tool calls, each through `dispatch()` and
         its gate, then its reply — as the turn it concludes. The voice driver
-        (`perception.VoiceSession`) calls this when System 2's answer arrives.
+        (`perception.VoiceSession`) calls this when System 2's answer arrives;
+        `started_ms` is when the transcript came in, so the wait is the turn's
+        `system_two` stage.
         """
-        recognition = self.grammar.recognize(text)
-        return await self._call_tools(Turn(text, recognition), calls, recognition, reply)
+
+        async def run() -> Turn:
+            with self._stage("perception"):
+                recognition = self.grammar.recognize(text)
+            return await self._call_tools(Turn(text, recognition), calls, recognition, reply)
+
+        return await self._metered(run, started_ms=started_ms, waited="system_two", path="system_2")
+
+    async def say_offline(self, text: str = "", *, started_ms: float | None = None) -> Turn:
+        """
+        System 2 did not answer `text` — unreachable, or too slow — so the device
+        says which commands still work (`offline_help`, Q-14): a `fallback` turn.
+        Speech only: never a `c.do()`.
+        """
+        turn = Turn(text, self.grammar.recognize(""))
+        return await self._metered(
+            lambda: self._speak(turn, self.offline_help(), "offline_help"),
+            started_ms=started_ms,
+            waited="system_two",
+            path="fallback",
+        )
 
     async def _call_tools(
         self, turn: Turn, calls: list[ToolCall], recognition: Recognition, reply: str | None = None
@@ -628,7 +724,7 @@ class SimSession:
                         "instructions": instructions,
                     }
                     try:
-                        payload = await self.slow.respond(state)
+                        payload = await self._system_two(self.slow.respond(state))
                     except PerceptionUnavailableError as exc:
                         self.events.emit(
                             "system_two_unavailable", {"task": task, "reason": exc.why}
@@ -700,7 +796,7 @@ class SimSession:
             "instructions": "Trả lời tự nhiên, ngắn gọn, chỉ dựa trên context; không có thì nói không biết.",
         }
         try:
-            text = await self.slow.reply(state)
+            text = await self._system_two(self.slow.reply(state))
         except PerceptionUnavailableError as exc:
             self.events.emit("system_two_unavailable", {"task": "knowledge", "reason": exc.why})
             return await self._speak(turn, local_answer, "knowledge_local")
@@ -718,7 +814,7 @@ class SimSession:
                 return handled
             return await self._speak(turn, offline, "offline")
         try:
-            text = await self.slow.reply({"task": task, "utterance": utterance})
+            text = await self._system_two(self.slow.reply({"task": task, "utterance": utterance}))
         except PerceptionUnavailableError as exc:
             self.events.emit("system_two_unavailable", {"task": task, "reason": exc.why})
             return await self._speak(turn, offline, "offline")
@@ -736,12 +832,12 @@ class SimSession:
         """
         return sorted(_sim_tables(self.manifest)[0])
 
-    def write_trace(self, path: Path) -> None:
-        """The session so far as a validated `trace.v1` file at `path`."""
+    def write_trace(self, path: Path) -> dict[str, Any]:
+        """The session so far as a validated `trace.v1` file at `path`; returns it."""
+        trace = self.trace()
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            json.dumps(self.trace(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-        )
+        path.write_text(json.dumps(trace, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        return trace
 
     def close(self) -> None:
         """End the session: on linux every line is dropped inactive and released."""

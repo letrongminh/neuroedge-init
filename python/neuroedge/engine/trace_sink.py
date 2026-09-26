@@ -16,6 +16,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from ..trace import TRACE_SCHEMA_ID
+from .latency import SUMMARY_EVENT, turn_summary
 
 Clock = Callable[[], float]
 
@@ -61,8 +62,13 @@ class EventLog:
         return [event["data"] for event in self.events if event["type"] == type]
 
     def to_trace(self) -> dict[str, Any]:
-        return {
-            "$schema": TRACE_SCHEMA_ID,
-            "metadata": dict(self.metadata),
-            "events": [dict(event) for event in self.events],
-        }
+        """
+        The log as a `trace.v1` document. When it holds `turn_latency` events it ends
+        with their `session_summary` (TSK-I4-03), computed now and not kept in the log.
+        """
+        events = [dict(event) for event in self.events]
+        summary = turn_summary(events)
+        if summary is not None:
+            offset = max(events[-1]["offset_ms"], self.elapsed_ms())
+            events.append({"offset_ms": offset, "type": SUMMARY_EVENT, "data": summary})
+        return {"$schema": TRACE_SCHEMA_ID, "metadata": dict(self.metadata), "events": events}
