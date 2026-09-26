@@ -2,7 +2,9 @@
 The ESP-IDF project `neuroedge build --target esp32s3` writes (TSK-I3-01, FR-CLI-02, FR-TGT-03).
 
 The firmware in `targets/esp32s3/` is the same for every agent. What is the
-agent's own is one generated component, `components/ne_agent/`:
+agent's own is one generated component, `components/ne_agent/`, and the project's
+`version.txt` (the agent's `[agent] version`, which ESP-IDF reads as its
+PROJECT_VER):
 
 * each gate as `NETR` v1 bytes linked into flash (`gates/<key>.netree.h`, RFC-0003),
   byte for byte the `<key>.netree.h` the build writes next to the tree;
