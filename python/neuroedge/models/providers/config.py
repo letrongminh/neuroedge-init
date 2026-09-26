@@ -35,6 +35,7 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from ...errors import AgentManifestError
 
@@ -70,6 +71,11 @@ DEFAULT_TIMEOUT_MS = 1500.0
 MAX_TIMEOUT_MS = 10_000.0
 # Set by the dispatcher (Q-24): who called is never a model's judgment.
 RUNTIME_CRITERIA = frozenset({"call_source"})
+MODEL_ID = re.compile(r"[A-Za-z0-9_.:/@+-]{1,100}")
+# sk-or-v1-…, sk-ant-…, or one long bare token: a key, not a model name.
+KEY_LIKE = re.compile(r"(sk|pk|rk)-|[A-Za-z0-9_-]{40,}$")
+WORD = re.compile(r"[a-z][a-z0-9_-]{0,19}")
+LOOPBACK = frozenset({"localhost", "127.0.0.1", "::1"})
 # Field names that hold a secret. Checked in the table and in `options`.
 SECRET = re.compile(r"(^|_)(api_?key|key|secret|token|password)$", re.IGNORECASE)
 ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -226,6 +232,12 @@ def _api_base(table: dict[str, Any], where: str, example: str) -> str | None:
     return api_base
 
 
+def _private_or_tls(url: str) -> bool:
+    """https://, or http:// to this machine only."""
+    parts = urlsplit(url)
+    return parts.scheme == "https" or (parts.hostname or "") in LOOPBACK
+
+
 def _options(table: dict[str, Any], where: str, name: str, builtin: str | None) -> dict:
     """`[<name>.options]`: a table, and only for a custom adapter (`builtin` is the other)."""
     options = table.get("options", {})
@@ -372,10 +384,14 @@ def parse_system_one(table: Any, source: Path | None = None) -> SystemOneConfig:
         )
     provider = table.get("provider", SYSTEMONE)
     if provider != SYSTEMONE and not _is_adapter(provider):
+        plain = isinstance(provider, str) and WORD.fullmatch(provider)
+        found = (
+            repr(provider) if plain else "a value that is neither (not repeated: it may be a key)"
+        )
         raise AgentManifestError(
             where=f"{where} provider",
             why=f'provider must be "{SYSTEMONE}" (the System One API of TypeSafe / OpenRouter) '
-            f'or "{PYTHON_PREFIX}<module>:<factory>", found {provider!r}',
+            f'or "{PYTHON_PREFIX}<module>:<factory>", found {found}',
             how='write provider = "systemone", or provider = "python:my_s1.adapter:make_source" '
             "for your own adapter (FR-MDL-08)",
         )
@@ -386,8 +402,23 @@ def parse_system_one(table: Any, source: Path | None = None) -> SystemOneConfig:
             why="the System One provider needs a string `model`",
             how='write model = "typesafe/jev-1.13" (Q-4)',
         )
+    if model and (not MODEL_ID.fullmatch(model) or KEY_LIKE.match(model)):
+        # The model name is printed and traced: a key pasted here would leak with it.
+        raise AgentManifestError(
+            where=f"{where} model",
+            why="model must be a model id (letters, digits and . _ : / @ + -); the value given "
+            "is not one, or looks like an API key — if it is the key itself, revoke it",
+            how=f'write model = "typesafe/jev-1.13" and api_key_env = "{key_env}"',
+        )
     api_key_env = _key_env(table, where, key_env)
     api_base = _api_base(table, where, DEFAULT_SYSTEM_ONE_BASE)
+    if api_base is not None and api_key_env is not None and not _private_or_tls(api_base):
+        raise AgentManifestError(
+            where=f"{where} api_base",
+            why="api_base is plain http:// to another machine: the key and what the person said "
+            "would cross the network in clear text",
+            how="use an https:// URL (http:// only for a server on this machine)",
+        )
     if provider == SYSTEMONE and api_key_env is None and api_base is None:
         raise AgentManifestError(
             where=f"{where} api_key_env",

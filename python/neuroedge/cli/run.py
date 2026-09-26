@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -299,8 +300,11 @@ def system_one_line(fast) -> str:
     name = getattr(primary, "name", "custom")
     if config is None:
         return f"{name} {fast.model}"
-    key = f"key from ${config.api_key_env}" if config.api_key_env else f"no key, {config.api_base}"
     criteria = ", ".join(config.criteria)
+    env = config.api_key_env
+    if env and not os.environ.get(env, "").strip():
+        return f"{name} {config.model} for {criteria} (${env} not set: the grammar decides)"
+    key = f"key from ${env}" if env else f"no key, {config.api_base}"
     return f"{name} {config.model} for {criteria} ({key}; the grammar if it cannot answer)"
 
 

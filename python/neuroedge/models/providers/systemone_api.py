@@ -36,8 +36,8 @@ grammar instead (FR-MDL-03):
 
 Confidence. Choice and score answers carry the model's own `confidence`. A noul
 carries only P(yes); its confidence is |2·P(yes) − 1| — the same measure on two
-outcomes (0 at 0.5, 1 at 0 or 1), rounded to 4 places so the threshold edge is
-exact. A level is the one the model gives the highest probability.
+outcomes (0 at 0.5, 1 at 0 or 1), cut (never rounded up) to 4 places, so the threshold
+edge is exact. A level is the one the model gives the highest probability.
 
 Each call it makes is one `system_one_call` event: provider, model, criterion,
 latency, status and, when the provider reports them, tokens and cost — never
@@ -54,7 +54,6 @@ import inspect
 import json
 import math
 import os
-import re
 import threading
 import urllib.error
 import urllib.request
@@ -64,7 +63,7 @@ from typing import Any
 from ...engine.trace_sink import monotonic_ms
 from ...engine.verdict import Fact, Unavailable
 from .base import scrub
-from .config import SystemOneConfig
+from .config import MODEL_ID, SystemOneConfig
 
 NAME = "systemone"
 CALL_EVENT = "system_one_call"
@@ -72,7 +71,6 @@ MAX_BODY = 64 * 1024  # a decision is a few hundred bytes; more is not an answer
 MAX_LEVELS = 10  # the API accepts 2–10 score levels
 MAX_OPTIONS = 255  # and at most 255 choice options
 QUESTION_TYPE = {"bool": "noul", "level": "score", "choice": "choice"}
-MODEL_ID = re.compile(r"[A-Za-z0-9_.:/@+-]{1,100}")
 
 # HTTP status → Unavailable reason. Anything not listed (other 3xx/4xx, 5xx) is offline.
 _STATUS_REASON = {
@@ -88,7 +86,7 @@ _STATUS_REASON = {
 }
 
 # ``transport(url, headers, body, timeout_s) -> (status, body)``: a function (run in a
-# daemon thread) or an ``async def`` one.
+# daemon thread), or an ``async def`` function or ``__call__``.
 Transport = Callable[[str, Mapping[str, str], bytes, float], Any]
 
 
@@ -199,6 +197,15 @@ def _probability(value: Any) -> float | None:
     return number
 
 
+def _down(confidence: float) -> float:
+    """
+    Four decimal places, never rounded up: 0.79996 must stay under a 0.8 threshold.
+    The 1e-7 absorbs binary noise only (2·0.9 − 1 is 0.8000000000000003, 0.94 is
+    9399.999999999998 ten-thousandths).
+    """
+    return math.floor(confidence * 10_000 + 1e-7) / 10_000
+
+
 def read_answer(
     answer: Any, definition: Mapping[str, Any]
 ) -> tuple[bool | str, float] | Unavailable:
@@ -213,7 +220,7 @@ def read_answer(
         yes = _probability(answer.get("noul"))
         if yes is None:
             return Unavailable("malformed", "noul is not a probability in [0, 1]")
-        return yes > 0.5, round(abs(2.0 * yes - 1.0), 4)
+        return yes > 0.5, _down(abs(2.0 * yes - 1.0))
     confidence = _probability(answer.get("confidence"))
     if confidence is None:
         return Unavailable("malformed", "confidence is missing or not in [0, 1]")
@@ -227,7 +234,7 @@ def read_answer(
             spread = _distribution(probabilities, options)
             if spread is None or spread.get(choice, 0.0) < max(spread.values(), default=0.0):
                 return Unavailable("malformed", "the choice is not the most probable option")
-        return choice, round(confidence, 4)
+        return choice, _down(confidence)
     levels = list(definition.get("levels") or ())
     spread = _distribution(probabilities, [str(index) for index in range(len(levels))])
     if not spread:
@@ -244,7 +251,7 @@ def read_answer(
     winners = [index for index, p in spread.items() if p == top]
     if len(winners) != 1:
         return Unavailable("empty", "two levels are tied for the top")
-    return levels[int(winners[0])], round(confidence, 4)
+    return levels[int(winners[0])], _down(confidence)
 
 
 def _distribution(probabilities: Any, keys: list[str]) -> dict[str, float] | None:
@@ -406,7 +413,9 @@ class SystemOneApi:
         timeout_s = limit_ms / 1000.0
         transport = self.transport
         args = (self.config.endpoint, headers, body, timeout_s)
-        if inspect.iscoroutinefunction(transport):
+        if inspect.iscoroutinefunction(transport) or inspect.iscoroutinefunction(
+            type(transport).__call__
+        ):
             pending = transport(*args)
         else:
             pending = _in_daemon_thread(transport, *args)

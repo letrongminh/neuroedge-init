@@ -206,8 +206,9 @@ async def test_a_confidence_equal_to_the_threshold_is_a_fact():
     assert (await ask(Transport(noul(0.9)))).confidence == 0.8
 
 
-async def test_just_below_the_threshold_is_no_answer():
-    answer = await ask(Transport(choice("light", 0.7999)), "request_kind")
+@pytest.mark.parametrize("confidence", [0.7999, 0.79996, 0.799999])
+async def test_just_below_the_threshold_is_no_answer_and_is_never_rounded_up(confidence):
+    answer = await ask(Transport(choice("light", confidence)), "request_kind")
     assert (answer.reason, answer.value) == ("empty", None)
 
 
@@ -339,6 +340,14 @@ async def test_a_model_that_does_not_answer_in_time_is_a_timeout():
     assert answer.reason == "timeout"
     (call,) = events.of_type("system_one_call")
     assert call["reason"] == "timeout"
+
+
+async def test_an_object_with_an_async_call_is_awaited_on_the_loop():
+    class Async:
+        async def __call__(self, url, headers, body, timeout_s):
+            return noul(0.97)
+
+    assert (await ask(Async())).value is True
 
 
 async def test_a_blocking_transport_that_hangs_is_cut_off_too():
@@ -535,11 +544,14 @@ def server(monkeypatch):
             status, payload = (429, b'{"error": {"code": 429}}')
             if not self.path.startswith("/limited/"):
                 status, payload = noul(0.97)
-            self.send_response(status)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(payload)))
-            self.end_headers()
-            self.wfile.write(payload)
+            try:
+                self.send_response(status)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+            except (BrokenPipeError, ConnectionResetError):
+                pass  # /slow: the client gave up first, as it should
 
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     httpd.daemon_threads = True
@@ -871,6 +883,34 @@ def test_a_bad_system_one_table_is_a_three_part_error(table, where, complaint):
     assert raised.value.how
 
 
+@pytest.mark.parametrize(
+    ("table", "where"),
+    [
+        ({**GOOD, "provider": KEY}, "provider"),
+        ({**GOOD, "model": KEY}, "model"),
+        ({**GOOD, "model": "x" * 48}, "model"),
+        ({**GOOD, "model": "typesafe/jev 1.13"}, "model"),
+    ],
+    ids=["key-as-provider", "key-as-model", "token-as-model", "not-an-id"],
+)
+def test_a_key_pasted_where_a_name_goes_is_refused_and_not_repeated(table, where):
+    with pytest.raises(AgentManifestError) as raised:
+        parse_system_one(table)
+    assert raised.value.where.endswith(where)
+    assert KEY not in raised.value.render()
+
+
+def test_a_key_never_crosses_the_network_in_clear_text():
+    with pytest.raises(AgentManifestError) as raised:
+        parse_system_one({**GOOD, "api_base": "http://10.0.0.5:8080/api/v1"})
+    assert raised.value.where.endswith("api_base")
+    assert "clear text" in raised.value.why
+    for local in ("http://localhost:8080/v1", "http://127.0.0.1:9/v1", "http://[::1]:9/v1"):
+        assert parse_system_one({**GOOD, "api_base": local}).api_base == local
+    keyless = {"model": MODEL, "criteria": ["x"], "api_base": "http://10.0.0.5:8080/v1"}
+    assert parse_system_one(keyless).api_key_env is None, "no key, nothing to leak"
+
+
 def test_a_threshold_of_one_is_allowed():
     assert parse_system_one({**GOOD, "threshold": 1}).threshold == 1.0
 
@@ -1087,10 +1127,11 @@ def test_a_replay_recomputes_from_the_recorded_facts_without_the_model_or_its_ke
     assert len(transport.requests) == 2
 
     monkeypatch.delenv(ENV)
-    wire(AssertionError("replay asked the model"))
+    later = wire(AssertionError("replay asked the model"))
     result = replay_sync(trace, agent=manifest)
     assert result.divergences == []
     assert [a.blocked for a in result.actions] == [False, True]
+    assert later.requests == [] and len(transport.requests) == 2, "replay asked no model"
     assert result.replayed["events"] and not [
         e for e in result.replayed["events"] if e["type"] == "system_one_call"
     ]
@@ -1121,6 +1162,18 @@ def test_the_repl_banner_names_the_model_its_criteria_and_the_key_variable(agent
     assert f"system 1: systemone {MODEL} for wants_light (key from ${ENV};" in text
     assert "offline, typed text" not in text
     assert KEY not in text
+
+
+def test_the_banner_says_when_the_key_is_missing(agent, wire, monkeypatch):
+    from rich.console import Console
+
+    from neuroedge.cli.run import banner
+
+    wire()
+    monkeypatch.delenv(ENV)
+    console = Console(record=True, width=200)
+    banner(SimSession.load(agent()), console)
+    assert f"(${ENV} not set: the grammar decides)" in console.export_text()
 
 
 # --- the build ------------------------------------------------------------------------------------
