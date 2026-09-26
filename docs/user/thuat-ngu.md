@@ -98,7 +98,7 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **HAL theo hợp đồng năng lực** | HAL đối chiếu hai chiều yêu cầu của agent với năng lực của bo mạch lúc build | `neuroedge-proposal.md` §3.3 · Phụ lục A |
 | **HAL port** | Bản hiện thực HAL cho một môi trường mới, có thể do bên thứ ba viết; đúng hay không chứng minh bằng bộ kiểm thử tuân thủ | `neuroedge-proposal.md` §1.7 |
 | **Nguyên tắc tương đương môi trường** | Cùng mã agent cho cùng chuỗi quyết định trên mọi target; mức cam kết theo bậc target | `neuroedge-proposal.md` §3.2 |
-| **OpenAI-compatible · adapter** | Chuẩn kết nối mặc định của lớp trừu tượng nhà cung cấp: dịch vụ theo OpenAI API chỉ cần cấu hình; dịch vụ khác cần một adapter mỏng do người dùng viết (`python:pkg.mod:factory`) | `neuroedge-proposal.md` §6.1 · Q-12 |
+| **OpenAI-compatible · adapter** | Chuẩn kết nối mặc định của lớp trừu tượng nhà cung cấp: nền tảng theo OpenAI API (một base URL, một key) chỉ cần cấu hình — chat completions, audio, và endpoint quyết định có kiểu như System One API cho Jev; dịch vụ khác cần một adapter mỏng do người dùng viết (`python:pkg.mod:factory`) | `neuroedge-proposal.md` §6.1 · Q-12 |
 | **Lớp trừu tượng nhà cung cấp** | Phần của lõi do người dùng tự vận hành, chuẩn hoá kết nối tới LLM, ASR, TTS (FR-GW; tên cũ *Inference Gateway*) | `neuroedge-prd.md` §8.1 |
 | **Fleet Management OS (Fleet OS)** | Dịch vụ thương mại duy nhất: quản trị, giám sát, chứng thực và OTA cho đội thiết bị | `neuroedge-proposal.md` §6.2 |
 | **Source-available · mã nguồn công khai** | Mã ai cũng đọc được nhưng giấy phép giới hạn cách dùng — **không** phải *open source* theo OSI. Lõi NeuroEdge là source-available; lược đồ, đặc tả và bộ kiểm thử tuân thủ là **chuẩn mở** | `LICENSING.md` · Q-45 |

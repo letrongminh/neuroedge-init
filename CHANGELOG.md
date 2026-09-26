@@ -219,6 +219,10 @@ bản gói.
 
 #### Đã đổi
 
+- **Q-12 nới (2026-09-26): chuẩn kết nối là nền tảng tương thích OpenAI, gồm cả endpoint quyết định có kiểu.** Jev
+  chạy trên System One API của OpenRouter (`/api/v1/systemone`), không trên chat completions; Q-4 dẫn sang Q-12. `neuroedge-prd.md` §15.
+- **Q-46 (2026-09-26): "có"/"không" nói ra chỉ trả lời câu hỏi của chính lượt đó; TTS lỗi khi đọc câu hỏi ⇒ không mở lượt
+  trả lời.** Gõ chữ và nút UI giữ nguyên (RFC-0006). Đặc tả: `docs/spec/voice_fsm.md`.
 - **Q-45 — giấy phép: PolyForm Noncommercial 1.0.0 cho mã, Apache-2.0 cho chuẩn (2026-09-25).** `LICENSE`, `LICENSES/Apache-2.0.txt`,
   `LICENSING.md`; wheel khai `PolyForm-Noncommercial-1.0.0 AND Apache-2.0`; P-3 sửa theo; hai dòng doanh thu; CLA (`TODOS.md` #43).
   Bản tới `f68a47f` vẫn là MIT. Kho public toàn bộ (đóng #41). Kiểm: `pytest tests/test_packaging.py`.
