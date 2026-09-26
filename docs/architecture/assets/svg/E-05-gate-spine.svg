@@ -1,14 +1,218 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" font-family="sans-serif">
-<rect width="960" height="420" fill="#ffffff"/>
-<text x="480" y="30" text-anchor="middle" font-size="20" font-weight="bold">E-05 · The Gate Spine: ToolCall → HAL (P-1)</text>
-<g font-size="13">
-<rect x="20" y="120" width="130" height="90" rx="10" fill="#f3e8fd" stroke="#9334e6"/><text x="85" y="146" text-anchor="middle" font-weight="bold">Sources</text><text x="85" y="166" text-anchor="middle" font-size="12">grammar · S1 · S2</text><text x="85" y="184" text-anchor="middle" font-size="12">mcp · test</text>
-<rect x="175" y="120" width="130" height="90" rx="10" fill="#e8f4ff" stroke="#1a73e8"/><text x="240" y="146" text-anchor="middle" font-weight="bold">dispatch()</text><text x="240" y="166" text-anchor="middle" font-size="12">schema check</text><text x="240" y="184" text-anchor="middle" font-size="12">+ call_source</text>
-<rect x="330" y="120" width="150" height="90" rx="10" fill="#dbeafe" stroke="#1a73e8"/><text x="405" y="146" text-anchor="middle" font-weight="bold">gate.evaluate</text><text x="405" y="166" text-anchor="middle" font-size="12">args → facts → walk</text><text x="405" y="184" text-anchor="middle" font-size="12">ALLOW / BLOCK</text>
-<rect x="505" y="120" width="130" height="90" rx="10" fill="#fff4e5" stroke="#e8930c"/><text x="570" y="146" text-anchor="middle" font-weight="bold">on_block</text><text x="570" y="166" text-anchor="middle" font-size="12">deny · escalate</text><text x="570" y="184" text-anchor="middle" font-size="12">ask · degrade</text>
-<rect x="660" y="120" width="130" height="90" rx="10" fill="#e9f9ee" stroke="#188038"/><text x="725" y="146" text-anchor="middle" font-weight="bold">TokenLedger</text><text x="725" y="166" text-anchor="middle" font-size="12">issue · single-use</text><text x="725" y="184" text-anchor="middle" font-size="12">TTL = p95 × 3</text>
-<rect x="815" y="120" width="125" height="90" rx="10" fill="#e9f9ee" stroke="#188038"/><text x="877" y="146" text-anchor="middle" font-weight="bold">HAL</text><text x="877" y="166" text-anchor="middle" font-size="12">authorize</text><text x="877" y="184" text-anchor="middle" font-size="12">→ pins</text>
-<g stroke="#1a73e8" stroke-width="2"><line x1="150" y1="165" x2="173" y2="165"/><line x1="305" y1="165" x2="328" y2="165"/><line x1="480" y1="165" x2="503" y2="165"/><line x1="635" y1="165" x2="658" y2="165"/><line x1="790" y1="165" x2="813" y2="165"/></g>
-<rect x="175" y="250" width="765" height="70" rx="10" fill="#f1f3f4" stroke="#555"/><text x="557" y="275" text-anchor="middle" font-weight="bold">BLOCK path: no token · body never runs · pins unchanged · event + hook · ask opens PendingConfirmation · degrade re-enters via its own gate</text><text x="557" y="297" text-anchor="middle" font-size="12">REJECTED path (bad schema/args): protocol error, never reaches gate</text>
-<text x="480" y="365" text-anchor="middle" font-size="12" fill="#555">The only lawful path to a pin · bypass attempts raise NE1001/NE1002 · Source: E-05.excalidraw</text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 740" width="1200" height="740" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+    <linearGradient id="pipeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eff6ff"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+    <linearGradient id="binGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="100%" stop-color="#fef3c7"/>
+    </linearGradient>
+    <linearGradient id="walkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef2f2"/>
+      <stop offset="100%" stop-color="#fee2e2"/>
+    </linearGradient>
+    <linearGradient id="tokenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0fdf4"/>
+      <stop offset="100%" stop-color="#dcfce7"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.06"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.04"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b"/>
+    </marker>
+    <marker id="arrowRed" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#dc2626"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#16a34a"/>
+    </marker>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="1200" height="740" fill="url(#bgGrad)"/>
+  <rect x="1" y="1" width="1198" height="738" rx="8" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+
+  <!-- Header Header -->
+  <g transform="translate(50, 25)">
+    <rect x="0" y="0" width="1100" height="58" rx="12" fill="#ffffff" stroke="#e2e8f0" filter="url(#cardShadow)"/>
+    <text x="24" y="35" font-size="20" font-weight="700" fill="#0f172a" letter-spacing="-0.02em">E-05 · The Gate Spine: Build Pipeline, NETR v1 Binary &amp; Token Authority (C4 L4)</text>
+    <rect x="850" y="15" width="225" height="28" rx="14" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="962" y="33" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">RFC-0003 &amp; RFC-0005 SPEC</text>
+  </g>
+
+  <!-- SECTION 1: COMPILATION & MERGE PIPELINE -->
+  <g transform="translate(50, 95)">
+    <rect width="1100" height="135" rx="14" fill="url(#pipeGrad)" stroke="#3b82f6" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <text x="20" y="24" font-size="12" font-weight="700" fill="#1e40af" text-transform="uppercase">1. Build-Time Static Compilation Pipeline (`neuroedge build`)</text>
+
+    <g transform="translate(20, 36)">
+      <!-- Step 1: Gate YAML -->
+      <rect x="0" y="0" width="180" height="80" rx="8" fill="#ffffff" stroke="#bfdbfe"/>
+      <text x="90" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">gate@semver.yaml</text>
+      <text x="90" y="42" text-anchor="middle" font-size="10" fill="#64748b">Schema gate.v1</text>
+      <text x="90" y="58" text-anchor="middle" font-size="9" fill="#64748b">Syntax Check NE2002</text>
+
+      <path d="M 185 40 L 205 40" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+
+      <!-- Step 2: Extends Merger -->
+      <rect x="210" y="0" width="220" height="80" rx="8" fill="#ffffff" stroke="#bfdbfe"/>
+      <text x="320" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Extends Chain Merger</text>
+      <text x="320" y="42" text-anchor="middle" font-size="10" fill="#64748b">Depth ≤ 3 Levels · Acyclic</text>
+      <text x="320" y="58" text-anchor="middle" font-size="9" font-weight="600" fill="#2563eb">P1/P2/Q-18 Invariants Enforced</text>
+
+      <path d="M 435 40 L 455 40" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+
+      <!-- Step 3: Argument Limits -->
+      <rect x="460" y="0" width="200" height="80" rx="8" fill="#ffffff" stroke="#bfdbfe"/>
+      <text x="560" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">RFC-0005 Argument Limits</text>
+      <text x="560" y="42" text-anchor="middle" font-size="10" fill="#64748b">Monotonic Narrowing</text>
+      <text x="560" y="58" text-anchor="middle" font-size="9" fill="#64748b">min / max / enum / max_len</text>
+
+      <path d="M 665 40 L 685 40" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+
+      <!-- Step 4: Decision Tree Optimizer -->
+      <rect x="690" y="0" width="180" height="80" rx="8" fill="#ffffff" stroke="#bfdbfe"/>
+      <text x="780" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Tree Compilation</text>
+      <text x="780" y="42" text-anchor="middle" font-size="10" fill="#64748b">Canonical criteria_order</text>
+      <text x="780" y="58" text-anchor="middle" font-size="9" fill="#64748b">SHA-256 gate_digest</text>
+
+      <path d="M 875 40 L 895 40" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+
+      <!-- Step 5: NETR v1 Binary -->
+      <rect x="900" y="0" width="160" height="80" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
+      <text x="980" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">NETR v1 Binary</text>
+      <text x="980" y="42" text-anchor="middle" font-size="10" fill="#1e40af">`.netree` or `.h` Header</text>
+      <text x="980" y="58" text-anchor="middle" font-size="9" font-weight="700" fill="#15803d">CRC32 Protected</text>
+    </g>
+  </g>
+
+  <!-- SECTION 2: NETR V1 BINARY LAYOUT -->
+  <g transform="translate(50, 240)">
+    <rect width="1100" height="155" rx="14" fill="url(#binGrad)" stroke="#d97706" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <text x="20" y="24" font-size="12" font-weight="700" fill="#92400e" text-transform="uppercase">2. NETR v1 Binary File Layout on Device Flash (Little-Endian, RFC-0003)</text>
+
+    <!-- Visual Memory Tape -->
+    <g transform="translate(20, 36)">
+      <!-- 1. Header 64B -->
+      <rect x="0" y="0" width="220" height="85" rx="6" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+      <text x="110" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#78350f">Header (64 Bytes)</text>
+      <text x="110" y="38" text-anchor="middle" font-size="9" fill="#92400e">Magic "NETR" · Version 1 · Size 64</text>
+      <text x="110" y="52" text-anchor="middle" font-size="9" fill="#92400e">gate_digest[32] (SHA-256)</text>
+      <text x="110" y="66" text-anchor="middle" font-size="8" fill="#b45309">node/arg/enum count · p95 · confirm_mask · CRC32</text>
+
+      <!-- 2. Nodes 24B * n -->
+      <rect x="230" y="0" width="220" height="85" rx="6" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+      <text x="340" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#78350f">Criteria Nodes (24B × N)</text>
+      <text x="340" y="38" text-anchor="middle" font-size="9" fill="#92400e">kind (bool/level/choice) · domain_size</text>
+      <text x="340" y="52" text-anchor="middle" font-size="9" fill="#92400e">name_off · admitted_mask (u32)</text>
+      <text x="340" y="66" text-anchor="middle" font-size="8" fill="#b45309">confidence_floor (f64) · domain_off (u16)</text>
+
+      <!-- 3. Arguments 32B * m -->
+      <rect x="460" y="0" width="210" height="85" rx="6" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+      <text x="565" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#78350f">Argument Limits (32B × A)</text>
+      <text x="565" y="38" text-anchor="middle" font-size="9" fill="#92400e">name_off · type · flags (HAS_MIN...)</text>
+      <text x="565" y="52" text-anchor="middle" font-size="9" fill="#92400e">enum_first · enum_count · max_len</text>
+      <text x="565" y="66" text-anchor="middle" font-size="8" fill="#b45309">minimum (f64) · maximum (f64)</text>
+
+      <!-- 4. Enums 16B * e -->
+      <rect x="680" y="0" width="180" height="85" rx="6" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+      <text x="770" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#78350f">Enum Values (16B × E)</text>
+      <text x="770" y="42" text-anchor="middle" font-size="9" fill="#92400e">number (f64)</text>
+      <text x="770" y="58" text-anchor="middle" font-size="9" fill="#92400e">str_off (u32) · str_len (u32)</text>
+
+      <!-- 5. Strings -->
+      <rect x="870" y="0" width="190" height="85" rx="6" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+      <text x="965" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#78350f">String Table (&lt;16 KB)</text>
+      <text x="965" y="42" text-anchor="middle" font-size="9" fill="#92400e">NUL-terminated UTF-8 strings</text>
+      <text x="965" y="58" text-anchor="middle" font-size="8" fill="#b45309">Consecutive domain values run</text>
+    </g>
+    <text x="20" y="138" font-size="10" fill="#78350f">Memory-mapped flash execution · Pointerless offsets · Traversal allocates ZERO heap memory bytes.</text>
+  </g>
+
+  <!-- SECTION 3: RUNTIME DECISION & TOKEN LEDGER -->
+  <g transform="translate(50, 405)">
+    <!-- LEFT: In-Place Walker Flow -->
+    <g transform="translate(0, 0)">
+      <rect width="535" height="300" rx="14" fill="url(#walkGrad)" stroke="#ef4444" stroke-width="2" filter="url(#cardShadow)"/>
+      <text x="20" y="26" font-size="13" font-weight="700" fill="#991b1b" text-transform="uppercase">3. Deterministic In-Place Walker (`ne_decide`)</text>
+
+      <g transform="translate(18, 42)">
+        <!-- Step 1: Arg Check -->
+        <rect x="0" y="0" width="500" height="42" rx="6" fill="#ffffff" stroke="#fca5a5"/>
+        <text x="16" y="26" font-size="11" font-weight="700" fill="#991b1b">1. Validate Argument Limits</text>
+        <text x="230" y="26" font-size="10" fill="#64748b">Out-of-range $\to$ BLOCK (`argument_out_of_range`)</text>
+
+        <!-- Step 2: Missing Facts Check -->
+        <rect x="0" y="48" width="500" height="42" rx="6" fill="#ffffff" stroke="#fca5a5"/>
+        <text x="16" y="74" font-size="11" font-weight="700" fill="#991b1b">2. Adjudicate Criteria Facts</text>
+        <text x="230" y="74" font-size="10" fill="#64748b">Missing / degraded facts $\to$ apply fail policy</text>
+
+        <!-- Step 3: Bitmask Check -->
+        <rect x="0" y="96" width="500" height="42" rx="6" fill="#ffffff" stroke="#fca5a5"/>
+        <text x="16" y="122" font-size="11" font-weight="700" fill="#991b1b">3. Bitmask &amp; Domain Index</text>
+        <text x="230" y="122" font-size="10" fill="#64748b">`(1 &lt;&lt; fact.index) &amp; admitted_mask` in O(1)</text>
+
+        <!-- Step 4: Confidence Check -->
+        <rect x="0" y="144" width="500" height="42" rx="6" fill="#ffffff" stroke="#fca5a5"/>
+        <text x="16" y="170" font-size="11" font-weight="700" fill="#991b1b">4. Confidence Floor</text>
+        <text x="230" y="170" font-size="10" fill="#64748b">`confidence &gt;= confidence_floor`</text>
+
+        <!-- Verdict Split -->
+        <rect x="0" y="196" width="240" height="44" rx="6" fill="#fee2e2" stroke="#dc2626"/>
+        <text x="120" y="218" text-anchor="middle" font-size="11" font-weight="700" fill="#991b1b">Verdict: BLOCK</text>
+        <text x="120" y="232" text-anchor="middle" font-size="9" fill="#7f1d1d">on_block: deny / ask / degrade</text>
+
+        <rect x="260" y="196" width="240" height="44" rx="6" fill="#dcfce7" stroke="#16a34a"/>
+        <text x="380" y="218" text-anchor="middle" font-size="11" font-weight="700" fill="#166534">Verdict: ALLOW</text>
+        <text x="380" y="232" text-anchor="middle" font-size="9" fill="#14532d">Proceed to TokenLedger.issue()</text>
+      </g>
+    </g>
+
+    <!-- RIGHT: Token Ledger & HAL Authorization -->
+    <g transform="translate(565, 0)">
+      <rect width="535" height="300" rx="14" fill="url(#tokenGrad)" stroke="#16a34a" stroke-width="2" filter="url(#cardShadow)"/>
+      <text x="20" y="26" font-size="13" font-weight="700" fill="#14532d" text-transform="uppercase">4. Ephemeral TokenLedger &amp; HAL Guard</text>
+
+      <g transform="translate(18, 42)">
+        <!-- Slot Structure -->
+        <rect x="0" y="0" width="500" height="85" rx="8" fill="#ffffff" stroke="#bbf7d0"/>
+        <text x="16" y="22" font-size="12" font-weight="700" fill="#166534">ne_token Structure (SRAM Slot)</text>
+        <text x="16" y="38" font-size="10" fill="#475569">nonce[16] (TRNG 128-bit) · gate_digest[32] · boot_id</text>
+        <text x="16" y="54" font-size="10" fill="#475569">pin_mask (granted pins) · issued_ms · ttl_ms (p95 × 3)</text>
+        <rect x="16" y="62" width="468" height="16" rx="3" fill="#f0fdf4"/>
+        <text x="250" y="74" text-anchor="middle" font-size="9" font-weight="600" fill="#16a34a">Static 4-Slot Ring · Refuses new tokens when full (Fail-Closed)</text>
+
+        <!-- Verification Checklist -->
+        <rect x="0" y="95" width="500" height="90" rx="8" fill="#ffffff" stroke="#bbf7d0"/>
+        <text x="16" y="20" font-size="11" font-weight="700" fill="#166534">`ne_token_authorize(token, pin)` Sequential Checks:</text>
+        <text x="16" y="36" font-size="9" fill="#dc2626">1. Non-null &amp; matching boot_id / nonce $\to$ else Contract Error NE1001</text>
+        <text x="16" y="50" font-size="9" fill="#dc2626">2. Pin present in pin_mask $\to$ else Contract Error NE1001</text>
+        <text x="16" y="64" font-size="9" fill="#d97706">3. Pin not already in consumed_mask $\to$ else Replay Error NE1002</text>
+        <text x="16" y="78" font-size="9" fill="#d97706">4. Monotonic elapsed time $\le$ ttl_ms $\to$ else Expired Error NE1002</text>
+
+        <!-- HAL Execution Success -->
+        <rect x="0" y="195" width="500" height="45" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+        <text x="250" y="218" text-anchor="middle" font-size="12" font-weight="700" fill="#166534">TOKEN AUTHORIZED $\to$ Drive Physical Pin $\to$ Token Closed</text>
+        <text x="250" y="232" text-anchor="middle" font-size="9" fill="#15803d">Emits actuator_command_executed · Token slot consumed for target pin</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Connective Arrows -->
+  <path d="M 585 175 L 585 240" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 315 395 L 315 405" stroke="#ef4444" stroke-width="2" marker-end="url(#arrowRed)"/>
+  <path d="M 430 600 L 565 470" stroke="#16a34a" stroke-width="2" marker-end="url(#arrowGreen)"/>
+
+  <!-- Footer Metadata Bar -->
+  <g transform="translate(50, 715)">
+    <text x="0" y="16" font-size="11" font-weight="600" fill="#64748b">NeuroEdge Gate Spine · Mathematical Equivalence between Python `engine/` and C99 `ne_gate` · Verified by `test_c_walker.py`</text>
+    <text x="1100" y="16" text-anchor="end" font-size="11" font-weight="500" fill="#94a3b8">Doc Ref: docs/architecture/vi/05-code-gate-hal-c4l4.md</text>
+  </g>
+</svg>

@@ -1,21 +1,230 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" font-family="sans-serif">
-<rect width="960" height="520" fill="#ffffff"/>
-<text x="480" y="30" text-anchor="middle" font-size="20" font-weight="bold">E-04 · ESP32-S3 Firmware Map (C4 L3)</text>
-<g font-size="13">
-<rect x="30" y="70" width="440" height="120" rx="12" fill="#e9f9ee" stroke="#188038" stroke-width="2"/><text x="250" y="96" text-anchor="middle" font-weight="bold">components/ne_gate (C99, no heap)</text>
-<rect x="50" y="110" width="190" height="60" rx="8" fill="#ceead6" stroke="#188038"/><text x="145" y="132" text-anchor="middle" font-weight="bold">ne_walker</text><text x="145" y="150" text-anchor="middle" font-size="12">ne_tree_load/evaluate</text>
-<rect x="260" y="110" width="190" height="60" rx="8" fill="#ceead6" stroke="#188038"/><text x="355" y="132" text-anchor="middle" font-weight="bold">ne_token</text><text x="355" y="150" text-anchor="middle" font-size="12">ledger · 4 slots · TTL</text>
-<rect x="500" y="70" width="430" height="120" rx="12" fill="#e9f9ee" stroke="#188038" stroke-width="2"/><text x="715" y="96" text-anchor="middle" font-weight="bold">components/ne_trace</text>
-<rect x="520" y="110" width="390" height="60" rx="8" fill="#ceead6" stroke="#188038"/><text x="715" y="132" text-anchor="middle" font-weight="bold">NE1 UART lines · ≤512 B · device_info/trace_end framing</text><text x="715" y="150" text-anchor="middle" font-size="12">prefix "NE1 " + one trace.v1 event as JSON</text>
-<rect x="30" y="210" width="900" height="150" rx="12" fill="#e8f4ff" stroke="#1a73e8" stroke-width="2"/><text x="480" y="236" text-anchor="middle" font-weight="bold">main app (boot order)</text>
-<g font-size="12">
-<rect x="50" y="250" width="150" height="90" rx="8" fill="#dbeafe" stroke="#1a73e8"/><text x="125" y="272" text-anchor="middle" font-weight="bold">1 · memory_probe</text><text x="125" y="290" text-anchor="middle">Q-3 budgets</text><text x="125" y="306" text-anchor="middle">SRAM/PSRAM</text>
-<rect x="215" y="250" width="150" height="90" rx="8" fill="#dbeafe" stroke="#1a73e8"/><text x="290" y="272" text-anchor="middle" font-weight="bold">2 · gate_selftest</text><text x="290" y="290" text-anchor="middle">NE_SELFTEST</text><text x="290" y="306" text-anchor="middle">PASS/FAIL</text>
-<rect x="380" y="250" width="150" height="90" rx="8" fill="#dbeafe" stroke="#1a73e8"/><text x="455" y="272" text-anchor="middle" font-weight="bold">3 · trace_vectors</text><text x="455" y="290" text-anchor="middle">replay 3 golden</text><text x="455" y="306" text-anchor="middle">traces on-device</text>
-<rect x="545" y="250" width="150" height="90" rx="8" fill="#f3f3f3" stroke="#888" stroke-dasharray="6 4"/><text x="620" y="272" text-anchor="middle" font-weight="bold">4 · HAL (planned)</text><text x="620" y="290" text-anchor="middle">GPIO · I2S · sensors</text><text x="620" y="306" text-anchor="middle">TSK-S4-01</text>
-<rect x="710" y="250" width="200" height="90" rx="8" fill="#dbeafe" stroke="#1a73e8"/><text x="810" y="272" text-anchor="middle" font-weight="bold">5 · network/idle</text><text x="810" y="290" text-anchor="middle">Opus streaming</text><text x="810" y="306" text-anchor="middle">OTA A/B partitions</text>
-</g>
-<rect x="30" y="380" width="900" height="60" rx="10" fill="#fff4e5" stroke="#e8930c"/><text x="480" y="402" text-anchor="middle" font-weight="bold">Flash layout · 16 MB: factory + ota_0 + ota_1 (3.5 MB each) + storage · NETR trees linked as const arrays</text><text x="480" y="422" text-anchor="middle" font-size="12">partitions.csv · sdkconfig.defaults · sdkconfig.qemu (CI overlay)</text>
-<g stroke="#555"><line x1="250" y1="190" x2="250" y2="208"/><line x1="715" y1="190" x2="715" y2="208"/><line x1="380" y1="295" x2="500" y2="295"/></g>
-<text x="480" y="478" text-anchor="middle" font-size="12" fill="#555">Self-test FAIL halts boot — device never gates on untested trees · Source: E-04.excalidraw</text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 740" width="1200" height="740" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+    <linearGradient id="core0Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eff6ff"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+    <linearGradient id="core1Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0fdf4"/>
+      <stop offset="100%" stop-color="#dcfce7"/>
+    </linearGradient>
+    <linearGradient id="flashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="100%" stop-color="#fef3c7"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.06"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.04"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="1200" height="740" fill="url(#bgGrad)"/>
+  <rect x="1" y="1" width="1198" height="738" rx="8" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+
+  <!-- Header Header -->
+  <g transform="translate(50, 25)">
+    <rect x="0" y="0" width="1100" height="58" rx="12" fill="#ffffff" stroke="#e2e8f0" filter="url(#cardShadow)"/>
+    <text x="24" y="35" font-size="20" font-weight="700" fill="#0f172a" letter-spacing="-0.02em">E-04 · ESP32-S3 Firmware Architecture &amp; Dual-Core Task Topology (C4 L3)</text>
+    <rect x="870" y="15" width="205" height="28" rx="14" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="972" y="33" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">FREERTOS &amp; MEMORY BUDGETS</text>
+  </g>
+
+  <!-- TOP SECTION: DUAL CORE FREERTOS TASK ALLOCATION -->
+  <g transform="translate(50, 95)">
+    <!-- CORE 0 CONTAINER -->
+    <g transform="translate(0, 0)">
+      <rect width="535" height="280" rx="14" fill="url(#core0Grad)" stroke="#3b82f6" stroke-width="2" filter="url(#cardShadow)"/>
+      <path d="M 0 14 Q 0 0 14 0 L 521 0 Q 535 0 535 14 L 535 34 L 0 34 Z" fill="#2563eb"/>
+      <text x="20" y="23" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.04em">CORE 0 · I/O, AUDIO DMA &amp; NETWORK COMMUNICATIONS</text>
+
+      <g transform="translate(18, 48)">
+        <!-- Task 1: Audio DMA -->
+        <rect x="0" y="0" width="240" height="95" rx="8" fill="#ffffff" stroke="#bfdbfe"/>
+        <rect x="12" y="10" width="56" height="18" rx="3" fill="#2563eb"/>
+        <text x="40" y="23" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">PRIO 22</text>
+        <text x="76" y="24" font-size="12" font-weight="700" fill="#1e3a8a">audio_dma_task</text>
+        <text x="12" y="44" font-size="10" fill="#64748b">I2S DMA Rx/Tx · 16kHz Mono</text>
+        <text x="12" y="60" font-size="10" fill="#64748b">AEC &amp; VAD HW Processing</text>
+        <rect x="12" y="70" width="216" height="16" rx="3" fill="#eff6ff"/>
+        <text x="120" y="82" text-anchor="middle" font-size="9" font-weight="600" fill="#2563eb">Stack: 4 KB · Core Affinity: 0</text>
+
+        <!-- Task 2: Network / TLS -->
+        <rect x="255" y="0" width="244" height="95" rx="8" fill="#ffffff" stroke="#bfdbfe"/>
+        <rect x="12" y="10" width="56" height="18" rx="3" fill="#2563eb"/>
+        <text x="40" y="23" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">PRIO 18</text>
+        <text x="76" y="24" font-size="12" font-weight="700" fill="#1e3a8a">network_task</text>
+        <text x="12" y="44" font-size="10" fill="#64748b">Wi-Fi 4 / BLE 5 Stack</text>
+        <text x="12" y="60" font-size="10" fill="#64748b">WebSocket / TLS 1.3 Opus Stream</text>
+        <rect x="12" y="70" width="220" height="16" rx="3" fill="#eff6ff"/>
+        <text x="122" y="82" text-anchor="middle" font-size="9" font-weight="600" fill="#2563eb">Stack: 8 KB · Core Affinity: 0</text>
+
+        <!-- Memory Buffer in PSRAM -->
+        <rect x="0" y="110" width="500" height="105" rx="8" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5"/>
+        <text x="16" y="28" font-size="12" font-weight="700" fill="#1e40af">Static Memory Buffers in PSRAM (Zero Heap Drift)</text>
+        <text x="16" y="48" font-size="10" fill="#475569">Audio In RingBuffer: 32 KB · Audio Out RingBuffer: 32 KB</text>
+        <text x="16" y="66" font-size="10" fill="#475569">DMA Buffer Descriptors: 8 × 512 B Ping-Pong Buffers</text>
+        <rect x="16" y="76" width="468" height="20" rx="4" fill="#dbeafe"/>
+        <text x="250" y="90" text-anchor="middle" font-size="10" font-weight="700" fill="#1e40af">Budget Invariant: PSRAM Free ≥ 2 MB Post-Boot (ADR Q-3)</text>
+      </g>
+    </g>
+
+    <!-- CORE 1 CONTAINER -->
+    <g transform="translate(565, 0)">
+      <rect width="535" height="280" rx="14" fill="url(#core1Grad)" stroke="#16a34a" stroke-width="2" filter="url(#cardShadow)"/>
+      <path d="M 0 14 Q 0 0 14 0 L 521 0 Q 535 0 535 14 L 535 34 L 0 34 Z" fill="#15803d"/>
+      <text x="20" y="23" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.04em">CORE 1 · VOICE FSM, GATE WALKER &amp; TOKEN LEDGER</text>
+
+      <g transform="translate(18, 48)">
+        <!-- Task 3: Voice FSM -->
+        <rect x="0" y="0" width="240" height="95" rx="8" fill="#ffffff" stroke="#bbf7d0"/>
+        <rect x="12" y="10" width="56" height="18" rx="3" fill="#15803d"/>
+        <text x="40" y="23" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">PRIO 20</text>
+        <text x="76" y="24" font-size="12" font-weight="700" fill="#14532d">voice_fsm_task</text>
+        <text x="12" y="44" font-size="10" fill="#64748b">14 Canonical Dialogue States</text>
+        <text x="12" y="60" font-size="10" fill="#64748b">Barge-in Cutoff Event &lt; 20ms</text>
+        <rect x="12" y="70" width="216" height="16" rx="3" fill="#f0fdf4"/>
+        <text x="120" y="82" text-anchor="middle" font-size="9" font-weight="600" fill="#15803d">Stack: 8 KB · Core Affinity: 1</text>
+
+        <!-- Task 4: ne_walker Core -->
+        <rect x="255" y="0" width="244" height="95" rx="8" fill="#ffffff" stroke="#bbf7d0"/>
+        <rect x="12" y="10" width="56" height="18" rx="3" fill="#15803d"/>
+        <text x="40" y="23" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">PRIO 16</text>
+        <text x="76" y="24" font-size="12" font-weight="700" fill="#14532d">ne_walker_task</text>
+        <text x="12" y="44" font-size="10" fill="#64748b">C99 Binary Tree Walker</text>
+        <text x="12" y="60" font-size="10" fill="#64748b">Zero Heap Alloc · O(N) Flash Walk</text>
+        <rect x="12" y="70" width="220" height="16" rx="3" fill="#f0fdf4"/>
+        <text x="122" y="82" text-anchor="middle" font-size="9" font-weight="600" fill="#15803d">Stack: 4 KB · Core Affinity: 1</text>
+
+        <!-- Token Ledger Structure -->
+        <rect x="0" y="110" width="500" height="105" rx="8" fill="#ffffff" stroke="#4ade80" stroke-width="1.5"/>
+        <text x="16" y="28" font-size="12" font-weight="700" fill="#14532d">ne_ledger &amp; ne_token Subsystem (Static in SRAM)</text>
+        <text x="16" y="48" font-size="10" fill="#475569">Fixed 4 Slots Array · Nonce 128-bit TRNG · Pin Mask (32 pins)</text>
+        <text x="16" y="66" font-size="10" fill="#475569">HAL Guard: ne_token_authorize() strictly required before GPIO set</text>
+        <rect x="16" y="76" width="468" height="20" rx="4" fill="#dcfce7"/>
+        <text x="250" y="90" text-anchor="middle" font-size="10" font-weight="700" fill="#15803d">Budget Invariant: Internal SRAM Free ≥ 120 KB Post-Boot (ADR Q-3)</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- MIDDLE SECTION: FLASH 16MB MEMORY MAP -->
+  <g transform="translate(50, 390)">
+    <rect width="1100" height="120" rx="14" fill="url(#flashGrad)" stroke="#d97706" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <text x="20" y="26" font-size="13" font-weight="700" fill="#92400e" text-transform="uppercase">16 MB SPI Flash Memory Layout (Dual A/B OTA Partitions)</text>
+
+    <!-- Partitions Bar -->
+    <g transform="translate(20, 38)">
+      <!-- nvs -->
+      <rect x="0" y="0" width="50" height="50" rx="4" fill="#fef3c7" stroke="#d97706"/>
+      <text x="25" y="22" text-anchor="middle" font-size="9" font-weight="700" fill="#92400e">NVS</text>
+      <text x="25" y="36" text-anchor="middle" font-size="8" fill="#78350f">24 KB</text>
+
+      <!-- otadata -->
+      <rect x="56" y="0" width="50" height="50" rx="4" fill="#fef3c7" stroke="#d97706"/>
+      <text x="81" y="22" text-anchor="middle" font-size="9" font-weight="700" fill="#92400e">OTA Data</text>
+      <text x="81" y="36" text-anchor="middle" font-size="8" fill="#78350f">8 KB</text>
+
+      <!-- factory -->
+      <rect x="112" y="0" width="220" height="50" rx="4" fill="#fed7aa" stroke="#ea580c"/>
+      <text x="222" y="22" text-anchor="middle" font-size="10" font-weight="700" fill="#9a3412">factory (3.5 MB)</text>
+      <text x="222" y="36" text-anchor="middle" font-size="8" fill="#7c2d12">Offset: 0x020000 · Golden Recovery Image</text>
+
+      <!-- ota_0 -->
+      <rect x="338" y="0" width="220" height="50" rx="4" fill="#bbf7d0" stroke="#16a34a" stroke-width="2"/>
+      <text x="448" y="22" text-anchor="middle" font-size="10" font-weight="700" fill="#166534">ota_0 (3.5 MB) [ACTIVE SLOT]</text>
+      <text x="448" y="36" text-anchor="middle" font-size="8" fill="#14532d">Offset: 0x3A0000 · Const-linked NETR v1 Trees</text>
+
+      <!-- ota_1 -->
+      <rect x="564" y="0" width="220" height="50" rx="4" fill="#e2e8f0" stroke="#64748b"/>
+      <text x="674" y="22" text-anchor="middle" font-size="10" font-weight="700" fill="#334155">ota_1 (3.5 MB) [PASSIVE SLOT]</text>
+      <text x="674" y="36" text-anchor="middle" font-size="8" fill="#475569">Offset: 0x720000 · Signed OTA Staging</text>
+
+      <!-- storage -->
+      <rect x="790" y="0" width="270" height="50" rx="4" fill="#e0e7ff" stroke="#4f46e5"/>
+      <text x="925" y="22" text-anchor="middle" font-size="10" font-weight="700" fill="#3730a3">storage (LittleFS / SPIFFS: ~5 MB)</text>
+      <text x="925" y="36" text-anchor="middle" font-size="8" fill="#312e81">Offset: 0xAA0000 · Local Voice Prompts &amp; NVS Keys</text>
+    </g>
+    <text x="20" y="106" font-size="10" fill="#78350f">Firmware size restriction: `.bin` image $\le 3,670,016$ bytes (3.5 MB limit per slot). Trees compiled as `const uint8_t[]` mapped directly to ROM.</text>
+  </g>
+
+  <!-- BOTTOM SECTION: 5-STAGE BOOT SEQUENCE & SELF-TEST CHECKPOINTS -->
+  <g transform="translate(50, 525)">
+    <rect width="1100" height="165" rx="14" fill="#ffffff" stroke="#e2e8f0" filter="url(#cardShadow)"/>
+    <text x="20" y="26" font-size="13" font-weight="700" fill="#0f172a" text-transform="uppercase">Deterministic 5-Checkpoint Boot Sequence</text>
+
+    <g transform="translate(20, 42)">
+      <!-- Checkpoint 1 -->
+      <rect x="0" y="0" width="195" height="100" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+      <rect x="10" y="8" width="80" height="18" rx="3" fill="#2563eb"/>
+      <text x="50" y="21" text-anchor="middle" font-size="9" font-weight="700" fill="#ffffff">CHECKPOINT 1</text>
+      <text x="10" y="42" font-size="11" font-weight="700" fill="#1e3a8a">Memory Probe</text>
+      <text x="10" y="58" font-size="9" fill="#64748b">Internal SRAM ≥ 120 KB</text>
+      <text x="10" y="72" font-size="9" fill="#64748b">External PSRAM ≥ 2 MB</text>
+      <text x="10" y="88" font-size="9" font-weight="600" fill="#dc2626">HALT IF SHORT</text>
+
+      <!-- Arrow -->
+      <path d="M 200 50 L 214 50" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Checkpoint 2 -->
+      <rect x="218" y="0" width="195" height="100" rx="8" fill="#f0fdf4" stroke="#bbf7d0"/>
+      <rect x="10" y="8" width="80" height="18" rx="3" fill="#16a34a"/>
+      <text x="50" y="21" text-anchor="middle" font-size="9" font-weight="700" fill="#ffffff">CHECKPOINT 2</text>
+      <text x="10" y="42" font-size="11" font-weight="700" fill="#14532d">Gate Self-Test</text>
+      <text x="10" y="58" font-size="9" fill="#64748b">Run `ne_selftest()`</text>
+      <text x="10" y="72" font-size="9" fill="#64748b">Verify Flash CRC32 &amp; Digest</text>
+      <text x="10" y="88" font-size="9" font-weight="600" fill="#dc2626">PANIC IF CRC FAIL</text>
+
+      <!-- Arrow -->
+      <path d="M 418 50 L 432 50" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Checkpoint 3 -->
+      <rect x="436" y="0" width="195" height="100" rx="8" fill="#f0fdf4" stroke="#bbf7d0"/>
+      <rect x="10" y="8" width="80" height="18" rx="3" fill="#16a34a"/>
+      <text x="50" y="21" text-anchor="middle" font-size="9" font-weight="700" fill="#ffffff">CHECKPOINT 3</text>
+      <text x="10" y="42" font-size="11" font-weight="700" fill="#14532d">Trace Replay Test</text>
+      <text x="10" y="58" font-size="9" fill="#64748b">Replay 3 Golden Traces</text>
+      <text x="10" y="72" font-size="9" fill="#64748b">Parity: ALLOW/BLOCK</text>
+      <text x="10" y="88" font-size="9" font-weight="600" fill="#dc2626">ROLLBACK IF MISMATCH</text>
+
+      <!-- Arrow -->
+      <path d="M 636 50 L 650 50" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Checkpoint 4 -->
+      <rect x="654" y="0" width="195" height="100" rx="8" fill="#eff6ff" stroke="#bfdbfe"/>
+      <rect x="10" y="8" width="80" height="18" rx="3" fill="#2563eb"/>
+      <text x="50" y="21" text-anchor="middle" font-size="9" font-weight="700" fill="#ffffff">CHECKPOINT 4</text>
+      <text x="10" y="42" font-size="11" font-weight="700" fill="#1e3a8a">HAL &amp; Peripherals</text>
+      <text x="10" y="58" font-size="9" fill="#64748b">I2S DMA &amp; ES7210/ES8311</text>
+      <text x="10" y="72" font-size="9" fill="#64748b">GPIO Refuse-All Active</text>
+      <text x="10" y="88" font-size="9" font-weight="600" fill="#16a34a">HAL ONLINE</text>
+
+      <!-- Arrow -->
+      <path d="M 854 50 L 868 50" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Checkpoint 5 -->
+      <rect x="872" y="0" width="188" height="100" rx="8" fill="#fefce8" stroke="#fde047"/>
+      <rect x="10" y="8" width="80" height="18" rx="3" fill="#ca8a04"/>
+      <text x="50" y="21" text-anchor="middle" font-size="9" font-weight="700" fill="#ffffff">CHECKPOINT 5</text>
+      <text x="10" y="42" font-size="11" font-weight="700" fill="#854d0e">Confirm OTA Valid</text>
+      <text x="10" y="58" font-size="9" fill="#64748b">mark_app_valid()</text>
+      <text x="10" y="72" font-size="9" fill="#64748b">Cancel Rollback Counter</text>
+      <text x="10" y="88" font-size="9" font-weight="700" fill="#15803d">STEADY STATE IDLE</text>
+    </g>
+  </g>
+
+  <!-- Footer Metadata Bar -->
+  <g transform="translate(50, 710)">
+    <text x="0" y="16" font-size="11" font-weight="600" fill="#64748b">NeuroEdge ESP32-S3 Firmware Blueprint · Boot failure triggers automatic hardware rollback to factory partition · No heap allocation during steady-state</text>
+    <text x="1100" y="16" text-anchor="end" font-size="11" font-weight="500" fill="#94a3b8">Doc Ref: docs/architecture/vi/04-component-device-c4l3.md</text>
+  </g>
+</svg>

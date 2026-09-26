@@ -1,24 +1,236 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" font-family="sans-serif">
-<rect width="960" height="520" fill="#ffffff"/>
-<text x="480" y="30" text-anchor="middle" font-size="20" font-weight="bold">E-01 · NeuroEdge System Landscape (C4 L1)</text>
-<g font-size="13">
-<rect x="30" y="90" width="170" height="70" rx="10" fill="#e8f4ff" stroke="#1a73e8"/><text x="115" y="118" text-anchor="middle" font-weight="bold">Maker / Dev</text><text x="115" y="138" text-anchor="middle">U1 · CLI, sim UI</text>
-<rect x="30" y="180" width="170" height="70" rx="10" fill="#e8f4ff" stroke="#1a73e8"/><text x="115" y="208" text-anchor="middle" font-weight="bold">Embed team</text><text x="115" y="228" text-anchor="middle">U2 · build, verify</text>
-<rect x="30" y="270" width="170" height="70" rx="10" fill="#e8f4ff" stroke="#1a73e8"/><text x="115" y="298" text-anchor="middle" font-weight="bold">Fleet Ops</text><text x="115" y="318" text-anchor="middle">U3 · OTA, traces</text>
-<rect x="30" y="360" width="170" height="70" rx="10" fill="#e8f4ff" stroke="#1a73e8"/><text x="115" y="388" text-anchor="middle" font-weight="bold">Safety / QA · OEM</text><text x="115" y="408" text-anchor="middle">U4, U5 · gates, HAL</text>
-<rect x="280" y="150" width="380" height="220" rx="14" fill="#f5f9ff" stroke="#1a73e8" stroke-width="2"/><text x="470" y="178" text-anchor="middle" font-size="16" font-weight="bold">NeuroEdge</text>
-<text x="470" y="200" text-anchor="middle">Physical AI, under contract</text>
-<rect x="300" y="220" width="340" height="46" rx="8" fill="#dbeafe" stroke="#1a73e8"/><text x="470" y="248" text-anchor="middle">Gate-checked actions · 5 HAL primitives</text>
-<rect x="300" y="276" width="160" height="46" rx="8" fill="#dbeafe" stroke="#1a73e8"/><text x="380" y="304" text-anchor="middle">Action CI</text>
-<rect x="470" y="276" width="160" height="46" rx="8" fill="#dbeafe" stroke="#1a73e8"/><text x="550" y="304" text-anchor="middle">Trace replay</text>
-<rect x="300" y="330" width="340" height="26" rx="8" fill="#eef2ff" stroke="#888"/><text x="470" y="348" text-anchor="middle" font-size="12">sim · linux · esp32s3 (tier 1)</text>
-<rect x="730" y="90" width="200" height="70" rx="10" fill="#fff4e5" stroke="#e8930c"/><text x="830" y="118" text-anchor="middle" font-weight="bold">AI Providers</text><text x="830" y="138" text-anchor="middle">LLM · STT · TTS</text>
-<rect x="730" y="180" width="200" height="70" rx="10" fill="#fff4e5" stroke="#e8930c"/><text x="830" y="208" text-anchor="middle" font-weight="bold">MCP clients</text><text x="830" y="228" text-anchor="middle">Claude Desktop…</text>
-<rect x="730" y="270" width="200" height="70" rx="10" fill="#f3f3f3" stroke="#888" stroke-dasharray="6 4"/><text x="830" y="298" text-anchor="middle" font-weight="bold">Fleet OS · Registry</text><text x="830" y="318" text-anchor="middle">planned (I9–I10)</text>
-<rect x="730" y="360" width="200" height="70" rx="10" fill="#f3f3f3" stroke="#888" stroke-dasharray="6 4"/><text x="830" y="388" text-anchor="middle" font-weight="bold">SchemaStore</text><text x="830" y="408" text-anchor="middle">public schemas</text>
-<g stroke="#555" marker-end="url(#a)"><defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#555"/></marker></defs>
-<line x1="200" y1="125" x2="278" y2="200"/><line x1="200" y1="215" x2="278" y2="240"/><line x1="200" y1="305" x2="278" y2="290"/><line x1="200" y1="395" x2="278" y2="330"/>
-<line x1="660" y1="200" x2="728" y2="125"/><line x1="660" y1="250" x2="728" y2="215"/><line x1="660" y1="300" x2="728" y2="305" stroke-dasharray="6 4"/><line x1="660" y1="330" x2="728" y2="395" stroke-dasharray="6 4"/>
-</g>
-<text x="480" y="480" text-anchor="middle" font-size="12" fill="#555">No contract, no action · every physical effect passes a versioned gate · Source: E-01.excalidraw</text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+    <linearGradient id="coreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eff6ff"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+    <linearGradient id="actorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="extGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff7ed"/>
+      <stop offset="100%" stop-color="#ffedd5"/>
+    </linearGradient>
+    <linearGradient id="gateGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef2f2"/>
+      <stop offset="100%" stop-color="#fee2e2"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.06"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.04"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b"/>
+    </marker>
+    <marker id="arrowPrimary" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="1200" height="700" fill="url(#bgGrad)"/>
+  <rect x="1" y="1" width="1198" height="698" rx="8" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+
+  <!-- Header Header -->
+  <g transform="translate(60, 40)">
+    <rect x="0" y="0" width="1080" height="64" rx="12" fill="#ffffff" stroke="#e2e8f0" filter="url(#cardShadow)"/>
+    <text x="24" y="38" font-size="20" font-weight="700" fill="#0f172a" letter-spacing="-0.02em">E-01 · NeuroEdge System Context &amp; Trust Boundaries (C4 L1)</text>
+    <rect x="880" y="18" width="176" height="28" rx="14" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="968" y="36" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">ISO/IEC/IEEE 42010</text>
+  </g>
+
+  <!-- LEFT: User Personas -->
+  <g transform="translate(60, 130)">
+    <rect x="0" y="0" width="220" height="510" rx="16" fill="#ffffff" stroke="#e2e8f0" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="220" height="42" rx="16" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="110" y="26" text-anchor="middle" font-size="13" font-weight="700" fill="#334155" text-transform="uppercase" letter-spacing="0.05em">User Personas</text>
+
+    <!-- U1: End User / Maker -->
+    <g transform="translate(15, 60)">
+      <rect width="190" height="85" rx="10" fill="url(#actorGrad)" filter="url(#cardShadow)"/>
+      <text x="16" y="28" font-size="14" font-weight="700" fill="#ffffff">U1 · Maker / End User</text>
+      <text x="16" y="48" font-size="11" fill="#94a3b8">Conversational control &amp; sim UI</text>
+      <rect x="16" y="58" width="158" height="18" rx="4" fill="#334155"/>
+      <text x="95" y="71" text-anchor="middle" font-size="10" font-weight="600" fill="#38bdf8">CLI · Audio · Web REPL</text>
+    </g>
+
+    <!-- U2: Embedded Team -->
+    <g transform="translate(15, 160)">
+      <rect width="190" height="85" rx="10" fill="url(#actorGrad)" filter="url(#cardShadow)"/>
+      <text x="16" y="28" font-size="14" font-weight="700" fill="#ffffff">U2 · Embedded Eng</text>
+      <text x="16" y="48" font-size="11" fill="#94a3b8">Build, flash, QEMU &amp; verify</text>
+      <rect x="16" y="58" width="158" height="18" rx="4" fill="#334155"/>
+      <text x="95" y="71" text-anchor="middle" font-size="10" font-weight="600" fill="#38bdf8">ESP-IDF · C99 · JTAG</text>
+    </g>
+
+    <!-- U3: Fleet Operator -->
+    <g transform="translate(15, 260)">
+      <rect width="190" height="85" rx="10" fill="url(#actorGrad)" filter="url(#cardShadow)"/>
+      <text x="16" y="28" font-size="14" font-weight="700" fill="#ffffff">U3 · Fleet Operator</text>
+      <text x="16" y="48" font-size="11" fill="#94a3b8">Canary OTA, audit traces, keys</text>
+      <rect x="16" y="58" width="158" height="18" rx="4" fill="#334155"/>
+      <text x="95" y="71" text-anchor="middle" font-size="10" font-weight="600" fill="#38bdf8">Fleet OS · MQTT · Hawkbit</text>
+    </g>
+
+    <!-- U4/U5: Safety Auditor & OEM -->
+    <g transform="translate(15, 360)">
+      <rect width="190" height="120" rx="10" fill="url(#actorGrad)" filter="url(#cardShadow)"/>
+      <text x="16" y="26" font-size="13" font-weight="700" fill="#ffffff">U4 · Safety Auditor</text>
+      <text x="16" y="44" font-size="11" fill="#94a3b8">Golden diff &amp; policy reviews</text>
+      <line x1="16" y1="56" x2="174" y2="56" stroke="#334155" stroke-width="1"/>
+      <text x="16" y="74" font-size="13" font-weight="700" fill="#ffffff">U5 · OEM Partner</text>
+      <text x="16" y="92" font-size="11" fill="#94a3b8">HAL 5+3+1 custom ports</text>
+      <rect x="16" y="100" width="158" height="14" rx="3" fill="#334155"/>
+      <text x="95" y="110" text-anchor="middle" font-size="9" font-weight="600" fill="#38bdf8">board.toml · ne_hal.h</text>
+    </g>
+  </g>
+
+  <!-- CENTER: Trust Boundary & NeuroEdge Platform Core -->
+  <g transform="translate(320, 130)">
+    <!-- Trust Boundary Outer Container -->
+    <rect x="0" y="0" width="540" height="510" rx="16" fill="#ffffff" stroke="#2563eb" stroke-width="2" filter="url(#cardShadow)"/>
+    
+    <!-- Boundary Banner -->
+    <path d="M 0 16 Q 0 0 16 0 L 524 0 Q 540 0 540 16 L 540 44 L 0 44 Z" fill="#2563eb"/>
+    <text x="270" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff" letter-spacing="0.03em">TRUST BOUNDARY: NEUROEDGE EXECUTION CONTEXT</text>
+
+    <!-- Sub-Zone 1: DMZ Ingestion & Routing -->
+    <g transform="translate(24, 60)">
+      <rect width="492" height="110" rx="12" fill="url(#coreGrad)" stroke="#93c5fd" stroke-width="1.5"/>
+      <text x="18" y="24" font-size="12" font-weight="700" fill="#1e40af" text-transform="uppercase">Zone 1 · Input Sanitation &amp; Dual Cognitive Routing (DMZ)</text>
+      
+      <rect x="18" y="38" width="140" height="56" rx="8" fill="#ffffff" stroke="#bfdbfe"/>
+      <text x="88" y="60" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Voice FSM / VAD</text>
+      <text x="88" y="78" text-anchor="middle" font-size="10" fill="#64748b">Barge-in ≤ 20ms</text>
+
+      <rect x="176" y="38" width="140" height="56" rx="8" fill="#ffffff" stroke="#bfdbfe"/>
+      <text x="246" y="60" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Dual Router</text>
+      <text x="246" y="78" text-anchor="middle" font-size="10" fill="#64748b">S1 Trie vs S2 Cloud</text>
+
+      <rect x="334" y="38" width="140" height="56" rx="8" fill="#ffffff" stroke="#bfdbfe"/>
+      <text x="404" y="60" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a8a">Tool Dispatcher</text>
+      <text x="404" y="78" text-anchor="middle" font-size="10" fill="#64748b">Call Source Injection</text>
+    </g>
+
+    <!-- Sub-Zone 2: Deterministic Safety Spine (The Inviolable Contract) -->
+    <g transform="translate(24, 185)">
+      <rect width="492" height="160" rx="12" fill="url(#gateGrad)" stroke="#fca5a5" stroke-width="2"/>
+      <text x="18" y="24" font-size="12" font-weight="700" fill="#991b1b" text-transform="uppercase">Zone 2 · Inviolable Safety Gate Spine (Fail-Closed Barrier)</text>
+
+      <rect x="18" y="40" width="216" height="100" rx="8" fill="#ffffff" stroke="#fecaca"/>
+      <text x="126" y="64" text-anchor="middle" font-size="13" font-weight="700" fill="#991b1b">Binary Decision Tree</text>
+      <text x="126" y="82" text-anchor="middle" font-size="11" fill="#7f1d1d">NETR v1 (RFC-0003)</text>
+      <text x="126" y="100" text-anchor="middle" font-size="10" fill="#64748b">Flash Memory Mapped</text>
+      <text x="126" y="118" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">Zero Heap · Bitmask O(1)</text>
+
+      <!-- Arrow -->
+      <path d="M 238 90 L 254 90" stroke="#dc2626" stroke-width="2" marker-end="url(#arrow)"/>
+
+      <rect x="258" y="40" width="216" height="100" rx="8" fill="#ffffff" stroke="#fecaca"/>
+      <text x="366" y="64" text-anchor="middle" font-size="13" font-weight="700" fill="#991b1b">Ephemeral TokenLedger</text>
+      <text x="366" y="82" text-anchor="middle" font-size="11" fill="#7f1d1d">4 Slots · Single Use / Pin</text>
+      <text x="366" y="100" text-anchor="middle" font-size="10" fill="#64748b">TTL = p95 × 3 Saturation</text>
+      <text x="366" y="118" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">No Token = No Actuation</text>
+    </g>
+
+    <!-- Sub-Zone 3: Hardware Abstraction & Actuator Drivers -->
+    <g transform="translate(24, 360)">
+      <rect width="492" height="125" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+      <text x="18" y="22" font-size="12" font-weight="700" fill="#334155" text-transform="uppercase">Zone 3 · Hardware Abstraction Layer (HAL 5 Primitives)</text>
+
+      <g transform="translate(12, 36)">
+        <rect x="0" y="0" width="86" height="74" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+        <text x="43" y="24" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a">audio.in</text>
+        <text x="43" y="42" text-anchor="middle" font-size="9" fill="#64748b">16kHz PCM</text>
+        <text x="43" y="58" text-anchor="middle" font-size="8" font-weight="600" fill="#16a34a">AEC + VAD</text>
+
+        <rect x="94" y="0" width="86" height="74" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+        <text x="137" y="24" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a">audio.out</text>
+        <text x="137" y="42" text-anchor="middle" font-size="9" fill="#64748b">I2S DMA</text>
+        <text x="137" y="58" text-anchor="middle" font-size="8" font-weight="600" fill="#16a34a">Opus / ES8311</text>
+
+        <rect x="188" y="0" width="92" height="74" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="234" y="24" text-anchor="middle" font-size="10" font-weight="700" fill="#1d4ed8">digital.out</text>
+        <text x="234" y="42" text-anchor="middle" font-size="9" fill="#64748b">Relay / Motor</text>
+        <text x="234" y="58" text-anchor="middle" font-size="8" font-weight="700" fill="#dc2626">TOKEN REQD</text>
+
+        <rect x="288" y="0" width="86" height="74" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+        <text x="331" y="24" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a">sensor.read</text>
+        <text x="331" y="42" text-anchor="middle" font-size="9" fill="#64748b">I2C / SPI</text>
+        <text x="331" y="58" text-anchor="middle" font-size="8" font-weight="600" fill="#16a34a">hwmon / BSP</text>
+
+        <rect x="382" y="0" width="86" height="74" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+        <text x="425" y="24" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a">display</text>
+        <text x="425" y="42" text-anchor="middle" font-size="9" fill="#64748b">SPI ST7789</text>
+        <text x="425" y="58" text-anchor="middle" font-size="8" font-weight="600" fill="#16a34a">320x240 RGB</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- RIGHT: External Systems (Untrusted & External Services) -->
+  <g transform="translate(900, 130)">
+    <rect x="0" y="0" width="240" height="510" rx="16" fill="#ffffff" stroke="#e2e8f0" filter="url(#cardShadow)"/>
+    <rect x="0" y="0" width="240" height="42" rx="16" fill="#fff7ed" stroke="#fed7aa"/>
+    <text x="120" y="26" text-anchor="middle" font-size="13" font-weight="700" fill="#9a3412" text-transform="uppercase" letter-spacing="0.05em">External Systems</text>
+
+    <!-- AI Providers -->
+    <g transform="translate(15, 60)">
+      <rect width="210" height="90" rx="10" fill="url(#extGrad)" stroke="#fb923c" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <text x="16" y="26" font-size="13" font-weight="700" fill="#9a3412">AI Providers (System 2)</text>
+      <text x="16" y="44" font-size="11" fill="#7c2d12">OpenAI · Anthropic · Local vLLM</text>
+      <rect x="16" y="58" width="178" height="20" rx="4" fill="#ffedd5" stroke="#fed7aa"/>
+      <text x="105" y="72" text-anchor="middle" font-size="10" font-weight="600" fill="#c2410c">HTTPS/TLS 1.3 · WebSocket</text>
+    </g>
+
+    <!-- MCP External Servers -->
+    <g transform="translate(15, 165)">
+      <rect width="210" height="90" rx="10" fill="url(#extGrad)" stroke="#fb923c" stroke-width="1.5" filter="url(#cardShadow)"/>
+      <text x="16" y="26" font-size="13" font-weight="700" fill="#9a3412">MCP Tool Servers</text>
+      <text x="16" y="44" font-size="11" fill="#7c2d12">News, Weather, Knowledge RAG</text>
+      <rect x="16" y="58" width="178" height="20" rx="4" fill="#ffedd5" stroke="#fed7aa"/>
+      <text x="105" y="72" text-anchor="middle" font-size="10" font-weight="600" fill="#c2410c">Stdio IPC (Advisory Only)</text>
+    </g>
+
+    <!-- Fleet OS & Registry -->
+    <g transform="translate(15, 270)">
+      <rect width="210" height="95" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-dasharray="5 3"/>
+      <text x="16" y="26" font-size="13" font-weight="700" fill="#334155">Fleet OS &amp; Registry</text>
+      <text x="16" y="44" font-size="11" fill="#64748b">Canary OTA · Trace Vault · OCI</text>
+      <text x="16" y="60" font-size="10" fill="#94a3b8">[Planned Increments I9–I10]</text>
+      <rect x="16" y="68" width="178" height="18" rx="4" fill="#e2e8f0"/>
+      <text x="105" y="81" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">MQTT/mTLS · ORAS</text>
+    </g>
+
+    <!-- Physical Hardware Pins / Actuators -->
+    <g transform="translate(15, 380)">
+      <rect width="210" height="100" rx="10" fill="#f0fdf4" stroke="#4ade80" stroke-width="1.5"/>
+      <text x="16" y="26" font-size="13" font-weight="700" fill="#166534">Physical World / Target</text>
+      <text x="16" y="44" font-size="11" fill="#15803d">Relays, Solenoids, Motors, LEDs</text>
+      <text x="16" y="60" font-size="10" fill="#64748b">GPIO, ADC, I2C, SPI Bus</text>
+      <rect x="16" y="70" width="178" height="20" rx="4" fill="#dcfce7" stroke="#bbf7d0"/>
+      <text x="105" y="84" text-anchor="middle" font-size="10" font-weight="700" fill="#166534">Controlled via Token Only</text>
+    </g>
+  </g>
+
+  <!-- Connective Arrows & Data Flows -->
+  <!-- Users to Core -->
+  <path d="M 280 230 L 320 230" stroke="#2563eb" stroke-width="2" marker-end="url(#arrowPrimary)"/>
+  <path d="M 280 330 L 320 330" stroke="#2563eb" stroke-width="2" marker-end="url(#arrowPrimary)"/>
+  <path d="M 280 430 L 320 430" stroke="#2563eb" stroke-width="2" marker-end="url(#arrowPrimary)"/>
+
+  <!-- Core to Externals -->
+  <path d="M 860 215 L 900 215" stroke="#f97316" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 860 320 L 900 320" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+  <path d="M 860 515 L 900 515" stroke="#16a34a" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Footer Metadata Bar -->
+  <g transform="translate(60, 655)">
+    <text x="0" y="16" font-size="11" font-weight="600" fill="#64748b">NeuroEdge Architecture · Invariant P-1 (Fail-Closed Default) · Invariant P-2 (Target Equivalence) · Invariant P-3 (Least Privilege Token)</text>
+    <text x="1080" y="16" text-anchor="end" font-size="11" font-weight="500" fill="#94a3b8">Doc Ref: docs/architecture/vi/01-context-c4l1.md</text>
+  </g>
+</svg>

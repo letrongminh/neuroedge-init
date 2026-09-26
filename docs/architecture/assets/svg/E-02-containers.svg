@@ -1,29 +1,243 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" font-family="sans-serif">
-<rect width="960" height="520" fill="#ffffff"/>
-<text x="480" y="30" text-anchor="middle" font-size="20" font-weight="bold">E-02 · NeuroEdge Containers (C4 L2)</text>
-<g font-size="13">
-<rect x="30" y="80" width="280" height="150" rx="12" fill="#e8f4ff" stroke="#1a73e8" stroke-width="2"/><text x="170" y="106" text-anchor="middle" font-weight="bold">Host Python runtime</text><text x="170" y="126" text-anchor="middle">neuroedge package</text>
-<rect x="50" y="140" width="120" height="34" rx="7" fill="#dbeafe" stroke="#1a73e8"/><text x="110" y="162" text-anchor="middle">engine</text>
-<rect x="180" y="140" width="120" height="34" rx="7" fill="#dbeafe" stroke="#1a73e8"/><text x="240" y="162" text-anchor="middle">actions</text>
-<rect x="50" y="182" width="120" height="34" rx="7" fill="#dbeafe" stroke="#1a73e8"/><text x="110" y="204" text-anchor="middle">hal/hal</text>
-<rect x="180" y="182" width="120" height="34" rx="7" fill="#dbeafe" stroke="#1a73e8"/><text x="240" y="204" text-anchor="middle">models</text>
-<rect x="350" y="80" width="280" height="150" rx="12" fill="#e9f9ee" stroke="#188038" stroke-width="2"/><text x="490" y="106" text-anchor="middle" font-weight="bold">ESP32-S3 firmware</text><text x="490" y="126" text-anchor="middle">ESP-IDF · C/C++</text>
-<rect x="370" y="140" width="120" height="34" rx="7" fill="#ceead6" stroke="#188038"/><text x="430" y="162" text-anchor="middle">ne_gate</text>
-<rect x="500" y="140" width="120" height="34" rx="7" fill="#ceead6" stroke="#188038"/><text x="560" y="162" text-anchor="middle">ne_token</text>
-<rect x="370" y="182" width="120" height="34" rx="7" fill="#ceead6" stroke="#188038"/><text x="430" y="204" text-anchor="middle">ne_trace</text>
-<rect x="500" y="182" width="120" height="34" rx="7" fill="#ceead6" stroke="#188038"/><text x="560" y="204" text-anchor="middle">main app</text>
-<rect x="670" y="80" width="260" height="150" rx="12" fill="#fff4e5" stroke="#e8930c" stroke-width="2"/><text x="800" y="106" text-anchor="middle" font-weight="bold">CLI + Action CI</text><text x="800" y="126" text-anchor="middle">Typer · pytest</text>
-<rect x="690" y="140" width="220" height="30" rx="7" fill="#feefc3" stroke="#e8930c"/><text x="800" y="160" text-anchor="middle">run · build · verify · replay</text>
-<rect x="690" y="178" width="220" height="30" rx="7" fill="#feefc3" stroke="#e8930c"/><text x="800" y="198" text-anchor="middle">record · trace view · gate lint</text>
-<rect x="30" y="270" width="440" height="130" rx="12" fill="#f3f3f3" stroke="#888" stroke-dasharray="6 4"/><text x="250" y="296" text-anchor="middle" font-weight="bold">Fleet OS + Registry (planned · I9–I10)</text>
-<text x="250" y="318" text-anchor="middle">OTA canary · trace vault · gate registry (ORAS)</text>
-<text x="250" y="340" text-anchor="middle">metering (OpenMeter) · provisioning</text>
-<text x="250" y="362" text-anchor="middle" font-size="12">talks to devices via MQTT/TLS · mTLS per device</text>
-<rect x="510" y="270" width="420" height="130" rx="12" fill="#f3f3f3" stroke="#888" stroke-dasharray="6 4"/><text x="720" y="296" text-anchor="middle" font-weight="bold">Extensions (planned)</text>
-<text x="720" y="318" text-anchor="middle">NeuroBrain I12 · vision I15–17 · robot I14</text>
-<text x="720" y="340" text-anchor="middle">community HAL ports (tier 3) · jetson (tier 2)</text>
-<g stroke="#555"><line x1="310" y1="155" x2="348" y2="155"/><line x1="630" y1="155" x2="668" y2="155"/>
-<line x1="170" y1="230" x2="170" y2="268" stroke-dasharray="6 4"/><line x1="800" y1="230" x2="800" y2="268" stroke-dasharray="6 4"/>
-<line x1="490" y1="230" x2="490" y2="268" stroke-dasharray="6 4"/></g>
-<text x="480" y="450" text-anchor="middle" font-size="12" fill="#555">Solid = done (I0–I4) · dashed = planned · wire: WebSocket/Opus (Wi-Fi) · UART NE1 (serial) · Source: E-02.excalidraw</text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" width="1200" height="720" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+    <linearGradient id="pyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#eff6ff"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+    <linearGradient id="mcuGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0fdf4"/>
+      <stop offset="100%" stop-color="#dcfce7"/>
+    </linearGradient>
+    <linearGradient id="cliGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="100%" stop-color="#fef3c7"/>
+    </linearGradient>
+    <linearGradient id="fleetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#faf5ff"/>
+      <stop offset="100%" stop-color="#f3e8ff"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.06"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.04"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#16a34a"/>
+    </marker>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="1200" height="720" fill="url(#bgGrad)"/>
+  <rect x="1" y="1" width="1198" height="718" rx="8" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+
+  <!-- Header Header -->
+  <g transform="translate(50, 30)">
+    <rect x="0" y="0" width="1100" height="60" rx="12" fill="#ffffff" stroke="#e2e8f0" filter="url(#cardShadow)"/>
+    <text x="24" y="36" font-size="20" font-weight="700" fill="#0f172a" letter-spacing="-0.02em">E-02 · NeuroEdge Container Runtime Architecture (C4 L2)</text>
+    <rect x="850" y="16" width="224" height="28" rx="14" fill="#f1f5f9" stroke="#cbd5e1"/>
+    <text x="962" y="34" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">IMPLEMENTED VS PLANNED</text>
+  </g>
+
+  <!-- ROW 1: IMPLEMENTED CONTAINERS (I0–I4) -->
+  <g transform="translate(50, 110)">
+    <!-- Boundary Box: Implemented Containers -->
+    <rect x="0" y="0" width="1100" height="280" rx="16" fill="#ffffff" stroke="#e2e8f0" filter="url(#cardShadow)"/>
+    <path d="M 0 16 Q 0 0 16 0 L 1084 0 Q 1100 0 1100 16 L 1100 36 L 0 36 Z" fill="#0f172a"/>
+    <text x="24" y="24" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.05em">CORE IMPLEMENTED RUNTIME CONTAINERS · AS-IS (I0–I4)</text>
+
+    <!-- Container 1: Host Python Runtime -->
+    <g transform="translate(20, 50)">
+      <rect width="330" height="210" rx="12" fill="url(#pyGrad)" stroke="#3b82f6" stroke-width="1.5"/>
+      <rect x="16" y="14" width="64" height="20" rx="4" fill="#2563eb"/>
+      <text x="48" y="28" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">TIER 1</text>
+      <text x="88" y="29" font-size="14" font-weight="700" fill="#1e3a8a">Host Python Runtime</text>
+      <text x="16" y="48" font-size="11" fill="#475569">Package `neuroedge` · Python 3.11+ (Linux/macOS)</text>
+
+      <!-- Submodules -->
+      <g transform="translate(16, 60)">
+        <rect x="0" y="0" width="142" height="40" rx="6" fill="#ffffff" stroke="#bfdbfe"/>
+        <text x="71" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">engine/</text>
+        <text x="71" y="32" text-anchor="middle" font-size="9" fill="#64748b">Tree walk · Gate merge</text>
+
+        <rect x="156" y="0" width="142" height="40" rx="6" fill="#ffffff" stroke="#bfdbfe"/>
+        <text x="227" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">actions/</text>
+        <text x="227" y="32" text-anchor="middle" font-size="9" fill="#64748b">c.do() · TokenLedger</text>
+
+        <rect x="0" y="48" width="142" height="40" rx="6" fill="#ffffff" stroke="#bfdbfe"/>
+        <text x="71" y="68" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">hal/ (sim · linux)</text>
+        <text x="71" y="80" text-anchor="middle" font-size="9" fill="#64748b">gpiod · hwmon · mock</text>
+
+        <rect x="156" y="48" width="142" height="40" rx="6" fill="#ffffff" stroke="#bfdbfe"/>
+        <text x="227" y="68" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">models/ &amp; voice/</text>
+        <text x="227" y="80" text-anchor="middle" font-size="9" fill="#64748b">Voice FSM · LiteLLM</text>
+
+        <rect x="0" y="96" width="298" height="34" rx="6" fill="#ffffff" stroke="#bfdbfe"/>
+        <text x="149" y="114" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">testing/ (Action CI &amp; Golden Diff)</text>
+        <text x="149" y="125" text-anchor="middle" font-size="9" fill="#64748b">Record · Replay · Regression Detection</text>
+      </g>
+    </g>
+
+    <!-- Container 2: ESP32-S3 Firmware Runtime -->
+    <g transform="translate(385, 50)">
+      <rect width="330" height="210" rx="12" fill="url(#mcuGrad)" stroke="#16a34a" stroke-width="1.5"/>
+      <rect x="16" y="14" width="64" height="20" rx="4" fill="#16a34a"/>
+      <text x="48" y="28" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">TIER 1</text>
+      <text x="88" y="29" font-size="14" font-weight="700" fill="#14532d">ESP32-S3 Firmware</text>
+      <text x="16" y="48" font-size="11" fill="#475569">ESP-IDF v5.1+ · C99 Pure · Zero-Heap Walker</text>
+
+      <!-- Submodules -->
+      <g transform="translate(16, 60)">
+        <rect x="0" y="0" width="142" height="40" rx="6" fill="#ffffff" stroke="#bbf7d0"/>
+        <text x="71" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#166534">ne_gate (C99)</text>
+        <text x="71" y="32" text-anchor="middle" font-size="9" fill="#64748b">ne_tree_load / decide</text>
+
+        <rect x="156" y="0" width="142" height="40" rx="6" fill="#ffffff" stroke="#bbf7d0"/>
+        <text x="227" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#166534">ne_token (C99)</text>
+        <text x="227" y="32" text-anchor="middle" font-size="9" fill="#64748b">Static 4 slots · TTL</text>
+
+        <rect x="0" y="48" width="142" height="40" rx="6" fill="#ffffff" stroke="#bbf7d0"/>
+        <text x="71" y="68" text-anchor="middle" font-size="11" font-weight="700" fill="#166534">ne_trace (C99)</text>
+        <text x="71" y="80" text-anchor="middle" font-size="9" fill="#64748b">NE1 UART stream</text>
+
+        <rect x="156" y="48" width="142" height="40" rx="6" fill="#ffffff" stroke="#bbf7d0"/>
+        <text x="227" y="68" text-anchor="middle" font-size="11" font-weight="700" fill="#166534">main.c &amp; Core 0/1</text>
+        <text x="227" y="80" text-anchor="middle" font-size="9" fill="#64748b">FreeRTOS Tasks</text>
+
+        <rect x="0" y="96" width="298" height="34" rx="6" fill="#ffffff" stroke="#bbf7d0"/>
+        <text x="149" y="114" text-anchor="middle" font-size="11" font-weight="700" fill="#166534">Flash ROM (NETR v1 const blob)</text>
+        <text x="149" y="125" text-anchor="middle" font-size="9" fill="#64748b">A/B OTA Partitioning (3.5MB each)</text>
+      </g>
+    </g>
+
+    <!-- Container 3: CLI & Action CI Runner -->
+    <g transform="translate(750, 50)">
+      <rect width="330" height="210" rx="12" fill="url(#cliGrad)" stroke="#d97706" stroke-width="1.5"/>
+      <rect x="16" y="14" width="64" height="20" rx="4" fill="#d97706"/>
+      <text x="48" y="28" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">TOOLS</text>
+      <text x="88" y="29" font-size="14" font-weight="700" fill="#92400e">CLI &amp; Action CI</text>
+      <text x="16" y="48" font-size="11" fill="#475569">Typer CLI · Test Harness · Trace Analyzer</text>
+
+      <!-- Submodules -->
+      <g transform="translate(16, 60)">
+        <rect x="0" y="0" width="298" height="36" rx="6" fill="#ffffff" stroke="#fde68a"/>
+        <text x="149" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="#92400e">CLI Commands</text>
+        <text x="149" y="30" text-anchor="middle" font-size="9" fill="#64748b">run · build · verify · replay · record · gate lint</text>
+
+        <rect x="0" y="44" width="298" height="36" rx="6" fill="#ffffff" stroke="#fde68a"/>
+        <text x="149" y="62" text-anchor="middle" font-size="11" font-weight="700" fill="#92400e">Differential Golden Test Suite</text>
+        <text x="149" y="74" text-anchor="middle" font-size="9" fill="#64748b">pytest · deepdiff · NE4002 Regression Detector</text>
+
+        <rect x="0" y="88" width="298" height="42" rx="6" fill="#ffffff" stroke="#fde68a"/>
+        <text x="149" y="106" text-anchor="middle" font-size="11" font-weight="700" fill="#92400e">UART Trace Telemetry Collector</text>
+        <text x="149" y="120" text-anchor="middle" font-size="9" fill="#64748b">QEMU / Dev-kit serial stream parser (115200bps)</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ROW 2: PLANNED CONTAINERS (I9–I18) -->
+  <g transform="translate(50, 415)">
+    <rect x="0" y="0" width="1100" height="255" rx="16" fill="#ffffff" stroke="#cbd5e1" stroke-dasharray="6 4" filter="url(#cardShadow)"/>
+    <path d="M 0 16 Q 0 0 16 0 L 1084 0 Q 1100 0 1100 16 L 1100 36 L 0 36 Z" fill="#475569"/>
+    <text x="24" y="24" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.05em">PLANNED EXTENSIONS &amp; FLEET ECOSYSTEM CONTAINERS (I9–I18)</text>
+
+    <!-- Container 4: Fleet OS & Trace Vault -->
+    <g transform="translate(20, 50)">
+      <rect width="330" height="185" rx="12" fill="url(#fleetGrad)" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <rect x="16" y="14" width="70" height="20" rx="4" fill="#9334e6"/>
+      <text x="51" y="28" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">I9 FLEET</text>
+      <text x="94" y="29" font-size="14" font-weight="700" fill="#6b21a8">Fleet OS &amp; Vault</text>
+      <text x="16" y="48" font-size="11" fill="#475569">Centralized Management &amp; Observability</text>
+
+      <g transform="translate(16, 60)">
+        <rect x="0" y="0" width="298" height="32" rx="5" fill="#ffffff" stroke="#e9d5ff"/>
+        <text x="149" y="17" text-anchor="middle" font-size="10" font-weight="700" fill="#7e22ce">Hawkbit Canary OTA Coordinator</text>
+        <text x="149" y="27" text-anchor="middle" font-size="8" fill="#64748b">Automated 1% -> 10% -> 100% Rollouts</text>
+
+        <rect x="0" y="38" width="144" height="36" rx="5" fill="#ffffff" stroke="#e9d5ff"/>
+        <text x="72" y="54" text-anchor="middle" font-size="10" font-weight="700" fill="#7e22ce">MQTT Broker</text>
+        <text x="72" y="66" text-anchor="middle" font-size="8" fill="#64748b">mTLS per-device</text>
+
+        <rect x="154" y="38" width="144" height="36" rx="5" fill="#ffffff" stroke="#e9d5ff"/>
+        <text x="226" y="54" text-anchor="middle" font-size="10" font-weight="700" fill="#7e22ce">Trace Vault</text>
+        <text x="226" y="66" text-anchor="middle" font-size="8" fill="#64748b">3-Year Storage</text>
+
+        <rect x="0" y="80" width="298" height="32" rx="5" fill="#ffffff" stroke="#e9d5ff"/>
+        <text x="149" y="97" text-anchor="middle" font-size="10" font-weight="700" fill="#7e22ce">OpenMeter &amp; Credential Vault</text>
+        <text x="149" y="107" text-anchor="middle" font-size="8" fill="#64748b">LLM Token Metering &amp; Provisioning</text>
+      </g>
+    </g>
+
+    <!-- Container 5: Gate Registry -->
+    <g transform="translate(385, 50)">
+      <rect width="330" height="185" rx="12" fill="#f8fafc" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <rect x="16" y="14" width="70" height="20" rx="4" fill="#475569"/>
+      <text x="51" y="28" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">I10 REG</text>
+      <text x="94" y="29" font-size="14" font-weight="700" fill="#1e293b">Gate Registry</text>
+      <text x="16" y="48" font-size="11" fill="#475569">Signed Artifact Distribution</text>
+
+      <g transform="translate(16, 60)">
+        <rect x="0" y="0" width="298" height="36" rx="5" fill="#ffffff" stroke="#cbd5e1"/>
+        <text x="149" y="18" text-anchor="middle" font-size="10" font-weight="700" fill="#334155">ORAS / OCI Signed Artifact Storage</text>
+        <text x="149" y="30" text-anchor="middle" font-size="8" fill="#64748b">Gate YAMLs · Model Adapters · HAL Ports</text>
+
+        <rect x="0" y="42" width="298" height="36" rx="5" fill="#ffffff" stroke="#cbd5e1"/>
+        <text x="149" y="60" text-anchor="middle" font-size="10" font-weight="700" fill="#334155">Extension Permission Sandbox</text>
+        <text x="149" y="72" text-anchor="middle" font-size="8" fill="#64748b">NFR-SEC-07 WASM / Isolated Process Sandbox</text>
+
+        <rect x="0" y="84" width="298" height="28" rx="5" fill="#ffffff" stroke="#cbd5e1"/>
+        <text x="149" y="102" text-anchor="middle" font-size="10" font-weight="600" fill="#334155">digests.lock Canonical Verifier</text>
+      </g>
+    </g>
+
+    <!-- Container 6: Distributed Robotics Nodes -->
+    <g transform="translate(750, 50)">
+      <rect width="330" height="185" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="5 3"/>
+      <rect x="16" y="14" width="70" height="20" rx="4" fill="#15803d"/>
+      <text x="51" y="28" text-anchor="middle" font-size="10" font-weight="700" fill="#ffffff">I14 ROBOT</text>
+      <text x="94" y="29" font-size="14" font-weight="700" fill="#14532d">Tiered Robot Nodes</text>
+      <text x="16" y="48" font-size="11" fill="#475569">Decentralized Multi-Node Actuation</text>
+
+      <g transform="translate(16, 60)">
+        <rect x="0" y="0" width="298" height="36" rx="5" fill="#ffffff" stroke="#bbf7d0"/>
+        <text x="149" y="18" text-anchor="middle" font-size="10" font-weight="700" fill="#166534">Brain Host (Raspberry Pi 5 / Jetson)</text>
+        <text x="149" y="30" text-anchor="middle" font-size="8" fill="#64748b">ROS 2 / Nav2 Adapter · Speed Gating (Q-34)</text>
+
+        <rect x="0" y="42" width="298" height="36" rx="5" fill="#ffffff" stroke="#bbf7d0"/>
+        <text x="149" y="60" text-anchor="middle" font-size="10" font-weight="700" fill="#166534">Zenoh-pico Pub/Sub Wire</text>
+        <text x="149" y="72" text-anchor="middle" font-size="8" fill="#64748b">IEC 61784-3 Black Channel · 200ms Heartbeat</text>
+
+        <rect x="0" y="84" width="298" height="28" rx="5" fill="#ffffff" stroke="#bbf7d0"/>
+        <text x="149" y="102" text-anchor="middle" font-size="10" font-weight="700" fill="#166534">On-Node Local Gate &amp; Lease Token</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Connective Inter-Container Wire Protocols -->
+  <g stroke="#2563eb" stroke-width="2">
+    <!-- Python to ESP32-S3 -->
+    <path d="M 370 215 L 385 215" marker-end="url(#arrowBlue)"/>
+  </g>
+  <g stroke="#d97706" stroke-width="2">
+    <!-- ESP32 to CLI / Trace -->
+    <path d="M 715 215 L 750 215" marker-end="url(#arrow)"/>
+  </g>
+  <g stroke="#9334e6" stroke-width="2" stroke-dasharray="4 3">
+    <!-- Firmware to Fleet OS -->
+    <path d="M 550 320 L 550 415" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- Footer Metadata Bar -->
+  <g transform="translate(50, 690)">
+    <text x="0" y="16" font-size="11" font-weight="600" fill="#64748b">NeuroEdge Container Layout · Wire: UART NE1 (115200bps) · WebSocket Opus (16kHz) · MQTT/mTLS (:8883) · Zenoh (:7447)</text>
+    <text x="1100" y="16" text-anchor="end" font-size="11" font-weight="500" fill="#94a3b8">Doc Ref: docs/architecture/vi/02-container-c4l2.md</text>
+  </g>
+</svg>
