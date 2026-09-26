@@ -178,7 +178,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `python/neuroedge/engine/` | L3 — phân giải gate, chuẩn tắc hoá, Gate Engine, cây quyết định, bố cục `NETR`, trình biên dịch `build`, bộ sinh firmware `esp32s3` của agent (`firmware.py`) | **RFC** nếu đổi ngữ nghĩa phân giải hoặc bố cục `NETR` |
 | `python/neuroedge/actions/` | `@action`, `c.do()`/`c.say()`, token phán quyết dùng một lần | PR thường; ranh giới ở [`threat_model.md`](docs/spec/threat_model.md) |
 | `python/neuroedge/hal/` | L1 — năm nguyên thủy, mô hình bo mạch, `sim.py`, `linux.py`, `audio.py` (PCM trên máy tính: tệp WAV, VAD, loa dạng dòng thời gian) | PR thường; xem [rà soát MCU](docs/spec/hal_mcu_review.md) |
-| `python/neuroedge/models/` | L2 — SystemOne/SystemTwo, ngữ pháp lệnh cục bộ, knowledge base, `providers/` (LiteLLM, System One API cho Jev, adapter) | PR thường |
+| `python/neuroedge/models/` | L2 — SystemOne/SystemTwo, ngữ pháp lệnh cục bộ, knowledge base, `providers/` (LiteLLM, System One API cho Jev, adapter; `common.py`: phần mọi bảng provider dùng chung — điểm cuối, không lặp key, nạp adapter) | PR thường |
 | `python/neuroedge/perception/` | L2 — máy trạng thái hội thoại (`voice_fsm.py`), driver của nó (`voice_session.py`: âm thanh vào, STT, TTS, cắt lời), `providers/` (STT/TTS: adapter OpenAI audio, provider giả; bảng `[stt]`/`[tts]`) | PR thường; hành vi theo [`voice_fsm.md`](docs/spec/voice_fsm.md) |
 | `python/neuroedge/sim/` | `SimSession` (REPL gõ chữ), `ui.py` (trang `--ui` cục bộ) | PR thường |
 | `python/neuroedge/mcp_server.py`, `mcp_host.py`, `mcp_desktop.py` | Máy chủ MCP · System 2 làm MCP host · cấu hình Claude Desktop | PR thường |
@@ -186,7 +186,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `python/neuroedge/viz/` | `trace view`, xuất Perfetto | PR thường |
 | `python/neuroedge/templates/` | Mẫu dự án cho `neuroedge new` (`*.tmpl`, generator Python thuần) | PR thường |
 | `python/neuroedge/cli/` | CLI Typer: `main.py`, `run.py` (REPL), `explain.py` | PR thường |
-| `python/neuroedge/errors.py`, `trace.py`, `paths.py` | Hợp đồng lỗi 3 thành phần · thẩm định vết ghi · định vị asset (checkout, editable, wheel) | PR thường; đụng `paths.py` thì chạy `scripts/wheel_smoke.sh` |
+| `python/neuroedge/errors.py`, `trace.py`, `paths.py`, `net.py` | Hợp đồng lỗi 3 thành phần · thẩm định vết ghi · định vị asset (checkout, editable, wheel) · HTTP tới provider (không proxy, không redirect, có hạn chót) | PR thường; đụng `paths.py` thì chạy `scripts/wheel_smoke.sh` |
 | `python/tests/` | Bộ test chính (`testpaths`) | PR thường |
 | `python/tests_linux/` | Test trên gpio-sim, job `linux-hal` | PR thường |
 | `python/hatch_build.py`, `pyproject.toml`, `requirements-lock.txt`, `pip-audit-ignore.txt`, `LICENSE` | Đóng gói (asset vào `neuroedge/_data/`, README gốc vào metadata) · phụ thuộc ghim · ngoại lệ `pip-audit` đã duyệt (job `pip-audit`) · bản sao `LICENSE` gốc | PR thường; chạy `scripts/wheel_smoke.sh` |
