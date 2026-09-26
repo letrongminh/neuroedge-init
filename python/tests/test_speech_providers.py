@@ -145,6 +145,19 @@ def test_a_key_never_crosses_the_network_in_clear_text():
         ("stt", {"model": "m", "api_key_env": ENV, "timeout_s": 0}, "timeout_s", "timeout_s"),
         ("stt", {"model": "m", "api_key_env": ENV, "timeout_s": 999}, "timeout_s", "timeout_s"),
         ("stt", {"model": "m", "api_key_env": ENV, "base_url": "ftp://x"}, "base_url", "http(s)"),
+        (
+            "stt",
+            {"model": "m", "api_key_env": ENV, "base_url": "http://[::1"},
+            "base_url",
+            "http(s)",
+        ),
+        (
+            "stt",
+            {"model": "m", "api_key_env": ENV, "base_url": "http://h:port"},
+            "base_url",
+            "http(s)",
+        ),
+        ("stt", {"model": "m", "api_key_env": ENV, "base_url": 8000}, "base_url", "http(s)"),
         ("stt", {"model": "m", "api_key_env": ENV, "provider": "whisper"}, "provider", "provider"),
         ("stt", {"model": "m", "api_key_env": ENV, "voice": "alloy"}, "voice", "not fields"),
         (

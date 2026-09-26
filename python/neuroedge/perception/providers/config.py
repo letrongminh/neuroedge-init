@@ -91,6 +91,18 @@ class SpeechConfig:
         return f"{self.model}{voice} at {self.base_url} ({key})"
 
 
+def _http_url(url: Any) -> bool:
+    """An http(s) URL with a host and, if any, a valid port."""
+    if not isinstance(url, str):
+        return False
+    try:
+        parts = urlsplit(url)
+        parts.port  # noqa: B018 — raises ValueError for a port that is not one
+    except ValueError:
+        return False
+    return parts.scheme in ("http", "https") and bool(parts.hostname)
+
+
 def _is_loopback(url: str) -> bool:
     host = (urlsplit(url).hostname or "").lower()
     return host in LOOPBACK or host.startswith("127.")
@@ -141,11 +153,7 @@ def parse_speech(role: str, table: Any, source: Path | None = None) -> SpeechCon
         )
     custom = provider != OPENAI
     base_url = table.get("base_url", OPENAI_BASE_URL)
-    if (
-        not isinstance(base_url, str)
-        or urlsplit(base_url).scheme not in ("http", "https")
-        or not (urlsplit(base_url).hostname)
-    ):
+    if not _http_url(base_url):
         raise AgentManifestError(
             where=f"{where} base_url",
             why="base_url must be an http(s) URL with a host",
