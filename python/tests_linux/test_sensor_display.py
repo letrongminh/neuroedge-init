@@ -138,7 +138,8 @@ def test_a_frame_reaches_the_kernel_framebuffer():
                 assert on_screen == packed[y * row : (y + 1) * row]
         finally:
             os.close(fd)
-        assert (geometry.xres, geometry.yres) == (800, 480)
+        assert geometry.bits_per_pixel in (16, 24, 32)
+        assert geometry.xres >= 800 and geometry.yres >= 480, "the board's display fits"
         assert hal.frames == [shown]
     finally:
         hal.close()

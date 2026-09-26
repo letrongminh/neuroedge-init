@@ -308,7 +308,8 @@ class SimSession:
         `TraceRecorder` to record it; its metadata is set from the agent and board.
         Raises `BuildFailed` with every problem when the agent does not fit the
         board, and `BoardCapabilityError` when `linux` cannot run it (a primitive
-        `LinuxHAL` lacks, no `gpiod`, no GPIO chip — Q-16).
+        `LinuxHAL` lacks, no `gpiod`, no GPIO chip, a sensor it reads that the kernel
+        does not have, no display backend chosen — Q-16), before any line is requested.
         """
         if target not in SESSION_TARGETS:
             raise BoardCapabilityError(
