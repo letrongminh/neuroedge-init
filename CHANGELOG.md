@@ -32,6 +32,31 @@ bản gói.
 
 #### Đã thêm
 
+- **I4 · TSK-S3-13 — nói với agent trên `sim`: STT/TTS qua provider chuẩn OpenAI audio.** `[stt]`/`[tts]` trong
+  `agent.toml` (OpenAI, Groq, faster-whisper, Kokoro… đổi bằng `base_url`; key chỉ ở biến môi trường) và `run`/`record
+  --voice-file x.wav [--voice-out y.wav]`: bản chép lời qua gate như lệnh gõ, nói chen thì loa dừng và lệnh chưa giao bị
+  hủy, provider hỏng ⇒ câu offline, không lệnh chân nào. `perception/providers/`, `hal/audio.py`; `linux` chờ TSK-S5-08.
+  Kiểm: `pytest tests/test_speech_providers.py tests/test_voice_speech.py tests/test_voice_cli.py tests/test_voice_corpus.py`.
+  (FR-MDL-09, FR-PER-07, Q-12, Q-15)
+- **I4 · TSK-I4-02 — `SystemOne` đổi được bằng cấu hình: Jev quyết các tiêu chí gate mà `[system_one]` liệt kê, ngữ pháp
+  lệnh là fallback.** Jev (`typesafe/jev-1.13`, OpenRouter) không phải model chat: `models/providers/systemone_api.py` hỏi
+  mỗi tiêu chí một câu có kiểu qua System One API (`POST …/systemone`, thư viện chuẩn, không cần extra). Thiếu key, lỗi
+  mạng/HTTP, hết giờ, trả sai hợp đồng, ngoài miền giá trị hay dưới `threshold` ⇒ `Unavailable` ⇒ ngữ pháp quyết
+  (`system_one_fallback`); mỗi lượt gọi một `system_one_call` (`tool_calling.md` §7). Không có bảng ⇒ như cũ; replay không
+  gọi model. Kiểm: `pytest tests/test_system_one_cloud.py`. (FR-MDL-03, FR-MDL-04, Q-4; thu hẹp `TODOS.md` #27)
+- **I3 · TSK-I3-01 — `build --target esp32s3` sinh firmware cho agent của người dùng.** `<out>/esp32s3/` là project
+  ESP-IDF: mã nguồn `targets/esp32s3/` + component sinh `ne_agent` (cây `NETR`, bảng gate · chân · action, phép kiểm
+  self-test kèm phán quyết của engine host); không hợp bo mạch ⇒ mã 1, không ghi gì; self-test lúc boot chung cho mọi
+  agent, `gen_firmware_gates.py` thành lớp mỏng; wheel mang mã nguồn firmware. Nạp: `docs/user/nap-firmware.md`. Kiểm:
+  `pytest tests/test_firmware_build.py`, job `agent-firmware`. (FR-CLI-02, FR-HAL-04)
+- **I3 · TSK-S4-11 — ngân sách RAM tĩnh Q-3 trên mỗi PR.** `check_firmware_size.py --size-json` đòi `.data` + `.bss` + mã
+  IRAM để lại ≥ 120 KB SRAM trong, `--heap-log` đòi heap lúc boot trên QEMU ≥ 120 KB; đầu vào không đọc được ⇒ đỏ.
+  ESP-SR chưa link (`TODOS.md` #17; móc `--require-esp-sr`). Kiểm: `pytest tests/test_firmware_size.py`, job
+  `firmware-size`. (NFR-RES-02, Q-3)
+- **I2 · D1 — `bands` trong `[sim.sensor_facts]`; `factory-monitor` đọc độ C trên `sim` và `linux`.** Số đọc → fact
+  `level`, mỗi dải bắt đầu tại ngưỡng của nó (tính cả ngưỡng); dưới ngưỡng đầu hay không hữu hạn ⇒ chưa xác định, gate
+  chặn; cấu hình sai ⇒ lỗi ba phần khi nạp phiên. Gate không đổi. Luật: `simulation_coverage.md` §2. Kiểm: `pytest
+  tests/test_sensor_bands.py tests/test_factory_monitor.py`; `tests_linux/test_sensor_display.py`. (FR-TGT-02, `TODOS.md` #30)
 - **I2 · TSK-S5-09 — `sensor.read` và `display` trên `linux`.** Cảm biến đọc qua sysfs hwmon và IIO (`hal/sysfs.py`),
   tìm theo **tên** — nhãn kênh, hoặc nguồn đặt theo máy (`LinuxHAL(sensor_sources=)`, `NEUROEDGE_LINUX_SENSORS`); mỗi lần đọc
   tới kernel, và không nguồn, tệp lỗi, NaN/inf, cờ `*_fault` hay đơn vị khác đơn vị agent khai đều là `BoardCapabilityError`.
@@ -62,7 +87,7 @@ bản gói.
   ca JSON cho V1–V7 và mọi dòng §4, đáp án `expected_results.yaml` khép kín hai chiều, agent `voice-door`; quy ước
   `voice_fsm.md` §9.1. Kiểm: `pytest tests/test_voice_corpus.py`. (FR-CI-07, FR-TGT-04)
 - **I1 · TSK-S3-08 — mẫu thứ ba `factory-monitor`.** Quạt thông gió và đèn báo động qua gate đọc fact `level` (dải nhiệt
-  `low…critical` từ cảm biến `sim`): tắt quạt khi nóng thì hỏi xác nhận, tắt báo động thì chặn; `neuroedge new --template
+  `low…critical`, từ độ C của cảm biến qua `bands` — D1): tắt quạt khi nóng thì hỏi xác nhận, tắt báo động thì chặn; `neuroedge new --template
   factory-monitor`, có trong `wheel-smoke`. Kiểm: `pytest tests/test_factory_monitor.py`. (FR-DX-05, RFC-0006)
 - **I2 · TSK-S5-10 — phiên tương tác trên `linux`.** `run` (REPL và `-c`), `record` và `mcp serve` nhận `--target linux`:
   chân là line GPIO thật qua `LinuxHAL` (`TypedLinuxHAL`, `hal/linux.py`), vẫn gõ chữ trên terminal như `sim`, cùng sổ
@@ -238,6 +263,9 @@ bản gói.
 
 #### Đã sửa
 
+- **D1 — `gte`/`lte` trên số đọc NaN, chữ hay bool là chưa xác định, không phải `false`.** Trước đây NaN đọc thành "không
+  nóng" và cho phép trên `sim`. Mỗi cảm biến đọc một lần mỗi lượt. `python/neuroedge/sim/session.py`. Kiểm: `pytest
+  tests/test_sensor_bands.py`.
 - **`run`/`record --target` nêu sai task và mã thoát.** `linux` nay chỉ TSK-S5-10, `esp32s3` chỉ TSK-S4-01 (trước in
   TSK-S3-05, task đã xong); target lạ thoát mã 1 kèm `NE3001`, không còn mã 2. Thông điệp bỏ tên sprint, chỉ giữ mã task.
   Kiểm: `pytest tests/test_cli_run.py tests/test_recorder.py -k target`.
