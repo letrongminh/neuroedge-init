@@ -360,9 +360,12 @@ assert f ota_ordered "$logs/f.log" \
   "^NE_OTA CHECK url=$URL\$" \
   '^NE_OTA REJECTED reason=signature$' \
   '^NE_OTA ERASED partition=ota_1$'
-# A stale ROLLBACK line opens the boot (the aborted slot from phase e); what
-# must not happen is a switch or a confirmation.
+# The boot reports phase e's aborted slot once, before the check; nothing may
+# switch, confirm or roll back after it.
 assert f ota_forbid "$logs/f.log" '^NE_OTA (SWITCH|VALID)'
+assert f ota_count_is "$logs/f.log" '^NE_OTA ROLLBACK' 1
+assert f ota_count_is "$logs/f.log" '^NE_OTA ROLLBACK from=ota_1 to=ota_0$' 1
+assert f ota_nothing_after "$logs/f.log" "^NE_OTA CHECK url=$URL\$" '^NE_OTA ROLLBACK'
 assert f ota_count_is "$logs/f.log" '^NE_SELFTEST PASS' 1
 
 # (g) a correctly signed lower version is a downgrade: the high-water mark
@@ -376,6 +379,9 @@ assert g ota_ordered "$logs/g.log" \
   "^NE_OTA CHECK url=$URL\$" \
   '^NE_OTA SKIP reason=downgrade version=0\.1\.0$'
 assert g ota_forbid "$logs/g.log" '^NE_OTA (DOWNLOADED|SWITCH|REJECTED)'
+assert g ota_count_is "$logs/g.log" '^NE_OTA ROLLBACK' 1
+assert g ota_count_is "$logs/g.log" '^NE_OTA ROLLBACK from=ota_1 to=ota_0$' 1
+assert g ota_nothing_after "$logs/g.log" "^NE_OTA CHECK url=$URL\$" '^NE_OTA ROLLBACK'
 assert g ota_count_is "$logs/g.log" '^NE_SELFTEST PASS' 1
 
 # --- evidence -----------------------------------------------------------------------------------
