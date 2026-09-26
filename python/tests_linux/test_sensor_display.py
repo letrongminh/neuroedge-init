@@ -99,7 +99,7 @@ def test_the_device_is_found_by_name_and_the_bus_it_sits_on(lm75):
         hal.close()
 
 
-def test_a_sensor_the_kernel_does_not_have_fails_closed(hal):
+def test_a_sensor_the_kernel_does_not_have_fails_closed(lm75):
     missing = LinuxHAL(
         authorize=lambda *_: None, sensor_sources={"humidity": "hwmon:sht3x/humidity1"}
     )
