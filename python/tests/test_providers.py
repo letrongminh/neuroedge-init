@@ -13,7 +13,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import shutil
 import subprocess
 import sys
 import types
@@ -107,31 +106,12 @@ def fake(monkeypatch):
 
 
 @pytest.fixture
-def fresh_actions():
-    """A copied agent defines the same @action names at another path: isolate the registry."""
-    from neuroedge.actions import spec
-
-    saved = dict(spec.REGISTRY)
-    spec.REGISTRY.clear()
-    yield
-    spec.REGISTRY.clear()
-    spec.REGISTRY.update(saved)
-
-
-@pytest.fixture
-def online(tmp_path, root, fresh_actions):
+def online(copy_agent):
     """A copy of home-voice with `[system_two]` appended; `online(extra)` appends more."""
 
     def make(system_two: str = SYSTEM_TWO, *, gates: dict[str, str] | None = None):
-        target = tmp_path / "home-voice"
-        if target.exists():
-            shutil.rmtree(target)
-        shutil.copytree(root / "fixtures" / "agents" / "home-voice", target)
-        manifest = target / "agent.toml"
-        manifest.write_text(manifest.read_text("utf-8") + system_two, encoding="utf-8")
-        for name, text in (gates or {}).items():
-            (target / "gates" / name).write_text(text, encoding="utf-8")
-        return manifest
+        files = {f"gates/{name}": text for name, text in (gates or {}).items()}
+        return copy_agent("home-voice", system_two, files)
 
     return make
 
@@ -501,7 +481,7 @@ def test_an_api_key_in_agent_toml_fails_the_build_without_repeating_it(online):
         ({"model": "x"}, "api_key_env", "does not say where"),
         ({"model": "x", "api_key_env": ENV, "timeout_s": 0}, "timeout_s", "timeout_s must"),
         ({"model": "x", "api_key_env": ENV, "max_tokens": -1}, "max_tokens", "positive"),
-        ({"model": "x", "api_key_env": ENV, "temperature": 3}, "temperature", "0 to 2"),
+        ({"model": "x", "api_key_env": ENV, "temperature": 3}, "temperature", "[0, 2]"),
         ({"model": "x", "api_key_env": ENV, "api_base": "ftp://h"}, "api_base", "http"),
         ({"model": "x", "api_key_env": ENV, "options": {"a": 1}}, "options", "custom adapter"),
         ({"provider": "python:m:f", "options": {"token": "t"}}, "options.token", "never"),

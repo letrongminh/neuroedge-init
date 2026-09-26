@@ -47,6 +47,9 @@ from .canonical import gate_canonical_json, gate_digest
 from .decision_tree import compile_tree, tree_bytes
 from .gate_resolver import GateRegistry, ResolvedGate, resolve_gate_file, resolve_gate_uri
 
+# The PCM rates speech runs at (`[stt]` / `[tts]`) — the bounds the audio path accepts.
+SPEECH_RATES_HZ = (8000, 96000)
+
 
 @dataclass(frozen=True)
 class AgentManifest:
@@ -403,11 +406,21 @@ def check_system_one(
 ) -> list[NeuroEdgeError]:
     """
     `[system_one]` of agent.toml is well formed — never an API key in it — a custom
-    adapter it names can be imported, and each criterion it delegates to the model
-    is evaluated by a gate whose budget outlasts `timeout_ms` (TSK-I4-02, FR-MDL-04).
+    adapter it names can be imported, and each criterion it delegates to the model:
+
+    * is evaluated by a gate, as a question the System One API can ask;
+    * is not one the agent computes itself (`[sim.facts]`, `[sim.slot_facts]`,
+      `[sim.sensor_facts]`): session state — identity, a booking, a reading — is never
+      a model's judgment of what a person said, and when the computation leaves it
+      undecided (a slot the guest did not say) the gate must block, not ask a model;
+    * has a gate budget that outlasts `timeout_ms` and the grammar after it.
+
+    (TSK-I4-02, FR-MDL-04.)
     """
     from ..models.providers import load_adapter, load_system_one_config
+    from ..models.providers.systemone_api import question_for
     from ..models.system import FALLBACK_RESERVE_MS
+    from .verdict import Unavailable
 
     try:
         config = load_system_one_config(manifest)
@@ -418,8 +431,30 @@ def check_system_one(
     if config is None:
         return []
     where = f"{config.where} criteria"
+    sim = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
+    sim = sim if isinstance(sim, dict) else {}
+    computed = {
+        f"sim.{table}": set(sim[table])
+        for table in ("facts", "slot_facts", "sensor_facts")
+        if isinstance(sim.get(table), dict)
+    }
     problems: list[NeuroEdgeError] = []
     for criterion in config.criteria:
+        owners = [table for table, names in computed.items() if criterion in names]
+        if owners:
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"{criterion!r} is computed by the agent ([{owners[0]}]); a model must "
+                    "never decide it from what a person said — and where the computation leaves "
+                    "it undecided (a room the guest did not say), the gate has to block",
+                    how=f"remove {criterion!r} from [system_one] criteria. Delegate only what the "
+                    "words alone settle; identity, authorization and booking criteria "
+                    "(guest_authenticated, staff_co_authorized, room_matches) are session "
+                    "facts from the property system",
+                )
+            )
+            continue
         using = [(key, gate) for key, gate in gates.items() if criterion in gate.evaluate]
         if not using:
             evaluated = sorted({name for gate in gates.values() for name in gate.evaluate})
@@ -432,6 +467,16 @@ def check_system_one(
             )
             continue
         for key, gate in using:
+            question = question_for(gate.evaluate[criterion])
+            if isinstance(question, Unavailable):
+                problems.append(
+                    AgentManifestError(
+                        where=where,
+                        why=f"gate {key!r} defines {criterion!r} in a way the System One API "
+                        f"cannot ask: {question.detail}",
+                        how=f"fix {criterion!r} in the gate, or remove it from [system_one] criteria",
+                    )
+                )
             p95 = gate.budget.get("p95_latency_ms")
             if isinstance(p95, int | float) and config.timeout_ms + FALLBACK_RESERVE_MS > p95:
                 room = p95 - FALLBACK_RESERVE_MS
@@ -483,12 +528,19 @@ def check_speech(
             )
         elif board is not None and board.supports(primitive):
             rate = board.capability(primitive).get("sample_rate_hz")
-            if isinstance(rate, bool) or not isinstance(rate, int) or rate <= 0:
+            # The rates the audio path runs at (8–96 kHz); outside them PCM is refused at
+            # run time, so the build says so first.
+            if (
+                isinstance(rate, bool)
+                or not isinstance(rate, int)
+                or not SPEECH_RATES_HZ[0] <= rate <= SPEECH_RATES_HZ[1]
+            ):
+                low, high = SPEECH_RATES_HZ
                 problems.append(
                     BoardCapabilityError(
                         where=f"{board.source} -> {primitive}",
                         why=f"[{role}] plays PCM through {primitive}, and board {board.id!r} "
-                        "declares no sample_rate_hz for it",
+                        f"declares no sample_rate_hz for it from {low} to {high} Hz",
                         how=f"add sample_rate_hz = 16000 to {primitive} in {board.source}",
                     )
                 )

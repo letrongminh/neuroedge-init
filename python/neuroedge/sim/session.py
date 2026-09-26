@@ -426,6 +426,7 @@ class SimSession:
         slot_facts: Mapping[str, tuple[str, Any]],
         sensor_facts: Mapping[str, SensorFact] | None = None,
         slow: SystemTwo | None = None,
+        fast: SystemOne | None = None,
         knowledge: KnowledgeBase | None = None,
         tools: list[Any] | None = None,
         mcp: Any = None,
@@ -440,6 +441,8 @@ class SimSession:
         self.slot_facts = dict(slot_facts)
         self.sensor_facts = dict(sensor_facts or {})
         self.slow = slow if slow is not None else SystemTwo("sim")
+        # System 1 — the gate's fact source: `[system_one]`'s model, or the grammar alone.
+        self.fast = fast if fast is not None else conversation.engine.facts_source
         self.knowledge = knowledge
         self.tools = ToolSet(tools or (), argument_limits)
         # System 2's MCP servers (Q-27); None = only the device's own tools.
@@ -550,6 +553,7 @@ class SimSession:
                 slot_facts=slot_facts,
                 sensor_facts=sensor_facts,
                 slow=slow,
+                fast=fast,
                 knowledge=knowledge,
                 tools=actions,
                 mcp=load_mcp_config(manifest),

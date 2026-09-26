@@ -8,34 +8,31 @@ One adapter for every server that speaks it, chosen by `base_url` in `[stt]` /
 `[tts]` (FR-MDL-09): OpenAI, Groq (``https://api.groq.com/openai/v1``),
 faster-whisper-server / speaches, Kokoro-FastAPI (``http://localhost:8880/v1``).
 
-The standard library only (`urllib`): no SDK to install, so `pip install
-neuroedge` is unchanged (FR-DX-02). Every failure raises `SpeechUnavailable`
-saying what to do; the voice driver turns it into voice_fsm.md §7. Before any
-network call the key's variable must be set, or nothing is sent. The key goes
-only in the ``Authorization`` header, is masked out of every error, and never
-follows a redirect: redirects are refused, since urllib would forward the header
-to wherever the server points. A response body is never quoted in an error — it
-may echo what was said, and errors reach the trace, where `--anonymize` hashes
+This module is the protocol mapping only. The HTTP — no redirect, no proxy, the
+answer read against a deadline, a size cap, a key that is a key — is
+`neuroedge.net`, shared with System 1's model. Every failure raises
+`SpeechUnavailable` saying what to do; the voice driver turns it into voice_fsm.md
+§7. Before any network call the key's variable must be set, or nothing is sent. The
+key goes only in the ``Authorization`` header and is never in an error: a network
+failure is reported by its class name. A response body is never quoted in an error —
+it may echo what was said, and errors reach the trace, where `--anonymize` hashes
 only the text fields.
 """
 
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import http.client
 import json
 import os
-import threading
 import time
 import urllib.error
-import urllib.request
 import uuid
 from collections.abc import Mapping
 from typing import Any
 
+from ... import net
 from ...hal.audio import read_wav_bytes
-from ...models.providers.base import scrub
 from .base import AudioClip, Speech, SpeechUnavailable, Transcript, clean_transcript
 from .config import SpeechConfig
 
@@ -43,16 +40,6 @@ GRACE = 1.25  # the whole call may take timeout_s × GRACE before it is abandone
 MIN_CLIP_MS = 100  # the API refuses shorter audio; a clip this short holds no words
 USER_AGENT = "neuroedge-speech/1"
 MAX_ANSWER_BYTES = {"stt": 1 << 20, "tts": 32 << 20}  # a transcript; ~10 min of 24 kHz speech
-CHUNK = 64 << 10
-
-
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        return None  # urllib then raises HTTPError with the 3xx status
-
-
-def _opener() -> urllib.request.OpenerDirector:
-    return urllib.request.build_opener(_NoRedirect)
 
 
 def _failure(status: int | None) -> tuple[str, str]:
@@ -96,7 +83,7 @@ class _OpenAIAudio:
         self.config = config
         self.model = config.model
         self.environ = os.environ if environ is None else environ
-        self._opener = opener if opener is not None else _opener()
+        self._opener = opener if opener is not None else net.make_opener()
 
     @property
     def where(self) -> str:
@@ -118,8 +105,15 @@ class _OpenAIAudio:
         name = self.config.api_key_env
         if name is None:
             return None  # a keyless server
-        key = self.environ.get(name, "")
-        if not key.strip():
+        try:
+            key = net.env_key(self.environ, name)
+        except net.KeyUnusable:
+            raise self._unavailable(
+                f"{name} holds spaces or control characters inside the key (nothing was sent)",
+                f"export {name} again with the key alone, on one line",
+                called=False,
+            ) from None
+        if key is None:
             raise self._unavailable(
                 f"{name} is not set (nothing was sent)",
                 f"export {name}=<your key>, or remove [{self.role}]",
@@ -130,81 +124,57 @@ class _OpenAIAudio:
     def _send(
         self, path: str, body: bytes, content_type: str, key: str | None, deadline: float
     ) -> bytes:
-        """
-        POST, in a worker thread: the body of a 2xx answer, or `SpeechUnavailable`.
-        The body is read a chunk at a time against `deadline` (monotonic s), so a
-        server that trickles bytes cannot keep the thread past it by more than one
-        socket timeout.
-        """
-        request = urllib.request.Request(f"{self.config.base_url}{path}", data=body, method="POST")
-        request.add_header("Content-Type", content_type)
-        request.add_header("User-Agent", USER_AGENT)
+        """POST, in a worker thread: the body of a 2xx answer, or `SpeechUnavailable`."""
+        headers = {"Content-Type": content_type, "User-Agent": USER_AGENT}
         if key is not None:
-            request.add_header("Authorization", f"Bearer {key}")
+            headers["Authorization"] = f"Bearer {key}"
         limit = MAX_ANSWER_BYTES[self.role]
         try:
-            with self._opener.open(request, timeout=self.config.timeout_s) as response:
-                chunks: list[bytes] = []
-                size = 0
-                while size <= limit:
-                    if time.monotonic() > deadline:
-                        raise self._timed_out()
-                    chunk = response.read1(CHUNK)
-                    if not chunk:
-                        break
-                    chunks.append(chunk)
-                    size += len(chunk)
-                data = b"".join(chunks)
-        except urllib.error.HTTPError as exc:
-            exc.close()  # the error body is not read, and never quoted (it may echo speech)
-            why, how = _failure(exc.code)
-            raise self._unavailable(why, how) from None
-        except (TimeoutError, urllib.error.URLError, OSError, http.client.HTTPException) as exc:
+            status, data = net.post(
+                f"{self.config.base_url}{path}",
+                headers,
+                body,
+                timeout_s=self.config.timeout_s,
+                deadline=deadline,
+                max_bytes=limit,
+                opener=self._opener,
+            )
+        except net.TooLarge:
+            raise self._unavailable(
+                f"the server's answer is larger than {limit >> 20} MB", "check base_url and model"
+            ) from None
+        except TimeoutError:
+            raise self._timed_out() from None
+        except (urllib.error.URLError, OSError, http.client.HTTPException) as exc:
             reason = getattr(exc, "reason", exc)
             if isinstance(reason, TimeoutError):
                 raise self._timed_out() from None
             why, how = _failure(None)
-            detail = scrub(f"{type(reason).__name__}: {reason}", key)[:160]
-            raise self._unavailable(f"{why} ({detail})", how) from None
-        if len(data) > limit:
-            raise self._unavailable(
-                f"the server's answer is larger than {limit >> 20} MB", "check base_url and model"
-            )
+            raise self._unavailable(f"{why} ({type(reason).__name__})", how) from None
+        if not 200 <= status < 300:
+            why, how = _failure(status)
+            raise self._unavailable(why, how)
         return data
 
     async def _post(self, path: str, body: bytes, content_type: str) -> bytes:
         """
         The request in a daemon thread, awaited for at most `timeout_s` × GRACE. On
         a timeout nothing waits for the thread — not this call, not `asyncio.run` at
-        exit (a default-executor thread would hold the CLI until its socket gave up).
+        exit — and the thread itself ends at that deadline (`net.post`).
         """
         key = self._key()
         budget = self.config.timeout_s * GRACE
-        loop = asyncio.get_running_loop()
-        answer: asyncio.Future[bytes] = loop.create_future()
-
-        def settle(result: bytes | None, error: BaseException | None) -> None:
-            if answer.done():
-                return  # abandoned: the caller has moved on
-            if error is not None:
-                answer.set_exception(error)
-            else:
-                answer.set_result(result or b"")
-
-        def work() -> None:
-            try:
-                outcome = (
-                    self._send(path, body, content_type, key, time.monotonic() + budget),
-                    None,
-                )
-            except Exception as exc:
-                outcome = (None, exc)
-            with contextlib.suppress(RuntimeError):  # the loop is closed: nobody waits
-                loop.call_soon_threadsafe(settle, *outcome)
-
-        threading.Thread(target=work, name=f"neuroedge-{self.role}", daemon=True).start()
+        pending = net.in_daemon_thread(
+            self._send,
+            path,
+            body,
+            content_type,
+            key,
+            time.monotonic() + budget,
+            name=f"neuroedge-{self.role}",
+        )
         try:
-            return await asyncio.wait_for(answer, timeout=budget)
+            return await asyncio.wait_for(pending, timeout=budget)
         except TimeoutError:
             raise self._timed_out() from None
 
@@ -268,9 +238,10 @@ class OpenAISpeaker(_OpenAIAudio):
         data = await self._post("/audio/speech", body, "application/json")
         try:
             pcm, rate, channels, width = read_wav_bytes(data)
-        except ValueError:
+        except ValueError as exc:
+            # `read_wav_bytes` words its own errors; the response body is never quoted.
             raise self._unavailable(
-                "the server's answer is not a PCM WAV file", "check base_url and model"
+                f"the server's answer is not a PCM WAV file ({exc})", "check base_url and model"
             ) from None
         if width != 2:
             raise self._unavailable(

@@ -20,8 +20,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ...errors import AgentManifestError
-from ...models.providers.config import load_adapter
+from ...models.providers.common import call_adapter
 from .base import (
     AudioClip,
     Speech,
@@ -62,24 +61,15 @@ def make_speech(config: SpeechConfig, root: Path | None = None) -> Any:
     """The provider `config` names; a custom adapter's factory is called with `config`."""
     if config.adapter is None:
         return OpenAITranscriber(config) if config.role == "stt" else OpenAISpeaker(config)
-    factory = load_adapter(config, root)
-    try:
-        provider = factory(config)
-    except Exception as exc:
-        raise AgentManifestError(
-            where=f"{config.where} provider",
-            why=f"the adapter factory {config.adapter!r} raised {type(exc).__name__}: {exc}",
-            how=f"fix the adapter; it is called once, with the [{config.role}] config",
-        ) from exc
     method = METHOD[config.role]
-    if not callable(getattr(provider, method, None)):
-        raise AgentManifestError(
-            where=f"{config.where} provider",
-            why=f"the adapter factory {config.adapter!r} returned {type(provider).__name__}, "
-            f"which has no {method}() method",
-            how=f"return an object with {method}() (perception/providers/base.py)",
-        )
-    return provider
+    return call_adapter(
+        config,
+        root,
+        table=config.role,
+        accepts=lambda provider: callable(getattr(provider, method, None)),
+        expected=f"an object with a {method}() method",
+        how=f"return an object with {method}() (perception/providers/base.py)",
+    )
 
 
 def speech_for(manifest: Any) -> tuple[Any, Any]:

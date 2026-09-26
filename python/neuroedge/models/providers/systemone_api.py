@@ -12,64 +12,71 @@ text to parse. One gate criterion is one question:
     choice → {"type": "choice", "instructions": ..., "criteria": {option: null, ...}}
 
 The question comes from the gate (its `instructions`, levels, options). The
-`state` is what the gate was asked about — the utterance, the action and its
-arguments — sent as data, and nothing in it can add a question, a criterion or
-a tool call.
+evidence is **only what the person said**: ``state = {"utterance": ...}``. Never the
+requested action or its arguments — they come from whoever called the tool (an MCP
+client, a System 2 that a prompt may have steered), and a caller must not be able to
+argue its own case. Context the question needs belongs in the criterion's
+`instructions`. No words from a person (an MCP call nobody spoke) ⇒ nothing is sent.
 
 The answer is untrusted data too. It becomes a `Fact` only when it is exactly one
 answer, for the criterion asked, of the type asked, with a value inside the
-declared levels or options and a confidence in [0, 1] at or above `threshold`
-(`admit`). Anything else is `Unavailable`, and `SystemOne` asks the command
-grammar instead (FR-MDL-03):
+declared levels or options and a confidence at or above `threshold` (`admit`).
+Anything else is `Unavailable`, and `SystemOne` asks the command grammar instead
+(FR-MDL-03):
 
-    offline       the key is not set (nothing sent) · network or TLS error · HTTP 401,
-                  402, 404, 5xx · a redirect (never followed: it could carry the key away)
+    offline       the key is not set, or not a key (nothing sent) · network or TLS error ·
+                  HTTP 401, 402, 404, 5xx · a redirect (never followed: it could carry the
+                  key away)
     timeout       no answer within min(timeout_ms, what the gate's budget has left) ·
                   HTTP 408, 504, 524
     rate_limited  HTTP 429, 529
     refused       HTTP 400, 403, 413, 422 — the provider refused the question · a
-                  criterion not listed in `criteria` · a definition it cannot ask
-    malformed     not a JSON object · not one answer for this criterion · the wrong
-                  type · a value outside the declared levels or options · confidence
-                  missing, not a number, or outside [0, 1]
-    empty         confidence below `threshold` · two levels tied for the top
+                  criterion not listed in `criteria` · a definition it cannot ask · words
+                  longer than any spoken request (nothing sent)
+    malformed     not a JSON object · larger than 64 KB · not one answer for this
+                  criterion · the wrong type · a value outside the declared levels or
+                  options · probabilities missing, not over every option / level, or not
+                  summing to 1 · a choice that is not the most probable option · a
+                  confidence missing, not a number, or outside [0, 1]
+    empty         no words from a person (nothing sent) · confidence below `threshold` ·
+                  two options or levels tied for the top
 
-Confidence. Choice and score answers carry the model's own `confidence`. A noul
-carries only P(yes); its confidence is |2·P(yes) − 1| — the same measure on two
-outcomes (0 at 0.5, 1 at 0 or 1), cut (never rounded up) to 4 places, so the threshold
-edge is exact. A level is the one the model gives the highest probability.
+Confidence. A choice's or a level's confidence is the lower of the model's own
+`confidence` and the probability it gives its answer — a provider cannot claim more
+certainty than its own distribution shows. A noul carries only P(yes); its confidence
+is |2·P(yes) − 1| (0 at 0.5, 1 at 0 or 1). Each is cut, never rounded up, to 4 places,
+so the threshold edge is exact.
 
 Each call it makes is one `system_one_call` event: provider, model, criterion,
-latency, status and, when the provider reports them, tokens and cost — never
-the state, never the key (`docs/spec/tool_calling.md` §7). HTTP goes through the
-standard library in a daemon thread: no extra, no SDK, and nothing leaves the
-machine unless `[system_one]` is configured and its key is set (FR-DX-02).
+latency, status and, when the provider reports them, tokens and cost — never the
+state, never the key (`docs/spec/tool_calling.md` §7). HTTP is `neuroedge.net` (no
+redirect, no proxy, a deadline, a size cap), in a daemon thread: no extra, no SDK,
+and nothing leaves the machine unless `[system_one]` is configured and its key is set
+(FR-DX-02).
 """
 
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import inspect
 import json
 import math
 import os
-import threading
-import urllib.error
-import urllib.request
+import time
 from collections.abc import Callable, Mapping
 from typing import Any
 
+from ... import net
 from ...engine.trace_sink import monotonic_ms
 from ...engine.verdict import Fact, Unavailable
-from .base import scrub
-from .config import MODEL_ID, SystemOneConfig
+from .config import MIN_THRESHOLD, MODEL_ID, SystemOneConfig
 
 NAME = "systemone"
 CALL_EVENT = "system_one_call"
 MAX_BODY = 64 * 1024  # a decision is a few hundred bytes; more is not an answer
 MAX_LEVELS = 10  # the API accepts 2–10 score levels
 MAX_OPTIONS = 255  # and at most 255 choice options
+MAX_UTTERANCE_CHARS = 4000  # more than any spoken or typed request (as a transcript's cap)
 QUESTION_TYPE = {"bool": "noul", "level": "score", "choice": "choice"}
 
 # HTTP status → Unavailable reason. Anything not listed (other 3xx/4xx, 5xx) is offline.
@@ -90,57 +97,18 @@ _STATUS_REASON = {
 Transport = Callable[[str, Mapping[str, str], bytes, float], Any]
 
 
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    """A redirect is refused, not followed: urllib would resend the Authorization header."""
-
-    def redirect_request(self, *args: Any, **kwargs: Any) -> None:
-        return None
-
-
 def urllib_transport(
     url: str, headers: Mapping[str, str], body: bytes, timeout_s: float
 ) -> tuple[int, bytes]:
-    """One POST with the standard library; an HTTP error is a status, not an exception."""
-    request = urllib.request.Request(url, data=body, headers=dict(headers), method="POST")
-    opener = urllib.request.build_opener(_NoRedirect)
-    try:
-        with opener.open(request, timeout=timeout_s) as response:
-            return int(response.status), response.read(MAX_BODY + 1)
-    except urllib.error.HTTPError as error:
-        try:
-            payload = error.read(MAX_BODY + 1)
-        except Exception:
-            payload = b""
-        finally:
-            error.close()
-        return int(error.code), payload
-
-
-def _in_daemon_thread(function: Callable[..., Any], *args: Any) -> asyncio.Future:
-    """
-    Run a blocking call off the loop. A daemon thread, not the default executor: a
-    loop that closes after a timeout (each REPL turn is its own loop) must not wait
-    for a request still stuck in DNS.
-    """
-    loop = asyncio.get_running_loop()
-    future: asyncio.Future = loop.create_future()
-
-    def deliver(setter: str, value: Any) -> None:
-        if not future.done():
-            getattr(future, setter)(value)
-
-    def run() -> None:
-        try:
-            result = function(*args)
-        except BaseException as exc:  # handed to the awaiting coroutine
-            setter, value = "set_exception", exc
-        else:
-            setter, value = "set_result", result
-        with contextlib.suppress(RuntimeError):  # the loop is gone: its caller timed out
-            loop.call_soon_threadsafe(deliver, setter, value)
-
-    threading.Thread(target=run, name="neuroedge-systemone", daemon=True).start()
-    return future
+    """One POST through `neuroedge.net`; the thread ends by `timeout_s`, whatever the server does."""
+    return net.post(
+        url,
+        headers,
+        body,
+        timeout_s=timeout_s,
+        deadline=time.monotonic() + timeout_s,
+        max_bytes=MAX_BODY,
+    )
 
 
 def _names(values: Any) -> bool:
@@ -173,18 +141,22 @@ def question_for(definition: Mapping[str, Any]) -> dict[str, Any] | Unavailable:
     return question
 
 
-def state_for(state: Mapping[str, Any] | None) -> dict[str, Any]:
-    """What the gate was asked about, as JSON data; values that are not JSON are left out."""
-    out: dict[str, Any] = {}
-    for key, value in (state or {}).items():
-        if not isinstance(key, str):
-            continue
-        try:
-            json.dumps(value, allow_nan=False)
-        except (TypeError, ValueError):
-            continue
-        out[key] = value
-    return out
+def evidence(state: Mapping[str, Any] | None) -> dict[str, str] | Unavailable:
+    """
+    What the model may read: the person's words, and nothing else. Not the action, not
+    its arguments — those come from the caller of the tool, who must not plead its own
+    case. No words (an MCP call nobody spoke) ⇒ `Unavailable("empty")`, nothing sent.
+    """
+    utterance = (state or {}).get("utterance")
+    if not isinstance(utterance, str) or not utterance.strip():
+        return Unavailable("empty", "no words from a person to decide on — nothing was sent")
+    if len(utterance) > MAX_UTTERANCE_CHARS:
+        return Unavailable(
+            "refused",
+            f"the words are longer than any spoken request ({MAX_UTTERANCE_CHARS} characters) "
+            "— nothing was sent",
+        )
+    return {"utterance": utterance}
 
 
 def _probability(value: Any) -> float | None:
@@ -206,6 +178,32 @@ def _down(confidence: float) -> float:
     return math.floor(confidence * 10_000 + 1e-7) / 10_000
 
 
+def _distribution(probabilities: Any, keys: list[str]) -> dict[str, float] | Unavailable:
+    """
+    `probabilities` over exactly `keys`, each in [0, 1], summing to 1 (within what
+    rounding each to two decimals allows); else malformed.
+    """
+    if not isinstance(probabilities, Mapping) or set(probabilities) != set(keys):
+        return Unavailable("malformed", "probabilities must give every option or level, once")
+    spread: dict[str, float] = {}
+    for key, value in probabilities.items():
+        number = _probability(value)
+        if number is None:
+            return Unavailable("malformed", "a probability is not a number in [0, 1]")
+        spread[key] = number
+    if abs(sum(spread.values()) - 1.0) > max(0.02, 0.005 * len(keys)):
+        return Unavailable("malformed", "the probabilities do not sum to 1")
+    return spread
+
+
+def _winner(spread: Mapping[str, float]) -> tuple[str, float] | Unavailable:
+    top = max(spread.values())
+    winners = [key for key, p in spread.items() if p == top]
+    if len(winners) != 1:
+        return Unavailable("empty", "two answers are tied for the top")
+    return winners[0], top
+
+
 def read_answer(
     answer: Any, definition: Mapping[str, Any]
 ) -> tuple[bool | str, float] | Unavailable:
@@ -224,21 +222,24 @@ def read_answer(
     confidence = _probability(answer.get("confidence"))
     if confidence is None:
         return Unavailable("malformed", "confidence is missing or not in [0, 1]")
-    probabilities = answer.get("probabilities")
     if kind == "choice":
         options = list(definition.get("options") or ())
         choice = answer.get("choice")
         if not isinstance(choice, str) or choice not in options:
             return Unavailable("malformed", "the choice is not one of the declared options")
-        if probabilities is not None:
-            spread = _distribution(probabilities, options)
-            if spread is None or spread.get(choice, 0.0) < max(spread.values(), default=0.0):
-                return Unavailable("malformed", "the choice is not the most probable option")
-        return choice, _down(confidence)
+        spread = _distribution(answer.get("probabilities"), options)
+        if isinstance(spread, Unavailable):
+            return spread
+        won = _winner(spread)
+        if isinstance(won, Unavailable):
+            return won
+        if won[0] != choice:
+            return Unavailable("malformed", "the choice is not the most probable option")
+        return choice, _down(min(confidence, won[1]))
     levels = list(definition.get("levels") or ())
-    spread = _distribution(probabilities, [str(index) for index in range(len(levels))])
-    if not spread:
-        return Unavailable("malformed", "a score answer needs probabilities over the levels")
+    spread = _distribution(answer.get("probabilities"), [str(i) for i in range(len(levels))])
+    if isinstance(spread, Unavailable):
+        return spread
     score = answer.get("score")
     if score is not None and (
         isinstance(score, bool)
@@ -247,24 +248,10 @@ def read_answer(
         or not -1e-6 <= float(score) <= len(levels) - 1 + 1e-6
     ):
         return Unavailable("malformed", "score lies outside the levels")
-    top = max(spread.values())
-    winners = [index for index, p in spread.items() if p == top]
-    if len(winners) != 1:
-        return Unavailable("empty", "two levels are tied for the top")
-    return levels[int(winners[0])], _down(confidence)
-
-
-def _distribution(probabilities: Any, keys: list[str]) -> dict[str, float] | None:
-    """`probabilities` keyed by a subset of `keys`, each a probability; else None."""
-    if not isinstance(probabilities, Mapping) or not probabilities:
-        return None
-    out: dict[str, float] = {}
-    for key, value in probabilities.items():
-        number = _probability(value)
-        if key not in keys or number is None:
-            return None
-        out[key] = number
-    return out
+    won = _winner(spread)
+    if isinstance(won, Unavailable):
+        return won
+    return levels[int(won[0])], _down(min(confidence, won[1]))
 
 
 def admit(
@@ -314,6 +301,13 @@ def _usage(body: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _checked_threshold(config: SystemOneConfig) -> float:
+    """`[system_one]` checks it; a config built in code is held to the same floor."""
+    if not MIN_THRESHOLD <= config.threshold <= 1:
+        raise ValueError(f"threshold must lie in [{MIN_THRESHOLD:g}, 1], not {config.threshold!r}")
+    return config.threshold
+
+
 class SystemOneApi:
     """A `FactSource`: ``await source.adjudicate(criterion, definition, state, deadline_ms)``."""
 
@@ -329,10 +323,11 @@ class SystemOneApi:
     ) -> None:
         self.config = config
         self.model = config.model
+        self.threshold = _checked_threshold(config)
         self.criteria = frozenset(config.criteria)
         self.events = events
         self.environ = os.environ if environ is None else environ
-        self.transport = urllib_transport if transport is None else transport
+        self.transport = transport
 
     @property
     def source(self) -> str:
@@ -346,8 +341,14 @@ class SystemOneApi:
         name = self.config.api_key_env
         if name is None:
             return None  # a keyless local server (api_base)
-        key = self.environ.get(name, "")
-        if not key.strip():
+        try:
+            key = net.env_key(self.environ, name)
+        except net.KeyUnusable:
+            return Unavailable(
+                "offline",
+                f"{name} holds spaces or control characters inside the key — nothing sent",
+            )
+        if key is None:
             return Unavailable("offline", f"{name} is not set — nothing was sent")
         return key
 
@@ -363,6 +364,9 @@ class SystemOneApi:
         question = question_for(definition)
         if isinstance(question, Unavailable):
             return question
+        words = evidence(state)
+        if isinstance(words, Unavailable):
+            return words
         key = self._key()
         if isinstance(key, Unavailable):
             return key
@@ -372,9 +376,8 @@ class SystemOneApi:
         if limit_ms <= 0:
             return Unavailable("timeout", "no time left in the gate's budget for the model")
         body = json.dumps(
-            {"model": self.model, "state": state_for(state), "questions": {criterion: question}},
+            {"model": self.model, "state": words, "questions": {criterion: question}},
             ensure_ascii=False,
-            allow_nan=False,
         ).encode("utf-8")
         started = self._clock()
         status: int | None = None
@@ -387,9 +390,12 @@ class SystemOneApi:
                 answer = Unavailable(
                     "timeout", f"{self.model} did not answer within {limit_ms:g} ms"
                 )
+            except net.TooLarge:
+                answer = Unavailable("malformed", f"the answer is larger than {MAX_BODY} bytes")
             except Exception as exc:  # network, TLS, DNS: the provider is unreachable
-                detail = scrub(f"{type(exc).__name__}: {exc}", key)[:200]
-                answer = Unavailable("offline", f"{self.model} unreachable: {detail}")
+                # The class name only: a message may quote a header, and so the key.
+                kind = type(getattr(exc, "reason", exc)).__name__
+                answer = Unavailable("offline", f"{self.model} unreachable ({kind})")
             else:
                 try:
                     answer = self._answer(status, payload, criterion, definition, call)
@@ -411,14 +417,15 @@ class SystemOneApi:
         if key is not None:
             headers["Authorization"] = f"Bearer {key}"
         timeout_s = limit_ms / 1000.0
-        transport = self.transport
+        # Looked up at call time, so a test can stand in for the network.
+        transport = self.transport if self.transport is not None else urllib_transport
         args = (self.config.endpoint, headers, body, timeout_s)
         if inspect.iscoroutinefunction(transport) or inspect.iscoroutinefunction(
             type(transport).__call__
         ):
             pending = transport(*args)
         else:
-            pending = _in_daemon_thread(transport, *args)
+            pending = net.in_daemon_thread(transport, *args, name="neuroedge-systemone")
         status, payload = await asyncio.wait_for(pending, timeout_s)
         return status, payload
 
@@ -460,7 +467,7 @@ class SystemOneApi:
             return read
         value, confidence = read
         call["confidence"] = confidence
-        return admit(value, confidence, definition, self.config.threshold, self.source)
+        return admit(value, confidence, definition, self.threshold, self.source)
 
     def _trace(
         self,
@@ -492,14 +499,16 @@ class SystemOneApi:
 class TracedSource:
     """
     A custom `[system_one]` adapter (FR-MDL-08), held to the same contract as the
-    built-in one: every answer passes `admit` (domain, confidence, threshold) and
-    is labelled with who decided it, and each call is a `system_one_call` event.
+    built-in one: it is shown only the person's words (`evidence`) and never asked
+    without them; every answer passes `admit` (domain, confidence, threshold) and is
+    labelled with who decided it; each call is a `system_one_call` event.
     """
 
     def __init__(self, source: Any, config: SystemOneConfig, events: Any = None) -> None:
         self.inner = source
         self.config = config
         self.events = events
+        self.threshold = _checked_threshold(config)
         self.name = str(getattr(source, "name", "custom"))
         self.model = config.model or str(getattr(source, "model", "") or self.name)
         self.criteria = frozenset(config.criteria)
@@ -516,10 +525,13 @@ class TracedSource:
     ) -> Fact | Unavailable:
         if criterion not in self.criteria:
             return Unavailable("refused", f"{criterion!r} is not in [system_one] criteria")
+        words = evidence(state)
+        if isinstance(words, Unavailable):
+            return words
         started = self._clock()
         answer: Fact | Unavailable | None = None
         try:
-            raw = await self.inner.adjudicate(criterion, definition, state, deadline_ms)
+            raw = await self.inner.adjudicate(criterion, definition, dict(words), deadline_ms)
             if isinstance(raw, Unavailable):
                 answer = raw
             elif isinstance(raw, Fact):
@@ -527,7 +539,7 @@ class TracedSource:
                     raw.value,
                     raw.confidence,
                     definition,
-                    self.config.threshold,
+                    self.threshold,
                     f"{self.name}:{self.model}",
                 )
             else:

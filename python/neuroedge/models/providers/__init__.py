@@ -28,14 +28,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ...errors import AgentManifestError
 from .base import Provider, ProviderUnavailable, scrub
+from .common import call_adapter, load_adapter
 from .config import (
     LITELLM,
     SYSTEMONE,
     SystemOneConfig,
     SystemTwoConfig,
-    load_adapter,
     load_system_one_config,
     load_system_two_config,
     parse_system_one,
@@ -55,6 +54,7 @@ __all__ = [
     "SystemOneConfig",
     "SystemTwoConfig",
     "TracedSource",
+    "call_adapter",
     "from_response",
     "load_adapter",
     "load_system_one_config",
@@ -74,23 +74,14 @@ def make_provider(config: SystemTwoConfig, root: Path | None = None) -> Any:
     """The provider `config` names; a custom adapter's factory is called with `config`."""
     if config.adapter is None:
         return LiteLLMProvider(config)
-    factory = load_adapter(config, root)
-    try:
-        provider = factory(config)
-    except Exception as exc:
-        raise AgentManifestError(
-            where=f"{config.where} provider",
-            why=f"the adapter factory {config.adapter!r} raised {type(exc).__name__}: {exc}",
-            how="fix the adapter; it is called once, with the [system_two] config",
-        ) from exc
-    if not callable(provider):
-        raise AgentManifestError(
-            where=f"{config.where} provider",
-            why=f"the adapter factory {config.adapter!r} returned {type(provider).__name__}, "
-            "not a callable provider",
-            how="return a callable (task, name, state) -> answer (models/providers/base.py)",
-        )
-    return provider
+    return call_adapter(
+        config,
+        root,
+        table="system_two",
+        accepts=callable,
+        expected="a callable provider",
+        how="return a callable (task, name, state) -> answer (models/providers/base.py)",
+    )
 
 
 def system_two_for(manifest: Any, events: Any = None) -> Any:
@@ -113,23 +104,15 @@ def make_system_one_source(
     """The `FactSource` `config` names; a custom adapter's factory is called with `config`."""
     if config.adapter is None:
         return SystemOneApi(config, events=events)
-    factory = load_adapter(config, root)
-    try:
-        source = factory(config)
-    except Exception as exc:
-        raise AgentManifestError(
-            where=f"{config.where} provider",
-            why=f"the adapter factory {config.adapter!r} raised {type(exc).__name__}: {exc}",
-            how="fix the adapter; it is called once, with the [system_one] config",
-        ) from exc
-    if not callable(getattr(source, "adjudicate", None)):
-        raise AgentManifestError(
-            where=f"{config.where} provider",
-            why=f"the adapter factory {config.adapter!r} returned {type(source).__name__}, "
-            "not a FactSource",
-            how="return an object with async adjudicate(criterion, definition, state, "
-            "deadline_ms) -> Fact | Unavailable (neuroedge.engine.gate.FactSource)",
-        )
+    source = call_adapter(
+        config,
+        root,
+        table="system_one",
+        accepts=lambda made: callable(getattr(made, "adjudicate", None)),
+        expected="a FactSource",
+        how="return an object with async adjudicate(criterion, definition, state, "
+        "deadline_ms) -> Fact | Unavailable (neuroedge.engine.gate.FactSource)",
+    )
     return TracedSource(source, config, events)
 
 

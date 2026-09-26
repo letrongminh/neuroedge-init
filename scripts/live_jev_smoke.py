@@ -24,11 +24,8 @@ import json
 import os
 import sys
 
-STATE = {
-    "utterance": "bật đèn phòng khách giúp mình, trời tối quá",
-    "action": "light_on",
-    "arguments": {},
-}
+# What the model is shown: the person's words, and nothing else (systemone_api.evidence).
+STATE = {"utterance": "bật đèn phòng khách giúp mình, trời tối quá"}
 QUESTIONS = {
     "wants_light": {
         "type": "bool",
