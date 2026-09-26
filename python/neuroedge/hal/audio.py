@@ -35,6 +35,27 @@ FRAME_MS = 20  # one Opus frame (PRD Appendix D.2): the unit the board's front e
 SAMPLE_WIDTH = 2  # 16-bit PCM
 MAX_FILE_S = 600  # a voice file is read whole: ten minutes is 19 MB at 16 kHz
 SILENCE_DB = -120.0  # the energy of digital silence, instead of -inf
+# Rates PCM audio may have here, from narrowband telephony to studio. Outside this a
+# rate is a broken header, and a resample to it would cost memory without bound.
+MIN_RATE_HZ = 8_000
+MAX_RATE_HZ = 96_000
+# One reply on the speaker: at most two minutes, and at most as many interleaved
+# samples as two minutes of 48 kHz mono — about one second of pure-Python work to
+# downmix and resample, so a reply can never freeze the session for long.
+MAX_REPLY_MS = 120_000
+MAX_REPLY_SAMPLES = 120 * 48_000
+MAX_SPEAKER_CHANNELS = 2
+
+
+def rate_ok(rate: object) -> bool:
+    """A sample rate in [MIN_RATE_HZ, MAX_RATE_HZ] Hz, as an integer."""
+    return (
+        isinstance(rate, int) and not isinstance(rate, bool) and MIN_RATE_HZ <= rate <= MAX_RATE_HZ
+    )
+
+
+def _rate_range() -> str:
+    return f"{MIN_RATE_HZ}–{MAX_RATE_HZ} Hz"
 
 
 def pcm_samples(pcm: bytes) -> array:
@@ -73,6 +94,43 @@ def pcm_digest(pcm: bytes) -> str:
     return "sha256:" + hashlib.sha256(pcm).hexdigest()
 
 
+def to_speaker(
+    pcm: bytes,
+    sample_rate_hz: object,
+    channels: object,
+    sample_width: object,
+    *,
+    to_hz: int,
+    max_ms: float = MAX_REPLY_MS,
+) -> bytes:
+    """
+    Synthesised audio as the speaker plays it — mono 16-bit PCM at `to_hz` — or
+    `ValueError` saying why not: another sample width, more than two channels, a
+    rate outside the sane range, or longer than `max_ms` (the reply's budget). Every
+    check runs *before* any sample is converted, so a header that lies costs nothing.
+    """
+    if sample_width != SAMPLE_WIDTH:
+        raise ValueError(f"the audio is {sample_width!r}-byte PCM; the speaker plays 16-bit")
+    if (
+        isinstance(channels, bool)
+        or not isinstance(channels, int)
+        or not 1 <= channels <= MAX_SPEAKER_CHANNELS
+    ):
+        raise ValueError(f"the audio has {channels!r} channels; the speaker takes 1 or 2")
+    if not rate_ok(sample_rate_hz):
+        raise ValueError(f"the audio's rate {sample_rate_hz!r} Hz is outside {_rate_range()}")
+    samples = len(pcm) // SAMPLE_WIDTH
+    length_ms = samples / channels * 1000 / sample_rate_hz
+    if samples > MAX_REPLY_SAMPLES or length_ms > max_ms:
+        raise ValueError(
+            f"the reply would pass {MAX_REPLY_MS // 1000} s of audio, the most the speaker plays "
+            f"per reply (this sentence: {length_ms / 1000:.1f} s, "
+            f"{max(0.0, min(max_ms, MAX_REPLY_MS)) / 1000:.1f} s left)"
+        )
+    pcm = pcm[: len(pcm) - len(pcm) % (SAMPLE_WIDTH * channels)]
+    return resample(to_mono(pcm, channels), sample_rate_hz, to_hz)
+
+
 def to_mono(pcm: bytes, channels: int) -> bytes:
     """Average interleaved 16-bit channels into one."""
     if channels == 1:
@@ -90,6 +148,8 @@ def resample(pcm: bytes, from_hz: int, to_hz: int) -> bytes:
     Mono 16-bit PCM from one rate to another by linear interpolation — enough to
     bring a TTS reply (24 kHz from most providers) to the board's speaker rate.
     """
+    if not (rate_ok(from_hz) and rate_ok(to_hz)):
+        raise ValueError(f"resample {from_hz} Hz → {to_hz} Hz: rates must be in {_rate_range()}")
     if from_hz == to_hz:
         return pcm
     samples = pcm_samples(pcm)
@@ -145,6 +205,12 @@ class WavSource:
         """
         path = Path(path)
         where = f"{called_from} -> audio.in {path}"
+        if not rate_ok(sample_rate_hz):
+            raise BoardCapabilityError(
+                where=where,
+                why=f"the board declares audio.in at {sample_rate_hz!r} Hz, outside {_rate_range()}",
+                how="fix sample_rate_hz of audio_in in the board profile (the reference board: 16000)",
+            )
         convert = (
             f"convert it: ffmpeg -i <in> -ar {sample_rate_hz} -ac 1 -c:a pcm_s16le {path.name}"
         )
@@ -153,15 +219,26 @@ class WavSource:
                 channels = wav.getnchannels()
                 width = wav.getsampwidth()
                 rate = wav.getframerate()
-                frames = wav.getnframes()
-                if frames > MAX_FILE_S * rate:
+                # The format before anything that uses it: a header with rate 0 is refused
+                # here, not divided by, and nothing is read from a file the board won't take.
+                if (channels, width, rate) != (1, SAMPLE_WIDTH, sample_rate_hz):
                     raise BoardCapabilityError(
                         where=where,
-                        why=f"the file is {frames / rate:.0f} s long; a voice file is read whole, "
-                        f"up to {MAX_FILE_S} s",
+                        why=f"the board's audio.in takes {sample_rate_hz} Hz mono 16-bit PCM; "
+                        f"the file is {rate} Hz, {channels} channel(s), {8 * width}-bit",
+                        how=convert,
+                    )
+                frames = wav.getnframes()
+                if frames > MAX_FILE_S * sample_rate_hz:
+                    raise BoardCapabilityError(
+                        where=where,
+                        why=f"the file is {frames / sample_rate_hz:.0f} s long; a voice file is "
+                        f"read whole, up to {MAX_FILE_S} s",
                         how="cut it into shorter files",
                     )
                 pcm = wav.readframes(frames)
+        except BoardCapabilityError:
+            raise
         except FileNotFoundError as exc:
             raise BoardCapabilityError(
                 where=where, why="no such file", how="pass the path of a .wav file"
@@ -176,17 +253,11 @@ class WavSource:
                 why=f"cannot read the file ({exc.strerror or exc})",
                 how="check the path",
             ) from exc
-        wanted = (1, SAMPLE_WIDTH, sample_rate_hz)
-        if (channels, width, rate) != wanted:
-            raise BoardCapabilityError(
-                where=where,
-                why=f"the board's audio.in takes {sample_rate_hz} Hz mono 16-bit PCM; the file is "
-                f"{rate} Hz, {channels} channel(s), {8 * width}-bit",
-                how=convert,
-            )
         return cls(path, pcm, rate)
 
     def frames(self, frame_ms: int = FRAME_MS) -> Iterator[AudioFrame]:
+        if not rate_ok(self.sample_rate_hz) or frame_ms < 1:
+            raise ValueError(f"{self.sample_rate_hz} Hz in {frame_ms} ms frames has no samples")
         size = self.sample_rate_hz * frame_ms // 1000 * SAMPLE_WIDTH
         for index, offset in enumerate(range(0, len(self.pcm), size)):
             chunk = self.pcm[offset : offset + size]
@@ -257,6 +328,19 @@ class Playback:
         return duration_ms(self.pcm, self.sample_rate_hz)
 
     @property
+    def end_ms(self) -> float:
+        return self.start_ms + self.duration_ms
+
+    def stop(self, at_ms: float) -> None:
+        """
+        The speaker's one stop rule (barge-in, voice_fsm.md §5.2 step 3): what had
+        not played by `at_ms` never does. Before the reply starts nothing plays; after
+        it ended, stopping changes nothing; a stopped reply stays stopped.
+        """
+        if self.stopped_at_ms is None and at_ms < self.end_ms:
+            self.stopped_at_ms = max(self.start_ms, float(at_ms))
+
+    @property
     def played(self) -> bytes:
         """The PCM that reached the speaker: all of it, or up to where it was stopped."""
         if self.stopped_at_ms is None:
@@ -277,15 +361,25 @@ class Speaker:
     sample_rate_hz: int
     playbacks: list[Playback] = field(default_factory=list)
 
+    def __post_init__(self) -> None:
+        if not rate_ok(self.sample_rate_hz):
+            raise BoardCapabilityError(
+                where="audio.out",
+                why=f"the board declares audio.out at {self.sample_rate_hz!r} Hz, outside "
+                f"{_rate_range()}",
+                how="fix sample_rate_hz of audio_out in the board profile (the reference board: "
+                "16000)",
+            )
+
     def play(self, pcm: bytes, start_ms: float) -> Playback:
         playback = Playback(float(start_ms), pcm, self.sample_rate_hz)
         self.playbacks.append(playback)
         return playback
 
     def stop(self, at_ms: float) -> None:
+        """Flush the speaker at `at_ms`: every reply stops by `Playback.stop`'s rule."""
         for playback in self.playbacks:
-            if playback.stopped_at_ms is None and at_ms < playback.start_ms + playback.duration_ms:
-                playback.stopped_at_ms = max(playback.start_ms, float(at_ms))
+            playback.stop(at_ms)
 
     def render(self) -> bytes:
         out = bytearray()
@@ -300,11 +394,7 @@ class Speaker:
     def write(self, path: str | Path) -> Path:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        with wave.open(str(path), "wb") as wav:
-            wav.setnchannels(1)
-            wav.setsampwidth(SAMPLE_WIDTH)
-            wav.setframerate(self.sample_rate_hz)
-            wav.writeframes(self.render())
+        path.write_bytes(wav_bytes(self.render(), self.sample_rate_hz))
         return path
 
 
@@ -349,8 +439,10 @@ def read_wav_bytes(data: bytes) -> tuple[bytes, int, int, int]:
                 raise ValueError("data before fmt")
             end = len(data) if size in (0, 0xFFFFFFFF) or body + size > len(data) else body + size
             rate, channels, width = fmt
-            if channels < 1 or width < 1 or rate < 1:
-                raise ValueError("invalid fmt chunk")
+            if not 1 <= channels <= 8 or not 1 <= width <= 4:
+                raise ValueError(f"invalid fmt chunk: {channels} channels, {8 * width}-bit")
+            if not rate_ok(rate):
+                raise ValueError(f"sample rate {rate} Hz is outside {_rate_range()}")
             pcm = data[body:end]
             return pcm[: len(pcm) - len(pcm) % (channels * width)], rate, channels, width
         if size == 0xFFFFFFFF:

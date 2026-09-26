@@ -36,14 +36,31 @@ def test_case_passes(path):
     assert differences == [], "\n".join(differences)
 
 
+# The only inputs of the speech run that no provider can produce, and so are fed as
+# written: a second transcript for a turn whose first came from STT. Anything else
+# fed as written means the STT or TTS path stopped producing it — a regression the
+# answer alone would not show, since the written input gives the same events.
+FED_AS_WRITTEN = {
+    "v3_speech_while_thinking_drops_late_reply.json": [(2600, "stt_result", 1)],
+    "v6_stt_unavailable_says_offline_line.json": [(1900, "stt_result", 1)],
+}
+
+
 @pytest.mark.parametrize("path", CASES, ids=[p.name for p in CASES])
 def test_case_passes_through_fake_speech_providers(path):
     # TSK-S3-13: the same answer when transcripts come out of the STT path and each
     # reply's end out of the speaker — not one expected event changes.
     case = vc.load_case(path)
     expected = vc.load_expected()[case.name]
-    differences = vc.run_case(case, expected, speech=True)
+    written: list[dict] = []
+    differences = vc.run_case(case, expected, speech=True, written=written)
     assert differences == [], "\n".join(differences)
+    fed = [(e["offset_ms"], e["type"], e["data"].get("turn")) for e in written]
+    assert fed == FED_AS_WRITTEN.get(case.name, []), f"fed as written, not by a provider: {fed}"
+
+
+def test_every_case_fed_as_written_is_in_the_corpus():
+    assert set(FED_AS_WRITTEN) <= {path.name for path in CASES}
 
 
 def test_the_speech_run_really_goes_through_the_providers():

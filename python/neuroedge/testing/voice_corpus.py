@@ -425,10 +425,15 @@ class CaseTextToSpeech:
         return Speech(tone(length, self.RATE), self.RATE, latency_ms=0.0)
 
 
-async def execute(case: VoiceCase, *, speech: bool = False) -> VoiceSession:
+async def execute(
+    case: VoiceCase, *, speech: bool = False, written: list[dict[str, Any]] | None = None
+) -> VoiceSession:
     """
     The case through a fresh `VoiceSession`, input by input, in virtual time —
     with `speech`, through fake STT and TTS providers scripted from the case.
+    `written` collects the inputs the providers should have produced but did not,
+    so they were fed as written: a speech path that regressed shows up there
+    instead of passing on the scripted inputs.
     """
     world = case.world
     clock = VirtualClock()
@@ -452,6 +457,8 @@ async def execute(case: VoiceCase, *, speech: bool = False) -> VoiceSession:
         elif speech and event["type"] in (*STT_INPUTS, "tts_stream_end"):
             # The providers produce it: take theirs, here. None scheduled: as written.
             if not await voice.deliver_due(event["type"], event["data"]):
+                if written is not None:
+                    written.append(dict(event))
                 await voice.feed(event["type"], event["data"])
         else:
             await voice.feed(event["type"], event["data"])
@@ -460,7 +467,13 @@ async def execute(case: VoiceCase, *, speech: bool = False) -> VoiceSession:
     return voice
 
 
-def run_case(case: VoiceCase, expected: Mapping[str, Any], *, speech: bool = False) -> list[str]:
+def run_case(
+    case: VoiceCase,
+    expected: Mapping[str, Any],
+    *,
+    speech: bool = False,
+    written: list[dict[str, Any]] | None = None,
+) -> list[str]:
     """Differences between the case's answer and what the implementation did."""
-    voice = asyncio.run(execute(case, speech=speech))
+    voice = asyncio.run(execute(case, speech=speech, written=written))
     return compare(list(expected["events"] or []), observe(voice.events.events))

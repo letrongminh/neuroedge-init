@@ -38,9 +38,13 @@ wait is the turn's `perception` stage (`turn_latency`, tool_calling.md §7.1).
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import heapq
 import inspect
 import itertools
+import math
+import threading
 from collections import deque
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -49,9 +53,7 @@ from typing import Any
 
 from ..actions.tools import ToolCall
 from ..engine.trace_sink import monotonic_ms
-from ..hal.audio import SAMPLE_WIDTH, AudioFrame, EnergyVAD, Playback, pcm_digest
-from ..hal.audio import resample as _resample
-from ..hal.audio import to_mono as _to_mono
+from ..hal.audio import MAX_REPLY_MS, AudioFrame, EnergyVAD, Playback, pcm_digest, to_speaker
 from ..models import SystemOne
 from ..sim.session import SimSession, Turn, answer_word
 from .providers.base import AudioClip, Speech, SpeechUnavailable, Transcript, clean_transcript
@@ -62,6 +64,21 @@ PREROLL_MS = 300  # audio kept from before speech starts, so a turn's first syll
 MAX_CLIP_MS = 120_000  # a turn longer than this goes to STT cut at this length
 DEFAULT_RATE_HZ = 16000
 SETTLE_STEPS = 100_000  # `settle()` stops after this many deadlines, whatever is left
+# A provider call is abandoned after its table's `timeout_s` × GRACE, plus a margin so
+# an adapter that times itself out (the OpenAI one does) says so first. A provider
+# without a `config.timeout_s` gets the think timeout: STT still silent then has
+# failed anyway (voice_fsm.md §7).
+GRACE = 1.25
+MARGIN_S = 1.0
+
+
+def _positive(value: Any) -> bool:
+    return (
+        isinstance(value, int | float)
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and value > 0
+    )
 
 
 class VirtualClock:
@@ -390,16 +407,14 @@ class VoiceSession:
         sent = self.clock.now
         self._stt_sent[turn] = sent
         started = self.stopwatch()
-        latency: float | None = None
+        declared: Any = None
         try:
-            answer = self.stt.transcribe(clip)
-            if inspect.isawaitable(answer):
-                answer = await answer
+            answer = await self._call(self.stt, "transcribe", clip, role="stt")
             transcript = answer if isinstance(answer, Transcript) else Transcript(answer)
-            latency = transcript.latency_ms
+            declared = transcript.latency_ms
             due = ("stt_result", {"turn": turn, "text": clean_transcript(transcript.text, "STT")})
         except SpeechUnavailable as exc:
-            latency = exc.latency_ms if latency is None else latency
+            declared = exc.latency_ms if declared is None else declared
             due = ("stt_unavailable", {"turn": turn, "reason": exc.why})
         except Exception as exc:
             # An adapter's own bug takes the same degraded path, never a crash. Only the
@@ -408,9 +423,70 @@ class VoiceSession:
                 "stt_unavailable",
                 {"turn": turn, "reason": f"the STT provider raised {type(exc).__name__} — fix it"},
             )
-        if latency is None:
-            latency = self.stopwatch() - started
-        self._schedule(sent + max(0.0, float(latency)), *due)
+        latency, problem = self._latency(declared, started, "STT")
+        if problem is not None:
+            due = ("stt_unavailable", {"turn": turn, "reason": problem})
+        self._schedule(sent + latency, *due)
+
+    # -- provider calls ------------------------------------------------------------
+    def _bound_s(self, provider: Any) -> float:
+        """How long a call to `provider` may take, in wall-clock seconds."""
+        timeout = getattr(getattr(provider, "config", None), "timeout_s", None)
+        if _positive(timeout):
+            return float(timeout) * GRACE + MARGIN_S
+        return self.fsm.params.think_timeout_ms / 1000
+
+    async def _call(self, provider: Any, method: str, argument: Any, *, role: str) -> Any:
+        """
+        ``provider.<method>(argument)``, bounded by `_bound_s`: a hung adapter is a
+        failed one (voice_fsm.md §7), never a hung session. An ``async def`` method is
+        awaited here; any other runs in a daemon thread, so a blocking one cannot stop
+        the loop, and nothing — not `asyncio.run` at exit — waits for a thread that
+        never returns. (An async method that blocks the loop itself cannot be bounded.)
+        """
+        call = getattr(provider, method)
+        bound = self._bound_s(provider)
+        try:
+            if inspect.iscoroutinefunction(call):
+                return await asyncio.wait_for(call(argument), timeout=bound)
+            loop = asyncio.get_running_loop()
+            started = loop.time()
+            result = await asyncio.wait_for(_in_thread(loop, call, argument, role), bound)
+            if inspect.isawaitable(result):
+                left = max(0.0, bound - (loop.time() - started))
+                result = await asyncio.wait_for(result, timeout=left)
+            return result
+        except TimeoutError:
+            name = role.upper()
+            raise SpeechUnavailable(
+                where=f"{name}({type(provider).__name__})",
+                why=f"the {name} provider did not answer within {bound:g} s — check it, or its "
+                f"[{role}] timeout_s",
+                how=f"check the {name} provider, or its [{role}] timeout_s",
+                role=role,
+            ) from None
+
+    def _latency(self, declared: Any, started: float, name: str) -> tuple[float, str | None]:
+        """
+        The call's latency in ms on the session's clock: what a simulated provider
+        declared, else the wall time measured. A declared value that is not a finite
+        number ≥ 0 (NaN, infinity, a string) is refused — the call counts as failed,
+        at its measured time — since it would put the answer nowhere on the clock.
+        """
+        measured = max(0.0, self.stopwatch() - started)
+        if declared is None:
+            return measured, None
+        if (
+            isinstance(declared, bool)
+            or not isinstance(declared, int | float)
+            or not math.isfinite(declared)
+            or declared < 0
+        ):
+            return measured, (
+                f"the {name} provider reported latency_ms={declared!r}, not a finite number of "
+                "ms ≥ 0 — fix it"
+            )
+        return float(declared), None
 
     def _waits(self, turn: int) -> tuple[float | None, float]:
         """(when the turn's wait began, how much of it was STT) for its `turn_latency`."""
@@ -521,23 +597,27 @@ class VoiceSession:
         speaker = self.hal.speaker(called_from="VoiceSession")
         pieces: list[bytes] = []
         latency = 0.0
+        budget_ms = float(MAX_REPLY_MS)  # the whole reply, not each sentence
         failure: str | None = None
         for text in texts:
             started = self.stopwatch()
+            took: Any = None
             try:
-                speech = self.tts.synthesize(text)
-                if inspect.isawaitable(speech):
-                    speech = await speech
+                speech = await self._call(self.tts, "synthesize", text, role="tts")
                 if not isinstance(speech, Speech):
                     raise TypeError(f"synthesize() returned {type(speech).__name__}, not Speech")
                 took = speech.latency_ms
-                pieces.append(self._for_speaker(speech, speaker.sample_rate_hz))
+                piece = self._for_speaker(speech, speaker.sample_rate_hz, budget_ms)
+                budget_ms -= len(piece) / 2 * 1000 / speaker.sample_rate_hz
+                pieces.append(piece)
             except SpeechUnavailable as exc:
-                took, failure = exc.latency_ms, exc.why
+                took = exc.latency_ms if took is None else took
+                failure = exc.why
             except Exception as exc:
-                took = None
                 failure = f"the TTS provider raised {type(exc).__name__} — fix it"
-            latency += max(0.0, self.stopwatch() - started if took is None else float(took))
+            spent, problem = self._latency(took, started, "TTS")
+            latency += spent
+            failure = failure or problem
             if failure is not None:
                 break
         at = start + latency
@@ -557,16 +637,33 @@ class VoiceSession:
         self._playing = (playback, [self._schedule(end, "tts_stream_end", data)])
 
     @staticmethod
-    def _for_speaker(speech: Speech, rate: int) -> bytes:
-        if speech.sample_width != SAMPLE_WIDTH or speech.channels < 1 or speech.sample_rate_hz < 1:
+    def _for_speaker(speech: Speech, rate: int, budget_ms: float = MAX_REPLY_MS) -> bytes:
+        """
+        The sentence at the speaker's rate, or `SpeechUnavailable` — checked before
+        any sample is converted (`hal.audio.to_speaker`): a header claiming 1 Hz, or a
+        reply past its two minutes, costs nothing and never freezes the session.
+        """
+        if not isinstance(speech.pcm, bytes | bytearray):
             raise SpeechUnavailable(
                 where="TTS",
-                why=f"the audio is {8 * speech.sample_width}-bit, {speech.channels} channel(s) — "
-                "the speaker plays 16-bit PCM",
-                how="choose a TTS model that returns 16-bit PCM",
+                why=f"the audio is a {type(speech.pcm).__name__}, not bytes — fix the TTS provider",
+                how="return Speech(pcm=bytes, …) (perception/providers/base.py)",
                 role="tts",
             )
-        return _resample(_to_mono(speech.pcm, speech.channels), speech.sample_rate_hz, rate)
+        try:
+            return to_speaker(
+                bytes(speech.pcm),
+                speech.sample_rate_hz,
+                speech.channels,
+                speech.sample_width,
+                to_hz=rate,
+                max_ms=budget_ms,
+            )
+        except ValueError as exc:
+            how = "choose a TTS model or voice that returns 16-bit PCM at 8–96 kHz, and shorter replies"
+            raise SpeechUnavailable(
+                where="TTS", why=f"{exc} — {how}", how=how, role="tts"
+            ) from None
 
     def _stop_speech(self) -> None:
         """§5.2 step 3, called by the machine on barge-in: flush what has not played."""
@@ -578,5 +675,30 @@ class VoiceSession:
         playback, dues = self._playing
         self._playing = None
         if playback is not None:
-            playback.stopped_at_ms = max(playback.start_ms, self.clock.now)
+            # The speaker's one stop rule (`Playback.stop`), for everything on it.
+            self.hal.speaker(called_from="VoiceSession").stop(self.clock.now)
         self._cancel(dues)
+
+
+def _in_thread(loop: asyncio.AbstractEventLoop, call: Any, argument: Any, role: str):
+    """`call(argument)` in a daemon thread, as a future of this loop."""
+    future: asyncio.Future[Any] = loop.create_future()
+
+    def settle(result: Any, error: BaseException | None) -> None:
+        if future.done():
+            return  # abandoned: the session moved on
+        if error is not None:
+            future.set_exception(error)
+        else:
+            future.set_result(result)
+
+    def work() -> None:
+        try:
+            outcome: tuple[Any, BaseException | None] = (call(argument), None)
+        except BaseException as exc:  # handed to the loop, raised there
+            outcome = (None, exc)
+        with contextlib.suppress(RuntimeError):  # the loop is closed: nobody waits
+            loop.call_soon_threadsafe(settle, *outcome)
+
+    threading.Thread(target=work, name=f"neuroedge-{role}", daemon=True).start()
+    return future

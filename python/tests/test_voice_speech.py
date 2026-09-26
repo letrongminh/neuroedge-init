@@ -249,7 +249,7 @@ def test_an_adapter_that_crashes_is_unavailable_and_its_message_is_not_kept(door
     _no_physical_act(voice)
 
 
-@pytest.mark.parametrize("answer", [None, 42, "mở\x00cửa", "m�"])
+@pytest.mark.parametrize("answer", [None, 42, "mở\x00cửa", "m\ufffd"])
 def test_a_garbled_transcript_is_unavailable_not_a_command(door, tmp_path, answer):
     voice = voice_on(door, stt=FakeSpeechToText(lambda clip: answer))
     asyncio.run(voice.play(speech_file(tmp_path, 500, 900, 3000)))
@@ -312,12 +312,21 @@ def test_tts_unavailable_ends_the_stream_with_error_and_the_words_stay_shown(doo
     assert voice.hal.speaker().playbacks == []
 
 
-def test_barge_in_stops_the_speaker(door, tmp_path):
+def test_barge_in_stops_the_speaker(door, tmp_path, monkeypatch):
     # Reply starts at 2400 (turn end 2300 + STT 100) and would last 60 ms/char; the person
     # speaks again from 3000, confirmed at 3060: the speaker stops there, not at the end.
+    stops: list[float] = []
+    real_stop = Speaker.stop
+
+    def spy(self, at_ms):
+        stops.append(at_ms)
+        real_stop(self, at_ms)
+
+    monkeypatch.setattr(Speaker, "stop", spy)
     voice = _ask_turn(
         door, tmp_path, FakeTextToSpeech(ms_per_char=60), parts=(500, 900, 1600, 800, 3000)
     )
+    assert stops == [3060]  # barge-in goes through the speaker's one stop rule
     (cut,) = voice.events.of_type("tts_stream_end")
     assert cut == {"duration_ms": 660, "reason": "barge_in"}
     assert at(voice, "tts_stream_end") == [3060]
@@ -415,3 +424,309 @@ def test_a_voice_file_run_is_deterministic(door, tmp_path):
 def test_a_frame_is_a_frame():
     frame = AudioFrame(silence(20), 40, 20, RATE)
     assert frame.end_ms == 60
+
+
+# --- wave-2 review: what a provider or a file may not do to the session ------------------------
+
+from neuroedge.hal.audio import (  # noqa: E402 — grouped with the tests that need them
+    MAX_REPLY_MS,
+    Playback,
+    read_wav_bytes,
+    to_speaker,
+    wav_bytes,
+)
+from neuroedge.perception.providers import SpeechUnavailable  # noqa: E402
+from neuroedge.perception.providers.base import clean_transcript  # noqa: E402
+
+
+class Says:
+    """A TTS that returns whatever Speech it is given, for every sentence."""
+
+    def __init__(self, speech):
+        self.speech = speech
+
+    def synthesize(self, text):
+        return self.speech
+
+
+def test_playback_stop_is_one_rule():
+    early = Playback(1000, tone(500, RATE), RATE)
+    early.stop(400)  # before it starts: nothing plays
+    assert early.stopped_at_ms == 1000 and early.played == b""
+    mid = Playback(1000, tone(500, RATE), RATE)
+    mid.stop(1200)
+    mid.stop(1300)  # stopped once, stays stopped where it was
+    assert mid.stopped_at_ms == 1200 and len(mid.played) == 200 * 32
+    done = Playback(1000, tone(500, RATE), RATE)
+    done.stop(1500)  # at or after its end: it played whole
+    assert done.stopped_at_ms is None and done.played == done.pcm
+    speaker = Speaker(RATE)
+    first, second = speaker.play(tone(500, RATE), 0), speaker.play(tone(500, RATE), 2000)
+    speaker.stop(250)
+    assert (first.stopped_at_ms, second.stopped_at_ms) == (250, 2000)  # the flush empties all
+
+
+def test_the_speaker_writes_exactly_wav_bytes(tmp_path):
+    speaker = Speaker(RATE)
+    speaker.play(tone(100, RATE), 50)
+    assert speaker.write(tmp_path / "out.wav").read_bytes() == wav_bytes(speaker.render(), RATE)
+
+
+# F2 — a TTS header that lies about its rate, or a reply without end
+
+
+@pytest.mark.parametrize(
+    "speech, fragment",
+    [
+        (Speech(bytes(2048), 1), "outside 8000–96000 Hz"),
+        (Speech(bytes(2048), 0), "outside 8000–96000 Hz"),
+        (Speech(bytes(2048), 10_000_000), "outside 8000–96000 Hz"),
+        (Speech(bytes(2048), 16000, channels=6), "channels"),
+        (Speech(bytes(2048), 16000, sample_width=3), "16-bit"),
+        (Speech(bytes(2 * 8000 * 121), 8000), "would pass 120 s"),
+    ],
+)
+def test_speech_the_speaker_cannot_play_is_refused_before_any_work(speech, fragment):
+    import time
+
+    started = time.perf_counter()
+    with pytest.raises(SpeechUnavailable) as caught:
+        VoiceSession._for_speaker(speech, RATE)
+    assert fragment in caught.value.why and caught.value.role == "tts"
+    assert time.perf_counter() - started < 0.2  # checked from the header, nothing converted
+
+
+def test_a_tts_rate_of_1_hz_is_a_failed_reply_not_a_frozen_session(door, tmp_path):
+    import time
+
+    started = time.perf_counter()
+    voice = _ask_turn(door, tmp_path, Says(Speech(bytes(2048), 1)))
+    assert time.perf_counter() - started < 2
+    (failed,) = voice.events.of_type("tts_unavailable")
+    assert "1 Hz is outside" in failed["reason"]
+    assert voice.events.of_type("tts_stream_end")[0]["reason"] == "error"
+    assert voice.hal.speaker().playbacks == []
+
+
+def test_the_reply_budget_is_the_whole_reply(door, tmp_path):
+    # Two sentences (the gate's question and its hint) of 70 s each: the second overruns.
+    voice = _ask_turn(door, tmp_path, Says(Speech(bytes(2 * 8000 * 70), 8000)))
+    (failed,) = voice.events.of_type("tts_unavailable")
+    assert f"would pass {MAX_REPLY_MS // 1000} s" in failed["reason"]
+    assert "this sentence: 70.0 s, 50.0 s left" in failed["reason"]
+
+
+def test_to_speaker_and_resample_refuse_absurd_rates():
+    assert len(to_speaker(tone(100, 8000), 8000, 1, 2, to_hz=RATE)) == 100 * 32
+    for bad in (0, 1, 7999, 96001, True, 16000.0):
+        with pytest.raises(ValueError):
+            resample(tone(20, RATE), bad, RATE)
+        with pytest.raises(ValueError):
+            to_speaker(tone(20, RATE), bad, 1, 2, to_hz=RATE)
+
+
+@pytest.mark.parametrize("rate", [0, 1, 200_000])
+def test_a_wav_answer_with_an_absurd_rate_is_not_wav(rate):
+    data = bytearray(wav_bytes(tone(20, RATE), RATE))
+    data[24:28] = rate.to_bytes(4, "little")
+    with pytest.raises(ValueError, match="outside"):
+        read_wav_bytes(bytes(data))
+
+
+# F4 — what a transcript may hold
+
+
+@pytest.mark.parametrize(
+    "text, category",
+    [
+        ("mở\ud800cửa", "lone surrogate"),
+        ("mở \u202ecửa", "format"),  # right-to-left override: the console lies
+        ("mở cửa\U000e0069\U000e0067", "format"),  # tag characters: hidden text for a model
+        ("mở \ue000", "private-use"),
+        ("mở \u0378", "unassigned"),
+    ],
+)
+def test_a_transcript_that_is_not_plain_speech_is_garbled(text, category):
+    with pytest.raises(SpeechUnavailable) as caught:
+        clean_transcript(text, "STT")
+    assert category in caught.value.why and "U+" in caught.value.why
+    assert "cửa" not in caught.value.why  # the code point is named, never the text around it
+
+
+def test_joiners_stay_and_invisible_spaces_go():
+    assert clean_transcript("a\u200db\u200cc", "w") == "a\u200db\u200cc"
+    assert clean_transcript("\ufeffmở\u200b cửa\u00ad", "w") == "mở cửa"
+
+
+def test_a_lone_surrogate_from_stt_never_reaches_the_trace(door, tmp_path):
+    voice = voice_on(door, stt=FakeSpeechToText(["mở\ud800 cửa"]), anonymize=True)
+    asyncio.run(voice.play(speech_file(tmp_path, 500, 900, 3000)))
+    assert voice.events.of_type("stt_unavailable") and not voice.events.of_type("stt_result")
+    _no_physical_act(voice)
+    json.dumps(voice.session.trace(), ensure_ascii=False).encode("utf-8")  # encodes cleanly
+
+
+# F5 — a WAV header checked before it is used
+
+
+def _patched(path, offset, value):
+    data = bytearray(path.read_bytes())
+    data[offset : offset + 4] = value.to_bytes(4, "little")
+    path.write_bytes(bytes(data))
+    return path
+
+
+def test_a_wav_with_rate_0_is_refused_not_divided_by(tmp_path):
+    path = _patched(write_wav(tmp_path / "zero.wav", silence(100)), 24, 0)
+    with pytest.raises(BoardCapabilityError) as caught:
+        WavSource.open(path, sample_rate_hz=RATE, called_from="t")
+    assert "the file is 0 Hz" in caught.value.why
+
+
+def test_the_format_is_checked_before_the_length_and_before_reading(tmp_path, monkeypatch):
+    path = write_wav(tmp_path / "cd.wav", bytes(4410 * 2), rate=44100)
+    _patched(path, 40, 0x7FFFFFF0)  # claims hours of audio
+    read = []
+    monkeypatch.setattr(wave.Wave_read, "readframes", lambda self, n: read.append(n) or b"")
+    with pytest.raises(BoardCapabilityError) as caught:
+        WavSource.open(path, sample_rate_hz=RATE, called_from="t")
+    assert "44100 Hz" in caught.value.why and read == []
+
+
+def test_a_file_too_long_is_refused_before_it_is_read(tmp_path, monkeypatch):
+    path = _patched(write_wav(tmp_path / "long.wav", silence(100)), 40, 0x7FFFFFF0)
+    read = []
+    monkeypatch.setattr(wave.Wave_read, "readframes", lambda self, n: read.append(n) or b"")
+    with pytest.raises(BoardCapabilityError, match="read whole, up to 600 s"):
+        WavSource.open(path, sample_rate_hz=RATE, called_from="t")
+    assert read == []
+
+
+# F8 — board rates and declared latencies that would break the clock
+
+
+@pytest.mark.parametrize("rate", [0, 40, 1_000_000])
+def test_a_board_rate_outside_the_range_is_refused(tmp_path, rate):
+    good = write_wav(tmp_path / "ok.wav", silence(100))
+    with pytest.raises(BoardCapabilityError, match="the board declares audio.in"):
+        WavSource.open(good, sample_rate_hz=rate, called_from="t")
+    with pytest.raises(BoardCapabilityError, match="the board declares audio.out"):
+        Speaker(rate)
+    with pytest.raises(ValueError, match="no samples"):
+        list(WavSource(good, silence(100), rate).frames())
+
+
+@pytest.mark.parametrize("latency", [float("inf"), float("nan"), -1.0])
+def test_the_fakes_refuse_latencies_that_break_the_clock(latency):
+    with pytest.raises(ValueError, match="finite"):
+        FakeTextToSpeech(latency_ms=latency)
+    with pytest.raises(ValueError, match="finite"):
+        FakeSpeechToText(latency_ms=latency)
+    with pytest.raises(ValueError, match="finite"):
+        FakeTextToSpeech(ms_per_char=latency)
+    with pytest.raises(ValueError, match="8000"):
+        FakeTextToSpeech(sample_rate_hz=1)
+
+
+@pytest.mark.parametrize("latency", [float("inf"), float("nan"), -5.0, "soon", True])
+def test_a_tts_that_declares_a_broken_latency_is_a_failed_reply(door, tmp_path, latency):
+    voice = _ask_turn(door, tmp_path, Says(Speech(tone(100, RATE), RATE, latency_ms=latency)))
+    (failed,) = voice.events.of_type("tts_unavailable")
+    assert "not a finite number" in failed["reason"]
+    assert voice.events.of_type("tts_stream_end")[0]["reason"] == "error"
+
+
+@pytest.mark.parametrize("latency", [float("inf"), float("nan")])
+def test_an_stt_that_declares_a_broken_latency_is_a_failed_turn(door, tmp_path, latency):
+    class Stt:
+        def transcribe(self, clip):
+            return type(FakeSpeechToText().transcribe(clip))("mở cửa", latency_ms=latency)
+
+    voice = voice_on(door, stt=Stt())
+    asyncio.run(voice.play(speech_file(tmp_path, 500, 900, 3000)))
+    (failed,) = voice.events.of_type("stt_unavailable")
+    assert "not a finite number" in failed["reason"]
+    _no_physical_act(voice)
+
+
+def test_the_fake_factories_refuse_infinite_options():
+    from types import SimpleNamespace
+
+    from neuroedge.perception.providers.fake import stt as fake_stt
+    from neuroedge.perception.providers.fake import tts as fake_tts
+
+    with pytest.raises(ValueError, match="finite"):
+        fake_tts(SimpleNamespace(options={"ms_per_char": float("inf")}))
+    with pytest.raises(ValueError, match="finite"):
+        fake_stt(SimpleNamespace(options={"latency_ms": float("nan")}))
+
+
+# F7 — a provider that never answers
+
+
+class HangingAsync:
+    def __init__(self, timeout_s=None):
+        self.config = None if timeout_s is None else type("C", (), {"timeout_s": timeout_s})()
+
+    async def transcribe(self, clip):
+        await asyncio.Event().wait()
+
+    async def synthesize(self, text):
+        await asyncio.Event().wait()
+
+
+class HangingSync:
+    """Blocks its thread for 5 s — a blocking HTTP client, a deadlock."""
+
+    def __init__(self):
+        import threading
+
+        self.release = threading.Event()
+
+    def transcribe(self, clip):
+        self.release.wait(5)
+        return "mở cửa"
+
+
+def test_a_hung_async_stt_is_unavailable_within_its_timeout(door, tmp_path):
+    import time
+
+    started = time.perf_counter()
+    voice = voice_on(door, stt=HangingAsync(timeout_s=0.1), tts=FakeTextToSpeech())
+    asyncio.run(voice.play(speech_file(tmp_path, 500, 900, 3000)))
+    assert time.perf_counter() - started < 3  # 0.1 s × 1.25 + 1 s margin
+    (failed,) = voice.events.of_type("stt_unavailable")
+    assert "did not answer within" in failed["reason"]
+    assert voice.hal.spoken == [voice.session.unheard_help()]
+    _no_physical_act(voice)
+
+
+def test_a_blocking_sync_stt_is_bounded_by_the_think_timeout(door, tmp_path):
+    import time
+
+    stt = HangingSync()
+    params = VoiceParams(vad_activation=True, think_timeout_ms=300)
+    started = time.perf_counter()
+    try:
+        voice = voice_on(door, stt=stt, params=params)
+        asyncio.run(voice.play(speech_file(tmp_path, 500, 900, 3000)))  # returns: no join
+        assert time.perf_counter() - started < 3
+    finally:
+        stt.release.set()
+    # The bound (0.3 s of wall time) lands on the virtual clock at or just after the think
+    # timeout (300 ms): either way STT failed, the offline line is said, nothing acts.
+    reason = voice.events.of_type("stt_unavailable")[0]["reason"]
+    assert "within 0.3 s" in reason or "before the think timeout" in reason
+    assert voice.hal.spoken == [voice.session.unheard_help()]
+    _no_physical_act(voice)
+
+
+def test_a_hung_tts_is_a_failed_reply(door, tmp_path):
+    import time
+
+    started = time.perf_counter()
+    voice = _ask_turn(door, tmp_path, HangingAsync(timeout_s=0.1))
+    assert time.perf_counter() - started < 3
+    (failed,) = voice.events.of_type("tts_unavailable")
+    assert "TTS provider did not answer" in failed["reason"]
+    assert voice.events.of_type("tts_stream_end")[0]["reason"] == "error"
