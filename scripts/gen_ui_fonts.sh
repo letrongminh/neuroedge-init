@@ -95,9 +95,11 @@ header = f"""\
  * (LICENSES/OFL-1.1.txt; NOTICE section A.5). Verified {verified},
  * file SHA-256 {sha}. Glyph ranges: fonts/ranges.txt.
  *
- * The OFL asks that the font not be sold by itself and that Modified Versions
- * keep the reserved font names; this bitmap subset is used inside NeuroEdge
- * and is not the font software. Regenerate with: bash scripts/gen_ui_fonts.sh
+ * This bitmap subset is a Modified Version under OFL 1.1, not the font
+ * software. Be Vietnam Pro declares no Reserved Font Name, so naming it
+ * {name} is allowed. Firmware images that link this font distribute it: they
+ * must carry this copyright notice and the OFL text (docs/spec/ui.md §5).
+ * Regenerate with: bash scripts/gen_ui_fonts.sh
  */
 {body}"""
 open(dst, "w", encoding="utf-8").write(header)

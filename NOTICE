@@ -90,9 +90,13 @@ of the file itself.
                 scripts/gen_ui_fonts.sh with lv_font_conv 1.5.3; each generated
                 .c file names the source font, its SHA-256 and the licence.
    - Lands in:  targets/esp32s3/ui/fonts/
-   - Status:    APPROVED — in use (TSK-S4-10). A Modified Version under OFL
-                §1: the subset does not use the reserved name "Be Vietnam Pro"
-                for itself, and no font software is sold.
+   - Status:    APPROVED — in use (TSK-S4-10). Each generated file is a
+                Modified Version under OFL 1.1 and is named ne_font_*; Be
+                Vietnam Pro declares no Reserved Font Name, so that naming is
+                allowed. A firmware image that links these fonts distributes
+                the font software: it must carry this copyright notice and
+                LICENSES/OFL-1.1.txt (docs/spec/ui.md §5). No font software is
+                sold.
 
 
 ================================================================================

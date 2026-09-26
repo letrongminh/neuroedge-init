@@ -76,6 +76,46 @@ def glyph_ranges() -> list[tuple[int, int]]:
     return ranges
 
 
+def font_codepoints(path: Path) -> set[int]:
+    """
+    Every code point the generated font can draw, read from its `cmaps` the way
+    LVGL reads them: a contiguous map covers `range_start … range_start +
+    range_length - 1`; a sparse map lists offsets from `range_start`.
+    """
+    source = read(path)
+    covered: set[int] = set()
+    maps = re.search(
+        r"static const lv_font_fmt_txt_cmap_t cmaps\[\] =\s*\{(.*?)\n\};", source, re.S
+    )
+    assert maps, f"{path} has no cmaps: is it a generated LVGL font?"
+    for entry in re.finditer(
+        r"\.range_start = (\d+), \.range_length = (\d+),.*?\.unicode_list = (\w+),",
+        maps.group(1),
+        re.S,
+    ):
+        start, length, unicode_list = int(entry.group(1)), int(entry.group(2)), entry.group(3)
+        if unicode_list == "NULL":
+            covered.update(range(start, start + length))
+            continue
+        table = re.search(rf"static const \w+ {unicode_list}\[\] = \{{(.*?)\}};", source, re.S)
+        assert table, f"{path}: {unicode_list} is not in the file"
+        # lv_font_conv writes these as hex (0x1c80), as LVGL's relative code points.
+        covered.update(
+            start + int(value, 0) for value in re.findall(r"0x[0-9a-fA-F]+|\d+", table.group(1))
+        )
+    return covered
+
+
+def table_characters() -> set[str]:
+    """Every non-ASCII character the Vietnamese and English tables draw."""
+    characters = set()
+    for literal in string_literals(read(STRINGS)):
+        for char in literal.replace("\\n", "").replace('\\"', '"'):
+            if ord(char) >= 0x80:
+                characters.add(char)
+    return characters
+
+
 def png_size(path: Path) -> tuple[int, int]:
     data = path.read_bytes()
     assert data[:8] == b"\x89PNG\r\n\x1a\n", f"{path} is not a PNG"
@@ -92,17 +132,25 @@ def test_the_string_tables_ship_exactly_the_python_languages() -> None:
         assert f'.code = "{language}"' in read(STRINGS)
 
 
-def test_every_string_table_character_has_a_glyph_range() -> None:
-    ranges = glyph_ranges()
-    missing = []
-    for literal in string_literals(read(STRINGS)):
-        # The escape sequences of the C source are not text the panel shows.
-        for char in literal.replace("\\n", "").replace('\\"', '"'):
-            if ord(char) < 0x80:
-                continue
-            if not any(low <= ord(char) <= high for low, high in ranges):
-                missing.append(f"U+{ord(char):04X} {char!r}")
-    assert missing == [], f"fonts/ranges.txt does not cover {sorted(set(missing))}"
+def test_every_string_table_character_is_in_every_generated_fonts_cmap() -> None:
+    # The real question is what the fonts can draw, not what ranges.txt asked
+    # lv_font_conv for: a character the generated cmap lacks renders as a box.
+    wanted = table_characters()
+    for font in sorted((UI / "fonts").glob("ne_font_*.c")):
+        covered = font_codepoints(font)
+        missing = sorted(
+            {f"U+{ord(char):04X} {char!r}" for char in wanted if ord(char) not in covered}
+        )
+        assert missing == [], f"{font.name} has no glyph for {missing}"
+
+
+def test_the_range_file_is_what_the_generator_passes() -> None:
+    # ranges.txt is the generator's input; a range that survives generation must
+    # be visible to the test that checks coverage.
+    script = read(ROOT / "scripts" / "gen_ui_fonts.sh")
+    assert '--range "$RANGES"' in script
+    assert "grep -v '^[[:space:]]*#' \"$FONTS/ranges.txt\"" in script
+    assert glyph_ranges(), "fonts/ranges.txt is empty"
 
 
 # --- reason codes -----------------------------------------------------------------------------
@@ -159,11 +207,20 @@ def test_the_two_languages_render_the_same_cases() -> None:
 # --- licences and pins (CONTRIBUTING.md §4) ----------------------------------------------------
 
 
+def font_source_shas() -> list[str]:
+    """The two font pins of the generator, in file order (the OFL pin is third)."""
+    script = read(ROOT / "scripts" / "gen_ui_fonts.sh")
+    return [
+        match.group(1)
+        for match in re.finditer(r"(?:REGULAR|SEMIBOLD)_SHA=\"([0-9a-f]{64})\"", script)
+    ]
+
+
 def test_the_generator_pins_its_sources() -> None:
     script = read(ROOT / "scripts" / "gen_ui_fonts.sh")
     assert "lv_font_conv@1.5.3" in script
-    for sha in re.findall(r"SHA=\"([0-9a-f]{64})\"", script):
-        assert sha in script
+    assert len(font_source_shas()) == 2
+    assert re.search(r"OFL_SHA=\"[0-9a-f]{64}\"", script)
     assert (
         script.count('_URL="https://raw.githubusercontent.com/google/fonts/main/ofl/bevietnampro/')
         == 3
@@ -171,8 +228,7 @@ def test_the_generator_pins_its_sources() -> None:
 
 
 def test_every_font_carries_its_attribution_and_source_sha() -> None:
-    script = read(ROOT / "scripts" / "gen_ui_fonts.sh")
-    shas = re.findall(r"SHA=\"([0-9a-f]{64})\"", script)
+    shas = font_source_shas()
     fonts = sorted((UI / "fonts").glob("ne_font_*.c"))
     assert [font.name for font in fonts] == ["ne_font_12.c", "ne_font_16.c", "ne_font_22.c"]
     for font in fonts:
@@ -180,7 +236,22 @@ def test_every_font_carries_its_attribution_and_source_sha() -> None:
         assert "scripts/gen_ui_fonts.sh" in source
         assert "SIL Open Font License 1.1" in source
         assert "LICENSES/OFL-1.1.txt" in source
+        assert "Modified Version" in source and "Reserved Font Name" in source
         assert any(sha in source for sha in shas), font
+
+
+def test_notice_records_the_same_source_pins_as_the_generator() -> None:
+    notice = read(ROOT / "NOTICE")
+    for sha in font_source_shas():
+        assert sha in notice, "NOTICE does not record the font pin the generator verifies"
+
+
+def test_the_compressed_fonts_are_enabled_or_the_build_stops() -> None:
+    # LVGL draws blank glyphs and only warns when compressed fonts are disabled;
+    # the UI header turns that into a build error, and the harness enables it.
+    fonts_header = read(UI / "fonts" / "ne_fonts.h")
+    assert "LV_USE_FONT_COMPRESSED" in fonts_header and "#error" in fonts_header
+    assert "#define LV_USE_FONT_COMPRESSED 1" in read(UI / "host" / "lv_conf.h")
 
 
 def test_the_ofl_text_ships_and_notice_names_the_font_and_lvgl() -> None:

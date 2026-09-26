@@ -14,6 +14,12 @@
 
 #include "lvgl/lvgl.h"
 
+/* lv_font_conv compresses the bitmaps; without this LVGL logs a warning and
+ * draws every glyph blank, so fail the build instead. */
+#if LV_USE_FONT_COMPRESSED == 0
+#error "The device UI fonts are compressed: set LV_USE_FONT_COMPRESSED 1 in lv_conf.h (docs/spec/ui.md §5)"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -6,9 +6,11 @@
  * (LICENSES/OFL-1.1.txt; NOTICE section A.5). Verified 2026-09-26,
  * file SHA-256 cd1ef6e9d7db28ad5cdb88a65ccbe693870e60d340b791f349d248342b4fe4c3. Glyph ranges: fonts/ranges.txt.
  *
- * The OFL asks that the font not be sold by itself and that Modified Versions
- * keep the reserved font names; this bitmap subset is used inside NeuroEdge
- * and is not the font software. Regenerate with: bash scripts/gen_ui_fonts.sh
+ * This bitmap subset is a Modified Version under OFL 1.1, not the font
+ * software. Be Vietnam Pro declares no Reserved Font Name, so naming it
+ * ne_font_16 is allowed. Firmware images that link this font distribute it: they
+ * must carry this copyright notice and the OFL text (docs/spec/ui.md §5).
+ * Regenerate with: bash scripts/gen_ui_fonts.sh
  */
 #ifdef LV_LVGL_H_INCLUDE_SIMPLE
 #include "lvgl.h"
@@ -3409,7 +3411,16 @@ static LV_ATTRIBUTE_LARGE_CONST const uint8_t glyph_bitmap[] = {
 
     /* U+2026 "…" */
     0x1, 0x0, 0x8, 0x4, 0x21, 0x9c, 0x21, 0xfa,
-    0x3, 0xd8, 0xc4, 0x20, 0x42, 0x2, 0x4c
+    0x3, 0xd8, 0xc4, 0x20, 0x42, 0x2, 0x4c,
+
+    /* U+20AB "₫" */
+    0x0, 0xf1, 0x10, 0x3, 0x9b, 0xb7, 0x58, 0x1,
+    0x9b, 0xd1, 0x1a, 0x0, 0x7e, 0xe4, 0x80, 0x4,
+    0x1a, 0x26, 0x8d, 0x0, 0x2b, 0x57, 0x4b, 0x0,
+    0xc5, 0xa0, 0x11, 0x80, 0x45, 0xc0, 0x11, 0x0,
+    0x4a, 0xc8, 0x10, 0x20, 0x14, 0x25, 0xf9, 0x98,
+    0x2, 0x1a, 0xcc, 0x57, 0xc0, 0x27, 0x73, 0x31,
+    0xd9, 0x89
 };
 
 
@@ -3814,7 +3825,8 @@ static const lv_font_fmt_txt_glyph_dsc_t glyph_dsc[] = {
     {.bitmap_index = 19248, .adv_w = 95, .box_w = 6, .box_h = 4, .ofs_x = -1, .ofs_y = 8},
     {.bitmap_index = 19260, .adv_w = 104, .box_w = 6, .box_h = 4, .ofs_x = 1, .ofs_y = 8},
     {.bitmap_index = 19272, .adv_w = 142, .box_w = 6, .box_h = 6, .ofs_x = 1, .ofs_y = 3},
-    {.bitmap_index = 19290, .adv_w = 186, .box_w = 10, .box_h = 3, .ofs_x = 1, .ofs_y = 0}
+    {.bitmap_index = 19290, .adv_w = 186, .box_w = 10, .box_h = 3, .ofs_x = 1, .ofs_y = 0},
+    {.bitmap_index = 19305, .adv_w = 151, .box_w = 9, .box_h = 12, .ofs_x = 0, .ofs_y = 0}
 };
 
 /*---------------------
@@ -3844,7 +3856,7 @@ static const uint16_t unicode_list_4[] = {
 
 static const uint16_t unicode_list_6[] = {
     0x0, 0x1, 0x5, 0x6, 0x7, 0x9, 0xa, 0xf,
-    0x13
+    0x13, 0x98
 };
 
 /*Collect the unicode lists and glyph_id offsets*/
@@ -3875,8 +3887,8 @@ static const lv_font_fmt_txt_cmap_t cmaps[] =
         .unicode_list = NULL, .glyph_id_ofs_list = NULL, .list_length = 0, .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY
     },
     {
-        .range_start = 8211, .range_length = 20, .glyph_id_start = 388,
-        .unicode_list = unicode_list_6, .glyph_id_ofs_list = NULL, .list_length = 9, .type = LV_FONT_FMT_TXT_CMAP_SPARSE_TINY
+        .range_start = 8211, .range_length = 153, .glyph_id_start = 388,
+        .unicode_list = unicode_list_6, .glyph_id_ofs_list = NULL, .list_length = 10, .type = LV_FONT_FMT_TXT_CMAP_SPARSE_TINY
     }
 };
 
@@ -3937,7 +3949,7 @@ static const uint8_t kern_left_class_mapping[] =
     21, 44, 52, 53, 52, 53, 52, 53,
     52, 53, 52, 53, 29, 47, 29, 47,
     29, 47, 29, 47, 0, 0, 0, 54,
-    0, 0, 0, 0, 0
+    0, 0, 0, 0, 0, 0
 };
 
 /*Map glyph_ids to kern right classes*/
@@ -3992,7 +4004,7 @@ static const uint8_t kern_right_class_mapping[] =
     27, 40, 27, 40, 27, 40, 27, 40,
     27, 40, 27, 40, 30, 43, 30, 43,
     30, 43, 30, 43, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
+    0, 0, 0, 0, 0, 0
 };
 
 /*Kern values between classes*/
