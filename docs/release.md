@@ -6,18 +6,20 @@ Lần phát hành ra ngoài đầu tiên là **I6 — Công khai**, lên PyPI; c
 nó (`0.6.0`).
 
 Workflow là [`.github/workflows/release-pypi.yml`](../.github/workflows/release-pypi.yml)
-(`TSK-S3-14`). Nó có bốn job:
+(`TSK-S3-14`). Nó có sáu job:
 
 | Job | Chạy khi | Làm gì |
 |:---|:---|:---|
-| `build` | mọi lần chạy | sdist, rồi wheel build **từ** sdist; `twine check --strict` (README render được trên PyPI); với tag, kiểm tag bằng `v` + `version` trong `python/pyproject.toml` |
+| `build` | mọi lần chạy | sdist, rồi wheel build **từ** sdist; `twine check --strict` (README render được trên PyPI); với tag, kiểm tag bằng `v` + `version` trong `python/pyproject.toml`; SBOM CycloneDX của wheel cài theo `requirements-lock.txt` (`scripts/sbom.sh`, artifact `sbom`, `TSK-W0-02`) |
 | `smoke` | mọi lần chạy | runner sạch tải đúng wheel vừa build, chạy `scripts/wheel_smoke.sh --wheel` trên Python 3.11 và 3.13 |
+| `attest` | tag và chạy tay, không bao giờ PR | ký provenance bản build cho wheel, sdist và SBOM (Sigstore), rồi `gh attestation verify` từng tệp (`TSK-W2-07`) — chạy tay là bản chạy thử |
 | `publish-testpypi` | tag pre-release (`v0.6.0rc1`, `v0.7.0b1`…) **và** `PUBLISH_ENABLED == 'true'` | đẩy lên test.pypi.org |
 | `publish-pypi` | tag bản chính (`v0.6.0`) **và** `PUBLISH_ENABLED == 'true'` | đẩy lên pypi.org |
+| `github-release` | sau khi một job `publish-*` xanh | tạo GitHub Release của tag, gắn wheel, sdist và SBOM |
 
 Đẩy lên index dùng trusted publishing (OIDC): kho không giữ token PyPI nào. Khi chưa
-đặt biến `PUBLISH_ENABLED`, dù có ai đẩy tag thì hai job `publish-*` cũng bị bỏ qua.
-Pull request đổi tệp đóng gói chạy `build` và `smoke`, không bao giờ tới `publish-*`.
+đặt biến `PUBLISH_ENABLED`, dù có ai đẩy tag thì hai job `publish-*` và `github-release` cũng bị bỏ qua.
+Pull request đổi tệp đóng gói chạy `build` và `smoke`, không bao giờ tới `attest` hay `publish-*`.
 **Giữ `PUBLISH_ENABLED` chưa đặt cho tới I6.**
 
 ## Tag nội bộ (I1–I5)
@@ -30,12 +32,14 @@ người đo được đội đưa tận tay (I1: buổi đo TTFV tại chỗ, `
   một `### [Chưa phát hành]` rỗng phía trên. Không thêm link phiên bản cuối tệp — repo còn
   riêng tư. CI xanh, merge.
 - **Tag.** `git tag v0.1.0 && git push origin v0.1.0`. `PUBLISH_ENABLED` chưa đặt nên chỉ
-  `build` và `smoke` chạy; hai job `publish-*` bị bỏ qua.
-- **GitHub Release nội bộ** kèm đúng wheel mà `smoke` đã kiểm:
+  `build`, `smoke` và `attest` chạy; `publish-*` và `github-release` bị bỏ qua.
+- **GitHub Release nội bộ** kèm đúng wheel mà `smoke` đã kiểm, và SBOM của nó:
 
   ```bash
   gh run download <run-id> --name dist --dir dist   # run của tag v0.1.0
-  gh release create v0.1.0 dist/* --title "v0.1.0 — nội bộ (I1)" \
+  gh run download <run-id> --name sbom --dir sbom
+  gh attestation verify dist/*.whl --repo letrongminh/neuroedge-init
+  gh release create v0.1.0 dist/* sbom/* --title "v0.1.0 — nội bộ (I1)" \
       --notes "Preview nội bộ, chưa phát hành ra ngoài. Thay đổi: CHANGELOG.md [0.1.0]."
   ```
 

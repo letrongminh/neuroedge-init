@@ -11,6 +11,10 @@
 # explicitly. It must never report success from a run that did not happen —
 # the memory spike feeds a re-plan decision (R-1, Q-44), and a
 # false pass there is worse than no data.
+#
+# Alongside, `upstream-drift` resolves the newest dependency versions that
+# pyproject.toml allows and tests them; drift or a red suite opens (or updates) one
+# issue through `drift-issue` and never fails the run (Q-32, TSK-W0-04).
 name: nightly-hardware
 
 on:
@@ -20,6 +24,10 @@ on:
     inputs:
       run_on_hardware:
         description: "Run the on-device stage (needs a self-hosted runner with a Box-3)"
+        type: boolean
+        default: false
+      drift_issue:
+        description: "Open, update or close the drift issue from this ref too (always on main)"
         type: boolean
         default: false
 
@@ -35,16 +43,16 @@ jobs:
     name: Build firmware and check the Q-3 flash budget
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Build with ESP-IDF ${{ env.IDF_VERSION }}
-        uses: espressif/esp-idf-ci-action@v1
+        uses: espressif/esp-idf-ci-action@e6f5c74232b1ccd4c97ed641f1e48553853f1fd5 # v1.2.0
         with:
           esp_idf_version: ${{ env.IDF_VERSION }}
           target: esp32s3
           path: targets/esp32s3
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.11"
 
@@ -61,12 +69,14 @@ jobs:
           echo "Found $image"
 
       - name: "Firmware must fit an A/B OTA slot (Q-3: <= 3.5 MB)"
-        run: python scripts/check_firmware_size.py "${{ steps.image.outputs.path }}"
+        env:
+          IMAGE: ${{ steps.image.outputs.path }}
+        run: python scripts/check_firmware_size.py "$IMAGE"
 
       - name: Component size breakdown
         # Recorded every night so that growth is attributable to a change rather
         # than discovered as a cliff at the end of Khối 1b.
-        uses: espressif/esp-idf-ci-action@v1
+        uses: espressif/esp-idf-ci-action@e6f5c74232b1ccd4c97ed641f1e48553853f1fd5 # v1.2.0
         continue-on-error: true
         with:
           esp_idf_version: ${{ env.IDF_VERSION }}
@@ -74,7 +84,7 @@ jobs:
           path: targets/esp32s3
           command: idf.py size-components
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: firmware-esp32s3
@@ -83,35 +93,104 @@ jobs:
             targets/esp32s3/build/*.map
 
   upstream-drift:
-    name: Upstream dependency drift
+    name: Upstream dependency drift (never fails the run — Q-32)
+    # §3.9 obligation 5: nightly is where an upstream breaking change should surface,
+    # not a release. Resolve the newest versions python/pyproject.toml allows, diff
+    # them against python/requirements-lock.txt and run the test suite on them.
+    # Upstream moving is information, not a defect in this repo (Q-32): whatever the
+    # outcome this job stays green, and `drift-issue` reports it as one issue.
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      status: ${{ steps.verdict.outputs.status }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.11"
 
-      - name: Compare the resolved set against the pinned set
-        # §3.9 obligation 5: nightly is where an upstream breaking change should
-        # surface, not a release. This reports drift without failing the build,
-        # because upstream moving is information, not a defect in this repo.
-        continue-on-error: true
+      - name: Resolve the newest allowed versions and compare them with the lock
+        id: resolve
         run: |
+          set +e
           python -m pip install --upgrade pip >/dev/null
-          python -m pip install -e 'python[dev]' >/dev/null
+          python -m pip install -e 'python[dev]' > install.log 2>&1
+          echo "install=$?" >> "$GITHUB_OUTPUT"
           python -m pip freeze --exclude-editable | sort > resolved.txt
           # The lock file carries a comment header explaining how to regenerate
           # it; strip comments and blanks so the diff is about versions only.
           grep -Ev '^\s*(#|$)' python/requirements-lock.txt | sort > pinned.txt
-          if diff -u pinned.txt resolved.txt > drift.diff; then
-            echo "  ok  the resolved set matches python/requirements-lock.txt"
-          else
-            echo "::warning::dependency drift detected against the pinned set"
-            cat drift.diff
-          fi
+          diff -u pinned.txt resolved.txt > drift.diff
+          echo "drift=$?" >> "$GITHUB_OUTPUT"
+          cat drift.diff
+          exit 0
 
-      - uses: actions/upload-artifact@v4
+      - name: Test suite on the resolved set
+        id: tests
+        if: steps.resolve.outputs.install == '0'
+        working-directory: python
+        run: |
+          set +e
+          python -m pytest -q --strict-markers -p no:cacheprovider > ../pytest.log 2>&1
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+          tail -n 40 ../pytest.log
+          exit 0
+
+      - name: Verdict and report
+        id: verdict
+        env:
+          INSTALL: ${{ steps.resolve.outputs.install }}
+          DRIFT: ${{ steps.resolve.outputs.drift }}
+          TESTS: ${{ steps.tests.outputs.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "$INSTALL" != 0 ]; then status=broken; why="the newest allowed versions do not install"
+          elif [ "$TESTS" != 0 ]; then status=broken; why="the test suite fails on the newest allowed versions"
+          elif [ "$DRIFT" != 0 ]; then status=drift; why="newer versions than the lock install and pass the suite"
+          else status=clean; why="the newest allowed versions are the pinned set"
+          fi
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          fence='```'
+          {
+            echo "Nightly check of \`python/requirements-lock.txt\` against the newest versions"
+            echo "that \`python/pyproject.toml\` allows (Q-32, TSK-W0-04). This issue is opened,"
+            echo "updated and closed by the \`upstream-drift\` job of \`nightly-hardware.yml\`;"
+            echo "it never fails the build."
+            echo
+            echo "**Verdict: $status** — $why."
+            echo
+            echo "Run: $RUN_URL"
+            echo
+            echo "| Step | Exit code |"
+            echo "|:---|:---|"
+            echo "| \`pip install -e 'python[dev]'\` | ${INSTALL:-?} |"
+            echo "| \`pytest -q\` on the resolved set | ${TESTS:-not run} |"
+            echo "| diff against the lock | ${DRIFT:-?} |"
+            echo
+            echo "### Drift (\`-\` pinned, \`+\` resolved)"
+            echo
+            echo "${fence}diff"
+            head -c 20000 drift.diff
+            echo "${fence}"
+            if [ "$status" = broken ]; then
+              echo
+              echo "### Tail of the failing step"
+              echo
+              echo "${fence}"
+              if [ "$INSTALL" != 0 ]; then tail -c 20000 install.log; else tail -c 20000 pytest.log; fi
+              echo "${fence}"
+            fi
+            echo
+            echo "To adopt the new versions, regenerate the lock as its header says and open a PR."
+          } > report.md
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+          if [ "$status" != clean ]; then echo "::warning::dependency drift: $status — $why"; fi
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: dependency-drift
@@ -119,6 +198,67 @@ jobs:
             pinned.txt
             resolved.txt
             drift.diff
+            report.md
+            install.log
+            pytest.log
+
+  drift-issue:
+    name: Open, update or close the drift issue (Q-32)
+    needs: upstream-drift
+    # The only job in this workflow that can write, and it runs no repository code:
+    # it reads the report and calls `gh`. On main (the nightly schedule), or when a
+    # manual run asks for it.
+    if: >-
+      needs.upstream-drift.result == 'success'
+      && (github.ref == 'refs/heads/main' || inputs.drift_issue)
+    runs-on: ubuntu-latest
+    # Q-32 holds here too: a GitHub API hiccup must not turn the night red. Its
+    # result is still a row of the `report` summary.
+    continue-on-error: true
+    # Two overlapping runs must not both find no issue and open two.
+    concurrency:
+      group: drift-issue
+      cancel-in-progress: false
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      STATUS: ${{ needs.upstream-drift.outputs.status }}
+      LABEL: dependency-drift
+      TITLE: "Upstream dependency drift against python/requirements-lock.txt"
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dependency-drift
+          path: drift/
+
+      - name: One issue, deduplicated by label and title
+        run: |
+          gh label create "$LABEL" --color FBCA04 \
+            --description "Nightly upstream drift against the lock (Q-32)" 2>/dev/null || true
+          number="$(gh issue list --state open --label "$LABEL" --limit 50 --json number,title \
+            --jq "map(select(.title == env.TITLE)) | .[0].number // empty")"
+          case "$STATUS" in
+            clean)
+              if [ -n "$number" ]; then
+                gh issue close "$number" --reason completed --comment \
+                  "The newest allowed versions are the pinned set again — closed by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+                echo "closed #$number"
+              else
+                echo "no drift, no open issue"
+              fi ;;
+            drift|broken)
+              if [ -n "$number" ]; then
+                gh issue edit "$number" --body-file drift/report.md
+                echo "updated #$number"
+              else
+                gh issue create --title "$TITLE" --label "$LABEL" --body-file drift/report.md
+              fi ;;
+            *)
+              echo "::error::unexpected drift status '$STATUS'"
+              exit 1 ;;
+          esac
 
   memory-spike:
     name: Memory spike on the reference board (TSK-S1-10)
@@ -128,9 +268,9 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_on_hardware }}
     runs-on: [self-hosted, esp32s3-box-3]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: firmware-esp32s3
           path: build-artifacts
@@ -195,7 +335,7 @@ jobs:
           # placeholder so the hardware stage has the right shape when it lands.
           echo "::notice::on-device replay equivalence is not implemented yet (TSK-S4-03)"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: memory-spike-measurement
@@ -205,7 +345,7 @@ jobs:
 
   report:
     name: Summary
-    needs: [firmware-build, upstream-drift, memory-spike]
+    needs: [firmware-build, upstream-drift, drift-issue, memory-spike]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -217,7 +357,8 @@ jobs:
             echo "| Stage | Result |"
             echo "|:---|:---|"
             echo "| Firmware build + Q-3 flash budget | ${{ needs.firmware-build.result }} |"
-            echo "| Upstream dependency drift | ${{ needs.upstream-drift.result }} |"
+            echo "| Upstream dependency drift (Q-32: never fails) | ${{ needs.upstream-drift.outputs.status }} |"
+            echo "| Drift issue | ${{ needs.drift-issue.result }} |"
             echo "| Memory spike on hardware | ${{ needs.memory-spike.result }} |"
             echo
             if [ "${{ needs.memory-spike.result }}" = "skipped" ]; then

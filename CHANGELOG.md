@@ -800,8 +800,9 @@ Nghĩa của từng mã `NE…`, lớp lỗi và lúc nó xuất hiện: PRD
 |:---|:---|:---|
 | `ci-sim-linux.yml` | Mỗi PR và push lên `main` | `frozen-artifacts` · `tests` (Python 3.11/3.12/3.13, gồm walker và sổ token C biên dịch trên host) · `linux-hal` · `wheel-smoke` · `lint` · `licence-obligations` · `cloud-extra` |
 | `firmware-qemu.yml` | PR và push đụng `targets/**`, `fixtures/traces/`, `engine/binary_tree.py` hoặc `testing/uart.py` · 01:30 UTC+7 hằng đêm · chạy tay | `firmware-qemu`: build `esp32s3` với `sdkconfig.qemu` (ESP-IDF 5.4), boot trên Espressif QEMU, đòi `NE_SELFTEST PASS` rồi `NE_TRACE DONE` trên UART · `uart-trace`: bằng CLI đã cài, `record --target esp32s3 --port uart.log` + `trace validate` (đòi `device_id = qemu`), rồi `verify --targets esp32s3 --port uart.log` |
-| `release-pypi.yml` | Tag `v*.*.*` · PR đổi tệp đóng gói · chạy tay | `build` · `smoke` (Python 3.11/3.13) · `publish-testpypi` · `publish-pypi` — hai job cuối chỉ chạy với tag **và** `PUBLISH_ENABLED == 'true'` ([`docs/release.md`](docs/release.md)) |
-| `nightly-hardware.yml` | 01:00 UTC+7 hằng đêm · chạy tay | `firmware-build` (ESP-IDF 5.2.1, ngân sách flash Q-3) · `upstream-drift` · `memory-spike` · `report` |
+| `release-pypi.yml` | Tag `v*.*.*` · PR đổi tệp đóng gói · chạy tay | `build` (kèm SBOM CycloneDX, `scripts/sbom.sh`) · `smoke` (Python 3.11/3.13) · `attest` (provenance Sigstore cho wheel, sdist, SBOM; tag và chạy tay, không PR) · `publish-testpypi` · `publish-pypi` · `github-release` — ba job cuối chỉ chạy với tag **và** `PUBLISH_ENABLED == 'true'` ([`docs/release.md`](docs/release.md)) |
+| `nightly-hardware.yml` | 01:00 UTC+7 hằng đêm · chạy tay | `firmware-build` (ESP-IDF 5.2.1, ngân sách flash Q-3) · `upstream-drift` (bản mới nhất được phép so với lock, chạy test; không bao giờ đỏ) · `drift-issue` (mở, cập nhật hoặc đóng **một** issue nhãn `dependency-drift`, cũng không làm đỏ lượt chạy — Q-32) · `memory-spike` · `report` |
+| `security.yml` | Mỗi PR và push lên `main` · hằng tuần · chạy tay | `pip-audit` (mọi pin trong `requirements-lock.txt`; lỗ hổng đã biết ⇒ đỏ, ngoại lệ chỉ qua `python/pip-audit-ignore.txt` có lý do) · `gitleaks` (toàn lịch sử mọi nhánh và tag; lượt hằng tuần và chạy tay thêm head của mọi PR) · `actionlint` · `codeql` (Python, GitHub Actions) · `firmware-changed` + `codeql-c` (firmware, build trong `espressif/idf:v5.4`; với PR chỉ khi đụng `targets/`) |
 
 `ci-sim-linux.yml` phải xanh trước khi hợp nhất. Năm cổng đáng chú ý:
 
@@ -813,6 +814,10 @@ Nghĩa của từng mã `NE…`, lớp lỗi và lúc nó xuất hiện: PRD
 - **Cổng giấy phép** — `licence-obligations`: `pip-licenses --fail-on` trên toàn bộ cây phụ thuộc lõi; `cloud-extra`:
   chính sách Q-11 cho extra `cloud` (`scripts/check_licences.py`: giấy phép lạ hoặc không rõ ⇒ đỏ).
 - **`ruff check .` và `ruff format --check .`** — job `lint`.
+
+Mọi `uses:` ghim theo SHA commit đầy đủ kèm chú thích `# vX.Y.Z`; Dependabot
+(`.github/dependabot.yml`) đề xuất bản mới hằng tuần. Job `actionlint` giữ mọi workflow sạch
+(`.github/actionlint.yaml` khai nhãn runner `esp32s3-box-3`).
 
 Job `memory-spike` cần runner tự quản gắn nhãn `esp32s3-box-3`. Khi chưa có,
 nó **bị bỏ qua và nói rõ là bỏ qua** trong phần summary, không bao giờ báo đạt.
