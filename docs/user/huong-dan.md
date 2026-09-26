@@ -53,7 +53,8 @@ neuroedge replay traces/sess_….json    # phát lại, tính lại phán quyế
 | Cho System 2 dùng MCP server bên ngoài (tin tức, tra cứu) — chỉ lấy thông tin | `[mcp.servers]` trong `agent.toml` · `neuroedge mcp tools --external` | ✅ cần `neuroedge[mcp]` |
 | Dùng LLM thật cho System 2 (Claude, GPT, DeepSeek qua OpenRouter…): câu tự do thành tool call, vẫn qua gate | `[system_two]` trong `agent.toml` · key ở biến môi trường (`api_key_env`), **không** ghi vào tệp | ✅ cần `neuroedge[cloud]` |
 | Mất mạng hoặc System 2 không trả lời: thiết bị nói các lệnh cục bộ còn dùng được (`offline_help`) | — (tự động) | ✅ |
-| Nối model chưa theo chuẩn OpenAI bằng adapter tự viết | `provider = "python:pkg.mod:factory"` trong `[system_two]` | ✅ |
+| Cho model cloud của System 1 — Jev (`typesafe/jev-1.13` qua OpenRouter, Q-4) — quyết định một tiêu chí gate từ câu người dùng. Chỉ các tiêu chí bạn liệt kê; model không trả lời được (mất mạng, hết giờ, trả sai hợp đồng, dưới ngưỡng) thì ngữ pháp lệnh quyết như cũ, vết ghi có `system_one_fallback` | `[system_one]` trong `agent.toml`: `model = "typesafe/jev-1.13"`, `api_key_env = "OPENROUTER_API_KEY"`, `criteria = ["…"]`, tuỳ chọn `threshold` (0.8), `timeout_ms` (1500) · thử với key thật: `python scripts/live_jev_smoke.py` | ✅ không cần extra; gate có tiêu chí đó cần `budget.p95_latency_ms` ≥ `timeout_ms` + 50 (build kiểm) |
+| Nối model chưa theo chuẩn OpenAI bằng adapter tự viết | `provider = "python:pkg.mod:factory"` trong `[system_two]` (trả provider) hoặc `[system_one]` (trả `FactSource`, câu trả lời vẫn bị kiểm miền giá trị và ngưỡng) | ✅ |
 | Người xác nhận khi gate hỏi lại (`ask`): gõ `có` / `không`, hoặc nút Đồng ý / Huỷ trên `run --ui` | `neuroedge run` · `neuroedge run --ui` | ✅ gate phải khai `confirms` |
 | Ghi một phiên ra vết ghi (có chế độ ẩn danh) | `neuroedge record` | ✅ |
 | Phát lại vết ghi trên `sim` / `linux`, so golden | `neuroedge replay` | ✅ |
@@ -86,6 +87,10 @@ Nói thẳng để bạn không mất thời gian:
   trên máy tính và QEMU. Trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng
   trên host; `replay --target esp32s3` cho vết ghi tuỳ ý **thoát mã 2**.
 - Tương đương target mới so **quyết định** (phán quyết + lệnh chân), chưa so timing.
+- `[system_one]` gửi câu người dùng, tên action và tham số của nó lên OpenRouter (`--anonymize` chỉ
+  băm vết ghi). Jev đọc tiếng Anh tốt nhất; độ tin cậy trên câu tiếng Việt chưa đo (`TODOS.md` #27),
+  nên đặt `threshold` và `confidence_gte` thận trọng. Chỉ giao cho model tiêu chí mà lời nói tự nó
+  xác lập được — danh tính, đặt phòng vẫn là dữ kiện phiên; `call_source` thì build từ chối.
 - Danh sách đầy đủ: `CHANGELOG.md` §3.7.
 
 ## 4. Khi gặp lỗi

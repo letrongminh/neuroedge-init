@@ -724,6 +724,10 @@ System 2 trên model thật (tùy chọn, không cần cho test): `.venv/bin/pyt
 thêm `[system_two]` vào `agent.toml` (mẫu có sẵn, đã comment, trong `fixtures/agents/home-voice/agent.toml`) và
 export key. Thử với key thật: `python scripts/live_llm_smoke.py` (tốn vài cent, không chạy trong CI).
 
+System 1 trên Jev (tùy chọn, không cần extra): thêm `[system_one]` vào `agent.toml` — dạng bảng ở docstring
+`python/neuroedge/models/providers/config.py` — và export `OPENROUTER_API_KEY`. Thử với key thật:
+`python scripts/live_jev_smoke.py` (đúng 3 lượt gọi, không chạy trong CI).
+
 ### 2.2 Kiểm tra nhanh toàn bộ artifact
 
 Các lệnh dưới viết cho **gốc kho**. `paths.py` tự tìm gốc từ checkout, editable install
@@ -967,8 +971,10 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
 - ❌ **`esp32s3` mới chạy logic gate, chưa chạy agent.** Walker và sổ token C khớp engine host trên host và
   boot trên QEMU (TSK-S4-07, S4-08); thiết bị replay 3 vết ghi chuẩn mực và ghi vết ghi qua UART (TSK-S4-09). HAL
   firmware, replay vết ghi tuỳ ý và mọi thứ trên bo mạch là I3 (TSK-S4-01, S4-04); âm thanh trên chip là I5.
-- ❌ **SystemOne chưa có nhà cung cấp cloud thật** (`TODOS.md` #27; đổi bằng cấu hình là TSK-I4-02). SystemTwo
-  đã có LiteLLM và adapter tự viết (TSK-S2-11); CI chỉ thử bằng `mock_response`, lượt gọi bằng key thật chạy tay (`scripts/live_llm_smoke.py`).
+- ❌ **Model cloud chưa được CI gọi thật.** SystemOne có Jev qua System One API (`[system_one]`, TSK-I4-02),
+  SystemTwo có LiteLLM và adapter tự viết (TSK-S2-11); CI chỉ thử bằng transport giả và `mock_response`, lượt gọi
+  bằng key thật chạy tay (`scripts/live_jev_smoke.py`, `scripts/live_llm_smoke.py`). Độ tin cậy của Jev trên câu
+  tiếng Việt chưa đo (`TODOS.md` #27).
 - ❌ **Tương đương target mới ở mức quyết định, trên `sim` + `linux` + `esp32s3` trên QEMU.** `verify` so chuỗi
   phán quyết và lệnh chân; trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng trên host
   (`TODOS.md` #37). So timing và bo mạch là TSK-S4-04 (I3).

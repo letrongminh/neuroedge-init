@@ -180,8 +180,8 @@ hỏi xác nhận* với nút Đồng ý / Huỷ và thời gian còn lại (`PO
 
 ## 7. Vết ghi
 
-Đây là danh mục **duy nhất** của sự kiện tool call, xác nhận, MCP host, System 2 và đo lượt
-(§7.1). Sự kiện
+Đây là danh mục **duy nhất** của sự kiện tool call, xác nhận, MCP host, System 2, model cloud
+của System 1 và đo lượt (§7.1). Sự kiện
 theo nguyên thủy HAL (`actuator_command`, `sensor_read`, `display_frame`…) ở
 `docs/spec/simulation_coverage.md` §3.
 
@@ -198,6 +198,7 @@ theo nguyên thủy HAL (`actuator_command`, `sensor_read`, `display_frame`…) 
 | `system_two_call` | `provider`, `model`, `task`, `latency_ms`, `status`, `prompt_tokens?`, `completion_tokens?`, `cost_usd?`, `error?` — không prompt, không key; replay bỏ qua | FR-MDL-06 |
 | `system_two_unavailable` | `task`, `reason` — model không trả lời được | FR-MDL-06 |
 | `system_two_rounds_exceeded` | `task`, `rounds` — quá `max_rounds` (§10 quy tắc 6) | FR-MDL-11 |
+| `system_one_call` | `provider`, `model`, `criterion`, `latency_ms`, `status` (`ok` · `unavailable`), `reason?` (lý do `Unavailable`: `offline`, `timeout`, `rate_limited`, `refused`, `malformed`, `empty`), `http_status?`, `confidence?`, `served_by?` (bản model đã trả lời), `prompt_tokens?`, `completion_tokens?`, `cost_usd?` — mỗi lượt SystemOne hỏi model cloud một tiêu chí (`[system_one]`); không state, không chữ, không key; thiếu key thì không gọi, không ghi; replay bỏ qua | TSK-I4-02 |
 
 Câu thiết bị nói ghi ở `tts_stream_start` (simulation_coverage §3); nguồn của câu nằm ở
 `reply_source` của lượt (vd `gate_ask`, `confirmed`, `offline_help` — §10 quy tắc 5; danh sách đủ ở
