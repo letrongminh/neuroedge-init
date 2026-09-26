@@ -37,9 +37,12 @@ with `session_summary`.
 ```mermaid
 stateDiagram-v2
     [*] --> IDLE
-    IDLE --> LISTENING: wake/VAD
-    LISTENING --> THINKING: end-of-turn silence
-    THINKING --> SPEAKING: reply ready
+    IDLE --> LISTENING: wake/VAD (T01)
+    LISTENING --> THINKING: end-of-turn silence (T04)
+    LISTENING --> IDLE: listen_timeout (T05)
+    THINKING --> SPEAKING: reply ready (T07)
+    THINKING --> IDLE: nothing to play (T08)
+    THINKING --> THINKING: reprompt (T06) / offline answer (T09)
     THINKING --> BARGE_IN: user cuts in (T10)
     SPEAKING --> BARGE_IN: user cuts in (T13)
     BARGE_IN --> LISTENING: immediately (T14)

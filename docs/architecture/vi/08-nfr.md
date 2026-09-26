@@ -3,6 +3,17 @@
 > Nguồn ngưỡng: PRD §9. Đường kiểm chứng: PRD Phụ lục A.3. Tài liệu này chỉ
 > nối NFR với chỗ kiến trúc đáp ứng nó — không chép ngưỡng.
 
+```mermaid
+flowchart LR
+    PERF[PERF-01..07] --> SP[xương sống gate<br/>05]
+    RES[RES-01..04] --> FW[firmware<br/>04]
+    REL[REL-01..04] --> OTA[OTA A/B + nightly<br/>04]
+    SEC[SEC-01..09] --> GN[một đường có gate + ranh giới tin cậy<br/>01 · 05]
+    PRIV[PRIV-01..04] --> TR[kỷ luật vết ghi<br/>06 · 07]
+    OBS[OBS-01..03] --> TR
+    COMP[COMP-01..06] --> LIC[giấy phép + nền tảng<br/>README · 02]
+```
+
 ## 1. Hiệu năng + tài nguyên (đường găng v1.0)
 
 | NFR | Tactic kiến trúc | Bằng chứng |

@@ -4,6 +4,17 @@
 > only connects each NFR to where the architecture answers it — no thresholds
 > repeated.
 
+```mermaid
+flowchart LR
+    PERF[PERF-01..07] --> SP[gate spine<br/>05]
+    RES[RES-01..04] --> FW[firmware<br/>04]
+    REL[REL-01..04] --> OTA[OTA A/B + nightly<br/>04]
+    SEC[SEC-01..09] --> GN[one gated path + trust boundary<br/>01 · 05]
+    PRIV[PRIV-01..04] --> TR[trace discipline<br/>06 · 07]
+    OBS[OBS-01..03] --> TR
+    COMP[COMP-01..06] --> LIC[licensing + platforms<br/>README · 02]
+```
+
 ## 1. Performance + resources (the v1.0 critical path)
 
 | NFR | Architectural tactic | Evidence |

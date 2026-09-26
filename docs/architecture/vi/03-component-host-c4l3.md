@@ -18,6 +18,7 @@
 | L2 · models | `models/system.py`, `grammar.py`, `knowledge.py`, `providers/` | `SystemOne` bool/level/choice + fallback ngữ pháp; `SystemTwo` sinh mở; LiteLLM/adapter sau `providers/` | `engine` (qua giao thức `FactSource`), `sim` | SDK provider trực tiếp trong lõi |
 | L2 · perception | `perception/voice_fsm.py`, `voice_session.py` | FSM 5 trạng thái + đồng hồ tiêm vào; không quyết gate, không lái chân; chỉ hủy pending + đóng token khi cắt lời | `sim` | `hal` trực tiếp (qua `pending_commands` được tiêm) |
 | L0 · sim/cli | `sim/session.py`, `sim/ui.py`, `cli/` | **Hub lắp ráp duy nhất**: `load()` wire HAL+engine+models+tools+MCP; REPL; trang `--ui` | — (đỉnh) | — |
+| L0 · MCP | `mcp_server.py`, `mcp_host.py`, `mcp_desktop.py` | Bề mặt entry thứ hai: agent là MCP server có gate (tool = `@action`, `call_source=mcp`); System 2 là MCP host (in-process `build_server` + server ngoài allowlist); sinh cấu hình Claude Desktop | `actions/tools`, `sim` | gọi HAL/engine ngoài `dispatch()` |
 | Observability | `engine/trace_sink.py`, `testing/recorder.py`, `player.py`, `golden.py`, `assertions.py`, `viz/` | Bus `EventLog.emit`; record/anonymize; replay tính lại; so golden; HTML/Perfetto | `cli`, `sim` | logic quyết định |
 
 ```mermaid

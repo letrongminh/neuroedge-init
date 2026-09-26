@@ -3,6 +3,13 @@
 > Nội dung quyết định: PRD §15 (sổ duy nhất, mã `Q-N`). RFC: `docs/rfc/`.
 > Bảng này chỉ nối quyết định với chỗ nó hạ cánh trong kiến trúc.
 
+```mermaid
+flowchart LR
+    Q[quyết định Q-N<br/>PRD §15 — nơi duy nhất] --> ADR[bảng hạ cánh<br/>tệp này]
+    RFC[RFC-000x<br/>schemas · ngữ nghĩa phân giải] --> ADR
+    ADR --> L[00–13<br/>chỗ hạ cánh]
+```
+
 ## 1. ADR đã chốt (trích phần chạm kiến trúc)
 
 | ADR | Quyết định một dòng | Hạ cánh |

@@ -1,7 +1,7 @@
 # 11 · Hướng dẫn OEM port HAL
 
 > Đối tượng: đối tác phần cứng đưa NeuroEdge lên board mới (U5).
-> Chuẩn port: FR-TGT-08 bậc 3;_increment I13 (sau I11). Chính sách tài sản:
+> Chuẩn port: FR-TGT-08 bậc 3; increment I13 (sau I11). Chính sách tài sản:
 > proposal §1.7/`§6.4` (adapter/HAL port do tác giả giữ bản quyền, kho riêng,
 > NeuroEdge lập chỉ mục).
 

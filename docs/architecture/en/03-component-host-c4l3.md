@@ -18,6 +18,7 @@
 | L2 · models | `models/system.py`, `grammar.py`, `knowledge.py`, `providers/` | `SystemOne` bool/level/choice + grammar fallback; open-ended `SystemTwo`; LiteLLM/adapters behind `providers/` | `engine` (via `FactSource` protocol), `sim` | provider SDKs directly in core |
 | L2 · perception | `perception/voice_fsm.py`, `voice_session.py` | 5-state FSM + injected clock; never decides gates, never drives pins; only cancels pendings + closes tokens on barge-in | `sim` | `hal` directly (pendings are injected) |
 | L0 · sim/cli | `sim/session.py`, `sim/ui.py`, `cli/` | **Only assembler**: `load()` wires HAL+engine+models+tools+MCP; REPL; `--ui` page | — (top) | — |
+| L0 · MCP | `mcp_server.py`, `mcp_host.py`, `mcp_desktop.py` | Second entry surface: agent as gated MCP server (tool = `@action`, `call_source=mcp`); System 2 as MCP host (in-process `build_server` + allowlisted external); Claude Desktop config | `actions/tools`, `sim` | reaching HAL/engine outside `dispatch()` |
 | Observability | `engine/trace_sink.py`, `testing/recorder.py`, `player.py`, `golden.py`, `assertions.py`, `viz/` | Shared `EventLog.emit` bus; record/anonymize; recompute replay; golden compare; HTML/Perfetto | `cli`, `sim` | decision logic |
 
 ```mermaid

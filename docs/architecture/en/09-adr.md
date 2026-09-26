@@ -3,6 +3,13 @@
 > Decision content: PRD §15 (the only register, `Q-N` codes). RFCs: `docs/rfc/`.
 > This table only connects each decision to where it lands in the architecture.
 
+```mermaid
+flowchart LR
+    Q[decisions Q-N<br/>PRD §15 — only place] --> ADR[landing table<br/>this file]
+    RFC[RFC-000x<br/>schemas · semantics] --> ADR
+    ADR --> L[00–13<br/>landing spots]
+```
+
 ## 1. Decided ADRs (architecture-touching excerpt)
 
 | ADR | One-line decision | Lands in |

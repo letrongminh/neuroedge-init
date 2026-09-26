@@ -34,4 +34,4 @@ flowchart LR
 | Robot multi-node | I14 | Mỗi node có HAL + gate riêng; wire Zenoh-pico (`Q-36`); token lease cho `motion.*` (`Q-37`) |
 | Vision / Jetson | I15–I17 | Nguyên thủy `vision.in` qua RFC riêng; bậc target 2/3 (`Q-13`, RFC-0002 PR2) |
 
-Chi tiết evolución: `13-evolution-i0-i18.md`.
+Chi tiết tiến hóa: `13-evolution-i0-i18.md`.

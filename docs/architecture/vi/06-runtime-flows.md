@@ -37,9 +37,12 @@ Thứ tự fact: `[sim.facts] → [sim.slot_facts] → [sim.sensor_facts] → gr
 ```mermaid
 stateDiagram-v2
     [*] --> IDLE
-    IDLE --> LISTENING: wake/VAD
-    LISTENING --> THINKING: hết lặng cuối lượt
-    THINKING --> SPEAKING: có câu trả lời
+    IDLE --> LISTENING: wake/VAD (T01)
+    LISTENING --> THINKING: hết lặng cuối lượt (T04)
+    LISTENING --> IDLE: listen_timeout (T05)
+    THINKING --> SPEAKING: có câu trả lời (T07)
+    THINKING --> IDLE: không có gì để phát (T08)
+    THINKING --> THINKING: reprompt (T06) / câu offline (T09)
     THINKING --> BARGE_IN: nói chen (T10)
     SPEAKING --> BARGE_IN: nói chen (T13)
     BARGE_IN --> LISTENING: ngay lập tức (T14)
