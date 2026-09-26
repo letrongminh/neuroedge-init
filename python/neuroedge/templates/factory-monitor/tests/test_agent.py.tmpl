@@ -42,6 +42,21 @@ def test_at_critical_heat_the_fan_cannot_be_stopped_even_with_a_yes():
     assert session.hal.pin("gate_relay").commands == [("on", 0)]
 
 
+def test_heat_level_and_heat_critical_agree_at_every_reading():
+    # Loading checks heat_critical's `gte` sits on a band bound; this checks it is the
+    # `critical` one, around every bound: never a critical band with "not critical".
+    session = SimSession.load(AGENT)
+    recognition = session.grammar.recognize("tắt quạt")
+    bounds = [bound for _, bound in session.sensor_facts["heat_level"].bands]
+    for reading in [b + d for b in bounds for d in (-0.5, -0.001, 0, 0.001, 0.5)] + [-41, 200]:
+        session.set_sensor("temperature", reading)
+        facts = session.gate_facts(recognition)
+        if facts["heat_level"] is None:  # below every band: both undecided, the gates refuse
+            assert facts["heat_critical"] is None, reading
+        else:
+            assert facts["heat_critical"] is (facts["heat_level"] == "critical"), reading
+
+
 def test_the_alarm_stays_on_until_the_room_cools():
     session, (_, off) = run("bật báo động", "tắt báo động", celsius=45)
     assert off.result.blocked

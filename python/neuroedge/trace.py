@@ -15,6 +15,7 @@ file.
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,26 @@ from .errors import TraceValidationError
 from .paths import schema_path
 
 TRACE_SCHEMA_ID = "https://schema.neuroedge.dev/trace/v1.json"
+
+
+def json_safe(value: Any) -> Any:
+    """
+    `value` with every NaN / inf float written as the string "nan", "inf" or "-inf".
+
+    JSON has no such numbers: Python writes a bare `NaN`, which `JSON.parse` in a
+    browser and strict parsers refuse — a trace view that stops, a live page that
+    stops updating. Every event goes through here (`EventLog.emit`), and so does
+    anything embedded in a page (`viz`, `sim/ui.py`).
+    """
+    if isinstance(value, float) and not math.isfinite(value):
+        return repr(value)
+    if isinstance(value, dict):
+        return {key: json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [json_safe(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(json_safe(item) for item in value)
+    return value
 
 
 def trace_schema() -> dict[str, Any]:
@@ -65,6 +86,14 @@ def validate_trace(trace: dict[str, Any], label: str = "<memory>") -> None:
     )
 
 
+class _NonFinite(ValueError):
+    pass
+
+
+def _no_constant(name: str) -> Any:
+    raise _NonFinite(name)  # NaN, Infinity, -Infinity: Python's extension, not JSON
+
+
 def load_trace(path: str | Path, validate: bool = True) -> dict[str, Any]:
     """Read a trace file, validating it against the frozen schema by default."""
     path = Path(path)
@@ -76,13 +105,19 @@ def load_trace(path: str | Path, validate: bool = True) -> dict[str, Any]:
         )
 
     try:
-        trace = json.loads(path.read_text(encoding="utf-8"))
+        trace = json.loads(path.read_text(encoding="utf-8"), parse_constant=_no_constant)
     except json.JSONDecodeError as exc:
         raise TraceValidationError(
             where=f"{path} -> line {exc.lineno}, column {exc.colno}",
             why=f"file is not valid JSON: {exc.msg}",
             how="traces are UTF-8 JSON objects; repair the syntax at the position above",
         ) from exc
+    except _NonFinite as exc:
+        raise TraceValidationError(
+            where=str(path),
+            why=f"the file holds a bare {exc.args[0]}, which JSON does not have",
+            how='write the value as a string ("nan", "inf", "-inf"), as `neuroedge record` does',
+        ) from None
 
     if not isinstance(trace, dict):
         raise TraceValidationError(

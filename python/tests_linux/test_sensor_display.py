@@ -184,13 +184,29 @@ def neuroedge(*args: str, stdin: str = "", timeout: float = 30) -> subprocess.Co
     )
 
 
+def lm75_hwmon(device: str, timeout: float = 5.0) -> Path:
+    """The hwmon directory of the lm75 bound to `device` — found by name, as the HAL does."""
+    deadline = time.monotonic() + timeout
+    while True:
+        for directory in Path("/sys/class/hwmon").glob("hwmon*"):
+            name = directory / "name"
+            if (
+                name.exists()
+                and name.read_text(encoding="ascii").strip() == "lm75"
+                and (directory / "device").resolve().name == device
+            ):
+                return directory
+        assert time.monotonic() < deadline, f"no lm75 hwmon device on {device}"
+        time.sleep(0.05)
+
+
 def wait_for_kernel(celsius: float, timeout: float = 5.0) -> None:
     """
     Wait until the lm75 driver reports the register just written (it refreshes on its
     own interval), reading sysfs directly: a LinuxHAL here would hold the lines the
     session under test needs.
     """
-    path = Path(env("NEUROEDGE_LM75_HWMON")) / "temp1_input"
+    path = lm75_hwmon(env("NEUROEDGE_LM75_DEVICE")) / "temp1_input"
     expected = round(celsius * 1000)
     deadline = time.monotonic() + timeout
     while (reported := int(path.read_text(encoding="ascii"))) != expected:
@@ -254,3 +270,48 @@ def test_a_session_whose_sensor_is_not_found_exits_before_any_line(lm75):
     )  # fmt: skip
     assert done.returncode == 1, done.stdout + done.stderr
     assert "no hwmon device named 'nothing'" in done.stdout + done.stderr
+
+
+def lm75_driver(action: str, device: str) -> None:
+    """Unbind or bind the kernel's lm75 driver from the chip: the sensor goes away, or back."""
+    subprocess.run(
+        ["sudo", "-n", "tee", f"/sys/bus/i2c/drivers/lm75/{action}"],
+        input=device, text=True, capture_output=True, check=True, timeout=10,
+    )  # fmt: skip
+
+
+def test_a_sensor_that_goes_away_mid_session_leaves_only_its_facts_undecided(lm75, monkeypatch):
+    """
+    Last in the file: it unbinds the driver. The session started on a healthy sensor
+    (preflight read it); then the kernel device disappears. The heat gates refuse
+    without asking, the gates that read no heat fact still decide, and nothing raises.
+    """
+    import asyncio
+
+    from neuroedge.sim import SimSession
+
+    monkeypatch.setenv(SENSORS_ENV, "temperature=hwmon:lm75/temp1")
+    set_temperature(30.0)
+    wait_for_kernel(30.0)
+    session = SimSession.load(FACTORY, target="linux")
+    try:
+        assert asyncio.run(session.handle("tắt báo động")).allowed, "30 °C is `normal`"
+        lm75_driver("unbind", lm75)
+        try:
+            lines = ("bật quạt", "bật báo động", "tắt quạt", "có", "tắt báo động")
+            fan_on, alarm_on, fan_off, yes, alarm_off = [
+                asyncio.run(session.handle(line)) for line in lines
+            ]
+        finally:
+            lm75_driver("bind", lm75)
+            lm75_hwmon(lm75)  # back, for whatever runs next
+        unavailable = session.events.of_type("sensor_unavailable")
+    finally:
+        session.close()
+    assert fan_on.allowed and alarm_on.allowed, "gates that read no heat fact still decide"
+    for turn in (fan_off, alarm_off):
+        assert turn.result.blocked and turn.result.gate.reason == "criterion_unavailable"
+        assert turn.confirmation is None, "nothing a person could stand in for: nothing asked"
+    assert not yes.allowed
+    assert unavailable and all(u["sensor"] == "temperature" for u in unavailable)
+    assert "no hwmon device named 'lm75'" in unavailable[0]["reason"]

@@ -15,8 +15,11 @@ Gate so dải, không so độ: tiêu chí số cần `evaluate.type: numeric`, 
 Cảm biến `temperature` báo độ C — trên `sim` lấy ở `[sim.sensors]`, trên `linux` từ kernel (vd
 `lm75` qua hwmon) — và `bands` ở `[sim.sensor_facts]` của `agent.toml` đổi số đọc thành dải, như
 nhau trên cả hai target. Mỗi dải bắt đầu **đúng tại** ngưỡng của nó (25 °C là `normal`, 24,5 °C là
-`low`); `heat_critical` dùng lại ngưỡng của `critical` nên hai dữ kiện luôn khớp. Số đọc dưới ngưỡng
-thấp nhất, hoặc không phải số hữu hạn (chữ, NaN), thì không thuộc dải nào: gate chặn, không đoán.
+`low`), và dải cuối phải là mức cao nhất của gate. Khi nạp phiên, ngưỡng `gte` của `heat_critical`
+phải trùng một ngưỡng của `bands`; ở mẫu này là ngưỡng của `critical` (55 °C), và
+`tests/test_agent.py` kiểm hai dữ kiện khớp quanh mọi ngưỡng — đổi ngưỡng thì đổi cả hai. Số đọc
+dưới -40 °C (đầu dò hở hoặc chập), không phải số hữu hạn, hoặc không đọc được thì **cả hai** dữ kiện
+chưa xác định: `tắt quạt` và `tắt báo động` bị chặn, không hỏi; `bật quạt`, `bật báo động` vẫn chạy.
 
 ## Chạy thử trên `sim` — không cần mạng, không cần key
 

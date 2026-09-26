@@ -26,6 +26,7 @@ from __future__ import annotations
 import asyncio
 import copy
 import json
+import tomllib
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -39,6 +40,7 @@ from ..engine.trace_sink import EventLog
 from ..engine.verdict import DEGRADED_REASONS, Fact, Unavailable
 from ..errors import AgentManifestError, ReplayError
 from ..hal.board import load_board_by_id
+from ..hal.sim import reading_value
 from ..paths import fixtures_dir
 from ..trace import load_trace, validate_trace
 
@@ -194,6 +196,8 @@ class ReplayResult:
     divergences: list[Divergence]
     target: str
     slow: str | None = None
+    # What replay cannot check but a person should know — `neuroedge replay` prints it.
+    warnings: list[str] = field(default_factory=list)
 
     # -- verdict sequence ------------------------------------------------------
     @property
@@ -354,6 +358,7 @@ class TracePlayer:
         if self.hal is not None and hasattr(hal, "events"):
             hal.events = events
         _script_sensors(hal, self.trace)
+        warnings = _sensor_rules_changed(self.trace, self.manifest, events)
         actions = load_actions(self.manifest)
         gates, problems = resolve_gates(self.manifest, self.registry)
         if problems:
@@ -381,7 +386,33 @@ class TracePlayer:
             divergences=engine.divergences,
             target=self.target,
             slow=self.slow,
+            warnings=warnings,
         )
+
+
+def _sensor_rules_changed(
+    trace: Mapping[str, Any], manifest: AgentManifest, events: EventLog
+) -> list[str]:
+    """
+    Replay feeds the recorded gate facts back; it cannot recompute a sensor fact.
+    If `[sim.sensor_facts]` changed since the recording (its digest in the metadata),
+    the verdicts say nothing about the new rules — which the person must be told.
+    """
+    recorded = trace.get("metadata", {}).get("sensor_facts_digest")
+    if recorded is None:
+        return []
+    from ..sim.session import sensor_facts_digest
+
+    sim = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
+    current = sensor_facts_digest(sim)
+    if current == recorded:
+        return []
+    events.emit("sensor_facts_changed", {"recorded": recorded, "current": current})
+    return [
+        f"[sim.sensor_facts] of {manifest.source} changed since the trace was recorded "
+        f"({recorded} → {current}): replay feeds the recorded gate facts back, so these "
+        "verdicts do not test the new rules — record the session again"
+    ]
 
 
 def _script_sensors(hal: Any, trace: Mapping[str, Any]) -> None:
@@ -395,7 +426,7 @@ def _script_sensors(hal: Any, trace: Mapping[str, Any]) -> None:
     for event in trace.get("events", []):
         data = event.get("data", {})
         if event.get("type") == "sensor_read" and "use" not in data:
-            readings.setdefault(data["sensor"], []).append(data.get("value"))
+            readings.setdefault(data["sensor"], []).append(reading_value(data))
             if "unit" in data:
                 units[data["sensor"]] = data["unit"]
     script = getattr(hal, "script_sensor", None)

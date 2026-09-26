@@ -393,7 +393,7 @@ supported = ["sim", "linux", "esp32s3"]
 operator_verified = true
 
 [sim.sensors]
-temperature  = 45
+temperature  = { value = 45, unit = "C" }   # ngưỡng số cần đơn vị (simulation_coverage.md §2)
 door_contact = true
 
 [sim.sensor_facts]

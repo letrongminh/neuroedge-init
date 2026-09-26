@@ -22,12 +22,16 @@ offline here, so a criterion is decided by, in order:
    supplies and which is never inferred from what the guest typed;
 2. `[sim.slot_facts]` — a fact computed from a slot the grammar extracted,
    e.g. ``room_matches = { slot = "room", equals = "101" }``;
-3. `[sim.sensor_facts]` — a fact read from a sensor at the start of the turn,
-   e.g. ``door_closed = { sensor = "door_contact" }`` (the reading itself),
-   ``too_hot = { sensor = "temperature", gte = 30 }``, or the `level` band a
-   reading falls in, ``heat = { sensor = "temperature", bands = { low = -40,
-   normal = 25 } }`` (`SensorFact`); sensor values come from `[sim.sensors]` on
-   `sim` — changed with `:sensor` in the REPL — and from the kernel on `linux`;
+3. `[sim.sensor_facts]` — a fact read from a sensor each time the gate facts
+   are gathered, e.g. ``door_closed = { sensor = "door_contact" }`` (the reading
+   itself), ``too_hot = { sensor = "temperature", gte = 30 }``, or the `level`
+   band a reading falls in, ``heat = { sensor = "temperature", bands = { low =
+   -40, normal = 25, high = 40, critical = 55 } }`` (`SensorFact`). A numeric rule
+   needs the sensor's unit (``temperature = { value = 24.5, unit = "C" }``).
+   Sensor values come from `[sim.sensors]` on `sim` — changed with `:sensor` in
+   the REPL — and from the kernel on `linux`. A reading that cannot be taken, or
+   that a rule of its sensor rejects, leaves every fact of that sensor undecided
+   (`sensor_unavailable`);
 4. the grammar, through `SystemOne`'s local fallback, for the facts a matched
    command declares (``command_recognized``).
 
@@ -55,20 +59,26 @@ from ..actions.tools import (
     dispatch,
     parse_tool_calls,
 )
+from ..engine.canonical import digest
 from ..engine.compiler import AgentManifest, build, load_actions, load_agent_manifest
 from ..engine.compiler import resolve_gates as _resolve_gates
 from ..engine.gate import ActionContractEngine
 from ..engine.gate_resolver import GateRegistry, ResolvedGate
 from ..engine.latency import TURN_EVENT, TurnMeter, system_two_usage, turn_path
 from ..engine.trace_sink import Clock, EventLog, monotonic_ms
-from ..errors import AgentManifestError, BoardCapabilityError, PerceptionUnavailableError
+from ..errors import (
+    AgentManifestError,
+    BoardCapabilityError,
+    NeuroEdgeError,
+    PerceptionUnavailableError,
+)
 from ..hal.board import REFERENCE_BOARD, load_board_by_id
-from ..hal.sim import SimHAL
+from ..hal.sim import SimHAL, reading_data
 from ..mcp_host import McpConfig, load_mcp_config
 from ..models import CommandGrammar, SystemOne, SystemTwo
 from ..models.grammar import OFFLINE_SAY, Recognition
 from ..models.knowledge import KNOWLEDGE_INTENT, KnowledgeBase, load_agent_grammar
-from ..trace import validate_trace
+from ..trace import json_safe, validate_trace
 
 # Words that answer the device's pending question (Q-26): matched on the device,
 # so the answer's source is `local_grammar`. Only while a question is pending.
@@ -142,18 +152,32 @@ def _finite_number(value: Any) -> float | int | None:
     return value
 
 
+def _kind(value: Any) -> str | None:
+    """What `equals` compares like with like: a bool, a string, or a finite number."""
+    if isinstance(value, bool):
+        return "bool"
+    if isinstance(value, str):
+        return "string"
+    return "number" if _finite_number(value) is not None else None
+
+
 @dataclass(frozen=True)
 class SensorFact:
     """
     A gate fact read from a sensor (`[sim.sensor_facts]`): the reading itself, a
-    match (`equals`), a comparison (`gte` / `lte`), or the `level` band it falls in.
+    match (`equals`), a comparison (`gte` / `lte`, bound included), or the `level`
+    band it falls in.
 
     `bands` are ``(level, lower bound)`` pairs, bounds strictly ascending: a reading
     is in the last band whose bound it reaches — a bound belongs to the band it
-    starts — and the last band has no upper end. A comparison or a band of a reading
-    that is not a finite number (a string, a bool, NaN, inf), or a band of a reading
-    below the first bound, is undecided: `None`, which no gate admits (a person may
-    still stand in for it through the gate's `on_block.confirms`, RFC-0006).
+    starts — and the last band has no upper end (so it must be the gate's highest
+    level, `_check_bands`).
+
+    `rejects()` says why the rule cannot decide on a reading: a numeric rule on
+    anything but a finite number, a band below the first bound, `equals` on a
+    reading of another type, the reading itself when it is None or not finite.
+    The session then leaves every fact of that sensor undecided (`gate_facts`);
+    `evaluate()` of a rejected reading is None, which no gate admits.
     """
 
     sensor: str
@@ -162,25 +186,42 @@ class SensorFact:
     lte: float | None = None
     bands: tuple[tuple[str, float], ...] | None = None
 
+    @property
+    def numeric(self) -> bool:
+        return self.bands is not None or self.gte is not None or self.lte is not None
+
+    def rejects(self, reading: Any) -> str | None:
+        if self.numeric:
+            number = _finite_number(reading)
+            if number is None:
+                return f"{reading!r} is not a finite number"
+            if self.bands is not None and number < self.bands[0][1]:
+                level, bound = self.bands[0]
+                return f"{number} is below {bound}, where the lowest band ({level!r}) starts"
+            return None
+        if self.equals is not None:
+            if _kind(reading) != _kind(self.equals):
+                return f"{reading!r} is not a {_kind(self.equals)} like {self.equals!r}"
+            return None
+        if reading is None or (isinstance(reading, float) and not math.isfinite(reading)):
+            return f"{reading!r} is not a reading"
+        return None
+
     def evaluate(self, reading: Any) -> Any:
+        if self.rejects(reading) is not None:
+            return None
         if self.equals is not None:
             return reading == self.equals
         if self.bands is not None:
-            number = _finite_number(reading)
-            if number is None:
-                return None
             level = None
             for name, bound in self.bands:
-                if number < bound:
+                if reading < bound:
                     break
                 level = name
             return level
-        if self.gte is not None or self.lte is not None:
-            number = _finite_number(reading)
-            if number is None:
-                return None  # NaN compares False: `gte` would read "not hot" and allow
-            return (self.gte is None or number >= self.gte) and (
-                self.lte is None or number <= self.lte
+        if self.numeric:
+            return (self.gte is None or reading >= self.gte) and (
+                self.lte is None or reading <= self.lte
             )
         return reading
 
@@ -207,6 +248,7 @@ def _sensor_fact(
             ),
             how=f'write {criterion} = {{ sensor = "door_contact" }}',
         )
+    sensor = rule["sensor"]
     rules = [key for key in ("equals", "bands") if key in rule]
     comparisons = [key for key in ("gte", "lte") if key in rule]
     if comparisons:
@@ -217,16 +259,37 @@ def _sensor_fact(
             why=f"a sensor fact is one rule, and this one has {len(rules)}: {rules}",
             how="keep one: `bands` for a level fact, `gte` / `lte` for a bool, `equals` for a match",
         )
-    for key in ("gte", "lte"):
-        if key in rule and _finite_number(rule[key]) is None:
+    if "equals" in rule and _kind(rule["equals"]) is None:
+        raise AgentManifestError(
+            where=f"{where} -> equals",
+            why=f"{rule['equals']!r} is not a bool, a string or a finite number",
+            how=f'write {criterion} = {{ sensor = "{sensor}", equals = true }}',
+        )
+    for key in comparisons:
+        if _finite_number(rule[key]) is None:
             raise AgentManifestError(
                 where=f"{where} -> {key}",
                 why=f"{rule[key]!r} is not a finite number, so no reading could be compared with it",
-                how=f'write {criterion} = {{ sensor = "{rule["sensor"]}", {key} = 30 }}',
+                how=f'write {criterion} = {{ sensor = "{sensor}", {key} = 30 }}',
             )
-    if "bands" not in rule:
-        return SensorFact(**rule)
-    bands = rule["bands"]
+    bands: tuple[tuple[str, float], ...] | None = None
+    if "bands" in rule:
+        bands = _parse_bands(where, rule["bands"])
+    if (comparisons or bands) and sensors.get(sensor, (None, None))[1] is None:
+        raise AgentManifestError(
+            where=where,
+            why=(
+                f"a threshold is a number in a unit, and [sim.sensors] declares none for "
+                f"{sensor!r}; on linux a reading in another unit would be compared as is"
+            ),
+            how=f'declare it: [sim.sensors] {sensor} = {{ value = 30, unit = "C" }}',
+        )
+    if bands is not None:
+        return SensorFact(sensor, bands=bands)
+    return SensorFact(**rule)
+
+
+def _parse_bands(where: str, bands: Any) -> tuple[tuple[str, float], ...]:
     if not isinstance(bands, dict) or not bands:
         raise AgentManifestError(
             where=f"{where} -> bands",
@@ -252,20 +315,58 @@ def _sensor_fact(
                 how=BANDS_HOW,
             )
         parsed.append((level, bound))
-    unit = sensors.get(rule["sensor"], (None, None))[1]
-    if unit is None:
-        raise AgentManifestError(
-            where=where,
-            why=(
-                f"the bounds are numbers in a unit, and [sim.sensors] declares none for "
-                f"{rule['sensor']!r}; on linux a reading in another unit would be banded as is"
-            ),
-            how=f'declare it: [sim.sensors] {rule["sensor"]} = {{ value = 30, unit = "C" }}',
-        )
-    return SensorFact(rule["sensor"], bands=tuple(parsed))
+    return tuple(parsed)
+
+
+def _check_thresholds(source: Path, sensor_facts: Mapping[str, SensorFact]) -> None:
+    """
+    A `gte` on a sensor that also has `bands` sits on a band bound, so the bool and
+    the level can never disagree between two hand-copied numbers. `lte` includes its
+    bound, which already belongs to the band above: it would disagree at the bound.
+    """
+    for criterion, rule in sensor_facts.items():
+        if rule.bands is not None or not rule.numeric:
+            continue
+        banded = {
+            other: [bound for _, bound in fact.bands]
+            for other, fact in sensor_facts.items()
+            if fact.sensor == rule.sensor and fact.bands is not None
+        }
+        if not banded:
+            continue
+        where = f"{source} -> [sim.sensor_facts] {criterion}"
+        levels = ", ".join(banded)
+        if rule.lte is not None:
+            raise AgentManifestError(
+                where=f"{where} -> lte",
+                why=(
+                    f"{rule.sensor!r} also has bands ({levels}), and a band starts at its "
+                    f"bound: lte = {rule.lte} is true at {rule.lte}, where the band is already "
+                    "the one above, so the two facts would disagree there"
+                ),
+                how="use gte = <a band bound> and require it false in the gate",
+            )
+        for other, bounds in banded.items():
+            if rule.gte not in bounds:
+                raise AgentManifestError(
+                    where=f"{where} -> gte",
+                    why=(
+                        f"{rule.gte} is not a bound of the bands of {other!r} on the same "
+                        f"sensor ({bounds}): between the two, {other} and {criterion} would "
+                        "disagree"
+                    ),
+                    how=f"use gte = one of {bounds}, the bound of the band it stands for",
+                )
 
 
 def _sim_sensors(manifest: AgentManifest, sim: dict[str, Any]):
+    for table in ("sensors", "sensor_facts"):
+        if not isinstance(sim.get(table, {}), dict):
+            raise AgentManifestError(
+                where=f"{manifest.source} -> [sim.{table}]",
+                why=f"[sim.{table}] must be a table, found {sim[table]!r}",
+                how=f"write [sim.{table}] with one line per entry (docs/spec/simulation_coverage.md §2)",
+            )
     sensors: dict[str, tuple[Any, str | None]] = {}
     for name, entry in sim.get("sensors", {}).items():
         if isinstance(entry, dict):
@@ -284,7 +385,35 @@ def _sim_sensors(manifest: AgentManifest, sim: dict[str, Any]):
         )
         for criterion, rule in sim.get("sensor_facts", {}).items()
     }
+    _check_thresholds(manifest.source, sensor_facts)
     return sensors, sensor_facts
+
+
+def _refuse_shadowed_facts(
+    where: str, facts: Mapping[str, Any], sensor_facts: Mapping[str, SensorFact]
+) -> None:
+    """A fixed value for a criterion a sensor decides would never be read."""
+    for criterion in facts:
+        if criterion in sensor_facts:
+            raise AgentManifestError(
+                where=f"{where} {criterion}",
+                why=(
+                    f"{criterion!r} is read from sensor {sensor_facts[criterion].sensor!r} "
+                    "([sim.sensor_facts]) on every evaluation, so this value would never be used"
+                ),
+                how=f"remove {criterion} here, or its [sim.sensor_facts] rule",
+            )
+
+
+def sensor_facts_digest(sim: Mapping[str, Any]) -> str | None:
+    """Digest of `[sim.sensor_facts]` as parsed — recorded with a session, checked by replay."""
+    rules = sim.get("sensor_facts")
+    if not rules:
+        return None
+    try:
+        return digest(rules)
+    except ValueError:  # a NaN / inf threshold JCS cannot write — load refuses it anyway
+        return digest(json_safe(rules))
 
 
 def _check_bands(
@@ -294,8 +423,9 @@ def _check_bands(
 ) -> None:
     """
     Every band of a `bands` fact is a level the gates declare for that criterion, in
-    their order — so a higher reading never gives a lower level, and no band is one
-    a gate would never admit. Checked when the session loads, before any line.
+    their order, and the last one is their highest level — so a higher reading never
+    gives a lower level, no reading however high stops below the top, and no band
+    is one a gate would never admit. Checked when the session loads, before any line.
     """
     for criterion, rule in sensor_facts.items():
         if rule.bands is None:
@@ -341,6 +471,19 @@ def _check_bands(
                         f"{levels}: a higher reading would give a lower level"
                     ),
                     how=f"list the bands in the order {levels}, each with the reading it starts at",
+                )
+            if names[-1] != levels[-1]:
+                raise AgentManifestError(
+                    where=where,
+                    why=(
+                        f"the last band {names[-1]!r} has no upper end, and gate {label} "
+                        f"declares {levels[-1]!r} above it: any reading, however high, would "
+                        f"stay {names[-1]!r}"
+                    ),
+                    how=(
+                        f"end the bands with {levels[-1]} = <the reading it starts at>; only "
+                        "lower or middle levels may be left out"
+                    ),
                 )
 
 
@@ -498,17 +641,28 @@ class SimSession:
         sim_facts, slot_facts = _sim_tables(manifest)
         sim_table = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
         sensors, sensor_facts = _sim_sensors(manifest, sim_table)
+        for where, given in (("[sim.facts]", sim_facts), ("SimSession.load(facts=...)", facts)):
+            _refuse_shadowed_facts(f"{manifest.source} -> {where}", given or {}, sensor_facts)
 
         if target == "linux":
             _require_linux_primitives(manifest)
         actions = load_actions(manifest)
         gates, _ = _resolve_gates(manifest, registry)  # build() has already vetted them
         _check_bands(manifest, sensor_facts, gates)
+        board = load_board_by_id(board_id)
+        for criterion, rule in sensor_facts.items():
+            # Here, not on the first turn: at run time a failed read is only "undecided".
+            board.require_sensor(
+                rule.sensor, called_from=f"{manifest.source} -> [sim.sensor_facts] {criterion}"
+            )
 
         if events is None:
             events = EventLog(clock)
         events.metadata.update(target=target, board_id=board_id, agent_version=manifest.label)
-        board = load_board_by_id(board_id)
+        rules_digest = sensor_facts_digest(sim_table)
+        if rules_digest is not None:
+            # Replay cannot recompute a sensor fact; it can tell the rules changed.
+            events.metadata["sensor_facts_digest"] = rules_digest
         if target == "linux":
             from ..hal.linux import TypedLinuxHAL
 
@@ -601,23 +755,62 @@ class SimSession:
     def set_sensor(self, sensor: str, value: Any) -> None:
         """Change a simulated reading (REPL `:sensor`, the UI) and record that it changed."""
         self.hal.set_sensor(sensor, value)
-        self.events.emit("sensor_set", {"sensor": sensor, "value": value})
+        self.events.emit("sensor_set", reading_data(sensor, value))
+
+    def set_fact(self, criterion: str, value: Any) -> None:
+        """A session fact (REPL `:set`, the UI) — refused for one a sensor decides."""
+        rule = self.sensor_facts.get(criterion)
+        if rule is not None:
+            raise NeuroEdgeError(
+                where=f":set {criterion}",
+                why=(
+                    f"{criterion!r} is read from sensor {rule.sensor!r} ([sim.sensor_facts]) "
+                    "each time the gate facts are gathered; a value set here would never be read"
+                ),
+                how=(
+                    f":sensor {rule.sensor} <value> on sim; on linux, change what the sensor "
+                    "measures"
+                ),
+            )
+        self.facts[criterion] = value
 
     def gate_facts(self, recognition: Recognition) -> dict[str, Any]:
+        """
+        The facts of one gate evaluation — a turn's tool calls, a confirmation, an MCP
+        call. Each sensor is read once here, so two facts of it (a band and a threshold)
+        never straddle a bound between two readings. A read that fails, or a reading a
+        rule of its sensor rejects (`SensorFact.rejects`), leaves every fact of that
+        sensor None — undecided — and writes `sensor_unavailable`; a gate that reads
+        none of them decides as usual.
+        """
         facts = dict(self.facts)
         for criterion, (slot, expected) in self.slot_facts.items():
             if slot in recognition.slots:
                 facts[criterion] = str(recognition.slots[slot]) == str(expected)
-        # One reading per sensor per turn: two facts of one sensor (a band and a
-        # threshold) must not straddle a bound between two kernel reads and disagree.
-        readings: dict[str, Any] = {}
+        by_sensor: dict[str, list[tuple[str, SensorFact]]] = {}
         for criterion, rule in self.sensor_facts.items():
-            if rule.sensor not in readings:
-                readings[rule.sensor] = self.hal.sensor_read(
-                    rule.sensor, called_from=f"[sim.sensor_facts] {criterion}", use="fact"
+            by_sensor.setdefault(rule.sensor, []).append((criterion, rule))
+        for sensor, rules in by_sensor.items():
+            reading, reason = None, None
+            try:
+                reading = self.hal.sensor_read(
+                    sensor, called_from=f"[sim.sensor_facts] {rules[0][0]}", use="fact"
                 )
-            # None = undecided; it stays in `facts`, so no [sim.facts] entry stands in.
-            facts[criterion] = rule.evaluate(readings[rule.sensor])
+            except (BoardCapabilityError, OSError) as error:  # a fault, a missing device
+                reason = error.why if isinstance(error, NeuroEdgeError) else repr(error)
+            else:
+                reason = next(
+                    (
+                        f"{criterion}: {why}"
+                        for criterion, rule in rules
+                        if (why := rule.rejects(reading)) is not None
+                    ),
+                    None,
+                )
+            if reason is not None:
+                self.events.emit("sensor_unavailable", {"sensor": sensor, "reason": reason})
+            for criterion, rule in rules:
+                facts[criterion] = None if reason is not None else rule.evaluate(reading)
         return facts
 
     # -- turn timing (TSK-I4-03) ------------------------------------------------------

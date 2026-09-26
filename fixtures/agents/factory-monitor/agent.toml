@@ -43,9 +43,11 @@ supported = ["sim", "linux"]
 temperature = { value = 45, unit = "C" }
 
 # Each band starts at its bound, inclusive, and ends where the next one starts:
-# 25 °C is `normal`, 24.5 °C `low`, 55 °C `critical`. Below -40 °C no band is
-# decided and heat_level blocks. heat_critical is the `critical` bound again, so
-# the two facts agree at 55 °C; both come from one reading per turn.
+# 25 °C is `normal`, 24.5 °C `low`, 55 °C `critical`; the last band is the gates'
+# highest level. heat_critical must sit on a band bound (checked at load) — here
+# the `critical` one — and both facts come from one reading. A reading below
+# -40 °C (an open or shorted probe), or none at all, leaves both undecided: every
+# gate that reads them refuses without asking, while vent_on / alarm_on still work.
 [sim.sensor_facts]
 heat_level    = { sensor = "temperature", bands = { low = -40, normal = 25, high = 40, critical = 55 } }
 heat_critical = { sensor = "temperature", gte = 55 }

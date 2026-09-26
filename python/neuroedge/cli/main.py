@@ -1220,6 +1220,8 @@ def replay(
             )
     else:
         console.print("  no pin was driven")
+    for warning in result.warnings:
+        console.print(f"[yellow]! {escape(warning)}[/yellow]")
 
     if trace_out is not None:
         dump(result, trace_out)

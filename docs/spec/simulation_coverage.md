@@ -38,35 +38,54 @@ không ghi ở đây: đọc task ở cột cuối trong bảng task của roadm
 | *Trực quan* | Terminal · `trace view` HTML tĩnh · `run --ui` và `mcp serve --ui` web cục bộ (FR-TGT-06) | PR | TSK-S3-22, S2-09, S3-27 |
 
 **Dữ kiện gate từ cảm biến — `[sim.sensor_facts]`.** Mỗi dòng `tiêu_chí = { sensor = "…", <luật> }`
-tính một dữ kiện gate từ số đọc đầu lượt, như nhau trên `sim` (giá trị kịch bản) và `linux` (số đọc
-kernel). Mỗi cảm biến được đọc **một lần mỗi lượt**, nên hai dữ kiện của cùng một cảm biến không bao giờ
-tính trên hai số đọc khác nhau. Hiện thực: `SensorFact` trong `python/neuroedge/sim/session.py`.
+tính một dữ kiện gate từ số đọc, như nhau trên `sim` (giá trị kịch bản) và `linux` (số đọc kernel).
+Mỗi cảm biến được đọc **một lần mỗi lần tính dữ kiện gate** (`gate_facts`: các tool call của một lượt
+lệnh, một câu trả lời xác nhận, một tool call qua MCP), nên hai dữ kiện của cùng một cảm biến không bao
+giờ tính trên hai số đọc khác nhau. Hiện thực: `SensorFact` và `SimSession.gate_facts` trong
+`python/neuroedge/sim/session.py`.
 
 | Luật | Dữ kiện | Ví dụ |
 |:---|:---|:---|
 | *(không có)* | Chính số đọc | `door_closed = { sensor = "door_contact" }` |
-| `equals` | `bool`: số đọc bằng giá trị | `room_empty = { sensor = "motion", equals = false }` |
+| `equals` | `bool`: số đọc bằng giá trị — giá trị là bool, chữ hoặc số hữu hạn | `room_empty = { sensor = "motion", equals = false }` |
 | `gte` / `lte` (một hoặc cả hai) | `bool`: số đọc ≥ / ≤ ngưỡng — **tính cả ngưỡng** | `too_hot = { sensor = "temperature", gte = 30 }` |
 | `bands` | `level`: dải chứa số đọc | `heat_level = { sensor = "temperature", bands = { low = -40, normal = 25, high = 40, critical = 55 } }` |
 
-Luật `bands` — gate so dải, không so số (`evaluate.type: numeric` chưa có, `TODOS.md` #30):
+Kiểm khi nạp phiên — sai ⇒ lỗi ba phần (`AgentManifestError`, cảm biến bo mạch không có ⇒
+`BoardCapabilityError`), **trước khi** xin line GPIO nào:
 
-- Mỗi mục là `mức = ngưỡng dưới`. Một dải bắt đầu **tại** ngưỡng của nó (tính cả ngưỡng) và dừng ngay
-  dưới ngưỡng của mục kế tiếp; dải cuối không có cận trên. Ví dụ trên: 24,999 → `low`, 25 → `normal`,
-  54,999 → `high`, 55 → `critical`.
-- Ngưỡng là số hữu hạn (không phải bool, NaN, inf), **tăng ngặt** theo thứ tự viết. Mức là mức mà gate
-  khai ở `evaluate.<tiêu_chí>.levels`, viết **đúng thứ tự** đó (được bỏ mức): số đọc cao hơn không bao
-  giờ ra mức thấp hơn. Phải có ít nhất một gate đọc tiêu chí đó, và mọi gate đọc nó khai kiểu `level`.
-- Cảm biến phải khai đơn vị ở `[sim.sensors]` (`temperature = { value = 45, unit = "C" }`), để `linux`
-  từ chối số đọc khác đơn vị thay vì đem so với ngưỡng (luật `linux` dưới đây).
-- Mỗi dòng một luật: `bands` đi cùng `equals`, `gte` hay `lte` bị từ chối; `equals` cùng `gte`/`lte` cũng
-  vậy. Ngưỡng `gte`/`lte` cũng phải là số hữu hạn.
-- Sai một điều trên ⇒ `AgentManifestError` (ba phần) khi nạp phiên, **trước khi** xin line GPIO nào.
-- Số đọc dưới ngưỡng đầu tiên, hoặc không phải số hữu hạn (chữ, bool, NaN, inf), cho dữ kiện **chưa
-  xác định** — `null` trong `gate_facts` — mà gate không bao giờ nhận; không bao giờ đoán một dải.
-  `gte`/`lte` trên số đọc không phải số hữu hạn cũng chưa xác định. Replay dùng lại `gate_facts` đã ghi.
-- Tiêu chí chưa xác định vẫn là tiêu chí `on_block.confirms` cho người trên thiết bị đứng thay
-  (RFC-0006): ở -41 °C, `vent_off` của `factory-monitor` hỏi lại, còn `alarm_off` chặn.
+- Mỗi dòng **một** luật: `bands`, `equals`, `gte`/`lte` không đi chung. Ngưỡng là số hữu hạn (không
+  phải bool, NaN, inf). Cảm biến phải là cảm biến bo mạch khai.
+- Luật số (`gte`, `lte`, `bands`) cần đơn vị khai ở `[sim.sensors]`
+  (`temperature = { value = 45, unit = "C" }`), để `linux` từ chối số đọc khác đơn vị thay vì đem so
+  với ngưỡng (luật `linux` dưới đây).
+- `bands`: mỗi mục là `mức = ngưỡng dưới`, ngưỡng **tăng ngặt** theo thứ tự viết. Một dải bắt đầu
+  **tại** ngưỡng của nó và dừng ngay dưới ngưỡng của mục kế tiếp; dải cuối không có cận trên. Ví dụ
+  trên: 24,999 → `low`, 25 → `normal`, 54,999 → `high`, 55 → `critical`. Phải có ít nhất một gate
+  đọc tiêu chí đó; mọi gate đọc nó khai kiểu `level`, và với từng gate: mức là mức gate khai ở
+  `evaluate.<tiêu_chí>.levels`, viết **đúng thứ tự** đó, và **mục cuối là mức cao nhất** của gate —
+  chỉ được bỏ mức thấp hoặc mức giữa, để số đọc cao tới đâu cũng không dừng dưới mức trên cùng.
+- Trên cảm biến có `bands`, `gte` phải **trùng một ngưỡng** của các `bands` đó (dữ kiện bool là
+  "từ dải này trở lên", không lệch khỏi dải ở số đọc nào); `lte` bị từ chối, vì ngưỡng thuộc dải
+  phía trên nên `lte` sẽ lệch đúng tại ngưỡng.
+- Tiêu chí do cảm biến quyết không được có giá trị cố định ở `[sim.facts]` (hay `SimSession.load(facts=)`):
+  giá trị đó không bao giờ được đọc. `:set` trong REPL và trang `--ui` từ chối nó và chỉ sang `:sensor`.
+
+Lúc chạy — fail-closed, không đoán:
+
+- Một số đọc **không lấy được** (cờ lỗi, NaN hay tệp hỏng trên `linux`, thiết bị biến mất, `sim` chưa có
+  giá trị), hoặc bị **một luật bất kỳ của cảm biến đó** từ chối — luật số trên số đọc không phải số hữu
+  hạn (chữ, bool, NaN, inf), `bands` trên số đọc dưới ngưỡng đầu tiên (đầu dò hở/chập), `equals` trên số
+  đọc khác kiểu (`0` không phải `false`), chính số đọc khi nó rỗng hay không hữu hạn — thì **mọi** dữ kiện
+  của cảm biến đó trong lần tính ấy là **chưa xác định** (`null` trong `gate_facts`), và phiên ghi
+  `sensor_unavailable` (§3). Gate đọc chúng chặn với `criterion_unavailable`; vì cả tiêu chí phủ quyết
+  (`heat_critical`) cũng chưa xác định, một lời "có" không đủ nên thiết bị **không hỏi**. Gate không đọc
+  dữ kiện nào của cảm biến đó quyết như thường (`vent_on` của `factory-monitor` vẫn chạy).
+- Câu trả lời xác nhận tính lại dữ kiện: hỏi lúc 45 °C, cảm biến hỏng trước lời "có" ⇒ vẫn chặn.
+- Replay dùng lại `gate_facts` đã ghi, nên không tính lại được dữ kiện cảm biến. Vết ghi mang digest
+  của `[sim.sensor_facts]` (`metadata.sensor_facts_digest`); luật đổi sau khi ghi thì `replay` cảnh báo
+  (sự kiện `sensor_facts_changed` trong vết ghi phát lại) — phán quyết khi đó không kiểm luật mới, cần
+  ghi lại phiên. Đây là cảnh báo, không phải khác biệt quyết định: mã thoát không đổi.
 
 ### `linux` — `linux-rpi5`
 
@@ -130,10 +149,17 @@ nào đi theo ô tương ứng ở §2. Cột "Vai trò khi replay" nói phần 
 | `audio.in` | `text_input` · `audio_in_vad_start` · `audio_in_segment` | `{text}` · `{energy_db}` · `{sha256, duration_ms, sample_rate_hz}` | **Đầu vào.** Replay bắt đầu từ kết quả nhận thức đã ghi (`intent_extracted`), không chạy lại âm thanh |
 | `audio.out` | `tts_stream_start` · `tts_stream_end` · `knowledge_retrieved` | `{text}` · `{duration_ms, sha256?, reason?}` (`reason`: `docs/spec/voice_fsm.md` §8) · `{entries: [{id, score}]}` | **Đầu ra** — chữ không vào so khớp quyết định; `knowledge_retrieved` cho biết câu trả lời dựa trên tri thức nào |
 | `digital.out` | `actuator_command` · `actuator_aborted` | `{pin, operation, duration_ms}` · `{pin, reason}` | **Quyết định** — so golden ở mọi lần `replay` / `verify` |
-| `sensor.read` | `sensor_read` · `sensor_set` | `{sensor, value, unit?, use?}` · `{sensor, value}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI |
+| `sensor.read` | `sensor_read` · `sensor_set` · `sensor_unavailable` | `{sensor, value, unit?, use?, non_finite?}` · `{sensor, value, non_finite?}` · `{sensor, reason}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI. `sensor_unavailable`: một lần tính dữ kiện gate không lấy được số đọc, hoặc một luật của cảm biến từ chối nó (§2), nên mọi dữ kiện của cảm biến đó là `null`; chỉ để đọc, replay dùng `gate_facts` |
 | `display` | `display_frame` | `{width, height, format, sha256, text?}` (`text` khi `format = "text"`) | **Đầu ra** — so digest khi golden có ghi, không chặn tương đương quyết định |
 
 Chế độ ẩn danh (FR-TRC-07) băm `text`; `audio_in_segment` và `display_frame` vốn chỉ mang digest.
+
+**Không có NaN hay vô cực trong JSON.** JSON không có các số đó (`NaN` trần làm `JSON.parse` của trình
+duyệt dừng, và trang `--ui` dừng theo). Số đọc không hữu hạn ghi thành chuỗi `"nan"`, `"inf"`, `"-inf"`
+kèm `non_finite: true`, và replay đọc lại thành số thực. Mọi sự kiện khác, siêu dữ liệu, trang `--ui` và
+`trace view` cũng không bao giờ mang số không hữu hạn (`json_safe` trong `python/neuroedge/trace.py`);
+`trace validate` từ chối tệp có `NaN`/`Infinity` trần. Siêu dữ liệu `sensor_facts_digest` và sự kiện
+`sensor_facts_changed` (chỉ ở vết ghi phát lại): §2, luật `[sim.sensor_facts]`.
 
 Sự kiện ngoài nguyên thủy (tool call, xác nhận, MCP host, `system_two_*`, đo lượt `turn_latency` /
 `session_summary`) ở danh mục duy nhất `docs/spec/tool_calling.md` §7; sự kiện của máy trạng thái hội thoại (`voice_state_changed`,
