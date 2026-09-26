@@ -100,8 +100,9 @@ luật, hiện thực ở `ne_ui_text.c` và `ne_ui.c`, đều tất định:
 
 1. **Cắt theo ngân sách của ô.** Mặc định `NE_UI_TEXT_MAX` (320) byte; vài ô ngắn hơn (tên action
    trên chip 20, tên cảm biến 64, giá trị 32, đơn vị 12, dải 20). Cắt tại ranh giới điểm mã UTF-8,
-   thêm `…` khi bị cắt — không bao giờ cắt giữa một ký tự. Chip còn có `max_width` làm lưới an toàn
-   cho glyph rộng.
+   thêm `…` khi bị cắt — không bao giờ cắt giữa một ký tự. Chip và ba ô của hàng cảm biến (giá trị,
+   đơn vị, dải) còn có `max_width` làm lưới an toàn cho glyph rộng: hết bề rộng thì LVGL thêm dấu
+   ba chấm, không đè sang ô bên cạnh.
 2. **Byte không hợp lệ thành `?`.** Thiếu byte nối, dạng overlong, surrogate, trên U+10FFFF: mỗi
    byte hỏng một `?`. Hàm không bao giờ đọc quá NUL đầu tiên, kể cả khi chuỗi kết thúc giữa một
    chuỗi nhiều byte. `python/tests/test_ui_text.py` build driver C với ASan+UBSan và chạy vài nghìn

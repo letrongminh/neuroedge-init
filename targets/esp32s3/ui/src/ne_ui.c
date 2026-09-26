@@ -380,14 +380,18 @@ void ne_ui_show_sensor(ne_ui_t *ui, const ne_ui_sensor_state_t *state)
         ne_ui_text_single_line(unit, sizeof(unit), reading->unit, 12);
         ne_ui_text_single_line(band, sizeof(band), reading->band, 20);
         lv_obj_set_pos(add_label(ui->root, name, &ne_font_12, C_MUTED, CONTENT_W, false), MARGIN, y);
+        /* Value, unit and band share the row: each has a cap so a long one
+         * ellipsizes instead of running into the next. */
         value_label = add_label(ui->root, value, &ne_font_22, C_TEXT, 0, false);
+        lv_obj_set_style_max_width(value_label, 100, 0);
         lv_obj_set_pos(value_label, MARGIN, y + 16);
         if (reading->unit != NULL) {
             lv_obj_t *unit_label = add_label(ui->root, unit, &ne_font_12, C_MUTED, 0, false);
+            lv_obj_set_style_max_width(unit_label, 40, 0);
             lv_obj_align_to(unit_label, value_label, LV_ALIGN_OUT_RIGHT_MID, 6, 0);
         }
         if (reading->band != NULL) {
-            lv_obj_t *badge = add_badge(ui->root, band, 0, 0, &ne_font_12, C_SURFACE, C_TEXT, 168);
+            lv_obj_t *badge = add_badge(ui->root, band, 0, 0, &ne_font_12, C_SURFACE, C_TEXT, 140);
             /* Right-aligned: a long band name grows left, never past the edge. */
             lv_obj_align(badge, LV_ALIGN_TOP_RIGHT, -MARGIN, y + 16);
         }
