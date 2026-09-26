@@ -22,10 +22,12 @@ FR-PER-01, Q-7, Q-12).
     timeout_s   = 15
 
     [wake_word]                                 # optional; without it a turn opens on VAD (T01)
-    provider    = "openwakeword"                # or "python:pkg.mod:factory"
-    model       = "models/hey_neuro.onnx"       # YOUR model file; NeuroEdge ships none (Q-45)
-    threshold   = 0.5
-    word        = "hey neuro"                   # the label in wake_word_detected; default: file stem
+    provider      = "openwakeword"              # or "python:pkg.mod:factory"
+    model         = "models/hey_neuro.onnx"     # YOUR wake-word model; NeuroEdge ships none (Q-45)
+    melspectrogram = "models/melspectrogram.onnx"   # openWakeWord's feature models are YOURS too:
+    embedding     = "models/embedding_model.onnx"   # it ships none, and nothing is downloaded
+    threshold     = 0.5
+    word          = "hey neuro"                 # the label in wake_word_detected; default: file stem
 
 `provider` is ``"openai"`` (the default: the OpenAI audio API, `openai_audio.py`)
 or ``"python:pkg.mod:factory"`` — an adapter of your own, handed this config
@@ -85,10 +87,12 @@ KEYS = {
 }
 EXAMPLE_MODEL = {"stt": "whisper-1", "tts": "gpt-4o-mini-tts"}
 LANGUAGE = re.compile(r"^[a-z]{2,3}$")
-# `[wake_word]`: openWakeWord (Apache-2.0 code) with a model of your own. No model
-# of openWakeWord's ships or is ever downloaded: they are CC BY-NC-SA 4.0 (Q-45).
+# `[wake_word]`: openWakeWord (Apache-2.0 code) with models of your own. No model
+# of openWakeWord's ships or is ever downloaded: every one it publishes is
+# CC BY-NC-SA 4.0 or of unestablished licence (Q-45). The three files are the
+# wake-word model and the two feature models `Model` always loads.
 OPENWAKEWORD = "openwakeword"
-WAKE_KEYS = ("provider", "model", "word", "threshold", "options")
+WAKE_KEYS = ("provider", "model", "melspectrogram", "embedding", "word", "threshold", "options")
 DEFAULT_WAKE_THRESHOLD = 0.5
 
 
@@ -255,13 +259,20 @@ def load_speech_configs(manifest: Any) -> tuple[SpeechConfig | None, SpeechConfi
 class WakeWordConfig:
     """
     `[wake_word]` (TSK-I4-01, Q-7): the detector that opens a turn, or None when
-    the agent declares none. `path` is the resolved model file (present for the
-    builtin provider); `word` is the label the `wake_word_detected` event carries.
+    the agent declares none. For provider ``openwakeword``, `path`,
+    `melspectrogram_path` and `embedding_path` are the three model files the user
+    supplies (openWakeWord ships none; nothing is ever downloaded, Q-45);
+    `word` is the label `wake_word_detected` carries and the only class allowed to
+    open a turn.
     """
 
     provider: str = OPENWAKEWORD
     model: str = ""
     path: Path | None = None
+    melspectrogram: str = ""
+    melspectrogram_path: Path | None = None
+    embedding: str = ""
+    embedding_path: Path | None = None
     word: str = ""
     threshold: float = DEFAULT_WAKE_THRESHOLD
     options: dict[str, Any] = field(default_factory=dict)
@@ -285,15 +296,79 @@ class WakeWordConfig:
             return f"adapter {self.adapter} (threshold {self.threshold:g})"
         return f"{self.path.name} (threshold {self.threshold:g}, word {self.word!r})"
 
+    def missing_models(self) -> list[tuple[str, Path | None]]:
+        """
+        The model files that are not on this machine, as ``(field, path)``, in the
+        order they appear in `[wake_word]`. Empty for a custom adapter, whose
+        files it owns.
+        """
+        if self.adapter is not None:
+            return []
+        return [
+            (field, path)
+            for field, path in (
+                ("model", self.path),
+                ("melspectrogram", self.melspectrogram_path),
+                ("embedding", self.embedding_path),
+            )
+            if path is None or not path.is_file()
+        ]
+
+
+def _wake_path(
+    table: dict[str, Any], where: str, field: str, root: Path | None, *, required: bool
+) -> tuple[str, Path | None]:
+    """One model path of `[wake_word]`: text, resolved against the agent's directory."""
+    value = table.get(field, "")
+    if not isinstance(value, str) or any(ord(ch) < 32 or ord(ch) == 127 for ch in value):
+        raise AgentManifestError(
+            where=f"{where} {field}",
+            why=f"{field} must be the path to a model file, as text without control characters",
+            how=f'write {field} = "models/<file>.onnx"',
+        )
+    value = value.strip()
+    if not value:
+        if required:
+            raise AgentManifestError(
+                where=f"{where} {field}",
+                why=f"provider openwakeword needs {field}: a model of your own. NeuroEdge ships "
+                "none — every model openWakeWord publishes is CC BY-NC-SA 4.0 (non-commercial) or "
+                "of unestablished licence, and its downloader must never run (Q-45)",
+                how=f"train or obtain your own {field} model and write {field} = "
+                '"models/<file>.onnx", or use provider = "python:my_wake.adapter:make"',
+            )
+        return "", None
+    if looks_like_key(value):
+        raise AgentManifestError(
+            where=f"{where} {field}",
+            why=f"{field} looks like an API key, not a path — if it is a key, revoke it; nothing is "
+            "downloaded from the network here",
+            how=f'write the path of a model file you own, e.g. {field} = "models/<file>.onnx"',
+        )
+    path = Path(value)
+    if not path.is_absolute() and root is not None:
+        path = Path(root) / path
+    return value, path
+
 
 def parse_wake_word(
-    table: Any, source: Path | None = None, root: Path | None = None
+    table: Any,
+    source: Path | None = None,
+    root: Path | None = None,
+    *,
+    check_files: bool = False,
 ) -> WakeWordConfig:
     """
     A validated `WakeWordConfig`; `AgentManifestError` naming the first bad field:
-    a missing model file, a threshold outside (0, 1], a key written in the table,
-    or an adapter that is not one. `root` resolves a relative `model` path (the
-    agent's directory, where a model of your own sits next to `agent.toml`).
+    a threshold outside (0, 1], a key written in the table, or an adapter that is
+    not one. `root` resolves a relative model path (the agent's directory, where
+    the user's models sit next to `agent.toml`).
+
+    `check_files=False` (a build, a typed session) validates the table's *shape*
+    only: the models may live on the device, not on this machine. A voice session
+    loads with `check_files=True`, before any GPIO line, and a missing file is an
+    error then — openWakeWord 0.6 downloads its models when a path is missing, and
+    that must never happen (Q-45).
     """
     where = f"{source} -> [wake_word]" if source else "[wake_word]"
     if not isinstance(table, dict):
@@ -306,8 +381,9 @@ def parse_wake_word(
         raise AgentManifestError(
             where=f"{where} {secrets[0]}",
             why="a key must never be written in agent.toml — the file is committed and shared, so "
-            "it would leak with it; a wake word reads a local model file and needs no key",
-            how=f"delete `{secrets[0]}`; [wake_word] takes provider, model, word and threshold",
+            "it would leak with it; a wake word reads local model files and needs no key",
+            how=f"delete `{secrets[0]}`; [wake_word] takes provider, model, melspectrogram, "
+            "embedding, word and threshold",
         )
     refuse_unknown(
         table,
@@ -320,46 +396,37 @@ def parse_wake_word(
         table,
         where,
         OPENWAKEWORD,
-        "openWakeWord with a model of your own (Apache-2.0 code; no model ships or downloads)",
+        "openWakeWord with models of your own (Apache-2.0 code; no model ships or downloads)",
         "python:my_wake.adapter:make",
     )
     custom = provider != OPENWAKEWORD
-    model = table.get("model", "")
-    if not isinstance(model, str) or any(ord(ch) < 32 or ord(ch) == 127 for ch in model):
-        raise AgentManifestError(
-            where=f"{where} model",
-            why="model must be the path to a model file, as text without control characters",
-            how='write model = "models/hey_neuro.onnx" (or .tflite)',
+    model, path = _wake_path(table, where, "model", root, required=not custom)
+    melspectrogram, melspectrogram_path = _wake_path(
+        table, where, "melspectrogram", root, required=not custom
+    )
+    embedding, embedding_path = _wake_path(table, where, "embedding", root, required=not custom)
+    if check_files:
+        config = WakeWordConfig(
+            provider=provider,
+            model=model,
+            path=path,
+            melspectrogram=melspectrogram,
+            melspectrogram_path=melspectrogram_path,
+            embedding=embedding,
+            embedding_path=embedding_path,
+            source=source,
         )
-    model = model.strip()
-    path: Path | None = None
-    if model:
-        if looks_like_key(model):
+        missing = config.missing_models()
+        if missing:
+            field, missing_path = missing[0]
             raise AgentManifestError(
-                where=f"{where} model",
-                why="model looks like an API key, not a path — if it is a key, revoke it; nothing "
-                "is downloaded from the network here",
-                how='write the path of a model file you trained, e.g. model = "models/hey_neuro.onnx"',
+                where=f"{where} {field}",
+                why=f"no model file at {missing_path}; openWakeWord ships none and its downloader "
+                "must never run (every model it publishes is CC BY-NC-SA 4.0 or of unestablished "
+                "licence — Q-45)",
+                how=f"put your own {field} file there (a path relative to the agent's directory "
+                'is taken from there), or use provider = "python:my_wake.adapter:make"',
             )
-        path = Path(model)
-        if not path.is_absolute() and root is not None:
-            path = Path(root) / path
-    if not custom and path is None:
-        raise AgentManifestError(
-            where=f"{where} model",
-            why="provider openwakeword needs the path to your own model file; NeuroEdge ships "
-            "none, and openWakeWord's own pre-trained models are CC BY-NC-SA 4.0 "
-            "(non-commercial) — they may not ship with a commercial product (Q-45)",
-            how='train or download your own model and write model = "models/hey_neuro.onnx" '
-            '(.tflite also works), or use provider = "python:my_wake.adapter:make"',
-        )
-    if path is not None and not path.is_file():
-        raise AgentManifestError(
-            where=f"{where} model",
-            why=f"no model file at {path}",
-            how="point model at the .onnx/.tflite you trained (a path relative to the agent's "
-            "directory is taken from there); NeuroEdge never downloads a wake-word model",
-        )
     word = plain_text(
         table,
         where,
@@ -383,6 +450,10 @@ def parse_wake_word(
         provider=provider,
         model=model,
         path=path,
+        melspectrogram=melspectrogram,
+        melspectrogram_path=melspectrogram_path,
+        embedding=embedding,
+        embedding_path=embedding_path,
         word=word or (path.stem if path is not None else "wake"),
         threshold=threshold,
         options=options(table, where, "wake_word", "openWakeWord" if not custom else None),
@@ -390,9 +461,11 @@ def parse_wake_word(
     )
 
 
-def load_wake_word_config(manifest: Any) -> WakeWordConfig | None:
+def load_wake_word_config(manifest: Any, *, check_files: bool = False) -> WakeWordConfig | None:
     """The agent's `[wake_word]`, or None when it declares none (VAD opens turns, T01)."""
     document = tomllib.loads(manifest.source.read_text(encoding="utf-8"))
     if "wake_word" not in document:
         return None
-    return parse_wake_word(document["wake_word"], manifest.source, manifest.root)
+    return parse_wake_word(
+        document["wake_word"], manifest.source, manifest.root, check_files=check_files
+    )

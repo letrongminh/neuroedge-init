@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import sys
 import threading
-import time
 import wave
 from array import array
 
@@ -203,13 +202,20 @@ class FakeInputStream:
         self.wake = threading.Event()
 
     def start(self):
+        # PortAudio refuses to start an already-started stream; model that too.
+        if self.started:
+            raise RuntimeError("Stream is already started")
         self.started = True
 
     def read(self, frames):
+        if not self.started:
+            raise RuntimeError("Stream is stopped")  # PortAudioError, reproduced
         if self.world.mode == "gone":
             raise OSError(19, "No such device")
         if self.world.mode == "empty":
             return b"", False
+        if self.world.mode == "overflow":
+            return b"\x00\x00" * frames * self.channels, True
         if self.world.blocks:
             return self.world.blocks.pop(0), False
         if self.world.blocking:  # a real device waits; abort() wakes the reader
@@ -218,6 +224,8 @@ class FakeInputStream:
         raise OSError(19, "No such device")
 
     def abort(self):
+        # PortAudio: abort() stops the stream; writing/reading needs start() again.
+        self.started = False
         self.aborted = True
         self.wake.set()
 
@@ -233,7 +241,7 @@ class FakeOutputStream(FakeInputStream):
 
     def write(self, payload):
         if not self.started:
-            raise RuntimeError("stream not started")
+            raise RuntimeError("Stream is stopped")  # PortAudioError, reproduced
         if self.fail_after is not None and len(self.written) >= self.fail_after:
             raise OSError(5, "Input/output error")
         self.written.append(bytes(payload))
@@ -306,7 +314,8 @@ def test_live_capture_never_reads_silence_as_input(tmp_path):
     hal, _ = make(tmp_path, audio="live", sounddevice=sd)
     with pytest.raises(BoardCapabilityError) as raised:
         next(hal.audio_source().frames())
-    assert "no audio" in raised.value.why and "silence is never passed off" in raised.value.why
+    assert "empty block" in raised.value.why
+    assert "silence is never passed off" in raised.value.why
     hal.close()
 
 
@@ -338,22 +347,86 @@ def test_a_device_that_is_not_there_or_refuses_the_format_fails_closed(tmp_path)
     assert "no output device named" in raised.value.why and OUTPUT_DEVICE in raised.value.why
 
 
+def test_an_input_overflow_is_recorded_and_stops_the_frames(tmp_path):
+    sd = FakeSounddevice(mode="overflow")
+    hal, _ = make(tmp_path, audio="live", sounddevice=sd)
+    with pytest.raises(BoardCapabilityError) as raised:
+        next(hal.audio_source().frames())
+    assert "overflowed" in raised.value.why and "cannot be trusted" in raised.value.why
+    assert raised.value.how and "keep up" in raised.value.how
+    (overflow,) = hal.events.of_type("audio_in_overflow")
+    assert overflow == {}, "the overflow is visible in the trace, not silent"
+    hal.close()
+
+
+def test_a_stream_that_will_not_start_is_closed_not_dropped(tmp_path):
+    class BadStart(FakeInputStream):
+        def start(self):
+            raise OSError(19, "No such device")
+
+    class BadSounddevice(FakeSounddevice):
+        def RawInputStream(self, **kwargs):  # noqa: N802 - mirrors sounddevice
+            stream = BadStart(self, kwargs["device"], kwargs["channels"], kwargs["samplerate"])
+            self.inputs.append(stream)
+            return stream
+
+    sd = BadSounddevice()
+    hal, _ = make(tmp_path, audio="live", sounddevice=sd)
+    with pytest.raises(BoardCapabilityError, match="refuses 48000 Hz"):
+        hal.audio_source()
+    assert sd.inputs[0].closed, "a half-open stream is closed, never just dropped"
+    hal.close()
+
+
+def test_preflight_opens_live_devices_before_any_line_is_requested(tmp_path):
+    sd = FakeSounddevice()
+    chip = tmp_path / "gpiochip0"
+    chip.write_text("")
+    hal = LinuxHAL(
+        chip_glob=str(tmp_path / "gpiochip*"),
+        gpiod=FakeGpiod({str(chip): LINES}),
+        audio="live",
+        sounddevice=sd,
+        needs={"audio": ("audio.in", "audio.out"), "where": "agent"},
+    )
+    assert [type(stream).__name__ for stream in (*sd.inputs, *sd.outputs)] == [
+        "FakeInputStream",
+        "FakeOutputStream",
+    ], "both devices opened, and before __init__ requested the lines"
+    hal.close()
+
+
+def test_a_live_device_that_cannot_open_refuses_before_any_line(tmp_path):
+    fake = FakeGpiod({str(tmp_path / "gpiochip0"): LINES})
+    (tmp_path / "gpiochip0").write_text("")
+    with pytest.raises(BoardCapabilityError, match="no input device named"):
+        LinuxHAL(
+            chip_glob=str(tmp_path / "gpiochip*"),
+            gpiod=fake,
+            audio="live",
+            sounddevice=FakeSounddevice(devices=set()),
+            needs={"audio": ("audio.in",), "where": "agent"},
+        )
+    assert fake.requests == [], "no GPIO line is requested for a device that cannot open"
+
+
 def test_a_close_while_capture_waits_ends_the_frames(tmp_path):
     sd = FakeSounddevice(blocking=True)
     hal, _ = make(tmp_path, audio="live", sounddevice=sd)
     frames = hal.audio_source().frames()
     seen: list[object] = []
+    waiting = threading.Event()
 
     def read_until_closed():
         try:
+            waiting.set()  # the thread is about to block in read()
             seen.append(next(frames))  # blocks until close() aborts the stream
         except StopIteration:
             seen.append("closed")
 
     reader = threading.Thread(target=read_until_closed)
     reader.start()
-    time.sleep(0.1)
-    assert reader.is_alive(), "the read is waiting, as a real device waits"
+    assert waiting.wait(2.0), "the reader thread started"
     hal.close()
     reader.join(timeout=2.0)
     assert seen == ["closed"] and not reader.is_alive()
@@ -369,9 +442,7 @@ def test_live_playback_interleaves_to_the_device_and_stop_aborts(tmp_path):
     assert isinstance(speaker, LiveSpeaker)
     pcm = tone(100, RATE)
     playback = speaker.play(pcm, 0)
-    deadline = time.monotonic() + 2.0
-    while sum(len(b) for b in sd.outputs[0].written) < 2 * len(pcm) and time.monotonic() < deadline:
-        time.sleep(0.01)
+    assert hal.audio_sink().wait(), "the writer finished"
     written = b"".join(sd.outputs[0].written)
     assert written == stereo(pcm), "mono 48 kHz on a stereo node, byte for byte"
     assert playback in speaker.playbacks, "the WAV timeline still holds the reply"
@@ -381,16 +452,33 @@ def test_live_playback_interleaves_to_the_device_and_stop_aborts(tmp_path):
     assert sd.outputs[0].closed
 
 
+def test_playback_restarts_an_aborted_stream_instead_of_writing_to_a_stopped_one(tmp_path):
+    # abort() (a stop, or the next reply replacing one in flight) leaves PortAudio's
+    # stream stopped: the next write must be preceded by start(), or it fails with
+    # "Stream is stopped" — the fake raises exactly that when a write finds it stopped.
+    sd = FakeSounddevice()
+    hal, _ = make(tmp_path, audio="live", sounddevice=sd)
+    sink = hal.audio_sink()
+    first, second, third = tone(20, RATE), tone(20, RATE), tone(40, RATE)
+    sink.play(first)
+    assert sink.wait(), "the first reply played"
+    sink.stop()  # barge-in: abort() stops the stream
+    assert not sd.outputs[0].started
+    sink.play(second)  # a reply after the stop: start() again before writing
+    assert sink.wait() and sd.outputs[0].started
+    sink.play(third)  # a reply replacing one in flight: play() aborts, then starts
+    assert sink.wait()
+    assert b"".join(sd.outputs[0].written) == stereo(first) + stereo(second) + stereo(third)
+    hal.close()
+
+
 def test_a_speaker_that_fails_is_never_just_quiet(tmp_path):
     sd = FakeSounddevice()
     hal, _ = make(tmp_path, audio="live", sounddevice=sd)
     sink = hal.audio_sink()
-    hal.speaker(called_from="test").play(tone(60, RATE), 0)  # opens the stream
-    sd.outputs[0].fail_after = 0  # the next write fails as if the device went away
+    sd.outputs[0].fail_after = 0  # the very first write fails as if the device went away
     sink.play(tone(60, RATE))
-    deadline = time.monotonic() + 2.0
-    while sink._error is None and time.monotonic() < deadline:
-        time.sleep(0.01)
+    assert sink.wait(), "the failed writer ended"
     assert sink._error is not None
     with pytest.raises(BoardCapabilityError) as raised:
         hal.close()
@@ -400,8 +488,10 @@ def test_a_speaker_that_fails_is_never_just_quiet(tmp_path):
         sink.play(tone(60, RATE))
 
 
-def test_the_live_speaker_is_never_opened_by_a_file_session(tmp_path):
-    hal, _ = make(tmp_path)
+def test_the_live_speaker_is_never_opened_by_a_file_session(tmp_path, monkeypatch):
+    monkeypatch.setenv(linux.AUDIO_ENV, "live")
+    hal, _ = make(tmp_path, audio="file")  # --voice-file forces this, env or not
+    assert hal.audio_backend == "file"
     speaker = hal.speaker()
     assert not isinstance(speaker, LiveSpeaker)
     speaker.play(tone(20, RATE), 0)

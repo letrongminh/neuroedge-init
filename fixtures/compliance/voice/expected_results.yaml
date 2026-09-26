@@ -364,9 +364,10 @@ v5_twenty_noise_bursts_then_a_command.json:
 
 i4_wake_word_opens_the_turn.json:
   proves: >-
-    TSK-I4-01: khi có [wake_word], lượt KHÔNG mở bằng VAD — vad_start/vad_end ở 100/400 trôi qua
-    trong IDLE, không có voice_state_changed nào; wake_word_detected ở 600 mở lượt 1 (T01), âm
-    thanh sau đó mới là của lượt; bản chép lời đi đường ngữ pháp lệnh và mở cửa qua gate.
+    TSK-I4-01: khi có [wake_word] cấu hình (world.wake_word — bộ phát hiện chạy nhưng không tự kích),
+    lượt KHÔNG mở bằng VAD — vad_start/vad_end ở 100/400 trôi qua trong IDLE, không có
+    voice_state_changed nào; wake_word_detected ở 600 mở lượt 1 (T01), âm thanh sau đó mới là của
+    lượt; bản chép lời đi đường ngữ pháp lệnh và mở cửa qua gate.
   events:
     - {offset_ms: 600, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
     - {offset_ms: 2200, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
@@ -389,3 +390,16 @@ i4_primary_stt_down_falls_back.json:
     - {offset_ms: 2200, type: gate_evaluation_result, data: {verdict: ALLOW}}
     - {offset_ms: 2200, type: actuator_command, data: {pin: door_lock, operation: pulse, duration_ms: 30000}}
     - {offset_ms: 2200, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 1}}
+
+i4_fallback_wait_is_bounded.json:
+  proves: >-
+    TSK-I4-01, Q-14: cửa sổ nghĩ mới có trần — STT chính hỏng ở 1700 ⇒ stt_fallback, nhưng fallback
+    không trả lời trong 5000 ms kể từ đó nên câu offline ở 6700 (T09/T07), không chờ hết transport
+    bound; bản chép lời đến muộn ở 9000 bị bỏ (`voice_late_result_dropped`), không c.do(), chân đứng yên.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1600, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 1700, type: stt_fallback, data: {reason: primary STT down, from: primary, to: local}}
+    - {offset_ms: 6700, type: tts_stream_start, data: {}}
+    - {offset_ms: 6700, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 1}}
+    - {offset_ms: 9000, type: voice_late_result_dropped, data: {turn: 1, input: stt_result}}

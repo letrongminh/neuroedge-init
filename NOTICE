@@ -138,39 +138,42 @@ Six deliberate choices in this section, all to keep copyleft out of the core:
     (tqdm: MPL-2.0 AND MIT); regex is Apache-2.0 AND CNRI-Python. Not in
     `dev` (~120 MB): the tests use a fake `litellm` module.
 
-   * pyserial (BSD-3-Clause, no dependencies) is NOT a core dependency. It sits
-     in the optional `serial` extra, pinned at pyserial==3.5, and is imported
-     only by python/neuroedge/testing/uart.py when `neuroedge record --target
-     esp32s3 --port` reads a serial device (TSK-S4-09); a QEMU log file or
-     tcp:// needs nothing. Checked 2026-09-25. Also in `dev`, so the serial
-     path is tested in CI.
+  * pyserial (BSD-3-Clause, no dependencies) is NOT a core dependency. It sits
+    in the optional `serial` extra, pinned at pyserial==3.5, and is imported
+    only by python/neuroedge/testing/uart.py when `neuroedge record --target
+    esp32s3 --port` reads a serial device (TSK-S4-09); a QEMU log file or
+    tcp:// needs nothing. Checked 2026-09-25. Also in `dev`, so the serial
+    path is tested in CI.
 
-   * sounddevice (MIT) is NOT a core dependency. It sits in the optional
-     `audio` extra, needed only for the live `audio.in` / `audio.out` backend
-     on target `linux` (python/neuroedge/hal/linux.py, TSK-S5-08, Q-22); a
-     `--voice-file` session and the compliance corpus use the file backend and
-     need nothing. It wraps PortAudio, whose licence is MIT-style
-     (portaudio/portaudio, LICENSE: "Permission is hereby granted, free of
-     charge…"); the wheel vendors no PortAudio binary. Imported at run time and
-     never vendored, and it is not in `dev` — the tests drive a fake
-     `sounddevice` module. Checked 2026-09-26.
+  * sounddevice (MIT) is NOT a core dependency. It sits in the optional
+    `audio` extra, needed only for the live `audio.in` / `audio.out` backend
+    on target `linux` (python/neuroedge/hal/linux.py, TSK-S5-08, Q-22); a
+    `--voice-file` session and the compliance corpus use the file backend and
+    need nothing. It wraps PortAudio, whose licence is MIT-style
+    (portaudio/portaudio, LICENSE: "Permission is hereby granted, free of
+    charge…"), and depends on CFFI (MIT) and pycparser (BSD-3-Clause); the
+    wheel vendors no PortAudio binary. Imported at run time and never vendored,
+    and it is not in `dev` — the tests drive a fake `sounddevice` module.
+    Checked 2026-09-26.
 
-   * openwakeword (openWakeWord) is NOT a core dependency. It sits in the
-     optional `wake` extra, imported only when an agent declares `[wake_word]`
-     with provider = "openwakeword" (python/neuroedge/perception/providers/
-     wake.py, TSK-I4-01, Q-7). The CODE is Apache-2.0 (verified at source
-     2026-09-26). Its PRE-TRAINED MODELS — including the ones its wheel bundles
-     under openwakeword/resources/models/ — are CC BY-NC-SA 4.0
-     (non-commercial), which conflicts with the core's licence (Q-45), so:
-     NeuroEdge ships no model, never calls openWakeWord's model downloader, and
-     always names the user's own file in `Model(wakeword_models=[...])`; only
-     the code is used. A model file is the user's own responsibility and must
-     not be committed. The extra's transitive dependencies (numpy, tqdm, scipy,
-     requests, onnxruntime, …) are whatever that release pins; the extra is not
-     in `dev`, so the `licence-obligations` job does not see them today — before
-     a nightly rig or a release relies on it, a job like `cloud-extra` must run
-     scripts/check_licences.py over that install (recorded as a follow-up in the
-     pull request; TODOS.md #45 is the activation milestone).
+  * openwakeword (openWakeWord) is NOT a core dependency. It sits in the
+    optional `wake` extra, pinned at openwakeword>=0.6.0, with onnxruntime
+    (MIT); imported only when an agent declares `[wake_word]` with
+    provider = "openwakeword" (python/neuroedge/perception/providers/wake.py,
+    TSK-I4-01, Q-7). The CODE is Apache-2.0 (verified at source 2026-09-26).
+    0.6.0 is required: its wheel ships no model files, while 0.5.1 bundled
+    pre-trained models. The LICENCE OF ITS MODELS IS NOT ESTABLISHED — the
+    wake-word models it publishes are reported as CC BY-NC-SA 4.0
+    (non-commercial), and the licence of the two feature models `Model` always
+    loads (melspectrogram, embedding) is not stated at source. None of them may
+    ship with NeuroEdge, and its downloader must never run (Q-45): all three
+    files (`model`, `melspectrogram`, `embedding`) are the user's own, named
+    explicitly, checked before use, and the user is responsible for their
+    licences. The extra is not in `dev` (the tests drive a fake openwakeword
+    module), so the `licence-obligations` job does not see its transitive set;
+    before a nightly rig or a release relies on it, a job like `cloud-extra`
+    must run scripts/check_licences.py over that install (TODOS.md #45 is the
+    activation milestone).
 
 
 ================================================================================
@@ -185,6 +188,12 @@ Not distributed to users; present only in developer and CI environments.
 | pytest-asyncio | Apache-2.0 | 2026-09-21 | Async test support           |
 | ruff           | MIT        | 2026-09-21 | Lint and format              |
 | pip-licenses   | MIT        | 2026-09-21 | Licence gate in CI           |
+| numpy          | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 (SPDX expression, 2026-09-26) | 2026-09-26 | wake-word adapter contract in tests; the `wake` extra brings it too |
+
+numpy (2026-09-26) is the dev dependency the wake-word tests need: openWakeWord's
+`predict` takes int16 numpy arrays, and the fake model in the tests enforces that
+contract. Its whole SPDX expression is permissive (Zlib keeps the notice, CC0-1.0
+is a public-domain dedication); Q-11 names Zlib and CC0-1.0 from this date.
 
 ESP-IDF (Apache-2.0) is a build toolchain, used but not redistributed. Pinned at
 v5.2.1 in nightly-hardware.yml, and at v5.4 (the espressif/idf container) in

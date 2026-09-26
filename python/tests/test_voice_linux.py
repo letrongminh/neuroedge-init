@@ -15,13 +15,14 @@ from typer.testing import CliRunner
 
 import neuroedge.hal.linux as linux
 from neuroedge.cli.main import app
-from neuroedge.errors import BuildFailed
+from neuroedge.errors import BoardCapabilityError, BuildFailed
 from neuroedge.perception.providers.fake import tone
 from neuroedge.sim import SimSession
 from neuroedge.testing import assert_matches_golden, replay
 from neuroedge.trace import load_trace, validate_trace
 
 from .test_hal_linux import LINES, FakeGpiod
+from .test_hal_linux_audio import FakeSounddevice
 
 runner = CliRunner()
 RATE = 16000  # the WAV is a 16 kHz mono recording, as `--voice-file` documents
@@ -145,6 +146,44 @@ def test_record_on_linux_replays_to_the_same_decisions_on_sim(project, gpio, tmp
     assert on_sim.verdicts == on_linux.verdicts == on_sim.recorded_verdicts
     assert on_sim.pin("porch_light").commands == on_linux.pin("porch_light").commands
     assert_matches_golden(on_sim, out)
+
+
+def test_a_voice_file_session_never_opens_the_live_devices(project, gpio, monkeypatch):
+    # `--voice-file` is the file backend even when the machine's environment says
+    # live: no microphone, no speaker, no sounddevice import (TSK-S5-08, TODOS #45).
+    monkeypatch.setenv(linux.AUDIO_ENV, "live")
+    monkeypatch.setattr(
+        linux,
+        "_import_sounddevice",
+        lambda: pytest.fail("a --voice-file session must not open sounddevice"),
+    )
+    agent, wav = project
+    result = invoke("run", "--target", "linux", "--agent", agent, "--voice-file", wav)
+    assert result.exit_code == 0, result.output
+    assert "ALLOW" in result.output
+
+
+def test_a_live_session_refuses_a_missing_device_before_any_line(project, gpio, monkeypatch):
+    monkeypatch.setenv(linux.AUDIO_ENV, "live")
+    monkeypatch.setattr(linux, "_import_sounddevice", lambda: FakeSounddevice(devices=set()))
+    agent, _ = project
+    with pytest.raises(BoardCapabilityError, match="no input device named"):
+        SimSession.load(agent, target="linux")
+    assert gpio.requests == [], "no GPIO line is requested for a device that cannot open"
+
+
+def test_a_live_session_opens_both_devices_then_requests_the_lines(project, gpio, monkeypatch):
+    fake = FakeSounddevice()
+    monkeypatch.setenv(linux.AUDIO_ENV, "live")
+    monkeypatch.setattr(linux, "_import_sounddevice", lambda: fake)
+    agent, _ = project
+    session = SimSession.load(agent, target="linux")
+    try:
+        assert fake.inputs and fake.outputs, "both live devices were preflighted"
+        assert gpio.requests, "the lines were requested after the devices opened"
+    finally:
+        session.close()
+    assert fake.inputs[0].closed and fake.outputs[0].closed
 
 
 def test_the_build_check_still_refuses_what_linux_has_not(root, gpio):

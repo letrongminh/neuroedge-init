@@ -1,5 +1,5 @@
 {
-  "description": "TSK-I4-01: VAD một mình không mở lượt (vad_activation tắt — có [wake_word] cấu hình thì lượt mở bằng từ khoá); wake_word_detected mở lượt 1, phần còn lại như thường.",
+  "description": "TSK-I4-01: có [wake_word] cấu hình (world.wake_word — bộ phát hiện chạy nhưng không tự kích), VAD một mình KHÔNG mở lượt; wake_word_detected mở lượt 1, phần còn lại như thường.",
   "scenario": "table",
   "covers": [
     "T01",
@@ -16,7 +16,9 @@
     "max_reprompts": 1,
     "vad_activation": false
   },
-  "world": {},
+  "world": {
+    "wake_word": true
+  },
   "inputs": [
     {
       "offset_ms": 100,

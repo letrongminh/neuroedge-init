@@ -5,8 +5,9 @@ Every installed package carries a licence the Q-11 policy allows (TSK-S2-11).
     pip-licenses --format=json > licences.json
     python scripts/check_licences.py licences.json
 
-Allowed: MIT, BSD-2/3-Clause, Apache-2.0, ISC, PSF, CNRI-Python (`regex`, via
-tiktoken), MPL-2.0 (used unmodified) — the list in PRD §15 Q-11. Everything else fails —
+Allowed: MIT, BSD-2/3-Clause, 0BSD, Apache-2.0, ISC, PSF, CNRI-Python (`regex`, via
+tiktoken), MPL-2.0 (used unmodified), Zlib and CC0-1.0 (`numpy`) — the list in PRD
+§15 Q-11. Everything else fails —
 GPL/LGPL/AGPL, SSPL, BSL, commercial, and *unknown*. Stricter than
 `pip-licenses --allow-only --partial-match`, whose substring test lets
 "Limited" pass as "MIT" and passes "X AND <anything>" when X is allowed: here
@@ -41,6 +42,12 @@ ALLOWED = [
     r"CNRI-Python",
     r"MPL-2\.0",
     r"Mozilla Public License 2\.0 \(MPL 2\.0\)",
+    # Added 2026-09-26 (Q-11 amendment): numpy's wheel declares
+    # `BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0`; both are permissive —
+    # Zlib keeps the notice, CC0 is a public-domain dedication.
+    r"Zlib",
+    r"CC0-1\.0",
+    r"CC0 1\.0 Universal",
 ]
 ALLOWED_RE = re.compile(r"^(?:" + "|".join(ALLOWED) + r")$", re.IGNORECASE)
 SPLIT = re.compile(r";|\s+AND\s+|\s+OR\s+", re.IGNORECASE)
@@ -94,7 +101,10 @@ def main(argv: list[str]) -> int:
     print(f"  {len(packages)} packages checked; MPL-2.0 (use unmodified): {sorted(mpl) or 'none'}")
     if bad:
         return 1
-    print("  ok  every licence is MIT / BSD / Apache-2.0 / ISC / PSF / CNRI-Python / MPL-2.0")
+    print(
+        "  ok  every licence is MIT / BSD / 0BSD / Apache-2.0 / ISC / PSF / CNRI-Python / "
+        "MPL-2.0 / Zlib / CC0-1.0"
+    )
     return 0
 
 

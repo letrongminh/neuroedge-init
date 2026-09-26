@@ -200,6 +200,45 @@ def test_a_fallback_transcript_that_is_garbled_is_still_a_failure(door, tmp_path
     assert voice.hal.pin("door_lock").never_pulsed()
 
 
+def test_a_primary_slower_than_the_think_timeout_cannot_drive_the_turn(door, tmp_path):
+    # The primary would open the door, but only long after the switch: its pending
+    # answer is dropped (recorded) when the fallback takes the turn, and only the
+    # fallback's transcript acts.
+    primary = FakeSpeechToText(["mở cửa"], latency_ms=30000)
+    fallback = FakeSpeechToText(["mở cửa"], latency_ms=3000)
+    voice, source = voice_on(door, tmp_path, stt=primary, fallback=fallback)
+    run(voice, source)
+    # T04 at 1800, think timeout 5000 ⇒ the switch at 6800; fallback answers at 9800.
+    (dropped,) = at(voice, "voice_late_result_dropped")
+    assert dropped == (6800, {"turn": 1, "input": "stt_result"})
+    (switched,) = at(voice, "stt_fallback")
+    assert switched[0] == 6800 and switched[1]["to"] == "stt.fallback (fake/local)"
+    (heard,) = at(voice, "stt_result")
+    assert heard == (9800, {"turn": 1, "text": "mở cửa"})
+    assert [t.heard for t in voice.turns] == ["mở cửa"]
+    # One pulse only, at the fallback's time: the primary's 31800 answer never acted.
+    assert voice.hal.pin("door_lock").commands == [("pulse", 30000)]
+    (command,) = [e for e in voice.events.events if e["type"] == "actuator_command"]
+    assert command["offset_ms"] == 9800
+
+
+def test_the_fallback_wait_has_its_own_bounded_deadline(door, tmp_path):
+    # The fallback is given `think_timeout_ms` from the switch, not its transport
+    # bound (here 30 s): the offline line runs at 11800, and its late answer is dropped.
+    primary = FakeSpeechToText(fail=True, latency_ms=100)
+    fallback = FakeSpeechToText(["mở cửa"], latency_ms=30000)
+    voice, source = voice_on(door, tmp_path, stt=primary, fallback=fallback)
+    run(voice, source)
+    (switched,) = at(voice, "stt_fallback")
+    assert switched[0] == 1900
+    # The offline line at 1900 + 5000; the fallback's answer at 31900 is dropped.
+    (dropped,) = at(voice, "voice_late_result_dropped")
+    assert dropped == (31900, {"turn": 1, "input": "stt_result"})
+    started = [e["offset_ms"] for e in voice.events.events if e["type"] == "tts_stream_start"]
+    assert started == [6900], "the turn concluded with the offline line, not 30 s later"
+    assert voice.hal.pin("door_lock").never_pulsed()
+
+
 def test_a_fallback_that_hears_nothing_reprompts_like_the_primary(door, tmp_path):
     primary = FakeSpeechToText(fail=True, latency_ms=100)
     fallback = FakeSpeechToText([""], latency_ms=50)
@@ -276,6 +315,22 @@ api_key  = "sk-abcdefghijklmnop"
         build(agent, target="sim", board_id="sim-default")
     rendered = " ".join(p.render() for p in raised.value.problems)
     assert "fallback.api_key" in rendered and "sk-abcdefghijklmnop" not in rendered
+
+
+def test_the_build_import_checks_the_fallback_adapter(project):
+    agent, _ = project(
+        """
+[stt]
+base_url = "http://localhost:8000/v1"
+model    = "small"
+[stt.fallback]
+provider = "python:no_such_module.adapter:make"
+"""
+    )
+    with pytest.raises(BuildFailed) as raised:
+        build(agent, target="sim", board_id="sim-default")
+    rendered = " ".join(p.render() for p in raised.value.problems)
+    assert "cannot import the adapter module" in rendered and "no_such_module" in rendered
 
 
 def test_the_voice_cli_uses_the_fallback_and_records_the_switch(project, tmp_path):

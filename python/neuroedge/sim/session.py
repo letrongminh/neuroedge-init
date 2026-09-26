@@ -534,13 +534,18 @@ def _require_linux_primitives(manifest: AgentManifest) -> None:
 def _linux_needs(manifest: AgentManifest, sensor_facts: Mapping[str, Any]) -> dict[str, Any]:
     """
     What `LinuxHAL` checks before it requests a line: every sensor the agent or a gate
-    fact reads is readable, and a display backend is chosen if the agent draws.
+    fact reads is readable, a display backend is chosen if the agent draws, and the
+    live audio devices (when the machine chose that backend) open if the agent needs
+    them — all before a pin is held (Q-16, TSK-S5-08).
     """
     sensors = list(manifest.requires.get("sensor.read", {}).get("sensors", ()))
     sensors += [rule.sensor for rule in sensor_facts.values()]
     return {
         "sensors": sensors,
         "display": "display" in manifest.requires,
+        "audio": tuple(
+            primitive for primitive in ("audio.in", "audio.out") if primitive in manifest.requires
+        ),
         "where": f"{manifest.source} on target 'linux'",
     }
 
@@ -609,6 +614,7 @@ class SimSession:
         events: EventLog | None = None,
         slow: SystemTwo | None = None,
         target: str = "sim",
+        target_options: Mapping[str, Any] | None = None,
     ) -> SimSession:
         """
         Build-check the agent for `target`, then wire it up.
@@ -619,10 +625,13 @@ class SimSession:
         is where the session facts come from on either target until a property
         system supplies them. `events` is where the session writes — a
         `TraceRecorder` to record it; its metadata is set from the agent and board.
+        `target_options` are the HAL's own options (on `linux`, e.g.
+        ``audio="file"``: a voice session must not open a live device — TSK-S5-08).
         Raises `BuildFailed` with every problem when the agent does not fit the
         board, and `BoardCapabilityError` when `linux` cannot run it (a primitive
         `LinuxHAL` lacks, no `gpiod`, no GPIO chip, a sensor it reads that the kernel
-        does not have, no display backend chosen — Q-16), before any line is requested.
+        does not have, no display backend chosen, a chosen live audio device that
+        will not open — Q-16), before any line is requested.
         """
         if target not in SESSION_TARGETS:
             raise BoardCapabilityError(
@@ -674,6 +683,7 @@ class SimSession:
                 events=events,
                 needs=_linux_needs(manifest, sensor_facts),
                 units={name: unit for name, (_, unit) in sensors.items() if unit is not None},
+                **dict(target_options or {}),
             )
         else:
             hal = SimHAL(board, events=events)

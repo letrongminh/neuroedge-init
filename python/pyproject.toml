@@ -51,6 +51,9 @@ dev = [
     "pip-licenses>=5.0.0",
     "mcp>=2.2",  # so the MCP server is tested in CI (no test may skip)
     "pyserial==3.5",  # so the serial path of `record --port` is tested in CI
+    # The openWakeWord adapter takes samples as numpy int16 arrays, and the wake
+    # tests model that contract; openWakeWord itself is never installed in CI.
+    "numpy>=2.0",
 ]
 # `neuroedge mcp serve` (Q-24): the official MCP Python SDK. MIT, and every
 # transitive dependency MIT/BSD/Apache-2.0/PSF (checked 2026-09-23, NOTICE §B).
@@ -86,13 +89,17 @@ audio = [
     "sounddevice>=0.5.1",
 ]
 # Wake word `[wake_word]` with provider = "openwakeword" (TSK-I4-01, Q-7):
-# openWakeWord's code is Apache-2.0, but its pre-trained models are CC BY-NC-SA
-# 4.0 — they must never ship with NeuroEdge (Q-45). So no model file is shipped
-# and the model downloader is never called: `model` is a file the user supplies.
-# Imported only when that provider is chosen. Not in `dev`: the tests drive a
-# fake openwakeword module (see NOTICE §B).
+# openWakeWord's code is Apache-2.0, but every model it publishes is CC BY-NC-SA
+# 4.0 or of unestablished licence — none may ship with NeuroEdge and its downloader
+# must never run (Q-45). All three model files (`model`, `melspectrogram`,
+# `embedding`) are the user's; 0.6.0 is required because 0.5.1 bundles NC models in
+# its wheel, while 0.6.0 ships none. Inference is onnx: tflite-runtime has no Linux
+# wheels for the Python versions supported here, so onnxruntime comes with it.
+# Imported only when that provider is chosen. Not in `dev`: the tests drive a fake
+# openwakeword module (see NOTICE §B).
 wake = [
-    "openwakeword>=0.5.1",
+    "openwakeword>=0.6.0",
+    "onnxruntime>=1.20",
 ]
 
 [project.urls]

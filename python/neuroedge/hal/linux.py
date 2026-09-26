@@ -150,18 +150,16 @@ def _interleave(pcm: bytes, channels: int) -> bytes:
     return samples_pcm(out)
 
 
-class LiveAudioIn:
+class _LiveAudio:
     """
-    `audio.in` from a live device (`sounddevice`, PortAudio) — by default the
-    PipeWire echo-cancel node `neuroedge.ec.source` (Q-22), so what a session hears
-    is already echo-cancelled. `frames()` reads the board's rate and channel count
-    as 20 ms mono `AudioFrame`s.
+    What the two live roles share: the device name, the board's format, the failure
+    shape (one helper), and opening a stream atomically — a stream whose `start()`
+    fails is closed, never left half-open behind a dropped reference.
+    """
 
-    Opening is explicit and checked (`query_devices`, `check_input_settings`); a
-    device that is missing, refuses the board's format, or stops answering raises a
-    three-part `BoardCapabilityError` — never an empty frame, never silence read as
-    if it were the room.
-    """
+    # What `query_devices`/`check_*_settings`/`Raw*Stream` are asked for, per role.
+    kind = ""
+    node_hint = ""
 
     def __init__(
         self,
@@ -178,6 +176,85 @@ class LiveAudioIn:
         self.device = device
         self._frames_per_block = max(1, sample_rate_hz * frame_ms // 1000)
         self._stream: Any = None
+
+    @property
+    def where(self) -> str:
+        raise NotImplementedError
+
+    def _fail(self, why: str, how: str) -> BoardCapabilityError:
+        return BoardCapabilityError(where=self.where, why=why, how=how)
+
+    def _open(self) -> Any:
+        if self._stream is not None:
+            return self._stream
+        try:
+            self.sd.query_devices(self.device, self.kind)
+        except Exception as exc:
+            raise self._fail(
+                f"no {self.kind} device named {self.device!r}: {exc}",
+                f"{self.node_hint} — how PortAudio sees the PipeWire node is in "
+                "docs/spec/simulation_coverage.md §6.1 (not yet verified on hardware)",
+            ) from exc
+        stream = None
+        try:
+            check = (
+                self.sd.check_input_settings
+                if self.kind == "input"
+                else self.sd.check_output_settings
+            )
+            check(
+                device=self.device,
+                samplerate=self.sample_rate_hz,
+                channels=self.channels,
+                dtype="int16",
+            )
+            factory = self.sd.RawInputStream if self.kind == "input" else self.sd.RawOutputStream
+            stream = factory(
+                samplerate=self.sample_rate_hz,
+                channels=self.channels,
+                dtype="int16",
+                device=self.device,
+                blocksize=self._frames_per_block,
+            )
+            stream.start()
+        except Exception as exc:
+            if stream is not None:  # never leave it half-open
+                with contextlib.suppress(Exception):
+                    stream.close()
+            raise self._fail(
+                f"device {self.device!r} refuses {self.sample_rate_hz} Hz, "
+                f"{self.channels} channel(s), 16-bit: {exc}",
+                "fix the board profile or the device (Q-22's nodes carry the board's format)",
+            ) from exc
+        self._stream = stream
+        return stream
+
+    def open(self) -> None:
+        """Open the device now: a missing one fails before a session asks for a line."""
+        self._open()
+
+
+class LiveAudioIn(_LiveAudio):
+    """
+    `audio.in` from a live device (`sounddevice`, PortAudio) — by default the
+    PipeWire echo-cancel node `neuroedge.ec.source` (Q-22), so what a session hears
+    is already echo-cancelled. `frames()` reads the board's rate and channel count
+    as 20 ms mono `AudioFrame`s.
+
+    Opening is explicit and checked (`query_devices`, `check_input_settings`); a
+    device that is missing, refuses the board's format, or stops answering raises a
+    three-part `BoardCapabilityError` — never an empty frame, never silence read as
+    if it were the room. An input overflow (PortAudio dropped captured audio because
+    the reader fell behind) is recorded (`audio_in_overflow`) and stops the frames:
+    the sample clock is no longer the room's, and a shrunken timeline is not passed
+    on as if nothing were lost. Real-time driving is `TODOS.md` #45.
+    """
+
+    kind = "input"
+
+    def __init__(self, *args: Any, events: EventSink | None = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.events: EventSink = events if events is not None else _NullSink()
         self._closed = False
         self._at_ms = 0
 
@@ -185,56 +262,19 @@ class LiveAudioIn:
     def where(self) -> str:
         return f"LinuxHAL -> audio.in ({self.device!r})"
 
-    def _fail(self, why: str, how: str, exc: BaseException | None = None) -> BoardCapabilityError:
-        return BoardCapabilityError(where=self.where, why=why, how=how)
-
-    def _open(self) -> Any:
-        if self._stream is not None:
-            return self._stream
-        try:
-            self.sd.query_devices(self.device, "input")
-        except Exception as exc:
-            raise self._fail(
-                f"no input device named {self.device!r}: {exc}",
-                "check PipeWire runs the echo-cancel module (pipewire/neuroedge-echo-cancel.conf, "
-                f"Q-22), or set {AUDIO_IN_ENV} to the device that should be read",
-                exc,
-            ) from exc
-        try:
-            self.sd.check_input_settings(
-                device=self.device,
-                samplerate=self.sample_rate_hz,
-                channels=self.channels,
-                dtype="int16",
-            )
-            self._stream = self.sd.RawInputStream(
-                samplerate=self.sample_rate_hz,
-                channels=self.channels,
-                dtype="int16",
-                device=self.device,
-                blocksize=self._frames_per_block,
-            )
-            self._stream.start()
-        except Exception as exc:
-            self._stream = None
-            raise self._fail(
-                f"device {self.device!r} refuses {self.sample_rate_hz} Hz, "
-                f"{self.channels} channel(s), 16-bit: {exc}",
-                "fix the board profile or the device (Q-22's nodes carry the board's format)",
-                exc,
-            ) from exc
-        return self._stream
-
-    def open(self) -> None:
-        """Open the device now: a missing one fails before a session asks for a line."""
-        self._open()
+    @property
+    def node_hint(self) -> str:
+        return (
+            "check PipeWire runs the echo-cancel module (pipewire/neuroedge-echo-cancel.conf, Q-22), "
+            f"or set {AUDIO_IN_ENV} to the device that should be read"
+        )
 
     def frames(self) -> Iterator[AudioFrame]:
         """20 ms frames, mono at the board's rate, from now until `close()`."""
         stream = self._open()
         while not self._closed:
             try:
-                data, _overflowed = stream.read(self._frames_per_block)
+                data, overflowed = stream.read(self._frames_per_block)
             except Exception as exc:
                 if self._closed:
                     return
@@ -242,12 +282,22 @@ class LiveAudioIn:
                     f"the input device stopped answering: {exc}",
                     "check the microphone and the PipeWire node are still there; reconnect, then "
                     "restart the session",
-                    exc,
                 ) from exc
+            if overflowed:
+                self.events.emit("audio_in_overflow", {})
+                raise self._fail(
+                    f"the input device {self.device!r} overflowed: captured audio was dropped and "
+                    "the frames' timeline cannot be trusted",
+                    "make the reader keep up (a real-time session is TODOS.md #45); the session "
+                    "stops rather than passing on a timeline that silently shrank",
+                )
             pcm = bytes(data)
             if not pcm:
+                # A blocking read of a started stream returns a full block; an empty one
+                # means the device stopped without raising — never read as silence.
                 raise self._fail(
-                    "the input device returned no audio; silence is never passed off as input",
+                    "the input device returned an empty block, so it is no longer running; "
+                    "silence is never passed off as input",
                     "check the device and the PipeWire node, then start the session again",
                 )
             mono = to_mono(pcm, self.channels) if self.channels > 1 else pcm
@@ -268,7 +318,7 @@ class LiveAudioIn:
             stream.close()
 
 
-class LiveAudioOut:
+class LiveAudioOut(_LiveAudio):
     """
     `audio.out` on a live device (`sounddevice`, PortAudio) — by default the
     PipeWire echo-cancel node `neuroedge.ec.sink` (Q-22), so a reply is also the
@@ -278,25 +328,14 @@ class LiveAudioOut:
     must never wait for the loudspeaker. `stop()` drops what has not played yet
     (barge-in, `voice_fsm.md` §5.2 step 3). A device that fails mid-reply is
     remembered — the next `play()` refuses and `close()` raises — so a dead
-    speaker is never just quiet.
+    speaker is never just quiet. Real-time driving is `TODOS.md` #45.
     """
 
-    def __init__(
-        self,
-        sd: Any,
-        *,
-        sample_rate_hz: int,
-        channels: int,
-        device: str,
-        frame_ms: int = FRAME_MS,
-    ) -> None:
-        self.sd = sd
-        self.sample_rate_hz = sample_rate_hz
-        self.channels = channels
-        self.device = device
-        self._frames_per_block = max(1, sample_rate_hz * frame_ms // 1000)
-        self._block = self._frames_per_block * channels * SAMPLE_WIDTH
-        self._stream: Any = None
+    kind = "output"
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._block = self._frames_per_block * self.channels * SAMPLE_WIDTH
         self._thread: threading.Thread | None = None
         self._generation = 0
         self._lock = threading.Lock()
@@ -307,61 +346,36 @@ class LiveAudioOut:
     def where(self) -> str:
         return f"LinuxHAL -> audio.out ({self.device!r})"
 
-    def _open(self) -> Any:
-        if self._stream is not None:
-            return self._stream
-        try:
-            self.sd.query_devices(self.device, "output")
-        except Exception as exc:
-            raise BoardCapabilityError(
-                where=self.where,
-                why=f"no output device named {self.device!r}: {exc}",
-                how="check PipeWire runs the echo-cancel module (pipewire/neuroedge-echo-cancel.conf, "
-                f"Q-22), or set {AUDIO_OUT_ENV} to the device that should be played to",
-            ) from exc
-        try:
-            self.sd.check_output_settings(
-                device=self.device,
-                samplerate=self.sample_rate_hz,
-                channels=self.channels,
-                dtype="int16",
-            )
-            self._stream = self.sd.RawOutputStream(
-                samplerate=self.sample_rate_hz,
-                channels=self.channels,
-                dtype="int16",
-                device=self.device,
-                blocksize=self._frames_per_block,
-            )
-            self._stream.start()
-        except Exception as exc:
-            self._stream = None
-            raise BoardCapabilityError(
-                where=self.where,
-                why=f"device {self.device!r} refuses {self.sample_rate_hz} Hz, "
-                f"{self.channels} channel(s), 16-bit: {exc}",
-                how="fix the board profile or the device (Q-22's nodes carry the board's format)",
-            ) from exc
-        return self._stream
-
-    def open(self) -> None:
-        """Open the device now: a missing one fails before a session asks for a line."""
-        self._open()
+    @property
+    def node_hint(self) -> str:
+        return (
+            "check PipeWire runs the echo-cancel module (pipewire/neuroedge-echo-cancel.conf, Q-22), "
+            f"or set {AUDIO_OUT_ENV} to the device that should be played to"
+        )
 
     def play(self, pcm: bytes) -> None:
         """Write one reply; the previous one is dropped, as `Playback.stop` does."""
         if self._error is not None:
-            raise BoardCapabilityError(
-                where=self.where,
-                why=f"the previous reply failed and the device was not reopened: {self._error}",
-                how="fix the output device, then start the session again",
+            raise self._fail(
+                f"the previous reply failed and the device was not reopened: {self._error}",
+                "fix the output device, then start the session again",
             )
         with self._lock:
             stream = self._open()
             self._generation += 1
             generation = self._generation
-            with contextlib.suppress(Exception):  # replace: pending audio is dropped
+            # `abort()` leaves the stream stopped; a writer needs it started again
+            # (PortAudioError "Stream is stopped" otherwise). The reply being replaced
+            # is dropped here.
+            with contextlib.suppress(Exception):
                 stream.abort()
+            try:
+                stream.start()
+            except Exception as exc:
+                raise self._fail(
+                    f"the output device {self.device!r} will not play: {exc}",
+                    "check the speaker and the PipeWire node, then start the session again",
+                ) from exc
             thread = threading.Thread(
                 target=self._write,
                 args=(stream, pcm, generation),
@@ -370,6 +384,18 @@ class LiveAudioOut:
             )
             self._thread = thread
             thread.start()
+
+    def wait(self, timeout: float = 2.0) -> bool:
+        """
+        Wait for the writer thread to finish the reply it was given (tests, orderly
+        shutdown). True when nothing is being written any more.
+        """
+        with self._lock:
+            thread = self._thread
+        if thread is None:
+            return True
+        thread.join(timeout)
+        return not thread.is_alive()
 
     def _write(self, stream: Any, pcm: bytes, generation: int) -> None:
         try:
@@ -846,8 +872,11 @@ class LinuxHAL(HardwareAbstractionLayer):
                 sample_rate_hz=self._audio_rate("audio.in", called_from),
                 channels=int(capability.get("channels") or 1),
                 device=self.audio_in_device,
+                events=self.events,
             )
-        self._audio_in.open()  # fail here, before any line is requested (Q-16)
+        # Opened eagerly: a session that prelights its audio before asking for lines
+        # (preflight, Q-16) fails on a missing microphone before a pin is held.
+        self._audio_in.open()
         return self._audio_in
 
     def audio_sink(self, called_from: str = "<unknown>") -> LiveAudioOut:
@@ -869,7 +898,9 @@ class LinuxHAL(HardwareAbstractionLayer):
                 channels=int(capability.get("channels") or 1),
                 device=self.audio_out_device,
             )
-        self._audio_out.open()  # fail here, before any line is requested (Q-16)
+        # Opened eagerly: a session that prelights its audio before asking for lines
+        # (preflight, Q-16) fails on a missing speaker before a pin is held.
+        self._audio_out.open()
         return self._audio_out
 
     def speaker(self, called_from: str = "<unknown>") -> Any:
@@ -920,11 +951,21 @@ class LinuxHAL(HardwareAbstractionLayer):
         return self.display_backend
 
     def preflight(
-        self, sensors: Iterable[str] = (), display: bool = False, where: str = ""
+        self,
+        sensors: Iterable[str] = (),
+        display: bool = False,
+        audio: Iterable[str] = (),
+        where: str = "",
     ) -> None:
         """
-        Fail now, not mid-session, if a sensor the agent reads cannot be read or it
-        draws with no display backend chosen. The reading taken here is not recorded.
+        Fail now, not mid-session, if a sensor the agent reads cannot be read, it
+        draws with no display backend chosen, or (with the live backend) the
+        microphone/speaker it needs cannot be opened. The reading taken here is not
+        recorded. `preflight` runs before `__init__` requests any GPIO line, so a
+        missing live device is refused before a pin is held (Q-16).
+
+        `audio` names the primitives the session will use; the file backend needs no
+        device, so nothing is opened unless the machine chose `live` (Q-22).
         """
         for sensor in dict.fromkeys(sensors):
             self.board.require_sensor(sensor, called_from=where)
@@ -932,6 +973,12 @@ class LinuxHAL(HardwareAbstractionLayer):
                 self._kernel_read(sensor, f"{where} -> sensor.read {sensor!r}")
         if display:
             self._require_display_backend(f"{where} -> display")
+        if self.audio_backend == "live":
+            for primitive in dict.fromkeys(audio):
+                if primitive == "audio.in":
+                    self.audio_source(f"{where} -> preflight")
+                elif primitive == "audio.out":
+                    self.audio_sink(f"{where} -> preflight")
 
 
 # Primitives `LinuxHAL` does not implement yet, and the task that brings each. An

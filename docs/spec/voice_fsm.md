@@ -206,11 +206,14 @@ Con số đo được trên bo mạch thay các giá trị gợi ý ở TSK-S5-0
   "không nghe ra gì" — T06, không phải lỗi (V5).
 - **STT dự phòng** (Q-14, TSK-I4-01): `[stt.fallback]` khai một endpoint cục bộ (faster-whisper /
   speaches trên máy, khác `base_url` của STT chính). Khi STT chính không dùng được, hiện thực **PHẢI**
-  ghi `stt_unavailable` của lượt (sự thật của lần hỏng), rồi `stt_fallback {from, to, reason}`, gửi
-  **cùng đoạn âm thanh** của lượt cho endpoint dự phòng, và **giữ lượt mở**: bản chép lời của nó vào
-  đúng đường của `stt_result` — cùng ngữ pháp lệnh / System 2, cùng `c.do()` và gate (Q-14). Không có
-  `[stt.fallback]`, hoặc cả hai đều hỏng, thì T09 với câu offline như trên. Bản chép lời rỗng của
-  fallback cũng là T06. Fallback không bao giờ tự gọi `c.do()` và không bao giờ bịa bản chép lời.
+  ghi `stt_unavailable` của lượt (sự thật của lần hỏng), **hủy câu trả lời còn hẹn giờ của STT chính**
+  (nó không bao giờ được chạy lượt; ghi `voice_late_result_dropped`), rồi `stt_fallback {from, to,
+  reason}`, gửi **cùng đoạn âm thanh** của lượt cho endpoint dự phòng, và **giữ lượt mở với một hạn
+  chót nghĩ MỚI, có trần** (`think_timeout_ms`, không phải hạn transport của fallback): bản chép lời
+  của nó vào đúng đường của `stt_result` — cùng ngữ pháp lệnh / System 2, cùng `c.do()` và gate (Q-14).
+  Không có `[stt.fallback]`, hoặc cả hai đều hỏng (fallback hết hạn chót mới / không trả lời), thì T09
+  với câu offline như trên. Bản chép lời rỗng của fallback cũng là T06. Fallback không bao giờ tự gọi
+  `c.do()` và không bao giờ bịa bản chép lời.
 - **TTS không dùng được:** `tts_unavailable {reason}` rồi `tts_stream_end {reason: "error"}` — câu vẫn
   được ghi và hiện (`tts_stream_start`), chỉ không phát thành tiếng. `error` kết thúc câu như `done`,
   trừ một điều: câu hỏi `ask` không phát được thì về `IDLE` (T12), không mở lượt trả lời — không ai
@@ -230,6 +233,7 @@ Thêm sự kiện không cần RFC.
 | Sự kiện | `data` | Vai trò | Có từ |
 |:---|:---|:---|:---|
 | `wake_word_detected` | `{word, score}` | Đầu vào | Mới |
+| `wake_word_unavailable` | `{reason}` — bộ phát hiện `[wake_word]` lỗi (mô hình hỏng, adapter ném lỗi); **không lượt nào mở** từ nó, phiên chạy tiếp ở dạng suy giảm, ghi một lần mỗi phiên | Đầu ra | Mới (TSK-I4-01) |
 | `audio_in_vad_start` | `{energy_db}` | Đầu vào | simulation_coverage §3 |
 | `audio_in_vad_end` | `{}` | Đầu vào | Mới |
 | `stt_result` | `{text, turn}` — `""` là không nghe ra gì; `turn` là lượt đã gửi âm thanh đi | Đầu vào; bản chép lời của `[stt.fallback]` cũng vào đây | Mới |
@@ -310,8 +314,9 @@ Mỗi ca là một tệp JSON; khoá của nó, và đáp án `{proves, events}`
   định gợi ý; `think_timeout_ms` và `vad_activation` — bật T01 bằng VAD — cũng là tham số), `world`
   (`facts`, `unset_facts`, `sensors`, `system_two` — có provider hay không, `facts_source` —
   `local_grammar` hoặc `unreachable`: model quyết dữ kiện mất mạng và không có fallback cục bộ,
-  `stt_fallback` — nhãn endpoint dự phòng: đường chạy cấp thêm một STT giả cho fallback, TSK-I4-01),
-  `inputs`, `until_ms`.
+  `stt_fallback` — nhãn endpoint dự phòng: đường chạy cấp thêm một STT giả cho fallback, TSK-I4-01,
+  `wake_word` — `true`: đường chạy cấp một bộ phát hiện **không bao giờ tự kích**, để chứng minh
+  VAD một mình không mở lượt — T01), `inputs`, `until_ms`.
 - **Đầu vào:** các sự kiện đầu vào §8, cộng hai đầu vào chỉ của corpus: `system_two_reply {turn,
   text?, tool_calls?}` — câu trả lời kịch bản hoá của provider cho một lượt; `reuse_token {pin}` — lái
   lại chân bằng token của lệnh vừa bị hủy (V1). `tts_stream_start` không phải đầu vào của ca: thiết bị

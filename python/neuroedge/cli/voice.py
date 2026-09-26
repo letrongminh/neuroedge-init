@@ -197,6 +197,7 @@ def _summary(voice: VoiceSession, console: Console) -> None:
         "STT unavailable": len(events.of_type("stt_unavailable")),
         "STT fallback": len(events.of_type("stt_fallback")),
         "TTS unavailable": len(events.of_type("tts_unavailable")),
+        "wake word unavailable": len(events.of_type("wake_word_unavailable")),
         "cancelled commands": len(events.of_type("actuator_aborted")),
     }
     console.print("voice: " + " · ".join(f"{value} {name}" for name, value in count.items()))

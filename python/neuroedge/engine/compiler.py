@@ -540,8 +540,9 @@ def check_speech(
                 )
         try:
             config = parse_speech(role, document[role], manifest.source)
-            if config.adapter is not None:
-                load_adapter(config, manifest.root)
+            for table in (config, config.fallback):
+                if table is not None and table.adapter is not None:
+                    load_adapter(table, manifest.root)
         except NeuroEdgeError as error:
             problems.append(error)
     return problems
@@ -552,12 +553,13 @@ def check_wake_word(
 ) -> list[NeuroEdgeError]:
     """
     `[wake_word]` of agent.toml is well formed (TSK-I4-01, FR-PER-01, Q-7): a
-    provider that is openWakeWord or a `python:` adapter, a model file that exists
-    on this machine (NeuroEdge ships none — openWakeWord's models are not
-    commercial, Q-45), a threshold in (0, 1], and the primitive it needs declared:
-    a detector reads `audio.in`, so a board without it fails here, not when the
-    session starts. A table with no wake word at all is fine: a turn opens on VAD
-    (T01). Every bad table is reported.
+    provider that is openWakeWord or a `python:` adapter, the three model paths for
+    the builtin provider (their *files* may live on the device, so a build checks
+    the table's shape only — a voice session checks the files before any line),
+    a threshold in (0, 1], and the primitive it needs declared: a detector reads
+    `audio.in`, whose rate the board must declare (8–96 kHz), so a board without it
+    fails here, not when the session starts. A table with no wake word at all is
+    fine: a turn opens on VAD (T01). Every bad table is reported.
     """
     from ..models.providers import load_adapter
     from ..perception.providers.config import parse_wake_word
@@ -583,6 +585,17 @@ def check_wake_word(
                 how=f"add a [capabilities.audio_in] section to {board.source}, or remove [wake_word]",
             )
         )
+    elif board is not None:
+        rate = board.capability("audio.in").get("sample_rate_hz")
+        if not rate_ok(rate):
+            problems.append(
+                BoardCapabilityError(
+                    where=f"{board.source} -> audio.in",
+                    why=f"[wake_word] reads PCM through audio.in, and board {board.id!r} declares "
+                    f"no sample_rate_hz for it from {MIN_RATE_HZ} to {MAX_RATE_HZ} Hz",
+                    how=f"add sample_rate_hz = 16000 to audio.in in {board.source}",
+                )
+            )
     if board is not None and board.target == "esp32s3":
         # Q-7 plans microWakeWord on Box-3; the device runtime has no detector yet, and
         # accepting the table would let a firmware build silently ignore the wake word.

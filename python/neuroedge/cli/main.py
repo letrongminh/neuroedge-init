@@ -1308,12 +1308,15 @@ def _start_session(
     events=None,
     ui: bool = False,
     clock=None,
+    target_options=None,
 ):
     """
     Load the agent for an interactive session on `sim` or `linux`, or exit with the
     right code: 2 for a target (or `--ui` on it) with no session yet, 1 when the agent
     does not fit the board or `linux` cannot run (no `gpiod`, no GPIO chip — Q-16).
     `clock`: the session's clock (a voice session runs on a virtual one).
+    `target_options`: the HAL's own options (a voice session on `linux` passes
+    ``audio="file"`` so it never opens a live device — TSK-S5-08).
     """
     from ..sim import SimSession
 
@@ -1357,6 +1360,7 @@ def _start_session(
             registry=GateRegistry(registry) if registry is not None else None,
             events=events,
             **({"clock": clock} if clock is not None else {}),
+            **({"target_options": target_options} if target_options is not None else {}),
         )
     except BuildFailed as failed:
         _fail_build(failed)
@@ -1433,8 +1437,22 @@ def _voice_session(
             )
         )
         raise typer.Exit(code=2)
+    from ..engine.compiler import load_agent_manifest
     from ..perception import VirtualClock
+    from ..perception.providers import load_wake_word_config, make_wake_word
     from .voice import run_voice
+
+    # The wake word's model files — and the detector library or adapter — are checked
+    # here, before the session requests any GPIO line: the models are the user's own
+    # and may live only on the device, and the build (rightly) no longer requires them
+    # on this machine (TSK-I4-01, Q-45).
+    try:
+        manifest = load_agent_manifest(agent or _default_agent())
+        wake_config = load_wake_word_config(manifest, check_files=True)
+        if wake_config is not None:
+            make_wake_word(wake_config, manifest.root)
+    except NeuroEdgeError as error:
+        _fail(error)
 
     clock = VirtualClock()
     events = None
@@ -1442,7 +1460,19 @@ def _voice_session(
         from ..testing.recorder import TraceRecorder
 
         events = TraceRecorder(anonymize=anonymize, clock=clock)
-    session = _start_session(verb, agent, target, board, registry, events=events, clock=clock)
+    session = _start_session(
+        verb,
+        agent,
+        target,
+        board,
+        registry,
+        events=events,
+        clock=clock,
+        # A voice session is the file backend only, whatever the machine's
+        # NEUROEDGE_LINUX_AUDIO says: live capture/playback drives no session yet
+        # (TODOS.md #45), and the file backend must never open a device (TSK-S5-08).
+        target_options={"audio": "file"} if target == "linux" else None,
+    )
     if events is not None:
         trace_out = (
             trace_out if trace_out.suffix == ".json" else trace_out / f"{events.session_id}.json"

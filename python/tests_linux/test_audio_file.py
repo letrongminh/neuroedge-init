@@ -56,17 +56,6 @@ def kernel_value(sysfs: Path, pin: str) -> int:
     return int((sysfs / f"sim_gpio{PINS.index(pin)}" / "value").read_text().strip())
 
 
-def wait_for(sysfs: Path, pin: str, value: int, timeout: float = 2.0) -> bool:
-    import time
-
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if kernel_value(sysfs, pin) == value:
-            return True
-        time.sleep(0.01)
-    return False
-
-
 def write_wav(path: Path, pcm: bytes, rate: int = RATE) -> Path:
     with wave.open(str(path), "wb") as w:
         w.setnchannels(1)

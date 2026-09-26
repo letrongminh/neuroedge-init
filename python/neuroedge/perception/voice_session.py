@@ -186,6 +186,9 @@ class VoiceSession:
         # whose primary already failed, so the fallback is tried once (§7, Q-14).
         self._clips: dict[int, AudioClip] = {}
         self._fallback_tried: set[int] = set()
+        # Wake-word detections that failed silently for the caller (recorded once).
+        self.wake_failures = 0
+        self._wake_recorded = False
         # audio.in: frames before speech (pre-roll), and the audio of the turn listening.
         self._ring: deque[AudioFrame] = deque()
         self._clip_turn: int | None = None
@@ -306,10 +309,16 @@ class VoiceSession:
         """One frame of `audio.in`, at the current clock (the frame's end)."""
         self._rate = frame.sample_rate_hz
         if self.wake_word is not None:
-            hit = self._wake_hit(self.wake_word.detect(frame))
-            if hit is not None:
-                word, score = hit
-                await self.feed("wake_word_detected", {"word": word, "score": score})
+            try:
+                hit = self._wake_hit(self.wake_word.detect(frame))
+            except Exception as exc:
+                # A detector nobody can trust opens no turn; the failure is recorded
+                # once and the session keeps running (like an STT/TTS adapter, §7).
+                self._wake_unavailable(exc)
+            else:
+                if hit is not None:
+                    word, score = hit
+                    await self.feed("wake_word_detected", {"word": word, "score": score})
         edge = self.vad.push(frame)
         if edge is not None:
             kind, energy = edge
@@ -342,6 +351,23 @@ class VoiceSession:
         if self.vad.flush():
             await self.feed("audio_in_vad_end", {})  # the input ended mid-speech
         await self.settle(self.clock.now + settle_ms)
+
+    def _wake_unavailable(self, exc: BaseException) -> None:
+        """
+        A detector failed: no turn opens from it, and the session keeps running —
+        degraded, like an STT adapter that failed (§7). Recorded once per session
+        (`wake_word_unavailable`): a detector that raises on every frame must not
+        fill the trace, and a later frame may still work [(TSK-I4-01)].
+        """
+        self.wake_failures += 1
+        if self._wake_recorded:
+            return
+        self._wake_recorded = True
+        if isinstance(exc, PerceptionUnavailableError):
+            reason = exc.why  # ours: a controlled message, no user speech in it
+        else:
+            reason = f"the wake-word detector raised {type(exc).__name__} — fix it"
+        self.events.emit("wake_word_unavailable", {"reason": reason})
 
     def _wake_hit(self, hit: Any) -> tuple[str, float] | None:
         """
@@ -484,26 +510,7 @@ class VoiceSession:
             self._clips[turn] = clip  # the fallback may need the same audio
         sent = self.clock.now
         self._stt_sent[turn] = sent
-        started = self.stopwatch()
-        declared: Any = None
-        try:
-            answer = await self._call(self.stt, "transcribe", clip, role="stt")
-            transcript = answer if isinstance(answer, Transcript) else Transcript(answer)
-            declared = transcript.latency_ms
-            due = ("stt_result", {"turn": turn, "text": clean_transcript(transcript.text, "STT")})
-        except SpeechUnavailable as exc:
-            declared = exc.latency_ms if declared is None else declared
-            due = ("stt_unavailable", {"turn": turn, "reason": exc.why})
-        except Exception as exc:
-            # An adapter's own bug takes the same degraded path, never a crash. Only the
-            # type is kept: the message may carry what was said.
-            due = (
-                "stt_unavailable",
-                {"turn": turn, "reason": f"the STT provider raised {type(exc).__name__} — fix it"},
-            )
-        latency, problem = self._latency(declared, started, "STT")
-        if problem is not None:
-            due = ("stt_unavailable", {"turn": turn, "reason": problem})
+        latency, due = await self._stt_answer(self.stt, clip, turn, fallback=False)
         self._schedule(sent + latency, *due)
 
     # -- provider calls ------------------------------------------------------------
@@ -603,22 +610,78 @@ class VoiceSession:
         """The question a spoken yes / no in `turn` may answer: only in its answer turn."""
         return self._asked.get(turn - 1) if self.fsm.answer_turn == turn else None
 
+    async def _stt_answer(
+        self, provider: Any, clip: AudioClip, turn: int, *, fallback: bool
+    ) -> tuple[float, tuple[str, dict[str, Any]]]:
+        """
+        One call to an STT provider, as `_turn_ended` and the fallback both make it:
+        ``(latency_ms, ("stt_result" | "stt_unavailable", data))``. An adapter that
+        raises takes the degraded path of §7 — only the exception's *type* is kept,
+        since its message may carry what was said — and never crashes the session.
+        """
+        started = self.stopwatch()
+        declared: Any = None
+        try:
+            answer = await self._call(provider, "transcribe", clip, role="stt")
+            transcript = answer if isinstance(answer, Transcript) else Transcript(answer)
+            declared = transcript.latency_ms
+            due: tuple[str, dict[str, Any]] = (
+                "stt_result",
+                {"turn": turn, "text": clean_transcript(transcript.text, "STT")},
+            )
+        except SpeechUnavailable as exc:
+            declared = exc.latency_ms if declared is None else declared
+            why = f"the fallback STT also failed: {exc.why}" if fallback else exc.why
+            due = ("stt_unavailable", {"turn": turn, "reason": why})
+        except Exception as exc:
+            who = "the fallback STT provider" if fallback else "the STT provider"
+            due = (
+                "stt_unavailable",
+                {"turn": turn, "reason": f"{who} raised {type(exc).__name__} — fix it"},
+            )
+        latency, problem = self._latency(declared, started, "STT")
+        if problem is not None:
+            due = ("stt_unavailable", {"turn": turn, "reason": problem})
+        return latency, due
+
+    def _cancel_primary_stt(self, turn: int) -> None:
+        """
+        The turn belongs to `[stt.fallback]` now: the primary's answer, still on the
+        clock — a slow transcript, or a failure not yet delivered — must never act
+        (§5.2 step 4). Cancelled here, before the fallback is asked, and recorded as
+        the late result it is; without this, a primary slower than the think timeout
+        could drive a gate after the switch.
+        """
+        due = [
+            d
+            for d in self._inbox
+            if d.type in ("stt_result", "stt_unavailable") and d.data.get("turn") == turn
+        ]
+        self._cancel(due)
+        for cancelled in due:
+            self._drop(turn, cancelled.type)
+
     async def _stt_failed(self, turn: int, reason: str) -> None:
         """
         §7: STT gone or unusable. With `[stt.fallback]` (Q-14) the primary's failure
-        is recorded (`stt_fallback`), the same audio goes to the fallback, and the
-        turn stays open for its transcript; only when no fallback is configured, or
-        the fallback failed too, does the device say the offline line. Never a c.do().
+        is recorded (`stt_fallback`), its still-pending answer is dropped, the same
+        audio goes to the fallback, and the turn stays open *with a fresh think
+        deadline* for it; only when no fallback is configured, or the fallback failed
+        too, does the device say the offline line. Never a c.do().
         """
         if not self.fsm.accepts(turn) or self.fsm.transcript_taken:
             self._drop(turn, "stt_unavailable")
             return
         if self.stt_fallback is not None and turn not in self._fallback_tried:
             self._fallback_tried.add(turn)
+            self._cancel_primary_stt(turn)
             self.events.emit(
                 "stt_fallback",
                 {"from": self.stt_label, "to": self.stt_fallback_label, "reason": reason},
             )
+            # Fresh, bounded: the fallback gets a full think window, not the primary's
+            # leftovers, and not its whole transport bound.
+            self.fsm.think_again(self.fsm.params.think_timeout_ms)
             clip = self._clips.pop(turn, None)
             if clip is not None:
                 await self._fallback_transcribe(turn, clip)
@@ -632,30 +695,7 @@ class VoiceSession:
 
     async def _fallback_transcribe(self, turn: int, clip: AudioClip) -> None:
         """`[stt.fallback]` gets the turn's audio; its answer is scheduled as `stt_result`."""
-        started = self.stopwatch()
-        declared: Any = None
-        try:
-            answer = await self._call(self.stt_fallback, "transcribe", clip, role="stt")
-            transcript = answer if isinstance(answer, Transcript) else Transcript(answer)
-            declared = transcript.latency_ms
-            due = ("stt_result", {"turn": turn, "text": clean_transcript(transcript.text, "STT")})
-        except SpeechUnavailable as exc:
-            declared = exc.latency_ms if declared is None else declared
-            due = (
-                "stt_unavailable",
-                {"turn": turn, "reason": f"the fallback STT also failed: {exc.why}"},
-            )
-        except Exception as exc:
-            due = (
-                "stt_unavailable",
-                {
-                    "turn": turn,
-                    "reason": f"the fallback STT provider raised {type(exc).__name__} — fix it",
-                },
-            )
-        latency, problem = self._latency(declared, started, "STT")
-        if problem is not None:
-            due = ("stt_unavailable", {"turn": turn, "reason": problem})
+        latency, due = await self._stt_answer(self.stt_fallback, clip, turn, fallback=True)
         self._schedule(self.clock.now + latency, *due)
 
     # -- System 2 -----------------------------------------------------------------------
@@ -680,10 +720,18 @@ class VoiceSession:
         """§7: provider gone or too slow — say the offline line, as any reply. Never a c.do()."""
         turn = self.fsm.turn
         self._awaiting = None
-        if self.stt is not None and turn in self._stt_sent and self._heard_at is None:
-            # The think timeout ran out while STT still worked: it is STT that failed. Its
-            # answer, when it comes, finds the turn concluded and is dropped (§5.2 step 4).
-            reason = "STT did not answer before the think timeout — check [stt] timeout_s"
+        waiting_for_stt = self.stt is not None and turn in self._stt_sent and self._heard_at is None
+        if waiting_for_stt or turn in self._fallback_tried:
+            # The think timeout ran out while STT (or the fallback holding the turn after
+            # it failed) still worked: it is STT that failed. Its answer, when it comes,
+            # finds the turn concluded and is dropped (§5.2 step 4).
+            if turn in self._fallback_tried:
+                reason = (
+                    "the STT fallback did not answer before the think timeout — check "
+                    "[stt.fallback] timeout_s"
+                )
+            else:
+                reason = "STT did not answer before the think timeout — check [stt] timeout_s"
             self.events.emit("stt_unavailable", {"turn": turn, "reason": reason})
             await self._stt_failed(turn, reason)
             return

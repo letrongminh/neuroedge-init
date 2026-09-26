@@ -131,7 +131,12 @@ biến bo mạch khai. Luật an toàn:
   chối rate/kênh/16-bit của bo mạch ⇒ lỗi ba phần; **im lặng không bao giờ được đọc như đầu vào**.
 - Replay không mở thiết bị nào (backend tệp), như `display` vẽ trong bộ nhớ. Phiên thoại thời
   gian thực (micro/loa thật chạy song song provider) vẫn là `TODOS.md` #45; ở đây là nguyên thủy
-  HAL mà phiên đó sẽ dùng.
+  HAL mà phiên đó sẽ dùng. Vì chưa có phiên thật điều khiển nó, **đầu vào sống chưa được kiểm trên
+  phần cứng**: một lần tràn bộ đệm (thiết bị bỏ mất âm thanh) ghi `audio_in_overflow` rồi dừng
+  phiên — không có dòng thời gian co lại trong im lặng.
+- Khi backend sống được chọn, `LinuxHAL` **mở và kiểm cả hai thiết bị trong `preflight`, trước khi
+  xin line GPIO nào** (Q-16): thiếu micro/loa ⇒ lỗi ba phần, chưa giữ chân nào. `--voice-file` luôn
+  ép backend tệp, nên `NEUROEDGE_LINUX_AUDIO=live` không bao giờ khiến một phiên WAV mở thiết bị.
 
 **Màn hình chọn rõ, không đoán:** `LinuxHAL(display="memory" | "/dev/fbN")` hoặc
 `NEUROEDGE_LINUX_DISPLAY`; không chọn thì `display` báo lỗi. Framebuffer đọc bố cục điểm ảnh từ
@@ -164,7 +169,7 @@ nào đi theo ô tương ứng ở §2. Cột "Vai trò khi replay" nói phần 
 
 | Nguyên thủy | Sự kiện | `data` | Vai trò khi replay |
 |:---|:---|:---|:---|
-| `audio.in` | `text_input` · `audio_in_vad_start` · `audio_in_segment` | `{text}` · `{energy_db}` · `{sha256, duration_ms, sample_rate_hz}` | **Đầu vào.** Replay bắt đầu từ kết quả nhận thức đã ghi (`intent_extracted`), không chạy lại âm thanh |
+| `audio.in` | `text_input` · `audio_in_vad_start` · `audio_in_segment` · `audio_in_overflow` | `{text}` · `{energy_db}` · `{sha256, duration_ms, sample_rate_hz}` · `{}` | **Đầu vào.** Replay bắt đầu từ kết quả nhận thức đã ghi (`intent_extracted`), không chạy lại âm thanh. `audio_in_overflow`: thiết bị sống bỏ mất âm thanh đã thu (người đọc theo không kịp) — phiên **dừng** thay vì đưa tiếp một dòng thời gian đã co lại trong im lặng (Q-21) |
 | `audio.out` | `tts_stream_start` · `tts_stream_end` · `knowledge_retrieved` | `{text}` · `{duration_ms, sha256?, reason?}` (`reason`: `docs/spec/voice_fsm.md` §8) · `{entries: [{id, score}]}` | **Đầu ra** — chữ không vào so khớp quyết định; `knowledge_retrieved` cho biết câu trả lời dựa trên tri thức nào |
 | `digital.out` | `actuator_command` · `actuator_aborted` | `{pin, operation, duration_ms}` · `{pin, reason}` | **Quyết định** — so golden ở mọi lần `replay` / `verify` |
 | `sensor.read` | `sensor_read` · `sensor_set` · `sensor_unavailable` | `{sensor, value, unit?, use?, non_finite?}` · `{sensor, value, non_finite?}` · `{sensor, reason}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI. `sensor_unavailable`: một lần tính dữ kiện gate không lấy được số đọc, hoặc một luật của cảm biến từ chối nó (§2), nên mọi dữ kiện của cảm biến đó là `null`; chỉ để đọc, replay dùng `gate_facts` |
@@ -326,14 +331,14 @@ thống), rồi `systemctl restart --user pipewire.service`: `LinuxHAL` đọc/g
 `neuroedge.ec.source` / `neuroedge.ec.sink` ở đây khi backend sống được chọn:
 
 ```text
-# neuroedge-echo-cancel.conf
+# neuroedge-echo-cancel.conf — bản giao kèm, dùng được ngay
 context.modules = [
 {   name = libpipewire-module-echo-cancel
     args = {
         library.name = "aec/libspa-aec-webrtc"
         node.description = "NeuroEdge Echo Cancel"
-        capture.props  = { node.name = "neuroedge.ec.capture"
-                           target.object = "<micro của HAT I2S>" }  # chỉ định micro
+        capture.props  = { node.name = "neuroedge.ec.capture" }
+        # target.object = "<tên nút micro HAT I2S, từ `pw-cli ls Node`>"   ← dòng DUY NHẤT phải sửa
         source.props   = { node.name = "neuroedge.ec.source" }      # audio.in đọc ở đây
         sink.props     = { node.name = "neuroedge.ec.sink" }        # audio.out phát vào đây
         playback.props = { node.name = "neuroedge.ec.playback"
@@ -343,10 +348,19 @@ context.modules = [
 ]
 ```
 
-Chỉ định micro bằng `capture.props.target.object` và tắt tự nối ở những nút không được nối tự do
-là mẫu lấy từ cấu hình tham khảo (gist `fathonix/05de5398…`, micro Android qua ROC). Tên nút của
-micro HAT và việc Raspberry Pi OS có chạy PipeWire mặc định hay không phải kiểm trên Pi khi làm
-TSK-S5-08.
+Bản giao kèm **không có placeholder**: không đặt `target.object`, module lấy micro nguồn mặc định
+của hệ thống. Muốn ghim micro HAT, bỏ chú thích và sửa **đúng một dòng** `target.object` bằng tên
+nút `pw-cli ls Node` in ra (mẫu lấy từ cấu hình tham khảo, gist `fathonix/05de5398…`).
+
+**PortAudio nhìn thấy gì — chưa kiểm trên phần cứng.** `audio.in`/`audio.out` sống đọc/ghi thiết bị
+qua `sounddevice` → PortAudio, mà host API mặc định trên Linux là **ALSA**: nó liệt kê các PCM ALSA,
+còn `neuroedge.ec.source` / `neuroedge.ec.sink` là **tên nút PipeWire**. Hai tên đó chỉ tới được
+PortAudio khi có lớp nối: plugin `pipewire-alsa` (thường có sẵn cùng PipeWire) phơi nút ra ALSA, và
+cách chắc chắn là thêm một alias PCM trong `~/.asoundrc` / `/etc/asound.conf` trỏ tới nút, hoặc
+truyền đúng tên/ chỉ số thiết bị mà `python -c "import sounddevice; print(sounddevice.query_devices())"`
+in ra trên chính máy đó (qua `NEUROEDGE_LINUX_AUDIO_IN`/`_OUT`). **Chưa có bước nào ở đây được kiểm
+trên Pi** — việc chọn tên/alias là phần của nightly TSK-S4-05; lỗi "no input/output device named …"
+của `LinuxHAL` luôn chỉ người đọc về mục này.
 
 ### 6.2 Khi nào `linux-rpi5` được khai `aec = true`
 

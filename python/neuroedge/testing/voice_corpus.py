@@ -50,7 +50,7 @@ from ..errors import NeuroEdgeError
 from ..paths import fixtures_dir
 from ..perception import TRIGGERS, VirtualClock, VoiceParams, VoiceSession
 from ..perception.providers.base import AudioClip, Speech, SpeechUnavailable, Transcript
-from ..perception.providers.fake import tone
+from ..perception.providers.fake import FakeWakeWordDetector, tone
 from ..perception.voice_session import FACTS_SOURCES
 from ..trace import validate_trace
 
@@ -64,6 +64,7 @@ WORLD_KEYS = {
     "system_two",
     "facts_source",
     "stt_fallback",  # a label: the run wires a fallback STT (TSK-I4-01, Q-14)
+    "wake_word",  # true: the run wires a detector (never fires on its own)
 }
 
 # §4, in table order: (from, to, trigger) — None where the row stays in its state
@@ -184,6 +185,13 @@ def load_case(path: Path) -> VoiceCase:
             repr(fallback),
             "a non-empty label; the run then wires a fallback STT (a stt_unavailable input makes "
             "the driver emit stt_fallback and keep the turn open)",
+        )
+    if "wake_word" in world and not isinstance(world["wake_word"], bool):
+        raise _error(
+            f"{path} -> world.wake_word",
+            repr(world["wake_word"]),
+            "true or false: with true the run wires a detector (which never fires on its own, "
+            "so wake_word_detected stays an input; vad_activation must be false — T01)",
         )
     inputs = document.get("inputs") or []
     last = 0
@@ -461,6 +469,10 @@ async def execute(
     world = case.world
     clock = VirtualClock()
     fallback_label = world.get("stt_fallback")
+    # A detector that never fires: the case's `wake_word_detected` input stays the
+    # input, but the session runs as one with a detector configured, so its
+    # vad_activation rule is the one the case proves (T01, TSK-I4-01).
+    wake = FakeWakeWordDetector([]) if world.get("wake_word") else None
     voice = VoiceSession.load(
         fixtures_dir() / "agents" / case.agent / "agent.toml",
         params=case.params,
@@ -481,6 +493,7 @@ async def execute(
         stt_label="primary",
         stt_fallback_label=str(fallback_label or "stt.fallback"),
         tts=CaseTextToSpeech(case, clock) if speech else None,
+        wake_word=wake,
     )
     for event in case.inputs:
         await voice.advance(event["offset_ms"])
