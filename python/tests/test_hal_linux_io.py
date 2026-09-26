@@ -408,6 +408,22 @@ def test_the_machines_wiring_does_not_enter_a_replay(tmp_path, sys_root, monkeyp
     assert hal.sensors.sources == {}
 
 
+def test_a_replay_preflight_reads_no_sensor(tmp_path, sys_root, monkeypatch):
+    def no_kernel(*args, **kwargs):
+        raise AssertionError("a replay read sysfs")
+
+    monkeypatch.setattr(linux.SysfsSensors, "read", no_kernel)
+    hal, fake = make(
+        tmp_path,
+        sysfs_root=sys_root,  # empty: a kernel read would fail anyway
+        replay=True,
+        needs={"sensors": ["temperature"], "display": True, "where": "agent"},
+    )
+    assert fake.requests, "the preflight passed and the lines were requested"
+    with pytest.raises(BoardCapabilityError, match="declares no sensor named 'pressure'"):
+        hal.preflight(sensors=["pressure"], where="agent")  # the board is still checked
+
+
 def test_a_reading_in_another_unit_than_the_agent_declares_is_refused(tmp_path, sys_root):
     iio(sys_root, 0, "bme280", {"in_pressure_input": 101.3, "in_pressure_label": "temperature"})
     hal, fake = make(tmp_path, sysfs_root=sys_root, units={"temperature": "C"})

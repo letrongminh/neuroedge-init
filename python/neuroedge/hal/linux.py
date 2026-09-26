@@ -399,7 +399,8 @@ class LinuxHAL(HardwareAbstractionLayer):
         """
         for sensor in dict.fromkeys(sensors):
             self.board.require_sensor(sensor, called_from=where)
-            self._kernel_read(sensor, f"{where} -> sensor.read {sensor!r}")
+            if not self.replay:  # a replay never reads the machine, not even to check it
+                self._kernel_read(sensor, f"{where} -> sensor.read {sensor!r}")
         if display:
             self._require_display_backend(f"{where} -> display")
 
