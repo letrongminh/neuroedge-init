@@ -19,7 +19,7 @@ name: security
 on:
   pull_request:
   push:
-    branches: [main, ci/supply-chain-security]   # TEMP: test before merge
+    branches: [main]
   schedule:
     - cron: "0 19 * * 0"   # Monday 02:00 UTC+7
   workflow_dispatch:
