@@ -1020,13 +1020,15 @@ nó trong bảng task.
 
 Nói rõ để không ai đọc các mốc đã đạt quá lên:
 
-- ❌ **Phiên tương tác (`run`, `record`, `mcp serve`) mới gõ chữ trên terminal, trên `sim` và `linux`** (trên `sim`
-  thêm tệp WAV — mục dưới). Trên `linux` agent chỉ được cần `digital.out` và chưa có trang `--ui` (TSK-S5-10); intent
-  không có action (`faq`) chỉ được trả lời khi agent khai `[system_two]`.
-- ❌ **Giọng nói mới từ tệp, trên `sim`.** `run --voice-file` đưa tệp WAV qua VAD, STT/TTS provider (`[stt]`/`[tts]`,
-  TSK-S3-13) và máy trạng thái hội thoại trong thời gian ảo; chưa có micro, loa thật, wake-word, âm thanh trên `linux`
-  (TSK-S5-08, I4-01). Lệnh hẹn giờ chỉ có trên `sim`, và khoảng hẹn đang bị chặn bởi TTL của phán quyết cho tới khi
-  chốt `voice_fsm.md` §10.
+- ❌ **Phiên tương tác (`run`, `record`, `mcp serve`) mới gõ chữ trên terminal, trên `sim` và `linux`** (cả hai
+  nhận thêm tệp WAV — mục dưới). Trên `linux` agent được cần cả năm nguyên thủy, nhưng chưa có trang `--ui`
+  (TSK-S5-10); intent không có action (`faq`) chỉ được trả lời khi agent khai `[system_two]`.
+- ❌ **Giọng nói mới từ tệp, trên `sim` và `linux`.** `run --voice-file` đưa tệp WAV qua VAD (hoặc wake-word, nếu
+  agent khai `[wake_word]` — nhưng **mô hình là của người dùng**, không mô hình nào được giao kèm hay tải về: Q-45),
+  STT/TTS provider (`[stt]`/`[tts]`, TSK-S3-13) và máy trạng thái hội thoại trong thời gian ảo; trên `linux` tệp được
+  đưa về rate bo mạch (TSK-S5-08). Chưa có phiên thời gian thực chạy song song provider trên micro/loa thật
+  (`TODOS.md` #45), chưa chạy trên Pi (nightly TSK-I2-01), và wake-word trên `esp32s3` (microWakeWord, Q-7) chưa có.
+  Lệnh hẹn giờ chỉ có trên `sim`, và khoảng hẹn đang bị chặn bởi TTL của phán quyết cho tới khi chốt `voice_fsm.md` §10.
 - ❌ **`esp32s3` mới chạy logic gate, chưa chạy agent.** Walker và sổ token C khớp engine host trên host và
   boot trên QEMU (TSK-S4-07, S4-08); thiết bị replay 3 vết ghi chuẩn mực và ghi vết ghi qua UART (TSK-S4-09);
   `build --target esp32s3` sinh firmware cho agent của người dùng, gate của nó tự kiểm lúc boot (TSK-I3-01) nhưng
@@ -1039,9 +1041,11 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
 - ❌ **Tương đương target mới ở mức quyết định, trên `sim` + `linux` + `esp32s3` trên QEMU.** `verify` so chuỗi
   phán quyết và lệnh chân; trên `esp32s3`, operation/duration của lệnh chân lấy từ bảng hành động dựng trên host
   (`TODOS.md` #37). So timing và bo mạch là TSK-S4-04 (I3).
-- ❌ **`LinuxHAL` chưa có âm thanh** (`audio.in/out`, TSK-S5-08, I4), và chưa đọc cảm biến là đầu vào GPIO
-  (`door_contact`, `motion`). Chân Pi thật cần `line_names` (vd `door_lock` → `GPIO17`); cảm biến hwmon/IIO cần nhãn
-  hoặc `NEUROEDGE_LINUX_SENSORS`. Chưa chạy trên Pi thật (nightly TSK-I2-01).
+- ❌ **`LinuxHAL` đủ năm nguyên thủy, nhưng chưa đọc cảm biến là đầu vào GPIO** (`door_contact`, `motion`), và
+  backend âm thanh sống (`sounddevice`, nút PipeWire đã khử vang — Q-22) chưa chạy trên HAT/Pi thật: `linux-rpi5` giữ
+  `aec = false` tới khi đo được §6.2 của `simulation_coverage.md`. Chân Pi thật cần `line_names`
+  (vd `door_lock` → `GPIO17`); cảm biến hwmon/IIO cần nhãn hoặc `NEUROEDGE_LINUX_SENSORS`. Chưa chạy trên Pi thật
+  (nightly TSK-I2-01).
 - ❌ **MCP chỉ qua stdio** (`TODOS.md` #24, #25). Không có transport mạng.
 - ❌ **Chưa phát hành ra ngoài.** Tag trước I6 là nội bộ; PyPI và repo công khai mở ở I6 (Q-39,
   TSK-S3-14, `docs/release.md`).

@@ -1,12 +1,13 @@
 """
 Hatch build hook: ship the language-neutral assets inside the package (TSK-S3-17).
 
-`schemas/`, `boards/`, `gates/`, `fixtures/traces/`, `fixtures/agents/` and
-`fixtures/tool_calls/` (the Gated Tool Profile corpus `neuroedge verify` runs) live at
-the monorepo root, outside `python/`. A wheel without them installs, but
-`neuroedge build`, `run`, `test` and `gate lint` all fail — measured 2026-09-23.
-This hook copies them to `neuroedge/_data/`, where `neuroedge.paths` finds them
-when there is no source checkout.
+`schemas/`, `boards/`, `gates/`, `fixtures/traces/`, `fixtures/agents/`,
+`fixtures/tool_calls/` (the Gated Tool Profile corpus `neuroedge verify` runs) and
+`pipewire/` (the echo-cancel drop-in `linux` ships, TSK-S5-08) live at the monorepo
+root, outside `python/`. A wheel without them installs, but `neuroedge build`, `run`,
+`test` and `gate lint` all fail — measured 2026-09-23. This hook copies them to
+`neuroedge/_data/`, where `neuroedge.paths` finds them when there is no source
+checkout.
 
 `neuroedge build --target esp32s3` copies the firmware sources into the agent's
 ESP-IDF project (TSK-I3-01), so the wheel carries them too — only the files

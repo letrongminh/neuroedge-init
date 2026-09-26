@@ -168,6 +168,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `gates/` | Gate mẫu, phân giải được, gồm chuỗi kế thừa | Thêm: PR thường; sửa/xoá: **RFC** (§3) |
 | `digests.lock` | Digest JCS của mọi gate chuẩn mực | Chỉ qua `scripts/check_digests.py` (§3) |
 | `boards/` | Khai báo năng lực bo mạch (TOML) | PR thường (§3) |
+| `pipewire/` | Drop-in `neuroedge-echo-cancel.conf` cho AEC phần mềm trên `linux` (Q-22); vào wheel qua `hatch_build.py`, tìm bằng `neuroedge.paths.echo_cancel_conf()` | PR thường |
 | `fixtures/traces/*.json` | Ba vết ghi chuẩn mực | **RFC** |
 | `fixtures/traces/invalid/`, `fixtures/gates/invalid/` | Corpus phản chứng + `expected_errors.yaml` | PR thường, khép kín (§3) |
 | `fixtures/gates/valid/`, `fixtures/gates/registry/` | Gate phân giải đúng; gate cơ sở cho fixture | Thêm: PR thường; sửa/xoá: **RFC** |
