@@ -180,7 +180,7 @@ NE1 {"offset_ms":3,"type":"gate_evaluation_begin","data":{"gate":"light_on@1.0.0
 NE1 {"offset_ms":6,"type":"gate_facts","data":{"call_source":{"value":"local_grammar","confidence":null,"source":"context"}}}
 NE1 {"offset_ms":9,"type":"gate_evaluation_result","data":{"verdict":"ALLOW","evaluations":{"call_source":"local_grammar"}}}
 NE1 {"offset_ms":57,"type":"trace_end","data":{"events":4}}
-NE_SELFTEST PASS walker=6 token=6
+NE_SELFTEST PASS walker=<n> token=<n>
 NE_TRACE DONE sessions=1
 ```
 

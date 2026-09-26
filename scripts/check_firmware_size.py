@@ -8,7 +8,8 @@ failure too — a budget that could not be measured never reads as met.
 
 1. **Flash** (`image.bin`): the image must fit the smallest A/B app slot of
    `targets/esp32s3/partitions.csv`, and Q-3's 3.5 MB (TSK-S1-12). An image larger
-   than the slot cannot be flashed at all, so exceeding it breaks OTA outright.
+   than the slot cannot be flashed at all, so exceeding it breaks OTA outright. A table
+   that is missing, has no app partition or an app size that cannot be read fails.
 
 2. **Static RAM** (`--size-json`, from `idf.py size --format json2`, TSK-S4-11):
    what `.data`, `.bss` and IRAM code placed in shared SRAM leave free of the
@@ -24,7 +25,8 @@ failure too — a budget that could not be measured never reads as met.
    build that silently dropped it cannot pass for one that measured it.
 
 3. **Boot heap** (`--heap-log`, a UART log): the firmware prints one
-   `NEUROEDGE_HEAP_JSON {...}` line once the gate runtime is up (main.c). Internal
+   `NEUROEDGE_HEAP_JSON {...}` line, at column 0, with checkpoint `gate_runtime_ready`
+   once the gate runtime is up (main.c); any other checkpoint, or no such line, fails. Internal
    free heap there must already clear the Q-3 floor. On Espressif QEMU this is the
    only runtime figure there is: no PSRAM, Wi-Fi or I2S (TSK-S4-08), so it is a floor
    before the network and the audio stack, never the Q-3 verdict.
@@ -61,6 +63,8 @@ ESP_SR_ARCHIVE = re.compile(
 )
 HEAP_PREFIX = "NEUROEDGE_HEAP_JSON "
 HEAP_SCHEMA = "neuroedge.heap/v1"
+# The one checkpoint main.c reports it at: the gate runtime up, before network and audio.
+HEAP_CHECKPOINT = "gate_runtime_ready"
 
 
 class Unreadable(Exception):
@@ -78,29 +82,39 @@ def _parse_size(raw: str) -> int:
     return number * {"": 1, "K": 1024, "M": 1024 * 1024}[suffix]
 
 
-def smallest_app_slot(partitions: Path) -> int | None:
+def smallest_app_slot(partitions: Path) -> int:
     """
     Size of the smallest `app` partition, which is the real ceiling.
 
     Read from the table rather than hard-coded, so that repartitioning cannot
-    silently diverge from the check that is supposed to guard it.
+    silently diverge from the check that is supposed to guard it. A table that is
+    missing, has no `app` partition, or an `app` row whose size cannot be read is
+    Unreadable: falling back to the Q-3 figure would pass an image no slot holds.
     """
-    if not partitions.is_file():
-        return None
-
+    try:
+        text = partitions.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as error:
+        raise Unreadable(f"partition table {partitions}: {error}") from error
     sizes: list[int] = []
-    with partitions.open(encoding="utf-8") as handle:
-        for row in csv.reader(handle):
-            cells = [cell.strip() for cell in row]
-            if len(cells) < 5 or not cells[0] or cells[0].startswith("#"):
-                continue
-            if cells[1].lower() != "app":
-                continue
-            try:
-                sizes.append(_parse_size(cells[4]))
-            except ValueError:
-                continue
-    return min(sizes) if sizes else None
+    for number, row in enumerate(csv.reader(text.splitlines()), 1):
+        cells = [cell.strip() for cell in row]
+        if not cells or not cells[0] or cells[0].startswith("#"):
+            continue
+        if len(cells) < 2 or cells[1].lower() != "app":
+            continue
+        where = f"{partitions}:{number} ({cells[0]})"
+        if len(cells) < 5:
+            raise Unreadable(f"{where}: an app partition without a size")
+        try:
+            size = _parse_size(cells[4])
+        except ValueError as error:
+            raise Unreadable(f"{where}: {error}") from error
+        if size <= 0:
+            raise Unreadable(f"{where}: an app partition of {size} bytes")
+        sizes.append(size)
+    if not sizes:
+        raise Unreadable(f"partition table {partitions}: no app partition")
+    return min(sizes)
 
 
 def _kib(value: int) -> str:
@@ -115,14 +129,13 @@ def check_flash(image: Path, partitions: Path, max_bytes: int) -> bool:
         raise Unreadable(f"firmware image not found: {image}")
     size = image.stat().st_size
     slot = smallest_app_slot(partitions)
-    budget = min(max_bytes, slot) if slot else max_bytes
+    budget = min(max_bytes, slot)
 
     print("== flash (Q-3: firmware <= 3.5 MB, and the smallest A/B app slot)")
     print(f"image:             {image}")
     print(f"size:              {size:,} bytes ({size / 1024 / 1024:.2f} MiB)")
     print(f"Q-3 budget:        {max_bytes:,} bytes")
-    if slot:
-        print(f"smallest app slot: {slot:,} bytes (from {partitions.name})")
+    print(f"smallest app slot: {slot:,} bytes (from {partitions.name})")
     print(f"effective budget:  {budget:,} bytes")
     if size > budget:
         over = size - budget
@@ -270,10 +283,12 @@ def boot_heap(log: Path) -> dict:
         text = log.read_text(encoding="utf-8", errors="replace")
     except OSError as error:
         raise Unreadable(f"{log}: {error}") from error
+    # Anchored at column 0: the same text inside a trace line (an on_block message, say)
+    # is never a heap line. UART logs end lines with CRLF.
     lines = [
-        (number, line[line.index(HEAP_PREFIX) + len(HEAP_PREFIX) :])
-        for number, line in enumerate(text.splitlines(), 1)
-        if HEAP_PREFIX in line
+        (number, line.rstrip("\r")[len(HEAP_PREFIX) :])
+        for number, line in enumerate(text.split("\n"), 1)
+        if line.startswith(HEAP_PREFIX)
     ]
     if not lines:
         raise Unreadable(
@@ -293,6 +308,11 @@ def boot_heap(log: Path) -> dict:
         raise Unreadable(f"{where}: not JSON: {error}") from error
     if not isinstance(data, dict) or data.get("schema") != HEAP_SCHEMA:
         raise Unreadable(f"{where}: not a {HEAP_SCHEMA} line")
+    if data.get("checkpoint") != HEAP_CHECKPOINT:
+        raise Unreadable(
+            f"{where}: checkpoint {data.get('checkpoint')!r}, not {HEAP_CHECKPOINT!r} — the "
+            "floor is defined once the gate runtime is up, before network and audio"
+        )
     for key in ("internal_free_bytes", "internal_largest_block_bytes", "internal_min_ever_bytes"):
         _count(data.get(key), f"{where} -> {key}")
     if not isinstance(data.get("qemu"), bool):

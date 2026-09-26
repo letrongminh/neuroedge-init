@@ -31,33 +31,56 @@
 name: firmware-qemu
 
 on:
+  # One list for both events: every input of the firmware and of the agent's build —
+  # the C sources, the generator and what it reads (gates, boards, schemas, the
+  # sample agents, the packaging that ships the sources), and these scripts.
   pull_request:
     paths:
       - "targets/**"
       - "python/neuroedge/engine/**"
+      - "python/neuroedge/actions/**"
+      - "python/neuroedge/hal/**"
       - "python/neuroedge/templates/**"
       - "python/neuroedge/cli/main.py"
+      - "python/neuroedge/paths.py"
+      - "python/neuroedge/testing/uart.py"
+      - "python/neuroedge/testing/recorder.py"
+      - "python/pyproject.toml"
       - "python/hatch_build.py"
+      - "gates/**"
+      - "boards/**"
+      - "schemas/**"
+      - "fixtures/traces/*.json"
+      - "fixtures/agents/**"
       - "scripts/gen_firmware_gates.py"
       - "scripts/gen_firmware_vectors.py"
       - "scripts/check_firmware_size.py"
       - "scripts/qemu_boot.sh"
-      - "fixtures/traces/*.json"
-      - "fixtures/agents/home-voice/**"
-      - "python/neuroedge/testing/uart.py"
-      - "python/neuroedge/testing/recorder.py"
       - ".github/workflows/firmware-qemu.yml"
   push:
     branches: [main]
     paths:
       - "targets/**"
       - "python/neuroedge/engine/**"
+      - "python/neuroedge/actions/**"
+      - "python/neuroedge/hal/**"
       - "python/neuroedge/templates/**"
+      - "python/neuroedge/cli/main.py"
+      - "python/neuroedge/paths.py"
+      - "python/neuroedge/testing/uart.py"
+      - "python/neuroedge/testing/recorder.py"
+      - "python/pyproject.toml"
       - "python/hatch_build.py"
+      - "gates/**"
+      - "boards/**"
+      - "schemas/**"
+      - "fixtures/traces/*.json"
+      - "fixtures/agents/**"
+      - "scripts/gen_firmware_gates.py"
+      - "scripts/gen_firmware_vectors.py"
       - "scripts/check_firmware_size.py"
       - "scripts/qemu_boot.sh"
-      - "python/neuroedge/testing/uart.py"
-      - "fixtures/traces/*.json"
+      - ".github/workflows/firmware-qemu.yml"
   schedule:
     - cron: "30 18 * * *"   # 01:30 UTC+7, after nightly-hardware
   workflow_dispatch:
@@ -73,6 +96,7 @@ jobs:
   firmware-qemu:
     name: Firmware boots on QEMU and passes the gate self-test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     container: espressif/idf:v5.4   # Espressif QEMU needs ESP-IDF >= 5.4 (Q-21)
     defaults:
       run:
@@ -103,7 +127,7 @@ jobs:
           scripts/qemu_boot.sh targets/esp32s3/build 120
           status=$?
           set -e
-          line="$(grep -o 'NE_SELFTEST .*' targets/esp32s3/build/uart.log 2>/dev/null | head -n1 || true)"
+          line="$(grep -E '^NE_SELFTEST ' targets/esp32s3/build/uart.log 2>/dev/null | head -n1 | tr -d '\r' || true)"
           echo "### Firmware on QEMU" >> "$GITHUB_STEP_SUMMARY"
           echo "\`${line:-no NE_SELFTEST line}\`" >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
@@ -134,6 +158,7 @@ jobs:
   firmware-size:
     name: "Q-3 static budget: flash and internal SRAM (board configuration, TSK-S4-11)"
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     container: espressif/idf:v5.4
     defaults:
       run:
@@ -188,6 +213,7 @@ jobs:
   agent-firmware:
     name: A user's agent, built with neuroedge build --target esp32s3, boots on QEMU (TSK-I3-01)
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     container: espressif/idf:v5.4
     defaults:
       run:
@@ -252,7 +278,8 @@ jobs:
           . "$IDF_PATH/export.sh"
           scripts/qemu_boot.sh work/ci-agent/build/esp32s3/build 120
           log=work/ci-agent/build/esp32s3/build/uart.log
-          line="$(grep -o 'NE_SELFTEST PASS walker=[0-9]* token=[0-9]*' "$log" | head -n1)"
+          # Column 0 only: the same words inside a trace line are not the device's verdict.
+          line="$(grep -oE '^NE_SELFTEST PASS walker=[0-9]+ token=[0-9]+' "$log" | head -n1)"
           walker="$(echo "$line" | sed -E 's/.*walker=([0-9]+).*/\1/')"
           if [ "${walker:-0}" -lt 1 ]; then echo "::error::the self-test checked no gate: $line"; exit 1; fi
           {
@@ -294,6 +321,7 @@ jobs:
     name: The UART trace validates, and verify --targets esp32s3 passes (TSK-S4-09)
     needs: firmware-qemu
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:

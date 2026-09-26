@@ -3,10 +3,11 @@ TSK-S4-11 — `scripts/check_firmware_size.py`: the Q-3 budget, and never a pass
 
 Inputs are real ESP-IDF v5.4 reports of this firmware (`tests/firmware/size/`: `idf.py size
 --format json2`, part of `idf.py size-components --format json2`) and the heap line the firmware
-prints on QEMU. Checked: the flash budget as before; the static RAM left for the heap against the
-120 KB floor; the boot heap against it; whether ESP-SR is linked, and `--require-esp-sr` failing
-when it is not. Every input that cannot be read — no region, a count that is not one, no heap
-line, two of them — is exit 1.
+prints on QEMU. Checked: the flash budget against the smallest app slot; the static RAM left for
+the heap against the 120 KB floor; the boot heap against it, at its checkpoint and at column 0
+only; whether ESP-SR is linked, and `--require-esp-sr` failing when it is not. Every input that
+cannot be read — no partition table or app size, no region, a count that is not one, no heap
+line, two of them, another checkpoint — is exit 1.
 """
 
 from __future__ import annotations
@@ -237,6 +238,62 @@ def test_flash_budget_is_unchanged(check, capsys, tmp_path):
     assert code == 1 and "cannot be flashed" in out
     code, out = _run(check, capsys, tmp_path / "missing.bin")
     assert code == 1 and "firmware image not found" in out
+
+
+TABLE = """# Name,   Type, SubType, Offset,  Size, Flags
+nvs,      data, nvs,     0x9000,  0x4000,
+factory,  app,  factory, 0x10000, {factory},
+ota_0,    app,  ota_0,   0x390000,{ota},
+"""
+
+
+@pytest.mark.parametrize(
+    ("table", "why"),
+    [
+        (None, "partition table"),
+        (TABLE.format(factory="0x380000", ota="three MB"), "unrecognised size 'three MB'"),
+        (TABLE.format(factory="0x380000", ota=""), "unrecognised size ''"),
+        ("factory, app, factory, 0x10000\n", "an app partition without a size"),
+        (TABLE.format(factory="0", ota="0x380000"), "an app partition of 0 bytes"),
+        ("nvs, data, nvs, 0x9000, 0x4000,\n", "no app partition"),
+    ],
+)
+def test_a_partition_table_that_cannot_be_read_fails_closed(check, capsys, tmp_path, table, why):
+    # Never the Q-3 figure in its place: an image that fits 3.5 MB may fit no slot.
+    image = tmp_path / "app.bin"
+    image.write_bytes(b"\0" * 1024)
+    partitions = tmp_path / "partitions.csv"
+    if table is not None:
+        partitions.write_text(table)
+    code, out = _run(check, capsys, image, "--partitions", partitions)
+    assert code == 1, out
+    assert why in out and "PASS" not in out
+
+
+def test_the_smallest_app_slot_is_the_budget(check, capsys, tmp_path):
+    image = tmp_path / "app.bin"
+    image.write_bytes(b"\0" * 0x200001)
+    partitions = _write(tmp_path, "p.csv", TABLE.format(factory="0x380000", ota="2M"))
+    code, out = _run(check, capsys, image, "--partitions", partitions)
+    assert code == 1 and "effective budget:  2,097,152 bytes" in out
+
+
+def test_the_heap_line_must_be_at_the_gate_runtime_checkpoint(check, capsys, tmp_path):
+    early = HEAP.replace('"checkpoint":"gate_runtime_ready"', '"checkpoint":"boot"')
+    code, out = _run(check, capsys, "--heap-log", _log(tmp_path, early))
+    assert code == 1 and "checkpoint 'boot', not 'gate_runtime_ready'" in out
+    missing = HEAP.replace('"checkpoint":"gate_runtime_ready",', "")
+    code, out = _run(check, capsys, "--heap-log", _log(tmp_path, missing))
+    assert code == 1 and "checkpoint None" in out
+
+
+def test_only_a_heap_line_at_column_0_counts(check, capsys, tmp_path):
+    # The same text inside a trace line (an on_block message) is not the device's heap line.
+    inside = f'NE1 {{"offset_ms":3,"type":"gate_evaluation_result","data":{{"message":"{HEAP}"}}}}'
+    code, out = _run(check, capsys, "--heap-log", _log(tmp_path, inside))
+    assert code == 1 and "no NEUROEDGE_HEAP_JSON line" in out
+    code, out = _run(check, capsys, "--heap-log", _log(tmp_path, inside, HEAP + "\r"))
+    assert code == 0, out  # the real one, with the UART's CRLF
 
 
 def test_every_check_runs_and_one_failure_fails_the_run(check, capsys, tmp_path):

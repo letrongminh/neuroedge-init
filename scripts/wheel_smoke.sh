@@ -62,11 +62,15 @@ case "$LISTING" in
   *) echo "::error::wheel lacks its LICENSE"; exit 1 ;;
 esac
 # The firmware sources ship for `build --target esp32s3` (TSK-I3-01). ESP-SR never does
-# (its licence is for Espressif chips only, TODOS.md #17), nor any build output.
-case "$LISTING" in
-  *esp-sr*|*esp_sr*|*managed_components*|*targets/esp32s3/build/*)
-    echo "::error::the wheel carries firmware files it must not"; exit 1 ;;
-esac
+# (its licence is for Espressif chips only, TODOS.md #17), nor any build output left in an
+# asset (hatch_build.py EXCLUDED_*): build/, managed_components/, sdkconfig, caches.
+# grep reads the whole listing (no -q), so printf never meets SIGPIPE under pipefail.
+BAD=$(printf '%s\n' "$LISTING" | grep -E 'esp[-_]sr|neuroedge/_data/.*/(build|managed_components|__pycache__)/|neuroedge/_data/.*/(sdkconfig|sdkconfig\.old|dependencies\.lock|\.neuroedge-build)$' || true)
+if [ -n "$BAD" ]; then
+  echo "::error::the wheel carries files it must not:"
+  echo "$BAD"
+  exit 1
+fi
 
 "$PY" -m venv "$WORK/venv"
 "$WORK/venv/bin/pip" install -q "$WHEEL[mcp]" pytest
