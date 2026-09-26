@@ -149,6 +149,9 @@ class VoiceSession:
         self.vad = vad if vad is not None else EnergyVAD()
         self.on_turn = on_turn
         self.turns: list[VoiceTurn] = []
+        # The question (confirmation id) each turn's reply asked (RFC-0006): what a spoken
+        # yes / no in that question's answer turn answers, and nothing else (Q-46 (D3)).
+        self._asked: dict[int, str] = {}
         self._awaiting: int | None = None  # the turn waiting for System 2
         self._transcript = ""
         # When the awaited transcript came in: the System 2 wait of that turn's
@@ -330,7 +333,7 @@ class VoiceSession:
                 await self._offline_reply()  # T09
         elif type == "tts_stream_end":
             self._end_playback()  # the stream ended from outside: the speaker stops too
-            self.fsm.reply_ended()
+            self.fsm.reply_ended(str(data.get("reason", "done")))
         else:
             raise ValueError(f"not a voice input event: {type!r}")
 
@@ -380,7 +383,7 @@ class VoiceSession:
             await self._stt_failed(int(due.data["turn"]), str(due.data["reason"]))
         elif due.type == "tts_stream_end":
             self._playing = None
-            self.fsm.reply_ended()  # T11, T12
+            self.fsm.reply_ended(str(due.data["reason"]))  # T11, T12
         # tts_unavailable: recorded only; its tts_stream_end {error} follows
 
     def _drop(self, turn: int, source: str) -> None:
@@ -505,15 +508,25 @@ class VoiceSession:
             return  # empty: T06
         self._transcript = text
         s = self.session
-        answers = s.pending_confirmation() is not None and answer_word(text) is not None
+        answer_to = self._answer_to(turn)
+        answers = s.question_for(answer_to) is not None and answer_word(text) is not None
         if self.system_two and not answers and not s.grammar.recognize(text).recognised:
             self._awaiting = turn  # free phrasing: System 2 answers later, or times out
             self._heard_at = self.clock.now
             return
         started, heard_ms = self._waits(turn)
         before = len(self.hal.spoken)
-        result = await s.handle(text, heard_after_ms=heard_ms if started is not None else 0.0)
+        result = await s.handle(
+            text,
+            heard_after_ms=heard_ms if started is not None else 0.0,
+            spoken=True,
+            answer_to=answer_to,
+        )
         await self._conclude(turn, text, result, before)
+
+    def _answer_to(self, turn: int) -> str | None:
+        """The question a spoken yes / no in `turn` may answer: only in its answer turn."""
+        return self._asked.get(turn - 1) if self.fsm.answer_turn == turn else None
 
     async def _stt_failed(self, turn: int, reason: str) -> None:
         """§7: STT gone or unusable — the offline line, from the device. Never a c.do()."""
@@ -583,6 +596,8 @@ class VoiceSession:
             self.fsm.reply_empty()  # T08
             return
         # RFC-0006: a question a person may answer keeps the floor for the answer (T11).
+        if result.confirmation is not None:
+            self._asked[turn] = result.confirmation.id
         self.fsm.reply_started(ask=result.confirmation is not None)  # T07
         if self.tts is not None and self.fsm.state is VoiceState.SPEAKING:
             await self._speak(spoken)

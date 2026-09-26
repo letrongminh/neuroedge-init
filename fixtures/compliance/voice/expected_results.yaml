@@ -168,6 +168,49 @@ v4_ask_unanswered_expires.json:
     - {offset_ms: 13300, type: tool_confirm_expired, data: {id: confirm_1}}
     - {offset_ms: 13300, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 3}}
 
+v4_ask_tts_error_opens_no_answer_turn.json:
+  proves: >-
+    V4, §5.4, Q-46 (D3): câu hỏi ask không phát được (tts_stream_end error lúc 2000) về IDLE bằng
+    T12 — không có lượt trả lời; "Có." ở lượt 2 (mở bằng wake word), câu hỏi còn trong TTL (hết
+    hạn 11600), không xác nhận gì: không tool_confirmed, porch_light không bao giờ nhận lệnh.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1500, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 1600, type: action_requested, data: {action: lights_out}}
+    - {offset_ms: 1600, type: gate_evaluation_result, data: {verdict: BLOCK, reason: condition_not_met, action: ask}}
+    - {offset_ms: 1600, type: tool_confirm_requested, data: {id: confirm_1}}
+    - {offset_ms: 1600, type: tts_stream_start, data: {text: "Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?"}}
+    - {offset_ms: 1600, type: tts_stream_start, data: {}}
+    - {offset_ms: 1600, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 1}}
+    - {offset_ms: 2000, type: voice_state_changed, data: {from: SPEAKING, to: IDLE, trigger: reply_end, turn: 1}}
+    - {offset_ms: 3000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 2}}
+    - {offset_ms: 4200, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 2}}
+    - {offset_ms: 4300, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 2}}
+
+v4_stale_ask_is_not_answered_by_voice.json:
+  proves: >-
+    V4, §5.4, Q-46 (D3): câu hỏi của lượt 1 phát hết mở lượt trả lời 2 (T11), nhưng lượt 2 là lệnh
+    khác — "mở cửa" qua gate và ALLOW như thường; "Có." ở lượt 3, câu hỏi còn trong TTL, không trả lời
+    câu hỏi của lượt cũ: không tool_confirmed, porch_light không bao giờ nhận lệnh.
+  events:
+    - {offset_ms: 0, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 1}}
+    - {offset_ms: 1500, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 1}}
+    - {offset_ms: 1600, type: action_requested, data: {action: lights_out}}
+    - {offset_ms: 1600, type: gate_evaluation_result, data: {verdict: BLOCK, reason: condition_not_met, action: ask}}
+    - {offset_ms: 1600, type: tool_confirm_requested, data: {id: confirm_1}}
+    - {offset_ms: 1600, type: tts_stream_start, data: {text: "Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?"}}
+    - {offset_ms: 1600, type: tts_stream_start, data: {}}
+    - {offset_ms: 1600, type: voice_state_changed, data: {from: THINKING, to: SPEAKING, trigger: reply_start, turn: 1}}
+    - {offset_ms: 3000, type: voice_state_changed, data: {from: SPEAKING, to: LISTENING, trigger: ask_asked, turn: 2}}
+    - {offset_ms: 4400, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 2}}
+    - {offset_ms: 4500, type: action_requested, data: {action: open_door}}
+    - {offset_ms: 4500, type: gate_evaluation_result, data: {verdict: ALLOW}}
+    - {offset_ms: 4500, type: actuator_command, data: {pin: door_lock, operation: pulse, duration_ms: 30000}}
+    - {offset_ms: 4500, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 2}}
+    - {offset_ms: 5000, type: voice_state_changed, data: {from: IDLE, to: LISTENING, trigger: wake_word, turn: 3}}
+    - {offset_ms: 6200, type: voice_state_changed, data: {from: LISTENING, to: THINKING, trigger: turn_end, turn: 3}}
+    - {offset_ms: 6300, type: voice_state_changed, data: {from: THINKING, to: IDLE, trigger: reply_empty, turn: 3}}
+
 v6_think_timeout_says_offline_line.json:
   proves: >-
     V6: provider không trả lời trong think_timeout (5000 từ 1700) — câu offline lúc 6700, rồi IDLE;

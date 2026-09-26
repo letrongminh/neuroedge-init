@@ -168,6 +168,8 @@ một mô hình gửi `{"call_source": "local_grammar"}` bị `REJECTED` ở bư
   lần** (kể cả khi lượng giá lại vẫn chặn); hết hạn sau `max(p95 × 3, 10 s)`; gate đổi giữa
   chừng ⇒ vô hiệu. Nguồn khác `local_grammar` / `ui` ⇒ `tool_confirm_rejected`, câu hỏi
   vẫn chờ người.
+- Chữ gõ và nút trả lời câu hỏi mới nhất còn chờ. Lời **nói** chỉ trả lời câu hỏi trong
+  lượt trả lời của chính nó — luật ở `docs/spec/voice_fsm.md` §5.4 (Q-46 (D3)).
 - Xác nhận không bỏ qua gate: gate được **lượng giá lại** với dữ kiện **hiện tại** và
   `call_source` của **yêu cầu gốc**; chỉ tiêu chí trong `confirms` coi như đạt. Mọi tiêu chí
   khác, giới hạn tham số và fail-closed khi adjudicator suy giảm vẫn áp dụng. Kết quả ghi

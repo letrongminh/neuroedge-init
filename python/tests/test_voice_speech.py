@@ -25,7 +25,7 @@ from neuroedge.hal.audio import (
     to_mono,
 )
 from neuroedge.hal.sim import SimHAL
-from neuroedge.perception import VirtualClock, VoiceParams, VoiceSession
+from neuroedge.perception import VirtualClock, VoiceParams, VoiceSession, VoiceState
 from neuroedge.perception.providers import FakeSpeechToText, FakeTextToSpeech, Speech
 from neuroedge.perception.providers.fake import tone
 from neuroedge.sim import SimSession
@@ -308,7 +308,9 @@ def test_tts_unavailable_ends_the_stream_with_error_and_the_words_stay_shown(doo
     (end,) = voice.events.of_type("tts_stream_end")
     assert (end["reason"], end["duration_ms"]) == ("error", 0)
     assert voice.events.of_type("tts_stream_start")[0]["text"] == voice.hal.spoken[0]
-    assert ("SPEAKING", "LISTENING", "ask_asked", 2) in states(voice)  # error ends as done does
+    # A question nobody heard opens no answer turn: T12, not T11 (Q-46 (D3)).
+    assert ("SPEAKING", "IDLE", "reply_end", 1) in states(voice)
+    assert ("SPEAKING", "LISTENING", "ask_asked", 2) not in states(voice)
     assert voice.hal.speaker().playbacks == []
 
 
@@ -730,3 +732,105 @@ def test_a_hung_tts_is_a_failed_reply(door, tmp_path):
     (failed,) = voice.events.of_type("tts_unavailable")
     assert "TTS provider did not answer" in failed["reason"]
     assert voice.events.of_type("tts_stream_end")[0]["reason"] == "error"
+
+
+# --- Q-46 (D3): a spoken "có" answers only the question it was the answer turn of ---------
+
+
+def _yes_no_turns(door, tmp_path, transcripts, parts, tts=None):
+    """Speech turns with someone in the room: "tắt đèn" makes the gate ask (RFC-0006)."""
+    voice = voice_on(
+        door, stt=FakeSpeechToText(transcripts), tts=tts or FakeTextToSpeech(ms_per_char=20)
+    )
+    voice.session.set_sensor("motion", True)
+    asyncio.run(voice.play(speech_file(tmp_path, *parts)))
+    return voice
+
+
+def _confirmed(voice):
+    return voice.events.of_type("tool_confirmed")
+
+
+def test_yes_in_the_asks_own_answer_turn_confirms(door, tmp_path):
+    # The question plays to its end (T11 opens turn 2), then "Có." in turn 2.
+    voice = _yes_no_turns(door, tmp_path, ["tắt đèn", "Có."], (500, 900, 3600, 400, 3000))
+    assert ("SPEAKING", "LISTENING", "ask_asked", 2) in states(voice)
+    assert _confirmed(voice) == [{"id": "confirm_1", "source": "local_grammar"}]
+    assert voice.hal.pin("porch_light").commands == [("off", 0)]
+
+
+def test_yes_said_over_the_ask_confirms(door, tmp_path):
+    # "Có." starts while the question is still playing: barge-in (T13 → T14) opens turn 2.
+    voice = _yes_no_turns(door, tmp_path, ["tắt đèn", "Có."], (500, 900, 1600, 400, 3000))
+    assert voice.events.of_type("tts_stream_end")[0]["reason"] == "barge_in"
+    assert _confirmed(voice) == [{"id": "confirm_1", "source": "local_grammar"}]
+    assert voice.hal.pin("porch_light").commands == [("off", 0)]
+
+
+def test_yes_after_an_ask_nobody_heard_confirms_nothing(door, tmp_path):
+    # TTS fails on the question: T12 to IDLE, no answer turn; "Có." in turn 2 is just words.
+    voice = _yes_no_turns(
+        door, tmp_path, ["tắt đèn", "Có."], (500, 900, 1600, 400, 3000), FakeTextToSpeech(fail=True)
+    )
+    assert voice.events.of_type("tts_stream_end")[0]["reason"] == "error"
+    assert ("SPEAKING", "IDLE", "reply_end", 1) in states(voice)
+    assert voice.events.of_type("stt_result")[1] == {"turn": 2, "text": "Có."}
+    assert _confirmed(voice) == [] and voice.hal.pin("porch_light").never_pulsed()
+    # Still waiting, for a person who reads it: the typed path answers it as before (RFC-0006).
+    pending = voice.session.pending_confirmation()
+    assert pending is not None and pending.id == "confirm_1"
+    asyncio.run(voice.session.handle("có"))
+    assert _confirmed(voice) == [{"id": "confirm_1", "source": "local_grammar"}]
+    assert voice.hal.pin("porch_light").commands == [("off", 0)]
+
+
+def test_yes_to_an_ask_from_an_earlier_turn_confirms_nothing(door, tmp_path):
+    # Ask in turn 1, "mở cửa" in its answer turn 2, "Có." in turn 3 — the ask is still in its
+    # TTL (10 s from 2400), and still not answered by it.
+    voice = _yes_no_turns(
+        door,
+        tmp_path,
+        ["tắt đèn", "mở cửa", "Có."],
+        (500, 900, 3600, 400, 3000, 400, 3000),
+    )
+    assert [e["turn"] for e in voice.events.of_type("stt_result")] == [1, 2, 3]
+    assert voice.hal.pin("door_lock").pulsed_once(30000)  # turn 2's command ran, through its gate
+    assert _confirmed(voice) == [] and voice.hal.pin("porch_light").never_pulsed()
+    assert voice.session.pending_confirmation() is not None  # unanswered, not spent
+
+
+def test_the_machine_marks_the_answer_turn():
+    from neuroedge.engine import EventLog
+    from neuroedge.perception import VoiceStateMachine
+
+    clock = VirtualClock()
+    fsm = VoiceStateMachine(VoiceParams(vad_activation=True), events=EventLog(clock))
+
+    def to_thinking():
+        fsm.vad_end()
+        clock.now += 700
+        fsm.fire_due()
+
+    fsm.vad_start()
+    to_thinking()
+    assert fsm.transcript(1, "tắt đèn")
+    fsm.reply_started(ask=True)
+    fsm.reply_ended("done")  # T11
+    assert fsm.answer_turn == fsm.turn == 2
+    fsm.vad_start()  # speech in the answer turn keeps it
+    assert fsm.answer_turn == 2
+    to_thinking()
+    fsm.vad_start()  # barge-in while THINKING: a new turn, and not an answer turn
+    assert fsm.turn == 3 and fsm.answer_turn is None
+    to_thinking()
+    assert fsm.transcript(3, "tắt đèn")
+    fsm.reply_started(ask=True)
+    fsm.vad_start()  # barge-in over the question: turn 4 is its answer turn
+    assert fsm.answer_turn == fsm.turn == 4
+    to_thinking()
+    assert fsm.transcript(4, "tắt đèn")
+    fsm.reply_started(ask=True)
+    fsm.reply_ended("error")  # nobody heard it: T12, no answer turn
+    assert fsm.state is VoiceState.IDLE and fsm.turn == 4  # no turn opened for it
+    fsm.vad_start()  # the next turn is an ordinary one
+    assert fsm.turn == 5 and fsm.answer_turn is None
