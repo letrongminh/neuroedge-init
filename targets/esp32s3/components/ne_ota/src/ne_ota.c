@@ -515,16 +515,16 @@ void ne_ota_run(void) {
                                       CONFIG_NEUROEDGE_OTA_STALL_TIMEOUT_MS)) {
             ESP_LOGE(TAG, "download stalled after %d bytes", read);
             esp_https_ota_abort(handle);
-            erase_slot("timeout", target);
             reject("timeout");
+            erase_slot("timeout", target);
             return;
         }
     }
     if (err != ESP_OK) {
         esp_https_ota_abort(handle);
         if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
-            erase_slot("signature", target);
             reject("signature");
+            erase_slot("signature", target);
         } else {
             reject("download");
         }
@@ -532,8 +532,8 @@ void ne_ota_run(void) {
     }
     if (!esp_https_ota_is_complete_data_received(handle)) {
         esp_https_ota_abort(handle);
-        erase_slot("incomplete", target);
         reject("incomplete");
+        erase_slot("incomplete", target);
         return;
     }
     const int read = esp_https_ota_get_image_len_read(handle);
@@ -543,8 +543,8 @@ void ne_ota_run(void) {
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "esp_https_ota_finish: %s", esp_err_to_name(err));
         if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
-            erase_slot("signature", target);
             reject("signature");
+            erase_slot("signature", target);
         } else {
             erase_slot("verify", target);
             reject("verify");
