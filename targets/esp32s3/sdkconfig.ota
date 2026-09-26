@@ -22,8 +22,8 @@ CONFIG_NEUROEDGE_OTA_URL=""
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 
 # esp_https_ota writes and verifies the image on the calling task's stack; the
-# default 3584 bytes is not enough (measured: a stack overflow in `main` while
-# image verification mapped a segment).
+# default is not enough (measured 2026-09-26), so the OTA layer raises it. The
+# figure and how it was measured: docs/reports/memory_spike_report.md §4.1.
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
 
 # Verify the signature of an image before it is switched to; the public key

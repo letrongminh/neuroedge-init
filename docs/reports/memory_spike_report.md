@@ -116,6 +116,12 @@ ESP-SR **chưa được link** (`TODOS.md` #17), nên cả hai là sàn **không
 *Hai dòng OTA đo 2026-09-26 với lớp `sdkconfig.ota` (TSK-S6-01/02/04); script in lại mỗi lượt chạy
 `firmware-qemu.yml` job `ota-rollback`. Đây là kích thước tĩnh của ảnh đã ký, không phải phán quyết Q-3.*
 
+Một số đo khác của đường OTA, không phải ngưỡng Q-3: `CONFIG_ESP_MAIN_TASK_STACK_SIZE` mặc định
+**3584 B không đủ**. `esp_https_ota` ghi và xác minh ảnh trên stack của task gọi, và `main` tràn
+stack khi xác minh ảnh ánh xạ một segment (đo 2026-09-26, ESP-IDF v5.4); lớp `sdkconfig.ota` đặt
+8192 B. Chú thích cạnh hằng số đó trong
+[`targets/esp32s3/sdkconfig.ota`](../../targets/esp32s3/sdkconfig.ota) dẫn về đây.
+
 *Đo 2026-09-26, ESP-IDF v5.4, firmware của agent mẫu `home-voice`; CI in lại các số này mỗi lượt chạy.*
 
 ## 5. Kết luận và hệ quả phạm vi
