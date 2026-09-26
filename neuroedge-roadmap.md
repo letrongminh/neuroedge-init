@@ -61,7 +61,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | **Pha đang thực thi** | 🟡 **I1 — Preview nội bộ trên `sim`** (I2, I3 phần không cần bo mạch và I4 làm song song) | Increment và ngày dự báo: §0.2 |
 | **Increment đang mở** | 🟡 **I1** — còn I1-01, I1-02 (tạm hoãn: phát triển nội bộ) | I0 đã xong 42 / 42 · chi tiết §0.2 |
 | **Cột mốc tiếp theo** | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** | Ngày dự báo ở §0.2 · chưa phát hành ra ngoài (Q-39) |
-| **Lần cập nhật cuối** | **2026-09-26** | Phiên gần nhất: đợt 2 — TSK-I4-02 (Jev), TSK-S3-13 (STT/TTS trên `sim`), TSK-I3-01 + S4-11 (firmware cho agent, RAM), D1 (`bands`) và review · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Lần cập nhật cuối** | **2026-09-26** | Phiên gần nhất: đợt 2, PR #60 (merge 2026-09-26) — TSK-I4-02 (Jev), TSK-S3-13 (STT/TTS trên `sim`), TSK-I3-01 + S4-11 (firmware cho agent, RAM), D1 (`bands`) và review · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
 | **Trạng thái CI Lõi** | ✅ **PASS 2135/2135 · SKIP 0** | `python/tests/` — 67 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 27/27 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · kỹ sư nhúng thứ hai (V6): đã quyết tuyển (2026-09-25), chưa có người — cần vào trước 2026-11-16 (Q-39) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
@@ -107,7 +107,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-26 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. VỪA HOÀN THÀNH — đợt 2 (chi tiết: CHANGELOG.md [Chưa phát hành])                    │
+│ 1. VỪA HOÀN THÀNH — đợt 2, PR #60 (chi tiết: CHANGELOG.md [Chưa phát hành])            │
 │    • TSK-I4-02: [system_one] — Jev typesafe/jev-1.13 qua System One API                │
 │    • TSK-S3-13: [stt]/[tts] chuẩn OpenAI audio; --voice-file trên sim                  │
 │    • TSK-I3-01: build --target esp32s3 sinh firmware cho agent (QEMU)                  │
@@ -120,8 +120,8 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
 │    1. Đặt 2 Box-3 + 1 RPi 5 (Phụ lục B); tuyển V6 — đã quyết, cần trước 2026-11-16     │
 │    2. Đợt 3: TSK-S6-01/02/04 (OTA QEMU), TSK-S4-10 + TSK-I4-01, TSK-S5-08              │
-│    3. Chạy scripts/live_jev_smoke.py với OPENROUTER_API_KEY; đo Jev tiếng Việt         │
-│    4. Tái sinh requirements-lock.txt (thiếu phụ thuộc của mcp) — đóng #54              │
+│    3. Chạy scripts/live_jev_smoke.py với OPENROUTER_API_KEY; đo Jev tiếng Việt (#27)   │
+│    4. Tái sinh requirements-lock.txt (đóng #54); xét 4 PR Dependabot (major Actions)   │
 │    5. Kỹ thuật trưởng: chốt chân trời hẹn giờ (voice_fsm.md §10) → Q-N                 │
 │    6. TSK-I1-01, I1-02 tạm hoãn: mở lại trước buổi đo TTFV                             │
 │                                                                                        │
@@ -628,7 +628,8 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 
 - [x] **Tiêu chí 1:** Bộ vector tuân thủ `fixtures/compliance/voice/` (TSK-S3-10) xanh trên hiện thực Python (TSK-S3-11).
 - [ ] **Tiêu chí 2:** Vòng thoại end-to-end trên `sim` và `linux`, STT/TTS qua provider cloud (TSK-S3-13); cắt lời giữa câu: TTS dừng dưới 300 ms, không lệnh actuator chưa giao nào rò (`voice_fsm.md` §5).
-- [ ] **Tiêu chí 3 (Q-14):** Mất provider giữa phiên → fallback lệnh cục bộ lượng giá; fallback không có hoặc không chạy → hành động bị chặn với lý do `gate_unreachable`.
+- [x] **Tiêu chí 3 (Q-14):** Mất provider giữa phiên → fallback lệnh cục bộ lượng giá; fallback không có hoặc không chạy → hành động bị chặn với lý do `gate_unreachable`.
+  *Bằng chứng:* `pytest tests/test_system_one_cloud.py -k "model_is_down or without_the_key"` (Jev mất giữa phiên ⇒ ngữ pháp quyết, vết ghi có `system_one_fallback`) · `pytest tests/test_models.py -k gate_unreachable` (fallback không có hoặc hỏng lúc chạy ⇒ `gate_unreachable`).
 - [ ] **Tiêu chí 4:** `linux-rpi5` khai `aec = true` chỉ khi đạt tiêu chí đo `docs/spec/simulation_coverage.md` §6 (TSK-S5-08).
 - [x] **Tiêu chí 5:** Vết ghi có độ trễ từng chặng và tỷ lệ System 1 / System 2 (TSK-I4-03).
   *Bằng chứng:* `pytest tests/test_turn_latency.py`; `neuroedge trace show <vết ghi>` in tỷ lệ và chặng.
