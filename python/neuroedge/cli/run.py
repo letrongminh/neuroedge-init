@@ -27,6 +27,7 @@ from rich.table import Table
 
 from ..actions import ActionResult
 from ..errors import NeuroEdgeError
+from ..models import SystemOne
 from ..sim import SimSession, Turn
 
 PROMPT = "neuroedge> "
@@ -264,8 +265,8 @@ def _turn(text: str, session: SimSession, console: Console, err_console: Console
 def banner(session: SimSession, console: Console) -> None:
     manifest = session.manifest
     gates = ", ".join(f"{key} → {ref}" for key, ref in manifest.gates.items()) or "none"
-    fast = getattr(getattr(session.conversation, "engine", None), "facts_source", None)
-    cloud_one = getattr(fast, "primary", None) is not None
+    fast = session.fast
+    cloud_one = isinstance(fast, SystemOne) and fast.primary is not None
     online = session.slow.available or cloud_one
     mode = "typed text" if online else "offline, typed text (Q-15)"
     console.print(
@@ -300,10 +301,10 @@ def mcp_lines(session: SimSession) -> list[str]:
     return [f"mcp: {names} — thông tin, không phải lệnh (Q-27)"]
 
 
-def system_one_line(fast) -> str:
+def system_one_line(fast: SystemOne) -> str:
     """Which model decides which criteria, and where its key comes from — never the key."""
     primary = fast.primary
-    config = getattr(primary, "config", None)
+    config = getattr(primary, "config", None)  # a test double has none
     name = getattr(primary, "name", "custom")
     if config is None:
         return f"{name} {fast.model}"

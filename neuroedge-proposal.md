@@ -1720,7 +1720,7 @@ Quá trình đối chiếu Golden trả lời chính xác câu hỏi: **Với c�
 
 | Vai trò xử lý | Các mô hình tham chiếu tiêu biểu | Chuẩn kết nối |
 |:---|:---|:---|
-| **System One** (Quyết định nhanh, cấu trúc) | Jev · Bộ nhận diện lệnh cố định cục bộ *(fallback, Q-14: ESP-SR MultiNet / TFLite Micro trên `esp32s3`, khớp ngữ pháp trên `sim`)* · Mô hình SLM on-device | OpenAI-compatible · Adapter tùy chỉnh *(mô hình cục bộ)* |
+| **System One** (Quyết định nhanh, cấu trúc) | Jev · Bộ nhận diện lệnh cố định cục bộ *(fallback, Q-14: ESP-SR MultiNet / TFLite Micro trên `esp32s3`, khớp ngữ pháp trên `sim`)* · Mô hình SLM on-device | System One API *(Jev, adapter dựng sẵn — Q-4)* · Adapter tùy chỉnh *(mô hình cục bộ)* |
 | **System Two** (Suy luận ngôn ngữ sâu) | `claude-sonnet-5` · GPT-4o-mini · Qwen 2.5 (3B / 7B / 72B) · Llama 3.2 · Phi-3 Mini | OpenAI-compatible |
 | **Chuyển đổi giọng nói thành văn bản (STT / ASR)** | Whisper (large-v3 / medium / small) · Deepgram Nova-2 · Azure Speech · Google STT · Sherpa-ONNX *(cục bộ)* | OpenAI-compatible *(Whisper API)* · Adapter tùy chỉnh *(Deepgram · Azure · Google)* |
 | **Chuyển đổi văn bản thành giọng nói (TTS)** | OpenAI TTS · ElevenLabs · Azure Speech · Kokoro · Edge-TTS · Piper *(cục bộ)* · Sherpa-ONNX *(cục bộ)* | OpenAI-compatible *(OpenAI TTS)* · Adapter tùy chỉnh *(ElevenLabs · Azure · mô hình cục bộ)* |

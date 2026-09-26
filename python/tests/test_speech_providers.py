@@ -10,7 +10,6 @@ import asyncio
 import http.client
 import io
 import json
-import shutil
 import subprocess
 import sys
 import threading
@@ -107,55 +106,8 @@ def test_an_api_key_env_that_is_not_a_variable_name_is_not_echoed():
     assert "revoke it" in error.why and KEY not in error.render()
 
 
-@pytest.mark.parametrize(
-    "url",
-    [
-        f"https://user:{KEY}@api.example.com/v1",
-        f"https://api.example.com/v1?key={KEY}",
-        "https://api.example.com/v1#x",
-    ],
-)
-def test_a_base_url_carrying_credentials_is_refused_without_repeating_it(url):
-    error = _refused("stt", {"model": "whisper-1", "base_url": url})
-    assert "credentials" in error.why and KEY not in error.render()
-
-
-@pytest.mark.parametrize(
-    "url",
-    ["http://127.0.0.1.evil.example/v1", "http://localhost.evil.example/v1", "http://10.0.0.5/v1"],
-)
-def test_only_this_machine_counts_as_this_machine(url):
-    # A DNS name that starts with "127." is someone else's host (outside review, 2026-09-26).
-    error = _refused("stt", {"model": "m", "base_url": url, "api_key_env": ENV})
-    assert "clear text" in error.why
-
-
-@pytest.mark.parametrize(
-    "url", ["http://127.8.0.1:8000/v1", "http://[::1]:8000/v1", "http://LOCALHOST/v1"]
-)
-def test_loopback_literals_are_this_machine(url):
-    parse_speech("stt", {"model": "m", "base_url": url, "api_key_env": ENV})
-
-
-def test_a_key_shaped_path_segment_is_refused_without_repeating_it():
-    error = _refused("stt", {"model": "m", "base_url": f"https://proxy.example/{KEY}/v1"})
-    assert "key-shaped" in error.why and KEY not in error.render()
-
-
-@pytest.mark.parametrize("field", ["provider", "language"])
-def test_a_key_pasted_into_another_field_is_not_echoed(field):
-    error = _refused("stt", {"model": "m", "api_key_env": ENV, field: KEY})
-    assert error.where.endswith(field) and KEY not in error.render()
-
-
-def test_a_key_never_crosses_the_network_in_clear_text():
-    error = _refused(
-        "stt", {"model": "m", "base_url": "http://192.168.1.10:8000/v1", "api_key_env": ENV}
-    )
-    assert "clear text" in error.why and "192.168.1.10" in error.why
-    # This machine is fine, and so is a keyless server on the LAN.
-    parse_speech("stt", {"model": "m", "base_url": "http://127.0.0.1:8000/v1", "api_key_env": ENV})
-    parse_speech("stt", {"model": "m", "base_url": "http://192.168.1.10:8000/v1"})
+# The URL, clear-text and no-echo cases run against every provider table, speech
+# included: tests/test_provider_common.py.
 
 
 @pytest.mark.parametrize(
@@ -223,7 +175,7 @@ def test_a_custom_adapter_needs_no_model_and_gets_its_options():
 
 def test_an_adapter_without_the_method_is_refused():
     config = parse_speech("tts", {"provider": "python:neuroedge.perception.providers.fake:stt"})
-    with pytest.raises(AgentManifestError, match="no synthesize"):
+    with pytest.raises(AgentManifestError, match=r"synthesize\(\) method"):
         make_speech(config)
 
 
@@ -240,29 +192,9 @@ def test_an_adapter_factory_that_raises_is_a_manifest_error():
 
 
 @pytest.fixture
-def agent(root, tmp_path):
+def agent(copy_agent):
     """A copy of voice-door; `agent(extra)` appends TOML to its agent.toml."""
-    folder = tmp_path / "voice-door"
-    shutil.copytree(root / "fixtures" / "agents" / "voice-door", folder)
-    path = folder / "agent.toml"
-    base = path.read_text(encoding="utf-8")
-
-    def write(extra: str = ""):
-        path.write_text(base + extra, encoding="utf-8")
-        return path
-
-    return write
-
-
-@pytest.fixture
-def fresh_actions():
-    from neuroedge.actions import spec
-
-    saved = dict(spec.REGISTRY)
-    spec.REGISTRY.clear()
-    yield
-    spec.REGISTRY.clear()
-    spec.REGISTRY.update(saved)
+    return lambda extra="": copy_agent("voice-door", extra)
 
 
 def test_no_speech_tables_is_exactly_as_before(agent, fresh_actions):
@@ -317,6 +249,23 @@ def test_a_board_without_a_sample_rate_fails_the_build_not_the_session(agent, ro
         check_speech(load_agent_manifest(path), load_board(root / "boards" / "sim-default.toml"))
         == []
     )
+
+
+@pytest.mark.parametrize("rate", [4000, 7999, 96001, 192000])
+def test_a_board_rate_the_audio_path_refuses_fails_the_build(agent, root, tmp_path, rate):
+    from neuroedge.hal.board import load_board
+
+    text = (root / "boards" / "sim-default.toml").read_text(encoding="utf-8")
+    board_file = tmp_path / "odd-rate.toml"
+    board_file.write_text(
+        text.replace("sample_rate_hz = 16000", f"sample_rate_hz = {rate}").replace(
+            'id     = "sim-default"', 'id     = "odd-rate"'
+        ),
+        encoding="utf-8",
+    )
+    path = agent(f'\n[stt]\nmodel = "whisper-1"\napi_key_env = "{ENV}"\n')
+    (problem,) = check_speech(load_agent_manifest(path), load_board(board_file))
+    assert problem.where.endswith("audio.in") and "8000 to 96000 Hz" in problem.why
 
 
 def test_the_build_imports_a_custom_adapter(agent, fresh_actions):
@@ -502,6 +451,15 @@ def test_a_tts_failure_is_unavailable(answer, fragment):
         run(provider.synthesize(SPEECH))
     assert fragment in caught.value.why and caught.value.role == "tts"
     assert SPEECH not in caught.value.render() and KEY not in caught.value.render()
+
+
+def test_a_wav_that_is_not_one_says_what_is_wrong_and_never_quotes_the_answer():
+    body = b"RIFF\x00\x00\x00\x00WAVEfmt " + SPEECH.encode()  # a fmt chunk cut short
+    provider = OpenAISpeaker(tts(), environ={ENV: KEY}, opener=FakeOpener(body))
+    with pytest.raises(SpeechUnavailable) as caught:
+        run(provider.synthesize("x"))
+    assert "not a PCM WAV file (" in caught.value.why
+    assert SPEECH not in caught.value.render()
 
 
 def test_8_bit_audio_is_refused():

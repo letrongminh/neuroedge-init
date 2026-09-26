@@ -27,7 +27,7 @@ from rich.markup import escape
 
 from ..errors import AgentManifestError, NeuroEdgeError
 from ..perception import VirtualClock, VoiceParams, VoiceSession, VoiceTurn
-from ..perception.providers import load_speech_configs, speech_for
+from ..perception.providers import load_speech_configs, make_speech
 from ..perception.providers.base import NoSpeech
 from ..sim import SimSession
 from .run import render_turn
@@ -109,7 +109,9 @@ def _run(
                 "out loud — replies are shown only",
                 how="add [tts] with base_url, model, voice (and api_key_env), or drop --voice-out",
             )
-        stt, tts = speech_for(manifest)
+        # From the configs just read: agent.toml is parsed once per run.
+        stt = make_speech(stt_config, manifest.root)
+        tts = None if tts_config is None else make_speech(tts_config, manifest.root)
         source = session.hal.audio_file(voice_file, called_from="neuroedge --voice-file")
     except NeuroEdgeError as error:
         return _error(err_console, error)
