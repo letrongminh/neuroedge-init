@@ -1,0 +1,15 @@
+# Keeps the SHA pins of GitHub Actions current (TSK-W2-07). Dependabot rewrites the
+# commit SHA and the `# vX.Y.Z` comment together. Python dependencies are not here on
+# purpose: their drift is the nightly `upstream-drift` job's issue (Q-32).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      # Minor and patch bumps in one PR; each major bump in its own PR, to review.
+      actions-minor-patch:
+        update-types: [minor, patch]
