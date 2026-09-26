@@ -1046,7 +1046,7 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
 - ❌ **Chưa phát hành ra ngoài.** Tag trước I6 là nội bộ; PyPI và repo công khai mở ở I6 (Q-39,
   TSK-S3-14, `docs/release.md`).
 - ❌ **Chưa có CEL.** `allow_when` chỉ nhận dạng mapping toán tử (TSK-S2-06 hoãn, `TODOS.md` #42).
-- ❌ **Chưa có số đo bộ nhớ.** Xem §3.4.
+- ❌ **Chưa có số đo bộ nhớ trên bo mạch.** CI đo sàn tĩnh và heap QEMU mỗi PR (TSK-S4-11, `docs/reports/memory_spike_report.md` §4.1); áp lực lúc chạy âm thanh chờ TSK-S1-10. Xem §3.4.
 
 ### 3.8 Bốn ràng buộc cho bản port HAL lên chip ở I3 (từ rà soát HAL)
 
