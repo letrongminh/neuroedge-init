@@ -18,6 +18,12 @@ firmware khi có driver.
 firmware đang chạy. Component `targets/esp32s3/ui/CMakeLists.txt` đã đăng ký sẵn cho lúc đó; hôm
 nay firmware không build thư mục này.
 
+**Không chép giao diện vào project sinh ra** (`neuroedge build --target esp32s3`): project chỉ mang
+thứ nó gọi, và hôm nay chưa ai gọi giao diện. Chép vào sẽ kéo cả LVGL và phông vào mọi firmware mà
+không đổi một hành vi nào, còn `SOURCES` của bộ sinh và `hatch_build.py` phải khớp nhau
+(`tests/test_packaging.py`). Việc chép cùng driver màn hình là một bước có chủ đích ở TSK-S4-01.
+Thứ firmware mang từ bây giờ là **ngôn ngữ** (§2): `NE_AGENT_LANGUAGE` trong `ne_agent.h`.
+
 Vẽ **tất định**: không đọc đồng hồ, không ngẫu nhiên, không tự chạy hoạt ảnh (mọi lời gọi có tham
 số hoạt ảnh đều nhận `LV_ANIM_OFF`), không tự cuộn. Cùng một struct trạng thái cho ra cùng điểm ảnh —
 đó là điều làm ảnh golden có nghĩa.
