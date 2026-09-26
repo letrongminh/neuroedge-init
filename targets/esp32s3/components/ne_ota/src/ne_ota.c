@@ -155,7 +155,9 @@ static const esp_partition_t *aborted_partition(const esp_partition_t *running) 
         if (candidate == NULL) continue;
         if (running != NULL && candidate->address == running->address) continue;
         esp_ota_img_states_t state;
-        if (esp_ota_get_state_partition(candidate, &state) != ESP_OK) {
+        const esp_err_t state_err = esp_ota_get_state_partition(candidate, &state);
+        if (state_err == ESP_ERR_NOT_FOUND) continue; /* no otadata entry: fine */
+        if (state_err != ESP_OK) {
             /* Not knowing this slot's state is not "it is fine": without it the
              * device cannot tell which version it must not go back to, so no
              * update is allowed this boot (NE_OTA SKIP reason=rolled_back). */
