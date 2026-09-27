@@ -59,10 +59,10 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | Chỉ số | Trạng thái hiện hành | Ghi chú & Liên kết |
 |:---|:---|:---|
 | **Pha đang thực thi** | 🟡 **I1 — Preview nội bộ trên `sim`** (I2, I3 phần không cần bo mạch và I4 làm song song) | Increment và ngày dự báo: §0.2 |
-| **Increment đang mở** | 🟡 **I1** — còn I1-01, I1-02 (tạm hoãn: phát triển nội bộ) | I0 đã xong 42 / 42 · chi tiết §0.2 |
+| **Increment đang mở** | 🟡 **I1** — còn I1-02 (tạm hoãn: phát triển nội bộ) | I0 đã xong 42 / 42 · chi tiết §0.2 |
 | **Cột mốc tiếp theo** | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** | Ngày dự báo ở §0.2 · chưa phát hành ra ngoài (Q-39) |
-| **Lần cập nhật cuối** | **2026-09-27** | Phiên gần nhất: tài liệu kiến trúc viết lại theo mã (C4, NFR, ADR, VI/EN; poster sinh tự động) · trước đó đợt 3 (PR #62, đã merge) — TSK-S6-01/02/04 + S6-03 một phần (OTA có ký trên QEMU), TSK-S4-10 (giao diện LVGL + golden), TSK-I4-01 (wake-word, STT dự phòng), TSK-S5-08 (âm thanh `linux`) và review · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 2310/2310 · SKIP 0** | `python/tests/` — 80 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 29/29 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `ui-golden` 66 ảnh, `ota-rollback` pha a–g · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
+| **Lần cập nhật cuối** | **2026-09-27** | Phiên gần nhất: TSK-I1-01 (vết ghi băm chữ người dùng mặc định, `--raw` để giữ) và RFC-0008 (`gate_digest` trong ba vết ghi chuẩn mực) · trước đó tài liệu kiến trúc (PR #64) và đợt 3 (PR #62) — TSK-S6-01/02/04 + S6-03 một phần (OTA có ký trên QEMU), TSK-S4-10 (giao diện LVGL + golden), TSK-I4-01 (wake-word, STT dự phòng), TSK-S5-08 (âm thanh `linux`) và review · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Trạng thái CI Lõi** | ✅ **PASS 2329/2329 · SKIP 0** | `python/tests/` — 80 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 29/29 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `ui-golden` 66 ảnh, `ota-rollback` pha a–g · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · kỹ sư nhúng thứ hai (V6): đã quyết tuyển (2026-09-25), chưa có người — cần vào trước 2026-11-16 (Q-39) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -76,7 +76,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 |:---:|:---|:---:|:---|:---:|:---|:---|:---|
 | **0.x nội bộ** | **I0 — Lõi hợp đồng trên `sim`** | ✅ 2026-09-24 | Gate có kiểu và phiên bản (lint, resolve, kế thừa, tham số, `confirms`), `sim` + web UI, Action CI, MCP, System 2 qua LiteLLM, `linux` replay trên gpio-sim; walker C, sổ token và vết ghi UART trên QEMU | **42 / 42** | ✅ Xong | — | lịch sử |
 |  | **Cổng nhu cầu (Q-20)** | 2026-10-25 | Go / Adjust / Stop cho I3–I7 (`docs/business/cong-nhu-cau-2026-10-25/cham-diem.md` §4.1) | — | ⏳ Đang phỏng vấn | I0 | — |
-|  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | Người ngoài đội cài từ wheel nội bộ và chạy agent có gate trong dưới 10 phút, không cần phần cứng | **3 / 5** | 🟡 Đang làm — TSK-I1-01, I1-02 tạm hoãn (phát triển nội bộ) | I0 | tag `v0.1.0` (nội bộ) |
+|  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | Người ngoài đội cài từ wheel nội bộ và chạy agent có gate trong dưới 10 phút, không cần phần cứng | **4 / 5** | 🟡 Đang làm — TSK-I1-02 tạm hoãn (phát triển nội bộ) | I0 | tag `v0.1.0` (nội bộ) |
 |  | **I2 — `linux` ngang `sim`** | 2026-11-29 | `run`, `record`, `mcp serve --target linux`; cảm biến và màn hình trên `linux`; nightly trên RPi 5 | **3 / 4** | 🟡 Phiên tương tác, cảm biến, màn hình xong trên gpio-sim + i2c-stub; nightly RPi 5 còn lại | I1 | tag `v0.2.0` (nội bộ) |
 |  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | Gate chạy trên chip, điều khiển chân thật; người dùng tự nạp agent; `verify` ba target bậc 1 cho miền phán quyết | **6 / 14** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU, giao diện LVGL có ảnh golden); chờ bo mạch | I1, cổng Go | tag `v0.3.0` + firmware (nội bộ) |
 |  | **I4 — Thoại trên host** | 2026-12-13 | Nói chuyện với agent trên `sim` và `linux`: wake-word, cắt lời, STT/TTS qua provider cloud, fallback lệnh cục bộ | **5 / 8** | 🟡 Đặc tả, vector, FSM Python, độ trễ, SystemOne qua Jev xong; STT/TTS trên `sim`, wake-word + STT dự phòng, âm thanh `linux` xong phần mã trên host; còn mô hình wake-word thật, Pi + HAT, phiên micro thời gian thực | I2, cổng Go | tag `v0.4.0` (nội bộ) |
@@ -107,11 +107,11 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-27 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. VỪA HOÀN THÀNH — đợt 3 (PR #62, đã merge) + tài liệu kiến trúc viết lại             │
-│    • TSK-S6-01/02/04 + S6-03 một phần: OTA A/B RSA-3072, rollback, chặn hạ cấp (QEMU)  │
-│    • TSK-S4-10: giao diện LVGL vi/en theo ngôn ngữ agent, 66 ảnh golden mỗi PR         │
-│    • TSK-I4-01: [wake_word] openWakeWord (mô hình người dùng cấp) + [stt.fallback]     │
-│    • TSK-S5-08: audio.in/out trên linux — backend tệp + live sounddevice/PipeWire      │
+│ 1. VỪA HOÀN THÀNH — TSK-I1-01 (băm chữ mặc định) + RFC-0008 (gate_digest)              │
+│    • TSK-I1-01: vết ghi băm chữ người dùng tại nguồn mặc định; --raw giữ nguyên văn    │
+│    • RFC-0008: 3 vết ghi chuẩn mực mang gate_digest; verify từ chối, replay cảnh báo   │
+│    • Trước đó: đợt 3 — OTA, giao diện LVGL, wake-word (PR #62); kiến trúc (PR #64)     │
+│    • Việc đợt 3 còn mở: Wi-Fi thật cho OTA (#50), driver màn hình (TSK-S4-01)          │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
@@ -123,7 +123,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 │    4. Chạy scripts/live_jev_smoke.py với OPENROUTER_API_KEY; đo Jev tiếng Việt (#27)   │
 │    5. Tái sinh requirements-lock.txt (đóng #54); xét 4 PR Dependabot (major Actions)   │
 │    6. Kỹ thuật trưởng: chốt chân trời hẹn giờ (voice_fsm.md §10) → Q-N                 │
-│    7. TSK-I1-01, I1-02 tạm hoãn: mở lại trước buổi đo TTFV                             │
+│    7. TSK-I1-02 tạm hoãn: mở lại trước buổi đo TTFV                                    │
 │                                                                                        │
 │ 4. LƯU Ý — bất biến ở CHANGELOG.md §3.3; dưới đây chỉ điều chưa có ở đó                │
 │    • Chỉ c.do() điều khiển được chân: HAL chưa gắn ledger từ chối mọi lệnh             │
@@ -521,7 +521,7 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S3-08** | Ba ví dụ mẫu chạy được, README có tài sản trực quan | FR-DX-05, FR-DX-06 | V3 | ✅ Hoàn thành (2026-09-25) | `villa-concierge`, `home-voice` ([`fixtures/agents/home-voice/`](fixtures/agents/home-voice/): RAG knowledge base, tin tức, đèn qua gate) và `factory-monitor` ([`fixtures/agents/factory-monitor/`](fixtures/agents/factory-monitor/): quạt, báo động qua gate đọc fact `level` — không cần tiêu chí số, `TODOS.md` #30) chạy được qua `neuroedge new --template`, có test (`tests/test_factory_monitor.py`) và nằm trong `wheel-smoke`. Tài sản trực quan cho README chuyển sang TSK-I6-03 |
 | **TSK-S3-15** | **RFC golden reference:** ba vết ghi chuẩn mực khai `"target": "esp32s3"` nhưng replay ở Tiêu chí 4 chạy trên `sim`/`linux` thật; `fixtures/traces/` là RFC-gated | FR-CI-04, FR-TRC-05 | V1 | ✅ Hoàn thành (2026-09-25) — không cần RFC | TSK-S3-04 so **quyết định**, không so `metadata.target`: ba vết ghi chuẩn mực làm golden nguyên trạng trên `sim` và `linux`, không sửa `fixtures/traces/`. **Xác nhận 2026-09-25:** golden là ba vết ghi chuẩn mực nguyên trạng, so quyết định trên `sim`, `linux` và `esp32s3`; không sửa `fixtures/traces/`, không cần RFC |
-| **TSK-I1-01** | **PII trong vết ghi trước khi có người ngoài dùng:** ẩn danh mặc định hoặc chính sách văn bản; `record --anonymize` đã có nhưng chưa là mặc định | FR-TRC-06, FR-TRC-07, NFR-PRIV-03 | V1 | ⏸ Tạm hoãn (2026-09-26) — đang phát triển nội bộ, chưa ưu tiên; mở lại trước buổi đo TTFV (TSK-I1-02) | `python/neuroedge/testing/recorder.py` |
+| **TSK-I1-01** | **PII trong vết ghi trước khi có người ngoài dùng:** vết ghi mặc định băm chữ người dùng gõ/nói tại nguồn (`metadata.anonymized = true`); `--raw` giữ nguyên văn, bật tường minh | FR-TRC-06, FR-TRC-07, NFR-PRIV-03 | V1 | ✅ Hoàn thành (2026-09-27) — quyết định: "dữ liệu thô" của NFR-PRIV-03 gồm cả chữ | `python/neuroedge/testing/recorder.py` (`DEFAULT_ANONYMIZE`) · `cli/main.py` (`--raw` trên `record`, `run`, `replay`, `mcp serve`, `mcp desktop-config`) · *Bằng chứng:* `pytest tests/test_recorder.py tests/test_uart_trace.py tests/test_voice_cli.py tests/test_cli_run.py tests/test_golden.py` |
 | **TSK-I1-02** | **Bộ đo TTFV tại chỗ:** kịch bản buổi đo, wheel nội bộ, biểu mẫu mốc thời gian từng bước; 3 người ngoài đội cho M1, 10 người cho A1 (TSK-I7-02) | FR-DX-01 | V3 | ⏸ Tạm hoãn (2026-09-26) — cùng lý do với TSK-I1-01 | `docs/reports/` — biên bản đo, không ghi danh tính người đo |
 | **TSK-I1-03** | **`--help` có ví dụ cho mọi lệnh; scaffold tạo sẵn `traces/`** | FR-CLI-07, FR-TRC-09 | V3 | ✅ Hoàn thành (2026-09-26) | [`cli/examples.py`](python/neuroedge/cli/examples.py): mỗi lệnh có mục `Examples:`, mọi ví dụ phân tích bằng parser thật và chạy trong dự án vừa tạo · [`templates/_common/traces/`](python/neuroedge/templates/_common/traces/) · kiểm: `pytest tests/test_cli_examples.py tests/test_cli_new.py`, `scripts/wheel_smoke.sh` |
 
@@ -531,7 +531,8 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 - [x] **Tiêu chí 2:** Mẫu thứ ba chạy được qua `neuroedge new --template`, có test và nằm trong `wheel-smoke` (TSK-S3-08).
 - [x] **Tiêu chí 3:** TSK-S3-15 đóng: golden là ba vết ghi chuẩn mực, hoặc một RFC được mở.
   *Bằng chứng:* xác nhận 2026-09-25 — golden là ba vết ghi chuẩn mực nguyên trạng, không cần RFC (dòng TSK-S3-15); `pytest tests/test_trace_vectors.py -k golden` và job `linux-hal` so quyết định trên ba target.
-- [ ] **Tiêu chí 4:** Vết ghi của buổi đo không chứa chữ thô của người dùng khi chưa bật tường minh (TSK-I1-01).
+- [x] **Tiêu chí 4:** Vết ghi của buổi đo không chứa chữ thô của người dùng khi chưa bật tường minh (TSK-I1-01).
+  *Bằng chứng:* mặc định băm tại nguồn từ 2026-09-27; `pytest tests/test_recorder.py -k default`.
 - [ ] **Tiêu chí 5:** Tag `v0.1.0` có GitHub Release nội bộ kèm wheel; `scripts/wheel_smoke.sh --wheel` xanh trên đúng wheel đó.
 
 ### 4.3 I2 — `linux` ngang `sim`
