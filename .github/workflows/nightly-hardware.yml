@@ -84,7 +84,7 @@ jobs:
           path: targets/esp32s3
           command: idf.py size-components
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: firmware-esp32s3
@@ -190,7 +190,7 @@ jobs:
           cat report.md >> "$GITHUB_STEP_SUMMARY"
           if [ "$status" != clean ]; then echo "::warning::dependency drift: $status — $why"; fi
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: dependency-drift
@@ -335,7 +335,7 @@ jobs:
           # placeholder so the hardware stage has the right shape when it lands.
           echo "::notice::on-device replay equivalence is not implemented yet (TSK-S4-03)"
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: memory-spike-measurement
