@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import unicodedata
 from pathlib import Path
 from typing import Any
@@ -51,9 +52,17 @@ def digest_text(text: str) -> str:
     return "sha256:" + hashlib.sha256(normalised).hexdigest()
 
 
+# A value already hashed by `digest_text`: hashing it again would turn the same words
+# into a different digest in every trace that passes through a replay.
+_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+
+
 def anonymise(data: dict[str, Any]) -> dict[str, Any]:
+    """Hash every raw text field; idempotent, so a hashed trace stays comparable."""
     return {
-        key: digest_text(value) if key in RAW_TEXT_FIELDS and isinstance(value, str) else value
+        key: digest_text(value)
+        if key in RAW_TEXT_FIELDS and isinstance(value, str) and not _DIGEST.fullmatch(value)
+        else value
         for key, value in data.items()
     }
 

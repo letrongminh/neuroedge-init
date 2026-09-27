@@ -228,3 +228,16 @@ def test_the_replayed_trace_is_marked_and_raw_is_opt_in(traces_dir, tmp_path):
     assert document["metadata"]["anonymized"] is False
     assert "keeps the user's words" in result.output
     validate_trace(document)
+
+
+def test_raw_cannot_unhash_a_hashed_recording(traces_dir, tmp_path):
+    # NFR-PRIV-03: `--raw` on replay keeps what the recording kept; a hashed recording's
+    # replayed trace is still hashed, so it must still say `anonymized: true`.
+    recorded = json.loads((traces_dir / "happy-path.json").read_text("utf-8"))
+    recorded["metadata"]["anonymized"] = True
+    source = tmp_path / "hashed-recording.json"
+    source.write_text(json.dumps(recorded), encoding="utf-8")
+    out = tmp_path / "replayed.json"
+    result = runner.invoke(app, ["replay", str(source), "--trace-out", str(out), "--raw"])
+    assert result.exit_code == 0, result.output
+    assert json.loads(out.read_text("utf-8"))["metadata"]["anonymized"] is True

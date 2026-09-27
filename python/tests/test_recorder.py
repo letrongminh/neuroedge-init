@@ -250,3 +250,14 @@ def test_record_on_an_unknown_target_exits_one(villa):
     result = runner.invoke(app, ["record", "--agent", str(villa), "--target", "stm32", "-c", "x"])
     assert result.exit_code == 1
     assert "NE3001" in result.output
+
+
+def test_hashing_is_idempotent_so_a_hashed_trace_stays_comparable():
+    # A replay of a hashed trace passes its text through the recorder again: the same
+    # words must keep the same digest, not become a digest of a digest.
+    from neuroedge.testing.recorder import anonymise
+
+    once = anonymise({"text": "mở cửa phòng 101", "intent": "unlock_door"})
+    assert once == {"text": digest_text("mở cửa phòng 101"), "intent": "unlock_door"}
+    assert anonymise(once) == once
+    assert anonymise({"text": "sha256:not-a-digest"})["text"] != "sha256:not-a-digest"

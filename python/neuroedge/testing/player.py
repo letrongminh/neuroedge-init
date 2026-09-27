@@ -138,9 +138,10 @@ def gate_digest_changes(
     (`verify --targets esp32s3`), the host check on the canonical traces (`verify` on
     sim/linux, enforced) and the `replay` warning (a gate edited on purpose).
 
-    A begin without the field — a trace recorded before RFC-0008 — yields nothing
-    (there is nothing to compare); a begin for a gate `gates` does not have yields
-    `current=None`.
+    A begin without the field — a trace recorded before RFC-0008 — yields a change with
+    `recorded=None`, and a begin for a gate `gates` does not have yields `current=None`:
+    the device check refuses both (a device always writes the field), while the host
+    replay compares only changes where both sides exist (`_decided_changes`).
     """
     from ..engine.decision_tree import compile_tree
 
@@ -543,9 +544,14 @@ def replay_sync(trace, **kwargs) -> ReplayResult:
 
 
 def dump(result: ReplayResult, path: str | Path, *, anonymize: bool = DEFAULT_ANONYMIZE) -> None:
-    """Write the replayed trace, hashed by default like every trace file (NFR-PRIV-03)."""
+    """
+    Write the replayed trace, hashed by default like every trace file (NFR-PRIV-03).
+    `anonymize=False` (`--raw`) cannot bring back words the recording already hashed:
+    the replayed trace of a hashed recording stays marked `anonymized: true`.
+    """
     trace = result.replayed
-    metadata = {**trace["metadata"], "anonymized": bool(anonymize)}
+    hashed = bool(anonymize) or bool(result.recorded.get("metadata", {}).get("anonymized"))
+    metadata = {**trace["metadata"], "anonymized": hashed}
     if anonymize:
         trace = {
             **trace,
