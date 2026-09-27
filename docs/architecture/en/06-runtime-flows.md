@@ -250,7 +250,7 @@ sequenceDiagram
     participant F as trace.v1.json
     participant P as TracePlayer
     participant G as GoldenComparator
-    R->>F: save() — validated against trace.v1, anonymize optional
+    R->>F: save() — validated against trace.v1, text hashed unless --raw
     P->>F: load, recorded_steps: facts from gate_facts, degraded reasons, actions
     P->>P: fresh EventLog, HAL for the target, Conversation
     P->>P: replay each step: conversation.do() — verdict, token, body, pins recomputed

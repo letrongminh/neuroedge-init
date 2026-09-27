@@ -80,7 +80,14 @@ of `linux`. They wait for a nightly runner on real hardware (TSK-S4-05, TSK-I2-0
 | `esp32s3` | **The firmware itself** replays the three normative traces at boot (`trace_vectors.c`) and sends results over UART; the host reads (`--port`) and compares against golden | firmware running, on QEMU or a board |
 
 Firmware replaying a trace or a gate **older than** the checkout ⇒ `NE4003` (old firmware), no
-comparison. One artifact kind scanned to 0 files ⇒ `NE4004`, exit code 1: there is no empty "PASS".
+comparison. On `sim`/`linux`, a normative trace recording a `gate_digest` different from what the
+checkout compiles is likewise ⇒ `NE4003`, no comparison (RFC-0008): a normative trace must be decided
+by the very gate it was recorded with. `neuroedge replay` on a user's own trace is **not** an error:
+the gate may have been tightened on purpose (dev quickstart, hour 3) — replay still recomputes the
+verdicts, reports `SAFETY REGRESSION` as before on any golden difference, and adds a warning naming
+the gate that changed (old digest → new digest). A trace without `gate_digest` (recorded before
+RFC-0008) replays exactly as before.
+One artifact kind scanned to 0 files ⇒ `NE4004`, exit code 1: there is no empty "PASS".
 
 ## 6. What equivalence does not promise
 

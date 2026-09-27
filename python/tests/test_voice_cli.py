@@ -93,6 +93,30 @@ def test_a_voice_file_runs_the_command_through_the_gate(project, tmp_path):
         assert (w.getframerate(), w.getnchannels()) == (RATE, 1)
 
 
+def test_record_hashes_a_voice_session_by_default(project, tmp_path):
+    agent, wav = project()
+    out = tmp_path / "traces" / "voice.json"
+    result = invoke("record", "--agent", agent, "--voice-file", wav, "--out", out)
+    assert result.exit_code == 0, result.output
+    trace = load_trace(out)
+    assert trace["metadata"]["anonymized"] is True
+    assert "mở cửa" not in json.dumps(trace["events"], ensure_ascii=False)
+    (heard,) = [e for e in trace["events"] if e["type"] == "stt_result"]
+    assert heard["data"]["text"].startswith("sha256:") and heard["offset_ms"] == 2600
+
+
+def test_record_raw_keeps_a_voice_transcript_and_says_so(project, tmp_path):
+    agent, wav = project()
+    out = tmp_path / "voice.json"
+    result = invoke("record", "--agent", agent, "--voice-file", wav, "--out", out, "--raw")
+    assert result.exit_code == 0, result.output
+    trace = load_trace(out)
+    assert trace["metadata"]["anonymized"] is False
+    (heard,) = [e for e in trace["events"] if e["type"] == "stt_result"]
+    assert heard["data"]["text"] == "mở cửa"
+    assert "keeps the user's words" in result.output
+
+
 def test_record_anonymises_a_voice_session(project, tmp_path):
     agent, wav = project()
     out = tmp_path / "traces" / "voice.json"

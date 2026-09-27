@@ -111,11 +111,27 @@ def test_trace_out_writes_a_valid_trace_of_the_session(villa, tmp_path):
     trace = load_trace(out)  # validates against schemas/trace.v1.json
     assert trace["metadata"]["target"] == "sim"
     assert trace["metadata"]["agent_version"] == "villa-concierge@0.1.0"
+    # NFR-PRIV-03: a --trace-out file stores the decision, not the words.
+    assert trace["metadata"]["anonymized"] is True
+    assert "mở cửa phòng 101" not in out.read_text(encoding="utf-8")
+    (text_input,) = [e for e in trace["events"] if e["type"] == "text_input"]
+    assert text_input["data"]["text"].startswith("sha256:")
     types = [event["type"] for event in trace["events"]]
     assert types[:2] == ["text_input", "intent_extracted"]
     verdicts = [e["data"] for e in trace["events"] if e["type"] == "gate_evaluation_result"]
     assert [v["verdict"] for v in verdicts] == ["ALLOW"]
     assert "actuator_command" in types
+
+
+def test_trace_out_raw_keeps_the_words_and_says_so(villa, tmp_path):
+    out = tmp_path / "raw.json"
+    result = run(villa, "-c", "mở cửa phòng 101", "--trace-out", str(out), "--raw")
+    assert result.exit_code == 0, result.output
+    trace = load_trace(out)
+    assert trace["metadata"]["anonymized"] is False
+    (text_input,) = [e for e in trace["events"] if e["type"] == "text_input"]
+    assert text_input["data"]["text"] == "mở cửa phòng 101"
+    assert "keeps the user's words" in result.output
 
 
 def test_a_blocked_session_trace_has_no_actuator_command(villa, tmp_path):

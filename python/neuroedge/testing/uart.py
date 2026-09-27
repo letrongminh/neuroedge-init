@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import Any
 
 from ..errors import TraceValidationError
-from .recorder import TraceRecorder
+from .recorder import DEFAULT_ANONYMIZE, TraceRecorder
 
 PREFIX = "NE1 "
 LINE_MAX = 512  # bytes, prefix included (ne_trace.h NE_TRACE_LINE_MAX)
@@ -72,7 +72,7 @@ class DeviceSession:
     def session_id(self) -> str:
         return f"sess_{self.info['boot_id']}{self.index:02x}"
 
-    def recorder(self, *, anonymize: bool = False) -> TraceRecorder:
+    def recorder(self, *, anonymize: bool = DEFAULT_ANONYMIZE) -> TraceRecorder:
         """The session as a `TraceRecorder`: the device's events, the host's metadata."""
         recorder = TraceRecorder(
             target="esp32s3",

@@ -59,6 +59,16 @@ def entry_for(home: Path, *extra: str) -> dict:
 # --- the printed entry ----------------------------------------------------------------------------
 
 
+def test_a_raw_entry_forwarded_to_the_server(home):
+    # NFR-PRIV-03: `--raw` is passed on, so the spawned server writes raw text —
+    # and the CLI says so where the person can see it.
+    entry = entry_for(home, "--trace-out", "out/t.json", "--raw")
+    assert entry["args"][-1:] == ["--raw"]
+    result = desktop_config("--agent", str(home), "--trace-out", "out/t.json", "--raw")
+    assert result.exit_code == 0, result.output
+    assert "keeps the user's words" in result.output
+
+
 def test_the_entry_uses_only_absolute_paths(home, root, monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)  # a relative --agent is resolved against where you ran it
     relative = os.path.relpath(home, tmp_path)
@@ -152,6 +162,7 @@ def test_desktop_starts_the_printed_entry_from_slash_with_a_minimal_path(home, t
     # The trace path was absolute, so it landed here and not under `/`.
     trace = poll(lambda: trace_out.exists() and json.loads(trace_out.read_text("utf-8")))
     validate_trace(trace)
+    assert trace["metadata"]["anonymized"] is True  # NFR-PRIV-03: hashed by default
     (call,) = [e["data"] for e in trace["events"] if e["type"] == "tool_call"]
     assert (call["name"], call["source"]) == ("light_on", "mcp")
 

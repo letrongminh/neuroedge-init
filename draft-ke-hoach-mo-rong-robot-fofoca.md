@@ -135,7 +135,7 @@ từng task: `neuroedge-roadmap.md`.
 | Secure Boot, mã hóa flash, nút ngắt micro | Đặc tả; task TSK-S6-05 | `neuroedge-prd.md` §9.4 |
 | TLS 1.3/mTLS/cert thiết bị/thu hồi | Task: TSK-K2-04 (danh tính + chứng chỉ thiết bị), TSK-P2-04 (MCP mạng + mTLS), TSK-W2-01 (mTLS hoặc PSK giữa Pi và node); thu hồi (NFR-SEC-05) chưa có task; PRD ghi "cần tiêu chí" | NFR-SEC-04/05, `neuroedge-prd.md` Phụ lục A.3 |
 | OTA ký số | Đặc tả; task TSK-S6-01…04 | NFR-SEC-06, FR-OTA (`neuroedge-prd.md` §5.3) |
-| Quyền riêng tư (vision, ẩn danh trace) | Luật đã có; `record --anonymize` có nhưng chưa là mặc định | TSK-I1-01 (FR-TRC-06/07) |
+| Quyền riêng tư (vision, ẩn danh trace) | Luật đã có; vết ghi băm chữ tại nguồn **mặc định** (`--raw` giữ nguyên văn), TSK-I1-01 | TSK-I1-01 (FR-TRC-06/07) |
 | Ký gate/trace | Chưa có; `gate_digest` chỉ truy vết, không chứng thực; task TSK-W2-04 | `docs/spec/threat_model.md` §4 |
 | Giấy phép/port OSS | Q-11 + 5 nghĩa vụ + CI; **SBOM chưa có** (TSK-W0-02) | `CONTRIBUTING.md` §4, `NOTICE` |
 | Phân tầng target 1/2/3 | Q-13 đã chốt; RFC-0002 (TSK-V1a-01); `TARGET_TIERS` chưa vào mã | `python/neuroedge/hal/board.py` (`SUPPORTED_TARGETS`) |

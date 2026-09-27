@@ -15,7 +15,7 @@ kiểm một phần · **chưa đo** — chưa có bằng chứng.
 | Độ tin cậy (REL) | Khi một phần hỏng thì sao? | Fail-closed mặc định; bộ ngắt mạch; vết ghi chuẩn mực đóng băng | đã kiểm (REL-02); REL-01, 03: chưa |
 | Tài nguyên (RES) | Có vừa chip không? Có chạy khi mất mạng? | `NETR` nhị phân, walker không cấp phát; fallback cục bộ | một phần |
 | Hiệu năng (PERF) | Có đủ nhanh? | Ngân sách thời gian mỗi gate, cưỡng chế fail-closed; đo từng chặng | công cụ có; ngưỡng **chưa đo** |
-| Riêng tư (PRIV) | Dữ liệu nào được lưu? | Không lưu âm thanh; ẩn danh tại nguồn | một phần |
+| Riêng tư (PRIV) | Dữ liệu nào được lưu? | Không lưu âm thanh; băm tại nguồn mặc định | đã kiểm (PRIV-02, 03, 04); PRIV-01: chưa có test riêng |
 | Quan sát (OBS) | Có hiểu được điều đã xảy ra? | Một vết ghi mỗi phiên; độ trễ từng chặng; tỷ lệ System 1/2 | đã kiểm |
 | Tương thích (COMP) | Có mở và thay được? | Lược đồ mở qua RFC; provider thay được; Python 3.11+ | một phần (ARM64 chưa) |
 
@@ -69,8 +69,8 @@ không gọi model thật.
 |:---|:---|:---|:---|
 | PRIV-01 Âm thanh không lưu mặc định | Sự kiện âm thanh chỉ mang siêu dữ liệu (năng lượng, thời lượng, digest) | Không có trường PCM nào trong mã | theo thiết kế, chưa có test riêng |
 | PRIV-02 Cloud-first, người dùng chọn nhà cung cấp | Mọi model sau giao thức; adapter tự viết | `test_providers.py` | đã kiểm |
-| PRIV-03 Vết ghi mặc định lưu quyết định, không lưu dữ liệu thô | Ẩn danh là tuỳ chọn (`--anonymize`) | Mặc định vết ghi **lưu chữ thô** (câu gõ, bản chép lời) | **khoảng trống cần quyết**: PRD chưa nói "dữ liệu thô" có gồm chữ hay không (TSK-I1-01 đang hoãn) |
-| PRIV-04 Chế độ ẩn danh băm tại nguồn, replay vẫn chạy | `TraceRecorder` băm `text`, `utterance`, `transcript` | `test_recorder.py`, `test_voice_speech.py`, `test_uart_trace.py` | đã kiểm |
+| PRIV-03 Vết ghi mặc định lưu quyết định, không lưu dữ liệu thô | Mặc định băm tại nguồn; `--raw` là cách bật tường minh giữ nguyên văn, vết ghi đó mang `metadata.anonymized = false` | `test_recorder.py::test_the_default_hashes_raw_text_and_keeps_every_decision`, `test_cli_run.py::test_trace_out_writes_a_valid_trace_of_the_session`, `test_uart_trace.py::test_anonymize_hashes_raw_text_at_the_source` | đã kiểm |
+| PRIV-04 Băm tại nguồn không phá vỡ khả năng replay | `TraceRecorder` băm `text`, `utterance`, `transcript` | `test_recorder.py` (kể cả `test_record_replay_matches_between_the_default_and_a_raw_trace`), `test_voice_speech.py`, `test_uart_trace.py` | đã kiểm |
 
 ## 7. Quan sát — NFR-OBS
 

@@ -3,7 +3,7 @@ Record a session to a `trace.v1` file (TSK-S3-01, FR-CI-01, FR-TRC-01→07).
 
 `TraceRecorder` is the session's `EventLog`: every component (HAL, SystemOne,
 Gate Engine, `c.do()`) already writes to it, so recording adds only the file
-and anonymisation. What a session writes, in order:
+and the hashing. What a session writes, in order:
 
     text_input / audio_in_*          what came in
     intent_extracted                 what SystemOne (or the grammar) decided
@@ -18,21 +18,29 @@ and anonymisation. What a session writes, in order:
 and, when the file is written, one `session_summary` — the System 1 / System 2
 ratio of the session (`engine/latency.py`).
 
-`anonymize=True` (FR-TRC-07) replaces raw text **at the source** — before it
-reaches the in-memory log — with ``sha256:<hex>``, and leaves every decision
-field untouched, so the trace still replays to the same verdicts.
+By default (NFR-PRIV-03, FR-TRC-07, TSK-I1-01) the recorder replaces raw text
+**at the source** — before it reaches the in-memory log — with ``sha256:<hex>``,
+and leaves every decision field untouched, so the trace still replays to the
+same verdicts. A trace that keeps text verbatim is an explicit opt-in
+(`--raw` on the CLI, ``anonymize=False`` here) and carries
+``metadata["anonymized"] = false`` so a reader always knows which it is.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import re
 import unicodedata
 from pathlib import Path
 from typing import Any
 
 from ..engine.trace_sink import Clock, EventLog, monotonic_ms
 from ..trace import json_safe, validate_trace
+
+# The default every trace writer shares: a trace stores decisions, not the
+# user's words. `--raw` (or `anonymize=False`) is the explicit way out.
+DEFAULT_ANONYMIZE = True
 
 # Fields that carry what a person said or heard. Decision fields (intent,
 # verdict, evaluations, pins) are never hashed: they are what a replay checks.
@@ -44,9 +52,17 @@ def digest_text(text: str) -> str:
     return "sha256:" + hashlib.sha256(normalised).hexdigest()
 
 
+# A value already hashed by `digest_text`: hashing it again would turn the same words
+# into a different digest in every trace that passes through a replay.
+_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+
+
 def anonymise(data: dict[str, Any]) -> dict[str, Any]:
+    """Hash every raw text field; idempotent, so a hashed trace stays comparable."""
     return {
-        key: digest_text(value) if key in RAW_TEXT_FIELDS and isinstance(value, str) else value
+        key: digest_text(value)
+        if key in RAW_TEXT_FIELDS and isinstance(value, str) and not _DIGEST.fullmatch(value)
+        else value
         for key, value in data.items()
     }
 
@@ -58,7 +74,7 @@ class TraceRecorder(EventLog):
         target: str = "sim",
         board_id: str = "sim-default",
         agent_version: str = "unknown@0.0.0",
-        anonymize: bool = False,
+        anonymize: bool = DEFAULT_ANONYMIZE,
         clock: Clock = monotonic_ms,
         session_id: str | None = None,
         path: str | Path | None = None,
@@ -72,8 +88,8 @@ class TraceRecorder(EventLog):
         )
         self.anonymize = anonymize
         self.path = None if path is None else Path(path)
-        if anonymize:
-            self.metadata["anonymized"] = True
+        # The marker goes on every trace, so a reader always knows which it holds.
+        self.metadata["anonymized"] = bool(anonymize)
 
     def emit(self, type: str, data: dict[str, Any]) -> None:
         super().emit(type, anonymise(data) if self.anonymize else data)

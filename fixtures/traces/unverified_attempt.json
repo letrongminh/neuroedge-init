@@ -25,7 +25,7 @@
     {
       "offset_ms": 620,
       "type": "gate_evaluation_begin",
-      "data": { "gate": "unlock_door@1.2.0" }
+      "data": { "gate": "unlock_door@1.2.0", "gate_digest": "sha256:2c20dc42616dbf9a3bf16b7967c3b01faa579e1186f55b928a85070a318a9ab5" }
     },
     {
       "offset_ms": 660,

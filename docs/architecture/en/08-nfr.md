@@ -15,7 +15,7 @@ partial check exists · **not measured yet** — no evidence yet.
 | Reliability (REL) | What happens when a part fails? | Fail-closed default; circuit breaker; normative traces frozen | checked (REL-02); REL-01, 03: not yet |
 | Resources (RES) | Does it fit the chip? Does it run offline? | Binary `NETR`, non-allocating walker; local fallback | partial |
 | Performance (PERF) | Is it fast enough? | Time budget per gate, fail-closed enforcement; per-stage measurement | tools exist; thresholds **not measured yet** |
-| Privacy (PRIV) | What data is stored? | No audio stored; anonymization at the source | partial |
+| Privacy (PRIV) | What data is stored? | No audio stored; hashing at the source by default | checked (PRIV-02, 03, 04); PRIV-01: no dedicated test yet |
 | Observability (OBS) | Can we understand what happened? | One trace per session; per-stage latency; System 1/2 ratio | checked |
 | Compatibility (COMP) | Can it be opened and swapped? | Schemas opened via RFC; providers swappable; Python 3.11+ | partial (ARM64 not yet) |
 
@@ -69,8 +69,8 @@ real-time voice session and CI does not call real models.
 |:---|:---|:---|:---|
 | PRIV-01 Audio not stored by default | Audio events carry metadata only (energy, duration, digest) | No PCM field anywhere in the code | by design, no dedicated test yet |
 | PRIV-02 Cloud-first, user chooses the provider | Every model behind a protocol; self-written adapters | `test_providers.py` | checked |
-| PRIV-03 Traces store decisions by default, not raw data | Anonymization is optional (`--anonymize`) | By default traces **store raw text** (typed sentences, transcripts) | **gap needing a decision**: PRD does not say whether "raw data" includes text (TSK-I1-01 on hold) |
-| PRIV-04 Anonymization mode hashes at the source, replay still runs | `TraceRecorder` hashes `text`, `utterance`, `transcript` | `test_recorder.py`, `test_voice_speech.py`, `test_uart_trace.py` | checked |
+| PRIV-03 Traces store decisions by default, not raw data | Hashed at the source by default; `--raw` is the explicit opt-in that keeps text verbatim, and that trace carries `metadata.anonymized = false` | `test_recorder.py::test_the_default_hashes_raw_text_and_keeps_every_decision`, `test_cli_run.py::test_trace_out_writes_a_valid_trace_of_the_session`, `test_uart_trace.py::test_anonymize_hashes_raw_text_at_the_source` | checked |
+| PRIV-04 Hashing at the source does not break replay | `TraceRecorder` hashes `text`, `utterance`, `transcript` | `test_recorder.py` (including `test_record_replay_matches_between_the_default_and_a_raw_trace`), `test_voice_speech.py`, `test_uart_trace.py` | checked |
 
 ## 7. Observability — NFR-OBS
 

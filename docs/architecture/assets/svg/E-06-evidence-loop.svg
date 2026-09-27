@@ -30,7 +30,7 @@
 <rect x="440" y="150" width="300" height="120" rx="10" fill="#fef9c3" stroke="#a16207" stroke-width="1.6"/>
 <text x="590.0" y="196.8" font-size="15" fill="#422006" text-anchor="middle" font-weight="700">TraceRecorder</text>
 <text x="590.0" y="217.0" font-size="12.5" fill="#422006" text-anchor="middle">validates on save</text>
-<text x="590.0" y="235.1" font-size="12.5" fill="#422006" text-anchor="middle">--anonymize hashes text</text>
+<text x="590.0" y="235.1" font-size="12.5" fill="#422006" text-anchor="middle">hashes text unless --raw</text>
 <rect x="440" y="440" width="300" height="130" rx="10" fill="#fef9c3" stroke="#a16207" stroke-width="1.6"/>
 <text x="590.0" y="491.8" font-size="15" fill="#422006" text-anchor="middle" font-weight="700">UART reader</text>
 <text x="590.0" y="512.0" font-size="12.5" fill="#422006" text-anchor="middle">record --target esp32s3</text>

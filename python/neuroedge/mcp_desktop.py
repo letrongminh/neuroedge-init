@@ -75,7 +75,13 @@ def _pythonpath_pin(interpreter: str) -> str | None:
 
 
 def server_entry(
-    agent: Path, *, ui: bool, port: int, trace_out: Path | None, interpreter: str | None = None
+    agent: Path,
+    *,
+    ui: bool,
+    port: int,
+    trace_out: Path | None,
+    raw: bool = False,
+    interpreter: str | None = None,
 ) -> dict[str, Any]:
     """One `mcpServers` value: absolute interpreter, module form, absolute paths."""
     # abspath, not resolve: a venv's python is a symlink, and resolving it leaves the venv.
@@ -85,6 +91,8 @@ def server_entry(
         args += ["--ui", "--port", str(port)]
     if trace_out is not None:
         args += ["--trace-out", str(trace_out.expanduser().resolve())]
+    if raw:
+        args += ["--raw"]
     entry: dict[str, Any] = {"command": command, "args": args}
     pin = _pythonpath_pin(command)
     if pin is not None:

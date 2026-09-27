@@ -139,8 +139,9 @@ NOT_RUN = {
         "needs [stt]/[tts] in agent.toml and a WAV file; tests/test_voice_cli.py runs it on the "
         "fake providers"
     ),
-    "neuroedge record --voice-file turn.wav --anonymize   # transcripts hashed in the trace": (
-        "as above"
+    "neuroedge record --voice-file turn.wav   # transcripts hashed in the trace": (
+        "needs [stt]/[tts] in agent.toml and a WAV file; tests/test_voice_cli.py runs it on the "
+        "fake providers"
     ),
     "neuroedge run --voice-file turn.wav --target linux   # real lines; the WAV is audio.in": (
         "needs [stt]/[tts] in agent.toml, a WAV file and GPIO lines; "

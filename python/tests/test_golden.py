@@ -65,6 +65,16 @@ def test_noise_is_ignored(traces_dir):
     assert GoldenComparator().compare(actual, golden).ok
 
 
+def test_gate_digest_in_the_recording_is_not_compared(traces_dir):
+    "RFC-0008: gate_digest is provenance of a gate_evaluation_begin; decisions are compared."
+    golden = canonical(traces_dir, "happy-path")
+    actual = copy.deepcopy(golden)
+    for event in actual["events"]:
+        if event["type"] == "gate_evaluation_begin":
+            event["data"]["gate_digest"] = "sha256:" + "0" * 64
+    assert GoldenComparator().compare(actual, golden).ok
+
+
 def test_a_decision_field_the_golden_lacks_is_not_compared(traces_dir):
     # The canonical unverified trace predates `reason`; the live engine adds it.
     golden = canonical(traces_dir, "unverified_attempt")
@@ -195,3 +205,39 @@ def test_replay_writes_the_replayed_trace(traces_dir, tmp_path):
     assert _commands(json.loads(out.read_text("utf-8"))) == [
         {"pin": "door_lock", "operation": "pulse", "duration_ms": 30000}
     ]
+
+
+def test_the_replayed_trace_is_marked_and_raw_is_opt_in(traces_dir, tmp_path):
+    # NFR-PRIV-03: a --trace-out file is written hashed by default; --raw says so.
+    from neuroedge.trace import validate_trace
+
+    default = tmp_path / "hashed.json"
+    result = runner.invoke(
+        app, ["replay", str(traces_dir / "happy-path.json"), "--trace-out", str(default)]
+    )
+    assert result.exit_code == 0, result.output
+    validate_trace(json.loads(default.read_text("utf-8")))
+    assert json.loads(default.read_text("utf-8"))["metadata"]["anonymized"] is True
+    raw = tmp_path / "raw.json"
+    result = runner.invoke(
+        app,
+        ["replay", str(traces_dir / "happy-path.json"), "--trace-out", str(raw), "--raw"],
+    )
+    assert result.exit_code == 0, result.output
+    document = json.loads(raw.read_text("utf-8"))
+    assert document["metadata"]["anonymized"] is False
+    assert "keeps the user's words" in result.output
+    validate_trace(document)
+
+
+def test_raw_cannot_unhash_a_hashed_recording(traces_dir, tmp_path):
+    # NFR-PRIV-03: `--raw` on replay keeps what the recording kept; a hashed recording's
+    # replayed trace is still hashed, so it must still say `anonymized: true`.
+    recorded = json.loads((traces_dir / "happy-path.json").read_text("utf-8"))
+    recorded["metadata"]["anonymized"] = True
+    source = tmp_path / "hashed-recording.json"
+    source.write_text(json.dumps(recorded), encoding="utf-8")
+    out = tmp_path / "replayed.json"
+    result = runner.invoke(app, ["replay", str(source), "--trace-out", str(out), "--raw"])
+    assert result.exit_code == 0, result.output
+    assert json.loads(out.read_text("utf-8"))["metadata"]["anonymized"] is True

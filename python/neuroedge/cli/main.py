@@ -71,14 +71,24 @@ err_console = Console(stderr=True)
 MCP_INIT_TIMEOUT_S = 30.0
 
 
-def _fail(error: NeuroEdgeError) -> None:
+def _fail(error: NeuroEdgeError, code: int = 1) -> None:
     """Render a three-part diagnostic to stderr and exit non-zero."""
     err_console.print(f"[bold red]✗ {error.code}[/bold red] [cyan]{escape(error.where)}[/cyan]")
     err_console.print(f"  [bold]why:[/bold] {escape(error.why)}")
     if isinstance(getattr(error, "principle", None), int):
         err_console.print(f"  [bold]rule:[/bold] Proposal Appendix B.5 principle {error.principle}")
     err_console.print(f"  [bold]fix:[/bold] {escape(error.how)}")
-    raise typer.Exit(code=1)
+    raise typer.Exit(code=code)
+
+
+def _warn_raw() -> None:
+    """One stderr line whenever `--raw` writes a trace: the file keeps the user's words."""
+    err_console.print(
+        "warning: --raw keeps the user's words in the trace file as plain text "
+        "(metadata.anonymized = false)",
+        markup=False,
+        highlight=False,
+    )
 
 
 # Targets `replay` knows but cannot replay an arbitrary trace on yet, and the task that
@@ -652,7 +662,10 @@ def mcp_serve(
         None, "--board", "-b", help="Board profile id (default: the target's reference board)"
     ),
     trace_out: Path = typer.Option(
-        None, "--trace-out", help="Write the session trace here on exit"
+        None, "--trace-out", help="Write the session trace here on exit (text hashed by default)"
+    ),
+    raw: bool = typer.Option(
+        False, "--raw", help="With --trace-out: keep the user's words in the trace as plain text"
     ),
     registry: Path | None = REGISTRY_OPTION,
     ui: bool = typer.Option(
@@ -685,7 +698,15 @@ def mcp_serve(
     except NeuroEdgeError as error:
         _fail(error)
         return
-    session = _start_session("mcp serve", agent, target, board, registry, ui=ui)
+    session = _start_session(
+        "mcp serve",
+        agent,
+        target,
+        board,
+        registry,
+        events=_trace_log(trace_out, raw),
+        ui=ui,
+    )
     page = _mcp_page(session, port) if ui else None
     # stdout is the protocol channel; anything for people goes to stderr.
     err_console.print(
@@ -801,6 +822,9 @@ def mcp_desktop_config(
     trace_out: Path = typer.Option(
         None, "--trace-out", help="Have the server write its session trace here on exit"
     ),
+    raw: bool = typer.Option(
+        False, "--raw", help="With --trace-out: have the server keep the user's words in the trace"
+    ),
     name: str = typer.Option(None, "--name", help="Key under mcpServers (default: agent name)"),
     write: bool = typer.Option(
         False, "--write", help="Write the entry into Claude Desktop's config (with a backup)"
@@ -831,7 +855,9 @@ def mcp_desktop_config(
     agent_path = (agent or _default_agent()).expanduser().resolve()
     session = _start_session("mcp desktop-config", agent_path, "sim", "sim-default", None)
     key = name or session.manifest.name
-    entry = server_entry(agent_path, ui=ui, port=port, trace_out=trace_out)
+    entry = server_entry(agent_path, ui=ui, port=port, trace_out=trace_out, raw=raw)
+    if raw and trace_out is not None:
+        _warn_raw()
     if "env" in entry:
         typer.echo(
             "note: this interpreter does not import this neuroedge on its own; "
@@ -1017,7 +1043,11 @@ def verify(
                 else:
                     if target == "linux":
                         _exit_on_signals()  # the replay drives real lines
-                    result = asyncio.run(TracePlayer(path, target=target).replay())
+                    # A canonical trace must be decided by the very gate it was recorded
+                    # with (RFC-0008): a different gate_digest is refused, not compared.
+                    result = asyncio.run(
+                        TracePlayer(path, target=target, enforce_gate_digests=True).replay()
+                    )
                     verdicts = result.verdicts
                 diff = GoldenComparator().compare(result, load_trace(path))
             except NeuroEdgeError as error:
@@ -1100,9 +1130,9 @@ def _device_replay(sessions, path: Path, port: str) -> dict[str, Any]:
     """
     from ..engine.canonical import digest
     from ..engine.compiler import load_agent_manifest, resolve_gates
-    from ..engine.decision_tree import compile_tree
     from ..errors import ReplayError
     from ..paths import fixtures_dir
+    from ..testing.player import gate_digest_changes
 
     stale = "the firmware is stale: python/.venv/bin/python scripts/gen_firmware_vectors.py, "
     stale += "then build and flash again (QEMU: firmware-qemu.yml)"
@@ -1128,18 +1158,15 @@ def _device_replay(sessions, path: Path, port: str) -> dict[str, Any]:
     gates, problems = resolve_gates(load_agent_manifest(agent / "agent.toml"), None)
     if problems:
         raise problems[0]
-    digests = {tree["gate"]: tree["gate_digest"] for tree in map(compile_tree, gates.values())}
-    for event in trace["events"]:
-        data = event["data"]
-        if event["type"] == "gate_evaluation_begin" and digests.get(data["gate"]) != data.get(
-            "gate_digest"
-        ):
-            raise ReplayError(
-                where=f"{port}: {path.name} {data['gate']}",
-                why=f"the device decides {data['gate']} as {data.get('gate_digest')}, "
-                f"this checkout compiles it to {digests.get(data['gate'])}",
-                how=stale,
-            )
+    changes = gate_digest_changes(trace["events"], gates)
+    if changes:
+        change = changes[0]
+        raise ReplayError(
+            where=f"{port}: {path.name} {change.gate}",
+            why=f"the device decides {change.gate} as {change.recorded}, "
+            f"this checkout compiles it to {change.current}",
+            how=stale,
+        )
     return trace
 
 
@@ -1158,7 +1185,12 @@ def replay(
     golden: Path = typer.Option(
         None, "--golden", "-g", help="Golden reference to compare against (default: the trace)"
     ),
-    trace_out: Path = typer.Option(None, "--trace-out", help="Write the replayed trace here"),
+    trace_out: Path = typer.Option(
+        None, "--trace-out", help="Write the replayed trace here (text hashed by default)"
+    ),
+    raw: bool = typer.Option(
+        False, "--raw", help="With --trace-out: keep text in the replayed trace as written"
+    ),
     registry: Path | None = REGISTRY_OPTION,
 ):
     """
@@ -1230,7 +1262,9 @@ def replay(
         console.print(f"[yellow]! {escape(warning)}[/yellow]")
 
     if trace_out is not None:
-        dump(result, trace_out)
+        dump(result, trace_out, anonymize=not raw)
+        if raw:
+            _warn_raw()
         console.print(f"  replayed trace: {escape(str(trace_out))}")
 
     diff = GoldenComparator().compare(result, reference)
@@ -1332,6 +1366,24 @@ def _exit_on_signals() -> None:
         signal.signal(getattr(signal, name), _exit)
 
 
+def _trace_log(trace_out: Path | None, raw: bool):
+    """
+    The session's event log when `--trace-out` writes a file (NFR-PRIV-03, TSK-I1-01):
+    a `TraceRecorder`, which hashes the user's words at the source unless `--raw`
+    keeps them (then the trace says `metadata.anonymized = false`, said on stderr).
+    Without `--trace-out` no file is written and the session keeps its plain log,
+    so the live page still shows what was said.
+    """
+    if trace_out is None:
+        return None
+    from ..testing.recorder import TraceRecorder
+
+    recorder = TraceRecorder(anonymize=False) if raw else TraceRecorder()
+    if raw:
+        _warn_raw()
+    return recorder
+
+
 def _start_session(
     verb: str,
     agent,
@@ -1428,7 +1480,7 @@ def _voice_session(
     command: str | None,
     ui: bool = False,
     trace_out: Path | None = None,
-    anonymize: bool = False,
+    anonymize: bool = True,
 ) -> int:
     """
     `--voice-file`: the WAV file is the session's `audio.in` (TSK-S3-13). On `linux`
@@ -1489,10 +1541,13 @@ def _voice_session(
 
     clock = VirtualClock()
     events = None
-    if trace_out is not None and verb == "record":
+    if trace_out is not None:
         from ..testing.recorder import TraceRecorder
 
-        events = TraceRecorder(anonymize=anonymize, clock=clock)
+        events = TraceRecorder(clock=clock)  # the default hashes (NFR-PRIV-03)
+        if not anonymize:
+            events = TraceRecorder(anonymize=False, clock=clock)
+            _warn_raw()
     session = _start_session(
         verb,
         agent,
@@ -1531,7 +1586,12 @@ def run(
         None, "--command", "-c", help="Run one typed command and exit (for scripts and CI)"
     ),
     trace_out: Path = typer.Option(
-        None, "--trace-out", help="Write the session trace (trace.v1 JSON) here on exit"
+        None,
+        "--trace-out",
+        help="Write the session trace (trace.v1 JSON) here on exit (text hashed by default)",
+    ),
+    raw: bool = typer.Option(
+        False, "--raw", help="With --trace-out: keep the user's words in the trace as plain text"
     ),
     ui: bool = typer.Option(
         False, "--ui", help="Serve the session as a live page on 127.0.0.1 (FR-TGT-06)"
@@ -1570,11 +1630,14 @@ def run(
             command=command,
             ui=ui,
             trace_out=trace_out,
+            anonymize=not raw,
         )
         raise typer.Exit(code=code)
     from .run import run_session
 
-    session = _start_session("run", agent, target, board, registry, ui=ui)
+    session = _start_session(
+        "run", agent, target, board, registry, events=_trace_log(trace_out, raw), ui=ui
+    )
     if ui:
         from ..sim.ui import serve
 
@@ -1698,6 +1761,9 @@ def record(
     ),
     out: Path = typer.Option(Path("traces"), "--out", "-o", help="Directory, or a .json path"),
     command: str = typer.Option(None, "--command", "-c", help="Record one typed command and exit"),
+    raw: bool = typer.Option(
+        False, "--raw", help="Keep the user's words in the trace as plain text (anonymized: false)"
+    ),
     anonymize: bool = typer.Option(
         False, "--anonymize", help="Hash raw text at the source (FR-TRC-07); verdicts unchanged"
     ),
@@ -1729,10 +1795,27 @@ def record(
     against trace.v1 and written to `--out` (default `traces/<session_id>.json`).
     A trace recorded on `linux` replays on `sim` to the same decisions.
 
+    By default the trace stores decisions, not the user's words: raw text is
+    hashed at the source (NFR-PRIV-03) and the trace says `anonymized: true`.
+    `--raw` keeps text verbatim (it then says so on stderr and the trace says
+    `anonymized: false`). `--anonymize` is still accepted, now the default.
+
     With `--target esp32s3 --port`, the device records: every `NE1` session it
     writes on its UART becomes one trace file, validated before it is written
     (docs/spec/simulation_coverage.md §4, TSK-S4-09).
     """
+    if raw and anonymize:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge record --raw --anonymize",
+                why="--raw keeps the user's words and --anonymize hashes them: one trace, one "
+                "choice",
+                how="keep --raw (text stays verbatim, marked anonymized: false), or drop --raw "
+                "(the default hashes)",
+            ),
+            code=2,
+        )
+    keep_raw = raw  # --anonymize is now the default; only --raw opts out
     if target == "esp32s3" or port is not None:
         if voice_file is not None or voice_out is not None:
             _fail(
@@ -1742,7 +1825,9 @@ def record(
                     how="drop --voice-file to read the device's UART, or drop --port for sim",
                 )
             )
-        _record_from_device(target, port, baud, timeout, out, anonymize, board, agent, command)
+        if keep_raw:
+            _warn_raw()
+        _record_from_device(target, port, baud, timeout, out, keep_raw, board, agent, command)
         return
     if voice_file is not None or voice_out is not None:
         code = _voice_session(
@@ -1755,13 +1840,15 @@ def record(
             voice_out=voice_out,
             command=command,
             trace_out=out,
-            anonymize=anonymize,
+            anonymize=not keep_raw,
         )
         raise typer.Exit(code=code)
     from ..testing.recorder import TraceRecorder
     from .run import run_session
 
-    recorder = TraceRecorder(anonymize=anonymize)
+    recorder = TraceRecorder(anonymize=False) if keep_raw else TraceRecorder()
+    if keep_raw:
+        _warn_raw()
     session = _start_session(
         "record",
         agent,
@@ -1775,7 +1862,7 @@ def record(
     raise typer.Exit(code=code)
 
 
-def _record_from_device(target, port, baud, timeout, out, anonymize, board, agent, command) -> None:
+def _record_from_device(target, port, baud, timeout, out, raw, board, agent, command) -> None:
     """`record --target esp32s3 --port`: the device's sessions, one trace file each."""
     from ..testing.uart import read_sessions
 
@@ -1832,7 +1919,7 @@ def _record_from_device(target, port, baud, timeout, out, anonymize, board, agen
     for session in sessions:
         path = out if single else out / f"{session.session_id}.json"
         try:
-            session.recorder(anonymize=anonymize).save(path)
+            session.recorder(anonymize=not raw).save(path)
         except NeuroEdgeError as error:
             _fail(error)
             return

@@ -34,8 +34,8 @@ static const ne_vector_gate ne_vector_gates[NE_VECTOR_GATES] = {
 };
 #define NE_VECTORS 3u
 static const ne_vector ne_vectors[NE_VECTORS] = {
-    {"happy-path.json", "sha256:2bfb6a3439f8c1b814be7aa355f827f3d301e3902f88366e2bbe6b5cff7fc9dd", "villa-concierge@0.1.0", ne_v_happy_path_steps, 1u},
-    {"network_offline.json", "sha256:2e596633e48e508ba711481e5010107463621747cc7bc30c9abdd3eb20fa2442", "villa-concierge@0.1.0", ne_v_network_offline_steps, 1u},
-    {"unverified_attempt.json", "sha256:9370c5eaa7f9e51813aa231617c02cdd564bb25b4b9db65fee9a5976c30fcdd7", "villa-concierge@0.1.0", ne_v_unverified_attempt_steps, 1u},
+    {"happy-path.json", "sha256:1b865281ee4c2cd75865f87df0d451e826c0f05a866cd704cbcfc68d272b14af", "villa-concierge@0.1.0", ne_v_happy_path_steps, 1u},
+    {"network_offline.json", "sha256:dbb371ed7b9c9767979f20866d5da21deaf7fc45cb459d0edad69b9ccc874489", "villa-concierge@0.1.0", ne_v_network_offline_steps, 1u},
+    {"unverified_attempt.json", "sha256:1e89d755bd1d8387c84406005d5819fdedd1c384ef6147ef4a19ea9375001ed3", "villa-concierge@0.1.0", ne_v_unverified_attempt_steps, 1u},
 };
 #endif /* NE_CANONICAL_VECTORS_H */

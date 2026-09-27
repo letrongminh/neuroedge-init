@@ -96,5 +96,6 @@ toàn chức năng được chứng nhận (`docs/spec/threat_model.md` §3, §3
 | STT | Đoạn âm thanh của một lượt | — |
 | TTS | Câu trả lời cần đọc | — |
 
-Vết ghi mặc định lưu chữ thô (câu gõ, bản chép lời); chế độ `--anonymize` băm chúng tại nguồn mà
-vẫn giữ mọi phán quyết (NFR-PRIV-04). Âm thanh không bao giờ được lưu vào vết ghi.
+Vết ghi mặc định chỉ lưu quyết định: chữ thô (câu gõ, bản chép lời) được băm tại nguồn (NFR-PRIV-03);
+`--raw` là cách bật tường minh giữ nguyên văn, vết ghi đó mang `metadata.anonymized = false` (NFR-PRIV-04).
+Âm thanh không bao giờ được lưu vào vết ghi.

@@ -164,8 +164,11 @@ Sự kiện theo vai trò trong phát lại:
 | **Chỉ từ thiết bị** | `device_info`, `trace_end` | khung phiên UART |
 
 `session_summary` không bao giờ được ghi trong phiên: `EventLog.to_trace()` tính và nối nó khi xuất.
-`--anonymize` băm `text`, `utterance`, `transcript` tại nguồn. Ba vết ghi chuẩn mực
-(`fixtures/traces/happy-path.json`, `unverified_attempt.json`, `network_offline.json`) đóng băng bằng RFC.
+Mặc định, vết ghi băm `text`, `utterance`, `transcript` tại nguồn và mang `metadata.anonymized = true`;
+`--raw` giữ nguyên văn, vết ghi đó mang `metadata.anonymized = false` (NFR-PRIV-03). Ba vết ghi chuẩn mực
+(`fixtures/traces/happy-path.json`, `unverified_attempt.json`, `network_offline.json`) đóng băng bằng
+RFC; RFC-0008 thêm `gate_digest` — digest của gate đã quyết từng phán quyết — vào mỗi
+`gate_evaluation_begin` của chúng.
 
 ## 8. Định dạng trên UART
 
