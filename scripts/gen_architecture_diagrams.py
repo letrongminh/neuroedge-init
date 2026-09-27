@@ -331,7 +331,7 @@ def e06_evidence() -> Diagram:
         Box("sess", 60, 150, 300, 120, "Session", ("sim or linux", "run · record · mcp serve"), "container"),
         Box("device", 60, 440, 300, 130, "Device", ("esp32s3 on QEMU", "boot replays the 3", "canonical traces"), "device",
             "partial"),
-        Box("rec", 440, 150, 300, 120, "TraceRecorder", ("validates on save", "--anonymize hashes text"), "test"),
+        Box("rec", 440, 150, 300, 120, "TraceRecorder", ("validates on save", "hashes text unless --raw"), "test"),
         Box("uart", 440, 440, 300, 130, "UART reader", ("record --target esp32s3", "NE1 sessions → trace.v1"), "test"),
         Box("trace", 820, 290, 300, 130, "trace.v1.json", ("facts · verdicts · pins", "one file per session"), "store"),
         Box("canon", 820, 560, 300, 120, "Canonical traces", ("happy-path · unverified", "network_offline — frozen"),
