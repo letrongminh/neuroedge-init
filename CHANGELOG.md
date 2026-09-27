@@ -312,6 +312,9 @@ bản gói.
 
 #### Đã sửa
 
+- **Component ESP-IDF `ne_ui` thiếu `src/ne_ui_text.c`** trong `SRCS`: `ne_ui.c` gọi `ne_ui_text_truncate` nên
+  firmware sẽ lỗi link ngay khi require `ne_ui` (TSK-S4-01); harness host đã có tệp nên golden không thấy. Kiểm:
+  `pytest tests/test_ui_assets.py -k same_sources` (component và harness biên dịch đúng mọi tệp C của `src/`, `fonts/`).
 - **`replay` trong dự án đã ghi vết ghi không còn đòi `--agent`.** Không có `--agent` thì lệnh dùng `./agent.toml` khi
   đó đúng là agent đã ghi (cùng `[agent] name`), không thì agent mẫu cùng tên; `./agent.toml` của agent khác bị bỏ qua
   kèm một dòng nói rõ, và lỗi chỉ tới flag `--agent`. Kiểm: `pytest tests/test_cli.py -k replay`.
@@ -1021,7 +1024,7 @@ này sẽ làm hỏng những thứ trông không liên quan.
    nhiên. Đó là điều cho phép `neuroedge verify` chứng minh cùng một chuỗi phân
    giải như nhau trên cả ba target.
 5. **Không có bộ lượng giá CEL nào trên vi điều khiển** (Q-9 phương án A). Máy
-   tính biên dịch sang cây quyết định phẳng; firmware chỉ duyệt cây.
+   tính biên dịch sang cây quyết định nhị phân `NETR` v1 (RFC-0003); firmware chỉ duyệt cây.
 6. **Bo mạch tham chiếu duy nhất là ESP32-S3-BOX-3.** Không đổi sang DevKitC —
    số đo spike sẽ vô nghĩa.
 7. **`sim` không được giàu năng lực hơn bo mạch tham chiếu.** Nếu giàu hơn, lời
@@ -1096,8 +1099,8 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
   (vd `door_lock` → `GPIO17`); cảm biến hwmon/IIO cần nhãn hoặc `NEUROEDGE_LINUX_SENSORS`. Chưa chạy trên Pi thật
   (nightly TSK-I2-01).
 - ❌ **MCP chỉ qua stdio** (`TODOS.md` #24, #25). Không có transport mạng.
-- ❌ **Chưa phát hành ra ngoài.** Tag trước I6 là nội bộ; PyPI và repo công khai mở ở I6 (Q-39,
-  TSK-S3-14, `docs/release.md`).
+- ❌ **Chưa phát hành ra ngoài.** Kho đã công khai từ 2026-09-25 (TSK-I6-01, Q-45), nhưng tag trước I6 là nội bộ;
+  PyPI mở ở I6 (Q-39, TSK-S3-14, `docs/release.md`).
 - ❌ **Chưa có CEL.** `allow_when` chỉ nhận dạng mapping toán tử (TSK-S2-06 hoãn, `TODOS.md` #42).
 - ❌ **Chưa có số đo bộ nhớ trên bo mạch.** CI đo sàn tĩnh và heap QEMU mỗi PR (TSK-S4-11, `docs/reports/memory_spike_report.md` §4.1); áp lực lúc chạy âm thanh chờ TSK-S1-10. Xem §3.4.
 
