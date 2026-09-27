@@ -184,24 +184,81 @@ def neuroedge(*args: str, stdin: str = "", timeout: float = 30) -> subprocess.Co
     )
 
 
-def test_a_session_on_linux_decides_on_the_kernel_reading_and_replays(lm75, tmp_path: Path):
-    set_temperature(26.5)
-    out = tmp_path / "factory.json"
-    done = neuroedge(
-        "record", "--target", "linux", "--agent", str(FACTORY), "--out", str(out),
-        stdin="bật quạt\ntắt quạt\nexit\n",
-    )  # fmt: skip
+def lm75_hwmon(device: str, timeout: float = 5.0) -> Path:
+    """The hwmon directory of the lm75 bound to `device` — found by name, as the HAL does."""
+    deadline = time.monotonic() + timeout
+    while True:
+        for directory in Path("/sys/class/hwmon").glob("hwmon*"):
+            name = directory / "name"
+            if (
+                name.exists()
+                and name.read_text(encoding="ascii").strip() == "lm75"
+                and (directory / "device").resolve().name == device
+            ):
+                return directory
+        assert time.monotonic() < deadline, f"no lm75 hwmon device on {device}"
+        time.sleep(0.05)
+
+
+def wait_for_kernel(celsius: float, timeout: float = 5.0) -> None:
+    """
+    Wait until the lm75 driver reports the register just written (it refreshes on its
+    own interval), reading sysfs directly: a LinuxHAL here would hold the lines the
+    session under test needs.
+    """
+    path = lm75_hwmon(env("NEUROEDGE_LM75_DEVICE")) / "temp1_input"
+    expected = round(celsius * 1000)
+    deadline = time.monotonic() + timeout
+    while (reported := int(path.read_text(encoding="ascii"))) != expected:
+        assert time.monotonic() < deadline, f"{path} reports {reported}, not {expected}"
+        time.sleep(0.05)
+
+
+def events(trace: dict, kind: str) -> list[dict]:
+    return [event["data"] for event in trace["events"] if event["type"] == kind]
+
+
+@pytest.mark.parametrize(
+    ("celsius", "band", "verdicts", "fan"),
+    [
+        # `normal`: vent_off is allowed; the "có" after it answers nothing.
+        (30.0, "normal", ["ALLOW", "ALLOW"], [("on", 0), ("off", 0)]),
+        # `high`: vent_off asks (on_block: ask); the operator's "có" stops the fan.
+        (45.0, "high", ["ALLOW", "BLOCK", "ALLOW"], [("on", 0), ("off", 0)]),
+        (54.5, "high", ["ALLOW", "BLOCK", "ALLOW"], [("on", 0), ("off", 0)]),
+        # `critical` starts at 55 °C, inclusive: refused, nothing asked, "có" is no answer.
+        (55.0, "critical", ["ALLOW", "BLOCK"], [("on", 0)]),
+        (60.0, "critical", ["ALLOW", "BLOCK"], [("on", 0)]),
+    ],
+)
+def test_the_kernel_reading_decides_the_fan_through_its_band_and_replays(
+    lm75, tmp_path: Path, celsius, band, verdicts, fan
+):
+    set_temperature(celsius)
+    try:
+        wait_for_kernel(celsius)
+        out = tmp_path / "factory.json"
+        done = neuroedge(
+            "record", "--target", "linux", "--agent", str(FACTORY), "--out", str(out),
+            stdin="bật quạt\ntắt quạt\ncó\nexit\n",
+        )  # fmt: skip
+    finally:
+        set_temperature(25.0)
     assert done.returncode == 0, done.stdout + done.stderr
     trace = json.loads(out.read_text(encoding="utf-8"))
-    reads = [e["data"] for e in trace["events"] if e["type"] == "sensor_read"]
-    assert reads and all(r == {"sensor": "temperature", "value": 26.5, "unit": "C", "use": "fact"}
+    reads = events(trace, "sensor_read")
+    assert reads and all(r == {"sensor": "temperature", "value": celsius, "unit": "C", "use": "fact"}
                          for r in reads)  # fmt: skip
-    # The gates compare heat bands; a reading in degrees is no band, so vent_off is refused.
-    assert "ALLOW" in done.stdout and "BLOCK" in done.stdout
+    vent_off = [f for f in events(trace, "gate_facts") if "heat_level" in f]
+    assert vent_off and all(f["heat_level"]["value"] == band for f in vent_off)
+    assert all(f["heat_critical"]["value"] is (celsius >= 55) for f in vent_off)
+    assert [r["verdict"] for r in events(trace, "gate_evaluation_result")] == verdicts
+    assert bool(events(trace, "tool_confirm_requested")) is (band == "high")
 
     sim = replay(out, target="sim", agent=FACTORY)
     linux = replay(out, target="linux", agent=FACTORY)
-    assert linux.verdicts == sim.verdicts == sim.recorded_verdicts
+    assert linux.verdicts == sim.verdicts == sim.recorded_verdicts == verdicts
+    assert linux.pin("gate_relay").commands == sim.pin("gate_relay").commands == fan
 
 
 def test_a_session_whose_sensor_is_not_found_exits_before_any_line(lm75):
@@ -213,3 +270,48 @@ def test_a_session_whose_sensor_is_not_found_exits_before_any_line(lm75):
     )  # fmt: skip
     assert done.returncode == 1, done.stdout + done.stderr
     assert "no hwmon device named 'nothing'" in done.stdout + done.stderr
+
+
+def lm75_driver(action: str, device: str) -> None:
+    """Unbind or bind the kernel's lm75 driver from the chip: the sensor goes away, or back."""
+    subprocess.run(
+        ["sudo", "-n", "tee", f"/sys/bus/i2c/drivers/lm75/{action}"],
+        input=device, text=True, capture_output=True, check=True, timeout=10,
+    )  # fmt: skip
+
+
+def test_a_sensor_that_goes_away_mid_session_leaves_only_its_facts_undecided(lm75, monkeypatch):
+    """
+    Last in the file: it unbinds the driver. The session started on a healthy sensor
+    (preflight read it); then the kernel device disappears. The heat gates refuse
+    without asking, the gates that read no heat fact still decide, and nothing raises.
+    """
+    import asyncio
+
+    from neuroedge.sim import SimSession
+
+    monkeypatch.setenv(SENSORS_ENV, "temperature=hwmon:lm75/temp1")
+    set_temperature(30.0)
+    wait_for_kernel(30.0)
+    session = SimSession.load(FACTORY, target="linux")
+    try:
+        assert asyncio.run(session.handle("tắt báo động")).allowed, "30 °C is `normal`"
+        lm75_driver("unbind", lm75)
+        try:
+            lines = ("bật quạt", "bật báo động", "tắt quạt", "có", "tắt báo động")
+            fan_on, alarm_on, fan_off, yes, alarm_off = [
+                asyncio.run(session.handle(line)) for line in lines
+            ]
+        finally:
+            lm75_driver("bind", lm75)
+            lm75_hwmon(lm75)  # back, for whatever runs next
+        unavailable = session.events.of_type("sensor_unavailable")
+    finally:
+        session.close()
+    assert fan_on.allowed and alarm_on.allowed, "gates that read no heat fact still decide"
+    for turn in (fan_off, alarm_off):
+        assert turn.result.blocked and turn.result.gate.reason == "criterion_unavailable"
+        assert turn.confirmation is None, "nothing a person could stand in for: nothing asked"
+    assert not yes.allowed
+    assert unavailable and all(u["sensor"] == "temperature" for u in unavailable)
+    assert "no hwmon device named 'lm75'" in unavailable[0]["reason"]

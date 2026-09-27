@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +27,7 @@ from rich.table import Table
 
 from ..actions import ActionResult
 from ..errors import NeuroEdgeError
+from ..models import SystemOne
 from ..sim import SimSession, Turn
 
 PROMPT = "neuroedge> "
@@ -34,7 +36,7 @@ EXIT_WORDS = ("exit", "quit", ":q")
 HELP = """\
 Type a command the agent's grammar knows, e.g. "mở cửa phòng 101".
   :facts              show the session facts the gate reads
-  :set <name> <value> set a fact (true/false, a number, or text)
+  :set <name> <value> set a fact (true/false, a number, or text) — not one a sensor decides
   :unset <name>       forget a fact — the gate then treats it as undecided
   :pins               show the virtual pins
   :sensors            show the simulated sensor values
@@ -190,10 +192,17 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
             table.add_row(key, json.dumps(value, ensure_ascii=False))
         for key, (slot, expected) in sorted(session.slot_facts.items()):
             table.add_row(key, f"[dim]from slot {{{slot}}} == {expected!r}[/dim]")
+        for key, rule in sorted(session.sensor_facts.items()):
+            shown = escape(f"from sensor {rule.sensor} ([sim.sensor_facts])")
+            table.add_row(key, f"[dim]{shown}[/dim]")
         console.print(table)
     elif name == "set" and len(rest.split(maxsplit=1)) == 2:
         key, value = rest.split(maxsplit=1)
-        session.facts[key] = parse_value(value)
+        try:
+            session.set_fact(key, parse_value(value))
+        except NeuroEdgeError as error:
+            console.print(f"[yellow]{escape(error.why)}[/yellow] — {escape(error.how)}")
+            return
         console.print(f"  {escape(key)} = {json.dumps(session.facts[key], ensure_ascii=False)}")
     elif name == "unset" and rest.strip():
         session.facts.pop(rest.strip(), None)
@@ -256,13 +265,18 @@ def _turn(text: str, session: SimSession, console: Console, err_console: Console
 def banner(session: SimSession, console: Console) -> None:
     manifest = session.manifest
     gates = ", ".join(f"{key} → {ref}" for key, ref in manifest.gates.items()) or "none"
-    mode = "offline, typed text (Q-15)" if not session.slow.available else "typed text"
+    fast = session.fast
+    cloud_one = isinstance(fast, SystemOne) and fast.primary is not None
+    online = session.slow.available or cloud_one
+    mode = "typed text" if online else "offline, typed text (Q-15)"
     console.print(
         f"[bold]{escape(manifest.label)}[/bold] on [cyan]{escape(session.target)}[/cyan] "
         f"([cyan]{escape(session.hal.board.id)}[/cyan]) · {mode}"
     )
     console.print(f"  gates: {escape(gates)}")
     console.print(f"  grammar: {escape(session.grammar.source)}")
+    if cloud_one:
+        console.print(f"  system 1: {escape(system_one_line(fast))}")
     if session.slow.available:
         console.print(f"  system 2: {escape(system_two_line(session.slow))}")
     for line in mcp_lines(session):
@@ -285,6 +299,21 @@ def mcp_lines(session: SimSession) -> list[str]:
     if not session.slow.available:
         return [f"mcp: {names} — chỉ dùng khi có System 2"]
     return [f"mcp: {names} — thông tin, không phải lệnh (Q-27)"]
+
+
+def system_one_line(fast: SystemOne) -> str:
+    """Which model decides which criteria, and where its key comes from — never the key."""
+    primary = fast.primary
+    config = getattr(primary, "config", None)  # a test double has none
+    name = getattr(primary, "name", "custom")
+    if config is None:
+        return f"{name} {fast.model}"
+    criteria = ", ".join(config.criteria)
+    env = config.api_key_env
+    if env and not os.environ.get(env, "").strip():
+        return f"{name} {config.model} for {criteria} (${env} not set: the grammar decides)"
+    key = f"key from ${env}" if env else f"no key, {config.api_base}"
+    return f"{name} {config.model} for {criteria} ({key}; the grammar if it cannot answer)"
 
 
 def system_two_line(slow) -> str:

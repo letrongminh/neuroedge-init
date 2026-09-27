@@ -1,0 +1,35 @@
+# A person may stand in for `resident_home` only (RFC-0006); risk and the caller still decide.
+schema:  neuroedge.gate/v1
+name:    open_door
+version: 1.0.0
+
+evaluate:
+  resident_home:
+    type: bool
+    instructions: "Chủ nhà đang ở nhà"
+  risk:
+    type: level
+    levels: [low, medium, high]
+    instructions: "Mức rủi ro của yêu cầu"
+  channel:
+    type: choice
+    options: [voice, app, mcp]
+    instructions: "Kênh của yêu cầu"
+  face_match:
+    type: bool
+    instructions: "Khuôn mặt khớp người trong danh sách"
+
+allow_when:
+  resident_home: true
+  risk:          { lte: medium }
+  channel:       { in: [voice, app] }
+  face_match:    { confidence_gte: 0.9 }
+
+on_block:
+  action:   ask
+  message:  "Chủ nhà không có ở nhà — vẫn mở cửa?"
+  confirms: [resident_home]
+
+budget:
+  p95_latency_ms: 200
+  fail:           closed

@@ -1,0 +1,37 @@
+{
+  "description": "Câu hỏi ask của lượt 1 phát hết (T11) mở lượt trả lời 2, nhưng lượt 2 là một lệnh khác (mở cửa); \"có\" ở lượt 3, câu hỏi còn trong TTL, không xác nhận gì: lời nói chỉ trả lời câu hỏi trong lượt trả lời của chính nó (Q-46 (D3)).",
+  "scenario": "V4",
+  "covers": [
+    "T01",
+    "T02",
+    "T04",
+    "T07",
+    "T08",
+    "T11"
+  ],
+  "agent": "voice-door",
+  "params": {
+    "end_of_turn_silence_ms": 700,
+    "listen_timeout_ms": 8000,
+    "think_timeout_ms": 5000,
+    "max_reprompts": 1
+  },
+  "world": {
+    "sensors": {"motion": true}
+  },
+  "inputs": [
+    {"offset_ms": 0, "type": "wake_word_detected", "data": {"word": "hey_neuro", "score": 0.93}},
+    {"offset_ms": 200, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 800, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 1600, "type": "stt_result", "data": {"turn": 1, "text": "tắt đèn"}},
+    {"offset_ms": 3000, "type": "tts_stream_end", "data": {"reason": "done"}},
+    {"offset_ms": 3400, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 3700, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 4500, "type": "stt_result", "data": {"turn": 2, "text": "mở cửa"}},
+    {"offset_ms": 5000, "type": "wake_word_detected", "data": {"word": "hey_neuro", "score": 0.93}},
+    {"offset_ms": 5200, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 5500, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 6300, "type": "stt_result", "data": {"turn": 3, "text": "Có."}}
+  ],
+  "until_ms": 7000
+}

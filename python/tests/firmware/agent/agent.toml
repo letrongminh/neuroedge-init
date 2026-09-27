@@ -1,0 +1,24 @@
+# Fixture agent for the esp32s3 firmware generator (TSK-I3-01, tests/test_firmware_build.py).
+#
+# Small, and each part covers something the sample agents do not all have:
+#   * fixture_open_door — two pins; `ask` with `confirms` (RFC-0006); a level, a
+#                         choice and a confidence floor;
+#   * fixture_buzz      — one pin; argument limits (RFC-0005); `fail: open`;
+#   * fixture_announce  — speech only: its token grants no pin; `escalate`, and a
+#                         message with `*/` and `?` in it (C comment and trigraph).
+# `porch_light` is declared and driven by no action: no token ever grants it.
+[agent]
+name    = "firmware-fixture"
+version = "0.2.0"
+
+[requires]
+"digital.out" = { pins = ["door_lock", "gate_relay", "porch_light"] }
+"audio.out"   = {}
+
+[gates]
+open_door = "gates/open_door@1.0.0.yaml"
+buzz      = "gates/buzz@1.0.0.yaml"
+announce  = "gates/announce@1.0.0.yaml"
+
+[targets]
+supported = ["sim", "esp32s3"]

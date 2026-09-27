@@ -62,5 +62,11 @@ dependencies.lock
 *.elf
 *.map
 
+# OTA signing keys: never in the repository (docs/user/nap-firmware.md §6).
+# The QEMU OTA test makes its throwaway keys under targets/esp32s3/build/, which
+# is ignored above; this covers the default key file of a board build too.
+secure_boot_signing_key.pem
+*.pem
+
 # Agent worktrees (Claude Code) — local only
 .claude/worktrees/

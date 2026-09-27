@@ -90,8 +90,8 @@ def make(tmp_path, fake=None, **kwargs):
     return hal, fake
 
 
-def test_only_audio_is_still_missing_on_linux():
-    assert set(MISSING_ON_LINUX) == {"audio.in", "audio.out"}
+def test_every_primitive_is_implemented_on_linux():
+    assert MISSING_ON_LINUX == {}, "audio was the last one (TSK-S5-08)"
 
 
 # --- sensor.read: hwmon ---------------------------------------------------------------

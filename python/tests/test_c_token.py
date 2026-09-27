@@ -17,7 +17,7 @@ Then what only C has: the full ledger, the millisecond clock wrapping at 2^32,
 the saturating TTL, byte-level tampering; the static budget (no .data/.bss,
 stack <= 512 B); a mutation check (deliberate bugs must be caught); the boot
 self-test `targets/esp32s3/main/gate_selftest.c` on the host; and the committed
-firmware gate headers against a fresh `neuroedge build`.
+agent component `targets/esp32s3/components/ne_agent/` against a fresh `neuroedge build`.
 """
 
 from __future__ import annotations
@@ -35,6 +35,7 @@ from neuroedge.actions.token import TTL_FACTOR, TokenLedger
 from neuroedge.errors import NeuroEdgeError
 
 from .test_c_walker import STACK_LIMIT, STRICT, cc
+from .test_firmware_build import selftest_counts
 
 SLOTS = 4  # NE_TOKEN_SLOTS
 U32 = 1 << 32
@@ -489,7 +490,8 @@ static void fill(void *buf, size_t len) {
 }
 int main(void) {
     char line[96];
-    int rc = neuroedge_gate_selftest(fill, 0x2468u, 4294967000u, line, sizeof line, NULL);
+    int rc = neuroedge_gate_selftest(&ne_agent_linked, fill, 0x2468u, 4294967000u, line,
+                                     sizeof line, NULL);
     puts(line);
     return rc;
 }
@@ -499,6 +501,7 @@ int main(void) {
 def test_the_boot_self_test_passes_on_the_host(root, component, tmp_path):
     main_dir = root / "targets" / "esp32s3" / "main"
     trace_dir = root / "targets" / "esp32s3" / "components" / "ne_trace"
+    agent_dir = root / "targets" / "esp32s3" / "components" / "ne_agent"
     driver = tmp_path / "driver.c"
     driver.write_text(SELFTEST_MAIN)
     exe = tmp_path / "selftest"
@@ -512,11 +515,14 @@ def test_the_boot_self_test_passes_on_the_host(root, component, tmp_path):
         "-I",
         str(trace_dir / "include"),
         "-I",
+        str(agent_dir / "include"),
+        "-I",
         str(main_dir),
         str(component / "src" / "ne_walker.c"),
         str(component / "src" / "ne_token.c"),
         str(trace_dir / "src" / "ne_trace.c"),
         str(main_dir / "gate_selftest.c"),
+        str(agent_dir / "ne_agent.c"),
         str(driver),
         "-o",
         str(exe),
@@ -525,17 +531,18 @@ def test_the_boot_self_test_passes_on_the_host(root, component, tmp_path):
     assert result.returncode == 0, result.stderr
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert result.stdout.strip() == "NE_SELFTEST PASS walker=6 token=6"
+    walker, token = selftest_counts(root / "fixtures" / "agents" / "home-voice" / "agent.toml")
+    assert result.stdout.strip() == f"NE_SELFTEST PASS walker={walker} token={token}"
 
 
-def test_the_firmware_gate_headers_match_a_fresh_build(root):
+def test_the_firmware_agent_component_matches_a_fresh_build(root):
     result = subprocess.run(
         [sys.executable, str(root / "scripts" / "gen_firmware_gates.py"), "--check"],
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0, (
-        "targets/esp32s3/main/gates/ is stale against fixtures/agents/home-voice.\n"
+        "targets/esp32s3/components/ne_agent/ is stale against fixtures/agents/home-voice.\n"
         "Run: python/.venv/bin/python scripts/gen_firmware_gates.py\n"
         f"{result.stdout}{result.stderr}"
     )

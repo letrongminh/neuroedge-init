@@ -826,8 +826,8 @@ room_matches = { slot = "room", equals = "101" }
 temperature  = { value = 24.5, unit = "C" }
 door_contact = true
 
-[sim.sensor_facts]          # dữ kiện gate đọc từ cảm biến: giá trị, hoặc equals / gte / lte
-door_closed = { sensor = "door_contact" }
+[sim.sensor_facts]          # dữ kiện gate đọc từ cảm biến: giá trị, equals, gte / lte, hoặc bands
+door_closed = { sensor = "door_contact" }   # luật: docs/spec/simulation_coverage.md §2
 ```
 
 Tiêu chí không có trong hai bảng và không do lệnh khớp chứng minh (`facts` trong `commands.toml`) là **chưa xác định** → gate chặn. Trong `commands.toml`, mỗi `[[command]]` làm **đúng một việc**: `tool` (tên `@action`; câu khớp thành một **tool call tổng hợp** nguồn `local_grammar`, kèm `arguments` là tham số ← slot và `default_args` là tham số cố định — Q-24; tên cũ `action` vẫn nhận), `say` (câu trả lời cố định), hoặc `ask` (một tác vụ System 2 như `"news"`, kèm `offline_say` khi System 2 không trả lời được); `neuroedge build` từ chối tool không tồn tại, tham số không có trong chữ ký, và `default_args` sai kiểu. Bảng `[mcp]` / `[mcp.servers.<tên>]` khai MCP server bên ngoài mà System 2 được dùng — `command`, `args`, và **`tools`: allowlist các tool thông tin**; tool có hiệu ứng vật lý phải là `@action` có gate (Q-27, `docs/spec/tool_calling.md` §10). `knowledge.toml` cạnh `agent.toml` là knowledge base: mỗi `[[entry]]` có `questions` và `answer`; câu hỏi khớp được tìm cục bộ làm context cho System 2 (RAG), mất mạng thì nói `answer` (`python/neuroedge/models/knowledge.py`).
@@ -1720,7 +1720,7 @@ Quá trình đối chiếu Golden trả lời chính xác câu hỏi: **Với c�
 
 | Vai trò xử lý | Các mô hình tham chiếu tiêu biểu | Chuẩn kết nối |
 |:---|:---|:---|
-| **System One** (Quyết định nhanh, cấu trúc) | Jev · Bộ nhận diện lệnh cố định cục bộ *(fallback, Q-14: ESP-SR MultiNet / TFLite Micro trên `esp32s3`, khớp ngữ pháp trên `sim`)* · Mô hình SLM on-device | OpenAI-compatible · Adapter tùy chỉnh *(mô hình cục bộ)* |
+| **System One** (Quyết định nhanh, cấu trúc) | Jev · Bộ nhận diện lệnh cố định cục bộ *(fallback, Q-14: ESP-SR MultiNet / TFLite Micro trên `esp32s3`, khớp ngữ pháp trên `sim`)* · Mô hình SLM on-device | System One API *(Jev, adapter dựng sẵn — Q-4)* · Adapter tùy chỉnh *(mô hình cục bộ)* |
 | **System Two** (Suy luận ngôn ngữ sâu) | `claude-sonnet-5` · GPT-4o-mini · Qwen 2.5 (3B / 7B / 72B) · Llama 3.2 · Phi-3 Mini | OpenAI-compatible |
 | **Chuyển đổi giọng nói thành văn bản (STT / ASR)** | Whisper (large-v3 / medium / small) · Deepgram Nova-2 · Azure Speech · Google STT · Sherpa-ONNX *(cục bộ)* | OpenAI-compatible *(Whisper API)* · Adapter tùy chỉnh *(Deepgram · Azure · Google)* |
 | **Chuyển đổi văn bản thành giọng nói (TTS)** | OpenAI TTS · ElevenLabs · Azure Speech · Kokoro · Edge-TTS · Piper *(cục bộ)* · Sherpa-ONNX *(cục bộ)* | OpenAI-compatible *(OpenAI TTS)* · Adapter tùy chỉnh *(ElevenLabs · Azure · mô hình cục bộ)* |

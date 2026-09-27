@@ -54,6 +54,16 @@ void neuroedge_memory_report(void);
 void neuroedge_memory_report_json(void);
 
 /*
+ * One machine-readable line of the free heap right now, prefixed
+ * NEUROEDGE_HEAP_JSON (schema neuroedge.heap/v1, TSK-S4-11). The QEMU jobs parse
+ * it (scripts/check_firmware_size.py --heap-log): internal SRAM free at `label`
+ * must already clear the Q-3 floor, since the network and the audio stack only
+ * take more. It is a floor check, never the Q-3 verdict: QEMU has no PSRAM, no
+ * Wi-Fi and no I2S, so the verdict stays with neuroedge_memory_meets_q3_budget().
+ */
+void neuroedge_memory_report_heap_json(const char *label);
+
+/*
  * Compare the final checkpoint against Q-3. Returns true only when every
  * runtime threshold is met. Fails loudly when the audio checkpoint was never
  * reached, because an unmeasured budget must never read as a pass.

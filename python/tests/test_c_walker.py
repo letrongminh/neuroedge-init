@@ -42,23 +42,26 @@ from neuroedge.engine.binary_tree import (
     encode,
 )
 from neuroedge.engine.decision_tree import compile_tree, truth_cases
+from neuroedge.engine.firmware import (
+    ARG_BOOLEAN,
+    ARG_INTEGER,
+    ARG_NUMBER,
+    ARG_STRING,
+    DEGRADED_BUDGET,
+    DEGRADED_NONE,
+    DEGRADED_UNREACHABLE,
+    REASONS,
+)
+from neuroedge.engine.firmware import expected as expected_from_engine
 from neuroedge.engine.gate_resolver import GateRegistry, resolve_gate_document, resolve_gate_file
 from neuroedge.engine.verdict import Fact, Unavailable
 from neuroedge.errors import GateSchemaError
 
 STACK_LIMIT = 512  # bytes per function; the walker has no recursion
-REASONS = {
-    None: 0,
-    "condition_not_met": 1,
-    "criterion_unavailable": 2,
-    "confidence_unavailable": 3,
-    "argument_out_of_range": 4,
-    "gate_unreachable": 5,
-    "budget_exceeded": 6,
-}
-FAIL_MODES = {None: 0, "open": 1, "closed": 2}
-DEGRADED_NONE, DEGRADED_UNREACHABLE, DEGRADED_BUDGET = 0, 1, 2
-T_STRING, T_INTEGER, T_NUMBER, T_BOOLEAN, T_OTHER = 0, 1, 2, 3, 7
+# The walker's enums come from the one host copy the firmware generator ships with
+# (`neuroedge.engine.firmware`): deciding every gate here pins that copy, not a twin.
+T_STRING, T_INTEGER, T_NUMBER, T_BOOLEAN = ARG_STRING, ARG_INTEGER, ARG_NUMBER, ARG_BOOLEAN
+T_OTHER = 7  # no JSON type the walker knows: every limit refuses it
 
 
 @pytest.fixture(scope="module")
@@ -199,6 +202,8 @@ def random_argument(limit, rng: random.Random):
     value = rng.choice(candidates)
     if kind == "integer":
         return rng.choice([int(value), float(int(value)), value + 0.5])
+    if rng.random() < 0.15:  # NaN compares False with every bound; both sides must refuse it
+        return rng.choice([float("nan"), float("inf"), float("-inf")])
     return value
 
 
@@ -285,22 +290,6 @@ def degraded_cases(tree, rng: random.Random, rows: int = 120):
     return out
 
 
-def expected_from_engine(tree, result):
-    names = [n["criterion"] for n in tree["nodes"]]
-    arg_names = [a["name"] for a in tree.get("arguments") or []]
-    verdict = 0 if str(result.verdict) == "ALLOW" else 1
-    reason = REASONS[None if result.reason is None else str(result.reason)]
-    kind = index = 0
-    if verdict == 1 and result.failed_criterion is not None:
-        if reason == REASONS["argument_out_of_range"]:
-            kind, index = 2, arg_names.index(result.failed_criterion)
-        else:
-            kind, index = 1, names.index(result.failed_criterion)
-    confirmed_mask = sum(1 << names.index(c) for c in result.confirmed)
-    answerable = 1 if result.confirms else 0
-    return verdict, reason, kind, index, answerable, confirmed_mask, FAIL_MODES[result.fail_mode]
-
-
 # --- encoding a case for the C runner ---------------------------------------------------------
 
 
@@ -337,7 +326,11 @@ def encode_arg(args, name) -> bytes:
 
 
 def write_cases(path: Path, tree, rows) -> None:
-    """Rows are (facts, args, confirmed, expected[, degraded]); `expected` may omit fail_mode."""
+    """
+    Rows are (facts, args, confirmed, expected[, degraded]); `expected` is the tuple of
+    `neuroedge.engine.firmware.expected`: verdict, reason, failed kind, failed index,
+    answerable, fail mode, confirmed mask.
+    """
     limits = tree.get("arguments") or []
     body = bytearray(struct.pack("<4sIIII", b"NEVC", 2, len(tree["nodes"]), len(limits), len(rows)))
     for facts, args, confirmed, expected, *rest in rows:
@@ -346,8 +339,7 @@ def write_cases(path: Path, tree, rows) -> None:
             body += encode_fact(node, facts.get(node["criterion"]))
         for limit in limits:
             body += encode_arg(args, limit["name"])
-        verdict, reason, kind, index, answerable, mask, *mode = expected
-        fail_mode = mode[0] if mode else 0
+        verdict, reason, kind, index, answerable, fail_mode, mask = expected
         body += struct.pack(
             "<BBBBBBBBI",
             1 if confirmed else 0,
@@ -434,6 +426,7 @@ def test_the_c_walker_reproduces_the_recorded_truth_tables(root, runner, tmp_pat
                 1 if failed else 0,
                 names.index(failed) if failed else 0,
                 0,  # these gates declare no confirms
+                0,  # nor a degraded verdict
                 0,
             )
             rows.append((facts, {}, False, expected))

@@ -204,7 +204,7 @@ def test_the_factory_monitor_template_copies_the_sample_and_its_tests_pass(tmp_p
     assert manifest["agent"]["name"] == "xuong"
     result = _pytest(project)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "4 passed" in result.stdout
+    assert "5 passed" in result.stdout  # 4 on the gates, 1 on heat_level / heat_critical
 
 
 # --- refusals ------------------------------------------------------------------------

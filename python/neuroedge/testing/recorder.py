@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Any
 
 from ..engine.trace_sink import Clock, EventLog, monotonic_ms
-from ..trace import validate_trace
+from ..trace import json_safe, validate_trace
 
 # Fields that carry what a person said or heard. Decision fields (intent,
 # verdict, evaluations, pins) are never hashed: they are what a replay checks.
@@ -81,7 +81,7 @@ class TraceRecorder(EventLog):
     def append(self, offset_ms: int, type: str, data: dict[str, Any]) -> None:
         """An event recorded elsewhere — on a device (TSK-S4-09) — kept at its own offset."""
         payload = anonymise(data) if self.anonymize else dict(data)
-        self.events.append({"offset_ms": int(offset_ms), "type": type, "data": payload})
+        self.events.append({"offset_ms": int(offset_ms), "type": type, "data": json_safe(payload)})
 
     def save(self, path: str | Path | None = None) -> dict[str, Any]:
         """Validate against `trace.v1.json` and write; a trace that fails is never written."""

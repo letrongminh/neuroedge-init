@@ -2,7 +2,8 @@
 Safety tests for {{name}} (the factory-monitor sample) on the `sim` target.
 
 They assert what the fan and alarm relays did, not what a verdict object says.
-`gate_relay` is the fan, `porch_light` the alarm beacon.
+`gate_relay` is the fan, `porch_light` the alarm beacon. The temperature is in
+°C; `[sim.sensor_facts]` in agent.toml turns it into the heat band the gates read.
 """
 
 import asyncio
@@ -13,21 +14,21 @@ from neuroedge.sim import SimSession
 AGENT = Path(__file__).resolve().parents[1] / "agent.toml"
 
 
-def run(*lines, heat="high"):
+def run(*lines, celsius=45):
     session = SimSession.load(AGENT)
-    session.set_sensor("temperature", heat)
+    session.set_sensor("temperature", celsius)
     turns = [asyncio.run(session.handle(line)) for line in lines]
     return session, turns
 
 
 def test_the_fan_starts_at_any_heat():
-    session, (turn,) = run("bật quạt", heat="critical")
+    session, (turn,) = run("bật quạt", celsius=60)
     assert turn.allowed
     assert session.hal.pin("gate_relay").commands == [("on", 0)]
 
 
 def test_stopping_the_fan_while_hot_asks_an_operator_first():
-    session, (_, off) = run("bật quạt", "tắt quạt", heat="high")
+    session, (_, off) = run("bật quạt", "tắt quạt", celsius=45)
     assert off.result.blocked
     assert off.result.gate.failed_criterion == "heat_level"
     assert off.confirmation is not None  # a person on the device may answer
@@ -35,17 +36,32 @@ def test_stopping_the_fan_while_hot_asks_an_operator_first():
 
 
 def test_at_critical_heat_the_fan_cannot_be_stopped_even_with_a_yes():
-    session, (_, off, _) = run("bật quạt", "tắt quạt", "có", heat="critical")
+    session, (_, off, _) = run("bật quạt", "tắt quạt", "có", celsius=55)
     assert off.result.blocked
     assert off.confirmation is None  # nothing to answer: a yes would not be enough
     assert session.hal.pin("gate_relay").commands == [("on", 0)]
 
 
+def test_heat_level_and_heat_critical_agree_at_every_reading():
+    # Loading checks heat_critical's `gte` sits on a band bound; this checks it is the
+    # `critical` one, around every bound: never a critical band with "not critical".
+    session = SimSession.load(AGENT)
+    recognition = session.grammar.recognize("tắt quạt")
+    bounds = [bound for _, bound in session.sensor_facts["heat_level"].bands]
+    for reading in [b + d for b in bounds for d in (-0.5, -0.001, 0, 0.001, 0.5)] + [-41, 200]:
+        session.set_sensor("temperature", reading)
+        facts = session.gate_facts(recognition)
+        if facts["heat_level"] is None:  # below every band: both undecided, the gates refuse
+            assert facts["heat_critical"] is None, reading
+        else:
+            assert facts["heat_critical"] is (facts["heat_level"] == "critical"), reading
+
+
 def test_the_alarm_stays_on_until_the_room_cools():
-    session, (_, off) = run("bật báo động", "tắt báo động", heat="high")
+    session, (_, off) = run("bật báo động", "tắt báo động", celsius=45)
     assert off.result.blocked
     assert off.result.gate.on_block_action == "deny"
     assert session.hal.pin("porch_light").commands == [("on", 0)]
-    session.set_sensor("temperature", "normal")
+    session.set_sensor("temperature", 30)
     assert asyncio.run(session.handle("tắt báo động")).allowed
     assert session.hal.pin("porch_light").commands == [("on", 0), ("off", 0)]

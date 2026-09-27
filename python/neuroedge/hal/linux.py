@@ -25,23 +25,51 @@ hands it to the backend chosen for the machine — `memory` or `/dev/fbN`
 close them at once, so neither holds anything `close()` would have to release
 (TSK-S5-09). Where no argument is given, the choice comes from the environment
 of the machine: `NEUROEDGE_LINUX_SENSORS` and `NEUROEDGE_LINUX_DISPLAY`.
+
+`audio.in` / `audio.out` (TSK-S5-08, Q-22) have two explicit backends, never
+guessed: the **file** one a `--voice-file` session and replay use (a WAV read at
+any rate in 8–96 kHz, 1 or 2 channels, downmixed and resampled to the board's
+`audio_in.sample_rate_hz`; the speaker stays the `sim` timeline), and the **live**
+one through `sounddevice` (PortAudio, optional extra `neuroedge[audio]`, imported
+only when chosen). Live capture reads the PipeWire echo-cancel node
+`neuroedge.ec.source` by default and live playback writes to `neuroedge.ec.sink` —
+the two nodes `libpipewire-module-echo-cancel` creates (Q-22, `pipewire/
+neuroedge-echo-cancel.conf`) — so what `audio.out` plays is the reference the AEC
+subtracts. A device that is missing, that stops answering, or that refuses the
+board's rate/channels is a three-part error: silence is never passed off as input.
+The machine's choice comes from `NEUROEDGE_LINUX_AUDIO` (`file` | `live`);
+`NEUROEDGE_LINUX_AUDIO_IN` / `NEUROEDGE_LINUX_AUDIO_OUT` name the nodes.
 """
 
 from __future__ import annotations
 
+import contextlib
 import glob
 import os
 import threading
+from array import array
 from collections import deque
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from pathlib import Path
 from typing import Any
 
 from ..errors import BoardCapabilityError
 from . import Authorizer, HardwareAbstractionLayer, _require_signature
+from .audio import (
+    FRAME_MS,
+    SAMPLE_WIDTH,
+    AudioFrame,
+    Speaker,
+    WavSource,
+    duration_ms,
+    open_audio_file,
+    pcm_samples,
+    samples_pcm,
+    to_mono,
+)
 from .board import BoardProfile, load_board_by_id
 from .framebuffer import DisplayBackend, display_backend
-from .sim import EventSink, Frame, PendingCommand, _NullSink, make_frame
+from .sim import EventSink, Frame, PendingCommand, _NullSink, make_frame, reading_data
 from .sysfs import Reading, SysfsSensors, parse_sources
 
 CHIP_GLOB = "/dev/gpiochip*"
@@ -52,6 +80,16 @@ SETUP_HINT = (
 # Per-machine wiring, when the caller passes none (a session, a replay).
 SENSORS_ENV = "NEUROEDGE_LINUX_SENSORS"  # temperature=hwmon:lm75/temp1;…
 DISPLAY_ENV = "NEUROEDGE_LINUX_DISPLAY"  # memory | /dev/fb0
+AUDIO_ENV = "NEUROEDGE_LINUX_AUDIO"  # file | live
+AUDIO_IN_ENV = "NEUROEDGE_LINUX_AUDIO_IN"  # a PipeWire node (PortAudio name)
+AUDIO_OUT_ENV = "NEUROEDGE_LINUX_AUDIO_OUT"
+AUDIO_BACKENDS = ("file", "live")
+# The nodes `libpipewire-module-echo-cancel` creates (Q-22, §6.1 of
+# docs/spec/simulation_coverage.md): capture reads the echo-cancelled `source`,
+# playback writes the reference into `sink`. Named on purpose: the default device
+# is the one with echo cancellation, never a bare microphone or speaker.
+AUDIO_IN_NODE = "neuroedge.ec.source"
+AUDIO_OUT_NODE = "neuroedge.ec.sink"
 
 
 def _import_gpiod() -> Any:
@@ -66,6 +104,21 @@ def _import_gpiod() -> Any:
     return gpiod
 
 
+def _import_sounddevice() -> Any:
+    try:
+        import sounddevice
+    except ImportError as exc:
+        raise BoardCapabilityError(
+            where="LinuxHAL -> audio.in/audio.out",
+            why="the `sounddevice` package (PortAudio) is not installed, and live audio needs it",
+            how=(
+                "pip install 'neuroedge[audio]' (MIT, optional; see NOTICE §B), or use a WAV "
+                "file session: neuroedge run --voice-file x.wav"
+            ),
+        ) from exc
+    return sounddevice
+
+
 def _chip_error(path: str, exc: OSError) -> BoardCapabilityError:
     return BoardCapabilityError(
         where=f"LinuxHAL.__init__ -> {path}",
@@ -76,6 +129,353 @@ def _chip_error(path: str, exc: OSError) -> BoardCapabilityError:
             "(an earlier `neuroedge mcp serve` still running)"
         ),
     )
+
+
+def _audio_node(argument: str | None, env: str, default: str) -> str:
+    """The device name, in order: the argument, the environment, the PipeWire node."""
+    if argument is not None and argument.strip():
+        return argument
+    from_env = (os.environ.get(env) or "").strip()
+    return from_env or default
+
+
+def _interleave(pcm: bytes, channels: int) -> bytes:
+    """Mono 16-bit PCM as `channels` interleaved copies — a mono reply on a stereo device."""
+    if channels == 1:
+        return pcm
+    samples = pcm_samples(pcm)
+    out = array("h")
+    for sample in samples:
+        out.extend((sample,) * channels)
+    return samples_pcm(out)
+
+
+class _LiveAudio:
+    """
+    What the two live roles share: the device name, the board's format, the failure
+    shape (one helper), and opening a stream atomically — a stream whose `start()`
+    fails is closed, never left half-open behind a dropped reference.
+    """
+
+    # What `query_devices`/`check_*_settings`/`Raw*Stream` are asked for, per role.
+    kind = ""
+    node_hint = ""
+
+    def __init__(
+        self,
+        sd: Any,
+        *,
+        sample_rate_hz: int,
+        channels: int,
+        device: str,
+        frame_ms: int = FRAME_MS,
+    ) -> None:
+        self.sd = sd
+        self.sample_rate_hz = sample_rate_hz
+        self.channels = channels
+        self.device = device
+        self._frames_per_block = max(1, sample_rate_hz * frame_ms // 1000)
+        self._stream: Any = None
+
+    @property
+    def where(self) -> str:
+        raise NotImplementedError
+
+    def _fail(self, why: str, how: str) -> BoardCapabilityError:
+        return BoardCapabilityError(where=self.where, why=why, how=how)
+
+    def _open(self) -> Any:
+        if self._stream is not None:
+            return self._stream
+        try:
+            self.sd.query_devices(self.device, self.kind)
+        except Exception as exc:
+            raise self._fail(
+                f"no {self.kind} device named {self.device!r}: {exc}",
+                f"{self.node_hint} — how PortAudio sees the PipeWire node is in "
+                "docs/spec/simulation_coverage.md §6.1 (not yet verified on hardware)",
+            ) from exc
+        stream = None
+        try:
+            check = (
+                self.sd.check_input_settings
+                if self.kind == "input"
+                else self.sd.check_output_settings
+            )
+            check(
+                device=self.device,
+                samplerate=self.sample_rate_hz,
+                channels=self.channels,
+                dtype="int16",
+            )
+            factory = self.sd.RawInputStream if self.kind == "input" else self.sd.RawOutputStream
+            stream = factory(
+                samplerate=self.sample_rate_hz,
+                channels=self.channels,
+                dtype="int16",
+                device=self.device,
+                blocksize=self._frames_per_block,
+            )
+            stream.start()
+        except Exception as exc:
+            if stream is not None:  # never leave it half-open
+                with contextlib.suppress(Exception):
+                    stream.close()
+            raise self._fail(
+                f"device {self.device!r} refuses {self.sample_rate_hz} Hz, "
+                f"{self.channels} channel(s), 16-bit: {exc}",
+                "fix the board profile or the device (Q-22's nodes carry the board's format)",
+            ) from exc
+        self._stream = stream
+        return stream
+
+    def open(self) -> None:
+        """Open the device now: a missing one fails before a session asks for a line."""
+        self._open()
+
+
+class LiveAudioIn(_LiveAudio):
+    """
+    `audio.in` from a live device (`sounddevice`, PortAudio) — by default the
+    PipeWire echo-cancel node `neuroedge.ec.source` (Q-22), so what a session hears
+    is already echo-cancelled. `frames()` reads the board's rate and channel count
+    as 20 ms mono `AudioFrame`s.
+
+    Opening is explicit and checked (`query_devices`, `check_input_settings`); a
+    device that is missing, refuses the board's format, or stops answering raises a
+    three-part `BoardCapabilityError` — never an empty frame, never silence read as
+    if it were the room. An input overflow (PortAudio dropped captured audio because
+    the reader fell behind) is recorded (`audio_in_overflow`) and stops the frames:
+    the sample clock is no longer the room's, and a shrunken timeline is not passed
+    on as if nothing were lost. Real-time driving is `TODOS.md` #45.
+    """
+
+    kind = "input"
+
+    def __init__(self, *args: Any, events: EventSink | None = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.events: EventSink = events if events is not None else _NullSink()
+        self._closed = False
+        self._at_ms = 0
+
+    @property
+    def where(self) -> str:
+        return f"LinuxHAL -> audio.in ({self.device!r})"
+
+    @property
+    def node_hint(self) -> str:
+        return (
+            "check PipeWire runs the echo-cancel module (pipewire/neuroedge-echo-cancel.conf, Q-22), "
+            f"or set {AUDIO_IN_ENV} to the device that should be read"
+        )
+
+    def frames(self) -> Iterator[AudioFrame]:
+        """20 ms frames, mono at the board's rate, from now until `close()`."""
+        stream = self._open()
+        while not self._closed:
+            try:
+                data, overflowed = stream.read(self._frames_per_block)
+            except Exception as exc:
+                if self._closed:
+                    return
+                raise self._fail(
+                    f"the input device stopped answering: {exc}",
+                    "check the microphone and the PipeWire node are still there; reconnect, then "
+                    "restart the session",
+                ) from exc
+            if overflowed:
+                self.events.emit("audio_in_overflow", {})
+                raise self._fail(
+                    f"the input device {self.device!r} overflowed: captured audio was dropped and "
+                    "the frames' timeline cannot be trusted",
+                    "make the reader keep up (a real-time session is TODOS.md #45); the session "
+                    "stops rather than passing on a timeline that silently shrank",
+                )
+            pcm = bytes(data)
+            if not pcm:
+                # A blocking read of a started stream returns a full block; an empty one
+                # means the device stopped without raising — never read as silence.
+                raise self._fail(
+                    "the input device returned an empty block, so it is no longer running; "
+                    "silence is never passed off as input",
+                    "check the device and the PipeWire node, then start the session again",
+                )
+            mono = to_mono(pcm, self.channels) if self.channels > 1 else pcm
+            frame = AudioFrame(
+                mono, self._at_ms, duration_ms(mono, self.sample_rate_hz), self.sample_rate_hz
+            )
+            self._at_ms = frame.end_ms
+            yield frame
+
+    def close(self) -> None:
+        self._closed = True
+        stream, self._stream = self._stream, None
+        if stream is None:
+            return
+        with contextlib.suppress(Exception):  # a stop that fails changes nothing here
+            stream.abort()
+        with contextlib.suppress(Exception):
+            stream.close()
+
+
+class LiveAudioOut(_LiveAudio):
+    """
+    `audio.out` on a live device (`sounddevice`, PortAudio) — by default the
+    PipeWire echo-cancel node `neuroedge.ec.sink` (Q-22), so a reply is also the
+    reference signal the AEC subtracts from the microphone.
+
+    `play()` returns at once: a daemon thread writes the reply, because a session
+    must never wait for the loudspeaker. `stop()` drops what has not played yet
+    (barge-in, `voice_fsm.md` §5.2 step 3). A device that fails mid-reply is
+    remembered — the next `play()` refuses and `close()` raises — so a dead
+    speaker is never just quiet. Real-time driving is `TODOS.md` #45.
+    """
+
+    kind = "output"
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._block = self._frames_per_block * self.channels * SAMPLE_WIDTH
+        self._thread: threading.Thread | None = None
+        self._generation = 0
+        self._lock = threading.Lock()
+        self._error: str | None = None
+        self._reported = False
+
+    @property
+    def where(self) -> str:
+        return f"LinuxHAL -> audio.out ({self.device!r})"
+
+    @property
+    def node_hint(self) -> str:
+        return (
+            "check PipeWire runs the echo-cancel module (pipewire/neuroedge-echo-cancel.conf, Q-22), "
+            f"or set {AUDIO_OUT_ENV} to the device that should be played to"
+        )
+
+    def play(self, pcm: bytes) -> None:
+        """Write one reply; the previous one is dropped, as `Playback.stop` does."""
+        if self._error is not None:
+            raise self._fail(
+                f"the previous reply failed and the device was not reopened: {self._error}",
+                "fix the output device, then start the session again",
+            )
+        with self._lock:
+            stream = self._open()
+            self._generation += 1
+            generation = self._generation
+            # `abort()` leaves the stream stopped; a writer needs it started again
+            # (PortAudioError "Stream is stopped" otherwise). The reply being replaced
+            # is dropped here.
+            with contextlib.suppress(Exception):
+                stream.abort()
+            try:
+                stream.start()
+            except Exception as exc:
+                raise self._fail(
+                    f"the output device {self.device!r} will not play: {exc}",
+                    "check the speaker and the PipeWire node, then start the session again",
+                ) from exc
+            thread = threading.Thread(
+                target=self._write,
+                args=(stream, pcm, generation),
+                name="neuroedge-audio-out",
+                daemon=True,
+            )
+            self._thread = thread
+            thread.start()
+
+    def wait(self, timeout: float = 2.0) -> bool:
+        """
+        Wait for the writer thread to finish the reply it was given (tests, orderly
+        shutdown). True when nothing is being written any more.
+        """
+        with self._lock:
+            thread = self._thread
+        if thread is None:
+            return True
+        thread.join(timeout)
+        return not thread.is_alive()
+
+    def _write(self, stream: Any, pcm: bytes, generation: int) -> None:
+        try:
+            payload = _interleave(pcm, self.channels)
+            for offset in range(0, len(payload), self._block):
+                with self._lock:
+                    if generation != self._generation:
+                        return
+                stream.write(payload[offset : offset + self._block])
+        except Exception as exc:
+            with self._lock:
+                if generation != self._generation:
+                    return  # dropped by stop() or replaced: not a device failure
+            self._error = f"{type(exc).__name__}: {exc}"
+
+    def stop(self) -> None:
+        """Drop what has not played. Never raises: barge-in has a 300 ms budget (§5.2)."""
+        with self._lock:
+            self._generation += 1
+            stream = self._stream
+        if stream is not None:
+            with contextlib.suppress(Exception):
+                stream.abort()
+
+    def close(self) -> None:
+        """Release the device. A failure noticed while playing is raised once, here."""
+        self.stop()
+        with self._lock:
+            stream, self._stream = self._stream, None
+            thread, self._thread = self._thread, None
+            failure = self._error
+        if thread is not None and thread.is_alive():
+            thread.join(timeout=2.0)
+        if stream is not None:
+            with contextlib.suppress(Exception):
+                stream.close()
+        # Reported once: `close()` stays idempotent, and `play()` keeps refusing.
+        if failure is not None and not self._reported:
+            self._reported = True
+            raise BoardCapabilityError(
+                where=self.where,
+                why=f"the output device failed while playing: {failure}",
+                how="check the speaker and the PipeWire node; the reply was not heard in full",
+            )
+
+
+class LiveSpeaker:
+    """
+    `audio.out` on a live device with the `Speaker` timeline on the side (`--voice-out`
+    still writes the session as WAV). `play()` starts the reply on the device and
+    records it; `stop()` flushes both. Real-time session driving is `TODOS.md` #45;
+    this is the HAL primitive it will use.
+    """
+
+    def __init__(self, sink: LiveAudioOut, sample_rate_hz: int) -> None:
+        self._timeline = Speaker(sample_rate_hz)
+        self._sink = sink
+        self.sample_rate_hz = sample_rate_hz
+
+    @property
+    def playbacks(self) -> list[Any]:
+        return self._timeline.playbacks
+
+    def play(self, pcm: bytes, start_ms: float) -> Any:
+        playback = self._timeline.play(pcm, start_ms)
+        self._sink.play(pcm)
+        return playback
+
+    def stop(self, at_ms: float) -> None:
+        self._timeline.stop(at_ms)
+        self._sink.stop()
+
+    def render(self) -> bytes:
+        return self._timeline.render()
+
+    def write(self, path: str | Path) -> Path:
+        return self._timeline.write(path)
+
+    def close(self) -> None:
+        self._sink.close()
 
 
 class LinuxHAL(HardwareAbstractionLayer):
@@ -92,6 +492,10 @@ class LinuxHAL(HardwareAbstractionLayer):
         sensor_sources: Mapping[str, str] | None = None,
         sysfs_root: str | Path | None = None,
         display: str | DisplayBackend | None = None,
+        audio: str | None = None,
+        audio_in_device: str | None = None,
+        audio_out_device: str | None = None,
+        sounddevice: Any = None,
         needs: Mapping[str, Any] | None = None,
         units: Mapping[str, str] | None = None,
         replay: bool = False,
@@ -134,6 +538,27 @@ class LinuxHAL(HardwareAbstractionLayer):
         self.display_backend = display_backend(choice, where)
         self.frame: str | bytes | None = None
         self.frames: list[Frame] = []
+        # The audio backend is chosen, never guessed (`file` | `live`); replay keeps to
+        # the file/timeline roles, so it never opens a microphone or a speaker. The live
+        # device is imported only when the live backend is chosen.
+        audio_where = "LinuxHAL(audio=...)" if audio is not None else AUDIO_ENV
+        if replay:
+            audio_choice: Any = "file"
+        else:
+            audio_choice = audio if audio is not None else os.environ.get(AUDIO_ENV) or None
+        if audio_choice is not None and audio_choice not in AUDIO_BACKENDS:
+            raise BoardCapabilityError(
+                where=audio_where,
+                why=f"unknown audio backend {audio_choice!r}; the backends are {list(AUDIO_BACKENDS)}",
+                how=f"set {AUDIO_ENV}=file for WAV sessions, or =live for sounddevice (Q-22)",
+            )
+        self.audio_backend: str | None = audio_choice
+        self._sounddevice = sounddevice
+        self._audio_in: LiveAudioIn | None = None
+        self._audio_out: LiveAudioOut | None = None
+        self._speaker: Any = None
+        self.audio_in_device = _audio_node(audio_in_device, AUDIO_IN_ENV, AUDIO_IN_NODE)
+        self.audio_out_device = _audio_node(audio_out_device, AUDIO_OUT_ENV, AUDIO_OUT_NODE)
         # Recorded readings replay feeds back (`script_sensor`), in place of the kernel's.
         self._scripted: dict[str, deque[Any]] = {}
         self._replayed: dict[str, Any] = {}
@@ -204,6 +629,29 @@ class LinuxHAL(HardwareAbstractionLayer):
                     held.release()
                 raise _chip_error(path, exc) from exc
         return requests
+
+    # -- scheduling (a voice session's hooks) -----------------------------------------
+    # LinuxHAL does not schedule commands: `after_ms` is refused with a three-part
+    # error (`schedules_commands` stays False, voice_fsm.md §5.5), so a pin never moves
+    # on a later clock tick here. The voice driver still asks for these hooks —
+    # barge-in cancels a *pending* command, and there are none — and they are honest
+    # no-ops: nothing is ever delivered early.
+    schedules_commands = False
+
+    def enable_scheduling(self, clock: Any) -> None:
+        self._schedule_clock = clock  # the clock a scheduled command would use; none is
+
+    def pending_commands(self) -> list[Any]:
+        return []
+
+    def next_delivery_ms(self) -> float | None:
+        return None
+
+    def run_due(self) -> list[Any]:
+        return []
+
+    def cancel_scheduled(self, token: Any, reason: str = "") -> None:
+        return None
 
     # -- the line itself -------------------------------------------------------------
     def _set(self, pin: str, active: bool) -> None:
@@ -276,24 +724,35 @@ class LinuxHAL(HardwareAbstractionLayer):
                 self._set(pin, False)
 
     def close(self) -> None:
-        """Drop every line inactive and release it. The session is over; nothing is recorded."""
-        if not self._requests:
-            return
-        for pin in list(self._timers):
-            self._stop_timer(pin)
+        """
+        Drop every line inactive, release it, then close any live audio device. The
+        session is over; nothing is recorded. One line that fails to drop must not
+        leave the others active or held, so every step runs before the first error
+        goes up.
+        """
         # One line that fails to drop must not leave the others active or held.
-        errors: list[OSError] = []
-        for pin in self.lines:
+        errors: list[BaseException] = []
+        if self._requests:
+            for pin in list(self._timers):
+                self._stop_timer(pin)
+            for pin in self.lines:
+                try:
+                    self._set(pin, False)
+                except OSError as exc:
+                    errors.append(exc)
+            with self._lock:  # a pulse ending now sees no requests and leaves the line alone
+                requests, self._requests = self._requests, {}
+            for request in requests.values():
+                try:
+                    request.release()
+                except OSError as exc:
+                    errors.append(exc)
+        for device in (self._audio_in, self._audio_out):
+            if device is None:
+                continue
             try:
-                self._set(pin, False)
-            except OSError as exc:
-                errors.append(exc)
-        with self._lock:  # a pulse ending now sees no requests and leaves the line alone
-            requests, self._requests = self._requests, {}
-        for request in requests.values():
-            try:
-                request.release()
-            except OSError as exc:
+                device.close()
+            except BaseException as exc:  # a dead speaker/printer must still raise
                 errors.append(exc)
         if errors:
             raise errors[0]
@@ -329,12 +788,7 @@ class LinuxHAL(HardwareAbstractionLayer):
         else:
             reading = self._kernel_read(sensor, where)
             value, unit = reading.value, reading.unit
-        data: dict[str, Any] = {"sensor": sensor, "value": value}
-        if unit is not None:
-            data["unit"] = unit
-        if use is not None:
-            data["use"] = use
-        self.events.emit("sensor_read", data)
+        self.events.emit("sensor_read", reading_data(sensor, value, unit, use))
         return value
 
     def _kernel_read(self, sensor: str, where: str) -> Reading:
@@ -357,6 +811,112 @@ class LinuxHAL(HardwareAbstractionLayer):
         self._scripted[sensor] = deque(values)
         if unit is not None:
             self._units[sensor] = unit
+
+    # -- audio -----------------------------------------------------------------------
+    def _audio_capability(self, primitive: str, called_from: str) -> dict[str, Any]:
+        """The board's declaration for `audio.in` / `audio.out`, or a three-part refusal."""
+        if not self.board.supports(primitive):
+            raise BoardCapabilityError(
+                where=f"{called_from} -> {primitive}",
+                why=f"board {self.board.id!r} does not declare the {primitive!r} primitive",
+                how=f"add it to {self.board.source}, or choose a board that provides it",
+            )
+        return self.board.capability(primitive)
+
+    def _audio_rate(self, primitive: str, called_from: str) -> int:
+        rate = self._audio_capability(primitive, called_from).get("sample_rate_hz")
+        if isinstance(rate, bool) or not isinstance(rate, int) or rate <= 0:
+            raise BoardCapabilityError(
+                where=f"{called_from} -> {primitive}",
+                why=f"board {self.board.id!r} declares {primitive} without a sample_rate_hz, and "
+                "PCM audio needs one",
+                how=f"add sample_rate_hz = 48000 to {primitive} in {self.board.source}",
+            )
+        return rate
+
+    def audio_file(self, path: Any, called_from: str = "<unknown>") -> WavSource:
+        """
+        A WAV file as `audio.in`, whatever rate (8–96 kHz) and 1–2 channels it has:
+        the file backend a `--voice-file` session uses, converted to the board's rate
+        as a capture device would be. It never touches a microphone.
+        """
+        capability = self._audio_capability("audio.in", called_from)
+        rate = self._audio_rate("audio.in", called_from)
+        return open_audio_file(
+            path,
+            sample_rate_hz=rate,
+            called_from=called_from,
+            max_channels=int(capability.get("channels") or 2),
+        )
+
+    def _device(self) -> Any:
+        if self._sounddevice is None:
+            self._sounddevice = _import_sounddevice()
+        return self._sounddevice
+
+    def audio_source(self, called_from: str = "<unknown>") -> LiveAudioIn:
+        """The live capture node (`neuroedge.ec.source` by default); live backend only."""
+        if self.audio_backend != "live":
+            raise BoardCapabilityError(
+                where=f"{called_from} -> audio.in",
+                why="no live audio backend is chosen for this machine; refusing to guess one",
+                how=(
+                    f"set {AUDIO_ENV}=live on the device (PipeWire echo-cancel nodes, Q-22) or "
+                    "pass LinuxHAL(audio='live'); a WAV session uses --voice-file"
+                ),
+            )
+        capability = self._audio_capability("audio.in", called_from)
+        if self._audio_in is None:
+            self._audio_in = LiveAudioIn(
+                self._device(),
+                sample_rate_hz=self._audio_rate("audio.in", called_from),
+                channels=int(capability.get("channels") or 1),
+                device=self.audio_in_device,
+                events=self.events,
+            )
+        # Opened eagerly: a session that prelights its audio before asking for lines
+        # (preflight, Q-16) fails on a missing microphone before a pin is held.
+        self._audio_in.open()
+        return self._audio_in
+
+    def audio_sink(self, called_from: str = "<unknown>") -> LiveAudioOut:
+        """The live playback node (`neuroedge.ec.sink` by default); live backend only."""
+        if self.audio_backend != "live":
+            raise BoardCapabilityError(
+                where=f"{called_from} -> audio.out",
+                why="no live audio backend is chosen for this machine; refusing to guess one",
+                how=(
+                    f"set {AUDIO_ENV}=live on the device (PipeWire echo-cancel nodes, Q-22) or "
+                    "pass LinuxHAL(audio='live'); --voice-out writes a WAV instead"
+                ),
+            )
+        capability = self._audio_capability("audio.out", called_from)
+        if self._audio_out is None:
+            self._audio_out = LiveAudioOut(
+                self._device(),
+                sample_rate_hz=self._audio_rate("audio.out", called_from),
+                channels=int(capability.get("channels") or 1),
+                device=self.audio_out_device,
+            )
+        # Opened eagerly: a session that prelights its audio before asking for lines
+        # (preflight, Q-16) fails on a missing speaker before a pin is held.
+        self._audio_out.open()
+        return self._audio_out
+
+    def speaker(self, called_from: str = "<unknown>") -> Any:
+        """
+        `audio.out` as a timeline at the board's rate — what `--voice-out` writes and
+        what `VoiceSession` plays a reply on. With the live backend the same `play()`
+        also writes to the device; with the file backend the timeline is all there is.
+        """
+        rate = self._audio_rate("audio.out", called_from)
+        if self._speaker is None:
+            self._speaker = (
+                LiveSpeaker(self.audio_sink(called_from), rate)
+                if self.audio_backend == "live"
+                else Speaker(rate)
+            )
+        return self._speaker
 
     # -- display ---------------------------------------------------------------------
     def display(
@@ -391,11 +951,21 @@ class LinuxHAL(HardwareAbstractionLayer):
         return self.display_backend
 
     def preflight(
-        self, sensors: Iterable[str] = (), display: bool = False, where: str = ""
+        self,
+        sensors: Iterable[str] = (),
+        display: bool = False,
+        audio: Iterable[str] = (),
+        where: str = "",
     ) -> None:
         """
-        Fail now, not mid-session, if a sensor the agent reads cannot be read or it
-        draws with no display backend chosen. The reading taken here is not recorded.
+        Fail now, not mid-session, if a sensor the agent reads cannot be read, it
+        draws with no display backend chosen, or (with the live backend) the
+        microphone/speaker it needs cannot be opened. The reading taken here is not
+        recorded. `preflight` runs before `__init__` requests any GPIO line, so a
+        missing live device is refused before a pin is held (Q-16).
+
+        `audio` names the primitives the session will use; the file backend needs no
+        device, so nothing is opened unless the machine chose `live` (Q-22).
         """
         for sensor in dict.fromkeys(sensors):
             self.board.require_sensor(sensor, called_from=where)
@@ -403,15 +973,19 @@ class LinuxHAL(HardwareAbstractionLayer):
                 self._kernel_read(sensor, f"{where} -> sensor.read {sensor!r}")
         if display:
             self._require_display_backend(f"{where} -> display")
+        if self.audio_backend == "live":
+            for primitive in dict.fromkeys(audio):
+                if primitive == "audio.in":
+                    self.audio_source(f"{where} -> preflight")
+                elif primitive == "audio.out":
+                    self.audio_sink(f"{where} -> preflight")
 
 
 # Primitives `LinuxHAL` does not implement yet, and the task that brings each. An
 # interactive session refuses an agent that needs one before any line is requested,
-# rather than failing mid-session on the first turn that reaches it (Q-16).
-MISSING_ON_LINUX = {
-    "audio.in": "TSK-S5-08",
-    "audio.out": "TSK-S5-08",
-}
+# rather than failing mid-session on the first turn that reaches it (Q-16). Empty
+# since TSK-S5-08: all five primitives run on `linux`.
+MISSING_ON_LINUX: dict[str, str] = {}
 
 
 class TypedLinuxHAL(LinuxHAL):
@@ -421,8 +995,11 @@ class TypedLinuxHAL(LinuxHAL):
     The pins are real kernel lines. The person types on the terminal, as on `sim`
     (Q-15): a typed line is the session's input and a reply is printed, with the
     same `text_input` / `tts_stream_start` events `SimHAL` writes, so a session
-    recorded here has the shape of a `sim` one and replays on either target.
-    Nothing is heard or spoken: microphone and speaker are TSK-S5-08.
+    recorded here has the shape of a `sim` one and replays on either target. The
+    person hears nothing and speaks nothing: an agent that needs `audio.in` /
+    `audio.out` in a *voice* session gets its frames from `audio_file` (file
+    backend) or the live nodes (TSK-S5-08); this class only substitutes the typed
+    line for a microphone, exactly as `SimHAL` does on `sim`.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

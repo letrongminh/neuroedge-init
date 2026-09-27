@@ -19,6 +19,7 @@ from typing import Any
 
 from ..errors import BoardCapabilityError
 from ..hal.board import load_board_by_id
+from ..trace import json_safe
 
 
 def _asset(name: str) -> str:
@@ -26,8 +27,8 @@ def _asset(name: str) -> str:
 
 
 def _embed(value: Any) -> str:
-    """JSON safe inside <script>: no `</` can close the element early."""
-    return json.dumps(value, ensure_ascii=False).replace("</", "<\\/")
+    """JSON safe inside <script>: no `</` can close the element early, no bare NaN."""
+    return json.dumps(json_safe(value), ensure_ascii=False, allow_nan=False).replace("</", "<\\/")
 
 
 def board_info(board_id: str | None) -> dict[str, Any]:

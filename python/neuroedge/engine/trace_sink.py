@@ -15,7 +15,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from ..trace import TRACE_SCHEMA_ID
+from ..trace import TRACE_SCHEMA_ID, json_safe
 from .latency import SUMMARY_EVENT, turn_summary
 
 Clock = Callable[[], float]
@@ -56,7 +56,8 @@ class EventLog:
 
     def emit(self, type: str, data: dict[str, Any]) -> None:
         offset = max(0, int(self.clock() - self._t0))
-        self.events.append({"offset_ms": offset, "type": type, "data": dict(data)})
+        # No NaN / inf reaches a trace, the live page or a trace view (`json_safe`).
+        self.events.append({"offset_ms": offset, "type": type, "data": json_safe(dict(data))})
 
     def of_type(self, type: str) -> list[dict[str, Any]]:
         return [event["data"] for event in self.events if event["type"] == type]
@@ -72,4 +73,8 @@ class EventLog:
         if summary is not None:
             offset = max(events[-1]["offset_ms"] if events else 0, self.elapsed_ms())
             events.append({"offset_ms": offset, "type": SUMMARY_EVENT, "data": summary})
-        return {"$schema": TRACE_SCHEMA_ID, "metadata": dict(self.metadata), "events": events}
+        return {
+            "$schema": TRACE_SCHEMA_ID,
+            "metadata": json_safe(dict(self.metadata)),
+            "events": events,
+        }

@@ -31,19 +31,69 @@ không ghi ở đây: đọc task ở cột cuối trong bảng task của roadm
 | Nguyên thủy | Backend | Kiểm ở | Task |
 |:---|:---|:---|:---|
 | `digital.out` | `SimHAL`, token dùng một lần | PR | TSK-S2-01, S2-05 |
-| `audio.in` | Gõ chữ → ngữ pháp lệnh (Q-15) · tệp WAV → VAD + STT provider | PR (gõ chữ, WAV fixture) | WAV: TSK-S3-13 |
-| `audio.out` | Chữ sẽ nói (`tts_stream_start`): câu trả lời knowledge base (RAG qua System 2, cục bộ khi mất mạng), lời hỏi lại của `on_block: ask` · âm thanh TTS ra WAV | PR | chữ: TSK-S2-11 · WAV: TSK-S3-13 |
+| `audio.in` | Gõ chữ → ngữ pháp lệnh (Q-15) · tệp WAV PCM 16-bit mono đúng `sample_rate_hz` của bo mạch (`--voice-file`; bo mạch không lấy mẫu lại nên `sim` cũng không) → khung 20 ms → VAD năng lượng → STT provider `[stt]` (`hal/audio.py`, `perception/voice_session.py`) | PR (gõ chữ, tệp WAV sinh trong test, provider giả) | WAV: TSK-S3-13 |
+| `audio.out` | Chữ sẽ nói (`tts_stream_start`): câu trả lời knowledge base (RAG qua System 2, cục bộ khi mất mạng), lời hỏi lại của `on_block: ask` · âm thanh TTS provider `[tts]` lấy mẫu lại về `sample_rate_hz` của bo mạch, đặt trên dòng thời gian ảo, cắt khi bị nói chen, ghi ra WAV (`--voice-out`) | PR (provider giả) | chữ: TSK-S2-11 · WAV: TSK-S3-13 |
 | `sensor.read` | Giá trị kịch bản: `[sim.sensors]` trong `agent.toml`, `:sensor` trong REPL và UI; dữ kiện gate từ cảm biến: `[sim.sensor_facts]`; `sensor.read()` trong `@action` | PR | TSK-S3-23 |
 | `display` | Khung chữ hoặc điểm ảnh RGB565/RGB888 trong bộ nhớ, kiểm độ phân giải; digest SHA-256; `display.show()` trong `@action` | PR | TSK-S3-23 |
 | *Trực quan* | Terminal · `trace view` HTML tĩnh · `run --ui` và `mcp serve --ui` web cục bộ (FR-TGT-06) | PR | TSK-S3-22, S2-09, S3-27 |
+
+**Dữ kiện gate từ cảm biến — `[sim.sensor_facts]`.** Mỗi dòng `tiêu_chí = { sensor = "…", <luật> }`
+tính một dữ kiện gate từ số đọc, như nhau trên `sim` (giá trị kịch bản) và `linux` (số đọc kernel).
+Mỗi cảm biến được đọc **một lần mỗi lần tính dữ kiện gate** (`gate_facts`: các tool call của một lượt
+lệnh, một câu trả lời xác nhận, một tool call qua MCP), nên hai dữ kiện của cùng một cảm biến không bao
+giờ tính trên hai số đọc khác nhau. Hiện thực: `SensorFact` và `SimSession.gate_facts` trong
+`python/neuroedge/sim/session.py`.
+
+| Luật | Dữ kiện | Ví dụ |
+|:---|:---|:---|
+| *(không có)* | Chính số đọc | `door_closed = { sensor = "door_contact" }` |
+| `equals` | `bool`: số đọc bằng giá trị — giá trị là bool, chữ hoặc số hữu hạn | `room_empty = { sensor = "motion", equals = false }` |
+| `gte` / `lte` (một hoặc cả hai) | `bool`: số đọc ≥ / ≤ ngưỡng — **tính cả ngưỡng** | `too_hot = { sensor = "temperature", gte = 30 }` |
+| `bands` | `level`: dải chứa số đọc | `heat_level = { sensor = "temperature", bands = { low = -40, normal = 25, high = 40, critical = 55 } }` |
+
+Kiểm khi nạp phiên — sai ⇒ lỗi ba phần (`AgentManifestError`, cảm biến bo mạch không có ⇒
+`BoardCapabilityError`), **trước khi** xin line GPIO nào:
+
+- Mỗi dòng **một** luật: `bands`, `equals`, `gte`/`lte` không đi chung. Ngưỡng là số hữu hạn (không
+  phải bool, NaN, inf). Cảm biến phải là cảm biến bo mạch khai.
+- Luật số (`gte`, `lte`, `bands`) cần đơn vị khai ở `[sim.sensors]`
+  (`temperature = { value = 45, unit = "C" }`), để `linux` từ chối số đọc khác đơn vị thay vì đem so
+  với ngưỡng (luật `linux` dưới đây).
+- `bands`: mỗi mục là `mức = ngưỡng dưới`, ngưỡng **tăng ngặt** theo thứ tự viết. Một dải bắt đầu
+  **tại** ngưỡng của nó và dừng ngay dưới ngưỡng của mục kế tiếp; dải cuối không có cận trên. Ví dụ
+  trên: 24,999 → `low`, 25 → `normal`, 54,999 → `high`, 55 → `critical`. Phải có ít nhất một gate
+  đọc tiêu chí đó; mọi gate đọc nó khai kiểu `level`, và với từng gate: mức là mức gate khai ở
+  `evaluate.<tiêu_chí>.levels`, viết **đúng thứ tự** đó, và **mục cuối là mức cao nhất** của gate —
+  chỉ được bỏ mức thấp hoặc mức giữa, để số đọc cao tới đâu cũng không dừng dưới mức trên cùng.
+- Trên cảm biến có `bands`, `gte` phải **trùng một ngưỡng** của các `bands` đó (dữ kiện bool là
+  "từ dải này trở lên", không lệch khỏi dải ở số đọc nào); `lte` bị từ chối, vì ngưỡng thuộc dải
+  phía trên nên `lte` sẽ lệch đúng tại ngưỡng.
+- Tiêu chí do cảm biến quyết không được có giá trị cố định ở `[sim.facts]` (hay `SimSession.load(facts=)`):
+  giá trị đó không bao giờ được đọc. `:set` trong REPL và trang `--ui` từ chối nó và chỉ sang `:sensor`.
+
+Lúc chạy — fail-closed, không đoán:
+
+- Một số đọc **không lấy được** (cờ lỗi, NaN hay tệp hỏng trên `linux`, thiết bị biến mất, `sim` chưa có
+  giá trị), hoặc bị **một luật bất kỳ của cảm biến đó** từ chối — luật số trên số đọc không phải số hữu
+  hạn (chữ, bool, NaN, inf), `bands` trên số đọc dưới ngưỡng đầu tiên (đầu dò hở/chập), `equals` trên số
+  đọc khác kiểu (`0` không phải `false`), chính số đọc khi nó rỗng hay không hữu hạn — thì **mọi** dữ kiện
+  của cảm biến đó trong lần tính ấy là **chưa xác định** (`null` trong `gate_facts`), và phiên ghi
+  `sensor_unavailable` (§3). Gate đọc chúng chặn với `criterion_unavailable`; vì cả tiêu chí phủ quyết
+  (`heat_critical`) cũng chưa xác định, một lời "có" không đủ nên thiết bị **không hỏi**. Gate không đọc
+  dữ kiện nào của cảm biến đó quyết như thường (`vent_on` của `factory-monitor` vẫn chạy).
+- Câu trả lời xác nhận tính lại dữ kiện: hỏi lúc 45 °C, cảm biến hỏng trước lời "có" ⇒ vẫn chặn.
+- Replay dùng lại `gate_facts` đã ghi, nên không tính lại được dữ kiện cảm biến. Vết ghi mang digest
+  của `[sim.sensor_facts]` (`metadata.sensor_facts_digest`); luật đổi sau khi ghi thì `replay` cảnh báo
+  (sự kiện `sensor_facts_changed` trong vết ghi phát lại) — phán quyết khi đó không kiểm luật mới, cần
+  ghi lại phiên. Đây là cảnh báo, không phải khác biệt quyết định: mã thoát không đổi.
 
 ### `linux` — `linux-rpi5`
 
 | Nguyên thủy | Backend | Kiểm ở | Chỉ phần cứng | Task |
 |:---|:---|:---|:---|:---|
 | `digital.out` | `LinuxHAL` qua libgpiod v2 | PR — gpio-sim | Điện áp, timing | TSK-S3-05 |
-| `audio.in` | `sounddevice` (PortAudio) · AEC phần mềm PipeWire `module-echo-cancel` (Q-22) | PR — backend tệp/PCM không cần kernel; **runner không có `snd-aloop`** | Micro, AEC, âm học — RPi 5 + HAT I2S, `snd-aloop` trên Pi | TSK-S5-08 |
-| `audio.out` | `sounddevice` | PR — như trên | Loa, âm lượng | TSK-S5-08 |
+| `audio.in` | **Backend tệp**: WAV (`--voice-file`) ở mọi rate 8–96 kHz, 1–2 kênh → mono ở rate bo mạch (`hal/audio.py`, `open_audio_file`) · **Backend sống**: `sounddevice` (PortAudio) đọc nút `neuroedge.ec.source` của `module-echo-cancel` (Q-22) | PR — backend tệp trên fake gpiod + `sounddevice` giả; `tests_linux/test_audio_file.py` trên gpio-sim (**runner không có `snd-aloop`**, nên backend sống chỉ chạy trên máy) | Micro, AEC, âm học — RPi 5 + HAT I2S, `snd-aloop` trên Pi | TSK-S5-08 |
+| `audio.out` | **Backend tệp**: dòng thời gian `Speaker` ghi WAV ở rate bo mạch (`--voice-out`) · **Backend sống**: `sounddevice` phát vào nút `neuroedge.ec.sink` (tín hiệu tham chiếu của AEC) | PR — như trên | Loa, âm lượng | TSK-S5-08 |
 | `sensor.read` | sysfs **hwmon** và **IIO** (`/sys/class/hwmon/*/temp1_input`, `/sys/bus/iio/devices/iio:device*/in_*`) — `hal/sysfs.py` | PR — `i2c-stub` + driver `lm75` → hwmon (`scripts/setup_i2c_stub.sh`, `tests_linux/`); IIO trên cây sysfs giả (`tests/test_hal_linux_io.py`) | Cảm biến thật; IIO chỉ trên Pi (`CONFIG_IIO` tắt trên runner) | TSK-S5-09 |
 | `display` | Kiểm và ghi khung bằng đúng mã của `sim` (`make_frame`), rồi → `/dev/fb*` trên Pi, hoặc chỉ trong bộ nhớ — `hal/framebuffer.py` | PR — khung trong bộ nhớ + digest; `/dev/fbN` của `vfb`, hoặc `vkms` trên kernel azure (`scripts/setup_vfb.sh`) | Panel HDMI/DSI | TSK-S5-09 |
 
@@ -58,11 +108,35 @@ biến bo mạch khai. Luật an toàn:
   hạn, cờ `*_fault`, hay loại kênh không rõ đơn vị ⇒ `BoardCapabilityError`, không bao giờ trả giá
   trị mặc định. "Tới kernel" không có nghĩa là mới hơn chu kỳ cập nhật của driver (lm75 ≈ 1,5 s).
 - Agent khai đơn vị cho cảm biến (`[sim.sensors] temperature = { value = …, unit = "C" }`) thì số đọc
-  của kernel khác đơn vị đó bị từ chối, không đem so với ngưỡng viết cho đơn vị kia.
+  của kernel khác đơn vị đó bị từ chối, không đem so với ngưỡng viết cho đơn vị kia. Dữ kiện gate tính
+  từ số đọc kernel bằng đúng luật `[sim.sensor_facts]` của `sim` (trên), gồm `bands`.
 - Replay chỉ dùng giá trị đã ghi: cảm biến vết ghi không có số đọc thì báo lỗi, không đọc kernel; khung
   hình vẽ trong bộ nhớ.
 - `door_contact` và `motion` của `linux-rpi5` là đầu vào GPIO, không phải hwmon/IIO: chưa đọc được trên
   `linux`, agent cần chúng bị từ chối trước khi xin line.
+
+**Âm thanh chọn rõ, không đoán** (TSK-S5-08): hai backend, không bao giờ đoán.
+
+- **Backend tệp** là mặc định của `--voice-file` (và của replay): WAV đọc cả tệp, 16-bit PCM,
+  1–2 kênh, rate 8–96 kHz, đưa về **mono ở `audio_in.sample_rate_hz` của bo mạch** bằng đúng
+  phép trộn kênh và lấy mẫu lại mà một câu TTS nhận (`to_mono`, `resample`); **không mở micro**.
+  `--voice-out` ghi dòng thời gian `Speaker` ở rate `audio_out` — bo mạch mới là bên lấy mẫu lại,
+  `sim` thì không (bất biến 7). Tệp sai định dạng, quá dài (> 600 s), thiếu tệp ⇒ lỗi ba phần,
+  không có sự kiện nào được ghi.
+- **Backend sống** qua `sounddevice` (PortAudio, extra `neuroedge[audio]`): chỉ được nạp khi
+  `LinuxHAL(audio="live")` hoặc `NEUROEDGE_LINUX_AUDIO=live`; mặc định đọc/ghi đúng hai nút
+  AEC của §6.1 — `audio.in` đọc `neuroedge.ec.source` (đã khử vang), `audio.out` phát vào
+  `neuroedge.ec.sink` (tham chiếu). Đổi nút bằng `NEUROEDGE_LINUX_AUDIO_IN` /
+  `NEUROEDGE_LINUX_AUDIO_OUT`. Thiếu thiết bị, thiết bị biến mất giữa phiên, hay thiết bị từ
+  chối rate/kênh/16-bit của bo mạch ⇒ lỗi ba phần; **im lặng không bao giờ được đọc như đầu vào**.
+- Replay không mở thiết bị nào (backend tệp), như `display` vẽ trong bộ nhớ. Phiên thoại thời
+  gian thực (micro/loa thật chạy song song provider) vẫn là `TODOS.md` #45; ở đây là nguyên thủy
+  HAL mà phiên đó sẽ dùng. Vì chưa có phiên thật điều khiển nó, **đầu vào sống chưa được kiểm trên
+  phần cứng**: một lần tràn bộ đệm (thiết bị bỏ mất âm thanh) ghi `audio_in_overflow` rồi dừng
+  phiên — không có dòng thời gian co lại trong im lặng.
+- Khi backend sống được chọn, `LinuxHAL` **mở và kiểm cả hai thiết bị trong `preflight`, trước khi
+  xin line GPIO nào** (Q-16): thiếu micro/loa ⇒ lỗi ba phần, chưa giữ chân nào. `--voice-file` luôn
+  ép backend tệp, nên `NEUROEDGE_LINUX_AUDIO=live` không bao giờ khiến một phiên WAV mở thiết bị.
 
 **Màn hình chọn rõ, không đoán:** `LinuxHAL(display="memory" | "/dev/fbN")` hoặc
 `NEUROEDGE_LINUX_DISPLAY`; không chọn thì `display` báo lỗi. Framebuffer đọc bố cục điểm ảnh từ
@@ -76,11 +150,11 @@ khi** xin line GPIO nào.
 
 | Nguyên thủy | Backend | Kiểm ở | Chỉ phần cứng | Task |
 |:---|:---|:---|:---|:---|
-| `digital.out` | ESP-IDF `gpio` sau walker cây `NETR` và sổ token C | PR — walker và sổ token C biên dịch trên host (bảng sự thật, ASan/UBSan) · QEMU (`firmware-qemu`, mỗi PR đụng `targets/**` và hằng đêm) — self-test gate lúc boot; lệnh chân qua UART (QEMU không có GPIO matrix) | Chân thật | walker, sổ token, self-test: TSK-S4-02, S4-07, S4-08 · chân: S4-01 · UART: S4-09 |
+| `digital.out` | ESP-IDF `gpio` sau walker cây `NETR` và sổ token C | PR — walker và sổ token C biên dịch trên host (bảng sự thật, ASan/UBSan) · QEMU (`firmware-qemu`, mỗi PR đụng `targets/**` và hằng đêm) — self-test gate lúc boot, cả firmware sinh cho một agent mới (`agent-firmware`); lệnh chân qua UART (QEMU không có GPIO matrix) | Chân thật | walker, sổ token, self-test: TSK-S4-02, S4-07, S4-08 · firmware của agent: I3-01 · chân: S4-01 · UART: S4-09 |
 | `audio.in` | I2S ES7210 + ESP-SR AFE (AEC, VAD) — driver từ XiaoZhi | **Không** — QEMU không có I2S; ESP-SR là thư viện Xtensa dựng sẵn, không chạy trên host | Toàn bộ | TSK-S5-01, S5-02 |
 | `audio.out` | I2S ES8311 | Không | Toàn bộ | TSK-S5-02 |
 | `sensor.read` | Driver I2C của ESP-IDF | QEMU — driver giả qua cùng giao diện HAL (QEMU không có I2C) | Bus I2C, cảm biến | TSK-S4-03 |
-| `display` | `esp_lcd` + LVGL | PR — **cùng mã giao diện LVGL** build trên host với màn hình test LVGL, so ảnh golden · QEMU — `esp_lcd_qemu_rgb` | Đường SPI tới ILI9342C/ST7789 | TSK-S4-10 |
+| `display` | `esp_lcd` + LVGL | PR — **cùng mã giao diện LVGL** build trên host với màn hình test LVGL, so ảnh golden ([`ui.md`](ui.md): màn hình, quy tắc ngôn ngữ, cách dựng golden) · QEMU — `esp_lcd_qemu_rgb` | Đường SPI tới ILI9342C/ST7789 | TSK-S4-10 |
 
 Mỗi ô có task. Ba ô chỉ kiểm được trên bo mạch (`audio.in`, `audio.out` của `esp32s3`, và
 phần âm học của `linux`); chúng nằm ở nightly TSK-S4-05 và tiêu chí Sprint 5–6.
@@ -95,17 +169,24 @@ nào đi theo ô tương ứng ở §2. Cột "Vai trò khi replay" nói phần 
 
 | Nguyên thủy | Sự kiện | `data` | Vai trò khi replay |
 |:---|:---|:---|:---|
-| `audio.in` | `text_input` · `audio_in_vad_start` · `audio_in_segment` | `{text}` · `{energy_db}` · `{sha256, duration_ms, sample_rate_hz}` | **Đầu vào.** Replay bắt đầu từ kết quả nhận thức đã ghi (`intent_extracted`), không chạy lại âm thanh |
+| `audio.in` | `text_input` · `audio_in_vad_start` · `audio_in_segment` · `audio_in_overflow` | `{text}` · `{energy_db}` · `{sha256, duration_ms, sample_rate_hz}` · `{}` | **Đầu vào.** Replay bắt đầu từ kết quả nhận thức đã ghi (`intent_extracted`), không chạy lại âm thanh. `audio_in_overflow`: thiết bị sống bỏ mất âm thanh đã thu (người đọc theo không kịp) — phiên **dừng** thay vì đưa tiếp một dòng thời gian đã co lại trong im lặng (Q-21) |
 | `audio.out` | `tts_stream_start` · `tts_stream_end` · `knowledge_retrieved` | `{text}` · `{duration_ms, sha256?, reason?}` (`reason`: `docs/spec/voice_fsm.md` §8) · `{entries: [{id, score}]}` | **Đầu ra** — chữ không vào so khớp quyết định; `knowledge_retrieved` cho biết câu trả lời dựa trên tri thức nào |
 | `digital.out` | `actuator_command` · `actuator_aborted` | `{pin, operation, duration_ms}` · `{pin, reason}` | **Quyết định** — so golden ở mọi lần `replay` / `verify` |
-| `sensor.read` | `sensor_read` · `sensor_set` | `{sensor, value, unit?, use?}` · `{sensor, value}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI |
+| `sensor.read` | `sensor_read` · `sensor_set` · `sensor_unavailable` | `{sensor, value, unit?, use?, non_finite?}` · `{sensor, value, non_finite?}` · `{sensor, reason}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI. `sensor_unavailable`: một lần tính dữ kiện gate không lấy được số đọc, hoặc một luật của cảm biến từ chối nó (§2), nên mọi dữ kiện của cảm biến đó là `null`; chỉ để đọc, replay dùng `gate_facts` |
 | `display` | `display_frame` | `{width, height, format, sha256, text?}` (`text` khi `format = "text"`) | **Đầu ra** — so digest khi golden có ghi, không chặn tương đương quyết định |
 
 Chế độ ẩn danh (FR-TRC-07) băm `text`; `audio_in_segment` và `display_frame` vốn chỉ mang digest.
 
+**Không có NaN hay vô cực trong JSON.** JSON không có các số đó (`NaN` trần làm `JSON.parse` của trình
+duyệt dừng, và trang `--ui` dừng theo). Số đọc không hữu hạn ghi thành chuỗi `"nan"`, `"inf"`, `"-inf"`
+kèm `non_finite: true`, và replay đọc lại thành số thực. Mọi sự kiện khác, siêu dữ liệu, trang `--ui` và
+`trace view` cũng không bao giờ mang số không hữu hạn (`json_safe` trong `python/neuroedge/trace.py`);
+`trace validate` từ chối tệp có `NaN`/`Infinity` trần. Siêu dữ liệu `sensor_facts_digest` và sự kiện
+`sensor_facts_changed` (chỉ ở vết ghi phát lại): §2, luật `[sim.sensor_facts]`.
+
 Sự kiện ngoài nguyên thủy (tool call, xác nhận, MCP host, `system_two_*`, đo lượt `turn_latency` /
 `session_summary`) ở danh mục duy nhất `docs/spec/tool_calling.md` §7; sự kiện của máy trạng thái hội thoại (`voice_state_changed`,
-`wake_word_detected`, `audio_in_vad_end`, `stt_result`) ở `docs/spec/voice_fsm.md` §8. Replay bỏ qua `system_two_call`: System 2 không đổi phán quyết, nên
+`wake_word_detected`, `audio_in_vad_end`, `stt_result`, `stt_unavailable`, `stt_fallback`) ở `docs/spec/voice_fsm.md` §8. Replay bỏ qua `system_two_call`: System 2 không đổi phán quyết, nên
 phiên ghi online replay được mà không cần model hay key.
 
 ## 4. Vết ghi từ `esp32s3` về máy tính
@@ -122,7 +203,7 @@ NE1 {"offset_ms":3,"type":"gate_evaluation_begin","data":{"gate":"light_on@1.0.0
 NE1 {"offset_ms":6,"type":"gate_facts","data":{"call_source":{"value":"local_grammar","confidence":null,"source":"context"}}}
 NE1 {"offset_ms":9,"type":"gate_evaluation_result","data":{"verdict":"ALLOW","evaluations":{"call_source":"local_grammar"}}}
 NE1 {"offset_ms":57,"type":"trace_end","data":{"events":4}}
-NE_SELFTEST PASS walker=6 token=6
+NE_SELFTEST PASS walker=<n> token=<n>
 NE_TRACE DONE sessions=1
 ```
 
@@ -146,8 +227,9 @@ biết nó không còn gì để nói.
 (`GateResult.to_event_data()`). Hai chỗ chưa như host, đều đọc lại được đúng khi replay: giá trị ngoài
 miền, và độ tin cậy NaN, ghi là `null` (thiết bị chỉ biết "không đọc được"). Nhãn gate
 (`light_on@1.0.0`) và chữ `on_block` (`to`, `message`, `fallback_action`) không có trong NETR v1 nên đi
-kèm firmware, sinh từ cùng gate đã phân giải (`scripts/gen_firmware_gates.py`,
-`scripts/gen_firmware_vectors.py`). Phiên self-test không có lệnh chân; lệnh chân chỉ có trong phiên
+kèm firmware, sinh từ cùng gate đã phân giải (component `ne_agent` của `neuroedge build --target esp32s3`,
+TSK-I3-01; `scripts/gen_firmware_vectors.py`). Phiên self-test là các phép kiểm của agent đã link, mỗi phép
+kiểm một lần đánh giá gate, cùng dữ kiện và phán quyết engine host đã tính lúc build; không có lệnh chân; lệnh chân chỉ có trong phiên
 replay dưới đây, và chưa có `actuator_aborted`: chưa có HAL firmware (TSK-S4-01).
 
 **Host.** `neuroedge record --target esp32s3 --port <nguồn>` giữ các dòng `NE1 `, bỏ mọi dòng khác
@@ -201,6 +283,51 @@ Firmware trên QEMU chạy mỗi PR đụng `targets/**` hoặc `fixtures/traces
 một vết ghi tuỳ ý trên thiết bị (gửi dữ kiện xuống) và so timing là phần còn lại của TSK-S4-04;
 `replay --target esp32s3` vẫn thoát mã 2.
 
+### 4.1 OTA trên QEMU (TSK-S6-01/02/04, FR-OTA-01…04)
+
+`scripts/qemu_ota.sh` (job `ota-rollback`) dựng các ảnh factory, bản mới, sai khóa, không ký và ảnh hỏng (pha a–g),
+ký bằng khóa RSA-3072 dùng-một-lần, phục vụ qua HTTP và đọc UART. Phiên bản trong app descriptor —
+thứ OTA so sánh — của một project người dùng build đến từ `version.txt` do `neuroedge build
+--target esp32s3` ghi (`[agent] version`; cách đặt và tăng: `docs/user/nap-firmware.md` §6.6);
+kịch bản QEMU ghi đè `PROJECT_VER` để dựng ảnh mới 0.2.0. QEMU **chứng minh**:
+
+- khe A/B: ảnh factory vẫn chạy, bản mới được nạp rồi khởi động, và một lần cập nhật hỏng không
+  làm mất khe đang chạy;
+- chữ ký: ảnh sai khóa bị `NE_OTA REJECTED reason=signature`, không có `SWITCH`, thiết bị ở lại
+  bản cũ, khe vừa ghi bị xoá (`NE_OTA ERASED`); ảnh không ký bị từ chối như vậy; đây là cùng
+  đường xác minh `esp_ota_end` mà bo mạch dùng;
+- xác nhận sau self-test: ảnh mới chỉ `NE_OTA VALID` sau khi self-test gate đạt;
+- rollback cục bộ: ảnh hỏng (tự reset trước khi kịp xác nhận, hoặc self-test hỏng ⇒
+  `NE_OTA INVALID`) bị bootloader quay về ảnh trước ở lần khởi động kế tiếp, và phiên bản vừa bị
+  quay về bị chặn (`NE_OTA SKIP reason=rolled_back`). Quyết định nạp hay không là hàm C thuần
+  `ne_ota_should_install` (`ne_ota_policy.c`) — QEMU chạy đúng bản bo mạch chạy, gồm cả từ chối hạ
+  cấp theo mốc nước cao phiên bản trong NVS (pha g: ảnh ký đúng nhưng thấp hơn mốc ⇒
+  `SKIP reason=downgrade`). Mốc đó chỉ là bảo vệ bằng phần mềm; quá hạn chót, lỗi tải, chuyển hướng, phiên
+  bản không đọc được và việc nâng lại mốc lúc khởi động chỉ được kiểm bằng test host
+  (`test_ota_policy_host.c`), không có pha QEMU.
+
+QEMU **không** chứng minh được, chỉ bo mạch mới có:
+
+- Wi-Fi và mạng thật: QEMU không có Wi-Fi (Q-21), nên kịch bản dùng NIC `open_eth` (slirp). Trên
+  Box-3, `main.c` (`init_network_stack`) mới chỉ dựng STA (`esp_wifi_set_mode(WIFI_MODE_STA)` +
+  `esp_wifi_start()`) mà **chưa** gọi `esp_wifi_connect()` và chưa có provisioning: hôm nay chỉ
+  đường `open_eth` của QEMU chạy được.
+- Mất điện giữa lúc ghi hoặc giữa lúc đánh dấu hợp lệ; điện áp, thời gian ghi flash. Ảnh **treo**
+  trước self-test cũng thuộc nhóm này: task watchdog không panic theo mặc định
+  (`CONFIG_ESP_TASK_WDT_PANIC=n`), nên máy không tự reset — rollback chỉ ở lần khởi động sau.
+- Bootloader: OTA không bao giờ ghi nó (`esp_https_ota` chỉ đổi khe app), nên bản có rollback phải
+  nạp **một lần bằng cáp**; QEMU không kiểm việc nạp đó.
+- Cấu hình thiếu: OTA chỉ được biên dịch khi bật đủ chữ ký-trên-cập-nhật và rollback (Kconfig từ
+  chối `CONFIG_NEUROEDGE_OTA` nếu thiếu); QEMU chỉ chạy lớp `sdkconfig.ota` đầy đủ, không chứng
+  minh gì về một build thiếu.
+- Secure Boot / khóa trong eFuse (TSK-S6-05, ngoài phạm vi đợt này): khóa xác minh nằm trong ảnh
+  đang chạy, nên người có cáp vẫn đổi được firmware; eFuse anti-rollback đi cùng Secure Boot.
+- Hai giới hạn của chính QEMU 9.0, kịch bản phải né: bộ mô hình flash hỏng trạng thái khi reset
+  nóng ngay sau các lần ghi flash của một lần cập nhật, và trình xử lý panic treo thay vì in rồi
+  reset. Vì vậy script chạy **mỗi lần khởi động trong một tiến trình QEMU riêng** (dừng ngay sau
+  dòng `rst:` của thiết bị) và ảnh hỏng dùng reset (`esp_restart`) chứ không panic; trên bo mạch
+  cùng logic otadata đó chạy trong một lần cập nhật duy nhất.
+
 ## 5. Trực quan hoá
 
 Năm bề mặt, cùng một bộ thành phần SVG tự vẽ (chốt cửa, đèn, relay, đồng hồ cảm biến, khung màn
@@ -219,11 +346,14 @@ kèm (không tải CDN); không có sẵn chốt cửa.
 
 ## 6. Ba thiết bị chạy cùng agent mẫu
 
-FR-TGT-02 và FR-TGT-03 đòi **agent mẫu chạy thật** trên RPi 5 và Box-3. Hôm nay agent mẫu
+FR-TGT-02 và FR-TGT-03 đòi **agent mẫu chạy thật** trên RPi 5 và Box-3. Agent mẫu
 `villa-concierge` khai `audio.in aec = true`, và `linux-rpi5` khai `aec = false`, nên `build
 --target linux` từ chối nó — agent mẫu chỉ phủ 2/3 thiết bị. **Q-22 (đã chốt, phương án A)** đóng
-khoảng này bằng AEC phần mềm của PipeWire, làm ở TSK-S5-08. Cho tới khi đó, kịch bản tương đương
-ba thiết bị dùng agent chỉ cần `digital.out` (mẫu `minimal` của `neuroedge new`).
+khoảng này bằng AEC phần mềm của PipeWire: TSK-S5-08 đã giao backend sống, cấu hình drop-in và
+đường tệp WAV; `linux-rpi5` **vẫn giữ `aec = false`** cho tới khi nightly trên Pi đạt hai phép đo
+§6.2, nên `build` tiếp tục từ chối agent cần AEC — không có đường nào để khai một năng lực chưa
+đo. Kịch bản tương đương ba thiết bị dùng agent chỉ cần `digital.out` (mẫu `minimal` của
+`neuroedge new`) hoặc agent cần âm thanh không AEC (`--voice-file` trên `linux`).
 
 ### 6.1 Cách nối
 
@@ -239,18 +369,21 @@ LinuxHAL.audio_out ─► sink ─────►└─────────�
 thẳng ra loa thì AEC không có gì để trừ. Cách khác là `monitor.mode = true`, lấy tham chiếu từ
 monitor của sink mặc định — dùng khi một tiến trình khác cũng phát ra loa.
 
-Cấu hình giao kèm TSK-S5-08, đặt ở `~/.config/pipewire/pipewire.conf.d/` (người dùng) hoặc
-`/etc/pipewire/pipewire.conf.d/` (hệ thống), rồi `systemctl restart --user pipewire.service`:
+Cấu hình TSK-S5-08 giao kèm ở `pipewire/neuroedge-echo-cancel.conf` (trong wheel:
+`neuroedge/_data/pipewire/`, tìm bằng `neuroedge.paths.echo_cancel_conf()`), **sao chép** vào
+`~/.config/pipewire/pipewire.conf.d/` (người dùng) hoặc `/etc/pipewire/pipewire.conf.d/` (hệ
+thống), rồi `systemctl restart --user pipewire.service`: `LinuxHAL` đọc/ghi hai nút
+`neuroedge.ec.source` / `neuroedge.ec.sink` ở đây khi backend sống được chọn:
 
 ```text
-# neuroedge-echo-cancel.conf
+# neuroedge-echo-cancel.conf — bản giao kèm, dùng được ngay
 context.modules = [
 {   name = libpipewire-module-echo-cancel
     args = {
         library.name = "aec/libspa-aec-webrtc"
         node.description = "NeuroEdge Echo Cancel"
-        capture.props  = { node.name = "neuroedge.ec.capture"
-                           target.object = "<micro của HAT I2S>" }  # chỉ định micro
+        capture.props  = { node.name = "neuroedge.ec.capture" }
+        # target.object = "<tên nút micro HAT I2S, từ `pw-cli ls Node`>"   ← dòng DUY NHẤT phải sửa
         source.props   = { node.name = "neuroedge.ec.source" }      # audio.in đọc ở đây
         sink.props     = { node.name = "neuroedge.ec.sink" }        # audio.out phát vào đây
         playback.props = { node.name = "neuroedge.ec.playback"
@@ -260,10 +393,19 @@ context.modules = [
 ]
 ```
 
-Chỉ định micro bằng `capture.props.target.object` và tắt tự nối ở những nút không được nối tự do
-là mẫu lấy từ cấu hình tham khảo (gist `fathonix/05de5398…`, micro Android qua ROC). Tên nút của
-micro HAT và việc Raspberry Pi OS có chạy PipeWire mặc định hay không phải kiểm trên Pi khi làm
-TSK-S5-08.
+Bản giao kèm **không có placeholder**: không đặt `target.object`, module lấy micro nguồn mặc định
+của hệ thống. Muốn ghim micro HAT, bỏ chú thích và sửa **đúng một dòng** `target.object` bằng tên
+nút `pw-cli ls Node` in ra (mẫu lấy từ cấu hình tham khảo, gist `fathonix/05de5398…`).
+
+**PortAudio nhìn thấy gì — chưa kiểm trên phần cứng.** `audio.in`/`audio.out` sống đọc/ghi thiết bị
+qua `sounddevice` → PortAudio, mà host API mặc định trên Linux là **ALSA**: nó liệt kê các PCM ALSA,
+còn `neuroedge.ec.source` / `neuroedge.ec.sink` là **tên nút PipeWire**. Hai tên đó chỉ tới được
+PortAudio khi có lớp nối: plugin `pipewire-alsa` (thường có sẵn cùng PipeWire) phơi nút ra ALSA, và
+cách chắc chắn là thêm một alias PCM trong `~/.asoundrc` / `/etc/asound.conf` trỏ tới nút, hoặc
+truyền đúng tên/ chỉ số thiết bị mà `python -c "import sounddevice; print(sounddevice.query_devices())"`
+in ra trên chính máy đó (qua `NEUROEDGE_LINUX_AUDIO_IN`/`_OUT`). **Chưa có bước nào ở đây được kiểm
+trên Pi** — việc chọn tên/alias là phần của nightly TSK-S4-05; lỗi "no input/output device named …"
+của `LinuxHAL` luôn chỉ người đọc về mục này.
 
 ### 6.2 Khi nào `linux-rpi5` được khai `aec = true`
 

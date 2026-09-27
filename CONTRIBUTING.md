@@ -168,6 +168,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `gates/` | Gate mẫu, phân giải được, gồm chuỗi kế thừa | Thêm: PR thường; sửa/xoá: **RFC** (§3) |
 | `digests.lock` | Digest JCS của mọi gate chuẩn mực | Chỉ qua `scripts/check_digests.py` (§3) |
 | `boards/` | Khai báo năng lực bo mạch (TOML) | PR thường (§3) |
+| `pipewire/` | Drop-in `neuroedge-echo-cancel.conf` cho AEC phần mềm trên `linux` (Q-22); vào wheel qua `hatch_build.py`, tìm bằng `neuroedge.paths.echo_cancel_conf()` | PR thường |
 | `fixtures/traces/*.json` | Ba vết ghi chuẩn mực | **RFC** |
 | `fixtures/traces/invalid/`, `fixtures/gates/invalid/` | Corpus phản chứng + `expected_errors.yaml` | PR thường, khép kín (§3) |
 | `fixtures/gates/valid/`, `fixtures/gates/registry/` | Gate phân giải đúng; gate cơ sở cho fixture | Thêm: PR thường; sửa/xoá: **RFC** |
@@ -175,25 +176,27 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `fixtures/decision_trees/` | Bảng sự thật cho walker C | Sinh bằng `scripts/generate_truth_tables.py`, không sửa tay |
 | `fixtures/agents/` | Agent mẫu `villa-concierge`, `home-voice`, `driveway`, `voice-door`; `neuroedge new --template` sao hai cái đầu | PR thường |
 | `fixtures/compliance/voice/` | Bộ vector tuân thủ máy trạng thái hội thoại + `expected_results.yaml`, chung cho hiện thực Python và C | PR thường, khép kín (§3) |
-| `python/neuroedge/engine/` | L3 — phân giải gate, chuẩn tắc hoá, Gate Engine, cây quyết định, bố cục `NETR`, trình biên dịch `build` | **RFC** nếu đổi ngữ nghĩa phân giải hoặc bố cục `NETR` |
+| `python/neuroedge/engine/` | L3 — phân giải gate, chuẩn tắc hoá, Gate Engine, cây quyết định, bố cục `NETR`, trình biên dịch `build`, bộ sinh firmware `esp32s3` của agent (`firmware.py`) | **RFC** nếu đổi ngữ nghĩa phân giải hoặc bố cục `NETR` |
 | `python/neuroedge/actions/` | `@action`, `c.do()`/`c.say()`, token phán quyết dùng một lần | PR thường; ranh giới ở [`threat_model.md`](docs/spec/threat_model.md) |
-| `python/neuroedge/hal/` | L1 — năm nguyên thủy, mô hình bo mạch, `sim.py`, `linux.py` | PR thường; xem [rà soát MCU](docs/spec/hal_mcu_review.md) |
-| `python/neuroedge/models/` | L2 — SystemOne/SystemTwo, ngữ pháp lệnh cục bộ, knowledge base, `providers/` (LiteLLM, adapter) | PR thường |
-| `python/neuroedge/perception/` | L2 — máy trạng thái hội thoại (`voice_fsm.py`) và driver của nó (`voice_session.py`) | PR thường; hành vi theo [`voice_fsm.md`](docs/spec/voice_fsm.md) |
+| `python/neuroedge/hal/` | L1 — năm nguyên thủy, mô hình bo mạch, `sim.py`, `linux.py`, `audio.py` (PCM trên máy tính: tệp WAV, VAD, loa dạng dòng thời gian) | PR thường; xem [rà soát MCU](docs/spec/hal_mcu_review.md) |
+| `python/neuroedge/models/` | L2 — SystemOne/SystemTwo, ngữ pháp lệnh cục bộ, knowledge base, `providers/` (LiteLLM, System One API cho Jev, adapter; `common.py`: phần mọi bảng provider dùng chung — điểm cuối, không lặp key, nạp adapter) | PR thường |
+| `python/neuroedge/perception/` | L2 — máy trạng thái hội thoại (`voice_fsm.py`), driver của nó (`voice_session.py`: âm thanh vào, STT, TTS, cắt lời), `providers/` (STT/TTS: adapter OpenAI audio, provider giả; bảng `[stt]`/`[tts]`) | PR thường; hành vi theo [`voice_fsm.md`](docs/spec/voice_fsm.md) |
 | `python/neuroedge/sim/` | `SimSession` (REPL gõ chữ), `ui.py` (trang `--ui` cục bộ) | PR thường |
 | `python/neuroedge/mcp_server.py`, `mcp_host.py`, `mcp_desktop.py` | Máy chủ MCP · System 2 làm MCP host · cấu hình Claude Desktop | PR thường |
 | `python/neuroedge/testing/` | Action CI — recorder, player (replay), assertions, golden, `tool_corpus`, `voice_corpus`, `uart` (vết ghi từ UART thiết bị) | PR thường |
 | `python/neuroedge/viz/` | `trace view`, xuất Perfetto | PR thường |
 | `python/neuroedge/templates/` | Mẫu dự án cho `neuroedge new` (`*.tmpl`, generator Python thuần) | PR thường |
 | `python/neuroedge/cli/` | CLI Typer: `main.py`, `run.py` (REPL), `explain.py` | PR thường |
-| `python/neuroedge/errors.py`, `trace.py`, `paths.py` | Hợp đồng lỗi 3 thành phần · thẩm định vết ghi · định vị asset (checkout, editable, wheel) | PR thường; đụng `paths.py` thì chạy `scripts/wheel_smoke.sh` |
+| `python/neuroedge/errors.py`, `trace.py`, `paths.py`, `net.py` | Hợp đồng lỗi 3 thành phần · thẩm định vết ghi · định vị asset (checkout, editable, wheel) · HTTP tới provider (không proxy, không redirect, có hạn chót) | PR thường; đụng `paths.py` thì chạy `scripts/wheel_smoke.sh` |
 | `python/tests/` | Bộ test chính (`testpaths`) | PR thường |
 | `python/tests_linux/` | Test trên gpio-sim, job `linux-hal` | PR thường |
 | `python/hatch_build.py`, `pyproject.toml`, `requirements-lock.txt`, `pip-audit-ignore.txt`, `LICENSE` | Đóng gói (asset vào `neuroedge/_data/`, README gốc vào metadata) · phụ thuộc ghim · ngoại lệ `pip-audit` đã duyệt (job `pip-audit`) · bản sao `LICENSE` gốc | PR thường; chạy `scripts/wheel_smoke.sh` |
 | `targets/esp32s3/` (gốc) | Dự án ESP-IDF: `CMakeLists.txt`, `sdkconfig.defaults` (flash 16 MB, PSRAM, FreeRTOS 1000 Hz), `sdkconfig.qemu` (lớp phủ cho QEMU), `partitions.csv` (factory + OTA A/B) | PR thường; job `firmware-qemu` |
-| `targets/esp32s3/main/` | Firmware ESP-IDF: `main.c`, khung đo bộ nhớ, self-test gate (ghi vết ghi `NE1`), replay vết ghi chuẩn mực (`trace_vectors.c`); `gates/` sinh bằng `scripts/gen_firmware_gates.py`, `vectors/` bằng `scripts/gen_firmware_vectors.py` | PR thường; đổi vết ghi chuẩn mực, gate hay action ⇒ sinh lại `vectors/` |
+| `targets/esp32s3/main/` | Firmware ESP-IDF, chung cho mọi agent: `main.c`, khung đo bộ nhớ (kể cả dòng heap `NEUROEDGE_HEAP_JSON`), self-test gate trên agent đã link (ghi vết ghi `NE1`), replay vết ghi chuẩn mực (`trace_vectors.c`); `vectors/` sinh bằng `scripts/gen_firmware_vectors.py` | PR thường; đổi vết ghi chuẩn mực, gate hay action ⇒ sinh lại `vectors/` |
+| `targets/esp32s3/components/ne_agent/` | Component agent do `neuroedge build --target esp32s3` sinh, ở đây cho agent mẫu `home-voice`: cây `NETR`, bảng gate · chân · action, phép kiểm self-test kèm phán quyết engine host | Không sửa tay — `scripts/gen_firmware_gates.py` (`--check` chạy trong pytest) |
 | `targets/esp32s3/components/ne_gate/` | Walker C99 và sổ token C | PR thường; bố cục `NETR`: **RFC** |
 | `targets/esp32s3/components/ne_trace/` | Dòng vết ghi `NE1` trên UART — định dạng C99, không biến toàn cục ([`simulation_coverage.md`](docs/spec/simulation_coverage.md) §4) | PR thường; job `firmware-qemu` |
+| `targets/esp32s3/ui/` | Giao diện LVGL của thiết bị: màn hình (`ne_ui.h`), bảng chữ vi/en, phông Be Vietnam Pro sinh sẵn, ảnh golden và host harness riêng; quy tắc ngôn ngữ ở [`docs/spec/ui.md`](docs/spec/ui.md) | PR thường; đổi màn hình, bảng chữ, phông hoặc ca golden ⇒ `bash scripts/run_ui_golden.sh --update`; job `ui-golden` |
 | `scripts/` | Công cụ CI và phát hành | PR thường |
 | `.github/` | Năm workflow ở `workflows/` — danh sách job: `CHANGELOG.md` §2.5; `dependabot.yml` (ghim SHA của Actions), `actionlint.yaml` | PR thường |
 | `docs/rfc/`, `docs/spec/`, `docs/reports/` | RFC, đặc tả chuẩn tắc, báo cáo đo | PR thường |

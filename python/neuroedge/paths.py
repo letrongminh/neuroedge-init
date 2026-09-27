@@ -85,3 +85,13 @@ def boards_dir() -> Path:
 def schema_path(name: str) -> Path:
     """Path to an official schema, e.g. ``schema_path("gate.v1.json")``."""
     return schemas_dir() / name
+
+
+def echo_cancel_conf() -> Path:
+    """
+    The PipeWire echo-cancel drop-in `linux` ships (TSK-S5-08, Q-22): copy it into
+    ``~/.config/pipewire/pipewire.conf.d/`` (or ``/etc/pipewire/pipewire.conf.d/``)
+    and restart PipeWire. Wiring and the two nodes it creates:
+    ``docs/spec/simulation_coverage.md`` §6.1.
+    """
+    return repo_root() / "pipewire" / "neuroedge-echo-cancel.conf"

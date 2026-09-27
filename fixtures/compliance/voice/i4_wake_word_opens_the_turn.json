@@ -1,0 +1,65 @@
+{
+  "description": "TSK-I4-01: có [wake_word] cấu hình (world.wake_word — bộ phát hiện chạy nhưng không tự kích), VAD một mình KHÔNG mở lượt; wake_word_detected mở lượt 1, phần còn lại như thường.",
+  "scenario": "table",
+  "covers": [
+    "T01",
+    "T02",
+    "T03",
+    "T04",
+    "T08"
+  ],
+  "agent": "voice-door",
+  "params": {
+    "end_of_turn_silence_ms": 700,
+    "listen_timeout_ms": 8000,
+    "think_timeout_ms": 5000,
+    "max_reprompts": 1,
+    "vad_activation": false
+  },
+  "world": {
+    "wake_word": true
+  },
+  "inputs": [
+    {
+      "offset_ms": 100,
+      "type": "audio_in_vad_start",
+      "data": {
+        "energy_db": -18.0
+      }
+    },
+    {
+      "offset_ms": 400,
+      "type": "audio_in_vad_end",
+      "data": {}
+    },
+    {
+      "offset_ms": 600,
+      "type": "wake_word_detected",
+      "data": {
+        "word": "hey_neuro",
+        "score": 0.93
+      }
+    },
+    {
+      "offset_ms": 800,
+      "type": "audio_in_vad_start",
+      "data": {
+        "energy_db": -18.0
+      }
+    },
+    {
+      "offset_ms": 1500,
+      "type": "audio_in_vad_end",
+      "data": {}
+    },
+    {
+      "offset_ms": 2600,
+      "type": "stt_result",
+      "data": {
+        "turn": 1,
+        "text": "mở cửa"
+      }
+    }
+  ],
+  "until_ms": 3000
+}

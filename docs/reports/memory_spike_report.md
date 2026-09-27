@@ -93,9 +93,36 @@ firmware bằng
 ### 4.1 Vì sao QEMU không thay được phép đo này
 
 Firmware đã boot trên Espressif QEMU (TSK-S4-08), nhưng QEMU không giả lập I2S, AFE hay PSRAM
-octal của Box-3 (Q-21), nên mốc `audio_ready` không lấy được ở đó. TSK-S4-11 sẽ in heap còn
-trống lúc boot trên QEMU và kiểm `.bss`/`.data` mỗi PR; đó là sàn tĩnh, **không** thay số đo
-của báo cáo này.
+octal của Box-3 (Q-21), nên mốc `audio_ready` không lấy được ở đó. Thay vào đó CI kiểm hai **sàn**
+(TSK-S4-11, `scripts/check_firmware_size.py`, workflow `firmware-qemu.yml`) — điều kiện cần, **không**
+thay số đo của báo cáo này:
+
+- **RAM tĩnh** (job `firmware-size`, cấu hình bo mạch, có Wi-Fi): SRAM trong còn lại sau `.data`,
+  `.bss` và mã IRAM phải ≥ 120 KB — heap không thể lớn hơn con số đó trước khi một task nào chạy.
+- **Heap lúc boot trên QEMU** (dòng `NEUROEDGE_HEAP_JSON` ngay trước `NE_TRACE DONE`, sau self-test
+  gate, trước mạng và âm thanh, không PSRAM): heap trong còn trống phải ≥ 120 KB.
+
+ESP-SR **chưa được link** (`TODOS.md` #17), nên cả hai là sàn **không có** AFE. Khi vendoring
+`esp-sr`, job `firmware-size` thêm `--require-esp-sr`: bản build lặng lẽ thiếu AFE thì không đạt.
+
+| Sàn (không phải phán quyết Q-3) | Đo được | Ngưỡng | Nguồn |
+|:---|:---:|:---:|:---|
+| SRAM trong còn lại sau cấp phát tĩnh — cấu hình bo mạch | 231 556 B | ≥ 122 880 B | `.data` 20 300 · `.bss` 16 432 · mã IRAM 73 435 trên DIRAM 341 760 |
+| Heap trong còn trống lúc boot — QEMU, không mạng, không PSRAM | 383 664 B | ≥ 122 880 B | checkpoint `gate_runtime_ready` |
+| Ảnh OTA đã ký — QEMU (open_eth, không Wi-Fi) | 724 992 B | ≤ 3 670 016 B | `scripts/qemu_ota.sh`, ảnh RSA-3072 |
+| Ảnh OTA đã ký — cấu hình bo mạch (Wi-Fi, CA bundle cho HTTPS) | 987 136 B | ≤ 3 670 016 B | `scripts/qemu_ota.sh` + `scripts/check_firmware_size.py` |
+| SRAM trong còn lại sau cấp phát tĩnh — bản OTA bo mạch | 229 312 B | ≥ 122 880 B | `.data` 20 624 · `.bss` 18 096 · mã IRAM 73 607 trên DIRAM 341 760 |
+
+*Hai dòng OTA đo 2026-09-26 với lớp `sdkconfig.ota` (TSK-S6-01/02/04); script in lại mỗi lượt chạy
+`firmware-qemu.yml` job `ota-rollback`. Đây là kích thước tĩnh của ảnh đã ký, không phải phán quyết Q-3.*
+
+Một số đo khác của đường OTA, không phải ngưỡng Q-3: `CONFIG_ESP_MAIN_TASK_STACK_SIZE` mặc định
+**3584 B không đủ**. `esp_https_ota` ghi và xác minh ảnh trên stack của task gọi, và `main` tràn
+stack khi xác minh ảnh ánh xạ một segment (đo 2026-09-26, ESP-IDF v5.4); lớp `sdkconfig.ota` đặt
+8192 B. Chú thích cạnh hằng số đó trong
+[`targets/esp32s3/sdkconfig.ota`](../../targets/esp32s3/sdkconfig.ota) dẫn về đây.
+
+*Đo 2026-09-26, ESP-IDF v5.4, firmware của agent mẫu `home-voice`; CI in lại các số này mỗi lượt chạy.*
 
 ## 5. Kết luận và hệ quả phạm vi
 

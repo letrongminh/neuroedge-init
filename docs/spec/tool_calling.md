@@ -168,6 +168,8 @@ một mô hình gửi `{"call_source": "local_grammar"}` bị `REJECTED` ở bư
   lần** (kể cả khi lượng giá lại vẫn chặn); hết hạn sau `max(p95 × 3, 10 s)`; gate đổi giữa
   chừng ⇒ vô hiệu. Nguồn khác `local_grammar` / `ui` ⇒ `tool_confirm_rejected`, câu hỏi
   vẫn chờ người.
+- Chữ gõ và nút trả lời câu hỏi mới nhất còn chờ. Lời **nói** chỉ trả lời câu hỏi trong
+  lượt trả lời của chính nó — luật ở `docs/spec/voice_fsm.md` §5.4 (Q-46 (D3)).
 - Xác nhận không bỏ qua gate: gate được **lượng giá lại** với dữ kiện **hiện tại** và
   `call_source` của **yêu cầu gốc**; chỉ tiêu chí trong `confirms` coi như đạt. Mọi tiêu chí
   khác, giới hạn tham số và fail-closed khi adjudicator suy giảm vẫn áp dụng. Kết quả ghi
@@ -180,8 +182,8 @@ hỏi xác nhận* với nút Đồng ý / Huỷ và thời gian còn lại (`PO
 
 ## 7. Vết ghi
 
-Đây là danh mục **duy nhất** của sự kiện tool call, xác nhận, MCP host, System 2 và đo lượt
-(§7.1). Sự kiện
+Đây là danh mục **duy nhất** của sự kiện tool call, xác nhận, MCP host, System 2, model cloud
+của System 1 và đo lượt (§7.1). Sự kiện
 theo nguyên thủy HAL (`actuator_command`, `sensor_read`, `display_frame`…) ở
 `docs/spec/simulation_coverage.md` §3.
 
@@ -198,6 +200,7 @@ theo nguyên thủy HAL (`actuator_command`, `sensor_read`, `display_frame`…) 
 | `system_two_call` | `provider`, `model`, `task`, `latency_ms`, `status`, `prompt_tokens?`, `completion_tokens?`, `cost_usd?`, `error?` — không prompt, không key; replay bỏ qua | FR-MDL-06 |
 | `system_two_unavailable` | `task`, `reason` — model không trả lời được | FR-MDL-06 |
 | `system_two_rounds_exceeded` | `task`, `rounds` — quá `max_rounds` (§10 quy tắc 6) | FR-MDL-11 |
+| `system_one_call` | `provider`, `model`, `criterion`, `latency_ms`, `status` (`ok` · `unavailable`), `reason?` (lý do `Unavailable`: `offline`, `timeout`, `rate_limited`, `refused`, `malformed`, `empty`), `http_status?`, `confidence?`, `served_by?` (bản model đã trả lời), `prompt_tokens?`, `completion_tokens?`, `cost_usd?` — mỗi lượt SystemOne hỏi model cloud một tiêu chí (`[system_one]`). Model chỉ nhận lời người nói (`state = {utterance}`), không bao giờ action hay tham số của bên gọi; không có lời người nói (vd lời gọi từ MCP client) hay thiếu key thì không gọi, không ghi. Sự kiện không mang state, chữ hay key; replay bỏ qua | TSK-I4-02 |
 
 Câu thiết bị nói ghi ở `tts_stream_start` (simulation_coverage §3); nguồn của câu nằm ở
 `reply_source` của lượt (vd `gate_ask`, `confirmed`, `offline_help` — §10 quy tắc 5; danh sách đủ ở
@@ -227,7 +230,7 @@ không lưu trong log. Lời gọi tool từ MCP client bên ngoài không phả
 
 | Chặng | Đo gì |
 |:---|:---|
-| `perception` | Đọc đầu vào và khớp ngữ pháp lệnh (chữ gõ / transcript → lệnh) |
+| `perception` | Đọc đầu vào và khớp ngữ pháp lệnh (chữ gõ / transcript → lệnh); với giọng nói qua provider STT (TSK-S3-13), cả thời gian chờ STT — từ lúc gửi âm thanh của lượt (T04) tới lúc có transcript, hoặc tới lúc STT hỏng (`stt_unavailable`) |
 | `system_two` | Chờ System 2: mọi `respond` / `reply` của lượt; với giọng nói, từ lúc có transcript tới lúc câu trả lời (hoặc hết giờ chờ) tới |
 | `gate` | `ActionContractEngine.evaluate()` — mọi gate của lượt, cộng dồn |
 | `action` | Thân các `@action` chạy sau ALLOW, cộng dồn |
@@ -243,7 +246,7 @@ Chặng mở bên trong một chặng khác (một `@action` gọi lại `c.do()
 | `system_1` | Ngữ pháp lệnh / System 1 của thiết bị phục vụ, System 2 không được hỏi — kể cả câu "có" / "không" nói với câu hỏi `ask` của thiết bị |
 | `system_2` | System 2 trả lời (có ít nhất một câu trả lời trong lượt) |
 | `fallback` | System 2 được hỏi mà không trả lời được, thiết bị tự trả lời (Q-14): `reply_source` là `offline`, `offline_help` hoặc `knowledge_local` — cả khi một vòng trước của System 2 đã trả lời. Agent không có System 2 thì những câu trả lời đó là `system_1` hoặc `none`, theo việc lệnh có được nhận ra |
-| `none` | Không mô hình nào phục vụ: không nhận ra lệnh và không có System 2, hoặc người bấm nút xác nhận |
+| `none` | Không mô hình nào phục vụ: không nhận ra lệnh và không có System 2, hoặc người bấm nút xác nhận, hoặc STT hỏng và thiết bị nói câu offline (`offline_help`, System 2 không được hỏi — `docs/spec/voice_fsm.md` §7) |
 
 `system_one_fallback` (System 1 chính → ngữ pháp cục bộ, FR-MDL-03) vẫn là sự kiện riêng, không
 đổi `path`. Hai sự kiện này **không mang chữ** — chế độ ẩn danh không cần băm gì thêm — và **không

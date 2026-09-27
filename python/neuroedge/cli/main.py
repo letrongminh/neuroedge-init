@@ -1148,7 +1148,11 @@ def replay(
     trace_file: Path = typer.Argument(..., help="Trace JSON file"),
     target: str = typer.Option("sim", "--target", "-t", help="Target to replay on: sim or linux"),
     agent: Path = typer.Option(
-        None, "--agent", "-a", help="agent.toml that produced the trace (default: from metadata)"
+        None,
+        "--agent",
+        "-a",
+        help="agent.toml that produced the trace (default: ./agent.toml when it is that agent, "
+        "else the sample agent named in the trace)",
     ),
     board: str = typer.Option(None, "--board", "-b", help="Board profile id (default per target)"),
     golden: Path = typer.Option(
@@ -1172,6 +1176,8 @@ def replay(
         _not_implemented_target("replay", target)
     if target == "linux":
         _exit_on_signals()  # the replay drives real lines
+    if agent is None:
+        agent = _recording_agent_here(trace_file)
     try:
         player = TracePlayer(
             trace_file,
@@ -1220,6 +1226,8 @@ def replay(
             )
     else:
         console.print("  no pin was driven")
+    for warning in result.warnings:
+        console.print(f"[yellow]! {escape(warning)}[/yellow]")
 
     if trace_out is not None:
         dump(result, trace_out)
@@ -1268,6 +1276,33 @@ def new(
     )
 
 
+def _recording_agent_here(trace_file: Path) -> Path | None:
+    """
+    `./agent.toml` when it is the agent that recorded the trace (same `[agent] name`
+    as the trace's `agent_version`), else None and the player looks for the sample
+    agent of that name. Replaying in the project that recorded it needs no --agent;
+    an agent.toml of another agent is never used silently.
+    """
+    here = Path("agent.toml")
+    if not here.is_file():
+        return None
+    try:
+        metadata = json.loads(trace_file.read_text(encoding="utf-8"))["metadata"]
+        recorded = str(metadata["agent_version"]).partition("@")[0]
+        from ..engine.compiler import load_agent_manifest
+
+        name = load_agent_manifest(here).name
+    except (OSError, ValueError, KeyError, TypeError, NeuroEdgeError):
+        return None  # the player reports what is wrong with the trace or the agent
+    if name != recorded:
+        console.print(
+            f"[dim]./agent.toml is {escape(name)!r}, the trace was recorded by "
+            f"{escape(recorded)!r}: not used (pass --agent to choose)[/dim]"
+        )
+        return None
+    return here
+
+
 def _default_agent() -> Path:
     """`agent.toml` here, else the sample agent of a source checkout."""
     here = Path("agent.toml")
@@ -1298,12 +1333,23 @@ def _exit_on_signals() -> None:
 
 
 def _start_session(
-    verb: str, agent, target: str, board: str | None, registry, events=None, ui: bool = False
+    verb: str,
+    agent,
+    target: str,
+    board: str | None,
+    registry,
+    events=None,
+    ui: bool = False,
+    clock=None,
+    target_options=None,
 ):
     """
     Load the agent for an interactive session on `sim` or `linux`, or exit with the
     right code: 2 for a target (or `--ui` on it) with no session yet, 1 when the agent
     does not fit the board or `linux` cannot run (no `gpiod`, no GPIO chip — Q-16).
+    `clock`: the session's clock (a voice session runs on a virtual one).
+    `target_options`: the HAL's own options (a voice session on `linux` passes
+    ``audio="file"`` so it never opens a live device — TSK-S5-08).
     """
     from ..sim import SimSession
 
@@ -1346,12 +1392,125 @@ def _start_session(
             board_id=board,  # None: the target's reference board
             registry=GateRegistry(registry) if registry is not None else None,
             events=events,
+            **({"clock": clock} if clock is not None else {}),
+            **({"target_options": target_options} if target_options is not None else {}),
         )
     except BuildFailed as failed:
         _fail_build(failed)
     except NeuroEdgeError as error:
         _fail(error)
     raise AssertionError("unreachable")  # _fail* always exit
+
+
+VOICE_FILE_OPTION = typer.Option(
+    None,
+    "--voice-file",
+    help=(
+        "Speak instead of typing: a WAV file (16 kHz mono 16-bit on sim; 8–96 kHz, 1–2 channels "
+        "on linux, converted to the board's rate) heard through the agent's \\[stt] provider, "
+        "replies spoken through \\[tts]"
+    ),
+)
+VOICE_OUT_OPTION = typer.Option(
+    None, "--voice-out", help="With --voice-file: write what the device said (TTS) as a WAV file"
+)
+
+
+def _voice_session(
+    verb: str,
+    agent,
+    target: str,
+    board: str | None,
+    registry,
+    *,
+    voice_file: Path | None,
+    voice_out: Path | None,
+    command: str | None,
+    ui: bool = False,
+    trace_out: Path | None = None,
+    anonymize: bool = False,
+) -> int:
+    """
+    `--voice-file`: the WAV file is the session's `audio.in` (TSK-S3-13). On `linux`
+    it goes through `LinuxHAL`'s file backend — converted to the board's rate, no
+    microphone and no `sounddevice` (TSK-S5-08). Exit 1 on a flag it cannot combine
+    with, 2 where voice is not implemented yet.
+    """
+    if voice_file is None:
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge {verb} --voice-out",
+                why="--voice-out writes the replies of a --voice-file session, and none is given",
+                how="add --voice-file <turn.wav>, or drop --voice-out",
+            )
+        )
+    if command is not None:
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge {verb} --voice-file -c",
+                why="-c is one typed command and --voice-file is spoken input: one session, one input",
+                how="drop -c, or drop --voice-file",
+            )
+        )
+    planned = None
+    if ui:
+        planned = ("--ui", "the live page does not play or record audio yet")
+    elif target in PLANNED_SESSIONS:
+        planned = (
+            f"--target {target}",
+            f"sessions on {target} arrive with {PLANNED_SESSIONS[target]}",
+        )
+    if planned is not None:
+        err_console.print(
+            Panel(
+                f"`neuroedge {verb} --voice-file {planned[0]}` is not implemented yet: "
+                f"{planned[1]}.\n\nSpoken input runs on `sim` today, in the terminal.",
+                title=f"[yellow]Not implemented: {verb} --voice-file {escape(planned[0])}[/yellow]",
+                border_style="yellow",
+            )
+        )
+        raise typer.Exit(code=2)
+    from ..engine.compiler import load_agent_manifest
+    from ..perception import VirtualClock
+    from ..perception.providers import load_wake_word_config, make_wake_word
+    from .voice import run_voice
+
+    # The wake word's model files — and the detector library or adapter — are checked
+    # here, before the session requests any GPIO line: the models are the user's own
+    # and may live only on the device, and the build (rightly) no longer requires them
+    # on this machine (TSK-I4-01, Q-45).
+    try:
+        manifest = load_agent_manifest(agent or _default_agent())
+        wake_config = load_wake_word_config(manifest, check_files=True)
+        if wake_config is not None:
+            make_wake_word(wake_config, manifest.root)
+    except NeuroEdgeError as error:
+        _fail(error)
+
+    clock = VirtualClock()
+    events = None
+    if trace_out is not None and verb == "record":
+        from ..testing.recorder import TraceRecorder
+
+        events = TraceRecorder(anonymize=anonymize, clock=clock)
+    session = _start_session(
+        verb,
+        agent,
+        target,
+        board,
+        registry,
+        events=events,
+        clock=clock,
+        # A voice session is the file backend only, whatever the machine's
+        # NEUROEDGE_LINUX_AUDIO says: live capture/playback drives no session yet
+        # (TODOS.md #45), and the file backend must never open a device (TSK-S5-08).
+        target_options={"audio": "file"} if target == "linux" else None,
+    )
+    if events is not None:
+        trace_out = (
+            trace_out if trace_out.suffix == ".json" else trace_out / f"{events.session_id}.json"
+        )
+    return run_voice(session, clock, voice_file, voice_out, trace_out, console, err_console)
 
 
 @app.command(epilog=epilog("run"))
@@ -1379,6 +1538,8 @@ def run(
     ),
     port: int = typer.Option(8765, "--port", help="Port for --ui"),
     no_browser: bool = typer.Option(False, "--no-browser", help="With --ui, do not open a browser"),
+    voice_file: Path = VOICE_FILE_OPTION,
+    voice_out: Path = VOICE_OUT_OPTION,
     registry: Path | None = REGISTRY_OPTION,
 ):
     """
@@ -1388,8 +1549,29 @@ def run(
     Input is typed text matched by the agent's commands.toml — no network, no
     key (Q-15). The agent is build-checked against the board first. On `linux`
     the pins are real GPIO lines (the `linux` extra; a board, or
-    scripts/setup_gpio_sim.sh) and the agent may need `digital.out` only.
+    scripts/setup_gpio_sim.sh).
+
+    With --voice-file the input is speech: each turn the VAD finds goes to
+    the agent's STT provider, its transcript takes the typed line's path through
+    the gate, and replies go to its TTS provider (--voice-out saves them). On
+    `linux` the file is converted to the board's rate by `LinuxHAL`'s file
+    backend; microphone and speaker (the `audio` extra, Q-22) are a later
+    session (TODOS.md #45).
     """
+    if voice_file is not None or voice_out is not None:
+        code = _voice_session(
+            "run",
+            agent,
+            target,
+            board,
+            registry,
+            voice_file=voice_file,
+            voice_out=voice_out,
+            command=command,
+            ui=ui,
+            trace_out=trace_out,
+        )
+        raise typer.Exit(code=code)
     from .run import run_session
 
     session = _start_session("run", agent, target, board, registry, ui=ui)
@@ -1421,7 +1603,12 @@ def build(
     out: Path = typer.Option(Path("build"), "--out", "-o", help="Directory for build artifacts"),
     registry: Path | None = REGISTRY_OPTION,
 ):
-    """Match the agent's capability needs against the board and compile its gates."""
+    """
+    Match the agent's capability needs against the board and compile its gates.
+
+    For esp32s3 it also writes the agent's firmware: an ESP-IDF project in
+    <out>/esp32s3/ to build and flash with idf.py. Any problem: exit 1, nothing written.
+    """
     from ..engine.compiler import build as run_build
 
     try:
@@ -1448,6 +1635,11 @@ def build(
     )
     for artifact in report.artifacts:
         console.print(f"  wrote:   {artifact}")
+    if report.firmware is not None:
+        console.print(
+            f"  firmware: {report.firmware} — ESP-IDF project, {report.firmware_files} files; "
+            "build and flash it with idf.py (docs/user/nap-firmware.md)"
+        )
 
 
 @app.command(epilog=epilog("test"))
@@ -1526,6 +1718,8 @@ def record(
     timeout: float = typer.Option(
         30.0, "--timeout", help="Seconds to wait for NE_TRACE DONE on a live port"
     ),
+    voice_file: Path = VOICE_FILE_OPTION,
+    voice_out: Path = VOICE_OUT_OPTION,
     registry: Path | None = REGISTRY_OPTION,
 ):
     """
@@ -1540,8 +1734,30 @@ def record(
     (docs/spec/simulation_coverage.md §4, TSK-S4-09).
     """
     if target == "esp32s3" or port is not None:
+        if voice_file is not None or voice_out is not None:
+            _fail(
+                NeuroEdgeError(
+                    where="neuroedge record --port --voice-file",
+                    why="a device session is the firmware's: it hears through its own microphone",
+                    how="drop --voice-file to read the device's UART, or drop --port for sim",
+                )
+            )
         _record_from_device(target, port, baud, timeout, out, anonymize, board, agent, command)
         return
+    if voice_file is not None or voice_out is not None:
+        code = _voice_session(
+            "record",
+            agent,
+            target,
+            board,
+            registry,
+            voice_file=voice_file,
+            voice_out=voice_out,
+            command=command,
+            trace_out=out,
+            anonymize=anonymize,
+        )
+        raise typer.Exit(code=code)
     from ..testing.recorder import TraceRecorder
     from .run import run_session
 
