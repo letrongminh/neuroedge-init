@@ -169,8 +169,9 @@ tên phần mở rộng đó (`neuroedge[mcp]`…); danh sách phần mở rộn
 
 **Làm được**
 
-- Ghi một phiên ra vết ghi đã thẩm định (`neuroedge record`), kể cả phiên thoại. Chế độ ẩn danh
-  (`--anonymize`) băm chữ thô tại nguồn (câu lệnh, bản chép lời, câu trả lời), phán quyết giữ nguyên.
+- Ghi một phiên ra vết ghi đã thẩm định (`neuroedge record`), kể cả phiên thoại. Vết ghi chỉ lưu
+  quyết định: chữ thô (câu lệnh, bản chép lời, câu trả lời) được băm tại nguồn, phán quyết giữ nguyên
+  (NFR-PRIV-03). Muốn giữ nguyên văn, thêm `--raw` khi ghi — vết ghi đó mang `metadata.anonymized = false`.
 - Thẩm định vết ghi theo lược đồ (`trace validate`) và in dòng thời gian sự kiện (`trace show`), gồm độ
   trễ từng chặng và tỷ lệ lượt do System 1 / System 2 xử lý (§4.4).
 - Mở vết ghi thành **một tệp HTML tự chứa** để xem lại, tua thời gian, gửi đồng nghiệp — mở không cần
@@ -227,8 +228,8 @@ Cả hai chỉ đề xuất lời gọi action; gate vẫn quyết định.
 - **Không bao giờ** giao cho model tiêu chí về danh tính, quyền hay đặt phòng (`guest_authenticated`,
   `room_matches`…): đó là dữ kiện của hệ thống quản lý. Build từ chối những tiêu chí agent tự tính và
   tiêu chí nguồn gọi (`call_source`).
-- `[system_one]` gửi **lời người nói** lên OpenRouter (không gửi action hay tham số). Chế độ ẩn danh chỉ
-  băm vết ghi, không ngăn việc gửi đó.
+- `[system_one]` gửi **lời người nói** lên OpenRouter (không gửi action hay tham số). Băm tại nguồn
+  chỉ áp cho vết ghi, không ngăn việc gửi đó.
 - Jev đọc tiếng Anh tốt nhất; độ tin cậy trên câu tiếng Việt **chưa đo** — đặt ngưỡng thận trọng
   (`TODOS.md` #27).
 - CI không gọi model thật; lượt gọi bằng khoá thật chạy tay (`scripts/live_llm_smoke.py`,

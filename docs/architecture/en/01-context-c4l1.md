@@ -85,4 +85,4 @@ Out of scope, stated explicitly: MCP over the network (stdio only in v1.0), atta
 | STT | The audio clip of one turn | — |
 | TTS | The reply to be spoken | — |
 
-By default the trace stores raw text (typed sentences, transcripts); `--anonymize` hashes them at the source while keeping every verdict (NFR-PRIV-04). Audio is never stored in the trace.
+By default the trace stores decisions only: raw text (typed sentences, transcripts) is hashed at the source (NFR-PRIV-03); `--raw` is the explicit opt-in that keeps it verbatim, and that trace carries `metadata.anonymized = false` (NFR-PRIV-04). Audio is never stored in the trace.
