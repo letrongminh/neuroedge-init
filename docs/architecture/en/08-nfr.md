@@ -24,7 +24,7 @@ partial check exists · **not measured yet** — no evidence yet.
 | NFR | Tactic | Evidence | Status |
 |:---|:---|:---|:---|
 | SEC-01 No shortcut to actuator | `c.do()` is the only path; one-time tokens; the HAL refuses by default; calling `@action` directly ⇒ `NE1001` | Shortcut table in `docs/spec/threat_model.md` §2, one test per line; `tests_linux/test_gpio_sim.py` proves the kernel line does not change when blocked | checked; no penetration test yet |
-| SEC-02, 03 Secure Boot, flash encryption, TPM, mic switch | — | TSK-S6-05, TSK-W2-03 not started | not yet |
+| SEC-02, 03 Secure Boot, flash encryption, TPM, mic switch | — | TSK-S6-05, TSK-W2-03 (status: roadmap) | not yet |
 | SEC-04, 05 device ↔ cloud mTLS, per-device certificates | — | Tied to Fleet OS (I9) | not yet |
 | SEC-06 Signed firmware, verified on chip | RSA-3072 verified on every OTA image; bad or unsigned ⇒ rejected, slot erased; high-water mark blocks downgrade | job `ota-rollback` (phases a–g), `test_c_ota_policy.py` | partial — on QEMU; Secure Boot, eFuse missing |
 | SEC-08 TLS to providers, provider recorded in the trace | Provider name and model in `system_one_call`, `system_two_call`; no prompt, no key recorded | `test_providers.py::test_each_model_call_is_traced_without_prompt_or_key` | partial — no TLS 1.3 test yet |
@@ -43,7 +43,7 @@ partial check exists · **not measured yet** — no evidence yet.
 
 | NFR | Tactic | Evidence | Status |
 |:---|:---|:---|:---|
-| RES-01 24-hour stability on board | No allocation on the audio path (RB-1…RB-4, `docs/spec/hal_mcu_review.md`) | TSK-S6-06 not started | not yet |
+| RES-01 24-hour stability on board | No allocation on the audio path (RB-1…RB-4, `docs/spec/hal_mcu_review.md`) | TSK-S6-06 (status: roadmap) | not yet |
 | RES-02 Free SRAM, PSRAM (Q-3) | Walker, token ledger, trace buffer use no static RAM; state is allocated by the application | jobs `firmware-size`, `firmware-qemu`; numbers in `memory_spike_report.md` §4.1 | partial — static floor and QEMU heap; PSRAM not measured yet |
 | RES-03 Firmware size ≤ A/B slot | Binary tree instead of JSON; no CEL on chip | jobs `firmware-size`, `ota-rollback`, `nightly-hardware` | checked |
 | RES-04 Safety functions run offline | Local command grammar is the fallback for every model; no fallback ⇒ `gate_unreachable` | `test_fail_closed.py`, `test_offline_fallback.py`, trace `network_offline.json` | checked on `sim`/`linux`; `esp32s3` not yet (TSK-S5-07) |

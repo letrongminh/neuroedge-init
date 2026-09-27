@@ -3,7 +3,7 @@
 > **Scope:** how the architecture will grow across increments, what is already prepared, what needs an
 > RFC. **Sources:** status, progress and forecast dates live only in roadmap §0.2 (Q-39) — this page
 > does not copy them; figure E-09 is **generated from that very table**. The design of the expansion
-> directions is in `neuroedge-roadmap-phase1-5.md`, `neuroedge-roadmap-phase2.md`,
+> directions is in `neuroedge-design-neurobrain.md`, `neuroedge-design-phase2.md`,
 > `draft-ke-hoach-mo-rong-robot-fofoca.md`, `draft-rfc-node-giao-thuc-dieu-phoi.md`.
 
 ## 1. The picture
@@ -12,7 +12,7 @@
 *Figure E-09 — Nineteen increments, status, progress and forecast dates read from roadmap §0.2 when the figure is generated.*
 
 The critical path (roadmap §2.2): boards arrive → memory spike (TSK-S1-10) → I3 → I5 → I6 → I7. The
-demand gate on 2026-10-25 (Q-20) decides Go / Adjust / Stop for I3–I7.
+demand gate (Q-20; date in roadmap §0.2) decides Go / Adjust / Stop for I3–I7.
 
 ## 2. What the architecture changes at each stage
 

@@ -159,7 +159,7 @@ bản gói.
 - **TSK-S2-07 — đặc tả chuẩn tắc máy trạng thái hội thoại.** `docs/spec/voice_fsm.md`: năm trạng thái, bảng chuyển
   trạng thái, hợp đồng thu hồi lệnh (chỉ lệnh chưa giao tới chân, ≤ 20 ms, đóng token; lệnh đã giao chạy hết), sự kiện,
   kịch bản tuân thủ cho TSK-S3-10. Chỉ tài liệu. (FR-PER-02→05)
-- **Giai đoạn 1.5 — kế hoạch NeuroBrain (bản nháp, chờ `Q-N`).** `neuroedge-roadmap-phase1-5.md`: khối N0–N7,
+- **Giai đoạn 1.5 — kế hoạch NeuroBrain (bản nháp, chờ `Q-N`).** `neuroedge-design-neurobrain.md`: khối N0–N7,
   bring-up phần cứng có gate, song song Khối 1b tới Developer Beta; wireframe Lab Monitor ở `wireframe/`. Chỉ tài liệu,
   chưa có mã. Quyết định chuyển vào PRD §15 ở TSK-N0-01.
 - **TSK-S3-14 — workflow phát hành PyPI, chưa đẩy lên index nào.** `release-pypi.yml`: sdist → wheel từ sdist →
@@ -252,6 +252,15 @@ bản gói.
 
 #### Đã đổi
 
+- **Một roadmap, mọi nơi khác dẫn tới nó (Q-39, 2026-09-27).** Hai ghi chú thiết kế đổi tên cho khỏi bị đọc là roadmap:
+  `neuroedge-roadmap-phase1-5.md` → `neuroedge-design-neurobrain.md`, `neuroedge-roadmap-phase2.md` →
+  `neuroedge-design-phase2.md` (mọi liên kết đang dùng đã sửa; `docs/archive/` giữ tên cũ). Proposal §8 thành "Các khối
+  sản phẩm và năng lực": giữ lý do của từng khối, bảng bàn giao, de-scope, điều kiện kích hoạt và sơ đồ thứ tự thay bằng
+  liên kết sang roadmap §0.2, §2.1, §4–§7, §9. PRD: mốc "v2.0" thành "Mở rộng (1.x)" theo tag của roadmap; "Hoãn sau
+  12 tháng" thành "Hoãn — tới khi đạt điều kiện kích hoạt"; bỏ ghi chú đã cũ "chờ TSK-S5-10". Nhãn Sprint trong spec,
+  PRD, proposal đổi sang increment theo roadmap Phụ lục A; ngày và trạng thái cấp task ngoài roadmap đổi thành liên kết
+  (tài liệu kiến trúc giữ nhãn năng lực done/partial/planned). RFC đã duyệt và bản ghi quyết định giữ nguyên. Rà soát
+  do agy (Gemini) làm, Claude kiểm từng điểm với nguồn.
 - **I1 · TSK-I1-01 — vết ghi mặc định chỉ lưu quyết định: chữ người dùng gõ hoặc nói được băm tại nguồn (2026-09-27).**
   Quyết định: "dữ liệu thô" của NFR-PRIV-03 gồm cả chữ. Mọi lệnh ghi vết ghi (`record`, `run --trace-out`,
   `replay --trace-out`, `mcp serve --trace-out`, ghi từ thiết bị qua UART) băm `text`, `utterance`, `transcript` và ghi
@@ -302,7 +311,7 @@ bản gói.
   (§2.4) kiểm bằng `tests/test_plan_contract.py`. `TODOS.md`: bỏ #4, #13, #18, #28, #31 (đã thành task), thêm #42.
 - **Q-30 — định vị "Hợp đồng vào Physical AI" / "Physical AI, under contract" (engine-first không đổi).** Contract là
   lớp bảo vệ gần nhất trên 5 nguyên thủy HAL; `neuroedge-prd.md` §1.2/§15 + masthead, `neuroedge-proposal.md`
-  §0.3 + masthead, `README.md` hero EN-first; định vị NeuroBrain đề xuất ở `neuroedge-roadmap-phase1-5.md` §1
+  §0.3 + masthead, `README.md` hero EN-first; định vị NeuroBrain đề xuất ở `neuroedge-design-neurobrain.md` §1
   (chờ Q-31); lưu vết `docs/archive/tai-dinh-vi-messaging-review.md`; theo dõi `TODOS.md` #32, #34. Không đổi mã; không cần RFC.
 - **Q-29 — định vị trước MHS + bối cảnh cạnh tranh MHS/DCP.** `neuroedge-proposal.md`
   §10.1–§10.2 (hai cột + hai hàng MHS/DCP, kèm nguồn), Phụ lục H.3; quyết định ở
@@ -457,7 +466,7 @@ làm hệ thống lỏng hơn.
 
 #### Đã thêm — Tài liệu Giai đoạn 2
 
-[`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) — sáu khối V1a, V1b,
+[`neuroedge-roadmap-phase2.md`](neuroedge-design-phase2.md) *(nay là `neuroedge-design-phase2.md`)* — sáu khối V1a, V1b,
 V2, V3, P1, P2 từ Tháng 9 đến Tháng 24, chạy **song song** Khối 4 AURA chứ không
 nối tiếp. AURA là nguồn dữ liệu R3 cho chính thị giác.
 
@@ -1002,8 +1011,8 @@ Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc 
 | Tệp | Vai trò | Khi nào đọc |
 |:---|:---|:---|
 | [`neuroedge-roadmap.md`](neuroedge-roadmap.md) | **Roadmap duy nhất (Q-39):** increment I0–I18, trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành. §0 là bảng điều khiển | **Luôn đọc trước** |
-| [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) | Ghi chú thiết kế — thị giác, phủ rộng phần cứng (I11, I13, I15–I18); không lịch, không trạng thái | Khi làm task của các increment đó |
-| [`neuroedge-roadmap-phase1-5.md`](neuroedge-roadmap-phase1-5.md) | Ghi chú thiết kế — NeuroBrain (I12) | Khi làm task `TSK-N*` |
+| [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) | Ghi chú thiết kế — thị giác, phủ rộng phần cứng (I11, I13, I15–I18); không lịch, không trạng thái | Khi làm task của các increment đó |
+| [`neuroedge-design-neurobrain.md`](neuroedge-design-neurobrain.md) | Ghi chú thiết kế — NeuroBrain (I12) | Khi làm task `TSK-N*` |
 | [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) · [`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) | Ghi chú thiết kế — robot phân tầng FOFOCA (I14; `TSK-W0-*` rải ở I2, I6, I7) · RFC nháp điều phối node (chưa cấp số) | Khi việc chạm nguyên thủy HAL mới, robot nhiều MCU hoặc multi-node |
 | [`neuroedge-prd.md`](neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`; **§15 là sổ quyết định duy nhất** (`Q-N`); Phụ lục B là mã lỗi | Khi cần biết *phải* làm gì, và đã chốt gì |
 | [`neuroedge-proposal.md`](neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** | Khi cần biết *tại sao* |

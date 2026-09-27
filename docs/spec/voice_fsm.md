@@ -295,7 +295,7 @@ Kịch bản bắt buộc:
 | V7 | Người nói chậm: khoảng lặng ngắn hơn `end_of_turn_silence_ms` giữa câu | Không bị cắt lượt (FR-PER-03) |
 
 Hai ngân sách thời gian thực (20 ms, 300 ms) **không** kiểm được trong thời gian ảo. Chúng được đo trên
-bo mạch, ở tiêu chí ra 2 của Sprint 5 và job hằng đêm TSK-S4-05.
+bo mạch, ở tiêu chí ra 2 của I5 (roadmap §4.6) và job hằng đêm TSK-S4-05.
 
 Ba vector của TSK-I4-01 nằm trong cùng corpus (`scenario: "table"`): `i4_wake_word_opens_the_turn`
 (VAD một mình không mở lượt khi `vad_activation` tắt — bộ phát hiện chưa bao giờ chạy, như trường hợp

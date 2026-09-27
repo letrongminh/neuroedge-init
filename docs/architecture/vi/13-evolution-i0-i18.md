@@ -3,7 +3,7 @@
 > **Phạm vi:** kiến trúc sẽ lớn lên thế nào qua các increment, cái gì đã được chuẩn bị sẵn, cái gì cần
 > RFC. **Nguồn:** trạng thái, tiến độ, ngày dự báo chỉ ở roadmap §0.2 (Q-39) — trang này không chép lại
 > chúng; hình E-09 được **sinh từ chính bảng đó**. Thiết kế của các hướng mở rộng ở
-> `neuroedge-roadmap-phase1-5.md`, `neuroedge-roadmap-phase2.md`, `draft-ke-hoach-mo-rong-robot-fofoca.md`,
+> `neuroedge-design-neurobrain.md`, `neuroedge-design-phase2.md`, `draft-ke-hoach-mo-rong-robot-fofoca.md`,
 > `draft-rfc-node-giao-thuc-dieu-phoi.md`.
 
 ## 1. Bức tranh
@@ -12,7 +12,7 @@
 *Hình E-09 — Mười chín increment, trạng thái, tiến độ và ngày dự báo đọc từ roadmap §0.2 lúc sinh hình.*
 
 Đường găng (roadmap §2.2): bo mạch về → spike bộ nhớ (TSK-S1-10) → I3 → I5 → I6 → I7. Cổng nhu cầu
-2026-10-25 (Q-20) quyết Go / Adjust / Stop cho I3–I7.
+(Q-20; ngày ở roadmap §0.2) quyết Go / Adjust / Stop cho I3–I7.
 
 ## 2. Kiến trúc thay đổi gì qua từng chặng
 

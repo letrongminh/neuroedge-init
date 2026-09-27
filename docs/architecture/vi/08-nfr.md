@@ -24,7 +24,7 @@ kiểm một phần · **chưa đo** — chưa có bằng chứng.
 | NFR | Chiến thuật | Bằng chứng | Trạng thái |
 |:---|:---|:---|:---|
 | SEC-01 Không đường tắt tới actuator | `c.do()` là đường duy nhất; token dùng một lần; HAL mặc định từ chối; gọi thẳng `@action` ⇒ `NE1001` | Bảng đường tắt ở `docs/spec/threat_model.md` §2, mỗi dòng một test; `tests_linux/test_gpio_sim.py` chứng minh line kernel không đổi khi bị chặn | đã kiểm; chưa có kiểm thử xâm nhập |
-| SEC-02, 03 Secure Boot, mã hoá flash, TPM, công tắc micro | — | TSK-S6-05, TSK-W2-03 chưa bắt đầu | chưa |
+| SEC-02, 03 Secure Boot, mã hoá flash, TPM, công tắc micro | — | TSK-S6-05, TSK-W2-03 (trạng thái: roadmap) | chưa |
 | SEC-04, 05 mTLS thiết bị ↔ cloud, chứng chỉ riêng mỗi thiết bị | — | Gắn với Fleet OS (I9) | chưa |
 | SEC-06 Firmware có ký, kiểm trên chip | RSA-3072 kiểm trên mọi ảnh OTA; sai hoặc không ký ⇒ từ chối, xoá khe; mốc nước cao chặn hạ cấp | job `ota-rollback` (pha a–g), `test_c_ota_policy.py` | một phần — trên QEMU; thiếu Secure Boot, eFuse |
 | SEC-08 TLS tới nhà cung cấp, ghi nhà cung cấp vào vết ghi | Tên nhà cung cấp và model trong `system_one_call`, `system_two_call`; không ghi prompt, không ghi khoá | `test_providers.py::test_each_model_call_is_traced_without_prompt_or_key` | một phần — TLS 1.3 chưa có test |
@@ -43,7 +43,7 @@ kiểm một phần · **chưa đo** — chưa có bằng chứng.
 
 | NFR | Chiến thuật | Bằng chứng | Trạng thái |
 |:---|:---|:---|:---|
-| RES-01 Ổn định 24 giờ trên bo mạch | Không cấp phát trên đường âm thanh (RB-1…RB-4, `docs/spec/hal_mcu_review.md`) | TSK-S6-06 chưa bắt đầu | chưa |
+| RES-01 Ổn định 24 giờ trên bo mạch | Không cấp phát trên đường âm thanh (RB-1…RB-4, `docs/spec/hal_mcu_review.md`) | TSK-S6-06 (trạng thái: roadmap) | chưa |
 | RES-02 SRAM, PSRAM còn trống (Q-3) | Walker, sổ token, bộ vết ghi không dùng RAM tĩnh; trạng thái do ứng dụng cấp phát | jobs `firmware-size`, `firmware-qemu`; số đo ở `memory_spike_report.md` §4.1 | một phần — sàn tĩnh và heap QEMU; PSRAM chưa đo |
 | RES-03 Kích thước firmware ≤ khe A/B | Cây nhị phân thay JSON; không CEL trên chip | jobs `firmware-size`, `ota-rollback`, `nightly-hardware` | đã kiểm |
 | RES-04 Chức năng an toàn chạy khi mất mạng | Ngữ pháp lệnh cục bộ là fallback của mọi model; không có fallback ⇒ `gate_unreachable` | `test_fail_closed.py`, `test_offline_fallback.py`, vết ghi `network_offline.json` | đã kiểm trên `sim`/`linux`; `esp32s3` chưa (TSK-S5-07) |

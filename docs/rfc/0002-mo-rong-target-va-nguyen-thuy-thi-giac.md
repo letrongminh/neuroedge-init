@@ -8,7 +8,7 @@
 | **Người đề xuất** | V1 — Kỹ sư lõi nền tảng |
 | **Ngày mở** | 2026-09-22 · thu hẹp phạm vi 2026-09-23 sau review (biên bản: [`docs/archive/rfc-0002-review-record.md`](../archive/rfc-0002-review-record.md)) |
 | **Trạng thái** | 🟡 Đang thảo luận |
-| **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc.** RFC không làm gate lỏng hơn, nhưng chạm ba bất biến kiểm thử đang bảo vệ tương đương target (§5), và tiêu chí ra Khối V1a số 1 đòi chữ ký kỹ thuật trưởng (`neuroedge-roadmap-phase2.md`) |
+| **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc.** RFC không làm gate lỏng hơn, nhưng chạm ba bất biến kiểm thử đang bảo vệ tương đương target (§5), và tiêu chí ra Khối V1a số 1 đòi chữ ký kỹ thuật trưởng (`neuroedge-design-phase2.md`) |
 | **Kiểm chứng** | *(chưa có — thuộc pull request thứ hai, hợp nhất trong increment I11 sau Developer Beta (PRD Q-40), xem §8)* |
 
 > **Phạm vi pull request này:** chỉ tệp RFC, **chưa sửa lược đồ**, đúng quy trình
@@ -29,7 +29,7 @@
 
 ## 1. Vấn đề
 
-Giai đoạn 2 (`neuroedge-roadmap-phase2.md`) mở rộng danh mục phần cứng sang Jetson
+Giai đoạn 2 (`neuroedge-design-phase2.md`) mở rộng danh mục phần cứng sang Jetson
 (bậc 2), STM32 và RP2350 (bậc 3). Phân tầng bậc đã có đủ trong văn bản — proposal
 §3.2 và Phụ lục D.1, PRD FR-TGT-08 và Q-13 — nhưng lược đồ đã đóng băng không công
 nhận ba target mới, và mã nguồn không biết bậc là gì.
@@ -312,7 +312,7 @@ một profile bậc 2/3 **thật** đang được viết.
 Tài liệu (cùng pull request với RFC này):
 
 - [x] Sửa chữ tiêu chí chấp nhận FR-TGT-08: bậc nằm trong `TARGET_TIERS` của mã lõi, `board.toml` không tự khai bậc
-- [x] `neuroedge-roadmap-phase2.md` Khối V1a: bỏ `vision_in` và `vision_ref` khỏi task và tiêu chí ra; chuyển sang V1b
+- [x] `neuroedge-design-phase2.md` Khối V1a: bỏ `vision_in` và `vision_ref` khỏi task và tiêu chí ra; chuyển sang V1b
 - [x] `CONTRIBUTING.md`: profile bậc 2/3 cần phần cứng thật
 
 Pull request thứ hai:

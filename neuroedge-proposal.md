@@ -419,7 +419,7 @@ Tầng nào đã chạy và task nào sở hữu tầng còn lại: roadmap (TSK
 
 **Không dùng, và vì sao:** Renode — không có nền tảng ESP32-S3 upstream (chỉ có ISA Xtensa). Trình mô phỏng Wokwi — mã đóng, cần token và hạn mức phút CI, không có I2S trên S3 (`TODOS.md`). Mock GPIO kiểu `gpiozero.MockFactory` — `SimHAL` đã giữ trạng thái chân trong bộ nhớ và gắn với token. `iio_simple_dummy` — không có trong kernel Ubuntu dựng sẵn. `snd-dummy` — không thu, không phát được âm thanh.
 
-**Hệ quả lên tiến độ:** mã C thuần của Sprint 4 (walker, TSK-S4-02) được kiểm trên mỗi PR **trước khi bo mạch về**; bo mạch chỉ còn là điều kiện cho phần thật sự cần phần cứng — âm thanh, màn hình, bộ nhớ (TSK-S1-10). QEMU không thay được spike bộ nhớ: nó không giả lập đường âm thanh I2S/AFE, nơi áp lực bộ nhớ nằm.
+**Hệ quả lên tiến độ:** mã C thuần của I3 (walker, TSK-S4-02) được kiểm trên mỗi PR **trước khi bo mạch về**; bo mạch chỉ còn là điều kiện cho phần thật sự cần phần cứng — âm thanh, màn hình, bộ nhớ (TSK-S1-10). QEMU không thay được spike bộ nhớ: nó không giả lập đường âm thanh I2S/AFE, nơi áp lực bộ nhớ nằm.
 
 #### Phân tầng cam kết theo bậc target
 
@@ -1204,41 +1204,9 @@ Mọi vướng mắc kỹ thuật phát sinh trong quá trình vận hành AURA 
 
 ---
 
-## 8. Lộ trình phát triển sản phẩm
+## 8. Các khối sản phẩm và năng lực
 
-Lộ trình được cấu trúc thành các khối công việc kỹ thuật, giai đoạn đệm cộng đồng và các cột mốc xác thực thị trường định lượng. **Quy tắc kỷ luật thực thi: Mọi sự chuyển giao giữa các khối đều là milestone-gated (phụ thuộc vào kết quả kiểm chứng thực tế), tuyệt đối không chạy theo lịch cố định trên giấy.** Các khối dưới đây được thực thi thành increment `I0…I18`; thứ tự, phụ thuộc và ngày dự báo chỉ nằm ở `neuroedge-roadmap.md` §0.2 (PRD Q-39).
-
-```text
-[ KHỐI 1a: SIM + LINUX + ACTION CI ]  (I0–I2)
-              │
-              ▼
-[ KHỐI 1b: ESP32-S3 REF BOARD + VOICE ] (I3–I7)     ──► [   HOÀN TẤT LÕI   ]
-              │                                                 │
-              ▼                                                 │
-[ GIAI ĐOẠN ĐỆM: DEVELOPER BETA & CỘNG ĐỒNG ] (I8)             │
-(Onboard 50–100 dev đầu tiên · Đóng băng tính năng mới)         │
-              │                                                 │
-              ▼ (Chỉ kích hoạt khi đạt B1 và B2 — Q-41)         │
-┌─────────────────────────────────┬─────────────────────────────┴───┐
-│ KHỐI 2: TẦNG DỊCH VỤ THƯƠNG MẠI │ KHỐI 3: HẠ TẦNG NỀN TẢNG        │
-│ (I9, sau Beta — nhánh A)        │ (I10, song song I9)             │
-│ • Fleet Management OS           │ • Gate Registry & Phiên bản hóa │
-│   (dịch vụ thương mại duy nhất) │ • Đo lường, Định danh & Sandbox │
-└──────────────┬──────────────────┴────────────────┬────────────────┘
-               └──────────────────┬────────────────┘
-                                  ▼
-                [ KHỐI 4: ỨNG DỤNG DỌC AURA ]  (sau Beta, ngoài roadmap)
-                         │                 │
-                         │                 └──► [ GIAI ĐOẠN 2 ] (I11, I13, I15–I18)
-                         │                      • 2a Mở danh sách target (RFC-0002)
-                         │                      • 2b Vision, phủ rộng phần cứng
-                         │                      (sau Beta; 2b chờ nhu cầu camera AURA — Q-40)
-                         ▼
-                [ CỘT MỐC XÁC THỰC THỊ TRƯỜNG ĐỊNH LƯỢNG (G1–G4) ]
-                                  │
-                                  ▼
-                [ KHỐI 5: MARKETPLACE & HỆ THỐNG THANH TOÁN ] (khi đạt G1–G4)
-```
+Lộ trình được cấu trúc thành các khối công việc kỹ thuật, giai đoạn đệm cộng đồng và các cột mốc xác thực thị trường định lượng. **Quy tắc kỷ luật thực thi: Mọi sự chuyển giao giữa các khối đều là milestone-gated (phụ thuộc vào kết quả kiểm chứng thực tế), tuyệt đối không chạy theo lịch cố định trên giấy.** Các khối dưới đây được thực thi thành increment `I0…I18`; thứ tự, phụ thuộc, sơ đồ phụ thuộc và ngày dự báo chỉ nằm ở [`neuroedge-roadmap.md` §0.2](neuroedge-roadmap.md#02-bảng-increment-increment-matrix) và [§2.1](neuroedge-roadmap.md#21-đồ-thị-phụ-thuộc) (PRD Q-39).
 
 ### 8.1 Khối 1a — Nền tảng logic và Trục kiểm thử Action CI (I0–I2)
 
@@ -1250,45 +1218,21 @@ neuroedge new my-agent
 neuroedge run --target sim
 ```
 
-| Hạng mục bàn giao | Mục chiếu | Đòn bẩy mã nguồn mở |
-|:---|:---:|:---|
-| Chuẩn HAL theo hợp đồng năng lực với 5 nguyên thủy | §3.3 | Tự phát triển — tài sản lõi |
-| Action Contract Engine, Gate có phiên bản, cơ chế fail-closed | §3.5 | Tự phát triển — tài sản lõi, gồm trình biên dịch gate sang cây quyết định. Google CEL chỉ là front-end tùy chọn cho `allow_when` dạng chuỗi (hoãn) |
-| Giao diện trừu tượng hóa mô hình `SystemOne` và `SystemTwo` | §3.6 | Tự phát triển — tài sản lõi |
-| Lớp trừu tượng nhà cung cấp: chuẩn OpenAI-compatible + cơ chế adapter tùy chỉnh, áp dụng cho cả LLM, ASR và TTS | §3.6, §6.1 | LiteLLM (thư viện MIT) · httpx |
-| Chuẩn hóa lược đồ gate và vết ghi | §3.7 | Pydantic v2 · canonical JSON theo RFC 8785 |
-| Hai môi trường thực thi đầu tiên: `sim` và `linux` | §3.2 | `libgpiod` qua liên kết động · giao diện mô phỏng tự viết (Wokwi Elements đã cân nhắc, chưa dùng) |
-| Trục Action CI: Ghi vết (record), Replay, Đối chiếu (assert), Mẫu chuẩn (golden) | §3.7 | Tự phát triển — tài sản lõi. Helper Pytest, so khớp bằng DeepDiff |
-| Bộ công cụ dòng lệnh (CLI) cơ bản | §4.8 | Typer · Rich · generator mẫu tự viết |
-| Ứng dụng mẫu hoàn chỉnh chạy thử nghiệm | §7 | — |
+Hạng mục bàn giao và kế hoạch thực thi: [`neuroedge-roadmap.md` §4.1–§4.3](neuroedge-roadmap.md#41-i0--lõi-hợp-đồng-trên-sim).
 
 ### 8.2 Khối 1b — Hiện thực hóa trên vi điều khiển biên (I3–I7)
 
 **Mục tiêu trọng tâm:** Chứng minh nguyên tắc tương đương môi trường trên vi điều khiển giá $5 với độ ổn định cao.
 
-| Hạng mục bàn giao | Nội dung kỹ thuật | Đòn bẩy mã nguồn mở |
-|:---|:---|:---|
-| Chuyển đổi chuẩn HAL lên `esp32s3` | Sử dụng bộ công cụ tiêu chuẩn ESP-IDF | ESP-IDF · **port driver bo mạch từ XiaoZhi**: codec I2S ES8311/ES7210, chân I2C/SPI của Box-3, màn hình ST7789 |
-| Runtime giọng nói tối ưu hóa bộ nhớ | Tích hợp khử vang, phát hiện tiếng nói và mã hóa luồng | microWakeWord · libfvad · WebRTC AEC3 · Opus · **port mô hình frame processor và barge-in từ Pipecat** |
-| Hiển thị trạng thái trên màn hình thiết bị | Giao diện tại chỗ cho trạng thái agent và gate | LVGL v8/v9 |
-| Lệnh kiểm thử `neuroedge verify` | Kiểm tra tính nhất quán phán quyết gate và GPIO giữa các môi trường bậc 1 | Tự phát triển — tài sản lõi |
-| Client OTA cấp thiết bị (On-device OTA) | Nạp firmware phân vùng kép A/B, tự động rollback cục bộ khi bootloop | `esp_https_ota` và `esp_ota_ops` của ESP-IDF |
+Hạng mục bàn giao và kế hoạch thực thi: [`neuroedge-roadmap.md` §4.4–§4.8](neuroedge-roadmap.md#44-i3--gate-trên-box-3-thật) (I3–I7).
 
-**De-scope tường minh trong Khối 1b:**
-- *Wake-word tùy biến:* Chưa hỗ trợ quy trình huấn luyện wake-word riêng biệt; chỉ tích hợp sẵn wake-word chuẩn pre-trained (ví dụ: *"Hey Neuro"*).
-- *Độ phủ phần cứng:* Giới hạn duy nhất trên **1 bo mạch tham chiếu chính thức: ESP32-S3-Box-3** (tích hợp sẵn màn hình LCD ST7789, dual-mic ES7210, loa ES8311, dock I/O; tránh câu dây gây nhiễu I2S) để tối ưu hóa triệt để độ ổn định bộ nhớ SRAM/PSRAM, không hỗ trợ dàn trải các biến thể phần cứng khác nhau.
-- *MCP trên vi điều khiển:* MCU không làm MCP host (Q-27); đưa tool của thiết bị MCU ra MCP qua gateway là việc của Giai đoạn 2 (`neuroedge-roadmap-phase2.md` TSK-P2-05).
-- *Phạm vi chưa thực hiện:* Thị giác máy tính · Dịch vụ đám mây thương mại *(Fleet OS thuộc Khối 2; kết nối tới provider cloud qua lớp provider **thuộc phạm vi** — CR-1.0)* · Hệ thống tài khoản người dùng · Sàn thương mại · Hỗ trợ Jetson/Matter/HomeKit · Tự tinh chỉnh (fine-tune) mô hình AI.
+De-scope tường minh và thang cắt phạm vi: [`neuroedge-roadmap.md` §9](neuroedge-roadmap.md#9-thang-cắt-phạm-vi); trong đó đưa tool của thiết bị MCU ra MCP qua gateway thuộc increment I14 ([`neuroedge-roadmap.md` §7.4](neuroedge-roadmap.md#74-i14--robot-phân-tầng), TSK-P2-05).
 
 ### 8.3 Giai đoạn đệm: Developer Beta & Xây dựng cộng đồng (I8)
 
 **Nguyên tắc vận hành: Đóng băng toàn bộ việc phát triển tính năng mới (Feature Freeze).** Đội ngũ tập trung 100% nguồn lực vào việc hỗ trợ kỹ thuật trực tiếp, onboarding và làm mượt trải nghiệm cho 50–100 lập trình viên bên ngoài đầu tiên.
 
-| Trọng tâm công việc | Mục tiêu đạt được |
-|:---|:---|
-| **Hỗ trợ 1:1 qua Discord & GitHub** | Giúp các nhà phát triển vượt qua các khúc mắc về toolchain ESP-IDF và nạp bo mạch |
-| **Hoàn thiện tài liệu và hướng dẫn bắt đầu** | Loại bỏ toàn bộ các bước gây khó hiểu trong tài liệu API và các ứng dụng mẫu tham chiếu |
-| **Xác thực trải nghiệm Action CI thực tế** | Đo lường tỷ lệ các bài kiểm thử CI chạy thành công trên máy lập trình viên bên ngoài |
+Trọng tâm công việc và tiêu chí nghiệm thu: [`neuroedge-roadmap.md` §5](neuroedge-roadmap.md#5-developer-beta-và-điểm-rẽ-i8).
 
 ### 8.4 Khối 2 — Tầng dịch vụ thương mại: Fleet OS (I9)
 
@@ -1301,21 +1245,7 @@ Nội dung triển khai: **Fleet Management OS** như mô tả chi tiết tại 
 
 ### 8.5 Khối 3 — Bảy đường ray hạ tầng nền tảng (I10, song song Khối 2)
 
-Xây dựng 7 thành phần hạ tầng cốt lõi phục vụ vận hành an toàn và chuẩn bị sẵn cho việc mở rộng Marketplace sau này:
-
-| # | Thành phần hạ tầng | Giá trị mang lại ban đầu | Vai trò nền tảng dài hạn |
-|:---:|:---|:---|:---|
-| 1 | **Kho lưu trữ Gate công khai (Public Registry)** | Cho phép chia sẻ qua `neuroedge gate add <uri>` | Thu thập dữ liệu về các chính sách an toàn được dùng lại nhiều nhất. **Mở rộng:** cùng hạ tầng phục vụ kho chia sẻ *adapter kết nối nhà cung cấp* do cộng đồng đóng góp — nhu cầu kết nối provider là tức thời nên hiệu ứng mạng dễ hình thành hơn gate |
-| 2 | **Manifest & Chuẩn phiên bản (SemVer)** | Quản lý gói phụ thuộc minh bạch | Đơn vị đóng gói và phân phối của Marketplace |
-| 3 | **Khai báo năng lực phần cứng** | Phát hiện và ngăn chặn lỗi bất tương thích khi build (§4.9) | Tự động kiểm tra tính tương thích trước khi cài đặt |
-| 4 | **Gate có phiên bản & hỗ trợ `extends`** | Tái sử dụng các chính sách an toàn công nghiệp | Tài sản cấu hình có giá trị trao đổi cao nhất |
-| 5 | **Định danh duy nhất (Stable ID)** | Hỗ trợ gỡ lỗi và tra cứu thiết bị chính xác | Quy kết trách nhiệm và doanh thu giao dịch |
-| 6 | **Hệ thống đo lường (Metering)** | Thống kê tần suất gọi agent và đánh giá gate | Cơ sở phân chia doanh thu công bằng và minh bạch |
-| 7 | **Cơ chế phân quyền & Sandbox** | Bảo vệ thiết bị khi thử nghiệm agent mới | Điều kiện tiên quyết để chạy mã nguồn từ bên thứ ba |
-
-**Đòn bẩy mã nguồn mở:** kho Registry xây trên chuẩn OCI với **ORAS** và **Harbor**; hệ đo lường dùng **OpenMeter** vốn đã tương thích chuẩn Stripe Billing.
-
-Các thành phần 5, 6 và 7 là nền tảng bắt buộc phải thiết kế sớm: nếu thiếu chúng, hệ thống sẽ không thể đối soát doanh thu hoặc bảo đảm an toàn khi người dùng cài đặt mã nguồn của nhau trên thiết bị có cơ cấu chấp hành vật lý.
+Xây dựng 7 thành phần hạ tầng cốt lõi (Registry, SemVer, khai báo năng lực, gate phiên bản hóa & `extends`, Stable ID, Metering, Sandbox) phục vụ vận hành an toàn và chuẩn bị sẵn cho việc mở rộng Marketplace sau này. Trong đó, định danh, đo lường và sandbox là nền tảng bắt buộc phải thiết kế sớm để đối soát doanh thu và bảo đảm an toàn khi người dùng chia sẻ mã nguồn trên thiết bị có cơ cấu chấp hành vật lý. Kho Registry xây trên chuẩn OCI (ORAS, Harbor) và hệ đo lường dùng OpenMeter tương thích Stripe Billing; chi tiết kiến trúc và kế hoạch thực thi xem [`neuroedge-roadmap.md` §6.2](neuroedge-roadmap.md#62-i10--registry-và-các-đường-ray).
 
 ### 8.6 Khối 4 — Triển khai ứng dụng thực địa AURA (sau Beta, ngoài roadmap)
 
@@ -1348,18 +1278,11 @@ Danh mục các sản phẩm tiềm năng trên sàn giao dịch:
 
 ### 8.9 Giai đoạn 2 — Perception thị giác và phủ rộng phần cứng (I11, I13, I15–I18)
 
-**Mục tiêu:** mở rộng tầng nhận thức từ thoại sang thị giác, và mở rộng danh mục phần cứng từ ba target lên sáu — **mà không đụng tới tầng an toàn hành động**. Kế hoạch thực thi chi tiết tại `neuroedge-roadmap-phase2.md`.
+**Mục tiêu:** mở rộng tầng nhận thức từ thoại sang thị giác, và mở rộng danh mục phần cứng từ ba target lên sáu — **mà không đụng tới tầng an toàn hành động**. Thiết kế: `neuroedge-design-phase2.md`; kế hoạch thực thi: `neuroedge-roadmap.md` §7.
 
 Giai đoạn 2 **chạy song song Khối 4**, không nối tiếp: AURA triển khai thực địa ở khách sạn chính là nơi sinh ra nhu cầu camera đo được, tức là nguồn dữ liệu PF-3 cho chính thị giác. Kích hoạt vẫn milestone-gated, không theo lịch.
 
-| Khối | Trọng tâm | Điều kiện kích hoạt |
-|:---|:---|:---|
-| **V1a — Mở danh sách target** | RFC-0002: mở enum target theo phân tầng bậc; bậc máy đọc được trong mã lõi. Nguyên thủy `vision.in` và bằng chứng thị giác trong vết ghi đi qua RFC riêng ở V1b. **Không viết driver, không đụng TTFV.** | RFC-0002 được phê duyệt; hợp nhất trong increment mở target I11 sau Beta (PRD Q-40). Không chờ AURA |
-| **V1b — Vision trên `linux`** | RFC `vision.in`, HAL thị giác, Action CI cho khung hình, tăng tốc NPU trên bo mạch giá thấp | Có nhu cầu camera **đo được** từ khách hàng AURA thật |
-| **V2 — Vision trên `jetson`** | Nâng target `jetson` lên bậc 2, thị giác thời gian thực chất lượng cao | V1b đạt tiêu chí ra |
-| **V3 — Đa phương thức** | Hợp nhất thoại và thị giác trong một máy trạng thái; gate đa phương thức | V2 đạt tiêu chí ra **và** RFC ngữ nghĩa gate thị giác được phê duyệt |
-| **P1 — Bộ công cụ port cộng đồng** | Xuất bản tài liệu, bộ vector tuân thủ và khung port để cộng đồng tự đưa NeuroEdge lên `stm32`, `rp2350` | I11 (mở target) phát hành — không chờ thị giác (PRD Q-40) |
-| **P2 — Hệ sinh thái thiết bị** | SDK đa thiết bị, kho adapter và HAL port, chứng nhận miễn phí tự kiểm chứng | ≥ 3 bản port bậc 3 do cộng đồng hoàn thành |
+Trọng tâm từng khối và điều kiện kích hoạt: [`neuroedge-roadmap.md` §7](neuroedge-roadmap.md#7-hướng-mở-rộng-sau-beta-i11i18).
 
 **Hai ranh giới không được vượt trong Giai đoạn 2:**
 
@@ -1373,7 +1296,7 @@ Giai đoạn 2 **chạy song song Khối 4**, không nối tiếp: AURA triển 
 
 ### 8.10 NeuroBrain — bring-up phần cứng bằng hội thoại (I12)
 
-*"NeuroBrain — Build Physical AI by conversation, under contract"* (PRD Q-31): kỹ sư bring-up một bo mạch mới bằng hội thoại, mỗi lệnh chạm chân vẫn đi qua gate, và bản nháp gate sinh ra phải được người duyệt khoá lại trước khi dùng. Làm **sau Developer Beta** (PRD Q-40) để không giành công của đường găng v1.0. Thiết kế: `neuroedge-roadmap-phase1-5.md`; task, tiêu chí ra và ngày: `neuroedge-roadmap.md` I12.
+*"NeuroBrain — Build Physical AI by conversation, under contract"* (PRD Q-31): kỹ sư bring-up một bo mạch mới bằng hội thoại, mỗi lệnh chạm chân vẫn đi qua gate, và bản nháp gate sinh ra phải được người duyệt khoá lại trước khi dùng. Làm **sau Developer Beta** (PRD Q-40) để không giành công của đường găng v1.0. Thiết kế: `neuroedge-design-neurobrain.md`; task, tiêu chí ra và ngày: `neuroedge-roadmap.md` I12.
 
 ### 8.11 Robot phân tầng (I14)
 
@@ -1423,7 +1346,7 @@ Thay vì sử dụng các biểu đồ định vị hai trục đơn giản hóa
 | **Tái hiện sự cố hiện trường từ xa (Trace)** | Log UART thủ công | Log Serial cơ bản | Bản ghi phiên audio<br>*(Dung lượng lớn)* | Log dấu vết đám mây<br>*(LangSmith)* | Chưa nêu | Không<br>*(Ngoài phạm vi v0.3)* | **Có**<br>*(Lược đồ trace JSON mở, replay trực tiếp trên PC)* |
 | **Độ phủ và tối ưu hóa sâu phần cứng vi điều khiển** | **Rất cao**<br>*(Toàn dải vi xử lý ESP32)* | **Cao**<br>*(Tối ưu ESP32-S3/C3)* | Thấp<br>*(Cần gateway Linux trung gian)* | Không hỗ trợ MCU | Không<br>*(Thiết bị sau máy tính đầy đủ)* | **Cao**<br>*(ESP32/ESP8266; đo trên 2 bo mạch thật)* | **Tiêu chuẩn**<br>*(Khối 1b tập trung 1 bo mạch tham chiếu ESP32-S3)* |
 | **Lớp trừu tượng nhà cung cấp & Adapter tùy chỉnh** | Không<br>*(Gắn với dịch vụ Espressif)* | Không<br>*(Gọi thẳng API nhà cung cấp)* | Trung bình<br>*(Plugin STT/TTS/LLM)* | **Cao**<br>*(LangChain/LiteLLM: chuẩn hóa provider)* | Không<br>*(Model-agnostic qua MCP, không trừu tượng provider)* | Không<br>*(Là giao thức, không phải lớp provider)* | **Có**<br>*(OpenAI-compatible + adapter tự viết, áp dụng cho cả LLM, ASR và TTS — kết hợp với gate an toàn)* |
-| **Quy mô cộng đồng & Độ trưởng thành sinh thái** | **Lớn**<br>*(Toàn bộ khách hàng Espressif)* | **Rất lớn**<br>*(Hàng chục nghìn maker)* | **Lớn**<br>*(Chuẩn công nghiệp WebRTC)* | **Khổng lồ**<br>*(Hàng triệu AI developer)* | Đang hình thành<br>*(Anthropic + Genentech, UW, CMU, Janelia)* | Nhỏ<br>*(~58 sao, một tác giả, MIT)* | **Mới khởi đầu**<br>*(Giai đoạn Beta, mục tiêu 1.000 dev đầu tiên)* |
+| **Quy mô cộng đồng & Độ trưởng thành sinh thái** | **Lớn**<br>*(Toàn bộ khách hàng Espressif)* | **Rất lớn**<br>*(Hàng chục nghìn maker)* | **Lớn**<br>*(Chuẩn công nghiệp WebRTC)* | **Khổng lồ**<br>*(Hàng triệu AI developer)* | Đang hình thành<br>*(Anthropic + Genentech, UW, CMU, Janelia)* | Nhỏ<br>*(~58 sao, một tác giả, MIT)* | **Mới khởi đầu**<br>*(Giai đoạn Beta, mục tiêu 50–100 dev đầu tiên)* |
 
 Phân tích đặc điểm kiến trúc và động cơ phát triển của sáu nhóm giải pháp trên thị trường:
 
@@ -1835,10 +1758,10 @@ Chạy như công cụ riêng hoặc mô-đun kernel; không có dòng mã nào 
 | Linux `gpio-sim` | `digital.out` trên `linux` trong CI | GPL-2.0 (kernel, không liên kết) | **Đang dùng** — `scripts/setup_gpio_sim.sh`, job `linux-hal` | Có *(runner GitHub, kernel 6.17 azure + `linux-modules-extra`)* |
 | ALSA `snd-aloop` | Bơm/thu âm thanh trên **RPi 5** (nightly) | GPL-2.0 (kernel) | Đề xuất — TSK-S5-08 | Có — **không có trên runner GitHub** (`CONFIG_SOUND` tắt ở kernel 6.17 azure); CI dùng backend tệp/PCM |
 | PipeWire `module-echo-cancel` (webrtc-audio-processing) | AEC phần mềm cho `audio.in` trên `linux` (Q-22) | MIT (PipeWire) · BSD-3 (webrtc-audio-processing) — dịch vụ của hệ điều hành, không đóng gói | Đã chốt (Q-22) — TSK-S5-08 | Có *(tài liệu PipeWire: 4 nút capture/source/sink/playback, `library.name = aec/libspa-aec-webrtc`)*; chưa thử trên Pi |
-| LVGL `lv_test_display` · `lv_test_screenshot_compare` | Ảnh golden cho màn hình `esp32s3`, build trên host | MIT | Đề xuất — TSK-S4-10 | Có *(tài liệu LVGL; lodepng kèm LVGL)* |
+| LVGL `lv_test_display` · `lv_test_screenshot_compare` | Ảnh golden cho màn hình `esp32s3`, build trên host | MIT | **Đang dùng** — TSK-S4-10, job `ui-golden` | Có *(tài liệu LVGL; lodepng kèm LVGL)* |
 | Perfetto UI | Xem timing vết ghi xuất sang Chrome Trace Event | Apache-2.0 | **Đang dùng** — đích của `trace export --format chrome` (TSK-S3-22) | Có |
 | Espressif QEMU (`qemu-xtensa`) | Boot + logic firmware `esp32s3` không cần bo mạch | GPL-2.0 (tệp nhị phân riêng) | **Đang dùng** — job `firmware-qemu.yml` (TSK-S4-08) | Có *(S3 từ `esp-develop-9.0.0`, tài liệu `idf.py qemu` cho S3 từ ESP-IDF v5.4; không I2S/Wi-Fi/LCD SPI/GPIO thường)* |
-| `i2c-stub` + driver `lm75` | `sensor.read` trên `linux` trong CI, đọc qua sysfs hwmon | GPL-2.0 (kernel) | Đề xuất — TSK-S5-09 | Có *(`i2c-stub.ko`, `lm75.ko` trong `linux-modules-extra` 6.17 azure)*; chưa chạy |
+| `i2c-stub` + driver `lm75` | `sensor.read` trên `linux` trong CI, đọc qua sysfs hwmon | GPL-2.0 (kernel) | **Đang dùng** — TSK-S5-09, job `linux-hal` | Có *(`i2c-stub.ko`, `lm75.ko` trong `linux-modules-extra` 6.17 azure)* |
 | Renode | — | MIT | **Không dùng** — không có nền tảng ESP32-S3 upstream | Có |
 | Trình mô phỏng Wokwi · `wokwi-ci-action` | — | Mã đóng; CLI/action MIT, cần token, hạn mức phút | **Không dùng mặc định** — `TODOS.md` | Có *(S3 có GPIO/I2C/SPI/Wi-Fi, không I2S)* |
 | `espressif/esp-emulator` | — | Apache-2.0 | **Theo dõi** — quá mới để dựa vào | Có |

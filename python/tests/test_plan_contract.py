@@ -16,8 +16,8 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 ROADMAP = ROOT / "neuroedge-roadmap.md"
 DESIGN_NOTES = (
-    "neuroedge-roadmap-phase1-5.md",
-    "neuroedge-roadmap-phase2.md",
+    "neuroedge-design-neurobrain.md",
+    "neuroedge-design-phase2.md",
     "draft-ke-hoach-mo-rong-robot-fofoca.md",
     "draft-rfc-node-giao-thuc-dieu-phoi.md",
 )
