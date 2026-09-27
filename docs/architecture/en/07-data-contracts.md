@@ -167,7 +167,9 @@ Events by role in replay:
 
 `session_summary` is never recorded during a session: `EventLog.to_trace()` computes and appends it on
 export. `--anonymize` hashes `text`, `utterance`, `transcript` at the source. The three normative traces
-(`fixtures/traces/happy-path.json`, `unverified_attempt.json`, `network_offline.json`) are frozen by RFC.
+(`fixtures/traces/happy-path.json`, `unverified_attempt.json`, `network_offline.json`) are frozen by RFC;
+RFC-0008 adds `gate_digest` — the digest of the gate that decided each verdict — to every
+`gate_evaluation_begin` they carry.
 
 ## 8. UART format
 

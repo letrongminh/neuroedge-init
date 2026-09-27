@@ -276,6 +276,10 @@ cảm biến, độ tin cậy không phải số.
 phiên có `replay_of` tương ứng với chính vết ghi đó làm golden — như `sim` và `linux` (TSK-S3-04;
 lệch ⇒ NE4002). Trước khi so, nó từ chối (NE4003, "firmware cũ") phiên có `trace_digest` khác tệp
 trong checkout, hoặc `gate_digest` khác gate checkout biên dịch ra: đó sẽ là kết quả về một thứ khác.
+Phép kiểm `gate_digest` là của RFC-0008 (ba vết ghi chuẩn mực mang nó trong
+`gate_evaluation_begin`): host `verify` cưỡng chế nó trên mọi target, còn `replay` trên vết ghi của
+người dùng chỉ cảnh báo, vì gate có thể được siết có chủ ý — luật chi tiết ở
+[`10-target-equivalence.md`](../architecture/vi/10-target-equivalence.md) §5.
 Thiếu `--port` ⇒ mã 1; thiếu phiên cho một vết ghi ⇒ ✗. Kết quả in rõ phần nào do thiết bị tính.
 
 Firmware trên QEMU chạy mỗi PR đụng `targets/**` hoặc `fixtures/traces/`, và job `uart-trace` của
