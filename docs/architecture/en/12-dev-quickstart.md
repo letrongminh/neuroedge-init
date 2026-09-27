@@ -1,202 +1,107 @@
-# 12 · Day-One Developer Quickstart
+# 12 · A new engineer's first day
 
-> **Status:** `done` · Standardized Onboarding Guide for New Developers  
-> **Target Audience:** Newly onboarded software engineers and AI developers (Personas U1 & U2).  
-> **Objective:** Guide developers from a fresh machine to a running, safety-gated agent on the simulator (`sim`) with audited traces in **under 10 minutes**.  
-> **Zero Hardware Prerequisite:** No microphone, no cloud API keys, and no physical embedded boards required (ADR Q-15).
+> **Goal of the first day:** run the system on your own machine, follow one command from the keyboard
+> to the hardware pin through the exact code files, and make one safe change with a test. Full syntax
+> of every command: `CHANGELOG.md` §2.3; repo map: `CONTRIBUTING.md` §6; user guide:
+> [`docs/user/huong-dan.md`](../../user/huong-dan.md).
 
----
+## Hour 1 — run
 
-## 1. The First 10 Minutes (From Zero to Safety-Gated Agent)
-
-```mermaid
-flowchart LR
-    S1["1. Install<br/>uv pip install"] --> S2["2. Scaffold<br/>neuroedge new"]
-    S2 --> S3["3. Execute<br/>neuroedge run -c"]
-    S3 --> S4["4. Test<br/>neuroedge test"]
-    S4 --> S5["5. Inspect<br/>neuroedge trace view"]
-```
-
-### Step 1: Install NeuroEdge CLI
-
-Prerequisites: Python $\ge 3.11$ on macOS or Linux (x86_64 / ARM64).
+Python 3.11+ required. No network, API key or hardware needed.
 
 ```bash
-# Create a dedicated virtual environment and install core package
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e "python/"
-
-# Verify installation success
-neuroedge --version
-# Expected output: neuroedge-cli v0.1.0 (target: sim, linux, esp32s3)
+cd python
+python3 -m venv .venv && .venv/bin/python -m pip install -e '.[dev]'
+.venv/bin/python -m pytest -q          # kỳ vọng: 0 failed, 0 skipped
+export PATH="$PWD/.venv/bin:$PATH"; cd ..
 ```
 
----
-
-### Step 2: Scaffold a New Agent Project
+Then, from the repo root:
 
 ```bash
-neuroedge new smart-home && cd smart-home
+neuroedge run -c "mở cửa phòng 101"     # ✓ ALLOW unlock_door@1.2.0, door_lock PULSED 30s
+neuroedge run -c "mở cửa phòng 202"     # ✗ BLOCK room_matches → lễ tân
+neuroedge gate explain gates/unlock_door@1.2.0.yaml
+neuroedge verify                        # mọi gate phân giải, mọi vết ghi chuẩn mực phát lại đúng
 ```
 
-Project scaffold created:
+Those three results are the whole product in miniature: a gate with three levels of inheritance gives
+`ALLOW` when the room matches, blocks and hands over to the receptionist when it does not; a reviewer
+can read the gate in words; and one command proves that every recorded decision still comes out exactly
+as before.
 
-```text
-smart-home/
-├── agent.toml            # Declares agent configuration, requirements, and gates
-├── board.toml            # Declares simulation board capabilities (sim-default)
-├── actions/
-│   └── home.py           # Action execution c.do() and speech c.say() handlers
-├── gates/
-│   └── light_on@1.0.0.yaml # Binary decision tree guarding light actuation
-└── tests/
-    └── test_home.py      # Automated Action CI verification test suite
-```
+## Hour 2 — follow one command through the code
 
----
+Open the files in the exact order of one typed turn ([`06`](06-runtime-flows.md) §1):
 
-### Step 3: Run Interactive Turns on Simulator (`sim`)
+| # | File · function | To see |
+|:---:|:---|:---|
+| 1 | `python/neuroedge/cli/main.py` · `run` | the CLI loads the session, decides nothing itself |
+| 2 | `python/neuroedge/sim/session.py` · `SimSession.load` | the assembly point: build, engine, token ledger, HAL, model ([`03`](03-component-host-c4l3.md) §5) |
+| 3 | `python/neuroedge/models/grammar.py` · `CommandGrammar.recognize` | the typed sentence becomes intent and slots |
+| 4 | `python/neuroedge/actions/tools.py` · `dispatch` | tool call, schema check, `call_source` inserted |
+| 5 | `python/neuroedge/actions/conversation.py` · `Conversation._do` | gate → token → function body → close token |
+| 6 | `python/neuroedge/engine/gate.py` · `ActionContractEngine.evaluate` | gather facts within budget, walk the tree, `on_block` |
+| 7 | `python/neuroedge/engine/decision_tree.py` · `walk` | pure decision: first failure wins |
+| 8 | `python/neuroedge/actions/token.py` · `TokenLedger.authorize` | six checks before a pin moves |
+| 9 | `python/neuroedge/hal/sim.py` · `SimHAL.digital_out` | the pin command and the `actuator_command` event |
+| 10 | `fixtures/agents/villa-concierge/` | a working agent: `agent.toml`, `commands.toml`, `actions/`, `gates/` |
 
-The `neuroedge run` command defaults to typed-text input on the local machine simulator, exercising the System 1 local grammar:
+Run the `mở cửa phòng 101` command again with `--trace-out /tmp/t.json`, then
+`neuroedge trace show /tmp/t.json`: every event in the trace matches one step in the table above.
+
+## Hour 3 — one safe change with a test
+
+Exercise: tighten a gate and prove the tightening.
 
 ```bash
-# 1. Test a safe command (Criteria satisfied -> ALLOW)
-neuroedge run -c "turn on the living room light"
+neuroedge new nhamay --template factory-monitor && cd nhamay
+neuroedge test                                    # bộ test an toàn của agent: đạt
+neuroedge record -c "tắt báo động"                # ✗ BLOCK: phòng máy đang nóng
 ```
 
-**Terminal Output (ALLOW Case):**
+1. Open `gates/alarm_off@1.0.0.yaml`. Change `heat_level: { lte: normal }` to `{ lte: low }` (only
+   allow turning the siren off when the room is cool). This is a **tightening** — valid. Run
+   `neuroedge test`: the test `test_the_alarm_stays_on_until_the_room_cools` goes red, because it
+   expects the siren to be turned off in the `normal` band. The test is doing its job: a safety
+   behaviour change must come with a **deliberate** test edit. Fix the test's expectation to match the
+   new policy.
+2. Try **loosening** it the other way to `{ lte: critical }`, then `neuroedge replay traces/sess_….json`:
+   the replay reports `SAFETY REGRESSION` and exits with code 1. This is how CI catches a change that
+   weakens safety.
+3. Write a test in `tests/` asserting that `tắt báo động` is blocked at 45 °C (see `neuroedge.testing`:
+   `assert_gate_blocked`, `assert_never_pulsed`), then `neuroedge test`.
 
-```text
-[neuroedge:sim] Booting session sess_8f21ab...
-[routing] System 1 (local_grammar) matched: light_on(room="living")
-[gate:light_on] Evaluating facts: {room_empty: false} -> ALLOW (reason: NONE, p95: 1.2ms)
-[ledger] Minted token nonce=4a8f... TTL=360ms pins=[porch_light]
-[hal:sim] digital_out(pin="porch_light", level=HIGH) -> PIN ACTIVATED
-[speech] c.say("Living room light turned on.")
-[session] Closed with status: COMPLETED in 48ms (Turn Latency: S1=48ms)
-```
+## Rules to know before your first PR
 
-Now execute a command that violates safety policy:
+| Rule | Why | Source |
+|:---|:---|:---|
+| Some changes **require an RFC**: `schemas/`, resolution semantics, the three normative traces, gates in `digests.lock`, the `NETR` layout | these are contracts other people implement | `CONTRIBUTING.md` §3 |
+| A valid schema does **not** mean a safe gate; the gatekeeper is `neuroedge gate lint` | the inheritance rule is a statement about the two documents | invariant 1 |
+| No test may be skipped; CI fails if one is | a skip hides a failure | `CONTRIBUTING.md` §5 |
+| Every corpus is closed both ways | each file one answer, each answer one file | `CONTRIBUTING.md` §3 |
+| Each fact in one place; other places cite it | documentation does not contradict itself | `CONTRIBUTING.md` §8.1 |
+| A new dependency edge between packages must be declared | the architecture does not drift | `python/tests/test_architecture_layers.py` |
+| `ruff check .` and `ruff format --check .` clean | CI blocks | `python/` |
+| Touching `paths.py`, `hatch_build.py`, `README.md` or a path to `schemas/`, `boards/`, `gates/` ⇒ run `scripts/wheel_smoke.sh` | a wheel install differs from an editable install | `CLAUDE.md` |
+| A task done: progress in the roadmap, a `CHANGELOG.md` `[Chưa phát hành]` entry | in the same PR as the code | `CONTRIBUTING.md` §8 |
 
-```bash
-# Simulate room occupancy while requesting light turn-off
-neuroedge run -c "turn off the bedroom light" --sensor room_empty=false
-```
+## By area
 
-**Terminal Output (BLOCK Case):**
+| You work on | Start from | Runs locally with |
+|:---|:---|:---|
+| Engine, gate | [`05`](05-code-gate-hal-c4l4.md), `python/tests/test_gate_engine.py` | pytest |
+| Models, voice | [`06`](06-runtime-flows.md) §5–§6, `docs/spec/voice_fsm.md` | pytest; fake provider `neuroedge.perception.providers.fake` |
+| `linux` | [`10`](10-target-equivalence.md), `hal/linux.py` | a Linux machine with kernel ≥ 5.19: `bash scripts/setup_gpio_sim.sh`, then `tests_linux/` |
+| Firmware | [`04`](04-component-device-c4l3.md) | Docker `espressif/idf:v5.4`: `scripts/qemu_boot.sh`, `scripts/qemu_ota.sh`, `scripts/run_ui_golden.sh` |
+| Architecture docs | [`README.md`](../README.md) | `python3 scripts/gen_architecture_diagrams.py --check`, `python3 scripts/check_architecture_mermaid.py` |
 
-```text
-[neuroedge:sim] Booting session sess_9c32de...
-[routing] System 1 (local_grammar) matched: light_off(room="bedroom")
-[gate:light_off] Evaluating facts: {room_empty: false} -> BLOCK (reason: CONDITION_NOT_MET)
-[gate:light_off] on_block triggered: deny
-[hal:sim] REFUSED: Zero pins toggled (Fail-Closed default enforced)
-[speech] c.say("Cannot turn off light while room is occupied.")
-[session] Closed with status: BLOCKED in 32ms
-```
+## Common first-day errors
 
----
-
-### Step 4: Run Automated Action CI Tests
-
-```bash
-neuroedge test
-```
-
-```text
-============================= test session starts ==============================
-tests/test_home.py::test_light_on_allow PASSED                            [ 50%]
-tests/test_home.py::test_light_off_blocked_when_occupied PASSED          [100%]
-
---------------------------------------------------------------------------------
-Verification: Golden trace matching PASS (2/2 traces match bitwise)
-Memory probe: Peak simulation heap = 1.4 MB (Safe under 120 KB SRAM limit)
-============================== 2 passed in 0.42s ===============================
-```
-
----
-
-### Step 5: Inspect Audit Trace Telemetry
-
-```bash
-neuroedge trace view --last
-```
-
-Displays the cryptographic digest, fact evaluations, and actuator transitions per RFC 8785:
-
-```text
-Session ID    : sess_8f21ab
-Target        : sim
-Board         : sim-default (Logical pins: porch_light, door_lock)
-Verdict Chain : ALLOW (Gate: light_on@1.0.0, SHA256: 2c20dc42...)
-Actuation     : digital_out(porch_light, HIGH) at offset +42ms
-Total Turn    : 48ms (System 1: 100%, System 2: 0%)
-Audit Trace   : traces/sess_8f21ab.json [VALID]
-```
-
----
-
-## 2. Minimum Concept Map (Mental Model)
-
-To avoid cognitive overload, new developers only need to understand six core building blocks:
-
-```mermaid
-flowchart TD
-    subgraph Config["1. Declarative Configuration"]
-        AT["agent.toml<br/>(What agent needs)"]
-        BT["board.toml<br/>(What board offers)"]
-        GT["*.gate.yaml<br/>(Safety contracts)"]
-    end
-
-    subgraph Runtime["2. Execution & Adjudication"]
-        DO["c.do(action)<br/>(Strictly gated)"]
-        SAY["c.say(text)<br/>(Conversational speech)"]
-        LEDGER["TokenLedger<br/>(Mints actuator tokens)"]
-    end
-
-    subgraph Audit["3. Verification & Audit"]
-        TR["traces/*.json<br/>(Session evidence)"]
-        VER["neuroedge verify<br/>(Equivalence checks)"]
-    end
-
-    AT --> DO
-    BT --> LEDGER
-    GT --> DO
-    DO --> LEDGER
-    DO --> TR
-    SAY --> TR
-    TR --> VER
-```
-
-| Concept | Core Meaning in One Sentence | Deep-Dive Reference |
-| :--- | :--- | :--- |
-| `agent.toml` | Declares all required hardware peripherals, safety gates, and simulation fact fixtures. | [07-data-contracts.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/en/07-data-contracts.md) |
-| `*.gate.yaml` | The immutable safety contract for an action: specifies `evaluate`, `allow_when`, and `on_block`. | [05-code-gate-hal-c4l4.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/en/05-code-gate-hal-c4l4.md) |
-| `board.toml` | Declares the 5 hardware primitives using logical pin identifiers (never physical pin numbers). | [10-target-equivalence.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/en/10-target-equivalence.md) |
-| `c.do()` | Executes physical actuation: **Always gated**, runs only when authorized by an ephemeral Token. | [03-component-host-c4l3.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/en/03-component-host-c4l3.md) |
-| `c.say()` | Synthesizes conversational speech: **Bypasses gates**, immediately interruptible via barge-in. | [06-runtime-flows.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/en/06-runtime-flows.md) |
-| `traces/*.json` | Tamper-evident execution trace; replay recomputes all verdicts from recorded raw facts. | [07-data-contracts.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/en/07-data-contracts.md) |
-| `neuroedge verify`| Differential testing tool: guarantees identical verdict sequences across Sim and physical MCUs. | [10-target-equivalence.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/en/10-target-equivalence.md) |
-
----
-
-## 3. Diagnostic & Error Triage Guide (NE Codes)
-
-All NeuroEdge diagnostic errors follow a standardized 3-part layout: **`where` · `why` · `how to fix`** (FR-DX-04). Triage table for rapid troubleshooting:
-
-| Error Code | Error Type | When Does It Occur? | Root Cause | Immediate Fix |
-| :---: | :--- | :--- | :--- | :--- |
-| **NE1001** | `TokenContractError` | Direct invocation of HAL functions without a valid token. | Developer bypassed safety protocol: tried to drive pins without `c.do()`. | Refactor `@action` code: route actuation exclusively through `c.do(gate="...")`. |
-| **NE1002** | `TokenReplayError` | Re-using a spent token or presenting an expired token. | Replay attempt or action execution exceeded $p95 \times 3$ TTL deadline. | Do not cache tokens in global variables; issue a fresh `c.do()` per physical action. |
-| **NE2001** | `CapabilityMismatchError` | During `neuroedge build`. | `agent.toml` requires a peripheral (e.g. `pins = ["door_lock"]`) missing in `board.toml`. | Add the missing peripheral to `board.toml` or remove it from `[requires]` in `agent.toml`. |
-| **NE2002** | `GateSchemaError` | During `neuroedge gate lint`. | YAML syntax error, missing mandatory field, or schema violation against `gate.v1`. | Inspect the indicated line; align with schema defined in `schemas/gate.v1.json`. |
-| **NE2003** | `GateInheritanceError` | In gate inheritance (`extends`). | Child gate redefined an inherited criterion (violates P-1) or relaxed budget $p95$. | Child gates may only tighten conditions (`allow_when`), never redefine ancestor criteria. |
-| **NE2004** | `ConfirmationExpiredError` | Gate blocked with `on_block: ask`. | User did not press the physical confirmation button on device within 10 seconds. | Confirm on the physical device in time or extend the timeout in test fixtures. |
-| **NE3001** | `UnsupportedTargetError` | Running `neuroedge build --target`. | Requested target is not listed in the agent's `supported` targets list. | Verify supported target platforms (`sim`, `linux`, `esp32s3`). |
-| **NE3002** | `LogicalPinConflictError` | Firmware build compilation. | Two distinct logical pin names map to the identical physical GPIO index in `board.toml`. | Correct board GPIO mapping so that every logical pin holds an exclusive physical line. |
-| **NE4001** | `TraceValidationError` | Running `neuroedge trace validate`. | Audit trace file corrupted, invalid JSON structure, or non-monotonic timestamps. | Re-run `neuroedge record` to generate a fresh, compliant trace file. |
-| **NE4002** | `SafetyRegressionError` | Running `neuroedge verify`. | Safety verdict divergence between current code and golden trace (e.g., `BLOCK` became `ALLOW`). | **CRITICAL SAFETY VIOLATION:** Revert recent logic changes; never loosen safety rules. |
-| **NE4004** | `EmptyVerificationError` | Running `neuroedge verify`. | Trace directory is empty or path points to zero test artifacts. | Provide a valid path to an existing directory containing recorded `.json` traces. |
-
-> **Exit Code 2 (Task In-Progress Protocol):**  
-> If you execute a command or target currently under active roadmap development, the CLI cleanly exits with **Exit Code 2** and reports the specific Jira/GitHub Task ID (e.g. `TSK-S4-01`) assigned to build it. This is expected behavior, not a regression!
+| You see | Meaning | Do |
+|:---|:---|:---|
+| `ModuleNotFoundError` when running tests | an old venv missing new `dev` dependencies | `pip install -e '.[dev]'` again |
+| `NE3003 build failed … NE3001` | the agent needs something the board does not have | read every problem line; change the agent or pick another board |
+| `NE1001` when a test calls an `@action` function directly | only `c.do()` may run an action | call through `Conversation.do` or `dispatch` |
+| `NE4002 SAFETY REGRESSION` | the replay differs from golden | your change alters a decision; if deliberate it needs review and may need an RFC |
+| Exit code `2` | the command or target is not implemented yet | correct behaviour; not your bug (invariant 10) |

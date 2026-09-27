@@ -1,270 +1,299 @@
-# 06 · Runtime Flows
+# 06 · Runtime flows (Dynamic views)
 
-> **Status:** `done` · Standardized Real-time Runtime Execution Flows  
-> **Reference Documents:** [04-component-device-c4l3.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/en/04-component-device-c4l3.md), [05-code-gate-hal-c4l4.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/en/05-code-gate-hal-c4l4.md), [E-06-trace-lifecycle](../assets/svg/E-06-trace-lifecycle.svg), [RFC-0006](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfcs/RFC-0006-on-block-ask-confirms.md)  
-> **Normative Test Suites:** `tests/test_runtime_flows.py`, `tests/test_barge_in.py`, `tests/test_trace_replay.py`
+> **Scope:** the important flows, each with a sequence or state diagram, calling functions by their
+> exact names in the code. **Source:** `sim/session.py`, `actions/`, `engine/gate.py`, `mcp_server.py`,
+> `mcp_host.py`, `models/system.py`, `perception/`, `testing/`, `docs/spec/voice_fsm.md`,
+> `docs/spec/tool_calling.md`.
 
----
+Every flow below, wherever it starts, meets at the same segment: `dispatch()` → `Conversation.do`
+→ `ActionContractEngine.evaluate` → `TokenLedger` → HAL ([`05`](05-code-gate-hal-c4l4.md) §5). The
+diagrams draw that segment once in §1 and call it by name in the other flows.
 
-## 1. Overall Interactive Session Flow (`run` session turn)
+## 1. A typed command turn
 
-Each spoken or typed conversational turn strictly adheres to a Dual-System Router model: Short, routine commands are resolved locally via System 1 (Grammar, latency $\le 50$ ms). Open-ended, complex utterances are routed upstream to System 2 (LLM / Cloud, latency $\le 1200$ ms).
+`neuroedge run -c "mở cửa phòng 101"` on `sim`.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as User (Audio / Text)
-    participant VAD as Audio Frontend / VAD
-    participant Router as Dual-System Router
-    participant S1 as System 1 (Grammar / S1)
-    participant S2 as System 2 (Cloud LLM)
-    participant Gate as Gate Engine (Evaluator)
-    participant Ledger as TokenLedger
-    participant HAL as HAL Actuator
-    participant AudioOut as TTS / Audio Output
-    participant Trace as EventLog (Telemetry)
-
-    User->>VAD: "Turn on the living room light"
-    VAD->>Router: Speech Complete (Silence Detected)
-    Note over Router: Mark T0: Turn Start
-
-    Router->>S1: Match grammar patterns
-    alt Command Matched System 1 (Local Pattern Match)
-        S1-->>Router: ToolCall(name="light_on", args={room: "living"}, source="local_grammar")
-    else Unmatched & Cloud Available
-        Router->>S2: Stream prompt + Tool Definitions
-        S2-->>Router: ToolCall(name="light_on", args={room: "living"}, source="system_two")
-    else Offline & Unmatched
-        Router->>AudioOut: Return offline_help (List available local commands)
-        AudioOut-->>User: "Device is offline. You can still toggle lights..."
-    end
-
-    Note over Router,Gate: Fact resolution order: [sim.facts] -> [sim.slot_facts] -> [sim.sensor_facts]
-    Router->>Gate: evaluate(tool="light_on", args, facts, deadline=p95)
-    
-    alt Verdict ALLOW
-        Gate->>Ledger: issue(pins=[4], ttl=p95*3)
-        Ledger-->>Gate: Valid Token
-        Gate-->>Router: GateResult(verdict=ALLOW, token)
-        Router->>HAL: digital_out(pin=4, level=HIGH, token)
-        HAL->>Ledger: authorize(token, pin=4)
-        Ledger-->>HAL: NE_TOKEN_AUTHORIZED
-        HAL->>HAL: Drive GPIO4 (Relay Trigger)
-        HAL-->>Router: Actuator Success
-        Router->>AudioOut: c.say("Living room light turned on")
-        AudioOut-->>User: Synthesize Audio Response
-    else Verdict BLOCK (on_block: deny/ask/degrade)
-        Gate-->>Router: GateResult(verdict=BLOCK, reason=CONDITION_NOT_MET)
-        Router->>AudioOut: c.say("Cannot turn on light due to safety policy")
-        AudioOut-->>User: Play Rejection Notice
-    end
-
-    Note over Router,Trace: Measure Turn Latency (5 stages: VAD -> STT -> Routing -> Gate -> HAL/TTS)
-    Router->>Trace: emit(turn_latency, session_summary)
+    participant CLI as cli run
+    participant S as SimSession
+    participant G as CommandGrammar
+    participant D as dispatch()
+    participant C as Conversation
+    participant E as Engine
+    participant H as SimHAL
+    participant T as EventLog
+    CLI->>S: SimSession.load() then handle(text) in a fresh event loop
+    S->>H: type_text, audio_in — text_input
+    S->>G: recognize(utterance)
+    G-->>S: Recognition(intent, confidence, slots)
+    S->>T: intent_extracted
+    S->>S: ToolCall(tool, arguments, source=local_grammar)
+    S->>S: gate facts = sim.facts + slot facts + sensor facts
+    S->>D: dispatch(conversation, tools, call)
+    D->>T: tool_call
+    D->>C: do(spec, arguments) with call_source = local_grammar
+    C->>E: evaluate — gate_evaluation_begin, gate_facts, gate_evaluation_result
+    C->>H: token, body, digital.out — actuator_command
+    D-->>S: ToolResult ALLOW or BLOCK
+    S->>T: turn_latency (perception, gate, action, other)
+    S-->>CLI: Turn, rendered with verdict and pins
 ```
 
-### 1.1. Fact Resolution Precedence
+A sentence that does not match the grammar: with `[system_two]` it goes to the flow in §4; otherwise
+`command_not_recognized` and the device speaks the local commands that still work (`offline_help`).
 
-When `engine.evaluate()` is invoked, fact sources are aggregated in descending order of precedence:
-1. `[sim.facts]` (Explicit fact overrides from test scripts or session harness).
-2. `[sim.slot_facts]` (Facts extracted directly from utterance slots).
-3. `[sim.sensor_facts]` (Real-time hardware sensor readings queried via HAL).
-4. `[grammar]` (Default facts declared statically in grammar rules).
-
----
-
-## 2. Barge-in & Actuator Abort Contract
-
-Barge-in occurs when a user begins speaking while the device is processing (`THINKING`) or speaking (`SPEAKING`). The system must instantly revoke hardware execution authority.
+## 2. Ask and confirmation (`on_block: ask`, RFC-0006)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as User
-    participant Mic as Audio Task (Core 0)
-    participant FSM as Voice FSM (Core 1)
-    participant Dispatcher as Action Dispatcher
-    participant Ledger as ne_ledger (Token Ledger)
-    participant HAL as Stepper / PWM Motor Driver
-    participant Speaker as I2S Audio Out (Core 0)
-
-    Note over FSM,Speaker: State: SPEAKING (Playing previous reply)
-    HAL->>HAL: Executing curtain motor motion (PWM Active)
-
-    User->>Mic: "Stop right now!" (Barge-in speech)
-    Mic->>FSM: Audio Event: barge_in_detected (VAD Energy Trigger)
-    
-    rect rgb(255, 235, 235)
-        Note over FSM,HAL: ACTUATOR ABORT CONTRACT (LATENCY <= 20 ms)
-        FSM->>FSM: State Transition: SPEAKING -> BARGE_IN (T13)
-        FSM->>Dispatcher: Signal: ACTUATOR_ABORTED_BY_BARGE_IN
-        Dispatcher->>Ledger: ne_token_close(active_tokens)
-        Note over Ledger: All active tokens immediately revoked (NE_SLOT_CLOSED)
-        Dispatcher->>HAL: hal_emergency_stop() (Force PWM/Steps to safe state)
-        HAL->>HAL: Motor halted within <= 1 audio frame (20 ms)
-    end
-
-    FSM->>Speaker: Abort Audio Pipeline (Flush DMA RingBuffer)
-    Speaker->>Speaker: Speaker silent in < 300 ms
-
-    Note over FSM: Late Result Drop Filter
-    opt Previous turn LLM/STT arrives after barge-in
-        Dispatcher->>Dispatcher: Drop late result (Log voice_late_result_dropped)
-        Note over Dispatcher: STRICTLY PROHIBITED to call c.do() or speak stale output!
-    end
-
-    FSM->>FSM: State Transition: BARGE_IN -> LISTENING (T14)
-    Note over FSM,Mic: Begin capturing user's new utterance
-```
-
-### 2.1. Four Invariants of Barge-in
-
-1. **Abort Undelivered Actuation ($\le 20$ ms):** Any incomplete actuator command must be halted immediately (`ACTUATOR_ABORTED_BY_BARGE_IN`). Irreversible physical actions already completed cannot be undone, but dependent chains are severed.
-2. **Revoke Active Tokens:** Issued tokens associated with aborted actions are transitioned to `closed`. Subsequent authorization attempts are rejected with `NE_TOKEN_EXPIRED` or `NE_TOKEN_REPLAYED`.
-3. **Immediate Speaker Silence ($< 300$ ms):** Audio playback must fall silent in $< 300$ ms (accounting for VAD energy detection latency and I2S DMA FIFO drain).
-4. **Drop Late Turn Results:** Upstream LLM or STT responses belonging to the interrupted turn that arrive late are dropped silently (`voice_late_result_dropped`), preventing delayed actuation or stale audio playback.
-
----
-
-## 3. Tool Dispatch & In-Person Confirmation
-
-When a safety policy blocks an action but specifies `on_block: ask` with `confirms` attributes (per [RFC-0006](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfcs/RFC-0006-on-block-ask-confirms.md)), the system triggers in-person physical verification:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as User
-    participant Engine as Engine Dispatcher
-    participant Gate as Gate Evaluator
-    participant Device as Physical Device (Button / Mic)
-    participant Ledger as Token Ledger
-    participant HAL as Smart Lock Driver
-
-    User->>Engine: ToolCall(name="unlock_door", source="system_two")
-    Engine->>Gate: evaluate("unlock_door", facts={authenticated: false})
-    
-    Gate->>Gate: walk(tree) -> BLOCK (Missing authenticated)
-    Note over Gate: on_block: ask, confirms=["authenticated"]
-    
-    Gate-->>Engine: GateResult(verdict=BLOCK, action=ask, confirm_mask=0x01)
-    
-    Engine->>Device: Open PendingConfirmation(action="unlock_door", timeout=10s)
-    Device->>User: "Are you sure you want to unlock? Press device button to confirm."
-    
-    alt User presses physical button within 10s
-        User->>Device: Press physical button (GPIO Interrupt)
-        Device->>Engine: ConfirmationEvent(criterion="authenticated", confirmed=true)
-        Engine->>Gate: re_evaluate("unlock_door", confirmed_mask=0x01)
-        Note over Gate: Bit 0 matches confirm_mask -> Treat authenticated as PASS
-        Gate->>Ledger: issue(pins=[12], ttl=p95*3)
-        Ledger-->>Gate: Valid Token
-        Gate-->>Engine: GateResult(verdict=ALLOW, token)
-        Engine->>HAL: digital_out(pin=12, level=HIGH, token)
-        HAL->>Ledger: authorize(token, pin=12)
-        Ledger-->>HAL: NE_TOKEN_AUTHORIZED
-        HAL->>HAL: Drive physical latch
-        HAL-->>Engine: Success
-        Engine->>User: "Door unlocked."
-    else Timeout (> 10s) or User Cancellation
-        Device-->>Engine: ConfirmationExpiredEvent (NE2004)
-        Engine->>User: "Unlock request cancelled due to confirmation timeout."
+    participant X as any caller
+    participant C as Conversation
+    participant E as Engine
+    participant B as ConfirmationBook
+    participant P as person at the device
+    X->>C: do(action)
+    C->>E: evaluate
+    E-->>C: BLOCK, on_block ask, confirms answerable
+    C->>B: open() — tool_confirm_requested, TTL = max(p95 x 3, 10 s)
+    C-->>X: BLOCK with confirmation (caller is told a person must answer)
+    P->>B: yes via local_grammar (typed or spoken) or ui (POST /confirm, same origin)
+    B->>B: take(id, source, current gate digest)
+    alt source not local_grammar or ui, expired, used, or gate changed
+        B-->>P: tool_confirm_rejected, nothing runs
+    else accepted
+        B-->>C: tool_confirmed
+        C->>E: evaluate(confirmed=True) — only the confirms criteria are waived
+        E-->>C: ALLOW or still BLOCK on the other criteria
     end
 ```
 
-> **In-Person Confirmation Safety Invariants:**
-> - Confirmation is strictly **single-use** for a single action invocation.
-> - Confirmation must originate from a **physical on-device interface** (hardware push button, biometric sensor, or local microphone). Remote confirmations via unauthenticated network APIs are forbidden.
-> - If the Gate configuration changes (hash `gate_digest` updates) while awaiting confirmation, the `PendingConfirmation` is immediately invalidated.
+- System 2 and the MCP client have **no confirmation tool**; a question created by System 2's own call
+  cannot be answered by System 2 (Q-26).
+- A spoken "yes" only answers the question of **that very turn** (Q-46).
 
----
-
-## 4. Fail-Closed Offline Fallback
-
-The system adheres to safe disconnection principles: When cloud connectivity drops or AI providers exceed their $p95$ budget, offline degradation logic executes deterministically without freezing the device.
+## 3. MCP calls
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as User
-    participant Router as Session Router
-    participant S2 as Cloud System 2
-    participant S1 as Local Grammar (System 1)
-    participant Gate as Gate Engine
-    participant Trace as EventLog
+    participant CL as MCP client
+    participant M as mcp serve (stdio)
+    participant S as SimSession
+    participant D as dispatch()
+    participant UI as sim page (optional)
+    CL->>M: tools/list
+    M-->>CL: one tool per @action (inputSchema, outputSchema)
+    CL->>M: tools/call name, arguments
+    M->>M: ToolCall(source=mcp) under the turns lock (one call at a time)
+    M->>S: call_tool(call) — utterance empty, gate facts from the session
+    S->>D: dispatch — gate, token, HAL as in section 1
+    D-->>M: ToolResult
+    M-->>CL: CallToolResult — isError only for REJECTED, BLOCK is a normal result
+    M->>UI: notify() — the page updates over SSE
+```
 
-    User->>Router: "Check temperature and turn on the water heater"
-    Router->>S2: Dispatch cloud request (Timeout deadline = 1000 ms)
-    
-    alt Network Disconnection or Timeout (p95 Exceeded)
-        S2--xRouter: Network Timeout / DNS Error
-        Router->>Trace: emit(source_degraded, reason=GATE_UNREACHABLE)
-        
-        Router->>S1: match_local_grammar("Check temperature and turn on the water heater")
-        alt Command matches local grammar
-            S1-->>Router: ToolCall(name="water_heater_on", source="local_grammar")
-            Router->>Gate: evaluate("water_heater_on", degraded=UNREACHABLE)
-            
-            alt Gate configured `fail: closed` (Default)
-                Gate-->>Router: GateResult(verdict=BLOCK, reason=GATE_UNREACHABLE)
-                Router->>User: "Cannot activate water heater while offline (Safety Policy)."
-            else Gate configured `fail: open`
-                Note over Gate: Only missing facts are excused; explicit NO still blocks
-                Gate-->>Router: GateResult(verdict=ALLOW, degraded=OPEN)
-                Router->>User: "Water heater activated in offline mode."
-            end
-        else No local grammar match
-            Router->>User: "Connection lost. Available commands: light on, light off..."
+An MCP call has no spoken words, so `[system_one]` sends nothing to the model: that criterion falls
+back to grammar or blocks. A gate can refuse the `mcp` source specifically through the `call_source`
+criterion.
+
+## 4. A System 2 (LLM) turn, with an external MCP server
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as SimSession
+    participant TH as ToolHost
+    participant LLM as SystemTwo (LiteLLM)
+    participant OWN as agent's own MCP server
+    participant EXT as external MCP server
+    participant D as dispatch()
+    S->>TH: open for this turn — in-process client to OWN, stdio to EXT (allowlist)
+    loop up to mcp.max_rounds (default 4)
+        S->>LLM: respond(state: utterance, tools, messages)
+        LLM-->>S: text or tool_calls — system_two_call traced, no prompt, no key
+        alt a device tool
+            S->>TH: call(name, arguments)
+            TH->>OWN: tools/call with source system_two
+            OWN->>D: dispatch — gate, token, HAL
+        else an information tool
+            TH->>EXT: tools/call
+            EXT-->>TH: result marked untrusted data, only its digest traced
         end
     end
+    S->>S: say the reply, or the gate's ask message (the model may not answer it)
 ```
 
----
+The provider cannot answer ⇒ `system_two_unavailable`, the device speaks an offline line. If content
+from an external MCP server contains an injected command (prompt injection), the call it leads to still
+has to pass the gate (`test_mcp_host.py::test_prompt_injection_in_the_news_still_meets_the_gate`).
 
-## 5. Trace Lifecycle & Target Verification
+## 5. The System 1 model and when offline
 
-Audit traces (`trace.json`) serve as mathematical evidence guaranteeing system integrity and target equivalence between the Simulator, Linux, and actual hardware (ESP32-S3).
+`SystemOne` is the engine's `FactSource`. With `[system_one]`, it asks the primary model (Jev via the
+System One API) for the delegated criteria, within the remaining budget minus 50 ms of reserve; if the
+model is not usable, the command grammar decides.
 
 ```mermaid
-flowchart TD
-    classDef rec fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
-    classDef val fill:#faf5ff,stroke:#9334e6,color:#6b21a8,stroke-width:1.5px;
-    classDef rep fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.5px;
-    classDef gold fill:#f0fdf4,stroke:#16a34a,color:#14532d,stroke-width:1.5px;
-    classDef pass fill:#f0fdf4,stroke:#16a34a,color:#14532d,stroke-width:2px;
-    classDef fail fill:#fef2f2,stroke:#dc2626,color:#991b1b,stroke-width:2px;
-
-    subgraph RunPhase["1. Record Execution (Run &amp; Record)"]
-        S["Sim / Host / Hardware Run"]:::rec -->|Every emit event| EL["EventLog Bus"]:::rec
-        EL -->|Anonymize Hash PII| TR["Trace Collector"]:::rec
-        TR -->|Serialize JSON RFC 8785| TF["trace.json / UART NE1 Stream"]:::rec
+sequenceDiagram
+    autonumber
+    participant E as Engine gather
+    participant S1 as SystemOne
+    participant BR as DegradationBreaker
+    participant JEV as Jev (System One API)
+    participant GR as GrammarAdjudicator
+    E->>S1: adjudicate(criterion, definition, state, deadline_ms)
+    alt criterion not delegated, offline, or breaker open
+        S1->>GR: adjudicate
+    else delegated
+        S1->>BR: allow_primary?
+        S1->>JEV: POST /systemone — only the utterance
+        alt well-formed answer, in domain, above threshold
+            JEV-->>S1: Fact(value, confidence)
+        else offline, timeout, HTTP error, malformed, below threshold
+            S1->>BR: record_failure
+            S1->>GR: adjudicate — system_one_fallback traced
+        end
     end
-
-    subgraph ValidatePhase["2. Validate Schema (Trace Validate)"]
-        TF -->|Schema Check| TV["trace.v1.json Schema Validator"]:::val
-        TV -->|NE3001 Check| CK1["Span Structure &amp; Monotonic Timestamps"]:::val
-        TV -->|NE3002 Check| CK2["Token &amp; Gate Digest Hash Integrity"]:::val
-    end
-
-    subgraph ReplayPhase["3. Audit Replay (Trace Replay)"]
-        TF -->|Replay Engine| RP["trace replay --target sim/linux"]:::rep
-        RP -->|Recompute verdicts from facts| GW["Gate Walker &amp; Token Ledger"]:::rep
-        GW -->|Drive actuator commands| SH["Simulated / Hardware Pins"]:::rep
-        SH -->|Emit fresh execution trace| RF["replayed_trace.json"]:::rep
-    end
-
-    subgraph GoldenPhase["4. Verify Equivalence (Golden Equivalence)"]
-        TF -->|Extract Verdicts &amp; Pins| GD["Golden Extractor"]:::gold
-        RF -->|Extract Verdicts &amp; Pins| GD
-        GD --> DIFF{"Diff Verdicts &amp; Pin Commands"}:::gold
-        DIFF -->|Identical 100% Match| PASS["VERIFICATION PASSED"]:::pass
-        DIFF -->|Any bit divergence| REG["NE4002: SAFETY REGRESSION DETECTED"]:::fail
-    end
+    S1-->>E: Fact or Unavailable
+    Note over E: Unavailable offline or timeout makes the verdict degraded — budget.fail applies
 ```
 
-### 5.1. Trace Replay Principles
+```mermaid
+stateDiagram-v2
+    [*] --> Closed
+    Closed --> Open: failure_threshold failures in a row
+    Open --> HalfOpen: after cooldown_ms
+    HalfOpen --> Closed: primary answers
+    HalfOpen --> Open: primary fails again
+    note right of Open
+        primary skipped, fallback answers
+        the breaker routes, it never allows
+    end note
+```
 
-- **No Result Trust:** `neuroedge trace replay` **recomputes all decisions from scratch** using the binary decision tree and recorded raw facts.
-- **Ignore Non-Safety Data:** Golden diffing strips real-time wall-clock timing (`timestamp_ms`, network transit jitter) and unconstrained LLM phrasing, focusing strictly on:
-  1. **Gate Verdict Sequences:** `ALLOW` or `BLOCK`.
-  2. **HAL Pin Transition Sequences:** Target GPIO pin numbers, logic levels (HIGH/LOW), and relative ordering.
-- **Safety Regression Detection (NE4002):** If hardware execution yields an `ALLOW` where the golden trace specifies `BLOCK`, CI immediately fails with a **Fatal Safety Regression**.
+No fallback can run for a model-decided criterion ⇒ `BLOCK` with `gate_unreachable` (Q-14, the third
+I4 exit criterion).
+
+## 6. Voice
+
+### 6.1 The conversation state machine
+
+Normative in `docs/spec/voice_fsm.md` §4 (T01–T14). Every state change writes `voice_state_changed`.
+The state machine never evaluates a gate or touches a pin.
+
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> LISTENING: T01 wake word, or speech when VAD activation is on
+    LISTENING --> LISTENING: T02 speech ends, silence timer starts · T03 speech resumes, timer cancelled
+    LISTENING --> THINKING: T04 end-of-turn silence elapsed, audio to STT
+    LISTENING --> IDLE: T05 no speech within listen timeout
+    THINKING --> IDLE: T06 empty transcript (reprompt at most max_reprompts) · T08 nothing to say
+    THINKING --> SPEAKING: T07 reply starts
+    THINKING --> THINKING: T09 think timeout or provider down, offline line
+    THINKING --> BARGE_IN: T10 user speaks again
+    SPEAKING --> LISTENING: T11 an ask question played to the end, answer turn opens
+    SPEAKING --> IDLE: T12 reply done or TTS error
+    SPEAKING --> BARGE_IN: T13 user speaks over the reply
+    BARGE_IN --> LISTENING: T14 recall pending commands, stop speech, new turn
+```
+
+### 6.2 One voice turn from a WAV file
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant F as WAV file
+    participant V as VoiceSession (virtual clock)
+    participant W as wake word or VAD
+    participant STT as STT (primary, then fallback)
+    participant S as SimSession
+    participant TTS as TTS
+    F->>V: 20 ms frames
+    V->>W: detect / push
+    W-->>V: wake_word_detected or audio_in_vad_start, then vad_end
+    V->>STT: audio segment of the turn
+    alt primary answers
+        STT-->>V: stt_result
+    else primary fails and stt.fallback exists
+        V->>STT: fallback, with its own bounded deadline — stt_fallback
+        Note over V: a late primary answer becomes voice_late_result_dropped, never a command
+    end
+    V->>S: handle(text, spoken=True) — the same path as a typed turn
+    S-->>V: Turn with reply
+    V->>TTS: synthesize(reply) — tts_stream_start, then tts_stream_end
+```
+
+**Barge-in** (`docs/spec/voice_fsm.md` §5): the user speaks while the device is thinking or speaking ⇒
+the speaker stops, every command **not yet delivered** to a pin is aborted (`actuator_aborted`, reason
+`ACTUATOR_ABORTED_BY_BARGE_IN`) and its token is closed. A delivered command (a pulse already running)
+runs to the end.
+
+**A broken wake word** (model fails to load, adapter throws) ⇒ `wake_word_unavailable`, no turn opens,
+the session keeps running.
+
+Voice sessions today run in **virtual time** from a WAV file; a real-time session with a real
+microphone does not exist yet (`TODOS.md` #45).
+
+## 7. The evidence loop: record, replay, compare
+
+![E-06 · Evidence loop](../assets/svg/E-06-evidence-loop.svg)
+*Figure E-06 — A session becomes a trace; the trace is recomputed on each target and compared with the original.*
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant R as TraceRecorder
+    participant F as trace.v1.json
+    participant P as TracePlayer
+    participant G as GoldenComparator
+    R->>F: save() — validated against trace.v1, anonymize optional
+    P->>F: load, recorded_steps: facts from gate_facts, degraded reasons, actions
+    P->>P: fresh EventLog, HAL for the target, Conversation
+    P->>P: replay each step: conversation.do() — verdict, token, body, pins recomputed
+    P->>G: compare(replayed, golden)
+    G-->>P: safety view: gate sequence, reasons, on_block, pin commands
+    Note over G: a difference is SafetyRegressionError NE4002, naming the first divergent event
+```
+
+- Replay **calls no model and reads no machine**: the recorded facts are fed back in, while verdicts,
+  tokens and pin commands are **recomputed**.
+- Comparison is by **decision** (verdict, reason, `on_block`, pin commands), ignoring time and spoken
+  words.
+- `neuroedge verify --targets sim,linux,esp32s3` does this for every canonical trace on each target; on
+  `esp32s3`, the firmware itself replays the three canonical traces at boot and sends the results over
+  UART.
+
+## 8. From agent to chip
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as engineer
+    participant B as neuroedge build
+    participant I as idf.py (ESP-IDF v5.4)
+    participant Q as QEMU or Box-3
+    participant R as neuroedge record / verify
+    U->>B: build --target esp32s3 --board esp32s3-box-3
+    B->>B: every check, render ne_agent, NETR per gate, self-test answers from the host engine
+    B-->>U: build/esp32s3 ESP-IDF project, or every problem and exit 1, nothing written
+    U->>I: set-target, build (sdkconfig layers)
+    I->>Q: flash or merged image
+    Q->>Q: boot: self-test, canonical replay, heap line
+    Q-->>R: UART NE1 lines
+    R->>R: sessions to trace.v1, validate, compare with goldens
+```
+
+## 9. Lifecycle of a `linux` session
+
+1. `SimSession.load(target="linux")` builds `TypedLinuxHAL` and calls `preflight`: every sensor,
+   display and audio device the agent needs is checked **before** any GPIO line is held. Anything
+   missing ⇒ three-part error, exit code 1, no line held.
+2. Pin commands reach the kernel line through libgpiod v2, looked up by name. A pulse with a duration
+   is released by a timer; `run -c` waits for the pulse to finish before exiting.
+3. Exit — normal, Ctrl-D, SIGTERM (MCP client stops the server), SIGHUP (terminal closed) — ⇒ every
+   line returns to the idle state and is released. SIGKILL cannot be caught: that is why hardware
+   safety is still needed (`docs/spec/threat_model.md` §3b).

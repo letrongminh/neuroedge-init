@@ -1,150 +1,218 @@
-# 04 · ESP32-S3 Firmware Components (C4 L3 — Device Level)
+# 04 · ESP32-S3 firmware components (C4 L3)
 
-> **Status:** C99 Walker, C99 Token Ledger, UART Trace output, and Boot Self-test are `done` (validated on Espressif QEMU in CI on every PR); complete hardware HAL and audio drivers are `in-progress / planned` (`TSK-S4-01`, awaiting physical silicon arrival).  
-> **Source Directory:** `targets/esp32s3/`. Embedded review specifications: [`docs/spec/hal_mcu_review.md`](../../spec/hal_mcu_review.md) (KL-1..KL-5, RB-1..RB-4).
+> **Scope:** firmware in `targets/esp32s3/` — components, boot sequence, memory, OTA,
+> interfaces. **Source:** C code in `targets/esp32s3/`, `python/neuroedge/engine/firmware.py`,
+> `docs/spec/hal_mcu_review.md`, `docs/reports/memory_spike_report.md`.
+> **Status:** `partial` — everything below runs on a computer (C compiled on the host) and on
+> Espressif QEMU in CI; there is no board yet, and the firmware **controls no pin**.
 
----
+## 1. Component diagram
 
-## 1. ESP32-S3 Firmware Component Diagram (C4 L3)
+![E-04 · Firmware](../assets/svg/E-04-firmware.svg)
+*Figure E-04 — Firmware components, build-time generated data, and the boot sequence.*
 
-The microcontroller firmware is structured into modular C99 components executing atop the FreeRTOS real-time kernel within ESP-IDF 5.2.1+ / 5.4:
+## 2. What the firmware does **not** have today
 
-![E-04 · Firmware Map](../assets/svg/E-04-firmware-map.svg)
-*Figure E-04 — Firmware Component Architecture and deterministic boot flow on the ESP32-S3 microcontroller.*
+Said up front, so nobody reads the diagram as more than it is:
 
-```mermaid
-flowchart TB
-    classDef host fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
-    classDef flash fill:#faf5ff,stroke:#9334e6,color:#6b21a8,stroke-width:1.5px;
-    classDef core0 fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.5px;
-    classDef core1 fill:#f0fdf4,stroke:#16a34a,color:#14532d,stroke-width:1.5px;
-    classDef gate fill:#fef2f2,stroke:#dc2626,color:#991b1b,stroke-width:2px;
-    classDef telem fill:#f1f5f9,stroke:#64748b,color:#0f172a,stroke-width:1.5px;
-    classDef act fill:#fffbeb,stroke:#d97706,color:#92400e,stroke-width:1.5px;
+- **No FreeRTOS task is created.** Every step runs sequentially in `app_main`. There is no priority,
+  queue or core pinning.
+- **No audio.** No I2S, codec, AEC, VAD, Opus or ESP-SR — only a `TODO(TSK-S1-10)`
+  in `main/main.c`. On-chip voice is increment I5.
+- **No GPIO control.** The agent's pin table carries pin **names**, not GPIO numbers; the on-chip
+  HAL is TSK-S4-01.
+- **Wi-Fi is started but never connects** (no `esp_wifi_connect`): the network is only brought up
+  to measure its memory cost (`TODOS.md` #50).
+- **The LVGL interface is not linked into the firmware** (§7). The `storage` partition is not mounted.
 
-    subgraph HostGen["Build-time Code Generation (Host Workstation)"]
-        COMP["neuroedge build<br/>engine/compiler.py"]:::host
-        GEN_G["scripts/gen_firmware_gates.py"]:::host
-        GEN_V["scripts/gen_firmware_vectors.py"]:::host
-        COMP --> GEN_G & GEN_V
-        GEN_G --> H_NETR["*.netree.h<br/>Const binary array"]:::host
-        GEN_V --> H_VEC["*.vectors.h<br/>Compliance test vectors"]:::host
-    end
+## 3. Component inventory
 
-    subgraph FlashMem["16 MB SPI Flash Partition Layout"]
-        BOOTLOADER["Bootloader<br/>(0x0000 · 32 KB)"]:::flash
-        PART_TABLE["Partition Table<br/>(0x8000 · 4 KB)"]:::flash
-        OTA_0["App Slot ota_0 (3.5 MB)<br/>Active firmware"]:::flash
-        OTA_1["App Slot ota_1 (3.5 MB)<br/>Standby firmware"]:::flash
-        NETREE_PART["Storage .netree (1 MB)<br/>Binary decision trees"]:::flash
-        NVS_PART["NVS Partition (64 KB)<br/>WiFi credentials & Device ID"]:::flash
-    end
+| Component | Path | Responsibility | Dependency | Status |
+|:---|:---|:---|:---|:---|
+| `main` | `main/` | Boot sequence; memory probe (`memory_probe.c`); gate self-test (`gate_selftest.c`); replay of the three canonical traces (`trace_vectors.c`) | every component below | `done` |
+| `ne_gate` | `components/ne_gate/` | `NETR` v1 tree walker (`ne_walker.c`) and token ledger (`ne_token.c`); pure C99, no allocation, no globals, no recursion | — | `done` |
+| `ne_trace` | `components/ne_trace/` | Trace line format `NE1 {…}` ≤ 512 bytes; format only, the application writes to UART | `ne_gate` | `done` |
+| `ne_agent` | `components/ne_agent/` (**generated**) | Agent-specific part: one `NETR` tree per gate, gate · pin · action tables, self-test cases with answers from the host engine | `ne_gate`, `ne_trace` | `done` |
+| `ne_ota` | `components/ne_ota/` | Signed A/B update, rollback, downgrade blocking; the policy is pure C99 (`ne_ota_policy.c`), the ESP-IDF part is in `ne_ota.c` | ESP-IDF `app_update`, `esp_https_ota`, `nvs_flash`… | `partial` — on QEMU |
+| `ne_ui` | `ui/` (**not linked**) | Nine LVGL screens, Vietnamese and English | LVGL v9.6 | `partial` — host build only |
 
-    subgraph RuntimeTasks["ESP-IDF FreeRTOS Dual-Core Architecture"]
-        subgraph Core0["Core 0 (Real-Time I/O & Networking)"]
-            TASK_AUDIO["Audio I/O Task (Priority 15)<br/>I2S DMA · ES8311 Codec<br/>AEC · VAD · Opus Encoder"]:::core0
-            TASK_NET["Network Task (Priority 10)<br/>WiFi STA · WebSocket Client<br/>Opus Stream to Cloud"]:::core0
-        end
+`ne_gate`, `ne_trace`, `ne_agent` compile with `-std=c99 -Wall -Wextra -Wconversion -Werror`.
 
-        subgraph Core1["Core 1 (Application Logic & Gate Safety)"]
-            TASK_FSM["Voice FSM Task (Priority 12)<br/>5 conversational states<br/>Barge-in Abort Coordinator"]:::core1
-            TASK_GATE["Gate Runtime Engine (Priority 14)<br/>ne_walker.c & ne_token.c<br/>Walks NETR in-place in Flash"]:::gate
-            QUEUE_CMD["Actuator Command Queue<br/>Abortable command pipeline"]:::act
-            DRV_GPIO["GPIO Drivers / Actuators<br/>Token-Verified Output"]:::act
-        end
+### 3.1 `ne_gate` — walker and token ledger
 
-        TASK_AUDIO <-->|PCM Audio Frames| TASK_FSM
-        TASK_FSM -->|Intent / ToolCall| TASK_GATE
-        TASK_GATE -- "ALLOW + Token" --> QUEUE_CMD
-        QUEUE_CMD -->|Pulses GPIO| DRV_GPIO
-        TASK_FSM -.->|Barge-in Abort Signal &lt;= 20ms| QUEUE_CMD
-    end
+```c
+/* ne_walker.h — đọc cây tại chỗ trong bộ nhớ của người gọi, không chép */
+ne_status ne_tree_load(ne_tree *tree, const uint8_t *buf, uint32_t len);
+ne_status ne_evaluate(const ne_tree *tree, const ne_fact *facts, const ne_arg_value *args,
+                      int confirmed, ne_result *out);
+ne_status ne_decide(const ne_tree *tree, const ne_fact *facts, const ne_arg_value *args,
+                    int confirmed, ne_degraded degraded, ne_result *out);
 
-    subgraph Telemetry["Telemetry & Trace Stream (Non-blocking)"]
-        TRACE_C["ne_trace.c<br/>Emits NE1 JSON-Lines"]:::telem
-        UART0["UART0 / USB-CDC<br/>921600 baud -> Host PC / QEMU"]:::telem
-        TRACE_C --> UART0
-        TASK_GATE & QUEUE_CMD & TASK_FSM --> TRACE_C
-    end
-
-    H_NETR & H_VEC --> OTA_0
+/* ne_token.h — bản thiết bị của actions/token.py; sổ do người gọi cấp phát */
+ne_token_status ne_ledger_init(ne_ledger *ledger, uint32_t boot_id);
+ne_token_status ne_token_issue(ne_ledger *ledger, const ne_tree *tree, uint32_t pin_mask,
+                               uint32_t now_ms, ne_random_fn fill_random, ne_token *out);
+ne_token_reason ne_token_authorize(ne_ledger *ledger, const ne_token *token, uint32_t pin,
+                                   uint32_t now_ms);
+void ne_token_close(ne_ledger *ledger, const ne_token *token);
 ```
 
----
+- **Facts entering the walker are indices into the value domain**, not strings: the chip never
+  compares strings. Each `ne_fact` carries `present`, `in_domain`, `index`, and confidence if any.
+- **The token ledger has four slots** (`NE_TOKEN_SLOTS`), a 16-byte nonce, TTL = `p95_latency_ms × 3`,
+  token age computed as `(uint32_t)(now − issued)`, so it is safe when the millisecond counter wraps.
+  `boot_id` plays the role of the host's `process_instance_id`: a token from a previous boot ⇒ expired.
+- **A full ledger refuses** (`NE_TOKEN_ERR_FULL`); it never evicts a live token.
+- Every rejection reason maps to the same error code as on the host: not a token, unknown token, pin
+  not granted ⇒ `NE1001`; reuse, expiry ⇒ `NE1002`.
 
-## 2. Core Firmware Components
+`NETR` byte layout and the walk algorithm: [`05`](05-code-gate-hal-c4l4.md).
 
-### 2.1 C Binary Decision Tree Walker (`ne_gate/ne_walker.c`)
-* **Role:** Evaluates Gate policies natively on the microcontroller with 100% mathematical determinism matching the Python host engine.
-* **Technical Constraints & Characteristics:**
-  * **Pure C99:** Non-recursive, zero dynamic memory allocation (`malloc`/`calloc`), zero shared global static state (fully reentrant & thread-safe).
-  * **Zero Heap RAM:** The `NETR v1` binary tree is mapped directly from Flash (Memory-Mapped Flash over SPI MMU). Pointers walk directly across the Flash bus.
-  * **Stack Budget:** Maximum stack depth $\le 512$ bytes, ensuring safe execution on constrained FreeRTOS tasks.
-  * **Fact Handling:** Facts passed into the walker are **domain integer indices** (`0..N` for bool/level/choice), eliminating on-chip string parsing or string comparisons.
+### 3.2 `ne_agent` — the component generated per agent
 
-### 2.2 Single-Use Token Ledger (`ne_gate/ne_token.c`)
-* **Role:** Enforces the core invariant: No GPIO pin can pulse without an authorized, unconsumed token issued by the Gate.
-* **Technical Characteristics:**
-  * **4 Fixed Memory Slots:** Static 4-slot array (`NE_TOKEN_SLOTS = 4`). When all 4 slots are occupied, the ledger rejects further allocations $\rightarrow$ **Fail-Closed by Default** (`NE_TOKEN_ERR_FULL`).
-  * **Wrap-Safe Monotonic Clock:** Uses `esp_timer_get_time() / 1000` (monotonic milliseconds) to compute expiration `TTL = p95_latency * 3`.
-  * **Tamper Resistance:** Validates random nonces and a hardware-seeded `boot_id`. Any tampered token or second invocation attempt is rejected with `NE_TOKEN_REPLAYED`.
+`neuroedge build --target esp32s3` (`engine/firmware.py::render_component`) generates:
 
-### 2.3 UART Trace Serializer (`ne_gate/ne_trace.c`)
-* **Role:** Streams on-device execution events back to the workstation for automated Action CI verification (`TSK-S4-09`).
-* **Data Protocol:**
-  * Emits each lifecycle event as a **standalone JSON line over UART0/USB-CDC**, prefixed with `NE1 ` followed by compacted JSON:
-    ```text
-    NE1 {"offset_ms":120,"type":"gate_evaluation_result","data":{"gate":"light_on","verdict":"ALLOW","reason":0}}
-    ```
-  * Uses a static stack buffer $\le 512$ bytes without heap allocation, cleanly separated from standard ESP-IDF system logging (`ESP_LOGI`).
+| File | Content |
+|:---|:---|
+| `gates/<key>.netree.h` | `static const uint8_t ne_tree_<key>[]` — the gate's `NETR` v1 bytes, in flash |
+| `ne_agent.c` | Gate table (label, digest, the `on_block` value that `NETR` does not carry — `TODOS.md` #36), pin table (names), action table (gate, pin mask), and the **self-test cases** |
+| `include/ne_agent.h` | Data types; `NE_AGENT_VERSION`, `NE_AGENT_BOARD`, `NE_AGENT_LANGUAGE`; one symbol `ne_agent_linked` |
 
----
+Self-test cases generated for each gate: the base case; for each criterion every value in the domain,
+a missing fact, an out-of-domain value, and confidence variants if there is a threshold; an offline
+case; and the "confirmed" version for an `ask` gate. **The answer for each case is computed by the
+Python engine itself at build time** — that is what makes the self-test a proof of host ↔ chip
+equivalence.
 
-## 3. Deterministic Boot Sequence Timeline
+## 4. Boot sequence
 
-Upon power-on or hardware reset, the ESP32-S3 firmware must pass through 5 deterministic checkpoints:
+Every marker line (`NE_SELFTEST`, `NE_TRACE DONE`, `NEUROEDGE_*_JSON`, `NE_OTA`) is printed at
+column 0, with no log prefix, so CI scripts can anchor it with `^`.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant HW as Hardware Bootloader
-    participant M as memory_probe.c
-    participant G as gate_selftest.c
-    participant N as Network & WiFi
-    participant A as Audio Pipeline
-
-    HW->>M: System Boot (Checkpoint: BOOT)
-    Note over M: Probe initial free SRAM
-    HW->>M: Initialize NVS Flash (Checkpoint: NVS_READY)
-    
-    HW->>G: Run Gate Self-Test in Flash
-    Note over G: Walker evaluates light_on & light_off<br/>Validates C99 single-use token ledger
-    alt Self-test fails (FAIL)
-        G-->>HW: Print NE_SELFTEST FAIL
-        Note over HW: HALT SYSTEM EXECUTION (Safety Lockout)
-    else Self-test succeeds (PASS)
-        G-->>HW: Print NE_SELFTEST PASS walker=6 token=7
+    participant M as app_main
+    participant P as memory_probe
+    participant O as ne_ota
+    participant S as gate_selftest
+    participant V as trace_vectors
+    participant N as network
+    M->>P: checkpoint boot
+    M->>M: init NVS (erase and retry on NO_FREE_PAGES)
+    M->>P: checkpoint nvs_ready
+    M->>O: ne_ota_boot() — running slot, rollback record, high-water mark
+    M->>S: neuroedge_gate_selftest(ne_agent_linked) as one NE1 session
+    alt self-test fails
+        S-->>M: NE_SELFTEST FAIL what name
+        M->>O: ne_ota_boot_rejected() — a pending OTA image is marked invalid, reboot
+        M->>M: halt: no replay, no network, no update check
+    else self-test passes
+        S-->>M: NE_SELFTEST PASS walker=n token=n
+        M->>O: ne_ota_boot_confirmed() — a pending image is marked valid
+        M->>V: replay the three canonical traces (CONFIG_NEUROEDGE_REPLAY_VECTORS)
+        M->>P: NEUROEDGE_HEAP_JSON at gate_runtime_ready
+        M->>M: NE_TRACE DONE sessions=n
+        M->>N: Wi-Fi STA init, never connects (skipped with CONFIG_NEUROEDGE_SKIP_NETWORK)
+        M->>O: ne_ota_run() — only with CONFIG_NEUROEDGE_OTA and a URL
+        M->>P: NEUROEDGE_MEMORY_JSON — Q-3 verdict INCONCLUSIVE until audio exists
     end
-
-    HW->>N: Initialize TCP/IP & WiFi (Checkpoint: NETWORK_READY)
-    Note over M: Probe static network stack footprint
-    
-    HW->>A: Initialize I2S Codec & AEC (Checkpoint: AUDIO_READY)
-    Note over M: Verify Q-3 budget: SRAM >= 120KB, PSRAM >= 2MB
-    
-    HW->>HW: Enter Application Main Loop & Voice FSM
 ```
 
-* **Absolute Safety Invariant:** If `gate_selftest` detects any verdict discrepancy between the C walker and reference decisions $\rightarrow$ the system halts immediately, refusing to bring up network interfaces or drive GPIO pins. An unverified runtime is never permitted to control physical actuators.
+The self-test has four stages: (1) every tree loads and its digest matches the host-compiled version;
+(2) the walker decides every case exactly as the host engine, field by field; (3) each action's token
+opens exactly its own pin once, rejects another pin, rejects a tampered token; (4) a full ledger
+refuses, and closing a token lets the slot be reused. Failure anywhere ⇒ the firmware halts: no gate
+runtime, no action, no network.
 
----
+| Kconfig option | Default | Effect |
+|:---|:---:|:---|
+| `CONFIG_NEUROEDGE_QEMU` | n | `device_id = "qemu"` instead of `esp32s3-<MAC>` |
+| `CONFIG_NEUROEDGE_SKIP_NETWORK` | n | Skip Wi-Fi startup (the `sdkconfig.qemu` layer enables it) |
+| `CONFIG_NEUROEDGE_REPLAY_VECTORS` | y | Replay the three canonical traces after the self-test |
+| `CONFIG_NEUROEDGE_OTA` | n | Enable the update path; Kconfig and `#error` refuse if signature check or rollback is missing |
+| `CONFIG_NEUROEDGE_OTA_ETH` | n | QEMU's `open_eth` virtual Ethernet network for OTA |
 
-## 4. Hardware Memory Budgets (Q-2, Q-3)
+## 5. Memory and flash
 
-Based on Technical Decision `Q-3` locked on the reference **ESP32-S3-BOX-3** board (16 MB Quad Flash, 512 KB Internal SRAM, 8 MB Octal PSRAM):
+**Partition table** (`partitions.csv`, 16 MB flash): `nvs` 16 KiB · `otadata` 8 KiB · `phy_init` 4 KiB
+· `factory`, `ota_0`, `ota_1` 3.5 MiB per slot · `storage` (spiffs) 5 MiB, unused. The 3.5 MiB slot
+is exactly the Q-3 firmware size ceiling.
 
-| Resource Domain | Budget Threshold (Q-3) | Expected Allocation | Architectural Enforcement Tactic |
-|:---|:---:|:---|:---|
-| **Free Application SRAM** | $\ge 120\text{ KB}$ | Networking: ~60 KB · FreeRTOS OS: ~40 KB · DMA Buffers: ~30 KB $\rightarrow$ Free headroom $\ge 140\text{ KB}$ | All large buffers (audio, ring buffers) must reside in external PSRAM; C walker consumes 0 bytes of static SRAM (`RB-1`, `RB-2`). |
-| **External PSRAM** | $\ge 2\text{ MB}$ | AEC/VAD Audio Buffers: ~512 KB · WebSocket stream buffer: ~256 KB $\rightarrow$ Free headroom $\ge 6\text{ MB}$ | Static pre-allocation at boot time; dynamic `malloc` is strictly forbidden in real-time audio loops (`RB-4`). |
-| **Flash Image Size** | $\le 3.5\text{ MB}$ | Compressed Binary: ~2.8 MB (including mbedTLS, WiFi, Opus, ESP-SR) | Fits within symmetrical A/B dual partition slots ($3.5\text{ MB}$ each on a $16\text{ MB}$ Flash) for zero-downtime OTA rollouts (`FR-OTA-01`). |
+**Config layers** stack through `SDKCONFIG_DEFAULTS`:
+
+| Layer | What it sets |
+|:---|:---|
+| `sdkconfig.defaults` | 16 MB flash, custom partition table, 80 MHz octal PSRAM, FreeRTOS 1000 Hz, performance optimization |
+| `sdkconfig.qemu` | No network, QEMU flags, skip when PSRAM is not found |
+| `sdkconfig.ota` | OTA, bootloader rollback, RSA-3072 image signing and signature verification on update (no Secure Boot yet), 8 KB main task stack |
+| `sdkconfig.qemu_ota` | Test server URL, `open_eth`, AES/SHA/MPI hardware acceleration off (QEMU's GDMA model is not complete enough) |
+
+**Static memory discipline**, tested on every PR (`test_c_walker.py`, `test_c_token.py`,
+`test_c_trace.py`): the object files of the walker, token ledger and trace formatter have **no**
+`.data`/`.bss` symbols; each function uses ≤ 512 bytes of stack. State memory (token ledger, line
+buffer) is allocated by the application, never inside the component.
+
+**Q-3 budget** (SRAM ≥ 120 KB and PSRAM ≥ 2 MB for the application, firmware ≤ 3.5 MB) is checked
+piecewise in CI: image size, static RAM left for the board configuration, boot heap on QEMU. The
+measurements and the measurement conditions are in [`memory_spike_report.md`](../../reports/memory_spike_report.md)
+§4.1 — that is a **floor**, not a Q-3 verdict, because there is no board yet and no audio yet.
+
+## 6. `ne_ota` — signed update
+
+```mermaid
+stateDiagram-v2
+    [*] --> Booted
+    Booted --> SelfTest: ne_ota_boot()
+    SelfTest --> Confirmed: PASS and image pending — mark valid, raise high-water mark
+    SelfTest --> Invalid: FAIL and image pending — mark invalid, reboot
+    Invalid --> [*]: bootloader rolls back to the previous slot
+    Confirmed --> Checking: ne_ota_run() with a URL
+    SelfTest --> Checking: PASS, image already confirmed
+    Checking --> Skipped: same version, downgrade, rolled back, bad version
+    Checking --> Rejected: http, redirect, timeout, signature, nvs
+    Rejected --> Erased: first sector of the written slot erased
+    Checking --> Switched: downloaded and signature verified
+    Switched --> [*]: reboot into the new slot, pending verify
+```
+
+- **The install-or-not decision** is a pure C function, `ne_ota_should_install(running, remote,
+  rolled_back, high_water)`, tested on the host under ASan/UBSan and used unchanged in the firmware.
+  Order: missing version ⇒ skip; version not `MAJOR.MINOR.PATCH` ⇒ skip; same version ⇒ skip; same as
+  the version just rolled back ⇒ skip; not above the high-water mark ⇒ skip (downgrade); otherwise ⇒
+  install.
+- **NVS** (namespace `ne_ota`): `url` (empty ⇒ OTA off), `best` (high-water mark — the highest version
+  that passed self-test), `rollback` (the version just rolled back). NVS unreadable ⇒ refuse, do not
+  guess.
+- **Every rejection after bytes were written** (bad signature, partial download, timeout, download
+  error) erases the first sector of the written slot, so no boot ever lands on a rejected image.
+- **Limits:** no Secure Boot yet and no eFuse downgrade protection (TSK-S6-05); OTA does not update the
+  bootloader; an image that hangs without rebooting only rolls back at the next power cycle. The
+  procedure and the meaning of each `NE_OTA` line:
+  [`docs/user/nap-firmware.md`](../../user/nap-firmware.md) §6.
+
+## 7. `ne_ui` — device interface (not linked)
+
+Nine screens (`ne_ui_show_boot`, `idle`, `voice`, `confirm`, `verdict`, `degraded`, `sensor`, `ota`,
+`fatal`) on a 320×240 RGB565 panel. The code is C99 on the LVGL v9.6 API, with no ESP-IDF headers, so
+the same code builds on a computer for **golden image** comparison on every PR (33 cases × 2 languages,
+harness run under ASan/UBSan). Deterministic drawing: no clock, no randomness, no animation. Agent text
+is data: strictly checked UTF-8, truncation with a `…` mark. Language: `ne_ui_init` returns `false` and
+draws nothing if the language has no font table. Spec: [`docs/spec/ui.md`](../../spec/ui.md). Wiring the
+interface into the firmware waits for the display driver (TSK-S4-01); the project generated for an agent
+today does not copy `ui/`.
+
+## 8. Build and checks
+
+| What is checked | With what | Where |
+|:---|:---|:---|
+| Walker, token ledger, trace writer match the host; static memory; tree-file fuzz | C compiled on the host (gcc/clang, ASan/UBSan) | `pytest` job `tests` |
+| OTA policy, version rules C = Python | C on the host | `pytest` job `tests` |
+| Firmware boot, self-test, trace, heap | ESP-IDF v5.4 + QEMU (`scripts/qemu_boot.sh`) | job `firmware-qemu` |
+| Image size, static RAM for the board configuration | `scripts/check_firmware_size.py` | job `firmware-size` |
+| Firmware generated for a new agent boots, the signed OTA build has the right version | `neuroedge build` + `idf.py` + QEMU + `scripts/build_ota_layer.sh` | job `agent-firmware` |
+| Seven-phase OTA a–g | `scripts/qemu_ota.sh` | job `ota-rollback` |
+| Interface golden images | `scripts/run_ui_golden.sh` | job `ui-golden` |
+| UART trace into `trace.v1`, `verify` on the chip | `neuroedge record --port`, `verify --targets esp32s3` | job `uart-trace` |
+
+Full list and the trigger conditions of each job: `CHANGELOG.md` §2.5.

@@ -1,141 +1,89 @@
-# 10 · Tương đương Mục tiêu (Target Equivalence)
+# 10 · Tương đương giữa các target
 
-> **Trạng thái:** `done` · Chuẩn hóa nguyên tắc tương đương thực thi giữa các môi trường  
-> **Nguyên tắc cốt lõi:** Bất biến P-2 & FR-TGT-04 — Cùng một mã khai báo Agent $\to$ 100% cùng chuỗi phán quyết Gate và trạng thái chân kích hoạt trên mọi mục tiêu phần cứng.  
-> **Tài liệu tham chiếu:** [E-07](../assets/svg/E-07-target-matrix.svg), `docs/standards/simulation_coverage.md`, [09-adr.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/vi/09-adr.md) (ADR Q-13, Q-16, Q-21, Q-22), [RFC-0002](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfcs/RFC-0002-open-target-enum-and-tier-matrix.md)
+> **Phạm vi:** vì sao cùng một agent và cùng một gate cho cùng quyết định trên `sim`, `linux` và
+> `esp32s3`, điều đó được chứng minh thế nào, và nó **không** hứa gì. **Nguồn:** P-2 (PRD §1.5),
+> FR-TGT, `docs/spec/simulation_coverage.md`, `python/neuroedge/testing/`, `targets/esp32s3/main/`.
 
----
+## 1. Tương đương nghĩa là gì
 
-## 1. Bản đồ Tổng thể Ba Lớp Bảo Vệ Tương Đương
+Hai lần chạy **tương đương** khi, với cùng dữ kiện đầu vào, chúng cho cùng **chuỗi quyết định**: cùng
+gate, cùng phán quyết, cùng lý do, cùng hành động `on_block`, cùng lệnh chân (chân, thao tác, thời
+lượng). Không so: thời gian, chữ nói, âm thanh, khung hình.
 
-Mục tiêu tối thượng của NeuroEdge là xóa bỏ hoàn toàn khoảng cách giữa máy mô phỏng (Simulation) và phần cứng vật lý (Production Hardware). Hệ thống kiểm soát tính tương đương qua 3 lớp phòng thủ độc lập:
+Mã agent **không được rẽ nhánh theo target** (P-2). Khác biệt giữa môi trường nằm trọn trong HAL và
+profile bo mạch.
 
-```mermaid
-flowchart TD
-    classDef spec fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
-    classDef vec fill:#faf5ff,stroke:#9334e6,color:#6b21a8,stroke-width:1.5px;
-    classDef eng fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.5px;
-    classDef vf fill:#f1f5f9,stroke:#64748b,color:#0f172a,stroke-width:1.5px;
-    classDef pass fill:#f0fdf4,stroke:#16a34a,color:#14532d,stroke-width:2px;
-    classDef fail fill:#fef2f2,stroke:#dc2626,color:#991b1b,stroke-width:2px;
-
-    subgraph Layer1["1. Normative Specifications (Spec First)"]
-        S1["Voice FSM Specification<br/>(voice_fsm.md)"]:::spec
-        S2["Gated Tool Profile<br/>(tool_calling.md)"]:::spec
-        S3["Binary Decision Tree<br/>(RFC-0003 NETR v1)"]:::spec
-    end
-
-    subgraph Layer2["2. Shared Compliance Vectors (Compliance Vectors)"]
-        V1["Gate Truth Tables<br/>(fixtures/decision_trees/)"]:::vec
-        V2["Voice Dialogue Scenarios<br/>(fixtures/voice_scenarios/)"]:::vec
-        V3["Golden Baseline Traces<br/>(fixtures/golden_traces/)"]:::vec
-    end
-
-    subgraph Layer3["3. Dual Execution Engines (Dual Engine Verification)"]
-        E_PY["Host Engine (Python 3.11+)<br/>sim / linux"]:::eng
-        E_C["Embedded Walker (C99)<br/>esp32s3 firmware"]:::eng
-    end
-
-    subgraph Verification["Equivalence Verification (neuroedge verify)"]
-        VF{"Golden Diff Engine<br/>(Strict Differential Comparison)"}:::vf
-        E_PY --> VF
-        E_C --> VF
-        VF -->|1-bit verdict drift| ERR["NE4002: Safety Regression"]:::fail
-        VF -->|Zero test artifacts found| ERR2["NE4004: Empty Verification"]:::fail
-        VF -->|100% identical verdict sequence| PASS["VERIFICATION PASSED"]:::pass
-    end
-
-    Layer1 --> Layer2
-    Layer2 --> Layer3
-```
-
----
-
-## 2. Ma trận Hiện thực (5 Nguyên thủy $\times$ 3 Target Bậc 1)
-
-Giai đoạn v1.0 cam kết hỗ trợ tuyệt đối 3 target Bậc 1 (Tier 1) trên 5 nguyên thủy phần cứng trừu tượng:
-
-| Nguyên thủy | `sim` (Mô phỏng bộ nhớ) | `linux` (Máy chủ x86_64 / ARM64) | `esp32s3` (ESP32-S3-BOX-3) |
-| :--- | :--- | :--- | :--- |
-| **`audio.in`** | Bộ đệm giả lập file WAV / Raw PCM; gõ phím dòng lệnh (CLI text) đóng vai trò nhận diện giọng nói. | PipeWire / ALSA driver với bộ lọc triệt tiếng vọng PipeWire Echo-Cancellation (AEC). | Codec kép ES7210 qua I2S DMA, bộ lọc AEC và phần cứng VAD tích hợp trên Core 0. |
-| **`audio.out`** | Bộ đệm âm thanh ảo hoặc in text ra terminal; đếm thời lượng phát theo mẫu. | ALSA / PulseAudio / PipeWire qua loa hệ thống hoặc jack 3.5mm / HDMI. | Codec ES8311 qua I2S DMA, khuếch đại công suất onboard NS4150. |
-| **`digital.out`** | `SimDigitalOut`: Mảng trạng thái boolean trong RAM; ghi vết thay đổi chân. | Linux Kernel Subsystem `libgpiod` / `gpio-sim` (mô phỏng chân phần mềm). | ESP-IDF GPIO Driver (`gpio_set_level`) điều khiển rơ-le và MOSFET công suất. |
-| **`sensor.read`** | `SimSensorRead`: Trả về dữ kiện cài đặt trong `[sim.sensors]` hoặc kịch bản. | Linux `hwmon` / `iio` (Industrial I/O) hoặc `i2c-stub` giả lập IC cảm biến LM75/BMP280. | Driver phần cứng I2C / SPI (đọc cảm biến nhiệt độ, độ ẩm SHTC3, gia tốc kế ICM-42607). |
-| **`display`** | In thông điệp giao diện ra terminal hoặc kết xuất ảnh PNG ảo qua headless renderer. | Linux Framebuffer (`/dev/fb0`) hoặc DRM/KMS, giả lập hiển thị qua cửa sổ SDL2. | Màn hình màu SPI LCD 2.4-inch (ST7789, $320 \times 240$, RGB565) qua thư viện đồ họa LVGL. |
-
-### 2.1. Quy tắc Tên chân Logic (KL-2) & Bất biến 7
-
-1. **Thống nhất tên logic (KL-2):** Cả ba target bắt buộc phải chia sẻ chung một tập tên chân logic duy nhất (ví dụ: `"status_led"`, `"porch_light"`, `"door_lock"`).
-2. **Bất biến 7 (Không ưu ái máy mô phỏng):** Bo mạch mặc định của trình mô phỏng (`sim-default`) **tuyệt đối không được phép giàu năng lực hơn** bo mạch phần cứng thật ESP32-S3-BOX-3. Nếu phần cứng thật không có ngoại vi đó, `sim-default` không được phép hỗ trợ sẵn nhằm chống ảo giác phần mềm khi porting.
-
----
-
-## 3. Phân Cấp Bậc Hỗ Trợ Mục Tiêu (Target Tiers per ADR Q-13 & RFC-0002)
-
-| Tiêu chí | Bậc 1: Cốt Lõi (Tier 1 - Core) | Bậc 2: Tham Chiếu (Tier 2 - Reference) | Bậc 3: Cộng Đồng / OEM (Tier 3 - Community) |
-| :--- | :--- | :--- | :--- |
-| **Danh sách thiết bị** | `sim`, `linux` (Debian/Ubuntu), `esp32s3` (ESP32-S3-BOX-3). | Bo mạch thử nghiệm mở rộng: STM32F4/H7, Raspberry Pi Pico W, ESP32-C6. | Các bo mạch tùy biến của đối tác OEM, vi điều khiển RISC-V mới. |
-| **Trách nhiệm bảo trì** | Đội ngũ cốt lõi NeuroEdge (Core Team). | Đội ngũ cốt lõi bảo trì hạ tầng; cộng đồng hỗ trợ driver. | Đối tác OEM hoặc người đóng góp cộng đồng tự bảo trì. |
-| **Cơ chế kiểm chứng CI** | Chạy kiểm thử tự động 100% trong **mọi Pull Request** (`ci/pr-checks.yml`). | Chạy kiểm thử trong các đợt phát hành Release hoặc Nightly build. | Kiểm tra qua bộ công cụ tự thẩm định `neuroedge hal test`. |
-| **Cam kết tương đương** | Cam kết 100% tương đương chuỗi phán quyết an toàn và lệnh chân. | Đảm bảo đúng miền phán quyết (Verdict Domain Equivalence). | Tự chịu trách nhiệm tuân thủ thông qua bộ vector kiểm toán. |
-| **Hành vi khi phát hiện lệch** | Chặn đứng quy trình Release (Lỗi P0). | Đánh dấu cảnh báo; khắc phục trong chu kỳ sprint tiếp theo. | Đối tác OEM tự sửa đổi bản port HAL. |
-
----
-
-## 4. Ngăn Xếp Mô Phỏng Đa Tầng (Layered Simulation Stack)
-
-Để đạt được độ tin cậy phần cứng cao nhất mà không bị phụ thuộc vào phòng thí nghiệm vật lý, NeuroEdge thiết lập ngăn xếp kiểm thử mô phỏng đa tầng theo ADR Q-21:
+## 2. Ba lớp bảo vệ
 
 ```mermaid
-flowchart TD
-    classDef l1 fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
-    classDef l2 fill:#f0fdf4,stroke:#16a34a,color:#14532d,stroke-width:1.5px;
-    classDef l3 fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.5px;
-    classDef l4 fill:#faf5ff,stroke:#9334e6,color:#6b21a8,stroke-width:1.5px;
-
-    subgraph L1["Layer 1: Instant In-Memory Logic"]
-        S_HAL["SimHAL: 100% RAM mock; executes thousands of unit tests in &lt; 3 seconds"]:::l1
+flowchart TB
+    subgraph L1["1 · Same contract"]
+        A1["One gate file per action"]
+        A2["Pure resolution: same ResolvedGate, same gate_digest everywhere"]
+        A3["Board profile checked against the agent at build"]
     end
-
-    subgraph L2["Layer 2: Linux Kernel Subsystem Stubs"]
-        K_GPIO["gpio-sim: Simulates Linux sysfs/chardev GPIO interfaces"]:::l2
-        K_I2C["i2c-stub + lm75: Simulates I2C register maps and hardware interrupts"]:::l2
-        K_SND["snd-dummy: Virtual multi-channel PCM sound card"]:::l2
+    subgraph L2["2 · Same semantics, two implementations"]
+        B1["Python walk() and C ne_evaluate() on every gate"]
+        B2["Truth tables in fixtures/decision_trees"]
+        B3["Boot self-test answers computed by the host engine"]
+        B4["Token ledgers: same refusals on the same operations"]
     end
-
-    subgraph L3["Layer 3: Full Microcontroller Emulation"]
-        QEMU["QEMU ESP32-S3: Boots unmodified production C99 binary image (.bin)"]:::l3
-        QEMU_TRACE["Validates ROM boot sequence, A/B partition OTA switching, and UART NE1 trace output"]:::l3
+    subgraph L3["3 · Same decisions, observed"]
+        C1["Record a session to trace.v1"]
+        C2["Replay on each target, recompute verdicts and pins"]
+        C3["Golden comparison: first divergence is NE4002"]
     end
-
-    subgraph L4["Layer 4: Physical Hardware Test Farm"]
-        HW_RIG["Self-hosted runner device farm hosting physical reference kits"]:::l4
-        HW_SCOPE["Measures electrical power draw, heap limits, thermal behavior, and acoustic round-trips"]:::l4
-    end
-
-    L1 --> L2
-    L2 --> L3
-    L3 --> L4
+    L1 --> L2 --> L3
 ```
 
-### 4.1. Quy tắc Khoảng dung sai Cảm biến (Sensor Tolerance Bounds per ADR Q-22)
+| Lớp | Bảo đảm | Bằng |
+|:---|:---|:---|
+| **1 · Cùng hợp đồng** | Mọi target nạp cùng một chính sách đã phân giải | Phân giải là hàm thuần (bất biến 4); `gate_digest` giống nhau trong vết ghi, trong `NETR`, trong token |
+| **2 · Cùng ngữ nghĩa** | Python và C quyết giống nhau trên mọi dữ kiện | `test_c_walker.py` (mọi gate, mọi dòng bảng sự thật, fuzz); `test_c_token.py`; self-test lúc khởi động của chính firmware |
+| **3 · Cùng quyết định, quan sát được** | Một phiên thật cho cùng quyết định khi phát lại ở target khác | `neuroedge verify --targets sim,linux,esp32s3`; `GoldenComparator` |
 
-- Trong môi trường thực tế, dữ liệu cảm biến (nhiệt độ, khoảng cách) luôn có độ nhiễu và độ trễ vật lý.
-- Khi kiểm thử Replay giữa Sim và Phần cứng thật:
-  - **Phán quyết Gate:** Bắt buộc phải **trùng khớp 100%** (`ALLOW` là `ALLOW`, `BLOCK` là `BLOCK`).
-  - **Dữ liệu số thực cảm biến:** Cho phép sai số biên trong khoảng quy định $\pm 2\%$ đối với ADC và nhiệt độ để tránh hiện tượng báo lỗi giả (False Alarm) do nhiễu môi trường tự nhiên.
+## 3. Ma trận năm nguyên thủy × ba target
 
----
+![E-07 · Ma trận target](../assets/svg/E-07-target-matrix.svg)
+*Hình E-07 — Mỗi ô: backend chạy nó, nơi nó được kiểm tự động, trạng thái.*
 
-## 5. Quy trình Kiểm thử Thẩm định Tự động (`neuroedge verify`)
+| Nguyên thủy | `sim` (`sim-default`) | `linux` (`linux-rpi5`) | `esp32s3` (`esp32s3-box-3`) |
+|:---|:---|:---|:---|
+| `digital.out` | `SimHAL`, token dùng một lần — PR | libgpiod v2, tìm line theo tên — PR trên gpio-sim | walker + sổ token C — host và QEMU; chân thật `planned` (TSK-S4-01) |
+| `audio.in` | chữ gõ vào ngữ pháp; WAV → VAD → STT — PR | tệp WAV — PR; micro thật qua PipeWire — mới mở thiết bị | `planned` (I5) |
+| `audio.out` | câu cần nói; TTS → dòng thời gian loa → WAV — PR | tệp WAV — PR; loa thật — chưa kiểm trên phần cứng | `planned` (I5) |
+| `sensor.read` | số đọc giả lập — PR | sysfs hwmon/IIO — PR trên `i2c-stub` + `lm75` | `planned` (TSK-S4-03) |
+| `display` | khung trong bộ nhớ, digest — PR | framebuffer — PR trên `vfb`/`vkms` | giao diện LVGL: ảnh golden trên host — PR; panel thật `planned` |
 
-Lệnh dòng lệnh `neuroedge verify` là chốt chặn cuối cùng bảo vệ tính toàn vẹn:
+Ba ô chỉ kiểm được trên bo mạch: `audio.in` và `audio.out` của `esp32s3`, và phần âm học của `linux`.
+Chúng chờ runner hằng đêm trên phần cứng thật (TSK-S4-05, TSK-I2-01).
 
-```bash
-# Thẩm định tính tương đương giữa mã nguồn hiện tại và vết ghi chuẩn mực
-neuroedge verify --agent fixtures/agents/home-voice --golden fixtures/golden_traces/
-```
+## 4. Luật của profile bo mạch
 
-### Tiêu chí Đạt/Không đạt (Pass/Fail Criteria):
-1. **NE4002 (`SafetyRegressionError`):** Xảy ra khi có bất kỳ sự trôi lệch nào trong chuỗi phán quyết an toàn (ví dụ: vết chuẩn ghi `BLOCK` nhưng firmware trên chip thật trả về `ALLOW`). Đây là lỗi vi phạm an toàn nghiêm trọng nhất, lập tức trả về mã thoát `1`.
-2. **NE4004 (`VerificationError`):** Xảy ra khi bộ quét không tìm thấy bất kỳ artifact kiểm thử nào hoặc đường dẫn vết ghi rỗng. Hệ thống **tuyệt đối không bao giờ âm thầm bỏ qua** mà báo lỗi ngay lập tức để chống lọt lỗi trong CI.
+- **`sim` không được giàu hơn bo mạch tham chiếu** (bất biến 7). `sim-default` sao đúng năng lực của
+  Box-3: một agent chạy trên `sim` thì cũng khai được cho `esp32s3`.
+- **Build đối chiếu hai chiều**: mỗi nguyên thủy agent cần (`[requires]`, mỗi `@action(requires=…)`) phải
+  có trên bo mạch, đúng tên chân, đúng cảm biến, đủ tần số lấy mẫu, có khử vang nếu agent đòi.
+  Thiếu ⇒ `NE3001`, build dừng, không ghi gì. Ví dụ: `villa-concierge` đòi `aec = true` nên bị từ chối
+  trên `linux-rpi5` cho tới khi Pi đo đạt khử vang (`simulation_coverage.md` §6.2).
+- **Tên chân là logic** (`door_lock`, `porch_light`, `gate_relay`); số GPIO thuộc về HAL của từng target.
+- Danh sách target đóng băng ở ba target bậc 1 cho tới RFC-0002 (I11).
+
+## 5. `verify` làm gì trên từng target
+
+| Target | Cách phát lại | Cần gì |
+|:---|:---|:---|
+| `sim` | `TracePlayer` trên `SimHAL` | không gì |
+| `linux` | `TracePlayer` trên `LinuxHAL`, line GPIO thật | line thật hoặc gpio-sim (`scripts/setup_gpio_sim.sh`) |
+| `esp32s3` | **Chính firmware** phát lại ba vết ghi chuẩn mực lúc khởi động (`trace_vectors.c`) và gửi kết quả qua UART; host đọc (`--port`) và so với golden | firmware đang chạy, trên QEMU hoặc bo mạch |
+
+Firmware phát lại một vết ghi hay một gate **cũ hơn** checkout ⇒ `NE4003` (firmware cũ), không so.
+Một loại artifact quét được 0 tệp ⇒ `NE4004`, mã 1: không có "PASS" rỗng.
+
+## 6. Tương đương không hứa gì
+
+- **Thời gian.** `verify` so quyết định, chưa so thời gian (TSK-S4-04).
+- **Thao tác và thời lượng trên chip.** Trên `esp32s3`, `operation` và `duration_ms` của lệnh chân hôm nay
+  lấy từ bảng dựng trên host; chip chỉ quyết có phát không và chân nào (`TODOS.md` #37).
+- **Chất lượng âm thanh** trong âm học thật.
+- **Target bậc 2 và 3** (`simulation_coverage.md` §7).

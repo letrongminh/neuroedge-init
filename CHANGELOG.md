@@ -252,6 +252,15 @@ bản gói.
 
 #### Đã đổi
 
+- **Tài liệu kiến trúc viết lại theo mã trên `main` (2026-09-27).** `docs/architecture/`: 15 chương mỗi cây `vi/` + `en/`
+  (VI là gốc) — tổng quan, C4 mức 1–4, luồng lúc chạy, hợp đồng dữ liệu, NFR → chiến thuật → bằng chứng, ADR theo `Q-N`
+  và RFC, tương đương target, hướng dẫn port HAL cho OEM, ngày đầu của kỹ sư mới, tiến hoá I0–I18, triển khai. Bộ cũ bị
+  thay vì mô tả công nghệ và tác vụ không có trong kho, trạng thái lệch hai đợt, 11/64 khối mermaid không dựng được, tệp
+  `.excalidraw` là giữ chỗ. Chín poster E-01…E-09 sinh từ một mô hình (`scripts/gen_architecture_diagrams.py`, lint bố
+  cục: hộp chồng, chữ tràn, mũi tên xuyên hộp) ra cả `.svg` và `.excalidraw` thật; E-09 đọc bảng roadmap §0.2. Kiểm:
+  `pytest tests/test_architecture_diagrams.py` (poster khớp mô hình, hai cây cùng cấu trúc và cùng khối mermaid, mọi
+  liên kết tương đối tồn tại), `tests/test_architecture_layers.py` (đồ thị import giữa các gói khớp bảng tầng của chương
+  03 — cạnh mới phải được khai), `python3 scripts/check_architecture_mermaid.py` (mọi khối mermaid dựng được bằng mmdc).
 - **Tài liệu người dùng viết lại theo năng lực hiện có (2026-09-27).** `docs/user/huong-dan.md`: sản phẩm là gì, ba môi
   trường và mức sẵn sàng, năng lực theo nhóm (làm được · cần gì · giới hạn), kịch bản thử từng bước đã chạy lại, bảng phần
   mở rộng; `README.md` nói đúng trạng thái `linux`/`esp32s3`; `thuat-ngu.md` thêm thuật ngữ OTA, thoại, giao diện.

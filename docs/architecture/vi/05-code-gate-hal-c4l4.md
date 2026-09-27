@@ -1,428 +1,258 @@
 # 05 · Mức mã: gate → token → HAL (C4 L4)
 
-> **Trạng thái:** `done` · Chuẩn hóa kiến trúc mức mã (C4 L4)  
-> **Tài liệu tham chiếu:** Poster [E-05](../assets/svg/E-05-gate-spine.svg), [09-adr.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/vi/09-adr.md) (ADR Q-9, Q-18, Q-23, Q-25, Q-26), [RFC-0003](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfcs/RFC-0003-binary-decision-tree.md), [RFC-0005](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfcs/RFC-0005-gate-argument-limits.md), [RFC-0006](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfcs/RFC-0006-on-block-ask-confirms.md)  
-> **Mã nguồn thực thi:** Python [`python/neuroedge/engine/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/python/neuroedge/engine/) & C99 [`targets/esp32s3/components/ne_gate/`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/targets/esp32s3/components/ne_gate/)
+> **Phạm vi:** xương sống an toàn ở mức hàm — một gate đi từ tệp YAML tới một lệnh chân, trên host
+> (Python) và trên chip (C). **Nguồn:** `python/neuroedge/engine/`, `python/neuroedge/actions/`,
+> `python/neuroedge/hal/`, `targets/esp32s3/components/ne_gate/`; quy phạm: proposal Phụ lục B,
+> RFC-0001, 0003, 0004, 0005, 0006.
 
----
+## 1. Chuỗi xương sống
 
-## 1. Bản đồ tổng thể chuỗi Gate Spine (C4 L4)
+![E-05 · Xương sống gate](../assets/svg/E-05-gate-spine.svg)
+*Hình E-05 — Từ tệp gate tới chân: phân giải và biên dịch lúc build, lượng giá và token lúc chạy, cùng ngữ nghĩa trên host và chip.*
 
-Kiến trúc mức mã thực thi nguyên lý **P-1 (Fail-Closed Default)** và **P-3 (Target Equivalence)**: Mọi quyết định kích hoạt phần cứng (Actuator) đều phải đi qua cây quyết định nhị phân xác định, sinh ra Token dùng một lần có hạn mức thời gian và chân định danh trước khi HAL cho phép chuyển trạng thái GPIO.
+| Giai đoạn | Khi nào | Host (Python) | Chip (C) |
+|:---|:---|:---|:---|
+| Phân giải | build, lint, nạp phiên | `gate_resolver.resolve_gate_file` → `ResolvedGate` | — (làm trên host) |
+| Băm | build | `canonical.gate_digest` (JCS + SHA-256) | digest nằm trong header `NETR` |
+| Biên dịch | build | `decision_tree.compile_tree` → cây JSON; `binary_tree.encode` → `NETR` v1 | `ne_tree_load` kiểm và đọc tại chỗ |
+| Gom dữ kiện | mỗi lần lượng giá | `ActionContractEngine._gather` qua `FactSource` | người gọi đưa `ne_fact[]` (chỉ số miền) |
+| Lượng giá | mỗi lần lượng giá | `decision_tree.walk` | `ne_evaluate` / `ne_decide` |
+| Cấp token | sau `ALLOW` | `TokenLedger.issue` | `ne_token_issue` |
+| Cho phép chân | mỗi lệnh chân | `TokenLedger.authorize` qua HAL | `ne_token_authorize` |
+| Đóng token | khi `c.do()` trả về | `TokenLedger.close` | `ne_token_close` |
 
-```mermaid
-flowchart TD
-    classDef bld fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
-    classDef hst fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.5px;
-    classDef dev fill:#f0fdf4,stroke:#16a34a,color:#14532d,stroke-width:1.5px;
-    classDef sec fill:#fef2f2,stroke:#dc2626,color:#991b1b,stroke-width:1.5px;
+## 2. Phân giải: từ nhiều tệp tới một chính sách
 
-    subgraph BuildTime["1. Build Time (Compiler Pipeline)"]
-        Y["gate.yaml"]:::bld -->|Schema Check NE2002| SC["Schema Validation"]:::bld
-        SC -->|Inheritance Resolve NE2003| IR["Extends Merger &lt;= 3 levels"]:::bld
-        IR -->|Rule Invariants P1/P2/Q-18/Q-25| MR["Merged Gate Model"]:::bld
-        MR -->|Compile Decision Tree| CD["Deterministic Tree Optimizer"]:::bld
-        CD -->|RFC-0003 Encoder| BE["NETR v1 Binary / C Header"]:::bld
-    end
+`resolve_gate_file` đọc gate, theo `extends` qua `GateRegistry` (`neuroedge://gates/<path>@<ver>` →
+`<gates>/<path>@<ver>.yaml`), rồi gộp chuỗi từ gốc tới lá. Phân giải là **hàm thuần**: không đồng hồ,
+không mạng, không ngẫu nhiên (bất biến 4).
 
-    subgraph HostRuntime["2. Host Runtime (c.do())"]
-        AC["@action Dispatcher"]:::hst -->|Evaluate Request| GE["engine.evaluate()"]:::hst
-        GE -->|Check Arguments| AC2["Argument Range Validator"]:::hst
-        GE -->|Resolve Facts via Adjudicator| AD["FactSource / SystemOne"]:::hst
-        AD -->|Facts + Latency Check| WT["Decision Tree Walker"]:::hst
-        WT -->|Verdict ALLOW| TL["TokenLedger.issue()"]:::sec
-        WT -->|Verdict BLOCK| OB["on_block: deny/ask/degrade"]:::sec
-        TL -->|Ephemeral Token| AH["actions.conversation"]:::hst
-    end
+| Luật | Nội dung | Vi phạm ⇒ |
+|:---|:---|:---|
+| Nguyên tắc 1 | Tiêu chí `evaluate` được kế thừa; định nghĩa lại bị từ chối | `NE2003` |
+| Nguyên tắc 2 | `allow_when` chỉ được **siết**: tập giá trị nhận được phải là tập con của cha, ngưỡng tin cậy ≥ của cha | `NE2003` |
+| Nguyên tắc 3 | Được thêm tiêu chí mới | — |
+| Nguyên tắc 4 | `fail: open` không bao giờ được kế thừa | — (tự về `closed`) |
+| Nguyên tắc 5 | Tối đa 3 tài liệu trong chuỗi; không vòng | `NE2003` |
+| RFC-0004 R1–R3 | `p95` con ≤ cha; chuỗi đã `closed` không mở lại; con không thêm `degrade` hay đổi `fallback_action` | `NE2003` |
+| RFC-0005 | Giới hạn tham số chỉ được thu hẹp; bỏ qua ⇒ kế thừa | `NE2003` |
+| RFC-0006 | `confirms` của con là tập con của cha; mỗi mục phải là tiêu chí trong `allow_when` | `NE2003` |
+| `allow_when` dạng chuỗi (CEL) | Bị từ chối ở mọi nơi hôm nay (TSK-S2-06 hoãn, `TODOS.md` #42) | `NE2002` |
 
-    subgraph DeviceRuntime["3. Device Runtime (Zero-Alloc C99 Walker)"]
-        FL["Flash Memory Mapped NETR v1"]:::dev -->|ne_tree_load()| TR["ne_tree Struct View"]:::dev
-        SN["Hardware Sensors / Facts"]:::dev -->|ne_decide()| DW["ne_evaluate Core"]:::dev
-        DW -->|Status ALLOW| NL["ne_token_issue()"]:::sec
-        NL -->|ne_token| DH["ne_token_authorize()"]:::sec
-        DH -->|Pin Granted &amp; Consumed| GP["ESP32-S3 GPIO / Actuator Driver"]:::dev
-    end
+Toán tử của `allow_when` theo kiểu tiêu chí (`constraints.py`): `bool` — giá trị trần hoặc
+`{confidence_gte: x}`; `level` — giá trị trần, `eq`, `lte`, `gte`; `choice` — giá trị trần, `eq`, `in`,
+`not_in`. Toán tử lạ ⇒ `NE2002`.
 
-    BE -.->|Flash via OTA / Flash Tool| FL
-    AH -->|HAL Driver Call| DH
-```
+Kết quả là `ResolvedGate`; `to_artifact()` là thứ được chuẩn tắc hoá và băm: `schema`, `name`,
+`version`, `resolved_from` (chuỗi từ gốc), `evaluate`, `allow_when`, `on_block`, `budget` (luôn có
+`fail` tường minh), và `arguments` nếu có. Digest này (`gate_digest`) xuất hiện trong vết ghi, trong
+header `NETR`, và trong token.
 
----
+> Chú ý hai digest khác nhau: `digests.lock` băm **tài liệu YAML như được viết** (khoá tệp gate chuẩn
+> mực), còn `gate_digest` băm **gate đã phân giải** (định danh chính sách đang chạy).
 
-## 2. Đường ống phân giải Gate (Build / Lint / Merge)
+## 3. Biên dịch: cây quyết định và `NETR` v1
 
-### 2.1. Quy tắc kế thừa và hợp nhất (Inheritance & Merge Invariants)
+`compile_tree` tạo cây JSON nội bộ (`neuroedge.decision_tree/v1`, không đóng băng): `criteria_order`
+theo thứ tự từ gốc, mỗi nút mang `kind`, `domain`, tập `admitted` và `confidence_floor`. Miền của `bool`
+là `false, true`; của `level` là các mức đã khai; của `choice` là các lựa chọn **đã sắp xếp**.
 
-Quá trình hợp nhất Gate (`gate_resolver.py`) kiểm tra tính hợp lệ tĩnh của chuỗi kế thừa theo 5 bất biến:
-
-1. **Độ sâu kế thừa giới hạn ($\le 3$ cấp):** Cấm kế thừa vòng lặp hoặc chuỗi vượt quá 3 cấp (báo lỗi `NE2003`).
-2. **Bất biến định nghĩa lại tiêu chí (P-1 & Q-9):** Gate con **tuyệt đối không được** định nghĩa lại tiêu chí đã xuất hiện ở bất kỳ gate cha nào trong chuỗi kế thừa (`NE2002`).
-3. **Thu hẹp điều kiện `allow_when` (P-2):** Gate con chỉ được phép siết chặt tập giá trị chấp nhận (`admitted` là tập con chặt chẽ hoặc bằng tập của cha) và nâng cao ngưỡng tin cậy (`confidence_floor` con $\ge$ cha).
-4. **Kế thừa ngân sách & Fail Mode (ADR Q-18):**
-   - $p95_{\text{con}} \le p95_{\text{cha}}$ (ngân sách thời gian chỉ có thể siết chặt hơn).
-   - Nếu bất kỳ gate nào trong chuỗi kế thừa đặt `fail: closed`, gate con **không thể** mở lại thành `fail: open`.
-   - Gate con không được tự ý giới thiệu hành động `degrade` mới nếu gate cha đã thiết lập hành vi cứu cánh khác.
-5. **Thu hẹp tham số hành động (ADR Q-25 / RFC-0005):**
-   - `minimum` chỉ có thể tăng lên ($\ge$).
-   - `maximum` chỉ có thể giảm đi ($\le$).
-   - `enum` chỉ có thể thu hẹp (tập con).
-   - `max_length` chỉ có thể giảm đi ($\le$).
-   - Tham số truyền vào vượt khoảng bị Gate chặn với lý do `argument_out_of_range` (trạng thái `BLOCK`), không ném lỗi `REJECTED` của tầng giao thức LLM.
+`binary_tree.encode` ghi cây đó thành `NETR` v1 — bố cục nhị phân đóng băng bởi RFC-0003: little-endian,
+không con trỏ, chỉ offset, bản ghi cố định kích thước.
 
 ```mermaid
 flowchart LR
-    classDef node fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
-    classDef check fill:#fffbeb,stroke:#d97706,color:#92400e,stroke-width:1.5px;
-    classDef pass fill:#f0fdf4,stroke:#16a34a,color:#14532d,stroke-width:1.5px;
-    classDef err fill:#fef2f2,stroke:#dc2626,color:#991b1b,stroke-width:1.5px;
-
-    G0["Base Gate"]:::node -->|extends| G1["Middle Gate"]:::node
-    G1 -->|extends| G2["Leaf Gate"]:::node
-    
-    subgraph MergeLogic["Merge Validation Pipeline"]
-        direction TB
-        C1{"Check Cycle &amp; Depth &lt;= 3"}:::check
-        C2{"Criterion Overlap? (P-1)"}:::check
-        C3{"allow_when Narrower? (P-2)"}:::check
-        C4{"p95 Lower &amp; Closed Preserved? (Q-18)"}:::check
-        C5{"Arguments Narrowed? (Q-25)"}:::check
-    end
-
-    G2 --> C1
-    C1 -->|Pass| C2
-    C2 -->|No Overlap| C3
-    C3 -->|Valid Subset| C4
-    C4 -->|Monotonic Tightening| C5
-    C5 -->|Pass| OK["Compiled Gate Digest SHA-256"]:::pass
-    
-    C1 -->|Fail| E1["NE2003 Inheritance Error"]:::err
-    C2 -->|Fail| E2["NE2002 Schema Violation"]:::err
-    C3 -->|Fail| E3["NE2002 Invalid Restriction"]:::err
-    C4 -->|Fail| E4["NE2002 Relaxed Budget Error"]:::err
-    C5 -->|Fail| E5["NE2002 Argument Range Error"]:::err
+    H["Header · 64 B<br/>magic NETR · layout_version 1<br/>gate_digest 32 B · counts<br/>on_block action · fail_open<br/>p95_latency_ms · confirm_mask<br/>strings_size · crc32"]
+    N["Nodes · 24 B each<br/>kind · domain_size · name_off<br/>admitted_mask · confidence_floor<br/>domain_off"]
+    A["Argument limits · 32 B each<br/>name_off · type · flags<br/>enum range · max_length<br/>minimum · maximum"]
+    E["Enums · 16 B each<br/>number · str_off · str_len"]
+    S["Strings<br/>UTF-8, NUL-terminated"]
+    H --> N --> A --> E --> S
 ```
 
----
+Kích thước tệp đúng bằng `64 + 24·n + 32·a + 16·e + strings`; giới hạn: tối đa 32 nút, miền 32 giá
+trị, 16 tham số, 64 enum, 16 384 byte chuỗi (khoảng 19 KB). Gate vượt giới hạn bị từ chối **lúc build**
+(`NE2002`), không bao giờ tới chip. Đổi bố cục cần RFC và tăng `layout_version`; walker v1 từ chối tệp
+v2. Bảng byte đầy đủ: [`docs/rfc/0003-bo-cuc-nhi-phan-cay.md`](../../rfc/0003-bo-cuc-nhi-phan-cay.md).
 
-## 3. Định dạng nhị phân NETR v1 trên thiết bị (RFC-0003)
+`ne_tree_load` từ chối tệp hỏng trước khi duyệt: sai magic, sai phiên bản, sai CRC, vượt giới hạn, sai
+cấu trúc (offset ngoài tệp, miền `bool` khác 2, ngưỡng NaN, `confirm_mask` khi không phải `ask`…). Không
+tải được cây ⇒ không có `ALLOW`.
 
-Cây quyết định được biên dịch thành file nhị phân phẳng `.netree` hoặc mảng `const uint8_t` trong C header. Trình duyệt walker trên thiết bị đọc trực tiếp trên bộ nhớ flash (Memory Mapped I/O), không cấp phát bộ nhớ động (Zero Heap Allocation), không dùng đệ quy, không con trỏ toàn cục.
+## 4. Lượng giá
 
-### 3.1. Bố cục bộ nhớ tổng thể (Memory Layout)
-
-Mọi số nguyên đều là **Little-Endian**, các cấu trúc được căn lề tự nhiên (Naturally Aligned).
-
-```
-+------------------------------------------------------------------------+
-| 1. Header (64 Bytes)                                                   |
-+------------------------------------------------------------------------+
-| 2. Node Records (24 Bytes * node_count) [Tối đa 32 nodes]               |
-+------------------------------------------------------------------------+
-| 3. Argument Limits (32 Bytes * arg_count) [Tối đa 16 args]             |
-+------------------------------------------------------------------------+
-| 4. Enum Values (16 Bytes * enum_count) [Tối đa 64 enums]               |
-+------------------------------------------------------------------------+
-| 5. String Table (UTF-8, NUL-terminated) [Tối đa 16,384 Bytes]          |
-+------------------------------------------------------------------------+
-```
-
-### 3.2. Đặc tả chi tiết từng Byte Header (64 Bytes)
-
-| Offset (Bytes) | Trường (Field) | Kiểu dữ liệu | Mô tả chi tiết |
-| :--- | :--- | :--- | :--- |
-| `0x00 - 0x03` | `magic` | `char[4]` | Bắt buộc là ASCII `"NETR"` (`0x4E, 0x45, 0x54, 0x52`). |
-| `0x04 - 0x05` | `layout_version` | `uint16_t` | Phiên bản layout nhị phân (hiện tại cố định = `1`). |
-| `0x06 - 0x07` | `header_size` | `uint16_t` | Kích thước header tính theo byte (cố định = `64`). |
-| `0x08 - 0x27` | `gate_digest` | `uint8_t[32]`| Băm mật mã SHA-256 thô của Gate Canonical Definition. |
-| `0x28 - 0x29` | `node_count` | `uint16_t` | Số lượng tiêu chí kiểm tra (`nodes`), $0 \le N \le 32$. |
-| `0x2A - 0x2B` | `arg_count` | `uint16_t` | Số lượng tham số giới hạn (`arguments`), $0 \le A \le 16$. |
-| `0x2C - 0x2D` | `enum_count` | `uint16_t` | Số lượng giá trị enum tham số, $0 \le E \le 64$. |
-| `0x2E` | `on_block_action`| `uint8_t` | Hành vi khi BLOCK: `0`=deny, `1`=escalate, `2`=ask, `3`=degrade. |
-| `0x2F` | `fail_open` | `uint8_t` | Hành vi lỗi degraded: `0` = fail-closed, `1` = fail-open. |
-| `0x30 - 0x33` | `p95_latency_ms`| `uint32_t` | Ngân sách thời gian đánh giá tối đa theo hợp đồng (ms). |
-| `0x34 - 0x37` | `confirm_mask` | `uint32_t` | Bitmask: Bit $i=1$ nghĩa là tiêu chí thứ $i$ có thể được con người xác nhận tại chỗ (RFC-0006). |
-| `0x38 - 0x3B` | `strings_size` | `uint32_t` | Tổng kích thước bảng chuỗi UTF-8 (kèm ký tự `\0`), $\le 16384$. |
-| `0x3C - 0x3F` | `crc32` | `uint32_t` | Mã kiểm tra CRC-32 (IEEE 802.3) của toàn bộ file khi trường này được điền bằng `0`. |
-
-### 3.3. Đặc tả Node Record (24 Bytes)
-
-Mỗi tiêu chí trong cây quyết định ứng với một bản ghi 24 Bytes:
-
-| Offset | Trường | Kiểu dữ liệu | Ý nghĩa |
-| :--- | :--- | :--- | :--- |
-| `0x00` | `kind` | `uint8_t` | Kiểu tiêu chí: `0` = `bool`, `1` = `level`, `2` = `choice`. |
-| `0x01` | `domain_size` | `uint8_t` | Số phần tử trong miền giá trị ($1 \le D \le 32$). |
-| `0x02 - 0x03` | `name_off` | `uint16_t` | Byte offset trỏ vào String Table lưu tên định danh tiêu chí. |
-| `0x04 - 0x07` | `admitted_mask`| `uint32_t` | Bitmask các giá trị được phép: Bit $j=1$ nghĩa là giá trị thứ $j$ trong domain được chấp thuận (`ALLOW`). |
-| `0x08 - 0x0F` | `confidence_floor` | `double` (f64)| Ngưỡng độ tin cậy tối thiểu ($0.0 \dots 1.0$, IEEE 754). |
-| `0x10 - 0x11` | `domain_off` | `uint16_t` | Offset trong String Table bắt đầu chuỗi các giá trị domain liên tiếp (mỗi giá trị kết thúc bằng `\0`). |
-| `0x12 - 0x13` | `reserved16` | `uint16_t` | Cố định = `0` (dự phòng căn lề). |
-| `0x14 - 0x17` | `reserved32` | `uint32_t` | Cố định = `0` (dự phòng căn lề). |
-
-### 3.4. Đặc tả Argument Limit Record (32 Bytes) & Enum Record (16 Bytes)
-
-- **Cấu trúc Argument (32 Bytes):**
-  - `0x00 - 0x01`: `name_off` (`uint16_t`) - Offset tên tham số trong String Table.
-  - `0x02`: `type` (`uint8_t`) - `0`=string, `1`=integer, `2`=number, `3`=boolean.
-  - `0x03`: `flags` (`uint8_t`) - Bitmask cờ giới hạn (`0x01`=HAS_MIN, `0x02`=HAS_MAX, `0x04`=HAS_ENUM, `0x08`=HAS_MAX_LENGTH).
-  - `0x04 - 0x05`: `enum_first` (`uint16_t`) - Vị trí phần tử đầu tiên trong Enum Table.
-  - `0x06 - 0x07`: `enum_count` (`uint16_t`) - Số lượng phần tử enum của tham số này.
-  - `0x08 - 0x0B`: `max_length` (`uint32_t`) - Giới hạn độ dài chuỗi tối đa.
-  - `0x0C - 0x0F`: `reserved` (`uint32_t`) - Cố định = `0`.
-  - `0x10 - 0x17`: `minimum` (`double`) - Giá trị cận dưới.
-  - `0x18 - 0x1F`: `maximum` (`double`) - Giá trị cận trên.
-
-- **Cấu trúc Enum (16 Bytes):**
-  - `0x00 - 0x07`: `number` (`double`) - Giá trị số thực (nếu enum dạng số).
-  - `0x08 - 0x0B`: `str_off` (`uint32_t`) - Offset chuỗi trong String Table (nếu enum dạng chuỗi).
-  - `0x0C - 0x0F`: `str_len` (`uint32_t`) - Độ dài byte UTF-8 của chuỗi enum.
-
----
-
-## 4. Định nghĩa C Structs trên Firmware (`targets/esp32s3/components/ne_gate/`)
-
-Mã nguồn C99 được kiểm toán chặt chẽ, đảm bảo tính bất biến trên kiến trúc 32-bit Xtensa / RISC-V:
-
-```c
-/* ne_walker.h — Định nghĩa cấu trúc cây quyết định nhị phân */
-
-typedef enum {
-    NE_OK = 0,
-    NE_ERR_ARGUMENT = 1,   /* Con trỏ NULL hoặc tham số không hợp lệ */
-    NE_ERR_SIZE = 2,       /* Kích thước file nhỏ hơn header hoặc không khớp */
-    NE_ERR_MAGIC = 3,      /* Sai Magic (khác "NETR") */
-    NE_ERR_VERSION = 4,    /* Phiên bản layout không hỗ trợ (khác 1) */
-    NE_ERR_CRC = 5,        /* Sai mã kiểm tra CRC-32 */
-    NE_ERR_LIMITS = 6,     /* Vượt giới hạn NE_MAX_* (nodes > 32, args > 16) */
-    NE_ERR_STRUCTURE = 7   /* Lỗi cấu trúc nội tại (offset chuỗi tràn ngoài bảng) */
-} ne_status;
-
-typedef enum { NE_ALLOW = 0, NE_BLOCK = 1 } ne_verdict;
-
-typedef enum {
-    NE_REASON_NONE = 0,
-    NE_REASON_CONDITION_NOT_MET = 1,      /* Sự thật không thỏa mãn admitted_mask */
-    NE_REASON_CRITERION_UNAVAILABLE = 2,  /* Thiếu dữ kiện sự thật */
-    NE_REASON_CONFIDENCE_UNAVAILABLE = 3, /* Độ tin cậy dưới ngưỡng confidence_floor */
-    NE_REASON_ARGUMENT_OUT_OF_RANGE = 4,  /* Tham số vi phạm min/max/enum/max_length */
-    NE_REASON_GATE_UNREACHABLE = 5,       /* Nguồn sự thật ngoại vi mất kết nối (Q-14) */
-    NE_REASON_BUDGET_EXCEEDED = 6         /* Thu thập sự thật quá ngân sách p95 */
-} ne_reason;
-
-typedef struct {
-    const uint8_t *base;        /* Con trỏ vùng nhớ flash memory mapped */
-    uint32_t size;              /* Kích thước tổng cộng của blob NETR */
-    uint16_t node_count;        /* Số lượng tiêu chí */
-    uint16_t arg_count;         /* Số lượng giới hạn tham số */
-    uint16_t enum_count;        /* Số lượng enum */
-    uint8_t on_block_action;    /* Hành động on_block (0..3) */
-    uint8_t fail_open;          /* Cờ fail_open */
-    uint32_t p95_latency_ms;    /* Thời hạn ngân sách */
-    uint32_t confirm_mask;      /* Mask các tiêu chí người có thể xác nhận */
-    uint32_t strings_size;      /* Kích thước bảng chuỗi */
-    const uint8_t *gate_digest; /* Con trỏ trỏ tới 32 bytes SHA-256 */
-} ne_tree;
-
-typedef struct {
-    uint8_t present;            /* 1 nếu có dữ kiện, 0 nếu không có */
-    uint8_t in_domain;          /* 1 nếu giá trị nằm trong domain của node */
-    uint8_t index;              /* Chỉ số nguyên của giá trị trong domain */
-    uint8_t has_confidence;     /* 1 nếu có kèm độ tin cậy */
-    double confidence;          /* Điểm tin cậy (0.0 .. 1.0) */
-} ne_fact;
-
-typedef struct {
-    ne_verdict verdict;         /* NE_ALLOW hoặc NE_BLOCK */
-    ne_reason reason;           /* Nguyên nhân đưa ra phán quyết */
-    ne_failed_kind failed_kind; /* Thất bại do CRITERION hay ARGUMENT */
-    uint8_t failed_index;       /* Chỉ số tiêu chí hoặc tham số vi phạm đầu tiên */
-    uint8_t answerable;         /* 1 nếu câu hỏi BLOCK có thể được người gỡ bỏ */
-    uint8_t fail_mode;          /* NE_FAIL_MODE_OPEN hoặc NE_FAIL_MODE_CLOSED */
-    uint32_t confirmed_mask;    /* Mask các tiêu chí đã được xác nhận */
-} ne_result;
-```
-
----
-
-## 5. Thuật toán duyệt cây quyết định nhị phân (`ne_evaluate` / `ne_decide`)
-
-Thuật toán duyệt cây trên chip hoạt động hoàn toàn xác định với độ phức tạp thời gian $O(N + A)$ và bộ nhớ phụ $O(1)$:
+### 4.1 Host: `ActionContractEngine.evaluate`
 
 ```mermaid
-flowchart TD
-    classDef start fill:#f1f5f9,stroke:#64748b,color:#0f172a,stroke-width:1.5px;
-    classDef check fill:#fffbeb,stroke:#d97706,color:#92400e,stroke-width:1.5px;
-    classDef block fill:#fef2f2,stroke:#dc2626,color:#991b1b,stroke-width:1.5px;
-    classDef allow fill:#f0fdf4,stroke:#16a34a,color:#14532d,stroke-width:1.5px;
-    classDef step fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
-
-    Start([Start ne_decide]):::start --> CheckArg{Validate Argument Limits?}:::check
-    
-    CheckArg -->|Argument Out of Bounds| BlockArg["BLOCK: NE_REASON_ARGUMENT_OUT_OF_RANGE<br/>failed_kind=ARGUMENT"]:::block
-    CheckArg -->|All Arguments Valid| CheckDegraded{Fact Gathering Degraded?}:::check
-    
-    CheckDegraded -->|NE_DEGRADED_UNREACHABLE| DegradedBranch
-    CheckDegraded -->|NE_DEGRADED_BUDGET| DegradedBranch
-    CheckDegraded -->|NE_DEGRADED_NONE| EvalLoop["Begin Node Loop 0..N-1"]:::step
-    
-    subgraph DegradedBranch["Degraded Evaluation (Fail Open vs Fail Closed)"]
-        FailClosed{"Tree fail_open == 1?"}:::check
-        FailClosed -->|No - fail: closed| BlockDegraded["BLOCK: NE_REASON_GATE_UNREACHABLE<br/>or BUDGET_EXCEEDED"]:::block
-        FailClosed -->|Yes - fail: open| ScanExplicitNo{"Does any present fact<br/>evaluate to explicit NO?"}:::check
-        ScanExplicitNo -->|Explicit NO Found| BlockExplicit["BLOCK: CONDITION_NOT_MET (Never excuse known NO)"]:::block
-        ScanExplicitNo -->|No Explicit NO| AllowOpen["ALLOW: NE_FAIL_MODE_OPEN<br/>(Excuse missing facts)"]:::allow
-    end
-
-    subgraph NodeLoop["Per-Criterion Evaluation Loop"]
-        EvalLoop --> NodeCheck{"Node i"}:::check
-        NodeCheck --> HasConfirm{"Bit i in confirm_mask<br/>&amp;&amp; confirmed == 1?"}:::check
-        HasConfirm -->|In-Person Confirmed| NextNode["Criterion PASS (Confirmed)"]:::step
-        HasConfirm -->|No| HasFact{"Fact i present?"}:::check
-        
-        HasFact -->|Absent| BlockMissing["BLOCK: NE_REASON_CRITERION_UNAVAILABLE"]:::block
-        HasFact -->|Present| InDomain{"Fact in Domain?"}:::check
-        
-        InDomain -->|No| BlockDomain["BLOCK: NE_REASON_CONDITION_NOT_MET"]:::block
-        InDomain -->|Yes| MaskCheck{"(1 &lt;&lt; fact.index) &amp; admitted_mask?"}:::check
-        
-        MaskCheck -->|Mismatch| BlockAdmit["BLOCK: NE_REASON_CONDITION_NOT_MET"]:::block
-        MaskCheck -->|Matched| ConfCheck{"fact.confidence &gt;= confidence_floor?"}:::check
-        
-        ConfCheck -->|Below Floor| BlockConf["BLOCK: NE_REASON_CONFIDENCE_UNAVAILABLE"]:::block
-        ConfCheck -->|Sufficient| NextNode
-        
-        NextNode --> MoreNodes{"More Nodes?"}:::check
-        MoreNodes -->|Yes| NodeCheck
-        MoreNodes -->|No more nodes| AllPass["All Criteria Satisfied"]:::step
-    end
-
-    AllPass --> AllowNormal["Verdict: ALLOW<br/>reason=NE_REASON_NONE"]:::allow
-    BlockArg --> End([End Decision]):::start
-    BlockDegraded --> End
-    BlockExplicit --> End
-    AllowOpen --> End
-    BlockMissing --> End
-    BlockDomain --> End
-    BlockAdmit --> End
-    BlockConf --> End
-    AllowNormal --> End
+flowchart TB
+    S(["evaluate(key, context, state, arguments, confirmed)"]) --> K{"gate known?"}
+    K -- no --> NF["BLOCK gate_not_found · deny"]
+    K -- yes --> B["emit gate_evaluation_begin"]
+    B --> AR{"arguments within limits?<br/>RFC-0005, defaults included"}
+    AR -- no --> AO["BLOCK argument_out_of_range"]
+    AR -- yes --> G["gather facts in criteria_order<br/>context first, then FactSource.adjudicate<br/>within p95 budget"]
+    G --> DG{"degraded?<br/>timeout or unreachable"}
+    DG -- yes --> FM{"budget.fail"}
+    FM -- closed --> DC["BLOCK · fail_mode closed · deny<br/>no hook runs"]
+    FM -- open --> KF{"known failing fact?"}
+    KF -- yes --> DB["BLOCK with that reason"]
+    KF -- no --> DO["ALLOW · fail_mode open"]
+    DG -- no --> W["walk(tree, facts, waived)<br/>waived = confirms if confirmed"]
+    W -- all satisfied --> AL["ALLOW"]
+    W -- first failure --> OB["BLOCK · on_block<br/>deny · escalate · ask · degrade"]
+    AO --> R["emit gate_evaluation_result"]
+    NF --> R
+    DC --> R
+    DB --> R
+    DO --> R
+    AL --> R
+    OB --> R
 ```
 
-> **Nguyên tắc vàng của `fail: open`:**  
-> `fail: open` chỉ áp dụng để tha thứ cho các tiêu chí bị **mất kết nối hoặc thiếu dữ liệu**. Nếu một tiêu chí có dữ liệu thực tế và dữ liệu đó nói **"KHÔNG"** (`CONDITION_NOT_MET`), phán quyết bắt buộc vẫn là `BLOCK`. Không bao giờ có chuyện `fail: open` ghi đè một phán quyết từ chối đã biết.
+- **Ngân sách thời gian** là `budget.p95_latency_ms`, tính từ lúc bắt đầu gom dữ kiện; mỗi lần hỏi
+  một `FactSource` bị giới hạn bởi phần ngân sách còn lại. Quá hạn ⇒ `budget_exceeded`; nguồn ném lỗi
+  ⇒ `gate_unreachable`. Hai lý do này là **suy giảm**: chúng áp `budget.fail` và bỏ qua `on_block`.
+- **Duyệt cây** (`walk`) là hàm thuần: `ALLOW` khi và chỉ khi mọi nút được thoả; lý do là lỗi đầu tiên
+  theo `criteria_order`. Không có dữ kiện hoặc giá trị ngoài miền ⇒ `criterion_unavailable`; độ tin cậy
+  không phải xác suất (NaN, `True`, > 1) ⇒ `criterion_unavailable`; có ngưỡng mà không có độ tin cậy
+  ⇒ `confidence_unavailable`; giá trị không được nhận hoặc dưới ngưỡng ⇒ `condition_not_met`.
+- **`fail: open`** chỉ tha những gì *không quyết được*: một dữ kiện đã biết là "không" vẫn chặn
+  (`known_failure`).
+- **Câu hỏi `ask`** chỉ được mở khi một lời "có" là đủ để đổi `BLOCK` thành `ALLOW` ("answerable"):
+  engine duyệt lại với các tiêu chí `confirms` được miễn.
 
----
+### 4.2 Chip: `ne_evaluate` và `ne_decide`
 
-## 6. Cơ chế Token Ledger & Ủy quyền HAL
+Cùng thứ tự: giới hạn tham số trước, rồi từng nút theo thứ tự, lỗi đầu tiên thắng; `confirm_mask`
+miễn các tiêu chí được xác nhận. `ne_decide` thêm đường suy giảm: với `NE_DEGRADED_UNREACHABLE` hoặc
+`NE_DEGRADED_BUDGET`, tham số vượt giới hạn vẫn đứng; `fail_open` chỉ tha khi không có dữ kiện nào đã
+biết là hỏng; còn lại chặn với `fail_mode` closed. Mã lý do dùng chung với host
+(`engine/firmware.py::REASONS`): 0 không có, 1 `condition_not_met`, 2 `criterion_unavailable`,
+3 `confidence_unavailable`, 4 `argument_out_of_range`, 5 `gate_unreachable`, 6 `budget_exceeded`.
 
-### 6.1. Cấu trúc Token và Sổ cái (Ledger Layout)
-
-Để thực thi nguyên tắc **Least Privilege** và chống tấn công Replay trên bus phần cứng, mọi lệnh điều khiển cơ cấu chấp hành phải đi kèm một Token hợp lệ do Ledger cấp phát:
-
-```c
-/* ne_token.h — Đặc tả Ledger và Token */
-
-#define NE_TOKEN_SLOTS 4u     /* Tối đa 4 slot token đồng thời trên RAM */
-#define NE_NONCE_SIZE  16u    /* Nonce ngẫu nhiên 128-bit chống replay */
-#define NE_DIGEST_SIZE 32u    /* Băm SHA-256 của Gate cấp phát */
-#define NE_TTL_FACTOR  3u     /* Thời hạn sống TTL = p95_latency_ms * 3 */
-#define NE_MAX_PINS    32u    /* Mask hỗ trợ tới 32 chân GPIO độc lập */
-
-typedef struct {
-    uint8_t nonce[NE_NONCE_SIZE];        /* 16 bytes ngẫu nhiên từ TRNG */
-    uint8_t gate_digest[NE_DIGEST_SIZE]; /* Băm của gate đã phê duyệt ALLOW */
-    uint32_t boot_id;                    /* Định danh phiên khởi động (ngẫu nhiên khi boot) */
-    uint32_t pin_mask;                   /* Mask các chân được cấp quyền */
-    uint32_t issued_ms;                  /* Thời điểm cấp phát (ms kể từ boot) */
-    uint32_t ttl_ms;                     /* Thời gian sống tối đa (ms) */
-} ne_token;
-
-typedef struct {
-    ne_token token;
-    uint32_t consumed_mask;              /* Mask các chân đã bị kích hoạt/tiêu thụ */
-    uint8_t state;                       /* NE_SLOT_FREE, NE_SLOT_ISSUED, NE_SLOT_CLOSED */
-} ne_token_slot;
-
-typedef struct {
-    uint32_t boot_id;                    /* Định danh khởi động của thiết bị */
-    ne_token_slot slots[NE_TOKEN_SLOTS]; /* Mảng tĩnh 4 slot, không cấp phát heap */
-} ne_ledger;
-```
-
-### 6.2. Sơ đồ trạng thái Slot Token Ledger (Slot State Transitions)
-
-Mỗi slot trong sổ Token Ledger chuyển trạng thái theo mô hình tất định:
-
-```mermaid
-stateDiagram-v2
-    [*] --> NE_SLOT_FREE: Device Boot (Zero-initialized)
-    NE_SLOT_FREE --> NE_SLOT_ISSUED: ne_token_issue() [ALLOW verdict]
-    NE_SLOT_ISSUED --> NE_SLOT_ISSUED: ne_token_authorize() [Pin consumed, others remain]
-    NE_SLOT_ISSUED --> NE_SLOT_CLOSED: All pins consumed / ne_token_close() / Barge-in abort
-    NE_SLOT_ISSUED --> NE_SLOT_CLOSED: Expired (now_ms - issued_ms > ttl_ms)
-    NE_SLOT_CLOSED --> NE_SLOT_FREE: Slot recycled for next turn
-```
-
-### 6.3. Vòng đời Token và Thứ tự thẩm định nghiêm ngặt
-
-Hàm `ne_token_authorize` kiểm tra theo đúng thứ tự ưu tiên (phù hợp tuyệt đối với `python/neuroedge/actions/token.py` qua kiểm thử vi sai `test_c_token.py`):
+## 5. Từ phán quyết tới chân
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant App as @action / App Task
-    participant L as ne_ledger (Token Ledger)
-    participant HAL as ne_hal_driver (GPIO Driver)
-    
-    App->>L: ne_token_issue(tree, pin_mask, now_ms, fill_random)
-    alt Hết slot trống (Mọi slot đều bận)
-        L-->>App: NE_TOKEN_ERR_FULL (Fail-Closed: Không sinh token, chân không đổi)
-    else Cấp phát thành công
-        L-->>App: NE_TOKEN_OK + ne_token
+    participant D as dispatch()
+    participant C as Conversation.do
+    participant E as ActionContractEngine
+    participant L as TokenLedger
+    participant A as action body
+    participant H as HAL
+    D->>C: do(spec, arguments) with call_source fact
+    C->>E: evaluate(spec.gate, facts, state, arguments)
+    E-->>C: GateResult
+    alt BLOCK
+        C-->>D: ActionResult BLOCK — degrade runs its fallback through its own gate · ask opens a question
+    else ALLOW
+        C->>L: issue(gate, digest, action, pins, session, p95)
+        L-->>C: VerdictToken (TTL = p95 x 3)
+        C->>A: run inside running(spec) and digital.grant(token)
+        A->>H: digital.out(pin).pulse(...)
+        H->>H: board.require_pin(pin) — a typo spends no token
+        H->>L: authorize(token, pin, called_from)
+        L-->>H: ok, pin consumed (or NE1001 / NE1002 and actuator_command_rejected)
+        H->>H: drive pin, emit actuator_command
+        C->>L: close(token) in finally
     end
-
-    App->>HAL: ne_hal_digital_out(pin=4, level=HIGH, token)
-    HAL->>L: ne_token_authorize(token, pin=4, now_ms)
-    
-    alt 1. Con trỏ NULL hoặc size sai
-        L-->>HAL: NE_TOKEN_NOT_A_TOKEN -> Báo lỗi hợp đồng NE1001 (Raise Fatal)
-    else 2. Nonce không khớp hoặc boot_id khác
-        L-->>HAL: NE_TOKEN_UNKNOWN_TOKEN -> Báo lỗi hợp đồng NE1001 (Raise Fatal)
-    else 3. Pin không nằm trong pin_mask
-        L-->>HAL: NE_TOKEN_PIN_NOT_GRANTED -> Báo lỗi hợp đồng NE1001 (Raise Fatal)
-    else 4. Pin đã nằm trong consumed_mask (Replay)
-        L-->>HAL: NE_TOKEN_REPLAYED -> Từ chối NE1002 (Ghi log actuator_command_rejected)
-    else 5. (now_ms - issued_ms) > ttl_ms
-        L-->>HAL: NE_TOKEN_EXPIRED -> Từ chối NE1002 (Ghi log actuator_command_rejected)
-    else 6. Thẩm định hoàn toàn hợp lệ
-        L->>L: consumed_mask |= (1 << pin)
-        L-->>HAL: NE_TOKEN_AUTHORIZED
-        HAL->>HAL: Kích hoạt chân GPIO vật lý
-        HAL-->>App: Thực thi thành công
-    end
-
-    App->>L: ne_token_close(token)
-    L->>L: state = NE_SLOT_CLOSED (Vô hiệu hóa toàn bộ pin còn lại)
 ```
 
-> **Phân biệt ranh giới lỗi NE1001 vs NE1002:**
-> - **NE1001 (Contract Violation):** Do lập trình viên vi phạm giao thức (token giả, token từ tiến trình khác, xin cấp quyền pin này nhưng lại lái pin khác). Hệ thống **bắt buộc ném ngoại lệ (Raise / Panic)**, không được nuốt lỗi thành BLOCK.
-> - **NE1002 (Operational Rejection):** Do điều kiện thời gian thực tế (token hết hạn do mạng lag, hoặc gọi lại lần thứ 2). Lệnh chấp hành bị từ chối an toàn, phát sinh sự kiện kiểm toán `actuator_command_rejected`.
+**Thứ tự kiểm của `authorize`** (host và chip giống nhau):
 
----
+| # | Kiểm | Từ chối với |
+|:---:|:---|:---|
+| 1 | Là một token (`VerdictToken`; trên chip: con trỏ khác `NULL`) | `not_a_token` · `NE1001` |
+| 2 | Cùng tiến trình (`process_instance_id`); trên chip: cùng `boot_id` | `token_expired` · `NE1002` |
+| 3 | Do chính sổ này phát (trên chip: khớp một khe theo nonce và digest, so sánh thời gian hằng) | `unknown_token` · `NE1001` |
+| 4 | Chân nằm trong tập chân của token | `pin_not_granted` · `NE1001` |
+| 5 | Token chưa đóng, chân chưa dùng | `token_replayed` · `NE1002` |
+| 6 | Chưa quá TTL | `token_expired` · `NE1002` |
 
-## 7. Hợp đồng Ngắt khẩn cấp (Actuator Abort) & Bộ ngắt mạch (Circuit Breaker)
+Mọi lần từ chối ghi `actuator_command_rejected {pin, reason, code}` **trước** khi ném lỗi, và chân
+không đổi. Nonce không bao giờ vào vết ghi.
 
-### 7.1. Hợp đồng Hủy tức thì khi Barge-in ($\le 20$ ms)
+```mermaid
+stateDiagram-v2
+    [*] --> Free
+    Free --> Issued: issue (nonce from fill_random)
+    Issued --> Issued: authorize(pin) marks pin consumed
+    Issued --> Closed: close when c.do() returns
+    Issued --> Free: slot reused after TTL expiry
+    Closed --> Free: slot reused by a later issue
+    note right of Issued
+        second use of a pin: token_replayed
+        past TTL: token_expired
+        all slots issued and live: ERR_FULL, no token
+    end note
+```
 
-Khi phát hiện người dùng ngắt lời (`barge_in_detected`), luồng âm thanh phát tín hiệu hủy qua Event Group / Ring Buffer:
-1. Trình điều phối hủy ngay lập tức phiên làm việc hiện tại.
-2. Mọi Token đang lưu hành (`NE_SLOT_ISSUED`) lập tức bị thu hồi thông qua `ne_token_close()`.
-3. Nếu động cơ hoặc cơ cấu chấp hành đang trong trạng thái vận động PWM / Step, driver HAL bắt buộc phải đưa phần cứng về trạng thái an toàn trong vòng **$\le 1$ khung âm thanh (20 ms)**.
+## 6. Các lớp chính (host)
 
-### 7.2. Bộ ngắt mạch chống lặp Degrade (Circuit Breaker)
+```mermaid
+classDiagram
+    class ActionContractEngine {
+        +register(key, gate)
+        +evaluate(key, context, state, arguments, confirmed) GateResult
+    }
+    class FactSource {
+        <<protocol>>
+        +adjudicate(criterion, definition, state, deadline_ms) Fact or Unavailable
+    }
+    class ResolvedGate {
+        +name
+        +version
+        +chain
+        +to_artifact()
+    }
+    class GateResult {
+        +verdict
+        +reason
+        +failed_criterion
+        +on_block_action
+        +fail_mode
+        +confirms
+    }
+    class Conversation {
+        +do(target, kwargs) ActionResult
+        +confirm(confirm_id, source) ActionResult
+        +say(text)
+    }
+    class TokenLedger {
+        +issue(...) VerdictToken
+        +authorize(token, pin, called_from)
+        +close(token)
+    }
+    class HardwareAbstractionLayer {
+        +digital_out(pin, operation, duration_ms, signature, called_from)
+        +authorize
+    }
+    class ConfirmationBook {
+        +open(...) PendingConfirmation
+        +take(confirm_id, source, current_digest)
+    }
+    ActionContractEngine --> ResolvedGate : holds compiled trees
+    ActionContractEngine --> FactSource : gathers facts
+    ActionContractEngine --> GateResult : returns
+    Conversation --> ActionContractEngine : evaluate
+    Conversation --> TokenLedger : issue and close
+    Conversation --> ConfirmationBook : ask
+    HardwareAbstractionLayer --> TokenLedger : authorize
+    HardwareAbstractionLayer <|-- SimHAL
+    HardwareAbstractionLayer <|-- LinuxHAL
+    FactSource <|.. SystemOne
+    FactSource <|.. GrammarAdjudicator
+```
 
-Hành vi `on_block: degrade` kích hoạt `fallback_action`. Để chống lỗi tràn ngăn xếp (Stack Overflow) hoặc lặp vô tận:
-- Trình phân giải từ chối bất kỳ cây nào tạo vòng lặp degrade tĩnh ở build time (`A -> degrade B -> degrade A`).
-- Lúc chạy, `engine/gate.py` duy trì độ sâu degrade tối đa $D_{\max} = 1$. Lệnh degrade thứ 2 liên tiếp tự động bị hạ cấp thành `deny`.
-- **Ngưỡng Trip:** Nếu một Gate gặp lỗi hạ cấp liên tiếp 3 lần trong vòng 60 giây ($N=3$), Circuit Breaker chuyển sang trạng thái `OPEN` trong 30 giây, từ chối ngay lập tức mọi lệnh gọi tiếp theo với lý do `circuit_breaker_tripped` mà không kích hoạt gọi mạng vô ích.
+## 7. Đối chiếu Python ↔ C
+
+Hai hiện thực của cùng một đặc tả (Q-8). Tương đương được chứng minh bằng test, không bằng lời hứa.
+
+| Khái niệm | Python | C | Chứng minh |
+|:---|:---|:---|:---|
+| Cây | `compile_tree` + `encode` | `ne_tree_load` | `test_c_walker.py` so walker C với engine trên mọi gate và bảng sự thật `fixtures/decision_trees/`, fuzz tệp cây |
+| Lượng giá | `walk`, `known_failure` | `ne_evaluate`, `ne_decide` | như trên; self-test lúc khởi động so với đáp án engine tính lúc build |
+| Token | `TokenLedger` | `ne_token_*` | `test_c_token.py`: cùng lý do từ chối trên cùng chuỗi thao tác, cộng các đột biến |
+| Vết ghi | `EventLog.emit` | `ne_trace_*` | `test_c_trace.py`; `verify --targets esp32s3` so với golden |
+| Phiên bản OTA | `firmware.py::_RELEASE` | `ne_ota_parse_version` | `test_ota_version_rule.py` chạy cùng danh sách trường hợp trên cả hai |

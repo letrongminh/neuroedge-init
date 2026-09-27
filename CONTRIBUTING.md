@@ -200,7 +200,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `scripts/` | Công cụ CI và phát hành | PR thường |
 | `.github/` | Năm workflow ở `workflows/` — danh sách job: `CHANGELOG.md` §2.5; `dependabot.yml` (ghim SHA của Actions), `actionlint.yaml` | PR thường |
 | `docs/rfc/`, `docs/spec/`, `docs/reports/` | RFC, đặc tả chuẩn tắc, báo cáo đo | PR thường |
-| `docs/architecture/` | Kiến trúc sản phẩm song ngữ: `README.md` · `vi/` + `en/` (14 file mỗi cây, VI là gốc) · `assets/excalidraw/` (nguồn) + `assets/svg/` (export) | PR thường — sửa `.excalidraw` thì export lại `.svg` cùng commit; nội dung dẫn mã, không chép (MECE §8.1) |
+| `docs/architecture/` | Kiến trúc sản phẩm song ngữ: `README.md` · `vi/` + `en/` (15 chương mỗi cây, VI là gốc, cùng cấu trúc và cùng khối mermaid) · `assets/svg/` + `assets/excalidraw/` (poster **sinh** từ `scripts/gen_architecture_diagrams.py`, không sửa tay) | PR thường — sửa mô hình poster rồi chạy lại script; khối mermaid kiểm bằng `scripts/check_architecture_mermaid.py`; cạnh import mới giữa các gói khai ở `python/tests/test_architecture_layers.py`; nội dung dẫn mã, không chép (§8.1) |
 | `docs/archive/` | Lịch sử đã khép, lưu để truy nguồn, không quy phạm: kế hoạch Giai đoạn 1 đã duyệt, biên bản review Giai đoạn 1 và RFC-0002 | Chỉ thêm, không sửa nội dung |
 | `docs/business/` | Bộ chuẩn bị cổng nhu cầu (Q-20); `cpo-dashboard.html` sinh từ roadmap, `TODOS.md`, PRD §15, `CHANGELOG.md` | PR thường — đổi các nguồn đó thì chạy `python3 scripts/gen_cpo_dashboard.py` |
 | `wireframe/` | Wireframe HTML tham chiếu cho UI (bản chụp `ui.css`, không đóng gói) — hiện có Lab Monitor của Khối N5b | PR thường |

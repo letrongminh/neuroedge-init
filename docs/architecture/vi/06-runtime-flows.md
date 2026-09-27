@@ -1,270 +1,294 @@
-# 06 · Luồng thực thi Runtime
+# 06 · Luồng lúc chạy (Dynamic views)
 
-> **Trạng thái:** `done` · Chuẩn hóa luồng hoạt động thời gian thực (Runtime Flows)  
-> **Tài liệu tham chiếu:** [04-component-device-c4l3.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/vi/04-component-device-c4l3.md), [05-code-gate-hal-c4l4.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/vi/05-code-gate-hal-c4l4.md), [E-06-trace-lifecycle](../assets/svg/E-06-trace-lifecycle.svg), [RFC-0006](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfcs/RFC-0006-on-block-ask-confirms.md)  
-> **Bộ kiểm thử chuẩn tắc:** `tests/test_runtime_flows.py`, `tests/test_barge_in.py`, `tests/test_trace_replay.py`
+> **Phạm vi:** các luồng quan trọng, mỗi luồng một sơ đồ trình tự hoặc trạng thái, gọi đúng tên hàm
+> trong mã. **Nguồn:** `sim/session.py`, `actions/`, `engine/gate.py`, `mcp_server.py`, `mcp_host.py`,
+> `models/system.py`, `perception/`, `testing/`, `docs/spec/voice_fsm.md`, `docs/spec/tool_calling.md`.
 
----
+Mọi luồng dưới đây, dù bắt đầu từ đâu, đều gặp nhau ở cùng một đoạn: `dispatch()` → `Conversation.do`
+→ `ActionContractEngine.evaluate` → `TokenLedger` → HAL ([`05`](05-code-gate-hal-c4l4.md) §5). Sơ đồ
+chỉ vẽ đoạn đó một lần trong §1 và gọi tên nó ở các luồng khác.
 
-## 1. Luồng phiên tương tác tổng thể (`run` session turn)
+## 1. Một lượt gõ lệnh
 
-Mỗi lượt tương tác thoại hoặc văn bản (`turn`) tuân thủ nghiêm ngặt mô hình phân tách nhận thức (Dual-System Router): Lệnh ngắn, quen thuộc được giải quyết cục bộ qua System 1 (Grammar, độ trễ $\le 50$ ms). Các câu lệnh tự do, phức tạp được định tuyến qua System 2 (LLM / Cloud, độ trễ $\le 1200$ ms).
+`neuroedge run -c "mở cửa phòng 101"` trên `sim`.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as User (Audio / Text)
-    participant VAD as Audio Frontend / VAD
-    participant Router as Dual-System Router
-    participant S1 as System 1 (Grammar / S1)
-    participant S2 as System 2 (Cloud LLM)
-    participant Gate as Gate Engine (Evaluator)
-    participant Ledger as TokenLedger
-    participant HAL as HAL Actuator
-    participant AudioOut as TTS / Audio Output
-    participant Trace as EventLog (Telemetry)
-
-    User->>VAD: "Bật đèn phòng khách"
-    VAD->>Router: Speech Complete (Silence Detected)
-    Note over Router: Ghi nhận T0: Bắt đầu xử lý lượt (Turn Start)
-
-    Router->>S1: Match grammar patterns
-    alt Khớp lệnh System 1 (Local Pattern Match)
-        S1-->>Router: ToolCall(name="light_on", args={room: "living"}, source="local_grammar")
-    else Không khớp lệnh & Mạng khả dụng (Cloud Available)
-        Router->>S2: Stream prompt + Tool Definitions
-        S2-->>Router: ToolCall(name="light_on", args={room: "living"}, source="system_two")
-    else Offline & Không khớp
-        Router->>AudioOut: Phản hồi offline_help (Liệt kê lệnh cục bộ khả dụng)
-        AudioOut-->>User: "Thiết bị mất mạng, bạn chỉ có thể bật/tắt đèn..."
-    end
-
-    Note over Router,Gate: Phân giải sự thật: [sim.facts] -> [sim.slot_facts] -> [sim.sensor_facts]
-    Router->>Gate: evaluate(tool="light_on", args, facts, deadline=p95)
-    
-    alt Phán quyết ALLOW
-        Gate->>Ledger: issue(pins=[4], ttl=p95*3)
-        Ledger-->>Gate: Valid Token
-        Gate-->>Router: GateResult(verdict=ALLOW, token)
-        Router->>HAL: digital_out(pin=4, level=HIGH, token)
-        HAL->>Ledger: authorize(token, pin=4)
-        Ledger-->>HAL: NE_TOKEN_AUTHORIZED
-        HAL->>HAL: Kích hoạt GPIO4 (Bật Rơ-le)
-        HAL-->>Router: Actuator Success
-        Router->>AudioOut: c.say("Đã bật đèn phòng khách")
-        AudioOut-->>User: Phát âm thanh phản hồi
-    else Phán quyết BLOCK (on_block: deny/ask/degrade)
-        Gate-->>Router: GateResult(verdict=BLOCK, reason=CONDITION_NOT_MET)
-        Router->>AudioOut: c.say("Không thể bật đèn do điều kiện an toàn")
-        AudioOut-->>User: Phát thông báo từ chối
-    end
-
-    Note over Router,Trace: Đo đạc Turn Latency (5 chặng: VAD -> STT -> Routing -> Gate -> HAL/TTS)
-    Router->>Trace: emit(turn_latency, session_summary)
+    participant CLI as cli run
+    participant S as SimSession
+    participant G as CommandGrammar
+    participant D as dispatch()
+    participant C as Conversation
+    participant E as Engine
+    participant H as SimHAL
+    participant T as EventLog
+    CLI->>S: SimSession.load() then handle(text) in a fresh event loop
+    S->>H: type_text, audio_in — text_input
+    S->>G: recognize(utterance)
+    G-->>S: Recognition(intent, confidence, slots)
+    S->>T: intent_extracted
+    S->>S: ToolCall(tool, arguments, source=local_grammar)
+    S->>S: gate facts = sim.facts + slot facts + sensor facts
+    S->>D: dispatch(conversation, tools, call)
+    D->>T: tool_call
+    D->>C: do(spec, arguments) with call_source = local_grammar
+    C->>E: evaluate — gate_evaluation_begin, gate_facts, gate_evaluation_result
+    C->>H: token, body, digital.out — actuator_command
+    D-->>S: ToolResult ALLOW or BLOCK
+    S->>T: turn_latency (perception, gate, action, other)
+    S-->>CLI: Turn, rendered with verdict and pins
 ```
 
-### 1.1. Thứ tự ưu tiên nạp sự thật (Fact Resolution Precedence)
+Câu không khớp ngữ pháp: có `[system_two]` thì đi luồng §4; không thì `command_not_recognized` và
+thiết bị nói những lệnh cục bộ còn dùng được (`offline_help`).
 
-Khi `engine.evaluate()` được triệu gọi, các nguồn dữ kiện được tổng hợp theo thứ tự ưu tiên giảm dần:
-1. `[sim.facts]` (Sự thật ghi đè từ kịch bản kiểm thử hoặc phiên chạy hiện tại).
-2. `[sim.slot_facts]` (Dữ kiện trích xuất trực tiếp từ các slot của câu lệnh người dùng).
-3. `[sim.sensor_facts]` (Dữ kiện đo đạc thời gian thực từ cảm biến phần cứng qua HAL).
-4. `[grammar]` (Dữ kiện mặc định khai báo trong quy tắc ngữ pháp).
-
----
-
-## 2. Hợp đồng ngắt lời & thu hồi chấp hành (Barge-in Abort Contract)
-
-Barge-in là tình huống người dùng lên tiếng ngắt lời khi thiết bị đang xử lý (`THINKING`) hoặc đang phát âm thanh (`SPEAKING`). Hệ thống bắt buộc phải thu hồi quyền điều khiển phần cứng ngay lập tức.
+## 2. Hỏi lại và xác nhận (`on_block: ask`, RFC-0006)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as User
-    participant Mic as Audio Task (Core 0)
-    participant FSM as Voice FSM (Core 1)
-    participant Dispatcher as Action Dispatcher
-    participant Ledger as ne_ledger (Token Ledger)
-    participant HAL as Stepper / PWM Motor Driver
-    participant Speaker as I2S Audio Out (Core 0)
-
-    Note over FSM,Speaker: Trạng thái: SPEAKING (Đang trả lời câu trước)
-    HAL->>HAL: Đang thực thi động cơ rèm (PWM Active)
-
-    User->>Mic: "Dừng lại ngay!" (Nói chen)
-    Mic->>FSM: Audio Event: barge_in_detected (VAD Speech Energy Trigger)
-    
-    rect rgb(255, 235, 235)
-        Note over FSM,HAL: HỢP ĐỒNG THU HỒI CƠ CẤU CHẤP HÀNH (THỜI GIAN <= 20 ms)
-        FSM->>FSM: Chuyển trạng thái: SPEAKING -> BARGE_IN (T13)
-        FSM->>Dispatcher: Signal: ACTUATOR_ABORTED_BY_BARGE_IN
-        Dispatcher->>Ledger: ne_token_close(active_tokens)
-        Note over Ledger: Mọi Token đang phát hành bị thu hồi lập tức (NE_SLOT_CLOSED)
-        Dispatcher->>HAL: hal_emergency_stop() (Chuyển PWM/Step về mức an toàn)
-        HAL->>HAL: Động cơ dừng quay trong <= 1 khung âm thanh (20 ms)
-    end
-
-    FSM->>Speaker: Audio Pipeline Abort (Xóa sạch DMA RingBuffer)
-    Speaker->>Speaker: Loa im lặng hoàn toàn trong < 300 ms
-
-    Note over FSM: Lọc kết quả muộn (Late Result Drop Filter)
-    opt Nếu LLM/STT của lượt trước trả về kết quả sau khi barge-in
-        Dispatcher->>Dispatcher: Drop kết quả muộn (Ghi log voice_late_result_dropped)
-        Note over Dispatcher: CẤM TUYỆT ĐỐI gọi c.do() hoặc phát loa từ kết quả cũ!
-    end
-
-    FSM->>FSM: Chuyển trạng thái: BARGE_IN -> LISTENING (T14)
-    Note over FSM,Mic: Bắt đầu thu âm câu mới của người dùng
-```
-
-### 2.1. Quy tắc thu hồi Barge-in (Four Invariants of Barge-in)
-
-1. **Hủy lệnh chưa giao ($\le 20$ ms):** Lệnh chưa hoàn thành phải bị hủy tức thì (`ACTUATOR_ABORTED_BY_BARGE_IN`). Lệnh đã hoàn tất vật lý không đảo ngược được nhưng không được gửi tiếp chuỗi lệnh phụ thuộc.
-2. **Thu hồi Token:** Token đã cấp cho lệnh bị hủy lập tức bị đóng (`closed`). Mọi nỗ lực điều khiển tiếp theo bằng token này sẽ bị từ chối với lỗi `NE_TOKEN_EXPIRED` hoặc `NE_TOKEN_REPLAYED`.
-3. **Câm loa tức thì ($< 300$ ms):** Kênh phát âm thanh phải câm hoàn toàn trong vòng dưới 300 ms (bao gồm thời gian nhận biết năng lượng giọng nói VAD và xả hàng đợi I2S DMA).
-4. **Vứt bỏ kết quả muộn (Late Result Drop):** Các phản hồi từ Cloud LLM hoặc STT của lượt cũ đến muộn sau khi ngắt lời sẽ bị tiêu hủy âm thầm (`voice_late_result_dropped`), không được chuyển tới `@action` hay gọi loa.
-
----
-
-## 3. Điều phối Tool & Xác nhận người tại chỗ (In-Person Confirmation)
-
-Khi một hành động nguy hiểm bị chặn bởi chính sách an toàn nhưng có cấu hình `on_block: ask` kèm thuộc tính `confirms` (theo [RFC-0006](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/rfcs/RFC-0006-on-block-ask-confirms.md)), hệ thống kích hoạt cơ chế xác thực vật lý từ con người:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as User
-    participant Engine as Engine Dispatcher
-    participant Gate as Gate Evaluator
-    participant Device as Physical Device (Button / Mic)
-    participant Ledger as Token Ledger
-    participant HAL as Smart Lock Driver
-
-    User->>Engine: ToolCall(name="unlock_door", source="system_two")
-    Engine->>Gate: evaluate("unlock_door", facts={authenticated: false})
-    
-    Gate->>Gate: walk(tree) -> BLOCK (Thiếu authenticated)
-    Note over Gate: on_block: ask, confirms=["authenticated"]
-    
-    Gate-->>Engine: GateResult(verdict=BLOCK, action=ask, confirm_mask=0x01)
-    
-    Engine->>Device: Open PendingConfirmation(action="unlock_door", timeout=10s)
-    Device->>User: "Bạn có chắc chắn muốn mở cửa? Bấm nút trên thiết bị để xác nhận."
-    
-    alt Người dùng bấm nút vật lý trên thiết bị trong vòng 10s
-        User->>Device: Bấm nút vật lý (GPIO Input Interrupt)
-        Device->>Engine: ConfirmationEvent(criterion="authenticated", confirmed=true)
-        Engine->>Gate: re_evaluate("unlock_door", confirmed_mask=0x01)
-        Note over Gate: Bit 0 khớp confirm_mask -> Coi như authenticated ĐẠT
-        Gate->>Ledger: issue(pins=[12], ttl=p95*3)
-        Ledger-->>Gate: Valid Token
-        Gate-->>Engine: GateResult(verdict=ALLOW, token)
-        Engine->>HAL: digital_out(pin=12, level=HIGH, token)
-        HAL->>Ledger: authorize(token, pin=12)
-        Ledger-->>HAL: NE_TOKEN_AUTHORIZED
-        HAL->>HAL: Mở khóa cửa vật lý
-        HAL-->>Engine: Success
-        Engine->>User: "Đã mở khóa cửa."
-    else Hết thời gian chờ (Timeout > 10s) hoặc Người bấm hủy
-        Device-->>Engine: ConfirmationExpiredEvent (NE2004)
-        Engine->>User: "Đã hủy lệnh mở khóa do không nhận được xác nhận."
+    participant X as any caller
+    participant C as Conversation
+    participant E as Engine
+    participant B as ConfirmationBook
+    participant P as person at the device
+    X->>C: do(action)
+    C->>E: evaluate
+    E-->>C: BLOCK, on_block ask, confirms answerable
+    C->>B: open() — tool_confirm_requested, TTL = max(p95 x 3, 10 s)
+    C-->>X: BLOCK with confirmation (caller is told a person must answer)
+    P->>B: yes via local_grammar (typed or spoken) or ui (POST /confirm, same origin)
+    B->>B: take(id, source, current gate digest)
+    alt source not local_grammar or ui, expired, used, or gate changed
+        B-->>P: tool_confirm_rejected, nothing runs
+    else accepted
+        B-->>C: tool_confirmed
+        C->>E: evaluate(confirmed=True) — only the confirms criteria are waived
+        E-->>C: ALLOW or still BLOCK on the other criteria
     end
 ```
 
-> **Bất biến An toàn về Xác nhận Người:**
-> - Xác nhận chỉ có giá trị **dùng một lần** cho một phiên duy nhất.
-> - Xác nhận chỉ được chấp nhận nếu bắt nguồn từ **giao diện cục bộ trên thiết bị vật lý** (nút bấm cứng, nhận diện vân tay, hoặc micro tại chỗ). Tuyệt đối cấm xác nhận từ xa qua API không tin cậy.
-> - Nếu cấu hình Gate bị thay đổi (băm `gate_digest` đổi) trong lúc đang chờ xác nhận, `PendingConfirmation` lập tức bị hủy bỏ.
+- System 2 và client MCP **không có công cụ xác nhận** nào; câu hỏi do chính lời gọi của System 2 tạo
+  ra thì System 2 không trả lời được (Q-26).
+- Câu "có" nói ra chỉ trả lời câu hỏi của **chính lượt đó** (Q-46).
 
----
-
-## 4. Xử lý sự cố mạng & Hạ cấp an toàn (Fail-Closed Offline Fallback)
-
-Hệ thống thiết kế theo nguyên lý ngắt kết nối an toàn: Khi mất kết nối Cloud hoặc AI Provider quá hạn $p95$, hệ thống tự động kích hoạt logic phân giải ngoại tuyến mà không gây treo hệ thống.
+## 3. Lời gọi MCP
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as User
-    participant Router as Session Router
-    participant S2 as Cloud System 2
-    participant S1 as Local Grammar (System 1)
-    participant Gate as Gate Engine
-    participant Trace as EventLog
+    participant CL as MCP client
+    participant M as mcp serve (stdio)
+    participant S as SimSession
+    participant D as dispatch()
+    participant UI as sim page (optional)
+    CL->>M: tools/list
+    M-->>CL: one tool per @action (inputSchema, outputSchema)
+    CL->>M: tools/call name, arguments
+    M->>M: ToolCall(source=mcp) under the turns lock (one call at a time)
+    M->>S: call_tool(call) — utterance empty, gate facts from the session
+    S->>D: dispatch — gate, token, HAL as in section 1
+    D-->>M: ToolResult
+    M-->>CL: CallToolResult — isError only for REJECTED, BLOCK is a normal result
+    M->>UI: notify() — the page updates over SSE
+```
 
-    User->>Router: "Kiểm tra nhiệt độ và bật bình nước nóng"
-    Router->>S2: Gửi truy vấn đám mây (Timeout deadline = 1000 ms)
-    
-    alt Kết nối mạng đứt hoặc Quá thời gian chờ (p95 Exceeded)
-        S2--xRouter: Network Timeout / DNS Error
-        Router->>Trace: emit(source_degraded, reason=GATE_UNREACHABLE)
-        
-        Router->>S1: match_local_grammar("Kiểm tra nhiệt độ và bật bình nước nóng")
-        alt Lệnh có hỗ trợ mẫu cục bộ
-            S1-->>Router: ToolCall(name="water_heater_on", source="local_grammar")
-            Router->>Gate: evaluate("water_heater_on", degraded=UNREACHABLE)
-            
-            alt Gate cấu hình `fail: closed` (Mặc định)
-                Gate-->>Router: GateResult(verdict=BLOCK, reason=GATE_UNREACHABLE)
-                Router->>User: "Không thể bật bình nóng lạnh khi mất mạng (Chính sách an toàn)."
-            else Gate cấu hình `fail: open`
-                Note over Gate: Chỉ bỏ qua tiêu chí bị thiếu, không bỏ qua tiêu chí từ chối
-                Gate-->>Router: GateResult(verdict=ALLOW, degraded=OPEN)
-                Router->>User: "Đã bật bình nước nóng ở chế độ ngoại tuyến."
-            end
-        else Không hỗ trợ mẫu cục bộ
-            Router->>User: "Mất kết nối mạng. Bạn có thể sử dụng các lệnh: bật đèn, tắt đèn..."
+Lời gọi MCP không có lời người nói, nên `[system_one]` không gửi gì lên model: tiêu chí đó rơi về ngữ
+pháp hoặc chặn. Một gate có thể từ chối riêng nguồn `mcp` qua tiêu chí `call_source`.
+
+## 4. Lượt System 2 (LLM), kèm MCP server bên ngoài
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as SimSession
+    participant TH as ToolHost
+    participant LLM as SystemTwo (LiteLLM)
+    participant OWN as agent's own MCP server
+    participant EXT as external MCP server
+    participant D as dispatch()
+    S->>TH: open for this turn — in-process client to OWN, stdio to EXT (allowlist)
+    loop up to mcp.max_rounds (default 4)
+        S->>LLM: respond(state: utterance, tools, messages)
+        LLM-->>S: text or tool_calls — system_two_call traced, no prompt, no key
+        alt a device tool
+            S->>TH: call(name, arguments)
+            TH->>OWN: tools/call with source system_two
+            OWN->>D: dispatch — gate, token, HAL
+        else an information tool
+            TH->>EXT: tools/call
+            EXT-->>TH: result marked untrusted data, only its digest traced
         end
     end
+    S->>S: say the reply, or the gate's ask message (the model may not answer it)
 ```
 
----
+Nhà cung cấp không trả lời được ⇒ `system_two_unavailable`, thiết bị nói câu offline. Nội dung từ MCP
+server bên ngoài có chèn lệnh (prompt injection) thì lời gọi nó dẫn tới vẫn phải qua gate
+(`test_mcp_host.py::test_prompt_injection_in_the_news_still_meets_the_gate`).
 
-## 5. Vòng đời vết ghi & Kiểm thử tương đương mục tiêu (Trace Lifecycle & Verification)
+## 5. Model của System 1 và khi mất mạng
 
-Vết ghi kiểm toán (`trace.json`) là bằng chứng toán học bảo đảm tính toàn vẹn hệ thống và tương đương mục tiêu giữa Máy mô phỏng (Sim), Linux và Chip thật (ESP32-S3).
+`SystemOne` là `FactSource` của engine. Với `[system_one]`, nó hỏi model chính (Jev qua System One API)
+cho các tiêu chí được giao, trong phần ngân sách còn lại trừ 50 ms dự phòng; model không dùng được thì
+ngữ pháp lệnh quyết.
 
 ```mermaid
-flowchart TD
-    classDef rec fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
-    classDef val fill:#faf5ff,stroke:#9334e6,color:#6b21a8,stroke-width:1.5px;
-    classDef rep fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.5px;
-    classDef gold fill:#f0fdf4,stroke:#16a34a,color:#14532d,stroke-width:1.5px;
-    classDef pass fill:#f0fdf4,stroke:#16a34a,color:#14532d,stroke-width:2px;
-    classDef fail fill:#fef2f2,stroke:#dc2626,color:#991b1b,stroke-width:2px;
-
-    subgraph RunPhase["1. Record Execution (Run &amp; Record)"]
-        S["Sim / Host / Hardware Run"]:::rec -->|Every emit event| EL["EventLog Bus"]:::rec
-        EL -->|Anonymize Hash PII| TR["Trace Collector"]:::rec
-        TR -->|Serialize JSON RFC 8785| TF["trace.json / UART NE1 Stream"]:::rec
+sequenceDiagram
+    autonumber
+    participant E as Engine gather
+    participant S1 as SystemOne
+    participant BR as DegradationBreaker
+    participant JEV as Jev (System One API)
+    participant GR as GrammarAdjudicator
+    E->>S1: adjudicate(criterion, definition, state, deadline_ms)
+    alt criterion not delegated, offline, or breaker open
+        S1->>GR: adjudicate
+    else delegated
+        S1->>BR: allow_primary?
+        S1->>JEV: POST /systemone — only the utterance
+        alt well-formed answer, in domain, above threshold
+            JEV-->>S1: Fact(value, confidence)
+        else offline, timeout, HTTP error, malformed, below threshold
+            S1->>BR: record_failure
+            S1->>GR: adjudicate — system_one_fallback traced
+        end
     end
-
-    subgraph ValidatePhase["2. Validate Schema (Trace Validate)"]
-        TF -->|Schema Check| TV["trace.v1.json Schema Validator"]:::val
-        TV -->|NE3001 Check| CK1["Span Structure &amp; Monotonic Timestamps"]:::val
-        TV -->|NE3002 Check| CK2["Token &amp; Gate Digest Hash Integrity"]:::val
-    end
-
-    subgraph ReplayPhase["3. Audit Replay (Trace Replay)"]
-        TF -->|Replay Engine| RP["trace replay --target sim/linux"]:::rep
-        RP -->|Recompute verdicts from facts| GW["Gate Walker &amp; Token Ledger"]:::rep
-        GW -->|Drive actuator commands| SH["Simulated / Hardware Pins"]:::rep
-        SH -->|Emit fresh execution trace| RF["replayed_trace.json"]:::rep
-    end
-
-    subgraph GoldenPhase["4. Verify Equivalence (Golden Equivalence)"]
-        TF -->|Extract Verdicts &amp; Pins| GD["Golden Extractor"]:::gold
-        RF -->|Extract Verdicts &amp; Pins| GD
-        GD --> DIFF{"Diff Verdicts &amp; Pin Commands"}:::gold
-        DIFF -->|Identical 100% Match| PASS["VERIFICATION PASSED"]:::pass
-        DIFF -->|Any bit divergence| REG["NE4002: SAFETY REGRESSION DETECTED"]:::fail
-    end
+    S1-->>E: Fact or Unavailable
+    Note over E: Unavailable offline or timeout makes the verdict degraded — budget.fail applies
 ```
 
-### 5.1. Cơ chế Tái hiện Kiểm toán (Trace Replay Principles)
+```mermaid
+stateDiagram-v2
+    [*] --> Closed
+    Closed --> Open: failure_threshold failures in a row
+    Open --> HalfOpen: after cooldown_ms
+    HalfOpen --> Closed: primary answers
+    HalfOpen --> Open: primary fails again
+    note right of Open
+        primary skipped, fallback answers
+        the breaker routes, it never allows
+    end note
+```
 
-- **Không sao chép kết quả cũ:** Lệnh `neuroedge trace replay` **tính toán lại từ đầu** mọi phán quyết dựa trên cây quyết định nhị phân và dữ kiện ghi trong trace.
-- **Bỏ qua dữ liệu không mang tính an toàn:** Quá trình so sánh Golden Diff loại bỏ thông tin thời gian thực tế (`timestamp_ms`, độ trễ mạng) và câu chữ tự do của LLM, chỉ tập trung tuyệt đối vào:
-  1. **Chuỗi phán quyết Gate:** `ALLOW` hay `BLOCK`.
-  2. **Chuỗi lệnh kích hoạt chân HAL:** Chân GPIO, mức logic (HIGH/LOW), thời điểm kích hoạt tương đối.
-- **Bắt lỗi suy thoái an toàn (NE4002):** Nếu một phiên chạy trên chip thật trả về `ALLOW` trong khi vết ghi chuẩn (Golden) quy định `BLOCK`, hệ thống CI lập tức dừng quy trình build và gắn nhãn **Fatal Safety Regression**.
+Không có fallback nào chạy được cho một tiêu chí do model quyết ⇒ `BLOCK` với `gate_unreachable`
+(Q-14, tiêu chí ra I4 số 3).
+
+## 6. Thoại
+
+### 6.1 Máy trạng thái hội thoại
+
+Quy phạm ở `docs/spec/voice_fsm.md` §4 (T01–T14). Mọi lần đổi trạng thái ghi `voice_state_changed`.
+Máy trạng thái không bao giờ lượng giá gate hay chạm chân.
+
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> LISTENING: T01 wake word, or speech when VAD activation is on
+    LISTENING --> LISTENING: T02 speech ends, silence timer starts · T03 speech resumes, timer cancelled
+    LISTENING --> THINKING: T04 end-of-turn silence elapsed, audio to STT
+    LISTENING --> IDLE: T05 no speech within listen timeout
+    THINKING --> IDLE: T06 empty transcript (reprompt at most max_reprompts) · T08 nothing to say
+    THINKING --> SPEAKING: T07 reply starts
+    THINKING --> THINKING: T09 think timeout or provider down, offline line
+    THINKING --> BARGE_IN: T10 user speaks again
+    SPEAKING --> LISTENING: T11 an ask question played to the end, answer turn opens
+    SPEAKING --> IDLE: T12 reply done or TTS error
+    SPEAKING --> BARGE_IN: T13 user speaks over the reply
+    BARGE_IN --> LISTENING: T14 recall pending commands, stop speech, new turn
+```
+
+### 6.2 Một lượt thoại từ tệp WAV
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant F as WAV file
+    participant V as VoiceSession (virtual clock)
+    participant W as wake word or VAD
+    participant STT as STT (primary, then fallback)
+    participant S as SimSession
+    participant TTS as TTS
+    F->>V: 20 ms frames
+    V->>W: detect / push
+    W-->>V: wake_word_detected or audio_in_vad_start, then vad_end
+    V->>STT: audio segment of the turn
+    alt primary answers
+        STT-->>V: stt_result
+    else primary fails and stt.fallback exists
+        V->>STT: fallback, with its own bounded deadline — stt_fallback
+        Note over V: a late primary answer becomes voice_late_result_dropped, never a command
+    end
+    V->>S: handle(text, spoken=True) — the same path as a typed turn
+    S-->>V: Turn with reply
+    V->>TTS: synthesize(reply) — tts_stream_start, then tts_stream_end
+```
+
+**Cắt lời** (`docs/spec/voice_fsm.md` §5): người dùng nói khi thiết bị đang nghĩ hoặc đang nói ⇒ loa
+dừng, mọi lệnh **chưa giao** tới chân bị huỷ (`actuator_aborted`, lý do
+`ACTUATOR_ABORTED_BY_BARGE_IN`) và token của chúng bị đóng. Lệnh đã giao (một xung đang chạy) chạy hết.
+
+**Từ đánh thức hỏng** (mô hình không nạp được, adapter ném lỗi) ⇒ `wake_word_unavailable`, không lượt
+nào mở, phiên vẫn chạy.
+
+Phiên thoại hôm nay chạy trong **thời gian ảo** từ tệp WAV; phiên thời gian thực với micro thật chưa có
+(`TODOS.md` #45).
+
+## 7. Vòng bằng chứng: ghi, phát lại, so sánh
+
+![E-06 · Vòng bằng chứng](../assets/svg/E-06-evidence-loop.svg)
+*Hình E-06 — Một phiên thành vết ghi; vết ghi được tính lại trên từng target và so với bản gốc.*
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant R as TraceRecorder
+    participant F as trace.v1.json
+    participant P as TracePlayer
+    participant G as GoldenComparator
+    R->>F: save() — validated against trace.v1, anonymize optional
+    P->>F: load, recorded_steps: facts from gate_facts, degraded reasons, actions
+    P->>P: fresh EventLog, HAL for the target, Conversation
+    P->>P: replay each step: conversation.do() — verdict, token, body, pins recomputed
+    P->>G: compare(replayed, golden)
+    G-->>P: safety view: gate sequence, reasons, on_block, pin commands
+    Note over G: a difference is SafetyRegressionError NE4002, naming the first divergent event
+```
+
+- Phát lại **không gọi model và không đọc máy**: dữ kiện đã ghi được đưa vào lại, còn phán quyết, token
+  và lệnh chân được **tính lại**.
+- So sánh theo **quyết định** (phán quyết, lý do, `on_block`, lệnh chân), bỏ qua thời gian và chữ nói.
+- `neuroedge verify --targets sim,linux,esp32s3` làm việc này cho mọi vết ghi chuẩn mực trên từng target;
+  trên `esp32s3`, chính firmware phát lại ba vết ghi chuẩn mực lúc khởi động và gửi kết quả qua UART.
+
+## 8. Từ agent tới chip
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as engineer
+    participant B as neuroedge build
+    participant I as idf.py (ESP-IDF v5.4)
+    participant Q as QEMU or Box-3
+    participant R as neuroedge record / verify
+    U->>B: build --target esp32s3 --board esp32s3-box-3
+    B->>B: every check, render ne_agent, NETR per gate, self-test answers from the host engine
+    B-->>U: build/esp32s3 ESP-IDF project, or every problem and exit 1, nothing written
+    U->>I: set-target, build (sdkconfig layers)
+    I->>Q: flash or merged image
+    Q->>Q: boot: self-test, canonical replay, heap line
+    Q-->>R: UART NE1 lines
+    R->>R: sessions to trace.v1, validate, compare with goldens
+```
+
+## 9. Vòng đời một phiên `linux`
+
+1. `SimSession.load(target="linux")` dựng `TypedLinuxHAL` và gọi `preflight`: mọi cảm biến, màn hình,
+   thiết bị âm thanh agent cần được kiểm **trước khi** giữ line GPIO nào. Thiếu thứ gì ⇒ lỗi ba phần,
+   mã 1, không line nào bị giữ.
+2. Lệnh chân tới line của kernel qua libgpiod v2, tìm theo tên. Xung có thời lượng được thả bằng một
+   bộ hẹn giờ; `run -c` chờ xung chạy hết trước khi thoát.
+3. Thoát — bình thường, Ctrl-D, SIGTERM (client MCP dừng máy chủ), SIGHUP (đóng terminal) — ⇒ mọi line
+   về trạng thái nghỉ và được thả. SIGKILL thì không bắt được: đó là lý do an toàn phần cứng vẫn cần
+   (`docs/spec/threat_model.md` §3b).

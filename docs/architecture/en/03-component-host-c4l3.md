@@ -1,168 +1,200 @@
-# 03 · Host Python Components (C4 L3)
+# 03 · Host-side components (C4 L3)
 
-> **Status:** `done` (I0–I4). Implementation source is located at `python/neuroedge/`. See full repository layout in [`CONTRIBUTING.md` §6](../../CONTRIBUTING.md#6-cấu-trúc-kho).
+> **Scope:** the Python package `python/neuroedge/` — its subpackages, the responsibility of each package, the real
+> dependencies between them, the protocols that connect them, and the assembly point. **Sources:** the code
+> in `python/neuroedge/`; the dependency graph is locked down by the test
+> [`test_architecture_layers.py`](../../../python/tests/test_architecture_layers.py).
 
----
+## 1. Component diagram
 
-## 1. Host Component Layering Diagram (C4 L3)
+![E-03 · Host components](../assets/svg/E-03-host-components.svg)
+*Figure E-03 — Subpackages ordered by dependency direction: a package above uses packages below, never the reverse.*
 
-The Host Python Runtime is organized into 8 distinct architectural layers with strict unidirectional dependency flow (upper layers depend on lower layers; reverse imports and cyclic dependencies are strictly prohibited):
+## 2. Layers and dependency rules
 
-![E-03 · Host Layers](../assets/svg/E-03-host-layers.svg)
-*Figure E-03 — Host Layer Architecture: Directed arrows indicate permissible dependency directions (top invokes bottom).*
+Each package's docstring names its own layer: HAL is **L1**, models and perception are **L2**, engine and actions are **L3** ("Action Contract"), targets are **L0**. Ordered by real dependency direction, from the bottom up:
+
+| Rank | Package | Depends on | Layer |
+|:---:|:---|:---|:---|
+| 0 | `errors`, `paths`, `net`, `trace` | each other only | foundation |
+| 1 | `hal` | `errors`, `paths` | L1 |
+| 2 | `engine` | rank 0; **`engine/compiler.py` alone** may use `hal` (board cross-check at build time) and late-imports `actions`, `models`, `perception`, `mcp_host` (configuration checks) | L3 core |
+| 3 | `actions` | `engine`, `hal`, rank 0 | L3 surface |
+| 4 | `models` | `engine` (implements its protocol), `net`, rank 0 | L2 |
+| 5 | `mcp_server`, `mcp_host`, `mcp_desktop` | `actions`, rank 0 | — |
+| 6 | `viz` | `hal`, `trace`, rank 0 | — |
+| 7 | `sim` | every rank below | L0, **assembly point** |
+| 8 | `perception` | `sim` (the voice session wraps the typed session), `models`, `actions`, `engine`, `hal`, `net` | L2 |
+| 9 | `testing` | `perception`, `actions`, `engine`, `hal`, `trace`; late-imports `sim` | Action CI |
+| 10 | `cli` | every package | entry |
+
+Four rules, each a deliberate choice:
+
+1. **A pure engine core.** `gate.py`, `gate_resolver.py`, `decision_tree.py`, `binary_tree.py`, `verdict.py` do not know that HAL, actions or models exist. They receive facts through the `FactSource` protocol and return `GateResult`. That is what makes gate resolution a pure function (invariant 4).
+2. **HAL is a leaf.** `hal` depends only on `errors` and `paths`. It does not know what a gate is: it only calls an `authorize(token, pin, called_from)` function installed from outside, and the default function refuses every command.
+3. **One single bridge between gate and HAL:** `actions/conversation.py` (`Conversation.do`). No other package both calls `evaluate()` and touches a pin.
+4. **One runtime assembly point:** `SimSession.load` (`sim/session.py`) creates and wires the engine, token ledger, HAL, models, tool set and MCP. `VoiceSession` wraps a `SimSession`; the CLI, the MCP server and the corpus runner all go through it. At build time, the assembly point is `engine/compiler.py::build`.
+
+## 3. Component catalogue
+
+### 3.1 `engine/` — the action contract engine
+
+| Module | Responsibility | Main types and functions |
+|:---|:---|:---|
+| `gate_resolver.py` | Merges the `extends` chain into one `ResolvedGate`, enforces the five inheritance principles and RFC-0004/0005/0006; looks up `neuroedge://` in the gate directory | `GateRegistry`, `ResolvedGate`, `resolve_gate_file`, `resolve_gate_uri` |
+| `constraints.py` | Normalises an `allow_when` clause into a set of accepted values; compares strictness | `Constraint.is_at_least_as_strict_as`, `parse_allow_when` |
+| `arguments.py` | Argument limits (RFC-0005): check, narrow-only merge, schema hints | `check`, `merge_arguments`, `schema_hint` |
+| `canonical.py` | RFC 8785 canonical JSON and SHA-256 hashing | `canonicalize`, `digest`, `gate_digest` |
+| `decision_tree.py` | Compiles a gate into an internal JSON tree; walks the tree (the Python version the C walker must match) | `compile_tree`, `walk`, `known_failure`, `truth_table` |
+| `binary_tree.py` | Encodes the tree into `NETR` v1 for the chip; generates the C header | `encode`, `c_header`, `domain_index` |
+| `gate.py` | Evaluates a gate: checks arguments, gathers facts within the time budget, walks the tree, applies `on_block` and `budget.fail` | `ActionContractEngine.evaluate`, `GateResult`, the `FactSource` protocol |
+| `verdict.py` | Verdict vocabulary | `GateVerdict`, `Reason`, `Fact`, `Unavailable` |
+| `circuit_breaker.py` | Trips the primary model after repeated consecutive errors; only routes, never creates `ALLOW` | `DegradationBreaker` |
+| `trace_sink.py` | Session event log, exports `trace.v1` | `EventLog.emit`, `EventLog.to_trace` |
+| `latency.py` | Per-stage latency and the System 1 / System 2 ratio | `TurnMeter`, `turn_summary` |
+| `gate_explain.py` | Data for `gate explain`: where a criterion comes from, what was tightened | `explain_gate_file` |
+| `compiler.py` | `neuroedge build`: cross-checks agent ↔ board, validates every configuration table, writes artifacts; collects **every** problem into one `BuildFailed` | `build`, `load_agent_manifest`, `check_capabilities` |
+| `firmware.py` | Generates the ESP-IDF project for an agent: `ne_agent` component, `version.txt`, copies firmware code | `render_project`, `firmware_problems`, `checks` |
+
+### 3.2 `actions/` — the physical action surface
+
+| Module | Responsibility | Main types and functions |
+|:---|:---|:---|
+| `spec.py` | `@action`: registers an action, its gate, the capability it needs; calling the function directly ⇒ `NE1001` | `action`, `ActionSpec`, `REGISTRY` |
+| `conversation.py` | `c.do()`: gate → token → function body → close token; `degrade` fallback; opens an `ask` question. `c.say()` speaks, without passing the gate | `Conversation.do`, `confirm`, `say`, `ActionResult` |
+| `token.py` | The single-use verdict token ledger, TTL = p95 × 3; is HAL's `authorize` function | `TokenLedger.issue`, `authorize`, `close`, `VerdictToken` |
+| `tools.py` | Each `@action` is a tool; `dispatch()` is the only path from a tool call to a pin | `ToolCall`, `dispatch`, `ToolResult`, `input_schema` |
+| `confirmation.py` | `on_block: ask` questions: who may answer, when they expire, bound to the gate digest | `ConfirmationBook.open`, `take`, `PendingConfirmation` |
+
+### 3.3 `hal/` — hardware abstraction layer
+
+| Module | Responsibility |
+|:---|:---|
+| `__init__.py` | `HardwareAbstractionLayer`: checks the pin name **before** calling `authorize` (a typo costs no token), then records the command |
+| `board.py` | Reads and validates `boards/*.toml`; the five primitives (`PRIMITIVES`), three targets (`SUPPORTED_TARGETS`), the reference board |
+| `digital.py`, `sensor.py`, `display.py` | API for the `@action` body: `digital.out("door_lock").pulse(...)`, `sensor.read(...)`, `display.show(...)`; `digital.out` outside `c.do()` ⇒ `NE1001` |
+| `sim.py` | `SimHAL`: virtual pins, sensors, display, microphone, speaker; timed commands cancelled on barge-in |
+| `linux.py` | `LinuxHAL`, `TypedLinuxHAL`: GPIO lines through libgpiod v2 looked up by name; checks every device before holding a line; releases every line on exit |
+| `sysfs.py` | hwmon and IIO sensors, looked up by label; never returns a default value |
+| `framebuffer.py` | In-memory display or `/dev/fbN` |
+| `audio.py` | Standard library: WAV read/write, energy VAD, 20 ms frames, speaker timeline |
+
+### 3.4 `models/` — System 1, System 2, grammar, knowledge
+
+| Module | Responsibility |
+|:---|:---|
+| `system.py` | `SystemOne` (implements `FactSource`: primary model then fallback, with a circuit breaker) and `SystemTwo` (LLM, with fallback, records `system_two_call`) |
+| `grammar.py` | Fixed command grammar from `commands.toml`: normalisation, pattern matching, `difflib` score; `GrammarAdjudicator` decides criteria from the command sentence |
+| `knowledge.py` | Local knowledge from `knowledge.toml`, deterministic retrieval |
+| `providers/` | **The only place that names a provider.** LiteLLM (late import), System One API (Jev), the `python:pkg.mod:factory` adapter, common rules for every configuration table (no keys in files, endpoint checks) |
+
+### 3.5 `perception/` — voice
+
+| Module | Responsibility |
+|:---|:---|
+| `voice_fsm.py` | Five-state conversation state machine (`IDLE`, `LISTENING`, `THINKING`, `SPEAKING`, `BARGE_IN`) per `docs/spec/voice_fsm.md`; never evaluates a gate or touches a pin |
+| `voice_session.py` | Places the state machine in front of a `SimSession`: audio frames → VAD or wake word → STT → the same path as a typed command; virtual time |
+| `providers/` | OpenAI-standard STT/TTS, wake word (openWakeWord or an adapter), fake providers for tests |
+
+### 3.6 `sim/`, MCP, `testing/`, `viz/`, `cli/`
+
+| Component | Responsibility |
+|:---|:---|
+| `sim/session.py` | `SimSession`: the assembly point for an agent on `sim` or `linux`; handles one turn (`handle`), one tool call (`call_tool`), one confirmation answer |
+| `sim/ui.py` | `SessionServer`: web UI for the same session, SSE, same-origin checks |
+| `mcp_server.py` | The agent becomes an MCP server over stdio; one call at a time |
+| `mcp_host.py` | System 2 as MCP host: device tools through the agent's own MCP server (still through the gate), information tools from external servers per the allowlist |
+| `testing/` | Action CI: `TraceRecorder`, `TracePlayer`, `GoldenComparator`, the assert library, UART reading, runs tool-call and voice corpora |
+| `viz/` | Self-contained HTML pages for `trace view` and the web UI; Perfetto export |
+| `cli/` | Typer: every command; errors become three-part messages and exit codes 0/1/2 |
+
+## 4. Protocols connecting the components
+
+These are the seams an engineer will implement or replace. Signatures are taken verbatim from the code.
+
+```python
+# engine/gate.py — nguồn dữ kiện cho gate (SystemOne, GrammarAdjudicator, SystemOneApi hiện thực nó)
+class FactSource(Protocol):
+    async def adjudicate(self, criterion: str, definition: Mapping[str, Any],
+                         state: Mapping[str, Any] | None, deadline_ms: float) -> Fact | Unavailable: ...
+
+# hal/__init__.py — HAL không biết gate; nó chỉ hỏi hàm authorize được lắp vào
+Authorizer = Callable[[Any, str, str], None]          # (token, pin, called_from) -> None hoặc raise
+
+# actions/token.py — sổ token là hàm authorize của HAL
+class TokenLedger:
+    def issue(self, *, gate: str, gate_digest: str, action: str, pins: frozenset[str],
+              session_id: str, p95_ms: float) -> VerdictToken: ...
+    def authorize(self, signature: Any, pin: str, called_from: str) -> None: ...
+    def close(self, token: VerdictToken) -> None: ...
+
+# actions/tools.py — đường duy nhất từ một tool call tới chân
+async def dispatch(conversation: Conversation, tools: ToolSet, call: ToolCall) -> ToolResult: ...
+
+# engine/trace_sink.py — mọi thành phần ghi vào một nhật ký của phiên
+class EventLog:
+    def emit(self, type: str, data: dict[str, Any]) -> None: ...
+
+# models/providers/base.py — nhà cung cấp System 2
+class Provider(Protocol):
+    def __call__(self, task: str, name: str | None, state: Mapping[str, Any] | None) -> Any: ...
+
+# perception/providers/base.py và wake.py — giọng nói
+class SpeechToText(Protocol):
+    def transcribe(self, clip: AudioClip) -> str | Transcript | Awaitable[str | Transcript]: ...
+class TextToSpeech(Protocol):
+    def synthesize(self, text: str) -> Speech | Awaitable[Speech]: ...
+class WakeWordDetector(Protocol):
+    def detect(self, frame: AudioFrame) -> tuple[str, float] | None: ...
+```
+
+## 5. Assembling a session
+
+`SimSession.load(agent_toml, target=...)` performs exactly the following steps, in order; if any step fails, no session is created and no GPIO line is held.
 
 ```mermaid
 flowchart TB
-    classDef l0 fill:#fffbeb,stroke:#d97706,color:#92400e,stroke-width:1.5px;
-    classDef l3s fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
-    classDef l3c fill:#fef2f2,stroke:#dc2626,color:#991b1b,stroke-width:2px;
-    classDef l2 fill:#faf5ff,stroke:#9334e6,color:#6b21a8,stroke-width:1.5px;
-    classDef l1 fill:#f0fdf4,stroke:#16a34a,color:#14532d,stroke-width:1.5px;
-    classDef obs fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.5px;
-    classDef fdn fill:#f1f5f9,stroke:#64748b,color:#0f172a,stroke-width:1.5px;
-
-    subgraph L0["Layer 0 · Entry Points &amp; Hub Assemblers"]
-        CLI["cli/<br/>main.py · run.py · build.py"]:::l0
-        SIM_SESS["sim/session.py<br/>Sole Assembler Hub"]:::l0
-        SIM_UI["sim/ui.py<br/>Local Web UI (SSE / POST)"]:::l0
-        MCP_SRV["mcp_server.py &amp; mcp_host.py<br/>Stdio JSON-RPC IPC"]:::l0
-    end
-
-    subgraph L3_Surface["Layer 3 Surface · Action Interface Domain"]
-        CONV["actions/conversation.py<br/>ConversationContext &amp; c.do()"]:::l3s
-        ACT_SPEC["actions/spec.py<br/>@action Decorator &amp; GatedAction"]:::l3s
-        TL["actions/token.py<br/>TokenLedger &amp; Ephemeral Token"]:::l3s
-        TOOLS["actions/tools.py<br/>GatedTool &amp; dispatch()"]:::l3s
-        CONF["actions/confirmation.py<br/>PendingConfirmation (on_block: ask)"]:::l3s
-    end
-
-    subgraph L3_Core["Layer 3 Core · Policy &amp; Safety Gate Engine"]
-        RESOLV["engine/gate_resolver.py<br/>Extends merger &amp; P1/P2 invariants"]:::l3c
-        CONST["engine/constraints.py<br/>RFC-0005 parameter limits"]:::l3c
-        GATE["engine/gate.py<br/>ActionContractEngine (evaluate)"]:::l3c
-        TREE["engine/decision_tree.py<br/>Criteria compiler &amp; domain index"]:::l3c
-        COMP["engine/compiler.py<br/>Capability negotiation"]:::l3c
-        BIN["engine/binary_tree.py<br/>NETR v1 encoder (RFC-0003)"]:::l3c
-        CB["engine/circuit_breaker.py<br/>Degrade loop circuit breaker"]:::l3c
-    end
-
-    subgraph L2["Layer 2 · Models, Perception &amp; Voice FSM"]
-        MOD_SYS["models/system.py<br/>SystemOne &amp; SystemTwo Protocols"]:::l2
-        GRAMMAR["models/grammar.py<br/>CommandGrammar (commands.toml)"]:::l2
-        PROV["models/providers/<br/>LiteLLMProvider &amp; Adapter Factory"]:::l2
-        VFSM["perception/voice_fsm.py<br/>VoiceFSM (14 canonical states)"]:::l2
-    end
-
-    subgraph L1["Layer 1 · Closed Hardware Abstraction (HAL)"]
-        HAL_BASE["hal/base.py<br/>5 Closed HAL Primitives"]:::l1
-        HAL_BOARD["hal/board.py<br/>BoardProfile (board.toml DATA-01)"]:::l1
-        HAL_DIG["hal/digital.py<br/>DigitalOutPin (Token Guarded)"]:::l1
-        HAL_SIM["hal/sim.py<br/>SimHAL (In-Memory Mock)"]:::l1
-        HAL_LINUX["hal/linux.py<br/>LinuxHAL (gpiod v2 &amp; sysfs)"]:::l1
-    end
-
-    subgraph Obs["Observability &amp; Testing Subsystem"]
-        SINK["engine/trace_sink.py<br/>EventLog Bus"]:::obs
-        REC["testing/recorder.py<br/>TraceRecorder (trace.v1.json)"]:::obs
-        PLAYER["testing/player.py<br/>TracePlayer (Deterministic Replay)"]:::obs
-        GOLD["testing/golden.py<br/>GoldenComparator (Regression Check)"]:::obs
-        VIZ["viz/<br/>trace_view.py &amp; Perfetto Export"]:::obs
-    end
-
-    subgraph Foundation["Foundation Layer (Zero Outgoing Dependencies)"]
-        ERR["errors.py<br/>NE1001-NE5001 3-Part Diagnostics"]:::fdn
-        PATHS["paths.py<br/>Repo Root &amp; Data File Locators"]:::fdn
-        TRC_VAL["trace.py<br/>trace.v1.json Schema Validator"]:::fdn
-    end
-
-    CLI &amp; SIM_SESS --> CONV &amp; TOOLS
-    MCP_SRV --> TOOLS
-    CONV --> GATE &amp; TL &amp; HAL_DIG
-    TOOLS --> CONV
-    GATE --> RESOLV &amp; CONST &amp; CB
-    COMP --> TREE &amp; BIN &amp; HAL_BOARD
-    GATE -.->|FactSource protocol| MOD_SYS
-    MOD_SYS --> GRAMMAR &amp; PROV
-    VFSM -.->|Barge-in abort &lt;= 20ms| CONV
-    HAL_DIG --> HAL_BASE
-    HAL_SIM &amp; HAL_LINUX --> HAL_BASE
-
-    GATE &amp; CONV &amp; HAL_BASE &amp; VFSM --> SINK
-    SINK --> REC
-    REC &amp; PLAYER &amp; GOLD &amp; VIZ --> TRC_VAL
+    A["build(agent.toml, target, board)<br/>every check, one BuildFailed"] --> B["load_agent_manifest<br/>commands.toml required"]
+    B --> C["load_agent_grammar<br/>commands.toml + knowledge.toml"]
+    C --> D["[sim] tables<br/>facts · slot_facts · sensors · sensor_facts"]
+    D --> E["load_actions · resolve_gates · load_board_by_id"]
+    E --> F["EventLog metadata<br/>session_id · target · board · agent · sensor_facts_digest"]
+    F --> G{"target"}
+    G -- sim --> H1["SimHAL"]
+    G -- linux --> H2["TypedLinuxHAL<br/>preflight before any line"]
+    H1 --> I["SystemOne fast path<br/>[system_one] primary, grammar fallback"]
+    H2 --> I
+    I --> J["ActionContractEngine(gates, facts_source=fast)"]
+    J --> K["Conversation(engine, hal)<br/>installs hal.authorize = ledger.authorize"]
+    K --> L["SystemTwo slow path<br/>[system_two] or unavailable"]
+    L --> M["ToolSet(actions, argument limits) · MCP config"]
 ```
 
----
+Fact order for the gate in a session: `[sim.facts]` → `[sim.slot_facts]` → `[sim.sensor_facts]` (sensors are read on every gathering pass) → the `[system_one]` primary model for the criteria assigned to it → the command grammar.
 
-## 2. Component Responsibility & Import Boundaries
+## 6. External dependencies
 
-The table governs import permissions and boundaries across layers to preserve architectural determinism:
+The core needs only seven libraries; each optional capability is an extra, late-imported in the exact function that needs it — if it is missing, the three-part error names the extra to install.
 
-| Layer | Primary Files | Core Responsibilities | Imported By | STRICTLY FORBIDDEN from Importing |
-|:---|:---|:---|:---|:---|
-| **Foundation** | `errors.py`, `paths.py`, `trace.py` | Low-level utilities: 3-part structured errors (`NE*`), package path resolution, JSON Schema validation for `trace.v1`. | All layers | Must not import any internal NeuroEdge module. |
-| **L3 Core Engine** | `gate_resolver.py`, `constraints.py`, `gate.py`, `compiler.py`, `binary_tree.py`, `circuit_breaker.py` | Pure Gate rule engine: Resolves `extends` chains, enforces 5 inheritance safety principles, evaluates Gates (`evaluate()`), compiles binary `NETR v1`, circuit breaker. | `actions`, `sim`, `cli`, `testing` | Must not import `hal`, `actions`, `sim`, `models` (sole exception: `compiler` reads `hal/board.py` for build-time capability checking). |
-| **L3 Actions** | `spec.py`, `conversation.py`, `token.py`, `tools.py`, `confirmation.py` | Action contract surface: `@action` enforcement, single-use token lifecycle (`TokenLedger`), execution dispatching (`dispatch()`), human confirmation management (`on_block: ask`). | `sim`, `cli`, `testing`, `mcp_*` | Must not import `sim`, `cli`. |
-| **L1 HAL** | `base.py`, `board.py`, `digital.py`, `sim.py`, `linux.py`, `sensor.py`, `display.py` | 5-primitive hardware abstraction: `BoardProfile` capability definitions, token verification before GPIO pulse, refusal of unknown pins. | `actions` (via `digital.grant`), `sim`, `testing` | Must not import `engine`, `actions`, `models`. |
-| **L2 Models** | `system.py`, `grammar.py`, `knowledge.py`, `providers/` | AI abstraction: Supplies structured facts via `SystemOne` and open reasoning via `SystemTwo` (LiteLLM SDK / Custom adapter). | `engine` (via `FactSource` protocol only), `sim` | Must not import external vendor SDKs directly into core (must be encapsulated behind `providers/`). |
-| **L2 Perception** | `voice_fsm.py`, `voice_session.py` | Conversational FSM: Coordinates 5 voice states, tracks barge-in timing, emits abort signals for queued actuator commands. | `sim` | Must not touch HAL directly (only interacts via injected `pending_commands`). |
-| **L0 Sim & CLI** | `sim/session.py`, `sim/ui.py`, `cli/main.py`, `run.py`, `build.py` | **Sole System Assembly Hub:** The only place authorized to instantiate and wire HAL, Engine, Actions, and Models into an executable session. | None (Top layer) | Must not contain embedded safety adjudication logic (all safety decisions must delegate down to Engine). |
-| **Observability** | `trace_sink.py`, `recorder.py`, `player.py`, `golden.py`, `viz/` | Action CI & Telemetry: Aggregates events via `EventLog` bus, serializes JSON traces, replays sessions on live HAL, golden diff checks. | `cli`, `sim` | Must not interfere with execution decisions or alter Gate verdicts. |
+| Extra | Package | Late-imported in |
+|:---|:---|:---|
+| (core) | `typer`, `rich`, `pydantic`, `jsonschema[format-nongpl]`, `pyyaml`, `rfc8785`, `deepdiff` | — |
+| `mcp` | `mcp` | `mcp_server.py::_sdk`, `mcp_host.py::ToolHost.__aenter__` |
+| `cloud` | `litellm==1.102.0` | `models/providers/litellm_provider.py::_import_litellm` |
+| `linux` | `gpiod` (LGPL, hence optional only) | `hal/linux.py::_import_gpiod` |
+| `audio` | `sounddevice` | `hal/linux.py::_import_sounddevice`, backend `live` only |
+| `wake` | `openwakeword`, `onnxruntime` | `perception/providers/wake.py` |
+| `serial` | `pyserial` | `testing/uart.py` |
 
----
+HTTP to Jev and to STT/TTS uses the standard library (`net.py`): no redirects, no proxy, with deadlines and size limits.
 
-## 3. Core Protocols & Contracts
+## 7. Extension points
 
-### 3.1 Fact Source Protocol (`FactSource`)
-Defined in `models/system.py`, this structural protocol decouples `GateEngine` from specific AI models:
-
-```python
-from typing import Protocol, Any
-
-class FactSource(Protocol):
-    """Supplies factual truth values for Gate adjudication."""
-    def get_fact(self, criterion_name: str, deadline_ms: float) -> tuple[Any, float]:
-        """
-        Returns (fact_value, confidence_score_0_to_1).
-        Returns (None, 0.0) if unavailable or deadline expires.
-        """
-        ...
-```
-
-### 3.2 Single-Use Token Ledger Contract (`TokenLedger`)
-Defined in `actions/token.py`, guarantees physical pins cannot be re-triggered by an expired or reused verdict:
-
-```python
-class Token:
-    digest: str      # SHA-256 hash of the authorising Gate
-    nonce: int       # Unique random session nonce
-    granted_pins: set[str]  # Logical pin names authorized for actuation
-    expires_at_ms: float   # Monotonic expiration timestamp (TTL = p95 * 3)
-
-class TokenLedger:
-    def issue(self, gate_digest: str, pins: set[str], ttl_ms: float) -> Token: ...
-    def authorize(self, token: Token, pin_name: str) -> bool: ...
-    def close(self, token: Token) -> None: ...
-```
-
-### 3.3 Universal Event Bus Protocol (`EventLog`)
-Defined in `engine/trace_sink.py`, all components emit lifecycle telemetry into a unified bus to build canonical `trace.v1.json` artifacts:
-
-```python
-class EventLog(Protocol):
-    def emit(self, event_type: str, data: dict[str, Any]) -> None:
-        """Emits an event into the session timeline."""
-        ...
-```
-
----
-
-## 4. The Five Invariant Architecture Rules
-
-To guarantee system determinism and prevent architectural drift:
-
-1. **Rule 1 (`engine` absolute isolation):** `engine` never imports `hal`, `actions`, or `sim`. It accepts facts strictly via `FactSource` and outputs deterministic `ALLOW` or `BLOCK` verdicts.
-2. **Rule 2 (`hal` zero-business-logic):** `hal` never knows what a Gate is. It merely receives a pin command with an attached `Token`. If the token is authentic and unconsumed $\rightarrow$ pulse physical pin; otherwise $\rightarrow$ refuse command immediately.
-3. **Rule 3 (The Sole Bridge `actions/conversation.py`):** The only bridge linking `engine` and `hal` is `ConversationContext` via the `c.do()` entrypoint.
-4. **Rule 4 (Single Assembly Hub):** `sim/session.py` (or `main.c` on firmware) is the sole orchestrator permitted to wire dependencies together.
-5. **Rule 5 (Three-Part Error Hierarchy):** All raised exceptions must inherit from `NeuroEdgeError(where=..., why=..., how=...)` to guarantee actionable developer feedback.
+| To add | Do it in | No need to change |
+|:---|:---|:---|
+| An LLM, STT, TTS, System 1 provider | A `python:package.module:function` adapter in `agent.toml` | Core |
+| A wake word | An adapter implementing `WakeWordDetector` | Core |
+| An agent template | `python/neuroedge/templates/` | Engine |
+| A trace event type | `EventLog.emit("…", data)` — `type` in `trace.v1` is a free string | `schemas/` (no RFC needed) |
+| A target | A `HardwareAbstractionLayer` subclass + a `boards/` profile + vectors | Engine, gate — but the target list is frozen until RFC-0002 ([`11`](11-hal-port-guide.md)) |
+| An `allow_when` operator or a criterion type | **An RFC is required** (`CONTRIBUTING.md` §3) | — |

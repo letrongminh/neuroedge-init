@@ -1,147 +1,88 @@
-# 01 · System Context (C4 L1)
+# 01 · System context (C4 L1)
 
-> **Status:** `done` for Core integrations, AI Providers via OpenAI API standard, and stdio MCP; `planned` for Fleet OS, public Gate Registry, and SchemaStore (I6–I10). See [`00-overview.md`](00-overview.md) for full documentation map.
+> **Scope:** NeuroEdge seen from outside — who uses it, which systems it talks to, and where the trust
+> boundary lies. **Sources:** `python/neuroedge/models/providers/`,
+> `python/neuroedge/perception/providers/`, `python/neuroedge/mcp_server.py`, PRD §2,
+> `docs/spec/threat_model.md`.
 
----
+## 1. Context diagram
 
-## 1. System Context Diagram (C4 L1)
+![E-01 · System context](../assets/svg/E-01-system-context.svg)
+*Figure E-01 — Users on the left, external systems on the right. Dashed lines are `planned`.*
 
-The C4 Level 1 diagram establishes NeuroEdge's central position within the Physical AI ecosystem, interfacing between human users, hardware execution environments, and external cloud services:
+## 2. Users
 
-![E-01 · System Landscape](../assets/svg/E-01-system-landscape.svg)
-*Figure E-01 — NeuroEdge System Context: Actors on the left, external systems on the right. Solid lines: done · Dashed lines: planned.*
-
-```mermaid
-flowchart TB
-    classDef actor fill:#0f172a,stroke:#334155,color:#ffffff,stroke-width:1.5px;
-    classDef primary fill:#2563eb,stroke:#1d4ed8,color:#ffffff,stroke-width:2px,font-weight:bold;
-    classDef core fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a,stroke-width:2px;
-    classDef external fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.5px;
-    classDef planned fill:#f8fafc,stroke:#94a3b8,color:#475569,stroke-dasharray: 4 3;
-
-    subgraph Users["User Personas (PRD §2.1)"]
-        U1["Maker / Prototyper<br/><b>U1 · Journey 1</b>"]:::actor
-        U2["Embedded Lead &amp; QA<br/><b>U2 · J2, J3</b>"]:::actor
-        U3["Fleet Ops Engineer<br/><b>U3 · Journey 2</b>"]:::actor
-        U4["Safety Auditor<br/><b>U4 · J6 Audit</b>"]:::actor
-        U5["OEM Hardware Partner<br/><b>U5 · HAL Port</b>"]:::actor
-        U6["Robotics Engineer<br/><b>U6 · Tiered Nodes</b>"]:::actor
-    end
-
-    subgraph CoreSystem["NeuroEdge System Boundary"]
-        NE["NeuroEdge Runtime &amp; Action CI<br/><b>Core Platform (Host Python &amp; Firmware C99)</b><br/>Enforces fail-closed safety gates before physical HAL actuation"]:::primary
-    end
-
-    subgraph ExternalSystems["External Systems &amp; Upstream AI Services"]
-        LLM["AI Providers<br/><b>OpenAI, Anthropic, Ollama</b><br/>LLM · STT · TTS (WebSocket/TLS)"]:::external
-        MCP["MCP Clients &amp; Tools<br/><b>Claude Desktop, Custom Agents</b><br/>Stdio JSON-RPC IPC"]:::external
-        REG["Gate Registry (I10 planned)<br/><b>CNCF ORAS / OCI Registry</b><br/>Signed Gate &amp; Port Artifacts"]:::planned
-        FLT["Fleet OS Backend (I9 planned)<br/><b>Hawkbit OTA &amp; EMQX Broker</b><br/>Fleet Management &amp; Trace Vault"]:::planned
-        SCH["SchemaStore Catalog (I6)<br/><b>JSON Schema Repository</b><br/>IDE schema completion"]:::planned
-    end
-
-    U1 -->|1. Init &amp; Run sim UI| NE
-    U2 -->|2. Build, Test CI, Verify| NE
-    U3 -.->|3. Coordinate Canary OTA| FLT
-    FLT -.->|mTLS Management| NE
-    U4 -->|4. Audit Gate YAMLs &amp; Traces| NE
-    U5 -->|5. Declare board.toml &amp; HAL| NE
-    U6 -.->|6. Configure Robot Nodes| NE
-
-    NE <-->|OpenAI API / LiteLLM<br/>HTTPS TLS 1.3 :443| LLM
-    NE <-->|Stdio JSON-RPC IPC<br/>Advisory Context| MCP
-    NE -.->|ORAS Push/Pull<br/>Signed OCI Artifacts| REG
-    NE -.->|MQTT 5.0 / mTLS :8883<br/>Telemetry &amp; OTA| FLT
-    NE -.->|Validate Schema $id| SCH
-```
-
----
-
-## 2. User Actors & Personas
-
-Actors interacting with the system map directly to standard personas and user journeys defined in PRD §2:
-
-| Actor | System Role | Primary Interfaces | Core Expectation |
+| User | What they do with NeuroEdge | Main tools | Status |
 |:---|:---|:---|:---|
-| **Maker / Creative Dev (U1)** | Individual developers prototyping Physical AI applications from scratch | `neuroedge new`, `neuroedge run --ui`, Local Web UI 127.0.0.1 | **TTFV < 10 minutes** on a clean workstation; no hardware required, no cloud API keys needed (Journey 1). |
-| **Embedded Lead (U2)** | Responsible for hardware safety, memory budget, and board stability | `neuroedge build`, `neuroedge test`, `verify`, Nightly CI runner | Changing prompts or changing silicon **never causes safety regressions** (door locks never unlock unexpectedly) (J2, J3). |
-| **Fleet Ops Lead (U3)** | Manages fleets of deployed devices in hotels, buildings, and industrial plants | Fleet OS UI (planned I9), Remote issue trace logs | **Reproduce field incidents in 30 seconds** on a laptop via `neuroedge replay`; execute safe canary OTA without bricking devices (Journey 2). |
-| **Safety Certifier / Auditor (U4)** | Approves operational safety policies and regulatory compliance | Gate YAML files, `neuroedge gate explain`, `trace.v1.json` | Review and sign off on physical safety policies **without reading Python or C code**; verify non-repudiable audit logs (J6). |
-| **OEM Hardware Partner (U5)** | Silicon vendors and hardware OEMs porting NeuroEdge to new boards | `board.toml`, C HAL stubs, Compliance test suite | Fast porting **without silicon lock-in**; retains full IP ownership of custom HAL drivers (details: [`11-hal-port-guide.md`](11-hal-port-guide.md)). |
-| **Robotics Engineer (U6)** | Designs autonomous mobile robots and distributed robot arms (planned I14) | Zenoh-pico, ROS 2 / Nav2 adapters, Node-level Gates | Every velocity command (`cmd_vel`) must pass an active Gate; supports deterministic hardware e-stop (Q-32..Q-38). |
+| **Maker, application developer** | Writes agents (`agent.toml`, gate, action), runs and checks them on their own machine | `neuroedge new · run · test · record` | `done` |
+| **Core and embedded engineers** | Generates firmware for an agent, flashes it to the chip, compares verdicts across environments | `build --target esp32s3 · verify · record --port` | `done` (on QEMU) |
+| **Safety reviewer, QA** | Reads and approves gates without reading code; investigates a session from the trace | `gate explain · trace view · replay` | `done` |
+| **OEM partner** | Declares a new board, ports HAL, proves equivalence | `board.toml`, conformance vectors | `partial` — see [`11`](11-hal-port-guide.md) |
+| **Fleet operator** | Rolls out updates in waves, collects incident traces remotely | Fleet OS | `planned` (I9) |
 
----
+The source user groups and journeys are in PRD §2 (`U1`…`U6`, `J1`…`J7`).
 
-## 3. External Systems & Protocols
+## 3. External systems
 
-### 3.1 AI Providers (LLM, STT, TTS)
-* **Role:** Provides natural language comprehension, Speech-to-Text (STT), reasoning capabilities (System 2 LLM), and Speech Synthesis (TTS).
-* **Protocols & Constraints:**
-  * Standardized communication via **OpenAI API specification** or custom pluggable adapters (`Q-10`, `Q-12`, PRD §4.3).
-  * Mandatory Transport Security: **TLS 1.3 HTTPS** (`NFR-SEC-08`). API keys are supplied strictly via process environment variables, never hardcoded in `agent.toml` or trace logs.
-  * Tracing Discipline: Traces record provider name, model identifier, token count, and latency in `system_two_call` events; raw text is hashed if `--anonymize` is enabled.
+Every outbound connection is **optional**: a basic install runs the whole `sim` without network or keys (Q-15). API keys are never stored in files: only the **name** of an environment variable is recorded (`api_key_env`), and the build refuses any field that looks like a key (`models/providers/common.py`).
 
-### 3.2 MCP Clients (Model Context Protocol)
-* **Role:** Enables modern AI agent interfaces (such as Claude Desktop, Cursor, or autonomous agents) to interact with physical actuators.
-* **Protocols & Constraints:**
-  * Version 1.0 supports **stdio transport** locally within the same machine (`NFR-SEC-09`).
-  * Every `@action` maps directly to an MCP Tool with declared `inputSchema` and `outputSchema`.
-  * **Safety Invariant:** Invocations from MCP clients receive `call_source = "mcp"` (untrusted caller) and must pass the Gate before reaching HAL (`Q-24`, `Q-27`). Network MCP (HTTP/mTLS) is deferred to Block 2 (`TODOS.md` #24).
+| System | Role | Protocol and format | Code responsible | Status |
+|:---|:---|:---|:---|:---|
+| **LLM provider** (System 2) | Answers free-form questions, proposes tool calls | OpenAI-standard chat completions via the LiteLLM library (no proxy process — Q-10); or a `python:` adapter | `models/providers/litellm_provider.py`, `openai_chat.py` | `done` |
+| **Jev on OpenRouter** (System 1) | Decides some gate criteria from the user's words | `POST {api_base}/systemone` (System One API), HTTPS required except loopback | `models/providers/systemone_api.py` | `done` |
+| **Speech provider** | STT, TTS | OpenAI-standard `POST {base_url}/audio/transcriptions` and `/audio/speech` | `perception/providers/openai_audio.py` | `done` |
+| **Local STT server** | Fallback STT when the primary STT fails | As above, usually `http://localhost` | `[stt.fallback]` | `done` |
+| **MCP client** | Calls agent actions as tools | JSON-RPC over **stdio** (not over the network — NFR-SEC-09) | `mcp_server.py` | `done` |
+| **External MCP server** | Information source for System 2 (news, lookups) | stdio; only tools on the allowlist | `mcp_host.py` | `done` |
+| **ESP-IDF v5.4 and Espressif QEMU** | Compiles firmware, runs the virtual chip | ESP-IDF project generated by `build`; UART read through a file or `tcp://` | `engine/firmware.py`, `testing/uart.py` | `done` |
+| **OTA image server** | Serves a signed app image | HTTP(S) GET to any static server | `components/ne_ota/` | `partial` — on QEMU |
+| **Fleet OS, Gate Registry** | Fleet management; shared gate repository | Planned: MQTT with a permissively licensed broker (Mosquitto, NanoMQ or VerneMQ — **not** EMQX, Q-11); OCI via ORAS and Harbor | no code yet | `planned` (I9, I10) |
 
-### 3.3 Gate Registry (Planned I10)
-* **Role:** Repository for storing, versioning, and distributing verified Gate policies, adapters, and community HAL ports.
-* **Protocol:** OCI Artifact standard using **CNCF ORAS / Harbor**. All uploaded artifacts are cryptographically signed.
-* **Current Readiness:** Version 1.0 is forward-compatible via `neuroedge gate publish` (RFC 8785 JCS SHA-256 hash) and `digests.lock` version immutability.
-
-### 3.4 Fleet OS Backend (Planned I9)
-* **Role:** SaaS device management platform providing canary OTA rollouts via Eclipse Hawkbit, telemetry routing via EMQX, and incident trace archiving (Trace Vault).
-* **Protocol:** Devices connect via **MQTT 5.0 wrapped in mTLS** with unique per-device X.509 certificates (`NFR-SEC-04`).
-
----
-
-## 4. Trust Boundaries & Threat Model
-
-Following the security specification in [`docs/spec/threat_model.md`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/spec/threat_model.md), the system defines three distinct trust zones:
+## 4. Trust boundary
 
 ```mermaid
 flowchart LR
-    subgraph Untrusted["Untrusted Zone"]
-        U_LLM["Cloud LLMs<br/>(Hallucinations, Prompt Injections)"]
-        U_MCP["MCP Clients / External Servers<br/>(Untrusted External Callers)"]
-        U_ENV["Insecure Network Environments"]
+    subgraph Untrusted["Untrusted: may propose, never decide"]
+        LLM["System 2 LLM"]
+        JEV["System 1 model (Jev)"]
+        MCPC["MCP client"]
+        EXT["External MCP server"]
     end
-
-    subgraph DMZ["Contract Adjudication DMZ"]
-        DISP["dispatch() & Argument Bounds Check"]
-        GATE["Gate Engine (100% Deterministic)"]
-        CB["Circuit Breaker (Fail-Closed)"]
-        TL["TokenLedger (Single-Use Tokens)"]
+    subgraph Contract["Contract boundary: deterministic"]
+        DISP["dispatch()<br/>schema · call_source"]
+        GATE["Gate engine<br/>domain · threshold · budget"]
+        LEDGER["TokenLedger<br/>one-time · TTL"]
     end
-
-    subgraph Trusted["Trusted Execution Zone"]
-        USER["Physical User at Device<br/>(Direct UI/Button Confirmation)"]
-        HAL["HAL Layer (Verifies & Burns Tokens)"]
-        GPIO["Actuators / Door Locks / Relays"]
+    subgraph Local["Trusted: on the device"]
+        PERSON["Person at the device<br/>REPL or same-origin page"]
+        HAL["HAL"]
+        PIN(["Pins"])
     end
-
-    U_LLM -->|Proposes ToolCall| DISP
-    U_MCP -->|Proposes ToolCall| DISP
+    LLM -- "ToolCall" --> DISP
+    MCPC -- "ToolCall" --> DISP
+    EXT -- "data only" --> LLM
+    JEV -- "Fact or Unavailable" --> GATE
     DISP --> GATE
-    CB -.-> GATE
-    GATE -- "BLOCK (Denied)" --> LOG["Trace Log / on_block"]
-    GATE -- "ALLOW (Passed)" --> TL
-    TL -->|Issues Token (Digest + Nonce)| HAL
-    USER -->|POST /confirm| GATE
-    HAL -->|Burns Token| GPIO
-
-    style Untrusted fill:#fee,stroke:#c00,stroke-dasharray: 5 5
-    style DMZ fill:#fef,stroke:#90c,stroke-width:2px
-    style Trusted fill:#efe,stroke:#090,stroke-width:2px
+    GATE -- "ALLOW" --> LEDGER --> HAL --> PIN
+    PERSON -- "confirm (local_grammar, ui)" --> GATE
 ```
 
-1. **Zero Trust Callers:**
-   * AI models (including frontier LLMs) and external MCP clients are treated strictly as untrusted inputs (`trust: untrusted`). Because they are susceptible to prompt injection and hallucinations, model output is **strictly a proposal**, never a direct command to hardware.
-2. **The Only Trusted Human Confirmation:**
-   * When an action is held by a Gate under `on_block: ask`, confirmation **can only be granted by an authenticated human physically present at the device** via the local terminal REPL (`:confirm`) or a same-origin local Web UI (`POST /confirm`) (`Q-26`, RFC-0006). AI models and remote callers are strictly forbidden from self-confirming.
-3. **Fail-Closed Offline Guarantee:**
-   * Network disconnection never disables the Gate. The system falls back seamlessly to the local command grammar (`commands.toml`, `Q-14`). If a command matches the grammar and sensor conditions pass $\rightarrow$ the Gate allows execution. If any condition fails or the fallback crashes $\rightarrow$ the circuit breaker trips, safely blocking actuation with reason `gate_unreachable`.
+Four rules define the boundary, each with a test in `docs/spec/threat_model.md` §2b:
+
+1. **Models and clients only propose.** LLMs and MCP clients can only submit a `ToolCall` through `dispatch()`. A tool that does not exist or an ill-typed argument ⇒ `REJECTED`, no verdict is computed.
+2. **The call source is assigned by the runtime, not declared by the caller.** `call_source` is injected by the dispatcher as a trusted fact; a gate can refuse an action for the `mcp` or `system_two` source alone.
+3. **A model's answer is a fact, not a verdict.** Jev returns `Fact` or `Unavailable`, then is checked against the value domain and the confidence threshold before entering the gate. A model never returns `ALLOW`. Content from an external MCP server is marked "untrusted data"; any call it leads to must still pass the gate.
+4. **Only a person at the device can confirm.** When the gate asks (`on_block: ask`), only two channels may answer: `local_grammar` (typing or saying "yes") and `ui` (a button on the same-origin 127.0.0.1 page) (Q-26). System 2 and MCP clients have no way to confirm instead.
+
+Out of scope, stated explicitly: MCP over the network (stdio only in v1.0), attackers inside the same process, and certified functional safety (`docs/spec/threat_model.md` §3, §3b).
+
+## 5. Data leaving the machine
+
+| To | Data sent | Never sent |
+|:---|:---|:---|
+| LLM (System 2) | User sentences, tool list, turn history | API keys (read from environment variables only), verdict tokens |
+| Jev (System 1) | **The user's words only** and typed questions for each criterion | Action names, arguments, session facts; an MCP call nobody spoke sends nothing |
+| STT | The audio clip of one turn | — |
+| TTS | The reply to be spoken | — |
+
+By default the trace stores raw text (typed sentences, transcripts); `--anonymize` hashes them at the source while keeping every verdict (NFR-PRIV-04). Audio is never stored in the trace.

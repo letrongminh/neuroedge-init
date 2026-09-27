@@ -1,123 +1,70 @@
-# 02 · Containers & Process Boundaries (C4 L2)
+# 02 · Containers and process boundaries (C4 L2)
 
-> **Status:** `done` for Host Runtime, ESP32-S3 Firmware, and CLI / Action CI; `planned` for Fleet OS, Gate Registry, NeuroBrain, and Robotics Nodes (I8–I18). See [`00-overview.md`](00-overview.md) for full documentation map.
+> **Scope:** the independently running blocks — processes, libraries, firmware, file stores — and how each
+> pair talks. **Sources:** `python/pyproject.toml`, `python/neuroedge/cli/`, `sim/ui.py`,
+> `mcp_server.py`, `targets/esp32s3/`, `.github/workflows/`.
 
----
-
-## 1. System Container Diagram (C4 L2)
-
-The C4 Level 2 diagram decomposes the NeuroEdge platform into independent execution runtimes, operating system processes, and persistent data stores:
+## 1. Container diagram
 
 ![E-02 · Containers](../assets/svg/E-02-containers.svg)
-*Figure E-02 — Container Topology: Solid boxes are implemented (done) · Dashed boxes are roadmap items (planned).*
+*Figure E-02 — Containers on a dev machine or Linux device (top), on the chip (bottom), and external systems (right).*
 
-```mermaid
-flowchart TB
-    classDef primary fill:#2563eb,stroke:#1d4ed8,color:#ffffff,stroke-width:2px,font-weight:bold;
-    classDef core fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a,stroke-width:1.5px;
-    classDef mcu fill:#f0fdf4,stroke:#16a34a,color:#14532d,stroke-width:2px,font-weight:bold;
-    classDef store fill:#f1f5f9,stroke:#64748b,color:#0f172a,stroke-width:1.5px;
-    classDef external fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.5px;
-    classDef planned fill:#faf5ff,stroke:#a855f7,color:#6b21a8,stroke-dasharray: 4 3;
+## 2. Container catalogue
 
-    subgraph DevMachine["Host Workstation &amp; CI Runner"]
-        CLI["CLI &amp; Action CI Runner<br/><b>Python 3.11+ Typer / Rich / Pytest</b><br/>run · build · verify · replay · record · test"]:::primary
-        HOST["Host Python Runtime<br/><b>Package neuroedge</b><br/>Engine · Actions · SimHAL · LinuxHAL · Models · MCP Host"]:::core
-        SIM_UI["Local Sim Web UI<br/><b>HTTP 127.0.0.1 :8765</b><br/>Virtual Board &amp; In-Person Confirmations"]:::core
-        TRACE_STORE[("Trace Storage<br/><b>Local Filesystem</b><br/>traces/*.json · fixtures/")]:::store
-        
-        CLI --> HOST
-        HOST <--> SIM_UI
-        HOST --> TRACE_STORE
-        CLI --> TRACE_STORE
-    end
-
-    subgraph EmbeddedDevice["Edge Microcontroller (ESP32-S3 Box-3 / QEMU)"]
-        FW["Firmware C99 Runtime<br/><b>ESP-IDF v5.1+ / FreeRTOS</b><br/>Walker C NETR · TokenLedger · Voice FSM · I2S/GPIO"]:::mcu
-        FLASH_STORE[("On-Chip Flash Storage<br/><b>16MB SPI Flash</b><br/>NETR const trees · A/B Partitions · NVS")]:::store
-        
-        FW <--> FLASH_STORE
-    end
-
-    subgraph CloudServices["Cloud &amp; Fleet Platform (I9–I10 Planned)"]
-        FLEET["Fleet OS Backend<br/><b>Hawkbit Canary OTA &amp; EMQX Broker</b><br/>mTLS :8883"]:::planned
-        REGISTRY["Gate Registry<br/><b>CNCF ORAS / OCI Signed Store</b>"]:::planned
-        VAULT[("Central Trace Vault<br/><b>Standard 90d · Enterprise 3yr</b>")]:::planned
-        
-        FLEET <--> VAULT
-    end
-
-    subgraph ExternalActors["External Ecosystem"]
-        EXT_MCP["Claude Desktop / MCP Client<br/><b>External AI Desktop</b>"]:::external
-        EXT_LLM["AI Cloud Providers<br/><b>OpenAI / Anthropic / LiteLLM</b>"]:::external
-    end
-
-    CLI <-->|1. Stdio JSON-RPC IPC| EXT_MCP
-    HOST <-->|2. HTTPS TLS 1.3 / WebSocket| EXT_LLM
-    HOST -->|3. neuroedge build (NETR binary + headers)| FW
-    FW <-->|4. UART NE1 Framing (115200 8N1)| HOST
-    FW -.->|5. MQTT 5.0 / mTLS :8883| FLEET
-    CLI -.->|6. OCI Publish/Pull Gates| REGISTRY
-    FW -.->|7. Telemetry &amp; Crash Dumps| VAULT
-```
-
----
-
-## 2. Implemented Containers (Done — I0–I4)
-
-### 2.1 Host Python Runtime (`neuroedge` Package)
-* **Technology & Platform:** Python 3.11+, standard library `tomllib` (zero external TOML parser dependency). Runs natively on macOS, Linux x86-64, and Linux ARM64 (Raspberry Pi 5).
-* **Core Responsibilities:**
-  * Implements Gate inheritance resolution (`GateResolver`), 5-principle safety enforcement, and compiles flat binary decision trees `NETR v1` (`compiler.py`).
-  * Executes the `actions` domain: Manages conversation session context (`ConversationContext`), manages single-use token lifecycles (`TokenLedger`), and provides safe tool dispatching (`dispatch()`).
-  * Runs `SimHAL` and `LinuxHAL` (direct Linux kernel interface via `gpiod` v2 / `gpio-sim`).
-  * Interfaces with AI models: `SystemOne` (deterministic local grammar) and `SystemTwo` (LiteLLM SDK embedded in-process, `Q-10`).
-  * Serves local embedded MCP server and localhost Web UI (`sim/ui.py`).
-
-### 2.2 ESP32-S3 Firmware (Embedded C99 / ESP-IDF)
-* **Technology & Platform:** Pure C99, ESP-IDF framework (v5.2.1 for physical silicon, v5.4 for Espressif QEMU). FreeRTOS real-time operating system.
-* **Core Responsibilities:**
-  * **C Decision Tree Walker (`ne_gate/ne_walker.c`):** Directly walks memory-mapped `NETR v1` binary trees in Flash, zero heap allocation (0 static RAM), stack usage $\le 512$ bytes (`Q-9`, `Q-23`).
-  * **C Token Ledger (`ne_gate/ne_token.c`):** Manages 4 single-use token slots on the microcontroller with monotonic wrap-safe expiration timers.
-  * **UART Trace Output Module (`ne_trace`):** Formats and emits JSON-lines trace events prefixed with `NE1 ` via UART0 / USB-CDC (`TSK-S4-09`).
-  * **Secure Boot Sequence (`main.c`):** Performs hardware memory probing (`memory_probe`) $\rightarrow$ executes flash-embedded Gate self-test $\rightarrow$ only initializes networking and main loop if self-test outputs `NE_SELFTEST PASS`.
-
-### 2.3 CLI & Action CI Framework
-* **Technology & Platform:** Typer, Rich, Pytest, DeepDiff.
-* **Core Responsibilities:**
-  * Unified developer interface: `new` (scaffold templates), `run` (interactive REPL), `build` (capability checking), `test` (runs Action CI assertion suite), `record` (session logging), `replay` (deterministic HAL replay), `verify` (multi-target equivalence checker).
-  * Strict enforcement of the **Canonical Exit Code Contract**:
-    * Code `0`: Test suite or CLI command passed with 100% compliance.
-    * Code `1`: Syntax error, safety regression, or Gate contract violation.
-    * Code `2`: Feature or target environment not yet implemented (enabling CI to distinguish between "broken" and "planned").
-
----
-
-## 3. Planned Containers (Roadmap I8–I18)
-
-The current architecture provides architectural extension points and data schema reservations for upcoming containers:
-
-| Container | Increment | Proposed Tech Stack | Core Responsibilities | Architectural Groundwork Already in Place |
-|:---|:---:|:---|:---|:---|
-| **Fleet OS Backend** | **I9** | FastAPI, Eclipse Hawkbit, EMQX Broker, PostgreSQL | Orchestrates canary OTA campaigns (1% $\rightarrow$ 10% $\rightarrow$ 100%, halts on error spike); manages fleet inventory and mTLS credentials. | Trace schemas include `metadata.device_id`; A/B dual-partition contracts and RSA/ECDSA verification defined in FR-OTA. |
-| **Gate Registry** | **I10** | CNCF ORAS, Harbor OCI Registry, Cosign | Stores and indexes public Gate policies, provider adapters, and verified community HAL ports. | `gate publish` computes canonical RFC 8785 JCS digests; `digests.lock` enforces immutability; URI scheme `neuroedge://<pkg>/<gate>@<semver>`. |
-| **Trace Vault** | **I9** | S3-compatible Object Storage (MinIO / Ceph), ClickHouse | Centralized telemetry store archiving millions of field incident traces; enables fast query of BLOCK verdicts and latency SLAs. | Self-contained canonical `trace.v1.json` format, directly ingestible without schema transformation. |
-| **NeuroBrain Copilot** | **I12** | Python package `neuroedge.brain`, LLM Hardware Assistant | Conversational assistant for board bring-up: scans I2C busses, suggests type-safe Gates and Actions (Chat Contracting). | **Invariant B-1:** `neuroedge.brain` must route actions strictly via `dispatch()` $\rightarrow$ Gate; cannot touch HAL directly. |
-| **Robotics Distributed Nodes** | **I14** | Zenoh-pico, C/C++ micro-ROS runtime | Distributed mobile robot architecture: Central Brain (Linux RPi 5) coordinates MCU actuator nodes over real-time network. | Multi-node Gate partitioning; deterministic token lease mechanism (`motion.*`, `Q-37`); autonomous safe state fallback (`Q-35`). |
-
----
-
-## 4. Inter-Container Communication Matrix
-
-The table defines communication channels, wire protocols, security invariants, and latency budgets between containers:
-
-| Source $\rightarrow$ Destination | Wire Channel | Data Payload Format | Authentication & Security | Latency Budget |
+| Container | Technology | Responsibility | Entry point | Status |
 |:---|:---|:---|:---|:---|
-| **CLI $\rightarrow$ Host Runtime** | In-process call | Python Objects / DTOs | Process-internal | $< 1\text{ ms}$ |
-| **Host $\rightarrow$ Local Sim UI** | HTTP / WebSocket | JSON / Server-Sent Events (SSE) | Same-origin 127.0.0.1, Cross-Origin POST denied | $< 50\text{ ms}$ |
-| **External MCP $\rightarrow$ Host** | Stdio (Standard I/O) | JSON-RPC 2.0 (MCP Protocol) | Tagged as `call_source = "mcp"`, verified by Gate | $< 100\text{ ms}$ |
-| **Host $\rightarrow$ AI Providers** | HTTPS over WAN | JSON (OpenAI API payload) | TLS 1.3, API Key via environment variable | P95 $< 1,500\text{ ms}$ (`NFR-PERF-07`) |
-| **Firmware $\rightarrow$ Host** | UART0 / USB-CDC or TCP | JSON-Lines (`NE1 ` prefix) | Baudrate 921600 (or TCP port 5555 under QEMU) | $< 20\text{ ms}$ per event line |
-| **Host $\rightarrow$ Firmware (Build)** | Compiler code generation | Binary NETR v1 + C Header `.h` | CRC32 and SHA-256 verification | Build-time operation |
-| **Firmware $\rightarrow$ Fleet OS** *(I9)* | MQTT 5.0 over WAN | Compressed JSON / CBOR | Mutual TLS (mTLS) with per-device X.509 cert | Asynchronous telemetry |
-| **Robot Brain $\rightarrow$ Nodes** *(I14)* | Zenoh-pico Bus | CDR / Raw Binary Frames | Black channel (IEC 61784-3), Token lease | $< 10\text{ ms}$ (Real-time) |
+| **`neuroedge` CLI** | Python 3.11+, Typer, Rich | Each command is a process: loads a session, turns errors into three-part messages and exit codes; never decides a gate itself | `neuroedge.cli.main:app` | `done` |
+| **`neuroedge` library** | Python; core dependencies: `pydantic`, `jsonschema`, `pyyaml`, `rfc8785`, `deepdiff`, `typer`, `rich` | All logic: gate engine, actions, HAL, models, voice, sessions, Action CI | `import neuroedge` | `done` |
+| **Session web UI** | Standard-library `http.server.ThreadingHTTPServer`, 127.0.0.1 only | Shows the virtual device and the verdict stream; accepts typed commands and the confirmation button from a person present | `run --ui`, `mcp serve --ui` | `done` (`sim` only) |
+| **MCP server** | MCP Python SDK (extra `mcp`), stdio | Exposes each `@action` as a tool; every `tools/call` passes the gate | `neuroedge mcp serve` | `done` |
+| **Files** | Local filesystem | Agent project (`agent.toml`, `commands.toml`, `knowledge.toml`, `gates/`, `actions/`, `traces/`); repository data (`schemas/`, `gates/`, `boards/`, `fixtures/`, `digests.lock`) | — | `done` |
+| **Build output** | Filesystem | `build/gates/` (JSON tree, gate artifact, `NETR`, C header); `build/esp32s3/` (full ESP-IDF project) | `neuroedge build` | `done` |
+| **Linux device** | Linux kernel: libgpiod v2, sysfs hwmon/IIO, framebuffer, PipeWire | Real pins, sensors, display, audio for `LinuxHAL` | `--target linux` | `partial` — tested on virtual hardware, not yet on a Pi |
+| **Firmware image** | C99, ESP-IDF v5.4 | `NETR` walker, token ledger, agent tables, UART trace, OTA; boot self-test | `app_main` | `partial` — runs on QEMU, does not drive pins yet |
+| **Flash** | 16 MB, partition table `partitions.csv` | `factory`, `ota_0`, `ota_1` (3.5 MB per slot); `nvs`, `otadata`, `phy_init`, `storage` | — | `done` |
+| **Fleet OS, Gate Registry** | Not fully chosen; Eclipse Hawkbit (Q-11), ORAS and Harbor are settled | Fleet management; signed gate repository | — | `planned` (I9, I10) |
+
+## 3. Process and thread model
+
+NeuroEdge has no background process that runs forever. Everything lives in the process of the command being run.
+
+| Situation | Process | Threads and event loop |
+|:---|:---|:---|
+| `run -c`, `run` (REPL), `record` | One `neuroedge` process | A fresh `asyncio` loop per turn (`asyncio.run(session.handle(text))`) |
+| `run --ui` | As above, plus the HTTP server | `ThreadingHTTPServer` HTTP thread; each turn runs under a shared lock; SSE pushes state on change or every 1 second |
+| `mcp serve` | Child process started by the MCP client | One `anyio` loop; the `turns` lock guarantees one call at a time |
+| `mcp serve --ui` | As above, plus the web page | MCP calls and page turns share one session and one lock |
+| `--target linux` | As above | Timed GPIO pulses are released by `threading.Timer`; SIGTERM/SIGHUP return every line to rest before exit |
+| Firmware | One `app_main` task | No FreeRTOS task is created; every boot step runs sequentially ([`04`](04-component-device-c4l3.md) §3) |
+
+Consequence: an MCP connection to an external server lives for one turn only (`TODOS.md` #25), and a stuck I2C bus can hold the loop for about one second (`TODOS.md` #48).
+
+## 4. Communication matrix
+
+Only what is in the code is recorded. No latency budget here is measured; latency thresholds are NFRs (PRD §9.1) and their measurement status is in [`08`](08-nfr.md).
+
+| Source → Destination | Channel | Format | Control |
+|:---|:---|:---|:---|
+| CLI → library | In-process function call | Python objects | — |
+| Browser ↔ web UI | HTTP on 127.0.0.1: `GET /events` (Server-Sent Events), `GET /state`, `POST /command`, `POST /confirm` | JSON; body max 4096 bytes | `Host` and `Origin` must be 127.0.0.1 or localhost with the correct port, otherwise 403 |
+| MCP client → MCP server | stdin/stdout of the child process | JSON-RPC (MCP); results carry `outputSchema` | Every call carries the `mcp` source and passes the gate; `BLOCK` is not an error, `REJECTED` is an error |
+| Library → LLM | HTTPS (LiteLLM) | OpenAI-standard chat completions | Keys are read from environment variables only; never enter the trace |
+| Library → Jev | HTTPS, `POST {api_base}/systemone` | JSON: `model`, `state.utterance`, `questions` | HTTPS required except loopback; only the user's words are sent; standard-library client (`net.py`): no redirects, no proxy, with a deadline |
+| Library → STT/TTS | HTTPS or `http://localhost` | OpenAI-standard audio API | `http://` to another machine with a key present ⇒ the build refuses; same `net.py` client |
+| Library → Linux device | Device nodes `/dev/gpiochipN`, sysfs, `/dev/fbN`, PortAudio | libgpiod v2, text files, pixels | Lines are looked up by **name**; a missing device ⇒ error before any line is held |
+| Library → build output → firmware image | `idf.py build` reads the generated project | C, header `.netree.h`, `version.txt` | A failing build ⇒ prints every problem, writes no files |
+| Firmware image → library | UART (log file, `tcp://`, serial port) | `NE1 {…}` lines ≤ 512 bytes, the `device_info` … `trace_end` frame | A corrupt line, a missing frame, a count mismatch ⇒ `NE4001`, nothing is written |
+| Firmware image → OTA server | HTTP(S) GET | RSA-3072-signed app image | No redirects; download deadline; a bad signature ⇒ erase the slot just written |
+| Firmware image → Fleet OS | MQTT | — | `planned` (I9) |
+
+## 5. Planned containers
+
+Only technologies named in the planning documents are recorded; everything else is "not chosen".
+
+| Container | Increment | Named technology | Not chosen | Source |
+|:---|:---:|:---|:---|:---|
+| **Fleet OS** | I9 | Eclipse Hawkbit for wave-based OTA campaigns; permissively licensed MQTT broker (Mosquitto, NanoMQ or VerneMQ, chosen by load measurement); FastAPI WebSockets for audio streams | Central trace store, database, gateway | Q-11, proposal §6.2 |
+| **Gate Registry** | I10 | OCI standard with ORAS and Harbor; OpenMeter for metering | The specific gate signing mechanism (only "OCI/ORAS" is recorded, TSK-W2-04) | roadmap §6.2, Q-5 |
+| **Robot node** | I14 | Zenoh-pico on the MCU and `zenohd` on the Pi (micro-ROS is plan B only); mTLS or PSK between Pi and node | Intent encryption on the wire, clock synchronisation | Q-36, node RFC draft |
+
+What the current architecture already prepares for these containers is in [`13`](13-evolution-i0-i18.md) §3.

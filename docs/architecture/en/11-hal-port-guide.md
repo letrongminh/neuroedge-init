@@ -1,211 +1,179 @@
-# 11 · OEM HAL Porting Guide
+# 11 · HAL porting guide for OEM partners
 
-> **Status:** `done` · Standardized Hardware Abstraction Layer (HAL) Integration Guide  
-> **Target Audience:** Embedded firmware engineers, Original Equipment Manufacturers (OEMs), and custom hardware board developers (U5).  
-> **Objective:** Deliver the normative "5 + 3 + 1" porting contract, canonical `board.toml` templates, C99 interface stubs (`hal-stubs`), and the 5-step compliance checklist.  
-> **Intellectual Property Policy:** OEM partners retain 100% copyright ownership of their BSP drivers and board definitions in separate repositories; NeuroEdge indexes them in the Gate Registry (ADR Q-45).
+> **Scope:** taking NeuroEdge onto a new board or a new chip — the contract to keep, the code that is
+> reused, the code to write, and how to prove the port correct. **Sources:** `python/neuroedge/hal/`, `boards/`,
+> `targets/esp32s3/components/`, `targets/esp32s3/main/`, `docs/spec/hal_mcu_review.md`, RFC-0002, Q-13.
 
----
+## 1. What can be ported today
 
-## 1. Normative Porting Contract (The 5 + 3 + 1 Contract)
+| Kind of port | Possible today? | Notes |
+|:---|:---|:---|
+| **A new board for an existing target** (another Linux SBC, another ESP32-S3 board) | Technically yes; but `boards/` accepts only the **three tier-1 profiles** until RFC-0002 (`test_boards.py`), and the reference board of `esp32s3` is only Box-3 (invariant 6) | Good for internal experiments; not publishable yet |
+| **A new target** (`stm32`, `rp2350`, `jetson`) | **Not yet**: the target list is closed at `sim`, `linux`, `esp32s3` in `schemas/` and `hal/board.py` | RFC-0002 (under discussion) opens the list by tier at I11; the community port tool kit at I13 |
+| **Tier 3, community self-checked** (Q-13) | The process is planned at I13 (`TSK-P1-01…05`) | This chapter describes the part that already has code and the part that will change |
 
-To uphold architectural invariants **P-1 (Fail-Closed Default)** and **P-2 (Target Equivalence)**, any Tier 3 hardware port must strictly fulfill the "5 + 3 + 1" contract:
+The rest describes the **contract** — it does not change when the target list opens — and the code that
+can be reused right away.
 
-```mermaid
-flowchart TD
-    classDef prim fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
-    classDef duty fill:#fef2f2,stroke:#dc2626,color:#991b1b,stroke-width:1.5px;
-    classDef comp fill:#f0fdf4,stroke:#16a34a,color:#14532d,stroke-width:1.5px;
+## 2. The port contract
 
-    subgraph P5["5 Closed Primitives"]
-        direction TB
-        PR1["audio.in: PCM microphone stream capture"]:::prim
-        PR2["audio.out: Audio speaker / DAC playback"]:::prim
-        PR3["digital.out: Relay / GPIO actuator toggle"]:::prim
-        PR4["sensor.read: Environmental sensor query"]:::prim
-        PR5["display: LCD screen rendering"]:::prim
-    end
+A port is correct when it keeps all of the following. Every clause already has an automatic check on the
+three tier-1 targets.
 
-    subgraph P3["3 Safety Duties"]
-        direction TB
-        D1["1. Refuse-All: Default refusal of all peripheral commands"]:::duty
-        D2["2. Token Authorization: Mandatory token validation before GPIO transition"]:::duty
-        D3["3. Logical Naming: Pure logical names, no physical pin numbers in agent code"]:::duty
-    end
+| # | Contract | Meaning | Checked by |
+|:---:|:---|:---|:---|
+| 1 | **Five primitives, no more** | `audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display` (FR-HAL-01, KL-1). Tier 3 may be missing some, but may not add any | `board.v1`, `PRIMITIVES` |
+| 2 | **Pins by name** | Agent code uses logical names (`door_lock`); physical pin numbers live only in the HAL (KL-2) | the build cross-checks the names |
+| 3 | **No pin moves without a token** | A pin command checks the pin name, then calls the `authorize` function wired into it, and only then drives the pin. A HAL with no token ledger wired in refuses every command | `test_hal_sim.py`, `tests_linux/test_gpio_sim.py`, token boot self-test on the chip |
+| 4 | **A missing device is an error, not a pretence** | No `/dev/gpiochip*`, no sensor, cannot open the microphone ⇒ three-part error **before** any pin is held (Q-16); never return a default value | `preflight` of `LinuxHAL` |
+| 5 | **Every command leaves an event** | `actuator_command`, `actuator_aborted`, `sensor_read`, `display_frame`… with the exact name and fields (`simulation_coverage.md` §3) | golden comparator |
+| 6 | **A pending command can be cancelled** | Barge-in must cancel a pulse not yet delivered within ≤ 1 audio frame (RB-3) | `test_voice_fsm.py` |
+| 7 | **Declaration is data** | Board capability is a `board.toml` file (on chip: a `const` table in flash — RB-4), not code (KL-4) | `schemas/board.v1.json` |
+| 8 | **Same decisions** | Replaying the three normative traces gives the same verdicts and pin commands as golden | `neuroedge verify --targets …` |
 
-    subgraph P1["1 Compliance Test Suite"]
-        direction TB
-        C1["Shared differential test vectors (fixtures/compliance/)<br/>neuroedge verify must pass 100%"]:::comp
-    end
+## 3. Board declaration
 
-    P5 --> P3
-    P3 --> P1
-```
-
----
-
-## 2. Canonical C HAL Interface Specification (`ne_hal.h`)
-
-All embedded C99 ports must implement the standardized interface declared in `ne_hal.h`. Implementations must compile cleanly with zero steady-state heap allocations post-initialization:
-
-```c
-/* ne_hal.h — NeuroEdge Hardware Abstraction Layer Interface */
-#ifndef NE_HAL_H
-#define NE_HAL_H
-
-#include <stdint.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include "ne_token.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* 1. Initialize all peripheral hardware per board.toml configuration */
-ne_status ne_hal_init(void);
-
-/* 2. Control Digital Out Actuators (Relays, LEDs, Solenoid Locks)
- * MANDATORY: Must invoke ne_token_authorize() before toggling GPIO state.
- * If token is invalid -> HAL MUST REFUSE and return an error code.
- */
-ne_status ne_hal_digital_out(const char *pin_name, uint8_t level, const ne_token *token);
-
-/* 3. Read Environmental Sensors (Temperature, Humidity, Motion) */
-ne_status ne_hal_sensor_read(const char *sensor_name, double *out_value);
-
-/* 4. Capture Microphone Audio (16 kHz, 16-bit Mono PCM frames) */
-ne_status ne_hal_audio_in_read(int16_t *buffer, size_t samples, size_t *samples_read);
-
-/* 5. Stream Audio to Speaker (I2S DMA streaming) */
-ne_status ne_hal_audio_out_write(const int16_t *buffer, size_t samples, size_t *samples_written);
-
-/* 6. Flush Visual Framebuffer to Display (Optional) */
-ne_status ne_hal_display_flush(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, const void *color_buf);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* NE_HAL_H */
-```
-
-### 2.1. Reference Driver Stub: Token-Gated Pin Actuation
-
-```c
-/* Example implementation of ne_hal_digital_out on a custom OEM board */
-ne_status ne_hal_digital_out(const char *pin_name, uint8_t level, const ne_token *token) {
-    if (!pin_name || !token) {
-        return NE_ERR_ARGUMENT;
-    }
-
-    /* 1. Map logical pin name to physical board GPIO index */
-    int gpio_num = bsp_lookup_gpio(pin_name);
-    if (gpio_num < 0) {
-        return NE_ERR_STRUCTURE; /* Pin name not supported on this board */
-    }
-
-    /* 2. ENFORCE SAFETY CONTRACT: Authorize token against Ledger */
-    uint32_t now_ms = bsp_get_time_ms();
-    ne_token_reason auth_res = ne_token_authorize(&g_ledger, token, (uint32_t)gpio_num, now_ms);
-    
-    if (auth_res != NE_TOKEN_AUTHORIZED) {
-        /* Emit audit telemetry recording the refused actuation */
-        ne_telemetry_emit_rejected(pin_name, auth_res);
-        return NE_ERR_LIMITS; /* REFUSE ACTUATION - FAIL CLOSED */
-    }
-
-    /* 3. Token verified: Drive physical hardware line */
-    bsp_gpio_set_level(gpio_num, level);
-    ne_telemetry_emit_actuator_executed(pin_name, level);
-    
-    return NE_OK;
-}
-```
-
----
-
-## 3. Canonical `board.toml` Template for Custom Hardware
-
-OEM partners create a `board.toml` in their BSP repository root. All pins must receive meaningful logical names, never exposing physical hardware pin numbers:
+The profile of the reference board, as a template:
 
 ```toml
-# board.toml — OEM Board Manifest Template
 [board]
-id     = "acme-smart-hub-v2"
-name   = "ACME Smart Home Gateway v2.0"
-target = "acme_mcu"          # Custom OEM target identifier (RFC-0002)
-mcu    = "cortex-m7"         # Microcontroller family or SoC architecture
+id     = "esp32s3-box-3"
+name   = "Espressif ESP32-S3-BOX-3"
+target = "esp32s3"
+mcu    = "esp32s3"
 
-# Audio Input (Omit section if board lacks microphones)
 [capabilities.audio_in]
-channels       = 1
+channels       = 2
 sample_rate_hz = 16000
-aec            = true        # Hardware acoustic echo cancellation supported
-vad            = true        # Hardware voice activity energy detection supported
+aec            = true
+vad            = true
 
-# Audio Output
 [capabilities.audio_out]
 channels       = 1
 sample_rate_hz = 16000
 
-# Actuator Pins (Digital Out)
 [capabilities.digital_out]
-backend = "gpio"
-# CONSTRAINT DATA-01: Logical names only
-pins = [
-    "status_led_red",
-    "status_led_green",
-    "relay_pump",
-    "relay_heater",
-    "alarm_buzzer"
-]
+pins    = ["door_lock", "porch_light", "gate_relay"]
+backend = "esp_driver_gpio"
 
-# Onboard Sensors (Sensor Read)
 [capabilities.sensor_read]
-sensors = [
-    "water_temperature",
-    "water_pressure",
-    "ambient_temp",
-    "leak_detected"
-]
+sensors = ["temperature", "humidity", "door_contact", "motion"]
 
-# LCD Display (Optional)
 [capabilities.display]
-width  = 480
-height = 320
+width  = 320
+height = 240
 color  = "rgb565"
 ```
 
----
+Declare only what the HAL **can run and has measured**. For example `linux-rpi5` keeps `aec = false`
+until the echo cancellation measurement on the Pi passes (`simulation_coverage.md` §6.2): declaring
+`true` early is promising something not proven.
 
-## 4. 5-Step Porting Verification Checklist
+## 4. Host-side port (Python)
 
-For a HAL port to achieve certified Tier 3 status in the ecosystem, OEM partners must satisfy all five verification steps:
+A host HAL is a subclass of `HardwareAbstractionLayer`. `SimHAL` and `LinuxHAL` are two complete
+examples.
 
-```mermaid
-flowchart LR
-    classDef step fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,stroke-width:1.5px;
-    classDef done fill:#f0fdf4,stroke:#16a34a,color:#14532d,stroke-width:2px;
+```python
+from neuroedge.hal import HardwareAbstractionLayer
+from neuroedge.hal.board import BoardProfile
 
-    S1["1. Declare<br/>board.toml"]:::step --> S2["2. Implement Driver<br/>ne_hal + authorize"]:::step
-    S2 --> S3["3. Verify Parity<br/>neuroedge verify"]:::step
-    S3 --> S4["4. License Audit<br/>NOTICE &amp; Apache-2.0"]:::step
-    S4 --> S5["5. Automated CI<br/>Nightly Hardware Run"]:::step
-    S5 --> PUB([Publish Tier 3 Port]):::done
+class MyBoardHAL(HardwareAbstractionLayer):
+    def __init__(self, board: BoardProfile, *, events, authorize, **options) -> None:
+        super().__init__(target="linux", board=board, authorize=authorize)
+        self.events = events
+        # open nothing yet: devices are checked in preflight(), before any line is held
+
+    def preflight(self, sensors=(), display=False, audio=(), where="") -> None:
+        ...  # open or probe every device the agent needs; raise BoardCapabilityError on the first gap
+
+    def digital_out(self, pin, operation, duration_ms=0, signature="", called_from="<unknown>"):
+        super().digital_out(pin, operation, duration_ms, signature, called_from)  # name check, authorize, record
+        ...  # drive the physical line only after the base call returned
+        self.events.emit("actuator_command", {"pin": pin, "operation": operation, "duration_ms": duration_ms})
+
+    def sensor_read(self, sensor, called_from="<unknown>", use=None):
+        ...  # read the device every time; raise, never return a default reading
+
+    def close(self) -> None:
+        ...  # every line back to inactive and released, on every exit path
 ```
 
-| Step | Milestone | Acceptance Criteria |
-| :---: | :--- | :--- |
-| **1** | Board Capability Declaration | `neuroedge board show` parses manifest; `neuroedge build` compiles firmware for sample `home-voice` agent without errors. |
-| **2** | Safety Boundary Audit | Internal penetration testing: Confirms zero execution paths exist to toggle GPIO pins without passing through `ne_token_authorize()`. |
-| **3** | Compliance Suite Execution | `neuroedge verify --target acme_mcu` achieves **100% exact verdict parity** across all 3 golden traces (`happy-path`, `unverified_attempt`, `network_offline`). |
-| **4** | Intellectual Property Compliance | Includes a `NOTICE` file declaring authorship; HAL glue code is released under **Apache-2.0** (avoiding viral copyleft licenses). |
-| **5** | Continuous Nightly Testing | Automated test suite executes nightly on physical hardware rigs; test logs and pass rates are made publicly accessible to developers. |
+Rules when writing:
+- **Call `super().digital_out` first** before driving the pin: it checks the pin name (a typo costs no
+  token) and calls `authorize`. Do not check the token yourself.
+- **Do not import `engine`, `actions`, `models`** from the HAL: `hal` is a leaf of the dependency graph
+  (`test_architecture_layers.py::test_the_hal_is_a_leaf`).
+- **Third-party libraries are imported late** in the function that needs them, with a three-part error
+  naming the extra to install (example: `hal/linux.py::_import_gpiod`). Copyleft libraries may only be
+  an optional extra (Q-11).
+- **Release every resource on every exit path**, including SIGTERM and SIGHUP.
 
----
+## 5. Chip-side port (C)
 
-## 5. Intellectual Property & Governance (Asset Governance)
+The firmware core is already **plain C99, with no ESP-IDF dependency**, so it is reused as is on another
+chip:
 
-- **Driver Ownership:** OEM partners retain 100% proprietary copyright ownership of their BSP code and `board.toml` manifests. Drivers may be maintained in public or private partner repositories.
-- **Linkage Architecture:** The NeuroEdge runtime interfaces with OEM hardware drivers exclusively across public C headers (`ne_hal.h`, `ne_token.h`). This clean boundary protects partner hardware trade secrets while maintaining inviolable fail-closed safety guarantees.
+| Code | Dependency | Reuse |
+|:---|:---|:---|
+| `components/ne_gate/` (walker `NETR`, token ledger) | none | verbatim |
+| `components/ne_trace/` (`NE1` line format) | `ne_gate` | verbatim |
+| `components/ne_agent/` (generated per agent) | `ne_gate`, `ne_trace` | regenerated by `neuroedge build` |
+| `main/gate_selftest.c`, `main/trace_vectors.c` | no ESP-IDF | verbatim |
+| `components/ne_ota/src/ne_ota_policy.c` | none | verbatim; `ne_ota.c` is the ESP-IDF part to rewrite |
+| `main/main.c`, `main/memory_probe.c` | ESP-IDF | rewritten for the new platform |
+
+A new platform need only provide **four connection points** — that is the whole surface the C core
+demands:
+
+```c
+/* 1. entropy for token nonces — the shape of esp_fill_random */
+typedef void (*ne_random_fn)(void *buf, size_t len);
+
+/* 2 and 3. where trace lines go, and the device clock in milliseconds */
+typedef struct {
+    void (*emit)(void *ctx, const char *line);   /* one line to the UART, no newline */
+    uint32_t (*now_ms)(void *ctx);
+    void *ctx;
+    char *buf;                                   /* at least NE_TRACE_LINE_MAX + 1 bytes */
+    size_t cap;
+    uint32_t t0_ms;
+    uint32_t lines;
+    uint32_t dropped;
+} ne_trace_sink;
+
+/* 4. run the boot self-test against the linked agent before anything else */
+int neuroedge_gate_selftest(const ne_agent *agent, ne_random_fn fill_random, uint32_t boot_id,
+                            uint32_t now_ms, char *line, size_t cap, ne_trace_sink *sink);
+```
+
+The boot sequence must stay as on `esp32s3` ([`04`](04-component-device-c4l3.md) §4): boot self-test
+**before** everything else, and on failure it stops — no runtime gate, no action, no network.
+
+**Not there yet:** a C interface for driving pins, reading sensors, audio (the on-chip HAL is
+TSK-S4-01). When it exists, it must call `ne_token_authorize` before driving a pin, exactly as the host
+HAL calls `authorize`. The mandatory memory constraints for it: RB-1…RB-4
+(`docs/spec/hal_mcu_review.md` §2) — no allocation on the audio path, measured static buffers, command
+cancellation within ≤ 1 frame, a `const` capability table.
+
+## 6. Proving the port correct
+
+| Step | Command | Passes when |
+|:---:|:---|:---|
+| 1 | `neuroedge board show <id>` and `neuroedge build --target <t> --board <id>` with each sample agent | the agent that fits the board builds; an agent demanding something the board lacks is rejected with `NE3001` |
+| 2 | C tests of the core on host: `make -C targets/esp32s3/components/ne_gate` and `make … check-static` | every test passes under ASan/UBSan; no `.data`/`.bss`; per-function stack ≤ 512 bytes |
+| 3 | Firmware boot | the line `NE_SELFTEST PASS walker=<n> token=<n>` at column 0 on the UART |
+| 4 | `neuroedge record --target <t> --port <nguồn>` then `neuroedge trace validate` | every `NE1` session becomes a valid `trace.v1` |
+| 5 | `neuroedge verify --targets <t> --port <nguồn>` (chip) or `neuroedge verify --targets sim,<t>` (host) | the three normative traces give the same decisions; a difference ⇒ `NE4002` |
+| 6 | Tool-call and voice corpus on the new HAL | matches `expected_results.yaml` |
+
+The tool that packages the vector suite to run **outside** the repo, and the `board check` command, are
+I13 work (`TSK-P1-01`, `TSK-P1-05`).
+
+## 7. Assets and licence of a port
+
+- An OEM partner's HAL driver is **the partner's own**; it only has to keep the contract in §2.
+- Every dependency, model and font shipped along must be on the allowlist of Q-11 and recorded in
+  `NOTICE`. Nothing non-commercial may ship along (Q-45).
+- The standards — `schemas/`, `docs/spec/`, `fixtures/compliance/` — are Apache-2.0 so that anyone can
+  implement them; NeuroEdge code is PolyForm Noncommercial (`LICENSING.md`).

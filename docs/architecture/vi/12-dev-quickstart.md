@@ -1,201 +1,104 @@
-# 12 · Hướng dẫn Khởi động Nhanh trong Ngày đầu (Day-1 Quickstart)
+# 12 · Ngày đầu của kỹ sư mới
 
-> **Trạng thái:** `done` · Chuẩn hóa quy trình làm quen dành cho kỹ sư mới (Onboarding Guide)  
-> **Mục tiêu:** Giúp lập trình viên mới (Persona U1 & U2) từ máy tính trắng thiết lập xong môi trường, chạy thành công một Agent có rào chắn an toàn (Gate) trên máy mô phỏng (`sim`) và kiểm tra vết ghi trong **dưới 10 phút**.  
-> **Cam kết:** Không cần micro, không cần tài khoản Cloud API, không cần phần cứng nhúng (ADR Q-15).
+> **Mục tiêu của ngày đầu:** chạy được hệ thống trên máy mình, lần theo một lệnh từ bàn phím tới chân
+> phần cứng qua đúng các tệp mã, và làm một thay đổi an toàn có test. Cú pháp đầy đủ của mọi lệnh ở
+> `CHANGELOG.md` §2.3; bản đồ kho ở `CONTRIBUTING.md` §6; hướng dẫn người dùng ở
+> [`docs/user/huong-dan.md`](../../user/huong-dan.md).
 
----
+## Giờ 1 — chạy
 
-## 1. Hành trình 10 Phút Đầu Tiên (Từ Số Không đến Agent Có Rào Chắn)
-
-```mermaid
-flowchart LR
-    S1["1. Cài đặt<br/>uv pip install"] --> S2["2. Khởi tạo<br/>neuroedge new"]
-    S2 --> S3["3. Chạy Thử<br/>neuroedge run -c"]
-    S3 --> S4["4. Kiểm Thử<br/>neuroedge test"]
-    S4 --> S5["5. Soi Vết Ghi<br/>neuroedge trace view"]
-```
-
-### Bước 1: Cài đặt công cụ NeuroEdge CLI
-
-Yêu cầu môi trường: Python $\ge 3.11$ trên macOS hoặc Linux (x86_64 / ARM64).
+Cần Python 3.11+. Không cần mạng, khoá API hay phần cứng.
 
 ```bash
-# Tạo môi trường ảo và cài đặt gói lõi
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e "python/"
-
-# Kiểm tra cài đặt thành công
-neuroedge --version
-# Output mong đợi: neuroedge-cli v0.1.0 (target: sim, linux, esp32s3)
+cd python
+python3 -m venv .venv && .venv/bin/python -m pip install -e '.[dev]'
+.venv/bin/python -m pytest -q          # kỳ vọng: 0 failed, 0 skipped
+export PATH="$PWD/.venv/bin:$PATH"; cd ..
 ```
 
----
-
-### Bước 2: Tạo dự án Agent mới từ mẫu chuẩn
+Rồi, từ gốc kho:
 
 ```bash
-neuroedge new smart-home && cd smart-home
+neuroedge run -c "mở cửa phòng 101"     # ✓ ALLOW unlock_door@1.2.0, door_lock PULSED 30s
+neuroedge run -c "mở cửa phòng 202"     # ✗ BLOCK room_matches → lễ tân
+neuroedge gate explain gates/unlock_door@1.2.0.yaml
+neuroedge verify                        # mọi gate phân giải, mọi vết ghi chuẩn mực phát lại đúng
 ```
 
-Cấu trúc thư mục được tự động sinh ra:
+Ba kết quả trên là cả sản phẩm thu nhỏ: một gate kế thừa ba cấp cho `ALLOW` khi đúng phòng, chặn và
+chuyển lễ tân khi sai phòng; một người duyệt đọc được gate bằng lời; và một lệnh chứng minh mọi quyết
+định đã ghi vẫn ra đúng như cũ.
 
-```text
-smart-home/
-├── agent.toml            # Khai báo cấu hình, tài nguyên cần dùng và gates
-├── board.toml            # Khai báo phần cứng mô phỏng (sim-default)
-├── actions/
-│   └── home.py           # Mã xử lý hành động c.do() và hội thoại c.say()
-├── gates/
-│   └── light_on@1.0.0.yaml # Cây quyết định an toàn kiểm soát bật đèn
-└── tests/
-    └── test_home.py      # Kịch bản kiểm thử Action CI tự động
-```
+## Giờ 2 — lần theo một lệnh qua mã
 
----
+Mở các tệp theo đúng thứ tự một lượt gõ đi qua ([`06`](06-runtime-flows.md) §1):
 
-### Bước 3: Chạy thử tương tác trên Simulator (`sim`)
+| # | Tệp · hàm | Để thấy |
+|:---:|:---|:---|
+| 1 | `python/neuroedge/cli/main.py` · `run` | CLI nạp phiên, không tự quyết gì |
+| 2 | `python/neuroedge/sim/session.py` · `SimSession.load` | nơi lắp ráp: build, engine, sổ token, HAL, model ([`03`](03-component-host-c4l3.md) §5) |
+| 3 | `python/neuroedge/models/grammar.py` · `CommandGrammar.recognize` | câu gõ thành ý định và khe |
+| 4 | `python/neuroedge/actions/tools.py` · `dispatch` | tool call, kiểm schema, chèn `call_source` |
+| 5 | `python/neuroedge/actions/conversation.py` · `Conversation._do` | gate → token → thân hàm → đóng token |
+| 6 | `python/neuroedge/engine/gate.py` · `ActionContractEngine.evaluate` | gom dữ kiện trong ngân sách, duyệt cây, `on_block` |
+| 7 | `python/neuroedge/engine/decision_tree.py` · `walk` | quyết định thuần: lỗi đầu tiên thắng |
+| 8 | `python/neuroedge/actions/token.py` · `TokenLedger.authorize` | sáu phép kiểm trước khi chân động |
+| 9 | `python/neuroedge/hal/sim.py` · `SimHAL.digital_out` | lệnh chân và sự kiện `actuator_command` |
+| 10 | `fixtures/agents/villa-concierge/` | agent đã chạy: `agent.toml`, `commands.toml`, `actions/`, `gates/` |
 
-Lệnh `neuroedge run` mặc định khởi chạy môi trường mô phỏng bằng bàn phím (Typed-text), kích hoạt ngữ pháp lệnh cục bộ System 1:
+Chạy lại lệnh `mở cửa phòng 101` với `--trace-out /tmp/t.json`, rồi `neuroedge trace show /tmp/t.json`:
+mỗi sự kiện trong vết ghi ứng với một bước trong bảng trên.
+
+## Giờ 3 — một thay đổi an toàn có test
+
+Bài tập: siết một gate và chứng minh việc siết đó.
 
 ```bash
-# 1. Thử lệnh an toàn (Thỏa mãn điều kiện an toàn -> ALLOW)
-neuroedge run -c "bật đèn phòng khách"
+neuroedge new nhamay --template factory-monitor && cd nhamay
+neuroedge test                                    # bộ test an toàn của agent: đạt
+neuroedge record -c "tắt báo động"                # ✗ BLOCK: phòng máy đang nóng
 ```
 
-**Đầu ra màn hình Terminal (Trường hợp ALLOW):**
+1. Mở `gates/alarm_off@1.0.0.yaml`. Đổi `heat_level: { lte: normal }` thành `{ lte: low }` (chỉ cho tắt
+   còi khi phòng mát). Đây là **siết** — hợp lệ. Chạy `neuroedge test`: test
+   `test_the_alarm_stays_on_until_the_room_cools` đỏ, vì nó mong tắt được còi ở dải `normal`. Test đang làm
+   đúng việc: một thay đổi hành vi an toàn phải đi kèm việc sửa test **có chủ đích**. Sửa kỳ vọng của test
+   cho khớp chính sách mới.
+2. Thử **nới** ngược lại thành `{ lte: critical }` rồi `neuroedge replay traces/sess_….json`: phát lại
+   báo `SAFETY REGRESSION` và thoát mã 1. Đây là cách CI bắt một thay đổi làm yếu an toàn.
+3. Viết một test trong `tests/` khẳng định `tắt báo động` bị chặn ở 45 °C (xem `neuroedge.testing`:
+   `assert_gate_blocked`, `assert_never_pulsed`), rồi `neuroedge test`.
 
-```text
-[neuroedge:sim] Booting session sess_8f21ab...
-[routing] System 1 (local_grammar) matched: light_on(room="living")
-[gate:light_on] Evaluating facts: {room_empty: false} -> ALLOW (reason: NONE, p95: 1.2ms)
-[ledger] Minted token nonce=4a8f... TTL=360ms pins=[porch_light]
-[hal:sim] digital_out(pin="porch_light", level=HIGH) -> PIN ACTIVATED
-[speech] c.say("Đã bật đèn phòng khách.")
-[session] Closed with status: COMPLETED in 48ms (Turn Latency: S1=48ms)
-```
+## Luật cần biết trước lần PR đầu
 
-Bây giờ thử một trường hợp vi phạm chính sách an toàn:
+| Luật | Vì sao | Nguồn |
+|:---|:---|:---|
+| Một số thay đổi **bắt buộc có RFC**: `schemas/`, ngữ nghĩa phân giải, ba vết ghi chuẩn mực, gate trong `digests.lock`, bố cục `NETR` | đó là hợp đồng người khác hiện thực | `CONTRIBUTING.md` §3 |
+| Lược đồ hợp lệ **không** có nghĩa gate an toàn; cổng là `neuroedge gate lint` | nguyên tắc kế thừa là mệnh đề về hai tài liệu | bất biến 1 |
+| Không test nào được skip; CI đỏ nếu có | skip là che lỗi | `CONTRIBUTING.md` §5 |
+| Mọi corpus khép kín hai chiều | mỗi tệp một đáp án, mỗi đáp án một tệp | `CONTRIBUTING.md` §3 |
+| Mỗi sự thật một nơi; nơi khác dẫn mã | tài liệu không tự mâu thuẫn | `CONTRIBUTING.md` §8.1 |
+| Cạnh phụ thuộc mới giữa các gói phải được khai | kiến trúc không trôi | `python/tests/test_architecture_layers.py` |
+| `ruff check .` và `ruff format --check .` sạch | CI chặn | `python/` |
+| Đụng `paths.py`, `hatch_build.py`, `README.md` hay đường dẫn tới `schemas/`, `boards/`, `gates/` ⇒ chạy `scripts/wheel_smoke.sh` | bản cài từ wheel khác bản editable | `CLAUDE.md` |
+| Xong một task: tiến độ ở roadmap, một mục `CHANGELOG.md` `[Chưa phát hành]` | trong cùng PR với mã | `CONTRIBUTING.md` §8 |
 
-```bash
-# Giả lập cảm biến phát hiện có người trong phòng nhưng ra lệnh tắt đèn khi chưa được phép
-neuroedge run -c "tắt đèn phòng ngủ" --sensor room_empty=false
-```
+## Theo mảng
 
-**Đầu ra màn hình Terminal (Trường hợp BLOCK):**
+| Bạn làm | Bắt đầu từ | Chạy được cục bộ bằng |
+|:---|:---|:---|
+| Engine, gate | [`05`](05-code-gate-hal-c4l4.md), `python/tests/test_gate_engine.py` | pytest |
+| Model, thoại | [`06`](06-runtime-flows.md) §5–§6, `docs/spec/voice_fsm.md` | pytest; nhà cung cấp giả `neuroedge.perception.providers.fake` |
+| `linux` | [`10`](10-target-equivalence.md), `hal/linux.py` | máy Linux kernel ≥ 5.19: `bash scripts/setup_gpio_sim.sh`, rồi `tests_linux/` |
+| Firmware | [`04`](04-component-device-c4l3.md) | Docker `espressif/idf:v5.4`: `scripts/qemu_boot.sh`, `scripts/qemu_ota.sh`, `scripts/run_ui_golden.sh` |
+| Tài liệu kiến trúc | [`README.md`](../README.md) | `python3 scripts/gen_architecture_diagrams.py --check`, `python3 scripts/check_architecture_mermaid.py` |
 
-```text
-[neuroedge:sim] Booting session sess_9c32de...
-[routing] System 1 (local_grammar) matched: light_off(room="bedroom")
-[gate:light_off] Evaluating facts: {room_empty: false} -> BLOCK (reason: CONDITION_NOT_MET)
-[gate:light_off] on_block triggered: deny
-[hal:sim] REFUSED: Zero pins toggled (Fail-Closed default enforced)
-[speech] c.say("Không thể tắt đèn khi phòng vẫn đang có người.")
-[session] Closed with status: BLOCKED in 32ms
-```
+## Lỗi hay gặp ngày đầu
 
----
-
-### Bước 4: Chạy kiểm thử tự động (Action CI)
-
-```bash
-neuroedge test
-```
-
-```text
-============================= test session starts ==============================
-tests/test_home.py::test_light_on_allow PASSED                            [ 50%]
-tests/test_home.py::test_light_off_blocked_when_occupied PASSED          [100%]
-
---------------------------------------------------------------------------------
-Verification: Golden trace matching PASS (2/2 traces match bitwise)
-Memory probe: Peak simulation heap = 1.4 MB (Safe under 120 KB SRAM limit)
-============================== 2 passed in 0.42s ===============================
-```
-
----
-
-### Bước 5: Xem và phân tích vết ghi kiểm toán (Trace View)
-
-```bash
-neuroedge trace view --last
-```
-
-Hiển thị toàn bộ tiến trình phân tích sự thật, băm mật mã của Gate và chuỗi sự kiện phần cứng theo chuẩn RFC 8785:
-
-```text
-Session ID    : sess_8f21ab
-Target        : sim
-Board         : sim-default (Logical pins: porch_light, door_lock)
-Verdict Chain : ALLOW (Gate: light_on@1.0.0, SHA256: 2c20dc42...)
-Actuation     : digital_out(porch_light, HIGH) at offset +42ms
-Total Turn    : 48ms (System 1: 100%, System 2: 0%)
-Audit Trace   : traces/sess_8f21ab.json [VALID]
-```
-
----
-
-## 2. Bản đồ Khái niệm Tối thiểu (Mental Model Map)
-
-Để không bị bỡ ngỡ giữa các khái niệm kiến trúc, nhà phát triển chỉ cần ghi nhớ 6 thành phần cốt lõi:
-
-```mermaid
-flowchart TD
-    subgraph Config["1. Cấu Hình Khai Báo"]
-        AT["agent.toml<br/>(Ứng dụng cần gì)"]
-        BT["board.toml<br/>(Bo mạch có gì)"]
-        GT["*.gate.yaml<br/>(Luật an toàn)"]
-    end
-
-    subgraph Runtime["2. Thực Thi & Phán Quyết"]
-        DO["c.do(action)<br/>(Bắt buộc qua Gate)"]
-        SAY["c.say(text)<br/>(Hội thoại tự do)"]
-        LEDGER["TokenLedger<br/>(Cấp quyền lái chân)"]
-    end
-
-    subgraph Audit["3. Kiểm Thử & Kiểm Toán"]
-        TR["traces/*.json<br/>(Vết ghi sự thật)"]
-        VER["neuroedge verify<br/>(Thẩm định tương đương)"]
-    end
-
-    AT --> DO
-    BT --> LEDGER
-    GT --> DO
-    DO --> LEDGER
-    DO --> TR
-    SAY --> TR
-    TR --> VER
-```
-
-| Khái niệm | Ý nghĩa cốt lõi trong một câu | Tài liệu đọc sâu |
-| :--- | :--- | :--- |
-| `agent.toml` | Khai báo toàn bộ tài nguyên, danh sách Gate và cấu hình nguồn sự thật của Agent. | [07-data-contracts.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/vi/07-data-contracts.md) |
-| `*.gate.yaml` | Hợp đồng an toàn của một hành động: quy định tiêu chí `evaluate`, điều kiện `allow_when` và xử lý `on_block`. | [05-code-gate-hal-c4l4.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/vi/05-code-gate-hal-c4l4.md) |
-| `board.toml` | Khai báo 5 nguyên thủy của bo mạch phần cứng bằng tên logic (không số chân vật lý). | [10-target-equivalence.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/vi/10-target-equivalence.md) |
-| `c.do()` | Hàm thực thi hành động vật lý: **Luôn luôn bị chặn bởi Gate**, chỉ chạy khi có Token hợp lệ. | [03-component-host-c4l3.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/vi/03-component-host-c4l3.md) |
-| `c.say()` | Hàm phát âm thanh hoặc thông điệp hội thoại: **Không qua Gate**, có thể bị ngắt bởi barge-in. | [06-runtime-flows.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/vi/06-runtime-flows.md) |
-| `traces/*.json` | Bản ghi vết kiểm toán toàn diện của phiên chạy; replay sẽ tính lại toàn bộ phán quyết từ đầu. | [07-data-contracts.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/vi/07-data-contracts.md) |
-| `neuroedge verify`| Công cụ kiểm thử vi sai: bảo đảm cùng vết ghi sẽ sinh ra 100% cùng chuỗi phán quyết trên Sim và Chip thật. | [10-target-equivalence.md](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/architecture/vi/10-target-equivalence.md) |
-
----
-
-## 3. Cẩm nang Chẩn đoán & Xử lý Mã lỗi (NE Diagnostic Codes)
-
-Mọi thông báo lỗi trong hệ thống NeuroEdge đều tuân thủ nguyên tắc chuẩn tắc **3 phần tường minh**: **Ở đâu (`where`) · Vì sao (`why`) · Cách khắc phục (`how`)** (FR-DX-04). Dưới đây là bảng cứu nguy nhanh khi gặp sự cố:
-
-| Mã Lỗi | Tên Lỗi | Xảy ra khi nào? | Nguyên nhân cốt lõi | Cách xử lý tức thì |
-| :---: | :--- | :--- | :--- | :--- |
-| **NE1001** | `TokenContractError` | Gọi hàm HAL trực tiếp mà không có Token hợp lệ hoặc truyền sai Token của hành động khác. | Lập trình viên vi phạm hợp đồng an toàn: cố tình lái chân mà không gọi qua `c.do()`. | Sửa lại mã `@action`: luôn thực thi qua `c.do(gate="...")` để hệ thống cấp Token tự động. |
-| **NE1002** | `TokenReplayError` | Cố tình tái sử dụng một Token đã dùng hoặc Token đã quá hạn thời gian sống (TTL). | Tấn công Replay hoặc hành động thực thi quá chậm vượt quá $p95 \times 3$. | Không lưu trữ Token vào biến toàn cục; mỗi lần kích hoạt vật lý phải là một lệnh `c.do()` mới. |
-| **NE2001** | `CapabilityMismatchError` | Khi chạy lệnh `neuroedge build`. | `agent.toml` đòi hỏi ngoại vi (ví dụ: `pins = ["door_lock"]`) nhưng `board.toml` không cung cấp. | Kiểm tra lại `board.toml` xem đã khai báo chân đó chưa, hoặc giảm yêu cầu `[requires]` trong `agent.toml`. |
-| **NE2002** | `GateSchemaError` | Khi chạy `neuroedge gate lint`. | Tệp Gate YAML sai cú pháp, thiếu trường bắt buộc, hoặc vi phạm kiểu dữ liệu chuẩn `gate.v1`. | Đọc kỹ thông báo lỗi trỏ tới dòng vi phạm trong file YAML; sửa theo chuẩn trong `schemas/gate.v1.json`. |
-| **NE2003** | `GateInheritanceError` | Kế thừa Gate (`extends`). | Gate con cố tình định nghĩa lại tiêu chí đã có của cha (vi phạm P-1) hoặc nới lỏng ngân sách $p95$. | Gate con chỉ được phép siết chặt điều kiện (`allow_when`), tuyệt đối không khai báo đè tiêu chí cũ. |
-| **NE2004** | `ConfirmationExpiredError` | Khi Gate chặn với `on_block: ask`. | Người dùng không bấm nút xác nhận trên thiết bị trong vòng 10 giây. | Bấm nút xác nhận vật lý kịp thời hoặc kéo dài thời gian chờ trong cấu hình kịch bản. |
-| **NE3001** | `UnsupportedTargetError` | Chạy lệnh `neuroedge build --target`. | Chỉ định target chưa được hỗ trợ trong danh sách `supported` của agent. | Kiểm tra lại danh sách target được hỗ trợ (`sim`, `linux`, `esp32s3`). |
-| **NE3002** | `LogicalPinConflictError` | Biên dịch firmware cho bo mạch. | Hai tên logic khác nhau bị gán trùng vào cùng một số chân GPIO vật lý trong `board.toml`. | Sửa lại bảng ánh xạ GPIO trong cấu hình bo mạch để mỗi tên logic sở hữu một chân riêng biệt. |
-| **NE4001** | `TraceValidationError` | Chạy `neuroedge trace validate`. | Tệp vết ghi `trace.json` bị sửa đổi thủ công, sai cấu trúc JSON hoặc mâu thuẫn thời gian offset. | Chạy lại lệnh ghi vết `neuroedge record` để sinh ra vết ghi hợp lệ mới từ đầu. |
-| **NE4002** | `SafetyRegressionError` | Chạy `neuroedge verify`. | Có sự trôi lệch phán quyết an toàn giữa mã nguồn mới và vết chuẩn Golden (ví dụ: trước `BLOCK` nay thành `ALLOW`). | **CẢNH BÁO NGUY HIỂM:** Rà soát lại thay đổi mã nguồn logic gần nhất; không được phép nới lỏng điều kiện an toàn. |
-| **NE4004** | `EmptyVerificationError` | Chạy `neuroedge verify`. | Thư mục chứa vết ghi kiểm toán rỗng hoặc đường dẫn truyền vào không chứa artifact nào. | Cung cấp đúng đường dẫn tới thư mục vết ghi kiểm toán chứa các tệp `.json`. |
-
-> **Quy tắc Thoát mã 2 (Task In-Progress):**  
-> Nếu bạn chạy một lệnh hoặc target phần cứng đang trong lộ trình phát triển (chưa hoàn thiện), công cụ CLI sẽ thoát với **Exit Code 2** và thông báo rõ mã Task Jira/GitHub (ví dụ: `TSK-S4-01`) chịu trách nhiệm xây dựng tính năng đó. Đây là hành vi thiết kế có chủ đích, không phải lỗi hệ thống của bạn!
+| Thấy | Nghĩa | Làm |
+|:---|:---|:---|
+| `ModuleNotFoundError` khi chạy test | venv cũ thiếu phụ thuộc `dev` mới | `pip install -e '.[dev]'` lại |
+| `NE3003 build failed … NE3001` | agent cần thứ bo mạch không có | đọc từng dòng vấn đề; đổi agent hoặc chọn bo mạch khác |
+| `NE1001` khi test gọi thẳng một hàm `@action` | chỉ `c.do()` được chạy action | gọi qua `Conversation.do` hoặc `dispatch` |
+| `NE4002 SAFETY REGRESSION` | phát lại lệch golden | thay đổi của bạn đổi một quyết định; nếu cố ý thì cần duyệt và có thể cần RFC |
+| Mã thoát `2` | lệnh hoặc target chưa được hiện thực | đúng hành vi; không phải lỗi của bạn (bất biến 10) |

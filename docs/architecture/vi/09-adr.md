@@ -1,158 +1,173 @@
-# 09 · Chỉ mục Quyết định Kiến trúc (ADR) & RFCs
+# 09 · Quyết định kiến trúc (ADR)
 
-> **Trạng thái:** `done` · Chuẩn hóa cây danh mục quyết định kỹ thuật  
-> **Nguồn quyết định gốc:** PRD §15 (Sổ quyết định duy nhất Q-1..Q-45), Thư mục RFCs: `docs/rfcs/`  
-> **Mục tiêu:** Ánh xạ mọi quyết định kiến trúc chiến lược và đặc tả RFC vào đúng các chương triển khai tương ứng trong bộ tài liệu kiến trúc (từ `00` đến `13`).
+> **Phạm vi:** các quyết định định hình kiến trúc, mỗi quyết định ở dạng ADR: bối cảnh → quyết định →
+> hệ quả → nơi cưỡng chế. **Nguồn:** sổ quyết định duy nhất là PRD §15 (mã `Q-N`); thay đổi hợp đồng
+> đóng băng là RFC (`docs/rfc/`). Trang này **không** thay hai nguồn đó: nó chỉ ra mỗi quyết định trông
+> như thế nào trong kiến trúc, và mã nào giữ nó.
 
----
+Định danh ADR chính là mã `Q-N` hoặc `RFC-NNNN`, để không có hai hệ đánh số. Trạng thái đầy đủ của 46
+quyết định ở PRD §15; dưới đây là những quyết định có hệ quả kiến trúc.
 
-## 1. Bản đồ tổng thể Điều hướng Quyết định (ADR & RFC Map)
+## 1. Thực thi và an toàn
 
-```mermaid
-flowchart TD
-    subgraph DecisionSources["Nguồn Quyết Định Chuẩn Mực"]
-        Q["Sổ Quyết Định PRD §15<br/>(Q-1 .. Q-45)"]
-        RFC["Bộ Đặc Tả Kỹ Thuật RFC<br/>(RFC-0001 .. RFC-0006)"]
-    end
+### Q-24 · Mọi hành động là một tool call qua một đường duy nhất
+- **Bối cảnh.** Hành động có thể đến từ ngữ pháp cục bộ, LLM, agent khác. Nhiều đường vào là nhiều chỗ
+  để quên gate.
+- **Quyết định.** Mỗi `@action` là một công cụ có schema sinh từ chữ ký hàm. Mọi nguồn gửi cùng một
+  `ToolCall` qua `dispatch()` → `c.do()` → gate → token; dispatcher chèn `call_source`.
+- **Hệ quả.** Một điểm cưỡng chế duy nhất; gate có thể phân biệt nguồn gọi; MCP là một adapter mỏng.
+- **Cưỡng chế.** `actions/tools.py::dispatch`, `mcp_server.py`; `docs/spec/tool_calling.md`; corpus
+  `fixtures/tool_calls/`.
 
-    subgraph ArchitectureClusters["Phân Cụm Kiến Trúc Hạ Cánh"]
-        C1["Phần Cứng & Mục Tiêu Thực Thi<br/>(Q-1..3, Q-13, Q-16, Q-21..22, RFC-0002)"]
-        C2["Thoại & Hệ Thống Nhận Thức Kép<br/>(Q-4..7, Q-14..15, Q-20)"]
-        C3["Xương Sống Gate & Bố Cục NETR<br/>(Q-8..9, Q-17..18, Q-23..26, RFC-0001/3/4/5/6)"]
-        C4["Đám Mây, AI Provider & MCP<br/>(Q-10, Q-12, Q-27, Q-28)"]
-        C5["Quản Trị, Bản Quyền & Sản Phẩm<br/>(Q-11, Q-19, Q-29..31, Q-45)"]
-        C6["Robot & Tiến Hóa Đa Nút I0–I18<br/>(Q-32..44)"]
-    end
+### Q-9 · Không CEL trên vi điều khiển (phương án A)
+- **Bối cảnh.** Một bộ lượng giá biểu thức trên chip là thêm một hiện thực phải giữ đồng bộ, đúng ở
+  tầng an toàn.
+- **Quyết định.** `neuroedge build` biên dịch gate thành cây quyết định tất định; firmware chỉ duyệt cây.
+  `allow_when` hôm nay là ánh xạ toán tử; CEL là front-end tuỳ chọn về sau (TSK-S2-06, hoãn).
+- **Hệ quả.** Ngữ nghĩa gate có một nguồn (engine Python); chip nhỏ và tất định; mọi toán tử mới phải
+  biên dịch được xuống cùng cây.
+- **Cưỡng chế.** `engine/decision_tree.py`; resolver từ chối `allow_when` dạng chuỗi.
 
-    subgraph DocChapters["Bộ Tài Liệu Kiến Trúc (00..13)"]
-        D00["00-overview.md & 01-context-c4l1.md"]
-        D02["02-container-c4l2.md & 03-component-host-c4l3.md"]
-        D04["04-component-device-c4l3.md & 05-code-gate-hal-c4l4.md"]
-        D06["06-runtime-flows.md & 07-data-contracts.md"]
-        D08["08-nfr.md & 10-target-equivalence.md"]
-        D11["11-hal-port-guide.md .. 13-evolution-i0-i18.md"]
-    end
+### Q-23, RFC-0003 · Cây trên thiết bị là bố cục nhị phân cố định `NETR` v1
+- **Bối cảnh.** Parser JSON trên MCU tốn flash, RAM và là bề mặt tấn công.
+- **Quyết định.** Bố cục nhị phân little-endian, không con trỏ, có magic, phiên bản và CRC, link dưới
+  dạng mảng `const` trong flash; `decision_tree.v1.json` chỉ là định dạng nội bộ của host.
+- **Hệ quả.** Walker đọc tại chỗ, không cấp phát; đổi bố cục là việc có RFC và tăng `layout_version`.
+- **Cưỡng chế.** `engine/binary_tree.py` ↔ `components/ne_gate/`; `test_c_walker.py`.
 
-    Q --> C1 & C2 & C3 & C4 & C5 & C6
-    RFC --> C1 & C3
-    C1 --> D04 & D08 & D11
-    C2 --> D02 & D06
-    C3 --> D04 & D06
-    C4 --> D02 & D06
-    C5 --> D00 & D08
-    C6 --> D00 & D11
-```
+### Q-18, RFC-0004 · Gate con không được nới `budget` và `on_block`
+- **Quyết định.** `p95` con ≤ cha; chuỗi đã `closed` không mở lại; con không thêm `degrade` hay đổi
+  `fallback_action`.
+- **Hệ quả.** Kế thừa là quan hệ chỉ-siết trên **mọi** trường có tác động an toàn, không chỉ `allow_when`.
+- **Cưỡng chế.** `engine/gate_resolver.py`; corpus `fixtures/gates/invalid/`.
 
----
+### Q-25, RFC-0005 · Giới hạn tham số nằm trong gate
+- **Quyết định.** Khoảng, tập, độ dài của tham số khai ở gate (không ở `agent.toml`), chỉ được thu hẹp
+  khi kế thừa, kiểm trước mọi dữ kiện kể cả giá trị mặc định, và xuất hiện trong `inputSchema`.
+- **Hệ quả.** Một tham số nguy hiểm (`duration_s = 3600`) bị chặn bởi gate, không phụ thuộc bên gọi.
+- **Cưỡng chế.** `engine/arguments.py`; bản ghi tham số trong `NETR`.
 
-## 2. Bảng Phân Loại Quyết Định Kiến Trúc (Q-1 .. Q-45)
+### Q-26, RFC-0006 · Chỉ người tại thiết bị xác nhận được, và chỉ cho tiêu chí gate liệt kê
+- **Quyết định.** Chỉ `local_grammar` và `ui` trả lời được câu hỏi `ask`; xác nhận **lượng giá lại** gate,
+  chỉ miễn các tiêu chí trong `on_block.confirms`.
+- **Hệ quả.** Một lời "có" không bao giờ vượt qua tiêu chí khác; model và client MCP không có đường
+  xác nhận.
+- **Cưỡng chế.** `actions/confirmation.py`; `test_tool_confirm.py`; `confirm_mask` trong `NETR`.
 
-### 2.1. Cụm 1: Phần Cứng, Mục Tiêu Thực Thi & Mô Phỏng (Hardware & Targets)
+### Q-17 · Mọi `on_block` đều chặn hành động vật lý
+- **Quyết định.** `escalate` và `ask` còn ghi vết và gọi hook (mặc định không làm gì); `degrade` chạy
+  `fallback_action` **qua gate riêng của nó**.
+- **Cưỡng chế.** `engine/gate.py`, `actions/conversation.py`.
 
-| Mã ADR | Tóm tắt quyết định kỹ thuật | Vị trí hạ cánh trong Docs | Tác động cốt lõi |
-| :--- | :--- | :--- | :--- |
-| **Q-1** | Chọn ESP32-S3 làm vi điều khiển chuẩn mở đầu tiên cho NeuroEdge. | `02`, `04`, `10` | SoC Xtensa Dual-Core LX7, có tập lệnh tăng tốc AI, Wi-Fi 4 + BLE 5 trên chip. |
-| **Q-2** | ESP32-S3-BOX-3 là phần cứng tham chiếu duy nhất ở giai đoạn v1.0. | `04`, `10`, `11` | Cố định sơ đồ chân, màn hình 320x240, codec âm thanh ES7210/ES8311, mic array kép. |
-| **Q-3** | Định mức ngân sách phần cứng: SRAM $\ge 120$ KB, PSRAM $\ge 2$ MB, Flash nhị phân $\le 3.5$ MB. | `04`, `08` | Thiết lập các rào cản bộ nhớ tĩnh (Static memory limits) và quy tắc cấm `malloc` sau init. |
-| **Q-13** | Phân cấp mục tiêu thực thi thành 3 bậc (Tier 1/2/3); đội ngũ cốt lõi cam kết Tier 1. | `10`, `11` | Tier 1: Sim, Linux x86/ARM64, ESP32-S3 Box-3. Mở rộng Tier 2/3 cho đối tác OEM. |
-| **Q-16** | Sử dụng `gpio-sim`, `i2c-stub` và máy ảo QEMU ESP32 trong CI tự động. | `08`, `10` | Chạy kiểm thử vi sai tự động 100% không cần phụ thuộc vào giá thử nghiệm vật lý. |
-| **Q-21** | Tích hợp PipeWire Echo-Cancellation (AEC) cho môi trường máy chủ Linux. | `03`, `10` | Đồng nhất chất lượng tiền xử lý âm thanh giữa host Linux và phần cứng nhúng. |
-| **Q-22** | Chấp nhận sai số đo lường cảm biến trong phạm vi cho phép trên Simulator. | `10` | Ngăn chặn hiện tượng fail giả khi chạy replay vết ghi giữa các cảm biến thực và ảo. |
-| **Q-41** | Thiết lập bo mạch ESP32-C6 là mục tiêu theo dõi thí điểm (chưa đầu tư sản xuất). | `02`, `13` | Dự phòng hướng chuyển đổi sang kiến trúc thuần RISC-V cho thế hệ sản phẩm tiếp theo. |
+### Q-14 · Mất mạng thì gate vẫn lượng giá bằng ngữ pháp lệnh cục bộ
+- **Quyết định.** Chỉ chặn với `gate_unreachable` khi fallback không có hoặc không chạy được. Fallback là
+  P0; mỗi target một backend trên cùng một ngữ pháp.
+- **Cưỡng chế.** `models/grammar.py`, `models/system.py`; `test_offline_fallback.py`. Trên `esp32s3`:
+  chưa (TSK-S5-07).
 
----
+## 2. Model và nhà cung cấp
 
-### 2.2. Cụm 2: Thoại & Hệ Thống Nhận Thức Kép (Voice & Cognitive Architecture)
+### Q-4, Q-12 · System 1 là Jev qua System One API; System 2 là LLM chuẩn OpenAI
+- **Quyết định.** Chuẩn mặc định là nền tảng tương thích OpenAI (một base URL, một khoá): chat
+  completions, audio, và endpoint quyết định có kiểu (`POST /systemone`). Nhà cung cấp khác đi qua
+  adapter tự viết.
+- **Hệ quả.** Đổi nhà cung cấp là đổi cấu hình; model chỉ trả dữ kiện (`Fact`/`Unavailable`), không bao
+  giờ trả phán quyết.
+- **Cưỡng chế.** `models/providers/`, `perception/providers/`.
 
-| Mã ADR | Tóm tắt quyết định kỹ thuật | Vị trí hạ cánh trong Docs | Tác động cốt lõi |
-| :--- | :--- | :--- | :--- |
-| **Q-4** | Sử dụng định dạng phát âm ngữ âm (Jev phonetic) cho từ khóa đánh thức Wake Word. | `03`, `04` | Cho phép tùy biến từ khóa thức tỉnh mà không cần huấn luyện lại toàn bộ mạng nơ-ron. |
-| **Q-5** | Tách biệt hoàn toàn FSM trạng thái thoại khỏi luồng điều phối cơ cấu chấp hành. | `04`, `06` | Trạng thái thoại có thể lỗi nhưng không bao giờ làm treo quy trình kiểm soát an toàn. |
-| **Q-6** | Tiền xử lý âm thanh DMA RingBuffer chạy độc quyền trên Core 0 của ESP32-S3. | `04` | Bảo đảm độ trễ âm thanh ổn định, không bị nghẽn bởi các phép toán logic trên Core 1. |
-| **Q-7** | Sử dụng Opus Codec nén âm thanh streaming với khung truyền 20 ms. | `02`, `04` | Tối ưu hóa băng thông mạng khi stream âm thanh lên Cloud System 2. |
-| **Q-14** | Chế độ ngắt kết nối an toàn P0: Duy trì 100% chức năng điều khiển qua ngữ pháp cục bộ. | `03`, `06`, `08` | Thiết bị vẫn bật/tắt đèn và điều khiển cơ bản khi mất kết nối Internet hoàn toàn. |
-| **Q-15** | Trình mô phỏng `sim` mặc định giao tiếp qua giao diện dòng lệnh gõ chữ (Typed-text). | `03`, `12` | Nhà phát triển có thể kiểm thử toàn bộ logic hệ thống trong vài giây mà không cần micro. |
-| **Q-20** | Thiết lập cơ chế chống dội phím phần mềm (Debounce) cho nút bấm xác nhận vật lý. | `04`, `06` | Loại bỏ nguy cơ kích hoạt 2 lần khi người dùng bấm nút xác nhận `ask`. |
+### Q-10 · LiteLLM là thư viện, không phải proxy
+- **Quyết định.** Dùng LiteLLM như SDK, luôn sau `neuroedge.models.providers`, chỉ cài qua extra `cloud`.
+- **Hệ quả.** `pip install neuroedge` nhẹ và không cần khoá; không có máy chủ nào do NeuroEdge vận hành.
+- **Cưỡng chế.** `pyproject.toml`; job `cloud-extra`.
 
----
+### Q-27 · System 2 là một MCP host
+- **Quyết định.** Công cụ thiết bị đi qua máy chủ MCP của chính agent (vẫn qua gate); MCP server bên
+  ngoài chỉ để lấy thông tin, theo danh sách cho phép, kết quả là dữ liệu không tin cậy. MCU không bao
+  giờ là host.
+- **Cưỡng chế.** `mcp_host.py`; `test_mcp_host.py`.
 
-### 2.3. Cụm 3: Xương Sống Gate & Bố Cục NETR (Gate Spine & Safety Contracts)
+### Q-7, Q-45 · Từ đánh thức: người dùng tự cấp mô hình
+- **Quyết định.** openWakeWord trên host, microWakeWord trên chip (Q-7). Mô hình dựng sẵn của
+  openWakeWord có giấy phép phi thương mại, không hợp Q-45 ⇒ không giao kèm, không tải.
+- **Cưỡng chế.** `perception/providers/wake.py`; `TODOS.md` #49.
 
-| Mã ADR | Tóm tắt quyết định kỹ thuật | Vị trí hạ cánh trong Docs | Tác động cốt lõi |
-| :--- | :--- | :--- | :--- |
-| **Q-8** | Firmware thiết bị viết bằng C99 thuần túy, không dùng thư viện ngoài nặng nề. | `04`, `05`, `11` | Đảm bảo kích thước nhị phân cực nhỏ, dễ dàng kiểm toán an ninh và porting sang MCU khác. |
-| **Q-9** | Lệnh `neuroedge build` biên dịch Gate YAML thành cây quyết định nhị phân xác định. | `05`, `07` | Chuyển toàn bộ gánh nặng parse chuỗi văn bản về máy chủ biên dịch build-time. |
-| **Q-17** | Toàn bộ phán quyết `BLOCK` đều chặn kích hoạt vật lý ở cấp độ HAL (Fail-Closed). | `05`, `06`, `08` | Nguyên lý P-1: Không một xung điện nào được phát ra nếu chưa có Token hợp lệ. |
-| **Q-18** | Quy tắc kế thừa Gate (extends) áp dụng nghiêm ngặt cho cả `budget` và `on_block`. | `05`, `07` | Con chỉ có thể siết chặt thời gian P95; chuỗi đã đóng cấm mở lại (`fail: open`). |
-| **Q-23** | Định dạng nhị phân cây quyết định NETR v1 (RFC-0003) trên bộ nhớ Flash. | `05`, `07` | Duyệt cây trực tiếp trên Flash bộ nhớ mà không cần cấp phát bất kỳ byte heap nào. |
-| **Q-24** | Mọi phương thức `@action` tương tác ngoại vi đều bắt buộc đăng ký như một Tool. | `03`, `06`, `07` | Chuẩn hóa toàn bộ phễu chấp hành vật lý qua cùng một giao diện điều phối. |
-| **Q-25** | Giới hạn tham số hành động (min/max/enum/max_length) nằm trong cấu hình Gate (RFC-0005). | `05`, `07` | Gate chặn tham số ngoài khoảng với lý do `argument_out_of_range`, không phụ thuộc LLM. |
-| **Q-26** | Cơ chế xác nhận người (`on_block: ask`) chỉ chấp nhận thao tác trực tiếp tại chỗ (RFC-0006). | `05`, `06` | Tuyệt đối ngăn chặn tấn công vượt rào an toàn từ xa qua mạng Internet. |
+## 3. Phần cứng, target, mô phỏng
 
----
+### Q-2, Q-3 · Một bo mạch tham chiếu và một ngân sách bộ nhớ
+- **Quyết định.** ESP32-S3-BOX-3 là bo mạch tham chiếu duy nhất (bất biến 6). Ngân sách: SRAM ≥ 120 KB
+  và PSRAM ≥ 2 MB cho ứng dụng, firmware ≤ 3,5 MB để vừa A/B trên flash 16 MB.
+- **Cưỡng chế.** `boards/esp32s3-box-3.toml`, `partitions.csv`, `scripts/check_firmware_size.py`.
 
-### 2.4. Cụm 4: AI Providers, MCP & Đám Mây (Cloud & Intelligence Routing)
+### Q-8 · C trên ESP-IDF cho chip, Python cho host
+- **Hệ quả.** Hai hiện thực của một đặc tả ⇒ đặc tả quy phạm và vector tuân thủ dùng chung là bắt buộc.
+- **Cưỡng chế.** `test_c_walker.py`, `test_c_token.py`, `test_c_trace.py`; self-test lúc khởi động.
 
-| Mã ADR | Tóm tắt quyết định kỹ thuật | Vị trí hạ cánh trong Docs | Tác động cốt lõi |
-| :--- | :--- | :--- | :--- |
-| **Q-10** | LiteLLM là SDK dự phòng nằm sau adapter `providers/` thống nhất (gói `[cloud]`). | `02`, `03` | Cách ly hoàn toàn mã nguồn lõi khỏi sự thay đổi SDK của các hãng AI (OpenAI, Anthropic). |
-| **Q-12** | Chuẩn hóa giao tiếp AI Provider theo định dạng chuẩn OpenAI Chat Completions API. | `02`, `03` | Dễ dàng thay thế mô hình đám mây hoặc máy chủ cục bộ (Ollama, vLLM) mà không sửa code. |
-| **Q-27** | Runtime System 2 đóng vai trò MCP Host; máy chủ MCP bên ngoài chỉ cung cấp dữ liệu. | `02`, `03`, `06` | Dữ liệu từ MCP Server chỉ là ngữ cảnh thông tin cho LLM, không bao giờ được phép trực tiếp lái chân GPIO. |
-| **Q-28** | Thiết kế Gateway định tuyến tối giản ở bản v1.0, không phân mảnh phức tạp. | `02`, `03` | Giữ cho hệ thống tinh gọn, tập trung hoàn thiện trải nghiệm đơn thiết bị trước khi scale. |
+### Q-13 · Ba bậc target
+- **Quyết định.** Bậc 1 (`sim`, `linux`, `esp32s3`) giữ toàn bộ cam kết; bậc 2 do đội lõi bảo trì với
+  cam kết hẹp hơn; bậc 3 do cộng đồng port và tự kiểm bằng bộ tuân thủ.
+- **Trạng thái.** Bảng bậc máy đọc được (`TARGET_TIERS`) mới là đề xuất trong RFC-0002; mã hôm nay có
+  đúng ba target.
 
----
+### Q-16, Q-21 · Mô phỏng theo tầng bằng công cụ mã nguồn mở đã kiểm chứng
+- **Quyết định.** Không tự viết trình giả lập. Mỗi tầng một công cụ: `SimHAL`, gpio-sim, `i2c-stub` +
+  `lm75`, framebuffer ảo, ảnh golden LVGL build trên host, C biên dịch trên host, Espressif QEMU; bo
+  mạch thật cho âm thanh, màn hình, bộ nhớ. Không dùng Renode, Wokwi.
+- **Cưỡng chế.** `docs/spec/simulation_coverage.md`; các job `linux-hal`, `ui-golden`, `firmware-qemu`.
 
-### 2.5. Cụm 5: Quản Trị, Bản Quyền & Định Vị Sản Phẩm (Governance & Packaging)
+### Q-22 · Khử vang bằng phần mềm trên `linux`
+- **Quyết định.** `audio.in` đọc nút nguồn đã khử vang của PipeWire `module-echo-cancel`; `audio.out` phát
+  vào nút sink của nó làm tín hiệu tham chiếu. `linux-rpi5` chỉ khai `aec = true` khi đo đạt.
+- **Cưỡng chế.** `hal/linux.py`, `pipewire/neuroedge-echo-cancel.conf`.
 
-| Mã ADR | Tóm tắt quyết định kỹ thuật | Vị trí hạ cánh trong Docs | Tác động cốt lõi |
-| :--- | :--- | :--- | :--- |
-| **Q-11** | Thiết lập danh sách kiểm soát giấy phép phụ thuộc nghiêm ngặt (License Allowlist). | `08` | Loại bỏ nguy cơ xung đột bản quyền hoặc mã nguồn mở lây nhiễm (GPL v3). |
-| **Q-19** | Quy trình phát hành chuẩn hóa với bộ kiểm thử tự động Gate Regression Suite. | `06`, `08` | Chặn đứng mọi bản phát hành nếu có sự trôi lệch phán quyết an toàn giữa các phiên bản. |
-| **Q-29** | Quan sát thị trường Matter/Home Assistant (MHS) nhưng chưa đầu tư nguồn lực phát triển. | `00`, `13` | Giữ vững định vị NeuroEdge là hệ thống kiểm soát hành vi an toàn chứ không phải trung tâm kết nối nhà. |
-| **Q-30** | Định vị sản phẩm cốt lõi: NeuroEdge là "Lớp khế ước an toàn cho Edge AI" (Safety Contract Layer). | `00`, `01` | Khẳng định giá trị khác biệt: Chống ảo giác phần cứng, xác định và kiểm toán được. |
-| **Q-31** | Đổi tên sản phẩm hạ tầng NeuroBrain, loại bỏ từ khóa gây hiểu lầm "Copilot". | `00`, `02`, `13` | Nhấn mạnh vai trò là nền tảng quản trị vòng đời mô hình và chính sách của hạm đội. |
-| **Q-45** | Mô hình giấy phép kép: Lõi PolyForm Noncommercial 1.0.0, Schemas & HAL Apache-2.0. | `00`, `08` | Khuyến khích cộng đồng và đối tác sản xuất phần cứng đóng góp HAL mở rộng. |
+## 4. Quản trị, giấy phép, lịch
 
----
+### Q-11 · Danh sách giấy phép cho phép
+- **Quyết định.** Cho phép MIT, BSD, Apache-2.0, ISC, PSF, CNRI-Python, MPL-2.0 (nguyên bản), Zlib,
+  CC0-1.0; cấm GPL/LGPL/AGPL, SSPL, BSL. Hawkbit (EPL-2.0) được dùng nguyên bản làm dịch vụ; **EMQX
+  (BSL) không dùng**.
+- **Hệ quả.** `gpiod` (LGPL) chỉ là phần mở rộng tuỳ chọn; broker MQTT của Fleet OS chọn trong
+  Mosquitto, NanoMQ, VerneMQ.
+- **Cưỡng chế.** `scripts/check_licences.py`; jobs `cloud-extra`, `licence-obligations`.
 
-### 2.6. Cụm 6: Robot & Tiến Hóa Đa Nút I0–I18 (Robotics & Multi-Node Evolution)
+### Q-45 · Giấy phép của NeuroEdge
+- **Quyết định.** Mã theo PolyForm Noncommercial 1.0.0; `schemas/`, `docs/spec/`, `fixtures/compliance/`
+  theo Apache-2.0 để ai cũng hiện thực được chuẩn.
+- **Cưỡng chế.** `LICENSE`, `LICENSING.md`, `test_packaging.py`.
 
-| Mã ADR | Tóm tắt quyết định kỹ thuật | Vị trí hạ cánh trong Docs | Tác động cốt lõi |
-| :--- | :--- | :--- | :--- |
-| **Q-32** | Phân tầng kiến trúc Robot sau giai đoạn Beta (Tầng Trực quan $\to$ Nhận thức $\to$ Phản xạ an toàn). | `02`, `13` | Tách biệt thuật toán AI phức tạp khỏi vòng lặp điều khiển vận động phần cứng cấp thấp. |
-| **Q-33** | Sử dụng giao thức Zenoh-pico cho mạng truyền thông phân tán giữa các vi điều khiển robot. | `02`, `13` | Băng thông siêu nhẹ, độ trễ sub-millisecond, không cần broker trung tâm cồng kềnh. |
-| **Q-34** | Giới hạn quyền điều khiển vận động robot thông qua Lease Token có hạn mức thời gian ngắn. | `05`, `13` | Nếu mất tín hiệu heartbeat từ node điều khiển, robot tự động phanh dừng khẩn cấp. |
-| **Q-35** | Tích hợp cổng ngắt nguồn khẩn cấp vật lý (Hardware E-Stop) song song với phần mềm. | `08`, `13` | Đảm bảo an toàn sinh mạng tuyệt đối cho con người khi robot vận hành. |
-| **Q-36** | Áp dụng chuẩn ROS 2 Micro-XRCE-DDS cho các nút robot tương thích công nghiệp. | `13` | Cầu nối liền mạch giữa hệ sinh thái NeuroEdge và chuẩn công nghiệp ROS 2. |
-| **Q-37** | Mô hình hóa môi trường không gian 3D bằng OctoMap nén trên vi điều khiển. | `13` | Hỗ trợ lập kế hoạch di chuyển tránh vật cản trong tài nguyên bộ nhớ hạn chế. |
-| **Q-38** | Phân vùng an toàn Geofencing tính toán cục bộ bằng thuật toán hình học xác định. | `05`, `13` | Ngăn chặn robot di chuyển ra khỏi khu vực an toàn được chỉ định. |
-| **Q-39** | Chuẩn hóa lộ trình tiến hóa gồm 19 bước tăng trưởng Increment I0 đến I18. | `00`, `13` | Tạo kim chỉ nam phát triển hệ thống từng bước, có kiểm chứng thực nghiệm rõ ràng. |
-| **Q-40** | Thứ tự ưu tiên sau Beta: Hoàn thiện Quản trị Hạm đội (Fleet OS) trước khi mở rộng Robot. | `13` | Bảo đảm khả năng vận hành và cập nhật từ xa an toàn cho hàng ngàn thiết bị trước. |
-| **Q-42** | Loại bỏ bậc cắt giảm phạm vi thứ 5 (No Scope-cut Ladder 5); kiên định với mục tiêu cốt lõi. | `00`, `13` | Giữ vững cam kết về trải nghiệm an toàn fail-closed trên mọi phiên bản phát hành. |
-| **Q-43** | Hỗ trợ cập nhật chính sách an toàn từng phần (Delta Gate OTA) giảm tải băng thông. | `04`, `13` | Cập nhật cây quyết định nhị phân mới mà không cần nạp lại toàn bộ image firmware. |
-| **Q-44** | Thiết lập kho chứng thực vết ghi kiểm toán phân tán (Decentralized Trace Vault). | `02`, `13` | Lưu trữ bằng chứng vận hành bất biến phục vụ điều tra sự cố và bảo hiểm trách nhiệm. |
+### Q-39 · Roadmap theo increment
+- **Quyết định.** Một roadmap, đo bằng increment I0…I18, mỗi increment một ngày dự báo, một tag và một tín
+  hiệu đo; không phát hành ra ngoài trước I6.
+- **Cưỡng chế.** `neuroedge-roadmap.md` §0.2; `test_plan_contract.py`.
 
----
+### Q-38 · Không phải chức năng an toàn được chứng nhận
+- **Quyết định.** Tạm thời OUT: không SIL, không PL; robot di động bắt buộc có nút dừng khẩn phần cứng.
 
-## 3. Chỉ Mục Các Đặc Tả Kỹ Thuật RFC (RFC Index)
+## 5. Quyết định cho hướng mở rộng (chưa có mã)
 
-| Mã RFC | Tiêu đề đặc tả | Trạng thái | Lược đồ / Định dạng liên quan | Chương kiến trúc |
-| :--- | :--- | :--- | :--- | :--- |
-| **RFC-0001** | Conditional-Required Safety Gates | `Proposed` | `schemas/gate.v1.json` | `05-code-gate-hal-c4l4.md` |
-| **RFC-0002** | Open Target Enum & Tier Matrix | `Proposed` | `schemas/board.v1.json` | `10-target-equivalence.md` |
-| **RFC-0003** | NETR v1 Binary Decision Tree Layout | `Final / Frozen` | `.netree` binary format | `05-code-gate-hal-c4l4.md` |
-| **RFC-0004** | Inheritance Constraints on Gate Budgets | `Final` | `gate_resolver.py` | `05-code-gate-hal-c4l4.md` |
-| **RFC-0005** | Gate Action Argument Limits & Constraints | `Final` | `schemas/gate.v1.json` | `05-code-gate-hal-c4l4.md`, `07-data-contracts.md` |
-| **RFC-0006** | In-Person Physical Confirmation (`ask`) | `Final` | `schemas/gate.v1.json`, `ne_walker.h` | `05-code-gate-hal-c4l4.md`, `06-runtime-flows.md` |
+| Mã | Quyết định | Hệ quả khi hiện thực |
+|:---|:---|:---|
+| Q-32 | Robot phân tầng sau Developer Beta; vết ghi nhiều node mở rộng `trace.v1` bằng trường tuỳ chọn | Không cần `trace.v2` |
+| Q-35 | Mỗi cơ cấu chấp hành tự khai trạng thái an toàn khi mất liên lạc; không khai thì dừng | Cần RFC cho trường khai báo |
+| Q-36 | Zenoh-pico trên MCU, `zenohd` trên Pi; spike với ngưỡng đạt/trượt, micro-ROS là phương án B | Bản nháp RFC node |
+| Q-37 | Token thuê có hạn cho `motion.*` (kênh, biên độ tối đa, TTL ngắn), gia hạn qua mỗi lệnh có gate | Khác token dùng-một-lần hôm nay; cần RFC-motion |
 
----
+## 6. RFC
 
-## 4. Quy Trình Ban Hành ADR và RFC Mới
+| RFC | Hợp đồng | Trạng thái | Hiện thực |
+|:---|:---|:---|:---|
+| [0001](../../rfc/0001-gate-schema-conditional-requirements.md) | `gate.v1`: trường bắt buộc có điều kiện cho gate kế thừa | Chấp nhận, đã hiện thực | `schemas/gate.v1.json` |
+| [0002](../../rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md) | Mở danh sách target theo bậc | **Đang thảo luận**; thuộc I11 | chưa |
+| [0003](../../rfc/0003-bo-cuc-nhi-phan-cay.md) | Bố cục nhị phân `NETR` v1 | Chấp nhận, đã hiện thực | `binary_tree.py`, `ne_gate/` |
+| [0004](../../rfc/0004-ke-thua-budget-on-block.md) | Không nới `budget`, `on_block` khi kế thừa | Chấp nhận, đã hiện thực | `gate_resolver.py` |
+| [0005](../../rfc/0005-rang-buoc-tham-so-trong-gate.md) | Giới hạn tham số trong gate | Chấp nhận, đã hiện thực | `arguments.py`, bản ghi tham số `NETR` |
+| [0006](../../rfc/0006-xac-nhan-ask-confirms.md) | `on_block.confirms` | Chấp nhận, đã hiện thực | `confirmation.py`, `confirm_mask` |
 
-Mọi thay đổi kiến trúc trong quá trình phát triển bắt buộc tuân theo quy tắc:
-1. **Phát sinh ADR mới:** Khi có một quyết định kỹ thuật ảnh hưởng tới thiết kế hệ thống, kỹ sư đăng ký mã số tiếp theo (`Q-46`,...) tại PRD §15 trong cùng Pull Request và cập nhật dòng tương ứng vào tệp `09-adr.md` này.
-2. **Khi nào cần soạn RFC riêng:** Chỉ soạn thảo tài liệu RFC độc lập tại `docs/rfcs/` khi thay đổi chạm vào các khu vực nhạy cảm được quy định tại `CONTRIBUTING.md` §3:
-   - Thay đổi các file JSON Schema chuẩn tắc (`schemas/*.json`).
-   - Sửa đổi ngữ nghĩa thuật toán duyệt cây Gate hoặc Token Ledger.
-   - Thay đổi bố cục nhị phân `NETR v1` (bắt buộc nâng `LAYOUT_VERSION`).
-   - Sửa đổi định dạng vết ghi kiểm toán `trace.v1.json` hoặc cơ chế băm JCS.
+## 7. Ra một quyết định kiến trúc mới
+
+1. **Quyết định** được ghi ở PRD §15 với mã `Q-N` mới — nơi duy nhất.
+2. Nếu nó đổi một thứ trong danh sách `CONTRIBUTING.md` §3 (lược đồ, ngữ nghĩa phân giải, vết ghi chuẩn
+   mực, gate khoá, bố cục `NETR`) thì cần **RFC**: PR đầu chỉ chứa tệp RFC; PR sau dẫn số RFC.
+3. Nếu nó có hệ quả kiến trúc, thêm một mục ADR vào trang này (bối cảnh, quyết định, hệ quả, cưỡng chế),
+   dẫn mã `Q-N` — không chép lại nội dung quyết định.
+4. Nếu nó đổi đồ thị phụ thuộc giữa các gói, sửa `ALLOWED` trong `python/tests/test_architecture_layers.py`
+   và bảng ở [`03`](03-component-host-c4l3.md) §2 trong cùng thay đổi.

@@ -1,147 +1,100 @@
-# 01 · Bối cảnh hệ thống (C4 L1 — System Context)
+# 01 · Bối cảnh hệ thống (C4 L1)
 
-> **Trạng thái:** `done` cho các liên kết Lõi, AI Provider qua OpenAI API, và MCP Stdio; `planned` cho các liên kết Fleet OS, Gate Registry công khai và SchemaStore (I6–I10). Xem [`00-overview.md`](00-overview.md) để tra cứu vị trí trong toàn bộ hệ thống tài liệu.
+> **Phạm vi:** NeuroEdge nhìn từ bên ngoài — ai dùng nó, nó nói chuyện với hệ thống nào, và ranh
+> giới tin cậy nằm ở đâu. **Nguồn:** `python/neuroedge/models/providers/`,
+> `python/neuroedge/perception/providers/`, `python/neuroedge/mcp_server.py`, PRD §2,
+> `docs/spec/threat_model.md`.
 
----
+## 1. Sơ đồ bối cảnh
 
-## 1. Sơ đồ Bối cảnh Hệ thống (C4 L1 System Context Diagram)
+![E-01 · Bối cảnh hệ thống](../assets/svg/E-01-system-context.svg)
+*Hình E-01 — Người dùng bên trái, hệ thống bên ngoài bên phải. Nét đứt là `planned`.*
 
-Sơ đồ C4 Level 1 mô tả vị trí trung tâm của NeuroEdge trong hệ sinh thái Physical AI, kết nối giữa người dùng, môi trường thực thi phần cứng và các dịch vụ đám mây ngoại vi:
+## 2. Người dùng
 
-![E-01 · Bối cảnh hệ thống](../assets/svg/E-01-system-landscape.svg)
-*Hình E-01 — Bối cảnh toàn cảnh NeuroEdge: Tác nhân bên trái, hệ thống ngoài bên phải. Nét liền: done · Nét đứt: planned.*
-
-```mermaid
-flowchart TB
-    classDef actor fill:#0f172a,stroke:#334155,color:#ffffff,stroke-width:1.5px;
-    classDef primary fill:#2563eb,stroke:#1d4ed8,color:#ffffff,stroke-width:2px,font-weight:bold;
-    classDef core fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a,stroke-width:2px;
-    classDef external fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.5px;
-    classDef planned fill:#f8fafc,stroke:#94a3b8,color:#475569,stroke-dasharray: 4 3;
-
-    subgraph Users["User Personas (PRD §2.1)"]
-        U1["Maker / Prototyper<br/><b>U1 · Journey 1</b>"]:::actor
-        U2["Embedded Lead &amp; QA<br/><b>U2 · J2, J3</b>"]:::actor
-        U3["Fleet Ops Engineer<br/><b>U3 · Journey 2</b>"]:::actor
-        U4["Safety Auditor<br/><b>U4 · J6 Audit</b>"]:::actor
-        U5["OEM Hardware Partner<br/><b>U5 · HAL Port</b>"]:::actor
-        U6["Robotics Engineer<br/><b>U6 · Tiered Nodes</b>"]:::actor
-    end
-
-    subgraph CoreSystem["NeuroEdge System Boundary"]
-        NE["NeuroEdge Runtime &amp; Action CI<br/><b>Core Platform (Host Python &amp; Firmware C99)</b><br/>Enforces fail-closed safety gates before physical HAL actuation"]:::primary
-    end
-
-    subgraph ExternalSystems["External Systems &amp; Upstream AI Services"]
-        LLM["AI Providers<br/><b>OpenAI, Anthropic, Ollama</b><br/>LLM · STT · TTS (WebSocket/TLS)"]:::external
-        MCP["MCP Clients &amp; Tools<br/><b>Claude Desktop, Custom Agents</b><br/>Stdio JSON-RPC IPC"]:::external
-        REG["Gate Registry (I10 planned)<br/><b>CNCF ORAS / OCI Registry</b><br/>Signed Gate &amp; Port Artifacts"]:::planned
-        FLT["Fleet OS Backend (I9 planned)<br/><b>Hawkbit OTA &amp; EMQX Broker</b><br/>Fleet Management &amp; Trace Vault"]:::planned
-        SCH["SchemaStore Catalog (I6)<br/><b>JSON Schema Repository</b><br/>IDE schema completion"]:::planned
-    end
-
-    U1 -->|1. Init &amp; Run sim UI| NE
-    U2 -->|2. Build, Test CI, Verify| NE
-    U3 -.->|3. Coordinate Canary OTA| FLT
-    FLT -.->|mTLS Management| NE
-    U4 -->|4. Audit Gate YAMLs &amp; Traces| NE
-    U5 -->|5. Declare board.toml &amp; HAL| NE
-    U6 -.->|6. Configure Robot Nodes| NE
-
-    NE <-->|OpenAI API / LiteLLM<br/>HTTPS TLS 1.3 :443| LLM
-    NE <-->|Stdio JSON-RPC IPC<br/>Advisory Context| MCP
-    NE -.->|ORAS Push/Pull<br/>Signed OCI Artifacts| REG
-    NE -.->|MQTT 5.0 / mTLS :8883<br/>Telemetry &amp; OTA| FLT
-    NE -.->|Validate Schema $id| SCH
-```
-
----
-
-## 2. Danh mục Tác nhân Người dùng (Actors & Personas)
-
-Các tác nhân tương tác với hệ thống tương ứng với các Persona và Hành trình người dùng đã được chuẩn hóa trong PRD §2:
-
-| Tác nhân | Vai trò trong hệ thống | Công cụ & Giao diện sử dụng | Kỳ vọng cốt lõi |
+| Người dùng | Làm gì với NeuroEdge | Công cụ chính | Trạng thái |
 |:---|:---|:---|:---|
-| **Maker / Dev sáng chế (U1)** | Lập trình viên cá nhân, phát triển ứng dụng Physical AI từ con số 0 | `neuroedge new`, `neuroedge run --ui`, Web UI cục bộ 127.0.0.1 | **TTFV < 10 phút** trên laptop sạch; không cần mua phần cứng, không cần khoá API cloud (Hành trình 1). |
-| **Trưởng nhóm Nhúng (U2)** | Chịu trách nhiệm về độ tin cậy và an toàn khi nạp mã lên phần cứng | `neuroedge build`, `neuroedge test`, `verify`, Nightly CI runner | Khi đổi prompt hoặc đổi chip, **không bao giờ hồi quy an toàn** (chốt cửa không mở nhầm, rơ-le không kích sai) (J2, J3). |
-| **Người vận hành Fleet (U3)** | Vận hành hàng nghìn thiết bị ngoài hiện trường (khách sạn, tòa nhà, nhà máy) | Giao diện Fleet OS (planned I9), tệp vết ghi sự cố từ xa | **Tái hiện nguyên trạng sự cố hiện trường trong 30 giây** bằng lệnh `replay` trên máy tính; cập nhật OTA Canary an toàn, không brick máy (Hành trình 2). |
-| **Chuyên viên An toàn (U4)** | Phê duyệt chính sách vận hành và giải trình pháp lý / bảo hiểm | File Gate YAML, lệnh `neuroedge gate explain`, tệp `trace.v1.json` | Đọc hiểu và phê duyệt điều kiện an toàn **mà không cần đọc code Python/C**; có bằng chứng đối soát kiểm toán không thể chối bỏ (J6). |
-| **Đối tác OEM (U5)** | Nhà sản xuất phần cứng đưa NeuroEdge lên bo mạch mới | `board.toml`, C HAL stubs, Bộ kiểm thử tuân thủ (Compliance suite) | Tích hợp nhanh, **không bị trói buộc độc quyền vào một dòng chip**; giữ quyền sở hữu HAL driver (chi tiết: [`11-hal-port-guide.md`](11-hal-port-guide.md)). |
-| **Kỹ sư Robot (U6)** | Thiết kế hệ thống tự hành và cánh tay robot phân tán (planned I14) | Zenoh-pico, adapter ROS 2 / Nav2, Gate từng node chấp hành | Mọi lệnh điều khiển vận tốc (`cmd_vel`) đều phải qua Gate an toàn; có cơ chế ngắt cứng tức thời (Q-32..Q-38). |
+| **Maker, lập trình viên ứng dụng** | Viết agent (`agent.toml`, gate, action), chạy và kiểm trên máy mình | `neuroedge new · run · test · record` | `done` |
+| **Kỹ sư lõi và kỹ sư nhúng** | Sinh firmware cho agent, nạp lên chip, so phán quyết giữa các môi trường | `build --target esp32s3 · verify · record --port` | `done` (trên QEMU) |
+| **Người duyệt an toàn, QA** | Đọc và duyệt gate mà không đọc mã; điều tra một phiên từ vết ghi | `gate explain · trace view · replay` | `done` |
+| **Đối tác OEM** | Khai báo một bo mạch mới, port HAL, chứng minh tương đương | `board.toml`, vector tuân thủ | `partial` — xem [`11`](11-hal-port-guide.md) |
+| **Người vận hành đội thiết bị** | Phát hành bản cập nhật theo đợt, thu vết ghi sự cố từ xa | Fleet OS | `planned` (I9) |
 
----
+Các nhóm người dùng và hành trình gốc ở PRD §2 (`U1`…`U6`, `J1`…`J7`).
 
-## 3. Hệ thống Ngoại vi & Giao thức Kết nối (External Systems)
+## 3. Hệ thống bên ngoài
 
-### 3.1 AI Providers (LLM, STT, TTS)
-* **Vai trò:** Cung cấp năng lực hiểu ngôn ngữ tự nhiên, chuyển giọng nói thành văn bản (STT), suy luận giải quyết vấn đề (System 2 LLM), và tổng hợp tiếng nói (TTS).
-* **Giao thức & Ràng buộc:**
-  * Kết nối chuẩn hóa qua giao thức **OpenAI API** hoặc **Custom Adapter** (`Q-10`, `Q-12`, PRD §4.3).
-  * Bảo mật bắt buộc: **TLS 1.3 HTTPS** (`NFR-SEC-08`). API key chỉ được truyền qua biến môi trường của tiến trình, tuyệt đối không lưu cứng trong `agent.toml` hay tệp vết ghi.
-  * Trong vết ghi: Chỉ ghi nhận tên provider, tên model, số token và độ trễ vào sự kiện `system_two_call`; nội dung prompt thô được ẩn danh hóa nếu bật `--anonymize`.
+Mọi kết nối ra ngoài đều **tuỳ chọn**: bản cài cơ bản chạy toàn bộ `sim` không cần mạng hay khoá
+(Q-15). Khoá API không bao giờ nằm trong tệp: chỉ **tên** biến môi trường được ghi (`api_key_env`),
+và build từ chối mọi trường trông giống khoá (`models/providers/common.py`).
 
-### 3.2 MCP Clients (Model Context Protocol)
-* **Vai trò:** Cho phép các ứng dụng giao diện AI hiện đại (như Claude Desktop, Cursor, hay các tác tử phần mềm tự hành) khám phá và điều khiển thiết bị phần cứng.
-* **Giao thức & Ràng buộc:**
-  * Phiên bản v1.0 chỉ hỗ trợ kênh truyền **stdio** nội bộ trên cùng máy tính (`NFR-SEC-09`).
-  * Mọi `@action` được chiếu xạ thành một Tool MCP kèm `inputSchema` và `outputSchema`.
-  * **Ràng buộc an toàn:** Lời gọi từ MCP Client được gán nhãn `call_source = "mcp"` (nguồn không tin cậy) và bắt buộc phải qua Gate thẩm định trước khi tới HAL (`Q-24`, `Q-27`). Transport mạng (HTTP/mTLS) hoãn tới Khối 2 (`TODOS.md` #24).
+| Hệ thống | Vai trò | Giao thức và định dạng | Mã đảm nhận | Trạng thái |
+|:---|:---|:---|:---|:---|
+| **Nhà cung cấp LLM** (System 2) | Trả lời câu tự do, đề xuất tool call | Chat completions chuẩn OpenAI qua thư viện LiteLLM (không chạy proxy — Q-10); hoặc adapter `python:` | `models/providers/litellm_provider.py`, `openai_chat.py` | `done` |
+| **Jev trên OpenRouter** (System 1) | Quyết một số tiêu chí gate từ lời người nói | `POST {api_base}/systemone` (System One API), HTTPS bắt buộc trừ loopback | `models/providers/systemone_api.py` | `done` |
+| **Nhà cung cấp giọng nói** | STT, TTS | `POST {base_url}/audio/transcriptions` và `/audio/speech` chuẩn OpenAI | `perception/providers/openai_audio.py` | `done` |
+| **Máy chủ STT cục bộ** | STT dự phòng khi STT chính hỏng | Như trên, thường `http://localhost` | `[stt.fallback]` | `done` |
+| **Client MCP** | Gọi action của agent như công cụ | JSON-RPC qua **stdio** (không qua mạng — NFR-SEC-09) | `mcp_server.py` | `done` |
+| **MCP server bên ngoài** | Nguồn thông tin cho System 2 (tin tức, tra cứu) | stdio; chỉ công cụ trong danh sách cho phép | `mcp_host.py` | `done` |
+| **ESP-IDF v5.4 và Espressif QEMU** | Biên dịch firmware, chạy chip ảo | Project ESP-IDF sinh bởi `build`; UART đọc qua tệp hoặc `tcp://` | `engine/firmware.py`, `testing/uart.py` | `done` |
+| **Máy chủ ảnh OTA** | Phục vụ một ảnh app đã ký | HTTP(S) GET bất kỳ máy chủ tĩnh nào | `components/ne_ota/` | `partial` — trên QEMU |
+| **Fleet OS, Gate Registry** | Quản trị đội thiết bị; kho gate chia sẻ | Quy hoạch: MQTT với broker giấy phép dễ dãi (Mosquitto, NanoMQ hoặc VerneMQ — **không** EMQX, Q-11); OCI qua ORAS và Harbor | chưa có mã | `planned` (I9, I10) |
 
-### 3.3 Gate Registry (Planned I10)
-* **Vai trò:** Kho lưu trữ, quản lý phiên bản và phân phối các gói Gate an toàn, Adapter, và HAL port đã được kiểm chứng.
-* **Giao thức:** Chuẩn OCI Artifacts sử dụng công cụ **CNCF ORAS / Harbor**. Mỗi artifact tải lên đều được ký số mật mã (Cosign / Sigstore).
-* **Tính sẵn sàng hôm nay:** Lõi v1.0 đã sẵn sàng cho Registry nhờ lệnh `neuroedge gate publish` xuất mã băm chuẩn tắc JCS SHA-256 và cơ chế khóa phiên bản `digests.lock`.
-
-### 3.4 Fleet OS Backend (Planned I9)
-* **Vai trò:** Nền tảng SaaS quản trị vòng đời thiết bị: điều phối cập nhật firmware Canary A/B qua Eclipse Hawkbit, broker truyền nhận sự kiện viễn trắc qua EMQX, và lưu trữ tập trung các vết ghi sự cố (Trace Vault).
-* **Giao thức:** Thiết bị kết nối qua giao thức **MQTT 5.0 bọc trong mTLS** với chứng chỉ X.509 riêng cho từng thiết bị (`NFR-SEC-04`).
-
----
-
-## 4. Mô hình Ranh giới Tin cậy (Trust Boundaries & Threat Model)
-
-Dựa trên tài liệu đặc tả mô hình mối đe dọa [`docs/spec/threat_model.md`](file:///Users/minhlt/Downloads/Projects/neuroedge-init/docs/spec/threat_model.md), hệ thống thiết lập ba ranh giới tin cậy nghiêm ngặt:
+## 4. Ranh giới tin cậy
 
 ```mermaid
 flowchart LR
-    subgraph Untrusted["Vùng KHÔNG Tin cậy (Untrusted Zone)"]
-        U_LLM["LLM Cloud<br/>(Ảo giác, Prompt Injection)"]
-        U_MCP["MCP Clients / External Servers<br/>(Lệnh độc hại ngoài mạng)"]
-        U_ENV["Môi trường mạng không an toàn"]
+    subgraph Untrusted["Untrusted: may propose, never decide"]
+        LLM["System 2 LLM"]
+        JEV["System 1 model (Jev)"]
+        MCPC["MCP client"]
+        EXT["External MCP server"]
     end
-
-    subgraph DMZ["Vùng Thẩm định Hợp đồng (Contract DMZ)"]
-        DISP["dispatch() & Argument Bounds Check"]
-        GATE["Gate Engine (Tất định 100%)"]
-        CB["Circuit Breaker (Fail-Closed)"]
-        TL["TokenLedger (Token dùng 1 lần)"]
+    subgraph Contract["Contract boundary: deterministic"]
+        DISP["dispatch()<br/>schema · call_source"]
+        GATE["Gate engine<br/>domain · threshold · budget"]
+        LEDGER["TokenLedger<br/>one-time · TTL"]
     end
-
-    subgraph Trusted["Vùng TIN CẬY Cục bộ (Trusted Execution Zone)"]
-        USER["Người dùng tại thiết bị<br/>(Xác nhận trực tiếp qua UI/Nút bấm)"]
-        HAL["HAL Layer (Kiểm tra & Tiêu hủy Token)"]
-        GPIO["Actuators / Chốt cửa / Rơ-le"]
+    subgraph Local["Trusted: on the device"]
+        PERSON["Person at the device<br/>REPL or same-origin page"]
+        HAL["HAL"]
+        PIN(["Pins"])
     end
-
-    U_LLM -->|Đề xuất ToolCall| DISP
-    U_MCP -->|Đề xuất ToolCall| DISP
+    LLM -- "ToolCall" --> DISP
+    MCPC -- "ToolCall" --> DISP
+    EXT -- "data only" --> LLM
+    JEV -- "Fact or Unavailable" --> GATE
     DISP --> GATE
-    CB -.-> GATE
-    GATE -- "BLOCK (Từ chối)" --> LOG["Trace Log / on_block"]
-    GATE -- "ALLOW (Hợp lệ)" --> TL
-    TL -->|Cấp Token (Digest + Nonce)| HAL
-    USER -->|POST /confirm| GATE
-    HAL -->|Tiêu hủy Token| GPIO
-
-    style Untrusted fill:#fee,stroke:#c00,stroke-dasharray: 5 5
-    style DMZ fill:#fef,stroke:#90c,stroke-width:2px
-    style Trusted fill:#efe,stroke:#090,stroke-width:2px
+    GATE -- "ALLOW" --> LEDGER --> HAL --> PIN
+    PERSON -- "confirm (local_grammar, ui)" --> GATE
 ```
 
-1. **Nguyên tắc "Mọi Bên gọi đều Không tin cậy" (Zero Trust Callers):**
-   * Mô hình AI (kể cả Claude 3.5 hay GPT-4o) và các client MCP bên ngoài đều được coi là nguồn dữ liệu không tin cậy (`trust: untrusted`). Chúng có thể bị tấn công tiêm nhiễm câu lệnh (prompt injection) hoặc sinh ảo giác. Do đó, output của LLM **chỉ là đề xuất**, không bao giờ là lệnh trực tiếp ra phần cứng.
-2. **Kênh Xác nhận Tin cậy Duy nhất (The Only Trusted Human Confirmation):**
-   * Đối với các hành động bị Gate chặn ở chế độ `on_block: ask`, việc mở khóa **chỉ được phép thực hiện bởi người dùng đứng trực tiếp tại thiết bị** thông qua REPL terminal (`:confirm`) hoặc qua trang Web UI cùng nguồn gốc (`POST /confirm` same-origin) (`Q-26`, RFC-0006). Không cho phép LLM hoặc client MCP tự xác nhận thay con người.
-3. **Mặc định An toàn khi Mất mạng (Fail-Closed Offline Guarantee):**
-   * Khi mất mạng, Gate không bị vô hiệu hóa. Hệ thống tự động chuyển sang bộ nhận diện lệnh cố định cục bộ (`commands.toml`, `Q-14`). Nếu câu lệnh nằm trong ngữ pháp và dữ kiện cảm biến thỏa mãn $\rightarrow$ Gate vẫn cho phép chạy. Nếu có nghi vấn $\rightarrow$ tự động kích hoạt mạch ngắt fail-closed, chặn mọi tác động vật lý với lý do `gate_unreachable`.
+Bốn luật định ranh giới, mỗi luật có test ở `docs/spec/threat_model.md` §2b:
+
+1. **Model và client chỉ đề xuất.** LLM và client MCP chỉ gửi được `ToolCall` qua `dispatch()`.
+   Công cụ không tồn tại hay tham số sai kiểu ⇒ `REJECTED`, không phán quyết nào được tính.
+2. **Nguồn gọi do runtime gán, không do bên gọi khai.** `call_source` được dispatcher chèn vào như
+   một dữ kiện tin cậy; một gate có thể từ chối một hành động cho riêng nguồn `mcp` hay
+   `system_two`.
+3. **Câu trả lời của model là dữ kiện, không phải phán quyết.** Jev trả `Fact` hoặc `Unavailable`,
+   rồi bị kiểm miền giá trị và ngưỡng tin cậy trước khi vào gate. Model không bao giờ trả `ALLOW`.
+   Nội dung từ MCP server bên ngoài được đánh dấu "dữ liệu không tin cậy"; lời gọi nó dẫn tới vẫn
+   phải qua gate.
+4. **Chỉ người có mặt tại thiết bị mới xác nhận được.** Khi gate hỏi lại (`on_block: ask`), chỉ hai
+   kênh `local_grammar` (gõ hoặc nói "có") và `ui` (nút trên trang cùng nguồn gốc 127.0.0.1) được
+   trả lời (Q-26). System 2 và client MCP không có cách nào xác nhận thay.
+
+Ngoài phạm vi, nói rõ: MCP qua mạng (chỉ stdio ở v1.0), kẻ tấn công trong cùng tiến trình, và an
+toàn chức năng được chứng nhận (`docs/spec/threat_model.md` §3, §3b).
+
+## 5. Dữ liệu rời khỏi máy
+
+| Tới | Dữ liệu gửi đi | Không bao giờ gửi |
+|:---|:---|:---|
+| LLM (System 2) | Câu người dùng, danh sách công cụ, lịch sử lượt | Khoá API (chỉ đọc từ biến môi trường), token phán quyết |
+| Jev (System 1) | **Chỉ lời người nói** và câu hỏi có kiểu cho từng tiêu chí | Tên action, tham số, dữ kiện phiên; lời gọi MCP không ai nói thì không gửi gì |
+| STT | Đoạn âm thanh của một lượt | — |
+| TTS | Câu trả lời cần đọc | — |
+
+Vết ghi mặc định lưu chữ thô (câu gõ, bản chép lời); chế độ `--anonymize` băm chúng tại nguồn mà
+vẫn giữ mọi phán quyết (NFR-PRIV-04). Âm thanh không bao giờ được lưu vào vết ghi.
