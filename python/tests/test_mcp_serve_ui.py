@@ -277,6 +277,7 @@ def test_the_real_command_serves_mcp_on_stdout_and_the_page_on_127_0_0_1(home, t
     # Closing stdin ends the server cleanly: the trace is written and the page is gone.
     trace = poll(lambda: trace_out.exists() and json.loads(trace_out.read_text("utf-8")))
     validate_trace(trace)
+    assert trace["metadata"]["anonymized"] is True  # NFR-PRIV-03: hashed by default
     assert [e["type"] for e in trace["events"]].count("actuator_command") == 1
     with pytest.raises(urllib.error.URLError):
         urllib.request.urlopen(url + "state", timeout=2)

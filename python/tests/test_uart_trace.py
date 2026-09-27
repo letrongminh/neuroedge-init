@@ -150,9 +150,15 @@ def test_anonymize_hashes_raw_text_at_the_source():
     lines = session()[:-1] + [ne1(50, "tts_stream_start", {"text": "Xin chào"})]
     lines.append(ne1(99, "trace_end", {"events": len(lines)}))
     [found] = sessions_from_lines(lines, "uart.log")
-    hashed = found.recorder(anonymize=True).to_trace()
-    assert "Xin chào" not in json.dumps(hashed, ensure_ascii=False)
-    assert "Xin chào" in json.dumps(found.trace(), ensure_ascii=False)
+    # The default hashes the device's words at the host (NFR-PRIV-03); the recorder
+    # marks it, and only `anonymize=False` keeps the text verbatim.
+    default = found.trace()
+    assert default["metadata"]["anonymized"] is True
+    dumped = json.dumps(default, ensure_ascii=False)
+    assert "Xin chào" not in dumped and dumped.count("sha256:") == 1
+    raw = found.recorder(anonymize=False).to_trace()
+    assert raw["metadata"]["anonymized"] is False
+    assert "Xin chào" in json.dumps(raw, ensure_ascii=False)
 
 
 # --- sources ----------------------------------------------------------------------------------
@@ -267,6 +273,39 @@ def test_record_writes_one_validated_trace_per_session(capture, tmp_path):
         assert load_trace(path)["metadata"]["device_id"] == "qemu"
     assert "2 gate evaluation(s), home-voice@0.1.0, device qemu" in result.output
     assert "happy-path.json" in result.output
+
+
+def test_record_hashes_the_device_text_by_default_and_raw_keeps_it(tmp_path):
+    # NFR-PRIV-03 on a device capture: the host hashes what the device said or heard.
+    log = tmp_path / "uart.log"
+    log.write_text(
+        "".join(BOOT_LOG) + "".join(session()[:-1])
+        + ne1(50, "tts_stream_start", {"text": "Cửa đã mở."}) + "\n"
+        + ne1(99, "trace_end", {"events": 5}) + "\n"
+    )  # fmt: skip
+    out = tmp_path / "hashed"
+    result = runner.invoke(
+        app, ["record", "--target", "esp32s3", "--port", str(log), "--out", str(out)]
+    )
+    assert result.exit_code == 0, result.output
+    (path,) = out.glob("sess_*.json")
+    trace = load_trace(path)
+    assert trace["metadata"]["anonymized"] is True
+    assert "Cửa đã mở" not in path.read_text(encoding="utf-8")
+    (tts,) = [e["data"] for e in trace["events"] if e["type"] == "tts_stream_start"]
+    assert tts["text"].startswith("sha256:")
+
+    raw_out = tmp_path / "raw"
+    result = runner.invoke(
+        app, ["record", "--target", "esp32s3", "--port", str(log), "--out", str(raw_out), "--raw"]
+    )
+    assert result.exit_code == 0, result.output
+    (raw_path,) = raw_out.glob("sess_*.json")
+    raw_trace = load_trace(raw_path)
+    assert raw_trace["metadata"]["anonymized"] is False
+    (raw_tts,) = [e["data"] for e in raw_trace["events"] if e["type"] == "tts_stream_start"]
+    assert raw_tts["text"] == "Cửa đã mở."
+    assert "keeps the user's words" in result.output
 
 
 def test_record_to_a_json_path_needs_exactly_one_session(capture, tmp_path):

@@ -123,8 +123,8 @@ def clean_transcript(text: object, where: str) -> str:
     """
     The transcript as the session may use it, or `SpeechUnavailable` when what
     came back is not one: not text; U+FFFD (bytes that were not text); control
-    characters but tab and newlines; lone surrogates, which the trace (and
-    `--anonymize`'s digest) could not even encode; private-use or unassigned code
+    characters but tab and newlines; lone surrogates, which the trace (and the
+    recorder's digest) could not even encode; private-use or unassigned code
     points; format characters but the joiners (`KEPT_FORMAT`); or longer than any
     turn. Whitespace is collapsed; an empty result is a valid answer — nothing was
     heard.

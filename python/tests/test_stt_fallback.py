@@ -348,8 +348,9 @@ def test_the_voice_cli_uses_the_fallback_and_records_the_switch(project, tmp_pat
     from neuroedge.trace import load_trace
 
     document = load_trace(trace)
+    # The default trace hashes the transcript (NFR-PRIV-03) but keeps the event.
+    assert document["metadata"]["anonymized"] is True
     (switched,) = [e for e in document["events"] if e["type"] == "stt_fallback"]
     assert switched["data"]["to"].startswith("stt.fallback") and switched["data"]["reason"]
-    assert [e for e in document["events"] if e["type"] == "stt_result"][0]["data"]["text"] == (
-        "mở cửa"
-    )
+    (heard,) = [e["data"] for e in document["events"] if e["type"] == "stt_result"]
+    assert heard["text"].startswith("sha256:") and heard["turn"] == 1

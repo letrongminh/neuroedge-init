@@ -110,9 +110,10 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
         "neuroedge test tests/ --pytest-arg=-x",
     ),
     "record": (
-        'neuroedge record -c "mở khoá"   # writes traces/<session_id>.json',
-        'neuroedge record -c "mở khoá" --out traces/session.json --anonymize',
-        "neuroedge record --voice-file turn.wav --anonymize   # transcripts hashed in the trace",
+        'neuroedge record -c "mở khoá"   # writes traces/<session_id>.json, text hashed',
+        'neuroedge record -c "mở khoá" --out traces/session.json',
+        'neuroedge record -c "mở khoá" --raw --out traces/raw.json   # keeps the user\'s words',
+        "neuroedge record --voice-file turn.wav   # transcripts hashed in the trace",
         "neuroedge record --voice-file turn.wav --target linux --out traces/voice.json",
     ),
 }

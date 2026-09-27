@@ -159,7 +159,7 @@ class Frame:
             "sha256": self.sha256,
         }
         if self.format == "text":
-            data["text"] = self.text  # hashed by the recorder under --anonymize
+            data["text"] = self.text  # hashed by the recorder unless --raw
         return data
 
     def rgb888(self) -> bytes:

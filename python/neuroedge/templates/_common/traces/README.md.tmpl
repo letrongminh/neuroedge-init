@@ -17,4 +17,6 @@ neuroedge replay traces/session.json --agent agent.toml --golden traces/golden/k
 ```
 
 `replay` so **quyết định** (phán quyết gate, lệnh chân), không so thời gian. Vết ghi
-có chữ người dùng gõ hoặc nói; thêm `--anonymize` khi ghi để băm chữ tại nguồn.
+mặc định không giữ chữ người dùng gõ hoặc nói: băm tại nguồn (NFR-PRIV-03) và
+mang `metadata.anonymized = true`. Muốn giữ nguyên văn, thêm `--raw` khi ghi —
+vết ghi đó sẽ mang `metadata.anonymized = false`.

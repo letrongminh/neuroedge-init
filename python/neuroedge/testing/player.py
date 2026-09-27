@@ -43,6 +43,7 @@ from ..hal.board import load_board_by_id
 from ..hal.sim import reading_value
 from ..paths import fixtures_dir
 from ..trace import load_trace, validate_trace
+from .recorder import DEFAULT_ANONYMIZE, anonymise
 
 DEFAULT_BOARD = {"sim": "sim-default", "linux": "linux-rpi5"}
 _DEGRADED_AS = {"gate_unreachable": "offline", "budget_exceeded": "timeout"}
@@ -447,7 +448,16 @@ def replay_sync(trace, **kwargs) -> ReplayResult:
     return asyncio.run(TracePlayer(trace, **kwargs).replay())
 
 
-def dump(result: ReplayResult, path: str | Path) -> None:
-    Path(path).write_text(
-        json.dumps(result.replayed, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
+def dump(result: ReplayResult, path: str | Path, *, anonymize: bool = DEFAULT_ANONYMIZE) -> None:
+    """Write the replayed trace, hashed by default like every trace file (NFR-PRIV-03)."""
+    trace = result.replayed
+    metadata = {**trace["metadata"], "anonymized": bool(anonymize)}
+    if anonymize:
+        trace = {
+            **trace,
+            "metadata": metadata,
+            "events": [{**event, "data": anonymise(event["data"])} for event in trace["events"]],
+        }
+    else:
+        trace = {**trace, "metadata": metadata}
+    Path(path).write_text(json.dumps(trace, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

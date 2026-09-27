@@ -15,7 +15,7 @@ answer read against a deadline, a size cap, a key that is a key — is
 §7. Before any network call the key's variable must be set, or nothing is sent. The
 key goes only in the ``Authorization`` header and is never in an error: a network
 failure is reported by its class name. A response body is never quoted in an error —
-it may echo what was said, and errors reach the trace, where `--anonymize` hashes
+it may echo what was said, and errors reach the trace, where the recorder hashes
 only the text fields.
 """
 

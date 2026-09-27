@@ -195,3 +195,26 @@ def test_replay_writes_the_replayed_trace(traces_dir, tmp_path):
     assert _commands(json.loads(out.read_text("utf-8"))) == [
         {"pin": "door_lock", "operation": "pulse", "duration_ms": 30000}
     ]
+
+
+def test_the_replayed_trace_is_marked_and_raw_is_opt_in(traces_dir, tmp_path):
+    # NFR-PRIV-03: a --trace-out file is written hashed by default; --raw says so.
+    from neuroedge.trace import validate_trace
+
+    default = tmp_path / "hashed.json"
+    result = runner.invoke(
+        app, ["replay", str(traces_dir / "happy-path.json"), "--trace-out", str(default)]
+    )
+    assert result.exit_code == 0, result.output
+    validate_trace(json.loads(default.read_text("utf-8")))
+    assert json.loads(default.read_text("utf-8"))["metadata"]["anonymized"] is True
+    raw = tmp_path / "raw.json"
+    result = runner.invoke(
+        app,
+        ["replay", str(traces_dir / "happy-path.json"), "--trace-out", str(raw), "--raw"],
+    )
+    assert result.exit_code == 0, result.output
+    document = json.loads(raw.read_text("utf-8"))
+    assert document["metadata"]["anonymized"] is False
+    assert "keeps the user's words" in result.output
+    validate_trace(document)
