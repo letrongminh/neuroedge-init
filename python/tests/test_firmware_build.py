@@ -9,6 +9,9 @@ engine's verdicts (`python/neuroedge/engine/firmware.py`). Checked here, without
 * the component of a fixture agent against its golden files, byte for byte;
 * two builds are the same bytes; a rebuild removes only what a build wrote;
 * every action's token grants exactly the pins of that action, through its own gate;
+* the generated project carries the OTA component and the agent's MAJOR.MINOR.PATCH
+  version as version.txt (ESP-IDF's PROJECT_VER); a version the firmware's OTA code
+  cannot read as three numbers is refused before anything is written;
 * the generated project compiles on this host (strict, ASan + UBSan) and its self-test
   passes — and every deliberate bug in the generated tables makes it fail;
 * a build that cannot produce a firmware exits 1 and writes nothing.
@@ -173,6 +176,8 @@ def test_the_project_is_the_firmware_sources_and_the_agent(root, fixture_build):
         name: data for name, data in written.items() if not name.startswith("components/ne_agent/")
     }
     del copied[firmware.MANIFEST]
+    # The one source the build does not copy verbatim: it writes the agent's own version.
+    assert copied.pop("version.txt") == b"0.2.0\n"
     for name, data in copied.items():
         assert (source / name).read_bytes() == data, name
     # Every firmware source is there; no host tooling, no build output.
@@ -197,6 +202,43 @@ def test_the_tree_in_the_firmware_is_the_tree_the_build_writes(fixture_build):
     for key in ("open_door", "buzz", "announce"):
         linked = fixture_build / "esp32s3" / "components" / "ne_agent" / "gates" / f"{key}.netree.h"
         assert linked.read_bytes() == (fixture_build / "gates" / f"{key}.netree.h").read_bytes()
+
+
+def test_the_generated_project_carries_the_ota_component_and_the_agent_version(tmp_path):
+    """
+    The OTA layer's sources travel with every generated project, and version.txt
+    holds the agent's version: ESP-IDF uses it as PROJECT_VER — outside git there
+    is no other source, and an app version of "1" makes every update a same-version
+    skip.
+    """
+    build(FIXTURE, target="esp32s3", board_id="esp32s3-box-3", out_dir=tmp_path)
+    project = tmp_path / "esp32s3"
+    for name in (
+        "components/ne_ota/CMakeLists.txt",
+        "components/ne_ota/Kconfig",
+        "components/ne_ota/include/ne_ota.h",
+        "components/ne_ota/src/ne_ota.c",
+        "components/ne_ota/src/ne_ota_policy.c",
+        "sdkconfig.ota",
+        "sdkconfig.qemu_ota",
+    ):
+        assert (project / name).is_file(), name
+    assert (project / "version.txt").read_text(encoding="utf-8") == "0.2.0\n"
+    header = (project / "components" / "ne_agent" / "include" / "ne_agent.h").read_text("utf-8")
+    assert '#define NE_AGENT_VERSION "firmware-fixture@0.2.0"' in header
+
+
+def test_the_reference_firmware_version_is_the_home_voice_agents(root, tmp_path):
+    # targets/esp32s3/version.txt: the in-tree idf.py build's PROJECT_VER (0.1.0, the
+    # home-voice sample); a generated project gets its own agent's version written over it.
+    build(
+        root / "fixtures" / "agents" / "home-voice" / "agent.toml",
+        target="esp32s3",
+        board_id="esp32s3-box-3",
+        out_dir=tmp_path,
+    )
+    assert (root / "targets" / "esp32s3" / "version.txt").read_text("utf-8") == "0.1.0\n"
+    assert (tmp_path / "esp32s3" / "version.txt").read_text("utf-8") == "0.1.0\n"
 
 
 def test_two_builds_are_the_same_bytes(tmp_path):
@@ -639,6 +681,7 @@ def test_a_manifest_names_nothing_outside_the_firmware_layout(tmp_path):
         ("main/main.c", True),
         ("components/ne_agent/gates/open_door.netree.h", True),
         (firmware.MANIFEST, True),
+        ("version.txt", True),
         ("main/../main/main.c", False),
         ("/etc/passwd", False),
         ("main/notes.txt", False),
@@ -691,6 +734,38 @@ def test_a_gate_key_the_firmware_cannot_name_is_refused(tmp_path, gates, why):
     (problem,) = _refused(_tmp_agent(tmp_path, gates=gates), tmp_path / "out")
     assert isinstance(problem, AgentManifestError)
     assert why in problem.why and "[gates]" in problem.where and problem.how
+
+
+@pytest.mark.parametrize(
+    "version",
+    [
+        "1",
+        "1.2",
+        "1.2.3.4",
+        "v1.2.3",
+        "1.2.x",
+        "01.2.3",
+        "1.02.3",
+        "1.2.03",
+        "1.2.3-rc1",
+        "",
+        " 1.2.3",
+    ],
+)
+def test_a_version_the_firmware_cannot_parse_is_refused(tmp_path, version):
+    # The OTA code reads the app version as three numbers to tell an update from a
+    # downgrade; the build writes it into version.txt, so it must be readable there too.
+    agent = _tmp_agent(tmp_path)
+    text = agent.read_text()
+    quoted = "".join(
+        c if " " <= c <= "~" and c not in '"\\' else f"\\u{ord(c):04X}" for c in version
+    )
+    agent.write_text(text.replace('version = "0.0.1"', f'version = "{quoted}"'))
+    assert load_agent_manifest(agent).version == version
+    (problem,) = _refused(agent, tmp_path / "out")
+    assert isinstance(problem, AgentManifestError)
+    assert "[agent] version" in problem.where
+    assert "MAJOR.MINOR.PATCH" in problem.why and problem.how
 
 
 def test_a_directory_the_build_did_not_write_is_never_overwritten(tmp_path):

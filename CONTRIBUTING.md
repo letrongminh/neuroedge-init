@@ -168,6 +168,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `gates/` | Gate mẫu, phân giải được, gồm chuỗi kế thừa | Thêm: PR thường; sửa/xoá: **RFC** (§3) |
 | `digests.lock` | Digest JCS của mọi gate chuẩn mực | Chỉ qua `scripts/check_digests.py` (§3) |
 | `boards/` | Khai báo năng lực bo mạch (TOML) | PR thường (§3) |
+| `pipewire/` | Drop-in `neuroedge-echo-cancel.conf` cho AEC phần mềm trên `linux` (Q-22); vào wheel qua `hatch_build.py`, tìm bằng `neuroedge.paths.echo_cancel_conf()` | PR thường |
 | `fixtures/traces/*.json` | Ba vết ghi chuẩn mực | **RFC** |
 | `fixtures/traces/invalid/`, `fixtures/gates/invalid/` | Corpus phản chứng + `expected_errors.yaml` | PR thường, khép kín (§3) |
 | `fixtures/gates/valid/`, `fixtures/gates/registry/` | Gate phân giải đúng; gate cơ sở cho fixture | Thêm: PR thường; sửa/xoá: **RFC** |
@@ -195,6 +196,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `targets/esp32s3/components/ne_agent/` | Component agent do `neuroedge build --target esp32s3` sinh, ở đây cho agent mẫu `home-voice`: cây `NETR`, bảng gate · chân · action, phép kiểm self-test kèm phán quyết engine host | Không sửa tay — `scripts/gen_firmware_gates.py` (`--check` chạy trong pytest) |
 | `targets/esp32s3/components/ne_gate/` | Walker C99 và sổ token C | PR thường; bố cục `NETR`: **RFC** |
 | `targets/esp32s3/components/ne_trace/` | Dòng vết ghi `NE1` trên UART — định dạng C99, không biến toàn cục ([`simulation_coverage.md`](docs/spec/simulation_coverage.md) §4) | PR thường; job `firmware-qemu` |
+| `targets/esp32s3/ui/` | Giao diện LVGL của thiết bị: màn hình (`ne_ui.h`), bảng chữ vi/en, phông Be Vietnam Pro sinh sẵn, ảnh golden và host harness riêng; quy tắc ngôn ngữ ở [`docs/spec/ui.md`](docs/spec/ui.md) | PR thường; đổi màn hình, bảng chữ, phông hoặc ca golden ⇒ `bash scripts/run_ui_golden.sh --update`; job `ui-golden` |
 | `scripts/` | Công cụ CI và phát hành | PR thường |
 | `.github/` | Năm workflow ở `workflows/` — danh sách job: `CHANGELOG.md` §2.5; `dependabot.yml` (ghim SHA của Actions), `actionlint.yaml` | PR thường |
 | `docs/rfc/`, `docs/spec/`, `docs/reports/` | RFC, đặc tả chuẩn tắc, báo cáo đo | PR thường |

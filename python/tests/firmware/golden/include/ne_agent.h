@@ -19,6 +19,9 @@ extern "C" {
 
 #define NE_AGENT_VERSION "firmware-fixture@0.2.0"
 #define NE_AGENT_BOARD "esp32s3-box-3"
+/* The language of the device UI (TSK-S4-10): one of ne_ui_language_from_code()'s
+ * codes in targets/esp32s3/ui/. The rule that picked it is docs/spec/ui.md §Ngôn ngữ. */
+#define NE_AGENT_LANGUAGE "vi"
 /* The most criteria of any gate of this agent: the self-test's fact buffer. */
 #define NE_AGENT_MAX_NODES 4u
 #define NE_AGENT_NO_NODE 255u

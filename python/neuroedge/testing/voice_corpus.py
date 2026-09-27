@@ -50,14 +50,22 @@ from ..errors import NeuroEdgeError
 from ..paths import fixtures_dir
 from ..perception import TRIGGERS, VirtualClock, VoiceParams, VoiceSession
 from ..perception.providers.base import AudioClip, Speech, SpeechUnavailable, Transcript
-from ..perception.providers.fake import tone
+from ..perception.providers.fake import FakeWakeWordDetector, tone
 from ..perception.voice_session import FACTS_SOURCES
 from ..trace import validate_trace
 
 EXPECTED_FILE = "expected_results.yaml"
 SCENARIOS = ("V1", "V2", "V3", "V4", "V5", "V6", "V7")
 CASE_KEYS = {"description", "scenario", "covers", "agent", "params", "world", "inputs", "until_ms"}
-WORLD_KEYS = {"facts", "unset_facts", "sensors", "system_two", "facts_source"}
+WORLD_KEYS = {
+    "facts",
+    "unset_facts",
+    "sensors",
+    "system_two",
+    "facts_source",
+    "stt_fallback",  # a label: the run wires a fallback STT (TSK-I4-01, Q-14)
+    "wake_word",  # true: the run wires a detector (never fires on its own)
+}
 
 # §4, in table order: (from, to, trigger) — None where the row stays in its state
 # and records no `voice_state_changed`.
@@ -108,6 +116,8 @@ OBSERVED: dict[str, dict[str, tuple[str, ...]]] = {
     "tool_confirm_expired": {"strict": ("id",), "optional": ()},
     "voice_reprompt": {"strict": ("turn", "count"), "optional": ()},
     "voice_late_result_dropped": {"strict": ("turn", "input"), "optional": ()},
+    # The primary STT failed and the fallback endpoint answered (TSK-I4-01, Q-14).
+    "stt_fallback": {"strict": ("reason",), "optional": ("from", "to")},
 }
 
 
@@ -168,6 +178,21 @@ def load_case(path: Path) -> VoiceCase:
         raise _error(f"{path} -> world", f"unknown keys {sorted(set(world) - WORLD_KEYS)}", "fix")
     if world.get("facts_source", "local_grammar") not in FACTS_SOURCES:
         raise _error(f"{path} -> world.facts_source", repr(world["facts_source"]), "fix")
+    fallback = world.get("stt_fallback")
+    if fallback is not None and (not isinstance(fallback, str) or not fallback.strip()):
+        raise _error(
+            f"{path} -> world.stt_fallback",
+            repr(fallback),
+            "a non-empty label; the run then wires a fallback STT (a stt_unavailable input makes "
+            "the driver emit stt_fallback and keep the turn open)",
+        )
+    if "wake_word" in world and not isinstance(world["wake_word"], bool):
+        raise _error(
+            f"{path} -> world.wake_word",
+            repr(world["wake_word"]),
+            "true or false: with true the run wires a detector (which never fires on its own, "
+            "so wake_word_detected stays an input; vad_activation must be false — T01)",
+        )
     inputs = document.get("inputs") or []
     last = 0
     for i, event in enumerate(inputs):
@@ -360,10 +385,16 @@ class CaseSpeechToText:
     A fake STT that answers a turn's audio with the case's first transcript (or
     failure) for that turn after the request, at that input's offset. A turn with
     none never answers inside the case: its answer lands after `until_ms`.
+
+    `kinds` narrows what it answers: the fallback STT of `world.stt_fallback`
+    answers only `stt_result` inputs, so a case can script "the primary fails at
+    T1, the fallback hears the words at T2" (TSK-I4-01, Q-14).
     """
 
-    def __init__(self, case: VoiceCase, clock: VirtualClock) -> None:
-        self.case, self.clock = case, clock
+    def __init__(
+        self, case: VoiceCase, clock: VirtualClock, kinds: tuple[str, ...] = STT_INPUTS
+    ) -> None:
+        self.case, self.clock, self.kinds = case, clock, kinds
         self.clips: list[AudioClip] = []
 
     def transcribe(self, clip: AudioClip) -> Transcript:
@@ -373,7 +404,7 @@ class CaseSpeechToText:
             (
                 e
                 for e in self.case.inputs
-                if e["type"] in STT_INPUTS
+                if e["type"] in self.kinds
                 and int(e["data"]["turn"]) == clip.turn
                 and e["offset_ms"] > now
             ),
@@ -437,6 +468,11 @@ async def execute(
     """
     world = case.world
     clock = VirtualClock()
+    fallback_label = world.get("stt_fallback")
+    # A detector that never fires: the case's `wake_word_detected` input stays the
+    # input, but the session runs as one with a detector configured, so its
+    # vad_activation rule is the one the case proves (T01, TSK-I4-01).
+    wake = FakeWakeWordDetector([]) if world.get("wake_word") else None
     voice = VoiceSession.load(
         fixtures_dir() / "agents" / case.agent / "agent.toml",
         params=case.params,
@@ -447,7 +483,17 @@ async def execute(
         system_two=bool(world.get("system_two")),
         facts_source=world.get("facts_source", "local_grammar"),
         stt=CaseSpeechToText(case, clock) if speech else None,
+        # Wired in both runs, so the driver emits `stt_fallback` alike: with no
+        # provider (the raw run) there is no clip to send, and the case's written
+        # `stt_result` continues the turn — exactly what the fallback provider
+        # produces in the speech run.
+        stt_fallback=(
+            CaseSpeechToText(case, clock, kinds=("stt_result",)) if fallback_label else None
+        ),
+        stt_label="primary",
+        stt_fallback_label=str(fallback_label or "stt.fallback"),
         tts=CaseTextToSpeech(case, clock) if speech else None,
+        wake_word=wake,
     )
     for event in case.inputs:
         await voice.advance(event["offset_ms"])

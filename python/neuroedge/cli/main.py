@@ -1308,12 +1308,15 @@ def _start_session(
     events=None,
     ui: bool = False,
     clock=None,
+    target_options=None,
 ):
     """
     Load the agent for an interactive session on `sim` or `linux`, or exit with the
     right code: 2 for a target (or `--ui` on it) with no session yet, 1 when the agent
     does not fit the board or `linux` cannot run (no `gpiod`, no GPIO chip — Q-16).
     `clock`: the session's clock (a voice session runs on a virtual one).
+    `target_options`: the HAL's own options (a voice session on `linux` passes
+    ``audio="file"`` so it never opens a live device — TSK-S5-08).
     """
     from ..sim import SimSession
 
@@ -1357,6 +1360,7 @@ def _start_session(
             registry=GateRegistry(registry) if registry is not None else None,
             events=events,
             **({"clock": clock} if clock is not None else {}),
+            **({"target_options": target_options} if target_options is not None else {}),
         )
     except BuildFailed as failed:
         _fail_build(failed)
@@ -1369,8 +1373,9 @@ VOICE_FILE_OPTION = typer.Option(
     None,
     "--voice-file",
     help=(
-        "Speak instead of typing: a WAV file (16 kHz mono 16-bit on sim) heard through the "
-        "agent's \\[stt] provider, replies spoken through \\[tts] (sim only)"
+        "Speak instead of typing: a WAV file (16 kHz mono 16-bit on sim; 8–96 kHz, 1–2 channels "
+        "on linux, converted to the board's rate) heard through the agent's \\[stt] provider, "
+        "replies spoken through \\[tts]"
     ),
 )
 VOICE_OUT_OPTION = typer.Option(
@@ -1393,8 +1398,10 @@ def _voice_session(
     anonymize: bool = False,
 ) -> int:
     """
-    `--voice-file`: the WAV file is the session's `audio.in` (TSK-S3-13). Exit 1 on
-    a flag it cannot combine with, 2 where voice is not implemented yet.
+    `--voice-file`: the WAV file is the session's `audio.in` (TSK-S3-13). On `linux`
+    it goes through `LinuxHAL`'s file backend — converted to the board's rate, no
+    microphone and no `sounddevice` (TSK-S5-08). Exit 1 on a flag it cannot combine
+    with, 2 where voice is not implemented yet.
     """
     if voice_file is None:
         _fail(
@@ -1415,8 +1422,6 @@ def _voice_session(
     planned = None
     if ui:
         planned = ("--ui", "the live page does not play or record audio yet")
-    elif target == "linux":
-        planned = ("--target linux", "audio.in / audio.out on linux arrive with TSK-S5-08")
     elif target in PLANNED_SESSIONS:
         planned = (
             f"--target {target}",
@@ -1432,8 +1437,22 @@ def _voice_session(
             )
         )
         raise typer.Exit(code=2)
+    from ..engine.compiler import load_agent_manifest
     from ..perception import VirtualClock
+    from ..perception.providers import load_wake_word_config, make_wake_word
     from .voice import run_voice
+
+    # The wake word's model files — and the detector library or adapter — are checked
+    # here, before the session requests any GPIO line: the models are the user's own
+    # and may live only on the device, and the build (rightly) no longer requires them
+    # on this machine (TSK-I4-01, Q-45).
+    try:
+        manifest = load_agent_manifest(agent or _default_agent())
+        wake_config = load_wake_word_config(manifest, check_files=True)
+        if wake_config is not None:
+            make_wake_word(wake_config, manifest.root)
+    except NeuroEdgeError as error:
+        _fail(error)
 
     clock = VirtualClock()
     events = None
@@ -1441,7 +1460,19 @@ def _voice_session(
         from ..testing.recorder import TraceRecorder
 
         events = TraceRecorder(anonymize=anonymize, clock=clock)
-    session = _start_session(verb, agent, target, board, registry, events=events, clock=clock)
+    session = _start_session(
+        verb,
+        agent,
+        target,
+        board,
+        registry,
+        events=events,
+        clock=clock,
+        # A voice session is the file backend only, whatever the machine's
+        # NEUROEDGE_LINUX_AUDIO says: live capture/playback drives no session yet
+        # (TODOS.md #45), and the file backend must never open a device (TSK-S5-08).
+        target_options={"audio": "file"} if target == "linux" else None,
+    )
     if events is not None:
         trace_out = (
             trace_out if trace_out.suffix == ".json" else trace_out / f"{events.session_id}.json"
@@ -1485,11 +1516,14 @@ def run(
     Input is typed text matched by the agent's commands.toml — no network, no
     key (Q-15). The agent is build-checked against the board first. On `linux`
     the pins are real GPIO lines (the `linux` extra; a board, or
-    scripts/setup_gpio_sim.sh) and the agent may need `digital.out` only.
+    scripts/setup_gpio_sim.sh).
 
-    With --voice-file (sim) the input is speech: each turn the VAD finds goes to
+    With --voice-file the input is speech: each turn the VAD finds goes to
     the agent's STT provider, its transcript takes the typed line's path through
-    the gate, and replies go to its TTS provider (--voice-out saves them).
+    the gate, and replies go to its TTS provider (--voice-out saves them). On
+    `linux` the file is converted to the board's rate by `LinuxHAL`'s file
+    backend; microphone and speaker (the `audio` extra, Q-22) are a later
+    session (TODOS.md #45).
     """
     if voice_file is not None or voice_out is not None:
         code = _voice_session(

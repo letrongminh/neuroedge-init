@@ -9,6 +9,7 @@ idf_component_register(
         ne_agent
         ne_gate
         ne_trace
+        ne_ota
         esp_system
         esp_wifi
         esp_netif

@@ -1,12 +1,13 @@
 """
 Hatch build hook: ship the language-neutral assets inside the package (TSK-S3-17).
 
-`schemas/`, `boards/`, `gates/`, `fixtures/traces/`, `fixtures/agents/` and
-`fixtures/tool_calls/` (the Gated Tool Profile corpus `neuroedge verify` runs) live at
-the monorepo root, outside `python/`. A wheel without them installs, but
-`neuroedge build`, `run`, `test` and `gate lint` all fail — measured 2026-09-23.
-This hook copies them to `neuroedge/_data/`, where `neuroedge.paths` finds them
-when there is no source checkout.
+`schemas/`, `boards/`, `gates/`, `fixtures/traces/`, `fixtures/agents/`,
+`fixtures/tool_calls/` (the Gated Tool Profile corpus `neuroedge verify` runs) and
+`pipewire/` (the echo-cancel drop-in `linux` ships, TSK-S5-08) live at the monorepo
+root, outside `python/`. A wheel without them installs, but `neuroedge build`, `run`,
+`test` and `gate lint` all fail — measured 2026-09-23. This hook copies them to
+`neuroedge/_data/`, where `neuroedge.paths` finds them when there is no source
+checkout.
 
 `neuroedge build --target esp32s3` copies the firmware sources into the agent's
 ESP-IDF project (TSK-I3-01), so the wheel carries them too — only the files
@@ -39,14 +40,20 @@ ASSETS = (
     "fixtures/traces",
     "fixtures/agents",
     "fixtures/tool_calls",
+    # The PipeWire echo-cancel drop-in `linux` ships to the device (TSK-S5-08, Q-22):
+    # language-neutral, so it travels with the other assets.
+    "pipewire",
 )
 TARGET = "neuroedge/_data"
 FIRMWARE = "targets/esp32s3"
 FIRMWARE_SOURCES = (
     "CMakeLists.txt",
     "partitions.csv",
+    "version.txt",
     "sdkconfig.defaults",
     "sdkconfig.qemu",
+    "sdkconfig.ota",
+    "sdkconfig.qemu_ota",
     "main/CMakeLists.txt",
     "main/Kconfig.projbuild",
     "main/*.c",
@@ -59,6 +66,10 @@ FIRMWARE_SOURCES = (
     "components/ne_trace/CMakeLists.txt",
     "components/ne_trace/include/*.h",
     "components/ne_trace/src/*.c",
+    "components/ne_ota/CMakeLists.txt",
+    "components/ne_ota/Kconfig",
+    "components/ne_ota/include/*.h",
+    "components/ne_ota/src/*.c",
 )
 # Never shipped from any asset: what building in place leaves behind — an agent's
 # `neuroedge build` (build/, its esp32s3/ project) or `idf.py` inside fixtures/agents/<name>/

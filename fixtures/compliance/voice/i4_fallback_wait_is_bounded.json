@@ -1,0 +1,23 @@
+{
+  "description": "TSK-I4-01, Q-14: fallback STT cũng không trả lời trong cửa sổ nghĩ mới (1700 + 5000 = 6700) ⇒ câu offline lúc 6700; bản chép lời đến muộn lúc 9000 bị bỏ, không chân nào động.",
+  "scenario": "table",
+  "covers": ["T01", "T02", "T04", "T07"],
+  "agent": "voice-door",
+  "params": {
+    "end_of_turn_silence_ms": 700,
+    "listen_timeout_ms": 8000,
+    "think_timeout_ms": 5000,
+    "max_reprompts": 1
+  },
+  "world": {
+    "stt_fallback": "local"
+  },
+  "inputs": [
+    {"offset_ms": 0, "type": "wake_word_detected", "data": {"word": "hey_neuro", "score": 0.93}},
+    {"offset_ms": 200, "type": "audio_in_vad_start", "data": {"energy_db": -18.0}},
+    {"offset_ms": 900, "type": "audio_in_vad_end", "data": {}},
+    {"offset_ms": 1700, "type": "stt_unavailable", "data": {"turn": 1, "reason": "primary STT down"}},
+    {"offset_ms": 9000, "type": "stt_result", "data": {"turn": 1, "text": "mở cửa"}}
+  ],
+  "until_ms": 10000
+}
