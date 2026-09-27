@@ -164,7 +164,9 @@ def gate_digest_changes(
 
 def _decided_changes(changes: list[GateDigestChange]) -> list[GateDigestChange]:
     """Those where both sides exist: a recorded digest that today's gate differs from."""
-    return [change for change in changes if change.recorded is not None and change.current is not None]
+    return [
+        change for change in changes if change.recorded is not None and change.current is not None
+    ]
 
 
 def _gate_digest_replay_error(change: GateDigestChange) -> ReplayError:

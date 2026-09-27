@@ -322,9 +322,7 @@ def test_replay_rejects_an_invalid_trace(invoke, traces_dir):
     assert result.exit_code == 1
 
 
-def test_replay_tells_the_user_a_gate_changed_since_the_recording(
-    invoke, traces_dir, tmp_path
-):
+def test_replay_tells_the_user_a_gate_changed_since_the_recording(invoke, traces_dir, tmp_path):
     "RFC-0008: replay after a deliberate gate edit is not an error — it says which gate changed."
     trace = tmp_path / "edited-gate.json"
     altered = json.loads((traces_dir / "happy-path.json").read_text(encoding="utf-8"))
