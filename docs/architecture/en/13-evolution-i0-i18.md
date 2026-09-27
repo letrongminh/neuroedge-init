@@ -3,7 +3,7 @@
 > **Scope:** how the architecture will grow across increments, what is already prepared, what needs an
 > RFC. **Sources:** status, progress and forecast dates live only in roadmap §0.2 (Q-39) — this page
 > does not copy them; figure E-09 is **generated from that very table**. The design of the expansion
-> directions is in `neuroedge-roadmap-phase1-5.md`, `neuroedge-roadmap-phase2.md`,
+> directions is in `neuroedge-design-neurobrain.md`, `neuroedge-design-phase2.md`,
 > `draft-ke-hoach-mo-rong-robot-fofoca.md`, `draft-rfc-node-giao-thuc-dieu-phoi.md`.
 
 ## 1. The picture

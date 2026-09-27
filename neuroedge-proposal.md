@@ -1277,7 +1277,7 @@ neuroedge run --target sim
 **De-scope tường minh trong Khối 1b:**
 - *Wake-word tùy biến:* Chưa hỗ trợ quy trình huấn luyện wake-word riêng biệt; chỉ tích hợp sẵn wake-word chuẩn pre-trained (ví dụ: *"Hey Neuro"*).
 - *Độ phủ phần cứng:* Giới hạn duy nhất trên **1 bo mạch tham chiếu chính thức: ESP32-S3-Box-3** (tích hợp sẵn màn hình LCD ST7789, dual-mic ES7210, loa ES8311, dock I/O; tránh câu dây gây nhiễu I2S) để tối ưu hóa triệt để độ ổn định bộ nhớ SRAM/PSRAM, không hỗ trợ dàn trải các biến thể phần cứng khác nhau.
-- *MCP trên vi điều khiển:* MCU không làm MCP host (Q-27); đưa tool của thiết bị MCU ra MCP qua gateway là việc của Giai đoạn 2 (`neuroedge-roadmap-phase2.md` TSK-P2-05).
+- *MCP trên vi điều khiển:* MCU không làm MCP host (Q-27); đưa tool của thiết bị MCU ra MCP qua gateway là việc của Giai đoạn 2 (`neuroedge-design-phase2.md` TSK-P2-05).
 - *Phạm vi chưa thực hiện:* Thị giác máy tính · Dịch vụ đám mây thương mại *(Fleet OS thuộc Khối 2; kết nối tới provider cloud qua lớp provider **thuộc phạm vi** — CR-1.0)* · Hệ thống tài khoản người dùng · Sàn thương mại · Hỗ trợ Jetson/Matter/HomeKit · Tự tinh chỉnh (fine-tune) mô hình AI.
 
 ### 8.3 Giai đoạn đệm: Developer Beta & Xây dựng cộng đồng (I8)
@@ -1348,7 +1348,7 @@ Danh mục các sản phẩm tiềm năng trên sàn giao dịch:
 
 ### 8.9 Giai đoạn 2 — Perception thị giác và phủ rộng phần cứng (I11, I13, I15–I18)
 
-**Mục tiêu:** mở rộng tầng nhận thức từ thoại sang thị giác, và mở rộng danh mục phần cứng từ ba target lên sáu — **mà không đụng tới tầng an toàn hành động**. Kế hoạch thực thi chi tiết tại `neuroedge-roadmap-phase2.md`.
+**Mục tiêu:** mở rộng tầng nhận thức từ thoại sang thị giác, và mở rộng danh mục phần cứng từ ba target lên sáu — **mà không đụng tới tầng an toàn hành động**. Kế hoạch thực thi chi tiết tại `neuroedge-design-phase2.md`.
 
 Giai đoạn 2 **chạy song song Khối 4**, không nối tiếp: AURA triển khai thực địa ở khách sạn chính là nơi sinh ra nhu cầu camera đo được, tức là nguồn dữ liệu PF-3 cho chính thị giác. Kích hoạt vẫn milestone-gated, không theo lịch.
 
@@ -1373,7 +1373,7 @@ Giai đoạn 2 **chạy song song Khối 4**, không nối tiếp: AURA triển 
 
 ### 8.10 NeuroBrain — bring-up phần cứng bằng hội thoại (I12)
 
-*"NeuroBrain — Build Physical AI by conversation, under contract"* (PRD Q-31): kỹ sư bring-up một bo mạch mới bằng hội thoại, mỗi lệnh chạm chân vẫn đi qua gate, và bản nháp gate sinh ra phải được người duyệt khoá lại trước khi dùng. Làm **sau Developer Beta** (PRD Q-40) để không giành công của đường găng v1.0. Thiết kế: `neuroedge-roadmap-phase1-5.md`; task, tiêu chí ra và ngày: `neuroedge-roadmap.md` I12.
+*"NeuroBrain — Build Physical AI by conversation, under contract"* (PRD Q-31): kỹ sư bring-up một bo mạch mới bằng hội thoại, mỗi lệnh chạm chân vẫn đi qua gate, và bản nháp gate sinh ra phải được người duyệt khoá lại trước khi dùng. Làm **sau Developer Beta** (PRD Q-40) để không giành công của đường găng v1.0. Thiết kế: `neuroedge-design-neurobrain.md`; task, tiêu chí ra và ngày: `neuroedge-roadmap.md` I12.
 
 ### 8.11 Robot phân tầng (I14)
 

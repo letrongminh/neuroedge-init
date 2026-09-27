@@ -14,7 +14,7 @@
 **Phạm vi:** mọi increment từ **I0** tới **I18** — v1.0, Developer Beta, tầng dịch vụ v1.1, Giai đoạn 2, NeuroBrain và robot phân tầng. Đây là **nơi duy nhất** ghi trạng thái task, tiêu chí ra, phụ thuộc, thẻ phát hành và ngày dự báo (Q-39).
 
 
-**Ghi chú thiết kế** — không lịch, không trạng thái; increment dẫn tới: [`neuroedge-roadmap-phase1-5.md`](neuroedge-roadmap-phase1-5.md) (NeuroBrain, I12) · [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) (thị giác và phủ phần cứng, I11, I13, I15–I18) · [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) và [`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) (robot phân tầng, I14)
+**Ghi chú thiết kế** — không lịch, không trạng thái; increment dẫn tới: [`neuroedge-design-neurobrain.md`](neuroedge-design-neurobrain.md) (NeuroBrain, I12) · [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) (thị giác và phủ phần cứng, I11, I13, I15–I18) · [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) và [`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) (robot phân tầng, I14)
 
 
 **Ngoài roadmap:** Khối 4 (AURA thực địa) · Khối 5 (Marketplace) — §8.1
@@ -912,7 +912,7 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 | **Điều kiện vào** | RFC-0002 được chấp thuận (kỹ thuật trưởng) |
 | **Tín hiệu đo** | Số profile bậc 3 gửi tới |
 | **Người** | V1 |
-| **Thiết kế** | [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) §5 |
+| **Thiết kế** | [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) §5 |
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
@@ -939,18 +939,18 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 | **Điều kiện vào** | Thêm một người (§1.1); khối N0 (quản trị) làm được sớm hơn nếu cần (Q-40) |
 | **Tín hiệu đo** | Tỷ lệ BLOCK; số bản nháp gate được khoá |
 | **Người** | V2 + người mới |
-| **Thiết kế** | [`neuroedge-roadmap-phase1-5.md`](neuroedge-roadmap-phase1-5.md) |
+| **Thiết kế** | [`neuroedge-design-neurobrain.md`](neuroedge-design-neurobrain.md) |
 
 #### Khối N0 — Quản trị
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N0-01** | Hai mục `Q-N`: "Lab Mode / NeuroBrain" và "Giai đoạn 1.5", chuyển các quyết định ở `neuroedge-roadmap-phase1-5.md` Phụ lục B vào PRD §15 | — | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` §15 |
+| **TSK-N0-01** | Hai mục `Q-N`: "Lab Mode / NeuroBrain" và "Giai đoạn 1.5", chuyển các quyết định ở `neuroedge-design-neurobrain.md` Phụ lục B vào PRD §15 | — | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` §15 |
 | **TSK-N0-02** | Sửa đổi FR-HAL-01: primitive mới (`digital.in`, bus I2C) là **tuỳ chọn theo board**, như RFC-0002 làm với `vision.in`; sửa FR-CLI-10 cho `mcp desktop-config --lab` | FR-HAL-01, FR-CLI-10 | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` |
 | **TSK-N0-03** | Nháp RFC-0007: `digital.in`; bus I2C chỉ đọc; chỗ cho ADC; trường bus/địa chỉ và khai báo phong bì trong `board.v1`. Phải lý giải vì sao không mở rộng `sensor.read`. `gate.v1` không đổi | FR-HAL-01 | V2 | ⏳ Chưa bắt đầu | `docs/rfc/0007-*.md` |
 | **TSK-N0-04** | Cập nhật threat model §2b: lab action, nguồn `trigger`, `/confirm`, cờ `[lab] enabled` | NFR-SEC-09 | V2 | ⏳ Chưa bắt đầu | `docs/spec/threat_model.md` |
 | **TSK-N0-05** | Quy trình duyệt gate nháp: `-draft` → PR có người review → `gate lint` sạch → bỏ hậu tố → `check_digests.py --update` | FR-GATE-* | V2 | ⏳ Chưa bắt đầu | `CONTRIBUTING.md` §3 |
-| **TSK-N0-06** | Đề xuất mở rộng Q-11 cho OFL-1.1 (**chỉ với font**) và mục `NOTICE` cho IBM Plex; thêm mục `NOTICE` Section A cho ESP-Claw (`neuroedge-roadmap-phase1-5.md` Phụ lục A) | — | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` Q-11 · `NOTICE` |
+| **TSK-N0-06** | Đề xuất mở rộng Q-11 cho OFL-1.1 (**chỉ với font**) và mục `NOTICE` cho IBM Plex; thêm mục `NOTICE` Section A cho ESP-Claw (`neuroedge-design-neurobrain.md` Phụ lục A) | — | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` Q-11 · `NOTICE` |
 
 - [ ] **Tiêu chí N0.1:** Hai mục `Q-N` có trạng thái ĐÃ CHỐT, có chữ ký kỹ thuật trưởng.
 - [ ] **Tiêu chí N0.2:** RFC-0007 ở trạng thái thảo luận, `schemas/gate.v1.json` không đổi byte nào.
@@ -982,12 +982,12 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 | **TSK-N2-01** | Hook phong bì trong `HardwareAbstractionLayer.digital_out`, được tiêm vào như `authorize`. Thứ tự `require_pin → envelope → authorize → record`. Bị từ chối thì **token không bị tiêu** | FR-HAL-* | — | ⏳ Chưa bắt đầu | `python/neuroedge/hal/__init__.py` |
 | **TSK-N2-02** | Chính sách phong bì trong `brain/`: check-và-reserve **nguyên tử** dưới khoá theo chân; `time.monotonic` được tiêm vào; trace ghi sự kiện `envelope_refused` | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
 | **TSK-N2-03** | Móc tắt an toàn cho `mcp serve`: `close()` gọi `hal.close()`, bắt SIGTERM, `on_no_initialize` dọn dẹp trước `os._exit` | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` |
-| **TSK-N2-04** | Hợp đồng hồi quy — năm khẳng định (`neuroedge-roadmap-phase1-5.md` §7.1) | — | — | ⏳ Chưa bắt đầu | `python/tests/test_hal_*.py` · `test_safety_regressions.py` · `test_mcp_serve_ui.py` |
+| **TSK-N2-04** | Hợp đồng hồi quy — năm khẳng định (`neuroedge-design-neurobrain.md` §7.1) | — | — | ⏳ Chưa bắt đầu | `python/tests/test_hal_*.py` · `test_safety_regressions.py` · `test_mcp_serve_ui.py` |
 | **TSK-N2-05** | Cập nhật sơ đồ ở đầu `mcp_server.py` thêm bước phong bì | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/mcp_server.py` |
 
 - [ ] **Tiêu chí N2.1:** Hai lệnh đồng thời cùng chân, chạy cả hai thứ tự bằng điểm dừng điều khiển được, cho đúng một `envelope_refused`.
 - [ ] **Tiêu chí N2.2:** Test SIGTERM giữa xung trên gpio-sim đưa line về 0 (sau TSK-S5-10). Phần unit của TSK-N2-03 chạy ngay.
-- [ ] **Tiêu chí N2.3:** Năm khẳng định của hợp đồng hồi quy (`neuroedge-roadmap-phase1-5.md` §7.1) đều xanh.
+- [ ] **Tiêu chí N2.3:** Năm khẳng định của hợp đồng hồi quy (`neuroedge-design-neurobrain.md` §7.1) đều xanh.
 
 #### Khối N3 — Bus I2C chỉ đọc
 
@@ -1006,7 +1006,7 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-N4-01** | Ghi sự thật phát hiện được, mỗi mục kèm trace nguồn: vai chân, chip ID. Hai vai mâu thuẫn trên cùng chân thì báo lỗi có kiểu, để người quyết | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
 | **TSK-N4-02** | Sinh profile board **mới** dạng nháp qua mã đọc/ghi `BoardProfile`, không ghi TOML bằng chuỗi. **Không sửa** ba profile tier-1 | FR-HAL-05 | — | ⏳ Chưa bắt đầu | `python/neuroedge/hal/board.py` |
-| **TSK-N4-03** | Cảnh báo chân đặc biệt theo MCU. ESP32-S3: strapping 0, 3, 45, 46; flash/PSRAM 26–32 (33–37 khi dùng PSRAM octal); chân đã bị ngoại vi chiếm (dữ liệu port từ ESP-Claw, `neuroedge-roadmap-phase1-5.md` Phụ lục A). Đây là cảnh báo, không phải blacklist | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
+| **TSK-N4-03** | Cảnh báo chân đặc biệt theo MCU. ESP32-S3: strapping 0, 3, 45, 46; flash/PSRAM 26–32 (33–37 khi dùng PSRAM octal); chân đã bị ngoại vi chiếm (dữ liệu port từ ESP-Claw, `neuroedge-design-neurobrain.md` Phụ lục A). Đây là cảnh báo, không phải blacklist | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
 
 #### Khối N5 — Chat Contracting
 
@@ -1049,7 +1049,7 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-N7-01** | Lab action + gate trên chip, dùng walker C và sổ token có sẵn | — | — | ⏳ Chưa bắt đầu | `targets/esp32s3/` |
 | **TSK-N7-02** | Cưỡng chế phong bì trong firmware C. Firmware chưa có phong bì thì action gắn phong bì bị **từ chối trên chip** (fail-closed) | — | — | ⏳ Chưa bắt đầu | `targets/esp32s3/components/` |
-| **TSK-N7-03** | Port chọn lọc từ ESP-Claw (`neuroedge-roadmap-phase1-5.md` Phụ lục A). MCP trên chip chỉ làm sau `TODOS.md` #24, hoặc đi qua UART | — | — | ⏳ Chưa bắt đầu | `targets/esp32s3/` · `NOTICE` |
+| **TSK-N7-03** | Port chọn lọc từ ESP-Claw (`neuroedge-design-neurobrain.md` Phụ lục A). MCP trên chip chỉ làm sau `TODOS.md` #24, hoặc đi qua UART | — | — | ⏳ Chưa bắt đầu | `targets/esp32s3/` · `NOTICE` |
 
 - [ ] **Tiêu chí N4–N7:** tiêu chí ra của N4, N5, N6 và N7 được viết và duyệt khi I12 mở (hôm nay chưa có).
 
@@ -1061,7 +1061,7 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 | **Điều kiện vào** | — |
 | **Tín hiệu đo** | Bản port bậc 3 đầu tiên của người ngoài; thời gian hỗ trợ của đội lõi |
 | **Người** | V3, V1 |
-| **Thiết kế** | [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) §9.1 |
+| **Thiết kế** | [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) §9.1 |
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
@@ -1121,7 +1121,7 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 | **Điều kiện vào** | Nhu cầu camera **đo được** từ khách hàng AURA thật — ít nhất hai khách nêu yêu cầu cụ thể (PF-3); V5 đã tuyển |
 | **Tín hiệu đo** | Tiêu chí ra bên dưới |
 | **Người** | V5, V1 |
-| **Thiết kế** | [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) §6 |
+| **Thiết kế** | [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) §6 |
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
@@ -1130,7 +1130,7 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 | **TSK-V1b-03** | Giao diện trừu tượng mô hình thị giác, đổi model bằng cấu hình | FR-MDL-04, FR-MDL-07 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/vision/` |
 | **TSK-V1b-04** | Action CI cho khung hình: record, replay, assert trên chuỗi phán quyết | FR-CI-01→04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/vision.py` |
 | **TSK-V1b-05** | Tích hợp NPU rời (Hailo-8, Coral) sau giao diện trừu tượng | FR-MDL-04 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/vision/accel/` |
-| **TSK-V1b-06** | Ba gate mẫu có yếu tố thị giác, tuân thủ ràng buộc ở `neuroedge-roadmap-phase2.md` §2.2 | FR-GATE-03 | V1 + V5 | ⏳ Chưa bắt đầu | `gates/vision/` |
+| **TSK-V1b-06** | Ba gate mẫu có yếu tố thị giác, tuân thủ ràng buộc ở `neuroedge-design-phase2.md` §2.2 | FR-GATE-03 | V1 + V5 | ⏳ Chưa bắt đầu | `gates/vision/` |
 | **TSK-V1b-07** | RFC nguyên thủy `vision.in`: hình dạng tham số có bằng chứng phần cứng (`fps` số thực, `modes[]`, enum `pixel_format`) và quy tắc so khớp với `[requires]` (RFC-0002 §9.1). Cần TSK-S2-02 | FR-HAL-01, FR-HAL-04 | V1 | ⏳ Chưa bắt đầu | `docs/rfc/` · `schemas/board.v1.json` |
 | **TSK-V1b-08** | Bằng chứng thị giác trong vết ghi: kết quả nhận diện qua sự kiện nhóm `perception`; `vision_ref` (băm + kích thước) chỉ là danh tính; lint `uri` chỉ khi `metadata.raw_capture` (RFC-0002 §9.2) | FR-CI-02, NFR-PRIV-01, NFR-PRIV-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/trace.py` · `fixtures/traces/invalid/` |
 
@@ -1153,7 +1153,7 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 | **Điều kiện vào** | Chỉ mua Jetson sau khi I15 đạt tiêu chí ra |
 | **Tín hiệu đo** | Tiêu chí ra bên dưới |
 | **Người** | V5 |
-| **Thiết kế** | [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) §7 |
+| **Thiết kế** | [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) §7 |
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
@@ -1178,7 +1178,7 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 | **Điều kiện vào** | TSK-V3-04 (RFC ngữ nghĩa gate cho bằng chứng thị giác) được chấp thuận trước phần gate đa phương thức |
 | **Tín hiệu đo** | Tiêu chí ra bên dưới |
 | **Người** | V1, V5 |
-| **Thiết kế** | [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) §8 |
+| **Thiết kế** | [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) §8 |
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
@@ -1201,7 +1201,7 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 | **Điều kiện vào** | Ít nhất 3 bản port bậc 3 do cộng đồng hoàn thành (PRD §14) |
 | **Tín hiệu đo** | V-G5 |
 | **Người** | V3 |
-| **Thiết kế** | [`neuroedge-roadmap-phase2.md`](neuroedge-roadmap-phase2.md) §9.2 |
+| **Thiết kế** | [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) §9.2 |
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|

@@ -18,7 +18,7 @@
 - `docs/spec/threat_model.md`, `docs/spec/tool_calling.md`, `docs/spec/hal_mcu_review.md`,
   `docs/spec/voice_fsm.md` (hợp đồng thu hồi lệnh), `docs/spec/simulation_coverage.md` (vết ghi `NE1` từ thiết bị)
 - `docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md`, `docs/rfc/0003-bo-cuc-nhi-phan-cay.md`
-- `neuroedge-roadmap-phase1-5.md` (ghi chú thiết kế NeuroBrain), `TODOS.md`, `CONTRIBUTING.md`
+- `neuroedge-design-neurobrain.md` (ghi chú thiết kế NeuroBrain), `TODOS.md`, `CONTRIBUTING.md`
 
 **Phạm vi:** các chặng W0–W4 — mở nguyên thủy HAL, an toàn actuator, hạ tầng tin cậy,
 multi-node, hệ sinh thái; kèm khung RFC cho từng thay đổi.
@@ -26,7 +26,7 @@ multi-node, hệ sinh thái; kèm khung RFC cho từng thay đổi.
 **Ngoài phạm vi:**
 
 - Matter / Apple HomeKit (PRD §14).
-- **Tự viết** SLAM, tránh vật cản, dẫn đường tự hành (`neuroedge-roadmap-phase2.md` §7). Ngoại lệ **Q-34**:
+- **Tự viết** SLAM, tránh vật cản, dẫn đường tự hành (`neuroedge-design-phase2.md` §7). Ngoại lệ **Q-34**:
   tích hợp nguyên bản ROS 2/Nav2 (TSK-W4-01), gate xét mọi lệnh tốc độ.
 - MHS ở bậc 1 hoặc chạm `schemas/` (Q-29 giữ nguyên: theo dõi, adapter cộng đồng khi chuẩn mở).
 - Tự huấn luyện/tinh chỉnh mô hình.
@@ -175,7 +175,7 @@ flowchart TB
 
 | Tầng | Thành phần | Vai trò |
 |:--|:--|:--|
-| T0 | Phần cứng node | Trạng thái an toàn cục bộ: kéo xuống/watchdog/giới hạn dòng — crash-safe (phần cứng bảo đảm; phần mềm thì không, `neuroedge-roadmap-phase1-5.md` §2.3) |
+| T0 | Phần cứng node | Trạng thái an toàn cục bộ: kéo xuống/watchdog/giới hạn dòng — crash-safe (phần cứng bảo đảm; phần mềm thì không, `neuroedge-design-neurobrain.md` §2.3) |
 | T1 | **Zenoh-pico** (nhánh Apache-2.0) trên MCU; `zenohd` trên Pi | Wire "black channel" — **không tin cậy** |
 | T2 | Lớp an toàn kiểu **black channel** (node id, seq, CRC, timestamp, heartbeat/TTL) | Thông điệp tự bảo vệ; mất heartbeat → node về trạng thái an toàn |
 | T3 | **Gate từng node** (giữ nguyên) + agent/ý định trên Pi | Không gate tập trung; node nào tự quyết node đó |
@@ -214,7 +214,7 @@ fail-closed) và cho phép dùng transport phổ thông mà không phải tin n�
 Hệ quả thiết kế:
 
 - Node giữ **trạng thái an toàn cục bộ** (ngắt điện động cơ) — phần mềm không cứu được
-  khi crash/SIGKILL, cần kéo xuống phần cứng/watchdog (`neuroedge-roadmap-phase1-5.md` §2.3, §15 rủi ro 3).
+  khi crash/SIGKILL, cần kéo xuống phần cứng/watchdog (`neuroedge-design-neurobrain.md` §2.3, §15 rủi ro 3).
 - Mất heartbeat/TTL → node từ chối mọi ý định mới và về trạng thái an toàn.
 - Replay protection: số thứ tự + epoch/`boot_id` + cửa sổ; không ý định cũ nào được thực hiện lại.
   ALLOW và token không đi qua wire (§4.2 của tài liệu này).
@@ -301,7 +301,7 @@ Test crash-safe cho `motion.*` phải chạy **trên bo mạch thật**: QEMU kh
 ### 7.3 An toàn actuator (cùng RFC-motion, không tách)
 
 - **T0 crash-safe:** kéo xuống/watchdog/giới hạn dòng trên node tham chiếu + runbook bắt
-  buộc ghi rõ (`neuroedge-roadmap-phase1-5.md` §2.3, §15 rủi ro 3).
+  buộc ghi rõ (`neuroedge-design-neurobrain.md` §2.3, §15 rủi ro 3).
 - **Phong bì N2:** định nghĩa ở ghi chú thiết kế NeuroBrain — tổng thời gian bật + tần suất theo chân,
   khai ở `board.v1` qua RFC-0007, móc trong HAL trước `authorize` (TSK-N2-01). RFC-motion mở rộng
   nó sang `motion.*`. **Không** dùng cờ `[lab]` làm ngoại lệ: lab mặc định tắt và `build --release`
@@ -383,7 +383,7 @@ từ W2-1…W2-7: Phụ lục B.
 
 **Lưu ý phần cứng:** `rp2350` có trong danh sách bậc 3 dự kiến (`neuroedge-proposal.md` Phụ lục D.1),
 nên nếu dùng thì chọn **RP2350** thay vì RP2040 cho node tay máy. **Q-33** (2026-09-25): đội lõi port
-RP2350 — ngoại lệ ghi ở PRD §14 cho luật "không tự port" (`neuroedge-roadmap-phase2.md` §9.1). Bo mạch tham chiếu
+RP2350 — ngoại lệ ghi ở PRD §14 cho luật "không tự port" (`neuroedge-design-phase2.md` §9.1). Bo mạch tham chiếu
 duy nhất vẫn là ESP32-S3-BOX-3 (bất biến 6); ở đây chỉ gọi là "node tham chiếu".
 
 ---
@@ -553,7 +553,7 @@ Mỗi khung dưới đây là dàn ý để chuyển thành RFC đầy đủ the
 ### A.5 RFC-vision-bậc23 — khoá `vision.in` cho bậc 2/3
 
 - **Vấn đề:** `vision.in` mới có danh sách đầu vào đã biết (RFC-0002 §9.1), chưa có hợp đồng
-  và luật riêng tư. Thuộc Khối V1b — thị giác trên `linux` và `sim` trước (`neuroedge-roadmap-phase2.md` §6).
+  và luật riêng tư. Thuộc Khối V1b — thị giác trên `linux` và `sim` trước (`neuroedge-design-phase2.md` §6).
 - **Đề xuất:** chốt `fps`/`modes[]`/`pixel_format`; kết quả quy về `bool/level/choice`
   trước gate; không khung hình thô vào trace; fail-closed khi mất camera/model.
 - **Ảnh hưởng:** `board.v1`; fixture vision; bất biến "sim không giàu hơn bo mạch".
@@ -585,7 +585,7 @@ thái và increment của task chỉ ở roadmap.
 | W1A-2 | FR-HAL-01; `TODOS.md` #30; RFC-numeric | TSK-W1-02 |
 | W1A-3 | RFC-0002 §3c.2 | TSK-V1a-03 |
 | W1B-RFC-1 | FR-TGT-08, RFC-0002; RFC-0007 (TSK-N0-03); ghi chú thiết kế NeuroBrain N0/N3 | TSK-V1a-01…06 · TSK-N0-03 · TSK-W1-02 |
-| W1B-RFC-2 | FR-HAL-01; N2 (ghi chú thiết kế NeuroBrain §7); crash-safe (`neuroedge-roadmap-phase1-5.md` §2.3, §15 rủi ro 3); `voice_fsm.md` §5; `TODOS.md` #39 | TSK-W1-03 · TSK-W1-04 |
+| W1B-RFC-2 | FR-HAL-01; N2 (ghi chú thiết kế NeuroBrain §7); crash-safe (`neuroedge-design-neurobrain.md` §2.3, §15 rủi ro 3); `voice_fsm.md` §5; `TODOS.md` #39 | TSK-W1-03 · TSK-W1-04 |
 | W1B-RFC-3 | RFC-0002 §9.1; `TODOS.md` #14; NFR-PRIV | TSK-V1b-07 |
 | W2-1 | NFR-SEC-04/05; FR-FLT-01; TSK-K2-04 | TSK-W2-01 (Pi ↔ node); cert thiết bị: TSK-K2-04 |
 | W2-2 | NFR-SEC-06; FR-OTA-01..04 | TSK-S6-01…04 |
@@ -598,7 +598,7 @@ thái và increment của task chỉ ở roadmap.
 | W3-5 | `docs/spec/tool_calling.md` §8 | TSK-P2-05 |
 | W3-6 | FR-CI-07 (NE4002, chỉ bậc 1) | TSK-W3-06 |
 | *(mới)* | Q-33 — port RP2350 làm node thứ hai | TSK-W3-07 |
-| W4-1 | `neuroedge-roadmap-phase2.md` §7; Q-11; Q-34; FR-MDL-10; `TODOS.md` #40 | TSK-W4-01 · TSK-W4-07 |
+| W4-1 | `neuroedge-design-phase2.md` §7; Q-11; Q-34; FR-MDL-10; `TODOS.md` #40 | TSK-W4-01 · TSK-W4-07 |
 | W4-2 | FR-GOV-03/04; TSK-P1-01..04 | TSK-P1-01…04 |
 | W4-3 | FR-REG-01..07; `TODOS.md` #11, #15; TR-4 | TSK-K3-04 · TSK-S3-21 |
 | W4-4 | TSK-P2-01 | TSK-P2-01 |
