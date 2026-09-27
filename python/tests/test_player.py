@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 
 import pytest
 
@@ -68,6 +69,84 @@ def test_the_happy_path_offline_is_blocked_as_unreachable(traces_dir):
 
 def test_a_bare_name_resolves_to_the_canonical_trace():
     assert replay("happy-path.json").verdicts == ["ALLOW"]
+
+
+# --- the gate the trace was decided by (RFC-0008) -----------------------------------------
+
+
+def test_canonical_traces_carry_the_compiled_gate_digest(traces_dir, root):
+    """RFC-0008: every gate_evaluation_begin of the normative traces names the gate's digest."""
+    from neuroedge.engine.compiler import load_agent_manifest, resolve_gates
+    from neuroedge.engine.decision_tree import compile_tree
+
+    manifest = load_agent_manifest(root / "fixtures" / "agents" / "villa-concierge" / "agent.toml")
+    gates, problems = resolve_gates(manifest)
+    assert problems == []
+    digests = {tree["gate"]: tree["gate_digest"] for tree in map(compile_tree, gates.values())}
+    for name in ("happy-path", "unverified_attempt", "network_offline"):
+        trace = canonical(traces_dir, name)
+        begins = [e for e in trace["events"] if e["type"] == "gate_evaluation_begin"]
+        assert begins
+        for begin in begins:
+            assert begin["data"]["gate_digest"] == digests[begin["data"]["gate"]]
+
+
+def test_verify_refuses_a_trace_decided_by_another_gate(traces_dir):
+    trace = canonical(traces_dir, "happy-path")
+    for event in trace["events"]:
+        if event["type"] == "gate_evaluation_begin":
+            event["data"]["gate_digest"] = "sha256:" + "0" * 64
+    # `neuroedge verify` runs the player with enforce_gate_digests (RFC-0008): the
+    # canonical trace must be decided by the very gate it was recorded with.
+    with pytest.raises(ReplayError, match="decides unlock_door@1.2.0 as.*compiles it to"):
+        replay(trace, enforce_gate_digests=True)
+
+
+def test_replay_reports_a_gate_that_changed_since_the_recording(traces_dir, copy_agent, root):
+    """A tightened gate is not a replay error: the verdicts are recomputed, the user is told."""
+    source = (root / "gates" / "unlock_door@1.2.0.yaml").read_text(encoding="utf-8")
+    manifest = (root / "fixtures" / "agents" / "villa-concierge" / "agent.toml").read_text(
+        encoding="utf-8"
+    )
+    agent = copy_agent(
+        "villa-concierge",
+        files={
+            "gates/unlock_door@1.2.0.yaml": source.replace(
+                "risk_level:   { lte: low }", "risk_level:   { eq: low }"
+            ),
+            "agent.toml": manifest.replace(
+                'unlock_door = "neuroedge://gates/unlock_door@1.2.0"',
+                'unlock_door = "gates/unlock_door@1.2.0.yaml"',
+            ),
+        },
+    )
+    result = replay(traces_dir / "happy-path.json", agent=agent)
+    assert result.verdicts == ["ALLOW"]
+    assert result.pin("door_lock").pulsed_once(duration_ms=30000)
+    [warning] = [w for w in result.warnings if w.startswith("unlock_door@1.2.0 changed")]
+    recorded = next(
+        e["data"]["gate_digest"]
+        for e in canonical(traces_dir, "happy-path")["events"]
+        if e["type"] == "gate_evaluation_begin"
+    )
+    old, new = re.findall(r"sha256:[0-9a-f]{64}", warning)
+    assert old == recorded != new
+    assert "replay recomputed the verdicts with the current gate" in warning
+
+
+def test_a_trace_without_gate_digest_replays_unchanged(traces_dir):
+    """A trace recorded before RFC-0008 has nothing to compare: replay stays as it was."""
+    trace = canonical(traces_dir, "happy-path")
+    for event in trace["events"]:
+        if event["type"] == "gate_evaluation_begin":
+            del event["data"]["gate_digest"]
+    result = replay(trace)
+    assert result.verdicts == ["ALLOW"]
+    assert result.pin("door_lock").pulsed_once(duration_ms=30000)
+    assert result.warnings == []
+    enforce = replay(trace, enforce_gate_digests=True)
+    assert enforce.verdicts == ["ALLOW"]
+    assert enforce.warnings == []
 
 
 # --- replay recomputes, it does not copy ----------------------------------------------
