@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1130" width="2000" height="1130" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="E-02-containers-title E-02-containers-desc">
+<title id="E-02-containers-title">E-02 · Containers (C4 L2)</title>
+<desc id="E-02-containers-desc">The processes, the library, the firmware image and the files — and how each pair talks.</desc>
+<defs>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#334155"/></marker>
+</defs>
+<rect width="2000" height="1130" fill="#ffffff"/>
+<text x="32.0" y="42.0" font-size="22" fill="#0f172a" text-anchor="start" font-weight="700">E-02 · Containers (C4 L2)</text>
+<text x="32.0" y="66.0" font-size="13" fill="#475569" text-anchor="start">The processes, the library, the firmware image and the files — and how each pair talks.</text>
+<rect x="40" y="100" width="1360" height="600" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
+<text x="54.0" y="121.0" font-size="13" fill="#2563eb" text-anchor="start" font-weight="700">Developer machine · CI runner · Linux device — Python 3.11+</text>
+<rect x="40" y="770" width="1360" height="260" rx="14" fill="#f7fdf9" stroke="#15803d" stroke-width="1.6"/>
+<text x="54.0" y="791.0" font-size="13" fill="#15803d" text-anchor="start" font-weight="700">ESP32-S3-BOX-3 · Espressif QEMU — C99 on ESP-IDF v5.4</text>
+<rect x="1480" y="100" width="480" height="930" rx="14" fill="#fffaf5" stroke="#c2410c" stroke-width="1.6"/>
+<text x="1494.0" y="121.0" font-size="13" fill="#c2410c" text-anchor="start" font-weight="700">External systems</text>
+<path d="M380.0,215.0 L560.0,215.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M900.0,215.0 L1060.0,215.0" fill="none" stroke="#334155" stroke-width="1.5" marker-start="url(#arr)" marker-end="url(#arr)"/>
+<path d="M380.0,440.0 L470.0,440.0 L470.0,250.0 L560.0,250.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M730.0,280.0 L730.0,380.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M900.0,250.0 L980.0,250.0 L980.0,440.0 L1060.0,440.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M560.0,265.0 L515.0,265.0 L515.0,615.0 L380.0,615.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M860.0,150.0 L860.0,122.0 L1445.0,122.0 L1445.0,200.0 L1510.0,200.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M790.0,150.0 L790.0,136.0 L1455.0,136.0 L1455.0,340.0 L1510.0,340.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M1510.0,480.0 L1465.0,480.0 L1465.0,535.0 L230.0,535.0 L230.0,500.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M1210.0,500.0 L1210.0,735.0 L730.0,735.0 L730.0,820.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M560.0,905.0 L20.0,905.0 L20.0,215.0 L80.0,215.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M900.0,905.0 L1060.0,905.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M700.0,990.0 L700.0,1080.0 L1720.0,1080.0 L1720.0,960.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M800.0,820.0 L800.0,752.0 L1440.0,752.0 L1440.0,650.0 L1510.0,650.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<rect x="80" y="150" width="300" height="130" rx="10" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.6"/>
+<text x="230.0" y="192.7" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">CLI  neuroedge</text>
+<text x="230.0" y="212.9" font-size="12.5" fill="#0f172a" text-anchor="middle">one process per command</text>
+<text x="230.0" y="231.1" font-size="12.5" fill="#0f172a" text-anchor="middle">new · build · run · record · replay</text>
+<text x="230.0" y="249.2" font-size="12.5" fill="#0f172a" text-anchor="middle">verify · test · trace · board</text>
+<rect x="560" y="150" width="340" height="130" rx="10" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.6"/>
+<text x="730.0" y="192.7" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">neuroedge library</text>
+<text x="730.0" y="212.9" font-size="12.5" fill="#0f172a" text-anchor="middle">engine · actions · hal · models</text>
+<text x="730.0" y="231.1" font-size="12.5" fill="#0f172a" text-anchor="middle">perception · sim · testing · viz</text>
+<text x="730.0" y="249.2" font-size="12.5" fill="#0f172a" text-anchor="middle">imported in-process</text>
+<rect x="1060" y="150" width="300" height="130" rx="10" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.6"/>
+<text x="1210.0" y="192.7" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">Sim web UI</text>
+<text x="1210.0" y="212.9" font-size="12.5" fill="#0f172a" text-anchor="middle">http.server on 127.0.0.1</text>
+<text x="1210.0" y="231.1" font-size="12.5" fill="#0f172a" text-anchor="middle">GET /events (SSE) · POST /command</text>
+<text x="1210.0" y="249.2" font-size="12.5" fill="#0f172a" text-anchor="middle">POST /confirm, same origin</text>
+<rect x="80" y="380" width="300" height="120" rx="10" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.6"/>
+<text x="230.0" y="417.7" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">MCP server</text>
+<text x="230.0" y="437.9" font-size="12.5" fill="#0f172a" text-anchor="middle">neuroedge mcp serve</text>
+<text x="230.0" y="456.1" font-size="12.5" fill="#0f172a" text-anchor="middle">JSON-RPC over stdio</text>
+<text x="230.0" y="474.2" font-size="12.5" fill="#0f172a" text-anchor="middle">every tools/call passes a gate</text>
+<rect x="560" y="380" width="340" height="120" rx="10" fill="#f1f5f9" stroke="#475569" stroke-width="1.6"/>
+<path d="M561,392 Q730.0,404 899,392" fill="none" stroke="#475569" stroke-width="1.2"/>
+<text x="730.0" y="417.7" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">Files</text>
+<text x="730.0" y="437.9" font-size="12.5" fill="#0f172a" text-anchor="middle">project: agent.toml · gates/ · actions/</text>
+<text x="730.0" y="456.1" font-size="12.5" fill="#0f172a" text-anchor="middle">repo: schemas/ · boards/ · fixtures/</text>
+<text x="730.0" y="474.2" font-size="12.5" fill="#0f172a" text-anchor="middle">traces/*.json · digests.lock</text>
+<rect x="1060" y="380" width="300" height="120" rx="10" fill="#f1f5f9" stroke="#475569" stroke-width="1.6"/>
+<path d="M1061,392 Q1210.0,404 1359,392" fill="none" stroke="#475569" stroke-width="1.2"/>
+<text x="1210.0" y="426.8" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">Build output</text>
+<text x="1210.0" y="447.0" font-size="12.5" fill="#0f172a" text-anchor="middle">build/gates/*.netree · *.netree.h</text>
+<text x="1210.0" y="465.1" font-size="12.5" fill="#0f172a" text-anchor="middle">build/esp32s3/  ESP-IDF project</text>
+<rect x="80" y="560" width="300" height="110" rx="10" fill="#dcfce7" stroke="#15803d" stroke-width="1.6"/>
+<text x="230.0" y="592.7" font-size="15" fill="#052e16" text-anchor="middle" font-weight="700">Linux kernel devices</text>
+<text x="230.0" y="612.9" font-size="12.5" fill="#052e16" text-anchor="middle">/dev/gpiochipN · hwmon · IIO</text>
+<text x="230.0" y="631.1" font-size="12.5" fill="#052e16" text-anchor="middle">/dev/fbN · PipeWire nodes</text>
+<text x="230.0" y="649.2" font-size="12.5" fill="#052e16" text-anchor="middle" font-style="italic">◐ partial</text>
+<rect x="560" y="820" width="340" height="170" rx="10" fill="#dcfce7" stroke="#15803d" stroke-width="1.6"/>
+<text x="730.0" y="864.6" font-size="15" fill="#052e16" text-anchor="middle" font-weight="700">Firmware image</text>
+<text x="730.0" y="884.8" font-size="12.5" fill="#052e16" text-anchor="middle">ne_gate: NETR walker, token ledger</text>
+<text x="730.0" y="902.9" font-size="12.5" fill="#052e16" text-anchor="middle">ne_agent: the agent's tables</text>
+<text x="730.0" y="921.1" font-size="12.5" fill="#052e16" text-anchor="middle">ne_trace: NE1 lines on UART</text>
+<text x="730.0" y="939.2" font-size="12.5" fill="#052e16" text-anchor="middle">ne_ota: signed A/B update</text>
+<text x="730.0" y="957.3" font-size="12.5" fill="#052e16" text-anchor="middle" font-style="italic">◐ partial</text>
+<rect x="1060" y="820" width="300" height="170" rx="10" fill="#f1f5f9" stroke="#475569" stroke-width="1.6"/>
+<path d="M1061,832 Q1210.0,844 1359,832" fill="none" stroke="#475569" stroke-width="1.2"/>
+<text x="1210.0" y="882.7" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">Flash (16 MB)</text>
+<text x="1210.0" y="902.9" font-size="12.5" fill="#0f172a" text-anchor="middle">factory · ota_0 · ota_1 (3.5 MB)</text>
+<text x="1210.0" y="921.1" font-size="12.5" fill="#0f172a" text-anchor="middle">nvs · otadata · phy_init</text>
+<text x="1210.0" y="939.2" font-size="12.5" fill="#0f172a" text-anchor="middle">storage (spiffs)</text>
+<rect x="1510" y="150" width="420" height="100" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6"/>
+<text x="1720.0" y="195.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">LLM providers · Jev</text>
+<text x="1720.0" y="216.1" font-size="12.5" fill="#431407" text-anchor="middle">OpenAI-compatible · System One API</text>
+<rect x="1510" y="290" width="420" height="100" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6"/>
+<text x="1720.0" y="335.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">Speech providers</text>
+<text x="1720.0" y="356.1" font-size="12.5" fill="#431407" text-anchor="middle">STT · TTS, cloud or localhost</text>
+<rect x="1510" y="430" width="420" height="100" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6"/>
+<text x="1720.0" y="475.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">MCP client</text>
+<text x="1720.0" y="496.1" font-size="12.5" fill="#431407" text-anchor="middle">Claude Desktop starts mcp serve</text>
+<rect x="1510" y="590" width="420" height="120" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1720.0" y="627.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Fleet OS · Gate Registry</text>
+<text x="1720.0" y="647.9" font-size="12.5" fill="#475569" text-anchor="middle">rollouts · trace vault · shared gates</text>
+<text x="1720.0" y="666.1" font-size="12.5" fill="#475569" text-anchor="middle">I9 · I10</text>
+<text x="1720.0" y="684.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1510" y="850" width="420" height="110" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6"/>
+<text x="1720.0" y="891.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">OTA image server</text>
+<text x="1720.0" y="912.0" font-size="12.5" fill="#431407" text-anchor="middle">any static HTTP(S) server</text>
+<text x="1720.0" y="930.1" font-size="12.5" fill="#431407" text-anchor="middle">one signed app image</text>
+<rect x="442.5" y="204.5" width="55.1" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="470.0" y="217.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">imports</text>
+<rect x="942.8" y="204.5" width="74.4" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="980.0" y="217.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">HTTP · SSE</text>
+<rect x="397.4" y="329.5" width="145.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="470.0" y="342.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">tools/call → dispatch</text>
+<rect x="686.4" y="319.5" width="87.3" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="730.0" y="332.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">load · write</text>
+<rect x="926.7" y="329.5" width="106.6" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="980.0" y="342.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">neuroedge build</text>
+<rect x="484.2" y="569.5" width="61.5" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="515.0" y="582.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">LinuxHAL</text>
+<rect x="1080.6" y="111.5" width="138.8" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1150.0" y="124.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">HTTPS · key from env</text>
+<rect x="1433.9" y="289.5" width="42.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1455.0" y="302.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">HTTPS</text>
+<rect x="687.4" y="524.5" width="145.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="760.0" y="537.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">stdio · child process</text>
+<rect x="930.6" y="724.5" width="138.8" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1000.0" y="737.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">idf.py build · flash</text>
+<rect x="182.0" y="894.5" width="216.1" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="290.0" y="907.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">UART NE1 lines → record · verify</text>
+<rect x="913.8" y="894.5" width="132.4" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="980.0" y="907.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">trees read in place</text>
+<rect x="1120.3" y="1069.5" width="119.5" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1180.0" y="1082.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">HTTP(S) GET image</text>
+<rect x="1249.9" y="741.5" width="100.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1300.0" y="754.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">MQTT (planned)</text>
+<rect x="1746.56" y="60" width="32" height="14" rx="3" fill="#ffffff" stroke="#475569" stroke-width="1.4" stroke-dasharray="7 5"/>
+<text x="1790.6" y="71.0" font-size="12" fill="#334155" text-anchor="start">○ planned — not in code yet</text>
+<rect x="1766.72" y="40" width="32" height="14" rx="3" fill="#ffffff" stroke="#475569" stroke-width="1.4"/>
+<text x="1810.7" y="51.0" font-size="12" fill="#334155" text-anchor="start">◐ partial — part in code</text>
+<rect x="1780.16" y="20" width="32" height="14" rx="3" fill="#ffffff" stroke="#475569" stroke-width="1.4"/>
+<text x="1824.2" y="31.0" font-size="12" fill="#334155" text-anchor="start">done — in code on main</text>
+</svg>

@@ -278,6 +278,22 @@ def test_the_host_harness_pins_lvgl_by_url_and_sha256() -> None:
     assert "lv_test_screenshot_compare" in read(MAIN)
 
 
+def test_the_component_and_the_host_harness_compile_the_same_sources() -> None:
+    """The ESP-IDF component is not built by today's firmware, so a missing source only
+    fails at link time once the display driver requires it (TSK-S4-01): both builds must
+    list every C file of src/ and fonts/."""
+    sources = {p.relative_to(UI).as_posix() for d in ("src", "fonts") for p in (UI / d).glob("*.c")}
+    component = set(re.findall(r'"((?:src|fonts)/[\w.]+\.c)"', read(UI / "CMakeLists.txt")))
+    harness = {
+        s.removeprefix("../")
+        for s in re.findall(r"\.\./(?:src|fonts)/[\w.]+\.c", read(UI / "host" / "CMakeLists.txt"))
+    }
+    assert component == sources, (
+        f"component SRCS differ from the sources: {sorted(component ^ sources)}"
+    )
+    assert harness == sources, f"host harness differs from the sources: {sorted(harness ^ sources)}"
+
+
 def test_the_run_script_is_the_ci_entry_point() -> None:
     workflow = read(ROOT / ".github" / "workflows" / "ci-sim-linux.yml")
     assert "scripts/run_ui_golden.sh" in workflow

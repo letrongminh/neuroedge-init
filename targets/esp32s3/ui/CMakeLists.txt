@@ -14,6 +14,7 @@
 idf_component_register(
     SRCS
         "src/ne_ui.c"
+        "src/ne_ui_text.c"
         "src/ne_ui_strings.c"
         "fonts/ne_font_12.c"
         "fonts/ne_font_16.c"

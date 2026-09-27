@@ -61,8 +61,8 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | **Pha đang thực thi** | 🟡 **I1 — Preview nội bộ trên `sim`** (I2, I3 phần không cần bo mạch và I4 làm song song) | Increment và ngày dự báo: §0.2 |
 | **Increment đang mở** | 🟡 **I1** — còn I1-01, I1-02 (tạm hoãn: phát triển nội bộ) | I0 đã xong 42 / 42 · chi tiết §0.2 |
 | **Cột mốc tiếp theo** | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** | Ngày dự báo ở §0.2 · chưa phát hành ra ngoài (Q-39) |
-| **Lần cập nhật cuối** | **2026-09-27** | Phiên gần nhất: đợt 3 (nhánh `wave3/integration`, chưa merge) — TSK-S6-01/02/04 + S6-03 một phần (OTA có ký trên QEMU), TSK-S4-10 (giao diện LVGL + golden), TSK-I4-01 (wake-word, STT dự phòng), TSK-S5-08 (âm thanh `linux`) và review · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 2300/2300 · SKIP 0** | `python/tests/` — 78 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 29/29 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `ui-golden` 66 ảnh, `ota-rollback` pha a–g · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
+| **Lần cập nhật cuối** | **2026-09-27** | Phiên gần nhất: tài liệu kiến trúc viết lại theo mã (C4, NFR, ADR, VI/EN; poster sinh tự động) · trước đó đợt 3 (PR #62, đã merge) — TSK-S6-01/02/04 + S6-03 một phần (OTA có ký trên QEMU), TSK-S4-10 (giao diện LVGL + golden), TSK-I4-01 (wake-word, STT dự phòng), TSK-S5-08 (âm thanh `linux`) và review · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Trạng thái CI Lõi** | ✅ **PASS 2310/2310 · SKIP 0** | `python/tests/` — 80 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 29/29 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `ui-golden` 66 ảnh, `ota-rollback` pha a–g · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · kỹ sư nhúng thứ hai (V6): đã quyết tuyển (2026-09-25), chưa có người — cần vào trước 2026-11-16 (Q-39) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -107,7 +107,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-27 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. VỪA HOÀN THÀNH — đợt 3, wave3/integration (chưa merge; CHANGELOG [Chưa phát hành])  │
+│ 1. VỪA HOÀN THÀNH — đợt 3 (PR #62, đã merge) + tài liệu kiến trúc viết lại             │
 │    • TSK-S6-01/02/04 + S6-03 một phần: OTA A/B RSA-3072, rollback, chặn hạ cấp (QEMU)  │
 │    • TSK-S4-10: giao diện LVGL vi/en theo ngôn ngữ agent, 66 ảnh golden mỗi PR         │
 │    • TSK-I4-01: [wake_word] openWakeWord (mô hình người dùng cấp) + [stt.fallback]     │
@@ -118,7 +118,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
 │    1. Đặt 2 Box-3 + 1 RPi 5 (Phụ lục B); tuyển V6 — đã quyết, cần trước 2026-11-16     │
-│    2. PR đợt 3: CI chạy lần đầu tests_linux âm thanh, ui-golden, ota-rollback          │
+│    2. Box-3 về: nối driver màn hình vào ne_ui (TSK-S4-01), đo trên silicon             │
 │    3. Mô hình wake-word có giấy phép dùng được (#49); cách provisioning Wi-Fi (#50)    │
 │    4. Chạy scripts/live_jev_smoke.py với OPENROUTER_API_KEY; đo Jev tiếng Việt (#27)   │
 │    5. Tái sinh requirements-lock.txt (đóng #54); xét 4 PR Dependabot (major Actions)   │
