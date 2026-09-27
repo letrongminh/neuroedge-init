@@ -287,7 +287,9 @@ def _agent_for(trace: Mapping[str, Any], agent: str | Path | None) -> AgentManif
     raise AgentManifestError(
         where="trace metadata.agent_version",
         why=f"no agent.toml given, and no sample agent named {name!r} in {fixtures_dir() / 'agents'}",
-        how="pass the agent that produced the trace: TracePlayer(trace, agent='agent.toml')",
+        how="pass the agent that recorded the trace: `neuroedge replay <trace> --agent "
+        "path/to/agent.toml`, or run it in that agent's project (Python: TracePlayer(trace, "
+        "agent='agent.toml'))",
     )
 
 

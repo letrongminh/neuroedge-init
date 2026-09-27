@@ -252,6 +252,9 @@ bản gói.
 
 #### Đã đổi
 
+- **Tài liệu người dùng viết lại theo năng lực hiện có (2026-09-27).** `docs/user/huong-dan.md`: sản phẩm là gì, ba môi
+  trường và mức sẵn sàng, năng lực theo nhóm (làm được · cần gì · giới hạn), kịch bản thử từng bước đã chạy lại, bảng phần
+  mở rộng; `README.md` nói đúng trạng thái `linux`/`esp32s3`; `thuat-ngu.md` thêm thuật ngữ OTA, thoại, giao diện.
 - **Q-12 nới (2026-09-26): chuẩn kết nối là nền tảng tương thích OpenAI, gồm cả endpoint quyết định có kiểu.** Jev
   chạy trên System One API của OpenRouter (`/api/v1/systemone`), không trên chat completions; Q-4 dẫn sang Q-12. `neuroedge-prd.md` §15.
 - **Q-46 (2026-09-26): "có"/"không" nói ra chỉ trả lời câu hỏi của chính lượt đó; TTS lỗi khi đọc câu hỏi ⇒ không mở lượt
@@ -300,6 +303,9 @@ bản gói.
 
 #### Đã sửa
 
+- **`replay` trong dự án đã ghi vết ghi không còn đòi `--agent`.** Không có `--agent` thì lệnh dùng `./agent.toml` khi
+  đó đúng là agent đã ghi (cùng `[agent] name`), không thì agent mẫu cùng tên; `./agent.toml` của agent khác bị bỏ qua
+  kèm một dòng nói rõ, và lỗi chỉ tới flag `--agent`. Kiểm: `pytest tests/test_cli.py -k replay`.
 - **Rà soát đợt 2 — Jev chỉ xét lời người nói.** Không có câu nói (MCP, System 2 tự gọi) ⇒ không hỏi model; model không nhận
   action và tham số bên gọi đưa. Độ tin cậy = `min(confidence, xác suất của đáp án thắng)`, hai đáp án ngang nhau ⇒ chưa quyết;
   tiêu chí agent tự tính không giao được; `http://` chỉ tới loopback. Một lớp provider chung (`models/providers/common.py`,
@@ -849,8 +855,7 @@ một pipeline xanh lúc đó là thông tin sai. CI có đúng một bước ch
 
 Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏng" và "chưa có". Hôm nay
 thoát mã 2: `run` / `mcp serve --target esp32s3` (TSK-S4-01), `run` / `mcp serve --ui --target linux`,
-`run` / `record --voice-file` với `--target linux` (TSK-S5-08) hoặc với `--ui`, `replay --target esp32s3`
-(TSK-S4-04). Target lạ (không phải `sim`, `linux`, `esp32s3`) là lỗi, mã 1.
+`run` / `record --voice-file` cùng `--ui`, `replay --target esp32s3` (TSK-S4-04). Target lạ (không phải `sim`, `linux`, `esp32s3`) là lỗi, mã 1.
 
 Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://`, mặc định `gates/`.
 `--agent` mặc định là `./agent.toml`, không có thì agent mẫu `villa-concierge` của checkout.
@@ -871,7 +876,7 @@ Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://
 | `board list` / `board show <id>` | Liệt kê / xem năng lực bo mạch theo 5 nguyên thủy |
 | `verify [--targets sim,linux,esp32s3] [--port <nguồn>]` | Mọi gate phân giải, mọi ca của corpus tool call (`fixtures/tool_calls/`, trên `sim`) ra đúng đáp án, mọi vết ghi chuẩn mực thẩm định **và** replay trên từng target ra đúng quyết định nó ghi (A2). Mặc định `sim`; `linux` cần line GPIO (bo mạch hoặc `scripts/setup_gpio_sim.sh`); `esp32s3` cần `--port <nguồn>` (như `record`): firmware replay các vết ghi chuẩn mực, lệch ⇒ `NE4002`; firmware replay vết ghi hay gate cũ hơn checkout ⇒ `NE4003`, không so; thiếu `--port` ⇒ mã 1. So quyết định, chưa so timing. Loại artifact nào quét được 0 ⇒ `NE4004`, mã 1 |
 | `build --target <t> [--board id]` | Đối chiếu năng lực agent ↔ bo mạch, phân giải và biên dịch gate (ghi cả `<gate>.netree`/`.netree.h`); kiểm `[mcp]`, `[system_two]`, `[system_one]`, `[stt]` (gồm `[stt.fallback]`), `[tts]` và `[wake_word]` (API key ghi trong `agent.toml`, trong URL, hay gửi qua `http://` tới máy khác ⇒ lỗi, không in lại key; `[wake_word]` kiểm hình dạng bảng và ngưỡng (0, 1] — **không** đòi tệp mô hình trên máy build; phiên thoại kiểm đủ ba tệp (`model`, `melspectrogram`, `embedding`) trước khi giữ line nào). `--agent` (mặc định `agent.toml`), `--board` (mặc định bo mạch tham chiếu của target: `sim-default`, `linux-rpi5`, `esp32s3-box-3`), `--out` (mặc định `build/`). `--target esp32s3` ghi thêm `<out>/esp32s3/`: project ESP-IDF đầy đủ của firmware cho agent — mã nguồn `targets/esp32s3/` và component sinh `ne_agent` (cây `NETR`, bảng gate · chân · action, phép kiểm self-test kèm phán quyết engine host); key gate không phải định danh C, `[agent] name`/`version` có ký tự điều khiển hay xuống dòng, quá 32 chân, thiếu mã nguồn firmware, `esp32s3/` có sẵn mà không do `build` ghi, hay liên kết tượng trưng ở một đường dẫn build ghi vào ⇒ vấn đề của build (build chỉ ghi, xoá tên của bố cục firmware, không bao giờ xuyên qua liên kết). Nạp: [`docs/user/nap-firmware.md`](docs/user/nap-firmware.md). Hỏng ⇒ in mọi vấn đề, mã 1, không ghi gì |
-| `replay <tệp> [--target sim\|linux]` | Replay trên HAL thật: dữ kiện đã ghi vào lại, phán quyết gate và lệnh chân **tính lại**, rồi so với golden (`--golden <tệp>`, mặc định chính vết ghi). Khớp ⇒ mã 0; lệch ⇒ mã 1, `NE4002`, dòng lệch đầu tiên; `--target esp32s3` ⇒ mã 2. `--agent`, `--board`, `--trace-out` |
+| `replay <tệp> [--target sim\|linux]` | Replay trên HAL thật: dữ kiện đã ghi vào lại, phán quyết gate và lệnh chân **tính lại**, rồi so với golden (`--golden <tệp>`, mặc định chính vết ghi). Khớp ⇒ mã 0; lệch ⇒ mã 1, `NE4002`, dòng lệch đầu tiên; `--target esp32s3` ⇒ mã 2. `--agent` mặc định là `./agent.toml` khi đó đúng là agent đã ghi vết ghi (cùng `[agent] name`), không thì agent mẫu cùng tên trong kho; `./agent.toml` của agent khác không bao giờ được dùng ngầm. `--board`, `--trace-out` |
 | `record [--target sim\|linux] [--out traces/] [-c "<lệnh>"] [--anonymize] [--voice-file x.wav [--voice-out y.wav]]` | Như `run`, và ghi phiên ra `traces/<session_id>.json` đã thẩm định. `--anonymize` băm chữ thô tại nguồn (`sha256:`) — cả bản chép lời và câu trả lời của phiên thoại —, phán quyết giữ nguyên (FR-TRC-07) |
 | `record --target esp32s3 --port <nguồn> [--out traces/] [--timeout 30] [--baud 921600]` | Thiết bị ghi, host đọc UART: mỗi phiên `NE1` thành một tệp `<session_id>.json` đã thẩm định (`--out x.json` khi chỉ có một phiên). `<nguồn>`: tệp log (QEMU `-serial file:uart.log`), `tcp://host:port` (QEMU `-serial tcp::5555,server`), `/dev/tty…` (cần `neuroedge[serial]`). Dòng hỏng, thiếu khung, đếm lệch ⇒ `NE4001` nêu `nguồn:dòng`, mã 1, không ghi gì. Định dạng: `docs/spec/simulation_coverage.md` §4 |
 | `test [thư-mục] [--pytest-arg A]` | Chạy bộ Action CI (pytest) của agent, mặc định `tests/`. Mọi test đạt ⇒ mã 0; có test trượt hoặc không thu được test nào ⇒ mã 1 |
@@ -1062,7 +1067,7 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
   đưa về rate bo mạch (TSK-S5-08). Chưa có phiên thời gian thực chạy song song provider trên micro/loa thật
   (`TODOS.md` #45), chưa chạy trên Pi (nightly TSK-I2-01), và wake-word trên `esp32s3` (microWakeWord, Q-7) chưa có.
   Lệnh hẹn giờ chỉ có trên `sim`, và khoảng hẹn đang bị chặn bởi TTL của phán quyết cho tới khi chốt `voice_fsm.md` §10.
-- ❌ **`esp32s3` mới chạy logic gate, chưa chạy agent.** Walker và sổ token C khớp engine host trên host và
+- ❌ **`esp32s3` chạy gate của agent, chưa điều khiển thiết bị.** Walker và sổ token C khớp engine host trên host và
   boot trên QEMU (TSK-S4-07, S4-08); thiết bị replay 3 vết ghi chuẩn mực và ghi vết ghi qua UART (TSK-S4-09);
   `build --target esp32s3` sinh firmware cho agent của người dùng, gate của nó tự kiểm lúc boot (TSK-I3-01) nhưng
   chưa chân nào động. HAL firmware, replay vết ghi tuỳ ý và mọi thứ trên bo mạch là I3 (TSK-S4-01, S4-04); âm thanh

@@ -14,7 +14,7 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | **Chạy thử** | | |
 | Cài đặt và chạy test | [`python/README.md`](../../python/README.md) | venv + `pip install -e '.[dev]'` |
 | Toàn bộ lệnh CLI và đầu ra kỳ vọng | [`CHANGELOG.md`](../../CHANGELOG.md) §2 | nguồn duy nhất cho cú pháp lệnh |
-| Hôm nay dùng được gì | [`huong-dan.md`](huong-dan.md) | hướng dẫn sử dụng cho maker |
+| Sản phẩm làm được gì, trên môi trường nào, và thử từng bước ra sao | [`huong-dan.md`](huong-dan.md) | năng lực theo nhóm (§3–§4) và kịch bản thử từng bước (§5) |
 | Trạng thái hiện tại | [`trang-thai.md`](trang-thai.md) | máy sinh từ roadmap §0 |
 | Nạp agent của mình lên ESP32-S3-BOX-3 (hoặc QEMU) | [`nap-firmware.md`](nap-firmware.md) | `build --target esp32s3` → `idf.py flash`; nơi duy nhất của thủ tục nạp |
 | **Hiểu sản phẩm** | | |
@@ -38,6 +38,8 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | **Tham chiếu** | | |
 | Lược đồ, gate mẫu, vết ghi, bo mạch | `schemas/` · `gates/` · `fixtures/` · `boards/` | artifact máy đọc |
 | Tool call, MCP, xác nhận `ask` (Gated Tool Profile) | [`docs/spec/tool_calling.md`](../spec/tool_calling.md) | nơi duy nhất cho tool call |
+| Máy trạng thái hội thoại: lượt, cắt lời, wake-word, STT/TTS, STT dự phòng | [`docs/spec/voice_fsm.md`](../spec/voice_fsm.md) | quy phạm cho cả Python lẫn chip |
+| Giao diện thiết bị: màn hình, quy tắc ngôn ngữ, ảnh golden | [`docs/spec/ui.md`](../spec/ui.md) | quy tắc ngôn ngữ ở §2 |
 | Đường tắt qua gate đã chặn, và điều ngoài phạm vi | [`docs/spec/threat_model.md`](../spec/threat_model.md) | kèm tên test |
 | Mỗi nguyên thủy HAL × target: chạy bằng gì, kiểm ở đâu | [`docs/spec/simulation_coverage.md`](../spec/simulation_coverage.md) | Q-21, Q-22 |
 | Ràng buộc MCU cho HAL | [`docs/spec/hal_mcu_review.md`](../spec/hal_mcu_review.md) | RB-1…RB-4 |
@@ -52,7 +54,8 @@ neuroedge-init/
 ├── boards/             khai báo năng lực bo mạch (TOML)
 ├── fixtures/           vết ghi chuẩn mực + corpus phản chứng
 ├── python/             SDK: hal/ · engine/ · cli/ · tests/
-├── targets/esp32s3/    firmware ESP-IDF
+├── targets/esp32s3/    firmware ESP-IDF (ui/: giao diện LVGL và ảnh golden)
+├── pipewire/           cấu hình PipeWire khử vang cho micro/loa trên linux
 ├── scripts/            công cụ CI (sinh tài liệu, kiểm dung lượng firmware)
 └── docs/
     ├── user/           tài liệu cho người dùng  ← bạn đang ở đây

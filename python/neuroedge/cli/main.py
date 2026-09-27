@@ -1148,7 +1148,11 @@ def replay(
     trace_file: Path = typer.Argument(..., help="Trace JSON file"),
     target: str = typer.Option("sim", "--target", "-t", help="Target to replay on: sim or linux"),
     agent: Path = typer.Option(
-        None, "--agent", "-a", help="agent.toml that produced the trace (default: from metadata)"
+        None,
+        "--agent",
+        "-a",
+        help="agent.toml that produced the trace (default: ./agent.toml when it is that agent, "
+        "else the sample agent named in the trace)",
     ),
     board: str = typer.Option(None, "--board", "-b", help="Board profile id (default per target)"),
     golden: Path = typer.Option(
@@ -1172,6 +1176,8 @@ def replay(
         _not_implemented_target("replay", target)
     if target == "linux":
         _exit_on_signals()  # the replay drives real lines
+    if agent is None:
+        agent = _recording_agent_here(trace_file)
     try:
         player = TracePlayer(
             trace_file,
@@ -1268,6 +1274,33 @@ def new(
         "  neuroedge run\n"
         "  neuroedge test"
     )
+
+
+def _recording_agent_here(trace_file: Path) -> Path | None:
+    """
+    `./agent.toml` when it is the agent that recorded the trace (same `[agent] name`
+    as the trace's `agent_version`), else None and the player looks for the sample
+    agent of that name. Replaying in the project that recorded it needs no --agent;
+    an agent.toml of another agent is never used silently.
+    """
+    here = Path("agent.toml")
+    if not here.is_file():
+        return None
+    try:
+        metadata = json.loads(trace_file.read_text(encoding="utf-8"))["metadata"]
+        recorded = str(metadata["agent_version"]).partition("@")[0]
+        from ..engine.compiler import load_agent_manifest
+
+        name = load_agent_manifest(here).name
+    except (OSError, ValueError, KeyError, TypeError, NeuroEdgeError):
+        return None  # the player reports what is wrong with the trace or the agent
+    if name != recorded:
+        console.print(
+            f"[dim]./agent.toml is {escape(name)!r}, the trace was recorded by "
+            f"{escape(recorded)!r}: not used (pass --agent to choose)[/dim]"
+        )
+        return None
+    return here
 
 
 def _default_agent() -> Path:
