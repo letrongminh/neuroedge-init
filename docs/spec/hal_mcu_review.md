@@ -11,8 +11,7 @@
 
 Roadmap §1.2 nêu thẳng: *"Một HAL thiết kế mà không có tiếng nói của kỹ sư nhúng
 sẽ phải viết lại ở I3."* Tài liệu này là tiếng nói đó, đặt trước khi có bất
-kỳ hiện thực HAL nào (`sim` ở Sprint 2, `linux` ở Sprint 3, `esp32s3` ở Sprint
-4) — vì sau đó thì mọi kết luận đây đều trở thành việc viết lại.
+kỳ hiện thực HAL nào (`sim` ở I0, `linux` ở I2, `esp32s3` ở I3) — vì sau đó thì mọi kết luận đây đều trở thành việc viết lại.
 
 Ràng buộc nền: ESP32-S3-WROOM-1-N16R8 có **512 KB SRAM nội**, trong đó Q-3 chỉ
 dành **≥ 120 KB** cho ứng dụng sau khi trừ ngăn xếp mạng và hệ điều hành. Mọi
@@ -116,14 +115,14 @@ toàn.
 
 ---
 
-## 2. Bốn ràng buộc chuyển tiếp sang Sprint 4
+## 2. Bốn ràng buộc chuyển tiếp sang I3
 
 Các mệnh đề dưới đây là hợp đồng mà `hal/esp32s3` phải thỏa, ghi ở đây để
-Sprint 4 không phải suy luận lại:
+I3 không phải suy luận lại:
 
 | # | Ràng buộc | Lý do |
 |:---:|:---|:---|
-| RB-1 | Không `malloc` trong đường dẫn âm thanh sau khi khởi tạo xong | Phân mảnh heap sau nhiều giờ chạy gây rớt khung; Tiêu chí 4 Sprint 5 đo bộ nhớ còn lại sau 4 giờ |
+| RB-1 | Không `malloc` trong đường dẫn âm thanh sau khi khởi tạo xong | Phân mảnh heap sau nhiều giờ chạy gây rớt khung; I5 tiêu chí 4 (roadmap §4.6) đo bộ nhớ còn lại sau 4 giờ |
 | RB-2 | Đệm âm thanh cấp phát tĩnh trong PSRAM, đặt tên và đo được | Q-3 dành ≥ 2 MB PSRAM cho ring buffer, VAD và wake-word; không đo được thì không đối chiếu được |
 | RB-3 | `digital.out` phải hủy được lệnh đang chờ trong ≤ 1 khung âm thanh | Hợp đồng thu hồi lệnh vật lý ([`voice_fsm.md`](voice_fsm.md) §5): cắt lời phải hủy xung chốt cửa đang chờ, ghi `ACTUATOR_ABORTED_BY_BARGE_IN` |
 | RB-4 | Bảng năng lực là `const` trong flash, không phải cấu trúc dựng lúc chạy | Tiết kiệm SRAM và loại bỏ khả năng năng lực bị sửa lúc chạy — một đường tắt vòng qua gate (A3) |

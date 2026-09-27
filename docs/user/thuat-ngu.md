@@ -54,7 +54,7 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 | **Tuần N · Tháng N** | Nhãn lịch cũ, đếm từ ngày bắt đầu chương trình 2026-09-21 — không phải tháng dương lịch. Bỏ từ Q-39: lịch mới dùng increment và ngày tuyệt đối (R6). Gặp trong tài liệu lịch sử (`docs/archive/`, `CHANGELOG.md` §1) thì ngày tuyệt đối đi kèm là đúng | `neuroedge-roadmap.md` §2.4 (R6) |
 | **V1–V4** | Vai trò trong đội: V1 kỹ sư lõi · V2 kỹ sư nhúng · V3 trải nghiệm lập trình viên · V4 hạ tầng dịch vụ | `neuroedge-roadmap.md` §1.1 |
 | **V5** | Kỹ sư thị giác: HAL thị giác, mô hình, NPU; có mặt trước I15 | `neuroedge-roadmap.md` §1.1 |
-| **V6** | Kỹ sư nhúng thứ hai: âm thanh trên chip, OTA và bảo mật thiết bị, song song với HAL của V2; cần từ 2026-11-16 — giả định của dự báo I5 và I7 (Q-39) | `neuroedge-roadmap.md` §1.1, §1.3 |
+| **V6** | Kỹ sư nhúng thứ hai: âm thanh trên chip, OTA và bảo mật thiết bị, song song với HAL của V2 — giả định của dự báo I5 và I7 (roadmap §0.1, Q-39) | `neuroedge-roadmap.md` §1.1, §1.3 |
 
 > ⚠️ **Hai mã trùng chữ, khác nghĩa:**
 > - **A1** là tiêu chí nghiệm thu v1.0 trong PRD, **và** trong tài liệu lịch sử (design doc Giai đoạn 1,

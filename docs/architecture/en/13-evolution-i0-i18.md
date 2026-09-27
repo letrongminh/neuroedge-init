@@ -12,7 +12,7 @@
 *Figure E-09 — Nineteen increments, status, progress and forecast dates read from roadmap §0.2 when the figure is generated.*
 
 The critical path (roadmap §2.2): boards arrive → memory spike (TSK-S1-10) → I3 → I5 → I6 → I7. The
-demand gate on 2026-10-25 (Q-20) decides Go / Adjust / Stop for I3–I7.
+demand gate (Q-20; date in roadmap §0.2) decides Go / Adjust / Stop for I3–I7.
 
 ## 2. What the architecture changes at each stage
 

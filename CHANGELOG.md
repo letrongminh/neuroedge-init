@@ -252,6 +252,15 @@ bản gói.
 
 #### Đã đổi
 
+- **Một roadmap, mọi nơi khác dẫn tới nó (Q-39, 2026-09-27).** Hai ghi chú thiết kế đổi tên cho khỏi bị đọc là roadmap:
+  `neuroedge-roadmap-phase1-5.md` → `neuroedge-design-neurobrain.md`, `neuroedge-roadmap-phase2.md` →
+  `neuroedge-design-phase2.md` (mọi liên kết đang dùng đã sửa; `docs/archive/` giữ tên cũ). Proposal §8 thành "Các khối
+  sản phẩm và năng lực": giữ lý do của từng khối, bảng bàn giao, de-scope, điều kiện kích hoạt và sơ đồ thứ tự thay bằng
+  liên kết sang roadmap §0.2, §2.1, §4–§7, §9. PRD: mốc "v2.0" thành "Mở rộng (1.x)" theo tag của roadmap; "Hoãn sau
+  12 tháng" thành "Hoãn — tới khi đạt điều kiện kích hoạt"; bỏ ghi chú đã cũ "chờ TSK-S5-10". Nhãn Sprint trong spec,
+  PRD, proposal đổi sang increment theo roadmap Phụ lục A; ngày và trạng thái cấp task ngoài roadmap đổi thành liên kết
+  (tài liệu kiến trúc giữ nhãn năng lực done/partial/planned). RFC đã duyệt và bản ghi quyết định giữ nguyên. Rà soát
+  do agy (Gemini) làm, Claude kiểm từng điểm với nguồn.
 - **I1 · TSK-I1-01 — vết ghi mặc định chỉ lưu quyết định: chữ người dùng gõ hoặc nói được băm tại nguồn (2026-09-27).**
   Quyết định: "dữ liệu thô" của NFR-PRIV-03 gồm cả chữ. Mọi lệnh ghi vết ghi (`record`, `run --trace-out`,
   `replay --trace-out`, `mcp serve --trace-out`, ghi từ thiết bị qua UART) băm `text`, `utterance`, `transcript` và ghi

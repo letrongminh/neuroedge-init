@@ -85,7 +85,7 @@ qua gate, kể cả khi hệ thống trải trên nhiều chip, và mọi mở r
 |:--:|:--|:--|
 | DoD-1 | Pi 5 (`linux`) + ≥ 2 node MCU chạy HAL/gate cục bộ, liên lạc qua wire "black channel". Node thứ hai là RP2350 (Q-33) | Demo + test CI |
 | DoD-2 | Ý định thoại → gate từng node quyết → actuator chạy; **mất liên lạc → node về trạng thái an toàn** (một lần dừng kiểu tắt máy, theo từng cơ cấu — Q-35; phải thêm vào `voice_fsm.md` §5) | Fault injection: drop/delay/replay/tamper |
-| DoD-3 | Trace hợp nhất đa node replay được trong CI | `neuroedge verify` + replay. Hôm nay đã có `verify --targets esp32s3 --port` (một node, trên QEMU — TSK-S4-09); `replay --target esp32s3` vẫn thoát mã 2 (TSK-S4-04) |
+| DoD-3 | Trace hợp nhất đa node replay được trong CI | `neuroedge verify` + replay; trạng thái TSK-S4-09, TSK-S4-04: roadmap §4.4 |
 | DoD-4 | Một bo bậc 3 được port chỉ bằng tài liệu công khai; **thời gian đội lõi hỗ trợ** bản port đầu tiên < 8 giờ | Tiêu chí ra 3 của I13 (`neuroedge-roadmap.md` §7.3) |
 | DoD-5 | SBOM + OTA ký + mTLS/cert thiết bị demo được | Chặng 2 (§8) |
 

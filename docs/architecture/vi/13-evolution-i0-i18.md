@@ -12,7 +12,7 @@
 *Hình E-09 — Mười chín increment, trạng thái, tiến độ và ngày dự báo đọc từ roadmap §0.2 lúc sinh hình.*
 
 Đường găng (roadmap §2.2): bo mạch về → spike bộ nhớ (TSK-S1-10) → I3 → I5 → I6 → I7. Cổng nhu cầu
-2026-10-25 (Q-20) quyết Go / Adjust / Stop cho I3–I7.
+(Q-20; ngày ở roadmap §0.2) quyết Go / Adjust / Stop cho I3–I7.
 
 ## 2. Kiến trúc thay đổi gì qua từng chặng
 

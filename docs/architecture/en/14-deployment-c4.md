@@ -23,11 +23,13 @@ Everything runs on the user's machine or on the device. The first server-side se
 | **Claude Desktop** (or another MCP client) | same machine | starts `neuroedge mcp serve` as a child process, speaks stdio | ✅ |
 | **Docker `espressif/idf:v5.4`** | same machine or CI runner | builds ESP-IDF firmware, Espressif QEMU; `scripts/qemu_boot.sh`, `qemu_ota.sh`, `run_ui_golden.sh` | ✅ |
 | **GitHub Actions** | `ubuntu-latest` | the five workflows in §3 | ✅ |
-| **Self-hosted runner with a Box-3** | label `[self-hosted, esp32s3-box-3]` | the `memory-spike` job of `nightly-hardware.yml` | ○ no runner yet (TSK-S1-10, TSK-S4-05) |
-| **Raspberry Pi 5 + I2S HAT** | Linux, profile `boards/linux-rpi5.toml` | `neuroedge --target linux`: libgpiod, hwmon, audio | ○ board has not arrived (TSK-I2-01) |
-| **ESP32-S3-BOX-3** | firmware from `neuroedge build --target esp32s3` | on-chip gate, UART trace to the host, OTA | ○ board has not arrived (TSK-S4-12) — already runs on QEMU |
+| **Self-hosted runner with a Box-3** | label `[self-hosted, esp32s3-box-3]` | the `memory-spike` job of `nightly-hardware.yml` | ○ planned (TSK-S1-10, TSK-S4-05) |
+| **Raspberry Pi 5 + I2S HAT** | Linux, profile `boards/linux-rpi5.toml` | `neuroedge --target linux`: libgpiod, hwmon, audio | ○ planned (TSK-I2-01) |
+| **ESP32-S3-BOX-3** | firmware from `neuroedge build --target esp32s3` | on-chip gate, UART trace to the host, OTA | ○ planned (TSK-S4-12) — already runs on QEMU |
 | **OTA image server** | any static HTTP(S) server | serves signed application images | ✅ on QEMU (`qemu_ota.sh` uses `python3 -m http.server` on 127.0.0.1) |
 | **Model and speech providers** | external services over HTTPS | language model, STT, TTS, Jev | ✅ optional; no network calls by default |
+
+What blocks these today is in roadmap §0.1 ("Chặn ngoài tầm kỹ thuật").
 
 ## 3. CI: what each job proves
 

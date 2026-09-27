@@ -52,7 +52,7 @@ người đo được đội đưa tận tay (I1: buổi đo TTFV tại chỗ, `
 
 Làm theo đúng thứ tự, khi I6 mở. Bước 1–4 là cấu hình; chưa bước nào phát hành gì.
 
-1. **Repo đã công khai** từ 2026-09-25 — toàn bộ kho (Q-45, `TSK-I6-01` ✅). Trước khi phát hành,
+1. **Repo đã công khai** từ 2026-09-25 — toàn bộ kho (Q-45, `TSK-I6-01`). Trước khi phát hành,
    gitleaks quét toàn lịch sử phải sạch (`TSK-W0-03`, I6 tiêu chí 1). Trang PyPI dẫn người đọc về các link
    `https://github.com/letrongminh/neuroedge-init/...` trong `README.md`; repo private thì
    mọi link đó trả 404.
