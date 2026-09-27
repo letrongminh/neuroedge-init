@@ -298,6 +298,41 @@ def test_replay_rejects_an_invalid_trace(invoke, traces_dir):
     assert result.exit_code == 1
 
 
+def _recorded_project(invoke, tmp_path, monkeypatch, name="nhamay"):
+    """A factory-monitor project with one recorded session, as the working directory."""
+    monkeypatch.chdir(tmp_path)
+    assert invoke("new", name, "--template", "factory-monitor").exit_code == 0
+    monkeypatch.chdir(tmp_path / name)
+    result = invoke("record", "-c", "tắt báo động")
+    assert result.exit_code == 0, result.output
+    (trace,) = (tmp_path / name / "traces").glob("sess_*.json")
+    return trace
+
+
+def test_replay_in_the_recording_project_needs_no_agent_flag(
+    invoke, tmp_path, monkeypatch, fresh_actions
+):
+    trace = _recorded_project(invoke, tmp_path, monkeypatch)
+    result = invoke("replay", str(trace))
+    assert result.exit_code == 0, result.output
+    assert "decisions match the recording" in result.output
+
+
+def test_replay_never_uses_the_agent_toml_of_another_agent(
+    invoke, tmp_path, monkeypatch, fresh_actions
+):
+    trace = _recorded_project(invoke, tmp_path, monkeypatch)
+    monkeypatch.chdir(tmp_path)
+    assert invoke("new", "other", "--template", "factory-monitor").exit_code == 0
+    monkeypatch.chdir(tmp_path / "other")
+    result = invoke("replay", str(trace))
+    assert result.exit_code == 1, result.output
+    assert "not used" in result.output
+    assert "--agent" in result.output  # the fix names the CLI flag, not only the Python API
+    with_flag = invoke("replay", str(trace), "--agent", str(tmp_path / "nhamay" / "agent.toml"))
+    assert with_flag.exit_code == 0, with_flag.output
+
+
 # --- not-yet-implemented paths ----------------------------------------------
 
 

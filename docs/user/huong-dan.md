@@ -193,7 +193,6 @@ tên phần mở rộng đó (`neuroedge[mcp]`…); danh sách phần mở rộn
   `esp32s3`, thao tác và thời lượng của lệnh chân còn lấy từ bảng dựng trên máy tính, chưa do chip tự
   chạy action (`TODOS.md` #37).
 - Vết ghi chưa được ký số (`TODOS.md` #1).
-- Trong một dự án agent, `replay` cần `--agent agent.toml` ghi rõ.
 
 ### 4.4 Model AI: System 1, System 2, và khi mất mạng
 
@@ -416,7 +415,7 @@ terminal.
 ```bash
 neuroedge record -c "tắt báo động"                  # in: trace: traces/sess_….json
 neuroedge trace view traces/sess_….json -o xem.html # mở xem.html bằng trình duyệt, không cần mạng
-neuroedge replay traces/sess_….json --agent agent.toml
+neuroedge replay traces/sess_….json
 ```
 
 `replay` tính lại phán quyết từ dữ kiện đã ghi và in `✓ decisions match the recording`. Thử sửa gate

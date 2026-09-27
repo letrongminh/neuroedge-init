@@ -547,8 +547,8 @@ $ ne test          # sau khi trả gate về
 [exit 0]
 ```
 
-`ne replay` **cần** `--agent agent.toml` với dự án ngoài kho; thiếu nó, lệnh báo `NE3002 … no sample
-agent named 'bom'` (xem báo cáo, mục lệch tài liệu).
+Chạy `ne replay` ngay trong thư mục dự án thì không cần `--agent`: lệnh tự dùng `./agent.toml` khi đó đúng
+là agent đã ghi vết ghi. Ghi `--agent agent.toml` như trên vẫn đúng, và là cách chọn agent khi chạy từ nơi khác.
 
 **Không tuyên bố:** tất cả §0.1, thêm: đây **không** phải PLC an toàn và không thay rơ-le an toàn
 có chứng nhận; `LinuxHAL` đọc được cảm biến hwmon/IIO nhưng mới kiểm trên cảm biến **ảo**
