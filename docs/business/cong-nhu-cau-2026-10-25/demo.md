@@ -35,11 +35,12 @@ Nói thẳng nếu bị hỏi. Mỗi dòng dẫn nguồn trong kho.
 | Không nói là đã có | Sự thật hôm nay | Nguồn |
 |:---|:---|:---|
 | Chạy trên phần cứng thật | Không có bo mạch ESP32-S3-BOX-3; mọi demo chạy trên `sim` (chân ảo) | `CHANGELOG.md` §3.4 (TSK-S1-10) |
-| Nói bằng giọng | `sim` là **gõ chữ** (Q-15); chưa có giọng nói | `docs/user/huong-dan.md` §3 |
+| Nói chuyện trực tiếp qua micro | Thoại mới chạy **từ tệp WAV** (`--voice-file`, cần nhà cung cấp STT); chưa có phiên micro thời gian thực; demo mặc định là gõ chữ (Q-15) | `docs/user/huong-dan.md` §4.5 · `TODOS.md` #45 |
 | LLM hiểu câu tự do | Có từ TSK-S2-11 nhưng cần `neuroedge[cloud]` + key thật; demo không khai `[system_two]`, nên chỉ câu khớp `commands.toml` chạy. CI chỉ thử LiteLLM bằng `mock_response`, chưa bằng key thật | TSK-S2-11 · `CHANGELOG.md` §3.7 |
 | Chuyển cho lễ tân thật (`escalate`) | Chặn + ghi vết ghi + hook không làm gì | Q-17 · `TODOS.md` #20 |
-| Phiên tương tác trên Linux | `run --target linux` thoát mã 2; trên Linux chỉ `replay` / `verify` | `CHANGELOG.md` §2.3 |
-| So thời gian giữa target | `verify` so **quyết định**, chưa so timing; chưa có `esp32s3` | TSK-S4-04 |
+| Chạy trên Raspberry Pi thật | `run --target linux` chạy trên line GPIO **ảo** (gpio-sim) trong CI; chưa chạy trên Pi thật | `docs/user/huong-dan.md` §5.1 |
+| So thời gian giữa target | `verify` so **quyết định**, chưa so timing; `esp32s3` chỉ trên QEMU | TSK-S4-04 |
+| Cập nhật firmware qua mạng thật | OTA có ký chỉ chạy trên QEMU; Box-3 chưa có Wi-Fi | `docs/user/nap-firmware.md` §6.5 · `TODOS.md` #50 |
 | Fleet OS (OTA theo đợt, dashboard, tải vết ghi từ xa) | Chưa có dòng mã nào; I9 (sau Beta, nhánh A) | proposal §6 · `TODOS.md` #6 · PRD Q-11 |
 | Chứng nhận an toàn chức năng | Không có, không nhắm tới (chưa quyết) | `CEO-T2` |
 | Vết ghi có chữ ký, dùng làm bằng chứng cho bên thứ ba | Không ký | `TODOS.md` #1 |
@@ -550,10 +551,10 @@ $ ne test          # sau khi trả gate về
 agent named 'bom'` (xem báo cáo, mục lệch tài liệu).
 
 **Không tuyên bố:** tất cả §0.1, thêm: đây **không** phải PLC an toàn và không thay rơ-le an toàn
-có chứng nhận; `LinuxHAL` mới có `digital.out` — `sensor.read` trên Linux **chưa** hiện thực
-(`CHANGELOG.md` §3.7), nên `build` cho `linux-rpi5` đạt là đối chiếu năng lực khai trong profile, không
-phải đọc cảm biến thật; chưa có CEL, `allow_when` chỉ nhận dạng mapping toán tử; ngưỡng 70 °C nằm ở
-`agent.toml` (`[sim.sensor_facts]`), là cách của `sim`, không phải của gate — gate chỉ thấy `temp_ok`.
+có chứng nhận; `LinuxHAL` đọc được cảm biến hwmon/IIO nhưng mới kiểm trên cảm biến **ảo**
+(`i2c-stub` + `lm75`), chưa trên Pi thật (`docs/user/huong-dan.md` §5.1); chưa có CEL, `allow_when` chỉ
+nhận dạng mapping toán tử; ngưỡng 70 °C nằm ở `agent.toml` (`[sim.sensor_facts]`, cùng luật trên `sim` và
+`linux`), không phải ở gate — gate chỉ thấy `temp_ok`, nên gate không khoá được ngưỡng (`TODOS.md` #30).
 
 **Hỏi sau demo:** "Hôm nay điều kiện khoá liên động của máy này nằm ở đâu, ai được sửa, và lần sửa gần
 nhất được kiểm thế nào?" · "Nếu không có chứng nhận [tiêu chuẩn họ nêu], có ai trong công ty ký mua

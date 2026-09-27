@@ -32,7 +32,7 @@ Lệch một chỗ ⇒ `NE_SELFTEST FAIL …` và firmware dừng: không runtim
 
 | Thứ | Ghi chú |
 |:---|:---|
-| `neuroedge` | Cài theo [`huong-dan.md`](huong-dan.md) §1. Wheel mang sẵn mã nguồn firmware |
+| `neuroedge` | Cài theo [`huong-dan.md`](huong-dan.md) §3. Wheel mang sẵn mã nguồn firmware |
 | ESP-IDF **v5.4** | [Hướng dẫn cài của Espressif](https://docs.espressif.com/projects/esp-idf/en/v5.4/esp32s3/get-started/), hoặc Docker `espressif/idf:v5.4` |
 | ESP32-S3-BOX-3 + cáp USB-C | Bo mạch tham chiếu duy nhất (bất biến 6, `CHANGELOG.md` §3.3). Chưa có: §5 |
 

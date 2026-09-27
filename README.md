@@ -9,14 +9,19 @@ Chatbot trả lời sai thì bấm
 được. NeuroEdge đặt một **gate** (chính sách an toàn dạng YAML, có phiên bản, kế thừa được)
 trước mọi lệnh ra phần cứng. Lời gọi từ LLM hay từ agent khác chỉ là *yêu cầu*: gate quyết
 định, mọi phán quyết vào một vết ghi phát lại được. Cùng một gate chạy trên trình mô
-phỏng, Linux và ESP32-S3 — hôm nay agent chạy đầy đủ trên trình mô phỏng; Linux mới
-phát lại vết ghi, ESP32-S3 mới chạy logic gate.
+phỏng, Linux và ESP32-S3. Hôm nay agent chạy đầy đủ trên trình mô phỏng; trên Linux, chân
+GPIO, cảm biến và màn hình đã chạy trên phần cứng ảo, âm thanh chạy từ tệp WAV; trên ESP32-S3, gate của agent
+tự kiểm lúc khởi động và cập nhật OTA có ký đã chạy trên QEMU — bo mạch thật chưa về.
 
 > Alpha. NeuroEdge **không** phải chức năng an toàn được chứng nhận (không SIL, không PL): gate
 > không thay nút dừng khẩn hay interlock phần cứng. Tiến độ ở
 > [trạng thái dự án](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/trang-thai.md).
 
 ## Bắt đầu nhanh (Python 3.11+)
+
+Chưa phát hành lên PyPI: trước bản công khai, cài từ mã nguồn theo
+[`python/README.md`](https://github.com/letrongminh/neuroedge-init/blob/main/python/README.md), rồi chạy hai
+lệnh sau.
 
 ```bash
 pip install neuroedge    # qua Claude Desktop hoặc LLM thật: 'neuroedge[mcp,cloud]'

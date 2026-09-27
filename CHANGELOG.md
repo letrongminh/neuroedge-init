@@ -252,6 +252,9 @@ bản gói.
 
 #### Đã đổi
 
+- **Tài liệu người dùng viết lại theo năng lực hiện có (2026-09-27).** `docs/user/huong-dan.md`: sản phẩm là gì, ba môi
+  trường và mức sẵn sàng, năng lực theo nhóm (làm được · cần gì · giới hạn), kịch bản thử từng bước đã chạy lại, bảng phần
+  mở rộng; `README.md` nói đúng trạng thái `linux`/`esp32s3`; `thuat-ngu.md` thêm thuật ngữ OTA, thoại, giao diện.
 - **Q-12 nới (2026-09-26): chuẩn kết nối là nền tảng tương thích OpenAI, gồm cả endpoint quyết định có kiểu.** Jev
   chạy trên System One API của OpenRouter (`/api/v1/systemone`), không trên chat completions; Q-4 dẫn sang Q-12. `neuroedge-prd.md` §15.
 - **Q-46 (2026-09-26): "có"/"không" nói ra chỉ trả lời câu hỏi của chính lượt đó; TTS lỗi khi đọc câu hỏi ⇒ không mở lượt
@@ -849,8 +852,7 @@ một pipeline xanh lúc đó là thông tin sai. CI có đúng một bước ch
 
 Mã `2` tách biệt với `1` là có chủ ý: CI phân biệt được "hỏng" và "chưa có". Hôm nay
 thoát mã 2: `run` / `mcp serve --target esp32s3` (TSK-S4-01), `run` / `mcp serve --ui --target linux`,
-`run` / `record --voice-file` với `--target linux` (TSK-S5-08) hoặc với `--ui`, `replay --target esp32s3`
-(TSK-S4-04). Target lạ (không phải `sim`, `linux`, `esp32s3`) là lỗi, mã 1.
+`run` / `record --voice-file` cùng `--ui`, `replay --target esp32s3` (TSK-S4-04). Target lạ (không phải `sim`, `linux`, `esp32s3`) là lỗi, mã 1.
 
 Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://`, mặc định `gates/`.
 `--agent` mặc định là `./agent.toml`, không có thì agent mẫu `villa-concierge` của checkout.
@@ -1062,7 +1064,7 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
   đưa về rate bo mạch (TSK-S5-08). Chưa có phiên thời gian thực chạy song song provider trên micro/loa thật
   (`TODOS.md` #45), chưa chạy trên Pi (nightly TSK-I2-01), và wake-word trên `esp32s3` (microWakeWord, Q-7) chưa có.
   Lệnh hẹn giờ chỉ có trên `sim`, và khoảng hẹn đang bị chặn bởi TTL của phán quyết cho tới khi chốt `voice_fsm.md` §10.
-- ❌ **`esp32s3` mới chạy logic gate, chưa chạy agent.** Walker và sổ token C khớp engine host trên host và
+- ❌ **`esp32s3` chạy gate của agent, chưa điều khiển thiết bị.** Walker và sổ token C khớp engine host trên host và
   boot trên QEMU (TSK-S4-07, S4-08); thiết bị replay 3 vết ghi chuẩn mực và ghi vết ghi qua UART (TSK-S4-09);
   `build --target esp32s3` sinh firmware cho agent của người dùng, gate của nó tự kiểm lúc boot (TSK-I3-01) nhưng
   chưa chân nào động. HAL firmware, replay vết ghi tuỳ ý và mọi thứ trên bo mạch là I3 (TSK-S4-01, S4-04); âm thanh

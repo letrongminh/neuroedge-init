@@ -150,6 +150,22 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **Action CI** | Kiểm thử hồi quy hành vi vật lý bằng vết ghi (record / replay / assert) | `neuroedge-proposal.md` §4.7 |
 | **Golden Reference** | Vết ghi có quyết định là quyết định kỳ vọng; replay được so với nó theo phán quyết gate + lệnh chân, bỏ qua timing và chữ | `python/neuroedge/testing/golden.py` (FR-CI-04) |
 | **gpio-sim** | Mô-đun kernel Linux tạo chip GPIO ảo qua configfs; CI chạy HAL `linux` trên nó, không cần bo mạch | `scripts/setup_gpio_sim.sh` (Q-16) |
+| **VAD** | Voice activity detection — bộ phát hiện có người đang nói. Không khai `[wake_word]` thì VAD mở một lượt thoại khi nghe tiếng nói | `docs/spec/voice_fsm.md` §4 |
+| **STT · TTS · `[stt]` · `[tts]`** | Speech-to-text (nhận dạng giọng nói thành chữ) · text-to-speech (đọc chữ thành giọng). Khai nhà cung cấp theo chuẩn OpenAI audio trong `agent.toml`; khoá chỉ ở biến môi trường | `docs/spec/voice_fsm.md` §1 (TSK-S3-13) |
+| **Nhà cung cấp giả (fake provider)** | STT/TTS không mạng, không khoá, tất định — dùng trong CI và để thử thoại: `python:neuroedge.perception.providers.fake:stt` / `:tts` | `python/neuroedge/perception/providers/fake.py` |
+| **AEC · PipeWire khử vang** | Acoustic echo cancellation — loại tiếng loa khỏi tín hiệu micro để thiết bị không tự nghe chính mình. Trên `linux`, PipeWire `module-echo-cancel` làm việc này; `audio.in` đọc nút đã khử vang (Q-22) | `docs/spec/simulation_coverage.md` §6 · `pipewire/neuroedge-echo-cancel.conf` |
+| **ESP32-S3-BOX-3 (Box-3)** | Bo mạch tham chiếu duy nhất của target `esp32s3`: chip ESP32-S3, micro, loa, màn hình 320×240 | `boards/esp32s3-box-3.toml` |
+| **QEMU (Espressif)** | Máy ảo mô phỏng chip ESP32-S3; chạy firmware thật khi chưa có bo mạch. Không có GPIO, I2S, Wi-Fi, PSRAM, màn hình (Q-21) | `docs/user/nap-firmware.md` §5 |
+| **Self-test lúc khởi động · `NE_SELFTEST`** | Firmware chạy lại các phép kiểm của agent lúc khởi động và phải ra đúng phán quyết máy tính đã tính lúc build. `NE_SELFTEST PASS` ⇒ runtime gate bật; `FAIL` ⇒ firmware dừng | `docs/user/nap-firmware.md` §1 (TSK-I3-01) |
+| **OTA · khe A/B** | Over-the-air — cập nhật firmware qua mạng. Flash có hai khe app; bản mới ghi vào khe đang trống, bản đang chạy giữ nguyên tới khi bản mới được xác nhận | `docs/user/nap-firmware.md` §6 (TSK-S6-01) |
+| **Ảnh ký · khoá ký** | Ảnh firmware mang chữ ký RSA-3072; thiết bị chỉ nhận ảnh ký bằng đúng khoá đã ký ảnh đang chạy. Khoá là của người dùng, không bao giờ nằm trong kho mã | `docs/user/nap-firmware.md` §6.2 (TSK-S6-03) |
+| **Rollback · xác nhận sau self-test** | Ảnh mới khởi động ở trạng thái chờ xác nhận; vượt self-test thì được xác nhận (`NE_OTA VALID`), hỏng hoặc reset trước đó thì bootloader quay về ảnh trước | `docs/user/nap-firmware.md` §6.3 (TSK-S6-02) |
+| **Mốc nước cao (high-water mark)** | Phiên bản cao nhất thiết bị đã xác nhận, lưu trong NVS và chỉ tăng. Ảnh có phiên bản không cao hơn mốc bị bỏ qua — chống hạ cấp bằng phần mềm (eFuse: TSK-S6-05) | `docs/user/nap-firmware.md` §6.3 |
+| **`version.txt` · MAJOR.MINOR.PATCH** | Phiên bản app của firmware, lấy từ `[agent] version`; phải là ba số (`0.1.0`) vì thiết bị so nó để chặn hạ cấp | `docs/user/nap-firmware.md` §6.6 |
+| **Dòng `NE_OTA`** | Một sự kiện OTA trên UART: `CHECK`, `DOWNLOADED`, `SWITCH`, `VALID`, `INVALID`, `ROLLBACK`, `REJECTED`, `ERASED`, `SKIP` | `docs/user/nap-firmware.md` §6.4 |
+| **LVGL · giao diện thiết bị** | Thư viện đồ hoạ nhúng (MIT) vẽ chín màn hình trên panel của Box-3; cùng mã build trên máy tính để so ảnh | `docs/spec/ui.md` (TSK-S4-10) |
+| **Ngôn ngữ agent · `[agent] language`** | Ngôn ngữ giao diện thiết bị: `[agent] language`, không có thì `[stt] language`, không có nữa thì `vi`. Hai giá trị lệch nhau ⇒ build dừng | `docs/spec/ui.md` §2 |
+| **Ảnh golden (giao diện)** | Ảnh PNG chuẩn của từng màn hình × ngôn ngữ; mỗi PR vẽ lại và so từng điểm ảnh. Khác với *Golden Reference* của vết ghi | `targets/esp32s3/ui/golden/` · job `ui-golden` |
 | **Vết ghi (trace)** | Tệp JSON `trace.v1` ghi mọi sự kiện một phiên | `schemas/trace.v1.json` |
 | **Wedge** | Lát cắt hẹp nhất chứng minh giá trị trước: `sim` trước, vi điều khiển sau | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` |
 | **TTFV** | Time-to-first-value — thời gian từ cài đặt tới lần đầu thấy agent chạy (mục tiêu < 10 phút) | `neuroedge-prd.md` §2.3 (hành trình 1) |
