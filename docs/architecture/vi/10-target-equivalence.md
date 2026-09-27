@@ -78,6 +78,12 @@ Chúng chờ runner hằng đêm trên phần cứng thật (TSK-S4-05, TSK-I2-0
 | `esp32s3` | **Chính firmware** phát lại ba vết ghi chuẩn mực lúc khởi động (`trace_vectors.c`) và gửi kết quả qua UART; host đọc (`--port`) và so với golden | firmware đang chạy, trên QEMU hoặc bo mạch |
 
 Firmware phát lại một vết ghi hay một gate **cũ hơn** checkout ⇒ `NE4003` (firmware cũ), không so.
+Trên `sim`/`linux`, một vết ghi chuẩn mực ghi `gate_digest` khác gate checkout biên dịch ra cũng
+⇒ `NE4003`, không so (RFC-0008): vết ghi chuẩn mực phải được quyết bởi đúng gate nó được ghi cùng.
+`neuroedge replay` trên vết ghi của người dùng thì **không lỗi**: gate có thể được siết có chủ ý
+(quickstart, giờ 3) — phát lại vẫn tính lại phán quyết, báo `SAFETY REGRESSION` như cũ khi lệch
+golden, và thêm cảnh báo nêu gate đã đổi (digest cũ → digest mới). Vết ghi không mang
+`gate_digest` (ghi trước RFC-0008) phát lại đúng như trước.
 Một loại artifact quét được 0 tệp ⇒ `NE4004`, mã 1: không có "PASS" rỗng.
 
 ## 6. Tương đương không hứa gì

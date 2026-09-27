@@ -65,6 +65,16 @@ def test_noise_is_ignored(traces_dir):
     assert GoldenComparator().compare(actual, golden).ok
 
 
+def test_gate_digest_in_the_recording_is_not_compared(traces_dir):
+    "RFC-0008: gate_digest is provenance of a gate_evaluation_begin; decisions are compared."
+    golden = canonical(traces_dir, "happy-path")
+    actual = copy.deepcopy(golden)
+    for event in actual["events"]:
+        if event["type"] == "gate_evaluation_begin":
+            event["data"]["gate_digest"] = "sha256:" + "0" * 64
+    assert GoldenComparator().compare(actual, golden).ok
+
+
 def test_a_decision_field_the_golden_lacks_is_not_compared(traces_dir):
     # The canonical unverified trace predates `reason`; the live engine adds it.
     golden = canonical(traces_dir, "unverified_attempt")

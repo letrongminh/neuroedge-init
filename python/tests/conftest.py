@@ -109,6 +109,7 @@ def copy_agent(tmp_path, fresh_actions):
             shutil.rmtree(target)
         shutil.copytree(ROOT / "fixtures" / "agents" / name, target)
         for relative, text in (files or {}).items():
+            (target / relative).parent.mkdir(parents=True, exist_ok=True)
             (target / relative).write_text(text, encoding="utf-8")
         manifest = target / "agent.toml"
         manifest.write_text(manifest.read_text("utf-8") + extra, encoding="utf-8")

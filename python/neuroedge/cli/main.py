@@ -1043,7 +1043,11 @@ def verify(
                 else:
                     if target == "linux":
                         _exit_on_signals()  # the replay drives real lines
-                    result = asyncio.run(TracePlayer(path, target=target).replay())
+                    # A canonical trace must be decided by the very gate it was recorded
+                    # with (RFC-0008): a different gate_digest is refused, not compared.
+                    result = asyncio.run(
+                        TracePlayer(path, target=target, enforce_gate_digests=True).replay()
+                    )
                     verdicts = result.verdicts
                 diff = GoldenComparator().compare(result, load_trace(path))
             except NeuroEdgeError as error:
@@ -1126,9 +1130,9 @@ def _device_replay(sessions, path: Path, port: str) -> dict[str, Any]:
     """
     from ..engine.canonical import digest
     from ..engine.compiler import load_agent_manifest, resolve_gates
-    from ..engine.decision_tree import compile_tree
     from ..errors import ReplayError
     from ..paths import fixtures_dir
+    from ..testing.player import gate_digest_changes
 
     stale = "the firmware is stale: python/.venv/bin/python scripts/gen_firmware_vectors.py, "
     stale += "then build and flash again (QEMU: firmware-qemu.yml)"
@@ -1154,18 +1158,15 @@ def _device_replay(sessions, path: Path, port: str) -> dict[str, Any]:
     gates, problems = resolve_gates(load_agent_manifest(agent / "agent.toml"), None)
     if problems:
         raise problems[0]
-    digests = {tree["gate"]: tree["gate_digest"] for tree in map(compile_tree, gates.values())}
-    for event in trace["events"]:
-        data = event["data"]
-        if event["type"] == "gate_evaluation_begin" and digests.get(data["gate"]) != data.get(
-            "gate_digest"
-        ):
-            raise ReplayError(
-                where=f"{port}: {path.name} {data['gate']}",
-                why=f"the device decides {data['gate']} as {data.get('gate_digest')}, "
-                f"this checkout compiles it to {digests.get(data['gate'])}",
-                how=stale,
-            )
+    changes = gate_digest_changes(trace["events"], gates)
+    if changes:
+        change = changes[0]
+        raise ReplayError(
+            where=f"{port}: {path.name} {change.gate}",
+            why=f"the device decides {change.gate} as {change.recorded}, "
+            f"this checkout compiles it to {change.current}",
+            how=stale,
+        )
     return trace
 
 

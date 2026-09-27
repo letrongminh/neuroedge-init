@@ -27,6 +27,7 @@ Người phê duyệt: `CONTRIBUTING.md` §3.
 | [0005](0005-rang-buoc-tham-so-trong-gate.md) | Gate tự khai ràng buộc tham số của hành động (Q-25) | `gate.v1` · ngữ nghĩa phân giải · bố cục Q-23 | ✅ Đã chấp thuận |
 | [0006](0006-xac-nhan-ask-confirms.md) | `on_block.confirms` — tiêu chí người trên thiết bị được xác nhận thay (Q-26) | `gate.v1` · ngữ nghĩa phân giải · lượng giá | ✅ Đã chấp thuận |
 | 0007 | *Giữ chỗ:* `digital.in` + bus I2C chỉ đọc + phong bì trong `board.v1` — TSK-N0-03 ([`neuroedge-roadmap-phase1-5.md`](../../neuroedge-roadmap-phase1-5.md)) | `board.v1` (`gate.v1` không đổi) | ⏳ Chưa mở |
+| [0008](0008-vet-ghi-chuan-muc-mang-gate-digest.md) | Ba vết ghi chuẩn mực mang `gate_digest` — phát lại kiểm nó | `trace.v1` *(chỉ `data` của ba vết ghi; tệp lược đồ không đổi)* | ✅ Đã chấp thuận |
 
 **Bản nháp chưa cấp số** (ngoài thư mục này; nhận số kế tiếp khi mở PR RFC):
 [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../draft-rfc-node-giao-thuc-dieu-phoi.md) — giao thức điều phối

@@ -17,6 +17,14 @@ Per recorded evaluation, the inputs are:
 * the action and its arguments — `action_requested` when present, else the
   agent's one @action behind that gate, with its default arguments.
 
+`gate_evaluation_begin` also records `gate_digest` (RFC-0008): the digest of the
+gate the verdict was computed with. One comparison,
+`gate_digest_changes`, serves three callers with two policies — `neuroedge
+verify` on the canonical traces *errors* (a canonical trace must be decided by
+the very gate it was recorded with, like the device check), `neuroedge replay`
+on a user's own trace *warns* (the gate may have been tightened on purpose) and
+keeps recomputing verdicts; a trace without the field replays exactly as before.
+
 What System 2 said (`tts_stream_start`) is not replayed and cannot be asserted
 on: it is not deterministic (L3). `ReplayResult.replies` says so.
 """
@@ -27,7 +35,7 @@ import asyncio
 import copy
 import json
 import tomllib
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -35,7 +43,7 @@ from typing import Any
 from ..actions import ActionResult, Conversation
 from ..engine.compiler import AgentManifest, load_actions, load_agent_manifest, resolve_gates
 from ..engine.gate import ActionContractEngine, GateResult
-from ..engine.gate_resolver import GateRegistry
+from ..engine.gate_resolver import GateRegistry, ResolvedGate
 from ..engine.trace_sink import EventLog
 from ..engine.verdict import DEGRADED_REASONS, Fact, Unavailable
 from ..errors import AgentManifestError, ReplayError
@@ -107,6 +115,78 @@ def recorded_steps(trace: Mapping[str, Any]) -> list[RecordedStep]:
             )
             request, gate, facts = None, None, None
     return steps
+
+
+# --- the gate the trace was decided by (RFC-0008) -----------------------------------
+
+
+@dataclass(frozen=True)
+class GateDigestChange:
+    """A gate_evaluation_begin whose `gate_digest` differs from what these gates compile to."""
+
+    gate: str
+    recorded: str | None
+    current: str | None
+
+
+def gate_digest_changes(
+    events: Iterable[Mapping[str, Any]], gates: Mapping[str, ResolvedGate]
+) -> list[GateDigestChange]:
+    """
+    Every `gate_evaluation_begin` whose recorded `gate_digest` (RFC-0008) differs from
+    what `gates` compile to now — the one comparison behind the device check
+    (`verify --targets esp32s3`), the host check on the canonical traces (`verify` on
+    sim/linux, enforced) and the `replay` warning (a gate edited on purpose).
+
+    A begin without the field — a trace recorded before RFC-0008 — yields nothing
+    (there is nothing to compare); a begin for a gate `gates` does not have yields
+    `current=None`.
+    """
+    from ..engine.decision_tree import compile_tree
+
+    digests: dict[str, str | None] = {}
+
+    def compiled(label: str) -> str | None:
+        if label not in digests:
+            match = next((g for g in gates.values() if f"{g.name}@{g.version}" == label), None)
+            digests[label] = None if match is None else compile_tree(match)["gate_digest"]
+        return digests[label]
+
+    changes: list[GateDigestChange] = []
+    for event in events:
+        if event.get("type") != "gate_evaluation_begin":
+            continue
+        data = event.get("data", {})
+        label, recorded = data.get("gate"), data.get("gate_digest")
+        if (current := compiled(label)) != recorded:
+            changes.append(GateDigestChange(label, recorded, current))
+    return changes
+
+
+def _decided_changes(changes: list[GateDigestChange]) -> list[GateDigestChange]:
+    """Those where both sides exist: a recorded digest that today's gate differs from."""
+    return [
+        change for change in changes if change.recorded is not None and change.current is not None
+    ]
+
+
+def _gate_digest_replay_error(change: GateDigestChange) -> ReplayError:
+    """The canonical trace must be decided by the very gate it was recorded with."""
+    return ReplayError(
+        where=f"trace event gate_evaluation_begin ({change.gate})",
+        why=f"the trace decides {change.gate} as {change.recorded}, "
+        f"this checkout compiles it to {change.current}",
+        how="a canonical trace is frozen with its gate (RFC-0008): changing either needs an RFC, "
+        "then python/.venv/bin/python scripts/gen_firmware_vectors.py",
+    )
+
+
+def _gate_digest_warning(change: GateDigestChange) -> str:
+    return (
+        f"{change.gate} changed since the trace was recorded "
+        f"({change.recorded} → {change.current}): replay recomputed the verdicts with the "
+        "current gate"
+    )
 
 
 class _Unreachable:
@@ -323,7 +403,15 @@ class TracePlayer:
         network: str = "online",
         slow: str | None = None,
         registry: GateRegistry | None = None,
+        enforce_gate_digests: bool = False,
     ) -> None:
+        """
+        `enforce_gate_digests` (RFC-0008): a recorded `gate_digest` that differs from
+        what the resolved gates compile to is a `ReplayError` instead of a warning.
+        `neuroedge verify` turns it on for the canonical traces — those must be decided
+        by the very gate they were recorded with. A trace without the field replays
+        exactly as before under both settings.
+        """
         self.trace = _load(trace)
         self.target = target
         self.manifest = _agent_for(self.trace, agent)
@@ -332,6 +420,7 @@ class TracePlayer:
         self.network = network
         self.slow = slow  # accepted for the §4.7 API; System 2 never changes a verdict
         self.registry = registry
+        self.enforce_gate_digests = enforce_gate_digests
 
     def _action_for(self, step: RecordedStep, actions: list[Any], gates) -> str:
         if step.action is not None:
@@ -357,15 +446,20 @@ class TracePlayer:
             board_id=self.board_id or DEFAULT_BOARD.get(self.target, ""),
             agent_version=self.manifest.label,
         )
+        actions = load_actions(self.manifest)
+        gates, problems = resolve_gates(self.manifest, self.registry)
+        if problems:
+            raise problems[0]
+        # RFC-0008: the recorded gate_digest against what this checkout compiles.
+        changed = _decided_changes(gate_digest_changes(self.trace.get("events", []), gates))
+        if changed and self.enforce_gate_digests:
+            raise _gate_digest_replay_error(changed[0])
         hal = self.hal if self.hal is not None else make_hal(self.target, self.board_id, events)
         if self.hal is not None and hasattr(hal, "events"):
             hal.events = events
         _script_sensors(hal, self.trace)
         warnings = _sensor_rules_changed(self.trace, self.manifest, events)
-        actions = load_actions(self.manifest)
-        gates, problems = resolve_gates(self.manifest, self.registry)
-        if problems:
-            raise problems[0]
+        warnings += [_gate_digest_warning(change) for change in changed]
         engine = _ReplayEngine(gates, steps, network=self.network, events=events)
         conversation = Conversation(engine=engine, hal=hal)
 

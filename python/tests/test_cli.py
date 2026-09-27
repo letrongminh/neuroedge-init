@@ -201,6 +201,30 @@ def test_verify_replays_every_canonical_trace_and_states_what_it_did_not_check(i
     assert "not timing" in result.output
 
 
+def test_verify_refuses_a_canonical_trace_decided_by_another_gate(
+    invoke, monkeypatch, tmp_path, root, fresh_actions
+):
+    "RFC-0008: a canonical trace must be decided by the very gate it was recorded with."
+    import shutil
+
+    for part in ("schemas", "gates", "boards", "fixtures"):
+        shutil.copytree(root / part, tmp_path / part)
+    trace = tmp_path / "fixtures" / "traces" / "happy-path.json"
+    altered = json.loads(trace.read_text(encoding="utf-8"))
+    for event in altered["events"]:
+        if event["type"] == "gate_evaluation_begin":
+            event["data"]["gate_digest"] = "sha256:" + "0" * 64
+    trace.write_text(json.dumps(altered, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    monkeypatch.setenv("NEUROEDGE_ROOT", str(tmp_path))
+    result = invoke("verify")
+    combined = " ".join((result.output + result.stderr).split())
+    assert result.exit_code == 1, combined
+    assert "NE4003" in combined
+    assert "decides unlock_door@1.2.0 as" in combined and "compiles it to" in combined
+    assert "RFC-0008" in combined  # fix: the trace and its gate are frozen together
+    assert "Passed" not in result.output
+
+
 def _assert_three_part(result, *fragments: str) -> None:
     combined = " ".join((result.output + result.stderr).split())
     assert result.exit_code == 1, combined
@@ -296,6 +320,21 @@ def test_replay_on_esp32s3_is_not_implemented_yet(invoke, traces_dir):
 def test_replay_rejects_an_invalid_trace(invoke, traces_dir):
     result = invoke("replay", str(traces_dir / "invalid" / "missing_board_id.json"))
     assert result.exit_code == 1
+
+
+def test_replay_tells_the_user_a_gate_changed_since_the_recording(invoke, traces_dir, tmp_path):
+    "RFC-0008: replay after a deliberate gate edit is not an error — it says which gate changed."
+    trace = tmp_path / "edited-gate.json"
+    altered = json.loads((traces_dir / "happy-path.json").read_text(encoding="utf-8"))
+    for event in altered["events"]:
+        if event["type"] == "gate_evaluation_begin":
+            event["data"]["gate_digest"] = "sha256:" + "0" * 64
+    trace.write_text(json.dumps(altered), encoding="utf-8")
+    result = invoke("replay", str(trace))
+    assert result.exit_code == 0, result.output
+    assert "changed since the trace was recorded" in result.output
+    assert "! unlock_door@1.2.0 changed" in result.output
+    assert "SAFETY REGRESSION" not in result.output  # the verdicts match on either gate
 
 
 def _recorded_project(invoke, tmp_path, monkeypatch, name="nhamay"):

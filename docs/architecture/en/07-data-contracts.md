@@ -169,7 +169,9 @@ Events by role in replay:
 export. By default, a trace hashes `text`, `utterance`, `transcript` at the source and carries
 `metadata.anonymized = true`; `--raw` keeps it verbatim, and that trace carries `metadata.anonymized = false`
 (NFR-PRIV-03). The three normative traces
-(`fixtures/traces/happy-path.json`, `unverified_attempt.json`, `network_offline.json`) are frozen by RFC.
+(`fixtures/traces/happy-path.json`, `unverified_attempt.json`, `network_offline.json`) are frozen by RFC;
+RFC-0008 adds `gate_digest` — the digest of the gate that decided each verdict — to every
+`gate_evaluation_begin` they carry.
 
 ## 8. UART format
 
