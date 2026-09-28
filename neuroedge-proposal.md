@@ -366,13 +366,14 @@ Bộ nguyên tắc rõ ràng giúp định hướng phát triển sản phẩm, 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │  L4: AGENT LAYER (Tầng ứng dụng Agent)                                 │
-│      Máy trạng thái hội thoại · Bộ nhớ ngữ cảnh · Tool call có gate (MCP)│
+│      Logic agent · Bộ nhớ ngữ cảnh · Tool call có gate (MCP) · System 2│
 ├────────────────────────────────────────────────────────────────────────┤
 │  L3: ACTION CONTRACT ENGINE (Động cơ hợp đồng hành động)   ← IP cốt lõi │
 │      Xác thực cổng chuẩn kiểu · Kế thừa chính sách · Mạch ngắt Fail-closed │
 ├────────────────────────────────────────────────────────────────────────┤
 │  L2: PERCEPTION & RUNTIME (Tầng nhận thức & Thời gian thực)            │
-│      Nhận diện Wake-word · Neural VAD · Khử vang AEC · STT/TTS độ trễ thấp │
+│      Wake-word · Neural VAD · Khử vang AEC · STT/TTS độ trễ thấp       │
+│      Máy trạng thái hội thoại thời gian thực (Q-48, §3.4)              │
 ├────────────────────────────────────────────────────────────────────────┤
 │  L1: HARDWARE ABSTRACTION LAYER (HAL - Lớp trừu tượng phần cứng)       │
 │      5 nguyên thủy cho v1.x · Đối chiếu hợp đồng năng lực lúc biên dịch │
@@ -1127,7 +1128,7 @@ Mô hình thương mại của NeuroEdge có **hai dòng doanh thu: license thư
 | 4 | **Cập nhật cấu hình, bí mật và cổng an toàn (Gate) từ xa** | Thay đổi từ khóa kích hoạt, tinh chỉnh prompt và cập nhật điều kiện gate an toàn trên toàn bộ đội thiết bị mà không cần nạp lại firmware. |
 | 5 | **Thu thập nhật ký vết (Trace) sự cố theo thời gian thực** | Tự động tải tệp vết ghi JSON về hệ thống trung tâm khi xảy ra cảnh báo, giúp kỹ sư dễ dàng tái hiện lại lỗi ngay trên máy tính cá nhân. |
 
-**Nền tảng hiện thực:** cơ chế điều phối chiến dịch cập nhật theo đợt kế thừa từ **Eclipse Hawkbit** — một nền tảng quản trị rollout đã được kiểm chứng trong công nghiệp. Kênh kết nối thiết bị và viễn trắc thời gian thực dùng **một broker MQTT giấy phép dễ dãi** (Mosquitto theo EDL-1.0, NanoMQ hoặc VerneMQ — chọn bằng đo tải khi mở Khối 2; EMQX không dùng vì BSL — PRD Q-11), kết hợp **FastAPI WebSockets** cho luồng âm thanh. Cả hai thành phần chỉ chạy phía máy chủ, không phân phối kèm sản phẩm tới khách hàng; ranh giới giấy phép được nêu tại Phụ lục H.
+**Nền tảng hiện thực:** cơ chế điều phối chiến dịch cập nhật theo đợt kế thừa từ **Eclipse Hawkbit** — một nền tảng quản trị rollout đã được kiểm chứng trong công nghiệp. Kênh kết nối thiết bị và viễn trắc thời gian thực dùng **một broker MQTT giấy phép dễ dãi** (Mosquitto theo EDL-1.0, NanoMQ hoặc VerneMQ — chọn bằng đo tải khi mở Khối 2; EMQX không dùng vì BSL — PRD Q-11), kết hợp **FastAPI WebSockets** cho kết nối và viễn trắc — **âm thanh không đi qua Fleet OS** (Q-47): luồng WebSocket âm thanh của thiết bị kết thúc ở lớp trừu tượng provider tự vận hành (§6.1, FR-GW-04). Cả hai thành phần chỉ chạy phía máy chủ, không phân phối kèm sản phẩm tới khách hàng; ranh giới giấy phép được nêu tại Phụ lục H.
 
 **Trải nghiệm liền mạch từ lõi đến quản trị thực tế:** Thiết bị ảo trong môi trường mô phỏng (`sim`) xuất hiện ngay trên giao diện Fleet Dashboard. Nền tảng quản trị được thiết kế để mang lại giá trị thiết thực ngay từ thiết bị đầu tiên (n = 1), tạo động lực tự nhiên cho khách hàng mở rộng quy mô lên hàng trăm, hàng nghìn thiết bị.
 

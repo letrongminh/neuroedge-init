@@ -73,6 +73,12 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 - **Hệ quả.** Một ảo giác của STT trên tiếng ồn, hay một câu "có" cho câu hỏi khác, không đứng thay được một tiêu chí trong `confirms`.
 - **Cưỡng chế.** `docs/spec/voice_fsm.md` §4 (T12), §5.4, §9 (V4); `perception/voice_fsm.py`, `perception/voice_session.py`, `sim/session.py`.
 
+### Q-48 · Máy trạng thái hội thoại thuộc L2, không phải L4
+- **Bối cảnh.** Sơ đồ 5 tầng ở proposal §3.1 đặt "máy trạng thái hội thoại" ở L4, trong khi proposal §3.4 và mã (`perception/` tự khai L2) đặt nó ở L2.
+- **Quyết định.** Máy trạng thái lượt thoại (nghe, nghĩ, nói, cắt lời) thuộc **L2 — Perception và runtime hội thoại**; L4 là logic agent, bộ nhớ ngữ cảnh, tool call có gate (MCP), System 2 (PRD §15 Q-48).
+- **Hệ quả.** Máy chạy thời gian thực trên cả chip lẫn host với một bộ vector tuân thủ; nó huỷ lệnh actuator đang chờ khi bị cắt lời nhưng không lượng giá gate và không lái chân. Không đổi mã; sơ đồ proposal §3.1 đã sửa.
+- **Cưỡng chế.** `perception/voice_fsm.py`, `docs/spec/voice_fsm.md`, `fixtures/compliance/voice/`; bảng tầng của [`03`](03-component-host-c4l3.md) §2.
+
 ## 2. Model và nhà cung cấp
 
 ### Q-4, Q-12 · System 1 là Jev qua System One API; System 2 là LLM chuẩn OpenAI
@@ -104,6 +110,12 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 - **Quyết định.** v1.0 (Khối 1a) chỉ giao FR-GW-01 ở mức tối thiểu (một bảng `[system_two]` trong `agent.toml`, khoá đọc từ biến môi trường, không lưu trong file hay mã) và FR-GW-03 (hợp đồng failover trong mã nguồn). Phần còn lại thuộc v1.1 (Khối 2, TSK-K2-01→03): khai báo nhiều provider và failover trong `agent.toml` (TSK-K2-02), một endpoint và credential dùng chung cho cả đội thiết bị, FR-GW-02/04 phía server, FR-GW-05→07 (TR-1, TR-6). (PRD §15 Q-28).
 - **Hệ quả.** v1.0 chạy trên `sim`/`linux` với một provider do người dùng giữ khoá, không cần máy chủ của NeuroEdge; phần cấp đội thiết bị của lớp provider (v1.1) vẫn là lõi tự vận hành, không thương mại hoá (roadmap §6.1), và chỉ có nghĩa khi có Fleet OS.
 - **Cưỡng chế.** `models/providers/config.py`, `agent.toml`; [`15`](15-target-architecture.md) §3.3.
+
+### Q-47 · FastAPI WebSockets của Fleet OS chỉ cho kết nối và viễn trắc
+- **Bối cảnh.** Proposal §6.2 từng ghi FastAPI WebSockets của Fleet OS "cho luồng âm thanh" — phần sót từ khi còn Inference Gateway thương mại; proposal §6.1, §8.4, roadmap §3.4, §6.1 và FR-GW-04 đều nói âm thanh là việc của lớp provider thuộc lõi.
+- **Quyết định.** Fleet OS dùng FastAPI WebSockets (cùng broker MQTT, Q-11) **chỉ cho kết nối và viễn trắc**; âm thanh không đi qua Fleet OS (PRD §15 Q-47).
+- **Hệ quả.** Luồng WebSocket âm thanh của thiết bị (khung Opus nhị phân, PRD Phụ lục D.2) kết thúc ở lớp provider tự vận hành (FR-GW-04); thiết bị nói được mà không cần tài khoản Fleet OS (P-3); kho của Fleet OS chỉ giữ quyết định (Q-6, NFR-PRIV-03); NeuroEdge không đứng giữa luồng token (N4).
+- **Cưỡng chế.** Chưa có mã — `targets/esp32s3/audio/provider_client.c` (TSK-S5-06), `services/fleet/` (TSK-K2-04…09); [`15`](15-target-architecture.md) §3.1, §3.3.
 
 ## 3. Phần cứng, target, mô phỏng
 
