@@ -252,6 +252,15 @@ bản gói.
 
 #### Đã đổi
 
+- **Kiến trúc khớp với vision và toàn bộ roadmap (2026-09-28).** `docs/architecture/` thêm chương 15 *Kiến trúc mục tiêu
+  theo chân trời* (v1.0 trên thiết bị I3–I7; tầng dịch vụ v1.1 I9–I10; mở rộng sau Beta I11–I18: NeuroBrain, robot phân tầng,
+  thị giác, hệ sinh thái) và chương 16 *Hệ sinh thái* (C4 system landscape: các bên U1–U6, tài sản dùng chung, nền tảng, vòng
+  lặp giá trị, chuẩn mở và quản trị, mô hình thương mại); poster sinh E-10, E-11. Chương 00 có mô hình logic năm lớp L0–L4 của
+  proposal §3.1 ánh xạ vào gói mã và bảng thuật ngữ phân tầng; 09 thêm ADR Q-6, Q-15, Q-28, Q-33, Q-34, Q-40, Q-46, RFC-0007,
+  RFC-0008 và các RFC quy hoạch; 13 thêm I0, I1, I2, I8. Hai chỗ nguồn tự mâu thuẫn được ghi rõ thay vì tự chọn: FastAPI
+  WebSockets của Fleet OS (proposal §6.2 "luồng âm thanh" ↔ roadmap §3.4, §6.1 "kết nối và viễn trắc") và tầng của máy trạng
+  thái hội thoại (proposal §3.1 L4 ↔ mã tự khai L2). Rà soát và viết do agy (Gemini), mọi chi tiết được Claude kiểm với nguồn;
+  khoảng 110 chi tiết bịa hoặc lệch đã bị sửa hoặc xoá.
 - **Một roadmap, mọi nơi khác dẫn tới nó (Q-39, 2026-09-27).** Hai ghi chú thiết kế đổi tên cho khỏi bị đọc là roadmap:
   `neuroedge-roadmap-phase1-5.md` → `neuroedge-design-neurobrain.md`, `neuroedge-roadmap-phase2.md` →
   `neuroedge-design-phase2.md` (mọi liên kết đang dùng đã sửa; `docs/archive/` giữ tên cũ). Proposal §8 thành "Các khối

@@ -5,10 +5,14 @@
 > `python/neuroedge/hal/`, `targets/esp32s3/components/ne_gate/`; quy phạm: proposal Phụ lục B,
 > RFC-0001, 0003, 0004, 0005, 0006.
 
+**Đọc chương này để làm gì:** Dành cho kỹ sư phần mềm và kỹ sư an toàn cần nắm chi tiết đường đi từ tệp gate YAML tới lệnh điều khiển chân phần cứng (C4 L4). Trả lời câu hỏi: gate được phân giải, biên dịch thành cây nhị phân `NETR`, duyệt và cấp token dùng một lần như thế nào trên cả Python lẫn C. Nên đọc [`00`](00-overview.md) và [`03`](03-component-host-c4l3.md) trước, và đọc [`06`](06-runtime-flows.md) sau để xem các luồng lúc chạy.
+
 ## 1. Chuỗi xương sống
 
 ![E-05 · Xương sống gate](../assets/svg/E-05-gate-spine.svg)
 *Hình E-05 — Từ tệp gate tới chân: phân giải và biên dịch lúc build, lượng giá và token lúc chạy, cùng ngữ nghĩa trên host và chip.*
+
+**Cách đọc sơ đồ:** Các khối thể hiện các giai đoạn biến đổi từ chính sách YAML sang lệnh phần cứng; mũi tên nét liền là luồng xử lý tuần tự qua từng bước, mũi tên nét đứt liên kết dữ liệu phụ trợ. Điều cốt lõi cần nhớ: chỉ có một đường đi duy nhất từ ý định tới chân phần cứng (`dispatch()` → gate → token → HAL), không có đường tắt nào bỏ qua gate.
 
 | Giai đoạn | Khi nào | Host (Python) | Chip (C) |
 |:---|:---|:---|:---|
@@ -70,6 +74,8 @@ flowchart LR
     H --> N --> A --> E --> S
 ```
 
+**Cách đọc sơ đồ:** Các hộp đại diện cho từng phân vùng liên tục trong tệp nhị phân `NETR` v1 (từ header 64 byte đến chuỗi UTF-8); mũi tên nét liền biểu thị thứ tự sắp xếp cố định trong bộ nhớ. Điều cốt lõi cần nhớ: bố cục nhị phân không chứa con trỏ mà dùng offset cố định, cho phép walker C đọc trực tiếp tại chỗ từ flash mà không cần cấp phát động (stack ≤ 512 byte).
+
 Kích thước tệp đúng bằng `64 + 24·n + 32·a + 16·e + strings`; giới hạn: tối đa 32 nút, miền 32 giá
 trị, 16 tham số, 64 enum, 16 384 byte chuỗi (khoảng 19 KB). Gate vượt giới hạn bị từ chối **lúc build**
 (`NE2002`), không bao giờ tới chip. Đổi bố cục cần RFC và tăng `layout_version`; walker v1 từ chối tệp
@@ -108,6 +114,8 @@ flowchart TB
     AL --> R
     OB --> R
 ```
+
+**Cách đọc sơ đồ:** Hình thoi là các điểm kiểm tra rẽ nhánh, hình chữ nhật là các bước xử lý và hành động; mũi tên nét liền chỉ hướng đi theo kết quả kiểm tra (yes/no, closed/open, all satisfied/first failure). Điều cốt lõi cần nhớ: `walk` là hàm thuần; thiếu dữ kiện hoặc ngoài miền ⇒ `BLOCK`; quá hạn hoặc mất nguồn ⇒ áp `budget.fail` — `closed` (mặc định) chặn, `open` chỉ cho `ALLOW` khi không có dữ kiện đã biết là "không".
 
 - **Ngân sách thời gian** là `budget.p95_latency_ms`, tính từ lúc bắt đầu gom dữ kiện; mỗi lần hỏi
   một `FactSource` bị giới hạn bởi phần ngân sách còn lại. Quá hạn ⇒ `budget_exceeded`; nguồn ném lỗi
@@ -159,6 +167,8 @@ sequenceDiagram
     end
 ```
 
+**Cách đọc sơ đồ:** Các cột thẳng đứng đại diện cho các lớp từ điều phối (`dispatch`), hội thoại (`Conversation`), động cơ (`Engine`), sổ token (`TokenLedger`), thân hàm action tới HAL; mũi tên nét liền là lời gọi hàm, mũi tên nét đứt là kết quả trả về; khối `alt` rẽ nhánh giữa `BLOCK` và `ALLOW`. Điều cốt lõi cần nhớ: HAL bắt buộc phải nhận được `VerdictToken` hợp lệ từ `TokenLedger` thì mới cấp phát xung điều khiển chân actuator, và mỗi token chỉ dùng được đúng một lần.
+
 **Thứ tự kiểm của `authorize`** (host và chip giống nhau):
 
 | # | Kiểm | Từ chối với |
@@ -172,6 +182,8 @@ sequenceDiagram
 
 Mọi lần từ chối ghi `actuator_command_rejected {pin, reason, code}` **trước** khi ném lỗi, và chân
 không đổi. Nonce không bao giờ vào vết ghi.
+
+**Quy hoạch:** hook phong bì an toàn vật lý (physical envelope hook — giới hạn tổng thời gian bật và tần suất theo từng chân, khai ở `board.v1` — RFC-0007) sẽ nằm trong `HAL.digital_out` giữa bước kiểm tra chân (`require_pin`) và `authorize` (TSK-N2-01, token không bị tiêu khi bị từ chối) → [`15`](15-target-architecture.md) §4.2; cơ chế token thuê có hạn (lease token — quyền điều khiển vận động có thời hạn ngắn, tự động gia hạn khi có lệnh mới qua gate, tự hết hạn để dừng an toàn khi mất liên lạc) cho `motion.*` (Q-37) → [`15`](15-target-architecture.md) §4.3.
 
 ```mermaid
 stateDiagram-v2
@@ -187,6 +199,8 @@ stateDiagram-v2
         all slots issued and live: ERR_FULL, no token
     end note
 ```
+
+**Cách đọc sơ đồ:** Các nút thể hiện trạng thái vòng đời của một khe token trong `TokenLedger` (`Free`, `Issued`, `Closed`); mũi tên nét liền là sự kiện chuyển trạng thái. Điều cốt lõi cần nhớ: mỗi chân của token chỉ dùng được một lần; dùng lại một chân ⇒ `token_replayed`, quá thời gian sống (TTL) sẽ bị `token_expired`, và khi toàn bộ khe đầy thì từ chối cấp mới chứ không đẩy token cũ ra.
 
 ## 6. Các lớp chính (host)
 
@@ -244,6 +258,8 @@ classDiagram
     FactSource <|.. SystemOne
     FactSource <|.. GrammarAdjudicator
 ```
+
+**Cách đọc sơ đồ:** Các hộp là các lớp và giao thức (`protocol`) chính trên Python host; mũi tên nét liền tam giác rỗng là kế thừa (`SimHAL`, `LinuxHAL`); nét đứt tam giác rỗng là hiện thực giao thức (`SystemOne`, `GrammarAdjudicator` hiện thực `FactSource`); mũi tên thường là nắm giữ hoặc gọi. Điều cốt lõi cần nhớ: `Conversation` là lớp duy nhất nối engine với sổ token; HAL chỉ biết `TokenLedger` qua `authorize`, không biết engine hay `FactSource`.
 
 ## 7. Đối chiếu Python ↔ C
 

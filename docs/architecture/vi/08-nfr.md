@@ -25,8 +25,9 @@ kiểm một phần · **chưa đo** — chưa có bằng chứng.
 |:---|:---|:---|:---|
 | SEC-01 Không đường tắt tới actuator | `c.do()` là đường duy nhất; token dùng một lần; HAL mặc định từ chối; gọi thẳng `@action` ⇒ `NE1001` | Bảng đường tắt ở `docs/spec/threat_model.md` §2, mỗi dòng một test; `tests_linux/test_gpio_sim.py` chứng minh line kernel không đổi khi bị chặn | đã kiểm; chưa có kiểm thử xâm nhập |
 | SEC-02, 03 Secure Boot, mã hoá flash, TPM, công tắc micro | — | TSK-S6-05, TSK-W2-03 (trạng thái: roadmap) | chưa |
-| SEC-04, 05 mTLS thiết bị ↔ cloud, chứng chỉ riêng mỗi thiết bị | — | Gắn với Fleet OS (I9) | chưa |
+| SEC-04, 05 mTLS thiết bị ↔ cloud, chứng chỉ riêng mỗi thiết bị | — | Gắn với Fleet OS (I9); mTLS hoặc PSK giữa Pi và node được quy hoạch riêng (TSK-W2-01, I14, không cần Fleet OS) → [`15`](15-target-architecture.md) §4.3 | chưa |
 | SEC-06 Firmware có ký, kiểm trên chip | RSA-3072 kiểm trên mọi ảnh OTA; sai hoặc không ký ⇒ từ chối, xoá khe; mốc nước cao chặn hạ cấp | job `ota-rollback` (pha a–g), `test_c_ota_policy.py` | một phần — trên QEMU; thiếu Secure Boot, eFuse |
+| SEC-07 Sandbox mã bên thứ ba giới hạn quyền truy cập chân actuator nhạy cảm (P0 v1.1, PRD §9.4) | Sandbox phân quyền của Registry (TSK-K3-05, → [`15`](15-target-architecture.md) §3.2) | — | chưa |
 | SEC-08 TLS tới nhà cung cấp, ghi nhà cung cấp vào vết ghi | Tên nhà cung cấp và model trong `system_one_call`, `system_two_call`; không ghi prompt, không ghi khoá | `test_providers.py::test_each_model_call_is_traced_without_prompt_or_key` | một phần — TLS 1.3 chưa có test |
 | SEC-09 MCP chỉ stdio; LLM và client MCP không tin cậy | `dispatch()`: kiểm schema, `call_source` do runtime gán, không công cụ xác nhận | Bảng §2b của threat model; corpus `fixtures/tool_calls/` | đã kiểm |
 

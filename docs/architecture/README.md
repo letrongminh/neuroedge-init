@@ -15,11 +15,11 @@ on `main`, from the big picture down to the byte.*
 | Bạn là · You are | Mục tiêu · Goal | Đọc theo thứ tự · Read in order |
 |:---|:---|:---|
 | Kỹ sư mới · New engineer | Chạy được hệ thống và hiểu nó trong ngày đầu · Run and understand it on day one | `12` → `00` → `01` → `02` → `03` |
-| Kỹ sư lõi · Core engineer | Hiểu từng layer và cách chúng gọi nhau · Every layer and how they call each other | `00` → `02` → `03` → `05` → `06` → `07` |
+| Kỹ sư lõi · Core engineer | Hiểu từng layer và cách chúng gọi nhau · Every layer and how they call each other | `00` → `02` → `03` → `05` → `06` → `07` → `15` |
 | Kỹ sư nhúng · Embedded engineer | Firmware, bộ nhớ, khởi động, OTA · Firmware, memory, boot, OTA | `02` → `04` → `05` → `06` → `14` |
-| Đối tác OEM · OEM partner | Port HAL lên bo mạch mới · Port the HAL to a new board | `11` → `10` → `07` → `04` |
+| Đối tác OEM · OEM partner | Port HAL lên bo mạch mới · Port the HAL to a new board | `11` → `10` → `07` → `04` → `15` §4.1 |
 | Người duyệt an toàn, QA · Safety reviewer, QA | Vì sao an toàn, bằng chứng ở đâu · Why it is safe, where the evidence is | `01` §4 → `08` → `09` → `06` → `10` |
-| Người lập kế hoạch · Planner | Cái gì đã có, cái gì tới sau · What exists, what comes next | `00` → `13` |
+| Người lập kế hoạch · Planner | Cái gì đã có, cái gì tới sau · What exists, what comes next | `00` → `13` → `15` |
 
 ## Bản đồ tệp · File map
 
@@ -40,6 +40,8 @@ on `main`, from the big picture down to the byte.*
 | [`12-dev-quickstart.md`](vi/12-dev-quickstart.md) | Ngày đầu: cài, chạy, đọc mã, sửa lần đầu | Guide |
 | [`13-evolution-i0-i18.md`](vi/13-evolution-i0-i18.md) | Hiện trạng và kế hoạch I0–I18, điểm mở rộng | Evolution |
 | [`14-deployment-c4.md`](vi/14-deployment-c4.md) | Chạy ở đâu: máy dev, CI, gpio-sim, QEMU, Pi, Box-3 | C4 Deployment |
+| [`15-target-architecture.md`](vi/15-target-architecture.md) | Kiến trúc mục tiêu theo chân trời (H1 v1.0, H2 v1.1, H3 sau Beta) · Target architecture by horizon | C4 To-be · Horizons |
+| [`16-ecosystem-landscape.md`](vi/16-ecosystem-landscape.md) | Bức tranh hệ sinh thái, các bên tham gia, tài sản chia sẻ và mô hình thương mại · Ecosystem landscape | C4 System Landscape |
 
 Bản tiếng Anh: cùng tên tệp trong [`en/`](en/). *English: same file names under [`en/`](en/).*
 

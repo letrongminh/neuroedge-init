@@ -292,3 +292,14 @@ sequenceDiagram
 3. Thoát — bình thường, Ctrl-D, SIGTERM (client MCP dừng máy chủ), SIGHUP (đóng terminal) — ⇒ mọi line
    về trạng thái nghỉ và được thả. SIGKILL thì không bắt được: đó là lý do an toàn phần cứng vẫn cần
    (`docs/spec/threat_model.md` §3b).
+
+## 10. Luồng quy hoạch
+
+| Luồng | Increment | Kiến trúc đích |
+|:---|:---|:---|
+| Lượt thoại trên chip | I5 | [`15`](15-target-architecture.md) §2.2 |
+| Từ chối do phong bì an toàn vật lý | I12 | [`15`](15-target-architecture.md) §4.2 |
+| Nguồn gọi kích hoạt từ sự kiện (`call_source = "trigger"`, TSK-N6-*) | I12 | [`15`](15-target-architecture.md) §4.2 |
+| Ý định đa node và mất liên lạc | I14 | [`15`](15-target-architecture.md) §4.3 |
+| Dữ kiện thị giác | I15 | [`15`](15-target-architecture.md) §4.4 |
+

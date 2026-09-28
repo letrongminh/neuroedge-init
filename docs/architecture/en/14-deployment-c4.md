@@ -10,9 +10,9 @@
 ![E-08 · Deployment](../assets/svg/E-08-deployment.svg)
 *Figure E-08 — Three zones: the engineer's machine, GitHub's CI machine, the device. The `○ planned` blocks have no hardware yet.*
 
-NeuroEdge has **no server-side service at all** in Phase 1: no account, no broker, no backend.
-Everything runs on the user's machine or on the device. The first server-side service is Fleet OS at I9
-([`13`](13-evolution-i0-i18.md) §2).
+NeuroEdge has **no server-side service at all** before the v1.1 service tier (I0–I8): no account, no broker, no
+backend. Everything runs on the user's machine or on the device. The first server-side service is Fleet
+OS at I9 ([`13`](13-evolution-i0-i18.md) §2).
 
 ## 2. Deployment nodes
 
@@ -77,8 +77,8 @@ The concrete steps: the workflow files themselves. Current green/red status: roa
 
 ## 6. Not deployed yet
 
-- **No NeuroEdge server exists.** Batched OTA rollout, the broker, the trace store and device identity
-  are Fleet OS (I9); the gate store is the Gate Registry (I10).
-- **No real board in CI.** All chip evidence today is QEMU and C tests on host; evidence on silicon
-  waits for the board and the self-hosted runner (`TODOS.md` #10).
+- **No NeuroEdge servers before v1.1.** Batched OTA rollout (Hawkbit), MQTT broker, incident trace store, device identity are Fleet OS (I9); gate storage and distribution is Gate Registry (I10) — server deployment structure details: [`15`](15-target-architecture.md) §3.1/§3.2.
+- **Layered robotics clusters not deployed yet.** Layered structure comprising Raspberry Pi 5 as the brain connecting to dedicated microcontroller nodes ESP32-S3 and RP2350 via Zenoh-pico communication bus (I14, Q-32, Q-33, Q-36) — network node layout details: [`15`](15-target-architecture.md) §4.3.
+- **Jetson vision inference node not deployed yet.** Target `jetson` (tier 2, I16) (tier 2 per FR-TGT-08, Q-13) runs vision via JetPack and TensorRT (`neuroedge-design-phase2.md` §7, TSK-V2-01) — hardware deployment details: [`15`](15-target-architecture.md) §4.4.
+- **No real board in CI.** All chip evidence today is QEMU and C tests on host; evidence on silicon waits for the board and the self-hosted runner (`TODOS.md` #10).
 - **Not released to PyPI yet.** The workflow exists; the real release is at I6.

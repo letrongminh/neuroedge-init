@@ -7,17 +7,21 @@
 
 ## 1. Bản đồ hợp đồng
 
-| Hợp đồng | Dạng | Ai viết | Ai đọc | Kiểm bằng | Đóng băng |
-|:---|:---|:---|:---|:---|:---|
-| **Gate** `gate.v1` | YAML | người viết gate | resolver | `schemas/gate.v1.json` + **phân giải** (`gate lint`) | có — RFC (`CONTRIBUTING.md` §3) |
-| **Vết ghi** `trace.v1` | JSON | `EventLog`, `TraceRecorder`, UART | player, golden, `trace view` | `schemas/trace.v1.json` | vỏ: có; danh mục sự kiện: không |
-| **Bo mạch** `board.v1` | TOML | OEM, đội lõi | build, HAL | `schemas/board.v1.json` | có |
-| **Agent** `agent.toml` | TOML | người viết agent | build, phiên | từng bảng có parser riêng | không (quy phạm trong mã) |
-| **Ngữ pháp** `commands.toml` | TOML | người viết agent | `CommandGrammar` | parser | không |
-| **Tri thức** `knowledge.toml` | TOML | người viết agent | `KnowledgeBase` | parser | không |
-| **Tool call** | đối tượng / JSON | bộ điều phối, LLM, client MCP | `dispatch()` | `input_schema` sinh từ chữ ký | không — Gated Tool Profile v0 (`TODOS.md` #23) |
-| **Cây thiết bị** `NETR` v1 | nhị phân | `binary_tree.encode` | walker C | `ne_tree_load` (magic, phiên bản, CRC, giới hạn) | có — RFC-0003 |
-| **Dòng UART** | văn bản | firmware | `testing/uart.py`, script CI | parser, regex neo `^` | quy phạm ở `simulation_coverage.md` §4 |
+| Hợp đồng | Dạng | Ai viết | Ai đọc | Kiểm bằng | Đóng băng | Trạng thái |
+|:---|:---|:---|:---|:---|:---|:---:|
+| **Gate** `gate.v1` | YAML | người viết gate | resolver | `schemas/gate.v1.json` + **phân giải** (`gate lint`) | có — RFC (`CONTRIBUTING.md` §3) | `done` |
+| **Vết ghi** `trace.v1` | JSON | `EventLog`, `TraceRecorder`, UART | player, golden, `trace view` | `schemas/trace.v1.json` | vỏ: có; danh mục sự kiện: không | `done` |
+| **Bo mạch** `board.v1` | TOML | OEM, đội lõi | build, HAL | `schemas/board.v1.json` | có | `done` |
+| **Agent** `agent.toml` | TOML | người viết agent | build, phiên | từng bảng có parser riêng | không (quy phạm trong mã) | `done` |
+| **Ngữ pháp** `commands.toml` | TOML | người viết agent | `CommandGrammar` | parser | không | `done` |
+| **Tri thức** `knowledge.toml` | TOML | người viết agent | `KnowledgeBase` | parser | không | `done` |
+| **Tool call** | đối tượng / JSON | bộ điều phối, LLM, client MCP | `dispatch()` | `input_schema` sinh từ chữ ký | không — Gated Tool Profile v0 (`TODOS.md` #23) | `done` |
+| **Cây thiết bị** `NETR` v1 | nhị phân | `binary_tree.encode` | walker C | `ne_tree_load` (magic, phiên bản, CRC, giới hạn) | có — RFC-0003 | `done` |
+| **Dòng UART** | văn bản | firmware | `testing/uart.py`, script CI | parser, regex neo `^` | quy phạm ở `simulation_coverage.md` §4 | `done` |
+| **Manifest** `manifest.v1` (`schemas/manifest.v1.json`, TSK-K3-03) | JSON | người đóng gói agent / gate | Gate Registry | JSON Schema | dự kiến có — → [`15`](15-target-architecture.md) §3.2 | `planned` |
+| **Khung WebSocket Opus/JSON** (và SLIP trên UART nếu cần — PRD Phụ lục D.2) | nhị phân / JSON | firmware (`provider_client.c`, TSK-S5-06) | lớp provider / nhà cung cấp cloud | chưa định | quy phạm PRD Phụ lục D.2 — → [`15`](15-target-architecture.md) §2.3 | `planned` |
+| **Dây black-channel và vết ghi đa node** (`metadata.nodes[]`, `data.node_id`, Q-32) | Zenoh-pico (mã hoá ý định chưa chọn) / JSON | Pi điều phối, node MCU | node MCU, TracePlayer | RFC-node; trường tuỳ chọn, không sửa `schemas/` (TSK-W3-04) | qua RFC — → [`15`](15-target-architecture.md) §4.3 | `planned` |
+| **Bảng mở rộng `agent.toml` (`[lab]`, `[nodes]`)** | TOML | người viết agent | parser `agent.toml` | parser cấu hình (TSK-N1-02, RFC-node draft) | không — → [`15`](15-target-architecture.md) §4.2, §4.3 | `planned` |
 
 ## 2. Gate — `gate.v1`
 
@@ -80,6 +84,8 @@ khoá lạ. Cú pháp dòng lệnh dùng các bảng này: `CHANGELOG.md` §2.3.
 | `[stt]`, `[stt.fallback]`, `[tts]` | `perception/providers/config.py` | `provider` (`openai` hoặc `python:…`), `base_url`, `model`, `voice` (TTS), `language` (STT), `timeout_s`, `api_key_env`; `[stt]` cần `audio.in`, `[tts]` cần `audio.out` |
 | `[wake_word]` | như trên | `provider` (`openwakeword` hoặc `python:…`), ba tệp mô hình `model`, `melspectrogram`, `embedding` (của người dùng), `word`, `threshold`; bị từ chối trên `esp32s3` |
 | `[mcp]`, `[mcp.servers.<tên>]` | `mcp_host.load_mcp_config` | `max_rounds` (1–16); mỗi server: `command`, `tools` (danh sách cho phép, bắt buộc), `args`, `env`, `timeout_s` |
+| `[lab]` | `brain/` (TSK-N1-02, planned) | Cờ `enabled`, mặc định tắt; tắt thì lab tool không được đăng ký; `build --release` từ chối khi bật (TSK-N1-03) — → [`15`](15-target-architecture.md) §4.2 |
+| `[nodes]` | RFC-node (đề xuất) | Cấu hình node MCU cho robot phân tầng; hình dạng chưa chốt (câu hỏi mở 3 của RFC-node nháp) — → [`15`](15-target-architecture.md) §4.3 |
 
 **Luật chung của mọi bảng nhà cung cấp** (`models/providers/common.py`): trường có tên như khoá
 (`api_key`, `token`, `secret`…) bị từ chối; giá trị trông như khoá bị từ chối và không bao giờ được in
@@ -97,7 +103,7 @@ bị từ chối, và với `[system_one]` thì `http://` tới máy khác bị 
 | `[capabilities.sensor_read]` | `sensors` |
 | `[capabilities.display]` | `width`, `height`, `color` |
 
-Năm nguyên thủy là tập đóng (FR-HAL-01). Có đúng ba profile bậc 1: `sim-default` (sao đúng Box-3, không
+Năm nguyên thủy là tập đóng cho v1.x (FR-HAL-01); nguyên thủy mới chỉ qua RFC (RFC-0007 `digital.in` tại I12, RFC-motion cho `motion.*` tại I14, RFC `vision.in` tại I15). Có đúng ba profile bậc 1: `sim-default` (sao đúng Box-3, không
 bao giờ giàu hơn — bất biến 7), `linux-rpi5` (`aec = false` tới khi đo đạt), `esp32s3-box-3`. Mã ứng dụng
 chỉ dùng **tên** chân; số GPIO thuộc về HAL.
 

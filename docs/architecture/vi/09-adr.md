@@ -5,6 +5,8 @@
 > đóng băng là RFC (`docs/rfc/`). Trang này **không** thay hai nguồn đó: nó chỉ ra mỗi quyết định trông
 > như thế nào trong kiến trúc, và mã nào giữ nó.
 
+**Đọc chương này để làm gì:** Dành cho kỹ sư hệ thống, người duyệt an toàn và QA. Chương này trả lời câu hỏi: *vì sao kiến trúc có hình dạng như hiện tại và quyết định nào định hình từng cơ chế an toàn*. Đọc sau [`00-overview.md`](00-overview.md) và [`01-context-c4l1.md`](01-context-c4l1.md); đọc trước khi đề xuất thay đổi lớn hoặc mở RFC mới tại [`docs/rfc/`](../../rfc/).
+
 Định danh ADR chính là mã `Q-N` hoặc `RFC-NNNN`, để không có hai hệ đánh số. Trạng thái đầy đủ của 46
 quyết định ở PRD §15; dưới đây là những quyết định có hệ quả kiến trúc.
 
@@ -65,6 +67,12 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 - **Cưỡng chế.** `models/grammar.py`, `models/system.py`; `test_offline_fallback.py`. Trên `esp32s3`:
   chưa (TSK-S5-07).
 
+### Q-46 · Câu "có"/"không" nói ra chỉ trả lời câu hỏi ask của chính lượt đó
+- **Bối cảnh.** Khi người dùng trả lời bằng giọng nói qua STT, nguy cơ nhận diện sai từ tiếng ồn hoặc một câu nói muộn có thể vô tình xác nhận một câu hỏi nguy hiểm ở lượt trước đó.
+- **Quyết định.** Câu trả lời nói ra chỉ trả lời câu hỏi `ask` của chính lượt đó: trong lượt mà câu hỏi mở (T11), hoặc nói ngắt lời khi câu hỏi đang được đọc. TTS gặp lỗi khi đọc câu hỏi thì máy trạng thái quay về IDLE, không mở lượt trả lời (câu hỏi chưa nghe thì không thể xác nhận). Gõ chữ và nút bấm UI giữ nguyên theo RFC-0006. (PRD §15 Q-46).
+- **Hệ quả.** Một ảo giác của STT trên tiếng ồn, hay một câu "có" cho câu hỏi khác, không đứng thay được một tiêu chí trong `confirms`.
+- **Cưỡng chế.** `docs/spec/voice_fsm.md` §4 (T12), §5.4, §9 (V4); `perception/voice_fsm.py`, `perception/voice_session.py`, `sim/session.py`.
+
 ## 2. Model và nhà cung cấp
 
 ### Q-4, Q-12 · System 1 là Jev qua System One API; System 2 là LLM chuẩn OpenAI
@@ -90,6 +98,12 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 - **Quyết định.** openWakeWord trên host, microWakeWord trên chip (Q-7). Mô hình dựng sẵn của
   openWakeWord có giấy phép phi thương mại, không hợp Q-45 ⇒ không giao kèm, không tải.
 - **Cưỡng chế.** `perception/providers/wake.py`; `TODOS.md` #49.
+
+### Q-28 · Mốc giao lớp trừu tượng provider (FR-GW)
+- **Bối cảnh.** Lớp trừu tượng provider (FR-GW) cần hỗ trợ đa nhà cung cấp và failover, nhưng việc xây dựng toàn bộ chức năng quản trị đội thiết bị tập trung quá sớm sẽ làm phình phạm vi v1.0.
+- **Quyết định.** v1.0 (Khối 1a) chỉ giao FR-GW-01 ở mức tối thiểu (một bảng `[system_two]` trong `agent.toml`, khoá đọc từ biến môi trường, không lưu trong file hay mã) và FR-GW-03 (hợp đồng failover trong mã nguồn). Phần còn lại thuộc v1.1 (Khối 2, TSK-K2-01→03): khai báo nhiều provider và failover trong `agent.toml` (TSK-K2-02), một endpoint và credential dùng chung cho cả đội thiết bị, FR-GW-02/04 phía server, FR-GW-05→07 (TR-1, TR-6). (PRD §15 Q-28).
+- **Hệ quả.** v1.0 chạy trên `sim`/`linux` với một provider do người dùng giữ khoá, không cần máy chủ của NeuroEdge; phần cấp đội thiết bị của lớp provider (v1.1) vẫn là lõi tự vận hành, không thương mại hoá (roadmap §6.1), và chỉ có nghĩa khi có Fleet OS.
+- **Cưỡng chế.** `models/providers/config.py`, `agent.toml`; [`15`](15-target-architecture.md) §3.3.
 
 ## 3. Phần cứng, target, mô phỏng
 
@@ -119,6 +133,12 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
   vào nút sink của nó làm tín hiệu tham chiếu. `linux-rpi5` chỉ khai `aec = true` khi đo đạt.
 - **Cưỡng chế.** `hal/linux.py`, `pipewire/neuroedge-echo-cancel.conf`.
 
+### Q-15 · Đầu vào mặc định của sim
+- **Bối cảnh.** Hành trình 10 phút đầu tiên (TTFV < 10 phút, M1) đòi hỏi lập trình viên chạy thử được ngay sau khi cài đặt, không bị gián đoạn bởi thiết lập micro, tải mô hình hay đăng ký khoá API đám mây.
+- **Quyết định.** Trình mô phỏng `sim` mặc định nhận đầu vào văn bản gõ (CLI hoặc web UI) đưa vào bộ khớp ngữ pháp lệnh cục bộ của Q-14: hoàn toàn không cần mạng, không cần API key, và thực thi tất định. Giọng nói và STT đám mây chỉ là tuỳ chọn khi có khoá; mô hình nhận diện giọng nói trên chip (WakeNet/MultiNet/TFLite Micro) chỉ thuộc target `esp32s3` (FR-DX-02). (PRD §15 Q-15).
+- **Hệ quả.** Lần chạy đầu tiên tất định, không mạng, không key (FR-DX-02); hành trình 10 phút bước 2–4 đổi theo (PRD §2.3).
+- **Cưỡng chế.** `sim/`, `models/grammar.py`; ngữ pháp mẫu `fixtures/agents/*/commands.toml`.
+
 ## 4. Quản trị, giấy phép, lịch
 
 ### Q-11 · Danh sách giấy phép cho phép
@@ -142,14 +162,23 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 ### Q-38 · Không phải chức năng an toàn được chứng nhận
 - **Quyết định.** Tạm thời OUT: không SIL, không PL; robot di động bắt buộc có nút dừng khẩn phần cứng.
 
+### Q-6 · Chính sách lưu trữ vết ghi Fleet OS
+- **Bối cảnh.** Vết ghi từ đội thiết bị chứa dữ liệu cá nhân (ai mở cửa lúc nào); chi phí lưu trữ không phải ràng buộc (~1,3 KB mỗi phiên).
+- **Quyết định.** Fleet Standard giữ vết 90 ngày; Fleet Enterprise giữ 3 năm. Vết ghi lên kho theo FR-FLT-05 chỉ chứa quyết định, không dữ liệu thô (NFR-PRIV-03); thời hạn là mức trần, không phải mức sàn. Hạn mức theo thiết bị chỉ để chặn thiết bị chạy vòng, không là đòn bẩy giá (~23 GB/năm cho 1.000 thiết bị × 50 phiên/ngày (ước lượng); PRD §15 Q-6).
+- **Hệ quả.** Kho chỉ giữ quyết định, không dữ liệu thô (NFR-PRIV-03); vì vết vẫn chứa dữ liệu cá nhân (ai mở cửa lúc nào), thời hạn là mức trần, không phải mức sàn.
+- **Cưỡng chế.** Chưa có mã — kho vết ghi Fleet OS (TSK-K2-08, `services/fleet/trace_collector.py`, proposal §6.4); [`15`](15-target-architecture.md) §3.1.
+
 ## 5. Quyết định cho hướng mở rộng (chưa có mã)
 
 | Mã | Quyết định | Hệ quả khi hiện thực |
 |:---|:---|:---|
 | Q-32 | Robot phân tầng sau Developer Beta; vết ghi nhiều node mở rộng `trace.v1` bằng trường tuỳ chọn | Không cần `trace.v2` |
+| Q-33 | **Bối cảnh:** Robot phân tầng cần node phụ trách cơ cấu chấp hành/tay máy độc lập. **Quyết định:** RP2350 là node tham chiếu thứ hai do đội lõi port: HAL C trên Pico SDK (`digital.out`, `sensor.read`), walker và sổ token C99 biên dịch cho ARM, profile bo mạch và runner test bo thật. | Đội lõi gánh thêm một target bảo trì lâu dài; ngoại lệ có chủ đích cho danh mục loại trừ ở PRD §14; bo mạch tham chiếu v1.0 vẫn là Box-3 (Q-2); [`15`](15-target-architecture.md) §4.3 |
+| Q-34 | **Bối cảnh:** Robot di động cần dẫn đường và tránh vật cản, nhưng NeuroEdge không tự phát triển lại SLAM/navigation. **Quyết định:** Tích hợp nguyên bản ROS 2 và Nav2 qua adapter tại ranh giới gate; gate xét duyệt mọi lệnh tốc độ (`cmd_vel`), kể cả khi Nav2 đang tự động dẫn đường. | Thiết lập tầng an toàn robot di động mới (gate chu kỳ 10–20 Hz, vùng cấm); cần RFC an toàn robot di động và khảo sát câu hỏi C6 từ người mua robot (Q-38, `TODOS.md` #40); [`15`](15-target-architecture.md) §4.3 |
 | Q-35 | Mỗi cơ cấu chấp hành tự khai trạng thái an toàn khi mất liên lạc; không khai thì dừng | Cần RFC cho trường khai báo |
 | Q-36 | Zenoh-pico trên MCU, `zenohd` trên Pi; spike với ngưỡng đạt/trượt, micro-ROS là phương án B | Bản nháp RFC node |
 | Q-37 | Token thuê có hạn cho `motion.*` (kênh, biên độ tối đa, TTL ngắn), gia hạn qua mỗi lệnh có gate | Khác token dùng-một-lần hôm nay; cần RFC-motion |
+| Q-40 | **Bối cảnh:** Nhiều hướng mở rộng sau Beta (NeuroBrain, robot phân tầng, thị giác, port cộng đồng) có nguy cơ làm loãng nguồn lực đội lõi nếu không có thứ tự ưu tiên. **Quyết định:** Thứ tự mở rộng sau Beta neo theo phụ thuộc: mở danh sách target (I11) → NeuroBrain (I12) → bộ port cộng đồng (I13) → robot phân tầng (I14); thị giác (I15–I17) chờ nhu cầu camera đo được; hệ sinh thái (I18) sau I13 và Registry. | Bảo vệ đường găng v1.0 và công của V2 (R-7); NeuroBrain chuyển sau Developer Beta thành I12; [`15`](15-target-architecture.md) §4 |
 
 ## 6. RFC
 
@@ -161,6 +190,22 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 | [0004](../../rfc/0004-ke-thua-budget-on-block.md) | Không nới `budget`, `on_block` khi kế thừa | Chấp nhận, đã hiện thực | `gate_resolver.py` |
 | [0005](../../rfc/0005-rang-buoc-tham-so-trong-gate.md) | Giới hạn tham số trong gate | Chấp nhận, đã hiện thực | `arguments.py`, bản ghi tham số `NETR` |
 | [0006](../../rfc/0006-xac-nhan-ask-confirms.md) | `on_block.confirms` | Chấp nhận, đã hiện thực | `confirmation.py`, `confirm_mask` |
+| 0007 | Giữ chỗ: `digital.in`, bus I2C chỉ đọc, khai báo phong bì trong `board.v1` (TSK-N0-03, NeuroBrain). Đọc mức logic và quét bus lab mà không đổi `gate.v1` | **Chưa mở** (giữ chỗ); thuộc I12 | chưa |
+| [0008](../../rfc/0008-vet-ghi-chuan-muc-mang-gate-digest.md) | Ba vết ghi chuẩn mực mang `gate_digest` trong `trace.v1` — phát lại kiểm tra. Ngăn chặn phát lại vết ghi trên gate đã đổi ngữ nghĩa an toàn mà không phát hiện được | Chấp nhận, đã hiện thực | `fixtures/traces/`, `verify`, `replay` |
+
+### Các RFC dự kiến chưa cấp số (planned RFCs)
+
+Mỗi RFC dưới đây giải quyết một điểm nghẽn kiến trúc cho các chặng mở rộng, được mở bởi một task cụ thể:
+
+| RFC dự kiến | Năng lực và mục đích kiến trúc (Tại sao cần) | Task mở | Thuộc chặng |
+|:---|:---|:---|:---|
+| **RFC-numeric** | Bổ sung `evaluate.type: numeric` trong `gate.v1`, nút so sánh số trong `NETR` và walker C; cho phép gate kiểm tra ngưỡng số liên tục (áp suất, nhiệt độ) thay vì chỉ enum `bool`/`level`/`choice` (`TODOS.md` #30) | TSK-W1-02 | I14 |
+| **RFC-motion** | Bổ sung nguyên thủy `motion.*` (motor/servo), `analog.in`, mở rộng phong bì an toàn vật lý, cơ chế token thuê có hạn (lease token, Q-37) và trạng thái an toàn riêng cho từng cơ cấu khi mất liên lạc (Q-35) | TSK-W1-03 | I14 |
+| **RFC-node** | Đặc tả giao thức điều phối đa node trên wire (Zenoh-pico, Q-36), cấu trúc black channel, nhịp tim (heartbeat) kích hoạt an toàn khi đứt kết nối (Q-35), và hợp nhất vết ghi đa node trong `trace.v1` (Q-32) | TSK-W3-02 | I14 |
+| **RFC-pin-extends** | Cho phép ghim kế thừa gate theo băm nội dung `@<ver>#sha256:…` trong `gate.v1`, nâng cấp `digests.lock` thành lockfile cho chuỗi kế thừa; chống tấn công thay thế gate trên Registry công cộng (`TODOS.md` #11, #15) | TSK-S3-21 | I10 |
+| **RFC vision.in** | Đặc tả nguyên thủy `vision.in` với các tham số phần cứng (`fps`, `modes[]`, enum `pixel_format`) và quy tắc đối chiếu năng lực bo mạch `[requires]` (RFC-0002 §9.1) | TSK-V1b-07 | I15 |
+| **RFC visual-evidence gate semantics** | Định nghĩa ngữ nghĩa gate cho bằng chứng thị giác; tới khi có RFC này, kết quả thị giác phải qua một `SystemOne` trả `bool`/`level`/`choice` (`neuroedge-design-phase2.md` §2.2); điều kiện tiên quyết cho gate đa phương thức | TSK-V3-04 | I17 |
+| **RFC mobile-robot safety** | Khung an toàn cho robot di động: giới hạn tốc độ tối đa, vùng cấm di chuyển, chu kỳ gate thời gian thực 10–20 Hz, tích hợp luồng điều khiển ROS 2 / Nav2 (Q-34) và câu hỏi C6 từ người mua robot (Q-38, `TODOS.md` #40) | TSK-W4-07 | I14 |
 
 ## 7. Ra một quyết định kiến trúc mới
 

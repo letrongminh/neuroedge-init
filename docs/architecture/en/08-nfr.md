@@ -25,8 +25,9 @@ partial check exists · **not measured yet** — no evidence yet.
 |:---|:---|:---|:---|
 | SEC-01 No shortcut to actuator | `c.do()` is the only path; one-time tokens; the HAL refuses by default; calling `@action` directly ⇒ `NE1001` | Shortcut table in `docs/spec/threat_model.md` §2, one test per line; `tests_linux/test_gpio_sim.py` proves the kernel line does not change when blocked | checked; no penetration test yet |
 | SEC-02, 03 Secure Boot, flash encryption, TPM, mic switch | — | TSK-S6-05, TSK-W2-03 (status: roadmap) | not yet |
-| SEC-04, 05 device ↔ cloud mTLS, per-device certificates | — | Tied to Fleet OS (I9) | not yet |
+| SEC-04, 05 device ↔ cloud mTLS, per-device certificates | — | Tied to Fleet OS (I9); mTLS or PSK between Pi and node is planned separately (TSK-W2-01, I14, does not need Fleet OS) → [`15`](15-target-architecture.md) §4.3 | not yet |
 | SEC-06 Signed firmware, verified on chip | RSA-3072 verified on every OTA image; bad or unsigned ⇒ rejected, slot erased; high-water mark blocks downgrade | job `ota-rollback` (phases a–g), `test_c_ota_policy.py` | partial — on QEMU; Secure Boot, eFuse missing |
+| SEC-07 Sandbox third-party code restricting access to sensitive actuator pins (P0 v1.1, PRD §9.4) | Registry permission sandbox (TSK-K3-05, → [`15`](15-target-architecture.md) §3.2) | — | not yet |
 | SEC-08 TLS to providers, provider recorded in the trace | Provider name and model in `system_one_call`, `system_two_call`; no prompt, no key recorded | `test_providers.py::test_each_model_call_is_traced_without_prompt_or_key` | partial — no TLS 1.3 test yet |
 | SEC-09 MCP stdio only; LLM and MCP client untrusted | `dispatch()`: schema check, `call_source` assigned by the runtime, no self-confirming tools | threat model table §2b; corpus `fixtures/tool_calls/` | checked |
 

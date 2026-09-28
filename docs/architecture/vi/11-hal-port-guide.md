@@ -20,7 +20,7 @@ Một port đúng khi nó giữ đủ các điều sau. Mỗi điều đã có k
 
 | # | Hợp đồng | Nghĩa là | Kiểm bằng |
 |:---:|:---|:---|:---|
-| 1 | **Năm nguyên thủy, không hơn** | `audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display` (FR-HAL-01, KL-1). Bậc 3 được thiếu một số, nhưng không được thêm | `board.v1`, `PRIMITIVES` |
+| 1 | **Năm nguyên thủy của v1.x — tập đóng** | `audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display` (FR-HAL-01, KL-1). Bậc 3 được thiếu một số nguyên thủy tuỳ năng lực bo mạch, nhưng không được tự ý thêm. Mọi nguyên thủy mới chỉ qua RFC (RFC-0007: `digital.in`, RFC-motion: `motion.*`, RFC vision.in: `vision.in`; xem [`15`](15-target-architecture.md) §4) | `board.v1`, `PRIMITIVES` |
 | 2 | **Chân theo tên** | Mã agent dùng tên logic (`door_lock`); số chân vật lý chỉ nằm trong HAL (KL-2) | build đối chiếu tên |
 | 3 | **Không chân nào động mà không có token** | Lệnh chân kiểm tên chân, rồi gọi hàm `authorize` được lắp vào, rồi mới lái chân. HAL chưa được lắp sổ token thì từ chối mọi lệnh | `test_hal_sim.py`, `tests_linux/test_gpio_sim.py`, self-test token trên chip |
 | 4 | **Thiếu thiết bị thì báo lỗi, không giả vờ** | Không có `/dev/gpiochip*`, không có cảm biến, không mở được micro ⇒ lỗi ba phần **trước khi** giữ chân nào (Q-16); không bao giờ trả giá trị mặc định | `preflight` của `LinuxHAL` |

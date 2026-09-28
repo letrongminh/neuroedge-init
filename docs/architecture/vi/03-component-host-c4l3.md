@@ -23,12 +23,14 @@ lên:
 | 2 | `engine` | bậc 0; **riêng `engine/compiler.py`** được dùng `hal` (đối chiếu bo mạch lúc build) và import muộn `actions`, `models`, `perception`, `mcp_host` (kiểm cấu hình) | L3 lõi |
 | 3 | `actions` | `engine`, `hal`, bậc 0 | L3 bề mặt |
 | 4 | `models` | `engine` (hiện thực giao thức của nó), `net`, bậc 0 | L2 |
-| 5 | `mcp_server`, `mcp_host`, `mcp_desktop` | `actions`, bậc 0 | — |
-| 6 | `viz` | `hal`, `trace`, bậc 0 | — |
+| 5 | `mcp_server`, `mcp_host`, `mcp_desktop` | `actions`, bậc 0 | L4 theo proposal §3.1 (docstring không tự khai tầng) |
+| 6 | `viz`, `templates` | `viz`: `hal`, `trace`, bậc 0; `templates`: `errors`, `paths` | công cụ |
 | 7 | `sim` | mọi bậc dưới | L0, **nơi lắp ráp** |
 | 8 | `perception` | `sim` (phiên thoại bọc phiên gõ), `models`, `actions`, `engine`, `hal`, `net` | L2 |
 | 9 | `testing` | `perception`, `actions`, `engine`, `hal`, `trace`; `sim` import muộn | Action CI |
 | 10 | `cli` | mọi gói | vào |
+
+Giữa L2 và L3 có nguyên lý đảo ngược phụ thuộc (dependency inversion): các adapter System 1 của L2 trong `models/` (`SystemOne`, `CommandGrammar`, `systemone_api`) hiện thực giao thức `FactSource` của `engine/gate.py` (L3), thay vì L3 phụ thuộc L2.
 
 Bốn luật, mỗi luật là một lựa chọn có chủ đích:
 
@@ -43,6 +45,16 @@ Bốn luật, mỗi luật là một lựa chọn có chủ đích:
 4. **Một nơi lắp ráp lúc chạy:** `SimSession.load` (`sim/session.py`) tạo và nối engine, sổ token,
    HAL, model, bộ công cụ và MCP. `VoiceSession` bọc một `SimSession`; CLI, máy chủ MCP, bộ chạy
    corpus đều đi qua nó. Lúc build, nơi lắp ráp là `engine/compiler.py::build`.
+
+### 2.1 Gói quy hoạch
+
+Các gói sau đã được quy hoạch trong kiến trúc tương lai nhưng chưa có mã trong kho hôm nay:
+
+- `brain/` (I12, NeuroBrain): logic điều phối phòng lab; tuân thủ bất biến B-1 — chỉ tác động vật lý qua `dispatch()` và gate, không bao giờ gọi thẳng HAL, được khoá bằng test quét AST và import (`neuroedge-design-neurobrain.md` §1 "Bảy nguyên tắc"; TSK-N1-07, `tests/test_brain_boundary.py`) — xem [`15`](15-target-architecture.md) §4.2.
+- `perception/vision/` và `sim/vision/` (I15, TSK-V1b-*): đường ống thị giác và giả lập thị giác; thị giác đóng vai trò đầu vào L2, rút gọn về System 1 trước khi đưa vào gate — xem [`15`](15-target-architecture.md) §4.4.
+- `services/fleet/` và `services/registry/` (I9–I10, TSK-K2, TSK-K3): các dịch vụ phía máy chủ cho Fleet OS (điều phối OTA theo đợt, broker MQTT, viễn trắc) và Gate Registry (kho OCI qua ORAS/Harbor, đo lường) — xem [`15`](15-target-architecture.md) §3.1, §3.2.
+
+Khi `brain/` vào kho, nó cần một mục trong `ALLOWED` (và `LAZY` nếu có import muộn) của [`python/tests/test_architecture_layers.py`](../../../python/tests/test_architecture_layers.py). `perception/vision/` và `sim/vision/` thuộc đơn vị `perception` và `sim` sẵn có nên không cần mục mới; `services/` (kể cả `services/metering/engine.py`, TSK-K3-02) nằm ngoài gói `neuroedge` nên test này không quét.
 
 ## 3. Danh mục thành phần
 

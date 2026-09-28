@@ -6,10 +6,14 @@
 > **Trạng thái:** `partial` — mọi thứ dưới đây chạy trên máy tính (C biên dịch trên host) và trên
 > Espressif QEMU trong CI; chưa có bo mạch, và firmware **chưa điều khiển chân nào**.
 
+**Đọc chương này để làm gì:** Dành cho kỹ sư nhúng và lập trình viên hệ thống cần hiểu cấu trúc firmware ESP32-S3, quy trình boot, bộ nhớ và cơ chế OTA. Trả lời câu hỏi: firmware trên chip chạy những gì, dùng bao nhiêu bộ nhớ, và tự kiểm tra ra sao trước khi kích hoạt phần cứng. Nên đọc [`02`](02-container-c4l2.md) trước để nắm ranh giới container, và đọc [`05`](05-code-gate-hal-c4l4.md) sau để hiểu chi tiết walker và token.
+
 ## 1. Sơ đồ thành phần
 
 ![E-04 · Firmware](../assets/svg/E-04-firmware.svg)
 *Hình E-04 — Component firmware, dữ liệu sinh lúc build, và trình tự khởi động.*
+
+**Cách đọc sơ đồ:** Các hộp thể hiện các component firmware và phân vùng bộ nhớ trên chip ESP32-S3; mũi tên nét liền là luồng khởi động và gọi hàm trực tiếp, mũi tên nét đứt là dữ liệu được sinh lúc build hoặc ghi ra ngoài. Điều cốt lõi cần nhớ: firmware chạy tuần tự trong `app_main`, self-test phải vượt qua 100% trước khi cho phép bất kỳ hành động vật lý nào.
 
 ## 2. Những gì firmware **không** có hôm nay
 
@@ -37,6 +41,22 @@ Nói trước, để không ai đọc sơ đồ thành nhiều hơn thực tế:
 | `ne_ui` | `ui/` (**không link**) | Chín màn hình LVGL, tiếng Việt và tiếng Anh | LVGL v9.6 | `partial` — chỉ build trên host |
 
 `ne_gate`, `ne_trace`, `ne_agent` biên dịch với `-std=c99 -Wall -Wextra -Wconversion -Werror`.
+
+### Thành phần quy hoạch
+
+| Đường dẫn quy hoạch | Task | Thành phần (là gì) và mục đích (vì sao cần) | Kiến trúc đích |
+|:---|:---|:---|:---|
+| `targets/esp32s3/hal/` | TSK-S4-01 | Hiện thực 5 nguyên thủy HAL trên ESP-IDF; cần để điều khiển phần cứng thật thay vì giả lập | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/drivers/` | TSK-S4-03 | Driver `digital.out` và `sensor.read` trên chân thật; cần để kích xung actuator và đọc cảm biến trên bo mạch Box-3 | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/audio/` | TSK-S5-01 | Tích hợp WebRTC AEC, libfvad (VAD), Opus streaming; cần để khử vang, phát hiện tiếng nói và nén âm thanh | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/drivers/audio_path.c` | TSK-S5-02 | Driver đường dẫn audio thu/phát I2S (ES8311/ES7210); cần để giao tiếp với codec âm thanh phần cứng của Box-3 | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/fsm/voice_fsm.c` | TSK-S5-03 | Hiện thực C của máy trạng thái hội thoại (`voice_fsm.md`); cần để điều phối lượt thoại thời gian thực trực tiếp trên chip | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/fsm/actuator_abort.c` | TSK-S5-04 | Logic thu hồi lệnh actuator chưa thực thi khi bị cắt lời (barge-in); cần để huỷ lệnh actuator chưa giao trong ≤ 20 ms và đóng token khi bị cắt lời ([`voice_fsm.md`](../../spec/voice_fsm.md) §5.2) | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/audio/provider_client.c` | TSK-S5-06 | Client streaming âm thanh lên provider cloud; cần để truyền nhận luồng STT/TTS từ vi điều khiển | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/fallback/` | TSK-S5-07 | Bộ nhận diện lệnh cố định cục bộ; cần để thiết bị vẫn lượng giá gate và hành động an toàn khi mất Internet | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/security/` | TSK-S6-05 | Secure Boot, mã hoá flash, nút ngắt micro vật lý; cần để bảo vệ toàn vẹn firmware và quyền riêng tư | [`15`](15-target-architecture.md) §2.1 |
+
+Hiện tại firmware chỉ có một `app_main` tuần tự; mô hình task FreeRTOS (số lượng task, độ ưu tiên, hàng đợi và ghim nhân) cho đường thoại chưa được thiết kế (→ [`15`](15-target-architecture.md) §2.2). Firmware cho node robot MCU ngoại vi thứ hai (RP2350, TSK-W3-07 tại `targets/rp2350/`, chạy walker gate và sổ token C99 độc lập trên node tay máy — draft robot §9.4) xem [`15`](15-target-architecture.md) §4.3.
 
 ### 3.1 `ne_gate` — walker và sổ token
 
@@ -118,6 +138,8 @@ sequenceDiagram
     end
 ```
 
+**Cách đọc sơ đồ:** Các cột thẳng đứng đại diện cho `app_main` và các module chức năng nội bộ firmware; mũi tên nét liền là lời gọi hàm đồng bộ, mũi tên nét đứt là kết quả trả về; khối `alt` phân nhánh theo kết quả self-test. Điều cốt lõi cần nhớ: nếu self-test thất bại, ảnh OTA đang chờ (nếu có) bị đánh dấu không hợp lệ và máy khởi động lại để bootloader quay về khe trước; không có ảnh chờ thì firmware dừng — không replay, không mạng, không action.
+
 Self-test gồm bốn giai đoạn: (1) mỗi cây nạp được và digest khớp bản host biên dịch; (2) walker
 quyết từng phép kiểm đúng như engine host, từng trường một; (3) token của mỗi action mở đúng chân
 của nó đúng một lần, từ chối chân khác, từ chối token bị sửa; (4) sổ đầy thì từ chối, đóng một token
@@ -173,6 +195,8 @@ stateDiagram-v2
     Checking --> Switched: downloaded and signature verified
     Switched --> [*]: reboot into the new slot, pending verify
 ```
+
+**Cách đọc sơ đồ:** Các nút bo tròn đại diện cho các trạng thái của vòng đời ảnh cập nhật OTA; mũi tên nét liền là bước chuyển trạng thái kèm điều kiện kích hoạt. Điều cốt lõi cần nhớ: ảnh mới nạp chỉ được xác nhận (`Confirmed`) khi vượt qua self-test lúc khởi động; sai chữ ký, lỗi tải hoặc quá hạn ⇒ `Rejected`: xoá sector đầu của khe vừa ghi, máy vẫn chạy khe hiện tại; chỉ self-test hỏng trên ảnh đang chờ mới làm bootloader quay về khe trước.
 
 - **Quyết định cài hay không** là một hàm C thuần, `ne_ota_should_install(running, remote,
   rolled_back, high_water)`, được test trên host dưới ASan/UBSan và dùng nguyên trong firmware.

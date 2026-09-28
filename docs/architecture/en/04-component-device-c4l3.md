@@ -6,10 +6,14 @@
 > **Status:** `partial` — everything below runs on a computer (C compiled on the host) and on
 > Espressif QEMU in CI; there is no board yet, and the firmware **controls no pin**.
 
+**What this chapter is for:** For embedded engineers and systems programmers who need to understand the ESP32-S3 firmware structure, boot process, memory, and OTA mechanism. Answers the questions: what runs on the chip's firmware, how much memory it uses, and how it self-tests before enabling any hardware. You should read [`02`](02-container-c4l2.md) first to grasp container boundaries, and [`05`](05-code-gate-hal-c4l4.md) afterwards to understand the walker and token details.
+
 ## 1. Component diagram
 
 ![E-04 · Firmware](../assets/svg/E-04-firmware.svg)
 *Figure E-04 — Firmware components, build-time generated data, and the boot sequence.*
+
+**How to read the diagram:** Boxes represent firmware components and memory partitions on the ESP32-S3 chip; solid arrows are boot flows and direct function calls, dashed arrows are data generated at build time or written outward. Core takeaway: firmware runs sequentially in `app_main`, self-test must pass 100% before allowing any physical action.
 
 ## 2. What the firmware does **not** have today
 
@@ -37,6 +41,22 @@ Said up front, so nobody reads the diagram as more than it is:
 | `ne_ui` | `ui/` (**not linked**) | Nine LVGL screens, Vietnamese and English | LVGL v9.6 | `partial` — host build only |
 
 `ne_gate`, `ne_trace`, `ne_agent` compile with `-std=c99 -Wall -Wextra -Wconversion -Werror`.
+
+### Planned components
+
+| Planned path | Task | Component (what it is) and purpose (why it is needed) | Target architecture |
+|:---|:---|:---|:---|
+| `targets/esp32s3/hal/` | TSK-S4-01 | Implements 5 HAL primitives on ESP-IDF; needed to control real hardware instead of emulation | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/drivers/` | TSK-S4-03 | Drivers for `digital.out` and `sensor.read` on real pins; needed to pulse actuators and read sensors on the Box-3 board | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/audio/` | TSK-S5-01 | Integrates WebRTC AEC, libfvad (VAD), Opus streaming; needed for acoustic echo cancellation, voice activity detection, and audio compression | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/drivers/audio_path.c` | TSK-S5-02 | I2S capture/playback audio path driver (ES8311/ES7210); needed to interface with Box-3 hardware audio codecs | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/fsm/voice_fsm.c` | TSK-S5-03 | C implementation of the voice state machine (`voice_fsm.md`); needed to coordinate real-time voice turns directly on chip | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/fsm/actuator_abort.c` | TSK-S5-04 | Logic to abort unexecuted actuator commands upon barge-in; needed to cancel undelivered actuator commands within ≤ 20 ms and close tokens when barged in ([`voice_fsm.md`](../../spec/voice_fsm.md) §5.2) | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/audio/provider_client.c` | TSK-S5-06 | Audio streaming client to cloud provider; needed to stream STT/TTS from the microcontroller | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/fallback/` | TSK-S5-07 | Local fixed-command recognizer; needed for the device to still evaluate gates and act safely when offline | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/security/` | TSK-S6-05 | Secure Boot, flash encryption, physical microphone mute button; needed to protect firmware integrity and privacy | [`15`](15-target-architecture.md) §2.1 |
+
+Currently the firmware only has a sequential `app_main`; the FreeRTOS task model (task count, priorities, queues, and core pinning) for the voice path is not designed yet (→ [`15`](15-target-architecture.md) §2.2). For firmware for the second peripheral robot MCU node (RP2350, TSK-W3-07 at `targets/rp2350/`, running an independent C99 gate walker and token ledger on the robot arm node — robot draft §9.4), see [`15`](15-target-architecture.md) §4.3.
 
 ### 3.1 `ne_gate` — walker and token ledger
 
@@ -119,6 +139,8 @@ sequenceDiagram
     end
 ```
 
+**How to read the diagram:** Vertical columns represent `app_main` and internal firmware functional modules; solid arrows are synchronous function calls, dashed arrows are return values; the `alt` block branches on the self-test result. Core takeaway: if the self-test fails, any pending OTA image (if present) is marked invalid and the machine reboots so the bootloader rolls back to the previous slot; with no pending image, the firmware halts — no replay, no network, no action.
+
 The self-test has four stages: (1) every tree loads and its digest matches the host-compiled version;
 (2) the walker decides every case exactly as the host engine, field by field; (3) each action's token
 opens exactly its own pin once, rejects another pin, rejects a tampered token; (4) a full ledger
@@ -175,6 +197,8 @@ stateDiagram-v2
     Checking --> Switched: downloaded and signature verified
     Switched --> [*]: reboot into the new slot, pending verify
 ```
+
+**How to read the diagram:** Rounded nodes represent states in the OTA update image lifecycle; solid arrows are state transitions with triggering conditions. Core takeaway: a newly flashed image is only confirmed (`Confirmed`) once it passes boot self-test; bad signature, download error, or timeout ⇒ `Rejected`: erases the first sector of the just-written slot, the machine continues running the current slot; only a failed self-test on a pending image causes the bootloader to roll back to the previous slot.
 
 - **The install-or-not decision** is a pure C function, `ne_ota_should_install(running, remote,
   rolled_back, high_water)`, tested on the host under ASan/UBSan and used unchanged in the firmware.
