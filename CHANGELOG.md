@@ -252,6 +252,11 @@ bản gói.
 
 #### Đã đổi
 
+- **Q-47, Q-48 — hai chỗ proposal tự mâu thuẫn đã chốt (2026-09-28).** Q-47: FastAPI WebSockets của Fleet OS chỉ cho kết nối và
+  viễn trắc; âm thanh không đi qua Fleet OS, luồng WebSocket âm thanh của thiết bị kết thúc ở lớp provider tự vận hành (FR-GW-04) — sửa
+  câu sót "cho luồng âm thanh" ở proposal §6.2. Q-48: máy trạng thái hội thoại thuộc L2 (perception và runtime hội thoại), L4 là logic
+  agent, bộ nhớ ngữ cảnh, tool call có gate, System 2 — sửa sơ đồ proposal §3.1 cho khớp §3.4 và mã. Tài liệu kiến trúc (00, 02, 09, 15;
+  vi và en) bỏ ghi chú "nguồn chưa thống nhất" và dẫn tới Q-47, Q-48. Không đổi mã.
 - **Kiến trúc khớp với vision và toàn bộ roadmap (2026-09-28).** `docs/architecture/` thêm chương 15 *Kiến trúc mục tiêu
   theo chân trời* (v1.0 trên thiết bị I3–I7; tầng dịch vụ v1.1 I9–I10; mở rộng sau Beta I11–I18: NeuroBrain, robot phân tầng,
   thị giác, hệ sinh thái) và chương 16 *Hệ sinh thái* (C4 system landscape: các bên U1–U6, tài sản dùng chung, nền tảng, vòng

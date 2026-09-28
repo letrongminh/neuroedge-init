@@ -87,6 +87,12 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
 - **Enforcement.** `docs/spec/voice_fsm.md` §4 (T12), §5.4, §9 (V4); `perception/voice_fsm.py`,
   `perception/voice_session.py`, `sim/session.py`.
 
+### Q-48 · The conversation state machine is L2, not L4
+- **Context.** The five-layer diagram in proposal §3.1 placed the "conversation state machine" in L4, while proposal §3.4 and the code (`perception/` declares itself L2) place it in L2.
+- **Decision.** The turn state machine (listen, think, speak, barge-in) belongs to **L2 — perception and conversation runtime**; L4 is agent logic, context memory, gated tool calls (MCP) and System 2 (PRD §15 Q-48).
+- **Consequences.** It runs in real time on both chip and host with one compliance vector suite; on barge-in it cancels pending actuator commands, but it never evaluates a gate and never drives a pin. No code change; the proposal §3.1 diagram was corrected.
+- **Enforcement.** `perception/voice_fsm.py`, `docs/spec/voice_fsm.md`, `fixtures/compliance/voice/`; the layer table in [`03`](03-component-host-c4l3.md) §2.
+
 ## 2. Models and providers
 
 ### Q-4, Q-12 · System 1 is Jev via the System One API; System 2 is a standard OpenAI LLM
@@ -127,6 +133,12 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
   requiring no NeuroEdge servers; the fleet-level part of the provider layer (v1.1) remains a
   self-operated core, unmonetized (roadmap §6.1), and only makes sense when Fleet OS exists.
 - **Enforcement.** `models/providers/config.py`, `agent.toml`; [`15`](15-target-architecture.md) §3.3.
+
+### Q-47 · Fleet OS uses FastAPI WebSockets for connection and telemetry only
+- **Context.** Proposal §6.2 used to say Fleet OS uses FastAPI WebSockets "for audio streams" — a leftover from the commercial Inference Gateway; proposal §6.1, §8.4, roadmap §3.4, §6.1 and FR-GW-04 all make audio the job of the core provider layer.
+- **Decision.** Fleet OS uses FastAPI WebSockets (alongside the MQTT broker, Q-11) **only for connection and telemetry**; audio does not pass through Fleet OS (PRD §15 Q-47).
+- **Consequences.** The device's audio WebSocket (binary Opus frames, PRD Appendix D.2) terminates at the self-hosted provider layer (FR-GW-04); a device can talk without a Fleet OS account (P-3); the Fleet OS store keeps decisions only (Q-6, NFR-PRIV-03); NeuroEdge does not sit in the token flow (N4).
+- **Enforcement.** No code yet — `targets/esp32s3/audio/provider_client.c` (TSK-S5-06), `services/fleet/` (TSK-K2-04…09); [`15`](15-target-architecture.md) §3.1, §3.3.
 
 ## 3. Hardware, targets, simulation
 
