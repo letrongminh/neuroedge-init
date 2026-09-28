@@ -5,6 +5,8 @@
 > `Q-N`); changes to frozen contracts are RFCs (`docs/rfc/`). This page does **not** replace those two
 > sources: it shows what each decision looks like in the architecture, and which code holds it.
 
+**What this chapter is for:** For systems engineers, safety reviewers, and QA. This chapter answers the question: *why the architecture has its current shape and which decisions shape each safety mechanism*. Read after [`00-overview.md`](00-overview.md) and [`01-context-c4l1.md`](01-context-c4l1.md); read before proposing major changes or opening a new RFC at [`docs/rfc/`](../../rfc/).
+
 ADR identifiers are the `Q-N` or `RFC-NNNN` codes, so there are no two numbering systems. The full
 status of the 46 decisions is in PRD §15; below are the decisions with architectural consequences.
 
@@ -72,6 +74,19 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
 - **Enforcement.** `models/grammar.py`, `models/system.py`; `test_offline_fallback.py`. On `esp32s3`:
   not yet (TSK-S5-07).
 
+### Q-46 · Spoken "yes"/"no" only answers the ask question of that exact turn
+- **Context.** When the user answers by voice via STT, the risk of misrecognition from noise or a late
+  utterance can inadvertently confirm a dangerous question from a previous turn.
+- **Decision.** A spoken answer only answers the `ask` question of that exact turn: during the turn in
+  which the question is open (T11), or spoken as barge-in while the question is being read. If TTS
+  encounters an error while reading the question, the state machine returns to IDLE, without opening an
+  answer turn (an unheard question cannot be confirmed). Text typing and UI buttons remain unchanged per
+  RFC-0006. (PRD §15 Q-46).
+- **Consequences.** An STT hallucination from noise, or a "yes" to a different question, cannot substitute
+  for a criterion in `confirms`.
+- **Enforcement.** `docs/spec/voice_fsm.md` §4 (T12), §5.4, §9 (V4); `perception/voice_fsm.py`,
+  `perception/voice_session.py`, `sim/session.py`.
+
 ## 2. Models and providers
 
 ### Q-4, Q-12 · System 1 is Jev via the System One API; System 2 is a standard OpenAI LLM
@@ -99,6 +114,19 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
 - **Decision.** openWakeWord on host, microWakeWord on chip (Q-7). openWakeWord's bundled models have a
   non-commercial license, incompatible with Q-45 ⇒ not shipped, not downloaded.
 - **Enforcement.** `perception/providers/wake.py`; `TODOS.md` #49.
+
+### Q-28 · Delivery milestone for the provider abstraction layer (FR-GW)
+- **Context.** The provider abstraction layer (FR-GW) needs to support multi-provider and failover, but
+  building the entire centralized fleet management capability too early would bloat the v1.0 scope.
+- **Decision.** v1.0 (Block 1a) only ships minimal FR-GW-01 (a single `[system_two]` table in `agent.toml`,
+  keys read from environment variables, not stored in files or code) and FR-GW-03 (failover contract in
+  source code). The remainder belongs to v1.1 (Block 2, TSK-K2-01→03): declaring multiple providers and
+  failover in `agent.toml` (TSK-K2-02), a shared endpoint and credential for the entire fleet,
+  server-side FR-GW-02/04, FR-GW-05→07 (TR-1, TR-6). (PRD §15 Q-28).
+- **Consequences.** v1.0 runs on `sim`/`linux` with a single provider whose keys are held by the user,
+  requiring no NeuroEdge servers; the fleet-level part of the provider layer (v1.1) remains a
+  self-operated core, unmonetized (roadmap §6.1), and only makes sense when Fleet OS exists.
+- **Enforcement.** `models/providers/config.py`, `agent.toml`; [`15`](15-target-architecture.md) §3.3.
 
 ## 3. Hardware, targets, simulation
 
@@ -131,6 +159,19 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
   measured.
 - **Enforcement.** `hal/linux.py`, `pipewire/neuroedge-echo-cancel.conf`.
 
+### Q-15 · Default input for sim
+- **Context.** The first 10-minute journey (TTFV < 10 minutes, M1) requires developers to be able to test
+  immediately after installation, uninterrupted by microphone setup, downloading models, or registering
+  cloud API keys.
+- **Decision.** The `sim` simulator defaults to typed text input (CLI or web UI) fed into the local
+  command grammar matcher from Q-14: requiring absolutely no network, no API key, and executing
+  deterministically. Voice and cloud STT are only optional when a key is present; on-chip speech
+  recognition models (WakeNet/MultiNet/TFLite Micro) only belong to the `esp32s3` target (FR-DX-02).
+  (PRD §15 Q-15).
+- **Consequences.** The first run is deterministic, offline, and keyless (FR-DX-02); steps 2–4 of the
+  10-minute journey adapt accordingly (PRD §2.3).
+- **Enforcement.** `sim/`, `models/grammar.py`; sample grammars `fixtures/agents/*/commands.toml`.
+
 ## 4. Governance, licensing, schedule
 
 ### Q-11 · Allowed license list
@@ -155,14 +196,29 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
 - **Decision.** Temporarily OUT: no SIL, no PL; mobile robots must have a hardware emergency stop
   button.
 
+### Q-6 · Fleet OS trace retention policy
+- **Context.** Traces from the device fleet contain personal data (who opened the door and when);
+  storage cost is not a constraint (~1.3 KB per session).
+- **Decision.** Fleet Standard retains traces for 90 days; Fleet Enterprise retains them for 3 years.
+  Traces sent to the store under FR-FLT-05 contain only decisions, no raw data (NFR-PRIV-03);
+  retention periods are ceilings, not floors. Per-device quotas exist only to prevent runaway devices,
+  not as a pricing lever (~23 GB/year for 1,000 devices × 50 sessions/day (estimated); PRD §15 Q-6).
+- **Consequences.** The store holds only decisions, no raw data (NFR-PRIV-03); because traces still
+  contain personal data (who opened the door and when), the retention period is a ceiling, not a floor.
+- **Enforcement.** No code yet — Fleet OS trace store (TSK-K2-08, `services/fleet/trace_collector.py`,
+  proposal §6.4); [`15`](15-target-architecture.md) §3.1.
+
 ## 5. Decisions for the expansion direction (no code yet)
 
 | Code | Decision | Consequence when implemented |
 |:---|:---|:---|
-| Q-32 | Tiered robotics after Developer Beta; multi-node traces extend `trace.v1` with optional fields | No `trace.v2` needed |
+| Q-32 | Layered robotics after Developer Beta; multi-node traces extend `trace.v1` with optional fields | No `trace.v2` needed |
+| Q-33 | **Context:** Layered robotics needs an independent node handling actuators/manipulators. **Decision:** RP2350 is the second reference node ported by the core team: C HAL on Pico SDK (`digital.out`, `sensor.read`), C99 walker and token ledger compiled for ARM, board profile, and real board test runner. | The core team takes on another long-term maintained target; an intentional exception to the exclusion catalog in PRD §14; reference board for v1.0 remains Box-3 (Q-2); [`15`](15-target-architecture.md) §4.3 |
+| Q-34 | **Context:** Mobile robots need navigation and obstacle avoidance, but NeuroEdge does not redevelop SLAM/navigation itself. **Decision:** Native integration of ROS 2 and Nav2 via adapters at the gate boundary; gate evaluates every velocity command (`cmd_vel`), even when Nav2 is autonomously navigating. | Establishes a new mobile robot safety tier (10–20 Hz cycle gate, forbidden zones); requires a mobile robot safety RFC and survey of question C6 from robot buyers (Q-38, `TODOS.md` #40); [`15`](15-target-architecture.md) §4.3 |
 | Q-35 | Every actuator declares its safe state on loss of communication; no declaration means stop | Needs an RFC for the declaration field |
 | Q-36 | Zenoh-pico on the MCU, `zenohd` on the Pi; spike with pass/fail thresholds, micro-ROS is plan B | Node RFC draft |
 | Q-37 | Time-limited lease tokens for `motion.*` (channel, maximum amplitude, short TTL), renewed through each gated command | Different from today's one-time token; needs an RFC-motion |
+| Q-40 | **Context:** Multiple post-Beta expansion directions (NeuroBrain, layered robotics, vision, community ports) risk diluting core team resources without prioritization. **Decision:** Post-Beta expansion sequence anchored on dependencies: open target list (I11) → NeuroBrain (I12) → community porting kit (I13) → layered robotics (I14); vision (I15–I17) awaits measured camera demand; ecosystem (I18) after I13 and Registry. | Protects the v1.0 critical path and V2 effort (R-7); NeuroBrain moved post-Developer Beta to I12; [`15`](15-target-architecture.md) §4 |
 
 ## 6. RFCs
 
@@ -174,6 +230,22 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
 | [0004](../../rfc/0004-ke-thua-budget-on-block.md) | No loosening of `budget`, `on_block` on inheritance | Accepted, implemented | `gate_resolver.py` |
 | [0005](../../rfc/0005-rang-buoc-tham-so-trong-gate.md) | Argument limits in the gate | Accepted, implemented | `arguments.py`, `NETR` argument record |
 | [0006](../../rfc/0006-xac-nhan-ask-confirms.md) | `on_block.confirms` | Accepted, implemented | `confirmation.py`, `confirm_mask` |
+| 0007 | Reserved: `digital.in`, read-only I2C bus, envelope declaration in `board.v1` (TSK-N0-03, NeuroBrain). Read logic levels and scan lab bus without modifying `gate.v1` | **Not opened yet** (reserved); part of I12 | not yet |
+| [0008](../../rfc/0008-vet-ghi-chuan-muc-mang-gate-digest.md) | Three normative traces bearing `gate_digest` in `trace.v1` — verification replay. Prevents undetectable replay of traces on gates whose safety semantics have changed | Accepted, implemented | `fixtures/traces/`, `verify`, `replay` |
+
+### Planned unnumbered RFCs (planned RFCs)
+
+Each RFC below resolves an architectural bottleneck for expansion stages, opened by a specific task:
+
+| Planned RFC | Capability and architectural purpose (Why needed) | Opening task | Stage |
+|:---|:---|:---|:---|
+| **RFC-numeric** | Adds `evaluate.type: numeric` in `gate.v1`, numeric comparison nodes in `NETR` and C walker; enables gates to check continuous numeric thresholds (pressure, temperature) rather than only enum `bool`/`level`/`choice` (`TODOS.md` #30) | TSK-W1-02 | I14 |
+| **RFC-motion** | Adds `motion.*` primitives (motor/servo), `analog.in`, expands the physical safety envelope, time-limited lease token mechanism (lease token, Q-37), and per-actuator safe states on loss of communication (Q-35) | TSK-W1-03 | I14 |
+| **RFC-node** | Specifies the multi-node coordination protocol on the wire (Zenoh-pico, Q-36), black channel structure, heartbeat-triggered safety on disconnect (Q-35), and multi-node trace unification in `trace.v1` (Q-32) | TSK-W3-02 | I14 |
+| **RFC-pin-extends** | Enables pinning gate inheritance by content hash `@<ver>#sha256:…` in `gate.v1`, upgrading `digests.lock` into a lockfile for inheritance chains; defends against gate substitution attacks on public Registries (`TODOS.md` #11, #15) | TSK-S3-21 | I10 |
+| **RFC vision.in** | Specifies the `vision.in` primitive with hardware parameters (`fps`, `modes[]`, enum `pixel_format`) and board capability matching rules `[requires]` (RFC-0002 §9.1) | TSK-V1b-07 | I15 |
+| **RFC visual-evidence gate semantics** | Defines gate semantics for visual evidence; until this RFC exists, vision results must go through a `SystemOne` returning `bool`/`level`/`choice` (`neuroedge-design-phase2.md` §2.2); prerequisite for multimodal gates | TSK-V3-04 | I17 |
+| **RFC mobile-robot safety** | Safety framework for mobile robots: maximum speed limits, forbidden navigation zones, 10–20 Hz real-time gate cycle, ROS 2 / Nav2 control flow integration (Q-34), and question C6 from robot buyers (Q-38, `TODOS.md` #40) | TSK-W4-07 | I14 |
 
 ## 7. Making a new architecture decision
 

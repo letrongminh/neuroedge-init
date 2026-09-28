@@ -51,7 +51,7 @@ flowchart LR
     subgraph H3["Horizon 3: Post-Beta Extensions (I11-I18)"]
         H3_TIERS["Target Tiers and Port Kit (I11, I13)"]
         H3_BRAIN["NeuroBrain: Lab Claw, Envelope, I2C Read (I12)"]
-        H3_ROBOT["Hierarchical Robot: Zenoh, Node Gates, Leases (I14)"]
+        H3_ROBOT["Layered Robot: Zenoh, Node Gates, Leases (I14)"]
         H3_VISION["Perception: Vision L2, NPU, Fusion (I15-I17)"]
         H3_ECO["Ecosystem: Registry Adapters and Ports (I18)"]
     end
@@ -388,7 +388,7 @@ sequenceDiagram
     participant Lease as Token Lease Ledger
     participant Actuator as Motor / Hardware Safe-State
 
-    Note over Brain,Actuator: Luồng thực thi bình thường (Normal Flow)
+    Note over Brain,Actuator: Normal Flow
     Brain->>Wire: send_intent(node_id, seq, crc, intent)
     Wire->>NodeGate: deliver_intent(intent)
     NodeGate->>NodeGate: evaluate_local_gate(facts)
@@ -396,7 +396,7 @@ sequenceDiagram
     Lease->>Actuator: apply_motion(velocity)
     Actuator-->>Brain: report_telemetry(status)
 
-    Note over Brain,Actuator: Biến cố mất liên lạc (Heartbeat Loss Flow)
+    Note over Brain,Actuator: Heartbeat Loss Flow
     Brain-xWire: connection_lost (Wi-Fi drop or crash)
     Note over NodeGate,Lease: Watchdog timeout: Heartbeat lost (threshold not designed)
     Lease->>Lease: lease_expired(no renewal)
@@ -471,7 +471,7 @@ Nguồn từng điều: [`00`](00-overview.md) §2, §4; [`CHANGELOG.md`](../../
    - [`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../../draft-ke-hoach-mo-rong-robot-fofoca.md) (§2 Bất biến và danh sách RFC, §4 Kiến trúc mục tiêu robot 7 tầng, Phụ lục A Khung RFC).
    - [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../../draft-rfc-node-giao-thuc-dieu-phoi.md) (§3 Thay đổi đề xuất cho giao thức điều phối node, black channel, lease tokens).
 5. **Các chương kiến trúc liên quan trong cùng tài liệu:**
-   - [`00 · Tổng quan kiến trúc`](00-overview.md) (§2 Xương sống thực thi, §4 Đặc tính kiến trúc).
+   - [`00 · Tổng quan kiến trúc`](00-overview.md) (§2 Hệ thống trong một hình, §4 Đặc tính kiến trúc).
    - [`02 · Kiến trúc Container`](02-container-c4l2.md) (§5 Container quy hoạch).
    - [`04 · Thành phần firmware ESP32-S3`](04-component-device-c4l3.md) (§3 Danh mục component, §6 Cập nhật OTA có ký).
    - [`05 · Thiết kế chi tiết Gate và HAL`](05-code-gate-hal-c4l4.md) (§5 Từ phán quyết tới chân).

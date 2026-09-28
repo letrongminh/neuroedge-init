@@ -7,17 +7,21 @@
 
 ## 1. Contract map
 
-| Contract | Form | Who writes | Who reads | Checked by | Frozen |
-|:---|:---|:---|:---|:---|:---|
-| **Gate** `gate.v1` | YAML | gate author | resolver | `schemas/gate.v1.json` + **resolution** (`gate lint`) | yes — RFC (`CONTRIBUTING.md` §3) |
-| **Trace** `trace.v1` | JSON | `EventLog`, `TraceRecorder`, UART | player, golden, `trace view` | `schemas/trace.v1.json` | envelope: yes; event catalog: no |
-| **Board** `board.v1` | TOML | OEM, core team | build, HAL | `schemas/board.v1.json` | yes |
-| **Agent** `agent.toml` | TOML | agent author | build, session | each table has its own parser | no (normative in code) |
-| **Grammar** `commands.toml` | TOML | agent author | `CommandGrammar` | parser | no |
-| **Knowledge** `knowledge.toml` | TOML | agent author | `KnowledgeBase` | parser | no |
-| **Tool call** | object / JSON | orchestrator, LLM, MCP client | `dispatch()` | `input_schema` generated from the signature | no — Gated Tool Profile v0 (`TODOS.md` #23) |
-| **Device tree** `NETR` v1 | binary | `binary_tree.encode` | C walker | `ne_tree_load` (magic, version, CRC, limits) | yes — RFC-0003 |
-| **UART stream** | text | firmware | `testing/uart.py`, CI scripts | parser, `^`-anchored regex | normative in `simulation_coverage.md` §4 |
+| Contract | Form | Who writes | Who reads | Checked by | Frozen | Status |
+|:---|:---|:---|:---|:---|:---|:---:|
+| **Gate** `gate.v1` | YAML | gate author | resolver | `schemas/gate.v1.json` + **resolution** (`gate lint`) | yes — RFC (`CONTRIBUTING.md` §3) | `done` |
+| **Trace** `trace.v1` | JSON | `EventLog`, `TraceRecorder`, UART | player, golden, `trace view` | `schemas/trace.v1.json` | envelope: yes; event catalog: no | `done` |
+| **Board** `board.v1` | TOML | OEM, core team | build, HAL | `schemas/board.v1.json` | yes | `done` |
+| **Agent** `agent.toml` | TOML | agent author | build, session | each table has its own parser | no (normative in code) | `done` |
+| **Grammar** `commands.toml` | TOML | agent author | `CommandGrammar` | parser | no | `done` |
+| **Knowledge** `knowledge.toml` | TOML | agent author | `KnowledgeBase` | parser | no | `done` |
+| **Tool call** | object / JSON | orchestrator, LLM, MCP client | `dispatch()` | `input_schema` generated from the signature | no — Gated Tool Profile v0 (`TODOS.md` #23) | `done` |
+| **Device tree** `NETR` v1 | binary | `binary_tree.encode` | C walker | `ne_tree_load` (magic, version, CRC, limits) | yes — RFC-0003 | `done` |
+| **UART stream** | text | firmware | `testing/uart.py`, CI scripts | parser, `^`-anchored regex | normative in `simulation_coverage.md` §4 | `done` |
+| **Manifest** `manifest.v1` (`schemas/manifest.v1.json`, TSK-K3-03) | JSON | agent / gate packager | Gate Registry | JSON Schema | planned yes — → [`15`](15-target-architecture.md) §3.2 | `planned` |
+| **Opus/JSON WebSocket frame** (and SLIP on UART if needed — PRD Appendix D.2) | binary / JSON | firmware (`provider_client.c`, TSK-S5-06) | provider layer / cloud provider | not specified yet | normative in PRD Appendix D.2 — → [`15`](15-target-architecture.md) §2.3 | `planned` |
+| **Black-channel wire and multi-node trace** (`metadata.nodes[]`, `data.node_id`, Q-32) | Zenoh-pico (intent encoding unselected) / JSON | coordinating Pi, MCU node | MCU node, TracePlayer | RFC-node; optional field, no changes to `schemas/` (TSK-W3-04) | via RFC — → [`15`](15-target-architecture.md) §4.3 | `planned` |
+| **`agent.toml` extension tables (`[lab]`, `[nodes]`)** | TOML | agent author | `agent.toml` parser | config parser (TSK-N1-02, RFC-node draft) | no — → [`15`](15-target-architecture.md) §4.2, §4.3 | `planned` |
 
 ## 2. Gate — `gate.v1`
 
@@ -80,6 +84,8 @@ reject unknown keys. Command syntax uses these tables: `CHANGELOG.md` §2.3.
 | `[stt]`, `[stt.fallback]`, `[tts]` | `perception/providers/config.py` | `provider` (`openai` or `python:…`), `base_url`, `model`, `voice` (TTS), `language` (STT), `timeout_s`, `api_key_env`; `[stt]` needs `audio.in`, `[tts]` needs `audio.out` |
 | `[wake_word]` | as above | `provider` (`openwakeword` or `python:…`), three model files `model`, `melspectrogram`, `embedding` (the user's), `word`, `threshold`; rejected on `esp32s3` |
 | `[mcp]`, `[mcp.servers.<name>]` | `mcp_host.load_mcp_config` | `max_rounds` (1–16); each server: `command`, `tools` (allowlist, required), `args`, `env`, `timeout_s` |
+| `[lab]` | `brain/` (TSK-N1-02, planned) | `enabled` flag, default false; when false, lab tools are not registered; `build --release` rejects when enabled (TSK-N1-03) — → [`15`](15-target-architecture.md) §4.2 |
+| `[nodes]` | RFC-node (proposed) | MCU node configuration for layered robots; shape not finalized (open question 3 of draft RFC-node) — → [`15`](15-target-architecture.md) §4.3 |
 
 **Common rule for all provider tables** (`models/providers/common.py`): fields named like keys
 (`api_key`, `token`, `secret`…) are rejected; values that look like keys are rejected and never printed
@@ -97,9 +103,7 @@ is rejected, and for `[system_one]` `http://` to another machine is rejected in 
 | `[capabilities.sensor_read]` | `sensors` |
 | `[capabilities.display]` | `width`, `height`, `color` |
 
-The five primitives are a closed set (FR-HAL-01). There are exactly three tier-1 profiles: `sim-default`
-(copies Box-3 exactly, never richer — invariant 7), `linux-rpi5` (`aec = false` until measured),
-`esp32s3-box-3`. Application code uses only pin **names**; GPIO numbers belong to the HAL.
+The five primitives are a closed set for v1.x (FR-HAL-01); new primitives only via RFC (RFC-0007 `digital.in` at I12, RFC-motion for `motion.*` at I14, RFC `vision.in` at I15). There are exactly three tier-1 profiles: `sim-default` (copies Box-3 exactly, never richer — invariant 7), `linux-rpi5` (`aec = false` until measured), `esp32s3-box-3`. Application code uses only pin **names**; GPIO numbers belong to the HAL.
 
 ## 5. Grammar and knowledge
 

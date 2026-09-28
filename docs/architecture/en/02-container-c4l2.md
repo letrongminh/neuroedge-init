@@ -14,7 +14,7 @@
 | Container | Technology | Responsibility | Entry point | Status |
 |:---|:---|:---|:---|:---|
 | **`neuroedge` CLI** | Python 3.11+, Typer, Rich | Each command is a process: loads a session, turns errors into three-part messages and exit codes; never decides a gate itself | `neuroedge.cli.main:app` | `done` |
-| **`neuroedge` library** | Python; core dependencies: `pydantic`, `jsonschema`, `pyyaml`, `rfc8785`, `deepdiff`, `typer`, `rich` | All logic: gate engine, actions, HAL, models, voice, sessions, Action CI | `import neuroedge` | `done` |
+| **`neuroedge` library** | Python (source-available core code — Q-45); core dependencies: `pydantic`, `jsonschema`, `pyyaml`, `rfc8785`, `deepdiff`, `typer`, `rich` | All logic: gate engine, actions, HAL, models, voice, sessions, Action CI | `import neuroedge` | `done` |
 | **Session web UI** | Standard-library `http.server.ThreadingHTTPServer`, 127.0.0.1 only | Shows the virtual device and the verdict stream; accepts typed commands and the confirmation button from a person present | `run --ui`, `mcp serve --ui` | `done` (`sim` only) |
 | **MCP server** | MCP Python SDK (extra `mcp`), stdio | Exposes each `@action` as a tool; every `tools/call` passes the gate | `neuroedge mcp serve` | `done` |
 | **Files** | Local filesystem | Agent project (`agent.toml`, `commands.toml`, `knowledge.toml`, `gates/`, `actions/`, `traces/`); repository data (`schemas/`, `gates/`, `boards/`, `fixtures/`, `digests.lock`) | — | `done` |
@@ -55,16 +55,19 @@ Only what is in the code is recorded. No latency budget here is measured; latenc
 | Library → build output → firmware image | `idf.py build` reads the generated project | C, header `.netree.h`, `version.txt` | A failing build ⇒ prints every problem, writes no files |
 | Firmware image → library | UART (log file, `tcp://`, serial port) | `NE1 {…}` lines ≤ 512 bytes, the `device_info` … `trace_end` frame | A corrupt line, a missing frame, a count mismatch ⇒ `NE4001`, nothing is written |
 | Firmware image → OTA server | HTTP(S) GET | RSA-3072-signed app image | No redirects; download deadline; a bad signature ⇒ erase the slot just written |
-| Firmware image → Fleet OS | MQTT | — | `planned` (I9) |
+| Firmware image → Fleet OS | MQTT | — | `planned` (I9) — see [`15`](15-target-architecture.md) §3.1 |
+| Firmware image ↔ provider *(planned)* | WebSocket (TLS 1.3) | Opus (binary 16 kHz audio) and JSON (events/results) ([`neuroedge-prd.md`](../../../neuroedge-prd.md) Appendix D.2) | MCU-optimized audio streaming termination point (FR-GW-04, TSK-S5-06); per-device quota is an optional provider layer feature (FR-GW-05, v1.1) — see [`15`](15-target-architecture.md) §2.3 |
+| MCP client ↔ MCP server over network *(planned)* | Streamable HTTP (TLS 1.3) | JSON-RPC (MCP) | OAuth 2.1 (Protected Resource Metadata RFC 9728, RFC 8414) behind mTLS (TSK-P2-04, Q-32) — see [`15`](15-target-architecture.md) §4.3 |
 
 ## 5. Planned containers
 
 Only technologies named in the planning documents are recorded; everything else is "not chosen".
 
-| Container | Increment | Named technology | Not chosen | Source |
-|:---|:---:|:---|:---|:---|
-| **Fleet OS** | I9 | Eclipse Hawkbit for wave-based OTA campaigns; permissively licensed MQTT broker (Mosquitto, NanoMQ or VerneMQ, chosen by load measurement); FastAPI WebSockets for audio streams | Central trace store, database, gateway | Q-11, proposal §6.2 |
-| **Gate Registry** | I10 | OCI standard with ORAS and Harbor; OpenMeter for metering | The specific gate signing mechanism (only "OCI/ORAS" is recorded, TSK-W2-04) | roadmap §6.2, Q-5 |
-| **Robot node** | I14 | Zenoh-pico on the MCU and `zenohd` on the Pi (micro-ROS is plan B only); mTLS or PSK between Pi and node | Intent encryption on the wire, clock synchronisation | Q-36, node RFC draft |
+| Container | Increment | Named technology | Not chosen | Source | Target architecture |
+|:---|:---:|:---|:---|:---|:---|
+| **Fleet OS** | I9 | Eclipse Hawkbit for staged OTA campaigns; permissively licensed MQTT broker (Mosquitto, NanoMQ or VerneMQ, chosen by load measurement); FastAPI WebSockets — the sources disagree: proposal §6.2 states "for audio streams", [`neuroedge-roadmap.md`](../../../neuroedge-roadmap.md) §3.4 and §6.1 state "for connection and telemetry"; needs resolution via a Q-N | Central trace store, database, gateway | Q-11, proposal §6.2, roadmap §3.4, §6.1 | [`15`](15-target-architecture.md) §3.1 |
+| **Gate Registry** | I10 | OCI standard with ORAS and Harbor; OpenMeter for metering | Specific gate signing mechanism (only records "OCI/ORAS", TSK-W2-04) | roadmap §6.2, Q-5 | [`15`](15-target-architecture.md) §3.2 |
+| **Robot node (MCU node)** | I14 | Zenoh-pico on MCU and `zenohd` on Pi (micro-ROS is plan B only); mTLS or PSK between Pi and node; watchdog / black channel local safety (IEC 61784-3) | Intent encryption on the wire, clock synchronization | Q-36, node RFC draft, `draft-ke-hoach-mo-rong-robot-fofoca.md` §4 | [`15`](15-target-architecture.md) §4.3 |
+| **Vision Pipeline** | I15–I17 | `vision.in` vision HAL on Linux then Jetson (RFC vision.in, TSK-V1b-07); vision results mapped to `bool`/`level`/`choice` via a `SystemOne` (interim constraint of `neuroedge-design-phase2.md` §2.2 until the vision evidence semantics RFC, TSK-V3-04); the trace does not embed raw frames, raw storage must be explicitly enabled (phase2 §2.3) | Specific choice among named frameworks (ONNX Runtime/YOLO, HailoRT/Edge TPU, TensorRT) and models | `neuroedge-design-phase2.md` §2, TSK-V1b-07, TSK-V3-04 | [`15`](15-target-architecture.md) §4.4 |
 
 What the current architecture already prepares for these containers is in [`13`](13-evolution-i0-i18.md) §3.

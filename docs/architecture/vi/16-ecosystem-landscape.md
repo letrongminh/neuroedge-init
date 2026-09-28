@@ -33,8 +33,8 @@ flowchart TD
         PYPI["PyPI Package (planned I6)"]
         REG["Gate Registry (planned I10)"]
         FLT["Fleet OS (planned I9)"]
-        MKT["Marketplace (planned Khối 5)"]
-        AURA["AURA Vertical App (planned Khối 4)"]
+        MKT["Marketplace (planned Block 5)"]
+        AURA["AURA Vertical App (planned Block 4)"]
     end
 
     %% Today flows (solid)
@@ -61,9 +61,9 @@ flowchart TD
 
     ROBOT -.->|"builds node firmware and ROS 2 bridge (planned I14)"| REPO
 
-    REG -.->|"curates verified assets (planned Khối 5)"| MKT
-    AURA -.->|"consumes core SDK & reference gates (planned Khối 4)"| REPO
-    AURA -.->|"contributes real-world proven gates (planned Khối 4)"| REG
+    REG -.->|"curates verified assets (planned Block 5)"| MKT
+    AURA -.->|"consumes core SDK & reference gates (planned Block 4)"| REPO
+    AURA -.->|"contributes real-world proven gates (planned Block 4)"| REG
 ```
 
 **Cách đọc sơ đồ luồng:** Các ô thuộc nhóm Parties là các chủ thể sáng tạo hoặc thụ hưởng giá trị; các ô thuộc nhóm Platforms là các kênh phân phối mã, dữ liệu và điều phối vận hành. Đường nét liền chỉ áp dụng cho những luồng công việc đang chạy thực tế hôm nay trên kho mã nguồn và môi trường mô phỏng (`sim`/`linux`). Các luồng nét đứt là quy hoạch: I6, I9, I10, I13, I14, I18, cùng Khối 4 (AURA) và Khối 5 (Marketplace) nằm ngoài roadmap. Điểm cốt lõi: Mọi tài sản mở rộng (gate, adapter, bản port) đều phải qua cổng kiểm định trước khi được triển khai lên thiết bị thật.

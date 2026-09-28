@@ -4,6 +4,8 @@
 > `esp32s3`, how that is proven, and what it does **not** promise. **Sources:** P-2 (PRD §1.5),
 > FR-TGT, `docs/spec/simulation_coverage.md`, `python/neuroedge/testing/`, `targets/esp32s3/main/`.
 
+**What this chapter is for:** For systems engineers, OEM partners, and QA teams. This chapter answers the question: *why the same agent and gate produce the exact same safety decision sequence across the simulator, Linux computers, and the ESP32-S3 microcontroller, how that is defended, and where its limits lie*. Read after [`00-overview.md`](00-overview.md) and [`05-code-gate-hal-c4l4.md`](05-code-gate-hal-c4l4.md); read before porting a HAL in [`11-hal-port-guide.md`](11-hal-port-guide.md).
+
 ## 1. What equivalence means
 
 Two runs are **equivalent** when, with the same input facts, they give the same **decision sequence**:
@@ -12,6 +14,16 @@ duration). Not compared: time, speech, audio, frames.
 
 Agent code **must not branch by target** (P-2). Differences between environments live entirely in the
 HAL and the board profile.
+
+### 1.1 Equivalence commitments by target tier (target tiers)
+
+Equivalence is not promised uniformly across all hardware. NeuroEdge clearly differentiates commitments across three tiers (Q-13, FR-TGT-08, `simulation_coverage.md` §7):
+
+- **Tier 1 (`sim`, `linux`, `esp32s3`):** `neuroedge verify` achieves 100%; tested on every PR (`sim`, gpio-sim; QEMU for PRs touching `targets/**`) and committed to nightly testing on real boards (TSK-S4-05, TSK-I2-01 — not running yet).
+- **Tier 2 (maintained by core team, e.g. `jetson` in I16):** `neuroedge verify` across the verdict domain; hardware testing per release, not nightly.
+- **Tier 3 (ported by community, e.g. `stm32`, `rp2350` outside the robot node role):** contributors self-verify through the Compliance Test Suite; the core team makes no quality commitments and does not block releases for this tier.
+
+Target stratification details and expansion roadmap: [`15`](15-target-architecture.md) §4.1.
 
 ## 2. Three defense layers
 
@@ -89,10 +101,13 @@ the gate that changed (old digest → new digest). A trace without `gate_digest`
 RFC-0008) replays exactly as before.
 One artifact kind scanned to 0 files ⇒ `NE4004`, exit code 1: there is no empty "PASS".
 
+> [!NOTE]
+> **Verification plan for layered robotics (planned):** `neuroedge verify` will expand to node clusters (Pi 5 + ESP32-S3 + RP2350, TSK-W3-06): comparing verdicts and actuator states across nodes over the verdict domain; divergence → `NE4002` (draft RFC-node §3.6). Details: [`15`](15-target-architecture.md) §4.3.
+
 ## 6. What equivalence does not promise
 
 - **Time.** `verify` compares decisions, not time yet (TSK-S4-04).
 - **Operation and duration on chip.** On `esp32s3`, `operation` and `duration_ms` of a pin command today
   come from a table built on host; the chip only decides whether to fire and which pin (`TODOS.md` #37).
 - **Audio quality** in real acoustics.
-- **Tier-2 and tier-3 targets** (`simulation_coverage.md` §7).
+- **Tier-2 and tier-3 targets** (`simulation_coverage.md` §7, Q-13; see narrowed commitments in §1.1).

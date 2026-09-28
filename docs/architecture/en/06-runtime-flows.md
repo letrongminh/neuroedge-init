@@ -290,10 +290,20 @@ sequenceDiagram
 ## 9. Lifecycle of a `linux` session
 
 1. `SimSession.load(target="linux")` builds `TypedLinuxHAL` and calls `preflight`: every sensor,
-   display and audio device the agent needs is checked **before** any GPIO line is held. Anything
-   missing ⇒ three-part error, exit code 1, no line held.
+    display and audio device the agent needs is checked **before** any GPIO line is held. Anything
+    missing ⇒ three-part error, exit code 1, no line held.
 2. Pin commands reach the kernel line through libgpiod v2, looked up by name. A pulse with a duration
-   is released by a timer; `run -c` waits for the pulse to finish before exiting.
+    is released by a timer; `run -c` waits for the pulse to finish before exiting.
 3. Exit — normal, Ctrl-D, SIGTERM (MCP client stops the server), SIGHUP (terminal closed) — ⇒ every
-   line returns to the idle state and is released. SIGKILL cannot be caught: that is why hardware
-   safety is still needed (`docs/spec/threat_model.md` §3b).
+    line returns to the idle state and is released. SIGKILL cannot be caught: that is why hardware
+    safety is still needed (`docs/spec/threat_model.md` §3b).
+
+## 10. Planned flows
+
+| Flow | Increment | Target architecture |
+|:---|:---|:---|
+| On-chip voice turn | I5 | [`15`](15-target-architecture.md) §2.2 |
+| Rejection by physical safety envelope | I12 | [`15`](15-target-architecture.md) §4.2 |
+| Event trigger call source (`call_source = "trigger"`, TSK-N6-*) | I12 | [`15`](15-target-architecture.md) §4.2 |
+| Multi-node intent and communication loss | I14 | [`15`](15-target-architecture.md) §4.3 |
+| Vision facts | I15 | [`15`](15-target-architecture.md) §4.4 |

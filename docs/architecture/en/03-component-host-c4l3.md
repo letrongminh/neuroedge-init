@@ -21,12 +21,14 @@ Each package's docstring names its own layer: HAL is **L1**, models and percepti
 | 2 | `engine` | rank 0; **`engine/compiler.py` alone** may use `hal` (board cross-check at build time) and late-imports `actions`, `models`, `perception`, `mcp_host` (configuration checks) | L3 core |
 | 3 | `actions` | `engine`, `hal`, rank 0 | L3 surface |
 | 4 | `models` | `engine` (implements its protocol), `net`, rank 0 | L2 |
-| 5 | `mcp_server`, `mcp_host`, `mcp_desktop` | `actions`, rank 0 | — |
-| 6 | `viz` | `hal`, `trace`, rank 0 | — |
+| 5 | `mcp_server`, `mcp_host`, `mcp_desktop` | `actions`, rank 0 | L4 per proposal §3.1 (docstring does not declare a layer) |
+| 6 | `viz`, `templates` | `viz`: `hal`, `trace`, rank 0; `templates`: `errors`, `paths` | tools |
 | 7 | `sim` | every rank below | L0, **assembly point** |
 | 8 | `perception` | `sim` (the voice session wraps the typed session), `models`, `actions`, `engine`, `hal`, `net` | L2 |
 | 9 | `testing` | `perception`, `actions`, `engine`, `hal`, `trace`; late-imports `sim` | Action CI |
 | 10 | `cli` | every package | entry |
+
+Between L2 and L3 lies the principle of dependency inversion: System 1 adapters of L2 in `models/` (`SystemOne`, `CommandGrammar`, `systemone_api`) implement the `FactSource` protocol of `engine/gate.py` (L3), instead of L3 depending on L2.
 
 Four rules, each a deliberate choice:
 
@@ -34,6 +36,16 @@ Four rules, each a deliberate choice:
 2. **HAL is a leaf.** `hal` depends only on `errors` and `paths`. It does not know what a gate is: it only calls an `authorize(token, pin, called_from)` function installed from outside, and the default function refuses every command.
 3. **One single bridge between gate and HAL:** `actions/conversation.py` (`Conversation.do`). No other package both calls `evaluate()` and touches a pin.
 4. **One runtime assembly point:** `SimSession.load` (`sim/session.py`) creates and wires the engine, token ledger, HAL, models, tool set and MCP. `VoiceSession` wraps a `SimSession`; the CLI, the MCP server and the corpus runner all go through it. At build time, the assembly point is `engine/compiler.py::build`.
+
+### 2.1 Planned packages
+
+The following packages are planned in the future architecture but have no code in the repository today:
+
+- `brain/` (I12, NeuroBrain): lab orchestration logic; complies with invariant B-1 — acts physically only through `dispatch()` and gates, never calls HAL directly, locked down by AST scan and import tests (`neuroedge-design-neurobrain.md` §1 "Seven principles"; TSK-N1-07, `tests/test_brain_boundary.py`) — see [`15`](15-target-architecture.md) §4.2.
+- `perception/vision/` and `sim/vision/` (I15, TSK-V1b-*): vision pipeline and vision simulation; vision serves as L2 input, reduced to System 1 before feeding into the gate — see [`15`](15-target-architecture.md) §4.4.
+- `services/fleet/` and `services/registry/` (I9–I10, TSK-K2, TSK-K3): server-side services for Fleet OS (staged OTA coordination, MQTT broker, telemetry) and Gate Registry (OCI repository via ORAS/Harbor, metering) — see [`15`](15-target-architecture.md) §3.1, §3.2.
+
+When `brain/` enters the repository, it needs an entry in `ALLOWED` (and `LAZY` if late-imported) of [`python/tests/test_architecture_layers.py`](../../../python/tests/test_architecture_layers.py). `perception/vision/` and `sim/vision/` belong to the existing `perception` and `sim` units and thus need no new entry; `services/` (including `services/metering/engine.py`, TSK-K3-02) lives outside the `neuroedge` package, so this test does not scan it.
 
 ## 3. Component catalogue
 

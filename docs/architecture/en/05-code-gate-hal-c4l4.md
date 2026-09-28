@@ -5,10 +5,14 @@
 > `python/neuroedge/hal/`, `targets/esp32s3/components/ne_gate/`; normative: proposal Appendix B,
 > RFC-0001, 0003, 0004, 0005, 0006.
 
+**What this chapter is for:** For software and safety engineers who need the detailed path from a YAML gate file to hardware pin commands (C4 L4). Answers the questions: how a gate is resolved, compiled into a `NETR` binary tree, walked, and granted a single-use token in both Python and C. You should read [`00`](00-overview.md) and [`03`](03-component-host-c4l3.md) first, and read [`06`](06-runtime-flows.md) afterwards to see the runtime flows.
+
 ## 1. The spine chain
 
 ![E-05 · Gate spine](../assets/svg/E-05-gate-spine.svg)
 *Figure E-05 — From gate file to pin: resolution and compilation at build time, evaluation and tokens at run time, with the same semantics on host and chip.*
+
+**How to read the diagram:** Blocks represent transformation stages from YAML policy to hardware commands; solid arrows are sequential processing flows through each step, dashed arrows link auxiliary data. Core takeaway: there is only a single path from intent to hardware pins (`dispatch()` → gate → token → HAL), with no shortcut that bypasses the gate.
 
 | Stage | When | Host (Python) | Chip (C) |
 |:---|:---|:---|:---|
@@ -71,6 +75,8 @@ flowchart LR
     H --> N --> A --> E --> S
 ```
 
+**How to read the diagram:** Boxes represent contiguous partitions in the `NETR` v1 binary file (from the 64-byte header to UTF-8 strings); solid arrows show fixed ordering in memory. Core takeaway: the binary layout contains no pointers and uses fixed offsets, allowing the C walker to read directly in place from flash without dynamic allocation (stack ≤ 512 bytes).
+
 The file size is exactly `64 + 24·n + 32·a + 16·e + strings`; limits: at most 32 nodes, 32 values per
 domain, 16 arguments, 64 enums, 16 384 string bytes (about 19 KB). A gate over the limits is refused
 **at build time** (`NE2002`) and never reaches the chip. Changing the layout needs an RFC and a
@@ -110,6 +116,8 @@ flowchart TB
     AL --> R
     OB --> R
 ```
+
+**How to read the diagram:** Diamonds are branch decision points, rectangles are processing steps and actions; solid arrows point along branch test outcomes (yes/no, closed/open, all satisfied/first failure). Core takeaway: `walk` is a pure function; missing or out-of-domain facts ⇒ `BLOCK`; timeout or lost sources ⇒ applies `budget.fail` — `closed` (default) blocks, `open` only permits `ALLOW` when there is no known failing fact.
 
 - **The time budget** is `budget.p95_latency_ms`, counted from the start of fact gathering; each query
   to a `FactSource` is bounded by the remaining budget. Over the deadline ⇒ `budget_exceeded`; source
@@ -163,6 +171,8 @@ sequenceDiagram
     end
 ```
 
+**How to read the diagram:** Vertical columns represent layers from dispatch (`dispatch`), conversation (`Conversation`), engine (`Engine`), token ledger (`TokenLedger`), and action body to HAL; solid arrows are function calls, dashed arrows are return values; the `alt` block branches between `BLOCK` and `ALLOW`. Core takeaway: HAL must receive a valid `VerdictToken` from `TokenLedger` before pulsing actuator pins, and each token can only be used exactly once.
+
 **The check order of `authorize`** (same on host and chip):
 
 | # | Check | Rejected with |
@@ -176,6 +186,8 @@ sequenceDiagram
 
 Every rejection writes `actuator_command_rejected {pin, reason, code}` **before** throwing, and the pin
 does not change. The nonce never enters the trace.
+
+**Planned:** physical safety envelope hooks (limiting total on-time and frequency per pin, declared in `board.v1` — RFC-0007) will sit in `HAL.digital_out` between pin validation (`require_pin`) and `authorize` (TSK-N2-01, tokens are not spent when rejected) → [`15`](15-target-architecture.md) §4.2; lease tokens (short-lived motion authority automatically renewed on new gated commands, self-expiring to safe state upon lost communication) for `motion.*` (Q-37) → [`15`](15-target-architecture.md) §4.3.
 
 ```mermaid
 stateDiagram-v2
@@ -191,6 +203,8 @@ stateDiagram-v2
         all slots issued and live: ERR_FULL, no token
     end note
 ```
+
+**How to read the diagram:** Nodes represent lifecycle states of a token slot in `TokenLedger` (`Free`, `Issued`, `Closed`); solid arrows are state transition events. Core takeaway: each pin of a token can be used only once; reusing a pin ⇒ `token_replayed`, exceeding TTL ⇒ `token_expired`, and when all slots are full, new issues are refused rather than evicting old tokens.
 
 ## 6. Main classes (host)
 
@@ -248,6 +262,8 @@ classDiagram
     FactSource <|.. SystemOne
     FactSource <|.. GrammarAdjudicator
 ```
+
+**How to read the diagram:** Boxes are main classes and protocols on the Python host; hollow triangle solid arrows denote inheritance (`SimHAL`, `LinuxHAL`); hollow triangle dashed arrows denote protocol implementation (`SystemOne`, `GrammarAdjudicator` implement `FactSource`); regular arrows denote holding or calling. Core takeaway: `Conversation` is the sole class connecting the engine to the token ledger; HAL only knows `TokenLedger` through `authorize`, with no knowledge of the engine or `FactSource`.
 
 ## 7. Python ↔ C comparison
 
