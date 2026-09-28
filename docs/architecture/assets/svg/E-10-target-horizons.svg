@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1060" width="1800" height="1060" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="E-10-target-horizons-title E-10-target-horizons-desc">
+<title id="E-10-target-horizons-title">E-10 · Target architecture by horizon</title>
+<desc id="E-10-target-horizons-desc">What each horizon adds on top of main. Details and sources: chapter 15; order and dates: roadmap §0.2.</desc>
+<defs>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#334155"/></marker>
+</defs>
+<rect width="1800" height="1060" fill="#ffffff"/>
+<text x="32.0" y="42.0" font-size="22" fill="#0f172a" text-anchor="start" font-weight="700">E-10 · Target architecture by horizon</text>
+<text x="32.0" y="66.0" font-size="13" fill="#475569" text-anchor="start">What each horizon adds on top of main. Details and sources: chapter 15; order and dates: roadmap §0.2.</text>
+<rect x="40" y="100" width="1720" height="200" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
+<text x="54.0" y="121.0" font-size="13" fill="#2563eb" text-anchor="start" font-weight="700">Today on main — I0 done, I1–I4 in progress</text>
+<rect x="40" y="330" width="1720" height="200" rx="14" fill="#f7fdf9" stroke="#15803d" stroke-width="1.6"/>
+<text x="54.0" y="351.0" font-size="13" fill="#15803d" text-anchor="start" font-weight="700">Horizon 1 — v1.0 on the device (I3–I7) · chapter 15 §2</text>
+<rect x="40" y="560" width="1720" height="200" rx="14" fill="#fffaf5" stroke="#c2410c" stroke-width="1.6"/>
+<text x="54.0" y="581.0" font-size="13" fill="#c2410c" text-anchor="start" font-weight="700">Horizon 2 — service tier v1.1 (I9–I10) · chapter 15 §3</text>
+<rect x="40" y="790" width="1720" height="200" rx="14" fill="#fcfcfd" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="54.0" y="811.0" font-size="13" fill="#94a3b8" text-anchor="start" font-weight="700">Horizon 3 — extensions after Beta (I11–I18) · chapter 15 §4</text>
+<path d="M561.0,268.0 L561.0,374.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M1237.0,498.0 L1237.0,604.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M561.0,728.0 L561.0,834.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M1575.0,728.0 L1575.0,834.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<rect x="60" y="144" width="326" height="124" rx="10" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.6"/>
+<text x="223.0" y="192.8" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">Host package neuroedge</text>
+<text x="223.0" y="213.0" font-size="12.5" fill="#0f172a" text-anchor="middle">SDK, CLI, gate engine, sim + linux HAL</text>
+<text x="223.0" y="231.1" font-size="12.5" fill="#0f172a" text-anchor="middle">voice from WAV, MCP, Action CI</text>
+<rect x="398" y="144" width="326" height="124" rx="10" fill="#dcfce7" stroke="#15803d" stroke-width="1.6"/>
+<text x="561.0" y="183.7" font-size="15" fill="#052e16" text-anchor="middle" font-weight="700">Firmware esp32s3 on QEMU</text>
+<text x="561.0" y="203.9" font-size="12.5" fill="#052e16" text-anchor="middle">NETR walker, token ledger, UART trace</text>
+<text x="561.0" y="222.1" font-size="12.5" fill="#052e16" text-anchor="middle">signed A/B OTA · LVGL UI on host</text>
+<text x="561.0" y="240.2" font-size="12.5" fill="#052e16" text-anchor="middle" font-style="italic">◐ partial</text>
+<rect x="736" y="144" width="326" height="124" rx="10" fill="#f1f5f9" stroke="#475569" stroke-width="1.6"/>
+<path d="M737,156 Q899.0,168 1061,156" fill="none" stroke="#475569" stroke-width="1.2"/>
+<text x="899.0" y="192.8" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">Frozen contracts</text>
+<text x="899.0" y="213.0" font-size="12.5" fill="#0f172a" text-anchor="middle">gate.v1 · trace.v1 · board.v1</text>
+<text x="899.0" y="231.1" font-size="12.5" fill="#0f172a" text-anchor="middle">NETR v1 · agent.toml</text>
+<rect x="1074" y="144" width="326" height="124" rx="10" fill="#fef9c3" stroke="#a16207" stroke-width="1.6"/>
+<text x="1237.0" y="192.8" font-size="15" fill="#422006" text-anchor="middle" font-weight="700">Evidence loop</text>
+<text x="1237.0" y="213.0" font-size="12.5" fill="#422006" text-anchor="middle">record → replay → verify</text>
+<text x="1237.0" y="231.1" font-size="12.5" fill="#422006" text-anchor="middle">three canonical traces, 3 targets</text>
+<rect x="60" y="374" width="326" height="124" rx="10" fill="#f8fafc" stroke="#15803d" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="223.0" y="413.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">HAL + drivers on chip</text>
+<text x="223.0" y="433.9" font-size="12.5" fill="#475569" text-anchor="middle">targets/esp32s3/hal/ · drivers/</text>
+<text x="223.0" y="452.1" font-size="12.5" fill="#475569" text-anchor="middle">TSK-S4-01, TSK-S4-03</text>
+<text x="223.0" y="470.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="398" y="374" width="326" height="124" rx="10" fill="#f8fafc" stroke="#15803d" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="561.0" y="413.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Voice path on chip</text>
+<text x="561.0" y="433.9" font-size="12.5" fill="#475569" text-anchor="middle">AEC · VAD · Opus · voice FSM in C</text>
+<text x="561.0" y="452.1" font-size="12.5" fill="#475569" text-anchor="middle">TSK-S5-01…S5-06</text>
+<text x="561.0" y="470.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="736" y="374" width="326" height="124" rx="10" fill="#f8fafc" stroke="#15803d" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="899.0" y="413.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Local offline fallback</text>
+<text x="899.0" y="433.9" font-size="12.5" fill="#475569" text-anchor="middle">fixed command recognizer</text>
+<text x="899.0" y="452.1" font-size="12.5" fill="#475569" text-anchor="middle">TSK-S5-07 · Q-14</text>
+<text x="899.0" y="470.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1074" y="374" width="326" height="124" rx="10" fill="#f8fafc" stroke="#15803d" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1237.0" y="413.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Device security</text>
+<text x="1237.0" y="433.9" font-size="12.5" fill="#475569" text-anchor="middle">Secure Boot · flash encryption</text>
+<text x="1237.0" y="452.1" font-size="12.5" fill="#475569" text-anchor="middle">mic switch · TSK-S6-05</text>
+<text x="1237.0" y="470.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1412" y="374" width="326" height="124" rx="10" fill="#f8fafc" stroke="#15803d" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1575.0" y="413.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">UI on the real display</text>
+<text x="1575.0" y="433.9" font-size="12.5" fill="#475569" text-anchor="middle">ne_ui wired to the display driver</text>
+<text x="1575.0" y="452.1" font-size="12.5" fill="#475569" text-anchor="middle">TSK-S4-01</text>
+<text x="1575.0" y="470.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="60" y="604" width="326" height="124" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="223.0" y="643.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Fleet OS</text>
+<text x="223.0" y="663.9" font-size="12.5" fill="#475569" text-anchor="middle">provisioning · inventory · config sync</text>
+<text x="223.0" y="682.1" font-size="12.5" fill="#475569" text-anchor="middle">canary OTA · incident traces · TSK-K2-04…09</text>
+<text x="223.0" y="700.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="398" y="604" width="326" height="124" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="561.0" y="643.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Gate Registry and rails</text>
+<text x="561.0" y="663.9" font-size="12.5" fill="#475569" text-anchor="middle">OCI store · identity · metering</text>
+<text x="561.0" y="682.1" font-size="12.5" fill="#475569" text-anchor="middle">sandbox · manifest.v1 · TSK-K3-*</text>
+<text x="561.0" y="700.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="736" y="604" width="326" height="124" rx="10" fill="#f8fafc" stroke="#1d4ed8" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="899.0" y="643.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Self-hosted provider layer</text>
+<text x="899.0" y="663.9" font-size="12.5" fill="#475569" text-anchor="middle">one endpoint · failover · quotas</text>
+<text x="899.0" y="682.1" font-size="12.5" fill="#475569" text-anchor="middle">TSK-K2-01…03 · Q-28</text>
+<text x="899.0" y="700.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1074" y="604" width="326" height="124" rx="10" fill="#f8fafc" stroke="#b91c1c" stroke-width="2.2" stroke-dasharray="7 5"/>
+<text x="1237.0" y="643.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Signed gates on the device</text>
+<text x="1237.0" y="663.9" font-size="12.5" fill="#475569" text-anchor="middle">verify signature before loading</text>
+<text x="1237.0" y="682.1" font-size="12.5" fill="#475569" text-anchor="middle">TSK-W2-04</text>
+<text x="1237.0" y="700.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1412" y="604" width="326" height="124" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="1.6"/>
+<text x="1575.0" y="652.8" font-size="15" fill="#451a03" text-anchor="middle" font-weight="700">Core ↔ commercial boundary</text>
+<text x="1575.0" y="673.0" font-size="12.5" fill="#451a03" text-anchor="middle">safety never behind a paid tier</text>
+<text x="1575.0" y="691.1" font-size="12.5" fill="#451a03" text-anchor="middle">proposal §6.4 · PRD P-3</text>
+<rect x="60" y="834" width="326" height="124" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="223.0" y="873.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Target tiers + port kit</text>
+<text x="223.0" y="893.9" font-size="12.5" fill="#475569" text-anchor="middle">tier 1 · 2 · 3, compliance vectors</text>
+<text x="223.0" y="912.1" font-size="12.5" fill="#475569" text-anchor="middle">I11 · I13 · Q-13 · RFC-0002</text>
+<text x="223.0" y="930.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="398" y="834" width="326" height="124" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="561.0" y="873.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">NeuroBrain</text>
+<text x="561.0" y="893.9" font-size="12.5" fill="#475569" text-anchor="middle">brain/ only via dispatch() (B-1)</text>
+<text x="561.0" y="912.1" font-size="12.5" fill="#475569" text-anchor="middle">envelope hook in HAL · I12 · RFC-0007</text>
+<text x="561.0" y="930.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="736" y="834" width="326" height="124" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="899.0" y="873.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Layered robot</text>
+<text x="899.0" y="893.9" font-size="12.5" fill="#475569" text-anchor="middle">Pi 5 brain + MCU nodes, gate per node</text>
+<text x="899.0" y="912.1" font-size="12.5" fill="#475569" text-anchor="middle">black channel · lease tokens · I14</text>
+<text x="899.0" y="930.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1074" y="834" width="326" height="124" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1237.0" y="873.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Vision</text>
+<text x="1237.0" y="893.9" font-size="12.5" fill="#475569" text-anchor="middle">L2 input reduced by a SystemOne</text>
+<text x="1237.0" y="912.1" font-size="12.5" fill="#475569" text-anchor="middle">never L3 authority · I15–I17</text>
+<text x="1237.0" y="930.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1412" y="834" width="326" height="124" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1575.0" y="873.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Ecosystem</text>
+<text x="1575.0" y="893.9" font-size="12.5" fill="#475569" text-anchor="middle">adapter + HAL-port store on Registry</text>
+<text x="1575.0" y="912.1" font-size="12.5" fill="#475569" text-anchor="middle">I18 · chapter 16</text>
+<text x="1575.0" y="930.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="491.6" y="301.5" width="138.8" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="561.0" y="314.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">same walker + ledger</text>
+<rect x="1186.9" y="531.5" width="100.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1237.0" y="544.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">verify on chip</text>
+<rect x="498.0" y="761.5" width="125.9" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="561.0" y="774.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">gates, lab actions</text>
+<rect x="1524.9" y="761.5" width="100.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1575.0" y="774.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">no paid safety</text>
+<rect x="1546.56" y="60" width="32" height="14" rx="3" fill="#ffffff" stroke="#475569" stroke-width="1.4" stroke-dasharray="7 5"/>
+<text x="1590.6" y="71.0" font-size="12" fill="#334155" text-anchor="start">○ planned — not in code yet</text>
+<rect x="1566.72" y="40" width="32" height="14" rx="3" fill="#ffffff" stroke="#475569" stroke-width="1.4"/>
+<text x="1610.7" y="51.0" font-size="12" fill="#334155" text-anchor="start">◐ partial — part in code</text>
+<rect x="1580.16" y="20" width="32" height="14" rx="3" fill="#ffffff" stroke="#475569" stroke-width="1.4"/>
+<text x="1624.2" y="31.0" font-size="12" fill="#334155" text-anchor="start">done — in code on main</text>
+</svg>

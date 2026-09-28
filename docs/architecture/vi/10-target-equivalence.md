@@ -4,6 +4,8 @@
 > `esp32s3`, điều đó được chứng minh thế nào, và nó **không** hứa gì. **Nguồn:** P-2 (PRD §1.5),
 > FR-TGT, `docs/spec/simulation_coverage.md`, `python/neuroedge/testing/`, `targets/esp32s3/main/`.
 
+**Đọc chương này để làm gì:** Dành cho kỹ sư hệ thống, đối tác OEM và đội QA. Chương này trả lời câu hỏi: *vì sao cùng một agent và gate lại đưa ra chuỗi quyết định an toàn giống hệt nhau trên cả trình mô phỏng, máy tính Linux và vi điều khiển ESP32-S3, điều đó được bảo vệ thế nào và giới hạn ở đâu*. Đọc sau [`00-overview.md`](00-overview.md) và [`05-code-gate-hal-c4l4.md`](05-code-gate-hal-c4l4.md); đọc trước khi thực hiện port HAL tại [`11-hal-port-guide.md`](11-hal-port-guide.md).
+
 ## 1. Tương đương nghĩa là gì
 
 Hai lần chạy **tương đương** khi, với cùng dữ kiện đầu vào, chúng cho cùng **chuỗi quyết định**: cùng
@@ -12,6 +14,16 @@ lượng). Không so: thời gian, chữ nói, âm thanh, khung hình.
 
 Mã agent **không được rẽ nhánh theo target** (P-2). Khác biệt giữa môi trường nằm trọn trong HAL và
 profile bo mạch.
+
+### 1.1 Cam kết tương đương theo bậc target (target tiers)
+
+Tương đương không được hứa cào bằng cho mọi phần cứng. NeuroEdge phân định cam kết rõ ràng theo ba bậc (Q-13, FR-TGT-08, `simulation_coverage.md` §7):
+
+- **Bậc 1 (`sim`, `linux`, `esp32s3`):** `neuroedge verify` đạt 100%; kiểm trên mỗi PR (`sim`, gpio-sim; QEMU cho PR đụng `targets/**`) và cam kết kiểm thử hằng đêm trên bo mạch thật (TSK-S4-05, TSK-I2-01 — chưa chạy).
+- **Bậc 2 (do đội lõi bảo trì, ví dụ `jetson` ở I16):** `neuroedge verify` trên miền phán quyết; kiểm thử phần cứng theo đợt phát hành, không hằng đêm.
+- **Bậc 3 (do cộng đồng port, ví dụ `stm32`, `rp2350` ngoài vai node robot):** bên đóng góp tự kiểm chứng qua Bộ kiểm thử tuân thủ; đội lõi không cam kết chất lượng và không chặn phát hành vì bậc này.
+
+Chi tiết phân tầng target và lộ trình mở rộng: [`15`](15-target-architecture.md) §4.1.
 
 ## 2. Ba lớp bảo vệ
 
@@ -86,10 +98,13 @@ golden, và thêm cảnh báo nêu gate đã đổi (digest cũ → digest mới
 `gate_digest` (ghi trước RFC-0008) phát lại đúng như trước.
 Một loại artifact quét được 0 tệp ⇒ `NE4004`, mã 1: không có "PASS" rỗng.
 
+> [!NOTE]
+> **Kế hoạch kiểm chứng cho robot phân tầng (planned):** `neuroedge verify` sẽ mở rộng cho cụm node (Pi 5 + ESP32-S3 + RP2350, TSK-W3-06): so phán quyết và trạng thái actuator giữa các node trên miền phán quyết; lệch → `NE4002` (RFC-node nháp §3.6). Chi tiết: [`15`](15-target-architecture.md) §4.3.
+
 ## 6. Tương đương không hứa gì
 
 - **Thời gian.** `verify` so quyết định, chưa so thời gian (TSK-S4-04).
 - **Thao tác và thời lượng trên chip.** Trên `esp32s3`, `operation` và `duration_ms` của lệnh chân hôm nay
   lấy từ bảng dựng trên host; chip chỉ quyết có phát không và chân nào (`TODOS.md` #37).
 - **Chất lượng âm thanh** trong âm học thật.
-- **Target bậc 2 và 3** (`simulation_coverage.md` §7).
+- **Target bậc 2 và 3** (`simulation_coverage.md` §7, Q-13; xem cam kết thu hẹp ở §1.1).

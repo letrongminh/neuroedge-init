@@ -517,6 +517,123 @@ def e09_evolution() -> Diagram:
     return d
 
 
+def e10_horizons() -> Diagram:
+    d = Diagram(
+        "E-10-target-horizons",
+        "E-10 · Target architecture by horizon",
+        "What each horizon adds on top of main. Details and sources: chapter 15; order and dates: roadmap §0.2.",
+        1800,
+        1060,
+    )
+    w, gap = 326, 12
+    col = [60 + c * (w + gap) for c in range(5)]
+    bands = [
+        ("today", "Today on main — I0 done, I1–I4 in progress", "host", [
+            ("core", "Host package neuroedge", ("SDK, CLI, gate engine, sim + linux HAL", "voice from WAV, MCP, Action CI"), "container", "done"),
+            ("fw", "Firmware esp32s3 on QEMU", ("NETR walker, token ledger, UART trace", "signed A/B OTA · LVGL UI on host"), "device", "partial"),
+            ("contracts", "Frozen contracts", ("gate.v1 · trace.v1 · board.v1", "NETR v1 · agent.toml"), "store", "done"),
+            ("ci", "Evidence loop", ("record → replay → verify", "three canonical traces, 3 targets"), "test", "done"),
+        ]),
+        ("h1", "Horizon 1 — v1.0 on the device (I3–I7) · chapter 15 §2", "device", [
+            ("hal", "HAL + drivers on chip", ("targets/esp32s3/hal/ · drivers/", "TSK-S4-01, TSK-S4-03"), "device", "planned"),
+            ("voice", "Voice path on chip", ("AEC · VAD · Opus · voice FSM in C", "TSK-S5-01…S5-06"), "device", "planned"),
+            ("fallback", "Local offline fallback", ("fixed command recognizer", "TSK-S5-07 · Q-14"), "device", "planned"),
+            ("security", "Device security", ("Secure Boot · flash encryption", "mic switch · TSK-S6-05"), "device", "planned"),
+            ("ui", "UI on the real display", ("ne_ui wired to the display driver", "TSK-S4-01"), "device", "planned"),
+        ]),
+        ("h2", "Horizon 2 — service tier v1.1 (I9–I10) · chapter 15 §3", "cloud", [
+            ("fleet", "Fleet OS", ("provisioning · inventory · config sync", "canary OTA · incident traces · TSK-K2-04…09"), "external", "planned"),
+            ("registry", "Gate Registry and rails", ("OCI store · identity · metering", "sandbox · manifest.v1 · TSK-K3-*"), "external", "planned"),
+            ("provider", "Self-hosted provider layer", ("one endpoint · failover · quotas", "TSK-K2-01…03 · Q-28"), "container", "planned"),
+            ("signed", "Signed gates on the device", ("verify signature before loading", "TSK-W2-04"), "gate", "planned"),
+            ("boundary", "Core ↔ commercial boundary", ("safety never behind a paid tier", "proposal §6.4 · PRD P-3"), "note", "done"),
+        ]),
+        ("h3", "Horizon 3 — extensions after Beta (I11–I18) · chapter 15 §4", "planned", [
+            ("tiers", "Target tiers + port kit", ("tier 1 · 2 · 3, compliance vectors", "I11 · I13 · Q-13 · RFC-0002"), "component", "planned"),
+            ("brain", "NeuroBrain", ("brain/ only via dispatch() (B-1)", "envelope hook in HAL · I12 · RFC-0007"), "component", "planned"),
+            ("robot", "Layered robot", ("Pi 5 brain + MCU nodes, gate per node", "black channel · lease tokens · I14"), "component", "planned"),
+            ("vision", "Vision", ("L2 input reduced by a SystemOne", "never L3 authority · I15–I17"), "component", "planned"),
+            ("eco", "Ecosystem", ("adapter + HAL-port store on Registry", "I18 · chapter 16"), "component", "planned"),
+        ]),
+    ]
+    y = 100
+    for gid, label, kind, items in bands:
+        d.groups.append(Group(gid, 40, y, 1720, 200, label, kind))
+        for c, (bid, title, lines, bkind, status) in enumerate(items):
+            d.boxes.append(Box(bid, col[c], y + 44, w, 124, title, lines, bkind, status))
+        y += 230
+    d.edges += [
+        Edge("fw", "voice", "same walker + ledger", label_at=(col[1] + w / 2, 312)),
+        Edge("security", "signed", "verify on chip", label_at=(col[3] + w / 2, 542)),
+        Edge("registry", "brain", "gates, lab actions", label_at=(col[1] + w / 2, 772)),
+        Edge("boundary", "eco", "no paid safety", label_at=(col[4] + w / 2, 772)),
+    ]
+    return d
+
+
+def e11_ecosystem() -> Diagram:
+    d = Diagram(
+        "E-11-ecosystem",
+        "E-11 · Ecosystem landscape (C4 system landscape)",
+        "Who takes part, what they share, and the platforms that carry it. Details and sources: chapter 16.",
+        1820,
+        1020,
+    )
+    d.groups.append(Group("parties", 40, 100, 380, 880, "Parties (PRD §2.1)", "boundary"))
+    parties = [
+        ("u1", "U1 · Maker", ("builds an agent, no account", "shares gates, agents"), "done"),
+        ("u2", "U2 · Embedded team lead", ("tests safety in CI", "moves boards without rewrites"), "done"),
+        ("u4", "U4 · Safety reviewer / QA", ("reads gates and traces", "approves behaviour"), "done"),
+        ("u5", "U5 · OEM / ODM partner", ("declares a board, ports the HAL", "compliance vectors"), "partial"),
+        ("u3", "U3 · Fleet operator", ("rolls out updates, pulls traces", "from v1.1"), "planned"),
+        ("u6", "U6 · Robot integrator", ("Pi 5 brain + MCU nodes", "ROS 2 / Nav2 · I14"), "planned"),
+    ]
+    for i, (pid, title, lines, status) in enumerate(parties):
+        d.boxes.append(Box(pid, 64, 140 + i * 138, 332, 110, title, lines, "person", status))
+    d.groups.append(Group("core", 600, 100, 620, 400, "Source-available core and open standards", "host"))
+    d.boxes.append(Box("ne", 630, 150, 560, 140, "NeuroEdge core",
+                       ("SDK + CLI + firmware — PolyForm Noncommercial (Q-45)",
+                        "commercial licence for companies",
+                        "public repository since 2026-09-25"), "system"))
+    d.boxes.append(Box("std", 630, 330, 560, 130, "Open standards — Apache-2.0",
+                       ("schemas/ · docs/spec/ · fixtures/compliance/",
+                        "changed only by RFC (CONTRIBUTING §3)"), "store"))
+    d.groups.append(Group("assets", 600, 540, 620, 440, "Shared assets (chapter 16 §3)", "test"))
+    assets = [
+        ("adapters", "Provider adapters", ("python:pkg.mod:factory", "OpenAI-compatible first")),
+        ("gates", "Gates", ("versioned YAML, neuroedge://", "inherit only to tighten")),
+        ("ports", "HAL ports + board.toml", ("five primitives of v1", "proved by compliance vectors")),
+        ("agents", "Agents and traces", ("agent.toml + actions + gates", "trace.v1 replays anywhere")),
+    ]
+    for i, (aid, title, lines) in enumerate(assets):
+        r, c = divmod(i, 2)
+        d.boxes.append(Box(aid, 630 + c * 290, 590 + r * 190, 270, 150, title, lines, "component"))
+    d.groups.append(Group("platforms", 1400, 100, 380, 880, "Platforms (chapter 16 §4)", "cloud"))
+    platforms = [
+        ("repo", "Source repository", ("public · issues · RFCs",), "done"),
+        ("pypi", "PyPI + public schema URLs", ("release workflow ready · I6",), "planned"),
+        ("registry", "Gate Registry", ("OCI · identity · metering · I10",), "planned"),
+        ("fleet", "Fleet OS", ("the one commercial service · I9",), "planned"),
+        ("aura", "AURA vertical app", ("Khối 4 · outside the roadmap",), "planned"),
+        ("market", "Marketplace", ("Khối 5 · only after G1–G4",), "planned"),
+    ]
+    for i, (pid, title, lines, status) in enumerate(platforms):
+        d.boxes.append(Box(pid, 1424, 140 + i * 138, 332, 96, title, lines, "external", status))
+    L, R = 510, 1310
+    d.edges += [
+        Edge("u1", "ne", "build · run · test", via=((L - 30, 195), (L - 30, 190)), label_at=(L - 30, 175)),
+        Edge("u2", "ne", "CI · build · verify", via=((L, 333), (L, 250)), label_at=(L, 300)),
+        Edge("u4", "gates", "review · explain", via=((L - 30, 471), (L - 30, 520), (1055, 520)), label_at=(L - 30, 500)),
+        Edge("u5", "ports", "port + prove", via=((L, 609), (L, 850)), label_at=(L, 760)),
+        Edge("u3", "fleet", "rollouts · traces", dashed=True, via=((560, 747), (560, 996), (1380, 996), (1380, 602)),
+             label_at=(980, 996)),
+        Edge("ne", "repo", "source · RFCs", via=((R, 220), (R, 188)), label_at=(R, 205)),
+        Edge("std", "pypi", "schemas published", dashed=True, via=((R - 40, 395), (R - 40, 326)), label_at=(R - 40, 360)),
+        Edge("gates", "registry", "share (planned)", dashed=True, via=((R, 665), (R, 464)), label_at=(R, 580)),
+    ]
+    return d
+
+
 DIAGRAMS = [
     e01_context,
     e02_containers,
@@ -527,6 +644,8 @@ DIAGRAMS = [
     e07_targets,
     e08_deployment,
     e09_evolution,
+    e10_horizons,
+    e11_ecosystem,
 ]
 
 

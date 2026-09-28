@@ -9,7 +9,7 @@
 ![E-08 · Triển khai](../assets/svg/E-08-deployment.svg)
 *Hình E-08 — Ba vùng: máy của kỹ sư, máy chạy CI của GitHub, thiết bị. Khối `○ planned` chưa có phần cứng.*
 
-NeuroEdge **không có dịch vụ phía máy chủ nào** trong Giai đoạn 1: không tài khoản, không broker, không
+NeuroEdge **không có dịch vụ phía máy chủ nào** trước tầng dịch vụ v1.1 (I0–I8): không tài khoản, không broker, không
 backend. Mọi thứ chạy trên máy của người dùng hoặc trên thiết bị. Dịch vụ phía máy chủ đầu tiên là Fleet
 OS ở I9 ([`13`](13-evolution-i0-i18.md) §2).
 
@@ -76,8 +76,9 @@ Bước cụ thể: chính các tệp workflow. Trạng thái xanh/đỏ hiện 
 
 ## 6. Chưa triển khai
 
-- **Không có máy chủ nào của NeuroEdge.** Điều phối OTA theo đợt, broker, kho vết ghi, danh tính thiết bị
-  là Fleet OS (I9); kho gate là Gate Registry (I10).
+- **Không có máy chủ nào của NeuroEdge trước v1.1.** Điều phối OTA theo đợt (Hawkbit), broker MQTT, kho vết ghi sự cố, danh tính thiết bị là Fleet OS (I9); kho lưu trữ và phân phối gate là Gate Registry (I10) — chi tiết cấu trúc triển khai máy chủ: [`15`](15-target-architecture.md) §3.1/§3.2.
+- **Cụm robot phân tầng chưa triển khai.** Cấu trúc phân tầng gồm Raspberry Pi 5 làm não kết nối với các node vi điều khiển chuyên trách ESP32-S3 và RP2350 qua bus truyền thông Zenoh-pico (I14, Q-32, Q-33, Q-36) — chi tiết bố trí nút mạng: [`15`](15-target-architecture.md) §4.3.
+- **Nút suy luận thị giác Jetson chưa triển khai.** Target `jetson` (bậc 2, I16) (bậc 2 theo FR-TGT-08, Q-13) chạy thị giác qua JetPack và TensorRT (`neuroedge-design-phase2.md` §7, TSK-V2-01) — chi tiết triển khai phần cứng: [`15`](15-target-architecture.md) §4.4.
 - **Không có bo mạch thật trong CI.** Mọi bằng chứng về chip hôm nay là QEMU và test C trên host; bằng
   chứng trên silicon chờ bo mạch và runner tự quản (`TODOS.md` #10).
 - **Chưa phát hành lên PyPI.** Workflow đã có; phát hành thật ở I6.
