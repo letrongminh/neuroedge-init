@@ -38,6 +38,7 @@ from .config import (
     load_wake_word_config,
     parse_speech,
     parse_wake_word,
+    suggested_key_env,
 )
 from .fake import FakeSpeechToText, FakeTextToSpeech, FakeWakeWordDetector
 from .openai_audio import OpenAISpeaker, OpenAITranscriber
@@ -68,6 +69,7 @@ __all__ = [
     "parse_speech",
     "parse_wake_word",
     "speech_for",
+    "suggested_key_env",
     "wake_word_for",
 ]
 
