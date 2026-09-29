@@ -141,7 +141,7 @@
     });
   }
 
-  function enc(s) { return encodeURIComponent(s); }
+  function enc(s) { return encodeURIComponent(s).replace(/%40/g, "@"); }
 
   // ---------------------------------------------------------------- events -> state
   function stateOf(evs, tMs) {
@@ -972,8 +972,9 @@
   function loadTraces() {
     api("GET", "traces").then(function (j) {
       S.traces = j;
-      if (j.ok && j.traces.length && !j.traces.some(function (x) { return x.name === S.traceName; })) {
-        S.traceName = j.traces[0].name;
+      if (j.ok && !j.traces.some(function (x) { return x.name === S.traceName && x.valid !== false; })) {
+        const first = j.traces.filter(function (x) { return x.valid !== false; })[0];
+        S.traceName = first ? first.name : null;
         S.trace = null;
       }
       if (S.traceName && !S.trace) loadTrace(S.traceName);
@@ -1009,12 +1010,14 @@
     });
     const rows = tr.traces.map(function (x) {
       const sel = x.name === S.traceName;
+      const bad = x.valid === false;
       return el("tr", { class: sel ? "sel" : "" }, [
-        el("td", {}, [el("button", { type: "button", class: "link-btn mono", "aria-pressed": sel ? "true" : "false", text: x.name,
+        el("td", {}, [bad ? el("span", { class: "mono", text: x.name }) : el("button", { type: "button", class: "link-btn mono", "aria-pressed": sel ? "true" : "false", text: x.name,
           onclick: function () { S.traceName = x.name; loadTrace(x.name); } })]),
-        el("td", { text: String(x.events === undefined ? "—" : x.events) }),
+        el("td", { text: bad || x.events === null || x.events === undefined ? "—" : String(x.events) }),
         el("td", { text: [x.target, x.board].filter(Boolean).join(" · ") || "—" }),
-        el("td", {}, [chip(x.anonymized === false ? "warn" : "allow", x.anonymized === false ? "raw" : "sha256")]),
+        el("td", {}, [bad ? el("span", { class: "st block", title: x.error || "", text: t("chip_invalid") + (x.error ? " · " + String(x.error).slice(0, 80) : "") })
+          : chip(x.anonymized === false ? "warn" : "allow", x.anonymized === false ? "raw" : "sha256")]),
         el("td", { class: "mono", text: x.recorded_at || "—" })
       ]);
     });
