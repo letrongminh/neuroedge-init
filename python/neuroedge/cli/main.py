@@ -33,6 +33,7 @@ from ..engine import (
     resolve_gate_file,
     resolve_gate_uri,
 )
+from ..engine.gate_resolver import lint_registry
 from ..errors import BoardCapabilityError, BuildFailed, NeuroEdgeError, VerificationError
 from ..hal.board import REFERENCE_BOARD, SUPPORTED_TARGETS, available_boards, load_board_by_id
 from ..paths import gates_dir, repo_root
@@ -255,18 +256,7 @@ def gate_lint(
         console.print(f"[yellow]No gate files found under {root}[/yellow]")
         raise typer.Exit(code=1)
 
-    # Bases are addressed by neuroedge:// URI. An explicit --registry wins;
-    # otherwise a fixture tree keeps its bases in a sibling `registry/`
-    # directory, and the real corpus resolves against gates/.
-    if registry is not None:
-        gate_registry = GateRegistry(registry)
-    else:
-        for candidate in (root / "registry", root.parent / "registry"):
-            if candidate.is_dir():
-                gate_registry = GateRegistry(candidate)
-                break
-        else:
-            gate_registry = GateRegistry()
+    gate_registry = lint_registry(root, registry)
 
     failures = 0
     table = Table(title=f"Gate lint — {root}")
