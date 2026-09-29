@@ -10,12 +10,10 @@ captured while a reply is playing are silenced to prevent echo through loudspeak
 from __future__ import annotations
 
 import asyncio
-import json
 import shutil
 import sys
 import threading
-import wave
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +22,7 @@ from typer.testing import CliRunner
 
 from neuroedge.cli.main import app
 from neuroedge.errors import BoardCapabilityError, PerceptionUnavailableError
-from neuroedge.hal.audio import AudioFrame, EnergyVAD, Speaker
+from neuroedge.hal.audio import AudioFrame, Speaker, WavSource
 from neuroedge.hal.sim import SimHAL
 from neuroedge.perception import VirtualClock, VoiceParams, VoiceSession
 from neuroedge.perception.live import LiveAudioCapture
@@ -34,10 +32,14 @@ from neuroedge.sim import SimSession
 from neuroedge.testing.recorder import TraceRecorder
 from neuroedge.trace import load_trace
 
-from .fake_sounddevice import FakeInputStream, FakeSounddevice
-
-RATE = 16000
-PARAMS = VoiceParams(vad_activation=True, think_timeout_ms=5000)
+from .fake_sounddevice import FakeSounddevice
+from .test_voice_speech import (
+    PARAMS,
+    RATE,
+    at,
+    silence,
+    states,
+)
 
 FAKES = """
 [stt]
@@ -55,17 +57,9 @@ ms_per_char = 30
 runner = CliRunner()
 
 
-def silence(ms: int) -> bytes:
-    return bytes(2 * RATE * ms // 1000)
-
-
-def write_wav(path: Path, pcm: bytes, rate: int = RATE) -> Path:
-    with wave.open(str(path), "wb") as w:
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(rate)
-        w.writeframes(pcm)
-    return path
+def make_speech_pcm(*parts: int) -> bytes:
+    """Alternating silence and speech tone: make_speech_pcm(500, 900, 3000)."""
+    return b"".join(silence(ms) if i % 2 == 0 else tone(ms, RATE) for i, ms in enumerate(parts))
 
 
 class ScriptedLiveSource:
@@ -92,53 +86,6 @@ class ScriptedLiveSource:
 
     def close(self) -> None:
         self.closed = True
-
-
-class EndingFakeInputStream(FakeInputStream):
-    """Fake input stream that closes the wrapping LiveAudioIn when blocks run out."""
-
-    def read(self, frames: int) -> tuple[bytes, bool]:
-        if not self.started:
-            raise RuntimeError("Stream is stopped")
-        if self.world.blocks:
-            return self.world.blocks.pop(0), False
-        import inspect
-
-        cur = inspect.currentframe()
-        while cur:
-            obj = cur.f_locals.get("self")
-            if hasattr(obj, "_closed") and hasattr(obj, "close"):
-                obj.close()
-                break
-            cur = cur.f_back
-        raise OSError(19, "End of scripted stream")
-
-
-class EndingFakeSounddevice(FakeSounddevice):
-    def RawInputStream(  # noqa: N802
-        self, *, samplerate: int, channels: int, dtype: str, device: Any, blocksize: int
-    ) -> EndingFakeInputStream:
-        stream = EndingFakeInputStream(self, device, channels, samplerate)
-        self.inputs.append(stream)
-        return stream
-
-
-class InterruptingFakeInputStream(FakeInputStream):
-    def read(self, frames: int) -> tuple[bytes, bool]:
-        if not self.started:
-            raise RuntimeError("Stream is stopped")
-        if self.world.blocks:
-            return self.world.blocks.pop(0), False
-        raise KeyboardInterrupt
-
-
-class InterruptingFakeSounddevice(FakeSounddevice):
-    def RawInputStream(  # noqa: N802
-        self, *, samplerate: int, channels: int, dtype: str, device: Any, blocksize: int
-    ) -> InterruptingFakeInputStream:
-        stream = InterruptingFakeInputStream(self, device, channels, samplerate)
-        self.inputs.append(stream)
-        return stream
 
 
 @pytest.fixture(scope="module")
@@ -198,10 +145,65 @@ def voice_on(
     )
 
 
+def _run_both(
+    build_voice: Callable[[], VoiceSession],
+    pcm: bytes,
+    *,
+    settle_ms: float = 60_000,
+    before_run: Callable[[VoiceSession], None] | None = None,
+) -> tuple[VoiceSession, VoiceSession]:
+    """
+    Run the same audio scenario through both play(WavSource) and play_live(ScriptedLiveSource),
+    asserting complete equivalence between the file and live paths.
+    """
+    # 1. Virtual clock driven by file:
+    voice_file = build_voice()
+    if before_run is not None:
+        before_run(voice_file)
+    asyncio.run(voice_file.play(WavSource("turn.wav", pcm, RATE), settle_ms=settle_ms))
+
+    # 2. Virtual clock driven by live source (mic sample clock):
+    voice_live = build_voice()
+    if before_run is not None:
+        before_run(voice_live)
+    asyncio.run(voice_live.play_live(ScriptedLiveSource(pcm, RATE), settle_ms=settle_ms))
+
+    # Event equivalence: identical (type, data)
+    events_file = [(e["type"], e["data"]) for e in voice_file.events.events]
+    events_live = [(e["type"], e["data"]) for e in voice_live.events.events]
+    assert events_live == events_file, f"Events mismatch:\nlive: {events_live}\nfile: {events_file}"
+
+    # Turns equivalence:
+    assert len(voice_live.turns) == len(voice_file.turns)
+    for t_live, t_file in zip(voice_live.turns, voice_file.turns):
+        assert t_live.heard == t_file.heard
+        assert (t_live.result.allowed if t_live.result else None) == (
+            t_file.result.allowed if t_file.result else None
+        )
+        assert t_live.stt_failure == t_file.stt_failure
+
+    # Pin states equivalence:
+    for pin_name in voice_file.hal._pins:
+        p_file = voice_file.hal.pin(pin_name)
+        p_live = voice_live.hal.pin(pin_name)
+        assert p_live.pulsed == p_file.pulsed
+        assert len(p_live.pulses) == len(p_file.pulses)
+
+    # Speaker playbacks equivalence:
+    pb_file = voice_file.hal.speaker().playbacks
+    pb_live = voice_live.hal.speaker().playbacks
+    assert len(pb_live) == len(pb_file)
+    for p_live, p_file in zip(pb_live, pb_file):
+        assert p_live.stopped_at_ms == p_file.stopped_at_ms
+        assert p_live.played == p_file.played
+
+    return voice_file, voice_live
+
+
 # --- 1. Capture thread unit tests -----------------------------------------------------------------
 
 
-def test_capture_thread_frames_flow_in_order() -> None:
+def test_capture_thread_frames_flow_in_order_then_error_surfaces() -> None:
     first = b"\x01\x00" * 320
     second = b"\x02\x00" * 320
     third = b"\x03\x00" * 320
@@ -216,18 +218,92 @@ def test_capture_thread_frames_flow_in_order() -> None:
         f1 = await capture.next_frame(loop)
         f2 = await capture.next_frame(loop)
         f3 = await capture.next_frame(loop)
-        f4 = await capture.next_frame(loop)
-        return f1, f2, f3, f4
+        err = None
+        try:
+            await capture.next_frame(loop)
+        except BoardCapabilityError as exc:
+            err = exc
+        return (f1, f2, f3), err
 
-    f1, f2, f3, f4 = asyncio.run(run())
+    (f1, f2, f3), err = asyncio.run(run())
     assert f1 is not None and f1.pcm == first and f1.start_ms == 0 and f1.end_ms == 20
     assert f2 is not None and f2.pcm == second and f2.start_ms == 20 and f2.end_ms == 40
     assert f3 is not None and f3.pcm == third and f3.start_ms == 40 and f3.end_ms == 60
-    assert f4 is None
+    assert err is not None
+    assert "stopped answering" in err.why
 
     capture.close()
     assert sd.inputs[0].closed
     hal.close()
+
+
+def test_capture_thread_drains_queued_frames_before_raising_error() -> None:
+    frame_bytes = bytes(2 * RATE * 20 // 1000)
+    frames_list = [AudioFrame(frame_bytes, i * 20, 20, RATE) for i in range(5)]
+
+    class FailingSource:
+        def frames(self):
+            for f in frames_list:
+                yield f
+            raise OSError(19, "Microphone disconnected")
+
+    source = FailingSource()
+    capture = LiveAudioCapture(source)
+    capture.start()
+
+    async def run():
+        loop = asyncio.get_running_loop()
+        received = []
+        err = None
+        try:
+            while True:
+                f = await capture.next_frame(loop)
+                if f is None:
+                    break
+                received.append(f)
+        except OSError as exc:
+            err = exc
+        return received, err
+
+    received, err = asyncio.run(run())
+    assert len(received) == 5
+    assert [f.start_ms for f in received] == [0, 20, 40, 60, 80]
+    assert err is not None and "Microphone disconnected" in str(err)
+    capture.close()
+
+
+def test_capture_thread_keyboard_interrupt_drains_frames_first() -> None:
+    frame_bytes = bytes(2 * RATE * 20 // 1000)
+    frames_list = [AudioFrame(frame_bytes, i * 20, 20, RATE) for i in range(5)]
+
+    class InterruptingSource:
+        def frames(self):
+            for f in frames_list:
+                yield f
+            raise KeyboardInterrupt
+
+    source = InterruptingSource()
+    capture = LiveAudioCapture(source)
+    capture.start()
+
+    async def run():
+        loop = asyncio.get_running_loop()
+        received = []
+        err = None
+        try:
+            while True:
+                f = await capture.next_frame(loop)
+                if f is None:
+                    break
+                received.append(f)
+        except KeyboardInterrupt as exc:
+            err = exc
+        return received, err
+
+    received, err = asyncio.run(run())
+    assert len(received) == 5
+    assert isinstance(err, KeyboardInterrupt)
+    capture.close()
 
 
 def test_capture_thread_full_queue_raises_three_part_error() -> None:
@@ -282,113 +358,217 @@ def test_capture_thread_stop_ends_loop_and_closes_streams() -> None:
     capture.start()
     assert not sd.inputs[0].closed
 
-    stop.set()
+    threading.Timer(0.05, stop.set).start()
+
+    async def run():
+        loop = asyncio.get_running_loop()
+        while True:
+            f = await capture.next_frame(loop)
+            if f is None:
+                break
+
+    asyncio.run(run())
     capture.close()
     assert sd.inputs[0].closed
     hal.close()
 
 
-# --- 2. VoiceSession.play_live tests --------------------------------------------------------------
-
-
-def test_play_live_command_reaches_gate_and_speaker_plays_reply(door: Path) -> None:
-    # 500 ms silence + 900 ms speech tone ("mở cửa") + 2000 ms silence
-    pcm = silence(500) + tone(900, RATE) + silence(2000)
+def test_capture_thread_clean_end_with_scripted_source() -> None:
+    pcm = silence(60)
     source = ScriptedLiveSource(pcm)
-    voice = voice_on(
-        door,
-        stt=FakeSpeechToText(["mở cửa"], latency_ms=100),
-        tts=FakeTextToSpeech(ms_per_char=30),
+    capture = LiveAudioCapture(source)
+    capture.start()
+
+    async def run():
+        loop = asyncio.get_running_loop()
+        frames = []
+        while True:
+            f = await capture.next_frame(loop)
+            if f is None:
+                break
+            frames.append(f)
+        return frames
+
+    frames = asyncio.run(run())
+    assert len(frames) == 3
+    assert [f.start_ms for f in frames] == [0, 20, 40]
+    capture.close()
+    assert source.closed
+
+
+# --- 2. Equivalence tests against test_voice_speech.py scenarios ----------------------------------
+
+
+def test_a_spoken_command_goes_through_stt_and_the_gate(door: Path) -> None:
+    stt = FakeSpeechToText(["mở cửa"], latency_ms=300)
+    pcm = make_speech_pcm(500, 900, 3000)
+    _, voice = _run_both(
+        lambda: voice_on(door, stt=stt, tts=FakeTextToSpeech()),
+        pcm,
     )
 
-    asyncio.run(voice.play_live(source))
+    assert states(voice)[:2] == [
+        ("IDLE", "LISTENING", "speech_start", 1),
+        ("LISTENING", "THINKING", "turn_end", 1),
+    ]
+    assert at(voice, "audio_in_vad_start") == [560] and at(voice, "audio_in_vad_end") == [1600]
+    assert at(voice, "voice_state_changed")[1] == 2300 and at(voice, "stt_result") == [2600]
+    assert voice.events.of_type("stt_result") == [{"turn": 1, "text": "mở cửa"}]
+    assert [
+        e["type"]
+        for e in voice.events.events
+        if e["type"] in ("text_input", "action_requested", "gate_evaluation_result", "actuator_command")
+    ] == ["text_input", "action_requested", "gate_evaluation_result", "actuator_command"]
+    assert voice.hal.pin("door_lock").pulsed_once(30000)
+    assert voice.settled
 
-    assert len(voice.turns) == 1
-    turn = voice.turns[0]
-    assert turn.heard == "mở cửa"
-    assert turn.result.allowed is True
-    assert voice.hal.pin("door_lock").pulsed is True
-    playbacks = voice.hal.speaker().playbacks
-    assert len(playbacks) == 1
-    assert playbacks[0].stopped_at_ms is None
 
-
-def test_play_live_barge_in_stops_speaker_and_cancels_pending_command(door: Path) -> None:
-    # Turn 1: 500 ms silence + 900 ms tone ("mở cửa sau hai giây") + 600 ms silence.
-    # At 2000 ms, turn ends. STT latency 100 ms => transcript delivered at 2100 ms.
-    # open_door_later schedules door_lock pulse at 2100 + 2000 = 4100 ms.
-    # Reply has 24 chars * 50 ms = 1200 ms (plays from 2100 to 3300 ms).
-    # Person speaks from 2600 to 3200 ms: VAD confirms start at 2660 ms.
-    # Speaker must stop at 2660 ms (< 300 ms after 2600 ms speech start).
-    # Pending command at 4100 ms must be cancelled and its token closed.
-    parts = (500, 900, 1200, 600, 2000)
-    pcm = b"".join(silence(ms) if i % 2 == 0 else tone(ms, RATE) for i, ms in enumerate(parts))
-    source = ScriptedLiveSource(pcm)
-    voice = voice_on(
-        door,
-        stt=FakeSpeechToText(["mở cửa sau hai giây", ""]),
-        tts=FakeTextToSpeech(ms_per_char=50),
+def test_the_reply_plays_to_its_end_on_the_speaker(door: Path) -> None:
+    pcm = make_speech_pcm(500, 900, 6000)
+    _, voice = _run_both(
+        lambda: voice_on(door, stt=FakeSpeechToText(["tắt đèn"]), tts=FakeTextToSpeech(ms_per_char=20)),
+        pcm,
+        before_run=lambda v: v.session.set_sensor("motion", True),
     )
 
-    asyncio.run(voice.play_live(source))
+    message, hint = voice.hal.spoken
+    reply_ms = (len(message) + len(hint)) * 20
+    start = at(voice, "tts_stream_start")[0]
+    (end,) = voice.events.of_type("tts_stream_end")
+    assert end["reason"] == "done" and end["duration_ms"] == reply_ms
+    assert end["sha256"].startswith("sha256:")
+    assert at(voice, "tts_stream_end") == [start + reply_ms]
+    assert ("SPEAKING", "LISTENING", "ask_asked", 2) in states(voice)
+    (playback,) = voice.hal.speaker().playbacks
+    assert playback.stopped_at_ms is None and len(playback.played) == reply_ms * 32
+
+
+def test_barge_in_stops_the_speaker(door: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    stops: list[float] = []
+    real_stop = Speaker.stop
+
+    def spy(self, at_ms):
+        stops.append(at_ms)
+        real_stop(self, at_ms)
+
+    monkeypatch.setattr(Speaker, "stop", spy)
+    pcm = make_speech_pcm(500, 900, 1600, 800, 3000)
+    _, voice = _run_both(
+        lambda: voice_on(door, stt=FakeSpeechToText(["tắt đèn"]), tts=FakeTextToSpeech(ms_per_char=60)),
+        pcm,
+        before_run=lambda v: v.session.set_sensor("motion", True),
+    )
+
+    assert 3060 in stops
+    (cut,) = voice.events.of_type("tts_stream_end")
+    assert cut == {"duration_ms": 660, "reason": "barge_in"}
+    assert at(voice, "tts_stream_end") == [3060]
+    (playback, *_) = voice.hal.speaker().playbacks
+    assert playback.stopped_at_ms == 3060 and len(playback.played) == 660 * 32
+    assert len(playback.pcm) > len(playback.played)
+    assert voice.session.pending_confirmation() is not None
+
+
+def test_barge_in_during_tts_still_cancels_the_pending_command(door: Path) -> None:
+    class SystemTwoFeederVoiceSession(VoiceSession):
+        async def advance(self, to_ms: float, *, inclusive: bool = False) -> None:
+            await super().advance(to_ms, inclusive=inclusive)
+            if to_ms == 2700 and self._awaiting is not None:
+                await self.feed(
+                    "system_two_reply",
+                    {
+                        "turn": 1,
+                        "text": "Cửa sẽ mở sau hai giây.",
+                        "tool_calls": [{"name": "open_door_later", "arguments": {}}],
+                    },
+                )
+
+    def build_voice() -> VoiceSession:
+        clock = VirtualClock()
+        session = SimSession.load(door, clock=clock)
+        return SystemTwoFeederVoiceSession(
+            session,
+            clock=clock,
+            params=PARAMS,
+            stt=FakeSpeechToText(["làm ơn mở giúp cái cửa sau hai giây", ""]),
+            tts=FakeTextToSpeech(ms_per_char=60),
+            system_two=True,
+        )
+
+    pcm = make_speech_pcm(500, 900, 1400, 600, 2000)
+    _, voice = _run_both(build_voice, pcm)
 
     kinds = [e["type"] for e in voice.events.events]
-    assert "actuator_aborted" in kinds
+    abort = kinds.index("actuator_aborted")
+    assert kinds[abort + 1] == "tts_stream_end"
     assert voice.events.of_type("actuator_aborted") == [
         {"pin": "door_lock", "reason": "ACTUATOR_ABORTED_BY_BARGE_IN"}
     ]
     assert voice.hal.pin("door_lock").never_pulsed()
-    (cut,) = voice.events.of_type("tts_stream_end")
-    assert cut["reason"] == "barge_in"
-
     (playback,) = voice.hal.speaker().playbacks
-    # Speech started at 2600 ms; barge-in confirmed at 2660 ms (stop is 60 ms < 300 ms after start)
-    assert playback.stopped_at_ms is not None
-    assert playback.stopped_at_ms == 2660
-    assert playback.stopped_at_ms - 2600 < 300
+    assert playback.stopped_at_ms == 2860
+    assert "actuator_command" not in kinds
 
 
-def test_play_live_slow_stt_drops_late_transcript(door: Path) -> None:
-    # Turn 1: 500 ms silence + 900 ms tone + 600 ms silence (turn ends at 2000 ms).
-    # STT latency 1500 ms => scheduled at 3500 ms.
-    # Person speaks again from 2300 to 3100 ms (speech start at 2360 ms).
-    # Turn 2 opens. At 3500 ms, Turn 1 STT result arrives late and is dropped.
-    parts = (500, 900, 900, 800, 2000)
-    pcm = b"".join(silence(ms) if i % 2 == 0 else tone(ms, RATE) for i, ms in enumerate(parts))
-    source = ScriptedLiveSource(pcm)
-    voice = voice_on(
-        door,
-        stt=FakeSpeechToText(["mở cửa", "mở cửa"], latency_ms=1500),
-        tts=FakeTextToSpeech(ms_per_char=20),
+def test_stt_slower_than_the_think_timeout_is_stt_failing(door: Path) -> None:
+    pcm = make_speech_pcm(500, 900, 12000)
+    _, voice = _run_both(
+        lambda: voice_on(door, stt=FakeSpeechToText(["mở cửa"], latency_ms=9000), tts=FakeTextToSpeech()),
+        pcm,
     )
 
-    asyncio.run(voice.play_live(source))
-
-    dropped = voice.events.of_type("voice_late_result_dropped")
-    assert dropped == [{"turn": 1, "input": "stt_result"}]
+    assert voice.hal.spoken == [voice.session.unheard_help()]
+    assert at(voice, "stt_unavailable") == [7300]
+    assert "think timeout" in voice.events.of_type("stt_unavailable")[0]["reason"]
+    assert voice.events.of_type("voice_late_result_dropped") == [{"turn": 1, "input": "stt_result"}]
+    assert at(voice, "voice_late_result_dropped") == [11300]
+    assert voice.hal.pin("door_lock").never_pulsed()
 
 
 def test_play_live_half_duplex_silences_echo_and_prevents_barge_in(door: Path) -> None:
-    # Same audio as barge-in test, where reply plays during 2100..3300 ms and loud echo
-    # arrives at 2600..3200 ms. With half_duplex=True, the frames during reply are
-    # replaced by silence, so no VAD start triggers, no barge-in, and playback finishes.
-    parts = (500, 900, 1200, 600, 2000)
-    pcm = b"".join(silence(ms) if i % 2 == 0 else tone(ms, RATE) for i, ms in enumerate(parts))
+    # 1. Base run from test_the_reply_plays_to_its_end_on_the_speaker to determine reply window:
+    base_pcm = make_speech_pcm(500, 900, 6000)
+    v_base = voice_on(door, stt=FakeSpeechToText(["tắt đèn"]), tts=FakeTextToSpeech(ms_per_char=20))
+    v_base.session.set_sensor("motion", True)
+    asyncio.run(v_base.play(WavSource("base.wav", base_pcm, RATE)))
 
-    source_hd = ScriptedLiveSource(pcm)
-    voice_hd = voice_on(
-        door,
-        stt=FakeSpeechToText(["mở cửa sau hai giây", ""]),
-        tts=FakeTextToSpeech(ms_per_char=50),
+    start = at(v_base, "tts_stream_start")[0]
+    (end,) = v_base.events.of_type("tts_stream_end")
+    reply_duration = end["duration_ms"]
+
+    # 2. Add loud tone frames inside reply playback window:
+    silence_between = int(start + 200 - 1400)
+    interrupt_pcm = (
+        silence(500)
+        + tone(900, RATE)
+        + silence(silence_between)
+        + tone(400, RATE)
+        + silence(3000)
     )
-    asyncio.run(voice_hd.play_live(source_hd, half_duplex=True))
 
-    (end_hd,) = voice_hd.events.of_type("tts_stream_end")
-    assert end_hd["reason"] == "done"  # NOT barge_in
-    assert not voice_hd.events.of_type("actuator_aborted")
-    (playback_hd,) = voice_hd.hal.speaker().playbacks
-    assert playback_hd.stopped_at_ms is None  # played completely
-    assert len(voice_hd.turns) == 1
+    # 3. Full-duplex: loud tone barges in and cuts speaker early
+    v_fd = voice_on(door, stt=FakeSpeechToText(["tắt đèn", ""]), tts=FakeTextToSpeech(ms_per_char=20))
+    v_fd.session.set_sensor("motion", True)
+    asyncio.run(v_fd.play_live(ScriptedLiveSource(interrupt_pcm, RATE), half_duplex=False))
+
+    (cut_fd,) = v_fd.events.of_type("tts_stream_end")
+    assert cut_fd["reason"] == "barge_in"
+    assert cut_fd["duration_ms"] < reply_duration
+    (pb_fd,) = v_fd.hal.speaker().playbacks
+    assert pb_fd.stopped_at_ms is not None
+
+    # 4. Half-duplex: frame is replaced by silence while reply plays, so no barge-in
+    v_hd = voice_on(door, stt=FakeSpeechToText(["tắt đèn", ""]), tts=FakeTextToSpeech(ms_per_char=20))
+    v_hd.session.set_sensor("motion", True)
+    asyncio.run(v_hd.play_live(ScriptedLiveSource(interrupt_pcm, RATE), half_duplex=True))
+
+    (end_hd,) = v_hd.events.of_type("tts_stream_end")
+    assert end_hd["reason"] == "done"
+    assert end_hd["duration_ms"] == reply_duration
+    assert at(v_hd, "tts_stream_end") == [start + reply_duration]
+    (pb_hd,) = v_hd.hal.speaker().playbacks
+    assert pb_hd.stopped_at_ms is None
+    assert len(pb_hd.played) == reply_duration * 32
 
 
 # --- 3. CLI tests ---------------------------------------------------------------------------------
@@ -448,11 +628,21 @@ def test_cli_mic_happy_path(
     project: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     agent = project()
-    # 500 ms silence (25 blocks) + 900 ms tone (45 blocks) + 2000 ms silence (100 blocks)
     block_bytes = 2 * RATE * 20 // 1000
     blocks = [bytes(block_bytes)] * 25 + [tone(20, RATE)] * 45 + [bytes(block_bytes)] * 100
-    sd = EndingFakeSounddevice(blocks)
+    sd = FakeSounddevice(blocks)
     monkeypatch.setitem(sys.modules, "sounddevice", sd)
+
+    # When FakeSounddevice runs out of blocks, simulate Ctrl+C ending the session
+    orig_next = LiveAudioCapture.next_frame
+
+    async def next_frame_then_ctrl_c(self, loop):
+        try:
+            return await orig_next(self, loop)
+        except BoardCapabilityError:
+            raise KeyboardInterrupt from None
+
+    monkeypatch.setattr(LiveAudioCapture, "next_frame", next_frame_then_ctrl_c)
 
     trace = tmp_path / "trace.json"
     result = runner.invoke(
@@ -479,8 +669,18 @@ def test_cli_mic_half_duplex_banner(
     agent = project()
     block_bytes = 2 * RATE * 20 // 1000
     blocks = [bytes(block_bytes)] * 5
-    sd = EndingFakeSounddevice(blocks)
+    sd = FakeSounddevice(blocks)
     monkeypatch.setitem(sys.modules, "sounddevice", sd)
+
+    orig_next = LiveAudioCapture.next_frame
+
+    async def next_frame_then_ctrl_c(self, loop):
+        try:
+            return await orig_next(self, loop)
+        except BoardCapabilityError:
+            raise KeyboardInterrupt from None
+
+    monkeypatch.setattr(LiveAudioCapture, "next_frame", next_frame_then_ctrl_c)
 
     result = runner.invoke(
         app,
@@ -496,8 +696,23 @@ def test_cli_mic_ctrl_c_exits_0(
     agent = project()
     block_bytes = 2 * RATE * 20 // 1000
     blocks = [bytes(block_bytes)] * 25 + [tone(20, RATE)] * 45 + [bytes(block_bytes)] * 10
-    sd = InterruptingFakeSounddevice(blocks)
+    sd = FakeSounddevice(blocks, blocking=True)
     monkeypatch.setitem(sys.modules, "sounddevice", sd)
+
+    # Simulate Ctrl+C in the main thread during asyncio.run after receiving frames
+    frame_count = 0
+    orig_next = LiveAudioCapture.next_frame
+
+    async def interrupt_main_thread(self, loop):
+        nonlocal frame_count
+        frame = await orig_next(self, loop)
+        if frame is not None:
+            frame_count += 1
+            if frame_count >= 20:
+                raise KeyboardInterrupt
+        return frame
+
+    monkeypatch.setattr(LiveAudioCapture, "next_frame", interrupt_main_thread)
 
     trace = tmp_path / "trace.json"
     result = runner.invoke(
@@ -509,6 +724,7 @@ def test_cli_mic_ctrl_c_exits_0(
     assert trace.exists()
     trace_data = load_trace(trace)
     assert trace_data["events"]
+    assert sd.inputs[0].closed
 
 
 def test_help_shows_mic_and_half_duplex() -> None:
