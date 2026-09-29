@@ -177,9 +177,7 @@ def test_tts_format_and_sample_rate_validation():
     assert "requires sample_rate_hz" in err.why
 
     # sample_rate_hz without format = "pcm"
-    err = _refused(
-        "tts", {"model": "m", "voice": "v", "api_key_env": ENV, "sample_rate_hz": 24000}
-    )
+    err = _refused("tts", {"model": "m", "voice": "v", "api_key_env": ENV, "sample_rate_hz": 24000})
     assert err.where.endswith("sample_rate_hz")
     assert 'only accepted with format = "pcm"' in err.why
 
@@ -198,9 +196,7 @@ def test_tts_format_and_sample_rate_validation():
 
     # Invalid formats
     for bad_fmt in ["mp3", True, 123]:
-        err = _refused(
-            "tts", {"model": "m", "voice": "v", "api_key_env": ENV, "format": bad_fmt}
-        )
+        err = _refused("tts", {"model": "m", "voice": "v", "api_key_env": ENV, "format": bad_fmt})
         assert err.where.endswith("format")
         assert 'format must be "wav" or "pcm"' in err.why
 
@@ -629,6 +625,17 @@ def test_synthesize_pcm_failures_are_unavailable(answer, fragment):
     if "asked for raw PCM" in fragment:
         assert 'set format = "wav" for this server' in caught.value.why
         assert caught.value.how == 'set format = "wav" for this server'
+
+
+@pytest.mark.parametrize("pcm", [b"{\x00" * 400, b"[ " * 400, b'{"a"' + b"\x00" * 396])
+def test_raw_pcm_that_starts_like_json_is_still_speech(pcm):
+    # Quiet 16-bit samples are often valid UTF-8 starting with `{` or `[`: only a
+    # whole document that parses is an error answer, never a prefix.
+    provider = OpenAISpeaker(
+        tts(format="pcm", sample_rate_hz=24000), environ={ENV: KEY}, opener=FakeOpener(pcm)
+    )
+    speech = run(provider.synthesize(SPEECH))
+    assert (speech.pcm, speech.sample_rate_hz) == (pcm, 24000)
 
 
 # --- a real HTTP stack, on 127.0.0.1 --------------------------------------------------------------

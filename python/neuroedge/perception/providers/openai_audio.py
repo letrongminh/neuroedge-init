@@ -223,18 +223,17 @@ class OpenAITranscriber(_OpenAIAudio):
 
 
 def _is_json(data: bytes) -> bool:
-    stripped = data.strip()
-    if stripped.startswith((b"{", b"[")):
-        try:
-            json.loads(stripped.decode("utf-8"))
-            return True
-        except (UnicodeDecodeError, json.JSONDecodeError):
-            try:
-                stripped.decode("utf-8")
-                return True
-            except UnicodeDecodeError:
-                return False
-    return False
+    """
+    An error document instead of audio: it parses as a JSON object or array.
+    Raw PCM can start with `{` and still decode as UTF-8, so a prefix alone is
+    never taken for JSON — only a whole document that parses.
+    """
+    if not data.lstrip().startswith((b"{", b"[")):
+        return False
+    try:
+        return isinstance(json.loads(data.decode("utf-8")), dict | list)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return False
 
 
 class OpenAISpeaker(_OpenAIAudio):
@@ -258,12 +257,12 @@ class OpenAISpeaker(_OpenAIAudio):
                 )
             if data.startswith(b"RIFF"):
                 raise self._unavailable(
-                    'asked for raw PCM, got a WAV answer',
+                    "asked for raw PCM, got a WAV answer",
                     'set format = "wav" for this server',
                 )
             if _is_json(data):
                 raise self._unavailable(
-                    'asked for raw PCM, got a JSON answer',
+                    "asked for raw PCM, got a JSON answer",
                     'set format = "wav" for this server',
                 )
             if len(data) % 2 != 0:
@@ -271,8 +270,12 @@ class OpenAISpeaker(_OpenAIAudio):
                     "the server returned raw PCM with an odd byte length",
                     "check base_url and model",
                 )
-            assert self.config.sample_rate_hz is not None
-            return Speech(data, self.config.sample_rate_hz, 1, 2)
+            rate = self.config.sample_rate_hz
+            if rate is None:  # parse_speech refuses pcm without a rate; never guess one
+                raise self._unavailable(
+                    'format = "pcm" has no sample_rate_hz', "add sample_rate_hz to [tts]"
+                )
+            return Speech(data, rate, 1, 2)
         try:
             pcm, rate, channels, width = read_wav_bytes(data)
         except ValueError as exc:
