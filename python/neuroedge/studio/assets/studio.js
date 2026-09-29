@@ -176,6 +176,7 @@
   // Turns: from text_input / stt_result to the next one (docs/spec/studio.md §5).
   function groupTurns(evs) {
     const turns = [], gates = [];
+    const askedBy = {}; // confirmation id -> the turn that asked it
     let cur = null, begin = null, facts = null;
     function open(e, d, kind, text) {
       cur = {
@@ -214,6 +215,14 @@
         if (cur) cur.gates.push(g);
         begin = null; facts = null;
       }
+      // An answer (or an expiry) belongs to the turn that asked, by confirmation id: an
+      // expiry is only noticed when the next line arrives, inside the next turn.
+      if ((ty === "tool_confirmed" || ty === "tool_confirm_declined" || ty === "tool_confirm_expired") &&
+          d.id !== undefined && askedBy[d.id]) {
+        askedBy[d.id].confirms.push({ type: ty, data: d });
+        return;
+      }
+      if (ty === "tool_confirm_requested" && d.id !== undefined && cur) askedBy[d.id] = cur;
       if (!cur) return;
       if (ty === "intent_extracted") cur.intents.push(d);
       else if (ty === "command_not_recognized") cur.notRecognized = d;
@@ -1069,15 +1078,24 @@
     };
 
     const gateHits = [];
+    // Verdicts closer than ~9% of the axis would print over each other: each goes one row
+    // down from the one before it (up to 4 rows), and the lane grows to fit.
+    const ROW_PX = 20, NEAR = 9, MAX_ROWS = 4;
+    let lastLeft = null, row = 0, rows = 1;
     evs.forEach(function (e) {
       if (e.type !== "gate_evaluation_result") return;
       const v = (e.data && e.data.verdict) || "?";
       const left = pct(e.offset_ms);
-      gateHits.push(el("div", { class: "timeline-hit " + (v === "ALLOW" ? "allow" : "block") + (left > 70 ? " flip" : ""), style: left > 70 ? "right:" + (100 - left) + "%" : "left:" + left + "%", title: v + " @ " + e.offset_ms + " ms" }, [
+      row = lastLeft !== null && Math.abs(left - lastLeft) < NEAR ? (row + 1) % MAX_ROWS : 0;
+      rows = Math.max(rows, row + 1);
+      lastLeft = left;
+      const place = (left > 70 ? "right:" + (100 - left) + "%" : "left:" + left + "%") + ";top:" + (row * ROW_PX + 3) + "px";
+      gateHits.push(el("div", { class: "timeline-hit " + (v === "ALLOW" ? "allow" : "block") + (left > 70 ? " flip" : ""), style: place, title: v + " @ " + e.offset_ms + " ms" }, [
         el("span", { class: "hit-label", text: v })
       ]));
     });
-    box.appendChild(lane(t("lbl_gate_lane"), el("div", { class: "timeline-track" }, gateHits), String(gateHits.length)));
+    const gateTrack = el("div", { class: "timeline-track", style: "height:" + (rows * ROW_PX + 4) + "px" }, gateHits);
+    box.appendChild(lane(t("lbl_gate_lane"), gateTrack, String(gateHits.length)));
 
     const pins = [];
     evs.forEach(function (e) { if (e.type === "actuator_command" && e.data && pins.indexOf(e.data.pin) < 0) pins.push(e.data.pin); });
@@ -1126,6 +1144,11 @@
   function cell(v) {
     if (v === true) return chip("allow", "✓");
     if (v === false) return chip("block", "✗");
+    if (v && typeof v === "object" && v.status) {
+      // Run on this machine: say whether it passed, not only where it ran.
+      const ok = v.status === "pass";
+      return chip(ok ? "allow" : "block", (ok ? "✓ " : "✗ ") + t("src_local"));
+    }
     if (v && typeof v === "object") return el("span", { class: "st accent", text: (v.source === "ci" ? "CI" : String(v.source || "")) + (v.job ? " · " + v.job : "") });
     return el("span", { text: v === undefined || v === null ? "—" : String(v) });
   }
