@@ -41,6 +41,16 @@ def get(server: StudioServer, path: str) -> tuple[int, str | None, bytes]:
         return reply.status, reply.headers.get("Content-Type"), reply.read()
 
 
+def get_page() -> str:
+    session = SimSession.load(VILLA)
+    server = StudioServer(session, agent_path=VILLA).start()
+    try:
+        return get(server, "/")[2].decode("utf-8")
+    finally:
+        server.stop()
+        session.close()
+
+
 def parse_i18n_dict() -> dict[str, dict[str, str]]:
     i18n_js = (ASSETS_DIR / "i18n.js").read_text(encoding="utf-8")
     match = re.search(r"const\s+I18N\s*=\s*(\{.*?\});", i18n_js, re.DOTALL)
@@ -141,6 +151,42 @@ def test_the_boot_json_has_agent_target_board_voice(studio: StudioServer):
     assert boot["target"] == "sim"
     assert boot["board"] == "sim-default"
     assert isinstance(boot["voice"], bool)
+    # the devices and sensors the agent declares, so the page shows them before any event
+    assert boot["pins"] == ["door_lock"]
+    assert boot["sensors"] == []
+
+
+LABEL_PREFIXES = (
+    "nav_", "btn_", "chip_", "lbl_", "th_", "title_", "ny_", "sec_", "route_", "audio_", "val_",
+    "msg_", "mcp_", "note_", "banner_", "confirm_", "counters_", "desc_", "voice_", "spk_", "cmd_",
+    "live_", "privacy_", "qemu_", "app_",
+)  # fmt: skip
+EVENT_NAMES = {"mcp_tool_result", "voice_state_changed"}
+
+
+def test_every_label_like_string_in_studio_js_is_an_i18n_key():
+    """Catches keys passed to helpers (`panel("title_x")`, `runButton("btn_y")`, `t(cond ? "a" : "b")`)."""
+    studio_js = (ASSETS_DIR / "studio.js").read_text(encoding="utf-8")
+    keys = set(parse_i18n_dict()["vi"])
+    literals = set(re.findall(r'"([a-z]+_[a-z0-9_]+)"', studio_js))
+    label_like = {s for s in literals if s.startswith(LABEL_PREFIXES)} - EVENT_NAMES
+    assert label_like - keys == set(), sorted(label_like - keys)
+    for prefix in ("nav_", "route_"):  # composed at run time: t("nav_" + view), t(turn.route)
+        assert any(k.startswith(prefix) for k in keys)
+    for view in ("live", "gate", "traces", "verify", "device", "mcp", "config"):
+        assert f"nav_{view}" in keys
+
+
+def test_the_only_url_in_the_page_is_the_svg_namespace():
+    page = get_page()
+    urls = set(re.findall(r"https?://[^\s\"'<>)]+", page))
+    assert urls <= {"http://www.w3.org/2000/svg"}, urls
+
+
+def test_fetch_calls_are_same_origin_relative_paths():
+    studio_js = (ASSETS_DIR / "studio.js").read_text(encoding="utf-8")
+    assert re.search(r"new EventSource\(\"/events\"\)", studio_js)
+    assert "XMLHttpRequest" not in studio_js and "WebSocket" not in studio_js
 
 
 def test_assets_budget_under_120kb():

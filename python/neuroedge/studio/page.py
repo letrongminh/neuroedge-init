@@ -19,11 +19,14 @@ def _asset(name: str) -> str:
 
 def studio_page(server: Any) -> str:
     session = server.session
+    requires = session.manifest.requires
     boot = {
         "agent": session.manifest.label,
         "target": session.target,
         "board": session.hal.board.id,
         "voice": server.voice is not None,
+        "pins": sorted(requires.get("digital.out", {}).get("pins", [])),
+        "sensors": sorted(requires.get("sensor.read", {}).get("sensors", [])),
     }
     title = html.escape(f"NeuroEdge Studio · {session.manifest.label}")
     return (

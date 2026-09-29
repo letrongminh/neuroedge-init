@@ -1,2157 +1,1354 @@
 /* neuroedge studio — the page (docs/spec/studio.md).
- * Every string from the server, an event, or a trace is set with textContent.
- * Standard library DOM only, no external dependencies, no network outside loopback.
- * Slice S3.
+ * Text from the server, an event or a trace is always set with textContent.
+ * No framework, no external asset; every request goes to the same origin.
  */
 "use strict";
 
 (function () {
   const boot = JSON.parse(document.getElementById("ne-boot").textContent);
   const root = document.getElementById("studio");
+  const VIEWS = ["live", "gate", "traces", "verify", "device", "mcp", "config"];
 
-  let currentLang = "vi";
+  // ---------------------------------------------------------------- state
+  const S = {
+    lang: "vi",
+    view: "live",
+    events: [],
+    nowMs: 0,
+    connected: false,
+    everConnected: false,
+    voice: null,
+    agent: null,
+    gates: null,
+    gateName: null,
+    gateInfo: {},
+    whatifSeq: 0,
+    traces: null,
+    traceName: null,
+    trace: null,
+    traceNote: null,
+    verify: { lint: null, test: null, verify: null },
+    device: null,
+    deviceNote: null,
+    screenLang: null,
+    mcp: null,
+    reply: null,
+    draft: "",
+    answerError: null,
+    openExplain: new Set()
+  };
   try {
     const saved = localStorage.getItem("ne_studio_lang");
-    if (saved === "vi" || saved === "en") currentLang = saved;
-  } catch (e) {}
-  document.documentElement.lang = currentLang;
+    if (saved === "vi" || saved === "en") S.lang = saved;
+  } catch (e) { /* storage may be blocked */ }
+  document.documentElement.lang = S.lang;
 
-  let currentView = "live";
-  let screenLang = currentLang;
-  let isLiveConnected = false;
-
-  let events = [];
-  let now_ms = 0;
-  let voiceData = { enabled: boot.voice, running: false, muted: false, half_duplex: false, state: "IDLE", counters: {} };
-  let agentData = null;
-  let gatesData = null;
-  let selectedGateName = null;
-  let selectedGateData = null;
-  let tracesData = null;
-  let selectedTraceName = null;
-  let selectedTraceData = null;
-  let verifyData = null;
-  let deviceData = null;
-  let mcpData = null;
-
+  // ---------------------------------------------------------------- helpers
   function t(key) {
-    const dict = I18N[currentLang] || I18N.vi;
-    return (dict && dict[key]) || key;
+    const dict = I18N[S.lang] || I18N.vi;
+    return dict[key] !== undefined ? dict[key] : key;
+  }
+
+  function fill(text, vars) {
+    return text.replace(/\{(\w+)\}/g, function (m, k) { return vars[k] !== undefined ? String(vars[k]) : m; });
   }
 
   function el(tag, attrs, children) {
     const node = document.createElement(tag);
-    for (const k in attrs || {}) {
-      if (k === "text") {
-        node.textContent = attrs[k];
-      } else if (k === "class") {
-        node.className = attrs[k];
-      } else if (k === "data-i18n") {
-        node.setAttribute("data-i18n", attrs[k]);
-        node.textContent = t(attrs[k]);
-      } else if (k === "data-i18n-placeholder") {
-        node.setAttribute("data-i18n-placeholder", attrs[k]);
-        node.setAttribute("placeholder", t(attrs[k]));
-      } else if (k.startsWith("on") && typeof attrs[k] === "function") {
-        node.addEventListener(k.slice(2).toLowerCase(), attrs[k]);
-      } else if (attrs[k] !== null && attrs[k] !== undefined) {
-        node.setAttribute(k, attrs[k]);
-      }
+    const a = attrs || {};
+    for (const k in a) {
+      const v = a[k];
+      if (v === null || v === undefined || v === false) continue;
+      if (k === "text") node.textContent = String(v);
+      else if (k === "class") node.className = v;
+      else if (k.slice(0, 2) === "on" && typeof v === "function") node.addEventListener(k.slice(2), v);
+      else node.setAttribute(k, v === true ? "" : String(v));
     }
-    for (const child of children || []) {
-      if (child) {
-        if (typeof child === "string" || typeof child === "number") {
-          node.appendChild(document.createTextNode(String(child)));
-        } else {
-          node.appendChild(child);
-        }
-      }
-    }
+    add(node, children);
     return node;
+  }
+
+  function add(node, children) {
+    (children || []).forEach(function (c) {
+      if (c === null || c === undefined || c === false) return;
+      node.appendChild(typeof c === "object" ? c : document.createTextNode(String(c)));
+    });
   }
 
   const SVG_NS = "http://www.w3.org/2000/svg";
-  function svgEl(tag, attrs, children) {
+  function svg(tag, attrs, children) {
     const node = document.createElementNS(SVG_NS, tag);
-    for (const k in attrs || {}) {
-      if (k === "text") {
-        node.textContent = attrs[k];
-      } else if (attrs[k] !== null && attrs[k] !== undefined) {
-        node.setAttribute(k, attrs[k]);
-      }
+    const a = attrs || {};
+    for (const k in a) {
+      if (k === "text") node.textContent = String(a[k]);
+      else node.setAttribute(k, String(a[k]));
     }
-    for (const child of children || []) {
-      if (child) {
-        if (typeof child === "string" || typeof child === "number") {
-          node.appendChild(document.createTextNode(String(child)));
-        } else {
-          node.appendChild(child);
-        }
-      }
-    }
+    add(node, children);
     return node;
   }
 
-  function icon(pin, on) {
-    const c = on ? "var(--allow)" : "var(--dim)";
-    if (/lock/.test(pin)) {
-      const shackle = on ? "M22 30 V20 a10 10 0 0 1 20 0" : "M22 30 V20 a10 10 0 0 1 20 0 V30";
-      return svgEl("svg", { viewBox: "0 0 64 64" }, [
-        svgEl("path", { d: shackle, fill: "none", stroke: c, "stroke-width": "5" }),
-        svgEl("rect", { x: "14", y: "30", width: "36", height: "26", rx: "4", fill: c }),
-        svgEl("circle", { cx: "32", cy: "43", r: "4", fill: "var(--panel)" })
-      ]);
-    }
-    if (/light|lamp|led/.test(pin)) {
-      return svgEl("svg", { viewBox: "0 0 64 64" }, [
-        svgEl("circle", { cx: "32", cy: "26", r: "16", fill: on ? "#f2cc60" : "none", stroke: c, "stroke-width": "4" }),
-        svgEl("rect", { x: "24", y: "44", width: "16", height: "10", rx: "2", fill: c })
-      ]);
-    }
-    if (/relay|gate/.test(pin)) {
-      return svgEl("svg", { viewBox: "0 0 64 64" }, [
-        svgEl("circle", { cx: "14", cy: "40", r: "5", fill: c }),
-        svgEl("circle", { cx: "50", cy: "40", r: "5", fill: c }),
-        svgEl("line", { x1: "14", y1: "40", x2: on ? "50" : "44", y2: on ? "40" : "18", stroke: c, "stroke-width": "5", "stroke-linecap": "round" })
-      ]);
-    }
-    return svgEl("svg", { viewBox: "0 0 64 64" }, [
-      svgEl("circle", { cx: "32", cy: "32", r: "18", fill: on ? "var(--allow)" : "none", stroke: c, "stroke-width": "4" })
+  function clear(node) { node.textContent = ""; }
+  function short(data, n) {
+    const text = JSON.stringify(data === undefined ? null : data);
+    const cap = n || 140;
+    return text.length > cap ? text.slice(0, cap - 1) + "…" : text;
+  }
+  function fmtMs(v) {
+    const n = Number(v) || 0;
+    return (n >= 100 ? String(Math.round(n)) : n >= 10 ? n.toFixed(1) : n.toFixed(2)) + " ms";
+  }
+  function chip(kind, text) { return el("span", { class: "st " + kind, text: text }); }
+  function verdictChip(v) {
+    return chip(v === "ALLOW" ? "allow" : "block", (v === "ALLOW" ? "✓ " : "✗ ") + v);
+  }
+  function codeBox(value) {
+    return el("pre", { class: "code-box", text: typeof value === "string" ? value : JSON.stringify(value, null, 2) });
+  }
+  function panel(titleKey, sub, extra, body) {
+    return el("section", { class: "panel" }, [
+      el("h2", {}, [el("span", { text: t(titleKey) }), sub ? el("span", { class: "sub", text: sub }) : null, extra]),
+      body
     ]);
   }
-
-  function short(data) {
-    const text = JSON.stringify(data);
-    return text.length > 160 ? text.slice(0, 157) + "…" : text;
+  function whyOf(res) {
+    const e = (res && res.error) || {};
+    return (e.why || t("msg_not_available")) + (e.how ? " — " + e.how : "");
   }
-
-  function notAvailableCard(why) {
+  function naCard(res) {
     return el("div", { class: "not-available" }, [
-      el("span", { class: "st warn", text: t("lbl_not_available") }),
-      el("span", { text: why || t("msg_not_available") })
+      chip("warn", t("lbl_not_available")),
+      el("span", { text: whyOf(res) })
     ]);
   }
+  function loadingCard() { return el("div", { class: "hint", text: t("lbl_loading") }); }
 
-  function stateAt(evList, tMs) {
-    const pins = {};
-    const sensors = {};
-    const asks = {};
-    const gates = [];
+  // GET/POST /api/<tail>: always resolves to an object with `ok`; 501 => `na`.
+  function api(method, tail, body) {
+    const opt = { method: method };
+    if (body !== undefined) {
+      opt.headers = { "Content-Type": "application/json" };
+      opt.body = JSON.stringify(body);
+    }
+    return fetch("/api/" + tail, opt).then(function (r) {
+      return r.json().then(function (j) {
+        if (r.status === 501) j.na = true;
+        return j;
+      }, function () {
+        return { ok: false, error: { why: "HTTP " + r.status } };
+      });
+    }).catch(function (e) {
+      return { ok: false, error: { why: String(e) } };
+    });
+  }
+
+  function enc(s) { return encodeURIComponent(s); }
+
+  // ---------------------------------------------------------------- events -> state
+  function stateOf(evs, tMs) {
+    const pins = {}, sensors = {}, asks = {};
     let frame = null;
-    let begin = null;
-    let call = null;
-
-    for (let i = 0; i < evList.length; i++) {
-      const e = evList[i];
-      if (e.offset_ms > tMs) break;
+    evs.forEach(function (e) {
       const d = e.data || {};
       if (e.type === "actuator_command") {
         const until = d.operation === "pulse" ? e.offset_ms + (d.duration_ms || 0)
           : d.operation === "on" ? Infinity : e.offset_ms;
-        pins[d.pin] = { since: e.offset_ms, until: until, operation: d.operation };
+        pins[d.pin] = { until: until, operation: d.operation };
       } else if (e.type === "actuator_aborted" && pins[d.pin]) {
         pins[d.pin].until = Math.min(pins[d.pin].until, e.offset_ms);
         pins[d.pin].aborted = d.reason;
-      } else if (e.type === "sensor_read") {
-        sensors[d.sensor] = { value: d.value, unit: d.unit };
+      } else if (e.type === "sensor_read" || e.type === "sensor_set") {
+        sensors[d.sensor] = { value: d.value, unit: d.unit || (sensors[d.sensor] && sensors[d.sensor].unit) };
       } else if (e.type === "display_frame") {
         frame = d;
-      } else if (e.type === "tool_call") {
-        call = d;
       } else if (e.type === "tool_confirm_requested") {
         asks[d.id] = d;
       } else if (e.type === "tool_confirmed" || e.type === "tool_confirm_declined" || e.type === "tool_confirm_expired") {
         delete asks[d.id];
-      } else if (e.type === "gate_evaluation_begin") {
-        begin = d.gate;
-      } else if (e.type === "gate_evaluation_result") {
-        gates.push({ index: i, offset_ms: e.offset_ms, gate: begin || d.blocked_by, call: call, result: d });
-        begin = null;
-        call = null;
       }
-    }
-
-    for (const name in pins) {
-      pins[name].on = tMs < pins[name].until;
-    }
-
-    let pending = null;
-    for (const id in asks) {
-      if (asks[id].expires_ms > tMs) pending = asks[id];
-    }
-
-    return { pins: pins, sensors: sensors, frame: frame, gates: gates, pending: pending };
-  }
-
-  function groupTurns(evList) {
-    const turns = [];
-    let currentTurn = null;
-
-    for (let i = 0; i < evList.length; i++) {
-      const e = evList[i];
-      const d = e.data || {};
-      if (e.type === "text_input" || e.type === "stt_result") {
-        if (currentTurn && currentTurn.offset_ms === e.offset_ms && (
-            (currentTurn.type === "stt_result" && e.type === "text_input") ||
-            (currentTurn.type === "text_input" && e.type === "stt_result")
-        )) {
-          if (e.type === "stt_result") currentTurn.is_voice = true;
-          if (d.text && (!currentTurn.text || currentTurn.text === "—")) {
-            currentTurn.text = d.text;
-          }
-          continue;
-        }
-
-        currentTurn = {
-          offset_ms: e.offset_ms,
-          type: e.type,
-          is_voice: e.type === "stt_result",
-          text: d.text || "—",
-          events: [e],
-          intents: [],
-          tool_calls: [],
-          gate_results: [],
-          gate_facts: [],
-          confirms: [],
-          tts: null,
-          latency: null,
-          route: null,
-          system_one: null,
-          system_two: null,
-          knowledge: null,
-          mcp_results: [],
-          not_recognized: false
-        };
-        turns.push(currentTurn);
-      } else {
-        if (!currentTurn) continue;
-        currentTurn.events.push(e);
-        if (e.type === "intent_extracted") {
-          currentTurn.intents.push(d);
-        } else if (e.type === "command_not_recognized") {
-          currentTurn.not_recognized = true;
-        } else if (e.type === "system_one_call" || e.type === "system_one_fallback") {
-          currentTurn.system_one = { type: e.type, data: d };
-        } else if (e.type === "system_two_call" || e.type === "system_two_reply") {
-          currentTurn.system_two = { type: e.type, data: d };
-        } else if (e.type === "knowledge_retrieved") {
-          currentTurn.knowledge = d;
-        } else if (e.type === "mcp_tool_result") {
-          currentTurn.mcp_results.push(d);
-        } else if (e.type === "tool_call") {
-          currentTurn.tool_calls.push(d);
-        } else if (e.type === "gate_facts") {
-          currentTurn.gate_facts.push(d);
-        } else if (e.type === "gate_evaluation_result") {
-          currentTurn.gate_results.push(d);
-        } else if (e.type === "tool_confirm_requested" || e.type === "tool_confirmed" || e.type === "tool_confirm_declined") {
-          currentTurn.confirms.push({ type: e.type, data: d });
-        } else if (e.type === "tts_stream_start") {
-          currentTurn.tts = d.text;
-        } else if (e.type === "turn_latency") {
-          currentTurn.latency = d;
-        }
-      }
-    }
-
-    for (let k = 0; k < turns.length; k++) {
-      const tr = turns[k];
-      if (tr.mcp_results.length > 0 || tr.tool_calls.some(function (c) { return c.source === "mcp"; })) {
-        tr.route = t("route_mcp");
-      } else if (tr.knowledge || (tr.latency && tr.latency.reply_source === "knowledge_rag")) {
-        tr.route = t("route_rag");
-      } else if (tr.system_two || (tr.latency && (tr.latency.path === "system_2" || (tr.latency.stages_ms && tr.latency.stages_ms.system_two > 0)))) {
-        tr.route = t("route_s2");
-      } else if (tr.system_one || (tr.latency && tr.latency.path === "system_1")) {
-        tr.route = t("route_s1");
-      } else if (tr.intents.some(function (i) { return i.backend && i.backend.includes("grammar"); }) || tr.tool_calls.some(function (c) { return c.source === "local_grammar"; })) {
-        tr.route = t("route_grammar");
-      }
-    }
-
-    return turns;
-  }
-
-  // --- Top bar & Navigation setup ---
-  const lostBanner = el("div", { id: "lostBanner", class: "banner lost", role: "status", style: "display:none;" }, [
-    el("span", {}, [
-      document.createTextNode("⚠ "),
-      el("span", { "data-i18n": "banner_lost_msg", text: t("banner_lost_msg") })
-    ]),
-    el("span", { class: "note", "data-i18n": "banner_lost_state", text: t("banner_lost_state") })
-  ]);
-
-  const liveDot = el("span", { class: "live-dot" });
-  const liveStatusText = el("span", { text: t("live_badge") });
-  const btnToggleLive = el("button", { class: "live-badge" }, [liveDot, liveStatusText]);
-  btnToggleLive.addEventListener("click", function () {
-    setLiveStatus(!isLiveConnected);
-  });
-
-  const providersContainer = el("div", { style: "display:flex;gap:6px;align-items:center;" });
-  function renderProviders(providers) {
-    providersContainer.textContent = "";
-    const list = providers || [
-      { role: "stt", label: "STT", key_present: true },
-      { role: "tts", label: "TTS", key_present: true },
-      { role: "system_one", label: "System 1", key_present: true },
-      { role: "system_two", label: "System 2", key_present: true }
-    ];
-    for (let i = 0; i < list.length; i++) {
-      const p = list[i];
-      const roleLabel = p.label || p.role.toUpperCase();
-      const badge = el("div", { class: "provider-badge" }, [
-        document.createTextNode(roleLabel + " "),
-        el("span", {
-          class: p.key_present ? "ok" : "missing",
-          text: p.key_present ? t("val_key_present") : t("val_key_missing")
-        })
-      ]);
-      providersContainer.appendChild(badge);
-    }
-  }
-  renderProviders(null);
-
-  const btnLangVi = el("button", { class: "lang-btn" + (currentLang === "vi" ? " active" : ""), text: "VI" });
-  const btnLangEn = el("button", { class: "lang-btn" + (currentLang === "en" ? " active" : ""), text: "EN" });
-  btnLangVi.addEventListener("click", function () { setLanguage("vi"); });
-  btnLangEn.addEventListener("click", function () { setLanguage("en"); });
-
-  const appHeader = el("header", { class: "app-header" }, [
-    el("div", { class: "header-left" }, [
-      el("div", { class: "brand" }, [
-        svgEl("svg", { viewBox: "0 0 24 24" }, [
-          svgEl("polygon", { points: "12 2 2 7 12 12 22 7 12 2" }),
-          svgEl("polyline", { points: "2 17 12 22 22 17" }),
-          svgEl("polyline", { points: "2 12 12 17 22 12" })
-        ]),
-        el("span", { "data-i18n": "app_title", text: t("app_title") })
-      ]),
-      el("div", { class: "meta-chip" }, [el("span", { text: "agent: " }), el("strong", { text: boot.agent })]),
-      el("div", { class: "meta-chip" }, [el("span", { text: "target: " }), el("strong", { text: boot.target })]),
-      el("div", { class: "meta-chip" }, [el("span", { text: "board: " }), el("strong", { text: boot.board })]),
-      btnToggleLive
-    ]),
-    el("div", { class: "header-right" }, [
-      providersContainer,
-      el("div", { class: "lang-toggle", role: "radiogroup", "aria-label": "Language selection" }, [
-        btnLangVi,
-        btnLangEn
-      ])
-    ])
-  ]);
-
-  const navItems = [
-    { view: "live", i18n: "nav_live", label: t("nav_live"), svg: [svgEl("circle", { cx: "12", cy: "12", r: "10" }), svgEl("circle", { cx: "12", cy: "12", r: "3" })] },
-    { view: "gate", i18n: "nav_gate", label: t("nav_gate"), svg: [svgEl("path", { d: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" })] },
-    { view: "traces", i18n: "nav_traces", label: t("nav_traces"), svg: [svgEl("polyline", { points: "22 12 18 12 15 21 9 3 6 12 2 12" })] },
-    { view: "verify", i18n: "nav_verify", label: t("nav_verify"), svg: [svgEl("path", { d: "M22 11.08V12a10 10 0 1 1-5.93-9.14" }), svgEl("polyline", { points: "22 4 12 14.01 9 11.01" })] },
-    { view: "device", i18n: "nav_device", label: t("nav_device"), svg: [svgEl("rect", { x: "4", y: "4", width: "16", height: "16", rx: "2" }), svgEl("rect", { x: "9", y: "9", width: "6", height: "6" }), svgEl("line", { x1: "9", y1: "1", x2: "9", y2: "4" }), svgEl("line", { x1: "15", y1: "1", x2: "15", y2: "4" }), svgEl("line", { x1: "9", y1: "20", x2: "9", y2: "23" }), svgEl("line", { x1: "15", y1: "20", x2: "15", y2: "23" })] },
-    { view: "mcp", i18n: "nav_mcp", label: t("nav_mcp"), svg: [svgEl("circle", { cx: "18", cy: "5", r: "3" }), svgEl("circle", { cx: "6", cy: "12", r: "3" }), svgEl("circle", { cx: "18", cy: "19", r: "3" }), svgEl("line", { x1: "8.59", y1: "13.51", x2: "15.42", y2: "17.49" }), svgEl("line", { x1: "15.41", y1: "6.51", x2: "8.59", y2: "10.49" })] },
-    { view: "config", i18n: "nav_config", label: t("nav_config"), svg: [svgEl("circle", { cx: "12", cy: "12", r: "3" }), svgEl("path", { d: "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" })] }
-  ];
-
-  const studioNav = el("nav", { class: "studio-nav", "aria-label": "Studio Views" });
-  const navButtons = {};
-
-  for (let j = 0; j < navItems.length; j++) {
-    const item = navItems[j];
-    const btn = el("button", {
-      class: "nav-item" + (item.view === currentView ? " active" : ""),
-      "data-view": item.view
-    }, [
-      svgEl("svg", { viewBox: "0 0 24 24" }, item.svg),
-      el("span", { "data-i18n": item.i18n, text: item.label })
-    ]);
-    btn.addEventListener("click", function () {
-      switchView(item.view);
     });
-    navButtons[item.view] = btn;
-    studioNav.appendChild(btn);
+    Object.keys(pins).forEach(function (k) { pins[k].on = tMs < pins[k].until; });
+    const pending = Object.keys(asks).map(function (k) { return asks[k]; }).filter(function (a) {
+      return a.expires_ms > tMs;
+    });
+    return { pins: pins, sensors: sensors, frame: frame, pending: pending };
   }
 
-  const studioContent = el("main", { class: "studio-content" });
+  // Turns: from text_input / stt_result to the next one (docs/spec/studio.md §5).
+  function groupTurns(evs) {
+    const turns = [], gates = [];
+    let cur = null, begin = null, facts = null;
+    function open(e, d, kind, text) {
+      cur = {
+        idx: e.idx, offset: e.offset_ms, voice: kind === "stt_result", hasStt: kind === "stt_result",
+        hasText: kind === "text_input", text: text, implicit: false, intents: [], notRecognized: null,
+        s1: false, s2: false, knowledge: null, mcp: [], calls: [], gates: [], confirms: [], tts: [],
+        latency: null
+      };
+      turns.push(cur);
+    }
+    evs.forEach(function (e, idx) {
+      e.idx = idx;
+      const d = e.data || {};
+      const ty = e.type;
+      if (ty === "stt_result" || ty === "text_input") {
+        if (cur && cur.offset === e.offset_ms && cur.text === d.text &&
+            ((ty === "text_input" && cur.hasStt && !cur.hasText) || (ty === "stt_result" && cur.hasText && !cur.hasStt))) {
+          if (ty === "stt_result") { cur.voice = true; cur.hasStt = true; } else cur.hasText = true;
+          return;
+        }
+        open(e, d, ty, d.text === undefined ? "—" : String(d.text));
+        return;
+      }
+      if (ty === "tool_call" && d.source === "mcp" && (!cur || cur.calls.length > 0 || cur.gates.length > 0)) {
+        open(e, d, "mcp", "MCP · " + d.name);
+        cur.implicit = true;
+      }
+      if (ty === "gate_evaluation_begin") { begin = d; facts = null; }
+      else if (ty === "gate_facts") facts = d;
+      else if (ty === "gate_evaluation_result") {
+        const g = {
+          idx: idx, offset: e.offset_ms, gate: (begin && begin.gate) || d.blocked_by || "gate",
+          digest: begin && begin.gate_digest, facts: facts || {}, result: d
+        };
+        gates.push(g);
+        if (cur) cur.gates.push(g);
+        begin = null; facts = null;
+      }
+      if (!cur) return;
+      if (ty === "intent_extracted") cur.intents.push(d);
+      else if (ty === "command_not_recognized") cur.notRecognized = d;
+      else if (ty === "system_one_call" || ty === "system_one_fallback") cur.s1 = true;
+      else if (ty === "system_two_call" || ty === "system_two_reply") cur.s2 = true;
+      else if (ty === "knowledge_retrieved") cur.knowledge = d;
+      else if (ty === "mcp_tool_result") cur.mcp.push(d);
+      else if (ty === "tool_call") cur.calls.push(d);
+      else if (ty === "tool_confirm_requested" || ty === "tool_confirmed" || ty === "tool_confirm_declined" || ty === "tool_confirm_expired") cur.confirms.push({ type: ty, data: d });
+      else if (ty === "tts_stream_start") cur.tts.push(d.text);
+      else if (ty === "turn_latency") cur.latency = d;
+    });
+    turns.forEach(function (tr) {
+      const lat = tr.latency || {};
+      const viaMcp = tr.mcp.length > 0 || tr.calls.some(function (c) { return c.source === "mcp"; });
+      if (viaMcp) tr.route = "route_mcp";
+      else if (tr.knowledge || lat.reply_source === "knowledge_rag") tr.route = "route_rag";
+      else if (tr.s2 || lat.path === "system_2") tr.route = "route_s2";
+      else if (tr.s1 || tr.calls.some(function (c) { return c.source === "system_one"; })) tr.route = "route_s1";
+      else if (tr.intents.length > 0 || tr.calls.length > 0) tr.route = "route_grammar";
+      else tr.route = null;
+    });
+    return { turns: turns, gates: gates };
+  }
 
-  const viewContainers = {
-    live: el("section", { class: "studio-view active", id: "view-live" }),
-    gate: el("section", { class: "studio-view", id: "view-gate" }),
-    traces: el("section", { class: "studio-view", id: "view-traces" }),
-    verify: el("section", { class: "studio-view", id: "view-verify" }),
-    device: el("section", { class: "studio-view", id: "view-device" }),
-    mcp: el("section", { class: "studio-view", id: "view-mcp" }),
-    config: el("section", { class: "studio-view", id: "view-config" })
+  // ---------------------------------------------------------------- icons (as in viz/assets/ui.js)
+  function pinIcon(pin, on) {
+    const c = on ? "var(--allow)" : "var(--dim)";
+    if (/lock/.test(pin)) {
+      return svg("svg", { viewBox: "0 0 64 64", "aria-hidden": "true" }, [
+        svg("path", { d: on ? "M22 30 V20 a10 10 0 0 1 20 0" : "M22 30 V20 a10 10 0 0 1 20 0 V30", fill: "none", stroke: c, "stroke-width": "5" }),
+        svg("rect", { x: 14, y: 30, width: 36, height: 26, rx: 4, fill: c }),
+        svg("circle", { cx: 32, cy: 43, r: 4, fill: "var(--panel)" })
+      ]);
+    }
+    if (/light|lamp|led/.test(pin)) {
+      return svg("svg", { viewBox: "0 0 64 64", "aria-hidden": "true" }, [
+        svg("circle", { cx: 32, cy: 26, r: 16, fill: on ? "#f2cc60" : "none", stroke: c, "stroke-width": 4 }),
+        svg("rect", { x: 24, y: 44, width: 16, height: 10, rx: 2, fill: c })
+      ]);
+    }
+    if (/relay|gate|vent|fan/.test(pin)) {
+      return svg("svg", { viewBox: "0 0 64 64", "aria-hidden": "true" }, [
+        svg("circle", { cx: 14, cy: 40, r: 5, fill: c }),
+        svg("circle", { cx: 50, cy: 40, r: 5, fill: c }),
+        svg("line", { x1: 14, y1: 40, x2: on ? 50 : 44, y2: on ? 40 : 18, stroke: c, "stroke-width": 5, "stroke-linecap": "round" })
+      ]);
+    }
+    return svg("svg", { viewBox: "0 0 64 64", "aria-hidden": "true" }, [
+      svg("circle", { cx: 32, cy: 32, r: 18, fill: on ? "var(--allow)" : "none", stroke: c, "stroke-width": 4 })
+    ]);
+  }
+
+  const NAV_ICONS = {
+    live: [["circle", { cx: 12, cy: 12, r: 10 }], ["circle", { cx: 12, cy: 12, r: 3 }]],
+    gate: [["path", { d: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" }]],
+    traces: [["polyline", { points: "22 12 18 12 15 21 9 3 6 12 2 12" }]],
+    verify: [["path", { d: "M22 11.08V12a10 10 0 1 1-5.93-9.14" }], ["polyline", { points: "22 4 12 14.01 9 11.01" }]],
+    device: [["rect", { x: 4, y: 4, width: 16, height: 16, rx: 2 }], ["rect", { x: 9, y: 9, width: 6, height: 6 }]],
+    mcp: [["circle", { cx: 18, cy: 5, r: 3 }], ["circle", { cx: 6, cy: 12, r: 3 }], ["circle", { cx: 18, cy: 19, r: 3 }],
+      ["line", { x1: 8.6, y1: 13.5, x2: 15.4, y2: 17.5 }], ["line", { x1: 15.4, y1: 6.5, x2: 8.6, y2: 10.5 }]],
+    config: [["circle", { cx: 12, cy: 12, r: 3 }], ["path", { d: "M12 1v4M12 19v4M1 12h4M19 12h4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M4.2 19.8L7 17M17 7l2.8-2.8" }]]
   };
 
-  for (const v in viewContainers) {
-    studioContent.appendChild(viewContainers[v]);
-  }
+  // ---------------------------------------------------------------- shell
+  let refs = {};          // DOM handles of the current shell
+  let regions = {};       // signature of what each live region shows
 
-  const studioLayout = el("div", { class: "studio-layout" }, [studioNav, studioContent]);
+  function buildApp() {
+    document.documentElement.lang = S.lang;
+    regions = {};
+    refs = { views: {}, nav: {} };
 
-  root.textContent = "";
-  root.appendChild(lostBanner);
-  root.appendChild(appHeader);
-  root.appendChild(studioLayout);
+    refs.lost = el("div", { class: "banner lost", role: "status" }, [
+      el("span", { text: "⚠ " + t("banner_lost_msg") })
+    ]);
+    refs.badge = el("span", { class: "live-badge", role: "status" });
+    refs.providers = el("div", { class: "providers" });
 
-  function setLiveStatus(connected) {
-    isLiveConnected = connected;
-    lostBanner.style.display = connected ? "none" : "flex";
-    btnToggleLive.classList.toggle("disconnected", !connected);
-    liveStatusText.textContent = connected ? t("live_badge") : t("live_badge_lost");
-  }
+    const langBtn = function (code) {
+      return el("button", {
+        type: "button", class: "lang-btn" + (S.lang === code ? " active" : ""), "aria-pressed": S.lang === code ? "true" : "false",
+        text: code.toUpperCase(), onclick: function () { setLang(code); }
+      });
+    };
 
-  function setLanguage(lang) {
-    currentLang = lang;
-    try {
-      localStorage.setItem("ne_studio_lang", lang);
-    } catch (e) {}
-    document.documentElement.lang = lang;
-    btnLangVi.classList.toggle("active", lang === "vi");
-    btnLangEn.classList.toggle("active", lang === "en");
-
-    document.querySelectorAll("[data-i18n]").forEach(function (node) {
-      const key = node.getAttribute("data-i18n");
-      if (key) node.textContent = t(key);
-    });
-
-    document.querySelectorAll("[data-i18n-placeholder]").forEach(function (node) {
-      const key = node.getAttribute("data-i18n-placeholder");
-      if (key) node.setAttribute("placeholder", t(key));
-    });
-
-    setLiveStatus(isLiveConnected);
-    renderProviders((agentData && agentData.providers) || null);
-    renderActiveView();
-  }
-
-  function switchView(view) {
-    currentView = view;
-    for (const v in navButtons) {
-      navButtons[v].classList.toggle("active", v === view);
-    }
-    for (const vc in viewContainers) {
-      viewContainers[vc].classList.toggle("active", vc === view);
-    }
-    renderActiveView();
-  }
-
-  function renderActiveView() {
-    if (currentView === "live") renderLiveSession();
-    else if (currentView === "gate") loadGates();
-    else if (currentView === "traces") loadTraces();
-    else if (currentView === "verify") loadVerify();
-    else if (currentView === "device") loadDevice();
-    else if (currentView === "mcp") loadMcp();
-    else if (currentView === "config") loadAgent();
-  }
-
-  // =========================================================================
-  // VIEW 1: Live session
-  // =========================================================================
-
-  function renderLiveSession() {
-    const container = viewContainers.live;
-    container.textContent = "";
-
-    const s = stateAt(events, now_ms);
-    const turns = groupTurns(events);
-
-    // Left Column
-    const devicesDiv = el("div", { class: "devices" });
-    const declaredPins = new Set(["door_lock", "porch_light", "gate_relay"]);
-    for (let i = 0; i < events.length; i++) {
-      if (events[i].type === "actuator_command" && events[i].data && events[i].data.pin) {
-        declaredPins.add(events[i].data.pin);
-      }
-    }
-    declaredPins.forEach(function (pin) {
-      const p = s.pins[pin];
-      const on = !!(p && p.on);
-      const label = !p ? "LOW" : on ? (p.operation === "pulse" ? "PULSE" : "HIGH") : (p.aborted ? "ABORTED" : "LOW");
-      devicesDiv.appendChild(el("div", { class: "device" + (on ? " on" : "") }, [
-        icon(pin, on),
-        el("div", { class: "mono", text: pin }),
-        el("div", { class: "state", text: label })
-      ]));
-    });
-
-    const sensorsDiv = el("div");
-    const declaredSensors = new Set(["motion", "temperature", "door_contact"]);
-    for (let j = 0; j < events.length; j++) {
-      if (events[j].type === "sensor_read" && events[j].data && events[j].data.sensor) {
-        declaredSensors.add(events[j].data.sensor);
-      }
-    }
-    declaredSensors.forEach(function (name) {
-      const r = s.sensors[name];
-      const valText = r !== undefined && r.value !== undefined ? String(r.value) + (r.unit ? " " + r.unit : "") : "—";
-      sensorsDiv.appendChild(el("div", { class: "sensor-row" }, [
-        el("span", { class: "mono", text: name }),
-        el("span", { class: "sensor-val", text: valText })
-      ]));
-    });
-
-    const screenFrame = el("div", { class: "screen-frame" });
-    if (s.frame) {
-      screenFrame.appendChild(el("div", { style: "padding:12px;color:#d8dee6;font-family:monospace;font-size:11px;", text: s.frame.text || (s.frame.format + " " + s.frame.width + "×" + s.frame.height) }));
-    } else {
-      screenFrame.appendChild(svgEl("svg", { viewBox: "0 0 320 240" }, [
-        svgEl("rect", { width: "320", height: "240", fill: "#080d14" }),
-        svgEl("rect", { x: "4", y: "4", width: "312", height: "232", rx: "4", fill: "none", stroke: "#1f2d3d", "stroke-width": "2" }),
-        svgEl("rect", { x: "8", y: "8", width: "304", height: "20", fill: "#121e2b" }),
-        svgEl("text", { x: "16", y: "22", fill: "#7d8a99", "font-size": "10", "font-family": "monospace", text: "NEUROEDGE OS v0.1.0 · sim" }),
-        svgEl("circle", { cx: "296", cy: "18", r: "4", fill: "#3fb950" }),
-        svgEl("circle", { cx: "160", cy: "105", r: "32", fill: "#172636" }),
-        svgEl("path", { d: "M160 88 v24 M154 94 v12 M166 94 v12 M148 98 v4 M172 98 v4", stroke: "#58a6ff", "stroke-width": "3", "stroke-linecap": "round" }),
-        svgEl("text", { x: "160", y: "160", "text-anchor": "middle", fill: "#d8dee6", "font-size": "14", "font-weight": "bold", "font-family": "system-ui", text: t("scr_listening") }),
-        svgEl("text", { x: "160", y: "180", "text-anchor": "middle", fill: "#58a6ff", "font-size": "11", "font-family": "monospace", text: "16 kHz PCM · VAD Active" }),
-        svgEl("text", { x: "160", y: "224", "text-anchor": "middle", fill: "#485767", "font-size": "10", "font-family": "monospace", text: "voice_listening (golden reference)" })
-      ]));
-    }
-
-    const colLeft = el("div", { class: "col-left" }, [
-      el("div", { class: "panel" }, [
-        el("h2", {}, [
-          el("span", { "data-i18n": "title_devices", text: t("title_devices") }),
-          el("span", { class: "sub", text: boot.board })
+    const header = el("header", { class: "app-header" }, [
+      el("div", { class: "header-left" }, [
+        el("div", { class: "brand" }, [
+          svg("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" }, [
+            svg("polygon", { points: "12 2 2 7 12 12 22 7 12 2" }),
+            svg("polyline", { points: "2 17 12 22 22 17" }),
+            svg("polyline", { points: "2 12 12 17 22 12" })
+          ]),
+          el("span", { text: t("app_title") })
         ]),
-        devicesDiv
+        el("div", { class: "meta-chip" }, [el("span", { text: "agent" }), el("strong", { text: boot.agent })]),
+        el("div", { class: "meta-chip" }, [el("span", { text: "target" }), el("strong", { text: boot.target })]),
+        el("div", { class: "meta-chip" }, [el("span", { text: "board" }), el("strong", { text: boot.board })]),
+        refs.badge
       ]),
-      el("div", { class: "panel" }, [
-        el("h2", {}, [
-          el("span", { "data-i18n": "title_sensors", text: t("title_sensors") }),
-          el("span", { class: "sub", text: "I2C / GPIO" })
-        ]),
-        sensorsDiv
-      ]),
-      el("div", { class: "panel" }, [
-        el("h2", {}, [
-          el("span", { "data-i18n": "title_screen", text: t("title_screen") }),
-          el("span", { class: "sub", text: "320×240" })
-        ]),
-        screenFrame
+      el("div", { class: "header-right" }, [
+        refs.providers,
+        el("div", { class: "lang-toggle", role: "group", "aria-label": "Language" }, [langBtn("vi"), langBtn("en")])
       ])
     ]);
 
-    // Center Column
-    const voiceStrip = buildVoiceStrip();
-    const transcriptDiv = el("div", { class: "transcript" });
-
-    if (turns.length === 0) {
-      transcriptDiv.appendChild(el("div", { class: "turn", style: "color:var(--dim);text-align:center;", text: t("lbl_no_events") }));
-    } else {
-      for (let tIdx = 0; tIdx < turns.length; tIdx++) {
-        transcriptDiv.appendChild(buildTurnCard(turns[tIdx]));
-      }
-    }
-
-    const cmdInput = el("input", {
-      class: "cmd-input",
-      name: "cmd",
-      "data-i18n-placeholder": "cmd_placeholder",
-      placeholder: t("cmd_placeholder"),
-      autocomplete: "off"
-    });
-    const cmdForm = el("form", { class: "cmd-form" }, [
-      cmdInput,
-      el("button", { class: "btn-primary", type: "submit", "data-i18n": "btn_send", text: t("btn_send") })
-    ]);
-    cmdForm.addEventListener("submit", function (ev) {
-      ev.preventDefault();
-      const val = cmdInput.value.trim();
-      if (val) {
-        submitCommand(val);
-        cmdInput.value = "";
-      }
-    });
-
-    const colCenter = el("div", { class: "col-center" }, [
-      el("div", { class: "panel", style: "padding-bottom: 8px;" }, [
-        el("h2", {}, [
-          el("span", { "data-i18n": "title_assistant", text: t("title_assistant") }),
-          el("span", { class: "sub", text: "live session" })
-        ]),
-        voiceStrip,
-        transcriptDiv,
-        cmdForm
-      ])
-    ]);
-
-    // Right Column
-    const colRight = el("div", { class: "col-right" });
-
-    // Confirm Card RFC-0006
-    if (s.pending) {
-      const ask = s.pending;
-      const timeLeft = Math.max(0, Math.ceil((ask.expires_ms - now_ms) / 1000));
-      const btnNo = el("button", { class: "ask-btn no", autofocus: "true", text: t("btn_cancel") });
-      const btnYes = el("button", { class: "ask-btn yes", text: t("btn_agree") });
-
-      btnNo.addEventListener("click", function () { answerConfirm(ask.id, "no"); });
-      btnYes.addEventListener("click", function () { answerConfirm(ask.id, "yes"); });
-
-      const askCard = el("div", { class: "panel ask-panel", role: "alertdialog", "aria-live": "assertive" }, [
-        el("h2", {}, [
-          el("span", { "data-i18n": "title_confirm", text: t("title_confirm") }),
-          el("span", { class: "sub", text: "RFC-0006" })
-        ]),
-        el("div", { class: "ask-title", text: ask.message + (ask.action ? " (" + ask.action + ")" : "") }),
-        el("div", { class: "ask-timer", text: t("confirm_time_left").replace("{s}", String(timeLeft)) + " · " + t("confirm_source") }),
-        el("div", { class: "ask-btns" }, [btnYes, btnNo]),
-        el("div", { class: "ask-note", "data-i18n": "confirm_note", text: t("confirm_note") })
+    const nav = el("nav", { class: "studio-nav", "aria-label": t("nav_label") });
+    VIEWS.forEach(function (v) {
+      const b = el("button", {
+        type: "button", class: "nav-item" + (v === S.view ? " active" : ""), "aria-current": v === S.view ? "page" : null,
+        onclick: function () { switchView(v); }
+      }, [
+        svg("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" }, NAV_ICONS[v].map(function (p) { return svg(p[0], p[1]); })),
+        el("span", { text: t("nav_" + v) })
       ]);
-      colRight.appendChild(askCard);
-      setTimeout(function () { try { btnNo.focus(); } catch (e) {} }, 50);
-    }
+      refs.nav[v] = b;
+      nav.appendChild(b);
+    });
 
-    // Gate Verdicts Cards
-    const verdictsPanel = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        el("span", { "data-i18n": "title_gate_verdicts", text: t("title_gate_verdicts") }),
-        el("span", { class: "sub", text: "session" })
+    const content = el("main", { class: "studio-content" });
+    VIEWS.forEach(function (v) {
+      refs.views[v] = el("section", { class: "studio-view" + (v === S.view ? " active" : ""), id: "view-" + v });
+      content.appendChild(refs.views[v]);
+    });
+
+    clear(root);
+    add(root, [refs.lost, header, el("div", { class: "studio-layout" }, [nav, content])]);
+    paintBadge();
+    paintProviders();
+    renderView(S.view);
+  }
+
+  function paintBadge() {
+    refs.badge.className = "live-badge" + (S.connected ? "" : " disconnected");
+    clear(refs.badge);
+    add(refs.badge, [el("span", { class: "live-dot" }), t(S.connected ? "live_badge" : "live_badge_lost")]);
+    refs.lost.hidden = S.connected || !S.everConnected;
+  }
+
+  function paintProviders() {
+    clear(refs.providers);
+    const list = (S.agent && S.agent.ok && S.agent.providers) || [];
+    list.forEach(function (p) {
+      refs.providers.appendChild(el("div", { class: "provider-badge" }, [
+        (p.label || p.role) + " ",
+        el("span", { class: p.key_present ? "ok" : "missing", text: p.key_present ? t("val_key_present") : t("val_key_missing") })
+      ]));
+    });
+  }
+
+  function setLang(code) {
+    S.lang = code;
+    try { localStorage.setItem("ne_studio_lang", code); } catch (e) { /* ignore */ }
+    S.draft = currentDraft();
+    buildApp();
+  }
+
+  function switchView(v) {
+    S.view = v;
+    VIEWS.forEach(function (name) {
+      refs.nav[name].classList.toggle("active", name === v);
+      if (name === v) refs.nav[name].setAttribute("aria-current", "page");
+      else refs.nav[name].removeAttribute("aria-current");
+      refs.views[name].classList.toggle("active", name === v);
+    });
+    if (v === "gate") loadGates();
+    else if (v === "traces") loadTraces();
+    else if (v === "device") loadDevice();
+    else if (v === "mcp") loadMcp();
+    else if (v === "config") loadAgent();
+    renderView(v);
+  }
+
+  function renderView(v) {
+    if (v !== S.view) return;
+    if (v === "live") renderLive();
+    else if (v === "gate") renderGate();
+    else if (v === "traces") renderTraces();
+    else if (v === "verify") renderVerify();
+    else if (v === "device") renderDevice();
+    else if (v === "mcp") renderMcp();
+    else renderConfig();
+  }
+
+  // ---------------------------------------------------------------- live session
+  let liveRefs = null;
+
+  function currentDraft() {
+    return liveRefs && liveRefs.input && liveRefs.input.isConnected ? liveRefs.input.value : S.draft;
+  }
+
+  // Redraw a region only when what it shows changed, so focus and open <details> survive the 1 s tick.
+  function region(key, sig, node, build) {
+    if (regions[key] === sig) return;
+    regions[key] = sig;
+    clear(node);
+    build(node);
+  }
+
+  function renderLive() {
+    const c = refs.views.live;
+    if (!liveRefs || !liveRefs.root.isConnected || liveRefs.root.parentNode !== c) {
+      liveRefs = buildLiveShell();
+      clear(c);
+      c.appendChild(liveRefs.root);
+      regions = {};
+    }
+    paintLive();
+  }
+
+  function buildLiveShell() {
+    const r = {};
+    r.devices = el("div", { class: "devices" });
+    r.sensors = el("div");
+    r.screen = el("div", { class: "screen-frame" });
+    r.voice = el("div", { class: "voice-strip" });
+    r.transcript = el("div", { class: "transcript", tabindex: "0", role: "log", "aria-label": t("title_assistant") });
+    r.input = el("input", {
+      class: "cmd-input", name: "cmd", autocomplete: "off", placeholder: t("cmd_placeholder"),
+      "aria-label": t("cmd_placeholder"), value: S.draft
+    });
+    r.reply = el("div", { class: "cmd-reply", role: "status" });
+    const form = el("form", { class: "cmd-form" }, [
+      r.input, el("button", { type: "submit", class: "btn-primary", text: t("btn_send") })
+    ]);
+    form.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      const line = r.input.value.trim();
+      if (!line) return;
+      r.input.value = "";
+      S.draft = "";
+      sendCommand(line);
+    });
+    r.ask = el("div");
+    r.verdicts = el("div");
+    r.stream = el("tbody");
+
+    const left = el("div", { class: "col-left" }, [
+      panel("title_devices", boot.board, null, r.devices),
+      panel("title_sensors", null, null, r.sensors),
+      panel("title_screen", null, null, r.screen)
+    ]);
+    const center = el("div", { class: "col-center" }, [
+      el("section", { class: "panel" }, [
+        el("h2", {}, [el("span", { text: t("title_assistant") })]),
+        r.voice, r.transcript, form, r.reply
       ])
     ]);
-
-    const gateEvals = [];
-    for (let k = 0; k < events.length; k++) {
-      if (events[k].type === "gate_evaluation_result") {
-        gateEvals.push(events[k]);
-      }
-    }
-
-    if (gateEvals.length === 0) {
-      verdictsPanel.appendChild(el("div", { style: "color:var(--dim);font-size:12px;", text: t("lbl_no_verdicts") }));
-    } else {
-      for (let gIdx = 0; gIdx < gateEvals.length; gIdx++) {
-        verdictsPanel.appendChild(buildVerdictCard(gateEvals[gIdx]));
-      }
-    }
-    colRight.appendChild(verdictsPanel);
-
-    // Bottom Panel: Event Stream
-    const streamTbody = el("tbody");
-    const recentEvents = events.slice(-15);
-    if (recentEvents.length === 0) {
-      streamTbody.appendChild(el("tr", {}, [
-        el("td", { colspan: "3", style: "color:var(--dim);text-align:center;", text: t("lbl_no_events") })
-      ]));
-    } else {
-      for (let eIdx = recentEvents.length - 1; eIdx >= 0; eIdx--) {
-        const ev = recentEvents[eIdx];
-        streamTbody.appendChild(el("tr", {}, [
-          el("td", { class: "mono", text: ev.offset_ms + " ms" }),
-          el("td", {}, [el("code", { text: ev.type })]),
-          el("td", { class: "mono", style: "color:var(--dim);", text: short(ev.data || {}) })
-        ]));
-      }
-    }
-
-    const streamPanel = el("div", { class: "panel", style: "margin-top:14px;" }, [
-      el("h2", {}, [
-        el("span", { "data-i18n": "title_event_stream", text: t("title_event_stream") }),
-        el("span", { class: "sub", text: Math.min(15, events.length) + " recent" })
-      ]),
-      el("table", { class: "data-table" }, [
-        el("thead", {}, [
-          el("tr", {}, [
-            el("th", { style: "width:110px;", "data-i18n": "th_time", text: t("th_time") }),
-            el("th", { style: "width:200px;", "data-i18n": "th_event", text: t("th_event") }),
-            el("th", { "data-i18n": "th_payload", text: t("th_payload") })
-          ])
-        ]),
-        streamTbody
-      ])
+    const right = el("div", { class: "col-right" }, [
+      r.ask, panel("title_gate_verdicts", null, null, r.verdicts)
     ]);
-
-    const grid3 = el("div", { class: "grid-3col" }, [colLeft, colCenter, colRight]);
-    container.appendChild(grid3);
-    container.appendChild(streamPanel);
-  }
-
-  function buildVoiceStrip() {
-    const strip = el("div", { class: "voice-strip" });
-    if (!voiceData || !voiceData.enabled) {
-      strip.appendChild(el("div", { style: "font-size:12px;color:var(--dim);display:flex;align-items:center;gap:6px;" }, [
-        document.createTextNode("ℹ "),
-        el("span", { "data-i18n": "voice_not_enabled", text: t("voice_not_enabled") })
-      ]));
-      return strip;
-    }
-
-    const state = (voiceData.state || "IDLE").toUpperCase();
-    const fsmStates = ["IDLE", "LISTENING", "THINKING", "SPEAKING"];
-    const chipsDiv = el("div", { class: "fsm-chips" });
-    for (let i = 0; i < fsmStates.length; i++) {
-      const st = fsmStates[i];
-      if (i > 0) chipsDiv.appendChild(el("span", { text: "→" }));
-      chipsDiv.appendChild(el("span", {
-        class: "fsm-chip" + (state === st ? " active" : ""),
-        text: st
-      }));
-    }
-
-    const micMeter = el("div", { class: "mic-meter", title: "Mic meter" }, [
-      el("div", { class: "mic-bar" }), el("div", { class: "mic-bar" }), el("div", { class: "mic-bar" }),
-      el("div", { class: "mic-bar" }), el("div", { class: "mic-bar" }), el("div", { class: "mic-bar" })
+    const table = el("table", { class: "data-table" }, [
+      el("thead", {}, [el("tr", {}, [
+        el("th", { text: t("th_time") }), el("th", { text: t("th_event") }), el("th", { text: t("th_payload") })
+      ])]),
+      r.stream
     ]);
-
-    const btnMute = el("button", {
-      class: "btn-sm" + (voiceData.muted ? "" : " active"),
-      text: voiceData.muted ? "🎤 " + t("btn_voice_start") : "⏹ " + t("btn_voice_stop")
-    });
-    btnMute.addEventListener("click", toggleMute);
-
-    const btnMode = el("button", {
-      class: "btn-sm",
-      text: voiceData.half_duplex ? "📢 " + t("btn_audio_mode_hd") : "🎧 " + t("btn_audio_mode")
-    });
-
-    const cnt = voiceData.counters || {};
-    const countersText = t("counters_voice")
-      .replace("{barge}", String(cnt.barge_in || 0))
-      .replace("{stt}", String(cnt.stt_unavailable || 0))
-      .replace("{cancel}", String(cnt.cancelled || 0));
-    const countersChip = el("div", { class: "counters-chip", text: countersText });
-
-    strip.appendChild(el("div", { class: "voice-strip-top" }, [chipsDiv, micMeter]));
-    strip.appendChild(el("div", { class: "voice-actions" }, [
-      el("div", { class: "voice-btn-group" }, [btnMute, btnMode]),
-      countersChip
-    ]));
-    return strip;
-  }
-
-  function buildTurnCard(tr) {
-    const isBlocked = tr.gate_results.some(function (r) { return r.verdict === "BLOCK"; });
-    const card = el("div", { class: "turn" + (isBlocked ? " blocked" : "") });
-
-    const spk = tr.is_voice ? "🎤 " + t("spk_you") : "⌨ " + t("spk_you");
-    card.appendChild(el("div", { class: "turn-header" }, [
-      el("span", { class: "speaker", text: spk }),
-      el("span", { class: "mono", text: "offset " + tr.offset_ms + " ms" })
-    ]));
-
-    card.appendChild(el("div", { class: "turn-text", text: tr.text }));
-
-    const metaDiv = el("div", { class: "turn-meta" });
-    if (tr.route) {
-      metaDiv.appendChild(el("span", { class: "route-badge", text: tr.route }));
-    }
-    for (let i = 0; i < tr.intents.length; i++) {
-      const it = tr.intents[i];
-      const conf = it.confidence !== undefined ? " (" + it.confidence.toFixed(2) + ")" : "";
-      metaDiv.appendChild(el("span", { class: "mono", text: "intent " + it.intent + conf }));
-    }
-    for (let c = 0; c < tr.tool_calls.length; c++) {
-      metaDiv.appendChild(el("span", { class: "mono", text: "tool_call " + tr.tool_calls[c].name + "()" }));
-    }
-    for (let g = 0; g < tr.gate_results.length; g++) {
-      const gr = tr.gate_results[g];
-      const stClass = gr.verdict === "ALLOW" ? "st allow" : "st block";
-      metaDiv.appendChild(el("span", { class: stClass, text: (gr.verdict === "ALLOW" ? "✓ " : "✗ ") + gr.verdict }));
-      if (gr.blocked_by) {
-        metaDiv.appendChild(el("span", { class: "mono", text: gr.blocked_by }));
-      }
-      if (gr.failed_criterion) {
-        metaDiv.appendChild(el("span", { class: "mono", style: "color:var(--block);", text: "(" + (gr.reason || "failed") + ", " + gr.failed_criterion + ")" }));
-      }
-    }
-    card.appendChild(metaDiv);
-
-    if (tr.tts) {
-      card.appendChild(el("div", { class: "turn-reply", text: "🗣 “" + tr.tts + "”" }));
-    } else if (isBlocked) {
-      const blk = tr.gate_results.find(function (r) { return r.verdict === "BLOCK"; });
-      if (blk && blk.message) {
-        card.appendChild(el("div", { class: "turn-reply blocked", text: "❓ “" + blk.message + "”" }));
-      }
-    }
-
-    if (tr.latency && tr.latency.stages_ms) {
-      const stg = tr.latency.stages_ms;
-      const total = tr.latency.total_ms || (stg.perception + stg.system_two + stg.gate + stg.action + (stg.other || 0)) || 1;
-      const bar = el("div", { class: "latency-bar" });
-      const segs = [
-        { key: "p", ms: stg.perception || 0, label: "perception" },
-        { key: "s2", ms: stg.system_two || 0, label: "system_two" },
-        { key: "g", ms: stg.gate || 0, label: "gate" },
-        { key: "a", ms: stg.action || 0, label: "action" },
-        { key: "tts", ms: stg.other || 0, label: "other/tts" }
-      ];
-      const legendSpans = [];
-      for (let s = 0; s < segs.length; s++) {
-        const seg = segs[s];
-        if (seg.ms > 0) {
-          const pct = Math.max(1, Math.round((seg.ms / total) * 100));
-          bar.appendChild(el("div", { class: "lat-seg " + seg.key, style: "width:" + pct + "%;" }));
-          legendSpans.push(el("span", { text: seg.label + " " + Math.round(seg.ms) + " ms" }));
-        }
-      }
-      card.appendChild(bar);
-      if (legendSpans.length > 0) {
-        const legendDiv = el("div", { class: "latency-legend" });
-        for (let l = 0; l < legendSpans.length; l++) {
-          if (l > 0) legendDiv.appendChild(document.createTextNode(" · "));
-          legendDiv.appendChild(legendSpans[l]);
-        }
-        card.appendChild(legendDiv);
-      }
-    }
-
-    return card;
-  }
-
-  function buildVerdictCard(ev) {
-    const d = ev.data || {};
-    const verdict = d.verdict || "UNKNOWN";
-    const gateName = d.blocked_by || d.gate || "gate";
-    const card = el("div", { class: "verdict-card " + verdict });
-
-    card.appendChild(el("div", { class: "verdict-summary" }, [
-      el("span", {}, [
-        el("span", { class: "st " + (verdict === "ALLOW" ? "allow" : "block"), text: verdict }),
-        document.createTextNode(" "),
-        el("span", { class: "mono", text: gateName })
-      ]),
-      el("span", { class: "mono", style: "font-size:11px;color:var(--dim);", text: ev.offset_ms + " ms" })
-    ]));
-
-    let summaryText = "";
-    if (verdict === "BLOCK") {
-      summaryText = (d.reason || "condition_not_met") + (d.failed_criterion ? " · " + t("th_criterion") + " " + d.failed_criterion : "") + (d.action ? " → " + d.action : "");
-    } else {
-      summaryText = "ALLOW · " + (d.action || "proceed");
-    }
-    card.appendChild(el("div", { style: "font-size:11.5px;color:var(--dim);margin:4px 0;", text: summaryText }));
-
-    const details = el("details", { class: "verdict-details" }, [
-      el("summary", { "data-i18n": "lbl_explain", text: t("lbl_explain") })
+    r.root = el("div", {}, [
+      el("div", { class: "grid-3col" }, [left, center, right]),
+      el("div", { class: "stream-panel" }, [panel("title_event_stream", null, null, el("div", { class: "table-wrap" }, [table]))])
     ]);
-
-    const detailsContent = el("div");
-    details.appendChild(detailsContent);
-
-    let fetchedGate = false;
-    details.addEventListener("toggle", function () {
-      if (details.open && !fetchedGate) {
-        fetchedGate = true;
-        renderVerdictExplain(detailsContent, d, gateName);
-      }
-    });
-
-    card.appendChild(details);
-    return card;
+    return r;
   }
 
-  function renderVerdictExplain(container, result, gateName) {
-    container.textContent = "";
+  function sendCommand(line) {
+    S.reply = { pending: true, line: line };
+    paintReply();
+    fetch("/command", { method: "POST", body: line }).then(function (r) { return r.json(); }).then(function (j) {
+      S.reply = { line: line, res: j };
+      paintReply();
+    }).catch(function (e) {
+      S.reply = { line: line, res: { ok: false, error: { why: String(e) } } };
+      paintReply();
+    });
+  }
 
-    const cleanName = (gateName || "").split("@")[0];
-    const factsObj = {};
-    for (let i = 0; i < events.length; i++) {
-      if (events[i].type === "gate_facts" && events[i].data) {
-        Object.assign(factsObj, events[i].data);
-      }
-    }
+  function paintReply() {
+    if (!liveRefs) return;
+    const node = liveRefs.reply;
+    clear(node);
+    const rp = S.reply;
+    if (!rp) return;
+    if (rp.pending) { node.textContent = t("lbl_running"); return; }
+    const j = rp.res;
+    if (!j.ok) { add(node, [chip("block", "✗"), " " + whyOf(j)]); return; }
+    if (j.recognised === undefined) { add(node, [chip("allow", "✓"), " " + rp.line]); return; }
+    if (!j.recognised) { add(node, [chip("warn", t("chip_not_recognized")), " " + rp.line]); return; }
+    add(node, [
+      chip("accent", "intent " + j.intent),
+      j.verdict ? verdictChip(j.verdict) : null,
+      j.action ? el("span", { class: "mono", text: " → " + j.action }) : null
+    ]);
+  }
 
-    const evals = result.evaluations || {};
-    const allCrit = new Set(Object.keys(evals).concat(Object.keys(factsObj)));
+  function paintLive() {
+    const R = liveRefs;
+    const st = stateOf(S.events, S.nowMs);
+    const grouped = groupTurns(S.events);
 
-    if (allCrit.size > 0) {
-      const tbody = el("tbody");
-      allCrit.forEach(function (crit) {
-        const fact = factsObj[crit] || {};
-        const val = fact.value !== undefined ? String(fact.value) : (evals[crit] !== undefined ? String(evals[crit]) : "—");
-        const src = fact.source || "context";
-        const conf = fact.confidence !== null && fact.confidence !== undefined ? String(fact.confidence) : "1.00";
-        const resOk = evals[crit] !== false && crit !== result.failed_criterion;
-        tbody.appendChild(el("tr", {}, [
-          el("td", { class: "mono", text: crit }),
-          el("td", { class: "mono", text: val }),
-          el("td", { text: src }),
-          el("td", { text: conf }),
-          el("td", { style: "color:" + (resOk ? "var(--allow)" : "var(--block)"), text: resOk ? "✓" : "✗" })
+    // devices
+    const pins = boot.pins.slice();
+    Object.keys(st.pins).forEach(function (p) { if (pins.indexOf(p) < 0) pins.push(p); });
+    const pinRows = pins.map(function (p) {
+      const s = st.pins[p];
+      const on = !!(s && s.on);
+      const label = !s ? "LOW" : on ? (s.operation === "pulse" ? "PULSE" : "HIGH") : (s.aborted ? "ABORTED" : "LOW");
+      return { pin: p, on: on, label: label };
+    });
+    region("devices", JSON.stringify(pinRows), R.devices, function (n) {
+      if (pinRows.length === 0) { n.appendChild(el("div", { class: "hint", text: t("lbl_no_devices") })); return; }
+      pinRows.forEach(function (row) {
+        n.appendChild(el("div", { class: "device" + (row.on ? " on" : "") }, [
+          pinIcon(row.pin, row.on), el("div", { class: "mono", text: row.pin }), el("div", { class: "state", text: row.label })
         ]));
       });
+    });
 
-      const table = el("table", { class: "crit-table" }, [
-        el("thead", {}, [
-          el("tr", {}, [
-            el("th", { "data-i18n": "th_criterion", text: t("th_criterion") }),
-            el("th", { "data-i18n": "th_val", text: t("th_val") }),
-            el("th", { "data-i18n": "th_src", text: t("th_src") }),
-            el("th", { "data-i18n": "th_conf", text: t("th_conf") }),
-            el("th", { "data-i18n": "th_res", text: t("th_res") })
-          ])
-        ]),
-        tbody
-      ]);
-      container.appendChild(table);
-    }
+    // sensors
+    const names = boot.sensors.slice();
+    Object.keys(st.sensors).forEach(function (s) { if (names.indexOf(s) < 0) names.push(s); });
+    const sensorRows = names.map(function (n) {
+      const r = st.sensors[n];
+      return { name: n, text: r && r.value !== undefined ? String(r.value) + (r.unit ? " " + r.unit : "") : "—" };
+    });
+    region("sensors", JSON.stringify(sensorRows), R.sensors, function (n) {
+      if (sensorRows.length === 0) { n.appendChild(el("div", { class: "hint", text: t("lbl_no_sensors") })); return; }
+      sensorRows.forEach(function (row) {
+        n.appendChild(el("div", { class: "sensor-row" }, [
+          el("span", { class: "mono", text: row.name }), el("span", { class: "sensor-val", text: row.text })
+        ]));
+      });
+    });
 
-    if (result.failed_criterion) {
-      container.appendChild(el("div", { style: "margin-top:4px;" }, [
-        el("strong", { "data-i18n": "lbl_failed_rule", text: t("lbl_failed_rule") + " " }),
-        el("span", { class: "mono", text: result.failed_criterion + " == false" })
-      ]));
-    }
-    if (result.action) {
-      container.appendChild(el("div", {}, [
-        el("strong", { "data-i18n": "lbl_onblock", text: t("lbl_onblock") + " " }),
-        el("span", { class: "mono", text: result.action + (result.escalated_to ? " " + result.escalated_to : "") })
-      ]));
-    }
+    // screen
+    region("screen", JSON.stringify(st.frame), R.screen, function (n) {
+      const f = st.frame;
+      if (!f) { n.appendChild(el("div", { class: "screen-text hint", text: t("lbl_no_frame") })); return; }
+      const text = f.text !== undefined ? String(f.text)
+        : [f.format, f.width && f.height ? f.width + "×" + f.height : "", f.sha256 ? String(f.sha256).slice(0, 23) + "…" : ""].join(" ");
+      n.appendChild(el("div", { class: "screen-text", text: text }));
+    });
 
-    const gateExtra = el("div", { style: "margin-top:6px;" });
-    container.appendChild(gateExtra);
+    paintVoiceStrip();
 
-    if (cleanName) {
-      fetch('/api/gates/' + encodeURIComponent(cleanName)).then(function (res) {
-        if (res.status === 501) return null;
-        return res.json();
-      }).then(function (gateRes) {
-        if (gateRes && gateRes.ok) {
-          if (gateRes.chain && gateRes.chain.length > 0) {
-            gateExtra.appendChild(el("div", {}, [
-              el("strong", { "data-i18n": "lbl_inherit", text: t("lbl_inherit") + " " }),
-              el("span", { class: "mono", text: gateRes.chain.join(" → ") })
-            ]));
-          }
-        }
-      }).catch(function () {});
-    }
+    // transcript
+    const last = S.events.length ? S.events[S.events.length - 1] : null;
+    region("transcript", S.events.length + ":" + (last ? last.type + last.offset_ms : "") + ":" + S.lang, R.transcript, function (n) {
+      const atBottom = R.transcript.scrollHeight - R.transcript.scrollTop - R.transcript.clientHeight < 40;
+      if (grouped.turns.length === 0) n.appendChild(el("div", { class: "hint", text: t("lbl_no_turns") }));
+      grouped.turns.forEach(function (tr) { n.appendChild(turnCard(tr)); });
+      if (atBottom) R.transcript.scrollTop = R.transcript.scrollHeight;
+    });
+
+    // confirmation: redraw only when the set of open questions or the connection changes
+    const askSig = st.pending.map(function (a) { return a.id; }).join(",") + ":" + S.connected + ":" + (S.answerError || "");
+    const changed = regions.ask !== askSig;
+    region("ask", askSig, R.ask, function (n) {
+      st.pending.forEach(function (a) { n.appendChild(askCard(a)); });
+      if (S.answerError) n.appendChild(el("div", { class: "hint err", text: S.answerError }));
+    });
+    if (changed && st.pending.length > 0 && R.ask.querySelector(".ask-btn.no")) R.ask.querySelector(".ask-btn.no").focus();
+    st.pending.forEach(function (a) {
+      const timer = R.ask.querySelector('[data-ask="' + String(a.id).replace(/"/g, "") + '"]');
+      if (timer) timer.textContent = fill(t("confirm_time_left"), { s: Math.max(0, Math.ceil((a.expires_ms - S.nowMs) / 1000)) }) + " · " + t("confirm_source");
+    });
+
+    // verdict cards, newest first
+    region("verdicts", grouped.gates.length + ":" + S.lang, R.verdicts, function (n) {
+      if (grouped.gates.length === 0) { n.appendChild(el("div", { class: "hint", text: t("lbl_no_verdicts") })); return; }
+      grouped.gates.slice(-20).reverse().forEach(function (g) { n.appendChild(verdictCard(g)); });
+    });
+
+    // event stream
+    region("stream", S.events.length + ":" + (last ? last.type : ""), R.stream, function (n) {
+      if (S.events.length === 0) {
+        n.appendChild(el("tr", {}, [el("td", { colspan: "3", class: "hint", text: t("lbl_no_events") })]));
+        return;
+      }
+      S.events.slice(-15).reverse().forEach(function (e) {
+        n.appendChild(el("tr", {}, [
+          el("td", { class: "mono", text: e.offset_ms + " ms" }),
+          el("td", {}, [el("code", { text: e.type })]),
+          el("td", { class: "mono dim", text: short(e.data, 200) })
+        ]));
+      });
+    });
   }
 
-  function submitCommand(line) {
-    fetch('/command', {
-      method: 'POST',
-      body: line
-    }).then(function (res) {
-      return res.json();
-    }).catch(function () {});
+  function askCard(a) {
+    const no = el("button", { type: "button", class: "ask-btn no", text: t("btn_cancel"), disabled: !S.connected,
+      onclick: function () { answerConfirm(a.id, "no"); } });
+    const yes = el("button", { type: "button", class: "ask-btn yes", text: t("btn_agree"), disabled: !S.connected,
+      onclick: function () { answerConfirm(a.id, "yes"); } });
+    return el("section", { class: "panel ask-panel", role: "alertdialog", "aria-label": t("title_confirm") }, [
+      el("h2", {}, [el("span", { text: t("title_confirm") }), el("span", { class: "sub", text: "RFC-0006" })]),
+      el("div", { class: "ask-title", text: String(a.message || "") + (a.action ? " (" + a.action + ")" : "") }),
+      el("div", { class: "ask-timer", "data-ask": String(a.id).replace(/"/g, ""), text: "" }),
+      el("div", { class: "ask-btns" }, [yes, no]),
+      el("div", { class: "ask-note", text: t("confirm_note") })
+    ]);
   }
 
   function answerConfirm(id, answer) {
-    fetch('/confirm', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: id, answer: answer })
-    }).then(function (res) {
-      return res.json();
-    }).catch(function () {});
+    S.answerError = null;
+    fetch("/confirm", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: id, answer: answer }) })
+      .then(function (r) { return r.json(); }).then(function (j) {
+        if (!j.ok) { S.answerError = whyOf(j); regions.ask = null; paintLive(); }
+      }).catch(function (e) { S.answerError = String(e); regions.ask = null; paintLive(); });
+  }
+
+  function turnCard(tr) {
+    const blocked = tr.gates.some(function (g) { return g.result.verdict === "BLOCK"; });
+    const card = el("div", { class: "turn" + (blocked ? " blocked" : "") });
+    card.appendChild(el("div", { class: "turn-header" }, [
+      el("span", { class: "speaker", text: (tr.voice ? "🎤 " : tr.implicit ? "⚙ " : "⌨ ") + (tr.implicit ? "MCP" : t("spk_you")) }),
+      el("span", { class: "mono dim", text: tr.offset + " ms" })
+    ]));
+    card.appendChild(el("div", { class: "turn-text", text: tr.text }));
+
+    const meta = el("div", { class: "turn-meta" });
+    if (tr.route) meta.appendChild(el("span", { class: "route-badge", text: t(tr.route) }));
+    tr.intents.forEach(function (it) {
+      meta.appendChild(el("span", { class: "mono", text: "intent " + it.intent + (typeof it.confidence === "number" ? " (" + it.confidence.toFixed(2) + ")" : "") }));
+    });
+    if (tr.notRecognized) {
+      meta.appendChild(chip("warn", t("chip_not_recognized") + (typeof tr.notRecognized.confidence === "number" ? " " + tr.notRecognized.confidence.toFixed(2) : "")));
+    }
+    tr.calls.forEach(function (cl) {
+      meta.appendChild(el("span", { class: "mono", text: cl.name + "() · " + (cl.source || "?") }));
+    });
+    tr.gates.forEach(function (g) {
+      meta.appendChild(verdictChip(g.result.verdict));
+      meta.appendChild(el("span", { class: "mono", text: g.gate }));
+      if (g.result.failed_criterion) {
+        meta.appendChild(el("span", { class: "mono err", text: (g.result.reason || "") + " " + g.result.failed_criterion }));
+      }
+    });
+    tr.confirms.forEach(function (cf) {
+      if (cf.type === "tool_confirm_requested") meta.appendChild(chip("warn", t("chip_asked")));
+      else if (cf.type === "tool_confirmed") meta.appendChild(chip("allow", t("chip_confirmed")));
+      else if (cf.type === "tool_confirm_declined") meta.appendChild(chip("block", t("chip_declined")));
+      else meta.appendChild(chip("warn", t("chip_expired")));
+    });
+    card.appendChild(meta);
+
+    tr.tts.forEach(function (line) {
+      card.appendChild(el("div", { class: "turn-reply", text: "🗣 “" + line + "”" }));
+    });
+
+    const lat = tr.latency;
+    if (lat && lat.stages_ms) {
+      const stages = [["p", "perception"], ["s2", "system_two"], ["g", "gate"], ["a", "action"], ["other", "other"]];
+      const bar = el("div", { class: "latency-bar", role: "img", "aria-label": t("lbl_latency") + " " + fmtMs(lat.total_ms) });
+      const legend = el("div", { class: "latency-legend" });
+      stages.forEach(function (s) {
+        const ms = Number(lat.stages_ms[s[1]]) || 0;
+        if (ms <= 0) return;
+        bar.appendChild(el("div", { class: "lat-seg " + s[0], style: "flex:" + ms + " 1 0" }));
+        legend.appendChild(el("span", { class: "lat-key" }, [el("i", { class: "lat-dot " + s[0] }), s[1] + " " + fmtMs(ms)]));
+      });
+      if (bar.children.length > 0) card.appendChild(bar);
+      legend.appendChild(el("span", { class: "lat-key", text: "Σ " + fmtMs(lat.total_ms) }));
+      card.appendChild(legend);
+    }
+    return card;
+  }
+
+  function verdictCard(g) {
+    const d = g.result;
+    const details = el("details", { class: "verdict-details" }, [el("summary", { text: t("lbl_explain") })]);
+    const body = el("div", { class: "explain" });
+    details.appendChild(body);
+    details.open = S.openExplain.has(g.idx);
+    if (details.open) explainBody(body, g);
+    details.addEventListener("toggle", function () {
+      if (details.open) { S.openExplain.add(g.idx); explainBody(body, g); }
+      else S.openExplain.delete(g.idx);
+    });
+    return el("div", { class: "verdict-card " + d.verdict }, [
+      el("div", { class: "verdict-summary" }, [
+        el("span", {}, [verdictChip(d.verdict), " ", el("span", { class: "mono", text: g.gate })]),
+        el("span", { class: "mono dim", text: g.offset + " ms" })
+      ]),
+      el("div", { class: "hint", text: d.verdict === "BLOCK"
+        ? [d.reason, d.failed_criterion, d.action ? "→ " + d.action : ""].filter(Boolean).join(" · ")
+        : (d.action ? "→ " + d.action : "") }),
+      details
+    ]);
+  }
+
+  function gateBase(name) { return String(name || "").split("@")[0]; }
+
+  function fetchGateInfo(base, done) {
+    if (S.gateInfo[base]) { done(S.gateInfo[base]); return; }
+    api("GET", "gates/" + enc(base)).then(function (j) {
+      S.gateInfo[base] = j;
+      done(j);
+    });
+  }
+
+  function explainBody(body, g) {
+    clear(body);
+    const d = g.result;
+    const crit = Object.keys(g.facts).concat(Object.keys(d.evaluations || {}).filter(function (k) { return !(k in g.facts); }));
+    if (crit.length > 0) {
+      const rows = crit.map(function (k) {
+        const f = g.facts[k] || {};
+        const ev = d.evaluations ? d.evaluations[k] : undefined;
+        const value = f.value !== undefined ? f.value : ev;
+        const fail = k === d.failed_criterion || ev === false;
+        return el("tr", {}, [
+          el("td", { class: "mono", text: k }),
+          el("td", { class: "mono", text: value === undefined ? "—" : typeof value === "object" ? short(value, 60) : String(value) }),
+          el("td", { text: f.source || "—" }),
+          el("td", { text: f.confidence === null || f.confidence === undefined ? "—" : String(f.confidence) }),
+          el("td", { class: fail ? "err" : "ok", text: fail ? "✗" : "✓" })
+        ]);
+      });
+      body.appendChild(el("div", { class: "table-wrap" }, [el("table", { class: "crit-table" }, [
+        el("thead", {}, [el("tr", {}, ["th_criterion", "th_val", "th_src", "th_conf", "th_res"].map(function (k) { return el("th", { text: t(k) }); }))]),
+        el("tbody", {}, rows)
+      ])]));
+    }
+    if (d.failed_criterion) body.appendChild(kv(t("lbl_failed_rule"), d.failed_criterion + (d.reason ? " (" + d.reason + ")" : "")));
+    if (d.action) body.appendChild(kv("on_block:", d.action + (d.escalated_to ? " → " + d.escalated_to : "")));
+    if (d.message) body.appendChild(kv(t("lbl_message"), d.message));
+    if (g.digest) body.appendChild(kv("gate_digest:", g.digest));
+    const extra = el("div", {}, [el("span", { class: "hint", text: t("lbl_loading") })]);
+    body.appendChild(extra);
+    fetchGateInfo(gateBase(g.gate), function (info) {
+      clear(extra);
+      if (!info.ok) { extra.appendChild(naCard(info)); return; }
+      if (info.chain && info.chain.length) extra.appendChild(kv(t("lbl_inherit"), info.chain.join(" → ")));
+      extra.appendChild(el("div", { class: "kv-key", text: "allow_when:" }));
+      extra.appendChild(codeBox(info.allow_when || {}));
+      extra.appendChild(el("div", { class: "kv-key", text: "on_block:" }));
+      extra.appendChild(codeBox(info.on_block || {}));
+    });
+  }
+
+  function kv(k, v) {
+    return el("div", { class: "kv" }, [el("strong", { text: k + " " }), el("span", { class: "mono", text: String(v) })]);
+  }
+
+  // ---- voice strip
+  function paintVoiceStrip() {
+    const v = S.voice;
+    let evState = null;
+    S.events.forEach(function (e) { if (e.type === "voice_state_changed") evState = e.data && e.data.to; });
+    const sig = JSON.stringify([v, evState, S.lang]);
+    region("voice", sig, liveRefs.voice, function (n) {
+      if (!v || !v.ok || !v.enabled) {
+        n.appendChild(el("div", { class: "hint" }, ["ℹ " + t("voice_not_enabled") + " ", el("code", { text: "neuroedge studio --mic" })]));
+        return;
+      }
+      const state = String(v.state || evState || "IDLE").toUpperCase();
+      const chips = el("div", { class: "fsm-chips" });
+      ["IDLE", "LISTENING", "THINKING", "SPEAKING"].forEach(function (s, i) {
+        if (i > 0) chips.appendChild(el("span", { class: "dim", text: "→" }));
+        chips.appendChild(el("span", { class: "fsm-chip" + (state === s ? " active" : ""), text: s }));
+      });
+      const c = v.counters || {};
+      const mute = el("button", { type: "button", class: "btn-sm" + (v.muted ? "" : " active"), "aria-pressed": v.muted ? "true" : "false",
+        text: (v.muted ? "🔇 " : "🎤 ") + t(v.muted ? "btn_unmute" : "btn_mute"), onclick: toggleMute });
+      n.appendChild(el("div", { class: "voice-strip-top" }, [chips]));
+      n.appendChild(el("div", { class: "voice-actions" }, [
+        el("div", { class: "voice-btn-group" }, [
+          v.running ? mute : null,
+          el("span", { class: "counters-chip", text: t(v.half_duplex ? "audio_half_duplex" : "audio_full_duplex") })
+        ]),
+        el("span", { class: "counters-chip", text: fill(t("counters_voice"), { turns: c.turns || 0, barge: c.barge_in || 0, stt: c.stt_unavailable || 0, cancel: c.cancelled || 0 }) })
+      ]));
+    });
   }
 
   function toggleMute() {
-    const nextMuted = voiceData ? !voiceData.muted : false;
-    fetch('/api/voice/mute', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ muted: nextMuted })
-    }).then(function (res) {
-      return res.json();
-    }).then(function (data) {
-      if (data && data.ok) {
-        voiceData = data;
-        renderActiveView();
-      }
-    }).catch(function () {});
+    api("POST", "voice/mute", { muted: !(S.voice && S.voice.muted) }).then(function (j) {
+      if (j.ok) { S.voice = j; if (liveRefs) paintVoiceStrip(); }
+    });
   }
 
-  // =========================================================================
-  // VIEW 2: Gate Registry & What-If Sandbox
-  // =========================================================================
+  let voiceTimer = null;
+  function pollVoice() {
+    if (S.view !== "live" || document.hidden) return;
+    api("GET", "voice").then(function (j) {
+      S.voice = j;
+      if (S.view === "live" && liveRefs && liveRefs.root.isConnected) paintVoiceStrip();
+    });
+  }
 
+  // ---------------------------------------------------------------- gates
   function loadGates() {
-    fetch('/api/gates').then(function (res) {
-      if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-      return res.json();
-    }).then(function (data) {
-      gatesData = data;
-      renderGateView();
-    }).catch(function (err) {
-      gatesData = { ok: false, error: { why: String(err) } };
-      renderGateView();
+    api("GET", "gates").then(function (j) {
+      S.gates = j;
+      if (j.ok && j.gates.length && !j.gates.some(function (g) { return g.name === S.gateName; })) S.gateName = j.gates[0].name;
+      renderView("gate");
     });
   }
 
-  function renderGateView() {
-    const container = viewContainers.gate;
-    container.textContent = "";
-
-    if (!gatesData || !gatesData.ok) {
-      const why = (gatesData && gatesData.error && gatesData.error.why) || t("msg_not_available");
-      container.appendChild(notAvailableCard(why));
-      return;
-    }
-
-    const gatesList = gatesData.gates || [];
-    const lintOutput = el("div", {
-      style: "display:none;padding:6px 10px;background:color-mix(in srgb, var(--allow) 15%, transparent);border:1px solid var(--allow);border-radius:4px;font-size:12px;margin-bottom:10px;"
-    });
-
-    const btnLint = el("button", { class: "btn-sm", text: t("btn_lint") });
-    btnLint.addEventListener("click", function () {
-      btnLint.textContent = t("lbl_running");
-      fetch('/api/lint', { method: 'POST' }).then(function (res) {
-        if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-        return res.json();
-      }).then(function (resData) {
-        btnLint.textContent = t("btn_lint");
-        lintOutput.style.display = "block";
-        if (resData.ok) {
-          lintOutput.textContent = "✓ " + (resData.resolved || 0) + " gate(s) resolved.";
-        } else {
-          lintOutput.textContent = "✗ " + ((resData.error && resData.error.why) || "Lint failed");
-        }
-      }).catch(function (err) {
-        btnLint.textContent = t("btn_lint");
-        lintOutput.style.display = "block";
-        lintOutput.textContent = "✗ " + String(err);
+  function renderGate() {
+    const c = refs.views.gate;
+    clear(c);
+    const g = S.gates;
+    if (!g) { c.appendChild(loadingCard()); return; }
+    if (!g.ok) { c.appendChild(naCard(g)); return; }
+    const lintBox = el("div", { class: "result-box", hidden: true });
+    const lintBtn = runButton("btn_lint", "gate-lint", function (done) {
+      api("POST", "lint").then(function (j) {
+        done();
+        clear(lintBox);
+        lintBox.hidden = false;
+        renderLint(lintBox, j);
       });
     });
-
-    const tbody = el("tbody");
-    for (let i = 0; i < gatesList.length; i++) {
-      const g = gatesList[i];
-      const isSel = selectedGateName === g.name || (!selectedGateName && i === 0);
-      if (isSel && !selectedGateName) selectedGateName = g.name;
-
-      const tr = el("tr", {
-        style: "cursor:pointer;" + (isSel ? "background:color-mix(in srgb, var(--accent) 10%, transparent);" : "")
-      }, [
-        el("td", { class: "mono" }, [el("strong", { text: g.name + (g.version ? "@" + g.version : "") })]),
-        el("td", { text: g.levels !== undefined ? String(g.levels) : "1" }),
-        el("td", {}, [el("code", { text: g.fail || "closed" })]),
-        el("td", {}, [el("span", { class: "st allow", text: g.status || "OK" })]),
-        el("td", { class: "mono", style: "color:var(--dim);", text: (g.digest || "").slice(0, 16) + "…" })
+    const rows = g.gates.map(function (x) {
+      const sel = x.name === S.gateName;
+      return el("tr", { class: sel ? "sel" : "" }, [
+        el("td", {}, [el("button", { type: "button", class: "link-btn mono", "aria-pressed": sel ? "true" : "false",
+          text: x.name + (x.version ? "@" + x.version : ""), onclick: function () { S.gateName = x.name; delete S.gateInfo[x.name]; renderGate(); } })]),
+        el("td", { text: Array.isArray(x.levels) ? x.levels.join(" / ") : x.levels === undefined ? "—" : String(x.levels) }),
+        el("td", {}, [el("code", { text: x.fail || "—" })]),
+        el("td", {}, [chip(x.status === "OK" ? "allow" : "block", x.status || "?")]),
+        el("td", { class: "mono dim", text: x.digest ? String(x.digest).slice(0, 19) + "…" : "—" })
       ]);
-      tr.addEventListener("click", function () {
-        selectGate(g.name);
-      });
-      tbody.appendChild(tr);
-    }
-
-    const registryPanel = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        el("span", { "data-i18n": "title_gate_registry", text: t("title_gate_registry") }),
-        btnLint
-      ]),
-      lintOutput,
-      el("table", { class: "data-table" }, [
-        el("thead", {}, [
-          el("tr", {}, [
-            el("th", { "data-i18n": "nav_gate", text: t("nav_gate") }),
-            el("th", { "data-i18n": "th_level", text: t("th_level") }),
-            el("th", { "data-i18n": "th_fail", text: t("th_fail") }),
-            el("th", { text: "Lint" }),
-            el("th", { "data-i18n": "th_digest", text: t("th_digest") })
-          ])
-        ]),
-        tbody
-      ])
-    ]);
-
-    const gateDetailContainer = el("div", { class: "panel" });
-    const whatifContainer = el("div", { class: "panel" });
-
-    const colLeft = el("div", { class: "col" }, [registryPanel, gateDetailContainer]);
-    const colRight = el("div", { class: "col" }, [whatifContainer]);
-    const grid2 = el("div", { class: "grid-2col" }, [colLeft, colRight]);
-    container.appendChild(grid2);
-
-    if (selectedGateName) {
-      fetchGateDetail(selectedGateName, gateDetailContainer, whatifContainer);
-    }
+    });
+    const registry = panel("title_gate_registry", g.lint ? g.lint.resolved + "/" + g.lint.total : null, lintBtn, el("div", {}, [
+      lintBox,
+      el("div", { class: "table-wrap" }, [el("table", { class: "data-table" }, [
+        el("thead", {}, [el("tr", {}, ["nav_gate", "th_level", "th_fail", "th_status", "th_digest"].map(function (k) { return el("th", { text: t(k) }); }))]),
+        el("tbody", {}, rows.length ? rows : [el("tr", {}, [el("td", { colspan: "5", class: "hint", text: t("lbl_no_gates") })])])
+      ])])
+    ]));
+    const detail = el("section", { class: "panel" });
+    const what = el("section", { class: "panel" });
+    c.appendChild(el("div", { class: "grid-2col" }, [el("div", { class: "col" }, [registry, detail]), el("div", { class: "col" }, [what])]));
+    if (!S.gateName) { detail.appendChild(el("div", { class: "hint", text: t("lbl_no_gates") })); return; }
+    const info = S.gateInfo[S.gateName];
+    if (!info) { detail.appendChild(loadingCard()); fetchGateInfo(S.gateName, function () { renderView("gate"); }); return; }
+    renderGateDetail(detail, what, info);
   }
 
-  function selectGate(name) {
-    selectedGateName = name;
-    renderGateView();
-  }
-
-  function fetchGateDetail(name, detailContainer, whatifContainer) {
-    fetch('/api/gates/' + encodeURIComponent(name)).then(function (res) {
-      if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-      return res.json();
-    }).then(function (data) {
-      selectedGateData = data;
-      renderGateDetailContent(data, detailContainer, whatifContainer);
-    }).catch(function (err) {
-      renderGateDetailContent({ ok: false, error: { why: String(err) } }, detailContainer, whatifContainer);
+  function renderLint(box, j) {
+    if (!j.ok) { box.appendChild(naCard(j)); return; }
+    box.appendChild(el("div", {}, [chip(j.resolved === j.total ? "allow" : "block", j.resolved + "/" + j.total), " " + t("lbl_gates_resolved")]));
+    (j.gates || []).forEach(function (x) {
+      if (x && (x.status === "FAIL" || x.error)) box.appendChild(el("div", { class: "mono err", text: (x.name || "") + " — " + (x.error || x.status) }));
     });
   }
 
-  function renderGateDetailContent(data, detailContainer, whatifContainer) {
-    detailContainer.textContent = "";
-    whatifContainer.textContent = "";
-
-    if (!data || !data.ok) {
-      const why = (data && data.error && data.error.why) || t("msg_not_available");
-      detailContainer.appendChild(notAvailableCard(why));
-      whatifContainer.appendChild(notAvailableCard(why));
-      return;
-    }
-
-    const gName = data.name + (data.version ? "@" + data.version : "");
-    const chainText = (data.chain && data.chain.length > 0) ? data.chain.join(" → ") : gName;
-
-    const critRows = [];
-    const evalSpec = data.evaluate || {};
-    for (const c in evalSpec) {
-      const spec = evalSpec[c] || {};
-      critRows.push(el("tr", {}, [
-        el("td", { class: "mono", text: c }),
-        el("td", {}, [el("code", { text: spec.type || (spec.levels ? "choice " + JSON.stringify(spec.levels) : "bool") })]),
-        el("td", { text: spec.instructions || spec.description || "—" })
-      ]));
-    }
-
-    detailContainer.appendChild(el("h2", {}, [
-      el("span", { "data-i18n": "title_gate_spec", text: t("title_gate_spec") }),
-      document.createTextNode(": "),
-      el("span", { class: "mono", text: gName })
-    ]));
-
-    detailContainer.appendChild(el("div", {}, [
-      el("strong", { "data-i18n": "lbl_chain", text: t("lbl_chain") + " " }),
-      el("code", { class: "mono", text: chainText })
-    ]));
-
-    const critTable = el("table", { class: "crit-table", style: "margin-top:4px;" }, [
-      el("thead", {}, [
-        el("tr", {}, [
-          el("th", { "data-i18n": "th_criterion", text: t("th_criterion") }),
-          el("th", { "data-i18n": "th_type", text: t("th_type") }),
-          el("th", { "data-i18n": "th_desc", text: t("th_desc") })
-        ])
-      ]),
-      el("tbody", {}, critRows)
-    ]);
-
-    detailContainer.appendChild(el("div", { style: "margin:8px 0;" }, [
-      el("strong", { "data-i18n": "lbl_criteria", text: t("lbl_criteria") }),
-      critTable
-    ]));
-
-    detailContainer.appendChild(el("div", {}, [el("strong", { text: "allow_when:" })]));
-    detailContainer.appendChild(el("div", { class: "code-box", text: JSON.stringify(data.allow_when || {}, null, 2) }));
-
-    detailContainer.appendChild(el("div", {}, [el("strong", { text: "on_block:" })]));
-    detailContainer.appendChild(el("div", { class: "code-box", text: JSON.stringify(data.on_block || {}, null, 2) }));
-
-    // What-If Form
-    whatifContainer.appendChild(el("h2", {}, [
-      el("span", { "data-i18n": "title_whatif", text: t("title_whatif") }),
-      el("span", { class: "sub", text: gName })
-    ]));
-    whatifContainer.appendChild(el("p", {
-      style: "font-size:12px;color:var(--dim);",
-      "data-i18n": "desc_whatif",
-      text: t("desc_whatif")
-    }));
-
-    const formDiv = el("div", {
-      style: "display:flex;flex-direction:column;gap:12px;margin:14px 0;background:var(--bg);padding:12px;border-radius:6px;border:1px solid var(--line);"
+  function runButton(labelKey, key, fn) {
+    const b = el("button", { type: "button", class: "btn-sm", text: t(labelKey) });
+    b.addEventListener("click", function () {
+      if (b.disabled) return;
+      b.disabled = true;
+      clear(b);
+      add(b, [el("span", { class: "spinner", "aria-hidden": "true" }), " " + t("lbl_running")]);
+      fn(function () { b.disabled = false; b.textContent = t(labelKey); });
     });
+    return b;
+  }
 
-    const whatifVerdictDiv = el("div", {
-      style: "padding:12px;border-radius:6px;border:1px solid var(--line);background:var(--panel);"
-    }, [
-      el("div", {
-        style: "font-size:11px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;",
-        "data-i18n": "lbl_preview_verdict",
-        text: t("lbl_preview_verdict")
-      }),
-      el("div", { id: "whatifVerdictContent" })
-    ]);
+  function renderGateDetail(detail, what, info) {
+    if (!info.ok) { detail.appendChild(naCard(info)); what.appendChild(naCard(info)); return; }
+    const label = info.name + (info.version ? "@" + info.version : "");
+    detail.appendChild(el("h2", {}, [el("span", { text: t("title_gate_spec") }), el("span", { class: "sub mono", text: label })]));
+    if (info.chain && info.chain.length) detail.appendChild(kv(t("lbl_chain"), info.chain.join(" → ")));
+    const spec = info.evaluate || {};
+    const crit = Object.keys(spec).map(function (k) {
+      const s = spec[k] || {};
+      const opts = s.levels || s.options;
+      return el("tr", {}, [
+        el("td", { class: "mono", text: k }),
+        el("td", {}, [el("code", { text: (s.type || "?") + (opts ? " [" + opts.join(", ") + "]" : "") })]),
+        el("td", { text: s.instructions || "—" })
+      ]);
+    });
+    detail.appendChild(el("div", { class: "table-wrap" }, [el("table", { class: "crit-table" }, [
+      el("thead", {}, [el("tr", {}, ["th_criterion", "th_type", "th_desc"].map(function (k) { return el("th", { text: t(k) }); }))]),
+      el("tbody", {}, crit)
+    ])]));
+    ["allow_when", "on_block", "budget"].forEach(function (k) {
+      if (info[k] && Object.keys(info[k]).length) {
+        detail.appendChild(el("div", { class: "kv-key", text: k + ":" }));
+        detail.appendChild(codeBox(info[k]));
+      }
+    });
+    if (info.explanation && Object.keys(info.explanation).length) {
+      detail.appendChild(el("div", { class: "kv-key", text: t("lbl_explain") + ":" }));
+      detail.appendChild(codeBox(info.explanation));
+    }
+    renderWhatIf(what, info, label);
+  }
 
-    const inputsMap = {};
-    for (const critName in evalSpec) {
-      const cSpec = evalSpec[critName] || {};
-      const type = cSpec.type || (cSpec.levels || cSpec.options ? "choice" : "bool");
-
-      if (type === "bool") {
-        const chk = el("input", { type: "checkbox", checked: "true" });
-        const unsetChk = el("input", { type: "checkbox" });
-        inputsMap[critName] = { type: "bool", chk: chk, unsetChk: unsetChk };
-
-        const row = el("div", { style: "display:flex;align-items:center;justify-content:space-between;gap:8px;" }, [
-          el("label", { class: "ctrl-label" }, [
-            chk,
-            el("span", {}, [el("code", { text: critName })])
-          ]),
-          el("label", { class: "ctrl-label", style: "font-size:11px;color:var(--dim);" }, [
-            unsetChk,
-            el("span", { "data-i18n": "lbl_unset", text: t("lbl_unset") })
-          ])
-        ]);
-        chk.addEventListener("change", function () {
-          unsetChk.checked = false;
-          executeWhatIf(data.name, inputsMap, whatifVerdictDiv.querySelector("#whatifVerdictContent"));
-        });
-        unsetChk.addEventListener("change", function () {
-          executeWhatIf(data.name, inputsMap, whatifVerdictDiv.querySelector("#whatifVerdictContent"));
-        });
-        formDiv.appendChild(row);
-      } else if (type === "choice") {
-        const opts = cSpec.levels || cSpec.options || ["low", "medium", "high"];
-        const sel = el("select", { class: "ctrl-select" });
-        for (let o = 0; o < opts.length; o++) {
-          sel.appendChild(el("option", { value: opts[o], text: opts[o] }));
-        }
-        sel.appendChild(el("option", { value: "__unset__", text: t("lbl_unset") }));
-        inputsMap[critName] = { type: "choice", sel: sel };
-
-        const row = el("label", { class: "ctrl-label", style: "justify-content:space-between;" }, [
-          el("span", {}, [el("code", { text: critName }), document.createTextNode(":") ]),
-          sel
-        ]);
-        sel.addEventListener("change", function () {
-          executeWhatIf(data.name, inputsMap, whatifVerdictDiv.querySelector("#whatifVerdictContent"));
-        });
-        formDiv.appendChild(row);
+  function renderWhatIf(what, info, label) {
+    what.appendChild(el("h2", {}, [el("span", { text: t("title_whatif") }), el("span", { class: "sub mono", text: label })]));
+    what.appendChild(el("p", { class: "hint", text: t("desc_whatif") }));
+    const out = el("div", { class: "whatif-out", role: "status" });
+    const inputs = {};
+    const form = el("div", { class: "whatif-form" });
+    const spec = info.evaluate || {};
+    Object.keys(spec).forEach(function (k) {
+      const s = spec[k] || {};
+      const opts = s.levels || s.options;
+      let ctl, read;
+      if (opts && opts.length) {
+        ctl = el("select", { class: "ctrl-select", "aria-label": k }, opts.map(function (o) { return el("option", { value: o, text: o }); }));
+        read = function () { return ctl.value; };
+      } else if (s.type === "bool" || s.type === "boolean") {
+        ctl = el("input", { type: "checkbox", checked: true, "aria-label": k });
+        read = function () { return ctl.checked; };
+      } else if (s.type === "number" || s.type === "int" || s.type === "float" || s.type === "integer") {
+        ctl = el("input", { type: "number", class: "ctrl-input", value: "0", "aria-label": k });
+        read = function () { return Number(ctl.value); };
       } else {
-        const inp = el("input", { type: "number", class: "ctrl-input", value: "0" });
-        const unsetChk = el("input", { type: "checkbox" });
-        inputsMap[critName] = { type: "number", inp: inp, unsetChk: unsetChk };
-
-        const row = el("div", { style: "display:flex;align-items:center;justify-content:space-between;gap:8px;" }, [
-          el("label", { class: "ctrl-label" }, [
-            el("code", { text: critName }),
-            document.createTextNode(":"),
-            inp
-          ]),
-          el("label", { class: "ctrl-label", style: "font-size:11px;color:var(--dim);" }, [
-            unsetChk,
-            el("span", { "data-i18n": "lbl_unset", text: t("lbl_unset") })
-          ])
-        ]);
-        inp.addEventListener("input", function () {
-          unsetChk.checked = false;
-          executeWhatIf(data.name, inputsMap, whatifVerdictDiv.querySelector("#whatifVerdictContent"));
-        });
-        unsetChk.addEventListener("change", function () {
-          executeWhatIf(data.name, inputsMap, whatifVerdictDiv.querySelector("#whatifVerdictContent"));
-        });
-        formDiv.appendChild(row);
+        ctl = el("input", { type: "text", class: "ctrl-input", "aria-label": k });
+        read = function () { return ctl.value; };
       }
-    }
-
-    whatifContainer.appendChild(formDiv);
-    whatifContainer.appendChild(whatifVerdictDiv);
-
-    executeWhatIf(data.name, inputsMap, whatifVerdictDiv.querySelector("#whatifVerdictContent"));
+      const unset = el("input", { type: "checkbox", "aria-label": k + " " + t("lbl_unset") });
+      inputs[k] = { read: read, unset: unset };
+      const refresh = function () { ctl.disabled = unset.checked; runWhatIf(info.name, inputs, out); };
+      ctl.addEventListener("change", refresh);
+      ctl.addEventListener("input", refresh);
+      unset.addEventListener("change", refresh);
+      form.appendChild(el("div", { class: "whatif-row" }, [
+        el("label", { class: "ctrl-label" }, [ctl, el("code", { text: k })]),
+        el("label", { class: "ctrl-label dim" }, [unset, t("lbl_unset")])
+      ]));
+    });
+    what.appendChild(form);
+    what.appendChild(el("div", { class: "kv-key", text: t("lbl_preview_verdict") }));
+    what.appendChild(out);
+    runWhatIf(info.name, inputs, out);
   }
 
-  function executeWhatIf(gateName, inputsMap, targetEl) {
+  function runWhatIf(name, inputs, out) {
     const facts = {};
-    for (const c in inputsMap) {
-      const item = inputsMap[c];
-      if (item.type === "bool") {
-        if (!item.unsetChk.checked) {
-          facts[c] = item.chk.checked;
-        }
-      } else if (item.type === "choice") {
-        if (item.sel.value !== "__unset__") {
-          facts[c] = item.sel.value;
-        }
-      } else if (item.type === "number") {
-        if (!item.unsetChk.checked) {
-          facts[c] = Number(item.inp.value);
-        }
-      }
-    }
-
-    fetch('/api/gates/' + encodeURIComponent(gateName) + '/whatif', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ facts: facts })
-    }).then(function (res) {
-      if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-      return res.json();
-    }).then(function (resData) {
-      targetEl.textContent = "";
-      if (!resData.ok) {
-        targetEl.appendChild(notAvailableCard((resData.error && resData.error.why) || t("msg_not_available")));
-        return;
-      }
-      const v = resData.verdict || "UNKNOWN";
-      targetEl.appendChild(el("span", { class: "st " + (v === "ALLOW" ? "allow" : "block"), text: (v === "ALLOW" ? "✓ " : "✗ ") + v }));
-      if (resData.reason) {
-        targetEl.appendChild(document.createTextNode(" "));
-        targetEl.appendChild(el("span", { class: "mono", text: resData.reason + (resData.failed_criterion ? " (" + resData.failed_criterion + ")" : "") }));
-      }
-      if (resData.action) {
-        targetEl.appendChild(el("div", { style: "font-size:12px;color:var(--dim);margin-top:6px;", text: "→ action: " + resData.action }));
-      }
-    }).catch(function (err) {
-      targetEl.textContent = "";
-      targetEl.appendChild(notAvailableCard(String(err)));
+    Object.keys(inputs).forEach(function (k) { if (!inputs[k].unset.checked) facts[k] = inputs[k].read(); });
+    const seq = ++S.whatifSeq;
+    api("POST", "gates/" + enc(name) + "/whatif", { facts: facts }).then(function (j) {
+      if (seq !== S.whatifSeq) return;
+      clear(out);
+      if (!j.ok) { out.appendChild(naCard(j)); return; }
+      out.appendChild(el("div", {}, [
+        verdictChip(j.verdict),
+        j.reason ? el("span", { class: "mono", text: " " + j.reason + (j.failed_criterion ? " (" + j.failed_criterion + ")" : "") }) : null
+      ]));
+      if (j.action) out.appendChild(kv("on_block:", j.action));
+      if (j.evaluations) out.appendChild(codeBox(j.evaluations));
     });
   }
 
-  // =========================================================================
-  // VIEW 3: Traces & Timeline
-  // =========================================================================
+  // ---------------------------------------------------------------- traces
+  let blobUrl = null;
 
   function loadTraces() {
-    fetch('/api/traces').then(function (res) {
-      if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-      return res.json();
-    }).then(function (data) {
-      tracesData = data;
-      renderTracesView();
-    }).catch(function (err) {
-      tracesData = { ok: false, error: { why: String(err) } };
-      renderTracesView();
+    api("GET", "traces").then(function (j) {
+      S.traces = j;
+      if (j.ok && j.traces.length && !j.traces.some(function (x) { return x.name === S.traceName; })) {
+        S.traceName = j.traces[0].name;
+        S.trace = null;
+      }
+      if (S.traceName && !S.trace) loadTrace(S.traceName);
+      renderView("traces");
     });
   }
 
-  function renderTracesView() {
-    const container = viewContainers.traces;
-    container.textContent = "";
+  function loadTrace(name) {
+    S.trace = null;
+    S.traceNote = null;
+    api("GET", "traces/" + enc(name)).then(function (j) {
+      if (S.traceName !== name) return;
+      S.trace = j;
+      renderView("traces");
+    });
+    renderView("traces");
+  }
 
-    if (!tracesData || !tracesData.ok) {
-      container.appendChild(notAvailableCard((tracesData && tracesData.error && tracesData.error.why) || t("msg_not_available")));
-      return;
-    }
-
-    const tracesList = tracesData.traces || [];
-    const btnRecord = el("button", { class: "btn-sm", text: "⏺ " + t("btn_record") });
-    btnRecord.addEventListener("click", function () {
-      btnRecord.textContent = t("lbl_running");
-      fetch('/api/record', { method: 'POST' }).then(function (res) {
-        if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-        return res.json();
-      }).then(function (recData) {
-        btnRecord.textContent = "⏺ " + t("btn_record");
-        if (recData.ok) {
-          loadTraces();
-        }
-      }).catch(function () {
-        btnRecord.textContent = "⏺ " + t("btn_record");
+  function renderTraces() {
+    const c = refs.views.traces;
+    clear(c);
+    const tr = S.traces;
+    if (!tr) { c.appendChild(loadingCard()); return; }
+    if (!tr.ok) { c.appendChild(naCard(tr)); return; }
+    const save = runButton("btn_record", "record", function (done) {
+      api("POST", "record").then(function (j) {
+        done();
+        S.traceNote = j.ok ? { ok: true, text: t("lbl_saved") + " " + j.name + " (" + j.events + ")" } : { ok: false, res: j };
+        if (j.ok) S.traceName = j.name;
+        S.trace = null;
+        loadTraces();
       });
     });
-
-    const tbody = el("tbody");
-    for (let i = 0; i < tracesList.length; i++) {
-      const tr = tracesList[i];
-      const isSel = selectedTraceName === tr.name || (!selectedTraceName && i === 0);
-      if (isSel && !selectedTraceName) selectedTraceName = tr.name;
-
-      const row = el("tr", {
-        style: "cursor:pointer;" + (isSel ? "background:color-mix(in srgb, var(--accent) 10%, transparent);" : "")
-      }, [
-        el("td", { class: "mono" }, [el("strong", { text: tr.session_id || tr.name })]),
-        el("td", { text: (tr.events || 0) + " " + t("th_events_count") }),
-        el("td", {}, [el("code", { text: tr.target || "sim" })]),
-        el("td", {}, [el("span", { class: "st allow", text: tr.anonymized !== false ? "✓ sha256" : "raw" })]),
-        el("td", { class: "mono", text: tr.recorded_at || "—" })
+    const rows = tr.traces.map(function (x) {
+      const sel = x.name === S.traceName;
+      return el("tr", { class: sel ? "sel" : "" }, [
+        el("td", {}, [el("button", { type: "button", class: "link-btn mono", "aria-pressed": sel ? "true" : "false", text: x.name,
+          onclick: function () { S.traceName = x.name; loadTrace(x.name); } })]),
+        el("td", { text: String(x.events === undefined ? "—" : x.events) }),
+        el("td", { text: [x.target, x.board].filter(Boolean).join(" · ") || "—" }),
+        el("td", {}, [chip(x.anonymized === false ? "warn" : "allow", x.anonymized === false ? "raw" : "sha256")]),
+        el("td", { class: "mono", text: x.recorded_at || "—" })
       ]);
-      row.addEventListener("click", function () {
-        selectTrace(tr.name);
-      });
-      tbody.appendChild(row);
-    }
-
-    const tablePanel = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        el("span", { "data-i18n": "title_traces_list", text: t("title_traces_list") }),
-        btnRecord
-      ]),
-      el("div", {
-        style: "font-size:11.5px;color:var(--warn);margin-bottom:10px;background:color-mix(in srgb, var(--warn) 15%, transparent);padding:6px 10px;border-radius:4px;border:1px solid var(--warn);"
-      }, [
-        document.createTextNode("🔒 "),
-        el("span", { "data-i18n": "privacy_note", text: t("privacy_note") })
-      ]),
-      el("table", { class: "data-table" }, [
-        el("thead", {}, [
-          el("tr", {}, [
-            el("th", { "data-i18n": "th_session", text: t("th_session") }),
-            el("th", { "data-i18n": "th_events_count", text: t("th_events_count") }),
-            el("th", { "data-i18n": "th_target", text: t("th_target") }),
-            el("th", { "data-i18n": "th_anonymized", text: t("th_anonymized") }),
-            el("th", { "data-i18n": "th_recorded_at", text: t("th_recorded_at") })
-          ])
-        ]),
-        tbody
-      ])
-    ]);
-
-    const timelinePanel = el("div", { class: "panel" });
-    container.appendChild(tablePanel);
-    container.appendChild(timelinePanel);
-
-    if (selectedTraceName) {
-      loadTraceDetail(selectedTraceName, timelinePanel);
-    }
-  }
-
-  function selectTrace(name) {
-    selectedTraceName = name;
-    renderTracesView();
-  }
-
-  function loadTraceDetail(name, container) {
-    fetch('/api/traces/' + encodeURIComponent(name)).then(function (res) {
-      if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-      return res.json();
-    }).then(function (data) {
-      selectedTraceData = data;
-      renderTraceTimeline(name, data, container);
-    }).catch(function (err) {
-      renderTraceTimeline(name, { ok: false, error: { why: String(err) } }, container);
     });
-  }
-
-  function renderTraceTimeline(name, trace, container) {
-    container.textContent = "";
-
-    const btnReplay = el("button", { class: "btn-sm", text: "⟳ " + t("btn_replay") });
-    btnReplay.addEventListener("click", function () {
-      btnReplay.textContent = t("lbl_running");
-      fetch('/api/traces/' + encodeURIComponent(name) + '/replay', { method: 'POST' }).then(function (res) {
-        if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-        return res.json();
-      }).then(function (resData) {
-        btnReplay.textContent = "⟳ " + t("btn_replay");
-        const msg = resData.ok ? (resData.match ? "✓ Match: " + t("lbl_replay_done") : "✗ Mismatch") : ((resData.error && resData.error.why) || "Replay failed");
-        alert(msg);
-      }).catch(function (err) {
-        btnReplay.textContent = "⟳ " + t("btn_replay");
-        alert(String(err));
-      });
-    });
-
-    const btnDownload = el("button", { class: "btn-sm", text: "⬇ " + t("btn_json") });
-    btnDownload.addEventListener("click", function () {
-      const blob = new Blob([JSON.stringify(trace, null, 2)], { type: "application/json" });
-      const dlLink = el("a", {
-        href: URL.createObjectURL(blob),
-        download: name + ".json"
-      });
-      document.body.appendChild(dlLink);
-      dlLink.click();
-      document.body.removeChild(dlLink);
-    });
-
-    container.appendChild(el("h2", {}, [
-      el("span", {}, [
-        el("span", { "data-i18n": "title_timeline", text: t("title_timeline") }),
-        document.createTextNode(" (" + name + ")")
-      ]),
-      el("div", { style: "display:flex;gap:6px;" }, [btnReplay, btnDownload])
+    const list = panel("title_traces_list", null, save, el("div", {}, [
+      el("div", { class: "notice", text: "🔒 " + t("privacy_note") }),
+      S.traceNote ? (S.traceNote.ok ? el("div", { class: "result-box", text: S.traceNote.text }) : naCard(S.traceNote.res)) : null,
+      el("div", { class: "table-wrap" }, [el("table", { class: "data-table" }, [
+        el("thead", {}, [el("tr", {}, ["th_session", "th_events_count", "th_target", "th_anonymized", "th_recorded_at"].map(function (k) { return el("th", { text: t(k) }); }))]),
+        el("tbody", {}, rows.length ? rows : [el("tr", {}, [el("td", { colspan: "5", class: "hint", text: t("lbl_no_traces") })])])
+      ])])
     ]));
-
-    if (!trace || !trace.events) {
-      container.appendChild(notAvailableCard((trace && trace.error && trace.error.why) || t("msg_not_available")));
-      return;
+    c.appendChild(list);
+    if (S.traceName) {
+      const box = el("section", { class: "panel" });
+      c.appendChild(box);
+      renderTimeline(box);
     }
+  }
 
-    const tEvents = trace.events || [];
+  function renderTimeline(box) {
+    const j = S.trace;
+    const replayOut = el("div", { class: "whatif-out", role: "status" });
+    const replay = runButton("btn_replay", "replay", function (done) {
+      api("POST", "traces/" + enc(S.traceName) + "/replay").then(function (r) {
+        done();
+        clear(replayOut);
+        if (!r.ok) { replayOut.appendChild(naCard(r)); return; }
+        replayOut.appendChild(el("div", {}, [chip(r.match ? "allow" : "block", r.match ? "✓ match" : "✗ mismatch"),
+          " " + (r.verdicts ? r.verdicts.length + " " + t("th_verdict") : "") + (r.detail ? " — " + r.detail : "")]));
+      });
+    });
+    const tools = el("span", { class: "row-actions" }, [replay]);
+    if (j && j.events) {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      blobUrl = URL.createObjectURL(new Blob([JSON.stringify(j, null, 2)], { type: "application/json" }));
+      tools.appendChild(el("a", { class: "btn-sm", href: blobUrl, download: S.traceName + ".json", text: "⬇ " + t("btn_json") }));
+    }
+    box.appendChild(el("h2", {}, [el("span", { text: t("title_timeline") }), el("span", { class: "sub mono", text: S.traceName }), tools]));
+    box.appendChild(replayOut);
+    if (!j) { box.appendChild(loadingCard()); return; }
+    if (!j.events) { box.appendChild(naCard(j)); return; }
+
+    const evs = j.events;
     let maxMs = 1;
-    for (let i = 0; i < tEvents.length; i++) {
-      if (tEvents[i].offset_ms > maxMs) maxMs = tEvents[i].offset_ms;
-      if (tEvents[i].type === "actuator_command" && tEvents[i].data && tEvents[i].data.duration_ms) {
-        const end = tEvents[i].offset_ms + tEvents[i].data.duration_ms;
-        if (end > maxMs) maxMs = end;
-      }
-    }
+    evs.forEach(function (e) { if (e.offset_ms > maxMs) maxMs = e.offset_ms; });
+    const pct = function (ms) { return Math.max(0, Math.min(100, (ms / maxMs) * 100)); };
+    const lane = function (name, track, tail) {
+      return el("div", { class: "timeline-lane" }, [el("span", { class: "mono lane-name", text: name }), track, el("span", { class: "dim lane-tail", text: tail })]);
+    };
 
-    // Gate lane
     const gateHits = [];
-    for (let g = 0; g < tEvents.length; g++) {
-      const ev = tEvents[g];
-      if (ev.type === "gate_evaluation_result") {
-        const pct = Math.min(95, Math.round((ev.offset_ms / maxMs) * 100));
-        const verd = (ev.data && ev.data.verdict) || "VERDICT";
-        gateHits.push(el("div", {
-          class: "timeline-hit " + (verd === "ALLOW" ? "allow" : "block"),
-          style: "left:" + pct + "%;",
-          title: (ev.data && ev.data.gate || "") + " " + verd,
-          text: verd
-        }));
-      }
-    }
-
-    const gateTrack = el("div", { class: "timeline-track" }, gateHits);
-    container.appendChild(el("div", { class: "timeline-lane" }, [
-      el("span", { class: "mono", text: "gate lane" }),
-      gateTrack,
-      el("span", { style: "font-size:11px;color:var(--dim);", text: gateHits.length + " " + t("th_verdict") })
-    ]));
-
-    // Pin lanes
-    const pinNames = new Set(["door_lock", "porch_light", "gate_relay"]);
-    for (let p = 0; p < tEvents.length; p++) {
-      if (tEvents[p].type === "actuator_command" && tEvents[p].data && tEvents[p].data.pin) {
-        pinNames.add(tEvents[p].data.pin);
-      }
-    }
-
-    pinNames.forEach(function (pin) {
-      const pinHits = [];
-      let lastStateText = "LOW";
-      for (let k = 0; k < tEvents.length; k++) {
-        const ev = tEvents[k];
-        if (ev.type === "actuator_command" && ev.data && ev.data.pin === pin) {
-          const pct = Math.min(95, Math.round((ev.offset_ms / maxMs) * 100));
-          const durPct = ev.data.duration_ms ? Math.min(100 - pct, Math.max(5, Math.round((ev.data.duration_ms / maxMs) * 100))) : 20;
-          const op = (ev.data.operation || "HIGH").toUpperCase();
-          pinHits.push(el("div", {
-            class: "timeline-hit pulse",
-            style: "left:" + pct + "%;width:" + durPct + "%;",
-            title: pin + " " + op,
-            text: op
-          }));
-          lastStateText = op;
-        }
-      }
-      const pinTrack = el("div", { class: "timeline-track" }, pinHits);
-      container.appendChild(el("div", { class: "timeline-lane" }, [
-        el("span", { class: "mono", text: pin }),
-        pinTrack,
-        el("span", { style: "font-size:11px;color:var(--dim);", text: lastStateText })
+    evs.forEach(function (e) {
+      if (e.type !== "gate_evaluation_result") return;
+      const v = (e.data && e.data.verdict) || "?";
+      const left = pct(e.offset_ms);
+      gateHits.push(el("div", { class: "timeline-hit " + (v === "ALLOW" ? "allow" : "block") + (left > 70 ? " flip" : ""), style: left > 70 ? "right:" + (100 - left) + "%" : "left:" + left + "%", title: v + " @ " + e.offset_ms + " ms" }, [
+        el("span", { class: "hit-label", text: v })
       ]));
     });
+    box.appendChild(lane(t("lbl_gate_lane"), el("div", { class: "timeline-track" }, gateHits), String(gateHits.length)));
 
-    container.appendChild(el("div", { class: "timeline-axis" }, [
-      el("span", { text: "0 ms" }),
-      el("span", { text: Math.round(maxMs / 2) + " ms" }),
-      el("span", { text: maxMs + " ms" })
-    ]));
-  }
-
-  // =========================================================================
-  // VIEW 4: Verify View
-  // =========================================================================
-
-  function loadVerify() {
-    renderVerifyView();
-  }
-
-  function renderVerifyView() {
-    const container = viewContainers.verify;
-    container.textContent = "";
-
-    const btnLint = el("button", { class: "btn-sm", text: t("btn_lint") });
-    btnLint.addEventListener("click", function () {
-      btnLint.textContent = t("lbl_running");
-      fetch('/api/lint', { method: 'POST' }).then(function (res) {
-        if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-        return res.json();
-      }).then(function (data) {
-        btnLint.textContent = t("btn_lint");
-        alert(data.ok ? "✓ " + (data.resolved || 0) + " gate(s) resolved." : "✗ " + ((data.error && data.error.why) || "Lint failed"));
-      }).catch(function (err) {
-        btnLint.textContent = t("btn_lint");
-        alert(String(err));
-      });
-    });
-
-    const btnTest = el("button", { class: "btn-sm", text: t("btn_test") });
-    btnTest.addEventListener("click", function () {
-      btnTest.textContent = t("lbl_running");
-      fetch('/api/test', { method: 'POST' }).then(function (res) {
-        if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-        return res.json();
-      }).then(function (data) {
-        btnTest.textContent = t("btn_test");
-        alert(data.ok ? "✓ Passed: " + data.passed + ", Failed: " + data.failed : "✗ " + ((data.error && data.error.why) || "Test failed"));
-      }).catch(function (err) {
-        btnTest.textContent = t("btn_test");
-        alert(String(err));
-      });
-    });
-
-    const btnVerify = el("button", { class: "btn-sm", text: t("btn_verify") });
-    btnVerify.addEventListener("click", function () {
-      btnVerify.textContent = t("lbl_running");
-      fetch('/api/verify', { method: 'POST' }).then(function (res) {
-        if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-        return res.json();
-      }).then(function (data) {
-        btnVerify.textContent = t("btn_verify");
-        verifyData = data;
-        renderVerifyView();
-      }).catch(function (err) {
-        btnVerify.textContent = t("btn_verify");
-        verifyData = { ok: false, error: { why: String(err) } };
-        renderVerifyView();
-      });
-    });
-
-    const defaultMatrix = [
-      { item: "trace-01 (light_on)", sim: "✓ máy này", linux: "✓ CI · linux-hal", esp32s3: "✓ CI · uart-trace (QEMU)" },
-      { item: "trace-02 (light_off_block)", sim: "✓ máy này", linux: "✓ CI · linux-hal", esp32s3: "✓ CI · uart-trace (QEMU)" },
-      { item: "trace-03 (door_unlock)", sim: "✓ máy này", linux: "✓ CI · linux-hal", esp32s3: "✓ CI · uart-trace (QEMU)" },
-      { item: "gate: light_on@1.0.0", sim: "✓ máy này", linux: "✓ CI · linux-hal", esp32s3: "✓ CI · uart-trace (QEMU)" },
-      { item: "gate: light_off@1.0.0", sim: "✓ máy này", linux: "✓ CI · linux-hal", esp32s3: "✓ CI · uart-trace (QEMU)" },
-      { item: "gate: unlock_door@1.2.0", sim: "✓ máy này", linux: "✓ CI · linux-hal", esp32s3: "✓ CI · uart-trace (QEMU)" },
-      { item: "tool-call corpus (fixtures/tool_calls/)", sim: "✓ máy này", linux: "✓ CI · linux-hal", esp32s3: "✓ CI · uart-trace (QEMU)" }
-    ];
-
-    const matrixRows = (verifyData && verifyData.matrix) || defaultMatrix;
-    const tbody = el("tbody");
-    for (let m = 0; m < matrixRows.length; m++) {
-      const row = matrixRows[m];
-      tbody.appendChild(el("tr", {}, [
-        el("td", {}, [el("strong", { text: row.item })]),
-        el("td", {}, [el("span", { class: "st allow", text: typeof row.sim === "string" ? row.sim : (row.sim ? "✓ pass" : "✗ fail") })]),
-        el("td", {}, [el("span", { class: "st allow", text: typeof row.linux === "string" ? row.linux : "✓ CI · linux-hal" })]),
-        el("td", {}, [el("span", { class: "st allow", text: typeof row.esp32s3 === "string" ? row.esp32s3 : "✓ CI · uart-trace (QEMU)" })])
-      ]));
-    }
-
-    const summaryText = (verifyData && verifyData.summary) ||
-      "✓ Passed: all gates resolve, canonical traces validate, every tool call gives its recorded result, and replays on sim match.";
-    const comparedText = (verifyData && verifyData.compared) ||
-      t("verify_timing_note");
-
-    const matrixPanel = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        el("span", { "data-i18n": "title_matrix", text: t("title_matrix") }),
-        el("div", { style: "display:flex;gap:6px;" }, [btnLint, btnTest, btnVerify])
-      ]),
-      el("table", { class: "data-table" }, [
-        el("thead", {}, [
-          el("tr", {}, [
-            el("th", { "data-i18n": "th_artifact", text: t("th_artifact") }),
-            el("th", { text: "sim" }),
-            el("th", { text: "linux" }),
-            el("th", { text: "esp32s3" })
-          ])
-        ]),
-        tbody
-      ]),
-      el("div", {
-        style: "margin-top:14px;padding:10px 14px;background:var(--code-bg);border:1px solid var(--allow);border-radius:6px;font-size:12px;"
-      }, [
-        el("div", { style: "color:var(--allow);font-weight:700;margin-bottom:4px;", text: summaryText }),
-        el("div", { style: "color:var(--dim);", "data-i18n": "verify_timing_note", text: comparedText })
-      ])
-    ]);
-
-    const notYetPanel = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        el("span", { "data-i18n": "title_not_yet", text: t("title_not_yet") }),
-        el("span", { class: "sub", text: "CHANGELOG §3.7" })
-      ]),
-      el("ul", { style: "margin:0;padding-left:20px;font-size:12px;color:var(--dim);line-height:1.7;" }, [
-        el("li", { "data-i18n": "ny_board", text: t("ny_board") }),
-        el("li", { "data-i18n": "ny_secure_boot", text: t("ny_secure_boot") }),
-        el("li", { "data-i18n": "ny_wifi", text: t("ny_wifi") }),
-        el("li", { "data-i18n": "ny_timing", text: t("ny_timing") })
-      ])
-    ]);
-
-    container.appendChild(matrixPanel);
-    container.appendChild(notYetPanel);
-  }
-
-  // =========================================================================
-  // VIEW 5: Device View
-  // =========================================================================
-
-  function loadDevice() {
-    fetch('/api/device').then(function (res) {
-      if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-      return res.json();
-    }).then(function (data) {
-      deviceData = data;
-      renderDeviceView();
-    }).catch(function (err) {
-      deviceData = { ok: false, error: { why: String(err) } };
-      renderDeviceView();
-    });
-  }
-
-  function renderDeviceView() {
-    const container = viewContainers.device;
-    container.textContent = "";
-
-    const banner = el("div", { class: "banner", style: "margin-bottom:14px;border-radius:6px;" }, [
-      el("span", { style: "font-weight:700;color:var(--warn);", "data-i18n": "banner_qemu", text: t("banner_qemu") }),
-      el("span", { class: "note", text: "Docker espressif/idf:v5.4 · demo/i3-firmware-qemu/run.sh" })
-    ]);
-    container.appendChild(banner);
-
-    // Firmware build panel
-    const btnBuild = el("button", { class: "btn-sm", text: t("btn_build") });
-    btnBuild.addEventListener("click", function () {
-      btnBuild.textContent = t("lbl_running");
-      fetch('/api/device/build', { method: 'POST' }).then(function (res) {
-        if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-        return res.json();
-      }).then(function (bData) {
-        btnBuild.textContent = t("btn_build");
-        alert(bData.ok ? "✓ Firmware built in " + bData.dir + " (" + bData.files + " files)" : "✗ " + ((bData.error && bData.error.why) || "Build failed"));
-      }).catch(function (err) {
-        btnBuild.textContent = t("btn_build");
-        alert(String(err));
-      });
-    });
-
-    const buildPanel = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        el("span", {}, [
-          document.createTextNode("(a) "),
-          el("span", { "data-i18n": "title_build_firmware", text: t("title_build_firmware") })
-        ]),
-        btnBuild
-      ]),
-      el("div", { class: "code-box", text: "neuroedge build --target esp32s3 --board esp32s3-box-3" }),
-      el("div", { style: "font-size:12px;margin:8px 0;color:var(--text);", text: "firmware: build/esp32s3 — ESP-IDF project, 38 " + t("lbl_files") }),
-      el("div", { style: "font-size:11.5px;color:var(--dim);margin-top:8px;" }, [
-        el("span", { text: t("lbl_flash") + " 1220 KiB / 4096 KiB (2876 KiB headroom)" }),
-        el("div", { class: "budget-bar" }, [el("div", { class: "budget-fill", style: "width: 29.8%;" })])
-      ]),
-      el("div", { style: "font-size:11.5px;color:var(--dim);" }, [
-        el("span", { text: t("lbl_sram") + " 172.3 KiB / 320 KiB (147.7 KiB above the floor)" }),
-        el("div", { class: "budget-bar" }, [el("div", { class: "budget-fill", style: "width: 53.8%;background:var(--accent);" })])
-      ])
-    ]);
-
-    const qemuLogText = (deviceData && deviceData.qemu && deviceData.qemu.log) ||
-      "ESP-IDF v5.4-dev-3208\nI (240) cpu_start: Pro cpu up.\nI (310) octal_psram: PSRAM ID read error (expected in QEMU)\nNE_SELFTEST PASS walker=26 token=11\nI (450) ne_runtime: NETR decision tree verified in flash\nNE1 {\"offset_ms\":0,\"type\":\"device_info\",\"data\":{\"board_id\":\"esp32s3-box-3\",\"agent_version\":\"home-voice@0.1.0\"}}\nNE_TRACE DONE sessions=4\nI (890) ne_boot: heap check free_sram_kb=267.7";
-
-    const qemuPanel = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        document.createTextNode("(c) "),
-        el("span", { "data-i18n": "title_qemu_boot", text: t("title_qemu_boot") }),
-        el("span", { class: "sub", text: "UART stream" })
-      ]),
-      el("div", { class: "code-box", style: "height:140px;overflow-y:auto;line-height:1.5;", text: qemuLogText }),
-      el("div", { style: "font-size:11.5px;color:var(--dim);margin-top:6px;", "data-i18n": "qemu_note", text: t("qemu_note") })
-    ]);
-
-    container.appendChild(el("div", { class: "grid-2col" }, [buildPanel, qemuPanel]));
-
-    // LCD screen gallery
-    const btnToggleScr = el("button", { class: "btn-sm", text: "LCD: " + screenLang.toUpperCase() });
-    btnToggleScr.addEventListener("click", function () {
-      screenLang = screenLang === "vi" ? "en" : "vi";
-      btnToggleScr.textContent = "LCD: " + screenLang.toUpperCase();
-      renderScreenGalleryCards(galleryGrid);
-    });
-
-    const galleryGrid = el("div", { class: "gallery-grid" });
-    const galleryPanel = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        el("span", {}, [
-          document.createTextNode("(b) "),
-          el("span", { "data-i18n": "title_ui_gallery", text: t("title_ui_gallery") })
-        ]),
-        el("div", { style: "display:flex;align-items:center;gap:8px;" }, [
-          btnToggleScr,
-          el("span", { class: "st allow", "data-i18n": "golden_badge", text: t("golden_badge") })
-        ])
-      ]),
-      galleryGrid
-    ]);
-    renderScreenGalleryCards(galleryGrid);
-    container.appendChild(galleryPanel);
-
-    // OTA Stepper
-    const otaPhases = [
-      { p: "a", cls: "valid", text: "SKIP same_version 0.1.0 — Bản factory khởi động, máy chủ cùng phiên bản nên bỏ qua; không bao giờ mất khe đang chạy." },
-      { p: "b", cls: "valid", text: "SWITCH ota_0 → VALID — Bản 0.2.0 ký đúng tải về, xác minh RSA-3072, chuyển khe và đạt self-test (mốc nước cao NVS nâng lên 0.2.0)." },
-      { p: "c", cls: "reject", text: "REJECTED signature → ERASED — Bản ký khóa lạ bị từ chối trước boot; ở lại 0.2.0 và khe vừa ghi bị xóa sector đầu." },
-      { p: "d", cls: "rollback", text: "TEST BOOTLOOP → ROLLBACK ota_1→ota_0 — Bản lỗi crash bootloader tự quay về 0.2.0; bỏ qua bản hỏng (SKIP rolled_back)." },
-      { p: "e", cls: "rollback", text: "INVALID → ROLLBACK — Bản trượt gate self-test tự đánh dấu hỏng và reboot; bootloader tự quay về bản trước." },
-      { p: "f", cls: "reject", text: "REJECTED signature — Bản không có chữ ký bị từ chối và xóa khe ngay lập tức." },
-      { p: "g", cls: "valid", text: "SKIP downgrade 0.1.0 — Bản ký đúng nhưng phiên bản thấp hơn bị từ chối hạ cấp bởi mốc nước cao trong NVS." }
-    ];
-
-    const stepperDiv = el("div", { class: "stepper" });
-    for (let o = 0; o < otaPhases.length; o++) {
-      const ph = otaPhases[o];
-      stepperDiv.appendChild(el("div", { class: "step-item " + ph.cls }, [
-        el("div", { class: "step-phase", text: ph.p }),
-        el("div", { text: ph.text })
-      ]));
-    }
-
-    const otaPanel = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        document.createTextNode("(d) "),
-        el("span", { "data-i18n": "title_ota_stepper", text: t("title_ota_stepper") }),
-        el("span", { class: "sub", text: "qemu_ota.sh" })
-      ]),
-      stepperDiv
-    ]);
-    container.appendChild(otaPanel);
-  }
-
-  function renderScreenGalleryCards(grid) {
-    grid.textContent = "";
-    const screens = ["boot_passed", "voice_listening", "voice_speaking", "confirm", "verdict_allow", "verdict_block", "sensor", "ota_verifying"];
-    for (let i = 0; i < screens.length; i++) {
-      const scr = screens[i];
-      const img = el("img", {
-        src: "/api/device/golden/" + screenLang + "/" + scr + ".png",
-        alt: scr
-      });
-      img.addEventListener("error", function () {
-        const frame = el("div", { class: "screen-frame" }, [
-          svgEl("svg", { viewBox: "0 0 320 240" }, [
-            svgEl("rect", { width: "320", height: "240", fill: "#080e14" }),
-            svgEl("rect", { x: "8", y: "8", width: "304", height: "224", rx: "4", fill: "none", stroke: "#1f2d3d", "stroke-width": "2" }),
-            svgEl("text", { x: "160", y: "120", "text-anchor": "middle", fill: "#d8dee6", "font-size": "13", "font-weight": "bold", "font-family": "system-ui", text: scr + " (" + screenLang + ")" }),
-            svgEl("text", { x: "160", y: "145", "text-anchor": "middle", fill: "#58a6ff", "font-size": "11", "font-family": "monospace", text: "LVGL 320×240" })
-          ])
+    const pins = [];
+    evs.forEach(function (e) { if (e.type === "actuator_command" && e.data && pins.indexOf(e.data.pin) < 0) pins.push(e.data.pin); });
+    pins.forEach(function (pin) {
+      const cmds = evs.filter(function (e) { return e.type === "actuator_command" && e.data.pin === pin; });
+      const bars = cmds.map(function (e, i) {
+        const op = e.data.operation;
+        let end = e.offset_ms;
+        if (op === "pulse") end = e.offset_ms + (e.data.duration_ms || 0);
+        else if (op === "on") end = i + 1 < cmds.length ? cmds[i + 1].offset_ms : Infinity;
+        const left = pct(e.offset_ms);
+        const endP = pct(Math.min(end, maxMs));
+        const width = Math.max(2, endP - left);
+        return el("div", { class: "timeline-hit pulse" + (left > 70 ? " flip" : ""), style: (left > 70 ? "right:" + (100 - endP) + "%" : "left:" + left + "%") + ";width:" + width + "%", title: pin + " " + op + " @ " + e.offset_ms + " ms" }, [
+          el("span", { class: "hit-label", text: op.toUpperCase() })
         ]);
-        img.replaceWith(frame);
       });
+      box.appendChild(lane(pin, el("div", { class: "timeline-track" }, bars), cmds.length ? cmds[cmds.length - 1].data.operation : ""));
+    });
 
-      grid.appendChild(el("div", { class: "gallery-card" }, [
-        img,
-        el("div", { class: "card-title" }, [
-          el("span", { text: scr }),
-          el("span", { class: "mono", text: "golden ✓" })
-        ])
-      ]));
-    }
+    const axis = el("div", { class: "timeline-axis" });
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (f) { axis.appendChild(el("span", { class: "mono", text: Math.round(maxMs * f) + " ms" })); });
+    box.appendChild(axis);
   }
 
-  // =========================================================================
-  // VIEW 6: MCP View
-  // =========================================================================
+  // ---------------------------------------------------------------- verify
+  function renderVerify() {
+    const c = refs.views.verify;
+    clear(c);
+    const V = S.verify;
+    const out = { lint: el("div"), test: el("div"), verify: el("div") };
+    const btn = function (key, labelKey, path) {
+      return runButton(labelKey, key, function (done) {
+        api("POST", path).then(function (j) { done(); V[key] = j; renderVerifyResults(out, V); });
+      });
+    };
+    c.appendChild(el("section", { class: "panel" }, [
+      el("h2", {}, [el("span", { text: t("title_matrix") }), el("span", { class: "row-actions" }, [btn("lint", "btn_lint", "lint"), btn("test", "btn_test", "test"), btn("verify", "btn_verify", "verify")])]),
+      out.lint, out.test, out.verify
+    ]));
+    renderVerifyResults(out, V);
+    const notYet = el("ul", { class: "plain-list" }, ["ny_board", "ny_secure_boot", "ny_wifi", "ny_timing"].map(function (k) { return el("li", { text: t(k) }); }));
+    c.appendChild(panel("title_not_yet", "CHANGELOG §3.7", null, notYet));
+  }
 
+  function cell(v) {
+    if (v === true) return chip("allow", "✓");
+    if (v === false) return chip("block", "✗");
+    if (v && typeof v === "object") return el("span", { class: "st accent", text: (v.source === "ci" ? "CI" : String(v.source || "")) + (v.job ? " · " + v.job : "") });
+    return el("span", { text: v === undefined || v === null ? "—" : String(v) });
+  }
+
+  function renderVerifyResults(out, V) {
+    clear(out.lint); clear(out.test); clear(out.verify);
+    if (V.lint) { const b = el("div", { class: "result-box" }); renderLint(b, V.lint); out.lint.appendChild(b); }
+    if (V.test) {
+      const b = el("div", { class: "result-box" });
+      if (!V.test.ok) b.appendChild(naCard(V.test));
+      else {
+        b.appendChild(el("div", {}, [chip(V.test.failed ? "block" : "allow", "Passed: " + V.test.passed + " · Failed: " + V.test.failed)]));
+        if (V.test.output_tail) b.appendChild(codeBox(V.test.output_tail));
+      }
+      out.test.appendChild(b);
+    }
+    const vr = V.verify;
+    if (!vr) { out.verify.appendChild(el("div", { class: "hint", text: t("lbl_verify_hint") })); return; }
+    if (!vr.ok) { out.verify.appendChild(naCard(vr)); return; }
+    const rows = (vr.matrix || []).map(function (r) {
+      return el("tr", {}, [el("td", {}, [el("strong", { text: r.item })]), el("td", {}, [cell(r.sim)]), el("td", {}, [cell(r.linux)]), el("td", {}, [cell(r.esp32s3)])]);
+    });
+    out.verify.appendChild(el("div", { class: "table-wrap" }, [el("table", { class: "data-table" }, [
+      el("thead", {}, [el("tr", {}, [el("th", { text: t("th_artifact") }), el("th", { text: "sim" }), el("th", { text: "linux" }), el("th", { text: "esp32s3" })])]),
+      el("tbody", {}, rows)
+    ])]));
+    out.verify.appendChild(el("div", { class: "result-box" }, [
+      el("div", {}, [chip(vr.passed ? "allow" : "block", vr.summary || (vr.passed ? "Passed" : "Failed"))]),
+      vr.compared ? el("div", { class: "hint", text: "Compared: " + vr.compared }) : null
+    ]));
+  }
+
+  // ---------------------------------------------------------------- device
+  function loadDevice() {
+    api("GET", "device").then(function (j) {
+      S.device = j;
+      renderView("device");
+    });
+  }
+
+  function renderDevice() {
+    const c = refs.views.device;
+    clear(c);
+    c.appendChild(el("div", { class: "banner", role: "note" }, [el("strong", { class: "warn-text", text: t("banner_qemu") })]));
+    const d = S.device;
+    if (!d) { c.appendChild(loadingCard()); return; }
+    if (!d.ok) { c.appendChild(naCard(d)); return; }
+
+    const buildOut = el("div", { class: "whatif-out", role: "status" });
+    const build = runButton("btn_build", "build", function (done) {
+      api("POST", "device/build").then(function (j) {
+        done();
+        clear(buildOut);
+        if (!j.ok) { buildOut.appendChild(naCard(j)); return; }
+        buildOut.appendChild(kv(t("lbl_built"), (j.dir || "") + " · " + (j.files ? (Array.isArray(j.files) ? j.files.length : j.files) : 0) + " " + t("lbl_files") + (j.checked ? " · " + j.checked : "")));
+        loadDevice();
+      });
+    });
+    const fw = d.firmware || {};
+    const golden = d.golden || {};
+    const fwPanel = panel("title_build_firmware", null, build, el("div", {}, [
+      codeBox("neuroedge build --target esp32s3 --board esp32s3-box-3"),
+      kv(t("lbl_firmware"), fw.built ? (t("lbl_built") + (fw.dir ? " · " + fw.dir : "")) : t("lbl_not_built")),
+      fw.files ? kv(t("lbl_files"), Array.isArray(fw.files) ? fw.files.length : fw.files) : null,
+      golden.checked ? kv(t("lbl_golden"), golden.checked) : null,
+      buildOut
+    ]));
+
+    const q = d.qemu;
+    const qBody = el("div", {});
+    if (!q) qBody.appendChild(el("div", { class: "hint", text: t("lbl_no_qemu") }));
+    else {
+      if (q.selftest !== undefined) qBody.appendChild(kv("NE_SELFTEST", String(q.selftest)));
+      if (q.trace_done !== undefined) qBody.appendChild(kv("NE_TRACE DONE", String(q.trace_done)));
+      if (q.log) qBody.appendChild(codeBox(q.log));
+    }
+    qBody.appendChild(el("div", { class: "hint", text: t("qemu_note") }));
+    c.appendChild(el("div", { class: "grid-2col" }, [fwPanel, panel("title_qemu_boot", "UART", null, qBody)]));
+
+    // screen gallery
+    const screens = d.screens || [];
+    if (!S.screenLang) S.screenLang = S.lang;
+    const grid = el("div", { class: "gallery-grid" });
+    const langBtn = function (code) {
+      return el("button", { type: "button", class: "btn-sm" + (S.screenLang === code ? " active" : ""), "aria-pressed": S.screenLang === code ? "true" : "false",
+        text: code.toUpperCase(), onclick: function () { S.screenLang = code; renderView("device"); } });
+    };
+    screens.forEach(function (s) {
+      const lang = s.langs && s.langs.indexOf(S.screenLang) >= 0 ? S.screenLang : (s.langs && s.langs[0]) || S.screenLang;
+      const img = el("img", { src: "/api/device/golden/" + lang + "/" + enc(s.name) + ".png", alt: s.name, loading: "lazy" });
+      const card = el("div", { class: "gallery-card" }, [img, el("div", { class: "card-title" }, [el("span", { text: s.name }), el("span", { class: "mono dim", text: lang })])]);
+      img.addEventListener("error", function () { img.replaceWith(el("div", { class: "hint img-missing", text: t("lbl_img_missing") })); });
+      grid.appendChild(card);
+    });
+    if (screens.length === 0) grid.appendChild(el("div", { class: "hint", text: t("lbl_no_screens") }));
+    c.appendChild(panel("title_ui_gallery", golden.checked || null, el("span", { class: "row-actions" }, [langBtn("vi"), langBtn("en")]), grid));
+
+    // OTA phases
+    const ota = d.ota && d.ota.phases;
+    const stepper = el("div", { class: "stepper" });
+    if (!ota || ota.length === 0) stepper.appendChild(el("div", { class: "hint", text: t("lbl_no_ota") }));
+    else ota.forEach(function (p) {
+      stepper.appendChild(el("div", { class: "step-item " + (p.ok ? "valid" : "reject") }, [
+        el("div", { class: "step-phase", text: p.phase }),
+        el("div", {}, [chip(p.ok ? "allow" : "block", p.ok ? "✓" : "✗"), el("div", { class: "mono", text: (p.markers || []).join("\n") })])
+      ]));
+    });
+    c.appendChild(panel("title_ota_stepper", "qemu_ota.sh", null, stepper));
+    if (d.hint) c.appendChild(el("div", { class: "notice", text: String(d.hint) }));
+  }
+
+  // ---------------------------------------------------------------- MCP
   function loadMcp() {
-    fetch('/api/mcp').then(function (res) {
-      if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-      return res.json();
-    }).then(function (data) {
-      mcpData = data;
-      renderMcpView();
-    }).catch(function (err) {
-      mcpData = { ok: false, error: { why: String(err) } };
-      renderMcpView();
-    });
+    api("GET", "mcp").then(function (j) { S.mcp = j; renderView("mcp"); });
   }
 
-  function renderMcpView() {
-    const container = viewContainers.mcp;
-    container.textContent = "";
-
-    const toolsBox = el("div");
-    if (!mcpData || !mcpData.ok) {
-      toolsBox.appendChild(notAvailableCard((mcpData && mcpData.error && mcpData.error.why) || t("msg_not_available")));
-    } else {
-      const tools = mcpData.tools || [];
-      if (tools.length === 0) {
-        toolsBox.appendChild(el("div", { style: "color:var(--dim);font-size:12px;", text: t("lbl_no_tools") }));
-      } else {
-        for (let i = 0; i < tools.length; i++) {
-          toolsBox.appendChild(el("div", { class: "code-box", text: JSON.stringify(tools[i], null, 2) }));
-        }
-      }
+  function renderMcp() {
+    const c = refs.views.mcp;
+    clear(c);
+    const m = S.mcp;
+    if (!m) { c.appendChild(loadingCard()); }
+    else if (!m.ok) { c.appendChild(naCard(m)); }
+    else {
+      const tools = (m.tools || []).map(function (x) {
+        return el("details", { class: "tool" }, [
+          el("summary", {}, [el("code", { text: x.name }), " ", el("span", { class: "dim", text: x.description || "" })]),
+          codeBox(x.input_schema || {})
+        ]);
+      });
+      c.appendChild(el("div", { class: "grid-2col" }, [
+        panel("title_mcp_tools", String((m.tools || []).length), null, el("div", {}, [el("p", { class: "hint", text: t("mcp_tools_desc") })].concat(tools.length ? tools : [el("div", { class: "hint", text: t("lbl_no_tools") })]))),
+        el("div", { class: "col" }, [
+          panel("title_desktop_cfg", null, null, el("div", {}, [codeBox(m.desktop_config || ""), el("p", { class: "hint", text: t("mcp_desktop_note") })])),
+          panel("title_ext_mcp", t("note_data_not_cmd"), null, el("div", {}, (m.servers || []).length
+            ? m.servers.map(function (s) { return kv(s.name, (s.tools || []).join(", ")); })
+            : [el("div", { class: "hint", text: t("lbl_no_servers") })]))
+        ])
+      ]));
     }
-
-    const desktopBox = el("div");
-    if (!mcpData || !mcpData.ok) {
-      desktopBox.appendChild(notAvailableCard((mcpData && mcpData.error && mcpData.error.why) || t("msg_not_available")));
-    } else {
-      desktopBox.appendChild(el("div", { style: "font-size:12px;color:var(--dim);margin-bottom:6px;", text: "neuroedge mcp desktop-config --agent " + boot.agent + " --ui" }));
-      desktopBox.appendChild(el("div", { class: "code-box", text: mcpData.desktop_config || JSON.stringify({
-        mcpServers: {
-          neuroedge: {
-            command: "/usr/local/bin/neuroedge",
-            args: ["mcp", "serve", "--agent", boot.agent, "--ui"]
-          }
-        }
-      }, null, 2) }));
-      desktopBox.appendChild(el("div", { style: "font-size:11.5px;color:var(--dim);margin-top:8px;", "data-i18n": "mcp_desktop_note", text: t("mcp_desktop_note") }));
-    }
-
-    const colTools = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        el("span", { "data-i18n": "title_mcp_tools", text: t("title_mcp_tools") }),
-        el("span", { class: "sub", text: "Gated Tool Profile v0" })
-      ]),
-      el("div", { style: "font-size:12px;margin-bottom:8px;", "data-i18n": "mcp_tools_desc", text: t("mcp_tools_desc") }),
-      toolsBox
-    ]);
-
-    const colDesktop = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        el("span", { "data-i18n": "title_desktop_cfg", text: t("title_desktop_cfg") }),
-        el("span", { class: "sub", text: "desktop-config" })
-      ]),
-      desktopBox
-    ]);
-
-    container.appendChild(el("div", { class: "grid-2col" }, [colTools, colDesktop]));
-
-    // Live MCP Tool Call Feed
-    const mcpFeedRows = [];
-    for (let j = 0; j < events.length; j++) {
-      const ev = events[j];
-      if (ev.type === "tool_call" && ev.data && ev.data.source === "mcp") {
-        mcpFeedRows.push(el("tr", {}, [
-          el("td", { class: "mono", text: ev.offset_ms + " ms" }),
-          el("td", {}, [el("span", { class: "st accent", text: "mcp" })]),
-          el("td", { class: "mono", text: ev.data.name }),
-          el("td", { class: "mono", text: JSON.stringify(ev.data.arguments || {}) }),
-          el("td", {}, [el("span", { class: "st allow", text: "ALLOW" })])
+    const feed = [];
+    groupTurns(S.events).turns.forEach(function (tr) {
+      tr.calls.filter(function (cl) { return cl.source === "mcp"; }).forEach(function (cl) {
+        const g = tr.gates[0];
+        feed.push(el("tr", {}, [
+          el("td", { class: "mono", text: tr.offset + " ms" }),
+          el("td", {}, [el("code", { text: cl.name })]),
+          el("td", { class: "mono dim", text: short(cl.arguments, 100) }),
+          el("td", {}, [g ? verdictChip(g.result.verdict) : el("span", { class: "dim", text: "—" })])
         ]));
-      }
-    }
-
-    if (mcpFeedRows.length === 0) {
-      mcpFeedRows.push(el("tr", {}, [
-        el("td", { colspan: "5", style: "color:var(--dim);text-align:center;", text: t("lbl_no_mcp_calls") })
-      ]));
-    }
-
-    const feedPanel = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        el("span", { "data-i18n": "title_mcp_feed", text: t("title_mcp_feed") }),
-        el("span", { class: "sub", text: "stdio feed" })
-      ]),
-      el("table", { class: "data-table" }, [
-        el("thead", {}, [
-          el("tr", {}, [
-            el("th", { "data-i18n": "th_time", text: t("th_time") }),
-            el("th", { "data-i18n": "th_caller", text: t("th_caller") }),
-            el("th", { "data-i18n": "th_func", text: t("th_func") }),
-            el("th", { "data-i18n": "th_args", text: t("th_args") }),
-            el("th", { "data-i18n": "th_verdict", text: t("th_verdict") })
-          ])
-        ]),
-        el("tbody", {}, mcpFeedRows)
-      ])
-    ]);
-    container.appendChild(feedPanel);
-
-    // External MCP Servers
-    const extServers = (mcpData && mcpData.servers) || [{ name: "news", tools: ["latest_news"] }];
-    const serverItems = [];
-    for (let s = 0; s < extServers.length; s++) {
-      serverItems.push(el("div", { style: "font-size:12px;margin-bottom:8px;" }, [
-        document.createTextNode("Máy chủ ngoài: "),
-        el("code", { class: "mono", text: extServers[s].name })
-      ]));
-    }
-
-    const extPanel = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        el("span", { "data-i18n": "title_ext_mcp", text: t("title_ext_mcp") }),
-        el("span", { class: "sub", text: "[mcp.servers]" })
-      ]),
-      el("div", {}, serverItems),
-      el("div", {
-        style: "font-size:11.5px;color:var(--warn);margin-top:8px;"
-      }, [
-        document.createTextNode("🔒 "),
-        el("strong", { "data-i18n": "note_data_not_cmd", text: t("note_data_not_cmd") }),
-        document.createTextNode(": Dữ liệu từ MCP server ngoài không thể vượt quyền qua Gate.")
-      ])
-    ]);
-    container.appendChild(extPanel);
+      });
+    });
+    c.appendChild(panel("title_mcp_feed", "tool_call · source=mcp", null, el("div", { class: "table-wrap" }, [el("table", { class: "data-table" }, [
+      el("thead", {}, [el("tr", {}, ["th_time", "th_func", "th_args", "th_verdict"].map(function (k) { return el("th", { text: t(k) }); }))]),
+      el("tbody", {}, feed.length ? feed : [el("tr", {}, [el("td", { colspan: "4", class: "hint", text: t("lbl_no_mcp_calls") })])])
+    ])])));
   }
 
-  // =========================================================================
-  // VIEW 7: Config View
-  // =========================================================================
-
+  // ---------------------------------------------------------------- config
   function loadAgent() {
-    fetch('/api/agent').then(function (res) {
-      if (res.status === 501) return { ok: false, error: { why: t("msg_not_available") } };
-      return res.json();
-    }).then(function (data) {
-      agentData = data;
-      renderConfigView();
-      if (data.ok && data.providers) {
-        renderProviders(data.providers);
-      }
-    }).catch(function (err) {
-      agentData = { ok: false, error: { why: String(err) } };
-      renderConfigView();
+    api("GET", "agent").then(function (j) {
+      S.agent = j;
+      paintProviders();
+      renderView("config");
     });
   }
 
-  function renderConfigView() {
-    const container = viewContainers.config;
-    container.textContent = "";
-
-    const reqList = [];
-    if (agentData && agentData.requires && agentData.requires.primitive) {
-      for (const p in agentData.requires.primitive) {
-        reqList.push(el("li", {}, [el("code", { class: "mono", text: p })]));
-      }
-    } else {
-      reqList.push(el("li", {}, [el("code", { class: "mono", text: "audio.in (micro)" })]));
-      reqList.push(el("li", {}, [el("code", { class: "mono", text: "audio.out (speaker)" })]));
-      reqList.push(el("li", {}, [el("code", { class: "mono", text: "digital.out porch_light" })]));
-      reqList.push(el("li", {}, [el("code", { class: "mono", text: "sensor.read motion" })]));
-    }
-
-    const declPanel = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        el("span", { "data-i18n": "title_agent_decl", text: t("title_agent_decl") }),
-        el("span", { class: "sub", text: "agent.toml" })
+  function renderConfig() {
+    const c = refs.views.config;
+    clear(c);
+    const a = S.agent;
+    if (!a) { c.appendChild(loadingCard()); return; }
+    if (!a.ok) { c.appendChild(naCard(a)); return; }
+    const req = Object.keys(a.requires || {}).map(function (k) {
+      return el("tr", {}, [el("td", { class: "mono", text: k }), el("td", { class: "mono", text: short(a.requires[k], 120) })]);
+    });
+    const caps = Object.keys((a.board && a.board.capabilities) || {}).map(function (k) {
+      return el("tr", {}, [el("td", { class: "mono", text: k }), el("td", { class: "mono", text: short(a.board.capabilities[k], 120) })]);
+    });
+    const table = function (head, rows) {
+      return el("div", { class: "table-wrap" }, [el("table", { class: "data-table" }, [
+        el("thead", {}, [el("tr", {}, head.map(function (k) { return el("th", { text: t(k) }); }))]), el("tbody", {}, rows)
+      ])]);
+    };
+    const provs = (a.providers || []).map(function (p) {
+      return el("tr", {}, [
+        el("td", { text: p.label || p.role }),
+        el("td", { class: "mono", text: p.role }),
+        el("td", { class: "mono", text: p.key_env || "—" }),
+        el("td", {}, [chip(p.key_present ? "allow" : "block", p.key_present ? t("val_key_present") : t("val_key_missing"))])
+      ]);
+    });
+    c.appendChild(el("div", { class: "grid-2col" }, [
+      el("div", { class: "col" }, [
+        panel("title_agent_decl", a.label, null, el("div", {}, [
+          kv("root", a.root || "—"),
+          kv("targets", (a.targets || []).join(", ") || "—"),
+          el("div", { class: "kv-key", text: t("sec_requires") }), table(["th_name", "th_params"], req),
+          el("div", { class: "kv-key", text: t("sec_board_caps") + " " + ((a.board && a.board.id) || "") }), table(["th_name", "th_params"], caps)
+        ])),
+        panel("title_templates", null, null, el("ul", { class: "plain-list" }, (a.templates || []).map(function (x) { return el("li", { class: "mono", text: String(x) }); })))
       ]),
-      el("div", { style: "margin-bottom:10px;" }, [
-        el("strong", { "data-i18n": "sec_requires", text: t("sec_requires") }),
-        el("ul", { style: "margin:4px 0 0;padding-left:20px;font-size:12px;color:var(--text);line-height:1.6;" }, reqList)
-      ]),
-      el("div", {}, [
-        el("strong", { "data-i18n": "sec_board_caps", text: t("sec_board_caps") + " (" + boot.board + ")" }),
-        el("ul", { style: "margin:4px 0 0;padding-left:20px;font-size:12px;color:var(--text);line-height:1.6;" }, [
-          el("li", { text: "Digital pins: porch_light, door_lock, gate_relay" }),
-          el("li", { text: "Sensors: motion, temperature, door_contact" }),
-          el("li", { text: "Audio: 16 kHz mono in, 24 kHz PCM out" }),
-          el("li", { text: "Display: 320×240 RGB565" })
-        ])
-      ])
-    ]);
-
-    const templates = (agentData && agentData.templates) || [
-      { name: "minimal", desc: "1 base gate, 1 digital out pin" },
-      { name: "villa-concierge", desc: "Smart lock, guest room authorization" },
-      { name: "home-voice", desc: "Voice assistant, RAG Q&A, lighting control" },
-      { name: "factory-monitor", desc: "Vent fan & thermal alarm alerts" }
-    ];
-
-    const templateRows = [];
-    for (let tIdx = 0; tIdx < templates.length; tIdx++) {
-      const tmpl = templates[tIdx];
-      templateRows.push(el("tr", {}, [
-        el("td", { class: "mono" }, [el("strong", { text: tmpl.name })]),
-        el("td", { text: tmpl.desc || "—" })
-      ]));
-    }
-
-    const tmplPanel = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        el("span", { "data-i18n": "title_templates", text: t("title_templates") }),
-        el("span", { class: "sub", text: "neuroedge new" })
-      ]),
-      el("div", { class: "code-box", text: "neuroedge new my-agent --template home-voice" }),
-      el("table", { class: "data-table", style: "margin-top:10px;" }, [
-        el("thead", {}, [
-          el("tr", {}, [
-            el("th", { "data-i18n": "th_name", text: t("th_name") }),
-            el("th", { "data-i18n": "th_desc", text: t("th_desc") })
-          ])
-        ]),
-        el("tbody", {}, templateRows)
-      ])
-    ]);
-
-    container.appendChild(el("div", { class: "grid-2col" }, [declPanel, tmplPanel]));
-
-    const provList = (agentData && agentData.providers) || [
-      { role: "stt", label: "openai/whisper-large-v3-turbo", params: "lang: vi · timeout: 15s", key_env: "$OPENROUTER_API_KEY", key_present: true },
-      { role: "tts", label: "google/gemini-3.1-flash-tts-preview", params: "voice: Kore · format: pcm · 24 kHz", key_env: "$OPENROUTER_API_KEY", key_present: true },
-      { role: "system_two", label: "openrouter/google/gemma-4-31b-it", params: "provider: litellm · tools: support", key_env: "$OPENROUTER_API_KEY", key_present: true },
-      { role: "system_one", label: "typesafe/jev-1.13", params: "System One API · fast validation", key_env: "(builtin)", key_present: true }
-    ];
-
-    const provRows = [];
-    for (let p = 0; p < provList.length; p++) {
-      const pv = provList[p];
-      provRows.push(el("tr", {}, [
-        el("td", {}, [el("strong", { text: pv.role.toUpperCase() })]),
-        el("td", { class: "mono", text: pv.label || "—" }),
-        el("td", { text: pv.params || "—" }),
-        el("td", {}, [
-          el("code", { class: "mono", text: pv.key_env || "—" }),
-          document.createTextNode(" "),
-          el("span", {
-            class: pv.key_present ? "st allow" : "st block",
-            "data-i18n": pv.key_present ? "val_key_present" : "val_key_missing",
-            text: pv.key_present ? t("val_key_present") : t("val_key_missing")
-          })
-        ])
-      ]));
-    }
-
-    const provPanel = el("div", { class: "panel" }, [
-      el("h2", {}, [
-        el("span", { "data-i18n": "title_providers", text: t("title_providers") }),
-        el("span", { class: "sub", text: "Security Key Guard" })
-      ]),
-      el("table", { class: "data-table" }, [
-        el("thead", {}, [
-          el("tr", {}, [
-            el("th", { "data-i18n": "th_provider", text: t("th_provider") }),
-            el("th", { "data-i18n": "th_model", text: t("th_model") }),
-            el("th", { "data-i18n": "th_params", text: t("th_params") }),
-            el("th", { "data-i18n": "th_key", text: t("th_key") })
-          ])
-        ]),
-        el("tbody", {}, provRows)
-      ]),
-      el("div", {
-        style: "font-size:11px;color:var(--dim);margin-top:8px;",
-        "data-i18n": "note_api_keys",
-        text: t("note_api_keys")
-      })
-    ]);
-    container.appendChild(provPanel);
+      panel("title_providers", null, null, el("div", {}, [table(["th_provider", "th_role", "th_key_env", "th_key"], provs), el("p", { class: "hint", text: t("note_api_keys") })]))
+    ]));
   }
 
-  // Initial event source & voice polling
-  function startVoicePolling() {
-    setInterval(function () {
-      if (currentView === "live") {
-        fetch('/api/voice').then(function (res) {
-          if (res.status === 501) return null;
-          return res.json();
-        }).then(function (data) {
-          if (data && data.ok) {
-            voiceData = data;
-            const liveView = viewContainers.live;
-            const oldStrip = liveView.querySelector(".voice-strip");
-            if (oldStrip) {
-              const newStrip = buildVoiceStrip();
-              oldStrip.replaceWith(newStrip);
-            }
-          }
-        }).catch(function () {});
-      }
-    }, 1000);
+  // ---------------------------------------------------------------- live connection
+  function connect() {
+    const es = new EventSource("/events");
+    es.onopen = function () { S.connected = true; S.everConnected = true; paintBadge(); if (liveRefs) { regions.ask = null; if (S.view === "live") paintLive(); } };
+    es.onmessage = function (m) {
+      let d;
+      try { d = JSON.parse(m.data); } catch (e) { return; }
+      S.events = d.events || [];
+      S.nowMs = d.now_ms || 0;
+      if (!S.connected) { S.connected = true; S.everConnected = true; paintBadge(); }
+      if (S.view === "live") paintLive();
+      else if (S.view === "mcp") renderMcp();
+    };
+    es.onerror = function () { S.connected = false; paintBadge(); if (S.view === "live" && liveRefs) { regions.ask = null; paintLive(); } };
   }
 
-  function initSSE() {
-    let evtSource = null;
-    function connect() {
-      evtSource = new EventSource('/events');
-      evtSource.onopen = function () {
-        setLiveStatus(true);
-      };
-      evtSource.onmessage = function (ev) {
-        try {
-          const payload = JSON.parse(ev.data);
-          events = payload.events || [];
-          now_ms = payload.now_ms || 0;
-          setLiveStatus(true);
-          if (currentView === "live") renderLiveSession();
-        } catch (e) {}
-      };
-      evtSource.onerror = function () {
-        setLiveStatus(false);
-      };
-    }
-    connect();
-  }
-
-  renderActiveView();
-  initSSE();
-  startVoicePolling();
-
-  fetch('/api/agent').then(function (res) {
-    if (res.status === 501) return null;
-    return res.json();
-  }).then(function (data) {
-    if (data && data.ok) {
-      agentData = data;
-      renderProviders(data.providers);
-    }
-  }).catch(function () {});
-
+  buildApp();
+  loadAgent();
+  connect();
+  pollVoice();
+  voiceTimer = setInterval(pollVoice, 1000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) pollVoice(); });
+  window.addEventListener("beforeunload", function () { clearInterval(voiceTimer); });
 })();
