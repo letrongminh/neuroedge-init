@@ -741,3 +741,58 @@ def test_help_shows_mic_and_half_duplex() -> None:
     assert result.exit_code == 0
     assert "--mic" in result.output
     assert "--half-duplex" in result.output
+
+
+def test_half_duplex_keeps_the_mic_open_while_tts_is_still_synthesising(door: Path) -> None:
+    # Review finding: the reply is decided at `start` but sounds only from `start + TTS
+    # latency`. Speech in between is the person, not an echo: half-duplex must hear it.
+    def build() -> VoiceSession:
+        voice = voice_on(
+            door,
+            stt=FakeSpeechToText(["tắt đèn", ""]),
+            tts=FakeTextToSpeech(ms_per_char=20, latency_ms=2000),
+        )
+        voice.session.set_sensor("motion", True)
+        return voice
+
+    probe = build()
+    asyncio.run(probe.play(WavSource("probe.wav", make_speech_pcm(500, 900, 8000), RATE)))
+    decided = at(probe, "tts_stream_start")[0]
+    (first,) = probe.hal.speaker().playbacks
+    assert first.start_ms - decided >= 2000  # the gap the fix is about (2000 ms per sentence)
+
+    # A tone that starts 200 ms after the reply was decided and ends before it sounds.
+    gap = int(decided + 200 - 1400)
+    pcm = silence(500) + tone(900, RATE) + silence(gap) + tone(900, RATE) + silence(6000)
+    voice = build()
+    asyncio.run(voice.play_live(ScriptedLiveSource(pcm, RATE), half_duplex=True, queue_frames=2000))
+
+    starts = at(voice, "audio_in_vad_start")
+    assert len(starts) == 2 and decided < starts[1] < first.start_ms
+
+
+def test_half_duplex_mutes_only_while_the_speaker_sounds(door: Path) -> None:
+    voice = voice_on(door, stt=FakeSpeechToText(["tắt đèn"]), tts=FakeTextToSpeech(ms_per_char=20))
+    voice.session.set_sensor("motion", True)
+    asyncio.run(voice.play(WavSource("w.wav", make_speech_pcm(500, 900, 6000), RATE)))
+    (playback,) = voice.hal.speaker().playbacks
+    begin, end = playback.start_ms, playback.end_ms
+    assert not voice._audible(begin - 40, begin)
+    assert voice._audible(begin, begin + 20)
+    assert voice._audible(end + 100, end + 120)  # the echo tail
+    assert not voice._audible(end + 160, end + 180)
+
+
+def test_an_overflow_stops_before_the_backlog_is_acted_on() -> None:
+    frame_bytes = bytes(2 * RATE * 20 // 1000)
+    source = ScriptedLiveSource(frame_bytes * 50)
+    capture = LiveAudioCapture(source, max_frames=5)
+    capture.start()
+    assert capture._done.wait(2.0)
+
+    async def first():
+        return await capture.next_frame(asyncio.get_running_loop())
+
+    with pytest.raises(PerceptionUnavailableError):
+        asyncio.run(first())  # not five stale frames first
+    capture.close()

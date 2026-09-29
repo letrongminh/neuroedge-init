@@ -74,6 +74,9 @@ SETTLE_STEPS = 100_000  # `settle()` stops after this many deadlines, whatever i
 # failed anyway (voice_fsm.md §7).
 GRACE = 1.25
 MARGIN_S = 1.0
+# Half-duplex keeps the microphone muted this long after the reply stops: the device's
+# output buffer and the room still carry it (Q-50).
+ECHO_TAIL_MS = 150
 
 
 def _positive(value: Any) -> bool:
@@ -380,9 +383,10 @@ class VoiceSession:
         session is more than ~10 s behind), the session stops with a three-part error
         rather than silently dropping audio.
 
-        With `half_duplex=True`, while a reply is playing (`self._playing` is not None)
-        the frame fed to the session is replaced by silence of the same duration (zeros,
-        same timestamps), so the agent never hears itself through loudspeakers.
+        With `half_duplex=True`, a frame captured while the speaker sounds (`_audible`:
+        from the reply's first sample, not from when it was decided, to its end plus
+        `ECHO_TAIL_MS`) is replaced by silence of the same duration (zeros, same
+        timestamps), so the agent never hears itself through loudspeakers.
         Barge-in is therefore impossible in that mode.
 
         Runs until `stop` is set or the source ends; then flushes VAD, closes the capture,
@@ -399,9 +403,8 @@ class VoiceSession:
                 frame = await capture.next_frame(loop)
                 if frame is None:
                     break
-                playing_before = self._playing is not None
                 await self.advance(origin + frame.end_ms)
-                if half_duplex and (playing_before or self._playing is not None):
+                if half_duplex and self._audible(origin + frame.start_ms, origin + frame.end_ms):
                     frame_to_feed = AudioFrame(
                         bytes(len(frame.pcm)),
                         frame.start_ms,
@@ -420,6 +423,19 @@ class VoiceSession:
                 capture.close()
                 if clean_exit:
                     await self.settle(self.clock.now + settle_ms)
+
+    def _audible(self, from_ms: float, to_ms: float) -> bool:
+        """
+        Whether the speaker sounds during [from_ms, to_ms): the last reply, from when its
+        audio starts (after TTS — not when the reply was decided) until it ended or was
+        cut, plus `ECHO_TAIL_MS` of output latency and room echo (half-duplex, Q-50).
+        """
+        playbacks = self.hal.speaker(called_from="VoiceSession").playbacks
+        if not playbacks:
+            return False
+        last = playbacks[-1]
+        stop = last.stopped_at_ms if last.stopped_at_ms is not None else last.end_ms
+        return last.start_ms < to_ms and from_ms < stop + ECHO_TAIL_MS
 
     def _wake_unavailable(self, exc: BaseException) -> None:
         """

@@ -45,6 +45,8 @@ class LiveAudioCapture:
         self._max_frames = max_frames
         self._queue: queue.Queue[AudioFrame] = queue.Queue(maxsize=max_frames)
         self._error: BaseException | None = None
+        # The queue filled: the session is too far behind for its audio to mean "now".
+        self._overflowed = False
         self._thread: threading.Thread | None = None
         self._done = threading.Event()
 
@@ -65,6 +67,7 @@ class LiveAudioCapture:
                 try:
                     self._queue.put_nowait(frame)
                 except queue.Full:
+                    self._overflowed = True
                     raise PerceptionUnavailableError(
                         where="VoiceSession.play_live -> capture queue",
                         why=(
@@ -95,10 +98,15 @@ class LiveAudioCapture:
         Get the next frame without blocking the event loop.
 
         Returns None when the capture has stopped or the source has ended and all
-        buffered frames have been consumed. Raises any exception that occurred in
-        the capture thread only after all queued frames have been returned.
+        buffered frames have been consumed. A capture-thread exception is raised only
+        after every queued frame has been returned — except an overflow, raised at once.
         """
         while True:
+            # An overflow stops the session at once: the backlog is seconds old, and
+            # acting on it now (a turn, a pin) would answer a room that has moved on.
+            if self._overflowed and self._error is not None:
+                err, self._error = self._error, None
+                raise err
             try:
                 return self._queue.get_nowait()
             except queue.Empty:
