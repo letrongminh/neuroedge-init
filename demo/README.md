@@ -7,7 +7,7 @@ Thư mục `demo/` tập hợp các kịch bản trình diễn và mã lệnh ch
 | Increment | Thư mục | Trạng thái | Chạy ở đâu | Chạy lại lần cuối |
 |:---|:---|:---|:---|:---|
 | I1 | [`i1-sim/`](i1-sim/) | sẵn sàng | local macOS/Linux, không cần phần cứng | `6a69626` (2026-09-29) |
-| I3 (phần không cần bo mạch) | `i3-firmware-qemu/` | đang viết | Docker `espressif/idf:v5.4` | — |
+| I3 (phần không cần bo mạch) + OTA của I7 | [`i3-firmware-qemu/`](i3-firmware-qemu/) | sẵn sàng | Docker `espressif/idf:v5.4` (Mac Apple Silicon hoặc Linux) | `6a69626` (2026-09-29) |
 | I4 (thoại trên laptop) | `i4-thoai-laptop/` | chưa có (chờ TSK-I4-04) | local macOS, tai nghe | — |
 
 ## Vì sao chạy local, không Docker

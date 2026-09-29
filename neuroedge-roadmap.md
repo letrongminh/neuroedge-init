@@ -105,12 +105,12 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-27 │
+│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-29 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. VỪA HOÀN THÀNH — TSK-I1-01 (băm chữ mặc định) + RFC-0008 (gate_digest)              │
-│    • TSK-I1-01: vết ghi băm chữ người dùng tại nguồn mặc định; --raw giữ nguyên văn    │
-│    • RFC-0008: 3 vết ghi chuẩn mực mang gate_digest; verify từ chối, replay cảnh báo   │
-│    • Trước đó: đợt 3 — OTA, giao diện LVGL, wake-word (PR #62); kiến trúc (PR #64)     │
+│ 1. VỪA HOÀN THÀNH — Q-49: mỗi increment có demo trong demo/                            │
+│    • demo/i1-sim: 5 màn trên sim (gate, hỏi xác nhận, cảm biến, replay, MCP)           │
+│    • demo/i3-firmware-qemu: golden LVGL, boot + verify esp32s3, OTA a–g (Docker)       │
+│    • Trước đó: TSK-I1-01 (băm chữ mặc định) + RFC-0008 (gate_digest)                   │
 │    • Việc đợt 3 còn mở: Wi-Fi thật cho OTA (#50), driver màn hình (TSK-S4-01)          │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │

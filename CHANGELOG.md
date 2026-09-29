@@ -32,6 +32,9 @@ bản gói.
 
 #### Đã thêm
 
+- **Q-49 — mỗi increment ra kèm một demo; `demo/` có demo đầu tiên.** `demo/i1-sim/` (5 màn trên `sim`, không phần
+  cứng) và `demo/i3-firmware-qemu/` (ảnh golden LVGL, boot + `verify --targets esp32s3`, firmware của agent, OTA pha
+  a–g trong Docker `espressif/idf:v5.4`); danh mục `demo/README.md`, luật ở roadmap §11.1. Kiểm bằng review.
 - **I7 · TSK-S6-01, S6-02, S6-04 (+ S6-03 một phần) — OTA A/B có ký, tự rollback, trên QEMU.** Component
   `ne_ota` (bật bằng lớp `sdkconfig.ota`; không có lớp đó thì ảnh không có đường tải): tải ảnh app từ một HTTP(S)
   endpoint bất kỳ, xác minh chữ ký RSA-3072 khi cập nhật (`SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT`), ghi khe A/B, chỉ
