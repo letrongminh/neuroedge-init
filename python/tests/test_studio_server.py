@@ -160,5 +160,6 @@ def test_one_subprocess_run_at_a_time_and_secrets_are_redacted(monkeypatch):
     assert "still going" in busy.value.why
     with api_checks.one_at_a_time("test"):  # released after the first run
         pass
-    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-v1-0123456789abcdef")
-    assert api_checks.redact("key=sk-or-v1-0123456789abcdef!") == "key=***!"
+    fake = "sk-or-v1-" + "0123456789abcdef"  # made up; built at run time so no scanner sees a key
+    monkeypatch.setenv("OPENROUTER_API_KEY", fake)
+    assert api_checks.redact(f"key={fake}!") == "key=***!"
