@@ -39,6 +39,7 @@ from .config import (
     load_system_two_config,
     parse_system_one,
     parse_system_two,
+    suggested_key_env,
 )
 from .litellm_provider import LiteLLMProvider
 from .openai_chat import from_response, to_messages
@@ -64,6 +65,7 @@ __all__ = [
     "parse_system_one",
     "parse_system_two",
     "scrub",
+    "suggested_key_env",
     "system_one_for",
     "system_two_for",
     "to_messages",

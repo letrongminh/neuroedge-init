@@ -79,6 +79,8 @@ __all__ = [
     "parse_system_two",
     "secret_fields",
     "shown",
+    "suggested_key_env",
+    "suggested_system_one_key_env",
 ]
 
 LITELLM = "litellm"
@@ -118,6 +120,7 @@ MAX_TIMEOUT_MS = 10_000.0
 # Set by the dispatcher (Q-24): who called is never a model's judgment.
 RUNTIME_CRITERIA = frozenset({"call_source"})
 _KEY_ENV_BY_PREFIX = {
+    "openrouter/": "OPENROUTER_API_KEY",
     "anthropic/": "ANTHROPIC_API_KEY",
     "claude": "ANTHROPIC_API_KEY",
     "openai/": "OPENAI_API_KEY",
