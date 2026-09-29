@@ -32,6 +32,9 @@ bản gói.
 
 #### Đã thêm
 
+- **I1 · TSK-I1-04 — NeuroEdge Studio: `neuroedge studio`, mọi năng lực trong một trang (Q-51).** Bảy màn song ngữ
+  trên 127.0.0.1: phiên trực tiếp (gõ, `--mic`), gate + what-if, vết ghi + replay, verify, ESP32-S3 (LVGL, QEMU, OTA), MCP,
+  cấu hình. Hợp đồng `docs/spec/studio.md`. Kiểm: `pytest tests/test_studio_*.py`; kịch bản `demo/i1-studio/`. (FR-TGT-06)
 - **I4 · TSK-I4-04 — nói với agent qua micro laptop, thời gian thực (`run --mic`, Q-50).** Micro và loa thật trên `sim`
   (`neuroedge[audio]`), cùng `VoiceSession` với `--voice-file`; tai nghe ⇒ cắt lời được, loa ngoài ⇒ `--half-duplex`. Hàng
   đợi thu đầy ⇒ dừng, không bỏ âm thanh. Kiểm: `pytest tests/test_voice_live.py tests/test_hal_sim_live_audio.py`. (FR-PER-01)

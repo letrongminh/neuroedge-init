@@ -6,7 +6,8 @@ Thư mục `demo/` tập hợp các kịch bản trình diễn và mã lệnh ch
 
 | Increment | Thư mục | Trạng thái | Chạy ở đâu | Chạy lại lần cuối |
 |:---|:---|:---|:---|:---|
-| I1 | [`i1-sim/`](i1-sim/) | sẵn sàng | local macOS/Linux, không cần phần cứng | `6a69626` (2026-09-29) |
+| I1 — **NeuroEdge Studio** (giao diện) | [`i1-studio/`](i1-studio/) | sẵn sàng — bảy màn kiểm trên trình duyệt | local macOS/Linux, `neuroedge studio` | nhánh `studio/integration` (2026-09-29) |
+| I1 — terminal | [`i1-sim/`](i1-sim/) | sẵn sàng | local macOS/Linux, không cần phần cứng | `6a69626` (2026-09-29) |
 | I3 (phần không cần bo mạch) + OTA của I7 | [`i3-firmware-qemu/`](i3-firmware-qemu/) | sẵn sàng | Docker `espressif/idf:v5.4` (Mac Apple Silicon hoặc Linux) | `6a69626` (2026-09-29) |
 | I4 (thoại trên laptop) | [`i4-thoai-laptop/`](i4-thoai-laptop/) | sẵn sàng — đường provider đã chạy thật; micro: chạy thử trên máy trình bày | local macOS, tai nghe, `OPENROUTER_API_KEY` | nhánh `voice/integration` (2026-09-29) |
 
