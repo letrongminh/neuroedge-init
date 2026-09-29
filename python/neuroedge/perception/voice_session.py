@@ -42,13 +42,14 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import functools
 import heapq
 import inspect
 import itertools
 import math
 import threading
 from collections import deque
-from collections.abc import Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -364,6 +365,7 @@ class VoiceSession:
         stop: threading.Event | None = None,
         settle_ms: float = 5000.0,
         queue_frames: int = QUEUE_MAX_FRAMES,
+        step: Callable[[Callable[[], Awaitable[None]]], Awaitable[None]] | None = None,
     ) -> None:
         """
         Drive the session from a live audio source (such as `SimHAL.audio_source()`).
@@ -389,6 +391,10 @@ class VoiceSession:
         timestamps), so the agent never hears itself through loudspeakers.
         Barge-in is therefore impossible in that mode.
 
+        `step`, when given, wraps the work of each frame (and the closing flush and settle):
+        it is called with a coroutine function and must await it once. The studio uses it to
+        hold its session lock per frame; with `step=None` nothing changes.
+
         Runs until `stop` is set or the source ends; then flushes VAD, closes the capture,
         and settles briefly (up to `settle_ms`).
         """
@@ -403,26 +409,29 @@ class VoiceSession:
                 frame = await capture.next_frame(loop)
                 if frame is None:
                     break
-                await self.advance(origin + frame.end_ms)
-                if half_duplex and self._audible(origin + frame.start_ms, origin + frame.end_ms):
-                    frame_to_feed = AudioFrame(
-                        bytes(len(frame.pcm)),
-                        frame.start_ms,
-                        frame.duration_ms,
-                        frame.sample_rate_hz,
-                    )
-                else:
-                    frame_to_feed = frame
-                await self.feed_audio(frame_to_feed)
+
+                work = functools.partial(self._live_frame, frame, origin, half_duplex)
+                await (step(work) if step is not None else work())
             clean_exit = True
         finally:
             try:
                 if clean_exit and self.vad.flush():
-                    await self.feed("audio_in_vad_end", {})
+                    flush = functools.partial(self.feed, "audio_in_vad_end", {})
+                    await (step(flush) if step is not None else flush())
             finally:
                 capture.close()
                 if clean_exit:
-                    await self.settle(self.clock.now + settle_ms)
+                    settle = functools.partial(self.settle, self.clock.now + settle_ms)
+                    await (step(settle) if step is not None else settle())
+
+    async def _live_frame(self, frame: AudioFrame, origin: float, half_duplex: bool) -> None:
+        """One captured frame: the clock to its end, then the frame (silence in half-duplex)."""
+        await self.advance(origin + frame.end_ms)
+        if half_duplex and self._audible(origin + frame.start_ms, origin + frame.end_ms):
+            frame = AudioFrame(
+                bytes(len(frame.pcm)), frame.start_ms, frame.duration_ms, frame.sample_rate_hz
+            )
+        await self.feed_audio(frame)
 
     def _audible(self, from_ms: float, to_ms: float) -> bool:
         """

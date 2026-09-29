@@ -56,7 +56,7 @@ Mọi câu trả lời thành công có `"ok": true`.
 | `GET /api/device` | `{firmware: {built: bool, dir?, files?}, screens: [{name, langs: ["vi","en"]}], golden: {checked?: "66/66"}, qemu: {selftest?, trace_done?, log?} \| null, ota: {phases: [{phase, markers: [..], ok}]} \| null, hint}` | `api_device` |
 | `POST /api/device/build` | `{built, dir, files, checked}` — như `build --target esp32s3 --board esp32s3-box-3` (sinh dự án ESP-IDF, không biên dịch) | `api_device` |
 | `GET /api/device/golden/<lang>/<name>.png` | ảnh PNG (`image/png`); `lang` ∈ `vi`,`en`; `name` phải có trong `screens` | `api_device` |
-| `GET /api/voice` | `{enabled, running, muted, half_duplex, state, counters: {turns, barge_in, stt_unavailable, cancelled}, devices: {input, output}}` | `voice` |
+| `GET /api/voice` | `{enabled, running, muted, half_duplex, state, counters: {turns, barge_in, stt_unavailable, cancelled}, devices: {input, output}, error?}` (`error`: chỉ có khi phiên tiếng nói dừng vì lỗi thiết bị, dạng ba phần) | `voice` |
 | `POST /api/voice/mute` body `{"muted": bool}` | như `GET /api/voice` | `voice` |
 
 ## 5. Màn và nguồn dữ liệu
