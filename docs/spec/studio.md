@@ -39,6 +39,8 @@ neuroedge studio [--agent agent.toml] [--port 8765] [--no-browser] [--mic [--hal
 
 Mọi câu trả lời thành công có `"ok": true`.
 
+`<name>` của vết ghi là đường dẫn tương đối so với `traces/`, bỏ `.json`, dấu `/` viết thành `@` (`incidents/door.json` ⇒ `incidents@door`) để khớp mẫu tên của đường dẫn. Tên chỉ được đối chiếu với danh sách dựng từ thư mục, không bao giờ ghép vào đường dẫn; tệp có tên không khớp mẫu hoặc trùng tên đã có thì không được liệt kê.
+
 | Phương thức, đường dẫn | Trả về | Module |
 |:---|:---|:---|
 | `GET /api/agent` | `{label, root, requires: {primitive: {...}}, targets: [..], board: {id, capabilities}, providers: [{role, label, key_env, key_present}], templates: [..]}` — `role` ∈ `stt`, `stt.fallback`, `tts`, `system_one`, `system_two`, `wake_word` | `api_agent` |
@@ -46,13 +48,13 @@ Mọi câu trả lời thành công có `"ok": true`.
 | `GET /api/gates/<name>` | `{name, version, chain: ["base@1.0.0", …], evaluate: {criterion: {type, levels?, options?, instructions?}}, allow_when: {...}, on_block: {...}, budget: {...}, explanation: {...}}` — `explanation` từ `engine/gate_explain.py` | `api_agent` |
 | `POST /api/gates/<name>/whatif` body `{"facts": {criterion: value}}` | `{verdict: "ALLOW"\|"BLOCK", reason?, failed_criterion?, evaluations, action?}` — lượng giá thuần, **không** đụng phiên, HAL, ledger | `api_agent` |
 | `GET /api/mcp` | `{tools: [{name, description, input_schema}], desktop_config: "<lệnh + JSON>", servers: [{name, tools}]}` | `api_agent` |
-| `GET /api/traces` | `{traces: [{name, session_id, events, target, board, anonymized, recorded_at}]}` — `*.json` dưới `<agent>/traces/` (không gồm `golden/`) | `api_checks` |
-| `GET /api/traces/<name>` | trace `trace.v1` đầy đủ | `api_checks` |
+| `GET /api/traces` | `{traces: [{name, valid, session_id, events, target, board, anonymized, recorded_at, error?}]}` — `*.json` dưới `<agent>/traces/` kể cả thư mục con (không gồm `golden/`); tệp không qua thẩm định vẫn được liệt kê với `valid: false`, `error` và các trường còn lại `null` | `api_checks` |
+| `GET /api/traces/<name>` | `{ok: true, $schema, metadata, events}` — trace `trace.v1` đầy đủ, trải phẳng cùng `ok` | `api_checks` |
 | `POST /api/traces/<name>/replay` | `{match: bool, verdicts: [...], pins: [...], detail?}` — như `neuroedge replay` trên `sim` | `api_checks` |
 | `POST /api/record` | `{name, events}` — ghi phiên hiện tại vào `<agent>/traces/` (chữ băm, như `record`) | `api_checks` |
-| `POST /api/lint` | `{resolved, total, gates: [...]}` — như `gate lint gates` trong thư mục agent | `api_checks` |
+| `POST /api/lint` | `{resolved, total, gates: [...]}` — như `gate lint gates` trong thư mục agent; agent không có `gates/` riêng thì dùng `gates/` của kho (nơi các tham chiếu `neuroedge://` phân giải) | `api_checks` |
 | `POST /api/verify` | `{passed: bool, summary: "<dòng Passed:/Failed:>", compared: "decisions only — not timing", matrix: [{item, sim, linux, esp32s3}]}` — `sim` chạy thật trên máy; `linux`/`esp32s3` là `{"source": "ci", "job": "linux-hal"\|"uart-trace"}` | `api_checks` |
-| `POST /api/test` | `{passed, failed, output_tail}` — `neuroedge test` trong thư mục agent, tiến trình con, hạn 120 s | `api_checks` |
+| `POST /api/test` | `{passed, failed, output_tail}` — `neuroedge test` trong thư mục agent, tiến trình con, hạn 120 s; `output_tail` là 20 dòng cuối | `api_checks` |
 | `GET /api/device` | `{firmware: {built: bool, dir?, files?}, screens: [{name, langs: ["vi","en"]}], golden: {checked?: "66/66"}, qemu: {selftest?, trace_done?, log?} \| null, ota: {phases: [{phase, markers: [..], ok}]} \| null, hint}` | `api_device` |
 | `POST /api/device/build` | `{built, dir, files, checked}` — như `build --target esp32s3 --board esp32s3-box-3` (sinh dự án ESP-IDF, không biên dịch) | `api_device` |
 | `GET /api/device/golden/<lang>/<name>.png` | ảnh PNG (`image/png`); `lang` ∈ `vi`,`en`; `name` phải có trong `screens` | `api_device` |

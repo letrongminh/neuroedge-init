@@ -236,6 +236,20 @@ def gate_explain(
     render(explanation, console)
 
 
+def lint_registry(root: Path, registry: Path | None = None) -> GateRegistry:
+    """
+    The registry `gate lint` resolves a directory against. Bases are addressed by
+    neuroedge:// URI. An explicit `registry` wins; otherwise a fixture tree keeps its
+    bases in a sibling `registry/` directory, and the real corpus resolves against gates/.
+    """
+    if registry is not None:
+        return GateRegistry(registry)
+    for candidate in (root / "registry", root.parent / "registry"):
+        if candidate.is_dir():
+            return GateRegistry(candidate)
+    return GateRegistry()
+
+
 @gate_app.command(name="lint", epilog=epilog("gate lint"))
 def gate_lint(
     directory: Path = typer.Argument(None, help="Directory of gate YAML files (default: gates/)"),
@@ -255,18 +269,7 @@ def gate_lint(
         console.print(f"[yellow]No gate files found under {root}[/yellow]")
         raise typer.Exit(code=1)
 
-    # Bases are addressed by neuroedge:// URI. An explicit --registry wins;
-    # otherwise a fixture tree keeps its bases in a sibling `registry/`
-    # directory, and the real corpus resolves against gates/.
-    if registry is not None:
-        gate_registry = GateRegistry(registry)
-    else:
-        for candidate in (root / "registry", root.parent / "registry"):
-            if candidate.is_dir():
-                gate_registry = GateRegistry(candidate)
-                break
-        else:
-            gate_registry = GateRegistry()
+    gate_registry = lint_registry(root, registry)
 
     failures = 0
     table = Table(title=f"Gate lint — {root}")
