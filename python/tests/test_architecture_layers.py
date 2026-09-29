@@ -67,6 +67,8 @@ LAZY: dict[str, set[str]] = {
         "viz",
     },
     "mcp_host.py": {"mcp_server"},
+    # the studio shows the same desktop entry and template list as the CLI, and reads no unit above it
+    "studio/api_agent.py": {"mcp_desktop", "templates"},
     "testing/tool_corpus.py": {"sim"},
     "testing/voice_corpus.py": {"sim"},
     "testing/player.py": {"sim"},

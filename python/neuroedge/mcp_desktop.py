@@ -100,6 +100,35 @@ def server_entry(
     return entry
 
 
+def desktop_entry(
+    agent: Path,
+    *,
+    ui: bool,
+    port: int,
+    trace_out: Path | None = None,
+    raw: bool = False,
+) -> dict[str, Any]:
+    """
+    The `mcpServers` entry that serves `agent`; `NeuroEdgeError` when the MCP SDK is missing,
+    since Desktop's `mcp serve` would then exit at once. Writes nothing.
+    """
+    import importlib.util
+
+    if importlib.util.find_spec("mcp") is None:
+        raise NeuroEdgeError(
+            where="neuroedge mcp desktop-config",
+            why="the MCP Python SDK (`mcp`) is not installed, so Desktop's "
+            "`mcp serve` would exit at once",
+            how="pip install 'neuroedge[mcp]'",
+        )
+    return server_entry(agent, ui=ui, port=port, trace_out=trace_out, raw=raw)
+
+
+def desktop_config_text(key: str, entry: dict[str, Any]) -> str:
+    """The text `mcp desktop-config` prints: plain JSON, meant to be pasted or piped."""
+    return json.dumps({"mcpServers": {key: entry}}, indent=2, ensure_ascii=False)
+
+
 def _refuse(path: Path, why: str) -> NeuroEdgeError:
     return NeuroEdgeError(
         where=str(path),

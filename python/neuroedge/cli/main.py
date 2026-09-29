@@ -838,24 +838,21 @@ def mcp_desktop_config(
     because Desktop starts the server from `/` with a minimal PATH, not from your shell.
     With --write, set that one entry in Desktop's config file and keep everything else.
     """
-    import importlib.util
+    from ..mcp_desktop import (
+        default_config_path,
+        desktop_config_text,
+        desktop_entry,
+        write_entry,
+    )
 
-    from ..mcp_desktop import default_config_path, server_entry, write_entry
-
-    if importlib.util.find_spec("mcp") is None:
-        _fail(
-            NeuroEdgeError(
-                where="neuroedge mcp desktop-config",
-                why="the MCP Python SDK (`mcp`) is not installed, so Desktop's "
-                "`mcp serve` would exit at once",
-                how="pip install 'neuroedge[mcp]'",
-            )
-        )
-        return
     agent_path = (agent or _default_agent()).expanduser().resolve()
+    try:
+        entry = desktop_entry(agent_path, ui=ui, port=port, trace_out=trace_out, raw=raw)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
     session = _start_session("mcp desktop-config", agent_path, "sim", "sim-default", None)
     key = name or session.manifest.name
-    entry = server_entry(agent_path, ui=ui, port=port, trace_out=trace_out, raw=raw)
     if raw and trace_out is not None:
         _warn_raw()
     if "env" in entry:
@@ -866,7 +863,7 @@ def mcp_desktop_config(
         )
     if not write:
         # Plain stdout, not rich: the output is meant to be pasted or piped.
-        typer.echo(json.dumps({"mcpServers": {key: entry}}, indent=2, ensure_ascii=False))
+        typer.echo(desktop_config_text(key, entry))
         return
     target = config_path or default_config_path()
     try:

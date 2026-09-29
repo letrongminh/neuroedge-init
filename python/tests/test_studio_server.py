@@ -90,7 +90,7 @@ def test_a_cross_origin_api_post_is_refused(studio):
 
 def test_a_malformed_body_is_400(studio):
     status, _ = post(studio, "/api/gates/unlock_door/whatif", body=b"[1, 2]")
-    assert status in (400, 501)  # 501 until slice S1a implements whatif
+    assert status == 400
 
 
 def test_voice_without_a_microphone_says_so(studio):
