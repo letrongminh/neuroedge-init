@@ -59,6 +59,7 @@ from ..errors import PerceptionUnavailableError
 from ..hal.audio import MAX_REPLY_MS, AudioFrame, EnergyVAD, Playback, pcm_digest, to_speaker
 from ..models import SystemOne
 from ..sim.session import SimSession, Turn, answer_word
+from .live import QUEUE_MAX_FRAMES, LiveAudioCapture
 from .providers.base import AudioClip, Speech, SpeechUnavailable, Transcript, clean_transcript
 from .voice_fsm import VoiceParams, VoiceState, VoiceStateMachine
 
@@ -351,6 +352,74 @@ class VoiceSession:
         if self.vad.flush():
             await self.feed("audio_in_vad_end", {})  # the input ended mid-speech
         await self.settle(self.clock.now + settle_ms)
+
+    async def play_live(
+        self,
+        source: Any,
+        *,
+        half_duplex: bool = False,
+        stop: threading.Event | None = None,
+        settle_ms: float = 5000.0,
+        queue_frames: int = QUEUE_MAX_FRAMES,
+    ) -> None:
+        """
+        Drive the session from a live audio source (such as `SimHAL.audio_source()`).
+
+        The session clock stays a `VirtualClock`, driven by the microphone's sample
+        clock instead of a file: for each captured frame, `await session.advance(origin + frame.end_ms)`
+        then `await session.feed_audio(frame)`.
+        No second clock or wall-clock deadlines are introduced because the microphone's
+        sample clock is the device's physical time — every sample counted represents
+        the device's true time in the room. Provider calls are awaited inline and
+        scheduled `latency` ms later on this clock; frames captured meanwhile are
+        processed in capture order, preserving exact barge-in and late-result dropping
+        guarantees.
+
+        A capture thread reads `source.frames()` continuously into a bounded queue
+        so PortAudio does not overflow during provider calls. If the queue fills (the
+        session is more than ~10 s behind), the session stops with a three-part error
+        rather than silently dropping audio.
+
+        With `half_duplex=True`, while a reply is playing (`self._playing` is not None)
+        the frame fed to the session is replaced by silence of the same duration (zeros,
+        same timestamps), so the agent never hears itself through loudspeakers.
+        Barge-in is therefore impossible in that mode.
+
+        Runs until `stop` is set or the source ends; then flushes VAD, closes the capture,
+        and settles briefly (up to `settle_ms`).
+        """
+        origin = self.clock.now
+        stop_event = stop if stop is not None else threading.Event()
+        capture = LiveAudioCapture(source, stop=stop_event, max_frames=queue_frames)
+        loop = asyncio.get_running_loop()
+        capture.start()
+        clean_exit = False
+        try:
+            while True:
+                frame = await capture.next_frame(loop)
+                if frame is None:
+                    break
+                playing_before = self._playing is not None
+                await self.advance(origin + frame.end_ms)
+                if half_duplex and (playing_before or self._playing is not None):
+                    frame_to_feed = AudioFrame(
+                        bytes(len(frame.pcm)),
+                        frame.start_ms,
+                        frame.duration_ms,
+                        frame.sample_rate_hz,
+                    )
+                else:
+                    frame_to_feed = frame
+                await self.feed_audio(frame_to_feed)
+            clean_exit = True
+        finally:
+            try:
+                if clean_exit and self.vad.flush():
+                    await self.feed("audio_in_vad_end", {})
+            finally:
+                capture.close()
+                if clean_exit:
+                    await self.settle(self.clock.now + settle_ms)
 
     def _wake_unavailable(self, exc: BaseException) -> None:
         """

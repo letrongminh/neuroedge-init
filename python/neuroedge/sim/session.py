@@ -686,7 +686,7 @@ class SimSession:
                 **dict(target_options or {}),
             )
         else:
-            hal = SimHAL(board, events=events)
+            hal = SimHAL(board, events=events, **dict(target_options or {}))
             for name, (value, unit) in sensors.items():
                 hal.set_sensor(name, value, unit)
         # Requesting the lines is the one step that holds anything: if the rest of
