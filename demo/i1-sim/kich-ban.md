@@ -13,9 +13,9 @@ Trước buổi demo, người thuyết trình chuẩn bị môi trường:
 # 1. Chạy script tạo môi trường ảo và 3 dự án mẫu tại /tmp/neuroedge-demo
 bash demo/i1-sim/chuan-bi.sh
 
-# 2. Chuyển vào thư mục demo và gán alias 'ne'
+# 2. Gán alias 'ne' từ gốc kho, rồi chuyển vào thư mục demo
+alias ne="$PWD/python/.venv/bin/neuroedge"
 cd /tmp/neuroedge-demo
-alias ne="$(pwd)/../.."/python/.venv/bin/neuroedge 2>/dev/null || alias ne=python/.venv/bin/neuroedge
 
 # 3. Đảm bảo cửa sổ terminal rộng ≥ 100 cột
 ```
@@ -53,9 +53,12 @@ exit
   action: escalate to human_receptionist — "Yêu cầu cần được nhân viên lễ tân xác nhận trực tiếp…"
 │ door_lock │ LOW   │        0 │
 …
-neuroedge> :set guest_authenticated false
+neuroedge>   guest_authenticated = false
+neuroedge> intent unlock (1.00) [room=101]
 ✗ BLOCK unlock_door@1.2.0 (reason: condition_not_met, criterion: guest_authenticated)
-neuroedge> :unset risk_level
+…
+neuroedge>   risk_level is now undecided
+…
 ✗ BLOCK unlock_door@1.2.0 (reason: criterion_unavailable, criterion: risk_level)
 ```
 
@@ -157,19 +160,20 @@ neuroedge>   temperature = 30
 ```bash
 cd villa-concierge
 ne record -c "mở cửa phòng 202"
-ne trace show traces/sess_7bd96da4.json
-ne trace view traces/sess_7bd96da4.json --open
-ne replay traces/sess_7bd96da4.json
+T=$(ls -t traces/sess_*.json | head -1)     # tên phiên ngẫu nhiên mỗi lần ghi
+ne trace show "$T"
+ne trace view "$T" --open
+ne replay "$T"
 ne verify
 ```
 
 ### Thấy
 ```text
-trace: traces/sess_7bd96da4.json (9 events)
+trace: traces/sess_<id>.json (9 events)
 │ text_input             │ {"text": "sha256:79ec5403a912a0baa7b575468e6e5f4d6f70f7b0e76e05d34d5b1…
 │ gate_facts             │ {"guest_authenticated": {"value": true…}, "room_matches": {"value": false…}}
 …
-✓ traces/sess_7bd96da4.html (9 events)
+✓ traces/sess_<id>.html (9 events)
 …
 ✓ decisions match the recording
 ╭──────────────────────────────────────── neuroedge verify ────────────────────────────────────────╮
@@ -218,7 +222,7 @@ Tool call từ LLM bên ngoài phải tuân thủ Gated Tool Profile v0; gate l�
    → Thoại hiện nhận từ tệp WAV (`--voice-file`), chưa có phiên micro thời gian thực trên máy tính ([`CHANGELOG.md` §3.7](../../CHANGELOG.md#37-điều-hệ-thống-chưa-làm-được) · [`demo.md` §0.1](../../docs/business/cong-nhu-cau-2026-10-25/demo.md#01-điều-không-được-nói-trong-bất-kỳ-demo-nào)).
 
 3. **Quyền riêng tư:** *"Vết ghi có lưu lộ văn bản thô của người dùng không?"*  
-   → Mặc định văn bản gõ/nói được băm SHA-256 tại nguồn (`metadata.anonymized = true`), chỉ lưu văn bản thô khi truyền cờ tường minh `--raw` ([`CHANGELOG.md` §1](../../CHANGELOG.md#đã-đổi) · [PRD NFR-PRIV-03](../../neuroedge-prd.md#nfr-priv-03)).
+   → Mặc định văn bản gõ/nói được băm SHA-256 tại nguồn (`metadata.anonymized = true`), chỉ lưu văn bản thô khi truyền cờ tường minh `--raw` (TSK-I1-01, NFR-PRIV-03 trong `neuroedge-prd.md`).
 
 4. **Phạm vi verify:** *"`neuroedge verify` so sánh những gì giữa các target?"*  
    → So sánh phán quyết gate và lệnh chân (decisions only), chưa so thời gian thực thi (timing equivalence ở TSK-S4-04) ([`CHANGELOG.md` §3.7](../../CHANGELOG.md#37-điều-hệ-thống-chưa-làm-được) · [`demo.md` §0.1](../../docs/business/cong-nhu-cau-2026-10-25/demo.md#01-điều-không-được-nói-trong-bất-kỳ-demo-nào)).

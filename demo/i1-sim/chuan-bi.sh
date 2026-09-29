@@ -44,7 +44,7 @@ done
 # 4. Kiểm tra gate lint và test trong từng dự án
 for tmpl in villa-concierge home-voice factory-monitor; do
   echo "==> Kiểm tra dự án '$tmpl' (gate lint)..."
-  (cd "$DEMO/$tmpl" && "$NE_BIN" gate lint)
+  (cd "$DEMO/$tmpl" && "$NE_BIN" gate lint gates)
   echo "==> Kiểm tra dự án '$tmpl' (test)..."
   (cd "$DEMO/$tmpl" && "$NE_BIN" test)
 done
