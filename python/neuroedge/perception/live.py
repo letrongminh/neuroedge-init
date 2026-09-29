@@ -77,7 +77,9 @@ class LiveAudioCapture:
                         ),
                     ) from None
         except BaseException as exc:
-            if not self._stop.is_set() or isinstance(exc, (PerceptionUnavailableError, KeyboardInterrupt)):
+            if not self._stop.is_set() or isinstance(
+                exc, (PerceptionUnavailableError, KeyboardInterrupt)
+            ):
                 self._error = exc
         finally:
             self._done.set()

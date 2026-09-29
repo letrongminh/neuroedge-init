@@ -295,4 +295,3 @@ def test_no_sounddevice_or_gpiod_in_sys_modules() -> None:
     # did not eagerly import sounddevice or gpiod
     assert "sounddevice" not in sys.modules
     assert "gpiod" not in sys.modules
-

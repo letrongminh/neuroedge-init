@@ -195,9 +195,7 @@ def run_voice_live(
 ) -> int:
     """Run a live microphone voice session and return the exit code; the session is closed."""
     try:
-        return _run_live(
-            session, clock, half_duplex, console, err_console, stop=stop
-        )
+        return _run_live(session, clock, half_duplex, console, err_console, stop=stop)
     finally:
         try:
             if trace_out is not None:
@@ -263,9 +261,7 @@ def _run_live(
             "  Dùng tai nghe — loa ngoài thì thêm --half-duplex (tắt micro khi agent đang nói, không cắt lời được)"
         )
     else:
-        console.print(
-            "  half-duplex: bật (tắt micro khi agent đang nói, không cắt lời được)"
-        )
+        console.print("  half-duplex: bật (tắt micro khi agent đang nói, không cắt lời được)")
     console.print(f"  stt: {escape(stt_config.label)}")
     if stt_fallback is not None:
         console.print(f"  stt fallback: {escape(stt_config.fallback.label)}")
@@ -302,7 +298,6 @@ def _run_live(
         return _error(err_console, error)
     _summary(voice, console)
     return 0
-
 
 
 def _summary(voice: VoiceSession, console: Console) -> None:

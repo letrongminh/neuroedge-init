@@ -44,6 +44,8 @@ from .audio_live import (
     LiveAudioOut,
     LiveSpeaker,
     _audio_node,
+)
+from .audio_live import (
     _import_sounddevice as _live_import_sounddevice,
 )
 from .board import BoardProfile, load_board_by_id
@@ -56,6 +58,7 @@ AUDIO_BACKENDS = ("file", "live")
 
 def _import_sounddevice(where: str = "SimHAL -> audio.in/audio.out") -> Any:
     return _live_import_sounddevice(where=where)
+
 
 ABORTED_BY_BARGE_IN = "ACTUATOR_ABORTED_BY_BARGE_IN"
 # The @action that scheduled the command raised: its verdict never completed (review of TSK-S3-11).

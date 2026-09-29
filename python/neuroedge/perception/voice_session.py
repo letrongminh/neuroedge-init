@@ -59,7 +59,7 @@ from ..errors import PerceptionUnavailableError
 from ..hal.audio import MAX_REPLY_MS, AudioFrame, EnergyVAD, Playback, pcm_digest, to_speaker
 from ..models import SystemOne
 from ..sim.session import SimSession, Turn, answer_word
-from .live import LiveAudioCapture
+from .live import QUEUE_MAX_FRAMES, LiveAudioCapture
 from .providers.base import AudioClip, Speech, SpeechUnavailable, Transcript, clean_transcript
 from .voice_fsm import VoiceParams, VoiceState, VoiceStateMachine
 
@@ -360,6 +360,7 @@ class VoiceSession:
         half_duplex: bool = False,
         stop: threading.Event | None = None,
         settle_ms: float = 5000.0,
+        queue_frames: int = QUEUE_MAX_FRAMES,
     ) -> None:
         """
         Drive the session from a live audio source (such as `SimHAL.audio_source()`).
@@ -389,7 +390,7 @@ class VoiceSession:
         """
         origin = self.clock.now
         stop_event = stop if stop is not None else threading.Event()
-        capture = LiveAudioCapture(source, stop=stop_event)
+        capture = LiveAudioCapture(source, stop=stop_event, max_frames=queue_frames)
         loop = asyncio.get_running_loop()
         capture.start()
         clean_exit = False
@@ -419,7 +420,6 @@ class VoiceSession:
                 capture.close()
                 if clean_exit:
                     await self.settle(self.clock.now + settle_ms)
-
 
     def _wake_unavailable(self, exc: BaseException) -> None:
         """

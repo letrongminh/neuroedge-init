@@ -1664,7 +1664,7 @@ def run(
     mic: bool = typer.Option(
         False,
         "--mic",
-        help="Speak through the microphone in real time (sim target; needs neuroedge[audio])",
+        help="Speak through the microphone in real time (sim target; needs neuroedge\\[audio])",
     ),
     half_duplex: bool = typer.Option(
         False,

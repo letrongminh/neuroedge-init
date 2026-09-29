@@ -62,10 +62,10 @@ from .audio_live import (
     LiveAudioIn,
     LiveAudioOut,
     LiveSpeaker,
-    _LiveAudio,
     _audio_node,
     _import_sounddevice,
     _interleave,
+    _LiveAudio,
 )
 from .board import BoardProfile, load_board_by_id
 from .framebuffer import DisplayBackend, display_backend
@@ -123,7 +123,6 @@ def _import_gpiod() -> Any:
             how="pip install 'neuroedge[linux]' (LGPL-2.1, optional; see NOTICE §B)",
         ) from exc
     return gpiod
-
 
 
 def _chip_error(path: str, exc: OSError) -> BoardCapabilityError:

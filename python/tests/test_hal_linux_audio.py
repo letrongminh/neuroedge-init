@@ -27,7 +27,7 @@ from neuroedge.hal.board import load_board_by_id
 from neuroedge.hal.linux import LinuxHAL, LiveSpeaker
 from neuroedge.perception.providers.fake import tone
 
-from .fake_sounddevice import FakeInputStream, FakeOutputStream, FakeSounddevice, stereo
+from .fake_sounddevice import FakeInputStream, FakeSounddevice, stereo
 from .test_hal_linux import LINES, FakeGpiod
 
 RATE = 48000
@@ -191,8 +191,6 @@ def test_sounddevice_missing_is_a_three_part_error(tmp_path, monkeypatch):
 
 
 # --- the live backend: capture ---------------------------------------------------------
-
-
 
 
 def test_live_capture_reads_the_board_format_as_mono_frames(tmp_path):
