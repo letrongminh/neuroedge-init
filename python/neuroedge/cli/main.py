@@ -1568,6 +1568,67 @@ def _voice_session(
     return run_voice(session, clock, voice_file, voice_out, trace_out, console, err_console)
 
 
+def _voice_live_session(
+    verb: str,
+    agent,
+    target: str,
+    board: str | None,
+    registry,
+    *,
+    half_duplex: bool = False,
+    trace_out: Path | None = None,
+    anonymize: bool = True,
+) -> int:
+    """
+    `--mic`: live microphone session on `sim` (TSK-I4-04). The microphone is `audio.in`
+    and the speaker is `audio.out` via PortAudio (`sounddevice`).
+    """
+    from ..engine.compiler import load_agent_manifest
+    from ..perception import VirtualClock
+    from ..perception.providers import load_wake_word_config, make_wake_word
+    from .voice import run_voice_live
+
+    try:
+        manifest = load_agent_manifest(agent or _default_agent())
+        wake_config = load_wake_word_config(manifest, check_files=True)
+        if wake_config is not None:
+            make_wake_word(wake_config, manifest.root)
+    except NeuroEdgeError as error:
+        _fail(error)
+
+    clock = VirtualClock()
+    events = None
+    if trace_out is not None:
+        from ..testing.recorder import TraceRecorder
+
+        events = TraceRecorder(clock=clock)  # the default hashes (NFR-PRIV-03)
+        if not anonymize:
+            events = TraceRecorder(anonymize=False, clock=clock)
+            _warn_raw()
+    session = _start_session(
+        verb,
+        agent,
+        target,
+        board,
+        registry,
+        events=events,
+        clock=clock,
+        target_options={"audio": "live"},
+    )
+    if events is not None:
+        trace_out = (
+            trace_out if trace_out.suffix == ".json" else trace_out / f"{events.session_id}.json"
+        )
+    return run_voice_live(
+        session,
+        clock,
+        half_duplex=half_duplex,
+        trace_out=trace_out,
+        console=console,
+        err_console=err_console,
+    )
+
+
 @app.command(epilog=epilog("run"))
 def run(
     agent: Path = typer.Option(
@@ -1600,6 +1661,19 @@ def run(
     no_browser: bool = typer.Option(False, "--no-browser", help="With --ui, do not open a browser"),
     voice_file: Path = VOICE_FILE_OPTION,
     voice_out: Path = VOICE_OUT_OPTION,
+    mic: bool = typer.Option(
+        False,
+        "--mic",
+        help="Speak through the microphone in real time (sim target; needs neuroedge[audio])",
+    ),
+    half_duplex: bool = typer.Option(
+        False,
+        "--half-duplex",
+        help=(
+            "With --mic: mute the microphone while the agent speaks (for loudspeakers; "
+            "barge-in disabled)"
+        ),
+    ),
     registry: Path | None = REGISTRY_OPTION,
 ):
     """
@@ -1617,7 +1691,80 @@ def run(
     `linux` the file is converted to the board's rate by `LinuxHAL`'s file
     backend; microphone and speaker (the `audio` extra, Q-22) are a later
     session (TODOS.md #45).
+
+    With --mic, talk to the agent through the microphone in real time on sim.
+    Replies play through the speaker. With --half-duplex, the microphone is muted
+    while the agent speaks so it does not hear itself through loudspeakers
+    (barge-in is disabled in that mode).
     """
+    if half_duplex and not mic:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge run --half-duplex",
+                why="--half-duplex is only valid with --mic (live audio)",
+                how="add --mic, or drop --half-duplex",
+            )
+        )
+    if mic:
+        if voice_file is not None:
+            _fail(
+                NeuroEdgeError(
+                    where="neuroedge run --mic --voice-file",
+                    why="--mic is live audio from the microphone and --voice-file is a prerecorded WAV file",
+                    how="drop --voice-file for live audio, or drop --mic",
+                )
+            )
+        if voice_out is not None:
+            _fail(
+                NeuroEdgeError(
+                    where="neuroedge run --mic --voice-out",
+                    why="--voice-out is for --voice-file sessions; live audio plays directly through the speaker",
+                    how="drop --voice-out",
+                )
+            )
+        if command is not None:
+            _fail(
+                NeuroEdgeError(
+                    where="neuroedge run --mic -c",
+                    why="-c is one typed command and --mic is live spoken input: one session, one input",
+                    how="drop -c, or drop --mic",
+                )
+            )
+        if target != "sim":
+            err_console.print(
+                Panel(
+                    f"`neuroedge run --mic --target {escape(target)}` is not implemented yet: "
+                    "Linux live audio waits for measured PipeWire echo cancellation "
+                    "(Q-50, docs/spec/simulation_coverage.md §6.2).\n\n"
+                    "Live audio runs on `sim` today.",
+                    title=f"[yellow]Not implemented: run --mic on {escape(target)}[/yellow]",
+                    border_style="yellow",
+                )
+            )
+            raise typer.Exit(code=2)
+        if ui:
+            err_console.print(
+                Panel(
+                    "`neuroedge run --mic --ui` is not implemented yet: "
+                    "the live page does not play or record audio yet.\n\n"
+                    "Spoken input runs on `sim` today, in the terminal.",
+                    title="[yellow]Not implemented: run --mic --ui[/yellow]",
+                    border_style="yellow",
+                )
+            )
+            raise typer.Exit(code=2)
+
+        code = _voice_live_session(
+            "run",
+            agent,
+            target,
+            board,
+            registry,
+            half_duplex=half_duplex,
+            trace_out=trace_out,
+            anonymize=not raw,
+        )
+        raise typer.Exit(code=code)
     if voice_file is not None or voice_out is not None:
         code = _voice_session(
             "run",

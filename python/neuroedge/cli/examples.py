@@ -98,6 +98,7 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
         'neuroedge run -c "mở khoá"',
         "neuroedge run                    # REPL: type a command, :help, exit",
         "neuroedge run --ui",
+        "neuroedge run --mic              # live voice session through the laptop mic",
         "neuroedge run --voice-file turn.wav --voice-out reply.wav   # speech: needs stt/tts tables",
         "neuroedge run --voice-file turn.wav --target linux   # real lines; the WAV is audio.in",
     ),
