@@ -1,4 +1,4 @@
-Chạy lại lần cuối: (Claude điền sau khi chạy)
+Chạy lại lần cuối: 2026-09-29, macOS (Apple Silicon), Docker `espressif/idf:v5.4`, `main` `6a69626` — `ui`, `boot`, `agent`, `ota` đều kết thúc bằng ✓.
 
 # Kịch bản demo firmware không cần bo mạch (I3 + OTA)
 
@@ -16,9 +16,8 @@ Trước buổi demo, người trình bày chuẩn bị máy tính (macOS Apple 
    docker pull espressif/idf:v5.4
    ```
 3. **Thời gian chạy:**
-   - Lần chạy đầu tiên sẽ cần thời gian tải các gói công cụ và biên dịch ban đầu: (đo khi chạy).
-   - Các lần chạy sau sẽ nhanh hơn đáng kể nhờ bộ đệm ccache persistent (`neuroedge-ccache`) và venv persistent (`neuroedge-demo-venv`): (đo khi chạy).
-   - *(Lưu ý: Không tự ước tính hoặc điền số phút; thời gian cụ thể sẽ được đo khi chạy thật).*
+   - Đo ngày 2026-09-29: lần đầu `ui` + `boot` mất khoảng 3,5 phút (biên dịch ESP-IDF từ đầu). Các lần sau nhanh hơn nhờ volume ccache `neuroedge-ccache` và venv `neuroedge-demo-venv`. `ota` build bốn ảnh firmware nên lâu nhất — **chạy trước buổi demo**, lúc trình bày chỉ mở log.
+   - Dòng `E (…) octal_psram: PSRAM ID read error` trong log là bình thường: QEMU không mô phỏng PSRAM.
 4. **Nguyên tắc môi trường:**
    - Script chạy từ thư mục gốc của kho: `./demo/i3-firmware-qemu/run.sh <lệnh>`.
    - Toàn bộ các bước biên dịch, mô phỏng QEMU và kiểm tra chạy trong container `espressif/idf:v5.4` không có quyền `--privileged`.
@@ -37,8 +36,8 @@ Trước buổi demo, người trình bày chuẩn bị máy tính (macOS Apple 
 ```
 
 ### Thấy
-- Công cụ so sánh 66 ảnh màn hình (33 ảnh tiếng Việt × 33 ảnh tiếng Anh) qua `scripts/run_ui_golden.sh` trong container `espressif/idf:v5.4`.
-- Thông báo đối chiếu thành công: `ui-golden: every screen matches its golden`.
+- Công cụ so sánh 66 ảnh màn hình (33 ảnh tiếng Việt + 33 ảnh tiếng Anh) qua `scripts/run_ui_golden.sh` trong container `espressif/idf:v5.4`.
+- Thông báo đối chiếu thành công: `ui-golden: 66/66 passed` rồi `ui-golden: every screen matches its golden`.
 - Dòng kết thúc:
   ```text
   ✓ ui: 66 ảnh golden khớp hoàn toàn (vi và en)
@@ -78,24 +77,21 @@ Trước buổi demo, người trình bày chuẩn bị máy tính (macOS Apple 
 Người trình bày chỉ cho người xem các mốc in ra ở cột 0 trên log UART:
 1. Dòng tự kiểm tra gate thành công:
    ```text
-   NE_SELFTEST PASS walker=<n> token=<n>
+   NE_SELFTEST PASS walker=26 token=11
    ```
-   *(kiểm lại khi chạy)*
 2. Các dòng phát lại vết ghi chuẩn mực dưới dạng cấu trúc JSON `NE1 `:
    ```text
-   NE1 {"offset_ms":0,"type":"device_info",...}
+   NE1 {"offset_ms":0,"type":"device_info","data":{"board_id":"esp32s3-box-3","agent_version":"home-voice@0.1.0","device_id":"qemu",…
    ```
-   *(kiểm lại khi chạy)*
 3. Dòng thông báo hoàn tất các phiên vết ghi:
    ```text
    NE_TRACE DONE sessions=4
    ```
-   *(kiểm lại khi chạy)*
 4. Kết quả xác minh tương đương target của CLI:
    ```text
-   neuroedge verify --targets esp32s3 --port targets/esp32s3/build/uart.log
+   ✓ VALID /tmp/demo-boot-traces/sess_…00.json — 78 event(s), target esp32s3
+   │ Passed: all 3 gate(s) resolve, all 3 canonical trace(s) validate, every tool │
    ```
-   *(kiểm lại khi chạy)*
 5. Dòng kết thúc:
    ```text
    ✓ boot: firmware boot thành công trên QEMU, self-test đạt và verify khớp 3 vết ghi chuẩn mực
@@ -125,9 +121,8 @@ Người trình bày chỉ cho người xem các mốc in ra ở cột 0 trên l
   4. Boot firmware của agent trên QEMU
   5. Đọc dòng phán quyết self-test ở cột 0:
      ```text
-     NE_SELFTEST PASS walker=<n> token=<n>
+     NE_SELFTEST PASS walker=8 token=6
      ```
-     *(kiểm lại khi chạy)*
   6. Ghi vết `neuroedge record` và thẩm định phiên `neuroedge trace validate`
 - Dòng kết thúc:
   ```text
@@ -155,10 +150,11 @@ Quá trình chạy kịch bản `scripts/qemu_ota.sh` trải qua đủ 7 pha:
 - **Pha a:** Bản factory 0.1.0 khởi động, self-test đạt, máy chủ đang chạy cùng phiên bản nên bỏ qua (`NE_OTA SKIP reason=same_version version=0.1.0`) — không bao giờ mất khe đang chạy.
 - **Pha b:** Bản 0.2.0 ký đúng khóa được tải về, xác minh chữ ký, chuyển khe khởi động (`SWITCH partition=ota_0`) và được đánh dấu hợp lệ (`NE_OTA VALID`) sau khi vượt qua self-test của chính nó (mốc nước cao NVS nâng lên 0.2.0).
 - **Pha c:** Bản cập nhật ký bằng khóa lạ (khác với khóa của bản đang chạy) bị từ chối trước khi khởi động (`NE_OTA REJECTED reason=signature`): không đổi khe, không reboot, thiết bị ở lại bản 0.2.0 và khe vừa ghi bị xóa sector đầu (`NE_OTA ERASED`).
-- **Pha d:** Bản ký đúng nhưng bị lỗi hỏng (resets/crashes trước khi kịp xác nhận) được bootloader tự động quay về (`NE_OTA ROLLBACK from=ota_1 to=ota_0`); thiết bị khởi động lại vào 0.2.0.
-- **Pha e:** Bản cập nhật có gate self-test thất bại tự đánh dấu hỏng (`NE_OTA INVALID partition=ota_1`) và reboot; bootloader tự quay về bản trước (`NE_OTA ROLLBACK`).
+- **Pha d:** Bản ký đúng nhưng bị lỗi hỏng (resets/crashes trước khi kịp xác nhận) (`NE_OTA TEST BOOTLOOP`) được bootloader tự động quay về (`NE_OTA ROLLBACK from=ota_1 to=ota_0`); thiết bị khởi động lại vào 0.2.0 và không tải lại bản đã hỏng (`NE_OTA SKIP reason=rolled_back version=0.3.0`).
+- **Pha e:** Bản cập nhật có gate self-test thất bại tự đánh dấu hỏng (`NE_OTA INVALID partition=ota_1`) và reboot; bootloader tự quay về bản trước (`NE_OTA ROLLBACK from=ota_1 to=ota_0`), rồi bỏ qua bản đó (`NE_OTA SKIP reason=rolled_back version=0.3.1`).
 - **Pha f:** Bản cập nhật không có chữ ký (không có signature block) bị từ chối (`NE_OTA REJECTED reason=signature`) và khe vừa ghi bị xóa (`NE_OTA ERASED`).
 - **Pha g:** Bản ký đúng nhưng có số phiên bản thấp hơn (0.1.0 so với mốc 0.2.0) bị từ chối vì hạ cấp (`NE_OTA SKIP reason=downgrade version=0.1.0`) bởi mốc nước cao trong NVS.
+- Tổng kết của script: `OTA on QEMU: all phases passed`.
 - Dòng kết thúc:
   ```text
   ✓ ota: toàn bộ các pha cập nhật OTA và rollback (a–g) đạt yêu cầu trên QEMU

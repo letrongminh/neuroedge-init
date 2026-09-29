@@ -26,8 +26,17 @@ VENV_VOLUME="neuroedge-demo-venv"
 
 run_docker() {
     local script="$1"
+    # In a git worktree `.git` is a file pointing at the main repository's git
+    # directory; mount that directory at the same path so git works inside.
+    local git_mount=()
+    if [ -f .git ]; then
+        local common
+        common="$(cd "$(git rev-parse --git-common-dir)" && pwd)"
+        git_mount=(-v "$common":"$common")
+    fi
     docker run --rm \
         -v "$PWD":/work \
+        ${git_mount[@]+"${git_mount[@]}"} \
         -w /work \
         -v "$CCACHE_VOLUME":/root/.ccache \
         -e IDF_CCACHE_ENABLE=1 \
@@ -97,14 +106,15 @@ cmd_boot() {
             /opt/neuroedge/bin/python -m pip install --upgrade pip
         fi
         /opt/neuroedge/bin/python -m pip install ./python
-        export PATH="/opt/neuroedge/bin:$PATH"
+        # Absolute path, never PATH: idf.py must keep running on the ESP-IDF python.
+        NE=/opt/neuroedge/bin/neuroedge
 
         echo "--- 5. Ghi lại vết UART (record) và đối chiếu với golden reference (verify)"
         rm -rf /tmp/demo-boot-traces
         mkdir -p /tmp/demo-boot-traces
-        neuroedge record --target esp32s3 --port targets/esp32s3/build/uart.log --out /tmp/demo-boot-traces
-        neuroedge trace validate /tmp/demo-boot-traces/*.json
-        neuroedge verify --targets esp32s3 --port targets/esp32s3/build/uart.log
+        "$NE" record --target esp32s3 --port targets/esp32s3/build/uart.log --out /tmp/demo-boot-traces
+        "$NE" trace validate /tmp/demo-boot-traces/*.json
+        "$NE" verify --targets esp32s3 --port targets/esp32s3/build/uart.log
     '; then
         echo "✓ boot: firmware boot thành công trên QEMU, self-test đạt và verify khớp 3 vết ghi chuẩn mực"
     else
@@ -126,7 +136,8 @@ cmd_agent() {
             /opt/neuroedge/bin/python -m pip install --upgrade pip
         fi
         /opt/neuroedge/bin/python -m pip install ./python
-        export PATH="/opt/neuroedge/bin:$PATH"
+        # Absolute path, never PATH: idf.py must keep running on the ESP-IDF python.
+        NE=/opt/neuroedge/bin/neuroedge
 
         SCRATCH_DIR="/tmp/demo-agent-scratch"
         rm -rf "$SCRATCH_DIR"
@@ -134,11 +145,11 @@ cmd_agent() {
         cd "$SCRATCH_DIR"
 
         echo "--- 2. Tạo agent mới: neuroedge new demo-agent"
-        neuroedge new demo-agent
+        "$NE" new demo-agent
         cd demo-agent
 
         echo "--- 3. Sinh firmware ESP-IDF: neuroedge build --target esp32s3 --board esp32s3-box-3"
-        neuroedge build --target esp32s3 --board esp32s3-box-3
+        "$NE" build --target esp32s3 --board esp32s3-box-3
 
         echo "--- 4. Cấu hình và biên dịch firmware của agent với sdkconfig.qemu"
         cd build/esp32s3
@@ -165,8 +176,8 @@ cmd_agent() {
         echo "$line"
 
         echo "--- 8. Ghi lại vết UART (record) và thẩm định phiên"
-        neuroedge record --target esp32s3 --port "$log" --out "$SCRATCH_DIR/agent-traces/"
-        neuroedge trace validate "$SCRATCH_DIR/agent-traces/"*.json
+        "$NE" record --target esp32s3 --port "$log" --out "$SCRATCH_DIR/agent-traces/"
+        "$NE" trace validate "$SCRATCH_DIR/agent-traces/"*.json
     '; then
         echo "✓ agent: agent demo-agent được sinh firmware, boot trên QEMU và vượt qua self-test"
     else
