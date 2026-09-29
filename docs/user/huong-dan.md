@@ -243,8 +243,11 @@ Cả hai chỉ đề xuất lời gọi action; gate vẫn quyết định.
   phát hiện tiếng nói (VAD), sang nhận dạng giọng nói (STT), bản chép lời đi đúng đường của lệnh gõ tới
   gate, câu trả lời đi sang tổng hợp giọng nói (TTS) và ghi ra tệp (`--voice-out tra-loi.wav`). Chạy
   trên `sim` và `linux`.
-- **STT/TTS qua mọi nhà cung cấp theo chuẩn OpenAI audio** — OpenAI, Groq, faster-whisper, Kokoro… — đổi
-  bằng `base_url` trong `[stt]` / `[tts]`. Có sẵn nhà cung cấp giả để thử không cần khoá (§6.6).
+- **Nói qua micro laptop, thời gian thực** (`run --mic`, chỉ `sim`, cần `neuroedge[audio]`): đeo tai nghe để
+  cắt lời được; dùng loa ngoài thì thêm `--half-duplex` (micro tắt khi agent đang nói, không cắt lời). Lần đầu
+  macOS hỏi quyền micro cho terminal. Kịch bản: `demo/i4-thoai-laptop/`.
+- **STT/TTS qua mọi nhà cung cấp theo chuẩn OpenAI audio** — OpenAI, Groq, OpenRouter, faster-whisper, Kokoro… — đổi
+  bằng `base_url` trong `[stt]` / `[tts]`; server trả PCM thô (OpenRouter) thì khai `format = "pcm"` và `sample_rate_hz`. Có sẵn nhà cung cấp giả để thử không cần khoá (§6.6).
 - **Cắt lời**: người dùng nói chen khi loa đang phát ⇒ loa dừng, và mọi lệnh chưa giao tới chân bị huỷ.
   Lệnh đã giao (một xung chốt cửa đang chạy) thì chạy hết.
 - **Từ đánh thức** (`[wake_word]`): lượt chỉ mở khi nghe đúng từ khoá, thay cho việc mở theo mọi tiếng nói.
@@ -260,8 +263,8 @@ cấp STT (khoá API hoặc server trên máy, hoặc nhà cung cấp giả).
 
 **Giới hạn**
 
-- **Chưa nói trực tiếp qua micro được.** Thoại hôm nay chạy từ tệp WAV, trong thời gian ảo. Phiên thoại
-  thời gian thực với micro và loa thật chưa có (`TODOS.md` #45).
+- **Micro thật mới có trên laptop, target `sim`** (Q-50). Chưa có trên `linux`/Pi (cần khử vang PipeWire,
+  `TODOS.md` #45) và chưa có trang web theo dõi cho phiên micro (`--mic --ui` ⇒ mã 2).
 - Chưa có mô hình từ đánh thức nào dùng được mà hợp giấy phép (`TODOS.md` #49); CI kiểm bằng mô hình giả.
 - Tệp WAV với trang web theo dõi (`--voice-file` cùng `--ui`) chưa hỗ trợ (mã 2).
 - Thoại trên chip ESP32-S3 là increment I5, chưa bắt đầu.

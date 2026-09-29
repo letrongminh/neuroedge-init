@@ -4,7 +4,7 @@
 # Trạng thái dự án
 
 > Sinh tự động từ [`neuroedge-roadmap.md`](../../neuroedge-roadmap.md) §0 —
-> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-09-27**.
+> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-09-29**.
 
 ## Điều hành
 
@@ -13,9 +13,9 @@
 | Pha đang thực thi | 🟡 **I1 — Preview nội bộ trên `sim`** (I2, I3 phần không cần bo mạch và I4 làm song song) |
 | Increment đang mở | 🟡 **I1** — còn I1-02 (tạm hoãn: phát triển nội bộ) |
 | Cột mốc tiếp theo | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** |
-| Trạng thái CI Lõi | ✅ **PASS 2329/2329 · SKIP 0** |
+| Trạng thái CI Lõi | ✅ **PASS 2382/2382 · SKIP 0** |
 | Chặn ngoài tầm kỹ thuật | 🟡 **2 hạng mục chặn** |
-| Lần cập nhật cuối | **2026-09-27** |
+| Lần cập nhật cuối | **2026-09-29** |
 
 ## Increment
 
@@ -26,7 +26,7 @@
 |  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | **4 / 5** | 🟡 Đang làm — TSK-I1-02 tạm hoãn (phát triển nội bộ) | tag `v0.1.0` (nội bộ) |
 |  | **I2 — `linux` ngang `sim`** | 2026-11-29 | **3 / 4** | 🟡 Phiên tương tác, cảm biến, màn hình xong trên gpio-sim + i2c-stub; nightly RPi 5 còn lại | tag `v0.2.0` (nội bộ) |
 |  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | **6 / 14** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU, giao diện LVGL có ảnh golden); chờ bo mạch | tag `v0.3.0` + firmware (nội bộ) |
-|  | **I4 — Thoại trên host** | 2026-12-13 | **5 / 8** | 🟡 Đặc tả, vector, FSM Python, độ trễ, SystemOne qua Jev xong; STT/TTS trên `sim`, wake-word + STT dự phòng, âm thanh `linux` xong phần mã trên host; còn mô hình wake-word thật, Pi + HAT, phiên micro thời gian thực | tag `v0.4.0` (nội bộ) |
+|  | **I4 — Thoại trên host** | 2026-12-13 | **5 / 9** | 🟡 Đặc tả, vector, FSM Python, độ trễ, SystemOne qua Jev xong; STT/TTS trên `sim`, wake-word + STT dự phòng, âm thanh `linux` xong phần mã trên host; phiên micro trên laptop (`run --mic`, TSK-I4-04) xong phần mã; còn mô hình wake-word thật, Pi + HAT | tag `v0.4.0` (nội bộ) |
 |  | **I5 — Thoại trên Box-3** | 2027-01-03 | **0 / 7** | ⏳ Chưa bắt đầu | tag `v0.5.0` + firmware (nội bộ) |
 | **Công khai** | **I6 — Công khai** | 2027-01-10 | **3 / 8** | 🟡 Quét bí mật, SBOM xong; chờ I5 | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
 | **v1.0** | **I7 — v1.0** | 2027-01-24 | **4 / 12** | 🟡 Ghim Actions, attestation xong; OTA A/B có ký + rollback xong trên QEMU; chờ I6 | `v1.0.0` |

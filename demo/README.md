@@ -8,7 +8,7 @@ Thư mục `demo/` tập hợp các kịch bản trình diễn và mã lệnh ch
 |:---|:---|:---|:---|:---|
 | I1 | [`i1-sim/`](i1-sim/) | sẵn sàng | local macOS/Linux, không cần phần cứng | `6a69626` (2026-09-29) |
 | I3 (phần không cần bo mạch) + OTA của I7 | [`i3-firmware-qemu/`](i3-firmware-qemu/) | sẵn sàng | Docker `espressif/idf:v5.4` (Mac Apple Silicon hoặc Linux) | `6a69626` (2026-09-29) |
-| I4 (thoại trên laptop) | `i4-thoai-laptop/` | chưa có (chờ TSK-I4-04) | local macOS, tai nghe | — |
+| I4 (thoại trên laptop) | [`i4-thoai-laptop/`](i4-thoai-laptop/) | sẵn sàng — đường provider đã chạy thật; micro: chạy thử trên máy trình bày | local macOS, tai nghe, `OPENROUTER_API_KEY` | nhánh `voice/integration` (2026-09-29) |
 
 ## Vì sao chạy local, không Docker
 
