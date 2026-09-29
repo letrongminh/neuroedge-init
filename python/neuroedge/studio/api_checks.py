@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -197,6 +198,41 @@ def lint(server: Any) -> dict[str, Any]:
 # -- verify and test (subprocesses) -----------------------------------------------------
 
 
+# One subprocess at a time per process: a second click while `verify` or `test` runs is
+# told so instead of starting another (and `build` must not race itself on build/).
+_BUSY = threading.Lock()
+# Values of these variables never leave the server, even inside a test's output.
+_SECRET_NAME = re.compile(r"(KEY|TOKEN|SECRET|PASSWORD)", re.IGNORECASE)
+
+
+def one_at_a_time(what: str) -> Any:
+    """Context manager: the busy lock, or a NeuroEdgeError when another run holds it."""
+    import contextlib
+
+    @contextlib.contextmanager
+    def held():
+        if not _BUSY.acquire(blocking=False):
+            raise NeuroEdgeError(
+                where=f"studio {what}",
+                why="another lint/test/verify/build run is still going",
+                how="wait for it to finish, then press the button again",
+            )
+        try:
+            yield
+        finally:
+            _BUSY.release()
+
+    return held()
+
+
+def redact(text: str) -> str:
+    """Replace the value of every secret-looking environment variable with ***."""
+    for name, value in os.environ.items():
+        if value and len(value) >= 8 and _SECRET_NAME.search(name):
+            text = text.replace(value, "***")
+    return text
+
+
 def _run(server: Any, *args: str) -> tuple[int, str]:
     """`python -m neuroedge <args>` in the agent's directory: (exit code, stdout + stderr)."""
     import neuroedge
@@ -227,7 +263,7 @@ def _run(server: Any, *args: str) -> tuple[int, str]:
             why=f"did not finish within {SUBPROCESS_TIMEOUT_S} s and was stopped",
             how=f"run it in a terminal in {server.agent_root} to see where it waits",
         ) from None
-    return done.returncode, done.stdout + done.stderr
+    return done.returncode, redact(done.stdout + done.stderr)
 
 
 def _text_lines(output: str) -> list[str]:
@@ -271,7 +307,8 @@ def _matrix(output: str, passed: bool) -> list[dict[str, Any]]:
 
 
 def verify(server: Any) -> dict[str, Any]:
-    code, output = _run(server, "verify", "--targets", "sim")
+    with one_at_a_time("verify"):
+        code, output = _run(server, "verify", "--targets", "sim")
     lines = [line for line in _text_lines(output) if line]
     summary = next((line for line in lines if line.startswith(("Passed:", "Failed:"))), None)
     if summary is None:
@@ -296,7 +333,8 @@ def _count(tail: str, word: str) -> int:
 
 
 def test(server: Any) -> dict[str, Any]:
-    _, output = _run(server, "test")
+    with one_at_a_time("test"):
+        _, output = _run(server, "test")
     lines = [line for line in output.splitlines() if line.strip()]
     tail = lines[-20:]
     # pytest's own summary line, e.g. "3 passed, 1 failed in 0.4s", is the last one that counts

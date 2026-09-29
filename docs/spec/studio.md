@@ -17,8 +17,8 @@ neuroedge studio [--agent agent.toml] [--port 8765] [--no-browser] [--mic [--hal
 
 ## 2. Luật không thương lượng
 
-1. **Chỉ 127.0.0.1.** Không bao giờ bind địa chỉ khác.
-2. **Mọi POST cùng nguồn** (`SessionServer._same_origin`), thân ≤ 4096 byte (trừ khi mục dưới ghi khác).
+1. **Chỉ 127.0.0.1.** Không bao giờ bind địa chỉ khác. **Mọi** yêu cầu (GET cũng vậy) phải có `Host` là `127.0.0.1:<port>` hoặc `localhost:<port>`, không thì 403 — chặn DNS rebinding đọc `/state`, `/events`, vết ghi.
+2. **Mọi POST cùng nguồn** (`SessionServer._same_origin`: `Origin` đúng từng chữ `http://127.0.0.1:<port>` / `http://localhost:<port>`), thân ≤ 4096 byte, `Content-Length` không phải số không âm ⇒ 400. `lint`/`test`/`verify`/`build` chạy **một lượt một lúc**; đầu ra tiến trình con che giá trị biến môi trường có tên kiểu key.
 3. **Không tài nguyên ngoài:** CSS/JS nhúng trong trang; không CDN, không font web, không `url(`, không `@import`.
    Ảnh chỉ từ đường dẫn cùng nguồn (`/api/device/golden/…`).
 4. **Chữ từ agent, vết ghi, model luôn gán bằng `textContent`**, không bao giờ `innerHTML`.

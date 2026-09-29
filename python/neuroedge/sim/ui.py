@@ -190,6 +190,8 @@ class _Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self) -> None:  # noqa: N802 - http.server API
+        if self._refuse_foreign_host():
+            return
         state = self.server_state
         if self.path == "/":
             session = state.session
@@ -226,16 +228,39 @@ class _Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             return
 
+    def _hosts(self) -> set[str]:
+        port = self.server.server_address[1]
+        return {f"127.0.0.1:{port}", f"localhost:{port}"}
+
+    def _host_ok(self) -> bool:
+        """
+        Every request names this server in `Host`. A page on another site that rebinds its
+        DNS name to 127.0.0.1 (DNS rebinding) keeps its own name in `Host`, so it can read
+        nothing — not the page, not /state, not /events (the user's words).
+        """
+        return self.headers.get("Host", "") in self._hosts()
+
     def _same_origin(self) -> bool:
         """
         Only this page may send commands. A page on another site could otherwise
         POST to 127.0.0.1 from the user's browser and drive the simulator.
         """
-        host = self.headers.get("Host", "")
-        port = self.server.server_address[1]
-        allowed = {f"127.0.0.1:{port}", f"localhost:{port}"}
         origin = self.headers.get("Origin")
-        return host in allowed and (origin is None or origin.removeprefix("http://") in allowed)
+        allowed = {f"http://{host}" for host in self._hosts()}
+        return self._host_ok() and (origin is None or origin in allowed)
+
+    def _body_length(self) -> int | None:
+        """`Content-Length` as a size from 0 to MAX_BODY, or None (the caller answers 400/413)."""
+        raw = self.headers.get("Content-Length") or "0"
+        if not raw.isdigit():
+            return None
+        return int(raw)
+
+    def _refuse_foreign_host(self) -> bool:
+        if self._host_ok():
+            return False
+        self._send(HTTPStatus.FORBIDDEN, b"unknown host", "text/plain")
+        return True
 
     def do_POST(self) -> None:  # noqa: N802 - http.server API
         if not self._same_origin():
@@ -244,7 +269,10 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path not in ("/command", "/confirm"):
             self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain")
             return
-        length = int(self.headers.get("Content-Length") or 0)
+        length = self._body_length()
+        if length is None:
+            self._send(HTTPStatus.BAD_REQUEST, b"bad Content-Length", "text/plain")
+            return
         if length > MAX_BODY:
             self._send(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, b"too long", "text/plain")
             return

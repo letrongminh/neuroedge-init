@@ -149,7 +149,14 @@ def device(server: Any) -> dict[str, Any]:
 
 
 def build(server: Any) -> dict[str, Any]:
-    """Generate the ESP-IDF project into `<agent_root>/build/`."""
+    """Generate the ESP-IDF project into `<agent_root>/build/` (one run at a time)."""
+    from .api_checks import one_at_a_time
+
+    with one_at_a_time("build"):
+        return _build(server)
+
+
+def _build(server: Any) -> dict[str, Any]:
     out_dir = server.agent_root / "build"
     try:
         # The same call as `neuroedge build --target esp32s3 --board esp32s3-box-3`; the CLI is a

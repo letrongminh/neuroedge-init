@@ -174,6 +174,8 @@ class _StudioHandler(_Handler):
         self._send(status, _json(payload).encode(), "application/json")
 
     def do_GET(self) -> None:  # noqa: N802 - http.server API
+        if self._refuse_foreign_host():
+            return
         path = self.path.split("?", 1)[0]
         if path == "/":
             body = studio_page(self.server_state).encode("utf-8")
@@ -191,7 +193,10 @@ class _StudioHandler(_Handler):
         if not self._same_origin():
             self._send(HTTPStatus.FORBIDDEN, b"cross-origin request refused", "text/plain")
             return
-        length = int(self.headers.get("Content-Length") or 0)
+        length = self._body_length()
+        if length is None:
+            self._send(HTTPStatus.BAD_REQUEST, b"bad Content-Length", "text/plain")
+            return
         if length > MAX_BODY:
             self._send(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, b"too long", "text/plain")
             return
