@@ -21,7 +21,7 @@ timeout_s      = 20
 
 [system_two]
 provider    = "litellm"
-model       = "openrouter/deepseek/deepseek-v4-flash"
+model       = "openrouter/google/gemma-4-31b-it"
 api_key_env = "OPENROUTER_API_KEY"
 timeout_s   = 20
 
