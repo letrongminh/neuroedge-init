@@ -359,6 +359,9 @@ bản gói.
 
 #### Đã sửa
 
+- **TSK-S3-13 — thiết bị không đọc markdown của model thành tiếng.** `speakable()` bỏ `**`, gạch đầu dòng, tiêu đề, link
+  trước TTS (chữ trên trang giữ nguyên); System 2 được dặn trả lời bằng lời nói thường (`SPOKEN_STYLE`). Kiểm: `pytest
+  tests/test_voice_speakable.py`. (FR-PER-07)
 - **Component ESP-IDF `ne_ui` thiếu `src/ne_ui_text.c`** trong `SRCS`: `ne_ui.c` gọi `ne_ui_text_truncate` nên
   firmware sẽ lỗi link ngay khi require `ne_ui` (TSK-S4-01); harness host đã có tệp nên golden không thấy. Kiểm:
   `pytest tests/test_ui_assets.py -k same_sources` (component và harness biên dịch đúng mọi tệp C của `src/`, `fonts/`).

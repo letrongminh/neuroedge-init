@@ -60,7 +60,14 @@ from ..hal.audio import MAX_REPLY_MS, AudioFrame, EnergyVAD, Playback, pcm_diges
 from ..models import SystemOne
 from ..sim.session import SimSession, Turn, answer_word
 from .live import QUEUE_MAX_FRAMES, LiveAudioCapture
-from .providers.base import AudioClip, Speech, SpeechUnavailable, Transcript, clean_transcript
+from .providers.base import (
+    AudioClip,
+    Speech,
+    SpeechUnavailable,
+    Transcript,
+    clean_transcript,
+    speakable,
+)
 from .voice_fsm import VoiceParams, VoiceState, VoiceStateMachine
 
 FACTS_SOURCES = ("local_grammar", "unreachable")
@@ -866,10 +873,13 @@ class VoiceSession:
         budget_ms = float(MAX_REPLY_MS)  # the whole reply, not each sentence
         failure: str | None = None
         for text in texts:
+            spoken = speakable(text)  # a model's Markdown is shown, never read aloud
+            if not spoken:
+                continue
             started = self.stopwatch()
             took: Any = None
             try:
-                speech = await self._call(self.tts, "synthesize", text, role="tts")
+                speech = await self._call(self.tts, "synthesize", spoken, role="tts")
                 if not isinstance(speech, Speech):
                     raise TypeError(f"synthesize() returned {type(speech).__name__}, not Speech")
                 took = speech.latency_ms
