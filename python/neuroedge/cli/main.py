@@ -1800,6 +1800,63 @@ def run(
     raise typer.Exit(code=code)
 
 
+@app.command(epilog=epilog("studio"))
+def studio(
+    agent: Path = typer.Option(
+        None,
+        "--agent",
+        "-a",
+        help="Path to agent.toml (default: ./agent.toml, else the villa-concierge sample)",
+    ),
+    port: int = typer.Option(8765, "--port", help="Port on 127.0.0.1 (0 picks a free one)"),
+    no_browser: bool = typer.Option(False, "--no-browser", help="Do not open a browser"),
+    mic: bool = typer.Option(
+        False, "--mic", help="Also listen to the microphone (sim; needs neuroedge\\[audio])"
+    ),
+    half_duplex: bool = typer.Option(
+        False, "--half-duplex", help="With --mic: mute the microphone while the agent speaks"
+    ),
+):
+    """
+    Open NeuroEdge Studio: every capability of the agent in one local web app on
+    127.0.0.1 — the live session (typed and, with --mic, spoken), gates and a what-if
+    box, traces and replay, verify, the ESP32-S3 device views, MCP and the agent's
+    configuration (docs/spec/studio.md). `sim` only; Ctrl-C to stop.
+    """
+    from ..studio import serve as serve_studio
+    from ..studio import voice as studio_voice
+
+    if half_duplex and not mic:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge studio --half-duplex",
+                why="--half-duplex mutes the microphone of a --mic session, and there is none",
+                how="add --mic, or drop --half-duplex",
+            )
+        )
+    agent_path = agent or _default_agent()
+    session = _start_session("studio", agent_path, "sim", None, None, ui=True)
+    on_start = None
+    if mic:
+
+        def on_start(server):
+            studio_voice.start(server, half_duplex=half_duplex)
+
+    try:
+        serve_studio(
+            session, agent_path, port, console, open_browser=not no_browser, on_start=on_start
+        )
+    except NeuroEdgeError as error:
+        _fail(error)
+    except NotImplementedError:
+        err_console.print(
+            "[yellow]studio --mic is not implemented yet (TSK-I1-04, slice S2)[/yellow]"
+        )
+        raise typer.Exit(code=2) from None
+    finally:
+        session.close()
+
+
 @app.command(epilog=epilog("build"))
 def build(
     target: str = typer.Option(..., "--target", "-t", help="Target runtime environment"),

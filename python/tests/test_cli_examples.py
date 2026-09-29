@@ -125,6 +125,12 @@ def test_a_stale_example_is_caught(example, error):
 # project `neuroedge new my-agent` just created, and must exit 0.
 NOT_RUN = {
     "neuroedge run --ui": "serves a page until interrupted",
+    "neuroedge studio                 # every capability in one local web app": (
+        "serves a page until interrupted; tests/test_studio_server.py drives the server"
+    ),
+    "neuroedge studio --mic           # plus the laptop microphone (headphones)": (
+        "a page and a microphone; tests/test_studio_voice.py covers it on a fake device"
+    ),
     "neuroedge mcp serve --ui": "an MCP stdio server runs until its client leaves",
     "neuroedge mcp serve --agent agent.toml": "an MCP stdio server",
     "neuroedge mcp serve --ui --trace-out traces/mcp.json": "an MCP stdio server",

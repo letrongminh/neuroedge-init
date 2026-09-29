@@ -1,0 +1,4 @@
+/* neuroedge studio — tokens from viz/assets/ui.css (docs/spec/studio.md). Slice S3. */
+:root { --bg: #0f1419; --panel: #171e26; --line: #26313d; --text: #d8dee6; --dim: #7d8a99;
+        --allow: #3fb950; --block: #f85149; --warn: #d29922; --accent: #58a6ff; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, sans-serif; }

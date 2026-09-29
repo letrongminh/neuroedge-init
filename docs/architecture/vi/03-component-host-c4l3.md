@@ -28,7 +28,8 @@ lên:
 | 7 | `sim` | mọi bậc dưới | L0, **nơi lắp ráp** |
 | 8 | `perception` | `sim` (phiên thoại bọc phiên gõ), `models`, `actions`, `engine`, `hal`, `net` | L2 |
 | 9 | `testing` | `perception`, `actions`, `engine`, `hal`, `trace`; `sim` import muộn | Action CI |
-| 10 | `cli` | mọi gói | vào |
+| 10 | `studio` | mọi bậc dưới trừ `cli` — ứng dụng web cục bộ `neuroedge studio` thể hiện mọi năng lực (TSK-I1-04, `docs/spec/studio.md`) | công cụ |
+| 11 | `cli` | mọi gói | vào |
 
 Giữa L2 và L3 có nguyên lý đảo ngược phụ thuộc (dependency inversion): các adapter System 1 của L2 trong `models/` (`SystemOne`, `CommandGrammar`, `systemone_api`) hiện thực giao thức `FactSource` của `engine/gate.py` (L3), thay vì L3 phụ thuộc L2.
 

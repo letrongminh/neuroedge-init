@@ -33,6 +33,21 @@ ALLOWED: dict[str, set[str]] = {
     "sim": {"actions", "engine", "errors", "hal", "mcp_host", "models", "trace", "viz"},
     "perception": {"actions", "engine", "errors", "hal", "models", "net", "sim"},
     "testing": {"actions", "engine", "errors", "hal", "paths", "perception", "trace"},
+    # The studio (TSK-I1-04) shows every capability, so it reads every layer below the CLI.
+    "studio": {
+        "actions",
+        "engine",
+        "errors",
+        "hal",
+        "mcp_server",
+        "models",
+        "paths",
+        "perception",
+        "sim",
+        "testing",
+        "trace",
+        "viz",
+    },
     "cli": {"actions", "engine", "errors", "hal", "models", "paths", "perception", "sim", "trace"},
     "__init__": {"actions", "engine", "errors", "hal", "models", "testing", "trace"},
     "__main__": {"cli"},
@@ -42,7 +57,15 @@ HAL_IN_ENGINE = {"engine/compiler.py"}
 # module -> units it may import lazily (inside a function) beyond its module-level set
 LAZY: dict[str, set[str]] = {
     "engine/compiler.py": {"actions", "mcp_host", "models", "perception"},
-    "cli/main.py": {"mcp_desktop", "mcp_host", "mcp_server", "templates", "testing", "viz"},
+    "cli/main.py": {
+        "mcp_desktop",
+        "mcp_host",
+        "mcp_server",
+        "studio",
+        "templates",
+        "testing",
+        "viz",
+    },
     "mcp_host.py": {"mcp_server"},
     "testing/tool_corpus.py": {"sim"},
     "testing/voice_corpus.py": {"sim"},
