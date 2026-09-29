@@ -204,6 +204,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `docs/archive/` | Lịch sử đã khép, lưu để truy nguồn, không quy phạm: kế hoạch Giai đoạn 1 đã duyệt, biên bản review Giai đoạn 1 và RFC-0002 | Chỉ thêm, không sửa nội dung |
 | `docs/business/` | Bộ chuẩn bị cổng nhu cầu (Q-20); `cpo-dashboard.html` sinh từ roadmap, `TODOS.md`, PRD §15, `CHANGELOG.md` | PR thường — đổi các nguồn đó thì chạy `python3 scripts/gen_cpo_dashboard.py` |
 | `wireframe/` | Wireframe HTML tham chiếu cho UI (bản chụp `ui.css`, không đóng gói) — hiện có Lab Monitor của Khối N5b | PR thường |
+| `demo/` | Kịch bản demo của từng increment (`demo/<increment>/`): lời dẫn, lệnh, đầu ra thật, commit đã chạy lại; danh mục ở `demo/README.md` (Q-49) | PR thường; người review chạy lại kịch bản |
 | `docs/user/` | Tài liệu người dùng; `thuat-ngu.md` là nơi duy nhất giải mã ký hiệu; `trang-thai.md` sinh từ roadmap §0 | PR thường — `python3 scripts/gen_user_status.py` |
 | `docs/release.md` | Thủ tục phát hành: tag nội bộ trước I6, PyPI từ I6 | PR thường |
 | `README.md` | Trang đầu và trang PyPI (link tuyệt đối) | PR thường — `tests/test_readme_quickstart.py` |
@@ -248,6 +249,7 @@ Một task **chưa xong** cho tới khi các cập nhật dưới đây nằm **
 | Ý nghĩa của một mã / ký hiệu | `docs/user/thuat-ngu.md` | Dẫn mã |
 | Yêu cầu và đặc tả | PRD (`FR-*`, `NFR-*`) · proposal (Phụ lục) · `docs/rfc/` · `docs/spec/` | Dẫn mã |
 | Việc hoãn có chủ ý | `TODOS.md`, kèm mốc kích hoạt | Dẫn số mục |
+| Kịch bản demo của một increment | `demo/<increment>/kich-ban.md`; danh mục `demo/README.md` (Q-49) | Dẫn thư mục; không chép lệnh hay đầu ra |
 
 Nơi khác **dẫn mã** (`TSK-S2-03`, `Q-17`, `RFC-0004`, `TODOS.md #15`), không chép
 lại nội dung. Khi cần chép một câu để câu văn đọc được, đó là dấu hiệu nên dẫn mã.
@@ -266,6 +268,9 @@ lại nội dung. Khi cần chép một câu để câu văn đọc được, đ
      không thì `TSK-I<n>-<nn>` với `n` là increment đầu tiên lên lịch nó. Mã không bao giờ
      đánh lại; dời task sang increment khác là dời dòng của nó.
    - Tiêu chí ra: `[x]` + **bằng chứng chạy lại được** (lệnh + kết quả, hoặc tên test).
+   - Demo (Q-49): increment — hay phần của nó không cần phần cứng — vừa xong thì thêm
+     hoặc chạy lại kịch bản trong `demo/<increment>/`, ghi commit đã chạy lại và sửa bảng
+     ở `demo/README.md`. Người review chạy lại kịch bản.
    - §0.2: sửa cột "Tiến độ" của increment mỗi khi một task của nó đổi trạng thái (số ✅
      trên tổng số task, R10), và cột "Trạng thái" nếu cần. Cột "Dự báo" chỉ đổi **cùng PR
      với bằng chứng** làm nó đổi, và dời luôn mọi increment phụ thuộc (R5).

@@ -401,7 +401,7 @@ Năm nghĩa vụ — (1) ma trận giấy phép, (2) tệp `NOTICE` ở gốc kh
 
 ## 4. Increment tới v1.0 (I0–I7)
 
-Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increment phụ thuộc, tín hiệu đo, người), bảng task, và tiêu chí ra. Increment chỉ được phát hành khi đạt mọi tiêu chí ra của nó.
+Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increment phụ thuộc, tín hiệu đo, người), bảng task, và tiêu chí ra. Increment chỉ được phát hành khi đạt mọi tiêu chí ra của nó, và kèm một demo trong `demo/` (§11.1, Q-49).
 
 ### 4.1 I0 — Lõi hợp đồng trên `sim`
 
@@ -1375,6 +1375,7 @@ Vì vậy job `licence-obligations` trong [`ci-sim-linux.yml`](.github/workflows
 | Hằng tuần | Rà soát chỉ báo sớm §12 | I0 |
 | Hằng đêm | Kiểm thử tự động trên bo mạch thật | I3 |
 | Mỗi increment | Nghiệm thu theo tiêu chí ra, không theo cảm nhận; một thẻ phát hành, một tín hiệu đo (Q-39) | I0 |
+| Mỗi increment | **Một demo chạy được** trong `demo/<increment>/` — lời dẫn, lệnh, đầu ra thật, commit đã chạy lại; tiêu chí ra chỉ đánh `[x]` trong PR có demo; người review chạy lại kịch bản (Q-49). Danh mục: [`demo/README.md`](demo/README.md) | I1 |
 
 ### 11.2 Định nghĩa hoàn thành
 
