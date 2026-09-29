@@ -15,7 +15,6 @@ from __future__ import annotations
 import sys
 import threading
 import wave
-from array import array
 
 import pytest
 
@@ -28,6 +27,7 @@ from neuroedge.hal.board import load_board_by_id
 from neuroedge.hal.linux import LinuxHAL, LiveSpeaker
 from neuroedge.perception.providers.fake import tone
 
+from .fake_sounddevice import FakeInputStream, FakeOutputStream, FakeSounddevice, stereo
 from .test_hal_linux import LINES, FakeGpiod
 
 RATE = 48000
@@ -193,103 +193,6 @@ def test_sounddevice_missing_is_a_three_part_error(tmp_path, monkeypatch):
 # --- the live backend: capture ---------------------------------------------------------
 
 
-class FakeInputStream:
-    def __init__(self, world, device, channels, rate):
-        self.world, self.device, self.channels, self.rate = world, device, channels, rate
-        self.started = False
-        self.aborted = False
-        self.closed = False
-        self.wake = threading.Event()
-
-    def start(self):
-        # PortAudio refuses to start an already-started stream; model that too.
-        if self.started:
-            raise RuntimeError("Stream is already started")
-        self.started = True
-
-    def read(self, frames):
-        if not self.started:
-            raise RuntimeError("Stream is stopped")  # PortAudioError, reproduced
-        if self.world.mode == "gone":
-            raise OSError(19, "No such device")
-        if self.world.mode == "empty":
-            return b"", False
-        if self.world.mode == "overflow":
-            return b"\x00\x00" * frames * self.channels, True
-        if self.world.blocks:
-            return self.world.blocks.pop(0), False
-        if self.world.blocking:  # a real device waits; abort() wakes the reader
-            self.wake.wait(2.0)
-            raise OSError(19, "No such device")
-        raise OSError(19, "No such device")
-
-    def abort(self):
-        # PortAudio: abort() stops the stream; writing/reading needs start() again.
-        self.started = False
-        self.aborted = True
-        self.wake.set()
-
-    def close(self):
-        self.closed = True
-
-
-class FakeOutputStream(FakeInputStream):
-    def __init__(self, world, device, channels, rate):
-        super().__init__(world, device, channels, rate)
-        self.written: list[bytes] = []
-        self.fail_after: int | None = None
-
-    def write(self, payload):
-        if not self.started:
-            raise RuntimeError("Stream is stopped")  # PortAudioError, reproduced
-        if self.fail_after is not None and len(self.written) >= self.fail_after:
-            raise OSError(5, "Input/output error")
-        self.written.append(bytes(payload))
-
-
-class FakeSounddevice:
-    """The slice of sounddevice `LiveAudioIn` / `LiveAudioOut` use."""
-
-    def __init__(self, blocks=(), *, mode="ok", devices=None, fail_format=False, blocking=False):
-        self.blocks = list(blocks)
-        self.mode = mode
-        self.devices = devices if devices is not None else {INPUT_DEVICE, OUTPUT_DEVICE}
-        self.fail_format = fail_format
-        self.blocking = blocking
-        self.inputs: list[FakeInputStream] = []
-        self.outputs: list[FakeOutputStream] = []
-
-    def query_devices(self, device, kind):
-        if device not in self.devices:
-            raise ValueError(f"No device matching {device!r}")
-        return {"name": device, "max_input_channels": 2, "max_output_channels": 2}
-
-    def check_input_settings(self, *, device, samplerate, channels, dtype):
-        if self.fail_format:
-            raise ValueError(f"device {device!r} does not support {samplerate} Hz")
-
-    def check_output_settings(self, *, device, samplerate, channels, dtype):
-        if self.fail_format:
-            raise ValueError(f"device {device!r} does not support {samplerate} Hz")
-
-    def RawInputStream(self, *, samplerate, channels, dtype, device, blocksize):  # noqa: N802
-        stream = FakeInputStream(self, device, channels, samplerate)
-        self.inputs.append(stream)
-        return stream
-
-    def RawOutputStream(self, *, samplerate, channels, dtype, device, blocksize):  # noqa: N802
-        stream = FakeOutputStream(self, device, channels, samplerate)
-        self.outputs.append(stream)
-        return stream
-
-
-def stereo(pcm: bytes) -> bytes:
-    samples = array("h")
-    samples.frombytes(pcm)
-    out = array("h")
-    for sample in samples:
-        out.extend((sample, sample))
-    return out.tobytes()
 
 
 def test_live_capture_reads_the_board_format_as_mono_frames(tmp_path):

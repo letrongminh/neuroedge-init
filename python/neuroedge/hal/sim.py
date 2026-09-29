@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import os
 from collections import deque
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -38,7 +39,23 @@ from typing import Any, Protocol
 from ..errors import ActionContractViolation, BoardCapabilityError
 from . import Authorizer, HardwareAbstractionLayer, PinAssertion, _require_signature
 from .audio import Speaker, WavSource
+from .audio_live import (
+    LiveAudioIn,
+    LiveAudioOut,
+    LiveSpeaker,
+    _audio_node,
+    _import_sounddevice as _live_import_sounddevice,
+)
 from .board import BoardProfile, load_board_by_id
+
+AUDIO_ENV = "NEUROEDGE_AUDIO"
+AUDIO_IN_ENV = "NEUROEDGE_AUDIO_IN"
+AUDIO_OUT_ENV = "NEUROEDGE_AUDIO_OUT"
+AUDIO_BACKENDS = ("file", "live")
+
+
+def _import_sounddevice(where: str = "SimHAL -> audio.in/audio.out") -> Any:
+    return _live_import_sounddevice(where=where)
 
 ABORTED_BY_BARGE_IN = "ACTUATOR_ABORTED_BY_BARGE_IN"
 # The @action that scheduled the command raised: its verdict never completed (review of TSK-S3-11).
@@ -235,6 +252,10 @@ class SimHAL(HardwareAbstractionLayer):
         events: EventSink | None = None,
         sensors: Mapping[str, Any] | None = None,
         authorize: Authorizer = _require_signature,
+        audio: str | None = None,
+        audio_in_device: str | None = None,
+        audio_out_device: str | None = None,
+        sounddevice: Any = None,
     ) -> None:
         board = board if board is not None else load_board_by_id("sim-default")
         if board.target != "sim":
@@ -252,10 +273,28 @@ class SimHAL(HardwareAbstractionLayer):
         self.frame: str | bytes | None = None
         self.frames: list[Frame] = []
         self.spoken: list[str] = []
-        self._speaker: Speaker | None = None
+        self._speaker: Speaker | LiveSpeaker | None = None
         # Scheduled commands (voice_fsm.md §5.1); None = scheduling refused.
         self._clock: Callable[[], float] | None = None
         self._scheduled: list[PendingCommand] = []
+
+        audio_where = "SimHAL(audio=...)" if audio is not None else AUDIO_ENV
+        audio_choice = audio if audio is not None else os.environ.get(AUDIO_ENV) or None
+        if audio_choice is not None and audio_choice not in AUDIO_BACKENDS:
+            raise BoardCapabilityError(
+                where=audio_where,
+                why=(
+                    f"unknown audio backend {audio_choice!r}; the backends are "
+                    f"{list(AUDIO_BACKENDS)}"
+                ),
+                how=f"set {AUDIO_ENV}=file for WAV sessions, or =live for sounddevice (Q-50)",
+            )
+        self.audio_backend: str | None = audio_choice
+        self._sounddevice = sounddevice
+        self._audio_in: LiveAudioIn | None = None
+        self._audio_out: LiveAudioOut | None = None
+        self.audio_in_device = _audio_node(audio_in_device, AUDIO_IN_ENV, None)
+        self.audio_out_device = _audio_node(audio_out_device, AUDIO_OUT_ENV, None)
 
     def _require(self, primitive: str, called_from: str) -> dict[str, Any]:
         if not self.board.supports(primitive):
@@ -456,16 +495,92 @@ class SimHAL(HardwareAbstractionLayer):
             )
         return rate
 
+    def _device(self) -> Any:
+        if self._sounddevice is None:
+            self._sounddevice = _import_sounddevice()
+        return self._sounddevice
+
     def audio_file(self, path: Any, called_from: str = "<unknown>") -> WavSource:
         """A WAV file as `audio.in`: 16-bit mono PCM at the board's `sample_rate_hz` only."""
         rate = self._rate("audio.in", called_from)
         return WavSource.open(path, sample_rate_hz=rate, called_from=called_from)
 
-    def speaker(self, called_from: str = "<unknown>") -> Speaker:
-        """`audio.out` as PCM, at the board's `sample_rate_hz` (one timeline per session)."""
+    def audio_source(self, called_from: str = "<unknown>") -> LiveAudioIn:
+        """The live capture device (system default by default); live backend only."""
+        if self.audio_backend != "live":
+            raise BoardCapabilityError(
+                where=f"{called_from} -> audio.in",
+                why="no live audio backend is chosen for this machine; refusing to guess one",
+                how=(
+                    f"set {AUDIO_ENV}=live or run with --mic (TSK-I4-04 slice 2) or "
+                    "pass SimHAL(audio='live'); a WAV session uses audio_file()"
+                ),
+            )
+        capability = self._require("audio.in", called_from)
+        if self._audio_in is None:
+            self._audio_in = LiveAudioIn(
+                self._device(),
+                sample_rate_hz=self._rate("audio.in", called_from),
+                channels=int(capability.get("channels") or 1),
+                device=self.audio_in_device,
+                events=self.events,
+                caller="SimHAL",
+                env_var=AUDIO_IN_ENV,
+            )
+        self._audio_in.open()
+        return self._audio_in
+
+    def audio_sink(self, called_from: str = "<unknown>") -> LiveAudioOut:
+        """The live playback device (system default by default); live backend only."""
+        if self.audio_backend != "live":
+            raise BoardCapabilityError(
+                where=f"{called_from} -> audio.out",
+                why="no live audio backend is chosen for this machine; refusing to guess one",
+                how=(
+                    f"set {AUDIO_ENV}=live or run with --mic (TSK-I4-04 slice 2) or "
+                    "pass SimHAL(audio='live'); speaker() timeline writes a WAV instead"
+                ),
+            )
+        capability = self._require("audio.out", called_from)
+        if self._audio_out is None:
+            self._audio_out = LiveAudioOut(
+                self._device(),
+                sample_rate_hz=self._rate("audio.out", called_from),
+                channels=int(capability.get("channels") or 1),
+                device=self.audio_out_device,
+                caller="SimHAL",
+                env_var=AUDIO_OUT_ENV,
+            )
+        self._audio_out.open()
+        return self._audio_out
+
+    def speaker(self, called_from: str = "<unknown>") -> Any:
+        """
+        `audio.out` as a timeline at the board's rate — what `--voice-out` writes and
+        what `VoiceSession` plays a reply on. With the live backend the same `play()`
+        also writes to the device; with the file backend the timeline is all there is.
+        """
+        rate = self._rate("audio.out", called_from)
         if self._speaker is None:
-            self._speaker = Speaker(self._rate("audio.out", called_from))
+            self._speaker = (
+                LiveSpeaker(self.audio_sink(called_from), rate)
+                if self.audio_backend == "live"
+                else Speaker(rate)
+            )
         return self._speaker
+
+    def close(self) -> None:
+        """Release live audio streams; idempotent."""
+        errors: list[BaseException] = []
+        for device in (self._audio_in, self._audio_out):
+            if device is None:
+                continue
+            try:
+                device.close()
+            except BaseException as exc:
+                errors.append(exc)
+        if errors:
+            raise errors[0]
 
     # -- display -----------------------------------------------------------------
     def display(
