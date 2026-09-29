@@ -1822,12 +1822,51 @@ def studio(
             )
         )
     agent_path = agent or _default_agent()
-    session = _start_session("studio", agent_path, "sim", None, None, ui=True)
+    clock = None
+    target_options = None
     on_start = None
     if mic:
+        from ..engine.compiler import load_agent_manifest
+        from ..errors import AgentManifestError
+        from ..perception import VirtualClock
+        from ..perception.providers import (
+            load_speech_configs,
+            load_wake_word_config,
+            make_wake_word,
+        )
+
+        try:
+            manifest = load_agent_manifest(agent_path)
+            stt_config, _ = load_speech_configs(manifest)
+            if stt_config is None:
+                raise AgentManifestError(
+                    where=f"{manifest.source} -> [stt]",
+                    why="--mic needs a speech-to-text provider, and the agent declares none",
+                    how="add [stt] with model and api_key_env, or the base_url of a local server "
+                    '(docs/user/huong-dan.md); or type the command: neuroedge run -c "…" (Q-15)',
+                )
+            wake_config = load_wake_word_config(manifest, check_files=True)
+            if wake_config is not None:
+                make_wake_word(wake_config, manifest.root)
+        except NeuroEdgeError as error:
+            _fail(error)
+
+        clock = VirtualClock()
+        target_options = {"audio": "live"}
 
         def on_start(server):
             studio_voice.start(server, half_duplex=half_duplex)
+
+    session = _start_session(
+        "studio",
+        agent_path,
+        "sim",
+        None,
+        None,
+        ui=True,
+        clock=clock,
+        target_options=target_options,
+    )
 
     try:
         serve_studio(
@@ -1835,11 +1874,6 @@ def studio(
         )
     except NeuroEdgeError as error:
         _fail(error)
-    except NotImplementedError:
-        err_console.print(
-            "[yellow]studio --mic is not implemented yet (TSK-I1-04, slice S2)[/yellow]"
-        )
-        raise typer.Exit(code=2) from None
     finally:
         session.close()
 

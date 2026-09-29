@@ -23,13 +23,13 @@ from __future__ import annotations
 import asyncio
 import threading
 from pathlib import Path
-from typing import Any
 
 from rich.console import Console
 from rich.markup import escape
 
 from ..errors import AgentManifestError, NeuroEdgeError
 from ..perception import VirtualClock, VoiceParams, VoiceSession, VoiceTurn
+from ..perception.live_voice import build_live_voice, count_events
 from ..perception.providers import (
     load_speech_configs,
     load_wake_word_config,
@@ -216,26 +216,13 @@ def _run_live(
 ) -> int:
     manifest = session.manifest
     try:
-        stt_config, tts_config = load_speech_configs(manifest)
-        if stt_config is None:
-            raise AgentManifestError(
-                where=f"{manifest.source} -> [stt]",
-                why="--mic needs a speech-to-text provider, and the agent declares none",
-                how="add [stt] with model and api_key_env, or the base_url of a local server "
-                '(docs/user/huong-dan.md); or type the command: neuroedge run -c "…" (Q-15)',
-            )
-        stt = make_speech(stt_config, manifest.root)
-        stt_fallback = (
-            None if stt_config.fallback is None else make_speech(stt_config.fallback, manifest.root)
-        )
-        tts = None if tts_config is None else make_speech(tts_config, manifest.root)
-        wake_config = load_wake_word_config(manifest)
-        wake = None if wake_config is None else make_wake_word(wake_config, manifest.root)
-
+        parts = build_live_voice(session, clock, on_turn=_printer(session, clock, console))
         source = session.hal.audio_source(called_from="neuroedge run --mic")
         sink = session.hal.audio_sink(called_from="neuroedge run --mic")
     except NeuroEdgeError as error:
         return _error(err_console, error)
+    voice, stt_config, tts_config, wake_config = parts
+    stt_fallback = voice.stt_fallback
 
     in_device = getattr(source, "device", None) or "default"
     out_device = getattr(sink, "device", None) or "default"
@@ -272,23 +259,6 @@ def _run_live(
     )
     console.print(f"  wake word: {escape(wake_line)}")
 
-    voice = VoiceSession(
-        session,
-        clock=clock,
-        params=VoiceParams(vad_activation=wake is None),
-        stt=stt,
-        stt_fallback=stt_fallback,
-        stt_label=f"stt ({stt_config.label})",
-        stt_fallback_label=(
-            f"stt.fallback ({stt_config.fallback.label})"
-            if stt_config.fallback is not None
-            else "stt.fallback"
-        ),
-        tts=tts if tts is not None else NoSpeech(),
-        wake_word=wake,
-        on_turn=_printer(session, clock, console),
-    )
-
     stop_event = stop if stop is not None else threading.Event()
     try:
         asyncio.run(voice.play_live(source, half_duplex=half_duplex, stop=stop_event))
@@ -301,23 +271,7 @@ def _run_live(
 
 
 def _summary(voice: VoiceSession, console: Console) -> None:
-    events = voice.events
-    count: dict[str, Any] = {
-        "turns": len(voice.turns),
-        "barge-in": sum(
-            1 for e in events.of_type("tts_stream_end") if e.get("reason") == "barge_in"
-        )
-        + sum(
-            1
-            for e in events.of_type("voice_state_changed")
-            if e["to"] == "BARGE_IN" and e["from"] == "THINKING"
-        ),
-        "STT unavailable": len(events.of_type("stt_unavailable")),
-        "STT fallback": len(events.of_type("stt_fallback")),
-        "TTS unavailable": len(events.of_type("tts_unavailable")),
-        "wake word unavailable": len(events.of_type("wake_word_unavailable")),
-        "cancelled commands": len(events.of_type("actuator_aborted")),
-    }
+    count = count_events(voice)
     console.print("voice: " + " · ".join(f"{value} {name}" for name, value in count.items()))
     if not voice.turns:
         console.print(
