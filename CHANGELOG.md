@@ -362,6 +362,9 @@ bản gói.
 
 #### Đã sửa
 
+- **FR-TGT-06 — trang sim và studio từ chối `Host` lạ ở mọi yêu cầu (DNS rebinding).** Trước đây chỉ POST được kiểm, nên
+  một trang lạ đổi DNS về 127.0.0.1 đọc được `/state`, `/events` (lời người dùng) của `run --ui`, `mcp serve --ui`. Kiểm:
+  `pytest tests/test_studio_server.py -k "host or length or origin"`. (NFR-PRIV-03, `docs/spec/studio.md` §2)
 - **Component ESP-IDF `ne_ui` thiếu `src/ne_ui_text.c`** trong `SRCS`: `ne_ui.c` gọi `ne_ui_text_truncate` nên
   firmware sẽ lỗi link ngay khi require `ne_ui` (TSK-S4-01); harness host đã có tệp nên golden không thấy. Kiểm:
   `pytest tests/test_ui_assets.py -k same_sources` (component và harness biên dịch đúng mọi tệp C của `src/`, `fonts/`).
