@@ -33,6 +33,7 @@ from ..engine import (
     resolve_gate_file,
     resolve_gate_uri,
 )
+from ..engine.gate_resolver import lint_registry
 from ..errors import BoardCapabilityError, BuildFailed, NeuroEdgeError, VerificationError
 from ..hal.board import REFERENCE_BOARD, SUPPORTED_TARGETS, available_boards, load_board_by_id
 from ..paths import gates_dir, repo_root
@@ -234,20 +235,6 @@ def gate_explain(
         _fail(error)
         return
     render(explanation, console)
-
-
-def lint_registry(root: Path, registry: Path | None = None) -> GateRegistry:
-    """
-    The registry `gate lint` resolves a directory against. Bases are addressed by
-    neuroedge:// URI. An explicit `registry` wins; otherwise a fixture tree keeps its
-    bases in a sibling `registry/` directory, and the real corpus resolves against gates/.
-    """
-    if registry is not None:
-        return GateRegistry(registry)
-    for candidate in (root / "registry", root.parent / "registry"):
-        if candidate.is_dir():
-            return GateRegistry(candidate)
-    return GateRegistry()
 
 
 @gate_app.command(name="lint", epilog=epilog("gate lint"))

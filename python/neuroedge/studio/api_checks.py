@@ -159,8 +159,7 @@ def lint(server: Any) -> dict[str, Any]:
     `neuroedge gate lint gates` in the agent's directory. An agent that keeps no `gates/` of
     its own uses the ones its `neuroedge://` references resolve against, as the CLI does.
     """
-    from ..cli.main import lint_registry
-    from ..engine.gate_resolver import resolve_gate_file
+    from ..engine.gate_resolver import lint_registry, resolve_gate_file
     from ..paths import gates_dir
 
     own = server.agent_root / "gates"
