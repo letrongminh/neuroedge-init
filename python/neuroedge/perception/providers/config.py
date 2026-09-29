@@ -21,6 +21,20 @@ FR-PER-01, Q-7, Q-12).
     voice       = "af_heart"
     timeout_s   = 15
 
+    # OpenRouter: STT and raw-PCM TTS
+    [stt]
+    base_url    = "https://openrouter.ai/api/v1"
+    model       = "openai/whisper-large-v3-turbo"
+    api_key_env = "OPENROUTER_API_KEY"
+
+    [tts]
+    base_url       = "https://openrouter.ai/api/v1"
+    model          = "google/gemini-3.1-flash-tts-preview"
+    voice          = "…"                        # (the voice ids your model accepts)
+    format         = "pcm"
+    sample_rate_hz = 24000
+    api_key_env    = "OPENROUTER_API_KEY"
+
     [wake_word]                                 # optional; without it a turn opens on VAD (T01)
     provider      = "openwakeword"              # or "python:pkg.mod:factory"
     model         = "models/hey_neuro.onnx"     # YOUR wake-word model; NeuroEdge ships none (Q-45)
@@ -83,7 +97,17 @@ KEYS = {
         "fallback",
         "options",
     ),
-    "tts": ("provider", "base_url", "model", "voice", "timeout_s", "api_key_env", "options"),
+    "tts": (
+        "provider",
+        "base_url",
+        "model",
+        "voice",
+        "timeout_s",
+        "api_key_env",
+        "format",
+        "sample_rate_hz",
+        "options",
+    ),
 }
 EXAMPLE_MODEL = {"stt": "whisper-1", "tts": "gpt-4o-mini-tts"}
 LANGUAGE = re.compile(r"^[a-z]{2,3}$")
@@ -106,6 +130,8 @@ class SpeechConfig:
     language: str | None = None
     timeout_s: float = DEFAULT_TIMEOUT_S
     api_key_env: str | None = None
+    format: str = "wav"
+    sample_rate_hz: int | None = None
     options: dict[str, Any] = field(default_factory=dict)
     source: Path | None = None
     # The table it was parsed from: "stt" or "stt.fallback" (TSK-I4-01)
@@ -139,15 +165,28 @@ class SpeechConfig:
         return f"{self.model}{voice} at {self.base_url} ({key})"
 
 
-def _unknown_hint(role: str, table: dict[str, Any]) -> str:
+def suggested_key_env(base_url: Any) -> str:
+    """The variable name suggested in errors: OpenRouter's for its domain, else OpenAI's."""
+    if isinstance(base_url, str) and "openrouter.ai" in base_url:
+        return "OPENROUTER_API_KEY"
+    return "OPENAI_API_KEY"
+
+
+def _unknown_hint(role: str, table: dict[str, Any], label: str = "") -> str:
+    tbl = label or role
     if role == "tts" and "language" in table:
         return (
             "the OpenAI speech API has no language field — pick a voice that speaks it, or pass "
-            f"it to your adapter under [{role}.options]"
+            f"it to your adapter under [{tbl}.options]"
+        )
+    if role == "stt" and ("format" in table or "sample_rate_hz" in table):
+        return (
+            f"`format` and `sample_rate_hz` configure TTS audio output ([tts]), not [{tbl}] — "
+            f"remove them, or put adapter settings under [{tbl}.options]"
         )
     if "api_base" in table:
-        return f"the endpoint of [{role}] is `base_url` (`api_base` is its name in [system_two])"
-    return f"remove them, or put adapter settings under [{role}.options]"
+        return f"the endpoint of [{tbl}] is `base_url` (`api_base` is its name in [system_two])"
+    return f"remove them, or put adapter settings under [{tbl}.options]"
 
 
 def parse_speech(
@@ -165,9 +204,10 @@ def parse_speech(
         raise AgentManifestError(
             where=where, why=f"[{label}] must be a table", how=f"write [{label}]"
         )
-    refuse_secrets(table, where, "OPENAI_API_KEY")
+    suggestion = suggested_key_env(table.get("base_url"))
+    refuse_secrets(table, where, suggestion)
     keys = KEYS[role] if label == role else tuple(k for k in KEYS[role] if k != "fallback")
-    refuse_unknown(table, where, label, keys, _unknown_hint(role, table))
+    refuse_unknown(table, where, label, keys, _unknown_hint(role, table, label))
     provider = provider_of(
         table,
         where,
@@ -184,6 +224,8 @@ def parse_speech(
         how=f'write model = "{EXAMPLE_MODEL[role]}" (or the model name your server serves)',
     )
     voice = None
+    format_val = "wav"
+    sample_rate_hz = None
     if role == "tts":
         voice = plain_text(
             table,
@@ -194,6 +236,45 @@ def parse_speech(
             "not shaped like a key",
             how='write voice = "alloy" (OpenAI), or the voice your server has (Kokoro: "af_heart")',
         )
+        if "format" in table:
+            fmt = table["format"]
+            if not isinstance(fmt, str) or fmt not in ("wav", "pcm"):
+                raise AgentManifestError(
+                    where=f"{where} format",
+                    why=f'format must be "wav" or "pcm", got {fmt!r}',
+                    how='write format = "wav" (the default) or format = "pcm"',
+                )
+            format_val = fmt
+        if "sample_rate_hz" in table:
+            rate = table["sample_rate_hz"]
+            if isinstance(rate, bool) or not isinstance(rate, int):
+                raise AgentManifestError(
+                    where=f"{where} sample_rate_hz",
+                    why="sample_rate_hz must be an integer from 8000 to 48000 Hz",
+                    how="write sample_rate_hz = 24000 (an integer from 8000 to 48000 Hz)",
+                )
+            if not (8000 <= rate <= 48000):
+                raise AgentManifestError(
+                    where=f"{where} sample_rate_hz",
+                    why=f"sample_rate_hz must be an integer from 8000 to 48000 Hz, got {rate}",
+                    how="write sample_rate_hz = 24000 (an integer from 8000 to 48000 Hz)",
+                )
+            sample_rate_hz = rate
+
+        if format_val == "pcm" and sample_rate_hz is None:
+            raise AgentManifestError(
+                where=f"{where} sample_rate_hz",
+                why='format = "pcm" requires sample_rate_hz: the raw PCM stream carries no header, '
+                "so the rate cannot be guessed",
+                how="add sample_rate_hz = 24000 (an integer from 8000 to 48000 Hz)",
+            )
+        if sample_rate_hz is not None and format_val != "pcm":
+            raise AgentManifestError(
+                where=f"{where} sample_rate_hz",
+                why='sample_rate_hz is only accepted with format = "pcm" (a WAV file carries its '
+                "sample rate in the header)",
+                how='set format = "pcm" or remove sample_rate_hz',
+            )
     language = table.get("language")
     if language is not None and (not isinstance(language, str) or not LANGUAGE.match(language)):
         raise AgentManifestError(
@@ -201,7 +282,7 @@ def parse_speech(
             why='language must be an ISO-639-1 code such as "vi" or "en", and it is not one',
             how='write language = "vi", or remove it to let the model detect it',
         )
-    api_key_env = key_env(table, where, "OPENAI_API_KEY")
+    api_key_env = key_env(table, where, suggestion)
     base_url = endpoint(
         table,
         where,
@@ -216,7 +297,7 @@ def parse_speech(
             where=f"{where} api_key_env",
             why=f"[{label}] speaks to OpenAI's cloud, which needs a key, and does not say where to "
             "read it",
-            how='add api_key_env = "OPENAI_API_KEY" (a keyless local server: set base_url instead)',
+            how=f'add api_key_env = "{suggestion}" (a keyless local server: set base_url instead)',
         )
     timeout = bounded(
         table,
@@ -239,6 +320,8 @@ def parse_speech(
         language=language,
         timeout_s=timeout,
         api_key_env=api_key_env,
+        format=format_val,
+        sample_rate_hz=sample_rate_hz,
         options=options(table, where, label, "OpenAI audio" if not custom else None),
         source=source,
         name=label,
