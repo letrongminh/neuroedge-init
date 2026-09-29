@@ -285,6 +285,23 @@ def test_mcp_lists_the_external_servers(home):
     assert mcp["servers"] == [{"name": "news", "tools": ["headlines"]}]
 
 
+def test_mcp_without_the_sdk_still_lists_the_tools(villa, monkeypatch):
+    import neuroedge.mcp_desktop as desktop
+    from neuroedge.errors import NeuroEdgeError
+
+    def no_sdk(*args, **kwargs):
+        raise NeuroEdgeError(
+            where="mcp", why="the MCP SDK is not installed", how="pip install 'neuroedge[mcp]'"
+        )
+
+    monkeypatch.setattr(desktop, "desktop_entry", no_sdk)
+    status, mcp = get(villa, "/api/mcp")
+    assert status == 200 and mcp["ok"] is True
+    assert [t["name"] for t in mcp["tools"]] == list(villa.session.tools.specs)
+    assert mcp["desktop_config"] is None
+    assert "neuroedge[mcp]" in mcp["desktop_config_error"]["how"]
+
+
 def test_mcp_writes_no_file(villa, tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))

@@ -45,7 +45,7 @@ Mọi câu trả lời thành công có `"ok": true`.
 | `GET /api/gates` | `{gates: [{name, version, ref, digest, levels, fail, status: "OK"\|"FAIL", error?}], lint: {resolved, total}}` — các gate trong `[gates]` của agent | `api_agent` |
 | `GET /api/gates/<name>` | `{name, version, chain: ["base@1.0.0", …], evaluate: {criterion: {type, levels?, options?, instructions?}}, allow_when: {...}, on_block: {...}, budget: {...}, explanation: {...}}` — `explanation` từ `engine/gate_explain.py` | `api_agent` |
 | `POST /api/gates/<name>/whatif` body `{"facts": {criterion: value}}` | `{verdict: "ALLOW"\|"BLOCK", reason?, failed_criterion?, evaluations, action?}` — lượng giá thuần, **không** đụng phiên, HAL, ledger | `api_agent` |
-| `GET /api/mcp` | `{tools: [{name, description, input_schema}], desktop_config: "<lệnh + JSON>", servers: [{name, tools}]}` | `api_agent` |
+| `GET /api/mcp` | `{tools: [{name, description, input_schema}], desktop_config: "<lệnh + JSON>" | null, desktop_config_error?, servers: [{name, tools}]}` — thiếu SDK MCP (`neuroedge[mcp]`) thì vẫn có `tools`, `desktop_config` là null kèm lỗi | `api_agent` |
 | `GET /api/traces` | `{traces: [{name, session_id, events, target, board, anonymized, recorded_at}]}` — `*.json` dưới `<agent>/traces/` (không gồm `golden/`) | `api_checks` |
 | `GET /api/traces/<name>` | trace `trace.v1` đầy đủ | `api_checks` |
 | `POST /api/traces/<name>/replay` | `{match: bool, verdicts: [...], pins: [...], detail?}` — như `neuroedge replay` trên `sim` | `api_checks` |

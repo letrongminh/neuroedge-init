@@ -253,12 +253,21 @@ def mcp(server: Any) -> dict[str, Any]:
             {"name": external.name, "tools": list(external.tools)}
             for external in server.session.mcp.servers
         ]
-    entry = desktop_entry(server.agent_path, ui=True, port=DESKTOP_UI_PORT)
-    return json_safe(
-        {
-            "ok": True,
-            "tools": tools,
-            "desktop_config": desktop_config_text(manifest.name, entry),
-            "servers": servers,
-        }
-    )
+    # The tools are the session's own; only the Desktop entry needs the MCP SDK. Without
+    # it the page still lists the tools and says why there is no Desktop config.
+    config: str | None = None
+    config_error: dict[str, Any] | None = None
+    try:
+        entry = desktop_entry(server.agent_path, ui=True, port=DESKTOP_UI_PORT)
+        config = desktop_config_text(manifest.name, entry)
+    except NeuroEdgeError as error:
+        config_error = error.as_dict()
+    reply: dict[str, Any] = {
+        "ok": True,
+        "tools": tools,
+        "desktop_config": config,
+        "servers": servers,
+    }
+    if config_error is not None:
+        reply["desktop_config_error"] = config_error
+    return json_safe(reply)
