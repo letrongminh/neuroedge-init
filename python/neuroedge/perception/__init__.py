@@ -11,10 +11,12 @@ behind `[stt]` / `[tts]` of agent.toml, and the wake-word detector behind
 `[wake_word]` (TSK-I4-01: a model of your own; none ships, Q-45).
 """
 
+from .live import LiveAudioCapture
 from .voice_fsm import TRIGGERS, VoiceParams, VoiceState, VoiceStateMachine
 from .voice_session import VirtualClock, VoiceSession, VoiceTurn
 
 __all__ = [
+    "LiveAudioCapture",
     "TRIGGERS",
     "VirtualClock",
     "VoiceParams",
