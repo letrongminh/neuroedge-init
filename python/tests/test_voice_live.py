@@ -10,6 +10,7 @@ captured while a reply is playing are silenced to prevent echo through loudspeak
 from __future__ import annotations
 
 import asyncio
+import re
 import shutil
 import sys
 import threading
@@ -737,10 +738,12 @@ def test_cli_mic_ctrl_c_exits_0(
 
 
 def test_help_shows_mic_and_half_duplex() -> None:
-    result = runner.invoke(app, ["run", "--help"])
+    result = runner.invoke(app, ["run", "--help"], env={"COLUMNS": "100"})
     assert result.exit_code == 0
-    assert "--mic" in result.output
-    assert "--half-duplex" in result.output
+    # CI forces colour: Rich styles "-" and "-mic" apart, so compare without ANSI codes.
+    page = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
+    assert "--mic" in page
+    assert "--half-duplex" in page
 
 
 def test_half_duplex_keeps_the_mic_open_while_tts_is_still_synthesising(door: Path) -> None:
