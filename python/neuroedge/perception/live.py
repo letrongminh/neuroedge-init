@@ -77,7 +77,7 @@ class LiveAudioCapture:
                         ),
                     ) from None
         except BaseException as exc:
-            if not self._stop.is_set() or isinstance(exc, PerceptionUnavailableError):
+            if not self._stop.is_set() or isinstance(exc, (PerceptionUnavailableError, KeyboardInterrupt)):
                 self._error = exc
         finally:
             self._done.set()
@@ -94,23 +94,27 @@ class LiveAudioCapture:
 
         Returns None when the capture has stopped or the source has ended and all
         buffered frames have been consumed. Raises any exception that occurred in
-        the capture thread.
+        the capture thread only after all queued frames have been returned.
         """
         while True:
-            if self._error is not None:
-                err = self._error
-                self._error = None
-                raise err
-
             try:
                 return self._queue.get_nowait()
             except queue.Empty:
                 pass
 
+            if self._error is not None:
+                err = self._error
+                self._error = None
+                raise err
+
             if self._stop.is_set():
                 return None
 
             if self._done.is_set():
+                try:
+                    return self._queue.get_nowait()
+                except queue.Empty:
+                    pass
                 if self._error is not None:
                     err = self._error
                     self._error = None
