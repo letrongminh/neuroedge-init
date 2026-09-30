@@ -2,8 +2,8 @@
 
 ## NeuroEdge — Hợp đồng vào Physical AI
 
-**Phiên bản PRD:** 1.4
-**Ngày phát hành:** 24 tháng 9, 2026
+**Phiên bản PRD:** 1.5
+**Ngày phát hành:** 30 tháng 9, 2026 — MVP = v1.0 đầy đủ (Q-52 → Q-55)
 **Tài liệu nguồn:** `neuroedge-proposal.md`
 **Trạng thái:** Bản thảo chờ phê duyệt kỹ thuật
 **Lịch sử thay đổi:** `CHANGELOG.md` — tài liệu này chỉ mô tả hiện trạng.
@@ -185,13 +185,13 @@ nói mốc nào gồm increment nào.
 | Mốc | Tên | Increment (roadmap §0.2) | Nội dung | Điều kiện khởi động |
 |:---|:---|:---:|:---|:---|
 | **0.x** | Bản increment nội bộ | I1–I5 | Mỗi increment một tag nội bộ và một tín hiệu đo; **không phát hành ra ngoài** (Q-39) | — |
-| **Công khai** | Repo công khai + PyPI | I6 | Demo thoại chạy trên `sim`, `linux` và ESP32-S3-Box-3 | I5 phát hành |
-| **v1.0** | Lõi (source-available, Q-45) | I7 | Khối 1a + Khối 1b | Đạt toàn bộ tiêu chí §11.1 |
+| **Công khai** | Repo công khai + PyPI | I6 | Bản ứng viên của MVP: demo thoại và bốn gói nguyên thủy mở rộng trên `sim`, `linux` và `esp32s3` | I5a và I2b phát hành |
+| **v1.0 = MVP** | Lõi (source-available, Q-45) — lần ra mắt MVP (Q-52) | I7 | Khối 1a + Khối 1b + bốn gói nguyên thủy mở rộng (Q-53) + kit mẫu + NeuroBrain (Q-55) | Đạt toàn bộ tiêu chí §11.1 (A1–A12) |
 | **Developer Beta** | Beta trên dòng `1.0.x` | I8 | Đóng băng tính năng trên dòng `1.0.x`, hỗ trợ 50–100 lập trình viên | v1.0 phát hành |
 | **v1.1** | Tầng dịch vụ thương mại | I9–I10 | Khối 2 + Khối 3 | **Cột mốc định lượng** — xem §3.3 |
-| **Mở rộng (1.x)** | Giai đoạn 2 — thị giác và phủ rộng phần cứng | I11, I13, I15–I18 | Khối V1a/V1b/V2/V3 + P1/P2 *(proposal §8.9)* · tag theo roadmap §0.2 | **2a:** RFC-0002 được phê duyệt · **2b:** nhu cầu camera đo được từ khách hàng AURA thật |
+| **Mở rộng (1.x)** | Giai đoạn 2 — phủ rộng phần cứng, Jetson, đa phương thức | I11, I13, I16–I18 | Khối V1a/V2/V3 + P1/P2 *(proposal §8.9)*; thị giác trên `sim`/`linux`/`esp32s3` (V1b) đã vào v1.0 (Q-53) · tag theo roadmap §0.2 | **2a:** RFC-0002 được phê duyệt |
 
-Khối 4 (AURA thực địa, sau Beta — điều kiện ở proposal §8.6) và Khối 5 (Marketplace, khi đạt G1–G4) nằm ngoài phạm vi PRD này; chúng được đặc tả trong tài liệu sản phẩm riêng khi tới mốc. Theo Q-39, kế hoạch thực thi của Giai đoạn 2, NeuroBrain (I12) và robot phân tầng (I14) nằm trong roadmap chung; PRD này chỉ đặc tả các hợp đồng mà Giai đoạn 2 phải tuân thủ (FR-TGT-08, FR-HAL-01), không đặc tả yêu cầu chi tiết của nó.
+Khối 4 (AURA thực địa, sau Beta — điều kiện ở proposal §8.6) và Khối 5 (Marketplace, khi đạt G1–G4) nằm ngoài phạm vi PRD này; chúng được đặc tả trong tài liệu sản phẩm riêng khi tới mốc. Theo Q-39, kế hoạch thực thi của Giai đoạn 2, NeuroBrain (I4a, I5a — Q-55) và robot phân tầng (I14) nằm trong roadmap chung; PRD này chỉ đặc tả các hợp đồng mà Giai đoạn 2 phải tuân thủ (FR-TGT-08, FR-HAL-01), không đặc tả yêu cầu chi tiết của nó.
 
 ### 3.2 Nội dung từng mốc
 
@@ -207,7 +207,8 @@ Khối 4 (AURA thực địa, sau Beta — điều kiện ở proposal §8.6) v�
 | Action CI (FR-CI) | ● | ◐ `verify` môi trường bậc 1 | — |
 | Lược đồ vết ghi (FR-TRC) | ● | — | — |
 | CLI (FR-CLI) | ● | ◐ bổ sung | — |
-| Trải nghiệm lập trình viên (FR-DX) | ● | — | — |
+| Trải nghiệm lập trình viên (FR-DX) | ● | ● FR-DX-08 → FR-DX-10 (kit, `neuroedge add`, NeuroBrain) | — |
+| Nguyên thủy mở rộng (FR-HAL-08) | ◐ `sim` + `linux` (I2a) | ● `esp32s3` (I3a) | — |
 | OTA cấp thiết bị (FR-OTA) | — | ● | — |
 | Lớp trừu tượng provider (FR-GW) | ◐ FR-GW-01, 03 tối thiểu (Q-28) | ◐ client streaming MCU của FR-GW-04 (TSK-S5-06) | ● phần còn lại (Q-28) |
 | Fleet Management OS (FR-FLT) | — | — | ● |
@@ -226,8 +227,8 @@ Các hạng mục sau **BẮT BUỘC** bị loại khỏi Khối 1b để bảo 
 | Hạng mục | Trạng thái trong v1.0 |
 |:---|:---|
 | Huấn luyện wake-word tùy biến | Không hỗ trợ — chỉ dùng wake-word pre-trained *"Hey Neuro"* |
-| Độ phủ bo mạch | Duy nhất **một bo mạch tham chiếu chính thức**: **ESP32-S3-Box-3** (tích hợp sẵn màn hình LCD ST7789, dual-mic ES7210, loa ES8311, dock I/O; DevKitC chuyển thành bo mạch thứ cấp do cộng đồng duy trì) |
-| Thị giác máy tính | Không thuộc phạm vi |
+| Độ phủ bo mạch | **Bo mạch tham chiếu chính thức ESP32-S3-Box-3**, cộng **một bo ESP32-S3 có camera** cho `vision.in` (Q-53; chọn ở TSK-I3a-01) (tích hợp sẵn màn hình LCD ST7789, dual-mic ES7210, loa ES8311, dock I/O; DevKitC chuyển thành bo mạch thứ cấp do cộng đồng duy trì) |
+| Thị giác máy tính | **Thuộc phạm vi v1.0** (Q-53): `vision.in` trên ba target; kết quả vào gate dưới dạng dữ kiện do maker khai, ngưỡng tin cậy khoá bằng tiêu chí số (Q-54) |
 | Kết nối tới provider AI trên đám mây (LLM · ASR · TTS) | **Thuộc phạm vi v1.0** — là kiến trúc mặc định theo P-4 |
 | Dịch vụ đám mây do NeuroEdge vận hành, hệ thống tài khoản NeuroEdge | Không thuộc phạm vi — người dùng tự vận hành lớp provider và tự giữ khóa |
 | Jetson, Matter, HomeKit | Không thuộc phạm vi |
@@ -243,13 +244,14 @@ HAL là hợp đồng kiểm tra hai chiều: bo mạch khai báo năng lực cu
 
 | Mã | Yêu cầu | Ưu tiên | Tiêu chí nghiệm thu | Nguồn |
 |:---|:---|:---:|:---|:---:|
-| **FR-HAL-01** | Hệ thống cung cấp đúng 5 nguyên thủy phần cứng: `audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display`. Tập nguyên thủy **đóng cho v1.x**; mở rộng chỉ qua RFC *(nguyên thủy thị giác `vision.in`, tùy chọn theo bo mạch, dự kiến qua một RFC riêng ở Khối V1b của Giai đoạn 2 — RFC-0002 §9.1)* | P0 | Cả 5 nguyên thủy có hiện thực đầy đủ trên các môi trường bậc 1 | §3.3 |
+| **FR-HAL-01** | *(Q-53: bốn gói mở rộng ở FR-HAL-08; văn bản này sửa ở TSK-N0-02 khi RFC-0013 được chấp thuận.)* Hệ thống cung cấp đúng 5 nguyên thủy phần cứng: `audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display`. Tập nguyên thủy **đóng cho v1.x**; mở rộng chỉ qua RFC *(nguyên thủy thị giác `vision.in`, tùy chọn theo bo mạch, dự kiến qua một RFC riêng ở Khối V1b của Giai đoạn 2 — RFC-0002 §9.1)* | P0 | Cả 5 nguyên thủy có hiện thực đầy đủ trên các môi trường bậc 1 | §3.3 |
 | **FR-HAL-02** | Bo mạch khai báo năng lực qua tệp `board.toml` theo schema chuẩn | P0 | Tệp sai schema bị từ chối kèm thông báo chỉ rõ trường lỗi | §4.2 |
 | **FR-HAL-03** | Agent khai báo yêu cầu năng lực qua khối `[requires]` trong `agent.toml` | P0 | Thiếu khối `[requires]` khi agent có hành động vật lý → build dừng | §4.3 |
 | **FR-HAL-04** | Công cụ đối chiếu năng lực chạy **lúc build**, không lúc chạy | P0 | Bất tương thích làm `neuroedge build` thoát với mã lỗi khác 0, không sinh firmware | §4.9 |
 | **FR-HAL-05** | Thông báo lỗi đối chiếu nêu rõ: năng lực thiếu, bo mạch cung cấp gì, vị trí mã nguồn gọi | P0 | Thông báo chứa đủ 3 thành phần và gợi ý cách xử lý | §4.9 |
 | **FR-HAL-06** | Chân GPIO và cảm biến định danh bằng **tên logic**, không bằng số chân vật lý | P0 | Đổi bo mạch chỉ cần sửa `board.toml`, không sửa mã agent | Phụ lục A.2 |
 | **FR-HAL-07** | HAL từ chối mọi lệnh `digital.out` không kèm chữ ký gate đã pass | P0 | Gọi trực tiếp sinh ngoại lệ `ActionContractViolation` | Phụ lục A.2 |
+| **FR-HAL-08** | Bốn gói nguyên thủy mở rộng, **tuỳ chọn theo bo mạch**: cảm biến (`digital.in`, bus I2C chỉ đọc, `analog.in`, tiêu chí gate `numeric`), điều khiển mịn (PWM trong `digital.out`), thị giác (`vision.in`), chuyển động (`motion.*`). Mỗi nguyên thủy mở rộng có ít nhất một bo tham chiếu bậc 1 trên **mỗi** target bậc 1 *(Q-53; RFC-0007, RFC-0009 → RFC-0013)* | P0 | `verify --targets sim,linux,esp32s3` đạt 100% cho agent mẫu của từng gói; agent đòi nguyên thủy mà bo không khai bị từ chối lúc build (FR-HAL-05) | Q-53 |
 
 ### 4.2 Môi trường thực thi (FR-TGT)
 
@@ -411,6 +413,9 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-DX-05** | Tài liệu có ít nhất 3 ứng dụng mẫu hoàn chỉnh chạy được | P0 | Ba mẫu chạy thành công trên máy sạch theo hướng dẫn *(tiến độ: TSK-S3-08)* | §12.1 |
 | **FR-DX-06** | Tài liệu có ít nhất 1 video hoặc ảnh động minh họa trực quan trong README | P0 | Có tài sản trực quan dưới 30 giây thể hiện vòng lặp giá trị | §12.1 |
 | **FR-DX-07** | Công cụ lint của dự án mẫu chặn khẳng định so khớp văn bản do System 2 sinh ra | P1 | Test vi phạm FR-CI-L3 bị lint báo lỗi | §3.7 |
+| **FR-DX-08** | `neuroedge add` sinh `@action` + gate + test hai chiều + khai `[requires]` cho mọi nguyên thủy, từ template có sẵn | P0 | Trên dự án mẫu: `gate lint` sạch, test ALLOW và BLOCK xanh; chạy lại không ghi đè tệp đã có | Q-52 |
+| **FR-DX-09** | Kit mẫu cho mỗi gói nguyên thủy: BOM, sơ đồ đấu dây, profile bo mạch, gate đã khoá, vết ghi golden, hướng dẫn "từ hộp tới chạy thật" | P0 | A12 | Q-52 |
+| **FR-DX-10** | NeuroBrain: hội thoại sinh bản nháp `@action` + gate `0.1.0-draft` + test hai chiều cho mọi nguyên thủy; bản nháp chỉ được khoá sau `gate lint` và người duyệt — LLM không tự khoá chính sách | P0 | A11 | Q-31, Q-55 |
 
 ### 7.2 Giao diện dòng lệnh (FR-CLI)
 
@@ -617,6 +622,9 @@ Các bản increment nội bộ trước khi công khai (I1–I5) không đượ
 | **A7** | Vết ghi hợp lệ | **100%** phiên sinh tệp qua được `neuroedge trace validate` | Chạy tự động trong CI |
 | **A8** | Tài liệu | 3 ứng dụng mẫu chạy được + 1 tài sản trực quan trong README | Kiểm chứng trên máy sạch |
 | **A9** | Lược đồ công khai | JSON Schema truy cập được tại URL công bố, kèm bộ kiểm thử tuân thủ | Bên thứ ba chạy thử thành công |
+| **A10** | Đủ nguyên thủy trên ba target | Mỗi nguyên thủy mở rộng của FR-HAL-08 có agent mẫu đạt `verify` **100%** trên `sim`, `linux`, `esp32s3` *(Q-53)* | Chạy trong CI và nightly trên bo mạch thật, lưu nhật ký |
+| **A11** | Dựng bằng hội thoại có hợp đồng | Mỗi gói có ít nhất **một** hợp đồng do NeuroBrain sinh, qua `gate lint`, test hai chiều và người duyệt, chạy trên ba target; **0** bản nháp được khoá mà thiếu test BLOCK *(Q-55)* | Kịch bản ghi lại cùng vết ghi, `verify` ba target |
+| **A12** | Kit mẫu dựng được | Trung vị **≤ 1 ngày** từ mở hộp tới thiết bị thật chạy agent có gate, trên 5 người ngoài đội, mỗi người một kit *(Q-52)* | Biên bản đo có mốc thời gian từng bước |
 
 ### 11.2 Nghiệm thu Developer Beta
 
@@ -798,7 +806,7 @@ Mọi quyết định kỹ thuật, đã chốt hoặc còn mở — xem cột T
 | **Q-37** | Token cho lệnh `motion.*` | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **Token thuê có hạn (lease)**: kênh + biên độ tối đa (tốc độ, góc) + thời hạn ngắn (cỡ 200 ms). Mỗi lệnh mới qua gate gia hạn; không còn lệnh ⇒ hết hạn ⇒ cơ cấu về trạng thái an toàn của nó (Q-35). Mất liên lạc vì vậy tự dẫn tới dừng, như `cmd_vel` timeout của ROS hay watchdog của biến tần. Khác token hôm nay (tập chân, mỗi chân một lần trong TTL — `ne_token.h`) ⇒ chi tiết, con số và bố cục `NETR` ở RFC-motion. Gate vẫn thuần: đếm hạn ở HAL/runtime (bất biến 4). |
 | **Q-38** | Chứng nhận an toàn chức năng (IEC 61508, ISO 13849, ISO 13482) | **ĐÃ CHỐT — tạm thời** *(2026-09-25, CPO)* | **OUT cho tới khi có dữ liệu.** Tài liệu và marketing ghi rõ NeuroEdge **không** phải chức năng an toàn được chứng nhận (không SIL, không PL). Robot di động (Q-34) **bắt buộc** nút dừng khẩn bằng phần cứng, cắt nguồn motor không qua phần mềm. Ngày 2026-10-25 áp luật `CEO-T2` cho bốn phân khúc của cổng như đã định. Cổng không phỏng vấn người mua robot, nên câu C6 cho robot được hỏi riêng trước khi mở RFC an toàn di động (`TODOS.md` #40). |
 | **Q-39** | Roadmap theo increment và chính sách phát hành | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **Một roadmap duy nhất** (`neuroedge-roadmap.md`); `neuroedge-design-neurobrain.md`, `neuroedge-design-phase2.md` và bản nháp robot thành ghi chú thiết kế — không lịch, không trạng thái. **Thời gian đo bằng increment** `I0…`: mỗi increment là một năng lực người dùng thấy được, có điều kiện vào, bằng chứng ra và **một** ngày dự báo; thứ tự do phụ thuộc quyết định; bỏ nhãn Tuần N/Tháng N; mã TSK giữ nguyên; cửa sổ sprint của Q-19 thành lịch sử. **Phát hành:** mỗi increment kết thúc bằng một tag và một tín hiệu đo; **không phát hành ra ngoài cho tới khi công khai** — trước đó A1 đo bằng buổi ngồi cùng người dùng với wheel. **Công khai** (repo công khai, PyPI, URL lược đồ cho A9) khi demo thoại chạy trên `sim`, `linux` và ESP32-S3-Box-3 — increment I6, trước v1.0 (I7); repo công khai chứa gì thì quyết khi tới lúc (`TODOS.md` #41). Đóng băng Beta áp cho dòng `1.0.x`; RFC, đặc tả và ghi chú thiết kế vẫn được merge. **Kéo v1.0 sớm hơn:** thoại trên host làm song song ngay; thêm **một kỹ sư nhúng** để làm âm thanh song song với HAL; OTA làm trước trên QEMU. Dự báo v1.0 ≈ 2027-01-24, Beta ≈ 2027-02-21 — giả định bo mạch về trước 2026-11-01 và kỹ sư nhúng thứ hai vào từ 2026-11-16. Ngày từng increment: roadmap §0.2. |
-| **Q-40** | Thứ tự các hướng mở rộng sau Beta | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **NeuroBrain (Giai đoạn 1.5) chuyển sau Developer Beta**, thành increment riêng (I12); trước đó chỉ làm phần quản trị (khối N0) nếu cần; bỏ luật cổng nhu cầu riêng của NeuroBrain — cổng 2026-10-25 dùng `docs/business/cong-nhu-cau-2026-10-25/cham-diem.md`. Lý do: bảo vệ đường găng v1.0 và công của V2 (R-7). Thứ tự sau Beta, theo phụ thuộc: mở danh sách target (I11: RFC-0002 PR2, khối V1a — không còn khoá theo tháng) → NeuroBrain (I12) → bộ port cộng đồng (I13, P1: sau I11, không chờ thị giác) → robot phân tầng (I14, Q-32). Thị giác (I15–I17) chờ nhu cầu camera đo được; hệ sinh thái thiết bị (I18, P2) sau P1 và Registry. |
+| **Q-40** | Thứ tự các hướng mở rộng sau Beta | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **NeuroBrain (Giai đoạn 1.5) chuyển sau Developer Beta**, thành increment riêng (I12); trước đó chỉ làm phần quản trị (khối N0) nếu cần; bỏ luật cổng nhu cầu riêng của NeuroBrain — cổng 2026-10-25 dùng `docs/business/cong-nhu-cau-2026-10-25/cham-diem.md`. Lý do: bảo vệ đường găng v1.0 và công của V2 (R-7). Thứ tự sau Beta, theo phụ thuộc: mở danh sách target (I11: RFC-0002 PR2, khối V1a — không còn khoá theo tháng) → NeuroBrain (I12) → bộ port cộng đồng (I13, P1: sau I11, không chờ thị giác) → robot phân tầng (I14, Q-32). Thị giác (I15–I17) chờ nhu cầu camera đo được; hệ sinh thái thiết bị (I18, P2) sau P1 và Registry. *(Sửa 2026-09-30: phần NeuroBrain thay bằng Q-55; thị giác trên `sim`/`linux`/`esp32s3` thay bằng Q-53 — I12 và I15 không còn là increment.)* |
 | **Q-41** | Điều kiện mở v1.1 và B3 | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **B3 bỏ khỏi điều kiện mở v1.1**: v1.1 mở khi Beta đạt đồng thời **B1 và B2** (§3.3); roadmap đổi ba nhánh của điểm rẽ theo. B3 vẫn đo và báo cáo trong Beta, rồi nối vào C5. Lý do: B3 ghi "đo qua Registry", nhưng Registry chỉ có ở v1.1 — phụ thuộc vòng. B4 vẫn cần một sự kiện đo (thêm vào TSK-S3-09), ngưỡng không đổi. |
 | **Q-42** | C6 ở v1.1 | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **C6 thành chỉ số theo dõi**, không là điều kiện phát hành: v1.1 công bố khi đạt C1–C5, C7, C8. Doanh thu Fleet so với đường hòa vốn báo cáo hằng tháng. Lý do: hòa vốn cần hàng chục nghìn thiết bị (proposal §6.3), tức mức G1, nên giữ C6 làm điều kiện thì v1.1 không bao giờ công bố được. |
 | **Q-43** | Mốc kiểm chứng giả định G-a..G-e | **ĐÃ CHỐT** *(2026-09-25, CPO)* | **Neo theo increment**, không theo tháng: mỗi giả định chỉ đo sau khi thứ nó đo đã tồn tại. G-b khi Beta (I8) đóng — cùng chỉ số với B5; G-a và G-c 90 ngày sau khi I9 phát hành; G-d 12 tháng sau khi I10 phát hành, tín hiệu sớm là B3; G-e 6 tháng sau ba site AURA đầu tiên. Cột "Mốc" ở §13.3 theo quyết định này. |
@@ -810,6 +818,10 @@ Mọi quyết định kỹ thuật, đã chốt hoặc còn mở — xem cột T
 | **Q-49** | Mỗi increment ra kèm một demo | **ĐÃ CHỐT** *(2026-09-29)* | **Mỗi increment ra kèm một demo** trong `demo/<increment>/`: kịch bản có lời dẫn, lệnh chạy được hôm đó và đầu ra thật, ghi commit đã chạy lại. Tiêu chí ra của increment chỉ được đánh `[x]` trong PR có demo của nó; phần của increment không cần phần cứng có demo ngay khi xong, không chờ cả increment. **Kiểm bằng review, không có test** — người review chạy lại kịch bản. Lý do: chưa có bo mạch thì demo là thứ duy nhất người ngoài nhìn thấy, và một kịch bản không ai chạy lại sẽ lỗi thời ngay khi mã đổi. Nơi ghi luật: roadmap §11.1; danh mục demo: `demo/README.md`. |
 | **Q-50** | Phiên thoại thời gian thực trên máy tính, trước khi có Pi | **ĐÃ CHỐT** *(2026-09-29)* | **Kéo `TODOS.md` #45 lên cho target `sim` trên laptop** (TSK-I4-04): `neuroedge run --mic` nghe micro và phát loa thật. Laptop không có khử vang, nên có **hai chế độ**: đeo **tai nghe** ⇒ full-duplex, cắt lời được; **loa ngoài** ⇒ `--half-duplex`, micro bị thay bằng im lặng khi agent đang nói, **không cắt lời được**. Không có bản chép lời từng phần: STT theo lượt như `--voice-file`, nên không đụng câu hỏi mở `voice_fsm.md` §10. Đồng hồ phiên là đồng hồ mẫu của micro, cùng `VoiceSession` với đường tệp — mọi bảo đảm của §5.2 giữ nguyên. **`linux`/Pi giữ mốc cũ của #45:** AEC PipeWire đạt `simulation_coverage.md` §6.2, `linux-rpi5` vẫn `aec = false`. Wake-word trong demo: mô hình dựng sẵn của openWakeWord chỉ để **thử nội bộ** (CC BY-NC-SA 4.0 — không vào video công khai, không đi kèm); mô hình dùng được là `TODOS.md` #49. Lý do: chưa có bo mạch thì thoại trên laptop là demo duy nhất người ngoài nghe được (Q-49). Nguồn: phiên này. |
 | **Q-51** | Giao diện của milestone: NeuroEdge Studio | **ĐÃ CHỐT** *(2026-09-29)* | **Một lệnh `neuroedge studio`** mở ứng dụng web cục bộ nhiều màn, thể hiện **mọi năng lực chạy được trên laptop** (TSK-I1-04), thay vì chỉ mở rộng trang `run --ui` hay làm trang showcase tĩnh. Giữ nguyên luật của trang sim: chỉ 127.0.0.1, POST cùng nguồn, không tài nguyên ngoài, chữ gán bằng `textContent`, không bao giờ trả giá trị key. **Song ngữ Việt/Anh** (hướng tới công khai I6). Bố cục duyệt qua wireframe trước khi code (`wireframe/studio-v1.html`). Hợp đồng server–trang: `docs/spec/studio.md`. Lý do: Q-49 đòi demo nhìn thấy được, và chưa có bo mạch. Nguồn: phiên này. |
+| **Q-52** | MVP = v1.0 đầy đủ, bốn phase | **ĐÃ CHỐT** *(2026-09-30, chủ sản phẩm)* | **MVP là v1.0 đầy đủ**: năm nguyên thủy lõi + bốn gói mở rộng (Q-53) trên ba target, thoại trên chip, OTA có ký, kit mẫu, `neuroedge add`, NeuroBrain (Q-55); nghiệm thu A1–A12. **Một lần ra mắt** (I7); I6 là bản ứng viên để đo A1 và A9 từ PyPI. **Trượt thì dời ngày cùng PR có bằng chứng (R5), không cắt phạm vi** — thang cắt của MVP bỏ. Roadmap gom thành bốn phase: P0 dọn nền · MVP (I0 → I7, thêm I2a, I2b, I3a, I4a, I5a) · Beta và thương mại (I8 → I10) · mở rộng. **Nhân sự:** lập kế hoạch với giả định đủ người cho mọi vai trò (V1 → V7). Ngày của I2a → I8 đặt lại bằng TSK-I2a-01. Hệ quả đã chấp nhận: MVP chờ bo mạch và sáu RFC; rủi ro R-1 (bộ nhớ ESP32-S3) tăng vì thoại, thị giác và chuyển động cùng chạy trên chip. Lý do: người dùng cần đủ nguyên thủy để triển khai usecase thật ngay khi ra mắt. Nguồn: rà soát roadmap 2026-09-30. |
+| **Q-53** | Bốn gói nguyên thủy mở rộng trên ba target | **ĐÃ CHỐT** *(2026-09-30, chủ sản phẩm)* | **Bốn gói vào v1.0:** cảm biến (`digital.in`, bus I2C chỉ đọc, `analog.in`, tiêu chí `numeric` — RFC-0007, RFC-0009), điều khiển mịn (PWM — RFC-0010), thị giác (`vision.in` — RFC-0012), chuyển động (`motion.*` — RFC-0011). **Bắt buộc trên cả ba target bậc 1** trước khi phát hành. Nguyên thủy mở rộng là tuỳ chọn theo bo mạch; một target bậc 1 có thể có nhiều bo tham chiếu, và mỗi nguyên thủy mở rộng có ít nhất một bo tham chiếu trên mỗi target (RFC-0013). Thêm **một bo ESP32-S3 có camera** làm bo tham chiếu thứ hai của `esp32s3` (Box-3 không có camera). Thêm profile **`sim-rpi5`** soi `linux-rpi5`, giữ bất biến "`sim` không giàu hơn bo tham chiếu" theo từng bo (`TODOS.md` #14). `analog.in` chuyển từ RFC-motion sang RFC-0007. Phong bì an toàn (khối N2) thành cơ chế chung cho mọi actuator. |
+| **Q-54** | Thị giác trong gate | **ĐÃ CHỐT** *(2026-09-30, chủ sản phẩm)* | **Maker tự định nghĩa** dữ kiện từ nhãn của model thị giác (`bool`/`level`/`choice` và độ tin cậy dạng số), tự viết `@action` và gate như với mọi dữ kiện khác. **Gate khoá ngưỡng tin cậy** bằng tiêu chí `numeric` (RFC-0009) — không có ngữ nghĩa gate riêng cho thị giác. Mất camera hoặc model ⇒ dữ kiện chưa quyết ⇒ gate chặn. Vết ghi mang sự kiện `perception` và `vision_ref`, không ảnh thô (RFC-0012). Phương án đã cân nhắc: RFC ngữ nghĩa gate thị giác (bác: bài toán chưa giải, RFC-0002 §9.3); ngưỡng trong cấu hình agent (bác: gate không khoá được). |
+| **Q-55** | NeuroBrain vào MVP | **ĐÃ CHỐT** *(2026-09-30, chủ sản phẩm)* | **NeuroBrain vào MVP** trên cả ba target (gồm khối N7 trên ESP32-S3), **phủ bốn gói nguyên thủy**: increment I4a (host) và I5a (chip); thay phần thứ tự NeuroBrain của Q-40. Định vị giữ Q-31. Bản nháp cho `motion.*` phải khai phong bì và trạng thái an toàn, thiếu thì từ chối sinh. Lý do: công cụ dựng nhanh phải đi cùng đủ nguyên thủy. |
 
 ---
 

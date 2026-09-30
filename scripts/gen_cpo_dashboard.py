@@ -4,7 +4,7 @@
 Một trang HTML tự chứa (không CDN, không mạng), sinh hoàn toàn từ nguồn sự thật:
 
 - `neuroedge-roadmap.md` §0.1–§0.3, bảng increment §0.2, bảng task và tiêu chí ra của từng
-  increment §4–§8, A1–A9 (Q-39: một roadmap duy nhất);
+  increment §4–§8, A1–A12 (Q-39: một roadmap duy nhất);
 - `TODOS.md` (việc hoãn có chủ ý, mốc kích hoạt);
 - `neuroedge-prd.md` §15 (quyết định chưa chốt hẳn);
 - `CHANGELOG.md` `[Chưa phát hành]` (thay đổi gần đây).
@@ -179,7 +179,7 @@ def exit_criteria(lines: list[str]) -> list[tuple[str, int, int]]:
             if total:
                 out.append((group, done, total))
             group, done, total = plain(line[4:]), 0, 0
-        elif re.match(r"- \[[ x]\] \*\*(Tiêu chí|A\d\*\* —)", line):
+        elif re.match(r"- \[[ x]\] \*\*(Tiêu chí|A\d+\*\* —)", line):
             total += 1
             done += line.startswith("- [x]")
     return out
@@ -188,7 +188,7 @@ def exit_criteria(lines: list[str]) -> list[tuple[str, int, int]]:
 def acceptance(lines: list[str]) -> list[tuple[str, str, bool]]:
     out = []
     for line in lines:
-        m = re.match(r"- \[([ x])\] \*\*(A\d)\*\* — (.*)", line)
+        m = re.match(r"- \[([ x])\] \*\*(A\d+)\*\* — (.*)", line)
         if m:
             out.append((m.group(2), plain(m.group(3)), m.group(1) == "x"))
     return out
@@ -410,7 +410,7 @@ def render() -> str:
             f"Tới {next_id}" if next_id else "Tới cột mốc tiếp theo",
             f"dự báo {next_date.group(1)}" if next_date else "",
         ),
-        (f"{passed}/{len(accept)}", "Tiêu chí nghiệm thu v1.0 (A1–A9)", "đạt khi đóng I7"),
+        (f"{passed}/{len(accept)}", "Tiêu chí nghiệm thu v1.0 (A1–A12)", "đạt khi đóng I7"),
         (str(len(decisions)), "Quyết định còn chờ", "PRD §15"),
         (str(len(todo_items)), "Việc hoãn có mốc (TODOS)", "mỗi mục có mốc kích hoạt"),
     ]

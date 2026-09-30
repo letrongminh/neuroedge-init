@@ -458,10 +458,12 @@ def e08_deployment() -> Diagram:
 # its only home, so this poster can never drift from it.
 INCREMENTS = {
     "I0": "Contract core on sim", "I1": "Internal preview on sim", "I2": "linux on par with sim",
-    "I3": "Gate on a real Box-3", "I4": "Voice on the host", "I5": "Voice on Box-3", "I6": "Public release",
-    "I7": "v1.0", "I8": "Developer Beta", "I9": "Providers v1.1 · Fleet OS", "I10": "Registry and rails",
-    "I11": "Open the target list", "I12": "NeuroBrain", "I13": "Community port kit", "I14": "Tiered robotics",
-    "I15": "Vision on linux", "I16": "Vision on jetson", "I17": "Multimodal", "I18": "Device ecosystem",
+    "I2a": "Primitives: sim, linux", "I2b": "Kits and quick build", "I3": "Gate on a real Box-3",
+    "I3a": "New primitives on esp32s3", "I4": "Voice on the host", "I4a": "NeuroBrain on the host",
+    "I5": "Voice on Box-3", "I5a": "NeuroBrain on the chip", "I6": "Public release", "I7": "v1.0 = MVP",
+    "I8": "Developer Beta", "I9": "Providers v1.1 · Fleet OS", "I10": "Registry and rails",
+    "I11": "Open the target list", "I13": "Community port kit", "I14": "Tiered robotics",
+    "I16": "Vision on jetson", "I17": "Multimodal", "I18": "Device ecosystem",
 }
 ROADMAP = ROOT / "roadmap" / "neuroedge-roadmap.md"
 
@@ -471,11 +473,16 @@ def _roadmap_matrix() -> list[tuple[str, str, str, str]]:
 
     rows = []
     for line in ROADMAP.read_text(encoding="utf-8").splitlines():
-        m = re.match(r"^\|[^|]*\| \*\*(I\d+) — [^|]*\*\* \| ([^|]*)\|[^|]*\| \*\*(\d+ / \d+)\*\* \| (\S+)", line)
+        m = re.match(r"^\|[^|]*\| \*\*(I\d+[a-z]?) — [^|]*\*\* \| ([^|]*)\|[^|]*\| \*\*(\d+ / \d+)\*\* \| (\S+)", line)
         if m:
             inc, forecast, progress, glyph = m.groups()
             forecast = forecast.strip().replace("✅ ", "")
-            for vi, en in (("nhu cầu camera", "camera demand"), ("nhánh", "branch"), ("sau ", "after ")):
+            for vi, en in (
+                ("khi ước lượng lại phạm vi MVP (TSK-I2a-01)", "on MVP re-estimate"),
+                ("nhu cầu camera", "camera demand"),
+                ("nhánh", "branch"),
+                ("sau ", "after "),
+            ):
                 forecast = forecast.replace(vi, en)
             rows.append((inc, forecast, progress.replace(" ", ""), glyph))
     got = [r[0] for r in rows]
@@ -487,17 +494,17 @@ def _roadmap_matrix() -> list[tuple[str, str, str, str]]:
 def e09_evolution() -> Diagram:
     d = Diagram(
         "E-09-evolution",
-        "E-09 · Evolution I0–I18",
+        "E-09 · Evolution I0–I18 (MVP = v1.0)",
         "Status, progress and forecast are read from neuroedge-roadmap.md §0.2 when this poster is generated.",
         1800,
-        1170,
+        1300,
     )
     status_of = {"✅": "done", "🟡": "partial", "⏳": "planned", "⏸": "planned", "🔴": "partial"}
     bands = [
-        ("internal", "0.x internal — I0 to I5", ["I0", "I1", "I2", "I3", "I4", "I5"]),
-        ("v1", "Public · v1.0 · Beta — I6 to I8", ["I6", "I7", "I8"]),
+        ("internal", "0.x internal — I0 to I5a", ["I0", "I1", "I2", "I2a", "I2b", "I3", "I3a", "I4", "I4a", "I5", "I5a"]),
+        ("v1", "Public · v1.0 = MVP · Beta — I6 to I8", ["I6", "I7", "I8"]),
         ("v11", "v1.1 services — I9 · I10", ["I9", "I10"]),
-        ("exp", "Expansion — I11 to I18", ["I11", "I12", "I13", "I14", "I15", "I16", "I17", "I18"]),
+        ("exp", "Expansion — I11 to I18", ["I11", "I13", "I14", "I16", "I17", "I18"]),
     ]
     rows = {r[0]: r for r in _roadmap_matrix()}
     y = 100
@@ -534,12 +541,12 @@ def e10_horizons() -> Diagram:
             ("contracts", "Frozen contracts", ("gate.v1 · trace.v1 · board.v1", "NETR v1 · agent.toml"), "store", "done"),
             ("ci", "Evidence loop", ("record → replay → verify", "three canonical traces, 3 targets"), "test", "done"),
         ]),
-        ("h1", "Horizon 1 — v1.0 on the device (I3–I7) · chapter 15 §2", "device", [
-            ("hal", "HAL + drivers on chip", ("targets/esp32s3/hal/ · drivers/", "TSK-S4-01, TSK-S4-03"), "device", "planned"),
-            ("voice", "Voice path on chip", ("AEC · VAD · Opus · voice FSM in C", "TSK-S5-01…S5-06"), "device", "planned"),
-            ("fallback", "Local offline fallback", ("fixed command recognizer", "TSK-S5-07 · Q-14"), "device", "planned"),
+        ("h1", "Horizon 1 — v1.0 = MVP (I2a–I7) · chapter 15 §2", "device", [
+            ("hal", "HAL + drivers + UI on chip", ("targets/esp32s3/hal/ · drivers/ · ne_ui", "TSK-S4-01, TSK-S4-03"), "device", "planned"),
+            ("voice", "Voice path on chip", ("AEC · VAD · Opus · voice FSM in C", "offline fallback · TSK-S5-01…S5-07"), "device", "planned"),
+            ("ext", "Extension primitives", ("digital.in · I2C · analog.in · PWM", "vision.in · motion.* · I2a, I3a · Q-53"), "device", "planned"),
+            ("brain", "NeuroBrain", ("brain/ only via dispatch() (B-1)", "envelope hook in HAL · I4a, I5a · Q-55"), "component", "planned"),
             ("security", "Device security", ("Secure Boot · flash encryption", "mic switch · TSK-S6-05"), "device", "planned"),
-            ("ui", "UI on the real display", ("ne_ui wired to the display driver", "TSK-S4-01"), "device", "planned"),
         ]),
         ("h2", "Horizon 2 — service tier v1.1 (I9–I10) · chapter 15 §3", "cloud", [
             ("fleet", "Fleet OS", ("provisioning · inventory · config sync", "canary OTA · incident traces · TSK-K2-04…09"), "external", "planned"),
@@ -550,9 +557,8 @@ def e10_horizons() -> Diagram:
         ]),
         ("h3", "Horizon 3 — extensions after Beta (I11–I18) · chapter 15 §4", "planned", [
             ("tiers", "Target tiers + port kit", ("tier 1 · 2 · 3, compliance vectors", "I11 · I13 · Q-13 · RFC-0002"), "component", "planned"),
-            ("brain", "NeuroBrain", ("brain/ only via dispatch() (B-1)", "envelope hook in HAL · I12 · RFC-0007"), "component", "planned"),
             ("robot", "Layered robot", ("Pi 5 brain + MCU nodes, gate per node", "black channel · lease tokens · I14"), "component", "planned"),
-            ("vision", "Vision", ("L2 input reduced by a SystemOne", "never L3 authority · I15–I17"), "component", "planned"),
+            ("vision", "Vision on jetson, multimodal", ("vision.in itself ships in v1.0 (Q-53)", "facts only, never L3 authority · I16, I17"), "component", "planned"),
             ("eco", "Ecosystem", ("adapter + HAL-port store on Registry", "I18 · chapter 16"), "component", "planned"),
         ]),
     ]
@@ -564,8 +570,7 @@ def e10_horizons() -> Diagram:
         y += 230
     d.edges += [
         Edge("fw", "voice", "same walker + ledger", label_at=(col[1] + w / 2, 312)),
-        Edge("security", "signed", "verify on chip", label_at=(col[3] + w / 2, 542)),
-        Edge("registry", "brain", "gates, lab actions", label_at=(col[1] + w / 2, 772)),
+        Edge("security", "signed", "verify on chip", label_at=(col[4] + w / 2, 542)),
         Edge("boundary", "eco", "no paid safety", label_at=(col[4] + w / 2, 772)),
     ]
     return d

@@ -5,16 +5,16 @@
 **Phiên bản:** 2.0
 
 
-**Ngày lập:** 21 tháng 9, 2026 · **Cập nhật:** 25 tháng 9, 2026 — viết lại theo increment (Q-39) · lịch sử thay đổi: `CHANGELOG.md`
+**Ngày lập:** 21 tháng 9, 2026 · **Cập nhật:** 30 tháng 9, 2026 — MVP = v1.0 đầy đủ, bốn phase (Q-52 → Q-55); viết lại theo increment (Q-39) · lịch sử thay đổi: `CHANGELOG.md`
 
 
 **Tài liệu nguồn:** `neuroedge-proposal.md` · `neuroedge-prd.md` · việc hoãn có chủ ý [`TODOS.md`](../TODOS.md) · kế hoạch Giai đoạn 1 đã duyệt (lịch sử, đóng băng 2026-09-23) [`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`](../docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md)
 
 
-**Phạm vi:** mọi increment từ **I0** tới **I18** — v1.0, Developer Beta, tầng dịch vụ v1.1, Giai đoạn 2, NeuroBrain và robot phân tầng. Đây là **nơi duy nhất** ghi trạng thái task, tiêu chí ra, phụ thuộc, thẻ phát hành và ngày dự báo (Q-39).
+**Phạm vi:** mọi increment từ **I0** tới **I18** — MVP (v1.0 đầy đủ: bốn gói nguyên thủy mở rộng, kit mẫu, NeuroBrain), Developer Beta, tầng dịch vụ v1.1 và các hướng mở rộng. Bốn phase: §0.5. Đây là **nơi duy nhất** ghi trạng thái task, tiêu chí ra, phụ thuộc, thẻ phát hành và ngày dự báo (Q-39).
 
 
-**Ghi chú thiết kế** — không lịch, không trạng thái; increment dẫn tới: [`neuroedge-design-neurobrain.md`](neuroedge-design-neurobrain.md) (NeuroBrain, I12) · [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) (thị giác và phủ phần cứng, I11, I13, I15–I18) · [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) và [`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) (robot phân tầng, I14)
+**Ghi chú thiết kế** — không lịch, không trạng thái; increment dẫn tới: [`neuroedge-design-neurobrain.md`](neuroedge-design-neurobrain.md) (NeuroBrain, I4a, I5a) · [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) (thị giác I2a, I3a; phủ phần cứng I11, I13, I16–I18) · [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) (nguyên thủy mới I2a, I3a; robot phân tầng I14) và [`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) (I14)
 
 
 **Ngoài roadmap:** Khối 4 (AURA thực địa) · Khối 5 (Marketplace) — §8.1
@@ -48,7 +48,7 @@
 
 ## Quy ước tài liệu
 
-Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A1`–`C8`, `TR-N`, `Q-N`, `RB-N`, `V1`–`V6`, `§x.y`…) được giải mã ở **[`docs/user/thuat-ngu.md`](../docs/user/thuat-ngu.md)** — nơi duy nhất, kèm chỗ định nghĩa đầy đủ. Thời gian đo bằng increment và ngày tuyệt đối; tên sprint (Sprint 1–6) và khối (Khối 1a, 1b, 2, 3) chỉ còn là tên lịch sử (Q-39).
+Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A1`–`C8`, `TR-N`, `Q-N`, `RB-N`, `V1`–`V7`, `§x.y`…) được giải mã ở **[`docs/user/thuat-ngu.md`](../docs/user/thuat-ngu.md)** — nơi duy nhất, kèm chỗ định nghĩa đầy đủ. Thời gian đo bằng increment và ngày tuyệt đối; tên sprint (Sprint 1–6) và khối (Khối 1a, 1b, 2, 3) chỉ còn là tên lịch sử (Q-39).
 
 ## 0. Bảng theo dõi tiến độ & Nhật ký bàn giao (Live Execution & Handoff Dashboard)
 
@@ -58,12 +58,12 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 
 | Chỉ số | Trạng thái hiện hành | Ghi chú & Liên kết |
 |:---|:---|:---|
-| **Pha đang thực thi** | 🟡 **I1 — Preview nội bộ trên `sim`** (I2, I3 phần không cần bo mạch và I4 làm song song) | Increment và ngày dự báo: §0.2 |
+| **Pha đang thực thi** | 🟡 **Phase MVP (§0.5)** — I1 đang mở; I2, I2a (sáu RFC), phần không cần bo mạch của I3 và I4 làm song song | Increment và ngày dự báo: §0.2 |
 | **Increment đang mở** | 🟡 **I1** — còn I1-02 (tạm hoãn: phát triển nội bộ) | I0 đã xong 42 / 42 · chi tiết §0.2 |
 | **Cột mốc tiếp theo** | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** | Ngày dự báo ở §0.2 · chưa phát hành ra ngoài (Q-39) |
-| **Lần cập nhật cuối** | **2026-09-29** | Phiên gần nhất: Q-51 + TSK-I1-04 (NeuroEdge Studio — `neuroedge studio`, bảy màn song ngữ), Q-49 (demo có giao diện), Q-50 + TSK-I4-04 (`run --mic`), TTS PCM qua OpenRouter · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Lần cập nhật cuối** | **2026-09-30** | Phiên gần nhất: Q-52 → Q-55 — MVP = v1.0 đầy đủ, bốn gói nguyên thủy mở rộng trên ba target, NeuroBrain vào MVP; tài liệu sản phẩm chuyển vào `roadmap/` · trước đó: Q-51 + TSK-I1-04 (NeuroEdge Studio — `neuroedge studio`, bảy màn song ngữ), Q-49 (demo có giao diện), Q-50 + TSK-I4-04 (`run --mic`), TTS PCM qua OpenRouter · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
 | **Trạng thái CI Lõi** | ✅ **PASS 2479/2479 · SKIP 0** | `python/tests/` — 89 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 29/29 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `ui-golden` 66 ảnh, `ota-rollback` pha a–g · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
-| **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · kỹ sư nhúng thứ hai (V6): đã quyết tuyển (2026-09-25), chưa có người — cần vào trước 2026-11-16 (Q-39) |
+| **Chặn ngoài tầm kỹ thuật** | 🟡 **3 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · bo ESP32-S3 có camera chưa chọn (TSK-I3a-01) · sáu RFC chờ kỹ thuật trưởng (§10.2) · nhân sự: lập kế hoạch với giả định đủ người (Q-52, §1.1) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](../TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
 ---
@@ -78,26 +78,29 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 |  | **Cổng nhu cầu (Q-20)** | 2026-10-25 | Go / Adjust / Stop cho I3–I7 (`docs/business/cong-nhu-cau-2026-10-25/cham-diem.md` §4.1) | — | ⏳ Đang phỏng vấn | I0 | — |
 |  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | Người ngoài đội cài từ wheel nội bộ và chạy agent có gate trong dưới 10 phút, không cần phần cứng | **4 / 6** | 🟡 Đang làm — TSK-I1-02 tạm hoãn (phát triển nội bộ) | I0 | tag `v0.1.0` (nội bộ) |
 |  | **I2 — `linux` ngang `sim`** | 2026-11-29 | `run`, `record`, `mcp serve --target linux`; cảm biến và màn hình trên `linux`; nightly trên RPi 5 | **3 / 4** | 🟡 Phiên tương tác, cảm biến, màn hình xong trên gpio-sim + i2c-stub; nightly RPi 5 còn lại | I1 | tag `v0.2.0` (nội bộ) |
+|  | **I2a — Nguyên thủy mở rộng trên `sim` và `linux`** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Bốn gói: cảm biến (`digital.in`, I2C chỉ đọc, `analog.in`, gate so ngưỡng số), điều khiển mịn (PWM), thị giác (`vision.in`), chuyển động (`motion.*`); sáu RFC; `sim-rpi5` | **0 / 26** | ⏳ Chưa bắt đầu | I2 | tag `v0.2.1` (nội bộ) |
+|  | **I2b — Kit mẫu và dựng nhanh** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Năm kit phần cứng (BOM, sơ đồ đấu dây, gate khoá), thư viện gate khởi đầu, `neuroedge add` | **0 / 4** | ⏳ Chưa bắt đầu | I2a | tag `v0.2.2` (nội bộ) |
 |  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | Gate chạy trên chip, điều khiển chân thật; người dùng tự nạp agent; `verify` ba target bậc 1 cho miền phán quyết | **6 / 14** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU, giao diện LVGL có ảnh golden); chờ bo mạch | I1, cổng Go | tag `v0.3.0` + firmware (nội bộ) |
+|  | **I3a — Nguyên thủy mở rộng trên `esp32s3`** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Bốn gói trên chip: Box-3 và một bo ESP32-S3 có camera (Q-53) | **0 / 7** | ⏳ Chưa bắt đầu | I2a, I3 | tag `v0.3.1` + firmware (nội bộ) |
 |  | **I4 — Thoại trên host** | 2026-12-13 | Nói chuyện với agent trên `sim` và `linux`: wake-word, cắt lời, STT/TTS qua provider cloud, fallback lệnh cục bộ | **5 / 9** | 🟡 Đặc tả, vector, FSM Python, độ trễ, SystemOne qua Jev xong; STT/TTS trên `sim`, wake-word + STT dự phòng, âm thanh `linux` xong phần mã trên host; phiên micro trên laptop (`run --mic`, TSK-I4-04) xong phần mã; còn mô hình wake-word thật, Pi + HAT | I2, cổng Go | tag `v0.4.0` (nội bộ) |
+|  | **I4a — NeuroBrain trên host** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Dựng bằng hội thoại có hợp đồng trên `sim` và `linux`, phủ bốn gói (Q-55) | **0 / 33** | ⏳ Chưa bắt đầu | I2b, I4 | tag `v0.4.1` + extra `[lab]` (nội bộ) |
 |  | **I5 — Thoại trên Box-3** | 2027-01-03 | Demo "nói chuyện với con chip $5": thoại trên ESP32-S3, gate trên chip, cùng vết ghi replay trong CI | **0 / 7** | ⏳ Chưa bắt đầu | I3, I4 | tag `v0.5.0` + firmware (nội bộ) |
-| **Công khai** | **I6 — Công khai** | 2027-01-10 | Repo công khai, `pip install neuroedge` từ PyPI, lược đồ ở URL công khai, video demo thoại trên `sim`, `linux` và Box-3 | **3 / 8** | 🟡 Quét bí mật, SBOM xong; chờ I5 | I5 | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
-| **v1.0** | **I7 — v1.0** | 2027-01-24 | OTA A/B có ký, bảo mật thiết bị, ổn định 24 giờ trên chip; đủ A1–A9 | **4 / 12** | 🟡 Ghim Actions, attestation xong; OTA A/B có ký + rollback xong trên QEMU; chờ I6 | I6 | `v1.0.0` |
-| **Beta** | **I8 — Developer Beta** | 2027-02-21 | 50–100 lập trình viên ngoài trên dòng `1.0.x`; đo B1–B5, chọn nhánh | **0 / 1** | ⏳ Chưa bắt đầu | I7 | `1.0.x` (chỉ bản vá) |
+|  | **I5a — NeuroBrain trên chip** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Lab action, gate và phong bì của NeuroBrain chạy trên Box-3 và bo camera | **0 / 2** | ⏳ Chưa bắt đầu | I3a, I4a, I5 | tag `v0.5.1` + firmware (nội bộ) |
+| **Công khai** | **I6 — Công khai** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Repo công khai, `pip install neuroedge` từ PyPI, lược đồ ở URL công khai, video demo thoại và bốn gói trên `sim`, `linux` và `esp32s3` | **3 / 8** | 🟡 Quét bí mật, SBOM xong; chờ I5a | I2b, I5a | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
+| **v1.0 = MVP** | **I7 — v1.0** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Lần ra mắt MVP (Q-52): OTA A/B có ký, bảo mật thiết bị, ổn định 24 giờ trên chip; đủ A1–A12 | **4 / 12** | 🟡 Ghim Actions, attestation xong; OTA A/B có ký + rollback xong trên QEMU; chờ I6 | I6 | `v1.0.0` |
+| **Beta** | **I8 — Developer Beta** | sau I7 | 50–100 lập trình viên ngoài trên dòng `1.0.x`; đo B1–B5, chọn nhánh | **0 / 1** | ⏳ Chưa bắt đầu | I7 | `1.0.x` (chỉ bản vá) |
 | **v1.1** | **I9 — Lớp provider v1.1 và Fleet OS** | sau I8 (nhánh A) | Một endpoint và credential cho cả đội, failover khai trong cấu hình, cấp phát, OTA canary, tải vết ghi sự cố | **0 / 9** | ⏳ Chờ nhánh A | I8 | `1.1.0` + dịch vụ |
 |  | **I10 — Registry và các đường ray** | sau I8 (nhánh A, Q-5) | `gate add` từ registry có ký, định danh ổn định, đo lường, sandbox | **0 / 8** | ⏳ Chờ nhánh A | I8 | `1.2.0` + registry |
 | **Mở rộng** | **I11 — Mở danh sách target** | sau I8 | RFC-0002 PR2: enum `target` theo bậc, `TARGET_TIERS` trong mã lõi, `board validate` | **0 / 6** | ⏳ Chưa bắt đầu | I8 | 1.x minor |
-|  | **I12 — NeuroBrain** | sau I11 | Bring-up phần cứng có hợp đồng bằng hội thoại (Q-31): lab action có gate, phong bì an toàn, I2C chỉ đọc | **0 / 43** | ⏳ Chưa bắt đầu | I2, I3, I8, I11 | 1.x + extra `[lab]` |
 |  | **I13 — Bộ port cộng đồng** | sau I11 | Tài liệu, bộ vector tuân thủ và khung port để người ngoài tự port bậc 3 | **0 / 5** | ⏳ Chưa bắt đầu | I7, I11 | bộ port |
-|  | **I14 — Robot phân tầng** | sau I13 | Pi 5 + nhiều node MCU, mỗi node tự lượng giá gate; mất liên lạc về trạng thái an toàn; ROS 2/Nav2 có gate | **0 / 16** | ⏳ Chưa bắt đầu | I4, I7, I11, I12, I13 | 1.x + firmware node RP2350 |
-|  | **I15 — Thị giác trên `linux`** | sau I8 + nhu cầu camera | `vision.in`, HAL thị giác, Action CI cho khung hình | **0 / 8** | ⏳ Chưa bắt đầu | I8 | 1.x (extra tùy chọn) |
-|  | **I16 — Thị giác trên `jetson`** | sau I15 | `jetson` bậc 2, thị giác thời gian thực | **0 / 4** | ⏳ Chưa bắt đầu | I11, I15 | 1.x |
+|  | **I14 — Robot phân tầng** | sau I13 | Pi 5 + nhiều node MCU, mỗi node tự lượng giá gate; mất liên lạc về trạng thái an toàn; ROS 2/Nav2 có gate | **0 / 12** | ⏳ Chưa bắt đầu | I4, I7, I11, I13 | 1.x + firmware node RP2350 |
+|  | **I16 — Thị giác trên `jetson`** | sau I8 | `jetson` bậc 2, thị giác thời gian thực | **0 / 4** | ⏳ Chưa bắt đầu | I11 | 1.x |
 |  | **I17 — Đa phương thức** | sau I16 | Thoại và thị giác trong một máy trạng thái; gate đa phương thức | **0 / 4** | ⏳ Chưa bắt đầu | I16 | 1.x |
 |  | **I18 — Hệ sinh thái thiết bị** | sau I13 | SDK đa thiết bị, kho HAL port, chứng nhận miễn phí tự kiểm chứng | **0 / 4** | ⏳ Chưa bắt đầu | I9, I10, I13 | dịch vụ |
 | **Ngoài roadmap** | **Khối 4 — AURA thực địa** | sau I8 | Ứng dụng khách sạn/villa; chỉ dùng API công khai (proposal §8.6) | — | ⏳ Ngoài roadmap | I8 | — |
 |  | **Khối 5 — Marketplace** | khi đạt G1–G4 | Sàn trao đổi tài sản có thu phí — Chặn (PRD §14) | — | ⏸ Chặn | — | — |
 
-**Giả định của các ngày dự báo (Q-39):** bo mạch Box-3 về trước 2026-11-01; kỹ sư nhúng thứ hai (V6) vào từ 2026-11-16; thoại trên host (I4) và OTA trên QEMU (TSK-S6-01, S6-02, S6-04) làm song song với I3. Cổng nhu cầu nói Stop thì I3–I7 đóng băng, I1 và I2 làm tiếp, và một PR lập lại kế hoạch.
+**Giả định của các ngày dự báo (Q-39, Q-52):** bo mạch Box-3 về trước 2026-11-01; đủ người cho mọi vai trò (§1.1); thoại trên host (I4) và OTA trên QEMU (TSK-S6-01, S6-02, S6-04) làm song song với I3. Ngày của I2a → I7 bị bỏ khi phạm vi MVP mở rộng (Q-52) và đặt lại bằng TSK-I2a-01; ngày của I1 → I5 giữ nguyên tới lúc đó. MVP trượt thì dời ngày, không cắt phạm vi (Q-52). Cổng nhu cầu nói Stop thì I3–I7 đóng băng, I1 và I2 làm tiếp, và một PR lập lại kế hoạch — cổng áp cho các increment có hậu tố thế nào là quyết định còn mở (§10.2).
 
 ---
 
@@ -105,31 +108,32 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-29 │
+│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-30 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. VỪA HOÀN THÀNH — Q-51 + TSK-I1-04: NeuroEdge Studio (xong phần mã)                  │
-│    • neuroedge studio: 7 màn, VI/EN, 17 API — docs/spec/studio.md                      │
-│    • demo/i1-studio · Q-49: demo có giao diện · Q-50 run --mic                         │
-│    • OpenRouter chạy thật: STT, TTS PCM, System 2 gemma-4-31b, Jev                     │
-│    • Còn: studio --mic với micro thật trên máy trình bày                               │
+│ 1. VỪA HOÀN THÀNH — Q-52 → Q-55: tái cấu trúc MVP (chỉ tài liệu)                       │
+│    • MVP = v1.0 đầy đủ; bốn phase ở §0.5; trượt thì dời ngày, không cắt                │
+│    • I2a, I2b, I3a, I4a, I5a mới; NeuroBrain (I12 cũ), thị giác (I15 cũ) vào MVP       │
+│    • Nháp sáu RFC: 0007, 0009 → 0013 (docs/rfc/, chưa mở PR)                           │
+│    • Tài liệu sản phẩm chuyển vào roadmap/                                             │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
-│    1. Đặt 2 Box-3 + 1 RPi 5 (Phụ lục B); tuyển V6 — đã quyết, cần trước 2026-11-16     │
-│    2. Box-3 về: nối driver màn hình vào ne_ui (TSK-S4-01), đo trên silicon             │
-│    3. Mô hình wake-word có giấy phép dùng được (#49); cách provisioning Wi-Fi (#50)    │
-│    4. Đo Jev trên bộ câu tiếng Việt có nhãn (#27) — lượt gọi key thật đã chạy          │
-│    5. Tái sinh requirements-lock.txt (đóng #54); xét 4 PR Dependabot (major Actions)   │
-│    6. Kỹ thuật trưởng: chốt chân trời hẹn giờ (voice_fsm.md §10) → Q-N                 │
-│    7. TSK-I1-02 tạm hoãn: mở lại trước buổi đo TTFV                                    │
+│    1. Mở sáu RFC thành PR riêng; kỹ thuật trưởng duyệt (§10.2)                         │
+│    2. TSK-I2a-01: ước lượng lại phạm vi MVP, đặt ngày cho I2a → I8                     │
+│    3. Đặt 2 Box-3 + 1 RPi 5 (Phụ lục B); chọn bo ESP32-S3 có camera (TSK-I3a-01)       │
+│    4. Chốt cách cổng nhu cầu 2026-10-25 áp cho I2a → I5a (§10.2)                       │
+│    5. Box-3 về: nối driver màn hình vào ne_ui (TSK-S4-01), đo trên silicon             │
+│    6. Mô hình wake-word có giấy phép dùng được (#49); cách provisioning Wi-Fi (#50)    │
+│    7. Tái sinh requirements-lock.txt (đóng #54); xét 4 PR Dependabot (major Actions)   │
+│    8. TSK-I1-02 tạm hoãn: mở lại trước buổi đo TTFV                                    │
 │                                                                                        │
 │ 4. LƯU Ý — bất biến ở CHANGELOG.md §3.3; dưới đây chỉ điều chưa có ở đó                │
 │    • Chỉ c.do() điều khiển được chân: HAL chưa gắn ledger từ chối mọi lệnh             │
+│    • Nguyên thủy mở rộng chỉ có mã sau khi RFC của nó được chấp thuận                  │
 │    • Replay tính lại phán quyết từ dữ kiện đã ghi; không gọi model, không đọc máy      │
-│    • Model cloud (Jev, STT) là đầu vào không tin cậy: miền, ngưỡng, rồi mới gate       │
-│    • [system_one] chỉ quyết tiêu chí liệt kê trong criteria; call_source thì không     │
+│    • Model cloud (Jev, STT, thị giác) là đầu vào không tin cậy: miền, ngưỡng, rồi gate │
 │    • tests_linux/ chỉ chạy trên CI (job linux-hal): gpio-sim, i2c-stub, vkms           │
 │    • Lệnh chạm line linux phải thả line ở mọi lối ra: finally + SIGTERM/SIGHUP         │
 │    • Chạy ruff check + ruff format --check trước khi commit (CI chặn)                  │
@@ -145,6 +149,19 @@ nơi duy nhất định nghĩa việc cập nhật trạng thái task, tiêu ch�
 
 ---
 
+### 0.5 Bốn phase (Q-52)
+
+Phase gom increment theo năng lực người dùng thấy được; ngày và phụ thuộc vẫn chỉ ở §0.2.
+
+| Phase | Người dùng làm được gì | Increment | Kết thúc bằng |
+|:---|:---|:---|:---|
+| **P0 — Dọn nền** | — | *(không có increment; PR tài liệu 2026-09-30)* | Tài liệu sản phẩm ở `roadmap/`, roadmap theo MVP |
+| **MVP = v1.0** | Chọn một kit, chạy trên `sim` dưới 10 phút, dựng thiết bị thật trong một ngày trên `linux` hoặc `esp32s3`; đủ năm nguyên thủy lõi và bốn gói mở rộng; tuỳ biến bằng hội thoại (NeuroBrain) hoặc lệnh sinh mã; mọi lệnh ra phần cứng qua gate | I0 → I7 (gồm I2a, I2b, I3a, I4a, I5a) | `v1.0.0` — đủ A1–A12; **một lần ra mắt, trượt thì dời ngày, không cắt** |
+| **Beta và thương mại** | 50–100 lập trình viên ngoài; doanh nghiệp mua license và Fleet OS theo điểm rẽ | I8 → I9, I10 | `1.0.x`, rồi `1.1.0` theo §5.6 |
+| **Mở rộng** | Bộ port cộng đồng, robot nhiều node, Jetson, đa phương thức, hệ sinh thái thiết bị | I11, I13, I14, I16, I17, I18 | 1.x theo nhu cầu đo được |
+
+---
+
 ## 1. Giả định nguồn lực
 
 > **Đây là giả định, không phải dữ kiện.** Toàn bộ ngày dự báo ở §0.2 phụ thuộc vào nó. Nếu cấu hình đội khác đi, xem §1.3 trước khi đọc tiếp.
@@ -157,10 +174,11 @@ nơi duy nhất định nghĩa việc cập nhật trạng thái task, tiêu ch�
 | **V2 — Kỹ sư nhúng** | Port `esp32s3`, HAL trên chip, tối ưu bộ nhớ, node RP2350 | I0 *(bán thời gian tới khi bo mạch về)* |
 | **V3 — Kỹ sư trải nghiệm lập trình viên** | Giao diện `sim`, CLI, scaffold, tài liệu, ví dụ mẫu, phát hành | I0 |
 | **V4 — Kỹ sư hạ tầng dịch vụ** | Fleet OS, Registry, hệ đo lường, hoàn thiện lớp provider tự vận hành | trước I9 một tháng |
-| **V5 — Kỹ sư thị giác** | HAL thị giác, mô hình, NPU | trước I15 |
+| **V5 — Kỹ sư thị giác** | HAL thị giác, mô hình, NPU | trước I2a *(Q-52)* |
+| **V7 — Kỹ sư NeuroBrain** | Lab action, Chat Contracting, Lab Monitor, trigger — cùng V2 | trước I4a *(Q-52)* |
 | **V6 — Kỹ sư nhúng thứ hai** | Pipeline âm thanh trên chip (TSK-S5-01, S5-02, S5-06, S5-07), OTA và bảo mật thiết bị — song song với HAL của V2 (Q-39) | 2026-11-16 |
 
-**Cấu hình tối thiểu khả thi: 3 người cho I0–I4**, trong đó một người kiêm vai trò kỹ thuật trưởng và vẫn viết mã. V6 là đòn bẩy kéo v1.0 sớm (Q-39). I12 (NeuroBrain) cần thêm một người.
+**Giả định lập kế hoạch từ Q-52: đủ người cho mọi vai trò trên** — không lập kế hoạch quanh thiếu người. Nếu thực tế khác, §1.3 là bảng để đọc lại ngày. Trước Q-52, cấu hình tối thiểu khả thi là 3 người cho I0–I4 và V6 là đòn bẩy kéo v1.0 sớm (Q-39).
 
 ### 1.2 Vì sao V2 phải có mặt từ đầu
 
@@ -174,7 +192,8 @@ V2 làm phần firmware không cần bo mạch trước (walker C, sổ token, v
 | :--- | :--- |
 | **2 người** | I1–I4 giãn gần gấp đôi; I3 → I7 nối tiếp trên một người. Không còn bậc cắt 5 (Q-44), nên v1.0 dời theo |
 | **3 người, không có V6** | I5 và I7 nối tiếp trên V2: v1.0 lùi khoảng 4–5 tuần so với §0.2 |
-| **3 người + V6** *(giả định cơ sở, Q-39)* | Ngày ở §0.2 |
+| **3 người + V6** *(giả định cơ sở của Q-39, trước khi phạm vi MVP mở rộng)* | Ngày của I1 → I5 ở §0.2 |
+| **Đủ người cho V1 → V7** *(giả định cơ sở, Q-52)* | Ngày của I2a → I8 do TSK-I2a-01 đặt |
 | **4–5 người** | I1, I2 và I4 song song hơn; đường găng vẫn là chuỗi phần cứng I3 → I5 → I7 |
 
 ---
@@ -184,31 +203,38 @@ V2 làm phần firmware không cần bo mạch trước (walker C, sổ token, v
 ### 2.1 Đồ thị phụ thuộc
 
 ```text
-I0 ──► I1 Preview nội bộ ──► I2 linux ──► I4 thoại host ─────────────┐
- │                                                                     ├──► I5 thoại Box-3 ──► I6 công khai ──► I7 v1.0 ──► I8 Beta
- └──► [bo mạch] ──► TSK-S1-10 ──► I3 gate trên Box-3 ──────────────────┘                                                    │
-                                                                                                                             ├──► I9 · I10  (v1.1, nhánh A)
-                                                                                                                             ├──► I11 ──► I12 · I13 ──► I14
-                                                                                                                             ├──► I15 ──► I16 ──► I17
-                                                                                                                             └──► I18 (sau I9, I10, I13)
-    ⟂ Cổng nhu cầu 2026-10-25: Go / Adjust / Stop cho I3–I7
+I0 ──► I1 ──► I2 linux ──► I2a nguyên thủy mở rộng (sim, linux) ──► I2b kit ──► I4a NeuroBrain host ──┐
+                │                    │                                              ▲                   │
+                └──► I4 thoại host ──┼──────────────────────────────────────────────┘                   │
+                                     ▼                                                                  ▼
+ [bo mạch] ──► TSK-S1-10 ──► I3 gate Box-3 ──► I3a nguyên thủy trên chip ──► I5 thoại Box-3 ──► I5a NeuroBrain chip
+                                                                                                        │
+                                              I6 công khai ◄───────────────────────────────────────────┘
+                                                   │
+                                                   ▼
+                                              I7 v1.0 = MVP ──► I8 Beta ──┬──► I9 · I10  (v1.1, nhánh A)
+                                                                          ├──► I11 ──► I13 ──► I14
+                                                                          ├──► I16 ──► I17
+                                                                          └──► I18 (sau I9, I10, I13)
+    ⟂ Cổng nhu cầu 2026-10-25: Go / Adjust / Stop cho I3–I7 (áp cho I2a → I5a: §10.2)
 ```
 
 ### 2.2 Đường găng
 
 | # | Mắt xích | Vì sao nằm trên đường găng |
 | :---: | :--- | :--- |
-| 1 | Bo mạch Box-3 về → TSK-S1-10 | Không có số đo bộ nhớ thì không chốt được kế hoạch thoại trên chip (Q-44) |
-| 2 | I3 — HAL và gate trên chip | Không có target thứ ba trên phần cứng thật thì không chứng minh được tương đương |
+| 0 | Sáu RFC của I2a được chấp thuận | Không có RFC thì không có mã cho nguyên thủy mở rộng (§2.3); kỹ thuật trưởng duyệt |
+| 1 | Bo mạch Box-3 về → TSK-S1-10 | Không có số đo bộ nhớ thì không chốt được kế hoạch thoại trên chip (Q-44) — và giờ cả ngân sách cho bốn gói (TSK-I3a-01) |
+| 2 | I3 → I3a — HAL, gate và nguyên thủy mở rộng trên chip | Không có target thứ ba trên phần cứng thật thì không chứng minh được tương đương; thị giác còn cần bo camera |
 | 3 | I5 — thoại trên chip | Vẫn là mắt xích khó nhất; rủi ro đã giảm từ CR-1.0 (STT/TTS ở provider cloud). V6 làm âm thanh song song với HAL của V2 |
 | 4 | I6 — công khai | A1 đo chính thức và A9 cần người ngoài, nên v1.0 không đạt khi repo còn kín |
-| 5 | I7 — OTA, ổn định 24 giờ, A1–A9 | OTA làm trước trên QEMU; còn lại phần cần bo mạch và phép chạy 24 giờ |
+| 5 | I7 — OTA, ổn định 24 giờ, A1–A12 | OTA làm trước trên QEMU; còn lại phần cần bo mạch và phép chạy 24 giờ |
 
-**Chuỗi con người:** kỹ sư nhúng thứ hai (V6, đã quyết tuyển) cho I5 và I7 · kỹ thuật trưởng cho RFC-0002 · CPO cho điều khoản license thương mại (`TODOS.md` #44) trước I6.
+**Chuỗi con người:** kỹ thuật trưởng cho sáu RFC của I2a và RFC-0002 · CPO cho điều khoản license thương mại (`TODOS.md` #44) trước I6 · nhân sự: giả định đủ người (Q-52).
 
 **Đòn bẩy mã nguồn mở trên đường găng:** mắt xích 2 rút ngắn nhờ driver XiaoZhi, mắt xích 3 nhờ Pipecat và bộ mô hình âm thanh. Chi tiết và mức rút ngắn thực tế tại §3.7.
 
-**Không nằm trên đường găng, làm song song:** I1, I2, I4, giao diện `sim`, tài liệu, ví dụ mẫu, hạ tầng CI.
+**Không nằm trên đường găng, làm song song:** I1, I2, I4, phần `sim` + `linux` của I2a, I2b, I4a, giao diện `sim`, tài liệu, hạ tầng CI.
 
 ### 2.3 Quy tắc đóng băng lược đồ
 
@@ -220,7 +246,7 @@ Từ khi I0 đóng băng lược đồ (2026-09-27), mọi thay đổi đối v�
 
 Đây là quy tắc nghiêm ngặt nhất của toàn bộ dự án. Lược đồ trôi nổi làm sụp đổ mệnh đề trung tâm.
 
-**RFC đang mở:** [RFC-0002](../docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md) đề xuất mở rộng enum `target` ở `board.v1` và `trace.v1`, và đưa bậc target vào mã lõi (`TARGET_TIERS`). Nguyên thủy `vision.in` đã tách khỏi RFC này, sang một RFC riêng ở I15 (RFC-0002 §9.1). RFC ở trạng thái *đang thảo luận*; **lược đồ chưa đổi và không được đổi cho tới khi RFC được phê duyệt**. PR thực thi của nó là I11 (Q-40); I0–I10 không phụ thuộc kết quả RFC đó.
+**RFC đang mở:** [RFC-0002](../docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md) đề xuất mở rộng enum `target` ở `board.v1` và `trace.v1`, và đưa bậc target vào mã lõi (`TARGET_TIERS`). Nguyên thủy `vision.in` đã tách khỏi RFC này, sang RFC-0012 ở I2a (RFC-0002 §9.1, Q-53). RFC ở trạng thái *đang thảo luận*; **lược đồ chưa đổi và không được đổi cho tới khi RFC được phê duyệt**. PR thực thi của nó là I11 (Q-40); I0–I10 không phụ thuộc kết quả RFC đó. RFC-0013 (I2a) sửa hai bất biến §5b, §5c của nó cho nhiều bo tham chiếu trên một target (Q-53).
 
 ### 2.4 Luật chống lệch
 
@@ -399,7 +425,9 @@ Năm nghĩa vụ — (1) ma trận giấy phép, (2) tệp `NOTICE` ở gốc kh
 
 ---
 
-## 4. Increment tới v1.0 (I0–I7)
+## 4. Increment tới v1.0 = MVP (I0–I7)
+
+Từ Q-52, MVP là v1.0 đầy đủ: các increment có hậu tố (I2a, I2b, I3a, I4a, I5a) nằm cạnh increment mà chúng mở rộng.
 
 Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increment phụ thuộc, tín hiệu đo, người), bảng task, và tiêu chí ra. Increment chỉ được phát hành khi đạt mọi tiêu chí ra của nó, và kèm một demo trong `demo/` (§11.1, Q-49).
 
@@ -559,6 +587,111 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 - [x] **Tiêu chí 3:** `neuroedge verify --targets sim,linux` vẫn đạt 100%.
 - [ ] **Tiêu chí 4:** Nightly trên RPi 5 chạy `tests_linux/` và `verify --targets linux` trên phần cứng thật (TSK-I2-01).
 
+### 4.3.1 I2a — Nguyên thủy mở rộng trên `sim` và `linux`
+
+| | |
+|:---|:---|
+| **Mục tiêu** | Đủ bốn gói nguyên thủy mở rộng — cảm biến, điều khiển mịn, thị giác, chuyển động — chạy trên `sim` và `linux`, với ngữ nghĩa gate chạy được trên cả ba target (Q-52, Q-53) |
+| **Điều kiện vào** | — (RFC mở ngay; mã của từng gói chờ RFC của gói đó được chấp thuận, §2.3) |
+| **Tín hiệu đo** | Tiêu chí ra bên dưới |
+| **Người** | V1 (chủ trì), V5 (thị giác), V2 (RFC-motion), kỹ thuật trưởng (sáu RFC) |
+| **Thiết kế** | [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) §6 (thị giác) · [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) §7 (PWM, `numeric`, `motion.*`) · [`neuroedge-design-neurobrain.md`](neuroedge-design-neurobrain.md) §7–§8 (phong bì, I2C) · RFC-0007, RFC-0009 → RFC-0013 |
+
+#### Quản trị và RFC
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-I2a-01** | **Ước lượng lại phạm vi MVP (Q-52):** đếm lại task I2a → I7, đặt ngày dự báo cho I2a, I2b, I3a, I4a, I5a, I6, I7 và I8 kèm bằng chứng (R5); cập nhật §1.3 và §2.2 | — | trưởng nhóm + kỹ thuật trưởng | ⏳ Chưa bắt đầu | §0.2 |
+| **TSK-N0-02** | Sửa đổi FR-HAL-01: nguyên thủy mở rộng (`digital.in`, bus I2C, `analog.in`, PWM, `motion.*`, `vision.in`) là **tuỳ chọn theo bo mạch** (RFC-0013, Q-53); sửa FR-CLI-10 cho `mcp desktop-config --lab` | FR-HAL-01, FR-CLI-10 | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` |
+| **TSK-N0-03** | RFC-0007: `digital.in`; bus I2C chỉ đọc; `analog.in` (ADC theo spike TSK-N3-03 — chuyển từ RFC-motion sang, Q-53); trường bus/địa chỉ và khai báo phong bì trong `board.v1`. Phải lý giải vì sao không mở rộng `sensor.read`. `gate.v1` không đổi | FR-HAL-01 | V2 | ⏳ Chưa bắt đầu | `docs/rfc/0007-digital-in-i2c-analog-in-phong-bi.md` |
+| **TSK-I2a-07** | **RFC-0013:** nguyên thủy mở rộng tuỳ chọn theo bo mạch; nhiều bo tham chiếu cho một target bậc 1; mỗi nguyên thủy mở rộng có ít nhất một bo tham chiếu trên **mỗi** target bậc 1 (Q-53) | FR-HAL-01, FR-TGT-08 | V1 + kỹ thuật trưởng | ⏳ Chưa bắt đầu | `docs/rfc/0013-nguyen-thuy-tuy-chon-va-nhieu-bo-tham-chieu.md` |
+| **TSK-I2a-06** | **Profile `sim-rpi5`** soi đúng `linux-rpi5` (có đủ nguyên thủy mở rộng, kể cả camera); phát biểu lại bất biến "`sim` không giàu hơn bo tham chiếu" theo từng bo (đóng `TODOS.md` #14) | FR-TGT-01, FR-TGT-06 | V1 | ⏳ Chưa bắt đầu | `boards/sim-rpi5.toml` · `python/tests/test_boards.py` |
+
+#### Gói cảm biến
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-W1-02** | **Tiêu chí `numeric`** cho `sensor.read` kiểu số: `gate.v1`, nút `NETR`, walker C, corpus (`TODOS.md` #30) | FR-GATE-03, FR-HAL-01 | V1 | ⏳ Chưa bắt đầu | `docs/rfc/0009-tieu-chi-so-numeric.md` |
+| **TSK-I2a-02** | **`digital.in` trên `sim` và `linux`** (sau RFC-0007): `LinuxHAL` đọc line qua gpiod (gpio-sim trong CI), `SimHAL` đổi mức trong REPL và trang `--ui`; mức logic vào gate như dữ kiện, có vết ghi | FR-HAL-01 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/` · `python/tests_linux/` |
+| **TSK-I2a-03** | **Bus I2C chỉ đọc cho agent** (sau RFC-0007): `linux` đọc thanh ghi của thiết bị trong allow-list của bo mạch, không ghi; `sim` chỉ phát lại từ vết ghi; test trên `i2c-stub` | FR-HAL-01 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/` · `python/tests_linux/` |
+| **TSK-N3-03** | **Spike ADC** trên runner `ubuntu-latest`: chip ADC I2C có driver hwmon (`ads7828` hoặc `ina2xx`) trên `i2c-stub`, đọc lại `in0_input` | — | — | ⏳ Chưa bắt đầu | báo cáo spike trong PR |
+| **TSK-I2a-04** | **`analog.in` (ADC) trên `sim` và `linux`** theo kết quả spike TSK-N3-03: giá trị có đơn vị, vào gate qua tiêu chí số (RFC-0009) | FR-HAL-01 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/` |
+
+#### Gói điều khiển mịn
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-W1-01** | **PWM** (tần số, độ rộng xung) và kênh phản hồi trạng thái trong `digital.out` (RFC-0010) — trên `sim` và `linux`; HAL C ở TSK-I3a-03 | FR-HAL-01 | V1 + V2 | ⏳ Chưa bắt đầu | `docs/rfc/0010-pwm-trong-digital-out.md` · `board.v1` · `python/neuroedge/hal/` |
+
+#### Gói thị giác
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-V1b-07** | RFC nguyên thủy `vision.in`: hình dạng tham số có bằng chứng phần cứng (`fps` số thực, `modes[]`, enum `pixel_format`) và quy tắc so khớp với `[requires]` (RFC-0002 §9.1). Cần TSK-S2-02 | FR-HAL-01, FR-HAL-04 | V1 | ⏳ Chưa bắt đầu | `docs/rfc/0012-nguyen-thuy-vision-in.md` · `schemas/board.v1.json` |
+| **TSK-V1b-01** | Hiện thực `vision.in` cho `linux`: luồng khung hình, độ phân giải, FPS. Cần TSK-V1b-07 | FR-HAL-01 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` (nguyên thủy `vision.in`) |
+| **TSK-V1b-02** | Camera ảo trong `sim`: phát lại chuỗi ảnh, giữ tương đương với phần cứng thật | FR-TGT-01, FR-TGT-06 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/sim/vision/` |
+| **TSK-V1b-03** | Giao diện trừu tượng mô hình thị giác, đổi model bằng cấu hình | FR-MDL-04, FR-MDL-07 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/vision/` |
+| **TSK-V1b-04** | Action CI cho khung hình: record, replay, assert trên chuỗi phán quyết | FR-CI-01→04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/vision.py` |
+| **TSK-V1b-05** | Tích hợp NPU rời (Hailo-8, Coral) sau giao diện trừu tượng | FR-MDL-04 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/vision/accel/` |
+| **TSK-V1b-06** | Ba gate mẫu có yếu tố thị giác, dữ kiện do maker khai từ nhãn của model, ngưỡng tin cậy khoá trong gate bằng tiêu chí số (Q-54) | FR-GATE-03 | V1 + V5 | ⏳ Chưa bắt đầu | `gates/vision/` |
+| **TSK-V1b-08** | Bằng chứng thị giác trong vết ghi: kết quả nhận diện qua sự kiện nhóm `perception`; `vision_ref` (băm + kích thước) chỉ là danh tính; lint `uri` chỉ khi `metadata.raw_capture` (RFC-0002 §9.2) | FR-CI-02, NFR-PRIV-01, NFR-PRIV-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/trace.py` · `fixtures/traces/invalid/` |
+
+#### Gói chuyển động
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-W1-03** | **RFC-motion (RFC-0011):** `motion.*` (`analog.in` chuyển sang RFC-0007, Q-53); phong bì N2 sang `motion.*`; token thuê có hạn (Q-37); trạng thái an toàn theo từng cơ cấu (Q-35); gộp `TODOS.md` #36, #39 | FR-HAL-01 | V1 + V2 | ⏳ Chưa bắt đầu | `docs/rfc/0011-nguyen-thuy-motion.md` |
+| **TSK-I2a-05** | **`motion.*` trên `sim` và `linux`** (sau RFC-0011): kênh, đích, tốc độ, ramp; token thuê có hạn (Q-37); trạng thái an toàn khai theo từng cơ cấu (Q-35); phong bì của khối N2 | FR-HAL-01, FR-PER-02 | V1 + V2 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/` |
+
+#### Khối N2 — Phong bì an toàn vật lý (dùng chung cho mọi actuator, chuyển từ NeuroBrain — Q-53)
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-N2-01** | Hook phong bì trong `HardwareAbstractionLayer.digital_out`, được tiêm vào như `authorize`. Thứ tự `require_pin → envelope → authorize → record`. Bị từ chối thì **token không bị tiêu** | FR-HAL-* | — | ⏳ Chưa bắt đầu | `python/neuroedge/hal/__init__.py` |
+| **TSK-N2-02** | Chính sách phong bì trong `brain/`: check-và-reserve **nguyên tử** dưới khoá theo chân; `time.monotonic` được tiêm vào; trace ghi sự kiện `envelope_refused` | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
+| **TSK-N2-03** | Móc tắt an toàn cho `mcp serve`: `close()` gọi `hal.close()`, bắt SIGTERM, `on_no_initialize` dọn dẹp trước `os._exit` | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` |
+| **TSK-N2-04** | Hợp đồng hồi quy — năm khẳng định (`neuroedge-design-neurobrain.md` §7.1) | — | — | ⏳ Chưa bắt đầu | `python/tests/test_hal_*.py` · `test_safety_regressions.py` · `test_mcp_serve_ui.py` |
+| **TSK-N2-05** | Cập nhật sơ đồ ở đầu `mcp_server.py` thêm bước phong bì | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/mcp_server.py` |
+
+- [ ] **Tiêu chí N2.1:** Hai lệnh đồng thời cùng chân, chạy cả hai thứ tự bằng điểm dừng điều khiển được, cho đúng một `envelope_refused`.
+- [ ] **Tiêu chí N2.2:** Test SIGTERM giữa xung trên gpio-sim đưa line về 0 (sau TSK-S5-10). Phần unit của TSK-N2-03 chạy ngay.
+- [ ] **Tiêu chí N2.3:** Năm khẳng định của hợp đồng hồi quy (`neuroedge-design-neurobrain.md` §7.1) đều xanh.
+
+**Tiêu chí ra I2a:**
+
+- [ ] **Tiêu chí 1:** Sáu RFC (0007, 0009, 0010, 0011, 0012, 0013) ở trạng thái ✅ Đã chấp thuận, có chữ ký kỹ thuật trưởng; `schemas/` chỉ đổi trong phạm vi các RFC đó, kèm kịch bản di trú (§2.3).
+- [ ] **Tiêu chí 2:** RFC-0007 không đổi byte nào của `schemas/gate.v1.json` — thay đổi `gate.v1` chỉ đi qua RFC-0009.
+- [ ] **Tiêu chí 3:** Mỗi gói có một agent mẫu chạy trên `sim` (profile `sim-rpi5`) và `linux` (gpio-sim, `i2c-stub`, camera ảo trong CI); `neuroedge verify --targets sim,linux` đạt 100%.
+- [ ] **Tiêu chí 4:** Gate so ngưỡng số: corpus hợp lệ và phản chứng khép kín hai chiều; walker C khớp engine host trên host (ASan/UBSan) — `esp32s3` phải đọc được cùng cây.
+- [ ] **Tiêu chí 5:** Mất nguồn dữ liệu (camera, cảm biến, bus, model) giữa phiên ⇒ hành động bị chặn với lý do fail-closed, không treo; cơ cấu chuyển động về trạng thái an toàn đã khai.
+- [ ] **Tiêu chí 6:** Đổi mô hình thị giác chỉ bằng cấu hình, không sửa mã agent; vết ghi thị giác mặc định không chứa ảnh thô, `vision_ref` qua lint và `neuroedge replay` tái hiện phán quyết từ sự kiện `perception`.
+- [ ] **Tiêu chí 7:** Agent yêu cầu một nguyên thủy mở rộng bị **từ chối lúc build** trên bo mạch không khai nó, thông báo nêu đủ ba thành phần (FR-HAL-05).
+- [ ] **Tiêu chí 8:** Kết quả spike ADC được ghi lại, và quyết định ADC đã áp dụng.
+- [ ] **Tiêu chí 9:** Năm nguyên thủy lõi và ba vết ghi chuẩn mực giữ nguyên chuỗi phán quyết; TTFV của luồng gõ chữ và thoại vẫn dưới 10 phút; `pytest` xanh, 0 skipped; `scripts/wheel_smoke.sh` đạt.
+
+### 4.3.2 I2b — Kit mẫu và dựng nhanh
+
+| | |
+|:---|:---|
+| **Mục tiêu** | Người dùng chọn một kit, chạy trên `sim` dưới 10 phút, rồi dựng thiết bị thật từ BOM và sơ đồ đấu dây trong một ngày; tuỳ biến bằng lệnh sinh mã, không sửa tay lược đồ (Q-52) |
+| **Điều kiện vào** | — |
+| **Tín hiệu đo** | Tiêu chí ra bên dưới; A12 đo ở I7 |
+| **Người** | V3 (chủ trì), V1, V5 |
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-I2b-01** | **Ba kit phần cứng từ ba template có sẵn** (`villa-concierge` khoá cửa, `home-voice`, `factory-monitor`): BOM cho Pi 5 và ESP32-S3, sơ đồ đấu dây, profile bo mạch, gate đã khoá, vết ghi golden, hướng dẫn "từ hộp tới chạy thật"; thống nhất tên và cơ cấu của mẫu thứ ba với proposal §1.6 (van xả hay quạt) | FR-DX-05, FR-DX-06 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/templates/` · `fixtures/agents/` · `docs/user/` |
+| **TSK-I2b-02** | **Hai kit cho gói mới:** camera cổng (thị giác: người lạ trong vùng ⇒ bật đèn, khoá cổng) và rèm hoặc cửa cuốn (`motion.*` có phong bì), cùng cấu trúc với TSK-I2b-01 | FR-DX-05 | V3 + V5 | ⏳ Chưa bắt đầu | `python/neuroedge/templates/` · `fixtures/agents/` |
+| **TSK-I2b-03** | **Thư viện gate khởi đầu** để `extends`: cửa, đèn, quạt hoặc van, còi, điều hoà, camera, động cơ — mỗi gate có corpus và mục trong `digests.lock` sau review | FR-GATE-05 | V1 | ⏳ Chưa bắt đầu | `gates/` · `digests.lock` |
+| **TSK-I2b-04** | **Lệnh dựng nhanh `neuroedge add`** (lệnh con `action`, `gate`, `sensor`, `device`): sinh `@action` + gate + test hai chiều + khai `[requires]` từ template có sẵn (`templates.scaffold`); không ghi đè tệp đã có | FR-DX-01, FR-DX-08 | V3 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` · `python/neuroedge/templates/` |
+
+**Tiêu chí ra I2b:**
+
+- [ ] **Tiêu chí 1:** Năm kit chạy qua `neuroedge new --template <kit>` trên `sim`, có test và nằm trong `wheel-smoke`; bản `linux` chạy trong job `linux-hal`.
+- [ ] **Tiêu chí 2:** TTFV trên `sim` của mọi kit vẫn dưới 10 phút (M1).
+- [ ] **Tiêu chí 3:** `neuroedge add` sinh được action + gate + test cho mỗi nguyên thủy; `gate lint` sạch, test hai chiều xanh; chạy lại không ghi đè tệp đã có.
+- [ ] **Tiêu chí 4:** Mọi gate cha trong thư viện khởi đầu có ca phản chứng: gate con nới lỏng bị `gate lint` từ chối (A5).
+
 ### 4.4 I3 — Gate trên Box-3 thật
 
 | | |
@@ -606,6 +739,32 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 - [ ] **Tiêu chí 4:** Nightly runner chạy tự động và gửi báo cáo.
 - [ ] **Tiêu chí 5:** Trong một buổi đo tại chỗ, một người ngoài đội tự build và nạp agent của mình lên Box-3 chỉ theo tài liệu (`build --target esp32s3` → nạp); chân kích khi ALLOW và không bao giờ kích khi BLOCK (TSK-I3-01).
 
+### 4.4.1 I3a — Nguyên thủy mở rộng trên `esp32s3`
+
+| | |
+|:---|:---|
+| **Mục tiêu** | Bốn gói nguyên thủy mở rộng chạy trên chip: Box-3 cho cảm biến, PWM và chuyển động; một bo ESP32-S3 có camera cho thị giác (Q-53) |
+| **Điều kiện vào** | Box-3 và bo camera đã về (Phụ lục B) |
+| **Tín hiệu đo** | Tiêu chí ra bên dưới |
+| **Người** | V2 (chủ trì), V6, V5 |
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-I3a-01** | **Bo ESP32-S3 có camera làm bo tham chiếu thứ hai của `esp32s3`** (RFC-0013, Q-53): khảo sát và chọn bo, đặt mua (Phụ lục B), profile bo mạch, đo ngân sách SRAM và PSRAM theo Q-3 | FR-HAL-02, NFR-RES-02 | V2 | ⏳ Chưa bắt đầu | `boards/` · `docs/reports/` |
+| **TSK-I3a-02** | **HAL C: `digital.in`, bus I2C chỉ đọc, `analog.in`** trên ESP-IDF, khớp hợp đồng RFC-0007 | FR-HAL-01, FR-TGT-03 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/hal/` |
+| **TSK-I3a-03** | **HAL C: PWM** (LEDC) trong `digital.out` theo RFC-0010 | FR-HAL-01 | V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/hal/` |
+| **TSK-N7-02** | Cưỡng chế phong bì trong firmware C. Firmware chưa có phong bì thì action gắn phong bì bị **từ chối trên chip** (fail-closed) | — | — | ⏳ Chưa bắt đầu | `targets/esp32s3/components/` |
+| **TSK-W1-04** | **Hiện thực `motion.*` trên `esp32s3`** (bản host: TSK-I2a-05) + test crash-safe trên bo mạch thật + sửa `voice_fsm.md` §5 (dừng do mất liên lạc) | FR-HAL-01, FR-PER-02 | V2 | ⏳ Chưa bắt đầu | `targets/` · `docs/spec/voice_fsm.md` |
+| **TSK-I3a-04** | **`vision.in` trên bo camera ESP32-S3** theo RFC-0012: khung hình, dữ kiện thị giác vào gate, fail-closed khi mất camera hoặc model; vết ghi chỉ mang `vision_ref` | FR-HAL-01 | V5 + V2 | ⏳ Chưa bắt đầu | `targets/esp32s3/` |
+| **TSK-I3a-05** | **`verify --targets sim,linux,esp32s3` cho agent mẫu của bốn gói** trên Box-3 và bo camera, nối vào nightly (TSK-S4-05) | FR-CI-07 | V1 + V2 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` · `.github/workflows/nightly-hardware.yml` |
+
+**Tiêu chí ra I3a:**
+
+- [ ] **Tiêu chí 1:** `neuroedge verify --targets sim,linux,esp32s3` đạt 100% cho agent mẫu của mỗi gói, trên Box-3 và bo camera.
+- [ ] **Tiêu chí 2:** Firmware bật đủ nguyên thủy mở rộng cùng thoại vẫn giữ SRAM trống ≥ 120 KB (Q-3); trượt thì mở một `Q-N` lập lại kế hoạch và dời ngày, không cắt (Q-52).
+- [ ] **Tiêu chí 3:** Mất điện hoặc reset giữa một lệnh `motion.*` trên bo thật: cơ cấu về trạng thái an toàn đã khai (Q-35).
+- [ ] **Tiêu chí 4:** Phong bì được cưỡng chế trong firmware; action có phong bì bị từ chối trên firmware chưa hiện thực phong bì (fail-closed).
+
 ### 4.5 I4 — Thoại trên host
 
 | | |
@@ -636,6 +795,107 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 - [ ] **Tiêu chí 4:** `linux-rpi5` khai `aec = true` chỉ khi đạt tiêu chí đo `docs/spec/simulation_coverage.md` §6 (TSK-S5-08).
 - [x] **Tiêu chí 5:** Vết ghi có độ trễ từng chặng và tỷ lệ System 1 / System 2 (TSK-I4-03).
   *Bằng chứng:* `pytest tests/test_turn_latency.py`; `neuroedge trace show <vết ghi>` in tỷ lệ và chặng.
+
+### 4.5.1 I4a — NeuroBrain trên host
+
+| | |
+|:---|:---|
+| **Mục tiêu** | Dựng Physical AI bằng hội thoại, có hợp đồng (Q-31), trên `sim` và `linux`, phủ đủ bốn gói nguyên thủy (Q-55): lab action có gate, I2C chỉ đọc, sổ bàn làm việc, Chat Contracting, Lab Monitor, trigger |
+| **Điều kiện vào** | — (lab action chờ RFC-0007 của I2a) |
+| **Tín hiệu đo** | Tỷ lệ BLOCK; số bản nháp gate được khoá |
+| **Người** | V2, V7 |
+| **Thiết kế** | [`neuroedge-design-neurobrain.md`](neuroedge-design-neurobrain.md) |
+
+#### Khối N0 — Quản trị
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-N0-01** | Hai mục `Q-N`: "Lab Mode / NeuroBrain" và "Giai đoạn 1.5", chuyển các quyết định ở `neuroedge-design-neurobrain.md` Phụ lục B vào PRD §15 | — | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` §15 |
+| **TSK-N0-04** | Cập nhật threat model §2b: lab action, nguồn `trigger`, `/confirm`, cờ `[lab] enabled` | NFR-SEC-09 | V2 | ⏳ Chưa bắt đầu | `docs/spec/threat_model.md` |
+| **TSK-N0-05** | Quy trình duyệt gate nháp: `-draft` → PR có người review → `gate lint` sạch → bỏ hậu tố → `check_digests.py --update` | FR-GATE-* | V2 | ⏳ Chưa bắt đầu | `CONTRIBUTING.md` §3 |
+| **TSK-N0-06** | Đề xuất mở rộng Q-11 cho OFL-1.1 (**chỉ với font**) và mục `NOTICE` cho IBM Plex; thêm mục `NOTICE` Section A cho ESP-Claw (`neuroedge-design-neurobrain.md` Phụ lục A) | — | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` Q-11 · `NOTICE` |
+
+- [ ] **Tiêu chí N0.1:** Hai mục `Q-N` có trạng thái ĐÃ CHỐT, có chữ ký kỹ thuật trưởng.
+- [ ] **Tiêu chí N0.3:** Mọi tài liệu khác dẫn mã `Q-N`, không chép lại nội dung (CONTRIBUTING §8.1).
+
+#### Khối N1 — Gated claw lõi
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-N1-01** | `lab_pulse` là `@action` mẫu + gate `gates/lab/lab_pulse@1.0.0`, với `arguments.duration_ms ≤ 2000` (RFC-0005). Gate không có pin enum: chân giới hạn bằng allow-list của board; dự án muốn hẹp hơn thì viết gate con thu hẹp `pin` | FR-MDL-10 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` · `gates/lab/` |
+| **TSK-N1-02** | Cờ `[lab] enabled` trong `agent.toml`, mặc định **tắt**; tắt thì lab tool không được đăng ký | — | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
+| **TSK-N1-03** | `neuroedge build --release` từ chối khi `[lab] enabled`, lỗi nêu tên cờ và cách tắt; build thường ghi `lab_enabled: true` trong báo cáo | FR-CLI-02 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` · `engine/compiler.py` · `docs/release.md` |
+| **TSK-N1-04** | Kết quả lab call kèm `gate explain`, để LLM tự sửa lệnh sai | FR-MDL-10 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
+| **TSK-N1-05** | `mcp desktop-config --lab`: cấu hình Claude Desktop cho agent lab trong một bước, vẫn đúng một mục `mcpServers` | FR-CLI-10 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/mcp_desktop.py` |
+| **TSK-N1-06** | `board show --lab`: chân trong allow-list, giới hạn phong bì từng chân, lý do chân khác bị cấm | FR-HAL-05 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` |
+| **TSK-N1-07** | Test ranh giới **B-1**: quét AST/import của `neuroedge.brain`, fail nếu có gọi phương thức HAL hoặc import `hal.linux` / `hal.sim` | — | V2 | ⏳ Chưa bắt đầu | `python/tests/test_brain_boundary.py` |
+| **TSK-N1-08** | `lab_read` trên primitive `digital.in` (sau RFC-0007) | FR-HAL-01 | — | ⏳ Chờ RFC-0007 | `python/neuroedge/brain/` · `hal/` |
+
+- [ ] **Tiêu chí N1.1:** Trên `sim`, Claude Desktop gọi `lab_pulse(pin, 300)`. Có trace ALLOW và chân về 0.
+- [ ] **Tiêu chí N1.2:** Gọi `lab_pulse(pin, 2500)` ra `argument_out_of_range`, kèm lý do `gate explain`.
+- [ ] **Tiêu chí N1.3:** Cờ tắt thì `mcp tools` không liệt kê `lab_pulse`. `build --release` với cờ bật thoát mã khác 0.
+- [ ] **Tiêu chí N1.4:** Test B-1 fail khi thêm thử một lệnh `hal.digital_out` vào `brain/`.
+- [ ] **Tiêu chí N1.5:** `pytest` xanh, 0 skipped; `gate lint gates/lab/` sạch; `scripts/wheel_smoke.sh` đạt.
+
+#### Khối N3 — Bus I2C chỉ đọc
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-N3-01** | Quét bus bằng **read-byte**, không bằng quick-write; đọc chip ID; không nhận diện được thì ghi "không nhận diện", không đoán | FR-HAL-01 | — | ⏳ Chờ RFC-0007 | `python/neuroedge/hal/` · `brain/` |
+| **TSK-N3-02** | Test trên `i2c-stub` + `lm75`: có thiết bị, bus trống, NACK, timeout (tối đa 1 lần thử lại) | FR-TGT-02 | — | ⏳ Chưa bắt đầu | `python/tests_linux/` |
+
+- [ ] **Tiêu chí N3.1:** `tests_linux` phát hiện `0x48` (`lm75`) và báo đúng bus trống.
+
+#### Khối N4 — Sổ bàn làm việc
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-N4-01** | Ghi sự thật phát hiện được, mỗi mục kèm trace nguồn: vai chân, chip ID. Hai vai mâu thuẫn trên cùng chân thì báo lỗi có kiểu, để người quyết | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
+| **TSK-N4-02** | Sinh profile board **mới** dạng nháp qua mã đọc/ghi `BoardProfile`, không ghi TOML bằng chuỗi. **Không sửa** ba profile tier-1 | FR-HAL-05 | — | ⏳ Chưa bắt đầu | `python/neuroedge/hal/board.py` |
+| **TSK-N4-03** | Cảnh báo chân đặc biệt theo MCU. ESP32-S3: strapping 0, 3, 45, 46; flash/PSRAM 26–32 (33–37 khi dùng PSRAM octal); chân đã bị ngoại vi chiếm (dữ liệu port từ ESP-Claw, `neuroedge-design-neurobrain.md` Phụ lục A). Đây là cảnh báo, không phải blacklist | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
+
+#### Khối N5 — Chat Contracting
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-N5-01** | Từ trace sinh `@action` + gate `0.1.0-draft` + test replay, bằng `templates.scaffold`/`_render` có sẵn. Chỉ ghi vào thư mục agent của người dùng | FR-DX-01 | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
+| **TSK-N5-02** | Test **hai chiều** bắt buộc: ít nhất một ALLOW và một BLOCK/`argument_out_of_range`. Bản nháp chỉ có ALLOW thì bị từ chối | FR-CI-* | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
+| **TSK-N5-03** | Ba lỗi LLM riêng biệt (malformed, empty, refusal), không ghi tệp rác. Chân không truy được về trace thì từ chối sinh. Tên action trùng thì không ghi đè | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` · corpus `expected_results.yaml` |
+| **TSK-N5-04** | PR của bản nháp in `gate explain` bằng lời, cùng diff chính sách và các test ALLOW/BLOCK | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
+| **TSK-N5-05** | `trace export --report`: báo cáo bring-up Markdown (chân đã thử, kết quả, thiết bị bus, bản nháp đã sinh) | FR-TRC-* | — | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` |
+
+#### Khối N5b — Lab Monitor
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-N5b-01** | Xếp hàng ask "1/3", ask cũ nhất trước (hôm nay `stateAt` chỉ giữ ask mới nhất). Focus mặc định ở "Huỷ"; phím chỉ tác dụng khi thẻ có focus; không cướp focus khi người đang gõ lệnh | — | — | ⏳ Chưa bắt đầu | `viz/assets/ui.js` · `tests/test_sim_ui.py` |
+| **TSK-N5b-02** | Mất kết nối SSE: banner vàng, làm mờ thiết bị và hàng live, khoá nút ask; gỡ banner khi có tin đầu tiên | — | — | ⏳ Chưa bắt đầu | `viz/__init__.py` · `ui.js` · `ui.css` |
+| **TSK-N5b-03** | Hàng "đang bật" có thời gian còn lại; làn timeline theo chân với vùng bấm ≥24×24 px, mỗi xung là `<button>` có `aria-label`, mũi tên trái/phải để di chuyển | — | — | ⏳ Chưa bắt đầu | `ui.js` · `ui.css` |
+| **TSK-N5b-04** | Thước phong bì ghi rõ cửa sổ lấy từ `board.v1`: xanh dưới 80%, vàng từ 80%, đầy thì đỏ kèm "khoá tới HH:MM:SS". Trạng thái rỗng: bo chưa khai chân → thông điệp trỏ tới `board show --lab`; thiếu phong bì → nhãn vàng | — | — | ⏳ Chưa bắt đầu | `ui.js` · `sim/ui.py` |
+| **TSK-N5b-05** | Thẻ phán quyết: huy hiệu bốn màu theo nghĩa (ALLOW xanh, BLOCK đỏ, ENVELOPE vàng, REJECTED xám, luôn kèm chữ); nhãn "người: Đồng ý/Huỷ/hết hạn"; gộp lặp "×N"; bấm xung thì mở thẻ tương ứng kèm `gate explain` | — | — | ⏳ Chưa bắt đầu | `ui.js` · `ui.css` |
+| **TSK-N5b-06** | Tiêu đề tab "(1) Cần xác nhận" + favicon vàng; công tắc âm báo mặc định tắt. Khi tua lại, ask và hàng live **luôn là hiện tại**. Nhãn bus: "phát lại từ trace `<tệp>` lúc HH:MM:SS" | — | — | ⏳ Chưa bắt đầu | `ui.js` · `sim/ui.py` |
+| **TSK-N5b-07** | Restyle **cả trang sim**: bỏ viền trái trên thẻ phán quyết, thay bằng huy hiệu; nhúng IBM Plex Sans 400/600 + Plex Mono 400 (woff2, subset Latin + tiếng Việt); luật hệ thiết kế ghi ở khối chú thích đầu `ui.css`. **Chặn bởi TSK-N0-06** | — | — | ⏳ Chặn bởi Q-11 | `ui.css` · `NOTICE` |
+
+- [ ] **Tiêu chí N5b.1:** Ba ask cùng lúc: không ask nào bị che rồi tự hết hạn.
+- [ ] **Tiêu chí N5b.2:** Nhấn Enter trong ô lệnh không bao giờ kích "Đồng ý".
+- [ ] **Tiêu chí N5b.3:** `trace view` vẫn là một tệp tự chứa, chạy offline (FR-DX-02).
+- [ ] **Tiêu chí N5b.4:** Đi hết luồng xác nhận chỉ bằng bàn phím và VoiceOver.
+
+#### Khối N6 — Trigger theo sự kiện
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-N6-01** | Giá trị `call_source` mới `trigger`. `SOURCES` là mã, không nằm trong `schemas/`, nên chỉ cần mục `Q-N` + cập nhật `docs/spec/tool_calling.md`, không cần RFC. Thêm fixture và `expected_results.yaml` | FR-MDL-10 | — | ⏳ Chưa bắt đầu | `actions/tools.py` · `fixtures/tool_calls/` |
+| **TSK-N6-02** | `trigger ∉ HUMAN_SOURCES`; có test khẳng định trigger không trả lời được `ask` | Q-26 | — | ⏳ Chưa bắt đầu | `actions/confirmation.py` |
+| **TSK-N6-03** | Debounce + trần tần suất trigger; action bị BLOCK không được thử lại vô hạn; trigger bị chặn liên tục thì hiện trên N5b | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
+
+#### Phủ bốn gói
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-I4a-01** | **NeuroBrain phủ bốn gói (Q-55):** lab action và Chat Contracting sinh hợp đồng cho `digital.in`, bus I2C, `analog.in`, PWM, `vision.in` (dữ kiện + ngưỡng tin cậy, Q-54) và `motion.*`; bản nháp cho `motion.*` phải khai phong bì và trạng thái an toàn, thiếu thì từ chối sinh | FR-MDL-10, FR-DX-01 | V2 + V7 | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
+
+- [ ] **Tiêu chí I4a:** Mỗi gói có ít nhất một bản nháp do Chat Contracting sinh, qua `gate lint`, test hai chiều và người duyệt, rồi chạy trên `sim` và `linux`. Tiêu chí ra của N4, N5 và N6 được viết và duyệt khi I4a mở.
 
 ### 4.6 I5 — Thoại trên Box-3
 
@@ -670,11 +930,31 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 - [ ] **Tiêu chí 4:** Bộ nhớ còn lại sau 4 giờ chạy nằm trong ngân sách Q-3.
 - [ ] **Tiêu chí 5 (Q-14):** Mất kết nối tới provider giữa phiên → gate lượng giá bằng fallback cục bộ của TSK-S5-07; fallback không có / không chạy được → hành động vật lý bị chặn với lý do `gate_unreachable`; thiết bị không treo và phục hồi được khi có mạng trở lại.
 
+### 4.6.1 I5a — NeuroBrain trên chip
+
+| | |
+|:---|:---|
+| **Mục tiêu** | Lab action, gate và bản nháp đã khoá của I4a chạy trên Box-3 và bo camera; phong bì cưỡng chế trên chip (Q-55) |
+| **Điều kiện vào** | — |
+| **Tín hiệu đo** | Tiêu chí ra bên dưới |
+| **Người** | V2, V7 |
+| **Thiết kế** | [`neuroedge-design-neurobrain.md`](neuroedge-design-neurobrain.md) §13 |
+
+#### Khối N7 — NeuroBrain trên ESP32-S3
+
+| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
+|:---:|:---|:---|:---:|:---:|:---|
+| **TSK-N7-01** | Lab action + gate trên chip, dùng walker C và sổ token có sẵn | — | — | ⏳ Chưa bắt đầu | `targets/esp32s3/` |
+| **TSK-N7-03** | Port chọn lọc từ ESP-Claw (`neuroedge-design-neurobrain.md` Phụ lục A). MCP trên chip chỉ làm sau `TODOS.md` #24, hoặc đi qua UART | — | — | ⏳ Chưa bắt đầu | `targets/esp32s3/` · `NOTICE` |
+
+- [ ] **Tiêu chí N7:** được viết và duyệt khi I5a mở.
+- [ ] **Tiêu chí I5a:** `neuroedge verify --targets sim,linux,esp32s3` đạt 100% cho một hợp đồng do NeuroBrain sinh ở mỗi gói.
+
 ### 4.7 I6 — Công khai
 
 | | |
 |:---|:---|
-| **Mục tiêu** | Lần đầu người ngoài dùng được sản phẩm: repo công khai, `pip install neuroedge` từ PyPI, lược đồ ở URL công khai, video demo thoại trên `sim`, `linux` và Box-3 (Q-39) |
+| **Mục tiêu** | Lần đầu người ngoài dùng được sản phẩm: repo công khai, `pip install neuroedge` từ PyPI, lược đồ ở URL công khai, video demo thoại và bốn gói trên `sim`, `linux` và `esp32s3` (Q-39, Q-52). Đây là bản ứng viên của MVP: A1 và A9 cần người ngoài cài từ PyPI trước khi v1.0 được công bố |
 | **Điều kiện vào** | Điều khoản license thương mại, kể cả quyền dùng thử cho doanh nghiệp (`TODOS.md` #44) |
 | **Tín hiệu đo** | Lượt cài đầu tiên từ PyPI; người ngoài đầu tiên chạy agent (B1 bắt đầu đếm) |
 | **Người** | V3 (chủ trì), trưởng nhóm, V2 (video trên chip) |
@@ -705,9 +985,9 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 
 | | |
 |:---|:---|
-| **Mục tiêu** | v1.0: đủ A1–A9 (PRD §11.1) |
+| **Mục tiêu** | v1.0 = lần ra mắt MVP (Q-52): đủ A1–A12 (PRD §11.1) |
 | **Điều kiện vào** | — |
-| **Tín hiệu đo** | A1–A9 |
+| **Tín hiệu đo** | A1–A12 |
 | **Người** | V2, V6 (OTA, bảo mật thiết bị), V1, V3 |
 
 **OTA làm trước trên QEMU (Q-39):** TSK-S6-01, S6-02 và S6-04 kiểm được trên QEMU trước khi có bo mạch; phần tải qua mạng thật, Secure Boot và phép chạy 24 giờ cần bo mạch.
@@ -730,7 +1010,7 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 **Đòn bẩy OSS:** `esp_https_ota` và `esp_ota_ops` của ESP-IDF cho cập nhật phân vùng kép A/B và rollback cục bộ. Tiết kiệm ước tính 2 tuần.
 
 **Tiêu chí ra I7 — cổng phát hành v1.0:**
-Đạt **toàn bộ A1 đến A9** — ngưỡng và phương pháp kiểm chứng ở [PRD §11.1](neuroedge-prd.md#111-nghiệm-thu-v10--lõi) (không chấp nhận đạt một phần):
+Đạt **toàn bộ A1 đến A12** — ngưỡng và phương pháp kiểm chứng ở [PRD §11.1](neuroedge-prd.md#111-nghiệm-thu-v10--lõi) (không chấp nhận đạt một phần):
 
 - [ ] **A1** — Time-to-first-value
 - [ ] **A2** — Tương đương môi trường (`verify --targets sim,linux,esp32s3`)
@@ -741,6 +1021,9 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 - [ ] **A7** — Vết ghi hợp lệ
 - [ ] **A8** — Tài liệu
 - [ ] **A9** — Lược đồ công khai
+- [ ] **A10** — Đủ nguyên thủy trên ba target *(bốn gói mở rộng, Q-53)*
+- [ ] **A11** — Dựng bằng hội thoại có hợp đồng *(NeuroBrain, Q-55)*
+- [ ] **A12** — Kit mẫu dựng được trong một ngày
 
 ---
 
@@ -902,9 +1185,9 @@ Bảy tiêu chí **TR-1 đến TR-7** dưới đây là tiêu chí ra **cấp th
 
 ---
 
-## 7. Hướng mở rộng sau Beta (I11–I18)
+## 7. Hướng mở rộng sau Beta (I11, I13, I14, I16–I18)
 
-Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú thiết kế; mục này chỉ giữ task, tiêu chí ra và điều kiện vào.
+Thứ tự theo phụ thuộc (Q-40); NeuroBrain và thị giác trên `linux` đã gộp vào MVP (Q-53, Q-55) — §7.2, §7.5. Thiết kế chi tiết nằm ở ghi chú thiết kế; mục này chỉ giữ task, tiêu chí ra và điều kiện vào.
 
 ### 7.1 I11 — Mở danh sách target
 
@@ -933,127 +1216,9 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 - [ ] **Tiêu chí 4:** `neuroedge board validate` trên một profile tổng hợp `target = "rp2350"` không có `display` thoát 0 và in "bậc 3"; cùng profile đó khai `target = "linux"` thì bị từ chối vì bậc 1 phải đủ năm nguyên thủy.
 - [ ] **Tiêu chí 5:** `boards/` vẫn chỉ chứa ba profile bậc 1; `pytest` xanh, 0 skipped.
 
-### 7.2 I12 — NeuroBrain
+### 7.2 NeuroBrain — đã gộp vào MVP
 
-| | |
-|:---|:---|
-| **Mục tiêu** | Bring-up phần cứng có hợp đồng bằng hội thoại (Q-31) — lab action có gate, phong bì an toàn vật lý, I2C chỉ đọc, sổ bàn làm việc, Chat Contracting (U2) |
-| **Điều kiện vào** | Thêm một người (§1.1); khối N0 (quản trị) làm được sớm hơn nếu cần (Q-40) |
-| **Tín hiệu đo** | Tỷ lệ BLOCK; số bản nháp gate được khoá |
-| **Người** | V2 + người mới |
-| **Thiết kế** | [`neuroedge-design-neurobrain.md`](neuroedge-design-neurobrain.md) |
-
-#### Khối N0 — Quản trị
-
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N0-01** | Hai mục `Q-N`: "Lab Mode / NeuroBrain" và "Giai đoạn 1.5", chuyển các quyết định ở `neuroedge-design-neurobrain.md` Phụ lục B vào PRD §15 | — | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` §15 |
-| **TSK-N0-02** | Sửa đổi FR-HAL-01: primitive mới (`digital.in`, bus I2C) là **tuỳ chọn theo board**, như RFC-0002 làm với `vision.in`; sửa FR-CLI-10 cho `mcp desktop-config --lab` | FR-HAL-01, FR-CLI-10 | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` |
-| **TSK-N0-03** | Nháp RFC-0007: `digital.in`; bus I2C chỉ đọc; chỗ cho ADC; trường bus/địa chỉ và khai báo phong bì trong `board.v1`. Phải lý giải vì sao không mở rộng `sensor.read`. `gate.v1` không đổi | FR-HAL-01 | V2 | ⏳ Chưa bắt đầu | `docs/rfc/0007-*.md` |
-| **TSK-N0-04** | Cập nhật threat model §2b: lab action, nguồn `trigger`, `/confirm`, cờ `[lab] enabled` | NFR-SEC-09 | V2 | ⏳ Chưa bắt đầu | `docs/spec/threat_model.md` |
-| **TSK-N0-05** | Quy trình duyệt gate nháp: `-draft` → PR có người review → `gate lint` sạch → bỏ hậu tố → `check_digests.py --update` | FR-GATE-* | V2 | ⏳ Chưa bắt đầu | `CONTRIBUTING.md` §3 |
-| **TSK-N0-06** | Đề xuất mở rộng Q-11 cho OFL-1.1 (**chỉ với font**) và mục `NOTICE` cho IBM Plex; thêm mục `NOTICE` Section A cho ESP-Claw (`neuroedge-design-neurobrain.md` Phụ lục A) | — | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` Q-11 · `NOTICE` |
-
-- [ ] **Tiêu chí N0.1:** Hai mục `Q-N` có trạng thái ĐÃ CHỐT, có chữ ký kỹ thuật trưởng.
-- [ ] **Tiêu chí N0.2:** RFC-0007 ở trạng thái thảo luận, `schemas/gate.v1.json` không đổi byte nào.
-- [ ] **Tiêu chí N0.3:** Mọi tài liệu khác dẫn mã `Q-N`, không chép lại nội dung (CONTRIBUTING §8.1).
-
-#### Khối N1 — Gated claw lõi
-
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N1-01** | `lab_pulse` là `@action` mẫu + gate `gates/lab/lab_pulse@1.0.0`, với `arguments.duration_ms ≤ 2000` (RFC-0005). Gate không có pin enum: chân giới hạn bằng allow-list của board; dự án muốn hẹp hơn thì viết gate con thu hẹp `pin` | FR-MDL-10 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` · `gates/lab/` |
-| **TSK-N1-02** | Cờ `[lab] enabled` trong `agent.toml`, mặc định **tắt**; tắt thì lab tool không được đăng ký | — | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N1-03** | `neuroedge build --release` từ chối khi `[lab] enabled`, lỗi nêu tên cờ và cách tắt; build thường ghi `lab_enabled: true` trong báo cáo | FR-CLI-02 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` · `engine/compiler.py` · `docs/release.md` |
-| **TSK-N1-04** | Kết quả lab call kèm `gate explain`, để LLM tự sửa lệnh sai | FR-MDL-10 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N1-05** | `mcp desktop-config --lab`: cấu hình Claude Desktop cho agent lab trong một bước, vẫn đúng một mục `mcpServers` | FR-CLI-10 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/mcp_desktop.py` |
-| **TSK-N1-06** | `board show --lab`: chân trong allow-list, giới hạn phong bì từng chân, lý do chân khác bị cấm | FR-HAL-05 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` |
-| **TSK-N1-07** | Test ranh giới **B-1**: quét AST/import của `neuroedge.brain`, fail nếu có gọi phương thức HAL hoặc import `hal.linux` / `hal.sim` | — | V2 | ⏳ Chưa bắt đầu | `python/tests/test_brain_boundary.py` |
-| **TSK-N1-08** | `lab_read` trên primitive `digital.in` (sau RFC-0007) | FR-HAL-01 | — | ⏳ Chờ RFC-0007 | `python/neuroedge/brain/` · `hal/` |
-
-- [ ] **Tiêu chí N1.1:** Trên `sim`, Claude Desktop gọi `lab_pulse(pin, 300)`. Có trace ALLOW và chân về 0.
-- [ ] **Tiêu chí N1.2:** Gọi `lab_pulse(pin, 2500)` ra `argument_out_of_range`, kèm lý do `gate explain`.
-- [ ] **Tiêu chí N1.3:** Cờ tắt thì `mcp tools` không liệt kê `lab_pulse`. `build --release` với cờ bật thoát mã khác 0.
-- [ ] **Tiêu chí N1.4:** Test B-1 fail khi thêm thử một lệnh `hal.digital_out` vào `brain/`.
-- [ ] **Tiêu chí N1.5:** `pytest` xanh, 0 skipped; `gate lint gates/lab/` sạch; `scripts/wheel_smoke.sh` đạt.
-
-#### Khối N2 — Phong bì an toàn vật lý
-
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N2-01** | Hook phong bì trong `HardwareAbstractionLayer.digital_out`, được tiêm vào như `authorize`. Thứ tự `require_pin → envelope → authorize → record`. Bị từ chối thì **token không bị tiêu** | FR-HAL-* | — | ⏳ Chưa bắt đầu | `python/neuroedge/hal/__init__.py` |
-| **TSK-N2-02** | Chính sách phong bì trong `brain/`: check-và-reserve **nguyên tử** dưới khoá theo chân; `time.monotonic` được tiêm vào; trace ghi sự kiện `envelope_refused` | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N2-03** | Móc tắt an toàn cho `mcp serve`: `close()` gọi `hal.close()`, bắt SIGTERM, `on_no_initialize` dọn dẹp trước `os._exit` | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` |
-| **TSK-N2-04** | Hợp đồng hồi quy — năm khẳng định (`neuroedge-design-neurobrain.md` §7.1) | — | — | ⏳ Chưa bắt đầu | `python/tests/test_hal_*.py` · `test_safety_regressions.py` · `test_mcp_serve_ui.py` |
-| **TSK-N2-05** | Cập nhật sơ đồ ở đầu `mcp_server.py` thêm bước phong bì | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/mcp_server.py` |
-
-- [ ] **Tiêu chí N2.1:** Hai lệnh đồng thời cùng chân, chạy cả hai thứ tự bằng điểm dừng điều khiển được, cho đúng một `envelope_refused`.
-- [ ] **Tiêu chí N2.2:** Test SIGTERM giữa xung trên gpio-sim đưa line về 0 (sau TSK-S5-10). Phần unit của TSK-N2-03 chạy ngay.
-- [ ] **Tiêu chí N2.3:** Năm khẳng định của hợp đồng hồi quy (`neuroedge-design-neurobrain.md` §7.1) đều xanh.
-
-#### Khối N3 — Bus I2C chỉ đọc
-
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N3-01** | Quét bus bằng **read-byte**, không bằng quick-write; đọc chip ID; không nhận diện được thì ghi "không nhận diện", không đoán | FR-HAL-01 | — | ⏳ Chờ RFC-0007 | `python/neuroedge/hal/` · `brain/` |
-| **TSK-N3-02** | Test trên `i2c-stub` + `lm75`: có thiết bị, bus trống, NACK, timeout (tối đa 1 lần thử lại) | FR-TGT-02 | — | ⏳ Chưa bắt đầu | `python/tests_linux/` |
-| **TSK-N3-03** | **Spike ADC** trên runner `ubuntu-latest`: chip ADC I2C có driver hwmon (`ads7828` hoặc `ina2xx`) trên `i2c-stub`, đọc lại `in0_input` | — | — | ⏳ Chưa bắt đầu | báo cáo spike trong PR |
-
-- [ ] **Tiêu chí N3.1:** `tests_linux` phát hiện `0x48` (`lm75`) và báo đúng bus trống.
-- [ ] **Tiêu chí N3.2:** Kết quả spike ADC được ghi lại, và quyết định ADC đã áp dụng.
-
-#### Khối N4 — Sổ bàn làm việc
-
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N4-01** | Ghi sự thật phát hiện được, mỗi mục kèm trace nguồn: vai chân, chip ID. Hai vai mâu thuẫn trên cùng chân thì báo lỗi có kiểu, để người quyết | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N4-02** | Sinh profile board **mới** dạng nháp qua mã đọc/ghi `BoardProfile`, không ghi TOML bằng chuỗi. **Không sửa** ba profile tier-1 | FR-HAL-05 | — | ⏳ Chưa bắt đầu | `python/neuroedge/hal/board.py` |
-| **TSK-N4-03** | Cảnh báo chân đặc biệt theo MCU. ESP32-S3: strapping 0, 3, 45, 46; flash/PSRAM 26–32 (33–37 khi dùng PSRAM octal); chân đã bị ngoại vi chiếm (dữ liệu port từ ESP-Claw, `neuroedge-design-neurobrain.md` Phụ lục A). Đây là cảnh báo, không phải blacklist | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-
-#### Khối N5 — Chat Contracting
-
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N5-01** | Từ trace sinh `@action` + gate `0.1.0-draft` + test replay, bằng `templates.scaffold`/`_render` có sẵn. Chỉ ghi vào thư mục agent của người dùng | FR-DX-01 | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N5-02** | Test **hai chiều** bắt buộc: ít nhất một ALLOW và một BLOCK/`argument_out_of_range`. Bản nháp chỉ có ALLOW thì bị từ chối | FR-CI-* | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N5-03** | Ba lỗi LLM riêng biệt (malformed, empty, refusal), không ghi tệp rác. Chân không truy được về trace thì từ chối sinh. Tên action trùng thì không ghi đè | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` · corpus `expected_results.yaml` |
-| **TSK-N5-04** | PR của bản nháp in `gate explain` bằng lời, cùng diff chính sách và các test ALLOW/BLOCK | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N5-05** | `trace export --report`: báo cáo bring-up Markdown (chân đã thử, kết quả, thiết bị bus, bản nháp đã sinh) | FR-TRC-* | — | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` |
-
-#### Khối N5b — Lab Monitor
-
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N5b-01** | Xếp hàng ask "1/3", ask cũ nhất trước (hôm nay `stateAt` chỉ giữ ask mới nhất). Focus mặc định ở "Huỷ"; phím chỉ tác dụng khi thẻ có focus; không cướp focus khi người đang gõ lệnh | — | — | ⏳ Chưa bắt đầu | `viz/assets/ui.js` · `tests/test_sim_ui.py` |
-| **TSK-N5b-02** | Mất kết nối SSE: banner vàng, làm mờ thiết bị và hàng live, khoá nút ask; gỡ banner khi có tin đầu tiên | — | — | ⏳ Chưa bắt đầu | `viz/__init__.py` · `ui.js` · `ui.css` |
-| **TSK-N5b-03** | Hàng "đang bật" có thời gian còn lại; làn timeline theo chân với vùng bấm ≥24×24 px, mỗi xung là `<button>` có `aria-label`, mũi tên trái/phải để di chuyển | — | — | ⏳ Chưa bắt đầu | `ui.js` · `ui.css` |
-| **TSK-N5b-04** | Thước phong bì ghi rõ cửa sổ lấy từ `board.v1`: xanh dưới 80%, vàng từ 80%, đầy thì đỏ kèm "khoá tới HH:MM:SS". Trạng thái rỗng: bo chưa khai chân → thông điệp trỏ tới `board show --lab`; thiếu phong bì → nhãn vàng | — | — | ⏳ Chưa bắt đầu | `ui.js` · `sim/ui.py` |
-| **TSK-N5b-05** | Thẻ phán quyết: huy hiệu bốn màu theo nghĩa (ALLOW xanh, BLOCK đỏ, ENVELOPE vàng, REJECTED xám, luôn kèm chữ); nhãn "người: Đồng ý/Huỷ/hết hạn"; gộp lặp "×N"; bấm xung thì mở thẻ tương ứng kèm `gate explain` | — | — | ⏳ Chưa bắt đầu | `ui.js` · `ui.css` |
-| **TSK-N5b-06** | Tiêu đề tab "(1) Cần xác nhận" + favicon vàng; công tắc âm báo mặc định tắt. Khi tua lại, ask và hàng live **luôn là hiện tại**. Nhãn bus: "phát lại từ trace `<tệp>` lúc HH:MM:SS" | — | — | ⏳ Chưa bắt đầu | `ui.js` · `sim/ui.py` |
-| **TSK-N5b-07** | Restyle **cả trang sim**: bỏ viền trái trên thẻ phán quyết, thay bằng huy hiệu; nhúng IBM Plex Sans 400/600 + Plex Mono 400 (woff2, subset Latin + tiếng Việt); luật hệ thiết kế ghi ở khối chú thích đầu `ui.css`. **Chặn bởi TSK-N0-06** | — | — | ⏳ Chặn bởi Q-11 | `ui.css` · `NOTICE` |
-
-- [ ] **Tiêu chí N5b.1:** Ba ask cùng lúc: không ask nào bị che rồi tự hết hạn.
-- [ ] **Tiêu chí N5b.2:** Nhấn Enter trong ô lệnh không bao giờ kích "Đồng ý".
-- [ ] **Tiêu chí N5b.3:** `trace view` vẫn là một tệp tự chứa, chạy offline (FR-DX-02).
-- [ ] **Tiêu chí N5b.4:** Đi hết luồng xác nhận chỉ bằng bàn phím và VoiceOver.
-
-#### Khối N6 — Trigger theo sự kiện
-
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N6-01** | Giá trị `call_source` mới `trigger`. `SOURCES` là mã, không nằm trong `schemas/`, nên chỉ cần mục `Q-N` + cập nhật `docs/spec/tool_calling.md`, không cần RFC. Thêm fixture và `expected_results.yaml` | FR-MDL-10 | — | ⏳ Chưa bắt đầu | `actions/tools.py` · `fixtures/tool_calls/` |
-| **TSK-N6-02** | `trigger ∉ HUMAN_SOURCES`; có test khẳng định trigger không trả lời được `ask` | Q-26 | — | ⏳ Chưa bắt đầu | `actions/confirmation.py` |
-| **TSK-N6-03** | Debounce + trần tần suất trigger; action bị BLOCK không được thử lại vô hạn; trigger bị chặn liên tục thì hiện trên N5b | — | — | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-
-#### Khối N7 — NeuroBrain trên ESP32-S3
-
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-N7-01** | Lab action + gate trên chip, dùng walker C và sổ token có sẵn | — | — | ⏳ Chưa bắt đầu | `targets/esp32s3/` |
-| **TSK-N7-02** | Cưỡng chế phong bì trong firmware C. Firmware chưa có phong bì thì action gắn phong bì bị **từ chối trên chip** (fail-closed) | — | — | ⏳ Chưa bắt đầu | `targets/esp32s3/components/` |
-| **TSK-N7-03** | Port chọn lọc từ ESP-Claw (`neuroedge-design-neurobrain.md` Phụ lục A). MCP trên chip chỉ làm sau `TODOS.md` #24, hoặc đi qua UART | — | — | ⏳ Chưa bắt đầu | `targets/esp32s3/` · `NOTICE` |
-
-- [ ] **Tiêu chí N4–N7:** tiêu chí ra của N4, N5, N6 và N7 được viết và duyệt khi I12 mở (hôm nay chưa có).
+NeuroBrain không còn là increment sau Beta (Q-55 thay phần thứ tự NeuroBrain của Q-40): task của nó nằm ở **I4a** (host: N0, N1, N3–N6, N5b) và **I5a** (chip: N7); phong bì N2, RFC-0007 (TSK-N0-03) và spike ADC (TSK-N3-03) nằm ở **I2a**, cưỡng chế phong bì trong firmware (TSK-N7-02) ở **I3a**. Mã task giữ nguyên.
 
 ### 7.3 I13 — Bộ port cộng đồng
 
@@ -1083,7 +1248,7 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 
 | | |
 |:---|:---|
-| **Mục tiêu** | Một robot Pi 5 + nhiều node MCU; mỗi node tự lượng giá gate; mất liên lạc thì về trạng thái an toàn; ROS 2/Nav2 có gate (Q-32 → Q-38) |
+| **Mục tiêu** | Một robot Pi 5 + nhiều node MCU; mỗi node tự lượng giá gate; mất liên lạc thì về trạng thái an toàn; ROS 2/Nav2 có gate (Q-32 → Q-38). PWM, tiêu chí số và `motion.*` (khối W1) đã vào MVP ở I2a, I3a (Q-53) |
 | **Điều kiện vào** | Nhu cầu hoặc đối tác thật (PF-3); `TODOS.md` #40 trả lời trước TSK-W4-01 và W4-07; nút dừng khẩn phần cứng bắt buộc cho robot di động (Q-38) |
 | **Tín hiệu đo** | DoD-1, DoD-2, DoD-3, DoD-5 của ghi chú thiết kế robot §1 |
 | **Người** | V2, V1 |
@@ -1091,10 +1256,6 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-W1-01** | **PWM** (tần số, độ rộng xung) và kênh phản hồi trạng thái trong `digital.out` | FR-HAL-01 | V1 + V2 | ⏳ Chưa bắt đầu | RFC · `board.v1` |
-| **TSK-W1-02** | **Tiêu chí `numeric`** cho `sensor.read` kiểu số: `gate.v1`, nút `NETR`, walker C, corpus (`TODOS.md` #30) | FR-GATE-03, FR-HAL-01 | V1 | ⏳ Chưa bắt đầu | RFC-numeric |
-| **TSK-W1-03** | **RFC-motion:** `motion.*` + `analog.in`; phong bì N2 sang `motion.*`; token thuê có hạn (Q-37); trạng thái an toàn theo từng cơ cấu (Q-35); gộp `TODOS.md` #36, #39 | FR-HAL-01 | V1 + V2 | ⏳ Chưa bắt đầu | `docs/rfc/` |
-| **TSK-W1-04** | **Hiện thực `motion.*`** + test crash-safe trên bo mạch thật + sửa `voice_fsm.md` §5 (dừng do mất liên lạc) | FR-HAL-01, FR-PER-02 | V2 | ⏳ Chưa bắt đầu | `targets/` · `docs/spec/voice_fsm.md` |
 | **TSK-W2-01** | **mTLS hoặc PSK giữa Pi và node** — không cần Fleet OS | NFR-SEC-04 | V2 | ⏳ Chưa bắt đầu | firmware · `python/` |
 | **TSK-W2-03** | **TPM cho Pi (`linux`)** — bổ sung cho Secure Boot của TSK-S6-05 | NFR-SEC-02, NFR-SEC-03 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` |
 | **TSK-W3-01** | **Spike Zenoh-pico ↔ Pi** trên ESP32-S3 và RP2350: phép thử loại theo ba ngưỡng của Q-36; trượt thì đo micro-ROS cùng điều kiện | — | V2 | ⏳ Chưa bắt đầu | `docs/reports/` |
@@ -1115,44 +1276,16 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 - [ ] **Tiêu chí 3:** DoD-3 — vết ghi hợp nhất đa node replay được trong CI (TSK-W3-04, W3-06).
 - [ ] **Tiêu chí 4:** DoD-5 — OTA có ký và mTLS/PSK giữa Pi và node demo được (TSK-W2-01).
 
-### 7.5 I15 — Thị giác trên `linux`
+### 7.5 Thị giác trên `linux` — đã gộp vào MVP
 
-| | |
-|:---|:---|
-| **Mục tiêu** | Thị giác chạy trên `sim` và `linux` với chi phí phần cứng thấp |
-| **Điều kiện vào** | Nhu cầu camera **đo được** từ khách hàng AURA thật — ít nhất hai khách nêu yêu cầu cụ thể (PF-3); V5 đã tuyển |
-| **Tín hiệu đo** | Tiêu chí ra bên dưới |
-| **Người** | V5, V1 |
-| **Thiết kế** | [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) §6 |
-
-| Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
-|:---:|:---|:---|:---:|:---:|:---|
-| **TSK-V1b-01** | Hiện thực `vision.in` cho `linux`: luồng khung hình, độ phân giải, FPS. Cần TSK-V1b-07 | FR-HAL-01 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` (nguyên thủy `vision.in`) |
-| **TSK-V1b-02** | Camera ảo trong `sim`: phát lại chuỗi ảnh, giữ tương đương với phần cứng thật | FR-TGT-01, FR-TGT-06 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/sim/vision/` |
-| **TSK-V1b-03** | Giao diện trừu tượng mô hình thị giác, đổi model bằng cấu hình | FR-MDL-04, FR-MDL-07 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/vision/` |
-| **TSK-V1b-04** | Action CI cho khung hình: record, replay, assert trên chuỗi phán quyết | FR-CI-01→04 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/testing/vision.py` |
-| **TSK-V1b-05** | Tích hợp NPU rời (Hailo-8, Coral) sau giao diện trừu tượng | FR-MDL-04 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/vision/accel/` |
-| **TSK-V1b-06** | Ba gate mẫu có yếu tố thị giác, tuân thủ ràng buộc ở `neuroedge-design-phase2.md` §2.2 | FR-GATE-03 | V1 + V5 | ⏳ Chưa bắt đầu | `gates/vision/` |
-| **TSK-V1b-07** | RFC nguyên thủy `vision.in`: hình dạng tham số có bằng chứng phần cứng (`fps` số thực, `modes[]`, enum `pixel_format`) và quy tắc so khớp với `[requires]` (RFC-0002 §9.1). Cần TSK-S2-02 | FR-HAL-01, FR-HAL-04 | V1 | ⏳ Chưa bắt đầu | `docs/rfc/` · `schemas/board.v1.json` |
-| **TSK-V1b-08** | Bằng chứng thị giác trong vết ghi: kết quả nhận diện qua sự kiện nhóm `perception`; `vision_ref` (băm + kích thước) chỉ là danh tính; lint `uri` chỉ khi `metadata.raw_capture` (RFC-0002 §9.2) | FR-CI-02, NFR-PRIV-01, NFR-PRIV-03 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/trace.py` · `fixtures/traces/invalid/` |
-
-**Tiêu chí ra I15:**
-
-- [ ] **Tiêu chí 1:** Agent mẫu nhận diện người trong vùng cấm chạy trên `sim` và `linux`, cùng một tệp mã nguồn.
-- [ ] **Tiêu chí 2:** `neuroedge verify --targets sim,linux` đạt 100% trên kịch bản **có thị giác**.
-- [ ] **Tiêu chí 3:** Mất camera giữa phiên → hành động bị chặn với lý do fail-closed, không treo.
-- [ ] **Tiêu chí 4:** Đổi mô hình thị giác chỉ bằng cấu hình, không sửa mã agent và không sửa gate.
-- [ ] **Tiêu chí 5:** Vết ghi thị giác mặc định không chứa ảnh thô; bật lưu thô phải khai tường minh.
-- [ ] **Tiêu chí 6:** TTFV của luồng thoại **vẫn dưới 10 phút** — thị giác không được làm chậm trải nghiệm đầu tiên.
-- [ ] **Tiêu chí 7:** Agent yêu cầu `vision.in` bị **từ chối lúc build** trên bo mạch không khai nó, thông báo nêu đủ ba thành phần (FR-HAL-05).
-- [ ] **Tiêu chí 8:** Vết ghi có `vision_ref` thẩm định qua lint và `neuroedge replay` tái hiện phán quyết từ sự kiện `perception`.
+Thị giác không còn chờ nhu cầu camera sau Beta (Q-53): TSK-V1b-01 → V1b-08 nằm ở **I2a** (`sim` + `linux`), `vision.in` trên chip ở **I3a** (TSK-I3a-04). Kết quả thị giác vào gate dưới dạng dữ kiện do maker khai, ngưỡng tin cậy khoá bằng tiêu chí số (Q-54). Mã task giữ nguyên.
 
 ### 7.6 I16 — Thị giác trên `jetson`
 
 | | |
 |:---|:---|
 | **Mục tiêu** | Nâng `jetson` lên target bậc 2: đội lõi bảo trì, kiểm chứng trên miền phán quyết, không cam kết nightly |
-| **Điều kiện vào** | Chỉ mua Jetson sau khi I15 đạt tiêu chí ra |
+| **Điều kiện vào** | Chỉ mua Jetson sau khi tiêu chí thị giác của I2a đạt (tiêu chí 6) |
 | **Tín hiệu đo** | Tiêu chí ra bên dưới |
 | **Người** | V5 |
 | **Thiết kế** | [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) §7 |
@@ -1229,7 +1362,7 @@ Thứ tự theo phụ thuộc (Q-40). Thiết kế chi tiết nằm ở ghi chú
 
 | Hạng mục | Điều kiện | Vì sao roadmap cần biết |
 |:---|:---|:---|
-| **Khối 4 — AURA thực địa** | Sau I8; API ổn định và một đối tác ngoài thành công trên phần cứng thật (proposal §8.6) | Là nguồn nhu cầu camera (PF-3) cho I15 và dữ liệu cho G-e (Q-43) |
+| **Khối 4 — AURA thực địa** | Sau I8; API ổn định và một đối tác ngoài thành công trên phần cứng thật (proposal §8.6) | Là nguồn dữ liệu cho G-e (Q-43); nhu cầu camera không còn chặn thị giác (Q-53) |
 | **Khối 5 — Marketplace** | Đạt G1–G4; Chặn ở PRD §14 | I18 chỉ làm phần miễn phí |
 
 ### 8.2 Task hoãn, chưa thuộc increment nào
@@ -1262,6 +1395,7 @@ Khi tiến độ trượt, cắt theo đúng thứ tự sau. **Không cắt nh�
 | Golden Reference                      | Không có nó thì Action CI chỉ là một thư viện test thông thường |
 | `sim` là target thật, không phải mock | Cắt cái này là cắt toàn bộ luận điểm                            |
 | Nguyên tắc kế thừa gate an toàn       | Thiếu nó, `extends` là rủi ro chứ không phải tính năng          |
+| Phạm vi MVP (Q-52): bốn gói nguyên thủy mở rộng trên ba target, kit mẫu, NeuroBrain | Quyết định của chủ sản phẩm: MVP trượt thì dời ngày cùng PR có bằng chứng (R5), không cắt |
 
 
 ### 9.2 Không còn bậc 5
@@ -1280,8 +1414,7 @@ Cắt từ trái sang phải khi increment đó trượt; không cắt cột cu�
 |:---|:---|:---|
 | **I1** | TSK-I1-03 | TSK-I1-01 (PII), TSK-I1-02 (đo TTFV) |
 | **I6** | TSK-I6-04 → TSK-W0-02 | TSK-W0-03 (quét bí mật), TSK-S3-14, TSK-S3-09 |
-| **I12** | N7 trên chip → N6 trigger → N4 sổ bàn làm việc → N3 bus I2C → TSK-N5b-07 (restyle) | N1 cùng cờ lab và test B-1; N2 phong bì — thiếu chúng thì "secure by design" không đứng được |
-| **I15–I18** | I17 → I16 → I18 → I15 | I11 — rẻ nhất (một RFC nới lỏng) và là điều kiện của I13, I14, I16. Cắt I13 thì I14 port RP2350 không có khung mẫu |
+| **I16–I18** | I17 → I16 → I18 | I11 — rẻ nhất (một RFC nới lỏng) và là điều kiện của I13, I14, I16. Cắt I13 thì I14 port RP2350 không có khung mẫu |
 
 ---
 
@@ -1328,10 +1461,21 @@ Cắt từ trái sang phải khi increment đó trượt; không cắt cột cu�
 | **Q-35** | Mất liên lạc: trạng thái an toàn theo từng cơ cấu, mặc định dừng | 2026-09-25 | RFC-node |
 | **Q-6** | Lưu vết Fleet OS: Standard 90 ngày, Enterprise 3 năm | 2026-09-25 | Khối 2 |
 | **Q-36** | Wire node: Zenoh-pico mặc định, spike W3-1 là phép thử loại (p99 ≤ 20 ms, SRAM ≤ 40 KB, nối lại ≤ 2 s) | 2026-09-25 | RFC-node, W3-1 |
+| **Q-45** | PolyForm Noncommercial cho mã, Apache-2.0 cho chuẩn; kho công khai | 2026-09-25 | `LICENSING.md`, `TODOS.md` #43, #44 |
+| **Q-46** | Câu có/không chỉ trả lời câu hỏi `ask` của chính lượt đó | 2026-09-26 | `docs/spec/voice_fsm.md` |
+| **Q-47** | WebSocket trong Fleet OS chỉ cho kết nối và viễn trắc | 2026-09-28 | Khối 2 |
+| **Q-48** | Máy trạng thái hội thoại thuộc L2 | 2026-09-28 | `docs/architecture/` |
+| **Q-49** | Mỗi increment ra kèm một demo | 2026-09-29 | §11.1, `demo/` |
+| **Q-50** | Phiên thoại thời gian thực trên laptop (`run --mic`) | 2026-09-29 | TSK-I4-04 |
+| **Q-51** | NeuroEdge Studio | 2026-09-29 | TSK-I1-04 |
+| **Q-52** | MVP = v1.0 đầy đủ, bốn phase, một lần ra mắt, trượt thì dời ngày; giả định đủ người | 2026-09-30 | §0.5, §1.1, TSK-I2a-01 |
+| **Q-53** | Bốn gói nguyên thủy mở rộng bắt buộc trên ba target; bo ESP32-S3 có camera; `sim-rpi5` | 2026-09-30 | I2a, I3a, RFC-0007, RFC-0009 → RFC-0013 |
+| **Q-54** | Thị giác → dữ kiện do maker khai; gate khoá ngưỡng tin cậy bằng tiêu chí số | 2026-09-30 | TSK-V1b-06, RFC-0012 |
+| **Q-55** | NeuroBrain vào MVP, phủ bốn gói trên ba target (thay phần thứ tự NeuroBrain của Q-40) | 2026-09-30 | I4a, I5a |
 | **Q-37** | Token `motion.*` thuê có hạn, mỗi lệnh qua gate gia hạn | 2026-09-25 | RFC-motion |
 | **Q-38** | Chứng nhận an toàn: OUT tạm thời, dừng khẩn phần cứng bắt buộc cho robot di động | 2026-09-25 | Cổng 2026-10-25, `TODOS.md` #40 |
 | **Q-39** | Roadmap theo increment; không phát hành ra ngoài tới khi công khai (I6: demo thoại trên `sim`, `linux`, Box-3); thêm một kỹ sư nhúng | 2026-09-25 | Toàn roadmap |
-| **Q-40** | NeuroBrain và các hướng mở rộng xếp sau Beta, theo phụ thuộc | 2026-09-25 | I11–I18 |
+| **Q-40** | NeuroBrain và các hướng mở rộng xếp sau Beta, theo phụ thuộc — phần NeuroBrain thay bởi Q-55, thị giác bởi Q-53 | 2026-09-25 | I11, I13, I14, I16–I18 |
 | **Q-41** | v1.1 mở khi Beta đạt B1 và B2; B3 đo nhưng không là điều kiện | 2026-09-25 | §7 |
 | **Q-42** | C6 là chỉ số theo dõi, không là điều kiện phát hành v1.1 | 2026-09-25 | §8.3 |
 | **Q-43** | Giả định G-a..G-e neo theo increment | 2026-09-25 | PRD §13.3 |
@@ -1341,11 +1485,13 @@ Cắt từ trái sang phải khi increment đó trượt; không cắt cột cu�
 
 **Một điều chỉnh so với đề xuất gốc:** Q-4 ghi Claude Sonnet 5 thay vì Sonnet 3.5. Thế hệ 3.5 đã bị thay thế; chốt một định danh mô hình lỗi thời vào tài liệu nền sẽ tạo nợ ngay từ ngày đầu.
 
-### 10.2 Một quyết định còn mở và một RFC
+### 10.2 Quyết định và RFC còn mở
 
 | Hạn | Mã | Quyết định | Vì sao hạn đó | Người quyết | Trạng thái |
 |:---:|:---:|:---|:---|:---:|:---:|
 | **Trước khi I10 mở** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng | ⏳ Đang mở |
+| **Trước mã của gói tương ứng trong I2a** | **RFC-0007, RFC-0009 → RFC-0013** | Sáu RFC của nguyên thủy mở rộng (bản nháp trong `docs/rfc/`, chưa mở PR) | Không có RFC thì không có mã (§2.3) | Kỹ thuật trưởng | ⏳ Nháp |
+| **Trước 2026-10-25** | — | Cổng nhu cầu nói Stop thì các increment có hậu tố (I2a → I5a) đóng băng cùng I3–I7 hay làm tiếp như I1, I2 | Luật cổng (`docs/business/cong-nhu-cau-2026-10-25/cham-diem.md` §4.1) viết trước Q-52 | Trưởng nhóm | ⏳ Đang mở |
 | **Trước khi I11 mở** | **RFC-0002** | Mở rộng enum `target` và đưa bậc target vào mã lõi (`TARGET_TIERS`); `vision.in` tách sang RFC riêng ở V1b | Không chặn roadmap này. Chặn I11 và mọi board profile mới | Kỹ thuật trưởng | ⏳ Đang mở |
 
 **Chính sách phụ thuộc bắc cầu** là một phần của Q-11: nguyên văn ở PRD §15, cưỡng chế bằng `scripts/check_licences.py` (job `cloud-extra`) và `pip-licenses --fail-on` (job `licence-obligations`). *(Ngoại lệ LGPL qua liên kết động của `libgpiod` — proposal §3.9 quy tắc 3 — là thư viện hệ thống C, không phải phụ thuộc Python bắc cầu.)*
@@ -1439,11 +1585,12 @@ Không có ngày; ngày chỉ ở §0.2.
 | Sprint 6 | I7 |
 | Developer Beta · Điểm rẽ | I8 |
 | Khối 2 · Khối 3 | I9 · I10 |
-| Giai đoạn 1.5 (NeuroBrain, N0–N7) | I12 |
-| Giai đoạn 2: V1a · V1b · V2 · V3 | I11 · I15 · I16 · I17 |
+| Giai đoạn 1.5 (NeuroBrain, N0–N7) | I4a (N0, N1, N3 → N6, N5b) · I5a (N7) · N2, TSK-N0-02, N0-03, N3-03 ở I2a · TSK-N7-02 ở I3a (Q-55) |
+| Giai đoạn 2: V1a · V1b · V2 · V3 | I11 · I2a (Q-53) · I16 · I17 |
 | Giai đoạn 2: P1 · P2-01, P2-02, P2-03, P2-06 · P2-04, P2-05 | I13 · I18 · I14 |
 | Robot W0-1 · W0-2, W0-3 · W0-4 | TSK-W0-01 (I7) · TSK-W0-02, W0-03 (I6) · TSK-W0-04 (I2) |
-| Robot W1–W4 còn lại | I14 |
+| Robot W1 (PWM, `numeric`, RFC-motion, `motion.*`) | I2a · I3a (TSK-W1-04) — Q-53 |
+| Robot W2–W4 còn lại | I14 |
 | TSK-S2-06 (CEL) | ngoài increment (§8.2, `TODOS.md` #42) |
 
 **Mục robot đã gộp vào task có sẵn** (không cấp mã mới): W1A-3 → TSK-V1a-03 · W1B-RFC-1 → TSK-V1a-01…06, TSK-N0-03, TSK-W1-02 · W1B-RFC-3 → TSK-V1b-07 · W2-2 → TSK-S6-01…04 · W2-3 → TSK-S6-05 + TSK-W2-03 · W2-5 → TSK-K3-05 · W2-6 → TSK-P2-04 · W3-5 → TSK-P2-05 · W4-2 → TSK-P1-01…04 · W4-3 → TSK-K3-04 + TSK-S3-21 · W4-4 → TSK-P2-01. **Bỏ:** W0-5 (mục TODOS đã giao task), W4-5 (giữ ở `TODOS.md` #33), W4-6 (đã chốt ở Q-11).
@@ -1462,10 +1609,12 @@ Không có ngày; ngày chỉ ở §0.2.
 | Runner CI tự quản có gắn bo mạch thật | 1 | I3 | Bắt buộc cho TSK-S4-05 |
 | Tên miền và hạ tầng cho `schema.neuroedge.dev` | — | I6 | Phục vụ FR-GOV-01 và A9 (TSK-I6-02) |
 | Kênh cộng đồng và repo công khai | — | I6 | TSK-I6-01, TSK-I6-04 |
-| Camera USB và CSI | 4 | I15 | Nguồn khung hình cho `vision.in`; hai loại để kiểm chứng tính di động |
-| NPU Hailo-8 hoặc Hailo-8L | 2 | I15 | Gắn ngoài cho Raspberry Pi 5 |
-| Google Coral Edge TPU | 2 | I15 | Phương án NPU chi phí thấp hơn |
-| Jetson Orin Nano | 2 | I16 | Target `jetson` bậc 2. **Chỉ mua sau khi I15 đạt tiêu chí ra** |
+| Camera USB và CSI | 4 | I2a | Nguồn khung hình cho `vision.in`; hai loại để kiểm chứng tính di động |
+| NPU Hailo-8 hoặc Hailo-8L | 2 | I2a | Gắn ngoài cho Raspberry Pi 5 |
+| Google Coral Edge TPU | 2 | I2a | Phương án NPU chi phí thấp hơn |
+| Jetson Orin Nano | 2 | I16 | Target `jetson` bậc 2. **Chỉ mua sau khi tiêu chí thị giác của I2a đạt** |
+| **Bo ESP32-S3 có camera** (bo tham chiếu `esp32s3` thứ hai, Q-53) | 2 | I3a | Chọn ở TSK-I3a-01; Box-3 không có camera |
+| Servo, driver motor và nguồn riêng | 2 bộ | I2a | Kiểm `motion.*` trên Pi và Box-3, kể cả test mất điện giữa lệnh (TSK-W1-04) |
 | Bo mạch STM32 và RP2350 | 2 mỗi loại | I13 · I14 | STM32 cho khung port mẫu của I13; RP2350 cho khung port mẫu và làm node robot do đội lõi port (Q-33) |
 
 ## Phụ lục C — Bố cục kho mã nguồn
