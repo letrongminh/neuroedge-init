@@ -63,7 +63,7 @@ multi-node, hệ sinh thái; kèm khung RFC cho từng thay đổi.
 ## Quy ước tài liệu
 
 - Mã chung của kho (`FR-*`, `NFR-*`, `Q-N`, `TSK-*`, `RFC-NNNN`) giải mã ở
-  [`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md); thuật ngữ của ghi chú (FOFOCA, node, black
+  [`docs/user/thuat-ngu.md`](../docs/user/thuat-ngu.md); thuật ngữ của ghi chú (FOFOCA, node, black
   channel, W-item, RFC nháp) cũng có ở đó.
 - **Mã cục bộ** chỉ có nghĩa trong tệp này, đặt tên để không trùng mã có sẵn: định nghĩa xong
   `DoD-1…5`, luật `BT1…BT8`, tầng kiến trúc `T0…T6`. `§x.y` trỏ vào tệp này khi ghi

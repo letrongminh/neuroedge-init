@@ -3,7 +3,7 @@
 
 # Trạng thái dự án
 
-> Sinh tự động từ [`neuroedge-roadmap.md`](../../neuroedge-roadmap.md) §0 —
+> Sinh tự động từ [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0 —
 > nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-09-29**.
 
 ## Điều hành
@@ -44,4 +44,4 @@
 | **Ngoài roadmap** | **Khối 4 — AURA thực địa** | sau I8 | — | ⏳ Ngoài roadmap | — |
 |  | **Khối 5 — Marketplace** | khi đạt G1–G4 | — | ⏸ Chặn | — |
 
-Năng lực, phụ thuộc và giả định của các ngày dự báo: [`neuroedge-roadmap.md`](../../neuroedge-roadmap.md) §0.
+Năng lực, phụ thuộc và giả định của các ngày dự báo: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0.

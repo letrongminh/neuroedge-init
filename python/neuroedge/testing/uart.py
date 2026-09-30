@@ -41,7 +41,7 @@ LINE_MAX = 512  # bytes, prefix included (ne_trace.h NE_TRACE_LINE_MAX)
 DONE = "NE_TRACE DONE"
 EVENT_KEYS = frozenset({"offset_ms", "type", "data"})
 DEVICE_INFO_KEYS = ("board_id", "agent_version", "device_id", "boot_id")
-DEFAULT_BAUD = 921600  # neuroedge-prd.md Appendix D.2; ignored by USB-CDC
+DEFAULT_BAUD = 921600  # roadmap/neuroedge-prd.md Appendix D.2; ignored by USB-CDC
 SPEC = "docs/spec/simulation_coverage.md §4"
 
 

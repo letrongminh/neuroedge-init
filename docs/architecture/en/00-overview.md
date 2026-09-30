@@ -1,8 +1,8 @@
 # 00 · Architecture Overview
 
 > **Scope:** the whole system, at the highest level. **Source of truth:** the code in `main`; requirements in
-> [`neuroedge-prd.md`](../../../neuroedge-prd.md); progress in
-> [`neuroedge-roadmap.md`](../../../neuroedge-roadmap.md) §0. Label conventions `done` / `partial` /
+> [`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md); progress in
+> [`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §0. Label conventions `done` / `partial` /
 > `planned`: [`README.md`](../README.md).
 
 **What this chapter is for:** This chapter is for every engineer, architect, and partner who needs an overall view of the entire NeuroEdge architecture. The document answers foundational questions: *What problem does NeuroEdge solve in Physical AI? What mechanism ensures physical actions never bypass the safety gate? How does the system tier and maintain target equivalence between the development machine (host) and the edge chip ($5)?* Before reading, readers only need a basic understanding of AI agents and embedded control. After this chapter, application developers should read [`01`](01-context-c4l1.md) and [`12`](12-dev-quickstart.md); systems engineers should read [`02`](02-container-c4l2.md) and [`03`](03-component-host-c4l3.md); architects should read [`15`](15-target-architecture.md).
@@ -87,7 +87,7 @@ NeuroEdge has three parts, plus the CI chain that keeps them in sync:
 
 | Part | What it is | Language | Status |
 |:---|:---|:---|:---|
-| **`neuroedge` package** (host) | SDK, CLI, gate engine, `sim`/`linux` HAL, models, voice (from WAV files `done`, real-time voice sessions `partial` — [`neuroedge-roadmap.md`](../../../neuroedge-roadmap.md) I4), MCP, Action CI | Python 3.11+ | `done` (real-time voice `partial` — roadmap I4) |
+| **`neuroedge` package** (host) | SDK, CLI, gate engine, `sim`/`linux` HAL, models, voice (from WAV files `done`, real-time voice sessions `partial` — [`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) I4), MCP, Action CI | Python 3.11+ | `done` (real-time voice `partial` — roadmap I4) |
 | **`esp32s3` firmware** | `NETR` walker, token ledger, UART trace, generated component for the agent, signed OTA | C99 on ESP-IDF v5.4 | `partial` — runs on QEMU; does not drive pins yet |
 | **Data contracts** | `gate.v1`, `trace.v1`, `board.v1`, `agent.toml`, `NETR` v1, UART lines | JSON Schema, TOML, binary | `done`, frozen via RFC |
 | **CI** | Python tests, gpio-sim, QEMU, golden images, OTA, security | GitHub Actions | `done` |
@@ -96,7 +96,7 @@ Two parts have no code today and appear only in the `planned` state: **Fleet OS*
 
 ### 5.1 Five-layer logical model
 
-The 5-layer logical model of NeuroEdge ([`neuroedge-proposal.md`](../../../neuroedge-proposal.md) §3.1) is spanned horizontally by the Action CI testing axis:
+The 5-layer logical model of NeuroEdge ([`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) §3.1) is spanned horizontally by the Action CI testing axis:
 
 | Layer / Axis | Nature of layer (proposal §3.1) | Host package (`03` §2) and firmware component (`04`) implementing | Status |
 |:---|:---|:---|:---|
@@ -116,7 +116,7 @@ To prevent readers from confusing the different layer/tier divisions across the 
 | Concept | Scale | Meaning | Defining document |
 |:---|:---|:---|:---|
 | **C4 architecture levels** | L1…L4 | Four architecture visualization levels: L1 Context · L2 Container · L3 Component · L4 Code | C4 model (Simon Brown) · [`01`](01-context-c4l1.md)…[`05`](05-code-gate-hal-c4l4.md) |
-| **System logical layers** | L0…L4 | Five logical functional layers of the platform: L0 Target · L1 HAL · L2 Perception/Runtime · L3 Action Contract Engine · L4 Agent Application, plus the Action CI axis | [`neuroedge-proposal.md`](../../../neuroedge-proposal.md) §3.1 |
+| **System logical layers** | L0…L4 | Five logical functional layers of the platform: L0 Target · L1 HAL · L2 Perception/Runtime · L3 Action Contract Engine · L4 Agent Application, plus the Action CI axis | [`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) §3.1 |
 | **Package dependency ranks** | Rank 0…10 | Import order of host-side Python modules, preventing cyclic dependencies (Tier 0: `errors`, `paths`… Tier 10: `cli`) | [`03`](03-component-host-c4l3.md) §2 · `python/tests/test_architecture_layers.py` |
 | **Target commitment tiers** | Tier 1…3 | Hardware verification commitment levels of the core team: Tier 1 (official: `sim`, `linux`, `esp32s3`), Tier 2 (extended: `jetson`), Tier 3 (community: `stm32`, `rp2350`) | PRD FR-TGT-08, Q-13 · proposal §3.2 · [`15`](15-target-architecture.md) §4.1 |
 | **Robot layering tiers** | T0…T6 | Seven distributed robot architecture layers: T0 Hardware actuators/local safety · T1 Wire Zenoh-pico · T2 Black channel safety layer · T3 Per-node gates · T4 Unified trace · T5 MCP · T6 ROS 2 bridge | `draft-ke-hoach-mo-rong-robot-fofoca.md` §4 · [`15`](15-target-architecture.md) §4.3 |
@@ -142,11 +142,11 @@ The table below is a snapshot of the shape, not a progress table; per-task progr
 - **Not certified functional safety** (no SIL per IEC 61508, no PL per ISO 13849 — Q-38). The gate does not replace an emergency stop or a hardware interlock.
 - **Does not defend against an attacker inside the same process.** A token is `(nonce, digest)` in memory; the in-scope threat is **accidentally bypassing the gate**, and that is proven by tests (`docs/spec/threat_model.md` §3, `TODOS.md` #2).
 - **Not a cloud service.** Today NeuroEdge is a library, a CLI and a firmware; there is no server operated by NeuroEdge.
-- **Not an inference token reseller** ([`neuroedge-proposal.md`](../../../neuroedge-proposal.md) §6.4; PRD §1.4 N4). The provider abstraction is self-hosted within the core; users operate it themselves and pay model providers directly.
-- **Does not do SLAM or navigation itself** — only gates velocity commands via ROS 2 / Nav2 ([`neuroedge-prd.md`](../../../neuroedge-prd.md) §14, Q-34).
-- **No paid marketplace** ([`neuroedge-prd.md`](../../../neuroedge-prd.md) §14, PF-3).
-- **No agent-to-agent payment** ([`neuroedge-prd.md`](../../../neuroedge-prd.md) §14, PF-4).
-- **No custom wake-word training in v1.0** ([`neuroedge-prd.md`](../../../neuroedge-prd.md) §3).
+- **Not an inference token reseller** ([`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) §6.4; PRD §1.4 N4). The provider abstraction is self-hosted within the core; users operate it themselves and pay model providers directly.
+- **Does not do SLAM or navigation itself** — only gates velocity commands via ROS 2 / Nav2 ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, Q-34).
+- **No paid marketplace** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-3).
+- **No agent-to-agent payment** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-4).
+- **No custom wake-word training in v1.0** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §3).
 
 The overall target architecture (to-be architecture) for subsequent phases is in [`15-target-architecture.md`](15-target-architecture.md).
 

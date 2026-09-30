@@ -1,5 +1,5 @@
 """
-Luật chống lệch của roadmap (`neuroedge-roadmap.md` §2.4, Q-39).
+Luật chống lệch của roadmap (`roadmap/neuroedge-roadmap.md` §2.4, Q-39).
 
 Roadmap là nơi duy nhất ghi trạng thái task, tiêu chí ra, dự báo, phụ thuộc và thẻ phát
 hành; ghi chú thiết kế không có chúng. Các test dưới đây giữ cho điều đó còn đúng sau mỗi
@@ -14,7 +14,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-ROADMAP = ROOT / "neuroedge-roadmap.md"
+DOCS = ROOT / "roadmap"
+ROADMAP = DOCS / "neuroedge-roadmap.md"
 DESIGN_NOTES = (
     "neuroedge-design-neurobrain.md",
     "neuroedge-design-phase2.md",
@@ -86,7 +87,7 @@ ALL_TASKS = [row for rows in TASKS.values() for row in rows]
 
 @pytest.mark.parametrize("note", DESIGN_NOTES)
 def test_design_notes_carry_no_tasks_criteria_or_cut_ladders(note: str) -> None:
-    text = (ROOT / note).read_text(encoding="utf-8")
+    text = (DOCS / note).read_text(encoding="utf-8")
     offenders = [
         line
         for line in text.splitlines()
@@ -139,7 +140,8 @@ def test_every_task_code_has_exactly_one_row() -> None:
 
 def test_every_cited_task_code_exists_in_the_roadmap() -> None:
     known = {row[0].strip("*") for row in ALL_TASKS}
-    places = [ROOT / p for p in (*DESIGN_NOTES, "TODOS.md", "neuroedge-prd.md", "CONTRIBUTING.md")]
+    places = [DOCS / p for p in (*DESIGN_NOTES, "neuroedge-prd.md")]
+    places += [ROOT / p for p in ("TODOS.md", "CONTRIBUTING.md")]
     for folder in ("python", "scripts", "targets", ".github", "docs"):
         places += [
             p

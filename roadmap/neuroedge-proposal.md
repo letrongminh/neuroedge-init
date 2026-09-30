@@ -235,7 +235,7 @@ Chiến lược phân phối của NeuroEdge — mã nguồn công khai, miễn 
 | Trực quan, dễ lan tỏa | Bản demo tương tác giọng nói với vi điều khiển và cơ cấu chấp hành chuyển động rõ ràng, ấn tượng. |
 | Người dùng là người quyết định | Maker và kỹ sư tự cài đặt, trải nghiệm trong vài phút cho mục đích cá nhân, học tập hay nghiên cứu mà không cần qua quy trình mua sắm; dùng trong doanh nghiệp cần license thương mại (`LICENSING.md`). |
 
-**NeuroEdge phân phối framework dưới dạng source-available, nhưng tài sản chuẩn hóa cốt lõi là ba đặc tả mở: lược đồ gate, lược đồ vết ghi JSON, và Gated Tool Profile** — ngữ nghĩa của một tool call tới thiết bị vật lý, đặt trên đường truyền MCP sẵn có thay vì phát minh giao thức mới ([`docs/spec/tool_calling.md`](docs/spec/tool_calling.md)). Framework có thể có nhiều biến thể, nhưng chuẩn lược đồ mô tả độ an toàn vật lý và quy trình kiểm thử CI đi kèm sẽ tạo nên hiệu ứng tiêu chuẩn công nghiệp lâu dài.
+**NeuroEdge phân phối framework dưới dạng source-available, nhưng tài sản chuẩn hóa cốt lõi là ba đặc tả mở: lược đồ gate, lược đồ vết ghi JSON, và Gated Tool Profile** — ngữ nghĩa của một tool call tới thiết bị vật lý, đặt trên đường truyền MCP sẵn có thay vì phát minh giao thức mới ([`docs/spec/tool_calling.md`](../docs/spec/tool_calling.md)). Framework có thể có nhiều biến thể, nhưng chuẩn lược đồ mô tả độ an toàn vật lý và quy trình kiểm thử CI đi kèm sẽ tạo nên hiệu ứng tiêu chuẩn công nghiệp lâu dài.
 
 Toàn bộ HAL, Action Contract Engine, Voice pipeline và Action CI miễn phí cho mục đích phi thương mại, nên maker và người nghiên cứu không gặp rào cản nào; doanh nghiệp dùng thương mại cần license thương mại. Chuẩn — lược đồ, đặc tả, bộ kiểm thử tuân thủ — mở theo Apache-2.0, nên bên thứ ba tự hiện thực và tự kiểm chứng được mà không cần license của NeuroEdge (Q-45, `LICENSING.md`).
 
@@ -402,7 +402,7 @@ Mỗi môi trường được mô tả theo năm tiêu chí dưới đây:
 
 #### Mô phỏng theo tầng — mượn công cụ chuẩn, không tự viết emulator *(Q-21)*
 
-Không một bộ mô phỏng nào phủ cả năm nguyên thủy trên cả ba target. Ô nào (nguyên thủy × target) do task nào phủ, và phần nào chỉ kiểm được trên bo mạch: [`docs/spec/simulation_coverage.md`](docs/spec/simulation_coverage.md). Mỗi tầng kiểm thử dùng công cụ mở đã được cộng đồng kiểm chứng cho đúng phần nó làm tốt, và ghi rõ phần nó **không** kiểm được — phần đó rơi xuống tầng dưới, cuối cùng là bo mạch thật. Giấy phép và phiên bản từng công cụ: Phụ lục H.4.
+Không một bộ mô phỏng nào phủ cả năm nguyên thủy trên cả ba target. Ô nào (nguyên thủy × target) do task nào phủ, và phần nào chỉ kiểm được trên bo mạch: [`docs/spec/simulation_coverage.md`](../docs/spec/simulation_coverage.md). Mỗi tầng kiểm thử dùng công cụ mở đã được cộng đồng kiểm chứng cho đúng phần nó làm tốt, và ghi rõ phần nó **không** kiểm được — phần đó rơi xuống tầng dưới, cuối cùng là bo mạch thật. Giấy phép và phiên bản từng công cụ: Phụ lục H.4.
 
 | Tầng kiểm thử | Công cụ | Kiểm được | Không kiểm được | Chạy khi |
 |:---|:---|:---|:---|:---|
@@ -558,7 +558,7 @@ client MCP (Claude, IDE…) ───┤  mcp — neuroedge mcp serve
 
 MCP chạy **hai chiều**. Agent bên ngoài gọi *vào* thiết bị qua `neuroedge mcp serve`; còn System 2 của chính agent là một **MCP host** gọi *ra*: tool của thiết bị qua MCP server của chính agent (nên vẫn qua gate), và MCP server bên ngoài — tin tức, lịch, tra cứu — **chỉ để lấy thông tin**, kết quả là dữ liệu không tin cậy (Q-27).
 
-Đường truyền theo đúng chuẩn của hệ sinh thái (MCP, function calling OpenAI, JSON Schema), nên agent nào gọi được tool thì gọi được thiết bị NeuroEdge. Phần NeuroEdge quy định — và là tài sản chuẩn thứ ba (§1.5) — là ngữ nghĩa giữa tool call và hiệu ứng vật lý: ba trạng thái kết quả, nguồn gọi là dữ kiện tin cậy, chỉ người xác nhận `ask` (Q-26), ràng buộc tham số trong gate (Q-25), và vết ghi replay được. Đặc tả chuẩn tắc: **Gated Tool Profile**, [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md).
+Đường truyền theo đúng chuẩn của hệ sinh thái (MCP, function calling OpenAI, JSON Schema), nên agent nào gọi được tool thì gọi được thiết bị NeuroEdge. Phần NeuroEdge quy định — và là tài sản chuẩn thứ ba (§1.5) — là ngữ nghĩa giữa tool call và hiệu ứng vật lý: ba trạng thái kết quả, nguồn gọi là dữ kiện tin cậy, chỉ người xác nhận `ask` (Q-26), ràng buộc tham số trong gate (Q-25), và vết ghi replay được. Đặc tả chuẩn tắc: **Gated Tool Profile**, [`docs/spec/tool_calling.md`](../docs/spec/tool_calling.md).
 
 ### 3.6 Trừu tượng hóa mô hình AI (Model Abstraction)
 
@@ -858,7 +858,7 @@ Ba ràng buộc an toàn bắt buộc từ decorator `@action`:
 | 2 | Năng lực khai báo tại `requires` tham gia đối chiếu tự động lúc biên dịch | Dừng quá trình build, chặn nạp firmware (§4.9) |
 | 3 | Tham số `gate` phải khớp với cổng an toàn đã khai báo trong `agent.toml` | Dừng quá trình build |
 
-**Mỗi `@action` là một tool (Q-24).** Chữ ký hàm sinh ra schema của tool; ngữ pháp cục bộ, System 1/2 và client MCP gọi nó bằng cùng một tool call qua cùng gate (§3.5). Quy tắc đầy đủ: [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md).
+**Mỗi `@action` là một tool (Q-24).** Chữ ký hàm sinh ra schema của tool; ngữ pháp cục bộ, System 1/2 và client MCP gọi nó bằng cùng một tool call qua cùng gate (§3.5). Quy tắc đầy đủ: [`docs/spec/tool_calling.md`](../docs/spec/tool_calling.md).
 
 Hệ thống ngoại lệ an toàn chuẩn mực:
 
@@ -1044,7 +1044,7 @@ Quy trình kiểm thử tự động trên biến các cam kết an toàn thành
 
 ### 4.8 Giao diện dòng lệnh (CLI Surface)
 
-Bề mặt lệnh chuẩn tắc — nhóm lệnh, hợp đồng mã thoát, tiêu chí nghiệm thu: **[PRD §7.2](neuroedge-prd.md#72-giao-diện-dòng-lệnh-fr-cli)** (FR-CLI). Lệnh cụ thể và đầu ra kỳ vọng: [`CHANGELOG.md`](CHANGELOG.md) §2. Mục này chỉ nêu lựa chọn thiết kế.
+Bề mặt lệnh chuẩn tắc — nhóm lệnh, hợp đồng mã thoát, tiêu chí nghiệm thu: **[PRD §7.2](neuroedge-prd.md#72-giao-diện-dòng-lệnh-fr-cli)** (FR-CLI). Lệnh cụ thể và đầu ra kỳ vọng: [`CHANGELOG.md`](../CHANGELOG.md) §2. Mục này chỉ nêu lựa chọn thiết kế.
 
 **Nền tảng hiện thực CLI:** xây trên **Typer** cho định nghĩa lệnh, **Rich** cho hiển thị và báo lỗi có cấu trúc. Khuôn mẫu dự án của `neuroedge new` là **generator Python thuần** trong gói — không dùng Copier, vì nó kéo theo `jinja2-ansible-filters` GPL3 (TSK-S3-07).
 
@@ -1360,7 +1360,7 @@ Phân tích đặc điểm kiến trúc và động cơ phát triển của sáu
 | **MHS** *(Anthropic)* — [Anthropic](https://www.anthropic.com/news/model-hardware-standard-research-preview) · [spec](https://www.modelhardwarestandard.com/) · [WIRED](https://www.wired.com/story/anthropic-standard-ai-agents-coming-to-the-physical-world) | Chuẩn hóa driver + tag mô tả đặc tính thiết bị bằng ngôn ngữ tự nhiên; giới hạn an toàn do driver thực thi, có phê duyệt người cho việc rủi ro cao (đang xây); đối tác thật (Genentech, UW, CMU, HHMI Janelia). | Không nhắm MCU hay môi trường mô phỏng trung lập; research preview chưa công bố schema/giấy phép; không có policy có phiên bản/kế thừa, Action CI hay định dạng vết ghi. |
 | **DCP** — [arXiv](https://arxiv.org/abs/2605.26159) · [GitHub](https://github.com/device-context-protocol/dcp) | Đã đo trên phần cứng thật (ESP32/ESP8266), frame dưới 50 byte, Bridge là ranh giới tin cậy duy nhất, HMAC capability token; benchmark 675 lượt gọi: chặn 100% leo thang quyền, 78% prompt injection (MCP thô 0–1%); MIT. | Không có policy theo điều kiện hay kế thừa, không Action CI replay, không vết ghi; thiết bị chưa tự xác minh chữ ký; quy mô một tác giả. |
 
-*Bối cảnh, chưa phải phân tích cạnh tranh:* hai hàng MHS/DCP là thông tin thị trường cập nhật 2026-09-24 (`TODOS.md` #32); §10 chỉ chuyển thành phân tích cạnh tranh khi cổng nhu cầu 2026-10-25 đạt ≥ 10 cuộc nêu giải pháp hiện tại ([`docs/business/cong-nhu-cau-2026-10-25/README.md`](docs/business/cong-nhu-cau-2026-10-25/README.md), C7).
+*Bối cảnh, chưa phải phân tích cạnh tranh:* hai hàng MHS/DCP là thông tin thị trường cập nhật 2026-09-24 (`TODOS.md` #32); §10 chỉ chuyển thành phân tích cạnh tranh khi cổng nhu cầu 2026-10-25 đạt ≥ 10 cuộc nêu giải pháp hiện tại ([`docs/business/cong-nhu-cau-2026-10-25/README.md`](../docs/business/cong-nhu-cau-2026-10-25/README.md), C7).
 
 ### 10.2 Ba khác biệt cốt lõi có tính phòng thủ
 
@@ -1561,7 +1561,7 @@ flowchart TD
 
 ### B.6 Ràng buộc tham số (`arguments`) — *RFC-0005, Q-25*
 
-> Chuẩn tắc từ 2026-09-24 ([`docs/rfc/0005-rang-buoc-tham-so-trong-gate.md`](docs/rfc/0005-rang-buoc-tham-so-trong-gate.md)).
+> Chuẩn tắc từ 2026-09-24 ([`docs/rfc/0005-rang-buoc-tham-so-trong-gate.md`](../docs/rfc/0005-rang-buoc-tham-so-trong-gate.md)).
 > Mã: `python/neuroedge/engine/arguments.py`.
 
 Khi hành động đến từ LLM hoặc client MCP, mô hình chọn cả tham số. Gate khai giới hạn cho
@@ -1579,7 +1579,7 @@ mặc định của hàm — trước mọi tiêu chí, không hỏi mô hình, 
 Gate con chỉ thu hẹp khoảng hoặc tập giá trị; không nhắc lại là kế thừa, nên không bỏ được
 ràng buộc của cha — cùng hình dạng với nguyên tắc 2 và 4 của B.5. `neuroedge build` từ chối
 giới hạn trên tham số mà `@action` không có, hoặc khác kiểu. Giới hạn
-đi vào `inputSchema` của tool để mô hình thấy trước ([`docs/spec/tool_calling.md`](docs/spec/tool_calling.md) §3).
+đi vào `inputSchema` của tool để mô hình thấy trước ([`docs/spec/tool_calling.md`](../docs/spec/tool_calling.md) §3).
 
 ---
 
@@ -1587,7 +1587,7 @@ giới hạn trên tham số mà `@action` không có, hoặc khác kiểu. Gi�
 
 ### C.1 Sáu nhóm sự kiện trong tệp vết
 
-Tên sự kiện cụ thể cho từng nguyên thủy HAL (`sensor_read`, `display_frame`, `audio_in_segment`…) và vai trò của chúng khi replay: [`docs/spec/simulation_coverage.md`](docs/spec/simulation_coverage.md) §3.
+Tên sự kiện cụ thể cho từng nguyên thủy HAL (`sensor_read`, `display_frame`, `audio_in_segment`…) và vai trò của chúng khi replay: [`docs/spec/simulation_coverage.md`](../docs/spec/simulation_coverage.md) §3.
 
 | Nhóm sự kiện | Dữ liệu ghi nhận chi tiết |
 |:---|:---|
@@ -1687,7 +1687,7 @@ Tham chiếu từ các nguyên lý phát triển sản phẩm nền tảng: Mọ
 
 ## Phụ lục F — Từ điển thuật ngữ
 
-Định nghĩa thuật ngữ và giải mã mọi ký hiệu: **[`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md)** — nơi duy nhất.
+Định nghĩa thuật ngữ và giải mã mọi ký hiệu: **[`docs/user/thuat-ngu.md`](../docs/user/thuat-ngu.md)** — nơi duy nhất.
 
 ---
 

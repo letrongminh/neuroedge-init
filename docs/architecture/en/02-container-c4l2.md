@@ -56,7 +56,7 @@ Only what is in the code is recorded. No latency budget here is measured; latenc
 | Firmware image → library | UART (log file, `tcp://`, serial port) | `NE1 {…}` lines ≤ 512 bytes, the `device_info` … `trace_end` frame | A corrupt line, a missing frame, a count mismatch ⇒ `NE4001`, nothing is written |
 | Firmware image → OTA server | HTTP(S) GET | RSA-3072-signed app image | No redirects; download deadline; a bad signature ⇒ erase the slot just written |
 | Firmware image → Fleet OS | MQTT | — | `planned` (I9) — see [`15`](15-target-architecture.md) §3.1 |
-| Firmware image ↔ provider *(planned)* | WebSocket (TLS 1.3) | Opus (binary 16 kHz audio) and JSON (events/results) ([`neuroedge-prd.md`](../../../neuroedge-prd.md) Appendix D.2) | MCU-optimized audio streaming termination point (FR-GW-04, TSK-S5-06); per-device quota is an optional provider layer feature (FR-GW-05, v1.1) — see [`15`](15-target-architecture.md) §2.3 |
+| Firmware image ↔ provider *(planned)* | WebSocket (TLS 1.3) | Opus (binary 16 kHz audio) and JSON (events/results) ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) Appendix D.2) | MCU-optimized audio streaming termination point (FR-GW-04, TSK-S5-06); per-device quota is an optional provider layer feature (FR-GW-05, v1.1) — see [`15`](15-target-architecture.md) §2.3 |
 | MCP client ↔ MCP server over network *(planned)* | Streamable HTTP (TLS 1.3) | JSON-RPC (MCP) | OAuth 2.1 (Protected Resource Metadata RFC 9728, RFC 8414) behind mTLS (TSK-P2-04, Q-32) — see [`15`](15-target-architecture.md) §4.3 |
 
 ## 5. Planned containers

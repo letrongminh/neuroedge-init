@@ -1,8 +1,8 @@
 # 00 · Tổng quan kiến trúc
 
 > **Phạm vi:** toàn hệ thống, ở mức cao nhất. **Nguồn sự thật:** mã trong `main`; yêu cầu ở
-> [`neuroedge-prd.md`](../../../neuroedge-prd.md); tiến độ ở
-> [`neuroedge-roadmap.md`](../../../neuroedge-roadmap.md) §0. Quy ước nhãn `done` / `partial` /
+> [`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md); tiến độ ở
+> [`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §0. Quy ước nhãn `done` / `partial` /
 > `planned`: [`README.md`](../README.md).
 
 **Đọc chương này để làm gì:** Chương này dành cho mọi kỹ sư, kiến trúc sư và đối tác cần cái nhìn bao quát toàn bộ kiến trúc NeuroEdge. Tài liệu trả lời các câu hỏi nền tảng: *NeuroEdge giải bài toán gì trong Physical AI? Cơ chế nào bảo đảm hành động vật lý không bao giờ vượt qua gate an toàn? Hệ thống phân tầng và tương đương target ra sao giữa máy phát triển (host) và chip biên ($5)?* Trước khi đọc, người đọc chỉ cần hiểu cơ bản về agent AI và điều khiển nhúng. Sau chương này, lập trình viên ứng dụng nên đọc [`01`](01-context-c4l1.md) và [`12`](12-dev-quickstart.md); kỹ sư hệ thống đọc tiếp [`02`](02-container-c4l2.md) và [`03`](03-component-host-c4l3.md); kiến trúc sư đọc [`15`](15-target-architecture.md).
@@ -100,7 +100,7 @@ NeuroEdge có ba phần, cộng với chuỗi CI giữ chúng khớp nhau:
 
 | Phần | Là gì | Ngôn ngữ | Trạng thái |
 |:---|:---|:---|:---|
-| **Gói `neuroedge`** (host) | SDK, CLI, engine gate, HAL `sim`/`linux`, model, thoại (từ tệp WAV `done`, phiên thoại thời gian thực `partial` — [`neuroedge-roadmap.md`](../../../neuroedge-roadmap.md) I4), MCP, Action CI | Python 3.11+ | `done` (thoại thời gian thực `partial` — roadmap I4) |
+| **Gói `neuroedge`** (host) | SDK, CLI, engine gate, HAL `sim`/`linux`, model, thoại (từ tệp WAV `done`, phiên thoại thời gian thực `partial` — [`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) I4), MCP, Action CI | Python 3.11+ | `done` (thoại thời gian thực `partial` — roadmap I4) |
 | **Firmware `esp32s3`** | Walker `NETR`, sổ token, vết ghi UART, component sinh cho agent, OTA có ký | C99 trên ESP-IDF v5.4 | `partial` — chạy trên QEMU; chưa điều khiển chân |
 | **Hợp đồng dữ liệu** | `gate.v1`, `trace.v1`, `board.v1`, `agent.toml`, `NETR` v1, dòng UART | JSON Schema, TOML, nhị phân | `done`, đóng băng qua RFC |
 | **CI** | Test Python, gpio-sim, QEMU, ảnh golden, OTA, bảo mật | GitHub Actions | `done` |
@@ -111,7 +111,7 @@ Registry** (I10). Mọi thứ quy hoạch khác (robot nhiều node, thị giác
 
 ### 5.1 Mô hình logic năm lớp
 
-Mô hình logic 5 tầng của NeuroEdge ([`neuroedge-proposal.md`](../../../neuroedge-proposal.md) §3.1) được vắt ngang bởi trục kiểm thử Action CI:
+Mô hình logic 5 tầng của NeuroEdge ([`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) §3.1) được vắt ngang bởi trục kiểm thử Action CI:
 
 | Tầng / Trục | Bản chất tầng (proposal §3.1) | Gói host (`03` §2) và component firmware (`04`) hiện thực | Trạng thái |
 |:---|:---|:---|:---|
@@ -131,7 +131,7 @@ Các adapter System 1 ở L2 (`models/`) hiện thực giao thức `FactSource` 
 | Khái niệm | Thang đo | Ý nghĩa | Tài liệu quy định |
 |:---|:---|:---|:---|
 | **Mức kiến trúc C4** | L1…L4 | Bốn cấp độ trực quan hoá kiến trúc: L1 Context (Bối cảnh) · L2 Container · L3 Component (Thành phần) · L4 Code (Mã) | Mô hình C4 (Simon Brown) · [`01`](01-context-c4l1.md)…[`05`](05-code-gate-hal-c4l4.md) |
-| **Tầng logic hệ thống** | L0…L4 | Năm tầng chức năng logic của nền tảng: L0 Target · L1 HAL · L2 Perception/Runtime · L3 Action Contract Engine · L4 Agent Application, cùng trục Action CI | [`neuroedge-proposal.md`](../../../neuroedge-proposal.md) §3.1 |
+| **Tầng logic hệ thống** | L0…L4 | Năm tầng chức năng logic của nền tảng: L0 Target · L1 HAL · L2 Perception/Runtime · L3 Action Contract Engine · L4 Agent Application, cùng trục Action CI | [`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) §3.1 |
 | **Bậc phụ thuộc gói** | Bậc 0…10 | Thứ tự import các module Python phía host, ngăn ngừa phụ thuộc vòng lặp (Bậc 0: `errors`, `paths`… Bậc 10: `cli`) | [`03`](03-component-host-c4l3.md) §2 · `python/tests/test_architecture_layers.py` |
 | **Bậc cam kết target** | Bậc 1…3 | Mức cam kết kiểm chứng phần cứng của đội lõi: Bậc 1 (chính thức: `sim`, `linux`, `esp32s3`), Bậc 2 (mở rộng: `jetson`), Bậc 3 (cộng đồng: `stm32`, `rp2350`) | PRD FR-TGT-08, Q-13 · proposal §3.2 · [`15`](15-target-architecture.md) §4.1 |
 | **Tầng phân tầng robot** | T0…T6 | Bảy tầng kiến trúc robot phân tán: T0 Cơ cấu phần cứng/an toàn cục bộ · T1 Wire Zenoh-pico · T2 Lớp an toàn black channel · T3 Gate từng node · T4 Trace hợp nhất · T5 MCP · T6 ROS 2 bridge | `draft-ke-hoach-mo-rong-robot-fofoca.md` §4 · [`15`](15-target-architecture.md) §4.3 |
@@ -161,11 +161,11 @@ Bảng dưới là ảnh chụp hình dạng, không phải bảng tiến độ;
   (`docs/spec/threat_model.md` §3, `TODOS.md` #2).
 - **Không phải dịch vụ đám mây.** Hôm nay NeuroEdge là một thư viện, một CLI và một firmware; không
   có máy chủ nào do NeuroEdge vận hành.
-- **Không bán lại token suy luận** ([`neuroedge-proposal.md`](../../../neuroedge-proposal.md) §6.4; PRD §1.4 N4). Lớp trừu tượng provider là self-host thuộc lõi; người dùng tự vận hành và trả tiền trực tiếp cho nhà cung cấp mô hình.
-- **Không tự làm SLAM hay điều hướng** — chỉ gate lệnh vận tốc qua ROS 2 / Nav2 ([`neuroedge-prd.md`](../../../neuroedge-prd.md) §14, Q-34).
-- **Không có sàn giao dịch trả phí (paid marketplace)** ([`neuroedge-prd.md`](../../../neuroedge-prd.md) §14, PF-3).
-- **Không có thanh toán tự động giữa các agent (agent-to-agent payment)** ([`neuroedge-prd.md`](../../../neuroedge-prd.md) §14, PF-4).
-- **Không tự huấn luyện từ đánh thức (custom wake-word training) trong v1.0** ([`neuroedge-prd.md`](../../../neuroedge-prd.md) §3).
+- **Không bán lại token suy luận** ([`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) §6.4; PRD §1.4 N4). Lớp trừu tượng provider là self-host thuộc lõi; người dùng tự vận hành và trả tiền trực tiếp cho nhà cung cấp mô hình.
+- **Không tự làm SLAM hay điều hướng** — chỉ gate lệnh vận tốc qua ROS 2 / Nav2 ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, Q-34).
+- **Không có sàn giao dịch trả phí (paid marketplace)** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-3).
+- **Không có thanh toán tự động giữa các agent (agent-to-agent payment)** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-4).
+- **Không tự huấn luyện từ đánh thức (custom wake-word training) trong v1.0** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §3).
 
 Kiến trúc quy hoạch tổng thể (to-be architecture) cho các chặng tiếp theo xem tại [`15-target-architecture.md`](15-target-architecture.md).
 

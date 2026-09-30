@@ -463,7 +463,7 @@ INCREMENTS = {
     "I11": "Open the target list", "I12": "NeuroBrain", "I13": "Community port kit", "I14": "Tiered robotics",
     "I15": "Vision on linux", "I16": "Vision on jetson", "I17": "Multimodal", "I18": "Device ecosystem",
 }
-ROADMAP = ROOT / "neuroedge-roadmap.md"
+ROADMAP = ROOT / "roadmap" / "neuroedge-roadmap.md"
 
 
 def _roadmap_matrix() -> list[tuple[str, str, str, str]]:

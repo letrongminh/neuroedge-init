@@ -30,7 +30,7 @@ INCREMENT_ROW = re.compile(
 
 
 def test_the_dashboard_shows_the_roadmap_progress_of_every_increment() -> None:
-    roadmap = (REPO_ROOT / "neuroedge-roadmap.md").read_text(encoding="utf-8")
+    roadmap = (REPO_ROOT / "roadmap" / "neuroedge-roadmap.md").read_text(encoding="utf-8")
     page = PAGE.read_text(encoding="utf-8")
     rows = INCREMENT_ROW.findall(roadmap)
     headings = re.findall(r"^### [\d.]+ (I\d+[a-z]?) — ", roadmap, re.M)
@@ -44,7 +44,7 @@ def test_every_increment_with_tasks_gets_its_bar() -> None:
     back silently to a placeholder instead of the bar."""
     page = PAGE.read_text(encoding="utf-8")
     for inc, value in INCREMENT_ROW.findall(
-        (REPO_ROOT / "neuroedge-roadmap.md").read_text(encoding="utf-8")
+        (REPO_ROOT / "roadmap" / "neuroedge-roadmap.md").read_text(encoding="utf-8")
     ):
         if not value.endswith(" 0"):
             assert f'class="bar" role="img" aria-label="{inc} — ' in page, inc

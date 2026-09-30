@@ -57,7 +57,7 @@
 ## Quy ước tài liệu
 
 Mọi mã và ký hiệu (`TSK-N*`, `N0`–`N7`, `§x.y`…) được giải mã ở
-**[`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md)**.
+**[`docs/user/thuat-ngu.md`](../docs/user/thuat-ngu.md)**.
 
 ---
 
@@ -207,7 +207,7 @@ Nếu profile mới cần qua `test_boards.py`, nó phụ thuộc RFC-0002.
 
 ## 11. Khối N5b — Lab Monitor
 
-Là một panel trong trang sim hiện có (`python/neuroedge/viz/assets/ui.js`, `ui.css`), **không có tab riêng**. Panel chỉ hiện khi `[lab] enabled`. Wireframe tham chiếu: [`wireframe/lab-monitor-v2.html`](wireframe/lab-monitor-v2.html).
+Là một panel trong trang sim hiện có (`python/neuroedge/viz/assets/ui.js`, `ui.css`), **không có tab riêng**. Panel chỉ hiện khi `[lab] enabled`. Wireframe tham chiếu: [`wireframe/lab-monitor-v2.html`](../wireframe/lab-monitor-v2.html).
 
 **Thứ bậc:**
 - Cột phải: thẻ xác nhận → hàng "đang bật" → timeline xung → phán quyết.

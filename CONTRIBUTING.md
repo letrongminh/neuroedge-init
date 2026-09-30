@@ -52,7 +52,7 @@ raise GateSchemaError(
 Không dùng `raise ValueError("bad gate")`. Test
 `test_invalid_fixture_diagnostic_has_all_three_parts` kiểm tra điều này trên
 toàn bộ corpus phản chứng. Mã lỗi (`NE…`) cấp ở PRD
-[Phụ lục B](neuroedge-prd.md#phụ-lục-b--danh-mục-mã-lỗi-chuẩn).
+[Phụ lục B](roadmap/neuroedge-prd.md#phụ-lục-b--danh-mục-mã-lỗi-chuẩn).
 
 ### Không in kết quả mà mình chưa tính
 
@@ -133,7 +133,7 @@ Mẫu ghi nhận tại chỗ:
 ```
 
 Giấy phép nào được vào phần phân phối: chính sách **Q-11**
-([PRD §15](neuroedge-prd.md#15-sổ-quyết-định)); không copyleft mạnh là
+([PRD §15](roadmap/neuroedge-prd.md#15-sổ-quyết-định)); không copyleft mạnh là
 bất biến `CHANGELOG.md` §3.3 #9. Hawkbit đã duyệt với điều kiện ở Q-11 (sửa thì công bố phần sửa); EMQX không dùng.
 
 ## 5. Test không được skip trong im lặng

@@ -647,7 +647,7 @@ def test_the_script_allows_exactly_what_q11_names(licences, root):
     """One fact, one place: every family the script lets through is named in PRD Q-11."""
     q11 = next(
         line
-        for line in (root / "neuroedge-prd.md").read_text(encoding="utf-8").splitlines()
+        for line in (root / "roadmap" / "neuroedge-prd.md").read_text(encoding="utf-8").splitlines()
         if line.startswith("| **Q-11** |")
     )
     policy = q11[q11.index("Chính sách phụ thuộc bắc cầu") :]

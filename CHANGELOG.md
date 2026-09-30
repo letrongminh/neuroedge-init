@@ -12,7 +12,7 @@ Toàn bộ thay đổi đáng kể của dự án được ghi tại đây, theo
 > | Chạy được hệ thống ngay | [§2 Cách vận hành](#2-cách-vận-hành) |
 > | Tiếp quản để build tiếp | [§3 Bàn giao ngữ cảnh sản phẩm](#3-bàn-giao-ngữ-cảnh-sản-phẩm) |
 >
-> **Nguồn sự thật về tiến độ** vẫn là [`neuroedge-roadmap.md`](neuroedge-roadmap.md)
+> **Nguồn sự thật về tiến độ** vẫn là [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md)
 > §0 (bảng theo dõi và thẻ bàn giao). Tệp này kể *đã xây gì và chạy thế nào*;
 > roadmap kể *còn gì phải xây*. Thứ tự ưu tiên khi lệch nhau: §3.1.
 
@@ -498,7 +498,7 @@ làm hệ thống lỏng hơn.
 
 #### Đã thêm — Tài liệu Giai đoạn 2
 
-[`neuroedge-roadmap-phase2.md`](neuroedge-design-phase2.md) *(nay là `neuroedge-design-phase2.md`)* — sáu khối V1a, V1b,
+[`neuroedge-roadmap-phase2.md`](roadmap/neuroedge-design-phase2.md) *(nay là `neuroedge-design-phase2.md`)* — sáu khối V1a, V1b,
 V2, V3, P1, P2 từ Tháng 9 đến Tháng 24, chạy **song song** Khối 4 AURA chứ không
 nối tiếp. AURA là nguồn dữ liệu R3 cho chính thị giác.
 
@@ -972,7 +972,7 @@ Lỗi kế thừa có thêm dòng `rule` chỉ ra nguyên tắc B.5 bị vi ph�
 ```
 
 Nghĩa của từng mã `NE…`, lớp lỗi và lúc nó xuất hiện: PRD
-[Phụ lục B](neuroedge-prd.md#phụ-lục-b--danh-mục-mã-lỗi-chuẩn).
+[Phụ lục B](roadmap/neuroedge-prd.md#phụ-lục-b--danh-mục-mã-lỗi-chuẩn).
 
 ### 2.5 CI
 
@@ -1042,12 +1042,12 @@ Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc 
 
 | Tệp | Vai trò | Khi nào đọc |
 |:---|:---|:---|
-| [`neuroedge-roadmap.md`](neuroedge-roadmap.md) | **Roadmap duy nhất (Q-39):** increment I0–I18, trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành. §0 là bảng điều khiển | **Luôn đọc trước** |
-| [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) | Ghi chú thiết kế — thị giác, phủ rộng phần cứng (I11, I13, I15–I18); không lịch, không trạng thái | Khi làm task của các increment đó |
-| [`neuroedge-design-neurobrain.md`](neuroedge-design-neurobrain.md) | Ghi chú thiết kế — NeuroBrain (I12) | Khi làm task `TSK-N*` |
-| [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) · [`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) | Ghi chú thiết kế — robot phân tầng FOFOCA (I14; `TSK-W0-*` rải ở I2, I6, I7) · RFC nháp điều phối node (chưa cấp số) | Khi việc chạm nguyên thủy HAL mới, robot nhiều MCU hoặc multi-node |
-| [`neuroedge-prd.md`](neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`; **§15 là sổ quyết định duy nhất** (`Q-N`); Phụ lục B là mã lỗi | Khi cần biết *phải* làm gì, và đã chốt gì |
-| [`neuroedge-proposal.md`](neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** | Khi cần biết *tại sao* |
+| [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md) | **Roadmap duy nhất (Q-39):** increment I0–I18, trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành. §0 là bảng điều khiển | **Luôn đọc trước** |
+| [`neuroedge-design-phase2.md`](roadmap/neuroedge-design-phase2.md) | Ghi chú thiết kế — thị giác, phủ rộng phần cứng (I11, I13, I15–I18); không lịch, không trạng thái | Khi làm task của các increment đó |
+| [`neuroedge-design-neurobrain.md`](roadmap/neuroedge-design-neurobrain.md) | Ghi chú thiết kế — NeuroBrain (I12) | Khi làm task `TSK-N*` |
+| [`draft-ke-hoach-mo-rong-robot-fofoca.md`](roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md) · [`draft-rfc-node-giao-thuc-dieu-phoi.md`](roadmap/draft-rfc-node-giao-thuc-dieu-phoi.md) | Ghi chú thiết kế — robot phân tầng FOFOCA (I14; `TSK-W0-*` rải ở I2, I6, I7) · RFC nháp điều phối node (chưa cấp số) | Khi việc chạm nguyên thủy HAL mới, robot nhiều MCU hoặc multi-node |
+| [`neuroedge-prd.md`](roadmap/neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`; **§15 là sổ quyết định duy nhất** (`Q-N`); Phụ lục B là mã lỗi | Khi cần biết *phải* làm gì, và đã chốt gì |
+| [`neuroedge-proposal.md`](roadmap/neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** | Khi cần biết *tại sao* |
 | [`docs/spec/`](docs/spec/) | Đặc tả chuẩn tắc: Gated Tool Profile, mô hình mối đe doạ, phủ mô phỏng, rà soát MCU, máy trạng thái hội thoại | Trước khi đổi hành vi ở tầng tương ứng |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quy ước; §3 việc gì cần RFC; §6 cấu trúc kho; §8 khi xong task | Trước khi sửa |
 | [`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`](docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md) | Kế hoạch Giai đoạn 1 đã duyệt, nay lưu trữ (biên bản review cùng thư mục) | Khi cần biết *vì sao* một task bị cắt/hoãn |

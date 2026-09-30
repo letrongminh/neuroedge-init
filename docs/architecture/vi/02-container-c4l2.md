@@ -58,7 +58,7 @@ Chỉ ghi những gì có trong mã. Không có ngân sách độ trễ nào ở
 | Ảnh firmware → thư viện | UART (tệp log, `tcp://`, cổng serial) | Dòng `NE1 {…}` ≤ 512 byte, khung `device_info` … `trace_end` | Dòng hỏng, thiếu khung, đếm lệch ⇒ `NE4001`, không ghi gì |
 | Ảnh firmware → máy chủ OTA | HTTP(S) GET | Ảnh app ký RSA-3072 | Không theo redirect; hạn chót tải; sai chữ ký ⇒ xoá khe vừa ghi |
 | Ảnh firmware → Fleet OS | MQTT | — | `planned` (I9) — xem [`15`](15-target-architecture.md) §3.1 |
-| Ảnh firmware ↔ nhà cung cấp (provider) *(planned)* | WebSocket (TLS 1.3) | Opus (âm thanh 16 kHz nhị phân) và JSON (sự kiện/kết quả) ([`neuroedge-prd.md`](../../../neuroedge-prd.md) Phụ lục D.2) | Điểm kết thúc luồng âm thanh tối ưu cho MCU (FR-GW-04, TSK-S5-06); hạn mức theo thiết bị là tuỳ chọn của lớp provider (FR-GW-05, v1.1) — xem [`15`](15-target-architecture.md) §2.3 |
+| Ảnh firmware ↔ nhà cung cấp (provider) *(planned)* | WebSocket (TLS 1.3) | Opus (âm thanh 16 kHz nhị phân) và JSON (sự kiện/kết quả) ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) Phụ lục D.2) | Điểm kết thúc luồng âm thanh tối ưu cho MCU (FR-GW-04, TSK-S5-06); hạn mức theo thiết bị là tuỳ chọn của lớp provider (FR-GW-05, v1.1) — xem [`15`](15-target-architecture.md) §2.3 |
 | Client MCP ↔ máy chủ MCP qua mạng *(planned)* | Streamable HTTP (TLS 1.3) | JSON-RPC (MCP) | OAuth 2.1 (Protected Resource Metadata RFC 9728, RFC 8414) sau mTLS (TSK-P2-04, Q-32) — xem [`15`](15-target-architecture.md) §4.3 |
 
 ## 5. Container quy hoạch
