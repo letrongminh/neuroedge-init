@@ -28,7 +28,7 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | Kế hoạch: increment I0–I18 (kèm I2a, I2b, I3a, I4a, I5a), việc gì làm khi nào, ngày dự báo | [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) | roadmap duy nhất (Q-39); bảng increment ở §0.2 |
 | Ghi chú thiết kế — thị giác, phủ rộng phần cứng | [`neuroedge-design-phase2.md`](../../roadmap/neuroedge-design-phase2.md) | Khối V1a → P2; không lịch, không trạng thái — increment ở roadmap (I11, I13, I16–I18; thị giác cơ bản V1b đã vào MVP ở I2a, I3a — Q-53) |
 | Ghi chú thiết kế — NeuroBrain | [`neuroedge-design-neurobrain.md`](../../roadmap/neuroedge-design-neurobrain.md) | Khối N0 → N7; increment I4a, I5a ở roadmap (Q-55); wireframe ở [`wireframe/`](../../wireframe/README.md) |
-| Ghi chú thiết kế — robot phân tầng (FOFOCA) | [`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md) · RFC nháp [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../roadmap/draft-rfc-node-giao-thuc-dieu-phoi.md) | chặng W0–W4; increment I14 ở roadmap (Q-32), riêng khối W1 ở I2a, I3a (Q-53); RFC node chưa cấp số |
+| Ghi chú thiết kế — robot phân tầng (FOFOCA) | [`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md) · RFC nháp [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) | chặng W0–W4; increment I14 ở roadmap (Q-32), riêng khối W1 ở I2a, I3a (Q-53); RFC node chưa cấp số |
 | **Đóng góp** | | |
 | Quy ước, quy trình, hoàn thành task | [`CONTRIBUTING.md`](../../CONTRIBUTING.md) | §8 là checklist bắt buộc |
 | Đổi `schemas/` (lược đồ đã đóng băng) | [`docs/rfc/README.md`](../rfc/README.md) | quy trình RFC |

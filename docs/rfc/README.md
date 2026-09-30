@@ -34,7 +34,7 @@ Người phê duyệt: `CONTRIBUTING.md` §3.
 | [0012](0012-nguyen-thuy-vision-in.md) | Nguyên thủy `vision.in`; kết quả thị giác vào gate dưới dạng dữ kiện — TSK-V1b-07 (Q-53, Q-54) | `board.v1` *(`trace.v1` không đổi)* | ⏳ Nháp |
 | [0013](0013-nguyen-thuy-tuy-chon-va-nhieu-bo-tham-chieu.md) | Nguyên thủy mở rộng tuỳ chọn theo bo mạch; nhiều bo tham chiếu mỗi target; `sim-rpi5` — TSK-I2a-07 (Q-53) | *(không — bất biến kiểm thử, sửa RFC-0002 §5b, §5c)* | ⏳ Nháp |
 
-**Bản nháp chưa cấp số** (ngoài thư mục này; nhận số kế tiếp khi mở PR RFC):
-[`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../roadmap/draft-rfc-node-giao-thuc-dieu-phoi.md) — giao thức điều phối
+**Bản nháp chưa cấp số** (nhận số kế tiếp khi mở PR RFC):
+[`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) — giao thức điều phối
 node cho robot phân tầng; các RFC tạm tên còn lại ở §2.2 của
 [`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md) (RFC-numeric và RFC-motion đã thành RFC-0009 và RFC-0011).

@@ -14,7 +14,7 @@
 **Phạm vi:** mọi increment từ **I0** tới **I18** — MVP (v1.0 đầy đủ: bốn gói nguyên thủy mở rộng, kit mẫu, NeuroBrain), Developer Beta, tầng dịch vụ v1.1 và các hướng mở rộng. Bốn phase: §0.5. Đây là **nơi duy nhất** ghi trạng thái task, tiêu chí ra, phụ thuộc, thẻ phát hành và ngày dự báo (Q-39).
 
 
-**Ghi chú thiết kế** — không lịch, không trạng thái; increment dẫn tới: [`neuroedge-design-neurobrain.md`](neuroedge-design-neurobrain.md) (NeuroBrain, I4a, I5a) · [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) (thị giác I2a, I3a; phủ phần cứng I11, I13, I16–I18) · [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) (nguyên thủy mới I2a, I3a; robot phân tầng I14) và [`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) (I14)
+**Ghi chú thiết kế** — không lịch, không trạng thái; increment dẫn tới: [`neuroedge-design-neurobrain.md`](neuroedge-design-neurobrain.md) (NeuroBrain, I4a, I5a) · [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) (thị giác I2a, I3a; phủ phần cứng I11, I13, I16–I18) · [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) (nguyên thủy mới I2a, I3a; robot phân tầng I14) và [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) (I14)
 
 
 **Ngoài roadmap:** Khối 4 (AURA thực địa) · Khối 5 (Marketplace) — §8.1
@@ -1251,7 +1251,7 @@ NeuroBrain không còn là increment sau Beta (Q-55 thay phần thứ tự Neuro
 | **Điều kiện vào** | Nhu cầu hoặc đối tác thật (PF-3); `TODOS.md` #40 trả lời trước TSK-W4-01 và W4-07; nút dừng khẩn phần cứng bắt buộc cho robot di động (Q-38) |
 | **Tín hiệu đo** | DoD-1, DoD-2, DoD-3, DoD-5 của ghi chú thiết kế robot §1 |
 | **Người** | V2, V1 |
-| **Thiết kế** | [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) · [`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) |
+| **Thiết kế** | [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) · [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) |
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|

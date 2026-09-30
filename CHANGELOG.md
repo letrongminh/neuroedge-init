@@ -275,6 +275,9 @@ bản gói.
   `max_age_ms`; PWM chỉ phần cứng, bắt buộc `enable_pin` kéo xuống; `motion.*` dừng ngay khi cắt lời (đóng `TODOS.md`
   #39 cho chuyển động); thị giác cần ≥ 2 khung liên tiếp; `verify` chạy mọi bo tham chiếu. Chấp thuận vẫn cần chữ ký
   kỹ thuật trưởng.
+- **Dọn `roadmap/`:** bản nháp RFC node chuyển sang `docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md`; kế hoạch robot
+  bỏ Chặng 1 chi tiết và khung RFC A.1 → A.6 (nay trỏ tới RFC-0002, 0007, 0009 → 0012); ghi chú Phase 2 §2.3 trỏ
+  tới RFC-0012. Không tệp nào bị xoá: mỗi tệp còn lại giữ nội dung không có ở nơi khác.
 
 #### Đã đổi — Tái cấu trúc MVP (2026-09-30, Q-52 → Q-55)
 
@@ -1074,7 +1077,7 @@ Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc 
 | [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md) | **Roadmap duy nhất (Q-39):** bốn phase (§0.5, Q-52), increment I0–I18 kể cả I2a, I2b, I3a, I4a, I5a; trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành. §0 là bảng điều khiển | **Luôn đọc trước** |
 | [`neuroedge-design-phase2.md`](roadmap/neuroedge-design-phase2.md) | Ghi chú thiết kế — thị giác (I2a, I3a), phủ rộng phần cứng (I11, I13, I16–I18); không lịch, không trạng thái | Khi làm task của các increment đó |
 | [`neuroedge-design-neurobrain.md`](roadmap/neuroedge-design-neurobrain.md) | Ghi chú thiết kế — NeuroBrain (I4a, I5a; Q-55) | Khi làm task `TSK-N*` |
-| [`draft-ke-hoach-mo-rong-robot-fofoca.md`](roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md) · [`draft-rfc-node-giao-thuc-dieu-phoi.md`](roadmap/draft-rfc-node-giao-thuc-dieu-phoi.md) | Ghi chú thiết kế — robot phân tầng FOFOCA (I14; `TSK-W0-*` rải ở I2, I6, I7) · RFC nháp điều phối node (chưa cấp số) | Khi việc chạm nguyên thủy HAL mới, robot nhiều MCU hoặc multi-node |
+| [`draft-ke-hoach-mo-rong-robot-fofoca.md`](roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md) · [`draft-rfc-node-giao-thuc-dieu-phoi.md`](docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) | Ghi chú thiết kế — robot phân tầng FOFOCA (I14; `TSK-W0-*` rải ở I2, I6, I7) · RFC nháp điều phối node (chưa cấp số) | Khi việc chạm nguyên thủy HAL mới, robot nhiều MCU hoặc multi-node |
 | [`neuroedge-prd.md`](roadmap/neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`; **§15 là sổ quyết định duy nhất** (`Q-N`); Phụ lục B là mã lỗi | Khi cần biết *phải* làm gì, và đã chốt gì |
 | [`neuroedge-proposal.md`](roadmap/neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** | Khi cần biết *tại sao* |
 | [`docs/spec/`](docs/spec/) | Đặc tả chuẩn tắc: Gated Tool Profile, mô hình mối đe doạ, phủ mô phỏng, rà soát MCU, máy trạng thái hội thoại | Trước khi đổi hành vi ở tầng tương ứng |

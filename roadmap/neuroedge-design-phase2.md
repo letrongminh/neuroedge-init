@@ -100,7 +100,8 @@ Cách này quy mọi bằng chứng thị giác về các kiểu gate đã biế
 
 ### 2.3 Quyền riêng tư của dữ liệu hình ảnh
 
-Vết ghi **không nhúng khung hình thô**. Mặc định chỉ lưu băm SHA-256 và kích thước; lưu ảnh thô phải bật tường minh. Đây là NFR-PRIV-01 và NFR-PRIV-03 áp nguyên xi, không có ngoại lệ cho thị giác. Camera đặt trong không gian riêng tư là rủi ro quyền riêng tư lớn hơn micro, nên quy tắc này chặt hơn chứ không lỏng hơn.
+Vết ghi **không nhúng khung hình thô** — NFR-PRIV-01 và NFR-PRIV-03 áp nguyên xi, không ngoại lệ cho thị giác.
+Hợp đồng chi tiết (`vision_ref`, cửa sổ khung được ghi, danh tính mô hình): [RFC-0012](../docs/rfc/0012-nguyen-thuy-vision-in.md) §3 và §9.
 
 ---
 

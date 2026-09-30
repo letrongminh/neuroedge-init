@@ -17,10 +17,10 @@ ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "roadmap"
 ROADMAP = DOCS / "neuroedge-roadmap.md"
 DESIGN_NOTES = (
-    "neuroedge-design-neurobrain.md",
-    "neuroedge-design-phase2.md",
-    "draft-ke-hoach-mo-rong-robot-fofoca.md",
-    "draft-rfc-node-giao-thuc-dieu-phoi.md",
+    "roadmap/neuroedge-design-neurobrain.md",
+    "roadmap/neuroedge-design-phase2.md",
+    "roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md",
+    "docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md",
 )
 GLYPHS = "✅🟡⏳⏸🔴"
 DATE = re.compile(r"\b20\d\d-\d\d-\d\d\b")
@@ -87,7 +87,7 @@ ALL_TASKS = [row for rows in TASKS.values() for row in rows]
 
 @pytest.mark.parametrize("note", DESIGN_NOTES)
 def test_design_notes_carry_no_tasks_criteria_or_cut_ladders(note: str) -> None:
-    text = (DOCS / note).read_text(encoding="utf-8")
+    text = (ROOT / note).read_text(encoding="utf-8")
     offenders = [
         line
         for line in text.splitlines()
@@ -140,8 +140,9 @@ def test_every_task_code_has_exactly_one_row() -> None:
 
 def test_every_cited_task_code_exists_in_the_roadmap() -> None:
     known = {row[0].strip("*") for row in ALL_TASKS}
-    places = [DOCS / p for p in (*DESIGN_NOTES, "neuroedge-prd.md")]
-    places += [ROOT / p for p in ("TODOS.md", "CONTRIBUTING.md")]
+    places = [
+        ROOT / p for p in (*DESIGN_NOTES, "roadmap/neuroedge-prd.md", "TODOS.md", "CONTRIBUTING.md")
+    ]
     for folder in ("python", "scripts", "targets", ".github", "docs"):
         places += [
             p

@@ -271,50 +271,27 @@ TSK-W0-04 (drift mở issue) — [`neuroedge-roadmap.md`](neuroedge-roadmap.md);
 ## 7. Chặng 1 — cơ thể: HAL và an toàn actuator
 
 Đây là chặng **quan trọng nhất** cho FOFOCA: multi-node và ROS 2 vô nghĩa nếu HAL không
-diễn tả được chuyển động và cảm biến.
+diễn tả được chuyển động và cảm biến. Từ Q-53, chặng này **nằm trong MVP** (I2a, I3a), và hợp đồng của nó
+nằm ở các RFC dưới đây — ghi chú này không chép lại.
 
 ### 7.1 1A — mở rộng trong 5 nguyên thủy
 
-- **PWM** (tần số, độ rộng xung) và kênh phản hồi trạng thái nằm trong `digital.out`, nhưng vẫn
-  cần RFC vì đổi tham số và lược đồ. Ràng buộc biên có test biên; gate kiểm cả giá trị mặc định
-  (mẫu RFC-0005).
-- **`sensor.read` kiểu số** cần tiêu chí `numeric` — RFC-0009 (§2.2): `gate.v1` + nút `NETR` + walker C + corpus.
-- **Khoá capability gõ sai** bị từ chối **trong mã lúc nạp**, không đóng `capabilities` trong
-  lược đồ (RFC-0002 §3c.2).
-
-→ Task: TSK-W1-01 (PWM), TSK-W1-02 (`numeric`) — [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I2a (§4.3.1, Q-53); TSK-V1a-03 (khoá capability lạ) — I11 (§7.1).
+PWM trong `digital.out`: [RFC-0010](../docs/rfc/0010-pwm-trong-digital-out.md) · tiêu chí `numeric` cho số đọc:
+[RFC-0009](../docs/rfc/0009-tieu-chi-so-numeric.md) · khoá capability gõ sai bị từ chối lúc nạp: RFC-0002 §3c.2 (TSK-V1a-03, I11).
 
 ### 7.2 1B — nguyên thủy mới
 
-Nguyên thủy mới đi qua RFC theo §2.2: RFC-0002 mở target, RFC-0007 mở `digital.in`/I2C/`analog.in`,
-RFC-0009 mở tiêu chí số, RFC-0010 mở PWM, RFC-0011 mở `motion.*`, RFC-0012 khoá `vision.in`, RFC-0013 cho phép nguyên thủy tuỳ chọn theo bo mạch.
-Test crash-safe cho `motion.*` phải chạy **trên bo mạch thật**: QEMU không giả lập GPIO (`TODOS.md` #21).
+`digital.in`, I2C chỉ đọc, `analog.in`, phong bì: [RFC-0007](../docs/rfc/0007-digital-in-i2c-analog-in-phong-bi.md) ·
+`motion.*`: [RFC-0011](../docs/rfc/0011-nguyen-thuy-motion.md) · `vision.in`:
+[RFC-0012](../docs/rfc/0012-nguyen-thuy-vision-in.md) · nguyên thủy tuỳ chọn theo bo mạch:
+[RFC-0013](../docs/rfc/0013-nguyen-thuy-tuy-chon-va-nhieu-bo-tham-chieu.md). Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I2a (§4.3.1), I3a (§4.4.1).
 
-→ Task: TSK-W1-03 (RFC-0011) ở I2a (§4.3.1), TSK-W1-04 (hiện thực `motion.*` trên chip) ở I3a (§4.4.1), và các task RFC ở §2.2 — [`neuroedge-roadmap.md`](neuroedge-roadmap.md).
+### 7.3 An toàn actuator
 
-**Thiết kế sơ bộ từng nguyên thủy mới:**
-
-| Nguyên thủy | Tham số chính | An toàn | Ghi chú |
-|:--|:--|:--|:--|
-| `motion.*` (motor/servo) | kênh, đích, tốc độ, thời lượng, ramp | Phong bì N2: duty tối đa, thời gian chạy liên tục tối đa, rate limit; **trạng thái an toàn khai theo từng cơ cấu** — ngắt điện không phải lúc nào cũng an toàn (ví dụ chốt cửa ở `voice_fsm.md` §5.3); token thêm kênh + thời lượng tối đa | Nguyên thủy riêng (không nhồi vào `digital.out`) để hợp đồng rõ |
-| `analog.in` | giá trị số, đơn vị, hiệu chuẩn | Ngưỡng qua tiêu chí `numeric`; không suy diễn ngoài thang | Phụ thuộc RFC-0009 |
-| `vision.in` | `fps`, `modes[]`, `pixel_format` | Dữ kiện do maker khai từ nhãn model, ngưỡng tin cậy khoá bằng tiêu chí `numeric` (Q-54); fail-closed khi mất camera/model; không khung hình thô vào trace | Hợp đồng ở RFC-0012 (Q-53) |
-| `digital.in` / I2C / ADC | mức logic, địa chỉ thiết bị I2C, kênh ADC | I2C chỉ đọc, allowlist thiết bị; `lab_read` có cờ; ADC theo kết quả spike | Nguồn: ghi chú thiết kế NeuroBrain (N0/N3) |
-
-### 7.3 An toàn actuator (cùng RFC-0011, không tách)
-
-- **T0 crash-safe:** kéo xuống/watchdog/giới hạn dòng trên node tham chiếu + runbook bắt
-  buộc ghi rõ (`neuroedge-design-neurobrain.md` §2.3, §15 rủi ro 3).
-- **Phong bì N2:** định nghĩa ở ghi chú thiết kế NeuroBrain — tổng thời gian bật + tần suất theo chân,
-  khai ở `board.v1` qua RFC-0007, móc trong HAL trước `authorize` (TSK-N2-01). RFC-0011 mở rộng
-  nó sang `motion.*`. **Không** dùng cờ `[lab]` làm ngoại lệ: lab mặc định tắt và `build --release`
-  từ chối khi bật (TSK-N1-02/03). Tích luỹ thời gian nằm ở HAL, không ở gate (bất biến 4).
-- **Token theo kênh:** token hôm nay đã mang **tập chân**, dùng một lần mỗi chân và đóng khi
-  `c.do()` trả về (`python/neuroedge/actions/token.py`, `threat_model.md` §2). Phần mới là kênh +
-  thời lượng tối đa, cập nhật cả host ledger lẫn `ne_token.c`.
-- **Hủy lệnh:** theo `docs/spec/voice_fsm.md` §5 — cắt lời chỉ hủy lệnh chưa giao; lệnh đã giao chạy
-  hết. Cờ "vẫn cắt khi đã chạy" cho motor là `TODOS.md` #39 (cần RFC); RFC-0011 là mốc kích
-  hoạt của #39 và phải quyết nó.
+Phong bì, lease, `safe_state`, `enable_pin`, dừng ngay khi cắt lời: §9 của RFC-0007, RFC-0010, RFC-0011 (Q-57).
+Phần riêng của robot vẫn ở ghi chú này: **T0 crash-safe** — kéo xuống, watchdog, giới hạn dòng trên mọi node
+tham chiếu, kèm runbook bắt buộc (`neuroedge-design-neurobrain.md` §2.3); robot di động bắt buộc nút dừng khẩn
+phần cứng (BT8, Q-38).
 
 ---
 
@@ -501,69 +478,38 @@ Theo `CONTRIBUTING.md` §8 (mỗi sự thật có đúng một nơi, §8.1):
 ## 16. Bước tiếp theo
 
 → Thứ tự việc: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I14 (§7.4), khối W1 ở I2a (§4.3.1) và I3a (§4.4.1), và TSK-W0-01…04. Bản nháp
-RFC-node đã có: [`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) (TSK-W3-02).
+RFC-node đã có: [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) (TSK-W3-02).
 
 ---
 
 ## Phụ lục A — Khung các RFC dự kiến
 
-Mỗi khung dưới đây là dàn ý để chuyển thành RFC đầy đủ theo
+A.1 → A.6 đã thành tệp RFC; mục này chỉ còn trỏ tới chúng. A.7 vẫn là dàn ý, chuyển thành RFC đầy đủ theo
 `docs/rfc/0000-template.md` khi mở PR.
 
 ### A.1 RFC-0002 — mở enum `target` và `TARGET_TIERS`
 
-- **Hướng:** hoàn tất thảo luận theo hướng D4→A (mã của biên bản) đã chốt trong biên bản review
-  (`docs/archive/rfc-0002-review-record.md`); chữ ký kỹ thuật trưởng là TSK-V1a-01 (tiêu chí 1 của I11).
-  PR2 (TSK-V1a-02…06) là increment I11 (Q-40).
-- **Nội dung đã sẵn:** mở enum target lên 6; `TARGET_TIERS` thuộc lõi, `board.toml`
-  không tự khai bậc; 3 bất biến test theo bậc; `vision.in` tách §9.1.
+Tệp: [`docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md`](../docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md); chữ ký là TSK-V1a-01 (I11).
 
-### A.2 RFC-0007 *(giữ chỗ — TSK-N0-03, ghi chú thiết kế NeuroBrain)* — `digital.in` + I2C chỉ đọc + ADC
+### A.2 RFC-0007 — `digital.in` + I2C chỉ đọc + `analog.in` + phong bì
 
-- **Vấn đề:** HAL có năm nguyên thủy, và `sensor.read` đã đọc cảm biến I2C qua driver
-  (`simulation_coverage.md` §2). Còn thiếu: đọc mức logic (nút nhấn/công tắc — `digital.in`), truy
-  cập bus I2C thô/quét (N3), ADC.
-- **Đề xuất:** thêm `digital.in`; bus I2C **chỉ đọc** theo allowlist thiết bị; ADC theo
-  kết quả spike; `lab_read` có cờ.
-- **Ảnh hưởng:** `board.v1` (capability mới + khai báo phong bì N2); `gate.v1` **không đổi**
-  (RFC-0007 ở I2a); `sim` phải có mô hình tương ứng nhưng không giàu hơn bo mạch.
-- **Soạn ở:** TSK-N0-03. Ghi chú này dùng kết quả, không soạn lại.
-- **Nguồn:** ghi chú thiết kế NeuroBrain (N0, N3).
+Tệp: [`docs/rfc/0007-digital-in-i2c-analog-in-phong-bi.md`](../docs/rfc/0007-digital-in-i2c-analog-in-phong-bi.md).
 
 ### A.3 RFC-0009 (RFC-numeric) — `evaluate.type: numeric`
 
-- **Vấn đề:** `schemas/gate.v1.json` chỉ nhận `bool`/`level`/`choice`; không diễn đạt
-  được ngưỡng số (`pressure < 8 bar`) — `TODOS.md` #30.
-- **Đề xuất:** thêm `numeric` + ngữ nghĩa siết chặt cho nguyên tắc 2 + nút trong `NETR`.
-- **Ảnh hưởng:** `gate.v1` (đổi enum đã đóng băng → RFC), `NETR` layout, walker C.
-- **Số:** RFC-0009 (Q-53).
+Tệp: [`docs/rfc/0009-tieu-chi-so-numeric.md`](../docs/rfc/0009-tieu-chi-so-numeric.md).
 
-### A.4 RFC-0011 (RFC-motion) — `motion.*` + phong bì N2 + token theo kênh
+### A.4 RFC-0011 (RFC-motion) — `motion.*`, lease, trạng thái an toàn
 
-- **Vấn đề:** robot cần chuyển động (`analog.in` đã chuyển sang RFC-0007, Q-53); `digital.out` không diễn tả
-  được vòng phản hồi/duty; token hôm nay mang tập chân, một lần mỗi chân, chưa có kênh và thời
-  lượng tối đa.
-- **Đề xuất:** nguyên thủy `motion.*` (motor/servo); mở rộng phong bì N2 của
-  RFC-0007 sang `motion.*`; trạng thái an toàn khai theo từng cơ cấu (Q-35); token **thuê có hạn** theo Q-37 (kênh +
-  biên độ tối đa + thời hạn ngắn, mỗi lệnh qua gate gia hạn, hết hạn ⇒ trạng thái an toàn); bố cục `NETR` mới (tăng `layout_version`, gộp với `TODOS.md` #36 để chỉ tăng một
-  lần).
-- **Ảnh hưởng:** `board.v1`, `NETR`, walker C, `ne_token.c`, `sim`. Gate vẫn thuần: phong bì và
-  tích luỹ thời gian ở HAL/runtime (bất biến 4).
-- **An toàn:** quyết cờ "vẫn cắt khi đã chạy" (`TODOS.md` #39, `voice_fsm.md` §5.3, §10); sự
-  kiện `motion.*` đặt cạnh `actuator_command`/`actuator_aborted` (`simulation_coverage.md` §3).
-- **Phụ thuộc:** RFC-0009; bo mạch thật.
+Tệp: [`docs/rfc/0011-nguyen-thuy-motion.md`](../docs/rfc/0011-nguyen-thuy-motion.md); PWM tách sang [RFC-0010](../docs/rfc/0010-pwm-trong-digital-out.md).
 
-### A.5 RFC-0012 (RFC-vision) — khoá `vision.in`
+### A.5 RFC-0012 (RFC-vision) — `vision.in`
 
-- **Vấn đề:** `vision.in` mới có danh sách đầu vào đã biết (RFC-0002 §9.1), chưa có hợp đồng
-  và luật riêng tư. Thuộc Khối V1b — trong MVP trên `sim`, `linux` và `esp32s3` (Q-53); bậc 2/3 sau (`neuroedge-design-phase2.md` §6).
-- **Đề xuất:** chốt `fps`/`modes[]`/`pixel_format`; dữ kiện do maker khai từ nhãn model,
-  ngưỡng tin cậy khoá bằng tiêu chí `numeric` (Q-54); không khung hình thô vào trace; fail-closed khi mất camera/model.
-- **Ảnh hưởng:** `board.v1`; fixture vision; bất biến "sim không giàu hơn bo mạch".
+Tệp: [`docs/rfc/0012-nguyen-thuy-vision-in.md`](../docs/rfc/0012-nguyen-thuy-vision-in.md).
 
 ### A.6 RFC-node — giao thức điều phối node
 
-- **Xem bản nháp kèm theo:** `draft-rfc-node-giao-thuc-dieu-phoi.md`.
+Bản nháp chưa cấp số: [`docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md`](../docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md).
 
 ### A.7 RFC-pin-extends — ghim `extends` bằng digest
 
