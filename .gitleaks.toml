@@ -1,0 +1,14 @@
+# gitleaks configuration — .github/workflows/security.yml scans the WHOLE history.
+# False positives are allowlisted here, one reason per entry; a real secret is never
+# allowlisted: rotate it, then decide on a history rewrite.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = """
+python/tests/test_studio_server.py (commit d968c07): a made-up OpenRouter-shaped value that
+the test puts in the environment to prove the studio redacts it from subprocess output
+(TSK-I1-04). It was never a key.
+"""
+regexes = ['''sk-or-v1-0123456789abcdef''']
