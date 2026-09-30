@@ -22,6 +22,7 @@ how long the call took on the session's clock. Unset, the driver times the call.
 
 from __future__ import annotations
 
+import re
 import unicodedata
 from collections.abc import Awaitable
 from dataclasses import dataclass
@@ -117,6 +118,36 @@ _REFUSED = {
     "Cn": "unassigned code points",
     "Cf": "invisible format characters (bidi overrides, tags)",
 }
+
+
+_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+_CODE = re.compile(r"`+([^`]*)`+")
+_EMPHASIS = re.compile(r"(\*\*|__|\*|_)(?=\S)(.+?)(?<=\S)\1")
+_LINE_MARK = re.compile(r"^\s*(?:#{1,6}\s+|>\s*|(?:[-*+•]|\d{1,3}[.)])\s+)")
+_SENTENCE_END = (".", "!", "?", "…", ":", ";", ",")
+
+
+def speakable(text: str) -> str:
+    """
+    A reply as a voice says it: no Markdown. A model may answer with **bold**, bullet
+    lists or headings; TTS would read the asterisks and hashes aloud. Links keep their
+    words, code keeps its text, every line becomes a sentence, spaces collapse. What
+    the page shows (`tts_stream_start`) is unchanged — only what is spoken.
+    """
+    sentences: list[str] = []
+    for line in text.splitlines():
+        line = _LINE_MARK.sub("", line)
+        line = _LINK.sub(r"\1", line)
+        line = _CODE.sub(r"\1", line)
+        for _ in range(3):  # nested emphasis: ***x*** is ** around *x*
+            line = _EMPHASIS.sub(r"\2", line)
+        line = " ".join(line.replace("*", " ").split())
+        if not line:
+            continue
+        if sentences and not sentences[-1].endswith(_SENTENCE_END):
+            sentences[-1] += "."
+        sentences.append(line)
+    return " ".join(sentences)
 
 
 def clean_transcript(text: object, where: str) -> str:

@@ -59,7 +59,15 @@ from ..errors import PerceptionUnavailableError
 from ..hal.audio import MAX_REPLY_MS, AudioFrame, EnergyVAD, Playback, pcm_digest, to_speaker
 from ..models import SystemOne
 from ..sim.session import SimSession, Turn, answer_word
-from .providers.base import AudioClip, Speech, SpeechUnavailable, Transcript, clean_transcript
+from .live import QUEUE_MAX_FRAMES, LiveAudioCapture
+from .providers.base import (
+    AudioClip,
+    Speech,
+    SpeechUnavailable,
+    Transcript,
+    clean_transcript,
+    speakable,
+)
 from .voice_fsm import VoiceParams, VoiceState, VoiceStateMachine
 
 FACTS_SOURCES = ("local_grammar", "unreachable")
@@ -73,6 +81,9 @@ SETTLE_STEPS = 100_000  # `settle()` stops after this many deadlines, whatever i
 # failed anyway (voice_fsm.md §7).
 GRACE = 1.25
 MARGIN_S = 1.0
+# Half-duplex keeps the microphone muted this long after the reply stops: the device's
+# output buffer and the room still carry it (Q-50).
+ECHO_TAIL_MS = 150
 
 
 def _positive(value: Any) -> bool:
@@ -351,6 +362,87 @@ class VoiceSession:
         if self.vad.flush():
             await self.feed("audio_in_vad_end", {})  # the input ended mid-speech
         await self.settle(self.clock.now + settle_ms)
+
+    async def play_live(
+        self,
+        source: Any,
+        *,
+        half_duplex: bool = False,
+        stop: threading.Event | None = None,
+        settle_ms: float = 5000.0,
+        queue_frames: int = QUEUE_MAX_FRAMES,
+    ) -> None:
+        """
+        Drive the session from a live audio source (such as `SimHAL.audio_source()`).
+
+        The session clock stays a `VirtualClock`, driven by the microphone's sample
+        clock instead of a file: for each captured frame, `await session.advance(origin + frame.end_ms)`
+        then `await session.feed_audio(frame)`.
+        No second clock or wall-clock deadlines are introduced because the microphone's
+        sample clock is the device's physical time — every sample counted represents
+        the device's true time in the room. Provider calls are awaited inline and
+        scheduled `latency` ms later on this clock; frames captured meanwhile are
+        processed in capture order, preserving exact barge-in and late-result dropping
+        guarantees.
+
+        A capture thread reads `source.frames()` continuously into a bounded queue
+        so PortAudio does not overflow during provider calls. If the queue fills (the
+        session is more than ~10 s behind), the session stops with a three-part error
+        rather than silently dropping audio.
+
+        With `half_duplex=True`, a frame captured while the speaker sounds (`_audible`:
+        from the reply's first sample, not from when it was decided, to its end plus
+        `ECHO_TAIL_MS`) is replaced by silence of the same duration (zeros, same
+        timestamps), so the agent never hears itself through loudspeakers.
+        Barge-in is therefore impossible in that mode.
+
+        Runs until `stop` is set or the source ends; then flushes VAD, closes the capture,
+        and settles briefly (up to `settle_ms`).
+        """
+        origin = self.clock.now
+        stop_event = stop if stop is not None else threading.Event()
+        capture = LiveAudioCapture(source, stop=stop_event, max_frames=queue_frames)
+        loop = asyncio.get_running_loop()
+        capture.start()
+        clean_exit = False
+        try:
+            while True:
+                frame = await capture.next_frame(loop)
+                if frame is None:
+                    break
+                await self.advance(origin + frame.end_ms)
+                if half_duplex and self._audible(origin + frame.start_ms, origin + frame.end_ms):
+                    frame_to_feed = AudioFrame(
+                        bytes(len(frame.pcm)),
+                        frame.start_ms,
+                        frame.duration_ms,
+                        frame.sample_rate_hz,
+                    )
+                else:
+                    frame_to_feed = frame
+                await self.feed_audio(frame_to_feed)
+            clean_exit = True
+        finally:
+            try:
+                if clean_exit and self.vad.flush():
+                    await self.feed("audio_in_vad_end", {})
+            finally:
+                capture.close()
+                if clean_exit:
+                    await self.settle(self.clock.now + settle_ms)
+
+    def _audible(self, from_ms: float, to_ms: float) -> bool:
+        """
+        Whether the speaker sounds during [from_ms, to_ms): the last reply, from when its
+        audio starts (after TTS — not when the reply was decided) until it ended or was
+        cut, plus `ECHO_TAIL_MS` of output latency and room echo (half-duplex, Q-50).
+        """
+        playbacks = self.hal.speaker(called_from="VoiceSession").playbacks
+        if not playbacks:
+            return False
+        last = playbacks[-1]
+        stop = last.stopped_at_ms if last.stopped_at_ms is not None else last.end_ms
+        return last.start_ms < to_ms and from_ms < stop + ECHO_TAIL_MS
 
     def _wake_unavailable(self, exc: BaseException) -> None:
         """
@@ -781,10 +873,13 @@ class VoiceSession:
         budget_ms = float(MAX_REPLY_MS)  # the whole reply, not each sentence
         failure: str | None = None
         for text in texts:
+            spoken = speakable(text)  # a model's Markdown is shown, never read aloud
+            if not spoken:
+                continue
             started = self.stopwatch()
             took: Any = None
             try:
-                speech = await self._call(self.tts, "synthesize", text, role="tts")
+                speech = await self._call(self.tts, "synthesize", spoken, role="tts")
                 if not isinstance(speech, Speech):
                     raise TypeError(f"synthesize() returned {type(speech).__name__}, not Speech")
                 took = speech.latency_ms

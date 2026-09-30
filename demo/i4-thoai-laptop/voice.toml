@@ -1,0 +1,36 @@
+
+# --- demo/i4-thoai-laptop: speech and System 2 through OpenRouter (Q-50) ---
+# Appended to a `neuroedge new … --template home-voice` agent by chuan-bi.sh. Only the
+# variable's NAME is here: export OPENROUTER_API_KEY before `neuroedge run --mic`.
+[stt]
+base_url    = "https://openrouter.ai/api/v1"
+model       = "openai/whisper-large-v3-turbo"
+language    = "vi"
+api_key_env = "OPENROUTER_API_KEY"
+timeout_s   = 15
+
+[tts]
+base_url       = "https://openrouter.ai/api/v1"
+model          = "google/gemini-3.1-flash-tts-preview"   # ~3.7 s per reply measured 2026-09-29;
+                                                       # google/gemini-3.8-flash-tts: ~2.6 s
+voice          = "Kore"
+format         = "pcm"
+sample_rate_hz = 24000                                 # OpenRouter: audio/pcm;rate=24000
+api_key_env    = "OPENROUTER_API_KEY"
+timeout_s      = 20
+
+[system_two]
+provider    = "litellm"
+model       = "openrouter/google/gemma-4-31b-it"
+api_key_env = "OPENROUTER_API_KEY"
+timeout_s   = 20
+
+# Optional, INTERNAL TESTS ONLY (Q-50): a pre-trained openWakeWord model is CC BY-NC-SA 4.0 —
+# never in a public video, never committed. Needs `pip install 'neuroedge[wake]'` and the three
+# files you download yourself (TODOS.md #49 tracks a model we can ship).
+# [wake_word]
+# provider       = "openwakeword"
+# model          = "/path/outside/the/repo/hey_jarvis_v0.1.onnx"
+# melspectrogram = "/path/outside/the/repo/melspectrogram.onnx"
+# embedding      = "/path/outside/the/repo/embedding_model.onnx"
+# word           = "hey jarvis"

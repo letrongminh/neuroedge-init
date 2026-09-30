@@ -502,6 +502,20 @@ def test_a_key_pasted_as_the_variable_name_is_refused_and_not_repeated():
     assert "ANTHROPIC_API_KEY" in raised.value.how
 
 
+def test_openrouter_model_suggests_openrouter_api_key():
+    from neuroedge.models.providers import suggested_key_env
+
+    assert suggested_key_env("openrouter/deepseek/deepseek-v4-flash") == "OPENROUTER_API_KEY"
+    with pytest.raises(AgentManifestError) as raised:
+        parse_system_two({"model": "openrouter/deepseek/deepseek-v4-flash", "api_key_env": KEY})
+    assert KEY not in raised.value.render()
+    assert "OPENROUTER_API_KEY" in raised.value.how
+
+    with pytest.raises(AgentManifestError) as raised:
+        parse_system_two({"model": "openrouter/deepseek/deepseek-v4-flash"})
+    assert "OPENROUTER_API_KEY" in raised.value.how
+
+
 def test_a_keyless_local_server_needs_only_api_base():
     config = parse_system_two({"model": "ollama/llama3", "api_base": "http://localhost:11434"})
     assert (config.api_key_env, config.timeout_s) == (None, 20.0)

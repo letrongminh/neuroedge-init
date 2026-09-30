@@ -161,6 +161,110 @@ def test_language_in_tts_says_the_speech_api_has_none():
     assert "no language field" in error.how
 
 
+def test_tts_format_and_sample_rate_validation():
+    c_pcm = tts(format="pcm", sample_rate_hz=24000)
+    assert c_pcm.format == "pcm" and c_pcm.sample_rate_hz == 24000
+
+    c_wav = tts(format="wav")
+    assert c_wav.format == "wav" and c_wav.sample_rate_hz is None
+
+    c_def = tts()
+    assert c_def.format == "wav" and c_def.sample_rate_hz is None
+
+    # format = "pcm" requires sample_rate_hz
+    err = _refused("tts", {"model": "m", "voice": "v", "api_key_env": ENV, "format": "pcm"})
+    assert err.where.endswith("sample_rate_hz")
+    assert "requires sample_rate_hz" in err.why
+
+    # sample_rate_hz without format = "pcm"
+    err = _refused("tts", {"model": "m", "voice": "v", "api_key_env": ENV, "sample_rate_hz": 24000})
+    assert err.where.endswith("sample_rate_hz")
+    assert 'only accepted with format = "pcm"' in err.why
+
+    err = _refused(
+        "tts",
+        {
+            "model": "m",
+            "voice": "v",
+            "api_key_env": ENV,
+            "format": "wav",
+            "sample_rate_hz": 24000,
+        },
+    )
+    assert err.where.endswith("sample_rate_hz")
+    assert 'only accepted with format = "pcm"' in err.why
+
+    # Invalid formats
+    for bad_fmt in ["mp3", True, 123]:
+        err = _refused("tts", {"model": "m", "voice": "v", "api_key_env": ENV, "format": bad_fmt})
+        assert err.where.endswith("format")
+        assert 'format must be "wav" or "pcm"' in err.why
+
+    # Invalid sample_rate_hz types (bool is not int)
+    for bad_rate in [True, False, "24000", 24000.0, 7999, 48001]:
+        err = _refused(
+            "tts",
+            {
+                "model": "m",
+                "voice": "v",
+                "api_key_env": ENV,
+                "format": "pcm",
+                "sample_rate_hz": bad_rate,
+            },
+        )
+        assert err.where.endswith("sample_rate_hz")
+        assert "8000 to 48000 Hz" in err.why
+
+
+def test_stt_refuses_tts_format_and_sample_rate():
+    for key, val in [("format", "pcm"), ("sample_rate_hz", 24000)]:
+        err = _refused("stt", {"model": "m", "api_key_env": ENV, key: val})
+        assert err.where.endswith(key)
+        assert "[tts]" in err.how
+
+        err_fb = _refused(
+            "stt",
+            {
+                "model": "m",
+                "api_key_env": ENV,
+                "fallback": {"model": "fb", "api_key_env": ENV, key: val},
+            },
+        )
+        assert "stt.fallback" in err_fb.where
+        assert err_fb.where.endswith(key)
+        assert "[tts]" in err_fb.how
+
+
+def test_speech_suggests_openrouter_api_key_for_openrouter_base_url():
+    from neuroedge.perception.providers import suggested_key_env
+
+    assert suggested_key_env("https://openrouter.ai/api/v1") == "OPENROUTER_API_KEY"
+    assert suggested_key_env("https://api.openai.com/v1") == "OPENAI_API_KEY"
+
+    err_tts = _refused(
+        "tts",
+        {
+            "base_url": "https://openrouter.ai/api/v1",
+            "model": "m",
+            "voice": "v",
+            "api_key": KEY,
+        },
+    )
+    assert "OPENROUTER_API_KEY" in err_tts.how
+    assert KEY not in err_tts.render()
+
+    err_stt = _refused(
+        "stt",
+        {
+            "base_url": "https://openrouter.ai/api/v1",
+            "model": "m",
+            "api_key_env": KEY + "!",
+        },
+    )
+    assert "OPENROUTER_API_KEY" in err_stt.how
+    assert KEY not in err_stt.render()
+
+
 def test_a_custom_adapter_needs_no_model_and_gets_its_options():
     config = parse_speech(
         "stt",
@@ -472,6 +576,66 @@ def test_8_bit_audio_is_refused():
     provider = OpenAISpeaker(tts(), environ={ENV: KEY}, opener=FakeOpener(buffer.getvalue()))
     with pytest.raises(SpeechUnavailable, match="8-bit"):
         run(provider.synthesize("x"))
+
+
+def test_synthesize_pcm_posts_pcm_format_and_returns_speech():
+    pcm = tone(250, 24000)
+    opener = FakeOpener(pcm)
+    provider = OpenAISpeaker(
+        tts(format="pcm", sample_rate_hz=24000), environ={ENV: KEY}, opener=opener
+    )
+    speech = run(provider.synthesize("Cửa đã mở."))
+    assert (speech.pcm, speech.sample_rate_hz, speech.channels, speech.sample_width) == (
+        pcm,
+        24000,
+        1,
+        2,
+    )
+    ((request, _),) = opener.requests
+    assert request.full_url == "https://api.openai.com/v1/audio/speech"
+    assert request.get_header("Content-type") == "application/json"
+    assert json.loads(request.data) == {
+        "model": "tts-1",
+        "voice": "alloy",
+        "input": "Cửa đã mở.",
+        "response_format": "pcm",
+    }
+
+
+@pytest.mark.parametrize(
+    ("answer", "fragment"),
+    [
+        (b"", "empty audio body"),
+        (b"\x00\x01\x02", "odd byte length"),
+        (wav_bytes(tone(100, 24000), 24000), "asked for raw PCM, got a WAV answer"),
+        (b'{"error": "unsupported format"}', "asked for raw PCM, got a JSON answer"),
+        (json.dumps({"detail": SPEECH}).encode(), "asked for raw PCM, got a JSON answer"),
+    ],
+)
+def test_synthesize_pcm_failures_are_unavailable(answer, fragment):
+    provider = OpenAISpeaker(
+        tts(format="pcm", sample_rate_hz=24000),
+        environ={ENV: KEY},
+        opener=FakeOpener(answer),
+    )
+    with pytest.raises(SpeechUnavailable) as caught:
+        run(provider.synthesize(SPEECH))
+    assert fragment in caught.value.why and caught.value.role == "tts"
+    assert SPEECH not in caught.value.render() and KEY not in caught.value.render()
+    if "asked for raw PCM" in fragment:
+        assert 'set format = "wav" for this server' in caught.value.why
+        assert caught.value.how == 'set format = "wav" for this server'
+
+
+@pytest.mark.parametrize("pcm", [b"{\x00" * 400, b"[ " * 400, b'{"a"' + b"\x00" * 396])
+def test_raw_pcm_that_starts_like_json_is_still_speech(pcm):
+    # Quiet 16-bit samples are often valid UTF-8 starting with `{` or `[`: only a
+    # whole document that parses is an error answer, never a prefix.
+    provider = OpenAISpeaker(
+        tts(format="pcm", sample_rate_hz=24000), environ={ENV: KEY}, opener=FakeOpener(pcm)
+    )
+    speech = run(provider.synthesize(SPEECH))
+    assert (speech.pcm, speech.sample_rate_hz) == (pcm, 24000)
 
 
 # --- a real HTTP stack, on 127.0.0.1 --------------------------------------------------------------

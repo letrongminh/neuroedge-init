@@ -35,7 +35,7 @@ Nói thẳng nếu bị hỏi. Mỗi dòng dẫn nguồn trong kho.
 | Không nói là đã có | Sự thật hôm nay | Nguồn |
 |:---|:---|:---|
 | Chạy trên phần cứng thật | Không có bo mạch ESP32-S3-BOX-3; mọi demo chạy trên `sim` (chân ảo) | `CHANGELOG.md` §3.4 (TSK-S1-10) |
-| Nói chuyện trực tiếp qua micro | Thoại mới chạy **từ tệp WAV** (`--voice-file`, cần nhà cung cấp STT); chưa có phiên micro thời gian thực; demo mặc định là gõ chữ (Q-15) | `docs/user/huong-dan.md` §4.5 · `TODOS.md` #45 |
+| Nói chuyện trực tiếp qua micro trên thiết bị | Micro thật mới có **trên laptop, target `sim`** (`run --mic`, TSK-I4-04; tai nghe, hoặc `--half-duplex` với loa ngoài) — chưa trên Pi hay Box-3; demo mặc định vẫn là gõ chữ (Q-15) | `docs/user/huong-dan.md` §4.5 · `demo/i4-thoai-laptop/` · Q-50 |
 | LLM hiểu câu tự do | Có từ TSK-S2-11 nhưng cần `neuroedge[cloud]` + key thật; demo không khai `[system_two]`, nên chỉ câu khớp `commands.toml` chạy. CI chỉ thử LiteLLM bằng `mock_response`, chưa bằng key thật | TSK-S2-11 · `CHANGELOG.md` §3.7 |
 | Chuyển cho lễ tân thật (`escalate`) | Chặn + ghi vết ghi + hook không làm gì | Q-17 · `TODOS.md` #20 |
 | Chạy trên Raspberry Pi thật | `run --target linux` chạy trên line GPIO **ảo** (gpio-sim) trong CI; chưa chạy trên Pi thật | `docs/user/huong-dan.md` §5.1 |

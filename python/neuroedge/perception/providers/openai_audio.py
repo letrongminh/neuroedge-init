@@ -2,7 +2,7 @@
 STT and TTS over the OpenAI audio API — the default speech contract (Q-12).
 
     POST {base_url}/audio/transcriptions   multipart: file, model, language?, response_format=json
-    POST {base_url}/audio/speech           json: model, voice, input, response_format=wav
+    POST {base_url}/audio/speech           json: model, voice, input, response_format=wav|pcm
 
 One adapter for every server that speaks it, chosen by `base_url` in `[stt]` /
 `[tts]` (FR-MDL-09): OpenAI, Groq (``https://api.groq.com/openai/v1``),
@@ -222,8 +222,22 @@ class OpenAITranscriber(_OpenAIAudio):
         return Transcript(clean_transcript(answer["text"], self.where))
 
 
+def _is_json(data: bytes) -> bool:
+    """
+    An error document instead of audio: it parses as a JSON object or array.
+    Raw PCM can start with `{` and still decode as UTF-8, so a prefix alone is
+    never taken for JSON — only a whole document that parses.
+    """
+    if not data.lstrip().startswith((b"{", b"[")):
+        return False
+    try:
+        return isinstance(json.loads(data.decode("utf-8")), dict | list)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return False
+
+
 class OpenAISpeaker(_OpenAIAudio):
-    """TTS: ``await speaker.synthesize(text)`` → `Speech` (16-bit PCM from a WAV answer)."""
+    """TTS: ``await speaker.synthesize(text)`` → `Speech` (16-bit PCM from WAV or raw PCM)."""
 
     role = "tts"
 
@@ -232,10 +246,36 @@ class OpenAISpeaker(_OpenAIAudio):
             "model": self.model,
             "voice": self.config.voice,
             "input": text,
-            "response_format": "wav",
+            "response_format": self.config.format,
         }
         body = json.dumps(request, ensure_ascii=False).encode("utf-8")
         data = await self._post("/audio/speech", body, "application/json")
+        if self.config.format == "pcm":
+            if not data:
+                raise self._unavailable(
+                    "the server returned an empty audio body", "check base_url and model"
+                )
+            if data.startswith(b"RIFF"):
+                raise self._unavailable(
+                    "asked for raw PCM, got a WAV answer",
+                    'set format = "wav" for this server',
+                )
+            if _is_json(data):
+                raise self._unavailable(
+                    "asked for raw PCM, got a JSON answer",
+                    'set format = "wav" for this server',
+                )
+            if len(data) % 2 != 0:
+                raise self._unavailable(
+                    "the server returned raw PCM with an odd byte length",
+                    "check base_url and model",
+                )
+            rate = self.config.sample_rate_hz
+            if rate is None:  # parse_speech refuses pcm without a rate; never guess one
+                raise self._unavailable(
+                    'format = "pcm" has no sample_rate_hz', "add sample_rate_hz to [tts]"
+                )
+            return Speech(data, rate, 1, 2)
         try:
             pcm, rate, channels, width = read_wav_bytes(data)
         except ValueError as exc:
