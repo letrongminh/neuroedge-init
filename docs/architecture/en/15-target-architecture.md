@@ -1,7 +1,7 @@
 # 15 · Target Architecture by Horizon
 
 > **Scope:** target architecture (to-be architecture) of NeuroEdge across three development horizons. **Source of truth:**
-> [`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §2.1, §3, §4.4–§4.8, §5, §6, §7, Appendix D;
+> [`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §2.1, §3, §4.3–§4.8, §5, §6, §7, Appendix D;
 > [`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §15, Appendix D.2;
 > [`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) §3.1, §6;
 > [`neuroedge-design-neurobrain.md`](../../../roadmap/neuroedge-design-neurobrain.md);
@@ -20,9 +20,9 @@ The architecture evolution roadmap of NeuroEdge is divided into three **horizons
 
 | Horizon | Increments | Architecture changes (What it is & Why it is needed) | Design location |
 |:---|:---|:---|:---|
-| **Horizon 1 (H1)** — On-device v1.0 | I3–I7 | Complete firmware on ESP32-S3 chip: bring the 5-primitive HAL onto real chip, hardware drivers (I2S codec, ST7789 LCD, GPIO), real-time voice pipeline (AEC, VAD, Opus streaming), C99 voice state machine, barge-in actuator command abort mechanism (`actuator_abort.c`), WebSocket streaming client to cloud, local fixed command recognition fallback when offline ([`Q-14`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)), device security (Secure Boot, flash encryption, physical mic cutoff, anti-rollback eFuse), LVGL interface connected to display driver. Prerequisite for the "talking to a $5 chip" demo (roadmap §4.6): voice on Box-3, gate on chip. | Roadmap [§4.4–§4.8](../../../roadmap/neuroedge-roadmap.md#44-i3--gate-trên-box-3-thật), PRD [Appendix D.2](../../../roadmap/neuroedge-prd.md#d2-giao-thức-truyền-dẫn--định-dạng-vết-ghi-wire-protocol), [`04`](04-component-device-c4l3.md) |
+| **Horizon 1 (H1)** — On-device v1.0 = MVP | I2a–I7 | Complete firmware on ESP32-S3 chip: bring the 5-primitive HAL onto real chip, hardware drivers (I2S codec, ST7789 LCD, GPIO), real-time voice pipeline (AEC, VAD, Opus streaming), C99 voice state machine, barge-in actuator command abort mechanism (`actuator_abort.c`), WebSocket streaming client to cloud, local fixed command recognition fallback when offline ([`Q-14`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)), device security (Secure Boot, flash encryption, physical mic cutoff, anti-rollback eFuse), LVGL interface connected to display driver. This horizon also carries the four extension primitive packs, mandatory on all three tier-1 targets — sensors, PWM, vision, motion ([`Q-53`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), I2a and I3a) — and **NeuroBrain** ([`Q-55`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), I4a on the host, I5a on the chip); one launch, and if it slips the date moves rather than the scope being cut ([`Q-52`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)). Prerequisite for the "talking to a $5 chip" demo (roadmap §4.6): voice on Box-3, gate on chip. | Roadmap [§4.3.1](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux), [§4.4–§4.8](../../../roadmap/neuroedge-roadmap.md#44-i3--gate-trên-box-3-thật), PRD [Appendix D.2](../../../roadmap/neuroedge-prd.md#d2-giao-thức-truyền-dẫn--định-dạng-vết-ghi-wire-protocol), [`04`](04-component-device-c4l3.md) |
 | **Horizon 2 (H2)** — Service tier v1.1 | I9–I10 | Two new server-side containers appear: **Fleet OS** (identity provisioning, inventory ledger, health monitoring, remote config and gate sync, canary rollout (releasing in progressively larger waves up to the whole fleet) campaign orchestration via Eclipse Hawkbit, centralized incident trace collector store, certificate revocation) and **Gate Registry** (public OCI (Open Container Initiative artifact packaging standard) registry via CNCF ORAS/Harbor, stable identifiers, metering system via OpenMeter, permissions sandbox, manifest (package descriptor) `schemas/manifest.v1.json`, signed gates with on-chip signature verification, pinning `extends` by digest). Self-hosted provider abstraction layer completed (multi-provider routing, failover, quota). Needed to manage large-scale device fleets without compromising the safety autonomy of each device. | Roadmap [§6](../../../roadmap/neuroedge-roadmap.md#6-tầng-dịch-vụ-v11-i9i10), Proposal [§6](../../../roadmap/neuroedge-proposal.md#6-mặt-phẳng-thương-mại-fleet-os), PRD [`Q-6`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`Q-28`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`02`](02-container-c4l2.md) §5 |
-| **Horizon 3 (H3)** — Post-Beta extensions | I11–I18 | Expand target list across 3 [target tiers](../../user/thuat-ngu.md) (I11, I13); **NeuroBrain** (I12) for hardware bring-up via conversation, isolated `brain/` package, gated lab actions, [physical safety envelope](../../user/thuat-ngu.md) in HAL, read-only I2C bus, event triggers; **Layered robot** (I14) coordinating Pi 5 brain and multiple MCU nodes (ESP32-S3, RP2350) over Zenoh-pico [black channel](../../user/thuat-ngu.md), each node evaluates gates locally, [lease tokens](../../user/thuat-ngu.md) (lease) for `motion.*`, safe state on link loss, ROS 2/Nav2 bridge; **Vision** (I15–I17) extending L2 perception on Linux/Jetson, reduced via [SystemOne](../../user/thuat-ngu.md), discrete NPU; **Ecosystem** (I18) sharing adapters and HAL ports on Registry. Needed for NeuroEdge to expand to complex motion systems, robotic arms, and multisensory systems. | Roadmap [§7](../../../roadmap/neuroedge-roadmap.md#7-hướng-mở-rộng-sau-beta-i11i18), [`neuroedge-design-neurobrain.md`](../../../roadmap/neuroedge-design-neurobrain.md), [`neuroedge-design-phase2.md`](../../../roadmap/neuroedge-design-phase2.md), [`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../../roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md), [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../../roadmap/draft-rfc-node-giao-thuc-dieu-phoi.md) |
+| **Horizon 3 (H3)** — Post-Beta extensions | I11, I13, I14, I16–I18 | Expand target list across 3 [target tiers](../../user/thuat-ngu.md) (I11, I13); **Layered robot** (I14) coordinating Pi 5 brain and multiple MCU nodes (ESP32-S3, RP2350) over Zenoh-pico [black channel](../../user/thuat-ngu.md), each node evaluates gates locally, [lease tokens](../../user/thuat-ngu.md) (lease) for `motion.*`, safe state on link loss, ROS 2/Nav2 bridge; **Vision on `jetson` and multimodal** (I16, I17) extending L2 perception to the Jetson GPU (basic vision on `sim`, `linux` and `esp32s3` is already in v1.0 — Q-53, Q-54); **Ecosystem** (I18) sharing adapters and HAL ports on Registry. Needed for NeuroEdge to expand to complex motion systems, robotic arms, and multisensory systems. NeuroBrain (I4a, I5a) and `vision.in` (I2a, I3a) moved into H1; §4.2 and §4.4 below keep their design. | Roadmap [§7](../../../roadmap/neuroedge-roadmap.md#7-hướng-mở-rộng-sau-beta-i11i18), [`neuroedge-design-neurobrain.md`](../../../roadmap/neuroedge-design-neurobrain.md), [`neuroedge-design-phase2.md`](../../../roadmap/neuroedge-design-phase2.md), [`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../../roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md), [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../../roadmap/draft-rfc-node-giao-thuc-dieu-phoi.md) |
 
 ![E-10 · Target architecture by horizon](../assets/svg/E-10-target-horizons.svg)
 *Figure E-10 — Four bands: status on main and three horizons; dashed boxes are planned. Generated by scripts/gen_architecture_diagrams.py.*
@@ -33,12 +33,14 @@ Development relationship diagram between the three horizons:
 
 ```mermaid
 flowchart LR
-    subgraph H1["Horizon 1: On-Device v1.0 (I3-I7)"]
+    subgraph H1["Horizon 1: On-Device v1.0 = MVP (I2a-I7)"]
         H1_HAL["On-chip HAL and Drivers (TSK-S4-01, S4-03)"]
         H1_VOICE["On-chip Voice Pipeline and FSM (TSK-S5-01..03)"]
         H1_ABORT["Actuator Abort on Barge-in (TSK-S5-04)"]
         H1_FALLBACK["Local Offline Fallback (TSK-S5-07, Q-14)"]
         H1_SEC["Hardware Security (TSK-S6-05) and Signed OTA (TSK-S6-03)"]
+        H1_PACKS["Extension Packs: Sensors, PWM, Vision, Motion (I2a, I3a)"]
+        H1_BRAIN["NeuroBrain: Lab Claw, Envelope, I2C Read (I4a, I5a)"]
     end
 
     subgraph H2["Horizon 2: Service Tier v1.1 (I9-I10)"]
@@ -48,11 +50,10 @@ flowchart LR
         H2_VERIF["Signed Gate On-Device Verification (TSK-W2-04)"]
     end
 
-    subgraph H3["Horizon 3: Post-Beta Extensions (I11-I18)"]
+    subgraph H3["Horizon 3: Post-Beta Extensions (I11-I18, without I12 and I15)"]
         H3_TIERS["Target Tiers and Port Kit (I11, I13)"]
-        H3_BRAIN["NeuroBrain: Lab Claw, Envelope, I2C Read (I12)"]
         H3_ROBOT["Layered Robot: Zenoh, Node Gates, Leases (I14)"]
-        H3_VISION["Perception: Vision L2, NPU, Fusion (I15-I17)"]
+        H3_VISION["Perception: Vision on jetson, Fusion (I16, I17)"]
         H3_ECO["Ecosystem: Registry Adapters and Ports (I18)"]
     end
 
@@ -60,11 +61,11 @@ flowchart LR
     H1 --> H3
 ```
 
-*How to read the diagram:* Three rectangular boxes represent the three architecture horizons. Arrows from H1 to H2 and H3 show that all safety mechanisms and target equivalence of Horizon 1 are mandatory prerequisites before activating the cloud service tier (H2) or multi-node/vision extensions (H3). Key point to remember: adding management services or layered robots never degrades or breaks the on-device safety guarantees packaged in H1.
+*How to read the diagram:* Three rectangular boxes represent the three architecture horizons. Arrows from H1 to H2 and H3 show that all safety mechanisms and target equivalence of Horizon 1 are mandatory prerequisites before activating the cloud service tier (H2) or multi-node/Jetson extensions (H3). Key point to remember: adding management services or layered robots never degrades or breaks the on-device safety guarantees packaged in H1.
 
 ---
 
-## 2. Horizon 1 — on-device v1.0 (I3–I7)
+## 2. Horizon 1 — on-device v1.0 (I2a–I7)
 
 ### 2.1 Planned firmware components
 
@@ -73,6 +74,7 @@ On the ESP32-S3 microcontroller, components with code already in `main` include 
 | Component (planned path) | What it is & Why it is needed | Governing task | Open-source reuse (Roadmap §3) | Status |
 |:---|:---|:---|:---|:---:|
 | `targets/esp32s3/hal/` | Implement 5 HAL primitives on ESP-IDF; needed to provide standard physical pin interfaces equivalent to `sim` and `linux`. | [`TSK-S4-01`](../../../roadmap/neuroedge-roadmap.md#44-i3--gate-trên-box-3-thật) | ESP-IDF (toolchain) — roadmap §4.4 | `planned` |
+| `targets/esp32s3/hal/` (four extension packs) | `digital.in`, read-only I2C bus, `analog.in`, PWM, `motion.*` and `vision.in` on the ESP32-S3 camera board, plus envelope enforcement in firmware; needed so the four packs run on-chip on par with `sim` and `linux` (Q-53, Q-55). | [`TSK-I3a-02`](../../../roadmap/neuroedge-roadmap.md#441-i3a--nguyên-thủy-mở-rộng-trên-esp32s3), [`TSK-I3a-03`](../../../roadmap/neuroedge-roadmap.md#441-i3a--nguyên-thủy-mở-rộng-trên-esp32s3), [`TSK-W1-04`](../../../roadmap/neuroedge-roadmap.md#441-i3a--nguyên-thủy-mở-rộng-trên-esp32s3), [`TSK-I3a-04`](../../../roadmap/neuroedge-roadmap.md#441-i3a--nguyên-thủy-mở-rộng-trên-esp32s3), [`TSK-N7-02`](../../../roadmap/neuroedge-roadmap.md#441-i3a--nguyên-thủy-mở-rộng-trên-esp32s3) | Per the RFC-0007, RFC-0010 → RFC-0013 contracts | `planned` |
 | `targets/esp32s3/drivers/` | Real peripheral drivers: I2S codec ES8311/ES7210, ST7789 LCD, GPIO; needed to directly control hardware registers of Box-3. | [`TSK-S4-03`](../../../roadmap/neuroedge-roadmap.md#44-i3--gate-trên-box-3-thật) | Port drivers directly from XiaoZhi ESP32 (roadmap [§3.4](../../../roadmap/neuroedge-roadmap.md#34-ma-trận-tích-hợp-theo-khối), [§3.5](../../../roadmap/neuroedge-roadmap.md#35-năm-dự-án-port-trực-tiếp)) | `planned` |
 | `targets/esp32s3/drivers/audio_path.c` | Capture/playback audio path; needed to connect I2S streams from codec into ring buffers without running STT/TTS on-device. | [`TSK-S5-02`](../../../roadmap/neuroedge-roadmap.md#46-i5--thoại-trên-box-3) | Port codec configuration and I2S clock from XiaoZhi ESP32 (roadmap [§3.5](../../../roadmap/neuroedge-roadmap.md#35-năm-dự-án-port-trực-tiếp)) | `planned` |
 | `targets/esp32s3/audio/` | Integrate WebRTC AEC, libfvad (VAD), Opus streaming; needed to cancel echo, filter silence, and compress real-time audio streams. | [`TSK-S5-01`](../../../roadmap/neuroedge-roadmap.md#46-i5--thoại-trên-box-3) | WebRTC AEC, libfvad, Opus; port pipeline from Pipecat (roadmap [§3.4](../../../roadmap/neuroedge-roadmap.md#34-ma-trận-tích-hợp-theo-khối), [§3.5](../../../roadmap/neuroedge-roadmap.md#35-năm-dự-án-port-trực-tiếp)) | `planned` |
@@ -262,6 +264,8 @@ To guarantee transparency and avoid "open-core" ambiguity, the boundary between 
 
 ## 4. Horizon 3 — post-Beta extensions (I11–I18)
 
+> **Note:** I12 (NeuroBrain) and I15 (vision) are no longer increments. NeuroBrain is part of the MVP at I4a and I5a ([`Q-55`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)); basic vision is part of the MVP at I2a and I3a ([`Q-53`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`Q-54`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)). §4.2 and the first part of §4.4 stay here so their design is not split from the adjacent sections; dates and dependencies live only in roadmap §0.2.
+
 ### 4.1 Expand target list and tiers (I11, I13)
 
 To expand the hardware portfolio without degrading quality commitments, NeuroEdge tiers its target commitments into 3 **target tiers** (levels of quality commitment, testing frequency, and technical support from the team for each environment, [`Q-13`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), Proposal [§3.2](../../../roadmap/neuroedge-proposal.md#phân-tầng-cam-kết-theo-bậc-target), FR-TGT-08, [RFC-0002](../../rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md)):
@@ -276,14 +280,14 @@ At increment I11 ([`TSK-V1a-*`](../../../roadmap/neuroedge-roadmap.md#71-i11--m�
 
 At increment I13 ([`TSK-P1-*`](../../../roadmap/neuroedge-roadmap.md#73-i13--bộ-port-cộng-đồng)), the core team publishes the **Community Porting Kit** (`docs/porting/`, `targets/_template/`) with language-independent compliance test vectors packaged to run outside the repository (`fixtures/compliance/portable/`) and CLI tool `neuroedge board check <path>` ([`TSK-P1-05`](../../../roadmap/neuroedge-roadmap.md#73-i13--bộ-port-cộng-đồng)) for external parties to verify compatibility.
 
-### 4.2 NeuroBrain (I12)
+### 4.2 NeuroBrain (I4a, I5a)
 
-NeuroBrain ([`Q-31`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), Roadmap [§7.2](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain), [`neuroedge-design-neurobrain.md`](../../../roadmap/neuroedge-design-neurobrain.md)) provides contracted hardware bring-up via conversation with large language models (LLMs).
+NeuroBrain ([`Q-31`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), Roadmap [§4.5.1](../../../roadmap/neuroedge-roadmap.md#451-i4a--neurobrain-trên-host), [`neuroedge-design-neurobrain.md`](../../../roadmap/neuroedge-design-neurobrain.md)) provides contracted hardware bring-up via conversation with large language models (LLMs).
 
-- **`brain/` package and invariant B-1:** All interactive logic of NeuroBrain is isolated in the `python/neuroedge/brain/` package. Per **invariant B-1**, `brain/` is permitted to interact with hardware solely through `dispatch()` → `c.do()` → gate. Calling HAL methods or importing `hal.linux`/`hal.sim` is strictly prohibited. This invariant is automatically checked in CI using AST and import scanning tests (`tests/test_brain_boundary.py`, [`TSK-N1-07`](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain)).
-- **Controlled Lab Actions:** Defines template `@action` `lab_pulse` ([`TSK-N1-01`](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain)) with pulse parameter `duration_ms ≤ 2000`. The `[lab] enabled` configuration flag in `agent.toml` defaults to off ([`TSK-N1-02`](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain)). The `neuroedge build --release` command refuses to compile if this flag is enabled ([`TSK-N1-03`](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain)). Lab command results always return accompanied by `gate explain` for the LLM to self-correct parameters ([`TSK-N1-04`](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain)).
+- **`brain/` package and invariant B-1:** All interactive logic of NeuroBrain is isolated in the `python/neuroedge/brain/` package. Per **invariant B-1**, `brain/` is permitted to interact with hardware solely through `dispatch()` → `c.do()` → gate. Calling HAL methods or importing `hal.linux`/`hal.sim` is strictly prohibited. This invariant is automatically checked in CI using AST and import scanning tests (`tests/test_brain_boundary.py`, [`TSK-N1-07`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neurobrain-trên-host)).
+- **Controlled Lab Actions:** Defines template `@action` `lab_pulse` ([`TSK-N1-01`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neurobrain-trên-host)) with pulse parameter `duration_ms ≤ 2000`. The `[lab] enabled` configuration flag in `agent.toml` defaults to off ([`TSK-N1-02`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neurobrain-trên-host)). The `neuroedge build --release` command refuses to compile if this flag is enabled ([`TSK-N1-03`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neurobrain-trên-host)). Lab command results always return accompanied by `gate explain` for the LLM to self-correct parameters ([`TSK-N1-04`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neurobrain-trên-host)).
 - **Physical Safety Envelope Hook:**
-  Physical safety envelopes (on-time duration limits and maximum frequency per GPIO pin) are declared in `board.v1` and enforced by a hook placed in `HardwareAbstractionLayer.digital_out` ([`TSK-N2-01`](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain), [`TSK-N2-02`](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain)).
+  Physical safety envelopes (on-time duration limits and maximum frequency per GPIO pin) are declared in `board.v1` and enforced by a hook placed in `HardwareAbstractionLayer.digital_out`, shared by every actuator (Q-53) ([`TSK-N2-01`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux), [`TSK-N2-02`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)).
   - **Mandatory execution order:** `pin check (require_pin)` → `envelope` → `authorize` → `record`.
   - **Handling envelope violations:** If an action exceeds physical envelope limits, the command is refused (error class name not designed yet) and an `envelope_refused` event is emitted to the trace. At this point, the **verdict token is NOT consumed** because it has not entered the `authorize()` function.
 
@@ -323,10 +327,10 @@ sequenceDiagram
 
 *How to read the diagram:* Arrows show the four-step verification order before physical current is driven to the microcontroller pin. Step 2 (envelope) and step 3 (token ledger) are two independent safety checkpoints. Key point to remember: the physical safety envelope is checked before token consumption; if the envelope refuses due to exceeding total on-time or frequency, the token is not consumed (TSK-N2-01); sources say nothing further on whether the token remains reusable.
 
-- **Read-only I2C bus (Block N3):** scan via read-byte, no quick-write; read chip ID; if unrecognized, record "unrecognized", do not guess ([`TSK-N3-01`](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain)).
-- **Event triggers (Block N6):** Adds value `call_source = "trigger"` ([`TSK-N6-01`](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain)). Invariant rule: `trigger ∉ HUMAN_SOURCES`, triggers cannot confirm `on_block: ask` questions ([`Q-26`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`TSK-N6-02`](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain)). Debounce and rate-limiting ceiling mechanisms apply ([`TSK-N6-03`](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain)).
-- **NeuroBrain on ESP32-S3 (Block N7):** Reuses the C walker and token ledger to evaluate lab actions on-chip ([`TSK-N7-01`](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain)); the safety envelope is enforced in C firmware ([`TSK-N7-02`](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain)).
-- **Role of RFC-0007:** RFC-0007 ([`TSK-N0-03`](../../../roadmap/neuroedge-roadmap.md#72-i12--neurobrain)) is a placeholder RFC for the `digital.in` primitive, read-only I2C bus, and envelope declaration in `board.v1`. This RFC **preserves 100% of the `schemas/gate.v1.json` structure**.
+- **Read-only I2C bus (Block N3):** scan via read-byte, no quick-write; read chip ID; if unrecognized, record "unrecognized", do not guess ([`TSK-N3-01`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neurobrain-trên-host)).
+- **Event triggers (Block N6):** Adds value `call_source = "trigger"` ([`TSK-N6-01`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neurobrain-trên-host)). Invariant rule: `trigger ∉ HUMAN_SOURCES`, triggers cannot confirm `on_block: ask` questions ([`Q-26`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`TSK-N6-02`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neurobrain-trên-host)). Debounce and rate-limiting ceiling mechanisms apply ([`TSK-N6-03`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neurobrain-trên-host)).
+- **NeuroBrain on ESP32-S3 (Block N7):** Reuses the C walker and token ledger to evaluate lab actions on-chip ([`TSK-N7-01`](../../../roadmap/neuroedge-roadmap.md#461-i5a--neurobrain-trên-chip)); the safety envelope is enforced in C firmware ([`TSK-N7-02`](../../../roadmap/neuroedge-roadmap.md#441-i3a--nguyên-thủy-mở-rộng-trên-esp32s3)).
+- **Role of RFC-0007:** RFC-0007 ([`TSK-N0-03`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)) is a placeholder RFC for the `digital.in` primitive, read-only I2C bus, and envelope declaration in `board.v1`. This RFC **preserves 100% of the `schemas/gate.v1.json` structure**.
 
 ### 4.3 Layered robot (I14)
 
@@ -372,7 +376,7 @@ flowchart TB
   - `crc`: bit-level integrity check over physical channel;
   - `epoch` / `boot_id` / `ttl`: prevents using stale, expired intents;
   - `heartbeat`: periodic heartbeat signal between Pi and nodes.
-- **Lease Tokens for `motion.*`:** Unlike single-pulse pin tokens, motor motion commands `motion.*` use short-term lease tokens (~200 ms) ([`Q-37`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`TSK-W1-03`](../../../roadmap/neuroedge-roadmap.md#74-i14--robot-phân-tầng)). Each new command passed by the gate extends the lease duration. When commands stop, the token expires automatically and the actuator returns to its safe state ([`Q-35`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)); specific numbers are finalized in RFC-motion ([`TSK-W1-03`](../../../roadmap/neuroedge-roadmap.md#74-i14--robot-phân-tầng)).
+- **Lease Tokens for `motion.*`:** Unlike single-pulse pin tokens, motor motion commands `motion.*` use short-term lease tokens (~200 ms) ([`Q-37`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`TSK-W1-03`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)). Each new command passed by the gate extends the lease duration. When commands stop, the token expires automatically and the actuator returns to its safe state ([`Q-35`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)); specific numbers are finalized in RFC-0011 ([`TSK-W1-03`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)).
 - **Safe State on Link Loss:** Each actuator declares its safe state in configuration (e.g., motor, gripper stops immediately; door lock finishes pulse then locks; lights remain unchanged — [`Q-35`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)). If undeclared, the system defaults to stopping (fail-closed, [`Q-35`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)). Loss of heartbeat connection (heartbeat loss) is treated as a shutdown-style stop event recorded in traces for replayability.
 - **Cross-chip barge-in budget:** The voice state machine runs on Pi, while pending commands may reside on nodes; RFC-node must define Pi → node abort messages and their timing budget (not designed yet). [`Q-36`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) sets a p99 Pi → node latency threshold ≤ 20 ms for spike W3-1.
 - **Multi-node merged trace:** Applies Option A per [`Q-32`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) ([`TSK-W3-04`](../../../roadmap/neuroedge-roadmap.md#74-i14--robot-phân-tầng)): adds optional field `metadata.nodes[]` and convention for embedding `data.node_id` in trace events, without breaking or altering the `schemas/trace.v1.json` structure. The `neuroedge verify` command is extended to verify consistency across nodes ([`TSK-W3-06`](../../../roadmap/neuroedge-roadmap.md#74-i14--robot-phân-tầng)).
@@ -392,7 +396,7 @@ sequenceDiagram
     Brain->>Wire: send_intent(node_id, seq, crc, intent)
     Wire->>NodeGate: deliver_intent(intent)
     NodeGate->>NodeGate: evaluate_local_gate(facts)
-    NodeGate->>Lease: grant_lease(channel, max_amplitude, ttl about 200ms per RFC-motion)
+    NodeGate->>Lease: grant_lease(channel, max_amplitude, ttl about 200ms per RFC-0011)
     Lease->>Actuator: apply_motion(velocity)
     Actuator-->>Brain: report_telemetry(status)
 
@@ -406,9 +410,9 @@ sequenceDiagram
 
 *How to read the diagram:* The upper half is the normal cycle (brain sends intents, node gate evaluates locally and issues short-term lease tokens). The lower half depicts the network disconnection scenario: when heartbeats are lost, the node rejects new intents; leases are not renewed and thus expire, returning actuators to their declared safe states (Q-35); tier T0 (pull-down, watchdog, current limiting) maintains safety even if software crashes. Key point to remember: safe stopping of robots during network loss is guaranteed by token expiry and baseline hardware, independent of packets sent from the brain.
 
-### 4.4 Vision (I15–I17)
+### 4.4 Vision (I2a, I3a; `jetson` I16, multimodal I17)
 
-Vision extends NeuroEdge perception capabilities from audio to imagery (Roadmap [§7.5–§7.7](../../../roadmap/neuroedge-roadmap.md#75-i15--thị-giác-trên-linux), [`neuroedge-design-phase2.md`](../../../roadmap/neuroedge-design-phase2.md) §6–§8):
+Vision extends NeuroEdge perception capabilities from audio to imagery; `vision.in` on `sim`, `linux` and `esp32s3` is part of v1.0 (Roadmap [§4.3.1](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux), [§4.4.1](../../../roadmap/neuroedge-roadmap.md#441-i3a--nguyên-thủy-mở-rộng-trên-esp32s3), [§7.6–§7.7](../../../roadmap/neuroedge-roadmap.md#76-i16--thị-giác-trên-jetson), [`neuroedge-design-phase2.md`](../../../roadmap/neuroedge-design-phase2.md) §6–§8):
 
 ```mermaid
 flowchart LR
@@ -423,13 +427,13 @@ flowchart LR
 
 *How to read the diagram:* Solid arrows represent the data processing pipeline: camera sensors capture frames, vision models perform inference, and the SystemOne reducer converts tensors into discrete facts (`bool`, `level`, `choice`) fed into FactSource for the Gate Engine. Dashed arrows show privacy protection. Key point to remember: vision models are solely L2 perception fact sources; Gate Engine L3 retains independent action verdict authority; traces strictly never contain raw frames.
 
-- **Principle of L2 vs L3 authority:** Vision is an L2 perception input, strictly **never an L3 verdict authority** (`neuroedge-design-phase2.md` §2.1). All inferences from camera frames must pass through a `SystemOne` to reduce down to three primitive data types that the Gate Engine already evaluates: `bool`, `level`, or `choice` (`neuroedge-design-phase2.md` §2.2). The Gate Engine preserves determinism and remains independent of image tensors.
-- **Software components:** The vision module resides in package `python/neuroedge/perception/vision/` ([`TSK-V1b-03`](../../../roadmap/neuroedge-roadmap.md#75-i15--thị-giác-trên-linux)). The `sim` environment provides a virtual camera replaying image sequences for Action CI regression testing without physical cameras ([`TSK-V1b-02`](../../../roadmap/neuroedge-roadmap.md#75-i15--thị-giác-trên-linux), [`TSK-V1b-04`](../../../roadmap/neuroedge-roadmap.md#75-i15--thị-giác-trên-linux)).
+- **Principle of L2 vs L3 authority:** Vision is an L2 perception input, strictly **never an L3 verdict authority** (`neuroedge-design-phase2.md` §2.1). Per [`Q-54`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), the maker defines the fact (`bool`, `level` or `choice`, with a numeric confidence) from the vision model's label and writes the `@action` and gate as for any other fact; the gate locks the confidence threshold with the `numeric` criterion (RFC-0009), and there are no vision-specific gate semantics. A lost camera or model leaves the fact undecided and the gate blocks (`neuroedge-design-phase2.md` §2.2). The Gate Engine preserves determinism and never receives image tensors.
+- **Software components:** The vision module resides in package `python/neuroedge/perception/vision/` ([`TSK-V1b-03`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)). The `sim` environment provides a virtual camera replaying image sequences for Action CI regression testing without physical cameras ([`TSK-V1b-02`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux), [`TSK-V1b-04`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)).
 - **Hardware accelerators:**
-  - On `linux` (Raspberry Pi 5): uses GStreamer and V4L2 for frame capture pipelines; Ultralytics YOLO and ONNX Runtime for models; connects discrete NPUs via HailoRT (Hailo-8) and Edge TPU runtime (Coral) ([`TSK-V1b-05`](../../../roadmap/neuroedge-roadmap.md#75-i15--thị-giác-trên-linux)).
+  - On `linux` (Raspberry Pi 5): uses GStreamer and V4L2 for frame capture pipelines; Ultralytics YOLO and ONNX Runtime for models; connects discrete NPUs via HailoRT (Hailo-8) and Edge TPU runtime (Coral) ([`TSK-V1b-05`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)).
   - On `jetson` (Tier 2, I16): integrates JetPack and TensorRT for GPU acceleration; DeepStream processes real-time multi-camera pipelines ([`TSK-V2-01`](../../../roadmap/neuroedge-roadmap.md#76-i16--thị-giác-trên-jetson), [`TSK-V2-02`](../../../roadmap/neuroedge-roadmap.md#76-i16--thị-giác-trên-jetson)).
   - Multimodal (I17): fuses voice, vision, and sensor perception in a single state machine (`perception/fusion/`, [`TSK-V3-01`](../../../roadmap/neuroedge-roadmap.md#77-i17--đa-phương-thức)); multimodal gates require `RFC visual-evidence gate semantics` ([`TSK-V3-04`](../../../roadmap/neuroedge-roadmap.md#77-i17--đa-phương-thức)).
-- **Data privacy:** Strictly adheres to NFR-PRIV-01 and NFR-PRIV-03 (`neuroedge-design-phase2.md` §2.3, [`TSK-V1b-08`](../../../roadmap/neuroedge-roadmap.md#75-i15--thị-giác-trên-linux)). Trace files **strictly never embed raw frames**. Traces default to storing only SHA-256 hashes (`vision_ref`) and frame dimensions. Recording raw images is enabled only with explicit flag `metadata.raw_capture`.
+- **Data privacy:** Strictly adheres to NFR-PRIV-01 and NFR-PRIV-03 (`neuroedge-design-phase2.md` §2.3, [`TSK-V1b-08`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)). Trace files **strictly never embed raw frames**. Traces default to storing only SHA-256 hashes (`vision_ref`) and frame dimensions. Recording raw images is enabled only with explicit flag `metadata.raw_capture`.
 
 ### 4.5 Ecosystem (I18)
 
@@ -462,7 +466,7 @@ Sources for each point: [`00`](00-overview.md) §2, §4; [`CHANGELOG.md`](../../
 1. **Development roadmap:**
    - [`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) (§2.1 Dependency graph, §3 OSS reuse strategy, §3.8 Preserving target equivalence, §4.4–§4.8 Task table I3–I7, §5 I8 Developer Beta, §6 I9–I10 Service tier v1.1, §7 I11–I18 Post-Beta extensions, Appendix D Wire protocols).
 2. **Product requirements document:**
-   - [`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) (§1.4 Non-goals N4; §9 Non-functional requirements; §15 Decision log: `Q-3`, `Q-6`, `Q-8`, `Q-10`, `Q-11`, `Q-12`, `Q-13`, `Q-14`, `Q-18`, `Q-24`, `Q-26`, `Q-28`, `Q-31`, `Q-32`, `Q-33`, `Q-34`, `Q-35`, `Q-36`, `Q-37`, `Q-45`; Appendix D.2 Wire protocol).
+   - [`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) (§1.4 Non-goals N4; §9 Non-functional requirements; §15 Decision log: `Q-3`, `Q-6`, `Q-8`, `Q-10`, `Q-11`, `Q-12`, `Q-13`, `Q-14`, `Q-18`, `Q-24`, `Q-26`, `Q-28`, `Q-31`, `Q-32`, `Q-33`, `Q-34`, `Q-35`, `Q-36`, `Q-37`, `Q-45`, `Q-52`, `Q-53`, `Q-54`, `Q-55`; Appendix D.2 Wire protocol).
 3. **Platform architecture proposal:**
    - [`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) (§3.1 5-layer block diagram L0–L4 and Action CI axis; §3.2 Target equivalence and target tier hierarchy; §6 Commercial plane Fleet OS; §6.4 Core ↔ Commercial service boundary matrix).
 4. **Detailed design notes:**

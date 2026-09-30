@@ -103,7 +103,7 @@ bị từ chối, và với `[system_one]` thì `http://` tới máy khác bị 
 | `[capabilities.sensor_read]` | `sensors` |
 | `[capabilities.display]` | `width`, `height`, `color` |
 
-Năm nguyên thủy là tập đóng cho v1.x (FR-HAL-01); nguyên thủy mới chỉ qua RFC (RFC-0007 `digital.in` tại I12, RFC-motion cho `motion.*` tại I14, RFC `vision.in` tại I15). Có đúng ba profile bậc 1: `sim-default` (sao đúng Box-3, không
+Năm nguyên thủy lõi là tập đóng cho v1.x (FR-HAL-01); nguyên thủy mới chỉ qua RFC, và bốn gói mở rộng tuỳ chọn theo bo mạch (FR-HAL-08, Q-53) vào v1.0 ở I2a và I3a: RFC-0007 (`digital.in`, I2C chỉ đọc, `analog.in`), RFC-0009 (tiêu chí `numeric`), RFC-0010 (PWM), RFC-0011 (`motion.*`), RFC-0012 (`vision.in`), RFC-0013 (tuỳ chọn theo bo mạch). Hôm nay có đúng ba profile bậc 1 (Q-53 thêm `sim-rpi5` và một bo ESP32-S3 có camera): `sim-default` (sao đúng Box-3, không
 bao giờ giàu hơn — bất biến 7), `linux-rpi5` (`aec = false` tới khi đo đạt), `esp32s3-box-3`. Mã ứng dụng
 chỉ dùng **tên** chân; số GPIO thuộc về HAL.
 

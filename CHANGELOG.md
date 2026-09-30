@@ -262,6 +262,21 @@ bản gói.
 - **Q-20 — bộ chuẩn bị cổng nhu cầu 2026-10-25** (`TODOS.md` #19): `docs/business/cong-nhu-cau-2026-10-25/` —
   câu hỏi cổng, demo ≤ 5 phút chỉ bằng lệnh đã chạy thật, bộ phỏng vấn, thang chấm, trang ghi phiếu.
 
+#### Đã đổi — Tái cấu trúc MVP (2026-09-30, Q-52 → Q-55)
+
+- **MVP = v1.0 đầy đủ, một lần ra mắt; trượt thì dời ngày, không cắt (Q-52).** Roadmap gom thành bốn phase
+  (`roadmap/neuroedge-roadmap.md` §0.5): P0 dọn nền · MVP (I0 → I7) · Beta và thương mại · mở rộng. Ngày của I2a → I8
+  bỏ, đặt lại bằng TSK-I2a-01; lập kế hoạch với giả định đủ người (V1 → V7).
+- **Bốn gói nguyên thủy mở rộng bắt buộc trên ba target (Q-53)**: cảm biến (`digital.in`, I2C chỉ đọc, `analog.in`, tiêu
+  chí `numeric`), PWM, `vision.in`, `motion.*`. Increment mới I2a (`sim` + `linux`), I3a (`esp32s3`, thêm một bo ESP32-S3
+  có camera), I2b (năm kit phần cứng, thư viện gate khởi đầu, `neuroedge add`). Thị giác vào gate dưới dạng dữ kiện do
+  maker khai, ngưỡng tin cậy khoá bằng tiêu chí số (Q-54).
+- **NeuroBrain vào MVP (Q-55)**: I4a (host) và I5a (chip), phủ bốn gói. I12 và I15 không còn là increment; khối W1 rời
+  I14. Mã task giữ nguyên.
+- **PRD 1.5**: FR-HAL-08, FR-DX-08 → FR-DX-10, nghiệm thu A10 → A12. Sáu bản nháp RFC: 0007, 0009 → 0013 (`docs/rfc/`,
+  chưa mở PR). `TODOS.md` #14, #30, #39 đã kích hoạt.
+- **Tài liệu sản phẩm chuyển vào `roadmap/`**; mọi link, test và script sinh đã trỏ đường dẫn mới.
+
 #### Đã đổi
 
 - **Q-47, Q-48 — hai chỗ proposal tự mâu thuẫn đã chốt (2026-09-28).** Q-47: FastAPI WebSockets của Fleet OS chỉ cho kết nối và
@@ -1042,9 +1057,9 @@ Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc 
 
 | Tệp | Vai trò | Khi nào đọc |
 |:---|:---|:---|
-| [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md) | **Roadmap duy nhất (Q-39):** increment I0–I18, trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành. §0 là bảng điều khiển | **Luôn đọc trước** |
-| [`neuroedge-design-phase2.md`](roadmap/neuroedge-design-phase2.md) | Ghi chú thiết kế — thị giác, phủ rộng phần cứng (I11, I13, I15–I18); không lịch, không trạng thái | Khi làm task của các increment đó |
-| [`neuroedge-design-neurobrain.md`](roadmap/neuroedge-design-neurobrain.md) | Ghi chú thiết kế — NeuroBrain (I12) | Khi làm task `TSK-N*` |
+| [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md) | **Roadmap duy nhất (Q-39):** bốn phase (§0.5, Q-52), increment I0–I18 kể cả I2a, I2b, I3a, I4a, I5a; trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành. §0 là bảng điều khiển | **Luôn đọc trước** |
+| [`neuroedge-design-phase2.md`](roadmap/neuroedge-design-phase2.md) | Ghi chú thiết kế — thị giác (I2a, I3a), phủ rộng phần cứng (I11, I13, I16–I18); không lịch, không trạng thái | Khi làm task của các increment đó |
+| [`neuroedge-design-neurobrain.md`](roadmap/neuroedge-design-neurobrain.md) | Ghi chú thiết kế — NeuroBrain (I4a, I5a; Q-55) | Khi làm task `TSK-N*` |
 | [`draft-ke-hoach-mo-rong-robot-fofoca.md`](roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md) · [`draft-rfc-node-giao-thuc-dieu-phoi.md`](roadmap/draft-rfc-node-giao-thuc-dieu-phoi.md) | Ghi chú thiết kế — robot phân tầng FOFOCA (I14; `TSK-W0-*` rải ở I2, I6, I7) · RFC nháp điều phối node (chưa cấp số) | Khi việc chạm nguyên thủy HAL mới, robot nhiều MCU hoặc multi-node |
 | [`neuroedge-prd.md`](roadmap/neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`; **§15 là sổ quyết định duy nhất** (`Q-N`); Phụ lục B là mã lỗi | Khi cần biết *phải* làm gì, và đã chốt gì |
 | [`neuroedge-proposal.md`](roadmap/neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** | Khi cần biết *tại sao* |

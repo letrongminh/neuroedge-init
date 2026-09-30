@@ -102,7 +102,7 @@ toàn chức năng được chứng nhận (`docs/spec/threat_model.md` §3, §3
 | Jev (System 1) | **Chỉ lời người nói** và câu hỏi có kiểu cho từng tiêu chí | Tên action, tham số, dữ kiện phiên; lời gọi MCP không ai nói thì không gửi gì |
 | STT | Đoạn âm thanh của một lượt | — |
 | TTS | Câu trả lời cần đọc | — |
-| Camera / thị giác *(planned)* | Tới model thị giác và một `SystemOne`, trả về `bool`/`level`/`choice` cho gate (`neuroedge-design-phase2.md` §2.2) | Vết ghi không nhúng khung hình thô: mặc định chỉ lưu băm SHA-256 và kích thước; lưu ảnh thô phải bật tường minh (`metadata.raw_capture`, phase2 §2.3, TSK-V1b-08) — xem [`15`](15-target-architecture.md) §4.4 |
+| Camera / thị giác *(planned)* | Tới model thị giác; maker khai dữ kiện `bool`/`level`/`choice` kèm độ tin cậy số, gate khoá ngưỡng bằng tiêu chí `numeric` (Q-54, `neuroedge-design-phase2.md` §2.2) | Vết ghi không nhúng khung hình thô: mặc định chỉ lưu băm SHA-256 và kích thước; lưu ảnh thô phải bật tường minh (`metadata.raw_capture`, phase2 §2.3, TSK-V1b-08) — xem [`15`](15-target-architecture.md) §4.4 |
 
 Vết ghi mặc định chỉ lưu quyết định: chữ thô (câu gõ, bản chép lời) được băm tại nguồn (NFR-PRIV-03);
 `--raw` là cách bật tường minh giữ nguyên văn, vết ghi đó mang `metadata.anonymized = false` (NFR-PRIV-04).

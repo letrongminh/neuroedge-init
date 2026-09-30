@@ -41,7 +41,7 @@
 | **Mở rộng** | **I11 — Mở danh sách target** | sau I8 | **0 / 6** | ⏳ Chưa bắt đầu | 1.x minor |
 |  | **I13 — Bộ port cộng đồng** | sau I11 | **0 / 5** | ⏳ Chưa bắt đầu | bộ port |
 |  | **I14 — Robot phân tầng** | sau I13 | **0 / 12** | ⏳ Chưa bắt đầu | 1.x + firmware node RP2350 |
-|  | **I16 — Thị giác trên `jetson`** | sau I8 | **0 / 4** | ⏳ Chưa bắt đầu | 1.x |
+|  | **I16 — Thị giác trên `jetson`** | sau I11 | **0 / 4** | ⏳ Chưa bắt đầu | 1.x |
 |  | **I17 — Đa phương thức** | sau I16 | **0 / 4** | ⏳ Chưa bắt đầu | 1.x |
 |  | **I18 — Hệ sinh thái thiết bị** | sau I13 | **0 / 4** | ⏳ Chưa bắt đầu | dịch vụ |
 | **Ngoài roadmap** | **Khối 4 — AURA thực địa** | sau I8 | — | ⏳ Ngoài roadmap | — |

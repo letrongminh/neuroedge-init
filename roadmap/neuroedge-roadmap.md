@@ -83,7 +83,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 |  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | Gate chạy trên chip, điều khiển chân thật; người dùng tự nạp agent; `verify` ba target bậc 1 cho miền phán quyết | **6 / 14** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU, giao diện LVGL có ảnh golden); chờ bo mạch | I1, cổng Go | tag `v0.3.0` + firmware (nội bộ) |
 |  | **I3a — Nguyên thủy mở rộng trên `esp32s3`** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Bốn gói trên chip: Box-3 và một bo ESP32-S3 có camera (Q-53) | **0 / 7** | ⏳ Chưa bắt đầu | I2a, I3 | tag `v0.3.1` + firmware (nội bộ) |
 |  | **I4 — Thoại trên host** | 2026-12-13 | Nói chuyện với agent trên `sim` và `linux`: wake-word, cắt lời, STT/TTS qua provider cloud, fallback lệnh cục bộ | **5 / 9** | 🟡 Đặc tả, vector, FSM Python, độ trễ, SystemOne qua Jev xong; STT/TTS trên `sim`, wake-word + STT dự phòng, âm thanh `linux` xong phần mã trên host; phiên micro trên laptop (`run --mic`, TSK-I4-04) xong phần mã; còn mô hình wake-word thật, Pi + HAT | I2, cổng Go | tag `v0.4.0` (nội bộ) |
-|  | **I4a — NeuroBrain trên host** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Dựng bằng hội thoại có hợp đồng trên `sim` và `linux`, phủ bốn gói (Q-55) | **0 / 33** | ⏳ Chưa bắt đầu | I2b, I4 | tag `v0.4.1` + extra `[lab]` (nội bộ) |
+|  | **I4a — NeuroBrain trên host** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Dựng bằng hội thoại có hợp đồng trên `sim` và `linux`, phủ bốn gói (Q-55) | **0 / 33** | ⏳ Chưa bắt đầu | I2a, I4 | tag `v0.4.1` + extra `[lab]` (nội bộ) |
 |  | **I5 — Thoại trên Box-3** | 2027-01-03 | Demo "nói chuyện với con chip $5": thoại trên ESP32-S3, gate trên chip, cùng vết ghi replay trong CI | **0 / 7** | ⏳ Chưa bắt đầu | I3, I4 | tag `v0.5.0` + firmware (nội bộ) |
 |  | **I5a — NeuroBrain trên chip** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Lab action, gate và phong bì của NeuroBrain chạy trên Box-3 và bo camera | **0 / 2** | ⏳ Chưa bắt đầu | I3a, I4a, I5 | tag `v0.5.1` + firmware (nội bộ) |
 | **Công khai** | **I6 — Công khai** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Repo công khai, `pip install neuroedge` từ PyPI, lược đồ ở URL công khai, video demo thoại và bốn gói trên `sim`, `linux` và `esp32s3` | **3 / 8** | 🟡 Quét bí mật, SBOM xong; chờ I5a | I2b, I5a | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
@@ -94,7 +94,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 | **Mở rộng** | **I11 — Mở danh sách target** | sau I8 | RFC-0002 PR2: enum `target` theo bậc, `TARGET_TIERS` trong mã lõi, `board validate` | **0 / 6** | ⏳ Chưa bắt đầu | I8 | 1.x minor |
 |  | **I13 — Bộ port cộng đồng** | sau I11 | Tài liệu, bộ vector tuân thủ và khung port để người ngoài tự port bậc 3 | **0 / 5** | ⏳ Chưa bắt đầu | I7, I11 | bộ port |
 |  | **I14 — Robot phân tầng** | sau I13 | Pi 5 + nhiều node MCU, mỗi node tự lượng giá gate; mất liên lạc về trạng thái an toàn; ROS 2/Nav2 có gate | **0 / 12** | ⏳ Chưa bắt đầu | I4, I7, I11, I13 | 1.x + firmware node RP2350 |
-|  | **I16 — Thị giác trên `jetson`** | sau I8 | `jetson` bậc 2, thị giác thời gian thực | **0 / 4** | ⏳ Chưa bắt đầu | I11 | 1.x |
+|  | **I16 — Thị giác trên `jetson`** | sau I11 | `jetson` bậc 2, thị giác thời gian thực | **0 / 4** | ⏳ Chưa bắt đầu | I11 | 1.x |
 |  | **I17 — Đa phương thức** | sau I16 | Thoại và thị giác trong một máy trạng thái; gate đa phương thức | **0 / 4** | ⏳ Chưa bắt đầu | I16 | 1.x |
 |  | **I18 — Hệ sinh thái thiết bị** | sau I13 | SDK đa thiết bị, kho HAL port, chứng nhận miễn phí tự kiểm chứng | **0 / 4** | ⏳ Chưa bắt đầu | I9, I10, I13 | dịch vụ |
 | **Ngoài roadmap** | **Khối 4 — AURA thực địa** | sau I8 | Ứng dụng khách sạn/villa; chỉ dùng API công khai (proposal §8.6) | — | ⏳ Ngoài roadmap | I8 | — |
@@ -202,21 +202,19 @@ V2 làm phần firmware không cần bo mạch trước (walker C, sổ token, v
 
 ### 2.1 Đồ thị phụ thuộc
 
+Đọc `A ◄ B, C`: A phụ thuộc B và C. Nguồn là cột Phụ thuộc của §0.2.
+
 ```text
-I0 ──► I1 ──► I2 linux ──► I2a nguyên thủy mở rộng (sim, linux) ──► I2b kit ──► I4a NeuroBrain host ──┐
-                │                    │                                              ▲                   │
-                └──► I4 thoại host ──┼──────────────────────────────────────────────┘                   │
-                                     ▼                                                                  ▼
- [bo mạch] ──► TSK-S1-10 ──► I3 gate Box-3 ──► I3a nguyên thủy trên chip ──► I5 thoại Box-3 ──► I5a NeuroBrain chip
-                                                                                                        │
-                                              I6 công khai ◄───────────────────────────────────────────┘
-                                                   │
-                                                   ▼
-                                              I7 v1.0 = MVP ──► I8 Beta ──┬──► I9 · I10  (v1.1, nhánh A)
-                                                                          ├──► I11 ──► I13 ──► I14
-                                                                          ├──► I16 ──► I17
-                                                                          └──► I18 (sau I9, I10, I13)
-    ⟂ Cổng nhu cầu 2026-10-25: Go / Adjust / Stop cho I3–I7 (áp cho I2a → I5a: §10.2)
+MVP · host    I1 ◄ I0 · I2 ◄ I1 · I2a ◄ I2 · I2b ◄ I2a · I4 ◄ I2 · I4a ◄ I2a, I4
+MVP · chip    [bo mạch] ► TSK-S1-10 ► I3 ◄ I1 · I3a ◄ I2a, I3 · I5 ◄ I3, I4 · I5a ◄ I3a, I4a, I5
+Ra mắt        I6 công khai ◄ I2b, I5a · I7 v1.0 = MVP ◄ I6 · I8 Beta ◄ I7
+Sau Beta      I9, I10 ◄ I8 (nhánh A) · I11 ◄ I8 · I13 ◄ I7, I11 · I14 ◄ I4, I7, I11, I13
+              I16 ◄ I11 · I17 ◄ I16 · I18 ◄ I9, I10, I13
+
+Chuỗi dài nhất  [bo mạch] ► TSK-S1-10 ► I3 ► I3a ► I5 ► I5a ► I6 ► I7
+                (I3a còn chờ nhánh: sáu RFC ► I2a)
+
+⟂ Cổng nhu cầu 2026-10-25: Go / Adjust / Stop cho I3–I7 (áp cho I2a → I5a: §10.2)
 ```
 
 ### 2.2 Đường găng

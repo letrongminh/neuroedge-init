@@ -167,7 +167,7 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 - **Cưỡng chế.** `LICENSE`, `LICENSING.md`, `test_packaging.py`.
 
 ### Q-39 · Roadmap theo increment
-- **Quyết định.** Một roadmap, đo bằng increment I0…I18, mỗi increment một ngày dự báo, một tag và một tín
+- **Quyết định.** Một roadmap, đo bằng increment I0…I18 (thêm I2a, I2b, I3a, I4a, I5a; bỏ I12 và I15 — Q-52), mỗi increment một ngày dự báo, một tag và một tín
   hiệu đo; không phát hành ra ngoài trước I6.
 - **Cưỡng chế.** `neuroedge-roadmap.md` §0.2; `test_plan_contract.py`.
 
@@ -189,8 +189,12 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 | Q-34 | **Bối cảnh:** Robot di động cần dẫn đường và tránh vật cản, nhưng NeuroEdge không tự phát triển lại SLAM/navigation. **Quyết định:** Tích hợp nguyên bản ROS 2 và Nav2 qua adapter tại ranh giới gate; gate xét duyệt mọi lệnh tốc độ (`cmd_vel`), kể cả khi Nav2 đang tự động dẫn đường. | Thiết lập tầng an toàn robot di động mới (gate chu kỳ 10–20 Hz, vùng cấm); cần RFC an toàn robot di động và khảo sát câu hỏi C6 từ người mua robot (Q-38, `TODOS.md` #40); [`15`](15-target-architecture.md) §4.3 |
 | Q-35 | Mỗi cơ cấu chấp hành tự khai trạng thái an toàn khi mất liên lạc; không khai thì dừng | Cần RFC cho trường khai báo |
 | Q-36 | Zenoh-pico trên MCU, `zenohd` trên Pi; spike với ngưỡng đạt/trượt, micro-ROS là phương án B | Bản nháp RFC node |
-| Q-37 | Token thuê có hạn cho `motion.*` (kênh, biên độ tối đa, TTL ngắn), gia hạn qua mỗi lệnh có gate | Khác token dùng-một-lần hôm nay; cần RFC-motion |
-| Q-40 | **Bối cảnh:** Nhiều hướng mở rộng sau Beta (NeuroBrain, robot phân tầng, thị giác, port cộng đồng) có nguy cơ làm loãng nguồn lực đội lõi nếu không có thứ tự ưu tiên. **Quyết định:** Thứ tự mở rộng sau Beta neo theo phụ thuộc: mở danh sách target (I11) → NeuroBrain (I12) → bộ port cộng đồng (I13) → robot phân tầng (I14); thị giác (I15–I17) chờ nhu cầu camera đo được; hệ sinh thái (I18) sau I13 và Registry. | Bảo vệ đường găng v1.0 và công của V2 (R-7); NeuroBrain chuyển sau Developer Beta thành I12; [`15`](15-target-architecture.md) §4 |
+| Q-37 | Token thuê có hạn cho `motion.*` (kênh, biên độ tối đa, TTL ngắn), gia hạn qua mỗi lệnh có gate | Khác token dùng-một-lần hôm nay; cần RFC-0011 |
+| Q-40 | **Bối cảnh:** Nhiều hướng mở rộng sau Beta (NeuroBrain, robot phân tầng, thị giác, port cộng đồng) có nguy cơ làm loãng nguồn lực đội lõi nếu không có thứ tự ưu tiên. **Quyết định:** Thứ tự mở rộng sau Beta neo theo phụ thuộc: mở danh sách target (I11) → bộ port cộng đồng (I13) → robot phân tầng (I14); hệ sinh thái (I18) sau I13 và Registry. *(Sửa 2026-09-30: phần NeuroBrain thay bằng Q-55 — vào MVP ở I4a, I5a; thị giác cơ bản thay bằng Q-53 — vào MVP ở I2a, I3a; I12 và I15 không còn là increment.)* | Bảo vệ đường găng v1.0 và công của V2 (R-7) — nay theo Q-52 bằng cách dời ngày thay vì cắt phạm vi; [`15`](15-target-architecture.md) §4 |
+| Q-52 | **MVP = v1.0 đầy đủ**, một lần ra mắt; trượt thì dời ngày, không cắt phạm vi; bốn phase P0 → MVP → Beta và thương mại → mở rộng (`neuroedge-prd.md` §15) | Roadmap thêm I2a, I2b, I3a, I4a, I5a; nghiệm thu A1–A12; giả định đủ người V1–V7 |
+| Q-53 | Bốn gói nguyên thủy mở rộng (cảm biến, PWM, thị giác, chuyển động) bắt buộc trên cả ba target bậc 1, tuỳ chọn theo bo mạch | Sáu RFC (RFC-0007, RFC-0009 → RFC-0013); thêm bo ESP32-S3 có camera và profile `sim-rpi5` |
+| Q-54 | Thị giác vào gate qua dữ kiện do maker khai; gate khoá ngưỡng tin cậy bằng tiêu chí `numeric` | Không có ngữ nghĩa gate riêng cho thị giác; vết ghi không chứa ảnh thô |
+| Q-55 | NeuroBrain vào MVP trên cả ba target, phủ bốn gói nguyên thủy | I4a (host) và I5a (chip); thay phần thứ tự NeuroBrain của Q-40 |
 
 ## 6. RFC
 
@@ -202,8 +206,13 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 | [0004](../../rfc/0004-ke-thua-budget-on-block.md) | Không nới `budget`, `on_block` khi kế thừa | Chấp nhận, đã hiện thực | `gate_resolver.py` |
 | [0005](../../rfc/0005-rang-buoc-tham-so-trong-gate.md) | Giới hạn tham số trong gate | Chấp nhận, đã hiện thực | `arguments.py`, bản ghi tham số `NETR` |
 | [0006](../../rfc/0006-xac-nhan-ask-confirms.md) | `on_block.confirms` | Chấp nhận, đã hiện thực | `confirmation.py`, `confirm_mask` |
-| 0007 | Giữ chỗ: `digital.in`, bus I2C chỉ đọc, khai báo phong bì trong `board.v1` (TSK-N0-03, NeuroBrain). Đọc mức logic và quét bus lab mà không đổi `gate.v1` | **Chưa mở** (giữ chỗ); thuộc I12 | chưa |
+| 0007 | Giữ chỗ: `digital.in`, bus I2C chỉ đọc, `analog.in`, khai báo phong bì trong `board.v1` (TSK-N0-03). Đọc mức logic và quét bus lab mà không đổi `gate.v1` | **Chưa mở** (giữ chỗ); thuộc I2a | chưa |
 | [0008](../../rfc/0008-vet-ghi-chuan-muc-mang-gate-digest.md) | Ba vết ghi chuẩn mực mang `gate_digest` trong `trace.v1` — phát lại kiểm tra. Ngăn chặn phát lại vết ghi trên gate đã đổi ngữ nghĩa an toàn mà không phát hiện được | Chấp nhận, đã hiện thực | `fixtures/traces/`, `verify`, `replay` |
+| 0009 | Tiêu chí `numeric`: `evaluate.type: numeric` trong `gate.v1`, nút so sánh số trong `NETR` và walker C; cho phép gate kiểm tra ngưỡng số liên tục (áp suất, nhiệt độ) thay vì chỉ enum `bool`/`level`/`choice` (TSK-W1-02, `TODOS.md` #30) | **Chưa mở** (giữ chỗ, Q-53); thuộc I2a | chưa |
+| 0010 | PWM (tần số, độ rộng xung) và kênh phản hồi trạng thái trong `digital.out` (TSK-W1-01) | **Chưa mở** (giữ chỗ, Q-53); thuộc I2a | chưa |
+| 0011 | Nguyên thủy `motion.*` (motor/servo), mở rộng phong bì an toàn vật lý, token thuê có hạn (Q-37) và trạng thái an toàn riêng cho từng cơ cấu khi mất liên lạc (Q-35) (TSK-W1-03) | **Chưa mở** (giữ chỗ, Q-53); thuộc I2a | chưa |
+| 0012 | Nguyên thủy `vision.in` với tham số phần cứng (`fps`, `modes[]`, enum `pixel_format`), quy tắc đối chiếu `[requires]` (RFC-0002 §9.1) và luật riêng tư của vết ghi (TSK-V1b-07) | **Chưa mở** (giữ chỗ, Q-53); thuộc I2a | chưa |
+| 0013 | Nguyên thủy mở rộng tuỳ chọn theo bo mạch; nhiều bo tham chiếu cho một target bậc 1 (TSK-I2a-07) | **Chưa mở** (giữ chỗ, Q-53); thuộc I2a | chưa |
 
 ### Các RFC dự kiến chưa cấp số (planned RFCs)
 
@@ -211,12 +220,9 @@ Mỗi RFC dưới đây giải quyết một điểm nghẽn kiến trúc cho c�
 
 | RFC dự kiến | Năng lực và mục đích kiến trúc (Tại sao cần) | Task mở | Thuộc chặng |
 |:---|:---|:---|:---|
-| **RFC-numeric** | Bổ sung `evaluate.type: numeric` trong `gate.v1`, nút so sánh số trong `NETR` và walker C; cho phép gate kiểm tra ngưỡng số liên tục (áp suất, nhiệt độ) thay vì chỉ enum `bool`/`level`/`choice` (`TODOS.md` #30) | TSK-W1-02 | I14 |
-| **RFC-motion** | Bổ sung nguyên thủy `motion.*` (motor/servo), `analog.in`, mở rộng phong bì an toàn vật lý, cơ chế token thuê có hạn (lease token, Q-37) và trạng thái an toàn riêng cho từng cơ cấu khi mất liên lạc (Q-35) | TSK-W1-03 | I14 |
 | **RFC-node** | Đặc tả giao thức điều phối đa node trên wire (Zenoh-pico, Q-36), cấu trúc black channel, nhịp tim (heartbeat) kích hoạt an toàn khi đứt kết nối (Q-35), và hợp nhất vết ghi đa node trong `trace.v1` (Q-32) | TSK-W3-02 | I14 |
 | **RFC-pin-extends** | Cho phép ghim kế thừa gate theo băm nội dung `@<ver>#sha256:…` trong `gate.v1`, nâng cấp `digests.lock` thành lockfile cho chuỗi kế thừa; chống tấn công thay thế gate trên Registry công cộng (`TODOS.md` #11, #15) | TSK-S3-21 | I10 |
-| **RFC vision.in** | Đặc tả nguyên thủy `vision.in` với các tham số phần cứng (`fps`, `modes[]`, enum `pixel_format`) và quy tắc đối chiếu năng lực bo mạch `[requires]` (RFC-0002 §9.1) | TSK-V1b-07 | I15 |
-| **RFC visual-evidence gate semantics** | Định nghĩa ngữ nghĩa gate cho bằng chứng thị giác; tới khi có RFC này, kết quả thị giác phải qua một `SystemOne` trả `bool`/`level`/`choice` (`neuroedge-design-phase2.md` §2.2); điều kiện tiên quyết cho gate đa phương thức | TSK-V3-04 | I17 |
+| **RFC visual-evidence gate semantics** | Định nghĩa ngữ nghĩa gate riêng cho bằng chứng thị giác; tới khi có RFC này, thị giác vào gate qua dữ kiện do maker khai và ngưỡng khoá bằng tiêu chí `numeric` (Q-54, `neuroedge-design-phase2.md` §2.2); điều kiện tiên quyết cho gate đa phương thức | TSK-V3-04 | I17 |
 | **RFC mobile-robot safety** | Khung an toàn cho robot di động: giới hạn tốc độ tối đa, vùng cấm di chuyển, chu kỳ gate thời gian thực 10–20 Hz, tích hợp luồng điều khiển ROS 2 / Nav2 (Q-34) và câu hỏi C6 từ người mua robot (Q-38, `TODOS.md` #40) | TSK-W4-07 | I14 |
 
 ## 7. Ra một quyết định kiến trúc mới

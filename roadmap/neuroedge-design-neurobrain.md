@@ -5,8 +5,9 @@
 > **Ghi chú thiết kế.** Tệp này giữ định vị, nguyên tắc, ranh giới với tầng an toàn và
 > thiết kế từng khối N0–N7. Nó **không** có lịch, trạng thái, tiêu chí ra hay thang cắt:
 > task, tiêu chí ra, phụ thuộc và thang cắt chỉ nằm ở [`neuroedge-roadmap.md`](neuroedge-roadmap.md)
-> increment **I12** (§7.2; thang cắt §9.3). Quyết định chỉ nằm ở `neuroedge-prd.md` §15:
-> **Q-31** (tên và định vị), **Q-40** (NeuroBrain sau Developer Beta). Quyết định còn chờ mã
+> increments **I4a** (host, §4.5.1) và **I5a** (chip, §4.6.1), phong bì N2 ở **I2a** (§4.3.1);
+> không có thang cắt riêng (§9.1). Quyết định chỉ nằm ở `neuroedge-prd.md` §15:
+> **Q-31** (tên và định vị), **Q-55** (NeuroBrain vào MVP, thay phần thứ tự của Q-40). Quyết định còn chờ mã
 > `Q-N`: Phụ lục B.
 
 **Cập nhật:** 2026-09-25 · lịch sử thay đổi: `CHANGELOG.md`
@@ -129,13 +130,13 @@ Libgpiod thả line khi tiến trình thoát, và *"it should not be assumed tha
 
 ## 3. Giả định nguồn lực
 
-→ Người và điều kiện vào của I12: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §1.1 và §7.2.
+→ Người (V7) và điều kiện vào của I4a: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §1.1 và §4.5.1.
 
 ---
 
 ## 4. Đường găng và phụ thuộc
 
-→ Phụ thuộc của I12 và của từng task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §0.2 và §7.2.
+→ Phụ thuộc của I4a, I5a và của từng task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §0.2, §4.5.1 và §4.6.1.
 
 ---
 
@@ -143,7 +144,7 @@ Libgpiod thả line khi tiến trình thoát, và *"it should not be assumed tha
 
 Chỉ có tài liệu, không có mã (nguyên tắc 7, §1).
 
-→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N0.
+→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N0.
 
 ---
 
@@ -155,7 +156,7 @@ Chỉ có tài liệu, không có mã (nguyên tắc 7, §1).
 - **Nhận:** `mcp`, `test`, cùng các nguồn người là `local_grammar` và `ui`.
 - **Từ chối:** `trigger` và `system_two`. Lab là dụng cụ bàn thí nghiệm, không phải hành vi tự động.
 
-→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N1.
+→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N1.
 
 ---
 
@@ -163,7 +164,7 @@ Chỉ có tài liệu, không có mã (nguyên tắc 7, §1).
 
 Phong bì gồm giới hạn tổng thời gian bật và tần suất theo chân, khai ở `board.v1` (RFC-0007).
 
-→ Hook phong bì và thứ tự kiểm (TSK-N2-01), chính sách check-và-reserve nguyên tử (TSK-N2-02), móc tắt an toàn (TSK-N2-03) và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N2.
+→ Hook phong bì và thứ tự kiểm (TSK-N2-01), chính sách check-và-reserve nguyên tử (TSK-N2-02), móc tắt an toàn (TSK-N2-03) và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I2a (§4.3.1), Khối N2.
 
 ### 7.1 Hợp đồng hồi quy
 
@@ -185,7 +186,7 @@ N3 dựng trên `sensor.read` qua `i2c-stub` của TSK-S5-09.
 - **Spike không đạt:** ADC vào `TODOS.md`, mốc kích hoạt là khi có runner tự host gắn ADC thật.
 - `sim` chỉ phát lại giá trị đã ghi, không có quét I2C thật.
 
-→ Quét bus (TSK-N3-01), test trên `i2c-stub` (TSK-N3-02), spike ADC (TSK-N3-03) và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N3.
+→ Quét bus (TSK-N3-01), test trên `i2c-stub` (TSK-N3-02) và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N3. Spike ADC (TSK-N3-03) nằm ở I2a (§4.3.1, gói cảm biến), vì `analog.in` là nguyên thủy chung (Q-53).
 
 ---
 
@@ -193,7 +194,7 @@ N3 dựng trên `sensor.read` qua `i2c-stub` của TSK-S5-09.
 
 Nếu profile mới cần qua `test_boards.py`, nó phụ thuộc RFC-0002.
 
-→ Sổ sự thật (TSK-N4-01), profile board nháp (TSK-N4-02), cảnh báo chân đặc biệt (TSK-N4-03): [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N4.
+→ Sổ sự thật (TSK-N4-01), profile board nháp (TSK-N4-02), cảnh báo chân đặc biệt (TSK-N4-03): [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N4.
 
 ---
 
@@ -201,7 +202,7 @@ Nếu profile mới cần qua `test_boards.py`, nó phụ thuộc RFC-0002.
 
 `extends` từ chối version pre-release, nên không gate nào extends được một bản nháp. Đây là hành vi mong muốn.
 
-→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N5.
+→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N5.
 
 ---
 
@@ -214,7 +215,7 @@ Là một panel trong trang sim hiện có (`python/neuroedge/viz/assets/ui.js`,
 - Cột trái: thiết bị → bus I2C.
 - Header: huy hiệu LAB MODE.
 
-→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N5b.
+→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N5b.
 
 ---
 
@@ -222,7 +223,7 @@ Là một panel trong trang sim hiện có (`python/neuroedge/viz/assets/ui.js`,
 
 Luật "khi X thì Y" là **cấu hình agent**, không phải mở rộng gate. Mỗi trigger gọi một `@action` có gate.
 
-→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N6.
+→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N6.
 
 ---
 
@@ -230,13 +231,13 @@ Luật "khi X thì Y" là **cấu hình agent**, không phải mở rộng gate.
 
 N7 đưa lab action, gate và phong bì của N1–N6 xuống chip, nên cần bo Box-3 và HAL `esp32s3`.
 
-→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I12 (§7.2), Khối N7.
+→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I5a (§4.6.1), Khối N7.
 
 ---
 
 ## 14. Cổng nhu cầu và cột mốc
 
-→ Q-40 bỏ luật cổng nhu cầu riêng của NeuroBrain. Tín hiệu đo của I12: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §7.2.
+→ Q-40 bỏ luật cổng nhu cầu riêng của NeuroBrain. Tín hiệu đo của I4a và I5a: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §4.5.1 và §4.6.1.
 
 ---
 
@@ -244,18 +245,18 @@ N7 đưa lab action, gate và phong bì của N1–N6 xuống chip, nên cần b
 
 | # | Rủi ro | Mức độ | Dấu hiệu sớm | Phương án ứng phó |
 |:---:|:---|:---:|:---|:---|
-| **1** | NeuroBrain kéo người khỏi đường găng v1.0 | Cao | Việc của v1.0 bị gán cho N0/N1 | Q-40 xếp I12 sau Developer Beta; không increment nào trước I12 phụ thuộc NeuroBrain |
+| **1** | NeuroBrain kéo người khỏi đường găng v1.0 | Cao | Việc của v1.0 bị gán cho N0/N1 | Q-55 đưa NeuroBrain vào MVP, nên I6 phụ thuộc I5a (`neuroedge-roadmap.md` §0.2); giảm thiểu bằng vai trò V7 riêng và increment riêng (I4a, I5a) để việc lõi không bị gán cho N0/N1. MVP trượt thì dời ngày, không cắt phạm vi (Q-52) |
 | **2** | LLM sinh gate nới lỏng hơn ý người nói | Cao | Bản nháp chỉ có test ALLOW | Test hai chiều (TSK-N5-02), `gate explain` trong PR (TSK-N5-04), người duyệt (TSK-N0-05) |
 | **3** | Chân kẹt HIGH khi tiến trình chết | Trung bình | Relay nóng hoặc kêu sau crash | §2.3: phần mềm không cứu được. README lab và runbook bắt buộc ghi rõ cần điện trở kéo xuống |
 | **4** | Lab lọt vào bản phát hành | Trung bình | Báo cáo build ghi `lab_enabled: true` | Cờ mặc định tắt, `build --release` chặn (TSK-N1-03) |
-| **5** | Không có thêm người cho I12 | Cao | Chưa có ứng viên khi I12 sắp mở | Điều kiện vào của I12 (`neuroedge-roadmap.md` §7.2): chưa có người thì I12 chưa mở |
+| **5** | Không có người cho vai trò V7 | Cao | Chưa có ứng viên khi I4a sắp mở | Roadmap lập kế hoạch với giả định đủ người (Q-52; `neuroedge-roadmap.md` §1.1, §1.3); thiếu người thì đọc lại ngày ở §1.3 và dời ngày, không cắt phạm vi |
 | **6** | RFC-0007 hoặc mở rộng Q-11 bị bác | Trung bình | Phản biện tập trung vào primitive mới | `lab_read`/N3 dừng, `lab_pulse` không bị ảnh hưởng. Restyle giữ font hệ thống, chỉ bỏ viền trái |
 
 ---
 
 ## 16. Cắt phạm vi
 
-→ Thang cắt của I12 và phần tuyệt đối không cắt: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §9.3.
+→ NeuroBrain không có thang cắt riêng; phần tuyệt đối không cắt của MVP: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §9.1 (Q-52).
 
 ---
 
@@ -285,7 +286,7 @@ Các quyết định dưới đây chốt ở ba vòng review ngày 2026-09-24. 
 | # | Quyết định |
 |:---:|:---|
 | 1 | Xây NeuroBrain kiểu ESP-Claw nhưng secure by design; không tool chân thô |
-| 2 | *Đã thay:* thời điểm và thứ tự của NeuroBrain là Q-40 (sau Developer Beta, increment I12) |
+| 2 | *Đã thay:* thời điểm và thứ tự của NeuroBrain là Q-55 (vào MVP, increment I4a và I5a; thay phần thứ tự của Q-40) |
 | 3 | Phạm vi N0–N7 như tệp này; N7 làm cuối |
 | 4 | Gói `brain/` với bất biến B-1; phong bì là hook trong HAL, kiểm trước `authorize` |
 | 5 | Thêm `digital.in` vào RFC-0007 cùng bus I2C; ADC có điều kiện theo spike |
@@ -293,4 +294,4 @@ Các quyết định dưới đây chốt ở ba vòng review ngày 2026-09-24. 
 | 7 | Lab qua MCP trên `linux` thật dùng phiên tương tác `linux` của TSK-S5-10 |
 | 8 | Port chọn lọc từ ESP-Claw theo Phụ lục A |
 | 9 | Restyle trang sim với IBM Plex; mở rộng Q-11 cho OFL-1.1, chỉ với font |
-| 10 | *Đã bỏ:* luật cổng nhu cầu riêng của NeuroBrain (Q-40); người cho I12: `neuroedge-roadmap.md` §1.1 |
+| 10 | *Đã bỏ:* luật cổng nhu cầu riêng của NeuroBrain (Q-40); người (V7): `neuroedge-roadmap.md` §1.1 |

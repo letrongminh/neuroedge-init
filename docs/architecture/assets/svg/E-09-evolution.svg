@@ -112,7 +112,7 @@
 <rect x="1074" y="978" width="326" height="112" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1237.0" y="1011.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I16 · Vision on jetson</text>
 <text x="1237.0" y="1031.9" font-size="12.5" fill="#475569" text-anchor="middle">0/4 tasks</text>
-<text x="1237.0" y="1050.1" font-size="12.5" fill="#475569" text-anchor="middle">forecast after I8</text>
+<text x="1237.0" y="1050.1" font-size="12.5" fill="#475569" text-anchor="middle">forecast after I11</text>
 <text x="1237.0" y="1068.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1412" y="978" width="326" height="112" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1575.0" y="1011.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I17 · Multimodal</text>

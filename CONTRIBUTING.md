@@ -208,8 +208,9 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `docs/user/` | Tài liệu người dùng; `thuat-ngu.md` là nơi duy nhất giải mã ký hiệu; `trang-thai.md` sinh từ roadmap §0 | PR thường — `python3 scripts/gen_user_status.py` |
 | `docs/release.md` | Thủ tục phát hành: tag nội bộ trước I6, PyPI từ I6 | PR thường |
 | `README.md` | Trang đầu và trang PyPI (link tuyệt đối) | PR thường — `tests/test_readme_quickstart.py` |
-| `neuroedge-roadmap.md` | Roadmap duy nhất (Q-39): increment I0–I18, trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành, thang cắt | PR thường, theo §8; luật chống lệch R1–R12 ở roadmap §2.4 |
-| `neuroedge-design-neurobrain.md`, `neuroedge-design-phase2.md`, `draft-ke-hoach-mo-rong-robot-fofoca.md`, `draft-rfc-node-giao-thuc-dieu-phoi.md` | Ghi chú thiết kế: NeuroBrain · thị giác và phủ phần cứng · robot phân tầng. Không lịch, không trạng thái, không tiêu chí ra; dẫn mã TSK của roadmap (R1, R8) | PR thường; merge được cả khi Beta đóng băng (R12) |
+| `roadmap/` | Bảy tài liệu sản phẩm: roadmap, PRD, proposal, hai ghi chú thiết kế, hai bản nháp | Theo từng tệp ở các dòng dưới |
+| `roadmap/neuroedge-roadmap.md` | Roadmap duy nhất (Q-39): bốn phase (§0.5, Q-52), increment I0–I18 kể cả I2a, I2b, I3a, I4a, I5a, trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành, thang cắt | PR thường, theo §8; luật chống lệch R1–R12 ở roadmap §2.4 |
+| `roadmap/neuroedge-design-neurobrain.md`, `roadmap/neuroedge-design-phase2.md`, `roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md`, `roadmap/draft-rfc-node-giao-thuc-dieu-phoi.md` | Ghi chú thiết kế: NeuroBrain · thị giác và phủ phần cứng · robot phân tầng. Không lịch, không trạng thái, không tiêu chí ra; dẫn mã TSK của roadmap (R1, R8) | PR thường; merge được cả khi Beta đóng băng (R12) |
 | `TODOS.md` | Việc đã xem xét và hoãn có chủ ý, kèm mốc kích hoạt | PR thường |
 
 ## 7. CI

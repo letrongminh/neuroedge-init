@@ -106,7 +106,7 @@ NeuroEdge có ba phần, cộng với chuỗi CI giữ chúng khớp nhau:
 | **CI** | Test Python, gpio-sim, QEMU, ảnh golden, OTA, bảo mật | GitHub Actions | `done` |
 
 Hai phần không có mã hôm nay và chỉ xuất hiện ở trạng thái `planned`: **Fleet OS** (I9) và **Gate
-Registry** (I10). Mọi thứ quy hoạch khác (robot nhiều node, thị giác, NeuroBrain) ở
+Registry** (I10). Mọi thứ quy hoạch khác (bốn gói nguyên thủy mở rộng, NeuroBrain, robot nhiều node, thị giác trên Jetson) ở
 [`13`](13-evolution-i0-i18.md).
 
 ### 5.1 Mô hình logic năm lớp

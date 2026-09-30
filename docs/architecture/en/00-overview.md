@@ -92,7 +92,7 @@ NeuroEdge has three parts, plus the CI chain that keeps them in sync:
 | **Data contracts** | `gate.v1`, `trace.v1`, `board.v1`, `agent.toml`, `NETR` v1, UART lines | JSON Schema, TOML, binary | `done`, frozen via RFC |
 | **CI** | Python tests, gpio-sim, QEMU, golden images, OTA, security | GitHub Actions | `done` |
 
-Two parts have no code today and appear only in the `planned` state: **Fleet OS** (I9) and the **Gate Registry** (I10). Everything else that is planned (multi-node robots, vision, NeuroBrain) is in [`13`](13-evolution-i0-i18.md).
+Two parts have no code today and appear only in the `planned` state: **Fleet OS** (I9) and the **Gate Registry** (I10). Everything else that is planned (the four extension primitive packs, NeuroBrain, multi-node robots, vision on Jetson) is in [`13`](13-evolution-i0-i18.md).
 
 ### 5.1 Five-layer logical model
 
