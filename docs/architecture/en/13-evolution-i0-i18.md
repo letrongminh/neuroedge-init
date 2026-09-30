@@ -11,8 +11,8 @@
 ![E-09 · Evolution](../assets/svg/E-09-evolution.svg)
 *Figure E-09 — Twenty-two increments, status, progress and forecast dates read from roadmap §0.2 when the figure is generated.*
 
-The critical path (roadmap §2.2): the six I2a RFCs → boards arrive → memory spike (TSK-S1-10) → I3 → I3a → I5 → I6 → I7. The MVP is the full v1.0, one launch: if it slips the date moves, the scope is not cut (Q-52). The
-demand gate (Q-20; date in roadmap §0.2) decides Go / Adjust / Stop for I3–I7. I12 and I15 are no longer increments: NeuroBrain became I4a and I5a (Q-55), and basic vision lives in I2a and I3a (Q-53).
+The critical path (roadmap §2.2): the six I2a RFCs → boards arrive → memory spike (TSK-S1-10) → I3 → I3a → I5 → I5a → I6 → I7. The MVP is the full v1.0, one launch: if it slips the date moves, the scope is not cut (Q-52); dates in roadmap §0.2.
+No demand gate blocks any increment any more (Q-56). I12 and I15 are no longer increments: NeuroBrain became I4a and I5a (Q-55), and basic vision lives in I2a and I3a (Q-53).
 
 ## 2. What the architecture changes at each stage
 

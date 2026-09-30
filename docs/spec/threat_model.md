@@ -124,7 +124,7 @@ NeuroEdge **không** phải chức năng an toàn được chứng nhận: khôn
 ISO 13849. Gate chặn lệnh sai do nhầm lẫn của agent (§2); nó không thay biện pháp an toàn độc lập, và
 phần mềm không cứu được khi tiến trình crash hay bị SIGKILL. Thiết bị có cơ cấu gây hại được cho người
 — motor của robot di động (Q-34) — phải có nút dừng khẩn bằng phần cứng, cắt nguồn không qua phần mềm.
-Tư thế này là tạm thời; IN/OUT thật chốt theo câu C6 của cổng nhu cầu và [`TODOS.md`](../../TODOS.md) #40.
+Tư thế này là tạm thời; IN/OUT thật chốt theo câu C6 của bộ phỏng vấn (`docs/business/cong-nhu-cau-2026-10-25/`) và [`TODOS.md`](../../TODOS.md) #40.
 
 ## 4. Giả định
 

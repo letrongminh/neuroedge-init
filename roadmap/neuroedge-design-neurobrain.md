@@ -237,7 +237,7 @@ N7 đưa lab action, gate và phong bì của N1–N6 xuống chip, nên cần b
 
 ## 14. Cổng nhu cầu và cột mốc
 
-→ Q-40 bỏ luật cổng nhu cầu riêng của NeuroBrain. Tín hiệu đo của I4a và I5a: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §4.5.1 và §4.6.1.
+→ Q-40 bỏ luật cổng nhu cầu riêng của NeuroBrain; Q-56 bỏ luôn luật cổng nhu cầu chung. Tín hiệu đo của I4a và I5a: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §4.5.1 và §4.6.1.
 
 ---
 

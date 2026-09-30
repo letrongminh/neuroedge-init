@@ -11,8 +11,8 @@
 ![E-09 · Tiến hoá](../assets/svg/E-09-evolution.svg)
 *Hình E-09 — Hai mươi hai increment, trạng thái, tiến độ và ngày dự báo đọc từ roadmap §0.2 lúc sinh hình.*
 
-Đường găng (roadmap §2.2): sáu RFC của I2a → bo mạch về → spike bộ nhớ (TSK-S1-10) → I3 → I3a → I5 → I6 → I7. MVP là v1.0 đầy đủ, một lần ra mắt: trượt thì dời ngày, không cắt phạm vi (Q-52). Cổng nhu cầu
-(Q-20; ngày ở roadmap §0.2) quyết Go / Adjust / Stop cho I3–I7. I12 và I15 không còn là increment: NeuroBrain thành I4a và I5a (Q-55), thị giác cơ bản nằm trong I2a và I3a (Q-53).
+Đường găng (roadmap §2.2): sáu RFC của I2a → bo mạch về → spike bộ nhớ (TSK-S1-10) → I3 → I3a → I5 → I5a → I6 → I7. MVP là v1.0 đầy đủ, một lần ra mắt: trượt thì dời ngày, không cắt phạm vi (Q-52); ngày ở roadmap §0.2.
+Không còn cổng nhu cầu chặn increment nào (Q-56). I12 và I15 không còn là increment: NeuroBrain thành I4a và I5a (Q-55), thị giác cơ bản nằm trong I2a và I3a (Q-53).
 
 ## 2. Kiến trúc thay đổi gì qua từng chặng
 

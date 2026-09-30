@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-HAL-01, FR-HAL-05, FR-ACE-08 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-09-30 |
-| **Trạng thái** | ⏳ Nháp — chưa mở PR |
+| **Trạng thái** | ⏳ Nháp — chưa mở PR · câu hỏi mở đã quyết (§9, Q-57) |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (chạm đường tới chân vật lý và mở rộng phong bì của RFC-0007) |
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/board.v1.json`. Task: TSK-W1-01.
@@ -112,9 +112,12 @@ Phong bì của RFC-0007 tính thời gian *có xung ra*. Với PWM: mọi lúc 
 - [ ] Hiện thực `python/neuroedge/hal/` (`__init__.py`, `digital.py`, `sim.py`, `linux.py`); firmware `esp32s3`
 - [ ] Thêm fixture/test; cập nhật `docs/rfc/README.md` và `CHANGELOG.md`
 
-## 9. Câu hỏi còn mở
+## 9. Quyết định cho các câu hỏi mở (Q-57, 2026-09-30)
 
-1. Backend PWM trên `linux`: libgpiod không tạo xung phần cứng; dùng PWM của kernel (sysfs) hay xung phần mềm? Ảnh hưởng độ chính xác tần số và chuỗi test `gpio-sim` (job `linux-hal`).
-2. Phong bì tính "bật" theo thời gian có xung hay theo năng lượng (thời gian × duty)? Đề xuất bảo thủ theo thời gian; chốt cùng RFC-0007.
-3. `state()` đọc giá trị *thực đo* (chân ra) hay *giá trị đã ghi* trên bo mạch không có readback phần cứng? Cần cờ phân biệt để agent không nhầm.
-4. PWM không `duration_ms` có được phép (bị phong bì chặn) hay bắt buộc luôn có `duration_ms`?
+Chủ sản phẩm uỷ quyền quyết các câu hỏi mở theo nguyên tắc **an toàn cao nhất**: giữa hai phương án, chọn phương án fail-closed và khó dùng sai hơn, kể cả khi nó tốn công hơn. Mục này **thay** mọi đoạn đề xuất trái với nó ở §3; khi mở PR RFC, gộp nội dung vào §3. Chấp thuận RFC vẫn cần chữ ký kỹ thuật trưởng (`CONTRIBUTING.md` §3).
+
+1. **Backend PWM trên `linux`:** **chỉ PWM phần cứng của kernel** (`/sys/class/pwm`). Không có PWM phần mềm; bo mạch không có kênh PWM phần cứng thì không khai `pwm`. Test CI chạy trên cây sysfs giả (cùng cách `hal/sysfs.py`), bằng chứng phần cứng ở nightly Pi 5. *Vì sao:* xung phần mềm lệch thời gian và dừng giữa chừng khi tiến trình nghẽn.
+2. **Chân cho phép (thêm mới).** Kênh PWM nối cơ cấu chấp hành **bắt buộc** khai `enable_pin` — một line `digital.out` có điện trở kéo xuống trên mạch; HAL chỉ bật `enable_pin` trong lúc có lệnh PWM đã qua gate. *Vì sao:* kênh PWM của kernel **vẫn chạy sau khi tiến trình chết**; line gpiod thì được thả khi tiến trình thoát, nên kéo xuống ngắt driver kể cả khi crash (`neuroedge-design-neurobrain.md` §2.3).
+3. **Phong bì đếm thời gian bật** là toàn bộ thời gian có duty > 0, không nhân với duty. *Vì sao:* bảo thủ, không phụ thuộc mô hình năng lượng của tải.
+4. **`state()`** trả `{value, source}` với `source` là `measured` (đọc lại từ phần cứng) hoặc `commanded` (giá trị đã ghi); gate chỉ được dùng giá trị `measured` làm dữ kiện, và bo mạch không có readback thì không khai `feedback`. *Vì sao:* không bao giờ trình bày lệnh đã gửi như trạng thái đã đo.
+5. **`duration_ms` luôn bắt buộc**, bị chặn bởi `arguments` của gate và `max_continuous_ms` của bo mạch (RFC-0007). *Vì sao:* không có PWM "chạy mãi"; muốn chạy tiếp phải gọi lại qua gate.

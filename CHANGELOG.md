@@ -262,6 +262,20 @@ bản gói.
 - **Q-20 — bộ chuẩn bị cổng nhu cầu 2026-10-25** (`TODOS.md` #19): `docs/business/cong-nhu-cau-2026-10-25/` —
   câu hỏi cổng, demo ≤ 5 phút chỉ bằng lệnh đã chạy thật, bộ phỏng vấn, thang chấm, trang ghi phiếu.
 
+#### Đã đổi — Ngày mới của MVP, bỏ cổng nhu cầu, quyết câu hỏi mở của RFC (2026-09-30, Q-56, Q-57)
+
+- **TSK-I2a-01 — ước lượng lại phạm vi MVP.** 106 task MVP còn mở, chia theo làn host / phần cứng / người ngoài;
+  tốc độ đo được 67 task trong 9 ngày, lập kế hoạch ở một phần tư tốc độ đó. Ngày mới: I2a 2026-12-06, I2b 2026-12-20,
+  I4a 2027-01-03, I3a 2027-01-10, I5a 2027-01-24, I6 2027-01-31, **v1.0 = MVP 2027-02-21**, Beta 2027-03-21 — v1.0
+  lùi bốn tuần so với trước Q-52. Cách tính và sáu giả định: `docs/reports/uoc-luong-mvp-2026-09-30.md`.
+- **Bỏ luật cổng nhu cầu (Q-56).** Không còn Go / Adjust / Stop; I3 và I4 bỏ điều kiện "cổng Go". Bộ phỏng vấn ở
+  `docs/business/cong-nhu-cau-2026-10-25/` giữ làm đầu vào thông tin; `TODOS.md` #19, #32, #34 neo lại vào trước I6.
+- **Câu hỏi mở của sáu RFC đã quyết theo hướng an toàn cao nhất (Q-57)**, ở §9 của từng RFC: I2C chỉ ghi con trỏ tới
+  thanh ghi đã khai; phong bì có `max_continuous_ms` và chờ sau khởi động; tiêu chí `numeric` bắt buộc `range`,
+  `max_age_ms`; PWM chỉ phần cứng, bắt buộc `enable_pin` kéo xuống; `motion.*` dừng ngay khi cắt lời (đóng `TODOS.md`
+  #39 cho chuyển động); thị giác cần ≥ 2 khung liên tiếp; `verify` chạy mọi bo tham chiếu. Chấp thuận vẫn cần chữ ký
+  kỹ thuật trưởng.
+
 #### Đã đổi — Tái cấu trúc MVP (2026-09-30, Q-52 → Q-55)
 
 - **MVP = v1.0 đầy đủ, một lần ra mắt; trượt thì dời ngày, không cắt (Q-52).** Roadmap gom thành bốn phase

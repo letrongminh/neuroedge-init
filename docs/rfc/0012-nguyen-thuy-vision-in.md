@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-HAL-01, FR-HAL-04, FR-CI-02, FR-MDL-04, FR-MDL-07, NFR-PRIV-01, NFR-PRIV-03 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-09-30 |
-| **Trạng thái** | ⏳ Nháp — chưa mở PR |
+| **Trạng thái** | ⏳ Nháp — chưa mở PR · câu hỏi mở đã quyết (§9, Q-57) |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (chạm `board.v1`, quyền riêng tư camera, ranh giới nhận thức/thẩm quyền) |
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/board.v1.json`. Task: TSK-V1b-07 (RFC này) và
@@ -141,11 +141,14 @@ Mất camera, mất mô hình, mô hình trả kết quả rác (điểm NaN, ng
 - [ ] `python/neuroedge/hal/` (`linux.py`, `sim.py`), `python/neuroedge/trace.py`, `perception/vision/`, camera ảo trong `sim`
 - [ ] Fixture/test; cập nhật `docs/rfc/README.md` và `CHANGELOG.md`
 
-## 9. Câu hỏi còn mở
+## 9. Quyết định cho các câu hỏi mở (Q-57, 2026-09-30)
 
-1. Danh sách giá trị enum `pixel_format` (đề xuất khởi đầu: `yuyv`, `mjpeg`, `rgb565`, `rgb888`, `gray8`) — chốt theo phần cứng thật.
-2. Cú pháp khai dữ kiện trong `agent.toml` (§3c chỉ là ví dụ ý tưởng) và cách gắn dữ kiện với tên tiêu chí của gate.
-3. Điểm tin cậy: luôn là tiêu chí `numeric` riêng, hay cho phép `bool` dùng `confidence_gte` sẵn có khi nhãn là bool? Q-54 chọn `numeric`; cần xác nhận không tạo hai đường.
-4. Danh tính mô hình nằm ở `metadata` (một lần/phiên) hay mỗi sự kiện `perception`.
-5. Chính sách lấy mẫu khung hình được ghi `vision_ref`: chỉ khung dẫn tới quyết định, hay cả khung ngay trước/sau.
-6. Camera ảo trong `sim` phát lại chuỗi ảnh nào và làm sao chứng minh tương đương với phần cứng (TSK-V1b-02).
+Chủ sản phẩm uỷ quyền quyết các câu hỏi mở theo nguyên tắc **an toàn cao nhất**: giữa hai phương án, chọn phương án fail-closed và khó dùng sai hơn, kể cả khi nó tốn công hơn. Mục này **thay** mọi đoạn đề xuất trái với nó ở §3; khi mở PR RFC, gộp nội dung vào §3. Chấp thuận RFC vẫn cần chữ ký kỹ thuật trưởng (`CONTRIBUTING.md` §3).
+
+1. **`pixel_format`** là enum đóng: `yuyv`, `mjpeg`, `rgb565`, `rgb888`, `gray8`; thêm giá trị cần RFC. *Vì sao:* so khớp `[requires]` phải tất định.
+2. **Cú pháp dữ kiện** trong `agent.toml`: `[vision] model = "<tệp>"` và mỗi dữ kiện là `[vision.facts.<tên>]` với `label`, `zone` (khai ở `[vision.zones]`), `kind` ∈ {`present` → `bool`, `count` → `level` qua `bands`, `confidence` → `numeric` trong [0, 1]} và `min_frames`. Tên dữ kiện trùng tên tiêu chí của gate. `present` cần `min_frames` khung liên tiếp (mặc định 3, tối thiểu 2); `confidence` lấy **giá trị nhỏ nhất** trong cửa sổ. *Vì sao:* một khung nhiễu không được mở khoá cửa; lấy min là bảo thủ.
+3. **Một đường cho độ tin cậy:** chỉ tiêu chí `numeric` (RFC-0009). `gate lint` từ chối `confidence_gte` trên dữ kiện thị giác. *Vì sao:* hai đường thì một đường sẽ bị quên khoá.
+4. **Danh tính mô hình** (tên + sha256 của tệp mô hình) nằm ở **mỗi** sự kiện `perception`, kèm danh sách ở `metadata`. *Vì sao:* mô hình đổi giữa phiên vẫn truy được từng phán quyết.
+5. **`vision_ref`** ghi cho **mọi khung trong cửa sổ** đã sinh ra dữ kiện của một phán quyết, không ghi khung ngoài cửa sổ. *Vì sao:* đủ để hậu kiểm, không phình vết ghi.
+6. **Tương đương.** Camera ảo trong `sim` phát lại chuỗi khung đã ghi **và** kết quả `perception` đã ghi; `verify` so phán quyết giữa các target từ cùng sự kiện `perception`. Suy luận của mô hình được kiểm riêng: với mỗi sha256 mô hình, kết quả trên từng target phải khớp kết quả golden trên host trong sai số khai ở bo mạch; vượt sai số ⇒ `SafetyRegressionError` (NE4002). *Vì sao:* tách "gate quyết giống nhau" khỏi "model thấy giống nhau", cả hai đều phải chứng minh.
+7. **Mất camera hoặc mô hình, khung quá cũ** (quá `max_age_ms` của RFC-0009) ⇒ dữ kiện chưa quyết ⇒ BLOCK; không nội suy từ khung trước.

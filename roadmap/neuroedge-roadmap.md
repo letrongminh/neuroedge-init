@@ -64,7 +64,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | **Lần cập nhật cuối** | **2026-09-30** | Phiên gần nhất: Q-52 → Q-55 — MVP = v1.0 đầy đủ, bốn gói nguyên thủy mở rộng trên ba target, NeuroBrain vào MVP; tài liệu sản phẩm chuyển vào `roadmap/` · trước đó: Q-51 + TSK-I1-04 (NeuroEdge Studio — `neuroedge studio`, bảy màn song ngữ), Q-49 (demo có giao diện), Q-50 + TSK-I4-04 (`run --mic`), TTS PCM qua OpenRouter · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
 | **Trạng thái CI Lõi** | ✅ **PASS 2479/2479 · SKIP 0** | `python/tests/` — 89 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 29/29 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `ui-golden` 66 ảnh, `ota-rollback` pha a–g · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **3 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · bo ESP32-S3 có camera chưa chọn (TSK-I3a-01) · sáu RFC chờ kỹ thuật trưởng (§10.2) · nhân sự: lập kế hoạch với giả định đủ người (Q-52, §1.1) |
-| **Hoãn có chủ ý** | 📋 [`TODOS.md`](../TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
+| **Hoãn có chủ ý** | 📋 [`TODOS.md`](../TODOS.md) | Mỗi mục kèm mốc kích hoạt · câu hỏi kinh doanh mở (`TODOS.md` #19) rà lại trước I6 — luật cổng nhu cầu đã bỏ (Q-56) |
 
 ---
 
@@ -75,20 +75,19 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 | Mốc | Increment | Dự báo | Năng lực | Tiến độ | Trạng thái | Phụ thuộc | Phát hành |
 |:---:|:---|:---:|:---|:---:|:---|:---|:---|
 | **0.x nội bộ** | **I0 — Lõi hợp đồng trên `sim`** | ✅ 2026-09-24 | Gate có kiểu và phiên bản (lint, resolve, kế thừa, tham số, `confirms`), `sim` + web UI, Action CI, MCP, System 2 qua LiteLLM, `linux` replay trên gpio-sim; walker C, sổ token và vết ghi UART trên QEMU | **42 / 42** | ✅ Xong | — | lịch sử |
-|  | **Cổng nhu cầu (Q-20)** | 2026-10-25 | Go / Adjust / Stop cho I3–I7 (`docs/business/cong-nhu-cau-2026-10-25/cham-diem.md` §4.1) | — | ⏳ Đang phỏng vấn | I0 | — |
 |  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | Người ngoài đội cài từ wheel nội bộ và chạy agent có gate trong dưới 10 phút, không cần phần cứng | **4 / 6** | 🟡 Đang làm — TSK-I1-02 tạm hoãn (phát triển nội bộ) | I0 | tag `v0.1.0` (nội bộ) |
 |  | **I2 — `linux` ngang `sim`** | 2026-11-29 | `run`, `record`, `mcp serve --target linux`; cảm biến và màn hình trên `linux`; nightly trên RPi 5 | **3 / 4** | 🟡 Phiên tương tác, cảm biến, màn hình xong trên gpio-sim + i2c-stub; nightly RPi 5 còn lại | I1 | tag `v0.2.0` (nội bộ) |
-|  | **I2a — Nguyên thủy mở rộng trên `sim` và `linux`** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Bốn gói: cảm biến (`digital.in`, I2C chỉ đọc, `analog.in`, gate so ngưỡng số), điều khiển mịn (PWM), thị giác (`vision.in`), chuyển động (`motion.*`); sáu RFC; `sim-rpi5` | **0 / 26** | ⏳ Chưa bắt đầu | I2 | tag `v0.2.1` (nội bộ) |
-|  | **I2b — Kit mẫu và dựng nhanh** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Năm kit phần cứng (BOM, sơ đồ đấu dây, gate khoá), thư viện gate khởi đầu, `neuroedge add` | **0 / 4** | ⏳ Chưa bắt đầu | I2a | tag `v0.2.2` (nội bộ) |
-|  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | Gate chạy trên chip, điều khiển chân thật; người dùng tự nạp agent; `verify` ba target bậc 1 cho miền phán quyết | **6 / 14** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU, giao diện LVGL có ảnh golden); chờ bo mạch | I1, cổng Go | tag `v0.3.0` + firmware (nội bộ) |
-|  | **I3a — Nguyên thủy mở rộng trên `esp32s3`** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Bốn gói trên chip: Box-3 và một bo ESP32-S3 có camera (Q-53) | **0 / 7** | ⏳ Chưa bắt đầu | I2a, I3 | tag `v0.3.1` + firmware (nội bộ) |
-|  | **I4 — Thoại trên host** | 2026-12-13 | Nói chuyện với agent trên `sim` và `linux`: wake-word, cắt lời, STT/TTS qua provider cloud, fallback lệnh cục bộ | **5 / 9** | 🟡 Đặc tả, vector, FSM Python, độ trễ, SystemOne qua Jev xong; STT/TTS trên `sim`, wake-word + STT dự phòng, âm thanh `linux` xong phần mã trên host; phiên micro trên laptop (`run --mic`, TSK-I4-04) xong phần mã; còn mô hình wake-word thật, Pi + HAT | I2, cổng Go | tag `v0.4.0` (nội bộ) |
-|  | **I4a — NeuroBrain trên host** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Dựng bằng hội thoại có hợp đồng trên `sim` và `linux`, phủ bốn gói (Q-55) | **0 / 33** | ⏳ Chưa bắt đầu | I2a, I4 | tag `v0.4.1` + extra `[lab]` (nội bộ) |
+|  | **I2a — Nguyên thủy mở rộng trên `sim` và `linux`** | 2026-12-06 | Bốn gói: cảm biến (`digital.in`, I2C chỉ đọc, `analog.in`, gate so ngưỡng số), điều khiển mịn (PWM), thị giác (`vision.in`), chuyển động (`motion.*`); sáu RFC; `sim-rpi5` | **1 / 26** | 🟡 Ước lượng lại xong (TSK-I2a-01); sáu RFC chờ chấp thuận | I2 | tag `v0.2.1` (nội bộ) |
+|  | **I2b — Kit mẫu và dựng nhanh** | 2026-12-20 | Năm kit phần cứng (BOM, sơ đồ đấu dây, gate khoá), thư viện gate khởi đầu, `neuroedge add` | **0 / 4** | ⏳ Chưa bắt đầu | I2a | tag `v0.2.2` (nội bộ) |
+|  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | Gate chạy trên chip, điều khiển chân thật; người dùng tự nạp agent; `verify` ba target bậc 1 cho miền phán quyết | **6 / 14** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU, giao diện LVGL có ảnh golden); chờ bo mạch | I1 | tag `v0.3.0` + firmware (nội bộ) |
+|  | **I3a — Nguyên thủy mở rộng trên `esp32s3`** | 2027-01-10 | Bốn gói trên chip: Box-3 và một bo ESP32-S3 có camera (Q-53) | **0 / 7** | ⏳ Chưa bắt đầu | I2a, I3 | tag `v0.3.1` + firmware (nội bộ) |
+|  | **I4 — Thoại trên host** | 2026-12-13 | Nói chuyện với agent trên `sim` và `linux`: wake-word, cắt lời, STT/TTS qua provider cloud, fallback lệnh cục bộ | **5 / 9** | 🟡 Đặc tả, vector, FSM Python, độ trễ, SystemOne qua Jev xong; STT/TTS trên `sim`, wake-word + STT dự phòng, âm thanh `linux` xong phần mã trên host; phiên micro trên laptop (`run --mic`, TSK-I4-04) xong phần mã; còn mô hình wake-word thật, Pi + HAT | I2 | tag `v0.4.0` (nội bộ) |
+|  | **I4a — NeuroBrain trên host** | 2027-01-03 | Dựng bằng hội thoại có hợp đồng trên `sim` và `linux`, phủ bốn gói (Q-55) | **0 / 33** | ⏳ Chưa bắt đầu | I2a, I4 | tag `v0.4.1` + extra `[lab]` (nội bộ) |
 |  | **I5 — Thoại trên Box-3** | 2027-01-03 | Demo "nói chuyện với con chip $5": thoại trên ESP32-S3, gate trên chip, cùng vết ghi replay trong CI | **0 / 7** | ⏳ Chưa bắt đầu | I3, I4 | tag `v0.5.0` + firmware (nội bộ) |
-|  | **I5a — NeuroBrain trên chip** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Lab action, gate và phong bì của NeuroBrain chạy trên Box-3 và bo camera | **0 / 2** | ⏳ Chưa bắt đầu | I3a, I4a, I5 | tag `v0.5.1` + firmware (nội bộ) |
-| **Công khai** | **I6 — Công khai** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Repo công khai, `pip install neuroedge` từ PyPI, lược đồ ở URL công khai, video demo thoại và bốn gói trên `sim`, `linux` và `esp32s3` | **3 / 8** | 🟡 Quét bí mật, SBOM xong; chờ I5a | I2b, I5a | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
-| **v1.0 = MVP** | **I7 — v1.0** | khi ước lượng lại phạm vi MVP (TSK-I2a-01) | Lần ra mắt MVP (Q-52): OTA A/B có ký, bảo mật thiết bị, ổn định 24 giờ trên chip; đủ A1–A12 | **4 / 12** | 🟡 Ghim Actions, attestation xong; OTA A/B có ký + rollback xong trên QEMU; chờ I6 | I6 | `v1.0.0` |
-| **Beta** | **I8 — Developer Beta** | sau I7 | 50–100 lập trình viên ngoài trên dòng `1.0.x`; đo B1–B5, chọn nhánh | **0 / 1** | ⏳ Chưa bắt đầu | I7 | `1.0.x` (chỉ bản vá) |
+|  | **I5a — NeuroBrain trên chip** | 2027-01-24 | Lab action, gate và phong bì của NeuroBrain chạy trên Box-3 và bo camera | **0 / 2** | ⏳ Chưa bắt đầu | I3a, I4a, I5 | tag `v0.5.1` + firmware (nội bộ) |
+| **Công khai** | **I6 — Công khai** | 2027-01-31 | Repo công khai, `pip install neuroedge` từ PyPI, lược đồ ở URL công khai, video demo thoại và bốn gói trên `sim`, `linux` và `esp32s3` | **3 / 8** | 🟡 Quét bí mật, SBOM xong; chờ I5a | I2b, I5a | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
+| **v1.0 = MVP** | **I7 — v1.0** | 2027-02-21 | Lần ra mắt MVP (Q-52): OTA A/B có ký, bảo mật thiết bị, ổn định 24 giờ trên chip; đủ A1–A12 | **4 / 12** | 🟡 Ghim Actions, attestation xong; OTA A/B có ký + rollback xong trên QEMU; chờ I6 | I6 | `v1.0.0` |
+| **Beta** | **I8 — Developer Beta** | 2027-03-21 | 50–100 lập trình viên ngoài trên dòng `1.0.x`; đo B1–B5, chọn nhánh | **0 / 1** | ⏳ Chưa bắt đầu | I7 | `1.0.x` (chỉ bản vá) |
 | **v1.1** | **I9 — Lớp provider v1.1 và Fleet OS** | sau I8 (nhánh A) | Một endpoint và credential cho cả đội, failover khai trong cấu hình, cấp phát, OTA canary, tải vết ghi sự cố | **0 / 9** | ⏳ Chờ nhánh A | I8 | `1.1.0` + dịch vụ |
 |  | **I10 — Registry và các đường ray** | sau I8 (nhánh A, Q-5) | `gate add` từ registry có ký, định danh ổn định, đo lường, sandbox | **0 / 8** | ⏳ Chờ nhánh A | I8 | `1.2.0` + registry |
 | **Mở rộng** | **I11 — Mở danh sách target** | sau I8 | RFC-0002 PR2: enum `target` theo bậc, `TARGET_TIERS` trong mã lõi, `board validate` | **0 / 6** | ⏳ Chưa bắt đầu | I8 | 1.x minor |
@@ -100,7 +99,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 | **Ngoài roadmap** | **Khối 4 — AURA thực địa** | sau I8 | Ứng dụng khách sạn/villa; chỉ dùng API công khai (proposal §8.6) | — | ⏳ Ngoài roadmap | I8 | — |
 |  | **Khối 5 — Marketplace** | khi đạt G1–G4 | Sàn trao đổi tài sản có thu phí — Chặn (PRD §14) | — | ⏸ Chặn | — | — |
 
-**Giả định của các ngày dự báo (Q-39, Q-52):** bo mạch Box-3 về trước 2026-11-01; đủ người cho mọi vai trò (§1.1); thoại trên host (I4) và OTA trên QEMU (TSK-S6-01, S6-02, S6-04) làm song song với I3. Ngày của I2a → I7 bị bỏ khi phạm vi MVP mở rộng (Q-52) và đặt lại bằng TSK-I2a-01; ngày của I1 → I5 giữ nguyên tới lúc đó. MVP trượt thì dời ngày, không cắt phạm vi (Q-52). Cổng nhu cầu nói Stop thì I3–I7 đóng băng, I1 và I2 làm tiếp, và một PR lập lại kế hoạch — cổng áp cho các increment có hậu tố thế nào là quyết định còn mở (§10.2).
+**Giả định của các ngày dự báo (Q-39, Q-52):** bo mạch Box-3 về trước 2026-11-01; đủ người cho mọi vai trò (§1.1); thoại trên host (I4) và OTA trên QEMU (TSK-S6-01, S6-02, S6-04) làm song song với I3. Ngày của I2a → I8 đặt lại bằng TSK-I2a-01 ([`docs/reports/uoc-luong-mvp-2026-09-30.md`](../docs/reports/uoc-luong-mvp-2026-09-30.md), giả định G1 → G6): bo camera chọn trước 2026-10-09, sáu RFC chấp thuận trước 2026-10-09; ngày của I1 → I5 giữ nguyên. MVP trượt thì dời ngày, không cắt phạm vi (Q-52). Không còn cổng nhu cầu chặn increment nào (Q-56).
 
 ---
 
@@ -110,20 +109,22 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-30 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. VỪA HOÀN THÀNH — Q-52 → Q-55: tái cấu trúc MVP (chỉ tài liệu)                       │
+│ 1. VỪA HOÀN THÀNH — Q-52 → Q-57: MVP, ước lượng lại, bỏ cổng nhu cầu                   │
 │    • MVP = v1.0 đầy đủ; bốn phase ở §0.5; trượt thì dời ngày, không cắt                │
 │    • I2a, I2b, I3a, I4a, I5a mới; NeuroBrain (I12 cũ), thị giác (I15 cũ) vào MVP       │
-│    • Nháp sáu RFC: 0007, 0009 → 0013 (docs/rfc/, chưa mở PR)                           │
+│    • Ngày mới: v1.0 = MVP 2027-02-21, Beta 2027-03-21 (TSK-I2a-01)                     │
+│    • Sáu RFC nháp, câu hỏi mở đã quyết theo hướng an toàn (Q-57); chưa mở PR           │
+│    • Luật cổng nhu cầu đã bỏ (Q-56)                                                    │
 │    • Tài liệu sản phẩm chuyển vào roadmap/                                             │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
-│    1. Mở sáu RFC thành PR riêng; kỹ thuật trưởng duyệt (§10.2)                         │
-│    2. TSK-I2a-01: ước lượng lại phạm vi MVP, đặt ngày cho I2a → I8                     │
-│    3. Đặt 2 Box-3 + 1 RPi 5 (Phụ lục B); chọn bo ESP32-S3 có camera (TSK-I3a-01)       │
-│    4. Chốt cách cổng nhu cầu 2026-10-25 áp cho I2a → I5a (§10.2)                       │
+│    1. Mở sáu RFC thành PR riêng; kỹ thuật trưởng ký trước 2026-10-09 (§10.2)           │
+│    2. Chọn bo ESP32-S3 có camera trước 2026-10-09 (TSK-I3a-01, RFC-0013 §9)            │
+│    3. Đặt 2 Box-3 + 1 RPi 5 + bo camera (Phụ lục B) — cần về trước 2026-11-01          │
+│    4. Làn host của I2a và I4a: bắt đầu theo thứ tự RFC được chấp thuận                 │
 │    5. Box-3 về: nối driver màn hình vào ne_ui (TSK-S4-01), đo trên silicon             │
 │    6. Mô hình wake-word có giấy phép dùng được (#49); cách provisioning Wi-Fi (#50)    │
 │    7. Tái sinh requirements-lock.txt (đóng #54); xét 4 PR Dependabot (major Actions)   │
@@ -193,7 +194,7 @@ V2 làm phần firmware không cần bo mạch trước (walker C, sổ token, v
 | **2 người** | I1–I4 giãn gần gấp đôi; I3 → I7 nối tiếp trên một người. Không còn bậc cắt 5 (Q-44), nên v1.0 dời theo |
 | **3 người, không có V6** | I5 và I7 nối tiếp trên V2: v1.0 lùi khoảng 4–5 tuần so với §0.2 |
 | **3 người + V6** *(giả định cơ sở của Q-39, trước khi phạm vi MVP mở rộng)* | Ngày của I1 → I5 ở §0.2 |
-| **Đủ người cho V1 → V7** *(giả định cơ sở, Q-52)* | Ngày của I2a → I8 do TSK-I2a-01 đặt |
+| **Đủ người cho V1 → V7** *(giả định cơ sở, Q-52)* | Ngày ở §0.2 — cách tính: [`docs/reports/uoc-luong-mvp-2026-09-30.md`](../docs/reports/uoc-luong-mvp-2026-09-30.md) |
 | **4–5 người** | I1, I2 và I4 song song hơn; đường găng vẫn là chuỗi phần cứng I3 → I5 → I7 |
 
 ---
@@ -214,7 +215,6 @@ Sau Beta      I9, I10 ◄ I8 (nhánh A) · I11 ◄ I8 · I13 ◄ I7, I11 · I14 
 Chuỗi dài nhất  [bo mạch] ► TSK-S1-10 ► I3 ► I3a ► I5 ► I5a ► I6 ► I7
                 (I3a còn chờ nhánh: sáu RFC ► I2a)
 
-⟂ Cổng nhu cầu 2026-10-25: Go / Adjust / Stop cho I3–I7 (áp cho I2a → I5a: §10.2)
 ```
 
 ### 2.2 Đường găng
@@ -227,6 +227,7 @@ Chuỗi dài nhất  [bo mạch] ► TSK-S1-10 ► I3 ► I3a ► I5 ► I5a ►
 | 3 | I5 — thoại trên chip | Vẫn là mắt xích khó nhất; rủi ro đã giảm từ CR-1.0 (STT/TTS ở provider cloud). V6 làm âm thanh song song với HAL của V2 |
 | 4 | I6 — công khai | A1 đo chính thức và A9 cần người ngoài, nên v1.0 không đạt khi repo còn kín |
 | 5 | I7 — OTA, ổn định 24 giờ, A1–A12 | OTA làm trước trên QEMU; còn lại phần cần bo mạch và phép chạy 24 giờ |
+| 6 | I3a → I5a | Hai mắt xích MVP thêm vào làn chip (bốn tuần và hai tuần, [`docs/reports/uoc-luong-mvp-2026-09-30.md`](../docs/reports/uoc-luong-mvp-2026-09-30.md) §4); v1.0 lùi bốn tuần so với trước Q-52 |
 
 **Chuỗi con người:** kỹ thuật trưởng cho sáu RFC của I2a và RFC-0002 · CPO cho điều khoản license thương mại (`TODOS.md` #44) trước I6 · nhân sự: giả định đủ người (Q-52).
 
@@ -599,7 +600,7 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-I2a-01** | **Ước lượng lại phạm vi MVP (Q-52):** đếm lại task I2a → I7, đặt ngày dự báo cho I2a, I2b, I3a, I4a, I5a, I6, I7 và I8 kèm bằng chứng (R5); cập nhật §1.3 và §2.2 | — | trưởng nhóm + kỹ thuật trưởng | ⏳ Chưa bắt đầu | §0.2 |
+| **TSK-I2a-01** | **Ước lượng lại phạm vi MVP (Q-52):** đếm lại task I2a → I7, đặt ngày dự báo cho I2a, I2b, I3a, I4a, I5a, I6, I7 và I8 kèm bằng chứng (R5); cập nhật §1.3 và §2.2 | — | trưởng nhóm + kỹ thuật trưởng | ✅ Hoàn thành (2026-09-30) — v1.0 dự báo 2027-02-21 | [`docs/reports/uoc-luong-mvp-2026-09-30.md`](../docs/reports/uoc-luong-mvp-2026-09-30.md) · §0.2 |
 | **TSK-N0-02** | Sửa đổi FR-HAL-01: nguyên thủy mở rộng (`digital.in`, bus I2C, `analog.in`, PWM, `motion.*`, `vision.in`) là **tuỳ chọn theo bo mạch** (RFC-0013, Q-53); sửa FR-CLI-10 cho `mcp desktop-config --lab` | FR-HAL-01, FR-CLI-10 | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` |
 | **TSK-N0-03** | RFC-0007: `digital.in`; bus I2C chỉ đọc; `analog.in` (ADC theo spike TSK-N3-03 — chuyển từ RFC-motion sang, Q-53); trường bus/địa chỉ và khai báo phong bì trong `board.v1`. Phải lý giải vì sao không mở rộng `sensor.read`. `gate.v1` không đổi | FR-HAL-01 | V2 | ⏳ Chưa bắt đầu | `docs/rfc/0007-digital-in-i2c-analog-in-phong-bi.md` |
 | **TSK-I2a-07** | **RFC-0013:** nguyên thủy mở rộng tuỳ chọn theo bo mạch; nhiều bo tham chiếu cho một target bậc 1; mỗi nguyên thủy mở rộng có ít nhất một bo tham chiếu trên **mỗi** target bậc 1 (Q-53) | FR-HAL-01, FR-TGT-08 | V1 + kỹ thuật trưởng | ⏳ Chưa bắt đầu | `docs/rfc/0013-nguyen-thuy-tuy-chon-va-nhieu-bo-tham-chieu.md` |
@@ -695,7 +696,7 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 | | |
 |:---|:---|
 | **Mục tiêu** | Gate chạy trên ESP32-S3-Box-3 thật và điều khiển chân thật; người dùng tự nạp agent của mình; `verify` ba target bậc 1 cho miền phán quyết (U2/J3 → M3, A2) |
-| **Điều kiện vào** | Cổng nhu cầu 2026-10-25 nói Go (`cham-diem.md` §4.1); Box-3 trong tay |
+| **Điều kiện vào** | Box-3 trong tay |
 | **Tín hiệu đo** | `verify --targets sim,linux,esp32s3` trên bo mạch; thời gian từ `build` tới chân kích trên bo mạch |
 | **Người** | V2 (chủ trì), V6, V1 (TSK-S4-04), V3 (TSK-S4-05) |
 
@@ -768,7 +769,7 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 | | |
 |:---|:---|
 | **Mục tiêu** | Nói chuyện với agent trên `sim` và `linux`: thu/phát âm thanh, wake-word, cắt lời, STT/TTS qua provider cloud, fallback lệnh cục bộ khi mất mạng — cùng đặc tả FSM với chip (U1/J1 bằng giọng nói) |
-| **Điều kiện vào** | Cổng nhu cầu nói Go (thoại thuộc Khối 1b, `cham-diem.md` §4.1); vector và FSM Python bắt đầu ngay (Q-39) |
+| **Điều kiện vào** | — (vector và FSM Python bắt đầu ngay, Q-39) |
 | **Tín hiệu đo** | Bộ vector tuân thủ xanh trên Python; tỷ lệ phiên thoại so với gõ chữ trong buổi đo |
 | **Người** | V1 (chủ trì), V2 (TSK-S5-08) |
 
@@ -1440,7 +1441,7 @@ Cắt từ trái sang phải khi increment đó trượt; không cắt cột cu�
 | **Q-17** | Hành vi `on_block` ở v1.0 | 2026-09-23 | TSK-S2-03, §11.3 |
 | **Q-18** | Kế thừa `budget`/`on_block` (RFC-0004) | 2026-09-23 | TSK-S2-13 |
 | **Q-19** | Lịch Sprint 2–3 theo ngày tuyệt đối | 2026-09-23 | lịch sử (Q-39) |
-| **Q-20** | Cổng nhu cầu mềm 2026-10-25 | 2026-09-23 | `TODOS.md` #19 |
+| **Q-20** | Cổng nhu cầu mềm 2026-10-25 — **đã bỏ bởi Q-56** | 2026-09-23 | `TODOS.md` #19 |
 | **Q-21** | Mô phỏng theo tầng bằng OSS | 2026-09-23 | TSK-S4-07, S4-08, S4-10, S5-08, S5-09 |
 | **Q-22** | AEC phần mềm PipeWire trên `linux` | 2026-09-23 | TSK-S5-08 |
 | **Q-23** | Cây quyết định trên MCU: bố cục nhị phân | 2026-09-23 | TSK-S4-02, RFC-0003 |
@@ -1470,6 +1471,8 @@ Cắt từ trái sang phải khi increment đó trượt; không cắt cột cu�
 | **Q-53** | Bốn gói nguyên thủy mở rộng bắt buộc trên ba target; bo ESP32-S3 có camera; `sim-rpi5` | 2026-09-30 | I2a, I3a, RFC-0007, RFC-0009 → RFC-0013 |
 | **Q-54** | Thị giác → dữ kiện do maker khai; gate khoá ngưỡng tin cậy bằng tiêu chí số | 2026-09-30 | TSK-V1b-06, RFC-0012 |
 | **Q-55** | NeuroBrain vào MVP, phủ bốn gói trên ba target (thay phần thứ tự NeuroBrain của Q-40) | 2026-09-30 | I4a, I5a |
+| **Q-56** | Bỏ luật cổng nhu cầu: không còn Go / Adjust / Stop; phỏng vấn chỉ là đầu vào thông tin | 2026-09-30 | §0.2, `TODOS.md` #19 |
+| **Q-57** | Quyết định cho câu hỏi mở của sáu RFC nguyên thủy mở rộng, theo hướng an toàn cao nhất | 2026-09-30 | RFC-0007, RFC-0009 → RFC-0013 §9 |
 | **Q-37** | Token `motion.*` thuê có hạn, mỗi lệnh qua gate gia hạn | 2026-09-25 | RFC-motion |
 | **Q-38** | Chứng nhận an toàn: OUT tạm thời, dừng khẩn phần cứng bắt buộc cho robot di động | 2026-09-25 | Cổng 2026-10-25, `TODOS.md` #40 |
 | **Q-39** | Roadmap theo increment; không phát hành ra ngoài tới khi công khai (I6: demo thoại trên `sim`, `linux`, Box-3); thêm một kỹ sư nhúng | 2026-09-25 | Toàn roadmap |
@@ -1488,8 +1491,7 @@ Cắt từ trái sang phải khi increment đó trượt; không cắt cột cu�
 | Hạn | Mã | Quyết định | Vì sao hạn đó | Người quyết | Trạng thái |
 |:---:|:---:|:---|:---|:---:|:---:|
 | **Trước khi I10 mở** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng | ⏳ Đang mở |
-| **Trước mã của gói tương ứng trong I2a** | **RFC-0007, RFC-0009 → RFC-0013** | Sáu RFC của nguyên thủy mở rộng (bản nháp trong `docs/rfc/`, chưa mở PR) | Không có RFC thì không có mã (§2.3) | Kỹ thuật trưởng | ⏳ Nháp |
-| **Trước 2026-10-25** | — | Cổng nhu cầu nói Stop thì các increment có hậu tố (I2a → I5a) đóng băng cùng I3–I7 hay làm tiếp như I1, I2 | Luật cổng (`docs/business/cong-nhu-cau-2026-10-25/cham-diem.md` §4.1) viết trước Q-52 | Trưởng nhóm | ⏳ Đang mở |
+| **2026-10-09** | **RFC-0007, RFC-0009 → RFC-0013** | Chấp thuận sáu RFC của nguyên thủy mở rộng; câu hỏi mở đã quyết (Q-57), còn chữ ký | Không có RFC thì không có mã (§2.3); giả định G2 của TSK-I2a-01 | Kỹ thuật trưởng | ⏳ Nháp |
 | **Trước khi I11 mở** | **RFC-0002** | Mở rộng enum `target` và đưa bậc target vào mã lõi (`TARGET_TIERS`); `vision.in` tách sang RFC riêng ở V1b | Không chặn roadmap này. Chặn I11 và mọi board profile mới | Kỹ thuật trưởng | ⏳ Đang mở |
 
 **Chính sách phụ thuộc bắc cầu** là một phần của Q-11: nguyên văn ở PRD §15, cưỡng chế bằng `scripts/check_licences.py` (job `cloud-extra`) và `pip-licenses --fail-on` (job `licence-obligations`). *(Ngoại lệ LGPL qua liên kết động của `libgpiod` — proposal §3.9 quy tắc 3 — là thư viện hệ thống C, không phải phụ thuộc Python bắc cầu.)*

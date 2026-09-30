@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-GATE-03, FR-GATE-06, FR-ACE-01, FR-HAL-01 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-09-30 |
-| **Trạng thái** | ⏳ Nháp — chưa mở PR |
+| **Trạng thái** | ⏳ Nháp — chưa mở PR · câu hỏi mở đã quyết (§9, Q-57) |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (chạm `gate.v1`, ngữ nghĩa phân giải, `NETR`) |
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/*.json`, sửa ngữ nghĩa phân giải gate
@@ -134,9 +134,13 @@ Firmware đã nạp cây v1 phải được build lại cùng cây v2; theo RFC-
 - [ ] Điều phối với RFC-0011 và `TODOS.md` #36 để `layout_version` chỉ tăng một lần
 - [ ] Thêm fixture và test; cập nhật `docs/rfc/README.md` và `CHANGELOG.md`
 
-## 9. Câu hỏi còn mở
+## 9. Quyết định cho các câu hỏi mở (Q-57, 2026-09-30)
 
-1. Lý do lỗi: dùng lại `criterion_unavailable` cho "ngoài thang", hay thêm một lý do riêng (`value_out_of_range`) để trace phân biệt mất cảm biến với cảm biến trả rác?
-2. Bố cục byte cuối cùng của bảng `numeric` và thời điểm bump `layout_version` (phụ thuộc RFC-0011 và #36).
-3. Tiêu chí số có cần `confidence` riêng như `bool` không, hay độ tin cậy luôn là một tiêu chí số khác (hướng RFC-0012)?
-4. `range` bắt buộc hay tuỳ chọn cho tiêu chí không có thang tự nhiên? Đề xuất bắt buộc để có cạnh cho fail-closed.
+Chủ sản phẩm uỷ quyền quyết các câu hỏi mở theo nguyên tắc **an toàn cao nhất**: giữa hai phương án, chọn phương án fail-closed và khó dùng sai hơn, kể cả khi nó tốn công hơn. Mục này **thay** mọi đoạn đề xuất trái với nó ở §3; khi mở PR RFC, gộp nội dung vào §3. Chấp thuận RFC vẫn cần chữ ký kỹ thuật trưởng (`CONTRIBUTING.md` §3).
+
+1. **Lý do lỗi.** Thêm lý do riêng `value_out_of_range` (số đọc ngoài `range`, NaN, ±inf); `criterion_unavailable` giữ cho trường hợp không có số đọc. Cả hai đều BLOCK. *Vì sao:* hậu kiểm phân biệt được "mất cảm biến" với "cảm biến trả rác", phán quyết không đổi.
+2. **Bố cục `NETR`.** Tăng `layout_version` lên 2 **một lần**, trong một PR gồm bảng `numeric` của RFC này, các trường của RFC-0011 và `TODOS.md` #36; engine host và walker C đổi trong cùng PR; walker v1 từ chối cây v2 (fail-closed). *Vì sao:* không bao giờ có giai đoạn host và chip đọc cùng cây theo hai nghĩa.
+3. **Độ tin cậy.** Tiêu chí `numeric` không có trường `confidence`; độ tin cậy, khi cần, là **một tiêu chí `numeric` khác** (đường của RFC-0012). *Vì sao:* một đường duy nhất, khoá được bằng `gate lint`.
+4. **`range` bắt buộc.** *Vì sao:* không có thang thì không phát hiện được giá trị vô lý, fail-closed mất cạnh.
+5. **Tuổi số đọc (thêm mới).** `max_age_ms` **bắt buộc** với mọi tiêu chí `numeric`; số đọc cũ hơn ⇒ `criterion_unavailable` ⇒ BLOCK. Mốc thời gian lấy từ lúc HAL đọc, được ghi vào vết ghi để `replay` tính lại đúng như lúc chạy. *Vì sao:* một cảm biến treo trả mãi giá trị cuối cùng trông như "an toàn"; gate phải từ chối số đọc đã cũ.
+6. **So sánh số thực.** Ngưỡng, `range` và số đọc là `f64` hữu hạn; host và walker C dùng đúng bốn phép `>`, `>=`, `<`, `<=`, không dung sai ẩn; vector tuân thủ có ca đúng bằng ngưỡng ở mọi biên.

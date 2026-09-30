@@ -445,7 +445,7 @@ def render() -> str:
         f"<th>Trạng thái</th><th>Phụ thuộc</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>"
     )
 
-    # Mốc có ngày: mọi dòng §0.2 có ngày dự báo. Đỏ = cổng nhu cầu và cột mốc tiếp theo.
+    # Mốc có ngày: mọi dòng §0.2 có ngày dự báo. Đỏ = mốc không phải increment và cột mốc tiếp theo.
     points = []
     for inc in matrix:
         found = DATE.findall(inc.forecast)
@@ -513,7 +513,7 @@ def render() -> str:
 <section class="card"><h2>Tiến độ theo increment</h2>{legend()}{matrix_html}</section>
 
 <section class="card"><h2>Dòng thời gian các mốc</h2>
-<p class="sub" style="margin-top:-6px">Đỏ = cổng nhu cầu và cột mốc tiếp theo. Ngày là dự báo ở roadmap §0.2.</p>{tl_html}</section>
+<p class="sub" style="margin-top:-6px">Đỏ = cột mốc tiếp theo. Ngày là dự báo ở roadmap §0.2.</p>{tl_html}</section>
 
 <div class="grid2">
 <section class="card"><h2>Pending — cần người</h2>

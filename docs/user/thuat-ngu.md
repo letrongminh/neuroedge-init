@@ -68,11 +68,11 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 >   hành chỉ dùng nghĩa thứ nhất.
 > - **V1** là vai trò kỹ sư lõi, **và** là tiền tố Khối V1a/V1b của Giai đoạn 2.
 > - **P1** là độ ưu tiên (P0 · P1 · P2), **và** là tiền đề P1 của design doc Giai đoạn 1 (P1–P4), **và**
->   là Khối P1 của Giai đoạn 2 (I13). Bảng chấm của cổng nhu cầu dùng `P1` theo nghĩa thứ hai (điểm cho
+>   là Khối P1 của Giai đoạn 2 (I13). Bảng chấm của bộ phỏng vấn (từng là cổng nhu cầu, bỏ ở Q-56) dùng `P1` theo nghĩa thứ hai (điểm cho
 >   tiền đề P1).
 > - **R1…R12** (luật chống lệch của roadmap) khác **R-1…R-7** (rủi ro PRD) và khác R1… trong biên bản
 >   review RFC-0002 (`docs/archive/rfc-0002-review-record.md`).
-> - **C1…C8** là tiêu chí nghiệm thu v1.1 trong PRD, **và** C1…C10 là câu hỏi của cổng nhu cầu
+> - **C1…C8** là tiêu chí nghiệm thu v1.1 trong PRD, **và** C1…C10 là câu hỏi của bộ phỏng vấn
 >   2026-10-25. Ngữ cảnh kinh doanh (`docs/business/`) luôn theo nghĩa thứ hai.
 > - **G1–G4** (cột mốc thị trường) khác **G-a…G-e** (giả định Phụ lục G) và khác **V-G1…V-G5**.
 
@@ -88,7 +88,7 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **D6–D11** | Câu hỏi trong phiên /office-hours 2026-09-22 — không có trong kho | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` (đầu tệp) |
 | **P1–P4** | Bốn tiền đề của design doc Giai đoạn 1 (P1 điểm đau thuộc U2 · P2 khoảng gate không trống · P3 khác biệt là tương đương target + fail-closed · P4 rủi ro số một là nhu cầu) | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` §Premises |
 | **Approach A · B · C · D · E** | Các hướng đi Giai đoạn 1: A wedge `sim` trước (đã chọn) · B spike xuyên tầng · C bán Action CI rời · D bán memo + bản ghi màn hình · E gate/Action CI cho hành động của agent thoại trên cloud | A–C: `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` §Approaches · D, E: `docs/archive/giai-doan-1-review-log.md` (`CEO-X4`) |
-| **C1…C10** (cổng nhu cầu) | Mười câu hỏi cổng nhu cầu 2026-10-25 phải trả lời — **khác** tiêu chí C1–C8 của PRD | `docs/business/cong-nhu-cau-2026-10-25/README.md` §2 |
+| **C1…C10** (bộ phỏng vấn) | Mười câu hỏi của bộ phỏng vấn khách hàng — đầu vào thông tin, không còn là cổng (Q-56); **khác** tiêu chí C1–C8 của PRD | `docs/business/cong-nhu-cau-2026-10-25/README.md` §2 |
 
 ## 4. Thuật ngữ sản phẩm
 

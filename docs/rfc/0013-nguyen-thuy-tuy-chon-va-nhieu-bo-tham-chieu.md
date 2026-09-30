@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-HAL-01, FR-HAL-04, FR-TGT-01, FR-TGT-06, FR-TGT-08 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-09-30 |
-| **Trạng thái** | ⏳ Nháp — chưa mở PR |
+| **Trạng thái** | ⏳ Nháp — chưa mở PR · câu hỏi mở đã quyết (§9, Q-57) |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (sửa các bất biến kiểm thử bảo vệ tương đương target, RFC-0002 §5) |
 
 > **Khi nào cần RFC:** RFC này không sửa `schemas/`, nhưng đổi ba bất biến mà RFC-0002 §5a–§5c đã đặt
@@ -143,11 +143,22 @@ RFC này không đụng `gate.v1`, phân giải, năm nguyên tắc kế thừa 
 - [ ] `neuroedge-prd.md` FR-HAL-01, FR-TGT-08; `neuroedge-roadmap.md` (TSK-I2a-06, TSK-I2a-07, TSK-I3a-01); đóng `TODOS.md` #14
 - [ ] `CONTRIBUTING.md` §3 (dòng profile bo mạch); cập nhật `docs/rfc/README.md` và `CHANGELOG.md`
 
-## 9. Câu hỏi còn mở
+## 9. Quyết định cho các câu hỏi mở (Q-57, 2026-09-30)
 
-1. Bo mạch ESP32-S3 có camera cụ thể nào, id, và nó có khai đủ tập tên chân chung §5a không (nếu không, §5a cần ngoại lệ có căn cứ).
-2. `verify` và nightly chạy bo mạch nào: chỉ mặc định, mọi bo mạch tham chiếu, hay mọi bo mạch thoả `[requires]` của agent?
-3. `build` không `--board`: chỉ báo lỗi kèm gợi ý, hay chọn bo mạch tham chiếu đầu tiên thoả `[requires]`?
-4. Quan hệ `sim-* → bo mạch mirror`: bảng trong mã (`SIM_MIRRORS`) hay trường trong `board.toml`.
-5. Bo mạch tham chiếu nào mang từng nguyên thủy mở rộng ở mỗi target (cần cho §3c), đặc biệt `motion` và `analog.in` trên `esp32s3` và `sim`.
-6. Thứ tự chấp thuận với RFC-0002: RFC-0002 đang thảo luận; RFC này sửa §5b/§5c của nó nên hai RFC nên chấp thuận cùng lượt hoặc RFC-0002 trước.
+Chủ sản phẩm uỷ quyền quyết các câu hỏi mở theo nguyên tắc **an toàn cao nhất**: giữa hai phương án, chọn phương án fail-closed và khó dùng sai hơn, kể cả khi nó tốn công hơn. Mục này **thay** mọi đoạn đề xuất trái với nó ở §3; khi mở PR RFC, gộp nội dung vào §3. Chấp thuận RFC vẫn cần chữ ký kỹ thuật trưởng (`CONTRIBUTING.md` §3).
+
+1. **Bo camera.** Tiêu chí chọn, theo thứ tự: (a) một bo ESP32-S3 có camera khai **đủ năm nguyên thủy lõi** và tập tên chân chung §5a của RFC-0002 — ứng viên đầu tiên để TSK-I3a-01 xác minh là ESP32-S3-EYE của Espressif; (b) nếu không có, gắn module camera vào Box-3 khi ngân sách bộ nhớ Q-3 vẫn đạt; (c) nếu vẫn không, bo camera là **bo tham chiếu mở rộng**: chỉ khai đúng những gì phần cứng có, không được làm bo mặc định của target, và luật "đủ năm nguyên thủy lõi" áp cho bo mặc định. Không bao giờ khai năng lực phần cứng không có.
+2. **`verify` và nightly chạy mọi bo tham chiếu** của mọi target bậc 1, không chỉ bo mặc định. *Vì sao:* tương đương chỉ có nghĩa khi đã chạy trên đúng bo sẽ giao cho người dùng.
+3. **`build` không `--board`:** dùng bo mặc định nếu nó thoả `[requires]`; không thoả thì báo lỗi ba phần (FR-HAL-05) liệt kê các bo tham chiếu thoả. Không tự chọn bo khác. *Vì sao:* người dùng phải biết chính xác mình nạp lên bo nào.
+4. **`SIM_MIRRORS` là bảng trong mã lõi**, không phải trường của `board.toml`. *Vì sao:* một profile không được tự khai mình soi bo nào (cùng lý do `TARGET_TIERS`).
+5. **Bo mang từng nguyên thủy mở rộng:**
+
+   | Nguyên thủy | `sim` | `linux` | `esp32s3` |
+   |:---|:---|:---|:---|
+   | `digital.in`, I2C chỉ đọc, PWM | `sim-default`, `sim-rpi5` | `linux-rpi5` | `esp32s3-box-3` |
+   | `analog.in` | `sim-default`, `sim-rpi5` | `linux-rpi5` + ADC I2C trên mạch | `esp32s3-box-3` (ADC của chip, xác minh ở TSK-I3a-01) |
+   | `motion.*` | `sim-default`, `sim-rpi5` | `linux-rpi5` + driver có `enable_pin` | `esp32s3-box-3` (RFC-0011 §9) |
+   | `vision.in` | `sim-rpi5` | `linux-rpi5` + camera | bo camera (mục 1) |
+
+   Mỗi ô là một cam kết kiểm được bằng test phủ của §3c; phần cứng thật không cho phép một ô thì mở `Q-N` và dời ngày, không bỏ ô (Q-52).
+6. **Thứ tự chấp thuận:** RFC này chấp thuận **trước** RFC-0002, vì I2a cần nó còn RFC-0002 chỉ cần cho I11; khi RFC-0002 được chấp thuận, §5b và §5c của nó dẫn RFC này thay vì viết lại.

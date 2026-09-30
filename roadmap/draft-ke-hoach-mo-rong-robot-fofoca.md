@@ -412,7 +412,7 @@ không bậc 1.
 
 ## 11. Chặng 5 — chứng nhận an toàn chức năng
 
-Không tự quyết IN/OUT: đây là **câu hỏi cổng nhu cầu C6** — "chứng nhận an toàn chức năng
+Không tự quyết IN/OUT: đây là **câu hỏi C6 của bộ phỏng vấn** (từng là cổng nhu cầu, bỏ ở Q-56) — "chứng nhận an toàn chức năng
 (IEC 61508, ISO 13849, hoặc tiêu chuẩn họ tự nêu) có là điều kiện mua?"
 (`docs/business/cong-nhu-cau-2026-10-25/README.md` §2, câu C6).
 
@@ -427,7 +427,7 @@ Nếu IN, khung tham chiếu:
 Đường gần: tự công bố + bằng chứng trace/Action CI, không phải chứng nhận SIL ngay.
 
 **Tư thế tạm thời (Q-38, 2026-09-25): OUT** cho tới khi có dữ liệu — tài liệu ghi rõ không có SIL/PL, robot
-di động bắt buộc dừng khẩn phần cứng (BT8). Cổng nhu cầu (Q-20) không phỏng vấn người mua robot, nên câu C6
+di động bắt buộc dừng khẩn phần cứng (BT8). Bộ phỏng vấn (Q-20, nay Q-56) không phỏng vấn người mua robot, nên câu C6
 cho robot hỏi riêng trong TSK-W4-07, trước RFC an toàn di động (`TODOS.md` #40).
 
 ---
@@ -449,7 +449,7 @@ cho robot hỏi riêng trong TSK-W4-07, trước RFC an toàn di động (`TODOS
 | Token theo kênh phức tạp | Trung bình | Làm trong RFC-0011 (TSK-W1-03), không nhồi vào 1A (§7.1) |
 | Giấy phép (Zenoh nhánh kép, Hawkbit) | Trung bình | Chọn nhánh Apache-2.0; ghi `NOTICE`; Q-11 đã chốt (Hawkbit duyệt, EMQX không dùng) |
 | Bo mạch thật về chậm | Cao | Phần không cần bo mạch kéo lên trước (tiền lệ TSK-S4-02/07/08/09 — firmware kiểm trên host và QEMU) |
-| Mở rộng không có nhu cầu thật | Trung bình | Neo vào cổng nhu cầu (Q-20) + PF-3 (điều kiện vào của I14; khối W1 đã vào MVP theo Q-53 nên không còn neo vào PF-3); không tự phát triển SLAM |
+| Mở rộng không có nhu cầu thật | Trung bình | Neo vào PF-3 (điều kiện vào của I14; khối W1 đã vào MVP theo Q-53 nên không còn neo vào PF-3); không tự phát triển SLAM |
 
 ---
 

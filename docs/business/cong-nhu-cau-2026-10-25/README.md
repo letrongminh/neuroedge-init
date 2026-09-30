@@ -1,5 +1,9 @@
 # Cổng nhu cầu 2026-10-25 (Q-20)
 
+> **Luật cổng đã bỏ (Q-56, 2026-09-30).** Không còn Go / Adjust / Stop và không increment nào chờ kết quả phỏng vấn.
+> Bộ tài liệu này giữ làm **đầu vào thông tin** (thông điệp, giá, câu C6, C7) — phỏng vấn tiếp được, kết quả ghi
+> vào `TODOS.md` #19 trước I6. Bảng ngưỡng ở [`cham-diem.md`](cham-diem.md) §4 hết hiệu lực.
+
 Bộ tài liệu chuẩn bị cho cổng nhu cầu thương mại của NeuroEdge. Soạn ngày 2026-09-24.
 
 | Tệp | Dùng khi nào |

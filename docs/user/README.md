@@ -62,7 +62,7 @@ neuroedge-init/
     ├── rfc/            thay đổi lược đồ
     ├── spec/           đặc tả và ràng buộc
     ├── reports/        báo cáo đo
-    ├── business/       tài liệu kinh doanh (cổng nhu cầu)
+    ├── business/       tài liệu kinh doanh (bộ phỏng vấn)
     ├── release.md      quy trình phát hành (tag nội bộ, PyPI từ I6)
     └── archive/        lưu trữ: biên bản review, thiết kế đã đóng băng
 ```

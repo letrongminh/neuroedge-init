@@ -62,6 +62,9 @@ người để phỏng vấn thêm.
 
 ## 4. Ngưỡng quyết định
 
+> **Hết hiệu lực từ 2026-09-30 (Q-56).** Các ngưỡng dưới đây không còn quyết định increment nào; giữ lại để đọc
+> kết quả phỏng vấn cũ. Thang chấm §1–§3 vẫn dùng được cho phỏng vấn làm đầu vào thông tin.
+
 ### 4.1 I3–I7 — giữ nguyên nhánh của thiết kế GĐ1
 
 Ngưỡng này là bảng cổng nhu cầu của thiết kế GĐ1 (`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`),

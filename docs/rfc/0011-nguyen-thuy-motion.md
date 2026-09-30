@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-HAL-01, FR-HAL-05, FR-PER-02, FR-ACE-08 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-09-30 |
-| **Trạng thái** | ⏳ Nháp — chưa mở PR |
+| **Trạng thái** | ⏳ Nháp — chưa mở PR · câu hỏi mở đã quyết (§9, Q-57) |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (chạm token, bố cục `NETR`, chuyển động vật lý) |
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/board.v1.json`, đổi bố cục `NETR` (RFC-0003).
@@ -117,11 +117,13 @@ Test crash-safe (SIGKILL/crash tiến trình, rút mạng, watchdog) **chạy tr
 - [ ] `python/neuroedge/actions/token.py`, `python/neuroedge/hal/`, `ne_token.c`, walker C
 - [ ] Fixture/test; cập nhật `docs/rfc/README.md` và `CHANGELOG.md`
 
-## 9. Câu hỏi còn mở
+## 9. Quyết định cho các câu hỏi mở (Q-57, 2026-09-30)
 
-1. **#39:** chốt hướng "lease thay cờ" ở §3d hay thêm cờ theo `@action`? Cần kỹ thuật trưởng.
-2. Giá trị `lease_ms` mặc định (Q-37 nói "cỡ 200 ms"), và quan hệ với `p95_latency_ms` của gate và `TTL_FACTOR`.
-3. Tập giá trị `safe_state` và có cần tham số (ví dụ `hold` giữ tối đa bao lâu).
-4. Tên API (`motion.drive` hay tách `motion.motor`/`motion.servo`).
-5. Thông tin lease/kênh nằm trong `NETR` hay trong bảng cấu hình của `ne_token.c` sinh từ `board.v1`.
-6. Bo mạch tham chiếu nào mang `motion` cho từng target khi Q-53 đòi có mặt ở cả ba (xem RFC-0013).
+Chủ sản phẩm uỷ quyền quyết các câu hỏi mở theo nguyên tắc **an toàn cao nhất**: giữa hai phương án, chọn phương án fail-closed và khó dùng sai hơn, kể cả khi nó tốn công hơn. Mục này **thay** mọi đoạn đề xuất trái với nó ở §3; khi mở PR RFC, gộp nội dung vào §3. Chấp thuận RFC vẫn cần chữ ký kỹ thuật trưởng (`CONTRIBUTING.md` §3).
+
+1. **Cắt lời (`TODOS.md` #39).** Với `motion.*`: cắt lời, BLOCK hay mất liên lạc ⇒ **gửi ngay lệnh `safe_state`** và ngừng gia hạn lease; không có cờ nào cho phép chuyển động "chạy tiếp khi đã giao". Xung `digital.out` giữ luật hiện hành (`docs/spec/voice_fsm.md` §5.3). *Vì sao:* motor đang quay khi người dùng phản đối là nguy hiểm; lease là lớp dự phòng, lệnh dừng tức thì là lớp chính. Đóng #39 cho chuyển động.
+2. **Lease.** `lease_ms` mặc định 200, trần 500 (trần khai ở bo mạch, gate chỉ được hạ). Gia hạn chỉ bằng một lời gọi mới qua gate, lượng giá lại đầy đủ. `budget.p95_latency_ms` của gate phải ≤ `lease_ms / 2`, không thì `gate lint` từ chối (`GateSchemaError`). Lease tách khỏi `TTL_FACTOR` của token phán quyết. *Vì sao:* gia hạn phải kịp tới trước khi lease hết, và mỗi lần gia hạn là một lần gate được hỏi lại.
+3. **`safe_state` ∈ {`stop`, `hold`}**, mặc định `stop`. `hold` chỉ khai được khi bo mạch khai kênh đó `holds_position = true` kèm `max_hold_ms`; hết `max_hold_ms` thì về `stop`. Không có `home` hay trạng thái nào tự di chuyển. *Vì sao:* khi mất giám sát, không cơ cấu nào được tự chuyển động.
+4. **API tách đôi:** `motion.motor` (tốc độ, chiều, ramp) và `motion.servo` (góc đích, tốc độ tối đa), hai hình dạng năng lực riêng. *Vì sao:* giới hạn của hai loại khác nhau về bản chất; gộp làm một thì ràng buộc lỏng.
+5. **Nơi giữ giới hạn.** Giới hạn phần cứng của kênh (khai ở `board.v1`) sinh thành bảng firmware, kiểm lúc boot (self-test hỏng ⇒ từ chối mọi lệnh `motion.*`); ràng buộc của gate nằm trong `NETR`. Cả hai cùng cưỡng chế, giới hạn chặt hơn thắng. Kênh chuyển động cũng bắt buộc `enable_pin` như PWM (RFC-0010 §9). *Vì sao:* gate lỏng không vượt được phần cứng, phần cứng khai sai không vượt được gate.
+6. **Bo mạch mang `motion`:** `linux-rpi5` (PWM phần cứng + driver có `enable_pin`) và `esp32s3-box-3` (LEDC qua chân dock, xác minh ở TSK-I3a-01; nếu dock không đủ chân thì bo camera của RFC-0013 mang); `sim-rpi5` và `sim-default` soi theo. Test mất điện giữa lệnh chạy trên cả hai bo thật (TSK-W1-04).

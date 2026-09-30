@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-HAL-01, FR-HAL-04, FR-HAL-05 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-09-30 |
-| **Trạng thái** | ⏳ Nháp — chưa mở PR |
+| **Trạng thái** | ⏳ Nháp — chưa mở PR · câu hỏi mở đã quyết (§9, Q-57) |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc.** Phong bì chạm đường tới chân vật lý (§5), và §4 nêu một điểm siết chặt lược đồ cần chữ ký |
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/*.json`. RFC này sửa `schemas/board.v1.json`.
@@ -135,10 +135,13 @@ Hook nằm trong `HardwareAbstractionLayer.digital_out` (`python/neuroedge/hal/_
 - [ ] Thêm/điều chỉnh fixture và test
 - [ ] Cập nhật dòng của RFC trong `docs/rfc/README.md` và một mục `CHANGELOG.md` `[Chưa phát hành]`
 
-## 9. Câu hỏi còn mở
+## 9. Quyết định cho các câu hỏi mở (Q-57, 2026-09-30)
 
-1. **Tên API cho đọc mức logic.** `in` là từ khoá Python nên không đặt được `digital.in(...)` cạnh `digital.out(...)` trong `hal/digital.py`; chọn `digital.read` hay `digital.input`?
-2. **Đọc thanh ghi trên I2C.** Nhiều thiết bị cần *ghi con trỏ thanh ghi* rồi mới đọc — về mặt dây đó là một lần ghi. "Chỉ đọc" cho phép đọc có địa chỉ thanh ghi trên thiết bị trong allowlist, hay chỉ receive-byte không thanh ghi?
-3. **Nếu TSK-N3-03 trượt:** ADC được kiểm thử ở đâu (runner tự host gắn ADC thật) và có chặn cổng ra không?
-4. **Lớp lỗi và mã lỗi của phong bì** khi từ chối (`BoardCapabilityError` hay lớp riêng), và tên sự kiện vết ghi cho `digital_in` / I2C.
-5. **Chuỗi tên khoá phong bì** (`window_s`, `max_on_ms_per_window`, `min_interval_ms`) mới là đề xuất; chốt cùng RFC-0010 (PWM) và RFC-0011.
+Chủ sản phẩm uỷ quyền quyết các câu hỏi mở theo nguyên tắc **an toàn cao nhất**: giữa hai phương án, chọn phương án fail-closed và khó dùng sai hơn, kể cả khi nó tốn công hơn. Mục này **thay** mọi đoạn đề xuất trái với nó ở §3; khi mở PR RFC, gộp nội dung vào §3. Chấp thuận RFC vẫn cần chữ ký kỹ thuật trưởng (`CONTRIBUTING.md` §3).
+
+1. **Tên API.** Nguyên thủy tên `digital.in` trong `[requires]`; khoá bo mạch `capabilities.digital_in`; phương thức HAL `digital_in(pin)` đặt cạnh `digital_out`; API cho agent là `digital.input("door_contact").level()`. *Vì sao:* cùng khuôn với `digital.out`, không đụng từ khoá `in` của Python; tên chân vẫn là tên logic (FR-HAL-06).
+2. **Đọc thanh ghi trên I2C.** Cho phép đọc có địa chỉ thanh ghi (ghi con trỏ rồi repeated-start đọc) **chỉ** với thiết bị trong allowlist của bo mạch **và** thanh ghi nằm trong danh sách `readable_registers` bo mạch khai cho thiết bị đó; mọi thiết bị khác chỉ receive-byte. Không có đường ghi dữ liệu nào. Quét bus chỉ bằng read-byte (TSK-N3-01). *Vì sao:* một số chip coi mọi lần ghi là lệnh; giới hạn lần ghi duy nhất vào con trỏ của thanh ghi đã khai là cách hẹp nhất vẫn đọc được cảm biến thật.
+3. **Nếu spike ADC (TSK-N3-03) trượt:** `analog.in` được kiểm trên runner tự quản gắn ADC thật (Pi 5 + ADC I2C) hằng đêm, và **chặn tiêu chí ra của I2a** tới khi có bằng chứng đó. *Vì sao:* Q-53 đòi `analog.in` có mặt; một nguyên thủy chưa kiểm trên phần cứng không được phát hành.
+4. **Lỗi và vết ghi.** Phong bì từ chối ⇒ lớp mới `EnvelopeRefusedError` (**NE1003**, lớp con của `ActionContractViolation`), sự kiện vết ghi `envelope_refused`, token không bị tiêu. Đọc hỏng (bus NACK, timeout, cảm biến mất) ⇒ `PerceptionUnavailableError` (NE5001) ⇒ tiêu chí chưa quyết ⇒ BLOCK. Chân hoặc thiết bị không khai ⇒ `BoardCapabilityError` (NE3001) lúc nạp. Sự kiện vết ghi: `digital_in`, `i2c_read`, `analog_in`. *Vì sao:* mỗi loại hỏng có một mã riêng để hậu kiểm, và không loại nào dẫn tới ALLOW.
+5. **Khoá phong bì** (dùng chung cho RFC-0010, RFC-0011): `window_s`, `max_on_ms_per_window`, `min_interval_ms` và thêm **`max_continuous_ms`** — trần một lần bật, độc lập với `arguments` của gate. Bảng phong bì là tuỳ chọn cho chân tín hiệu, **bắt buộc** cho mọi chân nối cơ cấu chấp hành (khai bằng `actuator = true`). *Vì sao:* giới hạn phần cứng phải đứng được cả khi gate viết lỏng.
+6. **Khởi động lại.** Sau khi tiến trình (hoặc firmware) khởi động, mỗi chân có phong bì phải chờ `min_interval_ms` trước lần bật đầu tiên. *Vì sao:* bộ đếm cửa sổ nằm trong bộ nhớ; không có luật này, khởi động lại liên tục sẽ xoá phong bì.
