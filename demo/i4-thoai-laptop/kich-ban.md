@@ -29,6 +29,10 @@ ne run --mic                                   # thử 1 câu, rồi Ctrl-C
 
 ---
 
+> **Có giao diện:** chạy `ne studio --mic` (thay cho `ne run --mic`) để cùng phiên hiện trên trang: trạng thái
+> nghe/nghĩ/nói, câu nghe được, phán quyết và độ trễ từng chặng (`demo/i1-studio/`, Q-51). Nút micro trên trang chỉ tắt/mở
+> tiếng micro.
+
 ## 1. Màn 1 — "Nói một câu, đèn bật qua gate"
 
 ### Nói

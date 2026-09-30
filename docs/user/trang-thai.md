@@ -13,7 +13,7 @@
 | Pha đang thực thi | 🟡 **I1 — Preview nội bộ trên `sim`** (I2, I3 phần không cần bo mạch và I4 làm song song) |
 | Increment đang mở | 🟡 **I1** — còn I1-02 (tạm hoãn: phát triển nội bộ) |
 | Cột mốc tiếp theo | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** |
-| Trạng thái CI Lõi | ✅ **PASS 2395/2395 · SKIP 0** |
+| Trạng thái CI Lõi | ✅ **PASS 2479/2479 · SKIP 0** |
 | Chặn ngoài tầm kỹ thuật | 🟡 **2 hạng mục chặn** |
 | Lần cập nhật cuối | **2026-09-29** |
 
@@ -23,7 +23,7 @@
 |:---:|:---|:---|:---:|:---|:---|
 | **0.x nội bộ** | **I0 — Lõi hợp đồng trên `sim`** | ✅ 2026-09-24 | **42 / 42** | ✅ Xong | lịch sử |
 |  | **Cổng nhu cầu (Q-20)** | 2026-10-25 | — | ⏳ Đang phỏng vấn | — |
-|  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | **4 / 5** | 🟡 Đang làm — TSK-I1-02 tạm hoãn (phát triển nội bộ) | tag `v0.1.0` (nội bộ) |
+|  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | **4 / 6** | 🟡 Đang làm — TSK-I1-02 tạm hoãn (phát triển nội bộ) | tag `v0.1.0` (nội bộ) |
 |  | **I2 — `linux` ngang `sim`** | 2026-11-29 | **3 / 4** | 🟡 Phiên tương tác, cảm biến, màn hình xong trên gpio-sim + i2c-stub; nightly RPi 5 còn lại | tag `v0.2.0` (nội bộ) |
 |  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | **6 / 14** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU, giao diện LVGL có ảnh golden); chờ bo mạch | tag `v0.3.0` + firmware (nội bộ) |
 |  | **I4 — Thoại trên host** | 2026-12-13 | **5 / 9** | 🟡 Đặc tả, vector, FSM Python, độ trễ, SystemOne qua Jev xong; STT/TTS trên `sim`, wake-word + STT dự phòng, âm thanh `linux` xong phần mã trên host; phiên micro trên laptop (`run --mic`, TSK-I4-04) xong phần mã; còn mô hình wake-word thật, Pi + HAT | tag `v0.4.0` (nội bộ) |

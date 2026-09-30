@@ -101,6 +101,13 @@ Mọi năng lực ở đây chạy trên `sim`, tức là trên máy tính của
 hay `esp32s3` thì ghi rõ. Mỗi mục trả lời: làm được gì · cần gì · giới hạn. Mục nào cần cài thêm một phần mở rộng thì ghi
 tên phần mở rộng đó (`neuroedge[mcp]`…); danh sách phần mở rộng ở §3.
 
+### 4.0 NeuroEdge Studio: mọi năng lực trong một trang
+
+`neuroedge studio` mở một ứng dụng web cục bộ (chỉ `127.0.0.1`, không cần mạng) với bảy màn: phiên trực tiếp (gõ,
+và nói qua micro với `--mic`), gate và ô thử nhanh, vết ghi và phát lại, kiểm chứng (`verify`), thiết bị ESP32-S3
+(ảnh giao diện, QEMU, OTA), MCP, và cấu hình agent. Song ngữ Việt/Anh. Hợp đồng: `docs/spec/studio.md`;
+kịch bản demo: `demo/i1-studio/`.
+
 ### 4.1 Viết gate và kiểm gate
 
 **Làm được**

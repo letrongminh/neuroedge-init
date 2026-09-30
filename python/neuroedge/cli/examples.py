@@ -102,6 +102,10 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
         "neuroedge run --voice-file turn.wav --voice-out reply.wav   # speech: needs stt/tts tables",
         "neuroedge run --voice-file turn.wav --target linux   # real lines; the WAV is audio.in",
     ),
+    "studio": (
+        "neuroedge studio                 # every capability in one local web app",
+        "neuroedge studio --mic           # plus the laptop microphone (headphones)",
+    ),
     "build": (
         "neuroedge build --target sim --board sim-default",
         "neuroedge build --target esp32s3 --board esp32s3-box-3   # + build/esp32s3/",

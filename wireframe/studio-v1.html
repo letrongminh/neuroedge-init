@@ -1,0 +1,1083 @@
+<!--
+NeuroEdge Studio v1 Wireframe
+Views:
+  1. Phiên trực tiếp / Live session (default view)
+  2. Gate / Gate registry, inheritance detail & what-if sandbox
+  3. Vết ghi / Traces list, timeline & replay
+  4. Kiểm chứng / Target-equivalence verification matrix
+  5. Thiết bị ESP32-S3 / Device firmware build, QEMU boot, LVGL screens & OTA stepper
+  6. MCP & tích hợp / MCP integrations & external tools
+  7. Agent & cấu hình / Agent declaration, board capabilities & providers
+
+Data note: All displayed data are static realistic samples drawn from real runs on 2026-09-29
+(including voice demo i4-thoai-laptop, firmware QEMU boot & OTA scripts, and canonical traces).
+-->
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuroEdge Studio · nha@0.1.0</title>
+<style>
+:root{--bg:#0f1419;--panel:#171e26;--panel-hover:#1c2530;--line:#26313d;--text:#d8dee6;--dim:#7d8a99;--allow:#3fb950;--block:#f85149;--warn:#d29922;--accent:#58a6ff;--code-bg:#0b0f14;--screen-bg:#05080c;--radius:8px;}
+@media (prefers-color-scheme:light){:root{--bg:#f6f8fa;--panel:#ffffff;--panel-hover:#f3f4f6;--line:#d0d7de;--text:#1f2328;--dim:#636c76;--allow:#1a7f37;--block:#cf222e;--warn:#9a6700;--accent:#0969da;--code-bg:#f3f4f6;--screen-bg:#111822;}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:13.5px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;}
+code,.mono,pre,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;}
+.app-header{padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:100;}
+.header-left,.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:-0.01em;color:var(--text);}
+.brand svg{width:20px;height:20px;fill:var(--accent);}
+.meta-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;background:color-mix(in srgb,var(--line) 40%,transparent);border:1px solid var(--line);border-radius:6px;font-size:11px;color:var(--dim);}
+.meta-chip strong{color:var(--text);font-weight:600;}
+.live-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;background:color-mix(in srgb,var(--allow) 16%,transparent);border:1px solid var(--allow);border-radius:12px;font-size:11.5px;font-weight:600;color:var(--allow);cursor:pointer;}
+.live-badge:hover{filter:brightness(1.15);}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--allow);box-shadow:0 0 6px var(--allow);animation:pulse-dot 2s infinite ease-in-out;}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.85)}}
+.provider-badge{font-size:11px;padding:2px 7px;border-radius:4px;border:1px solid var(--line);background:var(--bg);color:var(--dim);}
+.provider-badge span{color:var(--allow);font-weight:600;}
+.lang-toggle{display:inline-flex;border:1px solid var(--line);border-radius:6px;background:var(--bg);overflow:hidden;}
+.lang-btn{border:none;background:transparent;color:var(--dim);padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;}
+.lang-btn.active{background:var(--accent);color:#fff;}
+.lang-btn:focus-visible{outline:2px solid var(--accent);}
+.banner{background:color-mix(in srgb,var(--warn) 18%,var(--panel));border-bottom:1px solid var(--warn);padding:7px 18px;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.banner.lost{background:color-mix(in srgb,var(--block) 18%,var(--panel));border-bottom-color:var(--block);color:var(--block);font-weight:600;}
+.banner .note{color:var(--dim);font-size:11px;font-weight:normal;}
+.studio-layout{display:flex;min-height:calc(100vh - 52px);}
+.studio-nav{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--line);padding:12px 8px;display:flex;flex-direction:column;gap:4px;}
+.nav-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:transparent;color:var(--dim);border-radius:6px;font-size:12.5px;font-weight:500;text-align:left;cursor:pointer;}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.nav-item:hover{background:var(--panel-hover);color:var(--text);}
+.nav-item.active{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);font-weight:600;}
+.nav-item:focus-visible{outline:2px solid var(--accent);outline-offset:-1px;}
+.studio-content{flex:1;padding:16px 20px 40px;max-width:1600px;min-width:0;}
+.studio-view{display:none;}
+.studio-view.active{display:block;animation:fadeIn 0.15s ease-in;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:translateY(0)}}
+@media (max-width:860px){
+  .studio-layout{flex-direction:column;}
+  .studio-nav{width:100%;border-right:none;border-bottom:1px solid var(--line);flex-direction:row;overflow-x:auto;white-space:nowrap;padding:6px 12px;scrollbar-width:none;}
+  .studio-nav::-webkit-scrollbar{display:none;}
+  .nav-item{padding:6px 10px;font-size:12px;}
+  .studio-content{padding:12px;}
+}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;}
+.panel h2{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:0 0 10px;display:flex;align-items:center;justify-content:space-between;}
+.panel h2 .sub{font-size:11px;text-transform:none;color:var(--dim);font-weight:normal;}
+.grid-3col{display:grid;grid-template-columns:minmax(260px,320px) 1fr minmax(280px,360px);gap:14px;align-items:start;}
+.grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media (max-width:1150px){.grid-3col{grid-template-columns:300px 1fr;}.grid-3col>.col-right{grid-column:span 2;}}
+@media (max-width:860px){.grid-3col,.grid-2col{grid-template-columns:1fr;}.grid-3col>.col-right{grid-column:span 1;}}
+.devices{display:flex;flex-wrap:wrap;gap:12px;}
+.device{width:88px;text-align:center;font-size:11.5px;}
+.device svg{width:56px;height:56px;display:block;margin:0 auto 4px;}
+.device .state{color:var(--dim);font-weight:500;font-size:11px;}
+.device.on .state{color:var(--allow);font-weight:700;}
+.sensor-row{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:5px 0;font-size:12px;}
+.sensor-row:last-child{border-bottom:none;}
+.sensor-val{font-variant-numeric:tabular-nums;font-weight:600;}
+.screen-frame{width:100%;aspect-ratio:4/3;background:var(--screen-bg);border:1px solid var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:inset 0 0 16px rgba(0,0,0,0.5);}
+.screen-frame svg{width:100%;height:100%;display:block;}
+.st{display:inline-block;min-width:60px;text-align:center;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.04em;}
+.st.allow{background:color-mix(in srgb,var(--allow) 20%,transparent);color:var(--allow);}
+.st.block{background:color-mix(in srgb,var(--block) 20%,transparent);color:var(--block);}
+.st.warn{background:color-mix(in srgb,var(--warn) 22%,transparent);color:var(--warn);}
+.st.accent{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--accent);}
+.route-badge{font-size:10.5px;font-weight:600;padding:2px 6px;border-radius:4px;background:color-mix(in srgb,var(--line) 60%,transparent);color:var(--dim);}
+.transcript{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
+.turn{background:color-mix(in srgb,var(--panel) 90%,var(--line));border:1px solid var(--line);border-radius:6px;padding:9px 12px;}
+.turn-header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px;font-size:11px;color:var(--dim);}
+.turn-header .speaker{font-weight:700;color:var(--text);}
+.turn-text{font-size:13.5px;margin:4px 0 6px;}
+.turn-reply{font-size:13px;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);border-left:3px solid var(--accent);padding:5px 8px;border-radius:0 4px 4px 0;margin-top:6px;}
+.turn-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11px;margin-top:6px;}
+.latency-bar{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--line);margin-top:6px;width:100%;}
+.lat-seg{height:100%;}
+.lat-seg.p{background:#9c6ade;}
+.lat-seg.s2{background:var(--accent);}
+.lat-seg.g{background:var(--warn);}
+.lat-seg.a{background:var(--allow);}
+.lat-seg.tts{background:#ec6547;}
+.latency-legend{font-size:10px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap;margin-top:3px;}
+.voice-strip{background:color-mix(in srgb,var(--panel) 70%,var(--bg));border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin-bottom:12px;display:flex;flex-direction:column;gap:8px;}
+.voice-strip-top,.voice-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.fsm-chips{display:flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;}
+.fsm-chip{padding:2px 6px;border-radius:3px;background:var(--line);color:var(--dim);}
+.fsm-chip.active{background:var(--allow);color:#000;box-shadow:0 0 8px color-mix(in srgb,var(--allow) 60%,transparent);}
+.mic-meter{display:flex;align-items:center;gap:2px;height:12px;}
+.mic-bar{width:3px;height:100%;background:var(--allow);border-radius:1px;}
+.mic-bar:nth-child(4),.mic-bar:nth-child(5){background:var(--warn);}
+.mic-bar:nth-child(6){background:var(--block);}
+.voice-btn-group{display:flex;gap:6px;}
+.btn-sm{padding:5px 10px;border-radius:5px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+.btn-sm:hover{background:var(--panel-hover);border-color:var(--accent);}
+.btn-sm.active{background:color-mix(in srgb,var(--accent) 20%,transparent);border-color:var(--accent);color:var(--accent);}
+.counters-chip{color:var(--dim);font-size:11px;}
+.cmd-form{display:flex;gap:6px;}
+.cmd-input{flex:1;padding:8px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;font-size:12px;}
+.cmd-input:focus{outline:none;border-color:var(--accent);}
+.btn-primary{padding:8px 16px;border-radius:6px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;}
+.btn-primary:hover{filter:brightness(1.1);}
+.ask-panel{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--panel));}
+.ask-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.ask-timer{font-size:12px;color:var(--warn);font-weight:600;margin-bottom:10px;}
+.ask-btns{display:flex;gap:8px;margin-bottom:8px;}
+.ask-btn{padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12.5px;border:1px solid var(--line);}
+.ask-btn.yes{background:var(--warn);color:#000;border-color:var(--warn);}
+.ask-btn.no{background:var(--bg);color:var(--text);}
+.ask-btn.no:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.ask-note{font-size:11px;color:var(--dim);font-style:italic;}
+.verdict-card{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:6px;padding:8px 12px;margin-bottom:8px;background:color-mix(in srgb,var(--panel) 90%,var(--line));}
+.verdict-card.ALLOW{border-left-color:var(--allow);}
+.verdict-card.BLOCK{border-left-color:var(--block);}
+.verdict-summary{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;font-weight:600;}
+.verdict-details{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:11.5px;}
+.crit-table{width:100%;border-collapse:collapse;margin:6px 0;font-size:11.5px;}
+.crit-table th,.crit-table td{padding:3px 6px;text-align:left;border-bottom:1px solid var(--line);}
+.crit-table th{color:var(--dim);font-weight:600;}
+table.data-table{width:100%;border-collapse:collapse;font-size:12px;}
+table.data-table th,table.data-table td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;}
+table.data-table th{color:var(--dim);font-weight:600;background:color-mix(in srgb,var(--panel) 50%,var(--bg));}
+table.data-table tr:hover{background:var(--panel-hover);}
+.timeline-lane{display:grid;grid-template-columns:100px 1fr 140px;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:12px;}
+.timeline-track{position:relative;height:22px;background:color-mix(in srgb,var(--line) 40%,transparent);border-radius:4px;overflow:hidden;}
+.timeline-hit{position:absolute;top:3px;height:16px;border-radius:3px;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;}
+.timeline-hit.allow{background:var(--allow);}
+.timeline-hit.block{background:var(--block);}
+.timeline-hit.pulse{background:var(--accent);}
+.timeline-axis{display:flex;justify-content:space-between;color:var(--dim);font-size:11px;margin-left:110px;margin-right:150px;margin-top:4px;}
+.stepper{display:flex;flex-direction:column;gap:8px;margin:10px 0;}
+.step-item{display:flex;align-items:flex-start;gap:10px;padding:6px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;font-size:12px;}
+.step-phase{width:22px;height:22px;border-radius:50%;background:var(--line);color:var(--text);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0;}
+.step-item.valid .step-phase{background:var(--allow);color:#000;}
+.step-item.reject .step-phase{background:var(--block);color:#fff;}
+.step-item.rollback .step-phase{background:var(--warn);color:#000;}
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+.gallery-card{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;text-align:center;}
+.gallery-card .card-title{font-size:11px;font-weight:600;color:var(--dim);margin-top:6px;display:flex;justify-content:space-between;}
+.code-box{background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:9px 11px;font-family:ui-monospace,monospace;font-size:11.5px;overflow-x:auto;color:var(--text);white-space:pre-wrap;margin:6px 0;}
+.budget-bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:4px 0 8px;}
+.budget-fill{height:100%;background:var(--allow);border-radius:4px;}
+select.ctrl-select,input.ctrl-input{background:var(--bg);border:1px solid var(--line);color:var(--text);padding:5px 8px;border-radius:5px;font:inherit;font-size:12px;}
+label.ctrl-label{display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;}
+details summary{cursor:pointer;color:var(--accent);font-size:11.5px;font-weight:600;user-select:none;}
+details summary:hover{text-decoration:underline;}
+details[open] summary{margin-bottom:6px;}
+</style>
+</head>
+<body>
+
+<!-- Lost Connection Banner -->
+<div id="lostBanner" class="banner lost" style="display:none;" role="status">
+  <span>⚠ <span data-i18n="banner_lost_msg">Mất kết nối tới mcp serve, đang nối lại… Thiết bị và nút xác nhận tạm khoá.</span></span>
+  <span class="note" data-i18n="banner_lost_state">(trạng thái 4A — chỉ hiện khi SSE lỗi)</span>
+</div>
+
+<!-- Top Bar -->
+<header class="app-header">
+  <div class="header-left">
+    <div class="brand">
+      <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      <span data-i18n="app_title">NeuroEdge Studio</span>
+    </div>
+    <div class="meta-chip"><span>agent:</span> <strong>nha@0.1.0</strong></div>
+    <div class="meta-chip"><span>target:</span> <strong>sim</strong></div>
+    <div class="meta-chip"><span>board:</span> <strong>sim-default</strong></div>
+    <button class="live-badge" id="btnToggleLive" title="Nhấn để thử trạng thái mất kết nối / Click to toggle lost-connection banner">
+      <span class="live-dot" id="liveDot"></span>
+      <span id="liveStatusText" data-i18n="live_badge">● trực tiếp</span>
+    </button>
+  </div>
+  <div class="header-right">
+    <div class="provider-badge">STT <span data-i18n="val_key_present">✓ có</span></div>
+    <div class="provider-badge">TTS <span data-i18n="val_key_present">✓ có</span></div>
+    <div class="provider-badge">System 1 <span data-i18n="val_key_present">✓ có</span></div>
+    <div class="provider-badge">System 2 <span data-i18n="val_key_present">✓ có</span></div>
+    <div class="lang-toggle" role="radiogroup" aria-label="Language selection">
+      <button class="lang-btn active" id="btnLangVi" onclick="setLanguage('vi')">VI</button>
+      <button class="lang-btn" id="btnLangEn" onclick="setLanguage('en')">EN</button>
+    </div>
+  </div>
+</header>
+
+<div class="studio-layout">
+  <!-- Left Navigation -->
+  <nav class="studio-nav" aria-label="Studio Views">
+    <button class="nav-item active" data-view="live">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+      <span data-i18n="nav_live">Phiên trực tiếp</span>
+    </button>
+    <button class="nav-item" data-view="gate">
+      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span data-i18n="nav_gate">Gate</span>
+    </button>
+    <button class="nav-item" data-view="traces">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span data-i18n="nav_traces">Vết ghi</span>
+    </button>
+    <button class="nav-item" data-view="verify">
+      <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <span data-i18n="nav_verify">Kiểm chứng</span>
+    </button>
+    <button class="nav-item" data-view="device">
+      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/></svg>
+      <span data-i18n="nav_device">Thiết bị ESP32-S3</span>
+    </button>
+    <button class="nav-item" data-view="mcp">
+      <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      <span data-i18n="nav_mcp">MCP & tích hợp</span>
+    </button>
+    <button class="nav-item" data-view="config">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span data-i18n="nav_config">Agent & cấu hình</span>
+    </button>
+  </nav>
+
+  <!-- Main View Container -->
+  <main class="studio-content">
+
+    <!-- VIEW 1: Live session -->
+    <section class="studio-view active" id="view-live">
+      <div class="grid-3col">
+        <!-- Left Column -->
+        <div class="col-left">
+          <div class="panel">
+            <h2><span data-i18n="title_devices">Thiết bị</span> <span class="sub">sim-default</span></h2>
+            <div class="devices">
+              <div class="device">
+                <svg viewBox="0 0 64 64">
+                  <path d="M22 30 V20 a10 10 0 0 1 20 0 V30" fill="none" stroke="var(--dim)" stroke-width="5"/>
+                  <rect x="14" y="30" width="36" height="26" rx="4" fill="var(--dim)"/>
+                  <circle cx="32" cy="43" r="4" fill="var(--panel)"/>
+                </svg>
+                <div class="mono">door_lock</div>
+                <div class="state">LOW</div>
+              </div>
+              <div class="device on">
+                <svg viewBox="0 0 64 64">
+                  <circle cx="32" cy="26" r="16" fill="#f2cc60" stroke="var(--allow)" stroke-width="4"/>
+                  <rect x="24" y="44" width="16" height="10" rx="2" fill="var(--allow)"/>
+                </svg>
+                <div class="mono">porch_light</div>
+                <div class="state">HIGH</div>
+              </div>
+              <div class="device">
+                <svg viewBox="0 0 64 64">
+                  <circle cx="14" cy="40" r="5" fill="var(--dim)"/>
+                  <circle cx="50" cy="40" r="5" fill="var(--dim)"/>
+                  <line x1="14" y1="40" x2="44" y2="18" stroke="var(--dim)" stroke-width="5" stroke-linecap="round"/>
+                </svg>
+                <div class="mono">gate_relay</div>
+                <div class="state">LOW</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2><span data-i18n="title_sensors">Cảm biến</span> <span class="sub">I2C / GPIO</span></h2>
+            <div class="sensor-row"><span class="mono">motion</span><span class="sensor-val" style="color:var(--warn)">true</span></div>
+            <div class="sensor-row"><span class="mono">temperature</span><span class="sensor-val">45 °C</span></div>
+            <div class="sensor-row"><span class="mono">door_contact</span><span class="sensor-val" style="color:var(--allow)">closed</span></div>
+          </div>
+
+          <div class="panel">
+            <h2><span data-i18n="title_screen">Màn hình</span> <span class="sub">320×240</span></h2>
+            <div class="screen-frame">
+              <svg viewBox="0 0 320 240">
+                <rect width="320" height="240" fill="#080d14"/>
+                <rect x="4" y="4" width="312" height="232" rx="4" fill="none" stroke="#1f2d3d" stroke-width="2"/>
+                <rect x="8" y="8" width="304" height="20" fill="#121e2b"/>
+                <text x="16" y="22" fill="#7d8a99" font-size="10" font-family="monospace">NEUROEDGE OS v0.1.0 · sim</text>
+                <circle cx="296" cy="18" r="4" fill="#3fb950"/>
+                <circle cx="160" cy="105" r="32" fill="#172636"/>
+                <path d="M160 88 v24 M154 94 v12 M166 94 v12 M148 98 v4 M172 98 v4" stroke="#58a6ff" stroke-width="3" stroke-linecap="round"/>
+                <text x="160" y="160" text-anchor="middle" fill="#d8dee6" font-size="14" font-weight="bold" font-family="system-ui" class="scr-text-listen" data-i18n="scr_listening">Đang lắng nghe...</text>
+                <text x="160" y="180" text-anchor="middle" fill="#58a6ff" font-size="11" font-family="monospace">16 kHz PCM · VAD Active</text>
+                <text x="160" y="224" text-anchor="middle" fill="#485767" font-size="10" font-family="monospace">voice_listening (golden reference)</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center Column -->
+        <div class="col-center">
+          <div class="panel" style="padding-bottom: 8px;">
+            <h2><span data-i18n="title_assistant">Trợ lý & Hội thoại</span> <span class="sub">live session</span></h2>
+            
+            <div class="voice-strip">
+              <div class="voice-strip-top">
+                <div class="fsm-chips">
+                  <span class="fsm-chip">IDLE</span><span>→</span>
+                  <span class="fsm-chip active">LISTENING</span><span>→</span>
+                  <span class="fsm-chip">THINKING</span><span>→</span>
+                  <span class="fsm-chip">SPEAKING</span>
+                </div>
+                <div class="mic-meter" title="Mic level meter">
+                  <div class="mic-bar"></div><div class="mic-bar"></div><div class="mic-bar"></div>
+                  <div class="mic-bar"></div><div class="mic-bar"></div><div class="mic-bar"></div>
+                </div>
+              </div>
+              <div class="voice-actions">
+                <div class="voice-btn-group">
+                  <button class="btn-sm active" id="btnVoiceToggle">🎤 <span data-i18n="btn_voice_start">Bắt đầu nói</span></button>
+                  <button class="btn-sm" id="btnAudioMode">🎧 <span data-i18n="btn_audio_mode">Tai nghe (cắt lời được)</span></button>
+                </div>
+                <div class="counters-chip" data-i18n="counters_voice">cắt lời 1 · STT lỗi 0 · lệnh bị huỷ 1</div>
+              </div>
+            </div>
+
+            <div class="transcript">
+              <!-- Turn a -->
+              <div class="turn">
+                <div class="turn-header"><span class="speaker">🎤 <span data-i18n="spk_you">Bạn</span></span><span class="mono">offset 0 ms</span></div>
+                <div class="turn-text">“Bật đen.”</div>
+                <div class="turn-meta">
+                  <span class="route-badge" data-i18n="route_grammar">Ngữ pháp lệnh</span>
+                  <span class="mono">intent light_on (0.86)</span>
+                  <span class="st allow">✓ ALLOW</span>
+                  <span class="mono">light_on@1.0.0</span>
+                </div>
+                <div class="latency-bar" title="perception: 1910 ms | gate: 2 ms | action: 1 ms">
+                  <div class="lat-seg p" style="width:98%;"></div><div class="lat-seg g" style="width:1%;"></div><div class="lat-seg a" style="width:1%;"></div>
+                </div>
+                <div class="latency-legend"><span>perception 1910 ms</span> · <span>gate 2 ms</span> · <span>action 1 ms</span></div>
+              </div>
+
+              <!-- Turn b -->
+              <div class="turn">
+                <div class="turn-header"><span class="speaker">⌨ <span data-i18n="spk_you">Bạn</span></span><span class="mono">offset 3200 ms</span></div>
+                <div class="turn-text">“làm ơn bật giúp cái đèn hiên nhé”</div>
+                <div class="turn-meta">
+                  <span class="route-badge">System 2 gemma-4-31b</span>
+                  <span class="mono">tool_call light_on()</span>
+                  <span class="st allow">✓ ALLOW</span>
+                </div>
+                <div class="turn-reply">🗣 <span data-i18n="reply_turn_b">“Đã bật đèn hiên cho bạn rồi nhé!”</span></div>
+                <div class="latency-bar" title="system_two: 1140 ms | gate: 2 ms | action: 1 ms | tts: 2450 ms">
+                  <div class="lat-seg s2" style="width:32%;"></div><div class="lat-seg g" style="width:1%;"></div><div class="lat-seg a" style="width:1%;"></div><div class="lat-seg tts" style="width:66%;"></div>
+                </div>
+                <div class="latency-legend"><span>system_two 1140 ms</span> · <span>gate 2 ms</span> · <span>action 1 ms</span> · <span>tts 2450 ms</span></div>
+              </div>
+
+              <!-- Turn c -->
+              <div class="turn">
+                <div class="turn-header"><span class="speaker">🎤 <span data-i18n="spk_you">Bạn</span></span><span class="mono">offset 7800 ms</span></div>
+                <div class="turn-text">“Mật khẩu wifi nhà mình là gì?”</div>
+                <div class="turn-meta">
+                  <span class="route-badge" data-i18n="route_rag">Kiến thức RAG</span>
+                  <span class="mono">intent knowledge (0.81)</span>
+                </div>
+                <div class="turn-reply">🗣 <span data-i18n="reply_turn_c">“Mật khẩu wifi được dán ở mặt dưới router.”</span></div>
+                <div class="latency-bar" title="perception: 1910 ms | tts: 3720 ms">
+                  <div class="lat-seg p" style="width:34%;"></div><div class="lat-seg tts" style="width:66%;"></div>
+                </div>
+                <div class="latency-legend"><span>perception 1910 ms</span> · <span>tts 3720 ms</span></div>
+              </div>
+
+              <!-- Turn d -->
+              <div class="turn" style="border-left: 3px solid var(--block);">
+                <div class="turn-header"><span class="speaker">⌨ <span data-i18n="spk_you">Bạn</span></span><span class="mono">offset 14500 ms</span></div>
+                <div class="turn-text">“tắt đèn”</div>
+                <div class="turn-meta">
+                  <span class="st block">✗ BLOCK</span>
+                  <span class="mono">light_off@1.0.0</span>
+                  <span class="mono" style="color:var(--block)">(condition_not_met, room_empty)</span>
+                </div>
+                <div class="turn-reply" style="border-left-color:var(--warn);color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,transparent);">
+                  ❓ <span data-i18n="reply_turn_d">“Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?”</span>
+                </div>
+                <div class="latency-legend" style="margin-top:6px;"><span>gate 2 ms</span> · <span>on_block: ask (RFC-0006)</span></div>
+              </div>
+            </div>
+
+            <form class="cmd-form" id="liveCmdForm" onsubmit="event.preventDefault(); alert('Lệnh giả lập: ' + this.elements.cmd.value);">
+              <input class="cmd-input" name="cmd" data-i18n-placeholder="cmd_placeholder" placeholder="Gõ lệnh cho agent — hoặc :sensor <tên> <giá trị>, :set <dữ kiện> <giá trị>" autocomplete="off"/>
+              <button class="btn-primary" type="submit" data-i18n="btn_send">Gửi</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-right">
+          <!-- Confirm Card RFC-0006 -->
+          <div class="panel ask-panel" role="alertdialog" aria-live="assertive">
+            <h2><span data-i18n="title_confirm">Thiết bị hỏi xác nhận</span> <span class="sub">RFC-0006</span></h2>
+            <div class="ask-title" data-i18n="confirm_turn_d_title">Vẫn còn người trong phòng — bạn chắc muốn tắt đèn? (light_off)</div>
+            <div class="ask-timer"><span data-i18n="confirm_time_left">còn 8 s</span> · <span data-i18n="confirm_source">nguồn: thiết bị</span></div>
+            <div class="ask-btns">
+              <button class="ask-btn yes" onclick="alert('Đã xác nhận');"><span data-i18n="btn_agree">Đồng ý</span></button>
+              <button class="ask-btn no" autofocus onclick="alert('Đã huỷ');"><span data-i18n="btn_cancel">Huỷ</span></button>
+            </div>
+            <div class="ask-note" data-i18n="confirm_note">chỉ người trên thiết bị trả lời được — trợ lý và client MCP không xác nhận thay</div>
+          </div>
+
+          <!-- Gate Verdict Cards with explain disclosures -->
+          <div class="panel">
+            <h2><span data-i18n="title_gate_verdicts">Phán quyết gate</span> <span class="sub">phiên này</span></h2>
+
+            <!-- Card 1: unlock_door BLOCK -->
+            <div class="verdict-card BLOCK">
+              <div class="verdict-summary">
+                <span><span class="st block">BLOCK</span> <span class="mono">unlock_door@1.2.0</span></span>
+                <span class="mono" style="font-size:11px;color:var(--dim)">14:02:11</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--dim);margin:4px 0;">condition_not_met · tiêu chí room_matches → escalate human_receptionist</div>
+              <details class="verdict-details">
+                <summary data-i18n="lbl_explain">Giải thích</summary>
+                <table class="crit-table">
+                  <thead><tr><th data-i18n="th_criterion">Tiêu chí</th><th data-i18n="th_val">Giá trị</th><th data-i18n="th_src">Nguồn</th><th>Độ tin cậy</th><th data-i18n="th_res">Kết quả</th></tr></thead>
+                  <tbody>
+                    <tr><td class="mono">guest_authenticated</td><td class="mono">true</td><td>context</td><td>1.00</td><td style="color:var(--allow)">✓</td></tr>
+                    <tr><td class="mono">risk_level</td><td class="mono">low</td><td>context</td><td>0.95</td><td style="color:var(--allow)">✓</td></tr>
+                    <tr><td class="mono">room_matches</td><td class="mono">false</td><td>context</td><td>1.00</td><td style="color:var(--block)">✗</td></tr>
+                  </tbody>
+                </table>
+                <div style="margin-top:4px;"><strong data-i18n="lbl_failed_rule">Thất bại:</strong> <span class="mono">room_matches == false</span></div>
+                <div><strong data-i18n="lbl_onblock">on_block:</strong> <span class="mono">escalate human_receptionist</span></div>
+                <div><strong data-i18n="lbl_digest">gate_digest:</strong> <span class="mono">sha256:7f8a9b2c…</span></div>
+                <div><strong data-i18n="lbl_inherit">Kế thừa:</strong> <span class="mono">base-access@1.0.0 → unlock_door@1.2.0</span></div>
+              </details>
+            </div>
+
+            <!-- Card 2: light_off BLOCK -->
+            <div class="verdict-card BLOCK">
+              <div class="verdict-summary">
+                <span><span class="st block">BLOCK</span> <span class="mono">light_off@1.0.0</span></span>
+                <span class="mono" style="font-size:11px;color:var(--dim)">14:01:40</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--dim);margin:4px 0;">condition_not_met · tiêu chí room_empty → ask</div>
+              <details class="verdict-details">
+                <summary data-i18n="lbl_explain">Giải thích</summary>
+                <table class="crit-table">
+                  <thead><tr><th data-i18n="th_criterion">Tiêu chí</th><th data-i18n="th_val">Giá trị</th><th data-i18n="th_src">Nguồn</th><th>Độ tin cậy</th><th data-i18n="th_res">Kết quả</th></tr></thead>
+                  <tbody>
+                    <tr><td class="mono">room_empty</td><td class="mono">false</td><td>sensor (motion=true)</td><td>1.00</td><td style="color:var(--block)">✗</td></tr>
+                  </tbody>
+                </table>
+                <div style="margin-top:4px;"><strong data-i18n="lbl_failed_rule">Thất bại:</strong> <span class="mono">room_empty == false</span></div>
+                <div><strong data-i18n="lbl_onblock">on_block:</strong> <span class="mono">ask (confirms: [room_empty])</span></div>
+                <div><strong data-i18n="lbl_digest">gate_digest:</strong> <span class="mono">sha256:4a3b2c1d…</span></div>
+                <div><strong data-i18n="lbl_inherit">Kế thừa:</strong> <span class="mono">base-safety@1.0.0 → light_off@1.0.0</span></div>
+              </details>
+            </div>
+
+            <!-- Card 3: light_on ALLOW -->
+            <div class="verdict-card ALLOW">
+              <div class="verdict-summary">
+                <span><span class="st allow">ALLOW</span> <span class="mono">light_on@1.0.0</span></span>
+                <span class="mono" style="font-size:11px;color:var(--dim)">14:00:12</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--dim);margin:4px 0;">tool_call light_on() · intent light_on (0.86)</div>
+              <details class="verdict-details">
+                <summary data-i18n="lbl_explain">Giải thích</summary>
+                <div><strong data-i18n="lbl_digest">gate_digest:</strong> <span class="mono">sha256:9c8b7a6f…</span></div>
+                <div><strong data-i18n="lbl_inherit">Kế thừa:</strong> <span class="mono">base-safety@1.0.0 → light_on@1.0.0</span></div>
+              </details>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Panel: Event Stream (8 rows) -->
+      <div class="panel" style="margin-top:14px;">
+        <h2><span data-i18n="title_event_stream">Dòng sự kiện (Event stream)</span> <span class="sub">8 sự kiện gần nhất</span></h2>
+        <table class="data-table">
+          <thead><tr><th style="width:110px;" data-i18n="th_time">Thời điểm</th><th style="width:200px;" data-i18n="th_event">Sự kiện</th><th data-i18n="th_payload">Dữ liệu sự kiện</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">0 ms</td><td><code>text_input</code></td><td class="mono" style="color:var(--dim)">{"text": "sha256:79ec5403a…", "channel": "mic"}</td></tr>
+            <tr><td class="mono">1910 ms</td><td><code>intent_extracted</code></td><td class="mono" style="color:var(--dim)">{"intent": "light_on", "confidence": 0.86, "route": "grammar"}</td></tr>
+            <tr><td class="mono">1911 ms</td><td><code>tool_call</code></td><td class="mono" style="color:var(--dim)">{"name": "light_on", "arguments": {}, "source": "local_grammar"}</td></tr>
+            <tr><td class="mono">1911 ms</td><td><code>gate_evaluation_begin</code></td><td class="mono" style="color:var(--dim)">{"gate": "light_on@1.0.0", "digest": "sha256:9c8b7a6f…"}</td></tr>
+            <tr><td class="mono">1912 ms</td><td><code>gate_facts</code></td><td class="mono" style="color:var(--dim)">{"motion": true, "ambient_light": 120}</td></tr>
+            <tr><td class="mono">1913 ms</td><td><code>gate_evaluation_result</code></td><td class="mono" style="color:var(--dim)">{"verdict": "ALLOW", "gate": "light_on@1.0.0"}</td></tr>
+            <tr><td class="mono">1914 ms</td><td><code>actuator_command</code></td><td class="mono" style="color:var(--dim)">{"pin": "porch_light", "operation": "on", "duration_ms": 0}</td></tr>
+            <tr><td class="mono">1915 ms</td><td><code>turn_latency</code></td><td class="mono" style="color:var(--dim)">{"perception_ms": 1910, "gate_ms": 2, "action_ms": 1, "total_ms": 1913}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- VIEW 2: Gate -->
+    <section class="studio-view" id="view-gate">
+      <div class="grid-2col">
+        <div class="col">
+          <div class="panel">
+            <h2>
+              <span data-i18n="title_gate_registry">Danh mục Gate của agent</span>
+              <button class="btn-sm" id="btnGateLint" onclick="runGateLint()">⚡ gate lint</button>
+            </h2>
+            <div id="lintOutput" style="display:none; padding:6px 10px; background:color-mix(in srgb, var(--allow) 15%, transparent); border:1px solid var(--allow); border-radius:4px; font-size:12px; margin-bottom:10px;">
+              ✓ 3 gate(s) resolved. (digests.lock checked)
+            </div>
+            <table class="data-table">
+              <thead><tr><th>Gate</th><th>Level</th><th>Fail policy</th><th>Lint</th><th>Digest</th></tr></thead>
+              <tbody>
+                <tr style="cursor:pointer;" onclick="selectGate('light_on')"><td class="mono"><strong>light_on@1.0.0</strong></td><td>1</td><td><code>closed</code></td><td><span class="st allow">OK</span></td><td class="mono" style="color:var(--dim)">sha256:9c8b7a…</td></tr>
+                <tr style="cursor:pointer;" onclick="selectGate('light_off')"><td class="mono"><strong>light_off@1.0.0</strong></td><td>1</td><td><code>closed</code></td><td><span class="st allow">OK</span></td><td class="mono" style="color:var(--dim)">sha256:4a3b2c…</td></tr>
+                <tr style="cursor:pointer; background:color-mix(in srgb, var(--accent) 10%, transparent);" onclick="selectGate('unlock_door')"><td class="mono"><strong>unlock_door@1.2.0</strong></td><td>1</td><td><code>closed</code></td><td><span class="st allow">OK</span></td><td class="mono" style="color:var(--dim)">sha256:7f8a9b…</td></tr>
+                <tr style="cursor:pointer;" onclick="selectGate('base_access')"><td class="mono">base-access@1.0.0</td><td>0 (base)</td><td><code>closed</code></td><td><span class="st allow">OK</span></td><td class="mono" style="color:var(--dim)">sha256:112233…</td></tr>
+                <tr style="cursor:pointer;" onclick="selectGate('unlock_door_night')"><td class="mono">unlock_door_night@1.0.0</td><td>2</td><td><code>closed</code></td><td><span class="st allow">OK</span></td><td class="mono" style="color:var(--dim)">sha256:bb55aa…</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="panel">
+            <h2><span data-i18n="title_gate_spec">Chi tiết Gate</span>: <span class="mono" id="gateDetailName">unlock_door@1.2.0</span></h2>
+            <div><strong>Chuỗi kế thừa:</strong> <code class="mono">base-access@1.0.0 → unlock_door@1.2.0</code></div>
+            <div style="margin: 8px 0;">
+              <strong>Tiêu chí & Kiểu dữ liệu:</strong>
+              <table class="crit-table" style="margin-top:4px;">
+                <thead><tr><th>Tiêu chí</th><th>Kiểu</th><th>Mô tả</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono">guest_authenticated</td><td><code>bool</code></td><td>Khách đã xác thực phòng</td></tr>
+                  <tr><td class="mono">risk_level</td><td><code>choice [low, med, high]</code></td><td>Mức độ rủi ro ngữ cảnh</td></tr>
+                  <tr><td class="mono">room_matches</td><td><code>bool</code></td><td>Số phòng khớp thẻ cấp</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div><strong>allow_when:</strong></div>
+            <div class="code-box">guest_authenticated: true
+risk_level: { lte: low }
+room_matches: true</div>
+            <div><strong>on_block:</strong></div>
+            <div class="code-box">action: escalate
+target: human_receptionist
+message: "Yêu cầu cần được nhân viên lễ tân xác nhận trực tiếp."
+confirms: []</div>
+            <div style="margin-top:6px; color:var(--dim); font-size:11.5px;"><strong>Ngân sách:</strong> p95_latency_ms 150 ms · fail-closed · binary tree NETR v1</div>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="panel">
+            <h2><span data-i18n="title_whatif">Thử nhanh / What-if Sandbox</span> <span class="sub">unlock_door@1.2.0</span></h2>
+            <p style="font-size:12px; color:var(--dim);" data-i18n="desc_whatif">Thay đổi dữ kiện giả định để xem trước phán quyết tức thời từ Gate Engine mà không ảnh hưởng tới trạng thái phần cứng.</p>
+            <div style="display:flex; flex-direction:column; gap:12px; margin:14px 0; background:var(--bg); padding:12px; border-radius:6px; border:1px solid var(--line);">
+              <label class="ctrl-label"><input type="checkbox" id="whatifAuth" checked onchange="updateWhatIf()"/><span><code>guest_authenticated</code> (xác thực khách)</span></label>
+              <label class="ctrl-label"><span><code>risk_level</code> (mức rủi ro):</span>
+                <select class="ctrl-select" id="whatifRisk" onchange="updateWhatIf()"><option value="low">low (thấp)</option><option value="medium">medium (trung bình)</option><option value="high">high (cao)</option></select>
+              </label>
+              <label class="ctrl-label"><input type="checkbox" id="whatifRoom" onchange="updateWhatIf()"/><span><code>room_matches</code> (khớp phòng)</span></label>
+            </div>
+            <div style="padding:12px; border-radius:6px; border:1px solid var(--line); background:var(--panel);">
+              <div style="font-size:11px; text-transform:uppercase; color:var(--dim); margin-bottom:6px;" data-i18n="lbl_preview_verdict">Phán quyết dự kiến</div>
+              <div id="whatifVerdict">
+                <span class="st block">BLOCK</span> <span class="mono">condition_not_met (room_matches)</span>
+                <div style="font-size:12px; color:var(--dim); margin-top:6px;">→ action: escalate to <code>human_receptionist</code></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: Traces -->
+    <section class="studio-view" id="view-traces">
+      <div class="panel">
+        <h2>
+          <span data-i18n="title_traces_list">Danh sách phiên (traces/)</span>
+          <div style="display:flex; gap:6px;">
+            <button class="btn-sm" onclick="alert('✓ decisions match the recording');">⟳ <span data-i18n="btn_replay">Phát lại (Replay)</span></button>
+            <button class="btn-sm" onclick="alert('Xuất Chrome trace JSON thành công');">↗ <span data-i18n="btn_perfetto">Xuất Perfetto</span></button>
+            <button class="btn-sm" onclick="alert('Tải JSON trace thành công');">⬇ <span data-i18n="btn_json">Tải JSON</span></button>
+          </div>
+        </h2>
+        <div style="font-size:11.5px; color:var(--warn); margin-bottom:10px; background:color-mix(in srgb, var(--warn) 15%, transparent); padding:6px 10px; border-radius:4px; border:1px solid var(--warn);">
+          🔒 <span data-i18n="privacy_note">chữ người dùng được băm (sha256) — dùng cờ --raw để giữ nguyên văn (TSK-I1-01, NFR-PRIV-03)</span>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Session ID</th><th>Sự kiện</th><th>Target</th><th>Băm văn bản</th><th>Thời điểm ghi</th></tr></thead>
+          <tbody>
+            <tr style="background:color-mix(in srgb, var(--accent) 10%, transparent);"><td class="mono"><strong>sess_07b1f343</strong></td><td>9 events</td><td><code>sim</code></td><td><span class="st allow">✓ sha256</span></td><td class="mono">2026-09-29 14:02:11</td></tr>
+            <tr><td class="mono">sess_18a2c491</td><td>14 events</td><td><code>sim</code></td><td><span class="st allow">✓ sha256</span></td><td class="mono">2026-09-29 14:15:30</td></tr>
+            <tr><td class="mono">sess_bringup0924</td><td>78 events</td><td><code>esp32s3 (UART)</code></td><td><span class="st allow">✓ sha256</span></td><td class="mono">2026-09-29 11:32:00</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h2><span data-i18n="title_timeline">Timeline sự kiện & Xung chân (sess_07b1f343)</span></h2>
+        <div class="timeline-lane"><span class="mono">gate lane</span><div class="timeline-track"><div class="timeline-hit allow" style="left:12%; width:24px;" title="light_on ALLOW">ALLOW</div><div class="timeline-hit block" style="left:48%; width:24px;" title="light_off BLOCK">BLOCK</div><div class="timeline-hit allow" style="left:82%; width:24px;" title="light_off ALLOW (confirmed)">ALLOW</div></div><span style="font-size:11px; color:var(--dim);">3 phán quyết</span></div>
+        <div class="timeline-lane"><span class="mono">porch_light</span><div class="timeline-track"><div class="timeline-hit pulse" style="left:12%; width:70%;" title="HIGH (bật từ 14:00:12)">HIGH</div></div><span style="font-size:11px; color:var(--allow);">Đang bật (HIGH)</span></div>
+        <div class="timeline-lane"><span class="mono">door_lock</span><div class="timeline-track"><div class="timeline-hit pulse" style="left:82%; width:10%;" title="PULSE 30s">PULSE</div></div><span style="font-size:11px; color:var(--dim);">0 / 30 s</span></div>
+        <div class="timeline-lane"><span class="mono">gate_relay</span><div class="timeline-track"></div><span style="font-size:11px; color:var(--dim);">chưa kích hoạt</span></div>
+        <div class="timeline-axis"><span>-60 s</span><span>-30 s</span><span data-i18n="lbl_now">bây giờ</span></div>
+      </div>
+    </section>
+
+    <!-- VIEW 4: Verify -->
+    <section class="studio-view" id="view-verify">
+      <div class="panel">
+        <h2>
+          <span data-i18n="title_matrix">Ma trận tương đương mục tiêu (Target-Equivalence Matrix)</span>
+          <div style="display:flex; gap:6px;">
+            <button class="btn-sm" onclick="alert('✓ 3 gate(s) resolved.');">gate lint</button>
+            <button class="btn-sm" onclick="alert('4 passed in 0.42s (0 failed, 0 skipped)');">test (Action CI)</button>
+            <button class="btn-sm" onclick="alert('✓ Verification passed across all targets.');">verify</button>
+          </div>
+        </h2>
+        <table class="data-table">
+          <thead><tr><th data-i18n="th_artifact">Hạng mục kiểm chứng</th><th>sim</th><th>linux</th><th>esp32s3</th></tr></thead>
+          <tbody>
+            <tr><td><strong>trace-01 (light_on)</strong></td><td><span class="st allow">✓ máy này</span></td><td><span class="st allow">✓ CI · linux-hal</span></td><td><span class="st allow">✓ CI · uart-trace (QEMU)</span></td></tr>
+            <tr><td><strong>trace-02 (light_off_block)</strong></td><td><span class="st allow">✓ máy này</span></td><td><span class="st allow">✓ CI · linux-hal</span></td><td><span class="st allow">✓ CI · uart-trace (QEMU)</span></td></tr>
+            <tr><td><strong>trace-03 (door_unlock)</strong></td><td><span class="st allow">✓ máy này</span></td><td><span class="st allow">✓ CI · linux-hal</span></td><td><span class="st allow">✓ CI · uart-trace (QEMU)</span></td></tr>
+            <tr><td><strong>gate: light_on@1.0.0</strong></td><td><span class="st allow">✓ máy này</span></td><td><span class="st allow">✓ CI · linux-hal</span></td><td><span class="st allow">✓ CI · uart-trace (QEMU)</span></td></tr>
+            <tr><td><strong>gate: light_off@1.0.0</strong></td><td><span class="st allow">✓ máy này</span></td><td><span class="st allow">✓ CI · linux-hal</span></td><td><span class="st allow">✓ CI · uart-trace (QEMU)</span></td></tr>
+            <tr><td><strong>gate: unlock_door@1.2.0</strong></td><td><span class="st allow">✓ máy này</span></td><td><span class="st allow">✓ CI · linux-hal</span></td><td><span class="st allow">✓ CI · uart-trace (QEMU)</span></td></tr>
+            <tr><td><strong>tool-call corpus (fixtures/tool_calls/)</strong></td><td><span class="st allow">✓ máy này</span></td><td><span class="st allow">✓ CI · linux-hal</span></td><td><span class="st allow">✓ CI · uart-trace (QEMU)</span></td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:14px; padding:10px 14px; background:var(--code-bg); border:1px solid var(--allow); border-radius:6px; font-size:12px;">
+          <div style="color:var(--allow); font-weight:700; margin-bottom:4px;">✓ Passed: all 3 gate(s) resolve, all 3 canonical trace(s) validate, every tool call of the corpus gives its recorded result, and 3 replay(s) on sim match…</div>
+          <div style="color:var(--dim);" data-i18n="verify_timing_note">Compared: decisions only — not timing (TSK-S4-04). Timing equivalence arrives with TSK-S4-04.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2><span data-i18n="title_not_yet">Chưa làm được / Not yet</span> <span class="sub">CHANGELOG §3.7</span></h2>
+        <ul style="margin:0; padding-left:20px; font-size:12px; color:var(--dim); line-height:1.7;">
+          <li>❌ <strong>Chưa có bo mạch thật:</strong> mọi thứ hiện tại chạy trên <code>sim</code> hoặc QEMU; chưa chân GPIO vật lý nào chuyển động ngoài đời (CHANGELOG §3.4, §3.7).</li>
+          <li>❌ <strong>Chưa có Secure Boot phần cứng & anti-rollback eFuse:</strong> kiểm tra hạ cấp hiện tại là phần mềm qua mốc nước cao NVS (TSK-S6-05).</li>
+          <li>❌ <strong>Chưa có Wi-Fi thật trên ESP32-S3:</strong> QEMU dùng card mạng ảo <code>open_eth</code>; Box-3 thật chưa provisioning Wi-Fi.</li>
+          <li>❌ <strong>Chưa so sánh thời gian thực thi:</strong> mới bảo đảm tương đương 100% phán quyết (decisions only).</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- VIEW 5: Device -->
+    <section class="studio-view" id="view-device">
+      <div class="banner" style="margin-bottom:14px; border-radius:6px;">
+        <span style="font-weight:700; color:var(--warn);" data-i18n="banner_qemu">⚠ Chưa có bo mạch: mọi thứ ở đây chạy trên QEMU; chưa chân nào động</span>
+        <span class="note">Docker espressif/idf:v5.4 · demo/i3-firmware-qemu/run.sh</span>
+      </div>
+
+      <div class="grid-2col">
+        <div class="panel">
+          <h2>(a) <span data-i18n="title_build_firmware">Đóng gói Firmware</span> <span class="sub">ESP-IDF</span></h2>
+          <div class="code-box">neuroedge build --target esp32s3 --board esp32s3-box-3</div>
+          <div style="font-size:12px; margin: 8px 0; color:var(--text);">firmware: <span class="mono">build/esp32s3</span> — ESP-IDF project, 38 files</div>
+          <div style="font-size:11.5px; color:var(--dim); margin-top:8px;">
+            <span>Flash: 1220 KiB / 4096 KiB (<strong>2876 KiB headroom</strong>)</span>
+            <div class="budget-bar"><div class="budget-fill" style="width: 29.8%;"></div></div>
+          </div>
+          <div style="font-size:11.5px; color:var(--dim);">
+            <span>SRAM tĩnh: 172.3 KiB / 320 KiB (<strong>147.7 KiB above the floor</strong>)</span>
+            <div class="budget-bar"><div class="budget-fill" style="width: 53.8%; background:var(--accent);"></div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>(c) <span data-i18n="title_qemu_boot">QEMU Boot & Gate Self-Test</span> <span class="sub">UART stream</span></h2>
+          <div class="code-box" style="height:140px; overflow-y:auto; line-height:1.5;">
+ESP-IDF v5.4-dev-3208
+I (240) cpu_start: Pro cpu up.
+I (310) octal_psram: PSRAM ID read error (expected in QEMU)
+<strong style="color:var(--allow)">NE_SELFTEST PASS walker=26 token=11</strong>
+I (450) ne_runtime: NETR decision tree verified in flash
+NE1 {"offset_ms":0,"type":"device_info","data":{"board_id":"esp32s3-box-3","agent_version":"home-voice@0.1.0"}}
+<strong style="color:var(--allow)">NE_TRACE DONE sessions=4</strong>
+I (890) ne_boot: heap check free_sram_kb=267.7
+          </div>
+          <div style="font-size:11.5px; color:var(--dim); margin-top:6px;">Dấu <code>NE_SELFTEST PASS</code> và <code>NE_TRACE DONE</code> ở cột 0 đảm bảo walker C đạt chuẩn tắc trước khi mở mạng.</div>
+        </div>
+      </div>
+
+      <!-- Gallery of 8 screen placeholders with VI/EN switch -->
+      <div class="panel">
+        <h2>
+          (b) <span data-i18n="title_ui_gallery">Giao diện trên màn hình thiết bị 320×240 (LVGL v9.6.0 C99)</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button class="btn-sm" id="btnScreenToggle" onclick="toggleScreenLang()">LCD: <span id="lblScrLang">VI</span></button>
+            <span class="st allow" data-i18n="golden_badge">66/66 khớp ảnh golden</span>
+          </div>
+        </h2>
+        <div class="gallery-grid">
+          <!-- 1: boot_passed -->
+          <div class="gallery-card">
+            <div class="screen-frame">
+              <svg viewBox="0 0 320 240"><rect width="320" height="240" fill="#08100c"/><rect x="8" y="8" width="304" height="224" rx="4" fill="none" stroke="#223326" stroke-width="2"/><circle cx="160" cy="80" r="30" fill="#132a18"/><path d="M148 80 l8 8 l16 -16" stroke="#3fb950" stroke-width="4" fill="none" stroke-linecap="round"/><text x="160" y="140" text-anchor="middle" fill="#3fb950" font-size="16" font-weight="bold" font-family="system-ui">NE_SELFTEST PASS</text><text x="160" y="165" text-anchor="middle" fill="#7d8a99" font-size="12" font-family="monospace">walker=26 · token=11</text><text x="160" y="215" text-anchor="middle" fill="#485767" font-size="10" font-family="monospace">boot_passed.png</text></svg>
+            </div>
+            <div class="card-title"><span>boot_passed</span><span class="mono">golden ✓</span></div>
+          </div>
+
+          <!-- 2: voice_listening -->
+          <div class="gallery-card">
+            <div class="screen-frame">
+              <svg viewBox="0 0 320 240"><rect width="320" height="240" fill="#080e14"/><rect x="8" y="8" width="304" height="224" rx="4" fill="none" stroke="#1f2d3d" stroke-width="2"/><circle cx="160" cy="80" r="30" fill="#142232"/><path d="M160 65 v20 M154 70 v10 M166 70 v10 M148 73 v4 M172 73 v4" stroke="#58a6ff" stroke-width="3" stroke-linecap="round"/><text x="160" y="140" text-anchor="middle" fill="#d8dee6" font-size="15" font-weight="bold" font-family="system-ui" class="scr-text-listen">Đang lắng nghe...</text><text x="160" y="165" text-anchor="middle" fill="#58a6ff" font-size="11" font-family="monospace">16 kHz · VAD active</text><text x="160" y="215" text-anchor="middle" fill="#485767" font-size="10" font-family="monospace">voice_listening.png</text></svg>
+            </div>
+            <div class="card-title"><span>voice_listening</span><span class="mono">golden ✓</span></div>
+          </div>
+
+          <!-- 3: voice_speaking -->
+          <div class="gallery-card">
+            <div class="screen-frame">
+              <svg viewBox="0 0 320 240"><rect width="320" height="240" fill="#0c1214"/><rect x="8" y="8" width="304" height="224" rx="4" fill="none" stroke="#263438" stroke-width="2"/><rect x="25" y="45" width="270" height="85" rx="8" fill="#1a272c"/><text x="160" y="80" text-anchor="middle" fill="#d8dee6" font-size="12" font-family="system-ui" class="scr-text-speak-1">“Đã bật đèn hiên</text><text x="160" y="102" text-anchor="middle" fill="#d8dee6" font-size="12" font-family="system-ui" class="scr-text-speak-2">cho bạn rồi nhé!”</text><text x="160" y="165" text-anchor="middle" fill="#3fb950" font-size="12" font-family="monospace">TTS: 24 kHz PCM</text><text x="160" y="215" text-anchor="middle" fill="#485767" font-size="10" font-family="monospace">voice_speaking.png</text></svg>
+            </div>
+            <div class="card-title"><span>voice_speaking</span><span class="mono">golden ✓</span></div>
+          </div>
+
+          <!-- 4: confirm -->
+          <div class="gallery-card">
+            <div class="screen-frame">
+              <svg viewBox="0 0 320 240"><rect width="320" height="240" fill="#141006"/><rect x="8" y="8" width="304" height="224" rx="4" fill="none" stroke="#3d3012" stroke-width="2"/><text x="160" y="55" text-anchor="middle" fill="#d29922" font-size="13" font-weight="bold" font-family="system-ui" class="scr-text-confirm-hdr">CẦN XÁC NHẬN</text><text x="160" y="90" text-anchor="middle" fill="#d8dee6" font-size="12" font-family="system-ui" class="scr-text-confirm-msg">Vẫn còn người trong phòng?</text><rect x="40" y="130" width="105" height="34" rx="4" fill="#d29922"/><text x="92" y="152" text-anchor="middle" fill="#000" font-size="12" font-weight="bold" font-family="system-ui" class="scr-text-confirm-yes">Đồng ý</text><rect x="175" y="130" width="105" height="34" rx="4" fill="#26313d" stroke="#58a6ff" stroke-width="2"/><text x="227" y="152" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold" font-family="system-ui" class="scr-text-confirm-no">Huỷ (Esc)</text><text x="160" y="215" text-anchor="middle" fill="#485767" font-size="10" font-family="monospace">confirm.png</text></svg>
+            </div>
+            <div class="card-title"><span>confirm</span><span class="mono">golden ✓</span></div>
+          </div>
+
+          <!-- 5: verdict_allow -->
+          <div class="gallery-card">
+            <div class="screen-frame">
+              <svg viewBox="0 0 320 240"><rect width="320" height="240" fill="#08140c"/><rect x="8" y="8" width="304" height="224" rx="4" fill="none" stroke="#1b3824" stroke-width="2"/><circle cx="160" cy="85" r="32" fill="#14321d"/><path d="M148 85 l8 8 l16 -16" stroke="#3fb950" stroke-width="5" fill="none" stroke-linecap="round"/><text x="160" y="145" text-anchor="middle" fill="#3fb950" font-size="18" font-weight="bold" font-family="system-ui">✓ ALLOW</text><text x="160" y="170" text-anchor="middle" fill="#d8dee6" font-size="12" font-family="monospace">light_on@1.0.0</text><text x="160" y="215" text-anchor="middle" fill="#485767" font-size="10" font-family="monospace">verdict_allow.png</text></svg>
+            </div>
+            <div class="card-title"><span>verdict_allow</span><span class="mono">golden ✓</span></div>
+          </div>
+
+          <!-- 6: verdict_block -->
+          <div class="gallery-card">
+            <div class="screen-frame">
+              <svg viewBox="0 0 320 240"><rect width="320" height="240" fill="#140808"/><rect x="8" y="8" width="304" height="224" rx="4" fill="none" stroke="#3a1616" stroke-width="2"/><circle cx="160" cy="85" r="32" fill="#2d1212"/><path d="M148 73 l24 24 M172 73 l-24 24" stroke="#f85149" stroke-width="5" fill="none" stroke-linecap="round"/><text x="160" y="145" text-anchor="middle" fill="#f85149" font-size="18" font-weight="bold" font-family="system-ui">✗ BLOCK</text><text x="160" y="170" text-anchor="middle" fill="#d8dee6" font-size="11" font-family="monospace">condition_not_met: room_empty</text><text x="160" y="215" text-anchor="middle" fill="#485767" font-size="10" font-family="monospace">verdict_block...png</text></svg>
+            </div>
+            <div class="card-title"><span>verdict_block</span><span class="mono">golden ✓</span></div>
+          </div>
+
+          <!-- 7: sensor -->
+          <div class="gallery-card">
+            <div class="screen-frame">
+              <svg viewBox="0 0 320 240"><rect width="320" height="240" fill="#080e14"/><rect x="8" y="8" width="304" height="224" rx="4" fill="none" stroke="#1f2d3d" stroke-width="2"/><text x="25" y="40" fill="#7d8a99" font-size="12" font-weight="bold" font-family="system-ui">CẢM BIẾN / SENSORS</text><text x="25" y="80" fill="#d8dee6" font-size="13" font-family="monospace">temperature: 45 °C</text><text x="25" y="115" fill="#d8dee6" font-size="13" font-family="monospace">motion: true</text><text x="25" y="150" fill="#d8dee6" font-size="13" font-family="monospace">door_contact: closed</text><text x="160" y="215" text-anchor="middle" fill="#485767" font-size="10" font-family="monospace">sensor.png</text></svg>
+            </div>
+            <div class="card-title"><span>sensor</span><span class="mono">golden ✓</span></div>
+          </div>
+
+          <!-- 8: ota_verifying -->
+          <div class="gallery-card">
+            <div class="screen-frame">
+              <svg viewBox="0 0 320 240"><rect width="320" height="240" fill="#0f0c18"/><rect x="8" y="8" width="304" height="224" rx="4" fill="none" stroke="#2d2242" stroke-width="2"/><text x="160" y="70" text-anchor="middle" fill="#d8dee6" font-size="14" font-weight="bold" font-family="system-ui">CẬP NHẬT OTA A/B</text><text x="160" y="100" text-anchor="middle" fill="#58a6ff" font-size="12" font-family="monospace">Xác minh RSA-3072...</text><rect x="50" y="130" width="220" height="16" rx="4" fill="#1b162b"/><rect x="50" y="130" width="160" height="16" rx="4" fill="#3fb950"/><text x="160" y="170" text-anchor="middle" fill="#7d8a99" font-size="11" font-family="monospace">Partition: ota_0 (72%)</text><text x="160" y="215" text-anchor="middle" fill="#485767" font-size="10" font-family="monospace">ota_verifying.png</text></svg>
+            </div>
+            <div class="card-title"><span>ota_verifying</span><span class="mono">golden ✓</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OTA Stepper Phases a-g -->
+      <div class="panel">
+        <h2>(d) <span data-i18n="title_ota_stepper">Tiến trình kiểm thử OTA 7 pha (Phases a–g)</span> <span class="sub">qemu_ota.sh</span></h2>
+        <div class="stepper">
+          <div class="step-item valid">
+            <div class="step-phase">a</div>
+            <div><span class="mono"><strong>SKIP</strong> same_version 0.1.0</span> — Bản factory khởi động, máy chủ cùng phiên bản nên bỏ qua; không bao giờ mất khe đang chạy.</div>
+          </div>
+          <div class="step-item valid">
+            <div class="step-phase">b</div>
+            <div><span class="mono"><strong>SWITCH</strong> ota_0 → <strong>VALID</strong></span> — Bản 0.2.0 ký đúng tải về, xác minh RSA-3072, chuyển khe và đạt self-test (mốc nước cao NVS nâng lên 0.2.0).</div>
+          </div>
+          <div class="step-item reject">
+            <div class="step-phase">c</div>
+            <div><span class="mono"><strong>REJECTED</strong> signature → <strong>ERASED</strong></span> — Bản ký khóa lạ bị từ chối trước boot; ở lại 0.2.0 và khe vừa ghi bị xóa sector đầu.</div>
+          </div>
+          <div class="step-item rollback">
+            <div class="step-phase">d</div>
+            <div><span class="mono">TEST BOOTLOOP → <strong>ROLLBACK</strong> ota_1→ota_0</span> — Bản lỗi crash bootloader tự quay về 0.2.0; bỏ qua bản hỏng (<span class="mono">SKIP rolled_back</span>).</div>
+          </div>
+          <div class="step-item rollback">
+            <div class="step-phase">e</div>
+            <div><span class="mono"><strong>INVALID</strong> → <strong>ROLLBACK</strong></span> — Bản trượt gate self-test tự đánh dấu hỏng và reboot; bootloader tự quay về bản trước.</div>
+          </div>
+          <div class="step-item reject">
+            <div class="step-phase">f</div>
+            <div><span class="mono"><strong>REJECTED</strong> signature</span> — Bản không có chữ ký bị từ chối và xóa khe ngay lập tức.</div>
+          </div>
+          <div class="step-item valid">
+            <div class="step-phase">g</div>
+            <div><span class="mono"><strong>SKIP</strong> downgrade 0.1.0</span> — Bản ký đúng nhưng phiên bản thấp hơn bị từ chối hạ cấp bởi mốc nước cao trong NVS.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 6: MCP -->
+    <section class="studio-view" id="view-mcp">
+      <div class="grid-2col">
+        <div class="panel">
+          <h2><span data-i18n="title_mcp_tools">Công cụ MCP của agent</span> <span class="sub">Gated Tool Profile v0</span></h2>
+          <div style="font-size:12px; margin-bottom:8px;">Mỗi <code class="mono">@action</code> là một công cụ có schema kiểm soát, chặn tham số ngoài dải (RFC-0005) trước khi tới Gate:</div>
+          <div class="code-box">{
+  "name": "light_on",
+  "description": "Bật đèn hiên nhà",
+  "inputSchema": { "type": "object", "properties": {}, "required": [] }
+}</div>
+          <div class="code-box">{
+  "name": "light_off",
+  "description": "Tắt đèn hiên nhà",
+  "inputSchema": { "type": "object", "properties": {}, "required": [] }
+}</div>
+        </div>
+
+        <div class="panel">
+          <h2><span data-i18n="title_desktop_cfg">Cấu hình Claude Desktop</span> <span class="sub">desktop-config</span></h2>
+          <div style="font-size:12px; color:var(--dim); margin-bottom:6px;">Lệnh: <code class="mono">neuroedge mcp desktop-config --agent nha/agent.toml --ui</code></div>
+          <div class="code-box">{
+  "mcpServers": {
+    "neuroedge": {
+      "command": "/usr/local/bin/neuroedge",
+      "args": ["mcp", "serve", "--agent", "nha/agent.toml", "--ui"]
+    }
+  }
+}</div>
+          <div style="font-size:11.5px; color:var(--dim); margin-top:8px;">Server phục vụ qua stdio cho Claude Desktop, đồng thời mở trang sim tại <code class="mono">127.0.0.1:8765</code>.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2><span data-i18n="title_mcp_feed">Dòng gọi MCP trực tiếp</span> <span class="sub">stdio feed</span></h2>
+        <table class="data-table">
+          <thead><tr><th>Thời gian</th><th>Bên gọi</th><th>Hàm gọi</th><th>Tham số</th><th>Phán quyết gate</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">14:01:20</td><td><span class="st accent">mcp</span></td><td class="mono">light_on</td><td class="mono">{}</td><td><span class="st allow">✓ ALLOW</span></td></tr>
+            <tr><td class="mono">14:01:45</td><td><span class="st accent">mcp</span></td><td class="mono">light_off</td><td class="mono">{}</td><td><span class="st block">✗ BLOCK (room_empty false)</span></td></tr>
+            <tr><td class="mono">14:02:10</td><td><span class="st accent">mcp</span></td><td class="mono">lab_pulse</td><td class="mono">{"pin": "gate_relay", "duration_ms": 2500}</td><td><span class="st block">✗ BLOCK (duration > 2000 ms)</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h2><span data-i18n="title_ext_mcp">Máy chủ MCP ngoài</span> <span class="sub">[mcp.servers]</span></h2>
+        <div style="font-size:12px; margin-bottom:8px;">Máy chủ ngoài: <code class="mono">news</code> (đọc tin tức).</div>
+        <div style="background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:10px; font-size:12px;">
+          <div style="color:var(--text); font-weight:600; margin-bottom:4px;">Tiêu đề tin tức mới nhất:</div>
+          <ul style="margin:0; padding-left:20px; color:var(--dim); line-height:1.6;">
+            <li>"Dự báo thời tiết: Trời nắng ráo, nhiệt độ trung bình 28 °C."</li>
+            <li>"Thông tin giao thông: Tuyến đường chính lưu thông bình thường."</li>
+          </ul>
+        </div>
+        <div style="font-size:11.5px; color:var(--warn); margin-top:8px;">
+          🔒 <strong data-i18n="note_data_not_cmd">chỉ là dữ liệu, không bao giờ là lệnh</strong>: Dữ liệu từ MCP server ngoài không thể vượt quyền qua Gate.
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 7: Config -->
+    <section class="studio-view" id="view-config">
+      <div class="grid-2col">
+        <div class="panel">
+          <h2><span data-i18n="title_agent_decl">Khai báo Agent & Năng lực</span> <span class="sub">agent.toml</span></h2>
+          <div style="margin-bottom:10px;">
+            <strong>Năng lực đòi hỏi (requires):</strong>
+            <ul style="margin:4px 0 0; padding-left:20px; font-size:12px; color:var(--text); line-height:1.6;">
+              <li><code class="mono">audio.in</code> (micro thu âm)</li>
+              <li><code class="mono">audio.out</code> (loa phát thanh)</li>
+              <li><code class="mono">digital.out porch_light</code> (chân đèn hiên)</li>
+              <li><code class="mono">sensor.read motion</code> (cảm biến chuyển động)</li>
+            </ul>
+          </div>
+          <div>
+            <strong>Năng lực bo mạch (sim-default):</strong>
+            <ul style="margin:4px 0 0; padding-left:20px; font-size:12px; color:var(--text); line-height:1.6;">
+              <li>Chân số: <code class="mono">porch_light</code>, <code class="mono">door_lock</code>, <code class="mono">gate_relay</code></li>
+              <li>Cảm biến: <code class="mono">motion</code>, <code class="mono">temperature</code>, <code class="mono">door_contact</code></li>
+              <li>Âm thanh: <code class="mono">16 kHz mono</code> in, <code class="mono">24 kHz PCM</code> out</li>
+              <li>Màn hình: <code class="mono">320×240 RGB565</code></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2><span data-i18n="title_templates">Mẫu dự án có sẵn</span> <span class="sub">neuroedge new</span></h2>
+          <div class="code-box">neuroedge new my-agent --template home-voice</div>
+          <table class="data-table" style="margin-top:10px;">
+            <thead><tr><th>Template</th><th>Đặc điểm chính</th></tr></thead>
+            <tbody>
+              <tr><td class="mono"><strong>minimal</strong></td><td>1 gate cơ sở, 1 chân digital out</td></tr>
+              <tr><td class="mono"><strong>villa-concierge</strong></td><td>Khoá cửa thông minh, phân quyền khách</td></tr>
+              <tr><td class="mono"><strong>home-voice</strong></td><td>Trợ lý giọng nói, hỏi đáp RAG, kiểm soát đèn</td></tr>
+              <tr><td class="mono"><strong>factory-monitor</strong></td><td>Quạt thông gió & còi báo động theo dải nhiệt</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2><span data-i18n="title_providers">Cấu hình Provider AI & Lượng giá</span> <span class="sub">Bảo mật khóa API</span></h2>
+        <table class="data-table">
+          <thead><tr><th>Dịch vụ</th><th>Nhà cung cấp / Model</th><th>Tham số</th><th>Khóa API (Key)</th></tr></thead>
+          <tbody>
+            <tr><td><strong>STT</strong></td><td class="mono">openai/whisper-large-v3-turbo</td><td>lang: vi · timeout: 15s</td><td><code class="mono">$OPENROUTER_API_KEY</code> <span class="st allow" data-i18n="val_key_present">✓ có</span></td></tr>
+            <tr><td><strong>TTS</strong></td><td class="mono">google/gemini-3.1-flash-tts-preview</td><td>voice: Kore · format: pcm · 24 kHz</td><td><code class="mono">$OPENROUTER_API_KEY</code> <span class="st allow" data-i18n="val_key_present">✓ có</span></td></tr>
+            <tr><td><strong>System 2</strong></td><td class="mono">openrouter/google/gemma-4-31b-it</td><td>provider: litellm · tools: support</td><td><code class="mono">$OPENROUTER_API_KEY</code> <span class="st allow" data-i18n="val_key_present">✓ có</span></td></tr>
+            <tr><td><strong>System 1</strong></td><td class="mono">typesafe/jev-1.13</td><td>System One API · fast validation</td><td><span class="mono">(builtin)</span> <span class="st allow" data-i18n="val_key_present">✓ có</span></td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:11px; color:var(--dim); margin-top:8px;">* Giá trị khóa API không bao giờ hiển thị trên giao diện hay lưu trong vết ghi (chỉ lưu tên biến môi trường).</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const I18N = {
+  vi: {
+    app_title: "NeuroEdge Studio", live_badge: "● trực tiếp", live_badge_lost: "● mất kết nối", val_key_present: "✓ có",
+    banner_lost_msg: "Mất kết nối tới mcp serve, đang nối lại… Thiết bị và nút xác nhận tạm khoá.", banner_lost_state: "(trạng thái 4A — chỉ hiện khi SSE lỗi)",
+    nav_live: "Phiên trực tiếp", nav_gate: "Gate", nav_traces: "Vết ghi", nav_verify: "Kiểm chứng", nav_device: "Thiết bị ESP32-S3", nav_mcp: "MCP & tích hợp", nav_config: "Agent & cấu hình",
+    title_devices: "Thiết bị", title_sensors: "Cảm biến", title_screen: "Màn hình", scr_listening: "Đang lắng nghe...", title_assistant: "Trợ lý & Hội thoại",
+    btn_voice_start: "Bắt đầu nói", btn_voice_stop: "Dừng nói", btn_audio_mode: "Tai nghe (cắt lời được)", btn_audio_mode_hd: "Loa ngoài (--half-duplex)", counters_voice: "cắt lời 1 · STT lỗi 0 · lệnh bị huỷ 1",
+    spk_you: "Bạn", route_grammar: "Ngữ pháp lệnh", route_rag: "Kiến thức RAG",
+    reply_turn_b: "“Đã bật đèn hiên cho bạn rồi nhé!”", reply_turn_c: "“Mật khẩu wifi được dán ở mặt dưới router.”", reply_turn_d: "“Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?”",
+    cmd_placeholder: "Gõ lệnh cho agent — hoặc :sensor <tên> <giá trị>, :set <dữ kiện> <giá trị>", btn_send: "Gửi",
+    title_confirm: "Thiết bị hỏi xác nhận", confirm_turn_d_title: "Vẫn còn người trong phòng — bạn chắc muốn tắt đèn? (light_off)", confirm_time_left: "còn 8 s", confirm_source: "nguồn: thiết bị",
+    btn_agree: "Đồng ý", btn_cancel: "Huỷ", confirm_note: "chỉ người trên thiết bị trả lời được — trợ lý và client MCP không xác nhận thay",
+    title_gate_verdicts: "Phán quyết gate", lbl_explain: "Giải thích", th_criterion: "Tiêu chí", th_val: "Giá trị", th_src: "Nguồn", th_res: "Kết quả",
+    lbl_failed_rule: "Thất bại:", lbl_onblock: "on_block:", lbl_digest: "gate_digest:", lbl_inherit: "Kế thừa:",
+    title_event_stream: "Dòng sự kiện (Event stream)", th_time: "Thời điểm", th_event: "Sự kiện", th_payload: "Dữ liệu sự kiện",
+    title_gate_registry: "Danh mục Gate của agent", title_gate_spec: "Chi tiết Gate", title_whatif: "Thử nhanh / What-if Sandbox",
+    desc_whatif: "Thay đổi dữ kiện giả định để xem trước phán quyết tức thời từ Gate Engine mà không ảnh hưởng tới trạng thái phần cứng.", lbl_preview_verdict: "Phán quyết dự kiến",
+    title_traces_list: "Danh sách phiên (traces/)", btn_replay: "Phát lại (Replay)", btn_perfetto: "Xuất Perfetto", btn_json: "Tải JSON",
+    privacy_note: "chữ người dùng được băm (sha256) — dùng cờ --raw để giữ nguyên văn (TSK-I1-01, NFR-PRIV-03)", title_timeline: "Timeline sự kiện & Xung chân (sess_07b1f343)", lbl_now: "bây giờ",
+    title_matrix: "Ma trận tương đương mục tiêu (Target-Equivalence Matrix)", th_artifact: "Hạng mục kiểm chứng", verify_timing_note: "Compared: decisions only — not timing (TSK-S4-04). Timing equivalence arrives with TSK-S4-04.", title_not_yet: "Chưa làm được / Not yet",
+    banner_qemu: "⚠ Chưa có bo mạch: mọi thứ ở đây chạy trên QEMU; chưa chân nào động", title_build_firmware: "Đóng gói Firmware", title_qemu_boot: "QEMU Boot & Gate Self-Test",
+    title_ui_gallery: "Giao diện trên màn hình thiết bị 320×240 (LVGL v9.6.0 C99)", golden_badge: "66/66 khớp ảnh golden", title_ota_stepper: "Tiến trình kiểm thử OTA 7 pha (Phases a–g)",
+    title_mcp_tools: "Công cụ MCP của agent", title_desktop_cfg: "Cấu hình Claude Desktop", title_mcp_feed: "Dòng gọi MCP trực tiếp", title_ext_mcp: "Máy chủ MCP ngoài", note_data_not_cmd: "chỉ là dữ liệu, không bao giờ là lệnh",
+    title_agent_decl: "Khai báo Agent & Năng lực", title_templates: "Mẫu dự án có sẵn", title_providers: "Cấu hình Provider AI & Lượng giá"
+  },
+  en: {
+    app_title: "NeuroEdge Studio", live_badge: "● live", live_badge_lost: "● disconnected", val_key_present: "✓ key present",
+    banner_lost_msg: "Lost connection to mcp serve, reconnecting… Devices and confirmation buttons temporarily locked.", banner_lost_state: "(state 4A — shown only on SSE error)",
+    nav_live: "Live session", nav_gate: "Gate", nav_traces: "Traces", nav_verify: "Verify", nav_device: "Device ESP32-S3", nav_mcp: "MCP & integrations", nav_config: "Agent & config",
+    title_devices: "Devices", title_sensors: "Sensors", title_screen: "Display", scr_listening: "Listening...", title_assistant: "Assistant & Dialogue",
+    btn_voice_start: "Start speaking", btn_voice_stop: "Stop speaking", btn_audio_mode: "Headphones (barge-in enabled)", btn_audio_mode_hd: "Speaker (--half-duplex)", counters_voice: "barge-in 1 · STT error 0 · cancelled 1",
+    spk_you: "You", route_grammar: "Grammar", route_rag: "Knowledge RAG",
+    reply_turn_b: "“Turned on the porch light for you!”", reply_turn_c: "“The Wi-Fi password is on the label beneath the router.”", reply_turn_d: "“Room still occupied — are you sure you want to turn off the light?”",
+    cmd_placeholder: "Type command for agent — or :sensor <name> <val>, :set <fact> <val>", btn_send: "Send",
+    title_confirm: "Device Confirmation Required", confirm_turn_d_title: "Room still occupied — are you sure you want to turn off the light? (light_off)", confirm_time_left: "8s remaining", confirm_source: "source: device",
+    btn_agree: "Confirm", btn_cancel: "Cancel", confirm_note: "only a person on the device can answer — assistants and MCP clients cannot confirm on their behalf",
+    title_gate_verdicts: "Gate Verdicts", lbl_explain: "Explain", th_criterion: "Criterion", th_val: "Value", th_src: "Source", th_res: "Result",
+    lbl_failed_rule: "Failed:", lbl_onblock: "on_block:", lbl_digest: "gate_digest:", lbl_inherit: "Inherits:",
+    title_event_stream: "Event Stream", th_time: "Offset", th_event: "Event", th_payload: "Event Data",
+    title_gate_registry: "Agent Gate Registry", title_gate_spec: "Gate Details", title_whatif: "Quick Test / What-if Sandbox",
+    desc_whatif: "Adjust hypothetical facts to preview the instant verdict from the Gate Engine without affecting hardware states.", lbl_preview_verdict: "Expected Verdict",
+    title_traces_list: "Recorded Sessions (traces/)", btn_replay: "Replay", btn_perfetto: "Export Perfetto", btn_json: "Download JSON",
+    privacy_note: "user text is hashed (sha256) — use --raw to keep plaintext (TSK-I1-01, NFR-PRIV-03)", title_timeline: "Event Timeline & Pin Pulses (sess_07b1f343)", lbl_now: "now",
+    title_matrix: "Target-Equivalence Matrix", th_artifact: "Verification Item", verify_timing_note: "Compared: decisions only — not timing (TSK-S4-04). Timing equivalence arrives with TSK-S4-04.", title_not_yet: "Not Yet Implemented",
+    banner_qemu: "⚠ No hardware yet: everything here runs in QEMU; no physical pins have moved.", title_build_firmware: "Firmware Build", title_qemu_boot: "QEMU Boot & Gate Self-Test",
+    title_ui_gallery: "On-device Screen UI 320×240 (LVGL v9.6.0 C99)", golden_badge: "66/66 golden image match", title_ota_stepper: "7-Phase OTA Pipeline (Phases a–g)",
+    title_mcp_tools: "Agent MCP Tools", title_desktop_cfg: "Claude Desktop Config", title_mcp_feed: "Live MCP Tool Call Feed", title_ext_mcp: "External MCP Servers", note_data_not_cmd: "data only, never a command",
+    title_agent_decl: "Agent Declaration & Capabilities", title_templates: "Available Templates", title_providers: "AI & Valuation Provider Config"
+  }
+};
+
+let currentLang = 'vi';
+let screenLang = 'vi';
+
+function setLanguage(lang) {
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  document.getElementById('btnLangVi').classList.toggle('active', lang === 'vi');
+  document.getElementById('btnLangEn').classList.toggle('active', lang === 'en');
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (I18N[lang] && I18N[lang][key]) el.textContent = I18N[lang][key];
+  });
+
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (I18N[lang] && I18N[lang][key]) el.setAttribute('placeholder', I18N[lang][key]);
+  });
+
+  setScreenLang(lang);
+  updateWhatIf();
+}
+
+function toggleScreenLang() { setScreenLang(screenLang === 'vi' ? 'en' : 'vi'); }
+
+function setScreenLang(lang) {
+  screenLang = lang;
+  const lbl = document.getElementById('lblScrLang');
+  if (lbl) lbl.textContent = lang.toUpperCase();
+
+  document.querySelectorAll('.scr-text-listen').forEach(el => { el.textContent = lang === 'vi' ? 'Đang lắng nghe...' : 'Listening...'; });
+  document.querySelectorAll('.scr-text-speak-1').forEach(el => { el.textContent = lang === 'vi' ? '“Đã bật đèn hiên' : '“Turned on the porch'; });
+  document.querySelectorAll('.scr-text-speak-2').forEach(el => { el.textContent = lang === 'vi' ? 'cho bạn rồi nhé!”' : 'light for you!”'; });
+  document.querySelectorAll('.scr-text-confirm-hdr').forEach(el => { el.textContent = lang === 'vi' ? 'CẦN XÁC NHẬN' : 'CONFIRMATION NEEDED'; });
+  document.querySelectorAll('.scr-text-confirm-msg').forEach(el => { el.textContent = lang === 'vi' ? 'Vẫn còn người trong phòng?' : 'Room still occupied?'; });
+  document.querySelectorAll('.scr-text-confirm-yes').forEach(el => { el.textContent = lang === 'vi' ? 'Đồng ý' : 'Yes'; });
+  document.querySelectorAll('.scr-text-confirm-no').forEach(el => { el.textContent = lang === 'vi' ? 'Huỷ (Esc)' : 'Cancel (Esc)'; });
+}
+
+document.querySelectorAll('.nav-item').forEach(button => {
+  button.addEventListener('click', () => {
+    const targetView = button.getAttribute('data-view');
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.studio-view').forEach(v => v.classList.remove('active'));
+    button.classList.add('active');
+    const viewEl = document.getElementById('view-' + targetView);
+    if (viewEl) viewEl.classList.add('active');
+  });
+});
+
+let isLiveConnected = true;
+document.getElementById('btnToggleLive').addEventListener('click', () => {
+  isLiveConnected = !isLiveConnected;
+  const banner = document.getElementById('lostBanner');
+  const dot = document.getElementById('liveDot');
+  const txt = document.getElementById('liveStatusText');
+  if (isLiveConnected) {
+    banner.style.display = 'none';
+    dot.style.background = 'var(--allow)';
+    dot.style.boxShadow = '0 0 6px var(--allow)';
+    txt.textContent = I18N[currentLang].live_badge;
+  } else {
+    banner.style.display = 'flex';
+    dot.style.background = 'var(--block)';
+    dot.style.boxShadow = '0 0 6px var(--block)';
+    txt.textContent = I18N[currentLang].live_badge_lost;
+  }
+});
+
+let isSpeaking = false;
+document.getElementById('btnVoiceToggle').addEventListener('click', function() {
+  isSpeaking = !isSpeaking;
+  this.textContent = isSpeaking ? (currentLang === 'vi' ? '⏹ Dừng nói' : '⏹ Stop speaking') : (currentLang === 'vi' ? '🎤 Bắt đầu nói' : '🎤 Start speaking');
+  this.classList.toggle('active', !isSpeaking);
+});
+
+let isHalfDuplex = false;
+document.getElementById('btnAudioMode').addEventListener('click', function() {
+  isHalfDuplex = !isHalfDuplex;
+  this.textContent = isHalfDuplex ? (currentLang === 'vi' ? '📢 Loa ngoài (--half-duplex)' : '📢 Speaker (--half-duplex)') : (currentLang === 'vi' ? '🎧 Tai nghe (cắt lời được)' : '🎧 Headphones (barge-in enabled)');
+});
+
+const GATE_SPECS = {
+  unlock_door: { name: "unlock_door@1.2.0" },
+  light_on: { name: "light_on@1.0.0" },
+  light_off: { name: "light_off@1.0.0" },
+  base_access: { name: "base-access@1.0.0" },
+  unlock_door_night: { name: "unlock_door_night@1.0.0" }
+};
+
+function selectGate(key) {
+  const g = GATE_SPECS[key];
+  if (!g) return;
+  document.getElementById('gateDetailName').textContent = g.name;
+}
+
+function runGateLint() { document.getElementById('lintOutput').style.display = 'block'; }
+
+function updateWhatIf() {
+  const auth = document.getElementById('whatifAuth').checked;
+  const risk = document.getElementById('whatifRisk').value;
+  const room = document.getElementById('whatifRoom').checked;
+  const target = document.getElementById('whatifVerdict');
+  if (auth && risk === 'low' && room) {
+    target.innerHTML = '<span class="st allow">✓ ALLOW</span> <span class="mono">unlock_door(pulse=30s)</span><div style="font-size:12px; color:var(--allow); margin-top:6px;">→ Tất cả tiêu chí đạt điều kiện cho phép</div>';
+  } else {
+    let failedReason = [];
+    if (!auth) failedReason.push("guest_authenticated false");
+    if (risk !== 'low') failedReason.push("risk_level > low");
+    if (!room) failedReason.push("room_matches false");
+    target.innerHTML = `<span class="st block">✗ BLOCK</span> <span class="mono">condition_not_met (${failedReason.join(", ")})</span><div style="font-size:12px; color:var(--dim); margin-top:6px;">→ action: escalate to <code>human_receptionist</code></div>`;
+  }
+}
+</script>
+</body>
+</html>

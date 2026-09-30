@@ -61,8 +61,8 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | **Pha đang thực thi** | 🟡 **I1 — Preview nội bộ trên `sim`** (I2, I3 phần không cần bo mạch và I4 làm song song) | Increment và ngày dự báo: §0.2 |
 | **Increment đang mở** | 🟡 **I1** — còn I1-02 (tạm hoãn: phát triển nội bộ) | I0 đã xong 42 / 42 · chi tiết §0.2 |
 | **Cột mốc tiếp theo** | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** | Ngày dự báo ở §0.2 · chưa phát hành ra ngoài (Q-39) |
-| **Lần cập nhật cuối** | **2026-09-29** | Phiên gần nhất: Q-49 (mỗi increment có demo, `demo/`), Q-50 + TSK-I4-04 (`run --mic` trên laptop), TTS PCM qua OpenRouter · trước đó TSK-I1-01 và RFC-0008 · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
-| **Trạng thái CI Lõi** | ✅ **PASS 2395/2395 · SKIP 0** | `python/tests/` — 83 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 29/29 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `ui-golden` 66 ảnh, `ota-rollback` pha a–g · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
+| **Lần cập nhật cuối** | **2026-09-29** | Phiên gần nhất: Q-51 + TSK-I1-04 (NeuroEdge Studio — `neuroedge studio`, bảy màn song ngữ), Q-49 (demo có giao diện), Q-50 + TSK-I4-04 (`run --mic`), TTS PCM qua OpenRouter · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Trạng thái CI Lõi** | ✅ **PASS 2479/2479 · SKIP 0** | `python/tests/` — 89 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 29/29 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `ui-golden` 66 ảnh, `ota-rollback` pha a–g · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · kỹ sư nhúng thứ hai (V6): đã quyết tuyển (2026-09-25), chưa có người — cần vào trước 2026-11-16 (Q-39) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](TODOS.md) | Mỗi mục kèm mốc kích hoạt · gồm câu hỏi kinh doanh mở rà lại tại cổng nhu cầu **2026-10-25** (Q-20) |
 
@@ -76,7 +76,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 |:---:|:---|:---:|:---|:---:|:---|:---|:---|
 | **0.x nội bộ** | **I0 — Lõi hợp đồng trên `sim`** | ✅ 2026-09-24 | Gate có kiểu và phiên bản (lint, resolve, kế thừa, tham số, `confirms`), `sim` + web UI, Action CI, MCP, System 2 qua LiteLLM, `linux` replay trên gpio-sim; walker C, sổ token và vết ghi UART trên QEMU | **42 / 42** | ✅ Xong | — | lịch sử |
 |  | **Cổng nhu cầu (Q-20)** | 2026-10-25 | Go / Adjust / Stop cho I3–I7 (`docs/business/cong-nhu-cau-2026-10-25/cham-diem.md` §4.1) | — | ⏳ Đang phỏng vấn | I0 | — |
-|  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | Người ngoài đội cài từ wheel nội bộ và chạy agent có gate trong dưới 10 phút, không cần phần cứng | **4 / 5** | 🟡 Đang làm — TSK-I1-02 tạm hoãn (phát triển nội bộ) | I0 | tag `v0.1.0` (nội bộ) |
+|  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | Người ngoài đội cài từ wheel nội bộ và chạy agent có gate trong dưới 10 phút, không cần phần cứng | **4 / 6** | 🟡 Đang làm — TSK-I1-02 tạm hoãn (phát triển nội bộ) | I0 | tag `v0.1.0` (nội bộ) |
 |  | **I2 — `linux` ngang `sim`** | 2026-11-29 | `run`, `record`, `mcp serve --target linux`; cảm biến và màn hình trên `linux`; nightly trên RPi 5 | **3 / 4** | 🟡 Phiên tương tác, cảm biến, màn hình xong trên gpio-sim + i2c-stub; nightly RPi 5 còn lại | I1 | tag `v0.2.0` (nội bộ) |
 |  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | Gate chạy trên chip, điều khiển chân thật; người dùng tự nạp agent; `verify` ba target bậc 1 cho miền phán quyết | **6 / 14** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU, giao diện LVGL có ảnh golden); chờ bo mạch | I1, cổng Go | tag `v0.3.0` + firmware (nội bộ) |
 |  | **I4 — Thoại trên host** | 2026-12-13 | Nói chuyện với agent trên `sim` và `linux`: wake-word, cắt lời, STT/TTS qua provider cloud, fallback lệnh cục bộ | **5 / 9** | 🟡 Đặc tả, vector, FSM Python, độ trễ, SystemOne qua Jev xong; STT/TTS trên `sim`, wake-word + STT dự phòng, âm thanh `linux` xong phần mã trên host; phiên micro trên laptop (`run --mic`, TSK-I4-04) xong phần mã; còn mô hình wake-word thật, Pi + HAT | I2, cổng Go | tag `v0.4.0` (nội bộ) |
@@ -107,11 +107,11 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-09-29 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. VỪA HOÀN THÀNH — Q-49 demo/ · Q-50 + TSK-I4-04 (run --mic, xong phần mã)            │
-│    • demo/i1-sim, demo/i3-firmware-qemu (Docker), demo/i4-thoai-laptop                 │
-│    • run --mic: micro laptop trên sim; tai nghe hoặc --half-duplex                     │
-│    • OpenRouter chạy thật: STT, TTS PCM 24 kHz, System 2; Jev 3/3 hợp lệ               │
-│    • Còn của TSK-I4-04: micro thật trên máy trình bày, --mic --ui                      │
+│ 1. VỪA HOÀN THÀNH — Q-51 + TSK-I1-04: NeuroEdge Studio (xong phần mã)                  │
+│    • neuroedge studio: 7 màn, VI/EN, 17 API — docs/spec/studio.md                      │
+│    • demo/i1-studio · Q-49: demo có giao diện · Q-50 run --mic                         │
+│    • OpenRouter chạy thật: STT, TTS PCM, System 2 gemma-4-31b, Jev                     │
+│    • Còn: studio --mic với micro thật trên máy trình bày                               │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
@@ -524,6 +524,7 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 | **TSK-I1-01** | **PII trong vết ghi trước khi có người ngoài dùng:** vết ghi mặc định băm chữ người dùng gõ/nói tại nguồn (`metadata.anonymized = true`); `--raw` giữ nguyên văn, bật tường minh | FR-TRC-06, FR-TRC-07, NFR-PRIV-03 | V1 | ✅ Hoàn thành (2026-09-27) — quyết định: "dữ liệu thô" của NFR-PRIV-03 gồm cả chữ | `python/neuroedge/testing/recorder.py` (`DEFAULT_ANONYMIZE`) · `cli/main.py` (`--raw` trên `record`, `run`, `replay`, `mcp serve`, `mcp desktop-config`) · *Bằng chứng:* `pytest tests/test_recorder.py tests/test_uart_trace.py tests/test_voice_cli.py tests/test_cli_run.py tests/test_golden.py` |
 | **TSK-I1-02** | **Bộ đo TTFV tại chỗ:** kịch bản buổi đo, wheel nội bộ, biểu mẫu mốc thời gian từng bước; 3 người ngoài đội cho M1, 10 người cho A1 (TSK-I7-02) | FR-DX-01 | V3 | ⏸ Tạm hoãn (2026-09-26) — cùng lý do với TSK-I1-01 | `docs/reports/` — biên bản đo, không ghi danh tính người đo |
 | **TSK-I1-03** | **`--help` có ví dụ cho mọi lệnh; scaffold tạo sẵn `traces/`** | FR-CLI-07, FR-TRC-09 | V3 | ✅ Hoàn thành (2026-09-26) | [`cli/examples.py`](python/neuroedge/cli/examples.py): mỗi lệnh có mục `Examples:`, mọi ví dụ phân tích bằng parser thật và chạy trong dự án vừa tạo · [`templates/_common/traces/`](python/neuroedge/templates/_common/traces/) · kiểm: `pytest tests/test_cli_examples.py tests/test_cli_new.py`, `scripts/wheel_smoke.sh` |
+| **TSK-I1-04** | **NeuroEdge Studio:** `neuroedge studio` — ứng dụng web cục bộ (127.0.0.1, không CDN, song ngữ Việt/Anh) thể hiện mọi năng lực trên laptop: phiên trực tiếp gõ và nói, gate + thử nhanh, vết ghi + replay, verify, thiết bị ESP32-S3 (LVGL, QEMU, OTA), MCP, cấu hình agent (Q-51) | FR-TGT-06, FR-DX-06 | V3 | 🟡 Xong phần mã (2026-09-29): 17 API của `docs/spec/studio.md`, bảy màn song ngữ, kiểm trên trình duyệt (sáng/tối, 1280/390 px, VI/EN); `--mic` qua `StudioVoice`, kiểm bằng nguồn giả. **Còn:** chạy `studio --mic` với micro thật trên máy trình bày | [`python/neuroedge/studio/`](python/neuroedge/studio/) · [`demo/i1-studio/`](demo/i1-studio/) · kiểm: `pytest tests/test_studio_server.py tests/test_studio_api_agent.py tests/test_studio_api_checks.py tests/test_studio_api_device.py tests/test_studio_voice.py tests/test_studio_page.py` |
 
 **Tiêu chí ra I1:**
 
@@ -1376,7 +1377,7 @@ Vì vậy job `licence-obligations` trong [`ci-sim-linux.yml`](.github/workflows
 | Hằng tuần | Rà soát chỉ báo sớm §12 | I0 |
 | Hằng đêm | Kiểm thử tự động trên bo mạch thật | I3 |
 | Mỗi increment | Nghiệm thu theo tiêu chí ra, không theo cảm nhận; một thẻ phát hành, một tín hiệu đo (Q-39) | I0 |
-| Mỗi increment | **Một demo chạy được** trong `demo/<increment>/` — lời dẫn, lệnh, đầu ra thật, commit đã chạy lại; tiêu chí ra chỉ đánh `[x]` trong PR có demo; người review chạy lại kịch bản (Q-49). Danh mục: [`demo/README.md`](demo/README.md) | I1 |
+| Mỗi increment | **Một demo chạy được, có giao diện** trong `demo/<increment>/` — lời dẫn, lệnh, đầu ra thật, commit đã chạy lại; năng lực nào chạy trên laptop thì demo qua `neuroedge studio` (Q-51); tiêu chí ra chỉ đánh `[x]` trong PR có demo; người review chạy lại kịch bản (Q-49). Danh mục: [`demo/README.md`](demo/README.md) | I1 |
 
 ### 11.2 Định nghĩa hoàn thành
 

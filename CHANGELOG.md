@@ -32,6 +32,9 @@ bản gói.
 
 #### Đã thêm
 
+- **I1 · TSK-I1-04 — NeuroEdge Studio: `neuroedge studio`, mọi năng lực trong một trang (Q-51).** Bảy màn song ngữ
+  trên 127.0.0.1: phiên trực tiếp (gõ, `--mic`), gate + what-if, vết ghi + replay, verify, ESP32-S3 (LVGL, QEMU, OTA), MCP,
+  cấu hình. Hợp đồng `docs/spec/studio.md`. Kiểm: `pytest tests/test_studio_*.py`; kịch bản `demo/i1-studio/`. (FR-TGT-06)
 - **I4 · TSK-I4-04 — nói với agent qua micro laptop, thời gian thực (`run --mic`, Q-50).** Micro và loa thật trên `sim`
   (`neuroedge[audio]`), cùng `VoiceSession` với `--voice-file`; tai nghe ⇒ cắt lời được, loa ngoài ⇒ `--half-duplex`. Hàng
   đợi thu đầy ⇒ dừng, không bỏ âm thanh. Kiểm: `pytest tests/test_voice_live.py tests/test_hal_sim_live_audio.py`. (FR-PER-01)
@@ -359,6 +362,9 @@ bản gói.
 
 #### Đã sửa
 
+- **FR-TGT-06 — trang sim và studio từ chối `Host` lạ ở mọi yêu cầu (DNS rebinding).** Trước đây chỉ POST được kiểm, nên
+  một trang lạ đổi DNS về 127.0.0.1 đọc được `/state`, `/events` (lời người dùng) của `run --ui`, `mcp serve --ui`. Kiểm:
+  `pytest tests/test_studio_server.py -k "host or length or origin"`. (NFR-PRIV-03, `docs/spec/studio.md` §2)
 - **TSK-S3-13 — thiết bị không đọc markdown của model thành tiếng.** `speakable()` bỏ `**`, gạch đầu dòng, tiêu đề, link
   trước TTS (chữ trên trang giữ nguyên); System 2 được dặn trả lời bằng lời nói thường (`SPOKEN_STYLE`). Kiểm: `pytest
   tests/test_voice_speakable.py`. (FR-PER-07)

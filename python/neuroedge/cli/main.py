@@ -33,6 +33,7 @@ from ..engine import (
     resolve_gate_file,
     resolve_gate_uri,
 )
+from ..engine.gate_resolver import lint_registry
 from ..errors import BoardCapabilityError, BuildFailed, NeuroEdgeError, VerificationError
 from ..hal.board import REFERENCE_BOARD, SUPPORTED_TARGETS, available_boards, load_board_by_id
 from ..paths import gates_dir, repo_root
@@ -255,18 +256,7 @@ def gate_lint(
         console.print(f"[yellow]No gate files found under {root}[/yellow]")
         raise typer.Exit(code=1)
 
-    # Bases are addressed by neuroedge:// URI. An explicit --registry wins;
-    # otherwise a fixture tree keeps its bases in a sibling `registry/`
-    # directory, and the real corpus resolves against gates/.
-    if registry is not None:
-        gate_registry = GateRegistry(registry)
-    else:
-        for candidate in (root / "registry", root.parent / "registry"):
-            if candidate.is_dir():
-                gate_registry = GateRegistry(candidate)
-                break
-        else:
-            gate_registry = GateRegistry()
+    gate_registry = lint_registry(root, registry)
 
     failures = 0
     table = Table(title=f"Gate lint — {root}")
@@ -838,24 +828,21 @@ def mcp_desktop_config(
     because Desktop starts the server from `/` with a minimal PATH, not from your shell.
     With --write, set that one entry in Desktop's config file and keep everything else.
     """
-    import importlib.util
+    from ..mcp_desktop import (
+        default_config_path,
+        desktop_config_text,
+        desktop_entry,
+        write_entry,
+    )
 
-    from ..mcp_desktop import default_config_path, server_entry, write_entry
-
-    if importlib.util.find_spec("mcp") is None:
-        _fail(
-            NeuroEdgeError(
-                where="neuroedge mcp desktop-config",
-                why="the MCP Python SDK (`mcp`) is not installed, so Desktop's "
-                "`mcp serve` would exit at once",
-                how="pip install 'neuroedge[mcp]'",
-            )
-        )
-        return
     agent_path = (agent or _default_agent()).expanduser().resolve()
+    try:
+        entry = desktop_entry(agent_path, ui=ui, port=port, trace_out=trace_out, raw=raw)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
     session = _start_session("mcp desktop-config", agent_path, "sim", "sim-default", None)
     key = name or session.manifest.name
-    entry = server_entry(agent_path, ui=ui, port=port, trace_out=trace_out, raw=raw)
     if raw and trace_out is not None:
         _warn_raw()
     if "env" in entry:
@@ -866,7 +853,7 @@ def mcp_desktop_config(
         )
     if not write:
         # Plain stdout, not rich: the output is meant to be pasted or piped.
-        typer.echo(json.dumps({"mcpServers": {key: entry}}, indent=2, ensure_ascii=False))
+        typer.echo(desktop_config_text(key, entry))
         return
     target = config_path or default_config_path()
     try:
@@ -1798,6 +1785,97 @@ def run(
         return
     code = run_session(session, console, err_console, command=command, trace_out=trace_out)
     raise typer.Exit(code=code)
+
+
+@app.command(epilog=epilog("studio"))
+def studio(
+    agent: Path = typer.Option(
+        None,
+        "--agent",
+        "-a",
+        help="Path to agent.toml (default: ./agent.toml, else the villa-concierge sample)",
+    ),
+    port: int = typer.Option(8765, "--port", help="Port on 127.0.0.1 (0 picks a free one)"),
+    no_browser: bool = typer.Option(False, "--no-browser", help="Do not open a browser"),
+    mic: bool = typer.Option(
+        False, "--mic", help="Also listen to the microphone (sim; needs neuroedge\\[audio])"
+    ),
+    half_duplex: bool = typer.Option(
+        False, "--half-duplex", help="With --mic: mute the microphone while the agent speaks"
+    ),
+):
+    """
+    Open NeuroEdge Studio: every capability of the agent in one local web app on
+    127.0.0.1 — the live session (typed and, with --mic, spoken), gates and a what-if
+    box, traces and replay, verify, the ESP32-S3 device views, MCP and the agent's
+    configuration (docs/spec/studio.md). `sim` only; Ctrl-C to stop.
+    """
+    from ..studio import serve as serve_studio
+    from ..studio import voice as studio_voice
+
+    if half_duplex and not mic:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge studio --half-duplex",
+                why="--half-duplex mutes the microphone of a --mic session, and there is none",
+                how="add --mic, or drop --half-duplex",
+            )
+        )
+    agent_path = agent or _default_agent()
+    clock = None
+    target_options = None
+    on_start = None
+    if mic:
+        from ..engine.compiler import load_agent_manifest
+        from ..errors import AgentManifestError
+        from ..perception import VirtualClock
+        from ..perception.providers import (
+            load_speech_configs,
+            load_wake_word_config,
+            make_wake_word,
+        )
+
+        try:
+            manifest = load_agent_manifest(agent_path)
+            stt_config, _ = load_speech_configs(manifest)
+            if stt_config is None:
+                raise AgentManifestError(
+                    where=f"{manifest.source} -> [stt]",
+                    why="--mic needs a speech-to-text provider, and the agent declares none",
+                    how="add [stt] with model and api_key_env, or the base_url of a local server "
+                    '(docs/user/huong-dan.md); or type the command: neuroedge run -c "…" (Q-15)',
+                )
+            wake_config = load_wake_word_config(manifest, check_files=True)
+            if wake_config is not None:
+                make_wake_word(wake_config, manifest.root)
+        except NeuroEdgeError as error:
+            _fail(error)
+
+        clock = VirtualClock()
+        target_options = {"audio": "live"}
+
+        def on_start(server):
+            studio_voice.start(server, half_duplex=half_duplex)
+
+    session = _start_session(
+        "studio",
+        agent_path,
+        "sim",
+        None,
+        None,
+        ui=True,
+        clock=clock,
+        target_options=target_options,
+    )
+
+    try:
+        serve_studio(
+            session, agent_path, port, console, open_browser=not no_browser, on_start=on_start
+        )
+    except NeuroEdgeError as error:
+        _fail(error)
+    finally:
+        session.close()
 
 
 @app.command(epilog=epilog("build"))

@@ -26,7 +26,8 @@ Each package's docstring names its own layer: HAL is **L1**, models and percepti
 | 7 | `sim` | every rank below | L0, **assembly point** |
 | 8 | `perception` | `sim` (the voice session wraps the typed session), `models`, `actions`, `engine`, `hal`, `net` | L2 |
 | 9 | `testing` | `perception`, `actions`, `engine`, `hal`, `trace`; late-imports `sim` | Action CI |
-| 10 | `cli` | every package | entry |
+| 10 | `studio` | every layer below except `cli` — the local web app `neuroedge studio` that shows every capability (TSK-I1-04, `docs/spec/studio.md`) | tooling |
+| 11 | `cli` | every package | entry |
 
 Between L2 and L3 lies the principle of dependency inversion: System 1 adapters of L2 in `models/` (`SystemOne`, `CommandGrammar`, `systemone_api`) implement the `FactSource` protocol of `engine/gate.py` (L3), instead of L3 depending on L2.
 

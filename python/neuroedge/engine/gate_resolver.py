@@ -139,6 +139,20 @@ class GateRegistry:
 
 
 @functools.lru_cache(maxsize=1)
+def lint_registry(root: Path, registry: Path | None = None) -> GateRegistry:
+    """
+    The registry `gate lint` resolves a directory against. Bases are addressed by
+    neuroedge:// URI. An explicit `registry` wins; otherwise a fixture tree keeps its
+    bases in a sibling `registry/` directory, and the real corpus resolves against gates/.
+    """
+    if registry is not None:
+        return GateRegistry(registry)
+    for candidate in (root / "registry", root.parent / "registry"):
+        if candidate.is_dir():
+            return GateRegistry(candidate)
+    return GateRegistry()
+
+
 def _gate_schema() -> dict[str, Any]:
     # Parsed once per process: resolving an N-gate registry used to re-read and
     # re-parse the schema at every level of every chain (TODOS.md #5, ENG-Q4).
