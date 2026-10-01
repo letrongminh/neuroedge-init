@@ -174,7 +174,7 @@
    "type": "text",
    "x": 54,
    "y": 338,
-   "width": 435.24,
+   "width": 378.82,
    "height": 18,
    "angle": 0,
    "strokeColor": "#15803d",
@@ -195,8 +195,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "Horizon 1 — v1.0 on the device (I3–I7) · chapter 15 §2",
-   "originalText": "Horizon 1 — v1.0 on the device (I3–I7) · chapter 15 §2",
+   "text": "Horizon 1 — v1.0 = MVP (I2a–I7) · chapter 15 §2",
+   "originalText": "Horizon 1 — v1.0 = MVP (I2a–I7) · chapter 15 §2",
    "fontSize": 13,
    "fontFamily": 2,
    "textAlign": "left",
@@ -679,8 +679,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "HAL + drivers on chip\ntargets/esp32s3/hal/ · drivers/\nTSK-S4-01, TSK-S4-03\n○ planned",
-   "originalText": "HAL + drivers on chip\ntargets/esp32s3/hal/ · drivers/\nTSK-S4-01, TSK-S4-03\n○ planned",
+   "text": "HAL + drivers + UI on chip\ntargets/esp32s3/hal/ · drivers/ · ne_ui\nTSK-S4-01, TSK-S4-03\n○ planned",
+   "originalText": "HAL + drivers + UI on chip\ntargets/esp32s3/hal/ · drivers/ · ne_ui\nTSK-S4-01, TSK-S4-03\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -753,8 +753,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "Voice path on chip\nAEC · VAD · Opus · voice FSM in C\nTSK-S5-01…S5-06\n○ planned",
-   "originalText": "Voice path on chip\nAEC · VAD · Opus · voice FSM in C\nTSK-S5-01…S5-06\n○ planned",
+   "text": "Voice path on chip\nAEC · VAD · Opus · voice FSM in C\noffline fallback · TSK-S5-01…S5-07\n○ planned",
+   "originalText": "Voice path on chip\nAEC · VAD · Opus · voice FSM in C\noffline fallback · TSK-S5-01…S5-07\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -764,7 +764,7 @@
    "autoResize": true
   },
   {
-   "id": "box-fallback",
+   "id": "box-ext",
    "type": "rectangle",
    "x": 736,
    "y": 374,
@@ -783,14 +783,14 @@
    "roundness": {
     "type": 3
    },
-   "seed": 1884402422,
+   "seed": 2336146673,
    "version": 1,
-   "versionNonce": 3642478147,
+   "versionNonce": 2089107122,
    "isDeleted": false,
    "boundElements": [
     {
      "type": "text",
-     "id": "box-fallback-text"
+     "id": "box-ext-text"
     }
    ],
    "updated": 1,
@@ -798,7 +798,7 @@
    "locked": false
   },
   {
-   "id": "box-fallback-text",
+   "id": "box-ext-text",
    "type": "text",
    "x": 748,
    "y": 382,
@@ -815,28 +815,98 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 3168716590,
+   "seed": 1817363523,
    "version": 1,
-   "versionNonce": 413351042,
+   "versionNonce": 192457696,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "Local offline fallback\nfixed command recognizer\nTSK-S5-07 · Q-14\n○ planned",
-   "originalText": "Local offline fallback\nfixed command recognizer\nTSK-S5-07 · Q-14\n○ planned",
+   "text": "Extension primitives\ndigital.in · I2C · analog.in · PWM\nvision.in · motion.* · I2a, I3a · Q-53\n○ planned",
+   "originalText": "Extension primitives\ndigital.in · I2C · analog.in · PWM\nvision.in · motion.* · I2a, I3a · Q-53\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "box-fallback",
+   "containerId": "box-ext",
+   "lineHeight": 1.3,
+   "autoResize": true
+  },
+  {
+   "id": "box-brain",
+   "type": "rectangle",
+   "x": 1074,
+   "y": 374,
+   "width": 326,
+   "height": 124,
+   "angle": 0,
+   "strokeColor": "#3b82f6",
+   "backgroundColor": "#f8fafc",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "dashed",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": {
+    "type": 3
+   },
+   "seed": 1509731305,
+   "version": 1,
+   "versionNonce": 319964909,
+   "isDeleted": false,
+   "boundElements": [
+    {
+     "type": "text",
+     "id": "box-brain-text"
+    }
+   ],
+   "updated": 1,
+   "link": null,
+   "locked": false
+  },
+  {
+   "id": "box-brain-text",
+   "type": "text",
+   "x": 1086,
+   "y": 382,
+   "width": 302,
+   "height": 108,
+   "angle": 0,
+   "strokeColor": "#475569",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": null,
+   "seed": 2571726179,
+   "version": 1,
+   "versionNonce": 1066290660,
+   "isDeleted": false,
+   "boundElements": [],
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "text": "NeuroBrain\nbrain/ only via dispatch() (B-1)\nenvelope hook in HAL · I4a, I5a · Q-55\n○ planned",
+   "originalText": "NeuroBrain\nbrain/ only via dispatch() (B-1)\nenvelope hook in HAL · I4a, I5a · Q-55\n○ planned",
+   "fontSize": 12.5,
+   "fontFamily": 2,
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box-brain",
    "lineHeight": 1.3,
    "autoResize": true
   },
   {
    "id": "box-security",
    "type": "rectangle",
-   "x": 1074,
+   "x": 1412,
    "y": 374,
    "width": 326,
    "height": 124,
@@ -874,7 +944,7 @@
   {
    "id": "box-security-text",
    "type": "text",
-   "x": 1086,
+   "x": 1424,
    "y": 382,
    "width": 302,
    "height": 108,
@@ -904,76 +974,6 @@
    "textAlign": "center",
    "verticalAlign": "middle",
    "containerId": "box-security",
-   "lineHeight": 1.3,
-   "autoResize": true
-  },
-  {
-   "id": "box-ui",
-   "type": "rectangle",
-   "x": 1412,
-   "y": 374,
-   "width": 326,
-   "height": 124,
-   "angle": 0,
-   "strokeColor": "#15803d",
-   "backgroundColor": "#f8fafc",
-   "fillStyle": "solid",
-   "strokeWidth": 1,
-   "strokeStyle": "dashed",
-   "roughness": 0,
-   "opacity": 100,
-   "groupIds": [],
-   "frameId": null,
-   "roundness": {
-    "type": 3
-   },
-   "seed": 3666075330,
-   "version": 1,
-   "versionNonce": 2677352211,
-   "isDeleted": false,
-   "boundElements": [
-    {
-     "type": "text",
-     "id": "box-ui-text"
-    }
-   ],
-   "updated": 1,
-   "link": null,
-   "locked": false
-  },
-  {
-   "id": "box-ui-text",
-   "type": "text",
-   "x": 1424,
-   "y": 382,
-   "width": 302,
-   "height": 108,
-   "angle": 0,
-   "strokeColor": "#475569",
-   "backgroundColor": "transparent",
-   "fillStyle": "solid",
-   "strokeWidth": 1,
-   "strokeStyle": "solid",
-   "roughness": 0,
-   "opacity": 100,
-   "groupIds": [],
-   "frameId": null,
-   "roundness": null,
-   "seed": 3275909704,
-   "version": 1,
-   "versionNonce": 2234596559,
-   "isDeleted": false,
-   "boundElements": [],
-   "updated": 1,
-   "link": null,
-   "locked": false,
-   "text": "UI on the real display\nne_ui wired to the display driver\nTSK-S4-01\n○ planned",
-   "originalText": "UI on the real display\nne_ui wired to the display driver\nTSK-S4-01\n○ planned",
-   "fontSize": 12.5,
-   "fontFamily": 2,
-   "textAlign": "center",
-   "verticalAlign": "middle",
-   "containerId": "box-ui",
    "lineHeight": 1.3,
    "autoResize": true
   },
@@ -1075,10 +1075,6 @@
     {
      "type": "text",
      "id": "box-registry-text"
-    },
-    {
-     "type": "arrow",
-     "id": "edge-2-registry-brain"
     }
    ],
    "updated": 1,
@@ -1296,7 +1292,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-3-boundary-eco"
+     "id": "edge-2-boundary-eco"
     }
    ],
    "updated": 1,
@@ -1410,83 +1406,9 @@
    "autoResize": true
   },
   {
-   "id": "box-brain",
-   "type": "rectangle",
-   "x": 398,
-   "y": 834,
-   "width": 326,
-   "height": 124,
-   "angle": 0,
-   "strokeColor": "#3b82f6",
-   "backgroundColor": "#f8fafc",
-   "fillStyle": "solid",
-   "strokeWidth": 1,
-   "strokeStyle": "dashed",
-   "roughness": 0,
-   "opacity": 100,
-   "groupIds": [],
-   "frameId": null,
-   "roundness": {
-    "type": 3
-   },
-   "seed": 1509731305,
-   "version": 1,
-   "versionNonce": 319964909,
-   "isDeleted": false,
-   "boundElements": [
-    {
-     "type": "text",
-     "id": "box-brain-text"
-    },
-    {
-     "type": "arrow",
-     "id": "edge-2-registry-brain"
-    }
-   ],
-   "updated": 1,
-   "link": null,
-   "locked": false
-  },
-  {
-   "id": "box-brain-text",
-   "type": "text",
-   "x": 410,
-   "y": 842,
-   "width": 302,
-   "height": 108,
-   "angle": 0,
-   "strokeColor": "#475569",
-   "backgroundColor": "transparent",
-   "fillStyle": "solid",
-   "strokeWidth": 1,
-   "strokeStyle": "solid",
-   "roughness": 0,
-   "opacity": 100,
-   "groupIds": [],
-   "frameId": null,
-   "roundness": null,
-   "seed": 2571726179,
-   "version": 1,
-   "versionNonce": 1066290660,
-   "isDeleted": false,
-   "boundElements": [],
-   "updated": 1,
-   "link": null,
-   "locked": false,
-   "text": "NeuroBrain\nbrain/ only via dispatch() (B-1)\nenvelope hook in HAL · I12 · RFC-0007\n○ planned",
-   "originalText": "NeuroBrain\nbrain/ only via dispatch() (B-1)\nenvelope hook in HAL · I12 · RFC-0007\n○ planned",
-   "fontSize": 12.5,
-   "fontFamily": 2,
-   "textAlign": "center",
-   "verticalAlign": "middle",
-   "containerId": "box-brain",
-   "lineHeight": 1.3,
-   "autoResize": true
-  },
-  {
    "id": "box-robot",
    "type": "rectangle",
-   "x": 736,
+   "x": 398,
    "y": 834,
    "width": 326,
    "height": 124,
@@ -1520,7 +1442,7 @@
   {
    "id": "box-robot-text",
    "type": "text",
-   "x": 748,
+   "x": 410,
    "y": 842,
    "width": 302,
    "height": 108,
@@ -1556,7 +1478,7 @@
   {
    "id": "box-vision",
    "type": "rectangle",
-   "x": 1074,
+   "x": 736,
    "y": 834,
    "width": 326,
    "height": 124,
@@ -1590,7 +1512,7 @@
   {
    "id": "box-vision-text",
    "type": "text",
-   "x": 1086,
+   "x": 748,
    "y": 842,
    "width": 302,
    "height": 108,
@@ -1613,8 +1535,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "Vision\nL2 input reduced by a SystemOne\nnever L3 authority · I15–I17\n○ planned",
-   "originalText": "Vision\nL2 input reduced by a SystemOne\nnever L3 authority · I15–I17\n○ planned",
+   "text": "Vision on jetson, multimodal\nvision.in itself ships in v1.0 (Q-53)\nfacts only, never L3 authority · I16, I17\n○ planned",
+   "originalText": "Vision on jetson, multimodal\nvision.in itself ships in v1.0 (Q-53)\nfacts only, never L3 authority · I16, I17\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -1626,7 +1548,7 @@
   {
    "id": "box-eco",
    "type": "rectangle",
-   "x": 1412,
+   "x": 1074,
    "y": 834,
    "width": 326,
    "height": 124,
@@ -1654,7 +1576,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-3-boundary-eco"
+     "id": "edge-2-boundary-eco"
     }
    ],
    "updated": 1,
@@ -1664,7 +1586,7 @@
   {
    "id": "box-eco-text",
    "type": "text",
-   "x": 1424,
+   "x": 1086,
    "y": 842,
    "width": 302,
    "height": 108,
@@ -1791,10 +1713,10 @@
   {
    "id": "edge-1-security-signed",
    "type": "arrow",
-   "x": 1237.0,
-   "y": 498,
-   "width": 0.0,
-   "height": 106,
+   "x": 1483.89,
+   "y": 498.0,
+   "width": 155.77,
+   "height": 106.0,
    "angle": 0,
    "strokeColor": "#334155",
    "backgroundColor": "transparent",
@@ -1822,11 +1744,11 @@
    "points": [
     [
      0.0,
-     0
+     0.0
     ],
     [
-     0.0,
-     106
+     -155.77,
+     106.0
     ]
    ],
    "startBinding": {
@@ -1846,7 +1768,7 @@
   {
    "id": "edge-1-label",
    "type": "text",
-   "x": 1191.92,
+   "x": 1529.92,
    "y": 534.52,
    "width": 90.16,
    "height": 14.95,
@@ -1880,12 +1802,12 @@
    "autoResize": true
   },
   {
-   "id": "edge-2-registry-brain",
+   "id": "edge-2-boundary-eco",
    "type": "arrow",
-   "x": 561.0,
-   "y": 728,
-   "width": 0.0,
-   "height": 106,
+   "x": 1483.89,
+   "y": 728.0,
+   "width": 155.77,
+   "height": 106.0,
    "angle": 0,
    "strokeColor": "#334155",
    "backgroundColor": "transparent",
@@ -1897,9 +1819,9 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 386637635,
+   "seed": 1374035652,
    "version": 1,
-   "versionNonce": 858733657,
+   "versionNonce": 2932734658,
    "isDeleted": false,
    "boundElements": [
     {
@@ -1913,20 +1835,20 @@
    "points": [
     [
      0.0,
-     0
+     0.0
     ],
     [
-     0.0,
-     106
+     -155.77,
+     106.0
     ]
    ],
    "startBinding": {
-    "elementId": "box-registry",
+    "elementId": "box-boundary",
     "focus": 0,
     "gap": 1
    },
    "endBinding": {
-    "elementId": "box-brain",
+    "elementId": "box-eco",
     "focus": 0,
     "gap": 1
    },
@@ -1937,9 +1859,9 @@
   {
    "id": "edge-2-label",
    "type": "text",
-   "x": 503.04,
+   "x": 1529.92,
    "y": 764.52,
-   "width": 115.92,
+   "width": 90.16,
    "height": 14.95,
    "angle": 0,
    "strokeColor": "#1e293b",
@@ -1960,104 +1882,13 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "gates, lab actions",
-   "originalText": "gates, lab actions",
-   "fontSize": 11.5,
-   "fontFamily": 2,
-   "textAlign": "center",
-   "verticalAlign": "middle",
-   "containerId": "edge-2-registry-brain",
-   "lineHeight": 1.3,
-   "autoResize": true
-  },
-  {
-   "id": "edge-3-boundary-eco",
-   "type": "arrow",
-   "x": 1575.0,
-   "y": 728,
-   "width": 0.0,
-   "height": 106,
-   "angle": 0,
-   "strokeColor": "#334155",
-   "backgroundColor": "transparent",
-   "fillStyle": "solid",
-   "strokeWidth": 1,
-   "strokeStyle": "solid",
-   "roughness": 0,
-   "opacity": 100,
-   "groupIds": [],
-   "frameId": null,
-   "roundness": null,
-   "seed": 1065162036,
-   "version": 1,
-   "versionNonce": 4193058997,
-   "isDeleted": false,
-   "boundElements": [
-    {
-     "type": "text",
-     "id": "edge-3-label"
-    }
-   ],
-   "updated": 1,
-   "link": null,
-   "locked": false,
-   "points": [
-    [
-     0.0,
-     0
-    ],
-    [
-     0.0,
-     106
-    ]
-   ],
-   "startBinding": {
-    "elementId": "box-boundary",
-    "focus": 0,
-    "gap": 1
-   },
-   "endBinding": {
-    "elementId": "box-eco",
-    "focus": 0,
-    "gap": 1
-   },
-   "startArrowhead": null,
-   "endArrowhead": "arrow",
-   "elbowed": false
-  },
-  {
-   "id": "edge-3-label",
-   "type": "text",
-   "x": 1529.92,
-   "y": 764.52,
-   "width": 90.16,
-   "height": 14.95,
-   "angle": 0,
-   "strokeColor": "#1e293b",
-   "backgroundColor": "transparent",
-   "fillStyle": "solid",
-   "strokeWidth": 1,
-   "strokeStyle": "solid",
-   "roughness": 0,
-   "opacity": 100,
-   "groupIds": [],
-   "frameId": null,
-   "roundness": null,
-   "seed": 2943808859,
-   "version": 1,
-   "versionNonce": 1249864411,
-   "isDeleted": false,
-   "boundElements": [],
-   "updated": 1,
-   "link": null,
-   "locked": false,
    "text": "no paid safety",
    "originalText": "no paid safety",
    "fontSize": 11.5,
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "edge-3-boundary-eco",
+   "containerId": "edge-2-boundary-eco",
    "lineHeight": 1.3,
    "autoResize": true
   }

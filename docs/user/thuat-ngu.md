@@ -10,7 +10,7 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 | **FR-xxx-nn** | Yêu cầu chức năng, ví dụ `FR-GATE-03` (nhóm `GATE`, số 03) | `neuroedge-prd.md` §4–§8 |
 | **NFR-xxx-nn** | Yêu cầu phi chức năng (hiệu năng, bảo mật, độ bền…) | `neuroedge-prd.md` §9 |
 | **P0 · P1 · P2** | Độ ưu tiên: P0 bắt buộc để phát hành · P1 trượt được sang bản vá · P2 nếu còn nguồn lực | tệp này |
-| **A1–A9 · B1–B5 · C1–C8** | Tiêu chí **nghiệm thu phát hành**: A = v1.0 (I7) · B = Developer Beta (I8) · C = v1.1 (I9–I10) (vd C8: độ trễ `SystemOne` < 100 ms). Giá trị đo B1–B5: roadmap §5.5 | `neuroedge-prd.md` §11 |
+| **A1–A12 · B1–B5 · C1–C8** | Tiêu chí **nghiệm thu phát hành**: A = v1.0 (I7) · B = Developer Beta (I8) · C = v1.1 (I9–I10) (vd C8: độ trễ `SystemOne` < 100 ms). Giá trị đo B1–B5: roadmap §5.5 | `neuroedge-prd.md` §11 |
 | **M1–M5** | Mục tiêu sản phẩm (M1 = lập trình viên lạ chạy được agent có gate mà không cần phần cứng, TTFV trung vị < 10 phút trên 10 người). Chỉ mang nghĩa này — cột mốc kế tiếp của roadmap là **I1**, nơi đo sớm M1 trên 3 người; A1 đo đầy đủ ở I7 | `neuroedge-prd.md` §1.3 |
 | **TR-1…TR-7** | Tiêu chí ra cấp thực thi của v1.1 (I9–I10) — **khác** bộ C | `neuroedge-roadmap.md` §6.3 |
 | **Q-N** | Quyết định kỹ thuật đã chốt hoặc đang mở, đánh số tăng dần, không có số cuối | `neuroedge-prd.md` §15 — **sổ quyết định duy nhất** |
@@ -23,7 +23,8 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 | **G-a…G-e** | Giả định kinh doanh cần kiểm chứng (vd G-e: tỷ lệ chuyến hiện trường do phần mềm) — **khác** G1–G4 | `neuroedge-proposal.md` Phụ lục G |
 | **V-G1…V-G5** | Cột mốc xác thực Giai đoạn 2 | `neuroedge-proposal.md` §12.4 |
 | **RFC-NNNN** | Đề xuất sửa lược đồ hoặc ngữ nghĩa phân giải gate | `docs/rfc/` |
-| **RFC-numeric · RFC-motion · RFC-node · RFC-vision-bậc23 · RFC-pin-extends** | RFC **tạm tên**, chưa cấp số, của bản nháp mở rộng cho robot phân tầng; số cấp khi mở PR RFC | `draft-ke-hoach-mo-rong-robot-fofoca.md` §2.2 |
+| **RFC-node · RFC-pin-extends** | RFC **tạm tên**, chưa cấp số, của bản nháp mở rộng cho robot phân tầng; số cấp khi mở PR RFC. Ba tên tạm cũ đã có số nhờ Q-53: RFC-numeric = RFC-0009, RFC-motion = RFC-0011, RFC-vision = RFC-0012 | `draft-ke-hoach-mo-rong-robot-fofoca.md` §2.2 |
+| **A10 · A11 · A12** | Ba tiêu chí nghiệm thu thêm của v1.0 (Q-52 → Q-55): A10 đủ nguyên thủy mở rộng trên ba target (`verify` 100%) · A11 dựng bằng hội thoại có hợp đồng (NeuroBrain) · A12 kit mẫu dựng được, trung vị ≤ 1 ngày. | `neuroedge-prd.md` §11.1 |
 | **KL-1…KL-5** | Kết luận rà soát HAL dưới ràng buộc vi điều khiển | `docs/spec/hal_mcu_review.md` §1 |
 | **RB-1…RB-4** | Ràng buộc kỹ thuật HAL cho bản port lên chip ở I3 (vd RB-3: lệnh chân phải huỷ được) | `docs/spec/hal_mcu_review.md` §2 |
 | **Bất biến N** | Một trong mười điều không được phá (vd bất biến 7: `sim` không giàu hơn bo mạch tham chiếu) | `CHANGELOG.md` §3.3 |
@@ -35,17 +36,20 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 
 | Mã | Là gì | Định nghĩa ở |
 |:---|:---|:---|
-| **I0 … I18** | Increment — đơn vị thời gian của roadmap (Q-39): một năng lực người dùng thấy được, có điều kiện vào, tiêu chí ra, đúng một ngày dự báo, và kết thúc bằng một thẻ phát hành cùng một tín hiệu đo. Thứ tự theo phụ thuộc; chèn giữa dùng hậu tố (`I3a`), không đánh số lại (R2) | `neuroedge-roadmap.md` §0.2 (bảng) · §4–§7 (từng increment) |
+| **I0 … I18** | Increment — đơn vị thời gian của roadmap (Q-39): một năng lực người dùng thấy được, có điều kiện vào, tiêu chí ra, đúng một ngày dự báo, và kết thúc bằng một thẻ phát hành cùng một tín hiệu đo. Thứ tự theo phụ thuộc; chèn giữa dùng hậu tố (`I3a`), không đánh số lại (R2). Từ Q-52, I12 và I15 không còn là increment (số không dùng lại) | `neuroedge-roadmap.md` §0.2 (bảng) · §4–§7 (từng increment) |
+| **I2a · I2b · I3a · I4a · I5a** | Năm increment thêm bởi Q-52 (hậu tố chữ, R2): I2a nguyên thủy mở rộng trên `sim` và `linux` (bốn gói, sáu RFC, `sim-rpi5`) · I2b kit mẫu và `neuroedge add` · I3a nguyên thủy mở rộng trên `esp32s3` · I4a NeuroBrain trên host · I5a NeuroBrain trên chip. Đều thuộc MVP, kết thúc bằng tag nội bộ | `neuroedge-roadmap.md` §4.3.1, §4.3.2, §4.4.1, §4.5.1, §4.6.1 · Q-52 → Q-55 |
+| **P0 · MVP · Beta · Mở rộng** (phase) | Bốn phase của roadmap (Q-52): **P0** dọn nền (không có increment) · **MVP = v1.0** (I0 → I7, một lần ra mắt, trượt thì dời ngày, không cắt) · **Beta và thương mại** (I8 → I10) · **Mở rộng** (I11, I13, I14, I16 → I18). **Khác** độ ưu tiên P0 · P1 · P2 ở trên | `neuroedge-roadmap.md` §0.5 · Q-52 |
+| **Bốn gói nguyên thủy mở rộng** | Cảm biến (`digital.in`, I2C chỉ đọc, `analog.in`, tiêu chí `numeric`) · điều khiển mịn (PWM) · thị giác (`vision.in`) · chuyển động (`motion.*`); tuỳ chọn theo bo mạch, bắt buộc có bo tham chiếu trên mỗi target bậc 1 | `neuroedge-prd.md` FR-HAL-08 · Q-53 |
 | **Preview nội bộ** | I1: người ngoài đội cài từ wheel nội bộ (tag ở roadmap §0.2), TTFV đo tại chỗ trên 3 người. Chưa phát hành ra ngoài | `neuroedge-roadmap.md` §4.2 · Q-39 |
 | **Công khai (I6)** | Lần phát hành ra ngoài đầu tiên: repo công khai, `pip install neuroedge` từ PyPI, lược đồ ở URL công khai — khi demo thoại chạy trên `sim`, `linux` và Box-3. Trước I6 mọi tag là nội bộ | `neuroedge-roadmap.md` §4.7 · Q-39 · `docs/release.md` |
 | **Dự báo** | Ngày duy nhất của một increment, chỉ ghi ở roadmap §0.2. Chỉ đổi cùng PR với bằng chứng làm nó đổi, và dời luôn các increment phụ thuộc (R4, R5). "sau Ix" = increment có điều kiện, chưa có ngày | `neuroedge-roadmap.md` §0.2, §2.4 |
 | **Ghi chú thiết kế** | Tài liệu thiết kế không lịch, không trạng thái, không tiêu chí ra: `neuroedge-design-neurobrain.md`, `neuroedge-design-phase2.md`, `draft-ke-hoach-mo-rong-robot-fofoca.md`, `draft-rfc-node-giao-thuc-dieu-phoi.md`. Dẫn mã TSK của roadmap (R1, R8) | `neuroedge-roadmap.md` (đầu tệp) · `CONTRIBUTING.md` §8.1 |
 | **R1 … R12** | Mười hai luật chống lệch của roadmap (vd R6: không xếp lịch bằng nhãn tuần/tháng đánh số) — **khác** rủi ro `R-n` của PRD | `neuroedge-roadmap.md` §2.4 |
 | **Khối 1a · 1b · 2 · 3 · 4 · 5** | Tên lịch sử của khối công việc Giai đoạn 1: 1a lõi + Action CI · 1b vi điều khiển · 2 Fleet OS · 3 các đường ray nền tảng. Khối 2 → I9, Khối 3 → I10; task của 1a và 1b rải vào I0–I7. Khối 4 (AURA thực địa) và 5 (Marketplace) nằm ngoài roadmap | `neuroedge-roadmap.md` Phụ lục A · §8.1 |
-| **Khối V1a · V1b · V2 · V3 · P1 · P2** | Khối công việc Giai đoạn 2, tên dùng trong ghi chú thiết kế: V1a → I11 · V1b → I15 · V2 → I16 · V3 → I17 · P1 → I13 · P2 → I18, riêng P2-04, P2-05 → I14 | thiết kế: `neuroedge-design-phase2.md` · ánh xạ: `neuroedge-roadmap.md` Phụ lục A |
-| **Chặng W0 … W4 · W-item** | Chặng của ghi chú thiết kế robot phân tầng (W0 việc nhẹ · W1 HAL và an toàn actuator · W2 hạ tầng tin cậy · W3 multi-node · W4 hệ sinh thái); `W3-1`… là chỉ mục trong ghi chú đó, task thật là `TSK-W3-01`… trong roadmap. Toàn bộ W0 và vài task W2 rải vào I2, I6, I7, I10; phần còn lại là I14 | thiết kế: `draft-ke-hoach-mo-rong-robot-fofoca.md` · ánh xạ: `neuroedge-roadmap.md` Phụ lục A |
-| **Khối N0 … N7 · N5b** | Khối công việc NeuroBrain (Giai đoạn 1.5), cùng thuộc I12; task `TSK-Nk-mm` | thiết kế: `neuroedge-design-neurobrain.md` · task: `neuroedge-roadmap.md` §7.2 |
-| **NeuroBrain** | Trợ lý hội thoại dựng mạch cho Physical AI — "Build Physical AI by conversation, under contract" (Q-31); increment I12, sau Beta (Q-40) | `neuroedge-design-neurobrain.md` §1 |
+| **Khối V1a · V1b · V2 · V3 · P1 · P2** | Khối công việc Giai đoạn 2, tên dùng trong ghi chú thiết kế: V1a → I11 · V1b → I2a, I3a (đã vào MVP, Q-53) · V2 → I16 · V3 → I17 · P1 → I13 · P2 → I18, riêng P2-04, P2-05 → I14 | thiết kế: `neuroedge-design-phase2.md` · ánh xạ: `neuroedge-roadmap.md` Phụ lục A |
+| **Chặng W0 … W4 · W-item** | Chặng của ghi chú thiết kế robot phân tầng (W0 việc nhẹ · W1 HAL và an toàn actuator · W2 hạ tầng tin cậy · W3 multi-node · W4 hệ sinh thái); `W3-1`… là chỉ mục trong ghi chú đó, task thật là `TSK-W3-01`… trong roadmap. Toàn bộ W0 và vài task W2 rải vào I2, I6, I7, I10; khối W1 (PWM, tiêu chí số, RFC-motion, `motion.*`) vào I2a, I3a (Q-53); phần còn lại là I14 | thiết kế: `draft-ke-hoach-mo-rong-robot-fofoca.md` · ánh xạ: `neuroedge-roadmap.md` Phụ lục A |
+| **Khối N0 … N7 · N5b** | Khối công việc NeuroBrain (Giai đoạn 1.5), thuộc I4a (N0, N1, N3–N6, N5b), I2a (N2, TSK-N0-02, TSK-N0-03, TSK-N3-03), I3a (TSK-N7-02) và I5a (N7); task `TSK-Nk-mm` | thiết kế: `neuroedge-design-neurobrain.md` · task: `neuroedge-roadmap.md` §4.3.1, §4.4.1, §4.5.1, §4.6.1 |
+| **NeuroBrain** | Trợ lý hội thoại dựng mạch cho Physical AI — "Build Physical AI by conversation, under contract" (Q-31); vào MVP ở I4a và I5a (Q-55, thay phần thứ tự của Q-40) | `neuroedge-design-neurobrain.md` §1 |
 | **B-1** | Bất biến: gói `neuroedge.brain` không gọi HAL trực tiếp, chỉ qua `dispatch()` → gate | `neuroedge-design-neurobrain.md` §1 |
 | **Sprint 1…6** | Tên lịch sử: sáu sprint của kế hoạch gốc (Khối 1a, 1b). Task đã xong của Sprint 1–3 thuộc I0; task còn lại dời sang increment, mã `TSK-S<n>-*` giữ nguyên. Không dùng để xếp lịch mới (R6) | `neuroedge-roadmap.md` Phụ lục A |
 | **`TSK-<họ>-<nn>`** | Một task. Mã cho biết task từ đâu ra; increment cho biết khi nào làm; mã không bao giờ đánh lại. Họ: `TSK-S1-*` … `TSK-S6-*` (Sprint 1–6, vd `TSK-S2-03` = Sprint 2, task 03) · `TSK-K2-*`, `TSK-K3-*` (Khối 2, 3) · `TSK-N*-*` (NeuroBrain) · `TSK-V1a-*` … `TSK-V3-*`, `TSK-P1-*`, `TSK-P2-*` (Giai đoạn 2) · `TSK-W…` · `TSK-I…` (hai dòng dưới) | `neuroedge-roadmap.md` §2.4 (họ mã task) |
@@ -53,7 +57,8 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 | **`TSK-I<n>-<nn>`** | Việc mới không thuộc họ nào; `n` là increment đầu tiên lên lịch nó (vd `TSK-I1-01`). Dời sang increment khác thì mã giữ nguyên | `neuroedge-roadmap.md` §2.4 |
 | **Tuần N · Tháng N** | Nhãn lịch cũ, đếm từ ngày bắt đầu chương trình 2026-09-21 — không phải tháng dương lịch. Bỏ từ Q-39: lịch mới dùng increment và ngày tuyệt đối (R6). Gặp trong tài liệu lịch sử (`docs/archive/`, `CHANGELOG.md` §1) thì ngày tuyệt đối đi kèm là đúng | `neuroedge-roadmap.md` §2.4 (R6) |
 | **V1–V4** | Vai trò trong đội: V1 kỹ sư lõi · V2 kỹ sư nhúng · V3 trải nghiệm lập trình viên · V4 hạ tầng dịch vụ | `neuroedge-roadmap.md` §1.1 |
-| **V5** | Kỹ sư thị giác: HAL thị giác, mô hình, NPU; có mặt trước I15 | `neuroedge-roadmap.md` §1.1 |
+| **V5** | Kỹ sư thị giác: HAL thị giác, mô hình, NPU; có mặt trước I2a (Q-52) | `neuroedge-roadmap.md` §1.1 |
+| **V7** | Kỹ sư NeuroBrain: lab action, Chat Contracting, Lab Monitor, trigger — cùng V2; có mặt trước I4a (Q-52) | `neuroedge-roadmap.md` §1.1 |
 | **V6** | Kỹ sư nhúng thứ hai: âm thanh trên chip, OTA và bảo mật thiết bị, song song với HAL của V2 — giả định của dự báo I5 và I7 (roadmap §0.1, Q-39) | `neuroedge-roadmap.md` §1.1, §1.3 |
 
 > ⚠️ **Hai mã trùng chữ, khác nghĩa:**
@@ -63,11 +68,11 @@ Nơi **duy nhất** giải mã các ký hiệu dùng khắp kho. Mỗi dòng: m�
 >   hành chỉ dùng nghĩa thứ nhất.
 > - **V1** là vai trò kỹ sư lõi, **và** là tiền tố Khối V1a/V1b của Giai đoạn 2.
 > - **P1** là độ ưu tiên (P0 · P1 · P2), **và** là tiền đề P1 của design doc Giai đoạn 1 (P1–P4), **và**
->   là Khối P1 của Giai đoạn 2 (I13). Bảng chấm của cổng nhu cầu dùng `P1` theo nghĩa thứ hai (điểm cho
+>   là Khối P1 của Giai đoạn 2 (I13). Bảng chấm của bộ phỏng vấn (từng là cổng nhu cầu, bỏ ở Q-56) dùng `P1` theo nghĩa thứ hai (điểm cho
 >   tiền đề P1).
 > - **R1…R12** (luật chống lệch của roadmap) khác **R-1…R-7** (rủi ro PRD) và khác R1… trong biên bản
 >   review RFC-0002 (`docs/archive/rfc-0002-review-record.md`).
-> - **C1…C8** là tiêu chí nghiệm thu v1.1 trong PRD, **và** C1…C10 là câu hỏi của cổng nhu cầu
+> - **C1…C8** là tiêu chí nghiệm thu v1.1 trong PRD, **và** C1…C10 là câu hỏi của bộ phỏng vấn
 >   2026-10-25. Ngữ cảnh kinh doanh (`docs/business/`) luôn theo nghĩa thứ hai.
 > - **G1–G4** (cột mốc thị trường) khác **G-a…G-e** (giả định Phụ lục G) và khác **V-G1…V-G5**.
 
@@ -83,7 +88,7 @@ Các mã này chỉ có nghĩa trong biên bản review; nhiều mã đã đư�
 | **D6–D11** | Câu hỏi trong phiên /office-hours 2026-09-22 — không có trong kho | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` (đầu tệp) |
 | **P1–P4** | Bốn tiền đề của design doc Giai đoạn 1 (P1 điểm đau thuộc U2 · P2 khoảng gate không trống · P3 khác biệt là tương đương target + fail-closed · P4 rủi ro số một là nhu cầu) | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` §Premises |
 | **Approach A · B · C · D · E** | Các hướng đi Giai đoạn 1: A wedge `sim` trước (đã chọn) · B spike xuyên tầng · C bán Action CI rời · D bán memo + bản ghi màn hình · E gate/Action CI cho hành động của agent thoại trên cloud | A–C: `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` §Approaches · D, E: `docs/archive/giai-doan-1-review-log.md` (`CEO-X4`) |
-| **C1…C10** (cổng nhu cầu) | Mười câu hỏi cổng nhu cầu 2026-10-25 phải trả lời — **khác** tiêu chí C1–C8 của PRD | `docs/business/cong-nhu-cau-2026-10-25/README.md` §2 |
+| **C1…C10** (bộ phỏng vấn) | Mười câu hỏi của bộ phỏng vấn khách hàng — đầu vào thông tin, không còn là cổng (Q-56); **khác** tiêu chí C1–C8 của PRD | `docs/business/cong-nhu-cau-2026-10-25/README.md` §2 |
 
 ## 4. Thuật ngữ sản phẩm
 

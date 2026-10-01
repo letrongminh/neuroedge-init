@@ -51,8 +51,8 @@ Bốn luật, mỗi luật là một lựa chọn có chủ đích:
 
 Các gói sau đã được quy hoạch trong kiến trúc tương lai nhưng chưa có mã trong kho hôm nay:
 
-- `brain/` (I12, NeuroBrain): logic điều phối phòng lab; tuân thủ bất biến B-1 — chỉ tác động vật lý qua `dispatch()` và gate, không bao giờ gọi thẳng HAL, được khoá bằng test quét AST và import (`neuroedge-design-neurobrain.md` §1 "Bảy nguyên tắc"; TSK-N1-07, `tests/test_brain_boundary.py`) — xem [`15`](15-target-architecture.md) §4.2.
-- `perception/vision/` và `sim/vision/` (I15, TSK-V1b-*): đường ống thị giác và giả lập thị giác; thị giác đóng vai trò đầu vào L2, rút gọn về System 1 trước khi đưa vào gate — xem [`15`](15-target-architecture.md) §4.4.
+- `brain/` (I4a, NeuroBrain): logic điều phối phòng lab; tuân thủ bất biến B-1 — chỉ tác động vật lý qua `dispatch()` và gate, không bao giờ gọi thẳng HAL, được khoá bằng test quét AST và import (`neuroedge-design-neurobrain.md` §1 "Bảy nguyên tắc"; TSK-N1-07, `tests/test_brain_boundary.py`) — xem [`15`](15-target-architecture.md) §4.2.
+- `perception/vision/` và `sim/vision/` (I2a, TSK-V1b-*): đường ống thị giác và giả lập thị giác; thị giác đóng vai trò đầu vào L2, vào gate dưới dạng dữ kiện do maker khai (Q-54) — xem [`15`](15-target-architecture.md) §4.4.
 - `services/fleet/` và `services/registry/` (I9–I10, TSK-K2, TSK-K3): các dịch vụ phía máy chủ cho Fleet OS (điều phối OTA theo đợt, broker MQTT, viễn trắc) và Gate Registry (kho OCI qua ORAS/Harbor, đo lường) — xem [`15`](15-target-architecture.md) §3.1, §3.2.
 
 Khi `brain/` vào kho, nó cần một mục trong `ALLOWED` (và `LAZY` nếu có import muộn) của [`python/tests/test_architecture_layers.py`](../../../python/tests/test_architecture_layers.py). `perception/vision/` và `sim/vision/` thuộc đơn vị `perception` và `sim` sẵn có nên không cần mục mới; `services/` (kể cả `services/metering/engine.py`, TSK-K3-02) nằm ngoài gói `neuroedge` nên test này không quét.

@@ -1,5 +1,9 @@
 # Cổng nhu cầu 2026-10-25 (Q-20)
 
+> **Luật cổng đã bỏ (Q-56, 2026-09-30).** Không còn Go / Adjust / Stop và không increment nào chờ kết quả phỏng vấn.
+> Bộ tài liệu này giữ làm **đầu vào thông tin** (thông điệp, giá, câu C6, C7) — phỏng vấn tiếp được, kết quả ghi
+> vào `TODOS.md` #19 trước I6. Bảng ngưỡng ở [`cham-diem.md`](cham-diem.md) §4 hết hiệu lực.
+
 Bộ tài liệu chuẩn bị cho cổng nhu cầu thương mại của NeuroEdge. Soạn ngày 2026-09-24.
 
 | Tệp | Dùng khi nào |
@@ -21,7 +25,7 @@ Cổng không quyết code của I1, I2. Nó quyết ba việc:
 
 1. Mỗi mục của `TODOS.md` #19 được **đóng có lý do** hoặc **thành quyết định** trong PRD §15.
 2. Các increment I3–I7 (roadmap §0.2; tên lịch sử: Khối 1b) có đi tiếp theo kế hoạch không, hay
-   đổi hướng (Approach C / E) có bằng chứng — Go / Adjust / Stop ở `cham-diem.md` §4.1.
+   đổi hướng (Approach C / E) có bằng chứng — *(Go / Adjust / Stop ở `cham-diem.md` §4.1 hết hiệu lực, Q-56.)*
 3. Phân khúc nào là phân khúc đầu tiên để làm tiếp (tối đa hai).
 
 Rủi ro số một là nhu cầu chưa kiểm chứng (premise P4, `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`).
@@ -108,13 +112,12 @@ muốn xem; 5 phút kết. Không demo cho ai mà phần vấn đề chưa xong.
 
 ## 6. Ghi kết quả thế nào
 
-Mô tả việc cần làm sau cổng; bộ tài liệu này **không sửa** tệp nào trong kho.
+Mô tả việc cần làm sau mỗi đợt phỏng vấn; bộ tài liệu này **không sửa** tệp nào trong kho. Từ Q-56 không còn quyết định cổng: kết quả chỉ là thông tin, ghi vào `TODOS.md` #19 trước I6.
 
 | Nơi | Ghi gì |
 |:---|:---|
-| `neuroedge-prd.md` §15 | Một dòng quyết định mới (mã `Q-N` kế tiếp chưa dùng): *"Kết quả cổng nhu cầu 2026-10-25"* — số cuộc theo phân khúc, điểm C1–C9, nhánh đã chọn (go / adjust / stop), phân khúc đầu tiên, và mỗi mục `CEO-*` thành quyết định con hoặc đóng |
-| `TODOS.md` #19 | Từng mã (`CEO-X2`, `X4`, `X5`, `T1`, `T2`, `T3`, `T4`) gạch và dẫn tới quyết định cổng; mục nào còn mở phải có **mốc kích hoạt mới** (luật của `TODOS.md`) |
-| `neuroedge-roadmap.md` §0 | Dòng cổng nhu cầu ở bảng điều khiển: trạng thái, dẫn quyết định cổng |
+| `neuroedge-prd.md` §15 | Chỉ khi kết quả đổi một quyết định: dòng `Q-N` kế tiếp chưa dùng — số cuộc theo phân khúc, điểm C1–C9, phân khúc đầu tiên, và mục `CEO-*` nào thành quyết định |
+| `TODOS.md` #19 | Từng mã (`CEO-X2`, `X4`, `X5`, `T1`, `T2`, `T3`, `T4`) gạch và dẫn tới quyết định hoặc lý do đóng; mục nào còn mở phải có **mốc kích hoạt mới** (luật của `TODOS.md`) |
 | `CHANGELOG.md` `[Chưa phát hành]` | Một mục ngắn (CLAUDE.md "Khi xong một task", `CONTRIBUTING.md` §8) |
 | `docs/archive/` | Bản tổng hợp **ẩn danh** (vai trò + phân khúc, không tên người, không tên tổ chức nếu chưa được đồng ý). Bản ghi thô **không vào kho** (PII) |
 | `neuroedge-proposal.md` §1.8, §8.7, §10, Phụ lục G | Chỉ sửa nếu quyết định cổng đổi một giả định; mỗi con số thị trường mới phải dẫn nguồn là cuộc phỏng vấn nào (mã ẩn danh) |

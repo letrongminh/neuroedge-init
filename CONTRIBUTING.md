@@ -52,7 +52,7 @@ raise GateSchemaError(
 Không dùng `raise ValueError("bad gate")`. Test
 `test_invalid_fixture_diagnostic_has_all_three_parts` kiểm tra điều này trên
 toàn bộ corpus phản chứng. Mã lỗi (`NE…`) cấp ở PRD
-[Phụ lục B](neuroedge-prd.md#phụ-lục-b--danh-mục-mã-lỗi-chuẩn).
+[Phụ lục B](roadmap/neuroedge-prd.md#phụ-lục-b--danh-mục-mã-lỗi-chuẩn).
 
 ### Không in kết quả mà mình chưa tính
 
@@ -133,7 +133,7 @@ Mẫu ghi nhận tại chỗ:
 ```
 
 Giấy phép nào được vào phần phân phối: chính sách **Q-11**
-([PRD §15](neuroedge-prd.md#15-sổ-quyết-định)); không copyleft mạnh là
+([PRD §15](roadmap/neuroedge-prd.md#15-sổ-quyết-định)); không copyleft mạnh là
 bất biến `CHANGELOG.md` §3.3 #9. Hawkbit đã duyệt với điều kiện ở Q-11 (sửa thì công bố phần sửa); EMQX không dùng.
 
 ## 5. Test không được skip trong im lặng
@@ -202,14 +202,15 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `docs/rfc/`, `docs/spec/`, `docs/reports/` | RFC, đặc tả chuẩn tắc, báo cáo đo | PR thường |
 | `docs/architecture/` | Kiến trúc sản phẩm song ngữ: `README.md` · `vi/` + `en/` (17 chương mỗi cây, 00–16, VI là gốc, cùng cấu trúc và cùng khối mermaid) · `assets/svg/` + `assets/excalidraw/` (poster **sinh** từ `scripts/gen_architecture_diagrams.py`, không sửa tay) | PR thường — sửa mô hình poster rồi chạy lại script; khối mermaid kiểm bằng `scripts/check_architecture_mermaid.py`; cạnh import mới giữa các gói khai ở `python/tests/test_architecture_layers.py`; nội dung dẫn mã, không chép (§8.1) |
 | `docs/archive/` | Lịch sử đã khép, lưu để truy nguồn, không quy phạm: kế hoạch Giai đoạn 1 đã duyệt, biên bản review Giai đoạn 1 và RFC-0002 | Chỉ thêm, không sửa nội dung |
-| `docs/business/` | Bộ chuẩn bị cổng nhu cầu (Q-20); `cpo-dashboard.html` sinh từ roadmap, `TODOS.md`, PRD §15, `CHANGELOG.md` | PR thường — đổi các nguồn đó thì chạy `python3 scripts/gen_cpo_dashboard.py` |
+| `docs/business/` | Bộ phỏng vấn khách hàng — đầu vào thông tin, không còn là cổng quyết định (Q-56); `cpo-dashboard.html` sinh từ roadmap, `TODOS.md`, PRD §15, `CHANGELOG.md` | PR thường — đổi các nguồn đó thì chạy `python3 scripts/gen_cpo_dashboard.py` |
 | `wireframe/` | Wireframe HTML tham chiếu cho UI (bản chụp `ui.css`, không đóng gói) — hiện có Lab Monitor của Khối N5b | PR thường |
 | `demo/` | Kịch bản demo của từng increment (`demo/<increment>/`): lời dẫn, lệnh, đầu ra thật, commit đã chạy lại; danh mục ở `demo/README.md` (Q-49) | PR thường; người review chạy lại kịch bản |
 | `docs/user/` | Tài liệu người dùng; `thuat-ngu.md` là nơi duy nhất giải mã ký hiệu; `trang-thai.md` sinh từ roadmap §0 | PR thường — `python3 scripts/gen_user_status.py` |
 | `docs/release.md` | Thủ tục phát hành: tag nội bộ trước I6, PyPI từ I6 | PR thường |
 | `README.md` | Trang đầu và trang PyPI (link tuyệt đối) | PR thường — `tests/test_readme_quickstart.py` |
-| `neuroedge-roadmap.md` | Roadmap duy nhất (Q-39): increment I0–I18, trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành, thang cắt | PR thường, theo §8; luật chống lệch R1–R12 ở roadmap §2.4 |
-| `neuroedge-design-neurobrain.md`, `neuroedge-design-phase2.md`, `draft-ke-hoach-mo-rong-robot-fofoca.md`, `draft-rfc-node-giao-thuc-dieu-phoi.md` | Ghi chú thiết kế: NeuroBrain · thị giác và phủ phần cứng · robot phân tầng. Không lịch, không trạng thái, không tiêu chí ra; dẫn mã TSK của roadmap (R1, R8) | PR thường; merge được cả khi Beta đóng băng (R12) |
+| `roadmap/` | Sáu tài liệu sản phẩm: roadmap, PRD, proposal, hai ghi chú thiết kế, kế hoạch robot (bản nháp RFC node ở `docs/rfc/`) | Theo từng tệp ở các dòng dưới |
+| `roadmap/neuroedge-roadmap.md` | Roadmap duy nhất (Q-39): bốn phase (§0.5, Q-52), increment I0–I18 kể cả I2a, I2b, I3a, I4a, I5a, trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành, thang cắt | PR thường, theo §8; luật chống lệch R1–R12 ở roadmap §2.4 |
+| `roadmap/neuroedge-design-neurobrain.md`, `roadmap/neuroedge-design-phase2.md`, `roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md`, `docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md` | Ghi chú thiết kế: NeuroBrain · thị giác và phủ phần cứng · robot phân tầng. Không lịch, không trạng thái, không tiêu chí ra; dẫn mã TSK của roadmap (R1, R8) | PR thường; merge được cả khi Beta đóng băng (R12) |
 | `TODOS.md` | Việc đã xem xét và hoãn có chủ ý, kèm mốc kích hoạt | PR thường |
 
 ## 7. CI

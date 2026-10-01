@@ -22,7 +22,7 @@ three tier-1 targets.
 
 | # | Contract | Meaning | Checked by |
 |:---:|:---|:---|:---|
-| 1 | **The five primitives of v1.x — a closed set** | `audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display` (FR-HAL-01, KL-1). Tier 3 may lack some primitives depending on board capability, but may not add any arbitrarily. Any new primitive goes only through an RFC (RFC-0007: `digital.in`, RFC-motion: `motion.*`, RFC vision.in: `vision.in`; see [`15`](15-target-architecture.md) §4) | `board.v1`, `PRIMITIVES` |
+| 1 | **The five primitives of v1.x — a closed set** | `audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display` (FR-HAL-01, KL-1). Tier 3 may lack some primitives depending on board capability, but may not add any arbitrarily. Any new primitive goes only through an RFC (RFC-0007: `digital.in`; RFC-0010: PWM; RFC-0011: `motion.*`; RFC-0012: `vision.in`; RFC-0013: board-optional — Q-53; see [`15`](15-target-architecture.md) §4) | `board.v1`, `PRIMITIVES` |
 | 2 | **Pins by name** | Agent code uses logical names (`door_lock`); physical pin numbers live only in the HAL (KL-2) | the build cross-checks the names |
 | 3 | **No pin moves without a token** | A pin command checks the pin name, then calls the `authorize` function wired into it, and only then drives the pin. A HAL with no token ledger wired in refuses every command | `test_hal_sim.py`, `tests_linux/test_gpio_sim.py`, token boot self-test on the chip |
 | 4 | **A missing device is an error, not a pretence** | No `/dev/gpiochip*`, no sensor, cannot open the microphone ⇒ three-part error **before** any pin is held (Q-16); never return a default value | `preflight` of `LinuxHAL` |

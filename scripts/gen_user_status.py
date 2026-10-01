@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "neuroedge-roadmap.md"
+SOURCE = ROOT / "roadmap" / "neuroedge-roadmap.md"
 TARGET = ROOT / "docs" / "user" / "trang-thai.md"
 
 STATUS_LABELS = (
@@ -91,7 +91,7 @@ def render() -> str:
         "",
         "# Trạng thái dự án",
         "",
-        "> Sinh tự động từ [`neuroedge-roadmap.md`](../../neuroedge-roadmap.md) §0 —",
+        "> Sinh tự động từ [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0 —",
         f"> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: {status['Lần cập nhật cuối']}.",
         "",
         "## Điều hành",
@@ -113,7 +113,7 @@ def render() -> str:
     out += [
         "",
         "Năng lực, phụ thuộc và giả định của các ngày dự báo: "
-        "[`neuroedge-roadmap.md`](../../neuroedge-roadmap.md) §0.",
+        "[`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0.",
         "",
     ]
     return "\n".join(out)

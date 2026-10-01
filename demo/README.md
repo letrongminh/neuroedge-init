@@ -15,7 +15,7 @@ Thư mục `demo/` tập hợp các kịch bản trình diễn và mã lệnh ch
 
 Bản demo `sim` chạy trực tiếp trên máy cục bộ (macOS hoặc Linux) thay vì chạy trong container Docker vì trang giao diện trực quan `--ui` chỉ bind vào địa chỉ loopback `127.0.0.1`, đồng thời Docker trên macOS không thể chuyển tiếp trực tiếp micro và loa vào container cho các tác vụ âm thanh. Ngược lại, các demo firmware (như I3) chạy trong Docker với cùng image môi trường của CI (`espressif/idf:v5.4`). Với target `linux`, hệ thống đòi hỏi nhân Linux thật có mô-đun `gpio-sim` (máy ảo Linux), nên phần này được chứng minh qua nhật ký chạy của CI (job `linux-hal`).
 
-## Demo phỏng vấn cổng nhu cầu
+## Demo phỏng vấn khách hàng
 
 Ngoài các demo theo từng increment kỹ thuật tại thư mục này, tài liệu kịch bản demo phỏng vấn theo từng phân khúc nhu cầu khách hàng (≤ 5 phút mỗi phân khúc, phục vụ kiểm chứng giả thuyết kinh doanh) được lưu tại [`docs/business/cong-nhu-cau-2026-10-25/demo.md`](../docs/business/cong-nhu-cau-2026-10-25/demo.md).
 

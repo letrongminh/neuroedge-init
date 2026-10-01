@@ -1,7 +1,7 @@
 # 08 · Non-functional requirements → tactics → evidence
 
 > **Scope:** which tactic the architecture uses to satisfy each NFR group of PRD §9, and where the
-> evidence is today. **Sources:** PRD §9 (requirements, thresholds), PRD §11.1 (A1–A9), tests in
+> evidence is today. **Sources:** PRD §9 (requirements, thresholds), PRD §11.1 (A1–A12), tests in
 > `python/tests/`, CI jobs in `.github/workflows/` (single list: `CHANGELOG.md` §2.5).
 
 Evidence labels: **checked** — a test or CI job runs on every PR · **partial** — a measurement tool or a
@@ -92,7 +92,7 @@ real-time voice session and CI does not call real models.
 | COMP-05 Python 3.11+ | `requires-python >= 3.11` | CI matrix 3.11 / 3.12 / 3.13 | checked |
 | COMP-06 `linux` on ARM64 and x86-64 | — | Every job runs x86-64; no ARM64 job yet | partial |
 
-## 9. v1.0 acceptance criteria (A1–A9)
+## 9. v1.0 acceptance criteria (A1–A12)
 
 | # | Criterion | Related NFR | Evidence today |
 |:---:|:---|:---|:---|
@@ -105,3 +105,6 @@ real-time voice session and CI does not call real models.
 | A7 | Traces 100 % valid | REL-04, PRIV, OBS | validated in CI, including UART traces |
 | A8 | Docs, three runnable samples | — | three samples have tests; not checked on a clean machine by a third party yet |
 | A9 | Public schemas with a compliance suite | COMP-01→04 | `$id` asserted; `fixtures/compliance/` today has only `voice/`; public URL at I6 |
+| A10 | Every extension primitive on three targets (FR-HAL-08, Q-53) | REL-03, COMP-05/06 | not started; needs RFC-0007, RFC-0009 → RFC-0013 (I2a, I3a) |
+| A11 | Building by conversation under contract (NeuroBrain, Q-55) | SEC-01 | not started (I4a, I5a) |
+| A12 | Sample kits buildable in a day (Q-52) | — | not measured yet (I2b) |

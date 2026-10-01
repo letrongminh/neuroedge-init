@@ -3,8 +3,8 @@
 Hướng dẫn cho coding agent làm việc trên kho này.
 
 **Đọc `CHANGELOG.md` §3 (bàn giao ngữ cảnh) trước khi bắt đầu một phiên mới.** Nguồn
-sự thật và thứ tự ưu tiên khi lệch nhau: §3.1 của tệp đó. Tiến độ: `neuroedge-roadmap.md`
-§0. Quyết định: `neuroedge-prd.md` §15 (`Q-N`). Việc hoãn có chủ ý: `TODOS.md`. Giải mã
+sự thật và thứ tự ưu tiên khi lệch nhau: §3.1 của tệp đó. Tiến độ: `roadmap/neuroedge-roadmap.md`
+§0. Quyết định: `roadmap/neuroedge-prd.md` §15 (`Q-N`). Việc hoãn có chủ ý: `TODOS.md`. Giải mã
 mọi ký hiệu (`FR-*`, `Q-N`, `A1`, `CEO-X1`…): `docs/user/thuat-ngu.md`. Cấu trúc kho:
 `CONTRIBUTING.md` §6.
 
@@ -33,7 +33,7 @@ Hai luật không thương lượng, chi tiết ở `CONTRIBUTING.md`:
 - **Mọi corpus khép kín hai chiều** (§3): mỗi tệp một mục đáp án, mỗi mục một tệp —
   `expected_errors.yaml` cho gate và vết ghi, `expected_results.yaml` cho tool call.
 
-Số test hiện hành ở `neuroedge-roadmap.md` §0.1, không ghi ở đây.
+Số test hiện hành ở `roadmap/neuroedge-roadmap.md` §0.1, không ghi ở đây.
 
 ## Khi xong một task
 

@@ -4,7 +4,7 @@
 Một trang HTML tự chứa (không CDN, không mạng), sinh hoàn toàn từ nguồn sự thật:
 
 - `neuroedge-roadmap.md` §0.1–§0.3, bảng increment §0.2, bảng task và tiêu chí ra của từng
-  increment §4–§8, A1–A9 (Q-39: một roadmap duy nhất);
+  increment §4–§8, A1–A12 (Q-39: một roadmap duy nhất);
 - `TODOS.md` (việc hoãn có chủ ý, mốc kích hoạt);
 - `neuroedge-prd.md` §15 (quyết định chưa chốt hẳn);
 - `CHANGELOG.md` `[Chưa phát hành]` (thay đổi gần đây).
@@ -27,9 +27,9 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ROADMAP = ROOT / "neuroedge-roadmap.md"
+ROADMAP = ROOT / "roadmap" / "neuroedge-roadmap.md"
 TODOS = ROOT / "TODOS.md"
-PRD = ROOT / "neuroedge-prd.md"
+PRD = ROOT / "roadmap" / "neuroedge-prd.md"
 CHANGELOG = ROOT / "CHANGELOG.md"
 TARGET = ROOT / "docs" / "business" / "cpo-dashboard.html"
 
@@ -179,7 +179,7 @@ def exit_criteria(lines: list[str]) -> list[tuple[str, int, int]]:
             if total:
                 out.append((group, done, total))
             group, done, total = plain(line[4:]), 0, 0
-        elif re.match(r"- \[[ x]\] \*\*(Tiêu chí|A\d\*\* —)", line):
+        elif re.match(r"- \[[ x]\] \*\*(Tiêu chí|A\d+\*\* —)", line):
             total += 1
             done += line.startswith("- [x]")
     return out
@@ -188,7 +188,7 @@ def exit_criteria(lines: list[str]) -> list[tuple[str, int, int]]:
 def acceptance(lines: list[str]) -> list[tuple[str, str, bool]]:
     out = []
     for line in lines:
-        m = re.match(r"- \[([ x])\] \*\*(A\d)\*\* — (.*)", line)
+        m = re.match(r"- \[([ x])\] \*\*(A\d+)\*\* — (.*)", line)
         if m:
             out.append((m.group(2), plain(m.group(3)), m.group(1) == "x"))
     return out
@@ -410,7 +410,7 @@ def render() -> str:
             f"Tới {next_id}" if next_id else "Tới cột mốc tiếp theo",
             f"dự báo {next_date.group(1)}" if next_date else "",
         ),
-        (f"{passed}/{len(accept)}", "Tiêu chí nghiệm thu v1.0 (A1–A9)", "đạt khi đóng I7"),
+        (f"{passed}/{len(accept)}", "Tiêu chí nghiệm thu v1.0 (A1–A12)", "đạt khi đóng I7"),
         (str(len(decisions)), "Quyết định còn chờ", "PRD §15"),
         (str(len(todo_items)), "Việc hoãn có mốc (TODOS)", "mỗi mục có mốc kích hoạt"),
     ]
@@ -445,7 +445,7 @@ def render() -> str:
         f"<th>Trạng thái</th><th>Phụ thuộc</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>"
     )
 
-    # Mốc có ngày: mọi dòng §0.2 có ngày dự báo. Đỏ = cổng nhu cầu và cột mốc tiếp theo.
+    # Mốc có ngày: mọi dòng §0.2 có ngày dự báo. Đỏ = mốc không phải increment và cột mốc tiếp theo.
     points = []
     for inc in matrix:
         found = DATE.findall(inc.forecast)
@@ -513,7 +513,7 @@ def render() -> str:
 <section class="card"><h2>Tiến độ theo increment</h2>{legend()}{matrix_html}</section>
 
 <section class="card"><h2>Dòng thời gian các mốc</h2>
-<p class="sub" style="margin-top:-6px">Đỏ = cổng nhu cầu và cột mốc tiếp theo. Ngày là dự báo ở roadmap §0.2.</p>{tl_html}</section>
+<p class="sub" style="margin-top:-6px">Đỏ = cột mốc tiếp theo. Ngày là dự báo ở roadmap §0.2.</p>{tl_html}</section>
 
 <div class="grid2">
 <section class="card"><h2>Pending — cần người</h2>

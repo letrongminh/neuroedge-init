@@ -5,11 +5,12 @@
 > **Ghi chú thiết kế.** Tệp này giữ định vị, nguyên tắc, ranh giới với tầng an toàn và
 > thiết kế từng khối của Giai đoạn 2. Nó **không** có lịch, trạng thái, tiêu chí ra, thang
 > cắt hay danh mục mua sắm: những thứ đó chỉ nằm ở [`neuroedge-roadmap.md`](neuroedge-roadmap.md) —
-> V1a là **I11** (§7.1), V1b là **I15** (§7.5), V2 là **I16** (§7.6), V3 là **I17** (§7.7),
-> P1 là **I13** (§7.3), P2 là **I18** (§7.8) trừ TSK-P2-04 và P2-05 ở **I14** (§7.4); thang cắt
-> §9.3; mua sắm Phụ lục B. Quyết định chỉ nằm ở `neuroedge-prd.md` §15: **Q-13** (phân tầng
-> bậc target), **Q-40** (thứ tự sau Beta), **Q-33** (đội lõi port RP2350 làm node robot),
-> **Q-34** (tích hợp ROS 2/Nav2).
+> V1a là **I11** (§7.1), V1b đã vào MVP ở **I2a** (§4.3.1) và **I3a** (§4.4.1),
+> V2 là **I16** (§7.6), V3 là **I17** (§7.7), P1 là **I13** (§7.3), P2 là **I18** (§7.8)
+> trừ TSK-P2-04 và P2-05 ở **I14** (§7.4); thang cắt §9.3; mua sắm Phụ lục B. Quyết định
+> chỉ nằm ở `neuroedge-prd.md` §15: **Q-13** (phân tầng bậc target), **Q-40** (thứ tự sau
+> Beta), **Q-53** (bốn gói nguyên thủy, gồm thị giác, vào v1.0), **Q-54** (thị giác trong
+> gate), **Q-33** (đội lõi port RP2350 làm node robot), **Q-34** (tích hợp ROS 2/Nav2).
 
 **Cập nhật:** 2026-09-25 · lịch sử thay đổi: `CHANGELOG.md`
 
@@ -45,7 +46,7 @@
 
 ## Quy ước tài liệu
 
-Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-V*` · `TSK-P*`, `V-G1`–`V-G5`, `PF-N`, `§x.y`…) được giải mã ở **[`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md)** — nơi duy nhất, kèm chỗ định nghĩa đầy đủ.
+Mọi mã và ký hiệu dùng trong tài liệu này (`TSK-V*` · `TSK-P*`, `V-G1`–`V-G5`, `PF-N`, `§x.y`…) được giải mã ở **[`docs/user/thuat-ngu.md`](../docs/user/thuat-ngu.md)** — nơi duy nhất, kèm chỗ định nghĩa đầy đủ.
 
 ## 1. Định vị và nguyên tắc
 
@@ -89,17 +90,18 @@ Mục này đứng trước mọi thiết kế khối vì nó là điều kiện
 
 ### 2.2 Bài toán để mở, có chủ đích
 
-**Ngữ nghĩa gate lượng giá trên bằng chứng thị giác chưa được giải.** Gate hiện lượng giá tiêu chí rời rạc (`bool` / `level` / `choice`) qua cây quyết định biên dịch lúc build (Q-9, Q-23). Mệnh đề *"camera thấy người trong vùng cấm"* chưa có cách diễn đạt trong gate, và việc bịa ra một cách diễn đạt vội vàng sẽ làm hỏng tính xác định của rule engine — thứ đang là khác biệt cạnh tranh số một.
+**Ngữ nghĩa gate riêng cho bằng chứng thị giác chưa được giải, và Q-54 không giải nó mà đi vòng.** Gate hiện lượng giá tiêu chí rời rạc (`bool` / `level` / `choice`) qua cây quyết định biên dịch lúc build (Q-9, Q-23). Mệnh đề *"camera thấy người trong vùng cấm"* chưa có cách diễn đạt trong gate, và việc bịa ra một cách diễn đạt vội vàng sẽ làm hỏng tính xác định của rule engine — thứ đang là khác biệt cạnh tranh số một.
 
-**Ràng buộc tạm thời cho tới khi có RFC riêng về việc này:**
+**Ràng buộc hiện hành (Q-54, thay ràng buộc tạm thời trước đó):**
 
-> Kết quả thị giác chỉ được dùng làm **thông tin ngữ cảnh**, không được làm căn cứ trực tiếp cho phán quyết actuator. Một agent muốn hành động dựa trên camera phải đi qua một `SystemOne` trả về kiểu `bool` / `level` / `choice` — tức là quy về đúng ba kiểu nguyên thủy mà gate đã biết lượng giá, và chịu cùng cơ chế fallback và ghi vết.
+> Gate không nhận điểm ảnh và không có ngữ nghĩa riêng cho thị giác. **Maker tự định nghĩa dữ kiện** từ nhãn của model thị giác (`bool` / `level` / `choice`, kèm độ tin cậy dạng số), tự viết `@action` và gate như với mọi dữ kiện khác; **gate khoá ngưỡng tin cậy** bằng tiêu chí `numeric` (RFC-0009). Mất camera hoặc model thì dữ kiện chưa quyết và gate chặn.
 
-Ràng buộc này không cản trở các usecase ưu tiên của Giai đoạn 2: camera an toàn, nhận cử chỉ và giám sát đều diễn đạt được qua `bool` và `choice`.
+Cách này quy mọi bằng chứng thị giác về các kiểu gate đã biết lượng giá, chịu cùng cơ chế fallback và ghi vết. Bài toán ngữ nghĩa gate thị giác riêng (RFC-0002 §9.3) vẫn để mở, có chủ đích. Quyết định và phương án đã bác: `neuroedge-prd.md` §15, Q-54.
 
 ### 2.3 Quyền riêng tư của dữ liệu hình ảnh
 
-Vết ghi **không nhúng khung hình thô**. Mặc định chỉ lưu băm SHA-256 và kích thước; lưu ảnh thô phải bật tường minh. Đây là NFR-PRIV-01 và NFR-PRIV-03 áp nguyên xi, không có ngoại lệ cho thị giác. Camera đặt trong không gian riêng tư là rủi ro quyền riêng tư lớn hơn micro, nên quy tắc này chặt hơn chứ không lỏng hơn.
+Vết ghi **không nhúng khung hình thô** — NFR-PRIV-01 và NFR-PRIV-03 áp nguyên xi, không ngoại lệ cho thị giác.
+Hợp đồng chi tiết (`vision_ref`, cửa sổ khung được ghi, danh tính mô hình): [RFC-0012](../docs/rfc/0012-nguyen-thuy-vision-in.md) §3 và §9.
 
 ---
 
@@ -107,15 +109,15 @@ Vết ghi **không nhúng khung hình thô**. Mặc định chỉ lưu băm SHA-
 
 Giai đoạn 2 **không được rút người khỏi Khối 4 (AURA)**. AURA mang dòng tiền dự án sớm cho tổ chức — nằm ngoài mô hình nền tảng (proposal §6.3) — đồng thời là nguồn dữ liệu PF-3 cho chính thị giác.
 
-Chỉ V5 (kỹ sư thị giác) là tuyển mới. Không có V5 thì danh sách target đã mở (V1a) vẫn có giá trị độc lập, vì cộng đồng port được bậc 3 mà không cần V5.
+V5 (kỹ sư thị giác) là vai trò tuyển mới. Thị giác trên `sim`, `linux` và `esp32s3` nay nằm trong MVP (Q-53) và roadmap lập kế hoạch với giả định đủ người cho mọi vai trò (Q-52); riêng danh sách target đã mở (V1a) vẫn có giá trị độc lập, vì cộng đồng port được bậc 3 mà không cần V5.
 
-→ Vai trò và thời điểm cần người: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §1.1; điều kiện vào của I15: §7.5.
+→ Vai trò và thời điểm cần người: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §1.1; điều kiện vào của I2a: §4.3.1.
 
 ---
 
 ## 4. Đường găng và phụ thuộc
 
-→ Phụ thuộc giữa I11, I13 và I15–I18: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §0.2 và §2.1. Vì sao `vision.in` tách khỏi RFC-0002: §5.
+→ Phụ thuộc giữa I2a, I3a, I11, I13 và I16–I18: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §0.2 và §2.1. Vì sao `vision.in` tách khỏi RFC-0002: §5 (nay là RFC-0012, Q-53).
 
 ---
 
@@ -133,11 +135,11 @@ Khối này **không viết driver và không đụng TTFV**. Nó mở enum `tar
 
 ## 6. Khối V1b — Thị giác trên `linux`
 
-Chứng minh thị giác chạy được trên `sim` và `linux` với chi phí phần cứng thấp.
+Chứng minh thị giác chạy được trên `sim` và `linux` với chi phí phần cứng thấp. Khối này nằm trong MVP (Q-53): `vision.in` trên chip là một phần của gói thị giác ở I3a, trên bo ESP32-S3 có camera.
 
 **Đòn bẩy OSS Khối V1b:** GStreamer và V4L2 cho luồng khung hình · Ultralytics YOLO và ONNX Runtime cho mô hình · HailoRT và Edge TPU runtime cho NPU. Tiết kiệm ước tính 10 tuần.
 
-→ Điều kiện vào (cổng PF-3: nhu cầu camera đo được từ khách hàng AURA thật), task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I15 (§7.5).
+→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I2a (§4.3.1, gói thị giác) và I3a (§4.4.1). Cổng nhu cầu camera (PF-3) không còn là điều kiện vào (Q-53).
 
 ---
 
@@ -200,9 +202,9 @@ Bộ V-G1 đến V-G5 — ngưỡng chuẩn tắc ở proposal §12.4. Ba chỉ 
 
 | # | Rủi ro | Mức độ | Dấu hiệu sớm | Phương án ứng phó |
 |:---:|:---|:---:|:---|:---|
-| **1** | Thị giác làm chậm TTFV của luồng thoại | Trung bình | TTFV đo được vượt 10 phút ở bản có cài thị giác | Thị giác là gói tùy chọn, không nằm trong đường cài đặt mặc định. Tiêu chí ra 6 của I15 (`neuroedge-roadmap.md` §7.5) là cổng chặn |
+| **1** | Thị giác làm chậm TTFV của luồng thoại | Trung bình | TTFV đo được vượt 10 phút ở bản có cài thị giác | Thị giác là gói tùy chọn, không nằm trong đường cài đặt mặc định. Tiêu chí ra thị giác của I2a (`neuroedge-roadmap.md` §4.3.1) là cổng chặn |
 | **2** | Phủ rộng phần cứng làm loãng chất lượng bậc 1 | Trung bình | Kiểm thử hằng đêm trên `esp32s3` thất bại thường xuyên hơn; hỗ trợ bậc 3 chiếm quá 10% thời gian đội lõi | Ứng phó chung: PRD R-7. Riêng Giai đoạn 2: tiêu chí ra 3 của I16 (`neuroedge-roadmap.md` §7.6) là cổng chặn |
-| **3** | Không tuyển được V5 | Cao | Chưa có người khi I15 sắp mở | Dừng sau V1a. Danh sách target đã mở vẫn giữ nguyên giá trị cho cộng đồng port bậc 3 |
+| **3** | Không tuyển được V5 | Cao | Chưa có người khi I2a sắp mở | Roadmap lập kế hoạch với giả định đủ người (Q-52); thiếu V5 thì MVP dời ngày, không cắt phạm vi. Riêng V2, V3 (I16, I17): dừng sau V1a. Danh sách target đã mở vẫn giữ nguyên giá trị cho cộng đồng port bậc 3 |
 | **4** | Mô hình thị giác phi xác định làm loãng mệnh đề an toàn | Cao | Xuất hiện đề xuất cho gate lượng giá trực tiếp trên đầu ra model | Ràng buộc §2.2 của tài liệu này: kết quả thị giác phải quy về `bool` / `level` / `choice` trước khi tới gate. Rule engine giữ nguyên 100% xác định |
 | **5** | Tăng người dùng mà không tăng doanh thu | Cao | V-G1 vế một đạt nhưng vế hai không đạt | Xem §10. Nếu sau I16 tỷ lệ này vẫn thấp, xem lại giả định consumer-first thay vì tiếp tục đổ nguồn lực |
 | **6** | RFC-0002 bị bác | Trung bình | Phản biện tập trung vào việc thu hẹp ba bất biến kiểm thử theo bậc | V2 và P1 dừng; V1b không bị ảnh hưởng (nguyên thủy thị giác đi qua RFC riêng). Đây là lý do RFC-0002 phải đối chất trực diện với tuyên bố `v2` của RFC-0001, không né |
@@ -211,7 +213,7 @@ Bộ V-G1 đến V-G5 — ngưỡng chuẩn tắc ở proposal §12.4. Ba chỉ 
 
 ## 12. Cắt phạm vi
 
-→ Thang cắt của I15–I18 và phần tuyệt đối không cắt (I11): [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §9.3.
+→ Thang cắt của I16–I18 và phần tuyệt đối không cắt (I11): [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §9.3.
 
 ---
 

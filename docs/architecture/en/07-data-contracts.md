@@ -103,7 +103,7 @@ is rejected, and for `[system_one]` `http://` to another machine is rejected in 
 | `[capabilities.sensor_read]` | `sensors` |
 | `[capabilities.display]` | `width`, `height`, `color` |
 
-The five primitives are a closed set for v1.x (FR-HAL-01); new primitives only via RFC (RFC-0007 `digital.in` at I12, RFC-motion for `motion.*` at I14, RFC `vision.in` at I15). There are exactly three tier-1 profiles: `sim-default` (copies Box-3 exactly, never richer — invariant 7), `linux-rpi5` (`aec = false` until measured), `esp32s3-box-3`. Application code uses only pin **names**; GPIO numbers belong to the HAL.
+The five core primitives are a closed set for v1.x (FR-HAL-01); new primitives only via RFC, and the four board-optional extension packs (FR-HAL-08, Q-53) enter v1.0 at I2a and I3a: RFC-0007 (`digital.in`, read-only I2C, `analog.in`), RFC-0009 (`numeric` criterion), RFC-0010 (PWM), RFC-0011 (`motion.*`), RFC-0012 (`vision.in`), RFC-0013 (board-optional). Today there are exactly three tier-1 profiles (Q-53 adds `sim-rpi5` and an ESP32-S3 camera board): `sim-default` (copies Box-3 exactly, never richer — invariant 7), `linux-rpi5` (`aec = false` until measured), `esp32s3-box-3`. Application code uses only pin **names**; GPIO numbers belong to the HAL.
 
 ## 5. Grammar and knowledge
 

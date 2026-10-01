@@ -303,7 +303,7 @@ sequenceDiagram
 | Flow | Increment | Target architecture |
 |:---|:---|:---|
 | On-chip voice turn | I5 | [`15`](15-target-architecture.md) §2.2 |
-| Rejection by physical safety envelope | I12 | [`15`](15-target-architecture.md) §4.2 |
-| Event trigger call source (`call_source = "trigger"`, TSK-N6-*) | I12 | [`15`](15-target-architecture.md) §4.2 |
+| Rejection by physical safety envelope | I2a | [`15`](15-target-architecture.md) §4.2 |
+| Event trigger call source (`call_source = "trigger"`, TSK-N6-*) | I4a | [`15`](15-target-architecture.md) §4.2 |
 | Multi-node intent and communication loss | I14 | [`15`](15-target-architecture.md) §4.3 |
-| Vision facts | I15 | [`15`](15-target-architecture.md) §4.4 |
+| Vision facts | I2a, I3a | [`15`](15-target-architecture.md) §4.4 |

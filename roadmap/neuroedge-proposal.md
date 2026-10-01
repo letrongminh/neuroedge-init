@@ -37,7 +37,7 @@
 
 6. [Mặt phẳng thương mại: Fleet OS](#6-mặt-phẳng-thương-mại-fleet-os)
 7. [Ứng dụng mẫu điển hình: AURA cho khách sạn & nghỉ dưỡng](#7-ứng-dụng-mẫu-điển-hình-aura-cho-khách-sạn--nghỉ-dưỡng)
-8. [Lộ trình phát triển sản phẩm](#8-lộ-trình-phát-triển-sản-phẩm)
+8. [Các khối sản phẩm và năng lực](#8-các-khối-sản-phẩm-và-năng-lực)
 9. [Ranh giới sản phẩm và ma trận đánh đổi](#9-ranh-giới-sản-phẩm-và-ma-trận-đánh-đổi)
 
 **Phần IV — Đánh giá cạnh tranh & Quản trị rủi ro**
@@ -235,7 +235,7 @@ Chiến lược phân phối của NeuroEdge — mã nguồn công khai, miễn 
 | Trực quan, dễ lan tỏa | Bản demo tương tác giọng nói với vi điều khiển và cơ cấu chấp hành chuyển động rõ ràng, ấn tượng. |
 | Người dùng là người quyết định | Maker và kỹ sư tự cài đặt, trải nghiệm trong vài phút cho mục đích cá nhân, học tập hay nghiên cứu mà không cần qua quy trình mua sắm; dùng trong doanh nghiệp cần license thương mại (`LICENSING.md`). |
 
-**NeuroEdge phân phối framework dưới dạng source-available, nhưng tài sản chuẩn hóa cốt lõi là ba đặc tả mở: lược đồ gate, lược đồ vết ghi JSON, và Gated Tool Profile** — ngữ nghĩa của một tool call tới thiết bị vật lý, đặt trên đường truyền MCP sẵn có thay vì phát minh giao thức mới ([`docs/spec/tool_calling.md`](docs/spec/tool_calling.md)). Framework có thể có nhiều biến thể, nhưng chuẩn lược đồ mô tả độ an toàn vật lý và quy trình kiểm thử CI đi kèm sẽ tạo nên hiệu ứng tiêu chuẩn công nghiệp lâu dài.
+**NeuroEdge phân phối framework dưới dạng source-available, nhưng tài sản chuẩn hóa cốt lõi là ba đặc tả mở: lược đồ gate, lược đồ vết ghi JSON, và Gated Tool Profile** — ngữ nghĩa của một tool call tới thiết bị vật lý, đặt trên đường truyền MCP sẵn có thay vì phát minh giao thức mới ([`docs/spec/tool_calling.md`](../docs/spec/tool_calling.md)). Framework có thể có nhiều biến thể, nhưng chuẩn lược đồ mô tả độ an toàn vật lý và quy trình kiểm thử CI đi kèm sẽ tạo nên hiệu ứng tiêu chuẩn công nghiệp lâu dài.
 
 Toàn bộ HAL, Action Contract Engine, Voice pipeline và Action CI miễn phí cho mục đích phi thương mại, nên maker và người nghiên cứu không gặp rào cản nào; doanh nghiệp dùng thương mại cần license thương mại. Chuẩn — lược đồ, đặc tả, bộ kiểm thử tuân thủ — mở theo Apache-2.0, nên bên thứ ba tự hiện thực và tự kiểm chứng được mà không cần license của NeuroEdge (Q-45, `LICENSING.md`).
 
@@ -402,7 +402,7 @@ Mỗi môi trường được mô tả theo năm tiêu chí dưới đây:
 
 #### Mô phỏng theo tầng — mượn công cụ chuẩn, không tự viết emulator *(Q-21)*
 
-Không một bộ mô phỏng nào phủ cả năm nguyên thủy trên cả ba target. Ô nào (nguyên thủy × target) do task nào phủ, và phần nào chỉ kiểm được trên bo mạch: [`docs/spec/simulation_coverage.md`](docs/spec/simulation_coverage.md). Mỗi tầng kiểm thử dùng công cụ mở đã được cộng đồng kiểm chứng cho đúng phần nó làm tốt, và ghi rõ phần nó **không** kiểm được — phần đó rơi xuống tầng dưới, cuối cùng là bo mạch thật. Giấy phép và phiên bản từng công cụ: Phụ lục H.4.
+Không một bộ mô phỏng nào phủ cả năm nguyên thủy trên cả ba target. Ô nào (nguyên thủy × target) do task nào phủ, và phần nào chỉ kiểm được trên bo mạch: [`docs/spec/simulation_coverage.md`](../docs/spec/simulation_coverage.md). Mỗi tầng kiểm thử dùng công cụ mở đã được cộng đồng kiểm chứng cho đúng phần nó làm tốt, và ghi rõ phần nó **không** kiểm được — phần đó rơi xuống tầng dưới, cuối cùng là bo mạch thật. Giấy phép và phiên bản từng công cụ: Phụ lục H.4.
 
 | Tầng kiểm thử | Công cụ | Kiểm được | Không kiểm được | Chạy khi |
 |:---|:---|:---|:---|:---|
@@ -450,7 +450,7 @@ Phân tầng không nới lỏng nguyên tắc: hệ quả kỹ thuật **"khôn
 
 Lớp trừu tượng phần cứng (HAL) của NeuroEdge không phải là phép thỏa hiệp theo mẫu số chung nhỏ nhất giữa các loại vi mạch. Đây là **hợp đồng kiểm tra hai chiều (two-way capability contract)**: Phần cứng khai báo năng lực cung cấp, Agent khai báo tài nguyên cần sử dụng; mọi điểm không tương thích đều được phát hiện và cảnh báo sớm ngay **tại thời điểm biên dịch (build-time)**.
 
-Hệ thống chuẩn hóa thành 5 nguyên thủy cơ bản. Tập này **đóng cho v1.x**; mở rộng chỉ qua RFC (PRD FR-HAL-01) — ví dụ `vision.in` ở Giai đoạn 2 và `motion.*` của hướng robot phân tầng (PRD Q-32):
+Hệ thống chuẩn hóa thành 5 nguyên thủy cơ bản. Tập này **đóng cho v1.x**; mở rộng chỉ qua RFC (PRD FR-HAL-01). Bốn gói nguyên thủy mở rộng tuỳ chọn theo bo mạch (cảm biến, PWM, `vision.in`, `motion.*`) vào v1.0 theo PRD Q-53 và FR-HAL-08, không thuộc bảng năm nguyên thủy này:
 
 | Nguyên thủy | Chức năng kỹ thuật | Hiện thực hóa điển hình |
 |:---|:---|:---|
@@ -558,7 +558,7 @@ client MCP (Claude, IDE…) ───┤  mcp — neuroedge mcp serve
 
 MCP chạy **hai chiều**. Agent bên ngoài gọi *vào* thiết bị qua `neuroedge mcp serve`; còn System 2 của chính agent là một **MCP host** gọi *ra*: tool của thiết bị qua MCP server của chính agent (nên vẫn qua gate), và MCP server bên ngoài — tin tức, lịch, tra cứu — **chỉ để lấy thông tin**, kết quả là dữ liệu không tin cậy (Q-27).
 
-Đường truyền theo đúng chuẩn của hệ sinh thái (MCP, function calling OpenAI, JSON Schema), nên agent nào gọi được tool thì gọi được thiết bị NeuroEdge. Phần NeuroEdge quy định — và là tài sản chuẩn thứ ba (§1.5) — là ngữ nghĩa giữa tool call và hiệu ứng vật lý: ba trạng thái kết quả, nguồn gọi là dữ kiện tin cậy, chỉ người xác nhận `ask` (Q-26), ràng buộc tham số trong gate (Q-25), và vết ghi replay được. Đặc tả chuẩn tắc: **Gated Tool Profile**, [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md).
+Đường truyền theo đúng chuẩn của hệ sinh thái (MCP, function calling OpenAI, JSON Schema), nên agent nào gọi được tool thì gọi được thiết bị NeuroEdge. Phần NeuroEdge quy định — và là tài sản chuẩn thứ ba (§1.5) — là ngữ nghĩa giữa tool call và hiệu ứng vật lý: ba trạng thái kết quả, nguồn gọi là dữ kiện tin cậy, chỉ người xác nhận `ask` (Q-26), ràng buộc tham số trong gate (Q-25), và vết ghi replay được. Đặc tả chuẩn tắc: **Gated Tool Profile**, [`docs/spec/tool_calling.md`](../docs/spec/tool_calling.md).
 
 ### 3.6 Trừu tượng hóa mô hình AI (Model Abstraction)
 
@@ -858,7 +858,7 @@ Ba ràng buộc an toàn bắt buộc từ decorator `@action`:
 | 2 | Năng lực khai báo tại `requires` tham gia đối chiếu tự động lúc biên dịch | Dừng quá trình build, chặn nạp firmware (§4.9) |
 | 3 | Tham số `gate` phải khớp với cổng an toàn đã khai báo trong `agent.toml` | Dừng quá trình build |
 
-**Mỗi `@action` là một tool (Q-24).** Chữ ký hàm sinh ra schema của tool; ngữ pháp cục bộ, System 1/2 và client MCP gọi nó bằng cùng một tool call qua cùng gate (§3.5). Quy tắc đầy đủ: [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md).
+**Mỗi `@action` là một tool (Q-24).** Chữ ký hàm sinh ra schema của tool; ngữ pháp cục bộ, System 1/2 và client MCP gọi nó bằng cùng một tool call qua cùng gate (§3.5). Quy tắc đầy đủ: [`docs/spec/tool_calling.md`](../docs/spec/tool_calling.md).
 
 Hệ thống ngoại lệ an toàn chuẩn mực:
 
@@ -1044,7 +1044,7 @@ Quy trình kiểm thử tự động trên biến các cam kết an toàn thành
 
 ### 4.8 Giao diện dòng lệnh (CLI Surface)
 
-Bề mặt lệnh chuẩn tắc — nhóm lệnh, hợp đồng mã thoát, tiêu chí nghiệm thu: **[PRD §7.2](neuroedge-prd.md#72-giao-diện-dòng-lệnh-fr-cli)** (FR-CLI). Lệnh cụ thể và đầu ra kỳ vọng: [`CHANGELOG.md`](CHANGELOG.md) §2. Mục này chỉ nêu lựa chọn thiết kế.
+Bề mặt lệnh chuẩn tắc — nhóm lệnh, hợp đồng mã thoát, tiêu chí nghiệm thu: **[PRD §7.2](neuroedge-prd.md#72-giao-diện-dòng-lệnh-fr-cli)** (FR-CLI). Lệnh cụ thể và đầu ra kỳ vọng: [`CHANGELOG.md`](../CHANGELOG.md) §2. Mục này chỉ nêu lựa chọn thiết kế.
 
 **Nền tảng hiện thực CLI:** xây trên **Typer** cho định nghĩa lệnh, **Rich** cho hiển thị và báo lỗi có cấu trúc. Khuôn mẫu dự án của `neuroedge new` là **generator Python thuần** trong gói — không dùng Copier, vì nó kéo theo `jinja2-ansible-filters` GPL3 (TSK-S3-07).
 
@@ -1207,7 +1207,7 @@ Mọi vướng mắc kỹ thuật phát sinh trong quá trình vận hành AURA 
 
 ## 8. Các khối sản phẩm và năng lực
 
-Lộ trình được cấu trúc thành các khối công việc kỹ thuật, giai đoạn đệm cộng đồng và các cột mốc xác thực thị trường định lượng. **Quy tắc kỷ luật thực thi: Mọi sự chuyển giao giữa các khối đều là milestone-gated (phụ thuộc vào kết quả kiểm chứng thực tế), tuyệt đối không chạy theo lịch cố định trên giấy.** Các khối dưới đây được thực thi thành increment `I0…I18`; thứ tự, phụ thuộc, sơ đồ phụ thuộc và ngày dự báo chỉ nằm ở [`neuroedge-roadmap.md` §0.2](neuroedge-roadmap.md#02-bảng-increment-increment-matrix) và [§2.1](neuroedge-roadmap.md#21-đồ-thị-phụ-thuộc) (PRD Q-39).
+Lộ trình được cấu trúc thành các khối công việc kỹ thuật, giai đoạn đệm cộng đồng và các cột mốc xác thực thị trường định lượng. **Quy tắc kỷ luật thực thi: Mọi sự chuyển giao giữa các khối đều là milestone-gated (phụ thuộc vào kết quả kiểm chứng thực tế), tuyệt đối không chạy theo lịch cố định trên giấy.** Các khối dưới đây được thực thi thành increment `I0…I18` (kèm I2a, I2b, I3a, I4a, I5a); MVP là v1.0 đầy đủ, một lần ra mắt, trượt thì dời ngày chứ không cắt phạm vi (PRD Q-52); thứ tự, phụ thuộc, sơ đồ phụ thuộc và ngày dự báo chỉ nằm ở [`neuroedge-roadmap.md` §0.2](neuroedge-roadmap.md#02-bảng-increment-increment-matrix) và [§2.1](neuroedge-roadmap.md#21-đồ-thị-phụ-thuộc) (PRD Q-39).
 
 ### 8.1 Khối 1a — Nền tảng logic và Trục kiểm thử Action CI (I0–I2)
 
@@ -1219,13 +1219,13 @@ neuroedge new my-agent
 neuroedge run --target sim
 ```
 
-Hạng mục bàn giao và kế hoạch thực thi: [`neuroedge-roadmap.md` §4.1–§4.3](neuroedge-roadmap.md#41-i0--lõi-hợp-đồng-trên-sim).
+Hạng mục bàn giao và kế hoạch thực thi: [`neuroedge-roadmap.md` §4.1–§4.3](neuroedge-roadmap.md#41-i0--lõi-hợp-đồng-trên-sim). Bốn gói nguyên thủy mở rộng trên `sim` và `linux` (I2a) và kit mẫu (I2b): PRD Q-52, Q-53; [`neuroedge-roadmap.md` §4.3.1–§4.3.2](neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux).
 
 ### 8.2 Khối 1b — Hiện thực hóa trên vi điều khiển biên (I3–I7)
 
 **Mục tiêu trọng tâm:** Chứng minh nguyên tắc tương đương môi trường trên vi điều khiển giá $5 với độ ổn định cao.
 
-Hạng mục bàn giao và kế hoạch thực thi: [`neuroedge-roadmap.md` §4.4–§4.8](neuroedge-roadmap.md#44-i3--gate-trên-box-3-thật) (I3–I7).
+Hạng mục bàn giao và kế hoạch thực thi: [`neuroedge-roadmap.md` §4.4–§4.8](neuroedge-roadmap.md#44-i3--gate-trên-box-3-thật) (I3–I7, gồm I3a, I4a, I5a). Bốn gói nguyên thủy mở rộng trên chip (I3a) và NeuroBrain (I4a, I5a) cũng thuộc khối này: PRD Q-53, Q-55.
 
 De-scope tường minh và thang cắt phạm vi: [`neuroedge-roadmap.md` §9](neuroedge-roadmap.md#9-thang-cắt-phạm-vi); trong đó đưa tool của thiết bị MCU ra MCP qua gateway thuộc increment I14 ([`neuroedge-roadmap.md` §7.4](neuroedge-roadmap.md#74-i14--robot-phân-tầng), TSK-P2-05).
 
@@ -1277,27 +1277,27 @@ Danh mục các sản phẩm tiềm năng trên sàn giao dịch:
 - **Bo mạch phần cứng được chứng nhận:** Phân phối qua kênh đối tác phần cứng liên kết.
 - **Dịch vụ chuyên gia:** Khảo sát, tích hợp và triển khai hệ thống an toàn tại chỗ cho doanh nghiệp.
 
-### 8.9 Giai đoạn 2 — Perception thị giác và phủ rộng phần cứng (I11, I13, I15–I18)
+### 8.9 Giai đoạn 2 — Perception thị giác và phủ rộng phần cứng (I11, I13, I16–I18; thị giác trên `sim`, `linux`, `esp32s3` đã vào MVP)
 
-**Mục tiêu:** mở rộng tầng nhận thức từ thoại sang thị giác, và mở rộng danh mục phần cứng từ ba target lên sáu — **mà không đụng tới tầng an toàn hành động**. Thiết kế: `neuroedge-design-phase2.md`; kế hoạch thực thi: `neuroedge-roadmap.md` §7.
+**Mục tiêu:** phủ rộng danh mục phần cứng từ ba target lên sáu, và đưa thị giác lên `jetson` — **mà không đụng tới tầng an toàn hành động**. Thiết kế: `neuroedge-design-phase2.md`; kế hoạch thực thi: `neuroedge-roadmap.md` §7.
 
-Giai đoạn 2 **chạy song song Khối 4**, không nối tiếp: AURA triển khai thực địa ở khách sạn chính là nơi sinh ra nhu cầu camera đo được, tức là nguồn dữ liệu PF-3 cho chính thị giác. Kích hoạt vẫn milestone-gated, không theo lịch.
+Thị giác cơ bản (`vision.in` trên `sim`, `linux`, `esp32s3`) không còn chờ nhu cầu camera: nó là một trong bốn gói nguyên thủy mở rộng của v1.0 (PRD Q-53, Q-54). Phần còn lại của Giai đoạn 2 **chạy song song Khối 4**, không nối tiếp, và vẫn milestone-gated, không theo lịch.
 
-Trọng tâm từng khối và điều kiện kích hoạt: [`neuroedge-roadmap.md` §7](neuroedge-roadmap.md#7-hướng-mở-rộng-sau-beta-i11i18).
+Trọng tâm từng khối và điều kiện kích hoạt (thị giác trong MVP: §4.3.1 và §4.4.1): [`neuroedge-roadmap.md` §7](neuroedge-roadmap.md#7-hướng-mở-rộng-sau-beta-i11-i13-i14-i16i18).
 
 **Hai ranh giới không được vượt trong Giai đoạn 2:**
 
 1. **Tầng an toàn không đổi.** Gate engine, cơ chế fail-closed, Action CI và năm nguyên tắc kế thừa (Phụ lục B.5) giữ nguyên. Thị giác là đầu vào nhận thức (L2), không phải thẩm quyền phán quyết (L3).
-2. **Thị giác chưa được làm căn cứ trực tiếp cho phán quyết actuator.** Ngữ nghĩa gate lượng giá trên bằng chứng thị giác là bài toán mở, cần một RFC riêng (xem RFC-0002 §9). Cho tới khi có nó, kết quả thị giác chỉ dùng làm thông tin ngữ cảnh.
+2. **Gate không có ngữ nghĩa riêng cho thị giác và không nhận điểm ảnh.** Ngữ nghĩa gate lượng giá trực tiếp trên bằng chứng thị giác vẫn là bài toán mở (RFC-0002 §9); PRD Q-54 đi vòng: maker tự khai dữ kiện từ nhãn model, gate khoá ngưỡng tin cậy bằng tiêu chí số.
 
 *Hướng robot phân tầng (§8.11) thêm một tầng an toàn robot di động — giới hạn tốc độ, vùng cấm, gate trên mọi lệnh tốc độ (PRD Q-34) — qua RFC riêng. Nó nằm ngoài Giai đoạn 2 và không nới tầng an toàn có sẵn.*
 
 **Thay đổi trọng tâm so với các khối trước:** P1 không phải là "đội lõi port lên STM32 và RP2350", mà là **xuất bản bộ công cụ để cộng đồng tự port** *(ngoại lệ duy nhất: RP2350 làm node thứ hai của robot phân tầng, do đội lõi port — PRD Q-33, §8.11)*. Đây là khác biệt quyết định giữa phủ rộng phần cứng và dàn trải nguồn lực — và là lý do hạng mục này vượt được bộ lọc PF-1 (§2).
 
 
-### 8.10 NeuroBrain — bring-up phần cứng bằng hội thoại (I12)
+### 8.10 NeuroBrain — bring-up phần cứng bằng hội thoại (I4a, I5a)
 
-*"NeuroBrain — Build Physical AI by conversation, under contract"* (PRD Q-31): kỹ sư bring-up một bo mạch mới bằng hội thoại, mỗi lệnh chạm chân vẫn đi qua gate, và bản nháp gate sinh ra phải được người duyệt khoá lại trước khi dùng. Làm **sau Developer Beta** (PRD Q-40) để không giành công của đường găng v1.0. Thiết kế: `neuroedge-design-neurobrain.md`; task, tiêu chí ra và ngày: `neuroedge-roadmap.md` I12.
+*"NeuroBrain — Build Physical AI by conversation, under contract"* (PRD Q-31): kỹ sư bring-up một bo mạch mới bằng hội thoại, mỗi lệnh chạm chân vẫn đi qua gate, và bản nháp gate sinh ra phải được người duyệt khoá lại trước khi dùng. Nằm trong MVP (PRD Q-55, thay phần thứ tự của Q-40), phủ bốn gói nguyên thủy mở rộng. Thiết kế: `neuroedge-design-neurobrain.md`; task, tiêu chí ra và ngày: `neuroedge-roadmap.md` I4a (§4.5.1) và I5a (§4.6.1).
 
 ### 8.11 Robot phân tầng (I14)
 
@@ -1314,7 +1314,7 @@ Vì sao từng hạng mục bị loại hoặc hoãn. Trạng thái, tiêu chí 
 | **Marketplace thương mại có thu phí** | **Đánh đổi:** Chưa tạo doanh thu hoa hồng sớm.<br>**Lợi ích:** Tránh lãng phí tài nguyên xây dựng một sàn giao dịch khi cộng đồng chưa có nhu cầu trao đổi thực tế. |
 | **Thanh toán tự động giữa các agent (Agent-to-agent pay)** | **Đánh đổi:** Tạm gác lại một xu hướng công nghệ mới nổi.<br>**Lợi ích:** Loại bỏ hoàn toàn gánh nặng xin giấy phép tài chính và nghĩa vụ phòng chống rửa tiền phức tạp. |
 | **Chương trình chứng nhận phần cứng có thu phí** | **Đánh đổi:** Bỏ qua một nguồn thu nhỏ ban đầu.<br>**Lợi ích:** Tránh cam kết chất lượng khi tổ chức chưa hoàn thiện quy trình kiểm chuẩn độc lập. |
-| **Thị giác máy tính chuyên sâu (Camera, NPU)** | **Đánh đổi:** Thị giác không rút ngắn TTFV nên không thỏa PF-1; hiện thực đầy đủ ngay sẽ kéo dài trải nghiệm 10 phút đầu.<br>**Lợi ích:** Danh sách target mở trước (RFC-0002, nới lỏng lược đồ). Nguyên thủy `vision.in` và bằng chứng thị giác trong vết ghi chỉ chốt ở V1b, khi có camera thật: chốt hợp đồng tham số khi chưa có phần cứng là đoán, và sửa về sau là siết chặt. Phần hiện thực chờ nhu cầu đo được từ khách hàng AURA. TTFV của thoại và điều khiển vẫn giữ dưới 10 phút. |
+| **Thị giác máy tính chuyên sâu (Camera, NPU)** | **Đánh đổi:** Thị giác không rút ngắn TTFV nên không thỏa PF-1; hiện thực đầy đủ ngay sẽ kéo dài trải nghiệm 10 phút đầu.<br>**Lợi ích:** Danh sách target mở trước (RFC-0002, nới lỏng lược đồ). Nguyên thủy `vision.in` và bằng chứng thị giác trong vết ghi chốt ở V1b, khi có camera thật (RFC-0012): chốt hợp đồng tham số khi chưa có phần cứng là đoán, và sửa về sau là siết chặt. Phần hiện thực cơ bản đã vào v1.0 (PRD Q-53, Q-54), không còn chờ nhu cầu đo được từ khách hàng AURA; thị giác chuyên sâu (NPU, `jetson`) vẫn ở Giai đoạn 2. TTFV của thoại và điều khiển vẫn giữ dưới 10 phút. |
 | **Hỗ trợ thêm Jetson** | **Đánh đổi:** Mở rộng danh mục phần cứng làm tăng bề mặt bảo trì của đội lõi.<br>**Lợi ích:** Phân tầng bậc giữ nguyên tắc tương đương mà không pha loãng cam kết: bậc 1 vẫn là nơi mọi ngưỡng chất lượng trỏ tới, Jetson ở bậc 2 chỉ cam kết miền phán quyết. Điều kiện kích hoạt vẫn là nhu cầu đo được từ khách hàng thật. |
 | **Tự phát triển dẫn đường tự hành (SLAM, tránh vật cản, drone)** | **Đánh đổi:** NeuroEdge không tự có năng lực robot di động.<br>**Lợi ích:** Dẫn đường là bài toán đã có lời giải mở (ROS 2, Nav2); NeuroEdge tích hợp nguyên bản và chỉ gate lệnh tốc độ (PRD Q-34), không gánh một tầng thuật toán ngoài năng lực lõi. |
 | **Chuẩn Matter, Apple HomeKit** | **Đánh đổi:** Chưa tích hợp vào hai hệ sinh thái nhà thông minh lớn.<br>**Lợi ích:** Đây là bài toán giao thức ứng dụng, không phải bài toán tương đương môi trường; tách khỏi việc mở rộng target giúp cả hai việc gọn hơn. |
@@ -1360,7 +1360,7 @@ Phân tích đặc điểm kiến trúc và động cơ phát triển của sáu
 | **MHS** *(Anthropic)* — [Anthropic](https://www.anthropic.com/news/model-hardware-standard-research-preview) · [spec](https://www.modelhardwarestandard.com/) · [WIRED](https://www.wired.com/story/anthropic-standard-ai-agents-coming-to-the-physical-world) | Chuẩn hóa driver + tag mô tả đặc tính thiết bị bằng ngôn ngữ tự nhiên; giới hạn an toàn do driver thực thi, có phê duyệt người cho việc rủi ro cao (đang xây); đối tác thật (Genentech, UW, CMU, HHMI Janelia). | Không nhắm MCU hay môi trường mô phỏng trung lập; research preview chưa công bố schema/giấy phép; không có policy có phiên bản/kế thừa, Action CI hay định dạng vết ghi. |
 | **DCP** — [arXiv](https://arxiv.org/abs/2605.26159) · [GitHub](https://github.com/device-context-protocol/dcp) | Đã đo trên phần cứng thật (ESP32/ESP8266), frame dưới 50 byte, Bridge là ranh giới tin cậy duy nhất, HMAC capability token; benchmark 675 lượt gọi: chặn 100% leo thang quyền, 78% prompt injection (MCP thô 0–1%); MIT. | Không có policy theo điều kiện hay kế thừa, không Action CI replay, không vết ghi; thiết bị chưa tự xác minh chữ ký; quy mô một tác giả. |
 
-*Bối cảnh, chưa phải phân tích cạnh tranh:* hai hàng MHS/DCP là thông tin thị trường cập nhật 2026-09-24 (`TODOS.md` #32); §10 chỉ chuyển thành phân tích cạnh tranh khi cổng nhu cầu 2026-10-25 đạt ≥ 10 cuộc nêu giải pháp hiện tại ([`docs/business/cong-nhu-cau-2026-10-25/README.md`](docs/business/cong-nhu-cau-2026-10-25/README.md), C7).
+*Bối cảnh, chưa phải phân tích cạnh tranh:* hai hàng MHS/DCP là thông tin thị trường cập nhật 2026-09-24 (`TODOS.md` #32); §10 chỉ chuyển thành phân tích cạnh tranh khi bộ phỏng vấn (nay chỉ là đầu vào thông tin, Q-56) có ≥ 10 cuộc nêu giải pháp hiện tại; rà lại trước I6 ([`docs/business/cong-nhu-cau-2026-10-25/README.md`](../docs/business/cong-nhu-cau-2026-10-25/README.md), C7).
 
 ### 10.2 Ba khác biệt cốt lõi có tính phòng thủ
 
@@ -1426,7 +1426,7 @@ Vì sao: 0 brick trên 1.000 thiết bị là điều kiện để doanh nghiệ
 | **Tiến độ đạt các cột mốc xác thực** | Báo cáo minh bạch **từng chỉ số G1–G4 riêng biệt**, không dùng giá trị trung bình | Chuẩn bị đầy đủ cơ sở dữ liệu thực chứng cho việc kích hoạt Khối 5. |
 | **Hiệu quả kinh tế cho khách hàng** | Có ít nhất 1 nghiên cứu điển hình (case study) đo lường được hiệu quả: giảm chi phí bảo trì thực địa, giảm tỷ lệ hàng lỗi hoặc rút ngắn thời gian tích hợp | Kiểm chứng giá trị kinh tế thực tế (§1.8) trên số liệu thực chứng của khách hàng. |
 
-### 12.4 Giai đoạn 2 — Thị giác và phủ rộng phần cứng (đo khi I15–I18 đóng)
+### 12.4 Giai đoạn 2 — Thị giác và phủ rộng phần cứng (đo khi I16–I18 đóng)
 
 | # | Chỉ số hiệu suất | Ngưỡng cam kết | Ý nghĩa thực tiễn |
 |:---:|:---|:---|:---|
@@ -1561,7 +1561,7 @@ flowchart TD
 
 ### B.6 Ràng buộc tham số (`arguments`) — *RFC-0005, Q-25*
 
-> Chuẩn tắc từ 2026-09-24 ([`docs/rfc/0005-rang-buoc-tham-so-trong-gate.md`](docs/rfc/0005-rang-buoc-tham-so-trong-gate.md)).
+> Chuẩn tắc từ 2026-09-24 ([`docs/rfc/0005-rang-buoc-tham-so-trong-gate.md`](../docs/rfc/0005-rang-buoc-tham-so-trong-gate.md)).
 > Mã: `python/neuroedge/engine/arguments.py`.
 
 Khi hành động đến từ LLM hoặc client MCP, mô hình chọn cả tham số. Gate khai giới hạn cho
@@ -1579,7 +1579,7 @@ mặc định của hàm — trước mọi tiêu chí, không hỏi mô hình, 
 Gate con chỉ thu hẹp khoảng hoặc tập giá trị; không nhắc lại là kế thừa, nên không bỏ được
 ràng buộc của cha — cùng hình dạng với nguyên tắc 2 và 4 của B.5. `neuroedge build` từ chối
 giới hạn trên tham số mà `@action` không có, hoặc khác kiểu. Giới hạn
-đi vào `inputSchema` của tool để mô hình thấy trước ([`docs/spec/tool_calling.md`](docs/spec/tool_calling.md) §3).
+đi vào `inputSchema` của tool để mô hình thấy trước ([`docs/spec/tool_calling.md`](../docs/spec/tool_calling.md) §3).
 
 ---
 
@@ -1587,7 +1587,7 @@ giới hạn trên tham số mà `@action` không có, hoặc khác kiểu. Gi�
 
 ### C.1 Sáu nhóm sự kiện trong tệp vết
 
-Tên sự kiện cụ thể cho từng nguyên thủy HAL (`sensor_read`, `display_frame`, `audio_in_segment`…) và vai trò của chúng khi replay: [`docs/spec/simulation_coverage.md`](docs/spec/simulation_coverage.md) §3.
+Tên sự kiện cụ thể cho từng nguyên thủy HAL (`sensor_read`, `display_frame`, `audio_in_segment`…) và vai trò của chúng khi replay: [`docs/spec/simulation_coverage.md`](../docs/spec/simulation_coverage.md) §3.
 
 | Nhóm sự kiện | Dữ liệu ghi nhận chi tiết |
 |:---|:---|
@@ -1630,11 +1630,11 @@ Quá trình đối chiếu Golden trả lời chính xác câu hỏi: **Với c�
 | STM32 (dòng H7 / U5) | Vi điều khiển công nghiệp Cortex-M | ~$5–$20 | **Bậc 3 — Cộng đồng** (`stm32`, Giai đoạn 2 §8.9) |
 | Raspberry Pi RP2350 | Vi điều khiển Cortex-M33 lõi kép, giá cực thấp | ~$1–$8 | **Bậc 3 — Cộng đồng** (`rp2350`, Giai đoạn 2 §8.9); node robot do đội lõi port (PRD Q-33) |
 
-**Phần cứng thị giác bổ trợ** *(Giai đoạn 2, dùng kèm `linux` hoặc `jetson`)*:
+**Phần cứng thị giác bổ trợ** *(camera vào v1.0 theo PRD Q-53, dùng kèm `linux` hoặc bo ESP32-S3 có camera; NPU và `jetson` ở Giai đoạn 2)*:
 
 | Thành phần | Vai trò | Mức giá tham khảo | Trạng thái hỗ trợ |
 |:---|:---|:---:|:---|
-| Camera USB / CSI | Nguồn khung hình cho nguyên thủy `vision.in` | ~$20–$40 | Giai đoạn 2 (§8.9) |
+| Camera USB / CSI | Nguồn khung hình cho nguyên thủy `vision.in` | ~$20–$40 | v1.0 (PRD Q-53) |
 | Hailo-8 / Hailo-8L | Bộ tăng tốc NPU gắn ngoài cho Raspberry Pi 5 | ~$60–$110 | Giai đoạn 2 (§8.9) |
 | Google Coral Edge TPU | Bộ tăng tốc NPU chi phí thấp | ~$25–$60 | Giai đoạn 2 (§8.9) |
 
@@ -1687,7 +1687,7 @@ Tham chiếu từ các nguyên lý phát triển sản phẩm nền tảng: Mọ
 
 ## Phụ lục F — Từ điển thuật ngữ
 
-Định nghĩa thuật ngữ và giải mã mọi ký hiệu: **[`docs/user/thuat-ngu.md`](docs/user/thuat-ngu.md)** — nơi duy nhất.
+Định nghĩa thuật ngữ và giải mã mọi ký hiệu: **[`docs/user/thuat-ngu.md`](../docs/user/thuat-ngu.md)** — nơi duy nhất.
 
 ---
 

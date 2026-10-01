@@ -15,7 +15,7 @@ Everything else has one home in the repository root, and this page only points t
 | Set up, run the tests, every command and its expected output | [`CHANGELOG.md` §2](../CHANGELOG.md#2-cách-vận-hành) |
 | What lives where (this package included) | [`CONTRIBUTING.md` §6](../CONTRIBUTING.md#6-cấu-trúc-kho) |
 | How to contribute, and what needs an RFC | [`CONTRIBUTING.md`](../CONTRIBUTING.md) |
-| Architecture, requirements, plan | [`neuroedge-proposal.md`](../neuroedge-proposal.md) · [`neuroedge-prd.md`](../neuroedge-prd.md) · [`neuroedge-roadmap.md`](../neuroedge-roadmap.md) |
+| Architecture, requirements, plan | [`neuroedge-proposal.md`](../roadmap/neuroedge-proposal.md) · [`neuroedge-prd.md`](../roadmap/neuroedge-prd.md) · [`neuroedge-roadmap.md`](../roadmap/neuroedge-roadmap.md) |
 
 Quick start from a checkout:
 

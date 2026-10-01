@@ -200,7 +200,7 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
 - **Enforcement.** `LICENSE`, `LICENSING.md`, `test_packaging.py`.
 
 ### Q-39 · Roadmap by increment
-- **Decision.** One roadmap, measured in increments I0…I18, each increment with one forecast date, one
+- **Decision.** One roadmap, measured in increments I0…I18 (adding I2a, I2b, I3a, I4a, I5a; dropping I12 and I15 — Q-52), each increment with one forecast date, one
   tag and one measurement signal; no external release before I6.
 - **Enforcement.** `neuroedge-roadmap.md` §0.2; `test_plan_contract.py`.
 
@@ -229,8 +229,12 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
 | Q-34 | **Context:** Mobile robots need navigation and obstacle avoidance, but NeuroEdge does not redevelop SLAM/navigation itself. **Decision:** Native integration of ROS 2 and Nav2 via adapters at the gate boundary; gate evaluates every velocity command (`cmd_vel`), even when Nav2 is autonomously navigating. | Establishes a new mobile robot safety tier (10–20 Hz cycle gate, forbidden zones); requires a mobile robot safety RFC and survey of question C6 from robot buyers (Q-38, `TODOS.md` #40); [`15`](15-target-architecture.md) §4.3 |
 | Q-35 | Every actuator declares its safe state on loss of communication; no declaration means stop | Needs an RFC for the declaration field |
 | Q-36 | Zenoh-pico on the MCU, `zenohd` on the Pi; spike with pass/fail thresholds, micro-ROS is plan B | Node RFC draft |
-| Q-37 | Time-limited lease tokens for `motion.*` (channel, maximum amplitude, short TTL), renewed through each gated command | Different from today's one-time token; needs an RFC-motion |
-| Q-40 | **Context:** Multiple post-Beta expansion directions (NeuroBrain, layered robotics, vision, community ports) risk diluting core team resources without prioritization. **Decision:** Post-Beta expansion sequence anchored on dependencies: open target list (I11) → NeuroBrain (I12) → community porting kit (I13) → layered robotics (I14); vision (I15–I17) awaits measured camera demand; ecosystem (I18) after I13 and Registry. | Protects the v1.0 critical path and V2 effort (R-7); NeuroBrain moved post-Developer Beta to I12; [`15`](15-target-architecture.md) §4 |
+| Q-37 | Time-limited lease tokens for `motion.*` (channel, maximum amplitude, short TTL), renewed through each gated command | Different from today's one-time token; needs RFC-0011 |
+| Q-40 | **Context:** Multiple post-Beta expansion directions (NeuroBrain, layered robotics, vision, community ports) risk diluting core team resources without prioritization. **Decision:** Post-Beta expansion sequence anchored on dependencies: open target list (I11) → community porting kit (I13) → layered robotics (I14); ecosystem (I18) after I13 and Registry. *(Amended 2026-09-30: the NeuroBrain part is replaced by Q-55 — in the MVP at I4a, I5a; basic vision is replaced by Q-53 — in the MVP at I2a, I3a; I12 and I15 are no longer increments.)* | Protects the v1.0 critical path and V2 effort (R-7) — now per Q-52 by moving the date rather than cutting scope; [`15`](15-target-architecture.md) §4 |
+| Q-52 | **MVP = the full v1.0**, one launch; if it slips the date moves, scope is not cut; four phases P0 → MVP → Beta and commercial → expansion (`neuroedge-prd.md` §15) | The roadmap adds I2a, I2b, I3a, I4a, I5a; acceptance A1–A12; planning assumes full staffing V1–V7 |
+| Q-53 | Four extension primitive packs (sensors, PWM, vision, motion) mandatory on all three tier-1 targets, optional per board | Six RFCs (RFC-0007, RFC-0009 → RFC-0013); adds an ESP32-S3 camera board and the `sim-rpi5` profile |
+| Q-54 | Vision enters the gate as maker-declared facts; the gate locks the confidence threshold with the `numeric` criterion | No vision-specific gate semantics; traces carry no raw images |
+| Q-55 | NeuroBrain in the MVP on all three targets, covering the four primitive packs | I4a (host) and I5a (chip); replaces the NeuroBrain ordering of Q-40 |
 
 ## 6. RFCs
 
@@ -242,8 +246,13 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
 | [0004](../../rfc/0004-ke-thua-budget-on-block.md) | No loosening of `budget`, `on_block` on inheritance | Accepted, implemented | `gate_resolver.py` |
 | [0005](../../rfc/0005-rang-buoc-tham-so-trong-gate.md) | Argument limits in the gate | Accepted, implemented | `arguments.py`, `NETR` argument record |
 | [0006](../../rfc/0006-xac-nhan-ask-confirms.md) | `on_block.confirms` | Accepted, implemented | `confirmation.py`, `confirm_mask` |
-| 0007 | Reserved: `digital.in`, read-only I2C bus, envelope declaration in `board.v1` (TSK-N0-03, NeuroBrain). Read logic levels and scan lab bus without modifying `gate.v1` | **Not opened yet** (reserved); part of I12 | not yet |
+| [0007](../../rfc/0007-digital-in-i2c-analog-in-phong-bi.md) | `digital.in`, read-only I2C bus, `analog.in`, envelope declaration in `board.v1` (TSK-N0-03). Read logic levels and scan lab bus without modifying `gate.v1` | **Draft**, PR not opened yet (Q-53, Q-57 §9); part of I2a | not yet |
 | [0008](../../rfc/0008-vet-ghi-chuan-muc-mang-gate-digest.md) | Three normative traces bearing `gate_digest` in `trace.v1` — verification replay. Prevents undetectable replay of traces on gates whose safety semantics have changed | Accepted, implemented | `fixtures/traces/`, `verify`, `replay` |
+| [0009](../../rfc/0009-tieu-chi-so-numeric.md) | `numeric` criterion: `evaluate.type: numeric` in `gate.v1`, numeric comparison nodes in `NETR` and the C walker; lets gates check continuous numeric thresholds (pressure, temperature) rather than only enum `bool`/`level`/`choice` (TSK-W1-02, `TODOS.md` #30) | **Draft**, PR not opened yet (Q-53, Q-57 §9); part of I2a | not yet |
+| [0010](../../rfc/0010-pwm-trong-digital-out.md) | PWM (frequency, pulse width) and a state-feedback channel in `digital.out` (TSK-W1-01) | **Draft**, PR not opened yet (Q-53, Q-57 §9); part of I2a | not yet |
+| [0011](../../rfc/0011-nguyen-thuy-motion.md) | `motion.*` primitive (motor/servo), extended physical safety envelope, time-limited lease tokens (Q-37) and per-actuator safe states on loss of communication (Q-35) (TSK-W1-03) | **Draft**, PR not opened yet (Q-53, Q-57 §9); part of I2a | not yet |
+| [0012](../../rfc/0012-nguyen-thuy-vision-in.md) | `vision.in` primitive with hardware parameters (`fps`, `modes[]`, enum `pixel_format`), `[requires]` matching rules (RFC-0002 §9.1) and the trace privacy rule (TSK-V1b-07) | **Draft**, PR not opened yet (Q-53, Q-57 §9); part of I2a | not yet |
+| [0013](../../rfc/0013-nguyen-thuy-tuy-chon-va-nhieu-bo-tham-chieu.md) | Board-optional extension primitives; several reference boards for one tier-1 target (TSK-I2a-07) | **Draft**, PR not opened yet (Q-53, Q-57 §9); part of I2a | not yet |
 
 ### Planned unnumbered RFCs (planned RFCs)
 
@@ -251,12 +260,9 @@ Each RFC below resolves an architectural bottleneck for expansion stages, opened
 
 | Planned RFC | Capability and architectural purpose (Why needed) | Opening task | Stage |
 |:---|:---|:---|:---|
-| **RFC-numeric** | Adds `evaluate.type: numeric` in `gate.v1`, numeric comparison nodes in `NETR` and C walker; enables gates to check continuous numeric thresholds (pressure, temperature) rather than only enum `bool`/`level`/`choice` (`TODOS.md` #30) | TSK-W1-02 | I14 |
-| **RFC-motion** | Adds `motion.*` primitives (motor/servo), `analog.in`, expands the physical safety envelope, time-limited lease token mechanism (lease token, Q-37), and per-actuator safe states on loss of communication (Q-35) | TSK-W1-03 | I14 |
 | **RFC-node** | Specifies the multi-node coordination protocol on the wire (Zenoh-pico, Q-36), black channel structure, heartbeat-triggered safety on disconnect (Q-35), and multi-node trace unification in `trace.v1` (Q-32) | TSK-W3-02 | I14 |
 | **RFC-pin-extends** | Enables pinning gate inheritance by content hash `@<ver>#sha256:…` in `gate.v1`, upgrading `digests.lock` into a lockfile for inheritance chains; defends against gate substitution attacks on public Registries (`TODOS.md` #11, #15) | TSK-S3-21 | I10 |
-| **RFC vision.in** | Specifies the `vision.in` primitive with hardware parameters (`fps`, `modes[]`, enum `pixel_format`) and board capability matching rules `[requires]` (RFC-0002 §9.1) | TSK-V1b-07 | I15 |
-| **RFC visual-evidence gate semantics** | Defines gate semantics for visual evidence; until this RFC exists, vision results must go through a `SystemOne` returning `bool`/`level`/`choice` (`neuroedge-design-phase2.md` §2.2); prerequisite for multimodal gates | TSK-V3-04 | I17 |
+| **RFC visual-evidence gate semantics** | Defines dedicated gate semantics for visual evidence; until this RFC exists, vision enters the gate as maker-declared facts with the threshold locked by the `numeric` criterion (Q-54, `neuroedge-design-phase2.md` §2.2); prerequisite for multimodal gates | TSK-V3-04 | I17 |
 | **RFC mobile-robot safety** | Safety framework for mobile robots: maximum speed limits, forbidden navigation zones, 10–20 Hz real-time gate cycle, ROS 2 / Nav2 control flow integration (Q-34), and question C6 from robot buyers (Q-38, `TODOS.md` #40) | TSK-W4-07 | I14 |
 
 ## 7. Making a new architecture decision

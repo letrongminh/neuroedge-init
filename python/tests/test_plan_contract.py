@@ -1,5 +1,5 @@
 """
-Luật chống lệch của roadmap (`neuroedge-roadmap.md` §2.4, Q-39).
+Luật chống lệch của roadmap (`roadmap/neuroedge-roadmap.md` §2.4, Q-39).
 
 Roadmap là nơi duy nhất ghi trạng thái task, tiêu chí ra, dự báo, phụ thuộc và thẻ phát
 hành; ghi chú thiết kế không có chúng. Các test dưới đây giữ cho điều đó còn đúng sau mỗi
@@ -14,12 +14,13 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-ROADMAP = ROOT / "neuroedge-roadmap.md"
+DOCS = ROOT / "roadmap"
+ROADMAP = DOCS / "neuroedge-roadmap.md"
 DESIGN_NOTES = (
-    "neuroedge-design-neurobrain.md",
-    "neuroedge-design-phase2.md",
-    "draft-ke-hoach-mo-rong-robot-fofoca.md",
-    "draft-rfc-node-giao-thuc-dieu-phoi.md",
+    "roadmap/neuroedge-design-neurobrain.md",
+    "roadmap/neuroedge-design-phase2.md",
+    "roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md",
+    "docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md",
 )
 GLYPHS = "✅🟡⏳⏸🔴"
 DATE = re.compile(r"\b20\d\d-\d\d-\d\d\b")
@@ -139,7 +140,9 @@ def test_every_task_code_has_exactly_one_row() -> None:
 
 def test_every_cited_task_code_exists_in_the_roadmap() -> None:
     known = {row[0].strip("*") for row in ALL_TASKS}
-    places = [ROOT / p for p in (*DESIGN_NOTES, "TODOS.md", "neuroedge-prd.md", "CONTRIBUTING.md")]
+    places = [
+        ROOT / p for p in (*DESIGN_NOTES, "roadmap/neuroedge-prd.md", "TODOS.md", "CONTRIBUTING.md")
+    ]
     for folder in ("python", "scripts", "targets", ".github", "docs"):
         places += [
             p

@@ -298,8 +298,8 @@ sequenceDiagram
 | Luồng | Increment | Kiến trúc đích |
 |:---|:---|:---|
 | Lượt thoại trên chip | I5 | [`15`](15-target-architecture.md) §2.2 |
-| Từ chối do phong bì an toàn vật lý | I12 | [`15`](15-target-architecture.md) §4.2 |
-| Nguồn gọi kích hoạt từ sự kiện (`call_source = "trigger"`, TSK-N6-*) | I12 | [`15`](15-target-architecture.md) §4.2 |
+| Từ chối do phong bì an toàn vật lý | I2a | [`15`](15-target-architecture.md) §4.2 |
+| Nguồn gọi kích hoạt từ sự kiện (`call_source = "trigger"`, TSK-N6-*) | I4a | [`15`](15-target-architecture.md) §4.2 |
 | Ý định đa node và mất liên lạc | I14 | [`15`](15-target-architecture.md) §4.3 |
-| Dữ kiện thị giác | I15 | [`15`](15-target-architecture.md) §4.4 |
+| Dữ kiện thị giác | I2a, I3a | [`15`](15-target-architecture.md) §4.4 |
 
