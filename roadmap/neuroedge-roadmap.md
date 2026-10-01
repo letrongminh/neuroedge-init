@@ -61,9 +61,9 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | **Pha đang thực thi** | 🟡 **Phase MVP (§0.5)** — I1 đang mở; I2, I2a (sáu RFC), phần không cần bo mạch của I3 và I4 làm song song | Increment và ngày dự báo: §0.2 |
 | **Increment đang mở** | 🟡 **I1** — còn I1-02 (tạm hoãn: phát triển nội bộ) | I0 đã xong 42 / 42 · chi tiết §0.2 |
 | **Cột mốc tiếp theo** | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** | Ngày dự báo ở §0.2 · chưa phát hành ra ngoài (Q-39) |
-| **Lần cập nhật cuối** | **2026-10-01** | Phiên gần nhất: Q-58 → Q-60 — MCP qua mạng và Gated Tool Profile đóng băng vào I6, giữ PolyForm NC qua v1.0, mô hình một người + AI agent · trước đó: Q-52 → Q-57 (MVP = v1.0 đầy đủ, bốn gói nguyên thủy mở rộng, NeuroBrain vào MVP) · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Lần cập nhật cuối** | **2026-10-01** | Phiên gần nhất: sáu RFC nguyên thủy mở rộng chấp thuận (PR #75 → #80, Q-62); Q-61 bo camera M5Stack CoreS3; Q-58 → Q-60 — MCP qua mạng và Gated Tool Profile đóng băng vào I6, giữ PolyForm NC qua v1.0, mô hình một người + AI agent · trước đó: Q-52 → Q-57 (MVP = v1.0 đầy đủ, bốn gói nguyên thủy mở rộng, NeuroBrain vào MVP) · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
 | **Trạng thái CI Lõi** | ✅ **PASS 2479/2479 · SKIP 0** | `python/tests/` — 89 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 29/29 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `ui-golden` 66 ảnh, `ota-rollback` pha a–g · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
-| **Chặn ngoài tầm kỹ thuật** | 🟡 **3 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · bo camera đã chọn là M5Stack CoreS3 nhưng chưa đặt (Q-61, TSK-I3a-01) · sáu RFC chờ kỹ thuật trưởng (§10.2) · việc cần phần cứng, người ngoài hoặc chữ ký có người trong vòng (Q-60, §1.1) |
+| **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · bo camera đã chọn là M5Stack CoreS3 nhưng chưa đặt (Q-61, TSK-I3a-01) · việc cần phần cứng, người ngoài hoặc chữ ký có người trong vòng (Q-60, §1.1) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](../TODOS.md) | Mỗi mục kèm mốc kích hoạt · câu hỏi kinh doanh mở (`TODOS.md` #19) rà lại trước I6 — luật cổng nhu cầu đã bỏ (Q-56) |
 
 ---
@@ -77,7 +77,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 | **0.x nội bộ** | **I0 — Lõi hợp đồng trên `sim`** | ✅ 2026-09-24 | Gate có kiểu và phiên bản (lint, resolve, kế thừa, tham số, `confirms`), `sim` + web UI, Action CI, MCP, System 2 qua LiteLLM, `linux` replay trên gpio-sim; walker C, sổ token và vết ghi UART trên QEMU | **42 / 42** | ✅ Xong | — | lịch sử |
 |  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | Người ngoài đội cài từ wheel nội bộ và chạy agent có gate trong dưới 10 phút, không cần phần cứng | **4 / 6** | 🟡 Đang làm — TSK-I1-02 tạm hoãn (phát triển nội bộ) | I0 | tag `v0.1.0` (nội bộ) |
 |  | **I2 — `linux` ngang `sim`** | 2026-11-29 | `run`, `record`, `mcp serve --target linux`; cảm biến và màn hình trên `linux`; nightly trên RPi 5 | **3 / 4** | 🟡 Phiên tương tác, cảm biến, màn hình xong trên gpio-sim + i2c-stub; nightly RPi 5 còn lại | I1 | tag `v0.2.0` (nội bộ) |
-|  | **I2a — Nguyên thủy mở rộng trên `sim` và `linux`** | 2026-12-06 | Bốn gói: cảm biến (`digital.in`, I2C chỉ đọc, `analog.in`, gate so ngưỡng số), điều khiển mịn (PWM), thị giác (`vision.in`), chuyển động (`motion.*`); sáu RFC; `sim-rpi5` | **1 / 26** | 🟡 Ước lượng lại xong (TSK-I2a-01); sáu RFC chờ chấp thuận | I2 | tag `v0.2.1` (nội bộ) |
+|  | **I2a — Nguyên thủy mở rộng trên `sim` và `linux`** | 2026-12-06 | Bốn gói: cảm biến (`digital.in`, I2C chỉ đọc, `analog.in`, gate so ngưỡng số), điều khiển mịn (PWM), thị giác (`vision.in`), chuyển động (`motion.*`); sáu RFC; `sim-rpi5` | **5 / 26** | 🟡 Sáu RFC đã chấp thuận (2026-10-01); làn host bắt đầu hiện thực | I2 | tag `v0.2.1` (nội bộ) |
 |  | **I2b — Kit mẫu và dựng nhanh** | 2026-12-20 | Năm kit phần cứng (BOM, sơ đồ đấu dây, gate khoá), thư viện gate khởi đầu, `neuroedge add` | **0 / 4** | ⏳ Chưa bắt đầu | I2a | tag `v0.2.2` (nội bộ) |
 |  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | Gate chạy trên chip, điều khiển chân thật; người dùng tự nạp agent; `verify` ba target bậc 1 cho miền phán quyết | **6 / 14** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU, giao diện LVGL có ảnh golden); chờ bo mạch | I1 | tag `v0.3.0` + firmware (nội bộ) |
 |  | **I3a — Nguyên thủy mở rộng trên `esp32s3`** | 2027-01-10 | Bốn gói trên chip: Box-3 và M5Stack CoreS3 có camera (Q-53, Q-61) | **0 / 7** | ⏳ Chưa bắt đầu | I2a, I3 | tag `v0.3.1` + firmware (nội bộ) |
@@ -109,26 +109,21 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-10-01 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. VỪA HOÀN THÀNH — Q-58 → Q-60: bề mặt tích hợp, giấy phép, vận hành                  │
-│    • MCP qua mạng có xác thực (TSK-P2-04) dời từ I14 sang I6; mặc định tắt             │
-│    • Gated Tool Profile đóng băng vào schemas/ bằng RFC trước I6 (TSK-I6-05)           │
-│    • Giữ PolyForm NC qua v1.0, mở sau (#51); CLA phải cho tái cấp phép (#43)           │
-│    • Một người + AI agent; task phần cứng, người ngoài, chữ ký: người trong vòng       │
-│    • Ngày dự báo không đổi; làn chip đối chiếu lại khi bo mạch về                      │
-│    • Bo camera: M5Stack CoreS3 (Q-61) — đạt (a) của RFC-0013 §9.1                      │
+│ 1. VỪA HOÀN THÀNH — sáu RFC chấp thuận, Q-58 → Q-62                                    │
+│    • RFC-0007, RFC-0009 → RFC-0013 chấp thuận 2026-10-01 (PR #75 → #80, Q-62)          │
+│    • NETR v2 ghim byte ở RFC-0009 §3d; lệnh về phía an toàn không bao giờ bị chặn      │
+│    • Bo camera: M5Stack CoreS3 (Q-61); MCP qua mạng + Tool Profile vào I6 (Q-58)       │
+│    • Giữ PolyForm NC qua v1.0, mở sau (#51); một người + AI agent (Q-60)               │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
-│    1. Mở sáu RFC thành PR riêng; kỹ thuật trưởng ký trước 2026-10-09 (§10.2)           │
-│    2. Đặt 2 Box-3 + 1 RPi 5 + 2 M5Stack CoreS3 (Phụ lục B, Q-61) — về trước 11-01      │
-│    3. Sáu RFC đã sửa theo review: đọc diff, ký từng PR (lỗi chặn đã đóng)              │
-│    4. Làn host: I2a, I4a theo RFC được duyệt; TSK-P2-04, TSK-I6-05 (Q-58)              │
-│    5. Box-3 về: nối driver màn hình vào ne_ui (TSK-S4-01), đo trên silicon             │
-│    6. Mô hình wake-word có giấy phép dùng được (#49); cách provisioning Wi-Fi (#50)    │
-│    7. Tái sinh requirements-lock.txt (đóng #54); xét 4 PR Dependabot (major Actions)   │
-│    8. TSK-I1-02 tạm hoãn: mở lại trước buổi đo TTFV                                    │
+│    1. Đặt 2 Box-3 + 1 RPi 5 + 2 M5Stack CoreS3 (Phụ lục B, Q-61) — về trước 11-01      │
+│    2. Làn host I2a: TSK-W1-02 (numeric + NETR v2) trước, rồi RFC-0007, 0010 → 0013     │
+│    3. Song song: TSK-I6-05 (RFC Tool Profile), TSK-P2-04 (MCP qua mạng, Q-58)          │
+│    4. Box-3 về: nối driver màn hình vào ne_ui (TSK-S4-01), đo trên silicon             │
+│    5. Wake-word có giấy phép (#49); Wi-Fi (#50); lock (#54); I1-02 trước đo TTFV       │
 │                                                                                        │
 │ 4. LƯU Ý — bất biến ở CHANGELOG.md §3.3; dưới đây chỉ điều chưa có ở đó                │
 │    • Chỉ c.do() điều khiển được chân: HAL chưa gắn ledger từ chối mọi lệnh             │
@@ -223,7 +218,7 @@ Chuỗi dài nhất  [bo mạch] ► TSK-S1-10 ► I3 ► I3a ► I5 ► I5a ►
 
 | # | Mắt xích | Vì sao nằm trên đường găng |
 | :---: | :--- | :--- |
-| 0 | Sáu RFC của I2a được chấp thuận | Không có RFC thì không có mã cho nguyên thủy mở rộng (§2.3); kỹ thuật trưởng duyệt |
+| 0 | ✅ Sáu RFC của I2a được chấp thuận (2026-10-01, PR #75 → #80) | Không có RFC thì không có mã cho nguyên thủy mở rộng (§2.3); kỹ thuật trưởng duyệt |
 | 1 | Bo mạch Box-3 về → TSK-S1-10 | Không có số đo bộ nhớ thì không chốt được kế hoạch thoại trên chip (Q-44) — và giờ cả ngân sách cho bốn gói (TSK-I3a-01) |
 | 2 | I3 → I3a — HAL, gate và nguyên thủy mở rộng trên chip | Không có target thứ ba trên phần cứng thật thì không chứng minh được tương đương; thị giác còn cần bo camera |
 | 3 | I5 — thoại trên chip | Vẫn là mắt xích khó nhất; rủi ro đã giảm từ CR-1.0 (STT/TTS ở provider cloud). V6 làm âm thanh song song với HAL của V2 |
@@ -604,15 +599,15 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-I2a-01** | **Ước lượng lại phạm vi MVP (Q-52):** đếm lại task I2a → I7, đặt ngày dự báo cho I2a, I2b, I3a, I4a, I5a, I6, I7 và I8 kèm bằng chứng (R5); cập nhật §1.3 và §2.2 | — | trưởng nhóm + kỹ thuật trưởng | ✅ Hoàn thành (2026-09-30) — v1.0 dự báo 2027-02-21 | [`docs/reports/uoc-luong-mvp-2026-09-30.md`](../docs/reports/uoc-luong-mvp-2026-09-30.md) · §0.2 |
 | **TSK-N0-02** | Sửa đổi FR-HAL-01: nguyên thủy mở rộng (`digital.in`, bus I2C, `analog.in`, PWM, `motion.*`, `vision.in`) là **tuỳ chọn theo bo mạch** (RFC-0013, Q-53); sửa FR-CLI-10 cho `mcp desktop-config --lab` | FR-HAL-01, FR-CLI-10 | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` |
-| **TSK-N0-03** | RFC-0007: `digital.in`; bus I2C chỉ đọc; `analog.in` (ADC theo spike TSK-N3-03 — chuyển từ RFC-motion sang, Q-53); trường bus/địa chỉ và khai báo phong bì trong `board.v1`. Phải lý giải vì sao không mở rộng `sensor.read`. `gate.v1` không đổi | FR-HAL-01 | V2 | ⏳ Chưa bắt đầu | `docs/rfc/0007-digital-in-i2c-analog-in-phong-bi.md` |
-| **TSK-I2a-07** | **RFC-0013:** nguyên thủy mở rộng tuỳ chọn theo bo mạch; nhiều bo tham chiếu cho một target bậc 1; mỗi nguyên thủy mở rộng có ít nhất một bo tham chiếu trên **mỗi** target bậc 1 (Q-53) | FR-HAL-01, FR-TGT-08 | V1 + kỹ thuật trưởng | ⏳ Chưa bắt đầu | `docs/rfc/0013-nguyen-thuy-tuy-chon-va-nhieu-bo-tham-chieu.md` |
+| **TSK-N0-03** | RFC-0007: `digital.in`; bus I2C chỉ đọc; `analog.in` (ADC theo spike TSK-N3-03 — chuyển từ RFC-motion sang, Q-53); trường bus/địa chỉ và khai báo phong bì trong `board.v1`. Phải lý giải vì sao không mở rộng `sensor.read`. `gate.v1` không đổi | FR-HAL-01 | V2 | ✅ Hoàn thành (2026-10-01) — RFC-0007 chấp thuận, PR #75 | `docs/rfc/0007-digital-in-i2c-analog-in-phong-bi.md` |
+| **TSK-I2a-07** | **RFC-0013:** nguyên thủy mở rộng tuỳ chọn theo bo mạch; nhiều bo tham chiếu cho một target bậc 1; mỗi nguyên thủy mở rộng có ít nhất một bo tham chiếu trên **mỗi** target bậc 1 (Q-53) | FR-HAL-01, FR-TGT-08 | V1 + kỹ thuật trưởng | ✅ Hoàn thành (2026-10-01) — RFC-0013 chấp thuận, PR #80 | `docs/rfc/0013-nguyen-thuy-tuy-chon-va-nhieu-bo-tham-chieu.md` |
 | **TSK-I2a-06** | **Profile `sim-rpi5`** soi đúng `linux-rpi5` (có đủ nguyên thủy mở rộng, kể cả camera); phát biểu lại bất biến "`sim` không giàu hơn bo tham chiếu" theo từng bo (đóng `TODOS.md` #14) | FR-TGT-01, FR-TGT-06 | V1 | ⏳ Chưa bắt đầu | `boards/sim-rpi5.toml` · `python/tests/test_boards.py` |
 
 #### Gói cảm biến
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-W1-02** | **Tiêu chí `numeric`** cho `sensor.read` kiểu số: `gate.v1`, nút `NETR`, walker C, corpus (`TODOS.md` #30) | FR-GATE-03, FR-HAL-01 | V1 | ⏳ Chưa bắt đầu | `docs/rfc/0009-tieu-chi-so-numeric.md` |
+| **TSK-W1-02** | **Tiêu chí `numeric`** cho `sensor.read` kiểu số: `gate.v1`, nút `NETR`, walker C, corpus (`TODOS.md` #30) | FR-GATE-03, FR-HAL-01 | V1 | 🟡 RFC-0009 chấp thuận (2026-10-01, PR #76); còn hiện thực và `NETR` v2 | `docs/rfc/0009-tieu-chi-so-numeric.md` |
 | **TSK-I2a-02** | **`digital.in` trên `sim` và `linux`** (sau RFC-0007): `LinuxHAL` đọc line qua gpiod (gpio-sim trong CI), `SimHAL` đổi mức trong REPL và trang `--ui`; mức logic vào gate như dữ kiện, có vết ghi | FR-HAL-01 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/` · `python/tests_linux/` |
 | **TSK-I2a-03** | **Bus I2C chỉ đọc cho agent** (sau RFC-0007): `linux` đọc thanh ghi của thiết bị trong allow-list của bo mạch, không ghi; `sim` chỉ phát lại từ vết ghi; test trên `i2c-stub` | FR-HAL-01 | V1 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/` · `python/tests_linux/` |
 | **TSK-N3-03** | **Spike ADC** trên runner `ubuntu-latest`: chip ADC I2C có driver hwmon (`ads7828` hoặc `ina2xx`) trên `i2c-stub`, đọc lại `in0_input` | — | — | ⏳ Chưa bắt đầu | báo cáo spike trong PR |
@@ -622,13 +617,13 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-W1-01** | **PWM** (tần số, độ rộng xung) và kênh phản hồi trạng thái trong `digital.out` (RFC-0010) — trên `sim` và `linux`; HAL C ở TSK-I3a-03 | FR-HAL-01 | V1 + V2 | ⏳ Chưa bắt đầu | `docs/rfc/0010-pwm-trong-digital-out.md` · `board.v1` · `python/neuroedge/hal/` |
+| **TSK-W1-01** | **PWM** (tần số, độ rộng xung) và kênh phản hồi trạng thái trong `digital.out` (RFC-0010) — trên `sim` và `linux`; HAL C ở TSK-I3a-03 | FR-HAL-01 | V1 + V2 | 🟡 RFC-0010 chấp thuận (2026-10-01, PR #77); còn hiện thực | `docs/rfc/0010-pwm-trong-digital-out.md` · `board.v1` · `python/neuroedge/hal/` |
 
 #### Gói thị giác
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-V1b-07** | RFC nguyên thủy `vision.in`: hình dạng tham số có bằng chứng phần cứng (`fps` số thực, `modes[]`, enum `pixel_format`) và quy tắc so khớp với `[requires]` (RFC-0002 §9.1). Cần TSK-S2-02 | FR-HAL-01, FR-HAL-04 | V1 | ⏳ Chưa bắt đầu | `docs/rfc/0012-nguyen-thuy-vision-in.md` · `schemas/board.v1.json` |
+| **TSK-V1b-07** | RFC nguyên thủy `vision.in`: hình dạng tham số có bằng chứng phần cứng (`fps` số thực, `modes[]`, enum `pixel_format`) và quy tắc so khớp với `[requires]` (RFC-0002 §9.1). Cần TSK-S2-02 | FR-HAL-01, FR-HAL-04 | V1 | ✅ Hoàn thành (2026-10-01) — RFC-0012 chấp thuận, PR #79 | `docs/rfc/0012-nguyen-thuy-vision-in.md` · `schemas/board.v1.json` |
 | **TSK-V1b-01** | Hiện thực `vision.in` cho `linux`: luồng khung hình, độ phân giải, FPS. Cần TSK-V1b-07 | FR-HAL-01 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/linux.py` (nguyên thủy `vision.in`) |
 | **TSK-V1b-02** | Camera ảo trong `sim`: phát lại chuỗi ảnh, giữ tương đương với phần cứng thật | FR-TGT-01, FR-TGT-06 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/sim/vision/` |
 | **TSK-V1b-03** | Giao diện trừu tượng mô hình thị giác, đổi model bằng cấu hình | FR-MDL-04, FR-MDL-07 | V5 | ⏳ Chưa bắt đầu | `python/neuroedge/perception/vision/` |
@@ -641,7 +636,7 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-W1-03** | **RFC-motion (RFC-0011):** `motion.*` (`analog.in` chuyển sang RFC-0007, Q-53); phong bì N2 sang `motion.*`; token thuê có hạn (Q-37); trạng thái an toàn theo từng cơ cấu (Q-35); gộp `TODOS.md` #36, #39 | FR-HAL-01 | V1 + V2 | ⏳ Chưa bắt đầu | `docs/rfc/0011-nguyen-thuy-motion.md` |
+| **TSK-W1-03** | **RFC-motion (RFC-0011):** `motion.*` (`analog.in` chuyển sang RFC-0007, Q-53); phong bì N2 sang `motion.*`; token thuê có hạn (Q-37); trạng thái an toàn theo từng cơ cấu (Q-35); gộp `TODOS.md` #36, #39 | FR-HAL-01 | V1 + V2 | ✅ Hoàn thành (2026-10-01) — RFC-0011 chấp thuận, PR #78 | `docs/rfc/0011-nguyen-thuy-motion.md` |
 | **TSK-I2a-05** | **`motion.*` trên `sim` và `linux`** (sau RFC-0011): kênh, đích, tốc độ, ramp; token thuê có hạn (Q-37); trạng thái an toàn khai theo từng cơ cấu (Q-35); phong bì của khối N2 | FR-HAL-01, FR-PER-02 | V1 + V2 | ⏳ Chưa bắt đầu | `python/neuroedge/hal/` |
 
 #### Khối N2 — Phong bì an toàn vật lý (dùng chung cho mọi actuator, chuyển từ NeuroBrain — Q-53)
@@ -1493,7 +1488,6 @@ Chỉ cho increment sau Beta (Q-52). Cắt từ trái sang phải khi increment 
 | Hạn | Mã | Quyết định | Vì sao hạn đó | Người quyết | Trạng thái |
 |:---:|:---:|:---|:---|:---:|:---:|
 | **Trước khi I10 mở** | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế hạ tầng Khối 3 | Kỹ thuật nền tảng | ⏳ Đang mở |
-| **2026-10-09** | **RFC-0007, RFC-0009 → RFC-0013** | Chấp thuận sáu RFC của nguyên thủy mở rộng; câu hỏi mở đã quyết (Q-57), còn chữ ký | Không có RFC thì không có mã (§2.3); giả định G2 của TSK-I2a-01 | Kỹ thuật trưởng | ⏳ Nháp |
 | **Trước khi I11 mở** | **RFC-0002** | Mở rộng enum `target` và đưa bậc target vào mã lõi (`TARGET_TIERS`); `vision.in` tách sang RFC riêng ở V1b | Không chặn roadmap này. Chặn I11 và mọi board profile mới | Kỹ thuật trưởng | ⏳ Đang mở |
 
 **Chính sách phụ thuộc bắc cầu** là một phần của Q-11: nguyên văn ở PRD §15, cưỡng chế bằng `scripts/check_licences.py` (job `cloud-extra`) và `pip-licenses --fail-on` (job `licence-obligations`). *(Ngoại lệ LGPL qua liên kết động của `libgpiod` — proposal §3.9 quy tắc 3 — là thư viện hệ thống C, không phải phụ thuộc Python bắc cầu.)*

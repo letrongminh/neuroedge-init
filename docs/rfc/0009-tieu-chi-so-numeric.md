@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-GATE-03, FR-GATE-06, FR-ACE-01, FR-HAL-01 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-09-30 |
-| **Trạng thái** | 🟡 Đang thảo luận — đã sửa theo review 2026-10-01 (§9, Q-62); chờ chữ ký kỹ thuật trưởng |
+| **Trạng thái** | ✅ Đã chấp thuận (2026-10-01) — kỹ thuật trưởng ký trên PR #76; sửa theo review 2026-10-01 (§9, Q-62); hiện thực trong PR thứ hai |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (chạm `gate.v1`, ngữ nghĩa phân giải, `NETR`) |
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/*.json`, sửa ngữ nghĩa phân giải gate

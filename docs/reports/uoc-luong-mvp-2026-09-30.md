@@ -55,7 +55,7 @@ Không tính TSK-I2a-01 (task này).
 | # | Giả định | Nếu sai |
 |:---:|:---|:---|
 | G1 | Box-3, RPi 5 và bo ESP32-S3 có camera về **trước 2026-11-01**; bo camera được chọn ở TSK-I3a-01 **trước 2026-10-09** để kịp đặt mua — *đã chọn M5Stack CoreS3 ngày 2026-10-01 (Q-61)* | Mọi increment từ I3 dời theo, ngày đổi ngày |
-| G2 | Sáu RFC (0007, 0009 → 0013) được kỹ thuật trưởng chấp thuận **trước 2026-10-09**; câu hỏi mở đã quyết (Q-57) | I2a còn khoảng 3 tuần đệm trước khi phụ thuộc I2 (2026-11-29) ràng ngày; quá 2026-10-30 thì I2a dời |
+| G2 | Sáu RFC (0007, 0009 → 0013) được kỹ thuật trưởng chấp thuận **trước 2026-10-09**; câu hỏi mở đã quyết (Q-57) — *đã chấp thuận 2026-10-01 (PR #75 → #80)* | I2a còn khoảng 3 tuần đệm trước khi phụ thuộc I2 (2026-11-29) ràng ngày; quá 2026-10-30 thì I2a dời |
 | G3 | *Sửa 2026-10-01 (Q-60, thay giả định đủ người của Q-52):* một người + AI agent. Làn host chạy ở tốc độ §1, đo trên chính cấu hình này; task cần phần cứng hoặc người ngoài do một người làm, AI agent chuẩn bị | Làn chip nối tiếp trên một người: đối chiếu ở §5 khi bo mạch về, dời ngày theo R5 (roadmap §1.3) |
 | G4 | Spike bộ nhớ TSK-S1-10 đạt ngưỡng Q-3 với thoại + bốn gói | Mở `Q-N` lập lại kế hoạch I5, I3a; dời ngày, không cắt (Q-44, Q-52) |
 | G5 | `vision.in` chạy được trên bo camera ESP32-S3 trong ngân sách bộ nhớ (TSK-I3a-01) | Áp phương án (b) hoặc (c) của RFC-0013 §9; lập lại kế hoạch I3a |

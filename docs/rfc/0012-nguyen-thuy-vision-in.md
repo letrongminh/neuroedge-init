@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-HAL-01, FR-HAL-04, FR-HAL-05, FR-CI-02, FR-MDL-04, FR-MDL-07, NFR-PRIV-01, NFR-PRIV-03 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-09-30 |
-| **Trạng thái** | 🟡 Đang thảo luận — đã sửa theo review 2026-10-01 (§9, Q-62); chờ chữ ký kỹ thuật trưởng |
+| **Trạng thái** | ✅ Đã chấp thuận (2026-10-01) — kỹ thuật trưởng ký trên PR #79; sửa theo review 2026-10-01 (§9, Q-62); hiện thực trong PR thứ hai |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (chạm `board.v1`, quyền riêng tư camera, ranh giới nhận thức/thẩm quyền) |
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/board.v1.json`. Task: TSK-V1b-07 (RFC này) và

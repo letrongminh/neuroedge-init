@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-HAL-01, FR-HAL-04, FR-HAL-05, FR-HAL-08, FR-TGT-01, FR-TGT-06, FR-TGT-08 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-09-30 |
-| **Trạng thái** | 🟡 Đang thảo luận — đã sửa theo review 2026-10-01 (§9, Q-62); chờ chữ ký kỹ thuật trưởng |
+| **Trạng thái** | ✅ Đã chấp thuận (2026-10-01) — kỹ thuật trưởng ký trên PR #80; sửa theo review 2026-10-01 (§9, Q-62); hiện thực trong PR thứ hai |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (sửa các bất biến kiểm thử bảo vệ tương đương target, RFC-0002 §5) |
 
 > **Khi nào cần RFC:** RFC này không sửa `schemas/`, nhưng đổi ba bất biến mà RFC-0002 §5a–§5c đề xuất

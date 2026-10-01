@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-HAL-01, FR-HAL-05, FR-ACE-08 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-09-30 |
-| **Trạng thái** | 🟡 Đang thảo luận — đã sửa theo review 2026-10-01 (§9, Q-62); chờ chữ ký kỹ thuật trưởng |
+| **Trạng thái** | ✅ Đã chấp thuận (2026-10-01) — kỹ thuật trưởng ký trên PR #77; sửa theo review 2026-10-01 (§9, Q-62); hiện thực trong PR thứ hai |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (chạm đường tới chân vật lý và mở rộng phong bì của RFC-0007) |
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/board.v1.json`. Task: TSK-W1-01.

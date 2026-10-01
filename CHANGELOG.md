@@ -264,6 +264,9 @@ bản gói.
 
 #### Đã đổi — Bề mặt tích hợp vào MVP, giấy phép, mô hình vận hành (2026-10-01, Q-58 → Q-62)
 
+- **I2a · TSK-N0-03, I2a-07, V1b-07, W1-03 — sáu RFC nguyên thủy mở rộng chấp thuận (RFC-0007, RFC-0009 → RFC-0013).**
+  Kỹ thuật trưởng ký trên PR #75 → #80; danh mục `docs/rfc/README.md`. Bất biến §3.3 #6, #7 viết lại theo RFC-0013;
+  `TODOS.md` #39 đóng (RFC-0011). Mã của nguyên thủy mới giờ được viết. Kiểm: `pytest tests/test_plan_contract.py`.
 - **Q-61 · TSK-I3a-01 — bo camera của `esp32s3` là M5Stack CoreS3.** Đủ năm nguyên thủy lõi cộng camera, flash 16 MB
   (Q-3); ESP32-S3-EYE và Korvo-2 bị bác ở Q-61. Phụ lục B: đặt ngay 2 bo. Kiểm: `pytest tests/test_plan_contract.py`.
 - **Q-62 — sáu RFC nguyên thủy mở rộng sửa theo review độc lập** (PR riêng cho từng RFC); `TODOS.md` #36 trỏ bố cục
@@ -1131,9 +1134,9 @@ này sẽ làm hỏng những thứ trông không liên quan.
    giải như nhau trên cả ba target.
 5. **Không có bộ lượng giá CEL nào trên vi điều khiển** (Q-9 phương án A). Máy
    tính biên dịch sang cây quyết định nhị phân `NETR` v1 (RFC-0003); firmware chỉ duyệt cây.
-6. **Bo mạch tham chiếu duy nhất là ESP32-S3-BOX-3.** Không đổi sang DevKitC —
-   số đo spike sẽ vô nghĩa.
-7. **`sim` không được giàu năng lực hơn bo mạch tham chiếu.** Nếu giàu hơn, lời
+6. **Bo tham chiếu mặc định của `esp32s3` là ESP32-S3-BOX-3; bo tham chiếu thứ hai (có
+   camera) là M5Stack CoreS3** (RFC-0013, Q-61). Không đổi sang DevKitC — số đo spike sẽ vô nghĩa.
+7. **Mỗi profile `sim` không được giàu năng lực hơn bo mạch nó soi** (`SIM_MIRRORS`, RFC-0013). Nếu giàu hơn, lời
    hứa "TTFV dưới 10 phút" thành cái bẫy: rút ngắn 10 phút đầu, thêm hai ngày gỡ lỗi.
 8. **Đuôi vết ghi là `.json` mang `$schema`.** Không đổi sang `.ntrace`.
 9. **Không copyleft mạnh trong phần phân phối.** Chính sách giấy phép là Q-11; ghim
