@@ -39,7 +39,7 @@ motor, display, tay máy. NeuroEdge hôm nay coi mỗi môi trường thực thi
   `linux`", nhưng đó là **một thiết bị sau gateway**, không phải nhiều MCU phối hợp.
 - `trace.v1` gắn cứng **một** `target`/`board_id` cho cả phiên
   (`schemas/trace.v1.json`, `metadata.required`) — không có chỗ cho danh tính node.
-- Chưa có transport mạng nào được mở (`TODOS.md` #24; NFR-SEC-09): v1.0 chỉ stdio.
+- Chưa có transport mạng nào được mở (`TODOS.md` #24; NFR-SEC-09): hôm nay chỉ stdio; MCP qua mạng có xác thực vào v1.0 ở TSK-P2-04 (Q-58).
 
 Hệ quả: không thể diễn đạt "cùng một ý định, nhiều node cùng thực hiện", cũng không có
 bằng chứng replay cho một phiên trải trên nhiều chip.

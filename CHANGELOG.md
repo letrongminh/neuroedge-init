@@ -262,6 +262,15 @@ bản gói.
 - **Q-20 — bộ chuẩn bị cổng nhu cầu 2026-10-25** (`TODOS.md` #19): `docs/business/cong-nhu-cau-2026-10-25/` —
   câu hỏi cổng, demo ≤ 5 phút chỉ bằng lệnh đã chạy thật, bộ phỏng vấn, thang chấm, trang ghi phiếu.
 
+#### Đã đổi — Bề mặt tích hợp vào MVP, giấy phép, mô hình vận hành (2026-10-01, Q-58 → Q-60)
+
+- **Q-58 — MCP qua mạng có xác thực (TSK-P2-04) dời từ I14 sang I6; thêm TSK-I6-05 đóng băng Gated Tool Profile.**
+  I6 có tiêu chí ra 7, 8; NFR-SEC-09, `tool_calling.md`, `threat_model.md` theo đó; `TODOS.md` #23, #24 kích hoạt.
+  Ngày dự báo không đổi. Kiểm: `pytest tests/test_plan_contract.py`.
+- **Q-59, Q-60 — giữ PolyForm NC qua v1.0, mở sau (`TODOS.md` #51); CLA phải cho tái cấp phép (#43).** Mô hình vận
+  hành một người + AI agent, người trong vòng cho task phần cứng, người ngoài, chữ ký: roadmap §1.1, §1.3, G3 của
+  `docs/reports/uoc-luong-mvp-2026-09-30.md`.
+
 #### Đã đổi — Ngày mới của MVP, bỏ cổng nhu cầu, quyết câu hỏi mở của RFC (2026-09-30, Q-56, Q-57)
 
 - **TSK-I2a-01 — ước lượng lại phạm vi MVP.** 106 task MVP còn mở, chia theo làn host / phần cứng / người ngoài;
@@ -1191,7 +1200,7 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
   `aec = false` tới khi đo được §6.2 của `simulation_coverage.md`. Chân Pi thật cần `line_names`
   (vd `door_lock` → `GPIO17`); cảm biến hwmon/IIO cần nhãn hoặc `NEUROEDGE_LINUX_SENSORS`. Chưa chạy trên Pi thật
   (nightly TSK-I2-01).
-- ❌ **MCP chỉ qua stdio** (`TODOS.md` #24, #25). Không có transport mạng.
+- ❌ **MCP chỉ qua stdio** (`TODOS.md` #24, #25). Không có transport mạng; MCP qua mạng có xác thực vào v1.0 ở TSK-P2-04 (I6, Q-58).
 - ❌ **Chưa phát hành ra ngoài.** Kho đã công khai từ 2026-09-25 (TSK-I6-01, Q-45), nhưng tag trước I6 là nội bộ;
   PyPI mở ở I6 (Q-39, TSK-S3-14, `docs/release.md`).
 - ❌ **Chưa có CEL.** `allow_when` chỉ nhận dạng mapping toán tử (TSK-S2-06 hoãn, `TODOS.md` #42).

@@ -262,8 +262,9 @@ và vết ghi mới replay trên bản cũ. `neuroedge trace show` in tỷ lệ 
 | `linux` | Đầy đủ | Như `sim`, trên máy thiết bị |
 | `esp32s3` | Gate: walker C99 đọc cây `NETR` v1 do `neuroedge build` sinh (Q-23, RFC-0003). Giới hạn tham số (RFC-0005) và `confirms` (RFC-0006) nằm **trong** bố cục đó; `call_source` là một dữ kiện `choice` như mọi tiêu chí, chỉ số của nó do `neuroedge build` sinh (`<gate>.netree.h`). Ngữ pháp → tool call tổng hợp trong C: chưa có (TSK-S5-07) | **Không** chạy trên MCU. MCP cho thiết bị đi qua gateway hoặc một máy `linux` (FR-GW), và thiết bị vẫn tự lượng giá gate. MCU **không làm MCP host**: host (§10) đặt ở nơi System 2 chạy |
 
-Transport MCP ở v1.0 chỉ là **stdio**: bên có quyền chạy tiến trình chính là người vận
-hành. Transport HTTP cần xác thực và là việc hoãn (`TODOS.md` #24). Mục cấu hình cho
+Transport MCP mặc định là **stdio**: bên có quyền chạy tiến trình chính là người vận
+hành. Transport HTTP vào v1.0, **mặc định tắt**, chỉ bật khi có OAuth 2.1 và mTLS theo thiết bị
+(TSK-P2-04, Q-58, NFR-SEC-09); tới khi task đó xong, chỉ có stdio. Mục cấu hình cho
 Claude Desktop do `neuroedge mcp desktop-config` sinh — đường dẫn tuyệt đối, vì Desktop khởi
 động server từ `/` với `PATH` tối giản.
 
@@ -300,8 +301,8 @@ corpus; `pytest tests/test_tool_corpus.py` chạy thêm từng ca qua một clie
 quả khớp `outputSchema` (§4). Wheel mang corpus (`neuroedge/_data/fixtures/tool_calls/`), nên
 bản đã cài cũng tự kiểm được.
 
-Lược đồ phong bì và kết quả sẽ đóng băng thành `schemas/` khi corpus ổn định và có một
-client bên ngoài dùng (`TODOS.md` #23). Cho tới lúc đó, profile là **v0** và đổi được
+Lược đồ phong bì và kết quả đóng băng thành `schemas/` bằng một RFC trước I6 (TSK-I6-05,
+Q-58; `TODOS.md` #23), để OSS khác hiện thực được profile theo phần Apache-2.0 của kho. Cho tới lúc đó, profile là **v0** và đổi được
 bằng PR thường kèm cập nhật tài liệu này.
 
 ## 10. NeuroEdge làm MCP client (Q-27)
