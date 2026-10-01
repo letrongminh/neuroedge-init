@@ -278,6 +278,11 @@ bản gói.
 - **Dọn `roadmap/`:** bản nháp RFC node chuyển sang `docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md`; kế hoạch robot
   bỏ Chặng 1 chi tiết và khung RFC A.1 → A.6 (nay trỏ tới RFC-0002, 0007, 0009 → 0012); ghi chú Phase 2 §2.3 trỏ
   tới RFC-0012. Không tệp nào bị xoá: mỗi tệp còn lại giữ nội dung không có ở nơi khác.
+- **Rà soát trước khi merge.** MVP không còn thang cắt (roadmap §9, Q-52): bỏ bậc 1–4 và dòng I1, I6 của §9.3. Thân
+  §1–§8 của sáu RFC nháp viết lại cho khớp §9; RFC-0011 kiểm `p95_latency_ms ≤ lease_ms / 2` và RFC-0012 từ chối
+  `confidence_gte` trên dữ kiện thị giác lúc `neuroedge build` (gate không mang bo mạch hay nguồn dữ kiện, nên `gate
+  lint` không kiểm được); `count` của thị giác thành dữ kiện `numeric`, không còn `bands` (Q-54). Chương 08 kiến trúc
+  thêm A10 → A12; năm anchor hỏng sau khi đổi tên mục đã sửa; các dòng còn coi cổng nhu cầu là điều kiện đã sửa (Q-56).
 
 #### Đã đổi — Tái cấu trúc MVP (2026-09-30, Q-52 → Q-55)
 

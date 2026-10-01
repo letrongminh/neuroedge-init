@@ -183,7 +183,7 @@ N3 dựng trên `sensor.read` qua `i2c-stub` của TSK-S5-09.
 **ADC có điều kiện.**
 - Runner tắt `CONFIG_IIO` (`docs/spec/simulation_coverage.md`), nên `iio_dummy` và `ti-ads1015` bị loại.
 - **Spike đạt:** ADC nằm trong N3.
-- **Spike không đạt:** ADC vào `TODOS.md`, mốc kích hoạt là khi có runner tự host gắn ADC thật.
+- **Spike không đạt:** `analog.in` vẫn ở MVP (Q-53): kiểm hằng đêm trên runner tự host gắn ADC thật, và chặn tiêu chí ra của I2a tới khi có bằng chứng ([RFC-0007](../docs/rfc/0007-digital-in-i2c-analog-in-phong-bi.md) §9.3).
 - `sim` chỉ phát lại giá trị đã ghi, không có quét I2C thật.
 
 → Quét bus (TSK-N3-01), test trên `i2c-stub` (TSK-N3-02) và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N3. Spike ADC (TSK-N3-03) nằm ở I2a (§4.3.1, gói cảm biến), vì `analog.in` là nguyên thủy chung (Q-53).

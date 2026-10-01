@@ -1,7 +1,7 @@
 # 08 · Yêu cầu phi chức năng → chiến thuật → bằng chứng
 
 > **Phạm vi:** mỗi nhóm NFR của PRD §9 được kiến trúc đáp ứng bằng chiến thuật nào, và bằng chứng nằm
-> ở đâu hôm nay. **Nguồn:** PRD §9 (yêu cầu, ngưỡng), PRD §11.1 (A1–A9), test trong `python/tests/`,
+> ở đâu hôm nay. **Nguồn:** PRD §9 (yêu cầu, ngưỡng), PRD §11.1 (A1–A12), test trong `python/tests/`,
 > job CI trong `.github/workflows/` (danh sách duy nhất: `CHANGELOG.md` §2.5).
 
 Nhãn bằng chứng: **đã kiểm** — có test hoặc job CI chạy mỗi PR · **một phần** — có công cụ đo hoặc
@@ -92,7 +92,7 @@ không gọi model thật.
 | COMP-05 Python 3.11+ | `requires-python >= 3.11` | ma trận CI 3.11 / 3.12 / 3.13 | đã kiểm |
 | COMP-06 `linux` trên ARM64 và x86-64 | — | Mọi job chạy x86-64; chưa có job ARM64 | một phần |
 
-## 9. Tiêu chí nghiệm thu v1.0 (A1–A9)
+## 9. Tiêu chí nghiệm thu v1.0 (A1–A12)
 
 | # | Tiêu chí | NFR liên quan | Bằng chứng hôm nay |
 |:---:|:---|:---|:---|
@@ -105,3 +105,6 @@ không gọi model thật.
 | A7 | Vết ghi hợp lệ 100 % | REL-04, PRIV, OBS | thẩm định trong CI, cả vết ghi UART |
 | A8 | Tài liệu, ba mẫu chạy được | — | ba mẫu có test; chưa kiểm trên máy sạch bởi bên thứ ba |
 | A9 | Lược đồ công khai kèm bộ tuân thủ | COMP-01→04 | `$id` đã khẳng định; `fixtures/compliance/` hôm nay chỉ có `voice/`; URL công khai ở I6 |
+| A10 | Đủ nguyên thủy mở rộng trên ba target (FR-HAL-08, Q-53) | REL-03, COMP-05/06 | chưa bắt đầu; cần RFC-0007, RFC-0009 → RFC-0013 (I2a, I3a) |
+| A11 | Dựng bằng hội thoại có hợp đồng (NeuroBrain, Q-55) | SEC-01 | chưa bắt đầu (I4a, I5a) |
+| A12 | Kit mẫu dựng được trong một ngày (Q-52) | — | chưa đo (I2b) |

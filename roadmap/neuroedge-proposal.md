@@ -37,7 +37,7 @@
 
 6. [Mặt phẳng thương mại: Fleet OS](#6-mặt-phẳng-thương-mại-fleet-os)
 7. [Ứng dụng mẫu điển hình: AURA cho khách sạn & nghỉ dưỡng](#7-ứng-dụng-mẫu-điển-hình-aura-cho-khách-sạn--nghỉ-dưỡng)
-8. [Lộ trình phát triển sản phẩm](#8-lộ-trình-phát-triển-sản-phẩm)
+8. [Các khối sản phẩm và năng lực](#8-các-khối-sản-phẩm-và-năng-lực)
 9. [Ranh giới sản phẩm và ma trận đánh đổi](#9-ranh-giới-sản-phẩm-và-ma-trận-đánh-đổi)
 
 **Phần IV — Đánh giá cạnh tranh & Quản trị rủi ro**
@@ -1283,7 +1283,7 @@ Danh mục các sản phẩm tiềm năng trên sàn giao dịch:
 
 Thị giác cơ bản (`vision.in` trên `sim`, `linux`, `esp32s3`) không còn chờ nhu cầu camera: nó là một trong bốn gói nguyên thủy mở rộng của v1.0 (PRD Q-53, Q-54). Phần còn lại của Giai đoạn 2 **chạy song song Khối 4**, không nối tiếp, và vẫn milestone-gated, không theo lịch.
 
-Trọng tâm từng khối và điều kiện kích hoạt (thị giác trong MVP: §4.3.1 và §4.4.1): [`neuroedge-roadmap.md` §7](neuroedge-roadmap.md#7-hướng-mở-rộng-sau-beta-i11i18).
+Trọng tâm từng khối và điều kiện kích hoạt (thị giác trong MVP: §4.3.1 và §4.4.1): [`neuroedge-roadmap.md` §7](neuroedge-roadmap.md#7-hướng-mở-rộng-sau-beta-i11-i13-i14-i16i18).
 
 **Hai ranh giới không được vượt trong Giai đoạn 2:**
 
@@ -1360,7 +1360,7 @@ Phân tích đặc điểm kiến trúc và động cơ phát triển của sáu
 | **MHS** *(Anthropic)* — [Anthropic](https://www.anthropic.com/news/model-hardware-standard-research-preview) · [spec](https://www.modelhardwarestandard.com/) · [WIRED](https://www.wired.com/story/anthropic-standard-ai-agents-coming-to-the-physical-world) | Chuẩn hóa driver + tag mô tả đặc tính thiết bị bằng ngôn ngữ tự nhiên; giới hạn an toàn do driver thực thi, có phê duyệt người cho việc rủi ro cao (đang xây); đối tác thật (Genentech, UW, CMU, HHMI Janelia). | Không nhắm MCU hay môi trường mô phỏng trung lập; research preview chưa công bố schema/giấy phép; không có policy có phiên bản/kế thừa, Action CI hay định dạng vết ghi. |
 | **DCP** — [arXiv](https://arxiv.org/abs/2605.26159) · [GitHub](https://github.com/device-context-protocol/dcp) | Đã đo trên phần cứng thật (ESP32/ESP8266), frame dưới 50 byte, Bridge là ranh giới tin cậy duy nhất, HMAC capability token; benchmark 675 lượt gọi: chặn 100% leo thang quyền, 78% prompt injection (MCP thô 0–1%); MIT. | Không có policy theo điều kiện hay kế thừa, không Action CI replay, không vết ghi; thiết bị chưa tự xác minh chữ ký; quy mô một tác giả. |
 
-*Bối cảnh, chưa phải phân tích cạnh tranh:* hai hàng MHS/DCP là thông tin thị trường cập nhật 2026-09-24 (`TODOS.md` #32); §10 chỉ chuyển thành phân tích cạnh tranh khi cổng nhu cầu 2026-10-25 đạt ≥ 10 cuộc nêu giải pháp hiện tại ([`docs/business/cong-nhu-cau-2026-10-25/README.md`](../docs/business/cong-nhu-cau-2026-10-25/README.md), C7).
+*Bối cảnh, chưa phải phân tích cạnh tranh:* hai hàng MHS/DCP là thông tin thị trường cập nhật 2026-09-24 (`TODOS.md` #32); §10 chỉ chuyển thành phân tích cạnh tranh khi bộ phỏng vấn (nay chỉ là đầu vào thông tin, Q-56) có ≥ 10 cuộc nêu giải pháp hiện tại; rà lại trước I6 ([`docs/business/cong-nhu-cau-2026-10-25/README.md`](../docs/business/cong-nhu-cau-2026-10-25/README.md), C7).
 
 ### 10.2 Ba khác biệt cốt lõi có tính phòng thủ
 

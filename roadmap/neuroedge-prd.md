@@ -3,7 +3,7 @@
 ## NeuroEdge — Hợp đồng vào Physical AI
 
 **Phiên bản PRD:** 1.5
-**Ngày phát hành:** 30 tháng 9, 2026 — MVP = v1.0 đầy đủ (Q-52 → Q-55)
+**Ngày phát hành:** 30 tháng 9, 2026 — MVP = v1.0 đầy đủ (Q-52 → Q-57)
 **Tài liệu nguồn:** `neuroedge-proposal.md`
 **Trạng thái:** Bản thảo chờ phê duyệt kỹ thuật
 **Lịch sử thay đổi:** `CHANGELOG.md` — tài liệu này chỉ mô tả hiện trạng.
@@ -227,7 +227,7 @@ Các hạng mục sau **BẮT BUỘC** bị loại khỏi Khối 1b để bảo 
 | Hạng mục | Trạng thái trong v1.0 |
 |:---|:---|
 | Huấn luyện wake-word tùy biến | Không hỗ trợ — chỉ dùng wake-word pre-trained *"Hey Neuro"* |
-| Độ phủ bo mạch | **Bo mạch tham chiếu chính thức ESP32-S3-Box-3**, cộng **một bo ESP32-S3 có camera** cho `vision.in` (Q-53; chọn ở TSK-I3a-01) (tích hợp sẵn màn hình LCD ST7789, dual-mic ES7210, loa ES8311, dock I/O; DevKitC chuyển thành bo mạch thứ cấp do cộng đồng duy trì) |
+| Độ phủ bo mạch | **Bo mạch tham chiếu chính thức ESP32-S3-Box-3** (tích hợp sẵn màn hình LCD ST7789, dual-mic ES7210, loa ES8311, dock I/O; DevKitC chuyển thành bo mạch thứ cấp do cộng đồng duy trì), cộng **một bo ESP32-S3 có camera** cho `vision.in` (Q-53; chọn ở TSK-I3a-01) |
 | Thị giác máy tính | **Thuộc phạm vi v1.0** (Q-53): `vision.in` trên ba target; kết quả vào gate dưới dạng dữ kiện do maker khai, ngưỡng tin cậy khoá bằng tiêu chí số (Q-54) |
 | Kết nối tới provider AI trên đám mây (LLM · ASR · TTS) | **Thuộc phạm vi v1.0** — là kiến trúc mặc định theo P-4 |
 | Dịch vụ đám mây do NeuroEdge vận hành, hệ thống tài khoản NeuroEdge | Không thuộc phạm vi — người dùng tự vận hành lớp provider và tự giữ khóa |

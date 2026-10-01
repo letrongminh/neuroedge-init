@@ -206,13 +206,13 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 | [0004](../../rfc/0004-ke-thua-budget-on-block.md) | Không nới `budget`, `on_block` khi kế thừa | Chấp nhận, đã hiện thực | `gate_resolver.py` |
 | [0005](../../rfc/0005-rang-buoc-tham-so-trong-gate.md) | Giới hạn tham số trong gate | Chấp nhận, đã hiện thực | `arguments.py`, bản ghi tham số `NETR` |
 | [0006](../../rfc/0006-xac-nhan-ask-confirms.md) | `on_block.confirms` | Chấp nhận, đã hiện thực | `confirmation.py`, `confirm_mask` |
-| 0007 | Giữ chỗ: `digital.in`, bus I2C chỉ đọc, `analog.in`, khai báo phong bì trong `board.v1` (TSK-N0-03). Đọc mức logic và quét bus lab mà không đổi `gate.v1` | **Chưa mở** (giữ chỗ); thuộc I2a | chưa |
+| [0007](../../rfc/0007-digital-in-i2c-analog-in-phong-bi.md) | `digital.in`, bus I2C chỉ đọc, `analog.in`, khai báo phong bì trong `board.v1` (TSK-N0-03). Đọc mức logic và quét bus lab mà không đổi `gate.v1` | **Nháp**, chưa mở PR (Q-53, Q-57 §9); thuộc I2a | chưa |
 | [0008](../../rfc/0008-vet-ghi-chuan-muc-mang-gate-digest.md) | Ba vết ghi chuẩn mực mang `gate_digest` trong `trace.v1` — phát lại kiểm tra. Ngăn chặn phát lại vết ghi trên gate đã đổi ngữ nghĩa an toàn mà không phát hiện được | Chấp nhận, đã hiện thực | `fixtures/traces/`, `verify`, `replay` |
-| 0009 | Tiêu chí `numeric`: `evaluate.type: numeric` trong `gate.v1`, nút so sánh số trong `NETR` và walker C; cho phép gate kiểm tra ngưỡng số liên tục (áp suất, nhiệt độ) thay vì chỉ enum `bool`/`level`/`choice` (TSK-W1-02, `TODOS.md` #30) | **Chưa mở** (giữ chỗ, Q-53); thuộc I2a | chưa |
-| 0010 | PWM (tần số, độ rộng xung) và kênh phản hồi trạng thái trong `digital.out` (TSK-W1-01) | **Chưa mở** (giữ chỗ, Q-53); thuộc I2a | chưa |
-| 0011 | Nguyên thủy `motion.*` (motor/servo), mở rộng phong bì an toàn vật lý, token thuê có hạn (Q-37) và trạng thái an toàn riêng cho từng cơ cấu khi mất liên lạc (Q-35) (TSK-W1-03) | **Chưa mở** (giữ chỗ, Q-53); thuộc I2a | chưa |
-| 0012 | Nguyên thủy `vision.in` với tham số phần cứng (`fps`, `modes[]`, enum `pixel_format`), quy tắc đối chiếu `[requires]` (RFC-0002 §9.1) và luật riêng tư của vết ghi (TSK-V1b-07) | **Chưa mở** (giữ chỗ, Q-53); thuộc I2a | chưa |
-| 0013 | Nguyên thủy mở rộng tuỳ chọn theo bo mạch; nhiều bo tham chiếu cho một target bậc 1 (TSK-I2a-07) | **Chưa mở** (giữ chỗ, Q-53); thuộc I2a | chưa |
+| [0009](../../rfc/0009-tieu-chi-so-numeric.md) | Tiêu chí `numeric`: `evaluate.type: numeric` trong `gate.v1`, nút so sánh số trong `NETR` và walker C; cho phép gate kiểm tra ngưỡng số liên tục (áp suất, nhiệt độ) thay vì chỉ enum `bool`/`level`/`choice` (TSK-W1-02, `TODOS.md` #30) | **Nháp**, chưa mở PR (Q-53, Q-57 §9); thuộc I2a | chưa |
+| [0010](../../rfc/0010-pwm-trong-digital-out.md) | PWM (tần số, độ rộng xung) và kênh phản hồi trạng thái trong `digital.out` (TSK-W1-01) | **Nháp**, chưa mở PR (Q-53, Q-57 §9); thuộc I2a | chưa |
+| [0011](../../rfc/0011-nguyen-thuy-motion.md) | Nguyên thủy `motion.*` (motor/servo), mở rộng phong bì an toàn vật lý, token thuê có hạn (Q-37) và trạng thái an toàn riêng cho từng cơ cấu khi mất liên lạc (Q-35) (TSK-W1-03) | **Nháp**, chưa mở PR (Q-53, Q-57 §9); thuộc I2a | chưa |
+| [0012](../../rfc/0012-nguyen-thuy-vision-in.md) | Nguyên thủy `vision.in` với tham số phần cứng (`fps`, `modes[]`, enum `pixel_format`), quy tắc đối chiếu `[requires]` (RFC-0002 §9.1) và luật riêng tư của vết ghi (TSK-V1b-07) | **Nháp**, chưa mở PR (Q-53, Q-57 §9); thuộc I2a | chưa |
+| [0013](../../rfc/0013-nguyen-thuy-tuy-chon-va-nhieu-bo-tham-chieu.md) | Nguyên thủy mở rộng tuỳ chọn theo bo mạch; nhiều bo tham chiếu cho một target bậc 1 (TSK-I2a-07) | **Nháp**, chưa mở PR (Q-53, Q-57 §9); thuộc I2a | chưa |
 
 ### Các RFC dự kiến chưa cấp số (planned RFCs)
 

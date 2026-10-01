@@ -16,6 +16,8 @@ xác những gì cần RFC: [`CONTRIBUTING.md` §3](../../CONTRIBUTING.md#3-thay
 
 Người phê duyệt: `CONTRIBUTING.md` §3.
 
+**⏳ Nháp** = tệp RFC đã có trong kho (qua một PR tài liệu) nhưng chưa mở PR RFC ở bước 2; trạng thái chỉ chuyển sang thảo luận khi PR riêng của RFC đó được mở.
+
 ## Danh mục
 
 | RFC | Tiêu đề | Lược đồ | Trạng thái |

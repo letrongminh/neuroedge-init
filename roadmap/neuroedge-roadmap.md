@@ -27,10 +27,10 @@
 1. [Giả định nguồn lực](#1-giả-định-nguồn-lực)
 2. [Đường găng, phụ thuộc và luật chống lệch](#2-đường-găng-phụ-thuộc-và-luật-chống-lệch)
 3. [Chiến lược tái sử dụng mã nguồn mở](#3-chiến-lược-tái-sử-dụng-mã-nguồn-mở)
-4. [Increment tới v1.0 (I0–I7)](#4-increment-tới-v10-i0i7)
+4. [Increment tới v1.0 = MVP (I0–I7)](#4-increment-tới-v10--mvp-i0i7)
 5. [Developer Beta và điểm rẽ (I8)](#5-developer-beta-và-điểm-rẽ-i8)
 6. [Tầng dịch vụ v1.1 (I9–I10)](#6-tầng-dịch-vụ-v11-i9i10)
-7. [Hướng mở rộng sau Beta (I11–I18)](#7-hướng-mở-rộng-sau-beta-i11i18)
+7. [Hướng mở rộng sau Beta (I11, I13, I14, I16–I18)](#7-hướng-mở-rộng-sau-beta-i11-i13-i14-i16i18)
 8. [Ngoài roadmap](#8-ngoài-roadmap)
 9. [Thang cắt phạm vi](#9-thang-cắt-phạm-vi)
 10. [Lịch chốt quyết định](#10-lịch-chốt-quyết-định)
@@ -61,7 +61,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | **Pha đang thực thi** | 🟡 **Phase MVP (§0.5)** — I1 đang mở; I2, I2a (sáu RFC), phần không cần bo mạch của I3 và I4 làm song song | Increment và ngày dự báo: §0.2 |
 | **Increment đang mở** | 🟡 **I1** — còn I1-02 (tạm hoãn: phát triển nội bộ) | I0 đã xong 42 / 42 · chi tiết §0.2 |
 | **Cột mốc tiếp theo** | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** | Ngày dự báo ở §0.2 · chưa phát hành ra ngoài (Q-39) |
-| **Lần cập nhật cuối** | **2026-09-30** | Phiên gần nhất: Q-52 → Q-55 — MVP = v1.0 đầy đủ, bốn gói nguyên thủy mở rộng trên ba target, NeuroBrain vào MVP; tài liệu sản phẩm chuyển vào `roadmap/` · trước đó: Q-51 + TSK-I1-04 (NeuroEdge Studio — `neuroedge studio`, bảy màn song ngữ), Q-49 (demo có giao diện), Q-50 + TSK-I4-04 (`run --mic`), TTS PCM qua OpenRouter · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Lần cập nhật cuối** | **2026-09-30** | Phiên gần nhất: Q-52 → Q-57 — MVP = v1.0 đầy đủ, bốn gói nguyên thủy mở rộng trên ba target, NeuroBrain vào MVP; tài liệu sản phẩm chuyển vào `roadmap/` · trước đó: Q-51 + TSK-I1-04 (NeuroEdge Studio — `neuroedge studio`, bảy màn song ngữ), Q-49 (demo có giao diện), Q-50 + TSK-I4-04 (`run --mic`), TTS PCM qua OpenRouter · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
 | **Trạng thái CI Lõi** | ✅ **PASS 2479/2479 · SKIP 0** | `python/tests/` — 89 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 29/29 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `ui-golden` 66 ảnh, `ota-rollback` pha a–g · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **3 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · bo ESP32-S3 có camera chưa chọn (TSK-I3a-01) · sáu RFC chờ kỹ thuật trưởng (§10.2) · nhân sự: lập kế hoạch với giả định đủ người (Q-52, §1.1) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](../TODOS.md) | Mỗi mục kèm mốc kích hoạt · câu hỏi kinh doanh mở (`TODOS.md` #19) rà lại trước I6 — luật cổng nhu cầu đã bỏ (Q-56) |
@@ -1374,15 +1374,9 @@ Thị giác không còn chờ nhu cầu camera sau Beta (Q-53): TSK-V1b-01 → V
 
 ## 9. Thang cắt phạm vi
 
-Khi tiến độ trượt, cắt theo đúng thứ tự sau. **Không cắt nhảy bậc, không cắt tùy hứng.**
+**MVP không có thang cắt (Q-52).** Mọi increment của MVP (I0 → I7, gồm I2a, I2b, I3a, I4a, I5a) trượt thì dời
+ngày cùng PR có bằng chứng (R5), không cắt phạm vi. Thang cắt chỉ còn cho các increment mở rộng sau Beta (§9.3).
 
-
-| Bậc   | Hạng mục cắt                                                                       | Mất gì                                                                          | Yêu cầu bị ảnh hưởng |
-| :-----: | :---------------------------------------------------------------------------------- | :------------------------------------------------------------------------------- | :-------------------- |
-| **1** | Ví dụ mẫu thứ 2 và 3, giữ lại 1                                                    | Tài liệu mỏng hơn                                                               | FR-DX-05             |
-| **2** | Chính sách định tuyến khai báo được → viết cứng `fast_first`                       | Mất tính linh hoạt cấu hình                                                     | FR-MDL-05 *(P1)*     |
-| **3** | MCP server bên ngoài của System 2 (`[mcp.servers]`, Q-27) — tool thiết bị qua MCP vẫn giữ | Mất tin tức / tra cứu qua MCP bên ngoài | FR-MDL-12 |
-| **4** | Phản hồi dòng từng phần                                                            | Độ trễ cảm nhận tăng                                                            | FR-PER-04 *(P1)*     |
 ### 9.1 Tuyệt đối không cắt
 
 
@@ -1407,12 +1401,10 @@ thoát bằng cắt phạm vi: trượt ngân sách bộ nhớ thì mở một `
 
 ### 9.3 Thang cắt trong từng increment
 
-Cắt từ trái sang phải khi increment đó trượt; không cắt cột cuối.
+Chỉ cho increment sau Beta (Q-52). Cắt từ trái sang phải khi increment đó trượt; không cắt cột cuối.
 
 | Increment | Cắt theo thứ tự | Tuyệt đối không cắt |
 |:---|:---|:---|
-| **I1** | TSK-I1-03 | TSK-I1-01 (PII), TSK-I1-02 (đo TTFV) |
-| **I6** | TSK-I6-04 → TSK-W0-02 | TSK-W0-03 (quét bí mật), TSK-S3-14, TSK-S3-09 |
 | **I16–I18** | I17 → I16 → I18 | I11 — rẻ nhất (một RFC nới lỏng) và là điều kiện của I13, I14, I16. Cắt I13 thì I14 port RP2350 không có khung mẫu |
 
 ---
@@ -1474,7 +1466,7 @@ Cắt từ trái sang phải khi increment đó trượt; không cắt cột cu�
 | **Q-56** | Bỏ luật cổng nhu cầu: không còn Go / Adjust / Stop; phỏng vấn chỉ là đầu vào thông tin | 2026-09-30 | §0.2, `TODOS.md` #19 |
 | **Q-57** | Quyết định cho câu hỏi mở của sáu RFC nguyên thủy mở rộng, theo hướng an toàn cao nhất | 2026-09-30 | RFC-0007, RFC-0009 → RFC-0013 §9 |
 | **Q-37** | Token `motion.*` thuê có hạn, mỗi lệnh qua gate gia hạn | 2026-09-25 | RFC-motion |
-| **Q-38** | Chứng nhận an toàn: OUT tạm thời, dừng khẩn phần cứng bắt buộc cho robot di động | 2026-09-25 | Cổng 2026-10-25, `TODOS.md` #40 |
+| **Q-38** | Chứng nhận an toàn: OUT tạm thời, dừng khẩn phần cứng bắt buộc cho robot di động | 2026-09-25 | Câu C6 của bộ phỏng vấn (Q-56), `TODOS.md` #40 |
 | **Q-39** | Roadmap theo increment; không phát hành ra ngoài tới khi công khai (I6: demo thoại trên `sim`, `linux`, Box-3); thêm một kỹ sư nhúng | 2026-09-25 | Toàn roadmap |
 | **Q-40** | NeuroBrain và các hướng mở rộng xếp sau Beta, theo phụ thuộc — phần NeuroBrain thay bởi Q-55, thị giác bởi Q-53 | 2026-09-25 | I11, I13, I14, I16–I18 |
 | **Q-41** | v1.1 mở khi Beta đạt B1 và B2; B3 đo nhưng không là điều kiện | 2026-09-25 | §7 |
