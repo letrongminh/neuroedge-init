@@ -24,7 +24,11 @@ thì PR được review nhưng không merge (`TODOS.md` #43).
    `feat/TSK-S2-03-gate-engine`.
 2. Viết test trước khi viết hiện thực, nếu thay đổi có thể quan sát được.
 3. `pytest -q` xanh. **Không có test bị skip vì thiếu phụ thuộc** — xem §5.
-4. Commit theo Conventional Commits, phần thân dẫn chiếu mã task:
+4. **Tác giả commit là danh tính GitHub của người làm** (với đội lõi: chủ dự án, `Trong-Minh Le
+   <59441846+letrongminh@users.noreply.github.com>`), đặt bằng `git config user.name` và
+   `git config user.email` trong kho. Không commit bằng danh tính máy cục bộ; danh tính cũ đã gộp
+   về chủ dự án trong [`.mailmap`](.mailmap). Commit theo Conventional Commits, phần thân dẫn chiếu
+   mã task:
 
    ```
    feat(engine): cưỡng chế năm nguyên tắc kế thừa gate

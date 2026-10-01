@@ -264,6 +264,8 @@ bản gói.
 
 #### Đã đổi — Bề mặt tích hợp vào MVP, giấy phép, mô hình vận hành (2026-10-01, Q-58 → Q-62)
 
+- **Tác giả commit là chủ GitHub của dự án.** `CONTRIBUTING.md` §2 bước 4; `.mailmap` gộp danh tính máy cục bộ cũ về
+  Trong-Minh Le (@letrongminh); người phê duyệt ở RFC-0003 → RFC-0006 ghi theo tài khoản GitHub. Kiểm: `git shortlog -sne`.
 - **Mười mốc phát hành theo người dùng; CPO Dashboard và kiến trúc theo mốc.** Roadmap §0.5 gom increment thành
   mười mốc ("Thử trên laptop" → "v1.0" → "Mở rộng hệ sinh thái"); dashboard dẫn đầu bằng ngày người ngoài dùng được, chi
   tiết kỹ thuật thu gọn; kiến trúc `00` §1.1 (sáu lời hứa), `13` viết lại theo mốc, poster E-09 theo mốc. Kiểm: `pytest tests/test_cpo_dashboard.py tests/test_architecture_diagrams.py`.
@@ -490,7 +492,7 @@ bản gói.
 Rà soát toàn bộ tài liệu ngày 2026-09-23 kết luận **chưa triển khai được**: bốn
 quyết định Tuần 1 chưa ai chốt, roadmap chưa nhận kế hoạch đã duyệt ở
 `docs/designs/`, hai RFC bắt buộc chưa có, và PRD/proposal mâu thuẫn ở ba điểm
-P0. Phiên này chốt quyết định với người phụ trách (minhlt) và đồng bộ lại.
+P0. Phiên này chốt quyết định với người phụ trách (Trong-Minh Le, @letrongminh) và đồng bộ lại.
 
 #### Quyết định — ghi ở `neuroedge-prd.md` §15
 

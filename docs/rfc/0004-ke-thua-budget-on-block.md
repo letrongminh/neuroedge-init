@@ -9,7 +9,7 @@
 | **Người đề xuất** | V1 — Kỹ sư lõi nền tảng *(soạn theo phát hiện `ENG-A2`, design doc Giai đoạn 1)* |
 | **Ngày mở** | 2026-09-23 |
 | **Trạng thái** | ✅ Đã chấp thuận · ✅ Đã hiện thực (TSK-S2-13, PR #6) |
-| **Người phê duyệt** | minhlt, 2026-09-23 — quyết định **Q-18** (`neuroedge-prd.md` §15) |
+| **Người phê duyệt** | Trong-Minh Le (@letrongminh), 2026-09-23 — quyết định **Q-18** (`neuroedge-prd.md` §15) |
 
 > Sửa ngữ nghĩa phân giải gate cần RFC (`CONTRIBUTING.md` §3) dù không đụng
 > `schemas/`. RFC này **không** sửa lược đồ, **không** sửa ba vết ghi chuẩn mực.
