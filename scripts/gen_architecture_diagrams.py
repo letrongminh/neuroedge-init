@@ -491,36 +491,63 @@ def _roadmap_matrix() -> list[tuple[str, str, str, str]]:
     return rows
 
 
+# English names of the ten user-facing release milestones (roadmap §0.5, "Mười mốc phát hành theo người
+# dùng"). Which increments belong to which milestone is read from that table, never repeated here.
+MILESTONES = {
+    1: "Try it on a laptop", 2: "Real devices on a Raspberry Pi", 3: "The gate on a $5 chip",
+    4: "Talk to the device", 5: "Build by conversation", 6: "Public launch: first outside users",
+    7: "v1.0: ready to ship in products", 8: "Developer Beta", 9: "Run a fleet (v1.1)",
+    10: "Grow the ecosystem",
+}
+
+
+def _milestones() -> list[tuple[int, list[str]]]:
+    import re
+
+    lines = ROADMAP.read_text(encoding="utf-8").splitlines()
+    start = next(n for n, line in enumerate(lines) if line.startswith("#### Mười mốc phát hành"))
+    out = []
+    for line in lines[start + 1 :]:
+        if line.startswith(("#", "---")):
+            break
+        m = re.match(r"^\| (\d+) \|(?:[^|]*\|){3}([^|]*)\|", line)
+        if m:
+            out.append((int(m.group(1)), [x.strip() for x in m.group(2).split(",")]))
+    if [n for n, _ in out] != list(MILESTONES):
+        raise SystemExit("roadmap §0.5 milestones differ from MILESTONES — update the poster model")
+    return out
+
+
 def e09_evolution() -> Diagram:
     d = Diagram(
         "E-09-evolution",
-        "E-09 · Evolution I0–I18 (MVP = v1.0)",
-        "Status, progress and forecast are read from neuroedge-roadmap.md §0.2 when this poster is generated.",
+        "E-09 · Evolution by release milestone",
+        "Ten things a user can do, in order. Status, progress and forecast are read from roadmap §0.2.",
         1800,
-        1300,
+        1340,
     )
     status_of = {"✅": "done", "🟡": "partial", "⏳": "planned", "⏸": "planned", "🔴": "partial"}
-    bands = [
-        ("internal", "0.x internal — I0 to I5a", ["I0", "I1", "I2", "I2a", "I2b", "I3", "I3a", "I4", "I4a", "I5", "I5a"]),
-        ("v1", "Public · v1.0 = MVP · Beta — I6 to I8", ["I6", "I7", "I8"]),
-        ("v11", "v1.1 services — I9 · I10", ["I9", "I10"]),
-        ("exp", "Expansion — I11 to I18", ["I11", "I13", "I14", "I16", "I17", "I18"]),
-    ]
     rows = {r[0]: r for r in _roadmap_matrix()}
-    y = 100
-    for gid, label, incs in bands:
-        per_row = 5
+    groups = _milestones()
+    if sorted(i for _, incs in groups for i in incs) != sorted(rows):
+        raise SystemExit("roadmap §0.5 milestones do not cover every increment exactly once")
+    w, gap, per_row, col_w = 262, 12, 3, 840
+    cols = {1: 40, 2: 920}
+    y_at = {1: 100, 2: 100}
+    for n, incs in groups:
+        col = 1 if n <= 5 else 2
         lines = (len(incs) + per_row - 1) // per_row
-        h = 40 + lines * 130
-        d.groups.append(Group(gid, 40, y, 1720, h, label, "planned" if gid in ("v11", "exp") else "host"))
-        for i, inc in enumerate(incs):
-            r, c = divmod(i, per_row)
-            w = 326
-            x = 60 + c * (w + 12)
+        h = 44 + lines * 140
+        x0, y0 = cols[col], y_at[col]
+        kind = "host" if n <= 7 else "planned"
+        d.groups.append(Group(f"m{n}", x0, y0, col_w, h, f"{n} · {MILESTONES[n]}", kind))
+        for k, inc in enumerate(incs):
+            r, c = divmod(k, per_row)
             _, forecast, progress, glyph = rows[inc]
-            d.boxes.append(Box(inc, x, y + 36 + r * 130, w, 112, f"{inc} · {INCREMENTS[inc]}",
-                               (f"{progress} tasks", f"forecast {forecast}"), "component", status_of.get(glyph, "planned")))
-        y += h + 24
+            d.boxes.append(Box(inc, x0 + 20 + c * (w + gap), y0 + 38 + r * 140, w, 122, inc,
+                               (INCREMENTS[inc], f"{progress} tasks", forecast), "component",
+                               status_of.get(glyph, "planned")))
+        y_at[col] += h + 22
     return d
 
 

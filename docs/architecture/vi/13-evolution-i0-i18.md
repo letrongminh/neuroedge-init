@@ -1,46 +1,179 @@
-# 13 · Tiến hoá I0–I18: hiện trạng và kế hoạch
+# 13 · Tiến hoá kiến trúc theo mốc phát hành
 
-> **Phạm vi:** kiến trúc sẽ lớn lên thế nào qua các increment, cái gì đã được chuẩn bị sẵn, cái gì cần
-> RFC. **Nguồn:** trạng thái, tiến độ, ngày dự báo chỉ ở roadmap §0.2 (Q-39) — trang này không chép lại
-> chúng; hình E-09 được **sinh từ chính bảng đó**. Thiết kế của các hướng mở rộng ở
+> **Phạm vi:** kiến trúc lớn lên thế nào qua mười mốc phát hành theo người dùng, cái gì đã được chuẩn bị
+> sẵn, cái gì cần RFC. **Nguồn:** mười mốc và increment của từng mốc ở roadmap §0.5 ("Mười mốc phát hành
+> theo người dùng"); trạng thái, tiến độ, ngày dự báo chỉ ở roadmap §0.2 (Q-39) — trang này không chép lại
+> chúng, và hình E-09 được **sinh từ chính hai bảng đó**. Thiết kế của các hướng mở rộng ở
 > `neuroedge-design-neurobrain.md`, `neuroedge-design-phase2.md`, `draft-ke-hoach-mo-rong-robot-fofoca.md`,
 > `draft-rfc-node-giao-thuc-dieu-phoi.md`.
 
-## 1. Bức tranh
+## 1. Một xương sống, mười mốc
 
-![E-09 · Tiến hoá](../assets/svg/E-09-evolution.svg)
-*Hình E-09 — Hai mươi hai increment, trạng thái, tiến độ và ngày dự báo đọc từ roadmap §0.2 lúc sinh hình.*
+NeuroEdge lớn lên theo **chiều rộng**, không theo **ngoại lệ**. Mỗi mốc thêm một nơi gate chạy (Pi, chip,
+nhiều node), một loại thứ gate canh (cảm biến, PWM, camera, motor), hay một cách gọi vào (giọng nói, hội
+thoại, MCP qua mạng). Không mốc nào thêm một đường tới phần cứng mà không qua gate. Đó là tinh thần sản
+phẩm ở [`00`](00-overview.md) §1.1, viết thành luật kiến trúc: **kiến trúc được phép rộng ra, xương sống
+`dispatch()` → gate → token → HAL → vết ghi thì không được ngắn lại.**
 
-Đường găng (roadmap §2.2): sáu RFC của I2a → bo mạch về → spike bộ nhớ (TSK-S1-10) → I3 → I3a → I5 → I5a → I6 → I7. MVP là v1.0 đầy đủ, một lần ra mắt: trượt thì dời ngày, không cắt phạm vi (Q-52); ngày ở roadmap §0.2.
-Không còn cổng nhu cầu chặn increment nào (Q-56). I12 và I15 không còn là increment: NeuroBrain thành I4a và I5a (Q-55), thị giác cơ bản nằm trong I2a và I3a (Q-53).
+Vì thế mỗi mốc ở §3 trả lời bốn câu hỏi theo cùng một thứ tự: người dùng làm được gì, kiến trúc thêm gì,
+hợp đồng nào đổi, và **lời hứa an toàn nào được chứng minh lại** trên phạm vi mới.
 
-## 2. Kiến trúc thay đổi gì qua từng chặng
+![E-09 · Tiến hoá theo mốc](../assets/svg/E-09-evolution.svg)
+*Hình E-09 — Mười mốc phát hành, mỗi mốc gom các increment của nó; trạng thái, tiến độ và ngày dự báo
+đọc từ roadmap §0.2 lúc sinh hình.*
 
-| Chặng | Container hay thành phần mới | Hợp đồng đổi | Kiến trúc hôm nay đã chuẩn bị |
+Mốc 6 (**ra mắt công khai**) là lần đầu người ngoài dùng được; mốc 7 (**v1.0**) là lần đầu đủ tin cậy để
+đưa vào thiết bị bán ra. MVP là v1.0 đầy đủ, một lần ra mắt: trượt thì dời ngày, không cắt phạm vi (Q-52).
+Đường găng (roadmap §2.2): bo mạch về → spike bộ nhớ (TSK-S1-10) → mốc 3 → mốc 4 và 5 trên chip → mốc 6 →
+mốc 7. CPO Dashboard (`docs/business/cpo-dashboard.html`) đọc cùng bảng mốc.
+
+## 2. Những gì không đổi qua mọi mốc
+
+Đây là phần **không được tiến hoá**. Mỗi mốc mới phải chứng minh lại đúng các mệnh đề này trên phạm vi
+của nó; cột cuối là mốc mà phép chứng minh trở nên khó nhất.
+
+| Lời hứa sản phẩm | Cơ chế kiến trúc | Bằng chứng | Khó nhất ở mốc |
 |:---|:---|:---|:---|
-| **I0** Lõi trên `sim` | Lõi hợp đồng an toàn: Action Contract Engine, `sim` + web UI, CLI, MCP server/host, System 2 qua LiteLLM (Q-10); walker C, sổ token và vết ghi UART trên QEMU ([`00`](00-overview.md)) → [`15`](15-target-architecture.md) §2.1 | — (baseline hợp đồng đóng băng của dự án) | 42/42 task hoàn thành; `gate.v1`, `trace.v1`, `board.v1` đóng băng; Action CI chạy đầy đủ trên GitHub Actions |
-| **I1** Preview nội bộ | Trải nghiệm lập trình viên: gói wheel nội bộ, TTFV < 10 phút trên `sim` (M1), vết ghi băm chữ người dùng tại nguồn mặc định (`--raw` để giữ văn bản, TSK-I1-01) | — (RFC-0008 ghim `gate_digest` vào ba vết ghi chuẩn mực, 2026-09-27) | `sim/ui.py`, scaffold `neuroedge new`, bộ test `test_packaging.py` và job CI `wheel-smoke` |
-| **I2** `linux` ngang `sim` | `LinuxHAL` hoàn chỉnh ngang hàng `sim`: `run`, `record`, `mcp serve --target linux`; cảm biến hwmon/IIO, màn hình framebuffer; runner nightly trên Raspberry Pi 5 (TSK-I2-01) | — | Job `linux-hal` kiểm tra `LinuxHAL` trên `gpio-sim`, `i2c-stub` + `lm75`, và `vkms`; `simulation_coverage.md` §2 |
-| **I2a** Nguyên thủy mở rộng trên `sim` và `linux` | Bốn gói nguyên thủy tuỳ chọn theo bo mạch (Q-53): cảm biến (`digital.in`, I2C chỉ đọc, `analog.in`, gate so ngưỡng số), điều khiển mịn (PWM), thị giác (`vision.in`), chuyển động (`motion.*`); phong bì an toàn (khối N2) thành cơ chế chung; profile `sim-rpi5` → [`15`](15-target-architecture.md) §2.1, §4.2, §4.4 | **Sáu RFC:** RFC-0007 (`digital.in`, I2C chỉ đọc, `analog.in`, trường phong bì trong `board.v1`; `gate.v1` không đổi), RFC-0009 (tiêu chí `numeric` trong `gate.v1`, nút `NETR`), RFC-0010 (PWM), RFC-0011 (`motion.*`, token thuê có hạn — Q-37, an toàn cơ cấu — Q-35), RFC-0012 (`vision.in`), RFC-0013 (nguyên thủy tuỳ chọn theo bo mạch, nhiều bo tham chiếu) | `sensor.read` và `digital.out` đã có; bất biến "`sim` không giàu hơn bo tham chiếu" được phát biểu lại theo từng bo (`TODOS.md` #14); thị giác vào gate qua dữ kiện do maker khai và tiêu chí số (Q-54) |
-| **I2b** Kit mẫu và dựng nhanh | Năm kit phần cứng (BOM, sơ đồ đấu dây, gate khoá), thư viện gate khởi đầu, `neuroedge add` | — | scaffold `neuroedge new` và gate mẫu |
-| **I3** Gate trên Box-3 | HAL trên chip (GPIO, I2C — TSK-S4-01, TSK-S4-03); runner hằng đêm có bo mạch thật (TSK-S4-05) → [`15`](15-target-architecture.md) §2.1 | — | walker, sổ token, vết ghi UART, component sinh cho agent, self-test — đều đã chạy trên QEMU; bốn điểm nối C ([`11`](11-hal-port-guide.md) §5) |
-| **I3a** Nguyên thủy mở rộng trên `esp32s3` | Bốn gói trên chip: Box-3 và một bo ESP32-S3 có camera làm bo tham chiếu thứ hai (Q-53); HAL C cho `digital.in`, I2C chỉ đọc, `analog.in`, PWM, `motion.*`, `vision.in`; cưỡng chế phong bì trong firmware → [`15`](15-target-architecture.md) §2.1 | — (theo hợp đồng của I2a) | walker C, sổ token, bốn điểm nối C ([`11`](11-hal-port-guide.md) §5); firmware chưa có phong bì thì action gắn phong bì bị từ chối trên chip |
-| **I4** Thoại trên host | Phiên thoại thời gian thực với micro thật; máy trạng thái FSM, wake-word, AEC, cắt lời, STT/TTS qua provider cloud, Jev qua System One API (Q-4, Q-12) | — | máy trạng thái, nhà cung cấp, backend micro/loa `live` trên `sounddevice` (`hal/linux.py`, mới mở thiết bị); AEC qua PipeWire theo Q-22 khi nightly Pi đạt; `TODOS.md` #45 |
-| **I4a** NeuroBrain trên host | Dựng Physical AI bằng hội thoại có hợp đồng (Q-31, Q-55) trên `sim` và `linux`, phủ bốn gói: action phòng lab có gate, gói `brain/` cô lập, Chat Contracting, Lab Monitor, trigger → [`15`](15-target-architecture.md) §4.2 | — (bản nháp `motion.*` phải khai phong bì và trạng thái an toàn; `gate.v1` không đổi) | mọi thứ phải đi qua `dispatch()` → gate (bất biến B-1 của thiết kế NeuroBrain); bản nháp chỉ được khoá sau `gate lint` và người duyệt |
-| **I5** Thoại trên Box-3 | Đường âm thanh trên chip (I2S, AEC, VAD, Opus), client luồng âm thanh, máy trạng thái bằng C/C++ (TSK-S5-03, Q-8) → [`15`](15-target-architecture.md) §2.2, §2.3 | — | đặc tả quy phạm `voice_fsm.md` và bộ vector tuân thủ dùng chung cho Python và C (Q-8) |
-| **I5a** NeuroBrain trên chip | Lab action, gate và phong bì của NeuroBrain chạy trên Box-3 và bo camera (khối N7) → [`15`](15-target-architecture.md) §4.2 | — | walker C và sổ token lượng giá lab action trên chip |
-| **I6** Công khai | Gói `neuroedge` trên PyPI và lần ra mắt (kho đã công khai từ 2026-09-25, Q-45), URL lược đồ công khai (A9); video demo thoại trên 3 target bậc 1 | — | `$id` của lược đồ đã là `https://schema.neuroedge.dev/…`; workflow phát hành có SBOM CycloneDX và Sigstore attestation |
-| **I7** v1.0 | Lần ra mắt MVP (Q-52): Secure Boot, mã hoá flash, công tắc micro vật lý (TSK-S6-05); đạt toàn bộ tiêu chí A1–A12 ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §11.1) → [`15`](15-target-architecture.md) §2.4 | — | OTA có ký và rollback phân vùng kép A/B đã chạy trên QEMU; `sdkconfig.ota` là lớp riêng |
-| **I8** Developer Beta | Đóng băng tính năng trên dòng `1.0.x`, 50–100 lập trình viên ngoài; đo chỉ số B1–B5, rẽ 3 nhánh A/B/C ([`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §5) → [`15`](15-target-architecture.md) §1, §3 | — (đóng băng tính năng mới trên `1.0.x`; ngoại lệ lỗi chặn và lỗi an toàn; RFC, đặc tả, CI vẫn merge — roadmap §5.2) | — (TSK-S3-09 viễn trắc ẩn danh chưa bắt đầu, thuộc I6; tiêu chí nhánh A là B1 và B2, Q-41) |
-| **I9** Fleet OS | **Container mới phía máy chủ**: điều phối OTA theo đợt (Hawkbit EPL-2.0, Q-11), broker MQTT giấy phép dễ dãi, kho vết ghi sự cố (retention 90 ngày / 3 năm, Q-6), cấp phát danh tính thiết bị (TSK-K2-04); **lớp provider tự vận hành (self-hosted provider layer)** gom một endpoint/credential, định tuyến đa provider và failover qua `agent.toml` (TSK-K2-01→03, FR-GW, Q-28) → [`15`](15-target-architecture.md) §3.1, §3.3 | có thể thêm trường vào `metadata` của vết ghi (không cần RFC) | `metadata` nhận trường thêm; `device_id` đã có; OTA cấp thiết bị là của lõi, chiến dịch là của Fleet OS (proposal §6.4); giao diện provider `neuroedge.models.providers` (Q-10) và hợp đồng failover `SystemTwo(provider=…, fallback=…)` (Q-28) mở sẵn |
-| **I10** Gate Registry | **Container mới**: kho OCI (ORAS, Harbor), đo lường sử dụng (OpenMeter) → [`15`](15-target-architecture.md) §3.2 | ký gate và kiểm chữ ký trên thiết bị (TSK-W2-04); ghim `extends` theo digest cần RFC (TSK-S3-21) | định danh `neuroedge://`, digest JCS, `gate publish`, `digests.lock`, `GateRegistry` là điểm thay backend |
-| **I11** Mở danh sách target | bảng bậc `TARGET_TIERS` trong lõi, `board validate` → [`15`](15-target-architecture.md) §4.1 | **RFC-0002**: enum `target` trong hai lược đồ (`board.v1`, `trace.v1`) | danh sách target đóng tại một chỗ (`hal/board.py`, `schemas/`) |
-| **I13** Bộ port cộng đồng | vector tuân thủ đóng gói chạy ngoài kho, `board check`, khung kiểm thử cho OEM và cộng đồng (Q-13, FR-TGT-08) → [`15`](15-target-architecture.md) §4.1, §4.5 | — | lõi C99 không phụ thuộc ESP-IDF; hợp đồng port ([`11`](11-hal-port-guide.md) §2) |
-| **I14** Robot phân tầng | Pi 5 làm não, nhiều node MCU (ESP32-S3 + RP2350 do đội lõi port, Q-33) mỗi node tự lượng giá gate; truyền thông Zenoh-pico (Q-36); tích hợp ROS 2/Nav2 có gate kiểm soát mọi lệnh tốc độ (Q-34) → [`15`](15-target-architecture.md) §4.3 | RFC-node, RFC an toàn di động (TSK-W4-07); `motion.*` và tiêu chí số đến từ I2a (RFC-0011, RFC-0009, Q-53) | vết ghi nhiều node mở rộng `trace.v1` bằng trường tuỳ chọn (Q-32); gate thuần tái dùng trên mỗi node |
-| **I16–I17** Thị giác trên `jetson`, đa phương thức | `jetson` (bậc 2) và hợp nhất thoại với thị giác; tái dùng vision stack từ `neuroedge-design-phase2.md`: JetPack và TensorRT (`jetson`); `vision.in` cơ bản trên `sim`, `linux`, `esp32s3` đã vào v1.0 ở I2a, I3a (Q-53) → [`15`](15-target-architecture.md) §4.4 | RFC ngữ nghĩa bằng chứng thị giác (TSK-V3-04) | thị giác là đầu vào L2, không bao giờ là thẩm quyền L3: maker khai dữ kiện `bool`/`level`/`choice` kèm độ tin cậy số, gate khoá ngưỡng bằng tiêu chí `numeric` (Q-54) |
-| **I18** Hệ sinh thái | kho adapter và port HAL trên hạ tầng Registry, chứng nhận phần cứng miễn phí, tự kiểm chứng (TSK-P2-03); bức tranh hệ sinh thái C4 hoàn chỉnh ([`16`](16-ecosystem-landscape.md)) → [`15`](15-target-architecture.md) §4.5 | — | adapter `python:` và hợp đồng port; chuẩn mở Apache-2.0 cho `schemas/`, `docs/spec/`, `fixtures/compliance/` (Q-45) |
+| Không lệnh nào ra phần cứng mà không có gate | Một đường `dispatch()` → `c.do()` → gate → token dùng một lần → HAL; ngoại lệ duy nhất là lệnh về trạng thái an toàn (Q-62) | `docs/spec/threat_model.md` §1–§2b; test chặn từng đường tắt | 4 (cắt lời), 10 (nhiều node) |
+| Không chắc thì không làm | Fail-closed ở mọi hướng (bất biến 2); dữ kiện cũ, thiếu, sai kiểu ⇒ `BLOCK` | `fixtures/traces/network_offline.json`; corpus phản chứng | 2 (cảm biến, camera), 3 (mất mạng trên chip) |
+| Một hợp đồng ở mọi nơi | Cùng tệp gate, phân giải thuần (bất biến 4); Python và C cùng đặc tả; `verify` so phán quyết | [`10`](10-target-equivalence.md); `neuroedge verify --targets sim,linux,esp32s3` | 3 (chip thật), 10 (bo cộng đồng) |
+| Bằng chứng thay cho lời hứa | Mọi phán quyết vào vết ghi `trace.v1`; replay tính lại không gọi model | [`06`](06-runtime-flows.md) §7; Action CI | 5 (bản nháp do model sinh), 9 (vết ghi từ hiện trường) |
+| Người giữ quyền cuối | Model và client MCP không xác nhận được `ask` (Q-26); bản nháp NeuroBrain phải có người duyệt; không ai xác nhận thay một số đo (Q-62) | test `confirms`; RFC-0006, RFC-0009 | 5 (dựng bằng hội thoại) |
+| Cắm vào stack của người khác | MCP là bề mặt gọi vào; model và giọng nói là provider thay được (P-4); lược đồ, đặc tả, bộ kiểm tuân thủ theo Apache-2.0 (Q-45) | `docs/spec/tool_calling.md`; `fixtures/tool_calls/` | 6 (MCP qua mạng, Q-58) |
 
-## 3. Điểm biến thiên đã có sẵn
+## 3. Kiến trúc qua từng mốc
+
+Nhãn `done` / `partial` / `planned` theo quy ước của [`README.md`](../README.md); trạng thái chi tiết từng
+increment ở roadmap §0.2.
+
+### Mốc 1 — Thử trên laptop *(I0, I1)*
+
+- **Người dùng làm được:** cài một gói, chạy một agent có gate trên `sim` trong dưới 10 phút; không phần
+  cứng, không tài khoản, không khoá API (M1).
+- **Kiến trúc thêm:** lõi hợp đồng an toàn — Action Contract Engine, `sim` cùng trang web cục bộ, CLI, MCP
+  server và host, System 2 qua LiteLLM (Q-10); walker C, sổ token và vết ghi UART trên QEMU; NeuroEdge
+  Studio (Q-51); vết ghi băm chữ người dùng tại nguồn theo mặc định (TSK-I1-01) `done`. Gói wheel nội bộ và
+  phép đo TTFV `partial`.
+- **Hợp đồng:** `gate.v1`, `trace.v1`, `board.v1` đóng băng — mọi mốc sau xây trên chúng; RFC-0008 ghim
+  `gate_digest` vào ba vết ghi chuẩn mực.
+- **Lời hứa được chứng minh bằng:** ba vết ghi chuẩn mực replay trong CI; `wheel-smoke` chạy cả hành trình
+  từ bản đã cài.
+
+### Mốc 2 — Thiết bị thật trên Raspberry Pi *(I2, I2a, I2b)*
+
+- **Người dùng làm được:** đấu một kit (đèn, cửa, quạt, cảm biến, camera, motor) vào Pi 5; cùng agent, cùng
+  gate như trên laptop.
+- **Kiến trúc thêm:** `LinuxHAL` ngang `sim` — `run`, `record`, `mcp serve --target linux`, cảm biến
+  hwmon/IIO, màn hình framebuffer `done` trên phần cứng ảo; nightly trên Pi 5 `planned`. **Bốn gói nguyên
+  thủy tuỳ chọn theo bo mạch** (Q-53): cảm biến (`digital.in`, I2C chỉ đọc, `analog.in`, tiêu chí `numeric`),
+  điều khiển mịn (PWM), thị giác (`vision.in`), chuyển động (`motion.*`); **phong bì an toàn** thành cơ chế
+  chung cho mọi cơ cấu chấp hành; profile `sim-rpi5`; năm kit mẫu và `neuroedge add` → [`15`](15-target-architecture.md)
+  §2.1, §4.2, §4.4. `planned`.
+- **Hợp đồng:** sáu RFC đã chấp thuận (2026-10-01): RFC-0007, RFC-0009 → RFC-0013 — `board.v1` nhận khối
+  mới; `gate.v1` nhận tiêu chí `numeric`; `NETR` v2 ghim byte ở RFC-0009 §3d.
+- **Lời hứa được chứng minh bằng:** lệnh về phía an toàn không bao giờ bị chặn; mọi chân `digital_out` mặc
+  định là cơ cấu chấp hành và có phong bì ghi bền qua khởi động lại; tự tắt tại
+  `min(thời hạn lệnh, max_continuous_ms)`; giám sát ngoài tiến trình khi runtime treo (RFC-0007 §9); dữ
+  kiện thị giác lượng giá từng khung rồi AND, camera đứng hình ⇒ `BLOCK` (RFC-0012).
+
+### Mốc 3 — Gate chạy trên chip $5 *(I3, I3a)*
+
+- **Người dùng làm được:** nạp agent lên ESP32-S3 (Box-3 và M5Stack CoreS3 — Q-61); gate quyết ngay trên
+  chip, mất mạng vẫn chặn đúng.
+- **Kiến trúc thêm:** HAL trên chip (GPIO, I2C — TSK-S4-01, TSK-S4-03); runner hằng đêm có bo mạch thật
+  (TSK-S4-05); bốn gói nguyên thủy trên chip, phong bì cưỡng chế trong firmware từ bảng `const` trong
+  flash → [`15`](15-target-architecture.md) §2.1. Walker, sổ token, vết ghi UART, component sinh cho
+  agent, self-test và giao diện LVGL `done` trên QEMU và host; mọi thứ trên silicon `planned`.
+- **Hợp đồng:** không đổi — chip đọc đúng các hợp đồng của mốc 1 và 2; walker v1 từ chối cây v2 thay vì
+  đọc sai.
+- **Lời hứa được chứng minh bằng:** `verify` ba target trên từng bo tham chiếu (RFC-0013 §3f); spike bộ
+  nhớ theo ngưỡng Q-3, quy tắc quyết định chốt trước khi đo (Q-44).
+
+### Mốc 4 — Nói chuyện với thiết bị *(I4, I5)*
+
+- **Người dùng làm được:** ra lệnh bằng giọng nói trên laptop, Pi và chip; cắt lời thì lệnh chưa chạy bị
+  huỷ.
+- **Kiến trúc thêm:** máy trạng thái hội thoại năm trạng thái, wake-word, STT/TTS qua provider, Jev qua
+  System One API (Q-4, Q-12); `run --mic` trên laptop `done`; AEC qua PipeWire (Q-22) và phiên sống trên Pi
+  `planned`; đường âm thanh trên chip (I2S, AEC, VAD, Opus) và máy trạng thái bằng C (TSK-S5-03, Q-8)
+  `planned` → [`15`](15-target-architecture.md) §2.2, §2.3.
+- **Hợp đồng:** `docs/spec/voice_fsm.md` là đặc tả chuẩn tắc cho cả hai hiện thực; bộ vector tuân thủ dùng
+  chung.
+- **Lời hứa được chứng minh bằng:** hợp đồng thu hồi lệnh vật lý (`voice_fsm.md` §5) — cắt lời huỷ lệnh
+  chưa giao trong ≤ 1 khung âm thanh; `motion.*` dừng ngay (Q-57).
+
+### Mốc 5 — Dựng bằng hội thoại *(I4a, I5a)*
+
+- **Người dùng làm được:** mô tả thiết bị bằng lời; NeuroBrain sinh action, gate và phong bì; người duyệt
+  rồi mới khoá (Q-31, Q-55).
+- **Kiến trúc thêm:** gói `brain/` cô lập — action phòng lab có gate, Chat Contracting, Lab Monitor,
+  trigger theo sự kiện — trên host, rồi lab action, gate và phong bì trên chip (khối N7) →
+  [`15`](15-target-architecture.md) §4.2. `planned`.
+- **Hợp đồng:** không đổi `gate.v1`; bản nháp `motion.*` phải khai phong bì và trạng thái an toàn, thiếu thì
+  từ chối sinh.
+- **Lời hứa được chứng minh bằng:** mọi thứ NeuroBrain làm vẫn đi qua `dispatch()` → gate; bản nháp chỉ khoá
+  sau `gate lint` và người duyệt; model không bao giờ tự xác nhận.
+
+### Mốc 6 — Ra mắt công khai *(I6)*
+
+- **Người dùng làm được:** ai cũng `pip install neuroedge`; gọi thiết bị từ Claude, Home Assistant hay một
+  agent framework qua MCP có xác thực. **Lần đầu người ngoài dùng được.**
+- **Kiến trúc thêm:** gói trên PyPI có SBOM và attestation; lược đồ ở URL công khai `schema.neuroedge.dev`
+  (A9); **bề mặt tích hợp** (Q-58): MCP qua mạng — Streamable HTTP, OAuth 2.1, mTLS theo thiết bị, mặc định
+  tắt (TSK-P2-04) — và Gated Tool Profile đóng băng vào `schemas/` (TSK-I6-05). `partial`: quét bí mật,
+  SBOM `done`.
+- **Hợp đồng:** lược đồ phong bì `ToolCall` và kết quả vào `schemas/` qua RFC; từ đây OSS khác hiện thực
+  được profile theo phần Apache-2.0 mà không phụ thuộc mã PolyForm NC (Q-59).
+- **Lời hứa được chứng minh bằng:** client trên máy khác vẫn chỉ gửi được *yêu cầu*; thiếu xác thực ⇒ từ
+  chối; bật cổng mạng mà thiếu cấu hình xác thực ⇒ không khởi động; lặp lời gọi N lần ⇒ N lần `BLOCK`.
+
+### Mốc 7 — v1.0: đưa vào sản phẩm *(I7)*
+
+- **Người dùng làm được:** cập nhật firmware có ký, khoá thiết bị, chạy ổn định 24 giờ; đủ tiêu chí nghiệm
+  thu A1–A12 (PRD §11.1).
+- **Kiến trúc thêm:** Secure Boot, mã hoá flash, anti-rollback eFuse, công tắc micro vật lý (TSK-S6-05)
+  `planned`; OTA có ký và rollback phân vùng kép A/B `done` trên QEMU → [`15`](15-target-architecture.md) §2.4.
+- **Hợp đồng:** không đổi; `sdkconfig.ota` là lớp cấu hình riêng.
+- **Lời hứa được chứng minh bằng:** bên thứ ba hiện thực chuẩn từ lược đồ công khai (A9); 10 người ngoài
+  cài từ PyPI (A1); 5 người dựng kit (A12).
+
+### Mốc 8 — Developer Beta *(I8)*
+
+- **Người dùng làm được:** 50–100 lập trình viên ngoài dùng thật trên dòng `1.0.x`.
+- **Kiến trúc thêm:** không thêm tính năng; viễn trắc ẩn danh, có thể tắt (TSK-S3-09, từ mốc 6) đo B1–B5.
+- **Hợp đồng:** đóng băng tính năng trên `1.0.x` — chỉ lỗi chặn và lỗi an toàn (R12); RFC, đặc tả, CI vẫn
+  merge.
+- **Lời hứa được chứng minh bằng:** số đo thật, không phải giả định, quyết hướng thương mại (điểm rẽ,
+  roadmap §5.6; Q-41).
+
+### Mốc 9 — Vận hành đội thiết bị *(I9, I10)*
+
+- **Người dùng làm được:** cập nhật hàng nghìn thiết bị theo đợt, kéo vết ghi sự cố từ xa, dùng chung gate
+  qua registry có ký.
+- **Kiến trúc thêm:** **container đầu tiên phía máy chủ.** Fleet OS: điều phối OTA theo đợt (Hawkbit, Q-11),
+  broker MQTT giấy phép dễ dãi, kho vết ghi sự cố (Q-6), cấp phát danh tính thiết bị (TSK-K2-04), lớp
+  provider tự vận hành gom endpoint và failover (TSK-K2-01→03, Q-28). Gate Registry: kho OCI (ORAS,
+  Harbor), đo lường (OpenMeter) → [`15`](15-target-architecture.md) §3.1–§3.3. `planned`.
+- **Hợp đồng:** trường mới trong `metadata` của vết ghi (không cần RFC); ký gate và kiểm chữ ký trên thiết
+  bị (TSK-W2-04); ghim `extends` theo digest cần RFC (TSK-S3-21).
+- **Lời hứa được chứng minh bằng:** OTA cấp thiết bị vẫn là của lõi, chiến dịch là của Fleet OS (proposal
+  §6.4) — dịch vụ không bao giờ nằm trên đường quyết định của gate; 1.000 thiết bị, 0 brick (M5).
+
+### Mốc 10 — Mở rộng hệ sinh thái *(I11, I13, I14, I16, I17, I18)*
+
+- **Người dùng làm được:** cộng đồng tự port bo mạch mới; robot Pi 5 với nhiều node MCU; Jetson; thoại cùng
+  thị giác.
+- **Kiến trúc thêm:** bậc target `TARGET_TIERS` và `board validate` (RFC-0002); bộ port với vector tuân thủ
+  chạy ngoài kho (Q-13); robot phân tầng — mỗi node tự lượng giá gate, Zenoh-pico (Q-36), mất liên lạc về
+  trạng thái an toàn theo từng cơ cấu (Q-35), ROS 2/Nav2 có gate (Q-34); `jetson` bậc 2; chứng nhận phần
+  cứng miễn phí, tự kiểm chứng → [`15`](15-target-architecture.md) §4, [`16`](16-ecosystem-landscape.md).
+  `planned`.
+- **Hợp đồng:** RFC-0002 (enum `target`), RFC-node, RFC an toàn robot di động (TSK-W4-07); vết ghi nhiều
+  node bằng trường tuỳ chọn (Q-32).
+- **Lời hứa được chứng minh bằng:** gate on-device, không gate tập trung, kể cả khi hệ thống trải trên nhiều
+  chip; black channel không tin transport; robot di động bắt buộc nút dừng khẩn phần cứng (Q-38).
+
+## 4. Điểm biến thiên đã có sẵn
 
 Những chỗ kiến trúc hôm nay đã cố ý để mở, để các chặng trên không phải đập lại nền:
 
@@ -52,9 +185,9 @@ Những chỗ kiến trúc hôm nay đã cố ý để mở, để các chặng 
 | Backend registry | `GateRegistry` (`gate_resolver.py`) — docstring ghi rõ sẽ thay bằng tra cứu OCI | Gate Registry (I10) |
 | Sự kiện vết ghi | `type` là chuỗi tự do trong `trace.v1`; `metadata` nhận trường thêm | sự kiện mới, vết ghi nhiều node, mà không cần `trace.v2` |
 | Lớp cấu hình firmware | `SDKCONFIG_DEFAULTS` nhiều lớp | bật tính năng theo bo mạch mà không rẽ nhánh mã |
-| Cây trên thiết bị | `NETR` có `layout_version` | bố cục v2 khi cần (ví dụ mang nhãn gate — `TODOS.md` #36), walker v1 từ chối v2 thay vì đọc sai |
+| Cây trên thiết bị | `NETR` có `layout_version` | bố cục v2 đã ghim ở RFC-0009 §3d (bảng `numeric`, nhãn gate — `TODOS.md` #36); walker v1 từ chối v2 thay vì đọc sai |
 
-## 4. Nợ kiến trúc đã biết
+## 5. Nợ kiến trúc đã biết
 
 Mỗi mục là một lựa chọn có chủ đích, có mốc kích hoạt trong `TODOS.md`:
 
@@ -65,7 +198,7 @@ Mỗi mục là một lựa chọn có chủ đích, có mốc kích hoạt tron
 | `extends` chưa ghim theo digest | chưa có registry; `digests.lock` phủ CI | #15 |
 | Gated Tool Profile chưa đóng băng vào `schemas/` | đóng băng bằng RFC trước I6 (TSK-I6-05, Q-58) | #23 |
 | Kết nối MCP chỉ sống một lượt | mỗi lượt REPL một vòng lặp sự kiện | #25 |
-| Chưa có tiêu chí số trong gate | RFC-0009 (I2a) sẽ thêm; `bands` đủ cho mẫu hiện có | #30 |
+| Chưa có tiêu chí số trong gate | RFC-0009 đã chấp thuận; hiện thực ở TSK-W1-02 (mốc 2); `bands` đủ cho mẫu hiện có | #30 |
 | `NETR` v1 không mang nhãn gate và chữ `on_block` | cây link cùng firmware nên không lệch | #36 |
 | Thao tác và thời lượng lệnh chân trên chip lấy từ bảng dựng trên host | cách action chạy trên MCU chưa chốt | #37 |
 | Đọc cảm biến `linux` chặn vòng lặp sự kiện | chưa có agent vừa nói vừa đọc cảm biến | #48 |

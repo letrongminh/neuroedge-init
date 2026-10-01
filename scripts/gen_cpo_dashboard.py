@@ -3,7 +3,8 @@
 
 Một trang HTML tự chứa (không CDN, không mạng), sinh hoàn toàn từ nguồn sự thật:
 
-- `neuroedge-roadmap.md` §0.1–§0.3, bảng increment §0.2, bảng task và tiêu chí ra của từng
+- `neuroedge-roadmap.md` §0.1–§0.3, bảng increment §0.2, mười mốc phát hành theo người dùng §0.5
+  (trang dẫn đầu bằng chúng; chi tiết kỹ thuật thu gọn ở cuối), bảng task và tiêu chí ra của từng
   increment §4–§8, A1–A12 (Q-39: một roadmap duy nhất);
 - `TODOS.md` (việc hoãn có chủ ý, mốc kích hoạt);
 - `neuroedge-prd.md` §15 (quyết định chưa chốt hẳn);
@@ -264,7 +265,9 @@ def open_decisions() -> list[tuple[str, str, str]]:
 
 def recent_changes(limit: int = 8) -> list[str]:
     lines = between(
-        CHANGELOG.read_text(encoding="utf-8").splitlines(), "### [Chưa phát hành]", "### Mốc"
+        CHANGELOG.read_text(encoding="utf-8").splitlines(),
+        "### [Chưa phát hành]",
+        "### Mốc",
     )
     out = []
     for line in lines:
@@ -276,42 +279,133 @@ def recent_changes(limit: int = 8) -> list[str]:
     return out
 
 
+# --- mốc phát hành theo người dùng -----------------------------------------------------------
+
+
+@dataclass
+class Milestone:
+    n: int
+    name: str
+    does: str
+    why: str
+    incs: list[str]
+    who: str
+    done: int = 0
+    total: int = 0
+    date: str | None = None
+    after: str = ""
+    state: str = "upcoming"
+
+    @property
+    def pct(self) -> int:
+        return round(100 * self.done / self.total) if self.total else 0
+
+
+def milestones(lines: list[str], matrix: list[Increment]) -> list[Milestone]:
+    """Bảng "Mười mốc phát hành theo người dùng" (roadmap §0.5), ghép với §0.2."""
+    i = next(n for n, line in enumerate(lines) if line.startswith("#### Mười mốc phát hành"))
+    out: list[Milestone] = []
+    for line in lines[i + 1 :]:
+        if line.startswith("#") or line.startswith("---"):
+            break
+        if not re.match(r"\| \d+ \|", line):
+            continue
+        c = split_row(line)
+        incs = [x.strip() for x in plain(c[4]).split(",")]
+        out.append(Milestone(int(c[0]), plain(c[1]), c[2], c[3], incs, plain(c[5])))
+    by_id = {inc.id: inc for inc in matrix if inc.id}
+    owner = {inc: m for m in out for inc in m.incs}
+    missing = set(by_id) - set(owner)
+    if missing or set(owner) - set(by_id):
+        raise SystemExit(
+            f"Bảng mốc phát hành lệch §0.2: {sorted(missing or set(owner) - set(by_id))}"
+        )
+    for m in out:
+        dates, refs, states = [], [], []
+        for inc in m.incs:
+            row = by_id[inc]
+            a, b = (int(x) for x in re.findall(r"\d+", plain(row.progress))[:2])
+            m.done, m.total = m.done + a, m.total + b
+            found = DATE.findall(row.forecast)
+            if found:
+                dates.append(found[0])
+            else:
+                refs += [
+                    r for r in re.findall(r"\bI\d+[a-z]?\b", plain(row.forecast)) if r not in m.incs
+                ]
+            states.append(state_of(row.state))
+        if len(dates) == len(m.incs):
+            m.date = max(dates)
+        elif refs:
+            m.after = "sau " + max((owner[r] for r in refs if r in owner), key=lambda x: x.n).name
+        if all(st == "done" for st in states):
+            m.state = "done"
+        elif m.done or any(st in ("done", "partial") for st in states):
+            m.state = "active"
+    return out
+
+
+CODES = re.compile(r"\s*\((?=[^)]*(?:TSK-|Q-\d|§|#\d|RFC-|I\d))[^)]*\)")
+
+
+def human(text: str) -> str:
+    """Bỏ các cụm mã nội bộ trong ngoặc — dành cho người đọc không cần ký hiệu."""
+    return re.sub(r"\s{2,}", " ", CODES.sub("", plain(text))).strip(" ·;")
+
+
 # --- HTML --------------------------------------------------------------------------------------
 
 CSS = """
-:root{--bg:#f6f6f4;--surface:#fcfcfb;--line:#e4e3de;--ink:#0b0b0b;--ink2:#52514e;--ink3:#7a7974;
---done:#0ca30c;--partial:#eda100;--todo:#c9c8c2;--deferred:#9085e9;--critical:#d03b3b;--blocked:#d03b3b;--accent:#2a78d6}
-@media (prefers-color-scheme:dark){:root{--bg:#121211;--surface:#1a1a19;--line:#33332f;--ink:#fff;
---ink2:#c3c2b7;--ink3:#8f8e86;--done:#0ca30c;--partial:#c98500;--todo:#4a4a45;--deferred:#9085e9;
---critical:#e66767;--blocked:#e66767;--accent:#3987e5}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
-font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-main{max-width:1180px;margin:0 auto;padding:24px 16px 48px}
-h1{font-size:22px;margin:0}h2{font-size:15px;margin:0 0 12px;letter-spacing:.01em}
-.sub{color:var(--ink2);margin:4px 0 20px}.card{background:var(--surface);border:1px solid var(--line);
-border-radius:10px;padding:16px;margin-bottom:16px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:12px;margin-bottom:16px}
-.kpis>*,.grid2>*,.card{min-width:0}
-.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
-.kpi .v{font-size:26px;font-weight:650;line-height:1.2}.kpi .l{color:var(--ink2);font-size:12px}
-.kpi .n{color:var(--ink3);font-size:12px;margin-top:4px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media (max-width:820px){.grid2{grid-template-columns:1fr}}
-table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:7px 8px;border-top:1px solid var(--line);vertical-align:top}
-th{color:var(--ink2);font-weight:600;font-size:12px;border-top:0}td{font-size:13px}
-.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-td code{white-space:nowrap}code{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);padding:1px 4px;border-radius:4px}
-.legend{display:flex;flex-wrap:wrap;gap:14px;color:var(--ink2);font-size:12px;margin:0 0 10px}
+:root{--bg:#f5f4f0;--surface:#fffefb;--line:#e6e3dc;--ink:#14130f;--ink2:#55534c;--ink3:#86837a;
+--done:#1f8a4c;--done-bg:#e3f3e8;--active:#c77700;--active-bg:#fbefd9;--todo:#c9c6bd;--todo-bg:#efede7;
+--deferred:#7a6fd6;--blocked:#c43d3d;--partial:#c77700;--accent:#2457c5;--accent-bg:#e5ecfb;--hero:#14130f;--hero-ink:#fffefb}
+@media (prefers-color-scheme:dark){:root{--bg:#121210;--surface:#1b1a17;--line:#2f2d28;--ink:#f3f1ea;--ink2:#bdb9ad;
+--ink3:#8a867c;--done:#4cc27b;--done-bg:#173322;--active:#f0a53a;--active-bg:#3a2c12;--todo:#4a4842;--todo-bg:#25241f;
+--deferred:#9d93ef;--blocked:#ec6b6b;--partial:#f0a53a;--accent:#7aa2ff;--accent-bg:#1c2847;--hero:#f3f1ea;--hero-ink:#14130f}}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1120px;margin:0 auto;padding:32px 16px 56px}
+h1{font-size:28px;line-height:1.15;margin:0;letter-spacing:-.01em}
+h2{font-size:18px;margin:0 0 4px}.lede{color:var(--ink2);margin:0 0 16px}
+.top{display:flex;flex-wrap:wrap;gap:8px 24px;align-items:baseline;justify-content:space-between;margin-bottom:20px}
+.tagline{color:var(--ink2);margin:6px 0 0;font-size:16px}.stamp{color:var(--ink3);font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px;min-width:0}
+.hero{background:var(--hero);color:var(--hero-ink);border:0;display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:20px}
+.hero .k{font-size:13px;opacity:.75;margin:0 0 6px}.hero .big{font-size:34px;font-weight:700;line-height:1.1;margin:0}
+.hero .s{font-size:14px;opacity:.85;margin:6px 0 0}.hero .now{border-right:1px solid rgba(127,127,127,.35);padding-right:20px}
+@media (max-width:820px){.hero{grid-template-columns:1fr}.hero .now{border-right:0;border-bottom:1px solid rgba(127,127,127,.35);padding:0 0 16px}}
+.journey{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:14px}
+.ms{border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--surface);display:flex;flex-direction:column;gap:8px;min-width:0}
+.ms.launch{border:2px solid var(--accent)}
+.ms h3{font-size:16px;margin:0;display:flex;gap:10px;align-items:center}
+.num{flex:none;width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;font-size:13px;font-weight:700;
+background:var(--todo-bg);color:var(--ink2)}
+.done .num{background:var(--done);color:#fff}.active .num{background:var(--active);color:#fff}
+.ms p{margin:0}.ms .does{color:var(--ink)}.ms .why{color:var(--ink2);font-size:13px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:13px;color:var(--ink2);margin-top:auto}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.pill.done{background:var(--done-bg);color:var(--done)}.pill.active{background:var(--active-bg);color:var(--active)}
+.pill.upcoming{background:var(--todo-bg);color:var(--ink2)}.pill.launch{background:var(--accent-bg);color:var(--accent)}
+.prog{height:8px;border-radius:999px;background:var(--todo-bg);overflow:hidden}
+.prog span{display:block;height:100%;background:var(--done);border-radius:999px}
+.active .prog span{background:var(--active)}
+.later{margin-top:14px}.later summary{cursor:pointer;color:var(--ink2);font-weight:600}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media (max-width:820px){.grid2{grid-template-columns:1fr}}
+.grid2>*{min-width:0}
+ol.steps,ul.steps{margin:8px 0 0;padding-left:20px}.steps li{margin:6px 0}
+.health{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:12px}
+.health div{border:1px solid var(--line);border-radius:10px;padding:12px}.health b{display:block;font-size:22px}
+.health span{color:var(--ink2);font-size:13px}
+.tl{overflow-x:auto}.tl svg{display:block;min-width:720px}
+details.tech{margin-top:8px}details.tech>summary{cursor:pointer;font-weight:600;font-size:16px;padding:6px 0}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:7px 8px;border-top:1px solid var(--line);vertical-align:top;font-size:13px}
+th{color:var(--ink2);font-weight:600;font-size:12px;border-top:0}td.r,th.r{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+code{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);padding:1px 4px;border-radius:4px}
+.scroll{overflow-x:auto}.legend{display:flex;flex-wrap:wrap;gap:14px;color:var(--ink2);font-size:12px;margin:0 0 10px}
 .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
-.bar{display:flex;gap:2px;height:14px;min-width:120px}.bar span{display:block;height:100%}
-.bar span:first-child{border-radius:4px 0 0 4px}.bar span:last-child{border-radius:0 4px 4px 0}
-.bar span:only-child{border-radius:4px}
-.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);white-space:nowrap}
-.tag.done{color:var(--done);border-color:var(--done)}.tag.crit{color:var(--critical);border-color:var(--critical)}
-ul.plain{margin:0;padding-left:18px}ul.plain li{margin:3px 0}
-details summary{cursor:pointer;color:var(--ink2);margin:6px 0}
-.tl{position:relative;overflow-x:auto}.tl svg{display:block;min-width:640px}
-.foot{color:var(--ink3);font-size:12px;margin-top:24px}
-.scroll{overflow-x:auto}
+.bar{display:flex;gap:2px;height:12px;min-width:120px}.bar span{display:block;height:100%}
+.bar span:first-child{border-radius:4px 0 0 4px}.bar span:last-child{border-radius:0 4px 4px 0}.bar span:only-child{border-radius:4px}
+.foot{color:var(--ink3);font-size:12px;margin-top:28px}
 """
 
 
@@ -336,39 +430,76 @@ def legend() -> str:
     return f'<div class="legend">{items}</div>'
 
 
-def timeline(points: list[tuple[str, str, bool]], today: str) -> str:
-    """Các mốc có ngày tuyệt đối trên một trục thời gian (SVG)."""
-    dates = sorted({d for d, _, _ in points} | {today})
+STATE_TEXT = {"done": "Đã xong", "active": "Đang làm", "upcoming": "Chưa bắt đầu"}
+
+
+def vn_date(d: str) -> str:
+    y, m, day = d.split("-")
+    return f"{int(day)} thg {int(m)}, {y}"
+
+
+def timeline(ms: list[Milestone], today: str, launch: set[int]) -> str:
+    """Các mốc có ngày trên một trục thời gian (SVG); nhãn chia tầng để không chồng nhau."""
+    dated = sorted((m for m in ms if m.date), key=lambda m: m.date)
+    dates = sorted({m.date for m in dated} | {today})
     first, last = date.fromisoformat(dates[0]), date.fromisoformat(dates[-1])
     span = max((last - first).days, 1)
-    width, left, right = 1100, 80, 110
+    width, left, right, axis = 1080, 90, 90, 96
+    lanes = [62, 30, 132, 164]  # hai tầng trên, hai tầng dưới trục
 
     def x(d: str) -> float:
         return left + (date.fromisoformat(d) - first).days / span * (width - left - right)
 
-    marks = [
-        f'<line x1="{left}" y1="60" x2="{width - right}" y2="60" stroke="var(--line)" stroke-width="2"/>',
-        f'<line x1="{x(today):.1f}" y1="20" x2="{x(today):.1f}" y2="100" stroke="var(--accent)" '
-        f'stroke-width="2" stroke-dasharray="4 3"/>',
-        f'<text x="{x(today):.1f}" y="14" text-anchor="middle" font-size="11" fill="var(--accent)">'
-        f"hôm nay {today}</text>",
+    out = [
+        f'<line x1="{left - 40}" y1="{axis}" x2="{width - right + 40}" y2="{axis}" stroke="var(--line)" '
+        'stroke-width="3" stroke-linecap="round"/>',
+        f'<line x1="{x(today):.1f}" y1="{axis - 18}" x2="{x(today):.1f}" y2="{axis + 18}" stroke="var(--accent)" '
+        'stroke-width="2" stroke-dasharray="4 3"/>',
+        f'<text x="{x(today):.1f}" y="{axis + 34}" text-anchor="middle" font-size="12" font-weight="600" '
+        'fill="var(--accent)">hôm nay</text>',
     ]
-    for i, (d, name, hard) in enumerate(sorted(points)):
-        up = i % 2 == 0
-        y = (44 if (i // 2) % 2 == 0 else 26) if up else (84 if (i // 2) % 2 == 0 else 108)
-        color = "var(--critical)" if hard else "var(--ink2)"
-        marks.append(
-            f'<circle cx="{x(d):.1f}" cy="60" r="5" fill="var(--surface)" stroke="{color}" '
-            f'stroke-width="2"><title>{html.escape(name)} — {d}</title></circle>'
+    ends = [float("-inf")] * len(lanes)
+    ends[2] = x(today) + 30  # chừa chỗ cho nhãn "hôm nay"
+    for m in dated:
+        cx = x(m.date)
+        label = f"{m.n}. {m.name}"
+        half = max(len(label) * 3.6, len(vn_date(m.date)) * 3.2) + 8
+        lane = next((k for k in range(len(lanes)) if ends[k] < cx - half), 0)
+        ends[lane] = cx + half
+        y = lanes[lane]
+        color = {"done": "var(--done)", "active": "var(--active)"}.get(m.state, "var(--ink3)")
+        big = m.n in launch
+        if big:
+            color = "var(--accent)"
+        tip = y + 10 if y < axis else y - 26
+        out.append(
+            f'<line x1="{cx:.1f}" y1="{axis}" x2="{cx:.1f}" y2="{tip}" stroke="var(--line)" stroke-width="1"/>'
         )
-        marks.append(
-            f'<text x="{x(d):.1f}" y="{y}" text-anchor="middle" font-size="11" fill="var(--ink)">'
-            f'{html.escape(name[:34])}</text><text x="{x(d):.1f}" y="{y + (-12 if up else 13)}" '
-            f'text-anchor="middle" font-size="10" fill="var(--ink3)">{d}</text>'
+        out.append(
+            f'<circle cx="{cx:.1f}" cy="{axis}" r="{8 if big else 6}" fill="{color}" stroke="var(--surface)" '
+            f'stroke-width="2"><title>{html.escape(m.name)} — {m.date}</title></circle>'
+        )
+        out.append(
+            f'<text x="{cx:.1f}" y="{y - 14}" text-anchor="middle" font-size="12" font-weight="{700 if big else 500}" '
+            f'fill="var(--ink)">{html.escape(label)}</text>'
+            f'<text x="{cx:.1f}" y="{y}" text-anchor="middle" font-size="11" fill="var(--ink3)">{vn_date(m.date)}</text>'
         )
     return (
-        f'<div class="tl"><svg viewBox="0 0 {width} 130" width="100%" role="img" '
-        f'aria-label="Dòng thời gian các mốc">{"".join(marks)}</svg></div>'
+        f'<div class="tl"><svg viewBox="0 0 {width} 180" width="100%" role="img" '
+        f'aria-label="Dòng thời gian các mốc phát hành">{"".join(out)}</svg></div>'
+    )
+
+
+def milestone_card(m: Milestone, launch: set[int]) -> str:
+    when = vn_date(m.date) if m.date else html.escape(m.after or "chưa có ngày")
+    badge = '<span class="pill launch">Ra mắt</span>' if m.n in launch else ""
+    return (
+        f'<article class="ms {m.state}{" launch" if m.n in launch else ""}">'
+        f'<h3><span class="num">{m.n}</span>{html.escape(m.name)}</h3>'
+        f'<p class="does">{inline(m.does)}</p><p class="why">{inline(m.why)}</p>'
+        f'<div class="prog" role="img" aria-label="{m.pct}% việc đã xong"><span style="width:{m.pct}%"></span></div>'
+        f'<div class="meta"><span class="pill {m.state}">{STATE_TEXT[m.state]}</span>{badge}'
+        f"<span>{when}</span><span>{m.pct}% việc xong</span><span>{html.escape(m.who)}</span></div></article>"
     )
 
 
@@ -382,165 +513,147 @@ def render() -> str:
     card = handoff(lines)
     todo_items = todos()
     decisions = open_decisions()
-    changes = recent_changes()
+    ms = milestones(lines, matrix)
 
     updated = DATE.search(status["Lần cập nhật cuối"]).group(1)
     today = date.fromisoformat(updated)
 
-    by_id = {inc.id: inc for inc in matrix if inc.id}
-    v10 = [t for t in tasks if t.increment and inc_number(t.increment) <= 7]
-    done = sum(t.state == "done" for t in v10)
+    public = next(m for m in ms if m.who.startswith("Mọi người"))
+    v10 = next(m for m in ms if "v1.0" in m.name)
+    launch = {public.n, v10.n}
+    current = next((m for m in ms if m.state != "done"), ms[-1])
 
-    ci = re.search(r"PASS (\d+)/(\d+) · SKIP (\d+)", plain(status["Trạng thái CI Lõi"]))
-    next_id = inc_id(status["Cột mốc tiếp theo"])
-    next_date = DATE.search(by_id[next_id].forecast) if next_id in by_id else None
-    next_days = (date.fromisoformat(next_date.group(1)) - today).days if next_date else None
-    blockers = plain(status["Chặn ngoài tầm kỹ thuật · ghi chú"])
-    passed = sum(ok for _, _, ok in accept)
+    def days(m: Milestone) -> str:
+        return f"còn {(date.fromisoformat(m.date) - today).days} ngày" if m.date else m.after
 
-    kpis = [
-        (f"{done}/{len(v10)}", "Task tới v1.0 đã xong", f"{round(100 * done / len(v10))}% — I0→I7"),
-        (
-            f"{ci.group(1)}/{ci.group(2)}" if ci else "?",
-            "Test CI lõi đạt",
-            f"skip {ci.group(3)} — CI chặn mọi skip" if ci else "",
-        ),
-        (
-            f"{next_days} ngày" if next_days is not None else "?",
-            f"Tới {next_id}" if next_id else "Tới cột mốc tiếp theo",
-            f"dự báo {next_date.group(1)}" if next_date else "",
-        ),
-        (f"{passed}/{len(accept)}", "Tiêu chí nghiệm thu v1.0 (A1–A12)", "đạt khi đóng I7"),
-        (str(len(decisions)), "Quyết định còn chờ", "PRD §15"),
-        (str(len(todo_items)), "Việc hoãn có mốc (TODOS)", "mỗi mục có mốc kích hoạt"),
-    ]
-    kpi_html = "".join(
-        f'<div class="kpi"><div class="v">{html.escape(v)}</div><div class="l">{html.escape(label)}</div>'
-        f'<div class="n">{html.escape(n)}</div></div>'
-        for v, label, n in kpis
+    hero = (
+        f'<section class="card hero" aria-label="Tóm tắt">'
+        f'<div class="now"><p class="k">Hôm nay</p><p class="big">Mốc {current.n}: {html.escape(current.name)}</p>'
+        f'<p class="s">{current.pct}% việc xong · {STATE_TEXT[current.state].lower()}</p></div>'
+        f'<div><p class="k">Người ngoài dùng được</p><p class="big">{vn_date(public.date) if public.date else "—"}</p>'
+        f'<p class="s">{html.escape(public.name)} · {days(public)}</p></div>'
+        f'<div><p class="k">v1.0 — đưa vào sản phẩm</p><p class="big">{vn_date(v10.date) if v10.date else "—"}</p>'
+        f'<p class="s">{days(v10)}</p></div></section>'
     )
 
-    # Bảng increment: tiến độ chính thức (§0.2) + phân rã theo task, ghép theo mã increment.
+    core = [m for m in ms if m.n <= v10.n]
+    after = [m for m in ms if m.n > v10.n]
+    journey = (
+        '<section class="card"><h2>Hành trình tới sản phẩm dùng được</h2>'
+        '<p class="lede">Mỗi mốc là một việc người dùng làm được. Ngày là dự báo của đội; trượt thì dời ngày, không cắt phạm vi.</p>'
+        f"{timeline(ms, updated, launch)}"
+        f'<div class="journey">{"".join(milestone_card(m, launch) for m in core)}</div>'
+        f'<details class="later"><summary>Sau v1.0 — {len(after)} mốc: '
+        f"{html.escape(' · '.join(m.name for m in after))}</summary>"
+        f'<div class="journey" style="margin-top:12px">{"".join(milestone_card(m, launch) for m in after)}</div>'
+        "</details></section>"
+    )
+
+    blockers = [
+        human(b)
+        for b in plain(status["Chặn ngoài tầm kỹ thuật · ghi chú"]).replace("🔴", "").split(" · ")
+    ]
+    nexts = "".join(f"<li>{inline(item)}</li>" for item in card.get("3", []))
+    dec = "".join(
+        f'<li>{html.escape(t)} — <span class="stamp">{html.escape(s[:40])}</span></li>'
+        for _, t, s in decisions
+    )
+    asks = "".join(f"<li>{html.escape(b[:1].upper() + b[1:])}</li>" for b in blockers if b)
+    actions = (
+        '<section class="card"><h2>Cần chủ sản phẩm</h2><p class="lede">Những việc chỉ người làm được; đội đang chờ.</p>'
+        f'<ul class="steps">{asks}</ul>'
+        + (
+            f'<p style="margin:12px 0 0"><b>Quyết định còn mở</b></p><ul class="steps">{dec}</ul>'
+            if dec
+            else ""
+        )
+        + "</section>"
+    )
+
+    v1_tasks = [t for t in tasks if t.increment and inc_number(t.increment) <= 7]
+    done_v1 = sum(t.state == "done" for t in v1_tasks)
+    ci = re.search(r"PASS (\d+)/(\d+) · SKIP (\d+)", plain(status["Trạng thái CI Lõi"]))
+    passed = sum(ok for _, _, ok in accept)
+    health = (
+        '<section class="card"><h2>Sức khoẻ</h2><div class="health">'
+        f"<div><b>{round(100 * done_v1 / len(v1_tasks))}%</b><span>việc tới v1.0 đã xong ({done_v1}/{len(v1_tasks)})</span></div>"
+        f"<div><b>{ci.group(1) if ci else '?'}</b><span>test tự động đạt, {ci.group(3) if ci else '?'} bỏ qua</span></div>"
+        f"<div><b>{passed}/{len(accept)}</b><span>tiêu chí nghiệm thu v1.0 đã đạt</span></div>"
+        f"<div><b>{len(todo_items)}</b><span>việc hoãn có chủ ý, mỗi việc có mốc kích hoạt</span></div>"
+        "</div></section>"
+    )
+
+    feats = []
+    for line in between(
+        CHANGELOG.read_text(encoding="utf-8").splitlines(),
+        "#### Đã thêm",
+        "#### Đã đổi",
+    ):
+        m = re.match(r"- \*\*(.+?)\*\*", line)
+        if m:
+            text = m.group(1).split(" — ", 1)[-1]
+            text = human(text).rstrip(".")
+            feats.append(html.escape(text[:1].upper() + text[1:]))
+    shipped = (
+        '<section class="card"><h2>Năng lực mới đã có</h2><p class="lede">Từ CHANGELOG, chưa phát hành ra ngoài.</p>'
+        f'<ul class="steps">{"".join(f"<li>{f}</li>" for f in feats[:6])}</ul></section>'
+    )
+
+    # Chi tiết kỹ thuật cho đội — giữ đủ số liệu của roadmap §0.2.
     by_inc: dict[str, dict[str, int]] = {}
     for task in tasks:
         if task.increment:
             by_inc.setdefault(task.increment, {}).setdefault(task.state, 0)
             by_inc[task.increment][task.state] += 1
     crit = {inc_id(name): (d, n) for name, d, n in criteria if inc_id(name)}
-
+    owner = {inc: m for m in ms for inc in m.incs}
     rows = []
     for inc in matrix:
         counts = by_inc.get(inc.id, {}) if inc.id else {}
         bar = stacked_bar(counts, plain(inc.name)) if counts else "—"
         ec = crit.get(inc.id) if inc.id else None
+        mname = f"{owner[inc.id].n}. {owner[inc.id].name}" if inc.id in owner else ""
         rows.append(
-            f"<tr><td>{inline(inc.milestone)}</td><td>{inline(inc.name)}</td><td>{inline(inc.forecast)}</td>"
-            f'<td class="num"><b>{inline(inc.progress)}</b></td><td>{bar}</td>'
-            f'<td class="num">{f"{ec[0]}/{ec[1]}" if ec else "—"}</td><td>{inline(inc.state)}</td>'
-            f"<td>{inline(inc.deps)}</td></tr>"
+            f"<tr><td>{html.escape(mname)}</td><td>{inline(inc.name)}</td><td>{inline(inc.forecast)}</td>"
+            f'<td class="r"><b>{inline(inc.progress)}</b></td><td>{bar}</td>'
+            f'<td class="r">{f"{ec[0]}/{ec[1]}" if ec else "—"}</td><td>{inline(inc.state)}</td></tr>'
         )
-    matrix_html = (
-        '<div class="scroll"><table><thead><tr><th>Mốc</th><th>Increment</th><th>Dự báo</th>'
-        '<th class="num">Tiến độ (§0.2)</th><th>Task theo trạng thái</th><th class="num">Tiêu chí ra</th>'
-        f"<th>Trạng thái</th><th>Phụ thuộc</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>"
-    )
-
-    # Mốc có ngày: mọi dòng §0.2 có ngày dự báo. Đỏ = mốc không phải increment và cột mốc tiếp theo.
-    points = []
-    for inc in matrix:
-        found = DATE.findall(inc.forecast)
-        if found:
-            hard = inc.id == next_id or inc.id is None
-            points.append((found[0], plain(inc.name), hard))
-    tl_html = timeline(points, updated)
-
-    # Đã làm được, theo increment.
-    done_groups = []
-    for group in dict.fromkeys(t.group for t in tasks):
-        items = [t for t in tasks if t.group == group and t.state == "done"]
-        if items:
-            lis = "".join(f"<li><code>{t.id}</code> {html.escape(t.name)}</li>" for t in items)
-            done_groups.append(
-                f"<details><summary><b>{html.escape(group)}</b> — {len(items)} task xong</summary>"
-                f'<ul class="plain">{lis}</ul></details>'
-            )
-
-    # Pending — cần người.
     waiting = [t for t in tasks if t.state in ("partial", "blocked")]
     wait_rows = "".join(
-        f"<tr><td><code>{t.id}</code></td><td>{html.escape(t.name)}</td><td>{html.escape(t.status)}</td>"
-        f"<td>{html.escape(t.owner)}</td></tr>"
+        f"<tr><td><code>{t.id}</code></td><td>{html.escape(t.name)}</td><td>{html.escape(t.status)}</td></tr>"
         for t in waiting
     )
-    next_items = "".join(f"<li>{inline(item)}</li>" for item in card.get("3", []))
-    doing_items = "".join(f"<li>{inline(item)}</li>" for item in card.get("2", []))
-    dec_rows = "".join(
-        f'<tr><td><code>{html.escape(c)}</code></td><td>{html.escape(t)}</td><td><span class="tag crit">'
-        f"{html.escape(s[:60])}</span></td></tr>"
-        for c, t, s in decisions
-    )
-
-    # Hoãn có chủ ý: mốc có ngày lên trước.
     dated = sorted((t for t in todo_items if t["date"]), key=lambda t: t["date"])
     todo_rows = "".join(
-        f'<tr><td class="num">#{t["n"]}</td><td>{html.escape(t["title"])}</td><td>{html.escape(t["topic"])}</td>'
-        f"<td>{inline(t['trigger'])[:300]}</td></tr>"
+        f'<tr><td class="r">#{t["n"]}</td><td>{html.escape(t["title"])}</td><td>{inline(t["trigger"])[:300]}</td></tr>'
         for t in dated + [t for t in todo_items if not t["date"]]
     )
-    topics: dict[str, int] = {}
-    for t in todo_items:
-        topics[t["topic"]] = topics.get(t["topic"], 0) + 1
-    topic_tags = " ".join(
-        f'<span class="tag">{html.escape(k)} · {v}</span>' for k, v in topics.items()
-    )
-
-    changes_html = "".join(f"<li>{inline(c)}</li>" for c in changes)
-    accept_html = "".join(
-        f"<tr><td><code>{a}</code></td><td>{html.escape(t)}</td><td>"
-        f'<span class="tag{" done" if ok else ""}">{"✅ đạt" if ok else "chưa"}</span></td></tr>'
-        for a, t, ok in accept
+    tech = (
+        '<section class="card"><details class="tech"><summary>Chi tiết kỹ thuật cho đội</summary>'
+        f'<p class="lede">Increment, task và việc hoãn theo đúng mã của roadmap; trang trên chỉ gom chúng thành mốc.</p>{legend()}'
+        '<div class="scroll"><table><thead><tr><th>Mốc</th><th>Increment</th><th>Dự báo</th><th class="r">Tiến độ</th>'
+        '<th>Task theo trạng thái</th><th class="r">Tiêu chí ra</th><th>Trạng thái</th></tr></thead>'
+        f"<tbody>{''.join(rows)}</tbody></table></div>"
+        f'<h3>Việc tiếp theo của đội (thẻ bàn giao, đúng thứ tự)</h3><ol class="steps">{nexts}</ol>'
+        f'<h3>Task đang dở hoặc chờ người</h3><div class="scroll"><table><tbody>{wait_rows}</tbody></table></div>'
+        f'<h3>Việc hoãn có chủ ý ({len(todo_items)})</h3><div class="scroll"><table><tbody>{todo_rows}</tbody></table></div>'
+        "</details></section>"
     )
 
     return f"""<!doctype html>
 <!-- SINH TỰ ĐỘNG bởi scripts/gen_cpo_dashboard.py — đừng sửa tay. Kiểm: --check -->
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NeuroEdge — Dashboard sản phẩm</title><style>{CSS}</style></head><body><main>
-<h1>NeuroEdge — Dashboard sản phẩm</h1>
-<p class="sub">Cho CPO · số liệu tới <b>{updated}</b> · pha: {inline(status["Pha đang thực thi"])}</p>
-
-<section class="kpis" aria-label="Chỉ số chính">{kpi_html}</section>
-
-<section class="card"><h2>Tiến độ theo increment</h2>{legend()}{matrix_html}</section>
-
-<section class="card"><h2>Dòng thời gian các mốc</h2>
-<p class="sub" style="margin-top:-6px">Đỏ = cột mốc tiếp theo. Ngày là dự báo ở roadmap §0.2.</p>{tl_html}</section>
-
-<div class="grid2">
-<section class="card"><h2>Pending — cần người</h2>
-<p><b>Chặn ngoài tầm kỹ thuật:</b> {html.escape(blockers)}</p>
-<p><b>Đang làm:</b></p><ul class="plain">{doing_items}</ul>
-<p><b>Việc tiếp theo (đúng thứ tự):</b></p><ol class="plain">{next_items}</ol></section>
-<section class="card"><h2>Quyết định còn chờ</h2>
-<div class="scroll"><table><thead><tr><th>Mã</th><th>Quyết định</th><th>Trạng thái</th></tr></thead><tbody>{dec_rows}</tbody></table></div>
-</section></div>
-
-<section class="card"><h2>Task đang dở hoặc chờ người</h2><div class="scroll"><table><thead><tr><th>Mã</th><th>Task</th>
-<th>Trạng thái</th><th>Người</th></tr></thead><tbody>{wait_rows}</tbody></table></div></section>
-
-<div class="grid2">
-<section class="card"><h2>Đã làm được</h2>{"".join(done_groups)}</section>
-<section class="card"><h2>Tiêu chí nghiệm thu v1.0</h2><table><tbody>{accept_html}</tbody></table></section>
-</div>
-
-<section class="card"><h2>Hoãn có chủ ý — {len(todo_items)} mục</h2><p>{topic_tags}</p>
-<details><summary>Xem tất cả (mốc có ngày lên trước)</summary><div class="scroll"><table><thead><tr><th class="num">#</th>
-<th>Hạng mục</th><th>Chủ đề</th><th>Mốc kích hoạt</th></tr></thead><tbody>{todo_rows}</tbody></table></div></details></section>
-
-<section class="card"><h2>Thay đổi gần đây (CHANGELOG, chưa phát hành)</h2><ul class="plain">{changes_html}</ul></section>
-
-<p class="foot">Sinh bởi <code>scripts/gen_cpo_dashboard.py</code> từ <code>neuroedge-roadmap.md</code>, <code>TODOS.md</code>,
-<code>neuroedge-prd.md</code> §15 và <code>CHANGELOG.md</code>.
-Nguồn sự thật là các tệp đó; trang này không được sửa tay.</p>
+<header class="top"><div><h1>NeuroEdge</h1>
+<p class="tagline">Hợp đồng vào Physical AI — không hợp đồng, không hành động.</p></div>
+<span class="stamp">Dashboard cho CPO · số liệu tới {vn_date(updated)}</span></header>
+{hero}
+{journey}
+<div class="grid2">{actions}{shipped}</div>
+{health}
+{tech}
+<p class="foot">Sinh bởi <code>scripts/gen_cpo_dashboard.py</code> từ <code>roadmap/neuroedge-roadmap.md</code> (§0.1–§0.5, bảng task),
+<code>TODOS.md</code>, <code>roadmap/neuroedge-prd.md</code> §15 và <code>CHANGELOG.md</code>. Đừng sửa tay trang này.</p>
 </main></body></html>
 """
 

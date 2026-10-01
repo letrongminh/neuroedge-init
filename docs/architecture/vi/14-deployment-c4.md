@@ -11,7 +11,7 @@
 
 NeuroEdge **không có dịch vụ phía máy chủ nào** trước tầng dịch vụ v1.1 (I0–I8): không tài khoản, không broker, không
 backend. Mọi thứ chạy trên máy của người dùng hoặc trên thiết bị. Dịch vụ phía máy chủ đầu tiên là Fleet
-OS ở I9 ([`13`](13-evolution-i0-i18.md) §2).
+OS ở I9 ([`13`](13-evolution-i0-i18.md) §3, mốc 9).
 
 ## 2. Nút triển khai
 

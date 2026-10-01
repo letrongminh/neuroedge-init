@@ -13,6 +13,24 @@ When a chatbot answers incorrectly, the user clicks "Regenerate". When an agent 
 
 NeuroEdge separates those two concerns. Every action proposal — from the local command grammar, from an LLM, from another agent via MCP — is normalized into a **typed tool call**, then must pass a **gate**: a safety policy written in YAML, versioned, inheritable, compiled into a deterministic decision tree. When the gate returns `ALLOW`, a **single-use verdict token** ([one-time token](../../user/thuat-ngu.md)) is issued, and only that token can open the exact hardware pins of that action. Every fact, verdict and pin command is written to a replayable **trace** ([trace](../../user/thuat-ngu.md)). The same gate runs on the simulator (`sim`), on Linux (`linux`) and on the ESP32-S3 chip (`esp32s3`).
 
+### 1.1 Product spirit — six promises
+
+**No contract, no action.** Each promise below is something the user perceives, and each
+promise has an architectural mechanism that holds it. When a design decision weakens a promise, that decision is wrong
+— even when it makes the product faster or easier to demo.
+
+| # | Promise to the user | Architecture holds the promise by | Where the user sees it |
+|:---:|:---|:---|:---|
+| 1 | **Errors in the real world cannot be undone, so every command must be approved in advance.** Models only propose, never decide | One single path `dispatch()` → gate → single-use token → HAL; no shortcuts ([`05`](05-code-gate-hal-c4l4.md)) | Every action has an `ALLOW`/`BLOCK` verdict with a reason |
+| 2 | **When unsure, do not act.** Offline, stale sensors, frozen camera, model not answering ⇒ block | Fail-closed in every direction (invariant 2); only commands that bring actuators to a safe state are always allowed (Q-62) | The device stops or asks again, never guesses |
+| 3 | **One contract everywhere.** Trying on a laptop is identical to running on a $5 chip | Same gate file, pure resolution, two implementations in Python and C of the same specification ([`10`](10-target-equivalence.md)) | `neuroedge verify` produces the same verdict on `sim`, `linux`, `esp32s3` |
+| 4 | **Evidence over promises.** Every incident can be reproduced on the developer's machine | Every fact, verdict, pin command into the trace; replay recomputes without calling the model ([`06`](06-runtime-flows.md) §7) | `neuroedge replay`, `gate explain`, Action CI in PRs |
+| 5 | **Humans hold the final authority.** Models and other agents cannot confirm on behalf of humans; but no one can confirm on behalf of a physical reading either | `ask` can only be answered by a human on the device (Q-26); NeuroBrain drafts must be approved by a human; numeric criteria are forbidden in `confirms` (Q-62) | Confirmation prompt on the `--ui` page, via voice, or via button |
+| 6 | **Plug into other stacks, do not swallow the whole stack.** NeuroEdge is a contract layer, not a closed platform | MCP is the entry door; model and speech are replaceable providers (P-4); schemas, specifications, compliance test suite under Apache-2.0 (Q-45); network MCP with authentication at launch (Q-58) | Claude, Home Assistant, or an agent framework calls the device through the gate |
+
+The product grows through ten user-facing release milestones (roadmap §0.5); the architecture of each milestone and how
+each milestone proves the six promises again are in [`13`](13-evolution-i0-i18.md).
+
 ## 2. The system in one picture
 
 ![E-01 · System context](../assets/svg/E-01-system-context.svg)
@@ -131,7 +149,7 @@ The table below is a snapshot of the shape, not a progress table; per-task progr
 | Pin control | `done` (virtual) | `done` on gpio-sim | `planned` (TSK-S4-01) |
 | Sensors, display | `done` (virtual) | `done` on `i2c-stub`, `vkms` | `planned`; the LVGL interface builds on host only |
 | Voice (from WAV files) | `done` | `done` | `planned` (I5) |
-| Real-time voice (microphone) | `planned` | `partial` — only opens the device | `planned` |
+| Real-time voice (microphone) | `done` on a laptop (`run --mic`, TSK-I4-04) | `partial` — only opens the device | `planned` |
 | Cloud models (System 1, System 2) | `done` | `done` | not applicable: the chip only evaluates gates |
 | MCP | `done` | `done` | not applicable |
 | Trace, replay, verify | `done` | `done` | `done` (UART, QEMU) |

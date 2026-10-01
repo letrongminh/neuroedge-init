@@ -21,6 +21,24 @@ token đó mở được đúng các chân phần cứng của hành động đ�
 được ghi vào một **vết ghi** ([trace](../../user/thuat-ngu.md)) phát lại được. Cùng một gate chạy trên trình mô phỏng (`sim`), trên
 Linux (`linux`) và trên chip ESP32-S3 (`esp32s3`).
 
+### 1.1 Tinh thần sản phẩm — sáu lời hứa
+
+**Không hợp đồng, không hành động.** Mỗi lời hứa dưới đây là một điều người dùng cảm nhận được, và mỗi
+lời hứa có một cơ chế kiến trúc giữ nó. Khi một quyết định thiết kế làm yếu một lời hứa, quyết định đó sai
+— kể cả khi nó làm sản phẩm nhanh hơn hay dễ demo hơn.
+
+| # | Lời hứa với người dùng | Kiến trúc giữ lời hứa bằng | Người dùng thấy điều đó ở đâu |
+|:---:|:---|:---|:---|
+| 1 | **Sai ở thế giới thật không bấm lại được, nên mọi lệnh phải được duyệt trước.** Model chỉ đề xuất, không bao giờ quyết | Một đường duy nhất `dispatch()` → gate → token dùng một lần → HAL; không có đường tắt ([`05`](05-code-gate-hal-c4l4.md)) | Mỗi hành động có một phán quyết `ALLOW`/`BLOCK` kèm lý do |
+| 2 | **Không chắc thì không làm.** Mất mạng, cảm biến cũ, camera đứng hình, model không trả lời ⇒ chặn | Fail-closed ở mọi hướng (bất biến 2); chỉ lệnh đưa cơ cấu về trạng thái an toàn là luôn được phép (Q-62) | Thiết bị dừng hoặc hỏi lại, không đoán |
+| 3 | **Một hợp đồng ở mọi nơi.** Thử trên laptop là đúng như chạy trên chip $5 | Cùng tệp gate, phân giải thuần, hai hiện thực Python và C của cùng đặc tả ([`10`](10-target-equivalence.md)) | `neuroedge verify` cho cùng phán quyết trên `sim`, `linux`, `esp32s3` |
+| 4 | **Bằng chứng thay cho lời hứa.** Mọi sự cố tái hiện được trên máy lập trình viên | Mọi dữ kiện, phán quyết, lệnh chân vào vết ghi; replay tính lại không gọi model ([`06`](06-runtime-flows.md) §7) | `neuroedge replay`, `gate explain`, Action CI trong PR |
+| 5 | **Người giữ quyền cuối.** Model và agent khác không tự xác nhận thay người; nhưng cũng không ai xác nhận thay một số đo vật lý | `ask` chỉ người trên thiết bị trả lời được (Q-26); bản nháp NeuroBrain phải có người duyệt; tiêu chí số bị cấm trong `confirms` (Q-62) | Câu hỏi xác nhận trên trang `--ui`, bằng giọng nói hay nút bấm |
+| 6 | **Cắm vào stack của người khác, không ôm cả stack.** NeuroEdge là lớp hợp đồng, không phải một nền tảng khép kín | MCP là cửa gọi vào; model và giọng nói là provider thay được (P-4); lược đồ, đặc tả, bộ kiểm tuân thủ theo Apache-2.0 (Q-45); MCP qua mạng có xác thực ở mốc ra mắt (Q-58) | Claude, Home Assistant hay agent framework gọi thiết bị qua gate |
+
+Sản phẩm lớn lên qua mười mốc phát hành theo người dùng (roadmap §0.5); kiến trúc của từng mốc và cách
+mỗi mốc chứng minh lại sáu lời hứa ở [`13`](13-evolution-i0-i18.md).
+
 ## 2. Hệ thống trong một hình
 
 ![E-01 · Bối cảnh hệ thống](../assets/svg/E-01-system-context.svg)
@@ -146,7 +164,7 @@ Bảng dưới là ảnh chụp hình dạng, không phải bảng tiến độ;
 | Điều khiển chân | `done` (ảo) | `done` trên gpio-sim | `planned` (TSK-S4-01) |
 | Cảm biến, màn hình | `done` (ảo) | `done` trên `i2c-stub`, `vkms` | `planned`; giao diện LVGL chỉ build trên host |
 | Thoại (từ tệp WAV) | `done` | `done` | `planned` (I5) |
-| Thoại thời gian thực (micro) | `planned` | `partial` — mới mở thiết bị | `planned` |
+| Thoại thời gian thực (micro) | `done` trên laptop (`run --mic`, TSK-I4-04) | `partial` — mới mở thiết bị | `planned` |
 | Model cloud (System 1, System 2) | `done` | `done` | không áp dụng: chip chỉ lượng giá gate |
 | MCP | `done` | `done` | không áp dụng |
 | Vết ghi, replay, verify | `done` | `done` | `done` (UART, QEMU) |

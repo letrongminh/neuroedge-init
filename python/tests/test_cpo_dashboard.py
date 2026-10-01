@@ -54,3 +54,18 @@ def test_the_dashboard_needs_no_network() -> None:
     page = PAGE.read_text(encoding="utf-8")
     assert not re.search(r"(src|href)=\"(https?:)?//", page)
     assert "@import" not in page
+
+
+def test_every_increment_belongs_to_exactly_one_release_milestone() -> None:
+    """Roadmap §0.5 groups increments into user-facing milestones; the dashboard and poster E-09
+    read it, so an increment missing from it, or listed twice, would silently drop off the page."""
+    roadmap = (REPO_ROOT / "roadmap" / "neuroedge-roadmap.md").read_text(encoding="utf-8")
+    part = roadmap.split("#### Mười mốc phát hành theo người dùng", 1)[1].split("\n---", 1)[0]
+    grouped = [
+        inc.strip()
+        for row in re.findall(r"^\| \d+ \|(?:[^|\n]*\|){3}([^|\n]*)\|", part, re.M)
+        for inc in row.split(",")
+    ]
+    increments = [inc for inc, _ in INCREMENT_ROW.findall(roadmap)]
+    assert sorted(grouped) == sorted(increments)
+    assert len(grouped) == len(set(grouped))
