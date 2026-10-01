@@ -1474,6 +1474,7 @@ Chỉ cho increment sau Beta (Q-52). Cắt từ trái sang phải khi increment 
 | **Q-59** | Giữ PolyForm NC qua v1.0, mở sau; CLA cho tái cấp phép | 2026-10-01 | `TODOS.md` #43, #51 |
 | **Q-60** | Một người + AI agent; người trong vòng cho task phần cứng, người ngoài, chữ ký (thay phần nhân sự của Q-52) | 2026-10-01 | §1.1, §1.3 |
 | **Q-61** | Bo camera của `esp32s3`: M5Stack CoreS3 | 2026-10-01 | TSK-I3a-01, RFC-0013 §9.1, Phụ lục B |
+| **Q-62** | Sửa sáu RFC theo review độc lập: lệnh an toàn không bị chặn, tự tắt, phong bì ghi bền, `NETR` v2 ghim byte | 2026-10-01 | RFC-0007, RFC-0009 → RFC-0013 §9 |
 | **Q-37** | Token `motion.*` thuê có hạn, mỗi lệnh qua gate gia hạn | 2026-09-25 | RFC-motion |
 | **Q-38** | Chứng nhận an toàn: OUT tạm thời, dừng khẩn phần cứng bắt buộc cho robot di động | 2026-09-25 | Câu C6 của bộ phỏng vấn (Q-56), `TODOS.md` #40 |
 | **Q-39** | Roadmap theo increment; không phát hành ra ngoài tới khi công khai (I6: demo thoại trên `sim`, `linux`, Box-3); thêm một kỹ sư nhúng | 2026-09-25 | Toàn roadmap |
