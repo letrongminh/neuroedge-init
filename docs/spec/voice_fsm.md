@@ -136,8 +136,8 @@ giây — xung vẫn chạy đủ 30 s và cửa vẫn mở cho khách vào.
 
 Lý do: FR-PER-02 chỉ thu hồi lệnh **chưa thực thi**; lời nói thu hồi được, hành vi vật lý đã xảy ra thì
 không (proposal §4.6). `PendingCommand.cancel()` của `LinuxHAL` cắt được một xung đang chạy, nhưng khả
-năng đó dành cho tắt máy (SIGTERM), không cho cắt lời. Một cờ theo từng hành động kiểu "vẫn cắt khi đã
-chạy" cần RFC, vì `gate.v1` không nhận trường lạ (`TODOS.md` #39).
+năng đó dành cho tắt máy (SIGTERM), không cho cắt lời. Không có cờ theo từng hành động kiểu "vẫn cắt khi đã
+chạy" (Q-57): `motion.*` luôn dừng ngay khi bị cắt lời (RFC-0011 §3d), xung `digital.out` giữ luật này.
 
 ### 5.4 Không bị cắt lời chạm tới
 
@@ -346,7 +346,7 @@ Mỗi ca là một tệp JSON; khoá của nó, và đáp án `{proves, events}`
 
 ## 10. Để mở
 
-- Cờ theo từng hành động "vẫn cắt khi đã chạy" (§5.3): cần RFC — `TODOS.md` #39.
+- ~~Cờ theo từng hành động "vẫn cắt khi đã chạy" (§5.3)~~ — đã quyết không có cờ (Q-57, RFC-0011 §3d); `motion.*` dừng ngay khi cắt lời.
 - FR-PER-04 (P1, rút lại lời khi model đổi kết luận): quan hệ giữa lời bị rút lại và lệnh đang chờ của
   lượt đó chưa chốt. TSK-S3-11 và TSK-S3-13 **không** chốt: hiện thực Python tổng hợp cả câu trả lời
   rồi mới phát, và STT theo chuẩn OpenAI (`/v1/audio/transcriptions`) chỉ trả một bản chép lời cuối mỗi
