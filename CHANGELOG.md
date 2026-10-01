@@ -262,8 +262,12 @@ bản gói.
 - **Q-20 — bộ chuẩn bị cổng nhu cầu 2026-10-25** (`TODOS.md` #19): `docs/business/cong-nhu-cau-2026-10-25/` —
   câu hỏi cổng, demo ≤ 5 phút chỉ bằng lệnh đã chạy thật, bộ phỏng vấn, thang chấm, trang ghi phiếu.
 
-#### Đã đổi — Bề mặt tích hợp vào MVP, giấy phép, mô hình vận hành (2026-10-01, Q-58 → Q-60)
+#### Đã đổi — Bề mặt tích hợp vào MVP, giấy phép, mô hình vận hành (2026-10-01, Q-58 → Q-62)
 
+- **Q-61 · TSK-I3a-01 — bo camera của `esp32s3` là M5Stack CoreS3.** Đủ năm nguyên thủy lõi cộng camera, flash 16 MB
+  (Q-3); ESP32-S3-EYE và Korvo-2 bị bác ở Q-61. Phụ lục B: đặt ngay 2 bo. Kiểm: `pytest tests/test_plan_contract.py`.
+- **Q-62 — sáu RFC nguyên thủy mở rộng sửa theo review độc lập** (PR riêng cho từng RFC); `TODOS.md` #36 trỏ bố cục
+  `NETR` v2 đã ghim ở RFC-0009 §3d.
 - **Q-58 — MCP qua mạng có xác thực (TSK-P2-04) dời từ I14 sang I6; thêm TSK-I6-05 đóng băng Gated Tool Profile.**
   I6 có tiêu chí ra 7, 8; NFR-SEC-09, `tool_calling.md`, `threat_model.md` theo đó; `TODOS.md` #23, #24 kích hoạt.
   Ngày dự báo không đổi. Kiểm: `pytest tests/test_plan_contract.py`.
