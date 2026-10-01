@@ -26,6 +26,9 @@ và để chuyển quyền quản trị đặc tả cho một tổ chức trung 
 các bản đó giữ quyền MIT với đúng các bản đó; từ sau commit đó, mã theo bảng trên.
 
 **Đóng góp:** pull request từ người ngoài cần CLA trước khi merge, để NeuroEdge cấp được license
-thương mại cho phần đóng góp (`TODOS.md` #43, `CONTRIBUTING.md` §2).
+thương mại cho phần đóng góp và tái cấp phép được về sau (`TODOS.md` #43, `CONTRIBUTING.md` §2).
+
+**Về sau:** mã giữ PolyForm Noncommercial qua v1.0; việc mở giấy phép được rà lại ở điểm rẽ Beta
+(Q-59, `TODOS.md` #51).
 
 *Tệp này tóm tắt; văn bản giấy phép là thứ ràng buộc. Không phải tư vấn pháp lý.*

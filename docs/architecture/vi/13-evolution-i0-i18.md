@@ -63,7 +63,7 @@ Mỗi mục là một lựa chọn có chủ đích, có mốc kích hoạt tron
 | Vết ghi chưa ký | cần khoá thiết bị; thuộc Fleet OS | #1 |
 | Token là `(nonce, digest)` trong bộ nhớ, không ký | mối đe doạ trong phạm vi là bỏ qua do nhầm lẫn | #2 |
 | `extends` chưa ghim theo digest | chưa có registry; `digests.lock` phủ CI | #15 |
-| Gated Tool Profile chưa đóng băng vào `schemas/` | chưa client ngoài nào dùng | #23 |
+| Gated Tool Profile chưa đóng băng vào `schemas/` | đóng băng bằng RFC trước I6 (TSK-I6-05, Q-58) | #23 |
 | Kết nối MCP chỉ sống một lượt | mỗi lượt REPL một vòng lặp sự kiện | #25 |
 | Chưa có tiêu chí số trong gate | RFC-0009 (I2a) sẽ thêm; `bands` đủ cho mẫu hiện có | #30 |
 | `NETR` v1 không mang nhãn gate và chữ `on_block` | cây link cùng firmware nên không lệch | #36 |

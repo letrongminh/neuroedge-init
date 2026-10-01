@@ -4,7 +4,7 @@
 # Trạng thái dự án
 
 > Sinh tự động từ [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0 —
-> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-09-30**.
+> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-10-01**.
 
 ## Điều hành
 
@@ -15,7 +15,7 @@
 | Cột mốc tiếp theo | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** |
 | Trạng thái CI Lõi | ✅ **PASS 2479/2479 · SKIP 0** |
 | Chặn ngoài tầm kỹ thuật | 🟡 **3 hạng mục chặn** |
-| Lần cập nhật cuối | **2026-09-30** |
+| Lần cập nhật cuối | **2026-10-01** |
 
 ## Increment
 
@@ -32,14 +32,14 @@
 |  | **I4a — NeuroBrain trên host** | 2027-01-03 | **0 / 33** | ⏳ Chưa bắt đầu | tag `v0.4.1` + extra `[lab]` (nội bộ) |
 |  | **I5 — Thoại trên Box-3** | 2027-01-03 | **0 / 7** | ⏳ Chưa bắt đầu | tag `v0.5.0` + firmware (nội bộ) |
 |  | **I5a — NeuroBrain trên chip** | 2027-01-24 | **0 / 2** | ⏳ Chưa bắt đầu | tag `v0.5.1` + firmware (nội bộ) |
-| **Công khai** | **I6 — Công khai** | 2027-01-31 | **3 / 8** | 🟡 Quét bí mật, SBOM xong; chờ I5a | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
+| **Công khai** | **I6 — Công khai** | 2027-01-31 | **3 / 10** | 🟡 Quét bí mật, SBOM xong; chờ I5a | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
 | **v1.0 = MVP** | **I7 — v1.0** | 2027-02-21 | **4 / 12** | 🟡 Ghim Actions, attestation xong; OTA A/B có ký + rollback xong trên QEMU; chờ I6 | `v1.0.0` |
 | **Beta** | **I8 — Developer Beta** | 2027-03-21 | **0 / 1** | ⏳ Chưa bắt đầu | `1.0.x` (chỉ bản vá) |
 | **v1.1** | **I9 — Lớp provider v1.1 và Fleet OS** | sau I8 (nhánh A) | **0 / 9** | ⏳ Chờ nhánh A | `1.1.0` + dịch vụ |
 |  | **I10 — Registry và các đường ray** | sau I8 (nhánh A, Q-5) | **0 / 8** | ⏳ Chờ nhánh A | `1.2.0` + registry |
 | **Mở rộng** | **I11 — Mở danh sách target** | sau I8 | **0 / 6** | ⏳ Chưa bắt đầu | 1.x minor |
 |  | **I13 — Bộ port cộng đồng** | sau I11 | **0 / 5** | ⏳ Chưa bắt đầu | bộ port |
-|  | **I14 — Robot phân tầng** | sau I13 | **0 / 12** | ⏳ Chưa bắt đầu | 1.x + firmware node RP2350 |
+|  | **I14 — Robot phân tầng** | sau I13 | **0 / 11** | ⏳ Chưa bắt đầu | 1.x + firmware node RP2350 |
 |  | **I16 — Thị giác trên `jetson`** | sau I11 | **0 / 4** | ⏳ Chưa bắt đầu | 1.x |
 |  | **I17 — Đa phương thức** | sau I16 | **0 / 4** | ⏳ Chưa bắt đầu | 1.x |
 |  | **I18 — Hệ sinh thái thiết bị** | sau I13 | **0 / 4** | ⏳ Chưa bắt đầu | dịch vụ |

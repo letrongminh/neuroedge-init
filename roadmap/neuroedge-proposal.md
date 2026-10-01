@@ -1083,7 +1083,7 @@ Hệ thống thiết lập 6 lớp phòng thủ toàn diện, hoạt động the
 | Lớp phòng vệ | Thành phần cốt lõi | Cơ chế bảo vệ |
 |:---|:---|:---|
 | **Hành động vật lý** | Action Contract Engine | Không có đường tắt đến cơ cấu chấp hành ngoài gate · Cơ chế mặc định `fail: closed` · Mọi đánh giá gate đều được ghi vết chi tiết. |
-| **Bên gọi không tin cậy** | Dispatcher tool call | LLM (prompt injection, ảo giác) và client MCP chỉ gửi được *yêu cầu*: tool lạ hoặc tham số sai bị từ chối trước gate · nguồn gọi do runtime gắn, không tự khai được · không tự xác nhận được `ask` (Q-26) · MCP v1.0 chỉ qua stdio. Chi tiết: `docs/spec/threat_model.md` §2b. |
+| **Bên gọi không tin cậy** | Dispatcher tool call | LLM (prompt injection, ảo giác) và client MCP chỉ gửi được *yêu cầu*: tool lạ hoặc tham số sai bị từ chối trước gate · nguồn gọi do runtime gắn, không tự khai được · không tự xác nhận được `ask` (Q-26) · MCP mặc định qua stdio, qua mạng chỉ khi có OAuth 2.1 + mTLS (NFR-SEC-09, Q-58). Chi tiết: `docs/spec/threat_model.md` §2b. |
 | **An toàn thiết bị** | Firmware & Phần cứng | Kích hoạt Secure Boot và mã hóa bộ nhớ flash trên ESP32-S3 · Tích hợp nút ngắt micro vật lý trên thiết bị mẫu · Hỗ trợ chip bảo mật TPM trên Linux. |
 | **Bảo mật kết nối** | Mạng truyền dẫn | Áp dụng TLS 1.3 toàn tuyến · Xác thực mTLS hai chiều giữa thiết bị và đám mây · Cơ chế Certificate Pinning · Mỗi thiết bị có chứng chỉ mật mã riêng. |
 | **Quyền riêng tư dữ liệu** | Dữ liệu người dùng | Luồng âm thanh xử lý trực tiếp không lưu trữ · Ưu tiên xử lý on-device khi phần cứng cho phép · Nhật ký vết chỉ ghi nhận quyết định, không lưu dữ liệu thô trừ khi được bật tường minh. |

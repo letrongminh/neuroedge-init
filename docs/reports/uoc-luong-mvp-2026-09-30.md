@@ -56,7 +56,7 @@ Không tính TSK-I2a-01 (task này).
 |:---:|:---|:---|
 | G1 | Box-3, RPi 5 và bo ESP32-S3 có camera về **trước 2026-11-01**; bo camera được chọn ở TSK-I3a-01 **trước 2026-10-09** để kịp đặt mua | Mọi increment từ I3 dời theo, ngày đổi ngày |
 | G2 | Sáu RFC (0007, 0009 → 0013) được kỹ thuật trưởng chấp thuận **trước 2026-10-09**; câu hỏi mở đã quyết (Q-57) | I2a còn khoảng 3 tuần đệm trước khi phụ thuộc I2 (2026-11-29) ràng ngày; quá 2026-10-30 thì I2a dời |
-| G3 | Đủ người cho V1 → V7 (Q-52), mỗi làn làm song song | Đọc lại theo roadmap §1.3 |
+| G3 | *Sửa 2026-10-01 (Q-60, thay giả định đủ người của Q-52):* một người + AI agent. Làn host chạy ở tốc độ §1, đo trên chính cấu hình này; task cần phần cứng hoặc người ngoài do một người làm, AI agent chuẩn bị | Làn chip nối tiếp trên một người: đối chiếu ở §5 khi bo mạch về, dời ngày theo R5 (roadmap §1.3) |
 | G4 | Spike bộ nhớ TSK-S1-10 đạt ngưỡng Q-3 với thoại + bốn gói | Mở `Q-N` lập lại kế hoạch I5, I3a; dời ngày, không cắt (Q-44, Q-52) |
 | G5 | `vision.in` chạy được trên bo camera ESP32-S3 trong ngân sách bộ nhớ (TSK-I3a-01) | Áp phương án (b) hoặc (c) của RFC-0013 §9; lập lại kế hoạch I3a |
 | G6 | Điều khoản license thương mại (`TODOS.md` #44) có trước I6 | I6 và I7 dời |
@@ -68,7 +68,7 @@ sớm hơn ngày của mọi increment nó phụ thuộc (luật R3).
 
 | Increment | Dự báo | Cách tính |
 |:---|:---:|:---|
-| I1, I2, I3, I4, I5 | giữ nguyên | Phạm vi không đổi; đủ người nên làn chip của I3a không lấy người của I3, I5 |
+| I1, I2, I3, I4, I5 | giữ nguyên | Phạm vi không đổi. Tính lúc lập theo giả định đủ người (làn chip của I3a không lấy người của I3, I5); từ Q-60 đây là điểm phải đối chiếu đầu tiên khi bo mạch về (§5) |
 | **I2a** | **2026-12-06** | 18 task hiện thực sau RFC (G2) ≈ 10 ngày làm việc ở 1,75 task/ngày; phần NPU và ADC trên phần cứng sau 2026-11-01; ràng bởi I2 (2026-11-29) + một tuần tích hợp |
 | **I2b** | **2026-12-20** | Hai tuần sau I2a: năm kit kiểm trên Pi, thư viện gate, `neuroedge add` |
 | **I3a** | **2027-01-10** | Bốn tuần sau I3 (2026-12-13): HAL C của bốn gói, thị giác trên bo camera, test mất điện giữa lệnh `motion.*` |
@@ -87,3 +87,5 @@ chip thêm I3a và I5a.
 - Bất kỳ giả định G1 → G6 nào sai: ước lượng lại trong cùng PR với bằng chứng (R5).
 - Ngày 2026-11-01: đối chiếu tốc độ thật của làn host trong tháng 10 với 1,75 task/ngày.
 - Khi TSK-S1-10 có số đo và khi TSK-I3a-01 chọn xong bo camera.
+- Khi bo mạch về (Q-60): đo số ngày một người làm xong mỗi task cần phần cứng của I3 trong hai tuần đầu, rồi
+  tính lại I3 → I7 cho 35 task cần phần cứng làm nối tiếp.

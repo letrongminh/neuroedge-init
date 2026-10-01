@@ -64,7 +64,7 @@ Each item is a deliberate choice, with a trigger milestone in `TODOS.md`:
 | Traces are not signed | needs device keys; belongs to Fleet OS | #1 |
 | The token is an in-memory `(nonce, digest)`, not signed | the in-scope threat is skipping by mistake | #2 |
 | `extends` is not pinned by digest yet | no registry yet; `digests.lock` covers CI | #15 |
-| The Gated Tool Profile is not frozen into `schemas/` yet | no outside client uses it yet | #23 |
+| The Gated Tool Profile is not frozen into `schemas/` yet | frozen by an RFC before I6 (TSK-I6-05, Q-58) | #23 |
 | An MCP connection lives for one turn only | one event loop per REPL turn | #25 |
 | No numeric criteria in gates yet | RFC-0009 (I2a) will add them; `bands` suffice for the current samples | #30 |
 | `NETR` v1 carries no gate labels and no `on_block` text | the tree is linked with the firmware so it cannot drift | #36 |

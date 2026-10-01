@@ -7,7 +7,7 @@
 > cắt hay danh mục mua sắm: những thứ đó chỉ nằm ở [`neuroedge-roadmap.md`](neuroedge-roadmap.md) —
 > V1a là **I11** (§7.1), V1b đã vào MVP ở **I2a** (§4.3.1) và **I3a** (§4.4.1),
 > V2 là **I16** (§7.6), V3 là **I17** (§7.7), P1 là **I13** (§7.3), P2 là **I18** (§7.8)
-> trừ TSK-P2-04 và P2-05 ở **I14** (§7.4); thang cắt §9.3; mua sắm Phụ lục B. Quyết định
+> trừ TSK-P2-04 ở **I6** (§4.7, Q-58) và P2-05 ở **I14** (§7.4); thang cắt §9.3; mua sắm Phụ lục B. Quyết định
 > chỉ nằm ở `neuroedge-prd.md` §15: **Q-13** (phân tầng bậc target), **Q-40** (thứ tự sau
 > Beta), **Q-53** (bốn gói nguyên thủy, gồm thị giác, vào v1.0), **Q-54** (thị giác trong
 > gate), **Q-33** (đội lõi port RP2350 làm node robot), **Q-34** (tích hợp ROS 2/Nav2).
@@ -182,7 +182,7 @@ Phân biệt này quyết định việc khối có vượt được bộ lọc 
 - **Không làm marketplace riêng.** Việc thương mại hóa trao đổi tài sản thuộc **Khối 5** (proposal §8.8) và chỉ kích hoạt sau cột mốc G1–G4. P2 chỉ làm phần miễn phí.
 - **Chứng nhận không thu phí và không bảo chứng.** Chương trình chứng nhận **có thu phí** vẫn ở trạng thái Chặn tại PRD §14. NeuroEdge công bố kết quả bộ kiểm thử do bên đóng góp tự chạy, không đứng ra bảo đảm chất lượng bo mạch bên thứ ba — tránh nghĩa vụ pháp lý mà tổ chức chưa đủ quy trình để gánh.
 
-→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I18 (§7.8); MCP qua mạng (TSK-P2-04) và MCP cho MCU qua gateway (TSK-P2-05) ở I14 (§7.4).
+→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I18 (§7.8); MCP qua mạng (TSK-P2-04) ở I6 (§4.7, Q-58); MCP cho MCU qua gateway (TSK-P2-05) ở I14 (§7.4).
 
 ---
 

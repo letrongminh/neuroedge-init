@@ -106,9 +106,10 @@ nghe `127.0.0.1` và chỉ nhận yêu cầu cùng nguồn gốc (dòng trên). 
 đường nào để tự xác nhận (`test_an_mcp_client_has_no_way_to_confirm`); luồng MCP rồi người
 trên trang: `test_a_tool_call_through_mcp_then_a_person_on_the_page`.
 
-**Ngoài phạm vi ở v1.0:** MCP chỉ qua **stdio**, nên bên chạy được `neuroedge mcp serve`
-là người vận hành, có quyền ngang runtime (§3). Transport mạng cần xác thực trước khi mở
-(`TODOS.md` #24, NFR-SEC-09).
+**Hôm nay:** MCP chỉ qua **stdio**, nên bên chạy được `neuroedge mcp serve` là người vận
+hành, có quyền ngang runtime (§3). Transport mạng vào v1.0 ở TSK-P2-04 (Q-58), mặc định tắt;
+task đó thêm mục của bên gọi qua mạng vào mục này — xác thực OAuth 2.1, mTLS theo thiết bị,
+lặp lời gọi bị chặn (`TODOS.md` #24, #29, NFR-SEC-09).
 
 ## 3. Ngoài phạm vi: kẻ giả mạo trong cùng tiến trình
 
