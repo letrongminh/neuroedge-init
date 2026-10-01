@@ -25,7 +25,7 @@ on `main`, from the big picture down to the byte.*
 
 | Tệp · File | Nội dung · Content | Góc nhìn · View |
 |:---|:---|:---|
-| [`00-overview.md`](vi/00-overview.md) | NeuroEdge là gì, nguyên tắc, đặc tính kiến trúc, trạng thái | — |
+| [`00-overview.md`](vi/00-overview.md) | NeuroEdge là gì, tinh thần sản phẩm (sáu lời hứa), nguyên tắc, đặc tính kiến trúc, trạng thái | — |
 | [`01-context-c4l1.md`](vi/01-context-c4l1.md) | Người dùng, hệ thống bên ngoài, ranh giới tin cậy | C4 L1 · Context |
 | [`02-container-c4l2.md`](vi/02-container-c4l2.md) | Tiến trình, thư viện, firmware, kho tệp và cách chúng nói chuyện | C4 L2 · Container |
 | [`03-component-host-c4l3.md`](vi/03-component-host-c4l3.md) | Các gói Python, phụ thuộc thật giữa chúng, trách nhiệm từng gói | C4 L3 · Component (host) |
@@ -38,7 +38,7 @@ on `main`, from the big picture down to the byte.*
 | [`10-target-equivalence.md`](vi/10-target-equivalence.md) | Vì sao cùng gate cho cùng quyết định trên `sim`, `linux`, `esp32s3` | Cross-cutting |
 | [`11-hal-port-guide.md`](vi/11-hal-port-guide.md) | Port HAL lên bo mạch mới: hợp đồng, bước làm, cách chứng minh | Guide |
 | [`12-dev-quickstart.md`](vi/12-dev-quickstart.md) | Ngày đầu: cài, chạy, đọc mã, sửa lần đầu | Guide |
-| [`13-evolution-i0-i18.md`](vi/13-evolution-i0-i18.md) | Hiện trạng và kế hoạch I0–I18, điểm mở rộng | Evolution |
+| [`13-evolution-i0-i18.md`](vi/13-evolution-i0-i18.md) | Kiến trúc qua mười mốc phát hành theo người dùng, những gì không đổi, điểm mở rộng · Architecture across the ten user-facing release milestones | Evolution |
 | [`14-deployment-c4.md`](vi/14-deployment-c4.md) | Chạy ở đâu: máy dev, CI, gpio-sim, QEMU, Pi, Box-3 | C4 Deployment |
 | [`15-target-architecture.md`](vi/15-target-architecture.md) | Kiến trúc mục tiêu theo chân trời (H1 v1.0, H2 v1.1, H3 sau Beta) · Target architecture by horizon | C4 To-be · Horizons |
 | [`16-ecosystem-landscape.md`](vi/16-ecosystem-landscape.md) | Bức tranh hệ sinh thái, các bên tham gia, tài sản chia sẻ và mô hình thương mại · Ecosystem landscape | C4 System Landscape |

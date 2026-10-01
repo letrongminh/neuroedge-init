@@ -63,7 +63,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | **Cột mốc tiếp theo** | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** | Ngày dự báo ở §0.2 · chưa phát hành ra ngoài (Q-39) |
 | **Lần cập nhật cuối** | **2026-10-01** | Phiên gần nhất: sáu RFC nguyên thủy mở rộng chấp thuận (PR #75 → #80, Q-62); Q-61 bo camera M5Stack CoreS3; Q-58 → Q-60 — MCP qua mạng và Gated Tool Profile đóng băng vào I6, giữ PolyForm NC qua v1.0, mô hình một người + AI agent · trước đó: Q-52 → Q-57 (MVP = v1.0 đầy đủ, bốn gói nguyên thủy mở rộng, NeuroBrain vào MVP) · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
 | **Trạng thái CI Lõi** | ✅ **PASS 2479/2479 · SKIP 0** | `python/tests/` — 89 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 29/29 trên gpio-sim + i2c-stub/lm75 + vkms (job `linux-hal`) · `ui-golden` 66 ảnh, `ota-rollback` pha a–g · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
-| **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · bo camera đã chọn là M5Stack CoreS3 nhưng chưa đặt (Q-61, TSK-I3a-01) · việc cần phần cứng, người ngoài hoặc chữ ký có người trong vòng (Q-60, §1.1) |
+| **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · bo camera đã chọn là M5Stack CoreS3 nhưng chưa đặt (Q-61, TSK-I3a-01) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](../TODOS.md) | Mỗi mục kèm mốc kích hoạt · câu hỏi kinh doanh mở (`TODOS.md` #19) rà lại trước I6 — luật cổng nhu cầu đã bỏ (Q-56) |
 
 ---
@@ -156,6 +156,23 @@ Phase gom increment theo năng lực người dùng thấy được; ngày và p
 | **MVP = v1.0** | Chọn một kit, chạy trên `sim` dưới 10 phút, dựng thiết bị thật trong một ngày trên `linux` hoặc `esp32s3`; đủ năm nguyên thủy lõi và bốn gói mở rộng; tuỳ biến bằng hội thoại (NeuroBrain) hoặc lệnh sinh mã; mọi lệnh ra phần cứng qua gate | I0 → I7 (gồm I2a, I2b, I3a, I4a, I5a) | `v1.0.0` — đủ A1–A12; **một lần ra mắt, trượt thì dời ngày, không cắt** |
 | **Beta và thương mại** | 50–100 lập trình viên ngoài; doanh nghiệp mua license và Fleet OS theo điểm rẽ | I8 → I9, I10 | `1.0.x`, rồi `1.1.0` theo §5.6 |
 | **Mở rộng** | Bộ port cộng đồng, robot nhiều node, Jetson, đa phương thức, hệ sinh thái thiết bị | I11, I13, I14, I16, I17, I18 | 1.x theo nhu cầu đo được |
+
+#### Mười mốc phát hành theo người dùng
+
+Phase là cách đội lập kế hoạch; **mốc phát hành** là cách người dùng thấy sản phẩm. Mỗi mốc là một việc người dùng làm được, kết thúc khi mọi increment của nó xong. Bảng này không ghi ngày: ngày của một mốc là ngày dự báo muộn nhất trong các increment của nó ở §0.2. CPO Dashboard (`docs/business/cpo-dashboard.html`), poster E-09 và chương kiến trúc 13 đọc từ bảng này. Mỗi increment thuộc đúng một mốc.
+
+| # | Mốc | Người dùng làm được gì | Vì sao quan trọng | Increment | Ai dùng được |
+|:---:|:---|:---|:---|:---|:---|
+| 1 | **Thử trên laptop** | Cài một gói, chạy một agent có gate trên trình mô phỏng trong dưới 10 phút; không cần phần cứng, tài khoản hay khoá API | Cửa vào của sản phẩm: ai cũng thử được mà không tốn tiền phần cứng | I0, I1 | Đội và người thử nội bộ |
+| 2 | **Thiết bị thật trên Raspberry Pi** | Đấu một kit (đèn, cửa, quạt, cảm biến, camera, motor) vào Pi 5; cùng agent, cùng gate như trên laptop | Lần đầu một lệnh AI chạm phần cứng thật mà vẫn qua hợp đồng | I2, I2a, I2b | Đội và người thử nội bộ |
+| 3 | **Gate chạy trên chip $5** | Nạp agent lên ESP32-S3 (Box-3, M5Stack CoreS3); gate quyết ngay trên chip, mất mạng vẫn chặn đúng | An toàn không phụ thuộc cloud; cùng một hợp đồng từ laptop tới vi điều khiển | I3, I3a | Đội và người thử nội bộ |
+| 4 | **Nói chuyện với thiết bị** | Ra lệnh bằng giọng nói trên laptop, Pi và chip; cắt lời thì lệnh chưa chạy bị huỷ | Giọng nói là giao diện tự nhiên nhất của thiết bị trong nhà; cắt lời phải an toàn | I4, I5 | Đội và người thử nội bộ |
+| 5 | **Dựng bằng hội thoại** | Mô tả thiết bị bằng lời; NeuroBrain sinh action, gate và phong bì; người duyệt rồi mới khoá | Rút từ một ngày xuống vài phút để dựng một thiết bị có hợp đồng | I4a, I5a | Đội và người thử nội bộ |
+| 6 | **Ra mắt công khai** | Ai cũng `pip install neuroedge`; gọi thiết bị từ Claude, Home Assistant hay agent framework qua MCP có xác thực | **Lần đầu người ngoài dùng được** | I6 | Mọi người (phi thương mại miễn phí) |
+| 7 | **v1.0 — đưa vào sản phẩm** | Cập nhật firmware có ký, khoá thiết bị, chạy ổn định 24 giờ; đủ tiêu chí nghiệm thu A1–A12 | Đủ tin cậy để đội sản phẩm đưa vào thiết bị bán ra | I7 | Mọi người; doanh nghiệp qua license thương mại |
+| 8 | **Developer Beta** | 50–100 lập trình viên ngoài dùng thật trên dòng `1.0.x` | Số đo thật quyết hướng thương mại (điểm rẽ §5.6) | I8 | Lập trình viên được mời |
+| 9 | **Vận hành đội thiết bị (v1.1)** | Cập nhật hàng nghìn thiết bị theo đợt, kéo vết ghi sự cố từ xa, dùng chung gate qua registry có ký | Nguồn doanh thu chính: Fleet OS và license (P-3) | I9, I10 | Doanh nghiệp |
+| 10 | **Mở rộng hệ sinh thái** | Cộng đồng tự port bo mạch mới; robot nhiều MCU; Jetson; thoại cùng thị giác | NeuroEdge thành chuẩn chung, không phải sản phẩm của một đội | I11, I13, I14, I16, I17, I18 | Cộng đồng, OEM, đội robot |
 
 ---
 

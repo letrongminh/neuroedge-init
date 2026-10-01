@@ -264,6 +264,9 @@ bản gói.
 
 #### Đã đổi — Bề mặt tích hợp vào MVP, giấy phép, mô hình vận hành (2026-10-01, Q-58 → Q-62)
 
+- **Mười mốc phát hành theo người dùng; CPO Dashboard và kiến trúc theo mốc.** Roadmap §0.5 gom increment thành
+  mười mốc ("Thử trên laptop" → "v1.0" → "Mở rộng hệ sinh thái"); dashboard dẫn đầu bằng ngày người ngoài dùng được, chi
+  tiết kỹ thuật thu gọn; kiến trúc `00` §1.1 (sáu lời hứa), `13` viết lại theo mốc, poster E-09 theo mốc. Kiểm: `pytest tests/test_cpo_dashboard.py tests/test_architecture_diagrams.py`.
 - **I2a · TSK-N0-03, I2a-07, V1b-07, W1-03 — sáu RFC nguyên thủy mở rộng chấp thuận (RFC-0007, RFC-0009 → RFC-0013).**
   Kỹ thuật trưởng ký trên PR #75 → #80; danh mục `docs/rfc/README.md`. Bất biến §3.3 #6, #7 viết lại theo RFC-0013;
   `TODOS.md` #39 đóng (RFC-0011). Mã của nguyên thủy mới giờ được viết. Kiểm: `pytest tests/test_plan_contract.py`.

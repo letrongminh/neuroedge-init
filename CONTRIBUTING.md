@@ -234,6 +234,7 @@ Một task **chưa xong** cho tới khi các cập nhật dưới đây nằm **
 | Tiêu chí ra đạt hay chưa, kèm bằng chứng | Danh sách tiêu chí ra ngay dưới bảng task của increment | Dẫn mã increment + số tiêu chí (`I3 tiêu chí 2`) |
 | Lịch: ngày dự báo, phụ thuộc, thẻ phát hành | Roadmap §0.2 (bảng increment) | Dẫn mã increment; không chép ngày hay tag |
 | Tổng quan tiến độ, số test hiện hành, hạng mục bị chặn | Roadmap §0.1–§0.2 | Không chép con số |
+| Mốc phát hành theo người dùng và increment của từng mốc | Roadmap §0.5 (bảng "Mười mốc phát hành theo người dùng") | CPO Dashboard và poster E-09 đọc bảng này lúc sinh; nơi khác dẫn tên hoặc số mốc |
 | Việc tiếp theo, đang làm gì | Roadmap §0.3 (Thẻ bàn giao) | Không |
 | Thang cắt phạm vi | Roadmap §9 | Dẫn bậc hoặc increment |
 | Giá trị đo B1–B5 (và A1 đo đầy đủ) | Roadmap §5.5 | Ngưỡng ở PRD §11; nơi khác dẫn mã |

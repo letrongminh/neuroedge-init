@@ -12,7 +12,7 @@
 
 NeuroEdge has **no server-side service at all** before the v1.1 service tier (I0–I8): no account, no broker, no
 backend. Everything runs on the user's machine or on the device. The first server-side service is Fleet
-OS at I9 ([`13`](13-evolution-i0-i18.md) §2).
+OS at I9 ([`13`](13-evolution-i0-i18.md) §3, milestone 9).
 
 ## 2. Deployment nodes
 
