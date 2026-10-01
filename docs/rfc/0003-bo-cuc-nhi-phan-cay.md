@@ -9,7 +9,7 @@
 | **Người đề xuất** | V1 + V2 *(theo TSK-S4-02)* |
 | **Ngày mở** | 2026-09-24 |
 | **Trạng thái** | ✅ Đã chấp thuận — **thu hẹp**: chỉ bố cục nhị phân. Phần ghim `extends` bằng digest (TSK-S3-21) vẫn hoãn, `TODOS.md` #15 · ✅ Đã hiện thực (TSK-S4-02, S4-07, S4-08; PR #27, #29) |
-| **Người phê duyệt** | minhlt (kỹ thuật trưởng), 2026-09-24 |
+| **Người phê duyệt** | Trong-Minh Le (@letrongminh, kỹ thuật trưởng), 2026-09-24 |
 | **Kiểm chứng** | §7 — `python/tests/test_c_walker.py`, `python/tests/test_c_token.py`, job CI `firmware-qemu` |
 
 > **Khi nào cần RFC:** `TODOS.md` #15 và `decision_tree.py` yêu cầu đóng băng bố cục

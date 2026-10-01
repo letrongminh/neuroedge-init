@@ -9,7 +9,7 @@
 | **Người đề xuất** | V1 — Kỹ sư lõi nền tảng *(theo TSK-S3-26)* |
 | **Ngày mở** | 2026-09-24 |
 | **Trạng thái** | ✅ Đã chấp thuận · ✅ Đã hiện thực (TSK-S3-26, PR #25; walker C: TSK-S4-02, PR #27) |
-| **Người phê duyệt** | minhlt (kỹ thuật trưởng), 2026-09-24 — chọn "gate ghi rõ" (phương án A) trong ba phương án ở §6 |
+| **Người phê duyệt** | Trong-Minh Le (@letrongminh, kỹ thuật trưởng), 2026-09-24 — chọn "gate ghi rõ" (phương án A) trong ba phương án ở §6 |
 | **Kiểm chứng** | §7 — `python/tests/test_tool_confirm.py`, corpus `fixtures/gates/invalid/` |
 
 > **Khi nào cần RFC:** mọi thay đổi trong `schemas/`, và mọi thay đổi ngữ nghĩa

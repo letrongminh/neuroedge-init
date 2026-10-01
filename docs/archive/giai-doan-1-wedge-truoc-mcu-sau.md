@@ -56,7 +56,7 @@ Mode: Startup
 
 ## Quyết định 2026-09-23 — gỡ chặn
 
-Chốt bởi minhlt. Sổ quyết định là `neuroedge-prd.md` §15; bảng này chỉ nối từng
+Chốt bởi Trong-Minh Le (@letrongminh). Sổ quyết định là `neuroedge-prd.md` §15; bảng này chỉ nối từng
 câu hỏi mở của tài liệu này tới quyết định đã giải nó. **Mọi mốc dưới đây nay
 đọc theo ngày tuyệt đối của Q-19**, không theo quy ước "Tuần N ở đây".
 
