@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-HAL-01, FR-HAL-04, FR-HAL-05, FR-HAL-08, FR-TGT-01, FR-TGT-06, FR-TGT-08 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-09-30 |
-| **Trạng thái** | ⏳ Nháp — chưa mở PR · câu hỏi mở đã quyết (§9, Q-57) và đã gộp vào §3–§8 |
+| **Trạng thái** | 🟡 Đang thảo luận — đã sửa theo review 2026-10-01 (§9, Q-62); chờ chữ ký kỹ thuật trưởng |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (sửa các bất biến kiểm thử bảo vệ tương đương target, RFC-0002 §5) |
 
 > **Khi nào cần RFC:** RFC này không sửa `schemas/`, nhưng đổi ba bất biến mà RFC-0002 §5a–§5c đề xuất
@@ -62,6 +62,7 @@ ALL_PRIMITIVES = PRIMITIVES + EXTENSION_PRIMITIVES
 - **Năm nguyên thủy lõi bắt buộc với mọi bo tham chiếu bậc 1 ngoài `EXTENSION_REFERENCE_BOARDS`** (§3b), và luôn bắt buộc với bo mặc định của mỗi target. Bậc 2/3: có/không, như RFC-0002.
 - Nguyên thủy mở rộng **tuỳ chọn theo bo mạch**; `BoardProfile.supports()` / `missing_primitives()` nhận cả hai tập; thông điệp `_normalise()` sinh từ danh sách, không ghim "năm" (RFC-0002 §3c.1).
 - Khoá mở rộng gõ sai bị từ chối lúc nạp (RFC-0002 §3c.2), giờ dựa trên `ALL_PRIMITIVES`.
+- Bo tham chiếu mang `vision.in` (`linux-rpi5`, `esp32s3-cores3`, `sim-rpi5`) bắt buộc khai trường sai số suy luận `tolerance = { score_abs, box_iou_min }` trong khối `capabilities.vision_in` (RFC-0012).
 - **Không bao giờ khai năng lực phần cứng không có**, lõi lẫn mở rộng: bo thiếu thì vắng khoá, không khai giả để qua test (§9 mục 1).
 
 ### 3b. Nhiều bo mạch tham chiếu mỗi target
@@ -70,20 +71,20 @@ ALL_PRIMITIVES = PRIMITIVES + EXTENSION_PRIMITIVES
 REFERENCE_BOARDS: dict[str, tuple[str, ...]] = {
     "sim":     ("sim-default", "sim-rpi5"),
     "linux":   ("linux-rpi5",),
-    "esp32s3": ("esp32s3-box-3", "<id bo camera>"),  # phương án (a) hoặc (c); phương án (b): ("esp32s3-box-3",)
+    "esp32s3": ("esp32s3-box-3", "esp32s3-cores3"),  # phương án (a) theo Q-61; dự phòng: (b) hoặc (c)
 }
 EXTENSION_REFERENCE_BOARDS: frozenset[str] = frozenset()  # chỉ có phần tử khi bo camera theo phương án (c)
 ```
 
 Phần tử đầu là **mặc định** khi không có `--board` (giữ hành vi hiện tại của `cli/main.py`, `sim/session.py`); Box-3 vẫn là mặc định của `esp32s3`. `REFERENCE_BOARD` cũ giữ làm bí danh của phần tử đầu để không vỡ mã gọi. `EXTENSION_REFERENCE_BOARDS` là bảng lõi, không tự khai trong `board.toml`, cùng lý do `SIM_MIRRORS` (§3d).
 
-**Chọn bo camera** (TSK-I3a-01, §9 mục 1) — xét theo thứ tự, dừng ở phương án đầu tiên đạt:
+**Chọn bo camera** (TSK-I3a-01, §9 mục 1): Đã chọn **M5Stack CoreS3** (`esp32s3-cores3`) theo Q-61 (2026-10-01), đạt tiêu chí (a). Các phương án (b) và (c) giữ làm luật dự phòng nếu số đo Q-3 trên CoreS3 không đạt:
 
 | Phương án | Điều kiện | Hệ quả |
 |:---|:---|:---|
-| (a) | Một bo ESP32-S3 có camera khai **đủ năm nguyên thủy lõi** và tập tên chân chung (RFC-0002 §5a); ứng viên đầu tiên: ESP32-S3-EYE của Espressif | Bo tham chiếu thứ hai đầy đủ của `esp32s3`, đứng sau Box-3 |
-| (b) | Không có (a); gắn module camera vào Box-3 mà ngân sách bộ nhớ Q-3 vẫn đạt | `esp32s3` giữ một bo; Box-3 gắn module khai `vision_in` |
-| (c) | Không có (a) lẫn (b) | **Bo tham chiếu mở rộng**: id vào `EXTENSION_REFERENCE_BOARDS`, chỉ khai đúng những gì phần cứng có, **không bao giờ** là phần tử đầu của target |
+| (a) | Một bo ESP32-S3 có camera khai **đủ năm nguyên thủy lõi** và tập tên chân chung (RFC-0002 §5a); **đã chọn M5Stack CoreS3** (Q-61) | Bo tham chiếu thứ hai đầy đủ của `esp32s3`, đứng sau Box-3 |
+| (b) | Dự phòng: không có (a); gắn module camera vào Box-3 mà ngân sách bộ nhớ Q-3 vẫn đạt | `esp32s3` giữ một bo; Box-3 gắn module khai `vision_in` |
+| (c) | Dự phòng: không có (a) lẫn (b) | **Bo tham chiếu mở rộng**: id vào `EXTENSION_REFERENCE_BOARDS`, chỉ khai đúng những gì phần cứng có, **không bao giờ** là phần tử đầu của target |
 
 **Thay RFC-0002 §5c:** "mỗi target bậc 1 có **ít nhất một** profile tham chiếu, và mọi profile có target thuộc `SUPPORTED_TARGETS`". **Thay §5b:** lõi bắt buộc với mọi bo tham chiếu bậc 1 ngoài `EXTENSION_REFERENCE_BOARDS` và với bo mặc định; nguyên thủy mở rộng chỉ khai khi bo mạch thật có. **§5a** (tập tên chân chung) áp cho cùng tập bo đó. Vì RFC này chấp thuận trước, RFC-0002 §5b/§5c dẫn RFC này thay vì viết lại (§9 mục 6).
 
@@ -113,25 +114,26 @@ Bất biến **"`sim` không giàu hơn bo mạch tham chiếu"** (`TODOS.md` #1
 
 ### 3f. `verify` và nightly chạy mọi bo tham chiếu
 
-Quy tắc ở §9 mục 2: tương đương chỉ có nghĩa khi đã chạy trên đúng bo sẽ giao cho người dùng.
+Quy tắc ở §9 mục 2 và mục 7: tương đương chỉ có nghĩa khi đã chạy trên đúng bo sẽ giao cho người dùng.
 
-- `neuroedge verify --targets <t,…>` replay vết ghi chuẩn mực trên **từng** bo trong `REFERENCE_BOARDS[t]`, không chỉ phần tử đầu, và báo kết quả theo cặp (target, bo).
-- `sim`, `linux`: host lặp qua các bo. `esp32s3`: mỗi bo tham chiếu cần phiên replay của chính nó (`--port` cho từng bo; thiết bị tự khai `board_id`, `testing/uart.py`). Thiếu lượt replay của một bo ⇒ không đạt, mã 1, `VerificationError` (NE4004) — cùng nguyên tắc "quét 0 không bao giờ là đạt"; không bo nào bị bỏ qua lặng lẽ.
+- `neuroedge verify --targets <t,…>` replay vết ghi trên **từng** bo trong `REFERENCE_BOARDS[t]`, không chỉ phần tử đầu, và báo kết quả theo cặp (target, bo).
+- **Tập vết ghi replay theo năng lực bo (§9 mục 7):** Mỗi bo replay đúng các vết ghi chuẩn mực mà nguyên thủy nó khai đủ, cộng corpus riêng của nguyên thủy mở rộng nó mang. Bo mặc định của mỗi target bắt buộc replay cả ba vết ghi chuẩn mực. Một bo không có vết ghi nào áp được ⇒ không đạt, mã 1, `VerificationError` (NE4004) — theo nguyên tắc "quét 0 không bao giờ là đạt". Với lựa chọn hiện tại là M5Stack CoreS3 (đủ năm nguyên thủy lõi theo phương án (a)), `esp32s3-cores3` replay cả ba vết ghi chuẩn mực cộng corpus thị giác riêng.
+- `sim`, `linux`: host lặp qua các bo. `esp32s3`: mỗi bo tham chiếu cần phiên replay của chính nó (`--port` cho từng bo; thiết bị tự khai `board_id`, `testing/uart.py`). Thiếu lượt replay của một bo ⇒ không đạt, mã 1, `VerificationError` (NE4004); không bo nào bị bỏ qua lặng lẽ.
 - Nightly hardware (`.github/workflows/nightly-hardware.yml`) có một job cho mỗi bo tham chiếu phần cứng; test đối chiếu ma trận job với `REFERENCE_BOARDS`.
 
 ## 4. Ảnh hưởng tương thích
 
 | Hạng mục | Ảnh hưởng |
 |:---|:---|
-| Tệp đang hợp lệ có còn hợp lệ? | Có — không đổi `schemas/`; ba profile hiện có nguyên vẹn (phương án (b) của §3b thêm `vision_in` vào profile Box-3, không bỏ khoá nào) |
+| Tệp đang hợp lệ có còn hợp lệ? | Có — không đổi `schemas/`; ba profile bậc 1 trong `boards/` phải thêm phong bì `[capabilities.digital_out.envelope.<tên>]` trong PR hiện thực, với giá trị đủ rộng để ba vết ghi chuẩn mực vẫn replay y nguyên (chưa có profile bên ngoài). Thêm profile `esp32s3-cores3` và `sim-rpi5`, không bỏ khoá nào |
 | Tệp đang không hợp lệ có trở nên hợp lệ? | Có, ở tầng bộ nạp: khoá mở rộng trước đây nhận lặng lẽ nay là khoá hợp lệ; profile thứ hai mỗi target được `test_boards.py` chấp nhận. Ngược lại, profile khai `mirrors` nay bị bộ nạp từ chối (§3d) |
 | Cần tăng phiên bản lược đồ (`v1` → `v2`)? | Không |
 | Ảnh hưởng tới mã băm / chữ ký gate đã phát hành? | Không |
-| Ảnh hưởng tới ba tệp vết ghi chuẩn mực? | Không đổi tệp — cả ba vẫn khai `target: "esp32s3"`, `board_id: "esp32s3-box-3"`; `verify` replay chúng trên **mọi** bo tham chiếu của mỗi target được yêu cầu (§3f), không chỉ bo mặc định |
+| Ảnh hưởng tới ba tệp vết ghi chuẩn mực? | Không đổi tệp — cả ba vẫn khai `target: "esp32s3"`, `board_id: "esp32s3-box-3"`. Mỗi bo tham chiếu replay đúng các vết ghi chuẩn mực mà nguyên thủy nó khai đủ (§3f, §9 mục 7); bo mặc định của mỗi target replay cả ba; `esp32s3-cores3` đủ năm nguyên thủy lõi nên replay cả ba vết ghi chuẩn mực. Các profile phải có phong bì đủ rộng để ba vết ghi replay y nguyên |
 | Gate nào trong `digests.lock` đổi digest? | Không gate nào |
 | Bố cục `NETR` hoặc walker C phải đổi? | Không |
 | Đáp án nào của corpus tool call (`expected_results.yaml`) đổi? | Không |
-| Mã lỗi (`neuroedge-prd.md` Phụ lục B) | Không thêm lớp hay mã mới: `BoardCapabilityError` (NE3001), `BuildFailed` (NE3003), `VerificationError` (NE4004) đã có. Khi chấp thuận: dòng NE3001 thêm hành vi "không có `--board` mà bo mặc định không thoả ⇒ liệt kê bo tham chiếu thoả" (§3e); dòng NE4004 thêm nguyên nhân "một bo tham chiếu của target được yêu cầu không có lượt replay" (§3f) |
+| Mã lỗi (`neuroedge-prd.md` Phụ lục B) | Không thêm lớp hay mã mới: `BoardCapabilityError` (NE3001), `BuildFailed` (NE3003), `VerificationError` (NE4004) đã có. Khi chấp thuận: dòng NE3001 thêm hành vi "không có `--board` mà bo mặc định không thoả ⇒ liệt kê bo tham chiếu thoả" (§3e); dòng NE4004 thêm nguyên nhân "một bo tham chiếu của target được yêu cầu không có lượt replay hoặc không có vết ghi nào áp được" (§3f, §9 mục 7) |
 
 Hành vi CLI: `build` không `--board` không đổi khi bo mặc định thoả, và vẫn mã 1 khi không thoả — chỉ thông điệp thêm danh sách bo; `verify` chạy thêm bo nên chậm hơn và có thể đỏ ở bo mới — đó là mục đích.
 
@@ -143,7 +145,8 @@ RFC này không đụng `gate.v1`, phân giải, năm nguyên tắc kế thừa 
 
 - **Không bỏ khẳng định nào, chỉ đổi phạm vi**: lõi và tập tên chân chung vẫn bắt buộc với mọi bo tham chiếu bậc 1 đầy đủ và luôn với bo mặc định; "sim không giàu hơn" **chặt hơn** (theo cặp thay vì một profile). Ngoại lệ duy nhất là bo tham chiếu mở rộng (§3b phương án (c)), không bao giờ là bo mặc định.
 - **Cổng thay thế đã tồn tại:** `neuroedge build` đối chiếu `[requires]` với bo mạch (TSK-S2-02, `engine/compiler.py`), nên một agent cần `vision.in` bị từ chối ở bo mạch thiếu nó — không mở khoảng nào không ai canh.
-- **Ma trận kiểm thử nhân đôi — đã chấp nhận:** `verify` và nightly chạy mọi bo tham chiếu (§3f), vì agent thị giác qua trên `sim-rpi5` chưa chứng minh gì trên bo camera `esp32s3`. Chi phí: thời gian CI và một runner tự quản cho mỗi bo phần cứng.
+- **Ma trận kiểm thử nhân đôi — đã chấp nhận:** `verify` và nightly chạy mọi bo tham chiếu (§3f), vì agent thị giác qua trên `sim-rpi5` chưa chứng minh gì trên bo camera `esp32s3` (`esp32s3-cores3`). Chi phí: thời gian CI và một runner tự quản cho mỗi bo phần cứng.
+- **Replay theo đúng năng lực (§3f, §9 mục 7):** Bo mở rộng chỉ replay vết ghi nó đủ nguyên thủy, không ép chạy vết ghi dùng nguyên thủy thiếu; bo mặc định bắt buộc replay cả ba vết ghi chuẩn mực. Quét 0 vết ghi là vi phạm fail-closed và bị từ chối.
 - **Không chọn bo lặng lẽ:** `build` không bao giờ tự chuyển sang bo khác (§3e).
 - **`sim` giàu hơn bo mạch tham chiếu là lỗi an toàn:** agent qua mô phỏng nhưng không build được trên phần cứng. Test theo cặp là cổng chặn.
 - **Khai năng lực không có là lỗi an toàn:** test phủ đỏ thì mở `Q-N` và dời ngày (§3c), không khai giả.
@@ -164,29 +167,30 @@ RFC này không đụng `gate.v1`, phân giải, năm nguyên tắc kế thừa 
 
 ## 7. Bằng chứng kiểm chứng
 
-- [ ] `boards/sim-rpi5.toml` hợp lệ theo `board.v1`; profile bo camera theo phương án chọn ở TSK-I3a-01 (§3b), tham số lấy từ phần cứng thật (`CONTRIBUTING.md` §3); phương án (b) kèm báo cáo ngân sách Q-3 trong `docs/reports/`
-- [ ] Test bảng bo (§3a, §3b): lõi đủ năm và tập tên chân chung trên mọi bo tham chiếu bậc 1 ngoài `EXTENSION_REFERENCE_BOARDS`; phần tử đầu của mọi `REFERENCE_BOARDS[t]` khai đủ năm lõi và không thuộc `EXTENSION_REFERENCE_BOARDS`; mọi id trong hai bảng có profile trong `boards/` với target khớp; khoá mở rộng lạ bị từ chối lúc nạp
+- [ ] `boards/sim-rpi5.toml` và `boards/esp32s3-cores3.toml` (TSK-I3a-01, Q-61) hợp lệ theo `board.v1`; khai đúng `tolerance` cho `vision_in` (RFC-0012) và phong bì cho `digital_out`, tham số lấy từ phần cứng thật (`CONTRIBUTING.md` §3); phương án dự phòng (b) kèm báo cáo ngân sách Q-3 trong `docs/reports/`
+- [ ] Test bảng bo (§3a, §3b): lõi đủ năm và tập tên chân chung trên mọi bo tham chiếu bậc 1 ngoài `EXTENSION_REFERENCE_BOARDS`; phần tử đầu của mọi `REFERENCE_BOARDS[t]` khai đủ năm lõi và không thuộc `EXTENSION_REFERENCE_BOARDS`; mọi id trong hai bảng có profile trong `boards/` với target khớp; khoá mở rộng lạ bị từ chối lúc nạp; bo mang `vision.in` thiếu `tolerance` bị từ chối lúc nạp
 - [ ] Test phủ (§3c): `test_every_extension_primitive_on_every_tier1_target`, và **từng ô** của §9 mục 5 (bo trong ô khai nguyên thủy đó); phản chứng: bỏ một khoá khỏi bo trong ô ⇒ đỏ kèm gợi ý
-- [ ] Test soi (§3d): `sim-*` ⊆ bo mạch được soi (tham số hoá theo `SIM_MIRRORS`); mọi `sim-*` trong `boards/` có mục trong `SIM_MIRRORS` và ngược lại; profile khai `mirrors` bị từ chối lúc nạp; phản chứng: profile `sim` khai `vision_in` mà bo được soi thiếu ⇒ đỏ
+- [ ] Test soi (§3d, §9 mục 5): `sim-*` ⊆ bo mạch được soi (tham số hoá theo `SIM_MIRRORS`); mọi `sim-*` trong `boards/` có mục trong `SIM_MIRRORS` và ngược lại; profile khai `mirrors` bị từ chối lúc nạp; `sim-default` không mang `motion.*` nếu `esp32s3-box-3` không mang; phản chứng: profile `sim` khai `vision_in` mà bo được soi thiếu ⇒ đỏ
 - [ ] Test build (§3e): không `--board`, bo mặc định thoả ⇒ build trên bo mặc định; không thoả ⇒ mã 1, `BoardCapabilityError` liệt kê bo tham chiếu thoả, không ghi artifact, không build trên bo khác; `--board <id>` ⇒ dùng đúng bo đó
-- [ ] Test verify (§3f): `verify --targets sim` replay trên cả `sim-default` và `sim-rpi5`; `verify --targets esp32s3` thiếu phiên của một bo tham chiếu ⇒ mã 1 (`VerificationError`); ma trận nightly khớp `REFERENCE_BOARDS`
+- [ ] Test verify (§3f, §9 mục 7): `verify` kiểm tra từng bo chỉ replay các vết ghi mà bo khai đủ nguyên thủy; bo mặc định của mỗi target replay đủ ba vết ghi chuẩn mực; `esp32s3-cores3` replay đủ ba vết ghi chuẩn mực cộng corpus thị giác; phản chứng: một bo tham chiếu không có vết ghi nào áp được ⇒ đỏ, mã 1 (`VerificationError`, NE4004); thiếu phiên replay của một bo tham chiếu phần cứng ⇒ mã 1
 - [ ] `cd python && .venv/bin/python -m pytest -q` xanh, 0 skipped; `neuroedge verify --targets sim,linux,esp32s3` xanh trên mọi bo tham chiếu bậc 1, trong CI và nightly (A10)
 
 ## 8. Việc phải làm khi chấp thuận
 
 - [ ] Thứ tự (§9 mục 6): chấp thuận RFC này trước RFC-0002; ghi chú ở RFC-0002 §5b/§5c dẫn RFC này, và khi RFC-0002 được chấp thuận, §5b/§5c của nó dẫn RFC này thay vì viết lại
+- [ ] Sửa bất biến trong `CHANGELOG.md` §3.3: #6 thành "bo tham chiếu mặc định của `esp32s3` là ESP32-S3-BOX-3; bo tham chiếu thứ hai (có camera) là M5Stack CoreS3 (Q-61); không đổi sang DevKitC — số đo spike sẽ vô nghĩa"; #7 thành "mỗi profile `sim` không giàu năng lực hơn bo nó soi (`SIM_MIRRORS`)"
 - [ ] `python/neuroedge/hal/board.py` (`EXTENSION_PRIMITIVES`, `REFERENCE_BOARDS`, `EXTENSION_REFERENCE_BOARDS`, `SIM_MIRRORS`), `python/neuroedge/hal/__init__.py`, `python/neuroedge/cli/main.py` (`build` §3e, `verify` §3f), `python/neuroedge/sim/session.py`
 - [ ] `.github/workflows/nightly-hardware.yml`: một job cho mỗi bo tham chiếu phần cứng
-- [ ] Thêm `boards/sim-rpi5.toml` và profile bo camera (TSK-I3a-01); cập nhật `python/tests/test_boards.py`
+- [ ] Thêm `boards/sim-rpi5.toml` và `boards/esp32s3-cores3.toml` (TSK-I3a-01, Q-61); cập nhật `python/tests/test_boards.py`; thêm phong bì `envelope` cho chân `digital_out` của ba profile bậc 1
 - [ ] `neuroedge-prd.md` FR-HAL-01, FR-TGT-08, Phụ lục B dòng NE3001 và NE4004 (§4); `neuroedge-roadmap.md` (TSK-I2a-06, TSK-I2a-07, TSK-I3a-01); đóng `TODOS.md` #14
 - [ ] `CONTRIBUTING.md` §3 (dòng profile bo mạch); cập nhật `docs/rfc/README.md` và `CHANGELOG.md`
 
-## 9. Quyết định cho các câu hỏi mở (Q-57, 2026-09-30)
+## 9. Quyết định cho các câu hỏi mở (Q-57, 2026-09-30; Q-62, 2026-10-01)
 
 Chủ sản phẩm uỷ quyền quyết các câu hỏi mở theo nguyên tắc **an toàn cao nhất**: giữa hai phương án, chọn phương án fail-closed và khó dùng sai hơn, kể cả khi nó tốn công hơn. Các quyết định dưới đây **đã được gộp vào §3–§8**; mục này giữ làm hồ sơ quyết định (Q-57) — §3–§8 lệch với mục này thì sửa §3–§8. Chấp thuận RFC vẫn cần chữ ký kỹ thuật trưởng (`CONTRIBUTING.md` §3).
 
-1. **Bo camera.** Tiêu chí chọn, theo thứ tự: (a) một bo ESP32-S3 có camera khai **đủ năm nguyên thủy lõi** và tập tên chân chung §5a của RFC-0002 — ứng viên đầu tiên để TSK-I3a-01 xác minh là ESP32-S3-EYE của Espressif; (b) nếu không có, gắn module camera vào Box-3 khi ngân sách bộ nhớ Q-3 vẫn đạt; (c) nếu vẫn không, bo camera là **bo tham chiếu mở rộng**: chỉ khai đúng những gì phần cứng có, không được làm bo mặc định của target, và luật "đủ năm nguyên thủy lõi" áp cho bo mặc định. Không bao giờ khai năng lực phần cứng không có.
-2. **`verify` và nightly chạy mọi bo tham chiếu** của mọi target bậc 1, không chỉ bo mặc định. *Vì sao:* tương đương chỉ có nghĩa khi đã chạy trên đúng bo sẽ giao cho người dùng.
+1. **Bo camera.** TSK-I3a-01 chọn **M5Stack CoreS3** (Q-61, 2026-10-01) — đạt (a). Bo gồm ESP32-S3, flash 16 MB, PSRAM 8 MB, camera GC0308 0,3 MP (VGA), 2 mic qua ES7210, loa 1 W qua ampli AW88298, màn 2" 320×240 cảm ứng, IMU BMI270, cảm biến ánh sáng/khoảng cách LTR-553, cổng Grove và M5-Bus. Bo đạt tiêu chí (a), tức khai đủ năm nguyên thủy lõi cộng camera. Tên profile dự kiến: `esp32s3-cores3`. Bo mặc định của `esp32s3` vẫn là `esp32s3-box-3`. Các phương án (b) và (c) được giữ làm luật dự phòng nếu số đo Q-3 trên CoreS3 không đạt: (b) gắn module camera vào Box-3 khi ngân sách bộ nhớ Q-3 vẫn đạt; (c) bo camera là **bo tham chiếu mở rộng** (`EXTENSION_REFERENCE_BOARDS`), chỉ khai đúng những gì phần cứng có, không được làm bo mặc định của target, và luật "đủ năm nguyên thủy lõi" áp cho bo mặc định. Không bao giờ khai năng lực phần cứng không có.
+2. **`verify` và nightly chạy mọi bo tham chiếu** của mọi target bậc 1, không chỉ bo mặc định; tập vết ghi mỗi bo replay theo năng lực bo (mục 7). *Vì sao:* tương đương chỉ có nghĩa khi đã chạy trên đúng bo sẽ giao cho người dùng.
 3. **`build` không `--board`:** dùng bo mặc định nếu nó thoả `[requires]`; không thoả thì báo lỗi ba phần (FR-HAL-05) liệt kê các bo tham chiếu thoả. Không tự chọn bo khác. *Vì sao:* người dùng phải biết chính xác mình nạp lên bo nào.
 4. **`SIM_MIRRORS` là bảng trong mã lõi**, không phải trường của `board.toml`. *Vì sao:* một profile không được tự khai mình soi bo nào (cùng lý do `TARGET_TIERS`).
 5. **Bo mang từng nguyên thủy mở rộng:**
@@ -195,8 +199,11 @@ Chủ sản phẩm uỷ quyền quyết các câu hỏi mở theo nguyên tắc 
    |:---|:---|:---|:---|
    | `digital.in`, I2C chỉ đọc, PWM | `sim-default`, `sim-rpi5` | `linux-rpi5` | `esp32s3-box-3` |
    | `analog.in` | `sim-default`, `sim-rpi5` | `linux-rpi5` + ADC I2C trên mạch | `esp32s3-box-3` (ADC của chip, xác minh ở TSK-I3a-01) |
-   | `motion.*` | `sim-default`, `sim-rpi5` | `linux-rpi5` + driver có `enable_pin` | `esp32s3-box-3` qua chân dock; dock không đủ chân thì bo camera (mục 1) mang — RFC-0011 §9.6, xác minh ở TSK-I3a-01 |
-   | `vision.in` | `sim-rpi5` | `linux-rpi5` + camera | bo camera (mục 1) |
+   | `motion.*` | `sim-default`, `sim-rpi5` | `linux-rpi5` + driver có `enable_pin` | `esp32s3-box-3` qua chân dock; dock không đủ chân thì `esp32s3-cores3` (mục 1) mang — RFC-0011 §9.6, xác minh ở TSK-I3a-01 |
+   | `vision.in` | `sim-rpi5` | `linux-rpi5` + camera | `esp32s3-cores3` (mục 1) |
 
    Mỗi ô là một cam kết kiểm được bằng test phủ của §3c; phần cứng thật không cho phép một ô thì mở `Q-N` và dời ngày, không bỏ ô (Q-52).
+
+   *Ghi chú về `motion.*` trên `sim`:* `sim-default` chỉ mang `motion.*` khi `esp32s3-box-3` mang; nếu `motion.*` chuyển sang `esp32s3-cores3` thì chỉ `sim-rpi5` (và một profile `sim` soi CoreS3 nếu có) mang; `sim-default` không mang để tránh vi phạm bất biến "sim không giàu hơn bo nó soi".
 6. **Thứ tự chấp thuận:** RFC này chấp thuận **trước** RFC-0002, vì I2a cần nó còn RFC-0002 chỉ cần cho I11; khi RFC-0002 được chấp thuận, §5b và §5c của nó dẫn RFC này thay vì viết lại.
+7. **Tập vết ghi replay theo năng lực bo** (review 2026-10-01, Q-62). Mỗi bo tham chiếu chỉ replay đúng các vết ghi chuẩn mực mà nguyên thủy nó khai đủ, cộng corpus riêng của nguyên thủy mở rộng nó mang; bo mặc định của mỗi target bắt buộc replay cả ba vết ghi chuẩn mực; một bo không có vết ghi nào áp được thì không đạt (quét 0 không bao giờ là đạt). Với lựa chọn hiện tại là M5Stack CoreS3 (đủ năm nguyên thủy lõi theo phương án (a)), CoreS3 replay cả ba vết ghi chuẩn mực cộng corpus thị giác riêng. *Vì sao:* tránh ép bo mở rộng thiếu nguyên thủy lõi phải chạy test chứa nguyên thủy phần cứng không hỗ trợ dẫn đến fail sai, đồng thời không bao giờ cho phép bỏ qua kiểm thử âm thầm.
