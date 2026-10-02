@@ -7,21 +7,21 @@
 #include "vectors/unlock_door.netree.h"
 
 /* happy-path.json #1: unlock_door@1.2.0 */
-static const ne_fact ne_v_happy_path_0_facts[3] = {{1u, 1u, 1u, 0u, 0.0}, {1u, 1u, 0u, 0u, 0.0}, {1u, 1u, 1u, 0u, 0.0}};
+static const ne_fact ne_v_happy_path_0_facts[3] = {{1u, 1u, 1u, 0u, 0.0, 0.0, 0}, {1u, 1u, 0u, 0u, 0.0, 0.0, 0}, {1u, 1u, 1u, 0u, 0.0, 0.0, 0}};
 static const char *const ne_v_happy_path_0_sources[3] = {"trace", "trace", "trace"};
 static const ne_vector_command ne_v_happy_path_0_commands[1] = {{"door_lock", 0u, "pulse", 30000u}};
 static const ne_vector_step ne_v_happy_path_steps[1] = {
     {0u, 0u, 0u, ne_v_happy_path_0_facts, ne_v_happy_path_0_sources, 0x1u, ne_v_happy_path_0_commands, 1u},
 };
 /* network_offline.json #1: unlock_door@1.2.0 */
-static const ne_fact ne_v_network_offline_0_facts[3] = {{0u, 0u, 0u, 0u, 0.0}, {0u, 0u, 0u, 0u, 0.0}, {0u, 0u, 0u, 0u, 0.0}};
+static const ne_fact ne_v_network_offline_0_facts[3] = {{0u, 0u, 0u, 0u, 0.0, 0.0, 0}, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}};
 static const char *const ne_v_network_offline_0_sources[3] = {NULL, NULL, NULL};
 static const ne_vector_command ne_v_network_offline_0_commands[1] = {{"door_lock", 0u, "pulse", 30000u}};
 static const ne_vector_step ne_v_network_offline_steps[1] = {
     {0u, 1u, 0u, ne_v_network_offline_0_facts, ne_v_network_offline_0_sources, 0x1u, ne_v_network_offline_0_commands, 1u},
 };
 /* unverified_attempt.json #1: unlock_door@1.2.0 */
-static const ne_fact ne_v_unverified_attempt_0_facts[3] = {{1u, 1u, 0u, 0u, 0.0}, {1u, 1u, 2u, 0u, 0.0}, {1u, 1u, 0u, 0u, 0.0}};
+static const ne_fact ne_v_unverified_attempt_0_facts[3] = {{1u, 1u, 0u, 0u, 0.0, 0.0, 0}, {1u, 1u, 2u, 0u, 0.0, 0.0, 0}, {1u, 1u, 0u, 0u, 0.0, 0.0, 0}};
 static const char *const ne_v_unverified_attempt_0_sources[3] = {"trace", "trace", "trace"};
 static const ne_vector_command ne_v_unverified_attempt_0_commands[1] = {{"door_lock", 0u, "pulse", 30000u}};
 static const ne_vector_step ne_v_unverified_attempt_steps[1] = {

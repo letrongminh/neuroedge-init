@@ -73,6 +73,7 @@ static const ne_ui_strings_t ne_ui_strings_vi = {
             [NE_UI_REASON_ARGUMENT_OUT_OF_RANGE] = "Tham số ngoài khoảng cho phép",
             [NE_UI_REASON_GATE_UNREACHABLE] = "Không tới được cổng",
             [NE_UI_REASON_BUDGET_EXCEEDED] = "Cổng vượt ngân sách thời gian",
+            [NE_UI_REASON_VALUE_OUT_OF_RANGE] = "Số đo ngoài khoảng cho phép",
         },
 };
 
@@ -136,6 +137,7 @@ static const ne_ui_strings_t ne_ui_strings_en = {
             [NE_UI_REASON_ARGUMENT_OUT_OF_RANGE] = "An argument was outside its allowed range",
             [NE_UI_REASON_GATE_UNREACHABLE] = "The gate could not be reached",
             [NE_UI_REASON_BUDGET_EXCEEDED] = "The gate ran out of its time budget",
+            [NE_UI_REASON_VALUE_OUT_OF_RANGE] = "A reading was outside its valid range",
         },
 };
 

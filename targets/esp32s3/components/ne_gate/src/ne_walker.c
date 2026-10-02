@@ -9,20 +9,24 @@
 
 /* --- little-endian readers ------------------------------------------------------ */
 
-static uint16_t rd16(const uint8_t *p) { return (uint16_t)(p[0] | (uint16_t)p[1] << 8); }
+static uint16_t rd16(const uint8_t *p) {
+    return (uint16_t)((uint32_t)p[0] | ((uint32_t)p[1] << 8));
+}
 
 static uint32_t rd32(const uint8_t *p) {
-    return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24;
+    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
 }
 
 static double rdf64(const uint8_t *p) {
-    uint64_t bits = (uint64_t)rd32(p) | (uint64_t)rd32(p + 4) << 32;
+    uint64_t bits = (uint64_t)rd32(p) | ((uint64_t)rd32(p + 4) << 32);
     double value;
     memcpy(&value, &bits, sizeof value); /* IEEE 754 binary64, as on host and ESP32-S3 */
     return value;
 }
 
 static int is_nan(double x) { return x != x; }
+
+static int is_finite(double x) { return (x - x) == 0.0; }
 
 /* --- layout ------------------------------------------------------------------------ */
 
@@ -39,6 +43,13 @@ static int is_nan(double x) { return x != x; }
 #define H_CONFIRM_MASK 52
 #define H_STRINGS_SIZE 56
 #define H_CRC 60
+#define H_NUMERIC_COUNT 64
+#define H_GATE_NAME_OFF 66
+#define H_GATE_VERSION_OFF 68
+#define H_ON_BLOCK_TO_OFF 70
+#define H_ON_BLOCK_MSG_OFF 72
+#define H_FALLBACK_ACTION_OFF 74
+#define H_RESERVED 76
 
 #define N_KIND 0
 #define N_DOMAIN_SIZE 1
@@ -46,6 +57,21 @@ static int is_nan(double x) { return x != x; }
 #define N_ADMITTED 4
 #define N_FLOOR 8
 #define N_DOMAIN_OFF 16
+
+#define NUM_LO 0
+#define NUM_HI 8
+#define NUM_RANGE_MIN 16
+#define NUM_RANGE_MAX 24
+#define NUM_MAX_AGE_MS 32
+#define NUM_UNIT_OFF 36
+#define NUM_FLAGS 38
+#define NUM_RESERVED_U8 39
+#define NUM_RESERVED_U64 40
+
+#define NUM_F_HAS_LOWER 1u
+#define NUM_F_LOWER_CLOSED 2u
+#define NUM_F_HAS_UPPER 4u
+#define NUM_F_UPPER_CLOSED 8u
 
 #define A_NAME 0
 #define A_TYPE 2
@@ -66,19 +92,26 @@ static int is_nan(double x) { return x != x; }
 #define F_MAX_LENGTH 8u
 
 #define KIND_BOOL 0u
+#define KIND_NUMERIC 3u
 #define ACTION_ASK 2u
 
 static const uint8_t *node_at(const ne_tree *t, uint32_t i) {
     return t->base + NE_HEADER_SIZE + i * NE_NODE_SIZE;
 }
 
+static const uint8_t *numeric_at(const ne_tree *t, uint32_t i) {
+    return t->base + NE_HEADER_SIZE + (uint32_t)t->node_count * NE_NODE_SIZE + i * NE_NUMERIC_SIZE;
+}
+
 static const uint8_t *arg_at(const ne_tree *t, uint32_t i) {
-    return t->base + NE_HEADER_SIZE + (uint32_t)t->node_count * NE_NODE_SIZE + i * NE_ARG_SIZE;
+    return t->base + NE_HEADER_SIZE + (uint32_t)t->node_count * NE_NODE_SIZE +
+           (uint32_t)t->numeric_count * NE_NUMERIC_SIZE + i * NE_ARG_SIZE;
 }
 
 static const uint8_t *enum_at(const ne_tree *t, uint32_t i) {
     return t->base + NE_HEADER_SIZE + (uint32_t)t->node_count * NE_NODE_SIZE +
-           (uint32_t)t->arg_count * NE_ARG_SIZE + i * NE_ENUM_SIZE;
+           (uint32_t)t->numeric_count * NE_NUMERIC_SIZE + (uint32_t)t->arg_count * NE_ARG_SIZE +
+           i * NE_ENUM_SIZE;
 }
 
 static const uint8_t *strings_of(const ne_tree *t) {
@@ -116,11 +149,12 @@ ne_status ne_tree_load(ne_tree *tree, const uint8_t *buf, uint32_t len) {
 
     uint32_t nodes = rd16(buf + H_NODE_COUNT), args = rd16(buf + H_ARG_COUNT);
     uint32_t enums = rd16(buf + H_ENUM_COUNT), strings_size = rd32(buf + H_STRINGS_SIZE);
+    uint32_t numerics = rd16(buf + H_NUMERIC_COUNT);
     if (nodes == 0 || nodes > NE_MAX_NODES || args > NE_MAX_ARGS || enums > NE_MAX_ENUMS ||
-        strings_size > NE_MAX_STRINGS)
+        strings_size > NE_MAX_STRINGS || numerics > NE_MAX_NUMERIC)
         return NE_ERR_LIMITS;
-    uint32_t expected = NE_HEADER_SIZE + nodes * NE_NODE_SIZE + args * NE_ARG_SIZE +
-                        enums * NE_ENUM_SIZE + strings_size;
+    uint32_t expected = NE_HEADER_SIZE + nodes * NE_NODE_SIZE + numerics * NE_NUMERIC_SIZE +
+                        args * NE_ARG_SIZE + enums * NE_ENUM_SIZE + strings_size;
     if (expected != len) return NE_ERR_SIZE;
     if (ne_crc32(buf, len, H_CRC, 4) != rd32(buf + H_CRC)) return NE_ERR_CRC;
 
@@ -129,6 +163,7 @@ ne_status ne_tree_load(ne_tree *tree, const uint8_t *buf, uint32_t len) {
     t.base = buf;
     t.size = len;
     t.node_count = (uint16_t)nodes;
+    t.numeric_count = (uint16_t)numerics;
     t.arg_count = (uint16_t)args;
     t.enum_count = (uint16_t)enums;
     t.on_block_action = buf[H_ACTION];
@@ -141,33 +176,109 @@ ne_status ne_tree_load(ne_tree *tree, const uint8_t *buf, uint32_t len) {
     if (t.on_block_action > 3u || t.fail_open > 1u || t.p95_latency_ms == 0u) return NE_ERR_STRUCTURE;
     if (nodes < 32u && (t.confirm_mask >> nodes) != 0u) return NE_ERR_STRUCTURE;
     if (t.confirm_mask != 0u && t.on_block_action != ACTION_ASK) return NE_ERR_STRUCTURE;
+    if (rd32(buf + H_RESERVED) != 0u) return NE_ERR_STRUCTURE;
 
     const uint8_t *strings = strings_of(&t);
     if (strings_size == 0u || strings[strings_size - 1u] != 0u) return NE_ERR_STRUCTURE;
 
-    for (uint32_t i = 0; i < nodes; i++) {
-        const uint8_t *n = node_at(&t, i);
-        uint32_t kind = n[N_KIND], size = n[N_DOMAIN_SIZE];
-        uint32_t admitted = rd32(n + N_ADMITTED);
-        double floor = rdf64(n + N_FLOOR);
-        if (kind > 2u || size == 0u || size > NE_MAX_DOMAIN) return NE_ERR_STRUCTURE;
-        if (kind == KIND_BOOL && size != 2u) return NE_ERR_STRUCTURE;
-        if (size < 32u && (admitted >> size) != 0u) return NE_ERR_STRUCTURE;
-        if (is_nan(floor) || floor < 0.0 || floor > 1.0) return NE_ERR_STRUCTURE;
-        if (rd16(n + N_NAME) >= strings_size) return NE_ERR_STRUCTURE;
-        uint32_t off = rd16(n + N_DOMAIN_OFF);
-        for (uint32_t v = 0; v < size; v++) { /* the domain's strings are consecutive */
-            if (off >= strings_size) return NE_ERR_STRUCTURE;
-            int32_t end = string_end(strings, strings_size, off);
-            if (end < 0) return NE_ERR_STRUCTURE;
-            off = (uint32_t)end + 1u;
+    /* Check label offsets (66, 68, 70, 72, 74): 0xFFFF or valid terminated string offset */
+    for (uint32_t k = 0; k < 5u; k++) {
+        uint16_t off = rd16(buf + H_GATE_NAME_OFF + k * 2u);
+        if (off != 0xFFFFu) {
+            if ((uint32_t)off >= strings_size || string_end(strings, strings_size, off) < 0)
+                return NE_ERR_STRUCTURE;
         }
     }
+
+    uint32_t numeric_node_count = 0;
+    uint32_t numeric_seen = 0;
+    for (uint32_t i = 0; i < nodes; i++) {
+        const uint8_t *n = node_at(&t, i);
+        uint32_t kind = n[N_KIND];
+        if (kind > 3u) return NE_ERR_STRUCTURE;
+        if ((uint32_t)rd16(n + N_NAME) >= strings_size || string_end(strings, strings_size, rd16(n + N_NAME)) < 0)
+            return NE_ERR_STRUCTURE;
+        if (rd16(n + 18) != 0u || rd32(n + 20) != 0u) return NE_ERR_STRUCTURE;
+
+        if (kind == KIND_NUMERIC) {
+            numeric_node_count++;
+            if (n[N_DOMAIN_SIZE] != 0u) return NE_ERR_STRUCTURE;
+            if (rd32(n + N_ADMITTED) != 0u) return NE_ERR_STRUCTURE;
+            double floor = rdf64(n + N_FLOOR);
+            if (floor != 0.0 || is_nan(floor)) return NE_ERR_STRUCTURE;
+            uint32_t num_idx = rd16(n + N_DOMAIN_OFF);
+            if (num_idx >= numerics) return NE_ERR_STRUCTURE;
+            if ((numeric_seen & (1u << num_idx)) != 0u) return NE_ERR_STRUCTURE;
+            numeric_seen |= (1u << num_idx);
+            /* confirm_mask never has a bit on a numeric node */
+            if (((t.confirm_mask >> i) & 1u) != 0u) return NE_ERR_STRUCTURE;
+        } else {
+            uint32_t size = n[N_DOMAIN_SIZE];
+            uint32_t admitted = rd32(n + N_ADMITTED);
+            double floor = rdf64(n + N_FLOOR);
+            if (size == 0u || size > NE_MAX_DOMAIN) return NE_ERR_STRUCTURE;
+            if (kind == KIND_BOOL && size != 2u) return NE_ERR_STRUCTURE;
+            if (size < 32u && (admitted >> size) != 0u) return NE_ERR_STRUCTURE;
+            if (is_nan(floor) || floor < 0.0 || floor > 1.0) return NE_ERR_STRUCTURE;
+            uint32_t off = rd16(n + N_DOMAIN_OFF);
+            for (uint32_t v = 0; v < size; v++) {
+                if (off >= strings_size) return NE_ERR_STRUCTURE;
+                int32_t end = string_end(strings, strings_size, off);
+                if (end < 0) return NE_ERR_STRUCTURE;
+                off = (uint32_t)end + 1u;
+            }
+        }
+    }
+    if (numeric_node_count != numerics) return NE_ERR_STRUCTURE;
+
+    for (uint32_t m = 0; m < numerics; m++) {
+        const uint8_t *num = numeric_at(&t, m);
+        if (num[NUM_RESERVED_U8] != 0u) return NE_ERR_STRUCTURE;
+        if (rd32(num + NUM_RESERVED_U64) != 0u || rd32(num + NUM_RESERVED_U64 + 4) != 0u)
+            return NE_ERR_STRUCTURE;
+
+        uint8_t flags = num[NUM_FLAGS];
+        if (flags > 15u) return NE_ERR_STRUCTURE;
+        if (((flags & NUM_F_LOWER_CLOSED) != 0u) && ((flags & NUM_F_HAS_LOWER) == 0u))
+            return NE_ERR_STRUCTURE;
+        if (((flags & NUM_F_UPPER_CLOSED) != 0u) && ((flags & NUM_F_HAS_UPPER) == 0u))
+            return NE_ERR_STRUCTURE;
+
+        uint32_t max_age = rd32(num + NUM_MAX_AGE_MS);
+        if (max_age == 0u) return NE_ERR_STRUCTURE;
+
+        uint16_t unit_off = rd16(num + NUM_UNIT_OFF);
+        if ((uint32_t)unit_off >= strings_size || string_end(strings, strings_size, unit_off) < 0)
+            return NE_ERR_STRUCTURE;
+
+        double rmin = rdf64(num + NUM_RANGE_MIN);
+        double rmax = rdf64(num + NUM_RANGE_MAX);
+        if (!is_finite(rmin) || !is_finite(rmax) || rmin >= rmax) return NE_ERR_STRUCTURE;
+
+        double lo = rdf64(num + NUM_LO);
+        double hi = rdf64(num + NUM_HI);
+        if ((flags & NUM_F_HAS_LOWER) != 0u) {
+            if (!is_finite(lo) || lo < rmin || lo > rmax) return NE_ERR_STRUCTURE;
+        } else if (rd32(num + NUM_LO) != 0u || rd32(num + NUM_LO + 4) != 0u) {
+            return NE_ERR_STRUCTURE; /* no lower bound: lo is 0.0, bit for bit */
+        }
+        if ((flags & NUM_F_HAS_UPPER) != 0u) {
+            if (!is_finite(hi) || hi < rmin || hi > rmax) return NE_ERR_STRUCTURE;
+        } else if (rd32(num + NUM_HI) != 0u || rd32(num + NUM_HI + 4) != 0u) {
+            return NE_ERR_STRUCTURE; /* no upper bound: hi is 0.0, bit for bit */
+        }
+        if (((flags & NUM_F_HAS_LOWER) != 0u) && ((flags & NUM_F_HAS_UPPER) != 0u)) {
+            if (lo > hi) return NE_ERR_STRUCTURE;
+            if (lo == hi && (((flags & NUM_F_LOWER_CLOSED) == 0u) || ((flags & NUM_F_UPPER_CLOSED) == 0u)))
+                return NE_ERR_STRUCTURE;
+        }
+    }
+
     for (uint32_t i = 0; i < args; i++) {
         const uint8_t *a = arg_at(&t, i);
         uint32_t type = a[A_TYPE], flags = a[A_FLAGS];
         uint32_t first = rd16(a + A_ENUM_FIRST), count = rd16(a + A_ENUM_COUNT);
-        if (type > 3u || flags > 15u || rd16(a + A_NAME) >= strings_size) return NE_ERR_STRUCTURE;
+        if (type > 3u || flags > 15u || (uint32_t)rd16(a + A_NAME) >= strings_size) return NE_ERR_STRUCTURE;
         if (first + count > enums) return NE_ERR_STRUCTURE;
         if (((flags & F_ENUM) != 0u) != (count != 0u)) return NE_ERR_STRUCTURE;
         if (is_nan(rdf64(a + A_MINIMUM)) || is_nan(rdf64(a + A_MAXIMUM))) return NE_ERR_STRUCTURE;
@@ -197,7 +308,7 @@ const char *ne_argument_name(const ne_tree *tree, uint32_t i) {
 
 int ne_criterion_kind(const ne_tree *tree, uint32_t i) {
     if (tree == NULL || tree->base == NULL || i >= tree->node_count) return -1;
-    return node_at(tree, i)[N_KIND];
+    return (int)node_at(tree, i)[N_KIND];
 }
 
 const char *ne_domain_value(const ne_tree *tree, uint32_t i, uint32_t j) {
@@ -211,12 +322,93 @@ const char *ne_domain_value(const ne_tree *tree, uint32_t i, uint32_t j) {
     return (const char *)strings + off;
 }
 
+static const char *label_string(const ne_tree *tree, uint32_t off_in_hdr) {
+    if (tree == NULL || tree->base == NULL) return NULL;
+    uint16_t off = rd16(tree->base + off_in_hdr);
+    if (off == 0xFFFFu || (uint32_t)off >= tree->strings_size) return NULL;
+    return (const char *)strings_of(tree) + off;
+}
+
+const char *ne_gate_name(const ne_tree *tree) {
+    return label_string(tree, H_GATE_NAME_OFF);
+}
+
+const char *ne_gate_version(const ne_tree *tree) {
+    return label_string(tree, H_GATE_VERSION_OFF);
+}
+
+const char *ne_on_block_to(const ne_tree *tree) {
+    return label_string(tree, H_ON_BLOCK_TO_OFF);
+}
+
+const char *ne_on_block_message(const ne_tree *tree) {
+    return label_string(tree, H_ON_BLOCK_MSG_OFF);
+}
+
+const char *ne_fallback_action(const ne_tree *tree) {
+    return label_string(tree, H_FALLBACK_ACTION_OFF);
+}
+
+const char *ne_numeric_unit(const ne_tree *tree, uint32_t criterion) {
+    if (tree == NULL || tree->base == NULL || criterion >= tree->node_count) return NULL;
+    const uint8_t *node = node_at(tree, criterion);
+    if (node[N_KIND] != KIND_NUMERIC) return NULL;
+    uint32_t num_idx = rd16(node + N_DOMAIN_OFF);
+    if (num_idx >= tree->numeric_count) return NULL;
+    const uint8_t *num = numeric_at(tree, num_idx);
+    uint16_t unit_off = rd16(num + NUM_UNIT_OFF);
+    if ((uint32_t)unit_off >= tree->strings_size) return NULL;
+    return (const char *)strings_of(tree) + unit_off;
+}
+
 /* --- deciding ---------------------------------------------------------------------- */
 
 static int valid_confidence(double c) { return c >= 0.0 && c <= 1.0; } /* false for NaN */
 
 /* decision_tree._classify: NE_REASON_NONE when the fact satisfies the node. */
-static ne_reason classify(const uint8_t *node, const ne_fact *fact) {
+static ne_reason classify(const ne_tree *t, const uint8_t *node, const ne_fact *fact) {
+    if (node[N_KIND] == KIND_NUMERIC) {
+        /* (a) fact NULL or !present -> NE_REASON_CRITERION_UNAVAILABLE */
+        if (fact == NULL || !fact->present) return NE_REASON_CRITERION_UNAVAILABLE;
+
+        /* (b) age_ms < 0 -> CRITERION_UNAVAILABLE */
+        if (fact->age_ms < 0) return NE_REASON_CRITERION_UNAVAILABLE;
+
+        uint32_t num_idx = rd16(node + N_DOMAIN_OFF);
+        const uint8_t *num = numeric_at(t, num_idx);
+        uint32_t max_age = rd32(num + NUM_MAX_AGE_MS);
+
+        /* (c) age_ms > (int64_t)max_age_ms -> CRITERION_UNAVAILABLE (equal passes) */
+        if (fact->age_ms > (int64_t)max_age) return NE_REASON_CRITERION_UNAVAILABLE;
+
+        /* (d) value NaN, +/-inf, or outside [range_min, range_max] inclusive -> NE_REASON_VALUE_OUT_OF_RANGE */
+        double v = fact->value;
+        if (is_nan(v) || !is_finite(v)) return NE_REASON_VALUE_OUT_OF_RANGE;
+        double rmin = rdf64(num + NUM_RANGE_MIN);
+        double rmax = rdf64(num + NUM_RANGE_MAX);
+        if (v < rmin || v > rmax) return NE_REASON_VALUE_OUT_OF_RANGE;
+
+        /* (e) a bound present and violated -> NE_REASON_CONDITION_NOT_MET */
+        uint8_t flags = num[NUM_FLAGS];
+        if ((flags & NUM_F_HAS_LOWER) != 0u) {
+            double lo = rdf64(num + NUM_LO);
+            if ((flags & NUM_F_LOWER_CLOSED) != 0u) {
+                if (v < lo) return NE_REASON_CONDITION_NOT_MET;
+            } else {
+                if (v <= lo) return NE_REASON_CONDITION_NOT_MET;
+            }
+        }
+        if ((flags & NUM_F_HAS_UPPER) != 0u) {
+            double hi = rdf64(num + NUM_HI);
+            if ((flags & NUM_F_UPPER_CLOSED) != 0u) {
+                if (v > hi) return NE_REASON_CONDITION_NOT_MET;
+            } else {
+                if (v >= hi) return NE_REASON_CONDITION_NOT_MET;
+            }
+        }
+        return NE_REASON_NONE;
+    }
+
     if (fact == NULL || !fact->present) return NE_REASON_CRITERION_UNAVAILABLE;
     if (!fact->in_domain || fact->index >= node[N_DOMAIN_SIZE]) return NE_REASON_CRITERION_UNAVAILABLE;
     if (fact->has_confidence && !valid_confidence(fact->confidence))
@@ -232,7 +424,7 @@ static ne_reason classify(const uint8_t *node, const ne_fact *fact) {
 /* decision_tree.walk: the first failing criterion not in `waived`. */
 static ne_reason walk(const ne_tree *t, const ne_fact *facts, uint32_t waived, uint8_t *failed) {
     for (uint32_t i = 0; i < t->node_count; i++) {
-        ne_reason r = classify(node_at(t, i), facts != NULL ? &facts[i] : NULL);
+        ne_reason r = classify(t, node_at(t, i), facts != NULL ? &facts[i] : NULL);
         if (r != NE_REASON_NONE && ((waived >> i) & 1u) == 0u) {
             *failed = (uint8_t)i;
             return r;
@@ -331,8 +523,16 @@ ne_status ne_evaluate(const ne_tree *tree, const ne_fact *facts, const ne_arg_va
 static ne_reason known_failure(const ne_tree *t, const ne_fact *facts, uint32_t waived,
                                uint8_t *failed) {
     for (uint32_t i = 0; i < t->node_count; i++) {
-        if (((waived >> i) & 1u) != 0u || facts == NULL || !facts[i].present) continue;
-        ne_reason r = classify(node_at(t, i), &facts[i]);
+        if (((waived >> i) & 1u) != 0u) continue;
+        if (facts == NULL || !facts[i].present) {
+            /* A lost numeric sensor is not excused by `fail: open` (RFC-0009 section 5). */
+            if (node_at(t, i)[N_KIND] == KIND_NUMERIC) {
+                *failed = (uint8_t)i;
+                return NE_REASON_CRITERION_UNAVAILABLE;
+            }
+            continue;
+        }
+        ne_reason r = classify(t, node_at(t, i), &facts[i]);
         if (r != NE_REASON_NONE) {
             *failed = (uint8_t)i;
             return r;

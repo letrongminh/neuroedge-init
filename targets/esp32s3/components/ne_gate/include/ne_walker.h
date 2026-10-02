@@ -1,7 +1,7 @@
 /*
  * NeuroEdge gate walker — C99, no allocation, no globals, no recursion.
  *
- * Reads a decision tree in the `NETR` v1 binary layout (RFC-0003) that
+ * Reads a decision tree in the `NETR` v2 binary layout (RFC-0003, RFC-0009) that
  * `neuroedge build` generates, in place (typically from flash), and decides a
  * gate exactly as the host engine does (python/neuroedge/engine/): the same
  * verdict, the same reason, the same failing criterion — pinned by the truth
@@ -23,13 +23,15 @@
 extern "C" {
 #endif
 
-#define NE_LAYOUT_VERSION 1u
-#define NE_HEADER_SIZE 64u
+#define NE_LAYOUT_VERSION 2u
+#define NE_HEADER_SIZE 80u
 #define NE_NODE_SIZE 24u
+#define NE_NUMERIC_SIZE 48u
 #define NE_ARG_SIZE 32u
 #define NE_ENUM_SIZE 16u
 #define NE_MAX_NODES 32u
 #define NE_MAX_DOMAIN 32u
+#define NE_MAX_NUMERIC 32u
 #define NE_MAX_ARGS 16u
 #define NE_MAX_ENUMS 64u
 #define NE_MAX_STRINGS 16384u
@@ -55,8 +57,9 @@ typedef enum {
     NE_REASON_CRITERION_UNAVAILABLE = 2,
     NE_REASON_CONFIDENCE_UNAVAILABLE = 3,
     NE_REASON_ARGUMENT_OUT_OF_RANGE = 4,
-    NE_REASON_GATE_UNREACHABLE = 5, /* degraded: the fact source could not answer (Q-14) */
-    NE_REASON_BUDGET_EXCEEDED = 6   /* degraded: gathering overran budget.p95_latency_ms */
+    NE_REASON_GATE_UNREACHABLE = 5,  /* degraded: the fact source could not answer (Q-14) */
+    NE_REASON_BUDGET_EXCEEDED = 6,   /* degraded: gathering overran budget.p95_latency_ms */
+    NE_REASON_VALUE_OUT_OF_RANGE = 7 /* numeric reading NaN, infinite, or out of range (RFC-0009) */
 } ne_reason;
 
 /* How gathering the facts went, as `_gather` reports it; the input of `ne_decide`. */
@@ -71,7 +74,12 @@ typedef enum { NE_FAIL_MODE_NONE = 0, NE_FAIL_MODE_OPEN = 1, NE_FAIL_MODE_CLOSED
 
 typedef enum { NE_FAILED_NONE = 0, NE_FAILED_CRITERION = 1, NE_FAILED_ARGUMENT = 2 } ne_failed_kind;
 
-typedef enum { NE_KIND_BOOL = 0, NE_KIND_LEVEL = 1, NE_KIND_CHOICE = 2 } ne_kind;
+typedef enum {
+    NE_KIND_BOOL = 0,
+    NE_KIND_LEVEL = 1,
+    NE_KIND_CHOICE = 2,
+    NE_KIND_NUMERIC = 3
+} ne_kind;
 
 typedef enum { NE_ARG_STRING = 0, NE_ARG_INTEGER = 1, NE_ARG_NUMBER = 2, NE_ARG_BOOLEAN = 3 } ne_arg_type;
 
@@ -80,6 +88,7 @@ typedef struct {
     const uint8_t *base;
     uint32_t size;
     uint16_t node_count;
+    uint16_t numeric_count;
     uint16_t arg_count;
     uint16_t enum_count;
     uint8_t on_block_action; /* 0 deny, 1 escalate, 2 ask, 3 degrade */
@@ -94,6 +103,13 @@ typedef struct {
  * One criterion's fact. `present` 0 = no fact; `in_domain` 0 = a value outside
  * the node's domain (or a non-bool for a bool node); `index` = the value's
  * position in the domain. `has_confidence` 0 = no confidence given.
+ * For a numeric node: `present` 0 = no reading (criterion_unavailable before
+ * anything else); `value` and `age_ms` are the reading; `in_domain`, `index`,
+ * `has_confidence`, `confidence` are ignored. `age_ms` is the time since the
+ * hardware read it, measured by the caller from its own read mark. A value the
+ * firmware merely commanded (a pin it set, a duty it wrote) is not a reading:
+ * pass `present` 0 (RFC-0009 section 3f). Under `fail: open` a numeric criterion
+ * with `present` 0 still blocks (RFC-0009 section 5).
  */
 typedef struct {
     uint8_t present;
@@ -101,6 +117,8 @@ typedef struct {
     uint8_t index;
     uint8_t has_confidence;
     double confidence;
+    double value;
+    int64_t age_ms;
 } ne_fact;
 
 /*
@@ -126,7 +144,7 @@ typedef struct {
     uint32_t confirmed_mask;/* criteria stood in for on this verdict */
 } ne_result;
 
-/* Validate `len` bytes as a NETR v1 tree. Nothing is copied. */
+/* Validate `len` bytes as a NETR v2 tree. Nothing is copied. */
 ne_status ne_tree_load(ne_tree *tree, const uint8_t *buf, uint32_t len);
 
 /*
@@ -155,10 +173,23 @@ ne_status ne_decide(const ne_tree *tree, const ne_fact *facts, const ne_arg_valu
 const char *ne_criterion_name(const ne_tree *tree, uint32_t i);
 /* Name of argument `i`, or NULL. */
 const char *ne_argument_name(const ne_tree *tree, uint32_t i);
-/* Kind of criterion `i` — NE_KIND_BOOL, NE_KIND_LEVEL, NE_KIND_CHOICE — or -1. For traces. */
+/* Kind of criterion `i` — NE_KIND_BOOL, NE_KIND_LEVEL, NE_KIND_CHOICE, NE_KIND_NUMERIC — or -1. For traces. */
 int ne_criterion_kind(const ne_tree *tree, uint32_t i);
 /* Value `j` of criterion `i`'s domain ("false"/"true" for a bool), or NULL. For traces. */
 const char *ne_domain_value(const ne_tree *tree, uint32_t i, uint32_t j);
+
+/* Gate name (NUL-terminated, in the tree), or NULL if absent or tree NULL. */
+const char *ne_gate_name(const ne_tree *tree);
+/* Gate version (NUL-terminated, in the tree), or NULL if absent or tree NULL. */
+const char *ne_gate_version(const ne_tree *tree);
+/* Destination `to` of on_block (NUL-terminated), or NULL if absent or tree NULL. */
+const char *ne_on_block_to(const ne_tree *tree);
+/* Message of on_block (NUL-terminated), or NULL if absent or tree NULL. */
+const char *ne_on_block_message(const ne_tree *tree);
+/* Fallback action of on_block (NUL-terminated), or NULL if absent or tree NULL. */
+const char *ne_fallback_action(const ne_tree *tree);
+/* Unit of numeric criterion `criterion` (NUL-terminated), or NULL if not numeric. */
+const char *ne_numeric_unit(const ne_tree *tree, uint32_t criterion);
 
 /* CRC-32 (IEEE 802.3, as zlib) — exposed for tests and OTA tooling. */
 uint32_t ne_crc32(const uint8_t *data, uint32_t len, uint32_t skip_from, uint32_t skip_len);

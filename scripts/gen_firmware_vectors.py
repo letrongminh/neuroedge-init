@@ -94,8 +94,12 @@ async def _pin_commands(gates, action: str, arguments: dict) -> list[tuple[str, 
 
 def _fact(node, fact, where: str) -> tuple[str, str]:
     """(ne_fact initializer, source) — the walker's view of one recorded fact."""
+    if node["kind"] == "numeric":
+        raise _refuse(
+            where, f"{node['criterion']} is numeric; the vectors replay no readings yet (RFC-0009)"
+        )
     if fact is None or fact.value is None:
-        return "{0u, 0u, 0u, 0u, 0.0}", "NULL"
+        return "{0u, 0u, 0u, 0u, 0.0, 0.0, 0}", "NULL"
     index = domain_index(node, fact.value)
     confidence = fact.confidence
     has = confidence is not None
@@ -107,7 +111,9 @@ def _fact(node, fact, where: str) -> tuple[str, str]:
     ):
         raise _refuse(where, f"confidence {confidence!r} of {node['criterion']} is not a number")
     value = repr(float(confidence)) if has else "0.0"
-    init = f"{{1u, {0 if index is None else 1}u, {index or 0}u, {1 if has else 0}u, {value}}}"
+    init = (
+        f"{{1u, {0 if index is None else 1}u, {index or 0}u, {1 if has else 0}u, {value}, 0.0, 0}}"
+    )
     return init, c_string(fact.source or "trace")
 
 

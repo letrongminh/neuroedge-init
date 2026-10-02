@@ -262,7 +262,8 @@ def _classify(node: Mapping[str, Any], fact: Fact | None) -> tuple[Reason | None
 OUT_OF_DOMAIN = "__out_of_domain__"
 
 
-def _numeric_baseline_value(node: Mapping[str, Any]) -> float:
+def numeric_baseline_value(node: Mapping[str, Any]) -> float:
+    """A reading inside both the interval and the range of a numeric node (the all-satisfied row)."""
     num = node["numeric"]
     range_min = float(num["range"]["min"])
     range_max = float(num["range"]["max"])
@@ -373,7 +374,7 @@ def truth_cases(tree: Mapping[str, Any]) -> list[dict[str, dict[str, Any]]]:
     for n in nodes:
         if n["kind"] == "numeric":
             baseline[n["criterion"]] = {
-                "value": _numeric_baseline_value(n),
+                "value": numeric_baseline_value(n),
                 "age_ms": 0,
             }
         else:

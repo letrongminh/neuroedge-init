@@ -21,7 +21,7 @@
 
 #include "ne_walker.h"
 
-#define FACT_SIZE 16u
+#define FACT_SIZE 32u
 #define ARG_SIZE 80u
 #define TAIL_SIZE 12u
 
@@ -32,6 +32,13 @@ static uint32_t rd32(const uint8_t *p) {
 static double rdf64(const uint8_t *p) {
     uint64_t bits = (uint64_t)rd32(p) | (uint64_t)rd32(p + 4) << 32;
     double v;
+    memcpy(&v, &bits, sizeof v);
+    return v;
+}
+
+static int64_t rdi64(const uint8_t *p) {
+    uint64_t bits = (uint64_t)rd32(p) | (uint64_t)rd32(p + 4) << 32;
+    int64_t v;
     memcpy(&v, &bits, sizeof v);
     return v;
 }
@@ -78,6 +85,8 @@ static void exercise(const ne_tree *t, uint32_t *seed) {
             facts[i].index = (uint8_t)((r >> 2) & 0x3Fu);
             facts[i].has_confidence = (uint8_t)((r >> 8) & 1u);
             facts[i].confidence = (double)((r >> 9) & 0x3FFu) / 800.0;
+            facts[i].value = (double)((int32_t)xorshift(seed) % 1000) / 10.0;
+            facts[i].age_ms = (int64_t)(int32_t)xorshift(seed) % 10000;
         }
         for (uint32_t i = 0; i < NE_MAX_ARGS; i++) {
             uint32_t r = xorshift(seed);
@@ -96,6 +105,12 @@ static void exercise(const ne_tree *t, uint32_t *seed) {
         }
         (void)ne_criterion_name(t, xorshift(seed) % 40u);
         (void)ne_argument_name(t, xorshift(seed) % 20u);
+        (void)ne_gate_name(t);
+        (void)ne_gate_version(t);
+        (void)ne_on_block_to(t);
+        (void)ne_on_block_message(t);
+        (void)ne_fallback_action(t);
+        (void)ne_numeric_unit(t, xorshift(seed) % 40u);
     }
 }
 
@@ -138,7 +153,7 @@ static int fuzz(const uint8_t *tree, uint32_t len, const char *name) {
 }
 
 static int run_cases(const ne_tree *t, const uint8_t *vec, uint32_t vlen, const char *name) {
-    if (vlen < 20u || memcmp(vec, "NEVC", 4) != 0 || rd32(vec + 4) != 2u) {
+    if (vlen < 20u || memcmp(vec, "NEVC", 4) != 0 || rd32(vec + 4) != 3u) {
         fprintf(stderr, "%s: bad case file\n", name);
         return 1;
     }
@@ -163,6 +178,8 @@ static int run_cases(const ne_tree *t, const uint8_t *vec, uint32_t vlen, const 
             facts[i].index = p[2];
             facts[i].has_confidence = p[3];
             facts[i].confidence = rdf64(p + 8);
+            facts[i].value = rdf64(p + 16);
+            facts[i].age_ms = rdi64(p + 24);
         }
         for (uint32_t i = 0; i < args; i++, p += ARG_SIZE) {
             values[i].present = p[0];
