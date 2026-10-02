@@ -50,6 +50,10 @@ class EventLog:
         """Milliseconds since the log started, on the same clock as `offset_ms`."""
         return max(0, int(self.clock() - self._t0))
 
+    def offset_of(self, clock_value: float) -> int:
+        """Offset in integer milliseconds of a clock reading on the log's timeline."""
+        return max(0, int(clock_value - self._t0))
+
     @property
     def session_id(self) -> str:
         return self.metadata["session_id"]

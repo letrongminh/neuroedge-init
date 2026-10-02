@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -232,20 +232,40 @@ class ActionContractEngine:
                 self._call_hook(result)
                 return result
         facts, degraded = await self._gather(registered, dict(context or {}), state, t0)
+        numeric_nodes = {n["criterion"] for n in tree["nodes"] if n["kind"] == "numeric"}
+        read_marks: dict[str, tuple[int, int, int]] = {}
+        if numeric_nodes & facts.keys():
+            # RFC-0009 §3c: one evaluation instant for every reading, on the trace's own timeline.
+            facts = dict(facts)
+            eval_offset_ms = self.events.elapsed_ms()
+            for criterion in numeric_nodes & facts.keys():
+                fact = facts[criterion]
+                age_ms = self._numeric_age(fact, eval_offset_ms)
+                facts[criterion] = replace(fact, age_ms=age_ms)
+                if fact.read_ms is not None and age_ms is not None:
+                    read_marks[criterion] = (
+                        self.events.offset_of(fact.read_ms),
+                        eval_offset_ms,
+                        age_ms,
+                    )
+
         if facts:
             # The inputs of the verdict, with confidence and source: what a replay
             # feeds back in (TSK-S3-02). `evaluations` in the result keeps only values.
-            self.events.emit(
-                "gate_facts",
-                {
-                    criterion: {
-                        "value": fact.value,
-                        "confidence": fact.confidence,
-                        "source": fact.source,
-                    }
-                    for criterion, fact in facts.items()
-                },
-            )
+            facts_data: dict[str, Any] = {}
+            for criterion, fact in facts.items():
+                entry: dict[str, Any] = {
+                    "value": fact.value,
+                    "confidence": fact.confidence,
+                    "source": fact.source,
+                }
+                if criterion in read_marks:
+                    r_off, e_off, age = read_marks[criterion]
+                    entry["read_offset_ms"] = r_off
+                    entry["eval_offset_ms"] = e_off
+                    entry["age_ms"] = age
+                facts_data[criterion] = entry
+            self.events.emit("gate_facts", facts_data)
         waived = self._waived(registered) if confirmed else frozenset()
         walked = walk(tree, facts, waived)
         elapsed = self.clock() - t0
@@ -276,6 +296,18 @@ class ActionContractEngine:
         if result.verdict is GateVerdict.BLOCK and not result.degraded:
             self._call_hook(result)
         return result
+
+    def _numeric_age(self, fact: Fact, eval_offset_ms: int) -> int | None:
+        """
+        Age of a numeric reading at the evaluation instant, from its HAL read mark alone.
+
+        A source cannot state its own age: a reading without `read_ms` has none and the gate
+        blocks it as unavailable, whatever `age_ms` it carries. Replay overrides this, because
+        it feeds back ages already recomputed from the recorded offsets.
+        """
+        if fact.read_ms is None:
+            return None
+        return eval_offset_ms - self.events.offset_of(fact.read_ms)
 
     async def _gather(
         self,

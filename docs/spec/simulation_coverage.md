@@ -232,6 +232,8 @@ TSK-I3-01; `scripts/gen_firmware_vectors.py`). Phiên self-test là các phép k
 kiểm một lần đánh giá gate, cùng dữ kiện và phán quyết engine host đã tính lúc build; không có lệnh chân; lệnh chân chỉ có trong phiên
 replay dưới đây, và chưa có `actuator_aborted`: chưa có HAL firmware (TSK-S4-01).
 
+**Tiêu chí số trong `gate_facts` và quy tắc phát lại (RFC-0009 §4, §5).** Mỗi dữ kiện `numeric` mang thêm ba khoá nguyên trên trục thời gian của vết ghi: `read_offset_ms` (mốc HAL đọc cảm biến), `eval_offset_ms` (mốc bắt đầu lượng giá gate) và `age_ms` (tuổi số đọc, `eval_offset_ms - read_offset_ms`, có thể âm nếu vi phạm nhân quả). Khi phát lại (`replay`), player tính lại tuổi `eval_offset_ms - read_offset_ms` và so sánh với `age_ms` đã ghi; nếu lệch (vết ghi bị sửa đổi), replay cảnh báo và duyệt lại cây với tuổi vừa tính lại. Mục `numeric` thiếu một trong ba khoá luôn được coi là `criterion_unavailable`, không bao giờ được coi là đạt.
+
 **Host.** `neuroedge record --target esp32s3 --port <nguồn>` giữ các dòng `NE1 `, bỏ mọi dòng khác
 (kể cả `NE1001…`, `NE_SELFTEST`, `NEUROEDGE_MEMORY_JSON`), kiểm khung, rồi ghi **mỗi phiên một tệp**
 qua `TraceRecorder` (TSK-S3-01), thẩm định trước khi ghi. Sự kiện là của thiết bị, nguyên văn và đúng

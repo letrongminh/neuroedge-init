@@ -430,6 +430,22 @@ def _check_bands(
     is one a gate would never admit. Checked when the session loads, before any line.
     """
     for criterion, rule in sensor_facts.items():
+        for gate in gates.values():
+            if criterion in gate.evaluate:
+                spec = gate.evaluate[criterion]
+                if spec.get("type") == "numeric":
+                    label = f"{gate.name}@{gate.version}"
+                    raise BoardCapabilityError(
+                        where=f"{manifest.source} -> [sim.sensor_facts] {criterion}",
+                        why=(
+                            f"gate {label} evaluates {criterion!r} as 'numeric', and primitive "
+                            "'sensor.read' declares no unit and no scale (RFC-0009 §3f)"
+                        ),
+                        how=(
+                            f"bind {criterion!r} to a channel with declared unit and range, or "
+                            "evaluate it as 'level' with bands"
+                        ),
+                    )
         if rule.bands is None:
             continue
         where = f"{manifest.source} -> [sim.sensor_facts] {criterion} -> bands"

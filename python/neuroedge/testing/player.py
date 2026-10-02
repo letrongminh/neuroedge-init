@@ -91,12 +91,44 @@ def recorded_steps(trace: Mapping[str, Any]) -> list[RecordedStep]:
         elif kind == "gate_evaluation_begin":
             gate, facts = data.get("gate"), None
         elif kind == "gate_facts":
-            facts = {
-                name: Fact(
-                    entry.get("value"), entry.get("confidence"), entry.get("source", "trace")
-                )
-                for name, entry in data.items()
-            }
+            facts = {}
+            for name, entry in data.items():
+                if not isinstance(entry, dict):
+                    facts[name] = Fact(entry)
+                    continue
+                val = entry.get("value")
+                confidence = entry.get("confidence")
+                source = entry.get("source", "trace")
+                has_age = "age_ms" in entry
+                has_read_off = "read_offset_ms" in entry
+                has_eval_off = "eval_offset_ms" in entry
+                if has_age:
+                    if val == "nan":
+                        val = float("nan")
+                    elif val == "inf":
+                        val = float("inf")
+                    elif val == "-inf":
+                        val = float("-inf")
+                if has_age and has_read_off and has_eval_off:
+                    read_off = entry.get("read_offset_ms")
+                    eval_off = entry.get("eval_offset_ms")
+                    rec_age = entry.get("age_ms")
+                    if (
+                        isinstance(read_off, int)
+                        and not isinstance(read_off, bool)
+                        and isinstance(eval_off, int)
+                        and not isinstance(eval_off, bool)
+                        and isinstance(rec_age, int)
+                        and not isinstance(rec_age, bool)
+                    ):
+                        recomputed_age = eval_off - read_off
+                        facts[name] = Fact(val, confidence, source, age_ms=recomputed_age)
+                    else:
+                        facts[name] = Fact(val, confidence, source, age_ms=None)
+                elif has_age or has_read_off or has_eval_off:
+                    facts[name] = Fact(val, confidence, source, age_ms=None)
+                else:
+                    facts[name] = Fact(val, confidence, source)
         elif kind == "gate_evaluation_result" and gate is not None:
             if facts is None:  # a trace from before gate_facts: values only
                 facts = {
@@ -190,6 +222,70 @@ def _gate_digest_warning(change: GateDigestChange) -> str:
     )
 
 
+# --- numeric fact age verification (RFC-0009 §5) ------------------------------------
+
+
+@dataclass(frozen=True)
+class FactAgeMismatch:
+    """A gate_facts numeric entry whose recorded age_ms differs from eval - read."""
+
+    gate: str | None
+    criterion: str
+    recorded_age_ms: int
+    recomputed_age_ms: int
+
+
+def fact_age_mismatches(events: Iterable[Mapping[str, Any]]) -> list[FactAgeMismatch]:
+    """
+    Every numeric fact in `gate_facts` whose recorded `age_ms` differs from
+    `eval_offset_ms - read_offset_ms` (RFC-0009 §5). A recorded age that does not match
+    its own offsets means the trace was altered.
+    """
+    mismatches: list[FactAgeMismatch] = []
+    current_gate: str | None = None
+    for event in events:
+        kind = event.get("type")
+        data = event.get("data", {})
+        if kind == "gate_evaluation_begin":
+            current_gate = data.get("gate")
+        elif kind == "gate_facts":
+            for criterion, entry in data.items():
+                if not isinstance(entry, dict):
+                    continue
+                if "age_ms" in entry and "read_offset_ms" in entry and "eval_offset_ms" in entry:
+                    rec_age = entry.get("age_ms")
+                    read_off = entry.get("read_offset_ms")
+                    eval_off = entry.get("eval_offset_ms")
+                    if (
+                        isinstance(rec_age, int)
+                        and not isinstance(rec_age, bool)
+                        and isinstance(read_off, int)
+                        and not isinstance(read_off, bool)
+                        and isinstance(eval_off, int)
+                        and not isinstance(eval_off, bool)
+                    ):
+                        recomputed = eval_off - read_off
+                        if rec_age != recomputed:
+                            mismatches.append(
+                                FactAgeMismatch(
+                                    gate=current_gate,
+                                    criterion=criterion,
+                                    recorded_age_ms=rec_age,
+                                    recomputed_age_ms=recomputed,
+                                )
+                            )
+    return mismatches
+
+
+def _fact_age_warning(mismatch: FactAgeMismatch) -> str:
+    gate_label = f" in {mismatch.gate}" if mismatch.gate else ""
+    return (
+        f"numeric fact {mismatch.criterion!r}{gate_label} recorded age_ms={mismatch.recorded_age_ms} "
+        f"differs from eval_offset_ms - read_offset_ms ({mismatch.recomputed_age_ms}): "
+        "trace was altered, replaying with recomputed age"
+    )
+
+
 class _Unreachable:
     """The fact source of a degraded step: answers every criterion the same way."""
 
@@ -230,6 +326,10 @@ class _ReplayEngine(ActionContractEngine):
             )
             return None
         return step
+
+    def _numeric_age(self, fact: Fact, eval_offset_ms: int) -> int | None:
+        """Replayed readings carry the age `recorded_steps` recomputed from the recorded offsets."""
+        return fact.age_ms
 
     async def evaluate(
         self, key, context=None, *, state=None, arguments=None, confirmed=False
@@ -461,6 +561,18 @@ class TracePlayer:
         _script_sensors(hal, self.trace)
         warnings = _sensor_rules_changed(self.trace, self.manifest, events)
         warnings += [_gate_digest_warning(change) for change in changed]
+        mismatches = fact_age_mismatches(self.trace.get("events", []))
+        for m in mismatches:
+            events.emit(
+                "fact_age_mismatch",
+                {
+                    "gate": m.gate,
+                    "criterion": m.criterion,
+                    "recorded_age_ms": m.recorded_age_ms,
+                    "recomputed_age_ms": m.recomputed_age_ms,
+                },
+            )
+        warnings += [_fact_age_warning(m) for m in mismatches]
         engine = _ReplayEngine(gates, steps, network=self.network, events=events)
         conversation = Conversation(engine=engine, hal=hal)
 

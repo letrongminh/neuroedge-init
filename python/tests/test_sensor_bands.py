@@ -553,3 +553,37 @@ def test_a_misspelt_rule_key_is_refused(tmp_path):
     error = refused(tmp_path, 'heat = { sensor = "temperature", band = { low = 0 } }')
     assert "[sim.sensor_facts] heat" in error.where
     assert "`bands`" in error.why
+
+
+NUMERIC_GATE = """\
+schema: neuroedge.gate/v1
+name: cool
+version: 1.0.0
+evaluate:
+  hot:
+    type: numeric
+    unit: C
+    range: { min: -40, max: 125 }
+    max_age_ms: 500
+    instructions: temperature
+allow_when:
+  hot: { lt: 55 }
+on_block:
+  action: deny
+budget:
+  p95_latency_ms: 100
+  fail: closed
+"""
+
+
+def test_a_sensor_fact_on_a_numeric_criterion_is_refused_at_load(tmp_path):
+    """`sensor.read` declares no unit and no scale, so it cannot feed a numeric criterion (RFC-0009 §3f)."""
+    path = agent(tmp_path, 'hot = { sensor = "temperature", gte = 55 }')
+    (tmp_path / "cool.yaml").write_text(NUMERIC_GATE, encoding="utf-8")
+    with pytest.raises(BoardCapabilityError) as raised:
+        SimSession.load(path)
+    error = raised.value
+    assert error.code == "NE3001"
+    assert "[sim.sensor_facts] hot" in error.where
+    assert "'numeric'" in error.why and "sensor.read" in error.why
+    assert error.how
