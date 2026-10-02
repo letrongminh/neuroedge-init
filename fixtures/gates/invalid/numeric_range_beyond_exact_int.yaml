@@ -1,0 +1,21 @@
+# Schema error — range bound is an int a float cannot hold exactly.
+schema:  neuroedge.gate/v1
+name:    numeric-range-beyond-exact-int
+version: 1.0.0
+
+evaluate:
+  line_pressure:
+    type: numeric
+    unit: bar
+    range: { min: 0, max: 1152921504606846976 }
+    max_age_ms: 500
+    instructions: "Line pressure"
+
+allow_when:
+  line_pressure: { lt: 8 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100

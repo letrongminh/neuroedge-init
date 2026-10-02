@@ -9,6 +9,7 @@ clock (CEO-S6-1). The file recorder of TSK-S3-01 is built on top of this.
 
 from __future__ import annotations
 
+import math
 import secrets
 import time
 from collections.abc import Callable
@@ -50,9 +51,25 @@ class EventLog:
         """Milliseconds since the log started, on the same clock as `offset_ms`."""
         return max(0, int(self.clock() - self._t0))
 
-    def offset_of(self, clock_value: float) -> int:
-        """Offset in integer milliseconds of a clock reading on the log's timeline."""
-        return max(0, int(clock_value - self._t0))
+    def offset_of(self, clock_value: Any) -> int | None:
+        """
+        Offset of a clock reading on the log's timeline, in whole milliseconds rounded down.
+
+        Negative for a reading taken before the log began: such a reading is as old as the
+        distance says, never as young as the start of the log. ``None`` when the value is not
+        a finite real number (a bool, a string, NaN, an infinity).
+        """
+        if isinstance(clock_value, bool) or not isinstance(clock_value, (int, float)):
+            return None
+        try:
+            relative = clock_value - self._t0
+        except OverflowError:
+            return None
+        return math.floor(relative) if math.isfinite(relative) else None
+
+    def instant_ms(self) -> int:
+        """Now on the log's timeline, rounded up: an age measured to it is never too young."""
+        return math.ceil(self.clock() - self._t0)
 
     @property
     def session_id(self) -> str:

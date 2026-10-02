@@ -576,14 +576,19 @@ budget:
 """
 
 
-def test_a_sensor_fact_on_a_numeric_criterion_is_refused_at_load(tmp_path):
-    """`sensor.read` declares no unit and no scale, so it cannot feed a numeric criterion (RFC-0009 §3f)."""
+def test_neuroedge_build_refuses_a_sensor_fact_on_a_numeric_criterion(tmp_path):
+    """The same refusal as at session load, but at build, where RFC-0009 §3f puts it."""
+    from neuroedge.engine.compiler import build
+    from neuroedge.errors import BuildFailed
+
     path = agent(tmp_path, 'hot = { sensor = "temperature", gte = 55 }')
     (tmp_path / "cool.yaml").write_text(NUMERIC_GATE, encoding="utf-8")
-    with pytest.raises(BoardCapabilityError) as raised:
+    with pytest.raises(BuildFailed) as raised:
+        build(path, target="sim", board_id="sim-default")
+    with pytest.raises(BuildFailed):  # a session builds first, so it never gets as far as running
         SimSession.load(path)
-    error = raised.value
-    assert error.code == "NE3001"
-    assert "[sim.sensor_facts] hot" in error.where
-    assert "'numeric'" in error.why and "sensor.read" in error.why
-    assert error.how
+    problems = [p for p in raised.value.problems if isinstance(p, BoardCapabilityError)]
+    assert len(problems) == 1
+    assert problems[0].code == "NE3001"
+    assert "[sim.sensor_facts] hot" in problems[0].where
+    assert "sensor.read" in problems[0].why

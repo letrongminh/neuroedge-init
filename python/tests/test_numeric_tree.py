@@ -23,12 +23,9 @@ from neuroedge.engine import (
     Fact,
     GateVerdict,
     Reason,
-    canonicalize,
     compile_tree,
-    gate_digest,
     resolve_gate_document,
     resolve_gate_file,
-    tree_bytes,
     validate_tree,
     walk,
 )
@@ -546,9 +543,12 @@ def test_known_failure_numeric_classifications():
     )
     tree = compile_tree(gate)
 
-    # Missing fact: known_failure ignores it (fail: open excuses missing)
-    assert known_failure(tree, {}) is None
-    assert known_failure(tree, {"pressure": Fact(None, age_ms=0)}) is None
+    # Missing reading: a lost sensor, which fail: open does not excuse for a numeric criterion
+    assert known_failure(tree, {}) == (Reason.CRITERION_UNAVAILABLE, "pressure")
+    assert known_failure(tree, {"pressure": Fact(None, age_ms=0)}) == (
+        Reason.CRITERION_UNAVAILABLE,
+        "pressure",
+    )
 
     # Present fact failing with VALUE_OUT_OF_RANGE: stays a known 'no'
     kf_oor = known_failure(tree, {"pressure": Fact(20.0, age_ms=0)})
@@ -658,48 +658,75 @@ def test_truth_table_numeric_rows_and_oracle_match():
 # --- Non-Numeric Gate Byte-for-Byte Backward Compatibility (Item 1 & 4) -------
 
 
-def test_existing_non_numeric_gates_compile_byte_identical(
+def test_existing_non_numeric_gates_keep_their_node_shape(
     gates_dir, gate_fixtures_dir, fixture_registry
 ):
-    """
-    Trees of gates WITHOUT numeric criteria must produce identical node keys,
-    canonical bytes, and digest.
-    """
-    search_paths = list(gates_dir.rglob("*.yaml")) + list(
-        (gate_fixtures_dir / "valid").glob("*.yaml")
-    )
-    assert search_paths, "found gate files to verify"
-
-    tested_count = 0
-    for path in search_paths:
-        try:
-            gate = resolve_gate_file(path, registry=fixture_registry)
-        except Exception:
-            # Skip invalid fixtures or non-gate files
-            continue
-
+    """Trees of gates without numeric criteria carry exactly the keys they always had."""
+    search_paths = [(path, None) for path in gates_dir.rglob("*.yaml")] + [
+        (path, fixture_registry) for path in (gate_fixtures_dir / "valid").glob("*.yaml")
+    ]
+    tested = 0
+    for path, registry in search_paths:
+        gate = resolve_gate_file(path, registry=registry)
         if any(c.kind == "numeric" for c in gate.constraints.values()):
             continue
-
         tree = compile_tree(gate)
-        tested_count += 1
-
-        # Assert nodes have strictly the old keys and NO numeric key
+        tested += 1
         for node in tree["nodes"]:
-            assert set(node.keys()) == {
-                "criterion",
-                "kind",
-                "domain",
-                "admitted",
-                "confidence_floor",
-            }
-            assert "numeric" not in node
-
-        # Validate against decision_tree.v1.json
+            assert set(node) == {"criterion", "kind", "domain", "admitted", "confidence_floor"}
         validate_tree(tree, label=str(path))
+    assert tested >= 10, "the stored truth tables in fixtures/decision_trees pin the bytes"
 
-        # Assert canonical tree bytes and digest
-        assert tree_bytes(tree) == canonicalize(tree)
-        assert tree["gate_digest"] == gate_digest(gate)
 
-    assert tested_count > 0, "verified at least one non-numeric gate"
+# --- Fixes from the independent review ---------------------------------------
+
+
+def test_truth_table_rows_with_non_finite_values_expect_value_out_of_range():
+    """Independent of the oracle: NaN and the infinities are out of range, never a pass."""
+    table = truth_table(compile_tree(make_numeric_gate()))
+    seen = set()
+    for row in table["rows"]:
+        cell = row["facts"].get("pressure")
+        if cell is not None and cell["value"] in ("nan", "inf", "-inf") and cell["age_ms"] == 0:
+            seen.add(cell["value"])
+            assert (row["verdict"], row["reason"]) == ("BLOCK", "value_out_of_range")
+    assert seen == {"nan", "inf", "-inf"}
+
+
+@pytest.mark.parametrize("value", [10**400, -(10**400)])
+def test_an_int_no_float_can_hold_is_out_of_range_not_an_exception(value):
+    tree = compile_tree(make_numeric_gate())
+    result = walk(tree, {"pressure": Fact(value, age_ms=0)})
+    assert (result.verdict, result.reason) == (GateVerdict.BLOCK, Reason.VALUE_OUT_OF_RANGE)
+
+
+def test_a_commanded_value_is_not_a_measurement():
+    """RFC-0009 §3f: what software asked for never satisfies a numeric criterion."""
+    tree = compile_tree(make_numeric_gate())
+    for source in ("measured", "sensor", "context"):
+        assert walk(tree, {"pressure": Fact(5.0, source=source, age_ms=0)}).reason is None
+    result = walk(tree, {"pressure": Fact(5.0, source="commanded", age_ms=0)})
+    assert (result.verdict, result.reason) == (GateVerdict.BLOCK, Reason.CRITERION_UNAVAILABLE)
+
+
+def test_fail_open_does_not_excuse_a_missing_numeric_reading():
+    """A lost sensor is a BLOCK on every branch (RFC-0009 §5): known_failure counts it."""
+    tree = compile_tree(make_numeric_gate())
+    assert known_failure(tree, {}) == (Reason.CRITERION_UNAVAILABLE, "pressure")
+    assert known_failure(tree, {"pressure": Fact(None)}) == (
+        Reason.CRITERION_UNAVAILABLE,
+        "pressure",
+    )
+
+
+def test_a_numeric_criterion_in_confirms_is_refused_even_without_the_resolver():
+    """The compile step is the choke point: a hand-built gate cannot be waived by a person."""
+    import dataclasses
+
+    gate = make_numeric_gate()
+    forged = dataclasses.replace(
+        gate,
+        on_block={"action": "ask", "message": "sure?", "confirms": ["pressure"]},
+    )
+    with pytest.raises(GateSchemaError, match="cannot be confirmed"):
+        compile_tree(forged)

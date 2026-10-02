@@ -85,7 +85,8 @@ class Fact:
     `value` is ``True``/``False`` for a bool criterion, a level or option name for
     categorical criteria, or a float/int for a numeric criterion. `confidence` is
     ``None`` when the source gave none, which is different from ``0.0``.
-    `read_ms` is the reading's mark on the engine's clock when the HAL read the sensor.
+    `read_ms` is the reading's mark on the clock the engine's event log runs on, taken when the
+    HAL read the sensor.
     `age_ms` is the age in milliseconds computed by the engine at evaluation time; a
     source never sets it.
     """

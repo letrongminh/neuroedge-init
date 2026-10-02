@@ -60,7 +60,13 @@ from ..actions.tools import (
     parse_tool_calls,
 )
 from ..engine.canonical import digest
-from ..engine.compiler import AgentManifest, build, load_actions, load_agent_manifest
+from ..engine.compiler import (
+    AgentManifest,
+    build,
+    load_actions,
+    load_agent_manifest,
+    numeric_sensor_fact_error,
+)
 from ..engine.compiler import resolve_gates as _resolve_gates
 from ..engine.gate import ActionContractEngine
 from ..engine.gate_resolver import GateRegistry, ResolvedGate
@@ -431,21 +437,9 @@ def _check_bands(
     """
     for criterion, rule in sensor_facts.items():
         for gate in gates.values():
-            if criterion in gate.evaluate:
-                spec = gate.evaluate[criterion]
-                if spec.get("type") == "numeric":
-                    label = f"{gate.name}@{gate.version}"
-                    raise BoardCapabilityError(
-                        where=f"{manifest.source} -> [sim.sensor_facts] {criterion}",
-                        why=(
-                            f"gate {label} evaluates {criterion!r} as 'numeric', and primitive "
-                            "'sensor.read' declares no unit and no scale (RFC-0009 §3f)"
-                        ),
-                        how=(
-                            f"bind {criterion!r} to a channel with declared unit and range, or "
-                            "evaluate it as 'level' with bands"
-                        ),
-                    )
+            error = numeric_sensor_fact_error(str(manifest.source), criterion, gate)
+            if error is not None:
+                raise error
         if rule.bands is None:
             continue
         where = f"{manifest.source} -> [sim.sensor_facts] {criterion} -> bands"

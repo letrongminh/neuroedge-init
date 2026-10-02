@@ -47,7 +47,7 @@ from neuroedge.testing import (
     TracePlayer,
     recorded_steps,
 )
-from neuroedge.testing.player import fact_age_mismatches
+from neuroedge.testing.player import fact_mark_problems
 from neuroedge.trace import validate_trace
 
 # --- Helpers & Stubs ---------------------------------------------------------
@@ -314,65 +314,7 @@ async def test_engine_numeric_non_finite_json_safe():
 # --- 3. Fail:Open Gate with Present Failing Fact ------------------------------
 
 
-@pytest.mark.asyncio
-async def test_fail_open_gate_blocks_present_failing_numeric_fact():
-    gate = make_numeric_gate(
-        allow_when={"gte": 2.0, "lt": 8.0},
-        range_bounds={"min": 0.0, "max": 16.0},
-        max_age_ms=500,
-        fail_mode="open",
-    )
-
-    # Case A: Value outside admitted interval (condition_not_met)
-    clock = FakeClock(1000.0)
-    events = EventLog(clock)
-    clock.now = 1050.0
-    fact = Fact(10.0, read_ms=1050.0, source="sensor")
-    clock.now = 1200.0
-    engine = ActionContractEngine(
-        {"numeric-test": gate},
-        facts_source=ScriptedSource({"pressure": fact}),
-        clock=clock,
-        events=events,
-    )
-    result = await engine.evaluate("numeric-test")
-    assert result.verdict is GateVerdict.BLOCK
-    assert result.reason is Reason.CONDITION_NOT_MET
-
-    # Case B: Value outside declared range (value_out_of_range)
-    clock = FakeClock(1000.0)
-    events = EventLog(clock)
-    clock.now = 1050.0
-    fact_oor = Fact(20.0, read_ms=1050.0, source="sensor")
-    clock.now = 1200.0
-    engine_oor = ActionContractEngine(
-        {"numeric-test": gate},
-        facts_source=ScriptedSource({"pressure": fact_oor}),
-        clock=clock,
-        events=events,
-    )
-    result_oor = await engine_oor.evaluate("numeric-test")
-    assert result_oor.verdict is GateVerdict.BLOCK
-    assert result_oor.reason is Reason.VALUE_OUT_OF_RANGE
-
-    # Case C: Expired age (criterion_unavailable)
-    clock = FakeClock(1000.0)
-    events = EventLog(clock)
-    clock.now = 1050.0
-    fact_exp = Fact(5.0, read_ms=1050.0, source="sensor")
-    clock.now = 1700.0  # age 650 > 500
-    engine_exp = ActionContractEngine(
-        {"numeric-test": gate},
-        facts_source=ScriptedSource({"pressure": fact_exp}),
-        clock=clock,
-        events=events,
-    )
-    result_exp = await engine_exp.evaluate("numeric-test")
-    assert result_exp.verdict is GateVerdict.BLOCK
-    assert result_exp.reason is Reason.CRITERION_UNAVAILABLE
-
-
-# --- 4. Replay & Tampered Age Verification ------------------------------------
+# --- 4. Replay: what the trace can account for ---------------------------------
 
 
 def _setup_numeric_agent(copy_agent, tmp_path) -> Path:
@@ -415,10 +357,9 @@ supported = ["sim", "linux", "esp32s3"]
     return manifest_path
 
 
-@pytest.mark.asyncio
-async def test_replay_reproduces_numeric_verdict(copy_agent, tmp_path):
-    agent_path = _setup_numeric_agent(copy_agent, tmp_path)
-    trace = {
+def _trace_with(entry: dict[str, Any], verdict: str = "ALLOW") -> dict[str, Any]:
+    """A recorded evaluation (events at 10, 20, 30 ms) whose one fact is `entry`."""
+    return {
         "$schema": "https://schema.neuroedge.dev/trace/v1.json",
         "metadata": {
             "session_id": "sess_1111222233334444",
@@ -438,206 +379,139 @@ async def test_replay_reproduces_numeric_verdict(copy_agent, tmp_path):
                 "type": "gate_evaluation_begin",
                 "data": {"gate": "unlock_door@1.0.0"},
             },
-            {
-                "offset_ms": 20,
-                "type": "gate_facts",
-                "data": {
-                    "pressure": {
-                        "value": 5.0,
-                        "confidence": None,
-                        "source": "sensor",
-                        "read_offset_ms": 50,
-                        "eval_offset_ms": 200,
-                        "age_ms": 150,
-                    }
-                },
-            },
+            {"offset_ms": 20, "type": "gate_facts", "data": {"pressure": entry}},
             {
                 "offset_ms": 30,
                 "type": "gate_evaluation_result",
-                "data": {"verdict": "ALLOW", "evaluations": {"pressure": 5.0}},
+                "data": {"verdict": verdict, "evaluations": {"pressure": entry.get("value")}},
             },
         ],
     }
 
-    # Step parsing
-    steps = recorded_steps(trace)
-    assert len(steps) == 1
-    assert steps[0].facts["pressure"].age_ms == 150
-    assert steps[0].facts["pressure"].value == 5.0
 
-    # Full replay
-    player = TracePlayer(trace, target="sim", agent=agent_path)
-    result = await player.replay()
+def _reading(**marks: Any) -> dict[str, Any]:
+    entry: dict[str, Any] = {"value": 5.0, "confidence": None, "source": "sensor"}
+    entry.update(marks)
+    return entry
+
+
+CONSISTENT = {"read_offset_ms": 5, "eval_offset_ms": 20, "age_ms": 15}
+
+
+@pytest.mark.asyncio
+async def test_replay_reproduces_a_consistent_numeric_reading(copy_agent, tmp_path):
+    agent_path = _setup_numeric_agent(copy_agent, tmp_path)
+    trace = _trace_with(_reading(**CONSISTENT))
+    [step] = recorded_steps(trace)
+    assert step.facts["pressure"].age_ms == 15
+    assert step.marks == {"pressure": (5, 20, 15)}
+    assert not step.mark_problems
+    result = await TracePlayer(trace, target="sim", agent=agent_path).replay()
     assert result.verdicts == ["ALLOW"]
-    assert result.recorded_verdicts == ["ALLOW"]
+    assert not result.warnings
 
 
 @pytest.mark.asyncio
-async def test_replay_tampered_age_ms_mismatch(copy_agent, tmp_path):
+async def test_a_replay_can_itself_be_replayed(copy_agent, tmp_path):
+    """The replayed trace keeps the read marks, so replaying it again gives the same verdict."""
     agent_path = _setup_numeric_agent(copy_agent, tmp_path)
-    # The recorded trace claims age_ms: 150 and verdict ALLOW, but eval - read = 700 - 50 = 650 > 500!
-    trace = {
-        "$schema": "https://schema.neuroedge.dev/trace/v1.json",
-        "metadata": {
-            "session_id": "sess_1111222233334444",
-            "timestamp_utc": "2026-01-01T00:00:00Z",
-            "target": "sim",
-            "board_id": "sim-default",
-            "agent_version": "villa-concierge@0.1.0",
-        },
-        "events": [
-            {
-                "offset_ms": 0,
-                "type": "action_requested",
-                "data": {"action": "unlock_door", "arguments": {}},
-            },
-            {
-                "offset_ms": 10,
-                "type": "gate_evaluation_begin",
-                "data": {"gate": "unlock_door@1.0.0"},
-            },
-            {
-                "offset_ms": 20,
-                "type": "gate_facts",
-                "data": {
-                    "pressure": {
-                        "value": 5.0,
-                        "confidence": None,
-                        "source": "sensor",
-                        "read_offset_ms": 50,
-                        "eval_offset_ms": 700,
-                        "age_ms": 150,  # Tampered: 700 - 50 != 150
-                    }
-                },
-            },
-            {
-                "offset_ms": 30,
-                "type": "gate_evaluation_result",
-                "data": {"verdict": "ALLOW", "evaluations": {"pressure": 5.0}},
-            },
-        ],
-    }
+    first = await TracePlayer(
+        _trace_with(_reading(**CONSISTENT)), target="sim", agent=agent_path
+    ).replay()
+    assert first.verdicts == ["ALLOW"]
+    second = await TracePlayer(first.replayed, target="sim", agent=agent_path).replay()
+    assert second.verdicts == ["ALLOW"]
+    assert not second.warnings
 
-    # Verify fact_age_mismatches detects the discrepancy
-    mismatches = fact_age_mismatches(trace["events"])
-    assert len(mismatches) == 1
-    assert mismatches[0].recorded_age_ms == 150
-    assert mismatches[0].recomputed_age_ms == 650
 
-    # Replay re-walks with recomputed age 650 -> blocks with criterion_unavailable
-    player = TracePlayer(trace, target="sim", agent=agent_path)
-    result = await player.replay()
-
+@pytest.mark.asyncio
+async def test_replay_with_a_tampered_age_treats_the_reading_as_unavailable(copy_agent, tmp_path):
+    agent_path = _setup_numeric_agent(copy_agent, tmp_path)
+    # The age claimed is 5 ms but eval - read is 15: the trace was altered.
+    trace = _trace_with(_reading(read_offset_ms=5, eval_offset_ms=20, age_ms=5))
+    [problem] = fact_mark_problems(trace)
+    assert problem.criterion == "pressure"
+    assert "differs from eval_offset_ms - read_offset_ms" in problem.why
+    result = await TracePlayer(trace, target="sim", agent=agent_path).replay()
     assert result.verdicts == ["BLOCK"]
-    assert result.recorded_verdicts == ["ALLOW"]
     assert result.reason == "criterion_unavailable"
-    assert any("differs from eval_offset_ms - read_offset_ms" in w for w in result.warnings)
-    assert any(e["type"] == "fact_age_mismatch" for e in result.replayed["events"])
-
-    diff = GoldenComparator().compare(result, trace)
-    assert not diff.ok
+    assert any("altered" in w for w in result.warnings)
+    assert any(e["type"] == "fact_mark_problem" for e in result.replayed["events"])
+    assert not GoldenComparator().compare(result, trace).ok  # recorded ALLOW, replayed BLOCK
 
 
 @pytest.mark.asyncio
-async def test_replay_missing_offsets_replays_unavailable(copy_agent, tmp_path):
+@pytest.mark.parametrize(
+    "marks",
+    [
+        {"read_offset_ms": -9000, "eval_offset_ms": 100000, "age_ms": 109000},  # past the events
+        {"read_offset_ms": 19900, "eval_offset_ms": 19990, "age_ms": 90},  # forged, consistent
+        {"read_offset_ms": 5, "eval_offset_ms": 9, "age_ms": 4},  # before the evaluation began
+    ],
+    ids=["after-the-events", "far-after-the-events", "before-begin"],
+)
+async def test_an_evaluation_instant_outside_the_evaluations_own_events_is_refused(
+    copy_agent, tmp_path, marks
+):
     agent_path = _setup_numeric_agent(copy_agent, tmp_path)
-    # A numeric entry missing read_offset_ms / eval_offset_ms / age_ms
-    trace = {
-        "$schema": "https://schema.neuroedge.dev/trace/v1.json",
-        "metadata": {
-            "session_id": "sess_1111222233334444",
-            "timestamp_utc": "2026-01-01T00:00:00Z",
-            "target": "sim",
-            "board_id": "sim-default",
-            "agent_version": "villa-concierge@0.1.0",
-        },
-        "events": [
-            {
-                "offset_ms": 0,
-                "type": "action_requested",
-                "data": {"action": "unlock_door", "arguments": {}},
-            },
-            {
-                "offset_ms": 10,
-                "type": "gate_evaluation_begin",
-                "data": {"gate": "unlock_door@1.0.0"},
-            },
-            {
-                "offset_ms": 20,
-                "type": "gate_facts",
-                "data": {
-                    "pressure": {
-                        "value": 5.0,
-                        "confidence": None,
-                        "source": "sensor",
-                        # Missing read_offset_ms, eval_offset_ms, age_ms
-                    }
-                },
-            },
-            {
-                "offset_ms": 30,
-                "type": "gate_evaluation_result",
-                "data": {"verdict": "ALLOW", "evaluations": {"pressure": 5.0}},
-            },
-        ],
-    }
-
-    # Must parse with age_ms = None
-    steps = recorded_steps(trace)
-    assert steps[0].facts["pressure"].age_ms is None
-
-    # Replay re-walks as unavailable, never as a pass
-    player = TracePlayer(trace, target="sim", agent=agent_path)
-    result = await player.replay()
+    trace = _trace_with(_reading(**marks))
+    [problem] = fact_mark_problems(trace)
+    assert "outside the events of this evaluation" in problem.why
+    result = await TracePlayer(trace, target="sim", agent=agent_path).replay()
     assert result.verdicts == ["BLOCK"]
     assert result.reason == "criterion_unavailable"
 
 
-def test_replay_numeric_nan_inf_strings_parsed():
-    trace = {
-        "events": [
-            {
-                "type": "gate_evaluation_begin",
-                "data": {"gate": "gate@1.0.0"},
-            },
-            {
-                "type": "gate_facts",
-                "data": {
-                    "p_nan": {
-                        "value": "nan",
-                        "read_offset_ms": 10,
-                        "eval_offset_ms": 20,
-                        "age_ms": 10,
-                    },
-                    "p_inf": {
-                        "value": "inf",
-                        "read_offset_ms": 10,
-                        "eval_offset_ms": 20,
-                        "age_ms": 10,
-                    },
-                    "p_ninf": {
-                        "value": "-inf",
-                        "read_offset_ms": 10,
-                        "eval_offset_ms": 20,
-                        "age_ms": 10,
-                    },
-                    "p_plain": {"value": "nan"},  # non-numeric / missing age: stays string
-                },
-            },
-            {
-                "type": "gate_evaluation_result",
-                "data": {"verdict": "BLOCK"},
-            },
-        ]
-    }
-    steps = recorded_steps(trace)
-    assert len(steps) == 1
-    facts = steps[0].facts
-    assert math.isnan(facts["p_nan"].value)
-    assert facts["p_inf"].value == float("inf")
-    assert facts["p_ninf"].value == float("-inf")
-    assert facts["p_plain"].value == "nan"  # not parsed to float without age_ms
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "marks",
+    [
+        {"age_ms": 15},  # offsets missing: the age is the trace's own claim
+        {"read_offset_ms": 5, "age_ms": 15},
+        {"read_offset_ms": 5, "eval_offset_ms": 20},  # no age
+        {"read_offset_ms": 5.0, "eval_offset_ms": 20, "age_ms": 15},
+        {"read_offset_ms": "5", "eval_offset_ms": 20, "age_ms": 15},
+        {"read_offset_ms": True, "eval_offset_ms": 20, "age_ms": 19},
+        {"read_offset_ms": 5, "eval_offset_ms": 20, "age_ms": 15.0},
+        {"read_offset_ms": None, "eval_offset_ms": 20, "age_ms": 15},
+    ],
+    ids=repr,
+)
+async def test_partial_or_malformed_read_marks_replay_as_unavailable(copy_agent, tmp_path, marks):
+    agent_path = _setup_numeric_agent(copy_agent, tmp_path)
+    trace = _trace_with(_reading(**marks))
+    [step] = recorded_steps(trace)
+    assert step.facts["pressure"].age_ms is None
+    assert "pressure" in step.mark_problems
+    result = await TracePlayer(trace, target="sim", agent=agent_path).replay()
+    assert result.verdicts == ["BLOCK"]
+    assert result.reason == "criterion_unavailable"
+
+
+@pytest.mark.asyncio
+async def test_a_reading_without_any_read_marks_replays_as_unavailable(copy_agent, tmp_path):
+    agent_path = _setup_numeric_agent(copy_agent, tmp_path)
+    trace = _trace_with(_reading())
+    [step] = recorded_steps(trace)
+    assert step.facts["pressure"].age_ms is None
+    result = await TracePlayer(trace, target="sim", agent=agent_path).replay()
+    assert result.verdicts == ["BLOCK"]
+    assert result.reason == "criterion_unavailable"
+
+
+@pytest.mark.parametrize(
+    ("text", "check"),
+    [("nan", math.isnan), ("inf", lambda v: v == math.inf), ("-inf", lambda v: v == -math.inf)],
+)
+def test_non_finite_readings_come_back_from_the_trace_as_floats(text, check):
+    trace = _trace_with(_reading(value=text, **CONSISTENT))
+    [step] = recorded_steps(trace)
+    assert check(step.facts["pressure"].value)
+
+
+def test_a_string_that_looks_non_finite_stays_a_string_without_read_marks():
+    [step] = recorded_steps(_trace_with(_reading(value="nan")))
+    assert step.facts["pressure"].value == "nan"
 
 
 # --- 5. [sim.sensor_facts] Refusal on Numeric Criteria (RFC-0009 §3f) ----------
@@ -754,10 +628,124 @@ async def test_a_live_trace_replays_to_the_same_numeric_verdict_and_age():
     live = await engine.evaluate("g")
     [step] = recorded_steps(events.to_trace())
     assert step.facts["pressure"].age_ms == 150
-    assert not fact_age_mismatches(events.to_trace()["events"])
+    assert not fact_mark_problems(events.to_trace())
     tree = compile_tree(make_numeric_gate())
     from neuroedge.engine.decision_tree import walk
 
     replayed = walk(tree, step.facts)
     assert replayed.verdict is live.verdict
     assert replayed.reason is live.reason
+
+
+# --- 8. Review fixes: stale marks, malformed marks, rounding, fail:open ---------
+
+
+def _engine(gate, source, *, start=1000.0, **kwargs):
+    clock = FakeClock(start)
+    events = EventLog(clock)
+    engine = ActionContractEngine(
+        {"g": gate}, facts_source=source, clock=clock, events=events, **kwargs
+    )
+    return engine, clock, events
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("read_ms", [50000.0, 0.0, -5.0])
+async def test_a_reading_from_before_the_log_began_is_as_old_as_it_is(read_ms):
+    """Not clamped to the start of the log: a cached pre-restart reading is stale, not fresh."""
+    engine, clock, events = _engine(make_numeric_gate(max_age_ms=500), None, start=100000.0)
+    engine.facts_source = ScriptedSource({"pressure": Fact(5.0, read_ms=read_ms)})
+    clock.now = 100100.0
+    result = await engine.evaluate("g")
+    assert result.verdict is GateVerdict.BLOCK
+    assert result.reason is Reason.CRITERION_UNAVAILABLE
+    entry = events.of_type("gate_facts")[0]["pressure"]
+    assert entry["read_offset_ms"] < 0 and entry["age_ms"] > 500
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "read_ms", [float("nan"), float("inf"), float("-inf"), "abc", True, [1.0], 10**400]
+)
+async def test_a_malformed_read_mark_blocks_instead_of_raising(read_ms):
+    engine, clock, events = _engine(make_numeric_gate(), None)
+    engine.facts_source = ScriptedSource({"pressure": Fact(5.0, read_ms=read_ms)})
+    result = await engine.evaluate("g")
+    assert result.verdict is GateVerdict.BLOCK
+    assert result.reason is Reason.CRITERION_UNAVAILABLE
+    assert events.of_type("gate_evaluation_result"), "the verdict reaches the trace"
+
+
+@pytest.mark.asyncio
+async def test_ages_are_never_rounded_down_to_fit_the_limit():
+    """A reading 500.9 ms old is older than a 500 ms limit; one exactly 500 ms old is not."""
+    for evaluated_at, allowed in ((1500.0, True), (1500.4, False), (1500.9, False)):
+        engine, clock, _ = _engine(make_numeric_gate(max_age_ms=500), None)
+        engine.facts_source = ScriptedSource({"pressure": Fact(5.0, read_ms=1000.0)})
+        clock.now = evaluated_at
+        assert (await engine.evaluate("g")).allowed is allowed, evaluated_at
+
+
+@pytest.mark.asyncio
+async def test_a_commanded_value_never_satisfies_a_numeric_criterion():
+    engine, clock, _ = _engine(make_numeric_gate(), None)
+    engine.facts_source = ScriptedSource(
+        {"pressure": Fact(5.0, source="commanded", read_ms=clock())}
+    )
+    result = await engine.evaluate("g")
+    assert (result.verdict, result.reason) == (GateVerdict.BLOCK, Reason.CRITERION_UNAVAILABLE)
+
+
+MIXED_OPEN = {
+    "schema": "neuroedge.gate/v1",
+    "name": "mixed-open",
+    "version": "1.0.0",
+    "evaluate": {
+        "pressure": {
+            "type": "numeric",
+            "unit": "bar",
+            "range": {"min": 0.0, "max": 16.0},
+            "max_age_ms": 500,
+            "instructions": "Pressure",
+        },
+        "door_closed": {"type": "bool", "instructions": "Door is closed"},
+    },
+    "allow_when": {"pressure": {"lt": 8.0}, "door_closed": True},
+    "on_block": {"action": "deny"},
+    "budget": {"p95_latency_ms": 100, "fail": "open"},
+}
+
+
+async def _open_gate(answers):
+    gate = resolve_gate_document(MIXED_OPEN)
+    engine, clock, _ = _engine(gate, ScriptedSource(answers))
+    return await engine.evaluate("g")
+
+
+OFFLINE = Unavailable("offline", "test")
+
+
+@pytest.mark.asyncio
+async def test_fail_open_still_excuses_what_a_non_numeric_source_could_not_say():
+    """Regression: the open policy is unchanged when only the bool criterion is unanswered."""
+    result = await _open_gate({"pressure": Fact(5.0, read_ms=1000.0), "door_closed": OFFLINE})
+    assert result.verdict is GateVerdict.ALLOW
+    assert result.fail_mode == "open"
+    assert result.reason is Reason.GATE_UNREACHABLE
+
+
+@pytest.mark.asyncio
+async def test_fail_open_does_not_excuse_a_lost_numeric_sensor():
+    """RFC-0009 §5: every branch of a numeric criterion blocks, degraded gathering included."""
+    result = await _open_gate({"pressure": OFFLINE, "door_closed": Fact(True)})
+    assert result.verdict is GateVerdict.BLOCK
+    assert result.reason is Reason.CRITERION_UNAVAILABLE
+    assert result.failed_criterion == "pressure"
+
+
+@pytest.mark.asyncio
+async def test_fail_open_keeps_a_present_failing_numeric_reading_blocked():
+    result = await _open_gate({"pressure": Fact(12.0, read_ms=1000.0), "door_closed": OFFLINE})
+    assert result.verdict is GateVerdict.BLOCK
+    assert result.reason is Reason.CONDITION_NOT_MET
+    assert result.failed_criterion == "pressure"

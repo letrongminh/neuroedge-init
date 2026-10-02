@@ -237,17 +237,13 @@ class ActionContractEngine:
         if numeric_nodes & facts.keys():
             # RFC-0009 §3c: one evaluation instant for every reading, on the trace's own timeline.
             facts = dict(facts)
-            eval_offset_ms = self.events.elapsed_ms()
+            eval_offset_ms = self.events.instant_ms()
             for criterion in numeric_nodes & facts.keys():
                 fact = facts[criterion]
-                age_ms = self._numeric_age(fact, eval_offset_ms)
-                facts[criterion] = replace(fact, age_ms=age_ms)
-                if fact.read_ms is not None and age_ms is not None:
-                    read_marks[criterion] = (
-                        self.events.offset_of(fact.read_ms),
-                        eval_offset_ms,
-                        age_ms,
-                    )
+                marks = self._numeric_marks(criterion, fact, eval_offset_ms)
+                facts[criterion] = replace(fact, age_ms=None if marks is None else marks[2])
+                if marks is not None:
+                    read_marks[criterion] = marks
 
         if facts:
             # The inputs of the verdict, with confidence and source: what a replay
@@ -297,17 +293,21 @@ class ActionContractEngine:
             self._call_hook(result)
         return result
 
-    def _numeric_age(self, fact: Fact, eval_offset_ms: int) -> int | None:
+    def _numeric_marks(
+        self, criterion: str, fact: Fact, eval_offset_ms: int
+    ) -> tuple[int, int, int] | None:
         """
-        Age of a numeric reading at the evaluation instant, from its HAL read mark alone.
+        ``(read_offset_ms, eval_offset_ms, age_ms)`` of a numeric reading, from its HAL read mark alone.
 
-        A source cannot state its own age: a reading without `read_ms` has none and the gate
-        blocks it as unavailable, whatever `age_ms` it carries. Replay overrides this, because
-        it feeds back ages already recomputed from the recorded offsets.
+        A source cannot state its own age: a reading without a usable `read_ms` (absent, not a
+        finite number) has none, and the gate blocks it as unavailable whatever `age_ms` it
+        carries. A reading from before the log began has a negative read offset, so it is as old
+        as it is. Replay overrides this, because it feeds back the offsets it recorded.
         """
-        if fact.read_ms is None:
+        read_offset = None if fact.read_ms is None else self.events.offset_of(fact.read_ms)
+        if read_offset is None:
             return None
-        return eval_offset_ms - self.events.offset_of(fact.read_ms)
+        return read_offset, eval_offset_ms, eval_offset_ms - read_offset
 
     async def _gather(
         self,

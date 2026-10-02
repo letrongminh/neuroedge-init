@@ -360,3 +360,45 @@ numeric_redefines_max_age.yaml:
   principle: 1
   where_contains: "evaluate.line_pressure"
   why_contains: "redefines a criterion inherited from the base gate"
+
+numeric_range_reversed.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure.range"
+  why_contains: "strictly less than"
+
+numeric_blank_unit.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure.unit"
+  why_contains: "does not match"
+
+numeric_max_age_too_large.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure.max_age_ms"
+  why_contains: "greater than the maximum"
+
+numeric_range_beyond_exact_int.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure.range.max"
+  why_contains: "finite number"
+
+numeric_range_extra_key.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure.range"
+  why_contains: "Additional properties"
+
+bool_with_unit.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure"
+  why_contains: "should not be valid"
+
+level_with_range.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure"
+  why_contains: "should not be valid"

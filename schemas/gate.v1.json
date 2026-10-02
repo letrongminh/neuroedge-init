@@ -57,9 +57,9 @@
             "uniqueItems": true
           },
           "unit": {
-            "description": "Measurement unit label (e.g. bar, degC). Non-empty string.",
+            "description": "Measurement unit label (e.g. bar, degC). A string with at least one non-blank character.",
             "type": "string",
-            "minLength": 1
+            "pattern": "\\S"
           },
           "range": {
             "description": "Valid measurement range [min, max].",
@@ -72,9 +72,10 @@
             "additionalProperties": false
           },
           "max_age_ms": {
-            "description": "Maximum reading age in milliseconds before failing closed.",
+            "description": "Maximum reading age in milliseconds before failing closed; at most 2^32 - 1, the width of the NETR field.",
             "type": "integer",
-            "exclusiveMinimum": 0
+            "exclusiveMinimum": 0,
+            "maximum": 4294967295
           }
         },
         "additionalProperties": false,

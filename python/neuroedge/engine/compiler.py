@@ -372,6 +372,48 @@ def check_gate_arguments(
     return problems
 
 
+def numeric_sensor_fact_error(
+    where: str, criterion: str, gate: ResolvedGate
+) -> BoardCapabilityError | None:
+    """
+    The refusal of a `[sim.sensor_facts]` rule on a criterion `gate` evaluates as numeric, or None.
+
+    `sensor.read` declares no unit and no scale, so it cannot feed a numeric criterion
+    (RFC-0009 §3f). Shared by `neuroedge build` and by the session at load, so the two say the same.
+    """
+    definition = gate.evaluate.get(criterion)
+    if definition is None or definition.get("type") != "numeric":
+        return None
+    return BoardCapabilityError(
+        where=f"{where} -> [sim.sensor_facts] {criterion}",
+        why=(
+            f"gate {gate.name}@{gate.version} evaluates {criterion!r} as 'numeric', and primitive "
+            "'sensor.read' declares no unit and no scale (RFC-0009 §3f)"
+        ),
+        how=(
+            f"bind {criterion!r} to a channel with declared unit and range, or "
+            "evaluate it as 'level' with bands"
+        ),
+    )
+
+
+def check_sensor_facts(
+    manifest: AgentManifest, gates: Mapping[str, ResolvedGate]
+) -> list[NeuroEdgeError]:
+    """No `[sim.sensor_facts]` rule feeds a numeric criterion (RFC-0009 §3f)."""
+    sim = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
+    rules = sim.get("sensor_facts", {}) if isinstance(sim, dict) else {}
+    if not isinstance(rules, dict):
+        return []
+    problems: list[NeuroEdgeError] = []
+    for criterion in rules:
+        for gate in gates.values():
+            error = numeric_sensor_fact_error(str(manifest.source), criterion, gate)
+            if error is not None:
+                problems.append(error)
+    return problems
+
+
 def check_fallbacks(
     manifest: AgentManifest, gates: Mapping[str, ResolvedGate], actions: Iterable[Any]
 ) -> list[NeuroEdgeError]:
@@ -777,6 +819,7 @@ def build(
     problems += gate_problems
     problems += check_fallbacks(manifest, gates, actions)
     problems += check_gate_arguments(gates, actions)
+    problems += check_sensor_facts(manifest, gates)
 
     grammar = manifest.root / "commands.toml"
     if grammar.is_file():

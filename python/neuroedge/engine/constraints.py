@@ -33,23 +33,23 @@ _OPERATORS_BY_KIND = {
 }
 
 
+_EXACT_INT = 2**53
+
+
 def is_finite_number(value: Any) -> bool:
-    """A real number that converts to a finite float; a bool, NaN, ±inf or a huge int is not."""
+    """A finite real number a float holds exactly; a bool, NaN, ±inf or an int beyond 2**53 is not."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return False
-    try:
-        return math.isfinite(float(value))
-    except OverflowError:
-        return False
+    if isinstance(value, int) and abs(value) > _EXACT_INT:
+        return False  # an int a float cannot hold exactly would compare differently on the device
+    return math.isfinite(value)
 
 
 def _format_num(v: float) -> str:
-    """Format a threshold or bound cleanly, without trailing .0 for integers."""
+    """A threshold or bound as its shortest exact text, without a trailing .0 for whole numbers."""
     if math.isinf(v):
         return "-inf" if v < 0 else "+inf"
-    if v == int(v):
-        return str(int(v))
-    return f"{v:g}"
+    return str(int(v)) if v == int(v) else repr(float(v))
 
 
 @dataclass(frozen=True)

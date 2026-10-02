@@ -1,0 +1,21 @@
+# Schema error — max_age_ms does not fit the 32-bit NETR field.
+schema:  neuroedge.gate/v1
+name:    numeric-max-age-too-large
+version: 1.0.0
+
+evaluate:
+  line_pressure:
+    type: numeric
+    unit: bar
+    range: { min: 0, max: 16 }
+    max_age_ms: 4294967296
+    instructions: "Line pressure"
+
+allow_when:
+  line_pressure: { lt: 8 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100

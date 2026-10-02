@@ -102,6 +102,21 @@ def compile_tree(gate: ResolvedGate) -> dict[str, Any]:
             }
         nodes.append(node)
 
+    on_block = gate.on_block
+    confirmed_numeric = [
+        node["criterion"]
+        for node in nodes
+        if node["kind"] == "numeric"
+        and node["criterion"] in (on_block.get("confirms") or ())
+        and on_block.get("action") == "ask"
+    ]
+    if confirmed_numeric:
+        raise GateSchemaError(
+            where=f"{gate.name}@{gate.version} -> on_block.confirms",
+            why=f"numeric criteria {confirmed_numeric} cannot be confirmed by a person (RFC-0009 §3a)",
+            how=f"remove {confirmed_numeric} from on_block.confirms",
+        )
+
     tree = {
         "schema": TREE_SCHEMA,
         "gate": f"{gate.name}@{gate.version}",
@@ -172,6 +187,9 @@ def _classify(node: Mapping[str, Any], fact: Fact | None) -> tuple[Reason | None
         if fact is None or fact.value is None:
             return Reason.CRITERION_UNAVAILABLE, None
         if isinstance(fact.value, bool) or not isinstance(fact.value, (int, float)):
+            return Reason.CRITERION_UNAVAILABLE, None
+        if fact.source == "commanded":
+            # RFC-0009 §3f: what software asked for is not what a sensor measured.
             return Reason.CRITERION_UNAVAILABLE, None
         if fact.age_ms is None or isinstance(fact.age_ms, bool) or not isinstance(fact.age_ms, int):
             return Reason.CRITERION_UNAVAILABLE, None
@@ -469,13 +487,17 @@ def known_failure(
     The first criterion whose fact is *present* and fails, ignoring missing facts.
 
     Used when adjudication degraded under `fail: open`: open may excuse what
-    could not be decided, never a fact that was decided and said no.
+    could not be decided, never a fact that was decided and said no. A numeric
+    criterion is the exception: a missing reading is a lost sensor, and RFC-0009 §5
+    blocks every branch of it, so open does not excuse it either.
     """
     for node in tree["nodes"]:
         if node["criterion"] in waived:
             continue
         fact = facts.get(node["criterion"])
         if fact is None or fact.value is None:
+            if node["kind"] == "numeric":
+                return Reason.CRITERION_UNAVAILABLE, node["criterion"]
             continue
         reason, _ = _classify(node, fact)
         if reason is not None:
