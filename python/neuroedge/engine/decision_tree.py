@@ -22,6 +22,7 @@ same tree in the binary layout RFC-0003 freezes (`NETR` v1, `binary_tree.py`).
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -44,6 +45,8 @@ def _domain(definition: Mapping[str, Any]) -> list[str]:
         return ["false", "true"]
     if kind == "level":
         return list(definition["levels"])
+    if kind == "numeric":
+        return []
     return sorted(definition["options"])
 
 
@@ -67,15 +70,37 @@ def compile_tree(gate: ResolvedGate) -> dict[str, Any]:
                 why="the resolved constraint differs from the one in the signed artifact",
                 how="re-resolve the gate; this indicates a resolver defect, not an authoring error",
             )
-        nodes.append(
-            {
-                "criterion": criterion,
-                "kind": constraint.kind,
-                "domain": _domain(definition),
-                "admitted": sorted(constraint.admitted),
-                "confidence_floor": constraint.confidence_floor,
+        node: dict[str, Any] = {
+            "criterion": criterion,
+            "kind": constraint.kind,
+            "domain": _domain(definition),
+            "admitted": sorted(constraint.admitted),
+            "confidence_floor": constraint.confidence_floor,
+        }
+        if constraint.kind == "numeric":
+            interval = constraint.interval
+            lower = interval.lower if interval is not None else None
+            upper = interval.upper if interval is not None else None
+            range_def = definition["range"]
+            node["numeric"] = {
+                "unit": str(definition["unit"]),
+                "range": {
+                    "min": float(range_def["min"]),
+                    "max": float(range_def["max"]),
+                },
+                "max_age_ms": int(definition["max_age_ms"]),
+                "lower": (
+                    {"value": float(lower.value), "closed": bool(lower.closed)}
+                    if lower is not None
+                    else None
+                ),
+                "upper": (
+                    {"value": float(upper.value), "closed": bool(upper.closed)}
+                    if upper is not None
+                    else None
+                ),
             }
-        )
+        nodes.append(node)
 
     tree = {
         "schema": TREE_SCHEMA,
@@ -131,7 +156,7 @@ class TreeResult:
     verdict: GateVerdict
     reason: Reason | None = None
     failed_criterion: str | None = None
-    evaluations: dict[str, bool | str] = field(default_factory=dict)
+    evaluations: dict[str, Any] = field(default_factory=dict)
 
 
 def _valid_confidence(value: Any) -> bool:
@@ -139,10 +164,61 @@ def _valid_confidence(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and 0.0 <= value <= 1.0
 
 
-def _classify(
-    node: Mapping[str, Any], fact: Fact | None
-) -> tuple[Reason | None, bool | str | None]:
-    """Return (reason or None when satisfied, the JSON-native value for the trace)."""
+def _classify(node: Mapping[str, Any], fact: Fact | None) -> tuple[Reason | None, Any]:
+    """Return (reason or None when satisfied, the value for the trace)."""
+    if node["kind"] == "numeric":
+        # RFC-0009 §3c evaluation order:
+        # a. Missing reading, invalid type, or missing age_ms -> CRITERION_UNAVAILABLE
+        if fact is None or fact.value is None:
+            return Reason.CRITERION_UNAVAILABLE, None
+        if isinstance(fact.value, bool) or not isinstance(fact.value, (int, float)):
+            return Reason.CRITERION_UNAVAILABLE, None
+        if fact.age_ms is None or isinstance(fact.age_ms, bool) or not isinstance(fact.age_ms, int):
+            return Reason.CRITERION_UNAVAILABLE, None
+
+        # b. Causal violation: age_ms < 0 -> CRITERION_UNAVAILABLE
+        if fact.age_ms < 0:
+            return Reason.CRITERION_UNAVAILABLE, None
+
+        num = node["numeric"]
+        # c. Reading expired: age_ms > max_age_ms -> CRITERION_UNAVAILABLE (age == max_age_ms passes)
+        if fact.age_ms > num["max_age_ms"]:
+            return Reason.CRITERION_UNAVAILABLE, None
+
+        # d. Non-finite or outside declared range -> VALUE_OUT_OF_RANGE
+        try:
+            val = float(fact.value)
+        except OverflowError:  # an int no float can hold is out of any range
+            return Reason.VALUE_OUT_OF_RANGE, fact.value
+        range_min = float(num["range"]["min"])
+        range_max = float(num["range"]["max"])
+        if not math.isfinite(val) or val < range_min or val > range_max:
+            return Reason.VALUE_OUT_OF_RANGE, fact.value
+
+        # e. Finite, in range, but outside admitted interval -> CONDITION_NOT_MET
+        lower = num.get("lower")
+        if lower is not None:
+            low_val = float(lower["value"])
+            if lower["closed"]:
+                if val < low_val:
+                    return Reason.CONDITION_NOT_MET, fact.value
+            else:
+                if val <= low_val:
+                    return Reason.CONDITION_NOT_MET, fact.value
+
+        upper = num.get("upper")
+        if upper is not None:
+            high_val = float(upper["value"])
+            if upper["closed"]:
+                if val > high_val:
+                    return Reason.CONDITION_NOT_MET, fact.value
+            else:
+                if val >= high_val:
+                    return Reason.CONDITION_NOT_MET, fact.value
+
+        # f. Satisfied
+        return None, fact.value
+
     if fact is None or fact.value is None:
         return Reason.CRITERION_UNAVAILABLE, None
 
@@ -168,6 +244,53 @@ def _classify(
 OUT_OF_DOMAIN = "__out_of_domain__"
 
 
+def _numeric_baseline_value(node: Mapping[str, Any]) -> float:
+    num = node["numeric"]
+    range_min = float(num["range"]["min"])
+    range_max = float(num["range"]["max"])
+    lower = num.get("lower")
+    upper = num.get("upper")
+
+    def satisfies(val: float) -> bool:
+        if not (range_min <= val <= range_max):
+            return False
+        if lower is not None:
+            low_val = float(lower["value"])
+            if lower["closed"]:
+                if val < low_val:
+                    return False
+            else:
+                if val <= low_val:
+                    return False
+        if upper is not None:
+            high_val = float(upper["value"])
+            if upper["closed"]:
+                if val > high_val:
+                    return False
+            else:
+                if val >= high_val:
+                    return False
+        return True
+
+    candidates: list[float] = []
+    if lower is not None:
+        candidates.append(float(lower["value"]))
+    if upper is not None:
+        candidates.append(float(upper["value"]))
+    lo = float(lower["value"]) if lower is not None else range_min
+    hi = float(upper["value"]) if upper is not None else range_max
+    candidates.append((lo + hi) / 2.0)
+    candidates.append(range_min)
+    candidates.append(range_max)
+
+    for c in candidates:
+        if satisfies(c):
+            return c
+    raise ValueError(
+        f"could not find a satisfying baseline for numeric criterion {node['criterion']}"
+    )
+
+
 def truth_cases(tree: Mapping[str, Any]) -> list[dict[str, dict[str, Any]]]:
     """
     Fact sets for a conformance truth table — a few hundred rows, not a product
@@ -184,30 +307,115 @@ def truth_cases(tree: Mapping[str, Any]) -> list[dict[str, dict[str, Any]]]:
     import itertools
 
     nodes = tree["nodes"]
+    has_numeric = any(n["kind"] == "numeric" for n in nodes)
 
-    def fact(node: Mapping[str, Any], raw: str, confidence: float | None) -> dict[str, Any]:
+    if not has_numeric:
+
+        def fact(node: Mapping[str, Any], raw: str, confidence: float | None) -> dict[str, Any]:
+            value: bool | str = (raw == "true") if node["kind"] == "bool" else raw
+            return {"value": value, "confidence": confidence}
+
+        rows: list[dict[str, dict[str, Any]]] = []
+        for combo in itertools.product(*(node["domain"] for node in nodes)):
+            rows.append(
+                {n["criterion"]: fact(n, raw, 1.0) for n, raw in zip(nodes, combo, strict=True)}
+            )
+
+        baseline = {n["criterion"]: fact(n, n["admitted"][0], 1.0) for n in nodes if n["admitted"]}
+        for node in nodes:
+            name = node["criterion"]
+            faults: list[dict[str, Any] | None] = [
+                None,
+                {"value": OUT_OF_DOMAIN, "confidence": 1.0},
+            ]
+            floor = node["confidence_floor"]
+            if floor > 0 and node["admitted"]:
+                admitted = node["admitted"][0]
+                faults += [
+                    fact(node, admitted, None),
+                    fact(node, admitted, round(floor - 0.001, 6)),
+                    fact(node, admitted, floor),
+                    fact(node, admitted, 1.5),  # not a probability: unavailable, never a pass
+                ]
+            for fault in faults:
+                row = dict(baseline)
+                if fault is None:
+                    row.pop(name, None)
+                else:
+                    row[name] = fault
+                rows.append(row)
+        return rows
+
+    def non_num_fact(node: Mapping[str, Any], raw: str, confidence: float | None) -> dict[str, Any]:
         value: bool | str = (raw == "true") if node["kind"] == "bool" else raw
         return {"value": value, "confidence": confidence}
 
-    rows: list[dict[str, dict[str, Any]]] = []
-    for combo in itertools.product(*(node["domain"] for node in nodes)):
-        rows.append(
-            {n["criterion"]: fact(n, raw, 1.0) for n, raw in zip(nodes, combo, strict=True)}
-        )
+    # (i) All-satisfied baseline
+    baseline: dict[str, dict[str, Any]] = {}
+    for n in nodes:
+        if n["kind"] == "numeric":
+            baseline[n["criterion"]] = {
+                "value": _numeric_baseline_value(n),
+                "age_ms": 0,
+            }
+        else:
+            admitted = n["admitted"][0] if n["admitted"] else n["domain"][0]
+            baseline[n["criterion"]] = non_num_fact(n, admitted, 1.0)
 
-    baseline = {n["criterion"]: fact(n, n["admitted"][0], 1.0) for n in nodes if n["admitted"]}
+    rows: list[dict[str, dict[str, Any]]] = []
+
+    # Combos of bool/level/choice nodes with numeric baseline
+    non_numeric_nodes = [n for n in nodes if n["kind"] != "numeric"]
+    if non_numeric_nodes:
+        for combo in itertools.product(*(n["domain"] for n in non_numeric_nodes)):
+            row = dict(baseline)
+            for n, raw in zip(non_numeric_nodes, combo, strict=True):
+                row[n["criterion"]] = non_num_fact(n, raw, 1.0)
+            rows.append(row)
+    else:
+        rows.append(dict(baseline))
+
+    # (ii) Faults per node
     for node in nodes:
         name = node["criterion"]
-        faults: list[dict[str, Any] | None] = [None, {"value": OUT_OF_DOMAIN, "confidence": 1.0}]
-        floor = node["confidence_floor"]
-        if floor > 0 and node["admitted"]:
-            admitted = node["admitted"][0]
-            faults += [
-                fact(node, admitted, None),
-                fact(node, admitted, round(floor - 0.001, 6)),
-                fact(node, admitted, floor),
-                fact(node, admitted, 1.5),  # not a probability: unavailable, never a pass
+        if node["kind"] == "numeric":
+            num = node["numeric"]
+            base_val = baseline[name]["value"]
+            max_age_ms = num["max_age_ms"]
+            range_min = float(num["range"]["min"])
+            range_max = float(num["range"]["max"])
+
+            faults: list[dict[str, Any] | None] = [
+                None,
+                {"value": base_val, "age_ms": max_age_ms},
+                {"value": base_val, "age_ms": max_age_ms + 1},
+                {"value": base_val, "age_ms": -1},
+                {"value": "nan", "age_ms": 0},
+                {"value": "inf", "age_ms": 0},
+                {"value": "-inf", "age_ms": 0},
+                {"value": range_min, "age_ms": 0},
+                {"value": range_max, "age_ms": 0},
+                {"value": math.nextafter(range_min, -math.inf), "age_ms": 0},
+                {"value": math.nextafter(range_max, math.inf), "age_ms": 0},
             ]
+            for bound in (num.get("lower"), num.get("upper")):
+                if bound is not None:
+                    bv = float(bound["value"])
+                    for v in (bv, math.nextafter(bv, -math.inf), math.nextafter(bv, math.inf)):
+                        if range_min <= v <= range_max:
+                            faults.append({"value": v, "age_ms": 0})
+        else:
+            faults = [None, {"value": OUT_OF_DOMAIN, "confidence": 1.0}]
+            floor = node["confidence_floor"]
+            if floor > 0 and node["admitted"]:
+                admitted = node["admitted"][0]
+                faults += [
+                    non_num_fact(node, admitted, None),
+                    non_num_fact(node, admitted, round(floor - 0.001, 6)),
+                    non_num_fact(node, admitted, floor),
+                    non_num_fact(node, admitted, 1.5),
+                ]
+
         for fault in faults:
             row = dict(baseline)
             if fault is None:
@@ -215,11 +423,27 @@ def truth_cases(tree: Mapping[str, Any]) -> list[dict[str, dict[str, Any]]]:
             else:
                 row[name] = fault
             rows.append(row)
+
     return rows
 
 
 def facts_from_row(row: Mapping[str, Mapping[str, Any]]) -> dict[str, Fact]:
-    return {name: Fact(cell["value"], cell["confidence"]) for name, cell in row.items()}
+    facts: dict[str, Fact] = {}
+    for name, cell in row.items():
+        val = cell["value"]
+        if "age_ms" in cell:
+            if val == "nan":
+                num_val = float("nan")
+            elif val == "inf":
+                num_val = float("inf")
+            elif val == "-inf":
+                num_val = float("-inf")
+            else:
+                num_val = val
+            facts[name] = Fact(num_val, age_ms=cell["age_ms"])
+        else:
+            facts[name] = Fact(val, cell.get("confidence"))
+    return facts
 
 
 def truth_table(tree: Mapping[str, Any]) -> dict[str, Any]:
@@ -274,7 +498,7 @@ def walk(
     gate's own `on_block.confirms` lists, and only after a confirmation.
     """
     first: tuple[Reason, str] | None = None
-    evaluations: dict[str, bool | str] = {}
+    evaluations: dict[str, Any] = {}
     for node in tree["nodes"]:
         criterion = node["criterion"]
         reason, value = _classify(node, facts.get(criterion))

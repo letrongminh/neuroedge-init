@@ -26,6 +26,8 @@ class Reason(StrEnum):
     # The clause has a confidence floor and the fact carries no confidence at all.
     # Treated neither as 0 nor as 1 (design doc, closed question 10).
     CONFIDENCE_UNAVAILABLE = "confidence_unavailable"
+    # A numeric reading was NaN, infinite, or fell outside declared range (RFC-0009).
+    VALUE_OUT_OF_RANGE = "value_out_of_range"
     # The adjudicator is unreachable and no local fallback can run (Q-14).
     GATE_UNREACHABLE = "gate_unreachable"
     # Adjudication took longer than budget.p95_latency_ms (FR-GATE-09).
@@ -80,16 +82,21 @@ class Fact:
     """
     One adjudicated value for one criterion.
 
-    `value` is ``True``/``False`` for a bool criterion and a level or option name
-    otherwise. `confidence` is ``None`` when the source gave none, which is
-    different from ``0.0``.
+    `value` is ``True``/``False`` for a bool criterion, a level or option name for
+    categorical criteria, or a float/int for a numeric criterion. `confidence` is
+    ``None`` when the source gave none, which is different from ``0.0``.
+    `read_ms` is the reading's mark on the engine's clock when the HAL read the sensor.
+    `age_ms` is the age in milliseconds computed by the engine at evaluation time; a
+    source never sets it.
     """
 
-    value: bool | str | None
+    value: bool | str | float | int | None
     confidence: float | None = None
     source: str = "context"
+    read_ms: float | None = None
+    age_ms: int | None = None
 
     @property
-    def top(self) -> bool | str | None:
+    def top(self) -> bool | str | float | int | None:
         """The chosen option, for `choice` answers (`intent.top`, proposal §4.6)."""
         return self.value
