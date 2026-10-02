@@ -1,0 +1,22 @@
+# Schema error — 'confidence' field is not allowed on a numeric criterion.
+schema:  neuroedge.gate/v1
+name:    numeric-confidence-field
+version: 1.0.0
+
+evaluate:
+  line_pressure:
+    type: numeric
+    unit: bar
+    range: { min: 0, max: 16 }
+    max_age_ms: 500
+    instructions: "Line pressure"
+    confidence: 0.95
+
+allow_when:
+  line_pressure: { lt: 8 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100

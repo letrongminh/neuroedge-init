@@ -1,0 +1,21 @@
+# Schema error — 'eq' operator is not defined for a numeric criterion.
+schema:  neuroedge.gate/v1
+name:    numeric-eq
+version: 1.0.0
+
+evaluate:
+  line_pressure:
+    type: numeric
+    unit: bar
+    range: { min: 0, max: 16 }
+    max_age_ms: 500
+    instructions: "Line pressure"
+
+allow_when:
+  line_pressure: { eq: 8 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100

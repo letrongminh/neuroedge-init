@@ -1,0 +1,8 @@
+# Principle 2 — loosens upper bound: base has lt 8, this gate has lt 10.
+schema:  neuroedge.gate/v1
+name:    numeric-loosens-upper
+version: 1.0.0
+extends: neuroedge://gates/numeric-base@1.0.0
+
+allow_when:
+  line_pressure: { gte: 2, lt: 10 }

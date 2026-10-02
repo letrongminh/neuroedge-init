@@ -1,0 +1,21 @@
+# RFC-0009 §3a — confidence as a numeric criterion.
+schema:  neuroedge.gate/v1
+name:    numeric-confidence
+version: 1.0.0
+
+evaluate:
+  person_confidence:
+    type: numeric
+    unit: ratio
+    range: { min: 0, max: 1 }
+    max_age_ms: 300
+    instructions: "Person detection confidence score"
+
+allow_when:
+  person_confidence: { gte: 0.85 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100

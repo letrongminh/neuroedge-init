@@ -1,0 +1,13 @@
+# Principle 1 — child redefines unit of an inherited numeric criterion.
+schema:  neuroedge.gate/v1
+name:    numeric-redefines-unit
+version: 1.0.0
+extends: neuroedge://gates/numeric-base@1.0.0
+
+evaluate:
+  line_pressure:
+    type: numeric
+    unit: psi
+    range: { min: 0, max: 16 }
+    max_age_ms: 500
+    instructions: "Line pressure in bar"

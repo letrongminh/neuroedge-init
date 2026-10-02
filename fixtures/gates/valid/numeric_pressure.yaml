@@ -1,0 +1,21 @@
+# RFC-0009 — standalone base gate with numeric pressure criterion.
+schema:  neuroedge.gate/v1
+name:    numeric-pressure
+version: 1.0.0
+
+evaluate:
+  line_pressure:
+    type: numeric
+    unit: bar
+    range: { min: 0, max: 16 }
+    max_age_ms: 500
+    instructions: "Pipe pressure downstream of regulator"
+
+allow_when:
+  line_pressure: { lt: 8 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100

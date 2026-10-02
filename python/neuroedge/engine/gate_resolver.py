@@ -32,7 +32,7 @@ from typing import Any
 from ..errors import GateInheritanceError, GateNotFoundError, GateSchemaError
 from ..paths import gates_dir, schema_path
 from .arguments import merge_arguments
-from .constraints import Constraint, parse_allow_when
+from .constraints import Constraint, is_finite_number, parse_allow_when
 
 # Appendix B.5 principle 5. A "level" is one document in the chain: the root
 # counts as level 1, so at most two `extends` hops are permitted and a
@@ -172,19 +172,43 @@ def validate_gate_document(document: Mapping[str, Any], label: str) -> None:
 
     validator = jsonschema.Draft202012Validator(_gate_schema())
     errors = sorted(validator.iter_errors(document), key=lambda e: list(e.absolute_path))
-    if not errors:
-        return
+    if errors:
+        first = errors[0]
+        location = ".".join(str(part) for part in first.absolute_path) or "<document root>"
+        raise GateSchemaError(
+            where=f"{label} -> {location}",
+            why=first.message,
+            how=(
+                "correct the field against schemas/gate.v1.json "
+                "(field reference: Proposal Appendix B.1)"
+            ),
+        )
 
-    first = errors[0]
-    location = ".".join(str(part) for part in first.absolute_path) or "<document root>"
-    raise GateSchemaError(
-        where=f"{label} -> {location}",
-        why=first.message,
-        how=(
-            "correct the field against schemas/gate.v1.json "
-            "(field reference: Proposal Appendix B.1)"
-        ),
-    )
+    # RFC-0009: enforce finiteness and min < max for numeric criteria range
+    evaluate = document.get("evaluate")
+    if isinstance(evaluate, Mapping):
+        for criterion, defn in evaluate.items():
+            if isinstance(defn, Mapping) and defn.get("type") == "numeric":
+                range_obj = defn.get("range")
+                if isinstance(range_obj, Mapping):
+                    min_val = range_obj.get("min")
+                    max_val = range_obj.get("max")
+                    for key, val in (("min", min_val), ("max", max_val)):
+                        if not is_finite_number(val):
+                            raise GateSchemaError(
+                                where=f"{label} -> evaluate.{criterion}.range.{key}",
+                                why=f"range.{key} must be a finite number, got {val!r}",
+                                how="provide a finite numeric value for range (RFC-0009 §3a)",
+                            )
+                    if min_val >= max_val:
+                        raise GateSchemaError(
+                            where=f"{label} -> evaluate.{criterion}.range",
+                            why=(
+                                f"the admitted range is empty (range.min {min_val} >= range.max {max_val}); "
+                                "range.min must be strictly less than range.max"
+                            ),
+                            how="declare range with min < max (RFC-0009 §3a)",
+                        )
 
 
 def load_gate_document(path: str | Path) -> dict[str, Any]:
@@ -592,6 +616,20 @@ def resolve_gate_document(
             where=f"{leaf_label} -> on_block.confirms",
             why=f"{unknown} are not allow_when criteria of this gate, so there is nothing to confirm",
             how=f"list only criteria of allow_when: {sorted(constraints)}",
+        )
+    numeric_confirms = [
+        c
+        for c in on_block.get("confirms", ())
+        if constraints.get(c) is not None and constraints[c].kind == "numeric"
+    ]
+    if numeric_confirms:
+        raise GateSchemaError(
+            where=f"{leaf_label} -> on_block.confirms",
+            why=(
+                f"numeric criteria {numeric_confirms} cannot be confirmed by a person; "
+                "a human confirmation cannot stand in for a physical measurement (RFC-0009 §3a)"
+            ),
+            how=f"remove numeric criteria from on_block.confirms: {numeric_confirms}",
         )
 
     return ResolvedGate(

@@ -1,0 +1,8 @@
+# Principle 2 — narrows by opening the closed lower edge: parent gte 2, child gt 2.
+schema:  neuroedge.gate/v1
+name:    numeric-open-edge
+version: 1.0.0
+extends: neuroedge://gates/numeric-base@1.0.0
+
+allow_when:
+  line_pressure: { gt: 2, lt: 8 }
