@@ -302,7 +302,8 @@ quả khớp `outputSchema` (§4). Wheel mang corpus (`neuroedge/_data/fixtures/
 bản đã cài cũng tự kiểm được.
 
 Lược đồ phong bì và kết quả đóng băng thành `schemas/` bằng một RFC trước I6 (TSK-I6-05,
-Q-58; `TODOS.md` #23), để OSS khác hiện thực được profile theo phần Apache-2.0 của kho. Cho tới lúc đó, profile là **v0** và đổi được
+Q-58; `TODOS.md` #23), để OSS khác hiện thực được profile theo phần Apache-2.0 của kho. Cùng RFC đó khoá định danh phiên bản
+của `board.v1` và đưa danh mục mã lỗi `NE*` ra dạng máy đọc được (Q-63). Cho tới lúc đó, profile là **v0** và đổi được
 bằng PR thường kèm cập nhật tài liệu này.
 
 ## 10. NeuroEdge làm MCP client (Q-27)

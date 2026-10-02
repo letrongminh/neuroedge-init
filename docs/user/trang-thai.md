@@ -32,7 +32,7 @@
 |  | **I4a — NeuroBrain trên host** | 2027-01-03 | **0 / 33** | ⏳ Chưa bắt đầu | tag `v0.4.1` + extra `[lab]` (nội bộ) |
 |  | **I5 — Thoại trên Box-3** | 2027-01-03 | **0 / 7** | ⏳ Chưa bắt đầu | tag `v0.5.0` + firmware (nội bộ) |
 |  | **I5a — NeuroBrain trên chip** | 2027-01-24 | **0 / 2** | ⏳ Chưa bắt đầu | tag `v0.5.1` + firmware (nội bộ) |
-| **Công khai** | **I6 — Công khai** | 2027-01-31 | **3 / 10** | 🟡 Quét bí mật, SBOM xong; chờ I5a | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
+| **Công khai** | **I6 — Công khai** | 2027-01-31 | **3 / 12** | 🟡 Quét bí mật, SBOM xong; chờ I5a | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
 | **v1.0 = MVP** | **I7 — v1.0** | 2027-02-21 | **4 / 12** | 🟡 Ghim Actions, attestation xong; OTA A/B có ký + rollback xong trên QEMU; chờ I6 | `v1.0.0` |
 | **Beta** | **I8 — Developer Beta** | 2027-03-21 | **0 / 1** | ⏳ Chưa bắt đầu | `1.0.x` (chỉ bản vá) |
 | **v1.1** | **I9 — Lớp provider v1.1 và Fleet OS** | sau I8 (nhánh A) | **0 / 9** | ⏳ Chờ nhánh A | `1.1.0` + dịch vụ |

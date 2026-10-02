@@ -120,10 +120,10 @@ increment ở roadmap §0.2.
   agent framework qua MCP có xác thực. **Lần đầu người ngoài dùng được.**
 - **Kiến trúc thêm:** gói trên PyPI có SBOM và attestation; lược đồ ở URL công khai `schema.neuroedge.dev`
   (A9); **bề mặt tích hợp** (Q-58): MCP qua mạng — Streamable HTTP, OAuth 2.1, mTLS theo thiết bị, mặc định
-  tắt (TSK-P2-04) — và Gated Tool Profile đóng băng vào `schemas/` (TSK-I6-05). `partial`: quét bí mật,
-  SBOM `done`.
-- **Hợp đồng:** lược đồ phong bì `ToolCall` và kết quả vào `schemas/` qua RFC; từ đây OSS khác hiện thực
-  được profile theo phần Apache-2.0 mà không phụ thuộc mã PolyForm NC (Q-59).
+  tắt (TSK-P2-04) — và Gated Tool Profile đóng băng vào `schemas/` (TSK-I6-05); **bề mặt Python công khai** có đặc tả
+  và phiên bản (TSK-I6-06, Q-63). `partial`: quét bí mật, SBOM `done`.
+- **Hợp đồng:** lược đồ phong bì `ToolCall` và kết quả, định danh phiên bản `board.v1` và danh mục mã lỗi vào `schemas/`
+  qua RFC; từ đây OSS khác hiện thực được profile theo phần Apache-2.0 mà không phụ thuộc mã PolyForm NC (Q-59).
 - **Lời hứa được chứng minh bằng:** client trên máy khác vẫn chỉ gửi được *yêu cầu*; thiếu xác thực ⇒ từ
   chối; bật cổng mạng mà thiếu cấu hình xác thực ⇒ không khởi động; lặp lời gọi N lần ⇒ N lần `BLOCK`.
 
