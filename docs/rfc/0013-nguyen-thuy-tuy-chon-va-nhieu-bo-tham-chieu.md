@@ -182,8 +182,8 @@ RFC này không đụng `gate.v1`, phân giải, năm nguyên tắc kế thừa 
 - [ ] `python/neuroedge/hal/board.py` (`EXTENSION_PRIMITIVES`, `REFERENCE_BOARDS`, `EXTENSION_REFERENCE_BOARDS`, `SIM_MIRRORS`), `python/neuroedge/hal/__init__.py`, `python/neuroedge/cli/main.py` (`build` §3e, `verify` §3f), `python/neuroedge/sim/session.py`
 - [ ] `.github/workflows/nightly-hardware.yml`: một job cho mỗi bo tham chiếu phần cứng
 - [ ] Thêm `boards/sim-rpi5.toml` và `boards/esp32s3-cores3.toml` (TSK-I3a-01, Q-61); cập nhật `python/tests/test_boards.py`; thêm phong bì `envelope` cho chân `digital_out` của ba profile bậc 1
-- [ ] `neuroedge-prd.md` FR-HAL-01, FR-TGT-08, Phụ lục B dòng NE3001 và NE4004 (§4); `neuroedge-roadmap.md` (TSK-I2a-06, TSK-I2a-07, TSK-I3a-01); đóng `TODOS.md` #14
-- [ ] `CONTRIBUTING.md` §3 (dòng profile bo mạch); cập nhật `docs/rfc/README.md` và `CHANGELOG.md`
+- [x] `neuroedge-prd.md` FR-HAL-01, FR-TGT-08, Phụ lục B dòng NE3001 và NE4004 (§4); `neuroedge-roadmap.md` (TSK-I2a-06, TSK-I2a-07, TSK-I3a-01); đóng `TODOS.md` #14 *(Đã làm 2026-10-04: PRD ở commit `b2338a6`; roadmap TSK-I2a-06 ✅, TSK-I2a-07 🟡, TSK-I3a-01 🟡; `TODOS.md` #14 đã xoá)*
+- [x] `CONTRIBUTING.md` §3 (dòng profile bo mạch); cập nhật `docs/rfc/README.md` và `CHANGELOG.md` *(Đã làm: `CONTRIBUTING.md` §3 ở `b2338a6`, mục `CHANGELOG.md` `[Chưa phát hành]` 2026-10-04)*
 
 ## 9. Quyết định cho các câu hỏi mở (Q-57, 2026-09-30; Q-62, 2026-10-01)
 

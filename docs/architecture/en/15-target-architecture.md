@@ -289,7 +289,7 @@ NeuroBrain ([`Q-31`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định),
 - **Physical Safety Envelope Hook:**
   Physical safety envelopes (on-time duration limits and maximum frequency per GPIO pin) are declared in `board.v1` and enforced by a hook placed in `HardwareAbstractionLayer.digital_out`, shared by every actuator (Q-53) ([`TSK-N2-01`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux), [`TSK-N2-02`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)).
   - **Mandatory execution order:** `pin check (require_pin)` → `envelope` → `authorize` → `record`.
-  - **Handling envelope violations:** If an action exceeds physical envelope limits, the command is refused (error class name not designed yet) and an `envelope_refused` event is emitted to the trace. At this point, the **verdict token is NOT consumed** because it has not entered the `authorize()` function.
+  - **Handling envelope violations:** If an action exceeds physical envelope limits, the command is refused with `EnvelopeRefusedError` (`NE1003`) and an `envelope_refused` event is emitted to the trace. At this point, the **verdict token is NOT consumed** because it has not entered the `authorize()` function.
 
 Sequence diagram of physical envelope hook execution:
 
