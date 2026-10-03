@@ -41,7 +41,7 @@ from ..hal.board import (
     available_boards,
     load_board_by_id,
 )
-from ..paths import gates_dir, repo_root
+from ..paths import fixtures_dir, gates_dir, repo_root
 from ..sim.serve import MCP_INIT_TIMEOUT_S
 from ..sim.serve import exit_on_signals as _exit_on_signals
 from ..trace import load_trace
@@ -1202,6 +1202,12 @@ def verify(
         table.add_row(name, *cells)
     console.print(table)
 
+    # RFC-0012 §3f clause 2: besides deciding alike, the model must *see* alike — each inference
+    # golden of fixtures/vision/golden/ (per model SHA-256, per frame) is held to what each board
+    # that declares `vision_in` gets, within that board's own tolerance. Counted apart.
+    inference_problems, inference_on = _verify_inference(columns)
+    problems += inference_problems
+
     empty = _empty_categories(
         {
             "gates resolved": (resolved, gates_root, "has no *.yaml gate that resolves"),
@@ -1244,6 +1250,19 @@ def verify(
                 for label, count in replayed_on.items()
                 if len(columns) > 1
             },
+            # Only when some board declares `vision_in` (RFC-0012 §3f clause 2): with none there
+            # is no camera to hold to a golden, and nothing to count.
+            **(
+                {
+                    "inference goldens compared": (
+                        sum(inference_on.values()),
+                        fixtures_dir() / "vision" / "golden",
+                        "had no golden compared on a board that declares vision_in",
+                    )
+                }
+                if inference_on
+                else {}
+            ),
         }
     )
     if empty is not None:
@@ -1268,6 +1287,7 @@ def verify(
             f"result, and {_replay_breakdown(replayed_on)} match the verdicts "
             "and pin commands they record."
             f"{_extension_breakdown(extension_on)}"
+            f"{_inference_breakdown(inference_on)}"
             f"{on_device}\n\n"
             "[yellow]Compared:[/yellow] decisions only — not timing. Timing equivalence "
             "arrives with TSK-S4-04.",
@@ -1318,6 +1338,63 @@ def _trace_primitives(trace: dict[str, Any]) -> list[str]:
     """The primitives a trace uses, in HAL order: what a board must declare to replay it."""
     used = {_EVENT_PRIMITIVE[e["type"]] for e in trace["events"] if e["type"] in _EVENT_PRIMITIVE}
     return [p for p in ALL_PRIMITIVES if p in used]
+
+
+def _verify_inference(columns: list[tuple[str, str, str | None]]) -> tuple[int, dict[str, int]]:
+    """
+    ``(problems, goldens compared per column)``: every inference golden of
+    `fixtures/vision/golden/`, checked on each column whose board declares `vision_in`, with that
+    board's `tolerance` (RFC-0012 §3f clause 2; `testing/vision_golden.py`). A board without a
+    camera, and `esp32s3` (its inference is a device capture, TSK-I3a), are skipped.
+    """
+    from ..testing.vision import check_scene_inference
+    from ..testing.vision_golden import InferenceGolden, tolerance_of
+
+    golden_dir = fixtures_dir() / "vision" / "golden"
+    compared: dict[str, int] = {}
+    problems = 0
+    for label, target, board_id in columns:
+        if target == "esp32s3" or board_id is None:
+            continue
+        try:
+            tolerance = tolerance_of(load_board_by_id(board_id))
+        except NeuroEdgeError:
+            continue  # a tree without this board: the empty-category check says so
+        if tolerance is None:
+            continue
+        compared.setdefault(label, 0)
+        console.print(
+            f"\n[bold]Inference goldens on {escape(label)}[/bold] (score_abs "
+            f"{tolerance.score_abs}, box_iou_min {tolerance.box_iou_min})"
+        )
+        for path in sorted(golden_dir.glob("*.json")):
+            try:
+                check_scene_inference(
+                    fixtures_dir() / "vision" / path.stem,
+                    InferenceGolden.load(path),
+                    tolerance,
+                    label,
+                )
+            except NeuroEdgeError as error:
+                problems += 1
+                err_console.print(
+                    f"  [red]✗[/red] {path.name} on {escape(label)}: [{error.code}] "
+                    f"{escape(error.why)}\n    fix: {escape(error.how)}"
+                )
+                continue
+            compared[label] = compared.get(label, 0) + 1
+            console.print(f"  [green]✓[/green] {path.stem}")
+    return problems, compared
+
+
+def _inference_breakdown(inference_on: dict[str, int]) -> str:
+    if not any(inference_on.values()):
+        return ""
+    return (
+        " The inference goldens match within each board's tolerance: "
+        + ", ".join(f"{count} on {label}" for label, count in inference_on.items() if count)
+        + "."
+    )
 
 
 def _extension_breakdown(extension_on: dict[str, dict[str, int]]) -> str:

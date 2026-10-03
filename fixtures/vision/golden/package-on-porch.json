@@ -1,0 +1,93 @@
+{
+  "$format": "neuroedge.vision-golden/v1",
+  "model": {
+    "name": "package-on-porch",
+    "sha256": "afdc76bf55b067de2773ff4f324d33f6d9a7ec3ab4d68c0650903258f8805239"
+  },
+  "frames": {
+    "0100aeffab8416d8d6bbcbdcc7bb5368346e461d1056592a9f3cefff044f9713": [
+      {
+        "label": "package",
+        "score": 0.9,
+        "box": [
+          0.3,
+          0.6,
+          0.6,
+          0.95
+        ]
+      }
+    ],
+    "0e5b01b755f604387cde2524397544463d297375edadd560ffd3c28b0c50fff5": [
+      {
+        "label": "package",
+        "score": 0.91,
+        "box": [
+          0.3,
+          0.6,
+          0.6,
+          0.95
+        ]
+      }
+    ],
+    "1da2358c0ccf6dacce455ff51ee612110800ff57c7bb54d709fb15567a367407": [
+      {
+        "label": "package",
+        "score": 0.9,
+        "box": [
+          0.3,
+          0.6,
+          0.6,
+          0.95
+        ]
+      }
+    ],
+    "968221afa580bd1597f69526c80ea942172d302154d53642f71764df7cbf5f46": [
+      {
+        "label": "package",
+        "score": 0.9,
+        "box": [
+          0.3,
+          0.6,
+          0.6,
+          0.95
+        ]
+      }
+    ],
+    "b96e3a9db379e71fec08d74fdd5a2d4a0a17f3c2ebce5c0259428cb40e18e678": [
+      {
+        "label": "package",
+        "score": 0.9,
+        "box": [
+          0.3,
+          0.6,
+          0.6,
+          0.95
+        ]
+      }
+    ],
+    "f8c6d1380df6551cce92e33365bafd93d4d35092acf1d23cde5bebc47eb9a11b": [
+      {
+        "label": "package",
+        "score": 0.6,
+        "box": [
+          0.3,
+          0.6,
+          0.6,
+          0.95
+        ]
+      }
+    ],
+    "fd64212703886a13b0f5d9db9d012f27ded1d769195059fce74fc54aba47420c": [
+      {
+        "label": "package",
+        "score": 0.92,
+        "box": [
+          0.3,
+          0.6,
+          0.6,
+          0.95
+        ]
+      }
+    ]
+  }
+}
