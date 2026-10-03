@@ -54,7 +54,8 @@ không bao giờ cho phép, nên gate viết lỏng đến đâu thì giới h�
 bì hoàn trả toàn bộ phần đã giữ.
 
 **Ngoại lệ duy nhất của luật "không lệnh nào ra phần cứng mà không có ALLOW"** (RFC-0007 §3d, §8;
-Q-62): lệnh **về phía an toàn**. Đó là `digital.out` `off`, và mọi lệnh HAL tự phát khi hết `duration_ms`,
+Q-62): lệnh **về phía an toàn**. Đó là `digital.out` `off` (kênh PWM: `duty = 0` và thả `enable_pin`, kể cả một lệnh
+`pwm` có `duty` lượng tử về 0 — RFC-0010 §9.6), và mọi lệnh HAL tự phát khi hết `duration_ms`,
 hết `max_continuous_ms`, khi cắt lời, khi BLOCK, mất liên lạc, `hal.close()` hoặc khi tiến trình giám sát
 thả line. Các lệnh này **không qua phong bì, không cần ALLOW hay token, không chờ `min_interval_ms`** —
 `min_interval_ms` chỉ từ chối lệnh *bật* kế tiếp, tính từ lúc lần bật trước kết thúc. Lý do: lệnh đưa cơ
