@@ -85,7 +85,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 |  | **I4a — NeuroBrain trên host** | 2027-01-03 | Dựng bằng hội thoại có hợp đồng trên `sim` và `linux`, phủ bốn gói (Q-55) | **0 / 33** | ⏳ Chưa bắt đầu | I2a, I4 | tag `v0.4.1` + extra `[lab]` (nội bộ) |
 |  | **I5 — Thoại trên Box-3** | 2027-01-03 | Demo "nói chuyện với con chip $5": thoại trên ESP32-S3, gate trên chip, cùng vết ghi replay trong CI | **0 / 7** | ⏳ Chưa bắt đầu | I3, I4 | tag `v0.5.0` + firmware (nội bộ) |
 |  | **I5a — NeuroBrain trên chip** | 2027-01-24 | Lab action, gate và phong bì của NeuroBrain chạy trên Box-3 và bo camera | **0 / 2** | ⏳ Chưa bắt đầu | I3a, I4a, I5 | tag `v0.5.1` + firmware (nội bộ) |
-| **Công khai** | **I6 — Công khai** | 2027-01-31 | Repo công khai, `pip install neuroedge` từ PyPI, lược đồ ở URL công khai, video demo thoại và bốn gói trên `sim`, `linux` và `esp32s3`; MCP qua mạng có xác thực, Gated Tool Profile đóng băng (Q-58) | **3 / 10** | 🟡 Quét bí mật, SBOM xong; chờ I5a | I2b, I5a | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
+| **Công khai** | **I6 — Công khai** | 2027-01-31 | Repo công khai, `pip install neuroedge` từ PyPI, lược đồ ở URL công khai, video demo thoại và bốn gói trên `sim`, `linux` và `esp32s3`; MCP qua mạng có xác thực, hợp đồng cho người tích hợp đóng băng, bề mặt Python công khai (Q-58, Q-63) | **3 / 12** | 🟡 Quét bí mật, SBOM xong; chờ I5a | I2b, I5a | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
 | **v1.0 = MVP** | **I7 — v1.0** | 2027-02-21 | Lần ra mắt MVP (Q-52): OTA A/B có ký, bảo mật thiết bị, ổn định 24 giờ trên chip; đủ A1–A12 | **4 / 12** | 🟡 Ghim Actions, attestation xong; OTA A/B có ký + rollback xong trên QEMU; chờ I6 | I6 | `v1.0.0` |
 | **Beta** | **I8 — Developer Beta** | 2027-03-21 | 50–100 lập trình viên ngoài trên dòng `1.0.x`; đo B1–B5, chọn nhánh | **0 / 1** | ⏳ Chưa bắt đầu | I7 | `1.0.x` (chỉ bản vá) |
 | **v1.1** | **I9 — Lớp provider v1.1 và Fleet OS** | sau I8 (nhánh A) | Một endpoint và credential cho cả đội, failover khai trong cấu hình, cấp phát, OTA canary, tải vết ghi sự cố | **0 / 9** | ⏳ Chờ nhánh A | I8 | `1.1.0` + dịch vụ |
@@ -121,7 +121,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
 │    1. Đặt 2 Box-3 + 1 RPi 5 + 2 M5Stack CoreS3 (Phụ lục B, Q-61) — về trước 11-01      │
 │    2. Làn host I2a: TSK-W1-02 (numeric + NETR v2) trước, rồi RFC-0007, 0010 → 0013     │
-│    3. Song song: TSK-I6-05 (RFC Tool Profile), TSK-P2-04 (MCP qua mạng, Q-58)          │
+│    3. Song song: TSK-I6-05/06/07 (hợp đồng, API Python, RFC dữ kiện ngoài), TSK-P2-04  │
 │    4. Box-3 về: nối driver màn hình vào ne_ui (TSK-S4-01), đo trên silicon             │
 │    5. Wake-word có giấy phép (#49); Wi-Fi (#50); lock (#54); I1-02 trước đo TTFV       │
 │                                                                                        │
@@ -983,7 +983,9 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 | **TSK-I6-03** | **Video demo thoại trên `sim`, `linux` và Box-3:** cùng agent, cùng gate, cùng vết ghi replay trong CI — tài sản trực quan của A8 | FR-DX-06 | V3 + V2 | ⏳ Chưa bắt đầu | `README.md` |
 | **TSK-I6-04** | **Kênh cộng đồng** (Discord hoặc GitHub Discussions) và quy trình tiếp nhận lỗi | — | V3 | ⏳ Chưa bắt đầu | — |
 | **TSK-P2-04** | **MCP qua mạng có xác thực** (Streamable HTTP + OAuth 2.1 theo Q-32, token theo thiết bị, mTLS như NFR-SEC-04); mặc định tắt, stdio vẫn là mặc định; thiếu cấu hình xác thực thì không khởi động; kèm ca "lặp lời gọi bị chặn tới khi lọt" (`TODOS.md` #29) và mục mới trong threat model — dời từ I14 (Q-58) | NFR-SEC-09, FR-CLI-12 | V1 | ⏳ Chưa bắt đầu | `docs/spec/tool_calling.md` §8 · `docs/spec/threat_model.md` §2b |
-| **TSK-I6-05** | **Đóng băng Gated Tool Profile vào `schemas/`** (Q-58): RFC rồi PR mã (`CONTRIBUTING.md` §3) cho lược đồ phong bì `ToolCall` và kết quả, rút từ corpus `fixtures/tool_calls/` (TSK-S3-24); corpus thẩm định theo lược đồ mới; lược đồ lên `schema.neuroedge.dev` cùng TSK-I6-02 | FR-MDL-10, FR-GOV-01 | V1 | ⏳ Chưa bắt đầu | `docs/rfc/` · `schemas/` · `docs/spec/tool_calling.md` §9 |
+| **TSK-I6-05** | **Đóng băng hợp đồng cho người tích hợp vào `schemas/`** (Q-58, mở phạm vi ở Q-63): một RFC rồi PR mã (`CONTRIBUTING.md` §3) cho (1) lược đồ phong bì `ToolCall` và kết quả của Gated Tool Profile, rút từ corpus `fixtures/tool_calls/` (TSK-S3-24); (2) khoá định danh phiên bản lược đồ của `board.v1` (gate và vết ghi đã có `schema`/`$schema`, bo mạch chưa — RFC quyết cách thêm mà tệp `boards/*.toml` hiện có vẫn hợp lệ); (3) danh mục mã lỗi `NE*` ở dạng máy đọc được, để SDK ngôn ngữ khác sinh mã từ đó. Corpus thẩm định theo lược đồ mới; lược đồ lên `schema.neuroedge.dev` cùng TSK-I6-02. `agent.toml` vẫn không thuộc `schemas/` (`tool_calling.md` §9) | FR-MDL-10, FR-GOV-01, FR-GOV-02, FR-HAL-02 | V1 | ⏳ Chưa bắt đầu | `docs/rfc/` · `schemas/` · `docs/spec/tool_calling.md` §9 |
+| **TSK-I6-06** | **Bề mặt Python công khai** (Q-63): đặc tả `docs/spec/python_api.md` nói điều gì là công khai, chính sách SemVer và quy tắc ngừng hỗ trợ (PRD §9 hứa SemVer cho "API công khai" nhưng chưa định nghĩa); `neuroedge.__all__` đủ cho người tích hợp (`SimHAL`, `LinuxHAL`, `ToolCall`, `dispatch`, `TraceRecorder`, biên dịch và duyệt cây, các lỗi còn thiếu); hàm khởi động MCP server gọi được từ mã Python (hôm nay chỉ có lệnh CLI); lớp gốc `HardwareAbstractionLayer` khai chữ ký audio; `ToolCall` báo nguồn sai bằng lỗi `NE*` thay cho `ValueError`; test ghim `__all__` để đổi bề mặt là CI báo | FR-DX-02, FR-GOV-03 | V1 | ⏳ Chưa bắt đầu | `docs/spec/python_api.md` · `python/neuroedge/__init__.py` · `python/tests/test_public_api.py` |
+| **TSK-I6-07** | **RFC dữ kiện từ tiến trình ngoài** (Q-63; chỉ RFC, mã sau v1.0 — `TODOS.md` #56): cách một tiến trình khác (Frigate, OpenCV, bộ cảm biến, tích hợp Home Assistant) đưa quan sát vào gate mà không có model hay thư viện thị giác trong lõi — nguồn khai trong gate, danh tính nguồn ghi vào vết ghi, `age_ms` theo định nghĩa chung (Q-62), nguồn rớt ⇒ `criterion_unavailable`, không bao giờ cấp ALLOW; khớp RFC-0012 (§9.2: nhãn model → dữ kiện gõ kiểu) | FR-MDL-04, FR-MDL-10 | V1 | ⏳ Chưa bắt đầu | `docs/rfc/` · `docs/spec/tool_calling.md` |
 
 **Tiêu chí ra I6:**
 
@@ -996,7 +998,9 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 - [ ] **Tiêu chí 5:** README có video demo thoại trên ba target (TSK-I6-03).
 - [ ] **Tiêu chí 6:** Telemetry opt-in chạy, có thông báo lần đầu và tài liệu quyền riêng tư; đo được B1, B4, B5 (TSK-S3-09).
 - [ ] **Tiêu chí 7:** Một client MCP trên máy khác gọi `@action` qua Streamable HTTP + OAuth 2.1 + mTLS, mọi lời gọi qua gate và vào vết ghi; thiếu xác thực ⇒ từ chối; bật cổng mạng mà thiếu cấu hình xác thực ⇒ không khởi động; N lần lặp cùng dữ kiện ⇒ N `BLOCK` (TSK-P2-04).
-- [ ] **Tiêu chí 8:** Gated Tool Profile nằm trong `schemas/` qua RFC được chấp thuận; mọi ca của `fixtures/tool_calls/` thẩm định theo lược đồ đó (TSK-I6-05).
+- [ ] **Tiêu chí 8:** Gated Tool Profile, định danh phiên bản `board.v1` và danh mục mã lỗi nằm trong `schemas/` qua RFC được chấp thuận; mọi ca của `fixtures/tool_calls/` thẩm định theo lược đồ đó (TSK-I6-05).
+- [ ] **Tiêu chí 9:** `docs/spec/python_api.md` có thật; một dự án ngoài chỉ `import neuroedge` (không đường dẫn nội bộ) dựng được HAL, nạp gate, gọi `dispatch` và khởi động MCP server; test ghim `__all__` xanh (TSK-I6-06).
+- [ ] **Tiêu chí 10:** RFC dữ kiện từ tiến trình ngoài được chấp thuận; mã hiện thực không thuộc I6 (TSK-I6-07).
 
 ### 4.8 I7 — v1.0
 
@@ -1487,6 +1491,7 @@ Chỉ cho increment sau Beta (Q-52). Cắt từ trái sang phải khi increment 
 | **Q-60** | Một người + AI agent; người trong vòng cho task phần cứng, người ngoài, chữ ký (thay phần nhân sự của Q-52) | 2026-10-01 | §1.1, §1.3 |
 | **Q-61** | Bo camera của `esp32s3`: M5Stack CoreS3 | 2026-10-01 | TSK-I3a-01, RFC-0013 §9.1, Phụ lục B |
 | **Q-62** | Sửa sáu RFC theo review độc lập: lệnh an toàn không bị chặn, tự tắt, phong bì ghi bền, `NETR` v2 ghim byte | 2026-10-01 | RFC-0007, RFC-0009 → RFC-0013 §9 |
+| **Q-63** | Khoảng hở nền tảng cho người tích hợp: bề mặt Python công khai, mở phạm vi RFC hợp đồng, RFC dữ kiện từ tiến trình ngoài | 2026-10-02 | TSK-I6-05, TSK-I6-06, TSK-I6-07, `TODOS.md` #52 → #56 |
 | **Q-37** | Token `motion.*` thuê có hạn, mỗi lệnh qua gate gia hạn | 2026-09-25 | RFC-motion |
 | **Q-38** | Chứng nhận an toàn: OUT tạm thời, dừng khẩn phần cứng bắt buộc cho robot di động | 2026-09-25 | Câu C6 của bộ phỏng vấn (Q-56), `TODOS.md` #40 |
 | **Q-39** | Roadmap theo increment; không phát hành ra ngoài tới khi công khai (I6: demo thoại trên `sim`, `linux`, Box-3); thêm một kỹ sư nhúng | 2026-09-25 | Toàn roadmap |

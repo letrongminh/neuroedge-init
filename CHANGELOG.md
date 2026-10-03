@@ -262,6 +262,14 @@ bản gói.
 - **Q-20 — bộ chuẩn bị cổng nhu cầu 2026-10-25** (`TODOS.md` #19): `docs/business/cong-nhu-cau-2026-10-25/` —
   câu hỏi cổng, demo ≤ 5 phút chỉ bằng lệnh đã chạy thật, bộ phỏng vấn, thang chấm, trang ghi phiếu.
 
+#### Đã đổi — Khoảng hở nền tảng cho người tích hợp (2026-10-02, Q-63)
+
+- **Q-63 — ba khoảng hở nền tảng chưa có task, vào I6, ngày dự báo không đổi.** TSK-I6-06: bề mặt Python công khai
+  (đặc tả, SemVer, `__all__` đủ, khởi động MCP server từ mã Python). TSK-I6-05 mở phạm vi: cùng RFC khoá định danh phiên
+  bản `board.v1` và danh mục mã lỗi máy đọc được. TSK-I6-07: RFC dữ kiện từ tiến trình ngoài (mã sau v1.0). I6 thêm tiêu
+  chí ra 9, 10. Việc hoãn có chủ ý ghi ở `TODOS.md` #52 → #56 (cầu MQTT, OpenTelemetry, cầu âm thanh ngoài, thiết bị do OSS
+  khác quản lý, hiện thực dữ kiện ngoài). Kiểm: `pytest tests/test_plan_contract.py tests/test_cpo_dashboard.py`.
+
 #### Đã đổi — Bề mặt tích hợp vào MVP, giấy phép, mô hình vận hành (2026-10-01, Q-58 → Q-62)
 
 - **Tác giả commit là chủ GitHub của dự án.** `CONTRIBUTING.md` §2 bước 4; `.mailmap` gộp danh tính máy cục bộ cũ về

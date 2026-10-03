@@ -119,9 +119,10 @@ increment is in roadmap §0.2.
   agent framework via authenticated MCP. **First time outsiders can use it.**
 - **What the architecture adds:** package on PyPI with SBOM and attestation; schemas at public URLs `schema.neuroedge.dev`
   (A9); **integration surface** (Q-58): network MCP — Streamable HTTP, OAuth 2.1, per-device mTLS, disabled by default
-  (TSK-P2-04) — and Gated Tool Profile frozen into `schemas/` (TSK-I6-05). `partial`: secret scanning,
-  SBOM `done`.
-- **Contracts:** envelope schemas for `ToolCall` and results into `schemas/` via RFC; from here other OSS can implement
+  (TSK-P2-04) — and Gated Tool Profile frozen into `schemas/` (TSK-I6-05); a **public Python API** with a written
+  spec and versioning (TSK-I6-06, Q-63). `partial`: secret scanning, SBOM `done`.
+- **Contracts:** envelope schemas for `ToolCall` and results, a schema-version identifier for `board.v1`, and the error-code
+  catalogue go into `schemas/` via RFC; from here other OSS can implement
   the profile under Apache-2.0 without depending on PolyForm NC code (Q-59).
 - **The promise is proven by:** clients on other machines still only send *requests*; missing authentication ⇒ rejected;
   enabling network port without auth configuration ⇒ refuses to start; repeating a call N times ⇒ N times `BLOCK`.
