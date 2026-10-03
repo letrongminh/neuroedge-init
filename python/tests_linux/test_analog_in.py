@@ -203,6 +203,7 @@ def agent(directory: Path) -> Path:
     return directory / "agent.toml"
 
 
+@pytest.mark.usefixtures("fresh_actions")
 @pytest.mark.parametrize(
     ("code", "verdict"),
     [
@@ -249,6 +250,7 @@ def test_the_kernel_voltage_decides_the_gate_and_replays(
     assert replayed.warnings == []
 
 
+@pytest.mark.usefixtures("fresh_actions")
 def test_an_adc_that_is_not_there_blocks_criterion_unavailable(ads7828, monkeypatch, tmp_path):
     monkeypatch.setenv(ANALOG_ENV, f"adc0=hwmon:ads7828@{ads7828}/in0")
     session = SimSession.load(agent(tmp_path), target="linux")  # preflight reads the chip

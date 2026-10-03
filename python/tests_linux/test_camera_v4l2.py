@@ -139,6 +139,7 @@ def person_everywhere(project: Path) -> Path:
     return toml
 
 
+@pytest.mark.usefixtures("fresh_actions")
 def test_a_session_on_linux_reads_the_camera_and_the_gate_decides(tmp_path):
     project = tmp_path / "gate-watch"
     shutil.copytree(AGENT, project, ignore=shutil.ignore_patterns("__pycache__"))

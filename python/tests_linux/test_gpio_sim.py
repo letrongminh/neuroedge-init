@@ -371,6 +371,7 @@ def test_a_level_set_through_gpio_sim_is_a_gate_fact_that_allows_and_blocks(sysf
     assert kernel_value(sysfs, "gate_relay") == 0
 
 
+@pytest.mark.usefixtures("fresh_actions")
 def test_an_input_line_that_cannot_be_read_blocks_criterion_unavailable(sysfs, tmp_path):
     import gpiod
 

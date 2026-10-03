@@ -15,12 +15,13 @@ def envelope_state(tmp_path, monkeypatch):
     monkeypatch.setenv("NEUROEDGE_LINUX_ENVELOPE_INIT", "1")
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def fresh_actions():
     """
-    Many tests here copy an agent into their own tmp dir, so the same @action names come from a
-    new path each time; the action registry is per process. Isolate it per test, as
-    `tests/conftest.py::fresh_actions` does for the host suite.
+    For a test that copies an agent into its own tmp dir: the same @action names then come from
+    a new path, and the action registry is per process. Isolate it for that test, as
+    `tests/conftest.py::fresh_actions` does for the host suite. Not autouse: tests that load an
+    agent already imported (the canonical traces) need the registry as it is.
     """
     from neuroedge.actions import spec
 
