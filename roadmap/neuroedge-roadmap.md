@@ -121,8 +121,8 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 │ 1. VỪA HOÀN THÀNH — bước 1 của chặng A: TSK-N0-02, TSK-N3-03, TSK-I6-06                │
 │    • TSK-N0-02: FR-HAL-01 tách lõi / mở rộng (RFC-0013); `--lab` vào FR-CLI-12         │
 │    • TSK-N3-03: `ads7828` và `ina219` đọc đúng trên `i2c-stub`, không cần IIO (PR #87) │
-│    • TSK-I6-06: `__all__` đủ + ghim; `serve_mcp`; `ToolCallError` NE1004; Q-64 chốt    │
-│      quy tắc ngừng hỗ trợ. Còn mở: `python_api.md` §6 (`SimSession` trong mẫu, CLI)    │
+│    • TSK-I6-06: API Python + CLI công khai, ghim bằng test; `serve_mcp`; `SimSession`  │
+│      công khai; NE1004 (PR #89). Q-64: quy tắc ngừng hỗ trợ, hợp đồng CLI              │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
