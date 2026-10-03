@@ -7,7 +7,7 @@ docs/spec/hal_mcu_review.md for what that buys on the microcontroller.
 """
 
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ..errors import ActionContractViolation, BoardCapabilityError
 from .board import (
@@ -18,6 +18,10 @@ from .board import (
     load_board,
     load_board_by_id,
 )
+
+if TYPE_CHECKING:
+    from .audio import WavSource
+    from .audio_live import LiveAudioIn, LiveAudioOut
 
 __all__ = [
     "PRIMITIVES",
@@ -165,6 +169,31 @@ class HardwareAbstractionLayer:
 
     def display(self, frame: Any, *, called_from: str = "<unknown>", **_: Any) -> Any:
         self._not_on_target("display", called_from)
+
+    # -- audio: the signatures `SimHAL` and `LinuxHAL` implement -------------------
+    def audio_in(self, called_from: str = "<unknown>") -> str | None:
+        """One typed utterance, or None when nothing is queued (the text input of `sim`)."""
+        self._not_on_target("audio.in", called_from)
+
+    def audio_out(self, text: str, called_from: str = "<unknown>") -> None:
+        """Say `text` (the text output of `sim`)."""
+        self._not_on_target("audio.out", called_from)
+
+    def audio_file(self, path: Any, called_from: str = "<unknown>") -> "WavSource":
+        """A WAV file as `audio.in`: PCM frames from a file, never a microphone."""
+        self._not_on_target("audio.in", called_from)
+
+    def audio_source(self, called_from: str = "<unknown>") -> "LiveAudioIn":
+        """The live capture device as `audio.in`."""
+        self._not_on_target("audio.in", called_from)
+
+    def audio_sink(self, called_from: str = "<unknown>") -> "LiveAudioOut":
+        """The live playback device as `audio.out`."""
+        self._not_on_target("audio.out", called_from)
+
+    def speaker(self, called_from: str = "<unknown>") -> Any:
+        """`audio.out` as a timeline at the board's rate (`play`, `stop`, `render`, `write`)."""
+        self._not_on_target("audio.out", called_from)
 
     def pin(self, name: str) -> PinAssertion:
         """
