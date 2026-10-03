@@ -377,6 +377,10 @@ class SupervisorClient:
     def get(self, pin: str) -> bool:
         return bool(self._expect({"op": "get", "pin": pin})["active"])
 
+    def alive(self) -> bool:
+        """The process is running and not closed: its lines can be commanded."""
+        return not self._closed and self._process.poll() is None
+
     def close(self) -> None:
         """Every line off, the lines released, the process gone. Idempotent."""
         if self._closed:

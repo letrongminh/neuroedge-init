@@ -30,6 +30,10 @@ def envelope_state(tmp_path, monkeypatch):
     """
     monkeypatch.setenv("NEUROEDGE_LINUX_ENVELOPE_STATE", str(tmp_path / "envelope-state"))
     monkeypatch.setenv("NEUROEDGE_LINUX_ENVELOPE_INIT", "1")
+    # The supervisor process needs the real gpiod; these tests stand a fake in for it inside the
+    # process, so they opt out of supervision explicitly. Tests of supervision pass
+    # `supervise=True`, or delete this variable to see the default (`test_hal_linux_envelope.py`).
+    monkeypatch.setenv("NEUROEDGE_LINUX_SUPERVISE", "0")
 
 
 @pytest.fixture(scope="session")

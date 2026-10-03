@@ -51,7 +51,7 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
-from ..errors import BoardCapabilityError
+from ..errors import BoardCapabilityError, EnvelopeRefusedError
 from . import Authorizer, HardwareAbstractionLayer, _require_signature
 from .audio import (
     Speaker,
@@ -107,7 +107,9 @@ AUDIO_ENV = "NEUROEDGE_LINUX_AUDIO"  # file | live
 AUDIO_IN_ENV = "NEUROEDGE_LINUX_AUDIO_IN"  # a PipeWire node (PortAudio name)
 AUDIO_OUT_ENV = "NEUROEDGE_LINUX_AUDIO_OUT"
 AUDIO_BACKENDS = ("file", "live")
-SUPERVISE_ENV = "NEUROEDGE_LINUX_SUPERVISE"  # "1": the supervisor process holds the actuator lines
+SUPERVISE_ENV = (
+    "NEUROEDGE_LINUX_SUPERVISE"  # "0" opts out of the supervisor process (tests, debugging)
+)
 # The nodes `libpipewire-module-echo-cancel` creates (Q-22, §6.1 of
 # docs/spec/simulation_coverage.md): capture reads the echo-cancelled `source`,
 # playback writes the reference into `sink`. Named on purpose: the default device
@@ -262,12 +264,17 @@ class LinuxHAL(HardwareAbstractionLayer):
             )
         if needs:
             self.preflight(**needs)
-        # With supervision the lines of the pins that have an envelope are held by a process
-        # of its own, which drops them when the runtime freezes (RFC-0007 §3d, hal/supervisor.py);
-        # the runtime keeps only the pins that carry no load.
+        # Supervision is ON: the lines of the pins that have an envelope are held by a process
+        # of its own, which drops them when the runtime freezes (RFC-0007 §3d, §9 item 9,
+        # hal/supervisor.py); the runtime keeps only the pins that carry no load. The opt-out
+        # is explicit — `supervise=False` or NEUROEDGE_LINUX_SUPERVISE=0, for tests and
+        # debugging — and is recorded: `supervision` is "on", "off" or "failed" (a session
+        # writes it to the trace metadata). Replay never supervises: it is no deployment.
         if supervise is None:
-            supervise = os.environ.get(SUPERVISE_ENV) == "1" and not replay
+            supervise = os.environ.get(SUPERVISE_ENV) != "0" and not replay
         self.supervisor: SupervisorClient | None = None
+        self.supervision = "on" if supervise else "off"
+        self._supervisor_error: str | None = None
         self._supervised = frozenset(
             pin for pin in self.lines if supervise and board.envelope(pin) is not None
         )
@@ -281,6 +288,12 @@ class LinuxHAL(HardwareAbstractionLayer):
                     on_drop=self._supervisor_dropped,
                     **dict(supervisor_options or {}),
                 )
+            except (BoardCapabilityError, OSError) as exc:
+                # Never "carry on unsupervised": the pins it would have held are refused an
+                # `on` (`supervisor_unavailable`) and an `off` is a no-op, nobody holds them.
+                self.supervision = "failed"
+                self._supervisor_error = getattr(exc, "why", None) or str(exc)
+                self.events.emit("supervision_unavailable", {"reason": self._supervisor_error})
             except BaseException:
                 for held in self._requests.values():
                     held.release()
@@ -352,7 +365,14 @@ class LinuxHAL(HardwareAbstractionLayer):
     def _set(self, pin: str, active: bool, limit_ms: float | None = None) -> None:
         """Drive a line. `limit_ms`: with supervision, the longest the line may stay on."""
         if pin in self._supervised:
-            assert self.supervisor is not None
+            if self.supervisor is None or not self.supervisor.alive():
+                if active:
+                    raise BoardCapabilityError(
+                        where=f"LinuxHAL -> digital.out {pin!r}",
+                        why="the supervisor of the actuator lines is not running",
+                        how="restart the session; a pin is never turned on without it",
+                    )
+                return  # nobody holds the line, so it is down: an off has nothing to do
             self.supervisor.set(pin, active, limit_ms)
             return
         path, offset = self.lines[pin]
@@ -362,10 +382,14 @@ class LinuxHAL(HardwareAbstractionLayer):
     def line_value(self, pin: str) -> bool:
         """What the line is driven to right now (True = active)."""
         if pin in self._supervised:
-            assert self.supervisor is not None
+            if self.supervisor is None or not self.supervisor.alive():
+                return False
             return self.supervisor.get(pin)
         path, offset = self.lines[pin]
         return self._requests[path].get_value(offset) == self._gpiod.line.Value.ACTIVE
+
+    def _supervisor_alive(self) -> bool:
+        return self.supervisor is not None and self.supervisor.alive()
 
     def _supervisor_dropped(self, pin: str, cause: str) -> None:
         """The supervisor took a line down by itself — the runtime was late or frozen."""
@@ -424,6 +448,21 @@ class LinuxHAL(HardwareAbstractionLayer):
                 why=f"{pin!r} is a PWM channel of {self.board.id!r}; LinuxHAL has no PWM backend yet",
                 how="the PWM backend (RFC-0010 §3e) is not built yet; until then the channel is not driven",
             )
+        if operation != "off" and pin in self._supervised and not self._supervisor_alive():
+            # Before the envelope and `authorize`: nothing is reserved and no token is spent.
+            refusal = EnvelopeRefusedError(
+                f"{called_from} -> digital.out {pin!r}",
+                "the supervisor that must hold this actuator line is "
+                f"{'not running' if self.supervision == 'on' else 'unavailable'}"
+                f"{f' ({self._supervisor_error})' if self._supervisor_error else ''}, "
+                "so the pin is not turned on",
+                "restart the session; `off` still works. Opting out is for tests and debugging: "
+                "NEUROEDGE_LINUX_SUPERVISE=0",
+                reason="supervisor_unavailable",
+                event={"pin": pin, "operation": operation, "reason": "supervisor_unavailable"},
+            )
+            self._emit("envelope_refused", refusal.event)
+            raise refusal
         reservation = self._admit(pin, operation, duration_ms, signature, called_from)
         envelope = self.envelope
         if operation == "off":

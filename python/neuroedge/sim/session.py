@@ -731,6 +731,8 @@ class SimSession:
                 units={name: unit for name, (_, unit) in sensors.items() if unit is not None},
                 **options,
             )
+            # An audit sees whether the out-of-process line supervisor was on (RFC-0007 §3d).
+            events.metadata["supervision"] = hal.supervision
         else:
             given = options.pop("envelope", None)  # a caller's own envelope replaces the board's
             if given is None:

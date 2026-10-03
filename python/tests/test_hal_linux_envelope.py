@@ -225,3 +225,125 @@ def test_run_c_does_not_wait_for_the_cap_of_an_on_but_does_for_a_pulse(chips):
     hal.settle()
     assert hal.pulsing() == [] and not hal.line_value("porch_light")
     hal.close()
+
+
+# --- supervision is ON by default, and fail-closed (RFC-0007 §3d, §9 item 9) -----------------------
+
+
+class FakeSupervisor:
+    """What `LinuxHAL` needs of a `SupervisorClient`, with no process."""
+
+    started: list[FakeSupervisor] = []
+    fail_with: Exception | None = None
+
+    def __init__(self, lines, **options):
+        if FakeSupervisor.fail_with is not None:
+            raise FakeSupervisor.fail_with
+        self.lines, self.options, self.running = dict(lines), options, True
+        self.on: dict[str, bool] = {}
+        FakeSupervisor.started.append(self)
+
+    def alive(self):
+        return self.running
+
+    def set(self, pin, active, limit_ms=None):
+        self.on[pin] = active
+
+    def get(self, pin):
+        return self.on.get(pin, False)
+
+    def close(self):
+        self.running = False
+
+
+@pytest.fixture
+def fake_supervisor(monkeypatch):
+    from neuroedge.hal import linux
+
+    FakeSupervisor.started, FakeSupervisor.fail_with = [], None
+    monkeypatch.setattr(linux, "SupervisorClient", FakeSupervisor)
+    return FakeSupervisor
+
+
+def supervised_hal(chips, **kwargs):
+    pattern, table = chips
+    fake = FakeGpiod(table)
+    events = EventLog(target="linux", board_id="linux-rpi5")
+    consulted: list[str] = []
+    hal = LinuxHAL(
+        chip_glob=pattern,
+        gpiod=fake,
+        events=events,
+        authorize=lambda *args: consulted.append("authorize"),
+        **kwargs,
+    )
+    return hal, fake, events, consulted
+
+
+def test_supervision_is_on_by_default_and_holds_every_enveloped_line(
+    chips, fake_supervisor, monkeypatch
+):
+    monkeypatch.delenv("NEUROEDGE_LINUX_SUPERVISE")  # the suite opts out; a deployment does not
+    hal, fake, _, _ = supervised_hal(chips)
+    assert hal.supervision == "on"
+    (supervisor,) = fake_supervisor.started
+    assert sorted(supervisor.lines) == ["door_lock", "gate_relay", "porch_light"]
+    assert fake.requests == [] or all(not r.offsets for r in fake.requests), (
+        "the runtime holds none of the supervised lines"
+    )
+    hal.digital_out("porch_light", "on")
+    assert supervisor.on == {"porch_light": True}
+    hal.close()
+    assert supervisor.on["porch_light"] is False and not supervisor.running
+
+
+@pytest.mark.parametrize("how", ["env", "argument"])
+def test_the_opt_out_is_explicit_and_recorded(chips, fake_supervisor, monkeypatch, how):
+    monkeypatch.delenv("NEUROEDGE_LINUX_SUPERVISE")
+    if how == "env":
+        monkeypatch.setenv("NEUROEDGE_LINUX_SUPERVISE", "0")
+        hal, *_ = supervised_hal(chips)
+    else:
+        hal, *_ = supervised_hal(chips, supervise=False)
+    assert hal.supervision == "off" and fake_supervisor.started == []
+    hal.close()
+
+
+def test_a_supervisor_that_cannot_start_refuses_every_on_and_keeps_off_working(
+    chips, fake_supervisor
+):
+    from neuroedge.errors import BoardCapabilityError
+
+    fake_supervisor.fail_with = BoardCapabilityError("w", "no gpiod in the child", "h")
+    hal, fake, events, consulted = supervised_hal(chips, supervise=True)
+    assert hal.supervision == "failed"
+    assert events.of_type("supervision_unavailable") == [{"reason": "no gpiod in the child"}]
+    for operation in ("on", "pulse"):
+        with pytest.raises(EnvelopeRefusedError) as raised:
+            hal.digital_out("porch_light", operation, 100)
+        assert raised.value.reason == "supervisor_unavailable"
+        assert "no gpiod in the child" in raised.value.why and "off" in raised.value.how
+    assert consulted == [], "refused before authorize: no token is spent"
+    assert hal.pin("porch_light").never_pulsed()
+    assert [e["reason"] for e in events.of_type("envelope_refused")] == [
+        "supervisor_unavailable"
+    ] * 2
+    hal.digital_out("porch_light", "off")  # off always works
+    assert events.of_type("actuator_command") == [
+        {"pin": "porch_light", "operation": "off", "duration_ms": 0}
+    ]
+    hal.close()
+
+
+def test_a_supervisor_that_is_lost_refuses_the_next_on_and_not_the_off(chips, fake_supervisor):
+    hal, _, events, consulted = supervised_hal(chips, supervise=True)
+    hal.digital_out("porch_light", "on")
+    assert consulted == ["authorize"]
+    fake_supervisor.started[0].running = False  # the process died: its lines went down with it
+    with pytest.raises(EnvelopeRefusedError) as raised:
+        hal.digital_out("door_lock", "on")
+    assert raised.value.reason == "supervisor_unavailable"
+    assert consulted == ["authorize"]
+    hal.digital_out("porch_light", "off")
+    assert not hal.line_value("porch_light")
+    hal.close()

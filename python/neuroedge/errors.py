@@ -76,7 +76,7 @@ class EnvelopeRefusedError(ActionContractViolation):
     """
     A command to a pin or channel with a safety envelope was refused because it would break
     the envelope. `reason` is ``window_budget``, ``min_interval_ms``, ``already_on``,
-    ``max_continuous_ms`` or ``window_unreadable``, and `event` is the `envelope_refused`
+    ``max_continuous_ms``, ``window_unreadable`` or ``supervisor_unavailable``, and `event` is the `envelope_refused`
     event data the HAL records (RFC-0007 §3e): what replay and an audit need. No pin is driven
     and no token is spent. The command toward the safe state is never refused. Raised by the
     envelope hook of `HardwareAbstractionLayer.digital_out` (TSK-N2-01).

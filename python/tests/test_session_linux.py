@@ -600,3 +600,30 @@ def test_a_linux_session_can_be_given_an_envelope_of_its_own(driveway, gpio):
         assert session.hal.envelope is given
     finally:
         session.close()
+
+
+def test_the_trace_of_a_linux_session_says_whether_supervision_was_on(driveway, gpio, monkeypatch):
+    """RFC-0007 §3d: an audit can see a session ran without — or failed to start — its supervisor."""
+    session = SimSession.load(driveway, target="linux")  # the suite opts out (conftest)
+    try:
+        assert session.trace()["metadata"]["supervision"] == "off"
+    finally:
+        session.close()
+
+    from neuroedge.errors import BoardCapabilityError
+
+    def cannot_start(*args, **kwargs):
+        raise BoardCapabilityError("w", "no supervisor today", "h")
+
+    monkeypatch.setattr(linux, "SupervisorClient", cannot_start)
+    session = SimSession.load(driveway, target="linux", target_options={"supervise": True})
+    try:
+        assert session.trace()["metadata"]["supervision"] == "failed"
+        from neuroedge.errors import EnvelopeRefusedError
+
+        with pytest.raises(EnvelopeRefusedError) as raised:
+            anyio.run(session.call_tool, ToolCall("porch_light_on", {}, source="mcp"))
+        assert raised.value.reason == "supervisor_unavailable"
+        assert line(gpio, "porch_light") is Value.INACTIVE
+    finally:
+        session.close()
