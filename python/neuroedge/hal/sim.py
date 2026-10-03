@@ -58,6 +58,7 @@ from .audio_live import (
     _import_sounddevice as _live_import_sounddevice,
 )
 from .board import BoardProfile, load_board_by_id
+from .envelope import Reservation, SafetyEnvelope
 from .i2c_bus import I2CReader, ReadFault, ScriptedI2C
 
 AUDIO_ENV = "NEUROEDGE_AUDIO"
@@ -275,6 +276,7 @@ class SimHAL(HardwareAbstractionLayer):
         events: EventSink | None = None,
         sensors: Mapping[str, Any] | None = None,
         authorize: Authorizer = _require_signature,
+        envelope: SafetyEnvelope | None = None,
         audio: str | None = None,
         audio_in_device: str | None = None,
         audio_out_device: str | None = None,
@@ -287,7 +289,7 @@ class SimHAL(HardwareAbstractionLayer):
                 why=f"board {board.id!r} targets {board.target!r}, not 'sim'",
                 how="use a sim board such as sim-default, or the HAL for that target",
             )
-        super().__init__(target="sim", board=board, authorize=authorize)
+        super().__init__(target="sim", board=board, authorize=authorize, envelope=envelope)
         self.events: EventSink = events if events is not None else _NullSink()
         self._sensors: dict[str, Any] = dict(sensors or {})
         self._units: dict[str, str] = {}
@@ -362,11 +364,27 @@ class SimHAL(HardwareAbstractionLayer):
             )
         if delay_ms:
             return self._schedule(pin, operation, duration_ms, signature, called_from, delay_ms)
-        super().digital_out(pin, operation, duration_ms, signature, called_from)
+        reservation = self._admit(pin, operation, duration_ms, signature, called_from)
+        if operation == "off" and self.envelope is not None:
+            self.envelope.ended(pin)
         self.events.emit(
             "actuator_command", {"pin": pin, "operation": operation, "duration_ms": duration_ms}
         )
-        return PendingCommand(pin, operation, duration_ms, self.events, token=signature)
+        return PendingCommand(
+            pin,
+            operation,
+            duration_ms,
+            self.events,
+            on_cancel=self._ending(reservation),
+            token=signature,
+        )
+
+    def _ending(self, reservation: Reservation | None) -> Callable[[], None] | None:
+        """What aborting a command does to its pin: it goes off now, and the envelope is told."""
+        envelope = self.envelope
+        if reservation is None or envelope is None:
+            return None
+        return lambda: envelope.ended(reservation.name, reservation)
 
     def _schedule(
         self,
@@ -390,9 +408,11 @@ class SimHAL(HardwareAbstractionLayer):
             )
         # Checked and authorised now — the verdict is spent when the gate allowed —
         # but the pin is recorded only on delivery, so a cancelled command never moved it.
-        if self.board is not None:
-            self.board.require_pin(pin, called_from=called_from)
-        self.authorize(signature, pin, called_from)
+        # The envelope reserves the on-time of the delivery, so a command that would not
+        # fit is refused now, not when the pin is meant to move.
+        reservation = self._admit(
+            pin, operation, duration_ms, signature, called_from, after_ms=delay_ms, record=False
+        )
         # A verdict is fresh for its TTL (actions/token.py); a command delivered after
         # that would move the pin on facts the gate never saw, so it is refused now.
         issued_at = getattr(signature, "issued_at_ms", None)
@@ -400,6 +420,8 @@ class SimHAL(HardwareAbstractionLayer):
         if issued_at is not None and ttl is not None:
             deliver_at = self._clock() + delay_ms
             if deliver_at - issued_at > ttl:
+                if reservation is not None and self.envelope is not None:
+                    self.envelope.refund(reservation)
                 raise ActionContractViolation(
                     where=where,
                     why=(
@@ -415,6 +437,7 @@ class SimHAL(HardwareAbstractionLayer):
             self.events,
             delivered=False,
             deliver_at_ms=self._clock() + delay_ms,
+            on_cancel=self._ending(reservation),
             token=signature,
         )
         self._scheduled.append(command)
@@ -436,6 +459,8 @@ class SimHAL(HardwareAbstractionLayer):
 
     def run_due(self) -> list[PendingCommand]:
         """Deliver every pending command whose time has come on the clock, in time order."""
+        if self.envelope is not None:
+            self.envelope.settle()  # a pin whose on-time is up goes off, whoever is listening
         if self._clock is None:
             return []
         now = self._clock()
@@ -709,8 +734,10 @@ class SimHAL(HardwareAbstractionLayer):
         return self._speaker
 
     def close(self) -> None:
-        """Release live audio streams; idempotent."""
+        """Release live audio streams and end every on-time the envelope holds; idempotent."""
         errors: list[BaseException] = []
+        if self.envelope is not None:
+            self.envelope.end_all()
         for device in (self._audio_in, self._audio_out):
             if device is None:
                 continue

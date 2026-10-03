@@ -539,3 +539,91 @@ def test_a_replay_that_fails_on_linux_still_drops_the_lines(root, gpio, tmp_path
     with pytest.raises(RuntimeError, match="divergence"):
         replay(trace, target="linux")
     assert gpio.requests and all(request.released for request in gpio.requests)
+
+
+# --- the safety envelope of a linux session: its record and its first run (RFC-0007 §3d) -------------
+
+
+def test_a_linux_session_keeps_the_on_time_in_the_state_directory_of_its_board(
+    driveway, gpio, tmp_path
+):
+    session = SimSession.load(driveway, target="linux")
+    try:
+        store = session.hal.envelope.store
+        assert store.directory == tmp_path / "envelope-state"
+        assert anyio.run(
+            session.call_tool, ToolCall("porch_light_on", {}, source="mcp")
+        ).status == ("ALLOW")
+        assert store.load("porch_light") == [600_000.0], "reserved before the line went up"
+    finally:
+        session.close()
+    (used,) = store.load("porch_light")
+    assert used < 600_000, "closing the session gave the unused on-time back"
+    assert line(gpio, "porch_light") is Value.INACTIVE
+
+
+def test_a_linux_session_on_a_new_rig_refuses_every_on_until_it_is_declared_new(
+    driveway, gpio, monkeypatch
+):
+    from neuroedge.errors import EnvelopeRefusedError
+
+    monkeypatch.delenv("NEUROEDGE_LINUX_ENVELOPE_INIT")
+    session = SimSession.load(driveway, target="linux")
+    try:
+        with pytest.raises(EnvelopeRefusedError) as raised:
+            anyio.run(session.call_tool, ToolCall("porch_light_on", {}, source="mcp"))
+        assert raised.value.reason == "window_unreadable"
+        assert "NEUROEDGE_LINUX_ENVELOPE_INIT=1" in raised.value.how
+        assert line(gpio, "porch_light") is Value.INACTIVE, (
+            "the refused command never moved the line"
+        )
+        assert session.events.of_type("envelope_refused")[0]["reason"] == "window_unreadable"
+    finally:
+        session.close()
+    # the same rig, declared new in the HAL options: the records are created and the on goes through
+    session = SimSession.load(driveway, target="linux", target_options={"envelope_init": True})
+    try:
+        assert anyio.run(
+            session.call_tool, ToolCall("porch_light_on", {}, source="mcp")
+        ).status == ("ALLOW")
+        assert line(gpio, "porch_light") is Value.ACTIVE
+    finally:
+        session.close()
+
+
+def test_a_linux_session_can_be_given_an_envelope_of_its_own(driveway, gpio):
+    from neuroedge.hal.envelope import SafetyEnvelope
+
+    given = SafetyEnvelope({})
+    session = SimSession.load(driveway, target="linux", target_options={"envelope": given})
+    try:
+        assert session.hal.envelope is given
+    finally:
+        session.close()
+
+
+def test_the_trace_of_a_linux_session_says_whether_supervision_was_on(driveway, gpio, monkeypatch):
+    """RFC-0007 §3d: an audit can see a session ran without — or failed to start — its supervisor."""
+    session = SimSession.load(driveway, target="linux")  # the suite opts out (conftest)
+    try:
+        assert session.trace()["metadata"]["supervision"] == "off"
+    finally:
+        session.close()
+
+    from neuroedge.errors import BoardCapabilityError
+
+    def cannot_start(*args, **kwargs):
+        raise BoardCapabilityError("w", "no supervisor today", "h")
+
+    monkeypatch.setattr(linux, "SupervisorClient", cannot_start)
+    session = SimSession.load(driveway, target="linux", target_options={"supervise": True})
+    try:
+        assert session.trace()["metadata"]["supervision"] == "failed"
+        from neuroedge.errors import EnvelopeRefusedError
+
+        with pytest.raises(EnvelopeRefusedError) as raised:
+            anyio.run(session.call_tool, ToolCall("porch_light_on", {}, source="mcp"))
+        assert raised.value.reason == "supervisor_unavailable"
+        assert line(gpio, "porch_light") is Value.INACTIVE
+    finally:
+        session.close()

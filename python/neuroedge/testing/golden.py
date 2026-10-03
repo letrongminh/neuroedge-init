@@ -8,7 +8,8 @@ traces match when their safety views are equal:
   every decision field the golden records (`reason`, `blocked_by`, `action`,
   `escalated_to`, `fail_mode`, `fallback_action`);
 * the actuator sequence — every `actuator_command` (pin, operation, duration)
-  and `actuator_aborted` (pin, reason), in order.
+  and `actuator_aborted` (pin, reason), in order, and every `envelope_refused` (pin,
+  operation, reason).
 
 Everything else is noise and ignored: `session_id`, `timestamp_utc`,
 `offset_ms`, latency, perception details, System 2 text (L3). A decision field
@@ -70,6 +71,16 @@ def safety_view(trace: Any) -> dict[str, list[dict[str, Any]]]:
             )
         elif kind == "actuator_aborted":
             actuators.append({"pin": data.get("pin"), "aborted": data.get("reason")})
+        elif kind == "envelope_refused":
+            # The envelope's refusal is a decision like a verdict (RFC-0007 §3d): a golden that
+            # records none must not match a run that was refused, nor the other way round.
+            actuators.append(
+                {
+                    "pin": data.get("pin"),
+                    "operation": data.get("operation"),
+                    "refused": data.get("reason"),
+                }
+            )
     return {"gates": gates, "actuators": actuators}
 
 

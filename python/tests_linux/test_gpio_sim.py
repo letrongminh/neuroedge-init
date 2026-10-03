@@ -119,7 +119,11 @@ def test_verify_reaches_target_equivalence_on_sim_and_linux():
 # --- TSK-S5-10: interactive sessions on linux drive the kernel lines ---------------------
 
 DRIVEWAY = fixtures_dir() / "agents" / "driveway" / "agent.toml"
-CHILD_ENV = {**os.environ, "NO_COLOR": "1", "COLUMNS": "200"}
+
+
+def child_env() -> dict[str, str]:
+    """The environment of a child process, read when it starts: `conftest.py` gives each test its own."""
+    return {**os.environ, "NO_COLOR": "1", "COLUMNS": "200"}
 
 
 def neuroedge(*args: str) -> subprocess.Popen:
@@ -130,7 +134,7 @@ def neuroedge(*args: str) -> subprocess.Popen:
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
-        env=CHILD_ENV,
+        env=child_env(),
     )
 
 
@@ -197,7 +201,7 @@ def test_mcp_serve_on_linux_drives_the_kernel_line_through_the_gate(sysfs, tmp_p
             *("-m", "neuroedge", "mcp", "serve", "--target", "linux"),
             *("--agent", str(DRIVEWAY), "--trace-out", str(trace_out)),
         ],
-        env=CHILD_ENV,
+        env=child_env(),
     )
 
     async def main():

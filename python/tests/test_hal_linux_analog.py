@@ -21,6 +21,7 @@ from neuroedge.hal.board import load_board_by_id
 from neuroedge.hal.sim import SimHAL
 from neuroedge.sim import SimSession
 
+from .hand_clock import HandClock
 from .test_analog_in import agent
 from .test_hal_linux import LINES, FakeGpiod
 from .test_hal_linux_io import hwmon, make
@@ -210,7 +211,8 @@ def ads(monkeypatch, tmp_path):
 
 
 def test_the_gate_reads_the_kernel_voltage_into_a_numeric_fact(tmp_path, gpio, ads):
-    session = SimSession.load(agent(tmp_path), target="linux")
+    clock = HandClock()
+    session = SimSession.load(agent(tmp_path), target="linux", clock=clock)
     try:
         for millivolts, allowed in (
             (1500, True),
@@ -230,6 +232,10 @@ def test_the_gate_reads_the_kernel_voltage_into_a_numeric_fact(tmp_path, gpio, a
                 "unit": "V",
                 "use": "fact",
             }
+            # The fan relay stays on for its whole `max_continuous_ms` on a real line: turn it off
+            # (never refused) and let `min_interval_ms` pass, so the envelope admits the next `on`.
+            session.hal.digital_out("gate_relay", "off")
+            clock.advance(2_000)
     finally:
         session.close()
     assert all(request.released for request in gpio.requests)
@@ -277,11 +283,14 @@ def test_a_trace_recorded_on_linux_replays_the_same_on_sim(tmp_path, gpio, ads):
     from neuroedge.testing.recorder import TraceRecorder
 
     path = agent(tmp_path)
-    session = SimSession.load(path, target="linux", events=TraceRecorder())
+    clock = HandClock()
+    session = SimSession.load(path, target="linux", events=TraceRecorder(clock=clock), clock=clock)
     try:
         for millivolts in (1500, 500, 1999):
             (ads / "in0_input").write_text(f"{millivolts}\n")
             anyio.run(session.handle, "bật quạt")
+            session.hal.digital_out("gate_relay", "off")  # see above: the envelope's interval
+            clock.advance(2_000)
         trace = session.events.to_trace()
     finally:
         session.close()

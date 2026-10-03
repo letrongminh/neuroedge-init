@@ -20,6 +20,22 @@ from neuroedge.paths import repo_root
 ROOT = repo_root()
 
 
+@pytest.fixture(autouse=True)
+def envelope_state(tmp_path, monkeypatch):
+    """
+    A `linux` session keeps the on-time of its pins in a state directory and, without a
+    record, refuses every on (RFC-0007 §3d). A test is a new rig: its own empty directory, so
+    nothing is written under the developer's home and no test sees another's on-time. The
+    tests of the record itself (`test_envelope.py`) set their own.
+    """
+    monkeypatch.setenv("NEUROEDGE_LINUX_ENVELOPE_STATE", str(tmp_path / "envelope-state"))
+    monkeypatch.setenv("NEUROEDGE_LINUX_ENVELOPE_INIT", "1")
+    # The supervisor process needs the real gpiod; these tests stand a fake in for it inside the
+    # process, so they opt out of supervision explicitly. Tests of supervision pass
+    # `supervise=True`, or delete this variable to see the default (`test_hal_linux_envelope.py`).
+    monkeypatch.setenv("NEUROEDGE_LINUX_SUPERVISE", "0")
+
+
 @pytest.fixture(scope="session")
 def root() -> Path:
     return ROOT

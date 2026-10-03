@@ -9,6 +9,22 @@ arguments checked against the schema, then `c.do()`, the gate, a single-use
 verdict token, the HAL. A client that was prompt-injected or hallucinates a
 call is refused by the gate exactly like anyone else.
 
+The road, with the physical safety envelope in it (RFC-0007 §3d)::
+
+    tools/call ─▶ schema check ─▶ c.do() ─▶ gate ─▶ verdict token ─▶ @action body
+                                             │
+                                             └─ BLOCK: nothing runs, the pin is untouched
+
+    @action body ─▶ HardwareAbstractionLayer.digital_out
+        require_pin ─▶ envelope ─────────────▶ authorize ─────────────▶ record ─▶ pin
+        (the board     (on-time budget per     (the token: this pin,    (trace)
+        names it)      window, min interval,   once, within its TTL)
+                       auto-off; refused:
+                       NE1003, token not spent)
+
+`off`, the auto-off at the end of an on-time and `hal.close()` take no part in the envelope or
+the token: a command toward the safe state is never blocked.
+
 What the client gets back is the verdict, as JSON text and structured content:
 ``{"tool": "light_off", "status": "BLOCK", "reason": "condition_not_met", …}``.
 A BLOCK is the gate working, not an error (`isError` stays false); a call the

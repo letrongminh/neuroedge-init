@@ -34,6 +34,8 @@ from neuroedge.sim.ui import SessionServer
 from neuroedge.testing import TracePlayer
 from neuroedge.testing.recorder import TraceRecorder
 
+from .hand_clock import PAST_THE_ENVELOPE_MS, HandClock
+
 runner = CliRunner()
 
 GATE = """\
@@ -254,7 +256,8 @@ def test_gate_lint_refuses_the_same_gate(tmp_path):
 
 
 async def test_a_reading_inside_the_gate_interval_allows_and_a_reading_outside_blocks(tmp_path):
-    session = load(agent(tmp_path))
+    clock = HandClock()
+    session = load(agent(tmp_path), clock=clock)
     allowed = await session.handle("bật quạt")
     assert allowed.allowed and session.hal.pin("gate_relay").commands == [("on", 0)]
     for value, reason in ((0.99, "condition_not_met"), (2.0, "condition_not_met")):
@@ -262,6 +265,7 @@ async def test_a_reading_inside_the_gate_interval_allows_and_a_reading_outside_b
         turn = await session.handle("bật quạt")
         assert turn.result.blocked and turn.result.gate.reason == reason, value
     session.set_analog("adc0", 1.0)  # the lower bound is closed
+    clock.advance(PAST_THE_ENVELOPE_MS)  # the first `on` is over: the envelope allows the next
     assert (await session.handle("bật quạt")).allowed
     assert session.hal.pin("gate_relay").commands == [("on", 0)] * 2
 
@@ -422,11 +426,13 @@ def test_the_ui_sets_a_channel(tmp_path):
 
 async def test_replay_reproduces_every_verdict_from_the_recorded_readings(tmp_path):
     path = agent(tmp_path)
-    recorder = TraceRecorder()
-    session = load(path, events=recorder)
+    clock = HandClock()
+    recorder = TraceRecorder(clock=clock)
+    session = load(path, events=recorder, clock=clock)
     for value in (1.5, 0.5, float("nan"), 2.5, 1.0):
         session.set_analog("adc0", value)
         await session.handle("bật quạt")
+        clock.advance(PAST_THE_ENVELOPE_MS)  # the envelope lets the next `on` of the fan relay in
     out = tmp_path / "adc.json"
     session.write_trace(out)
     trace = json.loads(out.read_text(encoding="utf-8"))

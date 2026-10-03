@@ -320,6 +320,14 @@ action của agent thành một công cụ MCP, và mọi lời gọi vẫn ph�
 - **Chưa có máy Linux gắn thiết bị?** Tạo line GPIO ảo bằng gpio-sim (`scripts/setup_gpio_sim.sh`, kernel
   ≥ 5.19). CI chạy toàn bộ phần `linux` trên gpio-sim, cảm biến ảo `i2c-stub` + `lm75`, và màn hình ảo.
 - Kiểm cùng quyết định trên `sim` và `linux` (`verify --targets sim,linux`).
+- **Phong bì an toàn theo chân** (RFC-0007): mỗi chân nối tải có giới hạn của bo mạch — tổng thời gian bật trong một
+  cửa sổ trượt, giãn cách tối thiểu giữa hai lần bật, trần một lần bật. Chân luôn tự tắt khi hết thời hạn của lệnh hoặc
+  khi chạm trần; lệnh `tắt` không bao giờ bị chặn. Lệnh bật vượt giới hạn, hoặc khi chân đang bật, bị từ chối
+  (`NE1003`) mà không tiêu token. Thời gian bật được ghi vào một thư mục theo bo mạch
+  (`$NEUROEDGE_LINUX_ENVELOPE_STATE`, mặc định `~/.local/state/neuroedge/envelope/<bo mạch>`) **trước khi** bật,
+  để khởi động lại không xoá được bộ đếm. **Lần đầu trên một giàn thiết bị mới**, chưa có bản ghi nên mọi lệnh bật bị
+  từ chối: chạy phiên với `NEUROEDGE_LINUX_ENVELOPE_INIT=1` để khai đây là giàn mới (cờ chỉ tạo bản ghi chưa có).
+  Line của chân được giao cho một tiến trình giám sát riêng, thả line khi runtime bị treo hoặc chết; giám sát **bật mặc định** — không khởi động được thì lệnh bật bị từ chối, `tắt` vẫn chạy (`NEUROEDGE_LINUX_SUPERVISE=0` chỉ để test và gỡ lỗi, và được ghi vào vết ghi).
 
 **Cần gì:** máy Linux; `neuroedge[linux]` (thư viện libgpiod); line GPIO thật hoặc ảo. Âm thanh thật cần
 thêm `neuroedge[audio]` và PipeWire.

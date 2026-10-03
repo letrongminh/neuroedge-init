@@ -12,7 +12,12 @@ from collections import deque
 from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any, NamedTuple
 
-from ..errors import ActionContractViolation, BoardCapabilityError, PerceptionUnavailableError
+from ..errors import (
+    ActionContractViolation,
+    BoardCapabilityError,
+    EnvelopeRefusedError,
+    PerceptionUnavailableError,
+)
 from .board import (
     ALL_PRIMITIVES,
     EXTENSION_PRIMITIVES,
@@ -24,6 +29,7 @@ from .board import (
     load_board,
     load_board_by_id,
 )
+from .envelope import Reservation, SafetyEnvelope
 
 if TYPE_CHECKING:
     from .audio import WavSource
@@ -40,6 +46,7 @@ __all__ = [
     "HardwareAbstractionLayer",
     "PinAssertion",
     "available_boards",
+    "ensure_envelope",
     "load_board",
     "load_board_by_id",
 ]
@@ -144,9 +151,10 @@ class HardwareAbstractionLayer:
     """
     Standard interface across `sim`, `linux` and `esp32s3`.
 
-    `digital_out` is the only way a pin changes state, and it always asks
-    `authorize` first. The default refuses every command; `Conversation`
-    (TSK-S2-05) installs the single-use verdict-token check.
+    `digital_out` is the only way a pin changes state. It asks the safety envelope first and
+    `authorize` second; both are installed from outside. The default `authorize` refuses
+    every command; `Conversation` (TSK-S2-05) installs the single-use verdict-token check and,
+    for a board that declares envelopes, the envelope (RFC-0007 §3d, TSK-N2-01).
     """
 
     def __init__(
@@ -155,12 +163,95 @@ class HardwareAbstractionLayer:
         board: BoardProfile | None = None,
         *,
         authorize: Authorizer = _require_signature,
+        envelope: SafetyEnvelope | None = None,
     ):
         self.target = target
         self.board = board
         self.authorize = authorize
         self.pins: dict[str, PinAssertion] = {}
         self._replayed_levels: dict[str, deque[bool | None]] = {}
+        self._envelope: SafetyEnvelope | None = None
+        self.envelope = envelope
+
+    @property
+    def envelope(self) -> SafetyEnvelope | None:
+        """
+        The per-pin safety envelope, or None when none is installed: then `digital_out` is
+        what it was before the envelope existed (a pin the board does not bound moves as it
+        always did).
+        """
+        return self._envelope
+
+    @envelope.setter
+    def envelope(self, envelope: SafetyEnvelope | None) -> None:
+        self._envelope = envelope
+        if envelope is not None:
+            envelope.on_auto_off = self._auto_off
+
+    def _emit(self, type: str, data: dict[str, Any]) -> None:
+        events = getattr(self, "events", None)
+        if events is not None:
+            events.emit(type, data)
+
+    def _auto_off(self, reservation: Reservation) -> None:
+        """The HAL turned a pin off itself (a command toward the safe state, never refused)."""
+        if reservation.auto_off_cause is not None:
+            self._emit(
+                "actuator_command",
+                {
+                    "pin": reservation.name,
+                    "operation": "off",
+                    "duration_ms": 0,
+                    "cause": reservation.auto_off_cause,
+                },
+            )
+
+    def _admit(
+        self,
+        pin: str,
+        operation: str,
+        duration_ms: int,
+        signature: Any,
+        called_from: str,
+        *,
+        after_ms: float = 0,
+        record: bool = True,
+    ) -> Reservation | None:
+        """
+        What every target does before it moves a pin: `require_pin`, then the envelope, then
+        `authorize`, then `record`. The envelope stands before `authorize`, so a refused
+        command spends no token; and a command `authorize` refuses gives back every
+        millisecond it reserved. The command toward the safe state (`off`) is none of the
+        envelope's business and needs no proof (RFC-0007 §3d): it only has to name a real pin.
+        Returns the reservation the caller must `ended()` or `refund()` once the pin has moved
+        (or not), or None.
+        """
+        if self.board is not None:
+            self.board.require_pin(pin, called_from=called_from)
+        reservation = None
+        if operation != "off":
+            envelope = self._envelope
+            if envelope is not None:
+                try:
+                    reservation = envelope.reserve(
+                        pin,
+                        duration_ms,
+                        operation=operation,
+                        after_ms=after_ms,
+                        called_from=called_from,
+                    )
+                except EnvelopeRefusedError as refusal:
+                    self._emit("envelope_refused", refusal.event)
+                    raise
+            try:
+                self.authorize(signature, pin, called_from)
+            except BaseException:
+                if reservation is not None and envelope is not None:
+                    envelope.refund(reservation)
+                raise
+        if record:
+            self.pins.setdefault(pin, PinAssertion(pin)).record(operation, duration_ms)
+        return reservation
 
     def digital_out(
         self,
@@ -177,12 +268,12 @@ class HardwareAbstractionLayer:
         path from agent logic to a physical pin that does not carry proof of an
         authorising gate. An unsigned command is a contract violation, not a
         permission error to be retried. The pin is checked before the proof is
-        spent, so a typo never consumes a verdict token.
+        spent, so a typo never consumes a verdict token. The one exception is the
+        command toward the safe state, `off`, which is never blocked (RFC-0007 §3d).
         """
-        if self.board is not None:
-            self.board.require_pin(pin, called_from=called_from)
-        self.authorize(signature, pin, called_from)
-        self.pins.setdefault(pin, PinAssertion(pin)).record(operation, duration_ms)
+        self._admit(pin, operation, duration_ms, signature, called_from)
+        if operation == "off" and self._envelope is not None:
+            self._envelope.ended(pin)
 
     # -- digital.in (RFC-0007 §3a) -------------------------------------------------------
     # `SimHAL` and `LinuxHAL` set the event sink; the clock of an `EventLog` is the clock the
@@ -334,3 +425,23 @@ class HardwareAbstractionLayer:
         if self.board is not None:
             self.board.require_pin(name, called_from="hal.pin()")
         return self.pins.get(name, PinAssertion(name, pulsed=False))
+
+
+def ensure_envelope(hal: Any, clock: Callable[[], float], *, virtual: bool | None = None) -> None:
+    """
+    Give a HAL the envelope its board declares, unless one is installed already (a session
+    installs its own, with the durable record on `linux`). `Conversation` calls this next to
+    installing the token ledger, so a HAL driven through `c.do()` is bounded by its board
+    whoever built it. `clock` is the session's, in milliseconds. On `sim` the envelope ends
+    an on-time by itself at its deadline (there is no timer); anywhere else the HAL ends it
+    — unless `virtual` says otherwise (replay decides by recorded time on every target).
+    """
+    if not isinstance(hal, HardwareAbstractionLayer) or hal.envelope is not None:
+        return
+    if hal.board is None:
+        return
+    envelope = SafetyEnvelope.for_board(
+        hal.board, clock=clock, virtual=hal.target == "sim" if virtual is None else virtual
+    )
+    if envelope.names:
+        hal.envelope = envelope

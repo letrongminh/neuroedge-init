@@ -23,7 +23,8 @@ from typing import Any
 
 from ..engine.gate import ActionContractEngine, GateResult
 from ..engine.verdict import GateVerdict
-from ..hal import digital
+from ..errors import EnvelopeRefusedError
+from ..hal import digital, ensure_envelope
 from .confirmation import ConfirmationBook, ConfirmationRefused, PendingConfirmation
 from .spec import REGISTRY, ActionSpec, running, spec_of
 from .token import TokenLedger
@@ -90,6 +91,8 @@ class Conversation:
         self.ledger = ledger or TokenLedger(engine.clock, events=self.events)
         # From here on the HAL accepts only tokens from this ledger.
         hal.authorize = self.ledger.authorize
+        # ... and bounded by the safety envelope of its board (RFC-0007 §3d, TSK-N2-01).
+        ensure_envelope(hal, engine.clock)
         self.confirmations = ConfirmationBook(engine.clock, self.events)
         # The `TurnMeter` of the turn a session is timing, or None (TSK-I4-03). It
         # only measures: nothing here reads it to decide.
@@ -221,7 +224,18 @@ class Conversation:
         if problem is not None:
             self.events.emit("fallback_skipped", {"action": name, "reason": problem})
             return None
-        return await self._do(self.registry[name], {}, visited)
+        try:
+            return await self._do(self.registry[name], {}, visited)
+        except EnvelopeRefusedError as refusal:
+            # The verdict already stands as a BLOCK and the fallback is the best effort that
+            # follows it: a pin the envelope would not move (already on, resting) stays as it
+            # is, and the refusal is in the trace (`envelope_refused`) — it is not the caller's
+            # error (RFC-0007 §3d).
+            self.events.emit(
+                "fallback_skipped",
+                {"action": name, "reason": f"the envelope refused it ({refusal.reason})"},
+            )
+            return None
 
     async def say(self, text: str) -> None:
         self.hal.audio_out(text)

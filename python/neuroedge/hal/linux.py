@@ -68,7 +68,7 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
-from ..errors import BoardCapabilityError, PerceptionUnavailableError
+from ..errors import BoardCapabilityError, EnvelopeRefusedError, PerceptionUnavailableError
 from . import Authorizer, HardwareAbstractionLayer, _require_signature
 from .analog import analog_data, check_reading, unavailable
 from .audio import (
@@ -86,6 +86,7 @@ from .audio_live import (
     _LiveAudio,
 )
 from .board import BoardProfile, load_board_by_id
+from .envelope import Reservation, SafetyEnvelope
 from .framebuffer import DisplayBackend, display_backend
 from .i2c_bus import I2CReader, ReadFault, ScriptedI2C, open_mapped, parse_buses
 from .sim import (
@@ -97,6 +98,7 @@ from .sim import (
     make_frame,
     reading_data,
 )
+from .supervisor import DEADLINE_MARGIN_MS, SupervisorClient
 from .sysfs import Reading, SysfsSensors, parse_sources
 
 __all__ = [
@@ -136,6 +138,9 @@ AUDIO_ENV = "NEUROEDGE_LINUX_AUDIO"  # file | live
 AUDIO_IN_ENV = "NEUROEDGE_LINUX_AUDIO_IN"  # a PipeWire node (PortAudio name)
 AUDIO_OUT_ENV = "NEUROEDGE_LINUX_AUDIO_OUT"
 AUDIO_BACKENDS = ("file", "live")
+SUPERVISE_ENV = (
+    "NEUROEDGE_LINUX_SUPERVISE"  # "0" opts out of the supervisor process (tests, debugging)
+)
 # The nodes `libpipewire-module-echo-cancel` creates (Q-22, §6.1 of
 # docs/spec/simulation_coverage.md): capture reads the echo-cancelled `source`,
 # playback writes the reference into `sink`. Named on purpose: the default device
@@ -175,6 +180,7 @@ class LinuxHAL(HardwareAbstractionLayer):
         *,
         events: EventSink | None = None,
         authorize: Authorizer = _require_signature,
+        envelope: SafetyEnvelope | None = None,
         line_names: Mapping[str, str] | None = None,
         chip_glob: str | None = None,
         gpiod: Any = None,
@@ -191,6 +197,8 @@ class LinuxHAL(HardwareAbstractionLayer):
         needs: Mapping[str, Any] | None = None,
         units: Mapping[str, str] | None = None,
         replay: bool = False,
+        supervise: bool | None = None,
+        supervisor_options: Mapping[str, Any] | None = None,
     ) -> None:
         board = board if board is not None else load_board_by_id("linux-rpi5")
         if board.target != "linux":
@@ -199,10 +207,13 @@ class LinuxHAL(HardwareAbstractionLayer):
                 why=f"board {board.id!r} targets {board.target!r}, not 'linux'",
                 how="use a linux board such as linux-rpi5, or the HAL for that target",
             )
-        super().__init__(target="linux", board=board, authorize=authorize)
+        super().__init__(target="linux", board=board, authorize=authorize, envelope=envelope)
         self.events: EventSink = events if events is not None else _NullSink()
         self._gpiod = gpiod if gpiod is not None else _import_gpiod()
         self._timers: dict[str, threading.Timer] = {}
+        # The pins whose timer is a pulse the agent asked for, as opposed to the envelope's cap
+        # on an `on` that had no end: `settle()` waits for the first kind only.
+        self._pulses: set[str] = set()
         self._lock = threading.Lock()
         # sensor.read and display are settled before any line is requested (Q-16):
         # `needs` = preflight()'s arguments, what the session's agent will read and draw.
@@ -321,13 +332,49 @@ class LinuxHAL(HardwareAbstractionLayer):
             )
         if needs:
             self.preflight(**needs)
+        # Supervision is ON: the lines of the pins that have an envelope are held by a process
+        # of its own, which drops them when the runtime freezes (RFC-0007 §3d, §9 item 9,
+        # hal/supervisor.py); the runtime keeps only the pins that carry no load. The opt-out
+        # is explicit — `supervise=False` or NEUROEDGE_LINUX_SUPERVISE=0, for tests and
+        # debugging — and is recorded: `supervision` is "on", "off" or "failed" (a session
+        # writes it to the trace metadata). Replay never supervises: it is no deployment.
+        if supervise is None:
+            supervise = os.environ.get(SUPERVISE_ENV) != "0" and not replay
+        self.supervisor: SupervisorClient | None = None
+        self.supervision = "on" if supervise else "off"
+        self._supervisor_error: str | None = None
+        self._supervised = frozenset(
+            pin for pin in self.lines if supervise and board.envelope(pin) is not None
+        )
         self._requests = self._request_outputs(consumer)
+        if self._supervised:
+            try:
+                self.supervisor = SupervisorClient(
+                    {pin: self.lines[pin] for pin in sorted(self._supervised)},
+                    consumer=consumer,
+                    on_drop=self._supervisor_dropped,
+                    **dict(supervisor_options or {}),
+                )
+            except (BoardCapabilityError, OSError) as exc:
+                # Never "carry on unsupervised": the pins it would have held are refused an
+                # `on` (`supervisor_unavailable`) and an `off` is a no-op, nobody holds them.
+                self.supervision = "failed"
+                self._supervisor_error = getattr(exc, "why", None) or str(exc)
+                self.events.emit("supervision_unavailable", {"reason": self._supervisor_error})
+            except BaseException:
+                for held in self._requests.values():
+                    held.release()
+                raise
+        # The `digital.in` lines stay in the runtime (they are inputs: no envelope, no
+        # supervisor); the supervisor holds only the output lines, so the two never request
+        # the same line.
         if needs and not replay:
             try:
                 for pin in dict.fromkeys(needs.get("digital_in", ())):
                     self._input_line(pin, f"{needs.get('where', '')} -> digital.in {pin!r}")
             except BaseException:
-                # The session never starts: no output line may stay held, no input requested.
+                # The session never starts: no output line may stay held, no input requested,
+                # and the supervisor goes down with them.
                 with contextlib.suppress(OSError):
                     self.close()
                 raise
@@ -356,8 +403,9 @@ class LinuxHAL(HardwareAbstractionLayer):
             direction=line.Direction.OUTPUT, output_value=line.Value.INACTIVE
         )
         by_chip: dict[str, list[int]] = {}
-        for path, offset in self.lines.values():
-            by_chip.setdefault(path, []).append(offset)
+        for pin, (path, offset) in self.lines.items():
+            if pin not in self._supervised:
+                by_chip.setdefault(path, []).append(offset)
         requests: dict[str, Any] = {}
         for path, offsets in by_chip.items():
             try:
@@ -394,30 +442,70 @@ class LinuxHAL(HardwareAbstractionLayer):
         return None
 
     # -- the line itself -------------------------------------------------------------
-    def _set(self, pin: str, active: bool) -> None:
+    def _set(self, pin: str, active: bool, limit_ms: float | None = None) -> None:
+        """Drive a line. `limit_ms`: with supervision, the longest the line may stay on."""
+        if pin in self._supervised:
+            if self.supervisor is None or not self.supervisor.alive():
+                if active:
+                    raise BoardCapabilityError(
+                        where=f"LinuxHAL -> digital.out {pin!r}",
+                        why="the supervisor of the actuator lines is not running",
+                        how="restart the session; a pin is never turned on without it",
+                    )
+                return  # nobody holds the line, so it is down: an off has nothing to do
+            self.supervisor.set(pin, active, limit_ms)
+            return
         path, offset = self.lines[pin]
         value = self._gpiod.line.Value
         self._requests[path].set_value(offset, value.ACTIVE if active else value.INACTIVE)
 
     def line_value(self, pin: str) -> bool:
         """What the line is driven to right now (True = active)."""
+        if pin in self._supervised:
+            if self.supervisor is None or not self.supervisor.alive():
+                return False
+            return self.supervisor.get(pin)
         path, offset = self.lines[pin]
         return self._requests[path].get_value(offset) == self._gpiod.line.Value.ACTIVE
+
+    def _supervisor_alive(self) -> bool:
+        return self.supervisor is not None and self.supervisor.alive()
+
+    def _supervisor_dropped(self, pin: str, cause: str) -> None:
+        """The supervisor took a line down by itself — the runtime was late or frozen."""
+        self._stop_timer(pin)
+        if self.envelope is not None:
+            self.envelope.ended(pin)
+        self._emit(
+            "actuator_command",
+            {"pin": pin, "operation": "off", "duration_ms": 0, "cause": f"supervisor_{cause}"},
+        )
 
     def _stop_timer(self, pin: str) -> None:
         with self._lock:
             timer = self._timers.pop(pin, None)
+            self._pulses.discard(pin)
         if timer is not None:
             timer.cancel()
 
-    def _end_pulse(self, pin: str, timer: threading.Timer | None = None) -> None:
+    def _end_pulse(
+        self, pin: str, timer: threading.Timer | None = None, reservation: Reservation | None = None
+    ) -> None:
         with self._lock:
             if timer is not None and self._timers.get(pin) is not timer:
                 return  # a newer command owns the line
             self._timers.pop(pin, None)
-            if not self._requests:
+            self._pulses.discard(pin)
+            if self._closed:
                 return  # close() has already dropped and released every line
             self._set(pin, False)
+        # The line is down: the envelope gets the on-time back, and the trace says why it went.
+        if (
+            reservation is not None
+            and self.envelope is not None
+            and self.envelope.ended(pin, reservation) is not None
+        ):
+            self._auto_off(reservation)
 
     # -- digital.out -----------------------------------------------------------------
     def digital_out(
@@ -440,34 +528,102 @@ class LinuxHAL(HardwareAbstractionLayer):
                 why=f"{pin!r} is a PWM channel of {self.board.id!r}; LinuxHAL has no PWM backend yet",
                 how="the PWM backend (RFC-0010 §3e) is not built yet; until then the channel is not driven",
             )
-        super().digital_out(pin, operation, duration_ms, signature, called_from)
-        self._stop_timer(pin)
-        self._set(pin, operation != "off")
-        if operation == "pulse":
-            timer = threading.Timer(duration_ms / 1000.0, lambda: self._end_pulse(pin, timer))
-            timer.daemon = True
-            with self._lock:
-                self._timers[pin] = timer
-            try:
-                timer.start()
-            except BaseException:
-                # No timer, no off edge: never leave a pulse line driven without one.
-                with self._lock:
-                    self._timers.pop(pin, None)
-                self._set(pin, False)
-                raise
+        if operation != "off" and pin in self._supervised and not self._supervisor_alive():
+            # Before the envelope and `authorize`: nothing is reserved and no token is spent.
+            refusal = EnvelopeRefusedError(
+                f"{called_from} -> digital.out {pin!r}",
+                "the supervisor that must hold this actuator line is "
+                f"{'not running' if self.supervision == 'on' else 'unavailable'}"
+                f"{f' ({self._supervisor_error})' if self._supervisor_error else ''}, "
+                "so the pin is not turned on",
+                "restart the session; `off` still works. Opting out is for tests and debugging: "
+                "NEUROEDGE_LINUX_SUPERVISE=0",
+                reason="supervisor_unavailable",
+                event={"pin": pin, "operation": operation, "reason": "supervisor_unavailable"},
+            )
+            self._emit("envelope_refused", refusal.event)
+            raise refusal
+        reservation = self._admit(pin, operation, duration_ms, signature, called_from)
+        envelope = self.envelope
+        if operation == "off":
+            # Toward the safe state. The timer that would end the pin anyway is cancelled only
+            # once the line is known to be down: an off that fails must not strand the pin.
+            self._set(pin, False)
+            self._stop_timer(pin)
+            if envelope is not None:
+                envelope.ended(pin)
+        else:
+            self._turn_on(pin, operation, duration_ms, reservation)
         self.events.emit(
             "actuator_command", {"pin": pin, "operation": operation, "duration_ms": duration_ms}
         )
         return PendingCommand(
-            pin, operation, duration_ms, self.events, on_cancel=lambda: self._abort(pin)
+            pin,
+            operation,
+            duration_ms,
+            self.events,
+            on_cancel=lambda: self._abort(pin, reservation),
         )
 
-    def _abort(self, pin: str) -> None:
+    def _turn_on(
+        self, pin: str, operation: str, duration_ms: int, reservation: Reservation | None
+    ) -> None:
+        envelope = self.envelope
+        self._stop_timer(pin)
+        limit = None if reservation is None else reservation.reserved_ms + DEADLINE_MARGIN_MS
+        try:
+            self._set(pin, True, limit)
+        except BaseException:
+            # The line did not move as asked. The command gives its on-time back only once the
+            # line is known to be down; otherwise the reservation stays, the safe side of not
+            # knowing.
+            if reservation is not None and envelope is not None:
+                try:
+                    self._set(pin, False)
+                except BaseException:
+                    pass
+                else:
+                    envelope.refund(reservation)
+            raise
+        # A pin under an envelope always has an end: the reserved on-time. Without one only a
+        # pulse does, as before.
+        if reservation is not None:
+            seconds: float | None = reservation.reserved_ms / 1000.0
+        else:
+            seconds = duration_ms / 1000.0 if operation == "pulse" else None
+        if seconds is not None:
+            self._arm(pin, seconds, reservation, pulse=operation == "pulse" or duration_ms > 0)
+
+    def _arm(
+        self, pin: str, seconds: float, reservation: Reservation | None, *, pulse: bool
+    ) -> None:
+        """Turn the pin off after `seconds`: the timer that ends a pulse or an enveloped on."""
+        timer = threading.Timer(seconds, lambda: self._end_pulse(pin, timer, reservation))
+        timer.daemon = True
+        with self._lock:
+            self._timers[pin] = timer
+            if pulse:
+                self._pulses.add(pin)
+        try:
+            timer.start()
+        except BaseException:
+            # No timer, no off edge: never leave a line driven without one.
+            with self._lock:
+                self._timers.pop(pin, None)
+                self._pulses.discard(pin)
+            self._set(pin, False)
+            if reservation is not None and self.envelope is not None:
+                self.envelope.refund(reservation)
+            raise
+
+    def _abort(self, pin: str, reservation: Reservation | None = None) -> None:
         self._stop_timer(pin)
         with self._lock:
-            if self._requests:  # after close() every line is already dropped
-                self._set(pin, False)
+            if self._closed:  # after close() every line is already dropped
+                return
+            self._set(pin, False)
+        if self.envelope is not None:
+            self.envelope.ended(pin, reservation)
 
     def close(self) -> None:
         """
@@ -479,27 +635,36 @@ class LinuxHAL(HardwareAbstractionLayer):
         # One line that fails to drop must not leave the others active or held.
         errors: list[BaseException] = []
         with self._lock:
-            self._closed = True
+            first = not self._closed
+            self._closed = True  # a pulse ending now sees the HAL closed and leaves the lines alone
             inputs, self._inputs = self._inputs, {}
         for request, _offset in inputs.values():
             try:
                 request.release()
             except OSError as exc:
                 errors.append(exc)
-        if self._requests:
+        if first:
             for pin in list(self._timers):
                 self._stop_timer(pin)
             for pin in self.lines:
                 try:
                     self._set(pin, False)
                 except OSError as exc:
-                    errors.append(exc)
-            with self._lock:  # a pulse ending now sees no requests and leaves the line alone
+                    errors.append(exc)  # the line may still be on: its reservation stays held
+                else:
+                    if self.envelope is not None:
+                        self.envelope.ended(pin)
+            with self._lock:
                 requests, self._requests = self._requests, {}
             for request in requests.values():
                 try:
                     request.release()
                 except OSError as exc:
+                    errors.append(exc)
+            if self.supervisor is not None:
+                try:
+                    self.supervisor.close()
+                except BaseException as exc:
                     errors.append(exc)
         for device in (self._audio_in, self._audio_out):
             if device is None:
@@ -955,11 +1120,11 @@ class TypedLinuxHAL(LinuxHAL):
     def pulsing(self) -> list[str]:
         """The pins whose pulse is still in flight."""
         with self._lock:
-            return sorted(self._timers)
+            return sorted(self._pulses)
 
     def driven(self) -> list[str]:
         """The pins whose line is active right now."""
-        return [pin for pin in self.lines if self._requests and self.line_value(pin)]
+        return [pin for pin in self.lines if not self._closed and self.line_value(pin)]
 
     def settle(self) -> None:
         """
@@ -968,7 +1133,7 @@ class TypedLinuxHAL(LinuxHAL):
         before `close()` drops every line; Ctrl-C drops them at once.
         """
         with self._lock:
-            timers = list(self._timers.values())
+            timers = [self._timers[pin] for pin in self._pulses if pin in self._timers]
         for timer in timers:
             timer.join()
 

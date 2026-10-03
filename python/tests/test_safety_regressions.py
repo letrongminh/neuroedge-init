@@ -283,3 +283,86 @@ async def test_a_spawned_task_cannot_call_the_action_after_c_do_returns():
     with pytest.raises(ActionContractViolation):
         await LATER.pop()
     assert BODY_RAN == ["ran"]
+
+
+# --- 7. The safety envelope changes nothing where there is none (TSK-N2-04) -----------
+# The five assertions of roadmap/neuroedge-design-neurobrain.md §7.1. The fifth, `mcp serve`
+# leaving through its cleanup, is in test_mcp_serve_ui.py.
+
+
+def test_without_an_envelope_digital_out_is_what_it_was():
+    """§7.1 (1): the same errors in the same order, and a wrong pin spends no token."""
+    from neuroedge.actions.token import TokenLedger
+    from neuroedge.errors import BoardCapabilityError
+
+    hal = SimHAL()
+    assert hal.envelope is None, "a HAL nobody gave an envelope has none"
+    with pytest.raises(ActionContractViolation, match="no gate signature"):
+        hal.digital_out("door_lock", "pulse", 1_000)  # no proof: the default authorizer
+    with pytest.raises(BoardCapabilityError, match="no pin named 'nope'"):
+        hal.digital_out("nope", "pulse", 1_000, signature="proof")  # the pin comes first
+    assert hal.pin("door_lock").never_pulsed()
+
+    clock = [0.0]
+    ledger = TokenLedger(lambda: clock[0])
+    hal.authorize = ledger.authorize
+    token = ledger.issue(
+        gate="g",
+        gate_digest="d",
+        action="a",
+        pins=frozenset({"door_lock"}),
+        session_id="s",
+        p95_ms=1e9,
+    )
+    with pytest.raises(BoardCapabilityError):
+        hal.digital_out("nope", "pulse", 1_000, signature=token)
+    assert ledger._consumed[token.nonce] == set(), "a typo never spends a token"
+    for _ in range(2):  # no envelope: nothing refuses a pulse straight after a pulse
+        hal.digital_out(
+            "door_lock",
+            "pulse",
+            1_000,
+            signature=ledger.issue(
+                gate="g",
+                gate_digest="d",
+                action="a",
+                pins=frozenset({"door_lock"}),
+                session_id="s",
+                p95_ms=1e9,
+            ),
+        )
+    assert hal.pin("door_lock").pulses == [1_000, 1_000]
+
+
+def test_the_tool_call_corpus_gives_the_same_results_with_the_envelope_in_place():
+    """§7.1 (2): `fixtures/tool_calls/` — every case its recorded result, the corpus closed both ways."""
+    from neuroedge.testing.tool_corpus import run_corpus
+
+    outcomes, closure = run_corpus()
+    assert closure == []
+    assert outcomes and [o.case.name for o in outcomes if not o.ok] == []
+
+
+def test_every_profile_in_boards_is_valid_and_bounds_every_actuator_pin():
+    """§7.1 (3): each profile loads under board.v1 with the new fields, and its envelope is whole."""
+    from neuroedge.hal import available_boards
+    from neuroedge.hal.envelope import SafetyEnvelope
+
+    boards = available_boards()
+    assert {"sim-default", "sim-rpi5", "esp32s3-box-3", "linux-rpi5"} <= {b.id for b in boards}
+    for board in boards:
+        bounded = set(SafetyEnvelope.for_board(board).names)
+        exempt = set(board.signal_pins) | set(board.enable_pins)
+        assert set(board.pins) - exempt <= bounded, f"{board.id}: a pin with no envelope"
+
+
+@pytest.mark.parametrize("name", ["happy-path", "unverified_attempt", "network_offline"])
+def test_the_canonical_traces_keep_their_verdict_chain_and_pin_commands(name, traces_dir):
+    """§7.1 (4): what `neuroedge verify` compares, under the envelope, on `sim`."""
+    from neuroedge.testing import assert_matches_golden, replay_sync
+
+    result = replay_sync(traces_dir / f"{name}.json", enforce_gate_digests=True)
+    assert result.divergences == []
+    assert result.verdicts == result.recorded_verdicts
+    assert_matches_golden(result.replayed, traces_dir / f"{name}.json")
+    assert not [e for e in result.replayed["events"] if e["type"] == "envelope_refused"]

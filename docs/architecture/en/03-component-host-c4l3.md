@@ -83,7 +83,9 @@ When `brain/` enters the repository, it needs an entry in `ALLOWED` (and `LAZY` 
 
 | Module | Responsibility |
 |:---|:---|
-| `__init__.py` | `HardwareAbstractionLayer`: checks the pin name **before** calling `authorize` (a typo costs no token), then records the command |
+| `__init__.py` | `HardwareAbstractionLayer`: checks the pin name, then the envelope, then calls `authorize` (a typo or an envelope refusal costs no token), then records the command; the safe-direction `off` takes neither the envelope nor `authorize` (RFC-0007 §3d) |
+| `envelope.py` | `SafetyEnvelope`: the per-pin safety envelope — atomic reservation of on-time under a per-pin lock, mandatory auto-off, refund of the unused part, a write-ahead state file on `linux`; it can only refuse (`EnvelopeRefusedError`), never allow |
+| `supervisor.py` | The supervisor process that holds the actuator lines on `linux`: heartbeat from the runtime, a missed heartbeat or an expired deadline drops the line (`LineSupervisor`, `SupervisorClient`) |
 | `board.py` | Reads and validates `boards/*.toml`; the five primitives (`PRIMITIVES`), three targets (`SUPPORTED_TARGETS`), the reference board |
 | `digital.py`, `sensor.py`, `display.py` | API for the `@action` body: `digital.out("door_lock").pulse(...)`, `sensor.read(...)`, `display.show(...)`; `digital.out` outside `c.do()` ⇒ `NE1001` |
 | `sim.py` | `SimHAL`: virtual pins, sensors, display, microphone, speaker; timed commands cancelled on barge-in |

@@ -35,6 +35,8 @@ from neuroedge.sim import SimSession
 from neuroedge.testing import TracePlayer
 from neuroedge.testing.recorder import TraceRecorder
 
+from .hand_clock import PAST_THE_ENVELOPE_MS, HandClock
+
 BOARD = "sim-rpi5"
 
 SHUT_GATE = """\
@@ -512,12 +514,14 @@ async def test_a_gate_that_fails_open_still_excuses_what_it_always_did(tmp_path)
 
 async def recorded_session(tmp_path, steps):
     path = agent(tmp_path)
-    recorder = TraceRecorder()
-    session = SimSession.load(path, board_id=BOARD, events=recorder)
+    clock = HandClock()
+    recorder = TraceRecorder(clock=clock)
+    session = SimSession.load(path, board_id=BOARD, events=recorder, clock=clock)
     for text, pin, value in steps:
         if pin is not None:
             session.set_digital_in(pin, value)
         await session.handle(text)
+        clock.advance(PAST_THE_ENVELOPE_MS)  # the envelope lets the next `on` of the relay in
     out = tmp_path / "trace.json"
     session.write_trace(out)
     return path, out, session

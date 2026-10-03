@@ -36,7 +36,7 @@ import copy
 import json
 import tomllib
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -46,7 +46,8 @@ from ..engine.gate import ActionContractEngine, GateResult
 from ..engine.gate_resolver import GateRegistry, ResolvedGate
 from ..engine.trace_sink import EventLog
 from ..engine.verdict import DEGRADED_REASONS, DIGITAL_IN_SOURCE, Fact, Unavailable
-from ..errors import AgentManifestError, ReplayError
+from ..errors import AgentManifestError, EnvelopeRefusedError, ReplayError
+from ..hal import ensure_envelope
 from ..hal.board import load_board_by_id
 from ..hal.sim import reading_value
 from ..paths import fixtures_dir
@@ -71,6 +72,13 @@ class RecordedStep:
     # found consistent; `mark_problems` says, per criterion, why a recorded reading was refused.
     marks: dict[str, tuple[int, int, int]] = field(default_factory=dict)
     mark_problems: dict[str, str] = field(default_factory=dict)
+    # RFC-0007 §3d: the trace offset in ms of the verdict, and of the command that followed it
+    # (it reached the pin, or the envelope refused it). The replayed envelope decides at the
+    # command's instant on a clock of its own, never the wall clock. `refusal` is the
+    # `envelope_refused` data recorded for the step, if the envelope refused the command.
+    at_ms: int = 0
+    command_ms: int | None = None
+    refusal: dict[str, Any] | None = None
 
     @property
     def gate_name(self) -> str:
@@ -129,10 +137,24 @@ def recorded_steps(trace: Mapping[str, Any]) -> list[RecordedStep]:
     gate: str | None = None
     begin_offset = 0
     raw_facts: Mapping[str, Any] | None = None
+    open_step = False  # the commands that follow a verdict belong to its step
     for event in trace.get("events", []):
         kind, data = event.get("type"), event.get("data", {})
+        if kind in ("action_requested", "gate_evaluation_begin"):
+            open_step = False
         if kind == "action_requested":
             request = data
+        elif (
+            open_step
+            and steps
+            and steps[-1].command_ms is None
+            and (kind == "envelope_refused" or (kind == "actuator_command" and "cause" not in data))
+        ):
+            steps[-1] = replace(
+                steps[-1],
+                command_ms=event.get("offset_ms", 0),
+                refusal=dict(data) if kind == "envelope_refused" else None,
+            )
         elif kind == "gate_evaluation_begin":
             gate, raw_facts = data.get("gate"), None
             begin_offset = event.get("offset_ms", 0)
@@ -180,9 +202,11 @@ def recorded_steps(trace: Mapping[str, Any]) -> list[RecordedStep]:
                     arguments=dict((request or {}).get("arguments", {})),
                     marks=marks,
                     mark_problems=problems,
+                    at_ms=event.get("offset_ms", begin_offset),
                 )
             )
             request, gate, raw_facts = None, None, None
+            open_step = True
     return steps
 
 
@@ -508,6 +532,20 @@ def make_hal(target: str, board_id: str | None, events: EventLog):
     return LinuxHAL(board, events=events, replay=True)
 
 
+class ReplayClock:
+    """
+    The clock the replayed safety envelope decides on (RFC-0007 §3d): the recorded instant of
+    the command being replayed, in ms of trace time. The wall clock never enters a replay, so a
+    command the envelope refused at 40 s of the recording is refused at 40 s of the replay.
+    """
+
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
 class TracePlayer:
     def __init__(
         self,
@@ -574,6 +612,9 @@ class TracePlayer:
         hal = self.hal if self.hal is not None else make_hal(self.target, self.board_id, events)
         if self.hal is not None and hasattr(hal, "events"):
             hal.events = events
+        # Pins are bounded by the board's envelope on every target, on the recorded timeline.
+        envelope_clock = ReplayClock()
+        ensure_envelope(hal, envelope_clock, virtual=True)
         _script_sensors(hal, self.trace)
         _script_i2c(hal, self.trace)
         _script_digital_in(hal, self.trace)
@@ -590,11 +631,28 @@ class TracePlayer:
         conversation = Conversation(engine=engine, hal=hal)
 
         results: list[ActionResult] = []
+        recorded_events = self.trace.get("events", [])
         try:
             while engine.cursor < len(steps):
                 step = steps[engine.cursor]
                 name = self._action_for(step, actions, gates)
-                results.append(await conversation.do(name, **step.arguments))
+                envelope_clock.now = float(
+                    step.command_ms if step.command_ms is not None else step.at_ms
+                )
+                refused: EnvelopeRefusedError | None = None
+                try:
+                    results.append(await conversation.do(name, **step.arguments))
+                except EnvelopeRefusedError as refusal:
+                    refused = refusal
+                _check_refusal(step, refused, engine.divergences)
+            # The recording ran on after its last command: a pin whose on-time ran out by then
+            # went off in it, and goes off in the replay (its `cause` is part of the decisions).
+            envelope = getattr(hal, "envelope", None)
+            if envelope is not None:
+                envelope_clock.now = max(
+                    [envelope_clock.now, *(float(e.get("offset_ms", 0)) for e in recorded_events)]
+                )
+                envelope.settle()
         finally:
             # A divergence or a contract error must not leave a real line driven (linux).
             close = getattr(hal, "close", None)
@@ -611,6 +669,37 @@ class TracePlayer:
             slow=self.slow,
             warnings=warnings,
         )
+
+
+def _check_refusal(
+    step: RecordedStep, refused: EnvelopeRefusedError | None, divergences: list[Divergence]
+) -> None:
+    """
+    A recorded `envelope_refused` must replay as the same refusal, and a command the envelope
+    let through must not be refused now: either difference is a divergence (RFC-0007 §3d). The
+    refusal is compared by pin, operation and reason — the numbers follow from them.
+    """
+    recorded = step.refusal
+    if recorded is None and refused is None:
+        return
+    key = ("pin", "operation", "reason")
+    if (
+        recorded is not None
+        and refused is not None
+        and all(recorded.get(k) == refused.event.get(k) for k in key)
+    ):
+        return
+    divergences.append(
+        Divergence(
+            step.index,
+            None if recorded is None else _refusal_label(recorded),
+            "no refusal" if refused is None else _refusal_label(refused.event),
+        )
+    )
+
+
+def _refusal_label(event: Mapping[str, Any]) -> str:
+    return f"envelope_refused {event.get('pin')} {event.get('operation')}: {event.get('reason')}"
 
 
 def _sensor_rules_changed(
