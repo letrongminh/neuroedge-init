@@ -1,0 +1,36 @@
+{
+  "$format": "neuroedge.vision-golden/v1",
+  "model": {
+    "name": "person-in-blind-zone",
+    "sha256": "02397299d6d6c0781939e00762d3b7c241be233ce48f1ad5fcd79e7ea510435e"
+  },
+  "frames": {
+    "0100aeffab8416d8d6bbcbdcc7bb5368346e461d1056592a9f3cefff044f9713": [],
+    "1da2358c0ccf6dacce455ff51ee612110800ff57c7bb54d709fb15567a367407": [
+      {
+        "label": "person",
+        "score": 0.9,
+        "box": [
+          0.3,
+          0.4,
+          0.6,
+          0.95
+        ]
+      }
+    ],
+    "968221afa580bd1597f69526c80ea942172d302154d53642f71764df7cbf5f46": [],
+    "f8c6d1380df6551cce92e33365bafd93d4d35092acf1d23cde5bebc47eb9a11b": [
+      {
+        "label": "person",
+        "score": 0.88,
+        "box": [
+          0.3,
+          0.4,
+          0.6,
+          0.95
+        ]
+      }
+    ],
+    "fd64212703886a13b0f5d9db9d012f27ded1d769195059fce74fc54aba47420c": []
+  }
+}

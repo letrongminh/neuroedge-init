@@ -252,6 +252,40 @@ cùng nhãn và vùng, `max_age_ms` ≤ 500; ngưỡng khoá ở gate (Q-54). Ph
 `fixtures/gates/invalid/` vì chúng kế thừa gate của `gates/`, không phải của registry fixture): con nới ngưỡng, nới
 `max_age_ms`/`range` bị `gate lint` từ chối; con chỉ siết thì hợp lệ.
 
+## 6c. Golden suy luận và sai số giữa các target (TSK-V1b-04, RFC-0012 §3f mệnh đề 2, §9.6, §9.9)
+
+"Gate quyết giống nhau" (replay, §6) và "mô hình thấy giống nhau" là hai mệnh đề riêng. Mệnh đề sau do
+`python/neuroedge/testing/vision_golden.py` kiểm.
+
+**Golden** (`neuroedge.vision-golden/v1`, JSON, `fixtures/vision/golden/<cảnh>.json`): danh tính mô hình (`name` +
+`sha256`) và, theo **băm nội dung từng khung** (`vision_ref.sha256`, không có điểm ảnh), các phát hiện `{label, score, box}`
+mô hình cho trên host. Một golden thuộc về đúng một mô hình: so suy luận của mô hình khác với nó bị **từ chối**
+(`VerificationError`, NE4004), không bao giờ so ngầm. Ghi golden (`record_golden`) từ chối mô hình không trả lời một khung,
+trả rác, điểm ngoài `[0, 1]`, hay hai khung cùng byte mà cho hai đáp án khác nhau.
+
+**Sai số** là `vision_in.tolerance = {score_abs, box_iou_min}` của **chính bo mạch** (`tolerance_of(board)`; trần cứng của
+`board.v1`: `score_abs ≤ 0.05`, `box_iou_min ≥ 0.8`, kiểm lại ở `Tolerance`). Bo không camera không có phép kiểm này.
+
+**Quy tắc ghép** (một-một, tất định), trên từng khung:
+
+1. chỉ ghép hai phát hiện **cùng nhãn** có hộp trùng IoU ≥ `box_iou_min`;
+2. mọi cặp ứng viên được lấy theo thứ tự IoU cao nhất, rồi chênh điểm nhỏ nhất, rồi vị trí; mỗi phát hiện dùng tối đa một lần;
+3. mỗi cặp phải có |điểm − điểm golden| ≤ `score_abs` (biên bao gồm, cộng 1e-9 cho sai số dấu phẩy động);
+4. phát hiện golden không được ghép là **thiếu**; phát hiện của target không được ghép là **thừa** — thừa cũng là lệch, dù điểm thấp,
+   vì nó đổi dữ kiện `confidence` mà gate đọc.
+
+Khung target không suy luận, hay khung golden không có, cũng là lệch. Lệch đầu tiên ⇒ `SafetyRegressionError` (NE4002) nêu khung
+(băm), phát hiện và con số; số lệch còn lại ghi kèm.
+
+**Nơi nối.** `neuroedge verify` chạy mọi golden của `fixtures/vision/golden/` trên **mỗi bo mạch khai `vision_in`** của các target
+được hỏi (`sim-rpi5`, `linux-rpi5`), với sai số của bo đó, đếm riêng; không golden nào được so ⇒ NE4004 như các nhóm khác. API Action CI:
+`record_scene_golden`, `check_scene_inference(cảnh, golden, tolerance)`, `check_model`.
+
+**Chưa chứng minh được ở đây** (cần mô hình hay bo mạch thật): trên `sim` và `linux` mô hình chạy trên CPU của máy chủ, nên phép kiểm
+chỉ chứng minh khung và máy móc khớp nhau; nó cắn thật khi một target chạy mô hình bằng runtime hay phần cứng khác — NPU (TSK-V1b-05),
+`esp32s3` (TSK-I3a-04) — rồi giao các phát hiện cho phép kiểm theo định dạng golden (`InferenceGolden.load`). Golden của một mạng thật
+cũng cần mô hình thật; các golden hiện có là của mô hình `replay` trên các cảnh mẫu.
+
 ## 7. Quyết định diễn giải khi hiện thực
 
 RFC-0012 chưa nêu rõ các điểm sau; bản này chọn phương án an toàn hơn:
@@ -265,6 +299,6 @@ RFC-0012 chưa nêu rõ các điểm sau; bản này chọn phương án an toà
 
 ## 8. Chưa làm ở bản này
 
-- `vision.in` trên `linux` (V1b-01), camera ảo `sim` và phát lại cả `perception` đã ghi (V1b-02), golden suy luận theo sha256 mô hình và kiểm sai số trong `verify` (phần còn lại của V1b-04), NPU (V1b-05): các slice đó cắm khung vào `VisionPipeline.push`.
+- NPU (TSK-V1b-05) và suy luận của mô hình **thật** trên target (V1b-05, I3a-04): golden của mạng thật và phép so trên thiết bị — §6c.
 - Móc `parse_vision` vào `neuroedge build` và nạp agent: kiểu tiêu chí cùng tên, `confidence_gte` trên dữ kiện thị giác, `present`/`count` thiếu `confidence` — RFC-0012 §8 (`engine/compiler.py`).
 - Hằng `MAX_FRAME_AGE_MS`, `PRESENT_SCORE_FLOOR` sống ở `perception/vision/model.py`; `trace.py` không import chúng (tầng) và `replay` đối chiếu giá trị đã ghi với chúng.

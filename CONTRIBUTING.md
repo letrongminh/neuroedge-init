@@ -100,6 +100,7 @@ Test cưỡng chế cả hai chiều, nên không thể thêm fixture mà không
 | Tool call | `fixtures/tool_calls/{valid,invalid}/` | `fixtures/tool_calls/expected_results.yaml` — luật ở [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md) §9 |
 | Bo mạch | `fixtures/boards/{valid,invalid}/` | `fixtures/boards/expected_errors.yaml` |
 | Máy trạng thái hội thoại | `fixtures/compliance/voice/*.json` | `fixtures/compliance/voice/expected_results.yaml` — luật ở [`docs/spec/voice_fsm.md`](docs/spec/voice_fsm.md) §9 |
+| Cảnh thị giác | `fixtures/vision/<cảnh>/` (khung hình + `scene.toml`) | `fixtures/vision/expected_results.yaml` — chuỗi phán quyết theo khung; `fixtures/vision/golden/<cảnh>.json` là golden suy luận của mô hình trên cảnh đó ([`docs/spec/vision.md`](docs/spec/vision.md) §6a, §6c) |
 
 ```yaml
 # fixtures/gates/expected_errors.yaml

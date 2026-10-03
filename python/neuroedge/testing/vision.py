@@ -218,6 +218,15 @@ class VisionRun:
         return self.recorder.save(target)
 
 
+def scene_model(scene: Scene) -> ScriptedVisionModel:
+    """The scripted model of a scene: what its sidecars say, under the scene's name."""
+    labels = {s.label for s in scene.config.facts.values()}
+    labels |= {d.label for seen in scene.frameset.detections.values() for d in seen}
+    return ScriptedVisionModel(
+        scene.frameset.detections, labels=sorted(labels), name=scene.name, latency_ms=10.0
+    )
+
+
 async def arun_scene(
     scene: Scene | str | Path,
     *,
@@ -228,11 +237,7 @@ async def arun_scene(
     scene = scene if isinstance(scene, Scene) else load_scene(scene)
     gate = resolve_gate_uri(f"neuroedge://gates/{scene.gate}", registry=registry)
     frames = scene.frameset.frames
-    labels = {s.label for s in scene.config.facts.values()}
-    labels |= {d.label for seen in scene.frameset.detections.values() for d in seen}
-    model = ScriptedVisionModel(
-        scene.frameset.detections, labels=sorted(labels), name=scene.name, latency_ms=10.0
-    )
+    model = scene_model(scene)
     clock = VirtualClock(frames[0].captured_ms)
     recorder = TraceRecorder(
         clock=clock,
@@ -360,3 +365,37 @@ def assert_replay_matches(run: VisionRun) -> None:
             f"scene {run.scene!r}: evaluation {first} was {live[first : first + 1]} live and "
             f"{again[first : first + 1]} on replay (of {len(live)} and {len(again)})"
         )
+
+
+# --- inference golden (TSK-V1b-04, RFC-0012 §3f clause 2) -------------------------------------
+
+
+def record_scene_golden(scene: Scene | str | Path, out: str | Path | None = None):
+    """
+    The inference golden of a scene's model on its frames, recorded on this host
+    (`vision_golden.py`); written to `out` when given. A scene with a frame the model does not
+    answer (no sidecar) has no golden: `VisionUnavailable`.
+    """
+    from .vision_golden import record_golden
+
+    scene = scene if isinstance(scene, Scene) else load_scene(scene)
+    golden = record_golden(scene_model(scene), scene.frameset.frames)
+    if out is not None:
+        golden.save(out)
+    return golden
+
+
+def check_scene_inference(
+    scene: Scene | str | Path, golden: Any, tolerance: Any, label: str = "target"
+) -> None:
+    """
+    Run the scene's model on its frames and hold the result to `golden` within `tolerance` — the
+    inference check of one target (`SafetyRegressionError` NE4002 on the first difference).
+    `golden` is an `InferenceGolden` or the path of one.
+    """
+    from .vision_golden import InferenceGolden, check_model
+
+    scene = scene if isinstance(scene, Scene) else load_scene(scene)
+    if not isinstance(golden, InferenceGolden):
+        golden = InferenceGolden.load(golden)
+    check_model(golden, scene_model(scene), scene.frameset.frames, tolerance, label)

@@ -1,0 +1,10 @@
+{
+  "$format": "neuroedge.vision-golden/v1",
+  "model": {
+    "name": "frozen-camera-at-door",
+    "sha256": "08c6373a2b7733cd851a0ee219e812c27b27947f222998120b6ddda9d0a7fd0f"
+  },
+  "frames": {
+    "58d366c32dac002a5f63bd164b3d56db925c5568d96a1ba80f85460e35b5cc61": []
+  }
+}

@@ -33,7 +33,7 @@ from neuroedge.trace import load_trace, validate_trace
 
 SCENES_DIR = Path(__file__).resolve().parents[2] / "fixtures" / "vision"
 EXPECTED = yaml.safe_load((SCENES_DIR / "expected_results.yaml").read_text(encoding="utf-8"))
-SCENES = sorted(p.name for p in SCENES_DIR.iterdir() if p.is_dir())
+SCENES = sorted(p.name for p in SCENES_DIR.iterdir() if (p / "scene.toml").is_file())
 
 
 def test_the_scene_corpus_is_closed_both_ways():

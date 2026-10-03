@@ -1,0 +1,16 @@
+{
+  "$format": "neuroedge.vision-golden/v1",
+  "model": {
+    "name": "lost-frames-at-door",
+    "sha256": "e0b750a2136beea8fefbeeca51c19577af9adfc93b4d27592a3ee9486ae5d861"
+  },
+  "frames": {
+    "0100aeffab8416d8d6bbcbdcc7bb5368346e461d1056592a9f3cefff044f9713": [],
+    "0e5b01b755f604387cde2524397544463d297375edadd560ffd3c28b0c50fff5": [],
+    "1da2358c0ccf6dacce455ff51ee612110800ff57c7bb54d709fb15567a367407": [],
+    "305b9615a871b5daef709e569e071aedfb1c9ca783ef5c17c9c0bd19fdb1e7a2": [],
+    "968221afa580bd1597f69526c80ea942172d302154d53642f71764df7cbf5f46": [],
+    "b96e3a9db379e71fec08d74fdd5a2d4a0a17f3c2ebce5c0259428cb40e18e678": [],
+    "fd64212703886a13b0f5d9db9d012f27ded1d769195059fce74fc54aba47420c": []
+  }
+}
