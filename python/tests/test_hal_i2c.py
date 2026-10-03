@@ -12,6 +12,7 @@ from __future__ import annotations
 import ctypes
 import errno
 import inspect
+import os
 
 import pytest
 
@@ -310,13 +311,24 @@ class FakeKernel:
         self.calls: list[tuple] = []
         self.byte, self.word, self.fail, self.answering = byte, word, list(fail), answering
         self.address = None
+        self._real_open, self._real_close = os.open, os.close
         monkeypatch.setattr(i2c_bus.os, "open", self._open)
-        monkeypatch.setattr(i2c_bus.os, "close", lambda fd: self.calls.append(("close", fd)))
+        monkeypatch.setattr(i2c_bus.os, "close", self._close)
         monkeypatch.setattr(i2c_bus.fcntl, "ioctl", self._ioctl)
 
-    def _open(self, path, flags):
+    # `os` is the process's own module: whatever else opens a file meanwhile (a session's envelope
+    # record) goes to the real call, and only the i2c-dev node is the fake's.
+    def _open(self, path, flags, *rest, **named):
+        if not str(path).startswith("/dev/i2c"):
+            return self._real_open(path, flags, *rest, **named)
         self.calls.append(("open", path, flags))
         return 11
+
+    def _close(self, fd):
+        if fd != 11:
+            self._real_close(fd)
+            return
+        self.calls.append(("close", fd))
 
     def _ioctl(self, fd, request, arg):
         assert fd == 11

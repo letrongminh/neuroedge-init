@@ -179,7 +179,8 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `fixtures/gates/valid/`, `fixtures/gates/registry/` | Gate phân giải đúng; gate cơ sở cho fixture | Thêm: PR thường; sửa/xoá: **RFC** |
 | `fixtures/tool_calls/` | Corpus Gated Tool Profile + `expected_results.yaml` | PR thường, khép kín (§3) |
 | `fixtures/decision_trees/` | Bảng sự thật cho walker C | Sinh bằng `scripts/generate_truth_tables.py`, không sửa tay |
-| `fixtures/agents/` | Agent mẫu `villa-concierge`, `home-voice`, `driveway`, `voice-door`; `neuroedge new --template` sao hai cái đầu | PR thường |
+| `fixtures/agents/` | Agent mẫu `villa-concierge`, `home-voice`, `driveway`, `voice-door`, `rail-gate` (gói cảm biến: `digital.in` + `analog.in` + `i2c`); `neuroedge new --template` sao hai cái đầu | PR thường |
+| `fixtures/traces/sensor-pack/` | Corpus của gói cảm biến: ba phiên của `rail-gate` trên `sim-rpi5`, sinh bằng `scripts/gen_sensor_pack_traces.py` (`--check` chạy trong test); `verify` phát lại trên mọi bo mạch khai `digital.in`, `analog.in` và `i2c`, đếm riêng với ba vết ghi chuẩn mực (RFC-0013 §3f mục 7) | PR thường; sinh lại khi agent, gate hay hợp đồng cảm biến đổi có chủ ý |
 | `fixtures/compliance/voice/` | Bộ vector tuân thủ máy trạng thái hội thoại + `expected_results.yaml`, chung cho hiện thực Python và C | PR thường, khép kín (§3) |
 | `python/neuroedge/engine/` | L3 — phân giải gate, chuẩn tắc hoá, Gate Engine, cây quyết định, bố cục `NETR`, trình biên dịch `build`, bộ sinh firmware `esp32s3` của agent (`firmware.py`) | **RFC** nếu đổi ngữ nghĩa phân giải hoặc bố cục `NETR` |
 | `python/neuroedge/actions/` | `@action`, `c.do()`/`c.say()`, token phán quyết dùng một lần | PR thường; ranh giới ở [`threat_model.md`](docs/spec/threat_model.md) |

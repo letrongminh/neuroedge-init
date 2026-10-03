@@ -739,6 +739,94 @@ def parse_digital_levels(source: Path, sim: Mapping[str, Any]) -> dict[str, bool
     return dict(table)
 
 
+def parse_i2c_values(source: Path, sim: Mapping[str, Any]) -> list[tuple[str, str, int, int, int]]:
+    """
+    `[sim.i2c."i2c1/ina219"]`: what a read of a register returns on `sim`, as
+    ``(bus, device, register, value, width)``. A line is ``"0x02" = 24000`` (one byte) or
+    ``"0x02" = { value = 24000, width = 2 }`` (a 16-bit register, value in wire order).
+    """
+    table = sim.get("i2c", {})
+    where = f"{source} -> [sim.i2c]"
+    how = 'write [sim.i2c."i2c1/ina219"] with lines such as "0x02" = { value = 24000, width = 2 }'
+    if not isinstance(table, dict):
+        raise AgentManifestError(
+            where=where, why=f"[sim.i2c] must be a table of tables, found {table!r}", how=how
+        )
+    values: list[tuple[str, str, int, int, int]] = []
+    for name, registers in table.items():
+        bus, slash, device = name.partition("/")
+        if not slash or not bus or not device or not isinstance(registers, dict):
+            raise AgentManifestError(
+                where=f"{where} {name}",
+                why=f"{name!r} is not a `bus/device` table of registers",
+                how=how,
+            )
+        for key, entry in registers.items():
+            entry = {"value": entry} if not isinstance(entry, dict) else dict(entry)
+            try:
+                register = int(key, 0)
+            except ValueError:
+                register = -1
+            value, width = entry.get("value"), entry.get("width", 1)
+            valid = (
+                0 <= register <= 0xFF
+                and set(entry) <= {"value", "width"}
+                and width in (1, 2)
+                and not isinstance(width, bool)
+                and isinstance(value, int)
+                and not isinstance(value, bool)
+                and 0 <= value < 256**width
+            )
+            if not valid:
+                raise AgentManifestError(
+                    where=f"{where} {name} {key}",
+                    why=(
+                        f"{key!r} = {entry!r} is not a register (0..255) with an integer `value` "
+                        "that fits `width` (1 or 2 bytes)"
+                    ),
+                    how=how,
+                )
+            values.append((bus, device, register, value, width))
+    return values
+
+
+def check_i2c_values(manifest: AgentManifest, board: BoardProfile) -> list[NeuroEdgeError]:
+    """`[sim.i2c]` sets only registers the board lets an agent read, of devices `[requires]` lists."""
+    sim = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
+    if not isinstance(sim, dict) or "i2c" not in sim:
+        return []
+    try:
+        values = parse_i2c_values(manifest.source, sim)
+    except NeuroEdgeError as error:
+        return [error]
+    declared = manifest.requires.get("i2c", {}).get("devices", [])
+    problems: list[NeuroEdgeError] = []
+    for bus, device, register, _value, _width in values:
+        where = f'{manifest.source} -> [sim.i2c."{bus}/{device}"] {register:#04x}'
+        found = next((b for b in board.i2c_buses if b["id"] == bus), None)
+        entry = next((d for d in found["devices"] if d["name"] == device), None) if found else None
+        if entry is None or register not in entry.get("readable_registers", ()):
+            problems.append(
+                BoardCapabilityError(
+                    where=where,
+                    why=(
+                        f"board {board.id!r} lets an agent read no register {register:#04x} of "
+                        f"{bus}/{device}; the simulator serves only what `linux` would allow"
+                    ),
+                    how="set a register in readable_registers of that device, or remove the line",
+                )
+            )
+        elif f"{bus}/{device}" not in declared:
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"[requires] i2c does not list {bus}/{device}",
+                    how=f'add "{bus}/{device}" to "i2c" = {{ devices = [...] }} in {manifest.source}',
+                )
+            )
+    return problems
+
+
 def check_digital_facts(
     manifest: AgentManifest, gates: Mapping[str, ResolvedGate], board: BoardProfile
 ) -> list[NeuroEdgeError]:
@@ -1228,6 +1316,7 @@ def build(
     problems += check_sensor_facts(manifest, gates)
     problems += check_analog_facts(manifest, board, gates)
     problems += check_digital_facts(manifest, gates, board)
+    problems += check_i2c_values(manifest, board)
 
     grammar = manifest.root / "commands.toml"
     if grammar.is_file():

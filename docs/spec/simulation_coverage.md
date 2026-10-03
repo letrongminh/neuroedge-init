@@ -229,6 +229,26 @@ hwmon (`ads7828`, `lm75`) sẽ trả EBUSY cho yêu cầu thường. Agent khai 
 `"i2c" = { devices = ["i2c1/ina219"] }` — mỗi `bus/thiết bị` phải nằm trong allow-list của bo mạch (kiểm
 lúc build, `BoardCapabilityError`), và `@action(requires="i2c:i2c1/ina219")` phải được `[requires]` khai.
 
+**Giá trị I2C trên `sim` — `[sim.i2c."bus/thiết_bị"]`** (TSK-I2a-03, gói cảm biến). I2C không vào gate, nên
+bảng này không phải dữ kiện: nó đặt thứ `i2c.read()` trong thân `@action` nhận được trên `sim`, như
+`SimHAL.set_i2c()`. Mỗi dòng là `"0x02" = 24000` (một byte) hoặc `"0x02" = { value = 24000, width = 2 }`
+(thanh ghi 16 bit, giá trị theo thứ tự trên dây). `neuroedge build` kiểm: thanh ghi phải nằm trong
+`readable_registers` của thiết bị trong allow-list của bo mạch (`BoardCapabilityError`), thiết bị phải do
+`[requires]` `i2c` liệt kê, giá trị phải vừa `width`. Trên `linux` chip trả lời và bảng không được dùng.
+
+**Agent mẫu của gói cảm biến — `fixtures/agents/rail-gate`** (I2a tiêu chí ra 3). Một cổng chạy bằng ắc quy:
+`rail_open_gate` mở khi công tắc hành trình báo cổng ở điểm dừng đóng (`digital.in`, dữ kiện `bool`) và điện
+áp nguồn trên kênh ADC từ 1,2 V (`analog.in`, tiêu chí `numeric` với đơn vị, thang và `max_age_ms` khoá ở
+gate); `rail_report` đọc điện áp bus của `ina219` qua I2C trong thân action rồi hiện lên màn hình. Build trên
+`sim-rpi5` và `linux-rpi5`; `sim-default` và Box-3 từ chối nó, nêu từng nguyên thủy thiếu. Corpus
+`fixtures/traces/sensor-pack/` (cho phép; chặn vì rail sụt và vì cổng lệch điểm dừng; chặn
+`criterion_unavailable` vì ADC ngoài thang, số đọc ADC cũ 501 ms và chân hành trình chưa có mức) do
+`scripts/gen_sensor_pack_traces.py` sinh, phát lại bằng `neuroedge verify` trên **mọi bo mạch khai đủ ba
+nguyên thủy** (`sim-rpi5`, `linux-rpi5`). Bo mạch thiếu một nguyên thủy bỏ qua corpus (ô `—`), không tính là
+đạt; corpus đếm riêng với các vết ghi chuẩn mực ("extension replays compared"), và `verify` thất bại nếu không
+bo mạch nào phát lại được nó. Kiểm: `tests/test_sensor_pack_sample.py`, `tests/test_sensor_pack_linux.py` (phiên
+`linux` trên gpiod, sysfs và i2c-dev giả), `tests_linux/test_rail_gate.py` (gpio-sim + `i2c-stub`).
+
 **Âm thanh chọn rõ, không đoán** (TSK-S5-08): hai backend, không bao giờ đoán.
 
 - **Backend tệp** là mặc định của `--voice-file` (và của replay): WAV đọc cả tệp, 16-bit PCM,
