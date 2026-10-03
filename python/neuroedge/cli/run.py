@@ -29,6 +29,7 @@ from ..actions import ActionResult
 from ..errors import NeuroEdgeError
 from ..models import SystemOne
 from ..sim import SimSession, Turn
+from ..sim.session import level_word
 
 PROMPT = "neuroedge> "
 EXIT_WORDS = ("exit", "quit", ":q")
@@ -41,6 +42,8 @@ Type a command the agent's grammar knows, e.g. "mở cửa phòng 101".
   :pins               show the virtual pins
   :sensors            show the simulated sensor values
   :sensor <name> <v>  set a sensor value (what sensor.read returns)
+  :inputs             show the simulated digital input lines
+  :input <pin> <v>    set an input line: true | 1 | high, or false | 0 | low (digital.in)
   :screen             show the last display frame
   :confirm | :decline answer the device's pending question (same as typing "có" / "không")
   :help               this help
@@ -195,6 +198,9 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
         for key, rule in sorted(session.sensor_facts.items()):
             shown = escape(f"from sensor {rule.sensor} ([sim.sensor_facts])")
             table.add_row(key, f"[dim]{shown}[/dim]")
+        for key, line in sorted(session.digital_facts.items()):
+            shown = escape(f"from input pin {line.pin} ([sim.digital_facts])")
+            table.add_row(key, f"[dim]{shown}[/dim]")
         console.print(table)
     elif name == "set" and len(rest.split(maxsplit=1)) == 2:
         key, value = rest.split(maxsplit=1)
@@ -227,6 +233,29 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
             console.print(f"[red]{escape(error.why)}[/red]")
             return
         console.print(f"  {escape(sensor)} = {escape(value)}")
+    elif name == "inputs":
+        table = Table(title="Simulated input lines", title_justify="left")
+        table.add_column("Pin", style="cyan")
+        table.add_column("Level")
+        for pin, level in session.hal.digital_in_values().items():
+            table.add_row(
+                pin, "[dim]not set[/dim]" if level is None else ("high" if level else "low")
+            )
+        console.print(table)
+    elif name == "input" and len(rest.split(maxsplit=1)) == 2:
+        pin, word = rest.split(maxsplit=1)
+        level = level_word(word)
+        if level is None:
+            console.print(
+                f"[red]{escape(word)} is not a level[/red] — use true | 1 | high or false | 0 | low"
+            )
+            return
+        try:
+            session.set_digital_in(pin, level)
+        except NeuroEdgeError as error:
+            console.print(f"[red]{escape(error.why)}[/red]")
+            return
+        console.print(f"  {escape(pin)} = {'high' if level else 'low'}")
     elif name == "screen":
         if not session.hal.frames:
             console.print("  nothing has been drawn yet")

@@ -60,6 +60,11 @@ EXTENSION_PRIMITIVES: tuple[str, ...] = (
     "vision.in",
 )
 ALL_PRIMITIVES: tuple[str, ...] = PRIMITIVES + EXTENSION_PRIMITIVES
+# The extension primitives an agent can name in `[requires]` and in `@action(requires=...)` today.
+# Each primitive's slice adds its own, with the check that the pin, bus or channel it names is
+# declared on the board; one that is not listed here is refused, never waved through.
+REQUIRABLE_EXTENSIONS: tuple[str, ...] = ("digital.in",)
+REQUIRABLE_PRIMITIVES: tuple[str, ...] = PRIMITIVES + REQUIRABLE_EXTENSIONS
 
 _CAPABILITY_KEYS = {
     "audio.in": "audio_in",
@@ -186,6 +191,22 @@ class BoardProfile:
             how=(
                 f"use one of the declared pins, or add {pin!r} to "
                 f"[capabilities.digital_out].pins in {self.source}"
+            ),
+        )
+
+    def require_input_pin(self, pin: str, called_from: str = "<unknown>") -> None:
+        """Assert a named `digital.in` pin exists (RFC-0007 §3a), with the three-part message."""
+        if pin in self.input_pins:
+            return
+        raise BoardCapabilityError(
+            where=f"{called_from} -> digital.in pin {pin!r}",
+            why=(
+                f"board {self.id!r} declares no input pin named {pin!r}; "
+                f"it offers {list(self.input_pins) or 'no digital.in pins'}"
+            ),
+            how=(
+                f"use one of the declared input pins, or add {pin!r} to "
+                f"[capabilities.digital_in].pins in {self.source}"
             ),
         )
 

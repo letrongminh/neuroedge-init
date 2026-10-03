@@ -21,6 +21,8 @@ mirrors the reference board rather than exceeding it (CHANGELOG §3.3 #7).
 * `sensor_read` — values scripted with `set_sensor()` (or a sequence with
   `script_sensor()`, which replay uses); records `sensor_read`. An unscripted
   sensor raises instead of inventing a reading.
+* `digital_in` — levels scripted with `set_digital_in()` (RFC-0007 §3a); records `digital_in`.
+  An input nobody set raises `PerceptionUnavailableError` instead of inventing a level.
 * `display` — a virtual frame (text, or raw RGB565 / RGB888 pixels) checked
   against the declared resolution; records `display_frame` with its digest
   (docs/spec/simulation_coverage.md §3).
@@ -36,7 +38,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-from ..errors import ActionContractViolation, BoardCapabilityError
+from ..errors import ActionContractViolation, BoardCapabilityError, PerceptionUnavailableError
 from . import Authorizer, HardwareAbstractionLayer, PinAssertion, _require_signature
 from .audio import Speaker, WavSource
 from .audio_live import (
@@ -271,6 +273,7 @@ class SimHAL(HardwareAbstractionLayer):
         self.events: EventSink = events if events is not None else _NullSink()
         self._sensors: dict[str, Any] = dict(sensors or {})
         self._units: dict[str, str] = {}
+        self._levels: dict[str, bool] = {}
         self._scripted: dict[str, deque[Any]] = {}
         self._typed: deque[str] = deque()
         self.frame: str | bytes | None = None
@@ -468,6 +471,32 @@ class SimHAL(HardwareAbstractionLayer):
         value = self._sensors[sensor]
         self.events.emit("sensor_read", reading_data(sensor, value, self._units.get(sensor), use))
         return value
+
+    # -- digital.in ----------------------------------------------------------------
+    def set_digital_in(self, pin: str, level: bool) -> None:
+        """Set the level a declared input line reads (`set_sensor`'s counterpart for a pin)."""
+        where = "SimHAL.set_digital_in()"
+        self.board.require_input_pin(pin, called_from=where)
+        if not isinstance(level, bool):
+            raise BoardCapabilityError(
+                where=f"{where} -> digital.in {pin!r}",
+                why=f"{level!r} is not a logic level",
+                how="pass True (the line high) or False (low)",
+            )
+        self._levels[pin] = level
+
+    def digital_in_values(self) -> dict[str, bool | None]:
+        """Current level of every declared input line (None when nobody set it)."""
+        return {pin: self._levels.get(pin) for pin in self.board.input_pins}
+
+    def _read_level(self, pin: str, where: str) -> bool:
+        if pin not in self._levels:
+            raise PerceptionUnavailableError(
+                where=where,
+                why="the simulator has no level set for this input line",
+                how=f"call hal.set_digital_in({pin!r}, level) in the scenario first, or `:input` in the REPL",
+            )
+        return self._levels[pin]
 
     # -- audio -------------------------------------------------------------------
     def type_text(self, text: str) -> None:

@@ -46,9 +46,9 @@ from ..errors import (
 from ..hal.audio import MAX_RATE_HZ, MIN_RATE_HZ, rate_ok
 from ..hal.board import (
     ALL_PRIMITIVES,
-    PRIMITIVES,
     REFERENCE_BOARD,
     REFERENCE_BOARDS,
+    REQUIRABLE_PRIMITIVES,
     BoardProfile,
     load_board_by_id,
 )
@@ -135,11 +135,11 @@ def load_agent_manifest(path: str | Path) -> AgentManifest:
             why="[requires] is missing; the build cannot match the agent against a board",
             how='declare what the agent needs, e.g. "digital.out" = { pins = ["door_lock"] }',
         )
-    unknown = sorted(set(requires) - set(PRIMITIVES))
+    unknown = sorted(set(requires) - set(REQUIRABLE_PRIMITIVES))
     if unknown:
         raise AgentManifestError(
             where=f"{path} -> [requires]",
-            why=f"{unknown} are not HAL primitives; primitives are {list(PRIMITIVES)}",
+            why=f"{unknown} cannot be required; [requires] takes {list(REQUIRABLE_PRIMITIVES)}",
             how="use the dotted primitive names from FR-HAL-01",
         )
     targets = document.get("targets", {}).get("supported", [])
@@ -181,6 +181,8 @@ def _describe(board: BoardProfile) -> str:
             offered.append(f"digital.out:{list(board.pins)}")
         elif primitive == "sensor.read":
             offered.append(f"sensor.read:{list(board.sensors)}")
+        elif primitive == "digital.in":
+            offered.append(f"digital.in:{list(board.input_pins)}")
         else:
             offered.append(primitive)
     return ", ".join(offered) or "nothing"
@@ -239,11 +241,25 @@ def check_capabilities(manifest: AgentManifest, board: BoardProfile) -> list[Neu
                         "raise channels",
                     )
                 )
-        elif primitive in ("digital.out", "sensor.read"):
-            key, offered = (
-                ("pins", board.pins) if primitive == "digital.out" else ("sensors", board.sensors)
-            )
-            for name in need.get(key, []):
+        elif primitive in ("digital.out", "sensor.read", "digital.in"):
+            key, offered = {
+                "digital.out": ("pins", board.pins),
+                "sensor.read": ("sensors", board.sensors),
+                "digital.in": ("pins", board.input_pins),
+            }[primitive]
+            names = need.get(key, [])
+            if primitive == "digital.in" and not (
+                isinstance(names, list) and all(isinstance(name, str) for name in names)
+            ):
+                problems.append(
+                    AgentManifestError(
+                        where=f"{manifest.source} -> [requires] digital.in",
+                        why=f"`pins` must be a list of input pin names, found {names!r}",
+                        how='write "digital.in" = { pins = ["door_contact_raw"] }',
+                    )
+                )
+                continue
+            for name in names:
                 if name not in offered:
                     problems.append(
                         _mismatch(manifest, board, f"{primitive}:{name}", f"add {name!r} to {key}")
@@ -322,7 +338,9 @@ def check_actions(manifest: AgentManifest, actions: Iterable[Any]) -> list[Neuro
     for spec in actions:
         for requirement in spec.requires:
             declared = manifest.requires.get(requirement.primitive)
-            key = {"digital.out": "pins", "sensor.read": "sensors"}.get(requirement.primitive)
+            key = {"digital.out": "pins", "sensor.read": "sensors", "digital.in": "pins"}.get(
+                requirement.primitive
+            )
             missing = declared is None or (
                 key is not None
                 and requirement.name is not None
@@ -447,6 +465,144 @@ def check_sensor_facts(
             error = numeric_sensor_fact_error(str(manifest.source), criterion, gate)
             if error is not None:
                 problems.append(error)
+    return problems
+
+
+@dataclass(frozen=True)
+class DigitalFact:
+    """
+    A gate fact read from an input line (`[sim.digital_facts]`, RFC-0007 §3a): the level
+    itself, or whether it equals `equals` (``equals = false`` is the line low). RFC-0007 binds
+    no criterion to a pin, so this is the smallest binding that fits: it follows
+    `[sim.sensor_facts]`, which already binds sensors to criteria.
+    """
+
+    pin: str
+    equals: bool | None = None
+
+    def evaluate(self, level: bool) -> bool:
+        return level if self.equals is None else level == self.equals
+
+
+def parse_digital_facts(source: Path, sim: Mapping[str, Any]) -> dict[str, DigitalFact]:
+    """`[sim.digital_facts]` as rules, or an `AgentManifestError` naming the one that is wrong."""
+    table = sim.get("digital_facts", {})
+    where = f"{source} -> [sim.digital_facts]"
+    if not isinstance(table, dict):
+        raise AgentManifestError(
+            where=where,
+            why=f"[sim.digital_facts] must be a table, found {table!r}",
+            how='write [sim.digital_facts] with lines such as door_closed = { pin = "door_contact_raw" }',
+        )
+    rules: dict[str, DigitalFact] = {}
+    for criterion, rule in table.items():
+        if (
+            not isinstance(rule, dict)
+            or not isinstance(rule.get("pin"), str)
+            or set(rule) - {"pin", "equals"}
+            or ("equals" in rule and not isinstance(rule["equals"], bool))
+        ):
+            raise AgentManifestError(
+                where=f"{where} {criterion}",
+                why=(
+                    "a digital fact needs a string `pin`, and optionally `equals = true` or "
+                    f"`equals = false`, found {rule!r}"
+                ),
+                how=f'write {criterion} = {{ pin = "door_contact_raw" }}, or add equals = false for the line low',
+            )
+        rules[criterion] = DigitalFact(rule["pin"], rule.get("equals"))
+    return rules
+
+
+def parse_digital_levels(source: Path, sim: Mapping[str, Any]) -> dict[str, bool]:
+    """`[sim.inputs]`: the level each input line starts at on `sim`."""
+    table = sim.get("inputs", {})
+    where = f"{source} -> [sim.inputs]"
+    if not isinstance(table, dict):
+        raise AgentManifestError(
+            where=where,
+            why=f"[sim.inputs] must be a table of pin = true|false, found {table!r}",
+            how="write [sim.inputs] with lines such as door_contact_raw = true",
+        )
+    for pin, level in table.items():
+        if not isinstance(level, bool):
+            raise AgentManifestError(
+                where=f"{where} {pin}",
+                why=f"{level!r} is not a logic level",
+                how=f"write {pin} = true (the line high) or {pin} = false",
+            )
+    return dict(table)
+
+
+def check_digital_facts(
+    manifest: AgentManifest, gates: Mapping[str, ResolvedGate], board: BoardProfile
+) -> list[NeuroEdgeError]:
+    """
+    Every `[sim.digital_facts]` rule reads a pin the board declares *and* `[requires]` lists,
+    and feeds a criterion that some gate evaluates and that every gate evaluating it declares
+    `bool` — a level is a bool fact, never a number, a level or an option (RFC-0007 §3a).
+    `[sim.inputs]` sets only declared pins.
+    """
+    sim = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
+    if not isinstance(sim, dict):
+        return []
+    try:
+        rules = parse_digital_facts(manifest.source, sim)
+        levels = parse_digital_levels(manifest.source, sim)
+    except NeuroEdgeError as error:
+        return [error]
+    declared = manifest.requires.get("digital.in", {}).get("pins", [])
+    problems: list[NeuroEdgeError] = []
+    for pin in levels:
+        try:
+            board.require_input_pin(pin, called_from=f"{manifest.source} -> [sim.inputs]")
+        except BoardCapabilityError as error:
+            problems.append(error)
+    for criterion, rule in rules.items():
+        where = f"{manifest.source} -> [sim.digital_facts] {criterion}"
+        try:
+            board.require_input_pin(rule.pin, called_from=where)
+        except BoardCapabilityError as error:
+            problems.append(error)
+        sensor_rules = sim.get("sensor_facts", {})
+        if isinstance(sensor_rules, dict) and criterion in sensor_rules:
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"{criterion!r} is also a [sim.sensor_facts] rule: one criterion, one source",
+                    how="keep the rule of the line or the rule of the sensor, not both",
+                )
+            )
+        if rule.pin not in declared:
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"the fact reads input pin {rule.pin!r}, which [requires] digital.in does not declare",
+                    how=f'add {rule.pin!r} to "digital.in" = {{ pins = [...] }} in {manifest.source}',
+                )
+            )
+        readers = [gate for gate in gates.values() if criterion in gate.evaluate]
+        if not readers:
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"no gate of the agent evaluates {criterion!r}, so nothing would read this line",
+                    how=f"name the fact after the gate's `bool` criterion, or remove {criterion}",
+                )
+            )
+        for gate in readers:
+            declared_type = gate.evaluate[criterion].get("type")
+            if declared_type != "bool":
+                problems.append(
+                    AgentManifestError(
+                        where=where,
+                        why=(
+                            f"gate {gate.name}@{gate.version} evaluates {criterion!r} as "
+                            f"{declared_type!r}, and a digital.in level is a bool fact (RFC-0007 §3a)"
+                        ),
+                        how=f"evaluate {criterion!r} as `bool` in the gate",
+                    )
+                )
     return problems
 
 
@@ -865,6 +1021,7 @@ def build(
     problems += check_fallbacks(manifest, gates, actions)
     problems += check_gate_arguments(gates, actions)
     problems += check_sensor_facts(manifest, gates)
+    problems += check_digital_facts(manifest, gates, board)
 
     grammar = manifest.root / "commands.toml"
     if grammar.is_file():

@@ -3,17 +3,21 @@ Hardware Abstraction Layer (HAL) — L1.
 
 Five immutable primitives (FR-HAL-01): `audio.in`, `audio.out`, `digital.out`,
 `sensor.read`, `display`. The set is closed on purpose; see
-docs/spec/hal_mcu_review.md for what that buys on the microcontroller.
+docs/spec/hal_mcu_review.md for what that buys on the microcontroller. Extension primitives
+(RFC-0013) are optional per board: `digital.in` (RFC-0007 §3a) is read with `digital_in()`.
 """
 
-from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+import time
+from collections import deque
+from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING, Any, NamedTuple
 
-from ..errors import ActionContractViolation, BoardCapabilityError
+from ..errors import ActionContractViolation, BoardCapabilityError, PerceptionUnavailableError
 from .board import (
     ALL_PRIMITIVES,
     EXTENSION_PRIMITIVES,
     PRIMITIVES,
+    REQUIRABLE_PRIMITIVES,
     SUPPORTED_TARGETS,
     BoardProfile,
     available_boards,
@@ -29,8 +33,10 @@ __all__ = [
     "ALL_PRIMITIVES",
     "EXTENSION_PRIMITIVES",
     "PRIMITIVES",
+    "REQUIRABLE_PRIMITIVES",
     "SUPPORTED_TARGETS",
     "BoardProfile",
+    "DigitalReading",
     "HardwareAbstractionLayer",
     "PinAssertion",
     "available_boards",
@@ -92,6 +98,22 @@ class PinAssertion:
         return f"<PinAssertion {self.pin_name} {state}>"
 
 
+class DigitalReading(NamedTuple):
+    """
+    One `digital.in` level and the instant the HAL read it (RFC-0007 §3a).
+
+    `read_ms` is on the clock of the HAL's event log — the clock the gate ages a reading by —
+    and is taken before the line is read, so a reading is never younger than it looks.
+    """
+
+    value: bool
+    read_ms: float
+
+
+def _monotonic_ms() -> float:
+    return time.monotonic() * 1000.0
+
+
 Authorizer = Callable[[Any, str, str], None]
 
 
@@ -138,6 +160,7 @@ class HardwareAbstractionLayer:
         self.board = board
         self.authorize = authorize
         self.pins: dict[str, PinAssertion] = {}
+        self._replayed_levels: dict[str, deque[bool | None]] = {}
 
     def digital_out(
         self,
@@ -160,6 +183,87 @@ class HardwareAbstractionLayer:
             self.board.require_pin(pin, called_from=called_from)
         self.authorize(signature, pin, called_from)
         self.pins.setdefault(pin, PinAssertion(pin)).record(operation, duration_ms)
+
+    # -- digital.in (RFC-0007 §3a) -------------------------------------------------------
+    # `SimHAL` and `LinuxHAL` set the event sink; the clock of an `EventLog` is the clock the
+    # gate ages a reading by, so a HAL with another sink still marks reads on its own clock.
+    events: Any = None
+
+    def _clock_ms(self) -> float:
+        clock = getattr(self.events, "clock", None)
+        return clock() if callable(clock) else _monotonic_ms()
+
+    def digital_in(self, pin: str, called_from: str = "<unknown>", use: str | None = None) -> bool:
+        """
+        The logic level of an input line: True is the line high. Reading moves nothing, so it
+        needs no token (as `sensor.read`), and every read is a `digital_in` event. A read that
+        fails raises `PerceptionUnavailableError` (NE5001), never a level. `use="fact"` marks a
+        read made to compute a gate fact rather than by an action.
+        """
+        return self.digital_reading(pin, called_from, use).value
+
+    def digital_reading(
+        self, pin: str, called_from: str = "<unknown>", use: str | None = None
+    ) -> DigitalReading:
+        """`digital_in()` with the read mark the gate ages the level by."""
+        if self.board is not None:
+            self.board.require_input_pin(pin, called_from=called_from)
+        where = f"{called_from} -> digital.in {pin!r}"
+        read_ms = self._clock_ms()
+        try:
+            queue = self._replayed_levels.get(pin)
+            if queue is not None:
+                level = self._next_replayed_level(pin, queue, where)
+            else:
+                level = self._read_level(pin, where)
+            if not isinstance(level, bool):
+                raise PerceptionUnavailableError(
+                    where=where,
+                    why=f"the line gave {level!r}, not a logic level",
+                    how="check the wiring of the input, or the backend that reads it",
+                )
+        except PerceptionUnavailableError as error:
+            self._emit_digital_in({"pin": pin, "reason": error.why}, use)
+            raise
+        self._emit_digital_in({"pin": pin, "value": level}, use)
+        return DigitalReading(level, read_ms)
+
+    def _emit_digital_in(self, data: dict[str, Any], use: str | None) -> None:
+        if use is not None:
+            data["use"] = use
+        if self.events is not None:
+            self.events.emit("digital_in", data)
+
+    def _read_level(self, pin: str, where: str) -> bool:
+        """The target's own read of a declared input line; a read that fails raises NE5001."""
+        raise BoardCapabilityError(
+            where=where,
+            why=f"digital.in is not implemented on target {self.target!r} yet",
+            how="see docs/spec/simulation_coverage.md for the task that adds it; `sim` and `linux` have it",
+        )
+
+    def script_digital_in(self, pin: str, values: Iterable[bool | None]) -> None:
+        """
+        Levels returned in order, one per read, instead of the line's own — how replay feeds a
+        recorded session back; a None is a read that failed when it was recorded. Reading past
+        the last one is a failed read, never the last level again.
+        """
+        if self.board is not None:
+            self.board.require_input_pin(
+                pin, called_from=f"{type(self).__name__}.script_digital_in()"
+            )
+        self._replayed_levels[pin] = deque(values)
+
+    @staticmethod
+    def _next_replayed_level(pin: str, queue: deque[bool | None], where: str) -> bool:
+        level = queue.popleft() if queue else None
+        if level is None:
+            raise PerceptionUnavailableError(
+                where=where,
+                why="the trace being replayed holds no reading of this line here (it had failed, or ended)",
+                how="replay a trace recorded with its digital_in events",
+            )
+        return level
 
     def _not_on_target(self, primitive: str, called_from: str) -> None:
         raise BoardCapabilityError(

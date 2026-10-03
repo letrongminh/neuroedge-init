@@ -32,11 +32,19 @@ offline here, so a criterion is decided by, in order:
    the REPL — and from the kernel on `linux`. A reading that cannot be taken, or
    that a rule of its sensor rejects, leaves every fact of that sensor undecided
    (`sensor_unavailable`);
-4. the grammar, through `SystemOne`'s local fallback, for the facts a matched
+4. `[sim.digital_facts]` — a `bool` fact read from an input line each time the gate facts
+   are gathered, ``door_closed = { pin = "door_contact_raw" }`` (the level itself) or
+   ``{ pin = "limit_switch", equals = false }`` (the line low), on a board that declares
+   `digital.in` (RFC-0007 §3a). The level starts at `[sim.inputs]` on `sim` — changed with
+   `:input` in the REPL — and is read from the kernel on `linux`. The fact carries the
+   HAL's read mark: a level read more than `DIGITAL_IN_MAX_AGE_MS` before the verdict, a
+   line that cannot be read, or one nobody set leaves the criterion undecided and the gate
+   blocks `criterion_unavailable` — even under `fail: open`;
+5. the grammar, through `SystemOne`'s local fallback, for the facts a matched
    command declares (``command_recognized``).
 
 Anything else is undecided, and the gate blocks. With `[system_one]` (TSK-I4-02),
-step 4 asks the cloud model first for the criteria that table lists — and only
+step 5 asks the cloud model first for the criteria that table lists — and only
 those — and the grammar whenever the model cannot answer (Q-14, FR-MDL-03).
 """
 
@@ -62,16 +70,20 @@ from ..actions.tools import (
 from ..engine.canonical import digest
 from ..engine.compiler import (
     AgentManifest,
+    DigitalFact,
     build,
     load_actions,
     load_agent_manifest,
     numeric_sensor_fact_error,
+    parse_digital_facts,
+    parse_digital_levels,
 )
 from ..engine.compiler import resolve_gates as _resolve_gates
 from ..engine.gate import ActionContractEngine
 from ..engine.gate_resolver import GateRegistry, ResolvedGate
 from ..engine.latency import TURN_EVENT, TurnMeter, system_two_usage, turn_path
 from ..engine.trace_sink import Clock, EventLog, monotonic_ms
+from ..engine.verdict import DIGITAL_IN_SOURCE, Fact
 from ..errors import (
     AgentManifestError,
     BoardCapabilityError,
@@ -93,6 +105,14 @@ CONFIRM_WORDS = frozenset(
 )
 DECLINE_WORDS = frozenset({"không", "khong", "huỷ", "hủy", "huy", "thôi", "no", "n"})
 CONFIRM_HINT = "Nói “có” để xác nhận, “không” để huỷ."
+
+
+LEVEL_WORDS = {"true": True, "1": True, "high": True, "false": False, "0": False, "low": False}
+
+
+def level_word(text: str) -> bool | None:
+    """The logic level a typed word names (`:input`, the page): True for high, False for low."""
+    return LEVEL_WORDS.get(text.strip().casefold())
 
 
 def answer_word(text: str) -> bool | None:
@@ -398,10 +418,22 @@ def _sim_sensors(manifest: AgentManifest, sim: dict[str, Any]):
 
 
 def _refuse_shadowed_facts(
-    where: str, facts: Mapping[str, Any], sensor_facts: Mapping[str, SensorFact]
+    where: str,
+    facts: Mapping[str, Any],
+    sensor_facts: Mapping[str, SensorFact],
+    digital_facts: Mapping[str, DigitalFact] | None = None,
 ) -> None:
-    """A fixed value for a criterion a sensor decides would never be read."""
+    """A fixed value for a criterion a sensor or an input line decides would never be read."""
     for criterion in facts:
+        if digital_facts and criterion in digital_facts:
+            raise AgentManifestError(
+                where=f"{where} {criterion}",
+                why=(
+                    f"{criterion!r} is read from input pin {digital_facts[criterion].pin!r} "
+                    "([sim.digital_facts]) on every evaluation, so this value would never be used"
+                ),
+                how=f"remove {criterion} here, or its [sim.digital_facts] rule",
+            )
         if criterion in sensor_facts:
             raise AgentManifestError(
                 where=f"{where} {criterion}",
@@ -414,8 +446,13 @@ def _refuse_shadowed_facts(
 
 
 def sensor_facts_digest(sim: Mapping[str, Any]) -> str | None:
-    """Digest of `[sim.sensor_facts]` as parsed — recorded with a session, checked by replay."""
+    """Digest of `[sim.sensor_facts]` (and `[sim.digital_facts]`) as parsed — recorded with a session, checked by replay."""
     rules = sim.get("sensor_facts")
+    digital = sim.get("digital_facts")
+    if digital:
+        # A criterion has one source, so the two tables merge without a clash; a session with
+        # no digital rule keeps the digest it always had.
+        rules = {**(rules or {}), **digital}
     if not rules:
         return None
     try:
@@ -543,10 +580,14 @@ def _require_linux_primitives(manifest: AgentManifest) -> None:
     )
 
 
-def _linux_needs(manifest: AgentManifest, sensor_facts: Mapping[str, Any]) -> dict[str, Any]:
+def _linux_needs(
+    manifest: AgentManifest,
+    sensor_facts: Mapping[str, Any],
+    digital_facts: Mapping[str, DigitalFact] | None = None,
+) -> dict[str, Any]:
     """
     What `LinuxHAL` checks before it requests a line: every sensor the agent or a gate
-    fact reads is readable, a display backend is chosen if the agent draws, and the
+    fact reads is readable, every input line it reads is there, a display backend is chosen if the agent draws, and the
     live audio devices (when the machine chose that backend) open if the agent needs
     them — all before a pin is held (Q-16, TSK-S5-08).
     """
@@ -557,6 +598,14 @@ def _linux_needs(manifest: AgentManifest, sensor_facts: Mapping[str, Any]) -> di
         "display": "display" in manifest.requires,
         "audio": tuple(
             primitive for primitive in ("audio.in", "audio.out") if primitive in manifest.requires
+        ),
+        "digital_in": list(
+            dict.fromkeys(
+                [
+                    *manifest.requires.get("digital.in", {}).get("pins", ()),
+                    *(r.pin for r in (digital_facts or {}).values()),
+                ]
+            )
         ),
         "where": f"{manifest.source} on target 'linux'",
     }
@@ -585,6 +634,7 @@ class SimSession:
         facts: Mapping[str, Any],
         slot_facts: Mapping[str, tuple[str, Any]],
         sensor_facts: Mapping[str, SensorFact] | None = None,
+        digital_facts: Mapping[str, DigitalFact] | None = None,
         slow: SystemTwo | None = None,
         fast: SystemOne | None = None,
         knowledge: KnowledgeBase | None = None,
@@ -600,6 +650,7 @@ class SimSession:
         self.facts: dict[str, Any] = dict(facts)
         self.slot_facts = dict(slot_facts)
         self.sensor_facts = dict(sensor_facts or {})
+        self.digital_facts = dict(digital_facts or {})
         self.slow = slow if slow is not None else SystemTwo("sim")
         # System 1 — the gate's fact source: `[system_one]`'s model, or the grammar alone.
         self.fast = fast if fast is not None else conversation.engine.facts_source
@@ -665,8 +716,12 @@ class SimSession:
         sim_facts, slot_facts = _sim_tables(manifest)
         sim_table = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
         sensors, sensor_facts = _sim_sensors(manifest, sim_table)
+        digital_facts = parse_digital_facts(manifest.source, sim_table)
+        input_levels = parse_digital_levels(manifest.source, sim_table)
         for where, given in (("[sim.facts]", sim_facts), ("SimSession.load(facts=...)", facts)):
-            _refuse_shadowed_facts(f"{manifest.source} -> {where}", given or {}, sensor_facts)
+            _refuse_shadowed_facts(
+                f"{manifest.source} -> {where}", given or {}, sensor_facts, digital_facts
+            )
 
         if target == "linux":
             _require_linux_primitives(manifest)
@@ -678,6 +733,11 @@ class SimSession:
             # Here, not on the first turn: at run time a failed read is only "undecided".
             board.require_sensor(
                 rule.sensor, called_from=f"{manifest.source} -> [sim.sensor_facts] {criterion}"
+            )
+        for criterion, digital_rule in digital_facts.items():
+            board.require_input_pin(
+                digital_rule.pin,
+                called_from=f"{manifest.source} -> [sim.digital_facts] {criterion}",
             )
 
         if events is None:
@@ -693,7 +753,7 @@ class SimSession:
             hal = TypedLinuxHAL(
                 board,
                 events=events,
-                needs=_linux_needs(manifest, sensor_facts),
+                needs=_linux_needs(manifest, sensor_facts, digital_facts),
                 units={name: unit for name, (_, unit) in sensors.items() if unit is not None},
                 **dict(target_options or {}),
             )
@@ -701,6 +761,8 @@ class SimSession:
             hal = SimHAL(board, events=events, **dict(target_options or {}))
             for name, (value, unit) in sensors.items():
                 hal.set_sensor(name, value, unit)
+            for pin, level in input_levels.items():
+                hal.set_digital_in(pin, level)
         # Requesting the lines is the one step that holds anything: if the rest of
         # the wiring fails, they are released before the error goes up.
         try:
@@ -728,6 +790,7 @@ class SimSession:
                 facts={**sim_facts, **(facts or {})},
                 slot_facts=slot_facts,
                 sensor_facts=sensor_facts,
+                digital_facts=digital_facts,
                 slow=slow,
                 fast=fast,
                 knowledge=knowledge,
@@ -783,8 +846,25 @@ class SimSession:
         self.hal.set_sensor(sensor, value)
         self.events.emit("sensor_set", reading_data(sensor, value))
 
+    def set_digital_in(self, pin: str, level: bool) -> None:
+        """Change a simulated input level (REPL `:input`, the UI) and record that it changed."""
+        self.hal.set_digital_in(pin, level)
+        self.events.emit("digital_in_set", {"pin": pin, "value": level})
+
     def set_fact(self, criterion: str, value: Any) -> None:
-        """A session fact (REPL `:set`, the UI) — refused for one a sensor decides."""
+        """A session fact (REPL `:set`, the UI) — refused for one a sensor or an input decides."""
+        line = self.digital_facts.get(criterion)
+        if line is not None:
+            raise NeuroEdgeError(
+                where=f":set {criterion}",
+                why=(
+                    f"{criterion!r} is read from input pin {line.pin!r} ([sim.digital_facts]) "
+                    "each time the gate facts are gathered; a value set here would never be read"
+                ),
+                how=(
+                    f":input {line.pin} <true|false> on sim; on linux, change what drives the line"
+                ),
+            )
         rule = self.sensor_facts.get(criterion)
         if rule is not None:
             raise NeuroEdgeError(
@@ -837,7 +917,39 @@ class SimSession:
                 self.events.emit("sensor_unavailable", {"sensor": sensor, "reason": reason})
             for criterion, rule in rules:
                 facts[criterion] = None if reason is not None else rule.evaluate(reading)
+        self._digital_facts(facts)
         return facts
+
+    def _digital_facts(self, facts: dict[str, Any]) -> None:
+        """
+        The `bool` facts of the input lines (RFC-0007 §3a). Each line is read once, here, right
+        before the gate looks at it, and its fact carries the HAL's read mark: the engine ages
+        it, and a level older than `DIGITAL_IN_MAX_AGE_MS` is unavailable. A line that cannot be
+        read leaves every fact of it a `digital.in` fact with no value, which blocks
+        `criterion_unavailable` whatever `budget.fail` says — never a level that was not read.
+        """
+        by_pin: dict[str, list[tuple[str, DigitalFact]]] = {}
+        for criterion, rule in self.digital_facts.items():
+            by_pin.setdefault(rule.pin, []).append((criterion, rule))
+        for pin, rules in by_pin.items():
+            try:
+                reading = self.hal.digital_reading(
+                    pin, called_from=f"[sim.digital_facts] {rules[0][0]}", use="fact"
+                )
+            except (NeuroEdgeError, OSError) as error:
+                if not isinstance(error, PerceptionUnavailableError):
+                    # The HAL writes `digital_in` for a read that failed; a refusal it did not.
+                    reason = error.why if isinstance(error, NeuroEdgeError) else repr(error)
+                    self.events.emit("digital_in", {"pin": pin, "reason": reason, "use": "fact"})
+                for criterion, _ in rules:
+                    facts[criterion] = Fact(None, source=DIGITAL_IN_SOURCE)
+                continue
+            for criterion, rule in rules:
+                facts[criterion] = Fact(
+                    rule.evaluate(reading.value),
+                    source=DIGITAL_IN_SOURCE,
+                    read_ms=reading.read_ms,
+                )
 
     # -- turn timing (TSK-I4-03) ------------------------------------------------------
     async def _metered(

@@ -3,14 +3,14 @@
  * `neuroedge run --ui` (live). Plain DOM, no dependencies, no network.
  * Every string from a trace is set with textContent, never as HTML.
  *
- *   NE.stateAt(events, t)  -> what the pins, sensors and screen were at t (ms)
+ *   NE.stateAt(events, t)  -> what the pins, sensors, input lines and screen were at t (ms)
  *   NE.mount(root, opts)   -> render; opts = {meta, board, events, live, onCommand}
  */
 (function (global) {
   "use strict";
 
   function stateAt(events, t) {
-    const pins = {}, sensors = {}, gates = [], asks = {};
+    const pins = {}, sensors = {}, inputs = {}, gates = [], asks = {};
     let frame = null, begin = null, speech = null, heard = null, call = null;
     for (const [i, e] of events.entries()) {
       if (e.offset_ms > t) break;
@@ -24,6 +24,8 @@
         pins[d.pin].aborted = d.reason;
       } else if (e.type === "sensor_read") {
         sensors[d.sensor] = { value: d.value, unit: d.unit };
+      } else if ((e.type === "digital_in" || e.type === "digital_in_set") && typeof d.value === "boolean") {
+        inputs[d.pin] = d.value;  // RFC-0007 §3a: the level of a digital.in line, high = true
       } else if (e.type === "display_frame") {
         frame = d;
       } else if (e.type === "tts_stream_start") {
@@ -56,7 +58,7 @@
     // The newest question still open at t, and not past its expiry.
     let pending = null;
     for (const id in asks) if (asks[id].expires_ms > t) pending = asks[id];
-    return { pins: pins, sensors: sensors, frame: frame, gates: gates, speech: speech, heard: heard,
+    return { pins: pins, sensors: sensors, inputs: inputs, frame: frame, gates: gates, speech: speech, heard: heard,
              pending: pending };
   }
 
@@ -157,7 +159,7 @@
     }
     right.appendChild(ask);
     if (opts.onCommand) {
-      const input = el("input", { placeholder: "Gõ lệnh cho agent — hoặc :sensor <tên> <giá trị>, :set <dữ kiện> <giá trị>", autocomplete: "off" });
+      const input = el("input", { placeholder: "Gõ lệnh cho agent — hoặc :sensor <tên> <giá trị>, :input <chân> <true|false>, :set <dữ kiện> <giá trị>", autocomplete: "off" });
       const form = el("form", { class: "say" }, [input, el("button", { type: "submit", text: "Gửi" })]);
       form.addEventListener("submit", function (ev) {
         ev.preventDefault();
@@ -206,6 +208,13 @@
         sensors.appendChild(el("div", { class: "sensor" }, [
           el("span", { text: name }),
           el("span", { text: r ? String(r.value) + (r.unit ? " " + r.unit : "") : "—" }),
+        ]));
+      }
+      const inputNames = new Set(Object.keys(s.inputs).concat((opts.board && opts.board.inputs) || []));
+      for (const name of inputNames) {
+        sensors.appendChild(el("div", { class: "sensor" }, [
+          el("span", { text: name }),
+          el("span", { text: name in s.inputs ? (s.inputs[name] ? "HIGH" : "LOW") : "—" }),
         ]));
       }
       if (s.frame) {

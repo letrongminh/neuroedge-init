@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..errors import ActionContractViolation
-from ..hal.board import PRIMITIVES
+from ..hal.board import REQUIRABLE_PRIMITIVES
 
 
 @dataclass(frozen=True)
@@ -31,10 +31,10 @@ class Requirement:
     @classmethod
     def parse(cls, text: str, where: str) -> Requirement:
         primitive, _, name = text.partition(":")
-        if primitive not in PRIMITIVES:
+        if primitive not in REQUIRABLE_PRIMITIVES:
             raise ActionContractViolation(
                 where=where,
-                why=f"requires {text!r} names no HAL primitive; primitives are {list(PRIMITIVES)}",
+                why=f"requires {text!r} names no HAL primitive; primitives are {list(REQUIRABLE_PRIMITIVES)}",
                 how='write requires="digital.out:door_lock" (primitive:name)',
             )
         return cls(primitive, name or None)
