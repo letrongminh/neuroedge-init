@@ -32,7 +32,15 @@ from ..engine import (
 )
 from ..engine.gate_resolver import lint_registry
 from ..errors import BoardCapabilityError, BuildFailed, NeuroEdgeError, VerificationError
-from ..hal.board import REFERENCE_BOARD, SUPPORTED_TARGETS, available_boards, load_board_by_id
+from ..hal.board import (
+    ALL_PRIMITIVES,
+    PRIMITIVES,
+    REFERENCE_BOARD,
+    REFERENCE_BOARDS,
+    SUPPORTED_TARGETS,
+    available_boards,
+    load_board_by_id,
+)
 from ..paths import gates_dir, repo_root
 from ..sim.serve import MCP_INIT_TIMEOUT_S
 from ..sim.serve import exit_on_signals as _exit_on_signals
@@ -522,7 +530,7 @@ def board_list():
 def board_show(
     board_id: str = typer.Argument(..., help="Board id, e.g. esp32s3-box-3"),
 ):
-    """Show one board's declared capabilities across the five HAL primitives."""
+    """Show one board's declared capabilities: the five core primitives and the extensions it has."""
     try:
         board = load_board_by_id(board_id)
     except NeuroEdgeError as error:
@@ -540,10 +548,10 @@ def board_show(
     table = Table()
     table.add_column("Primitive", style="cyan")
     table.add_column("Declared parameters")
-    for primitive in ("audio.in", "audio.out", "digital.out", "sensor.read", "display"):
+    for primitive in ALL_PRIMITIVES:
         if board.supports(primitive):
             table.add_row(primitive, json.dumps(board.capability(primitive), ensure_ascii=False))
-        else:
+        elif primitive in PRIMITIVES:  # an extension a board lacks is not an omission
             table.add_row(primitive, "[red]not provided[/red]")
     console.print(table)
 
@@ -965,14 +973,39 @@ def verify(
     corpus_problems, tool_calls = _verify_tool_corpus()
     problems += corpus_problems
 
-    console.print(f"\n[bold]Replaying canonical traces on {', '.join(requested)}[/bold]")
+    # One column per (target, board): equivalence means something only once it has run on
+    # every reference board of the target (RFC-0013 §3f). `esp32s3` replays on the device,
+    # which declares its own board, so it keeps one column until a second board needs a port.
+    columns: list[tuple[str, str, str | None]] = []
+    for target in requested:
+        boards = () if target == "esp32s3" else REFERENCE_BOARDS.get(target, ())
+        columns += [(f"{target}/{b}", target, b) for b in boards] or [(target, target, None)]
+    console.print(
+        f"\n[bold]Replaying canonical traces on {', '.join(c[0] for c in columns)}[/bold]"
+    )
     table = Table()
     table.add_column("Trace", style="cyan")
-    for target in requested:
-        table.add_column(target, justify="center")
+    for label, _target, _board in columns:
+        table.add_column(label, justify="center")
     rows: dict[str, list[str]] = {path.name: [] for path in valid}
-    for target in requested:
+    replayed_on: dict[str, int] = {label: 0 for label, _t, _b in columns}
+    for label, target, board_id in columns:
         for path in valid:
+            if board_id is not None:
+                needs = _trace_primitives(load_trace(path))
+                lacking = load_board_by_id(board_id).missing_primitives(needs)
+                if lacking:
+                    # A board replays what it declares enough for; the default board must
+                    # replay all of it, so for that one a gap is a failure, not a skip.
+                    rows[path.name].append("[dim]—[/dim]")
+                    if board_id == REFERENCE_BOARD[target]:
+                        problems += 1
+                        err_console.print(
+                            f"  [red]✗[/red] {path.name} on {escape(label)}: the default board "
+                            f"of {escape(target)} lacks {lacking}, and must replay every "
+                            "canonical trace (RFC-0013 §3f)"
+                        )
+                    continue
             try:
                 if target == "esp32s3":
                     result = _device_replay(device, path, port)
@@ -987,7 +1020,12 @@ def verify(
                     # A canonical trace must be decided by the very gate it was recorded
                     # with (RFC-0008): a different gate_digest is refused, not compared.
                     result = asyncio.run(
-                        TracePlayer(path, target=target, enforce_gate_digests=True).replay()
+                        TracePlayer(
+                            path,
+                            target=target,
+                            board_id=board_id,
+                            enforce_gate_digests=True,
+                        ).replay()
                     )
                     verdicts = result.verdicts
                 diff = GoldenComparator().compare(result, load_trace(path))
@@ -995,11 +1033,12 @@ def verify(
                 problems += 1
                 rows[path.name].append("[red]✗[/red]")
                 err_console.print(
-                    f"  [red]✗[/red] {path.name} on {escape(target)}: [{error.code}] "
+                    f"  [red]✗[/red] {path.name} on {escape(label)}: [{error.code}] "
                     f"{escape(error.why)}\n    fix: {escape(error.how)}"
                 )
                 continue
             replayed += 1
+            replayed_on[label] += 1
             if diff.ok:
                 rows[path.name].append(f"[green]✓[/green] {' '.join(verdicts)}")
             else:
@@ -1007,7 +1046,7 @@ def verify(
                 rows[path.name].append("[red]✗ differs[/red]")
                 for difference in diff.differences:
                     err_console.print(
-                        f"  [red]✗[/red] {path.name} on {escape(target)}: {escape(str(difference))}"
+                        f"  [red]✗[/red] {path.name} on {escape(label)}: {escape(str(difference))}"
                     )
     for name, cells in rows.items():
         table.add_row(name, *cells)
@@ -1031,6 +1070,16 @@ def verify(
                 traces_root,
                 f"had no trace replayed on targets {targets!r}",
             ),
+            # Zero on one board is a failure even when the others replayed (RFC-0013 §3f).
+            **{
+                f"replays compared on {label}": (
+                    count,
+                    traces_root,
+                    "has no canonical trace this board declares enough primitives for",
+                )
+                for label, count in replayed_on.items()
+                if len(columns) > 1
+            },
         }
     )
     if empty is not None:
@@ -1052,7 +1101,7 @@ def verify(
         Panel(
             f"[green]Passed:[/green] all {resolved} gate(s) resolve, all {len(valid)} "
             "canonical trace(s) validate, every tool call of the corpus gives its recorded "
-            f"result, and {replayed} replay(s) on {', '.join(requested)} match the verdicts "
+            f"result, and {_replay_breakdown(replayed_on)} match the verdicts "
             "and pin commands they record."
             f"{on_device}\n\n"
             "[yellow]Compared:[/yellow] decisions only — not timing. Timing equivalence "
@@ -1061,6 +1110,29 @@ def verify(
             border_style="green",
         )
     )
+
+
+# The primitive each event type of a trace needs from the board it replays on. A type not
+# listed needs none: the core primitives are on every reference board (RFC-0013 §3a).
+_EVENT_PRIMITIVE = {
+    "actuator_command": "digital.out",
+    "actuator_command_rejected": "digital.out",
+    "sensor_read": "sensor.read",
+    "digital_in": "digital.in",
+    "i2c_read": "i2c",
+    "analog_in": "analog.in",
+    "envelope_refused": "digital.out",
+}
+
+
+def _trace_primitives(trace: dict[str, Any]) -> list[str]:
+    """The primitives a trace uses, in HAL order: what a board must declare to replay it."""
+    used = {_EVENT_PRIMITIVE[e["type"]] for e in trace["events"] if e["type"] in _EVENT_PRIMITIVE}
+    return [p for p in ALL_PRIMITIVES if p in used]
+
+
+def _replay_breakdown(replayed_on: dict[str, int]) -> str:
+    return ", ".join(f"{count} replay(s) on {label}" for label, count in replayed_on.items())
 
 
 def _device_replay(sessions, path: Path, port: str) -> dict[str, Any]:
@@ -1835,7 +1907,7 @@ def build(
         report = run_build(
             agent,
             target=target,
-            board_id=board or REFERENCE_BOARD.get(target, "esp32s3-box-3"),
+            board_id=board,  # None: the target's default board, never another one (RFC-0013 §3e)
             out_dir=out,
             registry=GateRegistry(registry) if registry is not None else None,
         )

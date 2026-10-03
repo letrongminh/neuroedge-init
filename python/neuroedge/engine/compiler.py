@@ -44,7 +44,14 @@ from ..errors import (
     NeuroEdgeError,
 )
 from ..hal.audio import MAX_RATE_HZ, MIN_RATE_HZ, rate_ok
-from ..hal.board import PRIMITIVES, BoardProfile, load_board_by_id
+from ..hal.board import (
+    ALL_PRIMITIVES,
+    PRIMITIVES,
+    REFERENCE_BOARD,
+    REFERENCE_BOARDS,
+    BoardProfile,
+    load_board_by_id,
+)
 from .canonical import gate_canonical_json, gate_digest
 from .decision_tree import compile_tree, tree_bytes
 from .gate_resolver import GateRegistry, ResolvedGate, resolve_gate_file, resolve_gate_uri
@@ -167,7 +174,7 @@ def load_agent_manifest(path: str | Path) -> AgentManifest:
 
 def _describe(board: BoardProfile) -> str:
     offered = []
-    for primitive in PRIMITIVES:
+    for primitive in ALL_PRIMITIVES:
         if not board.supports(primitive):
             continue
         if primitive == "digital.out":
@@ -254,6 +261,35 @@ def check_capabilities(manifest: AgentManifest, board: BoardProfile) -> list[Neu
                         )
                     )
     return problems
+
+
+def default_board_hint(manifest: AgentManifest, board: BoardProfile) -> NeuroEdgeError:
+    """
+    The way out when `build` ran on a default board that does not satisfy `[requires]`:
+    which other reference boards of the target do (RFC-0013 §3e). It names them and
+    changes nothing: the build stays failed, and the user passes `--board` knowingly.
+    """
+    satisfying = [
+        other
+        for other in REFERENCE_BOARDS.get(board.target, ())
+        if other != board.id and not check_capabilities(manifest, load_board_by_id(other))
+    ]
+    if satisfying:
+        how = f"build with --board {satisfying[0]} (reference boards of {board.target} that satisfy [requires]: {satisfying})"
+    else:
+        how = (
+            f"no reference board of {board.target} satisfies [requires] "
+            f"({list(REFERENCE_BOARDS.get(board.target, ()))}); narrow [requires] in "
+            f"{manifest.source}, or build for another target"
+        )
+    return BoardCapabilityError(
+        where=f"{manifest.source} -> [requires] on the default board {board.id!r}",
+        why=(
+            f"no --board was given, so {board.id!r}, the default board of {board.target}, was "
+            f"checked and does not satisfy [requires]; it provides {_describe(board)}"
+        ),
+        how=how,
+    )
 
 
 # --- 3. @action against the manifest -------------------------------------------
@@ -787,13 +823,19 @@ def build(
     agent_toml: str | Path,
     *,
     target: str,
-    board_id: str,
+    board_id: str | None = None,
     out_dir: str | Path | None = None,
     registry: GateRegistry | None = None,
 ) -> BuildReport:
-    """Check everything; raise `BuildFailed` with every problem, or write artifacts."""
+    """
+    Check everything; raise `BuildFailed` with every problem, or write artifacts.
+
+    `board_id` None builds on the target's default board. It is never replaced by another
+    board that would fit: the user must know which board they flash (RFC-0013 §3e).
+    """
     manifest = load_agent_manifest(agent_toml)
-    board = load_board_by_id(board_id)
+    explicit_board = board_id is not None
+    board = load_board_by_id(board_id or REFERENCE_BOARD.get(target, "esp32s3-box-3"))
     problems: list[NeuroEdgeError] = []
 
     if manifest.targets and target not in manifest.targets:
@@ -812,7 +854,10 @@ def build(
                 how=f"pick a {target} board, or build with --target {board.target}",
             )
         )
-    problems += check_capabilities(manifest, board)
+    capability_problems = check_capabilities(manifest, board)
+    problems += capability_problems
+    if capability_problems and not explicit_board:
+        problems.append(default_board_hint(manifest, board))
     actions = load_actions(manifest)
     problems += check_actions(manifest, actions)
     gates, gate_problems = resolve_gates(manifest, registry)
