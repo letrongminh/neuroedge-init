@@ -32,6 +32,10 @@ bản gói.
 
 #### Đã thêm
 
+- **I2a · TSK-V1b-04 — golden suy luận và sai số `tolerance` của từng bo (RFC-0012 §3f).** `verify` so suy luận với golden host
+  theo sha256 mô hình, ghép một-một theo nhãn, IoU ≥ `box_iou_min`, |Δscore| ≤ `score_abs`; lệch ⇒ NE4002, golden của mô hình khác
+  ⇒ NE4004. `testing/vision_golden.py`, `fixtures/vision/golden/`. Kiểm: `pytest tests/test_vision_golden.py`. (FR-CI-01→04)
+
 - **I2a — `verify` phát lại agent mẫu của cả bốn gói trên `sim-rpi5` và `linux-rpi5`.** Thêm corpus `fine-control` (`fan-pwm`)
   và `motion` (`rover`) cạnh `sensor-pack`, `vision`; bo không khai nguyên thủy của corpus hiện `—`, không tính đạt. Kiểm:
   `pytest tests/test_pack_corpora.py`; `neuroedge verify --targets sim,linux` (job `linux-hal`). (I2a tiêu chí 3, RFC-0013 §3f)
