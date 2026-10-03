@@ -1,0 +1,30 @@
+# Pushing the fan is allowed only while its *measured* duty is low: a fan already running hard is
+# not given more. `fan_load` is the read-back of the PWM controller (`[sim.feedback_facts]`); where
+# the board declares no read-back it is only ever commanded, never measured, and the gate blocks
+# `criterion_unavailable` — fail-closed (RFC-0010 §9.12).
+schema:  neuroedge.gate/v1
+name:    fan_assist
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+  fan_load:
+    type: numeric
+    unit: ratio
+    range: { min: 0, max: 0.8 }
+    max_age_ms: 5000
+    instructions: "Duty đo được của quạt, đọc lại từ bộ điều khiển PWM"
+
+allow_when:
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
+  fan_load:    { lt: 0.3 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

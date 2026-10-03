@@ -1,0 +1,87 @@
+{
+  "$schema": "https://schema.neuroedge.dev/trace/v1.json",
+  "metadata": {
+    "session_id": "sess_c0a1e300",
+    "timestamp_utc": "2026-10-03T12:00:00Z",
+    "target": "sim",
+    "board_id": "sim-rpi5",
+    "agent_version": "rover@0.1.0",
+    "anonymized": true
+  },
+  "events": [
+    {
+      "offset_ms": 0,
+      "type": "tool_call",
+      "data": {
+        "id": "call_1",
+        "name": "drive",
+        "arguments": {
+          "speed": 0.3
+        },
+        "source": "mcp"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "action_requested",
+      "data": {
+        "action": "drive",
+        "gate": "drive",
+        "arguments": {
+          "speed": 0.3
+        }
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "drive@1.0.0",
+        "gate_digest": "sha256:73f1b4fc025dfe6b48ce725503a526fd48827eb71df32fb27bce68bb8de3f0bd"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_facts",
+      "data": {
+        "path_clear": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "ALLOW",
+        "evaluations": {
+          "path_clear": true
+        }
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "motion_command",
+      "data": {
+        "channel": "wheel_left",
+        "kind": "motor",
+        "speed": 0.3,
+        "direction": "forward",
+        "ramp_ms": 200,
+        "lease_ms": 200,
+        "run": "new"
+      }
+    },
+    {
+      "offset_ms": 300,
+      "type": "motion_safe",
+      "data": {
+        "channel": "wheel_left",
+        "state": "stop",
+        "cause": "lease_expired"
+      }
+    }
+  ]
+}

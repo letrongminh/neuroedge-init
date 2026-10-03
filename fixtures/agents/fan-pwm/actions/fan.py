@@ -1,5 +1,5 @@
 """
-The fan-pwm sample's two physical actions. Only `c.do()` runs them, after their gate.
+The fan-pwm sample's three physical actions. Only `c.do()` runs them, after their gate.
 
 `fan_run` takes all three PWM parameters and gives none a default: the gate limits each one
 (`arguments`) before it looks at anything else, and a call that leaves one out is REJECTED.
@@ -18,3 +18,9 @@ def fan_run(duty: float, frequency_hz: int, duration_ms: int) -> None:
 def fan_stop() -> None:
     """Stop the fan."""
     digital.out("fan").off()
+
+
+@action(name="fan_assist", requires="digital.out:fan", gate="fan_assist")
+def fan_assist() -> None:
+    """Give the fan a push for two seconds, when it is not already working hard."""
+    digital.out("fan").pwm(frequency_hz=1000, duty=0.5, ms=2000)

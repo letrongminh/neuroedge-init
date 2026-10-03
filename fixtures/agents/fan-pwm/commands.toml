@@ -9,3 +9,8 @@ threshold = 0.80
 intent   = "fan_stop"
 patterns = ["tắt quạt", "dừng quạt", "stop the fan"]
 tool     = "fan_stop"
+
+[[command]]
+intent   = "fan_assist"
+patterns = ["đẩy quạt", "boost the fan"]
+tool     = "fan_assist"

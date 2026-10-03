@@ -1089,8 +1089,9 @@ def verify(
     # RFC-0013 §3f item 7: besides the canonical traces its primitives allow, a board replays the
     # corpus of every extension primitive it carries — one directory of `fixtures/traces/` per
     # pack (`EXTENSION_TRACES`: `sensor-pack` for `digital.in`, `analog.in` and `i2c`; `vision` for
-    # `vision.in`). These are not canonical: a board that lacks a primitive skips them, it does not
-    # fail, each corpus is counted apart, and a corpus no board replayed is a failure.
+    # `vision.in`; `fine-control` for a PWM channel of `digital.out`; `motion` for `motion`).
+    # These are not canonical: a board that lacks a primitive skips them, it does not fail, each
+    # corpus is counted apart, and a corpus no board replayed is a failure.
     extension = []
     for directory in EXTENSION_TRACES:
         for path in sorted((traces_root / directory).glob("*.json")):
@@ -1136,8 +1137,7 @@ def verify(
                 rows[row_of(path)].append("[dim]—[/dim]")  # the device replays the canonical set
                 continue
             if board_id is not None:
-                needs = _trace_primitives(load_trace(path))
-                lacking = load_board_by_id(board_id).missing_primitives(needs)
+                lacking = _trace_lacks(load_board_by_id(board_id), load_trace(path))
                 if lacking:
                     # A board replays what it declares enough for; the default board must
                     # replay all of it, so for that one a gap is a failure, not a skip.
@@ -1281,7 +1281,7 @@ def verify(
 # listed needs none: the core primitives are on every reference board (RFC-0013 §3a).
 # fixtures/traces/<each>/: the corpus of an extension pack (RFC-0013 §3f item 7), each replayed on
 # every board that declares the primitives its traces use.
-EXTENSION_TRACES = ("sensor-pack", "vision")
+EXTENSION_TRACES = ("sensor-pack", "vision", "fine-control", "motion")
 _EVENT_PRIMITIVE = {
     "vision_fact": "vision.in",
     "camera_unavailable": "vision.in",
@@ -1292,7 +1292,26 @@ _EVENT_PRIMITIVE = {
     "i2c_read": "i2c",
     "analog_in": "analog.in",
     "envelope_refused": "digital.out",
+    "pin_state": "digital.out",
+    "motion_command": "motion",
+    "motion_safe": "motion",
 }
+
+
+def _trace_lacks(board: Any, trace: dict[str, Any]) -> list[str]:
+    """
+    What `board` lacks to replay `trace`: primitives it does not declare, and — PWM being a block
+    of `digital.out`, not a primitive (RFC-0010) — a PWM channel when the trace commands or reads
+    one (`pwm` commands, `pin_state`).
+    """
+    lacking = board.missing_primitives(_trace_primitives(trace))
+    uses_pwm = any(
+        e["type"] == "pin_state" or e.get("data", {}).get("operation") == "pwm"
+        for e in trace["events"]
+    )
+    if uses_pwm and not board.pwm_pins:
+        lacking.append("digital.out pwm")
+    return lacking
 
 
 def _trace_primitives(trace: dict[str, Any]) -> list[str]:
