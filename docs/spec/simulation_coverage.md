@@ -30,7 +30,7 @@ không ghi ở đây: đọc task ở cột cuối trong bảng task của roadm
 
 | Nguyên thủy | Backend | Kiểm ở | Task |
 |:---|:---|:---|:---|
-| `digital.out` | `SimHAL`, token dùng một lần | PR | TSK-S2-01, S2-05 |
+| `digital.out` | `SimHAL`, token dùng một lần; phong bì theo chân trong bộ nhớ, đồng hồ của phiên, chân tự về tắt tại hạn (ảo: `sim` không có hẹn giờ) — cùng số của bo mạch nó soi (bất biến 7) | PR | TSK-S2-01, S2-05, N2-01, N2-02 |
 | `audio.in` | Gõ chữ → ngữ pháp lệnh (Q-15) · tệp WAV PCM 16-bit mono đúng `sample_rate_hz` của bo mạch (`--voice-file`; bo mạch không lấy mẫu lại nên `sim` cũng không) → khung 20 ms → VAD năng lượng → STT provider `[stt]` (`hal/audio.py`, `perception/voice_session.py`) | PR (gõ chữ, tệp WAV sinh trong test, provider giả) | WAV: TSK-S3-13 |
 | `audio.out` | Chữ sẽ nói (`tts_stream_start`): câu trả lời knowledge base (RAG qua System 2, cục bộ khi mất mạng), lời hỏi lại của `on_block: ask` · âm thanh TTS provider `[tts]` lấy mẫu lại về `sample_rate_hz` của bo mạch, đặt trên dòng thời gian ảo, cắt khi bị nói chen, ghi ra WAV (`--voice-out`) | PR (provider giả) | chữ: TSK-S2-11 · WAV: TSK-S3-13 |
 | `sensor.read` | Giá trị kịch bản: `[sim.sensors]` trong `agent.toml`, `:sensor` trong REPL và UI; dữ kiện gate từ cảm biến: `[sim.sensor_facts]`; `sensor.read()` trong `@action` | PR | TSK-S3-23 |
@@ -91,11 +91,35 @@ Lúc chạy — fail-closed, không đoán:
 
 | Nguyên thủy | Backend | Kiểm ở | Chỉ phần cứng | Task |
 |:---|:---|:---|:---|:---|
-| `digital.out` | `LinuxHAL` qua libgpiod v2 | PR — gpio-sim | Điện áp, timing | TSK-S3-05 |
+| `digital.out` | `LinuxHAL` qua libgpiod v2; phong bì theo chân với hẹn giờ tự tắt thật và tệp trạng thái bền theo bo mạch; tiến trình giám sát giữ line của chân cơ cấu (`supervise`, `hal/supervisor.py`) | PR — gpio-sim, và SIGSTOP runtime trên gpio-sim (`tests_linux/test_gpio_envelope.py`) | Điện áp, timing | TSK-S3-05, N2-01, N2-02 |
 | `audio.in` | **Backend tệp**: WAV (`--voice-file`) ở mọi rate 8–96 kHz, 1–2 kênh → mono ở rate bo mạch (`hal/audio.py`, `open_audio_file`) · **Backend sống**: `sounddevice` (PortAudio) đọc nút `neuroedge.ec.source` của `module-echo-cancel` (Q-22) | PR — backend tệp trên fake gpiod + `sounddevice` giả; `tests_linux/test_audio_file.py` trên gpio-sim (**runner không có `snd-aloop`**, nên backend sống chỉ chạy trên máy) | Micro, AEC, âm học — RPi 5 + HAT I2S, `snd-aloop` trên Pi | TSK-S5-08 |
 | `audio.out` | **Backend tệp**: dòng thời gian `Speaker` ghi WAV ở rate bo mạch (`--voice-out`) · **Backend sống**: `sounddevice` phát vào nút `neuroedge.ec.sink` (tín hiệu tham chiếu của AEC) | PR — như trên | Loa, âm lượng | TSK-S5-08 |
 | `sensor.read` | sysfs **hwmon** và **IIO** (`/sys/class/hwmon/*/temp1_input`, `/sys/bus/iio/devices/iio:device*/in_*`) — `hal/sysfs.py` | PR — `i2c-stub` + driver `lm75` → hwmon (`scripts/setup_i2c_stub.sh`, `tests_linux/`); IIO trên cây sysfs giả (`tests/test_hal_linux_io.py`) | Cảm biến thật; IIO chỉ trên Pi (`CONFIG_IIO` tắt trên runner) | TSK-S5-09 |
 | `display` | Kiểm và ghi khung bằng đúng mã của `sim` (`make_frame`), rồi → `/dev/fb*` trên Pi, hoặc chỉ trong bộ nhớ — `hal/framebuffer.py` | PR — khung trong bộ nhớ + digest; `/dev/fbN` của `vfb`, hoặc `vkms` trên kernel azure (`scripts/setup_vfb.sh`) | Panel HDMI/DSI | TSK-S5-09 |
+
+**Phong bì an toàn trên `sim` và `linux`** (RFC-0007 §3d, TSK-N2-01, TSK-N2-02; hiện thực `python/neuroedge/hal/envelope.py`).
+Bốn số của mỗi chân cơ cấu lấy từ `board.v1`; `sim-*` có đúng số của bo mạch nó soi, không giàu hơn.
+
+- **Giữ trước nguyên tử.** Mỗi lệnh `on` hoặc `pulse` giữ trước đúng thời gian chân sẽ bật: `min(thời hạn, max_continuous_ms)`,
+  hoặc `max_continuous_ms` khi lệnh không có hạn. Kiểm và giữ là một bước dưới khoá theo chân; hai lệnh đồng
+  thời không cùng qua ngân sách còn lại. Tắt sớm hoàn phần chưa dùng; `authorize` thất bại hoàn 100% và không tiêu token.
+- **Chân đang bật từ chối lệnh bật thứ hai** (`already_on`): không có "bật lại để kéo dài". `min_interval_ms` tính từ lúc lần bật
+  trước **kết thúc**. Lệnh `off` và mọi lệnh về phía an toàn không bao giờ bị chặn, không cần token (`threat_model.md` §1).
+- **Đồng hồ.** `sim`: đồng hồ của phiên (`EventLog.clock`), chân tự về tắt tại hạn mà không cần hẹn giờ (xử lý lười ở lệnh kế
+  tiếp và ở `run_due()`); `linux`: hẹn giờ thật ở `LinuxHAL`, và phong bì coi chân còn bật cho tới khi HAL xác nhận đã thả line.
+  Replay quyết định theo mốc đã ghi của từng lệnh (`ReplayClock`), nên bản ghi phát lại cho cùng quyết định ở mọi tốc độ.
+- **Sống qua khởi động lại (`linux`).** Thời gian bật được ghi **trước** khi bật, một tệp JSON mỗi chân
+  (`{"version": 1, "name": <chân>, "on_ms": [...]}`) trong **một thư mục theo bo mạch**: `$NEUROEDGE_LINUX_ENVELOPE_STATE`, mặc định
+  `$XDG_STATE_HOME/neuroedge/envelope/<board id>` (`~/.local/state/…`). Theo bo mạch vì chân thuộc về giàn thiết bị, không thuộc về agent:
+  hai agent trên cùng bo mạch dùng chung một cửa sổ. Sau khởi động, mọi lần bật đã ghi chiếm ngân sách tới `window_s`, và mỗi chân chờ
+  `min_interval_ms` trước lần bật đầu. Tệp thiếu, hỏng hoặc không ghi được ⇒ coi cả cửa sổ đã dùng hết (`window_unreadable`). Giàn
+  mới khai tệp trống bằng `NEUROEDGE_LINUX_ENVELOPE_INIT=1` (hoặc `envelope_init` ở `target_options`); cờ này chỉ tạo tệp **chưa có**,
+  không bao giờ ghi đè tệp có sẵn. `sim` giữ cùng luật trong bộ nhớ, không có tệp và không có lần khởi động lại.
+- **Giám sát ngoài tiến trình (`linux`, `supervise`).** Với `NEUROEDGE_LINUX_SUPERVISE=1` (hoặc `LinuxHAL(supervise=True)`), line của mọi chân
+  có phong bì do một tiến trình riêng giữ (`hal/supervisor.py`; phiên riêng nên SIGSTOP gửi cho nhóm tiến trình của runtime không dừng
+  nó). Runtime ra lệnh qua ống và gửi nhịp tim; mất nhịp quá `heartbeat_timeout_ms` (mặc định 1000 ms) khi có line đang bật, quá hạn
+  (thời gian giữ trước + 250 ms), hoặc ống đóng (runtime chết) ⇒ giám sát thả line. Runtime nhận biết ở tin nhắn kế tiếp và ghi
+  `actuator_command` `off` kèm `cause`. Mặc định **tắt** vì cần `gpiod` thật trong tiến trình con; xem báo cáo TSK-N2-02.
 
 **Cảm biến trên `linux` tìm theo tên, không theo số thứ tự** (`hwmon3`, `iio:device0` đổi theo thứ
 tự probe), như chân GPIO tìm theo tên line: kênh có nhãn trùng tên cảm biến của bo mạch, hoặc một
@@ -171,8 +195,8 @@ nào đi theo ô tương ứng ở §2. Cột "Vai trò khi replay" nói phần 
 |:---|:---|:---|:---|
 | `audio.in` | `text_input` · `audio_in_vad_start` · `audio_in_segment` · `audio_in_overflow` | `{text}` · `{energy_db}` · `{sha256, duration_ms, sample_rate_hz}` · `{}` | **Đầu vào.** Replay bắt đầu từ kết quả nhận thức đã ghi (`intent_extracted`), không chạy lại âm thanh. `audio_in_overflow`: thiết bị sống bỏ mất âm thanh đã thu (người đọc theo không kịp) — phiên **dừng** thay vì đưa tiếp một dòng thời gian đã co lại trong im lặng (Q-21) |
 | `audio.out` | `tts_stream_start` · `tts_stream_end` · `knowledge_retrieved` | `{text}` · `{duration_ms, sha256?, reason?}` (`reason`: `docs/spec/voice_fsm.md` §8) · `{entries: [{id, score}]}` | **Đầu ra** — chữ không vào so khớp quyết định; `knowledge_retrieved` cho biết câu trả lời dựa trên tri thức nào |
-| `digital.out` | `actuator_command` · `actuator_aborted` | `{pin, operation, duration_ms}` · `{pin, reason}` | **Quyết định** — so golden ở mọi lần `replay` / `verify` |
-| `digital.out` (phong bì) | `envelope_refused` | `{pin, operation, reason, limit_ms?}` — `reason`: `max_continuous_ms` · `window_budget` · `min_interval_ms` · `window_unreadable` | **Quyết định** — phong bì từ chối lệnh bật trước `authorize` (RFC-0007 §3d, `EnvelopeRefusedError` NE1003); không có `actuator_command` đi kèm và token không bị tiêu. Lệnh về phía an toàn không bao giờ sinh sự kiện này. So golden cùng `actuator_command` |
+| `digital.out` | `actuator_command` · `actuator_aborted` | `{pin, operation, duration_ms, cause?}` · `{pin, reason}` — `cause` chỉ có khi **HAL** tự đưa chân về an toàn, không phải lệnh của agent: `max_continuous_ms` (phong bì cắt một lệnh không có hạn hoặc hạn dài hơn trần) · `supervisor_heartbeat` · `supervisor_deadline` (tiến trình giám sát thả line, §2 phần `linux`). Lệnh kết thúc bằng `duration_ms` của chính nó không sinh sự kiện thứ hai | **Quyết định** — so golden ở mọi lần `replay` / `verify` |
+| `digital.out` (phong bì) | `envelope_refused` | `{pin, operation, reason, limit_ms?, used_ms?, requested_ms?, wait_ms?, remaining_ms?}` — `reason`: `window_budget` (`limit_ms` = `max_on_ms_per_window`, `used_ms` đã giữ trong cửa sổ, `requested_ms` phần xin thêm) · `min_interval_ms` (`limit_ms`, `wait_ms` còn phải chờ) · `already_on` (chân đang bật hoặc có lệnh chờ bật; `remaining_ms` tới hạn của lệnh đang giữ) · `window_unreadable` (bản ghi on-time thiếu, hỏng hoặc không ghi được) · `max_continuous_ms` (dành cho PWM, RFC-0010 §3d: lệnh có `duration_ms` vượt trần bị từ chối; `digital.out` thì tự tắt tại trần, không từ chối) | **Quyết định** — phong bì từ chối lệnh bật trước `authorize` (RFC-0007 §3d, `EnvelopeRefusedError` NE1003); không có `actuator_command` đi kèm và token không bị tiêu. Lệnh về phía an toàn không bao giờ sinh sự kiện này. So golden cùng `actuator_command` (`safety_view`: `{pin, operation, refused}`). Replay quyết định theo **mốc đã ghi** của lệnh (`ReplayClock`): lệnh bị từ chối trong bản ghi phải bị từ chối lại với cùng `pin`, `operation`, `reason`, và lệnh được phép không được bị từ chối — lệch là `Divergence` |
 | `digital.in` | `digital_in` | `{pin, value, read_ms, age_ms, reason?}` | **Đầu vào** (RFC-0007 §3a) — replay cấp lại đúng `value` đã ghi, tính lại `age_ms` từ `read_ms` rồi so với giá trị ghi; `age_ms < 0` hoặc vượt `DIGITAL_IN_MAX_AGE_MS` ⇒ BLOCK `criterion_unavailable`. `reason` có khi lần đọc hỏng (không có `value`) |
 | `i2c` | `i2c_read` | `{bus, device, address, register?, value?, reason?}` — `register` chỉ có ở lần đọc thanh ghi | **Đầu vào** (RFC-0007 §3b) — `sim` chỉ phát lại giá trị đã ghi, không quét bus. Mỗi lần đọc ghi một sự kiện; bus NACK hay timeout ghi `reason` thay cho `value` (`PerceptionUnavailableError` NE5001). Không có sự kiện ghi dữ liệu: API không có đường ghi |
 | `analog.in` | `analog_in` | `{channel, value, unit, read_ms, age_ms, reason?}` | **Đầu vào** (RFC-0007 §3c) — replay cấp lại `value` đã ghi và tính lại `age_ms`; giá trị ngoài `[min, max]` của kênh là lỗi đọc (`reason`), không bị cắt. `age_ms < 0` ⇒ BLOCK `criterion_unavailable` |

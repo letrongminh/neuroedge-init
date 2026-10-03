@@ -92,7 +92,9 @@ Khi `brain/` vào kho, nó cần một mục trong `ALLOWED` (và `LAZY` nếu c
 
 | Module | Trách nhiệm |
 |:---|:---|
-| `__init__.py` | `HardwareAbstractionLayer`: kiểm tên chân **trước** khi gọi `authorize` (gõ sai tên không tốn token), rồi ghi lệnh |
+| `__init__.py` | `HardwareAbstractionLayer`: kiểm tên chân, rồi phong bì, rồi gọi `authorize` (gõ sai tên hay bị phong bì từ chối không tốn token), rồi ghi lệnh; lệnh `off` về phía an toàn không qua phong bì hay `authorize` (RFC-0007 §3d) |
+| `envelope.py` | `SafetyEnvelope`: phong bì an toàn theo chân — giữ trước thời gian bật nguyên tử dưới khoá theo chân, tự tắt bắt buộc, hoàn phần dư, tệp trạng thái write-ahead trên `linux`; chỉ từ chối (`EnvelopeRefusedError`), không bao giờ cho phép |
+| `supervisor.py` | Tiến trình giám sát giữ line của chân cơ cấu trên `linux`: nhịp tim từ runtime, mất nhịp hoặc quá hạn thì thả line (`LineSupervisor`, `SupervisorClient`) |
 | `board.py` | Đọc và thẩm định `boards/*.toml`; năm nguyên thủy (`PRIMITIVES`), ba target (`SUPPORTED_TARGETS`), bo mạch tham chiếu |
 | `digital.py`, `sensor.py`, `display.py` | API cho thân `@action`: `digital.out("door_lock").pulse(...)`, `sensor.read(...)`, `display.show(...)`; `digital.out` ngoài `c.do()` ⇒ `NE1001` |
 | `sim.py` | `SimHAL`: chân, cảm biến, màn hình, micro, loa ảo; lệnh hẹn giờ và huỷ khi cắt lời |
