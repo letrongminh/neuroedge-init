@@ -32,6 +32,10 @@ bản gói.
 
 #### Đã thêm
 
+- **I2a — `verify` phát lại agent mẫu của cả bốn gói trên `sim-rpi5` và `linux-rpi5`.** Thêm corpus `fine-control` (`fan-pwm`)
+  và `motion` (`rover`) cạnh `sensor-pack`, `vision`; bo không khai nguyên thủy của corpus hiện `—`, không tính đạt. Kiểm:
+  `pytest tests/test_pack_corpora.py`; `neuroedge verify --targets sim,linux` (job `linux-hal`). (I2a tiêu chí 3, RFC-0013 §3f)
+
 - **I6 · TSK-P2-04 — MCP qua mạng có xác thực: `neuroedge mcp serve --http` (Q-58, Q-32).** Streamable HTTP qua mTLS (TLS 1.3, chứng chỉ
   client bắt buộc) và token OAuth 2.1 theo thiết bị, ràng buộc chứng chỉ; mặc định tắt; thiếu một mảnh cấu hình ⇒ mã 1 trước khi mở cổng.
   Kiểm: `pytest tests/test_mcp_http.py` (gồm N lần lặp lời gọi bị chặn ⇒ N `BLOCK`, đóng `TODOS.md` #24, #29). (NFR-SEC-09, FR-CLI-12)
@@ -1302,7 +1306,7 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
   không kiểm CRL/OCSP; kết nối bền tới MCP server ngoài chưa có (`TODOS.md` #25).
 - ❌ **Nguyên thủy mở rộng chạy trên kernel ảo trong CI, chưa trên phần cứng thật.** `digital.in` (gpio-sim), I2C và `analog.in` (`i2c-stub`), `vision.in` (`vivid`) và dây `enable` của PWM
   và `motion.*` (gpio-sim) xanh ở job `linux-hal` (CI run 37153005998); kênh PWM là cây sysfs giả, ADC là `i2c-stub`, camera là `vivid`: motor, servo, PWM và camera thật cần nightly Pi 5 (TSK-I2-01).
-  `verify` chưa phát lại agent `fan-pwm` và `rover` (không có corpus vết ghi); `esp32s3` chưa có nguyên thủy mở rộng nào (TSK-I3a-02 → I3a-04, TSK-W1-04). Tương đương
+  `esp32s3` chưa có nguyên thủy mở rộng nào (TSK-I3a-02 → I3a-04, TSK-W1-04). Tương đương
   suy luận của mô hình thị giác giữa target (RFC-0012 §3f mệnh đề 2) chưa kiểm.
 - ❌ **Chưa phát hành ra ngoài.** Kho đã công khai từ 2026-09-25 (TSK-I6-01, Q-45), nhưng tag trước I6 là nội bộ;
   PyPI mở ở I6 (Q-39, TSK-S3-14, `docs/release.md`).

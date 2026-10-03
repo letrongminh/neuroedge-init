@@ -13,7 +13,7 @@
 | Pha đang thực thi | 🟡 **Phase MVP (§0.5)** — I1 đang mở; I2, I2a (sáu RFC), phần không cần bo mạch của I3 và I4 làm song song |
 | Increment đang mở | 🟡 **I1** — còn I1-02 (tạm hoãn: phát triển nội bộ) |
 | Cột mốc tiếp theo | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** |
-| Trạng thái CI Lõi | ✅ **PASS 3777/3777 · SKIP 0** |
+| Trạng thái CI Lõi | ✅ **PASS 3796/3796 · SKIP 0** |
 | Chặn ngoài tầm kỹ thuật | 🟡 **3 hạng mục chặn** |
 | Lần cập nhật cuối | **2026-10-04** |
 
