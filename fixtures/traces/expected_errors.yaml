@@ -27,3 +27,65 @@ negative_offset.json:
 event_extra_field.json:
   where_contains: "events.0"
   why_contains: "Additional properties are not allowed ('gate_signature' was unexpected)"
+
+# TSK-V1b-08 — the semantic lint of vision evidence, `lint_vision` in python/neuroedge/trace.py
+# (RFC-0012 §3d). trace.v1 itself is unchanged: these files validate against the schema and fail the lint.
+vision_uri_without_raw_capture.json:
+  where_contains: "events.0.data.frames.1.vision_ref.uri"
+  why_contains: "uri is allowed only when metadata.raw_capture is true"
+
+vision_ref_bad_sha256.json:
+  where_contains: "events.0.data.frames.0.vision_ref.sha256"
+  why_contains: "sha256 must be 64 lowercase hex characters"
+
+vision_model_bad_sha256.json:
+  where_contains: "events.0.data.model.sha256"
+  why_contains: "sha256 must be 64 lowercase hex characters"
+
+vision_model_missing.json:
+  where_contains: "events.0.data.model"
+  why_contains: "a vision_fact names its model"
+
+vision_model_not_listed.json:
+  where_contains: "events.0.data.model.sha256"
+  why_contains: "not in metadata.vision_models"
+
+vision_frames_too_few.json:
+  where_contains: "events.0.data.frames"
+  why_contains: "2 frames recorded for min_frames=3"
+
+vision_frames_too_many.json:
+  where_contains: "events.0.data.frames"
+  why_contains: "4 frames recorded for min_frames=3"
+
+vision_frame_seq_gap.json:
+  where_contains: "events.0.data.frames.2.frame_seq"
+  why_contains: "frame_seq 104 follows 102"
+
+vision_age_mismatch.json:
+  where_contains: "events.0.data.age_ms"
+  why_contains: "is not offset_ms - the oldest captured_ms"
+
+vision_age_negative.json:
+  where_contains: "events.0.data.age_ms"
+  why_contains: "read after the instant it is judged at"
+
+vision_image_field.json:
+  where_contains: "events.0.data"
+  why_contains: "unexpected field 'image'"
+
+vision_base64_blob.json:
+  where_contains: "events.0.data.frames.0.labels.0.label"
+  why_contains: "an embedded image (base64 or a data: URI) is not allowed"
+
+vision_value_with_unavailable.json:
+  where_contains: "events.0.data"
+  why_contains: "either read"
+
+vision_foreign_label.json:
+  where_contains: "events.0.data.frames.0.labels.0"
+  why_contains: "this fact's own label and zone"
+
+vision_raw_capture_not_boolean.json:
+  where_contains: "metadata.raw_capture"
+  why_contains: "raw_capture must be true or false"
