@@ -21,6 +21,9 @@ mirrors the reference board rather than exceeding it (CHANGELOG §3.3 #7).
 * `sensor_read` — values scripted with `set_sensor()` (or a sequence with
   `script_sensor()`, which replay uses); records `sensor_read`. An unscripted
   sensor raises instead of inventing a reading.
+* `vision_in` — the board's camera, replayed: whoever owns the wiring attaches a factory
+  (`attach_camera`; the session does, from `[sim.vision]`), and the camera it makes runs
+  only in a mode the board declares. `sim` reads no camera of its own (`sim/vision/`).
 * `display` — a virtual frame (text, or raw RGB565 / RGB888 pixels) checked
   against the declared resolution; records `display_frame` with its digest
   (docs/spec/simulation_coverage.md §3).
@@ -49,6 +52,7 @@ from .audio_live import (
     _import_sounddevice as _live_import_sounddevice,
 )
 from .board import BoardProfile, load_board_by_id
+from .vision import Camera, CameraFactory, CameraUnavailable, Mode, modes_of, monotonic_ms
 
 AUDIO_ENV = "NEUROEDGE_AUDIO"
 AUDIO_IN_ENV = "NEUROEDGE_AUDIO_IN"
@@ -298,6 +302,8 @@ class SimHAL(HardwareAbstractionLayer):
         self._audio_out: LiveAudioOut | None = None
         self.audio_in_device = _audio_node(audio_in_device, AUDIO_IN_ENV, None)
         self.audio_out_device = _audio_node(audio_out_device, AUDIO_OUT_ENV, None)
+        self._camera_factory: CameraFactory | None = None
+        self._cameras: list[Camera] = []
 
     def _require(self, primitive: str, called_from: str) -> dict[str, Any]:
         if not self.board.supports(primitive):
@@ -307,6 +313,43 @@ class SimHAL(HardwareAbstractionLayer):
                 how=f"add it to {self.board.source}, or choose a board that provides it",
             )
         return self.board.capability(primitive)
+
+    # -- vision.in -------------------------------------------------------------
+    def attach_camera(self, factory: CameraFactory | None) -> None:
+        """Say how a camera is made here: the virtual one of `[sim.vision]`, or none."""
+        self._camera_factory = factory
+
+    def vision_in(
+        self,
+        mode: Mode,
+        called_from: str = "<unknown>",
+        *,
+        clock: Callable[[], float] | None = None,
+    ) -> Camera:
+        """
+        The virtual camera in `mode`. Only a mode of the board is accepted — `sim` is never
+        richer than the board it mirrors (CHANGELOG §3.3 #7) — and with no camera attached
+        it raises: a simulator that handed out frames of nothing would turn every vision
+        agent into a pass.
+        """
+        self._require("vision.in", called_from)
+        declared = modes_of(self.board.vision_modes)
+        if mode not in declared:
+            raise BoardCapabilityError(
+                where=f"{called_from} -> vision.in",
+                why=f"board {self.board.id!r} declares no camera mode {mode}; it has "
+                f"{[str(m) for m in declared]}",
+                how="open the camera in one of the board's modes",
+            )
+        if self._camera_factory is None:
+            raise CameraUnavailable(
+                where=f"{called_from} -> vision.in",
+                why="the simulator reads no camera of its own, and none is attached",
+                how='add [sim.vision] to agent.toml: a directory of frames, or source = "synthetic"',
+            )
+        camera = self._camera_factory(mode, clock or monotonic_ms)
+        self._cameras.append(camera)
+        return camera
 
     # -- digital.out -----------------------------------------------------------
     # Scheduled commands are what barge-in cancels (voice_fsm.md §5.2), so they
@@ -573,9 +616,10 @@ class SimHAL(HardwareAbstractionLayer):
         return self._speaker
 
     def close(self) -> None:
-        """Release live audio streams; idempotent."""
+        """Release live audio streams and cameras; idempotent."""
         errors: list[BaseException] = []
-        for device in (self._audio_in, self._audio_out):
+        cameras, self._cameras = self._cameras, []
+        for device in (self._audio_in, self._audio_out, *cameras):
             if device is None:
                 continue
             try:

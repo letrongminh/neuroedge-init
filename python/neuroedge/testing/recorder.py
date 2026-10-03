@@ -91,8 +91,8 @@ class TraceRecorder(EventLog):
         # The marker goes on every trace, so a reader always knows which it holds.
         self.metadata["anonymized"] = bool(anonymize)
 
-    def emit(self, type: str, data: dict[str, Any]) -> None:
-        super().emit(type, anonymise(data) if self.anonymize else data)
+    def emit(self, type: str, data: dict[str, Any], *, offset_ms: int | None = None) -> None:
+        super().emit(type, anonymise(data) if self.anonymize else data, offset_ms=offset_ms)
 
     def append(self, offset_ms: int, type: str, data: dict[str, Any]) -> None:
         """An event recorded elsewhere — on a device (TSK-S4-09) — kept at its own offset."""

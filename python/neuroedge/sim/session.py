@@ -555,11 +555,66 @@ def _linux_needs(manifest: AgentManifest, sensor_facts: Mapping[str, Any]) -> di
     return {
         "sensors": sensors,
         "display": "display" in manifest.requires,
+        "camera": "vision.in" in manifest.requires,
         "audio": tuple(
             primitive for primitive in ("audio.in", "audio.out") if primitive in manifest.requires
         ),
         "where": f"{manifest.source} on target 'linux'",
     }
+
+
+def _wire_vision(
+    manifest: AgentManifest,
+    board: Any,
+    hal: Any,
+    events: EventLog,
+    sim_table: Mapping[str, Any],
+    taken: set[str],
+) -> Any:
+    """
+    The camera of an agent that declares `[vision]` (TSK-V1b-01, TSK-V1b-02): the mode the build
+    chose, the camera the target makes of it, and the feed that turns its frames into gate facts.
+    None for an agent with no `[vision]`. Any failure — no camera, a mode the camera will not
+    run, a model that cannot say a label a fact reads — is raised here, at load, before a
+    session exists (the caller releases the lines): an agent that needs eyes does not start blind.
+    `taken` are the criteria another source already decides; a vision fact may not share one.
+    """
+    from ..hal.vision import CameraUnavailable, Requirement, modes_of, select_mode
+    from ..perception.vision import vision_model_for
+    from .vision import VisionFeed, parse_sim_vision
+
+    made = vision_model_for(manifest)
+    if made is None:
+        return None
+    config, model = made
+    where = f"{manifest.source} -> [vision]"
+    shadowed = sorted(set(config.facts) & taken)
+    if shadowed:
+        raise AgentManifestError(
+            where=where,
+            why=f"{shadowed} are decided by the camera, and also by another source of the "
+            "session ([sim.facts], [sim.slot_facts] or [sim.sensor_facts]); one would hide the other",
+            how="rename the vision fact, or remove the other source of that criterion",
+        )
+    need = Requirement.parse(manifest.requires.get("vision.in", {}))
+    mode = select_mode(modes_of(board.vision_modes), need)
+    if mode is None:  # build() refused this already; never open a camera on a guess
+        raise BoardCapabilityError(
+            where=f"{manifest.source} -> [requires] vision.in",
+            why=f"board {board.id!r} has no camera mode that meets it",
+            how="build the agent first: `neuroedge build` names the closest mode",
+        )
+    if hasattr(hal, "attach_camera"):  # `sim`: the recording of [sim.vision]; linux has a real node
+        recording = sim_table.get("vision")
+        if recording is None:
+            raise CameraUnavailable(
+                where=f"{manifest.source} -> [sim.vision]",
+                why="the agent reads a camera and the simulator has no recording to play",
+                how='add [sim.vision] with source = "synthetic" (or a directory of recorded frames)',
+            )
+        hal.attach_camera(parse_sim_vision(recording, manifest.root, manifest.source).factory())
+    camera = hal.vision_in(mode, called_from=where, clock=events.clock)
+    return VisionFeed(camera, config, model, events)
 
 
 def _asks(result: ToolResult) -> bool:
@@ -613,6 +668,8 @@ class SimSession:
         self._turn_results: list[ToolResult] = []
         # Turns timed so far: the `turn` of the next `turn_latency` (TSK-I4-03).
         self._turns = 0
+        # The camera and what reads it (`sim/vision/feed.py`), for an agent with `[vision]`.
+        self.vision: Any = None
 
     @classmethod
     def load(
@@ -712,6 +769,18 @@ class SimSession:
             )
             engine = ActionContractEngine(gates, facts_source=fast, clock=clock, events=events)
             conversation = Conversation(engine=engine, hal=hal)
+            # `[vision]` (TSK-V1b-01/02): the camera's facts are given to each gate that asks
+            # for them; an agent that declares it and cannot see does not start.
+            feed = _wire_vision(
+                manifest,
+                board,
+                hal,
+                events,
+                sim_table,
+                set(sim_facts) | set(facts or {}) | set(slot_facts) | set(sensor_facts),
+            )
+            if feed is not None:
+                conversation.fact_sources.append(feed.facts)
             if slow is None:
                 # `[system_two]` of agent.toml (TSK-S2-11); none ⇒ System 2 stays offline.
                 from ..models.providers import system_two_for
@@ -719,7 +788,7 @@ class SimSession:
                 slow = system_two_for(manifest, events)
             elif slow.events is None:
                 slow.events = events  # FR-MDL-06: every model call is traced
-            return cls(
+            session = cls(
                 manifest,
                 hal=hal,
                 events=events,
@@ -740,6 +809,8 @@ class SimSession:
                     if spec.gate in gates and gates[spec.gate].arguments
                 },
             )
+            session.vision = feed
+            return session
         except BaseException:
             close = getattr(hal, "close", None)
             if close is not None:

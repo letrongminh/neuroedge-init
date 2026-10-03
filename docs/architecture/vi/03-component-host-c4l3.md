@@ -25,7 +25,7 @@ lên:
 | 4 | `models` | `engine` (hiện thực giao thức của nó), `net`, bậc 0 | L2 |
 | 5 | `mcp_server`, `mcp_host`, `mcp_desktop` | `actions`, bậc 0 | L4 theo proposal §3.1 (docstring không tự khai tầng) |
 | 6 | `viz`, `templates` | `viz`: `hal`, `trace`, bậc 0; `templates`: `errors`, `paths` | công cụ |
-| 7 | `sim` | mọi bậc dưới | L0, **nơi lắp ráp** |
+| 7 | `sim` | mọi bậc dưới; import muộn `perception` ở `sim/session.py` và `sim/vision/feed.py` (camera → dữ kiện gate, chỉ khi agent khai `[vision]`: `perception` đứng trên `sim`) | L0, **nơi lắp ráp** |
 | 8 | `perception` | `sim` (phiên thoại bọc phiên gõ), `models`, `actions`, `engine`, `hal`, `net` | L2 |
 | 9 | `testing` | `perception`, `actions`, `engine`, `hal`, `trace`; `sim` import muộn (và `sim/serve.py` import muộn `testing` để lấy bộ ghi vết — chỉ khi có `trace_out`) | Action CI |
 | 10 | `studio` | mọi bậc dưới trừ `cli` — ứng dụng web cục bộ `neuroedge studio` thể hiện mọi năng lực (TSK-I1-04, `docs/spec/studio.md`) | công cụ |

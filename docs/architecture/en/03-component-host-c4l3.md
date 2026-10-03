@@ -23,7 +23,7 @@ Each package's docstring names its own layer: HAL is **L1**, models and percepti
 | 4 | `models` | `engine` (implements its protocol), `net`, rank 0 | L2 |
 | 5 | `mcp_server`, `mcp_host`, `mcp_desktop` | `actions`, rank 0 | L4 per proposal §3.1 (docstring does not declare a layer) |
 | 6 | `viz`, `templates` | `viz`: `hal`, `trace`, rank 0; `templates`: `errors`, `paths` | tools |
-| 7 | `sim` | every rank below | L0, **assembly point** |
+| 7 | `sim` | every rank below; late-imports `perception` in `sim/session.py` and `sim/vision/feed.py` (camera → gate facts, only for an agent that declares `[vision]`: `perception` sits above `sim`) | L0, **assembly point** |
 | 8 | `perception` | `sim` (the voice session wraps the typed session), `models`, `actions`, `engine`, `hal`, `net` | L2 |
 | 9 | `testing` | `perception`, `actions`, `engine`, `hal`, `trace`; late-imports `sim` (and `sim/serve.py` late-imports `testing` for the trace recorder, only when `trace_out` is given) | Action CI |
 | 10 | `studio` | every layer below except `cli` — the local web app `neuroedge studio` that shows every capability (TSK-I1-04, `docs/spec/studio.md`) | tooling |
