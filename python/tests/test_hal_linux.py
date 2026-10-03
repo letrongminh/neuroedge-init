@@ -126,6 +126,32 @@ def test_a_chip_without_the_board_pins_raises(tmp_path):
         LinuxHAL(chip_glob=str(tmp_path / "gpiochip*"), gpiod=FakeGpiod({str(path): ["x", "y"]}))
 
 
+def test_pwm_and_enable_pins_need_no_gpio_line_until_their_backends_exist(chips):
+    """RFC-0010 §3e: the kernel PWM channel and the HAL-owned enable lines are not plain GPIO."""
+    hal, _fake = make_hal(chips)
+    board = hal.board
+    assert {"fan", "fan_en", "motor_en", "servo_en"} <= set(board.pins)
+    assert set(hal.lines) == {"door_lock", "porch_light", "gate_relay"}
+    hal.close()
+
+
+def test_a_pwm_pin_is_refused_before_any_token_or_line_is_touched(chips):
+    hal, fake = make_hal(chips)
+    with pytest.raises(BoardCapabilityError) as raised:
+        hal.digital_out("fan", "on", called_from="actions/fan.py:3")
+    assert "PWM channel" in raised.value.why and "actions/fan.py:3" in raised.value.where
+    assert fake.history == []
+    hal.close()
+
+
+def test_an_enable_line_is_never_driven_by_an_agent(chips):
+    hal, fake = make_hal(chips)
+    with pytest.raises(BoardCapabilityError, match="enable line"):
+        hal.digital_out("fan_en", "on", called_from="actions/fan.py:4")
+    assert fake.history == []
+    hal.close()
+
+
 def test_a_sim_board_is_refused(chips):
     with pytest.raises(BoardCapabilityError, match="not 'linux'"):
         LinuxHAL(load_board_by_id("sim-default"), chip_glob=chips[0], gpiod=FakeGpiod(chips[1]))

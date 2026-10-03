@@ -1,0 +1,280 @@
+# Expected diagnostics for fixtures/boards/invalid/.
+
+# Each file is the valid example (valid/all-extensions.toml) with one change. The counter-example
+# half of RFC-0007 §7, RFC-0010 §7, RFC-0011 §7, RFC-0012 §7 and RFC-0013 §7 for board.v1.json and
+# the board loader. tests/test_board_fixtures.py requires every entry to fail exactly this way
+# (BoardCapabilityError, NE3001), and every file in invalid/ to have an entry.
+
+# --- RFC-0007 — digital_in, i2c, analog_in, envelope, signal_pins ---
+
+actuator_pin_without_envelope.toml:
+  where_contains: "capabilities.digital_out.envelope.door_lock"
+  why_contains: "pin 'door_lock' has no envelope and is not in signal_pins"
+
+analog_in_min_above_max.toml:
+  where_contains: "capabilities.analog_in.channels.supply_v"
+  why_contains: "min (5.0) is not below max (0.0)"
+
+analog_in_unit_missing.toml:
+  where_contains: "capabilities.analog_in.channels.0"
+  why_contains: "'unit' is a required property"
+
+digital_in_pins_empty.toml:
+  where_contains: "capabilities.digital_in.pins"
+  why_contains: "[] should be non-empty"
+
+digital_in_pins_not_array.toml:
+  where_contains: "capabilities.digital_in.pins"
+  why_contains: "'button_boot' is not of type 'array'"
+
+envelope_budget_missing.toml:
+  where_contains: "capabilities.digital_out.envelope.door_lock"
+  why_contains: "'max_on_ms_per_window' is a required property"
+
+envelope_max_continuous_zero.toml:
+  where_contains: "capabilities.digital_out.envelope.door_lock.max_continuous_ms"
+  why_contains: "0 is less than or equal to the minimum of 0"
+
+envelope_min_interval_negative.toml:
+  where_contains: "capabilities.digital_out.envelope.door_lock.min_interval_ms"
+  why_contains: "-1 is less than the minimum of 0"
+
+envelope_names_undeclared_pin.toml:
+  where_contains: "capabilities.digital_out.envelope.siren"
+  why_contains: "envelope names ['siren'], which digital_out.pins does not declare"
+
+envelope_unknown_key.toml:
+  where_contains: "capabilities.digital_out.envelope.door_lock"
+  why_contains: "Additional properties are not allowed ('max_duty_cycle' was unexpected)"
+
+envelope_window_zero.toml:
+  where_contains: "capabilities.digital_out.envelope.door_lock.window_s"
+  why_contains: "0 is less than or equal to the minimum of 0"
+
+i2c_address_above_range.toml:
+  where_contains: "capabilities.i2c.buses.0.devices.0.address"
+  why_contains: "120 is greater than the maximum of 119"
+
+i2c_address_below_range.toml:
+  where_contains: "capabilities.i2c.buses.0.devices.0.address"
+  why_contains: "2 is less than the minimum of 3"
+
+i2c_address_repeated_on_bus.toml:
+  where_contains: "capabilities.i2c.buses.i2c0"
+  why_contains: "device 'bme280' at 0x48 repeats a name or an address of the same bus"
+
+i2c_no_buses.toml:
+  where_contains: "capabilities.i2c.buses"
+  why_contains: "[] should be non-empty"
+
+i2c_register_not_a_byte.toml:
+  where_contains: "capabilities.i2c.buses.0.devices.0.readable_registers.1"
+  why_contains: "256 is greater than the maximum of 255"
+
+signal_pins_names_a_pwm_channel.toml:
+  where_contains: "capabilities.digital_out.signal_pins"
+  why_contains: "['fan'] drive a load (a PWM channel) or are HAL-owned enable pins, and cannot be signal pins"
+
+signal_pins_names_an_enable_pin.toml:
+  where_contains: "capabilities.digital_out.signal_pins"
+  why_contains: "['fan_en'] drive a load (a PWM channel) or are HAL-owned enable pins, and cannot be signal pins"
+
+signal_pins_names_undeclared_pin.toml:
+  where_contains: "capabilities.digital_out.signal_pins"
+  why_contains: "signal_pins names ['buzzer'], which digital_out.pins does not declare"
+
+signal_pins_not_an_array.toml:
+  where_contains: "capabilities.digital_out.signal_pins"
+  why_contains: "'status_led' is not of type 'array'"
+
+# --- RFC-0010 — PWM, enable_pin, feedback ---
+
+feedback_pin_not_declared.toml:
+  where_contains: "capabilities.digital_out.feedback.pins"
+  why_contains: "feedback names ['siren'], which digital_out.pins does not declare"
+
+feedback_pins_empty.toml:
+  where_contains: "capabilities.digital_out.feedback.pins"
+  why_contains: "[] should be non-empty"
+
+pwm_channel_without_enable_pin.toml:
+  where_contains: "capabilities.digital_out.pwm.enable_pin"
+  why_contains: "enable_pin covers [] but the PWM channels are ['fan']; every channel needs exactly one enable_pin"
+
+pwm_enable_pin_active_low.toml:
+  where_contains: "capabilities.digital_out.pwm.enable_pin.fan.enable_active"
+  why_contains: "'high' was expected"
+
+pwm_enable_pin_is_a_channel.toml:
+  where_contains: "capabilities.digital_out.pwm.enable_pin.fan"
+  why_contains: "enable pin 'fan' must be a declared digital_out pin that is not itself a PWM channel"
+
+pwm_enable_pin_not_declared.toml:
+  where_contains: "capabilities.digital_out.pwm.enable_pin.fan"
+  why_contains: "enable pin 'fan_enable' must be a declared digital_out pin that is not itself a PWM channel"
+
+pwm_enable_pin_pull_missing.toml:
+  where_contains: "capabilities.digital_out.pwm.enable_pin.fan"
+  why_contains: "'pull' is a required property"
+
+pwm_enable_pin_pull_up.toml:
+  where_contains: "capabilities.digital_out.pwm.enable_pin.fan.pull"
+  why_contains: "'down' was expected"
+
+pwm_enable_pin_serves_two_channels.toml:
+  where_contains: "capabilities.digital_out.pwm.enable_pin.pump"
+  why_contains: "enable pin 'fan_en' serves both PWM channels 'fan' and 'pump'"
+
+pwm_frequency_min_above_max.toml:
+  where_contains: "capabilities.digital_out.pwm.frequency_hz"
+  why_contains: "min (25000) is greater than max (100)"
+
+pwm_frequency_zero.toml:
+  where_contains: "capabilities.digital_out.pwm.frequency_hz.min"
+  why_contains: "0 is less than the minimum of 1"
+
+pwm_max_duty_above_one.toml:
+  where_contains: "capabilities.digital_out.pwm.max_duty"
+  why_contains: "1.2 is greater than the maximum of 1"
+
+pwm_max_duty_missing.toml:
+  where_contains: "capabilities.digital_out.pwm"
+  why_contains: "'max_duty' is a required property"
+
+pwm_max_duty_zero.toml:
+  where_contains: "capabilities.digital_out.pwm.max_duty"
+  why_contains: "0.0 is less than or equal to the minimum of 0"
+
+pwm_pin_not_declared.toml:
+  where_contains: "capabilities.digital_out.pwm.pins"
+  why_contains: "pwm.pins names ['siren'], which digital_out.pins does not declare"
+
+pwm_resolution_missing.toml:
+  where_contains: "capabilities.digital_out.pwm"
+  why_contains: "'resolution_bits' is a required property"
+
+# --- RFC-0011 — motion ---
+
+motion_channel_name_repeated.toml:
+  where_contains: "capabilities.motion"
+  why_contains: "channel names ['wheel_left'] are used more than once across motor and servo"
+
+motion_channel_without_envelope.toml:
+  where_contains: "capabilities.motion.envelope.gripper"
+  why_contains: "motion channel 'gripper' has no envelope; every channel is an actuator (no envelope for ['gripper'])"
+
+motion_enable_pin_not_declared.toml:
+  where_contains: "capabilities.motion.motor.wheel_left.enable_pin"
+  why_contains: "motion motor 'wheel_left' has enable pin 'motor_enable', which is not a declared digital_out pin"
+
+motion_enable_pin_shared_with_pwm.toml:
+  where_contains: "capabilities.motion.motor.wheel_left.enable_pin"
+  why_contains: "enable pin 'fan_en' serves both pwm channel 'fan' and motion motor 'wheel_left'"
+
+motion_envelope_names_unknown_channel.toml:
+  where_contains: "capabilities.motion.envelope.arm"
+  why_contains: "envelope names ['arm'], which are not motion channels (['gripper', 'wheel_left'])"
+
+motion_hold_without_holds_position.toml:
+  where_contains: "capabilities.motion.servo.gripper"
+  why_contains: "safe_state = \"hold\" needs holds_position = true and max_hold_ms"
+
+motion_hold_without_max_hold_ms.toml:
+  where_contains: "capabilities.motion.servo.gripper"
+  why_contains: "safe_state = \"hold\" needs holds_position = true and max_hold_ms"
+
+motion_lease_above_500.toml:
+  where_contains: "capabilities.motion.motor.0.lease_ms"
+  why_contains: "501 is greater than the maximum of 500"
+
+motion_lease_zero.toml:
+  where_contains: "capabilities.motion.motor.0.lease_ms"
+  why_contains: "0 is less than or equal to the minimum of 0"
+
+motion_motor_enable_pin_missing.toml:
+  where_contains: "capabilities.motion.motor.0"
+  why_contains: "'enable_pin' is a required property"
+
+motion_motor_key_on_servo.toml:
+  where_contains: "capabilities.motion.servo.0"
+  why_contains: "Additional properties are not allowed ('speed_max' was unexpected)"
+
+motion_safe_state_home.toml:
+  where_contains: "capabilities.motion.motor.0.safe_state"
+  why_contains: "'home' is not one of ['stop', 'hold']"
+
+motion_servo_key_on_motor.toml:
+  where_contains: "capabilities.motion.motor.0"
+  why_contains: "Additional properties are not allowed ('target_min' was unexpected)"
+
+motion_servo_range_inverted.toml:
+  where_contains: "capabilities.motion.servo.gripper"
+  why_contains: "target_min (90) is not below target_max (0)"
+
+motion_signal_pins.toml:
+  where_contains: "capabilities.motion"
+  why_contains: "Additional properties are not allowed ('signal_pins' was unexpected)"
+
+motion_speed_max_above_one.toml:
+  where_contains: "capabilities.motion.motor.0.speed_max"
+  why_contains: "1.5 is greater than the maximum of 1"
+
+motion_speed_max_zero.toml:
+  where_contains: "capabilities.motion.motor.0.speed_max"
+  why_contains: "0 is less than or equal to the minimum of 0"
+
+# --- RFC-0012 — vision_in ---
+
+vision_box_iou_below_floor.toml:
+  where_contains: "capabilities.vision_in.tolerance.box_iou_min"
+  why_contains: "0.79 is less than the minimum of 0.8"
+
+vision_fps_is_a_string.toml:
+  where_contains: "capabilities.vision_in.modes.0.fps"
+  why_contains: "'30' is not of type 'number'"
+
+vision_fps_zero.toml:
+  where_contains: "capabilities.vision_in.modes.0.fps"
+  why_contains: "0.0 is less than or equal to the minimum of 0"
+
+vision_modes_empty.toml:
+  where_contains: "capabilities.vision_in.modes"
+  why_contains: "[] should be non-empty"
+
+vision_pixel_format_unknown.toml:
+  where_contains: "capabilities.vision_in.modes.0.pixel_format"
+  why_contains: "'nv12' is not one of ['yuyv', 'mjpeg', 'rgb565', 'rgb888', 'gray8']"
+
+vision_score_abs_above_cap.toml:
+  where_contains: "capabilities.vision_in.tolerance.score_abs"
+  why_contains: "0.06 is greater than the maximum of 0.05"
+
+vision_tolerance_key_missing.toml:
+  where_contains: "capabilities.vision_in.tolerance"
+  why_contains: "'box_iou_min' is a required property"
+
+vision_tolerance_missing.toml:
+  where_contains: "capabilities.vision_in"
+  why_contains: "'tolerance' is a required property"
+
+# --- RFC-0013 — profile rules and capability keys ---
+
+capability_key_misspelt.toml:
+  where_contains: "capabilities.i2c_bus"
+  why_contains: "['i2c_bus'] are not capability keys of board.v1"
+
+capability_key_with_dot.toml:
+  where_contains: "capabilities.digital.in"
+  why_contains: "['digital.in'] are not capability keys of board.v1"
+
+mirrors_at_document_root.toml:
+  where_contains: "mirrors"
+  why_contains: "a profile may not declare which board it mirrors"
+
+mirrors_in_board_table.toml:
+  where_contains: "board.mirrors"
+  why_contains: "a profile may not declare which board it mirrors"
+
+mirrors_in_capabilities.toml:
+  where_contains: "capabilities.mirrors"
+  why_contains: "a profile may not declare which board it mirrors"

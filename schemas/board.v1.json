@@ -5,6 +5,28 @@
   "description": "Standard schema for NeuroEdge Hardware Abstraction Layer board declarations (board.toml).",
   "type": "object",
   "required": ["board", "capabilities"],
+  "$defs": {
+    "pinName": { "type": "string", "minLength": 1 },
+    "pinList": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/pinName" },
+      "uniqueItems": true
+    },
+    "envelope": {
+      "description": "Per-pin physical safety envelope (RFC-0007 §3d). All four keys are required: a missing key would be a limit that does not exist.",
+      "type": "object",
+      "required": ["window_s", "max_on_ms_per_window", "min_interval_ms", "max_continuous_ms"],
+      "additionalProperties": false,
+      "properties": {
+        "window_s": { "type": "integer", "exclusiveMinimum": 0 },
+        "max_on_ms_per_window": { "type": "integer", "exclusiveMinimum": 0 },
+        "min_interval_ms": { "type": "integer", "minimum": 0 },
+        "max_continuous_ms": { "type": "integer", "exclusiveMinimum": 0 }
+      }
+    },
+    "motionSafeState": { "type": "string", "enum": ["stop", "hold"] },
+    "motionLease": { "type": "integer", "exclusiveMinimum": 0, "maximum": 500 }
+  },
   "properties": {
     "board": {
       "type": "object",
@@ -18,6 +40,7 @@
     },
     "capabilities": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
         "audio_in": {
           "type": "object",
@@ -37,12 +60,210 @@
         },
         "digital_out": {
           "type": "object",
+          "additionalProperties": false,
           "properties": {
-            "pins": {
-              "type": "array",
-              "items": { "type": "string" }
+            "pins": { "$ref": "#/$defs/pinList" },
+            "backend": { "type": "string" },
+            "signal_pins": { "$ref": "#/$defs/pinList" },
+            "envelope": {
+              "type": "object",
+              "additionalProperties": { "$ref": "#/$defs/envelope" }
             },
+            "pwm": {
+              "description": "Hardware PWM channels (RFC-0010 §3a). Each channel in `pins` has its own `enable_pin` entry.",
+              "type": "object",
+              "required": ["pins", "frequency_hz", "resolution_bits", "max_duty", "enable_pin"],
+              "additionalProperties": false,
+              "properties": {
+                "pins": { "allOf": [{ "$ref": "#/$defs/pinList" }, { "minItems": 1 }] },
+                "frequency_hz": {
+                  "type": "object",
+                  "required": ["min", "max"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "min": { "type": "integer", "minimum": 1 },
+                    "max": { "type": "integer", "minimum": 1 }
+                  }
+                },
+                "resolution_bits": { "type": "integer", "minimum": 1, "maximum": 32 },
+                "max_duty": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+                "enable_pin": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "required": ["pin", "enable_active", "pull"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "pin": { "$ref": "#/$defs/pinName" },
+                      "enable_active": { "const": "high" },
+                      "pull": { "const": "down" }
+                    }
+                  }
+                }
+              }
+            },
+            "feedback": {
+              "description": "Pins whose state is read back from hardware (RFC-0010 §3a).",
+              "type": "object",
+              "required": ["pins"],
+              "additionalProperties": false,
+              "properties": {
+                "pins": { "allOf": [{ "$ref": "#/$defs/pinList" }, { "minItems": 1 }] }
+              }
+            }
+          }
+        },
+        "digital_in": {
+          "type": "object",
+          "required": ["pins"],
+          "additionalProperties": false,
+          "properties": {
+            "pins": { "allOf": [{ "$ref": "#/$defs/pinList" }, { "minItems": 1 }] },
             "backend": { "type": "string" }
+          }
+        },
+        "i2c": {
+          "description": "Read-only I2C (RFC-0007 §3b). An address outside `devices` is only ever reported by a scan.",
+          "type": "object",
+          "required": ["buses"],
+          "additionalProperties": false,
+          "properties": {
+            "buses": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["id", "devices"],
+                "additionalProperties": false,
+                "properties": {
+                  "id": { "type": "string", "minLength": 1 },
+                  "devices": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["name", "address"],
+                      "additionalProperties": false,
+                      "properties": {
+                        "name": { "type": "string", "minLength": 1 },
+                        "address": { "type": "integer", "minimum": 3, "maximum": 119 },
+                        "readable_registers": {
+                          "type": "array",
+                          "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+                          "uniqueItems": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "analog_in": {
+          "type": "object",
+          "required": ["channels"],
+          "additionalProperties": false,
+          "properties": {
+            "channels": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["name", "unit", "min", "max"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string", "minLength": 1 },
+                  "unit": { "type": "string", "minLength": 1 },
+                  "min": { "type": "number" },
+                  "max": { "type": "number" },
+                  "resolution_bits": { "type": "integer", "minimum": 1, "maximum": 32 }
+                }
+              }
+            }
+          }
+        },
+        "motion": {
+          "description": "Motion channels (RFC-0011 §3a). Every channel is an actuator: it has an envelope under `envelope.<channel>` and an `enable_pin`; `signal_pins` does not exist here.",
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "motor": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["name", "speed_max", "ramp_min_ms", "enable_pin"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string", "minLength": 1 },
+                  "speed_max": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+                  "ramp_min_ms": { "type": "integer", "minimum": 0 },
+                  "enable_pin": { "$ref": "#/$defs/pinName" },
+                  "safe_state": { "$ref": "#/$defs/motionSafeState" },
+                  "lease_ms": { "$ref": "#/$defs/motionLease" }
+                }
+              }
+            },
+            "servo": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["name", "target_min", "target_max", "unit", "enable_pin"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string", "minLength": 1 },
+                  "target_min": { "type": "number" },
+                  "target_max": { "type": "number" },
+                  "unit": { "type": "string", "minLength": 1 },
+                  "enable_pin": { "$ref": "#/$defs/pinName" },
+                  "safe_state": { "$ref": "#/$defs/motionSafeState" },
+                  "holds_position": { "type": "boolean" },
+                  "max_hold_ms": { "type": "integer", "exclusiveMinimum": 0 },
+                  "lease_ms": { "$ref": "#/$defs/motionLease" }
+                }
+              }
+            },
+            "envelope": {
+              "type": "object",
+              "additionalProperties": { "$ref": "#/$defs/envelope" }
+            }
+          }
+        },
+        "vision_in": {
+          "description": "Camera capability (RFC-0012 §3a). `tolerance` is mandatory and capped: it is the room the cross-target inference comparison is allowed.",
+          "type": "object",
+          "required": ["modes", "tolerance"],
+          "additionalProperties": false,
+          "properties": {
+            "modes": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["width", "height", "fps", "pixel_format"],
+                "additionalProperties": false,
+                "properties": {
+                  "width": { "type": "integer", "minimum": 1 },
+                  "height": { "type": "integer", "minimum": 1 },
+                  "fps": { "type": "number", "exclusiveMinimum": 0 },
+                  "pixel_format": {
+                    "type": "string",
+                    "enum": ["yuyv", "mjpeg", "rgb565", "rgb888", "gray8"]
+                  }
+                }
+              }
+            },
+            "tolerance": {
+              "type": "object",
+              "required": ["score_abs", "box_iou_min"],
+              "additionalProperties": false,
+              "properties": {
+                "score_abs": { "type": "number", "minimum": 0, "maximum": 0.05 },
+                "box_iou_min": { "type": "number", "minimum": 0.8, "maximum": 1 }
+              }
+            }
           }
         },
         "sensor_read": {

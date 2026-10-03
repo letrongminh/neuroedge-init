@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, Any
 
 from ..errors import ActionContractViolation, BoardCapabilityError
 from .board import (
+    ALL_PRIMITIVES,
+    EXTENSION_PRIMITIVES,
     PRIMITIVES,
     SUPPORTED_TARGETS,
     BoardProfile,
@@ -24,6 +26,8 @@ if TYPE_CHECKING:
     from .audio_live import LiveAudioIn, LiveAudioOut
 
 __all__ = [
+    "ALL_PRIMITIVES",
+    "EXTENSION_PRIMITIVES",
     "PRIMITIVES",
     "SUPPORTED_TARGETS",
     "BoardProfile",

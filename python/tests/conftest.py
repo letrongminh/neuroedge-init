@@ -46,6 +46,11 @@ def traces_dir() -> Path:
 
 
 @pytest.fixture(scope="session")
+def board_fixtures_dir() -> Path:
+    return ROOT / "fixtures" / "boards"
+
+
+@pytest.fixture(scope="session")
 def gate_fixtures_dir() -> Path:
     return ROOT / "fixtures" / "gates"
 
@@ -63,6 +68,11 @@ def _load_yaml(path: Path) -> dict:
 @pytest.fixture(scope="session")
 def expected_gate_errors(gate_fixtures_dir: Path) -> dict:
     return _load_yaml(gate_fixtures_dir / "expected_errors.yaml")
+
+
+@pytest.fixture(scope="session")
+def expected_board_errors(board_fixtures_dir: Path) -> dict:
+    return _load_yaml(board_fixtures_dir / "expected_errors.yaml")
 
 
 @pytest.fixture(scope="session")

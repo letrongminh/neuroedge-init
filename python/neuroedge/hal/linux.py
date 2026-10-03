@@ -231,7 +231,11 @@ class LinuxHAL(HardwareAbstractionLayer):
                 why=f"no GPIO chip found at {chip_glob}; refusing to run as a no-op (Q-16)",
                 how=SETUP_HINT,
             )
-        names = {pin: (line_names or {}).get(pin, pin) for pin in board.pins}
+        # The kernel PWM channel and the HAL-owned enable lines are served by the PWM and
+        # motion backends (RFC-0010, RFC-0011), not by this plain-GPIO path: no line is
+        # requested for them, and digital_out() refuses a PWM pin until that backend exists.
+        gpio_pins = [p for p in board.pins if p not in board.pwm_pins + board.enable_pins]
+        names = {pin: (line_names or {}).get(pin, pin) for pin in gpio_pins}
         self.lines: dict[str, tuple[str, int]] = {}
         for pin, name in names.items():
             location = self._find(chips, name)
@@ -352,6 +356,12 @@ class LinuxHAL(HardwareAbstractionLayer):
                 where=f"{called_from} -> digital.out {pin!r}",
                 why=f"unknown operation {operation!r}",
                 how="use one of 'pulse', 'on', 'off'",
+            )
+        if pin in self.board.pwm_pins:
+            raise BoardCapabilityError(
+                where=f"{called_from} -> digital.out {pin!r}",
+                why=f"{pin!r} is a PWM channel of {self.board.id!r}; LinuxHAL has no PWM backend yet",
+                how="the PWM backend (RFC-0010 §3e) is not built yet; until then the channel is not driven",
             )
         super().digital_out(pin, operation, duration_ms, signature, called_from)
         self._stop_timer(pin)
