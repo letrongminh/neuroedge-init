@@ -56,6 +56,11 @@ from .canonical import gate_canonical_json, gate_digest
 from .decision_tree import compile_tree, tree_bytes
 from .gate_resolver import GateRegistry, ResolvedGate, resolve_gate_file, resolve_gate_uri
 
+# The extension primitives an agent may declare in `[requires]`, each with the precise check
+# of `check_capabilities` for its own declaration. A primitive joins this tuple in the slice
+# that gives it a runtime (RFC-0013 §3a); until then naming it is a manifest error, as before.
+REQUIRABLE_EXTENSIONS: tuple[str, ...] = ("analog.in",)
+
 # An ISO-639-1 code is exactly two lowercase letters: "vi", "en". What the device
 # UI ships is `firmware.UI_LANGUAGES`; `[stt] language` still accepts three
 # letters on its own (perception/providers/config.py, another worker's file).
@@ -135,11 +140,12 @@ def load_agent_manifest(path: str | Path) -> AgentManifest:
             why="[requires] is missing; the build cannot match the agent against a board",
             how='declare what the agent needs, e.g. "digital.out" = { pins = ["door_lock"] }',
         )
-    unknown = sorted(set(requires) - set(PRIMITIVES))
+    requirable = PRIMITIVES + REQUIRABLE_EXTENSIONS
+    unknown = sorted(set(requires) - set(requirable))
     if unknown:
         raise AgentManifestError(
             where=f"{path} -> [requires]",
-            why=f"{unknown} are not HAL primitives; primitives are {list(PRIMITIVES)}",
+            why=f"{unknown} are not HAL primitives; primitives are {list(requirable)}",
             how="use the dotted primitive names from FR-HAL-01",
         )
     targets = document.get("targets", {}).get("supported", [])
@@ -181,6 +187,8 @@ def _describe(board: BoardProfile) -> str:
             offered.append(f"digital.out:{list(board.pins)}")
         elif primitive == "sensor.read":
             offered.append(f"sensor.read:{list(board.sensors)}")
+        elif primitive == "analog.in":
+            offered.append(f"analog.in:{[channel['name'] for channel in board.analog_channels]}")
         else:
             offered.append(primitive)
     return ", ".join(offered) or "nothing"
@@ -248,6 +256,8 @@ def check_capabilities(manifest: AgentManifest, board: BoardProfile) -> list[Neu
                     problems.append(
                         _mismatch(manifest, board, f"{primitive}:{name}", f"add {name!r} to {key}")
                     )
+        elif primitive == "analog.in":
+            problems += _check_analog_channels(manifest, board, need)
         elif primitive == "display":
             for axis in ("width", "height"):
                 wanted = need.get(f"min_{axis}", 0)
@@ -261,6 +271,35 @@ def check_capabilities(manifest: AgentManifest, board: BoardProfile) -> list[Neu
                         )
                     )
     return problems
+
+
+def _check_analog_channels(
+    manifest: AgentManifest, board: BoardProfile, need: Mapping[str, Any]
+) -> list[NeuroEdgeError]:
+    """
+    `"analog.in" = { channels = ["adc0"] }`: each channel is one the board declares. A
+    bare `analog.in` names no channel, so it would prove nothing about the board.
+    """
+    channels = need.get("channels")
+    shape = (
+        isinstance(channels, list)
+        and bool(channels)
+        and all(isinstance(name, str) for name in channels)
+    )
+    if not shape:
+        return [
+            AgentManifestError(
+                where=f"{manifest.source} -> [requires] analog.in",
+                why=f"`channels` must be a non-empty list of channel names, found {channels!r}",
+                how='write "analog.in" = { channels = ["adc0"] }',
+            )
+        ]
+    declared = [channel["name"] for channel in board.analog_channels]
+    return [
+        _mismatch(manifest, board, f"analog.in:{name}", f"add {name!r} to analog_in.channels")
+        for name in channels
+        if name not in declared
+    ]
 
 
 def default_board_hint(manifest: AgentManifest, board: BoardProfile) -> NeuroEdgeError:
@@ -450,6 +489,145 @@ def check_sensor_facts(
     return problems
 
 
+def analog_fact_channels(manifest: AgentManifest) -> dict[str, str]:
+    """
+    `[sim.analog_facts]`: ``line_voltage = { channel = "adc0" }`` binds a numeric criterion to
+    an `analog.in` channel (RFC-0007 §3c, RFC-0009 §3f) — the criterion's value is the channel's
+    reading, taken each time the gate facts are gathered. Returns criterion -> channel.
+    """
+    sim = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
+    rules = sim.get("analog_facts", {}) if isinstance(sim, dict) else {}
+    where = f"{manifest.source} -> [sim.analog_facts]"
+    if not isinstance(rules, dict):
+        raise AgentManifestError(
+            where=where,
+            why=f"[sim.analog_facts] must be a table of criterion = {{ channel = ... }}, found {rules!r}",
+            how='write line_voltage = { channel = "adc0" }',
+        )
+    channels: dict[str, str] = {}
+    for criterion, rule in rules.items():
+        if (
+            not isinstance(rule, dict)
+            or set(rule) != {"channel"}
+            or not isinstance(rule["channel"], str)
+        ):
+            raise AgentManifestError(
+                where=f"{where} {criterion}",
+                why=f"an analog fact is exactly `channel = <name>`, found {rule!r}",
+                how=f'write {criterion} = {{ channel = "adc0" }}',
+            )
+        channels[criterion] = rule["channel"]
+    return channels
+
+
+def check_analog_facts(
+    manifest: AgentManifest, board: BoardProfile, gates: Mapping[str, ResolvedGate]
+) -> list[NeuroEdgeError]:
+    """
+    Every `[sim.analog_facts]` rule is a numeric criterion fed by a channel it fits
+    (RFC-0007 §3c, RFC-0009 §3f). For each gate that evaluates the criterion:
+
+    * it is `numeric` — a channel has a unit and a range, which a bool or a level has not;
+    * its `unit` is the channel's, and the channel's `[min, max]` lies inside its `range`:
+      a reading the channel can legitimately give is one the criterion can judge, and a
+      criterion range wider than the channel is the only way the two can differ.
+
+    A mismatch is `BoardCapabilityError` (NE3001), found here and not as a wrong verdict
+    on the device. The channel is also one `[requires]` declares. (Tiering a numeric
+    criterion into `on_block.confirms` is refused by the gate resolver for every numeric
+    criterion, so a bound one cannot be waived by a person either.)
+    """
+    try:
+        bound = analog_fact_channels(manifest)
+    except AgentManifestError as error:
+        return [error]
+    required = manifest.requires.get("analog.in", {}).get("channels", [])
+    required = required if isinstance(required, list) else []
+    sensors = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
+    sensor_rules = sensors.get("sensor_facts", {}) if isinstance(sensors, dict) else {}
+    problems: list[NeuroEdgeError] = []
+    for criterion, channel in bound.items():
+        where = f"{manifest.source} -> [sim.analog_facts] {criterion}"
+        if isinstance(sensor_rules, dict) and criterion in sensor_rules:
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"{criterion!r} is also a [sim.sensor_facts] rule, so two readings would feed it",
+                    how="keep one source for the criterion",
+                )
+            )
+            continue
+        if channel not in required:
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"channel {channel!r} is not one [requires] declares for analog.in",
+                    how=f'add "analog.in" = {{ channels = ["{channel}"] }} to [requires]',
+                )
+            )
+            continue
+        declared = next((c for c in board.analog_channels if c["name"] == channel), None)
+        if declared is None:
+            continue  # check_capabilities already names the channel the board lacks
+        readers = [gate for gate in gates.values() if criterion in gate.evaluate]
+        if not readers:
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"no gate of the agent evaluates {criterion!r}, so the reading would feed nothing",
+                    how=f"name the rule after a numeric criterion of a gate, or remove {criterion}",
+                )
+            )
+        for gate in readers:
+            problems += _analog_binding_problems(where, criterion, declared, gate)
+    return problems
+
+
+def _analog_binding_problems(
+    where: str, criterion: str, channel: Mapping[str, Any], gate: ResolvedGate
+) -> list[NeuroEdgeError]:
+    label = f"{gate.name}@{gate.version}"
+    definition = gate.evaluate[criterion]
+    if definition.get("type") != "numeric":
+        return [
+            BoardCapabilityError(
+                where=where,
+                why=(
+                    f"gate {label} evaluates {criterion!r} as {definition.get('type')!r}, and an "
+                    f"analog.in channel feeds only a 'numeric' criterion (RFC-0009 §3f)"
+                ),
+                how=f"evaluate {criterion!r} as numeric, with the unit and range of {channel['name']!r}",
+            )
+        ]
+    problems: list[NeuroEdgeError] = []
+    if definition.get("unit") != channel["unit"]:
+        problems.append(
+            BoardCapabilityError(
+                where=where,
+                why=(
+                    f"gate {label} measures {criterion!r} in {definition.get('unit')!r}, and channel "
+                    f"{channel['name']!r} reads in {channel['unit']!r}; the engine converts nothing"
+                ),
+                how=f"set unit: {channel['unit']} on {criterion!r} (the gate and its children)",
+            )
+        )
+    low, high = definition["range"]["min"], definition["range"]["max"]
+    if not (low <= channel["min"] and channel["max"] <= high):
+        problems.append(
+            BoardCapabilityError(
+                where=where,
+                why=(
+                    f"channel {channel['name']!r} reads from {channel['min']} to {channel['max']} "
+                    f"{channel['unit']}, which is not inside the range [{low}, {high}] gate {label} "
+                    f"gives {criterion!r}"
+                ),
+                how=f"widen range of {criterion!r} to cover [{channel['min']}, {channel['max']}], "
+                "or narrow the channel in the board profile",
+            )
+        )
+    return problems
+
+
 def check_fallbacks(
     manifest: AgentManifest, gates: Mapping[str, ResolvedGate], actions: Iterable[Any]
 ) -> list[NeuroEdgeError]:
@@ -559,7 +737,7 @@ def check_system_one(
     sim = sim if isinstance(sim, dict) else {}
     computed = {
         f"sim.{table}": set(sim[table])
-        for table in ("facts", "slot_facts", "sensor_facts")
+        for table in ("facts", "slot_facts", "sensor_facts", "analog_facts")
         if isinstance(sim.get(table), dict)
     }
     problems: list[NeuroEdgeError] = []
@@ -865,6 +1043,7 @@ def build(
     problems += check_fallbacks(manifest, gates, actions)
     problems += check_gate_arguments(gates, actions)
     problems += check_sensor_facts(manifest, gates)
+    problems += check_analog_facts(manifest, board, gates)
 
     grammar = manifest.root / "commands.toml"
     if grammar.is_file():

@@ -21,6 +21,9 @@ mirrors the reference board rather than exceeding it (CHANGELOG §3.3 #7).
 * `sensor_read` — values scripted with `set_sensor()` (or a sequence with
   `script_sensor()`, which replay uses); records `sensor_read`. An unscripted
   sensor raises instead of inventing a reading.
+* `analog_in` — a value set with `set_analog()`, in the channel's unit; a value that is not
+  a finite number inside the channel's `[min, max]`, or none set, raises
+  `PerceptionUnavailableError` instead of being clamped; records `analog_in` (TSK-I2a-04);
 * `display` — a virtual frame (text, or raw RGB565 / RGB888 pixels) checked
   against the declared resolution; records `display_frame` with its digest
   (docs/spec/simulation_coverage.md §3).
@@ -36,8 +39,9 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-from ..errors import ActionContractViolation, BoardCapabilityError
+from ..errors import ActionContractViolation, BoardCapabilityError, PerceptionUnavailableError
 from . import Authorizer, HardwareAbstractionLayer, PinAssertion, _require_signature
+from .analog import analog_data, check_reading, unavailable
 from .audio import Speaker, WavSource
 from .audio_live import (
     LiveAudioIn,
@@ -272,6 +276,7 @@ class SimHAL(HardwareAbstractionLayer):
         self._sensors: dict[str, Any] = dict(sensors or {})
         self._units: dict[str, str] = {}
         self._scripted: dict[str, deque[Any]] = {}
+        self._analog: dict[str, Any] = {}
         self._typed: deque[str] = deque()
         self.frame: str | bytes | None = None
         self.frames: list[Frame] = []
@@ -467,6 +472,46 @@ class SimHAL(HardwareAbstractionLayer):
             )
         value = self._sensors[sensor]
         self.events.emit("sensor_read", reading_data(sensor, value, self._units.get(sensor), use))
+        return value
+
+    # -- analog.in ---------------------------------------------------------------
+    def set_analog(self, channel: str, value: Any) -> None:
+        """
+        What the next read of `channel` returns, in the channel's declared unit. Any value
+        is accepted, so a scenario can break the ADC (NaN, out of range); `analog_in` then
+        refuses it exactly as `linux` refuses the same reading from the kernel.
+        """
+        self.board.require_analog(channel, called_from="SimHAL.set_analog()")
+        self._analog[channel] = value
+
+    def analog_values(self) -> dict[str, tuple[Any, str]]:
+        """Current value (None when not set) and declared unit of every `analog.in` channel."""
+        return {
+            c["name"]: (self._analog.get(c["name"]), c["unit"]) for c in self.board.analog_channels
+        }
+
+    def analog_in(
+        self, channel: str, called_from: str = "<unknown>", use: str | None = None
+    ) -> float:
+        """
+        One reading of `channel`, recorded as `analog_in`. A value that is not a finite number
+        inside `[min, max]`, or none set, is `PerceptionUnavailableError` (NE5001) — recorded
+        as a failed read too, so the trace shows the attempt.
+        """
+        declared = self.board.require_analog(channel, called_from=called_from)
+        where = f"{called_from} -> analog.in {channel!r}"
+        try:
+            if channel not in self._analog:
+                raise unavailable(
+                    where,
+                    "the simulator has no value for this channel",
+                    f"call hal.set_analog({channel!r}, value) in the scenario first",
+                )
+            value = check_reading(declared, self._analog[channel], None, where)
+        except PerceptionUnavailableError as error:
+            self.events.emit("analog_in", analog_data(channel, use=use, error=error.why))
+            raise
+        self.events.emit("analog_in", analog_data(channel, value, declared["unit"], use))
         return value
 
     # -- audio -------------------------------------------------------------------

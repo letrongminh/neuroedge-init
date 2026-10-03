@@ -10,7 +10,8 @@ the page is `neuroedge.viz.page(live=True)`, the same renderer as
     GET  /         the page
     GET  /events   Server-Sent Events: {"events": [...], "now_ms": n} on change
     GET  /state    the same, once, as JSON
-    POST /command  a typed line — a command, or `:set k v`, `:unset k`, `:sensor n v`
+    POST /command  a typed line — a command, or `:set k v`, `:unset k`, `:sensor n v`,
+                   `:analog ch v`
     POST /confirm  {"id": "confirm_1", "answer": "yes"|"no"} — a person's answer to the
                    device's question (RFC-0006), source `ui`; same-origin only
 
@@ -119,6 +120,12 @@ class SessionServer:
                 except NeuroEdgeError as error:
                     return {"ok": False, "error": error.as_dict()}
                 return {"ok": True, "sensor": parts[0]}
+            if name == "analog" and len(parts) == 2:
+                try:
+                    session.set_analog(parts[0], _parse_value(parts[1]))
+                except NeuroEdgeError as error:
+                    return {"ok": False, "error": error.as_dict()}
+                return {"ok": True, "analog": parts[0]}
             return {"ok": False, "error": {"why": f"unknown command {line!r}"}}
         if not line:
             return {"ok": False, "error": {"why": "empty command"}}

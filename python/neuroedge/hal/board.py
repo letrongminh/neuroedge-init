@@ -253,6 +253,23 @@ class BoardProfile:
     def analog_channels(self) -> tuple[dict[str, Any], ...]:
         return tuple(self.capabilities.get("analog_in", {}).get("channels", ()))
 
+    def require_analog(self, channel: str, called_from: str = "<unknown>") -> dict[str, Any]:
+        """The declaration of an `analog.in` channel, or a three-part refusal (RFC-0007 §3c)."""
+        for declared in self.analog_channels:
+            if declared["name"] == channel:
+                return dict(declared)
+        raise BoardCapabilityError(
+            where=f"{called_from} -> analog.in {channel!r}",
+            why=(
+                f"board {self.id!r} declares no analog.in channel named {channel!r}; "
+                f"it offers {[c['name'] for c in self.analog_channels] or 'no analog.in channels'}"
+            ),
+            how=(
+                f"use one of the declared channels, or add {channel!r} to "
+                f"[capabilities.analog_in].channels in {self.source}"
+            ),
+        )
+
     @property
     def motion_channels(self) -> tuple[dict[str, Any], ...]:
         """Motor and servo records, each with a `kind` of `motor` or `servo` added."""

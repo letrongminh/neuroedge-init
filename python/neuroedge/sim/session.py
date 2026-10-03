@@ -32,7 +32,15 @@ offline here, so a criterion is decided by, in order:
    the REPL — and from the kernel on `linux`. A reading that cannot be taken, or
    that a rule of its sensor rejects, leaves every fact of that sensor undecided
    (`sensor_unavailable`);
-4. the grammar, through `SystemOne`'s local fallback, for the facts a matched
+4. `[sim.analog_facts]` — a numeric criterion fed by an `analog.in` channel, e.g.
+   ``line_voltage = { channel = "adc0" }`` (TSK-I2a-04, RFC-0007 §3c): each time the gate
+   facts are gathered the channel is read, and the reading enters the gate as a numeric fact
+   with the mark of that read, from which the engine computes `age_ms` (Q-62). A value comes
+   from `[sim.analog]` on `sim` (``adc0 = 1.25``, in the channel's unit) — changed with
+   `:analog` in the REPL — and from the kernel on `linux`. A read that fails (no device, a
+   value outside the channel's range) leaves the fact undecided: the gate blocks
+   `criterion_unavailable`;
+5. the grammar, through `SystemOne`'s local fallback, for the facts a matched
    command declares (``command_recognized``).
 
 Anything else is undecided, and the gate blocks. With `[system_one]` (TSK-I4-02),
@@ -62,6 +70,7 @@ from ..actions.tools import (
 from ..engine.canonical import digest
 from ..engine.compiler import (
     AgentManifest,
+    analog_fact_channels,
     build,
     load_actions,
     load_agent_manifest,
@@ -72,12 +81,14 @@ from ..engine.gate import ActionContractEngine
 from ..engine.gate_resolver import GateRegistry, ResolvedGate
 from ..engine.latency import TURN_EVENT, TurnMeter, system_two_usage, turn_path
 from ..engine.trace_sink import Clock, EventLog, monotonic_ms
+from ..engine.verdict import Fact
 from ..errors import (
     AgentManifestError,
     BoardCapabilityError,
     NeuroEdgeError,
     PerceptionUnavailableError,
 )
+from ..hal.analog import analog_data
 from ..hal.board import REFERENCE_BOARD, load_board_by_id
 from ..hal.sim import SimHAL, reading_data
 from ..mcp_host import McpConfig, load_mcp_config
@@ -397,11 +408,35 @@ def _sim_sensors(manifest: AgentManifest, sim: dict[str, Any]):
     return sensors, sensor_facts
 
 
+def _sim_analog(manifest: AgentManifest, sim: dict[str, Any]) -> dict[str, Any]:
+    """`[sim.analog]`: the value each `analog.in` channel reads on `sim`, in its declared unit."""
+    values = sim.get("analog", {})
+    if not isinstance(values, dict):
+        raise AgentManifestError(
+            where=f"{manifest.source} -> [sim.analog]",
+            why=f"[sim.analog] must be a table of channel = value, found {values!r}",
+            how="write [sim.analog] with one line per channel, such as adc0 = 1.25",
+        )
+    return dict(values)
+
+
 def _refuse_shadowed_facts(
-    where: str, facts: Mapping[str, Any], sensor_facts: Mapping[str, SensorFact]
+    where: str,
+    facts: Mapping[str, Any],
+    sensor_facts: Mapping[str, SensorFact],
+    analog_facts: Mapping[str, str] | None = None,
 ) -> None:
-    """A fixed value for a criterion a sensor decides would never be read."""
+    """A fixed value for a criterion a sensor or an analog channel decides would never be read."""
     for criterion in facts:
+        if analog_facts and criterion in analog_facts:
+            raise AgentManifestError(
+                where=f"{where} {criterion}",
+                why=(
+                    f"{criterion!r} is read from analog.in channel {analog_facts[criterion]!r} "
+                    "([sim.analog_facts]) on every evaluation, so this value would never be used"
+                ),
+                how=f"remove {criterion} here, or its [sim.analog_facts] rule",
+            )
         if criterion in sensor_facts:
             raise AgentManifestError(
                 where=f"{where} {criterion}",
@@ -552,8 +587,10 @@ def _linux_needs(manifest: AgentManifest, sensor_facts: Mapping[str, Any]) -> di
     """
     sensors = list(manifest.requires.get("sensor.read", {}).get("sensors", ()))
     sensors += [rule.sensor for rule in sensor_facts.values()]
+    analog = list(manifest.requires.get("analog.in", {}).get("channels", ()))
     return {
         "sensors": sensors,
+        "analog": analog,
         "display": "display" in manifest.requires,
         "audio": tuple(
             primitive for primitive in ("audio.in", "audio.out") if primitive in manifest.requires
@@ -585,6 +622,7 @@ class SimSession:
         facts: Mapping[str, Any],
         slot_facts: Mapping[str, tuple[str, Any]],
         sensor_facts: Mapping[str, SensorFact] | None = None,
+        analog_facts: Mapping[str, str] | None = None,
         slow: SystemTwo | None = None,
         fast: SystemOne | None = None,
         knowledge: KnowledgeBase | None = None,
@@ -600,6 +638,7 @@ class SimSession:
         self.facts: dict[str, Any] = dict(facts)
         self.slot_facts = dict(slot_facts)
         self.sensor_facts = dict(sensor_facts or {})
+        self.analog_facts = dict(analog_facts or {})  # criterion -> analog.in channel
         self.slow = slow if slow is not None else SystemTwo("sim")
         # System 1 — the gate's fact source: `[system_one]`'s model, or the grammar alone.
         self.fast = fast if fast is not None else conversation.engine.facts_source
@@ -665,8 +704,12 @@ class SimSession:
         sim_facts, slot_facts = _sim_tables(manifest)
         sim_table = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
         sensors, sensor_facts = _sim_sensors(manifest, sim_table)
+        analog_facts = analog_fact_channels(manifest)  # build() has already vetted the rules
+        analog_values = _sim_analog(manifest, sim_table)
         for where, given in (("[sim.facts]", sim_facts), ("SimSession.load(facts=...)", facts)):
-            _refuse_shadowed_facts(f"{manifest.source} -> {where}", given or {}, sensor_facts)
+            _refuse_shadowed_facts(
+                f"{manifest.source} -> {where}", given or {}, sensor_facts, analog_facts
+            )
 
         if target == "linux":
             _require_linux_primitives(manifest)
@@ -701,6 +744,8 @@ class SimSession:
             hal = SimHAL(board, events=events, **dict(target_options or {}))
             for name, (value, unit) in sensors.items():
                 hal.set_sensor(name, value, unit)
+            for channel, value in analog_values.items():
+                hal.set_analog(channel, value)
         # Requesting the lines is the one step that holds anything: if the rest of
         # the wiring fails, they are released before the error goes up.
         try:
@@ -728,6 +773,7 @@ class SimSession:
                 facts={**sim_facts, **(facts or {})},
                 slot_facts=slot_facts,
                 sensor_facts=sensor_facts,
+                analog_facts=analog_facts,
                 slow=slow,
                 fast=fast,
                 knowledge=knowledge,
@@ -783,8 +829,26 @@ class SimSession:
         self.hal.set_sensor(sensor, value)
         self.events.emit("sensor_set", reading_data(sensor, value))
 
+    def set_analog(self, channel: str, value: Any) -> None:
+        """Change what a simulated `analog.in` channel reads (REPL `:analog`, the UI), and record it."""
+        self.hal.set_analog(channel, value)
+        self.events.emit("analog_set", analog_data(channel, value))
+
     def set_fact(self, criterion: str, value: Any) -> None:
-        """A session fact (REPL `:set`, the UI) — refused for one a sensor decides."""
+        """A session fact (REPL `:set`, the UI) — refused for one a sensor or a channel decides."""
+        channel = self.analog_facts.get(criterion)
+        if channel is not None:
+            raise NeuroEdgeError(
+                where=f":set {criterion}",
+                why=(
+                    f"{criterion!r} is read from analog.in channel {channel!r} "
+                    "([sim.analog_facts]) each time the gate facts are gathered; a value set "
+                    "here would never be read"
+                ),
+                how=(
+                    f":analog {channel} <value> on sim; on linux, change what the channel measures"
+                ),
+            )
         rule = self.sensor_facts.get(criterion)
         if rule is not None:
             raise NeuroEdgeError(
@@ -837,6 +901,34 @@ class SimSession:
                 self.events.emit("sensor_unavailable", {"sensor": sensor, "reason": reason})
             for criterion, rule in rules:
                 facts[criterion] = None if reason is not None else rule.evaluate(reading)
+        facts.update(self._analog_facts())
+        return facts
+
+    def _analog_facts(self) -> dict[str, Fact | None]:
+        """
+        One read per channel, however many criteria it feeds, each a numeric `Fact` carrying
+        the mark of its read on the session's clock — the engine computes `age_ms` from it
+        (Q-62, RFC-0009 §3c). The mark is taken before the HAL reads, so a slow read only ever
+        makes the fact older, never younger. The source stays `context`: a reading of the
+        board's own ADC is local, and a replay that loses the network keeps it. A read that
+        fails (NE5001; the HAL has recorded it as `analog_in` with its `error`) leaves its
+        criteria undecided — the gate blocks `criterion_unavailable`, never reads a default.
+        """
+        by_channel: dict[str, list[str]] = {}
+        for criterion, channel in self.analog_facts.items():
+            by_channel.setdefault(channel, []).append(criterion)
+        facts: dict[str, Fact | None] = {}
+        for channel, criteria in by_channel.items():
+            read_ms = self.events.clock()
+            try:
+                value = self.hal.analog_in(
+                    channel, called_from=f"[sim.analog_facts] {criteria[0]}", use="fact"
+                )
+            except PerceptionUnavailableError:
+                fact = None
+            else:
+                fact = Fact(value, read_ms=read_ms)
+            facts.update(dict.fromkeys(criteria, fact))
         return facts
 
     # -- turn timing (TSK-I4-03) ------------------------------------------------------

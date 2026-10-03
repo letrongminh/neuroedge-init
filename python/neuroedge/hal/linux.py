@@ -23,8 +23,12 @@ inactive after the duration. `PendingCommand.cancel()` drops the line at once
 hands it to the backend chosen for the machine — `memory` or `/dev/fbN`
 (`hal/framebuffer.py`) — never to one guessed. Both open their files per call and
 close them at once, so neither holds anything `close()` would have to release
-(TSK-S5-09). Where no argument is given, the choice comes from the environment
-of the machine: `NEUROEDGE_LINUX_SENSORS` and `NEUROEDGE_LINUX_DISPLAY`.
+(TSK-S5-09). `analog.in` (TSK-I2a-04) reads the same sysfs, each declared channel found
+the same way — ``adc0=hwmon:ads7828/in0`` in `NEUROEDGE_LINUX_ANALOG`, or a label — converted
+to the channel's unit (the kernel's millivolts to volts) and refused, as a read failure,
+outside the channel's `[min, max]` (`hal/analog.py`). Where no argument is given, the choice comes from the environment
+of the machine: `NEUROEDGE_LINUX_SENSORS`, `NEUROEDGE_LINUX_ANALOG` and
+`NEUROEDGE_LINUX_DISPLAY`.
 
 `audio.in` / `audio.out` (TSK-S5-08, Q-22) have two explicit backends, never
 guessed: the **file** one a `--voice-file` session and replay use (a WAV read at
@@ -51,8 +55,9 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
-from ..errors import BoardCapabilityError
+from ..errors import BoardCapabilityError, PerceptionUnavailableError
 from . import Authorizer, HardwareAbstractionLayer, _require_signature
+from .analog import analog_data, check_reading, unavailable
 from .audio import (
     Speaker,
     WavSource,
@@ -73,6 +78,7 @@ from .sim import EventSink, Frame, PendingCommand, _NullSink, make_frame, readin
 from .sysfs import Reading, SysfsSensors, parse_sources
 
 __all__ = [
+    "ANALOG_ENV",
     "AUDIO_BACKENDS",
     "AUDIO_ENV",
     "AUDIO_IN_ENV",
@@ -100,6 +106,7 @@ SETUP_HINT = (
 )
 # Per-machine wiring, when the caller passes none (a session, a replay).
 SENSORS_ENV = "NEUROEDGE_LINUX_SENSORS"  # temperature=hwmon:lm75/temp1;…
+ANALOG_ENV = "NEUROEDGE_LINUX_ANALOG"  # adc0=hwmon:ads7828/in0;…
 DISPLAY_ENV = "NEUROEDGE_LINUX_DISPLAY"  # memory | /dev/fb0
 AUDIO_ENV = "NEUROEDGE_LINUX_AUDIO"  # file | live
 AUDIO_IN_ENV = "NEUROEDGE_LINUX_AUDIO_IN"  # a PipeWire node (PortAudio name)
@@ -149,6 +156,7 @@ class LinuxHAL(HardwareAbstractionLayer):
         gpiod: Any = None,
         consumer: str = "neuroedge",
         sensor_sources: Mapping[str, str] | None = None,
+        analog_sources: Mapping[str, str] | None = None,
         sysfs_root: str | Path | None = None,
         display: str | DisplayBackend | None = None,
         audio: str | None = None,
@@ -186,6 +194,15 @@ class LinuxHAL(HardwareAbstractionLayer):
             # find some other channel labelled after it.
             board.require_sensor(sensor, called_from=sources_where)
         self.sensors = SysfsSensors(sysfs_root, sensor_sources)
+        # `analog.in` channels are found the same way (a source, or a label), under their
+        # own names: a channel is not a sensor, and the two never share a mapping.
+        analog_where = "LinuxHAL(analog_sources=...)"
+        if analog_sources is None and os.environ.get(ANALOG_ENV) and not replay:
+            analog_sources = parse_sources(os.environ[ANALOG_ENV], ANALOG_ENV)
+            analog_where = ANALOG_ENV
+        for channel in analog_sources or {}:
+            board.require_analog(channel, called_from=analog_where)
+        self.analog = SysfsSensors(sysfs_root, analog_sources)
         # The unit the agent declares for a sensor ([sim.sensors]); a kernel reading
         # in another unit is refused, not compared against a threshold meant for it.
         self.expected_units = dict(units or {})
@@ -474,6 +491,48 @@ class LinuxHAL(HardwareAbstractionLayer):
             )
         return reading
 
+    # -- analog.in -------------------------------------------------------------------
+    def analog_in(
+        self, channel: str, called_from: str = "<unknown>", use: str | None = None
+    ) -> float:
+        """
+        One fresh reading of `channel` from the kernel, in the channel's declared unit,
+        recorded as `analog_in` (`use="fact"`: read to compute a gate fact). Any failure to
+        read it — no device, a file that is gone or holds garbage, another unit, a value
+        outside `[min, max]` — is `PerceptionUnavailableError` (NE5001), recorded as a failed
+        read: the gate then blocks `criterion_unavailable`, it never gets a clamped value.
+        A replay never reads the machine (the recorded facts are fed back instead).
+        """
+        declared = self.board.require_analog(channel, called_from=called_from)
+        where = f"{called_from} -> analog.in {channel!r}"
+        try:
+            if self.replay:
+                raise unavailable(
+                    where,
+                    "a replay does not read the machine; the trace holds the recorded facts",
+                    "replay a trace recorded with its gate_facts events",
+                )
+            value = check_reading(declared, *self._kernel_analog(channel, where), where)
+        except PerceptionUnavailableError as error:
+            self.events.emit("analog_in", analog_data(channel, use=use, error=error.why))
+            raise
+        self.events.emit("analog_in", analog_data(channel, value, declared["unit"], use))
+        return value
+
+    def _kernel_analog(self, channel: str, where: str) -> tuple[float, str]:
+        """The kernel's value and unit for `channel`; every way it can fail is NE5001."""
+        try:
+            reading = self.analog.read(channel, where)
+        except BoardCapabilityError as error:  # no source, no device, unreadable, not a number
+            raise unavailable(error.where, error.why, error.how) from error
+        except OSError as error:  # sysfs went away under the lookup itself
+            raise unavailable(
+                where,
+                f"cannot read the kernel: {error.strerror or error}",
+                "check the ADC is bound and the user may read sysfs",
+            ) from error
+        return reading.value, reading.unit
+
     def script_sensor(self, sensor: str, values: list[Any], unit: str | None = None) -> None:
         """Readings returned in order, one per read, instead of the kernel's — replay only."""
         self.board.require_sensor(sensor, called_from="LinuxHAL.script_sensor()")
@@ -625,6 +684,7 @@ class LinuxHAL(HardwareAbstractionLayer):
         display: bool = False,
         audio: Iterable[str] = (),
         where: str = "",
+        analog: Iterable[str] = (),
     ) -> None:
         """
         Fail now, not mid-session, if a sensor the agent reads cannot be read, it
@@ -635,11 +695,25 @@ class LinuxHAL(HardwareAbstractionLayer):
 
         `audio` names the primitives the session will use; the file backend needs no
         device, so nothing is opened unless the machine chose `live` (Q-22).
+
+        `analog` names the `analog.in` channels the session reads for gate facts: each must
+        read now (not recorded), so an ADC that is not there is refused at load as a board
+        problem, not found on the first turn that needs it (TSK-I2a-04).
         """
         for sensor in dict.fromkeys(sensors):
             self.board.require_sensor(sensor, called_from=where)
             if not self.replay:  # a replay never reads the machine, not even to check it
                 self._kernel_read(sensor, f"{where} -> sensor.read {sensor!r}")
+        for channel in dict.fromkeys(analog):
+            declared = self.board.require_analog(channel, called_from=where)
+            if not self.replay:
+                channel_where = f"{where} -> analog.in {channel!r}"
+                try:
+                    check_reading(
+                        declared, *self._kernel_analog(channel, channel_where), channel_where
+                    )
+                except PerceptionUnavailableError as error:
+                    raise BoardCapabilityError(error.where, error.why, error.how) from error
         if display:
             self._require_display_backend(f"{where} -> display")
         if self.audio_backend == "live":
@@ -718,4 +792,14 @@ class TypedLinuxHAL(LinuxHAL):
             where=f"LinuxHAL.set_sensor({sensor!r})",
             why="on linux a sensor is read from the kernel (hwmon, IIO); a reading cannot be set",
             how="change what the sensor measures, or set the value on sim (--target sim)",
+        )
+
+    def analog_values(self) -> dict[str, tuple[Any, str]]:
+        return {}  # `:analogs` lists values set on sim; on linux the kernel owns them
+
+    def set_analog(self, channel: str, value: Any) -> None:
+        raise BoardCapabilityError(
+            where=f"LinuxHAL.set_analog({channel!r})",
+            why="on linux an analog.in channel is read from the kernel (hwmon, IIO); a reading cannot be set",
+            how="change what the channel measures, or set the value on sim (--target sim)",
         )

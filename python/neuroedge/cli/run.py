@@ -41,6 +41,8 @@ Type a command the agent's grammar knows, e.g. "mở cửa phòng 101".
   :pins               show the virtual pins
   :sensors            show the simulated sensor values
   :sensor <name> <v>  set a sensor value (what sensor.read returns)
+  :analogs            show the simulated analog.in channels
+  :analog <ch> <v>    set what an analog.in channel reads, in its unit
   :screen             show the last display frame
   :confirm | :decline answer the device's pending question (same as typing "có" / "không")
   :help               this help
@@ -195,6 +197,9 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
         for key, rule in sorted(session.sensor_facts.items()):
             shown = escape(f"from sensor {rule.sensor} ([sim.sensor_facts])")
             table.add_row(key, f"[dim]{shown}[/dim]")
+        for key, channel in sorted(session.analog_facts.items()):
+            shown = escape(f"from analog.in {channel} ([sim.analog_facts])")
+            table.add_row(key, f"[dim]{shown}[/dim]")
         console.print(table)
     elif name == "set" and len(rest.split(maxsplit=1)) == 2:
         key, value = rest.split(maxsplit=1)
@@ -227,6 +232,22 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
             console.print(f"[red]{escape(error.why)}[/red]")
             return
         console.print(f"  {escape(sensor)} = {escape(value)}")
+    elif name == "analogs":
+        table = Table(title="Simulated analog.in channels", title_justify="left")
+        table.add_column("Channel", style="cyan")
+        table.add_column("Value")
+        for channel, (value, unit) in session.hal.analog_values().items():
+            shown = "[dim]not set[/dim]" if value is None else escape(f"{value} {unit}")
+            table.add_row(channel, shown)
+        console.print(table)
+    elif name == "analog" and len(rest.split(maxsplit=1)) == 2:
+        channel, value = rest.split(maxsplit=1)
+        try:
+            session.set_analog(channel, parse_value(value))
+        except NeuroEdgeError as error:
+            console.print(f"[red]{escape(error.why)}[/red]")
+            return
+        console.print(f"  {escape(channel)} = {escape(value)}")
     elif name == "screen":
         if not session.hal.frames:
             console.print("  nothing has been drawn yet")

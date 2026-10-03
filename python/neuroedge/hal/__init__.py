@@ -171,6 +171,12 @@ class HardwareAbstractionLayer:
     def sensor_read(self, sensor: str, called_from: str = "<unknown>") -> Any:
         self._not_on_target("sensor.read", called_from)
 
+    def analog_in(
+        self, channel: str, called_from: str = "<unknown>", use: str | None = None
+    ) -> float:
+        """One reading of an `analog.in` channel, in the unit the board declares (RFC-0007 §3c)."""
+        self._not_on_target("analog.in", called_from)
+
     def display(self, frame: Any, *, called_from: str = "<unknown>", **_: Any) -> Any:
         self._not_on_target("display", called_from)
 
