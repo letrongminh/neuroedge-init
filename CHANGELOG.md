@@ -340,6 +340,9 @@ bản gói.
 
 #### Đã đổi
 
+- **I2a · TSK-N0-02 — FR-HAL-01 tách nguyên thủy lõi và mở rộng (RFC-0013, Q-53).** Năm nguyên thủy lõi bắt buộc
+  với bo mặc định và bo tham chiếu bậc 1; nguyên thủy mở rộng tuỳ chọn theo bo mạch. FR-CLI-12 thêm `mcp desktop-config
+  --lab` (hiện thực ở TSK-N1-05). `neuroedge-prd.md` FR-HAL-01, FR-CLI-12. Kiểm bằng review.
 - **Q-47, Q-48 — hai chỗ proposal tự mâu thuẫn đã chốt (2026-09-28).** Q-47: FastAPI WebSockets của Fleet OS chỉ cho kết nối và
   viễn trắc; âm thanh không đi qua Fleet OS, luồng WebSocket âm thanh của thiết bị kết thúc ở lớp provider tự vận hành (FR-GW-04) — sửa
   câu sót "cho luồng âm thanh" ở proposal §6.2. Q-48: máy trạng thái hội thoại thuộc L2 (perception và runtime hội thoại), L4 là logic
