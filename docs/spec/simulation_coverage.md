@@ -152,6 +152,42 @@ Tuổi và fail-closed (RFC-0007 §3a, §3e, §9 mục 11):
   lần đọc hỏng, đọc quá số lần đã ghi cũng là đọc hỏng — không bao giờ lặp mức cuối.
 - `replay` không bao giờ chạm line của máy: `LinuxHAL(replay=True)` không xin line nào.
 
+### `motion.*` — `sim-rpi5` và `linux-rpi5` (RFC-0011, TSK-I2a-05)
+
+`motion.*` là nguyên thủy mở rộng (RFC-0013): chỉ bo mạch khai `[capabilities.motion]` mới có — `sim-default`
+không có, nên agent dùng nó build với `--board sim-rpi5`. `[requires]` khai `"motion" = { channels = [...] }`
+và mỗi kênh phải là kênh `motor` hoặc `servo` bo mạch khai (NE3001 lúc build). API trong thân `@action`:
+`motion.motor(kênh, speed=, ramp_ms=)`, `motion.servo(kênh, target=, speed_max=)`, `motion.stop(kênh)`.
+
+| Target | Backend | Kiểm ở | Chỉ phần cứng | Task |
+|:---|:---|:---|:---|:---|
+| `sim` | `SimActuator` — mô hình có ramp trên đồng hồ ảo: tốc độ motor đi tới giá trị lệnh trong `ramp_ms`, dừng là tức thì; servo đi tới đích với tốc độ `speed_max`, `hold` giữ nguyên vị trí và còn cấp điện. Hiện trong REPL (`:motion`: kênh, chế độ, setpoint, lease còn lại, tốc độ/vị trí) và trang `--ui` (từ sự kiện `motion_command`, `motion_safe`) | PR (`tests/test_motion.py`) | — | TSK-I2a-05 |
+| `linux` | PWM phần cứng qua sysfs (`/sys/class/pwm/pwmchipN/pwmM`, `hal/motion_pwm.py`: motor 20 kHz, duty = tốc độ; servo xung 1000–2000 µs trong chu kỳ 20 ms trải trên dải đích) + **đường enable** của driver. Kênh nào nối với `pwmchipN/M` nào là dây nối của máy, không phải của bo mạch: `NEUROEDGE_LINUX_MOTION=wheel_left=pwmchip0/0;gripper=pwmchip0/1` hoặc `LinuxHAL(motion_sources=…)`; kênh chưa nối bị từ chối khi dựng HAL, không đoán. Đường enable do HAL quản và **tiến trình giám sát giữ** (hạn = hết lease + 250 ms), PWM ghi **trước** khi đường enable lên, và về 0 ngay khi HAL khởi động (kernel giữ duty cuối của PWM) | PR — gpiod giả + cây sysfs PWM giả + một tiến trình giám sát thật trên `tests/fake_gpiod` (`tests/test_motion_linux.py`); `gpio-sim` cho đường enable, SIGSTOP và SIGKILL của runtime (`tests_linux/test_gpio_motion.py`, PWM vẫn là cây giả) | Motor, servo, driver thật cắt điện khi enable xuống, PWM của RP1, nút dừng khẩn (Q-38), test mất điện giữa lệnh (RFC-0011 §3f, giai đoạn B) | TSK-I2a-05 |
+
+**Lease và lần chạy.** Token phán quyết của một `action` có `requires="motion:<kênh>"` mang một **lease** cho mỗi
+kênh: `lease_ms` của kênh (200 nếu bo mạch không khai; trần 500), tính từ phán quyết, dùng cho **đúng một lệnh**,
+không phụ thuộc `TTL_FACTOR`. Lease không gia hạn được bằng cách nào khác ngoài một lần qua gate mới (lệnh
+mới, lượng giá lại đầy đủ); lời gọi bị BLOCK không gia hạn mà còn đưa kênh về trạng thái an toàn ngay.
+**Lần chạy** là chuỗi lease liên tiếp trên một kênh (lease mới đến trước khi lease cũ hết): phong bì giữ trước
+`max_continuous_ms` **một lần lúc bắt đầu** lần chạy, kiểm `min_interval_ms` **chỉ lúc đó**, ghi bền một lần
+(không ghi mỗi lần gia hạn), và hoàn phần dư khi lần chạy kết thúc. Mọi kiểm theo thứ tự
+`kênh đúng loại → giới hạn bo mạch → phong bì → bằng chứng (lease) → lái → ghi vết`; nếu bằng chứng hỏng thì
+phần phong bì đã giữ được hoàn trả hết.
+
+**Trạng thái an toàn** (`stop` nếu không khai; `hold` chỉ cho servo khai `holds_position` + `max_hold_ms`) được
+gửi, **không qua phong bì, không cần token, không chờ ramp**, khi: lease hết (`lease_expired`), hết
+`max_continuous_ms`, hết `max_hold_ms` (`hold` ⇒ `stop`), cắt lời (`barge_in`, `VoiceStateMachine` gọi
+`motion_barge_in` ở bước 1 của `docs/spec/voice_fsm.md` §5.2, cùng tick với sự kiện kích), BLOCK (`block`),
+`motion.stop` (`stop`), `hal.close()` (`close`), tiến trình giám sát thả đường enable (`supervisor_heartbeat`,
+`supervisor_deadline`), PWM không ghi được (`actuator_fault`). Mọi nguyên nhân sau `close`, `max_*`, `supervisor_*`,
+`actuator_fault` dừng hẳn kể cả khi kênh khai `hold`. Mỗi lần ghi `motion_safe` kèm nguyên nhân; kênh đã ở trạng
+thái đó không sinh sự kiện.
+
+Giới hạn theo hai nơi, **chặt hơn thắng**: bo mạch (`speed_max`, `ramp_min_ms`, dải đích — HAL từ chối bằng
+`BoardCapabilityError`) và gate (`arguments` của RFC-0005, `BLOCK argument_out_of_range` trước mọi dữ kiện).
+Chiều quay: `board.v1` chưa cho kênh motor khai đường chiều, nên `direction = "reverse"` bị từ chối trên **mọi**
+target (sim không giàu hơn bo mạch); cần RFC để mở.
+
 ### `linux` — `linux-rpi5`
 
 | Nguyên thủy | Backend | Kiểm ở | Chỉ phần cứng | Task |
@@ -288,6 +324,7 @@ nào đi theo ô tương ứng ở §2. Cột "Vai trò khi replay" nói phần 
 | `digital.out` | `actuator_command` · `actuator_aborted` | `{pin, operation, duration_ms, cause?}` · `{pin, reason}` — `cause` chỉ có khi **HAL** tự đưa chân về an toàn, không phải lệnh của agent: `max_continuous_ms` (phong bì cắt một lệnh không có hạn hoặc hạn dài hơn trần) · `supervisor_heartbeat` · `supervisor_deadline` (tiến trình giám sát thả line, §2 phần `linux`). Lệnh kết thúc bằng `duration_ms` của chính nó không sinh sự kiện thứ hai | **Quyết định** — so golden ở mọi lần `replay` / `verify` |
 | `digital.out` (phong bì) | `envelope_refused` | `{pin, operation, reason, limit_ms?, used_ms?, requested_ms?, wait_ms?, remaining_ms?}` — `reason`: `window_budget` (`limit_ms` = `max_on_ms_per_window`, `used_ms` đã giữ trong cửa sổ, `requested_ms` phần xin thêm) · `min_interval_ms` (`limit_ms`, `wait_ms` còn phải chờ) · `already_on` (chân đang bật hoặc có lệnh chờ bật; `remaining_ms` tới hạn của lệnh đang giữ) · `window_unreadable` (bản ghi on-time thiếu, hỏng hoặc không ghi được) · `supervisor_unavailable` (`linux`: tiến trình giám sát không chạy, §2 phần `linux`) · `max_continuous_ms` (dành cho PWM, RFC-0010 §3d: lệnh có `duration_ms` vượt trần bị từ chối; `digital.out` thì tự tắt tại trần, không từ chối) | **Quyết định** — phong bì từ chối lệnh bật trước `authorize` (RFC-0007 §3d, `EnvelopeRefusedError` NE1003); không có `actuator_command` đi kèm và token không bị tiêu. Lệnh về phía an toàn không bao giờ sinh sự kiện này. So golden cùng `actuator_command` (`safety_view`: `{pin, operation, refused}`). Replay quyết định theo **mốc đã ghi** của lệnh (`ReplayClock`): lệnh bị từ chối trong bản ghi phải bị từ chối lại với cùng `pin`, `operation`, `reason`, và lệnh được phép không được bị từ chối — lệch là `Divergence` |
 | `digital.in` | `digital_in` · `digital_in_set` | `{pin, value, use?}` hoặc `{pin, reason, use?}` (lần đọc hỏng, không có `value`) · `{pin, value}` | **Đầu vào** (RFC-0007 §3a) — replay cấp lại các lần đọc trong thân `@action` theo thứ tự, lần đọc hỏng thành lần đọc hỏng. Lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`, nơi ghi **mốc đọc và tuổi**: `read_offset_ms`, `eval_offset_ms`, `age_ms`, `source: "digital.in"`; replay tính lại `age_ms` rồi so, và `age_ms < 0` hoặc vượt `DIGITAL_IN_MAX_AGE_MS` ⇒ BLOCK `criterion_unavailable`. Mốc đọc của sự kiện là `offset_ms` của chính nó. `digital_in_set` ghi việc người dùng đổi mức trong REPL/UI (`:input`) |
+| `motion.*` | `motion_command` · `motion_safe` | `{channel, kind, speed, direction, ramp_ms, lease_ms, run}` (motor) hoặc `{channel, kind, target, speed_max?, lease_ms, run}` (servo), `run` ∈ {`new`, `renewed`} · `{channel, state, cause}`, `state` ∈ {`stop`, `hold`} | **Quyết định** (RFC-0011) — so golden: `replay` chạy lại action trên đồng hồ ghi, nên lease hết hạn, phong bì và cắt lời cho cùng chuỗi `motion_command`/`motion_safe` (trừ `motion_safe` nguyên nhân `close`: hết phiên, không phải quyết định). Phong bì từ chối một lần chạy ghi `envelope_refused` với `pin` là **tên kênh**; lease dùng lại hoặc hết hạn ghi `actuator_command_rejected {pin: kênh, reason: lease_used \| lease_expired, code}` |
 | `i2c` | `i2c_read` | `{bus, device, address, register?, value?, reason?}` — `register` chỉ có ở lần đọc thanh ghi | **Đầu vào** (RFC-0007 §3b) — `sim` chỉ phát lại giá trị đã ghi, không quét bus. Mỗi lần đọc ghi một sự kiện; bus NACK hay timeout ghi `reason` thay cho `value` (`PerceptionUnavailableError` NE5001). Không có sự kiện ghi dữ liệu: API không có đường ghi |
 | `analog.in` | `analog_in` · `analog_set` | `{channel, value, unit, use?, non_finite?}` hoặc `{channel, error, use?}` khi lần đọc hỏng · `{channel, value, non_finite?}` | **Đầu vào** (RFC-0007 §3c) — mỗi lần đọc một sự kiện (`use: fact` khi đọc để tính dữ kiện gate); giá trị ngoài `[min, max]` của kênh, mất thiết bị, rác là lỗi đọc (`error`, `PerceptionUnavailableError` NE5001), không bị cắt. Mốc đọc `read_offset_ms` và `age_ms` nằm ở `gate_facts` của lần lượng giá (RFC-0009 §3c): replay cấp lại đúng `value` và tuổi đã ghi, `age_ms < 0` hay quá `max_age_ms` ⇒ BLOCK `criterion_unavailable`. `analog_set`: người dùng đổi giá trị kênh trong REPL/UI (chỉ `sim`) |
 | `sensor.read` | `sensor_read` · `sensor_set` · `sensor_unavailable` | `{sensor, value, unit?, use?, non_finite?}` · `{sensor, value, non_finite?}` · `{sensor, reason}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI. `sensor_unavailable`: một lần tính dữ kiện gate không lấy được số đọc, hoặc một luật của cảm biến từ chối nó (§2), nên mọi dữ kiện của cảm biến đó là `null`; chỉ để đọc, replay dùng `gate_facts` |

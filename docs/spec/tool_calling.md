@@ -284,10 +284,13 @@ như corpus gate: mỗi tệp có một mục, mỗi mục có một tệp (TSK-
 
 - **Tệp ca** nêu đầu vào: `agent` (một thư mục của `fixtures/agents/`), `call`
   (`name`, `arguments`, `source` — nguồn do runtime gán như một kết nối), `facts` (ghi đè
-  `[sim.facts]`) và `sensors` (số đọc giả lập trước lời gọi).
+  `[sim.facts]`), `sensors` (số đọc giả lập trước lời gọi) và `board` (id một bo mạch của `boards/`, mặc
+  định là bo tham chiếu của target — agent `motion.*` cần `sim-rpi5`, RFC-0011).
 - **`expected_results.yaml`** nêu đáp án theo từng tệp: `status`, các trường của §4 (`reason`,
   `failed_criterion`, `on_block`, `escalated_to` phải khớp đúng; `problems` so chuỗi con;
-  `confirmation`, `fallback` có/không phải khớp) và `pins` — mọi lệnh chân, đúng thứ tự.
+  `confirmation`, `fallback` có/không phải khớp), `pins` — mọi lệnh chân, đúng thứ tự — và `motion` —
+  mọi lệnh chuyển động và lệnh về trạng thái an toàn của kênh, đúng thứ tự (`command: {channel, kind,
+  speed|target, run}`, `safe: {channel, state, cause}`).
 - **`valid/`** là lời gọi khớp `inputSchema` tool khai ra (sau phép ép chuỗi của §2): gate quyết
   định, `ALLOW` hoặc `BLOCK`. **`invalid/`** là lời gọi không khớp: tool lạ, tham số lạ, sai kiểu,
   thiếu tham số bắt buộc, tự khai `call_source` ⇒ `REJECTED`; giá trị ngoài giới hạn tham số
