@@ -32,6 +32,10 @@ bản gói.
 
 #### Đã thêm
 
+- **I2a · TSK-N3-03 — spike ADC: `analog.in` trên `linux` kiểm được trong CI, không cần bo mạch.** Job `adc-spike` gắn
+  `ads7828` và `ina219` lên `i2c-stub` và đọc lại đúng giá trị (1249 mV, 12000 mV) qua hwmon; runner không có IIO.
+  `scripts/spike_adc_stub.sh`. Kiểm: job `adc-spike` của `ci-sim-linux`. (FR-HAL-01, RFC-0007 §3c)
+
 - **I2a · TSK-W1-02 — tiêu chí `numeric` và `NETR` v2 (RFC-0009).** Gate khoá được ngưỡng số: `unit`, `range`,
   `max_age_ms` bắt buộc; khoảng `gt`/`gte`/`lt`/`lte`, kế thừa chỉ thu hẹp. Tuổi số đọc tính từ mốc đọc của HAL, vết ghi mang
   `read_offset_ms`/`eval_offset_ms`/`age_ms`, replay tính lại; thiếu, cũ, NaN, ngoài thang, giá trị `commanded` ⇒ BLOCK, kể cả
