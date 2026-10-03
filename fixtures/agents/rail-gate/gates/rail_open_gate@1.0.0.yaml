@@ -1,0 +1,28 @@
+# Mở cổng chỉ khi cổng đang ở điểm dừng đóng (digital.in) và điện áp nguồn đủ (analog.in, tiêu chí
+# `numeric`, RFC-0007 §3a, §3c). Ngưỡng và thang nằm ở đây; agent.toml chỉ nối tiêu chí với chân
+# và kênh. Thang `[0, 2.5]` V là thang của kênh `adc0`: `neuroedge build` đòi nó bao kênh.
+schema:  neuroedge.gate/v1
+name:    rail_open_gate
+version: 1.0.0
+
+evaluate:
+  limit_closed:
+    type: bool
+    instructions: "Công tắc hành trình báo cổng đang ở điểm dừng đóng"
+  rail_voltage:
+    type: numeric
+    unit: V
+    range: { min: 0.0, max: 2.5 }
+    max_age_ms: 500
+    instructions: "Điện áp nguồn sau cầu phân áp, đọc từ ADC"
+
+allow_when:
+  limit_closed: true
+  rail_voltage: { gte: 1.2 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed
