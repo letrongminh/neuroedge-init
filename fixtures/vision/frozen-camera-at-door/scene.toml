@@ -1,0 +1,19 @@
+description = "Camera đứng hình lặp một khung rỗng: không bao giờ được hiểu là không có người."
+gate = "vision/entry-no-stranger@1.0.0"
+action = "unlock_door"
+
+[context]
+guest_authenticated = true
+
+[vision.zones]
+door_area = [0.25, 0.40, 0.75, 1.00]
+
+[vision.facts.stranger_at_door]
+label = "unknown_person"
+zone  = "door_area"
+kind  = "present"
+
+[vision.facts.stranger_confidence]
+label = "unknown_person"
+zone  = "door_area"
+kind  = "confidence"
