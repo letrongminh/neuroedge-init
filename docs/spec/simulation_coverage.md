@@ -146,6 +146,17 @@ từ chối), ghi từng hàng từ góc trên trái, mở thiết bị mỗi kh
 mọi cảm biến agent và `[sim.sensor_facts]` cần, và backend màn hình nếu agent cần `display`, **trước
 khi** xin line GPIO nào.
 
+### Nguyên thủy mở rộng `vision.in` — `sim-rpi5` và `linux-rpi5`
+
+| Nguyên thủy | Backend | Kiểm ở | Task |
+|:---|:---|:---|:---|
+| `vision.in` trên `sim` (`sim-rpi5`) | Camera ảo phát lại chuỗi khung đã ghi (`[sim.vision]`) trên đồng hồ phiên, đúng chế độ bo mạch khai, hàng đợi kiểu driver, hết chuỗi ⇒ mất camera; nhãn do mô hình `replay` cấp ([`camera.md`](camera.md) §4) | PR (`tests/test_virtual_camera.py`, `tests/test_vision_camera.py`) | TSK-V1b-02 |
+| `vision.in` trên `linux` (`linux-rpi5`) | Node V4L2 do máy chọn (`NEUROEDGE_LINUX_CAMERA`), Python thuần, đúng chế độ khai ([`camera.md`](camera.md) §5) | PR với driver giả (`tests/test_v4l2.py`); job `linux-hal` với `vivid` (`scripts/setup_vivid.sh`, `tests_linux/test_camera_v4l2.py`) | TSK-V1b-01 |
+| Corpus `vision.in` | `fixtures/traces/vision/` replay trên mọi bo khai `vision.in` ([`camera.md`](camera.md) §8) | PR · `neuroedge verify` | TSK-V1b-02 |
+
+`sim-default` (soi Box-3) không có camera: agent đòi `vision.in` bị từ chối lúc build. Chỉ phần cứng: độ trễ thật của driver CSI/USB, nhiễu và phơi sáng;
+tương đương suy luận giữa target (`tolerance`): TSK-V1b-04.
+
 ### `esp32s3` — `esp32s3-box-3`
 
 | Nguyên thủy | Backend | Kiểm ở | Chỉ phần cứng | Task |
@@ -179,6 +190,7 @@ nào đi theo ô tương ứng ở §2. Cột "Vai trò khi replay" nói phần 
 | `sensor.read` | `sensor_read` · `sensor_set` · `sensor_unavailable` | `{sensor, value, unit?, use?, non_finite?}` · `{sensor, value, non_finite?}` · `{sensor, reason}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI. `sensor_unavailable`: một lần tính dữ kiện gate không lấy được số đọc, hoặc một luật của cảm biến từ chối nó (§2), nên mọi dữ kiện của cảm biến đó là `null`; chỉ để đọc, replay dùng `gate_facts` |
 | `display` | `display_frame` | `{width, height, format, sha256, text?}` (`text` khi `format = "text"`) | **Đầu ra** — so digest khi golden có ghi, không chặn tương đương quyết định |
 | `vision.in` | `vision_fact` | `{fact, kind, label, zone, min_frames, value, values, unavailable?, age_ms, max_frame_age_ms, present_score_floor, model: {name, sha256}, frames: [{frame_seq, vision_ref: {sha256, size}, captured_ms, labels, rejected?}]}` — mỗi dữ kiện thị giác của một phán quyết, trước `gate_evaluation_begin`; chi tiết và lint ở [`vision.md`](vision.md) §5 | **Đầu vào nhận thức.** Replay **tính lại** dữ kiện từ nhãn đã ghi, không gọi mô hình và không cần khung hình; sự kiện không khớp nhãn của nó ⇒ dữ kiện chưa quyết ⇒ BLOCK `criterion_unavailable`. Không ảnh thô: `vision_ref` là danh tính |
+| `vision.in` | `camera_unavailable` | `{reason}` — camera không giao được ở lần lượng giá này; cửa sổ bị xoá | **Đầu vào nhận thức** ([`camera.md`](camera.md) §7). Replay bỏ qua: phán quyết `criterion_unavailable` đi cùng được tính lại từ `vision_fact` chưa quyết |
 
 Chế độ ẩn danh (FR-TRC-07) băm `text`; `audio_in_segment`, `display_frame` và `vision_fact` vốn chỉ mang digest hoặc nhãn, không mang ảnh.
 
