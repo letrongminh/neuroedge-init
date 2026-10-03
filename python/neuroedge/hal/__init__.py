@@ -30,6 +30,7 @@ from .board import (
     load_board_by_id,
 )
 from .envelope import Reservation, SafetyEnvelope
+from .pwm import COMMANDED, MEASURED, PinState, check_pwm, pin_state_data, pwm_limits
 
 if TYPE_CHECKING:
     from .audio import WavSource
@@ -45,6 +46,7 @@ __all__ = [
     "DigitalReading",
     "HardwareAbstractionLayer",
     "PinAssertion",
+    "PinState",
     "available_boards",
     "ensure_envelope",
     "load_board",
@@ -75,9 +77,18 @@ class PinAssertion:
         self.commands: list[tuple[str, int]] = (
             list(commands) if commands is not None else ([("pulse", duration_ms)] if pulsed else [])
         )
+        # The `(frequency_hz, duty)` of every accepted `pwm` command, in order (RFC-0010).
+        self.pwm: list[tuple[int, float]] = []
 
-    def record(self, operation: str, duration_ms: int) -> None:
+    def record(
+        self,
+        operation: str,
+        duration_ms: int,
+        pwm: tuple[int, float] | None = None,
+    ) -> None:
         self.commands.append((operation, duration_ms))
+        if pwm is not None:
+            self.pwm.append(pwm)
 
     @property
     def pulses(self) -> list[int]:
@@ -170,6 +181,10 @@ class HardwareAbstractionLayer:
         self.authorize = authorize
         self.pins: dict[str, PinAssertion] = {}
         self._replayed_levels: dict[str, deque[bool | None]] = {}
+        self._replayed_states: dict[str, deque[dict[str, Any] | None]] = {}
+        # What each PWM channel was last commanded to: (frequency_hz, duty, off at this instant
+        # of the HAL's clock). The HAL's own memory — `commanded`, never a measurement.
+        self._pwm_runs: dict[str, tuple[int, float, float]] = {}
         self._envelope: SafetyEnvelope | None = None
         self.envelope = envelope
 
@@ -195,6 +210,7 @@ class HardwareAbstractionLayer:
 
     def _auto_off(self, reservation: Reservation) -> None:
         """The HAL turned a pin off itself (a command toward the safe state, never refused)."""
+        self._pwm_stopped(reservation.name)
         if reservation.auto_off_cause is not None:
             self._emit(
                 "actuator_command",
@@ -216,6 +232,7 @@ class HardwareAbstractionLayer:
         *,
         after_ms: float = 0,
         record: bool = True,
+        pwm: tuple[int, float] | None = None,
     ) -> Reservation | None:
         """
         What every target does before it moves a pin: `require_pin`, then the envelope, then
@@ -250,8 +267,71 @@ class HardwareAbstractionLayer:
                     envelope.refund(reservation)
                 raise
         if record:
-            self.pins.setdefault(pin, PinAssertion(pin)).record(operation, duration_ms)
+            self.pins.setdefault(pin, PinAssertion(pin)).record(operation, duration_ms, pwm)
         return reservation
+
+    def _pwm_prepare(
+        self,
+        pin: str,
+        operation: str,
+        duration_ms: Any,
+        frequency_hz: Any,
+        duty: Any,
+        called_from: str,
+    ) -> tuple[str, int, float]:
+        """
+        The board's limits on one command, before the envelope and `authorize` (RFC-0010 §3b):
+        `(operation, duration_ms, applied duty)`. A pin the board does not declare is refused
+        here as it is in `_admit`; a PWM command whose duty quantises to zero comes back as `off`.
+        """
+        if self.board is None:
+            if operation == "pwm":  # no board, no limits to check a PWM command against
+                raise BoardCapabilityError(
+                    where=f"{called_from} -> digital.out {pin!r}",
+                    why="a pwm command is checked against the board's PWM limits, and this HAL has no board",
+                    how="build the HAL with a board that declares the channel under digital_out.pwm",
+                )
+            return operation, duration_ms, 0.0
+        self.board.require_pin(pin, called_from=called_from)
+        return check_pwm(self.board, pin, operation, duration_ms, frequency_hz, duty, called_from)
+
+    def _pwm_started(
+        self,
+        pin: str,
+        frequency_hz: int,
+        duty: float,
+        duration_ms: int,
+        reservation: Reservation | None,
+    ) -> None:
+        """A `pwm` command was accepted: the channel is commanded for the time it may stay on."""
+        reserved: float = float(duration_ms)
+        if reservation is not None:
+            reserved = reservation.reserved_ms
+        else:
+            limits = None if self.board is None else pwm_limits(self.board, pin)
+            if limits is not None and limits.max_continuous_ms is not None:
+                reserved = min(reserved, limits.max_continuous_ms)
+        self._pwm_runs[pin] = (frequency_hz, duty, self._clock_ms() + reserved)
+
+    def _pwm_stopped(self, pin: str) -> None:
+        self._pwm_runs.pop(pin, None)
+
+    def pwm_enabled(self, pin: str) -> bool:
+        """
+        Whether the HAL holds the enable line of a PWM channel up: only while a gated `pwm`
+        command is running (RFC-0010 §9.2). On `linux` the line itself is `line_value(pin)`.
+        """
+        return self.commanded_pwm(pin) is not None
+
+    def commanded_pwm(self, pin: str) -> tuple[int, float] | None:
+        """`(frequency_hz, duty)` the channel is commanded to now, or None when it is off."""
+        run = self._pwm_runs.get(pin)
+        if run is None:
+            return None
+        if self._clock_ms() >= run[2]:  # the on-time is over: the channel goes off by itself
+            self._pwm_runs.pop(pin, None)
+            return None
+        return run[0], run[1]
 
     def digital_out(
         self,
@@ -260,6 +340,9 @@ class HardwareAbstractionLayer:
         duration_ms: int = 0,
         signature: Any = "",
         called_from: str = "<unknown>",
+        *,
+        frequency_hz: int | None = None,
+        duty: float | None = None,
     ) -> None:
         """
         Drive a digital output.
@@ -270,10 +353,22 @@ class HardwareAbstractionLayer:
         permission error to be retried. The pin is checked before the proof is
         spent, so a typo never consumes a verdict token. The one exception is the
         command toward the safe state, `off`, which is never blocked (RFC-0007 §3d).
+
+        `operation = "pwm"` (RFC-0010) takes `frequency_hz`, `duty` and a positive
+        `duration_ms`, all three; only a PWM channel takes it, and a PWM channel takes only it
+        and `off`.
         """
-        self._admit(pin, operation, duration_ms, signature, called_from)
-        if operation == "off" and self._envelope is not None:
-            self._envelope.ended(pin)
+        operation, duration_ms, applied = self._pwm_prepare(
+            pin, operation, duration_ms, frequency_hz, duty, called_from
+        )
+        pwm = (int(frequency_hz), applied) if operation == "pwm" else None  # type: ignore[arg-type]
+        reservation = self._admit(pin, operation, duration_ms, signature, called_from, pwm=pwm)
+        if operation == "pwm" and pwm is not None:
+            self._pwm_started(pin, pwm[0], pwm[1], duration_ms, reservation)
+        if operation == "off":
+            self._pwm_stopped(pin)
+            if self._envelope is not None:
+                self._envelope.ended(pin)
 
     # -- digital.in (RFC-0007 §3a) -------------------------------------------------------
     # `SimHAL` and `LinuxHAL` set the event sink; the clock of an `EventLog` is the clock the
@@ -355,6 +450,81 @@ class HardwareAbstractionLayer:
                 how="replay a trace recorded with its digital_in events",
             )
         return level
+
+    # -- state() of a digital.out pin (RFC-0010 §3b, §9.4) ---------------------------------
+    def pin_state(
+        self, pin: str, called_from: str = "<unknown>", use: str | None = None
+    ) -> PinState:
+        """
+        The state of a PWM channel: `duty` and `frequency_hz`, each with the `source` of the
+        numbers. A pin the board lists in `digital_out.feedback.pins` is read back from the
+        hardware (`measured`); any other is what the HAL last commanded (`commanded`). A
+        read-back that fails raises `PerceptionUnavailableError` (NE5001) and never returns the
+        commanded value in its place. Reading moves nothing, so it needs no token, and every
+        read is a `pin_state` event (`use="fact"`: a read made to compute a gate fact).
+        """
+        if self.board is not None:
+            self.board.require_pin(pin, called_from=called_from)
+        where = f"{called_from} -> digital.out {pin!r} state()"
+        limits = None if self.board is None else pwm_limits(self.board, pin)
+        if limits is None:
+            raise BoardCapabilityError(
+                where=where,
+                why=f"{pin!r} is not a PWM channel; state() reads back the duty and frequency of a "
+                "PWM channel (RFC-0010 §3b)",
+                how="use a pin listed in [capabilities.digital_out.pwm].pins",
+            )
+        read_ms = self._clock_ms()
+        try:
+            queue = self._replayed_states.get(pin)
+            if queue is not None:
+                state = self._next_replayed_state(pin, queue, where, read_ms)
+            elif pin in self.board.capabilities["digital_out"].get("feedback", {}).get("pins", ()):
+                state = PinState(pin, MEASURED, self._read_feedback(pin, limits, where), read_ms)
+            else:
+                run = self.commanded_pwm(pin)
+                values = {
+                    "duty": 0.0 if run is None else run[1],
+                    "frequency_hz": None if run is None else float(run[0]),
+                }
+                state = PinState(pin, COMMANDED, values, read_ms)
+        except PerceptionUnavailableError as error:
+            self._emit("pin_state", pin_state_data(pin, reason=error.why, use=use))
+            raise
+        self._emit("pin_state", pin_state_data(pin, state, use=use))
+        return state
+
+    def _read_feedback(self, pin: str, limits: Any, where: str) -> dict[str, float | None]:
+        """The target's own read-back of a channel in `feedback.pins`; a read that fails raises NE5001."""
+        raise BoardCapabilityError(
+            where=where,
+            why=f"the read-back of a PWM channel is not implemented on target {self.target!r} yet",
+            how="see docs/spec/simulation_coverage.md; `sim` and `linux` have it",
+        )
+
+    def script_pin_state(self, pin: str, entries: Iterable[dict[str, Any] | None]) -> None:
+        """
+        States returned in order, one per `state()`, instead of the hardware's — how replay
+        feeds a recorded session back, `source` included. A None is a read that failed when it
+        was recorded; reading past the last is a failed read.
+        """
+        if self.board is not None:
+            self.board.require_pin(pin, called_from=f"{type(self).__name__}.script_pin_state()")
+        self._replayed_states[pin] = deque(entries)
+
+    @staticmethod
+    def _next_replayed_state(
+        pin: str, queue: deque[dict[str, Any] | None], where: str, read_ms: float
+    ) -> PinState:
+        entry = queue.popleft() if queue else None
+        if entry is None:
+            raise PerceptionUnavailableError(
+                where=where,
+                why="the trace being replayed holds no state of this channel here (it had failed, or ended)",
+                how="replay a trace recorded with its pin_state events",
+            )
+        values = {k: entry.get(k) for k in ("duty", "frequency_hz")}
+        return PinState(pin, str(entry.get("source", COMMANDED)), values, read_ms)
 
     def _not_on_target(self, primitive: str, called_from: str) -> None:
         raise BoardCapabilityError(

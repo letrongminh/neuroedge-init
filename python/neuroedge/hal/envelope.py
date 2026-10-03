@@ -390,6 +390,21 @@ class SafetyEnvelope:
                         "(LinuxHAL envelope_init / NEUROEDGE_LINUX_ENVELOPE_INIT=1); "
                         "`off` still works",
                     )
+                if operation == "pwm" and duration_ms > limits.max_continuous_ms:
+                    # RFC-0010 §3d: a PWM command never runs forever and is never cut short and
+                    # run anyway — one longer than the channel may stay on is refused whole.
+                    raise self._refusal(
+                        name,
+                        operation,
+                        "max_continuous_ms",
+                        where,
+                        f"duration_ms {duration_ms} is over max_continuous_ms "
+                        f"{_whole(limits.max_continuous_ms)}, the longest this channel may stay on",
+                        f"ask for at most {_whole(limits.max_continuous_ms)} ms and call again "
+                        "through the gate to keep it running",
+                        limit_ms=_whole(limits.max_continuous_ms),
+                        requested_ms=_whole(duration_ms),
+                    )
                 if state.live is not None:
                     raise self._refusal(
                         name,
