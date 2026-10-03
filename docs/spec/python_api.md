@@ -44,7 +44,7 @@ Hợp đồng dạng tệp **không** thuộc tài liệu này vì có phiên b�
 | Mô hình | `SystemOne`, `SystemTwo` | Hai tầng mô hình của agent |
 | Vết ghi và kiểm thử | `TraceRecorder`, `load_trace`, `validate_trace`, `replay`, `scenario` | Ghi vết (băm lời người dùng theo mặc định, NFR-PRIV-03), thẩm định, replay |
 | MCP | `serve_mcp` | Khởi động MCP server qua stdio từ mã Python (§4) |
-| Lỗi | `NeuroEdgeError` và các lớp con: `ActionContractViolation`, `TokenReplayError`, `ToolCallError`, `GateError`, `GateNotFoundError`, `GateSchemaError`, `GateInheritanceError`, `BoardCapabilityError`, `AgentManifestError`, `BuildFailed`, `TraceValidationError`, `SafetyRegressionError`, `ReplayError`, `VerificationError`, `PerceptionUnavailableError` | Mọi lớp lỗi của gói, mã ở PRD Phụ lục B. `ToolCall` dựng với nguồn không hợp lệ ném `ToolCallError` (NE1004), cũng là `ValueError` để mã viết cho 0.1 vẫn chạy |
+| Lỗi | `NeuroEdgeError` và các lớp con: `ActionContractViolation`, `TokenReplayError`, `EnvelopeRefusedError` (NE1003, do phong bì ném — RFC-0007), `ToolCallError`, `GateError`, `GateNotFoundError`, `GateSchemaError`, `GateInheritanceError`, `BoardCapabilityError`, `AgentManifestError`, `BuildFailed`, `TraceValidationError`, `SafetyRegressionError`, `ReplayError`, `VerificationError`, `PerceptionUnavailableError` | Mọi lớp lỗi của gói, mã ở PRD Phụ lục B. `ToolCall` dựng với nguồn không hợp lệ ném `ToolCallError` (NE1004), cũng là `ValueError` để mã viết cho 0.1 vẫn chạy |
 
 Mọi lớp lỗi trong `errors.py` **PHẢI** nằm trong `__all__` (test khoá): người tích hợp bắt lỗi theo lớp,
 nên một lớp lỗi không có tên công khai là một lỗi không bắt được.

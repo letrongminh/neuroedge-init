@@ -69,6 +69,19 @@ class TokenReplayError(ActionContractViolation):
         return data
 
 
+class EnvelopeRefusedError(ActionContractViolation):
+    """
+    A command to a pin or channel with a safety envelope was refused because it would break
+    the envelope (`max_continuous_ms`, the budget per window, `min_interval_ms`, a restart
+    that left the window unreadable). No pin is driven and no token is spent; the refusal is
+    recorded as an `envelope_refused` event (RFC-0007 §3e). The command toward the safe state
+    is never refused. The class comes with the board contract; the HAL hook that raises it is
+    TSK-N2-01.
+    """
+
+    code = "NE1003"
+
+
 class ToolCallError(NeuroEdgeError, ValueError):
     """
     A `ToolCall` was built wrong: its `source` is not one the dispatcher assigns.
@@ -76,7 +89,7 @@ class ToolCallError(NeuroEdgeError, ValueError):
     against the 0.1 `ToolCall` (which raised a bare `ValueError`) keeps working.
     """
 
-    code = "NE1004"  # NE1003 is reserved by RFC-0007
+    code = "NE1004"  # NE1003 is EnvelopeRefusedError (RFC-0007)
 
 
 class GateError(NeuroEdgeError):
@@ -191,6 +204,10 @@ class PerceptionUnavailableError(NeuroEdgeError):
     A perception component cannot be constructed: a missing or malformed command
     grammar, an unknown model reference. Raised at build or load time; at run time
     the engine turns an unrunnable fallback into a `gate_unreachable` verdict.
+
+    RFC-0007 §3e widens it to run time for one case: an HAL input read that fails (a bus
+    NACK or timeout on I2C, a lost ADC, an unreadable `digital.in` line). The criterion that
+    needed the value is then undecided and the gate BLOCKs `criterion_unavailable`.
     """
 
     code = "NE5001"

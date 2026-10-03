@@ -43,6 +43,7 @@ PUBLIC = [
     "BoardProfile",
     "BuildFailed",
     "Conversation",
+    "EnvelopeRefusedError",
     "Fact",
     "Gate",
     "GateError",
