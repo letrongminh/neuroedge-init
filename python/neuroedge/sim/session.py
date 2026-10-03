@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import tomllib
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
@@ -78,7 +79,13 @@ from ..errors import (
     NeuroEdgeError,
     PerceptionUnavailableError,
 )
-from ..hal.board import REFERENCE_BOARD, load_board_by_id
+from ..hal.board import REFERENCE_BOARD, BoardProfile, load_board_by_id
+from ..hal.envelope import (
+    INIT_ENV,
+    FileEnvelopeStore,
+    SafetyEnvelope,
+    default_state_dir,
+)
 from ..hal.sim import SimHAL, reading_data
 from ..mcp_host import McpConfig, load_mcp_config
 from ..models import CommandGrammar, SystemOne, SystemTwo
@@ -543,6 +550,31 @@ def _require_linux_primitives(manifest: AgentManifest) -> None:
     )
 
 
+def _linux_envelope(board: BoardProfile, clock: Clock, options: dict[str, Any]) -> SafetyEnvelope:
+    """
+    The envelope of a `linux` session, with the durable record of each pin's on-time
+    (RFC-0007 §3d): one directory per board (`default_state_dir`; `envelope_state` in the
+    HAL options overrides it). `envelope_init` (or ``NEUROEDGE_LINUX_ENVELOPE_INIT=1``) says
+    this is a new rig and starts the records empty; without it a missing record means the
+    window is spent and the pin is refused. These options are consumed here, not the HAL's;
+    so is `envelope`, an envelope built by the caller, which replaces all of it.
+    """
+    given = options.pop("envelope", None)
+    state = options.pop("envelope_state", None)
+    init = options.pop("envelope_init", None)
+    if given is not None:
+        return given
+    if init is None:
+        init = os.environ.get(INIT_ENV) == "1"
+    return SafetyEnvelope.for_board(
+        board,
+        clock=clock,
+        virtual=False,
+        store=FileEnvelopeStore(state if state is not None else default_state_dir(board.id)),
+        init_store=bool(init),
+    )
+
+
 def _linux_needs(manifest: AgentManifest, sensor_facts: Mapping[str, Any]) -> dict[str, Any]:
     """
     What `LinuxHAL` checks before it requests a line: every sensor the agent or a gate
@@ -687,18 +719,23 @@ class SimSession:
         if rules_digest is not None:
             # Replay cannot recompute a sensor fact; it can tell the rules changed.
             events.metadata["sensor_facts_digest"] = rules_digest
+        options = dict(target_options or {})
         if target == "linux":
             from ..hal.linux import TypedLinuxHAL
 
             hal = TypedLinuxHAL(
                 board,
                 events=events,
+                envelope=_linux_envelope(board, events.clock, options),
                 needs=_linux_needs(manifest, sensor_facts),
                 units={name: unit for name, (_, unit) in sensors.items() if unit is not None},
-                **dict(target_options or {}),
+                **options,
             )
         else:
-            hal = SimHAL(board, events=events, **dict(target_options or {}))
+            given = options.pop("envelope", None)  # a caller's own envelope replaces the board's
+            if given is None:
+                given = SafetyEnvelope.for_board(board, clock=events.clock, virtual=True)
+            hal = SimHAL(board, events=events, envelope=given, **options)
             for name, (value, unit) in sensors.items():
                 hal.set_sensor(name, value, unit)
         # Requesting the lines is the one step that holds anything: if the rest of

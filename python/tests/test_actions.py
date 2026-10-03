@@ -52,6 +52,10 @@ def unlock_door(guest_id: str = "g-1", duration_s: int = 30) -> None:
 @action(name="t_double_pulse", requires="digital.out:door_lock", gate="unlock_door")
 def double_pulse() -> None:
     digital.out("door_lock").pulse(seconds=1)
+    # The safety envelope (RFC-0007 §3d) refuses a second pulse while the first one is going and
+    # within min_interval_ms after it, before the token is looked at: wait both out, so that
+    # what this action tests is still the token's single use.
+    CLOCK.advance(2_000)
     digital.out("door_lock").pulse(seconds=1)
 
 
@@ -79,6 +83,11 @@ def porch_light() -> None:
 @action(name="t_degrading", requires="digital.out:door_lock", gate="degrading")
 def degrading() -> None:
     digital.out("door_lock").pulse(seconds=30)
+
+
+@action(name="t_primary", requires="digital.out:door_lock", gate="primary")
+def primary() -> None:
+    digital.out("door_lock").pulse(seconds=1)
 
 
 @action(name="t_loop", requires="digital.out:gate_relay", gate="loop")
@@ -265,6 +274,34 @@ async def test_degrade_runs_the_fallback_through_its_own_gate(session):
     assert result.fallback.blocked, "the porch gate sees ok=false too"
     assert hal.pin("door_lock").never_pulsed()
     assert hal.pin("porch_light").never_pulsed()
+
+
+async def test_a_fallback_the_envelope_refuses_is_skipped_and_the_block_stands(session):
+    """RFC-0007 §3d: a pin that is already on is not turned on again — and that is no exception."""
+    c, hal, events = session()
+    c.engine.register(
+        "primary",
+        resolve_gate_document(
+            {
+                "schema": "neuroedge.gate/v1",
+                "name": "primary",
+                "version": "1.0.0",
+                "evaluate": {"ok": {"type": "bool", "instructions": "Precondition holds"}},
+                "allow_when": {"ok": False},  # blocks while `ok` is true
+                "on_block": {"action": "degrade", "fallback_action": "t_porch"},
+                "budget": {"p95_latency_ms": 100},
+            }
+        ),
+    )
+    assert not (await c.do(porch_light)).blocked  # the porch light is on
+    result = await c.do(primary)
+    assert result.blocked and result.fallback is None
+    assert events.of_type("fallback_skipped") == [
+        {"action": "t_porch", "reason": "the envelope refused it (already_on)"}
+    ]
+    assert [e["reason"] for e in events.of_type("envelope_refused")] == ["already_on"]
+    assert hal.pin("porch_light").commands == [("on", 0)], "the refused fallback never reached it"
+    assert hal.pin("door_lock").never_pulsed()
 
 
 async def test_a_self_referencing_fallback_is_skipped(session):

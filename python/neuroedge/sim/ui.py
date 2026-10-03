@@ -81,6 +81,9 @@ class SessionServer:
 
     def state(self) -> dict[str, Any]:
         with self.lock:
+            envelope = getattr(self.session.hal, "envelope", None)
+            if envelope is not None:
+                envelope.settle()  # a pin whose on-time is up has gone off: the page shows it
             return {
                 "events": list(self.session.events.events),
                 "now_ms": self.session.events.elapsed_ms(),

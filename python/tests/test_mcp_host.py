@@ -202,8 +202,11 @@ async def test_prompt_injection_in_the_news_still_meets_the_gate(tmp_path, root,
 
 async def test_the_react_loop_stops_at_max_rounds(tmp_path, root, fresh_actions):
     agent = agent_with(tmp_path, root, "[mcp]\nmax_rounds = 2\n")
-    call = {"tool_calls": [{"name": "light_on", "arguments": {}}]}
-    slow, seen = script(call, call, call, call)
+    # on, off, on, off: the safety envelope refuses a second `on` of a light that is already on
+    # (RFC-0007 §3d), and this test is about the loop's rounds, not about the light.
+    on = {"tool_calls": [{"name": "light_on", "arguments": {}}]}
+    off = {"tool_calls": [{"name": "light_off", "arguments": {}}]}
+    slow, seen = script(on, off, on, off)
     session = SimSession.load(agent, slow=slow)
     turn = await session.handle("trời tối quá")
     assert len(seen) == 2 and len(turn.tool_results) == 2
