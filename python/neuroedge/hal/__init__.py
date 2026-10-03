@@ -24,6 +24,7 @@ from .board import (
 if TYPE_CHECKING:
     from .audio import WavSource
     from .audio_live import LiveAudioIn, LiveAudioOut
+    from .vision import Camera, Mode
 
 __all__ = [
     "ALL_PRIMITIVES",
@@ -207,3 +208,19 @@ class HardwareAbstractionLayer:
         if self.board is not None:
             self.board.require_pin(name, called_from="hal.pin()")
         return self.pins.get(name, PinAssertion(name, pulsed=False))
+
+    # -- vision.in (extension primitive, RFC-0012) -----------------------------------
+    def vision_in(
+        self,
+        mode: "Mode",
+        called_from: str = "<unknown>",
+        *,
+        clock: Callable[[], float] | None = None,
+    ) -> "Camera":
+        """
+        The camera, running in `mode` — one of the modes the board declares in `vision_in`
+        (`hal/vision.py`) — stamping frames with `clock` (the session's: `Fact.read_ms` is on
+        it too). Frames come from `Camera.read_available()`; a camera that cannot deliver
+        raises `CameraUnavailable`, it never invents a frame.
+        """
+        self._not_on_target("vision.in", called_from)
