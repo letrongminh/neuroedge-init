@@ -164,13 +164,16 @@ def test_a_frame_reaches_the_kernel_framebuffer():
 
 # --- end to end: an interactive session and its trace --------------------------------
 
-CHILD_ENV = {
-    **os.environ,
-    "NO_COLOR": "1",
-    "COLUMNS": "200",
-    SENSORS_ENV: "temperature=hwmon:lm75/temp1",
-    DISPLAY_ENV: "memory",
-}
+
+def child_env() -> dict[str, str]:
+    """The environment of a child process, read when it starts: `conftest.py` gives each test its own."""
+    return {
+        **os.environ,
+        "NO_COLOR": "1",
+        "COLUMNS": "200",
+        SENSORS_ENV: "temperature=hwmon:lm75/temp1",
+        DISPLAY_ENV: "memory",
+    }
 
 
 def neuroedge(*args: str, stdin: str = "", timeout: float = 30) -> subprocess.CompletedProcess:
@@ -179,7 +182,7 @@ def neuroedge(*args: str, stdin: str = "", timeout: float = 30) -> subprocess.Co
         input=stdin,
         capture_output=True,
         text=True,
-        env=CHILD_ENV,
+        env=child_env(),
         timeout=timeout,
     )
 
@@ -266,7 +269,7 @@ def test_a_session_whose_sensor_is_not_found_exits_before_any_line(lm75):
         [sys.executable, "-m", "neuroedge", "run", "--target", "linux", "--agent", str(FACTORY),
          "-c", "bật quạt"],
         capture_output=True, text=True, timeout=30,
-        env={**CHILD_ENV, SENSORS_ENV: "temperature=hwmon:nothing/temp1"},
+        env={**child_env(), SENSORS_ENV: "temperature=hwmon:nothing/temp1"},
     )  # fmt: skip
     assert done.returncode == 1, done.stdout + done.stderr
     assert "no hwmon device named 'nothing'" in done.stdout + done.stderr
