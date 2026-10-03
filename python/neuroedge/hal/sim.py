@@ -67,6 +67,7 @@ from .audio_live import (
 from .board import BoardProfile, load_board_by_id
 from .envelope import Reservation, SafetyEnvelope
 from .i2c_bus import I2CReader, ReadFault, ScriptedI2C
+from .motion_core import SimActuator
 from .pwm import pwm_limits
 from .vision import Camera, CameraFactory, CameraUnavailable, Mode, modes_of, monotonic_ms
 
@@ -320,6 +321,8 @@ class SimHAL(HardwareAbstractionLayer):
         # Scheduled commands (voice_fsm.md §5.1); None = scheduling refused.
         self._clock: Callable[[], float] | None = None
         self._scheduled: list[PendingCommand] = []
+        # `motion.*` (RFC-0011): a model of the actuators the board declares, on the session clock.
+        self._install_motion(SimActuator())
 
         audio_where = "SimHAL(audio=...)" if audio is not None else AUDIO_ENV
         audio_choice = audio if audio is not None else os.environ.get(AUDIO_ENV) or None
@@ -530,12 +533,17 @@ class SimHAL(HardwareAbstractionLayer):
 
     def next_delivery_ms(self) -> float | None:
         due = [c.deliver_at_ms for c in self.pending_commands() if c.deliver_at_ms is not None]
+        if self._motion is not None:  # a lease, a hold or a run that ends is a due time too
+            motion = self._motion.next_deadline_ms()
+            if motion is not None:
+                due.append(motion)
         return min(due) if due else None
 
     def run_due(self) -> list[PendingCommand]:
         """Deliver every pending command whose time has come on the clock, in time order."""
         if self.envelope is not None:
             self.envelope.settle()  # a pin whose on-time is up goes off, whoever is listening
+        self.settle_motion()  # ... and a channel whose lease ran out goes to its safe state
         if self._clock is None:
             return []
         now = self._clock()
@@ -862,6 +870,11 @@ class SimHAL(HardwareAbstractionLayer):
     def close(self) -> None:
         """Release live audio streams and cameras and end every on-time the envelope holds; idempotent."""
         errors: list[BaseException] = []
+        if self._motion is not None:  # every channel to its safe state first (cause `close`)
+            try:
+                self._motion.close()
+            except BaseException as exc:
+                errors.append(exc)
         if self.envelope is not None:
             self.envelope.end_all()
         cameras, self._cameras = self._cameras, []

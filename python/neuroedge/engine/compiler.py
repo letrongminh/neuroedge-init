@@ -186,6 +186,8 @@ def _describe(board: BoardProfile) -> str:
             offered.append(f"digital.in:{list(board.input_pins)}")
         elif primitive == "analog.in":
             offered.append(f"analog.in:{[channel['name'] for channel in board.analog_channels]}")
+        elif primitive == "motion":
+            offered.append(f"motion:{[c['name'] for c in board.motion_channels]}")
         elif primitive == "i2c":
             offered.append(f"i2c:{_i2c_devices(board)}")
         else:
@@ -278,6 +280,8 @@ def check_capabilities(manifest: AgentManifest, board: BoardProfile) -> list[Neu
                 problems += _check_pwm_channels(manifest, board, need)
         elif primitive == "analog.in":
             problems += _check_analog_channels(manifest, board, need)
+        elif primitive == "motion":
+            problems += _check_motion_channels(manifest, board, need)
         elif primitive == "i2c":
             offered_devices = _i2c_devices(board)
             wanted = need.get("devices", [])
@@ -421,6 +425,79 @@ def _check_pwm_channels(
     return problems
 
 
+def _check_motion_channels(
+    manifest: AgentManifest, board: BoardProfile, need: Mapping[str, Any]
+) -> list[NeuroEdgeError]:
+    """
+    `"motion" = { channels = ["wheel_left"] }`: each channel is a motor or servo the board
+    declares (RFC-0011 §3a). A bare `motion` names no channel, so it would prove nothing about
+    the board.
+    """
+    channels = need.get("channels")
+    shape = (
+        isinstance(channels, list)
+        and bool(channels)
+        and all(isinstance(name, str) for name in channels)
+    )
+    if not shape:
+        return [
+            AgentManifestError(
+                where=f"{manifest.source} -> [requires] motion",
+                why=f"`channels` must be a non-empty list of channel names, found {channels!r}",
+                how='write "motion" = { channels = ["wheel_left"] }',
+            )
+        ]
+    declared = [channel["name"] for channel in board.motion_channels]
+    return [
+        _mismatch(
+            manifest, board, f"motion:{name}", f"declare {name!r} under [capabilities.motion]"
+        )
+        for name in channels
+        if name not in declared
+    ]
+
+
+def check_motion_leases(
+    manifest: AgentManifest,
+    board: BoardProfile,
+    gates: Mapping[str, ResolvedGate],
+    actions: Iterable[Any],
+) -> list[NeuroEdgeError]:
+    """
+    A gate that decides a command for a motion channel must answer in half the channel's lease
+    at most: `budget.p95_latency_ms <= lease_ms / 2` (RFC-0011 §3c, §9 item 2), so a renewal
+    reaches the channel before its lease runs out. Only the build has both the gate and the
+    board's `lease_ms`; `gate lint` and the resolution semantics do not change. The runtime
+    enforces the lease whatever the gate claims, so this is a build-time check on top, not the
+    safety layer itself.
+    """
+    leases = {
+        channel["name"]: int(channel.get("lease_ms", 200)) for channel in board.motion_channels
+    }
+    problems: list[NeuroEdgeError] = []
+    for spec in actions:
+        gate = gates.get(spec.gate)
+        if gate is None:
+            continue  # resolve_gates already said so
+        p95 = gate.budget["p95_latency_ms"]
+        for channel in sorted(spec.channels):
+            lease = leases.get(channel)
+            if lease is not None and p95 > lease / 2:
+                problems.append(
+                    BoardCapabilityError(
+                        where=f"{spec.where} -> action {spec.name!r} -> motion:{channel}",
+                        why=(
+                            f"gate {gate.name}@{gate.version} has p95_latency_ms {p95}, over half "
+                            f"of the {lease} ms lease of {channel!r} on board {board.id!r} "
+                            f"({lease / 2:g} ms): a renewal could not arrive before the lease ends"
+                        ),
+                        how=f"set budget.p95_latency_ms to at most {lease // 2} in the gate, or "
+                        f"lengthen lease_ms of {channel!r} (at most 500) in {board.source}",
+                    )
+                )
+    return problems
+
+
 def default_board_hint(manifest: AgentManifest, board: BoardProfile) -> NeuroEdgeError:
     """
     The way out when `build` ran on a default board that does not satisfy `[requires]`:
@@ -485,6 +562,7 @@ def check_actions(manifest: AgentManifest, actions: Iterable[Any]) -> list[Neuro
                 "sensor.read": "sensors",
                 "digital.in": "pins",
                 "i2c": "devices",
+                "motion": "channels",
             }.get(requirement.primitive)
             missing = declared is None or (
                 key is not None
@@ -1612,6 +1690,7 @@ def build(
     problems += check_feedback_facts(manifest, board, gates)
     problems += check_digital_facts(manifest, gates, board)
     problems += check_i2c_values(manifest, board)
+    problems += check_motion_leases(manifest, board, gates, actions)
 
     grammar = manifest.root / "commands.toml"
     if grammar.is_file():

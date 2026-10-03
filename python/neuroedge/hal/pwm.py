@@ -355,6 +355,13 @@ class SysfsPwm:
         self._write(directory, "duty_cycle", duty_ns)
         self._write(directory, "enable", 1)
 
+    def set_duty_ns(self, pin: str, duty_ns: int, called_from: str = "<unknown>") -> None:
+        """
+        Only the duty of a channel `apply_ns` has programmed (a ramp's next step, a servo's next
+        target): no zero in between, so the output does not glitch. `OSError` when refused.
+        """
+        self._write(self._dir(pin, called_from), "duty_cycle", duty_ns)
+
     def off(self, pin: str, called_from: str = "<unknown>") -> None:
         """
         Disable the channel and zero its duty. `OSError` when the kernel refuses. A channel

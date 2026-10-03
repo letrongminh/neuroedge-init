@@ -70,6 +70,7 @@ REQUIRABLE_PRIMITIVES: tuple[str, ...] = (
     "analog.in",
     "i2c",
     "vision.in",
+    "motion",
 )
 
 _CAPABILITY_KEYS = {

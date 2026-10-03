@@ -120,6 +120,11 @@ Vào `BARGE_IN`, hiện thực **PHẢI** làm đúng thứ tự:
    lúc chắc chắn chân sẽ không bị kích: **≤ 1 khung âm thanh = 20 ms** (khung Opus 20 ms, PRD Phụ lục
    D.2; RB-3). Mỗi lệnh bị hủy ghi `actuator_aborted {pin, reason: "ACTUATOR_ABORTED_BY_BARGE_IN"}`
    (`docs/spec/simulation_coverage.md` §3). Bước này **KHÔNG ĐƯỢC** chờ bước 3.
+   **`motion.*` (RFC-0011 §3d):** cùng bước này, `VoiceStateMachine` gọi `stop_motion` (`motion_barge_in` của HAL):
+   mọi kênh chuyển động đang chạy hoặc đang giữ được gửi **ngay** về trạng thái an toàn đã khai (`stop`, hoặc
+   `hold` cho servo giữ vị trí), ghi `motion_safe {channel, state, cause: "barge_in"}` ở cùng tick với sự kiện kích,
+   trước khi lease hết, và lease không được gia hạn nữa. Khác `digital.out`, lệnh chuyển động **đã giao** vẫn bị
+   dừng: không có cờ "chạy tiếp" (§5.3).
 2. **Đóng token** của lệnh bị hủy (`TokenLedger.close` / `ne_token_close`): cùng phán quyết đó không
    bao giờ được kích chân về sau. Muốn làm lại phải có lượng giá gate mới, qua `c.do()` mới.
 3. **Dừng TTS**: xả đệm DAC, ghi `tts_stream_end {duration_ms, reason: "barge_in"}`. Từ lúc người
@@ -154,6 +159,10 @@ chạy" (Q-57): `motion.*` luôn dừng ngay khi bị cắt lời (RFC-0011 §3d
 - **Phán quyết đã ghi**: cắt lời không sửa hay xoá sự kiện nào đã ghi; nó chỉ thêm sự kiện.
 
 ### 5.5 Hiện thực hôm nay
+
+`motion.*` (TSK-I2a-05): `VoiceStateMachine(stop_motion=…)` do `VoiceSession` nối với `hal.motion_barge_in`
+(`SimHAL`, `LinuxHAL`); test `test_a_barge_in_sends_safe_in_the_same_tick_and_before_the_lease_ends`,
+`test_a_barge_in_does_not_cut_a_delivered_digital_pulse` (`tests/test_motion.py`).
 
 Python (TSK-S3-11): `digital.out(pin).pulse(…, after_ms=N)` là **lệnh hẹn giờ**. Trên `sim`
 (`SimHAL`), gate lượng giá và token được tiêu ngay; chân chỉ được ghi và `actuator_command` chỉ được

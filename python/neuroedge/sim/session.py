@@ -673,12 +673,13 @@ def _linux_needs(
     digital_facts: Mapping[str, DigitalFact] | None = None,
 ) -> dict[str, Any]:
     """
-    What `LinuxHAL` checks before it requests a line: every sensor the agent or a gate
-    fact reads is readable, every input line it reads is there, a display backend is chosen
+        What `LinuxHAL` checks before it requests a line: every sensor the agent or a gate
+        fact reads is readable, every input line it reads is there, a display backend is chosen
     if the agent draws, the kernel has the PWM channels the agent drives and a channel chosen
-    for each, every I2C bus the agent reads has a device node chosen and opens,
-    and the live audio devices (when the machine chose that backend) open if the agent
-    needs them — all before a pin is held (Q-16, TSK-S5-08).
+    for each, every I2C bus the agent reads has a device node chosen and opens, every motion
+    channel it commands has a PWM wired and an enable line,
+        and the live audio devices (when the machine chose that backend) open if the agent
+        needs them — all before a pin is held (Q-16, TSK-S5-08).
     """
     sensors = list(manifest.requires.get("sensor.read", {}).get("sensors", ()))
     sensors += [rule.sensor for rule in sensor_facts.values()]
@@ -701,6 +702,8 @@ def _linux_needs(
                 ]
             )
         ),
+        # The motion channels the agent names: each needs its PWM wiring and its enable line.
+        "motion": list(manifest.requires.get("motion", {}).get("channels", ())),
         "where": f"{manifest.source} on target 'linux'",
     }
 
@@ -1376,6 +1379,7 @@ class SimSession:
     async def _handle(
         self, text: str, *, spoken: bool = False, answer_to: str | None = None
     ) -> Turn:
+        self.hal.settle_motion()  # a lease that ran out while nobody spoke is a stop on record
         with self.conversation.stage("perception"):
             self.hal.type_text(text)
             utterance = self.hal.audio_in(called_from="SimSession.handle()") or ""

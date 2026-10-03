@@ -56,8 +56,9 @@ class ActionContractViolation(NeuroEdgeError):
 class TokenReplayError(ActionContractViolation):
     """
     A verdict token was used again, after its TTL, or by another process
-    instance. `reason` is ``token_replayed`` or ``token_expired``. A contract
-    violation, never a retryable denial.
+    instance; for a motion lease (RFC-0011 §3c), a lease already used or past its time.
+    `reason` is ``token_replayed``, ``token_expired``, ``lease_used`` or ``lease_expired``.
+    A contract violation, never a retryable denial.
     """
 
     code = "NE1002"

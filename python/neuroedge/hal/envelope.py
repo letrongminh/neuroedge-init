@@ -399,6 +399,7 @@ class SafetyEnvelope:
         operation: str,
         after_ms: float = 0,
         called_from: str = "<unknown>",
+        primitive: str = "digital.out",
     ) -> Reservation | None:
         """
         Check the command against the envelope and reserve its on-time, as one step under
@@ -418,7 +419,7 @@ class SafetyEnvelope:
                 start = now + max(0.0, after_ms)
                 self._settle(state, now, fired)
                 limits = state.limits
-                where = f"{called_from} -> digital.out {name!r}"
+                where = f"{called_from} -> {primitive} {name!r}"
                 if state.unreadable is not None:
                     raise self._refusal(
                         name,
@@ -535,13 +536,16 @@ class SafetyEnvelope:
         )
 
     # -- the end of an on --------------------------------------------------------------
-    def ended(self, name: str, reservation: Reservation | None = None) -> Reservation | None:
+    def ended(
+        self, name: str, reservation: Reservation | None = None, *, at: float | None = None
+    ) -> Reservation | None:
         """
         The pin is in its safe state now: whatever it was holding ends here and the unused
         part of the reservation goes back to the window. A command that had not yet turned
         the pin on is refunded in full. Never refuses; returns the reservation it closed.
         With `reservation`, only that command is ended: an abort of a command that is long
-        over must not end the one that holds the pin now.
+        over must not end the one that holds the pin now. `at` is the instant it really ended,
+        when that was before now (a lease that ran out between two ticks of a clock).
         """
         state = self._states.get(name)
         if state is None:
@@ -557,6 +561,8 @@ class SafetyEnvelope:
                 if now < live.start_ms:
                     return self._refund(name, state, live)
                 end = min(now, live.deadline_ms) if self.virtual else now
+                if at is not None:
+                    end = min(end, at)  # it ended when its time came, not when somebody looked
                 self._finish(state, live, end)
                 self._persist_quietly(name, state)
                 return live

@@ -46,6 +46,7 @@ Type a command the agent's grammar knows, e.g. "mở cửa phòng 101".
   :analog <ch> <v>    set what an analog.in channel reads, in its unit
   :feedback <pin> duty=<r> [frequency_hz=<n>] | fail <why> | clear
                       set what a PWM channel's read-back reports (feedback.pins boards)
+  :motion             show the motion channels: mode, setpoint, lease left, speed or position
   :inputs             show the simulated digital input lines
   :input <pin> <v>    set an input line: true | 1 | high, or false | 0 | low (digital.in)
   :screen             show the last display frame
@@ -270,6 +271,24 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
             console.print(f"[red]{escape(error.why)}[/red] — {escape(error.how)}")
             return
         console.print(f"  {escape(pin)} read-back: {escape(' '.join(words))}")
+    elif name == "motion":
+        table = Table(title="Motion channels", title_justify="left")
+        for column in ("Channel", "Mode", "Setpoint", "Lease/hold left", "Now"):
+            table.add_column(column, style="cyan" if column == "Channel" else None)
+        for channel, info in session.hal.motion_values().items():
+            setpoint = ", ".join(f"{k}={v:g}" for k, v in info.get("setpoint", {}).items())
+            left = info.get("lease_left_ms", info.get("hold_left_ms"))
+            now = ", ".join(
+                f"{k}={v:g}" for k, v in info.items() if k in ("speed", "position", "distance")
+            )
+            table.add_row(
+                channel,
+                f"{info['mode']} (safe: {info['safe_state']})",
+                setpoint or "—",
+                "—" if left is None else f"{left} ms",
+                now or "—",
+            )
+        console.print(table)
     elif name == "inputs":
         table = Table(title="Simulated input lines", title_justify="left")
         table.add_column("Pin", style="cyan")

@@ -25,6 +25,7 @@ from ..engine.gate import ActionContractEngine, GateResult
 from ..engine.verdict import GateVerdict
 from ..errors import EnvelopeRefusedError
 from ..hal import digital, ensure_envelope
+from ..hal.motion_core import lease_ms_of
 from .confirmation import ConfirmationBook, ConfirmationRefused, PendingConfirmation
 from .spec import REGISTRY, ActionSpec, running, spec_of
 from .token import TokenLedger
@@ -194,6 +195,13 @@ class Conversation:
                         "call_source": self.facts.get("call_source"),
                     },
                 )
+            # RFC-0011 §3d: a BLOCK of a command for a motion channel sends the channel to its
+            # safe state at once, and the lease it held is not renewed. Toward the safe state:
+            # nothing waits for it, nothing refuses it.
+            safe = getattr(self.hal, "motion_safe", None)
+            if safe is not None:
+                for channel in sorted(spec.channels):
+                    safe(channel, "block", called_from=f"c.do({spec.name})")
             return ActionResult(
                 spec.name, GateVerdict.BLOCK, result, fallback=fallback, confirmation=pending
             )
@@ -206,6 +214,8 @@ class Conversation:
             pins=spec.pins,
             session_id=self.events.session_id,
             p95_ms=tree["budget"]["p95_latency_ms"],
+            # RFC-0011 §3c: a lease per motion channel, as long as the board says (not TTL_FACTOR).
+            channels={c: lease_ms_of(getattr(self.hal, "board", None), c) for c in spec.channels},
         )
         try:
             with self.stage("action"), running(spec), digital.grant(self.hal, token, spec.name):

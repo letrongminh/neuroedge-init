@@ -1,0 +1,4 @@
+# RFC-0011: `motion.servo` tới góc 45 độ trong dải 0..90 của kênh gripper.
+agent: rover
+board: sim-rpi5
+call:  { name: grip, arguments: { angle: 45 }, source: mcp }

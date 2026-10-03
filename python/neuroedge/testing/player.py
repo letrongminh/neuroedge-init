@@ -168,7 +168,10 @@ def recorded_steps(trace: Mapping[str, Any]) -> list[RecordedStep]:
             open_step
             and steps
             and steps[-1].command_ms is None
-            and (kind == "envelope_refused" or (kind == "actuator_command" and "cause" not in data))
+            and (
+                kind in ("envelope_refused", "motion_command")
+                or (kind == "actuator_command" and "cause" not in data)
+            )
         ):
             steps[-1] = replace(
                 steps[-1],
@@ -727,6 +730,7 @@ class TracePlayer:
         conversation = Conversation(engine=engine, hal=hal)
 
         results: list[ActionResult] = []
+        settle_motion = getattr(hal, "settle_motion", None)
         recorded_events = self.trace.get("events", [])
         try:
             while engine.cursor < len(steps):
@@ -735,6 +739,9 @@ class TracePlayer:
                 envelope_clock.now = float(
                     step.command_ms if step.command_ms is not None else step.at_ms
                 )
+                settle_motion = getattr(hal, "settle_motion", None)
+                if settle_motion is not None:  # a lease that ran out by now has gone safe
+                    settle_motion()
                 refused: EnvelopeRefusedError | None = None
                 try:
                     results.append(await conversation.do(name, **step.arguments))
@@ -749,6 +756,8 @@ class TracePlayer:
                     [envelope_clock.now, *(float(e.get("offset_ms", 0)) for e in recorded_events)]
                 )
                 envelope.settle()
+            if settle_motion is not None:
+                settle_motion()
         finally:
             # A divergence or a contract error must not leave a real line driven (linux).
             close = getattr(hal, "close", None)

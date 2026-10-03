@@ -63,6 +63,11 @@ class ActionSpec:
     def pins(self) -> frozenset[str]:
         return frozenset(r.name for r in self.requires if r.primitive == "digital.out" and r.name)
 
+    @property
+    def channels(self) -> frozenset[str]:
+        """The `motion` channels this action asks for (`requires="motion:wheel_left"`)."""
+        return frozenset(r.name for r in self.requires if r.primitive == "motion" and r.name)
+
 
 REGISTRY: dict[str, ActionSpec] = {}
 

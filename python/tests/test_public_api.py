@@ -83,6 +83,7 @@ PUBLIC = [
     "dispatch",
     "load_board_by_id",
     "load_trace",
+    "motion",
     "replay",
     "resolve_gate_file",
     "resolve_gate_uri",

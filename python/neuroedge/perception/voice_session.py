@@ -168,6 +168,7 @@ class VoiceSession:
             pending_commands=self.hal.pending_commands,
             close_token=session.conversation.ledger.close,
             stop_speech=self._stop_speech,
+            stop_motion=getattr(self.hal, "motion_barge_in", None),
         )
         self.stt = stt
         # `[stt.fallback]` (Q-14): called when the primary STT is unavailable; its

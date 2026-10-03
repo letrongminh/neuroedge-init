@@ -129,6 +129,32 @@ valid:
     status: ALLOW
     pins: [{ pin: fan, operation: "off", duration_ms: 0 }]
 
+  motion_drive_allows.yaml:
+    status: ALLOW
+    pins: []
+    motion:
+      - command: { channel: wheel_left, kind: motor, speed: 0.3, run: new }
+
+  motion_drive_at_the_gate_limit.yaml:
+    status: ALLOW
+    pins: []
+    motion:
+      - command: { channel: wheel_left, kind: motor, speed: 0.5, run: new }
+
+  motion_grip_allows.yaml:
+    status: ALLOW
+    pins: []
+    motion:
+      - command: { channel: gripper, kind: servo, target: 45.0, run: new }
+
+  motion_drive_blocked_moves_nothing.yaml:
+    status: BLOCK
+    reason: condition_not_met
+    failed_criterion: path_clear
+    on_block: deny
+    pins: []
+    motion: []
+
 invalid:
   unknown_tool.yaml:
     status: REJECTED
@@ -227,3 +253,12 @@ invalid:
     status: REJECTED
     problems: ["missing required argument 'duration_ms'"]
     pins: []
+
+  motion_speed_above_the_gate_limit.yaml:
+    status: BLOCK
+    gate: drive@1.0.0
+    reason: argument_out_of_range
+    failed_criterion: speed
+    on_block: deny
+    pins: []
+    motion: []

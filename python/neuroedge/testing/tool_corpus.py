@@ -50,6 +50,7 @@ OPTIONAL_FIELDS = ("gate", "message")
 EXPECTED_KEYS = {
     "status",
     "pins",
+    "motion",
     "problems",
     "confirmation",
     "fallback",
@@ -82,6 +83,8 @@ class CaseOutcome:
     case: ToolCase
     content: dict[str, Any]
     pins: list[dict[str, Any]]
+    # The `motion.*` commands and safe-state commands of the case (RFC-0011), in order.
+    motion: list[dict[str, Any]]
     # The call matches the tool's advertised inputSchema, after §2 coercion.
     conforms: bool
     differences: list[str]
@@ -269,6 +272,19 @@ def _compare(label: str, expected: Mapping[str, Any], content: Mapping[str, Any]
     return out
 
 
+def motion_events(session: Any) -> list[dict[str, Any]]:
+    """What the case did to the motion channels: each command's setpoint, each safe state's cause."""
+    out: list[dict[str, Any]] = []
+    for event in session.events.events:
+        data = event["data"]
+        if event["type"] == "motion_command":
+            keys = ("channel", "kind", "speed", "target", "run")
+            out.append({"command": {k: data[k] for k in keys if k in data}})
+        elif event["type"] == "motion_safe":
+            out.append({"safe": {k: data[k] for k in ("channel", "state", "cause")}})
+    return out
+
+
 def compare(case: ToolCase, expected: Mapping[str, Any], outcome: tuple[Any, Any]) -> CaseOutcome:
     session, result = outcome
     content = result.content()
@@ -282,8 +298,12 @@ def compare(case: ToolCase, expected: Mapping[str, Any], outcome: tuple[Any, Any
         }
         for e in session.events.of_type("actuator_command")
     ]
+    motion = motion_events(session)
     conforms = _conforms(session, case.call)
     differences = _compare("", expected, content)
+    wanted_motion = [dict(m) for m in expected.get("motion") or []]
+    if motion != wanted_motion:
+        differences.append(f"motion: expected {wanted_motion}, got {motion}")
     wanted_pins = [dict(p) for p in expected.get("pins") or []]
     if pins != wanted_pins:
         differences.append(f"pins: expected {wanted_pins}, got {pins}")
@@ -297,7 +317,7 @@ def compare(case: ToolCase, expected: Mapping[str, Any], outcome: tuple[Any, Any
             differences.append("in invalid/, but the call matches the tool's inputSchema")
         if content["status"] == "ALLOW":
             differences.append("in invalid/, but the call was ALLOWed")
-    return CaseOutcome(case, content, pins, conforms, differences)
+    return CaseOutcome(case, content, pins, motion, conforms, differences)
 
 
 async def run_case(case: ToolCase, expected: Mapping[str, Any]) -> CaseOutcome:

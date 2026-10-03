@@ -64,6 +64,16 @@ hỏng, đồng hồ lệch hay bản ghi phong bì không đọc được. Lệ
 `cause` khi HAL tự phát) — chỉ không bị chặn. Hệ quả cần biết: `off` chỉ cần tên chân có trên bo mạch;
 HAL không kiểm bằng chứng cho nó (`test_off_needs_no_envelope_no_proof_and_no_waiting`).
 
+**Chuyển động có lease** (RFC-0011 §3c, §3d, TSK-I2a-05). Lệnh `motion.*` đi cùng đường `require_channel → giới
+hạn bo mạch → phong bì → authorize → record`, nhưng bằng chứng là **lease** trong token: một lệnh, trong `lease_ms`
+của kênh, và chỉ một lần qua gate mới gia hạn được; HAL không bao giờ tự gia hạn. Lệnh **về trạng thái an
+toàn của kênh** (`stop`/`hold`) là phần mở rộng của ngoại lệ trên: lease hết, hết `max_continuous_ms` hay
+`max_hold_ms`, cắt lời, BLOCK, `motion.stop`, `hal.close()`, tiến trình giám sát thả đường enable — không qua
+phong bì, không cần token hay ALLOW, không chờ `ramp_min_ms`/`min_interval_ms`, luôn ghi `motion_safe` kèm nguyên
+nhân (`test_stop_needs_no_token_no_envelope_and_does_not_wait_for_a_ramp`). Trên `linux`, đường enable của driver
+do tiến trình giám sát giữ cùng hạn (hết lease + 250 ms), nên runtime treo hoặc chết cũng làm driver mất điện
+(`test_a_runtime_stopped_with_sigstop_while_a_motor_runs_loses_its_driver`).
+
 Sơ đồ bắt đầu ở `c.do()`. Lời gọi từ LLM hay client MCP đi qua `dispatch()` trước
 (`docs/spec/tool_calling.md` §2), và lời xác nhận `ask` lượng giá lại chính gate này
 (`tool_calling.md` §6); cả hai ở §2b.
@@ -81,6 +91,9 @@ trình viên gọi thẳng hàm, dùng lại token cũ, sao chép một lệnh t
 | HAL chưa gắn ledger | Authorizer mặc định từ chối tất cả | NE1001 | `test_a_hal_without_a_ledger_refuses_every_command` |
 | Token cho chân A dùng cho chân B | `pin ∈ token.pins` | NE1001 | `test_a_token_for_one_pin_cannot_drive_another` |
 | Dùng lại token (trong hoặc sau `c.do()`) | Mỗi chân tiêu một lần; token đóng khi `c.do()` trả về | NE1002 `token_replayed` | `test_a_second_pulse_…`, `test_a_token_kept_past_c_do_…` |
+| Lease dùng cho hai lệnh | Mỗi lease một lệnh; lệnh thứ hai ⇒ `lease_used` | NE1002 `lease_used` | `test_a_lease_carries_exactly_one_command` |
+| Lease quá hạn (lệnh tới sau `lease_ms`) | `lease_ms` của kênh từ lúc phán quyết, không phải `TTL_FACTOR` | NE1002 `lease_expired` | `test_a_lease_that_ran_out_before_the_command_is_refused`, `test_the_lease_is_the_boards_and_not_the_gates_or_the_ttl` |
+| Lease của kênh A dùng cho kênh B | `channel ∈ token.channels` | NE1001 | `test_a_lease_for_one_channel_is_no_proof_for_another` |
 | Token quá hạn | TTL = p95 × 3 | NE1002 `token_expired` | `test_a_token_used_after_its_ttl_is_token_expired` |
 | Token từ tiến trình trước (restart) | `process_instance_id` | NE1002 `token_expired` | `test_a_token_from_another_process_instance_is_token_expired` |
 | Sổ token trên thiết bị đầy (mọi ô giữ token còn sống) | Sổ đầy ⇒ đóng an toàn: `ne_token_issue` từ chối (`NE_TOKEN_ERR_FULL`), không cấp token thì không có hành động; không bao giờ đẩy token còn sống ra | — (không token) | `test_what_only_the_c_ledger_has` |

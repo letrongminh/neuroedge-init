@@ -54,7 +54,7 @@ def grant(hal: Any, token: Any, action: str) -> Iterator[None]:
 
 def _caller() -> str:
     for frame in inspect.stack()[2:]:
-        if not frame.filename.endswith(("hal/digital.py", "contextlib.py")):
+        if not frame.filename.endswith(("hal/digital.py", "hal/motion.py", "contextlib.py")):
             return f"{frame.filename}:{frame.lineno}"
     return "<unknown>"
 
