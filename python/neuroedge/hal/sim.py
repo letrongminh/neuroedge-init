@@ -21,6 +21,9 @@ mirrors the reference board rather than exceeding it (CHANGELOG §3.3 #7).
 * `sensor_read` — values scripted with `set_sensor()` (or a sequence with
   `script_sensor()`, which replay uses); records `sensor_read`. An unscripted
   sensor raises instead of inventing a reading.
+* `i2c_read` — values scripted with `set_i2c()` (or a sequence with `script_i2c()`, which
+  replay uses), through the same allow-list as `linux`; records `i2c_read`. It never
+  scans and never invents a reading (RFC-0007 §3b).
 * `display` — a virtual frame (text, or raw RGB565 / RGB888 pixels) checked
   against the declared resolution; records `display_frame` with its digest
   (docs/spec/simulation_coverage.md §3).
@@ -49,6 +52,7 @@ from .audio_live import (
     _import_sounddevice as _live_import_sounddevice,
 )
 from .board import BoardProfile, load_board_by_id
+from .i2c_bus import I2CReader, ReadFault, ScriptedI2C
 
 AUDIO_ENV = "NEUROEDGE_AUDIO"
 AUDIO_IN_ENV = "NEUROEDGE_AUDIO_IN"
@@ -87,6 +91,16 @@ def reading_value(data: Mapping[str, Any]) -> Any:
     """The reading a `sensor_read` event recorded (the inverse of `reading_data`)."""
     value = data.get("value")
     return float(value) if data.get("non_finite") else value
+
+
+def _i2c_value(value: Any, width: int, where: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value < 256**width:
+        raise BoardCapabilityError(
+            where=where,
+            why=f"{value!r} is not a {width}-byte register value (0..{256**width - 1})",
+            how="script integers that fit the read width",
+        )
+    return value
 
 
 class EventSink(Protocol):
@@ -272,6 +286,12 @@ class SimHAL(HardwareAbstractionLayer):
         self._sensors: dict[str, Any] = dict(sensors or {})
         self._units: dict[str, str] = {}
         self._scripted: dict[str, deque[Any]] = {}
+        self._i2c_script = ScriptedI2C()
+        self._i2c = I2CReader(
+            board,
+            lambda bus, where: self._i2c_script.transport(bus),
+            lambda type, data: self.events.emit(type, data),
+        )
         self._typed: deque[str] = deque()
         self.frame: str | bytes | None = None
         self.frames: list[Frame] = []
@@ -468,6 +488,48 @@ class SimHAL(HardwareAbstractionLayer):
         value = self._sensors[sensor]
         self.events.emit("sensor_read", reading_data(sensor, value, self._units.get(sensor), use))
         return value
+
+    # -- i2c ---------------------------------------------------------------------
+    def set_i2c(
+        self, bus: str, device: str | int, register: int | None, value: int, *, width: int = 1
+    ) -> None:
+        """What a read of this device (and register) returns from now on; the board decides what exists."""
+        where = "SimHAL.set_i2c()"
+        declared = self._i2c.resolve(bus, device, register, width, where)
+        self._i2c_script.set(bus, declared["address"], register, _i2c_value(value, width, where))
+
+    def script_i2c(
+        self,
+        bus: str,
+        device: str | int,
+        register: int | None,
+        values: list[int | ReadFault],
+        *,
+        width: int = 1,
+    ) -> None:
+        """Readings returned in order, one per read — how replay feeds a recorded session."""
+        where = "SimHAL.script_i2c()"
+        declared = self._i2c.resolve(bus, device, register, width, where)
+        checked = [v if isinstance(v, ReadFault) else _i2c_value(v, width, where) for v in values]
+        self._i2c_script.script(bus, declared["address"], register, checked)
+
+    def i2c_read(
+        self,
+        bus: str,
+        device: str | int,
+        register: int | None = None,
+        *,
+        width: int = 1,
+        called_from: str = "<unknown>",
+    ) -> int:
+        return self._i2c.read(bus, device, register, width=width, called_from=called_from)
+
+    def i2c_scan(self, bus: str, called_from: str = "<unknown>") -> list[Any]:
+        raise BoardCapabilityError(
+            where=f"{called_from} -> i2c.scan {bus!r}",
+            why="the simulator has no bus to scan: sim only replays what was recorded (RFC-0007 §3b)",
+            how="scan on the linux target, where a probe reaches a real or i2c-stub bus",
+        )
 
     # -- audio -------------------------------------------------------------------
     def type_text(self, text: str) -> None:

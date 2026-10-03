@@ -572,6 +572,7 @@ class TracePlayer:
         if self.hal is not None and hasattr(hal, "events"):
             hal.events = events
         _script_sensors(hal, self.trace)
+        _script_i2c(hal, self.trace)
         warnings = _sensor_rules_changed(self.trace, self.manifest, events)
         warnings += [_gate_digest_warning(change) for change in changed]
         problems = fact_mark_problems(self.trace)
@@ -656,6 +657,33 @@ def _script_sensors(hal: Any, trace: Mapping[str, Any]) -> None:
         )
     for sensor, values in readings.items():
         script(sensor, values, units.get(sensor))
+
+
+def _script_i2c(hal: Any, trace: Mapping[str, Any]) -> None:
+    """
+    Feed the recorded `i2c_read`s back, in order, per bus, device and register (RFC-0007
+    §3b): a read that failed is fed back as a failure with its recorded reason. Replay never
+    reaches a bus.
+    """
+    from ..hal.i2c_bus import ReadFault
+
+    reads: dict[tuple[str, str, int | None], list[Any]] = {}
+    for event in trace.get("events", []):
+        data = event.get("data", {})
+        if event.get("type") != "i2c_read":
+            continue
+        outcome = data["value"] if "value" in data else ReadFault(str(data.get("reason", "")))
+        reads.setdefault((data["bus"], data["device"], data.get("register")), []).append(outcome)
+    script = getattr(hal, "script_i2c", None)
+    if reads and script is None:
+        raise ReplayError(
+            where=f"replay on {getattr(hal, 'target', '?')}",
+            why="the trace reads I2C, and this HAL cannot be fed recorded readings",
+            how="replay on sim or linux",
+        )
+    for (bus, device, register), values in reads.items():
+        # The width only bounds what is scripted; the read checks the width it asks for.
+        script(bus, device, register, values, width=1 if register is None else 2)
 
 
 def replay_sync(trace, **kwargs) -> ReplayResult:

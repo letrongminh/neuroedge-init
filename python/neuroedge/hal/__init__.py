@@ -174,6 +174,23 @@ class HardwareAbstractionLayer:
     def display(self, frame: Any, *, called_from: str = "<unknown>", **_: Any) -> Any:
         self._not_on_target("display", called_from)
 
+    # -- i2c (RFC-0007 §3b): read-only; there is no method that writes data ----------
+    def i2c_read(
+        self,
+        bus: str,
+        device: str | int,
+        register: int | None = None,
+        *,
+        width: int = 1,
+        called_from: str = "<unknown>",
+    ) -> int:
+        """A receive byte, or a declared register (`width` 1 or 2 bytes), of an allow-listed device."""
+        self._not_on_target("i2c", called_from)
+
+    def i2c_scan(self, bus: str, called_from: str = "<unknown>") -> list[Any]:
+        """The addresses that answer a read-byte probe, tagged with their allow-list name or None."""
+        self._not_on_target("i2c", called_from)
+
     # -- audio: the signatures `SimHAL` and `LinuxHAL` implement -------------------
     def audio_in(self, called_from: str = "<unknown>") -> str | None:
         """One typed utterance, or None when nothing is queued (the text input of `sim`)."""

@@ -26,6 +26,11 @@ close them at once, so neither holds anything `close()` would have to release
 (TSK-S5-09). Where no argument is given, the choice comes from the environment
 of the machine: `NEUROEDGE_LINUX_SENSORS` and `NEUROEDGE_LINUX_DISPLAY`.
 
+`i2c_read` (RFC-0007 §3b) reads the devices the board allow-lists, through `/dev/i2c-N`
+(`hal/i2c_bus.py`); the node of each board bus is the machine's, `NEUROEDGE_LINUX_I2C`
+(`i2c1=/dev/i2c-1`), never guessed. It carries no data-write path, and replay feeds it the
+recorded readings without opening a node.
+
 `audio.in` / `audio.out` (TSK-S5-08, Q-22) have two explicit backends, never
 guessed: the **file** one a `--voice-file` session and replay use (a WAV read at
 any rate in 8–96 kHz, 1 or 2 channels, downmixed and resampled to the board's
@@ -69,7 +74,16 @@ from .audio_live import (
 )
 from .board import BoardProfile, load_board_by_id
 from .framebuffer import DisplayBackend, display_backend
-from .sim import EventSink, Frame, PendingCommand, _NullSink, make_frame, reading_data
+from .i2c_bus import I2CReader, ReadFault, ScriptedI2C, open_mapped, parse_buses
+from .sim import (
+    EventSink,
+    Frame,
+    PendingCommand,
+    _i2c_value,
+    _NullSink,
+    make_frame,
+    reading_data,
+)
 from .sysfs import Reading, SysfsSensors, parse_sources
 
 __all__ = [
@@ -80,6 +94,7 @@ __all__ = [
     "AUDIO_OUT_ENV",
     "AUDIO_OUT_NODE",
     "DISPLAY_ENV",
+    "I2C_ENV",
     "LinuxHAL",
     "LiveAudioIn",
     "LiveAudioOut",
@@ -101,6 +116,7 @@ SETUP_HINT = (
 # Per-machine wiring, when the caller passes none (a session, a replay).
 SENSORS_ENV = "NEUROEDGE_LINUX_SENSORS"  # temperature=hwmon:lm75/temp1;…
 DISPLAY_ENV = "NEUROEDGE_LINUX_DISPLAY"  # memory | /dev/fb0
+I2C_ENV = "NEUROEDGE_LINUX_I2C"  # i2c1=/dev/i2c-1;…
 AUDIO_ENV = "NEUROEDGE_LINUX_AUDIO"  # file | live
 AUDIO_IN_ENV = "NEUROEDGE_LINUX_AUDIO_IN"  # a PipeWire node (PortAudio name)
 AUDIO_OUT_ENV = "NEUROEDGE_LINUX_AUDIO_OUT"
@@ -149,6 +165,7 @@ class LinuxHAL(HardwareAbstractionLayer):
         gpiod: Any = None,
         consumer: str = "neuroedge",
         sensor_sources: Mapping[str, str] | None = None,
+        i2c_nodes: Mapping[str, str] | None = None,
         sysfs_root: str | Path | None = None,
         display: str | DisplayBackend | None = None,
         audio: str | None = None,
@@ -186,6 +203,25 @@ class LinuxHAL(HardwareAbstractionLayer):
             # find some other channel labelled after it.
             board.require_sensor(sensor, called_from=sources_where)
         self.sensors = SysfsSensors(sysfs_root, sensor_sources)
+        # Which /dev/i2c-N each board bus is: the machine's wiring, like the sensors'.
+        # Replay never opens a node, so it ignores the environment altogether.
+        i2c_where = "LinuxHAL(i2c_nodes=...)"
+        if i2c_nodes is None and os.environ.get(I2C_ENV) and not replay:
+            i2c_nodes = parse_buses(os.environ[I2C_ENV], I2C_ENV)
+            i2c_where = I2C_ENV
+        declared_buses = [bus["id"] for bus in board.i2c_buses]
+        for bus in i2c_nodes or {}:
+            if bus not in declared_buses:
+                raise BoardCapabilityError(
+                    where=i2c_where,
+                    why=f"board {board.id!r} declares no I2C bus {bus!r}; it declares {declared_buses}",
+                    how="name a bus of [capabilities.i2c] in the board profile",
+                )
+        self.i2c_nodes = dict(i2c_nodes or {})
+        self._i2c_script = ScriptedI2C()
+        self._i2c = I2CReader(
+            board, self._open_i2c, lambda type, data: self.events.emit(type, data)
+        )
         # The unit the agent declares for a sensor ([sim.sensors]); a kernel reading
         # in another unit is refused, not compared against a threshold meant for it.
         self.expected_units = dict(units or {})
@@ -423,6 +459,10 @@ class LinuxHAL(HardwareAbstractionLayer):
                 device.close()
             except BaseException as exc:  # a dead speaker/printer must still raise
                 errors.append(exc)
+        try:
+            self._i2c.close()
+        except OSError as exc:
+            errors.append(exc)
         if errors:
             raise errors[0]
 
@@ -480,6 +520,53 @@ class LinuxHAL(HardwareAbstractionLayer):
         self._scripted[sensor] = deque(values)
         if unit is not None:
             self._units[sensor] = unit
+
+    # -- i2c -------------------------------------------------------------------------
+    def _open_i2c(self, bus: str, where: str) -> Any:
+        # Replay, and a bus a test scripted, read the script: no node is opened for them.
+        if self.replay or self._i2c_script.has_bus(bus):
+            return self._i2c_script.transport(bus)
+        return open_mapped(self.i2c_nodes, self.board, bus, where)
+
+    def i2c_read(
+        self,
+        bus: str,
+        device: str | int,
+        register: int | None = None,
+        *,
+        width: int = 1,
+        called_from: str = "<unknown>",
+    ) -> int:
+        """
+        One read of an allow-listed device, recorded as `i2c_read` as on `sim`. The board
+        decides first — an undeclared bus, device or register is refused before a node is
+        chosen or a transaction sent. A NACK or timeout is tried once more, then NE5001.
+        """
+        return self._i2c.read(bus, device, register, width=width, called_from=called_from)
+
+    def i2c_scan(self, bus: str, called_from: str = "<unknown>") -> list[Any]:
+        if self.replay:
+            raise BoardCapabilityError(
+                where=f"{called_from} -> i2c.scan {bus!r}",
+                why="a replay never touches a bus, and a scan has nothing recorded to replay",
+                how="scan on a live linux HAL",
+            )
+        return self._i2c.scan(bus, called_from=called_from)
+
+    def script_i2c(
+        self,
+        bus: str,
+        device: str | int,
+        register: int | None,
+        values: list[int | ReadFault],
+        *,
+        width: int = 1,
+    ) -> None:
+        """Readings returned in order, one per read, instead of the bus's — replay only."""
+        where = "LinuxHAL.script_i2c()"
+        declared = self._i2c.resolve(bus, device, register, width, where)
+        checked = [v if isinstance(v, ReadFault) else _i2c_value(v, width, where) for v in values]
+        self._i2c_script.script(bus, declared["address"], register, checked)
 
     # -- audio -----------------------------------------------------------------------
     def _audio_capability(self, primitive: str, called_from: str) -> dict[str, Any]:
@@ -624,6 +711,7 @@ class LinuxHAL(HardwareAbstractionLayer):
         sensors: Iterable[str] = (),
         display: bool = False,
         audio: Iterable[str] = (),
+        i2c: Iterable[str] = (),
         where: str = "",
     ) -> None:
         """
@@ -634,12 +722,16 @@ class LinuxHAL(HardwareAbstractionLayer):
         missing live device is refused before a pin is held (Q-16).
 
         `audio` names the primitives the session will use; the file backend needs no
-        device, so nothing is opened unless the machine chose `live` (Q-22).
+        device, so nothing is opened unless the machine chose `live` (Q-22). `i2c` names the
+        buses the agent reads: each must be declared, have a device node chosen and open —
+        no transaction is sent.
         """
         for sensor in dict.fromkeys(sensors):
             self.board.require_sensor(sensor, called_from=where)
             if not self.replay:  # a replay never reads the machine, not even to check it
                 self._kernel_read(sensor, f"{where} -> sensor.read {sensor!r}")
+        for bus in dict.fromkeys(i2c):  # a declared bus with a node chosen; a replay's is scripted
+            self._i2c.check_bus(bus, f"{where} -> i2c {bus!r}")
         if display:
             self._require_display_backend(f"{where} -> display")
         if self.audio_backend == "live":
