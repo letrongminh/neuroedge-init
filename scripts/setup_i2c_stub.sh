@@ -2,8 +2,8 @@
 # Real hwmon sensors with no board: i2c-stub + the lm75 driver (TSK-S5-09), and the
 # ads7828 ADC driver for analog.in (TSK-I2a-04, folded in from the TSK-N3-03 spike).
 #
-# i2c-stub is a fake SMBus adapter whose chip at $ADDR answers from a register
-# table; binding the kernel's own lm75 driver to it creates
+# i2c-stub is a fake SMBus adapter whose chip at $ADDR (and the two extra ones, below) answers
+# from a register table; binding the kernel's own lm75 driver to it creates
 # /sys/class/hwmon/hwmonN (name "lm75", temp1_input in millidegrees), which is
 # what LinuxHAL reads on a Pi. The temperature register is set with i2cset,
 # so a test decides what the "sensor" measures and reads it back through the HAL.
@@ -26,11 +26,15 @@ set -euo pipefail
 
 ADDR=0x48
 ADS_ADDR=0x4a
+# The allow-listed devices of linux-rpi5 also sit on the stub: ina219 (0x40, bound to no
+# driver) and the ads7828 (0x4a, bound below for analog.in), which the I2C read tests
+# (TSK-I2a-03) read through /dev/i2c-N. The lm75 is the one device the board does not list.
+STUB_ADDRS="$ADDR,0x40,$ADS_ADDR"
 # 25.0 °C: the LM75 register is big-endian 0x1900, an SMBus word is little-endian.
 START_WORD=0x0019
 
 load_modules() {
-  sudo modprobe i2c-stub "chip_addr=$ADDR,$ADS_ADDR" && sudo modprobe i2c-dev &&
+  sudo modprobe i2c-stub "chip_addr=$STUB_ADDRS" && sudo modprobe i2c-dev &&
     sudo modprobe lm75 && sudo modprobe ads7828
 }
 if ! load_modules 2>/dev/null; then

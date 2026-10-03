@@ -18,12 +18,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..errors import ActionContractViolation
-from ..hal.board import PRIMITIVES
+from ..hal.board import PRIMITIVES, REQUIRABLE_EXTENSIONS
 
 
 @dataclass(frozen=True)
 class Requirement:
-    """One `requires` entry: a primitive and, optionally, the named pin or sensor."""
+    """One `requires` entry: a primitive and, optionally, the named pin, sensor or I2C `bus/device`."""
 
     primitive: str
     name: str | None = None
@@ -31,10 +31,13 @@ class Requirement:
     @classmethod
     def parse(cls, text: str, where: str) -> Requirement:
         primitive, _, name = text.partition(":")
-        if primitive not in PRIMITIVES:
+        if primitive not in PRIMITIVES + REQUIRABLE_EXTENSIONS:
             raise ActionContractViolation(
                 where=where,
-                why=f"requires {text!r} names no HAL primitive; primitives are {list(PRIMITIVES)}",
+                why=(
+                    f"requires {text!r} names no HAL primitive; primitives are "
+                    f"{list(PRIMITIVES + REQUIRABLE_EXTENSIONS)}"
+                ),
                 how='write requires="digital.out:door_lock" (primitive:name)',
             )
         return cls(primitive, name or None)

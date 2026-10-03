@@ -35,6 +35,7 @@ không ghi ở đây: đọc task ở cột cuối trong bảng task của roadm
 | `audio.out` | Chữ sẽ nói (`tts_stream_start`): câu trả lời knowledge base (RAG qua System 2, cục bộ khi mất mạng), lời hỏi lại của `on_block: ask` · âm thanh TTS provider `[tts]` lấy mẫu lại về `sample_rate_hz` của bo mạch, đặt trên dòng thời gian ảo, cắt khi bị nói chen, ghi ra WAV (`--voice-out`) | PR (provider giả) | chữ: TSK-S2-11 · WAV: TSK-S3-13 |
 | `sensor.read` | Giá trị kịch bản: `[sim.sensors]` trong `agent.toml`, `:sensor` trong REPL và UI; dữ kiện gate từ cảm biến: `[sim.sensor_facts]`; `sensor.read()` trong `@action` | PR | TSK-S3-23 |
 | `display` | Khung chữ hoặc điểm ảnh RGB565/RGB888 trong bộ nhớ, kiểm độ phân giải; digest SHA-256; `display.show()` trong `@action` | PR | TSK-S3-23 |
+| `i2c` *(chỉ bo mạch khai `i2c`, vd. `sim-rpi5`)* | Giá trị kịch bản `SimHAL.set_i2c()` / dãy `script_i2c()` (replay), qua đúng allow-list của `linux`; không quét bus, không bịa số đọc — chưa đặt giá trị ⇒ `PerceptionUnavailableError` (NE5001); `i2c.read()` trong `@action` | PR | TSK-I2a-03 |
 | *Trực quan* | Terminal · `trace view` HTML tĩnh · `run --ui` và `mcp serve --ui` web cục bộ (FR-TGT-06) | PR | TSK-S3-22, S2-09, S3-27 |
 
 **Dữ kiện gate từ cảm biến — `[sim.sensor_facts]`.** Mỗi dòng `tiêu_chí = { sensor = "…", <luật> }`
@@ -117,6 +118,7 @@ giờ cắt về biên) — là `PerceptionUnavailableError` (NE5001) ⇒ dữ k
 | `sensor.read` | sysfs **hwmon** và **IIO** (`/sys/class/hwmon/*/temp1_input`, `/sys/bus/iio/devices/iio:device*/in_*`) — `hal/sysfs.py` | PR — `i2c-stub` + driver `lm75` → hwmon (`scripts/setup_i2c_stub.sh`, `tests_linux/`); IIO trên cây sysfs giả (`tests/test_hal_linux_io.py`) | Cảm biến thật; IIO chỉ trên Pi (`CONFIG_IIO` tắt trên runner) | TSK-S5-09 |
 | `analog.in` | sysfs **hwmon** (`inN_input`, mV → V theo `HWMON_UNITS`) và IIO, kênh tìm bằng **nguồn** `NEUROEDGE_LINUX_ANALOG='adc0=hwmon:ads7828/in0'` / `LinuxHAL(analog_sources=…)` (như `sensor.read`, `board.v1` chưa có khoá nối kênh với thiết bị) hoặc bằng nhãn `inN_label`; đổi sang đơn vị khai của kênh, từ chối ngoài `[min, max]` như lỗi đọc — `hal/analog.py`, `hal/linux.py` | PR — cây sysfs giả (`tests/test_hal_linux_analog.py`); `i2c-stub` + driver `ads7828` → hwmon, mã `0x800` → 1249 mV, gate quyết trên số đọc, replay (`scripts/setup_i2c_stub.sh`, `tests_linux/test_analog_in.py`) | ADC thật trên Pi 5 (spike TSK-N3-03 chỉ chứng minh `i2c-stub` + hwmon, RFC-0007 §3c đòi bằng chứng hằng đêm trên phần cứng trước tiêu chí ra I2a) | TSK-I2a-04 |
 | `display` | Kiểm và ghi khung bằng đúng mã của `sim` (`make_frame`), rồi → `/dev/fb*` trên Pi, hoặc chỉ trong bộ nhớ — `hal/framebuffer.py` | PR — khung trong bộ nhớ + digest; `/dev/fbN` của `vfb`, hoặc `vkms` trên kernel azure (`scripts/setup_vfb.sh`) | Panel HDMI/DSI | TSK-S5-09 |
+| `i2c` *(chỉ bo mạch khai `i2c`, vd. `linux-rpi5`)* | `/dev/i2c-N` qua ioctl `I2C_SMBUS` (chỉ `fcntl` + `ctypes`, không thêm phụ thuộc) — `hal/i2c_bus.py`, API agent `hal/i2c.py` | PR — transport trên `ioctl` giả, chính sách trên bus giả ghi mọi giao dịch (`tests/test_hal_i2c.py`); `i2c-stub` với `ina219` (0x40), `ads7828` (0x4a), `lm75` (0x48) (`scripts/setup_i2c_stub.sh`, `tests_linux/test_i2c_read.py`) | Chip thật, pull-up, timeout thật | TSK-I2a-03 |
 
 **Cảm biến trên `linux` tìm theo tên, không theo số thứ tự** (`hwmon3`, `iio:device0` đổi theo thứ
 tự probe), như chân GPIO tìm theo tên line: kênh có nhãn trùng tên cảm biến của bo mạch, hoặc một
@@ -135,6 +137,23 @@ biến bo mạch khai. Luật an toàn:
   hình vẽ trong bộ nhớ.
 - `door_contact` và `motion` của `linux-rpi5` là đầu vào GPIO, không phải hwmon/IIO: chưa đọc được trên
   `linux`, agent cần chúng bị từ chối trước khi xin line.
+
+**I2C chỉ đọc** (RFC-0007 §3b, TSK-I2a-03). API không có hàm ghi dữ liệu: lần ghi duy nhất là con trỏ
+thanh ghi, và chỉ tới thanh ghi nằm trong `readable_registers` của thiết bị trong allow-list của bo
+mạch, ngay trước một lần đọc repeated-start (SMBus *read byte/word data*, `width` 1 hoặc 2 byte; số 16
+bit trả theo thứ tự trên dây, byte đầu là byte cao). Thiết bị không khai `readable_registers` chỉ nhận
+receive-byte. Mọi kiểm tra của bo mạch (bus, thiết bị — tên hoặc địa chỉ —, thanh ghi) chạy **trước**
+khi chọn nút hay gửi giao dịch; địa chỉ ngoài allow-list chỉ được liệt kê bởi `i2c_scan` (đọc từng
+địa chỉ `0x03..0x77` bằng read-byte, không bao giờ quick-write) và mọi lần đọc tới nó bị từ chối. NACK,
+timeout hay giá trị không phải số byte đã xin: thử lại **một lần**, rồi `i2c_read` ghi `reason` thay cho
+`value` và lỗi `PerceptionUnavailableError` (NE5001) bay lên; bản ghi tự ghi (replay) không thử lại.
+`i2c` **không** vào gate như một tiêu chí: RFC-0007 chỉ cho `digital.in` và `analog.in` vào gate; agent
+đọc I2C trong thân `@action`. Nút của từng bus bo mạch là của máy, không nằm trong `boards/*.toml`:
+`LinuxHAL(i2c_nodes={"i2c1": "/dev/i2c-1"})` hoặc `NEUROEDGE_LINUX_I2C='i2c1=/dev/i2c-1'`, không đoán
+(số adapter đổi theo bo mạch và lần khởi động). Địa chỉ được ép (`I2C_SLAVE_FORCE`) vì chip đã có driver
+hwmon (`ads7828`, `lm75`) sẽ trả EBUSY cho yêu cầu thường. Agent khai trong `[requires]`:
+`"i2c" = { devices = ["i2c1/ina219"] }` — mỗi `bus/thiết bị` phải nằm trong allow-list của bo mạch (kiểm
+lúc build, `BoardCapabilityError`), và `@action(requires="i2c:i2c1/ina219")` phải được `[requires]` khai.
 
 **Âm thanh chọn rõ, không đoán** (TSK-S5-08): hai backend, không bao giờ đoán.
 

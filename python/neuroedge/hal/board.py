@@ -60,6 +60,10 @@ EXTENSION_PRIMITIVES: tuple[str, ...] = (
     "vision.in",
 )
 ALL_PRIMITIVES: tuple[str, ...] = PRIMITIVES + EXTENSION_PRIMITIVES
+# The extension primitives an agent's `[requires]` and `@action(requires=...)` may name so
+# far: each one is added by the slice that gives it a precise capability check (the pin,
+# bus, device or channel must be declared on the board), never as a bare "the board has it".
+REQUIRABLE_EXTENSIONS: tuple[str, ...] = ("analog.in", "i2c")
 
 _CAPABILITY_KEYS = {
     "audio.in": "audio_in",

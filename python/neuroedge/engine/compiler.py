@@ -49,17 +49,13 @@ from ..hal.board import (
     PRIMITIVES,
     REFERENCE_BOARD,
     REFERENCE_BOARDS,
+    REQUIRABLE_EXTENSIONS,
     BoardProfile,
     load_board_by_id,
 )
 from .canonical import gate_canonical_json, gate_digest
 from .decision_tree import compile_tree, tree_bytes
 from .gate_resolver import GateRegistry, ResolvedGate, resolve_gate_file, resolve_gate_uri
-
-# The extension primitives an agent may declare in `[requires]`, each with the precise check
-# of `check_capabilities` for its own declaration. A primitive joins this tuple in the slice
-# that gives it a runtime (RFC-0013 §3a); until then naming it is a manifest error, as before.
-REQUIRABLE_EXTENSIONS: tuple[str, ...] = ("analog.in",)
 
 # An ISO-639-1 code is exactly two lowercase letters: "vi", "en". What the device
 # UI ships is `firmware.UI_LANGUAGES`; `[stt] language` still accepts three
@@ -189,9 +185,16 @@ def _describe(board: BoardProfile) -> str:
             offered.append(f"sensor.read:{list(board.sensors)}")
         elif primitive == "analog.in":
             offered.append(f"analog.in:{[channel['name'] for channel in board.analog_channels]}")
+        elif primitive == "i2c":
+            offered.append(f"i2c:{_i2c_devices(board)}")
         else:
             offered.append(primitive)
     return ", ".join(offered) or "nothing"
+
+
+def _i2c_devices(board: BoardProfile) -> list[str]:
+    """The `bus/device` names of the board's I2C allow-list."""
+    return [f"{bus['id']}/{device['name']}" for bus in board.i2c_buses for device in bus["devices"]]
 
 
 def _mismatch(manifest: AgentManifest, board: BoardProfile, need: str, fix: str) -> Exception:
@@ -258,6 +261,29 @@ def check_capabilities(manifest: AgentManifest, board: BoardProfile) -> list[Neu
                     )
         elif primitive == "analog.in":
             problems += _check_analog_channels(manifest, board, need)
+        elif primitive == "i2c":
+            offered_devices = _i2c_devices(board)
+            wanted = need.get("devices", [])
+            if not isinstance(wanted, list) or not all(isinstance(n, str) for n in wanted):
+                problems.append(
+                    _mismatch(
+                        manifest,
+                        board,
+                        f"i2c devices = {wanted!r}",
+                        'write devices = ["i2c1/ina219"] (bus/device, as the board names them)',
+                    )
+                )
+                wanted = []
+            for name in wanted:
+                if name not in offered_devices:
+                    problems.append(
+                        _mismatch(
+                            manifest,
+                            board,
+                            f"i2c:{name}",
+                            "declare the device under [[capabilities.i2c.buses.devices]]",
+                        )
+                    )
         elif primitive == "display":
             for axis in ("width", "height"):
                 wanted = need.get(f"min_{axis}", 0)
@@ -361,7 +387,9 @@ def check_actions(manifest: AgentManifest, actions: Iterable[Any]) -> list[Neuro
     for spec in actions:
         for requirement in spec.requires:
             declared = manifest.requires.get(requirement.primitive)
-            key = {"digital.out": "pins", "sensor.read": "sensors"}.get(requirement.primitive)
+            key = {"digital.out": "pins", "sensor.read": "sensors", "i2c": "devices"}.get(
+                requirement.primitive
+            )
             missing = declared is None or (
                 key is not None
                 and requirement.name is not None

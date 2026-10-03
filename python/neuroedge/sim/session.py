@@ -578,12 +578,19 @@ def _require_linux_primitives(manifest: AgentManifest) -> None:
     )
 
 
+def _required_i2c(manifest: AgentManifest) -> list[str]:
+    """The `bus/device` names `[requires]` lists under `i2c`."""
+    devices = manifest.requires.get("i2c", {}).get("devices", ())
+    return [d for d in devices if isinstance(d, str)]
+
+
 def _linux_needs(manifest: AgentManifest, sensor_facts: Mapping[str, Any]) -> dict[str, Any]:
     """
     What `LinuxHAL` checks before it requests a line: every sensor the agent or a gate
-    fact reads is readable, a display backend is chosen if the agent draws, and the
-    live audio devices (when the machine chose that backend) open if the agent needs
-    them — all before a pin is held (Q-16, TSK-S5-08).
+    fact reads is readable, a display backend is chosen if the agent draws, every I2C bus
+    the agent reads has a device node chosen and opens, and the live audio devices (when
+    the machine chose that backend) open if the agent needs them — all before a pin is
+    held (Q-16, TSK-S5-08).
     """
     sensors = list(manifest.requires.get("sensor.read", {}).get("sensors", ()))
     sensors += [rule.sensor for rule in sensor_facts.values()]
@@ -592,6 +599,7 @@ def _linux_needs(manifest: AgentManifest, sensor_facts: Mapping[str, Any]) -> di
         "sensors": sensors,
         "analog": analog,
         "display": "display" in manifest.requires,
+        "i2c": sorted({device.partition("/")[0] for device in _required_i2c(manifest)}),
         "audio": tuple(
             primitive for primitive in ("audio.in", "audio.out") if primitive in manifest.requires
         ),
