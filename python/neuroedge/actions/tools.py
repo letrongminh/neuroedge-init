@@ -34,6 +34,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..errors import ToolCallError
 from .conversation import ActionResult, Conversation
 from .spec import ActionSpec
 
@@ -53,7 +54,11 @@ class ToolCall:
 
     def __post_init__(self) -> None:
         if self.source not in SOURCES:
-            raise ValueError(f"unknown tool-call source {self.source!r}; one of {SOURCES}")
+            raise ToolCallError(
+                where=f"ToolCall({self.name!r}, source={self.source!r})",
+                why=f"{self.source!r} is not a tool-call source",
+                how=f"use one of {list(SOURCES)}; the runtime assigns it, as a connection would",
+            )
 
 
 # --- schemas ------------------------------------------------------------------------------

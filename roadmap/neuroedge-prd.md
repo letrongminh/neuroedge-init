@@ -924,6 +924,7 @@ Tên lớp và mã `NE…` khớp `python/neuroedge/errors.py`; mọi lớp kế
 |:---|:---:|:---|:---|:---|
 | `ActionContractViolation` | NE1001 | Chạy | Gọi hành động vật lý không qua `c.do()` / thiếu chữ ký gate hợp lệ | Ném ngoại lệ, chân GPIO không được kích |
 | `TokenReplayError` | NE1002 | Chạy | Token phán quyết bị dùng lại (`token_replayed`), quá TTL = p95 × 3 hoặc do tiến trình khác phát hành (`token_expired`) | Ném ngoại lệ (vi phạm hợp đồng, không thử lại), chân GPIO không được kích, ghi `actuator_command_rejected` (TSK-S2-05) |
+| `ToolCallError` | NE1004 | Chạy | `ToolCall` dựng với `source` không thuộc tập nguồn dispatcher gán (`docs/spec/tool_calling.md` §5): lỗi lập trình, không phải phán quyết. Cũng là `ValueError` (tương thích bản 0.1). NE1003 dành cho `EnvelopeRefusedError` (RFC-0007) | Ném ngoại lệ lúc dựng, không có lời gọi nào chạy; nêu `source` sai và các nguồn hợp lệ (TSK-I6-06) |
 | `GateNotFoundError` | NE2001 | Build hoặc chạy | URI hoặc đường dẫn gate không phân giải được thành tài liệu gate | Từ chối phân giải, nêu URI/đường dẫn |
 | `GateSchemaError` | NE2002 | Build, `gate lint`, `gate resolve` | Gate vi phạm `schemas/gate.v1.json` hoặc tập toán tử Phụ lục B | Từ chối, nêu trường sai |
 | `GateInheritanceError` | NE2003 | Build, `gate lint`, `gate resolve` | Chuỗi `extends` vi phạm nguyên tắc B.5: nới lỏng `allow_when`/`budget`/`on_block` (Q-18), `allow_when` dạng chuỗi trong chuỗi kế thừa, vượt 3 cấp, hoặc vòng lặp | Từ chối phân giải, nêu chuỗi kế thừa và dòng `rule` chỉ nguyên tắc B.5 bị vi phạm |
