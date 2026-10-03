@@ -3,7 +3,8 @@
 #
 # gpio-sim (kernel >= 5.19) builds a GPIO chip from configfs. The lines are
 # named door_lock / porch_light / gate_relay (outputs) and door_contact_raw /
-# limit_switch (the `digital_in` pins, TSK-I2a-02), which is how LinuxHAL finds
+# limit_switch (the `digital_in` pins, TSK-I2a-02) and motor_en / servo_en (the enable
+# lines of the motion drivers, TSK-I2a-05), which is how LinuxHAL finds
 # them, so the HAL runs against the real kernel character device with no board.
 # The output lines come first and keep their indexes; an input line reads the
 # level of its sysfs `pull` file (pull-up = 1, pull-down = 0), which the tests
@@ -19,7 +20,7 @@
 set -euo pipefail
 
 DEVICE=neuroedge
-PINS=(door_lock porch_light gate_relay door_contact_raw limit_switch)
+PINS=(door_lock porch_light gate_relay door_contact_raw limit_switch motor_en servo_en)
 CONFIGFS=/sys/kernel/config/gpio-sim
 
 if ! sudo modprobe gpio-sim 2>/dev/null; then
