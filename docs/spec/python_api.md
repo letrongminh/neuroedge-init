@@ -1,7 +1,6 @@
 # Bề mặt Python công khai — `import neuroedge`
 
-**Trạng thái:** chuẩn tắc cho TSK-I6-06 (Q-63), **trừ §5 (quy tắc ngừng hỗ trợ) là đề xuất** chờ chủ
-sản phẩm xác nhận. PRD §10.3 hứa SemVer cho gói `neuroedge` ("thay đổi bề mặt API công khai hoặc CLI")
+**Trạng thái:** chuẩn tắc (TSK-I6-06, Q-63); quy tắc ngừng hỗ trợ ở §5 và cách đọc `0.x` ở §3 chốt ở Q-64. PRD §10.3 hứa SemVer cho gói `neuroedge` ("thay đổi bề mặt API công khai hoặc CLI")
 nhưng chưa nói API nào là công khai; tài liệu này nói.
 **Mã nguồn:** `python/neuroedge/__init__.py` (`__all__`) · `python/neuroedge/sim/serve.py` (`serve_mcp`).
 **Test ghim:** `python/tests/test_public_api.py`.
@@ -71,7 +70,7 @@ Hai điểm riêng của sản phẩm này:
 **Ý nghĩa của `0.x`.** SemVer cho phép bản `0.y.z` đổi bất cứ lúc nào. NeuroEdge **hẹp lại** lời đó:
 trong `0.x`, MINOR đóng vai MAJOR — một thay đổi phá vỡ chỉ xảy ra ở bản MINOR (`0.y` → `0.y+1`),
 không bao giờ ở bản PATCH, và vẫn đi qua quy tắc §5. Lời hứa đầy đủ ở §3 bắt đầu từ `v1.0`.
-*(Đề xuất, cùng chờ xác nhận như §5.)*
+*(Q-64.)*
 
 ## 4. Khởi động MCP server từ Python
 
@@ -102,7 +101,7 @@ phục vụ (`sim/serve.py::run_stdio`), không phải hai đường mã:
 Hàm đồng bộ, tự chạy vòng sự kiện của nó: không gọi trực tiếp từ một coroutine. Người cần giao diện
 `--ui` dùng CLI: trang đó không thuộc bề mặt Python công khai.
 
-## 5. Quy tắc ngừng hỗ trợ — **ĐỀ XUẤT, chờ chủ sản phẩm xác nhận**
+## 5. Quy tắc ngừng hỗ trợ (Q-64)
 
 Bề mặt công khai không biến mất đột ngột:
 
@@ -120,9 +119,8 @@ Bề mặt công khai không biến mất đột ngột:
 
 ## 6. Câu hỏi mở cho chủ sản phẩm
 
-1. **Xác nhận quy tắc §5**, và việc `0.x` "hẹp lại" ở §3 (hay để `0.x` tự do đổi cho tới v1.0).
-2. **Mẫu `neuroedge new`** còn dùng `neuroedge.sim.SimSession` và `neuroedge.hal.digital` trong mã
+1. **Mẫu `neuroedge new`** còn dùng `neuroedge.sim.SimSession` và `neuroedge.hal.digital` trong mã
    sinh ra. `digital` đã có tên công khai (`neuroedge.digital`); `SimSession` thì chưa. Đưa `SimSession`
    (và `Turn`) vào `__all__`, hay đổi mẫu sang API khác? Mỗi tên thêm vào là một lời hứa SemVer.
-3. **"Hoặc CLI"** ở PRD §10.3: lệnh, cờ và mã thoát nào là hợp đồng? Bảng mã thoát ở `CHANGELOG.md` §2.3
+2. **"Hoặc CLI"** ở PRD §10.3: lệnh, cờ và mã thoát nào là hợp đồng? Bảng mã thoát ở `CHANGELOG.md` §2.3
    là ứng viên tự nhiên; chưa có định nghĩa tương tự cho tên lệnh và cờ.
