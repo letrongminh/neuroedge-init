@@ -48,11 +48,14 @@ offline here, so a criterion is decided by, in order:
    HAL's read mark: a level read more than `DIGITAL_IN_MAX_AGE_MS` before the verdict, a
    line that cannot be read, or one nobody set leaves the criterion undecided and the gate
    blocks `criterion_unavailable` — even under `fail: open`;
-6. the grammar, through `SystemOne`'s local fallback, for the facts a matched
+6. `[sim.i2c."i2c1/ina219"]` is not a fact: it sets what an `@action` reading the device with
+   `i2c.read()` gets on `sim` (``"0x02" = { value = 24000, width = 2 }``), through the board's
+   allow-list; on `linux` the chip answers. I2C never enters the gate (RFC-0007 §3b);
+7. the grammar, through `SystemOne`'s local fallback, for the facts a matched
    command declares (``command_recognized``).
 
 Anything else is undecided, and the gate blocks. With `[system_one]` (TSK-I4-02),
-step 6 asks the cloud model first for the criteria that table lists — and only
+step 7 asks the cloud model first for the criteria that table lists — and only
 those — and the grammar whenever the model cannot answer (Q-14, FR-MDL-03).
 """
 
@@ -86,6 +89,7 @@ from ..engine.compiler import (
     numeric_sensor_fact_error,
     parse_digital_facts,
     parse_digital_levels,
+    parse_i2c_values,
 )
 from ..engine.compiler import resolve_gates as _resolve_gates
 from ..engine.gate import ActionContractEngine
@@ -764,6 +768,7 @@ class SimSession:
         analog_values = _sim_analog(manifest, sim_table)
         digital_facts = parse_digital_facts(manifest.source, sim_table)
         input_levels = parse_digital_levels(manifest.source, sim_table)
+        i2c_values = parse_i2c_values(manifest.source, sim_table)
         for where, given in (("[sim.facts]", sim_facts), ("SimSession.load(facts=...)", facts)):
             _refuse_shadowed_facts(
                 f"{manifest.source} -> {where}",
@@ -815,6 +820,8 @@ class SimSession:
                 hal.set_analog(channel, value)
             for pin, level in input_levels.items():
                 hal.set_digital_in(pin, level)
+            for bus, device, register, value, width in i2c_values:
+                hal.set_i2c(bus, device, register, value, width=width)
         # Requesting the lines is the one step that holds anything: if the rest of
         # the wiring fails, they are released before the error goes up.
         try:
