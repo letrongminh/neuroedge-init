@@ -121,9 +121,9 @@ def test_an_absolute_path_is_not_a_trace_name(studio, agent):
     assert status == 404 and reply["ok"] is False
 
 
-def test_lint_resolves_the_three_gates_of_the_villa(studio):
+def test_lint_resolves_the_villa_gates_and_the_three_vision_gates(studio):
     _, reply = post(studio, "/api/lint")
-    assert reply["ok"] and (reply["resolved"], reply["total"]) == (3, 3)
+    assert reply["ok"] and (reply["resolved"], reply["total"]) == (6, 6)
     assert {g["name"] for g in reply["gates"]} >= {"unlock_door"}
     assert all(g["status"] == "OK" and g["fail"] == "closed" for g in reply["gates"])
 

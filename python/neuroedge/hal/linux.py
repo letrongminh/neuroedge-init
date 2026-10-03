@@ -42,6 +42,12 @@ of the machine: `NEUROEDGE_LINUX_SENSORS`, `NEUROEDGE_LINUX_ANALOG` and
 (`i2c1=/dev/i2c-1`), never guessed. It carries no data-write path, and replay feeds it the
 recorded readings without opening a node.
 
+`vision.in` (TSK-V1b-01) reads a V4L2 capture node (`hal/v4l2.py`, pure Python, no dependency)
+in a mode the board declares. The node is the machine's choice and never guessed — a Pi has a
+dozen `/dev/video*` nodes and most are not cameras: `NEUROEDGE_LINUX_CAMERA=/dev/video0` (or
+`camera=`). A camera that is missing, that will not run the declared mode, or that stops
+delivering is a three-part error / `CameraUnavailable`: no frame is ever invented.
+
 `audio.in` / `audio.out` (TSK-S5-08, Q-22) have two explicit backends, never
 guessed: the **file** one a `--voice-file` session and replay use (a WAV read at
 any rate in 8–96 kHz, 1 or 2 channels, downmixed and resampled to the board's
@@ -64,7 +70,7 @@ import glob
 import os
 import threading
 from collections import deque
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -100,6 +106,8 @@ from .sim import (
 )
 from .supervisor import DEADLINE_MARGIN_MS, SupervisorClient
 from .sysfs import Reading, SysfsSensors, parse_sources
+from .v4l2 import V4L2Camera, probe
+from .vision import Camera, CameraUnavailable, Mode, modes_of, monotonic_ms
 
 __all__ = [
     "ANALOG_ENV",
@@ -109,6 +117,7 @@ __all__ = [
     "AUDIO_IN_NODE",
     "AUDIO_OUT_ENV",
     "AUDIO_OUT_NODE",
+    "CAMERA_ENV",
     "DISPLAY_ENV",
     "I2C_ENV",
     "LinuxHAL",
@@ -134,6 +143,7 @@ SENSORS_ENV = "NEUROEDGE_LINUX_SENSORS"  # temperature=hwmon:lm75/temp1;…
 ANALOG_ENV = "NEUROEDGE_LINUX_ANALOG"  # adc0=hwmon:ads7828/in0;…
 DISPLAY_ENV = "NEUROEDGE_LINUX_DISPLAY"  # memory | /dev/fb0
 I2C_ENV = "NEUROEDGE_LINUX_I2C"  # i2c1=/dev/i2c-1;…
+CAMERA_ENV = "NEUROEDGE_LINUX_CAMERA"  # /dev/video0
 AUDIO_ENV = "NEUROEDGE_LINUX_AUDIO"  # file | live
 AUDIO_IN_ENV = "NEUROEDGE_LINUX_AUDIO_IN"  # a PipeWire node (PortAudio name)
 AUDIO_OUT_ENV = "NEUROEDGE_LINUX_AUDIO_OUT"
@@ -199,6 +209,7 @@ class LinuxHAL(HardwareAbstractionLayer):
         replay: bool = False,
         supervise: bool | None = None,
         supervisor_options: Mapping[str, Any] | None = None,
+        camera: str | None = None,
     ) -> None:
         board = board if board is not None else load_board_by_id("linux-rpi5")
         if board.target != "linux":
@@ -290,6 +301,12 @@ class LinuxHAL(HardwareAbstractionLayer):
         self._speaker: Any = None
         self.audio_in_device = _audio_node(audio_in_device, AUDIO_IN_ENV, AUDIO_IN_NODE)
         self.audio_out_device = _audio_node(audio_out_device, AUDIO_OUT_ENV, AUDIO_OUT_NODE)
+        # The V4L2 node of `vision.in`: the machine's choice (argument, else the environment);
+        # a replay never reads the machine. Opened by `vision_in`, never at construction.
+        self.camera_device: str | None = (
+            None if replay else camera or os.environ.get(CAMERA_ENV) or None
+        )
+        self._cameras: list[Camera] = []
         # Recorded readings replay feeds back (`script_sensor`), in place of the kernel's.
         self._scripted: dict[str, deque[Any]] = {}
         self._replayed: dict[str, Any] = {}
@@ -666,7 +683,8 @@ class LinuxHAL(HardwareAbstractionLayer):
                     self.supervisor.close()
                 except BaseException as exc:
                     errors.append(exc)
-        for device in (self._audio_in, self._audio_out):
+        cameras, self._cameras = self._cameras, []
+        for device in (self._audio_in, self._audio_out, *cameras):
             if device is None:
                 continue
             try:
@@ -731,6 +749,55 @@ class LinuxHAL(HardwareAbstractionLayer):
                 how="check the wiring and that no other process holds the line; the criterion stays undecided",
             ) from exc
         return value == self._gpiod.line.Value.ACTIVE
+
+    # -- vision.in -------------------------------------------------------------------
+    def _camera_node(self, called_from: str) -> str:
+        where = f"{called_from} -> vision.in"
+        if not self.board.supports("vision.in"):
+            raise BoardCapabilityError(
+                where=where,
+                why=f"board {self.board.id!r} does not declare the 'vision.in' primitive",
+                how=f"add it to {self.board.source}, or choose a board that provides it",
+            )
+        if self.replay:
+            raise CameraUnavailable(
+                where=where,
+                why="a replay recomputes vision facts from the recorded labels; it opens no camera",
+                how="replay a trace recorded with its vision_fact events",
+            )
+        if not self.camera_device:
+            raise CameraUnavailable(
+                where=where,
+                why=f"no camera node is chosen: {CAMERA_ENV} is not set, and /dev/video* nodes "
+                "are mostly not cameras, so none is guessed",
+                how=f"set {CAMERA_ENV}=/dev/video0 (or pass camera=); `v4l2-ctl --list-devices` lists them",
+            )
+        return self.camera_device
+
+    def vision_in(
+        self,
+        mode: Mode,
+        called_from: str = "<unknown>",
+        *,
+        clock: Callable[[], float] | None = None,
+    ) -> Camera:
+        """
+        The camera of `NEUROEDGE_LINUX_CAMERA` running in `mode`, which must be one of the
+        board's. The camera is asked for exactly that mode, and refused if it runs another
+        (`hal/v4l2.py`); its frames carry `clock`'s readings (the session's).
+        """
+        node = self._camera_node(called_from)
+        declared = modes_of(self.board.vision_modes)
+        if mode not in declared:
+            raise BoardCapabilityError(
+                where=f"{called_from} -> vision.in",
+                why=f"board {self.board.id!r} declares no camera mode {mode}; it has "
+                f"{[str(m) for m in declared]}",
+                how="open the camera in one of the board's modes",
+            )
+        camera = V4L2Camera(node, mode, clock or monotonic_ms)
+        self._cameras.append(camera)
+        return camera
 
     # -- sensor.read -----------------------------------------------------------------
     def sensor_read(
@@ -1023,6 +1090,7 @@ class LinuxHAL(HardwareAbstractionLayer):
         where: str = "",
         analog: Iterable[str] = (),
         digital_in: Iterable[str] = (),
+        camera: bool = False,
     ) -> None:
         """
         Fail now, not mid-session, if a sensor the agent reads cannot be read, it
@@ -1039,6 +1107,8 @@ class LinuxHAL(HardwareAbstractionLayer):
         problem, not found on the first turn that needs it (TSK-I2a-04). `i2c` names the
         buses the agent reads: each must be declared, have a device node chosen and open —
         no transaction is sent.
+        `camera`: the agent needs `vision.in`, so the chosen node must exist and be a capture device —
+        the camera is checked here, and opened only when the session asks for a mode.
         """
         for sensor in dict.fromkeys(sensors):
             self.board.require_sensor(sensor, called_from=where)
@@ -1069,6 +1139,8 @@ class LinuxHAL(HardwareAbstractionLayer):
                 )
         if display:
             self._require_display_backend(f"{where} -> display")
+        if camera and not self.replay:
+            probe(self._camera_node(where))
         if self.audio_backend == "live":
             for primitive in dict.fromkeys(audio):
                 if primitive == "audio.in":

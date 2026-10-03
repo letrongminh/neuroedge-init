@@ -1,0 +1,37 @@
+# Thị giác 2/3 — vùng chuyển động: không cho rèm/cửa cuốn chạy khi có người trong vùng (RFC-0012 §3c).
+#
+# Dùng cả `present` (bool), `count` và `confidence` (numeric) của cùng một nhãn và vùng. Cả ba cần
+# đủ: số đếm ≤ 0 và điểm tin cậy ≤ 0.10 trên từng khung của cửa sổ; tiêu chí `numeric` mang
+# `max_age_ms` nên một camera đứng hình không thể "chứng minh" vùng trống.
+schema:  neuroedge.gate/v1
+name:    zone-clear
+version: 1.0.0
+
+evaluate:
+  person_in_zone:
+    type: bool
+    instructions: "Có người trong vùng chuyển động (dữ kiện thị giác, kind = present)"
+  people_in_zone:
+    type: numeric
+    unit: count
+    range: { min: 0, max: 50 }
+    max_age_ms: 300
+    instructions: "Số người trong vùng chuyển động (dữ kiện thị giác, kind = count)"
+  person_confidence:
+    type: numeric
+    unit: ratio
+    range: { min: 0, max: 1 }
+    max_age_ms: 300
+    instructions: "Điểm cao nhất của nhãn người trong vùng (dữ kiện thị giác, kind = confidence)"
+
+allow_when:
+  person_in_zone:    false
+  people_in_zone:    { lte: 0 }
+  person_confidence: { lte: 0.10 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100
+  fail:           closed

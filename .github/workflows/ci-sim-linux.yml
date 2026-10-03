@@ -199,6 +199,11 @@ jobs:
           bash scripts/setup_i2c_stub.sh
           bash scripts/setup_vfb.sh
 
+      - name: A V4L2 capture device with no camera (vivid) — TSK-V1b-01
+        # `vision.in` on linux runs against the kernel's virtual video driver: the same ioctls and
+        # mmap buffers as a Pi's camera. A missing device here is a failure, never a skip.
+        run: bash scripts/setup_vivid.sh
+
       - name: Install, with the optional linux extra (gpiod, LGPL-2.1)
         working-directory: python
         run: |

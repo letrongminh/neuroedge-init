@@ -1,0 +1,333 @@
+{
+  "$schema": "https://schema.neuroedge.dev/trace/v1.json",
+  "metadata": {
+    "session_id": "sess_c0a1e000",
+    "timestamp_utc": "2026-10-03T12:00:00Z",
+    "target": "sim",
+    "board_id": "sim-rpi5",
+    "agent_version": "gate-watch@0.1.0",
+    "anonymized": true,
+    "vision_models": [
+      {
+        "name": "person-det",
+        "sha256": "315217c11762dae7074ef8e18911bf92416315ad66e4899dae29f6c12f6c1d1f"
+      }
+    ]
+  },
+  "events": [
+    {
+      "offset_ms": 283,
+      "type": "tool_call",
+      "data": {
+        "id": "call_1",
+        "name": "watch_open_gate",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 283,
+      "type": "action_requested",
+      "data": {
+        "action": "watch_open_gate",
+        "gate": "watch_open_gate",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 283,
+      "type": "vision_fact",
+      "data": {
+        "fact": "person_at_gate",
+        "kind": "present",
+        "label": "person",
+        "zone": "gate_area",
+        "min_frames": 3,
+        "value": true,
+        "values": [
+          true,
+          true,
+          true
+        ],
+        "age_ms": 83,
+        "max_frame_age_ms": 1000,
+        "present_score_floor": 0.5,
+        "model": {
+          "name": "person-det",
+          "sha256": "315217c11762dae7074ef8e18911bf92416315ad66e4899dae29f6c12f6c1d1f"
+        },
+        "frames": [
+          {
+            "frame_seq": 5,
+            "vision_ref": {
+              "sha256": "acf2a9f5d8874ec9296d5048e2b81358473ba82b5ae19ecf4f8e49238d32431e",
+              "size": 921600
+            },
+            "captured_ms": 200,
+            "labels": [
+              {
+                "label": "person",
+                "zone": "gate_area",
+                "score": 0.93
+              }
+            ]
+          },
+          {
+            "frame_seq": 6,
+            "vision_ref": {
+              "sha256": "f71efb98869172c9748cc16845769f56839000cdea341fb34907ab24d31bfbe4",
+              "size": 921600
+            },
+            "captured_ms": 233,
+            "labels": [
+              {
+                "label": "person",
+                "zone": "gate_area",
+                "score": 0.93
+              }
+            ]
+          },
+          {
+            "frame_seq": 7,
+            "vision_ref": {
+              "sha256": "a2063def508f376e350aea2ae1c1f2d55ae4ed2e68eb31a4dfdef730a5173ada",
+              "size": 921600
+            },
+            "captured_ms": 266,
+            "labels": [
+              {
+                "label": "person",
+                "zone": "gate_area",
+                "score": 0.93
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "offset_ms": 283,
+      "type": "vision_fact",
+      "data": {
+        "fact": "person_confidence",
+        "kind": "confidence",
+        "label": "person",
+        "zone": "gate_area",
+        "min_frames": 3,
+        "value": 0.93,
+        "values": [
+          0.93,
+          0.93,
+          0.93
+        ],
+        "age_ms": 83,
+        "max_frame_age_ms": 1000,
+        "present_score_floor": 0.5,
+        "model": {
+          "name": "person-det",
+          "sha256": "315217c11762dae7074ef8e18911bf92416315ad66e4899dae29f6c12f6c1d1f"
+        },
+        "frames": [
+          {
+            "frame_seq": 5,
+            "vision_ref": {
+              "sha256": "acf2a9f5d8874ec9296d5048e2b81358473ba82b5ae19ecf4f8e49238d32431e",
+              "size": 921600
+            },
+            "captured_ms": 200,
+            "labels": [
+              {
+                "label": "person",
+                "zone": "gate_area",
+                "score": 0.93
+              }
+            ]
+          },
+          {
+            "frame_seq": 6,
+            "vision_ref": {
+              "sha256": "f71efb98869172c9748cc16845769f56839000cdea341fb34907ab24d31bfbe4",
+              "size": 921600
+            },
+            "captured_ms": 233,
+            "labels": [
+              {
+                "label": "person",
+                "zone": "gate_area",
+                "score": 0.93
+              }
+            ]
+          },
+          {
+            "frame_seq": 7,
+            "vision_ref": {
+              "sha256": "a2063def508f376e350aea2ae1c1f2d55ae4ed2e68eb31a4dfdef730a5173ada",
+              "size": 921600
+            },
+            "captured_ms": 266,
+            "labels": [
+              {
+                "label": "person",
+                "zone": "gate_area",
+                "score": 0.93
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "offset_ms": 283,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "watch_open_gate@1.0.0",
+        "gate_digest": "sha256:adab942ba00f10cd946941ee3e55c104d0bf7fddd6f407c7b4b36b67d2266a24"
+      }
+    },
+    {
+      "offset_ms": 283,
+      "type": "gate_facts",
+      "data": {
+        "person_at_gate": {
+          "value": true,
+          "confidence": null,
+          "source": "vision"
+        },
+        "person_confidence": {
+          "value": 0.93,
+          "confidence": null,
+          "source": "vision",
+          "read_offset_ms": 200,
+          "eval_offset_ms": 284,
+          "age_ms": 84
+        }
+      }
+    },
+    {
+      "offset_ms": 283,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "ALLOW",
+        "evaluations": {
+          "person_at_gate": true,
+          "person_confidence": 0.93
+        }
+      }
+    },
+    {
+      "offset_ms": 283,
+      "type": "actuator_command",
+      "data": {
+        "pin": "gate_relay",
+        "operation": "pulse",
+        "duration_ms": 20000
+      }
+    },
+    {
+      "offset_ms": 316,
+      "type": "tool_call",
+      "data": {
+        "id": "call_2",
+        "name": "watch_open_gate",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 316,
+      "type": "action_requested",
+      "data": {
+        "action": "watch_open_gate",
+        "gate": "watch_open_gate",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 316,
+      "type": "camera_unavailable",
+      "data": {
+        "reason": "the camera is closed"
+      }
+    },
+    {
+      "offset_ms": 316,
+      "type": "vision_fact",
+      "data": {
+        "fact": "person_at_gate",
+        "kind": "present",
+        "label": "person",
+        "zone": "gate_area",
+        "min_frames": 3,
+        "value": null,
+        "values": [],
+        "unavailable": "window_size",
+        "age_ms": null,
+        "max_frame_age_ms": 1000,
+        "present_score_floor": 0.5,
+        "model": {
+          "name": "person-det",
+          "sha256": "315217c11762dae7074ef8e18911bf92416315ad66e4899dae29f6c12f6c1d1f"
+        },
+        "frames": []
+      }
+    },
+    {
+      "offset_ms": 316,
+      "type": "vision_fact",
+      "data": {
+        "fact": "person_confidence",
+        "kind": "confidence",
+        "label": "person",
+        "zone": "gate_area",
+        "min_frames": 3,
+        "value": null,
+        "values": [],
+        "unavailable": "window_size",
+        "age_ms": null,
+        "max_frame_age_ms": 1000,
+        "present_score_floor": 0.5,
+        "model": {
+          "name": "person-det",
+          "sha256": "315217c11762dae7074ef8e18911bf92416315ad66e4899dae29f6c12f6c1d1f"
+        },
+        "frames": []
+      }
+    },
+    {
+      "offset_ms": 316,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "watch_open_gate@1.0.0",
+        "gate_digest": "sha256:adab942ba00f10cd946941ee3e55c104d0bf7fddd6f407c7b4b36b67d2266a24"
+      }
+    },
+    {
+      "offset_ms": 316,
+      "type": "gate_facts",
+      "data": {
+        "person_at_gate": {
+          "value": null,
+          "confidence": null,
+          "source": "context"
+        },
+        "person_confidence": {
+          "value": null,
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 316,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "BLOCK",
+        "reason": "criterion_unavailable",
+        "evaluations": {},
+        "blocked_by": "watch_open_gate@1.0.0",
+        "action": "deny",
+        "failed_criterion": "person_at_gate"
+      }
+    }
+  ]
+}

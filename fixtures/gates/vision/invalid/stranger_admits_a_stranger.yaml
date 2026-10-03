@@ -1,0 +1,8 @@
+# Principle 2 — a child allows when a stranger IS at the door.
+schema:  neuroedge.gate/v1
+name:    stranger-admits-a-stranger
+version: 1.0.0
+extends: neuroedge://gates/vision/entry-no-stranger@1.0.0
+
+allow_when:
+  stranger_at_door: true

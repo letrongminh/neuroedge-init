@@ -245,12 +245,13 @@ def test_an_action_may_require_only_a_pin_requires_declares(tmp_path):
 
 
 def test_an_extension_primitive_no_slice_has_built_yet_cannot_be_required(tmp_path):
+    # `motion` is the one no slice has given a runtime yet (`vision.in` has one now).
     path = agent(tmp_path)
     text = path.read_text(encoding="utf-8").replace(
-        '"digital.in"', '"vision.in" = {}\n"digital.in"', 1
+        '"digital.in"', '"motion" = {}\n"digital.in"', 1
     )
     path.write_text(text, encoding="utf-8")
-    with pytest.raises(AgentManifestError, match=r"\['vision.in'\] are not HAL primitives"):
+    with pytest.raises(AgentManifestError, match=r"\['motion'\] are not HAL primitives"):
         load_agent_manifest(path)
 
 
@@ -690,7 +691,7 @@ def test_requires_and_action_requires_accept_the_same_primitives():
     from neuroedge.errors import ActionContractViolation
     from neuroedge.hal.board import ALL_PRIMITIVES, PRIMITIVES, REQUIRABLE_PRIMITIVES
 
-    assert (*PRIMITIVES, "digital.in", "analog.in", "i2c") == REQUIRABLE_PRIMITIVES
+    assert (*PRIMITIVES, "digital.in", "analog.in", "i2c", "vision.in") == REQUIRABLE_PRIMITIVES
     for primitive in ALL_PRIMITIVES:
         if primitive in REQUIRABLE_PRIMITIVES:
             assert Requirement.parse(primitive, "test").primitive == primitive

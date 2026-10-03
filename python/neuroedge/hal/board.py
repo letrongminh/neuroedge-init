@@ -64,7 +64,13 @@ ALL_PRIMITIVES: tuple[str, ...] = PRIMITIVES + EXTENSION_PRIMITIVES
 # far, with the core five: the one list every check reads. Each extension is here because its
 # slice gave it a precise capability check (the pin, bus, device or channel must be declared
 # on the board), never a bare "the board has it"; one that is not listed is refused.
-REQUIRABLE_PRIMITIVES: tuple[str, ...] = (*PRIMITIVES, "digital.in", "analog.in", "i2c")
+REQUIRABLE_PRIMITIVES: tuple[str, ...] = (
+    *PRIMITIVES,
+    "digital.in",
+    "analog.in",
+    "i2c",
+    "vision.in",
+)
 
 _CAPABILITY_KEYS = {
     "audio.in": "audio_in",

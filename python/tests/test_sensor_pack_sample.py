@@ -311,7 +311,8 @@ def test_verify_replays_the_corpus_where_the_pack_is_declared_and_skips_it_elsew
     # Counted apart: the canonical replays stay 3 per board, the corpus is 3 on sim-rpi5 only.
     assert "3 replay(s) on sim/sim-default, 3 replay(s) on sim/sim-rpi5" in result.output
     assert "3 on sim/sim-rpi5" in result.output
-    assert "sim/sim-default" not in result.output.split("The extension corpora replay alike:")[1]
+    pack = result.output.split("The `sensor-pack` corpus replays alike:")[1]
+    assert "sim/sim-default" not in pack.split(".")[0]
 
 
 def test_a_corpus_a_board_cannot_replay_does_not_make_that_board_pass(root, monkeypatch):
@@ -323,4 +324,4 @@ def test_a_corpus_a_board_cannot_replay_does_not_make_that_board_pass(root, monk
     )
     result = runner.invoke(app, ["verify", "--targets", "sim"])
     assert result.exit_code != 0, result.output
-    assert "extension replays compared" in result.output
+    assert "sensor-pack corpus replays compared" in result.output

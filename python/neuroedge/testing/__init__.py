@@ -8,6 +8,9 @@ gate verdicts and the pins, compare against a golden reference.
     assert s.action("unlock_door").blocked
     assert s.pin("door_lock").never_pulsed()
 
+Frames instead of a session: `neuroedge.testing.vision` records, replays and asserts a directory of
+camera frames judged by a vision gate (TSK-V1b-04, docs/spec/vision.md §6a).
+
 `replay()` and `scenario()` are the synchronous entry points of proposal §4.7;
 `TracePlayer` is the async one. Both recompute verdicts and pin commands — see
 `player.py`.

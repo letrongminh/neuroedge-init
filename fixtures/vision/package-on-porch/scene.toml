@@ -1,0 +1,19 @@
+description = "Kiện hàng trước hiên: chỉ báo khi điểm tin cậy ≥ 0.80 trên từng khung của cửa sổ; một khung 0.60 chặn."
+gate = "vision/package-notify@1.0.0"
+action = "notify_package"
+
+[context]
+notifications_enabled = true
+
+[vision.zones]
+porch = [0.20, 0.50, 0.80, 1.00]
+
+[vision.facts.package_present]
+label = "package"
+zone  = "porch"
+kind  = "present"
+
+[vision.facts.package_confidence]
+label = "package"
+zone  = "porch"
+kind  = "confidence"

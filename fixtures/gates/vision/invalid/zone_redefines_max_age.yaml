@@ -1,0 +1,13 @@
+# Principle 1 — a child stretches max_age_ms of the zone person confidence.
+schema:  neuroedge.gate/v1
+name:    zone-redefines-max-age
+version: 1.0.0
+extends: neuroedge://gates/vision/zone-clear@1.0.0
+
+evaluate:
+  person_confidence:
+    type: numeric
+    unit: ratio
+    range: { min: 0, max: 1 }
+    max_age_ms: 5000
+    instructions: "Điểm cao nhất của nhãn người trong vùng"

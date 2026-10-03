@@ -975,9 +975,10 @@ def verify(
             err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {escape(error.why)}")
 
     # RFC-0013 §3f item 7: besides the canonical traces its primitives allow, a board replays the
-    # corpus of every extension primitive it carries — `fixtures/traces/sensor-pack/` for
-    # `digital.in`, `analog.in` and `i2c`. These are not canonical: a board that lacks a primitive
-    # skips them, it does not fail, and they are counted apart.
+    # corpus of every extension primitive it carries — one directory of `fixtures/traces/` per
+    # pack (`EXTENSION_TRACES`: `sensor-pack` for `digital.in`, `analog.in` and `i2c`; `vision` for
+    # `vision.in`). These are not canonical: a board that lacks a primitive skips them, it does not
+    # fail, each corpus is counted apart, and a corpus no board replayed is a failure.
     extension = []
     for directory in EXTENSION_TRACES:
         for path in sorted((traces_root / directory).glob("*.json")):
@@ -1014,8 +1015,8 @@ def verify(
 
     rows: dict[str, list[str]] = {row_of(path): [] for path in [*valid, *extension]}
     replayed_on: dict[str, int] = {label: 0 for label, _t, _b in columns}
-    extension_replayed = 0
-    extension_on: dict[str, int] = {}
+    extension_replayed: dict[str, int] = {path.parent.name: 0 for path in extension}
+    extension_on: dict[str, dict[str, int]] = {}
     for label, target, board_id in columns:
         for path in [*valid, *extension]:
             canonical = path.parent == traces_root
@@ -1072,8 +1073,10 @@ def verify(
                 replayed += 1
                 replayed_on[label] += 1
             else:  # counted apart: the canonical figures are what each board must reach
-                extension_replayed += 1
-                extension_on[label] = extension_on.get(label, 0) + 1
+                corpus_name = path.parent.name
+                extension_replayed[corpus_name] += 1
+                counted = extension_on.setdefault(corpus_name, {})
+                counted[label] = counted.get(label, 0) + 1
             if diff.ok:
                 rows[row_of(path)].append(f"[green]✓[/green] {' '.join(verdicts)}")
             else:
@@ -1105,15 +1108,18 @@ def verify(
                 traces_root,
                 f"had no trace replayed on targets {targets!r}",
             ),
+            # Each extension corpus must be replayed by at least one board that declares its
+            # primitives (RFC-0013 §3f item 7); one nobody replayed proves nothing.
             **(
                 {
-                    "extension replays compared": (
-                        extension_replayed,
-                        traces_root,
-                        "had no extension trace replayed on a board that declares its primitives",
+                    f"{corpus} corpus replays compared": (
+                        count,
+                        traces_root / corpus,
+                        "had no trace replayed on a board that declares its primitives",
                     )
+                    for corpus, count in extension_replayed.items()
                 }
-                if extension and any(t != "esp32s3" for t in requested)
+                if any(t != "esp32s3" for t in requested)
                 else {}
             ),
             # Zero on one board is a failure even when the others replayed (RFC-0013 §3f).
@@ -1161,8 +1167,12 @@ def verify(
 
 # The primitive each event type of a trace needs from the board it replays on. A type not
 # listed needs none: the core primitives are on every reference board (RFC-0013 §3a).
-EXTENSION_TRACES = ("sensor-pack",)  # fixtures/traces/<each>/: the corpus of an extension pack
+# fixtures/traces/<each>/: the corpus of an extension pack (RFC-0013 §3f item 7), each replayed on
+# every board that declares the primitives its traces use.
+EXTENSION_TRACES = ("sensor-pack", "vision")
 _EVENT_PRIMITIVE = {
+    "vision_fact": "vision.in",
+    "camera_unavailable": "vision.in",
     "actuator_command": "digital.out",
     "actuator_command_rejected": "digital.out",
     "sensor_read": "sensor.read",
@@ -1179,12 +1189,14 @@ def _trace_primitives(trace: dict[str, Any]) -> list[str]:
     return [p for p in ALL_PRIMITIVES if p in used]
 
 
-def _extension_breakdown(extension_on: dict[str, int]) -> str:
-    """The replays of extension-primitive corpora (RFC-0013 §3f item 7), apart from the canonical ones."""
-    if not extension_on:
-        return ""
-    each = ", ".join(f"{count} on {label}" for label, count in extension_on.items())
-    return f" The extension corpora replay alike: {each}."
+def _extension_breakdown(extension_on: dict[str, dict[str, int]]) -> str:
+    """The replays of each extension corpus (RFC-0013 §3f item 7), apart from the canonical ones."""
+    return "".join(
+        f" The `{corpus}` corpus replays alike: "
+        + ", ".join(f"{count} on {label}" for label, count in counted.items())
+        + "."
+        for corpus, counted in extension_on.items()
+    )
 
 
 def _replay_breakdown(replayed_on: dict[str, int]) -> str:

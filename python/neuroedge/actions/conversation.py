@@ -16,7 +16,7 @@ corrected, a door pulse cannot.
 from __future__ import annotations
 
 import inspect
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from typing import Any
@@ -97,6 +97,11 @@ class Conversation:
         # The `TurnMeter` of the turn a session is timing, or None (TSK-I4-03). It
         # only measures: nothing here reads it to decide.
         self.meter: Any = None
+        # Facts a gate is given that are not `facts`: functions of the gate's tree, called just
+        # before it is evaluated (the camera of `vision.in`, `sim/vision/feed.py`). Each returns
+        # the criteria it speaks for — `None` for one it could not read, so the engine blocks
+        # it instead of asking another source. Their names are theirs: they win over `facts`.
+        self.fact_sources: list[Callable[[Mapping[str, Any]], Mapping[str, Any]]] = []
 
     def stage(self, name: str) -> AbstractContextManager[Any]:
         """Time `name` on the turn's meter, if a session is timing one."""
@@ -134,6 +139,16 @@ class Conversation:
         """A person answered "no": the question closes, nothing runs."""
         return self.confirmations.decline(confirm_id, source)
 
+    def _context(self, key: str) -> Mapping[str, Any]:
+        """`facts`, plus what each fact source reads for the gate `key` (if the engine has it)."""
+        tree = self.engine.tree(key) if self.fact_sources else None
+        if tree is None:
+            return self.facts
+        context = dict(self.facts)
+        for source in self.fact_sources:
+            context.update(source(tree))
+        return context
+
     async def _do(
         self,
         spec: ActionSpec,
@@ -150,7 +165,7 @@ class Conversation:
         with self.stage("gate"):
             result = await self.engine.evaluate(
                 spec.gate,
-                self.facts,
+                self._context(spec.gate),
                 state=state,
                 arguments=_effective(spec, kwargs),
                 confirmed=confirmed,

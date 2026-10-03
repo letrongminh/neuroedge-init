@@ -1,0 +1,21 @@
+description = "Một người bước vào vùng chuyển động của rèm: lệnh chạy bị chặn khi người đó trong cửa sổ."
+gate = "vision/zone-clear@1.0.0"
+action = "close_blind"
+
+[vision.zones]
+motion_area = [0.10, 0.10, 0.90, 1.00]
+
+[vision.facts.person_in_zone]
+label = "person"
+zone  = "motion_area"
+kind  = "present"
+
+[vision.facts.people_in_zone]
+label = "person"
+zone  = "motion_area"
+kind  = "count"
+
+[vision.facts.person_confidence]
+label = "person"
+zone  = "motion_area"
+kind  = "confidence"
