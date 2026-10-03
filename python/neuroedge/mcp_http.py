@@ -461,6 +461,9 @@ def bind(config: HttpConfig) -> socket.socket:
     try:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((config.host.strip("[]"), config.port))
+        # Listen now, not when uvicorn starts: on Linux a socket that is only bound does not hold
+        # the port against another bind with SO_REUSEADDR, so a second server could take it.
+        sock.listen(128)
     except OSError as exc:
         sock.close()
         raise _error(

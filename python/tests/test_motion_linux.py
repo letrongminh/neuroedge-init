@@ -67,7 +67,15 @@ def sysfs(tmp_path):
 
 
 def pwm(sysfs, index, name):
-    return int((sysfs / "class" / "pwm" / "pwmchip0" / f"pwm{index}" / name).read_text())
+    # The fake sysfs is a plain file: the ramp thread's write truncates it before writing, so a
+    # read can land in between and see "". The kernel's attribute write is atomic; read again.
+    path = sysfs / "class" / "pwm" / "pwmchip0" / f"pwm{index}" / name
+    for _ in range(100):
+        text = path.read_text().strip()
+        if text:
+            return int(text)
+        time.sleep(0.001)
+    raise AssertionError(f"{path} stayed empty")
 
 
 def open_hal(chips, sysfs, *, clock=None, **kwargs):
@@ -188,6 +196,8 @@ def test_a_lease_that_runs_out_stops_the_channel_by_the_hals_own_timer(chips, sy
     assert level(fake, "motor_en")
     wait_until(lambda: not level(fake, "motor_en"))
     wait_until(lambda: pwm(sysfs, 0, "duty_cycle") == 0)
+    # The HAL's timer acts on the hardware first (line down, duty 0) and records afterwards.
+    wait_until(lambda: any(e["type"] == "motion_safe" for e in events.events))
     assert [e["data"] for e in events.events if e["type"] == "motion_safe"] == [
         {"channel": "wheel_left", "state": "stop", "cause": "lease_expired"}
     ]
