@@ -690,7 +690,7 @@ def test_requires_and_action_requires_accept_the_same_primitives():
     from neuroedge.errors import ActionContractViolation
     from neuroedge.hal.board import ALL_PRIMITIVES, PRIMITIVES, REQUIRABLE_PRIMITIVES
 
-    assert (*PRIMITIVES, "digital.in", "analog.in", "i2c") == REQUIRABLE_PRIMITIVES
+    assert (*PRIMITIVES, "digital.in", "analog.in", "i2c", "motion") == REQUIRABLE_PRIMITIVES
     for primitive in ALL_PRIMITIVES:
         if primitive in REQUIRABLE_PRIMITIVES:
             assert Requirement.parse(primitive, "test").primitive == primitive

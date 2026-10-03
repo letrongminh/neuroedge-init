@@ -1,0 +1,24 @@
+# RFC-0011: gate của một lệnh chuyển động. Giới hạn tốc độ của gate (0.5) chặt hơn của bo mạch
+# (`speed_max` 0.6 của wheel_left): giới hạn chặt hơn thắng, và nó nằm trong `inputSchema` của tool.
+schema:  neuroedge.gate/v1
+name:    drive
+version: 1.0.0
+
+arguments:
+  speed: { type: number, minimum: 0, maximum: 0.5 }
+
+evaluate:
+  path_clear:
+    type: bool
+    instructions: "Phía trước không có vật cản"
+
+allow_when:
+  path_clear: true
+
+on_block:
+  action: deny
+
+# ≤ lease_ms / 2 của wheel_left (200 / 2): một lần gia hạn tới kịp trước khi lease hết.
+budget:
+  p95_latency_ms: 100
+  fail:           closed

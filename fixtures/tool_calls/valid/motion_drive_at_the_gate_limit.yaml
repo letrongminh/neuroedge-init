@@ -1,0 +1,4 @@
+# Tốc độ đúng bằng giới hạn của gate (0.5, chặt hơn 0.6 của bo mạch): vẫn qua.
+agent: rover
+board: sim-rpi5
+call:  { name: drive, arguments: { speed: 0.5 }, source: mcp }

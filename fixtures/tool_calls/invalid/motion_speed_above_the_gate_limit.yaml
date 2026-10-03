@@ -1,0 +1,5 @@
+# Tốc độ 0.55: trong giới hạn 0.6 của bo mạch nhưng vượt 0.5 của gate; giới hạn chặt hơn thắng
+# (RFC-0011 §3b) và `inputSchema` của tool đã nói trước điều đó.
+agent: rover
+board: sim-rpi5
+call:  { name: drive, arguments: { speed: 0.55 }, source: mcp }

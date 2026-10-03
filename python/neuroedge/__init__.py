@@ -44,7 +44,14 @@ from .errors import (
     TraceValidationError,
     VerificationError,
 )
-from .hal import BoardProfile, HardwareAbstractionLayer, PinAssertion, digital, load_board_by_id
+from .hal import (
+    BoardProfile,
+    HardwareAbstractionLayer,
+    PinAssertion,
+    digital,
+    load_board_by_id,
+    motion,
+)
 from .hal.linux import LinuxHAL
 from .hal.sim import SimHAL
 from .models import SystemOne, SystemTwo
@@ -102,6 +109,7 @@ __all__ = [
     "dispatch",
     "load_board_by_id",
     "load_trace",
+    "motion",
     "replay",
     "resolve_gate_file",
     "resolve_gate_uri",

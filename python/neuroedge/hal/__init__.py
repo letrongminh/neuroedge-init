@@ -30,6 +30,7 @@ from .board import (
     load_board_by_id,
 )
 from .envelope import Reservation, SafetyEnvelope
+from .motion_core import Actuator, Channel, MotionController, MotionLease
 
 if TYPE_CHECKING:
     from .audio import WavSource
@@ -172,6 +173,8 @@ class HardwareAbstractionLayer:
         self._replayed_levels: dict[str, deque[bool | None]] = {}
         self._envelope: SafetyEnvelope | None = None
         self.envelope = envelope
+        # The channels of `motion.*`, once a target gives them an actuator (`_install_motion`).
+        self._motion: MotionController | None = None
 
     @property
     def envelope(self) -> SafetyEnvelope | None:
@@ -195,6 +198,8 @@ class HardwareAbstractionLayer:
 
     def _auto_off(self, reservation: Reservation) -> None:
         """The HAL turned a pin off itself (a command toward the safe state, never refused)."""
+        if self._motion is not None and self._motion.covers(reservation.name):
+            return  # a channel's run ends in the controller (it records `motion_safe`)
         if reservation.auto_off_cause is not None:
             self._emit(
                 "actuator_command",
@@ -274,6 +279,121 @@ class HardwareAbstractionLayer:
         self._admit(pin, operation, duration_ms, signature, called_from)
         if operation == "off" and self._envelope is not None:
             self._envelope.ended(pin)
+
+    # -- motion.* (RFC-0011) ---------------------------------------------------------------
+    def _install_motion(
+        self,
+        actuator: Actuator,
+        *,
+        on_deadline: Callable[[float | None], None] | None = None,
+        only: Iterable[str] | None = None,
+    ) -> None:
+        """
+        Give the board's motion channels their target's actuator (`only` those named). A board
+        with none: no-op.
+        """
+        if self.board is None or not self.board.motion_channels:
+            return
+        keep = None if only is None else set(only)
+        channels = [
+            Channel.from_record(record)
+            for record in self.board.motion_channels
+            if keep is None or record["name"] in keep
+        ]
+        if not channels:
+            return
+        self._motion = MotionController(
+            self, channels, actuator, self._motion_clock, on_deadline=on_deadline
+        )
+
+    def _motion_clock(self) -> float:
+        """The clock the leases and the envelope share: the envelope's own when it has one."""
+        envelope = self._envelope
+        return envelope.clock() if envelope is not None else self._clock_ms()
+
+    def _require_motion(self, called_from: str, primitive: str) -> MotionController:
+        if self._motion is None:
+            board = self.board
+            raise BoardCapabilityError(
+                where=f"{called_from} -> {primitive}",
+                why=(
+                    f"board {board.id!r} declares no motion channel"
+                    if board is not None and not board.motion_channels
+                    else "no motion channel is set up on this HAL: a linux session brings up the "
+                    "channels its [requires] names, and LinuxHAL(motion=[...]) does it directly"
+                    if board is not None and self.target == "linux"
+                    else f"motion.* is not implemented on target {self.target!r} yet"
+                ),
+                how="use a board that declares `[capabilities.motion]` (linux-rpi5, sim-rpi5); "
+                "see docs/spec/simulation_coverage.md",
+            )
+        if self._envelope is None:
+            ensure_envelope(self, self._clock_ms)  # a channel is always an actuator
+        return self._motion
+
+    def motion_motor(
+        self,
+        channel: str,
+        speed: float,
+        direction: str = "forward",
+        ramp_ms: int | None = None,
+        signature: Any = "",
+        called_from: str = "<unknown>",
+    ) -> MotionLease:
+        """
+        Command a motor channel: `speed` (0..`speed_max` of the board), `direction`, `ramp_ms`
+        (at least `ramp_min_ms`). Checked in this order: the channel exists and is a motor, the
+        board's limits, the safety envelope (a run's start), then the proof — a lease from the
+        verdict token (RFC-0011 §3b, §3c). A command moves the motor only until its lease runs
+        out; the next command, a fresh gate pass, renews it.
+        """
+        controller = self._require_motion(called_from, "motion.motor")
+        return controller.motor(
+            channel, speed, direction, ramp_ms, signature=signature, called_from=called_from
+        )
+
+    def motion_servo(
+        self,
+        channel: str,
+        target: float,
+        speed_max: float | None = None,
+        signature: Any = "",
+        called_from: str = "<unknown>",
+    ) -> MotionLease:
+        """Command a servo channel to `target` (inside the board's range), at most `speed_max`."""
+        controller = self._require_motion(called_from, "motion.servo")
+        return controller.servo(
+            channel, target, speed_max, signature=signature, called_from=called_from
+        )
+
+    def motion_stop(self, channel: str, called_from: str = "<unknown>") -> None:
+        """A command toward the safe state: never refused, needs no token, no envelope, no ramp."""
+        self._require_motion(called_from, "motion.stop").safe(
+            channel, "stop", called_from=called_from
+        )
+
+    def motion_safe(self, channel: str, cause: str, called_from: str = "<unknown>") -> None:
+        """
+        The HAL's own command toward the safe state, for a `cause` (a BLOCK, a lost link, the
+        end of a session). A channel the board does not have is none of its business: ignored.
+        """
+        if self._motion is not None and self._motion.covers(channel):
+            self._motion.safe(channel, cause, called_from=called_from)
+
+    def motion_barge_in(self) -> list[str]:
+        """The user spoke over the agent (voice_fsm.md §5.2): every moving channel goes safe now."""
+        return [] if self._motion is None else self._motion.barge_in()
+
+    def motion_values(self) -> dict[str, dict[str, Any]]:
+        """Every channel as a person sees it: mode, setpoint, lease left, what the actuator does."""
+        if self._motion is None:
+            return {}
+        return {name: self._motion.describe(name) for name in self._motion.names}
+
+    def settle_motion(self) -> None:
+        """A tick of the clock: leases, holds and runs that are over end (their causes recorded)."""
+        if self._motion is not None:
+            self._motion.settle()
 
     # -- digital.in (RFC-0007 §3a) -------------------------------------------------------
     # `SimHAL` and `LinuxHAL` set the event sink; the clock of an `EventLog` is the clock the

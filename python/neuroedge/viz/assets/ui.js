@@ -3,14 +3,14 @@
  * `neuroedge run --ui` (live). Plain DOM, no dependencies, no network.
  * Every string from a trace is set with textContent, never as HTML.
  *
- *   NE.stateAt(events, t)  -> what the pins, sensors, input lines and screen were at t (ms)
+ *   NE.stateAt(events, t)  -> what the pins, sensors, input lines, motion channels and screen were at t (ms)
  *   NE.mount(root, opts)   -> render; opts = {meta, board, events, live, onCommand}
  */
 (function (global) {
   "use strict";
 
   function stateAt(events, t) {
-    const pins = {}, sensors = {}, inputs = {}, gates = [], asks = {};
+    const pins = {}, sensors = {}, inputs = {}, motion = {}, gates = [], asks = {};
     let frame = null, begin = null, speech = null, heard = null, call = null;
     for (const [i, e] of events.entries()) {
       if (e.offset_ms > t) break;
@@ -26,6 +26,12 @@
         sensors[d.sensor] = { value: d.value, unit: d.unit };
       } else if ((e.type === "digital_in" || e.type === "digital_in_set") && typeof d.value === "boolean") {
         inputs[d.pin] = d.value;  // RFC-0007 §3a: the level of a digital.in line, high = true
+      } else if (e.type === "motion_command") {
+        motion[d.channel] = d.kind === "motor"
+          ? "speed " + d.speed + " · ramp " + d.ramp_ms + " ms"
+          : "target " + d.target;  // RFC-0011: a command holds its channel for one lease
+      } else if (e.type === "motion_safe") {
+        motion[d.channel] = d.state + " (" + d.cause + ")";
       } else if (e.type === "display_frame") {
         frame = d;
       } else if (e.type === "tts_stream_start") {
@@ -58,7 +64,7 @@
     // The newest question still open at t, and not past its expiry.
     let pending = null;
     for (const id in asks) if (asks[id].expires_ms > t) pending = asks[id];
-    return { pins: pins, sensors: sensors, inputs: inputs, frame: frame, gates: gates, speech: speech, heard: heard,
+    return { pins: pins, sensors: sensors, inputs: inputs, motion: motion, frame: frame, gates: gates, speech: speech, heard: heard,
              pending: pending };
   }
 
@@ -215,6 +221,13 @@
         sensors.appendChild(el("div", { class: "sensor" }, [
           el("span", { text: name }),
           el("span", { text: name in s.inputs ? (s.inputs[name] ? "HIGH" : "LOW") : "—" }),
+        ]));
+      }
+      const motionNames = new Set(Object.keys(s.motion).concat((opts.board && opts.board.motion) || []));
+      for (const name of motionNames) {
+        sensors.appendChild(el("div", { class: "sensor" }, [
+          el("span", { text: name }),
+          el("span", { text: name in s.motion ? s.motion[name] : "—" }),
         ]));
       }
       if (s.frame) {

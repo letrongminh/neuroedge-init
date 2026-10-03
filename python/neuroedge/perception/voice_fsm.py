@@ -85,7 +85,8 @@ class VoiceStateMachine:
     (`SimHAL.pending_commands`); `close_token` is `TokenLedger.close`;
     `stop_speech` flushes the audio output (`VoiceSession` cuts the reply playing
     on the speaker, TSK-S3-13). All three are optional: a target with no
-    scheduled commands has nothing to cancel.
+    scheduled commands has nothing to cancel. `stop_motion` sends every moving `motion.*`
+    channel to its safe state (`HardwareAbstractionLayer.motion_barge_in`, RFC-0011 §3d).
     """
 
     def __init__(
@@ -96,6 +97,7 @@ class VoiceStateMachine:
         pending_commands: Callable[[], Iterable[Any]] | None = None,
         close_token: Callable[[Any], None] | None = None,
         stop_speech: Callable[[], None] | None = None,
+        stop_motion: Callable[[], Any] | None = None,
     ) -> None:
         self.params = params or VoiceParams()
         self.events = events
@@ -103,6 +105,7 @@ class VoiceStateMachine:
         self._pending_commands = pending_commands or (lambda: ())
         self._close_token = close_token
         self._stop_speech = stop_speech
+        self._stop_motion = stop_motion
         self.state = VoiceState.IDLE
         self.turn = 0
         # Deadlines, in clock ms; None when not running.
@@ -249,6 +252,10 @@ class VoiceStateMachine:
             token = getattr(command, "token", None)
             if token is not None and self._close_token is not None:
                 self._close_token(token)
+        # 1b. `motion.*` (RFC-0011 §3d): a channel that moves goes to its safe state now — the
+        # same tick, before its lease would end. A pulse of `digital.out` is not touched (§5.3).
+        if self._stop_motion is not None:
+            self._stop_motion()
         # 3. stop TTS — only when a reply is playing (THINKING is silent, §3).
         if was is VoiceState.SPEAKING:
             if self._stop_speech is not None:

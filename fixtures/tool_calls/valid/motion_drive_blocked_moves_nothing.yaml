@@ -1,0 +1,5 @@
+# Gate BLOCK (có vật cản): không lệnh chuyển động nào, kênh vốn đứng yên nên cũng không có lệnh `safe_state`.
+agent: rover
+board: sim-rpi5
+facts: { path_clear: false }
+call:  { name: drive, arguments: { speed: 0.3 }, source: mcp }

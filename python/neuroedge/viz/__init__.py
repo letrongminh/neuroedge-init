@@ -44,6 +44,7 @@ def board_info(board_id: str | None) -> dict[str, Any]:
         "pins": list(board.pins),
         "sensors": list(board.sensors),
         "inputs": list(board.input_pins),
+        "motion": [channel["name"] for channel in board.motion_channels],
     }
     if board.supports("display"):
         info["display"] = board.capability("display")

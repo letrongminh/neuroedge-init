@@ -1,0 +1,4 @@
+# RFC-0011: gate ALLOW một lệnh `motion.motor` — bắt đầu một lần chạy mới, giữ một lease.
+agent: rover
+board: sim-rpi5
+call:  { name: drive, arguments: { speed: 0.3 }, source: mcp }
