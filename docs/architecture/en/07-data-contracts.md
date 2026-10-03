@@ -74,7 +74,7 @@ reject unknown keys. Command syntax uses these tables: `CHANGELOG.md` §2.3.
 | Table | Parser | Main keys and rules |
 |:---|:---|:---|
 | `[agent]` | `compiler.load_agent_manifest` | `name`, `version` (required; on `esp32s3` must be `MAJOR.MINOR.PATCH`), `language` (exactly 2 lowercase letters) |
-| `[requires]` | `compiler.check_capabilities` | Keys are dotted primitives (`"digital.out"`…); `pins`, `sensors`, `sample_rate_hz`, `aec`, `min_width`… must exist on the board |
+| `[requires]` | `compiler.check_capabilities` | Keys are dotted primitives (`"digital.out"`…); `pins`, `sensors`, `channels` (`analog.in`, each one a declared channel), `sample_rate_hz`, `aec`, `min_width`… must exist on the board |
 | `[gates]` | `compiler.resolve_gates` | `key = "neuroedge://…"` or a relative path; each `@action(gate=…)` must point to a key. On `esp32s3` keys must be C identifiers |
 | `[targets]` | `compiler` | `supported = [...]` |
 | `[sim.facts]`, `[sim.slot_facts]` | `sim/session.py` | Fixed facts of the session; facts taken from the command slot |

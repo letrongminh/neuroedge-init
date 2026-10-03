@@ -87,6 +87,26 @@ Lúc chạy — fail-closed, không đoán:
   (sự kiện `sensor_facts_changed` trong vết ghi phát lại) — phán quyết khi đó không kiểm luật mới, cần
   ghi lại phiên. Đây là cảnh báo, không phải khác biệt quyết định: mã thoát không đổi.
 
+**Dữ kiện gate từ kênh ADC — `[sim.analog_facts]`** (`analog.in`, TSK-I2a-04; bo mạch khai kênh:
+`sim-rpi5`, `linux-rpi5`). `tiêu_chí = { channel = "adc0" }` nối một tiêu chí `numeric` của gate với một kênh
+`analog.in` (RFC-0007 §3c, RFC-0009 §3f); `[requires]` khai `"analog.in" = { channels = ["adc0"] }`. Giá trị
+trên `sim` là `[sim.analog] adc0 = 1.25` (đơn vị của kênh), đổi bằng `:analog adc0 1.5` / `:analogs` trong
+REPL và `:analog` trên trang `--ui`; trên `linux` là số đọc kernel (bên dưới). Mỗi kênh được đọc **một lần
+mỗi lần tính dữ kiện gate**; số đọc vào gate là `Fact` kèm **mốc đọc** `read_ms` lấy trên đồng hồ của phiên
+**trước** lần đọc HAL, và engine tính `age_ms` (Q-62; vết ghi `gate_facts` ghi `read_offset_ms`,
+`eval_offset_ms`, `age_ms`). Kiểm lúc `neuroedge build` — sai ⇒ `BoardCapabilityError` (NE3001): kênh phải
+do bo mạch khai **và** do `[requires]` liệt kê; mọi gate đọc tiêu chí đó khai nó `numeric`, cùng `unit` với
+kênh, và `[min, max]` của kênh nằm trong `range` của tiêu chí. Tiêu chí `numeric` nằm trong
+`on_block.confirms` bị `gate lint` từ chối với **mọi** tiêu chí số (`GateSchemaError`, NE2002), nên một kênh
+ADC không bao giờ được người dùng xác nhận thay. Tiêu chí do kênh quyết không được có giá trị cố định ở
+`[sim.facts]`, cũng không nằm đồng thời ở `[sim.sensor_facts]`; `:set` từ chối nó và chỉ sang `:analog`.
+Lúc chạy — fail-closed: số đọc hỏng — chưa đặt giá trị trên `sim`; trên `linux` thiết bị mất, tệp mất hay
+chứa rác, cờ `*_fault`, khác đơn vị; hoặc giá trị không hữu hạn hay **ngoài `[min, max]` của kênh** (không bao
+giờ cắt về biên) — là `PerceptionUnavailableError` (NE5001) ⇒ dữ kiện chưa xác định ⇒ BLOCK
+`criterion_unavailable`. Mỗi lần đọc, kể cả lần hỏng, ghi sự kiện `analog_in` (§3). Replay dùng lại
+`gate_facts` đã ghi (giá trị lẫn tuổi), không đọc kênh nào; vì vậy không tính lại được dữ kiện, và đổi
+`[sim.analog_facts]` sau khi ghi **không** được cảnh báo như `[sim.sensor_facts]` (chưa có digest).
+
 ### `linux` — `linux-rpi5`
 
 | Nguyên thủy | Backend | Kiểm ở | Chỉ phần cứng | Task |
@@ -95,6 +115,7 @@ Lúc chạy — fail-closed, không đoán:
 | `audio.in` | **Backend tệp**: WAV (`--voice-file`) ở mọi rate 8–96 kHz, 1–2 kênh → mono ở rate bo mạch (`hal/audio.py`, `open_audio_file`) · **Backend sống**: `sounddevice` (PortAudio) đọc nút `neuroedge.ec.source` của `module-echo-cancel` (Q-22) | PR — backend tệp trên fake gpiod + `sounddevice` giả; `tests_linux/test_audio_file.py` trên gpio-sim (**runner không có `snd-aloop`**, nên backend sống chỉ chạy trên máy) | Micro, AEC, âm học — RPi 5 + HAT I2S, `snd-aloop` trên Pi | TSK-S5-08 |
 | `audio.out` | **Backend tệp**: dòng thời gian `Speaker` ghi WAV ở rate bo mạch (`--voice-out`) · **Backend sống**: `sounddevice` phát vào nút `neuroedge.ec.sink` (tín hiệu tham chiếu của AEC) | PR — như trên | Loa, âm lượng | TSK-S5-08 |
 | `sensor.read` | sysfs **hwmon** và **IIO** (`/sys/class/hwmon/*/temp1_input`, `/sys/bus/iio/devices/iio:device*/in_*`) — `hal/sysfs.py` | PR — `i2c-stub` + driver `lm75` → hwmon (`scripts/setup_i2c_stub.sh`, `tests_linux/`); IIO trên cây sysfs giả (`tests/test_hal_linux_io.py`) | Cảm biến thật; IIO chỉ trên Pi (`CONFIG_IIO` tắt trên runner) | TSK-S5-09 |
+| `analog.in` | sysfs **hwmon** (`inN_input`, mV → V theo `HWMON_UNITS`) và IIO, kênh tìm bằng **nguồn** `NEUROEDGE_LINUX_ANALOG='adc0=hwmon:ads7828/in0'` / `LinuxHAL(analog_sources=…)` (như `sensor.read`, `board.v1` chưa có khoá nối kênh với thiết bị) hoặc bằng nhãn `inN_label`; đổi sang đơn vị khai của kênh, từ chối ngoài `[min, max]` như lỗi đọc — `hal/analog.py`, `hal/linux.py` | PR — cây sysfs giả (`tests/test_hal_linux_analog.py`); `i2c-stub` + driver `ads7828` → hwmon, mã `0x800` → 1249 mV, gate quyết trên số đọc, replay (`scripts/setup_i2c_stub.sh`, `tests_linux/test_analog_in.py`) | ADC thật trên Pi 5 (spike TSK-N3-03 chỉ chứng minh `i2c-stub` + hwmon, RFC-0007 §3c đòi bằng chứng hằng đêm trên phần cứng trước tiêu chí ra I2a) | TSK-I2a-04 |
 | `display` | Kiểm và ghi khung bằng đúng mã của `sim` (`make_frame`), rồi → `/dev/fb*` trên Pi, hoặc chỉ trong bộ nhớ — `hal/framebuffer.py` | PR — khung trong bộ nhớ + digest; `/dev/fbN` của `vfb`, hoặc `vkms` trên kernel azure (`scripts/setup_vfb.sh`) | Panel HDMI/DSI | TSK-S5-09 |
 
 **Cảm biến trên `linux` tìm theo tên, không theo số thứ tự** (`hwmon3`, `iio:device0` đổi theo thứ
@@ -175,7 +196,7 @@ nào đi theo ô tương ứng ở §2. Cột "Vai trò khi replay" nói phần 
 | `digital.out` (phong bì) | `envelope_refused` | `{pin, operation, reason, limit_ms?}` — `reason`: `max_continuous_ms` · `window_budget` · `min_interval_ms` · `window_unreadable` | **Quyết định** — phong bì từ chối lệnh bật trước `authorize` (RFC-0007 §3d, `EnvelopeRefusedError` NE1003); không có `actuator_command` đi kèm và token không bị tiêu. Lệnh về phía an toàn không bao giờ sinh sự kiện này. So golden cùng `actuator_command` |
 | `digital.in` | `digital_in` | `{pin, value, read_ms, age_ms, reason?}` | **Đầu vào** (RFC-0007 §3a) — replay cấp lại đúng `value` đã ghi, tính lại `age_ms` từ `read_ms` rồi so với giá trị ghi; `age_ms < 0` hoặc vượt `DIGITAL_IN_MAX_AGE_MS` ⇒ BLOCK `criterion_unavailable`. `reason` có khi lần đọc hỏng (không có `value`) |
 | `i2c` | `i2c_read` | `{bus, device, address, register?, value?, reason?}` — `register` chỉ có ở lần đọc thanh ghi | **Đầu vào** (RFC-0007 §3b) — `sim` chỉ phát lại giá trị đã ghi, không quét bus. Mỗi lần đọc ghi một sự kiện; bus NACK hay timeout ghi `reason` thay cho `value` (`PerceptionUnavailableError` NE5001). Không có sự kiện ghi dữ liệu: API không có đường ghi |
-| `analog.in` | `analog_in` | `{channel, value, unit, read_ms, age_ms, reason?}` | **Đầu vào** (RFC-0007 §3c) — replay cấp lại `value` đã ghi và tính lại `age_ms`; giá trị ngoài `[min, max]` của kênh là lỗi đọc (`reason`), không bị cắt. `age_ms < 0` ⇒ BLOCK `criterion_unavailable` |
+| `analog.in` | `analog_in` · `analog_set` | `{channel, value, unit, use?, non_finite?}` hoặc `{channel, error, use?}` khi lần đọc hỏng · `{channel, value, non_finite?}` | **Đầu vào** (RFC-0007 §3c) — mỗi lần đọc một sự kiện (`use: fact` khi đọc để tính dữ kiện gate); giá trị ngoài `[min, max]` của kênh, mất thiết bị, rác là lỗi đọc (`error`, `PerceptionUnavailableError` NE5001), không bị cắt. Mốc đọc `read_offset_ms` và `age_ms` nằm ở `gate_facts` của lần lượng giá (RFC-0009 §3c): replay cấp lại đúng `value` và tuổi đã ghi, `age_ms < 0` hay quá `max_age_ms` ⇒ BLOCK `criterion_unavailable`. `analog_set`: người dùng đổi giá trị kênh trong REPL/UI (chỉ `sim`) |
 | `sensor.read` | `sensor_read` · `sensor_set` · `sensor_unavailable` | `{sensor, value, unit?, use?, non_finite?}` · `{sensor, value, non_finite?}` · `{sensor, reason}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI. `sensor_unavailable`: một lần tính dữ kiện gate không lấy được số đọc, hoặc một luật của cảm biến từ chối nó (§2), nên mọi dữ kiện của cảm biến đó là `null`; chỉ để đọc, replay dùng `gate_facts` |
 | `display` | `display_frame` | `{width, height, format, sha256, text?}` (`text` khi `format = "text"`) | **Đầu ra** — so digest khi golden có ghi, không chặn tương đương quyết định |
 

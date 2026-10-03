@@ -74,7 +74,7 @@ khoá lạ. Cú pháp dòng lệnh dùng các bảng này: `CHANGELOG.md` §2.3.
 | Bảng | Parser | Khoá chính và luật |
 |:---|:---|:---|
 | `[agent]` | `compiler.load_agent_manifest` | `name`, `version` (bắt buộc; trên `esp32s3` phải là `MAJOR.MINOR.PATCH`), `language` (đúng 2 chữ thường) |
-| `[requires]` | `compiler.check_capabilities` | Khoá là nguyên thủy dạng chấm (`"digital.out"`…); `pins`, `sensors`, `sample_rate_hz`, `aec`, `min_width`… phải có trên bo mạch |
+| `[requires]` | `compiler.check_capabilities` | Khoá là nguyên thủy dạng chấm (`"digital.out"`…); `pins`, `sensors`, `channels` (`analog.in`, mỗi kênh phải do bo mạch khai), `sample_rate_hz`, `aec`, `min_width`… phải có trên bo mạch |
 | `[gates]` | `compiler.resolve_gates` | `khoá = "neuroedge://…"` hoặc đường dẫn tương đối; mỗi `@action(gate=…)` phải trỏ tới một khoá. Trên `esp32s3` khoá phải là định danh C |
 | `[targets]` | `compiler` | `supported = [...]` |
 | `[sim.facts]`, `[sim.slot_facts]` | `sim/session.py` | Dữ kiện cố định của phiên; dữ kiện lấy từ khe của câu lệnh |
