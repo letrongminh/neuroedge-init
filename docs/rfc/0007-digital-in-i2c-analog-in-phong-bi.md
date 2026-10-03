@@ -188,7 +188,7 @@ NE5001 hôm nay chỉ định nghĩa lúc nạp/build (`neuroedge-prd.md` Phụ 
 - [ ] Quét `i2c-stub`: địa chỉ ngoài allowlist chỉ được liệt kê; mọi lời gọi đọc tới nó bị từ chối và `i2c-stub` không thấy giao dịch nào ngoài read-byte thăm dò
 - [ ] I2C trên `i2c-stub`: đọc thanh ghi trong `readable_registers` thành công (một lần ghi con trỏ rồi repeated-start đọc); thanh ghi không khai bị từ chối, không phát giao dịch; API không có hàm ghi dữ liệu
 - [ ] Đọc hỏng (NACK, timeout, cảm biến mất) trên `digital.in`, I2C, `analog.in` ⇒ `PerceptionUnavailableError` ⇒ BLOCK `criterion_unavailable`, không bao giờ ALLOW
-- [ ] `analog.in` trên `linux`: spike TSK-N3-03 đạt trên `i2c-stub`, hoặc bằng chứng hằng đêm từ runner tự quản gắn ADC thật trước tiêu chí ra I2a
+- [x] `analog.in` trên `linux`: spike TSK-N3-03 đạt trên `i2c-stub`, hoặc bằng chứng hằng đêm từ runner tự quản gắn ADC thật trước tiêu chí ra I2a — *đạt trên `i2c-stub` 2026-10-03 (`ads7828`, `ina219`; PR #87)*
 - [ ] `neuroedge gate lint` và `neuroedge verify` vẫn xanh; ba vết ghi chuẩn mực không đổi
 
 ## 8. Việc phải làm khi chấp thuận
