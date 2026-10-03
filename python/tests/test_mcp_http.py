@@ -55,7 +55,10 @@ from neuroedge.errors import NeuroEdgeError
 from neuroedge.mcp_http import HttpConfig, prepare, thumbprint
 from neuroedge.sim import SimSession
 from neuroedge.sim.serve import run_http
+from neuroedge.testing.recorder import TraceRecorder
 from neuroedge.trace import validate_trace
+
+from .hand_clock import PAST_THE_ENVELOPE_MS, HandClock
 
 PYTHON_DIR = Path(__file__).resolve().parents[1]
 ISSUER = "https://auth.example.test"
@@ -234,8 +237,13 @@ def serve(pki, root):
     """Start `run_http` on a free port in a thread; the fixture stops them all."""
     started: list[tuple[threading.Thread, threading.Event]] = []
 
-    def start(agent: str = "driveway", facts=None, **override) -> Running:
-        session = SimSession.load(root / "fixtures" / "agents" / agent / "agent.toml", facts=facts)
+    def start(agent: str = "driveway", facts=None, clock=None, **override) -> Running:
+        # a test that calls one pin more than once hands in a clock it moves past the pin's
+        # safety envelope (RFC-0007 §3d) between the calls: each one is then a fresh, legitimate ALLOW
+        timing = {"clock": clock, "events": TraceRecorder(clock=clock)} if clock else {}
+        session = SimSession.load(
+            root / "fixtures" / "agents" / agent / "agent.toml", facts=facts, **timing
+        )
         prepared = prepare(config(pki, **override))
         ready, stop, box = threading.Event(), threading.Event(), {}
 
@@ -592,9 +600,11 @@ def test_an_authenticated_client_lists_and_calls_the_gated_tools(pki, serve):
 
 
 def test_every_device_gets_its_own_token_and_one_cannot_use_anothers(pki, serve):
-    running = serve(facts={"visitor_expected": True})
+    clock = HandClock()
+    running = serve(facts={"visitor_expected": True}, clock=clock)
 
     async def call_as(device: str):
+        clock.advance(PAST_THE_ENVELOPE_MS)  # the door's last pulse is over: a fresh ALLOW
         async with mcp_client(pki, running, device, mint(pki, device)) as client:
             return (
                 await client.call_tool("buzz_in", {"zone": "front", "seconds": 1})
@@ -689,8 +699,12 @@ def test_the_same_facts_give_the_same_verdict_with_or_without_the_network(root):
             ({"visitor_expected": False}, "BLOCK"),
             ({"visitor_expected": True}, "ALLOW"),
         ):
-            session = SimSession.load(agent, facts=facts)
+            clock = HandClock()
+            session = SimSession.load(
+                agent, facts=facts, clock=clock, events=TraceRecorder(clock=clock)
+            )
             for _ in range(20):
+                clock.advance(PAST_THE_ENVELOPE_MS)  # each ALLOW is a fresh pulse of the door
                 result = await session.call_tool(
                     ToolCall("buzz_in", {"zone": "front", "seconds": 3}, source="mcp")
                 )
