@@ -174,7 +174,7 @@ Test crash-safe và treo tiến trình: Test crash-safe (SIGKILL/crash tiến tr
 
 ## 8. Việc phải làm khi chấp thuận
 
-- [ ] Cập nhật `schemas/board.v1.json` (`motion.motor`, `motion.servo`, `safe_state`, `lease_ms`, `enable_pin`, `holds_position`, `max_hold_ms`, và phong bì bắt buộc `[capabilities.motion.envelope.<kênh>]`, không nhận `signal_pins` trên kênh `motion`); ba profile bậc 1 trong `boards/` bổ sung phong bì đủ rộng để ba vết ghi chuẩn mực replay y nguyên
+- [x] Cập nhật `schemas/board.v1.json` (`motion.motor`, `motion.servo`, `safe_state`, `lease_ms`, `enable_pin`, `holds_position`, `max_hold_ms`, và phong bì bắt buộc `[capabilities.motion.envelope.<kênh>]`, không nhận `signal_pins` trên kênh `motion`); ba profile bậc 1 trong `boards/` bổ sung phong bì đủ rộng để ba vết ghi chuẩn mực replay y nguyên — *đạt: `motion.motor`/`servo`, `safe_state`, `lease_ms`, `enable_pin`, `holds_position`, `max_hold_ms`, phong bì bắt buộc, không nhận `signal_pins` — `tests/test_board_fixtures.py`; ba profile bậc 1 có phong bì*
 - [ ] Ghim bố cục `NETR` v2 trong RFC-0009 (TSK-W1-02, đóng #36); RFC-0011 không thêm trường vào `NETR`. Đóng #39 cho `motion.*`, giữ hoãn phần `digital.out`
 - [ ] Ghi nhận ngoại lệ duy nhất của luật "không lệnh nào ra phần cứng mà không có ALLOW" vào `docs/spec/threat_model.md` §1 cho các lệnh đưa cơ cấu về `safe_state`
 - [ ] Sửa `docs/spec/voice_fsm.md` §5: §5.3 có ngoại lệ cho `motion.*` (cắt lời ⇒ gửi ngay `safe_state`); dừng do mất liên lạc là một lần dừng kiểu tắt máy — TSK-W1-04

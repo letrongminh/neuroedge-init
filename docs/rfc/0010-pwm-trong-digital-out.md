@@ -154,9 +154,9 @@ Phong bì của RFC-0007 tính thời gian *có xung ra*. Với PWM, **toàn b�
 
 ## 8. Việc phải làm khi chấp thuận
 
-- [ ] Cập nhật `schemas/board.v1.json` (`pwm`, `enable_pin` bắt buộc `enable_active = "high"` và `pull = "down"`, cấm dùng chung `enable_pin`, `feedback`, `signal_pins` và quy tắc phong bì bắt buộc cho mọi chân cơ cấu chấp hành theo RFC-0007 §9 mục 5)
+- [x] Cập nhật `schemas/board.v1.json` (`pwm`, `enable_pin` bắt buộc `enable_active = "high"` và `pull = "down"`, cấm dùng chung `enable_pin`, `feedback`, `signal_pins` và quy tắc phong bì bắt buộc cho mọi chân cơ cấu chấp hành theo RFC-0007 §9 mục 5) — *đạt: `pwm`, `enable_pin` (`high`/`down`, không dùng chung), `feedback`, `signal_pins`, phong bì bắt buộc — `tests/test_board_fixtures.py`*
 - [ ] Ghi nhận ngoại lệ của lệnh về phía an toàn (không cần ALLOW, không qua phong bì, không chờ `min_interval_ms`) vào `docs/spec/threat_model.md` §1
-- [ ] Bổ sung khối phong bì cho ba profile bậc 1 trong `boards/` trong PR hiện thực với giá trị đủ rộng để ba vết ghi chuẩn mực replay y nguyên
+- [x] Bổ sung khối phong bì cho ba profile bậc 1 trong `boards/` trong PR hiện thực với giá trị đủ rộng để ba vết ghi chuẩn mực replay y nguyên — *đạt — `test_the_envelopes_are_wide_enough_for_the_canonical_traces`*
 - [ ] Cập nhật Phụ lục tương ứng trong `neuroedge-proposal.md`; FR-HAL-01 ở `neuroedge-prd.md`; Phụ lục B của PRD thêm dòng `EnvelopeRefusedError` (NE1003) nếu RFC-0007 chưa thêm
 - [ ] Cập nhật `neuroedge-roadmap.md` (TSK-W1-01)
 - [ ] Hiện thực `python/neuroedge/hal/` (`__init__.py`, `digital.py`, `sim.py`, `linux.py` với backend `/sys/class/pwm`): từ chối `on`/`pulse` trên chân PWM, lượng tử hoá `duty` làm tròn về 0, hoàn ngân sách phong bì khi tắt sớm hoặc authorize thất bại, ghi bền phong bì write-ahead, và tiến trình giám sát độc lập ngoài runtime trên `linux`

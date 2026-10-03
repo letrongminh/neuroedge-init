@@ -46,8 +46,10 @@ có GPIO 11; `linux-rpi5` có GPIO 11 nhưng nối vào thứ khác. Một tác 
 chân sẽ không thể chạy trên ba target, và tương đương target chính là luận điểm
 sản phẩm.
 
-**Đã hiện thực:** `boards/*.toml` khai báo cùng một tập tên chân trên cả ba
-target. Kiểm chứng: `test_all_three_targets_share_the_same_named_pins`.
+**Đã hiện thực:** `boards/*.toml` khai báo cùng một tập tên chân trên mọi bo
+tham chiếu đầy đủ của cả ba target; chân của phần cứng mở rộng (kênh PWM và chân
+cho phép của PWM/`motion`, RFC-0013 §3b) chỉ có ở bo thật có phần cứng đó.
+Kiểm chứng: `test_all_full_reference_boards_share_the_same_named_pins`.
 
 ### KL-3 — `sim` không được giàu năng lực hơn bo mạch tham chiếu
 
@@ -58,9 +60,12 @@ thiết bị. Khi đó lời hứa "TTFV dưới 10 phút không cần mua phầ
 thành một cái bẫy: nó rút ngắn 10 phút đầu và thêm vào hai ngày gỡ lỗi.
 
 **Đã hiện thực:** `boards/sim-default.toml` sao đúng tham số của Box-3 —
-16 kHz, AEC, VAD, cùng tập chân, cùng tập cảm biến. Kiểm chứng:
+16 kHz, AEC, VAD, cùng tập chân, cùng tập cảm biến; `boards/sim-rpi5.toml` sao
+`linux-rpi5` (RFC-0013 §3d, bảng `SIM_MIRRORS`). Bất biến áp theo từng cặp
+(sim, bo được soi), gồm cả nguyên thủy mở rộng, phong bì và chế độ camera. Kiểm chứng:
 `test_sim_offers_no_pin_the_reference_board_lacks`,
 `test_sim_offers_no_sensor_the_reference_board_lacks`,
+`test_a_sim_profile_is_never_richer_than_the_board_it_mirrors`,
 `test_sim_audio_matches_the_reference_sample_rate`.
 
 *Ngoại lệ có chủ ý:* `display` của `linux-rpi5` là 800×480 còn Box-3 là 320×240.

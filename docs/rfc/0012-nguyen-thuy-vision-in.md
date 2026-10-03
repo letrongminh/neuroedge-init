@@ -275,7 +275,7 @@ Mỗi dòng nêu quyết định §9 nó phủ. Corpus theo luật khép kín ha
 
 ## 8. Việc phải làm khi chấp thuận
 
-- [ ] Cập nhật `schemas/board.v1.json` (`vision_in`: `modes[]`, enum `pixel_format`, trường `tolerance = { score_abs, box_iou_min }` với trần cứng `score_abs ≤ 0.05`, `box_iou_min ≥ 0.8`)
+- [x] Cập nhật `schemas/board.v1.json` (`vision_in`: `modes[]`, enum `pixel_format`, trường `tolerance = { score_abs, box_iou_min }` với trần cứng `score_abs ≤ 0.05`, `box_iou_min ≥ 0.8`) — *đạt: `modes[]`, enum `pixel_format`, `tolerance` bắt buộc với trần cứng — `tests/test_board_fixtures.py` (`vision_*`)*
 - [ ] Thêm profile bo mạch `esp32s3-cores3` (M5Stack CoreS3) cho ESP32-S3 có camera GC0308 VGA 640×480 (Q-61); tiến hành đo đạc SRAM/PSRAM theo Q-3 (TSK-I3a-01)
 - [ ] Cập nhật Phụ lục C.1 trong `neuroedge-proposal.md`; FR-HAL-01 ở `neuroedge-prd.md`; Phụ lục B của `neuroedge-prd.md` — nới nguyên nhân ba dòng ở §4; `TODOS.md` #14 (cách sửa nằm ở RFC-0013)
 - [ ] `docs/spec/simulation_coverage.md`: tên sự kiện `perception` thị giác ở §3, dòng `vision.in` ở ma trận §2

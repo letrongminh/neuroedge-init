@@ -77,7 +77,7 @@ nó — bất biến `CHANGELOG.md` §3.3 #10; bảng mã thoát ở §2.3.
 | Đổi bố cục nhị phân `NETR` v1 của cây trên thiết bị ([RFC-0003](docs/rfc/0003-bo-cuc-nhi-phan-cay.md)): `engine/binary_tree.py` ↔ walker `targets/esp32s3/components/ne_gate/` | **RFC** (tăng số phiên bản bố cục) |
 | Thêm gate vào `gates/` hoặc `fixtures/gates/{valid,registry}/` | PR thường — `python scripts/check_digests.py --update` để khoá digest |
 | Thêm fixture phản chứng, hoặc ca corpus tool call / thoại | PR thường — theo luật khép kín ngay dưới |
-| Thêm profile bo mạch ở `boards/` | PR thường — cần phần cứng thật để điền tham số. *Hiện `test_boards.py` chỉ nhận ba profile bậc 1; bậc 2/3 chờ RFC-0002* |
+| Thêm profile bo mạch ở `boards/` | PR thường — cần phần cứng thật để điền tham số (nguyên thủy mở rộng chỉ khai khi bo thật có, không khai giả để qua test — RFC-0013 §3a). *`test_boards.py` nhận các bo tham chiếu bậc 1 của `REFERENCE_BOARDS` (`neuroedge/hal/board.py`); mỗi profile `sim-*` phải có mục trong `SIM_MIRRORS` và không giàu năng lực hơn bo nó soi; bậc 2/3 chờ RFC-0002* |
 
 Quy trình: sao `docs/rfc/0000-template.md`, mở PR **chỉ chứa tệp RFC**, thảo luận,
 rồi sửa trong PR thứ hai dẫn chiếu số RFC. Thay đổi chạm `gate.v1` hoặc ngữ nghĩa
@@ -98,6 +98,7 @@ Test cưỡng chế cả hai chiều, nên không thể thêm fixture mà không
 | Gate | `fixtures/gates/invalid/` | `fixtures/gates/expected_errors.yaml` |
 | Vết ghi | `fixtures/traces/invalid/` | `fixtures/traces/expected_errors.yaml` |
 | Tool call | `fixtures/tool_calls/{valid,invalid}/` | `fixtures/tool_calls/expected_results.yaml` — luật ở [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md) §9 |
+| Bo mạch | `fixtures/boards/{valid,invalid}/` | `fixtures/boards/expected_errors.yaml` |
 | Máy trạng thái hội thoại | `fixtures/compliance/voice/*.json` | `fixtures/compliance/voice/expected_results.yaml` — luật ở [`docs/spec/voice_fsm.md`](docs/spec/voice_fsm.md) §9 |
 
 ```yaml

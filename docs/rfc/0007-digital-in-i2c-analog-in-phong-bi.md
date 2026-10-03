@@ -193,12 +193,12 @@ NE5001 hôm nay chỉ định nghĩa lúc nạp/build (`neuroedge-prd.md` Phụ 
 
 ## 8. Việc phải làm khi chấp thuận
 
-- [ ] Cập nhật `schemas/board.v1.json`: thêm `digital_in`, `i2c`, `analog_in`, `signal_pins` và lược đồ khối `envelope`; bắt buộc phong bì cho mọi chân `digital_out` không thuộc `signal_pins`
-- [ ] Bổ sung khối phong bì cho ba profile bậc 1 trong `boards/` đủ rộng (`door_lock` có `max_continuous_ms` ≥ 30000) để ba vết ghi chuẩn mực replay y nguyên
+- [x] Cập nhật `schemas/board.v1.json`: thêm `digital_in`, `i2c`, `analog_in`, `signal_pins` và lược đồ khối `envelope`; bắt buộc phong bì cho mọi chân `digital_out` không thuộc `signal_pins` — *đạt: `digital_in`, `i2c`, `analog_in`, `signal_pins`, `envelope`; thiếu phong bì ⇒ NE3001 — `tests/test_board_fixtures.py`*
+- [x] Bổ sung khối phong bì cho ba profile bậc 1 trong `boards/` đủ rộng (`door_lock` có `max_continuous_ms` ≥ 30000) để ba vết ghi chuẩn mực replay y nguyên — *đạt: ba profile bậc 1 và `sim-rpi5` — `test_the_envelopes_are_wide_enough_for_the_canonical_traces`; `neuroedge verify --targets sim` xanh*
 - [ ] Ghi ngoại lệ duy nhất của luật "không lệnh nào ra phần cứng mà không có ALLOW" cho lệnh về phía an toàn (`digital.out` `off`, HAL tự ngắt) vào `docs/spec/threat_model.md` §1 khi hiện thực
 - [ ] Cập nhật Phụ lục tương ứng trong `neuroedge-proposal.md` và FR-HAL-01 ở `neuroedge-prd.md`; quyết định mới cấp `Q-N` ở §15
-- [ ] `neuroedge-prd.md` Phụ lục B: thêm dòng `EnvelopeRefusedError` NE1003, mở phạm vi NE5001 sang lúc chạy (§4); `python/neuroedge/errors.py` thêm lớp và sửa docstring `PerceptionUnavailableError`
-- [ ] `docs/spec/simulation_coverage.md`: thêm sự kiện `digital_in`, `i2c_read`, `analog_in`, `envelope_refused` vào bảng sự kiện
+- [x] `neuroedge-prd.md` Phụ lục B: thêm dòng `EnvelopeRefusedError` NE1003, mở phạm vi NE5001 sang lúc chạy (§4); `python/neuroedge/errors.py` thêm lớp và sửa docstring `PerceptionUnavailableError` — *đạt: NE1003 và NE5001 ở Phụ lục B, lớp `EnvelopeRefusedError` và docstring `PerceptionUnavailableError` ở `errors.py`, `__all__`, `docs/spec/python_api.md`*
+- [x] `docs/spec/simulation_coverage.md`: thêm sự kiện `digital_in`, `i2c_read`, `analog_in`, `envelope_refused` vào bảng sự kiện — *đạt: `digital_in`, `i2c_read`, `analog_in`, `envelope_refused` ở §3*
 - [ ] `neuroedge-design-neurobrain.md` §8: nhánh "spike không đạt" theo §3c (runner tự quản, chặn tiêu chí ra I2a), thay cho việc đưa ADC vào `TODOS.md`
 - [ ] Cập nhật `neuroedge-roadmap.md` (TSK-N0-03 xong; TSK-N2-01, TSK-N2-02, TSK-N3-03; tiêu chí ra I2a đòi bằng chứng ADC trên phần cứng)
 - [ ] Hiện thực trong `python/neuroedge/hal/` (`board.py`, `__init__.py`, `sim.py`, `linux.py`): phong bì theo chân, tự tắt bắt buộc, hoàn phần giữ trước khi tắt sớm hoặc authorize hỏng, ghi bền write-ahead tệp trạng thái trên linux, tiến trình giám sát giữ line và nhịp tim runtime; mô hình `sim` không giàu hơn bo mạch tham chiếu
