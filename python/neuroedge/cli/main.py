@@ -690,6 +690,10 @@ def mcp_serve(
     except NeuroEdgeError as error:
         _fail(error)
         return
+    if trace_out is not None and target != "linux":
+        # SIGTERM / SIGHUP must still write the trace and close the HAL (TSK-N2-03): the host
+        # that stops a server sends SIGTERM. `linux` installs the handlers in `_start_session`.
+        _exit_on_signals()
     session = _start_session(
         "mcp serve",
         agent,

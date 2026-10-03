@@ -155,7 +155,7 @@ def serve_mcp(
     (`NeuroEdgeError` otherwise, before anything is wired).
 
     It owns the process: when no client sends `initialize` within `init_timeout`
-    seconds (0 waits forever), and on SIGTERM/SIGHUP with `target="linux"`, it cleans
+    seconds (0 waits forever), and on SIGTERM/SIGHUP with `target="linux"` or a `trace_out`, it cleans
     up and then ends the whole process with `os._exit` — the SDK's stdin thread cannot
     be cancelled any other way. Run it in a process of its own.
     """
@@ -172,7 +172,9 @@ def serve_mcp(
                 UserWarning,
                 stacklevel=2,
             )
-    restore = exit_on_signals() if target == "linux" else None  # before the lines are requested
+    # Before the lines are requested. `sim` has no line to drop, but with a trace to write a
+    # SIGTERM must still reach the cleanup, or the host stopping the server loses the trace.
+    restore = exit_on_signals() if target == "linux" or trace_out is not None else None
     try:
         session = SimSession.load(
             agent,
