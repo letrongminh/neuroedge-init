@@ -68,9 +68,8 @@ mọi thứ khác của `SimSession` và `Turn` nằm ngoài lời hứa (§1), 
 | `Turn.reply_source` | Nguồn của câu trả lời: chuỗi hoặc `None` (các giá trị cụ thể không được hứa) |
 | `Turn.confirmation` | `None` khi thiết bị không hỏi lại người; khác `None` khi có một câu hỏi chờ trả lời |
 
-Mẫu `factory-monitor` có một test (`test_heat_level_and_heat_critical_agree_at_every_reading`) đọc
-`session.grammar`, `session.sensor_facts` và `session.gate_facts`: đó là kiểm tra nội bộ của chính agent
-mẫu, **ngoài** lời hứa này, và có thể phải sửa khi nâng phiên bản.
+Test trong mã `neuroedge new` chỉ dùng các thành viên ở bảng trên (cộng các tệp của chính dự án, như
+`agent.toml`); đọc `session.grammar`, `session.sensor_facts` hay `session.gate_facts` là dựa vào nội bộ.
 
 ## 3. Chính sách SemVer
 
