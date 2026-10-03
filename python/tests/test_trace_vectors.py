@@ -184,14 +184,18 @@ def test_the_device_replays_every_canonical_trace_to_its_golden(root, uart):
     assert "NE_TRACE DONE sessions=4" in text
     result = verify(uart, "sim,esp32s3")
     assert result.exit_code == 0, result.output
-    assert "6 replay(s) on sim, esp32s3" in result.output
+    # One column per (target, reference board), RFC-0013 §3f: both sim boards and the device.
+    assert (
+        "3 replay(s) on sim/sim-default, 3 replay(s) on sim/sim-rpi5, 3 replay(s) on esp32s3"
+        in " ".join(result.output.replace("│", " ").split())
+    )
     for name, verdict in [
         ("happy-path.json", "ALLOW"),
         ("network_offline.json", "BLOCK"),
         ("unverified_attempt.json", "BLOCK"),
     ]:
         row = next(line for line in result.output.splitlines() if name in line and "│" in line)
-        assert row.count(f"✓ {verdict}") == 2, row
+        assert row.count(f"✓ {verdict}") == 3, row
     assert "esp32s3 (device qemu)" in result.output
     assert "operation and duration come from the action table built on the host" in result.output
 

@@ -206,7 +206,7 @@ def test_verify_replays_every_reference_board_of_a_target_and_reports_each(invok
     result = invoke("verify")
     assert result.exit_code == 0, result.output
     assert "3 replay(s) on sim/sim-default, 3 replay(s) on sim/sim-rpi5" in " ".join(
-        result.output.split()
+        result.output.replace("│", " ").split()
     )
     assert "sim/sim-default" in result.output and "sim/sim-rpi5" in result.output
 
