@@ -89,6 +89,8 @@ from .board import BoardProfile, load_board_by_id
 from .envelope import Reservation, SafetyEnvelope
 from .framebuffer import DisplayBackend, display_backend
 from .i2c_bus import I2CReader, ReadFault, ScriptedI2C, open_mapped, parse_buses
+from .motion_core import Channel, SimActuator
+from .motion_pwm import MOTION_ENV, PwmActuator, SysfsPwm, parse_motion_sources
 from .sim import (
     EventSink,
     Frame,
@@ -199,6 +201,8 @@ class LinuxHAL(HardwareAbstractionLayer):
         replay: bool = False,
         supervise: bool | None = None,
         supervisor_options: Mapping[str, Any] | None = None,
+        motion: Iterable[str] = (),
+        motion_sources: Mapping[str, str] | None = None,
     ) -> None:
         board = board if board is not None else load_board_by_id("linux-rpi5")
         if board.target != "linux":
@@ -314,6 +318,39 @@ class LinuxHAL(HardwareAbstractionLayer):
         # motion backends (RFC-0010, RFC-0011), not by this plain-GPIO path: no line is
         # requested for them, and digital_out() refuses a PWM pin until that backend exists.
         gpio_pins = [p for p in board.pins if p not in board.pwm_pins + board.enable_pins]
+        # `motion.*` (RFC-0011): the channels this HAL brings up are the ones the session's agent
+        # names (`needs`) or `motion=` lists. Each has a PWM channel (the machine's wiring) and a
+        # driver enable line, which the HAL owns and the supervisor holds. A replay brings up the
+        # model instead and touches neither.
+        wanted = tuple(dict.fromkeys([*motion, *(needs or {}).get("motion", ())]))
+        records = {record["name"]: record for record in board.motion_channels}
+        for channel in wanted:
+            if channel not in records:
+                raise BoardCapabilityError(
+                    where="LinuxHAL(motion=...)",
+                    why=f"board {board.id!r} declares no motion channel {channel!r}; it declares "
+                    f"{sorted(records)}",
+                    how="name a channel of [capabilities.motion] in the board profile",
+                )
+        pwm_specs: dict[str, str] = {}
+        if wanted and not replay:
+            motion_where = "LinuxHAL(motion_sources=...)"
+            if motion_sources is None and os.environ.get(MOTION_ENV):
+                motion_sources = parse_motion_sources(os.environ[MOTION_ENV], MOTION_ENV)
+                motion_where = MOTION_ENV
+            unwired = [c for c in wanted if c not in (motion_sources or {})]
+            if unwired:
+                raise BoardCapabilityError(
+                    where=motion_where,
+                    why=f"no PWM channel is wired to motion channel(s) {unwired}: the board "
+                    "does not say which pwmchip drives them, and none is guessed",
+                    how=f"set {MOTION_ENV}=wheel_left=pwmchip0/0 (channel=pwmchipN/M), or pass "
+                    "motion_sources",
+                )
+            pwm_specs = {c: (motion_sources or {})[c] for c in wanted}
+            gpio_pins += [records[c]["enable_pin"] for c in wanted]
+        self._motion_enable = {records[c]["enable_pin"]: c for c in wanted}
+        self._motion_timer: threading.Timer | None = None
         names = {pin: (line_names or {}).get(pin, pin) for pin in gpio_pins}
         self.lines: dict[str, tuple[str, int]] = {}
         for pin, name in names.items():
@@ -344,7 +381,9 @@ class LinuxHAL(HardwareAbstractionLayer):
         self.supervision = "on" if supervise else "off"
         self._supervisor_error: str | None = None
         self._supervised = frozenset(
-            pin for pin in self.lines if supervise and board.envelope(pin) is not None
+            pin
+            for pin in self.lines
+            if supervise and (board.envelope(pin) is not None or pin in self._motion_enable)
         )
         self._requests = self._request_outputs(consumer)
         if self._supervised:
@@ -364,6 +403,23 @@ class LinuxHAL(HardwareAbstractionLayer):
             except BaseException:
                 for held in self._requests.values():
                     held.release()
+                raise
+        # The motion channels' PWM is set up (exported, silent) once the lines and the supervisor
+        # are there; the controller then owns their leases and their safe state.
+        if replay:
+            self._install_motion(SimActuator(), on_deadline=None)
+        elif wanted:
+            try:
+                actuator = PwmActuator(
+                    {c: SysfsPwm(pwm_specs[c], sysfs_root) for c in wanted},
+                    self._set,
+                    on_fault=lambda channel: self.motion_safe(channel, "actuator_fault"),
+                )
+                actuator.open({c: Channel.from_record(records[c]) for c in wanted})
+                self._install_motion(actuator, on_deadline=self._arm_motion, only=wanted)
+            except BaseException:
+                with contextlib.suppress(OSError):
+                    self.close()
                 raise
         # The `digital.in` lines stay in the runtime (they are inputs: no envelope, no
         # supervisor); the supervisor holds only the output lines, so the two never request
@@ -473,6 +529,13 @@ class LinuxHAL(HardwareAbstractionLayer):
 
     def _supervisor_dropped(self, pin: str, cause: str) -> None:
         """The supervisor took a line down by itself — the runtime was late or frozen."""
+        channel = self._motion_enable.get(pin)
+        if channel is not None and self._motion is not None:
+            # The driver of a motion channel was taken down: the channel is stopped, whatever it
+            # declared (`supervisor_*` is a cause a hold does not survive).
+            with contextlib.suppress(OSError, BoardCapabilityError):
+                self._motion.safe(channel, f"supervisor_{cause}")
+            return
         self._stop_timer(pin)
         if self.envelope is not None:
             self.envelope.ended(pin)
@@ -480,6 +543,31 @@ class LinuxHAL(HardwareAbstractionLayer):
             "actuator_command",
             {"pin": pin, "operation": "off", "duration_ms": 0, "cause": f"supervisor_{cause}"},
         )
+
+    def _arm_motion(self, deadline_ms: float | None) -> None:
+        """The next time a lease, a hold or a run ends: one timer, re-armed on every change."""
+        timer, self._motion_timer = self._motion_timer, None
+        if timer is not None:
+            timer.cancel()
+        if deadline_ms is None or self._closed:
+            return
+        delay = max(0.0, deadline_ms - self._motion_clock()) / 1000.0 + 0.002
+        timer = threading.Timer(delay, self._motion_tick)
+        timer.daemon = True
+        self._motion_timer = timer
+        timer.start()
+
+    def _motion_tick(self) -> None:
+        try:
+            self.settle_motion()
+        except (OSError, BoardCapabilityError):
+            # A channel that would not go safe: try again shortly; the supervisor's deadline on
+            # the enable line is the backstop meanwhile.
+            if not self._closed:
+                retry = threading.Timer(0.05, self._motion_tick)
+                retry.daemon = True
+                self._motion_timer = retry
+                retry.start()
 
     def _stop_timer(self, pin: str) -> None:
         with self._lock:
@@ -644,6 +732,14 @@ class LinuxHAL(HardwareAbstractionLayer):
             except OSError as exc:
                 errors.append(exc)
         if first:
+            timer, self._motion_timer = self._motion_timer, None
+            if timer is not None:
+                timer.cancel()
+            if self._motion is not None:  # every channel to its safe state, the driver off
+                try:
+                    self._motion.close()
+                except BaseException as exc:
+                    errors.append(exc)
             for pin in list(self._timers):
                 self._stop_timer(pin)
             for pin in self.lines:
@@ -1023,6 +1119,7 @@ class LinuxHAL(HardwareAbstractionLayer):
         where: str = "",
         analog: Iterable[str] = (),
         digital_in: Iterable[str] = (),
+        motion: Iterable[str] = (),
     ) -> None:
         """
         Fail now, not mid-session, if a sensor the agent reads cannot be read, it
