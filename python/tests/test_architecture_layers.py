@@ -28,6 +28,8 @@ ALLOWED: dict[str, set[str]] = {
     "mcp_desktop": {"errors"},
     "mcp_host": {"actions", "errors"},
     "mcp_server": {"actions", "errors"},
+    # the network door (TSK-P2-04): the same server as stdio's, behind TLS and token checks
+    "mcp_http": {"errors", "mcp_server"},
     "viz": {"errors", "hal", "trace"},
     "templates": {"errors", "paths"},
     "sim": {
@@ -36,6 +38,7 @@ ALLOWED: dict[str, set[str]] = {
         "errors",
         "hal",
         "mcp_host",
+        "mcp_http",
         "mcp_server",
         "models",
         "trace",
@@ -70,6 +73,7 @@ LAZY: dict[str, set[str]] = {
     "cli/main.py": {
         "mcp_desktop",
         "mcp_host",
+        "mcp_http",
         "mcp_server",
         "studio",
         "templates",

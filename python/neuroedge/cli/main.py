@@ -656,14 +656,52 @@ def mcp_serve(
     ui: bool = typer.Option(
         False, "--ui", help="Also serve this session as the live sim page on 127.0.0.1"
     ),
-    port: int = typer.Option(8765, "--port", help="Port for --ui (0 picks a free one)"),
+    port: int | None = typer.Option(
+        None,
+        "--port",
+        help="Port for --ui (default 8765) or for --http (default 8443); 0 picks a free one",
+    ),
     open_browser: bool = typer.Option(
         False, "--open", help="With --ui, open the page in a browser"
     ),
     init_timeout: float = typer.Option(
         MCP_INIT_TIMEOUT_S,
         "--init-timeout",
-        help="Exit if no client sends `initialize` within this many seconds (0: wait forever)",
+        help="Exit if no client sends `initialize` within this many seconds (stdio only; 0: wait forever)",
+    ),
+    http: bool = typer.Option(
+        False,
+        "--http",
+        help="Serve over the network (Streamable HTTP, mTLS, OAuth 2.1 tokens) instead of stdio; "
+        "needs every flag below",
+    ),
+    host: str | None = typer.Option(
+        None, "--host", help="With --http, the address to listen on (default 127.0.0.1)"
+    ),
+    tls_cert: Path | None = typer.Option(
+        None, "--tls-cert", help="With --http: the server certificate (PEM)"
+    ),
+    tls_key: Path | None = typer.Option(
+        None, "--tls-key", help="With --http: the server certificate's private key (PEM)"
+    ),
+    client_ca: Path | None = typer.Option(
+        None, "--client-ca", help="With --http: the CA of the devices' client certificates (mTLS)"
+    ),
+    issuer: str | None = typer.Option(
+        None, "--issuer", help="With --http: the OAuth authorization server's issuer URL (https)"
+    ),
+    audience: str | None = typer.Option(
+        None,
+        "--audience",
+        help="With --http: this server's MCP URL, the audience of every token (https)",
+    ),
+    jwks: Path | None = typer.Option(
+        None, "--jwks", help="With --http: the issuer's public signing keys (JWKS file)"
+    ),
+    required_scope: str | None = typer.Option(
+        None,
+        "--required-scope",
+        help="With --http: the scope a token must carry (default neuroedge:call)",
     ),
 ):
     """
@@ -673,15 +711,73 @@ def mcp_serve(
     With --ui (sim only) the same session is shown live in the browser: a tool call from
     the MCP client moves the virtual devices on the page at once. The page never
     takes the MCP server down: a taken port falls back to a free one (URL on stderr).
+
+    With --http the server listens on the network instead: Streamable HTTP over mTLS
+    (TLS 1.3, a client certificate required), and every request carries a per-device
+    OAuth 2.1 bearer token bound to that certificate. Without every one of --tls-cert,
+    --tls-key, --client-ca, --issuer, --audience and --jwks it does not start. The gate,
+    the verdict token and the trace are the stdio server's, unchanged.
     """
     from ..mcp_server import _sdk
-    from ..sim.serve import run_stdio
+    from ..sim.serve import run_http, run_stdio
 
     try:
         _sdk()
     except NeuroEdgeError as error:
         _fail(error)
         return
+    network = {
+        "--host": host,
+        "--tls-cert": tls_cert,
+        "--tls-key": tls_key,
+        "--client-ca": client_ca,
+        "--issuer": issuer,
+        "--audience": audience,
+        "--jwks": jwks,
+        "--required-scope": required_scope,
+    }
+    if http and ui:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge mcp serve --http --ui",
+                why="the live page and the network door are not combined: the page answers `ask` "
+                "questions as the person on the device, and shares the session",
+                how="drop --ui for the network server, or --http for the page (stdio)",
+            ),
+            code=2,
+        )
+        return
+    if not http and any(value is not None for value in network.values()):
+        given = ", ".join(flag for flag, value in network.items() if value is not None)
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge mcp serve {given}",
+                why="those flags configure the network transport, which is off unless --http is given",
+                how="add --http (with every flag it needs), or drop them to serve over stdio",
+            )
+        )
+        return
+    prepared = None
+    if http:
+        from ..mcp_http import DEFAULT_PORT, DEFAULT_SCOPE, HttpConfig, prepare
+
+        try:  # before the session is wired and before any socket exists
+            prepared = prepare(
+                HttpConfig(
+                    host=host or "127.0.0.1",
+                    port=DEFAULT_PORT if port is None else port,
+                    tls_cert=tls_cert,
+                    tls_key=tls_key,
+                    client_ca=client_ca,
+                    issuer=issuer,
+                    audience=audience,
+                    jwks=jwks,
+                    required_scope=required_scope or DEFAULT_SCOPE,
+                )
+            )
+        except NeuroEdgeError as error:
+            _fail(error)
+            return
     session = _start_session(
         "mcp serve",
         agent,
@@ -691,16 +787,31 @@ def mcp_serve(
         events=_trace_log(trace_out, raw),
         ui=ui,
     )
-    page = _mcp_page(session, port) if ui else None
+    page = _mcp_page(session, 8765 if port is None else port) if ui else None
     # stdout is the protocol channel; anything for people goes to stderr.
     err_console.print(
         f"neuroedge MCP server · {escape(session.manifest.label)} · "
         f"{escape(session.target)}/{escape(session.hal.board.id)} · "
-        f"{len(session.tools.specs)} tool(s) · stdio"
+        f"{len(session.tools.specs)} tool(s) · {'https (mTLS)' if http else 'stdio'}"
     )
     warning = session.canned_fact_warning()
     if warning is not None:
         err_console.print(f"[yellow]! {escape(warning)}[/yellow]")
+    if prepared is not None:
+
+        def listening(bound_host: str, bound_port: int) -> None:
+            err_console.print(
+                f"listening on {bound_host}:{bound_port}{prepared.path} — "
+                "mTLS, OAuth 2.1 bearer tokens; refused attempts are traced as mcp_auth_refused",
+                markup=False,
+                highlight=False,
+            )
+
+        try:
+            run_http(session, prepared, trace_out=trace_out, on_ready=listening)
+        except NeuroEdgeError as error:
+            _fail(error)
+        return
     if page is not None:
         err_console.print(f"sim UI at {page.url} (same session)", markup=False, highlight=False)
 
