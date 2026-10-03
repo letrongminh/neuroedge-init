@@ -194,7 +194,7 @@ jobs:
       - name: Virtual GPIO lines (gpio-sim)
         run: bash scripts/setup_gpio_sim.sh
 
-      - name: A hwmon sensor (i2c-stub + lm75) and a framebuffer (vfb) — TSK-S5-09
+      - name: A hwmon sensor (i2c-stub + lm75), an ADC (ads7828) and a framebuffer (vfb) — TSK-S5-09, TSK-I2a-04
         run: |
           bash scripts/setup_i2c_stub.sh
           bash scripts/setup_vfb.sh
@@ -218,19 +218,6 @@ jobs:
         with:
           name: junit-linux
           path: junit-linux.xml
-
-  adc-spike:
-    name: I2C ADC with a hwmon driver on i2c-stub (spike TSK-N3-03)
-    # RFC-0007 §3c: analog.in on linux is tested in CI only if an ADC driver
-    # binds to i2c-stub and reads back a known value. This job answers that
-    # for ads7828 and ina219; TSK-I2a-04 folds the winner into linux-hal.
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-
-      - name: Bind each candidate and read back a known value
-        run: bash scripts/spike_adc_stub.sh
 
   wheel-smoke:
     name: Installed wheel runs the whole journey (TSK-S3-17)
