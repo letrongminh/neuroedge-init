@@ -1,0 +1,8 @@
+# Principle 2 — a child lets two people stand in the zone (inherited: none).
+schema:  neuroedge.gate/v1
+name:    zone-loosens-count
+version: 1.0.0
+extends: neuroedge://gates/vision/zone-clear@1.0.0
+
+allow_when:
+  people_in_zone: { lte: 2 }

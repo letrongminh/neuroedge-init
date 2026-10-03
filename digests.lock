@@ -58,3 +58,9 @@ files:
     digest: sha256:11fab1b70c28dfe8020e64ff0622b08dbac2a3600611fa0e14140fbaaf40225f
   gates/unlock_door_night@1.0.0.yaml:
     digest: sha256:0da1a33fb1c5ee2378ba60800deb7d8ab0447a9b39e35204c92ee97bc70e55a7
+  gates/vision/entry-no-stranger@1.0.0.yaml:
+    digest: sha256:1d708a3fbda4ad8e6d7fc60672a6945d5e9ccca47ca109712ec381d6aee2dc37
+  gates/vision/package-notify@1.0.0.yaml:
+    digest: sha256:aeb48d5ffa4c4915e7c9efe1716ee9232468e759d4b3766f05883967984f994f
+  gates/vision/zone-clear@1.0.0.yaml:
+    digest: sha256:c0c86316363adc33646a681ee42716873a6cda993f349b091f77ea51f05869b9

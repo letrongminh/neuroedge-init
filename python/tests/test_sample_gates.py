@@ -22,6 +22,12 @@ import pytest
 from neuroedge.engine import gate_canonical_json, gate_digest, resolve_gate_file, resolve_gate_uri
 
 SAMPLE_GATES = ["hospitality/base-access@1.0.0", "unlock_door@1.2.0", "unlock_door_night@1.0.0"]
+# TSK-V1b-06: the three vision gates are a corpus of their own (`test_vision_gates.py`).
+VISION_GATES = [
+    "vision/entry-no-stranger@1.0.0",
+    "vision/package-notify@1.0.0",
+    "vision/zone-clear@1.0.0",
+]
 
 
 @pytest.fixture(scope="module")
@@ -39,9 +45,9 @@ def night(gates_dir):
     return resolve_gate_file(gates_dir / "unlock_door_night@1.0.0.yaml")
 
 
-def test_there_are_exactly_three_sample_gates(gates_dir):
+def test_there_are_exactly_three_sample_gates_and_the_three_vision_gates(gates_dir):
     found = sorted(p.relative_to(gates_dir).as_posix() for p in gates_dir.rglob("*.yaml"))
-    assert found == sorted(f"{name}.yaml" for name in SAMPLE_GATES)
+    assert found == sorted(f"{name}.yaml" for name in [*SAMPLE_GATES, *VISION_GATES])
 
 
 @pytest.mark.parametrize("name", SAMPLE_GATES)
