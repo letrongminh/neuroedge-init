@@ -135,11 +135,14 @@ def load_agent_manifest(path: str | Path) -> AgentManifest:
             why="[requires] is missing; the build cannot match the agent against a board",
             how='declare what the agent needs, e.g. "digital.out" = { pins = ["door_lock"] }',
         )
-    unknown = sorted(set(requires) - set(PRIMITIVES))
+    # Each extension primitive widens this FOR ITSELF, with a precise check against the board
+    # (`check_capabilities`) — never "the board has it, so anything goes" (RFC-0013 §3a).
+    requirable = (*PRIMITIVES, *REQUIRABLE_EXTENSIONS)
+    unknown = sorted(set(requires) - set(requirable))
     if unknown:
         raise AgentManifestError(
             where=f"{path} -> [requires]",
-            why=f"{unknown} are not HAL primitives; primitives are {list(PRIMITIVES)}",
+            why=f"{unknown} are not HAL primitives; primitives are {list(requirable)}",
             how="use the dotted primitive names from FR-HAL-01",
         )
     targets = document.get("targets", {}).get("supported", [])
@@ -167,6 +170,10 @@ def load_agent_manifest(path: str | Path) -> AgentManifest:
         source=path,
         language=resolve_agent_language(language, stt_language, path),
     )
+
+
+# Extension primitives (RFC-0013) an agent may already require, each with its own board check.
+REQUIRABLE_EXTENSIONS: tuple[str, ...] = ("vision.in",)
 
 
 # --- 2. [requires] against the board -------------------------------------------
@@ -248,6 +255,8 @@ def check_capabilities(manifest: AgentManifest, board: BoardProfile) -> list[Neu
                     problems.append(
                         _mismatch(manifest, board, f"{primitive}:{name}", f"add {name!r} to {key}")
                     )
+        elif primitive == "vision.in":
+            problems += _check_vision_in(manifest, board, need)
         elif primitive == "display":
             for axis in ("width", "height"):
                 wanted = need.get(f"min_{axis}", 0)
@@ -261,6 +270,38 @@ def check_capabilities(manifest: AgentManifest, board: BoardProfile) -> list[Neu
                         )
                     )
     return problems
+
+
+def _check_vision_in(
+    manifest: AgentManifest, board: BoardProfile, need: Any
+) -> list[NeuroEdgeError]:
+    """
+    `[requires] "vision.in"` is met when at least one mode of the board satisfies every bound
+    (RFC-0012 §3b); otherwise the closest mode and what it misses are named (FR-HAL-05).
+    """
+    from ..hal.vision import Requirement, modes_of, nearest_mode, select_mode
+
+    where = f"{manifest.source} -> [requires] vision.in"
+    try:
+        requirement = Requirement.parse(need, where)
+    except NeuroEdgeError as error:
+        return [error]
+    modes = modes_of(board.capability("vision.in").get("modes", ()))
+    if select_mode(modes, requirement) is not None:
+        return []
+    near = nearest_mode(modes, requirement)
+    closest = f"; the closest mode, {near[0]}, misses {near[1]}" if near else ""
+    return [
+        BoardCapabilityError(
+            where=where,
+            why=(
+                f"no camera mode of board {board.id!r} ({board.source}) meets {dict(need)}"
+                f"{closest}; it declares {[str(m) for m in modes] or 'no mode'}"
+            ),
+            how=f"relax the bounds, add a mode to vision_in.modes in {board.source}, or build "
+            "for a board whose camera does it",
+        )
+    ]
 
 
 def default_board_hint(manifest: AgentManifest, board: BoardProfile) -> NeuroEdgeError:
@@ -562,6 +603,9 @@ def check_system_one(
         for table in ("facts", "slot_facts", "sensor_facts")
         if isinstance(sim.get(table), dict)
     }
+    vision = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("vision")
+    if isinstance(vision, dict) and isinstance(vision.get("facts"), dict):
+        computed["vision.facts"] = set(vision["facts"])  # what the camera sees is not what is said
     problems: list[NeuroEdgeError] = []
     for criterion in config.criteria:
         owners = [table for table, names in computed.items() if criterion in names]
@@ -617,6 +661,118 @@ def check_system_one(
                         else raise_budget,
                     )
                 )
+    return problems
+
+
+def check_vision(
+    manifest: AgentManifest, gates: Mapping[str, ResolvedGate]
+) -> list[NeuroEdgeError]:
+    """
+    `[vision]` of agent.toml (RFC-0012 §3c, §8; Q-54): the table is well formed, the agent declares
+    the primitive it reads (`vision.in` — a board without it fails the capability check, not
+    mid-conversation), the model it names can be found, and each fact meets the gates that read it:
+
+    * the criterion of the same name has the type its `kind` gives it (`present` → `bool`,
+      `count` and `confidence` → `numeric`);
+    * no gate puts `confidence_gte` on a vision fact — one road for confidence, the `numeric`
+      criterion, so there is no second threshold to forget to lock;
+    * a gate that uses `present` or `count` of a label and zone also has the `numeric` `confidence`
+      of the same label and zone in its `allow_when` (`facts.unpaired`): a `bool` has no
+      `max_age_ms`, so without that pair a camera repeating "nobody there" would pass
+      `present: false`;
+    * some gate reads the fact (a fact nothing reads is a typo that would block silently).
+
+    A gate may not give a vision criterion to a model that reads words (`check_system_one`).
+    Every problem is reported.
+    """
+    from types import SimpleNamespace
+
+    from ..models.providers import load_adapter
+    from ..perception.vision import BUILTIN, parse_vision, unpaired
+
+    document = tomllib.loads(manifest.source.read_text(encoding="utf-8"))
+    if "vision" not in document:
+        return []
+    try:
+        config = parse_vision(document["vision"], manifest.source)
+        if config.adapter is not None:
+            load_adapter(config, manifest.root)
+    except NeuroEdgeError as error:
+        return [error]
+    where = config.where
+    problems: list[NeuroEdgeError] = []
+    if "vision.in" not in manifest.requires:
+        problems.append(
+            AgentManifestError(
+                where=f"{manifest.source} -> [requires]",
+                why="[vision] reads frames through vision.in, which [requires] does not declare",
+                how='add "vision.in" = { min_width = 640, min_height = 480 } to [requires], or '
+                "remove [vision]",
+            )
+        )
+    if config.provider is None or (config.adapter is None and config.provider not in BUILTIN):
+        problems.append(
+            AgentManifestError(
+                where=f"{where} provider",
+                why="[vision] does not name a model that can be built"
+                if config.provider is None
+                else f"no built-in vision model is named {config.provider!r}; built in: {sorted(BUILTIN)}",
+                how='add provider = "replay" (a scripted model) or "python:my_vision.adapter:make"',
+            )
+        )
+    for name, spec in config.facts.items():
+        readers = [(key, gate) for key, gate in gates.items() if name in gate.evaluate]
+        if not readers:
+            problems.append(
+                AgentManifestError(
+                    where=f"{where}.facts.{name}",
+                    why=f"no gate of this agent evaluates {name!r}, so nothing reads this fact",
+                    how="name the fact after the criterion of the gate that uses it, or remove it",
+                )
+            )
+        for key, gate in readers:
+            declared = gate.evaluate[name].get("type")
+            if declared != spec.criterion_type:
+                problems.append(
+                    AgentManifestError(
+                        where=f"{where}.facts.{name}",
+                        why=f"gate {key!r} evaluates {name!r} as {declared!r}, and kind "
+                        f"{spec.kind!r} is a {spec.criterion_type!r} criterion",
+                        how=f"declare {name!r} as {spec.criterion_type!r} in the gate, or change kind",
+                    )
+                )
+    for key, gate in gates.items():
+        tree = compile_tree(gate)
+        nodes = {node["criterion"]: node for node in tree["nodes"]}
+        for name in config.facts.keys() & nodes.keys():
+            if nodes[name].get("confidence_floor", 0.0) > 0:
+                problems.append(
+                    AgentManifestError(
+                        where=f"gate {key!r} -> allow_when.{name}",
+                        why=f"{name!r} is a vision fact, and the gate gives it `confidence_gte`: "
+                        "the camera's confidence is a `numeric` criterion of the gate, never a "
+                        "second threshold (RFC-0012 §3c, §9.3)",
+                        how=f"remove confidence_gte, and lock the threshold with the numeric "
+                        f"confidence criterion of {config.facts[name].label!r}",
+                    )
+                )
+        readings = {
+            name: SimpleNamespace(spec=config.facts[name])
+            for name in config.facts.keys() & nodes.keys()
+        }
+        for name in sorted(unpaired(readings, tree)):
+            spec = config.facts[name]
+            problems.append(
+                AgentManifestError(
+                    where=f"gate {key!r} -> allow_when.{name}",
+                    why=f"{name!r} is a {spec.kind!r} of {spec.label!r} in zone {spec.zone!r}, and "
+                    "the gate has no numeric `confidence` criterion of the same label and zone "
+                    "in allow_when: a bool has no max_age_ms, so a frozen camera repeating "
+                    f"'nobody there' would pass (RFC-0012 §3c, §9.10)",
+                    how=f"add a `confidence` fact for {spec.label!r} in {spec.zone!r} and a numeric "
+                    "criterion for it to allow_when, with a max_age_ms",
+                )
+            )
     return problems
 
 
@@ -877,6 +1033,7 @@ def build(
     problems += check_mcp_servers(manifest, actions)
     problems += check_system_two(manifest)
     problems += check_system_one(manifest, gates)
+    problems += check_vision(manifest, gates)
     problems += check_speech(manifest, board)
     problems += check_wake_word(manifest, board)
     project: Path | None = None

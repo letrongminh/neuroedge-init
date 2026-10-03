@@ -1,0 +1,27 @@
+# Mở cổng khi camera thấy người ở cổng với độ tin cậy từ 0,85 (RFC-0012 §3c). Ngưỡng nằm ở
+# đây — agent.toml chỉ chọn nhãn nào thành dữ kiện nào (Q-54).
+schema:  neuroedge.gate/v1
+name:    watch_open_gate
+version: 1.0.0
+
+evaluate:
+  person_at_gate:
+    type: bool
+    instructions: "Có người trong vùng cổng"
+  person_confidence:
+    type: numeric
+    unit: ratio
+    range: { min: 0, max: 1 }
+    max_age_ms: 300
+    instructions: "Điểm tin cậy của nhãn person trong vùng cổng"
+
+allow_when:
+  person_at_gate:    true
+  person_confidence: { gte: 0.85 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

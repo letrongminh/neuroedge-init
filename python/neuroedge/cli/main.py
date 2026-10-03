@@ -970,6 +970,21 @@ def verify(
             problems += 1
             err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {escape(error.why)}")
 
+    # RFC-0013 §3f item 7: besides the canonical traces its primitives allow, a board replays the
+    # corpus of every extension primitive it carries — `fixtures/traces/vision/` for `vision.in`.
+    # These are not canonical: a board that lacks the primitive skips them, it does not fail.
+    extension = []
+    for path in sorted((traces_root / EXTENSION_TRACES).glob("*.json")):
+        try:
+            load_trace(path)
+            extension.append(path)
+            console.print(f"  [green]✓[/green] {EXTENSION_TRACES}/{path.name}")
+        except NeuroEdgeError as error:
+            problems += 1
+            err_console.print(
+                f"  [red]✗[/red] {EXTENSION_TRACES}/{path.name}: [{error.code}] {escape(error.why)}"
+            )
+
     corpus_problems, tool_calls = _verify_tool_corpus()
     problems += corpus_problems
 
@@ -987,18 +1002,28 @@ def verify(
     table.add_column("Trace", style="cyan")
     for label, _target, _board in columns:
         table.add_column(label, justify="center")
-    rows: dict[str, list[str]] = {path.name: [] for path in valid}
+
+    def row_of(path: Path) -> str:
+        return path.name if path.parent == traces_root else f"{EXTENSION_TRACES}/{path.name}"
+
+    rows: dict[str, list[str]] = {row_of(path): [] for path in [*valid, *extension]}
     replayed_on: dict[str, int] = {label: 0 for label, _t, _b in columns}
+    extension_replayed = 0
+    extension_on: dict[str, int] = {}
     for label, target, board_id in columns:
-        for path in valid:
+        for path in [*valid, *extension]:
+            canonical = path.parent == traces_root
+            if target == "esp32s3" and not canonical:
+                rows[row_of(path)].append("[dim]—[/dim]")  # the device replays the canonical set
+                continue
             if board_id is not None:
                 needs = _trace_primitives(load_trace(path))
                 lacking = load_board_by_id(board_id).missing_primitives(needs)
                 if lacking:
                     # A board replays what it declares enough for; the default board must
                     # replay all of it, so for that one a gap is a failure, not a skip.
-                    rows[path.name].append("[dim]—[/dim]")
-                    if board_id == REFERENCE_BOARD[target]:
+                    rows[row_of(path)].append("[dim]—[/dim]")
+                    if canonical and board_id == REFERENCE_BOARD[target]:
                         problems += 1
                         err_console.print(
                             f"  [red]✗[/red] {path.name} on {escape(label)}: the default board "
@@ -1031,19 +1056,23 @@ def verify(
                 diff = GoldenComparator().compare(result, load_trace(path))
             except NeuroEdgeError as error:
                 problems += 1
-                rows[path.name].append("[red]✗[/red]")
+                rows[row_of(path)].append("[red]✗[/red]")
                 err_console.print(
                     f"  [red]✗[/red] {path.name} on {escape(label)}: [{error.code}] "
                     f"{escape(error.why)}\n    fix: {escape(error.how)}"
                 )
                 continue
-            replayed += 1
-            replayed_on[label] += 1
+            if canonical:
+                replayed += 1
+                replayed_on[label] += 1
+            else:  # counted apart: the canonical figures are what each board must reach
+                extension_replayed += 1
+                extension_on[label] = extension_on.get(label, 0) + 1
             if diff.ok:
-                rows[path.name].append(f"[green]✓[/green] {' '.join(verdicts)}")
+                rows[row_of(path)].append(f"[green]✓[/green] {' '.join(verdicts)}")
             else:
                 problems += 1
-                rows[path.name].append("[red]✗ differs[/red]")
+                rows[row_of(path)].append("[red]✗ differs[/red]")
                 for difference in diff.differences:
                     err_console.print(
                         f"  [red]✗[/red] {path.name} on {escape(label)}: {escape(str(difference))}"
@@ -1069,6 +1098,17 @@ def verify(
                 replayed,
                 traces_root,
                 f"had no trace replayed on targets {targets!r}",
+            ),
+            **(
+                {
+                    "extension replays compared": (
+                        extension_replayed,
+                        traces_root / EXTENSION_TRACES,
+                        "had no extension trace replayed on a board that declares its primitive",
+                    )
+                }
+                if extension and any(t != "esp32s3" for t in requested)
+                else {}
             ),
             # Zero on one board is a failure even when the others replayed (RFC-0013 §3f).
             **{
@@ -1103,6 +1143,7 @@ def verify(
             "canonical trace(s) validate, every tool call of the corpus gives its recorded "
             f"result, and {_replay_breakdown(replayed_on)} match the verdicts "
             "and pin commands they record."
+            f"{_extension_breakdown(extension_on)}"
             f"{on_device}\n\n"
             "[yellow]Compared:[/yellow] decisions only — not timing. Timing equivalence "
             "arrives with TSK-S4-04.",
@@ -1114,7 +1155,10 @@ def verify(
 
 # The primitive each event type of a trace needs from the board it replays on. A type not
 # listed needs none: the core primitives are on every reference board (RFC-0013 §3a).
+EXTENSION_TRACES = "vision"  # fixtures/traces/<this>/: the corpus of `vision.in` (RFC-0013 §3f)
 _EVENT_PRIMITIVE = {
+    "vision_fact": "vision.in",
+    "camera_unavailable": "vision.in",
     "actuator_command": "digital.out",
     "actuator_command_rejected": "digital.out",
     "sensor_read": "sensor.read",
@@ -1129,6 +1173,14 @@ def _trace_primitives(trace: dict[str, Any]) -> list[str]:
     """The primitives a trace uses, in HAL order: what a board must declare to replay it."""
     used = {_EVENT_PRIMITIVE[e["type"]] for e in trace["events"] if e["type"] in _EVENT_PRIMITIVE}
     return [p for p in ALL_PRIMITIVES if p in used]
+
+
+def _extension_breakdown(extension_on: dict[str, int]) -> str:
+    """The replays of extension-primitive corpora (RFC-0013 §3f item 7), apart from the canonical ones."""
+    if not extension_on:
+        return ""
+    each = ", ".join(f"{count} on {label}" for label, count in extension_on.items())
+    return f" The corpus of `vision.in` replays alike: {each}."
 
 
 def _replay_breakdown(replayed_on: dict[str, int]) -> str:

@@ -1,0 +1,71 @@
+# Agent mẫu của gói thị giác (RFC-0012, TSK-V1b-01/02): một camera nhìn cổng.
+#
+# Camera chỉ cấp dữ kiện; ngưỡng nằm ở gate (Q-54). Đổi mô hình = đổi `provider` ở [vision],
+# không sửa mã action. Chạy trên `sim-rpi5` (camera ảo phát lại một chuỗi khung) và trên
+# `linux-rpi5` (một camera V4L2: NEUROEDGE_LINUX_CAMERA=/dev/videoN). `sim-default` và
+# Box-3 không có camera, nên agent này bị từ chối lúc build ở đó (FR-HAL-05).
+#
+#   * watch_open_gate  — mở cổng khi có người đứng ở cổng, tin cậy từ 0,85;
+#   * watch_lights_off — tắt đèn hiên khi không còn ai: `present: false` đi kèm một tiêu chí
+#                  `confidence` để camera đứng hình không mở được gate (RFC-0012 §9.10).
+[agent]
+name    = "gate-watch"
+version = "0.1.0"
+
+[requires]
+"digital.out" = { pins = ["gate_relay", "porch_light"] }
+"vision.in"   = { min_width = 640, min_height = 480, min_fps = 10.0 }
+
+[gates]
+watch_open_gate  = "gates/watch_open_gate@1.0.0.yaml"
+watch_lights_off = "gates/watch_lights_off@1.0.0.yaml"
+
+[targets]
+supported = ["sim", "linux"]
+
+# Mô hình giả có kịch bản: không ML, không mạng, tất định. Thay bằng mô hình của bạn:
+#   provider = "python:my_vision.adapter:make"
+[vision]
+provider   = "replay"
+timeout_ms = 200
+
+[vision.zones]
+gate_area = [0.25, 0.40, 0.75, 1.00]
+
+[vision.facts.person_at_gate]
+label = "person"
+zone  = "gate_area"
+kind  = "present"
+
+[vision.facts.people_at_gate]
+label = "person"
+zone  = "gate_area"
+kind  = "count"
+
+[vision.facts.person_confidence]
+label = "person"
+zone  = "gate_area"
+kind  = "confidence"
+
+# Kịch bản của camera ảo: khung 5–14 có một người trong vùng cổng (điểm 0,93); các khung khác
+# (`default = []`) là cảnh trống. Trên `sim`, nhãn này là thứ camera "thấy"; trên `linux`
+# mô hình thật đọc khung thật.
+[vision.options]
+name    = "person-det"
+labels  = ["person"]
+default = []
+
+[vision.options.script]
+5  = [{ label = "person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+6  = [{ label = "person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+7  = [{ label = "person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+8  = [{ label = "person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+9  = [{ label = "person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+10 = [{ label = "person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+11 = [{ label = "person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+12 = [{ label = "person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+
+# Camera ảo của `sim` (sim/vision/camera.py): chuỗi khung tổng hợp, mỗi khung khác nhau.
+[sim.vision]
+source = "synthetic"
+frames = 60
