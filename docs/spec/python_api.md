@@ -1,11 +1,11 @@
-# Bề mặt Python công khai — `import neuroedge`
+# Bề mặt công khai — API Python (`import neuroedge`) và CLI (`neuroedge`)
 
 **Trạng thái:** chuẩn tắc (TSK-I6-06, Q-63); quy tắc ngừng hỗ trợ ở §5 và cách đọc `0.x` ở §3 chốt ở Q-64. PRD §10.3 hứa SemVer cho gói `neuroedge` ("thay đổi bề mặt API công khai hoặc CLI")
-nhưng chưa nói API nào là công khai; tài liệu này nói.
-**Mã nguồn:** `python/neuroedge/__init__.py` (`__all__`) · `python/neuroedge/sim/serve.py` (`serve_mcp`).
-**Test ghim:** `python/tests/test_public_api.py`.
+nhưng chưa nói cái gì là công khai; tài liệu này nói, cho API Python (§1–§4) và cho CLI (§6).
+**Mã nguồn:** `python/neuroedge/__init__.py` (`__all__`) · `python/neuroedge/sim/serve.py` (`serve_mcp`) · `python/neuroedge/cli/main.py` (cây lệnh).
+**Test ghim:** `python/tests/test_public_api.py` (API Python) · `python/tests/test_cli_contract.py` (CLI).
 
-Tài liệu này là nơi **duy nhất** định nghĩa điều gì thuộc API Python công khai và SemVer hứa gì về nó.
+Tài liệu này là nơi **duy nhất** định nghĩa điều gì thuộc API Python và CLI công khai, và SemVer hứa gì về chúng.
 Tài liệu khác dẫn tới đây, không chép lại (CONTRIBUTING §8.1). Từ khoá **PHẢI**, **KHÔNG ĐƯỢC**,
 **NÊN** mang nghĩa như RFC 2119. Danh sách tên nằm ở `neuroedge.__all__`; bảng ở §2 chỉ giải thích
 từng nhóm, và test khoá việc mỗi tên đều có mặt ở đó.
@@ -24,12 +24,12 @@ từng nhóm, và test khoá việc mỗi tên đều có mặt ở đó.
 | Tên và lớp của các lỗi trong `__all__`; ba thuộc tính `where`, `why`, `how` và `code` của `NeuroEdgeError` | Thứ tự khoá, `repr`, hiệu năng, số sự kiện trong vết ghi |
 
 Công khai theo **tên**, không theo **vị trí**: `neuroedge.SimHAL` được hứa; `neuroedge.hal.sim.SimHAL`
-vẫn chạy hôm nay nhưng một bản phát hành có thể dời nó. Các mẫu `neuroedge new` hiện còn import từ
-mô-đun con (`neuroedge.sim.SimSession`, `neuroedge.hal.digital`): xem câu hỏi mở ở §6.
+vẫn chạy hôm nay nhưng một bản phát hành có thể dời nó. Mã sinh ra bởi `neuroedge new` và các agent
+mẫu chỉ import tên công khai ở dạng `from neuroedge import …`.
 
 Hợp đồng dạng tệp **không** thuộc tài liệu này vì có phiên bản riêng: lược đồ gate, vết ghi, `board.v1`
 (PRD §10.3, `schemas/`, `CONTRIBUTING.md` §3) và bố cục nhị phân `NETR` (RFC-0003, RFC-0009). Dòng
-"hoặc CLI" của PRD §10.3 cũng chưa có định nghĩa: xem §6.
+"hoặc CLI" của PRD §10.3 được định nghĩa ở §6.
 
 ## 2. Bề mặt hiện tại
 
@@ -40,6 +40,7 @@ Hợp đồng dạng tệp **không** thuộc tài liệu này vì có phiên b�
 | Gate và engine | `ResolvedGate`, `resolve_gate_file`, `resolve_gate_uri`, `GateRegistry`, `ActionContractEngine`, `GateVerdict`, `GateResult`, `Gate`, `Fact`, `Reason` | Nạp và phân giải gate, đăng ký vào engine, đọc phán quyết. `Gate` là bí danh cũ của `GateResult`, giữ vì đã công khai từ 0.1 |
 | Cây quyết định | `compile_tree`, `walk`, `TreeResult` | Biên dịch gate đã phân giải thành cây và duyệt nó trên máy tính — hàm thuần, cùng phán quyết với walker trên thiết bị |
 | Hành động và tool call | `action`, `spec_of`, `Conversation`, `ActionResult`, `ToolCall`, `ToolResult`, `ToolSet`, `dispatch` | `@action`, `c.do()` qua gate, và đường duy nhất từ một tool call tới chân: `dispatch` (`docs/spec/tool_calling.md` §2) |
+| Phiên mô phỏng | `SimSession`, `Turn` | Nạp một agent trên `sim` (hoặc `linux`), cho nó nghe một dòng, khẳng định chân và vết ghi: bộ khung test của mã `neuroedge new`. Chỉ một phần nhỏ được hứa: §2.1 |
 | Mô hình | `SystemOne`, `SystemTwo` | Hai tầng mô hình của agent |
 | Vết ghi và kiểm thử | `TraceRecorder`, `load_trace`, `validate_trace`, `replay`, `scenario` | Ghi vết (băm lời người dùng theo mặc định, NFR-PRIV-03), thẩm định, replay |
 | MCP | `serve_mcp` | Khởi động MCP server qua stdio từ mã Python (§4) |
@@ -48,9 +49,32 @@ Hợp đồng dạng tệp **không** thuộc tài liệu này vì có phiên b�
 Mọi lớp lỗi trong `errors.py` **PHẢI** nằm trong `__all__` (test khoá): người tích hợp bắt lỗi theo lớp,
 nên một lớp lỗi không có tên công khai là một lỗi không bắt được.
 
+### 2.1 `SimSession` và `Turn`: chỉ những thành viên này được hứa
+
+`SimSession` là nơi lắp ráp một agent (`docs/architecture/vi/03-component-host-c4l3.md` §2), nên lớp
+này lớn và còn đổi. Lời hứa SemVer **chỉ** phủ những thành viên mà mã `neuroedge new` và tài liệu dùng;
+mọi thứ khác của `SimSession` và `Turn` nằm ngoài lời hứa (§1), dù không bắt đầu bằng `_`.
+
+| Tên | Được hứa |
+|:---|:---|
+| `SimSession.load(agent_toml="agent.toml", *, board_id, facts, registry, clock, events, slow, target, target_options)` | Đúng chín tham số này, tên, thứ tự và mặc định; ném `BuildFailed` khi agent không khớp bo mạch, `BoardCapabilityError` khi `linux` không chạy được agent (docstring của `load`) |
+| `await session.handle(text)` | Chạy một dòng gõ qua ngữ pháp, `c.do()` và gate; trả một `Turn`. Các tham số từ khoá của `handle` (`heard_after_ms`, `spoken`, `answer_to`) **không** được hứa |
+| `session.hal` | HAL của phiên (`session.hal.pin(tên)` khẳng định chân) |
+| `session.set_sensor(sensor, value)` | Đặt giá trị cảm biến mô phỏng mà HAL trả về |
+| `session.trace()` | Vết ghi `trace.v1` của phiên cho tới lúc này, đã thẩm định |
+| `session.events.of_type(loại)` | Các sự kiện đã ghi theo loại |
+| `Turn.recognised`, `Turn.allowed` | `recognised`: ngữ pháp nhận ra lệnh; `allowed`: hành động đã chạy vì gate cho phép |
+| `Turn.result` | `ActionResult` của hành động, hoặc `None` nếu không có hành động; `result.blocked`, `result.gate` (một `GateResult`) |
+| `Turn.reply_source` | Nguồn của câu trả lời: chuỗi hoặc `None` (các giá trị cụ thể không được hứa) |
+| `Turn.confirmation` | `None` khi thiết bị không hỏi lại người; khác `None` khi có một câu hỏi chờ trả lời |
+
+Mẫu `factory-monitor` có một test (`test_heat_level_and_heat_critical_agree_at_every_reading`) đọc
+`session.grammar`, `session.sensor_facts` và `session.gate_facts`: đó là kiểm tra nội bộ của chính agent
+mẫu, **ngoài** lời hứa này, và có thể phải sửa khi nâng phiên bản.
+
 ## 3. Chính sách SemVer
 
-Gói `neuroedge` theo [SemVer 2.0.0](https://semver.org/lang/vi/) trên bề mặt ở §1. Với phiên bản
+Gói `neuroedge` theo [SemVer 2.0.0](https://semver.org/lang/vi/) trên bề mặt ở §1 và hợp đồng CLI ở §6. Với phiên bản
 `MAJOR.MINOR.PATCH`:
 
 | Thay đổi | Tăng |
@@ -117,10 +141,33 @@ Bề mặt công khai không biến mất đột ngột:
 
 *Chưa có tên nào bị ngừng hỗ trợ.* Khi có, mục này nhận một bảng: tên, bản đánh dấu, bản bỏ, tên thay thế.
 
-## 6. Câu hỏi mở cho chủ sản phẩm
+## 6. Hợp đồng CLI
 
-1. **Mẫu `neuroedge new`** còn dùng `neuroedge.sim.SimSession` và `neuroedge.hal.digital` trong mã
-   sinh ra. `digital` đã có tên công khai (`neuroedge.digital`); `SimSession` thì chưa. Đưa `SimSession`
-   (và `Turn`) vào `__all__`, hay đổi mẫu sang API khác? Mỗi tên thêm vào là một lời hứa SemVer.
-2. **"Hoặc CLI"** ở PRD §10.3: lệnh, cờ và mã thoát nào là hợp đồng? Bảng mã thoát ở `CHANGELOG.md` §2.3
-   là ứng viên tự nhiên; chưa có định nghĩa tương tự cho tên lệnh và cờ.
+CLI là `neuroedge <lệnh> …` (`python -m neuroedge` như nhau). Cùng chính sách SemVer (§3) và quy tắc
+ngừng hỗ trợ (§5, Q-64) như API Python; ở `0.x`, MINOR đóng vai MAJOR.
+
+| Được hứa | Không được hứa |
+|:---|:---|
+| Tên lệnh và lệnh con (`gate lint`, `mcp serve`…) | Chữ in ra stdout và stderr cho người đọc: câu chữ, màu, thứ tự dòng, bảng, khung |
+| Tên cờ và tuỳ chọn (kể cả dạng ngắn `-t`), ý nghĩa của chúng, cờ nhận giá trị hay không, lặp được hay không | Thời gian chạy, độ rộng bảng, khối `Examples:` của `--help` |
+| Đối số nào bắt buộc, và thứ tự các đối số vị trí | Đường dẫn mặc định của tệp một lệnh ghi khi không có `--out` |
+| **Mã thoát** — bảng ở `CHANGELOG.md` §2.3 (`0` đạt, `1` không đạt, `2` chưa hiện thực), không chép lại ở đây | Nội dung chẩn đoán `why`/`how` (mã `NE…` thì được hứa, §1) |
+| Đầu ra máy đọc: `--json`, `--openai`, và các tệp lệnh ghi ra (lược đồ riêng, có phiên bản — `schemas/`, PRD §10.3; không nhắc lại ở đây) | |
+
+**Quy tắc phiên bản cho CLI:**
+
+| Thay đổi | Tăng |
+|:---|:---|
+| Đổi tên hay bỏ một lệnh, cờ hay tuỳ chọn; đổi ý nghĩa của một mã thoát; đổi hình dạng `--json`/`--openai` theo cách làm hỏng bên đọc cũ; biến đối số tuỳ chọn hoặc cờ thành bắt buộc; biến cờ thành tuỳ chọn nhận giá trị | **MAJOR** (ở `0.x`: MINOR) |
+| Thêm một lệnh hoặc một cờ **tuỳ chọn**; thêm khoá vào `--json` mà bên đọc cũ bỏ qua được | **MINOR** |
+| Một lệnh (hay một `--target`) chuyển từ mã `2` ("chưa hiện thực") sang `0` hoặc `1` | **MINOR**, không phải thay đổi phá vỡ: mã `2` là lời hứa "chưa có", không phải lời hứa "sẽ không bao giờ có" |
+| Sửa câu chữ, màu, bảng; sửa lỗi | **PATCH** |
+
+Khi đổi tên hay bỏ, tên cũ **PHẢI** còn chạy như một bí danh ẩn (`hidden=True`) phát cảnh báo ngừng hỗ trợ
+trên stderr đúng một bản MINOR đầy đủ (§5). An toàn vẫn được ưu tiên: một lệnh mà hành vi cũ để lọt
+điều gate lẽ ra chặn thì sửa ngay, theo ngoại lệ ở §5.
+
+**Cưỡng chế.** `test_cli_contract.py` đọc cây lệnh Typer và so với một bản chụp theo từng dòng một
+lệnh: tên đầy đủ, đối số theo thứ tự, cờ (kèm `=` nếu nhận giá trị, `!` nếu bắt buộc). Thêm, bỏ hay đổi một
+lệnh hoặc cờ làm CI đỏ cho tới khi bản chụp, mục SemVer ở trên và `CHANGELOG.md` đổi trong cùng PR. Mã thoát
+và `--json` được kiểm bởi test của từng lệnh, không phải bản chụp này.

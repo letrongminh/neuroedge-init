@@ -72,8 +72,7 @@ Một HAL host là một lớp con của `HardwareAbstractionLayer`. `SimHAL` v�
 chỉnh.
 
 ```python
-from neuroedge.hal import HardwareAbstractionLayer
-from neuroedge.hal.board import BoardProfile
+from neuroedge import BoardProfile, HardwareAbstractionLayer
 
 class MyBoardHAL(HardwareAbstractionLayer):
     def __init__(self, board: BoardProfile, *, events, authorize, **options) -> None:

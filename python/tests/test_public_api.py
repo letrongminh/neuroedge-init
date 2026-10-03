@@ -62,6 +62,7 @@ PUBLIC = [
     "ResolvedGate",
     "SafetyRegressionError",
     "SimHAL",
+    "SimSession",
     "SystemOne",
     "SystemTwo",
     "TokenReplayError",
@@ -72,6 +73,7 @@ PUBLIC = [
     "TraceRecorder",
     "TraceValidationError",
     "TreeResult",
+    "Turn",
     "VerificationError",
     "__version__",
     "action",
@@ -472,3 +474,59 @@ def test_serve_mcp_refuses_a_target_that_has_no_session(root):
     agent = root / "fixtures" / "agents" / "villa-concierge" / "agent.toml"
     with pytest.raises(BoardCapabilityError, match="esp32s3"):
         neuroedge.serve_mcp(agent, target="esp32s3")
+
+
+# --- SimSession and Turn: the members spec §2.1 promises -------------------------------------------
+
+
+def test_sim_session_load_keeps_its_promised_parameters():
+    from neuroedge.engine.trace_sink import monotonic_ms
+
+    parameters = [
+        (name, parameter.kind.name, parameter.default)
+        for name, parameter in inspect.signature(neuroedge.SimSession.load).parameters.items()
+    ]
+    assert parameters == [
+        ("agent_toml", "POSITIONAL_OR_KEYWORD", "agent.toml"),
+        ("board_id", "KEYWORD_ONLY", None),
+        ("facts", "KEYWORD_ONLY", None),
+        ("registry", "KEYWORD_ONLY", None),
+        ("clock", "KEYWORD_ONLY", monotonic_ms),
+        ("events", "KEYWORD_ONLY", None),
+        ("slow", "KEYWORD_ONLY", None),
+        ("target", "KEYWORD_ONLY", "sim"),
+        ("target_options", "KEYWORD_ONLY", None),
+    ]
+
+
+def test_a_loaded_sim_session_has_the_promised_members(root):
+    import asyncio
+    import dataclasses
+
+    agent = root / "fixtures" / "agents" / "villa-concierge" / "agent.toml"
+    session = neuroedge.SimSession.load(agent)
+    assert inspect.iscoroutinefunction(neuroedge.SimSession.handle)
+    assert list(inspect.signature(neuroedge.SimSession.handle).parameters)[:2] == ["self", "text"]
+    assert list(inspect.signature(neuroedge.SimSession.set_sensor).parameters) == [
+        "self",
+        "sensor",
+        "value",
+    ]
+    assert isinstance(session.hal, HardwareAbstractionLayer)
+    assert callable(session.events.of_type)
+
+    turn = asyncio.run(session.handle("mở cửa phòng 101"))
+    assert isinstance(turn, neuroedge.Turn)
+    fields = {field.name for field in dataclasses.fields(neuroedge.Turn)}
+    assert {"result", "reply_source", "confirmation"} <= fields
+    assert isinstance(turn.allowed, bool) and isinstance(turn.recognised, bool)
+    assert turn.allowed and session.hal.pin("door_lock").pulsed
+    trace = session.trace()
+    assert [e["type"] for e in trace["events"]].count("gate_evaluation_result") == 1
+
+
+def test_sim_session_set_sensor_takes_a_reading(root):
+    agent = root / "fixtures" / "agents" / "factory-monitor" / "agent.toml"
+    session = neuroedge.SimSession.load(agent)
+    session.set_sensor("temperature", 30)
+    assert session.hal.sensor_read("temperature") == 30

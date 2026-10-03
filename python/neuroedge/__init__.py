@@ -47,6 +47,7 @@ from .hal import BoardProfile, HardwareAbstractionLayer, PinAssertion, digital, 
 from .hal.linux import LinuxHAL
 from .hal.sim import SimHAL
 from .models import SystemOne, SystemTwo
+from .sim import SimSession, Turn
 from .sim.serve import serve_mcp
 from .testing import TraceRecorder, replay, scenario
 from .trace import load_trace, validate_trace
@@ -80,6 +81,7 @@ __all__ = [
     "ResolvedGate",
     "SafetyRegressionError",
     "SimHAL",
+    "SimSession",
     "SystemOne",
     "SystemTwo",
     "TokenReplayError",
@@ -90,6 +92,7 @@ __all__ = [
     "TraceRecorder",
     "TraceValidationError",
     "TreeResult",
+    "Turn",
     "VerificationError",
     "action",
     "compile_tree",

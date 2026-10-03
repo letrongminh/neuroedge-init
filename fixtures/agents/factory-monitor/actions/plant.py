@@ -5,8 +5,7 @@ On `sim-default` and `linux-rpi5`, `gate_relay` drives the fan contactor and
 `porch_light` the alarm beacon.
 """
 
-from neuroedge import action
-from neuroedge.hal import digital
+from neuroedge import action, digital
 
 
 @action(name="vent_on", requires="digital.out:gate_relay", gate="vent_on")

@@ -1,7 +1,6 @@
 """The assistant's two physical actions. Only `c.do()` runs them, after their gate."""
 
-from neuroedge import action
-from neuroedge.hal import digital
+from neuroedge import action, digital
 
 
 @action(name="light_on", requires="digital.out:porch_light", gate="light_on")
