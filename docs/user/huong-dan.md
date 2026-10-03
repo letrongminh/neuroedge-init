@@ -296,7 +296,7 @@ action của agent thành một công cụ MCP, và mọi lời gọi vẫn ph�
 
 **Giới hạn**
 
-- Chỉ qua stdio, chưa có MCP qua mạng (`TODOS.md` #24, #25).
+- MCP mặc định qua stdio; qua mạng có `mcp serve --http` (mTLS + OAuth 2.1, TSK-P2-04), chưa thử trên hai máy thật; chưa có kết nối bền tới MCP server ngoài (`TODOS.md` #25).
 - Trang web theo dõi chỉ có trên `sim`.
 
 ---
@@ -312,6 +312,10 @@ action của agent thành một công cụ MCP, và mọi lời gọi vẫn ph�
 - Đủ năm nguyên thủy phần cứng (HAL): `digital.out` (chân ra), `sensor.read` (cảm biến hwmon/IIO, tìm theo
   **tên**), `display` (framebuffer — thiết bị màn hình của kernel, `/dev/fbN` — hoặc trong bộ nhớ),
   `audio.in` và `audio.out`.
+- **Nguyên thủy mở rộng**, tuỳ bo mạch khai (`board show <id>` liệt kê): `digital.in` (line vào đọc theo **tên**, không bao giờ ghi),
+  I2C chỉ đọc qua `/dev/i2c-N` (chỉ thanh ghi bo mạch cho phép), `analog.in` (kênh hwmon, `NEUROEDGE_LINUX_ANALOG`) và `vision.in`
+  (camera V4L2 do máy chọn: `NEUROEDGE_LINUX_CAMERA=/dev/video0`; không có camera hoặc driver không chạy đúng chế độ bo mạch khai ⇒ phiên không
+  khởi động). Đọc hỏng ở bất kỳ nguyên thủy nào ⇒ gate chặn `criterion_unavailable`, không bao giờ cho qua.
 - **Âm thanh từ tệp WAV**: `run` / `record --voice-file` trên `linux` đưa tệp về tần số lấy mẫu của bo
   mạch, không cần micro hay loa.
 - **Nối sẵn micro và loa thật** qua PipeWire đã khử vang (`NEUROEDGE_LINUX_AUDIO=live`, `neuroedge[audio]`;

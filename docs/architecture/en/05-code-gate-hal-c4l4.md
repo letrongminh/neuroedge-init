@@ -188,7 +188,7 @@ sequenceDiagram
 Every rejection writes `actuator_command_rejected {pin, reason, code}` **before** throwing, and the pin
 does not change. The nonce never enters the trace.
 
-**Planned:** physical safety envelope hooks (limiting total on-time and frequency per pin, declared in `board.v1` — RFC-0007) will sit in `HAL.digital_out` between pin validation (`require_pin`) and `authorize` (TSK-N2-01, tokens are not spent when rejected) → [`15`](15-target-architecture.md) §4.2; lease tokens (short-lived motion authority automatically renewed on new gated commands, self-expiring to safe state upon lost communication) for `motion.*` (Q-37) → [`15`](15-target-architecture.md) §4.3.
+**Done (TSK-N2-01):** the physical safety envelope hook (limiting total on-time and frequency per pin, declared in `board.v1` — RFC-0007) sits in `HAL.digital_out` between pin validation (`require_pin`) and `authorize` (`hal/envelope.py`; tokens are not spent when rejected) → [`15`](15-target-architecture.md) §4.2. Lease tokens (branch `feat/motion`, TSK-I2a-05: short-lived motion authority automatically renewed on new gated commands, self-expiring to safe state upon lost communication) for `motion.*` (Q-37) → [`15`](15-target-architecture.md) §4.3.
 
 ```mermaid
 stateDiagram-v2

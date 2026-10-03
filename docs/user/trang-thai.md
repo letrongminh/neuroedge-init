@@ -4,7 +4,7 @@
 # Trạng thái dự án
 
 > Sinh tự động từ [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0 —
-> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-10-03**.
+> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-10-04**.
 
 ## Điều hành
 
@@ -14,8 +14,8 @@
 | Increment đang mở | 🟡 **I1** — còn I1-02 (tạm hoãn: phát triển nội bộ) |
 | Cột mốc tiếp theo | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** |
 | Trạng thái CI Lõi | ✅ **PASS 2719/2719 · SKIP 0** |
-| Chặn ngoài tầm kỹ thuật | 🟡 **2 hạng mục chặn** |
-| Lần cập nhật cuối | **2026-10-03** |
+| Chặn ngoài tầm kỹ thuật | 🟡 **3 hạng mục chặn** |
+| Lần cập nhật cuối | **2026-10-04** |
 
 ## Increment
 
@@ -24,7 +24,7 @@
 | **0.x nội bộ** | **I0 — Lõi hợp đồng trên `sim`** | ✅ 2026-09-24 | **42 / 42** | ✅ Xong | lịch sử |
 |  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | **4 / 6** | 🟡 Đang làm — TSK-I1-02 tạm hoãn (phát triển nội bộ) | tag `v0.1.0` (nội bộ) |
 |  | **I2 — `linux` ngang `sim`** | 2026-11-29 | **3 / 4** | 🟡 Phiên tương tác, cảm biến, màn hình xong trên gpio-sim + i2c-stub; nightly RPi 5 còn lại | tag `v0.2.0` (nội bộ) |
-|  | **I2a — Nguyên thủy mở rộng trên `sim` và `linux`** | 2026-12-06 | **8 / 26** | 🟡 Sáu RFC đã chấp thuận (2026-10-01); tiêu chí số và `NETR` v2 xong (TSK-W1-02); spike ADC đạt (TSK-N3-03) | tag `v0.2.1` (nội bộ) |
+|  | **I2a — Nguyên thủy mở rộng trên `sim` và `linux`** | 2026-12-06 | **17 / 26** | 🟡 Sáu RFC đã chấp thuận; tiêu chí số và `NETR` v2; `board.v1` khai đủ nguyên thủy mở rộng, `sim-rpi5`; phong bì an toàn, `digital.in`, I2C chỉ đọc, `analog.in`, thị giác (camera ảo, mô hình, vết ghi, gate mẫu), PWM và `motion.*` xong trên `sim` và trên `linux` với thiết bị giả. **Còn:** nửa `linux` trên kernel thật chưa chạy ở đâu (job `linux-hal`: gpio-sim, `i2c-stub`, `vivid`); golden suy luận thị giác; ô `esp32s3` của bảng phủ (TSK-I3a-01) | tag `v0.2.1` (nội bộ) |
 |  | **I2b — Kit mẫu và dựng nhanh** | 2026-12-20 | **0 / 4** | ⏳ Chưa bắt đầu | tag `v0.2.2` (nội bộ) |
 |  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | **6 / 14** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU, giao diện LVGL có ảnh golden); chờ bo mạch | tag `v0.3.0` + firmware (nội bộ) |
 |  | **I3a — Nguyên thủy mở rộng trên `esp32s3`** | 2027-01-10 | **0 / 7** | ⏳ Chưa bắt đầu | tag `v0.3.1` + firmware (nội bộ) |
@@ -32,7 +32,7 @@
 |  | **I4a — NeuroBrain trên host** | 2027-01-03 | **0 / 33** | ⏳ Chưa bắt đầu | tag `v0.4.1` + extra `[lab]` (nội bộ) |
 |  | **I5 — Thoại trên Box-3** | 2027-01-03 | **0 / 7** | ⏳ Chưa bắt đầu | tag `v0.5.0` + firmware (nội bộ) |
 |  | **I5a — NeuroBrain trên chip** | 2027-01-24 | **0 / 2** | ⏳ Chưa bắt đầu | tag `v0.5.1` + firmware (nội bộ) |
-| **Công khai** | **I6 — Công khai** | 2027-01-31 | **4 / 12** | 🟡 Quét bí mật, SBOM, API Python công khai xong; chờ I5a | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
+| **Công khai** | **I6 — Công khai** | 2027-01-31 | **5 / 12** | 🟡 Quét bí mật, SBOM, API Python công khai, MCP qua mạng có xác thực xong; RFC-0014 và RFC-0015 chờ chữ ký; chờ I5a | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
 | **v1.0 = MVP** | **I7 — v1.0** | 2027-02-21 | **4 / 12** | 🟡 Ghim Actions, attestation xong; OTA A/B có ký + rollback xong trên QEMU; chờ I6 | `v1.0.0` |
 | **Beta** | **I8 — Developer Beta** | 2027-03-21 | **0 / 1** | ⏳ Chưa bắt đầu | `1.0.x` (chỉ bản vá) |
 | **v1.1** | **I9 — Lớp provider v1.1 và Fleet OS** | sau I8 (nhánh A) | **0 / 9** | ⏳ Chờ nhánh A | `1.1.0` + dịch vụ |

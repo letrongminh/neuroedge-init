@@ -227,7 +227,7 @@ Hệ quả thiết kế:
 Spec MCP hiện hành (2026-07-28) đã có **authorization OAuth 2.1 cho HTTP transport**
 (Streamable HTTP; Protected Resource Metadata RFC 9728; Authorization Server Metadata
 RFC 8414; Client ID Metadata Documents). Khuyến nghị: dùng đúng spec thay vì tự chế, và
-vẫn thêm mTLS ở tầng thiết bị (NFR-SEC-04) cùng test chống lặp lời gọi (`TODOS.md` #29)
+vẫn thêm mTLS ở tầng thiết bị (NFR-SEC-04) cùng test chống lặp lời gọi (TSK-P2-04)
 trước khi mở cổng mạng.
 
 ### 5.4 MHS
@@ -300,7 +300,7 @@ phần cứng (BT8, Q-38).
 Hạ tầng tin cậy phần lớn dùng lại task có sẵn của v1.0 và Fleet OS. Phần riêng của robot là
 kênh tin cậy giữa Pi và node.
 
-- **MCP qua mạng:** Streamable HTTP + OAuth 2.1 + mTLS thiết bị + test `TODOS.md` #29 (§5.3).
+- **MCP qua mạng:** Streamable HTTP + OAuth 2.1 + mTLS thiết bị + test lặp lời gọi bị chặn (TSK-P2-04, §5.3).
   Không có đường nào tới actuator mà chưa xác thực.
 - **Sandbox mã bên thứ ba:** truy cập chân theo capability được cấp; phạm vi `linux` trước.
 - **Khởi động an toàn trên Pi (`linux`)** cần thêm TPM, ngoài Secure Boot và mã hóa flash của chip.
