@@ -118,14 +118,14 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 │    • Chặng B — `esp32s3` + phần cứng thật, mở khi bo về. Xong khi đạt: tiêu chí ra     │
 │      I3, I3a, I5; I2 tiêu chí 4; I4 tiêu chí 4; TSK-S6-03, S6-05, V1b-05               │
 │                                                                                        │
-│ 1. VỪA HOÀN THÀNH — TSK-W1-02, Q-63, TSK-N0-02                                         │
+│ 1. VỪA HOÀN THÀNH — TSK-W1-02, Q-63, TSK-N0-02, TSK-N3-03                              │
 │    • TSK-W1-02: tiêu chí `numeric` + `NETR` v2, engine host khớp walker C (PR #86)     │
 │    • Q-63: ba khoảng hở nền tảng cho người tích hợp → TSK-I6-05/06/07 (PR #85)         │
 │    • TSK-N0-02: FR-HAL-01 tách lõi / mở rộng (RFC-0013); `--lab` vào FR-CLI-12         │
+│    • TSK-N3-03: `ads7828` và `ina219` đọc đúng trên `i2c-stub`, không cần IIO (PR #87) │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN — bước 1 của chặng A                                                 │
 │    • TSK-I6-06 — bề mặt Python công khai; merge trước các PR của I2a                   │
-│    • TSK-N3-03 — spike ADC trên runner CI (máy local không có `i2c-stub`)              │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
