@@ -111,7 +111,7 @@ cho phiên lấy qua `read_available()`; số khung là `sequence` của driver 
 **Kiểm.** `tests/test_v4l2.py` chạy cả giao thức với một driver giả (kích thước cấu trúc, số ioctl, thứ tự lời gọi, từ chối chế độ, số khung,
 khung lỗi, thiết bị chết, đứng hình, đóng). Trên kernel thật: job CI `linux-hal` nạp `vivid` (`scripts/setup_vivid.sh`: driver video ảo
 của kernel, cùng ioctl và bộ đệm `mmap` với camera thật, mẫu thử có dấu thời gian nên không hai khung giống nhau) và chạy
-`python/tests_linux/test_camera_v4l2.py`. Tệp đó được viết trên máy không phải Linux: **chưa chạy trên kernel nào ở lúc viết**.
+`python/tests_linux/test_camera_v4l2.py`. Tệp đó chạy trong job `linux-hal` trên kernel của runner (CI run 37153005998: 90 passed); nó bắt được lỗi đọc `sequence` sau `VIDIOC_QBUF` (`hal/v4l2.py`, `6bbfb43`). Chưa thử trên camera thật.
 
 ## 6. Từ camera tới gate
 

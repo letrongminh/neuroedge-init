@@ -42,19 +42,19 @@ bản gói.
 
 - **I2a · TSK-I2a-02 — `digital.in`: mức logic là dữ kiện `bool` có mốc đọc.** `SimHAL` (`:input`, `[sim.digital_facts]`) và `LinuxHAL` (line đọc
   qua gpiod, không bao giờ ghi); đọc hỏng ⇒ BLOCK `criterion_unavailable` kể cả `fail: open`. Kiểm: `pytest tests/test_digital_in.py
-  tests/test_digital_in_linux.py`; gpio-sim: `tests_linux/test_gpio_sim.py` (chưa chạy, job `linux-hal`). (FR-HAL-01, RFC-0007 §3a)
+  tests/test_digital_in_linux.py`; gpio-sim: `tests_linux/test_gpio_sim.py` (xanh, job `linux-hal`, CI run 37153005998). (FR-HAL-01, RFC-0007 §3a)
 
 - **I2a · TSK-I2a-03 — bus I2C chỉ đọc cho agent.** `i2c.read()` qua allow-list (bus, thiết bị, thanh ghi) trước mọi giao dịch; `linux` chỉ phát đọc
   SMBus qua `/dev/i2c-N` (không phụ thuộc mới), `sim` phát lại `[sim.i2c]`. Kiểm: `pytest tests/test_hal_i2c.py`; `i2c-stub`:
-  `tests_linux/test_i2c_read.py` (chưa chạy, job `linux-hal`). (FR-HAL-01, RFC-0007 §3b)
+  `tests_linux/test_i2c_read.py` (xanh, job `linux-hal`, CI run 37153005998). (FR-HAL-01, RFC-0007 §3b)
 
 - **I2a · TSK-I2a-04 — `analog.in`: số đo có đơn vị vào gate bằng tiêu chí `numeric`; agent mẫu `rail-gate`.** `SimHAL` (`[sim.analog]`) và `LinuxHAL`
   (hwmon `ads7828`); ngoài thang, khác đơn vị, không hữu hạn ⇒ `NE5001` ⇒ BLOCK, không bao giờ cắt. Kiểm: `pytest tests/test_analog_in.py
-  tests/test_hal_linux_analog.py tests/test_sensor_pack_sample.py`; `tests_linux/test_analog_in.py` (chưa chạy). (FR-HAL-01, RFC-0007 §3c, RFC-0009)
+  tests/test_hal_linux_analog.py tests/test_sensor_pack_sample.py`; `tests_linux/test_analog_in.py` (xanh, job `linux-hal`, CI run 37153005998). (FR-HAL-01, RFC-0007 §3c, RFC-0009)
 
 - **I2a · TSK-N2-01 → N2-05 — phong bì an toàn theo chân chạy thật trên `sim` và `linux`.** `digital_out`: `require_pin → envelope → authorize → record`;
   từ chối ⇒ `EnvelopeRefusedError` (`NE1003`), không tiêu token; `linux` tự tắt bằng hẹn giờ, ghi bền write-ahead, tiến trình giám sát bật mặc định.
-  Kiểm: `pytest tests/test_envelope.py tests/test_safety_regressions.py tests/test_supervisor.py`; `tests_linux/test_gpio_envelope.py` (chưa chạy). (RFC-0007 §3d)
+  Kiểm: `pytest tests/test_envelope.py tests/test_safety_regressions.py tests/test_supervisor.py`; `tests_linux/test_gpio_envelope.py` (xanh, job `linux-hal`, CI run 37153005998). (RFC-0007 §3d)
 
 - **I2a · TSK-V1b-03 — mô hình thị giác thay được bằng cấu hình; dữ kiện gõ kiểu cho gate (Q-54).** `VisionModel` không tin cậy, `VisionPipeline`
   (từng khung rồi AND; mất, đứng, cũ, rác ⇒ BLOCK). Đặc tả `docs/spec/vision.md`. Kiểm: `pytest tests/test_vision_model.py
@@ -75,15 +75,19 @@ bản gói.
 
 - **I2a · TSK-V1b-01 — `vision.in` trên `linux`: V4L2 bằng Python thuần.** Chế độ khai phải là chế độ driver chạy (làm tròn ⇒ từ chối); mất, đứng, hết khung ⇒
   `CameraUnavailable`; node do máy chọn (`NEUROEDGE_LINUX_CAMERA`). Kiểm: `pytest tests/test_v4l2.py`; trên driver `vivid`: `tests_linux/test_camera_v4l2.py`
-  (chưa chạy, job `linux-hal`). (FR-HAL-01, RFC-0012 §3a)
+  (xanh, job `linux-hal`, CI run 37153005998; lần chạy đầu bắt được lỗi số khung, sửa ở `6bbfb43`). (FR-HAL-01, RFC-0012 §3a)
 
 - **I2a · TSK-W1-01 — PWM và kênh phản hồi trạng thái trong `digital.out` (RFC-0010).** `pwm` với `duration_ms` bắt buộc, `duty` lượng tử về 0, từ chối
   `on`/`pulse` trên kênh PWM trước token, `state()` tách `measured` khỏi `commanded`; dây `enable` giữ bởi tiến trình giám sát. Agent mẫu `fan-pwm`. Kiểm:
-  `pytest tests/test_pwm.py tests/test_hal_linux_pwm.py`; `tests_linux/test_gpio_pwm.py` (chưa chạy, job `linux-hal`). (FR-HAL-01)
+  `pytest tests/test_pwm.py tests/test_hal_linux_pwm.py`; `tests_linux/test_gpio_pwm.py` (xanh, job `linux-hal`, CI run 37153005998; dây `enable` thật, kênh PWM vẫn là cây giả). (FR-HAL-01)
 
 - **I2a · TSK-I2a-05 — `motion.*` trên `sim` và `linux` (RFC-0011).** `motor`/`servo` với lease một lệnh, lần chạy qua phong bì, `safe_state` khi hết lease,
   BLOCK, cắt lời, đóng; `build` từ chối `p95_latency_ms > lease_ms / 2`. Agent mẫu `rover`. Kiểm: `pytest tests/test_motion.py tests/test_motion_linux.py`;
-  `tests_linux/test_gpio_motion.py` (chưa chạy, job `linux-hal`). (FR-HAL-01, FR-PER-02)
+  `tests_linux/test_gpio_motion.py` (xanh, job `linux-hal`, CI run 37153005998; dây `enable` thật, kênh PWM vẫn là cây giả). (FR-HAL-01, FR-PER-02)
+
+- **I2a · TSK-I2a-02 → I2a-05, V1b-01, N2.2 — nguyên thủy mở rộng chạy trên kernel trong CI (PR #91).** Job `linux-hal`: `pytest tests_linux` 90 passed (gpio-sim, `i2c-stub`,
+  `vivid`) và `neuroedge verify --targets sim,linux` Passed, replay corpus `sensor-pack` và `vision` trên `linux/linux-rpi5`. Lần chạy đầu bắt được lỗi V4L2: `sequence` đọc
+  sau `VIDIOC_QBUF` luôn là 0 (`6bbfb43`). Kiểm: CI run 37153005998; `neuroedge verify --targets sim,linux`. (FR-HAL-01, FR-CI-05)
 
 - **I6 · TSK-I6-06 — bề mặt công khai: API Python và CLI (Q-63, Q-64).** `neuroedge.__all__` đủ để dựng HAL, nạp gate,
   `dispatch`, `serve_mcp` và test agent bằng `SimSession`; mẫu `neuroedge new` chỉ import tên công khai. Hợp đồng CLI và
@@ -1296,9 +1300,10 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
 - ❌ **MCP qua mạng mới thử trên loopback.** Mặc định vẫn stdio; `mcp serve --http` (TSK-P2-04) chạy Streamable HTTP qua mTLS và token OAuth 2.1,
   kiểm bằng CA tạm trong một tiến trình (`tests/test_mcp_http.py`) — chưa một lần nào giữa hai máy thật. Không thu hồi tức thì (token hết hạn, `--jwks` đọc một lần),
   không kiểm CRL/OCSP; kết nối bền tới MCP server ngoài chưa có (`TODOS.md` #25).
-- ❌ **Nguyên thủy mở rộng chưa chạy trên kernel thật.** `digital.in`, I2C, `analog.in`, PWM, `motion.*`, `vision.in` có test trên `sim` và trên `linux` với
-  thiết bị giả; phần `tests_linux/` của chúng (gpio-sim, `i2c-stub`, `vivid`) viết cho job `linux-hal` và **chưa chạy ở đâu**, và `esp32s3` chưa có nguyên thủy mở rộng nào
-  (TSK-I3a-02 → I3a-04, TSK-W1-04). Tương đương suy luận của mô hình thị giác giữa target (RFC-0012 §3f mệnh đề 2) chưa kiểm.
+- ❌ **Nguyên thủy mở rộng chạy trên kernel ảo trong CI, chưa trên phần cứng thật.** `digital.in` (gpio-sim), I2C và `analog.in` (`i2c-stub`), `vision.in` (`vivid`) và dây `enable` của PWM
+  và `motion.*` (gpio-sim) xanh ở job `linux-hal` (CI run 37153005998); kênh PWM là cây sysfs giả, ADC là `i2c-stub`, camera là `vivid`: motor, servo, PWM và camera thật cần nightly Pi 5 (TSK-I2-01).
+  `verify` chưa phát lại agent `fan-pwm` và `rover` (không có corpus vết ghi); `esp32s3` chưa có nguyên thủy mở rộng nào (TSK-I3a-02 → I3a-04, TSK-W1-04). Tương đương
+  suy luận của mô hình thị giác giữa target (RFC-0012 §3f mệnh đề 2) chưa kiểm.
 - ❌ **Chưa phát hành ra ngoài.** Kho đã công khai từ 2026-09-25 (TSK-I6-01, Q-45), nhưng tag trước I6 là nội bộ;
   PyPI mở ở I6 (Q-39, TSK-S3-14, `docs/release.md`).
 - ❌ **Chưa có CEL.** `allow_when` chỉ nhận dạng mapping toán tử (TSK-S2-06 hoãn, `TODOS.md` #42).
