@@ -32,6 +32,12 @@ bản gói.
 
 #### Đã thêm
 
+- **I2a · TSK-W1-02 — tiêu chí `numeric` và `NETR` v2 (RFC-0009).** Gate khoá được ngưỡng số: `unit`, `range`,
+  `max_age_ms` bắt buộc; khoảng `gt`/`gte`/`lt`/`lte`, kế thừa chỉ thu hẹp. Tuổi số đọc tính từ mốc đọc của HAL, vết ghi mang
+  `read_offset_ms`/`eval_offset_ms`/`age_ms`, replay tính lại; thiếu, cũ, NaN, ngoài thang, giá trị `commanded` ⇒ BLOCK, kể cả
+  dưới `fail: open`. Lý do mới `value_out_of_range`. Bố cục `NETR` v2 (header 80 byte, bảng số 48 byte, nhãn gate — `TODOS.md`
+  #30, #36 đóng); walker C đổi cùng PR. Kiểm: `pytest tests/test_numeric_*.py tests/test_c_walker.py`. (FR-GATE-03)
+
 - **I1 · TSK-I1-04 — NeuroEdge Studio: `neuroedge studio`, mọi năng lực trong một trang (Q-51).** Bảy màn song ngữ
   trên 127.0.0.1: phiên trực tiếp (gõ, `--mic`), gate + what-if, vết ghi + replay, verify, ESP32-S3 (LVGL, QEMU, OTA), MCP,
   cấu hình. Hợp đồng `docs/spec/studio.md`. Kiểm: `pytest tests/test_studio_*.py`; kịch bản `demo/i1-studio/`. (FR-TGT-06)

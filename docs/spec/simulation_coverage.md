@@ -226,8 +226,8 @@ biết nó không còn gì để nói.
 (đầu vào của phán quyết, như host), `gate_evaluation_result` với đúng khoá của host
 (`GateResult.to_event_data()`). Hai chỗ chưa như host, đều đọc lại được đúng khi replay: giá trị ngoài
 miền, và độ tin cậy NaN, ghi là `null` (thiết bị chỉ biết "không đọc được"). Nhãn gate
-(`light_on@1.0.0`) và chữ `on_block` (`to`, `message`, `fallback_action`) không có trong NETR v1 nên đi
-kèm firmware, sinh từ cùng gate đã phân giải (component `ne_agent` của `neuroedge build --target esp32s3`,
+(`light_on@1.0.0`) và chữ `on_block` (`to`, `message`, `fallback_action`) nay có trong `NETR` v2 (`ne_gate_name`…), nhưng bảng vẫn đi
+kèm firmware cho tới khi `ne_trace` đọc từ cây, sinh từ cùng gate đã phân giải (component `ne_agent` của `neuroedge build --target esp32s3`,
 TSK-I3-01; `scripts/gen_firmware_vectors.py`). Phiên self-test là các phép kiểm của agent đã link, mỗi phép
 kiểm một lần đánh giá gate, cùng dữ kiện và phán quyết engine host đã tính lúc build; không có lệnh chân; lệnh chân chỉ có trong phiên
 replay dưới đây, và chưa có `actuator_aborted`: chưa có HAL firmware (TSK-S4-01).

@@ -131,8 +131,9 @@ kịch bản demo: `demo/i1-studio/`.
 **Giới hạn**
 
 - `gate publish` dừng ở mã băm, **chưa ký số** (ký cần kho gate có khoá — sau này).
-- Gate chưa so trực tiếp được một con số với ngưỡng (`pressure < 8 bar`). Cách làm hôm nay: agent đổi số
-  đọc thành một mức (`low`/`normal`/`high`/`critical`) rồi gate so mức đó (§4.2) — `TODOS.md` #30.
+- Gate đã so được số với ngưỡng (`pressure: { lt: 8 }`, tiêu chí `numeric` — RFC-0009), nhưng chưa có kênh
+  phần cứng nào cấp số đọc có đơn vị cho nó: `sensor.read` không khai đơn vị nên không nối được, `analog.in`
+  đến ở TSK-I2a-04. Tới lúc đó vẫn đổi số đọc thành một mức bằng `bands` (§4.2).
 - Chưa có cú pháp CEL cho `allow_when`; chỉ có dạng ánh xạ toán tử (`TODOS.md` #42).
 
 ### 4.2 Tạo và chạy một agent

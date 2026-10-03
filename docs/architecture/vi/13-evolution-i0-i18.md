@@ -185,7 +185,7 @@ Những chỗ kiến trúc hôm nay đã cố ý để mở, để các chặng 
 | Backend registry | `GateRegistry` (`gate_resolver.py`) — docstring ghi rõ sẽ thay bằng tra cứu OCI | Gate Registry (I10) |
 | Sự kiện vết ghi | `type` là chuỗi tự do trong `trace.v1`; `metadata` nhận trường thêm | sự kiện mới, vết ghi nhiều node, mà không cần `trace.v2` |
 | Lớp cấu hình firmware | `SDKCONFIG_DEFAULTS` nhiều lớp | bật tính năng theo bo mạch mà không rẽ nhánh mã |
-| Cây trên thiết bị | `NETR` có `layout_version` | bố cục v2 đã ghim ở RFC-0009 §3d (bảng `numeric`, nhãn gate — `TODOS.md` #36); walker v1 từ chối v2 thay vì đọc sai |
+| Cây trên thiết bị | `NETR` có `layout_version` | bố cục v2 (RFC-0009 §3d: bảng `numeric`, nhãn gate) đã hiện thực ở TSK-W1-02; walker từ chối bố cục khác thay vì đọc sai |
 
 ## 5. Nợ kiến trúc đã biết
 

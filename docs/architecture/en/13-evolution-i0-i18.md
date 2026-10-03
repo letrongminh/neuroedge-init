@@ -186,7 +186,7 @@ foundation up:
 | Backend registry | `GateRegistry` (`gate_resolver.py`) — the docstring says plainly it will be replaced by OCI lookup | the Gate Registry (I10) |
 | Trace events | `type` is a free string in `trace.v1`; `metadata` accepts extra fields | new events, multi-node traces, with no need for `trace.v2` |
 | Firmware config layers | layered `SDKCONFIG_DEFAULTS` | enabling a feature per board without branching code |
-| The tree on the device | `NETR` has `layout_version` | layout v2 pinned in RFC-0009 §3d (`numeric` table, gate labels — `TODOS.md` #36); the v1 walker refuses v2 instead of misreading it |
+| The tree on the device | `NETR` has `layout_version` | layout v2 (RFC-0009 §3d: `numeric` table, gate labels) implemented in TSK-W1-02; the walker refuses any other layout instead of misreading it |
 
 ## 5. Known architecture debt
 

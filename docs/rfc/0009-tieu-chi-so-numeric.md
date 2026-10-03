@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-GATE-03, FR-GATE-06, FR-ACE-01, FR-HAL-01 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-09-30 |
-| **Trạng thái** | ✅ Đã chấp thuận (2026-10-01) — kỹ thuật trưởng ký trên PR #76; sửa theo review 2026-10-01 (§9, Q-62); hiện thực trong PR thứ hai |
+| **Trạng thái** | ✅ Đã chấp thuận (2026-10-01) — kỹ thuật trưởng ký trên PR #76; sửa theo review 2026-10-01 (§9, Q-62) · ✅ Đã hiện thực (TSK-W1-02, 2026-10-03); nối kênh `analog.in` (TSK-I2a-04) và `state()` của PWM (RFC-0010) làm cùng các nguyên thủy đó |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (chạm `gate.v1`, ngữ nghĩa phân giải, `NETR`) |
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/*.json`, sửa ngữ nghĩa phân giải gate
@@ -242,26 +242,26 @@ Firmware đã nạp cây v1 phải được build lại cùng cây v2; theo RFC-
 
 ## 7. Bằng chứng kiểm chứng
 
-- [ ] Ví dụ hợp lệ trong `fixtures/gates/valid/`: gate `numeric` đủ `unit`/`range`/`max_age_ms`, gate con thu hẹp cận dưới/trên/biên mở, gate độ tin cậy `range: { min: 0, max: 1 }`
-- [ ] Phản chứng trong `fixtures/gates/invalid/` + `expected_errors.yaml`: thiếu `unit`, thiếu `range`, thiếu `max_age_ms`, `max_age_ms` ≤ 0, `range` có `min ≥ max` hoặc không hữu hạn, ngưỡng không hữu hạn, ngưỡng ngoài `range`, khoảng rỗng, `eq`, `confidence_gte` trên `numeric`, trường `confidence`, `levels`/`options` đi kèm `numeric`, tiêu chí `numeric` nằm trong `on_block.confirms` (`GateSchemaError`, `NE2002`); kế thừa: nới cận, bỏ cận cha khi ghi đè, đổi `unit`, đổi `range`, đổi `max_age_ms` (`GateInheritanceError`, `NE2003`)
-- [ ] Ràng buộc kênh HAL: `neuroedge build` kiểm tra khớp `unit` và `[min, max]` của kênh HAL nằm trong `range` của tiêu chí `numeric`; phản chứng lệch `unit` hoặc `[min, max]` vượt `range` bị từ chối với `BoardCapabilityError` (`NE3001`); test tiêu chí nối `digital.out(...).state()` nhận `source = commanded` ⇒ BLOCK `criterion_unavailable`, chỉ cho qua khi `source = measured`
-- [ ] Engine: không có số đọc ⇒ BLOCK `criterion_unavailable`; `age_ms < 0` (mốc HAL đọc sau thời điểm lượng giá) ⇒ BLOCK `criterion_unavailable`; tuổi > `max_age_ms` ⇒ BLOCK `criterion_unavailable` (ca biên tuổi đúng bằng `max_age_ms` cho qua); NaN, ±inf, ngoài `range` ⇒ BLOCK `value_out_of_range`; thứ tự kiểm theo §3c
-- [ ] Replay: vết ghi mang cả mốc HAL đọc và `age_ms`; `replay` tính lại tuổi và so khớp; thị giác lượng giá tuổi của cửa sổ theo khung cũ nhất
-- [ ] Walker C khớp engine host trên mọi gate (mở rộng `python/tests/test_c_walker.py`), gồm test C cho mọi biên: đóng/mở (`gt`, `gte`, `lt`, `lte`), NaN, ±inf, đúng biên `range` (`min`, `max`), `age_ms = max_age_ms`, `age_ms = max_age_ms + 1`, `age_ms < 0`; kiểm tra ABI fact `f64 value` + `i64 age_ms`; kiểm tra đột biến (đảo `<`/`<=`, bỏ kiểm NaN, bỏ kiểm `range`, bỏ kiểm tuổi); kiểm tra stack walker C ≤ 512 byte; kiểm tra ngân sách flash bảng numeric (48 byte × tối đa 32 mục = 1.536 byte)
-- [ ] Walker v1 từ chối cây v2 (`NE_ERR_VERSION`); `test_ui_assets.py` giữ `ne_reason` và `firmware.REASONS` khớp nhau sau khi thêm `value_out_of_range`
-- [ ] `neuroedge gate lint` và `neuroedge verify` vẫn xanh; `scripts/check_digests.py` không đổi digest gate đã khoá
+- [x] Ví dụ hợp lệ trong `fixtures/gates/valid/`: gate `numeric` đủ `unit`/`range`/`max_age_ms`, gate con thu hẹp cận dưới/trên/biên mở, gate độ tin cậy `range: { min: 0, max: 1 }`
+- [x] Phản chứng trong `fixtures/gates/invalid/` + `expected_errors.yaml`: thiếu `unit`, thiếu `range`, thiếu `max_age_ms`, `max_age_ms` ≤ 0, `range` có `min ≥ max` hoặc không hữu hạn, ngưỡng không hữu hạn, ngưỡng ngoài `range`, khoảng rỗng, `eq`, `confidence_gte` trên `numeric`, trường `confidence`, `levels`/`options` đi kèm `numeric`, tiêu chí `numeric` nằm trong `on_block.confirms` (`GateSchemaError`, `NE2002`); kế thừa: nới cận, bỏ cận cha khi ghi đè, đổi `unit`, đổi `range`, đổi `max_age_ms` (`GateInheritanceError`, `NE2003`)
+- [ ] *(cùng TSK-I2a-04 và RFC-0010; phần `sensor.read` ⇒ `NE3001` và `commanded` ⇒ BLOCK đã có)* Ràng buộc kênh HAL: `neuroedge build` kiểm tra khớp `unit` và `[min, max]` của kênh HAL nằm trong `range` của tiêu chí `numeric`; phản chứng lệch `unit` hoặc `[min, max]` vượt `range` bị từ chối với `BoardCapabilityError` (`NE3001`); test tiêu chí nối `digital.out(...).state()` nhận `source = commanded` ⇒ BLOCK `criterion_unavailable`, chỉ cho qua khi `source = measured`
+- [x] Engine: không có số đọc ⇒ BLOCK `criterion_unavailable`; `age_ms < 0` (mốc HAL đọc sau thời điểm lượng giá) ⇒ BLOCK `criterion_unavailable`; tuổi > `max_age_ms` ⇒ BLOCK `criterion_unavailable` (ca biên tuổi đúng bằng `max_age_ms` cho qua); NaN, ±inf, ngoài `range` ⇒ BLOCK `value_out_of_range`; thứ tự kiểm theo §3c
+- [x] Replay: vết ghi mang cả mốc HAL đọc và `age_ms`; `replay` tính lại tuổi và so khớp; thị giác lượng giá tuổi của cửa sổ theo khung cũ nhất
+- [x] Walker C khớp engine host trên mọi gate (mở rộng `python/tests/test_c_walker.py`), gồm test C cho mọi biên: đóng/mở (`gt`, `gte`, `lt`, `lte`), NaN, ±inf, đúng biên `range` (`min`, `max`), `age_ms = max_age_ms`, `age_ms = max_age_ms + 1`, `age_ms < 0`; kiểm tra ABI fact `f64 value` + `i64 age_ms`; kiểm tra đột biến (đảo `<`/`<=`, bỏ kiểm NaN, bỏ kiểm `range`, bỏ kiểm tuổi); kiểm tra stack walker C ≤ 512 byte; kiểm tra ngân sách flash bảng numeric (48 byte × tối đa 32 mục = 1.536 byte)
+- [x] Walker v1 từ chối cây v2 (`NE_ERR_VERSION`); `test_ui_assets.py` giữ `ne_reason` và `firmware.REASONS` khớp nhau sau khi thêm `value_out_of_range`
+- [x] `neuroedge gate lint` và `neuroedge verify` vẫn xanh; `scripts/check_digests.py` không đổi digest gate đã khoá
 
 ## 8. Việc phải làm khi chấp thuận
 
-- [ ] Cập nhật `schemas/gate.v1.json` (enum `type`, `unit`, `range`, `max_age_ms` bắt buộc, nhánh `if/then`)
-- [ ] Cập nhật Phụ lục B.2/B.5 trong `neuroedge-proposal.md`; FR-GATE-03 ở `neuroedge-prd.md`; ghi chấp thuận vào Q-57 (`neuroedge-prd.md` §15)
-- [ ] Cập nhật `neuroedge-roadmap.md` (TSK-W1-02) và đóng `TODOS.md` #30
-- [ ] `engine/constraints.py`, `engine/gate_resolver.py`, `engine/verdict.py` (`value_out_of_range`), `engine/binary_tree.py`, `engine/firmware.py` (`REASONS`), walker C (`ne_walker.h`), `gate explain`
-- [ ] Cập nhật `neuroedge gate lint` từ chối tiêu chí `numeric` trong `on_block.confirms` (`GateSchemaError`, `NE2002`)
-- [ ] Cập nhật `neuroedge build` kiểm tra ràng buộc kênh HAL với tiêu chí `numeric` (`unit`, `range`, `source = measured`) (`BoardCapabilityError`, `NE3001`)
-- [ ] Ghi cả mốc HAL đọc lẫn `age_ms` vào vết ghi; cập nhật `replay` tính lại và so sánh; xử lý `age_ms < 0` ⇒ BLOCK `criterion_unavailable`; cập nhật `docs/spec/simulation_coverage.md` §4 và bảng lý do ở `docs/spec/ui.md` (nhãn trong `ne_ui_strings.c`)
-- [ ] Một PR duy nhất nâng `layout_version` lên 2 do TSK-W1-02 chủ trì gồm bảng `numeric` và các trường `TODOS.md` #36 (RFC-0011 không thêm trường vào `NETR`); ABI walker C nhận `f64 value` + `i64 age_ms`, kiểm tra stack ≤ 512 byte và ngân sách flash bảng numeric 48 byte × 32 (§3d)
-- [ ] Thêm fixture và test; cập nhật `docs/rfc/README.md` và `CHANGELOG.md`
+- [x] Cập nhật `schemas/gate.v1.json` (enum `type`, `unit`, `range`, `max_age_ms` bắt buộc, nhánh `if/then`)
+- [x] Cập nhật Phụ lục B.2/B.5 trong `neuroedge-proposal.md`; FR-GATE-03 ở `neuroedge-prd.md`; ghi chấp thuận vào Q-57 (`neuroedge-prd.md` §15)
+- [x] Cập nhật `neuroedge-roadmap.md` (TSK-W1-02) và đóng `TODOS.md` #30
+- [x] `engine/constraints.py`, `engine/gate_resolver.py`, `engine/verdict.py` (`value_out_of_range`), `engine/binary_tree.py`, `engine/firmware.py` (`REASONS`), walker C (`ne_walker.h`), `gate explain`
+- [x] Cập nhật `neuroedge gate lint` từ chối tiêu chí `numeric` trong `on_block.confirms` (`GateSchemaError`, `NE2002`)
+- [ ] *(cùng TSK-I2a-04 và RFC-0010)* Cập nhật `neuroedge build` kiểm tra ràng buộc kênh HAL với tiêu chí `numeric` (`unit`, `range`, `source = measured`) (`BoardCapabilityError`, `NE3001`)
+- [x] Ghi cả mốc HAL đọc lẫn `age_ms` vào vết ghi; cập nhật `replay` tính lại và so sánh; xử lý `age_ms < 0` ⇒ BLOCK `criterion_unavailable`; cập nhật `docs/spec/simulation_coverage.md` §4 và bảng lý do ở `docs/spec/ui.md` (nhãn trong `ne_ui_strings.c`)
+- [x] Một PR duy nhất nâng `layout_version` lên 2 do TSK-W1-02 chủ trì gồm bảng `numeric` và các trường `TODOS.md` #36 (RFC-0011 không thêm trường vào `NETR`); ABI walker C nhận `f64 value` + `i64 age_ms`, kiểm tra stack ≤ 512 byte và ngân sách flash bảng numeric 48 byte × 32 (§3d)
+- [x] Thêm fixture và test; cập nhật `docs/rfc/README.md` và `CHANGELOG.md`
 
 ## 9. Quyết định cho các câu hỏi mở (Q-57, 2026-09-30; Q-62, 2026-10-01)
 
