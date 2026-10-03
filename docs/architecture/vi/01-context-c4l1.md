@@ -39,7 +39,7 @@ và build từ chối mọi trường trông giống khoá (`models/providers/co
 | **Jev trên OpenRouter** (System 1) | Quyết một số tiêu chí gate từ lời người nói | `POST {api_base}/systemone` (System One API), HTTPS bắt buộc trừ loopback | `models/providers/systemone_api.py` | `done` |
 | **Nhà cung cấp giọng nói** | STT, TTS | `POST {base_url}/audio/transcriptions` và `/audio/speech` chuẩn OpenAI | `perception/providers/openai_audio.py` | `done` |
 | **Máy chủ STT cục bộ** | STT dự phòng khi STT chính hỏng | Như trên, thường `http://localhost` | `[stt.fallback]` | `done` |
-| **Client MCP** | Gọi action của agent như công cụ | JSON-RPC qua **stdio** (không qua mạng — NFR-SEC-09) | `mcp_server.py` | `done` |
+| **Client MCP** | Gọi action của agent như công cụ | JSON-RPC qua **stdio**; qua mạng chỉ khi bật `--http` (mTLS + token OAuth 2.1, mặc định tắt — NFR-SEC-09, `mcp_http.py`) | `mcp_server.py` | `done` |
 | **MCP server bên ngoài** | Nguồn thông tin cho System 2 (tin tức, tra cứu) | stdio; chỉ công cụ trong danh sách cho phép | `mcp_host.py` | `done` |
 | **ESP-IDF v5.4 và Espressif QEMU** | Biên dịch firmware, chạy chip ảo | Project ESP-IDF sinh bởi `build`; UART đọc qua tệp hoặc `tcp://` | `engine/firmware.py`, `testing/uart.py` | `done` |
 | **Máy chủ ảnh OTA** | Phục vụ một ảnh app đã ký | HTTP(S) GET bất kỳ máy chủ tĩnh nào | `components/ne_ota/` | `partial` — trên QEMU |
@@ -91,7 +91,7 @@ Bốn luật định ranh giới, mỗi luật có test ở `docs/spec/threat_mo
    kênh `local_grammar` (gõ hoặc nói "có") và `ui` (nút trên trang cùng nguồn gốc 127.0.0.1) được
    trả lời (Q-26). System 2 và client MCP không có cách nào xác nhận thay.
 
-Ngoài phạm vi, nói rõ: MCP qua mạng (chỉ stdio ở v1.0), kẻ tấn công trong cùng tiến trình, và an
+Ngoài phạm vi, nói rõ: kẻ tấn công trong cùng tiến trình, và an
 toàn chức năng được chứng nhận (`docs/spec/threat_model.md` §3, §3b).
 
 ## 5. Dữ liệu rời khỏi máy
