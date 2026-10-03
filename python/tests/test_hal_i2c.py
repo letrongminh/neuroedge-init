@@ -820,3 +820,33 @@ def test_an_action_may_require_only_i2c_devices_the_manifest_declares(tmp_path):
 def test_an_unknown_extension_in_requires_is_still_refused(tmp_path):
     with pytest.raises(AgentManifestError, match="not HAL primitives"):
         _manifest(tmp_path, '"i2d" = {}')
+
+
+def test_the_i2c_api_has_no_data_write_anywhere():
+    """
+    RFC-0007 §3b: no data-write path exists. An agent gets `i2c.read` and nothing else; the
+    transports only read (the register pointer is the one write, inside a read); the HALs'
+    `set_i2c` / `script_i2c` feed a scenario or a replay and never reach a bus.
+    """
+    import inspect
+
+    from neuroedge.hal import i2c, i2c_bus
+    from neuroedge.hal.linux import LinuxHAL
+    from neuroedge.hal.sim import SimHAL
+
+    def public(obj):
+        return {name for name, _ in inspect.getmembers(obj, callable) if not name.startswith("_")}
+
+    assert {n for n in public(i2c) if n.islower()} == {"read"}
+    for cls in (i2c_bus.I2CReader, i2c_bus.LinuxI2CBus):
+        assert not [n for n in public(cls) if "write" in n], cls.__name__
+    for hal in (SimHAL, LinuxHAL):
+        assert {n for n in dir(hal) if n.startswith(("i2c", "set_i2c", "script_i2c"))} <= {
+            "i2c_read",
+            "i2c_scan",
+            "set_i2c",
+            "script_i2c",
+        }, hal.__name__
+    source = inspect.getsource(i2c_bus.LinuxI2CBus)
+    assert "I2C_SMBUS_READ" in source and "I2C_SMBUS_WRITE" not in source
+    assert "I2C_RDWR" not in source  # a raw message list could carry a data write
