@@ -1,6 +1,6 @@
 # Bề mặt công khai — API Python (`import neuroedge`) và CLI (`neuroedge`)
 
-**Trạng thái:** chuẩn tắc (TSK-I6-06, Q-63); quy tắc ngừng hỗ trợ ở §5 và cách đọc `0.x` ở §3 chốt ở Q-64. PRD §10.3 hứa SemVer cho gói `neuroedge` ("thay đổi bề mặt API công khai hoặc CLI")
+**Trạng thái:** chuẩn tắc (TSK-I6-06, Q-63); quy tắc ngừng hỗ trợ (§5), cách đọc `0.x` (§3), `SimSession` công khai (§2.1) và hợp đồng CLI (§6) chốt ở Q-64. PRD §10.3 hứa SemVer cho gói `neuroedge` ("thay đổi bề mặt API công khai hoặc CLI")
 nhưng chưa nói cái gì là công khai; tài liệu này nói, cho API Python (§1–§4) và cho CLI (§6).
 **Mã nguồn:** `python/neuroedge/__init__.py` (`__all__`) · `python/neuroedge/sim/serve.py` (`serve_mcp`) · `python/neuroedge/cli/main.py` (cây lệnh).
 **Test ghim:** `python/tests/test_public_api.py` (API Python) · `python/tests/test_cli_contract.py` (CLI).

@@ -32,9 +32,9 @@ bản gói.
 
 #### Đã thêm
 
-- **I6 · TSK-I6-06 — bề mặt Python công khai (Q-63).** `neuroedge.__all__` đủ để dựng HAL, nạp gate, gọi `dispatch`;
-  `neuroedge.serve_mcp` chạy cùng vòng phục vụ với `mcp serve`; `ToolCall` sai nguồn ném `ToolCallError` (NE1004, vẫn là
-  `ValueError`). Đặc tả `docs/spec/python_api.md`. Quy tắc ngừng hỗ trợ: Q-64. Kiểm: `pytest tests/test_public_api.py`. (FR-DX-02, FR-GOV-03)
+- **I6 · TSK-I6-06 — bề mặt công khai: API Python và CLI (Q-63, Q-64).** `neuroedge.__all__` đủ để dựng HAL, nạp gate,
+  `dispatch`, `serve_mcp` và test agent bằng `SimSession`; mẫu `neuroedge new` chỉ import tên công khai. Hợp đồng CLI và
+  quy tắc ngừng hỗ trợ ở `docs/spec/python_api.md`. Kiểm: `pytest tests/test_public_api.py tests/test_cli_contract.py`. (FR-DX-02)
 
 - **I2a · TSK-N3-03 — spike ADC: `analog.in` trên `linux` kiểm được trong CI, không cần bo mạch.** Job `adc-spike` gắn
   `ads7828` và `ina219` lên `i2c-stub` và đọc lại đúng giá trị (1249 mV, 12000 mV) qua hwmon; runner không có IIO.
