@@ -107,23 +107,33 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-10-01 │
+│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-10-03 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. VỪA HOÀN THÀNH — sáu RFC chấp thuận, Q-58 → Q-62                                    │
-│    • RFC-0007, RFC-0009 → RFC-0013 chấp thuận 2026-10-01 (PR #75 → #80, Q-62)          │
-│    • NETR v2 ghim byte ở RFC-0009 §3d; lệnh về phía an toàn không bao giờ bị chặn      │
-│    • Bo camera: M5Stack CoreS3 (Q-61); MCP qua mạng + Tool Profile vào I6 (Q-58)       │
-│    • Giữ PolyForm NC qua v1.0, mở sau (#51); một người + AI agent (Q-60)               │
+│ 0. MỤC TIÊU — hoàn thành mọi lớp nền tảng trên ba target bậc 1 (chốt 2026-10-03)       │
+│    Lớp nền tảng: hợp đồng, nguyên thủy HAL (5 lõi + 4 gói), phong bì, thoại, tích      │
+│    hợp (MCP qua mạng, API Python), tin cậy. NeuroBrain (I4a, I5a) là lớp ứng dụng:     │
+│    mục tiêu kế tiếp, xếp sau, không cắt (Q-55)                                         │
+│    • Chặng A — `sim` + `linux`, làm ngay. Xong khi đạt: I2a tiêu chí 1–9,              │
+│      N2.1–N2.3, I4 tiêu chí 2, I6 tiêu chí 7–10                                        │
+│    • Chặng B — `esp32s3` + phần cứng thật, mở khi bo về. Xong khi đạt: tiêu chí ra     │
+│      I3, I3a, I5; I2 tiêu chí 4; I4 tiêu chí 4; TSK-S6-03, S6-05, V1b-05               │
 │                                                                                        │
-│ 2. ĐANG THỰC HIỆN                                                                      │
+│ 1. VỪA HOÀN THÀNH — TSK-W1-02, Q-63                                                    │
+│    • TSK-W1-02: tiêu chí `numeric` + `NETR` v2, engine host khớp walker C (PR #86)     │
+│    • Q-63: ba khoảng hở nền tảng cho người tích hợp → TSK-I6-05/06/07 (PR #85)         │
+│                                                                                        │
+│ 2. ĐANG THỰC HIỆN — bước 1 của chặng A                                                 │
+│    • TSK-I6-06 — bề mặt Python công khai; merge trước các PR của I2a                   │
+│    • TSK-N3-03 — spike ADC trên runner CI (máy local không có `i2c-stub`)              │
+│    • TSK-N0-02 — sửa FR-HAL-01 và FR-CLI-10 trong PRD                                  │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
-│    1. Đặt 2 Box-3 + 1 RPi 5 + 2 M5Stack CoreS3 (Phụ lục B, Q-61) — về trước 11-01      │
-│    2. Làn host I2a: RFC-0007 (digital.in, I2C, analog.in), rồi RFC-0010 → 0013         │
-│    3. Song song: TSK-I6-05/06/07 (hợp đồng, API Python, RFC dữ kiện ngoài), TSK-P2-04  │
-│    4. Box-3 về: nối driver màn hình vào ne_ui (TSK-S4-01), đo trên silicon             │
-│    5. Wake-word có giấy phép (#49); Wi-Fi (#50); lock (#54); I1-02 trước đo TTFV       │
+│    1. Đặt 2 Box-3 + 1 RPi 5 + 2 M5Stack CoreS3 (Phụ lục B, Q-61) — mở chặng B          │
+│    2. Cảm biến + phong bì: TSK-I2a-02, I2a-03, N2-01→05, rồi I2a-04, I2a-06            │
+│    3. TSK-W1-01 (PWM), rồi TSK-I2a-05 (`motion.*` dựa trên phong bì, token thuê)       │
+│    4. Thị giác TSK-V1b-01→04, 06, 08 · thoại host TSK-S3-13, I4-01 (#49), I4-04        │
+│    5. TSK-P2-04 · TSK-I6-05 sau I2a (`board.v1` đóng băng khi đủ khoá) · I6-07         │
 │                                                                                        │
 │ 4. LƯU Ý — bất biến ở CHANGELOG.md §3.3; dưới đây chỉ điều chưa có ở đó                │
 │    • Chỉ c.do() điều khiển được chân: HAL chưa gắn ledger từ chối mọi lệnh             │
