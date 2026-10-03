@@ -47,8 +47,21 @@ if [ -z "$DEVICE" ] || [ ! -e "$DEVICE" ]; then
   exit 1
 fi
 
-# The test process reads frames as the runner user, not root.
-sudo chmod a+rw "$DEVICE"
+# The test process reads frames as the runner user, not root. udev applies its own rule to a
+# new node (0660, group video) a moment after it appears, which undoes a chmod made too early:
+# let udev finish, then open the node up and check it as this user, retrying until it holds.
+if command -v udevadm >/dev/null; then sudo udevadm settle --timeout=10 || true; fi
+for _ in $(seq 50); do
+  sudo chmod a+rw "$DEVICE"
+  [ -r "$DEVICE" ] && [ -w "$DEVICE" ] && break
+  sleep 0.1
+done
+if [ ! -r "$DEVICE" ] || [ ! -w "$DEVICE" ]; then
+  echo "::error::$DEVICE is not readable and writable by $(id -un) after chmod" >&2
+  ls -l "$DEVICE" >&2
+  exit 1
+fi
+ls -l "$DEVICE"
 
 echo "NEUROEDGE_LINUX_CAMERA=$DEVICE"
 if [ -n "${GITHUB_ENV:-}" ]; then

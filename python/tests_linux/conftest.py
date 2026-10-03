@@ -13,3 +13,19 @@ def envelope_state(tmp_path, monkeypatch):
     """
     monkeypatch.setenv("NEUROEDGE_LINUX_ENVELOPE_STATE", str(tmp_path / "envelope-state"))
     monkeypatch.setenv("NEUROEDGE_LINUX_ENVELOPE_INIT", "1")
+
+
+@pytest.fixture(autouse=True)
+def fresh_actions():
+    """
+    Many tests here copy an agent into their own tmp dir, so the same @action names come from a
+    new path each time; the action registry is per process. Isolate it per test, as
+    `tests/conftest.py::fresh_actions` does for the host suite.
+    """
+    from neuroedge.actions import spec
+
+    saved = dict(spec.REGISTRY)
+    spec.REGISTRY.clear()
+    yield
+    spec.REGISTRY.clear()
+    spec.REGISTRY.update(saved)

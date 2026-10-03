@@ -362,12 +362,15 @@ class I2CReader:
     def check_bus(self, bus: str, where: str) -> None:
         """Fail now if the bus cannot be used (declared, mapped, openable): no transaction."""
         self._bus(bus, where)
+        transport = self._transport(bus, where)
         try:
-            self._transport(bus, where).check()
+            transport.check()
         except OSError as exc:
+            node = getattr(transport, "path", None)
+            named = f" ({node})" if node else ""
             raise BoardCapabilityError(
                 where=where,
-                why=f"cannot open the device node of I2C bus {bus!r}: {_reason(exc)}",
+                why=f"cannot open the device node{named} of I2C bus {bus!r}: {_reason(exc)}",
                 how="check the node exists and the user may read and write it (group `i2c`)",
             ) from exc
 
