@@ -49,6 +49,7 @@ from ..hal.board import (
     PRIMITIVES,
     REFERENCE_BOARD,
     REFERENCE_BOARDS,
+    REQUIRABLE_EXTENSIONS,
     BoardProfile,
     load_board_by_id,
 )
@@ -135,11 +136,14 @@ def load_agent_manifest(path: str | Path) -> AgentManifest:
             why="[requires] is missing; the build cannot match the agent against a board",
             how='declare what the agent needs, e.g. "digital.out" = { pins = ["door_lock"] }',
         )
-    unknown = sorted(set(requires) - set(PRIMITIVES))
+    unknown = sorted(set(requires) - set(PRIMITIVES) - set(REQUIRABLE_EXTENSIONS))
     if unknown:
         raise AgentManifestError(
             where=f"{path} -> [requires]",
-            why=f"{unknown} are not HAL primitives; primitives are {list(PRIMITIVES)}",
+            why=(
+                f"{unknown} are not HAL primitives; primitives are "
+                f"{list(PRIMITIVES) + list(REQUIRABLE_EXTENSIONS)}"
+            ),
             how="use the dotted primitive names from FR-HAL-01",
         )
     targets = document.get("targets", {}).get("supported", [])
@@ -181,9 +185,16 @@ def _describe(board: BoardProfile) -> str:
             offered.append(f"digital.out:{list(board.pins)}")
         elif primitive == "sensor.read":
             offered.append(f"sensor.read:{list(board.sensors)}")
+        elif primitive == "i2c":
+            offered.append(f"i2c:{_i2c_devices(board)}")
         else:
             offered.append(primitive)
     return ", ".join(offered) or "nothing"
+
+
+def _i2c_devices(board: BoardProfile) -> list[str]:
+    """The `bus/device` names of the board's I2C allow-list."""
+    return [f"{bus['id']}/{device['name']}" for bus in board.i2c_buses for device in bus["devices"]]
 
 
 def _mismatch(manifest: AgentManifest, board: BoardProfile, need: str, fix: str) -> Exception:
@@ -247,6 +258,29 @@ def check_capabilities(manifest: AgentManifest, board: BoardProfile) -> list[Neu
                 if name not in offered:
                     problems.append(
                         _mismatch(manifest, board, f"{primitive}:{name}", f"add {name!r} to {key}")
+                    )
+        elif primitive == "i2c":
+            offered_devices = _i2c_devices(board)
+            wanted = need.get("devices", [])
+            if not isinstance(wanted, list) or not all(isinstance(n, str) for n in wanted):
+                problems.append(
+                    _mismatch(
+                        manifest,
+                        board,
+                        f"i2c devices = {wanted!r}",
+                        'write devices = ["i2c1/ina219"] (bus/device, as the board names them)',
+                    )
+                )
+                wanted = []
+            for name in wanted:
+                if name not in offered_devices:
+                    problems.append(
+                        _mismatch(
+                            manifest,
+                            board,
+                            f"i2c:{name}",
+                            "declare the device under [[capabilities.i2c.buses.devices]]",
+                        )
                     )
         elif primitive == "display":
             for axis in ("width", "height"):
@@ -322,7 +356,9 @@ def check_actions(manifest: AgentManifest, actions: Iterable[Any]) -> list[Neuro
     for spec in actions:
         for requirement in spec.requires:
             declared = manifest.requires.get(requirement.primitive)
-            key = {"digital.out": "pins", "sensor.read": "sensors"}.get(requirement.primitive)
+            key = {"digital.out": "pins", "sensor.read": "sensors", "i2c": "devices"}.get(
+                requirement.primitive
+            )
             missing = declared is None or (
                 key is not None
                 and requirement.name is not None
