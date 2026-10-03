@@ -155,9 +155,13 @@ pwm_resolution_missing.toml:
 
 # --- RFC-0011 — motion ---
 
+motion_channel_named_like_a_pin.toml:
+  where_contains: "capabilities.motion"
+  why_contains: "names ['door_lock'] are used more than once"
+
 motion_channel_name_repeated.toml:
   where_contains: "capabilities.motion"
-  why_contains: "channel names ['wheel_left'] are used more than once across motor and servo"
+  why_contains: "names ['wheel_left'] are used more than once"
 
 motion_channel_without_envelope.toml:
   where_contains: "capabilities.motion.envelope.gripper"

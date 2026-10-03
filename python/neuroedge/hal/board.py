@@ -543,13 +543,6 @@ def _check_motion(label: str, capabilities: Mapping[str, Any]) -> None:
     if motion is None:
         return
     where = "capabilities.motion"
-    if "signal_pins" in motion:
-        raise _refuse(
-            label,
-            f"{where}.signal_pins",
-            "motion channels are always actuators and cannot be signal pins",
-            "remove signal_pins; give every channel an envelope instead",
-        )
     names: list[str] = []
     for kind in ("motor", "servo"):
         for channel in motion.get(kind, ()):
@@ -573,20 +566,15 @@ def _check_motion(label: str, capabilities: Mapping[str, Any]) -> None:
                     f"target_max ({channel['target_max']})",
                     "declare the travel the servo has, target_min < target_max",
                 )
-            if kind == "motor" and (holds or "max_hold_ms" in channel):
-                raise _refuse(
-                    label,
-                    at,
-                    "holds_position and max_hold_ms belong to servo channels",
-                    "remove them from the motor record",
-                )
-    duplicated = sorted({name for name in names if names.count(name) > 1})
+    pins = set(capabilities.get("digital_out", {}).get("pins", ()))
+    duplicated = sorted({name for name in names if names.count(name) > 1} | (set(names) & pins))
     if duplicated:
         raise _refuse(
             label,
             where,
-            f"channel names {duplicated} are used more than once across motor and servo",
-            "a channel name addresses exactly one channel",
+            f"names {duplicated} are used more than once: across motor and servo channels, "
+            "or as a digital_out pin too",
+            "a name addresses exactly one pin or channel, so envelope(name) is unambiguous",
         )
     envelope = motion.get("envelope", {})
     stray = sorted(set(envelope) - set(names))
