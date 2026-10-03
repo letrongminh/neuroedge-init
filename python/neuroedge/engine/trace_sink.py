@@ -75,8 +75,13 @@ class EventLog:
     def session_id(self) -> str:
         return self.metadata["session_id"]
 
-    def emit(self, type: str, data: dict[str, Any]) -> None:
-        offset = max(0, int(self.clock() - self._t0))
+    def emit(self, type: str, data: dict[str, Any], *, offset_ms: int | None = None) -> None:
+        """
+        Append an event. `offset_ms` is for an event that states the instant it was judged at
+        (`vision_fact`: its `age_ms` is measured to its own offset); it is the caller's
+        `elapsed_ms()` taken just before, so offsets still never decrease.
+        """
+        offset = max(0, int(self.clock() - self._t0)) if offset_ms is None else offset_ms
         # No NaN / inf reaches a trace, the live page or a trace view (`json_safe`).
         self.events.append({"offset_ms": offset, "type": type, "data": json_safe(dict(data))})
 

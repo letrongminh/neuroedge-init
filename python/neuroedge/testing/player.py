@@ -25,6 +25,13 @@ the very gate it was recorded with, like the device check), `neuroedge replay`
 on a user's own trace *warns* (the gate may have been tightened on purpose) and
 keeps recomputing verdicts; a trace without the field replays exactly as before.
 
+A trace with vision evidence (TSK-V1b-08, RFC-0012 §3d) records, before each evaluation, one
+`vision_fact` event per vision fact: the labels and frame identities of the window. Replay
+**recomputes** those facts from the recorded labels (`perception.vision.reading_from_event`) —
+no model, no frame — and feeds the result to the engine in place of the recorded gate fact; an
+event that does not add up (a value its own labels do not give, a window not `min_frames` long,
+an age that is not what the read marks say) replays as unavailable and is warned about.
+
 What System 2 said (`tts_stream_start`) is not replayed and cannot be asserted
 on: it is not deterministic (L3). `ReplayResult.replies` says so.
 """
@@ -50,6 +57,14 @@ from ..errors import AgentManifestError, ReplayError
 from ..hal.board import load_board_by_id
 from ..hal.sim import reading_value
 from ..paths import fixtures_dir
+from ..perception.vision import EVENT_TYPE as VISION_EVENT
+from ..perception.vision import (
+    FactReading,
+    facts_for_tree,
+    reading_from_event,
+    rebased,
+    to_event,
+)
 from ..trace import load_trace, validate_trace
 from .recorder import DEFAULT_ANONYMIZE, anonymise
 
@@ -71,6 +86,8 @@ class RecordedStep:
     # found consistent; `mark_problems` says, per criterion, why a recorded reading was refused.
     marks: dict[str, tuple[int, int, int]] = field(default_factory=dict)
     mark_problems: dict[str, str] = field(default_factory=dict)
+    # TSK-V1b-08: the `vision_fact` events judged for this evaluation, as (offset_ms, data).
+    vision: tuple[tuple[int, dict[str, Any]], ...] = ()
 
     @property
     def gate_name(self) -> str:
@@ -129,9 +146,12 @@ def recorded_steps(trace: Mapping[str, Any]) -> list[RecordedStep]:
     gate: str | None = None
     begin_offset = 0
     raw_facts: Mapping[str, Any] | None = None
+    vision: list[tuple[int, dict[str, Any]]] = []
     for event in trace.get("events", []):
         kind, data = event.get("type"), event.get("data", {})
-        if kind == "action_requested":
+        if kind == VISION_EVENT:
+            vision.append((event.get("offset_ms", 0), dict(data)))
+        elif kind == "action_requested":
             request = data
         elif kind == "gate_evaluation_begin":
             gate, raw_facts = data.get("gate"), None
@@ -180,9 +200,10 @@ def recorded_steps(trace: Mapping[str, Any]) -> list[RecordedStep]:
                     arguments=dict((request or {}).get("arguments", {})),
                     marks=marks,
                     mark_problems=problems,
+                    vision=tuple(vision),
                 )
             )
-            request, gate, raw_facts = None, None, None
+            request, gate, raw_facts, vision = None, None, None, []
     return steps
 
 
@@ -288,6 +309,36 @@ def _fact_mark_warning(problem: FactMarkProblem) -> str:
     )
 
 
+@dataclass(frozen=True)
+class VisionProblem:
+    """A recorded `vision_fact` whose claims its own labels do not support (TSK-V1b-08)."""
+
+    offset_ms: int
+    fact: str
+    why: str
+
+
+def vision_problems(trace: Mapping[str, Any]) -> list[VisionProblem]:
+    """Every way a recorded `vision_fact` disagrees with the labels and frames it records."""
+    found: list[VisionProblem] = []
+    for event in trace.get("events", []):
+        if event.get("type") != VISION_EVENT:
+            continue
+        reading = reading_from_event(event.get("offset_ms", 0), event.get("data", {}))
+        found += [
+            VisionProblem(event.get("offset_ms", 0), reading.spec.name, why)
+            for why in reading.problems
+        ]
+    return found
+
+
+def _vision_warning(problem: VisionProblem) -> str:
+    return (
+        f"vision fact {problem.fact!r} at {problem.offset_ms} ms: {problem.why}; the trace was "
+        "altered or is incomplete, so replay treats the fact as unavailable"
+    )
+
+
 class _Unreachable:
     """The fact source of a degraded step: answers every criterion the same way."""
 
@@ -343,6 +394,36 @@ class _ReplayEngine(ActionContractEngine):
         age = mark[2]
         return eval_offset_ms - age, eval_offset_ms, age
 
+    def _vision_facts(
+        self, key: str, step: RecordedStep, facts: dict[str, Fact]
+    ) -> dict[str, Fact]:
+        """
+        The vision facts of `step`, recomputed from the labels its `vision_fact` events recorded
+        and put in place of the recorded gate facts of the same criteria. No model is asked.
+        A fact the labels cannot support (or the gate may not use alone) is absent, so the gate
+        blocks it `criterion_unavailable`; the replayed trace carries the event again, on its
+        own timeline.
+        """
+        tree = self.tree(key)
+        if tree is None:
+            return facts
+        readings: dict[str, FactReading] = {}
+        for offset, data in step.vision:
+            reading = reading_from_event(offset, data)
+            if reading.spec.name != "?":
+                readings[reading.spec.name] = reading
+        recomputed, judged = facts_for_tree(readings, tree)
+        facts = {name: fact for name, fact in facts.items() if name not in judged}
+        for name, reading in judged.items():
+            now = self.events.elapsed_ms()
+            self.events.emit(VISION_EVENT, to_event(rebased(reading, now)), offset_ms=now)
+            fact = recomputed.get(name)
+            if fact is not None:
+                facts[name] = fact
+                if reading.age_ms is not None:
+                    self._marks[name] = (0, 0, reading.age_ms)
+        return facts
+
     async def evaluate(
         self, key, context=None, *, state=None, arguments=None, confirmed=False
     ) -> GateResult:
@@ -360,7 +441,9 @@ class _ReplayEngine(ActionContractEngine):
             elif step.degraded:
                 source = _Unreachable(_DEGRADED_AS[step.degraded])
         self.facts_source = source
-        self._marks = {} if step is None else step.marks
+        self._marks = {} if step is None else dict(step.marks)
+        if step is not None and step.vision:
+            facts = self._vision_facts(key, step, facts)
         return await super().evaluate(
             key, facts, state=state, arguments=arguments, confirmed=confirmed
         )
@@ -581,6 +664,17 @@ class TracePlayer:
                 {"gate": problem.gate, "criterion": problem.criterion, "why": problem.why},
             )
         warnings += [_fact_mark_warning(problem) for problem in problems]
+        if "vision_models" in self.trace["metadata"]:  # the models the recorded session used
+            events.metadata["vision_models"] = copy.deepcopy(
+                self.trace["metadata"]["vision_models"]
+            )
+        vision = vision_problems(self.trace)
+        for found in vision:
+            events.emit(
+                "vision_fact_problem",
+                {"offset_ms": found.offset_ms, "fact": found.fact, "why": found.why},
+            )
+        warnings += [_vision_warning(found) for found in vision]
         engine = _ReplayEngine(gates, steps, network=self.network, events=events)
         conversation = Conversation(engine=engine, hal=hal)
 

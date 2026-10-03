@@ -178,8 +178,9 @@ nào đi theo ô tương ứng ở §2. Cột "Vai trò khi replay" nói phần 
 | `analog.in` | `analog_in` | `{channel, value, unit, read_ms, age_ms, reason?}` | **Đầu vào** (RFC-0007 §3c) — replay cấp lại `value` đã ghi và tính lại `age_ms`; giá trị ngoài `[min, max]` của kênh là lỗi đọc (`reason`), không bị cắt. `age_ms < 0` ⇒ BLOCK `criterion_unavailable` |
 | `sensor.read` | `sensor_read` · `sensor_set` · `sensor_unavailable` | `{sensor, value, unit?, use?, non_finite?}` · `{sensor, value, non_finite?}` · `{sensor, reason}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI. `sensor_unavailable`: một lần tính dữ kiện gate không lấy được số đọc, hoặc một luật của cảm biến từ chối nó (§2), nên mọi dữ kiện của cảm biến đó là `null`; chỉ để đọc, replay dùng `gate_facts` |
 | `display` | `display_frame` | `{width, height, format, sha256, text?}` (`text` khi `format = "text"`) | **Đầu ra** — so digest khi golden có ghi, không chặn tương đương quyết định |
+| `vision.in` | `vision_fact` | `{fact, kind, label, zone, min_frames, value, values, unavailable?, age_ms, max_frame_age_ms, present_score_floor, model: {name, sha256}, frames: [{frame_seq, vision_ref: {sha256, size}, captured_ms, labels, rejected?}]}` — mỗi dữ kiện thị giác của một phán quyết, trước `gate_evaluation_begin`; chi tiết và lint ở [`vision.md`](vision.md) §5 | **Đầu vào nhận thức.** Replay **tính lại** dữ kiện từ nhãn đã ghi, không gọi mô hình và không cần khung hình; sự kiện không khớp nhãn của nó ⇒ dữ kiện chưa quyết ⇒ BLOCK `criterion_unavailable`. Không ảnh thô: `vision_ref` là danh tính |
 
-Chế độ ẩn danh (FR-TRC-07) băm `text`; `audio_in_segment` và `display_frame` vốn chỉ mang digest.
+Chế độ ẩn danh (FR-TRC-07) băm `text`; `audio_in_segment`, `display_frame` và `vision_fact` vốn chỉ mang digest hoặc nhãn, không mang ảnh.
 
 **Không có NaN hay vô cực trong JSON.** JSON không có các số đó (`NaN` trần làm `JSON.parse` của trình
 duyệt dừng, và trang `--ui` dừng theo). Số đọc không hữu hạn ghi thành chuỗi `"nan"`, `"inf"`, `"-inf"`
