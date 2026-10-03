@@ -1,0 +1,5 @@
+# RFC-0010 §3c: đúng biên của gate (duty 0.6, 5000 Hz, 10000 ms). HAL lượng tử hoá duty về 0
+# theo 10 bit: 0.6 → 614/1024 = 0.599609375, không bao giờ vượt duty đã được kiểm (§9.15).
+agent: fan-pwm
+board: sim-rpi5
+call:  { name: fan_run, arguments: { duty: 0.6, frequency_hz: 5000, duration_ms: 10000 }, source: system_two }

@@ -1,0 +1,5 @@
+# RFC-0010 §3c: inputSchema nói maximum 0.6; một client MCP xin 0.7 (trần cứng của bo mạch là
+# 0.8). Gate cưỡng chế: BLOCK argument_out_of_range, quạt không đổi.
+agent: fan-pwm
+board: sim-rpi5
+call:  { name: fan_run, arguments: { duty: 0.7, frequency_hz: 1000, duration_ms: 5000 }, source: mcp }

@@ -18,6 +18,10 @@ mirrors the reference board rather than exceeding it (CHANGELOG §3.3 #7).
 * `audio_out` — records `tts_stream_start`; the audio of a reply, when a TTS
   provider made one, plays on `speaker()`, a timeline written out as WAV
   (`hal/audio.py`).
+* `digital_out` also takes `operation = "pwm"` (RFC-0010): the channel's duty and frequency are
+  the HAL's commanded state, the enable line is up while the command runs, and `pin_state()` reads
+  back what was commanded — or, where the board declares `feedback`, what `set_feedback()` says the
+  hardware reports.
 * `sensor_read` — values scripted with `set_sensor()` (or a sequence with
   `script_sensor()`, which replay uses); records `sensor_read`. An unscripted
   sensor raises instead of inventing a reading.
@@ -63,6 +67,7 @@ from .audio_live import (
 from .board import BoardProfile, load_board_by_id
 from .envelope import Reservation, SafetyEnvelope
 from .i2c_bus import I2CReader, ReadFault, ScriptedI2C
+from .pwm import pwm_limits
 from .vision import Camera, CameraFactory, CameraUnavailable, Mode, modes_of, monotonic_ms
 
 AUDIO_ENV = "NEUROEDGE_AUDIO"
@@ -300,6 +305,7 @@ class SimHAL(HardwareAbstractionLayer):
         self._levels: dict[str, bool] = {}
         self._scripted: dict[str, deque[Any]] = {}
         self._analog: dict[str, Any] = {}
+        self._feedback: dict[str, tuple[float | None, float | None, str | None]] = {}
         self._i2c_script = ScriptedI2C()
         self._i2c = I2CReader(
             board,
@@ -398,36 +404,62 @@ class SimHAL(HardwareAbstractionLayer):
         signature: Any = "",
         called_from: str = "<unknown>",
         delay_ms: int = 0,
+        *,
+        frequency_hz: int | None = None,
+        duty: float | None = None,
     ) -> PendingCommand:
-        if operation not in ("pulse", "on", "off"):
+        if operation not in ("pulse", "on", "off", "pwm"):
             raise BoardCapabilityError(
                 where=f"{called_from} -> digital.out {pin!r}",
                 why=f"unknown operation {operation!r}",
-                how="use one of 'pulse', 'on', 'off'",
+                how="use one of 'pulse', 'on', 'off', 'pwm'",
             )
+        if operation == "pwm" and delay_ms:
+            raise BoardCapabilityError(
+                where=f"{called_from} -> digital.out {pin!r}",
+                why="a pwm command cannot be scheduled (after_ms): it starts when the gate allows it",
+                how="call pwm() without after_ms",
+            )
+        operation, duration_ms, applied = self._pwm_prepare(
+            pin, operation, duration_ms, frequency_hz, duty, called_from
+        )
         if delay_ms:
             return self._schedule(pin, operation, duration_ms, signature, called_from, delay_ms)
-        reservation = self._admit(pin, operation, duration_ms, signature, called_from)
-        if operation == "off" and self.envelope is not None:
-            self.envelope.ended(pin)
-        self.events.emit(
-            "actuator_command", {"pin": pin, "operation": operation, "duration_ms": duration_ms}
-        )
+        pwm = (int(frequency_hz), applied) if operation == "pwm" else None  # type: ignore[arg-type]
+        reservation = self._admit(pin, operation, duration_ms, signature, called_from, pwm=pwm)
+        data: dict[str, Any] = {"pin": pin, "operation": operation, "duration_ms": duration_ms}
+        if pwm is not None:
+            self._pwm_started(pin, pwm[0], pwm[1], duration_ms, reservation)
+            data.update(frequency_hz=pwm[0], duty=pwm[1])
+        if operation == "off":
+            self._pwm_stopped(pin)
+            if self.envelope is not None:
+                self.envelope.ended(pin)
+            if duty is not None and pin in self.board.pwm_pins:
+                data["cause"] = "duty_zero"  # a pwm command whose duty quantised to nothing
+        self.events.emit("actuator_command", data)
         return PendingCommand(
             pin,
             operation,
             duration_ms,
             self.events,
-            on_cancel=self._ending(reservation),
+            on_cancel=self._ending(reservation, pin),
             token=signature,
         )
 
-    def _ending(self, reservation: Reservation | None) -> Callable[[], None] | None:
+    def _ending(
+        self, reservation: Reservation | None, pin: str | None = None
+    ) -> Callable[[], None] | None:
         """What aborting a command does to its pin: it goes off now, and the envelope is told."""
         envelope = self.envelope
         if reservation is None or envelope is None:
             return None
-        return lambda: envelope.ended(reservation.name, reservation)
+
+        def abort() -> None:
+            self._pwm_stopped(reservation.name)
+            envelope.ended(reservation.name, reservation)
+
+        return abort
 
     def _schedule(
         self,
@@ -526,6 +558,57 @@ class SimHAL(HardwareAbstractionLayer):
             )
         self._scheduled = [c for c in self._scheduled if not c.delivered and not c.cancelled]
         return due
+
+    # -- state() read-back (RFC-0010 §3b) -------------------------------------------------
+    def set_feedback(
+        self,
+        pin: str,
+        *,
+        duty: float | None = None,
+        frequency_hz: float | None = None,
+        fail: str | None = None,
+    ) -> None:
+        """
+        What the simulated hardware reads back for a channel in `feedback.pins`, instead of the
+        commanded output — a drifting fan, a dead sensor. `fail` makes the read-back fail with
+        that reason (NE5001). `clear_feedback()` returns to the output the HAL commanded.
+        """
+        where = "SimHAL.set_feedback()"
+        self.board.require_pin(pin, called_from=where)
+        if pwm_limits(self.board, pin) is None:
+            raise BoardCapabilityError(
+                where=f"{where} {pin!r}",
+                why=f"{pin!r} is not a PWM channel",
+                how="name a pin of [capabilities.digital_out.pwm].pins",
+            )
+        if pin not in self.board.capabilities["digital_out"].get("feedback", {}).get("pins", ()):
+            raise BoardCapabilityError(
+                where=f"{where} {pin!r}",
+                why=f"board {self.board.id!r} declares no feedback for {pin!r}, so its state() is "
+                "what was commanded and there is no read-back to set",
+                how="list the pin in [capabilities.digital_out.feedback].pins of the board",
+            )
+        self._feedback[pin] = (duty, frequency_hz, fail)
+
+    def clear_feedback(self, pin: str) -> None:
+        self._feedback.pop(pin, None)
+
+    def _read_feedback(self, pin: str, limits: Any, where: str) -> dict[str, float | None]:
+        injected = self._feedback.get(pin)
+        if injected is not None:
+            duty, frequency, fail = injected
+            if fail is not None:
+                raise PerceptionUnavailableError(
+                    where=where,
+                    why=f"the simulated read-back of {pin!r} fails: {fail}",
+                    how="the criterion stays undecided; clear it with clear_feedback()",
+                )
+            return {"duty": duty, "frequency_hz": frequency}
+        run = self.commanded_pwm(pin)
+        return {
+            "duty": 0.0 if run is None else run[1],
+            "frequency_hz": None if run is None else float(run[0]),
+        }
 
     # -- sensor.read -------------------------------------------------------------
     def set_sensor(self, sensor: str, value: Any, unit: str | None = None) -> None:

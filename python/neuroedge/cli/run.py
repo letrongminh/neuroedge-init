@@ -44,6 +44,8 @@ Type a command the agent's grammar knows, e.g. "mở cửa phòng 101".
   :sensor <name> <v>  set a sensor value (what sensor.read returns)
   :analogs            show the simulated analog.in channels
   :analog <ch> <v>    set what an analog.in channel reads, in its unit
+  :feedback <pin> duty=<r> [frequency_hz=<n>] | fail <why> | clear
+                      set what a PWM channel's read-back reports (feedback.pins boards)
   :inputs             show the simulated digital input lines
   :input <pin> <v>    set an input line: true | 1 | high, or false | 0 | low (digital.in)
   :screen             show the last display frame
@@ -71,6 +73,9 @@ def pin_state(session: SimSession, pin: str) -> str:
     operation, duration_ms = commands[-1]
     if operation == "pulse":
         return f"PULSED {duration_ms / 1000:g}s"
+    running = getattr(session.hal, "commanded_pwm", lambda _: None)(pin)
+    if running is not None:  # a PWM channel that is on: its frequency and duty
+        return f"PWM {running[1] * 100:.1f}% @ {running[0]} Hz"
     return "HIGH" if operation == "on" else "LOW"
 
 
@@ -82,7 +87,7 @@ def pin_table(session: SimSession) -> Table:
     table.add_column("Commands", justify="right")
     for pin in session.pins:
         state = pin_state(session, pin)
-        style = "green" if state.startswith(("PULSED", "HIGH")) else "dim"
+        style = "green" if state.startswith(("PULSED", "HIGH", "PWM")) else "dim"
         table.add_row(pin, f"[{style}]{state}[/{style}]", str(len(session.hal.pin(pin).commands)))
     return table
 
@@ -203,6 +208,9 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
         for key, channel in sorted(session.analog_facts.items()):
             shown = escape(f"from analog.in {channel} ([sim.analog_facts])")
             table.add_row(key, f"[dim]{shown}[/dim]")
+        for key, (pin, quantity) in sorted(session.feedback_facts.items()):
+            shown = escape(f"from the {quantity} of PWM channel {pin} ([sim.feedback_facts])")
+            table.add_row(key, f"[dim]{shown}[/dim]")
         for key, line in sorted(session.digital_facts.items()):
             shown = escape(f"from input pin {line.pin} ([sim.digital_facts])")
             table.add_row(key, f"[dim]{shown}[/dim]")
@@ -254,6 +262,14 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
             console.print(f"[red]{escape(error.why)}[/red]")
             return
         console.print(f"  {escape(channel)} = {escape(value)}")
+    elif name == "feedback" and rest.split():
+        pin, *words = rest.split()
+        try:
+            session.set_feedback(pin, words)
+        except NeuroEdgeError as error:
+            console.print(f"[red]{escape(error.why)}[/red] — {escape(error.how)}")
+            return
+        console.print(f"  {escape(pin)} read-back: {escape(' '.join(words))}")
     elif name == "inputs":
         table = Table(title="Simulated input lines", title_justify="left")
         table.add_column("Pin", style="cyan")

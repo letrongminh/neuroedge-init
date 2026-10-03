@@ -1,0 +1,20 @@
+# Sample agent: a PWM fan on the reference rig (TSK-W1-01, RFC-0010).
+#
+# `fan` is a hardware PWM channel of `sim-rpi5` and `linux-rpi5` (not of `sim-default`:
+# an agent that needs PWM is built for a board that has it, `--board sim-rpi5`). It runs at a
+# frequency and duty the gate limits, for a time the gate and the board limit — `duration_ms`
+# is required, there is no PWM that runs forever. Its enable line (`fan_en`) is the HAL's:
+# it is raised for a gated command and dropped when it ends; no agent drives it.
+[agent]
+name    = "fan-pwm"
+version = "0.1.0"
+
+[requires]
+"digital.out" = { pins = ["fan"], pwm = ["fan"] }
+
+[gates]
+fan_run  = "gates/fan_run@1.0.0.yaml"
+fan_stop = "gates/fan_stop@1.0.0.yaml"
+
+[targets]
+supported = ["sim", "linux"]

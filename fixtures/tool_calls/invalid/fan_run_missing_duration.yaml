@@ -1,0 +1,4 @@
+# RFC-0010 §9.5: không có PWM chạy mãi — tool call thiếu duration_ms là REJECTED, không tới gate.
+agent: fan-pwm
+board: sim-rpi5
+call:  { name: fan_run, arguments: { duty: 0.4, frequency_hz: 1000 }, source: mcp }

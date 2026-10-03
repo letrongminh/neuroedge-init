@@ -1,0 +1,4 @@
+# RFC-0010 §9.5: duration_ms bị chặn ở gate (10000 ms) trước khi tới trần max_continuous_ms của bo mạch.
+agent: fan-pwm
+board: sim-rpi5
+call:  { name: fan_run, arguments: { duty: 0.4, frequency_hz: 1000, duration_ms: 20000 }, source: mcp }

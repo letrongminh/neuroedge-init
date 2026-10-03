@@ -1,6 +1,7 @@
 """Shared fixtures for the NeuroEdge test suite."""
 
 import os
+import shutil
 from pathlib import Path
 
 # CLI output is asserted as plain text. A developer shell with FORCE_COLOR set
@@ -15,6 +16,7 @@ import pytest
 import yaml
 
 from neuroedge.engine import GateRegistry
+from neuroedge.hal.board import load_board_by_id
 from neuroedge.paths import repo_root
 
 ROOT = repo_root()
@@ -158,3 +160,21 @@ def proxies(monkeypatch):
             monkeypatch.setenv(name, url)
 
     return point
+
+
+@pytest.fixture
+def feedback_board(tmp_path, monkeypatch):
+    """`sim-rpi5` with a hardware read-back declared for `fan`: a boards dir of its own."""
+    boards = tmp_path / "boards"
+    shutil.copytree(Path(load_board_by_id("sim-rpi5").source).parent, boards)
+    path = boards / "sim-rpi5.toml"
+    path.write_text(
+        path.read_text(encoding="utf-8").replace(
+            "[capabilities.digital_in]",
+            '[capabilities.digital_out.feedback]\npins = ["fan"]\n\n[capabilities.digital_in]',
+            1,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("neuroedge.hal.board.boards_dir", lambda: boards)
+    return load_board_by_id("sim-rpi5")
