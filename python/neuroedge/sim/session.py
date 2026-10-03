@@ -843,6 +843,14 @@ class SimSession:
             )
             # An audit sees whether the out-of-process line supervisor was on (RFC-0007 §3d).
             events.metadata["supervision"] = hal.supervision
+            # What the restart handed the envelope (on-time carried over from a previous run), so
+            # that a replay decides the same way from the trace alone (RFC-0007 §3d).
+            restored = hal.envelope.restored() if hal.envelope is not None else {}
+            if restored:
+                events.emit(
+                    "envelope_restored",
+                    {"boot_ms": events.offset_of(hal.envelope.boot_ms), "pins": restored},
+                )
         else:
             given = options.pop("envelope", None)  # a caller's own envelope replaces the board's
             if given is None:

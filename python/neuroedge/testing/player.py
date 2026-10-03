@@ -615,6 +615,7 @@ class TracePlayer:
         # Pins are bounded by the board's envelope on every target, on the recorded timeline.
         envelope_clock = ReplayClock()
         ensure_envelope(hal, envelope_clock, virtual=True)
+        _seed_envelope(hal, self.trace)
         _script_sensors(hal, self.trace)
         _script_i2c(hal, self.trace)
         _script_digital_in(hal, self.trace)
@@ -669,6 +670,24 @@ class TracePlayer:
             slow=self.slow,
             warnings=warnings,
         )
+
+
+def _seed_envelope(hal: Any, trace: Mapping[str, Any]) -> None:
+    """
+    Start the replayed envelope from what the session started with: the `envelope_restored`
+    event (on-time carried over from a previous run, RFC-0007 §3d) — the machine's state files
+    never enter a replay. A trace without the event starts empty, as every canonical trace does.
+    """
+    envelope = getattr(hal, "envelope", None)
+    event = next((e for e in trace.get("events", []) if e.get("type") == "envelope_restored"), None)
+    if envelope is None or event is None:
+        return
+    data = event.get("data", {})
+    boot = data.get("boot_ms")
+    pins = data.get("pins")
+    if isinstance(boot, bool) or not isinstance(boot, int | float) or not isinstance(pins, Mapping):
+        boot, pins = 0, dict.fromkeys(envelope.names)  # unusable: nothing is allowed
+    envelope.seed(pins, float(boot))
 
 
 def _check_refusal(

@@ -627,3 +627,78 @@ def test_the_trace_of_a_linux_session_says_whether_supervision_was_on(driveway, 
         assert line(gpio, "porch_light") is Value.INACTIVE
     finally:
         session.close()
+
+
+# --- the state a restart handed the envelope is in the trace, so replay decides the same -------------
+
+
+async def _refused_on_carried_over_on_time(driveway, tmp_path):
+    """A linux session that starts with 1790 of 1800 s of porch light already recorded."""
+    from neuroedge.errors import EnvelopeRefusedError
+    from neuroedge.hal.envelope import FileEnvelopeStore
+    from neuroedge.testing.recorder import TraceRecorder
+
+    from .hand_clock import HandClock
+
+    FileEnvelopeStore(tmp_path / "envelope-state").save("porch_light", [1_790_000])
+    clock = HandClock()
+    recorder = TraceRecorder(clock=clock)
+    session = SimSession.load(driveway, target="linux", events=recorder, clock=clock)
+    try:
+        clock.advance(3_000)  # past the 2 s every pin waits after a start: the budget decides
+        with pytest.raises(EnvelopeRefusedError) as raised:
+            await session.handle("bật đèn hiên")
+        assert raised.value.reason == "window_budget" and raised.value.event["used_ms"] == 1_790_000
+        return recorder.to_trace()
+    finally:
+        session.close()
+
+
+async def test_the_trace_records_what_the_restart_carried_over_and_replay_refuses_again(
+    driveway, gpio, tmp_path
+):
+    from neuroedge.testing import TracePlayer
+
+    trace = await _refused_on_carried_over_on_time(driveway, tmp_path)
+    (restored,) = [e["data"] for e in trace["events"] if e["type"] == "envelope_restored"]
+    assert restored["pins"] == {"porch_light": {"carried_ms": [1_790_000.0]}}
+    refusal = next(e["data"] for e in trace["events"] if e["type"] == "envelope_refused")
+
+    result = await TracePlayer(trace, agent=driveway).replay()  # the machine's files: none
+    assert result.divergences == []
+    replayed = next(e["data"] for e in result.replayed["events"] if e["type"] == "envelope_refused")
+    assert replayed == refusal
+
+
+async def test_a_replay_seed_with_more_budget_than_was_recorded_is_a_divergence(
+    driveway, gpio, tmp_path
+):
+    from neuroedge.testing import TracePlayer
+
+    trace = await _refused_on_carried_over_on_time(driveway, tmp_path)
+    event = next(e for e in trace["events"] if e["type"] == "envelope_restored")
+    event["data"]["pins"]["porch_light"]["carried_ms"] = [1_000.0]  # tampered: nearly empty
+    result = await TracePlayer(trace, agent=driveway).replay()
+    (divergence,) = result.divergences
+    assert divergence.expected == "envelope_refused porch_light on: window_budget"
+    assert divergence.actual == "no refusal"
+
+
+async def test_a_trace_whose_restored_state_is_unusable_allows_nothing(driveway, gpio, tmp_path):
+    from neuroedge.testing import TracePlayer
+
+    trace = await _refused_on_carried_over_on_time(driveway, tmp_path)
+    event = next(e for e in trace["events"] if e["type"] == "envelope_restored")
+    event["data"]["pins"]["porch_light"] = {"carried_ms": ["x"]}
+    result = await TracePlayer(trace, agent=driveway).replay()
+    (divergence,) = result.divergences
+    assert divergence.actual == "envelope_refused porch_light on: window_unreadable"
+
+
+async def test_a_trace_without_the_event_replays_from_an_empty_state(driveway, gpio, tmp_path):
+    from neuroedge.testing import TracePlayer
+
+    trace = await _refused_on_carried_over_on_time(driveway, tmp_path)
+    trace["events"] = [e for e in trace["events"] if e["type"] != "envelope_restored"]
+    result = await TracePlayer(trace, agent=driveway).replay()
+    assert [d.actual for d in result.divergences] == ["no refusal"], "empty state: nothing refuses"

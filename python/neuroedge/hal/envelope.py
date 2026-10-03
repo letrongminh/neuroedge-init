@@ -152,6 +152,9 @@ class _State:
     live: Reservation | None = None
     last_end: float | None = None
     unreadable: str | None = None  # why the record cannot be trusted; the window is spent
+    # What a restart handed this pin (`restored()`), for the trace: the carried on-time, or why
+    # the record was unusable; None when nothing came from a previous run.
+    restored: dict[str, Any] | None = None
 
 
 class StateUnreadable(Exception):
@@ -287,6 +290,7 @@ class SafetyEnvelope:
         # Called, outside every lock, for each reservation the envelope itself ended at its
         # deadline (`virtual`): the HAL records that the pin went off and why.
         self.on_auto_off: Callable[[Reservation], None] | None = None
+        self.boot_ms = self.clock()
         self._states = {name: _State(declared) for name, declared in limits.items()}
         if store is not None:
             self._restore(init_store)
@@ -338,10 +342,47 @@ class SafetyEnvelope:
                     raise StateUnreadable(f"{self.store.path(name)} does not exist")
             except StateUnreadable as exc:
                 state.unreadable = str(exc)
+                state.restored = {"unreadable": str(exc)}
                 continue
             # No trusted clock across boots: a recorded on counts as just before startup.
             state.intervals = [_Interval(boot, boot, weight=on) for on in recorded if on > 0]
             state.last_end = boot
+            state.restored = {"carried_ms": [on for on in recorded if on > 0]}
+        self.boot_ms = boot
+
+    def restored(self) -> dict[str, dict[str, Any]]:
+        """
+        The state a restart gave each pin — per pin, the on-time carried over (`carried_ms`,
+        every entry holding budget until `window_s` after startup, and the pin waiting
+        `min_interval_ms` from startup) or `unreadable` (the window is spent). Empty for a
+        new rig and for an envelope with no record. Written to the trace (`envelope_restored`)
+        so that a replay decides the way the session did (`seed`).
+        """
+        return {n: dict(s.restored) for n, s in self._states.items() if s.restored is not None}
+
+    def seed(self, restored: Mapping[str, Any], boot_ms: float) -> None:
+        """
+        Start from a recorded `restored()` as if the process had started at `boot_ms` on this
+        envelope's clock. An entry that is not what `restored()` writes is treated as an
+        unreadable record: a trace that cannot say what the session started with is never
+        allowed more than it recorded.
+        """
+        for name, record in restored.items():
+            state = self._states.get(name)
+            if state is None:
+                continue
+            carried = record.get("carried_ms") if isinstance(record, Mapping) else None
+            if not isinstance(carried, list) or not all(
+                isinstance(x, int | float)
+                and not isinstance(x, bool)
+                and math.isfinite(x)
+                and x >= 0
+                for x in carried
+            ):
+                state.unreadable = "the recorded envelope state is unusable"
+                continue
+            state.intervals = [_Interval(boot_ms, boot_ms, weight=float(on)) for on in carried]
+            state.last_end = boot_ms
 
     def _persist(self, name: str, state: _State) -> None:
         """Write the pin's on-time down. The caller holds the pin's lock."""
