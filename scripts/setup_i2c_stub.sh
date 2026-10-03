@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # A real hwmon temperature sensor with no board: i2c-stub + the lm75 driver (TSK-S5-09).
 #
-# i2c-stub is a fake SMBus adapter whose chip at $ADDR answers from a register
-# table; binding the kernel's own lm75 driver to it creates
+# i2c-stub is a fake SMBus adapter whose chip at $ADDR (and the two extra ones, below) answers
+# from a register table; binding the kernel's own lm75 driver to it creates
 # /sys/class/hwmon/hwmonN (name "lm75", temp1_input in millidegrees), which is
 # what LinuxHAL reads on a Pi. The temperature register is set with i2cset,
 # so a test decides what the "sensor" measures and reads it back through the HAL.
@@ -16,11 +16,15 @@
 set -euo pipefail
 
 ADDR=0x48
+# Two more chips, bound to no driver: the allow-listed devices of linux-rpi5 (ina219, ads7828),
+# which the I2C read tests (TSK-I2a-03) read through /dev/i2c-N. The lm75 above is the one
+# device on the bus the board does not list.
+STUB_ADDRS="$ADDR,0x40,0x4a"
 # 25.0 °C: the LM75 register is big-endian 0x1900, an SMBus word is little-endian.
 START_WORD=0x0019
 
 load_modules() {
-  sudo modprobe i2c-stub "chip_addr=$ADDR" && sudo modprobe i2c-dev && sudo modprobe lm75
+  sudo modprobe i2c-stub "chip_addr=$STUB_ADDRS" && sudo modprobe i2c-dev && sudo modprobe lm75
 }
 if ! load_modules 2>/dev/null; then
   # Cloud kernels (GitHub's linux-azure) ship i2c-stub and lm75 in the extra modules.
