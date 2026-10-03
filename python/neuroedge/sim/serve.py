@@ -153,6 +153,11 @@ def serve_mcp(
     ``metadata.anonymized = false``). stdout belongs to the protocol: anything for
     people goes to stderr. Needs the MCP SDK: ``pip install 'neuroedge[mcp]'``
     (`NeuroEdgeError` otherwise, before anything is wired).
+
+    It owns the process: when no client sends `initialize` within `init_timeout`
+    seconds (0 waits forever), and on SIGTERM/SIGHUP with `target="linux"`, it cleans
+    up and then ends the whole process with `os._exit` — the SDK's stdin thread cannot
+    be cancelled any other way. Run it in a process of its own.
     """
     _sdk()
     events = None

@@ -600,7 +600,7 @@ Bốn tệp định dạng tạo thành toàn bộ bề mặt dữ liệu của 
 | Lược đồ vết ghi | URL `/v1`, `/v2` | Tăng phiên bản chính; bổ sung trường tùy chọn không tăng |
 | Lược đồ gate | `neuroedge.gate/v1` | Tăng phiên bản chính |
 | Tệp gate cụ thể | SemVer | Mọi thay đổi trong `allow_when` |
-| Gói `neuroedge` | SemVer | Thay đổi bề mặt API công khai hoặc CLI |
+| Gói `neuroedge` | SemVer | Thay đổi bề mặt API công khai ([`docs/spec/python_api.md`](../docs/spec/python_api.md)) hoặc CLI |
 
 ---
 

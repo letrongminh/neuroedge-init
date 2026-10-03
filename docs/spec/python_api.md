@@ -91,6 +91,11 @@ phục vụ (`sim/serve.py::run_stdio`), không phải hai đường mã:
   `UserWarning` và vết ghi `metadata.anonymized = false`, như `--raw`). Mặc định giữ nguyên NFR-PRIV-03.
 - `target="linux"` điều khiển chân thật: tiến trình rời qua phần dọn dẹp khi nhận SIGTERM hay SIGHUP,
   mọi chân về trạng thái tắt (như `mcp serve --target linux`).
+- **`serve_mcp` sở hữu tiến trình.** Hai lối ra kết thúc cả tiến trình gọi nó bằng `os._exit`, sau khi
+  đã dọn dẹp (ghi vết, thả mọi chân): không client nào gửi `initialize` trong `init_timeout` giây (mặc
+  định 30; `0` chờ mãi), và SIGTERM/SIGHUP khi `target="linux"`. Lý do: luồng đọc stdin của MCP SDK
+  không huỷ được, nên chỉ thoát tiến trình mới giải phóng được nó. Gọi `serve_mcp` trong một tiến trình
+  dành riêng cho nó, không trong tiến trình còn việc khác.
 - stdout thuộc về giao thức; mọi thứ cho người đọc đi vào stderr. Thiếu MCP SDK (extra `mcp`) thì
   `serve_mcp` ném `NeuroEdgeError` với cách cài, trước khi dựng gì.
 
