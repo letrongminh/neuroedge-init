@@ -52,16 +52,21 @@ class FakeChip:
 
 
 class FakeRequest:
-    def __init__(self, world, path, offsets):
+    def __init__(self, world, path, offsets, direction=Direction.OUTPUT):
         self.world, self.path, self.offsets = world, path, offsets
+        self.direction = direction
         self.released = False
 
     def set_value(self, offset, value):
+        assert self.direction is Direction.OUTPUT, "an input line is never driven"
         assert not self.released and offset in self.offsets
         self.world.values[(self.path, offset)] = value
         self.world.history.append((self.world.chips[self.path][offset], value.value))
 
     def get_value(self, offset):
+        assert not self.released and offset in self.offsets
+        if self.world.read_error is not None:
+            raise self.world.read_error
         return self.world.values.get((self.path, offset), Value.INACTIVE)
 
     def release(self):
@@ -74,18 +79,27 @@ class FakeGpiod:
         self.values = {}
         self.history = []
         self.requests = []
+        # What the kernel does to an input line: refuse the request, or fail the read.
+        self.input_request_error = None
+        self.read_error = None
         self.line = SimpleNamespace(Direction=Direction, Value=Value)
 
     def Chip(self, path):  # noqa: N802 - mirrors gpiod.Chip
         return FakeChip(self, path)
 
-    def LineSettings(self, direction, output_value):  # noqa: N802 - mirrors gpiod.LineSettings
-        assert direction is Direction.OUTPUT and output_value is Value.INACTIVE
+    def LineSettings(self, direction, output_value=None):  # noqa: N802 - mirrors gpiod.LineSettings
+        # An output starts inactive; an input is requested as one and never given a value.
+        assert (direction is Direction.OUTPUT and output_value is Value.INACTIVE) or (
+            direction is Direction.INPUT and output_value is None
+        )
         return {"direction": direction, "output_value": output_value}
 
     def request_lines(self, path, consumer, config):
         (offsets,) = config
-        request = FakeRequest(self, path, offsets)
+        direction = config[offsets]["direction"]
+        if direction is Direction.INPUT and self.input_request_error is not None:
+            raise self.input_request_error
+        request = FakeRequest(self, path, offsets, direction)
         self.requests.append(request)
         return request
 

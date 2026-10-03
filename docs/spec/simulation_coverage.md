@@ -108,6 +108,50 @@ giờ cắt về biên) — là `PerceptionUnavailableError` (NE5001) ⇒ dữ k
 `gate_facts` đã ghi (giá trị lẫn tuổi), không đọc kênh nào; vì vậy không tính lại được dữ kiện, và đổi
 `[sim.analog_facts]` sau khi ghi **không** được cảnh báo như `[sim.sensor_facts]` (chưa có digest).
 
+### `digital.in` — `sim-rpi5` và `linux-rpi5` (RFC-0007 §3a, TSK-I2a-02)
+
+`digital.in` là nguyên thủy mở rộng (RFC-0013): chỉ bo mạch khai `[capabilities.digital_in]` mới có —
+`sim-default` không có, nên agent dùng nó build với `--board sim-rpi5`.
+
+| Target | Backend | Kiểm ở | Chỉ phần cứng | Task |
+|:---|:---|:---|:---|:---|
+| `sim` | `SimHAL.set_digital_in()` — mức khởi đầu `[sim.inputs]`, đổi bằng `:input <chân> <true\|false>` trong REPL và trang `--ui` (sự kiện `digital_in_set`); chân chưa đặt mức ⇒ lần đọc hỏng, không phải một mức | PR | — | TSK-I2a-02 |
+| `linux` | `LinuxHAL` qua libgpiod v2: line tìm theo **tên** như chân ra, xin làm **đầu vào** (không bao giờ ghi, không đặt bias hay cạnh), giữ tới `close()`; phiên xin mọi line agent đọc ngay khi dựng, line đọc lần đầu muộn hơn thì xin lúc đó | PR — fake gpiod (`tests/test_digital_in_linux.py`) · `gpio-sim` (`tests_linux/test_gpio_sim.py`; mức đặt qua `sim_gpioN/pull`) | Điện áp, nhiễu, bias thật của mạch | TSK-I2a-02 |
+
+**Dữ kiện gate từ chân đầu vào — `[sim.digital_facts]`.** RFC-0007 không nói tiêu chí gate nối với chân
+nào; cách nối nhỏ nhất hợp với RFC là theo khuôn `[sim.sensor_facts]`: `tiêu_chí = { pin = "…" }` là chính
+mức đọc (cao = `true`), `{ pin = "…", equals = false }` là "chân ở mức thấp". Giống `sensor_facts`, bảng nằm
+trong `[sim]` nhưng cũng dùng trên `linux`. Mỗi chân được đọc **một lần mỗi lần tính dữ kiện gate**, ngay
+trước lúc gate lượng giá (không dùng giá trị đệm).
+
+Kiểm lúc `neuroedge build` và nạp phiên — sai ⇒ lỗi ba phần, **trước khi** xin line nào:
+
+- Chân phải là chân `digital_in.pins` của bo mạch **và** nằm trong `"digital.in" = { pins = [...] }` của
+  `[requires]` (`@action(requires="digital.in:<chân>")` cũng phải là chân `[requires]` khai); chân không khai ⇒
+  `BoardCapabilityError` (NE3001).
+- Tiêu chí phải do ít nhất một gate đánh giá, và mọi gate đánh giá nó khai kiểu `bool` — mức logic là dữ
+  kiện `bool` (không `numeric`, `level`, `choice`).
+- Một tiêu chí một nguồn: không đồng thời ở `[sim.sensor_facts]`; không có giá trị cố định ở `[sim.facts]`;
+  `:set` từ chối và chỉ sang `:input`.
+
+Tuổi và fail-closed (RFC-0007 §3a, §3e, §9 mục 11):
+
+- Dữ kiện mang **mốc đọc** HAL (`read_ms`, trên đồng hồ của `EventLog`, lấy **trước** lần đọc). Engine tính
+  `age_ms` lúc lượng giá, như tiêu chí `numeric` (RFC-0009 §3c); `gate_facts` ghi `read_offset_ms`,
+  `eval_offset_ms`, `age_ms`, `source: "digital.in"`. `replay` chỉ tin một tuổi vết ghi giải thích được.
+- Tiêu chí `bool` không có `max_age_ms`, nên trần là hằng `DIGITAL_IN_MAX_AGE_MS = 100` trong
+  `engine/verdict.py`: không cấu hình, gate và agent không nới được. `age_ms` âm, vượt trần, hoặc không có
+  mốc đọc dùng được ⇒ `criterion_unavailable`. Trần bắt đường đọc treo; đầu vào kẹt mức ở phần cứng không
+  bị bắt bằng tuổi, nên gate quan trọng cần thêm một tiêu chí độc lập.
+- Lần đọc hỏng (không tìm thấy line, không xin được, `get_value` lỗi, chip mất, `sim` chưa đặt mức) ⇒
+  `PerceptionUnavailableError` (NE5001) ⇒ dữ kiện `digital.in` **không có giá trị** ⇒ BLOCK
+  `criterion_unavailable`, **kể cả gate `fail: open`** (`known_failure` không bỏ qua dữ kiện `digital.in`
+  mất, như số đọc `numeric` mất). Mức không bao giờ được đoán.
+- Đọc trong thân `@action`: `digital.input("<chân>").level()` (không cần token, đọc không di chuyển gì);
+  mỗi lần đọc là một sự kiện `digital_in` mà `replay` cấp lại theo thứ tự, lần đọc hỏng được cấp lại thành
+  lần đọc hỏng, đọc quá số lần đã ghi cũng là đọc hỏng — không bao giờ lặp mức cuối.
+- `replay` không bao giờ chạm line của máy: `LinuxHAL(replay=True)` không xin line nào.
+
 ### `linux` — `linux-rpi5`
 
 | Nguyên thủy | Backend | Kiểm ở | Chỉ phần cứng | Task |
@@ -213,7 +257,7 @@ nào đi theo ô tương ứng ở §2. Cột "Vai trò khi replay" nói phần 
 | `audio.out` | `tts_stream_start` · `tts_stream_end` · `knowledge_retrieved` | `{text}` · `{duration_ms, sha256?, reason?}` (`reason`: `docs/spec/voice_fsm.md` §8) · `{entries: [{id, score}]}` | **Đầu ra** — chữ không vào so khớp quyết định; `knowledge_retrieved` cho biết câu trả lời dựa trên tri thức nào |
 | `digital.out` | `actuator_command` · `actuator_aborted` | `{pin, operation, duration_ms}` · `{pin, reason}` | **Quyết định** — so golden ở mọi lần `replay` / `verify` |
 | `digital.out` (phong bì) | `envelope_refused` | `{pin, operation, reason, limit_ms?}` — `reason`: `max_continuous_ms` · `window_budget` · `min_interval_ms` · `window_unreadable` | **Quyết định** — phong bì từ chối lệnh bật trước `authorize` (RFC-0007 §3d, `EnvelopeRefusedError` NE1003); không có `actuator_command` đi kèm và token không bị tiêu. Lệnh về phía an toàn không bao giờ sinh sự kiện này. So golden cùng `actuator_command` |
-| `digital.in` | `digital_in` | `{pin, value, read_ms, age_ms, reason?}` | **Đầu vào** (RFC-0007 §3a) — replay cấp lại đúng `value` đã ghi, tính lại `age_ms` từ `read_ms` rồi so với giá trị ghi; `age_ms < 0` hoặc vượt `DIGITAL_IN_MAX_AGE_MS` ⇒ BLOCK `criterion_unavailable`. `reason` có khi lần đọc hỏng (không có `value`) |
+| `digital.in` | `digital_in` · `digital_in_set` | `{pin, value, use?}` hoặc `{pin, reason, use?}` (lần đọc hỏng, không có `value`) · `{pin, value}` | **Đầu vào** (RFC-0007 §3a) — replay cấp lại các lần đọc trong thân `@action` theo thứ tự, lần đọc hỏng thành lần đọc hỏng. Lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`, nơi ghi **mốc đọc và tuổi**: `read_offset_ms`, `eval_offset_ms`, `age_ms`, `source: "digital.in"`; replay tính lại `age_ms` rồi so, và `age_ms < 0` hoặc vượt `DIGITAL_IN_MAX_AGE_MS` ⇒ BLOCK `criterion_unavailable`. Mốc đọc của sự kiện là `offset_ms` của chính nó. `digital_in_set` ghi việc người dùng đổi mức trong REPL/UI (`:input`) |
 | `i2c` | `i2c_read` | `{bus, device, address, register?, value?, reason?}` — `register` chỉ có ở lần đọc thanh ghi | **Đầu vào** (RFC-0007 §3b) — `sim` chỉ phát lại giá trị đã ghi, không quét bus. Mỗi lần đọc ghi một sự kiện; bus NACK hay timeout ghi `reason` thay cho `value` (`PerceptionUnavailableError` NE5001). Không có sự kiện ghi dữ liệu: API không có đường ghi |
 | `analog.in` | `analog_in` · `analog_set` | `{channel, value, unit, use?, non_finite?}` hoặc `{channel, error, use?}` khi lần đọc hỏng · `{channel, value, non_finite?}` | **Đầu vào** (RFC-0007 §3c) — mỗi lần đọc một sự kiện (`use: fact` khi đọc để tính dữ kiện gate); giá trị ngoài `[min, max]` của kênh, mất thiết bị, rác là lỗi đọc (`error`, `PerceptionUnavailableError` NE5001), không bị cắt. Mốc đọc `read_offset_ms` và `age_ms` nằm ở `gate_facts` của lần lượng giá (RFC-0009 §3c): replay cấp lại đúng `value` và tuổi đã ghi, `age_ms < 0` hay quá `max_age_ms` ⇒ BLOCK `criterion_unavailable`. `analog_set`: người dùng đổi giá trị kênh trong REPL/UI (chỉ `sim`) |
 | `sensor.read` | `sensor_read` · `sensor_set` · `sensor_unavailable` | `{sensor, value, unit?, use?, non_finite?}` · `{sensor, value, non_finite?}` · `{sensor, reason}` | **Đầu vào** — replay cấp lại đúng giá trị đã ghi; lần đọc `use: fact` (tính dữ kiện gate) không cấp lại vì kết quả đã ở `gate_facts`. `sensor_set` ghi việc người dùng đổi giá trị trong REPL/UI. `sensor_unavailable`: một lần tính dữ kiện gate không lấy được số đọc, hoặc một luật của cảm biến từ chối nó (§2), nên mọi dữ kiện của cảm biến đó là `null`; chỉ để đọc, replay dùng `gate_facts` |

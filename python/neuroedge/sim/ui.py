@@ -11,7 +11,7 @@ the page is `neuroedge.viz.page(live=True)`, the same renderer as
     GET  /events   Server-Sent Events: {"events": [...], "now_ms": n} on change
     GET  /state    the same, once, as JSON
     POST /command  a typed line — a command, or `:set k v`, `:unset k`, `:sensor n v`,
-                   `:analog ch v`
+                   `:analog ch v`, `:input pin v`
     POST /confirm  {"id": "confirm_1", "answer": "yes"|"no"} — a person's answer to the
                    device's question (RFC-0006), source `ui`; same-origin only
 
@@ -34,7 +34,7 @@ from typing import Any
 from ..errors import NeuroEdgeError
 from ..trace import json_safe
 from ..viz import board_info, page
-from .session import SimSession
+from .session import SimSession, level_word
 
 
 def _json(value: Any) -> str:
@@ -126,6 +126,15 @@ class SessionServer:
                 except NeuroEdgeError as error:
                     return {"ok": False, "error": error.as_dict()}
                 return {"ok": True, "analog": parts[0]}
+            if name == "input" and len(parts) == 2:
+                level = level_word(parts[1])
+                if level is None:
+                    return {"ok": False, "error": {"why": f"{parts[1]!r} is not a level"}}
+                try:
+                    session.set_digital_in(parts[0], level)
+                except NeuroEdgeError as error:
+                    return {"ok": False, "error": error.as_dict()}
+                return {"ok": True, "input": parts[0]}
             return {"ok": False, "error": {"why": f"unknown command {line!r}"}}
         if not line:
             return {"ok": False, "error": {"why": "empty command"}}

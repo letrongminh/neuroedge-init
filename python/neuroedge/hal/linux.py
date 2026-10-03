@@ -18,6 +18,13 @@ A pulse sets the line active and returns immediately; a timer makes it
 inactive after the duration. `PendingCommand.cancel()` drops the line at once
 (RB-3, barge-in). `close()` releases every line inactive.
 
+`digital.in` (RFC-0007 §3a) reads the board's input pins through the same character
+device: each line is found by name like an output, requested as an input — never driven,
+no bias or edge detection set — and held until `close()`. An agent's session requests its
+lines when the HAL is built; a line first read later is requested then. A line that cannot
+be found, requested or read is a failed read (`PerceptionUnavailableError`), which the gate
+turns into BLOCK `criterion_unavailable`: a level is never invented.
+
 `sensor.read` reads hwmon and IIO sysfs, each board sensor found by name
 (`hal/sysfs.py`); `display` checks and records a frame exactly as `sim` does, then
 hands it to the backend chosen for the machine — `memory` or `/dev/fbN`
@@ -52,6 +59,7 @@ The machine's choice comes from `NEUROEDGE_LINUX_AUDIO` (`file` | `live`);
 
 from __future__ import annotations
 
+import contextlib
 import glob
 import os
 import threading
@@ -284,6 +292,13 @@ class LinuxHAL(HardwareAbstractionLayer):
                 why=f"no GPIO chip found at {chip_glob}; refusing to run as a no-op (Q-16)",
                 how=SETUP_HINT,
             )
+        # The lines `digital.in` reads (RFC-0007 §3a): requested as inputs, by name, when the
+        # session needs them or on the first read, and released by close().
+        self._chips = chips
+        self._line_names = dict(line_names or {})
+        self._consumer = consumer
+        self._inputs: dict[str, tuple[Any, int]] = {}
+        self._closed = False
         # The kernel PWM channel and the HAL-owned enable lines are served by the PWM and
         # motion backends (RFC-0010, RFC-0011), not by this plain-GPIO path: no line is
         # requested for them, and digital_out() refuses a PWM pin until that backend exists.
@@ -307,6 +322,15 @@ class LinuxHAL(HardwareAbstractionLayer):
         if needs:
             self.preflight(**needs)
         self._requests = self._request_outputs(consumer)
+        if needs and not replay:
+            try:
+                for pin in dict.fromkeys(needs.get("digital_in", ())):
+                    self._input_line(pin, f"{needs.get('where', '')} -> digital.in {pin!r}")
+            except BaseException:
+                # The session never starts: no output line may stay held, no input requested.
+                with contextlib.suppress(OSError):
+                    self.close()
+                raise
 
     def _find(self, chips: list[str], name: str) -> tuple[str, int] | None:
         denied: tuple[str, OSError] | None = None
@@ -454,6 +478,14 @@ class LinuxHAL(HardwareAbstractionLayer):
         """
         # One line that fails to drop must not leave the others active or held.
         errors: list[BaseException] = []
+        with self._lock:
+            self._closed = True
+            inputs, self._inputs = self._inputs, {}
+        for request, _offset in inputs.values():
+            try:
+                request.release()
+            except OSError as exc:
+                errors.append(exc)
         if self._requests:
             for pin in list(self._timers):
                 self._stop_timer(pin)
@@ -482,6 +514,58 @@ class LinuxHAL(HardwareAbstractionLayer):
             errors.append(exc)
         if errors:
             raise errors[0]
+
+    # -- digital.in ------------------------------------------------------------------
+    def _input_line(self, pin: str, where: str) -> tuple[Any, int]:
+        """The held request of an input line, requested now if nothing has read it yet."""
+        with self._lock:
+            if self._closed:
+                raise BoardCapabilityError(
+                    where=where,
+                    why="the HAL is closed and holds no input line any more",
+                    how="build a new HAL to read inputs",
+                )
+            held = self._inputs.get(pin)
+            if held is not None:
+                return held
+            name = self._line_names.get(pin, pin)
+            location = self._find(self._chips, name)
+            if location is None:
+                raise BoardCapabilityError(
+                    where=where,
+                    why=f"no line named {name!r} on {self._chips} for input pin {pin!r} of {self.board.id!r}",
+                    how=f"name the line after the pin (setup_gpio_sim.sh does), or pass line_names; {SETUP_HINT}",
+                )
+            path, offset = location
+            settings = self._gpiod.LineSettings(direction=self._gpiod.line.Direction.INPUT)
+            try:
+                request = self._gpiod.request_lines(
+                    path, consumer=self._consumer, config={(offset,): settings}
+                )
+            except OSError as exc:
+                raise _chip_error(path, exc) from exc
+            self._inputs[pin] = (request, offset)
+            return request, offset
+
+    def _read_level(self, pin: str, where: str) -> bool:
+        if self.replay:
+            # A replay never reads the machine, not even to see what its lines say today.
+            raise PerceptionUnavailableError(
+                where=where,
+                why="the trace being replayed holds no reading of this line",
+                how="replay a trace recorded with its digital_in events",
+            )
+        try:
+            request, offset = self._input_line(pin, where)
+            value = request.get_value(offset)
+        except (OSError, BoardCapabilityError, ValueError, RuntimeError) as exc:
+            reason = exc.why if isinstance(exc, BoardCapabilityError) else str(exc)
+            raise PerceptionUnavailableError(
+                where=where,
+                why=f"the line cannot be read: {reason}",
+                how="check the wiring and that no other process holds the line; the criterion stays undecided",
+            ) from exc
+        return value == self._gpiod.line.Value.ACTIVE
 
     # -- sensor.read -----------------------------------------------------------------
     def sensor_read(
@@ -773,6 +857,7 @@ class LinuxHAL(HardwareAbstractionLayer):
         i2c: Iterable[str] = (),
         where: str = "",
         analog: Iterable[str] = (),
+        digital_in: Iterable[str] = (),
     ) -> None:
         """
         Fail now, not mid-session, if a sensor the agent reads cannot be read, it
@@ -806,6 +891,17 @@ class LinuxHAL(HardwareAbstractionLayer):
                     raise BoardCapabilityError(error.where, error.why, error.how) from error
         for bus in dict.fromkeys(i2c):  # a declared bus with a node chosen; a replay's is scripted
             self._i2c.check_bus(bus, f"{where} -> i2c {bus!r}")
+        for pin in dict.fromkeys(digital_in):
+            # Found now, requested once the output lines are held: a missing input line is
+            # refused before any pin is (RFC-0007 §3a, Q-16).
+            self.board.require_input_pin(pin, called_from=where)
+            name = self._line_names.get(pin, pin)
+            if not self.replay and self._find(self._chips, name) is None:
+                raise BoardCapabilityError(
+                    where=f"{where} -> digital.in {pin!r}",
+                    why=f"no line named {name!r} on {self._chips} for input pin {pin!r} of {self.board.id!r}",
+                    how=f"name the line after the pin (setup_gpio_sim.sh does), or pass line_names; {SETUP_HINT}",
+                )
         if display:
             self._require_display_backend(f"{where} -> display")
         if self.audio_backend == "live":
@@ -878,6 +974,16 @@ class TypedLinuxHAL(LinuxHAL):
 
     def sensor_values(self) -> dict[str, tuple[Any, str | None]]:
         return {}  # `:sensors` lists values set on sim; on linux the kernel owns them
+
+    def digital_in_values(self) -> dict[str, bool | None]:
+        return {}  # on linux the kernel owns the lines; `:inputs` lists levels set on sim
+
+    def set_digital_in(self, pin: str, level: bool) -> None:
+        raise BoardCapabilityError(
+            where=f"LinuxHAL.set_digital_in({pin!r})",
+            why="on linux an input line is read from the kernel (gpiod); a level cannot be set",
+            how="change what drives the line, or set the level on sim (--target sim)",
+        )
 
     def set_sensor(self, sensor: str, value: Any, unit: str | None = None) -> None:
         raise BoardCapabilityError(

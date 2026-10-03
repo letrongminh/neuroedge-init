@@ -33,7 +33,7 @@ from ..errors import GateSchemaError
 from .canonical import canonicalize, gate_digest
 from .constraints import parse_constraint
 from .gate_resolver import ResolvedGate
-from .verdict import Fact, GateVerdict, Reason
+from .verdict import DIGITAL_IN_MAX_AGE_MS, DIGITAL_IN_SOURCE, Fact, GateVerdict, Reason
 
 TREE_SCHEMA = "neuroedge.decision_tree/v1"
 _SCHEMA_FILE = Path(__file__).with_name("decision_tree.v1.json")
@@ -179,6 +179,14 @@ def _valid_confidence(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and 0.0 <= value <= 1.0
 
 
+def _level_is_fresh(fact: Fact) -> bool:
+    """A `digital.in` level was read at most `DIGITAL_IN_MAX_AGE_MS` before the evaluation, not after it."""
+    age = fact.age_ms
+    if age is None or isinstance(age, bool) or not isinstance(age, int):
+        return False
+    return 0 <= age <= DIGITAL_IN_MAX_AGE_MS
+
+
 def _classify(node: Mapping[str, Any], fact: Fact | None) -> tuple[Reason | None, Any]:
     """Return (reason or None when satisfied, the value for the trace)."""
     if node["kind"] == "numeric":
@@ -238,6 +246,11 @@ def _classify(node: Mapping[str, Any], fact: Fact | None) -> tuple[Reason | None
         return None, fact.value
 
     if fact is None or fact.value is None:
+        return Reason.CRITERION_UNAVAILABLE, None
+
+    if fact.source == DIGITAL_IN_SOURCE and not _level_is_fresh(fact):
+        # RFC-0007 §3a: a bool has no `max_age_ms`, so the age of a digital.in level is
+        # capped in code, and a level without a usable read mark has no age at all.
         return Reason.CRITERION_UNAVAILABLE, None
 
     is_bool = node["kind"] == "bool"
@@ -497,7 +510,10 @@ def known_failure(
             continue
         fact = facts.get(node["criterion"])
         if fact is None or fact.value is None:
-            if node["kind"] == "numeric":
+            # A lost digital.in line is a lost input, like a lost numeric sensor: not
+            # something `fail: open` may excuse (RFC-0007 §3e). A source of any other kind
+            # that gave no value is what open is for.
+            if node["kind"] == "numeric" or (fact is not None and fact.source == DIGITAL_IN_SOURCE):
                 return Reason.CRITERION_UNAVAILABLE, node["criterion"]
             continue
         reason, _ = _classify(node, fact)

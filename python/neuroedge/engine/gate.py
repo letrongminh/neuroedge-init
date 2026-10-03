@@ -37,7 +37,7 @@ from . import arguments as argument_limits
 from .decision_tree import TreeResult, compile_tree, known_failure, walk
 from .gate_resolver import GateRegistry, ResolvedGate, resolve_gate_file, resolve_gate_uri
 from .trace_sink import Clock, EventLog, monotonic_ms
-from .verdict import DEGRADED_REASONS, Fact, GateVerdict, Reason, Unavailable
+from .verdict import DEGRADED_REASONS, DIGITAL_IN_SOURCE, Fact, GateVerdict, Reason, Unavailable
 
 
 class FactSource(Protocol):
@@ -232,13 +232,16 @@ class ActionContractEngine:
                 self._call_hook(result)
                 return result
         facts, degraded = await self._gather(registered, dict(context or {}), state, t0)
-        numeric_nodes = {n["criterion"] for n in tree["nodes"] if n["kind"] == "numeric"}
+        # The readings the HAL took (RFC-0009 numeric; RFC-0007 §3a digital.in levels) are
+        # aged against one evaluation instant. A digital.in level is a fact of its own source.
+        marked = {n["criterion"] for n in tree["nodes"] if n["kind"] == "numeric"}
+        marked |= {c for c, fact in facts.items() if fact.source == DIGITAL_IN_SOURCE}
         read_marks: dict[str, tuple[int, int, int]] = {}
-        if numeric_nodes & facts.keys():
+        if marked & facts.keys():
             # RFC-0009 §3c: one evaluation instant for every reading, on the trace's own timeline.
             facts = dict(facts)
             eval_offset_ms = self.events.instant_ms()
-            for criterion in numeric_nodes & facts.keys():
+            for criterion in marked & facts.keys():
                 fact = facts[criterion]
                 marks = self._numeric_marks(criterion, fact, eval_offset_ms)
                 facts[criterion] = replace(fact, age_ms=None if marks is None else marks[2])
@@ -297,7 +300,8 @@ class ActionContractEngine:
         self, criterion: str, fact: Fact, eval_offset_ms: int
     ) -> tuple[int, int, int] | None:
         """
-        ``(read_offset_ms, eval_offset_ms, age_ms)`` of a numeric reading, from its HAL read mark alone.
+        ``(read_offset_ms, eval_offset_ms, age_ms)`` of a HAL reading (a numeric one, or a
+        digital.in level), from its read mark alone.
 
         A source cannot state its own age: a reading without a usable `read_ms` (absent, not a
         finite number) has none, and the gate blocks it as unavailable whatever `age_ms` it

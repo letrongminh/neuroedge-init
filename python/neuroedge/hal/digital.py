@@ -12,6 +12,11 @@ could forge. Outside a grant every call is an `ActionContractViolation`.
 `after_ms` schedules the command: the gate decides now, the pin moves later, and
 until then barge-in cancels it (docs/spec/voice_fsm.md §5). A HAL that cannot
 schedule refuses it — it never delivers early instead.
+
+`digital.input(pin).level()` is the input side (RFC-0007 §3a): the logic level of a declared
+input pin, True for high. Reading moves nothing, so it needs no verdict token — but it uses the
+HAL of the `c.do()` that is running the action, and a line that cannot be read raises
+`PerceptionUnavailableError` rather than returning a level. Every read is a `digital_in` event.
 """
 
 from __future__ import annotations
@@ -108,3 +113,23 @@ class _Pin:
 
 def out(pin: str) -> _Pin:
     return _Pin(pin)
+
+
+class _Input:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def level(self) -> bool:
+        where = _caller()
+        active = _active.get()
+        if active is None:
+            raise ActionContractViolation(
+                where=f"{where} -> digital.input({self.name!r})",
+                why="no HAL is active; inputs are read inside an @action run by c.do()",
+                how="read the input in an @action function, or call hal.digital_in() in a test",
+            )
+        return active.hal.digital_in(self.name, called_from=f"{where} ({active.action})")
+
+
+def input(pin: str) -> _Input:  # noqa: A001 - the agent API names the primitive, like `out`
+    return _Input(pin)

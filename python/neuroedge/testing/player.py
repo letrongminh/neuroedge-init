@@ -45,7 +45,7 @@ from ..engine.compiler import AgentManifest, load_actions, load_agent_manifest, 
 from ..engine.gate import ActionContractEngine, GateResult
 from ..engine.gate_resolver import GateRegistry, ResolvedGate
 from ..engine.trace_sink import EventLog
-from ..engine.verdict import DEGRADED_REASONS, Fact, Unavailable
+from ..engine.verdict import DEGRADED_REASONS, DIGITAL_IN_SOURCE, Fact, Unavailable
 from ..errors import AgentManifestError, ReplayError
 from ..hal.board import load_board_by_id
 from ..hal.sim import reading_value
@@ -355,7 +355,10 @@ class _ReplayEngine(ActionContractEngine):
             facts = dict(step.facts)
             if self.network == "offline":
                 # Only session context survives a network loss; model answers do not.
-                facts = {k: f for k, f in facts.items() if f.source == "context"}
+                # A digital.in level is the device's own read, not a model's answer.
+                facts = {
+                    k: f for k, f in facts.items() if f.source in ("context", DIGITAL_IN_SOURCE)
+                }
                 source = _Unreachable("offline")
             elif step.degraded:
                 source = _Unreachable(_DEGRADED_AS[step.degraded])
@@ -573,6 +576,7 @@ class TracePlayer:
             hal.events = events
         _script_sensors(hal, self.trace)
         _script_i2c(hal, self.trace)
+        _script_digital_in(hal, self.trace)
         warnings = _sensor_rules_changed(self.trace, self.manifest, events)
         warnings += [_gate_digest_warning(change) for change in changed]
         problems = fact_mark_problems(self.trace)
@@ -684,6 +688,29 @@ def _script_i2c(hal: Any, trace: Mapping[str, Any]) -> None:
     for (bus, device, register), values in reads.items():
         # The width only bounds what is scripted; the read checks the width it asks for.
         script(bus, device, register, values, width=1 if register is None else 2)
+
+
+def _script_digital_in(hal: Any, trace: Mapping[str, Any]) -> None:
+    """
+    Feed the recorded `digital_in` levels back, in order (RFC-0007 §3a), to the reads an
+    @action body makes — a read that failed (`reason`, no `value`) as a failed read again.
+    Reads made to compute a gate fact (`use: fact`) are not replayed: what they gave is
+    already in `gate_facts`.
+    """
+    levels: dict[str, list[bool | None]] = {}
+    for event in trace.get("events", []):
+        data = event.get("data", {})
+        if event.get("type") == "digital_in" and "use" not in data:
+            levels.setdefault(data["pin"], []).append(data.get("value"))
+    script = getattr(hal, "script_digital_in", None)
+    if levels and script is None:
+        raise ReplayError(
+            where=f"replay on {getattr(hal, 'target', '?')}",
+            why="the trace reads input lines, and this HAL cannot be fed recorded levels",
+            how="replay on sim or linux, or wait for digital.in on this target",
+        )
+    for pin, values in levels.items():
+        script(pin, values)
 
 
 def replay_sync(trace, **kwargs) -> ReplayResult:
