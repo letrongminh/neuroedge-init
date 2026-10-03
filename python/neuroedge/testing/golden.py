@@ -7,7 +7,8 @@ traces match when their safety views are equal:
 * the gate sequence — for each evaluation, in order: the gate, the verdict, and
   every decision field the golden records (`reason`, `blocked_by`, `action`,
   `escalated_to`, `fail_mode`, `fallback_action`);
-* the actuator sequence — every `actuator_command` (pin, operation, duration)
+* the actuator sequence — every `actuator_command` (pin, operation, duration; and, for a
+  PWM command, frequency and duty)
   and `actuator_aborted` (pin, reason), in order, and every `envelope_refused` (pin,
   operation, reason).
 
@@ -62,13 +63,16 @@ def safety_view(trace: Any) -> dict[str, list[dict[str, Any]]]:
             gates.append(entry)
             current = None
         elif kind == "actuator_command":
-            actuators.append(
-                {
-                    "pin": data.get("pin"),
-                    "operation": data.get("operation"),
-                    "duration_ms": data.get("duration_ms", 0),
-                }
-            )
+            command = {
+                "pin": data.get("pin"),
+                "operation": data.get("operation"),
+                "duration_ms": data.get("duration_ms", 0),
+            }
+            # A PWM command is its frequency and duty too (RFC-0010): a regression to a higher
+            # duty is a safety regression. Absent on every other command, so goldens made before
+            # PWM compare as they did.
+            command.update({k: data[k] for k in ("frequency_hz", "duty") if k in data})
+            actuators.append(command)
         elif kind == "actuator_aborted":
             actuators.append({"pin": data.get("pin"), "aborted": data.get("reason")})
         elif kind == "envelope_refused":

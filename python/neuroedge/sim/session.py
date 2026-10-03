@@ -62,7 +62,7 @@ import json
 import math
 import os
 import tomllib
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -82,6 +82,7 @@ from ..engine.compiler import (
     DigitalFact,
     analog_fact_channels,
     build,
+    feedback_fact_rules,
     load_actions,
     load_agent_manifest,
     numeric_sensor_fact_error,
@@ -108,6 +109,7 @@ from ..hal.envelope import (
     SafetyEnvelope,
     default_state_dir,
 )
+from ..hal.pwm import MEASURED
 from ..hal.sim import SimHAL, reading_data
 from ..mcp_host import McpConfig, load_mcp_config
 from ..models import CommandGrammar, SystemOne, SystemTwo
@@ -452,9 +454,20 @@ def _refuse_shadowed_facts(
     sensor_facts: Mapping[str, SensorFact],
     analog_facts: Mapping[str, str] | None = None,
     digital_facts: Mapping[str, DigitalFact] | None = None,
+    feedback_facts: Mapping[str, tuple[str, str]] | None = None,
 ) -> None:
-    """A fixed value for a criterion a sensor, an analog channel or an input line decides would never be read."""
+    """A fixed value for a criterion a sensor, a channel, an input line or a PWM read-back decides would never be read."""
     for criterion in facts:
+        if feedback_facts and criterion in feedback_facts:
+            pin, quantity = feedback_facts[criterion]
+            raise AgentManifestError(
+                where=f"{where} {criterion}",
+                why=(
+                    f"{criterion!r} is read from the {quantity} of PWM channel {pin!r} "
+                    "([sim.feedback_facts]) on every evaluation, so this value would never be used"
+                ),
+                how=f"remove {criterion} here, or its [sim.feedback_facts] rule",
+            )
         if digital_facts and criterion in digital_facts:
             raise AgentManifestError(
                 where=f"{where} {criterion}",
@@ -658,7 +671,8 @@ def _linux_needs(
     """
     What `LinuxHAL` checks before it requests a line: every sensor the agent or a gate
     fact reads is readable, every input line it reads is there, a display backend is chosen
-    if the agent draws, every I2C bus the agent reads has a device node chosen and opens,
+    if the agent draws, the kernel has the PWM channels the agent drives and a channel chosen
+    for each, every I2C bus the agent reads has a device node chosen and opens,
     and the live audio devices (when the machine chose that backend) open if the agent
     needs them — all before a pin is held (Q-16, TSK-S5-08).
     """
@@ -669,6 +683,7 @@ def _linux_needs(
         "sensors": sensors,
         "analog": analog,
         "display": "display" in manifest.requires,
+        "pwm": list(manifest.requires.get("digital.out", {}).get("pwm", ())),
         "i2c": sorted({device.partition("/")[0] for device in _required_i2c(manifest)}),
         "audio": tuple(
             primitive for primitive in ("audio.in", "audio.out") if primitive in manifest.requires
@@ -710,6 +725,7 @@ class SimSession:
         sensor_facts: Mapping[str, SensorFact] | None = None,
         analog_facts: Mapping[str, str] | None = None,
         digital_facts: Mapping[str, DigitalFact] | None = None,
+        feedback_facts: Mapping[str, tuple[str, str]] | None = None,
         slow: SystemTwo | None = None,
         fast: SystemOne | None = None,
         knowledge: KnowledgeBase | None = None,
@@ -727,6 +743,7 @@ class SimSession:
         self.sensor_facts = dict(sensor_facts or {})
         self.analog_facts = dict(analog_facts or {})  # criterion -> analog.in channel
         self.digital_facts = dict(digital_facts or {})
+        self.feedback_facts = dict(feedback_facts or {})  # criterion -> (PWM channel, quantity)
         self.slow = slow if slow is not None else SystemTwo("sim")
         # System 1 — the gate's fact source: `[system_one]`'s model, or the grammar alone.
         self.fast = fast if fast is not None else conversation.engine.facts_source
@@ -793,6 +810,7 @@ class SimSession:
         sim_table = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
         sensors, sensor_facts = _sim_sensors(manifest, sim_table)
         analog_facts = analog_fact_channels(manifest)  # build() has already vetted the rules
+        feedback_facts = feedback_fact_rules(manifest)
         analog_values = _sim_analog(manifest, sim_table)
         digital_facts = parse_digital_facts(manifest.source, sim_table)
         input_levels = parse_digital_levels(manifest.source, sim_table)
@@ -803,6 +821,7 @@ class SimSession:
                 sensor_facts,
                 analog_facts,
                 digital_facts,
+                feedback_facts,
             )
 
         if target == "linux":
@@ -883,6 +902,7 @@ class SimSession:
                 sensor_facts=sensor_facts,
                 analog_facts=analog_facts,
                 digital_facts=digital_facts,
+                feedback_facts=feedback_facts,
                 slow=slow,
                 fast=fast,
                 knowledge=knowledge,
@@ -943,6 +963,46 @@ class SimSession:
         self.hal.set_analog(channel, value)
         self.events.emit("analog_set", analog_data(channel, value))
 
+    def set_feedback(self, pin: str, words: Sequence[str]) -> None:
+        """
+        Change what a simulated PWM channel reads back (REPL `:feedback`, the UI), and record it:
+        ``duty=0.3``, ``frequency_hz=1000`` (either or both), ``fail <reason>`` for a read-back that
+        fails, ``clear`` to read the commanded output again. Only `sim` has a read-back to set.
+        """
+        words = list(words)
+        if not hasattr(self.hal, "set_feedback"):
+            raise NeuroEdgeError(
+                where=f":feedback {pin}",
+                why="on linux the read-back is the PWM controller's own; there is nothing to set",
+                how="change what the channel does, or set it on sim (--target sim)",
+            )
+        data: dict[str, Any] = {"pin": pin}
+        if words[:1] == ["clear"]:
+            self.hal.board.require_pin(pin, called_from=":feedback")
+            self.hal.clear_feedback(pin)
+            data["clear"] = True
+        elif words[:1] == ["fail"]:
+            reason = " ".join(words[1:]) or "the read-back fails"
+            self.hal.set_feedback(pin, fail=reason)
+            data["fail"] = reason
+        else:
+            values: dict[str, float] = {}
+            for word in words:
+                key, _, text = word.partition("=")
+                try:
+                    values[key] = float(text)
+                except ValueError:
+                    values = {}
+                if key not in ("duty", "frequency_hz") or key not in values:
+                    raise NeuroEdgeError(
+                        where=f":feedback {pin} {' '.join(words)}",
+                        why="a read-back is set as duty=<ratio> and/or frequency_hz=<Hz>, or `fail <why>`, or `clear`",
+                        how=f":feedback {pin} duty=0.3 frequency_hz=1000",
+                    )
+            self.hal.set_feedback(pin, **values)
+            data.update(values)
+        self.events.emit("feedback_set", data)
+
     def set_digital_in(self, pin: str, level: bool) -> None:
         """Change a simulated input level (REPL `:input`, the UI) and record that it changed."""
         self.hal.set_digital_in(pin, level)
@@ -961,6 +1021,17 @@ class SimSession:
                 how=(
                     f":input {line.pin} <true|false> on sim; on linux, change what drives the line"
                 ),
+            )
+        feedback = self.feedback_facts.get(criterion)
+        if feedback is not None:
+            raise NeuroEdgeError(
+                where=f":set {criterion}",
+                why=(
+                    f"{criterion!r} is read from the {feedback[1]} of PWM channel {feedback[0]!r} "
+                    "([sim.feedback_facts]) each time the gate facts are gathered; a value set "
+                    "here would never be read"
+                ),
+                how=f":feedback {feedback[0]} duty=<ratio> on sim; on linux, it is what the controller reports",
             )
         channel = self.analog_facts.get(criterion)
         if channel is not None:
@@ -1029,6 +1100,39 @@ class SimSession:
                 facts[criterion] = None if reason is not None else rule.evaluate(reading)
         facts.update(self._analog_facts())
         self._digital_facts(facts)
+        facts.update(self._feedback_facts())
+        return facts
+
+    def _feedback_facts(self) -> dict[str, Fact | None]:
+        """
+        One `state()` per PWM channel, however many criteria it feeds (RFC-0010 §3b, §9.12). A
+        `measured` quantity is a numeric `Fact` carrying the mark of its read, which the engine
+        ages. A `commanded` one is **never** handed to the gate — it is what the HAL wrote, not
+        what the hardware does — and a read-back that failed (NE5001; the HAL has recorded it as
+        `pin_state` with its `reason`) or a quantity the channel has no value for now (the
+        frequency of a channel that is off) is no number either: each leaves its criterion
+        undecided, and the gate blocks `criterion_unavailable`.
+        """
+        by_pin: dict[str, list[tuple[str, str]]] = {}
+        for criterion, (pin, quantity) in self.feedback_facts.items():
+            by_pin.setdefault(pin, []).append((criterion, quantity))
+        facts: dict[str, Fact | None] = {}
+        for pin, rules in by_pin.items():
+            try:
+                state = self.hal.pin_state(
+                    pin, called_from=f"[sim.feedback_facts] {rules[0][0]}", use="fact"
+                )
+            except (PerceptionUnavailableError, BoardCapabilityError):
+                state = None
+            for criterion, quantity in rules:
+                value = (
+                    None
+                    if state is None or state.source != MEASURED
+                    else state.values.get(quantity)
+                )
+                facts[criterion] = (
+                    None if value is None else Fact(value, read_ms=state.read_ms, source="context")
+                )
         return facts
 
     def _analog_facts(self) -> dict[str, Fact | None]:

@@ -618,6 +618,7 @@ class TracePlayer:
         _script_sensors(hal, self.trace)
         _script_i2c(hal, self.trace)
         _script_digital_in(hal, self.trace)
+        _script_pin_state(hal, self.trace)
         warnings = _sensor_rules_changed(self.trace, self.manifest, events)
         warnings += [_gate_digest_warning(change) for change in changed]
         problems = fact_mark_problems(self.trace)
@@ -800,6 +801,30 @@ def _script_digital_in(hal: Any, trace: Mapping[str, Any]) -> None:
         )
     for pin, values in levels.items():
         script(pin, values)
+
+
+def _script_pin_state(hal: Any, trace: Mapping[str, Any]) -> None:
+    """
+    Feed the recorded `pin_state` reads back, in order (RFC-0010 §3b), to the `state()` calls an
+    @action body makes — each with the `source` it was recorded with, a read that failed
+    (`reason`, no `source`) as a failed read again. Reads made to compute a gate fact
+    (`use: fact`) are not replayed: what they gave is already in `gate_facts`.
+    """
+    states: dict[str, list[dict[str, Any] | None]] = {}
+    for event in trace.get("events", []):
+        data = event.get("data", {})
+        if event.get("type") == "pin_state" and "use" not in data:
+            entry = None if "source" not in data else dict(data)
+            states.setdefault(data["pin"], []).append(entry)
+    script = getattr(hal, "script_pin_state", None)
+    if states and script is None:
+        raise ReplayError(
+            where=f"replay on {getattr(hal, 'target', '?')}",
+            why="the trace reads the state of PWM channels, and this HAL cannot be fed recorded states",
+            how="replay on sim or linux",
+        )
+    for pin, entries in states.items():
+        script(pin, entries)
 
 
 def replay_sync(trace, **kwargs) -> ReplayResult:

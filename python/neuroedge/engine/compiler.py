@@ -178,7 +178,8 @@ def _describe(board: BoardProfile) -> str:
         if not board.supports(primitive):
             continue
         if primitive == "digital.out":
-            offered.append(f"digital.out:{list(board.pins)}")
+            pwm = f" (pwm: {list(board.pwm_pins)})" if board.pwm_pins else ""
+            offered.append(f"digital.out:{list(board.pins)}{pwm}")
         elif primitive == "sensor.read":
             offered.append(f"sensor.read:{list(board.sensors)}")
         elif primitive == "digital.in":
@@ -273,6 +274,8 @@ def check_capabilities(manifest: AgentManifest, board: BoardProfile) -> list[Neu
                     problems.append(
                         _mismatch(manifest, board, f"{primitive}:{name}", f"add {name!r} to {key}")
                     )
+            if primitive == "digital.out" and "pwm" in need:
+                problems += _check_pwm_channels(manifest, board, need)
         elif primitive == "analog.in":
             problems += _check_analog_channels(manifest, board, need)
         elif primitive == "i2c":
@@ -340,6 +343,48 @@ def _check_analog_channels(
         for name in channels
         if name not in declared
     ]
+
+
+def _check_pwm_channels(
+    manifest: AgentManifest, board: BoardProfile, need: Mapping[str, Any]
+) -> list[NeuroEdgeError]:
+    """
+    `"digital.out" = { pins = ["fan"], pwm = ["fan"] }` (RFC-0010): PWM is a block of
+    `digital.out`, not a primitive of its own, so the agent names the PWM channels it
+    drives and each must be one the board declares in `digital_out.pwm.pins` and also be
+    listed in `pins` (that is the list a verdict token is checked against).
+    """
+    channels = need["pwm"]
+    where = f"{manifest.source} -> [requires] digital.out pwm"
+    if not (isinstance(channels, list) and all(isinstance(name, str) for name in channels)):
+        return [
+            AgentManifestError(
+                where=where,
+                why=f"`pwm` must be a list of PWM channel names, found {channels!r}",
+                how='write "digital.out" = { pins = ["fan"], pwm = ["fan"] }',
+            )
+        ]
+    problems: list[NeuroEdgeError] = []
+    listed = need.get("pins", [])
+    for name in channels:
+        if name not in board.pwm_pins:
+            problems.append(
+                _mismatch(
+                    manifest,
+                    board,
+                    f"digital.out pwm:{name}",
+                    f"declare {name!r} in [capabilities.digital_out.pwm].pins",
+                )
+            )
+        elif name not in listed:
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"PWM channel {name!r} is not in this agent's digital.out `pins`",
+                    how=f'add {name!r} to pins: "digital.out" = {{ pins = [{name!r}], pwm = [{name!r}] }}',
+                )
+            )
+    return problems
 
 
 def default_board_hint(manifest: AgentManifest, board: BoardProfile) -> NeuroEdgeError:
@@ -673,6 +718,106 @@ def _analog_binding_problems(
     return problems
 
 
+def feedback_fact_rules(manifest: AgentManifest) -> dict[str, tuple[str, str]]:
+    """
+    `[sim.feedback_facts]`: ``fan_duty = { pin = "fan", quantity = "duty" }`` binds a numeric
+    criterion to one quantity (`duty` or `frequency_hz`) of a PWM channel's `state()`
+    (RFC-0010 §3b, §9.12). Returns criterion -> (pin, quantity).
+    """
+    sim = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
+    rules = sim.get("feedback_facts", {}) if isinstance(sim, dict) else {}
+    where = f"{manifest.source} -> [sim.feedback_facts]"
+    if not isinstance(rules, dict):
+        raise AgentManifestError(
+            where=where,
+            why=f"[sim.feedback_facts] must be a table of criterion = {{ pin, quantity }}, found {rules!r}",
+            how='write fan_duty = { pin = "fan", quantity = "duty" }',
+        )
+    bound: dict[str, tuple[str, str]] = {}
+    for criterion, rule in rules.items():
+        if (
+            not isinstance(rule, dict)
+            or set(rule) != {"pin", "quantity"}
+            or not isinstance(rule["pin"], str)
+            or rule["quantity"] not in ("duty", "frequency_hz")
+        ):
+            raise AgentManifestError(
+                where=f"{where} {criterion}",
+                why=f"a feedback fact is `pin = <PWM channel>, quantity = duty | frequency_hz`, found {rule!r}",
+                how=f'write {criterion} = {{ pin = "fan", quantity = "duty" }}',
+            )
+        bound[criterion] = (rule["pin"], rule["quantity"])
+    return bound
+
+
+def check_feedback_facts(
+    manifest: AgentManifest, board: BoardProfile, gates: Mapping[str, ResolvedGate]
+) -> list[NeuroEdgeError]:
+    """
+    Every `[sim.feedback_facts]` rule is a numeric criterion fed by a PWM channel's `state()`
+    that it fits (RFC-0010 §3b, §9.12; RFC-0009 §3f). The scale is fixed by the board: `duty` is
+    a `ratio` on `[0, max_duty]`, `frequency_hz` is in `Hz` on the channel's range. For each
+    gate that evaluates the criterion it is `numeric`, its `unit` is the quantity's, and the
+    quantity's scale lies inside its `range`; a mismatch is `BoardCapabilityError` (NE3001),
+    found here and not as a wrong verdict on the device. The channel is one `[requires]`
+    lists under `digital.out` `pwm`. A channel the board does not declare `feedback` for reads
+    back `commanded` values, which never reach the gate: its criteria stay undecided.
+    """
+    from ..hal.pwm import pwm_limits
+
+    try:
+        bound = feedback_fact_rules(manifest)
+    except AgentManifestError as error:
+        return [error]
+    sim = tomllib.loads(manifest.source.read_text(encoding="utf-8")).get("sim", {})
+    others = {
+        table: set(sim[table])
+        for table in ("sensor_facts", "analog_facts", "digital_facts", "facts")
+        if isinstance(sim.get(table), dict)
+    }
+    required = manifest.requires.get("digital.out", {}).get("pwm", [])
+    required = required if isinstance(required, list) else []
+    problems: list[NeuroEdgeError] = []
+    for criterion, (pin, quantity) in bound.items():
+        where = f"{manifest.source} -> [sim.feedback_facts] {criterion}"
+        clash = next((table for table, names in others.items() if criterion in names), None)
+        if clash is not None:
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"{criterion!r} is also a [sim.{clash}] rule, so two sources would feed it",
+                    how="keep one source for the criterion",
+                )
+            )
+            continue
+        if pin not in required:
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"channel {pin!r} is not one [requires] declares under digital.out `pwm`",
+                    how=f'add pwm = ["{pin}"] to "digital.out" in [requires]',
+                )
+            )
+            continue
+        limits = pwm_limits(board, pin)
+        if limits is None:
+            continue  # check_capabilities already names the channel the board lacks
+        readers = [gate for gate in gates.values() if criterion in gate.evaluate]
+        if not readers:
+            problems.append(
+                AgentManifestError(
+                    where=where,
+                    why=f"no gate of the agent evaluates {criterion!r}, so the read-back would feed nothing",
+                    how=f"name the rule after a numeric criterion of a gate, or remove {criterion}",
+                )
+            )
+        unit, low, high = limits.scale(quantity)
+        scale = {"name": f"{pin}.{quantity}", "unit": unit, "min": low, "max": high}
+        for gate in readers:
+            problems += _analog_binding_problems(where, criterion, scale, gate)
+    return problems
+
+
 @dataclass(frozen=True)
 class DigitalFact:
     """
@@ -920,7 +1065,7 @@ def check_system_one(
     sim = sim if isinstance(sim, dict) else {}
     computed = {
         f"sim.{table}": set(sim[table])
-        for table in ("facts", "slot_facts", "sensor_facts", "analog_facts")
+        for table in ("facts", "slot_facts", "sensor_facts", "analog_facts", "feedback_facts")
         if isinstance(sim.get(table), dict)
     }
     problems: list[NeuroEdgeError] = []
@@ -1227,6 +1372,7 @@ def build(
     problems += check_gate_arguments(gates, actions)
     problems += check_sensor_facts(manifest, gates)
     problems += check_analog_facts(manifest, board, gates)
+    problems += check_feedback_facts(manifest, board, gates)
     problems += check_digital_facts(manifest, gates, board)
 
     grammar = manifest.root / "commands.toml"

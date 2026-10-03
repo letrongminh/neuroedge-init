@@ -9,6 +9,7 @@ the world it arrives in:
     call:    { name: light_off, arguments: {}, source: mcp }
     facts:   { }                             # override [sim.facts] of the agent
     sensors: { motion: true }                # simulated readings, before the call
+    board:   sim-rpi5                        # a reference board of `sim`; default sim-default
 
 and its expectation — `status`, the verdict fields, the pin commands — lives in
 `expected_results.yaml` under ``valid:`` or ``invalid:``, one entry per file and
@@ -35,11 +36,12 @@ import yaml
 
 from ..actions.tools import SOURCES, ToolCall, check_arguments
 from ..errors import NeuroEdgeError
+from ..hal.board import REFERENCE_BOARDS
 from ..paths import fixtures_dir
 
 KINDS = ("valid", "invalid")
 EXPECTED_FILE = "expected_results.yaml"
-CASE_KEYS = {"agent", "call", "facts", "sensors"}
+CASE_KEYS = {"agent", "board", "call", "facts", "sensors"}
 CALL_KEYS = {"name", "arguments", "source"}
 # Verdict fields an expectation must state whenever the result carries them.
 STRICT_FIELDS = ("reason", "failed_criterion", "on_block", "escalated_to")
@@ -68,6 +70,7 @@ class ToolCase:
     call: ToolCall
     facts: dict[str, Any] = field(default_factory=dict)
     sensors: dict[str, Any] = field(default_factory=dict)
+    board: str | None = None  # a reference board of `sim` other than the default (RFC-0013)
 
     @property
     def name(self) -> str:
@@ -136,6 +139,13 @@ def load_case(path: Path, kind: str) -> ToolCase:
             f"use one of {list(SOURCES)} — the runtime assigns it, as a connection would",
         )
     arguments = _mapping(call.get("arguments"), f"{path} -> call.arguments", "call.arguments")
+    board = document.get("board")
+    if board is not None and board not in REFERENCE_BOARDS["sim"]:
+        raise _corpus_error(
+            f"{path} -> board",
+            f"{board!r} is not a reference board of `sim`",
+            f"use one of {list(REFERENCE_BOARDS['sim'])}, or omit board for the default",
+        )
     return ToolCase(
         path=path,
         kind=kind,
@@ -143,6 +153,7 @@ def load_case(path: Path, kind: str) -> ToolCase:
         call=ToolCall(call["name"], arguments, source),
         facts=_mapping(document.get("facts"), f"{path} -> facts", "facts"),
         sensors=_mapping(document.get("sensors"), f"{path} -> sensors", "sensors"),
+        board=board,
     )
 
 
@@ -211,7 +222,7 @@ def session_for(case: ToolCase) -> Any:
     from ..sim import SimSession
 
     agent = fixtures_dir() / "agents" / case.agent / "agent.toml"
-    session = SimSession.load(agent, facts=case.facts)
+    session = SimSession.load(agent, facts=case.facts, board_id=case.board)
     for sensor, value in case.sensors.items():
         session.set_sensor(sensor, value)
     return session
@@ -262,7 +273,13 @@ def compare(case: ToolCase, expected: Mapping[str, Any], outcome: tuple[Any, Any
     session, result = outcome
     content = result.content()
     pins = [
-        {"pin": e["pin"], "operation": e["operation"], "duration_ms": e["duration_ms"]}
+        {
+            "pin": e["pin"],
+            "operation": e["operation"],
+            "duration_ms": e["duration_ms"],
+            # a PWM command states its frequency and duty too (RFC-0010)
+            **{k: e[k] for k in ("frequency_hz", "duty") if k in e},
+        }
         for e in session.events.of_type("actuator_command")
     ]
     conforms = _conforms(session, case.call)
