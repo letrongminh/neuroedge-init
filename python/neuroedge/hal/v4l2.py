@@ -489,11 +489,15 @@ class V4L2Camera:
                 f"the driver returned buffer {buf.index}, and only {len(self._maps)} were queued",
                 "the stream is out of step with the driver: reopen the camera",
             )
+        # Everything the frame is made of is read now, before the buffer goes back: `VIDIOC_QBUF`
+        # writes the *queued* buffer's state into its argument (sequence 0, no timestamp, the
+        # QUEUED flag), so reading `buf.sequence` after it would number every frame 0 (found on
+        # `vivid`, kernel 6.17). The hand-back below uses a fresh structure for the same reason.
+        index, flags, used, sequence = buf.index, buf.flags, buf.bytesused, buf.sequence
         try:
-            if buf.flags & V4L2_BUF_FLAG_ERROR:
+            if flags & V4L2_BUF_FLAG_ERROR:
                 self.dropped += 1  # a corrupt frame is a frame that never came
                 return None
-            used = buf.bytesused
             expected = self.mode.frame_bytes
             if expected is not None and used != expected:
                 raise _error(
@@ -501,11 +505,17 @@ class V4L2Camera:
                     f"a frame has {used} bytes; a {self.mode} frame has {expected}",
                     "the driver changed the format under the stream: reopen the camera",
                 )
-            pixels = bytes(self._maps[buf.index][:used])
+            pixels = bytes(self._maps[index][:used])
         finally:
-            self.io.ioctl(self._fd, VIDIOC_QBUF, buf)  # always hand the buffer back
+            back = v4l2_buffer()
+            back.type, back.memory, back.index = (
+                V4L2_BUF_TYPE_VIDEO_CAPTURE,
+                V4L2_MEMORY_MMAP,
+                index,
+            )
+            self.io.ioctl(self._fd, VIDIOC_QBUF, back)  # always hand the buffer back
         return CameraFrame(
-            buf.sequence,
+            sequence,
             captured,
             pixels,
             self.mode.width,

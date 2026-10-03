@@ -40,6 +40,9 @@ class FakeMap:
         self.closed = True
 
 
+V4L2_BUF_FLAG_QUEUED = 0x00000002
+
+
 class FakeKernel:
     """A V4L2 capture driver: answers the ioctls of `hal/v4l2.py`, and queues what a test puts."""
 
@@ -118,6 +121,10 @@ class FakeKernel:
         elif request == v4l2.VIDIOC_QBUF:
             self.calls.append("QBUF")
             self.in_flight.add(arg.index)
+            # like vb2: the argument comes back describing the buffer as *queued* — no frame
+            # number, no timestamp (a reader that takes a frame's fields after handing it back
+            # numbers every frame 0, as the first run on `vivid` showed)
+            arg.sequence, arg.tv_sec, arg.tv_usec, arg.flags = 0, 0, 0, V4L2_BUF_FLAG_QUEUED
         elif request == v4l2.VIDIOC_STREAMON:
             self.calls.append("STREAMON")
             self.streaming = True
