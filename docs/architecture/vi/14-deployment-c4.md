@@ -68,7 +68,7 @@ Bước cụ thể: chính các tệp workflow. Trạng thái xanh/đỏ hiện 
 | Từ → tới | Giao thức | Ghi chú |
 |:---|:---|:---|
 | `neuroedge` → trình duyệt | HTTP + SSE trên 127.0.0.1 | không mở ra mạng |
-| Claude Desktop → `mcp serve` | MCP qua stdio | transport mạng hoãn (`TODOS.md` #24) |
+| Claude Desktop → `mcp serve` | MCP qua stdio | transport mạng: `--http` (TSK-P2-04), thiết bị khác qua mTLS, không phải Claude Desktop |
 | `neuroedge` → Docker IDF | `neuroedge build --target esp32s3` sinh project; ESP-IDF dựng trong container | |
 | Box-3 → host | UART, dòng `NE1` | `record`/`verify --port` đọc; baud và console còn mở (`TODOS.md` #35) |
 | Box-3 → máy chủ OTA | HTTP(S) GET ảnh đã ký | Wi-Fi thật chưa nối (`TODOS.md` #50) |

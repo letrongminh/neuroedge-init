@@ -164,7 +164,7 @@ Events by role in replay:
 |:---|:---|:---|
 | **Input** | `text_input`, `audio_in_*`, `wake_word_detected`, `stt_result`, `stt_unavailable`, `sensor_read`, `sensor_set`, `sensor_unavailable`, `intent_extracted` | fed in again |
 | **Decision** | `gate_evaluation_begin`, `gate_facts`, `gate_evaluation_result`, `argument_out_of_range`, `actuator_command`, `actuator_aborted`, `actuator_command_rejected` | recomputed and compared against golden |
-| **Orchestration** | `tool_call`, `tool_call_rejected`, `tool_confirm_*`, `action_requested`, `fallback_skipped`, `voice_state_changed`, `voice_reprompt`, `voice_late_result_dropped`, `stt_fallback` | recorded, not compared |
+| **Orchestration** | `tool_call`, `tool_call_rejected`, `mcp_auth_refused`, `tool_confirm_*`, `action_requested`, `fallback_skipped`, `voice_state_changed`, `voice_reprompt`, `voice_late_result_dropped`, `stt_fallback` | recorded, not compared |
 | **Output** | `tts_stream_start`, `tts_stream_end`, `tts_unavailable`, `display_frame` (digest only), `knowledge_retrieved` | not compared |
 | **Measurement** | `system_one_call`, `system_one_fallback`, `system_two_call`, `system_two_unavailable`, `circuit_breaker`, `mcp_tool_result`, `turn_latency`, `session_summary` | skipped |
 | **Device-only** | `device_info`, `trace_end` | UART session frame |

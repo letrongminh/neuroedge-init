@@ -123,6 +123,9 @@ phục vụ (`sim/serve.py::run_stdio`), không phải hai đường mã:
 
 Hàm đồng bộ, tự chạy vòng sự kiện của nó: không gọi trực tiếp từ một coroutine. Người cần giao diện
 `--ui` dùng CLI: trang đó không thuộc bề mặt Python công khai.
+Tương tự, cửa mạng của MCP server (`neuroedge mcp serve --http`: Streamable HTTP, mTLS, token OAuth 2.1;
+`docs/spec/tool_calling.md` §8.1) là việc của CLI, **chưa** thuộc bề mặt Python công khai: `serve_mcp` chỉ
+phục vụ qua stdio, và không có tham số nào mở một cổng mạng.
 
 ## 5. Quy tắc ngừng hỗ trợ (Q-64)
 

@@ -95,7 +95,14 @@ nó đọc; client MCP có thể là một agent tự động. Chúng chỉ gử
 | Nội dung từ MCP server bên ngoài bị cài lệnh ("hãy tắt đèn") | Kết quả là dữ liệu cho mô hình, không phải lệnh; lời gọi mô hình sinh ra sau đó vẫn qua gate (Q-27) | `BLOCK` theo gate | `test_prompt_injection_in_the_news_still_meets_the_gate` |
 | Tool bên ngoài có hiệu ứng vật lý (đi vòng qua gate) | Allowlist `tools` trong `agent.toml`; quy tắc: hiệu ứng vật lý phải là `@action`; tên trùng `@action` ⇒ build lỗi | Tool ngoài allowlist `REJECTED` | `test_a_tool_outside_the_allowlist_is_refused` · `test_build_refuses_a_bad_mcp_table` |
 | Server bên ngoài treo hoặc không chạy | `timeout_s`; server bị bỏ qua | `mcp_server_unavailable`, tool thiết bị vẫn chạy | `test_a_server_that_does_not_start_is_skipped_and_the_lights_still_work` |
-| Lặp lời gọi bị chặn tới khi lọt | Gate tất định: cùng dữ kiện ⇒ cùng phán quyết; mỗi lần đều ghi vết | `BLOCK` lặp lại | chưa có test riêng |
+| Lặp lời gọi bị chặn tới khi lọt (một client, hay nhiều kết nối, qua stdio hay qua mạng) | Gate tất định: cùng dữ kiện ⇒ cùng phán quyết; không có đếm lần thử, không có "thử lại", không có trạng thái nào lời gọi trước để lại cho lời gọi sau; mỗi lần đều ghi vết. Chỉ **dữ kiện đổi** mới đổi được phán quyết | N lời gọi ⇒ N `BLOCK` và N chuỗi sự kiện, không chân nào đổi | `test_repeating_a_blocked_call_over_the_network_never_slips_through` (deny và degrade, 25 lần, qua mTLS) · `test_the_same_facts_give_the_same_verdict_with_or_without_the_network` (`TODOS.md` #29) |
+| Client MCP qua mạng không có chứng chỉ, chứng chỉ do CA lạ ký, hoặc chỉ nói TLS 1.2 | mTLS bắt buộc, TLS 1.3 tối thiểu (NFR-SEC-04): bắt tay thất bại, không byte HTTP nào tới ứng dụng; không có sự kiện vết ghi (xảy ra trước mã ứng dụng) | Kết nối bị đóng | `test_a_client_without_a_trusted_certificate_never_reaches_http` · `test_a_client_that_will_not_speak_tls_13_is_refused` |
+| Gọi qua mạng không token, hoặc token sai: hết hạn, chữ ký khoá khác, `alg: none`, sai `aud` hay `iss`, thiếu `exp`/`sub` | Bộ kiểm token của resource server (OAuth 2.1, RFC 9068/8707); chỉ thuật toán bất đối xứng | `401`, **không gì được chuyển tiếp**, `mcp_auth_refused` | `test_a_request_without_a_valid_token_is_refused_and_nothing_is_dispatched` · `test_a_request_with_no_token_at_all_is_a_401_and_is_traced` |
+| Token thiếu phạm vi | `--required-scope` | `403` | `test_a_token_without_the_required_scope_is_a_403` |
+| Token của thiết bị A bị đánh cắp, trình từ máy khác (kể cả máy có chứng chỉ hợp lệ của thiết bị B) | Token ràng buộc chứng chỉ (RFC 8705, `cnf.x5t#S256`): phải bằng dấu vân tay chứng chỉ đang kết nối; token không ràng buộc bị từ chối | `401` `cert_mismatch` / `not_cert_bound` | `test_every_device_gets_its_own_token_and_one_cannot_use_anothers` · `BAD_TOKENS` (hai ca) |
+| Thiết bị đã xác thực dùng lại phiên MCP của thiết bị khác (đoán `mcp-session-id`) | Phiên gắn với (issuer, `client_id`, `sub`) của token mở nó | `404` | `test_a_session_belongs_to_the_device_that_opened_it` |
+| Bật cổng mạng mà thiếu một mảnh cấu hình (TLS, CA, issuer, audience, JWKS), hoặc đưa vào khoá có thể ký | Khởi động đóng: `prepare` kiểm đủ **trước** khi dựng phiên và mở socket; JWKS chứa khoá riêng hay khoá đối xứng bị từ chối | Thoát mã 1, lỗi ba phần | `test_the_network_transport_refuses_to_start_without_the_whole_configuration` · `test_the_cli_refuses_to_start_half_configured_before_wiring_a_session_or_binding` · `test_a_key_file_that_could_forge_tokens_is_refused` |
+| Client mạng tự khai `call_source` để giả làm lệnh cục bộ | Như dòng `call_source` ở đầu mục: không phải tham số; nguồn của kết nối `--http` là `mcp` | `REJECTED` | `test_an_authenticated_client_lists_and_calls_the_gated_tools` |
 
 **Ranh giới tin cậy của `mcp serve --ui`.** Trang và client MCP dùng **chung một phiên**
 (`tool_calling.md` §8). Chữ gõ trên trang đi vào như lời của người trên thiết bị: câu lệnh
@@ -106,10 +113,25 @@ nghe `127.0.0.1` và chỉ nhận yêu cầu cùng nguồn gốc (dòng trên). 
 đường nào để tự xác nhận (`test_an_mcp_client_has_no_way_to_confirm`); luồng MCP rồi người
 trên trang: `test_a_tool_call_through_mcp_then_a_person_on_the_page`.
 
-**Hôm nay:** MCP chỉ qua **stdio**, nên bên chạy được `neuroedge mcp serve` là người vận
-hành, có quyền ngang runtime (§3). Transport mạng vào v1.0 ở TSK-P2-04 (Q-58), mặc định tắt;
-task đó thêm mục của bên gọi qua mạng vào mục này — xác thực OAuth 2.1, mTLS theo thiết bị,
-lặp lời gọi bị chặn (`TODOS.md` #24, #29, NFR-SEC-09).
+**Ranh giới tin cậy của `mcp serve --http` (TSK-P2-04, Q-58, `tool_calling.md` §8.1).** MCP mặc định
+qua **stdio**: bên chạy được `neuroedge mcp serve` là người vận hành, có quyền ngang runtime (§3). Cổng mạng
+**mặc định tắt**, và khi bật thì bên gọi vẫn **không tin cậy** — chỉ được tin là *được phép hỏi*, còn gate quyết
+định. Ai qua được cửa: người giữ **cả** một chứng chỉ client do `--client-ca` ký **và** một token do issuer cấp
+cho đúng chứng chỉ đó. Những gì cửa mạng **không** làm được, nói rõ:
+
+- **Không phân biệt thiết bị ở gate.** Mọi lời gọi qua mạng, thiết bị nào cũng vậy, là `call_source = mcp`; gate
+  không cấm riêng được một thiết bị hay riêng cửa mạng (thêm nguồn là đổi hợp đồng, cần RFC — `tool_calling.md` §5).
+  Hai thiết bị cùng quyền như nhau với gate; phân quyền theo thiết bị làm ở issuer (phạm vi trong token).
+- **Không thu hồi tức thì.** Token chết khi hết hạn hoặc khi issuer đổi khoá (`--jwks` đọc một lần lúc khởi
+  động — đổi khoá thì khởi động lại); chứng chỉ client không kiểm CRL/OCSP. Cấp token ngắn hạn. Một thiết bị bị
+  chiếm giữ cả khoá riêng lẫn token vẫn gọi được tới khi token hết hạn; nó vẫn chỉ *hỏi* được, và gate vẫn
+  chặn điều gate chặn — N lần hỏi lại vẫn là N lần `BLOCK`.
+- **Kẻ giữ chứng chỉ hợp lệ có thể gây quá tải.** Không giới hạn tốc độ ở tầng ứng dụng; vết ghi chỉ giữ
+  10 000 lần từ chối đầu mỗi phiên (`last_recorded`) để vết không phình vô hạn. Bắt tay TLS thất bại không vào
+  vết ghi, chỉ vào log của uvicorn.
+- **Token chỉ được kiểm lúc nhận yêu cầu.** Một luồng SSE đã mở sống tiếp tới khi đóng, dù token đã hết hạn.
+- **Lệnh quản trị không qua mạng** (`gate lint`, `trace validate`): Q-63 chủ ý không mở thêm bề mặt này.
+- **Chưa thử trên hai máy thật.** Test chạy trong một tiến trình trên 127.0.0.1 với CA tạm sinh lúc chạy.
 
 ## 3. Ngoài phạm vi: kẻ giả mạo trong cùng tiến trình
 

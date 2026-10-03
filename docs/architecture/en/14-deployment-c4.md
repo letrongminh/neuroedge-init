@@ -69,7 +69,7 @@ The concrete steps: the workflow files themselves. Current green/red status: roa
 | From → to | Protocol | Notes |
 |:---|:---|:---|
 | `neuroedge` → browser | HTTP + SSE on 127.0.0.1 | does not open to the network |
-| Claude Desktop → `mcp serve` | MCP over stdio | network transport deferred (`TODOS.md` #24) |
+| Claude Desktop → `mcp serve` | MCP over stdio | network transport: `--http` (TSK-P2-04), other machines over mTLS, not Claude Desktop |
 | `neuroedge` → Docker IDF | `neuroedge build --target esp32s3` generates the project; ESP-IDF builds inside the container | |
 | Box-3 → host | UART, `NE1` lines | `record`/`verify --port` reads; baud and console still open (`TODOS.md` #35) |
 | Box-3 → OTA server | HTTP(S) GET of the signed image | real Wi-Fi not connected yet (`TODOS.md` #50) |

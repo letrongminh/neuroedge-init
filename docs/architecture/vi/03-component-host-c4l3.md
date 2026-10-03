@@ -23,7 +23,7 @@ lên:
 | 2 | `engine` | bậc 0; **riêng `engine/compiler.py`** được dùng `hal` (đối chiếu bo mạch lúc build) và import muộn `actions`, `models`, `perception`, `mcp_host` (kiểm cấu hình) | L3 lõi |
 | 3 | `actions` | `engine`, `hal`, bậc 0 | L3 bề mặt |
 | 4 | `models` | `engine` (hiện thực giao thức của nó), `net`, bậc 0 | L2 |
-| 5 | `mcp_server`, `mcp_host`, `mcp_desktop` | `actions`, bậc 0 | L4 theo proposal §3.1 (docstring không tự khai tầng) |
+| 5 | `mcp_server`, `mcp_host`, `mcp_desktop`, `mcp_http` | `actions`, bậc 0; riêng `mcp_http` chỉ dùng `mcp_server` và `errors` — cửa mạng (TSK-P2-04) đặt sau cùng một máy chủ của stdio, không dựng đường thứ hai | L4 theo proposal §3.1 (docstring không tự khai tầng) |
 | 6 | `viz`, `templates` | `viz`: `hal`, `trace`, bậc 0; `templates`: `errors`, `paths` | công cụ |
 | 7 | `sim` | mọi bậc dưới | L0, **nơi lắp ráp** |
 | 8 | `perception` | `sim` (phiên thoại bọc phiên gõ), `models`, `actions`, `engine`, `hal`, `net` | L2 |
@@ -124,8 +124,9 @@ Khi `brain/` vào kho, nó cần một mục trong `ALLOWED` (và `LAZY` nếu c
 |:---|:---|
 | `sim/session.py` | `SimSession`: nơi lắp ráp một agent trên `sim` hoặc `linux`; xử lý một lượt (`handle`), một tool call (`call_tool`), một câu trả lời xác nhận |
 | `sim/ui.py` | `SessionServer`: web UI cùng phiên, SSE, kiểm cùng nguồn gốc |
-| `sim/serve.py` | Vòng phục vụ MCP qua stdio dùng chung: `neuroedge mcp serve` và `neuroedge.serve_mcp` (hàm Python công khai, `docs/spec/python_api.md`) cùng gọi `run_stdio` |
+| `sim/serve.py` | Vòng phục vụ MCP dùng chung: `neuroedge mcp serve` và `neuroedge.serve_mcp` (hàm Python công khai, `docs/spec/python_api.md`) cùng gọi `run_stdio`; `mcp serve --http` gọi `run_http`, cùng cách đóng phiên |
 | `mcp_server.py` | Agent thành máy chủ MCP qua stdio; mỗi lần một lời gọi |
+| `mcp_http.py` | Cửa mạng có xác thực của cùng máy chủ đó (TSK-P2-04, `docs/spec/tool_calling.md` §8): Streamable HTTP qua mTLS, token OAuth 2.1 theo thiết bị, kiểm cấu hình đủ trước khi mở cổng |
 | `mcp_host.py` | System 2 làm MCP host: công cụ của thiết bị qua máy chủ MCP của chính agent (vẫn qua gate), công cụ thông tin từ server bên ngoài theo danh sách cho phép |
 | `testing/` | Action CI: `TraceRecorder`, `TracePlayer`, `GoldenComparator`, thư viện assert, đọc UART, chạy corpus tool call và thoại |
 | `viz/` | Trang HTML tự chứa cho `trace view` và web UI; xuất Perfetto |
@@ -206,7 +207,7 @@ nó — cài thiếu thì lỗi ba phần chỉ ra phần mở rộng cần cài
 | Phần mở rộng | Gói | Import muộn trong |
 |:---|:---|:---|
 | (lõi) | `typer`, `rich`, `pydantic`, `jsonschema[format-nongpl]`, `pyyaml`, `rfc8785`, `deepdiff` | — |
-| `mcp` | `mcp` | `mcp_server.py::_sdk`, `mcp_host.py::ToolHost.__aenter__` |
+| `mcp` | `mcp` (kéo theo `starlette`, `uvicorn`, `PyJWT[crypto]`) | `mcp_server.py::_sdk`, `mcp_host.py::ToolHost.__aenter__`, `mcp_http.py` (các thư viện của SDK, trong từng hàm) |
 | `cloud` | `litellm==1.102.0` | `models/providers/litellm_provider.py::_import_litellm` |
 | `linux` | `gpiod` (LGPL, nên chỉ là tuỳ chọn) | `hal/linux.py::_import_gpiod` |
 | `audio` | `sounddevice` | `hal/linux.py::_import_sounddevice`, chỉ backend `live` |
