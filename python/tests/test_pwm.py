@@ -637,7 +637,11 @@ def feedback_agent(tmp_path, unit="ratio", allow="lt: 0.5", extra=""):
         'fan_stop = "gates/fan_stop@1.0.0.yaml"',
         'fan_stop = "gates/fan_stop@1.0.0.yaml"\nfan_boost = "gates/fan_boost@1.0.0.yaml"',
     )
-    text += '\n[sim.feedback_facts]\nfan_duty = { pin = "fan", quantity = "duty" }\n' + extra
+    text = text.replace(
+        "[sim.feedback_facts]\n",
+        '[sim.feedback_facts]\nfan_duty = { pin = "fan", quantity = "duty" }\n',
+    )
+    text += extra
     (folder / "agent.toml").write_text(text, encoding="utf-8")
     return folder / "agent.toml"
 

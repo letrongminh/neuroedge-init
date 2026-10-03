@@ -319,6 +319,19 @@ nguyên thủy** (`sim-rpi5`, `linux-rpi5`). Bo mạch thiếu một nguyên th�
 bo mạch nào phát lại được nó. Kiểm: `tests/test_sensor_pack_sample.py`, `tests/test_sensor_pack_linux.py` (phiên
 `linux` trên gpiod, sysfs và i2c-dev giả), `tests_linux/test_rail_gate.py` (gpio-sim + `i2c-stub`).
 
+**Hai corpus còn lại của tiêu chí ra I2a số 3** (`tests/test_pack_corpora.py`): `fixtures/traces/fine-control/`
+(agent `fan-pwm`: chạy quạt trong giới hạn, `duty`/`frequency_hz` vượt giới hạn gate ⇒ BLOCK
+`argument_out_of_range`, lần chạy thứ hai bị phong bì từ chối `already_on`, tiêu chí `fan_load` quyết bằng duty
+`measured` ⇒ ALLOW hoặc BLOCK `condition_not_met`, đọc lại hỏng hay chỉ có `commanded` ⇒ BLOCK
+`criterion_unavailable`) do `scripts/gen_fine_control_traces.py` sinh; `fixtures/traces/motion/` (agent `rover`:
+lease gia hạn, BLOCK đưa bánh về an toàn `cause: block`, lease hết hạn `cause: lease_expired`, tốc độ quá
+giới hạn gate) do `scripts/gen_motion_traces.py` sinh. `verify` phát lại fine-control trên mọi bo mạch khai kênh
+PWM (`digital_out.pwm`; PWM là khối của `digital.out` nên bo mạch được xét theo kênh, không theo nguyên thủy) và
+motion trên mọi bo mạch khai `motion` — `sim-rpi5`, `linux-rpi5`; còn lại `—`. Các bo mạch tham chiếu chưa khai
+`feedback`, nên hai phiên cần duty `measured` được ghi trên một giàn có khai nó (bản sao `boards/` trong bộ sinh,
+không đổi kho) và mang `board_id: sim-rpi5`: phát lại không đọc bộ điều khiển, nó nạp lại dữ kiện đã ghi. Phát lại
+trên `linux` với gpiod giả: `test_the_corpus_replays_to_what_it_recorded_on_every_board_that_declares_its_primitives`.
+
 **Âm thanh chọn rõ, không đoán** (TSK-S5-08): hai backend, không bao giờ đoán.
 
 - **Backend tệp** là mặc định của `--voice-file` (và của replay): WAV đọc cả tệp, 16-bit PCM,

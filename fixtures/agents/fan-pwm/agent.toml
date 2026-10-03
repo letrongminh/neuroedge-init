@@ -15,6 +15,13 @@ version = "0.1.0"
 [gates]
 fan_run  = "gates/fan_run@1.0.0.yaml"
 fan_stop = "gates/fan_stop@1.0.0.yaml"
+fan_assist = "gates/fan_assist@1.0.0.yaml"
 
 [targets]
 supported = ["sim", "linux"]
+
+# The fan's measured duty gates `fan_assist` (RFC-0010 §9.12): a read-back of the controller, not the
+# duty the HAL last wrote. The reference boards declare no `feedback` yet, so there the fact is
+# `commanded` and never reaches the gate: `fan_assist` then BLOCKs `criterion_unavailable`.
+[sim.feedback_facts]
+fan_load = { pin = "fan", quantity = "duty" }
