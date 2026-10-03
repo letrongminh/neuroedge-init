@@ -1,0 +1,13 @@
+# Principle 1 — a child widens the declared range of the package confidence beyond [0, 1].
+schema:  neuroedge.gate/v1
+name:    package-redefines-range
+version: 1.0.0
+extends: neuroedge://gates/vision/package-notify@1.0.0
+
+evaluate:
+  package_confidence:
+    type: numeric
+    unit: ratio
+    range: { min: 0, max: 10 }
+    max_age_ms: 500
+    instructions: "Điểm cao nhất của nhãn kiện hàng trong vùng hiên"

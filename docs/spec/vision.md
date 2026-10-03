@@ -1,6 +1,6 @@
 # Thị giác — từ khung hình tới dữ kiện gate và bằng chứng trong vết ghi
 
-**Trạng thái:** đặc tả chuẩn tắc (TSK-V1b-03, TSK-V1b-08). Hợp đồng gốc: [RFC-0012](../rfc/0012-nguyen-thuy-vision-in.md)
+**Trạng thái:** đặc tả chuẩn tắc (TSK-V1b-03, V1b-04, V1b-06, V1b-08). Hợp đồng gốc: [RFC-0012](../rfc/0012-nguyen-thuy-vision-in.md)
 §3c–§3e, §9; quyết định Q-54 (thị giác quy về dữ kiện gõ kiểu, ngưỡng khoá ở gate), Q-62; yêu cầu
 FR-MDL-04, FR-MDL-07, FR-CI-02, NFR-PRIV-01, NFR-PRIV-03. Hiện thực: `python/neuroedge/perception/vision/`,
 lint ở `python/neuroedge/trace.py`, phát lại ở `python/neuroedge/testing/player.py`. Từ khoá **PHẢI**,
@@ -226,6 +226,32 @@ vắng, gate chặn `criterion_unavailable`, replay cảnh báo và ghi `vision_
 nhiều hơn, không bao giờ cho phép nhiều hơn. Cùng sự kiện `perception` cho cùng phán quyết trên mọi target: đó là mệnh đề
 "gate quyết giống nhau" của RFC-0012 §3f (phần `verify` và camera ảo: V1b-02, V1b-04).
 
+## 6a. Action CI cho khung hình (TSK-V1b-04, FR-CI-01→04)
+
+`python/neuroedge/testing/vision.py`. Một **cảnh** (`fixtures/vision/<cảnh>/`) là thư mục khung hình: `scene.toml`
+(`gate`, `action`, `step_ms`, `[context]` cho dữ kiện không phải thị giác, `[vision]` cho vùng và dữ kiện), các tệp khung,
+và `<tên>.json` cho từng khung — mô hình (giả) thấy gì. Tên tệp số là **số khung của camera** (thiếu số = mất khung);
+khung **không có** `.json` là mô hình không trả lời, không phải cảnh rỗng (`[]` mới là cảnh rỗng).
+
+| Thành phần FR-CI | Hàm | Ghi chú |
+|:---|:---|:---|
+| Record (CI-01) | `run_scene`, `record_scene(cảnh, đường_dẫn, raw=False)` | một lần lượng giá mỗi khung, đồng hồ ảo; vết ghi chỉ có `vision_ref` (băm + kích thước). `raw=True` là lựa chọn tường minh (NFR-PRIV-03): khung chép vào `frames/<sha256>.bin` cạnh vết ghi, `metadata.raw_capture = true`, mỗi `vision_ref` có `uri` |
+| Replay (CI-02) | `replay_verdicts(trace, gates)`, hoặc `neuroedge replay` / `TracePlayer` khi có agent | tính lại phán quyết từ `vision_fact` và `gate_facts` đã ghi; không mô hình, không khung hình |
+| Assert (CI-03) | `assert_verdicts(run, [...], reason=…)`, `assert_replay_matches(run)` | chuỗi phán quyết theo khung; replay phải khớp bản chạy sống |
+| Golden (CI-04) | `assert_matches_golden(run.trace, golden)` | như mọi vết ghi (`golden.py`) |
+
+Kho cảnh khép kín hai chiều với `fixtures/vision/expected_results.yaml` (mỗi thư mục một mục, mỗi mục một thư mục); năm
+cảnh hiện có gồm người lạ vào/ra vùng cửa, camera đứng hình, mất khung, mô hình im lặng, người trong vùng rèm, kiện hàng.
+Chưa có lệnh CLI hay đầu vào GitHub Action riêng cho khung hình (kho chưa có `action.yml`; thêm lệnh phải cập nhật snapshot CLI).
+
+## 6b. Ba gate mẫu (TSK-V1b-06, `gates/vision/`)
+
+`entry-no-stranger` (không mở khoá khi có người lạ trong vùng cửa), `zone-clear` (rèm/cửa cuốn không chạy khi có người
+trong vùng) và `package-notify` (chỉ báo kiện hàng khi chắc). Mỗi gate dùng `present` kèm tiêu chí `numeric` `confidence`
+cùng nhãn và vùng, `max_age_ms` ≤ 500; ngưỡng khoá ở gate (Q-54). Phản chứng ở `fixtures/gates/vision/` (không nằm trong
+`fixtures/gates/invalid/` vì chúng kế thừa gate của `gates/`, không phải của registry fixture): con nới ngưỡng, nới
+`max_age_ms`/`range` bị `gate lint` từ chối; con chỉ siết thì hợp lệ.
+
 ## 7. Quyết định diễn giải khi hiện thực
 
 RFC-0012 chưa nêu rõ các điểm sau; bản này chọn phương án an toàn hơn:
@@ -239,6 +265,6 @@ RFC-0012 chưa nêu rõ các điểm sau; bản này chọn phương án an toà
 
 ## 8. Chưa làm ở bản này
 
-- `vision.in` trên `linux` (V1b-01), camera ảo `sim` và phát lại cả `perception` đã ghi (V1b-02), Action CI khung hình và golden suy luận (V1b-04), NPU (V1b-05), ba gate mẫu (V1b-06): các slice đó cắm khung vào `VisionPipeline.push`.
+- `vision.in` trên `linux` (V1b-01), camera ảo `sim` và phát lại cả `perception` đã ghi (V1b-02), golden suy luận theo sha256 mô hình và kiểm sai số trong `verify` (phần còn lại của V1b-04), NPU (V1b-05): các slice đó cắm khung vào `VisionPipeline.push`.
 - Móc `parse_vision` vào `neuroedge build` và nạp agent: kiểu tiêu chí cùng tên, `confidence_gte` trên dữ kiện thị giác, `present`/`count` thiếu `confidence` — RFC-0012 §8 (`engine/compiler.py`).
 - Hằng `MAX_FRAME_AGE_MS`, `PRESENT_SCORE_FLOOR` sống ở `perception/vision/model.py`; `trace.py` không import chúng (tầng) và `replay` đối chiếu giá trị đã ghi với chúng.

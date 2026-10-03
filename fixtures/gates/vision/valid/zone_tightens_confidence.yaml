@@ -1,0 +1,8 @@
+# Narrows the person confidence ceiling from 0.10 to 0.02.
+schema:  neuroedge.gate/v1
+name:    zone-tightens-confidence
+version: 1.0.0
+extends: neuroedge://gates/vision/zone-clear@1.0.0
+
+allow_when:
+  person_confidence: { lte: 0.02 }

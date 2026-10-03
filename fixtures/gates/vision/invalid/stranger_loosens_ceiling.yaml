@@ -1,0 +1,8 @@
+# Principle 2 — a child raises the stranger confidence ceiling from 0.10 to 0.30: a stranger seen at 0.25 would now pass.
+schema:  neuroedge.gate/v1
+name:    stranger-loosens-ceiling
+version: 1.0.0
+extends: neuroedge://gates/vision/entry-no-stranger@1.0.0
+
+allow_when:
+  stranger_confidence: { lte: 0.30 }

@@ -1,0 +1,38 @@
+# Thị giác 1/3 — cổng vào: không mở khoá khi có người lạ trong vùng cửa (RFC-0012 §3c, Q-54).
+#
+# Mô hình chỉ cấp dữ kiện; maker khai ở `agent.toml` nhãn nào thành dữ kiện nào
+# (`[vision.facts.stranger_at_door]`, `[vision.facts.stranger_confidence]`, cùng nhãn và vùng).
+# Ngưỡng nằm ở ĐÂY: điểm tin cậy của nhãn người lạ phải ≤ 0.10 trong từng khung của cửa sổ.
+# `stranger_at_door: false` đứng một mình sẽ qua được khi camera đứng hình lặp "không có ai":
+# tiêu chí số kèm theo mang `max_age_ms` nên chặn đúng ca đó (RFC-0012 §3c).
+schema:  neuroedge.gate/v1
+name:    entry-no-stranger
+version: 1.0.0
+
+evaluate:
+  guest_authenticated:
+    type: bool
+    instructions: "Khách đã xác thực danh tính qua hệ thống đặt phòng"
+  stranger_at_door:
+    type: bool
+    instructions: "Có người lạ trong vùng cửa (dữ kiện thị giác, kind = present)"
+  stranger_confidence:
+    type: numeric
+    unit: ratio
+    range: { min: 0, max: 1 }
+    max_age_ms: 300
+    instructions: "Điểm cao nhất của nhãn người lạ trong vùng cửa (dữ kiện thị giác, kind = confidence)"
+
+allow_when:
+  guest_authenticated: true
+  stranger_at_door:    false
+  stranger_confidence: { lte: 0.10 }
+
+on_block:
+  action:  escalate
+  to:      human_receptionist
+  message: "Có người lạ ở cửa hoặc camera không xác nhận được: cần nhân viên kiểm tra trực tiếp."
+
+budget:
+  p95_latency_ms: 120
+  fail:           closed
