@@ -77,7 +77,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 | **0.x nội bộ** | **I0 — Lõi hợp đồng trên `sim`** | ✅ 2026-09-24 | Gate có kiểu và phiên bản (lint, resolve, kế thừa, tham số, `confirms`), `sim` + web UI, Action CI, MCP, System 2 qua LiteLLM, `linux` replay trên gpio-sim; walker C, sổ token và vết ghi UART trên QEMU | **42 / 42** | ✅ Xong | — | lịch sử |
 |  | **I1 — Preview nội bộ trên `sim`** | 2026-11-15 | Người ngoài đội cài từ wheel nội bộ và chạy agent có gate trong dưới 10 phút, không cần phần cứng | **4 / 6** | 🟡 Đang làm — TSK-I1-02 tạm hoãn (phát triển nội bộ) | I0 | tag `v0.1.0` (nội bộ) |
 |  | **I2 — `linux` ngang `sim`** | 2026-11-29 | `run`, `record`, `mcp serve --target linux`; cảm biến và màn hình trên `linux`; nightly trên RPi 5 | **3 / 4** | 🟡 Phiên tương tác, cảm biến, màn hình xong trên gpio-sim + i2c-stub; nightly RPi 5 còn lại | I1 | tag `v0.2.0` (nội bộ) |
-|  | **I2a — Nguyên thủy mở rộng trên `sim` và `linux`** | 2026-12-06 | Bốn gói: cảm biến (`digital.in`, I2C chỉ đọc, `analog.in`, gate so ngưỡng số), điều khiển mịn (PWM), thị giác (`vision.in`), chuyển động (`motion.*`); sáu RFC; `sim-rpi5` | **7 / 26** | 🟡 Sáu RFC đã chấp thuận (2026-10-01); tiêu chí số và `NETR` v2 xong (TSK-W1-02); spike ADC đạt (TSK-N3-03) | I2 | tag `v0.2.1` (nội bộ) |
+|  | **I2a — Nguyên thủy mở rộng trên `sim` và `linux`** | 2026-12-06 | Bốn gói: cảm biến (`digital.in`, I2C chỉ đọc, `analog.in`, gate so ngưỡng số), điều khiển mịn (PWM), thị giác (`vision.in`), chuyển động (`motion.*`); sáu RFC; `sim-rpi5` | **8 / 26** | 🟡 Sáu RFC đã chấp thuận (2026-10-01); tiêu chí số và `NETR` v2 xong (TSK-W1-02); spike ADC đạt (TSK-N3-03) | I2 | tag `v0.2.1` (nội bộ) |
 |  | **I2b — Kit mẫu và dựng nhanh** | 2026-12-20 | Năm kit phần cứng (BOM, sơ đồ đấu dây, gate khoá), thư viện gate khởi đầu, `neuroedge add` | **0 / 4** | ⏳ Chưa bắt đầu | I2a | tag `v0.2.2` (nội bộ) |
 |  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | Gate chạy trên chip, điều khiển chân thật; người dùng tự nạp agent; `verify` ba target bậc 1 cho miền phán quyết | **6 / 14** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU, giao diện LVGL có ảnh golden); chờ bo mạch | I1 | tag `v0.3.0` + firmware (nội bộ) |
 |  | **I3a — Nguyên thủy mở rộng trên `esp32s3`** | 2027-01-10 | Bốn gói trên chip: Box-3 và M5Stack CoreS3 có camera (Q-53, Q-61) | **0 / 7** | ⏳ Chưa bắt đầu | I2a, I3 | tag `v0.3.1` + firmware (nội bộ) |
@@ -107,23 +107,32 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-10-01 │
+│ THẺ BÀN GIAO PHIÊN LÀM VIỆC (LIVING HANDOFF CARD)                 Cập nhật: 2026-10-03 │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. VỪA HOÀN THÀNH — sáu RFC chấp thuận, Q-58 → Q-62                                    │
-│    • RFC-0007, RFC-0009 → RFC-0013 chấp thuận 2026-10-01 (PR #75 → #80, Q-62)          │
-│    • NETR v2 ghim byte ở RFC-0009 §3d; lệnh về phía an toàn không bao giờ bị chặn      │
-│    • Bo camera: M5Stack CoreS3 (Q-61); MCP qua mạng + Tool Profile vào I6 (Q-58)       │
-│    • Giữ PolyForm NC qua v1.0, mở sau (#51); một người + AI agent (Q-60)               │
+│ 0. MỤC TIÊU — hoàn thành mọi lớp nền tảng trên ba target bậc 1 (chốt 2026-10-03)       │
+│    Lớp nền tảng: hợp đồng, nguyên thủy HAL (5 lõi + 4 gói), phong bì, thoại, tích      │
+│    hợp (MCP qua mạng, API Python), tin cậy. NeuroBrain (I4a, I5a) là lớp ứng dụng:     │
+│    mục tiêu kế tiếp, xếp sau, không cắt (Q-55)                                         │
+│    • Chặng A — `sim` + `linux`, làm ngay. Xong khi đạt: I2a tiêu chí 1–9,              │
+│      N2.1–N2.3, I4 tiêu chí 2, I6 tiêu chí 7–10                                        │
+│    • Chặng B — `esp32s3` + phần cứng thật, mở khi bo về. Xong khi đạt: tiêu chí ra     │
+│      I3, I3a, I5; I2 tiêu chí 4; I4 tiêu chí 4; TSK-S6-03, S6-05, V1b-05               │
+│                                                                                        │
+│ 1. VỪA HOÀN THÀNH — bước 1 của chặng A: TSK-N0-02, TSK-N3-03, TSK-I6-06                │
+│    • TSK-N0-02: FR-HAL-01 tách lõi / mở rộng (RFC-0013); `--lab` vào FR-CLI-12         │
+│    • TSK-N3-03: `ads7828` và `ina219` đọc đúng trên `i2c-stub`, không cần IIO (PR #87) │
+│    • TSK-I6-06: API Python + CLI công khai, ghim bằng test; `serve_mcp`; `SimSession`  │
+│      công khai; NE1004 (PR #89). Q-64: quy tắc ngừng hỗ trợ, hợp đồng CLI              │
 │                                                                                        │
 │ 2. ĐANG THỰC HIỆN                                                                      │
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
-│    1. Đặt 2 Box-3 + 1 RPi 5 + 2 M5Stack CoreS3 (Phụ lục B, Q-61) — về trước 11-01      │
-│    2. Làn host I2a: RFC-0007 (digital.in, I2C, analog.in), rồi RFC-0010 → 0013         │
-│    3. Song song: TSK-I6-05/06/07 (hợp đồng, API Python, RFC dữ kiện ngoài), TSK-P2-04  │
-│    4. Box-3 về: nối driver màn hình vào ne_ui (TSK-S4-01), đo trên silicon             │
-│    5. Wake-word có giấy phép (#49); Wi-Fi (#50); lock (#54); I1-02 trước đo TTFV       │
+│    1. Đặt 2 Box-3 + 1 RPi 5 + 2 M5Stack CoreS3 (Phụ lục B, Q-61) — mở chặng B          │
+│    2. Cảm biến + phong bì: TSK-I2a-02, I2a-03, N2-01→05, rồi I2a-04, I2a-06            │
+│    3. TSK-W1-01 (PWM), rồi TSK-I2a-05 (`motion.*` dựa trên phong bì, token thuê)       │
+│    4. Thị giác TSK-V1b-01→04, 06, 08 · thoại host TSK-S3-13, I4-01 (#49), I4-04        │
+│    5. TSK-P2-04 · TSK-I6-05 sau I2a (`board.v1` đóng băng khi đủ khoá) · I6-07         │
 │                                                                                        │
 │ 4. LƯU Ý — bất biến ở CHANGELOG.md §3.3; dưới đây chỉ điều chưa có ở đó                │
 │    • Chỉ c.do() điều khiển được chân: HAL chưa gắn ledger từ chối mọi lệnh             │
@@ -615,7 +624,7 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-I2a-01** | **Ước lượng lại phạm vi MVP (Q-52):** đếm lại task I2a → I7, đặt ngày dự báo cho I2a, I2b, I3a, I4a, I5a, I6, I7 và I8 kèm bằng chứng (R5); cập nhật §1.3 và §2.2 | — | trưởng nhóm + kỹ thuật trưởng | ✅ Hoàn thành (2026-09-30) — v1.0 dự báo 2027-02-21 | [`docs/reports/uoc-luong-mvp-2026-09-30.md`](../docs/reports/uoc-luong-mvp-2026-09-30.md) · §0.2 |
-| **TSK-N0-02** | Sửa đổi FR-HAL-01: nguyên thủy mở rộng (`digital.in`, bus I2C, `analog.in`, PWM, `motion.*`, `vision.in`) là **tuỳ chọn theo bo mạch** (RFC-0013, Q-53); sửa FR-CLI-10 cho `mcp desktop-config --lab` | FR-HAL-01, FR-CLI-10 | V2 | ⏳ Chưa bắt đầu | `neuroedge-prd.md` |
+| **TSK-N0-02** | Sửa đổi FR-HAL-01: nguyên thủy mở rộng (`digital.in`, bus I2C, `analog.in`, PWM, `motion.*`, `vision.in`) là **tuỳ chọn theo bo mạch** (RFC-0013, Q-53); sửa FR-CLI-12 cho `mcp desktop-config --lab` | FR-HAL-01, FR-CLI-12 | V2 | ✅ Hoàn thành (2026-10-03) — FR-HAL-01 tách lõi/mở rộng theo RFC-0013 §3a; `--lab` vào FR-CLI-12 (hiện thực ở TSK-N1-05). | `neuroedge-prd.md` FR-HAL-01, FR-CLI-12 |
 | **TSK-N0-03** | RFC-0007: `digital.in`; bus I2C chỉ đọc; `analog.in` (ADC theo spike TSK-N3-03 — chuyển từ RFC-motion sang, Q-53); trường bus/địa chỉ và khai báo phong bì trong `board.v1`. Phải lý giải vì sao không mở rộng `sensor.read`. `gate.v1` không đổi | FR-HAL-01 | V2 | ✅ Hoàn thành (2026-10-01) — RFC-0007 chấp thuận, PR #75 | `docs/rfc/0007-digital-in-i2c-analog-in-phong-bi.md` |
 | **TSK-I2a-07** | **RFC-0013:** nguyên thủy mở rộng tuỳ chọn theo bo mạch; nhiều bo tham chiếu cho một target bậc 1; mỗi nguyên thủy mở rộng có ít nhất một bo tham chiếu trên **mỗi** target bậc 1 (Q-53) | FR-HAL-01, FR-TGT-08 | V1 + kỹ thuật trưởng | ✅ Hoàn thành (2026-10-01) — RFC-0013 chấp thuận, PR #80 | `docs/rfc/0013-nguyen-thuy-tuy-chon-va-nhieu-bo-tham-chieu.md` |
 | **TSK-I2a-06** | **Profile `sim-rpi5`** soi đúng `linux-rpi5` (có đủ nguyên thủy mở rộng, kể cả camera); phát biểu lại bất biến "`sim` không giàu hơn bo tham chiếu" theo từng bo (đóng `TODOS.md` #14) | FR-TGT-01, FR-TGT-06 | V1 | ⏳ Chưa bắt đầu | `boards/sim-rpi5.toml` · `python/tests/test_boards.py` |
@@ -839,7 +848,7 @@ Ngưỡng đối chiếu đã chốt tại Q-3: **SRAM cho ứng dụng ≥ 120 
 | **TSK-N1-02** | Cờ `[lab] enabled` trong `agent.toml`, mặc định **tắt**; tắt thì lab tool không được đăng ký | — | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
 | **TSK-N1-03** | `neuroedge build --release` từ chối khi `[lab] enabled`, lỗi nêu tên cờ và cách tắt; build thường ghi `lab_enabled: true` trong báo cáo | FR-CLI-02 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` · `engine/compiler.py` · `docs/release.md` |
 | **TSK-N1-04** | Kết quả lab call kèm `gate explain`, để LLM tự sửa lệnh sai | FR-MDL-10 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/brain/` |
-| **TSK-N1-05** | `mcp desktop-config --lab`: cấu hình Claude Desktop cho agent lab trong một bước, vẫn đúng một mục `mcpServers` | FR-CLI-10 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/mcp_desktop.py` |
+| **TSK-N1-05** | `mcp desktop-config --lab`: cấu hình Claude Desktop cho agent lab trong một bước, vẫn đúng một mục `mcpServers` | FR-CLI-12 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/mcp_desktop.py` |
 | **TSK-N1-06** | `board show --lab`: chân trong allow-list, giới hạn phong bì từng chân, lý do chân khác bị cấm | FR-HAL-05 | V2 | ⏳ Chưa bắt đầu | `python/neuroedge/cli/main.py` |
 | **TSK-N1-07** | Test ranh giới **B-1**: quét AST/import của `neuroedge.brain`, fail nếu có gọi phương thức HAL hoặc import `hal.linux` / `hal.sim` | — | V2 | ⏳ Chưa bắt đầu | `python/tests/test_brain_boundary.py` |
 | **TSK-N1-08** | `lab_read` trên primitive `digital.in` (sau RFC-0007) | FR-HAL-01 | — | ⏳ Chờ RFC-0007 | `python/neuroedge/brain/` · `hal/` |
