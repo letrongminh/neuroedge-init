@@ -25,7 +25,7 @@ Each package's docstring names its own layer: HAL is **L1**, models and percepti
 | 6 | `viz`, `templates` | `viz`: `hal`, `trace`, rank 0; `templates`: `errors`, `paths` | tools |
 | 7 | `sim` | every rank below | L0, **assembly point** |
 | 8 | `perception` | `sim` (the voice session wraps the typed session), `models`, `actions`, `engine`, `hal`, `net` | L2 |
-| 9 | `testing` | `perception`, `actions`, `engine`, `hal`, `trace`; late-imports `sim` | Action CI |
+| 9 | `testing` | `perception`, `actions`, `engine`, `hal`, `trace`; late-imports `sim` (and `sim/serve.py` late-imports `testing` for the trace recorder, only when `trace_out` is given) | Action CI |
 | 10 | `studio` | every layer below except `cli` — the local web app `neuroedge studio` that shows every capability (TSK-I1-04, `docs/spec/studio.md`) | tooling |
 | 11 | `cli` | every package | entry |
 
@@ -115,6 +115,7 @@ When `brain/` enters the repository, it needs an entry in `ALLOWED` (and `LAZY` 
 |:---|:---|
 | `sim/session.py` | `SimSession`: the assembly point for an agent on `sim` or `linux`; handles one turn (`handle`), one tool call (`call_tool`), one confirmation answer |
 | `sim/ui.py` | `SessionServer`: web UI for the same session, SSE, same-origin checks |
+| `sim/serve.py` | The shared stdio MCP serving loop: `neuroedge mcp serve` and `neuroedge.serve_mcp` (the public Python function, `docs/spec/python_api.md`) both call `run_stdio` |
 | `mcp_server.py` | The agent becomes an MCP server over stdio; one call at a time |
 | `mcp_host.py` | System 2 as MCP host: device tools through the agent's own MCP server (still through the gate), information tools from external servers per the allowlist |
 | `testing/` | Action CI: `TraceRecorder`, `TracePlayer`, `GoldenComparator`, the assert library, UART reading, runs tool-call and voice corpora |

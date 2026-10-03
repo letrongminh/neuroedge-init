@@ -27,7 +27,7 @@ lên:
 | 6 | `viz`, `templates` | `viz`: `hal`, `trace`, bậc 0; `templates`: `errors`, `paths` | công cụ |
 | 7 | `sim` | mọi bậc dưới | L0, **nơi lắp ráp** |
 | 8 | `perception` | `sim` (phiên thoại bọc phiên gõ), `models`, `actions`, `engine`, `hal`, `net` | L2 |
-| 9 | `testing` | `perception`, `actions`, `engine`, `hal`, `trace`; `sim` import muộn | Action CI |
+| 9 | `testing` | `perception`, `actions`, `engine`, `hal`, `trace`; `sim` import muộn (và `sim/serve.py` import muộn `testing` để lấy bộ ghi vết — chỉ khi có `trace_out`) | Action CI |
 | 10 | `studio` | mọi bậc dưới trừ `cli` — ứng dụng web cục bộ `neuroedge studio` thể hiện mọi năng lực (TSK-I1-04, `docs/spec/studio.md`) | công cụ |
 | 11 | `cli` | mọi gói | vào |
 
@@ -124,6 +124,7 @@ Khi `brain/` vào kho, nó cần một mục trong `ALLOWED` (và `LAZY` nếu c
 |:---|:---|
 | `sim/session.py` | `SimSession`: nơi lắp ráp một agent trên `sim` hoặc `linux`; xử lý một lượt (`handle`), một tool call (`call_tool`), một câu trả lời xác nhận |
 | `sim/ui.py` | `SessionServer`: web UI cùng phiên, SSE, kiểm cùng nguồn gốc |
+| `sim/serve.py` | Vòng phục vụ MCP qua stdio dùng chung: `neuroedge mcp serve` và `neuroedge.serve_mcp` (hàm Python công khai, `docs/spec/python_api.md`) cùng gọi `run_stdio` |
 | `mcp_server.py` | Agent thành máy chủ MCP qua stdio; mỗi lần một lời gọi |
 | `mcp_host.py` | System 2 làm MCP host: công cụ của thiết bị qua máy chủ MCP của chính agent (vẫn qua gate), công cụ thông tin từ server bên ngoài theo danh sách cho phép |
 | `testing/` | Action CI: `TraceRecorder`, `TracePlayer`, `GoldenComparator`, thư viện assert, đọc UART, chạy corpus tool call và thoại |

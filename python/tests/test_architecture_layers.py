@@ -30,7 +30,17 @@ ALLOWED: dict[str, set[str]] = {
     "mcp_server": {"actions", "errors"},
     "viz": {"errors", "hal", "trace"},
     "templates": {"errors", "paths"},
-    "sim": {"actions", "engine", "errors", "hal", "mcp_host", "models", "trace", "viz"},
+    "sim": {
+        "actions",
+        "engine",
+        "errors",
+        "hal",
+        "mcp_host",
+        "mcp_server",
+        "models",
+        "trace",
+        "viz",
+    },
     "perception": {"actions", "engine", "errors", "hal", "models", "net", "sim"},
     "testing": {"actions", "engine", "errors", "hal", "paths", "perception", "trace"},
     # The studio (TSK-I1-04) shows every capability, so it reads every layer below the CLI.
@@ -49,7 +59,7 @@ ALLOWED: dict[str, set[str]] = {
         "viz",
     },
     "cli": {"actions", "engine", "errors", "hal", "models", "paths", "perception", "sim", "trace"},
-    "__init__": {"actions", "engine", "errors", "hal", "models", "testing", "trace"},
+    "__init__": {"actions", "engine", "errors", "hal", "models", "sim", "testing", "trace"},
     "__main__": {"cli"},
 }
 # the engine's pure core: only engine/compiler.py matches the agent against a board
@@ -67,6 +77,8 @@ LAZY: dict[str, set[str]] = {
         "viz",
     },
     "mcp_host.py": {"mcp_server"},
+    # `serve_mcp` records the session only when asked to: the recorder is `testing`'s
+    "sim/serve.py": {"testing"},
     # the studio shows the same desktop entry and template list as the CLI, and reads no unit above it
     "studio/api_agent.py": {"mcp_desktop", "templates"},
     "testing/tool_corpus.py": {"sim"},

@@ -13,9 +13,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
-import sys
-from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +34,8 @@ from ..engine.gate_resolver import lint_registry
 from ..errors import BoardCapabilityError, BuildFailed, NeuroEdgeError, VerificationError
 from ..hal.board import REFERENCE_BOARD, SUPPORTED_TARGETS, available_boards, load_board_by_id
 from ..paths import gates_dir, repo_root
+from ..sim.serve import MCP_INIT_TIMEOUT_S
+from ..sim.serve import exit_on_signals as _exit_on_signals
 from ..trace import load_trace
 from .examples import epilog
 
@@ -66,10 +65,6 @@ app.add_typer(mcp_app, name="mcp")
 
 console = Console()
 err_console = Console(stderr=True)
-
-# `mcp serve` exits when no client initializes within this window (a leaked, orphaned
-# spawn). Clients send `initialize` at once, so 30 s only has to beat a slow start.
-MCP_INIT_TIMEOUT_S = 30.0
 
 
 def _fail(error: NeuroEdgeError, code: int = 1) -> None:
@@ -679,9 +674,8 @@ def mcp_serve(
     the MCP client moves the virtual devices on the page at once. The page never
     takes the MCP server down: a taken port falls back to a free one (URL on stderr).
     """
-    import anyio
-
-    from ..mcp_server import _sdk, serve_stdio
+    from ..mcp_server import _sdk
+    from ..sim.serve import run_stdio
 
     try:
         _sdk()
@@ -704,9 +698,7 @@ def mcp_serve(
         f"{escape(session.target)}/{escape(session.hal.board.id)} · "
         f"{len(session.tools.specs)} tool(s) · stdio"
     )
-    from .run import canned_fact_warning
-
-    warning = canned_fact_warning(session)
+    warning = session.canned_fact_warning()
     if warning is not None:
         err_console.print(f"[yellow]! {escape(warning)}[/yellow]")
     if page is not None:
@@ -718,53 +710,15 @@ def mcp_serve(
 
             webbrowser.open(page.url)
 
-    def close() -> None:
-        if page is not None:
-            page.stop()
-        try:
-            if trace_out is not None:
-                session.write_trace(trace_out)
-        finally:
-            session.close()  # on linux: every line inactive and released
-
-    def on_no_initialize() -> None:
-        # The client started us and let go without closing stdin (Claude Desktop does
-        # this when it restarts a server before the handshake). Nothing will ever
-        # arrive, and the SDK's stdin thread cannot be cancelled: free the port, exit.
-        err_console.print(
-            f"no MCP client sent `initialize` within {init_timeout:g} s; exiting so an "
-            "orphaned server does not hold the UI port (--init-timeout 0 waits forever)",
-            markup=False,
-            highlight=False,
-        )
-        close()
-        sys.stderr.flush()
-        os._exit(0)
-
-    serve = partial(
-        serve_stdio,
+    run_stdio(
         session,
+        trace_out=trace_out,
+        init_timeout=init_timeout,
         lock=page.lock if page is not None else None,
         on_change=page.notify if page is not None else None,
         on_ready=on_ready,
-        init_timeout=init_timeout or None,
-        on_no_initialize=on_no_initialize,
+        on_close=page.stop if page is not None else None,
     )
-    try:
-        anyio.run(serve)
-    except KeyboardInterrupt:
-        pass
-    except SystemExit as stop:
-        # SIGTERM / SIGHUP (`_exit_on_signals`): drop the lines, then leave at once —
-        # the SDK's stdin thread is not a daemon and would hold the exit (as above).
-        # The exit happens even when the cleanup raises.
-        try:
-            close()
-        finally:
-            sys.stderr.flush()
-            os._exit(stop.code if isinstance(stop.code, int) else 1)
-    finally:
-        close()
 
 
 def _mcp_page(session: Any, port: int) -> Any:
@@ -1329,28 +1283,6 @@ def _default_agent() -> Path:
     here = Path("agent.toml")
     sample = repo_root() / "fixtures" / "agents" / "villa-concierge" / "agent.toml"
     return sample if not here.is_file() and sample.is_file() else here
-
-
-def _exit_on_signals() -> None:
-    """
-    SIGTERM and SIGHUP end the process through `SystemExit`, so the session's
-    `finally: session.close()` runs and every line drops inactive. Python's default
-    for both ends the process at once: a door-lock pulse in flight, or a line left
-    `on`, would stay driven after the process is gone (an MCP host stops its server
-    with SIGTERM; closing the terminal sends SIGHUP). SIGKILL cannot be caught.
-    """
-    import signal
-
-    names = [name for name in ("SIGTERM", "SIGHUP") if hasattr(signal, name)]
-
-    def _exit(signum: int, _frame: Any) -> None:
-        # A second signal must not cut the cleanup short between two lines.
-        for name in names:
-            signal.signal(getattr(signal, name), signal.SIG_IGN)
-        raise SystemExit(128 + signum)
-
-    for name in names:
-        signal.signal(getattr(signal, name), _exit)
 
 
 def _trace_log(trace_out: Path | None, raw: bool):
