@@ -1,0 +1,19 @@
+# Schema error — a bool criterion may not declare a unit.
+schema:  neuroedge.gate/v1
+name:    bool-with-unit
+version: 1.0.0
+
+evaluate:
+  line_pressure:
+    type: bool
+    unit: bar
+    instructions: "Line pressure"
+
+allow_when:
+  line_pressure: true
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100

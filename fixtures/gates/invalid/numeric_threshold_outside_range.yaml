@@ -1,0 +1,21 @@
+# Schema error — numeric threshold outside declared range [0, 16].
+schema:  neuroedge.gate/v1
+name:    numeric-threshold-outside-range
+version: 1.0.0
+
+evaluate:
+  line_pressure:
+    type: numeric
+    unit: bar
+    range: { min: 0, max: 16 }
+    max_age_ms: 500
+    instructions: "Line pressure"
+
+allow_when:
+  line_pressure: { lt: 20 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100

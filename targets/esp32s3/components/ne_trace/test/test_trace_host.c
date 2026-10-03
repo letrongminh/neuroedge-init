@@ -193,7 +193,7 @@ int main(void) {
         }
     }
 
-    for (uint32_t i = 0; i <= 7u; i++) {
+    for (uint32_t i = 0; i <= 8u; i++) {
         const char *reason = ne_reason_name((ne_reason)i);
         printf("reason\t%u\t%s\n", (unsigned)i, reason != NULL ? reason : "-");
     }

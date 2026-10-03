@@ -361,8 +361,8 @@ TOKEN_C = "components/ne_gate/src/ne_token.c"
 SELFTEST_C = "main/gate_selftest.c"
 # One check of the fixture, "face_match = false": the host says BLOCK, condition_not_met,
 # criterion 3. Each field changed must fail the self-test: every comparison is live.
-ROW = "{0u, 3u, 0u, 0u, 1u, 1u, 1u, 3u, 0u, 0u, 0x0u, {1u, 1u, 0u, 1u, 1.0}}"
-ASKED = "{0u, 0u, 0u, 0u, 1u, 1u, 1u, 0u, 1u, 0u, 0x0u, {1u, 1u, 0u, 1u, 1.0}}"
+ROW = "{0u, 3u, 0u, 0u, 1u, 1u, 1u, 3u, 0u, 0u, 0x0u, {1u, 1u, 0u, 1u, 1.0, 0.0, 0}}"
+ASKED = "{0u, 0u, 0u, 0u, 1u, 1u, 1u, 0u, 1u, 0u, 0x0u, {1u, 1u, 0u, 1u, 1.0, 0.0, 0}}"
 OPEN = "{1u, 0u, 0u, 1u, 0u, 5u, 0u, 0u, 0u, 1u, 0x0u,"
 CONFIRMED = "{0u, 255u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u,"
 
@@ -370,7 +370,7 @@ CONFIRMED = "{0u, 255u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u,"
 def _row(verdict=1, reason=1, kind=1, index=3) -> str:
     return (
         f"{{0u, 3u, 0u, 0u, {verdict}u, {reason}u, {kind}u, {index}u, 0u, 0u, 0x0u, "
-        "{1u, 1u, 0u, 1u, 1.0}}"
+        "{1u, 1u, 0u, 1u, 1.0, 0.0, 0}}"
     )
 
 
@@ -392,8 +392,8 @@ MUTANTS = {
     "a baseline fact": [
         (
             AGENT_C,
-            "ne_agent_baseline_1[1] = {{1u, 1u, 1u, 1u, 1.0}}",
-            "ne_agent_baseline_1[1] = {{1u, 1u, 0u, 1u, 1.0}}",
+            "ne_agent_baseline_1[1] = {{1u, 1u, 1u, 1u, 1.0, 0.0, 0}}",
+            "ne_agent_baseline_1[1] = {{1u, 1u, 0u, 1u, 1.0, 0.0, 0}}",
         )
     ],
     "an argument value that no longer fits": [
@@ -470,7 +470,7 @@ def test_every_deliberate_bug_fails_the_self_test(fixture_build, tmp_path):
 
 def test_a_corrupted_tree_in_flash_stops_the_gate_runtime(fixture_build, tmp_path):
     header = "components/ne_agent/gates/open_door.netree.h"
-    edit = (header, "0x4e, 0x45, 0x54, 0x52, 0x01", "0x4e, 0x45, 0x54, 0x52, 0x02")  # NETR v2
+    edit = (header, "0x4e, 0x45, 0x54, 0x52, 0x02", "0x4e, 0x45, 0x54, 0x52, 0x01")  # a v1 tree
     project = _mutated_project(fixture_build, tmp_path, [edit])
     result = run_selftest(compile_selftest(project, tmp_path / "selftest", sanitize=False))
     assert result.returncode != 0

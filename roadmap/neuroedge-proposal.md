@@ -1491,15 +1491,16 @@ Vì sao: 0 brick trên 1.000 thiết bị là điều kiện để doanh nghiệ
 | `on_block` | Gate gốc: Có · Gate dẫn xuất: kế thừa được | Hành vi ứng xử khi yêu cầu bị cổng an toàn từ chối (Phụ lục B.3). |
 | `budget` | Gate gốc: Có · Gate dẫn xuất: kế thừa được | Ngân sách thời gian thẩm định và chính sách xử lý khi có sự cố kết nối (Phụ lục B.4). |
 
-### B.2 Ba kiểu dữ liệu trong khối `evaluate`
+### B.2 Bốn kiểu dữ liệu trong khối `evaluate`
 
 | Kiểu dữ liệu | Tham số khai báo | Kết quả trả về | Toán tử điều kiện trong `allow_when` |
 |:---|:---|:---|:---|
 | `bool` | `instructions` *(không được có `levels` hay `options`)* | Giá trị đúng/sai kèm độ tin cậy | `true`, `false`, `{ confidence_gte: x }` |
 | `level` | `levels[]` theo thứ tự (bắt buộc, ≥ 2 giá trị), `instructions` | Mức xếp hạng kèm phân phối | `eq`, `lte`, `gte` |
 | `choice` | `options[]` (bắt buộc, ≥ 2 giá trị), `instructions` | Lựa chọn kèm xác suất các nhánh | `in`, `not_in`, `eq` |
+| `numeric` *(RFC-0009)* | `unit`, `range { min, max }`, `max_age_ms` (cả ba bắt buộc), `instructions` | Số đọc `f64` kèm mốc đọc của HAL | `gt`, `gte`, `lt`, `lte`, ghép được thành khoảng; không `eq`, không `confidence_gte`; không được nằm trong `on_block.confirms`. Gate con chỉ thu hẹp khoảng (nguyên tắc 2) |
 
-Ba kiểu dữ liệu này tương thích trực tiếp với hợp đồng chuẩn của nhà cung cấp `SystemOne` (§3.6).
+Ba kiểu đầu tương thích trực tiếp với hợp đồng chuẩn của nhà cung cấp `SystemOne` (§3.6); `numeric` chỉ đến từ số đọc phần cứng, không từ model.
 
 #### Hai dạng viết `allow_when` *(v5.5 — RFC-0001)*
 

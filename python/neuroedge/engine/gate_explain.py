@@ -76,6 +76,15 @@ def _detail(definition: dict[str, Any]) -> str:
         return " / ".join(definition.get("levels", []))
     if definition.get("type") == "choice":
         return " / ".join(definition.get("options", []))
+    if definition.get("type") == "numeric":
+        unit = definition.get("unit", "")
+        range_obj = definition.get("range", {})
+        r_min = range_obj.get("min", "")
+        r_max = range_obj.get("max", "")
+        min_str = f"{r_min:g}" if isinstance(r_min, (int, float)) else str(r_min)
+        max_str = f"{r_max:g}" if isinstance(r_max, (int, float)) else str(r_max)
+        max_age = definition.get("max_age_ms", "")
+        return f"unit: {unit}, range: [{min_str}, {max_str}], max_age_ms: {max_age}"
     return ""
 
 
@@ -108,12 +117,25 @@ def explain(levels: list[ResolvedGate], extends: str | None) -> GateExplanation:
             status = "inherited"  # restating the parent's clause changes nothing
         else:
             status = "tightened"  # the resolver admits no other change (principle 2)
+
+        admits_desc = constraint.describe()
+        parent_desc = None if before is None else before.describe()
+        if constraint.kind == "numeric":
+            unit = gate.evaluate.get(name, {}).get("unit", "")
+            if unit:
+                admits_desc = f"{admits_desc} {unit}"
+                if parent_desc is not None:
+                    parent_unit = (
+                        parent.evaluate.get(name, {}).get("unit", unit) if parent else unit
+                    )
+                    parent_desc = f"{parent_desc} {parent_unit}"
+
         clauses.append(
             ClauseChange(
                 criterion=name,
-                admits=constraint.describe(),
+                admits=admits_desc,
                 status=status,
-                parent_admits=None if before is None else before.describe(),
+                parent_admits=parent_desc,
             )
         )
     return GateExplanation(gate, parent, extends, criteria, clauses)

@@ -553,3 +553,42 @@ def test_a_misspelt_rule_key_is_refused(tmp_path):
     error = refused(tmp_path, 'heat = { sensor = "temperature", band = { low = 0 } }')
     assert "[sim.sensor_facts] heat" in error.where
     assert "`bands`" in error.why
+
+
+NUMERIC_GATE = """\
+schema: neuroedge.gate/v1
+name: cool
+version: 1.0.0
+evaluate:
+  hot:
+    type: numeric
+    unit: C
+    range: { min: -40, max: 125 }
+    max_age_ms: 500
+    instructions: temperature
+allow_when:
+  hot: { lt: 55 }
+on_block:
+  action: deny
+budget:
+  p95_latency_ms: 100
+  fail: closed
+"""
+
+
+def test_neuroedge_build_refuses_a_sensor_fact_on_a_numeric_criterion(tmp_path):
+    """The same refusal as at session load, but at build, where RFC-0009 §3f puts it."""
+    from neuroedge.engine.compiler import build
+    from neuroedge.errors import BuildFailed
+
+    path = agent(tmp_path, 'hot = { sensor = "temperature", gte = 55 }')
+    (tmp_path / "cool.yaml").write_text(NUMERIC_GATE, encoding="utf-8")
+    with pytest.raises(BuildFailed) as raised:
+        build(path, target="sim", board_id="sim-default")
+    with pytest.raises(BuildFailed):  # a session builds first, so it never gets as far as running
+        SimSession.load(path)
+    problems = [p for p in raised.value.problems if isinstance(p, BoardCapabilityError)]
+    assert len(problems) == 1
+    assert problems[0].code == "NE3001"
+    assert "[sim.sensor_facts] hot" in problems[0].where
+    assert "sensor.read" in problems[0].why

@@ -1,0 +1,8 @@
+# Principle 2 — loosens lower bound: base has gte 2, this gate has gte 1.
+schema:  neuroedge.gate/v1
+name:    numeric-loosens-lower
+version: 1.0.0
+extends: neuroedge://gates/numeric-base@1.0.0
+
+allow_when:
+  line_pressure: { gte: 1, lt: 8 }

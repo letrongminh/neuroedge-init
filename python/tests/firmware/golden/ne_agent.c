@@ -8,10 +8,10 @@
 #include "gates/buzz.netree.h"
 #include "gates/announce.netree.h"
 
-static const ne_fact ne_agent_baseline_0[4] = {{1u, 1u, 1u, 1u, 1.0}, {1u, 1u, 0u, 1u, 1.0}, {1u, 1u, 0u, 1u, 1.0}, {1u, 1u, 1u, 1u, 1.0}};
-static const ne_fact ne_agent_baseline_1[1] = {{1u, 1u, 1u, 1u, 1.0}};
+static const ne_fact ne_agent_baseline_0[4] = {{1u, 1u, 1u, 1u, 1.0, 0.0, 0}, {1u, 1u, 0u, 1u, 1.0, 0.0, 0}, {1u, 1u, 0u, 1u, 1.0, 0.0, 0}, {1u, 1u, 1u, 1u, 1.0, 0.0, 0}};
+static const ne_fact ne_agent_baseline_1[1] = {{1u, 1u, 1u, 1u, 1.0, 0.0, 0}};
 static const ne_arg_value ne_agent_args_1[2] = {{1u, 1u, 0u, NULL, 1.0}, {1u, 0u, 5u, "front", 0.0}};
-static const ne_fact ne_agent_baseline_2[1] = {{1u, 1u, 0u, 1u, 1.0}};
+static const ne_fact ne_agent_baseline_2[1] = {{1u, 1u, 0u, 1u, 1.0, 0.0, 0}};
 
 static const ne_agent_gate ne_agent_gate_table[3] = {
     {"open_door@1.0.0", ne_tree_open_door, (uint32_t)sizeof ne_tree_open_door,
@@ -39,45 +39,45 @@ static const ne_agent_action ne_agent_action_table[3] = {
 
 static const ne_agent_check ne_agent_check_table[37] = {
     /* open_door@1.0.0 */
-    {0u, 255u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* baseline */
-    {0u, 0u, 0u, 0u, 1u, 1u, 1u, 0u, 1u, 0u, 0x0u, {1u, 1u, 0u, 1u, 1.0}}, /* resident_home = false */
-    {0u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 1u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* resident_home missing */
-    {0u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 1u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0}}, /* resident_home outside its domain */
-    {0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 1.0}}, /* risk = medium */
-    {0u, 1u, 0u, 0u, 1u, 1u, 1u, 1u, 0u, 0u, 0x0u, {1u, 1u, 2u, 1u, 1.0}}, /* risk = high */
-    {0u, 1u, 0u, 0u, 1u, 2u, 1u, 1u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* risk missing */
-    {0u, 1u, 0u, 0u, 1u, 2u, 1u, 1u, 0u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0}}, /* risk outside its domain */
-    {0u, 2u, 0u, 0u, 1u, 1u, 1u, 2u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 1.0}}, /* channel = mcp */
-    {0u, 2u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 2u, 1u, 1.0}}, /* channel = voice */
-    {0u, 2u, 0u, 0u, 1u, 2u, 1u, 2u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* channel missing */
-    {0u, 2u, 0u, 0u, 1u, 2u, 1u, 2u, 0u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0}}, /* channel outside its domain */
-    {0u, 3u, 0u, 0u, 1u, 1u, 1u, 3u, 0u, 0u, 0x0u, {1u, 1u, 0u, 1u, 1.0}}, /* face_match = false */
-    {0u, 3u, 0u, 0u, 1u, 2u, 1u, 3u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* face_match missing */
-    {0u, 3u, 0u, 0u, 1u, 2u, 1u, 3u, 0u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0}}, /* face_match outside its domain */
-    {0u, 3u, 0u, 0u, 1u, 3u, 1u, 3u, 0u, 0u, 0x0u, {1u, 1u, 1u, 0u, 0.0}}, /* face_match: no confidence */
-    {0u, 3u, 0u, 0u, 1u, 1u, 1u, 3u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 0.899}}, /* face_match: confidence below the floor */
-    {0u, 3u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 0.9}}, /* face_match: confidence at the floor */
-    {0u, 3u, 0u, 0u, 1u, 2u, 1u, 3u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 1.5}}, /* face_match: confidence outside [0, 1] */
-    {0u, 0u, 0u, 1u, 1u, 5u, 0u, 0u, 0u, 2u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* a fact missing and its source offline */
-    {0u, 255u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u, {0u, 0u, 0u, 0u, 0.0}}, /* baseline, confirmed */
-    {0u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u, {1u, 1u, 0u, 1u, 1.0}}, /* resident_home = false, confirmed */
-    {0u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u, {0u, 0u, 0u, 0u, 0.0}}, /* resident_home missing, confirmed */
-    {0u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u, {1u, 0u, 0u, 1u, 1.0}}, /* resident_home outside its domain, confirmed */
-    {0u, 1u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u, {1u, 1u, 1u, 1u, 1.0}}, /* risk = medium, confirmed */
-    {0u, 2u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u, {1u, 1u, 2u, 1u, 1.0}}, /* channel = voice, confirmed */
-    {0u, 3u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u, {1u, 1u, 1u, 1u, 0.9}}, /* face_match: confidence at the floor, confirmed */
+    {0u, 255u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* baseline */
+    {0u, 0u, 0u, 0u, 1u, 1u, 1u, 0u, 1u, 0u, 0x0u, {1u, 1u, 0u, 1u, 1.0, 0.0, 0}}, /* resident_home = false */
+    {0u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 1u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* resident_home missing */
+    {0u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 1u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0, 0.0, 0}}, /* resident_home outside its domain */
+    {0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 1.0, 0.0, 0}}, /* risk = medium */
+    {0u, 1u, 0u, 0u, 1u, 1u, 1u, 1u, 0u, 0u, 0x0u, {1u, 1u, 2u, 1u, 1.0, 0.0, 0}}, /* risk = high */
+    {0u, 1u, 0u, 0u, 1u, 2u, 1u, 1u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* risk missing */
+    {0u, 1u, 0u, 0u, 1u, 2u, 1u, 1u, 0u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0, 0.0, 0}}, /* risk outside its domain */
+    {0u, 2u, 0u, 0u, 1u, 1u, 1u, 2u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 1.0, 0.0, 0}}, /* channel = mcp */
+    {0u, 2u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 2u, 1u, 1.0, 0.0, 0}}, /* channel = voice */
+    {0u, 2u, 0u, 0u, 1u, 2u, 1u, 2u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* channel missing */
+    {0u, 2u, 0u, 0u, 1u, 2u, 1u, 2u, 0u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0, 0.0, 0}}, /* channel outside its domain */
+    {0u, 3u, 0u, 0u, 1u, 1u, 1u, 3u, 0u, 0u, 0x0u, {1u, 1u, 0u, 1u, 1.0, 0.0, 0}}, /* face_match = false */
+    {0u, 3u, 0u, 0u, 1u, 2u, 1u, 3u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* face_match missing */
+    {0u, 3u, 0u, 0u, 1u, 2u, 1u, 3u, 0u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0, 0.0, 0}}, /* face_match outside its domain */
+    {0u, 3u, 0u, 0u, 1u, 3u, 1u, 3u, 0u, 0u, 0x0u, {1u, 1u, 1u, 0u, 0.0, 0.0, 0}}, /* face_match: no confidence */
+    {0u, 3u, 0u, 0u, 1u, 1u, 1u, 3u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 0.899, 0.0, 0}}, /* face_match: confidence below the floor */
+    {0u, 3u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 0.9, 0.0, 0}}, /* face_match: confidence at the floor */
+    {0u, 3u, 0u, 0u, 1u, 2u, 1u, 3u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 1.5, 0.0, 0}}, /* face_match: confidence outside [0, 1] */
+    {0u, 0u, 0u, 1u, 1u, 5u, 0u, 0u, 0u, 2u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* a fact missing and its source offline */
+    {0u, 255u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* baseline, confirmed */
+    {0u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u, {1u, 1u, 0u, 1u, 1.0, 0.0, 0}}, /* resident_home = false, confirmed */
+    {0u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* resident_home missing, confirmed */
+    {0u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u, {1u, 0u, 0u, 1u, 1.0, 0.0, 0}}, /* resident_home outside its domain, confirmed */
+    {0u, 1u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u, {1u, 1u, 1u, 1u, 1.0, 0.0, 0}}, /* risk = medium, confirmed */
+    {0u, 2u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u, {1u, 1u, 2u, 1u, 1.0, 0.0, 0}}, /* channel = voice, confirmed */
+    {0u, 3u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x1u, {1u, 1u, 1u, 1u, 0.9, 0.0, 0}}, /* face_match: confidence at the floor, confirmed */
     /* buzz@1.0.0 */
-    {1u, 255u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* baseline */
-    {1u, 0u, 0u, 0u, 1u, 1u, 1u, 0u, 0u, 0u, 0x0u, {1u, 1u, 0u, 1u, 1.0}}, /* visitor_expected = false */
-    {1u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* visitor_expected missing */
-    {1u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0}}, /* visitor_expected outside its domain */
-    {1u, 0u, 0u, 1u, 0u, 5u, 0u, 0u, 0u, 1u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* a fact missing and its source offline */
+    {1u, 255u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* baseline */
+    {1u, 0u, 0u, 0u, 1u, 1u, 1u, 0u, 0u, 0u, 0x0u, {1u, 1u, 0u, 1u, 1.0, 0.0, 0}}, /* visitor_expected = false */
+    {1u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* visitor_expected missing */
+    {1u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0, 0.0, 0}}, /* visitor_expected outside its domain */
+    {1u, 0u, 0u, 1u, 0u, 5u, 0u, 0u, 0u, 1u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* a fact missing and its source offline */
     /* announce@1.0.0 */
-    {2u, 255u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* baseline */
-    {2u, 0u, 0u, 0u, 1u, 1u, 1u, 0u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 1.0}}, /* quiet_hours = true */
-    {2u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* quiet_hours missing */
-    {2u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0}}, /* quiet_hours outside its domain */
-    {2u, 0u, 0u, 1u, 1u, 5u, 0u, 0u, 0u, 2u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* a fact missing and its source offline */
+    {2u, 255u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* baseline */
+    {2u, 0u, 0u, 0u, 1u, 1u, 1u, 0u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 1.0, 0.0, 0}}, /* quiet_hours = true */
+    {2u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* quiet_hours missing */
+    {2u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0, 0.0, 0}}, /* quiet_hours outside its domain */
+    {2u, 0u, 0u, 1u, 1u, 5u, 0u, 0u, 0u, 2u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* a fact missing and its source offline */
 };
 
 const ne_agent ne_agent_linked = {

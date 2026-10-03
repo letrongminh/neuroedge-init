@@ -69,7 +69,8 @@ typedef enum {
     NE_UI_REASON_ARGUMENT_OUT_OF_RANGE = 4,
     NE_UI_REASON_GATE_UNREACHABLE = 5,
     NE_UI_REASON_BUDGET_EXCEEDED = 6,
-    NE_UI_REASON_COUNT = 7,
+    NE_UI_REASON_VALUE_OUT_OF_RANGE = 7,
+    NE_UI_REASON_COUNT = 8,
 } ne_ui_reason_t;
 
 /* The boot self-test phases (main/gate_selftest.c). */

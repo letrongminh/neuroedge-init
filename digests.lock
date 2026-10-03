@@ -22,6 +22,8 @@ files:
     digest: sha256:79c9ed2903128e8d7eb39f5c8e4bc101afaffcd5ed3145ec3961a99469965a36
   fixtures/gates/registry/depth-l3@1.0.0.yaml:
     digest: sha256:28bb8377bae4b16418882d305ee6d3d49d10582b52dc2d64b8bfa5d30204d264
+  fixtures/gates/registry/numeric-base@1.0.0.yaml:
+    digest: sha256:b0186a4ac824a8f1462a68ce93d54c6f8379f00bbb1e9245d48c465e723784de
   fixtures/gates/registry/strict-base@1.0.0.yaml:
     digest: sha256:e0de9e5d966d971d8a945ba434cb4c4fd3e8bf29b626c2995f77b738a96d25b4
   fixtures/gates/valid/explicit_fail_open.yaml:
@@ -36,6 +38,16 @@ files:
     digest: sha256:c1a3c459b33fae7791ff85906ebe9828bb983a19c098e306aba3ff7eab546ecc
   fixtures/gates/valid/narrows_confirms.yaml:
     digest: sha256:04b34d38e57d90c4071cfff9031e7ad4f1d2f8f96e10a9b49774ea0b5ff82495
+  fixtures/gates/valid/numeric_confidence.yaml:
+    digest: sha256:5ce77af9f2621a8ce981a8891720fc4e1821d76ca2381ca3f4f078ad433453b2
+  fixtures/gates/valid/numeric_narrows_lower.yaml:
+    digest: sha256:a902539893776736d8b094af7eb79151048798e85c87694b5957650c46b4373b
+  fixtures/gates/valid/numeric_narrows_upper.yaml:
+    digest: sha256:42256c8de1e7cad261794a0cd91d9ceb94ee963f0025a1032a5aec1085e517b7
+  fixtures/gates/valid/numeric_open_edge.yaml:
+    digest: sha256:faa554e40715ab01a4718ef1a00a3d02e5dd1d7b3774a351985842b6f1f7d338
+  fixtures/gates/valid/numeric_pressure.yaml:
+    digest: sha256:48747ab17d37711a8f367ce325571470b13d06351c70ad6485a848997c26f376
   fixtures/gates/valid/restates_identically.yaml:
     digest: sha256:9fdab8a924461744d4e6ccb3c94182a4d1d4ac00cd5066f25319ff85ea6ff019
   fixtures/gates/valid/tightens_every_kind.yaml:

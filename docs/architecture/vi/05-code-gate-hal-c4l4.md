@@ -66,20 +66,21 @@ không con trỏ, chỉ offset, bản ghi cố định kích thước.
 
 ```mermaid
 flowchart LR
-    H["Header · 64 B<br/>magic NETR · layout_version 1<br/>gate_digest 32 B · counts<br/>on_block action · fail_open<br/>p95_latency_ms · confirm_mask<br/>strings_size · crc32"]
+    H["Header · 80 B<br/>magic NETR · layout_version 2<br/>gate_digest 32 B · counts<br/>on_block action · fail_open<br/>p95_latency_ms · confirm_mask<br/>strings_size · crc32<br/>numeric_count · gate and on_block labels"]
     N["Nodes · 24 B each<br/>kind · domain_size · name_off<br/>admitted_mask · confidence_floor<br/>domain_off"]
+    M["Numeric · 48 B each<br/>lo · hi · range_min · range_max<br/>max_age_ms · unit_off · flags"]
     A["Argument limits · 32 B each<br/>name_off · type · flags<br/>enum range · max_length<br/>minimum · maximum"]
     E["Enums · 16 B each<br/>number · str_off · str_len"]
     S["Strings<br/>UTF-8, NUL-terminated"]
-    H --> N --> A --> E --> S
+    H --> N --> M --> A --> E --> S
 ```
 
-**Cách đọc sơ đồ:** Các hộp đại diện cho từng phân vùng liên tục trong tệp nhị phân `NETR` v1 (từ header 64 byte đến chuỗi UTF-8); mũi tên nét liền biểu thị thứ tự sắp xếp cố định trong bộ nhớ. Điều cốt lõi cần nhớ: bố cục nhị phân không chứa con trỏ mà dùng offset cố định, cho phép walker C đọc trực tiếp tại chỗ từ flash mà không cần cấp phát động (stack ≤ 512 byte).
+**Cách đọc sơ đồ:** Các hộp đại diện cho từng phân vùng liên tục trong tệp nhị phân `NETR` v2 (từ header 80 byte đến chuỗi UTF-8); mũi tên nét liền biểu thị thứ tự sắp xếp cố định trong bộ nhớ. Điều cốt lõi cần nhớ: bố cục nhị phân không chứa con trỏ mà dùng offset cố định, cho phép walker C đọc trực tiếp tại chỗ từ flash mà không cần cấp phát động (stack ≤ 512 byte).
 
-Kích thước tệp đúng bằng `64 + 24·n + 32·a + 16·e + strings`; giới hạn: tối đa 32 nút, miền 32 giá
-trị, 16 tham số, 64 enum, 16 384 byte chuỗi (khoảng 19 KB). Gate vượt giới hạn bị từ chối **lúc build**
-(`NE2002`), không bao giờ tới chip. Đổi bố cục cần RFC và tăng `layout_version`; walker v1 từ chối tệp
-v2. Bảng byte đầy đủ: [`docs/rfc/0003-bo-cuc-nhi-phan-cay.md`](../../rfc/0003-bo-cuc-nhi-phan-cay.md).
+Kích thước tệp đúng bằng `80 + 24·n + 48·m + 32·a + 16·e + strings` (`m` tiêu chí `numeric`); giới hạn: tối đa 32 nút, miền 32 giá
+trị, 32 tiêu chí số, 16 tham số, 64 enum, 16 384 byte chuỗi (khoảng 21 KB). Gate vượt giới hạn bị từ chối **lúc build**
+(`NE2002`), không bao giờ tới chip. Đổi bố cục cần RFC và tăng `layout_version`; walker v2 từ chối tệp
+v1. Bảng byte đầy đủ: [`docs/rfc/0009-tieu-chi-so-numeric.md`](../../rfc/0009-tieu-chi-so-numeric.md) §3d (v1: RFC-0003).
 
 `ne_tree_load` từ chối tệp hỏng trước khi duyệt: sai magic, sai phiên bản, sai CRC, vượt giới hạn, sai
 cấu trúc (offset ngoài tệp, miền `bool` khác 2, ngưỡng NaN, `confirm_mask` khi không phải `ask`…). Không

@@ -7,8 +7,8 @@
 #include "gates/light_on.netree.h"
 #include "gates/light_off.netree.h"
 
-static const ne_fact ne_agent_baseline_0[1] = {{1u, 1u, 0u, 1u, 1.0}};
-static const ne_fact ne_agent_baseline_1[2] = {{1u, 1u, 0u, 1u, 1.0}, {1u, 1u, 1u, 1u, 1.0}};
+static const ne_fact ne_agent_baseline_0[1] = {{1u, 1u, 0u, 1u, 1.0, 0.0, 0}};
+static const ne_fact ne_agent_baseline_1[2] = {{1u, 1u, 0u, 1u, 1.0, 0.0, 0}, {1u, 1u, 1u, 1u, 1.0, 0.0, 0}};
 
 static const ne_agent_gate ne_agent_gate_table[2] = {
     {"light_on@1.0.0", ne_tree_light_on, (uint32_t)sizeof ne_tree_light_on,
@@ -30,33 +30,33 @@ static const ne_agent_action ne_agent_action_table[2] = {
 
 static const ne_agent_check ne_agent_check_table[26] = {
     /* light_on@1.0.0 */
-    {0u, 255u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* baseline */
-    {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 1.0}}, /* call_source = mcp */
-    {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 2u, 1u, 1.0}}, /* call_source = system_one */
-    {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 3u, 1u, 1.0}}, /* call_source = system_two */
-    {0u, 0u, 0u, 0u, 1u, 1u, 1u, 0u, 0u, 0u, 0x0u, {1u, 1u, 4u, 1u, 1.0}}, /* call_source = test */
-    {0u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* call_source missing */
-    {0u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0}}, /* call_source outside its domain */
-    {0u, 0u, 0u, 1u, 1u, 5u, 0u, 0u, 0u, 2u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* a fact missing and its source offline */
+    {0u, 255u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* baseline */
+    {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 1.0, 0.0, 0}}, /* call_source = mcp */
+    {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 2u, 1u, 1.0, 0.0, 0}}, /* call_source = system_one */
+    {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 3u, 1u, 1.0, 0.0, 0}}, /* call_source = system_two */
+    {0u, 0u, 0u, 0u, 1u, 1u, 1u, 0u, 0u, 0u, 0x0u, {1u, 1u, 4u, 1u, 1.0, 0.0, 0}}, /* call_source = test */
+    {0u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* call_source missing */
+    {0u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0, 0.0, 0}}, /* call_source outside its domain */
+    {0u, 0u, 0u, 1u, 1u, 5u, 0u, 0u, 0u, 2u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* a fact missing and its source offline */
     /* light_off@1.0.0 */
-    {1u, 255u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* baseline */
-    {1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 1.0}}, /* call_source = mcp */
-    {1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 2u, 1u, 1.0}}, /* call_source = system_one */
-    {1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 3u, 1u, 1.0}}, /* call_source = system_two */
-    {1u, 0u, 0u, 0u, 1u, 1u, 1u, 0u, 0u, 0u, 0x0u, {1u, 1u, 4u, 1u, 1.0}}, /* call_source = test */
-    {1u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* call_source missing */
-    {1u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0}}, /* call_source outside its domain */
-    {1u, 1u, 0u, 0u, 1u, 1u, 1u, 1u, 1u, 0u, 0x0u, {1u, 1u, 0u, 1u, 1.0}}, /* room_empty = false */
-    {1u, 1u, 0u, 0u, 1u, 2u, 1u, 1u, 1u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* room_empty missing */
-    {1u, 1u, 0u, 0u, 1u, 2u, 1u, 1u, 1u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0}}, /* room_empty outside its domain */
-    {1u, 0u, 0u, 1u, 1u, 5u, 0u, 0u, 0u, 2u, 0x0u, {0u, 0u, 0u, 0u, 0.0}}, /* a fact missing and its source offline */
-    {1u, 255u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x2u, {0u, 0u, 0u, 0u, 0.0}}, /* baseline, confirmed */
-    {1u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x2u, {1u, 1u, 1u, 1u, 1.0}}, /* call_source = mcp, confirmed */
-    {1u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x2u, {1u, 1u, 2u, 1u, 1.0}}, /* call_source = system_one, confirmed */
-    {1u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x2u, {1u, 1u, 3u, 1u, 1.0}}, /* call_source = system_two, confirmed */
-    {1u, 1u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x2u, {1u, 1u, 0u, 1u, 1.0}}, /* room_empty = false, confirmed */
-    {1u, 1u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x2u, {0u, 0u, 0u, 0u, 0.0}}, /* room_empty missing, confirmed */
-    {1u, 1u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x2u, {1u, 0u, 0u, 1u, 1.0}}, /* room_empty outside its domain, confirmed */
+    {1u, 255u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* baseline */
+    {1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 1u, 1u, 1.0, 0.0, 0}}, /* call_source = mcp */
+    {1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 2u, 1u, 1.0, 0.0, 0}}, /* call_source = system_one */
+    {1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x0u, {1u, 1u, 3u, 1u, 1.0, 0.0, 0}}, /* call_source = system_two */
+    {1u, 0u, 0u, 0u, 1u, 1u, 1u, 0u, 0u, 0u, 0x0u, {1u, 1u, 4u, 1u, 1.0, 0.0, 0}}, /* call_source = test */
+    {1u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* call_source missing */
+    {1u, 0u, 0u, 0u, 1u, 2u, 1u, 0u, 0u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0, 0.0, 0}}, /* call_source outside its domain */
+    {1u, 1u, 0u, 0u, 1u, 1u, 1u, 1u, 1u, 0u, 0x0u, {1u, 1u, 0u, 1u, 1.0, 0.0, 0}}, /* room_empty = false */
+    {1u, 1u, 0u, 0u, 1u, 2u, 1u, 1u, 1u, 0u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* room_empty missing */
+    {1u, 1u, 0u, 0u, 1u, 2u, 1u, 1u, 1u, 0u, 0x0u, {1u, 0u, 0u, 1u, 1.0, 0.0, 0}}, /* room_empty outside its domain */
+    {1u, 0u, 0u, 1u, 1u, 5u, 0u, 0u, 0u, 2u, 0x0u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* a fact missing and its source offline */
+    {1u, 255u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x2u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* baseline, confirmed */
+    {1u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x2u, {1u, 1u, 1u, 1u, 1.0, 0.0, 0}}, /* call_source = mcp, confirmed */
+    {1u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x2u, {1u, 1u, 2u, 1u, 1.0, 0.0, 0}}, /* call_source = system_one, confirmed */
+    {1u, 0u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x2u, {1u, 1u, 3u, 1u, 1.0, 0.0, 0}}, /* call_source = system_two, confirmed */
+    {1u, 1u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x2u, {1u, 1u, 0u, 1u, 1.0, 0.0, 0}}, /* room_empty = false, confirmed */
+    {1u, 1u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x2u, {0u, 0u, 0u, 0u, 0.0, 0.0, 0}}, /* room_empty missing, confirmed */
+    {1u, 1u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0x2u, {1u, 0u, 0u, 1u, 1.0, 0.0, 0}}, /* room_empty outside its domain, confirmed */
 };
 
 const ne_agent ne_agent_linked = {

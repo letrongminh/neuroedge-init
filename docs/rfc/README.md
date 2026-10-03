@@ -30,7 +30,7 @@ Người phê duyệt: `CONTRIBUTING.md` §3.
 | [0006](0006-xac-nhan-ask-confirms.md) | `on_block.confirms` — tiêu chí người trên thiết bị được xác nhận thay (Q-26) | `gate.v1` · ngữ nghĩa phân giải · lượng giá | ✅ Đã chấp thuận |
 | [0007](0007-digital-in-i2c-analog-in-phong-bi.md) | `digital.in`, bus I2C chỉ đọc, `analog.in` và phong bì an toàn trong `board.v1` — TSK-N0-03 (Q-53) | `board.v1` (`gate.v1` không đổi) | ✅ Đã chấp thuận |
 | [0008](0008-vet-ghi-chuan-muc-mang-gate-digest.md) | Ba vết ghi chuẩn mực mang `gate_digest` — phát lại kiểm nó | `trace.v1` *(chỉ `data` của ba vết ghi; tệp lược đồ không đổi)* | ✅ Đã chấp thuận |
-| [0009](0009-tieu-chi-so-numeric.md) | Tiêu chí số `evaluate.type: numeric` — TSK-W1-02 (Q-53, Q-54) | `gate.v1` · ngữ nghĩa phân giải · `NETR` | ✅ Đã chấp thuận |
+| [0009](0009-tieu-chi-so-numeric.md) | Tiêu chí số `evaluate.type: numeric` — TSK-W1-02 (Q-53, Q-54) | `gate.v1` · ngữ nghĩa phân giải · `NETR` | ✅ Đã chấp thuận · ✅ Đã hiện thực |
 | [0010](0010-pwm-trong-digital-out.md) | PWM trong `digital.out` — TSK-W1-01 (Q-53) | `board.v1` | ✅ Đã chấp thuận |
 | [0011](0011-nguyen-thuy-motion.md) | Nguyên thủy `motion.*`, token thuê có hạn, trạng thái an toàn theo cơ cấu — TSK-W1-03 (Q-53) | `board.v1` · sổ token · `NETR` | ✅ Đã chấp thuận |
 | [0012](0012-nguyen-thuy-vision-in.md) | Nguyên thủy `vision.in`; kết quả thị giác vào gate dưới dạng dữ kiện — TSK-V1b-07 (Q-53, Q-54) | `board.v1` *(`trace.v1` không đổi)* | ✅ Đã chấp thuận |

@@ -135,6 +135,7 @@ const char *ne_reason_name(ne_reason reason) {
     case NE_REASON_ARGUMENT_OUT_OF_RANGE: return "argument_out_of_range";
     case NE_REASON_GATE_UNREACHABLE: return "gate_unreachable";
     case NE_REASON_BUDGET_EXCEEDED: return "budget_exceeded";
+    case NE_REASON_VALUE_OUT_OF_RANGE: return "value_out_of_range";
     case NE_REASON_NONE:
     default: return NULL;
     }

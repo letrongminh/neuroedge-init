@@ -212,3 +212,193 @@ confirms_unknown_criterion.yaml:
   code: NE2002
   where_contains: "on_block.confirms"
   why_contains: "room_is_empty"
+
+# --- RFC-0009: numeric criteria ----------------------------------------------
+
+numeric_missing_unit.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure"
+  why_contains: "'unit' is a required property"
+
+numeric_missing_range.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure"
+  why_contains: "'range' is a required property"
+
+numeric_missing_max_age_ms.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure"
+  why_contains: "'max_age_ms' is a required property"
+
+numeric_max_age_ms_zero.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure.max_age_ms"
+  why_contains: "0"
+
+numeric_max_age_ms_negative.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure.max_age_ms"
+  why_contains: "less than"
+
+numeric_range_min_gte_max.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure.range"
+  why_contains: "strictly less than"
+
+numeric_range_non_finite.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure.range"
+  why_contains: "finite number"
+
+numeric_threshold_non_finite.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "allow_when.line_pressure"
+  why_contains: "finite number"
+
+numeric_threshold_outside_range.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "allow_when.line_pressure"
+  why_contains: "outside declared range"
+
+numeric_empty_interval.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "allow_when.line_pressure"
+  why_contains: "empty interval"
+
+numeric_eq.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "allow_when.line_pressure"
+  why_contains: "operator 'eq' is not defined for a 'numeric' criterion"
+
+numeric_confidence_gte.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "allow_when.line_pressure"
+  why_contains: "operator 'confidence_gte' is not defined for a 'numeric' criterion"
+
+numeric_confidence_field.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure"
+  why_contains: "confidence"
+
+numeric_with_levels.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure"
+  why_contains: "should not be valid"
+
+numeric_in_confirms.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "on_block.confirms"
+  why_contains: "cannot be confirmed by a person"
+
+numeric_loosens_lower.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.line_pressure"
+  why_contains: "loosens the inherited condition"
+
+numeric_loosens_upper.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.line_pressure"
+  why_contains: "loosens the inherited condition"
+
+numeric_drops_lower.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.line_pressure"
+  why_contains: "loosens the inherited condition"
+
+numeric_drops_upper.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.line_pressure"
+  why_contains: "loosens the inherited condition"
+
+numeric_opens_edge.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.temperature"
+  why_contains: "loosens the inherited condition"
+
+numeric_redefines_unit.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 1
+  where_contains: "evaluate.line_pressure"
+  why_contains: "redefines a criterion inherited from the base gate"
+
+numeric_redefines_range.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 1
+  where_contains: "evaluate.line_pressure"
+  why_contains: "redefines a criterion inherited from the base gate"
+
+numeric_redefines_max_age.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 1
+  where_contains: "evaluate.line_pressure"
+  why_contains: "redefines a criterion inherited from the base gate"
+
+numeric_range_reversed.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure.range"
+  why_contains: "strictly less than"
+
+numeric_blank_unit.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure.unit"
+  why_contains: "does not match"
+
+numeric_max_age_too_large.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure.max_age_ms"
+  why_contains: "greater than the maximum"
+
+numeric_range_beyond_exact_int.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure.range.max"
+  why_contains: "finite number"
+
+numeric_range_extra_key.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure.range"
+  why_contains: "Additional properties"
+
+bool_with_unit.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure"
+  why_contains: "should not be valid"
+
+level_with_range.yaml:
+  error: GateSchemaError
+  code: NE2002
+  where_contains: "evaluate.line_pressure"
+  why_contains: "should not be valid"

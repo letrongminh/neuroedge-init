@@ -1,0 +1,8 @@
+# Principle 2 — opens an edge: parent has gt 2 (open), child has gte 2 (closed, admits 2).
+schema:  neuroedge.gate/v1
+name:    numeric-opens-edge
+version: 1.0.0
+extends: neuroedge://gates/numeric-base@1.0.0
+
+allow_when:
+  temperature: { gte: 2, lt: 30 }

@@ -1,0 +1,20 @@
+# Schema error — numeric criterion missing required 'unit'.
+schema:  neuroedge.gate/v1
+name:    numeric-missing-unit
+version: 1.0.0
+
+evaluate:
+  line_pressure:
+    type: numeric
+    range: { min: 0, max: 16 }
+    max_age_ms: 500
+    instructions: "Line pressure"
+
+allow_when:
+  line_pressure: { lt: 8 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100

@@ -60,7 +60,13 @@ from ..actions.tools import (
     parse_tool_calls,
 )
 from ..engine.canonical import digest
-from ..engine.compiler import AgentManifest, build, load_actions, load_agent_manifest
+from ..engine.compiler import (
+    AgentManifest,
+    build,
+    load_actions,
+    load_agent_manifest,
+    numeric_sensor_fact_error,
+)
 from ..engine.compiler import resolve_gates as _resolve_gates
 from ..engine.gate import ActionContractEngine
 from ..engine.gate_resolver import GateRegistry, ResolvedGate
@@ -430,6 +436,10 @@ def _check_bands(
     is one a gate would never admit. Checked when the session loads, before any line.
     """
     for criterion, rule in sensor_facts.items():
+        for gate in gates.values():
+            error = numeric_sensor_fact_error(str(manifest.source), criterion, gate)
+            if error is not None:
+                raise error
         if rule.bands is None:
             continue
         where = f"{manifest.source} -> [sim.sensor_facts] {criterion} -> bands"

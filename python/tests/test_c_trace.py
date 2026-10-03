@@ -271,11 +271,12 @@ def test_reason_and_on_block_names_are_the_hosts(harness):
         Reason.ARGUMENT_OUT_OF_RANGE,
         Reason.GATE_UNREACHABLE,
         Reason.BUDGET_EXCEEDED,
+        Reason.VALUE_OUT_OF_RANGE,
     ]
     assert harness["reasons"] == {
         0: "-",
         **{i + 1: str(reason) for i, reason in enumerate(walker_reasons)},
-        7: "-",
+        8: "-",
     }
     assert harness["actions"] == {**{code: name for name, code in ACTIONS.items()}, 4: "-"}
 

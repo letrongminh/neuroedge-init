@@ -85,9 +85,9 @@ dịch. Nhãn của giao diện nằm trong `ne_ui_strings.c`, mỗi ngôn ngữ
 | `ne_ui_show_ota` | cập nhật firmware (task OTA) | 6 pha, tiến độ, chi tiết (dữ liệu) |
 | `ne_ui_show_fatal` | cổng dừng | lý do (dữ liệu) |
 
-Sáu mã lý do của BLOCK — đúng bảng `ne_reason` của walker (`ne_walker.h`) và `firmware.REASONS`:
+Bảy mã lý do của BLOCK — đúng bảng `ne_reason` của walker (`ne_walker.h`) và `firmware.REASONS`:
 `condition_not_met`, `criterion_unavailable`, `confidence_unavailable`, `argument_out_of_range`,
-`gate_unreachable`, `budget_exceeded`. Nhãn của chúng ở `ne_ui_strings.c`; `test_ui_assets.py` giữ
+`gate_unreachable`, `budget_exceeded`, `value_out_of_range`. Nhãn của chúng ở `ne_ui_strings.c`; `test_ui_assets.py` giữ
 enum C và bảng Python khớp nhau. `NE_UI_REASON_NONE` là của ALLOW.
 
 Hàm nhận con trỏ struct; trường `const char *` là dữ liệu, `NULL` vẽ như dòng rỗng. Màn hình không

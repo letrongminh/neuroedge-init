@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import asyncio
 import fnmatch
+import math
 import os
 import re
 import tempfile
@@ -42,7 +43,7 @@ from typing import Any
 
 from ..errors import AgentManifestError, BoardCapabilityError, NeuroEdgeError
 from .binary_tree import MAX_NODES, c_header, c_string, domain_index, encode
-from .decision_tree import OUT_OF_DOMAIN, compile_tree
+from .decision_tree import OUT_OF_DOMAIN, compile_tree, numeric_baseline_value
 from .gate import ActionContractEngine, GateResult
 from .gate_resolver import ResolvedGate
 from .trace_sink import EventLog
@@ -138,6 +139,7 @@ REASONS = {
     "argument_out_of_range": 4,
     "gate_unreachable": 5,
     "budget_exceeded": 6,
+    "value_out_of_range": 7,
 }
 FAIL_MODES = {None: 0, "open": 1, "closed": 2}
 DEGRADED_NONE, DEGRADED_UNREACHABLE, DEGRADED_BUDGET = 0, 1, 2
@@ -335,6 +337,15 @@ class Check:
     note: str
 
 
+class _PresetAges(ActionContractEngine):
+    """The self-test hands the engine readings with their ages already set, as replay does."""
+
+    def _numeric_marks(self, criterion, fact, eval_offset_ms):
+        if fact.age_ms is None:
+            return None
+        return eval_offset_ms - fact.age_ms, eval_offset_ms, fact.age_ms
+
+
 class _Offline:
     """A fact source that cannot answer: the degraded check (`gate_unreachable`)."""
 
@@ -380,13 +391,51 @@ def expected(tree: Mapping[str, Any], result: GateResult) -> tuple[int, ...]:
     return verdict, reason, kind, index, answerable, FAIL_MODES[result.fail_mode], mask
 
 
+def _reading(value: float, age_ms: int = 0) -> Fact:
+    return Fact(value, source="measured", age_ms=age_ms)
+
+
 def baseline(tree: Mapping[str, Any]) -> dict[str, Fact]:
     """Every criterion at its first admitted value, fully confident; unsatisfiable ones absent."""
-    return {
-        node["criterion"]: Fact(_value(node, node["admitted"][0]), 1.0)
-        for node in tree["nodes"]
-        if node["admitted"]
-    }
+    facts: dict[str, Fact] = {}
+    for node in tree["nodes"]:
+        if node["kind"] == "numeric":
+            facts[node["criterion"]] = _reading(numeric_baseline_value(node))
+        elif node["admitted"]:
+            facts[node["criterion"]] = Fact(_value(node, node["admitted"][0]), 1.0)
+    return facts
+
+
+def _numeric_variants(node: Mapping[str, Any]) -> list[tuple[Fact | None, str]]:
+    """The readings the self-test tries on a numeric criterion, beyond its baseline."""
+    num = node["numeric"]
+    name = node["criterion"]
+    good = numeric_baseline_value(node)
+    variants: list[tuple[Fact | None, str]] = [
+        (_reading(good, num["max_age_ms"]), f"{name}: a reading exactly as old as allowed"),
+        (_reading(good, num["max_age_ms"] + 1), f"{name}: a reading one ms too old"),
+        (_reading(good, -1), f"{name}: a reading from the future"),
+        (
+            _reading(math.nextafter(float(num["range"]["max"]), math.inf)),
+            f"{name}: above its range",
+        ),
+        (
+            _reading(math.nextafter(float(num["range"]["min"]), -math.inf)),
+            f"{name}: below its range",
+        ),
+        (Fact(OUT_OF_DOMAIN, source="measured", age_ms=0), f"{name}: not a number"),
+    ]
+    for bound in (num.get("lower"), num.get("upper")):
+        if bound is None:
+            continue
+        for value in (
+            float(bound["value"]),
+            math.nextafter(float(bound["value"]), -math.inf),
+            math.nextafter(float(bound["value"]), math.inf),
+        ):
+            if float(num["range"]["min"]) <= value <= float(num["range"]["max"]):
+                variants.append((_reading(value), f"{name} = {value!r}"))
+    return variants
 
 
 def arguments(tree: Mapping[str, Any]) -> dict[str, Any]:
@@ -409,6 +458,10 @@ def checks(key: str, gate: ResolvedGate) -> list[Check]:
     for index, node in enumerate(tree["nodes"]):
         name = node["criterion"]
         present = base.get(name)
+        if node["kind"] == "numeric":
+            variants.append((index, None, f"{name} missing"))
+            variants += [(index, fact, note) for fact, note in _numeric_variants(node)]
+            continue
         for raw in node["domain"]:
             fact = Fact(_value(node, raw), 1.0)
             if fact != present:
@@ -436,7 +489,7 @@ def checks(key: str, gate: ResolvedGate) -> list[Check]:
             facts.pop(name, None)
             if fact is not None:
                 facts[name] = fact
-        engine = ActionContractEngine(
+        engine = _PresetAges(
             {key: gate},
             facts_source=_Offline() if degraded else None,
             clock=lambda: 0.0,
@@ -493,13 +546,24 @@ def _double(value: float) -> str:
 
 
 def _fact(node: Mapping[str, Any], fact: Fact | None) -> str:
-    """A `ne_fact` initializer: present, in_domain, index, has_confidence, confidence."""
+    """
+    A `ne_fact` initializer: present, in_domain, index, has_confidence, confidence, value, age_ms.
+
+    A numeric "reading" that is not a number is written with an age from the future, which the
+    walker blocks as unavailable: the self-test needs no `<math.h>`, and the conformance suite
+    covers NaN and the infinities.
+    """
     if fact is None or fact.value is None:
-        return "{0u, 0u, 0u, 0u, 0.0}"
+        return "{0u, 0u, 0u, 0u, 0.0, 0.0, 0}"
+    if node["kind"] == "numeric":
+        number = fact.value
+        if isinstance(number, bool) or not isinstance(number, (int, float)):
+            return "{1u, 0u, 0u, 0u, 0.0, 0.0, -1}"  # not a number: age < 0, unavailable
+        return f"{{1u, 0u, 0u, 0u, 0.0, {_double(number)}, {int(fact.age_ms or 0)}}}"
     index = domain_index(node, fact.value)  # the walker's view, as the vectors write it
     has = fact.confidence is not None
     confidence = _double(fact.confidence) if has else "0.0"
-    return f"{{1u, {int(index is not None)}u, {index or 0}u, {int(has)}u, {confidence}}}"
+    return f"{{1u, {int(index is not None)}u, {index or 0}u, {int(has)}u, {confidence}, 0.0, 0}}"
 
 
 def _arg(value: Any) -> str:
@@ -665,7 +729,11 @@ def _source(
         check_rows.append(f"    /* {_comment(tree['gate'])} */")
         for row in rows[key]:
             node = NO_NODE if row.node is None else row.node
-            fact = "{0u, 0u, 0u, 0u, 0.0}" if row.node is None else _fact(nodes[row.node], row.fact)
+            fact = (
+                "{0u, 0u, 0u, 0u, 0.0, 0.0, 0}"
+                if row.node is None
+                else _fact(nodes[row.node], row.fact)
+            )
             verdict, reason, kind, index, answerable, fail_mode, mask = row.expected
             check_rows.append(
                 f"    {{{g}u, {node}u, {int(row.confirmed)}u, {row.degraded}u, {verdict}u, "

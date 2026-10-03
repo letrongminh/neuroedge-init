@@ -1,0 +1,20 @@
+# Schema error — a level criterion may not declare a range.
+schema:  neuroedge.gate/v1
+name:    level-with-range
+version: 1.0.0
+
+evaluate:
+  line_pressure:
+    type: level
+    range: { min: 0, max: 16 }
+    levels: [low, high]
+    instructions: "Line pressure"
+
+allow_when:
+  line_pressure: { lte: low }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100

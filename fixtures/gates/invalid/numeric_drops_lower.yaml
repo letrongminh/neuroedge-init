@@ -1,0 +1,8 @@
+# Principle 2 — drops the parent's lower bound while overriding allow_when.
+schema:  neuroedge.gate/v1
+name:    numeric-drops-lower
+version: 1.0.0
+extends: neuroedge://gates/numeric-base@1.0.0
+
+allow_when:
+  line_pressure: { lt: 6 }

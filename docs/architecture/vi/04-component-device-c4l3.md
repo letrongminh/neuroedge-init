@@ -95,7 +95,7 @@ Bố cục byte của `NETR` và thuật toán duyệt: [`05`](05-code-gate-hal-
 | Tệp | Nội dung |
 |:---|:---|
 | `gates/<key>.netree.h` | `static const uint8_t ne_tree_<key>[]` — byte `NETR` v1 của gate, nằm trong flash |
-| `ne_agent.c` | Bảng gate (nhãn, digest, chữ `on_block` mà `NETR` không mang — `TODOS.md` #36), bảng chân (tên), bảng action (gate, mặt nạ chân), và **các phép kiểm self-test** |
+| `ne_agent.c` | Bảng gate (nhãn, digest, chữ `on_block`; `NETR` v2 cũng mang chúng, `ne_trace` vẫn đọc từ bảng này), bảng chân (tên), bảng action (gate, mặt nạ chân), và **các phép kiểm self-test** |
 | `include/ne_agent.h` | Kiểu dữ liệu; `NE_AGENT_VERSION`, `NE_AGENT_BOARD`, `NE_AGENT_LANGUAGE`; một ký hiệu `ne_agent_linked` |
 
 Phép kiểm self-test sinh cho mỗi gate: trường hợp cơ sở; với mỗi tiêu chí mọi giá trị trong miền,

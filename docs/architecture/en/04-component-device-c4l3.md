@@ -95,7 +95,7 @@ void ne_token_close(ne_ledger *ledger, const ne_token *token);
 | File | Content |
 |:---|:---|
 | `gates/<key>.netree.h` | `static const uint8_t ne_tree_<key>[]` — the gate's `NETR` v1 bytes, in flash |
-| `ne_agent.c` | Gate table (label, digest, the `on_block` value that `NETR` does not carry — `TODOS.md` #36), pin table (names), action table (gate, pin mask), and the **self-test cases** |
+| `ne_agent.c` | Gate table (label, digest, the `on_block` text; `NETR` v2 carries them too, `ne_trace` still reads them from this table), pin table (names), action table (gate, pin mask), and the **self-test cases** |
 | `include/ne_agent.h` | Data types; `NE_AGENT_VERSION`, `NE_AGENT_BOARD`, `NE_AGENT_LANGUAGE`; one symbol `ne_agent_linked` |
 
 Self-test cases generated for each gate: the base case; for each criterion every value in the domain,

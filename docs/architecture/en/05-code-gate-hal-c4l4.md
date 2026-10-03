@@ -67,21 +67,22 @@ no pointers, offsets only, fixed-size records.
 
 ```mermaid
 flowchart LR
-    H["Header · 64 B<br/>magic NETR · layout_version 1<br/>gate_digest 32 B · counts<br/>on_block action · fail_open<br/>p95_latency_ms · confirm_mask<br/>strings_size · crc32"]
+    H["Header · 80 B<br/>magic NETR · layout_version 2<br/>gate_digest 32 B · counts<br/>on_block action · fail_open<br/>p95_latency_ms · confirm_mask<br/>strings_size · crc32<br/>numeric_count · gate and on_block labels"]
     N["Nodes · 24 B each<br/>kind · domain_size · name_off<br/>admitted_mask · confidence_floor<br/>domain_off"]
+    M["Numeric · 48 B each<br/>lo · hi · range_min · range_max<br/>max_age_ms · unit_off · flags"]
     A["Argument limits · 32 B each<br/>name_off · type · flags<br/>enum range · max_length<br/>minimum · maximum"]
     E["Enums · 16 B each<br/>number · str_off · str_len"]
     S["Strings<br/>UTF-8, NUL-terminated"]
-    H --> N --> A --> E --> S
+    H --> N --> M --> A --> E --> S
 ```
 
-**How to read the diagram:** Boxes represent contiguous partitions in the `NETR` v1 binary file (from the 64-byte header to UTF-8 strings); solid arrows show fixed ordering in memory. Core takeaway: the binary layout contains no pointers and uses fixed offsets, allowing the C walker to read directly in place from flash without dynamic allocation (stack ≤ 512 bytes).
+**How to read the diagram:** Boxes represent contiguous partitions in the `NETR` v2 binary file (from the 80-byte header to UTF-8 strings); solid arrows show fixed ordering in memory. Core takeaway: the binary layout contains no pointers and uses fixed offsets, allowing the C walker to read directly in place from flash without dynamic allocation (stack ≤ 512 bytes).
 
-The file size is exactly `64 + 24·n + 32·a + 16·e + strings`; limits: at most 32 nodes, 32 values per
-domain, 16 arguments, 64 enums, 16 384 string bytes (about 19 KB). A gate over the limits is refused
+The file size is exactly `80 + 24·n + 48·m + 32·a + 16·e + strings` (`m` numeric criteria); limits: at most 32 nodes, 32 values per
+domain, 32 numeric criteria, 16 arguments, 64 enums, 16 384 string bytes (about 21 KB). A gate over the limits is refused
 **at build time** (`NE2002`) and never reaches the chip. Changing the layout needs an RFC and a
-`layout_version` bump; the v1 walker refuses a v2 file. Full byte table:
-[`docs/rfc/0003-bo-cuc-nhi-phan-cay.md`](../../rfc/0003-bo-cuc-nhi-phan-cay.md).
+`layout_version` bump; the v2 walker refuses a v1 file. Full byte table:
+[`docs/rfc/0009-tieu-chi-so-numeric.md`](../../rfc/0009-tieu-chi-so-numeric.md) §3d (v1: RFC-0003).
 
 `ne_tree_load` refuses a corrupt file before walking: bad magic, bad version, bad CRC, over the limits,
 bad structure (offset outside the file, `bool` domain other than 2, NaN threshold, `confirm_mask` when

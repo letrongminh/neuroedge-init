@@ -1,0 +1,21 @@
+# Schema error — numeric threshold with non-finite value (.inf).
+schema:  neuroedge.gate/v1
+name:    numeric-threshold-non-finite
+version: 1.0.0
+
+evaluate:
+  line_pressure:
+    type: numeric
+    unit: bar
+    range: { min: 0, max: 16 }
+    max_age_ms: 500
+    instructions: "Line pressure"
+
+allow_when:
+  line_pressure: { lt: .inf }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100

@@ -94,12 +94,13 @@ def test_gate_schema_enumerates_exactly_the_four_on_block_behaviours():
     assert set(on_block["properties"]["action"]["enum"]) == {"deny", "escalate", "ask", "degrade"}
 
 
-def test_gate_schema_enumerates_exactly_the_three_evaluate_types():
+def test_gate_schema_enumerates_exactly_the_four_evaluate_types():
     evaluate = _load("gate.v1.json")["properties"]["evaluate"]
     assert set(evaluate["additionalProperties"]["properties"]["type"]["enum"]) == {
         "bool",
         "level",
         "choice",
+        "numeric",
     }
 
 
