@@ -119,7 +119,7 @@ Bốn số của mỗi chân cơ cấu lấy từ `board.v1`; `sim-*` có đúng
   có phong bì do một tiến trình riêng giữ (`hal/supervisor.py`; phiên riêng nên SIGSTOP gửi cho nhóm tiến trình của runtime không dừng
   nó). Runtime ra lệnh qua ống và gửi nhịp tim; mất nhịp quá `heartbeat_timeout_ms` (mặc định 1000 ms) khi có line đang bật, quá hạn
   (thời gian giữ trước + 250 ms), hoặc ống đóng (runtime chết) ⇒ giám sát thả line. Runtime nhận biết ở tin nhắn kế tiếp và ghi
-  `actuator_command` `off` kèm `cause`. Mặc định **tắt** vì cần `gpiod` thật trong tiến trình con; xem báo cáo TSK-N2-02.
+  `actuator_command` `off` kèm `cause`. Mặc định **tắt**: tiến trình giám sát cần `gpiod` thật, mà các test phiên `linux` thay `gpiod` bằng bản giả ngay trong tiến trình; nên bật mặc định khi job `linux-hal` (`tests_linux/test_gpio_envelope.py`) đã chứng minh trên gpio-sim.
 
 **Cảm biến trên `linux` tìm theo tên, không theo số thứ tự** (`hwmon3`, `iio:device0` đổi theo thứ
 tự probe), như chân GPIO tìm theo tên line: kênh có nhãn trùng tên cảm biến của bo mạch, hoặc một
