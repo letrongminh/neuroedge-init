@@ -157,7 +157,14 @@ def test_the_output_schema_refuses_what_the_profile_never_returns():
     assert not validator.is_valid({"tool": "light_on", "status": "ALLOW"})  # another tool
     assert not validator.is_valid({"tool": "light_off", "status": "BLOCK"})  # no gate, no on_block
     assert not validator.is_valid({"tool": "light_off", "status": "REJECTED"})  # no problems
-    assert not validator.is_valid({"tool": "light_off", "status": "ALLOW", "token": "x"})
+    # RFC-0015 §3b, Q-66 #2: result objects are open — a key the reader does not know is
+    # ignored, not refused — but a key it does know still has its type, and `status` stays closed.
+    assert validator.is_valid({"tool": "light_off", "status": "ALLOW", "token": "x"})
+    assert not validator.is_valid({"tool": "light_off", "status": "ALLOW", "gate": 1})
+    assert not validator.is_valid({"tool": "light_off", "status": "PENDING"})
+    assert not validator.is_valid(
+        {"tool": "light_off", "status": "BLOCK", "gate": "g", "on_block": "ignore"}
+    )
     assert not validator.is_valid(
         {
             "tool": "light_off",
