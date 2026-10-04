@@ -7,7 +7,7 @@ is a directory of `*.tmpl` files whose only placeholder is ``{{name}}``;
 generating a project writes each file with the suffix dropped. The `.tmpl`
 suffix keeps pytest and ruff from treating template code as package code.
 
-`villa-concierge`, `home-voice` and `factory-monitor` add their README and tests to a copy of
+`villa-concierge`, `home-voice`, `factory-monitor`, `gate-camera` and `blinds` add their README and tests to a copy of
 `fixtures/agents/<template>/`, so each sample agent has one source. A wheel
 carries that directory under `neuroedge/_data/` (TSK-S3-17), so the template
 works from an installed package too.
@@ -28,12 +28,19 @@ from pathlib import Path
 from ..errors import AgentManifestError
 from ..paths import fixtures_dir
 
-TEMPLATES = ("minimal", "villa-concierge", "home-voice", "factory-monitor")
+TEMPLATES = (
+    "minimal",
+    "villa-concierge",
+    "home-voice",
+    "factory-monitor",
+    "gate-camera",
+    "blinds",
+)
 PLACEHOLDER = "{{name}}"
 NAME = re.compile(r"^[a-z][a-z0-9_-]{0,62}$")
 _HERE = Path(__file__).parent
 # Templates that add README + tests to a copy of the sample agent of the same name.
-SAMPLES = ("villa-concierge", "home-voice", "factory-monitor")
+SAMPLES = ("villa-concierge", "home-voice", "factory-monitor", "gate-camera", "blinds")
 # Files every template gets, rendered from `_common/`, plus the empty directories of
 # the trace path convention (FR-TRC-09), each kept by an empty `.gitkeep`.
 COMMON = "_common"
@@ -96,7 +103,7 @@ def scaffold(name: str, template: str = "minimal", parent: str | Path = ".") -> 
             where=f"--template {template}",
             why=f"unknown template; available: {list(TEMPLATES)}",
             how="use --template minimal (one action, one gate, tests), or a sample: "
-            "villa-concierge, home-voice, factory-monitor",
+            "villa-concierge, home-voice, factory-monitor, gate-camera, blinds",
         )
     target = Path(parent) / name
     if target.exists() and any(target.iterdir()):

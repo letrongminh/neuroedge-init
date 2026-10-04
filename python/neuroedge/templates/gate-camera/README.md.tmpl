@@ -1,0 +1,34 @@
+# {{name}}
+
+Camera cổng, sinh từ mẫu `gate-camera`: người lạ trong vùng cổng ⇒ bật đèn hiên và khoá cổng. Camera chỉ cấp
+**dữ kiện** (nhãn, vùng, điểm tin cậy); ngưỡng nằm ở gate. Hai gate kế thừa `gates/home/camera@1.0.0` của
+thư viện khởi đầu và chỉ siết thêm.
+
+| Hành động | Chân | Cho phép khi |
+|:---|:---|:---|
+| `stranger_light` | `porch_light` | người trong nhà đã đồng ý ghi hình, vùng riêng tư trống, người lạ ở cổng tin cậy từ 0,85 |
+| `stranger_lock` | `gate_relay` (xung 30 s) | như trên, tin cậy từ 0,90 |
+
+Không có người lạ, điểm thấp, khung hình quá cũ hay camera mất ⇒ BLOCK, chân không đổi.
+
+## Chạy thử trên `sim-rpi5` — không cần camera, không cần mạng
+
+Agent cần bo mạch có `vision.in` (`sim-default` không có camera).
+
+```bash
+neuroedge build --target sim --board sim-rpi5
+neuroedge test                                      # Action CI: 0 = mọi test đạt
+```
+
+`neuroedge run --board sim-rpi5` mở REPL; camera ảo phát lại kịch bản trong `[vision.options.script]`
+(khung 5–12: người lạ ở cổng, điểm 0,93).
+
+## Tệp
+
+| Tệp | Vai trò |
+|:---|:---|
+| `agent.toml` | Năng lực cần (`digital.out`, `vision.in`), gate, vùng và dữ kiện thị giác, kịch bản camera ảo |
+| `commands.toml` | Lệnh → action (`stranger_light`, `stranger_lock`) |
+| `gates/` | `stranger_light@1.0.0`, `stranger_lock@1.0.0` (kế thừa `camera`) |
+| `actions/gate_camera.py` | Hai hàm `@action` |
+| `traces/golden/` | Hai vết golden của kit (cho phép, chặn): `neuroedge replay` |

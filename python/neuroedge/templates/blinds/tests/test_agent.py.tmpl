@@ -1,0 +1,92 @@
+"""
+Safety tests for {{name}} (the blinds sample) on the `sim-rpi5` board.
+
+They assert what the servo was told, not what a verdict object says. A hand clock lets a lease run out
+and the envelope's interval pass.
+"""
+
+import asyncio
+from pathlib import Path
+
+import pytest
+
+from neuroedge import SimSession
+from neuroedge.actions.tools import ToolCall
+from neuroedge.errors import EnvelopeRefusedError
+
+AGENT = Path(__file__).resolve().parents[1] / "agent.toml"
+
+
+class Clock:
+    def __init__(self):
+        self.now = 1000.0
+
+    def __call__(self):
+        return self.now
+
+
+def start(**facts):
+    clock = Clock()
+    session = SimSession.load(AGENT, board_id="sim-rpi5", clock=clock)
+    for criterion, value in facts.items():
+        session.set_fact(criterion, value)
+    return session, clock
+
+
+def ask(session, tool):
+    return asyncio.run(session.call_tool(ToolCall(tool, {}, source="local_grammar"))).content()
+
+
+def targets(session):
+    return [e["target"] for e in session.events.of_type("motion_command")]
+
+
+def test_the_blinds_open_and_close():
+    session, clock = start()
+    assert ask(session, "blinds_open")["status"] == "ALLOW"
+    clock.now += 2500  # the lease and the hold are over: the servo is off
+    session.hal.settle_motion()
+    clock.now += 1500  # and the envelope keeps 1 s between two runs
+    assert ask(session, "blinds_close")["status"] == "ALLOW"
+    assert targets(session) == [90.0, 0.0]
+    session.close()
+
+
+def test_a_lease_nobody_renews_ends_in_the_safe_state():
+    session, clock = start()
+    ask(session, "blinds_open")
+    clock.now += 300
+    session.hal.settle_motion()
+    safe = list(session.events.of_type("motion_safe"))
+    assert [(s["channel"], s["state"], s["cause"]) for s in safe] == [
+        ("gripper", "hold", "lease_expired")
+    ]
+    session.close()
+
+
+@pytest.mark.parametrize(
+    ("fact", "tool"),
+    [
+        ("estop_released", "blinds_open"),
+        ("device_fault_free", "blinds_open"),
+        ("path_clear", "blinds_close"),
+    ],
+)
+def test_a_blocked_command_never_moves_the_servo(fact, tool):
+    session, _ = start(**{fact: False})
+    answer = ask(session, tool)
+    assert answer["status"] == "BLOCK" and answer["failed_criterion"] == fact
+    assert targets(session) == []
+    session.close()
+
+
+def test_the_envelope_refuses_a_second_run_too_soon_even_when_the_gate_allows_it():
+    session, clock = start()
+    ask(session, "blinds_open")
+    clock.now += 2500
+    session.hal.settle_motion()  # lease over, hold over: the servo is off
+    clock.now += 300
+    with pytest.raises(EnvelopeRefusedError):
+        ask(session, "blinds_close")
+    assert targets(session) == [90.0]
+    session.close()

@@ -1,0 +1,78 @@
+"""
+Safety tests for {{name}} (the gate-camera sample) on the `sim-rpi5` board.
+
+The pins are asserted on the pin, not on a verdict object. A hand clock moves the virtual camera:
+frames 5-12 show a stranger at the gate (0.93), 20-27 one at 0.60, 40-47 one at 0.93 with a person in
+the private zone; every other frame is an empty scene.
+"""
+
+import asyncio
+from pathlib import Path
+
+from neuroedge import SimSession
+from neuroedge.actions.tools import ToolCall
+
+AGENT = Path(__file__).resolve().parents[1] / "agent.toml"
+FRAME_MS = 1000.0 / 30.0
+
+
+class Clock:
+    def __init__(self):
+        self.now = 1000.0
+
+    def __call__(self):
+        return self.now
+
+
+def ask(tool, frame, *, consent=True, lose_camera=False):
+    clock = Clock()
+    session = SimSession.load(AGENT, board_id="sim-rpi5", clock=clock)
+    try:
+        session.set_fact("recording_consent", consent)
+        clock.now += frame * FRAME_MS
+        if lose_camera:
+            session.vision.camera.close()
+            clock.now += 100
+        result = asyncio.run(session.call_tool(ToolCall(tool, {}, source="local_grammar")))
+        return session, result.content()
+    finally:
+        session.close()
+
+
+def test_a_stranger_at_the_gate_turns_the_light_on_and_locks_the_gate():
+    session, light = ask("stranger_light", 8.5)
+    assert light["status"] == "ALLOW"
+    assert session.hal.pin("porch_light").commands == [("on", 0)]
+    session, lock = ask("stranger_lock", 8.5)
+    assert lock["status"] == "ALLOW"
+    assert [op for op, _ in session.hal.pin("gate_relay").commands] == ["pulse"]
+
+
+def test_nobody_at_the_gate_changes_nothing():
+    session, answer = ask("stranger_light", 3.5)
+    assert answer["status"] == "BLOCK" and answer["failed_criterion"] == "stranger_at_gate"
+    assert session.hal.pin("porch_light").never_pulsed()
+
+
+def test_a_stranger_the_model_is_not_sure_of_is_not_enough():
+    session, answer = ask("stranger_lock", 24.5)
+    assert answer["status"] == "BLOCK" and answer["failed_criterion"] == "stranger_confidence"
+    assert session.hal.pin("gate_relay").never_pulsed()
+
+
+def test_a_person_in_the_private_zone_blocks_the_camera_from_acting():
+    session, answer = ask("stranger_light", 44.5)
+    assert answer["status"] == "BLOCK" and answer["failed_criterion"] == "person_in_private_zone"
+    assert session.hal.pin("porch_light").never_pulsed()
+
+
+def test_without_the_households_consent_the_camera_does_not_act():
+    session, answer = ask("stranger_light", 8.5, consent=False)
+    assert answer["status"] == "BLOCK" and answer["failed_criterion"] == "recording_consent"
+    assert session.hal.pin("porch_light").never_pulsed()
+
+
+def test_a_camera_that_is_gone_blocks_fail_closed():
+    session, answer = ask("stranger_light", 8.5, lose_camera=True)
+    assert answer["status"] == "BLOCK" and answer["reason"] == "criterion_unavailable"
+    assert session.hal.pin("porch_light").never_pulsed()

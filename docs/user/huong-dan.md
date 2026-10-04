@@ -147,7 +147,7 @@ kịch bản demo: `demo/i1-studio/`.
 **Làm được**
 
 - Tạo dự án agent mới từ một mẫu (`neuroedge new <tên> --template …`). Dự án có sẵn gate, action, bộ
-  test, ngữ pháp lệnh và thư mục vết ghi; `neuroedge test` qua ngay. Bốn mẫu:
+  test, ngữ pháp lệnh và thư mục vết ghi; `neuroedge test` qua ngay. Sáu mẫu:
 
   | Mẫu | Là gì | Thấy được gì |
   |:---|:---|:---|
@@ -155,6 +155,8 @@ kịch bản demo: `demo/i1-studio/`.
   | `villa-concierge` | Chốt cửa phòng khách sạn | ALLOW khi đúng phòng, BLOCK và chuyển lễ tân khi sai |
   | `home-voice` | Trợ lý giọng nói trong nhà: đèn, hỏi đáp, tin tức | Bật/tắt đèn qua gate; câu hỏi tự do cho LLM |
   | `factory-monitor` | Quạt thông gió và còi báo động theo nhiệt độ phòng máy | Hỏi lại trước khi tắt quạt lúc nóng; từ chối tắt báo động khi còn nóng |
+  | `gate-camera` | Camera cổng: người lạ trong vùng ⇒ bật đèn, khoá cổng (cần `--board sim-rpi5`) | Chặn khi không có người lạ, điểm thấp, camera mất, hay có người trong vùng riêng tư |
+  | `blinds` | Rèm lá bằng servo, có lease và phong bì (cần `--board sim-rpi5`) | Lease không gia hạn ⇒ `safe_state`; kẹt tay hay dừng khẩn ⇒ chặn |
 
 - **Đối chiếu agent với bo mạch** trước khi chạy (`neuroedge build --target … --board …`): agent cần chân,
   cảm biến, micro nào thì bo mạch phải có đúng thứ đó; thiếu một thứ ⇒ build dừng, in từng vấn đề, không
