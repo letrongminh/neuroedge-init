@@ -109,20 +109,24 @@ def test_a_stranger_on_the_kernel_camera_turns_the_light_on_and_locks_the_gate(t
 
 
 @pytest.mark.usefixtures("fresh_actions")
-def test_an_empty_scene_and_an_unsure_model_never_move_a_line(tmp_path, sysfs):
-    quiet = SimSession.load(seen(tmp_path / "empty", "[]"), target="linux")
+def test_an_empty_scene_never_moves_a_line(tmp_path, sysfs):
+    quiet = SimSession.load(seen(tmp_path, "[]"), target="linux")
     try:
         answer = until(quiet, "stranger_light", "ALLOW", seconds=2.0)
         assert answer["status"] == "BLOCK" and answer["failed_criterion"] == "stranger_at_gate"
     finally:
         quiet.close()
-    unsure = SimSession.load(seen(tmp_path / "unsure", UNSURE), target="linux")
+    assert not wait_for(sysfs, "porch_light", 1, timeout=0.3), "a BLOCK never moves the light"
+
+
+@pytest.mark.usefixtures("fresh_actions")
+def test_an_unsure_model_never_moves_a_line(tmp_path, sysfs):
+    unsure = SimSession.load(seen(tmp_path, UNSURE), target="linux")
     try:
         answer = until(unsure, "stranger_lock", "ALLOW", seconds=2.0)
         assert answer["status"] == "BLOCK" and answer["failed_criterion"] == "stranger_confidence"
     finally:
         unsure.close()
-    assert not wait_for(sysfs, "porch_light", 1, timeout=0.3), "a BLOCK never moves the light"
     assert not wait_for(sysfs, "gate_relay", 1, timeout=0.3), "a BLOCK never moves the lock"
 
 

@@ -794,3 +794,24 @@ def test_the_blinds_kit_on_the_pi_is_refused_when_no_pwm_is_wired_and_no_line_is
     with pytest.raises(BoardCapabilityError, match="no PWM channel is wired"):
         SimSession.load(agent, target="linux", target_options={"sysfs_root": pwm_sys})
     assert motion_gpio.requests == []
+
+
+@pytest.mark.parametrize("kit", ["gate-camera", "blinds"])
+def test_the_camera_and_motion_kits_build_for_linux_on_the_pi_again_and_again(root, kit):
+    # What `tests_linux/test_kit_*.py` do: load the canonical agent once per test, in one process. The
+    # action module is imported on the first build and cached for the rest, so a later build must still
+    # find its `@action`s (a registry cleared in between, `fresh_actions`, would leave it none: NE3003).
+    from neuroedge.engine.compiler import build
+
+    agent = root / "fixtures" / "agents" / kit / "agent.toml"
+    for _ in range(2):
+        build(agent, target="linux", board_id="linux-rpi5")  # raises BuildFailed on any problem
+
+
+@pytest.mark.parametrize("kit", ["gate_camera", "blinds"])
+def test_a_linux_kit_test_that_loads_the_canonical_agent_does_not_clear_the_action_registry(
+    root, kit
+):
+    text = (root / "python" / "tests_linux" / f"test_kit_{kit}.py").read_text("utf-8")
+    uses = "fresh_actions" in text.replace("`fresh_actions`", "")
+    assert uses == (kit == "gate_camera"), "only the tests that copy the agent isolate the registry"
