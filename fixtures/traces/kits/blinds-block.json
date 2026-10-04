@@ -1,0 +1,380 @@
+{
+  "$schema": "https://schema.neuroedge.dev/trace/v1.json",
+  "metadata": {
+    "session_id": "sess_b11db10c",
+    "timestamp_utc": "2026-10-04T12:00:00Z",
+    "target": "sim",
+    "board_id": "sim-rpi5",
+    "agent_version": "blinds@0.1.0",
+    "anonymized": true
+  },
+  "events": [
+    {
+      "offset_ms": 0,
+      "type": "tool_call",
+      "data": {
+        "id": "call_1",
+        "name": "blinds_open",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "action_requested",
+      "data": {
+        "action": "blinds_open",
+        "gate": "blinds_open",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "blinds-open@1.0.0",
+        "gate_digest": "sha256:4ba30e63c1be095a6141fe246505c60b06fb859c68169b98c68f581d0c990206"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_facts",
+      "data": {
+        "device_fault_free": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        },
+        "quiet_hours_ok": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        },
+        "estop_released": {
+          "value": false,
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "BLOCK",
+        "reason": "condition_not_met",
+        "evaluations": {
+          "device_fault_free": true,
+          "quiet_hours_ok": true,
+          "estop_released": false
+        },
+        "blocked_by": "blinds-open@1.0.0",
+        "action": "ask",
+        "failed_criterion": "estop_released",
+        "message": "Đang trong giờ yên tĩnh — vẫn bật đèn?"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "tool_call",
+      "data": {
+        "id": "call_2",
+        "name": "blinds_close",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "action_requested",
+      "data": {
+        "action": "blinds_close",
+        "gate": "blinds_close",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "blinds-close@1.0.0",
+        "gate_digest": "sha256:5fc9a24dcec133666e0e39dd5df882eb5262f8e3578b847fdc500ec4a1be7a62"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_facts",
+      "data": {
+        "device_fault_free": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        },
+        "quiet_hours_ok": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        },
+        "estop_released": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        },
+        "path_clear": {
+          "value": false,
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "BLOCK",
+        "reason": "condition_not_met",
+        "evaluations": {
+          "device_fault_free": true,
+          "quiet_hours_ok": true,
+          "estop_released": true,
+          "path_clear": false
+        },
+        "blocked_by": "blinds-close@1.0.0",
+        "action": "ask",
+        "failed_criterion": "path_clear",
+        "message": "Đang trong giờ yên tĩnh — vẫn bật đèn?"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "tool_call",
+      "data": {
+        "id": "call_3",
+        "name": "blinds_open",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "action_requested",
+      "data": {
+        "action": "blinds_open",
+        "gate": "blinds_open",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "blinds-open@1.0.0",
+        "gate_digest": "sha256:4ba30e63c1be095a6141fe246505c60b06fb859c68169b98c68f581d0c990206"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_facts",
+      "data": {
+        "device_fault_free": {
+          "value": false,
+          "confidence": null,
+          "source": "context"
+        },
+        "quiet_hours_ok": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        },
+        "estop_released": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "BLOCK",
+        "reason": "condition_not_met",
+        "evaluations": {
+          "device_fault_free": false,
+          "quiet_hours_ok": true,
+          "estop_released": true
+        },
+        "blocked_by": "blinds-open@1.0.0",
+        "action": "ask",
+        "failed_criterion": "device_fault_free",
+        "message": "Đang trong giờ yên tĩnh — vẫn bật đèn?"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "tool_call",
+      "data": {
+        "id": "call_4",
+        "name": "blinds_open",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "action_requested",
+      "data": {
+        "action": "blinds_open",
+        "gate": "blinds_open",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "blinds-open@1.0.0",
+        "gate_digest": "sha256:4ba30e63c1be095a6141fe246505c60b06fb859c68169b98c68f581d0c990206"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_facts",
+      "data": {
+        "device_fault_free": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        },
+        "quiet_hours_ok": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        },
+        "estop_released": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "ALLOW",
+        "evaluations": {
+          "device_fault_free": true,
+          "quiet_hours_ok": true,
+          "estop_released": true
+        }
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "motion_command",
+      "data": {
+        "channel": "gripper",
+        "kind": "servo",
+        "target": 90.0,
+        "lease_ms": 200,
+        "run": "new"
+      }
+    },
+    {
+      "offset_ms": 300,
+      "type": "motion_safe",
+      "data": {
+        "channel": "gripper",
+        "state": "hold",
+        "cause": "lease_expired"
+      }
+    },
+    {
+      "offset_ms": 2300,
+      "type": "motion_safe",
+      "data": {
+        "channel": "gripper",
+        "state": "stop",
+        "cause": "max_hold_ms"
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "tool_call",
+      "data": {
+        "id": "call_5",
+        "name": "blinds_close",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "action_requested",
+      "data": {
+        "action": "blinds_close",
+        "gate": "blinds_close",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "blinds-close@1.0.0",
+        "gate_digest": "sha256:5fc9a24dcec133666e0e39dd5df882eb5262f8e3578b847fdc500ec4a1be7a62"
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "gate_facts",
+      "data": {
+        "device_fault_free": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        },
+        "quiet_hours_ok": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        },
+        "estop_released": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        },
+        "path_clear": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "ALLOW",
+        "evaluations": {
+          "device_fault_free": true,
+          "quiet_hours_ok": true,
+          "estop_released": true,
+          "path_clear": true
+        }
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "envelope_refused",
+      "data": {
+        "pin": "gripper",
+        "operation": "run",
+        "reason": "min_interval_ms",
+        "limit_ms": 1000,
+        "wait_ms": 600
+      }
+    }
+  ]
+}
