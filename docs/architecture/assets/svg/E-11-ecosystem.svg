@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1820 1020" width="1820" height="1020" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="E-11-ecosystem-title E-11-ecosystem-desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1820 1050" width="1820" height="1050" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="E-11-ecosystem-title E-11-ecosystem-desc">
 <title id="E-11-ecosystem-title">E-11 · Ecosystem landscape (C4 system landscape)</title>
 <desc id="E-11-ecosystem-desc">Who takes part, what they share, and the platforms that carry it. Details and sources: chapter 16.</desc>
 <defs>
 <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#334155"/></marker>
 </defs>
-<rect width="1820" height="1020" fill="#ffffff"/>
+<rect width="1820" height="1050" fill="#ffffff"/>
 <text x="32.0" y="42.0" font-size="22" fill="#0f172a" text-anchor="start" font-weight="700">E-11 · Ecosystem landscape (C4 system landscape)</text>
 <text x="32.0" y="66.0" font-size="13" fill="#475569" text-anchor="start">Who takes part, what they share, and the platforms that carry it. Details and sources: chapter 16.</text>
 <rect x="40" y="100" width="380" height="880" rx="14" fill="#f8fafc" stroke="#1e3a8a" stroke-width="1.6"/>
@@ -15,41 +15,47 @@
 <text x="614.0" y="561.0" font-size="13" fill="#a16207" text-anchor="start" font-weight="700">Shared assets (chapter 16 §3)</text>
 <rect x="1400" y="100" width="380" height="880" rx="14" fill="#fffaf5" stroke="#c2410c" stroke-width="1.6"/>
 <text x="1414.0" y="121.0" font-size="13" fill="#c2410c" text-anchor="start" font-weight="700">Platforms (chapter 16 §4)</text>
-<path d="M396.0,195.0 L480.0,195.0 L480.0,190.0 L630.0,190.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-<path d="M396.0,333.0 L510.0,333.0 L510.0,250.0 L630.0,250.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-<path d="M396.0,471.0 L480.0,471.0 L480.0,520.0 L1055.0,520.0 L1055.0,590.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-<path d="M396.0,609.0 L510.0,609.0 L510.0,850.0 L630.0,850.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-<path d="M396.0,747.0 L560.0,747.0 L560.0,996.0 L1380.0,996.0 L1380.0,602.0 L1424.0,602.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M396.0,192.0 L480.0,192.0 L630.0,192.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M396.0,310.0 L510.0,310.0 L510.0,250.0 L630.0,250.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M396.0,428.0 L480.0,428.0 L480.0,520.0 L1055.0,520.0 L1055.0,590.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M396.0,546.0 L510.0,546.0 L510.0,850.0 L630.0,850.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M396.0,664.0 L560.0,664.0 L560.0,996.0 L1380.0,996.0 L1380.0,542.0 L1424.0,542.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M396.0,900.0 L540.0,900.0 L540.0,1016.0 L1392.0,1016.0 L1392.0,660.0 L1424.0,660.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
 <path d="M1190.0,220.0 L1310.0,220.0 L1310.0,188.0 L1424.0,188.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-<path d="M1190.0,395.0 L1270.0,395.0 L1270.0,326.0 L1424.0,326.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
-<path d="M1190.0,665.0 L1310.0,665.0 L1310.0,464.0 L1424.0,464.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
-<rect x="64" y="140" width="332" height="110" rx="26" fill="#1e293b" stroke="#0f172a" stroke-width="1.6"/>
-<text x="230.0" y="181.8" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">U1 · Maker</text>
-<text x="230.0" y="202.0" font-size="12.5" fill="#ffffff" text-anchor="middle">builds an agent, no account</text>
-<text x="230.0" y="220.1" font-size="12.5" fill="#ffffff" text-anchor="middle">shares gates, agents</text>
-<rect x="64" y="278" width="332" height="110" rx="26" fill="#1e293b" stroke="#0f172a" stroke-width="1.6"/>
-<text x="230.0" y="319.8" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">U2 · Embedded team lead</text>
-<text x="230.0" y="340.0" font-size="12.5" fill="#ffffff" text-anchor="middle">tests safety in CI</text>
-<text x="230.0" y="358.1" font-size="12.5" fill="#ffffff" text-anchor="middle">moves boards without rewrites</text>
-<rect x="64" y="416" width="332" height="110" rx="26" fill="#1e293b" stroke="#0f172a" stroke-width="1.6"/>
-<text x="230.0" y="457.8" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">U4 · Safety reviewer / QA</text>
-<text x="230.0" y="478.0" font-size="12.5" fill="#ffffff" text-anchor="middle">reads gates and traces</text>
-<text x="230.0" y="496.1" font-size="12.5" fill="#ffffff" text-anchor="middle">approves behaviour</text>
-<rect x="64" y="554" width="332" height="110" rx="26" fill="#1e293b" stroke="#0f172a" stroke-width="1.6"/>
-<text x="230.0" y="586.7" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">U5 · OEM / ODM partner</text>
-<text x="230.0" y="606.9" font-size="12.5" fill="#ffffff" text-anchor="middle">declares a board, ports the HAL</text>
-<text x="230.0" y="625.1" font-size="12.5" fill="#ffffff" text-anchor="middle">compliance vectors</text>
-<text x="230.0" y="643.2" font-size="12.5" fill="#ffffff" text-anchor="middle" font-style="italic">◐ partial</text>
-<rect x="64" y="692" width="332" height="110" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="230.0" y="724.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">U3 · Fleet operator</text>
-<text x="230.0" y="744.9" font-size="12.5" fill="#475569" text-anchor="middle">rolls out updates, pulls traces</text>
-<text x="230.0" y="763.1" font-size="12.5" fill="#475569" text-anchor="middle">from v1.1</text>
-<text x="230.0" y="781.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
-<rect x="64" y="830" width="332" height="110" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="230.0" y="862.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">U6 · Robot integrator</text>
-<text x="230.0" y="882.9" font-size="12.5" fill="#475569" text-anchor="middle">Pi 5 brain + MCU nodes</text>
-<text x="230.0" y="901.1" font-size="12.5" fill="#475569" text-anchor="middle">ROS 2 / Nav2 · I14</text>
-<text x="230.0" y="919.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<path d="M1190.0,395.0 L1270.0,395.0 L1270.0,306.0 L1424.0,306.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M1190.0,665.0 L1310.0,665.0 L1310.0,424.0 L1424.0,424.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<rect x="64" y="140" width="332" height="104" rx="26" fill="#1e293b" stroke="#0f172a" stroke-width="1.6"/>
+<text x="230.0" y="178.8" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">U1 · Maker</text>
+<text x="230.0" y="199.0" font-size="12.5" fill="#ffffff" text-anchor="middle">builds an agent, no account</text>
+<text x="230.0" y="217.1" font-size="12.5" fill="#ffffff" text-anchor="middle">shares gates, agents</text>
+<rect x="64" y="258" width="332" height="104" rx="26" fill="#1e293b" stroke="#0f172a" stroke-width="1.6"/>
+<text x="230.0" y="296.8" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">U2 · Embedded team lead</text>
+<text x="230.0" y="317.0" font-size="12.5" fill="#ffffff" text-anchor="middle">tests safety in CI</text>
+<text x="230.0" y="335.1" font-size="12.5" fill="#ffffff" text-anchor="middle">moves boards without rewrites</text>
+<rect x="64" y="376" width="332" height="104" rx="26" fill="#1e293b" stroke="#0f172a" stroke-width="1.6"/>
+<text x="230.0" y="414.8" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">U4 · Safety reviewer / QA</text>
+<text x="230.0" y="435.0" font-size="12.5" fill="#ffffff" text-anchor="middle">reads gates and traces</text>
+<text x="230.0" y="453.1" font-size="12.5" fill="#ffffff" text-anchor="middle">approves behaviour</text>
+<rect x="64" y="494" width="332" height="104" rx="26" fill="#1e293b" stroke="#0f172a" stroke-width="1.6"/>
+<text x="230.0" y="523.7" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">U5 · OEM / ODM partner</text>
+<text x="230.0" y="543.9" font-size="12.5" fill="#ffffff" text-anchor="middle">declares a board, ports the HAL</text>
+<text x="230.0" y="562.1" font-size="12.5" fill="#ffffff" text-anchor="middle">compliance vectors</text>
+<text x="230.0" y="580.2" font-size="12.5" fill="#ffffff" text-anchor="middle" font-style="italic">◐ partial</text>
+<rect x="64" y="612" width="332" height="104" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="230.0" y="641.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">U3 · Fleet operator</text>
+<text x="230.0" y="661.9" font-size="12.5" fill="#475569" text-anchor="middle">rolls out updates, pulls traces</text>
+<text x="230.0" y="680.1" font-size="12.5" fill="#475569" text-anchor="middle">from v1.1</text>
+<text x="230.0" y="698.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="64" y="730" width="332" height="104" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="230.0" y="759.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">U6 · Robot integrator</text>
+<text x="230.0" y="779.9" font-size="12.5" fill="#475569" text-anchor="middle">Pi 5 brain + MCU nodes</text>
+<text x="230.0" y="798.1" font-size="12.5" fill="#475569" text-anchor="middle">ROS 2 / Nav2 · I14</text>
+<text x="230.0" y="816.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="64" y="848" width="332" height="104" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="230.0" y="877.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">U7 · Plug-in author</text>
+<text x="230.0" y="897.9" font-size="12.5" fill="#475569" text-anchor="middle">wires a product in, own repo and licence</text>
+<text x="230.0" y="916.1" font-size="12.5" fill="#475569" text-anchor="middle">passes the conformance suite · I2c</text>
+<text x="230.0" y="934.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="630" y="150" width="560" height="140" rx="10" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="2.2"/>
 <text x="910.0" y="197.7" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">NeuroEdge core</text>
 <text x="910.0" y="217.9" font-size="12.5" fill="#ffffff" text-anchor="middle">SDK + CLI + firmware — PolyForm Noncommercial (Q-45)</text>
@@ -58,7 +64,7 @@
 <rect x="630" y="330" width="560" height="130" rx="10" fill="#f1f5f9" stroke="#475569" stroke-width="1.6"/>
 <path d="M631,342 Q910.0,354 1189,342" fill="none" stroke="#475569" stroke-width="1.2"/>
 <text x="910.0" y="381.8" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">Open standards — Apache-2.0</text>
-<text x="910.0" y="402.0" font-size="12.5" fill="#0f172a" text-anchor="middle">schemas/ · docs/spec/ · fixtures/compliance/</text>
+<text x="910.0" y="402.0" font-size="12.5" fill="#0f172a" text-anchor="middle">schemas/ · docs/spec/ · fixtures/compliance/ · compliance corpus (Q-67)</text>
 <text x="910.0" y="420.1" font-size="12.5" fill="#0f172a" text-anchor="middle">changed only by RFC (CONTRIBUTING §3)</text>
 <rect x="630" y="590" width="270" height="150" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
 <text x="765.0" y="651.8" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">Provider adapters</text>
@@ -79,36 +85,42 @@
 <rect x="1424" y="140" width="332" height="96" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6"/>
 <text x="1590.0" y="183.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">Source repository</text>
 <text x="1590.0" y="204.1" font-size="12.5" fill="#431407" text-anchor="middle">public · issues · RFCs</text>
-<rect x="1424" y="278" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1590.0" y="312.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">PyPI + public schema URLs</text>
-<text x="1590.0" y="333.0" font-size="12.5" fill="#475569" text-anchor="middle">release workflow ready · I6</text>
-<text x="1590.0" y="351.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
-<rect x="1424" y="416" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1590.0" y="450.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Gate Registry</text>
-<text x="1590.0" y="471.0" font-size="12.5" fill="#475569" text-anchor="middle">OCI · identity · metering · I10</text>
-<text x="1590.0" y="489.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
-<rect x="1424" y="554" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1590.0" y="588.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Fleet OS</text>
-<text x="1590.0" y="609.0" font-size="12.5" fill="#475569" text-anchor="middle">the one commercial service · I9</text>
-<text x="1590.0" y="627.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
-<rect x="1424" y="692" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1590.0" y="726.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">AURA vertical app</text>
-<text x="1590.0" y="747.0" font-size="12.5" fill="#475569" text-anchor="middle">Khối 4 · outside the roadmap</text>
-<text x="1590.0" y="765.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
-<rect x="1424" y="830" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1590.0" y="864.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Marketplace</text>
-<text x="1590.0" y="885.0" font-size="12.5" fill="#475569" text-anchor="middle">Khối 5 · only after G1–G4</text>
-<text x="1590.0" y="903.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="258" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1590.0" y="292.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">PyPI + public schema URLs</text>
+<text x="1590.0" y="313.0" font-size="12.5" fill="#475569" text-anchor="middle">release workflow ready · I6</text>
+<text x="1590.0" y="331.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="376" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1590.0" y="410.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Gate Registry</text>
+<text x="1590.0" y="431.0" font-size="12.5" fill="#475569" text-anchor="middle">OCI · identity · metering · I10</text>
+<text x="1590.0" y="449.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="494" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1590.0" y="528.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Fleet OS</text>
+<text x="1590.0" y="549.0" font-size="12.5" fill="#475569" text-anchor="middle">the one commercial service · I9</text>
+<text x="1590.0" y="567.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="612" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1590.0" y="646.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Community plug-in index</text>
+<text x="1590.0" y="667.0" font-size="12.5" fill="#475569" text-anchor="middle">search/install · not a Marketplace · I2c</text>
+<text x="1590.0" y="685.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="730" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1590.0" y="764.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">AURA vertical app</text>
+<text x="1590.0" y="785.0" font-size="12.5" fill="#475569" text-anchor="middle">Khối 4 · outside the roadmap</text>
+<text x="1590.0" y="803.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="848" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1590.0" y="882.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Marketplace</text>
+<text x="1590.0" y="903.0" font-size="12.5" fill="#475569" text-anchor="middle">Khối 5 · only after G1–G4</text>
+<text x="1590.0" y="921.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="417.0" y="164.5" width="125.9" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="480.0" y="177.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">build · run · test</text>
-<rect x="443.8" y="289.5" width="132.4" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
-<text x="510.0" y="302.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">CI · build · verify</text>
+<rect x="443.8" y="279.5" width="132.4" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="510.0" y="292.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">CI · build · verify</text>
 <rect x="423.5" y="489.5" width="113.0" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="480.0" y="502.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">review · explain</text>
 <rect x="466.4" y="749.5" width="87.3" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="510.0" y="762.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">port + prove</text>
 <rect x="920.3" y="985.5" width="119.5" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="980.0" y="998.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">rollouts · traces</text>
+<rect x="1093.5" y="1005.5" width="113.0" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1150.0" y="1018.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">publish plug-ins</text>
 <rect x="1263.1" y="194.5" width="93.7" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="1310.0" y="207.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">source · RFCs</text>
 <rect x="1210.3" y="349.5" width="119.5" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>

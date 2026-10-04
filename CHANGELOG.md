@@ -378,6 +378,25 @@ bản gói.
   micro giây, làm cùng một lệnh 600 000 ms bị ghi 600 001 ms ở lần chạy này và 600 000 ms ở lần khác (test chập chờn trên CI,
   PR #94); nay bỏ nhiễu trước khi làm tròn lên, phần lẻ thật vẫn làm tròn về phía đã dùng. Kiểm: `pytest tests/test_envelope.py -k float_noise`.
 
+#### Đã đổi — Ký ba RFC của nền tảng mở (2026-10-04, Q-68)
+
+- **Q-68 — RFC-0016, RFC-0017, RFC-0018 được chấp thuận; mọi câu hỏi mở chốt theo khuyến nghị.** Kỹ thuật trưởng ký trên PR #99.
+  Hằng cơ cấu từ xa: `OFF_SLACK_MS` 100 ms, `OFF_RETRY_MS` 500 ms, `max_state_age_ms` 2000 ms, trần `command_timeout_ms` 5000 ms,
+  trần `tolerance_ms` 2000 ms. RFC-0014 sửa nhẹ (khoá `plugin` cho fact source trong tiến trình). Adapter Home Assistant đặt ở kho riêng.
+  I2c tiêu chí 1 đạt; mã của I2c mở. Kiểm: §9 của ba RFC.
+
+#### Đã đổi — Nền tảng mở (2026-10-04, Q-67)
+
+- **Q-67 — NeuroEdge thành lớp an toàn mở: bên thứ ba tự nối với sản phẩm mới mà không sửa lõi, không chờ đội lõi.**
+  Increment mới **I2c — Nền tảng mở**, làm trước NeuroBrain và là điều kiện của I6: lõi an toàn dùng độc lập
+  (`neuroedge.guard`), Extension SDK sáu loại điểm cắm có bộ test tuân thủ, `proxy mcp`/`proxy http`, cơ cấu chấp hành từ xa,
+  index cộng đồng. I11 gộp vào I2c (RFC-0002 ký, hiện thực ở I2c); TSK-P2-06 chuyển từ I18. PRD thêm M6, U7, FR-EXT-01→09,
+  NFR-SEC-10, A13. Corpus tuân thủ (`fixtures/tool_calls/`, `fixtures/contracts/`, `fixtures/traces/`, `fixtures/agents/`)
+  sang Apache-2.0; plugin của bên thứ ba theo giấy phép của tác giả (`LICENSING.md`). Bản nháp RFC-0016 → RFC-0018. Ghi chú
+  thiết kế `roadmap/neuroedge-design-open-platform.md`; khảo sát `docs/reports/thi-truong-tich-hop-2026-10-04.md`. Gỡ
+  `TODOS.md` #56, #57 (đã lên lịch, đã xong). Sửa hai chỗ lệch: TSK-S3-14 ghi LICENSE là MIT; proposal Phụ lục D.1 xếp CoreS3
+  là bo cộng đồng (Q-61). Kiểm: `pytest tests/test_plan_contract.py tests/test_cpo_dashboard.py`.
+
 #### Đã đổi — Khoảng hở nền tảng cho người tích hợp (2026-10-02, Q-63)
 
 - **Q-63 — ba khoảng hở nền tảng chưa có task, vào I6, ngày dự báo không đổi.** TSK-I6-06: bề mặt Python công khai
@@ -1354,6 +1373,9 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
   `villa-concierge` không build cho `linux-rpi5` (cần AEC), `home-voice` trên `linux` chặn `light_off` tới khi có PIR, `blinds` là servo
   nghiêng lá (kênh motor chưa quay ngược). Ngưỡng điện áp của thư viện `gates/home/` dựa trên thang cảm biến giả định — người dựng
   siết theo datasheet (`TODOS.md` #59).
+- ❌ **Chưa mở cho bên thứ ba tự nối.** Hợp đồng đã mở (lược đồ, đặc tả, corpus tuân thủ — Apache-2.0) nhưng chưa có điểm cắm:
+  chưa entry point nào, `--board` chỉ nhận id, template cố định, `source` của tool call là tập đóng, chưa có mã dữ kiện ngoài, thân
+  `@action` gọi thiết bị từ xa thì không có phong bì. Chỉ provider mô hình mở thật (`python:pkg.mod:factory`). Lộ trình: I2c (Q-67).
 - ❌ **Chưa phát hành ra ngoài.** Kho đã công khai từ 2026-09-25 (TSK-I6-01, Q-45), nhưng tag trước I6 là nội bộ;
   PyPI mở ở I6 (Q-39, TSK-S3-14, `docs/release.md`).
 - ❌ **Chưa có CEL.** `allow_when` chỉ nhận dạng mapping toán tử (TSK-S2-06 hoãn, `TODOS.md` #42).

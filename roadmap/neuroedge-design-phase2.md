@@ -5,7 +5,7 @@
 > **Ghi chú thiết kế.** Tệp này giữ định vị, nguyên tắc, ranh giới với tầng an toàn và
 > thiết kế từng khối của Giai đoạn 2. Nó **không** có lịch, trạng thái, tiêu chí ra, thang
 > cắt hay danh mục mua sắm: những thứ đó chỉ nằm ở [`neuroedge-roadmap.md`](neuroedge-roadmap.md) —
-> V1a là **I11** (§7.1), V1b đã vào MVP ở **I2a** (§4.3.1) và **I3a** (§4.4.1),
+> V1a là **I2c** (§4.3.3, gộp từ I11 theo Q-67), V1b đã vào MVP ở **I2a** (§4.3.1) và **I3a** (§4.4.1),
 > V2 là **I16** (§7.6), V3 là **I17** (§7.7), P1 là **I13** (§7.3), P2 là **I18** (§7.8)
 > trừ TSK-P2-04 ở **I6** (§4.7, Q-58) và P2-05 ở **I14** (§7.4); thang cắt §9.3; mua sắm Phụ lục B. Quyết định
 > chỉ nằm ở `neuroedge-prd.md` §15: **Q-13** (phân tầng bậc target), **Q-40** (thứ tự sau
@@ -117,19 +117,19 @@ V5 (kỹ sư thị giác) là vai trò tuyển mới. Thị giác trên `sim`, `
 
 ## 4. Đường găng và phụ thuộc
 
-→ Phụ thuộc giữa I2a, I3a, I11, I13 và I16–I18: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §0.2 và §2.1. Vì sao `vision.in` tách khỏi RFC-0002: §5 (nay là RFC-0012, Q-53).
+→ Phụ thuộc giữa I2a, I2c, I3a, I13 và I16–I18: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §0.2 và §2.1. Vì sao `vision.in` tách khỏi RFC-0002: §5 (nay là RFC-0012, Q-53).
 
 ---
 
 ## 5. Khối V1a — Mở danh sách target
 
-Khối này **không viết driver và không đụng TTFV**. Nó mở enum `target` ở hai lược đồ đã đóng băng và đưa bậc target vào mã lõi (`TARGET_TIERS`), theo RFC-0002. Pull request thực thi (PR2 của RFC-0002) là increment I11 (Q-40).
+Khối này **không viết driver và không đụng TTFV**. Nó mở enum `target` ở hai lược đồ đã đóng băng và đưa bậc target vào mã lõi (`TARGET_TIERS`), theo RFC-0002. Pull request thực thi (PR2 của RFC-0002) thuộc increment I2c (Q-67; trước đó là I11 theo Q-40).
 
 *Sửa 2026-09-23 sau review RFC-0002:* bản trước của khối này còn chốt nguyên thủy `vision.in` và trường vết ghi cho bằng chứng thị giác, viện dẫn PF-2 ("không chốt chỗ ngay thì sau này phải viết lại"). Lập luận đó không đứng: chính RFC-0002 §4 chứng minh các thay đổi này là **nới lỏng**, làm được trong `v1` vào bất kỳ lúc nào. Còn chốt hợp đồng tham số camera khi chưa có camera là đoán, và sửa về sau lại là siết chặt. Vì vậy phần thị giác chuyển sang Khối V1b (TSK-V1b-07, TSK-V1b-08). V1a giữ lại phần rẻ và chắc chắn: mở danh sách target, điều kiện của V2 và P1.
 
 **Đòn bẩy OSS Khối V1a:** không có. Đây là công việc hợp đồng thuần túy trên tài sản lõi.
 
-→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I11 (§7.1).
+→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I2c (§4.3.3).
 
 ---
 
@@ -213,7 +213,7 @@ Bộ V-G1 đến V-G5 — ngưỡng chuẩn tắc ở proposal §12.4. Ba chỉ 
 
 ## 12. Cắt phạm vi
 
-→ Thang cắt của I16–I18 và phần tuyệt đối không cắt (I11): [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §9.3.
+→ Thang cắt của I16–I18 và phần tuyệt đối không cắt: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §9.3.
 
 ---
 

@@ -23,7 +23,7 @@ Người phê duyệt: `CONTRIBUTING.md` §3.
 | RFC | Tiêu đề | Lược đồ | Trạng thái |
 |:---|:---|:---|:---:|
 | [0001](0001-gate-schema-conditional-requirements.md) | Yêu cầu trường có điều kiện cho gate kế thừa | `gate.v1` | ✅ Đã chấp thuận |
-| [0002](0002-mo-rong-target-va-nguyen-thuy-thi-giac.md) | Mở rộng danh sách target | `board.v1` · `trace.v1` (chỉ enum `target`) | 🟡 Đang thảo luận |
+| [0002](0002-mo-rong-target-va-nguyen-thuy-thi-giac.md) | Mở rộng danh sách target — hiện thực ở I2c (Q-67) | `board.v1` · `trace.v1` (chỉ enum `target`) | ✅ Đã chấp thuận |
 | [0003](0003-bo-cuc-nhi-phan-cay.md) | Bố cục nhị phân `NETR` v1 của cây trên thiết bị (Q-23) — thu hẹp; ghim `extends` vẫn hoãn (`TODOS.md` #15) | *(định dạng mới, ngoài `schemas/`)* | ✅ Đã chấp thuận |
 | [0004](0004-ke-thua-budget-on-block.md) | Gate con không được nới `budget` và `on_block` | *(không — ngữ nghĩa phân giải)* | ✅ Đã chấp thuận |
 | [0005](0005-rang-buoc-tham-so-trong-gate.md) | Gate tự khai ràng buộc tham số của hành động (Q-25) | `gate.v1` · ngữ nghĩa phân giải · bố cục Q-23 | ✅ Đã chấp thuận |
@@ -37,6 +37,9 @@ Người phê duyệt: `CONTRIBUTING.md` §3.
 | [0013](0013-nguyen-thuy-tuy-chon-va-nhieu-bo-tham-chieu.md) | Nguyên thủy mở rộng tuỳ chọn theo bo mạch; nhiều bo tham chiếu mỗi target; `sim-rpi5` — TSK-I2a-07 (Q-53) | *(không — bất biến kiểm thử, sửa RFC-0002 §5b, §5c)* | ✅ Đã chấp thuận |
 | [0014](0014-du-kien-tu-tien-trinh-ngoai.md) | Dữ kiện số từ tiến trình ngoài (Frigate, OpenCV, hộp cảm biến, Home Assistant): nguồn khai trong gate, danh tính nguồn ghi vào vết ghi, `age_ms` theo Q-62, nguồn rớt ⇒ BLOCK — TSK-I6-07 (Q-63; mã sau v1.0, `TODOS.md` #56) | `gate.v1` *(một khoá tuỳ chọn)* · ngữ nghĩa phân giải · `agent.toml` (`trace.v1`, `board.v1` không đổi) | ✅ Đã chấp thuận |
 | [0015](0015-hop-dong-cho-nguoi-tich-hop.md) | Đóng băng hợp đồng cho người tích hợp: Gated Tool Profile (`tool-call.v1`, `tool-result.v1`), định danh phiên bản `board.v1`, danh mục mã lỗi `NE*` (`error.v1`, `error-codes.v1`) — TSK-I6-05 (Q-58, Q-63) | `schemas/` (bốn lược đồ mới) · `board.v1` (khoá `schema`) | ✅ Đã chấp thuận · ✅ Đã hiện thực |
+| [0016](0016-loi-tach-duoc-va-extension-sdk.md) | Lõi an toàn dùng độc lập và Extension SDK: điểm cắm, mô hình tin cậy, bộ test tuân thủ — TSK-I2c-02 (Q-67) | *(không trong `schemas/`)* — API mới, `agent.toml` `[plugins]`, CLI | ✅ Đã chấp thuận |
+| [0017](0017-nguon-goi-theo-khong-gian-ten.md) | Nguồn gọi theo không gian tên (`bridge:<id>`) và danh tính client — TSK-I2c-03 (Q-67) | `tool-call.v1` (`source`) · `docs/spec/tool_calling.md` | ✅ Đã chấp thuận |
+| [0018](0018-co-cau-chap-hanh-tu-xa.md) | Cơ cấu chấp hành từ xa và mức tự tắt — TSK-I2c-04 (Q-67) | *(không trong `schemas/`)* — khối `[actuators]` của `agent.toml`, đường `_admit` của HAL, phong bì, sự kiện vết ghi (`trace.v1` không đổi) | ✅ Đã chấp thuận |
 
 **Bản nháp chưa cấp số** (nhận số kế tiếp khi mở PR RFC):
 [`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) — giao thức điều phối
