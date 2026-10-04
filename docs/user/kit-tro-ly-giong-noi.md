@@ -38,6 +38,13 @@ chứ không phải đúng/sai, nên dữ kiện `room_empty` **vẫn chưa xác
 nhưng kit chưa dùng được đầy đủ trên Pi cho tới khi có nguồn `motion` đúng kiểu. Firmware `esp32s3` chưa
 đọc cảm biến (TSK-S4-01).
 
+**Trên `linux`, nguồn `motion` chưa được nối, và việc sửa chờ giàn thật.** Hiện `light_off` luôn **chặn**
+theo hướng an toàn (`criterion_unavailable`); đèn chỉ bật được. Cách sửa dự kiến: nối PIR vào một line
+`digital.in` của `linux-rpi5` và khai `[sim.digital_facts] room_empty = { pin = "<line của PIR>", equals = false }`
+(line thấp là phòng trống). Gate không phải đổi (`room_empty` là `bool`), nhưng chân PIR là tham số của giàn
+thật, profile `linux-rpi5` chưa khai nó, và `digital.in` chỉ có trên `linux-rpi5`/`sim-rpi5` — nên việc này
+chờ bước dựng phần cứng, không làm trước khi có bo thật.
+
 ## Sơ đồ đấu dây
 
 Nhãn `line:<tên>` là tên chân của bo trong `boards/*.toml`; `sensor:<tên>` là tên cảm biến trong
