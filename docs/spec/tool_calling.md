@@ -149,8 +149,12 @@ ghim tên `tool`).
 
 ## 5. `call_source`
 
-Dispatcher chèn dữ kiện `call_source = <source>` vào ngữ cảnh gate trong lúc `c.do()`
-chạy, rồi trả lại dữ kiện cũ. Gate đọc nó như mọi tiêu chí `choice`:
+Dispatcher chèn dữ kiện `call_source = <source>` vào ngữ cảnh gate của **chính lời gọi đó**
+(`Conversation.do_with`): một bản chụp `c.facts` lấy lúc lời gọi bắt đầu, `call_source` đè lên. `c.facts`
+không bị ghi, cũng không phải khôi phục. Hai lời gọi chồng nhau trên một `Conversation` (một `mcp`,
+một `system_two`) vì vậy không thấy nguồn của nhau; fallback `degrade` và câu hỏi `ask` của một lời
+gọi mang nguồn của lời gọi đó, kể cả khi lời gọi khác đang chạy
+(`tests/test_call_source_isolation.py`). Gate đọc nó như mọi tiêu chí `choice`:
 
 ```yaml
 evaluate:

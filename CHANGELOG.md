@@ -368,6 +368,12 @@ bản gói.
 
 #### Đã sửa
 
+- **Nguồn gọi (`call_source`) không còn lẫn giữa hai lời gọi chồng nhau.** `dispatch` từng ghi `call_source` vào
+  `conversation.facts` dùng chung rồi khôi phục sau `await`, và `_do` đọc `self.facts` sau `await`: một lời gọi `mcp` chồng lên
+  một lời gọi `local_grammar` có thể được xét — kể cả nhánh `degrade` — như lời gọi kia và **chạy**; nguồn cũ còn sót lại sau đó.
+  Mỗi lời gọi nay mang khung dữ kiện của riêng nó, `call_source` không bao giờ ghi vào dữ kiện chung (`Conversation.do_with`).
+  Phát hiện khi soạn RFC-0016. Kiểm: `pytest tests/test_call_source_isolation.py` (6 test, đỏ trước bản sửa).
+
 - **Phong bì an toàn ghi thời gian bật tất định.** Độ dài khoảng bật tính bằng số thực của đồng hồ đơn điệu có nhiễu dưới
   micro giây, làm cùng một lệnh 600 000 ms bị ghi 600 001 ms ở lần chạy này và 600 000 ms ở lần khác (test chập chờn trên CI,
   PR #94); nay bỏ nhiễu trước khi làm tròn lên, phần lẻ thật vẫn làm tròn về phía đã dùng. Kiểm: `pytest tests/test_envelope.py -k float_noise`.
