@@ -535,3 +535,14 @@ def test_edit_manifest_leaves_a_value_it_does_not_change_on_its_own_line():
     text = '[requires]\n"audio.in" = { sample_rate_hz = 16000 }  # the mic\n'
     edit = Edit(("requires",), "audio.in", {"sample_rate_hz": 16000})
     assert edit_manifest(text, [edit], "agent.toml") == text
+
+
+def test_an_earlier_add_moves_to_the_extension_board_when_a_later_one_needs_it(tmp_path):
+    project = new_project(tmp_path)
+    assert invoke(project, "add", "action", "open-gate", "--pin", "gate_relay").exit_code == 0
+    later = ["sensor", "limit-guard", "--primitive", "digital.in", "--source", "limit_switch"]
+    assert invoke(project, "add", *later, "--pin", "gate_relay").exit_code == 0
+    earlier = (project / "tests" / "test_open_gate.py").read_text(encoding="utf-8")
+    assert 'BOARD = "sim-rpi5"' in earlier
+    ran = _pytest(project)
+    assert ran.returncode == 0, ran.stdout + ran.stderr

@@ -43,7 +43,6 @@ RESERVED = frozenset({"action", "digital", "display", "i2c", "motion"})
 IDENT = re.compile(r"^[a-z][a-z0-9_]{0,62}$")
 BUS_DEVICE = re.compile(r"^[a-z][a-z0-9_]*/[a-z][a-z0-9_]*$")
 BOARD_LINE = 'BOARD = "sim-default"'
-TEST_AGENT = Path("tests/test_agent.py")
 # Not copied into the scratch copy a build checks: nothing a build reads, often large.
 COPY_IGNORE = shutil.ignore_patterns(
     ".git", ".venv", "venv", "build", "traces", "__pycache__", ".pytest_cache", "node_modules"
@@ -625,19 +624,23 @@ def plan_add(
             plan.changed.get(Path("commands.toml")) or plan.created[Path("commands.toml")], where
         )
 
-    existing = project / TEST_AGENT
-    if board != CORE_BOARD and existing.is_file():
+    # The tests already in the project load the board they were written for: every one that
+    # still says the default board moves to the board this agent now needs.
+    for existing in sorted((project / "tests").glob("test_*.py")) if board != CORE_BOARD else []:
+        relative = existing.relative_to(project)
+        if relative in plan.created:
+            continue
         text = existing.read_text(encoding="utf-8")
         if BOARD_LINE in text.splitlines():
-            plan.changed[TEST_AGENT] = text.replace(BOARD_LINE, f'BOARD = "{board}"', 1)
+            plan.changed[relative] = text.replace(BOARD_LINE, f'BOARD = "{board}"', 1)
         elif "SimSession.load(AGENT" in text and "board_id" not in text:
             # the sample agents' tests: the same one-argument change at every load
-            plan.changed[TEST_AGENT] = text.replace(
+            plan.changed[relative] = text.replace(
                 "SimSession.load(AGENT", f'SimSession.load(AGENT, board_id="{board}"'
             )
         elif "SimSession.load(" in text and "board_id" not in text:
             plan.notes.append(
-                f"{TEST_AGENT} loads the default board {CORE_BOARD}, which lacks what this agent "
+                f"{relative} loads the default board {CORE_BOARD}, which lacks what this agent "
                 f"now requires: pass board_id={board!r} to SimSession.load there"
             )
     if board != CORE_BOARD:
