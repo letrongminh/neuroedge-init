@@ -32,6 +32,10 @@ bản gói.
 
 #### Đã thêm
 
+- **I6 · TSK-I6-05 — RFC-0015 chấp thuận: hợp đồng cho người tích hợp vào `schemas/` (Q-66).** Kỹ thuật trưởng ký trên PR #93;
+  quyết định cho mười ba câu hỏi mở ở §10 của RFC. Hoãn có mốc: giấy phép corpus tuân thủ (`TODOS.md` #57), khoá bắt buộc hiểu cho
+  `board.v1` (`TODOS.md` #58). Chưa có lược đồ nào; hai PR mã theo RFC-0015 §8. Kiểm: `docs/rfc/0015-hop-dong-cho-nguoi-tich-hop.md` §10.
+
 - **I6 · TSK-I6-07 — RFC-0014 chấp thuận: dữ kiện số từ tiến trình ngoài (Q-65).** Kỹ thuật trưởng ký trên PR #92; quyết định cho mười
   câu hỏi mở ở §9 của RFC: chỉ cùng máy, chỉ `numeric`, không `esp32s3`, `build` cảnh báo khi cơ cấu chỉ dựa vào nguồn ngoài. Mã sau
   v1.0 (`TODOS.md` #56). Kiểm: `docs/rfc/0014-du-kien-tu-tien-trinh-ngoai.md` §9. (I6 tiêu chí 10)
