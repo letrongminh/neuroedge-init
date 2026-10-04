@@ -1,0 +1,9 @@
+{
+  "tool": "unlock_door",
+  "status": "BLOCK",
+  "gate": "unlock_door@1.2.0",
+  "reason": "condition_not_met",
+  "failed_criterion": "risk_level",
+  "on_block": "escalate",
+  "escalated_to": "human_receptionist"
+}

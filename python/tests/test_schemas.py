@@ -1,5 +1,5 @@
 """
-Structural conformance of the three frozen schemas.
+Structural conformance of the seven frozen schemas.
 
 `jsonschema` is imported at module level on purpose. It used to be pulled in
 with `pytest.importorskip`, which meant that on a machine without it these
@@ -24,6 +24,11 @@ SCHEMA_IDS = {
     "trace.v1.json": "https://schema.neuroedge.dev/trace/v1.json",
     "gate.v1.json": "https://schema.neuroedge.dev/gate/v1.json",
     "board.v1.json": "https://schema.neuroedge.dev/board/v1.json",
+    # RFC-0015: the integrator contracts
+    "tool-call.v1.json": "https://schema.neuroedge.dev/tool-call/v1.json",
+    "tool-result.v1.json": "https://schema.neuroedge.dev/tool-result/v1.json",
+    "error.v1.json": "https://schema.neuroedge.dev/error/v1.json",
+    "error-codes.v1.json": "https://schema.neuroedge.dev/error-codes/v1.json",
 }
 
 
@@ -32,8 +37,8 @@ def _load(name: str) -> dict:
         return json.load(handle)
 
 
-def test_schemas_directory_holds_exactly_the_three_frozen_schemas():
-    """TSK-S1-07. A fourth schema appearing without an RFC is itself a finding."""
+def test_schemas_directory_holds_exactly_the_seven_frozen_schemas():
+    """TSK-S1-07, RFC-0015 (three became seven). An eighth schema without an RFC is a finding."""
     assert {p.name for p in SCHEMAS_DIR.glob("*.json")} == set(SCHEMA_IDS)
 
 

@@ -19,7 +19,7 @@ Each package's docstring names its own layer: HAL is **L1**, models and percepti
 | 0 | `errors`, `paths`, `net`, `trace` | each other only | foundation |
 | 1 | `hal` | `errors`, `paths` | L1 |
 | 2 | `engine` | rank 0; **`engine/compiler.py` alone** may use `hal` (board cross-check at build time) and late-imports `actions`, `models`, `perception`, `mcp_host` (configuration checks) | L3 core |
-| 3 | `actions` | `engine`, `hal`, rank 0 | L3 surface |
+| 3 | `actions` | `engine`, `hal`, rank 0 (the `actions` → `paths` edge: `actions/tools.py::result_schema` reads `schemas/tool-result.v1.json`, RFC-0015) | L3 surface |
 | 4 | `models` | `engine` (implements its protocol), `net`, rank 0 | L2 |
 | 5 | `mcp_server`, `mcp_host`, `mcp_desktop`, `mcp_http` | `actions`, rank 0; `mcp_http` alone uses only `mcp_server` and `errors` — the network door (TSK-P2-04) sits in front of the same server as stdio, not a second road | L4 per proposal §3.1 (docstring does not declare a layer) |
 | 6 | `viz`, `templates` | `viz`: `hal`, `trace`, rank 0; `templates`: `errors`, `paths` | tools |

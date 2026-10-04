@@ -1,0 +1,7 @@
+{
+  "code": "NE1003",
+  "where": "example for EnvelopeRefusedError",
+  "why": "what rule was broken",
+  "how": "what to do next",
+  "reason": "window_budget"
+}

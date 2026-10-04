@@ -1,0 +1,7 @@
+# Principle 2 — nâng trần rủi ro từ low lên medium.
+schema:  neuroedge.gate/v1
+name:    door-lock-admits-medium-risk
+version: 1.0.0
+extends: neuroedge://gates/home/door-lock@1.0.0
+allow_when:
+  risk_level: { lte: medium }

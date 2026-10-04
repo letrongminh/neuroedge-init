@@ -50,12 +50,12 @@
 <text x="465.0" y="412.0" font-size="12.5" fill="#0f172a" text-anchor="middle">22/26 tasks</text>
 <text x="465.0" y="430.1" font-size="12.5" fill="#0f172a" text-anchor="middle">2026-12-06</text>
 <text x="465.0" y="448.2" font-size="12.5" fill="#0f172a" text-anchor="middle" font-style="italic">◐ partial</text>
-<rect x="608" y="344" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="739.0" y="373.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I2b</text>
-<text x="739.0" y="393.9" font-size="12.5" fill="#475569" text-anchor="middle">Kits and quick build</text>
-<text x="739.0" y="412.0" font-size="12.5" fill="#475569" text-anchor="middle">0/4 tasks</text>
-<text x="739.0" y="430.1" font-size="12.5" fill="#475569" text-anchor="middle">2026-12-20</text>
-<text x="739.0" y="448.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="608" y="344" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
+<text x="739.0" y="373.6" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">I2b</text>
+<text x="739.0" y="393.9" font-size="12.5" fill="#0f172a" text-anchor="middle">Kits and quick build</text>
+<text x="739.0" y="412.0" font-size="12.5" fill="#0f172a" text-anchor="middle">4/4 tasks</text>
+<text x="739.0" y="430.1" font-size="12.5" fill="#0f172a" text-anchor="middle">2026-12-20</text>
+<text x="739.0" y="448.2" font-size="12.5" fill="#0f172a" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="60" y="550" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
 <text x="191.0" y="579.6" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">I3</text>
 <text x="191.0" y="599.9" font-size="12.5" fill="#0f172a" text-anchor="middle">Gate on a real Box-3</text>
@@ -95,7 +95,7 @@
 <rect x="940" y="138" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
 <text x="1071.0" y="167.6" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">I6</text>
 <text x="1071.0" y="187.9" font-size="12.5" fill="#0f172a" text-anchor="middle">Public release</text>
-<text x="1071.0" y="206.0" font-size="12.5" fill="#0f172a" text-anchor="middle">6/12 tasks</text>
+<text x="1071.0" y="206.0" font-size="12.5" fill="#0f172a" text-anchor="middle">7/12 tasks</text>
 <text x="1071.0" y="224.1" font-size="12.5" fill="#0f172a" text-anchor="middle">2027-01-31</text>
 <text x="1071.0" y="242.2" font-size="12.5" fill="#0f172a" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="940" y="344" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>

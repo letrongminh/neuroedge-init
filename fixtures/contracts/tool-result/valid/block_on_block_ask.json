@@ -1,0 +1,14 @@
+{
+  "tool": "light_off",
+  "status": "BLOCK",
+  "gate": "light_off@1.0.0",
+  "reason": "condition_not_met",
+  "on_block": "ask",
+  "message": "Turn the light off?",
+  "confirmation": {
+    "id": "confirm_1",
+    "message": "Turn the light off?",
+    "expires_in_ms": 30000,
+    "who": "person"
+  }
+}

@@ -10,6 +10,10 @@ valid:
     status: ALLOW
     pins: [{ pin: porch_light, operation: "on", duration_ms: 0 }]
 
+  light_on_from_system_one.yaml:
+    status: ALLOW
+    pins: [{ pin: porch_light, operation: "on", duration_ms: 0 }]
+
   light_off_room_empty.yaml:
     status: ALLOW
     pins: [{ pin: porch_light, operation: "off", duration_ms: 0 }]

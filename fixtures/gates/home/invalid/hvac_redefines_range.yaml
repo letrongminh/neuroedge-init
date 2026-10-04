@@ -1,0 +1,12 @@
+# Principle 1 (RFC-0009) — định nghĩa lại `range` của số đọc nhiệt độ.
+schema:  neuroedge.gate/v1
+name:    hvac-redefines-range
+version: 1.0.0
+extends: neuroedge://gates/home/hvac@1.0.0
+evaluate:
+  room_temperature_sense:
+    type: numeric
+    unit: V
+    range: { min: 0, max: 5 }
+    max_age_ms: 1000
+    instructions: "Điện áp cảm biến nhiệt phòng, volt"

@@ -4,6 +4,26 @@
 # Tệp mới: --update. Tệp đổi hoặc bị xoá: cần RFC, --accept <tệp> --rfc NNNN.
 version: 1
 files:
+  fixtures/agents/blinds/gates/blinds_close@1.0.0.yaml:
+    digest: sha256:1b8a80ac4124365220bb7b7258d5933e489ba0ddbf2907519b6ed3f81599ffc1
+  fixtures/agents/blinds/gates/blinds_open@1.0.0.yaml:
+    digest: sha256:b73b3079d1ac164eb1ab41e1fb5763e73bb0aa897c72169d3277d99b8ddf00dd
+  fixtures/agents/factory-monitor/gates/alarm_off@1.0.0.yaml:
+    digest: sha256:240790fd8a07efb9d285e1ce10d5931f13013e5b77efbe798482877de5367cb9
+  fixtures/agents/factory-monitor/gates/alarm_on@1.0.0.yaml:
+    digest: sha256:e3a70084f48442b366344a7afd62b9a34ebb8badd33c6563295d5b0b76b2397c
+  fixtures/agents/factory-monitor/gates/vent_off@1.0.0.yaml:
+    digest: sha256:2c2bb624cd8a5771455356812695225ad04f2547da2aaef39fa7db51a9e49d03
+  fixtures/agents/factory-monitor/gates/vent_on@1.0.0.yaml:
+    digest: sha256:cb95488c1b65eb0be16606d4e998f987b01957b2df01afc17b5c1521db843c58
+  fixtures/agents/gate-camera/gates/stranger_light@1.0.0.yaml:
+    digest: sha256:db9eb1e1a79af9f04c7ca0635736bc77d9d3a2e14a7827f76a763fb942a66a3f
+  fixtures/agents/gate-camera/gates/stranger_lock@1.0.0.yaml:
+    digest: sha256:ebef650b1ccceb57cd39f8201fdae0c10d2750597786674dfdb2d39603485061
+  fixtures/agents/home-voice/gates/light_off@1.0.0.yaml:
+    digest: sha256:87e7cccfcce436e4c5359ed78ac389bf8e0a321457cc0dccc11be022128bc3f5
+  fixtures/agents/home-voice/gates/light_on@1.0.0.yaml:
+    digest: sha256:551cd160254ef54b9eea979f53d985a5f12b27b676d130151d93250d541e0d27
   fixtures/gates/registry/args-base@1.0.0.yaml:
     digest: sha256:29cadc94193ffe17b51ccb9adf665b25577070e00336fa280aea795c74ba26bb
   fixtures/gates/registry/ask-base@1.0.0.yaml:
@@ -52,6 +72,20 @@ files:
     digest: sha256:9fdab8a924461744d4e6ccb3c94182a4d1d4ac00cd5066f25319ff85ea6ff019
   fixtures/gates/valid/tightens_every_kind.yaml:
     digest: sha256:7f5948bb668f56be4f2841318d58491c27e202a7a2f653737666b3751e2f25cc
+  gates/home/camera@1.0.0.yaml:
+    digest: sha256:f0b8aa84ab556eca0fbe739fa24c4a20556a2fd333416f9fdb9ad29f822930c5
+  gates/home/door-lock@1.0.0.yaml:
+    digest: sha256:450dbf617068628ee0eeece53fb8fa634056cf89693cb00b3c414e49dc228662
+  gates/home/hvac@1.0.0.yaml:
+    digest: sha256:b8193a51f116483d82cbc64462dd239868c67e1711d0bb6931acb7ec98a24cf3
+  gates/home/light@1.0.0.yaml:
+    digest: sha256:a15a3ef9e9934e5b69676fd1df4aaee0038dade67a94906861d1d05cc2434c20
+  gates/home/motor@1.0.0.yaml:
+    digest: sha256:30bf69622b75c3376d6b9ced14e144ae4f2062579a69562f6386a4a1df38f9db
+  gates/home/siren@1.0.0.yaml:
+    digest: sha256:2a7e3968482ae8decd6cd0067d7d098102a0529bf8b7c8bae9d2212ded83d655
+  gates/home/valve@1.0.0.yaml:
+    digest: sha256:d5b62fa03e97f19e923f93b5d661c0fedb41f8179697108dcc05e072c08095cc
   gates/hospitality/base-access@1.0.0.yaml:
     digest: sha256:8b6a1795fd93694fd5f799c1812fee447757ee6a8d58ab926b386af02ce5d8e7
   gates/unlock_door@1.2.0.yaml:

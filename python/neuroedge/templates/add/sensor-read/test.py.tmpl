@@ -1,0 +1,47 @@
+"""
+Two-way safety tests for `{{name}}` on the `{{board}}` board (neuroedge add).
+
+The `{{sensor}}` sensor decides ({{rule}}); a blocked action must leave the pin untouched,
+and a reading that cannot be trusted must block too, never allow.
+"""
+
+import asyncio
+from pathlib import Path
+
+from neuroedge import SimSession
+
+AGENT = Path(__file__).resolve().parents[1] / "agent.toml"
+BOARD = "{{board}}"
+COMMAND = "{{phrase}}"
+
+
+def run(reading, **facts):
+    session = SimSession.load(AGENT, board_id=BOARD, facts=facts)
+    session.set_sensor("{{sensor}}", reading)
+    return session, asyncio.run(session.handle(COMMAND))
+
+
+def test_{{fn}}_runs_when_the_sensor_is_in_range():
+    session, turn = run({{allow_value}})
+    assert turn.allowed
+    assert session.hal.pin("{{pin}}").pulsed_once(duration_ms=2000)
+
+
+def test_{{fn}}_never_moves_the_pin_when_the_sensor_is_out_of_range():
+    session, turn = run({{block_value}})
+    assert turn.result.blocked
+    assert turn.result.gate.failed_criterion == "{{fact}}"
+    assert session.hal.pin("{{pin}}").never_pulsed()
+
+
+def test_{{fn}}_never_moves_the_pin_for_an_unverified_user():
+    session, turn = run({{allow_value}}, user_verified=False)
+    assert turn.result.blocked
+    assert turn.result.gate.failed_criterion == "user_verified"
+    assert session.hal.pin("{{pin}}").never_pulsed()
+
+
+def test_{{fn}}_blocks_on_a_reading_it_cannot_trust():
+    session, turn = run({{bad_value}})
+    assert turn.result.blocked
+    assert session.hal.pin("{{pin}}").never_pulsed()

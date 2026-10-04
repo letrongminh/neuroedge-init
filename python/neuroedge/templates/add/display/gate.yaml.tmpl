@@ -1,0 +1,26 @@
+# Gate của `{{name}}` (neuroedge add). Màn hình không phải cơ cấu chấp hành, nhưng mọi đường ra
+# thế giới thật vẫn qua gate (A3). Độ dài chữ bị giới hạn ở `arguments`.
+#
+#   neuroedge gate explain gates/{{name}}@1.0.0.yaml   # chính sách bằng lời
+schema:  neuroedge.gate/v1
+name:    {{name}}
+version: 1.0.0
+
+arguments:
+  text: { type: string, max_length: 32 }
+
+evaluate:
+  user_verified:
+    type: bool
+    instructions: "Người dùng đã được xác minh trong phiên hiện tại"
+
+allow_when:
+  user_verified: true
+
+on_block:
+  action:  ask
+  message: "Cần xác minh người dùng trước khi {{phrase}}."
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

@@ -1,0 +1,9 @@
+# Mở rèm: kế thừa gate `motor` của thư viện khởi đầu (nút dừng khẩn đã nhả, điện áp current-sense trong giới
+# hạn, ngân sách 100 ms ≤ lease_ms / 2) và chỉ siết thêm: trần current-sense của servo hạ từ 1,0 V xuống 0,8 V.
+schema:  neuroedge.gate/v1
+name:    blinds-open
+version: 1.0.0
+extends: neuroedge://gates/home/motor@1.0.0
+
+allow_when:
+  motor_current_sense: { lte: 0.8 }

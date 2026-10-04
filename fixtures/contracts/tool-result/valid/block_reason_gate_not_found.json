@@ -1,0 +1,7 @@
+{
+  "tool": "unlock_door",
+  "status": "BLOCK",
+  "gate": "unlock_door@1.2.0",
+  "reason": "gate_not_found",
+  "on_block": "deny"
+}

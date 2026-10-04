@@ -7,10 +7,13 @@ is a directory of `*.tmpl` files whose only placeholder is ``{{name}}``;
 generating a project writes each file with the suffix dropped. The `.tmpl`
 suffix keeps pytest and ruff from treating template code as package code.
 
-`villa-concierge`, `home-voice` and `factory-monitor` add their README and tests to a copy of
+`villa-concierge`, `home-voice`, `factory-monitor`, `gate-camera` and `blinds` add their README and tests to a copy of
 `fixtures/agents/<template>/`, so each sample agent has one source. A wheel
 carries that directory under `neuroedge/_data/` (TSK-S3-17), so the template
 works from an installed package too.
+
+A sample's golden traces, `fixtures/traces/kits/<sample>-*.json` (TSK-I2b-01), are copied to the
+project's `traces/golden/`, so a maker starts with the decisions the kit is expected to keep.
 
 Every template also gets `_common/` — today the `traces/` tree of FR-TRC-09:
 `traces/README.md`, and `traces/incidents/` and `traces/golden/` held by an empty
@@ -25,12 +28,19 @@ from pathlib import Path
 from ..errors import AgentManifestError
 from ..paths import fixtures_dir
 
-TEMPLATES = ("minimal", "villa-concierge", "home-voice", "factory-monitor")
+TEMPLATES = (
+    "minimal",
+    "villa-concierge",
+    "home-voice",
+    "factory-monitor",
+    "gate-camera",
+    "blinds",
+)
 PLACEHOLDER = "{{name}}"
 NAME = re.compile(r"^[a-z][a-z0-9_-]{0,62}$")
 _HERE = Path(__file__).parent
 # Templates that add README + tests to a copy of the sample agent of the same name.
-SAMPLES = ("villa-concierge", "home-voice", "factory-monitor")
+SAMPLES = ("villa-concierge", "home-voice", "factory-monitor", "gate-camera", "blinds")
 # Files every template gets, rendered from `_common/`, plus the empty directories of
 # the trace path convention (FR-TRC-09), each kept by an empty `.gitkeep`.
 COMMON = "_common"
@@ -70,6 +80,15 @@ def _sample_files(sample: str, name: str) -> dict[Path, str]:
     return files
 
 
+def _golden_files(sample: str) -> dict[Path, str]:
+    """The kit's golden traces (`fixtures/traces/kits/<sample>-*.json`), for `traces/golden/`."""
+    source = fixtures_dir() / "traces" / "kits"
+    return {
+        Path("traces/golden") / path.name: path.read_text(encoding="utf-8")
+        for path in sorted(source.glob(f"{sample}-*.json"))
+    }
+
+
 def scaffold(name: str, template: str = "minimal", parent: str | Path = ".") -> list[Path]:
     """Write a new agent project `parent/name` and return the files, relative to it."""
     if not NAME.match(name):
@@ -84,7 +103,7 @@ def scaffold(name: str, template: str = "minimal", parent: str | Path = ".") -> 
             where=f"--template {template}",
             why=f"unknown template; available: {list(TEMPLATES)}",
             how="use --template minimal (one action, one gate, tests), or a sample: "
-            "villa-concierge, home-voice, factory-monitor",
+            "villa-concierge, home-voice, factory-monitor, gate-camera, blinds",
         )
     target = Path(parent) / name
     if target.exists() and any(target.iterdir()):
@@ -100,7 +119,7 @@ def scaffold(name: str, template: str = "minimal", parent: str | Path = ".") -> 
         **_template_files(template),
     }
     if template in SAMPLES:
-        files = {**_sample_files(template, name), **files}
+        files = {**_sample_files(template, name), **_golden_files(template), **files}
     for relative, text in _render(files, name).items():
         path = target / relative
         path.parent.mkdir(parents=True, exist_ok=True)

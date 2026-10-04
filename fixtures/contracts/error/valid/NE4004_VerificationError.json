@@ -1,0 +1,6 @@
+{
+  "code": "NE4004",
+  "where": "example for VerificationError",
+  "why": "what rule was broken",
+  "how": "what to do next"
+}

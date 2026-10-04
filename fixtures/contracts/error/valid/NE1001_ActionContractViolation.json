@@ -1,0 +1,6 @@
+{
+  "code": "NE1001",
+  "where": "example for ActionContractViolation",
+  "why": "what rule was broken",
+  "how": "what to do next"
+}

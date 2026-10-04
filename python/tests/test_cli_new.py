@@ -207,6 +207,31 @@ def test_the_factory_monitor_template_copies_the_sample_and_its_tests_pass(tmp_p
     assert "5 passed" in result.stdout  # 4 on the gates, 1 on heat_level / heat_critical
 
 
+@pytest.mark.parametrize(
+    ("template", "files"),
+    [
+        (
+            "gate-camera",
+            ("actions/gate_camera.py", "gates/stranger_light@1.0.0.yaml", "tests/test_agent.py"),
+        ),
+        ("blinds", ("actions/blinds.py", "gates/blinds_close@1.0.0.yaml", "tests/test_agent.py")),
+    ],
+)
+def test_the_camera_and_motion_templates_copy_the_sample_and_their_tests_pass(
+    tmp_path, template, files
+):
+    scaffold("proj", template, tmp_path)
+    project = tmp_path / "proj"
+    for expected in files:
+        assert (project / expected).is_file()
+    assert (project / "traces" / "golden" / f"{template}-allow.json").is_file()
+    manifest = tomllib.loads((project / "agent.toml").read_text("utf-8"))
+    assert manifest["agent"]["name"] == "proj"
+    result = _pytest(project)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "6 passed" in result.stdout
+
+
 # --- refusals ------------------------------------------------------------------------
 
 
@@ -235,4 +260,11 @@ def test_an_unknown_template_is_refused(tmp_path):
     result = runner.invoke(app, ["new", "x", "--template", "nope"])
     assert result.exit_code == 1
     assert "minimal" in result.output
-    assert set(TEMPLATES) == {"minimal", "villa-concierge", "home-voice", "factory-monitor"}
+    assert set(TEMPLATES) == {
+        "minimal",
+        "villa-concierge",
+        "home-voice",
+        "factory-monitor",
+        "gate-camera",
+        "blinds",
+    }

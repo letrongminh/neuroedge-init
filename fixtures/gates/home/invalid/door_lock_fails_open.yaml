@@ -1,0 +1,8 @@
+# Principle 4 (RFC-0004 R2) — con khai fail: open trên chuỗi cha đã đóng.
+schema:  neuroedge.gate/v1
+name:    door-lock-fails-open
+version: 1.0.0
+extends: neuroedge://gates/home/door-lock@1.0.0
+budget:
+  p95_latency_ms: 120
+  fail:           open

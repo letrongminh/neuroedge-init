@@ -5,6 +5,9 @@
 # ESP32-S3-WROOM-1-N16R8: 16 MB flash, 8 MB octal PSRAM, 512 KB internal SRAM.
 # The Q-3 budget carves out of that: >= 120 KB SRAM and >= 2 MB PSRAM for the
 # application, firmware <= 3.5 MB to fit the dual A/B partitions.
+
+schema = "neuroedge.board/v1"
+
 [board]
 id     = "esp32s3-box-3"
 name   = "Espressif ESP32-S3-BOX-3"

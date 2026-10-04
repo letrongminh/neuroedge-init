@@ -1,0 +1,8 @@
+{
+  "tool": "unlock_door",
+  "status": "BLOCK",
+  "gate": "unlock_door@1.2.0",
+  "reason": "gate_unreachable",
+  "on_block": "deny",
+  "message": "The gate could not decide in time."
+}

@@ -1,0 +1,6 @@
+{
+  "code": "NE4002",
+  "where": "example for SafetyRegressionError",
+  "why": "what rule was broken",
+  "how": "what to do next"
+}

@@ -1,0 +1,6 @@
+{
+  "code": "NE2001",
+  "where": "example for GateNotFoundError",
+  "why": "what rule was broken",
+  "how": "what to do next"
+}

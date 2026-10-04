@@ -7,7 +7,9 @@ Khoá digest của gate chuẩn mực trong kho (TSK-S3-16).
     python scripts/check_digests.py --accept <tệp> --rfc 0007
 
 Phạm vi: mọi tệp trong `gates/**`, `fixtures/gates/valid/**`,
-`fixtures/gates/registry/**`. Digest là `engine/canonical.py` `digest()` của tài
+`fixtures/gates/registry/**`, và gate của bốn kit phần cứng có gate riêng
+(`fixtures/agents/{home-voice,factory-monitor}/gates/**`, TSK-I2b-01;
+`fixtures/agents/{gate-camera,blinds}/gates/**`, TSK-I2b-02; gate của kit `villa-concierge` đã ở `gates/`). Digest là `engine/canonical.py` `digest()` của tài
 liệu YAML **đã parse** (JCS, RFC 8785), không phải byte thô: sửa thụt lề, thứ tự
 khoá hay comment không phải là thay đổi.
 
@@ -33,7 +35,15 @@ from neuroedge.engine.canonical import digest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LOCK_NAME = "digests.lock"
-SCOPE = ("gates", "fixtures/gates/valid", "fixtures/gates/registry")
+SCOPE = (
+    "gates",
+    "fixtures/gates/valid",
+    "fixtures/gates/registry",
+    "fixtures/agents/home-voice/gates",
+    "fixtures/agents/factory-monitor/gates",
+    "fixtures/agents/gate-camera/gates",
+    "fixtures/agents/blinds/gates",
+)
 HEADER = """\
 # digests.lock — digest của gate chuẩn mực (TSK-S3-16). Sinh bởi
 # scripts/check_digests.py; không sửa tay. Digest là canonical.digest() của

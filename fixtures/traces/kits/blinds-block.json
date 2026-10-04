@@ -1,0 +1,505 @@
+{
+  "$schema": "https://schema.neuroedge.dev/trace/v1.json",
+  "metadata": {
+    "session_id": "sess_b11db10c",
+    "timestamp_utc": "2026-10-04T12:00:00Z",
+    "target": "sim",
+    "board_id": "sim-rpi5",
+    "agent_version": "blinds@0.1.0",
+    "anonymized": true,
+    "sensor_facts_digest": "sha256:5a304a33be445373a996b5deba4cf027a19a82f0efba346c21ea330f338b0a38"
+  },
+  "events": [
+    {
+      "offset_ms": 0,
+      "type": "digital_in_set",
+      "data": {
+        "pin": "limit_switch",
+        "value": false
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "analog_in",
+      "data": {
+        "channel": "adc0",
+        "value": 0.4,
+        "unit": "V",
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "digital_in",
+      "data": {
+        "pin": "limit_switch",
+        "value": false,
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "tool_call",
+      "data": {
+        "id": "call_1",
+        "name": "blinds_open",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "action_requested",
+      "data": {
+        "action": "blinds_open",
+        "gate": "blinds_open",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "blinds-open@1.0.0",
+        "gate_digest": "sha256:69d9e64c0c2f842ec0626e0a38f76503523cf404e94cbe45f74612fc44c54bcb"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_facts",
+      "data": {
+        "estop_released": {
+          "value": false,
+          "confidence": null,
+          "source": "digital.in",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
+        },
+        "motor_current_sense": {
+          "value": 0.4,
+          "confidence": null,
+          "source": "context",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
+        }
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "BLOCK",
+        "reason": "condition_not_met",
+        "evaluations": {
+          "estop_released": false,
+          "motor_current_sense": 0.4
+        },
+        "blocked_by": "blinds-open@1.0.0",
+        "action": "deny",
+        "failed_criterion": "estop_released"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "digital_in_set",
+      "data": {
+        "pin": "limit_switch",
+        "value": true
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "analog_in",
+      "data": {
+        "channel": "adc0",
+        "value": 0.4,
+        "unit": "V",
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "digital_in",
+      "data": {
+        "pin": "limit_switch",
+        "value": true,
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "tool_call",
+      "data": {
+        "id": "call_2",
+        "name": "blinds_close",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "action_requested",
+      "data": {
+        "action": "blinds_close",
+        "gate": "blinds_close",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "blinds-close@1.0.0",
+        "gate_digest": "sha256:8adcd34f26cebccd6077995da1aedd5846f39ae5f941aa86af73de66591fe1f9"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_facts",
+      "data": {
+        "estop_released": {
+          "value": true,
+          "confidence": null,
+          "source": "digital.in",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
+        },
+        "motor_current_sense": {
+          "value": 0.4,
+          "confidence": null,
+          "source": "context",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
+        },
+        "path_clear": {
+          "value": false,
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "BLOCK",
+        "reason": "condition_not_met",
+        "evaluations": {
+          "estop_released": true,
+          "motor_current_sense": 0.4,
+          "path_clear": false
+        },
+        "blocked_by": "blinds-close@1.0.0",
+        "action": "deny",
+        "failed_criterion": "path_clear"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "analog_set",
+      "data": {
+        "channel": "adc0",
+        "value": 0.9
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "analog_in",
+      "data": {
+        "channel": "adc0",
+        "value": 0.9,
+        "unit": "V",
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "digital_in",
+      "data": {
+        "pin": "limit_switch",
+        "value": true,
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "tool_call",
+      "data": {
+        "id": "call_3",
+        "name": "blinds_open",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "action_requested",
+      "data": {
+        "action": "blinds_open",
+        "gate": "blinds_open",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "blinds-open@1.0.0",
+        "gate_digest": "sha256:69d9e64c0c2f842ec0626e0a38f76503523cf404e94cbe45f74612fc44c54bcb"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_facts",
+      "data": {
+        "estop_released": {
+          "value": true,
+          "confidence": null,
+          "source": "digital.in",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
+        },
+        "motor_current_sense": {
+          "value": 0.9,
+          "confidence": null,
+          "source": "context",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
+        }
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "BLOCK",
+        "reason": "condition_not_met",
+        "evaluations": {
+          "estop_released": true,
+          "motor_current_sense": 0.9
+        },
+        "blocked_by": "blinds-open@1.0.0",
+        "action": "deny",
+        "failed_criterion": "motor_current_sense"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "analog_set",
+      "data": {
+        "channel": "adc0",
+        "value": 0.4
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "analog_in",
+      "data": {
+        "channel": "adc0",
+        "value": 0.4,
+        "unit": "V",
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "digital_in",
+      "data": {
+        "pin": "limit_switch",
+        "value": true,
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "tool_call",
+      "data": {
+        "id": "call_4",
+        "name": "blinds_open",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "action_requested",
+      "data": {
+        "action": "blinds_open",
+        "gate": "blinds_open",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "blinds-open@1.0.0",
+        "gate_digest": "sha256:69d9e64c0c2f842ec0626e0a38f76503523cf404e94cbe45f74612fc44c54bcb"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_facts",
+      "data": {
+        "estop_released": {
+          "value": true,
+          "confidence": null,
+          "source": "digital.in",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
+        },
+        "motor_current_sense": {
+          "value": 0.4,
+          "confidence": null,
+          "source": "context",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
+        }
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "ALLOW",
+        "evaluations": {
+          "estop_released": true,
+          "motor_current_sense": 0.4
+        }
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "motion_command",
+      "data": {
+        "channel": "gripper",
+        "kind": "servo",
+        "target": 90.0,
+        "lease_ms": 200,
+        "run": "new"
+      }
+    },
+    {
+      "offset_ms": 300,
+      "type": "motion_safe",
+      "data": {
+        "channel": "gripper",
+        "state": "hold",
+        "cause": "lease_expired"
+      }
+    },
+    {
+      "offset_ms": 2300,
+      "type": "motion_safe",
+      "data": {
+        "channel": "gripper",
+        "state": "stop",
+        "cause": "max_hold_ms"
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "analog_in",
+      "data": {
+        "channel": "adc0",
+        "value": 0.4,
+        "unit": "V",
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "digital_in",
+      "data": {
+        "pin": "limit_switch",
+        "value": true,
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "tool_call",
+      "data": {
+        "id": "call_5",
+        "name": "blinds_close",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "action_requested",
+      "data": {
+        "action": "blinds_close",
+        "gate": "blinds_close",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "blinds-close@1.0.0",
+        "gate_digest": "sha256:8adcd34f26cebccd6077995da1aedd5846f39ae5f941aa86af73de66591fe1f9"
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "gate_facts",
+      "data": {
+        "estop_released": {
+          "value": true,
+          "confidence": null,
+          "source": "digital.in",
+          "read_offset_ms": 2600,
+          "eval_offset_ms": 2600,
+          "age_ms": 0
+        },
+        "motor_current_sense": {
+          "value": 0.4,
+          "confidence": null,
+          "source": "context",
+          "read_offset_ms": 2600,
+          "eval_offset_ms": 2600,
+          "age_ms": 0
+        },
+        "path_clear": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "ALLOW",
+        "evaluations": {
+          "estop_released": true,
+          "motor_current_sense": 0.4,
+          "path_clear": true
+        }
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "envelope_refused",
+      "data": {
+        "pin": "gripper",
+        "operation": "run",
+        "reason": "min_interval_ms",
+        "limit_ms": 1000,
+        "wait_ms": 600
+      }
+    }
+  ]
+}

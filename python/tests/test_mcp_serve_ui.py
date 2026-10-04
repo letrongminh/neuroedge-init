@@ -58,10 +58,30 @@ def served_unbounded(home):
     light on and off as fast as threads run, which the envelope's `min_interval_ms` (rightly)
     refuses; the test of the interleave is about the session's integrity, not about the light.
     """
-    session = SimSession.load(home, target_options={"envelope": SafetyEnvelope({})})
+    session = SimSession.load(
+        home, target_options={"envelope": SafetyEnvelope({})}, clock=_StepClock()
+    )
     server = SessionServer(session, port=0).start()
     yield session, server
     server.stop()
+
+
+class _StepClock:
+    """
+    A clock that moves 1 ms per reading, from any thread. The gates' `p95_latency_ms` budget is
+    measured on the session clock; on the wall clock a loaded CI runner exceeded it and the gate
+    rightly failed closed with BLOCK (PR #94) — which says nothing about the interleave this
+    fixture is for. Offsets still only grow.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._now = 1_000.0
+
+    def __call__(self) -> float:
+        with self._lock:
+            self._now += 1.0
+            return self._now
 
 
 def mcp_server_for(server: SessionServer):
@@ -173,7 +193,9 @@ def test_page_commands_and_mcp_calls_interleave_without_corrupting_the_session(s
         try:
             for i in range(rounds):
                 reply = post(server.url, "bật đèn" if i % 2 == 0 else "tắt đèn")
-                assert reply["verdict"] == "ALLOW", reply
+                # .get: a reply without a verdict must fail with the reply shown, not a bare
+                # KeyError (CI flake on PR #94 printed only KeyError('verdict')).
+                assert reply.get("verdict") == "ALLOW", reply
         except BaseException as error:  # reported by the main thread
             page_errors.append(error)
 
@@ -181,7 +203,7 @@ def test_page_commands_and_mcp_calls_interleave_without_corrupting_the_session(s
         async with Client(mcp_server_for(server)) as client:
             for i in range(rounds):
                 result = await client.call_tool("light_off" if i % 2 == 0 else "light_on", {})
-                assert result.structured_content["status"] == "ALLOW"
+                assert result.structured_content["status"] == "ALLOW", result.structured_content
 
     typist = threading.Thread(target=page_side)
     typist.start()
@@ -497,7 +519,9 @@ def test_the_real_command_writes_its_trace_and_leaves_with_143_on_sigterm(home, 
         rpc({"id": 2, "method": "tools/call", "params": {"name": "light_on", "arguments": {}}})
         assert json.loads(process.stdout.readline())["id"] == 2
         process.send_signal(signal.SIGTERM)
-        assert process.wait(TIMEOUT) == 128 + signal.SIGTERM
+        # A whole interpreter shuts down and writes the trace: on a loaded CI runner that has
+        # taken over 10 s (PR #94), so this one wait is longer; the exit code is still exact.
+        assert process.wait(3 * TIMEOUT) == 128 + signal.SIGTERM
     finally:
         if process.poll() is None:
             process.kill()

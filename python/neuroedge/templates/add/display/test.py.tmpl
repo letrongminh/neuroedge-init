@@ -1,0 +1,38 @@
+"""
+Two-way safety tests for `{{name}}` on the `{{board}}` board (neuroedge add).
+
+A blocked action must leave the display without a frame.
+"""
+
+import asyncio
+from pathlib import Path
+
+from neuroedge import SimSession
+
+AGENT = Path(__file__).resolve().parents[1] / "agent.toml"
+BOARD = "{{board}}"
+COMMAND = "{{phrase}}"
+
+
+def handle(text, **facts):
+    session = SimSession.load(AGENT, board_id=BOARD, facts=facts)
+    return session, asyncio.run(session.handle(text))
+
+
+def test_{{fn}}_shows_its_text_for_a_verified_user():
+    session, turn = handle(COMMAND)
+    assert turn.allowed
+    assert session.hal.frames[-1].text == "Xin chào"
+
+
+def test_{{fn}}_draws_nothing_for_an_unverified_user():
+    session, turn = handle(COMMAND, user_verified=False)
+    assert turn.result.blocked
+    assert turn.result.gate.failed_criterion == "user_verified"
+    assert session.hal.frames == []
+
+
+def test_{{fn}}_does_not_run_on_a_command_it_does_not_know():
+    session, turn = handle("hát một bài")
+    assert not turn.recognised
+    assert session.hal.frames == []

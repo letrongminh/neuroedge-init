@@ -1,0 +1,48 @@
+"""
+Two-way safety tests for `{{name}}` on the `{{board}}` board (neuroedge add).
+
+The ADC channel `{{source}}` decides (at least 1.2 V); a blocked action must leave the pin
+untouched, and a read outside the channel's range is a fault that blocks, never a clamp.
+"""
+
+import asyncio
+from pathlib import Path
+
+from neuroedge import SimSession
+
+AGENT = Path(__file__).resolve().parents[1] / "agent.toml"
+BOARD = "{{board}}"
+COMMAND = "{{phrase}}"
+
+
+def run(volts, **facts):
+    session = SimSession.load(AGENT, board_id=BOARD, facts=facts)
+    session.set_analog("{{source}}", volts)
+    return session, asyncio.run(session.handle(COMMAND))
+
+
+def test_{{fn}}_runs_when_the_voltage_is_enough():
+    session, turn = run(1.8)
+    assert turn.allowed
+    assert session.hal.pin("{{pin}}").pulsed_once(duration_ms=2000)
+
+
+def test_{{fn}}_never_moves_the_pin_when_the_voltage_is_low():
+    session, turn = run(0.5)
+    assert turn.result.blocked
+    assert turn.result.gate.failed_criterion == "{{fact}}"
+    assert session.hal.pin("{{pin}}").never_pulsed()
+
+
+def test_{{fn}}_never_moves_the_pin_for_an_unverified_user():
+    session, turn = run(1.8, user_verified=False)
+    assert turn.result.blocked
+    assert turn.result.gate.failed_criterion == "user_verified"
+    assert session.hal.pin("{{pin}}").never_pulsed()
+
+
+def test_{{fn}}_blocks_on_a_read_past_the_channel_range():
+    session, turn = run(2.6)
+    assert turn.result.blocked
+    assert turn.result.gate.reason == "criterion_unavailable"
+    assert session.hal.pin("{{pin}}").never_pulsed()

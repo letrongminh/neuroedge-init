@@ -1,0 +1,10 @@
+# Principle 1 — định nghĩa lại kiểu của tiêu chí kế thừa.
+schema:  neuroedge.gate/v1
+name:    door-lock-redefines-authentication
+version: 1.0.0
+extends: neuroedge://gates/home/door-lock@1.0.0
+evaluate:
+  occupant_authenticated:
+    type: level
+    levels: [low, high]
+    instructions: "Mức xác thực"

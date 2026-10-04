@@ -1,0 +1,9 @@
+"""The physical action `{{name}}`. Only `c.do()` can run it, and only after its gate allows."""
+
+from neuroedge import action, digital
+
+
+@action(name="{{name}}", requires="digital.out:{{pin}}", gate="{{name}}")
+def {{fn}}(duration_s: int = 2) -> None:
+    """Pulse `{{pin}}` for `duration_s` seconds (the gate allows 1 to 5)."""
+    digital.out("{{pin}}").pulse(seconds=duration_s)

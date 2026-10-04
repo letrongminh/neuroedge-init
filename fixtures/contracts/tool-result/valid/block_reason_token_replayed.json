@@ -1,0 +1,7 @@
+{
+  "tool": "unlock_door",
+  "status": "BLOCK",
+  "gate": "unlock_door@1.2.0",
+  "reason": "token_replayed",
+  "on_block": "deny"
+}

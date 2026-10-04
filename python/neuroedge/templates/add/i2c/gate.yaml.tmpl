@@ -1,0 +1,24 @@
+# Gate của `{{name}}` (neuroedge add). I2C không vào gate (RFC-0007 §3b): chip `{{device}}` được
+# đọc trong thân `@action`, qua danh sách thanh ghi cho phép của bo mạch. Gate chỉ hỏi ai gọi:
+# người dùng đã được xác minh chưa.
+#
+#   neuroedge gate explain gates/{{name}}@1.0.0.yaml   # chính sách bằng lời
+schema:  neuroedge.gate/v1
+name:    {{name}}
+version: 1.0.0
+
+evaluate:
+  user_verified:
+    type: bool
+    instructions: "Người dùng đã được xác minh trong phiên hiện tại"
+
+allow_when:
+  user_verified: true
+
+on_block:
+  action:  ask
+  message: "Cần xác minh người dùng trước khi {{phrase}}."
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

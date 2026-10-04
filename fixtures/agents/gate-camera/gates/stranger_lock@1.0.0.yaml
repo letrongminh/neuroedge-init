@@ -1,0 +1,22 @@
+# Khoá cổng khi camera thấy người lạ ở cổng với điểm tin cậy từ 0,90: nặng hơn bật đèn nên ngưỡng cao hơn.
+# Cùng gốc `camera` của thư viện khởi đầu (đồng ý ghi hình, vùng riêng tư trống); `max_age_ms` 300 giữ
+# nguyên nên camera đứng hình không "chứng minh" được có người lạ.
+schema:  neuroedge.gate/v1
+name:    stranger-lock
+version: 1.0.0
+extends: neuroedge://gates/home/camera@1.0.0
+
+evaluate:
+  stranger_at_gate:
+    type: bool
+    instructions: "Có người lạ trong vùng cổng (dữ kiện thị giác, kind = present)"
+  stranger_confidence:
+    type: numeric
+    unit: ratio
+    range: { min: 0, max: 1 }
+    max_age_ms: 300
+    instructions: "Điểm cao nhất của nhãn người lạ trong vùng cổng (dữ kiện thị giác, kind = confidence)"
+
+allow_when:
+  stranger_at_gate:    true
+  stranger_confidence: { gte: 0.90 }

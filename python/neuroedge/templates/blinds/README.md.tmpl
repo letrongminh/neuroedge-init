@@ -1,0 +1,36 @@
+# {{name}}
+
+Rèm lá điều khiển bằng một servo, sinh từ mẫu `blinds` (`motion.*`, RFC-0011). Mỗi lệnh qua gate rồi nhận
+một **lease** một lệnh trong 200 ms; không gia hạn thì kênh về `safe_state` của nó (`hold`: giữ vị trí tối
+đa `max_hold_ms`, rồi cắt điện). Phong bì thời gian của kênh (profile bo mạch) cắt lệnh vượt mức dù gate đã
+cho phép.
+
+| Hành động | Cho phép khi |
+|:---|:---|
+| `blinds_open` (90°) | nút dừng khẩn đã nhả (`limit_switch`, `digital.in`) và điện áp current-sense của mạch servo (`adc0`, `analog.in`) ≤ 0,8 V |
+| `blinds_close` (0°) | như trên, và khe rèm không có vật hay tay (`path_clear`) |
+
+Gate kế thừa `gates/home/motor@1.0.0` của thư viện khởi đầu và chỉ siết thêm; ngân sách 100 ms = lease / 2.
+
+## Chạy thử trên `sim-rpi5` — không cần servo, không cần mạng
+
+Agent cần bo mạch có `motion` (`sim-default` không có).
+
+```bash
+neuroedge build --target sim --board sim-rpi5
+neuroedge run --board sim-rpi5 -c "mở rèm"           # ALLOW, servo gripper tới 90°
+neuroedge test                                      # Action CI: 0 = mọi test đạt
+```
+
+Trong REPL: `:input limit_switch false` (dừng khẩn) hoặc `:analog adc0 0.9` (dòng quá lớn) rồi `mở rèm` ⇒
+BLOCK, servo không nhúc nhích.
+
+## Tệp
+
+| Tệp | Vai trò |
+|:---|:---|
+| `agent.toml` | Năng lực cần (`motion`: kênh `gripper`; `digital.in`; `analog.in`), gate, đầu vào giả lập |
+| `commands.toml` | Lệnh → action (`blinds_open`, `blinds_close`) |
+| `gates/` | `blinds_open@1.0.0`, `blinds_close@1.0.0` (kế thừa `motor`) |
+| `actions/blinds.py` | Hai hàm `@action` gọi `motion.servo` |
+| `traces/golden/` | Hai vết golden của kit (cho phép, chặn): `neuroedge replay` |

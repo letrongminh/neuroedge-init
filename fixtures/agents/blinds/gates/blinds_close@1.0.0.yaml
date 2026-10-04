@@ -1,0 +1,15 @@
+# Đóng rèm: như mở rèm, thêm `path_clear` — rèm không đóng khi có vật hay tay kẹt ở khe (đóng là chiều
+# có thể kẹp). Chỉ siết thêm trên gate `motor` của thư viện khởi đầu, không nới gì của cha.
+schema:  neuroedge.gate/v1
+name:    blinds-close
+version: 1.0.0
+extends: neuroedge://gates/home/motor@1.0.0
+
+evaluate:
+  path_clear:
+    type: bool
+    instructions: "Khe rèm không có vật hay tay người"
+
+allow_when:
+  motor_current_sense: { lte: 0.8 }
+  path_clear:          true

@@ -1,0 +1,12 @@
+# Principle 1 (RFC-0009) — đổi đơn vị V → mV: ngưỡng 1.0 đổi nghĩa.
+schema:  neuroedge.gate/v1
+name:    motor-redefines-unit
+version: 1.0.0
+extends: neuroedge://gates/home/motor@1.0.0
+evaluate:
+  motor_current_sense:
+    type: numeric
+    unit: mV
+    range: { min: 0, max: 2.5 }
+    max_age_ms: 200
+    instructions: "Điện áp chân current-sense"

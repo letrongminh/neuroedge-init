@@ -34,7 +34,7 @@ OS ở I9 ([`13`](13-evolution-i0-i18.md) §3, mốc 9).
 
 | Workflow | Kích hoạt | Job | Chứng minh |
 |:---|:---|:---|:---|
-| `ci-sim-linux.yml` | PR, push, tay | `frozen-artifacts` | ba lược đồ hợp lệ; gate khớp `digests.lock`; mọi gate phân giải; corpus gate hỏng vẫn hỏng; ba vết ghi chuẩn mực hợp lệ; profile bo mạch |
+| `ci-sim-linux.yml` | PR, push, tay | `frozen-artifacts` | bảy lược đồ hợp lệ; gate khớp `digests.lock`; mọi gate phân giải; corpus gate hỏng vẫn hỏng; ba vết ghi chuẩn mực hợp lệ; profile bo mạch |
 | | | `tests` | pytest trên Python 3.11, 3.12, 3.13; **fail nếu có test bị skip** |
 | | | `linux-hal` | `LinuxHAL` trên dòng GPIO ảo (gpio-sim), cảm biến hwmon (i2c-stub + lm75), framebuffer ảo (vfb hoặc vkms — runner GitHub chỉ có vkms); `verify --targets sim,linux` |
 | | | `wheel-smoke` | bản cài từ wheel chạy được, không chỉ bản editable |

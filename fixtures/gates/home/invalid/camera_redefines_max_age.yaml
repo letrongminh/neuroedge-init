@@ -1,0 +1,12 @@
+# Principle 1 (RFC-0012 §3c) — nới tuổi tối đa của dữ kiện thị giác: 300 ms → 30000 ms, camera đứng hình qua được.
+schema:  neuroedge.gate/v1
+name:    camera-redefines-max-age
+version: 1.0.0
+extends: neuroedge://gates/home/camera@1.0.0
+evaluate:
+  private_zone_confidence:
+    type: numeric
+    unit: ratio
+    range: { min: 0, max: 1 }
+    max_age_ms: 30000
+    instructions: "Điểm cao nhất của nhãn người trong vùng riêng tư"

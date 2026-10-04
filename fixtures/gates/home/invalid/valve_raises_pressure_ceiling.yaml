@@ -1,0 +1,7 @@
+# Principle 2 — nâng trần áp suất từ 2.0 V lên 2.4 V.
+schema:  neuroedge.gate/v1
+name:    valve-raises-pressure-ceiling
+version: 1.0.0
+extends: neuroedge://gates/home/valve@1.0.0
+allow_when:
+  line_pressure_sense: { gte: 0.25, lt: 2.4 }

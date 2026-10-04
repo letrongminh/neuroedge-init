@@ -47,9 +47,14 @@ else
 fi
 
 LISTING=$(unzip -l "$WHEEL")  # listed once: `unzip | grep -q` trips pipefail on SIGPIPE
-for asset in schemas/trace.v1.json boards/sim-default.toml gates/unlock_door@1.2.0.yaml \
+for asset in schemas/trace.v1.json schemas/tool-call.v1.json schemas/tool-result.v1.json \
+  schemas/error.v1.json schemas/error-codes.v1.json boards/sim-default.toml gates/unlock_door@1.2.0.yaml \
   fixtures/traces/happy-path.json fixtures/agents/villa-concierge/agent.toml \
-  fixtures/agents/factory-monitor/agent.toml \
+  fixtures/agents/factory-monitor/agent.toml fixtures/agents/home-voice/agent.toml \
+  fixtures/traces/kits/villa-concierge-allow.json fixtures/traces/kits/home-voice-block.json \
+  fixtures/traces/kits/factory-monitor-block.json fixtures/agents/gate-camera/agent.toml \
+  fixtures/agents/blinds/agent.toml fixtures/traces/kits/gate-camera-allow.json \
+  fixtures/traces/kits/blinds-block.json gates/home/camera@1.0.0.yaml gates/home/light@1.0.0.yaml \
   fixtures/tool_calls/expected_results.yaml \
   fixtures/vision/expected_results.yaml fixtures/vision/golden/stranger-at-door.json \
   pipewire/neuroedge-echo-cancel.conf \
@@ -58,6 +63,13 @@ for asset in schemas/trace.v1.json boards/sim-default.toml gates/unlock_door@1.2
   case "$LISTING" in
     *"neuroedge/_data/$asset"*) ;;
     *) echo "::error::wheel lacks $asset"; exit 1 ;;
+  esac
+done
+# The templates of `neuroedge add` (TSK-I2b-04) are package files, not _data: one of each piece.
+for tmpl in digital-out/action.py.tmpl i2c/gate.yaml.tmpl vision-in/test.py.tmpl gate/gate.yaml.tmpl; do
+  case "$LISTING" in
+    *"neuroedge/templates/add/$tmpl"*) ;;
+    *) echo "::error::wheel lacks neuroedge/templates/add/$tmpl"; exit 1 ;;
   esac
 done
 case "$LISTING" in
@@ -93,6 +105,22 @@ if page.strip() != readme.strip():
 print("long description = root README.md")
 PY
 
+# The output schema of every tool is a packaged file, read at run time (RFC-0015): from the
+# wheel, not from a checkout.
+"$WORK/venv/bin/python" - <<'PY'
+import sys
+
+from neuroedge.actions.tools import result_schema
+from neuroedge.paths import schema_path
+
+schema = result_schema("light_on")
+if schema["properties"]["tool"].get("const") != "light_on" or "$id" in schema:
+    sys.exit("::error::result_schema() did not read schemas/tool-result.v1.json from the wheel")
+if "neuroedge/_data/schemas" not in str(schema_path("tool-result.v1.json")).replace("\\", "/"):
+    sys.exit("::error::the tool-result schema was not read from the packaged copy")
+print("result_schema(): read from the packaged schemas/tool-result.v1.json")
+PY
+
 step board list
 step gate lint
 step trace validate "$("$WORK/venv/bin/python" -c 'import neuroedge.paths as p; print(p.fixtures_dir())')/traces/happy-path.json"
@@ -109,10 +137,18 @@ step record -c "mở khoá" --out traces/session.json
 step replay traces/session.json --agent agent.toml
 step trace view traces/session.json
 step test
+# `neuroedge add` from the installed wheel (TSK-I2b-04): its templates ship in the package. One on
+# the core board, one for an extension primitive (the board changes), then gate lint, build, tests.
+step add action open-gate --pin gate_relay
+step add sensor limit-guard --primitive digital.in --source limit_switch --pin gate_relay
+step gate lint gates
+step build --target sim --board sim-rpi5
+step test
 cd "$WORK"
 step new villa --template villa-concierge
 cd "$WORK/villa"
 step run -c "mở cửa phòng 101"
+step run -c "mở cửa phòng 202"
 step test
 cd "$WORK"
 step new plant --template factory-monitor
@@ -122,6 +158,24 @@ step run -c "bật quạt"
 step run -c "tắt quạt"
 step run -c "tắt báo động"
 step gate lint gates
+step test
+cd "$WORK"
+# The camera and motion kits need a board that declares `vision.in` / `motion` (TSK-I2b-02); their gates
+# extend the starter library, which must resolve from the installed package.
+step new gatecam --template gate-camera
+cd "$WORK/gatecam"
+step build --target sim --board sim-rpi5
+step run --board sim-rpi5 -c "bật đèn cảnh báo"
+step gate lint gates
+step replay traces/golden/gate-camera-allow.json --agent agent.toml --board sim-rpi5 --golden traces/golden/gate-camera-allow.json
+step test
+cd "$WORK"
+step new shades --template blinds
+cd "$WORK/shades"
+step build --target sim --board sim-rpi5
+step run --board sim-rpi5 -c "mở rèm"
+step gate lint gates
+step replay traces/golden/blinds-block.json --agent agent.toml --board sim-rpi5 --golden traces/golden/blinds-block.json
 step test
 cd "$WORK"
 

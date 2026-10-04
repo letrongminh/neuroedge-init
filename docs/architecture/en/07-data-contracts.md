@@ -15,7 +15,9 @@
 | **Agent** `agent.toml` | TOML | agent author | build, session | each table has its own parser | no (normative in code) | `done` |
 | **Grammar** `commands.toml` | TOML | agent author | `CommandGrammar` | parser | no | `done` |
 | **Knowledge** `knowledge.toml` | TOML | agent author | `KnowledgeBase` | parser | no | `done` |
-| **Tool call** | object / JSON | orchestrator, LLM, MCP client | `dispatch()` | `input_schema` generated from the signature | no — Gated Tool Profile v0 (`TODOS.md` #23) | `done` |
+| **Tool call** `tool-call.v1` | object / JSON | orchestrator, LLM, MCP client | `dispatch()` | `schemas/tool-call.v1.json` (envelope, tool description); `input_schema` generated from the signature | yes — RFC-0015 | `done` |
+| **Tool result** `tool-result.v1` | JSON | `dispatch()` | LLM, MCP client (`outputSchema`) | `schemas/tool-result.v1.json` | yes — RFC-0015 | `done` |
+| **Error** `error.v1` · **code catalogue** `error-codes.v1` | JSON | `NeuroEdgeError.as_dict()` · the catalogue file | Studio, the `sim` page, integrators' SDKs | `schemas/error.v1.json`, `schemas/error-codes.v1.json` | yes — RFC-0015 | `done` |
 | **Device tree** `NETR` v1 | binary | `binary_tree.encode` | C walker | `ne_tree_load` (magic, version, CRC, limits) | yes — RFC-0003 | `done` |
 | **UART stream** | text | firmware | `testing/uart.py`, CI scripts | parser, `^`-anchored regex | normative in `simulation_coverage.md` §4 | `done` |
 | **Manifest** `manifest.v1` (`schemas/manifest.v1.json`, TSK-K3-03) | JSON | agent / gate packager | Gate Registry | JSON Schema | planned yes — → [`15`](15-target-architecture.md) §3.2 | `planned` |
@@ -128,10 +130,7 @@ Vietnamese diacritics kept), an exact pattern match scores 1.0, otherwise a `dif
 
 ## 6. Tool call and result
 
-```text
-ToolCall   { id, name, arguments, source }        source ∈ local_grammar · system_one · system_two · mcp · test
-ToolResult { tool, status, … }                    status ∈ ALLOW · BLOCK · REJECTED
-```
+The shapes live in `schemas/tool-call.v1.json` (the envelope `ToolCall { id, name, arguments, source }`, `source` one of five sources; the tool description) and `schemas/tool-result.v1.json` (`ToolResult`, `status` ∈ ALLOW · BLOCK · REJECTED); they are not restated here.
 
 | `status` | Meaning | Pin | MCP `isError` |
 |:---|:---|:---|:---|
@@ -140,9 +139,7 @@ ToolResult { tool, status, … }                    status ∈ ALLOW · BLOCK ·
 | `REJECTED` | Unknown tool or bad argument; no verdict | unchanged | true |
 
 Empty `id`s are assigned `call_1`, `call_2`… per session. `source` is assigned by the runtime from the
-connection, not declared by the caller. On `BLOCK`, the result carries `gate`, `reason`,
-`failed_criterion`, `on_block`, `message`, `escalated_to`, and possibly `fallback` or
-`confirmation {id, message, expires_in_ms, who}`. Full normative spec:
+connection, not declared by the caller. A reader of a result does not branch on `reason` (an open string): `status` decides. Full normative spec:
 [`docs/spec/tool_calling.md`](../../spec/tool_calling.md).
 
 ## 7. Trace — `trace.v1`
@@ -209,6 +206,7 @@ directions.
 | Gate counterexamples | `fixtures/gates/invalid/*.yaml` (and `valid/`, `registry/` must resolve) | `fixtures/gates/expected_errors.yaml`: error class, code, principle, substring of location and reason |
 | Trace counterexamples | `fixtures/traces/invalid/*.json` | `fixtures/traces/expected_errors.yaml` |
 | Tool call | `fixtures/tool_calls/{valid,invalid}/*.yaml` | `fixtures/tool_calls/expected_results.yaml`: status, pin commands, reason… |
+| Integrator contracts | `fixtures/contracts/{tool-call,tool-result,error}/{valid,invalid}/*.json` | `fixtures/contracts/expected_errors.yaml`: the schema (`against`) of each file; an `invalid/` file also carries its error (`keyword`, `path`, substring of the message) |
 | Voice state machine | `fixtures/compliance/voice/*.json` | `fixtures/compliance/voice/expected_results.yaml`: full event list, exact offsets |
 | Tree truth tables | `fixtures/decision_trees/*.truth.json` | the file itself; the C walker must match every line |
 
@@ -223,14 +221,13 @@ directions.
 | Public schema | `https://schema.neuroedge.dev/<kind>/v<n>.json` (served from I6) |
 | Digest | `"sha256:" + SHA-256(JCS RFC 8785)` |
 
-**Frozen means** a change needs an RFC and CI enforcement: three schemas (file set, `$id`, valid
+**Frozen means** a change needs an RFC and CI enforcement: seven schemas (file set, `$id`, valid
 metaschema); gates in `digests.lock`; three normative traces; the `NETR` v1 layout. Not frozen: the
-internal JSON tree, the Gated Tool Profile (v0), the trace event catalog.
+internal JSON tree, the trace event catalog.
 
 ## 11. Error codes
 
-Every error has three parts: **where · why · what to do** (FR-DX-04). Code families (PRD Appendix B is
-the source):
+Every error has three parts: **where · why · what to do** (FR-DX-04). Code families (`schemas/error-codes.v1.json` is the source of the structure: code, class, parent, status; PRD Appendix B keeps the wording):
 
 | Family | Meaning | Examples |
 |:---|:---|:---|

@@ -28,6 +28,16 @@ VISION_GATES = [
     "vision/package-notify@1.0.0",
     "vision/zone-clear@1.0.0",
 ]
+# TSK-I2b-03: the seven starter library gates are a corpus of their own (`test_home_gates.py`).
+HOME_GATES = [
+    "home/camera@1.0.0",
+    "home/door-lock@1.0.0",
+    "home/hvac@1.0.0",
+    "home/light@1.0.0",
+    "home/motor@1.0.0",
+    "home/siren@1.0.0",
+    "home/valve@1.0.0",
+]
 
 
 @pytest.fixture(scope="module")
@@ -45,9 +55,9 @@ def night(gates_dir):
     return resolve_gate_file(gates_dir / "unlock_door_night@1.0.0.yaml")
 
 
-def test_there_are_exactly_three_sample_gates_and_the_three_vision_gates(gates_dir):
+def test_there_are_exactly_the_sample_vision_and_library_gates(gates_dir):
     found = sorted(p.relative_to(gates_dir).as_posix() for p in gates_dir.rglob("*.yaml"))
-    assert found == sorted(f"{name}.yaml" for name in [*SAMPLE_GATES, *VISION_GATES])
+    assert found == sorted(f"{name}.yaml" for name in [*SAMPLE_GATES, *VISION_GATES, *HOME_GATES])
 
 
 @pytest.mark.parametrize("name", SAMPLE_GATES)

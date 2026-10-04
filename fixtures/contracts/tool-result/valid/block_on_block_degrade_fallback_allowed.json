@@ -1,0 +1,11 @@
+{
+  "tool": "open_gate",
+  "status": "BLOCK",
+  "gate": "open_gate@1.0.0",
+  "reason": "condition_not_met",
+  "on_block": "degrade",
+  "fallback": {
+    "tool": "porch_light_on",
+    "status": "ALLOW"
+  }
+}

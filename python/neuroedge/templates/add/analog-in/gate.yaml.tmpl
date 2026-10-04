@@ -1,0 +1,35 @@
+# Gate của `{{name}}` (neuroedge add). Kênh ADC `{{source}}` (`analog.in`) là tiêu chí `numeric`: đơn
+# vị, thang đo và tuổi tối đa khoá ở đây; agent.toml chỉ nối `{{fact}}` với kênh. Thang `range`
+# phải bao thang của kênh (`neuroedge build` kiểm). Giá trị ngoài thang, quá cũ hoặc không đọc
+# được thì tiêu chí không quyết định được và gate chặn, không bao giờ cắt về thang.
+#
+#   neuroedge gate explain gates/{{name}}@1.0.0.yaml   # chính sách bằng lời
+schema:  neuroedge.gate/v1
+name:    {{name}}
+version: 1.0.0
+
+arguments:
+  duration_s: { type: integer, minimum: 1, maximum: 5 }
+
+evaluate:
+  user_verified:
+    type: bool
+    instructions: "Người dùng đã được xác minh trong phiên hiện tại"
+  {{fact}}:
+    type: numeric
+    unit: V
+    range: { min: 0.0, max: 2.5 }
+    max_age_ms: 500
+    instructions: "Điện áp trên kênh ADC {{source}}"
+
+allow_when:
+  user_verified: true
+  {{fact}}:      { gte: 1.2 }
+
+on_block:
+  action:  ask
+  message: "Cần xác minh người dùng và điện áp {{source}} đủ trước khi {{phrase}}."
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

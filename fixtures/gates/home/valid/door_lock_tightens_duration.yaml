@@ -1,0 +1,7 @@
+# Siết thời gian giữ khoá mở từ 30 s xuống 10 s.
+schema:  neuroedge.gate/v1
+name:    door-lock-tightens-duration
+version: 1.0.0
+extends: neuroedge://gates/home/door-lock@1.0.0
+arguments:
+  duration_s: { type: integer, maximum: 10 }

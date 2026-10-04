@@ -1,0 +1,7 @@
+# Principle 2 — ghi đè allow_when mà bỏ cận dưới của cha: khoảng mở rộng xuống mọi áp suất.
+schema:  neuroedge.gate/v1
+name:    valve-drops-pressure-floor
+version: 1.0.0
+extends: neuroedge://gates/home/valve@1.0.0
+allow_when:
+  line_pressure_sense: { lt: 2.0 }

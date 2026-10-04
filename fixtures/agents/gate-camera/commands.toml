@@ -1,0 +1,14 @@
+# Ngữ pháp lệnh cố định của agent gate-camera (Q-14, Q-15).
+[grammar]
+version   = 1
+threshold = 0.80
+
+[[command]]
+intent   = "stranger_light"
+patterns = ["bật đèn cảnh báo", "bật đèn hiên", "turn on the porch light"]
+tool     = "stranger_light"
+
+[[command]]
+intent   = "stranger_lock"
+patterns = ["khoá cổng", "khóa cổng", "lock the gate"]
+tool     = "stranger_lock"

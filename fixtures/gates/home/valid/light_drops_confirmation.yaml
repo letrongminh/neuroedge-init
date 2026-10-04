@@ -1,0 +1,7 @@
+# Bỏ quyền xác nhận của người có mặt: hỏi lại (ask) thu hẹp thành chặn thẳng (deny).
+schema:  neuroedge.gate/v1
+name:    light-drops-confirmation
+version: 1.0.0
+extends: neuroedge://gates/home/light@1.0.0
+on_block:
+  action: deny

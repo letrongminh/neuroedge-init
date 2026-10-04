@@ -155,7 +155,10 @@ def test_the_channel_goes_off_when_the_time_is_up_enable_line_first(tmp_path, sy
     fan(hal, duration_ms=60)
     wait_until(lambda: not hal.line_value("fan"))
     wait_until(lambda: files(sysfs)["enable"] == 0)
-    assert files(sysfs)["duty_cycle"] == 0
+    # off() writes enable = 0 first, then duty_cycle = 0 (the output stops before anything
+    # else): wait for the second write too, then the end state is exact.
+    wait_until(lambda: files(sysfs)["duty_cycle"] == 0)
+    assert files(sysfs)["enable"] == 0
     assert enable_history(fake) == [True, False]
     assert hal.commanded_pwm("fan") is None
     hal.close()

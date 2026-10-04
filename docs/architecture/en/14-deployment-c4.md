@@ -35,7 +35,7 @@ What blocks these today is in roadmap §0.1 ("Chặn ngoài tầm kỹ thuật")
 
 | Workflow | Trigger | Job | Proves |
 |:---|:---|:---|:---|
-| `ci-sim-linux.yml` | PR, push, manual | `frozen-artifacts` | the three schemas are valid; gates match `digests.lock`; every gate resolves; the broken-gate corpus stays broken; the three normative traces are valid; board profiles |
+| `ci-sim-linux.yml` | PR, push, manual | `frozen-artifacts` | the seven schemas are valid; gates match `digests.lock`; every gate resolves; the broken-gate corpus stays broken; the three normative traces are valid; board profiles |
 | | | `tests` | pytest on Python 3.11, 3.12, 3.13; **fails if any test is skipped** |
 | | | `linux-hal` | `LinuxHAL` on a virtual GPIO line (gpio-sim), hwmon sensors (i2c-stub + lm75), a virtual framebuffer (vfb or vkms — GitHub runners have only vkms); `verify --targets sim,linux` |
 | | | `wheel-smoke` | the wheel install works, not only the editable install |

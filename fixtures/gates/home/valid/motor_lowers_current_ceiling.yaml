@@ -1,0 +1,7 @@
+# Hạ trần điện áp current-sense từ 1.0 V xuống 0.6 V.
+schema:  neuroedge.gate/v1
+name:    motor-lowers-current-ceiling
+version: 1.0.0
+extends: neuroedge://gates/home/motor@1.0.0
+allow_when:
+  motor_current_sense: { lte: 0.6 }

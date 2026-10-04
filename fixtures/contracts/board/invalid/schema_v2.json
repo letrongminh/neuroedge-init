@@ -1,0 +1,62 @@
+{
+  "schema": "neuroedge.board/v2",
+  "board": {
+    "id": "sim-default",
+    "target": "sim",
+    "mcu": "none",
+    "name": "NeuroEdge Web Simulator"
+  },
+  "capabilities": {
+    "audio_in": {
+      "channels": 1,
+      "sample_rate_hz": 16000,
+      "aec": true,
+      "vad": true
+    },
+    "audio_out": {
+      "channels": 1,
+      "sample_rate_hz": 16000
+    },
+    "digital_out": {
+      "pins": [
+        "door_lock",
+        "porch_light",
+        "gate_relay"
+      ],
+      "backend": "virtual",
+      "envelope": {
+        "door_lock": {
+          "window_s": 3600,
+          "max_on_ms_per_window": 600000,
+          "min_interval_ms": 1000,
+          "max_continuous_ms": 60000
+        },
+        "porch_light": {
+          "window_s": 3600,
+          "max_on_ms_per_window": 1800000,
+          "min_interval_ms": 2000,
+          "max_continuous_ms": 600000
+        },
+        "gate_relay": {
+          "window_s": 3600,
+          "max_on_ms_per_window": 600000,
+          "min_interval_ms": 1000,
+          "max_continuous_ms": 60000
+        }
+      }
+    },
+    "sensor_read": {
+      "sensors": [
+        "temperature",
+        "humidity",
+        "door_contact",
+        "motion"
+      ]
+    },
+    "display": {
+      "width": 320,
+      "height": 240,
+      "color": "rgb565"
+    }
+  }
+}

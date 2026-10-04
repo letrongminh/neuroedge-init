@@ -1,0 +1,8 @@
+# Principle 4 (RFC-0004 R2) — con khai fail: open.
+schema:  neuroedge.gate/v1
+name:    light-fails-open
+version: 1.0.0
+extends: neuroedge://gates/home/light@1.0.0
+budget:
+  p95_latency_ms: 150
+  fail:           open

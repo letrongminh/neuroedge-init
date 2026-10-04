@@ -1,0 +1,6 @@
+{
+  "code": "NE5001",
+  "where": "example for PerceptionUnavailableError",
+  "why": "what rule was broken",
+  "how": "what to do next"
+}

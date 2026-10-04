@@ -1,0 +1,3 @@
+# Gate light_on nhận cả `system_one`: nguồn thứ năm của Profile có mặt trong corpus.
+agent: home-voice
+call:  { name: light_on, arguments: {}, source: system_one }

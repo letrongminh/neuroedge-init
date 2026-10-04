@@ -23,7 +23,8 @@ ALLOWED: dict[str, set[str]] = {
     "trace": {"errors", "paths"},
     "hal": {"errors", "paths"},
     "engine": {"errors", "paths", "trace", "hal"},
-    "actions": {"engine", "errors", "hal"},
+    # `paths`: `actions/tools.py::result_schema` reads schemas/tool-result.v1.json (RFC-0015)
+    "actions": {"engine", "errors", "hal", "paths"},
     "models": {"engine", "errors", "net"},
     "mcp_desktop": {"errors"},
     "mcp_host": {"actions", "errors"},
