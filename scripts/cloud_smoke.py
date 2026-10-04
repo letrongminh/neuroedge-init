@@ -80,7 +80,7 @@ async def main() -> None:
         import litellm
     except ImportError:
         fail("litellm is not installed: pip install -e 'python[cloud]'")
-    from neuroedge.sim import SimSession
+    from neuroedge import SimSession
 
     print(
         f"litellm {getattr(litellm, '__version__', None) or _version()} (real library, mock responses)"

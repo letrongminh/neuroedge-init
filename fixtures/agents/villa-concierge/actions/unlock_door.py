@@ -1,7 +1,6 @@
 """Sample physical action for the villa-concierge agent (proposal §4.4)."""
 
-from neuroedge import action
-from neuroedge.hal import digital
+from neuroedge import action, digital
 
 
 @action(name="unlock_door", requires="digital.out:door_lock", gate="unlock_door")

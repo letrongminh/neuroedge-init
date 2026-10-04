@@ -1,7 +1,6 @@
 """Ba action của agent driveway. Chỉ `c.do()` chạy chúng, sau gate của mỗi action."""
 
-from neuroedge import action
-from neuroedge.hal import digital
+from neuroedge import action, digital
 
 
 @action(name="buzz_in", requires="digital.out:door_lock", gate="buzz_in")

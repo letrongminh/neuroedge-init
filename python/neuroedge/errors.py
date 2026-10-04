@@ -69,6 +69,16 @@ class TokenReplayError(ActionContractViolation):
         return data
 
 
+class ToolCallError(NeuroEdgeError, ValueError):
+    """
+    A `ToolCall` was built wrong: its `source` is not one the dispatcher assigns.
+    A programming error, not a verdict. Also a `ValueError`, so code written
+    against the 0.1 `ToolCall` (which raised a bare `ValueError`) keeps working.
+    """
+
+    code = "NE1004"  # NE1003 is reserved by RFC-0007
+
+
 class GateError(NeuroEdgeError):
     """Base class for gate authoring, schema and resolution failures."""
 

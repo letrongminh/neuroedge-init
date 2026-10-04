@@ -1305,6 +1305,21 @@ class SimSession:
         """
         return sorted(_sim_tables(self.manifest)[0])
 
+    def canned_fact_warning(self) -> str | None:
+        """
+        On `linux`, gate facts from `[sim.facts]` are fixed values deciding for real
+        lines: a gate that is safe on `sim` may ALLOW here only because of one.
+        """
+        if self.target == "sim":
+            return None
+        names = self.canned_facts()
+        if not names:
+            return None
+        return (
+            f"gates on {self.target} decide on fixed values from [sim.facts]: "
+            f"{', '.join(names)} — no property system supplies them yet"
+        )
+
     def write_trace(self, path: Path) -> dict[str, Any]:
         """The session so far as a validated `trace.v1` file at `path`; returns it."""
         trace = self.trace()

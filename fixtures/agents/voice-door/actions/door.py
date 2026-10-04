@@ -1,7 +1,6 @@
 """Các action của agent voice-door. Chỉ `c.do()` chạy chúng, sau gate của mỗi action."""
 
-from neuroedge import action
-from neuroedge.hal import digital
+from neuroedge import action, digital
 
 
 @action(name="open_door", requires="digital.out:door_lock", gate="unlock_door")

@@ -327,22 +327,6 @@ def system_two_line(slow) -> str:
     return f"{name} {config.model} ({key}; offline line if it cannot answer)"
 
 
-def canned_fact_warning(session: SimSession) -> str | None:
-    """
-    On `linux`, gate facts from `[sim.facts]` are fixed values deciding for real
-    lines: a gate that is safe on `sim` may ALLOW here only because of one.
-    """
-    if session.target == "sim":
-        return None
-    names = session.canned_facts()
-    if not names:
-        return None
-    return (
-        f"gates on {session.target} decide on fixed values from [sim.facts]: "
-        f"{', '.join(names)} — no property system supplies them yet"
-    )
-
-
 def _dropped_at_exit(session: SimSession, console: Console) -> None:
     """On `linux`, say which lines are still `on` when the session ends and drops them."""
     driven = getattr(session.hal, "driven", None)
@@ -386,7 +370,7 @@ def run_session(
     trace_out: Path | None = None,
 ) -> int:
     """Drive the session and return the exit code."""
-    warning = canned_fact_warning(session)
+    warning = session.canned_fact_warning()
     try:
         if command is not None:
             if warning is not None:

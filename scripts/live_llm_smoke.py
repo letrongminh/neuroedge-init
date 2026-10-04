@@ -31,7 +31,7 @@ async def main(model: str, key_env: str) -> int:
         print(f"{key_env} is not set — export {key_env}=<your key> and run again.")
         print("Nothing was sent. (This script is manual; CI runs scripts/cloud_smoke.py.)")
         return 1
-    from neuroedge.sim import SimSession
+    from neuroedge import SimSession
 
     work = Path(tempfile.mkdtemp(prefix="live-llm-"))
     target = work / "home-voice"

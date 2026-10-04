@@ -7,9 +7,11 @@ They assert what the fan and alarm relays did, not what a verdict object says.
 """
 
 import asyncio
+import math
+import tomllib
 from pathlib import Path
 
-from neuroedge.sim import SimSession
+from neuroedge import SimSession
 
 AGENT = Path(__file__).resolve().parents[1] / "agent.toml"
 
@@ -42,19 +44,34 @@ def test_at_critical_heat_the_fan_cannot_be_stopped_even_with_a_yes():
     assert session.hal.pin("gate_relay").commands == [("on", 0)]
 
 
-def test_heat_level_and_heat_critical_agree_at_every_reading():
-    # Loading checks heat_critical's `gte` sits on a band bound; this checks it is the
-    # `critical` one, around every bound: never a critical band with "not critical".
+def decision(celsius):
+    """What stopping the fan does at `celsius`: `off`, `asks` an operator, or `refuses`."""
     session = SimSession.load(AGENT)
-    recognition = session.grammar.recognize("tắt quạt")
-    bounds = [bound for _, bound in session.sensor_facts["heat_level"].bands]
-    for reading in [b + d for b in bounds for d in (-0.5, -0.001, 0, 0.001, 0.5)] + [-41, 200]:
-        session.set_sensor("temperature", reading)
-        facts = session.gate_facts(recognition)
-        if facts["heat_level"] is None:  # below every band: both undecided, the gates refuse
-            assert facts["heat_critical"] is None, reading
-        else:
-            assert facts["heat_critical"] is (facts["heat_level"] == "critical"), reading
+    session.set_sensor("temperature", celsius)
+    turn = asyncio.run(session.handle("tắt quạt"))
+    if turn.allowed:
+        return "off"
+    return "asks" if turn.confirmation is not None else "refuses"
+
+
+def test_heat_level_and_heat_critical_agree_at_every_reading():
+    # The two facts of `[sim.sensor_facts]` must agree: `critical` is exactly the band where
+    # heat_critical holds. Stopping the fan shows both — it needs heat_level <= normal and
+    # heat_critical false, and an operator's yes can waive only the first. So per band:
+    # low and normal stop the fan, high asks, critical refuses without asking; a reading below
+    # every band is undecided and refuses too. Swept around every bound of the project's own
+    # agent.toml, so a heat_critical that sits on the wrong bound turns this red.
+    bands = tomllib.loads(AGENT.read_text(encoding="utf-8"))["sim"]["sensor_facts"]["heat_level"][
+        "bands"
+    ]
+    expected = {"low": "off", "normal": "off", "high": "asks", "critical": "refuses"}
+    bounds = sorted(bands.values())
+    readings = [bound + step for bound in bounds for step in (-1, -0.001, 0, 0.001, 1)]
+    readings += [math.nextafter(bound, -math.inf) for bound in bounds] + [bounds[0] - 1, 200]
+    for reading in readings:
+        inside = [name for name, bound in bands.items() if bound <= reading]
+        band = max(inside, key=bands.get) if inside else None
+        assert decision(reading) == expected.get(band, "refuses"), (reading, band)
 
 
 def test_the_alarm_stays_on_until_the_room_cools():

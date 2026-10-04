@@ -75,8 +75,7 @@ A host HAL is a subclass of `HardwareAbstractionLayer`. `SimHAL` and `LinuxHAL` 
 examples.
 
 ```python
-from neuroedge.hal import HardwareAbstractionLayer
-from neuroedge.hal.board import BoardProfile
+from neuroedge import BoardProfile, HardwareAbstractionLayer
 
 class MyBoardHAL(HardwareAbstractionLayer):
     def __init__(self, board: BoardProfile, *, events, authorize, **options) -> None:
