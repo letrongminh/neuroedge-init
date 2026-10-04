@@ -13,6 +13,9 @@ fake `/sys/class/pwm` tree in a temporary directory: the runner has no PWM contr
 is not shown here — that a pulse tilts the slats, that the driver cuts power when its enable line drops —
 needs the stage-B rig (RFC-0011 §3f; `docs/user/kit-rem-cua.md`, "Chưa kiểm").
 
+These load the canonical agent in place (no copy), so none uses `fresh_actions`: clearing the action
+registry while the agent's module is already imported leaves it with no `@action` (NE3003 at build).
+
 NOTE: written without a kernel at hand (the author's machine is not Linux); the same scenarios against
 an in-memory gpiod are `python/tests/test_kits.py`. If a gpio-sim detail differs, CI shows it here.
 """
@@ -126,7 +129,7 @@ def say(session: SimSession, text: str):
     return asyncio.run(session.handle(text))
 
 
-@pytest.mark.usefixtures("fresh_actions", "wired")
+@pytest.mark.usefixtures("wired")
 def test_an_allowed_open_raises_the_enable_line_and_the_lease_drops_it(sysfs, pwm_root):
     session = SimSession.load(AGENT, target="linux", target_options={"sysfs_root": pwm_root})
     try:
@@ -140,7 +143,7 @@ def test_an_allowed_open_raises_the_enable_line_and_the_lease_drops_it(sysfs, pw
     assert kernel_value(sysfs, "servo_en") == 0, "the session ends with the driver down"
 
 
-@pytest.mark.usefixtures("fresh_actions", "wired")
+@pytest.mark.usefixtures("wired")
 @pytest.mark.parametrize(
     ("trouble", "text", "criterion"),
     [
@@ -168,7 +171,6 @@ def test_a_blocked_command_never_raises_the_enable_line(sysfs, pwm_root, trouble
         session.close()
 
 
-@pytest.mark.usefixtures("fresh_actions")
 def test_without_a_wired_pwm_the_session_is_refused_before_any_line_moves(
     sysfs, pwm_root, monkeypatch
 ):
