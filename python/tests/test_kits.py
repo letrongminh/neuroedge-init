@@ -1,5 +1,6 @@
 """
-The three hardware kits (TSK-I2b-01): `villa-concierge`, `home-voice`, `factory-monitor`.
+The five hardware kits (TSK-I2b-01, TSK-I2b-02): `villa-concierge`, `home-voice`, `factory-monitor`,
+`gate-camera` (vision.in) and `blinds` (motion.*).
 
 A kit is a template plus what it takes to build the device: a BOM, a wiring diagram per board, a
 locked gate, golden traces and a guide, in `docs/user/kit-*.md`. The template itself — `new`, its
@@ -39,8 +40,22 @@ KITS = {
     "villa-concierge": "kit-khoa-cua-villa.md",
     "home-voice": "kit-tro-ly-giong-noi.md",
     "factory-monitor": "kit-giam-sat-nha-may.md",
+    "gate-camera": "kit-camera-cong.md",
+    "blinds": "kit-rem-cua.md",
 }
 BOARDS = ("linux-rpi5", "esp32s3-box-3")
+# A kit draws one diagram per reference board it builds for: the camera and motion kits only for the Pi.
+KIT_BOARDS = dict.fromkeys(KITS, BOARDS) | {
+    "gate-camera": ("linux-rpi5",),
+    "blinds": ("linux-rpi5",),
+}
+WIRED = [(kit, board) for kit in KITS for board in KIT_BOARDS[kit]]
+# The boards each kit's golden traces replay on: those that declare what the traces use.
+REPLAY_BOARDS = {
+    "gate-camera": ("sim-rpi5", "linux-rpi5"),
+    "blinds": ("sim-rpi5", "linux-rpi5"),
+}
+SIM_DEFAULT_KITS = ("villa-concierge", "home-voice", "factory-monitor")
 # The gates each kit's `agent.toml` names, as paths under the repository.
 LOCKED_GATES = {
     "villa-concierge": ["gates/unlock_door@1.2.0.yaml"],
@@ -51,6 +66,14 @@ LOCKED_GATES = {
     "factory-monitor": [
         f"fixtures/agents/factory-monitor/gates/{name}@1.0.0.yaml"
         for name in ("vent_on", "vent_off", "alarm_on", "alarm_off")
+    ],
+    "gate-camera": [
+        f"fixtures/agents/gate-camera/gates/{name}@1.0.0.yaml"
+        for name in ("stranger_light", "stranger_lock")
+    ],
+    "blinds": [
+        f"fixtures/agents/blinds/gates/{name}@1.0.0.yaml"
+        for name in ("blinds_open", "blinds_close")
     ],
 }
 # What each golden trace holds: gate verdicts in order, then every pin command (pin, operation).
@@ -73,6 +96,13 @@ OUTCOMES = {
         [ALLOW, ALLOW, BLOCK, BLOCK, BLOCK, BLOCK],
         [("gate_relay", "on"), ("porch_light", "on")],
     ),
+    "gate-camera-allow": (
+        [ALLOW, ALLOW],
+        [("porch_light", "on"), ("gate_relay", "pulse")],
+    ),
+    "gate-camera-block": ([BLOCK] * 5, []),
+    "blinds-allow": ([ALLOW, ALLOW], []),
+    "blinds-block": ([BLOCK, BLOCK, BLOCK, ALLOW, ALLOW], []),
 }
 WIRING = re.compile(r"<!-- wiring: (\S+) -->\n```mermaid\n(.*?)```", re.S)
 
@@ -97,38 +127,64 @@ def diagrams(root: Path, kit: str) -> dict[str, str]:
 
 
 @pytest.mark.parametrize("kit", KITS)
-def test_a_kit_page_draws_one_diagram_for_each_reference_board(root, kit):
-    assert sorted(diagrams(root, kit)) == sorted(BOARDS)
+def test_a_kit_page_draws_one_diagram_for_each_reference_board_it_builds_for(root, kit):
+    assert sorted(diagrams(root, kit)) == sorted(KIT_BOARDS[kit])
 
 
-@pytest.mark.parametrize("board", BOARDS)
-@pytest.mark.parametrize("kit", KITS)
-def test_every_pin_and_sensor_in_a_wiring_diagram_exists_in_that_board_profile(root, kit, board):
+@pytest.mark.parametrize(("kit", "board"), WIRED)
+def test_every_name_in_a_wiring_diagram_exists_in_that_board_profile(root, kit, board):
     capabilities = board_profile(root, board)
     pins = {
         *capabilities["digital_out"]["pins"],
         *capabilities.get("digital_in", {}).get("pins", []),
     }
     sensors = set(capabilities["sensor_read"]["sensors"])
+    channels = {
+        channel["name"]
+        for kind in ("motor", "servo")
+        for channel in capabilities.get("motion", {}).get(kind, [])
+    }
+    modes = {
+        f"{mode['width']}x{mode['height']}"
+        for mode in capabilities.get("vision_in", {}).get("modes", [])
+    }
     diagram = diagrams(root, kit)[board]
     drawn_pins = set(re.findall(r"line:([a-z0-9_]+)", diagram))
     drawn_sensors = set(re.findall(r"sensor:([a-z0-9_]+)", diagram))
-    assert drawn_pins, f"{kit} on {board}: the diagram names no line"
+    drawn_channels = set(re.findall(r"motion:([a-z0-9_]+)", diagram))
+    drawn_modes = set(re.findall(r"camera:([0-9]+x[0-9]+)", diagram))
+    assert drawn_pins or drawn_channels, f"{kit} on {board}: the diagram names no line"
     assert drawn_pins <= pins, f"{kit} on {board}: {sorted(drawn_pins - pins)} is not a pin"
     assert drawn_sensors <= sensors, (
         f"{kit} on {board}: {sorted(drawn_sensors - sensors)} is not a sensor"
     )
+    assert drawn_channels <= channels, (
+        f"{kit} on {board}: {sorted(drawn_channels - channels)} is not a motion channel"
+    )
+    assert drawn_modes <= modes, f"{kit} on {board}: {sorted(drawn_modes - modes)} is not a mode"
 
 
-@pytest.mark.parametrize("board", BOARDS)
-@pytest.mark.parametrize("kit", KITS)
-def test_a_wiring_diagram_draws_every_pin_and_sensor_the_agent_needs(root, kit, board):
+@pytest.mark.parametrize(("kit", "board"), WIRED)
+def test_a_wiring_diagram_draws_every_name_the_agent_needs(root, kit, board):
     requires = agent_manifest(root, kit)["requires"]
     diagram = diagrams(root, kit)[board]
-    for pin in requires["digital.out"]["pins"]:
+    for pin in requires.get("digital.out", {}).get("pins", []):
         assert f"line:{pin}" in diagram, f"{kit} on {board}: {pin} is not wired"
     for sensor in requires.get("sensor.read", {}).get("sensors", []):
         assert f"sensor:{sensor}" in diagram, f"{kit} on {board}: {sensor} is not wired"
+    for channel in requires.get("motion", {}).get("channels", []):
+        assert f"motion:{channel}" in diagram, f"{kit} on {board}: {channel} is not wired"
+        enable = next(
+            c["enable_pin"]
+            for kind in ("motor", "servo")
+            for c in board_profile(root, board)["motion"][kind]
+            if c["name"] == channel
+        )
+        assert f"line:{enable}" in diagram, (
+            f"{kit} on {board}: the enable line {enable} is not wired"
+        )
+    if "vision.in" in requires:
+        assert "camera:" in diagram, f"{kit} on {board}: the camera is not wired"
 
 
 @pytest.mark.parametrize("kit", KITS)
@@ -139,7 +195,7 @@ def test_a_pin_an_agent_needs_is_a_pin_of_every_board_that_it_builds_for(root, k
     for target in manifest["targets"]["supported"]:
         if target in boards:
             profile = board_profile(root, boards[target])
-            for pin in manifest["requires"]["digital.out"]["pins"]:
+            for pin in manifest["requires"].get("digital.out", {}).get("pins", []):
                 assert pin in profile["digital_out"]["pins"], (kit, target, pin)
 
 
@@ -324,7 +380,11 @@ def test_the_corpus_replays_to_what_it_recorded_on_every_board_that_declares_its
         recorded = json.loads(path.read_text(encoding="utf-8"))
         kit = path.stem.rsplit("-", 1)[0]
         agent = root / "fixtures" / "agents" / kit / "agent.toml"
-        assert _trace_lacks(load_board_by_id(board), recorded) == [], (board, path.name)
+        lacking = _trace_lacks(load_board_by_id(board), recorded)
+        if board not in REPLAY_BOARDS.get(kit, (board,)):
+            assert lacking, (board, path.name)  # a board without the camera or motion skips it
+            continue
+        assert lacking == [], (board, path.name)
         result = replay(path, agent=agent, target=target, board_id=board)
         assert result.verdicts == OUTCOMES[path.stem][0], path.name
         assert result.warnings == [] and result.divergences == []
@@ -544,6 +604,7 @@ def test_a_new_project_from_a_kit_carries_its_golden_traces_and_they_replay(root
                 "agent.toml",
                 "--golden",
                 str(relative),
+                *(["--board", "sim-rpi5"] if kit in REPLAY_BOARDS else []),
             ],  # fmt: skip
             cwd=project,
             capture_output=True,
@@ -551,3 +612,144 @@ def test_a_new_project_from_a_kit_carries_its_golden_traces_and_they_replay(root
             timeout=120,
         )
         assert result.returncode == 0, result.stdout + result.stderr
+
+
+# --- the camera and motion kits ------------------------------------------------------------------
+
+
+def test_the_camera_and_motion_kits_are_skipped_by_the_boards_without_the_primitives(root):
+    for board in ("sim-default", "esp32s3-box-3"):
+        for kit, needs in (("gate-camera", "vision.in"), ("blinds", "motion")):
+            for path in corpus(root):
+                if path.stem.startswith(f"{kit}-"):
+                    lacking = _trace_lacks(
+                        load_board_by_id(board), json.loads(path.read_text(encoding="utf-8"))
+                    )
+                    assert needs in lacking, (board, path.name, lacking)
+    for kit, boards in REPLAY_BOARDS.items():
+        assert set(boards) == {"sim-rpi5", "linux-rpi5"}, kit
+
+
+def by_name(root: Path, name: str) -> list[dict]:
+    return events(corpus_path(name))
+
+
+def test_the_camera_kit_traces_hold_a_stranger_the_refusals_and_a_lost_camera(root):
+    reasons = [
+        (e["data"]["reason"], e["data"]["failed_criterion"])
+        for e in by_name(root, "gate-camera-block")
+        if e["type"] == "gate_evaluation_result"
+    ]
+    assert reasons == [
+        ("condition_not_met", "stranger_at_gate"),
+        ("condition_not_met", "recording_consent"),
+        ("condition_not_met", "stranger_confidence"),
+        ("condition_not_met", "person_in_private_zone"),
+        ("criterion_unavailable", "person_in_private_zone"),
+    ]
+    assert [e["type"] for e in by_name(root, "gate-camera-block")].count("camera_unavailable") == 1
+    assert any(e["type"] == "vision_fact" for e in by_name(root, "gate-camera-allow"))
+
+
+def test_the_blinds_traces_hold_a_lease_that_ends_safe_a_refusal_and_the_envelope(root):
+    allow = by_name(root, "blinds-allow")
+    assert [
+        (e["data"]["target"], e["data"]["run"]) for e in allow if e["type"] == "motion_command"
+    ] == [
+        (90.0, "new"),
+        (0.0, "renewed"),
+    ]
+    safe = [(e["data"]["state"], e["data"]["cause"]) for e in allow if e["type"] == "motion_safe"]
+    assert safe[0] == ("hold", "lease_expired")
+    block = by_name(root, "blinds-block")
+    assert [
+        (e["data"]["state"], e["data"]["cause"]) for e in block if e["type"] == "motion_safe"
+    ] == [("hold", "lease_expired"), ("stop", "max_hold_ms")]
+    assert [
+        e["data"]["failed_criterion"]
+        for e in block
+        if e["type"] == "gate_evaluation_result" and e["data"]["verdict"] == BLOCK
+    ] == ["estop_released", "path_clear", "device_fault_free"]
+    assert [e["data"]["target"] for e in block if e["type"] == "motion_command"] == [90.0], (
+        "a BLOCK and an envelope refusal never reached the servo"
+    )
+    assert [e["data"]["reason"] for e in block if e["type"] == "envelope_refused"] == [
+        "min_interval_ms"
+    ]
+
+
+def test_the_kit_gates_extend_the_library_and_only_tighten_it(root):
+    for kit, parent in (("gate-camera", "camera"), ("blinds", "light")):
+        for gate in LOCKED_GATES[kit]:
+            document = yaml.safe_load((root / gate).read_text("utf-8"))
+            assert document["extends"] == f"neuroedge://gates/home/{parent}@1.0.0", gate
+            assert "on_block" not in document or document["on_block"]["action"] != "allow"
+
+
+@pytest.fixture
+def pwm_sys(tmp_path):
+    """`/sys` with one PWM chip of two channels already exported, as the pwm-2chan overlay gives."""
+    chip = tmp_path / "sys" / "class" / "pwm" / "pwmchip0"
+    chip.mkdir(parents=True)
+    (chip / "export").write_text("")
+    (chip / "npwm").write_text("2\n")
+    for index in (0, 1):
+        (chip / f"pwm{index}").mkdir()
+        for name in ("period", "duty_cycle", "enable"):
+            (chip / f"pwm{index}" / name).write_text("0\n")
+    return tmp_path / "sys"
+
+
+@pytest.fixture
+def motion_gpio(monkeypatch, tmp_path):
+    chip = tmp_path / "gpiochip0"
+    chip.write_text("")
+    names = [
+        "door_lock", "porch_light", "gate_relay", "door_contact_raw", "limit_switch",
+        "fan_en", "motor_en", "servo_en",
+    ]  # fmt: skip
+    fake = FakeGpiod({str(chip): names})
+    monkeypatch.setattr(linux, "CHIP_GLOB", str(tmp_path / "gpiochip*"))
+    monkeypatch.setattr(linux, "_import_gpiod", lambda: fake)
+    monkeypatch.setenv(linux.MOTION_ENV, "gripper=pwmchip0/1")
+    return fake
+
+
+def test_the_blinds_kit_on_the_pi_drives_the_enable_line_and_a_block_never_does(
+    root, motion_gpio, pwm_sys
+):
+    import anyio
+
+    from neuroedge.sim import SimSession
+
+    agent = root / "fixtures" / "agents" / "blinds" / "agent.toml"
+    session = SimSession.load(agent, target="linux", target_options={"sysfs_root": pwm_sys})
+    try:
+        assert session.hal.motion_values().keys() == {"gripper"}
+        assert anyio.run(session.handle, "mở rèm").allowed
+        assert is_high(motion_gpio, "servo_en")
+    finally:
+        session.close()
+    assert not is_high(motion_gpio, "servo_en"), "the session ends with the driver down"
+    blocked = SimSession.load(
+        agent, target="linux", target_options={"sysfs_root": pwm_sys}, facts={"path_clear": False}
+    )
+    try:
+        turn = anyio.run(blocked.handle, "đóng rèm")
+        assert turn.result is not None and turn.result.blocked
+        assert not is_high(motion_gpio, "servo_en")
+    finally:
+        blocked.close()
+
+
+def test_the_blinds_kit_on_the_pi_is_refused_when_no_pwm_is_wired_and_no_line_is_requested(
+    root, motion_gpio, pwm_sys, monkeypatch
+):
+    from neuroedge.errors import BoardCapabilityError
+    from neuroedge.sim import SimSession
+
+    monkeypatch.delenv(linux.MOTION_ENV)
+    agent = root / "fixtures" / "agents" / "blinds" / "agent.toml"
+    with pytest.raises(BoardCapabilityError, match="no PWM channel is wired"):
+        SimSession.load(agent, target="linux", target_options={"sysfs_root": pwm_sys})
+    assert motion_gpio.requests == []

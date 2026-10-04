@@ -52,7 +52,9 @@ for asset in schemas/trace.v1.json schemas/tool-call.v1.json schemas/tool-result
   fixtures/traces/happy-path.json fixtures/agents/villa-concierge/agent.toml \
   fixtures/agents/factory-monitor/agent.toml fixtures/agents/home-voice/agent.toml \
   fixtures/traces/kits/villa-concierge-allow.json fixtures/traces/kits/home-voice-block.json \
-  fixtures/traces/kits/factory-monitor-block.json \
+  fixtures/traces/kits/factory-monitor-block.json fixtures/agents/gate-camera/agent.toml \
+  fixtures/agents/blinds/agent.toml fixtures/traces/kits/gate-camera-allow.json \
+  fixtures/traces/kits/blinds-block.json gates/home/camera@1.0.0.yaml gates/home/light@1.0.0.yaml \
   fixtures/tool_calls/expected_results.yaml \
   fixtures/vision/expected_results.yaml fixtures/vision/golden/stranger-at-door.json \
   pipewire/neuroedge-echo-cancel.conf \
@@ -142,6 +144,24 @@ step run -c "bật quạt"
 step run -c "tắt quạt"
 step run -c "tắt báo động"
 step gate lint gates
+step test
+cd "$WORK"
+# The camera and motion kits need a board that declares `vision.in` / `motion` (TSK-I2b-02); their gates
+# extend the starter library, which must resolve from the installed package.
+step new gatecam --template gate-camera
+cd "$WORK/gatecam"
+step build --target sim --board sim-rpi5
+step run --board sim-rpi5 -c "bật đèn cảnh báo"
+step gate lint gates
+step replay traces/golden/gate-camera-allow.json --agent agent.toml --board sim-rpi5 --golden traces/golden/gate-camera-allow.json
+step test
+cd "$WORK"
+step new shades --template blinds
+cd "$WORK/shades"
+step build --target sim --board sim-rpi5
+step run --board sim-rpi5 -c "mở rèm"
+step gate lint gates
+step replay traces/golden/blinds-block.json --agent agent.toml --board sim-rpi5 --golden traces/golden/blinds-block.json
 step test
 cd "$WORK"
 

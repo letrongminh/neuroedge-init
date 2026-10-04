@@ -16,7 +16,7 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | Toàn bộ lệnh CLI và đầu ra kỳ vọng | [`CHANGELOG.md`](../../CHANGELOG.md) §2 | nguồn duy nhất cho cú pháp lệnh |
 | Sản phẩm làm được gì, trên môi trường nào, và thử từng bước ra sao | [`huong-dan.md`](huong-dan.md) | năng lực theo nhóm (§3–§4) và kịch bản thử từng bước (§5) |
 | Trạng thái hiện tại | [`trang-thai.md`](trang-thai.md) | máy sinh từ roadmap §0 |
-| Dựng thiết bị thật từ ba kit (BOM, sơ đồ đấu dây, từ hộp tới chạy thật) | [`kit-phan-cung.md`](kit-phan-cung.md) | khoá cửa villa, trợ lý giọng nói, giám sát phòng máy; chưa kiểm trên phần cứng thật |
+| Dựng thiết bị thật từ năm kit (BOM, sơ đồ đấu dây, từ hộp tới chạy thật) | [`kit-phan-cung.md`](kit-phan-cung.md) | khoá cửa villa, trợ lý giọng nói, giám sát phòng máy, camera cổng, rèm cửa; chưa kiểm trên phần cứng thật |
 | Nạp agent của mình lên ESP32-S3-BOX-3 (hoặc QEMU) | [`nap-firmware.md`](nap-firmware.md) | `build --target esp32s3` → `idf.py flash`; nơi duy nhất của thủ tục nạp |
 | **Hiểu sản phẩm** | | |
 | Yêu cầu `FR-*` / `NFR-*` | [`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) | sổ quyết định là §15 (mã `Q-N`) |

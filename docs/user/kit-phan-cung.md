@@ -1,6 +1,6 @@
-# Ba kit phần cứng: từ hộp tới chạy thật
+# Năm kit phần cứng: từ hộp tới chạy thật
 
-> **Mã task:** TSK-I2b-01 · **Yêu cầu:** FR-DX-05, FR-DX-09 · **Quyết định:** Q-52.
+> **Mã task:** TSK-I2b-01 (ba kit đầu), TSK-I2b-02 (camera cổng, rèm cửa) · **Yêu cầu:** FR-DX-05, FR-DX-09 · **Quyết định:** Q-52.
 > Trang này là **nơi duy nhất** của quy trình chung "từ hộp tới chạy thật" và của danh sách việc
 > **chưa kiểm trên phần cứng thật**. Mỗi kit có trang riêng cho BOM và sơ đồ đấu dây.
 
@@ -10,13 +10,15 @@
 > **của người** (`docs/reports/uoc-luong-mvp-2026-09-30.md`, dòng I2b: kiểm BOM và sơ đồ đấu dây trên Pi). Mạch điện sai có thể làm
 > hỏng linh kiện hoặc gây nguy hiểm: kiểm bằng đồng hồ vạn năng trước khi cấp nguồn cho tải.
 
-## 1. Ba kit
+## 1. Năm kit
 
 | Kit | Mẫu (`--template`) | Thiết bị | Gate | `sim` | `linux` (Pi 5) | `esp32s3` (Box-3) |
 |:---|:---|:---|:---|:---|:---|:---|
 | [Khoá cửa villa](kit-khoa-cua-villa.md) | `villa-concierge` | Khoá điện của một cửa | `unlock_door@1.2.0` (`gates/`, đã khoá) | chạy | khoá + gate chạy trên `linux`, nhưng agent **không build** trên `linux-rpi5` (cần AEC, bo khai `aec = false`: `NE3003`) | build ra firmware |
 | [Trợ lý giọng nói trong nhà](kit-tro-ly-giong-noi.md) | `home-voice` | Đèn + cảm biến chuyển động + loa | `light_on`, `light_off` (`fixtures/agents/home-voice/gates/`, đã khoá) | chạy | phiên chỉ chạy khi khai nguồn `motion`, và `light_off` luôn chặn (xem trang kit) | build ra firmware |
 | [Giám sát phòng máy](kit-giam-sat-nha-may.md) | `factory-monitor` | Quạt xả (hoặc van xả) + còi báo động theo nhiệt độ | `vent_on`, `vent_off`, `alarm_on`, `alarm_off` (`fixtures/agents/factory-monitor/gates/`, đã khoá) | chạy | chạy với LM75 qua hwmon | **không build**: agent khai `supported = ["sim", "linux"]` |
+| [Camera cổng](kit-camera-cong.md) | `gate-camera` | Camera + đèn hiên + khoá cổng: người lạ ở cổng ⇒ bật đèn, khoá | `stranger_light`, `stranger_lock` (`fixtures/agents/gate-camera/gates/`, đã khoá; kế thừa `gates/home/camera`) | chạy trên `sim-rpi5` (camera ảo) | cần camera V4L2 (`NEUROEDGE_LINUX_CAMERA`) | **không build**: bo không có `vision.in` |
+| [Rèm cửa](kit-rem-cua.md) | `blinds` | Servo nghiêng rèm lá, có lease, `safe_state` và phong bì | `blinds_open`, `blinds_close` (`fixtures/agents/blinds/gates/`, đã khoá; kế thừa `gates/home/light`) | chạy trên `sim-rpi5` | cần nguồn PWM (`NEUROEDGE_LINUX_MOTION`) và servo | **không build**: bo không có `motion` |
 
 Tên và cơ cấu của kit thứ ba theo `roadmap/neuroedge-proposal.md` §1.6 mục 3 ("kích hoạt van xả an toàn
 hoặc còi báo động"). Kho giữ tên mẫu `factory-monitor` (đổi tên một mẫu công khai là thay đổi vỡ của CLI,
@@ -39,7 +41,7 @@ neuroedge board list             # thấy sim-default, sim-rpi5, linux-rpi5, esp
 ### Bước 1. `sim` — không cần phần cứng, không cần mạng, không cần khoá
 
 ```bash
-neuroedge new villa --template villa-concierge      # hoặc home-voice, factory-monitor
+neuroedge new villa --template villa-concierge      # hoặc home-voice, factory-monitor (gate-camera, blinds: thêm --board sim-rpi5)
 cd villa
 neuroedge build --target sim --board sim-default
 neuroedge run -c "mở cửa phòng 101"                 # lệnh mẫu của từng kit: xem trang kit
@@ -56,7 +58,7 @@ Mỗi kit có một bộ vết ghi chuẩn trong `fixtures/traces/kits/`, **sinh
 chiếu khai đủ năng lực:
 
 ```bash
-neuroedge verify --targets sim            # phát lại trên sim-default và sim-rpi5
+neuroedge verify --targets sim            # phát lại trên sim-default và sim-rpi5 (bo nào khai đủ năng lực)
 neuroedge verify --targets sim,linux      # thêm linux-rpi5, trên chân của kernel (job linux-hal)
 python scripts/gen_kit_traces.py --check  # vết trong kho có đúng là thứ agent mẫu ghi ra không
 ```
