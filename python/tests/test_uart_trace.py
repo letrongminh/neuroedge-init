@@ -271,8 +271,10 @@ def test_record_writes_one_validated_trace_per_session(capture, tmp_path):
     assert [p.name for p in written] == ["sess_0000246800.json", "sess_0000246801.json"]
     for path in written:
         assert load_trace(path)["metadata"]["device_id"] == "qemu"
-    assert "2 gate evaluation(s), home-voice@0.1.0, device qemu" in result.output
-    assert "happy-path.json" in result.output
+    # Rich wraps a line that holds a long tmp_path; compare words, not line breaks.
+    said = " ".join(result.output.split())
+    assert "2 gate evaluation(s), home-voice@0.1.0, device qemu" in said
+    assert "happy-path.json" in said
 
 
 def test_record_hashes_the_device_text_by_default_and_raw_keeps_it(tmp_path):
