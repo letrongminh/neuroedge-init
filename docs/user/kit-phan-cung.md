@@ -61,6 +61,9 @@ neuroedge verify --targets sim,linux      # thêm linux-rpi5, trên chân của 
 python scripts/gen_kit_traces.py --check  # vết trong kho có đúng là thứ agent mẫu ghi ra không
 ```
 
+`neuroedge new --template <kit>` chép hai vết của kit vào `traces/golden/` của dự án; kiểm bằng
+`neuroedge replay traces/golden/<tệp>.json --agent agent.toml --golden traces/golden/<tệp>.json`.
+
 Chỉ chạy lại `python scripts/gen_kit_traces.py` (không `--check`) khi agent mẫu, gate hay hợp đồng cảm
 biến đổi **có chủ đích**; diff của các tệp JSON là nội dung cần review.
 

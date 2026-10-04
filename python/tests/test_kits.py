@@ -519,3 +519,35 @@ def test_a_factory_sensor_that_is_gone_blocks_every_switch_off_and_the_safe_ones
         assert anyio.run(session.handle, "bật báo động").allowed and is_high(gpio, "porch_light")
     finally:
         session.close()
+
+
+@pytest.mark.parametrize("kit", KITS)
+def test_a_new_project_from_a_kit_carries_its_golden_traces_and_they_replay(root, kit, tmp_path):
+    from neuroedge.templates import scaffold
+
+    files = scaffold("proj", kit, tmp_path)
+    project = tmp_path / "proj"
+    names = sorted(name for name in OUTCOMES if name.startswith(f"{kit}-"))
+    assert names, kit
+    for name in names:
+        relative = Path("traces/golden") / f"{name}.json"
+        assert relative in files
+        assert (project / relative).read_bytes() == corpus_path(name).read_bytes()
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "neuroedge",
+                "replay",
+                str(relative),
+                "--agent",
+                "agent.toml",
+                "--golden",
+                str(relative),
+            ],  # fmt: skip
+            cwd=project,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
