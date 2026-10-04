@@ -499,7 +499,9 @@ def test_the_real_command_writes_its_trace_and_leaves_with_143_on_sigterm(home, 
         rpc({"id": 2, "method": "tools/call", "params": {"name": "light_on", "arguments": {}}})
         assert json.loads(process.stdout.readline())["id"] == 2
         process.send_signal(signal.SIGTERM)
-        assert process.wait(TIMEOUT) == 128 + signal.SIGTERM
+        # A whole interpreter shuts down and writes the trace: on a loaded CI runner that has
+        # taken over 10 s (PR #94), so this one wait is longer; the exit code is still exact.
+        assert process.wait(3 * TIMEOUT) == 128 + signal.SIGTERM
     finally:
         if process.poll() is None:
             process.kill()
