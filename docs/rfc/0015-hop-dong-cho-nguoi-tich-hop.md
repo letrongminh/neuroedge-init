@@ -312,7 +312,7 @@ Test dưới đây là **tên đề xuất** — chưa tồn tại tới khi RFC
   - [x] `test_every_serialised_error_validates_against_the_error_schema` (chạy mọi lớp lỗi với dữ liệu mẫu; bắt chuỗi rỗng)
   - [x] `test_a_board_with_a_schema_key_of_another_version_is_refused_before_validation` · `test_a_board_without_a_schema_key_is_read_as_v1` · `test_every_shipped_board_declares_its_schema` · `test_board_to_document_round_trips_the_schema_key` *(PR B, `tests/test_boards.py`; thêm `test_a_board_document_in_memory_is_refused_for_another_version_too`)*
   - [x] `test_schemas_directory_holds_exactly_the_seven_frozen_schemas` (đổi từ "ba")
-- [ ] *(PR A: `scripts/wheel_smoke.sh` xanh trên bản cài, đã thêm bốn tệp vào danh sách và một kiểm `result_schema()` từ wheel; ruff, pytest xanh; `gate lint` / `verify` không đổi — vẫn do CI)* `neuroedge gate lint` và `neuroedge verify` vẫn xanh; `scripts/wheel_smoke.sh` chạy trên bản cài (`schemas/` đã đi vào wheel nguyên thư mục qua `hatch_build.py`, thêm `schemas/tool-result.v1.json` vào danh sách tệp nó kiểm)
+- [x] *(PR A, PR B: `scripts/wheel_smoke.sh` xanh trên bản cài, đã thêm bốn tệp vào danh sách và một kiểm `result_schema()` từ wheel; ruff, pytest xanh; `gate lint` / `verify` không đổi — vẫn do CI)* `neuroedge gate lint` và `neuroedge verify` vẫn xanh; `scripts/wheel_smoke.sh` chạy trên bản cài (`schemas/` đã đi vào wheel nguyên thư mục qua `hatch_build.py`, thêm `schemas/tool-result.v1.json` vào danh sách tệp nó kiểm)
 - Có sẵn, vẫn xanh: `test_tool_corpus.py::test_an_mcp_client_gets_the_same_result_and_its_sdk_accepts_it`, `test_every_case_has_an_expectation_and_every_expectation_a_case`, `test_public_api.py::test_every_error_class_of_the_package_is_public`
 
 ## 8. Việc phải làm khi chấp thuận
@@ -334,9 +334,9 @@ Thứ tự đề xuất — hai PR hiện thực vì `board.v1.json` đang bị 
 
 **Chung:**
 
-- [ ] Một mục `CHANGELOG.md` `[Chưa phát hành]` cho mỗi PR; tiến độ ở roadmap TSK-I6-05 (một mình PR A không đóng task); tiêu chí ra 8 chỉ tick khi cả hai PR xong
-- [ ] Cập nhật dòng RFC-0015 trong `docs/rfc/README.md`
-- [ ] Không đụng `digests.lock` (không gate nào đổi)
+- [x] *(hai PR gộp trong PR #94, giữ commit riêng; một mục CHANGELOG)* Một mục `CHANGELOG.md` `[Chưa phát hành]` cho mỗi PR; tiến độ ở roadmap TSK-I6-05 (một mình PR A không đóng task); tiêu chí ra 8 chỉ tick khi cả hai PR xong
+- [x] Cập nhật dòng RFC-0015 trong `docs/rfc/README.md`
+- [x] Không đụng `digests.lock` (không gate nào đổi) *(phần RFC-0015 không đổi mục nào; PR #94 chỉ thêm mục cho gate của I2b)*
 
 ## 9. Phát hiện khi đối chiếu đặc tả, corpus và mã
 

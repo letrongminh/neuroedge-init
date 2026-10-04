@@ -32,6 +32,23 @@ bản gói.
 
 #### Đã thêm
 
+- **I6 · TSK-I6-05 — hợp đồng cho người tích hợp trong `schemas/` (RFC-0015, Q-66).** Bốn lược đồ `tool-call.v1`, `tool-result.v1`,
+  `error.v1`, `error-codes.v1` (17 mã, nguồn của cấu trúc `NE…`; PRD Phụ lục B giữ lời); `result_schema()` đọc tệp tĩnh; khoá
+  `schema = "neuroedge.board/v1"` của `board.v1`, phiên bản khác ⇒ NE3001 trước khi thẩm định. Kiểm: `pytest tests/test_contracts.py
+  tests/test_error_catalog.py tests/test_boards.py`. Đóng `TODOS.md` #23. (I6 tiêu chí 8)
+
+- **I2b · TSK-I2b-03 — thư viện gate khởi đầu `gates/home/`.** Bảy gate cha (`door-lock`, `light`, `valve`, `siren`, `hvac`, `camera`,
+  `motor`), khoá trong `digests.lock`; mỗi gate ≥ 3 gate con nới lỏng bị `gate lint` từ chối. Kiểm: `pytest tests/test_home_gates.py`.
+  (I2b tiêu chí 4, FR-GATE-05)
+
+- **I2b · TSK-I2b-04 — `neuroedge add action|sensor|device|gate`.** Sinh `@action`, gate chặn mặc định, test hai chiều, `[requires]`
+  cho mọi nguyên thủy; build thử trên bản sao trước khi ghi, không ghi đè tệp đã có. Kiểm: `pytest tests/test_cli_add.py`;
+  `scripts/wheel_smoke.sh`. (I2b tiêu chí 3, FR-DX-01, FR-DX-08)
+
+- **I2b · TSK-I2b-01, TSK-I2b-02 — năm kit phần cứng.** `villa-concierge`, `home-voice`, `factory-monitor`, `gate-camera`, `blinds`: BOM,
+  sơ đồ Pi 5 và ESP32-S3 kiểm với `boards/*.toml`, vết golden `fixtures/traces/kits/`, hướng dẫn `docs/user/kit-*.md`. Chưa kiểm trên
+  phần cứng thật (`TODOS.md` #59). Kiểm: `pytest tests/test_kits.py`; `tests_linux/test_kit_*.py` (job `linux-hal`). (I2b tiêu chí 1)
+
 - **I6 · TSK-I6-05 — RFC-0015 chấp thuận: hợp đồng cho người tích hợp vào `schemas/` (Q-66).** Kỹ thuật trưởng ký trên PR #93;
   quyết định cho mười ba câu hỏi mở ở §10 của RFC. Hoãn có mốc: giấy phép corpus tuân thủ (`TODOS.md` #57), khoá bắt buộc hiểu cho
   `board.v1` (`TODOS.md` #58). Chưa có lược đồ nào; hai PR mã theo RFC-0015 §8. Kiểm: `docs/rfc/0015-hop-dong-cho-nguoi-tich-hop.md` §10.
@@ -348,6 +365,12 @@ bản gói.
   `CONTRIBUTING.md` §8. Kiểm: `pytest tests/test_user_status_fresh.py`.
 - **Q-20 — bộ chuẩn bị cổng nhu cầu 2026-10-25** (`TODOS.md` #19): `docs/business/cong-nhu-cau-2026-10-25/` —
   câu hỏi cổng, demo ≤ 5 phút chỉ bằng lệnh đã chạy thật, bộ phỏng vấn, thang chấm, trang ghi phiếu.
+
+#### Đã sửa
+
+- **Phong bì an toàn ghi thời gian bật tất định.** Độ dài khoảng bật tính bằng số thực của đồng hồ đơn điệu có nhiễu dưới
+  micro giây, làm cùng một lệnh 600 000 ms bị ghi 600 001 ms ở lần chạy này và 600 000 ms ở lần khác (test chập chờn trên CI,
+  PR #94); nay bỏ nhiễu trước khi làm tròn lên, phần lẻ thật vẫn làm tròn về phía đã dùng. Kiểm: `pytest tests/test_envelope.py -k float_noise`.
 
 #### Đã đổi — Khoảng hở nền tảng cho người tích hợp (2026-10-02, Q-63)
 
