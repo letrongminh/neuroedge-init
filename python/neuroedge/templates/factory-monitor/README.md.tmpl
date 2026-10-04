@@ -1,6 +1,6 @@
 # {{name}}
 
-Giám sát môi trường phòng máy, sinh từ mẫu `factory-monitor`. Quạt thông gió và đèn báo động là
+Giám sát môi trường phòng máy, sinh từ mẫu `factory-monitor`. Quạt xả thông gió (hoặc van xả: cùng một rơ-le) và còi báo động là
 hành động vật lý, đi qua gate; mọi gate đọc **một** dữ kiện kiểu `level` — dải nhiệt
 `low · normal · high · critical` của phòng máy:
 
@@ -61,4 +61,4 @@ neuroedge test                                      # Action CI: 0 = mọi test 
 | `agent.toml` | Năng lực cần (`digital.out`, `sensor.read`), gate, cảm biến giả lập và dải nhiệt (`bands`) lấy từ nó |
 | `commands.toml` | Lệnh → action |
 | `gates/` | `vent_on`, `vent_off` (ask, `confirms: [heat_level]`), `alarm_on`, `alarm_off` (deny) |
-| `actions/plant.py` | Bốn hàm `@action`: `gate_relay` là rơ-le quạt, `porch_light` là đèn báo động |
+| `actions/plant.py` | Bốn hàm `@action`: `gate_relay` là rơ-le quạt, `porch_light` là còi báo động |
