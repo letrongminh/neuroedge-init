@@ -205,10 +205,14 @@ def test_a_lease_that_runs_out_stops_the_channel_by_the_hals_own_timer(chips, sy
 
 
 def test_a_renewal_before_the_lease_ends_keeps_the_run_going(chips, sysfs):
-    hal, fake, events = open_hal(chips, sysfs)
+    # A fake clock: on the wall clock a loaded CI runner let the 200 ms lease run out between
+    # two renewals, and the next one was rightly a new run refused by min_interval_ms (PR #56).
+    clock = FakeClock()
+    hal, fake, events = open_hal(chips, sysfs, clock=clock)
     for _ in range(4):
         hal.motion_motor("wheel_left", 0.3, called_from="t")
-        time.sleep(0.1)  # half a lease
+        clock.advance(100)  # half a lease
+        hal.settle_motion()
     assert level(fake, "motor_en")
     assert not [e for e in events.events if e["type"] == "motion_safe"]
     assert [e["data"]["run"] for e in events.events if e["type"] == "motion_command"] == [
@@ -216,6 +220,12 @@ def test_a_renewal_before_the_lease_ends_keeps_the_run_going(chips, sysfs):
         "renewed",
         "renewed",
         "renewed",
+    ]
+    clock.advance(200)  # no renewal: the lease ends and the motor stops
+    hal.settle_motion()
+    assert not level(fake, "motor_en")
+    assert [e["data"]["cause"] for e in events.events if e["type"] == "motion_safe"] == [
+        "lease_expired"
     ]
     hal.close()
 
