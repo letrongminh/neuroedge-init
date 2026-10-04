@@ -1,5 +1,6 @@
 # Thư viện gate khởi đầu 5/7 — điều hoà (HVAC): không chạy máy nén khi số đọc nhiệt độ vô lý hoặc cũ.
 #
+# Số đo là điện áp cảm biến nhiệt qua `analog.in` (V), giả định 10 mV/°C (kiểu LM35): 5–40 °C ↔ 0.05–0.40 V.
 # Số đọc ngoài dải 5–40 °C thường là cảm biến hỏng hoặc đứt dây; chạy tiếp theo số đọc đó có thể đóng băng
 # dàn lạnh. Máy nén phải nghỉ đủ thời gian giữa hai lần khởi động (`compressor_rested`).
 schema:  neuroedge.gate/v1
@@ -7,12 +8,12 @@ name:    hvac
 version: 1.0.0
 
 evaluate:
-  room_temperature:
+  room_temperature_sense:
     type: numeric
-    unit: degC
-    range: { min: -40, max: 125 }
+    unit: V
+    range: { min: 0, max: 2.5 }
     max_age_ms: 1000
-    instructions: "Nhiệt độ phòng, độ C"
+    instructions: "Điện áp cảm biến nhiệt phòng, volt (analog.in; 10 mV/°C)"
   compressor_rested:
     type: bool
     instructions: "Máy nén đã nghỉ đủ thời gian tối thiểu từ lần dừng trước"
@@ -21,9 +22,9 @@ evaluate:
     instructions: "Thiết bị không báo lỗi (áp suất gas, quá dòng, đóng băng)"
 
 allow_when:
-  room_temperature:  { gte: 5, lte: 40 }
-  compressor_rested: true
-  device_fault_free: true
+  room_temperature_sense: { gte: 0.05, lte: 0.40 }
+  compressor_rested:      true
+  device_fault_free:      true
 
 on_block:
   action: deny

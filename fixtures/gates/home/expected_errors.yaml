@@ -80,14 +80,14 @@ hvac_drops_upper_bound.yaml:
   error: GateInheritanceError
   code: NE2003
   principle: 2
-  where_contains: "allow_when.room_temperature"
+  where_contains: "allow_when.room_temperature_sense"
   why_contains: "loosens the inherited condition"
 
 hvac_redefines_range.yaml:
   error: GateInheritanceError
   code: NE2003
   principle: 1
-  where_contains: "evaluate.room_temperature"
+  where_contains: "evaluate.room_temperature_sense"
   why_contains: "redefines a criterion inherited from the base gate"
 
 hvac_skips_compressor_rest.yaml:
@@ -101,7 +101,7 @@ hvac_widens_band.yaml:
   error: GateInheritanceError
   code: NE2003
   principle: 2
-  where_contains: "allow_when.room_temperature"
+  where_contains: "allow_when.room_temperature_sense"
   why_contains: "loosens the inherited condition"
 
 light_admits_faulty_device.yaml:
@@ -125,11 +125,11 @@ light_lets_person_waive_fault.yaml:
   where_contains: "on_block.confirms"
   why_contains: "more permissive"
 
-motor_drops_temperature_ceiling.yaml:
+motor_drops_current_ceiling.yaml:
   error: GateInheritanceError
   code: NE2003
   principle: 2
-  where_contains: "allow_when.motor_temperature"
+  where_contains: "allow_when.motor_current_sense"
   why_contains: "loosens the inherited condition"
 
 motor_fails_open.yaml:
@@ -143,14 +143,21 @@ motor_raises_current_ceiling.yaml:
   error: GateInheritanceError
   code: NE2003
   principle: 2
-  where_contains: "allow_when.motor_current"
+  where_contains: "allow_when.motor_current_sense"
   why_contains: "loosens the inherited condition"
+
+motor_redefines_max_age.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 1
+  where_contains: "evaluate.motor_current_sense"
+  why_contains: "redefines a criterion inherited from the base gate"
 
 motor_redefines_unit.yaml:
   error: GateInheritanceError
   code: NE2003
   principle: 1
-  where_contains: "evaluate.motor_current"
+  where_contains: "evaluate.motor_current_sense"
   why_contains: "redefines a criterion inherited from the base gate"
 
 motor_runs_with_estop_pressed.yaml:
@@ -199,7 +206,7 @@ valve_drops_pressure_floor.yaml:
   error: GateInheritanceError
   code: NE2003
   principle: 2
-  where_contains: "allow_when.line_pressure"
+  where_contains: "allow_when.line_pressure_sense"
   why_contains: "loosens the inherited condition"
 
 valve_ignores_leak.yaml:
@@ -220,12 +227,12 @@ valve_raises_pressure_ceiling.yaml:
   error: GateInheritanceError
   code: NE2003
   principle: 2
-  where_contains: "allow_when.line_pressure"
+  where_contains: "allow_when.line_pressure_sense"
   why_contains: "loosens the inherited condition"
 
 valve_redefines_max_age.yaml:
   error: GateInheritanceError
   code: NE2003
   principle: 1
-  where_contains: "evaluate.line_pressure"
+  where_contains: "evaluate.line_pressure_sense"
   why_contains: "redefines a criterion inherited from the base gate"

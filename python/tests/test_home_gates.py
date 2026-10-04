@@ -10,6 +10,7 @@ The children resolve against `gates/`, so they live beside, not in, the fixture 
 
 from __future__ import annotations
 
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -86,6 +87,35 @@ def test_every_library_gate_has_a_loosening_counter_example(name, registry):
 def test_every_library_gate_has_a_valid_tightening_child(name):
     children = [p for p in VALID if _extends(p) == name]
     assert children, f"gates/home/{name}.yaml has no valid child in fixtures/gates/home/valid/"
+
+
+def _analog_units() -> dict[str, list[tuple[float, float]]]:
+    """Unit -> [min, max] of every `analog.in` channel any shipped board declares."""
+    units: dict[str, list[tuple[float, float]]] = {}
+    for path in sorted((ROOT / "boards").glob("*.toml")):
+        board = tomllib.loads(path.read_text(encoding="utf-8"))
+        for channel in board.get("capabilities", {}).get("analog_in", {}).get("channels", []):
+            units.setdefault(channel["unit"], []).append((channel["min"], channel["max"]))
+    return units
+
+
+# Units of facts that do not come from `analog.in`: the vision model's scores and counts (RFC-0012 §3c).
+VISION_UNITS = {"ratio", "count"}
+
+
+@pytest.mark.parametrize("name", LIBRARY_GATES)
+def test_every_numeric_criterion_of_a_library_gate_can_be_fed_by_a_shipped_board(name):
+    """A gate no board can feed never ALLOWs (RFC-0009 §3f: numeric facts come from `analog.in` or vision)."""
+    analog = _analog_units()
+    gate = resolve_gate_file(LIBRARY / f"{name}.yaml")
+    for criterion, definition in gate.evaluate.items():
+        if definition["type"] != "numeric" or definition["unit"] in VISION_UNITS:
+            continue
+        unit, span = definition["unit"], definition["range"]
+        assert unit in analog, f"{name}.{criterion}: no board has an analog_in channel in {unit!r}"
+        assert any(lo <= span["min"] and span["max"] <= hi for lo, hi in analog[unit]), (
+            f"{name}.{criterion}: range {span} is outside every {unit!r} channel of the boards"
+        )
 
 
 # --- the counter-examples, closed both ways ----------------------------------------------------

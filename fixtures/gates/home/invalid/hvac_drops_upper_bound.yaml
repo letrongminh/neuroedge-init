@@ -4,4 +4,4 @@ name:    hvac-drops-upper-bound
 version: 1.0.0
 extends: neuroedge://gates/home/hvac@1.0.0
 allow_when:
-  room_temperature: { gte: 5 }
+  room_temperature_sense: { gte: 0.05 }

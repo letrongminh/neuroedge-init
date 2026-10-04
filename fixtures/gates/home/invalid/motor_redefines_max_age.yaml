@@ -1,12 +1,12 @@
-# Principle 1 (RFC-0009) — đổi đơn vị V → mV: ngưỡng 1.0 đổi nghĩa.
+# Principle 1 (RFC-0009) — nới tuổi tối đa của số đọc dòng: 200 ms → 5000 ms, một lease không còn đo lại.
 schema:  neuroedge.gate/v1
-name:    motor-redefines-unit
+name:    motor-redefines-max-age
 version: 1.0.0
 extends: neuroedge://gates/home/motor@1.0.0
 evaluate:
   motor_current_sense:
     type: numeric
-    unit: mV
+    unit: V
     range: { min: 0, max: 2.5 }
-    max_age_ms: 200
+    max_age_ms: 5000
     instructions: "Điện áp chân current-sense"
