@@ -75,6 +75,7 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 | # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
 |:---:|:---|:---|:---|
 | 25 | **Kết nối MCP bền giữa các lượt** và **transport HTTP tới MCP server bên ngoài** (Q-27) | `sim` mở kết nối theo từng lượt vì REPL chạy mỗi lượt trong một event loop riêng; HTTP cần xác thực như `mcp serve --http` (TSK-P2-04) | Runtime `linux` chạy một event loop dài, hoặc độ trễ mở kết nối vượt ngân sách lượt |
+| 60 | **Khung dữ kiện theo lượt của `SimSession`.** Sau bản sửa cách ly `call_source`, mỗi lời gọi chụp khung dữ kiện của nó lúc bắt đầu; nhưng `SimSession` vẫn gán `c.facts = gate_facts(…)` và `c.utterance` một lần mỗi lượt (`call_tool`, `_call_tools`, `_answer`), nên lời gọi thứ 2…n của một lượt đọc dữ kiện chung sau một `await`. Một lượt khác chồng lên cùng phiên có thể đổi dữ kiện slot của chúng — về nguyên tắc có thể ALLOW sai với tiêu chí lấy từ slot; `call_source` thì không còn bị ảnh hưởng | Qua CLI hôm nay không chạm tới được: trang `--ui` và MCP stdio dùng chung khoá trang, `--http` không đi cùng `--ui` (mã 2) nên không có lượt nào để chồng. Chỉ người nhúng gọi phiên từ nhiều luồng mới gặp; sửa đúng cần khung theo lượt ở `Conversation` hoặc tham số dữ kiện cho `dispatch` (bề mặt công khai) | Trước khi một phiên nhận cả lượt và lời gọi ngoài mà không cùng khoá — `neuroedge.guard` và bridge của I2c (TSK-I2c-07, RFC-0016 đặt khoá tuần tự trong `Guard`), hoặc khi `--http` được phép đi cùng `--ui` |
 
 ## Kinh doanh
 
