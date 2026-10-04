@@ -173,7 +173,9 @@ def test_page_commands_and_mcp_calls_interleave_without_corrupting_the_session(s
         try:
             for i in range(rounds):
                 reply = post(server.url, "bật đèn" if i % 2 == 0 else "tắt đèn")
-                assert reply["verdict"] == "ALLOW", reply
+                # .get: a reply without a verdict must fail with the reply shown, not a bare
+                # KeyError (CI flake on PR #94 printed only KeyError('verdict')).
+                assert reply.get("verdict") == "ALLOW", reply
         except BaseException as error:  # reported by the main thread
             page_errors.append(error)
 
