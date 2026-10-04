@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-MDL-10, FR-GOV-01, FR-GOV-02, FR-HAL-02, FR-DX-04 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-10-03 |
-| **Trạng thái** | 🟡 Đang thảo luận |
+| **Trạng thái** | ✅ Đã chấp thuận (2026-10-04) — kỹ thuật trưởng ký trên PR #93; quyết định ở §10 (Q-66); hiện thực trong hai PR (§8) |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (thêm lược đồ vào `schemas/`, chạm `board.v1`, đổi nơi duy nhất của danh mục mã lỗi). **Chủ sản phẩm** cho các câu hỏi mở ở §10 có tính sản phẩm hoặc giấy phép (Q10.4, Q10.5) |
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/*.json` (thêm lược đồ và sửa `board.v1.json`).
@@ -205,15 +205,15 @@ Hai tệp, một nguồn sự thật.
 ```json
 { "code": "NE1002", "name": "TokenReplayError", "parent": "ActionContractViolation", "status": "stable",
   "fields": ["reason"], "also_a": [], "aliases": [], "rfc": null, "since": "0.1" }
-{ "code": "NE1003", "name": "EnvelopeRefusedError", "parent": "ActionContractViolation", "status": "reserved", "rfc": "RFC-0007" }
+{ "code": "NE1003", "name": "EnvelopeRefusedError", "parent": "ActionContractViolation", "status": "stable", "rfc": "RFC-0007" }
 { "code": "NE5001", "name": "PerceptionUnavailableError", "parent": "NeuroEdgeError", "status": "stable",
   "aliases": ["ProviderUnavailable", "MalformedResponse", "SpeechUnavailable"] }
 { "code": "NE0000", "name": "NeuroEdgeError", "parent": null, "status": "stable", "general": true }
 ```
 
-Trường: `code` (duy nhất, **không bao giờ tái dùng**), `name` (lớp công khai trong `errors.py`), `parent`, `status` (`stable` · `reserved` — mã giữ chỗ cho lớp chưa có, như NE1003 của RFC-0007), `fields` (khoá thêm ngoài bốn khoá chung trong `as_dict()`),
+Trường: `code` (duy nhất, **không bao giờ tái dùng**), `name` (lớp công khai trong `errors.py`), `parent`, `status` (`stable` · `reserved` — mã giữ chỗ cho lớp chưa có; NE1003 của RFC-0007 là `reserved` tới khi PR #91 thêm lớp), `fields` (khoá thêm ngoài bốn khoá chung trong `as_dict()`),
 `also_a` (lớp Python khác nó kế thừa — `ToolCallError` cũng là `ValueError`; chỉ SDK Python cần), `aliases` (lớp con dùng chung mã, `NE5001`), `general` (mã "không phân loại" — NE0000, NE2000: người nhận **không được** rẽ nhánh theo nó), `rfc`, `since`.
-Hôm nay: 19 mục `stable` (NE0000, NE1001, NE1002, NE1004, NE2000→NE2003, NE3001→NE3003, NE4001→NE4004, NE5001) và 1 `reserved` (NE1003).
+Hôm nay: 20 mục `stable` (NE0000, NE1001→NE1004, NE2000→NE2003, NE3001→NE3003, NE4001→NE4004, NE5001), không mục `reserved` nào (§10 câu 13).
 
 **Nguồn sự thật — quyết định đề xuất.** `schemas/error-codes.v1.json` là nơi **duy nhất** nói *mã nào tồn tại, tên lớp, quan hệ cha con, trạng thái*. Hai nơi kia được **kiểm** theo nó, không tự khai lại:
 
@@ -274,7 +274,7 @@ RFC không đụng `gate.v1`, ngữ nghĩa phân giải hay đường tới HAL;
    (`caller_declares_call_source.yaml` là ca tham số, không phải ca phong bì — hai tầng bảo vệ). `source` chỉ có ở `#/$defs/call`, phong bì đã gán.
 2. **Nới kết quả không nới quyền.** `tool-result` mô tả đầu ra; một client coi `reason` lạ dưới `BLOCK` là bị chặn không thể biến `BLOCK` thành `ALLOW`. Luật của client được ghi ở `tool_calling.md` §4 khi hiện thực: *"`status` quyết định; `reason` chỉ là lời giải thích — không bao giờ rẽ nhánh ALLOW theo `reason`"*.
 3. **Bộ đọc bo mạch từ chối phiên bản lạ (fail-closed).** Hôm nay một runtime cũ đọc bo mạch mới bỏ qua mọi khoá nó không biết. Khoá `schema` chỉ cứu được qua ranh giới **phiên bản chính**; khoá thêm *trong* `v1` (như `envelope` của RFC-0007) mà bộ đọc cũ không hiểu vẫn bị bỏ qua. Đó là lỗ hổng có thật nằm ngoài RFC này — Q10.6.
-4. **Danh mục mã lỗi.** Mã `reserved` ngăn một SDK dùng lại NE1003. Không đổi hành vi lỗi nào. Thiết bị chỉ phát `NE1001`/`NE1002`; test `targets/` ⊂ danh mục giữ điều đó.
+4. **Danh mục mã lỗi.** Mã `reserved` ngăn một SDK dùng lại một mã đã giữ chỗ (NE1003 trước PR #91). Không đổi hành vi lỗi nào. Thiết bị chỉ phát `NE1001`/`NE1002`; test `targets/` ⊂ danh mục giữ điều đó.
 
 Câu trả lời cho "có đường nào làm gate lỏng hơn?": **không**. Phê duyệt kỹ thuật trưởng vì phạm vi `schemas/` và `board.v1`, không vì an toàn gate.
 
@@ -324,11 +324,11 @@ Thứ tự đề xuất — hai PR hiện thực vì `board.v1.json` đang bị 
 - [ ] Thêm `schemas/tool-call.v1.json`, `tool-result.v1.json`, `error.v1.json`, `error-codes.v1.json`; sửa `test_schemas.py`
 - [ ] `actions/tools.py::result_schema` đọc tệp tĩnh; thêm ca `system_one`; `fixtures/contracts/` và `expected_errors.yaml`; các test ở §7
 - [ ] Cập nhật `docs/spec/tool_calling.md`: §1 và §4 dẫn lược đồ (không chép lại); §2 thêm khoá `__unparseable__`; §4 luật "không rẽ nhánh theo `reason`"; §9 đoạn cuối ("đóng băng thành `schemas/` bằng một RFC…") thành hiện thực; đóng `TODOS.md` #23
-- [ ] Cập nhật `neuroedge-prd.md`: ma trận §10.3 (thêm bốn lược đồ và khoá `schema` của bo); đầu Phụ lục B (nêu danh mục là nguồn của cấu trúc; PRD giữ lời; thêm dòng NE0000, NE2000 và ghi chú lớp con của NE5001, NE1003 `reserved`); quyết định mới nếu có thì cấp `Q-N`
+- [ ] Cập nhật `neuroedge-prd.md`: ma trận §10.3 (thêm bốn lược đồ và khoá `schema` của bo); đầu Phụ lục B (nêu danh mục là nguồn của cấu trúc; PRD giữ lời; thêm dòng NE0000, NE2000 và ghi chú lớp con của NE5001); quyết định mới nếu có thì cấp `Q-N`
 - [ ] Cập nhật `CONTRIBUTING.md` §8.1 hàng "Mã lỗi `NE…`" và §3 (thêm bốn lược đồ vào dòng "Sửa `schemas/*.json`" nếu cần); `docs/spec/python_api.md` §1 (hợp đồng dạng tệp: thêm bốn lược đồ)
 - [ ] `docs/architecture/{vi,en}/07-data-contracts.md`: danh mục lược đồ; nếu `error-codes` đọc từ mã Python thì kiểm cạnh phụ thuộc ở `tests/test_architecture_layers.py` và `03-component-host-c4l3.md` (không có cạnh mới nếu chỉ test đọc tệp)
 
-**PR B — `board.v1.json` (sau khi RFC-0007, 0010→0013 hiện thực xong phần khoá của chúng):**
+**PR B — `board.v1.json` (sau khi RFC-0007, 0010→0013 hiện thực xong phần khoá của chúng — đã đạt nhờ PR #91, §10 câu 13):**
 
 - [ ] Thêm khoá `schema` vào `schemas/board.v1.json`; `SUPPORTED_BOARD_SCHEMAS` và kiểm trước thẩm định ở `hal/board.py`; dòng `schema = "neuroedge.board/v1"` vào ba `boards/*.toml`; `to_document()`; các test board ở §7
 
@@ -357,22 +357,22 @@ Thứ tự đề xuất — hai PR hiện thực vì `board.v1.json` đang bị 
 | F11 | `test_schemas_directory_holds_exactly_the_three_frozen_schemas` phải đổi; không ai quên được vì nó đỏ | `tests/test_schemas.py`; §4 |
 | F12 | `docs/spec/studio.md` (mục 8) cho phép lỗi API Studio chỉ có `why` (`code`, `where`, `how` tuỳ chọn) và `studio/server.py` trả `{"why": "not implemented yet"}` cho stub 501 — hai hình dạng "lỗi" cùng gọi là `as_dict()`-shaped; `error.v1` chỉ nhận hình dạng đầy đủ | `docs/spec/studio.md`, `studio/server.py`; §3d |
 
-## 10. Câu hỏi mở cho chủ sản phẩm và kỹ thuật trưởng
+## 10. Quyết định cho các câu hỏi mở (Q-66, 2026-10-04)
 
-RFC này **không** quyết các câu này; mỗi câu kèm khuyến nghị để người quyết có điểm xuất phát.
+Chủ sản phẩm và kỹ thuật trưởng chấp nhận **khuyến nghị** của từng câu, theo nguyên tắc an toàn cao nhất của Q-57. Các khuyến nghị đã nằm sẵn trong §3–§8, nên mục này không đổi thiết kế. Nó chỉ ghi hai điều đã khác từ lúc viết (câu 13) và đưa hai việc hoãn vào `TODOS.md` (câu 4 và 6). Mục này là hồ sơ quyết định: nếu §3–§8 lệch với mục này thì sửa §3–§8. Kỹ thuật trưởng ký trên PR #93.
 
-| # | Câu hỏi | Khuyến nghị |
-|:---:|:---|:---|
-| Q10.1 | `reason` của kết quả: `enum` đóng (mỗi `Reason` mới = `v2`) hay chuỗi mở kèm danh sách đã biết và luật "`status` quyết định, không rẽ nhánh ALLOW theo `reason`"? | Mở (§3b). Chi phí: validator không bắt được lỗi gõ ở phía ta — test hai chiều với `Reason` bù |
-| Q10.2 | Đối tượng kết quả (gốc, `fallback`, `confirmation`) `additionalProperties` mở hay đóng? | Mở, kèm test mã chỉ phát khoá đã khai |
-| Q10.3 | Đưa `inputSchema` (tập con JSON Schema) và mô tả tool (`tools/list`) vào `tool-call.v1.json`, hay chỉ phong bì và kết quả theo chữ của roadmap? | Đưa vào — người hiện thực Profile cần nó để biết "khớp `inputSchema`" (ranh giới `valid/` – `invalid/`) |
-| Q10.4 | **Giấy phép corpus (F3):** đưa `fixtures/tool_calls/` (và `fixtures/agents/` nó dùng, `fixtures/traces/`) vào hàng Apache-2.0 của `LICENSING.md` / chuyển sang `fixtures/compliance/`? Có đưa định dạng ca (`CASE_KEYS`) và `expected_results.yaml` thành lược đồ không (hoãn cùng TSK-I6-02)? | Việc của chủ sản phẩm + người giữ giấy phép (Q-45, Q-59); không phải việc kỹ thuật. RFC này không đổi giấy phép |
-| Q10.5 | Khoá `schema` của bo mạch: tuỳ chọn ở `v1` (đề xuất) hay bắt buộc? Và chấp nhận siết hình thức "bo mạch mang `schema` khác `v1` giờ bị từ chối" (§4)? | Tuỳ chọn; kỹ thuật trưởng ký điểm siết |
-| Q10.6 | Khoá thêm *trong* `v1` mà bộ đọc cũ không hiểu (vd `envelope`, RFC-0007) vẫn bị bỏ qua lặng lẽ (§5.3). Có cần cơ chế "khoá bắt buộc hiểu" cho bo mạch (vd `requires = ["envelope"]`) và/hoặc đóng `board.v1.json`? | RFC riêng, vì chạm an toàn phần cứng và siết lược đồ; không chặn RFC này |
-| Q10.7 | Một tệp `tool-profile` hay hai (`tool-call`, `tool-result`)? Có thêm `tool` ở tệp thứ ba? | Hai tệp (§6) |
-| Q10.8 | Danh mục mã lỗi là nguồn của *cấu trúc*, PRD giữ *lời* (§3d) — đồng ý đổi `CONTRIBUTING.md` §8.1? | Đồng ý |
-| Q10.9 | `NE0000`/`NE2000` là mã "chung" và 36 chỗ dựng `NE0000` (F4): cấp mã riêng cho các lỗi đó **trước** khi đóng băng (SDK khác rẽ nhánh được), hay đóng băng `general` và để sau? | Để sau; RFC này chỉ ghi `general: true` và hứa không rẽ nhánh |
-| Q10.10 | Ghim `$schema` của `trace.v1.json` bằng `const` (F6)? Là siết lỏng (tệp có `$schema` khác hôm nay hợp lệ) — thuộc RFC riêng về `trace.v1` | RFC riêng, nếu muốn |
-| Q10.11 | Sau này một gate có thể cần cấm riêng cửa mạng hay một thiết bị. Có dự trù giá trị `source` mới (vd `mcp_network`) trong `v1` để khỏi RFC phá vỡ? | Không dự trù; làm khi có nhu cầu, vì mỗi giá trị đi vào `NETR` (chỉ số `choice`) |
-| Q10.12 | Lỗi hợp đồng (NE1001/NE1002) đi qua MCP là lỗi JSON-RPC; có đưa đối tượng `error.v1` vào `error.data` cho client mạng không? | Ngoài phạm vi; ghi nhận. Cần RFC về hành vi MCP |
-| Q10.13 | Thứ tự: chấp thuận RFC này trước khi RFC-0007, 0010→0013 hiện thực xong, hay đợi (§8 PR B phụ thuộc chúng)? | Chấp thuận sớm, tách hai PR hiện thực |
+1. **`reason` là chuỗi mở** (§3b), kèm danh sách giá trị đã biết và luật "`status` quyết định; không rẽ nhánh ALLOW theo `reason`". Thiếu kiểm lỗi gõ ở validator được bù bằng test hai chiều với `Reason`.
+2. **Đối tượng kết quả mở** (`additionalProperties: true` ở gốc, ở `fallback` và ở `confirmation`), kèm test rằng mã chỉ phát các khoá đã khai.
+3. **`tool-call.v1.json` có `inputSchema` và mô tả tool.** Người hiện thực Profile cần chúng để biết ranh giới giữa `valid/` và `invalid/`.
+4. **RFC này không đổi giấy phép.** Đưa corpus tuân thủ (`fixtures/tool_calls/`, `fixtures/agents/` và `fixtures/traces/` mà corpus dùng) vào phần Apache-2.0 là việc của người giữ giấy phép (Q-45, Q-59), không phải việc kỹ thuật. Việc này là `TODOS.md` #57, phải xong trước lần công bố lược đồ (TSK-I6-02). Nếu chưa xong, một OSS khác chạy corpus là đang dùng tệp PolyForm NC.
+5. **Khoá `schema` của bo mạch tuỳ chọn ở `v1`.** Kỹ thuật trưởng chấp nhận điểm siết của §4: một bo mạch mang `schema` khác `neuroedge.board/v1` giờ bị từ chối.
+6. **"Khoá bắt buộc hiểu" và đóng `board.v1.json` cần một RFC riêng, và không chặn RFC này.** Lý do: việc đó chạm an toàn phần cứng và siết lược đồ. Chỗ hở thì có thật: một bộ đọc cũ lặng lẽ bỏ qua `envelope`. Hôm nay nó chưa gây hại, vì chỉ có một bộ đọc là runtime Python của cùng phiên bản với bo mạch. RFC riêng đó là `TODOS.md` #58. Mốc kích hoạt của nó: trước khi xuất hiện một bộ đọc `board.v1` thứ hai (firmware `esp32s3` đọc profile, SDK ngoài, hoặc runtime cũ hơn đọc bo mới), và chậm nhất trước chặng B.
+7. **Hai tệp:** `tool-call.v1.json` và `tool-result.v1.json` (§6). Không có tệp `tool` thứ ba; mô tả tool nằm trong `tool-call.v1.json` (câu 3).
+8. **Đồng ý tách nguồn:** danh mục `schemas/error-codes.v1.json` là nguồn của *cấu trúc*, PRD Phụ lục B giữ *lời*. PR A sửa `CONTRIBUTING.md` §8.1 theo đó.
+9. **`NE0000` và `NE2000` đóng băng với `general: true`.** Người nhận hứa không rẽ nhánh theo hai mã này. Cấp mã riêng cho 36 chỗ đang phát `NE0000` (F4) để sau; đó là thay đổi nới lỏng, cùng `v1`.
+10. **Không ghim `$schema` của `trace.v1.json` lúc này.** Ghim là siết lỏng, nên cần RFC riêng về `trace.v1` khi có nhu cầu.
+11. **Không dự trù giá trị `source` mới** (như `mcp_network`). Mỗi giá trị đi vào `NETR` dưới dạng chỉ số `choice`, nên chỉ thêm khi có nhu cầu.
+12. **Đặt `error.v1` vào `error.data` của JSON-RPC: ngoài phạm vi.** Việc đó cần một RFC về hành vi MCP.
+13. **Chấp thuận ngay và tách hai PR hiện thực (§8).** Hai điều đã khác từ lúc viết RFC (nền `87db7c7`), đều nhờ PR #91 (chặng A):
+    - **Điều kiện của PR B đã đạt.** RFC-0007 và RFC-0010 → RFC-0013 đã hiện thực phần khoá trên `sim` và `linux`, nên PR B làm được ngay sau PR A.
+    - **NE1003 có lớp:** `EnvelopeRefusedError` (RFC-0007). Danh mục hôm nay vì thế có 20 mục `stable` và không mục `reserved` nào (§3d đã sửa). Trường `status: reserved` vẫn giữ trong lược đồ cho mã giữ chỗ về sau.
