@@ -58,10 +58,30 @@ def served_unbounded(home):
     light on and off as fast as threads run, which the envelope's `min_interval_ms` (rightly)
     refuses; the test of the interleave is about the session's integrity, not about the light.
     """
-    session = SimSession.load(home, target_options={"envelope": SafetyEnvelope({})})
+    session = SimSession.load(
+        home, target_options={"envelope": SafetyEnvelope({})}, clock=_StepClock()
+    )
     server = SessionServer(session, port=0).start()
     yield session, server
     server.stop()
+
+
+class _StepClock:
+    """
+    A clock that moves 1 ms per reading, from any thread. The gates' `p95_latency_ms` budget is
+    measured on the session clock; on the wall clock a loaded CI runner exceeded it and the gate
+    rightly failed closed with BLOCK (PR #94) — which says nothing about the interleave this
+    fixture is for. Offsets still only grow.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._now = 1_000.0
+
+    def __call__(self) -> float:
+        with self._lock:
+            self._now += 1.0
+            return self._now
 
 
 def mcp_server_for(server: SessionServer):
@@ -183,7 +203,7 @@ def test_page_commands_and_mcp_calls_interleave_without_corrupting_the_session(s
         async with Client(mcp_server_for(server)) as client:
             for i in range(rounds):
                 result = await client.call_tool("light_off" if i % 2 == 0 else "light_on", {})
-                assert result.structured_content["status"] == "ALLOW"
+                assert result.structured_content["status"] == "ALLOW", result.structured_content
 
     typist = threading.Thread(target=page_side)
     typist.start()
