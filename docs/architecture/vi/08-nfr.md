@@ -1,7 +1,7 @@
 # 08 · Yêu cầu phi chức năng → chiến thuật → bằng chứng
 
 > **Phạm vi:** mỗi nhóm NFR của PRD §9 được kiến trúc đáp ứng bằng chiến thuật nào, và bằng chứng nằm
-> ở đâu hôm nay. **Nguồn:** PRD §9 (yêu cầu, ngưỡng), PRD §11.1 (A1–A12), test trong `python/tests/`,
+> ở đâu hôm nay. **Nguồn:** PRD §9 (yêu cầu, ngưỡng), PRD §11.1 (A1–A13), test trong `python/tests/`,
 > job CI trong `.github/workflows/` (danh sách duy nhất: `CHANGELOG.md` §2.5).
 
 Nhãn bằng chứng: **đã kiểm** — có test hoặc job CI chạy mỗi PR · **một phần** — có công cụ đo hoặc
@@ -30,6 +30,7 @@ kiểm một phần · **chưa đo** — chưa có bằng chứng.
 | SEC-07 Sandbox mã bên thứ ba giới hạn quyền truy cập chân actuator nhạy cảm (P0 v1.1, PRD §9.4) | Sandbox phân quyền của Registry (TSK-K3-05, → [`15`](15-target-architecture.md) §3.2) | — | chưa |
 | SEC-08 TLS tới nhà cung cấp, ghi nhà cung cấp vào vết ghi | Tên nhà cung cấp và model trong `system_one_call`, `system_two_call`; không ghi prompt, không ghi khoá | `test_providers.py::test_each_model_call_is_traced_without_prompt_or_key` | một phần — TLS 1.3 chưa có test |
 | SEC-09 MCP chỉ stdio; LLM và client MCP không tin cậy | `dispatch()`: kiểm schema, `call_source` do runtime gán, không công cụ xác nhận | Bảng §2b của threat model; corpus `fixtures/tool_calls/` | đã kiểm |
+| SEC-10 Plugin của bên thứ ba (Q-67) | Plugin chạy trong tiến trình là mã người vận hành tin (`docs/spec/threat_model.md` §3): chỉ nạp khi được bật rõ; nguồn gốc (gói, phiên bản, băm tệp) in ra và ghi vào vết ghi; không API nào của `neuroedge.sdk` trao handle phần cứng cho bridge hay fact source (FR-EXT-02, FR-EXT-03) | Bộ nạp plugin và bộ test tuân thủ theo loại (TSK-I2c-11, TSK-I2c-12; RFC-0016 còn là bản nháp) | chưa — I2c |
 
 ## 3. Độ tin cậy — NFR-REL
 
@@ -92,7 +93,7 @@ không gọi model thật.
 | COMP-05 Python 3.11+ | `requires-python >= 3.11` | ma trận CI 3.11 / 3.12 / 3.13 | đã kiểm |
 | COMP-06 `linux` trên ARM64 và x86-64 | — | Mọi job chạy x86-64; chưa có job ARM64 | một phần |
 
-## 9. Tiêu chí nghiệm thu v1.0 (A1–A12)
+## 9. Tiêu chí nghiệm thu v1.0 (A1–A13)
 
 | # | Tiêu chí | NFR liên quan | Bằng chứng hôm nay |
 |:---:|:---|:---|:---|
@@ -104,7 +105,8 @@ không gọi model thật.
 | A6 | Ổn định 24 giờ trên chip | RES-01/02/03 | chưa đo |
 | A7 | Vết ghi hợp lệ 100 % | REL-04, PRIV, OBS | thẩm định trong CI, cả vết ghi UART |
 | A8 | Tài liệu, ba mẫu chạy được | — | ba mẫu có test; chưa kiểm trên máy sạch bởi bên thứ ba |
-| A9 | Lược đồ công khai kèm bộ tuân thủ | COMP-01→04 | `$id` đã khẳng định; `fixtures/compliance/` hôm nay chỉ có `voice/`; URL công khai ở I6 |
-| A10 | Đủ nguyên thủy mở rộng trên ba target (FR-HAL-08, Q-53) | REL-03, COMP-05/06 | chưa bắt đầu; cần RFC-0007, RFC-0009 → RFC-0013 (I2a, I3a) |
+| A9 | Lược đồ công khai kèm bộ tuân thủ | COMP-01→04 | một phần — bảy lược đồ trong `schemas/`, `$id` đã khẳng định (`test_schemas.py`); corpus tuân thủ có sẵn: `fixtures/compliance/voice/` (thoại), `fixtures/tool_calls/` (Gated Tool Profile) và `fixtures/contracts/` (bo, lỗi, tool-call, tool-result; `test_contracts.py`), theo Apache-2.0 (Q-67); chưa phục vụ ở URL công khai (TSK-I6-02, I6) và chưa có bằng chứng bên thứ ba đã chạy thử |
+| A10 | Đủ nguyên thủy mở rộng trên ba target (FR-HAL-08, Q-53) | REL-03, COMP-05/06 | một phần — RFC-0007, RFC-0009 → RFC-0013 đã chấp thuận; `digital.in`, I2C chỉ đọc, `analog.in`, thị giác và phong bì xong trên `sim` và `linux` (job `linux-hal`), PWM và `motion.*` xong trên `sim` (I2a); `verify` chưa phát lại agent `fan-pwm` và `rover`; `esp32s3` chưa bắt đầu (I3a) |
 | A11 | Dựng bằng hội thoại có hợp đồng (NeuroBrain, Q-55) | SEC-01 | chưa bắt đầu (I4a, I5a) |
-| A12 | Kit mẫu dựng được trong một ngày (Q-52) | — | chưa đo (I2b) |
+| A12 | Kit mẫu dựng được trong một ngày (Q-52) | — | một phần — năm kit có BOM, sơ đồ, vết golden và test trên `sim`, `linux` (I2b); chưa dựng trên phần cứng thật (`TODOS.md` #59), TTFV chưa đo trên người; A12 đo ở I7 |
+| A13 | Nền tảng mở: bên thứ ba tự nối một hệ sinh thái mới ≤ 1 ngày, che một MCP server ≤ 3 lệnh (Q-67) | SEC-10 | chưa bắt đầu — I2c; sẽ đo bằng bài kiểm `neuroedge-muse` (TSK-I2c-17) và test CI cài plugin ngoài kho |

@@ -8,8 +8,8 @@
 
 | Loại port | Làm được hôm nay? | Ghi chú |
 |:---|:---|:---|
-| **Bo mạch mới cho target có sẵn** (một SBC Linux khác, một bo ESP32-S3 khác) | Về kỹ thuật có; nhưng `boards/` chỉ nhận **ba profile bậc 1** cho tới RFC-0002 (`test_boards.py`), và bo mạch tham chiếu của `esp32s3` chỉ là Box-3 (bất biến 6) | Dùng để thử nghiệm nội bộ; chưa công bố được |
-| **Target mới** (`stm32`, `rp2350`, `jetson`) | **Chưa**: danh sách target đóng ở `sim`, `linux`, `esp32s3` trong `schemas/` và `hal/board.py` | RFC-0002 (đang thảo luận) mở danh sách theo bậc ở I11; bộ công cụ port cộng đồng ở I13 |
+| **Bo mạch mới cho target có sẵn** (một SBC Linux khác, một bo ESP32-S3 khác) | Về kỹ thuật có; nhưng `boards/` chỉ nhận **profile bo tham chiếu của ba target bậc 1** (bốn tệp kể từ `sim-rpi5`, RFC-0013) cho tới khi phần mã của RFC-0002 vào ở I2c (`test_boards.py`), và bo mạch tham chiếu của `esp32s3` chỉ là Box-3 (bất biến 6) | Dùng để thử nghiệm nội bộ; chưa công bố được. Từ I2c (`planned`), bo của cộng đồng ngoài kho nạp bằng `--board <đường dẫn>`, tự chứng nhận bằng `board validate`, không bao giờ là bo tham chiếu (TSK-I2c-05) |
+| **Target mới** (`stm32`, `rp2350`, `jetson`) | **Chưa**: danh sách target đóng ở `sim`, `linux`, `esp32s3` trong `schemas/` và `hal/board.py` | RFC-0002 (đã ký 2026-10-04) mở danh sách theo bậc — phần mã ở I2c ([`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §4.3.3, trước là I11); bộ công cụ port cộng đồng ở I13 |
 | **Bậc 3 do cộng đồng tự kiểm** (Q-13) | Quy trình quy hoạch ở I13 (`TSK-P1-01…05`) | Chương này mô tả phần đã có mã và phần sẽ đổi |
 
 Phần còn lại mô tả **hợp đồng** — nó không đổi khi danh sách target mở — và mã có thể tái dùng ngay.

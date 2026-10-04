@@ -11,7 +11,7 @@
 
 NeuroEdge grows in **breadth**, not by **exceptions**. Each milestone adds a place where the gate runs (Pi, chip,
 multi-node), a type of thing the gate guards (sensors, PWM, cameras, motors), or a way to call in (voice,
-conversation, network MCP). No milestone adds a path to hardware without passing through the gate. That is the product
+conversation, network MCP, third-party bridges). No milestone adds a path to hardware without passing through the gate. That is the product
 spirit in [`00`](00-overview.md) §1.1, written into architectural law: **the architecture may widen, but the
 execution spine `dispatch()` → gate → token → HAL → trace may not shorten.**
 
@@ -39,7 +39,7 @@ its scope; the last column is the milestone where proof becomes the hardest.
 | One contract everywhere | Same gate file, pure resolution (invariant 4); Python and C share the same spec; `verify` compares verdicts | [`10`](10-target-equivalence.md); `neuroedge verify --targets sim,linux,esp32s3` | 3 (real chip), 10 (community boards) |
 | Evidence over promises | Every verdict into the trace `trace.v1`; replay recomputes without calling the model | [`06`](06-runtime-flows.md) §7; Action CI | 5 (model-generated drafts), 9 (field traces) |
 | Humans hold the final authority | Models and MCP clients cannot confirm `ask` (Q-26); NeuroBrain drafts must be approved by a human; no one can confirm in place of a measurement (Q-62) | `confirms` tests; RFC-0006, RFC-0009 | 5 (build by conversation) |
-| Plug into other stacks | MCP is the caller surface; models and voice are replaceable providers (P-4); schemas, specifications, compliance test suite under Apache-2.0 (Q-45) | `docs/spec/tool_calling.md`; `fixtures/tool_calls/` | 6 (network MCP, Q-58) |
+| Plug into other stacks | MCP is the caller surface; models and voice are replaceable providers (P-4); schemas, specifications, compliance test suite and compliance corpus under Apache-2.0 (Q-45, Q-67); from I2c, third parties wire themselves in through `neuroedge.sdk` plug points without touching the core, and the safety invariants do not change (Q-67) | `docs/spec/tool_calling.md`; `fixtures/tool_calls/`; plug-in compliance suite (I2c, `planned`) | 2 (open platform, Q-67), 6 (network MCP, Q-58) |
 
 ## 3. Architecture across milestones
 
@@ -59,22 +59,45 @@ increment is in roadmap §0.2.
 - **The promise is proven by:** three normative traces replay in CI; `wheel-smoke` runs the complete journey
   from the installed package.
 
-### Milestone 2 — Real devices on a Raspberry Pi *(I2, I2a, I2b)*
+### Milestone 2 — Real devices on a Raspberry Pi *(I2, I2a, I2b, I2c)*
 
 - **What the user can do:** wire a kit (light, door, fan, sensor, camera, motor) to a Pi 5; same agent, same
-  gate as on the laptop.
+  gate as on the laptop; connect another vendor's product (Muse, Home Assistant, an existing MCP server)
+  through a plug-in and a proxy.
 - **What the architecture adds:** `LinuxHAL` on par with `sim` — `run`, `record`, `mcp serve --target linux`,
   hwmon/IIO sensors, framebuffer display `done` on virtual hardware; nightly on Pi 5 `planned`. **Four board-optional
   primitive packs** (Q-53): sensors (`digital.in`, read-only I2C, `analog.in`, `numeric` criterion),
   fine control (PWM), vision (`vision.in`), motion (`motion.*`); **safety envelope** becomes a shared mechanism
   for all actuators; `sim-rpi5` profile; five sample kits and `neuroedge add` → [`15`](15-target-architecture.md)
-  §2.1, §4.2, §4.4. `planned`.
+  §2.1, §4.2, §4.4. On `sim` and `linux` (gpio-sim, `i2c-stub`, `vivid` in job `linux-hal`): the safety envelope, `digital.in`, read-only I2C, `analog.in`, vision, the `numeric` criterion and `NETR` v2, the `sim-rpi5` profile, the five sample kits, the gate library and `neuroedge add` are `done` (kits not yet built on real hardware, `TODOS.md` #59); PWM and `motion.*` are `done` on `sim`, on `linux` so far only against a fake sysfs tree. Still `planned`: `verify` replaying the `fan-pwm` and `rover` agents, real PWM channels and actuators, a camera lost mid-session on the kernel, the vision inference golden, the `esp32s3` cells (I3a). **I2c — Open platform** (Q-67; depends on I2b, graph in roadmap §2.1; **I11 —
+  opening the target list — has been merged into I2c**): a third party wires NeuroEdge to a new product in a few
+  commands, without touching the core and without waiting for the core team. The safety core is usable on its
+  own through `neuroedge.guard` (no `agent.toml`, `@action` or `SimSession` needed); the Extension SDK
+  `neuroedge.sdk` with six plug-in kinds through entry points — bridge, fact source, actuator, board, template,
+  exporter — and a per-kind compliance suite (`neuroedge conformance`); two universal proxies,
+  `neuroedge proxy mcp` and `proxy http`; remote actuators with a declared self-off level, Home Assistant first;
+  `--board <path>` for out-of-repo community boards and an open, tiered target list (RFC-0002); a community
+  index for `plugin search/install`. I4a, I6, I13, I14 and I16 depend on I2c →
+  `neuroedge-design-open-platform.md`, [`16`](16-ecosystem-landscape.md) §3, §8. `planned`; the RFC-0002
+  signature and the switch of the compliance corpus to Apache-2.0 are `done` (2026-10-04).
 - **Contracts:** six RFCs approved (2026-10-01): RFC-0007, RFC-0009 → RFC-0013 — `board.v1` receives new
-  blocks; `gate.v1` receives the `numeric` criterion; `NETR` v2 pins bytes in RFC-0009 §3d.
+  blocks; `gate.v1` receives the `numeric` criterion; `NETR` v2 pins bytes in RFC-0009 §3d. For I2c: RFC-0002
+  signed (2026-10-04); RFC-0016 (standalone core and Extension SDK), RFC-0017 (namespaced `source`,
+  `bridge:<id>`) and RFC-0018 (remote actuators) are drafts awaiting signature; the RFC-0014 code (facts from
+  an external process) is pulled forward into I2c; `neuroedge.sdk` has its own version and stability promise,
+  stricter than the package's `0.x`; the compliance corpus (`fixtures/tool_calls/`, `fixtures/contracts/`,
+  `fixtures/traces/`, `fixtures/agents/`) is under Apache-2.0 (`LICENSING.md`).
 - **The promise is proven by:** safe-state commands are never blocked; all `digital_out` pins default
   to actuators and have envelopes persisted across reboots; auto-off at
   `min(command duration, max_continuous_ms)`; out-of-process watchdog when runtime hangs (RFC-0007 §9); visual
-  evidence evaluated frame-by-frame then ANDed, frozen camera ⇒ `BLOCK` (RFC-0012).
+  evidence evaluated frame-by-frame then ANDed, frozen camera ⇒ `BLOCK` (RFC-0012). For plug-ins: a bridge has
+  only `dispatch(ToolCall)` and no HAL handle, a fact source cannot declare the age of its own facts, an
+  actuator can be driven by the HAL only after a token and the envelope (FR-EXT-03), each with a counterexample
+  the compliance suite catches; a proxy is worth something only when it is the only path to its target
+  (`plugin doctor` warns when the target is still reachable without the proxy); remote actuators declare a
+  self-off level, and an irreversible action needs a level the device can reach on its own even when contact is
+  lost (RFC-0018 §7); the `neuroedge-muse` bridge is written in its own repository with no core line changed
+  (A13).
 
 ### Milestone 3 — The gate on a $5 chip *(I3, I3a)*
 
@@ -120,7 +143,7 @@ increment is in roadmap §0.2.
 - **What the architecture adds:** package on PyPI with SBOM and attestation; schemas at public URLs `schema.neuroedge.dev`
   (A9); **integration surface** (Q-58): network MCP — Streamable HTTP, OAuth 2.1, per-device mTLS, disabled by default
   (TSK-P2-04) — and Gated Tool Profile frozen into `schemas/` (TSK-I6-05); a **public Python API** with a written
-  spec and versioning (TSK-I6-06, Q-63). `partial`: secret scanning, SBOM `done`.
+  spec and versioning (TSK-I6-06, Q-63). `partial`: secret scanning, SBOM, authenticated network MCP (not yet tried across two machines), the integrator contracts in `schemas/` (RFC-0015) and the public Python surface `done`; PyPI and schemas at public URLs `planned`.
 - **Contracts:** envelope schemas for `ToolCall` and results, a schema-version identifier for `board.v1`, and the error-code
   catalogue go into `schemas/` via RFC; from here other OSS can implement
   the profile under Apache-2.0 without depending on PolyForm NC code (Q-59).
@@ -130,12 +153,13 @@ increment is in roadmap §0.2.
 ### Milestone 7 — v1.0: ready to ship in products *(I7)*
 
 - **What the user can do:** signed firmware update, lock device, 24-hour stable run; satisfies acceptance
-  criteria A1–A12 (PRD §11.1).
+  criteria A1–A13 (PRD §11.1).
 - **What the architecture adds:** Secure Boot, flash encryption, anti-rollback eFuses, physical microphone switch (TSK-S6-05)
   `planned`; signed OTA and A/B dual-partition rollback `done` on QEMU → [`15`](15-target-architecture.md) §2.4.
 - **Contracts:** unchanged; `sdkconfig.ota` is a separate configuration layer.
 - **The promise is proven by:** third parties implement the standard from public schemas (A9); 10 outsiders
-  install from PyPI (A1); 5 people build kits (A12).
+  install from PyPI (A1); 5 people build kits (A12); a third party wires up a new ecosystem in ≤ 1 day with no
+  core line changed (A13).
 
 ### Milestone 8 — Developer Beta *(I8)*
 
@@ -155,21 +179,22 @@ increment is in roadmap §0.2.
   provider layer bundling endpoints and failover (TSK-K2-01→03, Q-28). Gate Registry: OCI store (ORAS,
   Harbor), usage metering (OpenMeter) → [`15`](15-target-architecture.md) §3.1–§3.3. `planned`.
 - **Contracts:** new fields in trace `metadata` (no RFC needed); sign gates and verify signatures on the device
-  (TSK-W2-04); pinning `extends` by digest requires an RFC (TSK-S3-21).
+  (TSK-W2-04); pinning `extends` by digest (TSK-S3-21) has been pulled forward into I2c — an RFC, then code (Q-67).
 - **The promise is proven by:** device-level OTA remains with the core, campaigns belong to Fleet OS (proposal
   §6.4) — services never sit on the gate's decision path; 1,000 devices, 0 bricks (M5).
 
-### Milestone 10 — Grow the ecosystem *(I11, I13, I14, I16, I17, I18)*
+### Milestone 10 — Grow the ecosystem *(I13, I14, I16, I17, I18)*
 
 - **What the user can do:** community ports new boards independently; Pi 5 robot with multiple MCU nodes; Jetson; voice
   together with vision.
-- **What the architecture adds:** target tiers `TARGET_TIERS` and `board validate` (RFC-0002); port kit with compliance
-  vectors running outside the repo (Q-13); layered robotics — each node evaluates gates locally, Zenoh-pico (Q-36),
+- **What the architecture adds:** port kit with compliance vectors running outside the repo (Q-13), built on the
+  target tiers `TARGET_TIERS` and `board validate` (RFC-0002) — formerly I11, now merged into I2c (Q-67,
+  milestone 2); layered robotics — each node evaluates gates locally, Zenoh-pico (Q-36),
   loss of communication reverts to safe state per actuator (Q-35), gated ROS 2 / Nav2 (Q-34); Tier 2 `jetson`;
-  free hardware certification, self-verification → [`15`](15-target-architecture.md) §4, [`16`](16-ecosystem-landscape.md).
-  `planned`.
-- **Contracts:** RFC-0002 (`target` enum), RFC-node, mobile robot safety RFC (TSK-W4-07); multi-node traces
-  via optional fields (Q-32).
+  free hardware certification, self-verification (the SDK and the "NeuroEdge-gated" certification have moved up
+  to I2c) → [`15`](15-target-architecture.md) §4, [`16`](16-ecosystem-landscape.md). `planned`.
+- **Contracts:** RFC-node, mobile robot safety RFC (TSK-W4-07); multi-node traces via optional fields
+  (Q-32). RFC-0002 (`target` enum) is no longer at this milestone — signed 2026-10-04, its code moved into I2c (milestone 2).
 - **The promise is proven by:** on-device gates, no centralized gate, even when the system spans multiple chips;
   black channel does not trust transport; mobile robots strictly require a hardware emergency stop button (Q-38).
 
@@ -182,7 +207,7 @@ foundation up:
 |:---|:---|:---|
 | Fact source | the `FactSource` protocol (`engine/gate.py`) | adding a decision model, sensors, vision as fact sources without changing the engine |
 | Model and speech providers | `models/providers/`, `perception/providers/`, the `python:` adapter | swapping provider by configuration |
-| HAL | the `HardwareAbstractionLayer` subclass + `boards/` profiles | new targets (after RFC-0002) |
+| HAL | the `HardwareAbstractionLayer` subclass + `boards/` profiles | new targets (RFC-0002 signed; its code is in I2c) |
 | Backend registry | `GateRegistry` (`gate_resolver.py`) — the docstring says plainly it will be replaced by OCI lookup | the Gate Registry (I10) |
 | Trace events | `type` is a free string in `trace.v1`; `metadata` accepts extra fields | new events, multi-node traces, with no need for `trace.v2` |
 | Firmware config layers | layered `SDKCONFIG_DEFAULTS` | enabling a feature per board without branching code |
@@ -196,10 +221,7 @@ Each item is a deliberate choice, with a trigger milestone in `TODOS.md`:
 |:---|:---|:---|
 | Traces are not signed | needs device keys; belongs to Fleet OS | #1 |
 | The token is an in-memory `(nonce, digest)`, not signed | the in-scope threat is skipping by mistake | #2 |
-| `extends` is not pinned by digest yet | no registry yet; `digests.lock` covers CI | #15 |
-| The Gated Tool Profile is not frozen into `schemas/` yet | frozen by an RFC before I6 (TSK-I6-05, Q-58) | #23 |
+| `extends` is not pinned by digest yet | no registry yet; `digests.lock` covers CI; scheduled in I2c (TSK-S3-21, Q-67) | #15 |
 | An MCP connection lives for one turn only | one event loop per REPL turn | #25 |
-| No numeric criteria in gates yet | RFC-0009 approved; implemented in TSK-W1-02 (milestone 2); `bands` suffice for current samples | #30 |
-| `NETR` v1 carries no gate labels and no `on_block` text | the tree is linked with the firmware so it cannot drift | #36 |
 | Pin command operation and duration on chip come from a table built on host | how an action runs on the MCU is not settled yet | #37 |
 | `linux` sensor reads block the event loop | no agent both speaks and reads sensors yet | #48 |

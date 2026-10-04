@@ -7,9 +7,9 @@
 | **Yêu cầu PRD liên quan** | FR-TGT-08, FR-HAL-01, FR-HAL-04, FR-HAL-05 |
 | **Người đề xuất** | V1 — Kỹ sư lõi nền tảng |
 | **Ngày mở** | 2026-09-22 · thu hẹp phạm vi 2026-09-23 sau review (biên bản: [`docs/archive/rfc-0002-review-record.md`](../archive/rfc-0002-review-record.md)) |
-| **Trạng thái** | 🟡 Đang thảo luận |
+| **Trạng thái** | ✅ Đã chấp thuận (2026-10-04) — kỹ thuật trưởng ký theo Q-67 (quyết định 4); hiện thực trong I2c (§10) |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc.** RFC không làm gate lỏng hơn, nhưng chạm ba bất biến kiểm thử đang bảo vệ tương đương target (§5), và tiêu chí ra Khối V1a số 1 đòi chữ ký kỹ thuật trưởng (`neuroedge-design-phase2.md`) |
-| **Kiểm chứng** | *(chưa có — thuộc pull request thứ hai, hợp nhất trong increment I11 sau Developer Beta (PRD Q-40), xem §8)* |
+| **Kiểm chứng** | *(chưa có — thuộc pull request thứ hai, nay ở increment I2c (Q-67; trước đó I11 sau Developer Beta theo Q-40), xem §8 và §10)* |
 
 > **Phạm vi pull request này:** chỉ tệp RFC, **chưa sửa lược đồ**, đúng quy trình
 > `docs/rfc/README.md` bước 2. Ba lược đồ trong `schemas/` giữ nguyên; bộ test
@@ -369,6 +369,23 @@ suy luận lại:
    tham số. Phụ thuộc lịch mua sắm; không thuộc pull request thứ hai.
 
 ---
+
+## 10. Chấp thuận (Q-67, 2026-10-04)
+
+Kỹ thuật trưởng ký RFC này như quyết định 4 của **Q-67** (nền tảng mở, `neuroedge-prd.md` §15). Những điều đã khác
+từ lúc viết:
+
+1. **Hiện thực kéo lên I2c.** Pull request thứ hai không còn chờ sau Developer Beta: nó là TSK-V1a-02 → V1a-06 trong
+   increment **I2c — Nền tảng mở** (`neuroedge-roadmap.md` §4.3.3). Lý do: bo của cộng đồng nạp từ đường dẫn
+   (`--board <đường dẫn>`, RFC-0016) cần bậc target máy đọc được trong mã lõi.
+2. **"Ba profile bậc 1" nay là "các bo tham chiếu".** RFC-0013 cho mỗi target bậc 1 nhiều bo tham chiếu
+   (`REFERENCE_BOARDS`, `SIM_MIRRORS`); mọi chỗ của RFC này nói "ba profile" hay "một profile mỗi target" đọc theo
+   RFC-0013. `boards/` vẫn chỉ chứa bo tham chiếu.
+3. **Bo ngoài kho.** Một hồ sơ nạp từ đường dẫn hay từ plugin không bao giờ là bo tham chiếu và không bao giờ được
+   `verify` tính vào tương đương bậc 1; bậc của nó là bậc của target nó khai, theo `TARGET_TIERS` của §3b. Luật đó
+   nằm ở RFC-0016; RFC này không đổi.
+4. **Không đổi:** enum vẫn đóng (§6); `board.toml` không tự khai bậc (§3b); cam kết bậc 2 cho `jetson` vẫn thuộc
+   I16; hồ sơ phần cứng thật cho bậc 2 và 3 vẫn cần bo mạch thật (§9.4).
 
 ## Biên bản review
 

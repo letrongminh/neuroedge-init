@@ -372,6 +372,18 @@ bản gói.
   micro giây, làm cùng một lệnh 600 000 ms bị ghi 600 001 ms ở lần chạy này và 600 000 ms ở lần khác (test chập chờn trên CI,
   PR #94); nay bỏ nhiễu trước khi làm tròn lên, phần lẻ thật vẫn làm tròn về phía đã dùng. Kiểm: `pytest tests/test_envelope.py -k float_noise`.
 
+#### Đã đổi — Nền tảng mở (2026-10-04, Q-67)
+
+- **Q-67 — NeuroEdge thành lớp an toàn mở: bên thứ ba tự nối với sản phẩm mới mà không sửa lõi, không chờ đội lõi.**
+  Increment mới **I2c — Nền tảng mở**, làm trước NeuroBrain và là điều kiện của I6: lõi an toàn dùng độc lập
+  (`neuroedge.guard`), Extension SDK sáu loại điểm cắm có bộ test tuân thủ, `proxy mcp`/`proxy http`, cơ cấu chấp hành từ xa,
+  index cộng đồng. I11 gộp vào I2c (RFC-0002 ký, hiện thực ở I2c); TSK-P2-06 chuyển từ I18. PRD thêm M6, U7, FR-EXT-01→09,
+  NFR-SEC-10, A13. Corpus tuân thủ (`fixtures/tool_calls/`, `fixtures/contracts/`, `fixtures/traces/`, `fixtures/agents/`)
+  sang Apache-2.0; plugin của bên thứ ba theo giấy phép của tác giả (`LICENSING.md`). Bản nháp RFC-0016 → RFC-0018. Ghi chú
+  thiết kế `roadmap/neuroedge-design-open-platform.md`; khảo sát `docs/reports/thi-truong-tich-hop-2026-10-04.md`. Gỡ
+  `TODOS.md` #56, #57 (đã lên lịch, đã xong). Sửa hai chỗ lệch: TSK-S3-14 ghi LICENSE là MIT; proposal Phụ lục D.1 xếp CoreS3
+  là bo cộng đồng (Q-61). Kiểm: `pytest tests/test_plan_contract.py tests/test_cpo_dashboard.py`.
+
 #### Đã đổi — Khoảng hở nền tảng cho người tích hợp (2026-10-02, Q-63)
 
 - **Q-63 — ba khoảng hở nền tảng chưa có task, vào I6, ngày dự báo không đổi.** TSK-I6-06: bề mặt Python công khai
@@ -1282,6 +1294,7 @@ này sẽ làm hỏng những thứ trông không liên quan.
 | **V6 — kỹ sư nhúng thứ hai** | CPO đã quyết tuyển (2026-09-25); chưa có người, cần vào trước 2026-11-16 | Tuyển người (Q-39) | Âm thanh trên chip song song với HAL của V2 (TSK-S5-01, S5-02, S5-06, S5-07) — giả định của dự báo I5, I7 (roadmap §1.3) |
 | **`TODOS.md` #43** — CLA cho người đóng góp | Chưa có văn bản CLA (cần rà soát pháp lý) | CPO | Merge PR đầu tiên từ người ngoài (Q-45) |
 | **RFC-0002** | Phê duyệt | Kỹ thuật trưởng, trước khi I11 mở | I11 và mọi board profile mới |
+| **RFC-0016, RFC-0017, RFC-0018** · I2c | Phê duyệt | Kỹ thuật trưởng | Mã của nền tảng mở: `neuroedge.guard`, plugin, bộ test tuân thủ, proxy, cơ cấu từ xa (Q-67) |
 | **I2b tiêu chí 2** — TTFV của năm kit | Cần người đo (A1) | Người (Q-60) | Đóng I2b |
 | **`TODOS.md` #59** — dựng năm kit trên phần cứng thật | RPi 5 và Box-3 chưa về | Đặt hàng, rồi người dựng theo `docs/user/kit-*.md` | Kiểm BOM, sơ đồ đấu dây, mức kích rơ-le; PIR cho `home-voice` trên `linux` |
 | **I6 tiêu chí 7** — MCP qua mạng giữa hai máy thật | Cần hai máy và một người chạy | Người (Q-60) | Đóng tiêu chí 7; hôm nay chỉ có test trên loopback |
@@ -1348,6 +1361,9 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
   `villa-concierge` không build cho `linux-rpi5` (cần AEC), `home-voice` trên `linux` chặn `light_off` tới khi có PIR, `blinds` là servo
   nghiêng lá (kênh motor chưa quay ngược). Ngưỡng điện áp của thư viện `gates/home/` dựa trên thang cảm biến giả định — người dựng
   siết theo datasheet (`TODOS.md` #59).
+- ❌ **Chưa mở cho bên thứ ba tự nối.** Hợp đồng đã mở (lược đồ, đặc tả, corpus tuân thủ — Apache-2.0) nhưng chưa có điểm cắm:
+  chưa entry point nào, `--board` chỉ nhận id, template cố định, `source` của tool call là tập đóng, chưa có mã dữ kiện ngoài, thân
+  `@action` gọi thiết bị từ xa thì không có phong bì. Chỉ provider mô hình mở thật (`python:pkg.mod:factory`). Lộ trình: I2c (Q-67).
 - ❌ **Chưa phát hành ra ngoài.** Kho đã công khai từ 2026-09-25 (TSK-I6-01, Q-45), nhưng tag trước I6 là nội bộ;
   PyPI mở ở I6 (Q-39, TSK-S3-14, `docs/release.md`).
 - ❌ **Chưa có CEL.** `allow_when` chỉ nhận dạng mapping toán tử (TSK-S2-06 hoãn, `TODOS.md` #42).

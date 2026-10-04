@@ -79,7 +79,7 @@ Chúng chờ runner hằng đêm trên phần cứng thật (TSK-S4-05, TSK-I2-0
   Thiếu ⇒ `NE3001`, build dừng, không ghi gì. Ví dụ: `villa-concierge` đòi `aec = true` nên bị từ chối
   trên `linux-rpi5` cho tới khi Pi đo đạt khử vang (`simulation_coverage.md` §6.2).
 - **Tên chân là logic** (`door_lock`, `porch_light`, `gate_relay`); số GPIO thuộc về HAL của từng target.
-- Danh sách target đóng băng ở ba target bậc 1 cho tới RFC-0002 (I11).
+- Danh sách target đóng băng ở ba target bậc 1 cho tới khi phần mã của RFC-0002 (đã ký 2026-10-04) vào ở I2c.
 
 ## 5. `verify` làm gì trên từng target
 

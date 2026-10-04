@@ -11,7 +11,7 @@
 
 NeuroEdge lớn lên theo **chiều rộng**, không theo **ngoại lệ**. Mỗi mốc thêm một nơi gate chạy (Pi, chip,
 nhiều node), một loại thứ gate canh (cảm biến, PWM, camera, motor), hay một cách gọi vào (giọng nói, hội
-thoại, MCP qua mạng). Không mốc nào thêm một đường tới phần cứng mà không qua gate. Đó là tinh thần sản
+thoại, MCP qua mạng, bridge của bên thứ ba). Không mốc nào thêm một đường tới phần cứng mà không qua gate. Đó là tinh thần sản
 phẩm ở [`00`](00-overview.md) §1.1, viết thành luật kiến trúc: **kiến trúc được phép rộng ra, xương sống
 `dispatch()` → gate → token → HAL → vết ghi thì không được ngắn lại.**
 
@@ -39,7 +39,7 @@ của nó; cột cuối là mốc mà phép chứng minh trở nên khó nhất.
 | Một hợp đồng ở mọi nơi | Cùng tệp gate, phân giải thuần (bất biến 4); Python và C cùng đặc tả; `verify` so phán quyết | [`10`](10-target-equivalence.md); `neuroedge verify --targets sim,linux,esp32s3` | 3 (chip thật), 10 (bo cộng đồng) |
 | Bằng chứng thay cho lời hứa | Mọi phán quyết vào vết ghi `trace.v1`; replay tính lại không gọi model | [`06`](06-runtime-flows.md) §7; Action CI | 5 (bản nháp do model sinh), 9 (vết ghi từ hiện trường) |
 | Người giữ quyền cuối | Model và client MCP không xác nhận được `ask` (Q-26); bản nháp NeuroBrain phải có người duyệt; không ai xác nhận thay một số đo (Q-62) | test `confirms`; RFC-0006, RFC-0009 | 5 (dựng bằng hội thoại) |
-| Cắm vào stack của người khác | MCP là bề mặt gọi vào; model và giọng nói là provider thay được (P-4); lược đồ, đặc tả, bộ kiểm tuân thủ theo Apache-2.0 (Q-45) | `docs/spec/tool_calling.md`; `fixtures/tool_calls/` | 6 (MCP qua mạng, Q-58) |
+| Cắm vào stack của người khác | MCP là bề mặt gọi vào; model và giọng nói là provider thay được (P-4); lược đồ, đặc tả, bộ kiểm tuân thủ và corpus tuân thủ theo Apache-2.0 (Q-45, Q-67); từ I2c, bên thứ ba tự nối qua điểm cắm của `neuroedge.sdk` mà không sửa lõi, bất biến an toàn không đổi (Q-67) | `docs/spec/tool_calling.md`; `fixtures/tool_calls/`; bộ test tuân thủ plugin (I2c, `planned`) | 2 (nền tảng mở, Q-67), 6 (MCP qua mạng, Q-58) |
 
 ## 3. Kiến trúc qua từng mốc
 
@@ -59,22 +59,42 @@ increment ở roadmap §0.2.
 - **Lời hứa được chứng minh bằng:** ba vết ghi chuẩn mực replay trong CI; `wheel-smoke` chạy cả hành trình
   từ bản đã cài.
 
-### Mốc 2 — Thiết bị thật trên Raspberry Pi *(I2, I2a, I2b)*
+### Mốc 2 — Thiết bị thật trên Raspberry Pi *(I2, I2a, I2b, I2c)*
 
 - **Người dùng làm được:** đấu một kit (đèn, cửa, quạt, cảm biến, camera, motor) vào Pi 5; cùng agent, cùng
-  gate như trên laptop.
+  gate như trên laptop; nối sản phẩm của hãng khác (Muse, Home Assistant, MCP server sẵn có) qua plugin và
+  proxy.
 - **Kiến trúc thêm:** `LinuxHAL` ngang `sim` — `run`, `record`, `mcp serve --target linux`, cảm biến
   hwmon/IIO, màn hình framebuffer `done` trên phần cứng ảo; nightly trên Pi 5 `planned`. **Bốn gói nguyên
   thủy tuỳ chọn theo bo mạch** (Q-53): cảm biến (`digital.in`, I2C chỉ đọc, `analog.in`, tiêu chí `numeric`),
   điều khiển mịn (PWM), thị giác (`vision.in`), chuyển động (`motion.*`); **phong bì an toàn** thành cơ chế
   chung cho mọi cơ cấu chấp hành; profile `sim-rpi5`; năm kit mẫu và `neuroedge add` → [`15`](15-target-architecture.md)
-  §2.1, §4.2, §4.4. `planned`.
+  §2.1, §4.2, §4.4. Trên `sim` và `linux` (gpio-sim, `i2c-stub`, `vivid` ở job `linux-hal`): phong bì an toàn, `digital.in`, I2C chỉ đọc, `analog.in`, thị giác, tiêu chí `numeric` và `NETR` v2, profile `sim-rpi5`, năm kit mẫu, thư viện gate và `neuroedge add` `done` (kit chưa dựng trên phần cứng thật, `TODOS.md` #59); PWM và `motion.*` `done` trên `sim`, trên `linux` mới với cây sysfs giả. Còn `planned`: `verify` phát lại agent `fan-pwm` và `rover`, kênh PWM và cơ cấu thật, camera mất giữa phiên trên kernel, golden suy luận thị giác, ô `esp32s3` (I3a). **I2c — Nền tảng mở** (Q-67; phụ thuộc I2b, đồ thị ở roadmap §2.1; **I11 — mở
+  danh sách target — đã gộp vào I2c**): bên thứ ba tự nối NeuroEdge với sản phẩm mới bằng vài lệnh, không sửa
+  lõi, không chờ đội lõi. Lõi an toàn dùng độc lập qua `neuroedge.guard` (không cần `agent.toml`, `@action` hay
+  `SimSession`); Extension SDK `neuroedge.sdk` với sáu loại điểm cắm qua entry points — bridge, fact source,
+  actuator, board, template, exporter — kèm bộ test tuân thủ theo loại (`neuroedge conformance`); hai proxy phổ
+  quát `neuroedge proxy mcp` và `proxy http`; cơ cấu chấp hành từ xa có mức tự tắt, đầu tiên là Home Assistant;
+  `--board <đường dẫn>` cho bo cộng đồng ngoài kho và danh sách target mở theo bậc (RFC-0002); index cộng đồng
+  cho `plugin search/install`. I4a, I6, I13, I14 và I16 phụ thuộc I2c → `neuroedge-design-open-platform.md`,
+  [`16`](16-ecosystem-landscape.md) §3, §8. `planned`; chữ ký RFC-0002 và việc đổi giấy phép corpus tuân thủ sang
+  Apache-2.0 `done` (2026-10-04).
 - **Hợp đồng:** sáu RFC đã chấp thuận (2026-10-01): RFC-0007, RFC-0009 → RFC-0013 — `board.v1` nhận khối
-  mới; `gate.v1` nhận tiêu chí `numeric`; `NETR` v2 ghim byte ở RFC-0009 §3d.
+  mới; `gate.v1` nhận tiêu chí `numeric`; `NETR` v2 ghim byte ở RFC-0009 §3d. Cho I2c: RFC-0002 đã ký
+  (2026-10-04); RFC-0016 (lõi dùng độc lập và Extension SDK), RFC-0017 (`source` theo không gian tên
+  `bridge:<id>`) và RFC-0018 (cơ cấu chấp hành từ xa) là bản nháp chờ chữ ký; mã RFC-0014 (dữ kiện từ tiến
+  trình ngoài) kéo lên I2c; `neuroedge.sdk` có phiên bản và cam kết ổn định riêng, chặt hơn `0.x` của gói; corpus
+  tuân thủ (`fixtures/tool_calls/`, `fixtures/contracts/`, `fixtures/traces/`, `fixtures/agents/`) theo
+  Apache-2.0 (`LICENSING.md`).
 - **Lời hứa được chứng minh bằng:** lệnh về phía an toàn không bao giờ bị chặn; mọi chân `digital_out` mặc
   định là cơ cấu chấp hành và có phong bì ghi bền qua khởi động lại; tự tắt tại
   `min(thời hạn lệnh, max_continuous_ms)`; giám sát ngoài tiến trình khi runtime treo (RFC-0007 §9); dữ
-  kiện thị giác lượng giá từng khung rồi AND, camera đứng hình ⇒ `BLOCK` (RFC-0012).
+  kiện thị giác lượng giá từng khung rồi AND, camera đứng hình ⇒ `BLOCK` (RFC-0012). Với plugin: bridge chỉ có
+  `dispatch(ToolCall)` và không có handle HAL, fact source không tự khai tuổi dữ kiện, actuator chỉ được HAL lái
+  sau token và phong bì (FR-EXT-03), mỗi điều có ca phản chứng bị bộ test tuân thủ bắt; proxy chỉ có giá trị khi
+  là đường duy nhất tới đích (`plugin doctor` cảnh báo khi đích còn tới được mà không qua proxy); cơ cấu từ xa
+  khai mức tự tắt, hành động không hoàn tác cần thiết bị tự tắt được dù mất liên lạc (RFC-0018 §7); bridge
+  `neuroedge-muse` viết ở kho riêng, lõi không đổi dòng nào (A13).
 
 ### Mốc 3 — Gate chạy trên chip $5 *(I3, I3a)*
 
@@ -121,7 +141,7 @@ increment ở roadmap §0.2.
 - **Kiến trúc thêm:** gói trên PyPI có SBOM và attestation; lược đồ ở URL công khai `schema.neuroedge.dev`
   (A9); **bề mặt tích hợp** (Q-58): MCP qua mạng — Streamable HTTP, OAuth 2.1, mTLS theo thiết bị, mặc định
   tắt (TSK-P2-04) — và Gated Tool Profile đóng băng vào `schemas/` (TSK-I6-05); **bề mặt Python công khai** có đặc tả
-  và phiên bản (TSK-I6-06, Q-63). `partial`: quét bí mật, SBOM `done`.
+  và phiên bản (TSK-I6-06, Q-63). `partial`: quét bí mật, SBOM, MCP qua mạng có xác thực (chưa thử trên hai máy thật), hợp đồng cho người tích hợp trong `schemas/` (RFC-0015) và bề mặt Python công khai `done`; PyPI và lược đồ ở URL công khai `planned`.
 - **Hợp đồng:** lược đồ phong bì `ToolCall` và kết quả, định danh phiên bản `board.v1` và danh mục mã lỗi vào `schemas/`
   qua RFC; từ đây OSS khác hiện thực được profile theo phần Apache-2.0 mà không phụ thuộc mã PolyForm NC (Q-59).
 - **Lời hứa được chứng minh bằng:** client trên máy khác vẫn chỉ gửi được *yêu cầu*; thiếu xác thực ⇒ từ
@@ -130,12 +150,13 @@ increment ở roadmap §0.2.
 ### Mốc 7 — v1.0: đưa vào sản phẩm *(I7)*
 
 - **Người dùng làm được:** cập nhật firmware có ký, khoá thiết bị, chạy ổn định 24 giờ; đủ tiêu chí nghiệm
-  thu A1–A12 (PRD §11.1).
+  thu A1–A13 (PRD §11.1).
 - **Kiến trúc thêm:** Secure Boot, mã hoá flash, anti-rollback eFuse, công tắc micro vật lý (TSK-S6-05)
   `planned`; OTA có ký và rollback phân vùng kép A/B `done` trên QEMU → [`15`](15-target-architecture.md) §2.4.
 - **Hợp đồng:** không đổi; `sdkconfig.ota` là lớp cấu hình riêng.
 - **Lời hứa được chứng minh bằng:** bên thứ ba hiện thực chuẩn từ lược đồ công khai (A9); 10 người ngoài
-  cài từ PyPI (A1); 5 người dựng kit (A12).
+  cài từ PyPI (A1); 5 người dựng kit (A12); một bên thứ ba nối hệ sinh thái mới trong ≤ 1 ngày, lõi không đổi
+  dòng nào (A13).
 
 ### Mốc 8 — Developer Beta *(I8)*
 
@@ -155,21 +176,21 @@ increment ở roadmap §0.2.
   provider tự vận hành gom endpoint và failover (TSK-K2-01→03, Q-28). Gate Registry: kho OCI (ORAS,
   Harbor), đo lường (OpenMeter) → [`15`](15-target-architecture.md) §3.1–§3.3. `planned`.
 - **Hợp đồng:** trường mới trong `metadata` của vết ghi (không cần RFC); ký gate và kiểm chữ ký trên thiết
-  bị (TSK-W2-04); ghim `extends` theo digest cần RFC (TSK-S3-21).
+  bị (TSK-W2-04); ghim `extends` theo digest (TSK-S3-21) đã kéo lên I2c — RFC rồi mã (Q-67).
 - **Lời hứa được chứng minh bằng:** OTA cấp thiết bị vẫn là của lõi, chiến dịch là của Fleet OS (proposal
   §6.4) — dịch vụ không bao giờ nằm trên đường quyết định của gate; 1.000 thiết bị, 0 brick (M5).
 
-### Mốc 10 — Mở rộng hệ sinh thái *(I11, I13, I14, I16, I17, I18)*
+### Mốc 10 — Mở rộng hệ sinh thái *(I13, I14, I16, I17, I18)*
 
 - **Người dùng làm được:** cộng đồng tự port bo mạch mới; robot Pi 5 với nhiều node MCU; Jetson; thoại cùng
   thị giác.
-- **Kiến trúc thêm:** bậc target `TARGET_TIERS` và `board validate` (RFC-0002); bộ port với vector tuân thủ
-  chạy ngoài kho (Q-13); robot phân tầng — mỗi node tự lượng giá gate, Zenoh-pico (Q-36), mất liên lạc về
+- **Kiến trúc thêm:** bộ port với vector tuân thủ chạy ngoài kho (Q-13), đứng trên bậc target `TARGET_TIERS`
+  và `board validate` (RFC-0002) — phần này trước là I11, nay đã gộp vào I2c (Q-67, mốc 2); robot phân tầng — mỗi node tự lượng giá gate, Zenoh-pico (Q-36), mất liên lạc về
   trạng thái an toàn theo từng cơ cấu (Q-35), ROS 2/Nav2 có gate (Q-34); `jetson` bậc 2; chứng nhận phần
-  cứng miễn phí, tự kiểm chứng → [`15`](15-target-architecture.md) §4, [`16`](16-ecosystem-landscape.md).
-  `planned`.
-- **Hợp đồng:** RFC-0002 (enum `target`), RFC-node, RFC an toàn robot di động (TSK-W4-07); vết ghi nhiều
-  node bằng trường tuỳ chọn (Q-32).
+  cứng miễn phí, tự kiểm chứng (SDK và chứng nhận "NeuroEdge-gated" đã kéo lên I2c) →
+  [`15`](15-target-architecture.md) §4, [`16`](16-ecosystem-landscape.md). `planned`.
+- **Hợp đồng:** RFC-node, RFC an toàn robot di động (TSK-W4-07); vết ghi nhiều node bằng trường tuỳ chọn
+  (Q-32). RFC-0002 (enum `target`) không còn ở mốc này — đã ký 2026-10-04, phần mã chuyển vào I2c (mốc 2).
 - **Lời hứa được chứng minh bằng:** gate on-device, không gate tập trung, kể cả khi hệ thống trải trên nhiều
   chip; black channel không tin transport; robot di động bắt buộc nút dừng khẩn phần cứng (Q-38).
 
@@ -181,7 +202,7 @@ Những chỗ kiến trúc hôm nay đã cố ý để mở, để các chặng 
 |:---|:---|:---|
 | Nguồn dữ kiện | giao thức `FactSource` (`engine/gate.py`) | thêm model quyết định, cảm biến, thị giác làm nguồn dữ kiện mà không đổi engine |
 | Nhà cung cấp model và giọng nói | `models/providers/`, `perception/providers/`, adapter `python:` | đổi nhà cung cấp bằng cấu hình |
-| HAL | lớp con `HardwareAbstractionLayer` + profile `boards/` | target mới (sau RFC-0002) |
+| HAL | lớp con `HardwareAbstractionLayer` + profile `boards/` | target mới (RFC-0002 đã ký; phần mã ở I2c) |
 | Backend registry | `GateRegistry` (`gate_resolver.py`) — docstring ghi rõ sẽ thay bằng tra cứu OCI | Gate Registry (I10) |
 | Sự kiện vết ghi | `type` là chuỗi tự do trong `trace.v1`; `metadata` nhận trường thêm | sự kiện mới, vết ghi nhiều node, mà không cần `trace.v2` |
 | Lớp cấu hình firmware | `SDKCONFIG_DEFAULTS` nhiều lớp | bật tính năng theo bo mạch mà không rẽ nhánh mã |
@@ -195,10 +216,7 @@ Mỗi mục là một lựa chọn có chủ đích, có mốc kích hoạt tron
 |:---|:---|:---|
 | Vết ghi chưa ký | cần khoá thiết bị; thuộc Fleet OS | #1 |
 | Token là `(nonce, digest)` trong bộ nhớ, không ký | mối đe doạ trong phạm vi là bỏ qua do nhầm lẫn | #2 |
-| `extends` chưa ghim theo digest | chưa có registry; `digests.lock` phủ CI | #15 |
-| Gated Tool Profile chưa đóng băng vào `schemas/` | đóng băng bằng RFC trước I6 (TSK-I6-05, Q-58) | #23 |
+| `extends` chưa ghim theo digest | chưa có registry; `digests.lock` phủ CI; đã lên lịch ở I2c (TSK-S3-21, Q-67) | #15 |
 | Kết nối MCP chỉ sống một lượt | mỗi lượt REPL một vòng lặp sự kiện | #25 |
-| Chưa có tiêu chí số trong gate | RFC-0009 đã chấp thuận; hiện thực ở TSK-W1-02 (mốc 2); `bands` đủ cho mẫu hiện có | #30 |
-| `NETR` v1 không mang nhãn gate và chữ `on_block` | cây link cùng firmware nên không lệch | #36 |
 | Thao tác và thời lượng lệnh chân trên chip lấy từ bảng dựng trên host | cách action chạy trên MCU chưa chốt | #37 |
 | Đọc cảm biến `linux` chặn vòng lặp sự kiện | chưa có agent vừa nói vừa đọc cảm biến | #48 |

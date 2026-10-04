@@ -8,8 +8,8 @@
 
 | Kind of port | Possible today? | Notes |
 |:---|:---|:---|
-| **A new board for an existing target** (another Linux SBC, another ESP32-S3 board) | Technically yes; but `boards/` accepts only the **three tier-1 profiles** until RFC-0002 (`test_boards.py`), and the reference board of `esp32s3` is only Box-3 (invariant 6) | Good for internal experiments; not publishable yet |
-| **A new target** (`stm32`, `rp2350`, `jetson`) | **Not yet**: the target list is closed at `sim`, `linux`, `esp32s3` in `schemas/` and `hal/board.py` | RFC-0002 (under discussion) opens the list by tier at I11; the community port tool kit at I13 |
+| **A new board for an existing target** (another Linux SBC, another ESP32-S3 board) | Technically yes; but `boards/` accepts only the **reference-board profiles of the three tier-1 targets** (four files since `sim-rpi5`, RFC-0013) until the code of RFC-0002 lands in I2c (`test_boards.py`), and the reference board of `esp32s3` is only Box-3 (invariant 6) | Good for internal experiments; not publishable yet. From I2c (`planned`), a community board outside the repo loads with `--board <path>`, is self-certified with `board validate`, and is never a reference board (TSK-I2c-05) |
+| **A new target** (`stm32`, `rp2350`, `jetson`) | **Not yet**: the target list is closed at `sim`, `linux`, `esp32s3` in `schemas/` and `hal/board.py` | RFC-0002 (signed 2026-10-04) opens the list by tier — its code is in I2c ([`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §4.3.3, formerly I11); the community port tool kit at I13 |
 | **Tier 3, community self-checked** (Q-13) | The process is planned at I13 (`TSK-P1-01…05`) | This chapter describes the part that already has code and the part that will change |
 
 The rest describes the **contract** — it does not change when the target list opens — and the code that

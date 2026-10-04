@@ -81,7 +81,7 @@ of `linux`. They wait for a nightly runner on real hardware (TSK-S4-05, TSK-I2-0
   Pi measures echo cancellation (`simulation_coverage.md` §6.2).
 - **Pin names are logical** (`door_lock`, `porch_light`, `gate_relay`); GPIO numbers belong to each
   target's HAL.
-- The target list is frozen at the three tier-1 targets until RFC-0002 (I11).
+- The target list is frozen at the three tier-1 targets until the code of RFC-0002 (signed 2026-10-04) lands in I2c.
 
 ## 5. What `verify` does on each target
 

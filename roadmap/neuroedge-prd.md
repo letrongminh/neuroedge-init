@@ -76,6 +76,7 @@ Ba câu hỏi mà công cụ hiện tại không trả lời được:
 | **M3** | Cùng một mã nguồn agent chạy nhất quán trên mọi môi trường | `neuroedge verify` đạt 100% trên các target bậc 1: `sim`, `linux`, `esp32s3` |
 | **M4** | Sự cố hiện trường tái hiện được trên máy lập trình viên | Tải vết ghi và replay thành công bằng một lệnh |
 | **M5** | Đội vận hành cập nhật firmware quy mô lớn không mất thiết bị | 1.000 thiết bị / 0 sự cố brick |
+| **M6** | Bên thứ ba tự nối NeuroEdge với một sản phẩm hay hệ sinh thái mới mà không sửa lõi, không chờ đội lõi *(Q-67)* | Một bridge cho hệ sinh thái chưa từng có, viết ở kho riêng chỉ từ tài liệu công khai, qua bộ test tuân thủ trong **≤ 1 ngày**; che một MCP server sẵn có trong **≤ 3 lệnh** (A13) |
 
 ### 1.4 Phi mục tiêu
 
@@ -96,7 +97,7 @@ Mọi yêu cầu trong tài liệu này phải tuân thủ năm nguyên tắc sa
 | **P-2** | Các môi trường thực thi ngang hàng | Không được rẽ nhánh logic theo target trong mã nguồn agent. Mức cam kết kiểm chứng phân theo ba bậc target (FR-TGT-08); hệ quả kỹ thuật này áp dụng như nhau ở mọi bậc |
 | **P-3** | Giá trị tập trung ở quản trị đội thiết bị và license thương mại | Người dùng phi thương mại có toàn bộ lõi miễn phí; với doanh nghiệp, tính năng an toàn cốt lõi luôn nằm trong license thương mại, không bao giờ bị tách thành gói trả thêm (Q-45) |
 | **P-4** | Mô hình AI là thành phần thay thế được — cloud-first, provider-pluggable | Mọi truy cập mô hình đi qua interface `SystemOne` / `SystemTwo`; chuẩn kết nối mặc định là OpenAI API, provider không tương thích đi qua adapter tự viết; ASR và TTS cũng là provider thay thế được. Phần nặng xử lý ngôn ngữ chạy trên cloud/host, `esp32s3` chỉ thu/phát âm thanh và thẩm định gate |
-| **P-5** | Hiệu ứng mạng từ chia sẻ chính sách an toàn và thành phần mở rộng | Gate là tệp dữ liệu có phiên bản, chia sẻ và kế thừa được. Adapter kết nối nhà cung cấp và bản port HAL là loại tài sản chia sẻ thứ hai; chúng là mã thực thi nên đi kèm cổng kiểm soát riêng — Bộ kiểm thử tuân thủ, sandbox phân quyền và đối chiếu năng lực lúc build |
+| **P-5** | Hiệu ứng mạng từ chia sẻ chính sách an toàn và thành phần mở rộng | Gate là tệp dữ liệu có phiên bản, chia sẻ và kế thừa được. Adapter kết nối nhà cung cấp và bản port HAL là loại tài sản chia sẻ thứ hai; chúng là mã thực thi nên đi kèm cổng kiểm soát riêng — Bộ kiểm thử tuân thủ, sandbox phân quyền và đối chiếu năng lực lúc build. Từ Q-67, mọi đường nối với bên ngoài là một điểm cắm của Extension SDK (FR-EXT): bên thứ ba tự nối mà không sửa lõi, còn bất biến an toàn không đổi |
 
 ---
 
@@ -112,6 +113,7 @@ Mọi yêu cầu trong tài liệu này phải tuân thủ năm nguyên tắc sa
 | **U4** | **Chuyên gia an toàn & QA** | Chịu trách nhiệm phê duyệt hành vi thiết bị | Điều kiện an toàn đọc được, nhật ký đối soát được | Phụ |
 | **U5** | **Đối tác sản xuất phần cứng (OEM/ODM)** | Bán bo mạch, muốn kèm lớp agent | Tích hợp không khóa khách vào một dòng chip | Phụ |
 | **U6** | **Đội tích hợp robot phân tầng** | Robot một não (Pi 5) và nhiều bộ điều khiển MCU: motor, tay máy, dẫn đường qua ROS 2/Nav2 (Q-32, Q-34) | Mọi lệnh chuyển động qua gate trên từng node; mất liên lạc thì từng cơ cấu về trạng thái an toàn (Q-35) | Phụ — từ I14; giả thuyết, kiểm bằng phỏng vấn ở `TODOS.md` #40 |
+| **U7** | **Tác giả tích hợp (bên thứ ba)** | Hãng thiết bị AI mới, cộng đồng của một hệ sinh thái (Muse Gadgets, Home Assistant, xiaozhi…), maker viết cầu nối cho sản phẩm mình đang dùng | Tự nối sản phẩm của mình với lớp an toàn chỉ qua tài liệu công khai, không sửa lõi; tự chứng minh đúng bằng bộ test tuân thủ (Q-67) | Chính — từ I2c |
 
 ### 2.2 Nhiệm vụ cần hoàn thành (Jobs To Be Done)
 
@@ -186,10 +188,10 @@ nói mốc nào gồm increment nào.
 |:---|:---|:---:|:---|:---|
 | **0.x** | Bản increment nội bộ | I1–I5 | Mỗi increment một tag nội bộ và một tín hiệu đo; **không phát hành ra ngoài** (Q-39) | — |
 | **Công khai** | Repo công khai + PyPI | I6 | Bản ứng viên của MVP: demo thoại và bốn gói nguyên thủy mở rộng trên `sim`, `linux` và `esp32s3` | I5a và I2b phát hành |
-| **v1.0 = MVP** | Lõi (source-available, Q-45) — lần ra mắt MVP (Q-52) | I7 | Khối 1a + Khối 1b + bốn gói nguyên thủy mở rộng (Q-53) + kit mẫu + NeuroBrain (Q-55) | Đạt toàn bộ tiêu chí §11.1 (A1–A12) |
+| **v1.0 = MVP** | Lõi (source-available, Q-45) — lần ra mắt MVP (Q-52) | I7 | Khối 1a + Khối 1b + bốn gói nguyên thủy mở rộng (Q-53) + kit mẫu + nền tảng mở (Q-67) + NeuroBrain (Q-55) | Đạt toàn bộ tiêu chí §11.1 (A1–A13) |
 | **Developer Beta** | Beta trên dòng `1.0.x` | I8 | Đóng băng tính năng trên dòng `1.0.x`, hỗ trợ 50–100 lập trình viên | v1.0 phát hành |
 | **v1.1** | Tầng dịch vụ thương mại | I9–I10 | Khối 2 + Khối 3 | **Cột mốc định lượng** — xem §3.3 |
-| **Mở rộng (1.x)** | Giai đoạn 2 — phủ rộng phần cứng, Jetson, đa phương thức | I11, I13, I16–I18 | Khối V1a/V2/V3 + P1/P2 *(proposal §8.9)*; thị giác trên `sim`/`linux`/`esp32s3` (V1b) đã vào v1.0 (Q-53) · tag theo roadmap §0.2 | **2a:** RFC-0002 được phê duyệt |
+| **Mở rộng (1.x)** | Giai đoạn 2 — phủ rộng phần cứng, Jetson, đa phương thức | I13, I16–I18 | Khối V1a/V2/V3 + P1/P2 *(proposal §8.9)*; thị giác trên `sim`/`linux`/`esp32s3` (V1b) đã vào v1.0 (Q-53) · tag theo roadmap §0.2 | **2a:** RFC-0002 được phê duyệt — đã ký 2026-10-04, hiện thực ở I2c (Q-67) |
 
 Khối 4 (AURA thực địa, sau Beta — điều kiện ở proposal §8.6) và Khối 5 (Marketplace, khi đạt G1–G4) nằm ngoài phạm vi PRD này; chúng được đặc tả trong tài liệu sản phẩm riêng khi tới mốc. Theo Q-39, kế hoạch thực thi của Giai đoạn 2, NeuroBrain (I4a, I5a — Q-55) và robot phân tầng (I14) nằm trong roadmap chung; PRD này chỉ đặc tả các hợp đồng mà Giai đoạn 2 phải tuân thủ (FR-TGT-08, FR-HAL-01), không đặc tả yêu cầu chi tiết của nó.
 
@@ -441,6 +443,23 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-CLI-07** | Mọi lệnh có `--help` mô tả đủ tham số và ví dụ sử dụng | P0 | `--help` của mỗi lệnh thoát mã 0 và có ít nhất một ví dụ; test tự động duyệt toàn bộ lệnh |
 | **FR-CLI-08** | Lệnh chạy lâu hiển thị tiến trình; lệnh phá hủy dữ liệu yêu cầu xác nhận | P1 | `build`, `verify`, `record` hiển thị tiến trình; lệnh xoá hoặc ghi đè dữ liệu không chạy khi chưa xác nhận và thoát khác 0 |
 
+### 7.3 Mở rộng của bên thứ ba (FR-EXT)
+
+Thiết kế: [`neuroedge-design-open-platform.md`](neuroedge-design-open-platform.md); hợp đồng ở RFC-0016, RFC-0017,
+RFC-0018 (`docs/rfc/`). Quyết định: Q-67.
+
+| Mã | Yêu cầu | Ưu tiên | Tiêu chí nghiệm thu | Nguồn |
+|:---|:---|:---:|:---|:---:|
+| **FR-EXT-01** | **Lõi an toàn dùng độc lập:** API `neuroedge.guard` cho chương trình bất kỳ (proxy, bridge, node robot) — gate → token → phong bì → vết ghi, không bắt buộc `agent.toml`, `@action` hay `SimSession` | P0 | Một chương trình ngắn gate được một hành động và ghi vết ghi hợp lệ mà không có `agent.toml` | Q-67 |
+| **FR-EXT-02** | **Sáu loại điểm cắm qua entry points:** bridge, fact source, actuator, board, template, exporter. Plugin chỉ nạp khi được bật rõ; nạp hỏng hoặc lệch phiên bản SDK ⇒ không khởi động; nguồn gốc in ra và ghi vào vết ghi | P0 | Với mỗi loại, một package ngoài kho cài bằng `pip` chạy được, lõi không đổi dòng nào | Q-67 |
+| **FR-EXT-03** | **Bất biến cấu trúc của plugin:** bridge chỉ gửi được yêu cầu tool không mang `source` qua bộ điều phối do lõi cấp (lõi gán `bridge:<id>`), không có handle HAL; fact source không tự khai tuổi dữ kiện; actuator chỉ được HAL lái sau token và phong bì | P0 | Bộ test tuân thủ chứng minh từng điều; A3 vẫn là 0 lối tắt | Q-67 |
+| **FR-EXT-04** | **Bộ test tuân thủ theo loại plugin:** `neuroedge conformance <package>`, kết quả máy đọc được | P0 | Plugin mẫu đạt; mỗi phép kiểm có một ca phản chứng bị bắt | Q-67 |
+| **FR-EXT-05** | **Tài sản ngoài gói:** `--board <đường dẫn>` cho bo cộng đồng (tự chứng nhận, không bao giờ là bo tham chiếu); template từ đường dẫn, package hay git ghim commit; nhiều gốc registry gate; `extends` ghim được bằng digest | P0 | Mỗi nguồn có test; `verify` không bao giờ tính bo ngoài kho vào tương đương bậc 1 | Q-67, RFC-0002 |
+| **FR-EXT-06** | **Hai proxy phổ quát:** `neuroedge proxy mcp` che một MCP server sẵn có (`guard init --mcp` sinh gate chặn mặc định cho từng tool) và `neuroedge proxy http` | P0 | Che một MCP server sẵn có trong ≤ 3 lệnh; công cụ chẩn đoán cảnh báo khi đích còn tới được mà không qua proxy | Q-67 |
+| **FR-EXT-07** | **Cơ cấu chấp hành từ xa** có mức tự tắt khai rõ; hành động không hoàn tác cần mức mà thiết bị tự tắt được dù mất liên lạc | P0 | Theo RFC-0018 §7; adapter Home Assistant đạt đúng mức nó khai | Q-67 |
+| **FR-EXT-08** | **Khám phá và phân phối:** index cộng đồng (kho riêng, Apache-2.0), `neuroedge plugin search/install`, huy hiệu "NeuroEdge-gated" chỉ cấp khi đạt FR-EXT-04. Không thu phí, không xếp hạng trả tiền (Marketplace vẫn chặn, §14) | P1 | Một plugin bên thứ ba cài từ index, hiện kết quả tuân thủ | Q-67 |
+| **FR-EXT-09** | **`neuroedge.sdk` ổn định:** có phiên bản riêng; cam kết chặt hơn mức `0.x` của gói (`docs/spec/python_api.md`) | P0 | Test ghim bề mặt SDK như `test_public_api.py` ghim `__all__` | Q-67 |
+
 ---
 
 ## 8. Yêu cầu chức năng — Tầng dịch vụ thương mại
@@ -538,6 +557,7 @@ Các lớp phòng thủ theo proposal §5 — hành động vật lý, bên gọ
 | **NFR-SEC-07** | Mã bên thứ ba | Sandbox giới hạn quyền truy cập chân actuator nhạy cảm | P0 (v1.1) |
 | **NFR-SEC-08** | Nhà cung cấp bên ngoài | Dữ liệu âm thanh và văn bản gửi tới provider cloud phải đi qua kênh mã hóa TLS 1.3; hệ thống ghi nhận provider đang dùng trong vết ghi. Việc chọn provider tuân thủ quy định là trách nhiệm của người dùng | P0 |
 | **NFR-SEC-09** | Bên gọi tool | MCP mặc định qua **stdio** (bên chạy tiến trình là người vận hành). Transport mạng vào v1.0 (Q-58, TSK-P2-04): **mặc định tắt**, chỉ bật khi có xác thực OAuth 2.1 và mTLS theo thiết bị (NFR-SEC-04); thiếu một trong hai thì từ chối khởi động. LLM và client MCP là bên gọi **không tin cậy** — `docs/spec/threat_model.md` §2b | P0 |
+| **NFR-SEC-10** | Plugin của bên thứ ba | Plugin chạy trong tiến trình là mã người vận hành tin (`threat_model.md` §3): chỉ nạp khi được bật rõ, nguồn gốc (gói, phiên bản, băm tệp) in ra và ghi vào vết ghi; không API nào của `neuroedge.sdk` trao handle phần cứng cho bridge hay fact source (FR-EXT-03, Q-67) | P0 |
 
 ### 9.5 Quyền riêng tư (NFR-PRIV)
 
@@ -630,6 +650,7 @@ Các bản increment nội bộ trước khi công khai (I1–I5) không đượ
 | **A10** | Đủ nguyên thủy trên ba target | Mỗi nguyên thủy mở rộng của FR-HAL-08 có agent mẫu đạt `verify` **100%** trên `sim`, `linux`, `esp32s3` *(Q-53)* | Chạy trong CI và nightly trên bo mạch thật, lưu nhật ký |
 | **A11** | Dựng bằng hội thoại có hợp đồng | Mỗi gói có ít nhất **một** hợp đồng do NeuroBrain sinh, qua `gate lint`, test hai chiều và người duyệt, chạy trên ba target; **0** bản nháp được khoá mà thiếu test BLOCK *(Q-55)* | Kịch bản ghi lại cùng vết ghi, `verify` ba target |
 | **A12** | Kit mẫu dựng được | Trung vị **≤ 1 ngày** từ mở hộp tới thiết bị thật chạy agent có gate, trên 5 người ngoài đội, mỗi người một kit *(Q-52)* | Biên bản đo có mốc thời gian từng bước |
+| **A13** | Nền tảng mở | Một bên thứ ba nối NeuroEdge với một hệ sinh thái chưa từng có, ở kho riêng, chỉ từ tài liệu công khai, qua bộ test tuân thủ trong **≤ 1 ngày**, lõi không đổi dòng nào; che một MCP server sẵn có trong **≤ 3 lệnh** *(Q-67)* | Biên bản đo của bài kiểm `neuroedge-muse` (roadmap TSK-I2c-17); test CI cài plugin ngoài kho |
 
 ### 11.2 Nghiệm thu Developer Beta
 
@@ -744,13 +765,13 @@ Danh mục loại trừ tường minh — **nơi duy nhất** của trạng thá
 
 | Hạng mục | Trạng thái | Tiêu chí | Điều kiện xem xét lại |
 |:---|:---|:---:|:---|
-| Marketplace thương mại có thu phí | Chặn | PF-3 | Đạt toàn bộ cột mốc G1–G4 (proposal §8.7) |
+| Marketplace thương mại có thu phí | Chặn | PF-3 | Đạt toàn bộ cột mốc G1–G4 (proposal §8.7). Index cộng đồng của plugin (FR-EXT-08) không phải Marketplace: không thu phí, không xếp hạng trả tiền |
 | Thanh toán tự động giữa agent | Chặn | PF-4 | Đạt cột mốc và có đánh giá pháp lý riêng |
 | Chương trình chứng nhận phần cứng có thu phí | Chặn | PF-3 | Đạt cột mốc và có quy trình kiểm chuẩn độc lập |
 | Thị giác máy tính (camera, NPU) | **Đưa vào Giai đoạn 2**, tách hai bước | PF-1, PF-3 | **2a mở danh sách target:** RFC-0002 được phê duyệt · **2b hiện thực** (gồm RFC nguyên thủy `vision.in`): nhu cầu camera đo được từ khách hàng thật, TTFV thoại vẫn < 10 phút |
 | Jetson | **Đưa vào Giai đoạn 2** ở bậc 2 (FR-TGT-08) | PF-3 | RFC-0002 được phê duyệt và có nhu cầu đo được từ khách hàng thật |
 | Tự phát triển SLAM, tránh vật cản, dẫn đường tự hành, drone | Chặn — **ngoại lệ Q-34:** tích hợp nguyên bản ROS 2/Nav2, gate xét mọi lệnh tốc độ (roadmap I14) | PF-1, PF-3 | Không có — dẫn đường thuộc ROS 2/Nav2 |
-| Matter, HomeKit | Hoãn — tới khi đạt điều kiện kích hoạt | PF-3 | Có nhu cầu đo được từ khách hàng thật |
+| Matter, HomeKit | Hoãn — tới khi đạt điều kiện kích hoạt | PF-3 | Có nhu cầu đo được từ khách hàng thật. Cộng đồng tự làm được dưới dạng plugin cơ cấu từ xa (FR-EXT-07, Q-67) mà không cần đội lõi |
 | SSO/SAML, chứng chỉ SOC 2 | Hoãn — tới khi đạt điều kiện kích hoạt | PF-3 | Có hợp đồng doanh nghiệp yêu cầu cụ thể |
 | Chứng nhận an toàn chức năng (SIL theo IEC 61508, PL theo ISO 13849, ISO 13482) | Chặn tạm thời (Q-38) | PF-3 | Câu C6 của bộ phỏng vấn (`docs/business/cong-nhu-cau-2026-10-25/`, nay chỉ là đầu vào thông tin — Q-56): một phân khúc có nhãn **R** ≥ 3/5 (`CEO-T2`), hoặc người mua robot trả lời như vậy (`TODOS.md` #40) |
 | Multi-region, on-premise | Hoãn — tới khi đạt điều kiện kích hoạt | PF-3 | Có ràng buộc chủ quyền dữ liệu từ khách hàng thật |
@@ -838,6 +859,7 @@ Mọi quyết định kỹ thuật, đã chốt hoặc còn mở — xem cột T
 | **Q-64** | Quy tắc ngừng hỗ trợ của API Python công khai | **ĐÃ CHỐT** *(2026-10-03, chủ sản phẩm)* | Chấp nhận đề xuất của TSK-I6-06 (`docs/spec/python_api.md` §3, §5): một tên công khai bị đánh dấu ngừng hỗ trợ ở một bản MINOR, vẫn chạy kèm `DeprecationWarning` ít nhất một bản MINOR đầy đủ nữa, và chỉ bị bỏ ở bản MAJOR; lỗ hổng an toàn là ngoại lệ duy nhất (bỏ ngay ở bản PATCH). Trong `0.x`, bản MINOR đóng vai MAJOR: không thay đổi phá vỡ nào ở bản PATCH. Khoảng trống NE1003 trong danh mục mã lỗi được chấp nhận tới khi RFC-0007 hiện thực `EnvelopeRefusedError`; `ToolCallError` lấy NE1004. Cùng ngày chốt thêm: (a) `SimSession` và `Turn` vào `__all__`, chỉ hứa những thành viên mã `neuroedge new` dùng (`python_api.md` §2.1); mẫu chỉ import tên công khai; (b) hợp đồng CLI định nghĩa ngay (`python_api.md` §6): được hứa tên lệnh, tên cờ, đối số bắt buộc, mã thoát, đầu ra máy đọc; không hứa câu chữ cho người đọc; cây lệnh ghim bằng `test_cli_contract.py`. |
 | **Q-65** | Câu hỏi mở của RFC-0014 (dữ kiện từ tiến trình ngoài) | **ĐÃ CHỐT** *(2026-10-04, chủ sản phẩm; nguyên tắc an toàn cao nhất như Q-57)* | Quyết định chi tiết ở §9 của [RFC-0014](../docs/rfc/0014-du-kien-tu-tien-trinh-ngoai.md), nơi duy nhất ghi chúng. Điểm chính: chỉ nguồn cùng máy qua ổ cắm Unix (nguồn ở máy khác cần RFC bổ sung dùng danh tính của TSK-P2-04); `esp32s3` không nhận dữ kiện ngoài; chỉ `numeric`, trạng thái hai giá trị là số 0/1; không xác nhận thay một nguồn đã rớt; giao thức dây ở `docs/spec/external_facts.md`, chưa vào `schemas/` tới sau Beta; lõi không chứa adapter mẫu; bộ nhận chỉ bật khi `agent.toml` có `[external]`; `neuroedge build` cảnh báo (không chặn) khi một hành động điều khiển cơ cấu có gate chỉ dựa vào tiêu chí có `external_source`; hằng của §3d–§3e chốt như đề xuất. Kỹ thuật trưởng ký trên PR #92. Mã sau v1.0 (`TODOS.md` #56). |
 | **Q-66** | Câu hỏi mở của RFC-0015 (hợp đồng cho người tích hợp) | **ĐÃ CHỐT** *(2026-10-04, chủ sản phẩm và kỹ thuật trưởng; nguyên tắc an toàn cao nhất như Q-57)* | Chấp nhận khuyến nghị của cả mười ba câu; chi tiết ở §10 của [RFC-0015](../docs/rfc/0015-hop-dong-cho-nguoi-tich-hop.md), nơi duy nhất ghi chúng. Điểm chính: `reason` là chuỗi mở và đối tượng kết quả mở (`status` quyết định, không rẽ nhánh ALLOW theo `reason`); `tool-call.v1.json` có `inputSchema` và mô tả tool; hai tệp `tool-call`, `tool-result`; danh mục `schemas/error-codes.v1.json` là nguồn của cấu trúc mã lỗi, Phụ lục B giữ lời; NE0000, NE2000 đóng băng với `general: true`; khoá `schema` của bo tuỳ chọn, bo mang `schema` khác `v1` bị từ chối; không ghim `$schema` của `trace.v1`, không dự trù `source` mới, `error.v1` trong JSON-RPC ngoài phạm vi. Hoãn có mốc: giấy phép corpus tuân thủ (`TODOS.md` #57), khoá bắt buộc hiểu cho `board.v1` (`TODOS.md` #58). Kỹ thuật trưởng ký trên PR #93; hiện thực trong hai PR (RFC-0015 §8). |
+| **Q-67** | Nền tảng mở: bên thứ ba tự nối NeuroEdge với sản phẩm mới mà không chờ đội lõi | **ĐÃ CHỐT** *(2026-10-04, chủ sản phẩm; kỹ thuật trưởng ký RFC-0002)* | NeuroEdge là **lớp an toàn mở**: maker hay bên thứ ba nối với bất kỳ sản phẩm, hệ sinh thái mới nào (Muse Gadgets, Home Assistant, Alexa+, xiaozhi, ESP-Claw, ROS 2…) bằng vài lệnh, không sửa lõi, không chờ đội lõi; bất biến an toàn giữ nguyên (gate → phong bì → token → HAL; fail-closed; lệnh về phía an toàn không bị chặn). Tám quyết định: (1) increment **I2c — Nền tảng mở**, làm trước NeuroBrain (I4a) và là điều kiện của I6; I11 gộp vào I2c; thêm M6, U7, A13, FR-EXT, NFR-SEC-10; (2) `source` của tool call mở thành không gian tên (`bridge:<id>`), đảo RFC-0015 §10 câu 11 (RFC-0017); (3) mã RFC-0014 kéo lên trước v1.0, vào I2c (gỡ `TODOS.md` #56); (4) RFC-0002 được ký và hiện thực trong I2c, cộng `--board <đường dẫn>` cho bo cộng đồng ngoài kho — tự chứng nhận, không bao giờ là bo tham chiếu (RFC-0016); (5) cơ cấu chấp hành từ xa có mức tự tắt; mức không tự tắt bị cấm cho hành động không hoàn tác (RFC-0018, phần thiết kế của `TODOS.md` #55); (6) corpus tuân thủ (`fixtures/tool_calls/`, `fixtures/contracts/`, `fixtures/traces/`, `fixtures/agents/`) sang Apache-2.0 (`LICENSING.md`, đóng `TODOS.md` #57); (7) API plugin `neuroedge.sdk` có phiên bản và cam kết ổn định riêng, chặt hơn `0.x` (RFC-0016); (8) mã runtime giữ PolyForm NC (Q-45, Q-59); plugin của bên thứ ba ở kho và theo giấy phép của tác giả. Thiết kế: `neuroedge-design-open-platform.md`; bằng chứng thị trường: `docs/reports/thi-truong-tich-hop-2026-10-04.md`. Hệ quả đã chấp nhận: lịch MVP dài thêm (Q-52: lùi ngày, không cắt phạm vi). |
 
 ---
 
@@ -911,6 +933,7 @@ A.1 truy vết theo **mục tiêu sản phẩm**, A.2 theo **nguyên tắc bất
 | **FR-CLI** | 02→08 | Bề mặt dòng lệnh | A1, A8 |
 | **FR-CLI** | 09→12 | `gate lint`, `gate resolve`, `board`, `mcp` | A5 *(09, 10)* · A2 *(11)* · A3 *(12)* |
 | **FR-DX** | 03→07 | Khuôn mẫu dự án, ví dụ mẫu, thông báo lỗi | A1, A8 |
+| **FR-EXT** | 01→09 | Lõi dùng độc lập, điểm cắm, tuân thủ, proxy, cơ cấu từ xa, phân phối | A13, A3 |
 | **FR-TGT** | 07 | Mô phỏng kịch bản suy giảm trong `sim` | A4 |
 | **FR-MDL** | 05, 06 | Định tuyến khai báo và ghi nhận tỷ lệ S1/S2 | C4 |
 | **FR-FLT** | 01, 03, 04, 06 | Provisioning, giám sát, cấu hình từ xa, thiết bị ảo | C1, roadmap TR-7 |

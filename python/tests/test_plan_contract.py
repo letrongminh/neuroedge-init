@@ -19,6 +19,7 @@ ROADMAP = DOCS / "neuroedge-roadmap.md"
 DESIGN_NOTES = (
     "roadmap/neuroedge-design-neurobrain.md",
     "roadmap/neuroedge-design-phase2.md",
+    "roadmap/neuroedge-design-open-platform.md",
     "roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md",
     "docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md",
 )

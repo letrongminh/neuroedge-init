@@ -239,6 +239,9 @@ Chiến lược phân phối của NeuroEdge — mã nguồn công khai, miễn 
 
 Toàn bộ HAL, Action Contract Engine, Voice pipeline và Action CI miễn phí cho mục đích phi thương mại, nên maker và người nghiên cứu không gặp rào cản nào; doanh nghiệp dùng thương mại cần license thương mại. Chuẩn — lược đồ, đặc tả, bộ kiểm thử tuân thủ — mở theo Apache-2.0, nên bên thứ ba tự hiện thực và tự kiểm chứng được mà không cần license của NeuroEdge (Q-45, `LICENSING.md`).
 
+#### Nền tảng mở: ai cũng tự nối được (Q-67)
+Chuẩn mở chỉ lan khi người khác **dùng được nó mà không phải chờ ai**. Từ Q-67, mọi đường nối giữa NeuroEdge và thế giới bên ngoài — lệnh vào từ một agent hay hệ sinh thái khác, dữ kiện vào từ camera hay cảm biến của bên thứ ba, cơ cấu chấp hành từ xa, bo mạch, kit, bộ xuất quan sát — là một **điểm cắm** của Extension SDK, kèm bộ kiểm thử tuân thủ để bên viết plugin tự chứng minh đúng. Lõi an toàn dùng độc lập được, đặt trước một MCP server sẵn có hay bên trong firmware của hãng khác. Một hệ sinh thái mới ra thị trường (Meta Muse Gadgets, 2026-10) là phép thử: cộng đồng viết cầu nối ở kho của mình, lõi không đổi dòng nào. Bất biến an toàn không đổi: không đường nào tới cơ cấu chấp hành bỏ qua gate. Thiết kế: [`neuroedge-design-open-platform.md`](neuroedge-design-open-platform.md).
+
 #### Quản trị chuẩn mở và Cam kết chuyển giao cho tổ chức trung lập
 Để lược đồ Gate và lược đồ vết ghi JSON thực sự trở thành tiêu chuẩn chung không bị chi phối bởi lợi ích cục bộ của bất kỳ công ty nào, NeuroEdge thiết lập cơ chế quản trị chuẩn mực ngay từ ngày đầu:
 - **Quy trình RFC (Request for Comments) minh bạch:** Mọi thay đổi về schema của `@action`, cú pháp của Gate hoặc lược đồ JSON của vết ghi đều phải qua tài liệu RFC công khai trên GitHub, cho phép cộng đồng thảo luận và phản biện trước khi hợp nhất.
@@ -1625,7 +1628,8 @@ Quá trình đối chiếu Golden trả lời chính xác câu hỏi: **Với c�
 | `sim` | Môi trường mô phỏng cục bộ trên máy tính cá nhân | Miễn phí | Nền tảng chính thức (First-class) |
 | Raspberry Pi 5 / x86 | BCM2712 / Kiến trúc x86-64 | ~$80 | Nền tảng chính thức (`linux`) |
 | ESP32-S3-Box-3 | ESP32-S3 tích hợp sẵn màn hình ST7789, dual-mic & loa | ~$50 | Bo mạch tham chiếu chính thức (`esp32s3`) |
-| ESP32-S3-DevKitC / CoreS3 | ESP32-S3 tiêu chuẩn / M5Stack | ~$5–$50 | Bo mạch thứ cấp (Hỗ trợ từ cộng đồng) |
+| M5Stack CoreS3 | ESP32-S3, camera GC0308, màn hình cảm ứng | ~$50 | Bo mạch tham chiếu thứ hai của `esp32s3`, mang thị giác (PRD Q-61, RFC-0013) |
+| ESP32-S3-DevKitC | ESP32-S3 tiêu chuẩn | ~$5–$15 | Bo mạch thứ cấp (Hỗ trợ từ cộng đồng) |
 | Seeed XIAO ESP32S3 | ESP32-S3 kích thước siêu nhỏ | ~$8 | Hỗ trợ từ cộng đồng |
 | NVIDIA Jetson Orin Nano / NX | ARM Cortex-A78AE + Tăng tốc GPU | ~$150–$500 | **Bậc 2 — Mở rộng** (`jetson`, Giai đoạn 2 §8.9) |
 | STM32 (dòng H7 / U5) | Vi điều khiển công nghiệp Cortex-M | ~$5–$20 | **Bậc 3 — Cộng đồng** (`stm32`, Giai đoạn 2 §8.9) |
