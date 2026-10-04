@@ -5,9 +5,9 @@
 version: 1
 files:
   fixtures/agents/blinds/gates/blinds_close@1.0.0.yaml:
-    digest: sha256:19de938ac21f534a4e4c628726d92f6bb15f77730a10446ce20f3fd4365a0d34
+    digest: sha256:1b8a80ac4124365220bb7b7258d5933e489ba0ddbf2907519b6ed3f81599ffc1
   fixtures/agents/blinds/gates/blinds_open@1.0.0.yaml:
-    digest: sha256:4122e119c7957cad9f2b0b52bb52b7f44b0864a813907e710d792ac635b2fe7c
+    digest: sha256:b73b3079d1ac164eb1ab41e1fb5763e73bb0aa897c72169d3277d99b8ddf00dd
   fixtures/agents/factory-monitor/gates/alarm_off@1.0.0.yaml:
     digest: sha256:240790fd8a07efb9d285e1ce10d5931f13013e5b77efbe798482877de5367cb9
   fixtures/agents/factory-monitor/gates/alarm_on@1.0.0.yaml:

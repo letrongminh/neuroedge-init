@@ -25,11 +25,13 @@ class Clock:
         return self.now
 
 
-def start(**facts):
+def start(*, estop_released=True, current_sense=0.4, path_clear=True):
+    """`limit_switch` is the emergency-stop contact (high = released), `adc0` the current-sense volts."""
     clock = Clock()
     session = SimSession.load(AGENT, board_id="sim-rpi5", clock=clock)
-    for criterion, value in facts.items():
-        session.set_fact(criterion, value)
+    session.set_digital_in("limit_switch", estop_released)
+    session.set_analog("adc0", current_sense)
+    session.set_fact("path_clear", path_clear)
     return session, clock
 
 
@@ -65,17 +67,17 @@ def test_a_lease_nobody_renews_ends_in_the_safe_state():
 
 
 @pytest.mark.parametrize(
-    ("fact", "tool"),
+    ("setting", "tool", "criterion"),
     [
-        ("estop_released", "blinds_open"),
-        ("device_fault_free", "blinds_open"),
-        ("path_clear", "blinds_close"),
+        ({"estop_released": False}, "blinds_open", "estop_released"),
+        ({"current_sense": 0.9}, "blinds_open", "motor_current_sense"),
+        ({"path_clear": False}, "blinds_close", "path_clear"),
     ],
 )
-def test_a_blocked_command_never_moves_the_servo(fact, tool):
-    session, _ = start(**{fact: False})
+def test_a_blocked_command_never_moves_the_servo(setting, tool, criterion):
+    session, _ = start(**setting)
     answer = ask(session, tool)
-    assert answer["status"] == "BLOCK" and answer["failed_criterion"] == fact
+    assert answer["status"] == "BLOCK" and answer["failed_criterion"] == criterion
     assert targets(session) == []
     session.close()
 

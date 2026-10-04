@@ -22,7 +22,7 @@ motion channels), recorded on a fake clock so they are the same every time:
                                    no pin moves
     blinds-allow.json              open, close: ALLOW x2, the servo is commanded; a lease nobody renews
                                    ends in its safe state (`hold`) before the close renews the run
-    blinds-block.json              emergency stop pressed, a hand in the slot, the driver faulted: BLOCK x3,
+    blinds-block.json              emergency stop pressed, a hand in the slot, too much current: BLOCK x3,
                                    the servo never moves; then an open, the hold running out
                                    (`stop`, `max_hold_ms`), and a close inside the envelope's interval,
                                    allowed by the gate and refused by the envelope
@@ -97,6 +97,14 @@ def frames_to(n: float):
         session.clock.now = 1000.0 + n * FRAME_MS
 
     return apply
+
+
+def estop(released: bool):
+    return lambda session: session.set_digital_in("limit_switch", released)
+
+
+def current_sense(volts: float):
+    return lambda session: session.set_analog("adc0", volts)
 
 
 def lose_camera(session) -> None:
@@ -236,15 +244,15 @@ def sessions() -> dict[str, dict]:
             "blinds",
             "b11db10c",
             [
-                fact("estop_released", False),
+                estop(False),
                 tool("blinds_open"),  # the emergency stop is pressed
-                fact("estop_released", True),
+                estop(True),
                 fact("path_clear", False),
                 tool("blinds_close"),  # a hand in the slot
                 fact("path_clear", True),
-                fact("device_fault_free", False),
-                tool("blinds_open"),  # the driver reports a fault: nobody's "có" stands in for it
-                fact("device_fault_free", True),
+                current_sense(0.9),
+                tool("blinds_open"),  # the driver draws too much: over the gate's 0.8 V
+                current_sense(0.4),
                 tool("blinds_open"),
                 wait(300),
                 settle,

@@ -34,7 +34,7 @@ from neuroedge.hal.board import load_board_by_id
 from neuroedge.testing import assert_matches_golden, replay
 from neuroedge.trace import validate_trace
 
-from .test_hal_linux import FakeGpiod
+from .test_hal_linux import FakeGpiod, Value
 
 KITS = {
     "villa-concierge": "kit-khoa-cua-villa.md",
@@ -153,6 +153,8 @@ def test_every_name_in_a_wiring_diagram_exists_in_that_board_profile(root, kit, 
     drawn_sensors = set(re.findall(r"sensor:([a-z0-9_]+)", diagram))
     drawn_channels = set(re.findall(r"motion:([a-z0-9_]+)", diagram))
     drawn_modes = set(re.findall(r"camera:([0-9]+x[0-9]+)", diagram))
+    drawn_analog = set(re.findall(r"analog:([a-z0-9_]+)", diagram))
+    analog = {c["name"] for c in capabilities.get("analog_in", {}).get("channels", [])}
     assert drawn_pins or drawn_channels, f"{kit} on {board}: the diagram names no line"
     assert drawn_pins <= pins, f"{kit} on {board}: {sorted(drawn_pins - pins)} is not a pin"
     assert drawn_sensors <= sensors, (
@@ -162,6 +164,9 @@ def test_every_name_in_a_wiring_diagram_exists_in_that_board_profile(root, kit, 
         f"{kit} on {board}: {sorted(drawn_channels - channels)} is not a motion channel"
     )
     assert drawn_modes <= modes, f"{kit} on {board}: {sorted(drawn_modes - modes)} is not a mode"
+    assert drawn_analog <= analog, (
+        f"{kit} on {board}: {sorted(drawn_analog - analog)} is no channel"
+    )
 
 
 @pytest.mark.parametrize(("kit", "board"), WIRED)
@@ -170,6 +175,10 @@ def test_a_wiring_diagram_draws_every_name_the_agent_needs(root, kit, board):
     diagram = diagrams(root, kit)[board]
     for pin in requires.get("digital.out", {}).get("pins", []):
         assert f"line:{pin}" in diagram, f"{kit} on {board}: {pin} is not wired"
+    for pin in requires.get("digital.in", {}).get("pins", []):
+        assert f"line:{pin}" in diagram, f"{kit} on {board}: input {pin} is not wired"
+    for channel in requires.get("analog.in", {}).get("channels", []):
+        assert f"analog:{channel}" in diagram, f"{kit} on {board}: {channel} is not wired"
     for sensor in requires.get("sensor.read", {}).get("sensors", []):
         assert f"sensor:{sensor}" in diagram, f"{kit} on {board}: {sensor} is not wired"
     for channel in requires.get("motion", {}).get("channels", []):
@@ -669,7 +678,7 @@ def test_the_blinds_traces_hold_a_lease_that_ends_safe_a_refusal_and_the_envelop
         e["data"]["failed_criterion"]
         for e in block
         if e["type"] == "gate_evaluation_result" and e["data"]["verdict"] == BLOCK
-    ] == ["estop_released", "path_clear", "device_fault_free"]
+    ] == ["estop_released", "path_clear", "motor_current_sense"]
     assert [e["data"]["target"] for e in block if e["type"] == "motion_command"] == [90.0], (
         "a BLOCK and an envelope refusal never reached the servo"
     )
@@ -679,7 +688,7 @@ def test_the_blinds_traces_hold_a_lease_that_ends_safe_a_refusal_and_the_envelop
 
 
 def test_the_kit_gates_extend_the_library_and_only_tighten_it(root):
-    for kit, parent in (("gate-camera", "camera"), ("blinds", "light")):
+    for kit, parent in (("gate-camera", "camera"), ("blinds", "motor")):
         for gate in LOCKED_GATES[kit]:
             document = yaml.safe_load((root / gate).read_text("utf-8"))
             assert document["extends"] == f"neuroedge://gates/home/{parent}@1.0.0", gate
@@ -701,7 +710,9 @@ def pwm_sys(tmp_path):
 
 
 @pytest.fixture
-def motion_gpio(monkeypatch, tmp_path):
+def motion_gpio(monkeypatch, tmp_path, fake_sys):
+    """The blinds rig: `servo_en` is a line, `limit_switch` is the emergency-stop contact (released),
+    the ADC reads 0.4 V on the servo driver's current-sense pin, and the PWM is wired."""
     chip = tmp_path / "gpiochip0"
     chip.write_text("")
     names = [
@@ -709,9 +720,15 @@ def motion_gpio(monkeypatch, tmp_path):
         "fan_en", "motor_en", "servo_en",
     ]  # fmt: skip
     fake = FakeGpiod({str(chip): names})
+    fake.values[(str(chip), names.index("limit_switch"))] = Value.ACTIVE
+    fake.estop = lambda released: fake.values.__setitem__(
+        (str(chip), names.index("limit_switch")), Value.ACTIVE if released else Value.INACTIVE
+    )
     monkeypatch.setattr(linux, "CHIP_GLOB", str(tmp_path / "gpiochip*"))
     monkeypatch.setattr(linux, "_import_gpiod", lambda: fake)
     monkeypatch.setenv(linux.MOTION_ENV, "gripper=pwmchip0/1")
+    monkeypatch.setenv(linux.ANALOG_ENV, "adc0=hwmon:ads7828/in0")
+    fake.adc = fake_sys(2, "ads7828", "in0", "400")
     return fake
 
 
@@ -723,23 +740,47 @@ def test_the_blinds_kit_on_the_pi_drives_the_enable_line_and_a_block_never_does(
     from neuroedge.sim import SimSession
 
     agent = root / "fixtures" / "agents" / "blinds" / "agent.toml"
-    session = SimSession.load(agent, target="linux", target_options={"sysfs_root": pwm_sys})
+    options = {"sysfs_root": pwm_sys}
+    session = SimSession.load(agent, target="linux", target_options=options)
     try:
         assert session.hal.motion_values().keys() == {"gripper"}
         assert anyio.run(session.handle, "mở rèm").allowed
-        assert is_high(motion_gpio, "servo_en")
+        # the 200 ms lease may already have dropped the line on a slow machine: the history shows it rose
+        assert ("servo_en", 1) in motion_gpio.history
     finally:
         session.close()
     assert not is_high(motion_gpio, "servo_en"), "the session ends with the driver down"
-    blocked = SimSession.load(
-        agent, target="linux", target_options={"sysfs_root": pwm_sys}, facts={"path_clear": False}
-    )
-    try:
-        turn = anyio.run(blocked.handle, "đóng rèm")
-        assert turn.result is not None and turn.result.blocked
-        assert not is_high(motion_gpio, "servo_en")
-    finally:
-        blocked.close()
+    raised = motion_gpio.history.count(("servo_en", 1))
+
+    def blocked(text, after):
+        session = SimSession.load(agent, target="linux", target_options=options)
+        try:
+            after()
+            turn = anyio.run(session.handle, text)
+            assert turn.result is not None and turn.result.blocked
+            assert motion_gpio.history.count(("servo_en", 1)) == raised, "a BLOCK never powers it"
+            return turn.result.gate.failed_criterion
+        finally:
+            session.close()
+
+    assert blocked("mở rèm", lambda: motion_gpio.estop(False)) == "estop_released"
+    motion_gpio.estop(True)
+    motion_gpio.adc.joinpath("in0_input").write_text("900\n")  # 0.9 V: over the gate's 0.8 V
+    assert blocked("mở rèm", lambda: None) == "motor_current_sense"
+    motion_gpio.adc.joinpath("in0_input").write_text("400\n")
+
+
+def test_a_blinds_current_sense_that_is_gone_refuses_the_session_and_the_servo_stays_off(
+    root, motion_gpio, pwm_sys
+):
+    from neuroedge.errors import BoardCapabilityError
+    from neuroedge.sim import SimSession
+
+    agent = root / "fixtures" / "agents" / "blinds" / "agent.toml"
+    motion_gpio.adc.joinpath("in0_input").unlink()  # the ADC no longer answers
+    with pytest.raises(BoardCapabilityError, match="in0_input"):
+        SimSession.load(agent, target="linux", target_options={"sysfs_root": pwm_sys})
+    assert not is_high(motion_gpio, "servo_en")
 
 
 def test_the_blinds_kit_on_the_pi_is_refused_when_no_pwm_is_wired_and_no_line_is_requested(

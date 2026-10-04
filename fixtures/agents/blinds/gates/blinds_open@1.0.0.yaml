@@ -1,21 +1,9 @@
-# Mở rèm: kế thừa gate `light` của thư viện khởi đầu (bộ truyền động không báo lỗi; ngoài giờ yên tĩnh, hoặc
-# người có mặt trả lời "có" thay cho giờ yên tĩnh — không thay được cho lỗi thiết bị) và chỉ siết thêm:
-# nút dừng khẩn phải nhả, ngân sách 100 ms ≤ lease_ms / 2 của kênh.
-#
-# Vì sao không kế thừa `motor`: gate đó đòi dòng điện (A) và nhiệt độ (degC) dạng số, mà chưa bo mạch nào
-# khai kênh có đúng đơn vị ấy (`docs/user/kit-rem-cua.md`). Gate này chỉ dùng dữ kiện đúng/sai.
+# Mở rèm: kế thừa gate `motor` của thư viện khởi đầu (nút dừng khẩn đã nhả, điện áp current-sense trong giới
+# hạn, ngân sách 100 ms ≤ lease_ms / 2) và chỉ siết thêm: trần current-sense của servo hạ từ 1,0 V xuống 0,8 V.
 schema:  neuroedge.gate/v1
 name:    blinds-open
 version: 1.0.0
-extends: neuroedge://gates/home/light@1.0.0
-
-evaluate:
-  estop_released:
-    type: bool
-    instructions: "Nút dừng khẩn đã nhả và mạch an toàn đóng"
+extends: neuroedge://gates/home/motor@1.0.0
 
 allow_when:
-  estop_released: true
-
-budget:
-  p95_latency_ms: 100
+  motor_current_sense: { lte: 0.8 }

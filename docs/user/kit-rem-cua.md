@@ -11,15 +11,17 @@ phép. Kit làm cho rèm lá; cửa cuốn xem phần "Giới hạn" cuối tran
 ## Gate đã khoá
 
 `blinds_open@1.0.0` và `blinds_close@1.0.0` nằm ở `fixtures/agents/blinds/gates/`, có digest trong
-`digests.lock`. Cả hai **kế thừa `gates/home/light@1.0.0`** của thư viện khởi đầu và chỉ siết thêm:
+`digests.lock`. Cả hai **kế thừa `gates/home/motor@1.0.0`** của thư viện khởi đầu và chỉ siết thêm:
 
-- (gate cha) bộ truyền động không báo lỗi (`device_fault_free`: người có mặt **không** trả lời thay được);
-  ngoài giờ yên tĩnh (`quiet_hours_ok`: người có mặt nói "có" thì xét lại);
-- `estop_released`: nút dừng khẩn đã nhả;
+- (gate cha) `estop_released`: nút dừng khẩn đã nhả, đọc từ một đầu vào số (`limit_switch`, `digital.in`);
+- (gate cha) `motor_current_sense` ≤ 1,0 V: điện áp chân current-sense của mạch cấp điện cho servo, đọc qua
+  kênh `adc0` (`analog.in`, đơn vị V, tuổi tối đa 200 ms); gate con hạ trần xuống 0,8 V. Thang V→A tuỳ mạch
+  của bạn: chỉnh ngưỡng theo bảng dữ liệu của nó, và chỉ được siết;
 - `blinds_close` thêm `path_clear`: khe rèm không có vật hay tay (đóng là chiều có thể kẹp);
 - ngân sách 100 ms = `lease_ms / 2` của kênh, kiểm lúc `neuroedge build`.
 
-Lệnh theo hướng an toàn (về `safe_state`, dừng) không bao giờ qua gate (RFC-0011). Sửa gate đã khoá cần RFC.
+Số đọc mất, hỏng hay quá cũ ⇒ `criterion_unavailable` ⇒ chặn. Lệnh theo hướng an toàn (về `safe_state`, dừng)
+không bao giờ qua gate (RFC-0011). Sửa gate đã khoá cần RFC.
 
 ## BOM
 
@@ -31,7 +33,8 @@ Mô tả theo chức năng và thông số. **Không có mã hàng, giá hay nh�
 | 2 | Servo nghiêng rèm | Servo mô hình điều khiển bằng xung PWM, hành trình ít nhất 90°, đủ mô-men cho trục lá rèm | có |
 | 3 | Mạch cấp điện cho servo | Có chân enable từ bo (`servo_en`): enable thấp là servo mất điện; nguồn riêng, tách khỏi nguồn của bo | có |
 | 4 | Điện trở kéo xuống | 10 kΩ từ chân `servo_en` về GND (chân thả nổi ⇒ servo tắt) | có |
-| 5 | Nút dừng khẩn | Nút nhấn giữ, cắt nguồn của servo bằng phần cứng, độc lập với phần mềm | có |
+| 5 | Nút dừng khẩn | Nút nhấn giữ, cắt nguồn của servo bằng phần cứng, độc lập với phần mềm; thêm một tiếp điểm phụ nối vào chân `limit_switch` (cao = đã nhả) để phần mềm biết | có |
+| 5b | ADC và mạch current-sense | ADC 12 bit thang 0–2,5 V (profile khai `adc0`) nối chân current-sense của mạch cấp điện servo | có |
 | 6 | Cảm biến khe rèm (tuỳ chọn) | Công tắc hoặc cảm biến phát hiện vật kẹp; kit mô phỏng `path_clear` bằng dữ kiện phiên | có |
 | 7 | Nguồn cho bo | Nguồn 5 V cho Pi 5 | có |
 
@@ -41,7 +44,7 @@ servo của profile; kit dùng nó làm trục nghiêng của rèm lá.
 ## Sơ đồ đấu dây
 
 Nhãn `line:<tên>` là tên chân của bo trong `boards/*.toml`; `motion:<kênh>` là tên kênh trong
-`[[capabilities.motion.servo]]`. Test `python/tests/test_kits.py` kiểm cả hai với profile bo. Tín hiệu PWM
+`[[capabilities.motion.servo]]`; `analog:<kênh>` là kênh trong `[capabilities.analog_in]`. Test `python/tests/test_kits.py` kiểm cả hai với profile bo. Tín hiệu PWM
 của kênh do HAL điều khiển (không phải chân `digital.out` của agent), nên sơ đồ chỉ vẽ dây dẫn tới servo.
 Chỉ có sơ đồ cho `linux-rpi5`: Box-3 không khai `motion`.
 
@@ -54,6 +57,9 @@ flowchart LR
   PSU["Nguồn của servo"] --> DRV
   DRV --> SV
   EST["Nút dừng khẩn, cắt nguồn servo"] -.-> DRV
+  EST -->|"tiếp điểm phụ: line:limit_switch"| PI
+  CS["Chân current-sense của mạch servo"] -->|"analog:adc0 (V)"| PI
+  DRV --> CS
   PD["10 kΩ kéo xuống"] -. "line:servo_en" .- PI
 ```
 
@@ -69,20 +75,17 @@ neuroedge test
 ```
 
 - **`sim-rpi5`**: `neuroedge test` chạy sáu ca (mở, đóng, lease hết hạn ⇒ `safe_state`, ba BLOCK không
-  nhúc nhích servo, phong bì từ chối lệnh thứ hai quá sớm). Trong REPL, `:set path_clear false` rồi
-  `đóng rèm` ⇒ BLOCK.
+  nhúc nhích servo, phong bì từ chối lệnh thứ hai quá sớm). Trong REPL, `:input limit_switch false` (dừng
+  khẩn), `:analog adc0 0.9` (dòng quá lớn) hay `:set path_clear false` rồi `mở rèm` / `đóng rèm` ⇒ BLOCK.
 - **`linux` trên Pi 5**: kênh cần một nguồn PWM khai bằng biến môi trường (`NEUROEDGE_LINUX_MOTION`,
-  ví dụ `gripper=pwmchip0/1`, cần overlay PWM của Pi) và line `servo_en` do device-tree đặt tên. Test:
+  ví dụ `gripper=pwmchip0/1`, cần overlay PWM của Pi), nguồn của `adc0` (`NEUROEDGE_LINUX_ANALOG`, ví dụ
+  `adc0=hwmon:ads7828/in0`) và các line `servo_en`, `limit_switch` do device-tree đặt tên. Mất ADC ⇒ phiên
+  bị từ chối, servo không có điện. Test:
   `python/tests_linux/test_kit_blinds.py` (chân `gpio-sim`, cây PWM giả). Servo thật, mô-men và việc
   driver cắt điện khi `servo_en` xuống **chưa kiểm** (cần giàn thử, RFC-0011 §3f).
 
 ## Giới hạn
 
-- **Gate `motor` của thư viện chưa dùng được cho kit này.** Nó đòi dòng điện (`A`) và nhiệt độ (`degC`) dạng
-  số, mà chưa bo mạch nào khai một kênh `analog.in` đúng đơn vị đó (`adc0` là `V`; `sensor.read` không cấp
-  số có đơn vị). Một gate con của `motor` vì thế luôn chặn `criterion_unavailable` trên mọi bo hiện có.
-  Kit kế thừa `light` (chỉ dữ kiện đúng/sai) và thêm `estop_released`. Khi có kênh dòng điện và nhiệt độ trong
-  profile bo, đổi sang `motor` là việc của một PR riêng.
 - **Cửa cuốn**: kênh `motor` của kho chưa có chiều ngược (`direction` chỉ `forward`, RFC-0011), nên kit không
   làm cửa cuốn hai chiều; rèm lá dùng servo (có vị trí) nên mở và đóng đều làm được.
 

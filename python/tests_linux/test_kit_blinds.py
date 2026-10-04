@@ -1,11 +1,14 @@
 """
 The blinds kit on a real kernel (TSK-I2b-02): the servo's enable line on gpio-sim.
 
-Run by the `linux-hal` CI job after `scripts/setup_gpio_sim.sh`:
+Run by the `linux-hal` CI job after `scripts/setup_gpio_sim.sh` (the lines `servo_en` and `limit_switch`) and
+`scripts/setup_i2c_stub.sh` (an `ads7828` bound to its hwmon driver at 0x4a, the current-sense reading):
 
     cd python && python -m pytest -q tests_linux
 
-`servo_en` is a gpio-sim line, read from sysfs independently of the process that drives it. The PWM is a
+`servo_en` is a gpio-sim line, read from sysfs independently of the process that drives it; the emergency
+stop is the gpio-sim line `limit_switch` whose `pull` is its level, and the current-sense volts are the ADC's
+channel 0 read through hwmon (codes as in `test_rail_gate.py`: 656 is 0.4 V, 1639 is 1.0 V). The PWM is a
 fake `/sys/class/pwm` tree in a temporary directory: the runner has no PWM controller and no servo. What
 is not shown here — that a pulse tilts the slats, that the driver cuts power when its enable line drops —
 needs the stage-B rig (RFC-0011 §3f; `docs/user/kit-rem-cua.md`, "Chưa kiểm").
@@ -18,12 +21,14 @@ from __future__ import annotations
 
 import asyncio
 import os
+import subprocess
 import time
 from pathlib import Path
 
 import pytest
 
 from neuroedge.errors import BoardCapabilityError
+from neuroedge.hal.linux import ANALOG_ENV
 from neuroedge.hal.motion_pwm import MOTION_ENV
 from neuroedge.paths import fixtures_dir
 from neuroedge.sim import SimSession
@@ -66,9 +71,42 @@ def pwm_root(tmp_path) -> Path:
     return root
 
 
+HEALTHY_CODE, OVERLOADED_CODE = (
+    656,
+    1639,
+)  # 0.4 V and 1.0 V on the channel (the gate wants <= 0.8 V)
+
+
+def env(name: str) -> str:
+    value = os.environ.get(name)
+    assert value, f"{name} is not set; run the setup script that exports it first"
+    return value
+
+
+def set_adc(code: int) -> None:
+    """The 12-bit conversion result of channel 0 (an SMBus word is little-endian)."""
+    word = ((code & 0xFF) << 8) | (code >> 8)
+    subprocess.run(
+        ["i2cset", "-f", "-y", env("NEUROEDGE_I2C_STUB_BUS"), "0x4a", "0x8c", hex(word), "w"],
+        check=True,
+    )
+
+
+def pull(sysfs: Path, pin: str, high: bool) -> None:
+    """What the emergency-stop contact does: gpio-sim's `pull` is the level an input reads."""
+    (sysfs / f"sim_gpio{LINES.index(pin)}" / "pull").write_text("pull-up" if high else "pull-down")
+
+
 @pytest.fixture
-def wired(monkeypatch):
+def wired(monkeypatch, sysfs):
+    """The blinds rig: PWM wired, emergency stop released, a healthy current-sense reading."""
     monkeypatch.setenv(MOTION_ENV, "gripper=pwmchip0/1")
+    monkeypatch.setenv(ANALOG_ENV, f"adc0=hwmon:ads7828@{env('NEUROEDGE_ADS7828_DEVICE')}/in0")
+    pull(sysfs, "limit_switch", True)
+    set_adc(HEALTHY_CODE)
+    yield
+    pull(sysfs, "limit_switch", True)
+    set_adc(0x800)
 
 
 def kernel_value(sysfs: Path, pin: str) -> int:
@@ -104,21 +142,27 @@ def test_an_allowed_open_raises_the_enable_line_and_the_lease_drops_it(sysfs, pw
 
 @pytest.mark.usefixtures("fresh_actions", "wired")
 @pytest.mark.parametrize(
-    ("facts", "text"),
+    ("trouble", "text", "criterion"),
     [
-        ({"estop_released": False}, "mở rèm"),
-        ({"device_fault_free": False}, "mở rèm"),
-        ({"path_clear": False}, "đóng rèm"),
+        ("estop", "mở rèm", "estop_released"),
+        ("overload", "mở rèm", "motor_current_sense"),
+        ("hand", "đóng rèm", "path_clear"),
     ],
-    ids=["emergency stop", "driver fault", "a hand in the slot"],
+    ids=["emergency stop", "too much current", "a hand in the slot"],
 )
-def test_a_blocked_command_never_raises_the_enable_line(sysfs, pwm_root, facts, text):
+def test_a_blocked_command_never_raises_the_enable_line(sysfs, pwm_root, trouble, text, criterion):
+    facts = {"path_clear": False} if trouble == "hand" else {}
+    if trouble == "estop":
+        pull(sysfs, "limit_switch", False)
+    if trouble == "overload":
+        set_adc(OVERLOADED_CODE)
     session = SimSession.load(
         AGENT, target="linux", facts=facts, target_options={"sysfs_root": pwm_root}
     )
     try:
         turn = say(session, text)
         assert turn.result is not None and turn.result.blocked
+        assert turn.result.gate.failed_criterion == criterion
         assert not wait_for(sysfs, "servo_en", 1, timeout=0.3), "a BLOCK never powers the servo"
     finally:
         session.close()
@@ -135,6 +179,7 @@ def test_without_a_wired_pwm_the_session_is_refused_before_any_line_moves(
 
 
 @pytest.mark.parametrize("name", ["blinds-allow", "blinds-block"])
+@pytest.mark.usefixtures("wired")
 def test_the_golden_traces_replay_on_the_kernel_lines_as_recorded(name, sysfs):
     path = GOLDEN / f"{name}.json"
     linux = replay(path, target="linux", agent=AGENT, board_id="linux-rpi5")

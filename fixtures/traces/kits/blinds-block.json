@@ -6,9 +6,37 @@
     "target": "sim",
     "board_id": "sim-rpi5",
     "agent_version": "blinds@0.1.0",
-    "anonymized": true
+    "anonymized": true,
+    "sensor_facts_digest": "sha256:5a304a33be445373a996b5deba4cf027a19a82f0efba346c21ea330f338b0a38"
   },
   "events": [
+    {
+      "offset_ms": 0,
+      "type": "digital_in_set",
+      "data": {
+        "pin": "limit_switch",
+        "value": false
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "analog_in",
+      "data": {
+        "channel": "adc0",
+        "value": 0.4,
+        "unit": "V",
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "digital_in",
+      "data": {
+        "pin": "limit_switch",
+        "value": false,
+        "use": "fact"
+      }
+    },
     {
       "offset_ms": 0,
       "type": "tool_call",
@@ -33,27 +61,28 @@
       "type": "gate_evaluation_begin",
       "data": {
         "gate": "blinds-open@1.0.0",
-        "gate_digest": "sha256:4ba30e63c1be095a6141fe246505c60b06fb859c68169b98c68f581d0c990206"
+        "gate_digest": "sha256:69d9e64c0c2f842ec0626e0a38f76503523cf404e94cbe45f74612fc44c54bcb"
       }
     },
     {
       "offset_ms": 0,
       "type": "gate_facts",
       "data": {
-        "device_fault_free": {
-          "value": true,
-          "confidence": null,
-          "source": "context"
-        },
-        "quiet_hours_ok": {
-          "value": true,
-          "confidence": null,
-          "source": "context"
-        },
         "estop_released": {
           "value": false,
           "confidence": null,
-          "source": "context"
+          "source": "digital.in",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
+        },
+        "motor_current_sense": {
+          "value": 0.4,
+          "confidence": null,
+          "source": "context",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
         }
       }
     },
@@ -64,14 +93,39 @@
         "verdict": "BLOCK",
         "reason": "condition_not_met",
         "evaluations": {
-          "device_fault_free": true,
-          "quiet_hours_ok": true,
-          "estop_released": false
+          "estop_released": false,
+          "motor_current_sense": 0.4
         },
         "blocked_by": "blinds-open@1.0.0",
-        "action": "ask",
-        "failed_criterion": "estop_released",
-        "message": "Đang trong giờ yên tĩnh — vẫn bật đèn?"
+        "action": "deny",
+        "failed_criterion": "estop_released"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "digital_in_set",
+      "data": {
+        "pin": "limit_switch",
+        "value": true
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "analog_in",
+      "data": {
+        "channel": "adc0",
+        "value": 0.4,
+        "unit": "V",
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "digital_in",
+      "data": {
+        "pin": "limit_switch",
+        "value": true,
+        "use": "fact"
       }
     },
     {
@@ -98,27 +152,28 @@
       "type": "gate_evaluation_begin",
       "data": {
         "gate": "blinds-close@1.0.0",
-        "gate_digest": "sha256:5fc9a24dcec133666e0e39dd5df882eb5262f8e3578b847fdc500ec4a1be7a62"
+        "gate_digest": "sha256:8adcd34f26cebccd6077995da1aedd5846f39ae5f941aa86af73de66591fe1f9"
       }
     },
     {
       "offset_ms": 0,
       "type": "gate_facts",
       "data": {
-        "device_fault_free": {
-          "value": true,
-          "confidence": null,
-          "source": "context"
-        },
-        "quiet_hours_ok": {
-          "value": true,
-          "confidence": null,
-          "source": "context"
-        },
         "estop_released": {
           "value": true,
           "confidence": null,
-          "source": "context"
+          "source": "digital.in",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
+        },
+        "motor_current_sense": {
+          "value": 0.4,
+          "confidence": null,
+          "source": "context",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
         },
         "path_clear": {
           "value": false,
@@ -134,15 +189,40 @@
         "verdict": "BLOCK",
         "reason": "condition_not_met",
         "evaluations": {
-          "device_fault_free": true,
-          "quiet_hours_ok": true,
           "estop_released": true,
+          "motor_current_sense": 0.4,
           "path_clear": false
         },
         "blocked_by": "blinds-close@1.0.0",
-        "action": "ask",
-        "failed_criterion": "path_clear",
-        "message": "Đang trong giờ yên tĩnh — vẫn bật đèn?"
+        "action": "deny",
+        "failed_criterion": "path_clear"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "analog_set",
+      "data": {
+        "channel": "adc0",
+        "value": 0.9
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "analog_in",
+      "data": {
+        "channel": "adc0",
+        "value": 0.9,
+        "unit": "V",
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "digital_in",
+      "data": {
+        "pin": "limit_switch",
+        "value": true,
+        "use": "fact"
       }
     },
     {
@@ -169,27 +249,28 @@
       "type": "gate_evaluation_begin",
       "data": {
         "gate": "blinds-open@1.0.0",
-        "gate_digest": "sha256:4ba30e63c1be095a6141fe246505c60b06fb859c68169b98c68f581d0c990206"
+        "gate_digest": "sha256:69d9e64c0c2f842ec0626e0a38f76503523cf404e94cbe45f74612fc44c54bcb"
       }
     },
     {
       "offset_ms": 0,
       "type": "gate_facts",
       "data": {
-        "device_fault_free": {
-          "value": false,
-          "confidence": null,
-          "source": "context"
-        },
-        "quiet_hours_ok": {
-          "value": true,
-          "confidence": null,
-          "source": "context"
-        },
         "estop_released": {
           "value": true,
           "confidence": null,
-          "source": "context"
+          "source": "digital.in",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
+        },
+        "motor_current_sense": {
+          "value": 0.9,
+          "confidence": null,
+          "source": "context",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
         }
       }
     },
@@ -200,14 +281,39 @@
         "verdict": "BLOCK",
         "reason": "condition_not_met",
         "evaluations": {
-          "device_fault_free": false,
-          "quiet_hours_ok": true,
-          "estop_released": true
+          "estop_released": true,
+          "motor_current_sense": 0.9
         },
         "blocked_by": "blinds-open@1.0.0",
-        "action": "ask",
-        "failed_criterion": "device_fault_free",
-        "message": "Đang trong giờ yên tĩnh — vẫn bật đèn?"
+        "action": "deny",
+        "failed_criterion": "motor_current_sense"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "analog_set",
+      "data": {
+        "channel": "adc0",
+        "value": 0.4
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "analog_in",
+      "data": {
+        "channel": "adc0",
+        "value": 0.4,
+        "unit": "V",
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 0,
+      "type": "digital_in",
+      "data": {
+        "pin": "limit_switch",
+        "value": true,
+        "use": "fact"
       }
     },
     {
@@ -234,27 +340,28 @@
       "type": "gate_evaluation_begin",
       "data": {
         "gate": "blinds-open@1.0.0",
-        "gate_digest": "sha256:4ba30e63c1be095a6141fe246505c60b06fb859c68169b98c68f581d0c990206"
+        "gate_digest": "sha256:69d9e64c0c2f842ec0626e0a38f76503523cf404e94cbe45f74612fc44c54bcb"
       }
     },
     {
       "offset_ms": 0,
       "type": "gate_facts",
       "data": {
-        "device_fault_free": {
-          "value": true,
-          "confidence": null,
-          "source": "context"
-        },
-        "quiet_hours_ok": {
-          "value": true,
-          "confidence": null,
-          "source": "context"
-        },
         "estop_released": {
           "value": true,
           "confidence": null,
-          "source": "context"
+          "source": "digital.in",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
+        },
+        "motor_current_sense": {
+          "value": 0.4,
+          "confidence": null,
+          "source": "context",
+          "read_offset_ms": 0,
+          "eval_offset_ms": 0,
+          "age_ms": 0
         }
       }
     },
@@ -264,9 +371,8 @@
       "data": {
         "verdict": "ALLOW",
         "evaluations": {
-          "device_fault_free": true,
-          "quiet_hours_ok": true,
-          "estop_released": true
+          "estop_released": true,
+          "motor_current_sense": 0.4
         }
       }
     },
@@ -301,6 +407,25 @@
     },
     {
       "offset_ms": 2600,
+      "type": "analog_in",
+      "data": {
+        "channel": "adc0",
+        "value": 0.4,
+        "unit": "V",
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 2600,
+      "type": "digital_in",
+      "data": {
+        "pin": "limit_switch",
+        "value": true,
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 2600,
       "type": "tool_call",
       "data": {
         "id": "call_5",
@@ -323,27 +448,28 @@
       "type": "gate_evaluation_begin",
       "data": {
         "gate": "blinds-close@1.0.0",
-        "gate_digest": "sha256:5fc9a24dcec133666e0e39dd5df882eb5262f8e3578b847fdc500ec4a1be7a62"
+        "gate_digest": "sha256:8adcd34f26cebccd6077995da1aedd5846f39ae5f941aa86af73de66591fe1f9"
       }
     },
     {
       "offset_ms": 2600,
       "type": "gate_facts",
       "data": {
-        "device_fault_free": {
-          "value": true,
-          "confidence": null,
-          "source": "context"
-        },
-        "quiet_hours_ok": {
-          "value": true,
-          "confidence": null,
-          "source": "context"
-        },
         "estop_released": {
           "value": true,
           "confidence": null,
-          "source": "context"
+          "source": "digital.in",
+          "read_offset_ms": 2600,
+          "eval_offset_ms": 2600,
+          "age_ms": 0
+        },
+        "motor_current_sense": {
+          "value": 0.4,
+          "confidence": null,
+          "source": "context",
+          "read_offset_ms": 2600,
+          "eval_offset_ms": 2600,
+          "age_ms": 0
         },
         "path_clear": {
           "value": true,
@@ -358,9 +484,8 @@
       "data": {
         "verdict": "ALLOW",
         "evaluations": {
-          "device_fault_free": true,
-          "quiet_hours_ok": true,
           "estop_released": true,
+          "motor_current_sense": 0.4,
           "path_clear": true
         }
       }

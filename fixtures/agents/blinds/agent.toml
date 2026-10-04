@@ -3,7 +3,7 @@
 # Mỗi lệnh đi qua gate rồi nhận một lease một lệnh trong `lease_ms` của kênh (200 ms trên `sim-rpi5` /
 # `linux-rpi5`); không gia hạn thì kênh về `safe_state` của nó (servo `gripper`: `hold`, giữ nguyên vị trí
 # tối đa `max_hold_ms` rồi cắt điện). Vì vậy `budget.p95_latency_ms` của gate ≤ lease_ms / 2 = 100. Gate
-# kế thừa `gates/home/light@1.0.0` (thư viện khởi đầu) và chỉ siết thêm. Phong bì thời gian của kênh nằm ở
+# kế thừa `gates/home/motor@1.0.0` (thư viện khởi đầu) và chỉ siết thêm. Phong bì thời gian của kênh nằm ở
 # profile bo mạch, và cắt lệnh vượt mức dù gate đã cho phép.
 # Cần bo mạch có `motion`: `--board sim-rpi5` (mặc định `sim-default` không có).
 #
@@ -16,7 +16,9 @@ name    = "blinds"
 version = "0.1.0"
 
 [requires]
-"motion" = { channels = ["gripper"] }
+"motion"     = { channels = ["gripper"] }
+"digital.in" = { pins = ["limit_switch"] }
+"analog.in"  = { channels = ["adc0"] }
 
 [gates]
 blinds_open  = "gates/blinds_open@1.0.0.yaml"
@@ -25,9 +27,22 @@ blinds_close = "gates/blinds_close@1.0.0.yaml"
 [targets]
 supported = ["sim", "linux"]
 
-# Dữ kiện không phải số đọc: trên thiết bị là mạch dừng khẩn, giờ yên tĩnh, cảm biến khe rèm.
+# Hai dữ kiện của gate `motor` đọc từ đầu vào của bo mạch (cùng khuôn rail-gate):
+#   * estop_released      — `limit_switch` là tiếp điểm của mạch dừng khẩn (cao = đã nhả);
+#   * motor_current_sense — `adc0` là điện áp chân current-sense của mạch cấp điện cho servo, đơn vị V.
+[sim.digital_facts]
+estop_released = { pin = "limit_switch" }
+
+[sim.analog_facts]
+motor_current_sense = { channel = "adc0" }
+
+# Giá trị khởi đầu trên `sim`: dừng khẩn đã nhả, dòng nhỏ (0,4 V). Đổi bằng `:input`, `:analog` trong REPL.
+[sim.inputs]
+limit_switch = true
+
+[sim.analog]
+adc0 = 0.4
+
+# Dữ kiện không phải số đọc: trên thiết bị là cảm biến khe rèm (tuỳ chọn).
 [sim.facts]
-device_fault_free = true
-quiet_hours_ok    = true
-estop_released    = true
-path_clear        = true
+path_clear = true
