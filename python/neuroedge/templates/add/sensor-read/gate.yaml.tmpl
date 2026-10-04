@@ -1,0 +1,31 @@
+# Gate của `{{name}}` (neuroedge add). Cảm biến `{{sensor}}` (`sensor.read`) chỉ cấp dữ kiện; ngưỡng
+# nằm ở đây và ở `[sim.sensor_facts]` trong agent.toml, nơi biến số đọc được thành `{{fact}}`
+# ({{rule}}). Không đọc được cảm biến thì tiêu chí không quyết định được và gate chặt (fail-closed).
+#
+#   neuroedge gate explain gates/{{name}}@1.0.0.yaml   # chính sách bằng lời
+schema:  neuroedge.gate/v1
+name:    {{name}}
+version: 1.0.0
+
+arguments:
+  duration_s: { type: integer, minimum: 1, maximum: 5 }
+
+evaluate:
+  user_verified:
+    type: bool
+    instructions: "Người dùng đã được xác minh trong phiên hiện tại"
+  {{fact}}:
+    type: bool
+    instructions: "Cảm biến {{sensor}} báo trong giới hạn an toàn ({{rule}})"
+
+allow_when:
+  user_verified: true
+  {{fact}}:      true
+
+on_block:
+  action:  ask
+  message: "Cần xác minh người dùng và cảm biến {{sensor}} trong giới hạn trước khi {{phrase}}."
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

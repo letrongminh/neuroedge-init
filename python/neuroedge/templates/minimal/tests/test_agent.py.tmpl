@@ -11,10 +11,11 @@ from pathlib import Path
 from neuroedge import SimSession
 
 AGENT = Path(__file__).resolve().parents[1] / "agent.toml"
+BOARD = "sim-default"
 
 
 def handle(text, **facts):
-    session = SimSession.load(AGENT, facts=facts)
+    session = SimSession.load(AGENT, board_id=BOARD, facts=facts)
     return session, asyncio.run(session.handle(text))
 
 

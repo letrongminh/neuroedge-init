@@ -1,0 +1,26 @@
+# Gate của `{{name}}` (neuroedge add). Action chỉ chạy khi mọi mệnh đề `allow_when` đúng; một
+# tiêu chí không quyết định được thì chặn (fail-closed). Thời gian xung bị giới hạn ở `arguments`.
+#
+#   neuroedge gate explain gates/{{name}}@1.0.0.yaml   # chính sách bằng lời
+schema:  neuroedge.gate/v1
+name:    {{name}}
+version: 1.0.0
+
+arguments:
+  duration_s: { type: integer, minimum: 1, maximum: 5 }
+
+evaluate:
+  user_verified:
+    type: bool
+    instructions: "Người dùng đã được xác minh trong phiên hiện tại"
+
+allow_when:
+  user_verified: true
+
+on_block:
+  action:  ask
+  message: "Cần xác minh người dùng trước khi {{phrase}}."
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

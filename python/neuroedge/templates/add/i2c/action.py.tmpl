@@ -1,0 +1,11 @@
+"""The action `{{name}}`. Only `c.do()` can run it, and only after its gate allows."""
+
+from neuroedge import action
+from neuroedge.hal import display, i2c
+
+
+@action(name="{{name}}", requires=["i2c:{{device}}", "display"], gate="{{name}}")
+def {{fn}}() -> None:
+    """Read register {{register}} of `{{device}}` over I2C and show it (a read, never a gate fact)."""
+    raw = i2c.read("{{bus}}", "{{dev}}", register={{register}}, width={{width}})
+    display.show(f"{{device}}: {raw}")

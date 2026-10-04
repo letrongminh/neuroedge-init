@@ -156,6 +156,13 @@ ngừng hỗ trợ (§5, Q-64) như API Python; ở `0.x`, MINOR đóng vai MAJO
 | **Mã thoát** — bảng ở `CHANGELOG.md` §2.3 (`0` đạt, `1` không đạt, `2` chưa hiện thực), không chép lại ở đây | Nội dung chẩn đoán `why`/`how` (mã `NE…` thì được hứa, §1) |
 | Đầu ra máy đọc: `--json`, `--openai`, và các tệp lệnh ghi ra (lược đồ riêng, có phiên bản — `schemas/`, PRD §10.3; không nhắc lại ở đây) | |
 
+**Nhóm lệnh `add` (TSK-I2b-04, FR-DX-08).** Hứa bốn lệnh con `add action`, `add sensor`, `add device`,
+`add gate`, mỗi lệnh nhận một tên làm đối số bắt buộc; các cờ `--primitive`, `--pin`, `--channel`,
+`--source`, `--label`, `--device`, `--register`, `--width`, `--fact`, `--board` và `--agent` như bản chụp ở
+`test_cli_contract.py`. Hợp đồng hành vi: lệnh chỉ chạy trong dự án có `agent.toml`; **không bao giờ ghi đè**
+một tệp, một khoá `[gates]`, một tên action hay tên lệnh đã có (từ chối bằng lỗi ba phần, mã thoát `1`, không
+ghi gì); kết quả được build thử trên một bản sao trước khi ghi vào dự án. Câu chữ in ra không được hứa.
+
 **Quy tắc phiên bản cho CLI:**
 
 | Thay đổi | Tăng |

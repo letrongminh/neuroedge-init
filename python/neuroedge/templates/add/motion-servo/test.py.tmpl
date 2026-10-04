@@ -1,0 +1,39 @@
+"""
+Two-way safety tests for `{{name}}` on the `{{board}}` board (neuroedge add).
+
+A blocked command must leave the channel without a single motion command.
+"""
+
+import asyncio
+from pathlib import Path
+
+from neuroedge import SimSession
+
+AGENT = Path(__file__).resolve().parents[1] / "agent.toml"
+BOARD = "{{board}}"
+COMMAND = "{{phrase}}"
+
+
+def handle(text, **facts):
+    session = SimSession.load(AGENT, board_id=BOARD, facts=facts)
+    return session, asyncio.run(session.handle(text))
+
+
+def test_{{fn}}_runs_the_channel_for_a_verified_user():
+    session, turn = handle(COMMAND)
+    assert turn.allowed
+    (command,) = session.events.of_type("motion_command")
+    assert command["channel"] == "{{channel}}"
+
+
+def test_{{fn}}_sends_the_channel_no_command_for_an_unverified_user():
+    session, turn = handle(COMMAND, user_verified=False)
+    assert turn.result.blocked
+    assert turn.result.gate.failed_criterion == "user_verified"
+    assert session.events.of_type("motion_command") == []
+
+
+def test_{{fn}}_does_not_run_on_a_command_it_does_not_know():
+    session, turn = handle("hát một bài")
+    assert not turn.recognised
+    assert session.events.of_type("motion_command") == []
