@@ -2,7 +2,9 @@
 # vỡ ống — còn quạt là tải bật/tắt rủi ro thấp, maker dùng `light` làm cha là đủ).
 #
 # Mở van chỉ khi không rò rỉ, áp suất đường ống nằm trong dải và còn mới (`max_age_ms`, RFC-0009):
-# cảm biến đứng hình không "chứng minh" được áp suất. `duration_s` là thời gian mở tối đa (RFC-0005).
+# cảm biến đứng hình không "chứng minh" được áp suất. Số đo là điện áp bộ đo áp qua `analog.in` (V);
+# ngưỡng giả định 0.25 V/bar (0–2.5 V ↔ 0–10 bar), maker siết theo cảm biến của mình.
+# `duration_s` là thời gian mở tối đa (RFC-0005).
 schema:  neuroedge.gate/v1
 name:    valve
 version: 1.0.0
@@ -14,20 +16,20 @@ evaluate:
   leak_detected:
     type: bool
     instructions: "Cảm biến rò rỉ báo có nước ngoài đường ống"
-  line_pressure:
+  line_pressure_sense:
     type: numeric
-    unit: bar
-    range: { min: 0, max: 16 }
+    unit: V
+    range: { min: 0, max: 2.5 }
     max_age_ms: 500
-    instructions: "Áp suất đường ống, đơn vị bar"
+    instructions: "Điện áp bộ đo áp suất đường ống, volt (analog.in; 0.25 V/bar)"
   device_fault_free:
     type: bool
     instructions: "Cơ cấu van không báo lỗi (kẹt, quá dòng)"
 
 allow_when:
-  leak_detected:     false
-  line_pressure:     { gte: 1, lt: 8 }
-  device_fault_free: true
+  leak_detected:       false
+  line_pressure_sense: { gte: 0.25, lt: 2.0 }
+  device_fault_free:   true
 
 on_block:
   action: deny

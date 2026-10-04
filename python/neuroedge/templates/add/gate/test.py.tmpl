@@ -1,0 +1,36 @@
+"""
+Two-way tests for the gate `{{name}}` (neuroedge add): it allows only when every fact holds, and
+blocks on a false or a missing fact — fail-closed. Pure: no hardware, no session.
+"""
+
+import asyncio
+from pathlib import Path
+
+from neuroedge import ActionContractEngine, GateVerdict, resolve_gate_file
+
+GATE = Path(__file__).resolve().parents[1] / "gates" / "{{name}}@1.0.0.yaml"
+FACTS = {{facts}}
+
+
+def verdict(facts):
+    engine = ActionContractEngine()
+    engine.register("{{name}}", resolve_gate_file(GATE))
+    return asyncio.run(engine.evaluate("{{name}}", facts))
+
+
+def test_{{fn}}_allows_when_every_fact_holds():
+    assert verdict(dict.fromkeys(FACTS, True)).verdict is GateVerdict.ALLOW
+
+
+def test_{{fn}}_blocks_when_any_fact_is_false():
+    for fact in FACTS:
+        result = verdict({**dict.fromkeys(FACTS, True), fact: False})
+        assert result.verdict is GateVerdict.BLOCK
+        assert result.failed_criterion == fact
+
+
+def test_{{fn}}_blocks_when_a_fact_is_missing():
+    for fact in FACTS:
+        result = verdict({k: True for k in FACTS if k != fact})
+        assert result.verdict is GateVerdict.BLOCK
+        assert result.failed_criterion == fact

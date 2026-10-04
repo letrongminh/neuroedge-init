@@ -1,0 +1,61 @@
+"""
+Two-way safety tests for `{{name}}` on the `{{board}}` board (neuroedge add).
+
+The virtual camera replays a scene (`[vision.options.script]` in agent.toml): frames 5 to 12 hold
+a `{{label}}` in the watched zone, the rest are empty. The clock is injected, so a test says how
+many frame periods have passed. A blocked action must leave the pin untouched.
+"""
+
+import asyncio
+from pathlib import Path
+
+from neuroedge import SimSession, ToolCall
+
+AGENT = Path(__file__).resolve().parents[1] / "agent.toml"
+BOARD = "{{board}}"
+FRAME_MS = 1000.0 / 30.0  # the 640x480 @ 30 fps mode of the reference boards
+
+
+class Clock:
+    def __init__(self):
+        self.now = 1000.0
+
+    def __call__(self):
+        return self.now
+
+    def advance(self, ms):
+        self.now += ms
+
+
+def run(frames, **facts):
+    """Let `frames` frame periods pass, then call the tool: `(session, action result)`."""
+    clock = Clock()
+    session = SimSession.load(AGENT, board_id=BOARD, clock=clock, facts=facts)
+    clock.advance(frames * FRAME_MS)
+    result = asyncio.run(session.call_tool(ToolCall("{{name}}", {}, source="local_grammar")))
+    return session, result.action
+
+
+def test_{{fn}}_runs_when_the_camera_sees_the_{{fact}}():
+    # frames 0-7 exist after 8.5 periods; the window of three is frames 5, 6, 7
+    session, action = run(8.5)
+    assert not action.blocked
+    assert session.hal.pin("{{pin}}").pulsed_once(duration_ms=2000)
+
+
+def test_{{fn}}_never_moves_the_pin_on_an_empty_scene():
+    session, action = run(4.5)  # frames 0-3: nobody there
+    assert action.blocked and action.gate.reason == "condition_not_met"
+    assert session.hal.pin("{{pin}}").never_pulsed()
+
+
+def test_{{fn}}_never_moves_the_pin_for_an_unverified_user():
+    session, action = run(8.5, user_verified=False)
+    assert action.blocked and action.gate.failed_criterion == "user_verified"
+    assert session.hal.pin("{{pin}}").never_pulsed()
+
+
+def test_{{fn}}_blocks_while_the_camera_window_is_not_yet_full():
+    session, action = run(1.5)  # one frame so far
+    assert action.blocked and action.gate.reason == "criterion_unavailable"
+    assert session.hal.pin("{{pin}}").never_pulsed()

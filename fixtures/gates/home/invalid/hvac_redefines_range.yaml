@@ -4,9 +4,9 @@ name:    hvac-redefines-range
 version: 1.0.0
 extends: neuroedge://gates/home/hvac@1.0.0
 evaluate:
-  room_temperature:
+  room_temperature_sense:
     type: numeric
-    unit: degC
-    range: { min: -100, max: 200 }
+    unit: V
+    range: { min: 0, max: 5 }
     max_age_ms: 1000
-    instructions: "Nhiệt độ phòng, độ C"
+    instructions: "Điện áp cảm biến nhiệt phòng, volt"

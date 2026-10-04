@@ -1,0 +1,31 @@
+# Gate của `{{name}}` (neuroedge add). Lệnh đến từ micro (`audio.in`): bộ nhận lệnh cố định trong
+# commands.toml chứng minh câu nói khớp (`command_recognized`); không có chứng minh đó thì chặn.
+# Chữ gõ hay lời nói chưa nhận ra không bao giờ tự thành dữ kiện.
+#
+#   neuroedge gate explain gates/{{name}}@1.0.0.yaml   # chính sách bằng lời
+schema:  neuroedge.gate/v1
+name:    {{name}}
+version: 1.0.0
+
+arguments:
+  duration_s: { type: integer, minimum: 1, maximum: 5 }
+
+evaluate:
+  user_verified:
+    type: bool
+    instructions: "Người dùng đã được xác minh trong phiên hiện tại"
+  command_recognized:
+    type: bool
+    instructions: "Câu nói khớp ngữ pháp lệnh cố định trong commands.toml"
+
+allow_when:
+  user_verified:      true
+  command_recognized: true
+
+on_block:
+  action:  ask
+  message: "Cần xác minh người dùng trước khi {{phrase}}."
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

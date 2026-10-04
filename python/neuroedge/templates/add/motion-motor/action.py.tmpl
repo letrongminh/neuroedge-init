@@ -1,0 +1,9 @@
+"""The motion action `{{name}}`. Only `c.do()` can run it, and only after its gate allows."""
+
+from neuroedge import action, motion
+
+
+@action(name="{{name}}", requires="motion:{{channel}}", gate="{{name}}")
+def {{fn}}(speed: float = 0.2) -> None:
+    """Run `{{channel}}` at `speed` for one lease; call again to keep going."""
+    motion.motor("{{channel}}", speed=speed)

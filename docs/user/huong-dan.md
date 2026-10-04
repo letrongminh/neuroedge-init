@@ -128,7 +128,8 @@ kịch bản demo: `demo/i1-studio/`.
 - Có sẵn **thư viện gate khởi đầu** trong `gates/home/` để bạn `extends` thay vì viết từ đầu: `door-lock`
   (khoá cửa), `light` (đèn), `valve` (van nước/khí), `siren` (còi), `hvac` (điều hoà), `camera` (ghi hình, theo
   dữ kiện thị giác) và `motor` (động cơ `motion.motor`). Mọi gate đều đóng khi lỗi (`fail: closed`) và có
-  ngưỡng an toàn bảo thủ; gate con chỉ siết thêm được, nới ngưỡng, thời hạn số đọc hay ngân sách là bị
+  ngưỡng an toàn bảo thủ; số đo vật lý là điện áp (V) của kênh `analog.in` (áp suất, nhiệt, dòng động cơ), thang
+  quy đổi ghi trong chú thích đầu mỗi gate; gate con chỉ siết thêm được, nới ngưỡng, thời hạn số đọc hay ngân sách là bị
   `gate lint` từ chối (phản chứng: `fixtures/gates/home/invalid/`). Gate có `arguments` (`door-lock`,
   `valve`, `siren`: `duration_s`) đòi `@action` của bạn có tham số nguyên tên đó.
 
@@ -157,6 +158,23 @@ kịch bản demo: `demo/i1-studio/`.
   | `factory-monitor` | Quạt thông gió và còi báo động theo nhiệt độ phòng máy | Hỏi lại trước khi tắt quạt lúc nóng; từ chối tắt báo động khi còn nóng |
   | `gate-camera` | Camera cổng: người lạ trong vùng ⇒ bật đèn, khoá cổng (cần `--board sim-rpi5`) | Chặn khi không có người lạ, điểm thấp, camera mất, hay có người trong vùng riêng tư |
   | `blinds` | Rèm lá bằng servo, có lease và phong bì (cần `--board sim-rpi5`) | Lease không gia hạn ⇒ `safe_state`; kẹt tay hay dừng khẩn ⇒ chặn |
+
+- **Thêm một action vào dự án có sẵn** (`neuroedge add`): mỗi lệnh sinh `@action`, gate đặt sẵn mặc định
+  chặn, bộ test hai chiều (có ca ALLOW và ca BLOCK), khai `[requires]`, `[gates]` và các bảng `[sim.*]`
+  nuôi gate, rồi tự build thử trước khi ghi. Không bao giờ ghi đè: tệp hoặc tên đã có ⇒ từ chối, không
+  ghi gì.
+
+  | Lệnh | Nguyên thủy | Ví dụ |
+  |:---|:---|:---|
+  | `add action <tên>` | `digital.out` (mặc định), `motion`, `display`, `audio.out` | `neuroedge add action open-gate --pin gate_relay` |
+  | `add sensor <tên>` | `sensor.read` (mặc định), `digital.in`, `analog.in`, `vision.in`, `audio.in` | `neuroedge add sensor heat-guard --source temperature --pin porch_light` |
+  | `add device <tên>` | `i2c` | `neuroedge add device read-supply --device i2c1/ina219 --register 0x02` |
+  | `add gate <tên>` | không có: một gate đứng riêng | `neuroedge add gate night-lock --fact user_verified --fact door_closed` |
+
+  Nguyên thủy mở rộng (`digital.in`, `analog.in`, `i2c`, `motion`, `vision.in`) chỉ có trên bo mạch
+  `sim-rpi5`: `add` in ra lệnh build đúng bo mạch, và đổi dòng `BOARD = "sim-default"` trong
+  `tests/test_agent.py` của mẫu `minimal` sang `sim-rpi5`. Sau đó: `neuroedge gate lint gates`,
+  `neuroedge test`.
 
 - **Đối chiếu agent với bo mạch** trước khi chạy (`neuroedge build --target … --board …`): agent cần chân,
   cảm biến, micro nào thì bo mạch phải có đúng thứ đó; thiếu một thứ ⇒ build dừng, in từng vấn đề, không

@@ -65,6 +65,13 @@ for asset in schemas/trace.v1.json schemas/tool-call.v1.json schemas/tool-result
     *) echo "::error::wheel lacks $asset"; exit 1 ;;
   esac
 done
+# The templates of `neuroedge add` (TSK-I2b-04) are package files, not _data: one of each piece.
+for tmpl in digital-out/action.py.tmpl i2c/gate.yaml.tmpl vision-in/test.py.tmpl gate/gate.yaml.tmpl; do
+  case "$LISTING" in
+    *"neuroedge/templates/add/$tmpl"*) ;;
+    *) echo "::error::wheel lacks neuroedge/templates/add/$tmpl"; exit 1 ;;
+  esac
+done
 case "$LISTING" in
   *".dist-info/licenses/LICENSE"*) ;;
   *) echo "::error::wheel lacks its LICENSE"; exit 1 ;;
@@ -129,6 +136,13 @@ step run -c "mở khoá"
 step record -c "mở khoá" --out traces/session.json
 step replay traces/session.json --agent agent.toml
 step trace view traces/session.json
+step test
+# `neuroedge add` from the installed wheel (TSK-I2b-04): its templates ship in the package. One on
+# the core board, one for an extension primitive (the board changes), then gate lint, build, tests.
+step add action open-gate --pin gate_relay
+step add sensor limit-guard --primitive digital.in --source limit_switch --pin gate_relay
+step gate lint gates
+step build --target sim --board sim-rpi5
 step test
 cd "$WORK"
 step new villa --template villa-concierge

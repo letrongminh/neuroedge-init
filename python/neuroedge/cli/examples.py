@@ -121,6 +121,24 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
         "neuroedge record --voice-file turn.wav   # transcripts hashed in the trace",
         "neuroedge record --voice-file turn.wav --target linux --out traces/voice.json",
     ),
+    # -- add ----------------------------------------------------------------------------
+    # Last on purpose: each one changes the project, so the examples above must run before.
+    "add": (
+        "neuroedge add action open-gate --pin gate_relay",
+        "neuroedge add sensor heat-guard --source temperature --pin porch_light",
+    ),
+    "add action": (
+        "neuroedge add action open-vent --pin gate_relay",
+        "neuroedge add action show-status --primitive display",
+        "neuroedge add action lift-arm --primitive motion --channel gripper",
+    ),
+    "add sensor": (
+        "neuroedge add sensor limit-guard --primitive digital.in --source limit_switch "
+        "--pin gate_relay",
+        "neuroedge add sensor watch-gate --primitive vision.in --label person --pin porch_light",
+    ),
+    "add device": ("neuroedge add device read-supply --device i2c1/ina219 --register 0x02",),
+    "add gate": ("neuroedge add gate night-lock --fact user_verified --fact door_closed",),
 }
 
 

@@ -1,0 +1,47 @@
+"""
+Two-way safety tests for `{{name}}` on the `{{board}}` board (neuroedge add).
+
+A blocked action must read nothing and draw nothing; a read that fails raises out of the action
+(NE5001) and shows nothing, never a stale value.
+"""
+
+import asyncio
+from pathlib import Path
+
+import pytest
+
+from neuroedge import PerceptionUnavailableError, SimSession, ToolCall
+from neuroedge.hal.i2c_bus import ReadFault
+
+AGENT = Path(__file__).resolve().parents[1] / "agent.toml"
+BOARD = "{{board}}"
+COMMAND = "{{phrase}}"
+
+
+def handle(text, **facts):
+    session = SimSession.load(AGENT, board_id=BOARD, facts=facts)
+    return session, asyncio.run(session.handle(text))
+
+
+def test_{{fn}}_reads_the_register_and_shows_it_for_a_verified_user():
+    session, turn = handle(COMMAND)
+    assert turn.allowed
+    (read,) = session.events.of_type("i2c_read")
+    assert read["register"] == {{register}}
+    assert session.hal.frames[-1].text.startswith("{{device}}: ")
+
+
+def test_{{fn}}_reads_and_draws_nothing_for_an_unverified_user():
+    session, turn = handle(COMMAND, user_verified=False)
+    assert turn.result.blocked
+    assert turn.result.gate.failed_criterion == "user_verified"
+    assert session.events.of_type("i2c_read") == []
+    assert session.hal.frames == []
+
+
+def test_{{fn}}_shows_nothing_when_the_chip_does_not_answer():
+    session = SimSession.load(AGENT, board_id=BOARD)
+    session.hal.script_i2c("{{bus}}", "{{dev}}", {{register}}, [ReadFault("NACK")], width={{width}})
+    with pytest.raises(PerceptionUnavailableError):
+        asyncio.run(session.call_tool(ToolCall("{{name}}", {}, source="local_grammar")))
+    assert session.hal.frames == []

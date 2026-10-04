@@ -197,7 +197,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `python/neuroedge/mcp_server.py`, `mcp_host.py`, `mcp_desktop.py` | Máy chủ MCP · System 2 làm MCP host · cấu hình Claude Desktop | PR thường |
 | `python/neuroedge/testing/` | Action CI — recorder, player (replay), assertions, golden, `tool_corpus`, `voice_corpus`, `uart` (vết ghi từ UART thiết bị) | PR thường |
 | `python/neuroedge/viz/` | `trace view`, xuất Perfetto | PR thường |
-| `python/neuroedge/templates/` | Mẫu dự án cho `neuroedge new` (`*.tmpl`, generator Python thuần) | PR thường |
+| `python/neuroedge/templates/` | Mẫu dự án cho `neuroedge new` và mẫu từng nguyên thủy của `neuroedge add` (`add/`) (`*.tmpl`, generator Python thuần) | PR thường |
 | `python/neuroedge/cli/` | CLI Typer: `main.py`, `run.py` (REPL), `explain.py` | PR thường |
 | `python/neuroedge/errors.py`, `trace.py`, `paths.py`, `net.py` | Hợp đồng lỗi 3 thành phần · thẩm định vết ghi · định vị asset (checkout, editable, wheel) · HTTP tới provider (không proxy, không redirect, có hạn chót) | PR thường; đụng `paths.py` thì chạy `scripts/wheel_smoke.sh`; một lớp lỗi mới có mã trong `schemas/error-codes.v1.json` **và** hàng ở PRD Phụ lục B (test `test_error_catalog.py` đỏ nếu thiếu một trong hai) |
 | `python/tests/` | Bộ test chính (`testpaths`) | PR thường |
