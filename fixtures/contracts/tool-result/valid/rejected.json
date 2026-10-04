@@ -1,0 +1,7 @@
+{
+  "tool": "light_on",
+  "status": "REJECTED",
+  "problems": [
+    "unknown argument 'x'; light_on takes []"
+  ]
+}

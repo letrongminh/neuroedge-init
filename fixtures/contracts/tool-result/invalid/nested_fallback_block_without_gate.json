@@ -1,0 +1,17 @@
+{
+  "tool": "open_gate",
+  "status": "BLOCK",
+  "gate": "open_gate@1.0.0",
+  "on_block": "degrade",
+  "fallback": {
+    "tool": "a",
+    "status": "BLOCK",
+    "gate": "a@1.0.0",
+    "on_block": "degrade",
+    "fallback": {
+      "tool": "b",
+      "status": "BLOCK",
+      "on_block": "deny"
+    }
+  }
+}

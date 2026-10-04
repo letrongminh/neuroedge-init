@@ -1,0 +1,21 @@
+{
+  "tool": "open_gate",
+  "status": "BLOCK",
+  "gate": "open_gate@1.0.0",
+  "reason": "condition_not_met",
+  "on_block": "degrade",
+  "fallback": {
+    "tool": "porch_light_on",
+    "status": "BLOCK",
+    "gate": "porch_light_on@1.0.0",
+    "reason": "gate_unreachable",
+    "on_block": "degrade",
+    "fallback": {
+      "tool": "buzzer_on",
+      "status": "BLOCK",
+      "gate": "buzzer_on@1.0.0",
+      "reason": "condition_not_met",
+      "on_block": "deny"
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "name": "fan_run",
+  "description": "Run the fan. (Guarded by gate `fan_run`: the call may be blocked.)",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "duty": {
+        "type": "number",
+        "minimum": 0.2,
+        "maximum": 0.8
+      },
+      "duration_ms": {
+        "type": "integer",
+        "default": 1000,
+        "maximum": 5000
+      },
+      "label": {
+        "type": "string",
+        "maxLength": 16
+      },
+      "mode": {
+        "type": "string",
+        "enum": [
+          "low",
+          "high"
+        ]
+      },
+      "forced": {
+        "type": "boolean",
+        "default": false
+      }
+    },
+    "required": [
+      "duty"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "tool": {
+        "type": "string",
+        "const": "fan_run"
+      }
+    }
+  }
+}

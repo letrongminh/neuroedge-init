@@ -1,0 +1,11 @@
+{
+  "name": "light_on",
+  "description": "Light on.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "outputSchema": {
+    "type": "object"
+  }
+}

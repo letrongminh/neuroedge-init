@@ -1,0 +1,7 @@
+{
+  "code": "NE1002",
+  "where": "example for TokenReplayError",
+  "why": "what rule was broken",
+  "how": "what to do next",
+  "reason": "token_replayed"
+}

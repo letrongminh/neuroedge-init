@@ -1,0 +1,6 @@
+{
+  "code": "NE2003",
+  "where": "gates/a.yaml",
+  "why": "loosens",
+  "how": "tighten"
+}

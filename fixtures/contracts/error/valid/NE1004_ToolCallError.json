@@ -1,0 +1,6 @@
+{
+  "code": "NE1004",
+  "where": "example for ToolCallError",
+  "why": "what rule was broken",
+  "how": "what to do next"
+}

@@ -1,0 +1,6 @@
+{
+  "code": "NE4003",
+  "where": "example for ReplayError",
+  "why": "what rule was broken",
+  "how": "what to do next"
+}

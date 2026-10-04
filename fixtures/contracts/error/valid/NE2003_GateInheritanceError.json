@@ -1,0 +1,7 @@
+{
+  "code": "NE2003",
+  "where": "example for GateInheritanceError",
+  "why": "what rule was broken",
+  "how": "what to do next",
+  "principle": "2"
+}

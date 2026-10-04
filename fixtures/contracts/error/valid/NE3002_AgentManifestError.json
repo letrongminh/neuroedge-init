@@ -1,0 +1,6 @@
+{
+  "code": "NE3002",
+  "where": "example for AgentManifestError",
+  "why": "what rule was broken",
+  "how": "what to do next"
+}

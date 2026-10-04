@@ -1,0 +1,16 @@
+{
+  "name": "light_on",
+  "description": "Light on.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "x": {
+        "type": "array"
+      }
+    },
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object"
+  }
+}

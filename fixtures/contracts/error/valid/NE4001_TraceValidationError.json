@@ -1,0 +1,6 @@
+{
+  "code": "NE4001",
+  "where": "example for TraceValidationError",
+  "why": "what rule was broken",
+  "how": "what to do next"
+}

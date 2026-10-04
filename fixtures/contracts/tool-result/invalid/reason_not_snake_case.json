@@ -1,0 +1,7 @@
+{
+  "tool": "light_off",
+  "status": "BLOCK",
+  "gate": "light_off@1.0.0",
+  "reason": "Condition Not Met",
+  "on_block": "deny"
+}
