@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.neuroedge.dev/tool-call/v1.json",
+  "title": "NeuroEdge Gated Tool Profile — ToolCall envelope v1",
+  "description": "The tool-call envelope of the Gated Tool Profile (docs/spec/tool_calling.md §1) and the tool description `tools/list` returns. `#/$defs/request` is what a caller sends; `#/$defs/call` is the envelope the dispatcher holds, the data of the `tool_call` trace event. A passing validation proves the envelope's shape only: whether the tool exists, whether the arguments fit its inputSchema after coercion, and the gate's limits are decided by the runtime (the corpus fixtures/tool_calls/ is the conformance test).",
+  "$ref": "#/$defs/call",
+  "$defs": {
+    "id": {
+      "description": "Assigned by the provider. Empty or absent: the dispatcher numbers it call_1, call_2…",
+      "type": "string"
+    },
+    "name": {
+      "description": "The tool's name. An unknown name is a REJECTED result at dispatch, not an envelope error.",
+      "type": "string",
+      "minLength": 1
+    },
+    "arguments": {
+      "description": "The call's arguments. Their types are the tool's `inputSchema`, not the envelope's. The key `__unparseable__` is reserved: the runtime puts it here when a provider's arguments were not valid JSON, and dispatch rejects the call.",
+      "type": "object",
+      "default": {}
+    },
+    "source": {
+      "description": "Where the call came from. Assigned by the runtime from the connection (tool_calling.md §5); never the caller's to state.",
+      "enum": ["local_grammar", "system_one", "system_two", "mcp", "test"]
+    },
+    "request": {
+      "description": "What a caller sends. It carries no `source`: a request that states one is refused at the envelope.",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "$ref": "#/$defs/name" },
+        "arguments": { "$ref": "#/$defs/arguments" }
+      },
+      "additionalProperties": false
+    },
+    "call": {
+      "description": "The envelope the dispatcher holds: a request plus the source it assigned.",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "$ref": "#/$defs/name" },
+        "arguments": { "$ref": "#/$defs/arguments" },
+        "source": { "$ref": "#/$defs/source" }
+      },
+      "additionalProperties": false
+    },
+    "input_schema": {
+      "description": "The JSON Schema subset a tool's `inputSchema` is written in: an object of scalar parameters. `minimum`, `maximum`, `enum` and `maxLength` come from the gate's `arguments` limits and are a hint to the caller: a value outside them is the gate's BLOCK `argument_out_of_range`, not a REJECTED.",
+      "type": "object",
+      "required": ["type", "properties", "additionalProperties"],
+      "properties": {
+        "type": { "const": "object" },
+        "properties": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/parameter" }
+        },
+        "required": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "additionalProperties": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "parameter": {
+      "type": "object",
+      "properties": {
+        "type": { "enum": ["string", "integer", "number", "boolean"] },
+        "default": {},
+        "minimum": { "type": "number" },
+        "maximum": { "type": "number" },
+        "enum": { "type": "array", "items": {}, "minItems": 1 },
+        "maxLength": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "tool": {
+      "description": "One entry of `tools/list`. `outputSchema` is tool-result.v1.json with `properties.tool` pinned to `name`.",
+      "type": "object",
+      "required": ["name", "description", "inputSchema", "outputSchema"],
+      "properties": {
+        "name": { "$ref": "#/$defs/name" },
+        "description": { "type": "string", "minLength": 1 },
+        "inputSchema": { "$ref": "#/$defs/input_schema" },
+        "outputSchema": { "type": "object" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.neuroedge.dev/error-codes/v1.json",
+  "title": "NeuroEdge error code catalogue v1",
+  "description": "Every NE code: its class, parent, status and extra fields. The source of the structure of the codes; the wording (when, why, what the system does) stays in PRD Appendix B. A data document validated against error.v1.json#/$defs/catalog. A code is never reused; adding a code or an alias is a loosening (still v1); renaming, removing or giving a code another meaning is v2. A receiver must not branch on a `general` code.",
+  "schema": "neuroedge.error-codes/v1",
+  "codes": [
+    {"code": "NE0000", "name": "NeuroEdgeError", "parent": null, "status": "stable", "general": true},
+    {"code": "NE1001", "name": "ActionContractViolation", "parent": "NeuroEdgeError", "status": "stable"},
+    {"code": "NE1002", "name": "TokenReplayError", "parent": "ActionContractViolation", "status": "stable", "fields": ["reason"]},
+    {"code": "NE1003", "name": "EnvelopeRefusedError", "parent": "ActionContractViolation", "status": "stable", "fields": ["reason"], "rfc": "RFC-0007"},
+    {"code": "NE1004", "name": "ToolCallError", "parent": "NeuroEdgeError", "status": "stable", "also_a": ["ValueError"]},
+    {"code": "NE2000", "name": "GateError", "parent": "NeuroEdgeError", "status": "stable", "general": true},
+    {"code": "NE2001", "name": "GateNotFoundError", "parent": "GateError", "status": "stable"},
+    {"code": "NE2002", "name": "GateSchemaError", "parent": "GateError", "status": "stable"},
+    {"code": "NE2003", "name": "GateInheritanceError", "parent": "GateError", "status": "stable", "fields": ["principle"]},
+    {"code": "NE3001", "name": "BoardCapabilityError", "parent": "NeuroEdgeError", "status": "stable"},
+    {"code": "NE3002", "name": "AgentManifestError", "parent": "NeuroEdgeError", "status": "stable"},
+    {"code": "NE3003", "name": "BuildFailed", "parent": "NeuroEdgeError", "status": "stable"},
+    {"code": "NE4001", "name": "TraceValidationError", "parent": "NeuroEdgeError", "status": "stable"},
+    {"code": "NE4002", "name": "SafetyRegressionError", "parent": "NeuroEdgeError", "status": "stable", "also_a": ["AssertionError"]},
+    {"code": "NE4003", "name": "ReplayError", "parent": "NeuroEdgeError", "status": "stable"},
+    {"code": "NE4004", "name": "VerificationError", "parent": "NeuroEdgeError", "status": "stable"},
+    {"code": "NE5001", "name": "PerceptionUnavailableError", "parent": "NeuroEdgeError", "status": "stable", "aliases": ["CameraUnavailable", "MalformedResponse", "ProviderUnavailable", "SpeechUnavailable", "VisionUnavailable"]}
+  ]
+}

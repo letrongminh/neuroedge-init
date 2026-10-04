@@ -47,7 +47,8 @@ else
 fi
 
 LISTING=$(unzip -l "$WHEEL")  # listed once: `unzip | grep -q` trips pipefail on SIGPIPE
-for asset in schemas/trace.v1.json boards/sim-default.toml gates/unlock_door@1.2.0.yaml \
+for asset in schemas/trace.v1.json schemas/tool-call.v1.json schemas/tool-result.v1.json \
+  schemas/error.v1.json schemas/error-codes.v1.json boards/sim-default.toml gates/unlock_door@1.2.0.yaml \
   fixtures/traces/happy-path.json fixtures/agents/villa-concierge/agent.toml \
   fixtures/agents/factory-monitor/agent.toml \
   fixtures/tool_calls/expected_results.yaml \
@@ -91,6 +92,22 @@ readme = Path(sys.argv[1]).read_text(encoding="utf-8")
 if page.strip() != readme.strip():
     sys.exit("::error::the wheel's long description is not the root README.md")
 print("long description = root README.md")
+PY
+
+# The output schema of every tool is a packaged file, read at run time (RFC-0015): from the
+# wheel, not from a checkout.
+"$WORK/venv/bin/python" - <<'PY'
+import sys
+
+from neuroedge.actions.tools import result_schema
+from neuroedge.paths import schema_path
+
+schema = result_schema("light_on")
+if schema["properties"]["tool"].get("const") != "light_on" or "$id" in schema:
+    sys.exit("::error::result_schema() did not read schemas/tool-result.v1.json from the wheel")
+if "neuroedge/_data/schemas" not in str(schema_path("tool-result.v1.json")).replace("\\", "/"):
+    sys.exit("::error::the tool-result schema was not read from the packaged copy")
+print("result_schema(): read from the packaged schemas/tool-result.v1.json")
 PY
 
 step board list
