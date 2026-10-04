@@ -70,7 +70,7 @@ nó — bất biến `CHANGELOG.md` §3.3 #10; bảng mã thoát ở §2.3.
 
 | Thay đổi | Thủ tục |
 |:---|:---|
-| Sửa `schemas/*.json` | **RFC** |
+| Sửa `schemas/*.json` — mọi lược đồ, kể cả `tool-call`, `tool-result`, `error`, `error-codes` (RFC-0015) | **RFC** |
 | Sửa ngữ nghĩa phân giải gate (`engine/gate_resolver.py`, `engine/constraints.py`) | **RFC** |
 | Sửa ba vết ghi chuẩn mực `fixtures/traces/*.json` | **RFC** |
 | Sửa hoặc xoá gate đã khoá trong `digests.lock` (`gates/`, `fixtures/gates/valid/`, `fixtures/gates/registry/`) | **RFC**, rồi `python scripts/check_digests.py --accept <tệp> --rfc NNNN`; thiếu RFC thì CI đỏ (TSK-S3-16) |
@@ -99,6 +99,7 @@ Test cưỡng chế cả hai chiều, nên không thể thêm fixture mà không
 | Vết ghi | `fixtures/traces/invalid/` | `fixtures/traces/expected_errors.yaml` |
 | Tool call | `fixtures/tool_calls/{valid,invalid}/` | `fixtures/tool_calls/expected_results.yaml` — luật ở [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md) §9 |
 | Bo mạch | `fixtures/boards/{valid,invalid}/` | `fixtures/boards/expected_errors.yaml` |
+| Hợp đồng người tích hợp | `fixtures/contracts/{tool-call,tool-result,error}/{valid,invalid}/*.json` | `fixtures/contracts/expected_errors.yaml` — mỗi tệp một mục: `against` (lược đồ, có thể kèm `#/$defs/…`) và, với `invalid/`, `error: {keyword, path, message_contains}`; test còn buộc các tệp `valid/` phủ mọi `status`, `on_block`, `source`, `reason` đã biết và mọi mã của danh mục |
 | Máy trạng thái hội thoại | `fixtures/compliance/voice/*.json` | `fixtures/compliance/voice/expected_results.yaml` — luật ở [`docs/spec/voice_fsm.md`](docs/spec/voice_fsm.md) §9 |
 | Cảnh thị giác | `fixtures/vision/<cảnh>/` (khung hình + `scene.toml`) | `fixtures/vision/expected_results.yaml` — chuỗi phán quyết theo khung; `fixtures/vision/golden/<cảnh>.json` là golden suy luận của mô hình trên cảnh đó ([`docs/spec/vision.md`](docs/spec/vision.md) §6a, §6c) |
 
@@ -170,7 +171,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 
 | Đường dẫn | Nội dung | Thủ tục sửa |
 |:---|:---|:---|
-| `schemas/` | Ba lược đồ đã đóng băng: `gate.v1` · `trace.v1` · `board.v1` | **RFC** (§3) |
+| `schemas/` | Bảy lược đồ đã đóng băng: `gate.v1` · `trace.v1` · `board.v1` · `tool-call.v1` · `tool-result.v1` · `error.v1` · `error-codes.v1` (danh mục mã lỗi, nguồn của cấu trúc `NE…`; RFC-0015) | **RFC** (§3) |
 | `gates/` | Gate mẫu, phân giải được, gồm chuỗi kế thừa | Thêm: PR thường; sửa/xoá: **RFC** (§3) |
 | `digests.lock` | Digest JCS của mọi gate chuẩn mực | Chỉ qua `scripts/check_digests.py` (§3) |
 | `boards/` | Khai báo năng lực bo mạch (TOML) | PR thường (§3) |
@@ -179,6 +180,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `fixtures/traces/invalid/`, `fixtures/gates/invalid/` | Corpus phản chứng + `expected_errors.yaml` | PR thường, khép kín (§3) |
 | `fixtures/gates/valid/`, `fixtures/gates/registry/` | Gate phân giải đúng; gate cơ sở cho fixture | Thêm: PR thường; sửa/xoá: **RFC** |
 | `fixtures/tool_calls/` | Corpus Gated Tool Profile + `expected_results.yaml` | PR thường, khép kín (§3) |
+| `fixtures/contracts/` | Corpus phản chứng của `tool-call`, `tool-result`, `error` + `expected_errors.yaml` (RFC-0015) | PR thường, khép kín (§3) |
 | `fixtures/decision_trees/` | Bảng sự thật cho walker C | Sinh bằng `scripts/generate_truth_tables.py`, không sửa tay |
 | `fixtures/agents/` | Agent mẫu `villa-concierge`, `home-voice`, `driveway`, `voice-door`, `rail-gate` (gói cảm biến: `digital.in` + `analog.in` + `i2c`); `neuroedge new --template` sao hai cái đầu | PR thường |
 | `fixtures/traces/sensor-pack/` | Corpus của gói cảm biến: ba phiên của `rail-gate` trên `sim-rpi5`, sinh bằng `scripts/gen_sensor_pack_traces.py` (`--check` chạy trong test); `verify` phát lại trên mọi bo mạch khai `digital.in`, `analog.in` và `i2c`, đếm riêng với ba vết ghi chuẩn mực (RFC-0013 §3f mục 7) | PR thường; sinh lại khi agent, gate hay hợp đồng cảm biến đổi có chủ ý |
@@ -196,7 +198,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `python/neuroedge/viz/` | `trace view`, xuất Perfetto | PR thường |
 | `python/neuroedge/templates/` | Mẫu dự án cho `neuroedge new` (`*.tmpl`, generator Python thuần) | PR thường |
 | `python/neuroedge/cli/` | CLI Typer: `main.py`, `run.py` (REPL), `explain.py` | PR thường |
-| `python/neuroedge/errors.py`, `trace.py`, `paths.py`, `net.py` | Hợp đồng lỗi 3 thành phần · thẩm định vết ghi · định vị asset (checkout, editable, wheel) · HTTP tới provider (không proxy, không redirect, có hạn chót) | PR thường; đụng `paths.py` thì chạy `scripts/wheel_smoke.sh` |
+| `python/neuroedge/errors.py`, `trace.py`, `paths.py`, `net.py` | Hợp đồng lỗi 3 thành phần · thẩm định vết ghi · định vị asset (checkout, editable, wheel) · HTTP tới provider (không proxy, không redirect, có hạn chót) | PR thường; đụng `paths.py` thì chạy `scripts/wheel_smoke.sh`; một lớp lỗi mới có mã trong `schemas/error-codes.v1.json` **và** hàng ở PRD Phụ lục B (test `test_error_catalog.py` đỏ nếu thiếu một trong hai) |
 | `python/tests/` | Bộ test chính (`testpaths`) | PR thường |
 | `python/tests_linux/` | Test trên gpio-sim, job `linux-hal` | PR thường |
 | `python/hatch_build.py`, `pyproject.toml`, `requirements-lock.txt`, `pip-audit-ignore.txt`, `LICENSE` | Đóng gói (asset vào `neuroedge/_data/`, README gốc vào metadata) · phụ thuộc ghim · ngoại lệ `pip-audit` đã duyệt (job `pip-audit`) · bản sao `LICENSE` gốc | PR thường; chạy `scripts/wheel_smoke.sh` |
@@ -256,7 +258,8 @@ Một task **chưa xong** cho tới khi các cập nhật dưới đây nằm **
 | Cấu trúc kho | `CONTRIBUTING.md` §6 | Dẫn §6 |
 | Quyết định | `neuroedge-prd.md` §15 (mã `Q-N`) | Dẫn mã `Q-N` |
 | Chính sách giấy phép (allowlist) | `neuroedge-prd.md` §15, Q-11 | `NOTICE` ghi ma trận từng thành phần, dẫn Q-11 |
-| Mã lỗi `NE…` | PRD Phụ lục B | Dẫn mã |
+| Mã lỗi `NE…`: mã nào tồn tại, tên lớp, cha, trạng thái | `schemas/error-codes.v1.json` (RFC-0015, Q-66) | Dẫn mã; `errors.py`, PRD Phụ lục B và `targets/` được test kiểm theo danh mục |
+| Lời của một mã lỗi (khi nào, vì sao, hệ thống làm gì) | PRD Phụ lục B | Dẫn mã |
 | Ý nghĩa của một mã / ký hiệu | `docs/user/thuat-ngu.md` | Dẫn mã |
 | Yêu cầu và đặc tả | PRD (`FR-*`, `NFR-*`) · proposal (Phụ lục) · `docs/rfc/` · `docs/spec/` | Dẫn mã |
 | Việc hoãn có chủ ý | `TODOS.md`, kèm mốc kích hoạt | Dẫn số mục |

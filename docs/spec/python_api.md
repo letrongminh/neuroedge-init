@@ -27,7 +27,8 @@ Công khai theo **tên**, không theo **vị trí**: `neuroedge.SimHAL` được
 vẫn chạy hôm nay nhưng một bản phát hành có thể dời nó. Mã sinh ra bởi `neuroedge new` và các agent
 mẫu chỉ import tên công khai ở dạng `from neuroedge import …`.
 
-Hợp đồng dạng tệp **không** thuộc tài liệu này vì có phiên bản riêng: lược đồ gate, vết ghi, `board.v1`
+Hợp đồng dạng tệp **không** thuộc tài liệu này vì có phiên bản riêng: lược đồ gate, vết ghi, `board.v1`,
+`tool-call.v1`, `tool-result.v1`, `error.v1` và danh mục mã lỗi `error-codes.v1` (RFC-0015)
 (PRD §10.3, `schemas/`, `CONTRIBUTING.md` §3) và bố cục nhị phân `NETR` (RFC-0003, RFC-0009). Dòng
 "hoặc CLI" của PRD §10.3 được định nghĩa ở §6.
 

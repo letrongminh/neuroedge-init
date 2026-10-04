@@ -15,7 +15,9 @@
 | **Agent** `agent.toml` | TOML | người viết agent | build, phiên | từng bảng có parser riêng | không (quy phạm trong mã) | `done` |
 | **Ngữ pháp** `commands.toml` | TOML | người viết agent | `CommandGrammar` | parser | không | `done` |
 | **Tri thức** `knowledge.toml` | TOML | người viết agent | `KnowledgeBase` | parser | không | `done` |
-| **Tool call** | đối tượng / JSON | bộ điều phối, LLM, client MCP | `dispatch()` | `input_schema` sinh từ chữ ký | không — Gated Tool Profile v0 (`TODOS.md` #23) | `done` |
+| **Tool call** `tool-call.v1` | đối tượng / JSON | bộ điều phối, LLM, client MCP | `dispatch()` | `schemas/tool-call.v1.json` (phong bì, mô tả tool); `input_schema` sinh từ chữ ký | có — RFC-0015 | `done` |
+| **Kết quả tool** `tool-result.v1` | JSON | `dispatch()` | LLM, client MCP (`outputSchema`) | `schemas/tool-result.v1.json` | có — RFC-0015 | `done` |
+| **Lỗi** `error.v1` · **danh mục mã** `error-codes.v1` | JSON | `NeuroEdgeError.as_dict()` · tệp danh mục | Studio, trang `sim`, SDK người tích hợp | `schemas/error.v1.json`, `schemas/error-codes.v1.json` | có — RFC-0015 | `done` |
 | **Cây thiết bị** `NETR` v1 | nhị phân | `binary_tree.encode` | walker C | `ne_tree_load` (magic, phiên bản, CRC, giới hạn) | có — RFC-0003 | `done` |
 | **Dòng UART** | văn bản | firmware | `testing/uart.py`, script CI | parser, regex neo `^` | quy phạm ở `simulation_coverage.md` §4 | `done` |
 | **Manifest** `manifest.v1` (`schemas/manifest.v1.json`, TSK-K3-03) | JSON | người đóng gói agent / gate | Gate Registry | JSON Schema | dự kiến có — → [`15`](15-target-architecture.md) §3.2 | `planned` |
@@ -129,10 +131,7 @@ xác được 1,0, còn lại dùng tỉ lệ `difflib` so với `threshold`. `k
 
 ## 6. Tool call và kết quả
 
-```text
-ToolCall   { id, name, arguments, source }        source ∈ local_grammar · system_one · system_two · mcp · test
-ToolResult { tool, status, … }                    status ∈ ALLOW · BLOCK · REJECTED
-```
+Hình dạng nằm ở `schemas/tool-call.v1.json` (phong bì `ToolCall { id, name, arguments, source }`, `source` ∈ năm nguồn; mô tả tool) và `schemas/tool-result.v1.json` (`ToolResult`, `status` ∈ ALLOW · BLOCK · REJECTED); không chép lại ở đây.
 
 | `status` | Nghĩa | Chân | MCP `isError` |
 |:---|:---|:---|:---|
@@ -141,8 +140,7 @@ ToolResult { tool, status, … }                    status ∈ ALLOW · BLOCK ·
 | `REJECTED` | Công cụ lạ hoặc tham số sai; không có phán quyết | không đổi | true |
 
 `id` rỗng được gán `call_1`, `call_2`… theo phiên. `source` do runtime gán theo kết nối, không do bên
-gọi khai. Khi `BLOCK`, kết quả mang `gate`, `reason`, `failed_criterion`, `on_block`, `message`,
-`escalated_to`, và có thể `fallback` hoặc `confirmation {id, message, expires_in_ms, who}`. Quy phạm
+gọi khai. Bên đọc kết quả không rẽ nhánh theo `reason` (chuỗi mở): `status` quyết định. Quy phạm
 đầy đủ: [`docs/spec/tool_calling.md`](../../spec/tool_calling.md).
 
 ## 7. Vết ghi — `trace.v1`
@@ -206,6 +204,7 @@ Mỗi tệp có đúng một mục đáp án và mỗi mục có đúng một t�
 | Gate phản chứng | `fixtures/gates/invalid/*.yaml` (và `valid/`, `registry/` phải phân giải) | `fixtures/gates/expected_errors.yaml`: lớp lỗi, mã, nguyên tắc, chuỗi con của nơi và lý do |
 | Vết ghi phản chứng | `fixtures/traces/invalid/*.json` | `fixtures/traces/expected_errors.yaml` |
 | Tool call | `fixtures/tool_calls/{valid,invalid}/*.yaml` | `fixtures/tool_calls/expected_results.yaml`: trạng thái, lệnh chân, lý do… |
+| Hợp đồng người tích hợp | `fixtures/contracts/{tool-call,tool-result,error}/{valid,invalid}/*.json` | `fixtures/contracts/expected_errors.yaml`: lược đồ (`against`) của mỗi tệp; tệp `invalid/` kèm lỗi (`keyword`, `path`, chuỗi con của thông điệp) |
 | Máy trạng thái thoại | `fixtures/compliance/voice/*.json` | `fixtures/compliance/voice/expected_results.yaml`: danh sách sự kiện đầy đủ, đúng offset |
 | Bảng sự thật cây | `fixtures/decision_trees/*.truth.json` | chính tệp đó; walker C phải khớp mọi dòng |
 
@@ -220,13 +219,13 @@ Mỗi tệp có đúng một mục đáp án và mỗi mục có đúng một t�
 | Lược đồ công khai | `https://schema.neuroedge.dev/<loại>/v<n>.json` (phục vụ từ I6) |
 | Digest | `"sha256:" + SHA-256(JCS RFC 8785)` |
 
-**Đóng băng nghĩa là** đổi cần RFC và CI cưỡng chế: ba lược đồ (tập tệp, `$id`, siêu lược đồ hợp lệ);
+**Đóng băng nghĩa là** đổi cần RFC và CI cưỡng chế: bảy lược đồ (tập tệp, `$id`, siêu lược đồ hợp lệ);
 gate trong `digests.lock`; ba vết ghi chuẩn mực; bố cục `NETR` v1. Không đóng băng: cây JSON nội bộ,
-Gated Tool Profile (v0), danh mục sự kiện vết ghi.
+danh mục sự kiện vết ghi.
 
 ## 11. Mã lỗi
 
-Mọi lỗi có ba phần: **ở đâu · vì sao · cách xử lý** (FR-DX-04). Họ mã (PRD Phụ lục B là nguồn):
+Mọi lỗi có ba phần: **ở đâu · vì sao · cách xử lý** (FR-DX-04). Họ mã (`schemas/error-codes.v1.json` là nguồn của cấu trúc: mã, lớp, cha, trạng thái; PRD Phụ lục B giữ lời):
 
 | Họ | Nghĩa | Ví dụ |
 |:---|:---|:---|
