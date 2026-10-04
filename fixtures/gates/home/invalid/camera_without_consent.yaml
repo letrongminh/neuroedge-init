@@ -1,0 +1,7 @@
+# Principle 2 — cho ghi hình khi chưa có đồng ý.
+schema:  neuroedge.gate/v1
+name:    camera-without-consent
+version: 1.0.0
+extends: neuroedge://gates/home/camera@1.0.0
+allow_when:
+  recording_consent: false

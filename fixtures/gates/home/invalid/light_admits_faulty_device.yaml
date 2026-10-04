@@ -1,0 +1,7 @@
+# Principle 2 — đảo dấu điều kiện: chỉ bật khi thiết bị đang lỗi.
+schema:  neuroedge.gate/v1
+name:    light-admits-faulty-device
+version: 1.0.0
+extends: neuroedge://gates/home/light@1.0.0
+allow_when:
+  device_fault_free: false

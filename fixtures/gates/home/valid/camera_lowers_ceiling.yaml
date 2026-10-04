@@ -1,0 +1,7 @@
+# Hạ trần điểm tin cậy của vùng riêng tư từ 0.10 xuống 0.05.
+schema:  neuroedge.gate/v1
+name:    camera-lowers-ceiling
+version: 1.0.0
+extends: neuroedge://gates/home/camera@1.0.0
+allow_when:
+  private_zone_confidence: { lte: 0.05 }

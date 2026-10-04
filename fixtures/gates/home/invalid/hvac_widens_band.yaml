@@ -1,0 +1,7 @@
+# Principle 2 — mở rộng dải nhiệt độ cho phép từ 5–40 °C ra −10–60 °C.
+schema:  neuroedge.gate/v1
+name:    hvac-widens-band
+version: 1.0.0
+extends: neuroedge://gates/home/hvac@1.0.0
+allow_when:
+  room_temperature: { gte: -10, lte: 60 }

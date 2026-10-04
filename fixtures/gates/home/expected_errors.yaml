@@ -1,0 +1,231 @@
+# Expected failures for fixtures/gates/home/invalid/ — TSK-I2b-03.
+#
+# Each child tries to loosen a library gate of gates/home/ (A5 style): a threshold, a freshness lock
+# (`max_age_ms`, `range`, `unit`), the sign of a clause, an argument limit, the `budget` or `on_block`.
+# They resolve against the monorepo `gates/`, not the fixture registry: python/tests/test_home_gates.py
+# requires every file here to fail exactly this way, every file to have an entry, every entry a file,
+# and every gate of gates/home/ to have at least one counter-example.
+
+camera_raises_confidence_ceiling.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.private_zone_confidence"
+  why_contains: "loosens the inherited condition"
+
+camera_records_with_person_present.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.person_in_private_zone"
+  why_contains: "loosens the inherited condition"
+
+camera_redefines_max_age.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 1
+  where_contains: "evaluate.private_zone_confidence"
+  why_contains: "redefines a criterion inherited from the base gate"
+
+camera_without_consent.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.recording_consent"
+  why_contains: "loosens the inherited condition"
+
+door_lock_admits_medium_risk.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.risk_level"
+  why_contains: "loosens the inherited condition"
+
+door_lock_fails_open.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 4
+  where_contains: "budget.fail"
+  why_contains: "declares fail: open in a chain that has already resolved to closed"
+
+door_lock_hour_long_unlock.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "arguments.duration_s"
+  why_contains: "loosens the inherited maximum"
+
+door_lock_redefines_authentication.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 1
+  where_contains: "evaluate.occupant_authenticated"
+  why_contains: "redefines a criterion inherited from the base gate"
+
+door_lock_slower_budget.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "budget.p95_latency_ms"
+  why_contains: "loosens the inherited budget"
+
+door_lock_waivable_by_asking.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "on_block.confirms"
+  why_contains: "more permissive"
+
+hvac_drops_upper_bound.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.room_temperature"
+  why_contains: "loosens the inherited condition"
+
+hvac_redefines_range.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 1
+  where_contains: "evaluate.room_temperature"
+  why_contains: "redefines a criterion inherited from the base gate"
+
+hvac_skips_compressor_rest.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.compressor_rested"
+  why_contains: "loosens the inherited condition"
+
+hvac_widens_band.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.room_temperature"
+  why_contains: "loosens the inherited condition"
+
+light_admits_faulty_device.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.device_fault_free"
+  why_contains: "loosens the inherited condition"
+
+light_fails_open.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 4
+  where_contains: "budget.fail"
+  why_contains: "declares fail: open in a chain that has already resolved to closed"
+
+light_lets_person_waive_fault.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "on_block.confirms"
+  why_contains: "more permissive"
+
+motor_drops_temperature_ceiling.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.motor_temperature"
+  why_contains: "loosens the inherited condition"
+
+motor_fails_open.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 4
+  where_contains: "budget.fail"
+  why_contains: "declares fail: open in a chain that has already resolved to closed"
+
+motor_raises_current_ceiling.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.motor_current"
+  why_contains: "loosens the inherited condition"
+
+motor_redefines_unit.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 1
+  where_contains: "evaluate.motor_current"
+  why_contains: "redefines a criterion inherited from the base gate"
+
+motor_runs_with_estop_pressed.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.estop_released"
+  why_contains: "loosens the inherited condition"
+
+motor_slower_budget.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "budget.p95_latency_ms"
+  why_contains: "loosens the inherited budget"
+
+siren_hour_long_blast.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "arguments.duration_s"
+  why_contains: "loosens the inherited maximum"
+
+siren_slower_budget.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "budget.p95_latency_ms"
+  why_contains: "loosens the inherited budget"
+
+siren_unverified_trigger.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.trigger_verified"
+  why_contains: "loosens the inherited condition"
+
+siren_waivable_by_asking.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "on_block.confirms"
+  why_contains: "more permissive"
+
+valve_drops_pressure_floor.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.line_pressure"
+  why_contains: "loosens the inherited condition"
+
+valve_ignores_leak.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.leak_detected"
+  why_contains: "loosens the inherited condition"
+
+valve_open_for_an_hour.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "arguments.duration_s"
+  why_contains: "loosens the inherited maximum"
+
+valve_raises_pressure_ceiling.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.line_pressure"
+  why_contains: "loosens the inherited condition"
+
+valve_redefines_max_age.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 1
+  where_contains: "evaluate.line_pressure"
+  why_contains: "redefines a criterion inherited from the base gate"

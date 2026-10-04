@@ -1,0 +1,12 @@
+# Principle 1 (RFC-0009) — đổi đơn vị dòng điện A → mA: ngưỡng 8 đổi nghĩa.
+schema:  neuroedge.gate/v1
+name:    motor-redefines-unit
+version: 1.0.0
+extends: neuroedge://gates/home/motor@1.0.0
+evaluate:
+  motor_current:
+    type: numeric
+    unit: mA
+    range: { min: 0, max: 30 }
+    max_age_ms: 200
+    instructions: "Dòng điện động cơ"

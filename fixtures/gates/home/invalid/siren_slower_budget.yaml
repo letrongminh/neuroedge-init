@@ -1,0 +1,7 @@
+# Principle 2 (RFC-0004 R1) — nới ngân sách từ 100 ms lên 400 ms.
+schema:  neuroedge.gate/v1
+name:    siren-slower-budget
+version: 1.0.0
+extends: neuroedge://gates/home/siren@1.0.0
+budget:
+  p95_latency_ms: 400

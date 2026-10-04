@@ -1,0 +1,7 @@
+# Principle 2 — cho ghi hình khi có người trong vùng riêng tư.
+schema:  neuroedge.gate/v1
+name:    camera-records-with-person-present
+version: 1.0.0
+extends: neuroedge://gates/home/camera@1.0.0
+allow_when:
+  person_in_private_zone: true

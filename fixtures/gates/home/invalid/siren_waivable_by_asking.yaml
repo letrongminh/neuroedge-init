@@ -1,0 +1,9 @@
+# Principle 2 (RFC-0006) — escalate → ask: một câu "có" thay cho kiểm chứng.
+schema:  neuroedge.gate/v1
+name:    siren-waivable-by-asking
+version: 1.0.0
+extends: neuroedge://gates/home/siren@1.0.0
+on_block:
+  action:   ask
+  message:  "Bật còi?"
+  confirms: [trigger_verified]
