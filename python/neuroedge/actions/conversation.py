@@ -54,6 +54,21 @@ def _effective(spec: ActionSpec, kwargs: dict[str, Any]) -> dict[str, Any]:
 
 
 @dataclass(frozen=True)
+class _Frame:
+    """
+    What one call of `c.do()` decides on, fixed when the call begins: the conversation's `facts`
+    with the facts of that call laid over them (who asked: `call_source`), and the utterance. A
+    call waits — a gate for its adjudicator, an action body — and other calls run meanwhile on the
+    same conversation: what it reads after the wait is its own frame, never `self.facts`, which
+    those other calls and agent code are free to replace. Nothing a call lays over is ever
+    written into `self.facts` either, so no other call, concurrent or later, can see it.
+    """
+
+    facts: Mapping[str, Any]
+    utterance: str
+
+
+@dataclass(frozen=True)
 class ActionResult:
     action: str
     verdict: GateVerdict
@@ -85,6 +100,8 @@ class Conversation:
         self.hal = hal
         self.fast = fast
         self.slow = slow
+        # What every call starts from. Read once, when a call begins (`_Frame`): a call never
+        # writes it, and replacing it does not change a call already running.
         self.facts = dict(facts or {})
         self.utterance = utterance
         self.registry = registry
@@ -108,8 +125,22 @@ class Conversation:
         """Time `name` on the turn's meter, if a session is timing one."""
         return self.meter.stage(name) if self.meter is not None else nullcontext()
 
+    def _frame(self, own: Mapping[str, Any] | None = None) -> _Frame:
+        """A call's frame, now: a copy of `facts` with `own` over it (`own` wins)."""
+        return _Frame({**self.facts, **(own or {})}, self.utterance)
+
     async def do(self, target: Any, /, **kwargs: Any) -> ActionResult:
-        return await self._do(spec_of(target), kwargs, visited=())
+        return await self._do(spec_of(target), kwargs, visited=(), frame=self._frame())
+
+    async def do_with(
+        self, facts: Mapping[str, Any], target: Any, /, **kwargs: Any
+    ) -> ActionResult:
+        """
+        `do()` with `facts` of its own in front of the gate, over the conversation's: the
+        dispatcher's `call_source`. They belong to this call alone — `self.facts` is neither
+        written nor restored — so calls that overlap on one conversation do not see each other's.
+        """
+        return await self._do(spec_of(target), kwargs, visited=(), frame=self._frame(facts))
 
     async def confirm(self, confirm_id: str, source: str) -> ActionResult:
         """
@@ -127,25 +158,23 @@ class Conversation:
         spec = self.registry.get(taken.action)
         if spec is None:
             raise ConfirmationRefused(f"no @action {taken.action!r} to run")
-        facts = dict(self.facts)
+        # The gate is judged again as the call that raised the question, not as whoever answers.
         source_of_request = taken.context.get("call_source")
-        if source_of_request is not None:
-            self.facts = {**facts, "call_source": source_of_request}
-        try:
-            return await self._do(spec, dict(taken.arguments), visited=(), confirmed=True)
-        finally:
-            self.facts = facts
+        own = {} if source_of_request is None else {"call_source": source_of_request}
+        return await self._do(
+            spec, dict(taken.arguments), visited=(), confirmed=True, frame=self._frame(own)
+        )
 
     def decline(self, confirm_id: str, source: str) -> PendingConfirmation:
         """A person answered "no": the question closes, nothing runs."""
         return self.confirmations.decline(confirm_id, source)
 
-    def _context(self, key: str) -> Mapping[str, Any]:
-        """`facts`, plus what each fact source reads for the gate `key` (if the engine has it)."""
+    def _context(self, key: str, frame: _Frame) -> Mapping[str, Any]:
+        """The call's facts, plus what each fact source reads for the gate `key` (if it exists)."""
         tree = self.engine.tree(key) if self.fact_sources else None
         if tree is None:
-            return self.facts
-        context = dict(self.facts)
+            return frame.facts
+        context = dict(frame.facts)
         for source in self.fact_sources:
             context.update(source(tree))
         return context
@@ -156,8 +185,10 @@ class Conversation:
         kwargs: dict[str, Any],
         visited: tuple[str, ...],
         confirmed: bool = False,
+        *,
+        frame: _Frame,
     ) -> ActionResult:
-        state = {"utterance": self.utterance, "action": spec.name, "arguments": dict(kwargs)}
+        state = {"utterance": frame.utterance, "action": spec.name, "arguments": dict(kwargs)}
         # Which action asked for which gate: a replay (TSK-S3-02) re-runs exactly this.
         self.events.emit(
             "action_requested",
@@ -166,7 +197,7 @@ class Conversation:
         with self.stage("gate"):
             result = await self.engine.evaluate(
                 spec.gate,
-                self._context(spec.gate),
+                self._context(spec.gate, frame),
                 state=state,
                 arguments=_effective(spec, kwargs),
                 confirmed=confirmed,
@@ -174,7 +205,9 @@ class Conversation:
         if result.verdict is GateVerdict.BLOCK:
             fallback = None
             if result.on_block_action == "degrade" and result.fallback_action:
-                fallback = await self._fallback(result.fallback_action, visited + (spec.name,))
+                fallback = await self._fallback(
+                    result.fallback_action, visited + (spec.name,), frame
+                )
             pending = None
             if result.on_block_action == "ask" and result.confirms and not confirmed:
                 # RFC-0006: the gate asked a question a person may answer. Nothing
@@ -191,8 +224,8 @@ class Conversation:
                     p95_ms=tree["budget"]["p95_latency_ms"],
                     # The re-evaluation must see who asked originally, not who answered.
                     context={
-                        "utterance": self.utterance,
-                        "call_source": self.facts.get("call_source"),
+                        "utterance": frame.utterance,
+                        "call_source": frame.facts.get("call_source"),
                     },
                 )
             # RFC-0011 §3d: a BLOCK of a command for a motion channel sends the channel to its
@@ -233,7 +266,9 @@ class Conversation:
             self.ledger.close(token)
         return ActionResult(spec.name, GateVerdict.ALLOW, result, value=value)
 
-    async def _fallback(self, name: str, visited: tuple[str, ...]) -> ActionResult | None:
+    async def _fallback(
+        self, name: str, visited: tuple[str, ...], frame: _Frame
+    ) -> ActionResult | None:
         problem = None
         if name not in self.registry:
             problem = "not a registered @action"
@@ -250,7 +285,8 @@ class Conversation:
             self.events.emit("fallback_skipped", {"action": name, "reason": problem})
             return None
         try:
-            return await self._do(self.registry[name], {}, visited)
+            # The fallback is part of the call that was blocked: it is judged as that call.
+            return await self._do(self.registry[name], {}, visited, frame=frame)
         except EnvelopeRefusedError as refusal:
             # The verdict already stands as a BLOCK and the fallback is the best effort that
             # follows it: a pin the envelope would not move (already on, resting) stays as it

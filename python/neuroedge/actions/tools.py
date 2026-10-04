@@ -347,11 +347,7 @@ async def dispatch(conversation: Conversation, tools: ToolSet, call: ToolCall) -
     if problems:
         events.emit("tool_call_rejected", {"id": call.id, "name": call.name, "problems": problems})
         return ToolResult(call, "REJECTED", problems=tuple(problems))
-    # The dispatcher, not the model, says where the call came from.
-    facts = dict(conversation.facts)
-    conversation.facts = {**facts, CALL_SOURCE_FACT: call.source}
-    try:
-        result = await conversation.do(spec, **arguments)
-    finally:
-        conversation.facts = facts
+    # The dispatcher, not the model, says where the call came from — for this call alone: calls
+    # overlap on one conversation, and `conversation.facts` is never written here.
+    result = await conversation.do_with({CALL_SOURCE_FACT: call.source}, spec, **arguments)
     return ToolResult(call, "BLOCK" if result.blocked else "ALLOW", action=result)
