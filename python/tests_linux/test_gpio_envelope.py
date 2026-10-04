@@ -82,6 +82,11 @@ def test_the_hal_turns_an_on_off_at_max_continuous_ms_on_a_real_line(sysfs):
         assert wait_for(sysfs, "porch_light", 1, timeout=2)
         took = wait_for(sysfs, "porch_light", 0, timeout=3)
         assert took is not None and took < 1.5, "the kernel line went down by the cap"
+        # The line goes down first, then the auto-off is recorded (the safe state never
+        # waits on the log): wait for the record, then it is exact.
+        deadline = time.monotonic() + 2
+        while "cause" not in events.of_type("actuator_command")[-1] and time.monotonic() < deadline:
+            time.sleep(0.01)
         assert events.of_type("actuator_command")[-1]["cause"] == "max_continuous_ms"
     finally:
         hal.close()
