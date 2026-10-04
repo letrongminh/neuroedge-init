@@ -35,6 +35,8 @@ def tree(tmp_path: Path) -> Path:
         "fixtures/gates/registry",
         "fixtures/agents/home-voice/gates",
         "fixtures/agents/factory-monitor/gates",
+        "fixtures/agents/gate-camera/gates",
+        "fixtures/agents/blinds/gates",
     ):
         shutil.copytree(REPO_ROOT / part, tmp_path / part)
     shutil.copy(REPO_ROOT / "digests.lock", tmp_path / "digests.lock")

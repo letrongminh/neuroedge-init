@@ -1,0 +1,103 @@
+# Agent mẫu của kit "camera cổng" (TSK-I2b-02, RFC-0012): người lạ trong vùng cổng ⇒ bật đèn, khoá cổng.
+#
+# Camera chỉ cấp dữ kiện; ngưỡng nằm ở gate (Q-54). Hai gate kế thừa `gates/home/camera@1.0.0` (thư viện
+# khởi đầu, TSK-I2b-03) và chỉ siết thêm: ghi hình cần đồng ý của người trong nhà, vùng riêng tư phải trống
+# (cả hai do gate cha khoá), và người lạ phải ở vùng cổng với điểm tin cậy đủ cao trong từng khung.
+# Cần bo mạch có `vision.in`: `sim-rpi5` (camera ảo phát lại một chuỗi khung) hoặc `linux-rpi5`
+# (một camera V4L2: NEUROEDGE_LINUX_CAMERA=/dev/videoN). `sim-default` và Box-3 không có camera, nên agent
+# này bị từ chối lúc build ở đó (FR-HAL-05).
+#
+#   * stranger_light — bật đèn hiên khi có người lạ ở cổng, tin cậy từ 0,85;
+#   * stranger_lock  — khoá cổng khi có người lạ ở cổng, tin cậy từ 0,90 (hành động nặng hơn, ngưỡng cao hơn).
+#
+# `gate_relay` là rơ-le của chốt khoá cổng, `porch_light` là đèn hiên (tên chân của bo mạch).
+[agent]
+name    = "gate-camera"
+version = "0.1.0"
+
+[requires]
+"digital.out" = { pins = ["gate_relay", "porch_light"] }
+"vision.in"   = { min_width = 640, min_height = 480, min_fps = 10.0 }
+
+[gates]
+stranger_light = "gates/stranger_light@1.0.0.yaml"
+stranger_lock  = "gates/stranger_lock@1.0.0.yaml"
+
+[targets]
+supported = ["sim", "linux"]
+
+# Người trong nhà đã đồng ý ghi hình (dữ kiện không phải thị giác: trên thiết bị là công tắc hoặc chế độ nhà).
+[sim.facts]
+recording_consent = true
+
+# Mô hình giả có kịch bản: không ML, không mạng, tất định. Thay bằng mô hình của bạn:
+#   provider = "python:my_vision.adapter:make"
+[vision]
+provider   = "replay"
+timeout_ms = 200
+
+# `gate_area` là vùng cổng; `private_zone` là góc khung hình chiếu vào phần riêng tư (cửa sổ, sân trong).
+[vision.zones]
+gate_area    = [0.25, 0.40, 0.75, 1.00]
+private_zone = [0.00, 0.00, 0.25, 0.40]
+
+[vision.facts.stranger_at_gate]
+label = "unknown_person"
+zone  = "gate_area"
+kind  = "present"
+
+[vision.facts.stranger_confidence]
+label = "unknown_person"
+zone  = "gate_area"
+kind  = "confidence"
+
+[vision.facts.person_in_private_zone]
+label = "person"
+zone  = "private_zone"
+kind  = "present"
+
+[vision.facts.private_zone_confidence]
+label = "person"
+zone  = "private_zone"
+kind  = "confidence"
+
+# Kịch bản của camera ảo (khung nào mô hình thấy gì; khung không ghi là cảnh trống, `default = []`):
+#   khung 5–12   người lạ ở vùng cổng, điểm 0,93;
+#   khung 20–27  một người ở xa, điểm 0,60: chưa đủ tin cậy;
+#   khung 40–47  người lạ ở cổng điểm 0,93 và một người trong vùng riêng tư điểm 0,90.
+# Trên `sim`, nhãn này là thứ camera "thấy"; trên `linux` mô hình thật đọc khung thật.
+[vision.options]
+name    = "stranger-det"
+labels  = ["unknown_person", "person"]
+default = []
+
+[vision.options.script]
+5  = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+6  = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+7  = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+8  = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+9  = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+10 = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+11 = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+12 = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }]
+20 = [{ label = "unknown_person", score = 0.60, box = [0.4, 0.5, 0.6, 0.9] }]
+21 = [{ label = "unknown_person", score = 0.60, box = [0.4, 0.5, 0.6, 0.9] }]
+22 = [{ label = "unknown_person", score = 0.60, box = [0.4, 0.5, 0.6, 0.9] }]
+23 = [{ label = "unknown_person", score = 0.60, box = [0.4, 0.5, 0.6, 0.9] }]
+24 = [{ label = "unknown_person", score = 0.60, box = [0.4, 0.5, 0.6, 0.9] }]
+25 = [{ label = "unknown_person", score = 0.60, box = [0.4, 0.5, 0.6, 0.9] }]
+26 = [{ label = "unknown_person", score = 0.60, box = [0.4, 0.5, 0.6, 0.9] }]
+27 = [{ label = "unknown_person", score = 0.60, box = [0.4, 0.5, 0.6, 0.9] }]
+40 = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }, { label = "person", score = 0.90, box = [0.05, 0.05, 0.20, 0.35] }]
+41 = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }, { label = "person", score = 0.90, box = [0.05, 0.05, 0.20, 0.35] }]
+42 = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }, { label = "person", score = 0.90, box = [0.05, 0.05, 0.20, 0.35] }]
+43 = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }, { label = "person", score = 0.90, box = [0.05, 0.05, 0.20, 0.35] }]
+44 = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }, { label = "person", score = 0.90, box = [0.05, 0.05, 0.20, 0.35] }]
+45 = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }, { label = "person", score = 0.90, box = [0.05, 0.05, 0.20, 0.35] }]
+46 = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }, { label = "person", score = 0.90, box = [0.05, 0.05, 0.20, 0.35] }]
+47 = [{ label = "unknown_person", score = 0.93, box = [0.4, 0.5, 0.6, 0.9] }, { label = "person", score = 0.90, box = [0.05, 0.05, 0.20, 0.35] }]
+
+# Camera ảo của `sim` (sim/vision/camera.py): chuỗi khung tổng hợp, mỗi khung khác nhau.
+[sim.vision]
+source = "synthetic"
+frames = 60

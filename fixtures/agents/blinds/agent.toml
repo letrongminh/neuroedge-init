@@ -1,0 +1,33 @@
+# Agent mẫu của kit "rèm cửa" (TSK-I2b-02, RFC-0011): rèm lá điều khiển bằng một servo.
+#
+# Mỗi lệnh đi qua gate rồi nhận một lease một lệnh trong `lease_ms` của kênh (200 ms trên `sim-rpi5` /
+# `linux-rpi5`); không gia hạn thì kênh về `safe_state` của nó (servo `gripper`: `hold`, giữ nguyên vị trí
+# tối đa `max_hold_ms` rồi cắt điện). Vì vậy `budget.p95_latency_ms` của gate ≤ lease_ms / 2 = 100. Gate
+# kế thừa `gates/home/light@1.0.0` (thư viện khởi đầu) và chỉ siết thêm. Phong bì thời gian của kênh nằm ở
+# profile bo mạch, và cắt lệnh vượt mức dù gate đã cho phép.
+# Cần bo mạch có `motion`: `--board sim-rpi5` (mặc định `sim-default` không có).
+#
+#   * blinds_open  — nghiêng lá rèm tới 90° (mở hẳn);
+#   * blinds_close — nghiêng lá rèm tới 0° (đóng kín).
+#
+# `gripper` là tên kênh servo của bo mạch; kit dùng nó làm trục nghiêng của rèm lá.
+[agent]
+name    = "blinds"
+version = "0.1.0"
+
+[requires]
+"motion" = { channels = ["gripper"] }
+
+[gates]
+blinds_open  = "gates/blinds_open@1.0.0.yaml"
+blinds_close = "gates/blinds_close@1.0.0.yaml"
+
+[targets]
+supported = ["sim", "linux"]
+
+# Dữ kiện không phải số đọc: trên thiết bị là mạch dừng khẩn, giờ yên tĩnh, cảm biến khe rèm.
+[sim.facts]
+device_fault_free = true
+quiet_hours_ok    = true
+estop_released    = true
+path_clear        = true
