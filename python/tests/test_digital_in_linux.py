@@ -20,6 +20,7 @@ from neuroedge.sim import SimSession
 from neuroedge.testing import TracePlayer
 from neuroedge.testing.recorder import TraceRecorder
 
+from .hand_clock import HandClock
 from .test_digital_in import agent
 from .test_hal_linux import LINES, Direction, FakeGpiod, Value
 
@@ -242,12 +243,16 @@ def gpio(monkeypatch, chip):
     return fake
 
 
-def load(tmp_path, **kwargs):
-    return SimSession.load(agent(tmp_path, **kwargs), target="linux")
+def load(tmp_path, clock=None, **kwargs):
+    options = {} if clock is None else {"clock": clock}
+    return SimSession.load(agent(tmp_path, **kwargs), target="linux", **options)
 
 
 async def test_the_kernel_level_is_the_fact_and_decides_both_ways(tmp_path, gpio, chip):
-    session = load(tmp_path)
+    # A hand clock: the verdict token's 300 ms TTL and the gate budget are measured on the
+    # session clock, and a loaded CI runner outran them on the wall clock (rightly refused,
+    # NE1002 — PR #96). This test is about the kernel level deciding the gate.
+    session = load(tmp_path, clock=HandClock())
     try:
         assert [r.direction for r in gpio.requests].count(
             Direction.INPUT
