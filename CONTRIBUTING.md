@@ -73,7 +73,7 @@ nó — bất biến `CHANGELOG.md` §3.3 #10; bảng mã thoát ở §2.3.
 | Sửa `schemas/*.json` | **RFC** |
 | Sửa ngữ nghĩa phân giải gate (`engine/gate_resolver.py`, `engine/constraints.py`) | **RFC** |
 | Sửa ba vết ghi chuẩn mực `fixtures/traces/*.json` | **RFC** |
-| Sửa hoặc xoá gate đã khoá trong `digests.lock` (`gates/`, `fixtures/gates/valid/`, `fixtures/gates/registry/`) | **RFC**, rồi `python scripts/check_digests.py --accept <tệp> --rfc NNNN`; thiếu RFC thì CI đỏ (TSK-S3-16) |
+| Sửa hoặc xoá gate đã khoá trong `digests.lock` (`gates/`, `fixtures/gates/valid/`, `fixtures/gates/registry/`, và gate của hai kit ở `fixtures/agents/{home-voice,factory-monitor}/gates/`) | **RFC**, rồi `python scripts/check_digests.py --accept <tệp> --rfc NNNN`; thiếu RFC thì CI đỏ (TSK-S3-16) |
 | Đổi bố cục nhị phân `NETR` v1 của cây trên thiết bị ([RFC-0003](docs/rfc/0003-bo-cuc-nhi-phan-cay.md)): `engine/binary_tree.py` ↔ walker `targets/esp32s3/components/ne_gate/` | **RFC** (tăng số phiên bản bố cục) |
 | Thêm gate vào `gates/` hoặc `fixtures/gates/{valid,registry}/` | PR thường — `python scripts/check_digests.py --update` để khoá digest |
 | Thêm fixture phản chứng, hoặc ca corpus tool call / thoại | PR thường — theo luật khép kín ngay dưới |
