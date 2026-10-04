@@ -65,11 +65,17 @@ board_app = typer.Typer(
 mcp_app = typer.Typer(
     name="mcp", help="Serve the agent's gated tools over MCP", epilog=epilog("mcp")
 )
+add_app = typer.Typer(
+    name="add",
+    help="Add an action, gate and two-way test to an agent project",
+    epilog=epilog("add"),
+)
 
 app.add_typer(gate_app, name="gate")
 app.add_typer(trace_app, name="trace")
 app.add_typer(board_app, name="board")
 app.add_typer(mcp_app, name="mcp")
+app.add_typer(add_app, name="add")
 
 console = Console()
 err_console = Console(stderr=True)
@@ -1598,6 +1604,182 @@ def new(
         "  neuroedge run\n"
         "  neuroedge test"
     )
+
+
+AGENT_OPTION = typer.Option(
+    Path("agent.toml"), "--agent", "-a", help="Path to the project's agent.toml"
+)
+ADD_BOARD_OPTION = typer.Option(
+    None,
+    "--board",
+    help="Board the generated test runs on (default: sim-default, or sim-rpi5 when the agent "
+    "needs a primitive only that board has)",
+)
+
+
+def _check_added(agent: Path, board: str) -> None:
+    """
+    Build the project with the add applied (a scratch copy: `add` passes it), as `neuroedge
+    build --target sim` would, then start a session on it: the tables that feed the gates
+    (`[sim.*]`) are read there. The process-wide action registry is emptied for the check and
+    put back after it: the copy defines the project's actions again, and a refused add must
+    leave nothing behind, so that the same name can be tried again.
+    """
+    import sys
+
+    from ..actions import REGISTRY
+    from ..engine.compiler import build as run_build
+    from ..sim import SimSession
+
+    saved, modules = dict(REGISTRY), set(sys.modules)
+    REGISTRY.clear()
+    try:
+        run_build(agent, target="sim", board_id=board, out_dir=agent.parent / "build")
+        SimSession.load(agent, board_id=board).hal.close()
+    finally:
+        REGISTRY.clear()
+        REGISTRY.update(saved)
+        for module in set(sys.modules) - modules:
+            if module.startswith("neuroedge_agent_"):
+                del sys.modules[module]
+
+
+def _is_servo(channel: str | None) -> bool:
+    """
+    Whether `channel` is a servo of the board that has motion (`sim-rpi5`), so the action calls
+    `motion.servo` and not `motion.motor`. A channel the board does not have is left to the
+    build check, which names it.
+    """
+    try:
+        motion = load_board_by_id("sim-rpi5").capability("motion")
+    except NeuroEdgeError:
+        return False
+    return any(servo.get("name") == channel for servo in motion.get("servo", []))
+
+
+def _add(kind: str, name: str, agent: Path, **options: Any) -> None:
+    from ..templates.add import add
+
+    try:
+        plan = add(agent.parent, kind, name, check=_check_added, manifest=agent.name, **options)
+    except BuildFailed as failed:
+        _fail_build(failed)
+        return
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    console.print(f"[bold green]✓[/bold green] added {escape(kind)} {escape(name)}")
+    for path in plan.files:
+        label = "created" if path in plan.created else "updated"
+        console.print(f"  {label} {escape(str(path))}")
+    for note in plan.notes:
+        console.print(f"  [yellow]note:[/yellow] {escape(note)}")
+    console.print(
+        "\nNext:\n  neuroedge gate lint gates\n"
+        f"  neuroedge build --target sim --board {plan.board}\n"
+        "  neuroedge test"
+    )
+
+
+@add_app.command(name="action", epilog=epilog("add action"))
+def add_action(
+    name: str = typer.Argument(..., help="Name of the action (and of its gate and test)"),
+    primitive: str = typer.Option(
+        "digital.out", "--primitive", help="digital.out, motion, display or audio.out"
+    ),
+    pin: str = typer.Option(None, "--pin", help="digital.out and audio.out: the output pin"),
+    channel: str = typer.Option(None, "--channel", help="motion: the motor or servo channel"),
+    board: str = ADD_BOARD_OPTION,
+    agent: Path = AGENT_OPTION,
+):
+    """Add an @action, its gate, a two-way test and its \\[requires] to the project."""
+    servo = _is_servo(channel) if primitive.replace("_", ".") == "motion" else False
+    _add(
+        "action",
+        name,
+        agent,
+        primitive=primitive,
+        pin=pin,
+        channel=channel,
+        servo=servo,
+        board=board,
+    )
+
+
+@add_app.command(name="sensor", epilog=epilog("add sensor"))
+def add_sensor(
+    name: str = typer.Argument(..., help="Name of the action (and of its gate and test)"),
+    primitive: str = typer.Option(
+        "sensor.read",
+        "--primitive",
+        help="sensor.read, digital.in, analog.in, vision.in or audio.in",
+    ),
+    source: str = typer.Option(
+        None, "--source", help="What is read: a sensor, an input pin or an ADC channel"
+    ),
+    pin: str = typer.Option(None, "--pin", help="The output pin the action drives"),
+    label: str = typer.Option(None, "--label", help="vision.in: the label to look for (person)"),
+    board: str = ADD_BOARD_OPTION,
+    agent: Path = AGENT_OPTION,
+):
+    """Add an action decided by a sensor, camera or microphone, with its gate and test."""
+    _add(
+        "sensor",
+        name,
+        agent,
+        primitive=primitive,
+        source=source,
+        pin=pin,
+        label=label,
+        board=board,
+    )
+
+
+@add_app.command(name="device", epilog=epilog("add device"))
+def add_device(
+    name: str = typer.Argument(..., help="Name of the action (and of its gate and test)"),
+    device: str = typer.Option(..., "--device", help="The I2C chip, as bus/device (i2c1/ina219)"),
+    register: str = typer.Option(..., "--register", help="The register to read (0x02)"),
+    width: int = typer.Option(2, "--width", help="Register width in bytes: 1 or 2"),
+    board: str = ADD_BOARD_OPTION,
+    agent: Path = AGENT_OPTION,
+):
+    """Add an action that reads an I2C chip and shows the value, with its gate and test."""
+    try:
+        number = int(register, 0)
+        if not 0 <= number <= 0xFF or width not in (1, 2):
+            raise ValueError(register)
+    except ValueError:
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge add device {name}",
+                why=f"--register {register!r} must be 0..0xFF and --width {width} 1 or 2",
+                how="pass a register such as 0x02 and --width 2",
+            )
+        )
+        return
+    _add(
+        "device",
+        name,
+        agent,
+        primitive="i2c",
+        device=device,
+        register=number,
+        width=width,
+        board=board,
+    )
+
+
+@add_app.command(name="gate", epilog=epilog("add gate"))
+def add_gate(
+    name: str = typer.Argument(..., help="Name of the gate (and of its test)"),
+    fact: list[str] = typer.Option(
+        None, "--fact", help="A bool fact the gate needs true (repeatable; default user_verified)"
+    ),
+    agent: Path = AGENT_OPTION,
+):
+    """Add a fail-closed gate on its own, with a two-way test; an @action names it by `gate=`."""
+    _add("gate", name, agent, facts=tuple(fact or ()))
 
 
 def _recording_agent_here(trace_file: Path) -> Path | None:
