@@ -39,7 +39,7 @@ motor, display, tay máy. NeuroEdge hôm nay coi mỗi môi trường thực thi
   `linux`", nhưng đó là **một thiết bị sau gateway**, không phải nhiều MCU phối hợp.
 - `trace.v1` gắn cứng **một** `target`/`board_id` cho cả phiên
   (`schemas/trace.v1.json`, `metadata.required`) — không có chỗ cho danh tính node.
-- Chưa có transport mạng nào được mở (`TODOS.md` #24; NFR-SEC-09): hôm nay chỉ stdio; MCP qua mạng có xác thực vào v1.0 ở TSK-P2-04 (Q-58).
+- Transport mạng của MCP mặc định tắt (NFR-SEC-09); `mcp serve --http` (TSK-P2-04, Q-58) là cổng có xác thực duy nhất, và chưa là kênh tới node.
 
 Hệ quả: không thể diễn đạt "cùng một ý định, nhiều node cùng thực hiện", cũng không có
 bằng chứng replay cho một phiên trải trên nhiều chip.
@@ -52,7 +52,7 @@ bằng chứng replay cho một phiên trải trên nhiều chip.
 | `events[].additionalProperties: false` (`trace.v1.json`) | Không thể thêm `node_id` cấp sự kiện nếu không đổi lược đồ — và cả đặc tả dòng `NE1`, vốn có đúng ba khoá (`simulation_coverage.md` §4) |
 | `board.py` `SUPPORTED_TARGETS = ("sim","linux","esp32s3")` (`python/neuroedge/hal/board.py`) | Node mới phải qua RFC-0002 (bậc 3 `rp2350`) |
 | Bất biến fail-closed on-device (`neuroedge-proposal.md` §3.4, Phụ lục H.3) | **Cấm** giải pháp "gate tập trung trên Pi" — nếu Pi mất, actuator phải tự về an toàn |
-| MCP chỉ stdio (`TODOS.md` #24) | Chưa có kênh mạng nào để nói chuyện với node từ xa |
+| MCP mặc định stdio; `--http` dành cho client, không cho node (TSK-P2-04) | Chưa có kênh mạng nào để nói chuyện với node từ xa |
 
 ## 3. Thay đổi đề xuất
 
@@ -126,7 +126,7 @@ gãy test và đổi vector firmware.
 - Tái dùng hướng TSK-P2-05 (MCP gateway) làm điểm vào cho node; **không** dùng MCP làm
   wire protocol MCU (JSON-RPC nặng).
 - MCP qua mạng giữ ở mặt agent: **Streamable HTTP + OAuth 2.1** theo spec MCP 2026-07-28,
-  sau khi có mTLS (NFR-SEC-04) và test #29.
+  sau khi có mTLS (NFR-SEC-04) và test lặp lời gọi bị chặn (`test_repeating_a_blocked_call_over_the_network_never_slips_through`, TSK-P2-04).
 
 ### 3.6 CLI và `verify`
 

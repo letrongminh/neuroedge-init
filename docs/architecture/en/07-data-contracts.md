@@ -74,7 +74,7 @@ reject unknown keys. Command syntax uses these tables: `CHANGELOG.md` §2.3.
 | Table | Parser | Main keys and rules |
 |:---|:---|:---|
 | `[agent]` | `compiler.load_agent_manifest` | `name`, `version` (required; on `esp32s3` must be `MAJOR.MINOR.PATCH`), `language` (exactly 2 lowercase letters) |
-| `[requires]` | `compiler.check_capabilities` | Keys are dotted primitives (`"digital.out"`…); `pins`, `sensors`, `sample_rate_hz`, `aec`, `min_width`… must exist on the board |
+| `[requires]` | `compiler.check_capabilities` | Keys are dotted primitives (`"digital.out"`…); `pins`, `sensors`, `channels` (`analog.in`, each one a declared channel), `sample_rate_hz`, `aec`, `min_width`… must exist on the board |
 | `[gates]` | `compiler.resolve_gates` | `key = "neuroedge://…"` or a relative path; each `@action(gate=…)` must point to a key. On `esp32s3` keys must be C identifiers |
 | `[targets]` | `compiler` | `supported = [...]` |
 | `[sim.facts]`, `[sim.slot_facts]` | `sim/session.py` | Fixed facts of the session; facts taken from the command slot |
@@ -164,7 +164,7 @@ Events by role in replay:
 |:---|:---|:---|
 | **Input** | `text_input`, `audio_in_*`, `wake_word_detected`, `stt_result`, `stt_unavailable`, `sensor_read`, `sensor_set`, `sensor_unavailable`, `intent_extracted` | fed in again |
 | **Decision** | `gate_evaluation_begin`, `gate_facts`, `gate_evaluation_result`, `argument_out_of_range`, `actuator_command`, `actuator_aborted`, `actuator_command_rejected` | recomputed and compared against golden |
-| **Orchestration** | `tool_call`, `tool_call_rejected`, `tool_confirm_*`, `action_requested`, `fallback_skipped`, `voice_state_changed`, `voice_reprompt`, `voice_late_result_dropped`, `stt_fallback` | recorded, not compared |
+| **Orchestration** | `tool_call`, `tool_call_rejected`, `mcp_auth_refused`, `tool_confirm_*`, `action_requested`, `fallback_skipped`, `voice_state_changed`, `voice_reprompt`, `voice_late_result_dropped`, `stt_fallback` | recorded, not compared |
 | **Output** | `tts_stream_start`, `tts_stream_end`, `tts_unavailable`, `display_frame` (digest only), `knowledge_retrieved` | not compared |
 | **Measurement** | `system_one_call`, `system_one_fallback`, `system_two_call`, `system_two_unavailable`, `circuit_breaker`, `mcp_tool_result`, `turn_latency`, `session_summary` | skipped |
 | **Device-only** | `device_info`, `trace_end` | UART session frame |

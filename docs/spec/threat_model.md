@@ -14,6 +14,7 @@ sequenceDiagram
     participant C as c.do()
     participant E as Gate Engine
     participant S as SystemOne
+    participant V as Phong bì
     participant L as TokenLedger
     participant B as Thân @action
     participant H as HAL
@@ -32,6 +33,8 @@ sequenceDiagram
         C->>B: chạy thân hàm (token cấp qua ContextVar)
         B->>H: digital.out("door_lock").pulse()
         H->>H: kiểm tên chân trên bo mạch
+        H->>V: giữ trước thời gian bật (nguyên tử, theo chân)
+        V-->>H: còn ngân sách · đủ giãn cách · chân đang tắt
         H->>L: authorize(token, pin)
         L-->>H: đúng sổ · đúng chân · chưa dùng · còn hạn
         H-->>B: actuator_command (ghi vết ghi)
@@ -42,6 +45,34 @@ sequenceDiagram
 
 HAL không có bộ kiểm nào khác: khi chưa gắn `Conversation`, HAL **từ chối mọi lệnh**,
 kể cả chuỗi trông giống bằng chứng.
+
+**Phong bì đứng trước token.** Thứ tự trong `HardwareAbstractionLayer.digital_out` là
+`require_pin → phong bì → authorize → record` (RFC-0007 §3d, TSK-N2-01). Phong bì là lớp chặn thứ
+hai, độc lập với gate: nó chỉ biết từ chối (`EnvelopeRefusedError`, NE1003, sự kiện `envelope_refused`),
+không bao giờ cho phép, nên gate viết lỏng đến đâu thì giới hạn vật lý của chân vẫn đứng. Vì đứng trước
+`authorize`, lệnh bị từ chối **không tiêu token**; `authorize` thất bại sau khi đã giữ trước thì phong
+bì hoàn trả toàn bộ phần đã giữ.
+
+**Ngoại lệ duy nhất của luật "không lệnh nào ra phần cứng mà không có ALLOW"** (RFC-0007 §3d, §8;
+Q-62): lệnh **về phía an toàn**. Đó là `digital.out` `off` (kênh PWM: `duty = 0` và thả `enable_pin`, kể cả một lệnh
+`pwm` có `duty` lượng tử về 0 — RFC-0010 §9.6), và mọi lệnh HAL tự phát khi hết `duration_ms`,
+hết `max_continuous_ms`, khi cắt lời, khi BLOCK, mất liên lạc, `hal.close()` hoặc khi tiến trình giám sát
+thả line. Các lệnh này **không qua phong bì, không cần ALLOW hay token, không chờ `min_interval_ms`** —
+`min_interval_ms` chỉ từ chối lệnh *bật* kế tiếp, tính từ lúc lần bật trước kết thúc. Lý do: lệnh đưa cơ
+cấu về trạng thái an toàn không bao giờ được phép bị cản bởi bất kỳ cơ chế kiểm soát nào, kể cả sổ token
+hỏng, đồng hồ lệch hay bản ghi phong bì không đọc được. Lệnh vẫn ghi vết ghi (`actuator_command`, kèm
+`cause` khi HAL tự phát) — chỉ không bị chặn. Hệ quả cần biết: `off` chỉ cần tên chân có trên bo mạch;
+HAL không kiểm bằng chứng cho nó (`test_off_needs_no_envelope_no_proof_and_no_waiting`).
+
+**Chuyển động có lease** (RFC-0011 §3c, §3d, TSK-I2a-05). Lệnh `motion.*` đi cùng đường `require_channel → giới
+hạn bo mạch → phong bì → authorize → record`, nhưng bằng chứng là **lease** trong token: một lệnh, trong `lease_ms`
+của kênh, và chỉ một lần qua gate mới gia hạn được; HAL không bao giờ tự gia hạn. Lệnh **về trạng thái an
+toàn của kênh** (`stop`/`hold`) là phần mở rộng của ngoại lệ trên: lease hết, hết `max_continuous_ms` hay
+`max_hold_ms`, cắt lời, BLOCK, `motion.stop`, `hal.close()`, tiến trình giám sát thả đường enable — không qua
+phong bì, không cần token hay ALLOW, không chờ `ramp_min_ms`/`min_interval_ms`, luôn ghi `motion_safe` kèm nguyên
+nhân (`test_stop_needs_no_token_no_envelope_and_does_not_wait_for_a_ramp`). Trên `linux`, đường enable của driver
+do tiến trình giám sát giữ cùng hạn (hết lease + 250 ms), nên runtime treo hoặc chết cũng làm driver mất điện
+(`test_a_runtime_stopped_with_sigstop_while_a_motor_runs_loses_its_driver`).
 
 Sơ đồ bắt đầu ở `c.do()`. Lời gọi từ LLM hay client MCP đi qua `dispatch()` trước
 (`docs/spec/tool_calling.md` §2), và lời xác nhận `ask` lượng giá lại chính gate này
@@ -60,6 +91,9 @@ trình viên gọi thẳng hàm, dùng lại token cũ, sao chép một lệnh t
 | HAL chưa gắn ledger | Authorizer mặc định từ chối tất cả | NE1001 | `test_a_hal_without_a_ledger_refuses_every_command` |
 | Token cho chân A dùng cho chân B | `pin ∈ token.pins` | NE1001 | `test_a_token_for_one_pin_cannot_drive_another` |
 | Dùng lại token (trong hoặc sau `c.do()`) | Mỗi chân tiêu một lần; token đóng khi `c.do()` trả về | NE1002 `token_replayed` | `test_a_second_pulse_…`, `test_a_token_kept_past_c_do_…` |
+| Lease dùng cho hai lệnh | Mỗi lease một lệnh; lệnh thứ hai ⇒ `lease_used` | NE1002 `lease_used` | `test_a_lease_carries_exactly_one_command` |
+| Lease quá hạn (lệnh tới sau `lease_ms`) | `lease_ms` của kênh từ lúc phán quyết, không phải `TTL_FACTOR` | NE1002 `lease_expired` | `test_a_lease_that_ran_out_before_the_command_is_refused`, `test_the_lease_is_the_boards_and_not_the_gates_or_the_ttl` |
+| Lease của kênh A dùng cho kênh B | `channel ∈ token.channels` | NE1001 | `test_a_lease_for_one_channel_is_no_proof_for_another` |
 | Token quá hạn | TTL = p95 × 3 | NE1002 `token_expired` | `test_a_token_used_after_its_ttl_is_token_expired` |
 | Token từ tiến trình trước (restart) | `process_instance_id` | NE1002 `token_expired` | `test_a_token_from_another_process_instance_is_token_expired` |
 | Sổ token trên thiết bị đầy (mọi ô giữ token còn sống) | Sổ đầy ⇒ đóng an toàn: `ne_token_issue` từ chối (`NE_TOKEN_ERR_FULL`), không cấp token thì không có hành động; không bao giờ đẩy token còn sống ra | — (không token) | `test_what_only_the_c_ledger_has` |
@@ -68,11 +102,17 @@ trình viên gọi thẳng hàm, dùng lại token cũ, sao chép một lệnh t
 | Gate quá lớn cho thiết bị | Bộ mã hoá `NETR` từ chối gate vượt giới hạn thiết bị (vd quá 32 nút) lúc build, không sinh `.netree` | NE2002 | `test_a_gate_too_large_for_the_device_is_refused_at_build` |
 | Gate chuẩn mực bị sửa âm thầm (digest đổi) | `digests.lock`: CI đỏ khi digest đổi hoặc tệp bị xoá mà không có RFC | — (CI) | `test_a_changed_digest_needs_an_rfc_and_update_does_not_hide_it` · `test_a_deleted_file_needs_an_rfc` |
 | Task sinh trong thân hành động gọi lại hành động sau khi `c.do()` trả về | Quyền chạy là cờ dùng chung, đóng khi `c.do()` thoát | NE1001 | `test_a_spawned_task_cannot_call_the_action_after_c_do_returns` |
+| Gate viết lỏng cho một chân bật quá lâu, quá thường, hoặc bật lại để kéo dài | Phong bì theo chân của bo mạch (RFC-0007 §3d): tự tắt bắt buộc tại `min(thời hạn, max_continuous_ms)`, ngân sách `max_on_ms_per_window` trên cửa sổ trượt, `min_interval_ms` tính từ lúc lần bật trước kết thúc; chân đang bật từ chối lệnh bật thứ hai | NE1003 `envelope_refused` (`window_budget` · `min_interval_ms` · `already_on`), token không bị tiêu | `test_the_budget_holds_exactly_the_reserved_time_and_an_early_off_refunds_the_rest` · `test_a_pin_that_is_on_refuses_another_on_or_pulse_instead_of_restarting_its_limit` · `test_a_refused_command_does_not_consume_the_verdict_token` |
+| Hai lệnh đồng thời cùng chân cùng qua ngân sách còn lại | Giữ trước **nguyên tử** dưới khoá theo chân (TSK-N2-02) | NE1003, đúng một lệnh bị từ chối | `test_two_concurrent_commands_on_one_pin_give_exactly_one_envelope_refused` |
+| Khởi động lại liên tục để xoá bộ đếm phong bì | Thời gian bật ghi bền **trước** khi bật (write-ahead; tệp trạng thái theo bo mạch trên `linux`), sau khởi động coi mọi lần bật đã ghi như vừa xảy ra và mỗi chân chờ `min_interval_ms`; bản ghi hỏng, thiếu hoặc không ghi được ⇒ coi cả cửa sổ đã dùng hết | NE1003 `window_unreadable` | `test_after_a_restart_what_was_recorded_counts_against_the_window_and_the_pin_waits` · `test_a_corrupt_record_makes_the_pin_refuse_every_on` · `test_a_missing_record_is_refused_unless_this_is_declared_a_new_rig` |
+| Tiến trình runtime treo (SIGSTOP, kẹt) hoặc chết khi chân đang bật; hẹn giờ tự tắt chết cùng nó | Trên `linux`, mặc định bật (tắt chỉ cho test/gỡ lỗi, ghi ở `metadata.supervision`; giám sát không chạy ⇒ lệnh bật bị từ chối `supervisor_unavailable`, `off` vẫn chạy): line của chân có phong bì do **tiến trình giám sát riêng** giữ; runtime gửi nhịp tim; mất nhịp quá `heartbeat_timeout_ms`, quá hạn hoặc đóng ống ⇒ giám sát thả line (`hal/supervisor.py`) | Line về 0, runtime ghi `actuator_command` `off` kèm `cause` `supervisor_*` khi tỉnh lại | `test_a_runtime_stopped_with_sigstop_while_a_line_is_on_loses_the_line` · `test_a_runtime_that_dies_loses_its_lines_because_the_pipe_closes` · `tests_linux/test_gpio_envelope.py` |
 | Độ tin cậy không phải xác suất (`NaN`, `True`, > 1) lọt ngưỡng | `walk()` coi là `criterion_unavailable` | — (phán quyết BLOCK) | `test_a_non_probability_confidence_blocks` |
 | `fail: open` biến một "không" đã biết thành ALLOW | `known_failure()` — `open` chỉ tha điều không quyết được | — (phán quyết BLOCK) | `test_fail_open_still_blocks_on_a_known_failing_fact` |
 
 Mọi lần từ chối ghi `actuator_command_rejected{pin, reason, code}` vào vết ghi **trước**
-khi ném lỗi; chân không đổi trạng thái. Nonce không bao giờ vào vết ghi.
+khi ném lỗi; chân không đổi trạng thái. Nonce không bao giờ vào vết ghi. Phong bì từ chối ghi
+`envelope_refused{pin, operation, reason, …}` (`docs/spec/simulation_coverage.md` §3) và ném NE1003, cũng
+trước khi chạm chân hay token.
 
 ## 2b. Trong phạm vi: bên gọi không tin cậy (Q-24)
 
@@ -95,7 +135,14 @@ nó đọc; client MCP có thể là một agent tự động. Chúng chỉ gử
 | Nội dung từ MCP server bên ngoài bị cài lệnh ("hãy tắt đèn") | Kết quả là dữ liệu cho mô hình, không phải lệnh; lời gọi mô hình sinh ra sau đó vẫn qua gate (Q-27) | `BLOCK` theo gate | `test_prompt_injection_in_the_news_still_meets_the_gate` |
 | Tool bên ngoài có hiệu ứng vật lý (đi vòng qua gate) | Allowlist `tools` trong `agent.toml`; quy tắc: hiệu ứng vật lý phải là `@action`; tên trùng `@action` ⇒ build lỗi | Tool ngoài allowlist `REJECTED` | `test_a_tool_outside_the_allowlist_is_refused` · `test_build_refuses_a_bad_mcp_table` |
 | Server bên ngoài treo hoặc không chạy | `timeout_s`; server bị bỏ qua | `mcp_server_unavailable`, tool thiết bị vẫn chạy | `test_a_server_that_does_not_start_is_skipped_and_the_lights_still_work` |
-| Lặp lời gọi bị chặn tới khi lọt | Gate tất định: cùng dữ kiện ⇒ cùng phán quyết; mỗi lần đều ghi vết | `BLOCK` lặp lại | chưa có test riêng |
+| Lặp lời gọi bị chặn tới khi lọt (một client, hay nhiều kết nối, qua stdio hay qua mạng) | Gate tất định: cùng dữ kiện ⇒ cùng phán quyết; không có đếm lần thử, không có "thử lại", không có trạng thái nào lời gọi trước để lại cho lời gọi sau; mỗi lần đều ghi vết. Chỉ **dữ kiện đổi** mới đổi được phán quyết | N lời gọi ⇒ N `BLOCK` và N chuỗi sự kiện, không chân nào đổi | `test_repeating_a_blocked_call_over_the_network_never_slips_through` (deny và degrade, 25 lần, qua mTLS) · `test_the_same_facts_give_the_same_verdict_with_or_without_the_network` (`TODOS.md` #29) |
+| Client MCP qua mạng không có chứng chỉ, chứng chỉ do CA lạ ký, hoặc chỉ nói TLS 1.2 | mTLS bắt buộc, TLS 1.3 tối thiểu (NFR-SEC-04): bắt tay thất bại, không byte HTTP nào tới ứng dụng; không có sự kiện vết ghi (xảy ra trước mã ứng dụng) | Kết nối bị đóng | `test_a_client_without_a_trusted_certificate_never_reaches_http` · `test_a_client_that_will_not_speak_tls_13_is_refused` |
+| Gọi qua mạng không token, hoặc token sai: hết hạn, chữ ký khoá khác, `alg: none`, sai `aud` hay `iss`, thiếu `exp`/`sub` | Bộ kiểm token của resource server (OAuth 2.1, RFC 9068/8707); chỉ thuật toán bất đối xứng | `401`, **không gì được chuyển tiếp**, `mcp_auth_refused` | `test_a_request_without_a_valid_token_is_refused_and_nothing_is_dispatched` · `test_a_request_with_no_token_at_all_is_a_401_and_is_traced` |
+| Token thiếu phạm vi | `--required-scope` | `403` | `test_a_token_without_the_required_scope_is_a_403` |
+| Token của thiết bị A bị đánh cắp, trình từ máy khác (kể cả máy có chứng chỉ hợp lệ của thiết bị B) | Token ràng buộc chứng chỉ (RFC 8705, `cnf.x5t#S256`): phải bằng dấu vân tay chứng chỉ đang kết nối; token không ràng buộc bị từ chối | `401` `cert_mismatch` / `not_cert_bound` | `test_every_device_gets_its_own_token_and_one_cannot_use_anothers` · `BAD_TOKENS` (hai ca) |
+| Thiết bị đã xác thực dùng lại phiên MCP của thiết bị khác (đoán `mcp-session-id`) | Phiên gắn với (issuer, `client_id`, `sub`) của token mở nó | `404` | `test_a_session_belongs_to_the_device_that_opened_it` |
+| Bật cổng mạng mà thiếu một mảnh cấu hình (TLS, CA, issuer, audience, JWKS), hoặc đưa vào khoá có thể ký | Khởi động đóng: `prepare` kiểm đủ **trước** khi dựng phiên và mở socket; JWKS chứa khoá riêng hay khoá đối xứng bị từ chối | Thoát mã 1, lỗi ba phần | `test_the_network_transport_refuses_to_start_without_the_whole_configuration` · `test_the_cli_refuses_to_start_half_configured_before_wiring_a_session_or_binding` · `test_a_key_file_that_could_forge_tokens_is_refused` |
+| Client mạng tự khai `call_source` để giả làm lệnh cục bộ | Như dòng `call_source` ở đầu mục: không phải tham số; nguồn của kết nối `--http` là `mcp` | `REJECTED` | `test_an_authenticated_client_lists_and_calls_the_gated_tools` |
 
 **Ranh giới tin cậy của `mcp serve --ui`.** Trang và client MCP dùng **chung một phiên**
 (`tool_calling.md` §8). Chữ gõ trên trang đi vào như lời của người trên thiết bị: câu lệnh
@@ -106,10 +153,25 @@ nghe `127.0.0.1` và chỉ nhận yêu cầu cùng nguồn gốc (dòng trên). 
 đường nào để tự xác nhận (`test_an_mcp_client_has_no_way_to_confirm`); luồng MCP rồi người
 trên trang: `test_a_tool_call_through_mcp_then_a_person_on_the_page`.
 
-**Hôm nay:** MCP chỉ qua **stdio**, nên bên chạy được `neuroedge mcp serve` là người vận
-hành, có quyền ngang runtime (§3). Transport mạng vào v1.0 ở TSK-P2-04 (Q-58), mặc định tắt;
-task đó thêm mục của bên gọi qua mạng vào mục này — xác thực OAuth 2.1, mTLS theo thiết bị,
-lặp lời gọi bị chặn (`TODOS.md` #24, #29, NFR-SEC-09).
+**Ranh giới tin cậy của `mcp serve --http` (TSK-P2-04, Q-58, `tool_calling.md` §8.1).** MCP mặc định
+qua **stdio**: bên chạy được `neuroedge mcp serve` là người vận hành, có quyền ngang runtime (§3). Cổng mạng
+**mặc định tắt**, và khi bật thì bên gọi vẫn **không tin cậy** — chỉ được tin là *được phép hỏi*, còn gate quyết
+định. Ai qua được cửa: người giữ **cả** một chứng chỉ client do `--client-ca` ký **và** một token do issuer cấp
+cho đúng chứng chỉ đó. Những gì cửa mạng **không** làm được, nói rõ:
+
+- **Không phân biệt thiết bị ở gate.** Mọi lời gọi qua mạng, thiết bị nào cũng vậy, là `call_source = mcp`; gate
+  không cấm riêng được một thiết bị hay riêng cửa mạng (thêm nguồn là đổi hợp đồng, cần RFC — `tool_calling.md` §5).
+  Hai thiết bị cùng quyền như nhau với gate; phân quyền theo thiết bị làm ở issuer (phạm vi trong token).
+- **Không thu hồi tức thì.** Token chết khi hết hạn hoặc khi issuer đổi khoá (`--jwks` đọc một lần lúc khởi
+  động — đổi khoá thì khởi động lại); chứng chỉ client không kiểm CRL/OCSP. Cấp token ngắn hạn. Một thiết bị bị
+  chiếm giữ cả khoá riêng lẫn token vẫn gọi được tới khi token hết hạn; nó vẫn chỉ *hỏi* được, và gate vẫn
+  chặn điều gate chặn — N lần hỏi lại vẫn là N lần `BLOCK`.
+- **Kẻ giữ chứng chỉ hợp lệ có thể gây quá tải.** Không giới hạn tốc độ ở tầng ứng dụng; vết ghi chỉ giữ
+  10 000 lần từ chối đầu mỗi phiên (`last_recorded`) để vết không phình vô hạn. Bắt tay TLS thất bại không vào
+  vết ghi, chỉ vào log của uvicorn.
+- **Token chỉ được kiểm lúc nhận yêu cầu.** Một luồng SSE đã mở sống tiếp tới khi đóng, dù token đã hết hạn.
+- **Lệnh quản trị không qua mạng** (`gate lint`, `trace validate`): Q-63 chủ ý không mở thêm bề mặt này.
+- **Chưa thử trên hai máy thật.** Test chạy trong một tiến trình trên 127.0.0.1 với CA tạm sinh lúc chạy.
 
 ## 3. Ngoài phạm vi: kẻ giả mạo trong cùng tiến trình
 
@@ -131,5 +193,10 @@ Tư thế này là tạm thời; IN/OUT thật chốt theo câu C6 của bộ ph
 
 - Agent chỉ nhận HAL qua runtime (`Conversation`), không tự dựng HAL.
 - Đồng hồ ledger là đồng hồ đơn điệu của engine; test dùng đồng hồ giả.
+- Đồng hồ phong bì là đồng hồ của phiên (`EventLog.clock`, mili giây); replay dùng mốc đã ghi của lệnh, không
+  bao giờ đồng hồ treo tường. Giữa hai lần khởi động không có đồng hồ tin cậy nên phong bì giả định xấu nhất (§1).
+- Phong bì và tiến trình giám sát chống nhầm lẫn và treo, không chống kẻ có quyền ngang runtime (§3): kẻ đó xoá
+  được tệp trạng thái hay giết tiến trình giám sát. SIGKILL cả hai thì chân giữ nguyên mức cho tới khi gpiod thả
+  line (§3b: điện trở kéo xuống hoặc watchdog phần cứng).
 - `gate_digest` trong token là để truy vết, không phải để chứng thực — chữ ký gate
   thuộc Khối 3 (Gate Registry).

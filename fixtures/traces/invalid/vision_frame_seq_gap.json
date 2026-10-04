@@ -1,0 +1,89 @@
+{
+  "$schema": "https://schema.neuroedge.dev/trace/v1.json",
+  "metadata": {
+    "session_id": "sess_a1b2c3d4",
+    "timestamp_utc": "2026-10-02T08:00:00Z",
+    "target": "sim",
+    "board_id": "sim-default",
+    "agent_version": "gate-watch@0.1.0",
+    "vision_models": [
+      {
+        "name": "person-det",
+        "sha256": "17c5dbf4338214506571ca5e3d4ec159b1ca21fa421500549c1926c6a4d80f56"
+      }
+    ]
+  },
+  "events": [
+    {
+      "offset_ms": 1840,
+      "type": "vision_fact",
+      "data": {
+        "fact": "person_confidence",
+        "kind": "confidence",
+        "label": "person",
+        "zone": "gate_area",
+        "min_frames": 3,
+        "value": 0.93,
+        "values": [
+          0.93,
+          0.93,
+          0.93
+        ],
+        "age_ms": 140,
+        "max_frame_age_ms": 1000,
+        "present_score_floor": 0.5,
+        "model": {
+          "name": "person-det",
+          "sha256": "17c5dbf4338214506571ca5e3d4ec159b1ca21fa421500549c1926c6a4d80f56"
+        },
+        "frames": [
+          {
+            "frame_seq": 101,
+            "vision_ref": {
+              "sha256": "38ef56880e404152978a941911af827b651483a292480c5549bde3309ce2e874",
+              "size": 61440
+            },
+            "captured_ms": 1700,
+            "labels": [
+              {
+                "label": "person",
+                "zone": "gate_area",
+                "score": 0.93
+              }
+            ]
+          },
+          {
+            "frame_seq": 102,
+            "vision_ref": {
+              "sha256": "213e0cae2c38fa53982f7ff0e1288f14f1195e16cbaaa18c8f0f5dfa450c4132",
+              "size": 61440
+            },
+            "captured_ms": 1767,
+            "labels": [
+              {
+                "label": "person",
+                "zone": "gate_area",
+                "score": 0.93
+              }
+            ]
+          },
+          {
+            "frame_seq": 104,
+            "vision_ref": {
+              "sha256": "15923f5e6320d1fe6b68c0afd7b5d50821ada9951a8ecdfd4d542720d2fac494",
+              "size": 61440
+            },
+            "captured_ms": 1833,
+            "labels": [
+              {
+                "label": "person",
+                "zone": "gate_area",
+                "score": 0.93
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

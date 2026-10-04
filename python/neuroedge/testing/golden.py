@@ -7,8 +7,11 @@ traces match when their safety views are equal:
 * the gate sequence — for each evaluation, in order: the gate, the verdict, and
   every decision field the golden records (`reason`, `blocked_by`, `action`,
   `escalated_to`, `fail_mode`, `fallback_action`);
-* the actuator sequence — every `actuator_command` (pin, operation, duration)
-  and `actuator_aborted` (pin, reason), in order.
+* the actuator sequence — every `actuator_command` (pin, operation, duration; and, for a
+  PWM command, frequency and duty)
+  and `actuator_aborted` (pin, reason), in order, every `envelope_refused` (pin,
+  operation, reason), and every `motion_command` / `motion_safe` (channel, setpoint or
+  state, run or cause: RFC-0011).
 
 Everything else is noise and ignored: `session_id`, `timestamp_utc`,
 `offset_ms`, latency, perception details, System 2 text (L3). A decision field
@@ -61,15 +64,37 @@ def safety_view(trace: Any) -> dict[str, list[dict[str, Any]]]:
             gates.append(entry)
             current = None
         elif kind == "actuator_command":
+            command = {
+                "pin": data.get("pin"),
+                "operation": data.get("operation"),
+                "duration_ms": data.get("duration_ms", 0),
+            }
+            # A PWM command is its frequency and duty too (RFC-0010): a regression to a higher
+            # duty is a safety regression. Absent on every other command, so goldens made before
+            # PWM compare as they did.
+            command.update({k: data[k] for k in ("frequency_hz", "duty") if k in data})
+            actuators.append(command)
+        elif kind == "actuator_aborted":
+            actuators.append({"pin": data.get("pin"), "aborted": data.get("reason")})
+        elif kind in ("motion_command", "motion_safe"):
+            # `motion.*` (RFC-0011): what the channel was told, and why it went safe, are
+            # decisions like a pin command. The lease's own length is the board's, not compared.
+            keys = ("channel", "kind", "speed", "target", "speed_max", "ramp_ms", "run")
+            if kind == "motion_safe":
+                if data.get("cause") == "close":
+                    continue  # the session ending, not a decision: where a trace is cut decides it
+                keys = ("channel", "state", "cause")
+            actuators.append({"motion": kind, **{k: data[k] for k in keys if k in data}})
+        elif kind == "envelope_refused":
+            # The envelope's refusal is a decision like a verdict (RFC-0007 §3d): a golden that
+            # records none must not match a run that was refused, nor the other way round.
             actuators.append(
                 {
                     "pin": data.get("pin"),
                     "operation": data.get("operation"),
-                    "duration_ms": data.get("duration_ms", 0),
+                    "refused": data.get("reason"),
                 }
             )
-        elif kind == "actuator_aborted":
-            actuators.append({"pin": data.get("pin"), "aborted": data.get("reason")})
     return {"gates": gates, "actuators": actuators}
 
 

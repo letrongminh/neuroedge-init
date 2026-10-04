@@ -18,9 +18,24 @@ mirrors the reference board rather than exceeding it (CHANGELOG §3.3 #7).
 * `audio_out` — records `tts_stream_start`; the audio of a reply, when a TTS
   provider made one, plays on `speaker()`, a timeline written out as WAV
   (`hal/audio.py`).
+* `digital_out` also takes `operation = "pwm"` (RFC-0010): the channel's duty and frequency are
+  the HAL's commanded state, the enable line is up while the command runs, and `pin_state()` reads
+  back what was commanded — or, where the board declares `feedback`, what `set_feedback()` says the
+  hardware reports.
 * `sensor_read` — values scripted with `set_sensor()` (or a sequence with
   `script_sensor()`, which replay uses); records `sensor_read`. An unscripted
   sensor raises instead of inventing a reading.
+* `analog_in` — a value set with `set_analog()`, in the channel's unit; a value that is not
+  a finite number inside the channel's `[min, max]`, or none set, raises
+  `PerceptionUnavailableError` instead of being clamped; records `analog_in` (TSK-I2a-04);
+* `i2c_read` — values scripted with `set_i2c()` (or a sequence with `script_i2c()`, which
+  replay uses), through the same allow-list as `linux`; records `i2c_read`. It never
+  scans and never invents a reading (RFC-0007 §3b).
+* `digital_in` — levels scripted with `set_digital_in()` (RFC-0007 §3a); records `digital_in`.
+  An input nobody set raises `PerceptionUnavailableError` instead of inventing a level.
+* `vision_in` — the board's camera, replayed: whoever owns the wiring attaches a factory
+  (`attach_camera`; the session does, from `[sim.vision]`), and the camera it makes runs
+  only in a mode the board declares. `sim` reads no camera of its own (`sim/vision/`).
 * `display` — a virtual frame (text, or raw RGB565 / RGB888 pixels) checked
   against the declared resolution; records `display_frame` with its digest
   (docs/spec/simulation_coverage.md §3).
@@ -36,8 +51,9 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-from ..errors import ActionContractViolation, BoardCapabilityError
+from ..errors import ActionContractViolation, BoardCapabilityError, PerceptionUnavailableError
 from . import Authorizer, HardwareAbstractionLayer, PinAssertion, _require_signature
+from .analog import analog_data, check_reading, unavailable
 from .audio import Speaker, WavSource
 from .audio_live import (
     LiveAudioIn,
@@ -49,6 +65,11 @@ from .audio_live import (
     _import_sounddevice as _live_import_sounddevice,
 )
 from .board import BoardProfile, load_board_by_id
+from .envelope import Reservation, SafetyEnvelope
+from .i2c_bus import I2CReader, ReadFault, ScriptedI2C
+from .motion_core import SimActuator
+from .pwm import pwm_limits
+from .vision import Camera, CameraFactory, CameraUnavailable, Mode, modes_of, monotonic_ms
 
 AUDIO_ENV = "NEUROEDGE_AUDIO"
 AUDIO_IN_ENV = "NEUROEDGE_AUDIO_IN"
@@ -87,6 +108,16 @@ def reading_value(data: Mapping[str, Any]) -> Any:
     """The reading a `sensor_read` event recorded (the inverse of `reading_data`)."""
     value = data.get("value")
     return float(value) if data.get("non_finite") else value
+
+
+def _i2c_value(value: Any, width: int, where: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value < 256**width:
+        raise BoardCapabilityError(
+            where=where,
+            why=f"{value!r} is not a {width}-byte register value (0..{256**width - 1})",
+            how="script integers that fit the read width",
+        )
+    return value
 
 
 class EventSink(Protocol):
@@ -255,6 +286,7 @@ class SimHAL(HardwareAbstractionLayer):
         events: EventSink | None = None,
         sensors: Mapping[str, Any] | None = None,
         authorize: Authorizer = _require_signature,
+        envelope: SafetyEnvelope | None = None,
         audio: str | None = None,
         audio_in_device: str | None = None,
         audio_out_device: str | None = None,
@@ -267,11 +299,20 @@ class SimHAL(HardwareAbstractionLayer):
                 why=f"board {board.id!r} targets {board.target!r}, not 'sim'",
                 how="use a sim board such as sim-default, or the HAL for that target",
             )
-        super().__init__(target="sim", board=board, authorize=authorize)
+        super().__init__(target="sim", board=board, authorize=authorize, envelope=envelope)
         self.events: EventSink = events if events is not None else _NullSink()
         self._sensors: dict[str, Any] = dict(sensors or {})
         self._units: dict[str, str] = {}
+        self._levels: dict[str, bool] = {}
         self._scripted: dict[str, deque[Any]] = {}
+        self._analog: dict[str, Any] = {}
+        self._feedback: dict[str, tuple[float | None, float | None, str | None]] = {}
+        self._i2c_script = ScriptedI2C()
+        self._i2c = I2CReader(
+            board,
+            lambda bus, where: self._i2c_script.transport(bus),
+            lambda type, data: self.events.emit(type, data),
+        )
         self._typed: deque[str] = deque()
         self.frame: str | bytes | None = None
         self.frames: list[Frame] = []
@@ -280,6 +321,8 @@ class SimHAL(HardwareAbstractionLayer):
         # Scheduled commands (voice_fsm.md §5.1); None = scheduling refused.
         self._clock: Callable[[], float] | None = None
         self._scheduled: list[PendingCommand] = []
+        # `motion.*` (RFC-0011): a model of the actuators the board declares, on the session clock.
+        self._install_motion(SimActuator())
 
         audio_where = "SimHAL(audio=...)" if audio is not None else AUDIO_ENV
         audio_choice = audio if audio is not None else os.environ.get(AUDIO_ENV) or None
@@ -298,6 +341,8 @@ class SimHAL(HardwareAbstractionLayer):
         self._audio_out: LiveAudioOut | None = None
         self.audio_in_device = _audio_node(audio_in_device, AUDIO_IN_ENV, None)
         self.audio_out_device = _audio_node(audio_out_device, AUDIO_OUT_ENV, None)
+        self._camera_factory: CameraFactory | None = None
+        self._cameras: list[Camera] = []
 
     def _require(self, primitive: str, called_from: str) -> dict[str, Any]:
         if not self.board.supports(primitive):
@@ -307,6 +352,43 @@ class SimHAL(HardwareAbstractionLayer):
                 how=f"add it to {self.board.source}, or choose a board that provides it",
             )
         return self.board.capability(primitive)
+
+    # -- vision.in -------------------------------------------------------------
+    def attach_camera(self, factory: CameraFactory | None) -> None:
+        """Say how a camera is made here: the virtual one of `[sim.vision]`, or none."""
+        self._camera_factory = factory
+
+    def vision_in(
+        self,
+        mode: Mode,
+        called_from: str = "<unknown>",
+        *,
+        clock: Callable[[], float] | None = None,
+    ) -> Camera:
+        """
+        The virtual camera in `mode`. Only a mode of the board is accepted — `sim` is never
+        richer than the board it mirrors (CHANGELOG §3.3 #7) — and with no camera attached
+        it raises: a simulator that handed out frames of nothing would turn every vision
+        agent into a pass.
+        """
+        self._require("vision.in", called_from)
+        declared = modes_of(self.board.vision_modes)
+        if mode not in declared:
+            raise BoardCapabilityError(
+                where=f"{called_from} -> vision.in",
+                why=f"board {self.board.id!r} declares no camera mode {mode}; it has "
+                f"{[str(m) for m in declared]}",
+                how="open the camera in one of the board's modes",
+            )
+        if self._camera_factory is None:
+            raise CameraUnavailable(
+                where=f"{called_from} -> vision.in",
+                why="the simulator reads no camera of its own, and none is attached",
+                how='add [sim.vision] to agent.toml: a directory of frames, or source = "synthetic"',
+            )
+        camera = self._camera_factory(mode, clock or monotonic_ms)
+        self._cameras.append(camera)
+        return camera
 
     # -- digital.out -----------------------------------------------------------
     # Scheduled commands are what barge-in cancels (voice_fsm.md §5.2), so they
@@ -325,20 +407,62 @@ class SimHAL(HardwareAbstractionLayer):
         signature: Any = "",
         called_from: str = "<unknown>",
         delay_ms: int = 0,
+        *,
+        frequency_hz: int | None = None,
+        duty: float | None = None,
     ) -> PendingCommand:
-        if operation not in ("pulse", "on", "off"):
+        if operation not in ("pulse", "on", "off", "pwm"):
             raise BoardCapabilityError(
                 where=f"{called_from} -> digital.out {pin!r}",
                 why=f"unknown operation {operation!r}",
-                how="use one of 'pulse', 'on', 'off'",
+                how="use one of 'pulse', 'on', 'off', 'pwm'",
             )
+        if operation == "pwm" and delay_ms:
+            raise BoardCapabilityError(
+                where=f"{called_from} -> digital.out {pin!r}",
+                why="a pwm command cannot be scheduled (after_ms): it starts when the gate allows it",
+                how="call pwm() without after_ms",
+            )
+        operation, duration_ms, applied = self._pwm_prepare(
+            pin, operation, duration_ms, frequency_hz, duty, called_from
+        )
         if delay_ms:
             return self._schedule(pin, operation, duration_ms, signature, called_from, delay_ms)
-        super().digital_out(pin, operation, duration_ms, signature, called_from)
-        self.events.emit(
-            "actuator_command", {"pin": pin, "operation": operation, "duration_ms": duration_ms}
+        pwm = (int(frequency_hz), applied) if operation == "pwm" else None  # type: ignore[arg-type]
+        reservation = self._admit(pin, operation, duration_ms, signature, called_from, pwm=pwm)
+        data: dict[str, Any] = {"pin": pin, "operation": operation, "duration_ms": duration_ms}
+        if pwm is not None:
+            self._pwm_started(pin, pwm[0], pwm[1], duration_ms, reservation)
+            data.update(frequency_hz=pwm[0], duty=pwm[1])
+        if operation == "off":
+            self._pwm_stopped(pin)
+            if self.envelope is not None:
+                self.envelope.ended(pin)
+            if duty is not None and pin in self.board.pwm_pins:
+                data["cause"] = "duty_zero"  # a pwm command whose duty quantised to nothing
+        self.events.emit("actuator_command", data)
+        return PendingCommand(
+            pin,
+            operation,
+            duration_ms,
+            self.events,
+            on_cancel=self._ending(reservation, pin),
+            token=signature,
         )
-        return PendingCommand(pin, operation, duration_ms, self.events, token=signature)
+
+    def _ending(
+        self, reservation: Reservation | None, pin: str | None = None
+    ) -> Callable[[], None] | None:
+        """What aborting a command does to its pin: it goes off now, and the envelope is told."""
+        envelope = self.envelope
+        if reservation is None or envelope is None:
+            return None
+
+        def abort() -> None:
+            self._pwm_stopped(reservation.name)
+            envelope.ended(reservation.name, reservation)
+
+        return abort
 
     def _schedule(
         self,
@@ -362,9 +486,11 @@ class SimHAL(HardwareAbstractionLayer):
             )
         # Checked and authorised now — the verdict is spent when the gate allowed —
         # but the pin is recorded only on delivery, so a cancelled command never moved it.
-        if self.board is not None:
-            self.board.require_pin(pin, called_from=called_from)
-        self.authorize(signature, pin, called_from)
+        # The envelope reserves the on-time of the delivery, so a command that would not
+        # fit is refused now, not when the pin is meant to move.
+        reservation = self._admit(
+            pin, operation, duration_ms, signature, called_from, after_ms=delay_ms, record=False
+        )
         # A verdict is fresh for its TTL (actions/token.py); a command delivered after
         # that would move the pin on facts the gate never saw, so it is refused now.
         issued_at = getattr(signature, "issued_at_ms", None)
@@ -372,6 +498,8 @@ class SimHAL(HardwareAbstractionLayer):
         if issued_at is not None and ttl is not None:
             deliver_at = self._clock() + delay_ms
             if deliver_at - issued_at > ttl:
+                if reservation is not None and self.envelope is not None:
+                    self.envelope.refund(reservation)
                 raise ActionContractViolation(
                     where=where,
                     why=(
@@ -387,6 +515,7 @@ class SimHAL(HardwareAbstractionLayer):
             self.events,
             delivered=False,
             deliver_at_ms=self._clock() + delay_ms,
+            on_cancel=self._ending(reservation),
             token=signature,
         )
         self._scheduled.append(command)
@@ -404,10 +533,17 @@ class SimHAL(HardwareAbstractionLayer):
 
     def next_delivery_ms(self) -> float | None:
         due = [c.deliver_at_ms for c in self.pending_commands() if c.deliver_at_ms is not None]
+        if self._motion is not None:  # a lease, a hold or a run that ends is a due time too
+            motion = self._motion.next_deadline_ms()
+            if motion is not None:
+                due.append(motion)
         return min(due) if due else None
 
     def run_due(self) -> list[PendingCommand]:
         """Deliver every pending command whose time has come on the clock, in time order."""
+        if self.envelope is not None:
+            self.envelope.settle()  # a pin whose on-time is up goes off, whoever is listening
+        self.settle_motion()  # ... and a channel whose lease ran out goes to its safe state
         if self._clock is None:
             return []
         now = self._clock()
@@ -430,6 +566,57 @@ class SimHAL(HardwareAbstractionLayer):
             )
         self._scheduled = [c for c in self._scheduled if not c.delivered and not c.cancelled]
         return due
+
+    # -- state() read-back (RFC-0010 §3b) -------------------------------------------------
+    def set_feedback(
+        self,
+        pin: str,
+        *,
+        duty: float | None = None,
+        frequency_hz: float | None = None,
+        fail: str | None = None,
+    ) -> None:
+        """
+        What the simulated hardware reads back for a channel in `feedback.pins`, instead of the
+        commanded output — a drifting fan, a dead sensor. `fail` makes the read-back fail with
+        that reason (NE5001). `clear_feedback()` returns to the output the HAL commanded.
+        """
+        where = "SimHAL.set_feedback()"
+        self.board.require_pin(pin, called_from=where)
+        if pwm_limits(self.board, pin) is None:
+            raise BoardCapabilityError(
+                where=f"{where} {pin!r}",
+                why=f"{pin!r} is not a PWM channel",
+                how="name a pin of [capabilities.digital_out.pwm].pins",
+            )
+        if pin not in self.board.capabilities["digital_out"].get("feedback", {}).get("pins", ()):
+            raise BoardCapabilityError(
+                where=f"{where} {pin!r}",
+                why=f"board {self.board.id!r} declares no feedback for {pin!r}, so its state() is "
+                "what was commanded and there is no read-back to set",
+                how="list the pin in [capabilities.digital_out.feedback].pins of the board",
+            )
+        self._feedback[pin] = (duty, frequency_hz, fail)
+
+    def clear_feedback(self, pin: str) -> None:
+        self._feedback.pop(pin, None)
+
+    def _read_feedback(self, pin: str, limits: Any, where: str) -> dict[str, float | None]:
+        injected = self._feedback.get(pin)
+        if injected is not None:
+            duty, frequency, fail = injected
+            if fail is not None:
+                raise PerceptionUnavailableError(
+                    where=where,
+                    why=f"the simulated read-back of {pin!r} fails: {fail}",
+                    how="the criterion stays undecided; clear it with clear_feedback()",
+                )
+            return {"duty": duty, "frequency_hz": frequency}
+        run = self.commanded_pwm(pin)
+        return {
+            "duty": 0.0 if run is None else run[1],
+            "frequency_hz": None if run is None else float(run[0]),
+        }
 
     # -- sensor.read -------------------------------------------------------------
     def set_sensor(self, sensor: str, value: Any, unit: str | None = None) -> None:
@@ -468,6 +655,114 @@ class SimHAL(HardwareAbstractionLayer):
         value = self._sensors[sensor]
         self.events.emit("sensor_read", reading_data(sensor, value, self._units.get(sensor), use))
         return value
+
+    # -- analog.in ---------------------------------------------------------------
+    def set_analog(self, channel: str, value: Any) -> None:
+        """
+        What the next read of `channel` returns, in the channel's declared unit. Any value
+        is accepted, so a scenario can break the ADC (NaN, out of range); `analog_in` then
+        refuses it exactly as `linux` refuses the same reading from the kernel.
+        """
+        self.board.require_analog(channel, called_from="SimHAL.set_analog()")
+        self._analog[channel] = value
+
+    def analog_values(self) -> dict[str, tuple[Any, str]]:
+        """Current value (None when not set) and declared unit of every `analog.in` channel."""
+        return {
+            c["name"]: (self._analog.get(c["name"]), c["unit"]) for c in self.board.analog_channels
+        }
+
+    def analog_in(
+        self, channel: str, called_from: str = "<unknown>", use: str | None = None
+    ) -> float:
+        """
+        One reading of `channel`, recorded as `analog_in`. A value that is not a finite number
+        inside `[min, max]`, or none set, is `PerceptionUnavailableError` (NE5001) — recorded
+        as a failed read too, so the trace shows the attempt.
+        """
+        declared = self.board.require_analog(channel, called_from=called_from)
+        where = f"{called_from} -> analog.in {channel!r}"
+        try:
+            if channel not in self._analog:
+                raise unavailable(
+                    where,
+                    "the simulator has no value for this channel",
+                    f"call hal.set_analog({channel!r}, value) in the scenario first",
+                )
+            value = check_reading(declared, self._analog[channel], None, where)
+        except PerceptionUnavailableError as error:
+            self.events.emit("analog_in", analog_data(channel, use=use, error=error.why))
+            raise
+        self.events.emit("analog_in", analog_data(channel, value, declared["unit"], use))
+        return value
+
+    # -- i2c ---------------------------------------------------------------------
+    def set_i2c(
+        self, bus: str, device: str | int, register: int | None, value: int, *, width: int = 1
+    ) -> None:
+        """What a read of this device (and register) returns from now on; the board decides what exists."""
+        where = "SimHAL.set_i2c()"
+        declared = self._i2c.resolve(bus, device, register, width, where)
+        self._i2c_script.set(bus, declared["address"], register, _i2c_value(value, width, where))
+
+    def script_i2c(
+        self,
+        bus: str,
+        device: str | int,
+        register: int | None,
+        values: list[int | ReadFault],
+        *,
+        width: int = 1,
+    ) -> None:
+        """Readings returned in order, one per read — how replay feeds a recorded session."""
+        where = "SimHAL.script_i2c()"
+        declared = self._i2c.resolve(bus, device, register, width, where)
+        checked = [v if isinstance(v, ReadFault) else _i2c_value(v, width, where) for v in values]
+        self._i2c_script.script(bus, declared["address"], register, checked)
+
+    def i2c_read(
+        self,
+        bus: str,
+        device: str | int,
+        register: int | None = None,
+        *,
+        width: int = 1,
+        called_from: str = "<unknown>",
+    ) -> int:
+        return self._i2c.read(bus, device, register, width=width, called_from=called_from)
+
+    def i2c_scan(self, bus: str, called_from: str = "<unknown>") -> list[Any]:
+        raise BoardCapabilityError(
+            where=f"{called_from} -> i2c.scan {bus!r}",
+            why="the simulator has no bus to scan: sim only replays what was recorded (RFC-0007 §3b)",
+            how="scan on the linux target, where a probe reaches a real or i2c-stub bus",
+        )
+
+    # -- digital.in ----------------------------------------------------------------
+    def set_digital_in(self, pin: str, level: bool) -> None:
+        """Set the level a declared input line reads (`set_sensor`'s counterpart for a pin)."""
+        where = "SimHAL.set_digital_in()"
+        self.board.require_input_pin(pin, called_from=where)
+        if not isinstance(level, bool):
+            raise BoardCapabilityError(
+                where=f"{where} -> digital.in {pin!r}",
+                why=f"{level!r} is not a logic level",
+                how="pass True (the line high) or False (low)",
+            )
+        self._levels[pin] = level
+
+    def digital_in_values(self) -> dict[str, bool | None]:
+        """Current level of every declared input line (None when nobody set it)."""
+        return {pin: self._levels.get(pin) for pin in self.board.input_pins}
+
+    def _read_level(self, pin: str, where: str) -> bool:
+        if pin not in self._levels:
+            raise PerceptionUnavailableError(
+                where=where,
+                why="the simulator has no level set for this input line",
+                how=f"call hal.set_digital_in({pin!r}, level) in the scenario first, or `:input` in the REPL",
+            )
+        return self._levels[pin]
 
     # -- audio -------------------------------------------------------------------
     def type_text(self, text: str) -> None:
@@ -573,9 +868,17 @@ class SimHAL(HardwareAbstractionLayer):
         return self._speaker
 
     def close(self) -> None:
-        """Release live audio streams; idempotent."""
+        """Release live audio streams and cameras and end every on-time the envelope holds; idempotent."""
         errors: list[BaseException] = []
-        for device in (self._audio_in, self._audio_out):
+        if self._motion is not None:  # every channel to its safe state first (cause `close`)
+            try:
+                self._motion.close()
+            except BaseException as exc:
+                errors.append(exc)
+        if self.envelope is not None:
+            self.envelope.end_all()
+        cameras, self._cameras = self._cameras, []
+        for device in (self._audio_in, self._audio_out, *cameras):
             if device is None:
                 continue
             try:

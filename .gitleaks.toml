@@ -12,3 +12,11 @@ the test puts in the environment to prove the studio redacts it from subprocess 
 (TSK-I1-04). It was never a key.
 """
 regexes = ['''sk-or-v1-0123456789abcdef''']
+
+[[allowlists]]
+description = """
+python/tests/test_vision_model.py (commit aed1e60): a made-up key-shaped value the test puts in
+a `[vision]` table to prove the loader refuses secrets in agent.toml and never echoes them
+(TSK-V1b-03). It was never a key.
+"""
+regexes = ['''sk-live-1234567890abcdef''']

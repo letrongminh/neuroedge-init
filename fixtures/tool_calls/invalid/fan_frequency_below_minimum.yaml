@@ -1,0 +1,4 @@
+# RFC-0010 §3c: tần số dưới minimum 200 của gate (dải của bo mạch bắt đầu từ 100).
+agent: fan-pwm
+board: sim-rpi5
+call:  { name: fan_run, arguments: { duty: 0.4, frequency_hz: 150, duration_ms: 5000 }, source: mcp }

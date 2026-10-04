@@ -34,8 +34,9 @@ COMMANDS = {
         "--agent|-a= --config-path= --name= --port= --raw --trace-out= --ui --write"
     ),
     "mcp serve": (
-        "--agent|-a= --board|-b= --init-timeout= --open --port= --raw --registry|-r= "
-        "--target|-t= --trace-out= --ui"
+        "--agent|-a= --audience= --board|-b= --client-ca= --host= --http --init-timeout= "
+        "--issuer= --jwks= --open --port= --raw --registry|-r= --required-scope= --target|-t= "
+        "--tls-cert= --tls-key= --trace-out= --ui"
     ),
     "mcp tools": "--agent|-a= --external --json --openai",
     "new": "<name> --template=",

@@ -24,6 +24,26 @@ sample_rate_hz = 16000
 pins    = ["door_lock", "porch_light", "gate_relay"]
 backend = "virtual"
 
+# Safety envelope per pin (RFC-0007 §3d): every digital.out pin is an actuator and needs
+# one. Wide enough that the canonical traces replay unchanged (door_lock pulses 30 s).
+[capabilities.digital_out.envelope.door_lock]
+window_s             = 3600
+max_on_ms_per_window = 600000
+min_interval_ms      = 1000
+max_continuous_ms    = 60000
+
+[capabilities.digital_out.envelope.porch_light]
+window_s             = 3600
+max_on_ms_per_window = 1800000
+min_interval_ms      = 2000
+max_continuous_ms    = 600000
+
+[capabilities.digital_out.envelope.gate_relay]
+window_s             = 3600
+max_on_ms_per_window = 600000
+min_interval_ms      = 1000
+max_continuous_ms    = 60000
+
 [capabilities.sensor_read]
 sensors = ["temperature", "humidity", "door_contact", "motion"]
 

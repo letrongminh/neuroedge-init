@@ -28,6 +28,7 @@ import pytest
 from mcp import Client, ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 
+from neuroedge.hal.envelope import SafetyEnvelope
 from neuroedge.mcp_server import build_server
 from neuroedge.sim import SimSession
 from neuroedge.sim.ui import SessionServer
@@ -45,6 +46,19 @@ def home(root):
 @pytest.fixture
 def served(home):
     session = SimSession.load(home)
+    server = SessionServer(session, port=0).start()
+    yield session, server
+    server.stop()
+
+
+@pytest.fixture
+def served_unbounded(home):
+    """
+    The session with no safety envelope: the page and the MCP client take turns turning the
+    light on and off as fast as threads run, which the envelope's `min_interval_ms` (rightly)
+    refuses; the test of the interleave is about the session's integrity, not about the light.
+    """
+    session = SimSession.load(home, target_options={"envelope": SafetyEnvelope({})})
     server = SessionServer(session, port=0).start()
     yield session, server
     server.stop()
@@ -150,8 +164,8 @@ def test_the_event_stream_pushes_an_mcp_call_at_once(served):
     assert [c["source"] for c in of_type(pushed["events"], "tool_call")] == ["mcp"]
 
 
-def test_page_commands_and_mcp_calls_interleave_without_corrupting_the_session(served):
-    session, server = served
+def test_page_commands_and_mcp_calls_interleave_without_corrupting_the_session(served_unbounded):
+    session, server = served_unbounded
     rounds = 12
     page_errors: list[BaseException] = []
 
@@ -327,3 +341,166 @@ def test_a_taken_port_moves_the_page_and_keeps_serving_mcp(home, tmp_path):
     stderr = errlog_path.read_text(encoding="utf-8")
     assert f"warning: sim UI port {port} is taken" in stderr
     assert f"sim UI at {url} (same session)" in stderr
+
+
+# --- the way out of `mcp serve`: trace written, hal.close() called (TSK-N2-03, TSK-N2-04) -----------
+# §7.1 (5) of roadmap/neuroedge-design-neurobrain.md: `mcp serve` on its way out — stdin closed,
+# Ctrl-C, SIGTERM, a client that never initializes — still writes the trace and closes the HAL.
+
+
+class Exited(BaseException):
+    """What the fake `os._exit` raises, so the test sees the exit code and unwinds."""
+
+    def __init__(self, code: int) -> None:
+        super().__init__(code)
+        self.code = code
+
+
+@pytest.fixture
+def leaving(home, tmp_path, monkeypatch):
+    """A session whose `hal.close()` is counted, its trace file, and the fake `os._exit`."""
+    from neuroedge.sim import serve as serve_module
+    from neuroedge.testing.recorder import TraceRecorder
+
+    session = SimSession.load(home, events=TraceRecorder())
+    closes: list[str] = []
+    real_close = session.hal.close
+
+    def counted() -> None:
+        closes.append("hal.close")
+        real_close()
+
+    session.hal.close = counted
+    exits: list[int] = []
+
+    def fake_exit(code: int) -> None:
+        exits.append(code)
+        raise Exited(code)
+
+    monkeypatch.setattr(serve_module.os, "_exit", fake_exit)
+    return serve_module, session, tmp_path / "trace.json", closes, exits
+
+
+def written(trace_out: Path) -> dict:
+    trace = json.loads(trace_out.read_text("utf-8"))
+    validate_trace(trace)
+    return trace
+
+
+def test_run_stdio_writes_the_trace_and_closes_the_hal_when_the_client_closes_stdin(
+    leaving, monkeypatch
+):
+    serve_module, session, trace_out, closes, exits = leaving
+
+    async def served(session, **_):  # `serve_stdio` returning is the client closing stdin
+        return None
+
+    monkeypatch.setattr(serve_module, "serve_stdio", served)
+    serve_module.run_stdio(session, trace_out=trace_out, init_timeout=0)
+    assert closes == ["hal.close"] and exits == []
+    assert written(trace_out)["metadata"]["target"] == "sim"
+
+
+def test_run_stdio_writes_the_trace_and_closes_the_hal_on_ctrl_c(leaving, monkeypatch):
+    serve_module, session, trace_out, closes, exits = leaving
+
+    async def interrupted(session, **_):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(serve_module, "serve_stdio", interrupted)
+    serve_module.run_stdio(session, trace_out=trace_out, init_timeout=0)
+    assert closes == ["hal.close"] and exits == []
+    written(trace_out)
+
+
+def test_a_sigterm_unwinds_through_the_cleanup_and_leaves_with_128_plus_the_signal(
+    leaving, monkeypatch
+):
+    serve_module, session, trace_out, closes, exits = leaving
+
+    async def terminated(session, **_):
+        raise SystemExit(128 + 15)  # what `exit_on_signals` raises in the main thread
+
+    monkeypatch.setattr(serve_module, "serve_stdio", terminated)
+    with pytest.raises(Exited):
+        serve_module.run_stdio(session, trace_out=trace_out, init_timeout=0)
+    assert exits == [143] and closes, "the HAL was closed before the process left"
+    written(trace_out)
+
+
+def test_the_process_leaves_on_sigterm_even_when_the_cleanup_raises(leaving, monkeypatch):
+    serve_module, session, trace_out, closes, exits = leaving
+
+    def broken() -> None:
+        closes.append("hal.close")
+        raise OSError("the line would not drop")
+
+    session.hal.close = broken
+
+    async def terminated(session, **_):
+        raise SystemExit(143)
+
+    monkeypatch.setattr(serve_module, "serve_stdio", terminated)
+    with pytest.raises(BaseException):  # noqa: B017 - the cleanup's error or the fake exit
+        serve_module.run_stdio(session, trace_out=trace_out, init_timeout=0)
+    assert exits[0] == 143, "the exit happens whatever the cleanup does"
+
+
+def test_a_client_that_never_initializes_gets_the_cleanup_before_the_process_exits(
+    leaving, monkeypatch, capsys
+):
+    serve_module, session, trace_out, closes, exits = leaving
+
+    async def silent(session, *, on_no_initialize, **_):
+        on_no_initialize()  # the watchdog's timeout, without waiting for it
+
+    monkeypatch.setattr(serve_module, "serve_stdio", silent)
+    with pytest.raises(Exited):
+        serve_module.run_stdio(session, trace_out=trace_out, init_timeout=0.1)
+    assert exits[0] == 0 and closes
+    assert "no MCP client sent `initialize`" in capsys.readouterr().err
+    written(trace_out)
+
+
+def test_the_real_command_writes_its_trace_and_leaves_with_143_on_sigterm(home, tmp_path):
+    """The whole path, in a process of its own: initialize, one call, SIGTERM."""
+    import signal
+    import subprocess
+
+    trace_out = tmp_path / "trace.json"
+    process = subprocess.Popen(
+        [sys.executable, *serve_args(home, "--port", "0", "--trace-out", str(trace_out))],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        env=child_env(),
+    )
+
+    def rpc(message: dict) -> None:
+        process.stdin.write((json.dumps({"jsonrpc": "2.0", **message}) + "\n").encode())
+        process.stdin.flush()
+
+    try:
+        rpc(
+            {
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2025-06-18",
+                    "capabilities": {},
+                    "clientInfo": {"name": "test", "version": "0"},
+                },
+            }
+        )
+        assert json.loads(process.stdout.readline())["id"] == 1
+        rpc({"method": "notifications/initialized"})
+        rpc({"id": 2, "method": "tools/call", "params": {"name": "light_on", "arguments": {}}})
+        assert json.loads(process.stdout.readline())["id"] == 2
+        process.send_signal(signal.SIGTERM)
+        assert process.wait(TIMEOUT) == 128 + signal.SIGTERM
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+    trace = written(trace_out)
+    assert [e["type"] for e in trace["events"]].count("actuator_command") == 1

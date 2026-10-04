@@ -2,8 +2,14 @@
 # Create virtual GPIO lines named after the linux-rpi5 board pins (Q-16, TSK-S3-05).
 #
 # gpio-sim (kernel >= 5.19) builds a GPIO chip from configfs. The lines are
-# named door_lock / porch_light / gate_relay, which is how LinuxHAL finds them,
-# so the HAL runs against the real kernel character device with no board.
+# named door_lock / porch_light / gate_relay (outputs) and door_contact_raw /
+# limit_switch (the `digital_in` pins, TSK-I2a-02), fan_en (the enable line of the fan's PWM
+# channel, TSK-W1-01) and motor_en / servo_en (the enable lines of the motion drivers,
+# TSK-I2a-05), which is how LinuxHAL finds them, so the HAL runs against the real kernel
+# character device with no board.
+# The output lines come first and keep their indexes; an input line reads the
+# level of its sysfs `pull` file (pull-up = 1, pull-down = 0), which the tests
+# write: this script makes those files writable by the runner user.
 #
 # Prints, and appends to $GITHUB_ENV when set:
 #   NEUROEDGE_GPIO_SIM_CHIP   /dev/gpiochipN of the virtual chip
@@ -15,7 +21,7 @@
 set -euo pipefail
 
 DEVICE=neuroedge
-PINS=(door_lock porch_light gate_relay)
+PINS=(door_lock porch_light gate_relay door_contact_raw limit_switch fan_en motor_en servo_en)
 CONFIGFS=/sys/kernel/config/gpio-sim
 
 if ! sudo modprobe gpio-sim 2>/dev/null; then
@@ -47,6 +53,9 @@ SYSFS=/sys/devices/platform/$DEV_NAME/$CHIP_NAME
 # The test process drives the lines as the runner user, not root.
 sudo chmod a+rw "$CHIP"
 sudo chmod -R a+r "$SYSFS" 2>/dev/null || true
+for i in "${!PINS[@]}"; do
+  sudo chmod a+w "$SYSFS/sim_gpio$i/pull" 2>/dev/null || true
+done
 
 echo "NEUROEDGE_GPIO_SIM_CHIP=$CHIP"
 echo "NEUROEDGE_GPIO_SIM_SYSFS=$SYSFS"

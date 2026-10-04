@@ -1,0 +1,63 @@
+# Expected failures for fixtures/gates/vision/invalid/ — TSK-V1b-06.
+#
+# Each child tries to loosen a vision gate of gates/vision/ (A5 style): a ceiling or floor on the
+# confidence or the count, the sign of the presence clause, or the freshness lock (`max_age_ms`,
+# `range`) that makes a stale camera block. They resolve against the monorepo `gates/`, not the
+# fixture registry: python/tests/test_vision_gates.py requires every file here to fail exactly this
+# way, every file to have an entry, and every entry a file.
+
+stranger_loosens_ceiling.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.stranger_confidence"
+  why_contains: "loosens the inherited condition"
+
+stranger_admits_a_stranger.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.stranger_at_door"
+  why_contains: "loosens the inherited condition"
+
+stranger_redefines_max_age.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 1
+  where_contains: "evaluate.stranger_confidence"
+  why_contains: "redefines a criterion inherited from the base gate"
+
+zone_loosens_count.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.people_in_zone"
+  why_contains: "loosens the inherited condition"
+
+zone_loosens_confidence.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.person_confidence"
+  why_contains: "loosens the inherited condition"
+
+zone_redefines_max_age.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 1
+  where_contains: "evaluate.person_confidence"
+  why_contains: "redefines a criterion inherited from the base gate"
+
+package_loosens_confidence.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 2
+  where_contains: "allow_when.package_confidence"
+  why_contains: "loosens the inherited condition"
+
+package_redefines_range.yaml:
+  error: GateInheritanceError
+  code: NE2003
+  principle: 1
+  where_contains: "evaluate.package_confidence"
+  why_contains: "redefines a criterion inherited from the base gate"

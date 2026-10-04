@@ -1,0 +1,116 @@
+# Invalid: motion_speed_max_zero. The valid example with one change.
+[board]
+id     = "all-extensions"
+name   = "Fixture: every extension declaration"
+target = "linux"
+mcu    = "none"
+
+[capabilities.audio_in]
+channels       = 1
+sample_rate_hz = 16000
+aec            = false
+vad            = true
+
+[capabilities.audio_out]
+channels       = 1
+sample_rate_hz = 16000
+
+[capabilities.digital_out]
+pins        = ["door_lock", "status_led", "fan", "fan_en", "motor_en", "servo_en"]
+signal_pins = ["status_led"]
+backend     = "virtual"
+
+[capabilities.digital_out.envelope.door_lock]
+window_s             = 3600
+max_on_ms_per_window = 600000
+min_interval_ms      = 1000
+max_continuous_ms    = 60000
+
+[capabilities.digital_out.envelope.fan]
+window_s             = 3600
+max_on_ms_per_window = 1800000
+min_interval_ms      = 2000
+max_continuous_ms    = 600000
+
+[capabilities.digital_out.pwm]
+pins            = ["fan"]
+frequency_hz    = { min = 100, max = 25000 }
+resolution_bits = 10
+max_duty        = 0.8
+enable_pin      = { fan = { pin = "fan_en", enable_active = "high", pull = "down" } }
+
+[capabilities.digital_out.feedback]
+pins = ["fan"]
+
+[capabilities.digital_in]
+pins    = ["button_boot", "door_contact_raw"]
+backend = "virtual"
+
+[[capabilities.i2c.buses]]
+id = "i2c0"
+
+[[capabilities.i2c.buses.devices]]
+name               = "ads1015"
+address            = 0x48
+readable_registers = [0x00, 0x01]
+
+[[capabilities.i2c.buses.devices]]
+name    = "bme280"
+address = 0x76
+
+[capabilities.analog_in]
+channels = [{ name = "supply_v", unit = "V", min = 0.0, max = 5.0, resolution_bits = 12 }]
+
+[[capabilities.motion.motor]]
+name        = "wheel_left"
+speed_max   = 0
+ramp_min_ms = 200
+enable_pin  = "motor_en"
+safe_state  = "stop"
+lease_ms    = 200
+
+[[capabilities.motion.servo]]
+name           = "gripper"
+target_min     = 0
+target_max     = 90
+unit           = "deg"
+enable_pin     = "servo_en"
+safe_state     = "hold"
+holds_position = true
+max_hold_ms    = 2000
+lease_ms       = 200
+
+[capabilities.motion.envelope.wheel_left]
+window_s             = 60
+max_on_ms_per_window = 30000
+min_interval_ms      = 2000
+max_continuous_ms    = 10000
+
+[capabilities.motion.envelope.gripper]
+window_s             = 60
+max_on_ms_per_window = 10000
+min_interval_ms      = 1000
+max_continuous_ms    = 3000
+
+[capabilities.vision_in]
+tolerance = { score_abs = 0.03, box_iou_min = 0.85 }
+
+[[capabilities.vision_in.modes]]
+width        = 640
+height       = 480
+fps          = 30.0
+pixel_format = "yuyv"
+
+[[capabilities.vision_in.modes]]
+width        = 1280
+height       = 720
+fps          = 7.5
+pixel_format = "mjpeg"
+
+[capabilities.sensor_read]
+sensors = ["temperature"]
+
+[capabilities.display]
+width  = 320
+height = 240
+color  = "rgb565"

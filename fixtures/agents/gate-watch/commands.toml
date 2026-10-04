@@ -1,0 +1,14 @@
+# Ngữ pháp lệnh cố định của agent gate-watch (Q-14, Q-15).
+[grammar]
+version   = 1
+threshold = 0.80
+
+[[command]]
+intent   = "watch_open_gate"
+patterns = ["mở cổng", "open the gate"]
+tool     = "watch_open_gate"
+
+[[command]]
+intent   = "watch_lights_off"
+patterns = ["tắt đèn hiên", "turn off the porch light"]
+tool     = "watch_lights_off"

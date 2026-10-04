@@ -16,14 +16,16 @@ corrected, a door pulse cannot.
 from __future__ import annotations
 
 import inspect
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from typing import Any
 
 from ..engine.gate import ActionContractEngine, GateResult
 from ..engine.verdict import GateVerdict
-from ..hal import digital
+from ..errors import EnvelopeRefusedError
+from ..hal import digital, ensure_envelope
+from ..hal.motion_core import lease_ms_of
 from .confirmation import ConfirmationBook, ConfirmationRefused, PendingConfirmation
 from .spec import REGISTRY, ActionSpec, running, spec_of
 from .token import TokenLedger
@@ -90,10 +92,17 @@ class Conversation:
         self.ledger = ledger or TokenLedger(engine.clock, events=self.events)
         # From here on the HAL accepts only tokens from this ledger.
         hal.authorize = self.ledger.authorize
+        # ... and bounded by the safety envelope of its board (RFC-0007 §3d, TSK-N2-01).
+        ensure_envelope(hal, engine.clock)
         self.confirmations = ConfirmationBook(engine.clock, self.events)
         # The `TurnMeter` of the turn a session is timing, or None (TSK-I4-03). It
         # only measures: nothing here reads it to decide.
         self.meter: Any = None
+        # Facts a gate is given that are not `facts`: functions of the gate's tree, called just
+        # before it is evaluated (the camera of `vision.in`, `sim/vision/feed.py`). Each returns
+        # the criteria it speaks for — `None` for one it could not read, so the engine blocks
+        # it instead of asking another source. Their names are theirs: they win over `facts`.
+        self.fact_sources: list[Callable[[Mapping[str, Any]], Mapping[str, Any]]] = []
 
     def stage(self, name: str) -> AbstractContextManager[Any]:
         """Time `name` on the turn's meter, if a session is timing one."""
@@ -131,6 +140,16 @@ class Conversation:
         """A person answered "no": the question closes, nothing runs."""
         return self.confirmations.decline(confirm_id, source)
 
+    def _context(self, key: str) -> Mapping[str, Any]:
+        """`facts`, plus what each fact source reads for the gate `key` (if the engine has it)."""
+        tree = self.engine.tree(key) if self.fact_sources else None
+        if tree is None:
+            return self.facts
+        context = dict(self.facts)
+        for source in self.fact_sources:
+            context.update(source(tree))
+        return context
+
     async def _do(
         self,
         spec: ActionSpec,
@@ -147,7 +166,7 @@ class Conversation:
         with self.stage("gate"):
             result = await self.engine.evaluate(
                 spec.gate,
-                self.facts,
+                self._context(spec.gate),
                 state=state,
                 arguments=_effective(spec, kwargs),
                 confirmed=confirmed,
@@ -176,6 +195,13 @@ class Conversation:
                         "call_source": self.facts.get("call_source"),
                     },
                 )
+            # RFC-0011 §3d: a BLOCK of a command for a motion channel sends the channel to its
+            # safe state at once, and the lease it held is not renewed. Toward the safe state:
+            # nothing waits for it, nothing refuses it.
+            safe = getattr(self.hal, "motion_safe", None)
+            if safe is not None:
+                for channel in sorted(spec.channels):
+                    safe(channel, "block", called_from=f"c.do({spec.name})")
             return ActionResult(
                 spec.name, GateVerdict.BLOCK, result, fallback=fallback, confirmation=pending
             )
@@ -188,6 +214,8 @@ class Conversation:
             pins=spec.pins,
             session_id=self.events.session_id,
             p95_ms=tree["budget"]["p95_latency_ms"],
+            # RFC-0011 §3c: a lease per motion channel, as long as the board says (not TTL_FACTOR).
+            channels={c: lease_ms_of(getattr(self.hal, "board", None), c) for c in spec.channels},
         )
         try:
             with self.stage("action"), running(spec), digital.grant(self.hal, token, spec.name):
@@ -221,7 +249,18 @@ class Conversation:
         if problem is not None:
             self.events.emit("fallback_skipped", {"action": name, "reason": problem})
             return None
-        return await self._do(self.registry[name], {}, visited)
+        try:
+            return await self._do(self.registry[name], {}, visited)
+        except EnvelopeRefusedError as refusal:
+            # The verdict already stands as a BLOCK and the fallback is the best effort that
+            # follows it: a pin the envelope would not move (already on, resting) stays as it
+            # is, and the refusal is in the trace (`envelope_refused`) — it is not the caller's
+            # error (RFC-0007 §3d).
+            self.events.emit(
+                "fallback_skipped",
+                {"action": name, "reason": f"the envelope refused it ({refusal.reason})"},
+            )
+            return None
 
     async def say(self, text: str) -> None:
         self.hal.audio_out(text)

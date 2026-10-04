@@ -1,0 +1,8 @@
+# Raises the package confidence floor from 0.80 to 0.90.
+schema:  neuroedge.gate/v1
+name:    package-tightens-confidence
+version: 1.0.0
+extends: neuroedge://gates/vision/package-notify@1.0.0
+
+allow_when:
+  package_confidence: { gte: 0.90 }

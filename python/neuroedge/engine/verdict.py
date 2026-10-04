@@ -46,6 +46,13 @@ class Reason(StrEnum):
 DEGRADED_REASONS = frozenset({Reason.GATE_UNREACHABLE, Reason.BUDGET_EXCEEDED})
 
 
+# RFC-0007 §3a: a `digital.in` level reaches the gate as a bool fact of this source, carrying the
+# HAL's read mark. A `bool` criterion has no `max_age_ms`, so the age of such a level is capped by
+# this constant in code: not configurable, and not something a gate or an agent can widen.
+DIGITAL_IN_SOURCE = "digital.in"
+DIGITAL_IN_MAX_AGE_MS = 100
+
+
 UNAVAILABLE_REASONS = ("offline", "timeout", "rate_limited", "malformed", "refused", "empty")
 
 

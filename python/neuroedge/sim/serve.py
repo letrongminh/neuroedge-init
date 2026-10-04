@@ -3,7 +3,8 @@
 
 `serve_mcp` is the public entry point (`neuroedge.serve_mcp`); `neuroedge mcp serve`
 runs the same `run_stdio`, so the gate, the shutdown and the trace default are one
-path whoever starts the server. `SimSession.load` is the one place the agent is
+path whoever starts the server. `run_http` (`mcp serve --http`, TSK-P2-04) is the same
+session and the same closing behind the authenticated network door of `mcp_http`. `SimSession.load` is the one place the agent is
 wired (docs/architecture/vi/03-component-host-c4l3.md §2), and `mcp_server` the one
 place a tool call becomes a `ToolCall` (docs/spec/tool_calling.md).
 """
@@ -20,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from ..engine import GateRegistry
+from ..mcp_http import Prepared, serve_http
 from ..mcp_server import ThreadLock, _sdk, serve_stdio
 from .session import SimSession
 
@@ -58,6 +60,19 @@ def exit_on_signals() -> Callable[[], None]:
     return restore
 
 
+def _close(
+    session: SimSession, trace_out: Path | None, on_close: Callable[[], None] | None
+) -> None:
+    """The way out of every serving loop: `on_close`, the trace, then the session (lines dropped)."""
+    try:
+        if on_close is not None:
+            on_close()
+        if trace_out is not None:
+            session.write_trace(trace_out)
+    finally:
+        session.close()
+
+
 def run_stdio(
     session: SimSession,
     *,
@@ -80,13 +95,7 @@ def run_stdio(
     import anyio
 
     def close() -> None:
-        try:
-            if on_close is not None:
-                on_close()
-            if trace_out is not None:
-                session.write_trace(trace_out)
-        finally:
-            session.close()
+        _close(session, trace_out, on_close)
 
     def on_no_initialize() -> None:
         # The client started us and let go without closing stdin (Claude Desktop does
@@ -128,6 +137,32 @@ def run_stdio(
         close()
 
 
+def run_http(
+    session: SimSession,
+    prepared: Prepared,
+    *,
+    trace_out: Path | None = None,
+    on_ready: Callable[[str, int], None] | None = None,
+    stop: threading.Event | None = None,
+) -> None:
+    """
+    Serve `session` over authenticated Streamable HTTP until SIGINT, SIGTERM or SIGHUP (or
+    `stop` is set), then close it as `run_stdio` does: the trace to `trace_out`, every line of
+    a `linux` session dropped inactive. `prepared` comes from `mcp_http.prepare`, which has
+    already refused an incomplete configuration; `on_ready(host, port)` runs once connections
+    are accepted. Unlike stdio, nothing here needs `os._exit`: the server stops cleanly.
+    """
+    import anyio
+
+    async def serve() -> None:
+        await serve_http(session, prepared, on_ready=on_ready, stop=stop)
+
+    try:
+        anyio.run(serve)
+    finally:
+        _close(session, trace_out, None)
+
+
 def serve_mcp(
     agent: str | Path = "agent.toml",
     *,
@@ -155,7 +190,7 @@ def serve_mcp(
     (`NeuroEdgeError` otherwise, before anything is wired).
 
     It owns the process: when no client sends `initialize` within `init_timeout`
-    seconds (0 waits forever), and on SIGTERM/SIGHUP with `target="linux"`, it cleans
+    seconds (0 waits forever), and on SIGTERM/SIGHUP with `target="linux"` or a `trace_out`, it cleans
     up and then ends the whole process with `os._exit` — the SDK's stdin thread cannot
     be cancelled any other way. Run it in a process of its own.
     """
@@ -172,7 +207,9 @@ def serve_mcp(
                 UserWarning,
                 stacklevel=2,
             )
-    restore = exit_on_signals() if target == "linux" else None  # before the lines are requested
+    # Before the lines are requested. `sim` has no line to drop, but with a trace to write a
+    # SIGTERM must still reach the cleanup, or the host stopping the server loses the trace.
+    restore = exit_on_signals() if target == "linux" or trace_out is not None else None
     try:
         session = SimSession.load(
             agent,

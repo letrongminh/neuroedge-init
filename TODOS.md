@@ -39,7 +39,6 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 | # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
 |:---:|:---|:---|:---|
 | 10 | **Vector tương đương Python ↔ C trên phần cứng thật.** Walker và sổ token C đã khớp engine host trên host (ASan/UBSan, mỗi PR — TSK-S4-07) và boot trên Espressif QEMU (TSK-S4-08); chưa chạy trên silicon | Chưa có bo mạch (`TSK-S1-10`) | **Bo mạch về** (TSK-S4-01, TSK-S4-12) |
-| 14 | **Bất biến `sim` không giàu hơn bo mạch tham chiếu (#7) khi có `vision.in`.** `sim-default` sao Box-3 nên không được khai camera, mà Box-3 chưa có camera, và RFC `vision.in` về sau có thể cấm khai `vision_in` trên esp32s3 tới khi đo ngân sách bộ nhớ (RFC-0002 §9.1) → agent thị giác không chạy được trên target chính thức, Action CI cho khung hình không có đường `sim` (phát hiện R6 của review RFC-0002) | Chưa có agent thị giác nào; cách sửa (mỗi profile `sim` sao đúng một bo mạch tham chiếu, ví dụ `sim-vision` ↔ `linux` có camera) cần bo mạch tham chiếu thị giác | **Đã kích hoạt 2026-09-30 (Q-53):** thị giác vào MVP — cách sửa đã chọn là profile `sim-rpi5` soi `linux-rpi5` (TSK-I2a-06, RFC-0013). Xoá dòng khi TSK-I2a-06 xong |
 | 21 | **Wokwi CI cho `esp32s3`** (phần `board-esp32-s3-box-3`, GPIO/I2C/SPI) — Q-21 | Trình mô phỏng mã đóng, cần `WOKWI_CLI_TOKEN`, hạn mức phút CI, bản thương mại €20/chỗ/tháng; **không có I2S** nên không thay được bo mạch cho phần âm thanh. QEMU (TSK-S4-08, đã có) phủ boot và logic gate nhưng **không giả lập GPIO** (`.github/workflows/firmware-qemu.yml`) | Một task của I3 cần kiểm GPIO/I2C của `esp32s3` trước khi bo mạch về |
 | 35 | **Console và baud của Box-3 cho vết ghi UART** (TSK-S4-09). PRD Phụ lục D.2 ghi 921600; `sdkconfig.defaults` không đặt (ESP-IDF mặc định UART0 115200); `nightly-hardware.yml` đọc `/dev/ttyUSB0` ở 115200; Box-3 có thể đưa console qua USB-Serial-JTAG (`/dev/ttyACM0`, baud vô nghĩa) | Không kiểm được khi chưa có bo mạch; QEMU đọc qua tệp hoặc `tcp://` nên không phụ thuộc baud | **Bo mạch về (TSK-S4-12)**: đọc console thật, chốt `CONFIG_ESP_CONSOLE_*` và baud trong `sdkconfig.defaults`, rồi sửa `nightly-hardware.yml`, `CHANGELOG.md` §2.6 và PRD D.2 cho khớp |
 | 37 | **Bảng hành động của vector thay cho action chạy trên MCU.** `verify --targets esp32s3` lấy operation/duration của lệnh chân từ việc chạy @action một lần trên `SimHAL` lúc sinh vector; thiết bị chỉ quyết định có phát và chân nào (TSK-S4-09) | Cách action của agent chạy trên firmware (dịch, bảng khai báo, hay mã C) chưa chốt — là phần của HAL firmware | **TSK-S4-01 bắt đầu**: chốt cách action chạy trên MCU, rồi cho vector dùng đúng đường đó và bỏ bảng |
@@ -73,9 +72,7 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 | # | Hạng mục | Vì sao hoãn | Mốc kích hoạt |
 |:---:|:---|:---|:---|
 | 23 | **Đóng băng Gated Tool Profile vào `schemas/`** (lược đồ phong bì `ToolCall` và kết quả) — `docs/spec/tool_calling.md` | Corpus tuân thủ đã có (`fixtures/tool_calls/`, TSK-S3-24) nhưng chưa client bên ngoài nào dùng profile; đóng băng trước đó là mở RFC sửa ngay khi client đầu tiên đòi đổi | **Đã kích hoạt 2026-10-01 (Q-58):** đóng băng trước I6 bằng RFC, không chờ client bên ngoài — TSK-I6-05. Xoá dòng khi TSK-I6-05 xong |
-| 24 | **Transport MCP qua mạng** (HTTP của MCP) có xác thực — TSK-P2-04 | Mở cổng mạng tới hành động vật lý cần xác thực theo thiết bị và mTLS (NFR-SEC-04); hôm nay chỉ stdio, mặc định vẫn là stdio (NFR-SEC-09) | **Đã kích hoạt 2026-10-01 (Q-58):** vào v1.0, mặc định tắt — TSK-P2-04 dời từ I14 sang I6. Xoá dòng khi TSK-P2-04 xong |
-| 29 | **Test riêng cho "lặp lời gọi bị chặn tới khi lọt"** (`docs/spec/threat_model.md` §2b: *chưa có test riêng*). Lập luận hiện có: gate tất định — cùng dữ kiện ⇒ cùng phán quyết, mỗi lần đều ghi vết | Tính tất định đã được phủ gián tiếp (replay tính lại phán quyết, `tests/test_player.py`); chưa có bên gọi nào lặp tự động | Trước khi mở MCP qua mạng (#24 — TSK-P2-04 nhận ca này, Q-58), hoặc khi vòng ReAct của System 2 (`max_rounds`) được nới — thêm một ca vào `fixtures/tool_calls/` gọi N lần cùng dữ kiện và đòi N lần `BLOCK`, N sự kiện vết ghi |
-| 25 | **Kết nối MCP bền giữa các lượt** và **transport HTTP tới MCP server bên ngoài** (Q-27) | `sim` mở kết nối theo từng lượt vì REPL chạy mỗi lượt trong một event loop riêng; HTTP cần xác thực như #24 | Runtime `linux` chạy một event loop dài, hoặc độ trễ mở kết nối vượt ngân sách lượt |
+| 25 | **Kết nối MCP bền giữa các lượt** và **transport HTTP tới MCP server bên ngoài** (Q-27) | `sim` mở kết nối theo từng lượt vì REPL chạy mỗi lượt trong một event loop riêng; HTTP cần xác thực như `mcp serve --http` (TSK-P2-04) | Runtime `linux` chạy một event loop dài, hoặc độ trễ mở kết nối vượt ngân sách lượt |
 
 ## Kinh doanh
 
@@ -103,12 +100,10 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 |:---|:---|
 | #1–#3, #5–#9 | `/autoplan` 2026-09-22, Phase 1 (CEO) — `docs/archive/giai-doan-1-review-log.md` §GSTACK CEO / DX / ENG REVIEW REPORT |
 | #10, #11 | `/autoplan` 2026-09-22, Phase 3 (Eng) — cùng biên bản |
-| #14 | Review RFC-0002 (2026-09-23) — `docs/archive/rfc-0002-review-record.md` |
 | #15–#17, #19–#22 | Phiên gỡ chặn Sprint 2 (2026-09-23) — quyết định Q-14 → Q-21 (`neuroedge-prd.md` §15) |
 | #23–#25 | Phiên chuẩn hoá tool call (2026-09-23) — Q-24 → Q-27 |
 | #26 | Sổ token C (TSK-S4-02, 2026-09-24) |
 | #27 | Provider thật cho System 2 (TSK-S2-11, 2026-09-24); thu hẹp sau TSK-I4-02 (2026-09-26) |
-| #29, #30 | Rà soát tài liệu MECE (2026-09-24) — `docs/spec/threat_model.md` §2b; câu hỏi mở #10 của kế hoạch Giai đoạn 1 |
 | #32–#33 | Rà soát cạnh tranh MHS/DCP (2026-09-24) — `neuroedge-proposal.md` §10.1–§10.2, Phụ lục H.3; Q-29 (`neuroedge-prd.md` §15) |
 | #34 | Đánh giá tái định vị thông điệp (2026-09-24) — `docs/archive/tai-dinh-vi-messaging-review.md`; Q-30 (`neuroedge-prd.md` §15) |
 | #42 | Roadmap theo increment (2026-09-25) — `TSK-S2-06` rời bảng task, chưa thuộc increment nào; Q-39 (`neuroedge-prd.md` §15) |
@@ -117,5 +112,5 @@ mốc kích hoạt nhắc tới nó (`CONTRIBUTING.md` §8.2 bước 5).
 | #48 | Rà soát đợt 1 — cảm biến `linux` (TSK-S5-09, 2026-09-26) |
 | #46, #47 | Rà soát đợt 2 — firmware cho agent (TSK-I3-01, 2026-09-26) |
 | #49, #50 | Đợt 3 — wake-word (TSK-I4-01), OTA trên QEMU (TSK-S6-01/04), 2026-09-26 |
-| #14, #30, #36, #39 (kích hoạt; #39 đóng khi RFC-0011 chấp thuận 2026-10-01) · #19, #32, #34, #44 (mốc mới) | Tái cấu trúc MVP (2026-09-30) — Q-53, Q-56, Q-57 (`roadmap/neuroedge-prd.md` §15) |
-| #23, #24 (kích hoạt) · #29, #43 (sửa) · #51 | Bề mặt tích hợp và giấy phép (2026-10-01) — Q-58, Q-59 (`roadmap/neuroedge-prd.md` §15) |
+| #19, #32, #34, #44 (mốc mới) | Tái cấu trúc MVP (2026-09-30) — Q-53, Q-56, Q-57 (`roadmap/neuroedge-prd.md` §15) |
+| #23 (kích hoạt) · #43 (sửa) · #51 | Bề mặt tích hợp và giấy phép (2026-10-01) — Q-58, Q-59 (`roadmap/neuroedge-prd.md` §15) |

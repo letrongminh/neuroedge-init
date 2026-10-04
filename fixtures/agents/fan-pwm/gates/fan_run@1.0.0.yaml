@@ -1,0 +1,27 @@
+# Running the fan is limited in how hard and how long, not in whether: the board's own ceiling
+# (`max_duty` 0.8, `max_continuous_ms`) still stands behind these narrower numbers (RFC-0010 §3c).
+# A value outside a limit is BLOCK `argument_out_of_range`, decided before anything else.
+schema:  neuroedge.gate/v1
+name:    fan_run
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24)"
+
+allow_when:
+  call_source: { in: [local_grammar, system_one, system_two, mcp] }
+
+arguments:
+  duty:         { type: number,  minimum: 0.0, maximum: 0.6 }
+  frequency_hz: { type: integer, minimum: 200, maximum: 5000 }
+  duration_ms:  { type: integer, minimum: 1,   maximum: 10000 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

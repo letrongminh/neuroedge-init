@@ -29,6 +29,7 @@ from ..actions import ActionResult
 from ..errors import NeuroEdgeError
 from ..models import SystemOne
 from ..sim import SimSession, Turn
+from ..sim.session import level_word
 
 PROMPT = "neuroedge> "
 EXIT_WORDS = ("exit", "quit", ":q")
@@ -41,6 +42,13 @@ Type a command the agent's grammar knows, e.g. "mở cửa phòng 101".
   :pins               show the virtual pins
   :sensors            show the simulated sensor values
   :sensor <name> <v>  set a sensor value (what sensor.read returns)
+  :analogs            show the simulated analog.in channels
+  :analog <ch> <v>    set what an analog.in channel reads, in its unit
+  :feedback <pin> duty=<r> [frequency_hz=<n>] | fail <why> | clear
+                      set what a PWM channel's read-back reports (feedback.pins boards)
+  :motion             show the motion channels: mode, setpoint, lease left, speed or position
+  :inputs             show the simulated digital input lines
+  :input <pin> <v>    set an input line: true | 1 | high, or false | 0 | low (digital.in)
   :screen             show the last display frame
   :confirm | :decline answer the device's pending question (same as typing "có" / "không")
   :help               this help
@@ -66,6 +74,9 @@ def pin_state(session: SimSession, pin: str) -> str:
     operation, duration_ms = commands[-1]
     if operation == "pulse":
         return f"PULSED {duration_ms / 1000:g}s"
+    running = getattr(session.hal, "commanded_pwm", lambda _: None)(pin)
+    if running is not None:  # a PWM channel that is on: its frequency and duty
+        return f"PWM {running[1] * 100:.1f}% @ {running[0]} Hz"
     return "HIGH" if operation == "on" else "LOW"
 
 
@@ -77,7 +88,7 @@ def pin_table(session: SimSession) -> Table:
     table.add_column("Commands", justify="right")
     for pin in session.pins:
         state = pin_state(session, pin)
-        style = "green" if state.startswith(("PULSED", "HIGH")) else "dim"
+        style = "green" if state.startswith(("PULSED", "HIGH", "PWM")) else "dim"
         table.add_row(pin, f"[{style}]{state}[/{style}]", str(len(session.hal.pin(pin).commands)))
     return table
 
@@ -195,6 +206,15 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
         for key, rule in sorted(session.sensor_facts.items()):
             shown = escape(f"from sensor {rule.sensor} ([sim.sensor_facts])")
             table.add_row(key, f"[dim]{shown}[/dim]")
+        for key, channel in sorted(session.analog_facts.items()):
+            shown = escape(f"from analog.in {channel} ([sim.analog_facts])")
+            table.add_row(key, f"[dim]{shown}[/dim]")
+        for key, (pin, quantity) in sorted(session.feedback_facts.items()):
+            shown = escape(f"from the {quantity} of PWM channel {pin} ([sim.feedback_facts])")
+            table.add_row(key, f"[dim]{shown}[/dim]")
+        for key, line in sorted(session.digital_facts.items()):
+            shown = escape(f"from input pin {line.pin} ([sim.digital_facts])")
+            table.add_row(key, f"[dim]{shown}[/dim]")
         console.print(table)
     elif name == "set" and len(rest.split(maxsplit=1)) == 2:
         key, value = rest.split(maxsplit=1)
@@ -227,6 +247,71 @@ def _meta(line: str, session: SimSession, console: Console) -> None:
             console.print(f"[red]{escape(error.why)}[/red]")
             return
         console.print(f"  {escape(sensor)} = {escape(value)}")
+    elif name == "analogs":
+        table = Table(title="Simulated analog.in channels", title_justify="left")
+        table.add_column("Channel", style="cyan")
+        table.add_column("Value")
+        for channel, (value, unit) in session.hal.analog_values().items():
+            shown = "[dim]not set[/dim]" if value is None else escape(f"{value} {unit}")
+            table.add_row(channel, shown)
+        console.print(table)
+    elif name == "analog" and len(rest.split(maxsplit=1)) == 2:
+        channel, value = rest.split(maxsplit=1)
+        try:
+            session.set_analog(channel, parse_value(value))
+        except NeuroEdgeError as error:
+            console.print(f"[red]{escape(error.why)}[/red]")
+            return
+        console.print(f"  {escape(channel)} = {escape(value)}")
+    elif name == "feedback" and rest.split():
+        pin, *words = rest.split()
+        try:
+            session.set_feedback(pin, words)
+        except NeuroEdgeError as error:
+            console.print(f"[red]{escape(error.why)}[/red] — {escape(error.how)}")
+            return
+        console.print(f"  {escape(pin)} read-back: {escape(' '.join(words))}")
+    elif name == "motion":
+        table = Table(title="Motion channels", title_justify="left")
+        for column in ("Channel", "Mode", "Setpoint", "Lease/hold left", "Now"):
+            table.add_column(column, style="cyan" if column == "Channel" else None)
+        for channel, info in session.hal.motion_values().items():
+            setpoint = ", ".join(f"{k}={v:g}" for k, v in info.get("setpoint", {}).items())
+            left = info.get("lease_left_ms", info.get("hold_left_ms"))
+            now = ", ".join(
+                f"{k}={v:g}" for k, v in info.items() if k in ("speed", "position", "distance")
+            )
+            table.add_row(
+                channel,
+                f"{info['mode']} (safe: {info['safe_state']})",
+                setpoint or "—",
+                "—" if left is None else f"{left} ms",
+                now or "—",
+            )
+        console.print(table)
+    elif name == "inputs":
+        table = Table(title="Simulated input lines", title_justify="left")
+        table.add_column("Pin", style="cyan")
+        table.add_column("Level")
+        for pin, level in session.hal.digital_in_values().items():
+            table.add_row(
+                pin, "[dim]not set[/dim]" if level is None else ("high" if level else "low")
+            )
+        console.print(table)
+    elif name == "input" and len(rest.split(maxsplit=1)) == 2:
+        pin, word = rest.split(maxsplit=1)
+        level = level_word(word)
+        if level is None:
+            console.print(
+                f"[red]{escape(word)} is not a level[/red] — use true | 1 | high or false | 0 | low"
+            )
+            return
+        try:
+            session.set_digital_in(pin, level)
+        except NeuroEdgeError as error:
+            console.print(f"[red]{escape(error.why)}[/red]")
+            return
+        console.print(f"  {escape(pin)} = {'high' if level else 'low'}")
     elif name == "screen":
         if not session.hal.frames:
             console.print("  nothing has been drawn yet")

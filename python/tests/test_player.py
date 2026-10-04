@@ -24,6 +24,19 @@ from neuroedge.testing.recorder import TraceRecorder
 from neuroedge.trace import validate_trace
 
 
+class HandClock:
+    """A clock that moves only when the test says so (milliseconds)."""
+
+    def __init__(self) -> None:
+        self.now = 1_000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+    def advance(self, ms: float) -> None:
+        self.now += ms
+
+
 @pytest.fixture(scope="module")
 def villa(root):
     return root / "fixtures" / "agents" / "villa-concierge" / "agent.toml"
@@ -185,10 +198,13 @@ def test_the_input_trace_is_not_modified(traces_dir):
 
 
 async def test_a_recorded_session_replays_to_the_same_verdicts_and_pins(villa):
-    recorder = TraceRecorder()
-    session = SimSession.load(villa, events=recorder)
+    clock = HandClock()
+    recorder = TraceRecorder(clock=clock)
+    session = SimSession.load(villa, events=recorder, clock=clock)
     for line in ("mở cửa phòng 101", "mở cửa phòng 202", "hát một bài", "mở cửa phòng 101"):
         await session.handle(line)
+        # the door pulses 30 s: the safety envelope lets the next unlock come once it is over
+        clock.advance(40_000)
     trace = recorder.to_trace()
 
     result = await TracePlayer(trace, agent=villa).replay()
@@ -305,3 +321,83 @@ def test_replies_cannot_be_asserted_on(traces_dir):
 def test_esp32s3_has_no_live_hal_here(traces_dir):
     with pytest.raises(ReplayError, match="esp32s3"):
         replay(traces_dir / "happy-path.json", target="esp32s3")
+
+
+# --- the safety envelope replays on the recorded timeline (RFC-0007 §3d, TSK-N2-02) -------------
+
+
+async def _session_with_a_refused_unlock(villa):
+    """Unlock at 0 s; again 5 s later (the door still pulses: refused); a third 40 s later."""
+    from neuroedge.errors import EnvelopeRefusedError
+
+    clock = HandClock()
+    recorder = TraceRecorder(clock=clock)
+    session = SimSession.load(villa, events=recorder, clock=clock)
+    await session.handle("mở cửa phòng 101")
+    clock.advance(5_000)
+    with pytest.raises(EnvelopeRefusedError):
+        await session.handle("mở cửa phòng 101")
+    clock.advance(40_000)
+    await session.handle("mở cửa phòng 101")
+    return session, recorder.to_trace()
+
+
+async def test_a_recorded_envelope_refusal_replays_as_the_same_refusal(villa):
+    session, trace = await _session_with_a_refused_unlock(villa)
+    recorded = [e["data"] for e in trace["events"] if e["type"] == "envelope_refused"]
+    assert [(r["pin"], r["operation"], r["reason"]) for r in recorded] == [
+        ("door_lock", "pulse", "already_on")
+    ]
+    (refused_step,) = [s for s in recorded_steps(trace) if s.refusal is not None]
+    assert refused_step.index == 1 and refused_step.refusal == recorded[0]
+
+    result = await TracePlayer(trace, agent=villa).replay()
+    replayed = [e["data"] for e in result.replayed["events"] if e["type"] == "envelope_refused"]
+    assert replayed == recorded, "the same refusal, with the same numbers, at the recorded instant"
+    assert result.divergences == []
+    assert result.pin("door_lock").commands == session.hal.pin("door_lock").commands
+    assert len(result.pin("door_lock").pulses) == 2
+
+
+async def test_a_replay_decides_on_recorded_time_not_on_how_fast_it_runs(villa):
+    """The recording ran 45 s of session time; the replay takes milliseconds and agrees."""
+    _, trace = await _session_with_a_refused_unlock(villa)
+    first = await TracePlayer(trace, agent=villa).replay()
+    second = await TracePlayer(trace, agent=villa).replay()
+    assert first.divergences == second.divergences == []
+    assert [e["data"] for e in first.replayed["events"] if e["type"] == "envelope_refused"] == [
+        e["data"] for e in second.replayed["events"] if e["type"] == "envelope_refused"
+    ]
+
+
+async def test_a_refusal_the_recording_does_not_have_is_a_divergence(villa):
+    _, trace = await _session_with_a_refused_unlock(villa)
+    trace["events"] = [e for e in trace["events"] if e["type"] != "envelope_refused"]
+    result = await TracePlayer(trace, agent=villa).replay()
+    (divergence,) = result.divergences
+    assert divergence.expected is None
+    assert divergence.actual == "envelope_refused door_lock pulse: already_on"
+
+
+async def test_a_recorded_refusal_the_replay_does_not_make_is_a_divergence(villa):
+    _, trace = await _session_with_a_refused_unlock(villa)
+    # everything after the first unlock moves 30 s later: the door was free by the time of the
+    # second one, so the refusal the recording holds is no longer what the envelope decides
+    first = next(i for i, e in enumerate(trace["events"]) if e["type"] == "actuator_command")
+    for event in trace["events"][first + 1 :]:
+        event["offset_ms"] += 30_000
+    result = await TracePlayer(trace, agent=villa).replay()
+    (divergence,) = result.divergences
+    assert divergence.expected == "envelope_refused door_lock pulse: already_on"
+    assert divergence.actual == "no refusal"
+
+
+async def test_a_refusal_for_another_reason_is_a_divergence(villa):
+    _, trace = await _session_with_a_refused_unlock(villa)
+    next(e for e in trace["events"] if e["type"] == "envelope_refused")["data"]["reason"] = (
+        "window_budget"
+    )
+    result = await TracePlayer(trace, agent=villa).replay()
+    (divergence,) = result.divergences
+    assert divergence.expected == "envelope_refused door_lock pulse: window_budget"
+    assert divergence.actual == "envelope_refused door_lock pulse: already_on"

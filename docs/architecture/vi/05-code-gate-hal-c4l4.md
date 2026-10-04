@@ -184,7 +184,7 @@ sequenceDiagram
 Mọi lần từ chối ghi `actuator_command_rejected {pin, reason, code}` **trước** khi ném lỗi, và chân
 không đổi. Nonce không bao giờ vào vết ghi.
 
-**Quy hoạch:** hook phong bì an toàn vật lý (physical envelope hook — giới hạn tổng thời gian bật và tần suất theo từng chân, khai ở `board.v1` — RFC-0007) sẽ nằm trong `HAL.digital_out` giữa bước kiểm tra chân (`require_pin`) và `authorize` (TSK-N2-01, token không bị tiêu khi bị từ chối) → [`15`](15-target-architecture.md) §4.2; cơ chế token thuê có hạn (lease token — quyền điều khiển vận động có thời hạn ngắn, tự động gia hạn khi có lệnh mới qua gate, tự hết hạn để dừng an toàn khi mất liên lạc) cho `motion.*` (Q-37) → [`15`](15-target-architecture.md) §4.3.
+**Đã có (TSK-N2-01):** hook phong bì an toàn vật lý (physical envelope hook — giới hạn tổng thời gian bật và tần suất theo từng chân, khai ở `board.v1` — RFC-0007) nằm trong `HAL.digital_out` giữa bước kiểm tra chân (`require_pin`) và `authorize` (`hal/envelope.py`; token không bị tiêu khi bị từ chối) → [`15`](15-target-architecture.md) §4.2. Token thuê có hạn (nhánh `feat/motion`, TSK-I2a-05): (lease token — quyền điều khiển vận động có thời hạn ngắn, tự động gia hạn khi có lệnh mới qua gate, tự hết hạn để dừng an toàn khi mất liên lạc) cho `motion.*` (Q-37) → [`15`](15-target-architecture.md) §4.3.
 
 ```mermaid
 stateDiagram-v2

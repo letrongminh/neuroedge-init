@@ -296,7 +296,7 @@ action của agent thành một công cụ MCP, và mọi lời gọi vẫn ph�
 
 **Giới hạn**
 
-- Chỉ qua stdio, chưa có MCP qua mạng (`TODOS.md` #24, #25).
+- MCP mặc định qua stdio; qua mạng có `mcp serve --http` (mTLS + OAuth 2.1, TSK-P2-04), chưa thử trên hai máy thật; chưa có kết nối bền tới MCP server ngoài (`TODOS.md` #25).
 - Trang web theo dõi chỉ có trên `sim`.
 
 ---
@@ -312,6 +312,10 @@ action của agent thành một công cụ MCP, và mọi lời gọi vẫn ph�
 - Đủ năm nguyên thủy phần cứng (HAL): `digital.out` (chân ra), `sensor.read` (cảm biến hwmon/IIO, tìm theo
   **tên**), `display` (framebuffer — thiết bị màn hình của kernel, `/dev/fbN` — hoặc trong bộ nhớ),
   `audio.in` và `audio.out`.
+- **Nguyên thủy mở rộng**, tuỳ bo mạch khai (`board show <id>` liệt kê): `digital.in` (line vào đọc theo **tên**, không bao giờ ghi),
+  I2C chỉ đọc qua `/dev/i2c-N` (chỉ thanh ghi bo mạch cho phép), `analog.in` (kênh hwmon, `NEUROEDGE_LINUX_ANALOG`) và `vision.in`
+  (camera V4L2 do máy chọn: `NEUROEDGE_LINUX_CAMERA=/dev/video0`; không có camera hoặc driver không chạy đúng chế độ bo mạch khai ⇒ phiên không
+  khởi động). Đọc hỏng ở bất kỳ nguyên thủy nào ⇒ gate chặn `criterion_unavailable`, không bao giờ cho qua.
 - **Âm thanh từ tệp WAV**: `run` / `record --voice-file` trên `linux` đưa tệp về tần số lấy mẫu của bo
   mạch, không cần micro hay loa.
 - **Nối sẵn micro và loa thật** qua PipeWire đã khử vang (`NEUROEDGE_LINUX_AUDIO=live`, `neuroedge[audio]`;
@@ -320,6 +324,14 @@ action của agent thành một công cụ MCP, và mọi lời gọi vẫn ph�
 - **Chưa có máy Linux gắn thiết bị?** Tạo line GPIO ảo bằng gpio-sim (`scripts/setup_gpio_sim.sh`, kernel
   ≥ 5.19). CI chạy toàn bộ phần `linux` trên gpio-sim, cảm biến ảo `i2c-stub` + `lm75`, và màn hình ảo.
 - Kiểm cùng quyết định trên `sim` và `linux` (`verify --targets sim,linux`).
+- **Phong bì an toàn theo chân** (RFC-0007): mỗi chân nối tải có giới hạn của bo mạch — tổng thời gian bật trong một
+  cửa sổ trượt, giãn cách tối thiểu giữa hai lần bật, trần một lần bật. Chân luôn tự tắt khi hết thời hạn của lệnh hoặc
+  khi chạm trần; lệnh `tắt` không bao giờ bị chặn. Lệnh bật vượt giới hạn, hoặc khi chân đang bật, bị từ chối
+  (`NE1003`) mà không tiêu token. Thời gian bật được ghi vào một thư mục theo bo mạch
+  (`$NEUROEDGE_LINUX_ENVELOPE_STATE`, mặc định `~/.local/state/neuroedge/envelope/<bo mạch>`) **trước khi** bật,
+  để khởi động lại không xoá được bộ đếm. **Lần đầu trên một giàn thiết bị mới**, chưa có bản ghi nên mọi lệnh bật bị
+  từ chối: chạy phiên với `NEUROEDGE_LINUX_ENVELOPE_INIT=1` để khai đây là giàn mới (cờ chỉ tạo bản ghi chưa có).
+  Line của chân được giao cho một tiến trình giám sát riêng, thả line khi runtime bị treo hoặc chết; giám sát **bật mặc định** — không khởi động được thì lệnh bật bị từ chối, `tắt` vẫn chạy (`NEUROEDGE_LINUX_SUPERVISE=0` chỉ để test và gỡ lỗi, và được ghi vào vết ghi).
 
 **Cần gì:** máy Linux; `neuroedge[linux]` (thư viện libgpiod); line GPIO thật hoặc ảo. Âm thanh thật cần
 thêm `neuroedge[audio]` và PipeWire.

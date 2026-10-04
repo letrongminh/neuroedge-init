@@ -52,16 +52,21 @@ class FakeChip:
 
 
 class FakeRequest:
-    def __init__(self, world, path, offsets):
+    def __init__(self, world, path, offsets, direction=Direction.OUTPUT):
         self.world, self.path, self.offsets = world, path, offsets
+        self.direction = direction
         self.released = False
 
     def set_value(self, offset, value):
+        assert self.direction is Direction.OUTPUT, "an input line is never driven"
         assert not self.released and offset in self.offsets
         self.world.values[(self.path, offset)] = value
         self.world.history.append((self.world.chips[self.path][offset], value.value))
 
     def get_value(self, offset):
+        assert not self.released and offset in self.offsets
+        if self.world.read_error is not None:
+            raise self.world.read_error
         return self.world.values.get((self.path, offset), Value.INACTIVE)
 
     def release(self):
@@ -74,18 +79,27 @@ class FakeGpiod:
         self.values = {}
         self.history = []
         self.requests = []
+        # What the kernel does to an input line: refuse the request, or fail the read.
+        self.input_request_error = None
+        self.read_error = None
         self.line = SimpleNamespace(Direction=Direction, Value=Value)
 
     def Chip(self, path):  # noqa: N802 - mirrors gpiod.Chip
         return FakeChip(self, path)
 
-    def LineSettings(self, direction, output_value):  # noqa: N802 - mirrors gpiod.LineSettings
-        assert direction is Direction.OUTPUT and output_value is Value.INACTIVE
+    def LineSettings(self, direction, output_value=None):  # noqa: N802 - mirrors gpiod.LineSettings
+        # An output starts inactive; an input is requested as one and never given a value.
+        assert (direction is Direction.OUTPUT and output_value is Value.INACTIVE) or (
+            direction is Direction.INPUT and output_value is None
+        )
         return {"direction": direction, "output_value": output_value}
 
     def request_lines(self, path, consumer, config):
         (offsets,) = config
-        request = FakeRequest(self, path, offsets)
+        direction = config[offsets]["direction"]
+        if direction is Direction.INPUT and self.input_request_error is not None:
+            raise self.input_request_error
+        request = FakeRequest(self, path, offsets, direction)
         self.requests.append(request)
         return request
 
@@ -124,6 +138,32 @@ def test_a_chip_without_the_board_pins_raises(tmp_path):
     path.write_text("")
     with pytest.raises(BoardCapabilityError, match="door_lock"):
         LinuxHAL(chip_glob=str(tmp_path / "gpiochip*"), gpiod=FakeGpiod({str(path): ["x", "y"]}))
+
+
+def test_pwm_and_enable_pins_need_no_gpio_line_until_their_backends_exist(chips):
+    """RFC-0010 §3e: the kernel PWM channel and the HAL-owned enable lines are not plain GPIO."""
+    hal, _fake = make_hal(chips)
+    board = hal.board
+    assert {"fan", "fan_en", "motor_en", "servo_en"} <= set(board.pins)
+    assert set(hal.lines) == {"door_lock", "porch_light", "gate_relay"}
+    hal.close()
+
+
+def test_a_pwm_pin_is_refused_before_any_token_or_line_is_touched(chips):
+    hal, fake = make_hal(chips)
+    with pytest.raises(BoardCapabilityError) as raised:
+        hal.digital_out("fan", "on", called_from="actions/fan.py:3")
+    assert "PWM channel" in raised.value.why and "actions/fan.py:3" in raised.value.where
+    assert fake.history == []
+    hal.close()
+
+
+def test_an_enable_line_is_never_driven_by_an_agent(chips):
+    hal, fake = make_hal(chips)
+    with pytest.raises(BoardCapabilityError, match="enable line"):
+        hal.digital_out("fan_en", "on", called_from="actions/fan.py:4")
+    assert fake.history == []
+    hal.close()
 
 
 def test_a_sim_board_is_refused(chips):

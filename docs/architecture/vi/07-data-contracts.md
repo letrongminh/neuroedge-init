@@ -74,7 +74,7 @@ khoá lạ. Cú pháp dòng lệnh dùng các bảng này: `CHANGELOG.md` §2.3.
 | Bảng | Parser | Khoá chính và luật |
 |:---|:---|:---|
 | `[agent]` | `compiler.load_agent_manifest` | `name`, `version` (bắt buộc; trên `esp32s3` phải là `MAJOR.MINOR.PATCH`), `language` (đúng 2 chữ thường) |
-| `[requires]` | `compiler.check_capabilities` | Khoá là nguyên thủy dạng chấm (`"digital.out"`…); `pins`, `sensors`, `sample_rate_hz`, `aec`, `min_width`… phải có trên bo mạch |
+| `[requires]` | `compiler.check_capabilities` | Khoá là nguyên thủy dạng chấm (`"digital.out"`…); `pins`, `sensors`, `channels` (`analog.in`, mỗi kênh phải do bo mạch khai), `sample_rate_hz`, `aec`, `min_width`… phải có trên bo mạch |
 | `[gates]` | `compiler.resolve_gates` | `khoá = "neuroedge://…"` hoặc đường dẫn tương đối; mỗi `@action(gate=…)` phải trỏ tới một khoá. Trên `esp32s3` khoá phải là định danh C |
 | `[targets]` | `compiler` | `supported = [...]` |
 | `[sim.facts]`, `[sim.slot_facts]` | `sim/session.py` | Dữ kiện cố định của phiên; dữ kiện lấy từ khe của câu lệnh |
@@ -164,7 +164,7 @@ Sự kiện theo vai trò trong phát lại:
 |:---|:---|:---|
 | **Đầu vào** | `text_input`, `audio_in_*`, `wake_word_detected`, `stt_result`, `stt_unavailable`, `sensor_read`, `sensor_set`, `sensor_unavailable`, `intent_extracted` | đưa vào lại |
 | **Quyết định** | `gate_evaluation_begin`, `gate_facts`, `gate_evaluation_result`, `argument_out_of_range`, `actuator_command`, `actuator_aborted`, `actuator_command_rejected` | tính lại và so với golden |
-| **Điều phối** | `tool_call`, `tool_call_rejected`, `tool_confirm_*`, `action_requested`, `fallback_skipped`, `voice_state_changed`, `voice_reprompt`, `voice_late_result_dropped`, `stt_fallback` | ghi lại, không so |
+| **Điều phối** | `tool_call`, `tool_call_rejected`, `mcp_auth_refused`, `tool_confirm_*`, `action_requested`, `fallback_skipped`, `voice_state_changed`, `voice_reprompt`, `voice_late_result_dropped`, `stt_fallback` | ghi lại, không so |
 | **Đầu ra** | `tts_stream_start`, `tts_stream_end`, `tts_unavailable`, `display_frame` (chỉ digest), `knowledge_retrieved` | không so |
 | **Đo đạc** | `system_one_call`, `system_one_fallback`, `system_two_call`, `system_two_unavailable`, `circuit_breaker`, `mcp_tool_result`, `turn_latency`, `session_summary` | bỏ qua |
 | **Chỉ từ thiết bị** | `device_info`, `trace_end` | khung phiên UART |

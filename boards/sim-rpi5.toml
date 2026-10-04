@@ -1,0 +1,145 @@
+# Target `sim` — the browser simulator, mirroring `linux-rpi5` (RFC-0013 §3d, SIM_MIRRORS).
+#
+# Everything the reference rig has, and nothing more: a `sim` profile richer than the board
+# it mirrors would let an agent pass in simulation and fail to build for hardware.
+# `sim-default` mirrors the Box-3; this profile is what lets a vision agent run on `sim`
+# (TODOS.md #14). The extension primitives are replayed from recorded values — the
+# simulator reads no bus, no ADC and no camera of its own.
+[board]
+id     = "sim-rpi5"
+name   = "NeuroEdge Web Simulator (mirrors linux-rpi5)"
+target = "sim"
+mcu    = "none"
+
+[capabilities.audio_in]
+channels       = 2
+sample_rate_hz = 48000
+aec            = false      # no hardware reference channel; AEC runs in software
+vad            = true
+
+[capabilities.audio_out]
+channels       = 2
+sample_rate_hz = 48000
+
+# `fan` is the PWM channel and `fan_en` / `motor_en` / `servo_en` the enable lines of the
+# PWM and motion channels (HAL-owned, never driven by an agent): each is a gpiod line with
+# a pull-down on the carrier board, so a dead runtime drops the driver (RFC-0010 §9.2).
+[capabilities.digital_out]
+pins    = ["door_lock", "porch_light", "gate_relay", "fan", "fan_en", "motor_en", "servo_en"]
+backend = "virtual"
+
+# Safety envelope per pin (RFC-0007 §3d): every digital.out pin is an actuator and needs
+# one. Wide enough that the canonical traces replay unchanged (door_lock pulses 30 s).
+[capabilities.digital_out.envelope.door_lock]
+window_s             = 3600
+max_on_ms_per_window = 600000
+min_interval_ms      = 1000
+max_continuous_ms    = 60000
+
+[capabilities.digital_out.envelope.porch_light]
+window_s             = 3600
+max_on_ms_per_window = 1800000
+min_interval_ms      = 2000
+max_continuous_ms    = 600000
+
+[capabilities.digital_out.envelope.gate_relay]
+window_s             = 3600
+max_on_ms_per_window = 600000
+min_interval_ms      = 1000
+max_continuous_ms    = 60000
+
+[capabilities.digital_out.envelope.fan]
+window_s             = 3600
+max_on_ms_per_window = 1800000
+min_interval_ms      = 2000
+max_continuous_ms    = 600000
+
+# Hardware PWM only (/sys/class/pwm, RP1 PWM0): no bit-banged PWM (RFC-0010 §9.1).
+[capabilities.digital_out.pwm]
+pins            = ["fan"]
+frequency_hz    = { min = 100, max = 25000 }
+resolution_bits = 10
+max_duty        = 0.8      # hard ceiling of the fan driver, not a default
+enable_pin      = { fan = { pin = "fan_en", enable_active = "high", pull = "down" } }
+
+[capabilities.digital_in]
+pins    = ["door_contact_raw", "limit_switch"]
+backend = "virtual"
+
+# The 40-pin header's I2C bus, with the ADC and power monitor of the reference rig
+# (the chips spiked on i2c-stub in TSK-N3-03). A device not listed is only ever reported
+# by a scan; ina219's registers 0x01..0x04 are its measurements — no register is a command.
+[[capabilities.i2c.buses]]
+id = "i2c1"
+
+[[capabilities.i2c.buses.devices]]
+name               = "ina219"
+address            = 0x40
+readable_registers = [0x01, 0x02, 0x03, 0x04]
+
+[[capabilities.i2c.buses.devices]]
+name    = "ads7828"
+address = 0x4a
+
+# The Pi 5 has no ADC of its own: the rig carries an ADS7828 (12-bit, internal 2.5 V
+# reference) on the bus above.
+[capabilities.analog_in]
+channels = [{ name = "adc0", unit = "V", min = 0.0, max = 2.5, resolution_bits = 12 }]
+
+# Reference rig: one DC drive motor and one hobby servo behind drivers that have an
+# enable line. Limits are the drivers' own; the gate may only narrow them (RFC-0011 §3a).
+[[capabilities.motion.motor]]
+name        = "wheel_left"
+speed_max   = 0.6
+ramp_min_ms = 200
+enable_pin  = "motor_en"
+safe_state  = "stop"
+lease_ms    = 200
+
+[[capabilities.motion.servo]]
+name           = "gripper"
+target_min     = 0
+target_max     = 90
+unit           = "deg"
+enable_pin     = "servo_en"
+safe_state     = "hold"
+holds_position = true
+max_hold_ms    = 2000
+lease_ms       = 200
+
+[capabilities.motion.envelope.wheel_left]
+window_s             = 60
+max_on_ms_per_window = 30000
+min_interval_ms      = 2000
+max_continuous_ms    = 10000
+
+[capabilities.motion.envelope.gripper]
+window_s             = 60
+max_on_ms_per_window = 10000
+min_interval_ms      = 1000
+max_continuous_ms    = 3000
+
+# The reference rig's CSI camera. `tolerance` is the room the cross-target inference
+# comparison gets (RFC-0012 §3a), inside the schema's hard ceiling.
+[capabilities.vision_in]
+tolerance = { score_abs = 0.03, box_iou_min = 0.85 }
+
+[[capabilities.vision_in.modes]]
+width        = 640
+height       = 480
+fps          = 30.0
+pixel_format = "rgb888"
+
+[[capabilities.vision_in.modes]]
+width        = 1280
+height       = 720
+fps          = 30.0
+pixel_format = "yuyv"
+
+[capabilities.sensor_read]
+sensors = ["temperature", "humidity", "door_contact", "motion"]
+
+[capabilities.display]
+width  = 800
+height = 480
+color  = "rgb888"

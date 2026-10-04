@@ -1,0 +1,28 @@
+# Valid example: the five core primitives and nothing else. A signal-only pin needs no envelope.
+[board]
+id     = "core-only"
+target = "sim"
+mcu    = "none"
+
+[capabilities.audio_in]
+channels = 1
+
+[capabilities.audio_out]
+channels = 1
+
+[capabilities.digital_out]
+pins        = ["door_lock", "status_led"]
+signal_pins = ["status_led"]
+
+[capabilities.digital_out.envelope.door_lock]
+window_s             = 3600
+max_on_ms_per_window = 600000
+min_interval_ms      = 0
+max_continuous_ms    = 30000
+
+[capabilities.sensor_read]
+sensors = []
+
+[capabilities.display]
+width  = 320
+height = 240

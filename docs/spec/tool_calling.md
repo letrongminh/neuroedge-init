@@ -3,7 +3,7 @@
 **Trạng thái:** chuẩn tắc cho `sim` và `linux` từ v0; `esp32s3` theo §8. Quyết định:
 Q-24, Q-25, Q-26, Q-27 (`neuroedge-prd.md` §15).
 **Mã nguồn:** `python/neuroedge/actions/tools.py` (dispatch), `python/neuroedge/mcp_server.py`
-(MCP server), `python/neuroedge/mcp_host.py` (System 2 làm MCP client),
+(MCP server), `python/neuroedge/mcp_http.py` (cửa mạng của MCP server, §8.1), `python/neuroedge/mcp_host.py` (System 2 làm MCP client),
 `python/neuroedge/sim/session.py` (ngữ pháp, vòng System 2).
 
 Tài liệu này là nơi **duy nhất** định nghĩa tool call trong NeuroEdge. Tài liệu khác dẫn
@@ -58,7 +58,7 @@ ToolCall { id: string, name: string, arguments: object, source: string }
 | `local_grammar` | Câu khớp `commands.toml` → tool call **tổng hợp** (Q-14). Chạy không mạng |
 | `system_one` | Mô hình có cấu trúc (§3.6 proposal) |
 | `system_two` | LLM với câu tự do; gọi tool của thiết bị qua kết nối MCP in-process tới chính agent (§10) |
-| `mcp` | Client MCP qua `neuroedge mcp serve` |
+| `mcp` | Client MCP qua `neuroedge mcp serve`, qua stdio hay qua mạng (§8.1) |
 | `test` | Action CI |
 
 Câu khớp ngữ pháp **PHẢI** trở thành tool call rồi đi qua cùng đường với mọi nguồn khác —
@@ -140,7 +140,9 @@ evaluate:
 allow_when: call_source in ["local_grammar", "system_one"]   # MCP không mở được cửa
 ```
 
-Nguồn **gắn theo kết nối**, do runtime tạo kết nối đó: `neuroedge mcp serve` là `mcp`; kết nối in-process của System 2 là `system_two` (`build_server(session, source=...)`).
+Nguồn **gắn theo kết nối**, do runtime tạo kết nối đó: `neuroedge mcp serve` là `mcp`, kể cả qua mạng (`--http`, §8.1); kết nối in-process của System 2 là `system_two` (`build_server(session, source=...)`).
+
+Một lời gọi qua mạng là `mcp`, **không** có nguồn riêng: stdio và mạng cùng một máy chủ, cùng một đường tới gate, nên gate không phân biệt được hai cửa. Muốn một gate cấm riêng cửa mạng thì phải thêm một giá trị vào danh sách nguồn ở trên — đổi hợp đồng của `call_source`, nên cần RFC (`CONTRIBUTING.md` §3), không thể thêm bằng PR thường.
 
 Bên gọi **KHÔNG ĐƯỢC** tự khai nguồn: `call_source` không phải tham số của tool nào, nên
 một mô hình gửi `{"call_source": "local_grammar"}` bị `REJECTED` ở bước 3
@@ -195,6 +197,7 @@ theo nguyên thủy HAL (`actuator_command`, `sensor_read`, `display_frame`…) 
 | `tool_confirmed` · `tool_confirm_declined` | `id`, `source` | RFC-0006 |
 | `tool_confirm_rejected` | `id`, `source`, `reason` | RFC-0006 |
 | `tool_confirm_expired` | `id` | RFC-0006 |
+| `mcp_auth_refused` | `reason`, `status`, `subject?` — một yêu cầu tới cửa mạng (§8.1) bị 401 hoặc 403, nên không có gì được chuyển tiếp. `reason`: `no_token` · `malformed_authorization` · `invalid_token` (chữ ký, định dạng, thiếu `exp` `iss` `sub`) · `expired` · `wrong_audience` · `wrong_issuer` · `not_cert_bound` · `cert_mismatch` · `insufficient_scope` (`status` 403). `subject` chỉ có khi chữ ký đã đúng (`cert_mismatch`, `not_cert_bound`, `insufficient_scope`). **Không bao giờ** có token, địa chỉ client hay chứng chỉ. Ghi tối đa 10 000 sự kiện mỗi phiên; sự kiện cuối có `last_recorded: true`. Không phải lượt (không `turn_latency`); replay bỏ qua | TSK-P2-04 |
 | `mcp_tool_result` | `id`, `server`, `tool`, `status`, `sha256`, `bytes` — không lưu nội dung (§10 quy tắc 3) | Q-27 |
 | `mcp_server_unavailable` | `server`, `reason` (§10 quy tắc 4) | Q-27 |
 | `system_two_call` | `provider`, `model`, `task`, `latency_ms`, `status`, `prompt_tokens?`, `completion_tokens?`, `cost_usd?`, `error?` — không prompt, không key; replay bỏ qua | FR-MDL-06 |
@@ -263,18 +266,71 @@ và vết ghi mới replay trên bản cũ. `neuroedge trace show` in tỷ lệ 
 | `esp32s3` | Gate: walker C99 đọc cây `NETR` v1 do `neuroedge build` sinh (Q-23, RFC-0003). Giới hạn tham số (RFC-0005) và `confirms` (RFC-0006) nằm **trong** bố cục đó; `call_source` là một dữ kiện `choice` như mọi tiêu chí, chỉ số của nó do `neuroedge build` sinh (`<gate>.netree.h`). Ngữ pháp → tool call tổng hợp trong C: chưa có (TSK-S5-07) | **Không** chạy trên MCU. MCP cho thiết bị đi qua gateway hoặc một máy `linux` (FR-GW), và thiết bị vẫn tự lượng giá gate. MCU **không làm MCP host**: host (§10) đặt ở nơi System 2 chạy |
 
 Transport MCP mặc định là **stdio**: bên có quyền chạy tiến trình chính là người vận
-hành. Transport HTTP vào v1.0, **mặc định tắt**, chỉ bật khi có OAuth 2.1 và mTLS theo thiết bị
-(TSK-P2-04, Q-58, NFR-SEC-09); tới khi task đó xong, chỉ có stdio. Mục cấu hình cho
+hành. Transport mạng (Streamable HTTP) có từ TSK-P2-04 (Q-58, NFR-SEC-09), **mặc định tắt**, và chỉ
+bật bằng `neuroedge mcp serve --http` kèm đủ cấu hình xác thực (§8.1). Mục cấu hình cho
 Claude Desktop do `neuroedge mcp desktop-config` sinh — đường dẫn tuyệt đối, vì Desktop khởi
-động server từ `/` với `PATH` tối giản.
+động server từ `/` với `PATH` tối giản; nó chỉ sinh mục stdio.
 
-Hai quy tắc giữ cho `mcp serve` sống sót khi client bỏ rơi nó. Claude Desktop có thể bỏ một tiến
+Hai quy tắc giữ cho `mcp serve` qua stdio sống sót khi client bỏ rơi nó (`--http` không có chúng: nó nghe cổng, không giữ stdin). Claude Desktop có thể bỏ một tiến
 trình trước `initialize` mà vẫn giữ stdin của nó, nên tiến trình không bao giờ nhận được EOF.
 
 - Không có `initialize` sau `--init-timeout` giây (mặc định 30) thì tiến trình thoát 0 và nhả
   cổng. Phiên đã `initialize` không bị giới hạn thời gian.
 - Trang `--ui` không bao giờ làm sập MCP. Cổng bận, kể cả `--port` ghi rõ, thì trang chạy ở cổng
   trống và URL thật được in ra stderr.
+
+### 8.1 MCP qua mạng: `mcp serve --http` (TSK-P2-04, Q-58, Q-32)
+
+Cùng một máy chủ, cùng một đường tới phần cứng như stdio: `SimSession.load`, `build_server`, gate,
+token phán quyết dùng một lần, HAL, vết ghi (băm theo mặc định). Chỉ **cửa** khác (`mcp_http.py`);
+không có cờ nào tắt gate, và `call_source` vẫn là `mcp` (§5). MCP SDK cấp ứng dụng Streamable HTTP,
+lớp kiểm bearer và metadata tài nguyên được bảo vệ (RFC 9728, `/.well-known/oauth-protected-resource`);
+`mcp_http.py` cấp ngữ cảnh TLS, bộ kiểm token và lớp gác quanh chúng.
+
+**Khởi động đóng.** `--http` đòi **cả sáu**: `--tls-cert` và `--tls-key` (chứng chỉ máy chủ), `--client-ca`
+(CA ký chứng chỉ thiết bị — mTLS), `--issuer` (URL https của máy chủ cấp quyền), `--audience` (URL https
+của chính MCP server, là `aud` của mọi token; đường dẫn của nó là đường dẫn của endpoint, mặc định `/mcp`),
+`--jwks` (khoá công khai ký token của issuer). Thiếu bất kỳ cái nào, hoặc tệp không đọc được (chứng chỉ
+không khớp khoá, CA rỗng, JWKS không có khoá ký), thì **thoát mã 1 với lỗi ba phần, trước khi dựng phiên và trước
+khi mở bất kỳ socket nào**. Bind vào địa chỉ không phải loopback (`--host`) không đòi thêm gì — vì cấu hình
+đủ đã là điều kiện cho mọi địa chỉ. Mặc định nghe `127.0.0.1`, cổng 8443 (`--port 0` chọn cổng trống).
+`--http` không đi cùng `--ui` (mã 2: trang chung phiên và trả lời câu hỏi `ask` như người trên thiết bị),
+và các cờ mạng không có `--http` bị từ chối (mã 1), không bị lờ đi. `--required-scope` (mặc định `neuroedge:call`)
+là cờ duy nhất có mặc định.
+
+**Lớp 1 — mTLS, TLS 1.3 trở lên (NFR-SEC-04).** Chứng chỉ client **bắt buộc** và phải do `--client-ca` ký;
+client không có (hoặc do CA lạ ký, hoặc chỉ nói TLS 1.2) không qua được bắt tay, nên không có byte HTTP nào
+tới ứng dụng. Việc này xảy ra ở tầng TLS, trước mọi mã của ứng dụng nên **không có sự kiện vết ghi**; nhật ký
+của uvicorn trên stderr là dấu vết duy nhất.
+
+**Lớp 2 — một token bearer cho mỗi thiết bị.** Máy chủ là *resource server* OAuth 2.1; việc cấp token là của
+`--issuer` (ngoài phạm vi), và máy chủ chỉ kiểm, không gọi mạng nào để kiểm. Token là JWT (RFC 9068); mọi
+điều kiện sau phải đúng, nếu không thì **401** (kèm `WWW-Authenticate: Bearer`, trỏ tới metadata tài nguyên) và
+không gì được chuyển tiếp tới MCP:
+
+| Kiểm | Chi tiết |
+|:---|:---|
+| Chữ ký | Chỉ thuật toán bất đối xứng (`RS*`, `PS*`, `ES*`, `EdDSA`) với khoá của `--jwks`, chọn theo `kid` (không `kid` thì chỉ khi có đúng một khoá). `none` và `HS*` không bao giờ được nhận. JWKS có khoá riêng (`d`), khoá đối xứng (`oct`) hoặc không có khoá ký thì **không khởi động**: một resource server giữ được khoá ký là một resource server tự làm giả được token của mình |
+| `iss`, `aud`, `exp`, `sub` | Đều bắt buộc. `iss` bằng `--issuer`; `aud` chứa `--audience` (RFC 8707); `exp` chưa qua, không dung sai; `sub` là mã thiết bị |
+| Ràng buộc chứng chỉ (RFC 8705) | `cnf.x5t#S256` bắt buộc và phải bằng SHA-256 của chứng chỉ client đang kết nối. Token cấp cho thiết bị A trình bằng chứng chỉ của B là 401; token không ràng buộc cũng là 401. Cả hai cùng bị đánh cắp mới dùng được |
+| Phạm vi | Token mang `--required-scope` trong `scope` (chuỗi cách nhau bằng khoảng trắng) hoặc `scp`; thiếu thì **403** (`insufficient_scope`) |
+
+Phiên MCP gắn với người cấp (issuer, `client_id`, `sub`) của token tạo ra nó: thiết bị khác, dù đã xác thực đủ,
+không dùng lại được phiên (404; `test_a_session_belongs_to_the_device_that_opened_it`). Mọi 401/403 ghi `mcp_auth_refused` (§7) — chỉ `reason` là chữ cố định, không bao giờ có
+token.
+
+**Một đường tới gate.** Một lời gọi đã qua hai lớp là một `tools/call` như của stdio: `ToolCall` có
+`source = "mcp"`, schema, `c.do()`, gate, token, HAL; kết quả `BLOCK` vẫn là kết quả, không phải lỗi giao thức (§4).
+Lặp một lời gọi bị chặn không đổi được phán quyết: gate tất định, mỗi lần là một `BLOCK` và một chuỗi sự kiện
+vết ghi (`tests/test_mcp_http.py`, `TODOS.md` #29; `docs/spec/threat_model.md` §2b). Lời gọi chạy lần lượt (`build_server`), như stdio.
+
+**Chưa có, nói rõ.** Không có danh sách thu hồi: token chết khi hết hạn (nên cấp ngắn hạn) hoặc khi issuer
+đổi khoá — `--jwks` đọc **một lần lúc khởi động**, đổi khoá thì khởi động lại; chứng chỉ client bị thu hồi chỉ
+hết hiệu lực khi đổi `--client-ca` (không kiểm CRL/OCSP). Token chỉ kiểm lúc **nhận yêu cầu**, nên một luồng
+SSE đang mở sống tiếp tới khi đóng dù token trong đó đã hết hạn. Không giới hạn tốc độ ở tầng ứng dụng.
+Metadata tài nguyên được bảo vệ phục vụ không cần token (RFC 9728 đòi vậy) — nhưng chỉ sau mTLS.
+Chưa có API Python công khai cho cửa mạng (`serve_mcp` vẫn chỉ stdio); chưa có cầu MCP cho MCU (TSK-P2-05, I14).
+Chưa kiểm trên hai máy thật: test chạy trong một tiến trình trên 127.0.0.1 với CA tạm.
 
 ## 9. Tuân thủ
 
@@ -284,10 +340,14 @@ như corpus gate: mỗi tệp có một mục, mỗi mục có một tệp (TSK-
 
 - **Tệp ca** nêu đầu vào: `agent` (một thư mục của `fixtures/agents/`), `call`
   (`name`, `arguments`, `source` — nguồn do runtime gán như một kết nối), `facts` (ghi đè
-  `[sim.facts]`) và `sensors` (số đọc giả lập trước lời gọi).
+  `[sim.facts]`), `sensors` (số đọc giả lập trước lời gọi) và `board` (id một bo mạch của `boards/`, mặc
+  định là bo tham chiếu của target — vd. `sim-rpi5` cho agent cần PWM hoặc `motion.*`, RFC-0010, RFC-0011).
 - **`expected_results.yaml`** nêu đáp án theo từng tệp: `status`, các trường của §4 (`reason`,
   `failed_criterion`, `on_block`, `escalated_to` phải khớp đúng; `problems` so chuỗi con;
-  `confirmation`, `fallback` có/không phải khớp) và `pins` — mọi lệnh chân, đúng thứ tự.
+  `confirmation`, `fallback` có/không phải khớp), `pins` — mọi lệnh chân, đúng thứ tự (một
+  lệnh `pwm` ghi thêm `frequency_hz` và `duty` — `duty` là giá trị HAL đã lượng tử hoá, RFC-0010 §9.15) —
+  và `motion` — mọi lệnh chuyển động và lệnh về trạng thái an toàn của kênh, đúng thứ tự (`command:
+  {channel, kind, speed|target, run}`, `safe: {channel, state, cause}`).
 - **`valid/`** là lời gọi khớp `inputSchema` tool khai ra (sau phép ép chuỗi của §2): gate quyết
   định, `ALLOW` hoặc `BLOCK`. **`invalid/`** là lời gọi không khớp: tool lạ, tham số lạ, sai kiểu,
   thiếu tham số bắt buộc, tự khai `call_source` ⇒ `REJECTED`; giá trị ngoài giới hạn tham số

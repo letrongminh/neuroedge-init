@@ -25,6 +25,13 @@ the very gate it was recorded with, like the device check), `neuroedge replay`
 on a user's own trace *warns* (the gate may have been tightened on purpose) and
 keeps recomputing verdicts; a trace without the field replays exactly as before.
 
+A trace with vision evidence (TSK-V1b-08, RFC-0012 §3d) records, before each evaluation, one
+`vision_fact` event per vision fact: the labels and frame identities of the window. Replay
+**recomputes** those facts from the recorded labels (`perception.vision.reading_from_event`) —
+no model, no frame — and feeds the result to the engine in place of the recorded gate fact; an
+event that does not add up (a value its own labels do not give, a window not `min_frames` long,
+an age that is not what the read marks say) replays as unavailable and is warned about.
+
 What System 2 said (`tts_stream_start`) is not replayed and cannot be asserted
 on: it is not deterministic (L3). `ReplayResult.replies` says so.
 """
@@ -36,7 +43,7 @@ import copy
 import json
 import tomllib
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -45,11 +52,20 @@ from ..engine.compiler import AgentManifest, load_actions, load_agent_manifest, 
 from ..engine.gate import ActionContractEngine, GateResult
 from ..engine.gate_resolver import GateRegistry, ResolvedGate
 from ..engine.trace_sink import EventLog
-from ..engine.verdict import DEGRADED_REASONS, Fact, Unavailable
-from ..errors import AgentManifestError, ReplayError
+from ..engine.verdict import DEGRADED_REASONS, DIGITAL_IN_SOURCE, Fact, Unavailable
+from ..errors import AgentManifestError, EnvelopeRefusedError, ReplayError
+from ..hal import ensure_envelope
 from ..hal.board import load_board_by_id
 from ..hal.sim import reading_value
 from ..paths import fixtures_dir
+from ..perception.vision import EVENT_TYPE as VISION_EVENT
+from ..perception.vision import (
+    FactReading,
+    facts_for_tree,
+    reading_from_event,
+    rebased,
+    to_event,
+)
 from ..trace import load_trace, validate_trace
 from .recorder import DEFAULT_ANONYMIZE, anonymise
 
@@ -71,6 +87,15 @@ class RecordedStep:
     # found consistent; `mark_problems` says, per criterion, why a recorded reading was refused.
     marks: dict[str, tuple[int, int, int]] = field(default_factory=dict)
     mark_problems: dict[str, str] = field(default_factory=dict)
+    # RFC-0007 §3d: the trace offset in ms of the verdict, and of the command that followed it
+    # (it reached the pin, or the envelope refused it). The replayed envelope decides at the
+    # command's instant on a clock of its own, never the wall clock. `refusal` is the
+    # `envelope_refused` data recorded for the step, if the envelope refused the command.
+    at_ms: int = 0
+    command_ms: int | None = None
+    refusal: dict[str, Any] | None = None
+    # TSK-V1b-08: the `vision_fact` events judged for this evaluation, as (offset_ms, data).
+    vision: tuple[tuple[int, dict[str, Any]], ...] = ()
 
     @property
     def gate_name(self) -> str:
@@ -129,10 +154,30 @@ def recorded_steps(trace: Mapping[str, Any]) -> list[RecordedStep]:
     gate: str | None = None
     begin_offset = 0
     raw_facts: Mapping[str, Any] | None = None
+    open_step = False  # the commands that follow a verdict belong to its step
+    vision: list[tuple[int, dict[str, Any]]] = []
     for event in trace.get("events", []):
         kind, data = event.get("type"), event.get("data", {})
-        if kind == "action_requested":
+        if kind in ("action_requested", "gate_evaluation_begin"):
+            open_step = False
+        if kind == VISION_EVENT:
+            vision.append((event.get("offset_ms", 0), dict(data)))
+        elif kind == "action_requested":
             request = data
+        elif (
+            open_step
+            and steps
+            and steps[-1].command_ms is None
+            and (
+                kind in ("envelope_refused", "motion_command")
+                or (kind == "actuator_command" and "cause" not in data)
+            )
+        ):
+            steps[-1] = replace(
+                steps[-1],
+                command_ms=event.get("offset_ms", 0),
+                refusal=dict(data) if kind == "envelope_refused" else None,
+            )
         elif kind == "gate_evaluation_begin":
             gate, raw_facts = data.get("gate"), None
             begin_offset = event.get("offset_ms", 0)
@@ -180,9 +225,12 @@ def recorded_steps(trace: Mapping[str, Any]) -> list[RecordedStep]:
                     arguments=dict((request or {}).get("arguments", {})),
                     marks=marks,
                     mark_problems=problems,
+                    at_ms=event.get("offset_ms", begin_offset),
+                    vision=tuple(vision),
                 )
             )
-            request, gate, raw_facts = None, None, None
+            request, gate, raw_facts, vision = None, None, None, []
+            open_step = True
     return steps
 
 
@@ -288,6 +336,36 @@ def _fact_mark_warning(problem: FactMarkProblem) -> str:
     )
 
 
+@dataclass(frozen=True)
+class VisionProblem:
+    """A recorded `vision_fact` whose claims its own labels do not support (TSK-V1b-08)."""
+
+    offset_ms: int
+    fact: str
+    why: str
+
+
+def vision_problems(trace: Mapping[str, Any]) -> list[VisionProblem]:
+    """Every way a recorded `vision_fact` disagrees with the labels and frames it records."""
+    found: list[VisionProblem] = []
+    for event in trace.get("events", []):
+        if event.get("type") != VISION_EVENT:
+            continue
+        reading = reading_from_event(event.get("offset_ms", 0), event.get("data", {}))
+        found += [
+            VisionProblem(event.get("offset_ms", 0), reading.spec.name, why)
+            for why in reading.problems
+        ]
+    return found
+
+
+def _vision_warning(problem: VisionProblem) -> str:
+    return (
+        f"vision fact {problem.fact!r} at {problem.offset_ms} ms: {problem.why}; the trace was "
+        "altered or is incomplete, so replay treats the fact as unavailable"
+    )
+
+
 class _Unreachable:
     """The fact source of a degraded step: answers every criterion the same way."""
 
@@ -343,6 +421,36 @@ class _ReplayEngine(ActionContractEngine):
         age = mark[2]
         return eval_offset_ms - age, eval_offset_ms, age
 
+    def _vision_facts(
+        self, key: str, step: RecordedStep, facts: dict[str, Fact]
+    ) -> dict[str, Fact]:
+        """
+        The vision facts of `step`, recomputed from the labels its `vision_fact` events recorded
+        and put in place of the recorded gate facts of the same criteria. No model is asked.
+        A fact the labels cannot support (or the gate may not use alone) is absent, so the gate
+        blocks it `criterion_unavailable`; the replayed trace carries the event again, on its
+        own timeline.
+        """
+        tree = self.tree(key)
+        if tree is None:
+            return facts
+        readings: dict[str, FactReading] = {}
+        for offset, data in step.vision:
+            reading = reading_from_event(offset, data)
+            if reading.spec.name != "?":
+                readings[reading.spec.name] = reading
+        recomputed, judged = facts_for_tree(readings, tree)
+        facts = {name: fact for name, fact in facts.items() if name not in judged}
+        for name, reading in judged.items():
+            now = self.events.elapsed_ms()
+            self.events.emit(VISION_EVENT, to_event(rebased(reading, now)), offset_ms=now)
+            fact = recomputed.get(name)
+            if fact is not None:
+                facts[name] = fact
+                if reading.age_ms is not None:
+                    self._marks[name] = (0, 0, reading.age_ms)
+        return facts
+
     async def evaluate(
         self, key, context=None, *, state=None, arguments=None, confirmed=False
     ) -> GateResult:
@@ -355,12 +463,17 @@ class _ReplayEngine(ActionContractEngine):
             facts = dict(step.facts)
             if self.network == "offline":
                 # Only session context survives a network loss; model answers do not.
-                facts = {k: f for k, f in facts.items() if f.source == "context"}
+                # A digital.in level is the device's own read, not a model's answer.
+                facts = {
+                    k: f for k, f in facts.items() if f.source in ("context", DIGITAL_IN_SOURCE)
+                }
                 source = _Unreachable("offline")
             elif step.degraded:
                 source = _Unreachable(_DEGRADED_AS[step.degraded])
         self.facts_source = source
-        self._marks = {} if step is None else step.marks
+        self._marks = {} if step is None else dict(step.marks)
+        if step is not None and step.vision:
+            facts = self._vision_facts(key, step, facts)
         return await super().evaluate(
             key, facts, state=state, arguments=arguments, confirmed=confirmed
         )
@@ -505,6 +618,20 @@ def make_hal(target: str, board_id: str | None, events: EventLog):
     return LinuxHAL(board, events=events, replay=True)
 
 
+class ReplayClock:
+    """
+    The clock the replayed safety envelope decides on (RFC-0007 §3d): the recorded instant of
+    the command being replayed, in ms of trace time. The wall clock never enters a replay, so a
+    command the envelope refused at 40 s of the recording is refused at 40 s of the replay.
+    """
+
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
 class TracePlayer:
     def __init__(
         self,
@@ -571,7 +698,14 @@ class TracePlayer:
         hal = self.hal if self.hal is not None else make_hal(self.target, self.board_id, events)
         if self.hal is not None and hasattr(hal, "events"):
             hal.events = events
+        # Pins are bounded by the board's envelope on every target, on the recorded timeline.
+        envelope_clock = ReplayClock()
+        ensure_envelope(hal, envelope_clock, virtual=True)
+        _seed_envelope(hal, self.trace)
         _script_sensors(hal, self.trace)
+        _script_i2c(hal, self.trace)
+        _script_digital_in(hal, self.trace)
+        _script_pin_state(hal, self.trace)
         warnings = _sensor_rules_changed(self.trace, self.manifest, events)
         warnings += [_gate_digest_warning(change) for change in changed]
         problems = fact_mark_problems(self.trace)
@@ -581,15 +715,49 @@ class TracePlayer:
                 {"gate": problem.gate, "criterion": problem.criterion, "why": problem.why},
             )
         warnings += [_fact_mark_warning(problem) for problem in problems]
+        if "vision_models" in self.trace["metadata"]:  # the models the recorded session used
+            events.metadata["vision_models"] = copy.deepcopy(
+                self.trace["metadata"]["vision_models"]
+            )
+        vision = vision_problems(self.trace)
+        for found in vision:
+            events.emit(
+                "vision_fact_problem",
+                {"offset_ms": found.offset_ms, "fact": found.fact, "why": found.why},
+            )
+        warnings += [_vision_warning(found) for found in vision]
         engine = _ReplayEngine(gates, steps, network=self.network, events=events)
         conversation = Conversation(engine=engine, hal=hal)
 
         results: list[ActionResult] = []
+        settle_motion = getattr(hal, "settle_motion", None)
+        recorded_events = self.trace.get("events", [])
         try:
             while engine.cursor < len(steps):
                 step = steps[engine.cursor]
                 name = self._action_for(step, actions, gates)
-                results.append(await conversation.do(name, **step.arguments))
+                envelope_clock.now = float(
+                    step.command_ms if step.command_ms is not None else step.at_ms
+                )
+                settle_motion = getattr(hal, "settle_motion", None)
+                if settle_motion is not None:  # a lease that ran out by now has gone safe
+                    settle_motion()
+                refused: EnvelopeRefusedError | None = None
+                try:
+                    results.append(await conversation.do(name, **step.arguments))
+                except EnvelopeRefusedError as refusal:
+                    refused = refusal
+                _check_refusal(step, refused, engine.divergences)
+            # The recording ran on after its last command: a pin whose on-time ran out by then
+            # went off in it, and goes off in the replay (its `cause` is part of the decisions).
+            envelope = getattr(hal, "envelope", None)
+            if envelope is not None:
+                envelope_clock.now = max(
+                    [envelope_clock.now, *(float(e.get("offset_ms", 0)) for e in recorded_events)]
+                )
+                envelope.settle()
+            if settle_motion is not None:
+                settle_motion()
         finally:
             # A divergence or a contract error must not leave a real line driven (linux).
             close = getattr(hal, "close", None)
@@ -606,6 +774,55 @@ class TracePlayer:
             slow=self.slow,
             warnings=warnings,
         )
+
+
+def _seed_envelope(hal: Any, trace: Mapping[str, Any]) -> None:
+    """
+    Start the replayed envelope from what the session started with: the `envelope_restored`
+    event (on-time carried over from a previous run, RFC-0007 §3d) — the machine's state files
+    never enter a replay. A trace without the event starts empty, as every canonical trace does.
+    """
+    envelope = getattr(hal, "envelope", None)
+    event = next((e for e in trace.get("events", []) if e.get("type") == "envelope_restored"), None)
+    if envelope is None or event is None:
+        return
+    data = event.get("data", {})
+    boot = data.get("boot_ms")
+    pins = data.get("pins")
+    if isinstance(boot, bool) or not isinstance(boot, int | float) or not isinstance(pins, Mapping):
+        boot, pins = 0, dict.fromkeys(envelope.names)  # unusable: nothing is allowed
+    envelope.seed(pins, float(boot))
+
+
+def _check_refusal(
+    step: RecordedStep, refused: EnvelopeRefusedError | None, divergences: list[Divergence]
+) -> None:
+    """
+    A recorded `envelope_refused` must replay as the same refusal, and a command the envelope
+    let through must not be refused now: either difference is a divergence (RFC-0007 §3d). The
+    refusal is compared by pin, operation and reason — the numbers follow from them.
+    """
+    recorded = step.refusal
+    if recorded is None and refused is None:
+        return
+    key = ("pin", "operation", "reason")
+    if (
+        recorded is not None
+        and refused is not None
+        and all(recorded.get(k) == refused.event.get(k) for k in key)
+    ):
+        return
+    divergences.append(
+        Divergence(
+            step.index,
+            None if recorded is None else _refusal_label(recorded),
+            "no refusal" if refused is None else _refusal_label(refused.event),
+        )
+    )
+
+
+def _refusal_label(event: Mapping[str, Any]) -> str:
+    return f"envelope_refused {event.get('pin')} {event.get('operation')}: {event.get('reason')}"
 
 
 def _sensor_rules_changed(
@@ -656,6 +873,80 @@ def _script_sensors(hal: Any, trace: Mapping[str, Any]) -> None:
         )
     for sensor, values in readings.items():
         script(sensor, values, units.get(sensor))
+
+
+def _script_i2c(hal: Any, trace: Mapping[str, Any]) -> None:
+    """
+    Feed the recorded `i2c_read`s back, in order, per bus, device and register (RFC-0007
+    §3b): a read that failed is fed back as a failure with its recorded reason. Replay never
+    reaches a bus.
+    """
+    from ..hal.i2c_bus import ReadFault
+
+    reads: dict[tuple[str, str, int | None], list[Any]] = {}
+    for event in trace.get("events", []):
+        data = event.get("data", {})
+        if event.get("type") != "i2c_read":
+            continue
+        outcome = data["value"] if "value" in data else ReadFault(str(data.get("reason", "")))
+        reads.setdefault((data["bus"], data["device"], data.get("register")), []).append(outcome)
+    script = getattr(hal, "script_i2c", None)
+    if reads and script is None:
+        raise ReplayError(
+            where=f"replay on {getattr(hal, 'target', '?')}",
+            why="the trace reads I2C, and this HAL cannot be fed recorded readings",
+            how="replay on sim or linux",
+        )
+    for (bus, device, register), values in reads.items():
+        # The width only bounds what is scripted; the read checks the width it asks for.
+        script(bus, device, register, values, width=1 if register is None else 2)
+
+
+def _script_digital_in(hal: Any, trace: Mapping[str, Any]) -> None:
+    """
+    Feed the recorded `digital_in` levels back, in order (RFC-0007 §3a), to the reads an
+    @action body makes — a read that failed (`reason`, no `value`) as a failed read again.
+    Reads made to compute a gate fact (`use: fact`) are not replayed: what they gave is
+    already in `gate_facts`.
+    """
+    levels: dict[str, list[bool | None]] = {}
+    for event in trace.get("events", []):
+        data = event.get("data", {})
+        if event.get("type") == "digital_in" and "use" not in data:
+            levels.setdefault(data["pin"], []).append(data.get("value"))
+    script = getattr(hal, "script_digital_in", None)
+    if levels and script is None:
+        raise ReplayError(
+            where=f"replay on {getattr(hal, 'target', '?')}",
+            why="the trace reads input lines, and this HAL cannot be fed recorded levels",
+            how="replay on sim or linux, or wait for digital.in on this target",
+        )
+    for pin, values in levels.items():
+        script(pin, values)
+
+
+def _script_pin_state(hal: Any, trace: Mapping[str, Any]) -> None:
+    """
+    Feed the recorded `pin_state` reads back, in order (RFC-0010 §3b), to the `state()` calls an
+    @action body makes — each with the `source` it was recorded with, a read that failed
+    (`reason`, no `source`) as a failed read again. Reads made to compute a gate fact
+    (`use: fact`) are not replayed: what they gave is already in `gate_facts`.
+    """
+    states: dict[str, list[dict[str, Any] | None]] = {}
+    for event in trace.get("events", []):
+        data = event.get("data", {})
+        if event.get("type") == "pin_state" and "use" not in data:
+            entry = None if "source" not in data else dict(data)
+            states.setdefault(data["pin"], []).append(entry)
+    script = getattr(hal, "script_pin_state", None)
+    if states and script is None:
+        raise ReplayError(
+            where=f"replay on {getattr(hal, 'target', '?')}",
+            why="the trace reads the state of PWM channels, and this HAL cannot be fed recorded states",
+            how="replay on sim or linux",
+        )
+    for pin, entries in states.items():
+        script(pin, entries)
 
 
 def replay_sync(trace, **kwargs) -> ReplayResult:

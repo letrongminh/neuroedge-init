@@ -51,6 +51,7 @@ for asset in schemas/trace.v1.json boards/sim-default.toml gates/unlock_door@1.2
   fixtures/traces/happy-path.json fixtures/agents/villa-concierge/agent.toml \
   fixtures/agents/factory-monitor/agent.toml \
   fixtures/tool_calls/expected_results.yaml \
+  fixtures/vision/expected_results.yaml fixtures/vision/golden/stranger-at-door.json \
   pipewire/neuroedge-echo-cancel.conf \
   targets/esp32s3/main/main.c targets/esp32s3/version.txt \
   targets/esp32s3/components/ne_gate/src/ne_walker.c; do

@@ -82,7 +82,7 @@ def test_gate_resolve_missing_file_exits_one(invoke, tmp_path):
 def test_gate_lint_passes_on_the_sample_corpus(invoke):
     result = invoke("gate", "lint")
     assert result.exit_code == 0, result.output
-    assert "3 gate(s) resolved" in result.output
+    assert "6 gate(s) resolved" in result.output
 
 
 def test_gate_lint_fails_on_the_invalid_corpus(invoke, gate_fixtures_dir):
@@ -191,7 +191,7 @@ def test_verify_replays_every_canonical_trace_and_states_what_it_did_not_check(i
     result = invoke("verify")
     assert result.exit_code == 0, result.output
     # The panel states what was counted, so "passed" over nothing cannot hide.
-    assert "all 3 gate(s) resolve" in result.output
+    assert "all 6 gate(s) resolve" in result.output
     assert "all 3 canonical trace(s) validate" in result.output
     assert "3 replay(s) on sim" in result.output
     assert "give the recorded result" in result.output  # the tool-call corpus (§9)
@@ -199,6 +199,39 @@ def test_verify_replays_every_canonical_trace_and_states_what_it_did_not_check(i
         assert name in result.output
     # Timing is not compared yet; the command must not imply otherwise.
     assert "not timing" in result.output
+
+
+def test_verify_replays_every_reference_board_of_a_target_and_reports_each(invoke):
+    """RFC-0013 §3f: a pass on the default board proves nothing about the other reference board."""
+    result = invoke("verify")
+    assert result.exit_code == 0, result.output
+    assert "3 replay(s) on sim/sim-default, 3 replay(s) on sim/sim-rpi5" in " ".join(
+        result.output.replace("│", " ").split()
+    )
+    assert "sim/sim-default" in result.output and "sim/sim-rpi5" in result.output
+
+
+def test_verify_fails_when_the_default_board_cannot_replay_a_canonical_trace(invoke, monkeypatch):
+    """The default board replays all three traces; a primitive it lacks is a failure, not a skip."""
+    monkeypatch.setattr("neuroedge.cli.main._trace_primitives", lambda trace: ["motion"])
+    result = invoke("verify")
+    combined = " ".join((result.output + result.stderr).split())
+    assert result.exit_code == 1, combined
+    assert "the default board of sim lacks ['motion']" in combined
+    assert "Passed" not in result.output
+
+
+def test_verify_fails_when_a_reference_board_has_no_trace_to_replay(invoke, monkeypatch):
+    """Zero replays on one board is NE4004 even when the other board replayed everything."""
+    monkeypatch.setattr("neuroedge.cli.main._trace_primitives", lambda trace: ["motion"])
+    monkeypatch.setattr("neuroedge.cli.main.REFERENCE_BOARD", {"sim": "sim-rpi5"})
+    monkeypatch.setattr("neuroedge.cli.main.REFERENCE_BOARDS", {"sim": ("sim-rpi5", "sim-default")})
+    result = invoke("verify")
+    combined = " ".join((result.output + result.stderr).split())
+    assert result.exit_code == 1, combined
+    assert "NE4004" in combined
+    assert "0 replays compared on sim/sim-default" in combined
+    assert "Passed" not in result.output
 
 
 def test_verify_refuses_a_canonical_trace_decided_by_another_gate(

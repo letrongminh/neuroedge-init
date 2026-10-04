@@ -18,13 +18,35 @@ A pulse sets the line active and returns immediately; a timer makes it
 inactive after the duration. `PendingCommand.cancel()` drops the line at once
 (RB-3, barge-in). `close()` releases every line inactive.
 
+`digital.in` (RFC-0007 §3a) reads the board's input pins through the same character
+device: each line is found by name like an output, requested as an input — never driven,
+no bias or edge detection set — and held until `close()`. An agent's session requests its
+lines when the HAL is built; a line first read later is requested then. A line that cannot
+be found, requested or read is a failed read (`PerceptionUnavailableError`), which the gate
+turns into BLOCK `criterion_unavailable`: a level is never invented.
+
 `sensor.read` reads hwmon and IIO sysfs, each board sensor found by name
 (`hal/sysfs.py`); `display` checks and records a frame exactly as `sim` does, then
 hands it to the backend chosen for the machine — `memory` or `/dev/fbN`
 (`hal/framebuffer.py`) — never to one guessed. Both open their files per call and
 close them at once, so neither holds anything `close()` would have to release
-(TSK-S5-09). Where no argument is given, the choice comes from the environment
-of the machine: `NEUROEDGE_LINUX_SENSORS` and `NEUROEDGE_LINUX_DISPLAY`.
+(TSK-S5-09). `analog.in` (TSK-I2a-04) reads the same sysfs, each declared channel found
+the same way — ``adc0=hwmon:ads7828/in0`` in `NEUROEDGE_LINUX_ANALOG`, or a label — converted
+to the channel's unit (the kernel's millivolts to volts) and refused, as a read failure,
+outside the channel's `[min, max]` (`hal/analog.py`). Where no argument is given, the choice comes from the environment
+of the machine: `NEUROEDGE_LINUX_SENSORS`, `NEUROEDGE_LINUX_ANALOG` and
+`NEUROEDGE_LINUX_DISPLAY`.
+
+`i2c_read` (RFC-0007 §3b) reads the devices the board allow-lists, through `/dev/i2c-N`
+(`hal/i2c_bus.py`); the node of each board bus is the machine's, `NEUROEDGE_LINUX_I2C`
+(`i2c1=/dev/i2c-1`), never guessed. It carries no data-write path, and replay feeds it the
+recorded readings without opening a node.
+
+`vision.in` (TSK-V1b-01) reads a V4L2 capture node (`hal/v4l2.py`, pure Python, no dependency)
+in a mode the board declares. The node is the machine's choice and never guessed — a Pi has a
+dozen `/dev/video*` nodes and most are not cameras: `NEUROEDGE_LINUX_CAMERA=/dev/video0` (or
+`camera=`). A camera that is missing, that will not run the declared mode, or that stops
+delivering is a three-part error / `CameraUnavailable`: no frame is ever invented.
 
 `audio.in` / `audio.out` (TSK-S5-08, Q-22) have two explicit backends, never
 guessed: the **file** one a `--voice-file` session and replay use (a WAV read at
@@ -43,16 +65,18 @@ The machine's choice comes from `NEUROEDGE_LINUX_AUDIO` (`file` | `live`);
 
 from __future__ import annotations
 
+import contextlib
 import glob
 import os
 import threading
 from collections import deque
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
-from ..errors import BoardCapabilityError
+from ..errors import BoardCapabilityError, EnvelopeRefusedError, PerceptionUnavailableError
 from . import Authorizer, HardwareAbstractionLayer, _require_signature
+from .analog import analog_data, check_reading, unavailable
 from .audio import (
     Speaker,
     WavSource,
@@ -68,23 +92,43 @@ from .audio_live import (
     _LiveAudio,
 )
 from .board import BoardProfile, load_board_by_id
+from .envelope import Reservation, SafetyEnvelope
 from .framebuffer import DisplayBackend, display_backend
-from .sim import EventSink, Frame, PendingCommand, _NullSink, make_frame, reading_data
+from .i2c_bus import I2CReader, ReadFault, ScriptedI2C, open_mapped, parse_buses
+from .motion_core import Channel, SimActuator
+from .motion_pwm import MOTION_ENV, PwmActuator, parse_motion_sources
+from .pwm import PWM_ENV, SysfsPwm, parse_channels, pwm_limits
+from .sim import (
+    EventSink,
+    Frame,
+    PendingCommand,
+    _i2c_value,
+    _NullSink,
+    make_frame,
+    reading_data,
+)
+from .supervisor import DEADLINE_MARGIN_MS, SupervisorClient
 from .sysfs import Reading, SysfsSensors, parse_sources
+from .v4l2 import V4L2Camera, probe
+from .vision import Camera, CameraUnavailable, Mode, modes_of, monotonic_ms
 
 __all__ = [
+    "ANALOG_ENV",
     "AUDIO_BACKENDS",
     "AUDIO_ENV",
     "AUDIO_IN_ENV",
     "AUDIO_IN_NODE",
     "AUDIO_OUT_ENV",
     "AUDIO_OUT_NODE",
+    "CAMERA_ENV",
     "DISPLAY_ENV",
+    "I2C_ENV",
     "LinuxHAL",
     "LiveAudioIn",
     "LiveAudioOut",
     "LiveSpeaker",
     "MISSING_ON_LINUX",
+    "PWM_ENV",
     "SENSORS_ENV",
     "TypedLinuxHAL",
     "_LiveAudio",
@@ -100,11 +144,17 @@ SETUP_HINT = (
 )
 # Per-machine wiring, when the caller passes none (a session, a replay).
 SENSORS_ENV = "NEUROEDGE_LINUX_SENSORS"  # temperature=hwmon:lm75/temp1;…
+ANALOG_ENV = "NEUROEDGE_LINUX_ANALOG"  # adc0=hwmon:ads7828/in0;…
 DISPLAY_ENV = "NEUROEDGE_LINUX_DISPLAY"  # memory | /dev/fb0
+I2C_ENV = "NEUROEDGE_LINUX_I2C"  # i2c1=/dev/i2c-1;…
+CAMERA_ENV = "NEUROEDGE_LINUX_CAMERA"  # /dev/video0
 AUDIO_ENV = "NEUROEDGE_LINUX_AUDIO"  # file | live
 AUDIO_IN_ENV = "NEUROEDGE_LINUX_AUDIO_IN"  # a PipeWire node (PortAudio name)
 AUDIO_OUT_ENV = "NEUROEDGE_LINUX_AUDIO_OUT"
 AUDIO_BACKENDS = ("file", "live")
+SUPERVISE_ENV = (
+    "NEUROEDGE_LINUX_SUPERVISE"  # "0" opts out of the supervisor process (tests, debugging)
+)
 # The nodes `libpipewire-module-echo-cancel` creates (Q-22, §6.1 of
 # docs/spec/simulation_coverage.md): capture reads the echo-cancelled `source`,
 # playback writes the reference into `sink`. Named on purpose: the default device
@@ -144,11 +194,15 @@ class LinuxHAL(HardwareAbstractionLayer):
         *,
         events: EventSink | None = None,
         authorize: Authorizer = _require_signature,
+        envelope: SafetyEnvelope | None = None,
         line_names: Mapping[str, str] | None = None,
         chip_glob: str | None = None,
         gpiod: Any = None,
         consumer: str = "neuroedge",
         sensor_sources: Mapping[str, str] | None = None,
+        analog_sources: Mapping[str, str] | None = None,
+        i2c_nodes: Mapping[str, str] | None = None,
+        pwm_channels: Mapping[str, str] | None = None,
         sysfs_root: str | Path | None = None,
         display: str | DisplayBackend | None = None,
         audio: str | None = None,
@@ -158,6 +212,11 @@ class LinuxHAL(HardwareAbstractionLayer):
         needs: Mapping[str, Any] | None = None,
         units: Mapping[str, str] | None = None,
         replay: bool = False,
+        supervise: bool | None = None,
+        supervisor_options: Mapping[str, Any] | None = None,
+        camera: str | None = None,
+        motion: Iterable[str] = (),
+        motion_sources: Mapping[str, str] | None = None,
     ) -> None:
         board = board if board is not None else load_board_by_id("linux-rpi5")
         if board.target != "linux":
@@ -166,10 +225,13 @@ class LinuxHAL(HardwareAbstractionLayer):
                 why=f"board {board.id!r} targets {board.target!r}, not 'linux'",
                 how="use a linux board such as linux-rpi5, or the HAL for that target",
             )
-        super().__init__(target="linux", board=board, authorize=authorize)
+        super().__init__(target="linux", board=board, authorize=authorize, envelope=envelope)
         self.events: EventSink = events if events is not None else _NullSink()
         self._gpiod = gpiod if gpiod is not None else _import_gpiod()
         self._timers: dict[str, threading.Timer] = {}
+        # The pins whose timer is a pulse the agent asked for, as opposed to the envelope's cap
+        # on an `on` that had no end: `settle()` waits for the first kind only.
+        self._pulses: set[str] = set()
         self._lock = threading.Lock()
         # sensor.read and display are settled before any line is requested (Q-16):
         # `needs` = preflight()'s arguments, what the session's agent will read and draw.
@@ -186,6 +248,63 @@ class LinuxHAL(HardwareAbstractionLayer):
             # find some other channel labelled after it.
             board.require_sensor(sensor, called_from=sources_where)
         self.sensors = SysfsSensors(sysfs_root, sensor_sources)
+        # `analog.in` channels are found the same way (a source, or a label), under their
+        # own names: a channel is not a sensor, and the two never share a mapping.
+        analog_where = "LinuxHAL(analog_sources=...)"
+        if analog_sources is None and os.environ.get(ANALOG_ENV) and not replay:
+            analog_sources = parse_sources(os.environ[ANALOG_ENV], ANALOG_ENV)
+            analog_where = ANALOG_ENV
+        for channel in analog_sources or {}:
+            board.require_analog(channel, called_from=analog_where)
+        self.analog = SysfsSensors(sysfs_root, analog_sources)
+        # Which /dev/i2c-N each board bus is: the machine's wiring, like the sensors'.
+        # Replay never opens a node, so it ignores the environment altogether.
+        i2c_where = "LinuxHAL(i2c_nodes=...)"
+        if i2c_nodes is None and os.environ.get(I2C_ENV) and not replay:
+            i2c_nodes = parse_buses(os.environ[I2C_ENV], I2C_ENV)
+            i2c_where = I2C_ENV
+        declared_buses = [bus["id"] for bus in board.i2c_buses]
+        for bus in i2c_nodes or {}:
+            if bus not in declared_buses:
+                raise BoardCapabilityError(
+                    where=i2c_where,
+                    why=f"board {board.id!r} declares no I2C bus {bus!r}; it declares {declared_buses}",
+                    how="name a bus of [capabilities.i2c] in the board profile",
+                )
+        self.i2c_nodes = dict(i2c_nodes or {})
+        self._i2c_script = ScriptedI2C()
+        self._i2c = I2CReader(
+            board, self._open_i2c, lambda type, data: self.events.emit(type, data)
+        )
+        # Which kernel PWM channel (`pwmchipN/M`) each board PWM pin is — the machine's wiring
+        # again, never guessed; replay ignores the environment (RFC-0010 §3e).
+        pwm_where = "LinuxHAL(pwm_channels=...)"
+        if pwm_channels is None and os.environ.get(PWM_ENV) and not replay:
+            pwm_channels = parse_channels(os.environ[PWM_ENV], PWM_ENV)
+            pwm_where = PWM_ENV
+        for pin in pwm_channels or {}:
+            if pin not in board.pwm_pins:
+                raise BoardCapabilityError(
+                    where=pwm_where,
+                    why=f"{pin!r} is not a PWM channel of board {board.id!r}; it has {list(board.pwm_pins)}",
+                    how="name a pin of [capabilities.digital_out.pwm].pins",
+                )
+        self.pwm = SysfsPwm(sysfs_root, pwm_channels or {}, pwm_where)
+        # The PWM channels this HAL will drive — those the session's agent needs
+        # (`needs["pwm"]`) — each with the enable line the HAL owns. A replay drives nothing.
+        wanted = [] if replay else list(dict.fromkeys((needs or {}).get("pwm", ())))
+        for pin in wanted:
+            if pin not in board.pwm_pins:
+                raise BoardCapabilityError(
+                    where=f"{(needs or {}).get('where', 'LinuxHAL(needs=...)')} -> digital.out {pin!r}",
+                    why=f"{pin!r} is not a PWM channel of board {board.id!r}",
+                    how="name a pin of [capabilities.digital_out.pwm].pins",
+                )
+        self._pwm_enable: dict[str, str] = {
+            pin: pwm_limits(board, pin).enable_pin
+            for pin in wanted  # type: ignore[union-attr]
+        }
+        self._enable_owner = {line: pin for pin, line in self._pwm_enable.items()}
         # The unit the agent declares for a sensor ([sim.sensors]); a kernel reading
         # in another unit is refused, not compared against a threshold meant for it.
         self.expected_units = dict(units or {})
@@ -218,6 +337,12 @@ class LinuxHAL(HardwareAbstractionLayer):
         self._speaker: Any = None
         self.audio_in_device = _audio_node(audio_in_device, AUDIO_IN_ENV, AUDIO_IN_NODE)
         self.audio_out_device = _audio_node(audio_out_device, AUDIO_OUT_ENV, AUDIO_OUT_NODE)
+        # The V4L2 node of `vision.in`: the machine's choice (argument, else the environment);
+        # a replay never reads the machine. Opened by `vision_in`, never at construction.
+        self.camera_device: str | None = (
+            None if replay else camera or os.environ.get(CAMERA_ENV) or None
+        )
+        self._cameras: list[Camera] = []
         # Recorded readings replay feeds back (`script_sensor`), in place of the kernel's.
         self._scripted: dict[str, deque[Any]] = {}
         self._replayed: dict[str, Any] = {}
@@ -231,7 +356,70 @@ class LinuxHAL(HardwareAbstractionLayer):
                 why=f"no GPIO chip found at {chip_glob}; refusing to run as a no-op (Q-16)",
                 how=SETUP_HINT,
             )
-        names = {pin: (line_names or {}).get(pin, pin) for pin in board.pins}
+        # The lines `digital.in` reads (RFC-0007 §3a): requested as inputs, by name, when the
+        # session needs them or on the first read, and released by close().
+        self._chips = chips
+        self._line_names = dict(line_names or {})
+        self._consumer = consumer
+        self._inputs: dict[str, tuple[Any, int]] = {}
+        self._closed = False
+        # The kernel PWM channel is the PWM backend's (`hal/pwm.py`), not a GPIO line. The
+        # enable lines are the HAL's: only those of the PWM channels this session needs, and of
+        # the motion channels it brings up (below), are requested (a Pi without the PWM overlay
+        # still runs agents that do not use it).
+        gpio_pins = [
+            p
+            for p in board.pins
+            if p not in board.pwm_pins + board.enable_pins or p in self._enable_owner
+        ]
+        # `motion.*` (RFC-0011): the channels this HAL brings up are the ones the session's agent
+        # names (`needs`) or `motion=` lists. Each has a PWM channel (the machine's wiring) and a
+        # driver enable line, which the HAL owns and the supervisor holds. A replay brings up the
+        # model instead and touches neither.
+        wanted = tuple(dict.fromkeys([*motion, *(needs or {}).get("motion", ())]))
+        records = {record["name"]: record for record in board.motion_channels}
+        for channel in wanted:
+            if channel not in records:
+                raise BoardCapabilityError(
+                    where="LinuxHAL(motion=...)",
+                    why=f"board {board.id!r} declares no motion channel {channel!r}; it declares "
+                    f"{sorted(records)}",
+                    how="name a channel of [capabilities.motion] in the board profile",
+                )
+        pwm_specs: dict[str, str] = {}
+        motion_where = "LinuxHAL(motion_sources=...)"
+        if wanted and not replay:
+            if motion_sources is None and os.environ.get(MOTION_ENV):
+                motion_sources = parse_motion_sources(os.environ[MOTION_ENV], MOTION_ENV)
+                motion_where = MOTION_ENV
+            unwired = [c for c in wanted if c not in (motion_sources or {})]
+            if unwired:
+                raise BoardCapabilityError(
+                    where=motion_where,
+                    why=f"no PWM channel is wired to motion channel(s) {unwired}: the board "
+                    "does not say which pwmchip drives them, and none is guessed",
+                    how=f"set {MOTION_ENV}=wheel_left=pwmchip0/0 (channel=pwmchipN/M), or pass "
+                    "motion_sources",
+                )
+            pwm_specs = {c: (motion_sources or {})[c] for c in wanted}
+            # One kernel channel has one owner: not two motion channels, and not a motion channel
+            # and a `digital.out` PWM pin (RFC-0010) — whose wiring is `pwm_channels`.
+            owners: dict[str, str] = {
+                spec: f"PWM pin {pin!r}" for pin, spec in (pwm_channels or {}).items()
+            }
+            for channel, spec in pwm_specs.items():
+                if spec in owners:
+                    raise BoardCapabilityError(
+                        where=motion_where,
+                        why=f"{spec} is wired to motion channel {channel!r} and to "
+                        f"{owners[spec]}: a kernel PWM channel has one owner",
+                        how="give each its own pwmchipN/M",
+                    )
+                owners[spec] = f"motion channel {channel!r}"
+            gpio_pins += [records[c]["enable_pin"] for c in wanted]
+        self._motion_enable = {records[c]["enable_pin"]: c for c in wanted}
+        self._motion_timer: threading.Timer | None = None
+        names = {pin: (line_names or {}).get(pin, pin) for pin in gpio_pins}
         self.lines: dict[str, tuple[str, int]] = {}
         for pin, name in names.items():
             location = self._find(chips, name)
@@ -249,7 +437,76 @@ class LinuxHAL(HardwareAbstractionLayer):
             )
         if needs:
             self.preflight(**needs)
+        # Supervision is ON: the lines of the pins that have an envelope are held by a process
+        # of its own, which drops them when the runtime freezes (RFC-0007 §3d, §9 item 9,
+        # hal/supervisor.py); the runtime keeps only the pins that carry no load. The opt-out
+        # is explicit — `supervise=False` or NEUROEDGE_LINUX_SUPERVISE=0, for tests and
+        # debugging — and is recorded: `supervision` is "on", "off" or "failed" (a session
+        # writes it to the trace metadata). Replay never supervises: it is no deployment.
+        if supervise is None:
+            supervise = os.environ.get(SUPERVISE_ENV) != "0" and not replay
+        self.supervisor: SupervisorClient | None = None
+        self.supervision = "on" if supervise else "off"
+        self._supervisor_error: str | None = None
+        self._supervised = frozenset(
+            pin
+            for pin in self.lines
+            if supervise
+            and (
+                board.envelope(pin) is not None
+                or pin in self._enable_owner
+                or pin in self._motion_enable
+            )
+        )
         self._requests = self._request_outputs(consumer)
+        if self._supervised:
+            try:
+                self.supervisor = SupervisorClient(
+                    {pin: self.lines[pin] for pin in sorted(self._supervised)},
+                    consumer=consumer,
+                    on_drop=self._supervisor_dropped,
+                    **dict(supervisor_options or {}),
+                )
+            except (BoardCapabilityError, OSError) as exc:
+                # Never "carry on unsupervised": the pins it would have held are refused an
+                # `on` (`supervisor_unavailable`) and an `off` is a no-op, nobody holds them.
+                self.supervision = "failed"
+                self._supervisor_error = getattr(exc, "why", None) or str(exc)
+                self.events.emit("supervision_unavailable", {"reason": self._supervisor_error})
+            except BaseException:
+                for held in self._requests.values():
+                    held.release()
+                raise
+        # The motion channels' PWM is set up (exported, silent) once the lines and the supervisor
+        # are there; the controller then owns their leases and their safe state.
+        if replay:
+            self._install_motion(SimActuator(), on_deadline=None)
+        elif wanted:
+            try:
+                actuator = PwmActuator(
+                    SysfsPwm(sysfs_root, pwm_specs, motion_where),
+                    self._set,
+                    on_fault=lambda channel: self.motion_safe(channel, "actuator_fault"),
+                )
+                actuator.open({c: Channel.from_record(records[c]) for c in wanted})
+                self._install_motion(actuator, on_deadline=self._arm_motion, only=wanted)
+            except BaseException:
+                with contextlib.suppress(OSError):
+                    self.close()
+                raise
+        # The `digital.in` lines stay in the runtime (they are inputs: no envelope, no
+        # supervisor); the supervisor holds only the output lines, so the two never request
+        # the same line.
+        if needs and not replay:
+            try:
+                for pin in dict.fromkeys(needs.get("digital_in", ())):
+                    self._input_line(pin, f"{needs.get('where', '')} -> digital.in {pin!r}")
+            except BaseException:
+                # The session never starts: no output line may stay held, no input requested,
+                # and the supervisor goes down with them.
+                with contextlib.suppress(OSError):
+                    self.close()
+                raise
 
     def _find(self, chips: list[str], name: str) -> tuple[str, int] | None:
         denied: tuple[str, OSError] | None = None
@@ -275,8 +532,9 @@ class LinuxHAL(HardwareAbstractionLayer):
             direction=line.Direction.OUTPUT, output_value=line.Value.INACTIVE
         )
         by_chip: dict[str, list[int]] = {}
-        for path, offset in self.lines.values():
-            by_chip.setdefault(path, []).append(offset)
+        for pin, (path, offset) in self.lines.items():
+            if pin not in self._supervised:
+                by_chip.setdefault(path, []).append(offset)
         requests: dict[str, Any] = {}
         for path, offsets in by_chip.items():
             try:
@@ -313,30 +571,121 @@ class LinuxHAL(HardwareAbstractionLayer):
         return None
 
     # -- the line itself -------------------------------------------------------------
-    def _set(self, pin: str, active: bool) -> None:
+    def _set(self, pin: str, active: bool, limit_ms: float | None = None) -> None:
+        """Drive a line. `limit_ms`: with supervision, the longest the line may stay on."""
+        if pin in self.board.pwm_pins:  # a PWM channel goes down by dropping its enable line
+            if active:
+                raise BoardCapabilityError(
+                    where=f"LinuxHAL -> digital.out {pin!r}",
+                    why="a PWM channel is turned on by a pwm command, not by driving its pin",
+                    how="use digital.out(pin).pwm(...)",
+                )
+            self._pwm_down(pin)
+            return
+        if pin in self._supervised:
+            if self.supervisor is None or not self.supervisor.alive():
+                if active:
+                    raise BoardCapabilityError(
+                        where=f"LinuxHAL -> digital.out {pin!r}",
+                        why="the supervisor of the actuator lines is not running",
+                        how="restart the session; a pin is never turned on without it",
+                    )
+                return  # nobody holds the line, so it is down: an off has nothing to do
+            self.supervisor.set(pin, active, limit_ms)
+            return
         path, offset = self.lines[pin]
         value = self._gpiod.line.Value
         self._requests[path].set_value(offset, value.ACTIVE if active else value.INACTIVE)
 
     def line_value(self, pin: str) -> bool:
-        """What the line is driven to right now (True = active)."""
+        """What the line is driven to right now (True = active). A PWM channel: its enable line."""
+        if pin in self.board.pwm_pins:
+            line = self._pwm_enable.get(pin)
+            return line is not None and self.line_value(line)
+        if pin in self._supervised:
+            if self.supervisor is None or not self.supervisor.alive():
+                return False
+            return self.supervisor.get(pin)
         path, offset = self.lines[pin]
         return self._requests[path].get_value(offset) == self._gpiod.line.Value.ACTIVE
+
+    def _supervisor_alive(self) -> bool:
+        return self.supervisor is not None and self.supervisor.alive()
+
+    def _supervisor_dropped(self, pin: str, cause: str) -> None:
+        """The supervisor took a line down by itself — the runtime was late or frozen."""
+        channel = self._motion_enable.get(pin)
+        if channel is not None and self._motion is not None:
+            # The driver of a motion channel was taken down: the channel is stopped, whatever it
+            # declared (`supervisor_*` is a cause a hold does not survive).
+            with contextlib.suppress(OSError, BoardCapabilityError):
+                self._motion.safe(channel, f"supervisor_{cause}")
+            return
+        pin = self._enable_owner.get(
+            pin, pin
+        )  # the enable line of a PWM channel: report the channel
+        self._stop_timer(pin)
+        if pin in self._pwm_enable:
+            self._pwm_stopped(pin)
+            with contextlib.suppress(OSError):  # the line is down already; the controller follows
+                self.pwm.off(pin, "LinuxHAL -> supervisor")
+        if self.envelope is not None:
+            self.envelope.ended(pin)
+        self._emit(
+            "actuator_command",
+            {"pin": pin, "operation": "off", "duration_ms": 0, "cause": f"supervisor_{cause}"},
+        )
+
+    def _arm_motion(self, deadline_ms: float | None) -> None:
+        """The next time a lease, a hold or a run ends: one timer, re-armed on every change."""
+        timer, self._motion_timer = self._motion_timer, None
+        if timer is not None:
+            timer.cancel()
+        if deadline_ms is None or self._closed:
+            return
+        delay = max(0.0, deadline_ms - self._motion_clock()) / 1000.0 + 0.002
+        timer = threading.Timer(delay, self._motion_tick)
+        timer.daemon = True
+        self._motion_timer = timer
+        timer.start()
+
+    def _motion_tick(self) -> None:
+        try:
+            self.settle_motion()
+        except (OSError, BoardCapabilityError):
+            # A channel that would not go safe: try again shortly; the supervisor's deadline on
+            # the enable line is the backstop meanwhile.
+            if not self._closed:
+                retry = threading.Timer(0.05, self._motion_tick)
+                retry.daemon = True
+                self._motion_timer = retry
+                retry.start()
 
     def _stop_timer(self, pin: str) -> None:
         with self._lock:
             timer = self._timers.pop(pin, None)
+            self._pulses.discard(pin)
         if timer is not None:
             timer.cancel()
 
-    def _end_pulse(self, pin: str, timer: threading.Timer | None = None) -> None:
+    def _end_pulse(
+        self, pin: str, timer: threading.Timer | None = None, reservation: Reservation | None = None
+    ) -> None:
         with self._lock:
             if timer is not None and self._timers.get(pin) is not timer:
                 return  # a newer command owns the line
             self._timers.pop(pin, None)
-            if not self._requests:
+            self._pulses.discard(pin)
+            if self._closed:
                 return  # close() has already dropped and released every line
             self._set(pin, False)
+        # The line is down: the envelope gets the on-time back, and the trace says why it went.
+        if (
+            reservation is not None
+            and self.envelope is not None
+            and self.envelope.ended(pin, reservation) is not None
+        ):
+            self._auto_off(reservation)
 
     # -- digital.out -----------------------------------------------------------------
     def digital_out(
@@ -346,41 +695,201 @@ class LinuxHAL(HardwareAbstractionLayer):
         duration_ms: int = 0,
         signature: Any = "",
         called_from: str = "<unknown>",
+        *,
+        frequency_hz: int | None = None,
+        duty: float | None = None,
     ) -> PendingCommand:
-        if operation not in ("pulse", "on", "off"):
+        if operation not in ("pulse", "on", "off", "pwm"):
             raise BoardCapabilityError(
                 where=f"{called_from} -> digital.out {pin!r}",
                 why=f"unknown operation {operation!r}",
-                how="use one of 'pulse', 'on', 'off'",
+                how="use one of 'pulse', 'on', 'off', 'pwm'",
             )
-        super().digital_out(pin, operation, duration_ms, signature, called_from)
-        self._stop_timer(pin)
-        self._set(pin, operation != "off")
-        if operation == "pulse":
-            timer = threading.Timer(duration_ms / 1000.0, lambda: self._end_pulse(pin, timer))
-            timer.daemon = True
-            with self._lock:
-                self._timers[pin] = timer
-            try:
-                timer.start()
-            except BaseException:
-                # No timer, no off edge: never leave a pulse line driven without one.
-                with self._lock:
-                    self._timers.pop(pin, None)
-                self._set(pin, False)
-                raise
-        self.events.emit(
-            "actuator_command", {"pin": pin, "operation": operation, "duration_ms": duration_ms}
+        operation, duration_ms, applied = self._pwm_prepare(
+            pin, operation, duration_ms, frequency_hz, duty, called_from
         )
+        pwm = (int(frequency_hz), applied) if operation == "pwm" else None  # type: ignore[arg-type]
+        if pwm is not None and not self.replay and pin not in self._pwm_enable:
+            raise BoardCapabilityError(
+                where=f"{called_from} -> digital.out {pin!r}",
+                why=f"this HAL was not prepared to drive the PWM channel {pin!r}: its enable line is "
+                "not held (the session's agent must list it under [requires] digital.out pwm)",
+                how=f"build the HAL with needs={{'pwm': ['{pin}']}}, as a session does for its agent",
+            )
+        line = self._pwm_enable.get(pin, pin)  # a PWM channel runs on its enable line
+        if operation != "off" and line in self._supervised and not self._supervisor_alive():
+            # Before the envelope and `authorize`: nothing is reserved and no token is spent.
+            refusal = EnvelopeRefusedError(
+                f"{called_from} -> digital.out {pin!r}",
+                "the supervisor that must hold this actuator line is "
+                f"{'not running' if self.supervision == 'on' else 'unavailable'}"
+                f"{f' ({self._supervisor_error})' if self._supervisor_error else ''}, "
+                "so the pin is not turned on",
+                "restart the session; `off` still works. Opting out is for tests and debugging: "
+                "NEUROEDGE_LINUX_SUPERVISE=0",
+                reason="supervisor_unavailable",
+                event={"pin": pin, "operation": operation, "reason": "supervisor_unavailable"},
+            )
+            self._emit("envelope_refused", refusal.event)
+            raise refusal
+        reservation = self._admit(pin, operation, duration_ms, signature, called_from, pwm=pwm)
+        envelope = self.envelope
+        data: dict[str, Any] = {"pin": pin, "operation": operation, "duration_ms": duration_ms}
+        if operation == "off":
+            # Toward the safe state. The timer that would end the pin anyway is cancelled only
+            # once the line is known to be down: an off that fails must not strand the pin.
+            self._set(pin, False)
+            self._stop_timer(pin)
+            self._pwm_stopped(pin)
+            if envelope is not None:
+                envelope.ended(pin)
+            if duty is not None and pin in self.board.pwm_pins:
+                data["cause"] = "duty_zero"  # a pwm command whose duty quantised to nothing
+        elif pwm is not None:
+            self._turn_on_pwm(pin, pwm[0], pwm[1], duration_ms, reservation, called_from)
+            data.update(frequency_hz=pwm[0], duty=pwm[1])
+        else:
+            self._turn_on(pin, operation, duration_ms, reservation)
+        self.events.emit("actuator_command", data)
         return PendingCommand(
-            pin, operation, duration_ms, self.events, on_cancel=lambda: self._abort(pin)
+            pin,
+            operation,
+            duration_ms,
+            self.events,
+            on_cancel=lambda: self._abort(pin, reservation),
         )
 
-    def _abort(self, pin: str) -> None:
+    def _turn_on(
+        self, pin: str, operation: str, duration_ms: int, reservation: Reservation | None
+    ) -> None:
+        envelope = self.envelope
+        self._stop_timer(pin)
+        limit = None if reservation is None else reservation.reserved_ms + DEADLINE_MARGIN_MS
+        try:
+            self._set(pin, True, limit)
+        except BaseException:
+            # The line did not move as asked. The command gives its on-time back only once the
+            # line is known to be down; otherwise the reservation stays, the safe side of not
+            # knowing.
+            if reservation is not None and envelope is not None:
+                try:
+                    self._set(pin, False)
+                except BaseException:
+                    pass
+                else:
+                    envelope.refund(reservation)
+            raise
+        # A pin under an envelope always has an end: the reserved on-time. Without one only a
+        # pulse does, as before.
+        if reservation is not None:
+            seconds: float | None = reservation.reserved_ms / 1000.0
+        else:
+            seconds = duration_ms / 1000.0 if operation == "pulse" else None
+        if seconds is not None:
+            self._arm(pin, seconds, reservation, pulse=operation == "pulse" or duration_ms > 0)
+
+    def _turn_on_pwm(
+        self,
+        pin: str,
+        frequency_hz: int,
+        duty: float,
+        duration_ms: int,
+        reservation: Reservation | None,
+        called_from: str,
+    ) -> None:
+        """
+        A PWM command on the kernel's channel: program it while the driver is still unpowered,
+        then raise the enable line (supervised, with the on-time as its deadline), then arm the
+        timer that ends it. If anything fails the channel goes back down before the error does.
+        """
+        envelope = self.envelope
+        self._stop_timer(pin)
+        seconds = (duration_ms if reservation is None else reservation.reserved_ms) / 1000.0
+        self._pwm_started(pin, frequency_hz, duty, duration_ms, reservation)
+        if self.replay:
+            return  # a replay drives no hardware; the envelope's recorded time ends the run
+        limit = seconds * 1000.0 + DEADLINE_MARGIN_MS
+        try:
+            self.pwm.apply(pin, frequency_hz, duty, called_from)
+            self._set(self._pwm_enable[pin], True, limit)
+        except BaseException as exc:
+            self._pwm_stopped(pin)
+            down = True
+            try:
+                self._set(self._pwm_enable[pin], False)
+            except BaseException:
+                down = False  # the reservation stays: the safe side of not knowing
+            with contextlib.suppress(OSError):
+                self.pwm.off(pin, called_from)
+            if down and reservation is not None and envelope is not None:
+                envelope.refund(reservation)
+            if isinstance(exc, OSError):
+                raise BoardCapabilityError(
+                    where=f"{called_from} -> digital.out {pin!r}",
+                    why=f"the kernel PWM refused the command: {exc.strerror or exc}",
+                    how="check the PWM overlay, the channel mapping and the permissions on /sys/class/pwm",
+                ) from exc
+            raise
+        self._arm(pin, seconds, reservation, pulse=True)
+
+    def _pwm_down(self, pin: str) -> None:
+        """
+        The safe state of a PWM channel: its enable line down first (the load loses power
+        whatever the controller does), then the controller disabled. A channel this HAL holds
+        no enable line for is not being driven, so there is nothing to bring down.
+        """
+        line = self._pwm_enable.get(pin)
+        self._pwm_stopped(pin)
+        if line is None:
+            return
+        self._set(line, False)
+        with contextlib.suppress(OSError):  # the line is down; a controller that will not stop is
+            self.pwm.off(pin, "LinuxHAL -> digital.out")  # read back as it is, never as commanded
+
+    def _read_feedback(self, pin: str, limits: Any, where: str) -> dict[str, float | None]:
+        if self.replay or pin not in self._pwm_enable:
+            raise PerceptionUnavailableError(
+                where=where,
+                why="no PWM controller is read here"
+                + (
+                    " (a replay never reads the machine)"
+                    if self.replay
+                    else " (the channel is not held)"
+                ),
+                how="replay a trace recorded with its pin_state events, or build the HAL for the channel",
+            )
+        return self.pwm.read(pin, limits, where)
+
+    def _arm(
+        self, pin: str, seconds: float, reservation: Reservation | None, *, pulse: bool
+    ) -> None:
+        """Turn the pin off after `seconds`: the timer that ends a pulse or an enveloped on."""
+        timer = threading.Timer(seconds, lambda: self._end_pulse(pin, timer, reservation))
+        timer.daemon = True
+        with self._lock:
+            self._timers[pin] = timer
+            if pulse:
+                self._pulses.add(pin)
+        try:
+            timer.start()
+        except BaseException:
+            # No timer, no off edge: never leave a line driven without one.
+            with self._lock:
+                self._timers.pop(pin, None)
+                self._pulses.discard(pin)
+            self._set(pin, False)
+            if reservation is not None and self.envelope is not None:
+                self.envelope.refund(reservation)
+            raise
+
+    def _abort(self, pin: str, reservation: Reservation | None = None) -> None:
         self._stop_timer(pin)
         with self._lock:
-            if self._requests:  # after close() every line is already dropped
-                self._set(pin, False)
+            if self._closed:  # after close() every line is already dropped
+                return
+            self._set(pin, False)
+        if self.envelope is not None:
+            self.envelope.ended(pin, reservation)
 
     def close(self) -> None:
         """
@@ -391,30 +900,167 @@ class LinuxHAL(HardwareAbstractionLayer):
         """
         # One line that fails to drop must not leave the others active or held.
         errors: list[BaseException] = []
-        if self._requests:
+        with self._lock:
+            first = not self._closed
+            self._closed = True  # a pulse ending now sees the HAL closed and leaves the lines alone
+            inputs, self._inputs = self._inputs, {}
+        for request, _offset in inputs.values():
+            try:
+                request.release()
+            except OSError as exc:
+                errors.append(exc)
+        if first:
+            timer, self._motion_timer = self._motion_timer, None
+            if timer is not None:
+                timer.cancel()
+            if self._motion is not None:  # every channel to its safe state, the driver off
+                try:
+                    self._motion.close()
+                except BaseException as exc:
+                    errors.append(exc)
             for pin in list(self._timers):
                 self._stop_timer(pin)
             for pin in self.lines:
                 try:
                     self._set(pin, False)
                 except OSError as exc:
+                    errors.append(exc)  # the line may still be on: its reservation stays held
+                else:
+                    if self.envelope is not None:
+                        self.envelope.ended(self._enable_owner.get(pin, pin))
+            for pin in self._pwm_enable:  # the enable lines are down; now the controllers
+                self._pwm_stopped(pin)
+                try:
+                    self.pwm.off(pin, "LinuxHAL.close()")
+                except OSError as exc:
                     errors.append(exc)
-            with self._lock:  # a pulse ending now sees no requests and leaves the line alone
+            with self._lock:
                 requests, self._requests = self._requests, {}
             for request in requests.values():
                 try:
                     request.release()
                 except OSError as exc:
                     errors.append(exc)
-        for device in (self._audio_in, self._audio_out):
+            if self.supervisor is not None:
+                try:
+                    self.supervisor.close()
+                except BaseException as exc:
+                    errors.append(exc)
+        cameras, self._cameras = self._cameras, []
+        for device in (self._audio_in, self._audio_out, *cameras):
             if device is None:
                 continue
             try:
                 device.close()
             except BaseException as exc:  # a dead speaker/printer must still raise
                 errors.append(exc)
+        try:
+            self._i2c.close()
+        except OSError as exc:
+            errors.append(exc)
         if errors:
             raise errors[0]
+
+    # -- digital.in ------------------------------------------------------------------
+    def _input_line(self, pin: str, where: str) -> tuple[Any, int]:
+        """The held request of an input line, requested now if nothing has read it yet."""
+        with self._lock:
+            if self._closed:
+                raise BoardCapabilityError(
+                    where=where,
+                    why="the HAL is closed and holds no input line any more",
+                    how="build a new HAL to read inputs",
+                )
+            held = self._inputs.get(pin)
+            if held is not None:
+                return held
+            name = self._line_names.get(pin, pin)
+            location = self._find(self._chips, name)
+            if location is None:
+                raise BoardCapabilityError(
+                    where=where,
+                    why=f"no line named {name!r} on {self._chips} for input pin {pin!r} of {self.board.id!r}",
+                    how=f"name the line after the pin (setup_gpio_sim.sh does), or pass line_names; {SETUP_HINT}",
+                )
+            path, offset = location
+            settings = self._gpiod.LineSettings(direction=self._gpiod.line.Direction.INPUT)
+            try:
+                request = self._gpiod.request_lines(
+                    path, consumer=self._consumer, config={(offset,): settings}
+                )
+            except OSError as exc:
+                raise _chip_error(path, exc) from exc
+            self._inputs[pin] = (request, offset)
+            return request, offset
+
+    def _read_level(self, pin: str, where: str) -> bool:
+        if self.replay:
+            # A replay never reads the machine, not even to see what its lines say today.
+            raise PerceptionUnavailableError(
+                where=where,
+                why="the trace being replayed holds no reading of this line",
+                how="replay a trace recorded with its digital_in events",
+            )
+        try:
+            request, offset = self._input_line(pin, where)
+            value = request.get_value(offset)
+        except (OSError, BoardCapabilityError, ValueError, RuntimeError) as exc:
+            reason = exc.why if isinstance(exc, BoardCapabilityError) else str(exc)
+            raise PerceptionUnavailableError(
+                where=where,
+                why=f"the line cannot be read: {reason}",
+                how="check the wiring and that no other process holds the line; the criterion stays undecided",
+            ) from exc
+        return value == self._gpiod.line.Value.ACTIVE
+
+    # -- vision.in -------------------------------------------------------------------
+    def _camera_node(self, called_from: str) -> str:
+        where = f"{called_from} -> vision.in"
+        if not self.board.supports("vision.in"):
+            raise BoardCapabilityError(
+                where=where,
+                why=f"board {self.board.id!r} does not declare the 'vision.in' primitive",
+                how=f"add it to {self.board.source}, or choose a board that provides it",
+            )
+        if self.replay:
+            raise CameraUnavailable(
+                where=where,
+                why="a replay recomputes vision facts from the recorded labels; it opens no camera",
+                how="replay a trace recorded with its vision_fact events",
+            )
+        if not self.camera_device:
+            raise CameraUnavailable(
+                where=where,
+                why=f"no camera node is chosen: {CAMERA_ENV} is not set, and /dev/video* nodes "
+                "are mostly not cameras, so none is guessed",
+                how=f"set {CAMERA_ENV}=/dev/video0 (or pass camera=); `v4l2-ctl --list-devices` lists them",
+            )
+        return self.camera_device
+
+    def vision_in(
+        self,
+        mode: Mode,
+        called_from: str = "<unknown>",
+        *,
+        clock: Callable[[], float] | None = None,
+    ) -> Camera:
+        """
+        The camera of `NEUROEDGE_LINUX_CAMERA` running in `mode`, which must be one of the
+        board's. The camera is asked for exactly that mode, and refused if it runs another
+        (`hal/v4l2.py`); its frames carry `clock`'s readings (the session's).
+        """
+        node = self._camera_node(called_from)
+        declared = modes_of(self.board.vision_modes)
+        if mode not in declared:
+            raise BoardCapabilityError(
+                where=f"{called_from} -> vision.in",
+                why=f"board {self.board.id!r} declares no camera mode {mode}; it has "
+                f"{[str(m) for m in declared]}",
+                how="open the camera in one of the board's modes",
+            )
+        camera = V4L2Camera(node, mode, clock or monotonic_ms)
+        self._cameras.append(camera)
+        return camera
 
     # -- sensor.read -----------------------------------------------------------------
     def sensor_read(
@@ -464,12 +1110,101 @@ class LinuxHAL(HardwareAbstractionLayer):
             )
         return reading
 
+    # -- analog.in -------------------------------------------------------------------
+    def analog_in(
+        self, channel: str, called_from: str = "<unknown>", use: str | None = None
+    ) -> float:
+        """
+        One fresh reading of `channel` from the kernel, in the channel's declared unit,
+        recorded as `analog_in` (`use="fact"`: read to compute a gate fact). Any failure to
+        read it — no device, a file that is gone or holds garbage, another unit, a value
+        outside `[min, max]` — is `PerceptionUnavailableError` (NE5001), recorded as a failed
+        read: the gate then blocks `criterion_unavailable`, it never gets a clamped value.
+        A replay never reads the machine (the recorded facts are fed back instead).
+        """
+        declared = self.board.require_analog(channel, called_from=called_from)
+        where = f"{called_from} -> analog.in {channel!r}"
+        try:
+            if self.replay:
+                raise unavailable(
+                    where,
+                    "a replay does not read the machine; the trace holds the recorded facts",
+                    "replay a trace recorded with its gate_facts events",
+                )
+            value = check_reading(declared, *self._kernel_analog(channel, where), where)
+        except PerceptionUnavailableError as error:
+            self.events.emit("analog_in", analog_data(channel, use=use, error=error.why))
+            raise
+        self.events.emit("analog_in", analog_data(channel, value, declared["unit"], use))
+        return value
+
+    def _kernel_analog(self, channel: str, where: str) -> tuple[float, str]:
+        """The kernel's value and unit for `channel`; every way it can fail is NE5001."""
+        try:
+            reading = self.analog.read(channel, where)
+        except BoardCapabilityError as error:  # no source, no device, unreadable, not a number
+            raise unavailable(error.where, error.why, error.how) from error
+        except OSError as error:  # sysfs went away under the lookup itself
+            raise unavailable(
+                where,
+                f"cannot read the kernel: {error.strerror or error}",
+                "check the ADC is bound and the user may read sysfs",
+            ) from error
+        return reading.value, reading.unit
+
     def script_sensor(self, sensor: str, values: list[Any], unit: str | None = None) -> None:
         """Readings returned in order, one per read, instead of the kernel's — replay only."""
         self.board.require_sensor(sensor, called_from="LinuxHAL.script_sensor()")
         self._scripted[sensor] = deque(values)
         if unit is not None:
             self._units[sensor] = unit
+
+    # -- i2c -------------------------------------------------------------------------
+    def _open_i2c(self, bus: str, where: str) -> Any:
+        # Replay, and a bus a test scripted, read the script: no node is opened for them.
+        if self.replay or self._i2c_script.has_bus(bus):
+            return self._i2c_script.transport(bus)
+        return open_mapped(self.i2c_nodes, self.board, bus, where)
+
+    def i2c_read(
+        self,
+        bus: str,
+        device: str | int,
+        register: int | None = None,
+        *,
+        width: int = 1,
+        called_from: str = "<unknown>",
+    ) -> int:
+        """
+        One read of an allow-listed device, recorded as `i2c_read` as on `sim`. The board
+        decides first — an undeclared bus, device or register is refused before a node is
+        chosen or a transaction sent. A NACK or timeout is tried once more, then NE5001.
+        """
+        return self._i2c.read(bus, device, register, width=width, called_from=called_from)
+
+    def i2c_scan(self, bus: str, called_from: str = "<unknown>") -> list[Any]:
+        if self.replay:
+            raise BoardCapabilityError(
+                where=f"{called_from} -> i2c.scan {bus!r}",
+                why="a replay never touches a bus, and a scan has nothing recorded to replay",
+                how="scan on a live linux HAL",
+            )
+        return self._i2c.scan(bus, called_from=called_from)
+
+    def script_i2c(
+        self,
+        bus: str,
+        device: str | int,
+        register: int | None,
+        values: list[int | ReadFault],
+        *,
+        width: int = 1,
+    ) -> None:
+        """Readings returned in order, one per read, instead of the bus's — replay only."""
+        where = "LinuxHAL.script_i2c()"
+        declared = self._i2c.resolve(bus, device, register, width, where)
+        checked = [v if isinstance(v, ReadFault) else _i2c_value(v, width, where) for v in values]
+        self._i2c_script.script(bus, declared["address"], register, checked)
 
     # -- audio -----------------------------------------------------------------------
     def _audio_capability(self, primitive: str, called_from: str) -> dict[str, Any]:
@@ -614,7 +1349,13 @@ class LinuxHAL(HardwareAbstractionLayer):
         sensors: Iterable[str] = (),
         display: bool = False,
         audio: Iterable[str] = (),
+        i2c: Iterable[str] = (),
         where: str = "",
+        analog: Iterable[str] = (),
+        digital_in: Iterable[str] = (),
+        camera: bool = False,
+        pwm: Iterable[str] = (),
+        motion: Iterable[str] = (),
     ) -> None:
         """
         Fail now, not mid-session, if a sensor the agent reads cannot be read, it
@@ -625,13 +1366,56 @@ class LinuxHAL(HardwareAbstractionLayer):
 
         `audio` names the primitives the session will use; the file backend needs no
         device, so nothing is opened unless the machine chose `live` (Q-22).
+
+        `analog` names the `analog.in` channels the session reads for gate facts: each must
+        read now (not recorded), so an ADC that is not there is refused at load as a board
+        problem, not found on the first turn that needs it (TSK-I2a-04). `i2c` names the
+        buses the agent reads: each must be declared, have a device node chosen and open —
+        no transaction is sent.
+        `camera`: the agent needs `vision.in`, so the chosen node must exist and be a capture device —
+        the camera is checked here, and opened only when the session asks for a mode.
         """
         for sensor in dict.fromkeys(sensors):
             self.board.require_sensor(sensor, called_from=where)
             if not self.replay:  # a replay never reads the machine, not even to check it
                 self._kernel_read(sensor, f"{where} -> sensor.read {sensor!r}")
+        for channel in dict.fromkeys(analog):
+            declared = self.board.require_analog(channel, called_from=where)
+            if not self.replay:
+                channel_where = f"{where} -> analog.in {channel!r}"
+                try:
+                    check_reading(
+                        declared, *self._kernel_analog(channel, channel_where), channel_where
+                    )
+                except PerceptionUnavailableError as error:
+                    raise BoardCapabilityError(error.where, error.why, error.how) from error
+        for pin in dict.fromkeys(pwm):
+            self.board.require_pin(pin, called_from=where)
+            if pin not in self.board.pwm_pins:
+                raise BoardCapabilityError(
+                    where=f"{where} -> digital.out {pin!r}",
+                    why=f"{pin!r} is not a PWM channel of board {self.board.id!r}",
+                    how="name a pin of [capabilities.digital_out.pwm].pins",
+                )
+            if not self.replay:  # a replay never opens the kernel's PWM, not even to look
+                self.pwm.check(pin, where)
+        for bus in dict.fromkeys(i2c):  # a declared bus with a node chosen; a replay's is scripted
+            self._i2c.check_bus(bus, f"{where} -> i2c {bus!r}")
+        for pin in dict.fromkeys(digital_in):
+            # Found now, requested once the output lines are held: a missing input line is
+            # refused before any pin is (RFC-0007 §3a, Q-16).
+            self.board.require_input_pin(pin, called_from=where)
+            name = self._line_names.get(pin, pin)
+            if not self.replay and self._find(self._chips, name) is None:
+                raise BoardCapabilityError(
+                    where=f"{where} -> digital.in {pin!r}",
+                    why=f"no line named {name!r} on {self._chips} for input pin {pin!r} of {self.board.id!r}",
+                    how=f"name the line after the pin (setup_gpio_sim.sh does), or pass line_names; {SETUP_HINT}",
+                )
         if display:
             self._require_display_backend(f"{where} -> display")
+        if camera and not self.replay:
+            probe(self._camera_node(where))
         if self.audio_backend == "live":
             for primitive in dict.fromkeys(audio):
                 if primitive == "audio.in":
@@ -683,11 +1467,15 @@ class TypedLinuxHAL(LinuxHAL):
     def pulsing(self) -> list[str]:
         """The pins whose pulse is still in flight."""
         with self._lock:
-            return sorted(self._timers)
+            return sorted(self._pulses)
 
     def driven(self) -> list[str]:
         """The pins whose line is active right now."""
-        return [pin for pin in self.lines if self._requests and self.line_value(pin)]
+        return [
+            self._enable_owner.get(pin, pin)  # a PWM channel is driven while its enable line is
+            for pin in self.lines
+            if not self._closed and self.line_value(pin)
+        ]
 
     def settle(self) -> None:
         """
@@ -696,16 +1484,36 @@ class TypedLinuxHAL(LinuxHAL):
         before `close()` drops every line; Ctrl-C drops them at once.
         """
         with self._lock:
-            timers = list(self._timers.values())
+            timers = [self._timers[pin] for pin in self._pulses if pin in self._timers]
         for timer in timers:
             timer.join()
 
     def sensor_values(self) -> dict[str, tuple[Any, str | None]]:
         return {}  # `:sensors` lists values set on sim; on linux the kernel owns them
 
+    def digital_in_values(self) -> dict[str, bool | None]:
+        return {}  # on linux the kernel owns the lines; `:inputs` lists levels set on sim
+
+    def set_digital_in(self, pin: str, level: bool) -> None:
+        raise BoardCapabilityError(
+            where=f"LinuxHAL.set_digital_in({pin!r})",
+            why="on linux an input line is read from the kernel (gpiod); a level cannot be set",
+            how="change what drives the line, or set the level on sim (--target sim)",
+        )
+
     def set_sensor(self, sensor: str, value: Any, unit: str | None = None) -> None:
         raise BoardCapabilityError(
             where=f"LinuxHAL.set_sensor({sensor!r})",
             why="on linux a sensor is read from the kernel (hwmon, IIO); a reading cannot be set",
             how="change what the sensor measures, or set the value on sim (--target sim)",
+        )
+
+    def analog_values(self) -> dict[str, tuple[Any, str]]:
+        return {}  # `:analogs` lists values set on sim; on linux the kernel owns them
+
+    def set_analog(self, channel: str, value: Any) -> None:
+        raise BoardCapabilityError(
+            where=f"LinuxHAL.set_analog({channel!r})",
+            why="on linux an analog.in channel is read from the kernel (hwmon, IIO); a reading cannot be set",
+            how="change what the channel measures, or set the value on sim (--target sim)",
         )

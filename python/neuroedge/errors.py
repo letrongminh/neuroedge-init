@@ -9,6 +9,9 @@ three parts cannot be forgotten, and so tests can assert on them individually.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from typing import Any
+
 
 class NeuroEdgeError(Exception):
     """
@@ -53,8 +56,9 @@ class ActionContractViolation(NeuroEdgeError):
 class TokenReplayError(ActionContractViolation):
     """
     A verdict token was used again, after its TTL, or by another process
-    instance. `reason` is ``token_replayed`` or ``token_expired``. A contract
-    violation, never a retryable denial.
+    instance; for a motion lease (RFC-0011 §3c), a lease already used or past its time.
+    `reason` is ``token_replayed``, ``token_expired``, ``lease_used`` or ``lease_expired``.
+    A contract violation, never a retryable denial.
     """
 
     code = "NE1002"
@@ -69,6 +73,37 @@ class TokenReplayError(ActionContractViolation):
         return data
 
 
+class EnvelopeRefusedError(ActionContractViolation):
+    """
+    A command to a pin or channel with a safety envelope was refused because it would break
+    the envelope. `reason` is ``window_budget``, ``min_interval_ms``, ``already_on``,
+    ``max_continuous_ms``, ``window_unreadable`` or ``supervisor_unavailable``, and `event` is the `envelope_refused`
+    event data the HAL records (RFC-0007 §3e): what replay and an audit need. No pin is driven
+    and no token is spent. The command toward the safe state is never refused. Raised by the
+    envelope hook of `HardwareAbstractionLayer.digital_out` (TSK-N2-01).
+    """
+
+    code = "NE1003"
+
+    def __init__(
+        self,
+        where: str,
+        why: str,
+        how: str,
+        reason: str = "",
+        event: Mapping[str, Any] | None = None,
+    ) -> None:
+        self.reason = reason
+        self.event: dict[str, Any] = dict(event or {})
+        super().__init__(where, why, how)
+
+    def as_dict(self) -> dict[str, str]:
+        data = super().as_dict()
+        if self.reason:
+            data["reason"] = self.reason
+        return data
+
+
 class ToolCallError(NeuroEdgeError, ValueError):
     """
     A `ToolCall` was built wrong: its `source` is not one the dispatcher assigns.
@@ -76,7 +111,7 @@ class ToolCallError(NeuroEdgeError, ValueError):
     against the 0.1 `ToolCall` (which raised a bare `ValueError`) keeps working.
     """
 
-    code = "NE1004"  # NE1003 is reserved by RFC-0007
+    code = "NE1004"  # NE1003 is EnvelopeRefusedError (RFC-0007)
 
 
 class GateError(NeuroEdgeError):
@@ -191,6 +226,10 @@ class PerceptionUnavailableError(NeuroEdgeError):
     A perception component cannot be constructed: a missing or malformed command
     grammar, an unknown model reference. Raised at build or load time; at run time
     the engine turns an unrunnable fallback into a `gate_unreachable` verdict.
+
+    RFC-0007 §3e widens it to run time for one case: an HAL input read that fails (a bus
+    NACK or timeout on I2C, a lost ADC, an unreadable `digital.in` line). The criterion that
+    needed the value is then undecided and the gate BLOCKs `criterion_unavailable`.
     """
 
     code = "NE5001"

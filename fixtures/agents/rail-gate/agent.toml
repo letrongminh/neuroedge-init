@@ -1,0 +1,50 @@
+# Agent mẫu của gói cảm biến (RFC-0007, TSK-I2a-02/03/04): một cổng chạy bằng ắc quy.
+#
+# Ba nguyên thủy đầu vào, mỗi cái một vai:
+#   * digital.in  — công tắc hành trình `limit_switch`: dữ kiện `bool` `limit_closed` của gate;
+#   * analog.in   — kênh ADC `adc0` (cầu phân áp của nguồn): tiêu chí `numeric` `rail_voltage` của
+#                   gate, với đơn vị, thang và tuổi tối đa khoá ở gate;
+#   * i2c         — ina219 đọc điện áp bus trong thân `@action` (RFC-0007 §3b): I2C KHÔNG vào gate.
+#
+#   * rail_open_gate — mở cổng: cổng ở điểm dừng đóng VÀ nguồn từ 1,2 V trên kênh ADC;
+#   * rail_report    — hiện điện áp bus ina219 lên màn hình.
+#
+# Chạy trên `sim-rpi5` (giá trị kịch bản ở [sim.*] dưới đây) và `linux-rpi5` (chân gpio, hwmon, I2C
+# của kernel). `sim-default` và Box-3 không khai các nguyên thủy này, nên agent bị từ chối lúc build ở
+# đó (FR-HAL-05). Corpus: fixtures/traces/sensor-pack/ (scripts/gen_sensor_pack_traces.py).
+[agent]
+name    = "rail-gate"
+version = "0.1.0"
+
+[requires]
+"digital.out" = { pins = ["gate_relay"] }
+"digital.in"  = { pins = ["limit_switch"] }
+"analog.in"   = { channels = ["adc0"] }
+"i2c"         = { devices = ["i2c1/ina219"] }
+"display"     = {}
+
+[gates]
+rail_open_gate = "gates/rail_open_gate@1.0.0.yaml"
+rail_report    = "gates/rail_report@1.0.0.yaml"
+
+[targets]
+supported = ["sim", "linux"]
+
+# Nối tiêu chí của gate với đầu vào của bo mạch (cùng khuôn [sim.sensor_facts]); bảng nằm trong [sim]
+# nhưng dùng trên cả hai target.
+[sim.digital_facts]
+limit_closed = { pin = "limit_switch" }
+
+[sim.analog_facts]
+rail_voltage = { channel = "adc0" }
+
+# Giá trị khởi đầu trên `sim`: cổng đóng, nguồn 1,8 V sau phân áp, ina219 đo 12 000 mV
+# (thanh ghi 0x02 = 12 000 / 4 << 3 = 0x5dc0). Đổi bằng `:input`, `:analog` trong REPL.
+[sim.inputs]
+limit_switch = true
+
+[sim.analog]
+adc0 = 1.8
+
+[sim.i2c."i2c1/ina219"]
+"0x02" = { value = 24000, width = 2 }

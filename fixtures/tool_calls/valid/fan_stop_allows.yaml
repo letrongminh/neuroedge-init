@@ -1,0 +1,4 @@
+# RFC-0010 §3b: tắt kênh PWM là lệnh về phía an toàn — HAL thả duty và `enable_pin`.
+agent: fan-pwm
+board: sim-rpi5
+call:  { name: fan_stop, arguments: {}, source: local_grammar }

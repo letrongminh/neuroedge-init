@@ -289,7 +289,7 @@ NeuroBrain ([`Q-31`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định),
 - **Hook phong bì an toàn vật lý (Physical Safety Envelope):**
   Phong bì vật lý (giới hạn thời lượng bật và tần suất tối đa trên từng chân GPIO) được khai báo trong `board.v1` và được cưỡng chế bởi một hook đặt trong `HardwareAbstractionLayer.digital_out`, dùng chung cho mọi actuator (Q-53) ([`TSK-N2-01`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux), [`TSK-N2-02`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)).
   - **Thứ tự thực thi bắt buộc:** `pin check (require_pin)` → `envelope` → `authorize` → `record`.
-  - **Xử lý khi vi phạm phong bì:** Nếu hành động vượt quá giới hạn phong bì vật lý, lệnh bị từ chối (tên lớp lỗi chưa thiết kế) và ghi sự kiện `envelope_refused` vào vết ghi. Lúc này, **token phán quyết KHÔNG bị tiêu hủy (token not consumed)** vì chưa bước vào hàm `authorize()`.
+  - **Xử lý khi vi phạm phong bì:** Nếu hành động vượt quá giới hạn phong bì vật lý, lệnh bị từ chối bằng `EnvelopeRefusedError` (`NE1003`) và ghi sự kiện `envelope_refused` vào vết ghi. Lúc này, **token phán quyết KHÔNG bị tiêu hủy (token not consumed)** vì chưa bước vào hàm `authorize()`.
 
 Sơ đồ trình tự thực thi hook phong bì vật lý:
 

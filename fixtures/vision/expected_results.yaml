@@ -1,0 +1,27 @@
+# Expected verdict sequences of the scenes in fixtures/vision/ (TSK-V1b-04) — one verdict per frame,
+# in frame order. python/tests/test_vision_scenes.py requires every directory here to have an entry
+# and every entry a directory (CONTRIBUTING.md §3). `reasons` is null for an ALLOW.
+
+stranger-at-door:
+  verdicts: [BLOCK, BLOCK, ALLOW, BLOCK, BLOCK, BLOCK, BLOCK, BLOCK, ALLOW]
+  reasons:  [criterion_unavailable, criterion_unavailable, null, condition_not_met, condition_not_met, condition_not_met, condition_not_met, condition_not_met, null]
+
+frozen-camera-at-door:
+  verdicts: [BLOCK, BLOCK, BLOCK, BLOCK, BLOCK]
+  reasons:  [criterion_unavailable, criterion_unavailable, criterion_unavailable, criterion_unavailable, criterion_unavailable]
+
+lost-frames-at-door:
+  verdicts: [BLOCK, BLOCK, ALLOW, BLOCK, BLOCK, ALLOW, ALLOW]
+  reasons:  [criterion_unavailable, criterion_unavailable, null, criterion_unavailable, criterion_unavailable, null, null]
+
+silent-model-at-door:
+  verdicts: [BLOCK, BLOCK, BLOCK, BLOCK, BLOCK, ALLOW]
+  reasons:  [criterion_unavailable, criterion_unavailable, criterion_unavailable, criterion_unavailable, criterion_unavailable, null]
+
+person-in-blind-zone:
+  verdicts: [BLOCK, BLOCK, ALLOW, BLOCK, BLOCK]
+  reasons:  [criterion_unavailable, criterion_unavailable, null, condition_not_met, condition_not_met]
+
+package-on-porch:
+  verdicts: [BLOCK, BLOCK, ALLOW, BLOCK, BLOCK, BLOCK, ALLOW]
+  reasons:  [criterion_unavailable, criterion_unavailable, null, condition_not_met, condition_not_met, condition_not_met, null]

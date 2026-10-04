@@ -24,7 +24,7 @@
 - Tool MCP điều khiển chân thô, không qua gate.
 - Blacklist chân.
 - Runtime Lua kiểu ESP-Claw.
-- MCP qua mạng (xem `TODOS.md` #24).
+- MCP qua mạng (xem TSK-P2-04: `mcp serve --http`, có xác thực).
 - Kênh IM (Telegram, Zalo).
 - Sinh ràng buộc gate từ datasheet.
 
@@ -277,7 +277,7 @@ Nguồn: [espressif/esp-claw](https://github.com/espressif/esp-claw), Apache-2.0
 **Không lấy:**
 - `cap_lua`, `lua_module_*`: Lua tự do phá P-1.
 - `claw_core`, `cap_im_*`, `cap_web_search`.
-- MCP HTTP + mDNS của `cap_mcp_server` trước khi có `TODOS.md` #24 (NFR-SEC-09 chỉ cho stdio).
+- MCP HTTP + mDNS của `cap_mcp_server`: chỉ qua cổng có xác thực của TSK-P2-04 (NFR-SEC-09), không tự mở cổng.
 
 ## Phụ lục B — Quyết định chờ cấp mã `Q-N`
 

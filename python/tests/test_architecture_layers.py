@@ -28,6 +28,8 @@ ALLOWED: dict[str, set[str]] = {
     "mcp_desktop": {"errors"},
     "mcp_host": {"actions", "errors"},
     "mcp_server": {"actions", "errors"},
+    # the network door (TSK-P2-04): the same server as stdio's, behind TLS and token checks
+    "mcp_http": {"errors", "mcp_server"},
     "viz": {"errors", "hal", "trace"},
     "templates": {"errors", "paths"},
     "sim": {
@@ -36,6 +38,7 @@ ALLOWED: dict[str, set[str]] = {
         "errors",
         "hal",
         "mcp_host",
+        "mcp_http",
         "mcp_server",
         "models",
         "trace",
@@ -70,6 +73,7 @@ LAZY: dict[str, set[str]] = {
     "cli/main.py": {
         "mcp_desktop",
         "mcp_host",
+        "mcp_http",
         "mcp_server",
         "studio",
         "templates",
@@ -79,6 +83,11 @@ LAZY: dict[str, set[str]] = {
     "mcp_host.py": {"mcp_server"},
     # `serve_mcp` records the session only when asked to: the recorder is `testing`'s
     "sim/serve.py": {"testing"},
+    # `[vision]` (TSK-V1b-01/02): `perception` sits above `sim` (the voice session wraps a
+    # `SimSession`), so a session that reads a camera imports the vision pipeline only when the
+    # agent declares `[vision]`, inside the function that wires it
+    "sim/session.py": {"perception"},
+    "sim/vision/feed.py": {"perception"},
     # the studio shows the same desktop entry and template list as the CLI, and reads no unit above it
     "studio/api_agent.py": {"mcp_desktop", "templates"},
     "testing/tool_corpus.py": {"sim"},

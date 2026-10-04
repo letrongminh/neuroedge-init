@@ -36,7 +36,7 @@ Hợp đồng dạng tệp **không** thuộc tài liệu này vì có phiên b�
 | Nhóm | Tên | Dùng để |
 |:---|:---|:---|
 | Phiên bản | `__version__` | Chuỗi phiên bản của gói |
-| HAL | `HardwareAbstractionLayer`, `SimHAL`, `LinuxHAL`, `PinAssertion`, `BoardProfile`, `load_board_by_id`, `digital` | Dựng HAL cho `sim` hoặc `linux`, khẳng định trạng thái chân, đọc hồ sơ bo mạch; `digital.out(pin)` là cách thân `@action` điều khiển chân. `LinuxHAL` cần extra `linux` (`gpiod`) **khi dựng**, không phải khi `import neuroedge` |
+| HAL | `HardwareAbstractionLayer`, `SimHAL`, `LinuxHAL`, `PinAssertion`, `BoardProfile`, `load_board_by_id`, `digital`, `motion` | Dựng HAL cho `sim` hoặc `linux`, khẳng định trạng thái chân, đọc hồ sơ bo mạch; `digital.out(pin)` là cách thân `@action` điều khiển chân, `digital.input(pin).level()` là cách nó đọc mức một chân đầu vào đã khai (RFC-0007 §3a; không cần token, đọc hỏng ⇒ `PerceptionUnavailableError`). `motion.motor(kênh, speed=…, ramp_ms=…)`, `motion.servo(kênh, target=…)` và `motion.stop(kênh)` điều khiển kênh chuyển động đã khai (RFC-0011 §3b): lệnh chỉ chạy trong thời hạn thuê (lease) của phán quyết, gia hạn bằng một lần qua gate mới, hết hạn ⇒ trạng thái an toàn của kênh; `stop` là lệnh về phía an toàn, không bao giờ bị chặn. `LinuxHAL` cần extra `linux` (`gpiod`) **khi dựng**, không phải khi `import neuroedge` |
 | Gate và engine | `ResolvedGate`, `resolve_gate_file`, `resolve_gate_uri`, `GateRegistry`, `ActionContractEngine`, `GateVerdict`, `GateResult`, `Gate`, `Fact`, `Reason` | Nạp và phân giải gate, đăng ký vào engine, đọc phán quyết. `Gate` là bí danh cũ của `GateResult`, giữ vì đã công khai từ 0.1 |
 | Cây quyết định | `compile_tree`, `walk`, `TreeResult` | Biên dịch gate đã phân giải thành cây và duyệt nó trên máy tính — hàm thuần, cùng phán quyết với walker trên thiết bị |
 | Hành động và tool call | `action`, `spec_of`, `Conversation`, `ActionResult`, `ToolCall`, `ToolResult`, `ToolSet`, `dispatch` | `@action`, `c.do()` qua gate, và đường duy nhất từ một tool call tới chân: `dispatch` (`docs/spec/tool_calling.md` §2) |
@@ -44,7 +44,7 @@ Hợp đồng dạng tệp **không** thuộc tài liệu này vì có phiên b�
 | Mô hình | `SystemOne`, `SystemTwo` | Hai tầng mô hình của agent |
 | Vết ghi và kiểm thử | `TraceRecorder`, `load_trace`, `validate_trace`, `replay`, `scenario` | Ghi vết (băm lời người dùng theo mặc định, NFR-PRIV-03), thẩm định, replay |
 | MCP | `serve_mcp` | Khởi động MCP server qua stdio từ mã Python (§4) |
-| Lỗi | `NeuroEdgeError` và các lớp con: `ActionContractViolation`, `TokenReplayError`, `ToolCallError`, `GateError`, `GateNotFoundError`, `GateSchemaError`, `GateInheritanceError`, `BoardCapabilityError`, `AgentManifestError`, `BuildFailed`, `TraceValidationError`, `SafetyRegressionError`, `ReplayError`, `VerificationError`, `PerceptionUnavailableError` | Mọi lớp lỗi của gói, mã ở PRD Phụ lục B. `ToolCall` dựng với nguồn không hợp lệ ném `ToolCallError` (NE1004), cũng là `ValueError` để mã viết cho 0.1 vẫn chạy |
+| Lỗi | `NeuroEdgeError` và các lớp con: `ActionContractViolation`, `TokenReplayError`, `EnvelopeRefusedError` (NE1003, do phong bì ném — RFC-0007), `ToolCallError`, `GateError`, `GateNotFoundError`, `GateSchemaError`, `GateInheritanceError`, `BoardCapabilityError`, `AgentManifestError`, `BuildFailed`, `TraceValidationError`, `SafetyRegressionError`, `ReplayError`, `VerificationError`, `PerceptionUnavailableError` | Mọi lớp lỗi của gói, mã ở PRD Phụ lục B. `ToolCall` dựng với nguồn không hợp lệ ném `ToolCallError` (NE1004), cũng là `ValueError` để mã viết cho 0.1 vẫn chạy |
 
 Mọi lớp lỗi trong `errors.py` **PHẢI** nằm trong `__all__` (test khoá): người tích hợp bắt lỗi theo lớp,
 nên một lớp lỗi không có tên công khai là một lỗi không bắt được.
@@ -123,6 +123,9 @@ phục vụ (`sim/serve.py::run_stdio`), không phải hai đường mã:
 
 Hàm đồng bộ, tự chạy vòng sự kiện của nó: không gọi trực tiếp từ một coroutine. Người cần giao diện
 `--ui` dùng CLI: trang đó không thuộc bề mặt Python công khai.
+Tương tự, cửa mạng của MCP server (`neuroedge mcp serve --http`: Streamable HTTP, mTLS, token OAuth 2.1;
+`docs/spec/tool_calling.md` §8.1) là việc của CLI, **chưa** thuộc bề mặt Python công khai: `serve_mcp` chỉ
+phục vụ qua stdio, và không có tham số nào mở một cổng mạng.
 
 ## 5. Quy tắc ngừng hỗ trợ (Q-64)
 

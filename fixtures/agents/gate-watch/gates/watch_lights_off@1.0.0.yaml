@@ -1,0 +1,35 @@
+# Tắt đèn hiên khi không còn ai ở cổng. `person_confidence: { lte: 0.10 }` đi kèm vì tiêu chí
+# `bool` không có tuổi: không có nó, camera đứng hình lặp "không có ai" sẽ cho gate qua
+# (RFC-0012 §9.10). Cửa sổ khung quá cũ ⇒ chặn.
+schema:  neuroedge.gate/v1
+name:    watch_lights_off
+version: 1.0.0
+
+evaluate:
+  person_at_gate:
+    type: bool
+    instructions: "Có người trong vùng cổng"
+  people_at_gate:
+    type: numeric
+    unit: count
+    range: { min: 0, max: 50 }
+    max_age_ms: 300
+    instructions: "Số người trong vùng cổng"
+  person_confidence:
+    type: numeric
+    unit: ratio
+    range: { min: 0, max: 1 }
+    max_age_ms: 300
+    instructions: "Điểm tin cậy của nhãn person trong vùng cổng"
+
+allow_when:
+  person_at_gate:    false
+  people_at_gate:    { lte: 0 }
+  person_confidence: { lte: 0.10 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

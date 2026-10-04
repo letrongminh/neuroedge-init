@@ -2,7 +2,7 @@
 Hatch build hook: ship the language-neutral assets inside the package (TSK-S3-17).
 
 `schemas/`, `boards/`, `gates/`, `fixtures/traces/`, `fixtures/agents/`,
-`fixtures/tool_calls/` (the Gated Tool Profile corpus `neuroedge verify` runs) and
+`fixtures/tool_calls/` (the Gated Tool Profile corpus `neuroedge verify` runs), `fixtures/vision/` and
 `pipewire/` (the echo-cancel drop-in `linux` ships, TSK-S5-08) live at the monorepo
 root, outside `python/`. A wheel without them installs, but `neuroedge build`, `run`,
 `test` and `gate lint` all fail — measured 2026-09-23. This hook copies them to
@@ -40,6 +40,8 @@ ASSETS = (
     "fixtures/traces",
     "fixtures/agents",
     "fixtures/tool_calls",
+    # The scenes and inference goldens `neuroedge verify` holds each board's camera to (RFC-0012 §3f).
+    "fixtures/vision",
     # The PipeWire echo-cancel drop-in `linux` ships to the device (TSK-S5-08, Q-22):
     # language-neutral, so it travels with the other assets.
     "pipewire",

@@ -1,0 +1,8 @@
+# Narrows the stranger confidence ceiling from 0.10 to 0.05 — tightening is allowed.
+schema:  neuroedge.gate/v1
+name:    stranger-tightens-ceiling
+version: 1.0.0
+extends: neuroedge://gates/vision/entry-no-stranger@1.0.0
+
+allow_when:
+  stranger_confidence: { lte: 0.05 }

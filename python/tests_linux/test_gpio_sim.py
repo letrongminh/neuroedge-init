@@ -13,6 +13,7 @@ that drives the line.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import subprocess
@@ -27,12 +28,16 @@ from mcp.client.stdio import StdioServerParameters, stdio_client
 
 from neuroedge.cli.main import app
 from neuroedge.engine.trace_sink import EventLog
+from neuroedge.errors import PerceptionUnavailableError
 from neuroedge.hal.linux import LinuxHAL
 from neuroedge.paths import fixtures_dir
+from neuroedge.sim import SimSession
 from neuroedge.testing import assert_matches_golden, replay
 from neuroedge.trace import validate_trace
 
 PINS = ["door_lock", "porch_light", "gate_relay"]
+# Input lines (`digital_in` of linux-rpi5), created after the outputs by setup_gpio_sim.sh.
+INPUTS = ["door_contact_raw", "limit_switch"]
 TRACES = fixtures_dir() / "traces"
 
 
@@ -114,7 +119,11 @@ def test_verify_reaches_target_equivalence_on_sim_and_linux():
 # --- TSK-S5-10: interactive sessions on linux drive the kernel lines ---------------------
 
 DRIVEWAY = fixtures_dir() / "agents" / "driveway" / "agent.toml"
-CHILD_ENV = {**os.environ, "NO_COLOR": "1", "COLUMNS": "200"}
+
+
+def child_env() -> dict[str, str]:
+    """The environment of a child process, read when it starts: `conftest.py` gives each test its own."""
+    return {**os.environ, "NO_COLOR": "1", "COLUMNS": "200"}
 
 
 def neuroedge(*args: str) -> subprocess.Popen:
@@ -125,7 +134,7 @@ def neuroedge(*args: str) -> subprocess.Popen:
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
-        env=CHILD_ENV,
+        env=child_env(),
     )
 
 
@@ -192,7 +201,7 @@ def test_mcp_serve_on_linux_drives_the_kernel_line_through_the_gate(sysfs, tmp_p
             *("-m", "neuroedge", "mcp", "serve", "--target", "linux"),
             *("--agent", str(DRIVEWAY), "--trace-out", str(trace_out)),
         ],
-        env=CHILD_ENV,
+        env=child_env(),
     )
 
     async def main():
@@ -246,3 +255,149 @@ def test_sigterm_ends_mcp_serve_on_linux_even_with_stdin_still_open(sysfs):
         child.kill()
     assert child.returncode == 143, output
     assert all(kernel_value(sysfs, pin) == 0 for pin in PINS)
+
+
+# --- TSK-I2a-02: digital.in on real kernel lines (RFC-0007 §3a) -----------------------------
+
+
+def pull(sysfs: Path, pin: str, high: bool) -> None:
+    """What a switch wired to the line does: gpio-sim's `pull` is the level an input reads."""
+    index = [*PINS, *INPUTS].index(pin)
+    (sysfs / f"sim_gpio{index}" / "pull").write_text("pull-up" if high else "pull-down")
+
+
+@pytest.mark.parametrize("pin", INPUTS)
+def test_an_input_line_reads_the_level_the_kernel_holds(hal, sysfs, pin):
+    pull(sysfs, pin, True)
+    assert hal.digital_in(pin, called_from="test") is True
+    pull(sysfs, pin, False)
+    assert hal.digital_in(pin, called_from="test") is False
+    events = [e["data"] for e in hal.events.events if e["type"] == "digital_in"]
+    assert events == [{"pin": pin, "value": True}, {"pin": pin, "value": False}]
+
+
+def test_an_input_line_is_requested_as_an_input_and_never_driven(hal, sysfs):
+    pull(sysfs, "limit_switch", True)
+    assert hal.digital_in("limit_switch", called_from="test") is True
+    index = [*PINS, *INPUTS].index("limit_switch")
+    value = int((sysfs / f"sim_gpio{index}" / "value").read_text().strip())
+    assert value == 1, "an output driven inactive would read 0 here; an input reads its pull"
+    assert not any(kernel_value(sysfs, pin) for pin in PINS), "no output line moved"
+
+
+def test_a_pin_the_board_does_not_declare_as_an_input_is_refused_and_no_line_is_touched(hal, sysfs):
+    with pytest.raises(Exception, match="declares no input pin"):
+        hal.digital_in("door_lock", called_from="test")
+    assert kernel_value(sysfs, "door_lock") == 0
+
+
+def test_a_line_released_by_close_cannot_be_read_again(sysfs):
+    hal = LinuxHAL(events=EventLog(target="linux", board_id="linux-rpi5"))
+    pull(sysfs, "limit_switch", True)
+    assert hal.digital_in("limit_switch", called_from="test") is True
+    hal.close()
+    with pytest.raises(PerceptionUnavailableError):
+        hal.digital_in("limit_switch", called_from="test")
+    # The kernel line is free again: another process may request it.
+    other = LinuxHAL(events=EventLog(target="linux", board_id="linux-rpi5"))
+    try:
+        assert other.digital_in("limit_switch", called_from="test") is True
+    finally:
+        other.close()
+
+
+GATE = """\
+schema: neuroedge.gate/v1
+name: shut
+version: 1.0.0
+evaluate:
+  door_closed:
+    type: bool
+    instructions: the door contact reads closed
+allow_when:
+  door_closed: true
+on_block:
+  action: deny
+budget:
+  p95_latency_ms: 100
+  fail: closed
+"""
+
+
+def digital_agent(directory: Path) -> Path:
+    """`đóng cổng` behind a gate that reads the door contact line."""
+    (directory / "actions").mkdir()
+    (directory / "actions" / "gate.py").write_text(
+        "from neuroedge import action\n"
+        "from neuroedge.hal import digital\n\n"
+        '@action(name="gpio_sim_shut", requires="digital.out:gate_relay", gate="shut")\n'
+        "def shut() -> None:\n"
+        '    digital.out("gate_relay").on()\n',
+        encoding="utf-8",
+    )
+    (directory / "shut.yaml").write_text(GATE, encoding="utf-8")
+    (directory / "commands.toml").write_text(
+        '[grammar]\nversion = 1\n\n[[command]]\nintent = "shut"\npatterns = ["đóng cổng"]\n'
+        'tool = "gpio_sim_shut"\n',
+        encoding="utf-8",
+    )
+    (directory / "agent.toml").write_text(
+        '[agent]\nname = "gpio-sim-digital-in"\nversion = "0.1.0"\n\n'
+        '[requires]\n"digital.out" = { pins = ["gate_relay"] }\n'
+        '"digital.in" = { pins = ["door_contact_raw"] }\n\n'
+        '[gates]\nshut = "shut.yaml"\n\n'
+        '[sim.digital_facts]\ndoor_closed = { pin = "door_contact_raw" }\n',
+        encoding="utf-8",
+    )
+    return directory / "agent.toml"
+
+
+def test_a_level_set_through_gpio_sim_is_a_gate_fact_that_allows_and_blocks(sysfs, tmp_path):
+    path = digital_agent(tmp_path)
+    session = SimSession.load(path, target="linux")
+    try:
+        pull(sysfs, "door_contact_raw", False)
+        blocked = asyncio.run(session.handle("đóng cổng"))
+        assert not blocked.allowed and blocked.result.gate.reason == "condition_not_met"
+        assert kernel_value(sysfs, "gate_relay") == 0
+        pull(sysfs, "door_contact_raw", True)
+        allowed = asyncio.run(session.handle("đóng cổng"))
+        assert allowed.allowed and wait_for(sysfs, "gate_relay", 1)
+        fact = session.events.of_type("gate_facts")[-1]["door_closed"]
+        assert fact["value"] is True and fact["source"] == "digital.in"
+        assert fact["age_ms"] == fact["eval_offset_ms"] - fact["read_offset_ms"] >= 0
+    finally:
+        session.close()
+    assert kernel_value(sysfs, "gate_relay") == 0
+
+
+@pytest.mark.usefixtures("fresh_actions")
+def test_an_input_line_that_cannot_be_read_blocks_criterion_unavailable(sysfs, tmp_path):
+    import gpiod
+
+    path = digital_agent(tmp_path)
+    session = SimSession.load(path, target="linux")
+    squatter = None
+    try:
+        pull(sysfs, "door_contact_raw", True)
+        # The session's request is lost, and another process takes the line: the next read
+        # cannot request it again.
+        for request, _offset in session.hal._inputs.values():
+            request.release()
+        session.hal._inputs.clear()
+        offset = [*PINS, *INPUTS].index("door_contact_raw")
+        squatter = gpiod.request_lines(
+            os.environ["NEUROEDGE_GPIO_SIM_CHIP"],
+            consumer="squatter",
+            config={
+                (offset,): gpiod.LineSettings(direction=gpiod.line.Direction.INPUT),
+            },
+        )
+        turn = asyncio.run(session.handle("đóng cổng"))
+        assert not turn.allowed and turn.result.gate.reason == "criterion_unavailable"
+        assert kernel_value(sysfs, "gate_relay") == 0
+        assert "cannot be read" in session.events.of_type("digital_in")[-1]["reason"]
+    finally:
+        if squatter is not None:
+            squatter.release()
+        session.close()

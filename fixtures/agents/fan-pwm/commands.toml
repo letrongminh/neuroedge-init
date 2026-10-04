@@ -1,0 +1,16 @@
+# Fixed-command grammar for the fan-pwm sample (Q-14, Q-15): the one command that needs no
+# arguments. A speed and a time are the arguments of the `fan_run` tool, which System 2 or an
+# MCP client fills; the gate limits them either way.
+[grammar]
+version   = 1
+threshold = 0.80
+
+[[command]]
+intent   = "fan_stop"
+patterns = ["tắt quạt", "dừng quạt", "stop the fan"]
+tool     = "fan_stop"
+
+[[command]]
+intent   = "fan_assist"
+patterns = ["đẩy quạt", "boost the fan"]
+tool     = "fan_assist"

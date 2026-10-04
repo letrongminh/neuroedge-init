@@ -243,6 +243,76 @@ def test_an_unsupported_target_is_refused(tmp_path):
     assert "[targets]" in _problems(excinfo)[0].where
 
 
+# --- Which board when --board is absent (RFC-0013 §3e) ---------------------------------------
+
+
+NEEDS_48_KHZ = '"audio.in" = { sample_rate_hz = 48000 }'
+
+
+def test_without_a_board_the_default_is_checked_and_the_ones_that_fit_are_named(tmp_path):
+    """sim-default samples at 16 kHz, sim-rpi5 at 48 kHz: the build fails and says which fits."""
+    out = tmp_path / "out"
+    with pytest.raises(BuildFailed) as excinfo:
+        build(_minimal(tmp_path, requires=NEEDS_48_KHZ), target="sim", out_dir=out)
+    mismatch, hint = _problems(excinfo)
+    assert "audio.in sample_rate_hz = 48000" in mismatch.where and "sim-default" in mismatch.why
+    assert isinstance(hint, BoardCapabilityError)
+    assert "no --board was given" in hint.why and "'sim-default'" in hint.why
+    assert "--board sim-rpi5" in hint.how
+    assert not out.exists(), "a failed build writes nothing, and never on the board it suggests"
+
+
+def test_the_hint_never_builds_on_the_board_it_names(tmp_path):
+    """The user decides: the same agent builds on sim-rpi5 only when asked for it."""
+    agent = _minimal(tmp_path, requires=NEEDS_48_KHZ)
+    assert build(agent, target="sim", board_id="sim-rpi5").board == "sim-rpi5"
+    with pytest.raises(BuildFailed):
+        build(agent, target="sim")
+
+
+def test_when_no_reference_board_fits_the_build_says_so(tmp_path):
+    with pytest.raises(BuildFailed) as excinfo:
+        build(_minimal(tmp_path, requires='"audio.in" = { sample_rate_hz = 96000 }'), target="sim")
+    hint = _problems(excinfo)[-1]
+    assert "no reference board of sim satisfies [requires]" in hint.how
+    assert "--board" not in hint.how
+
+
+def test_a_target_with_one_reference_board_gets_the_same_honest_answer(tmp_path):
+    with pytest.raises(BuildFailed) as excinfo:
+        build(_minimal(tmp_path, requires='"digital.out" = { pins = ["garage"] }'), target="linux")
+    hint = _problems(excinfo)[-1]
+    assert "'linux-rpi5'" in hint.why
+    assert "no reference board of linux satisfies [requires]" in hint.how
+
+
+def test_an_explicit_board_gets_no_hint_and_a_default_that_fits_builds(tmp_path):
+    with pytest.raises(BuildFailed) as excinfo:
+        build(_minimal(tmp_path, requires=NEEDS_48_KHZ), target="sim", board_id="sim-default")
+    (only,) = _problems(excinfo)
+    assert "no --board was given" not in only.why
+    assert build(_minimal(tmp_path), target="sim").board == "sim-default"
+
+
+def test_cli_build_without_board_lists_the_reference_boards_that_fit(tmp_path):
+    out = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        [
+            "build",
+            "--target",
+            "sim",
+            "--agent",
+            str(_minimal(tmp_path, requires=NEEDS_48_KHZ)),
+            "--out",
+            str(out),
+        ],
+    )
+    assert result.exit_code == 1, result.output
+    assert "--board sim-rpi5" in result.output
+    assert not out.exists()
+
+
 # --- CLI ------------------------------------------------------------------------------------
 
 

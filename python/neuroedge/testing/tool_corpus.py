@@ -9,6 +9,7 @@ the world it arrives in:
     call:    { name: light_off, arguments: {}, source: mcp }
     facts:   { }                             # override [sim.facts] of the agent
     sensors: { motion: true }                # simulated readings, before the call
+    board:   sim-rpi5                        # a reference board of `sim`; default sim-default
 
 and its expectation — `status`, the verdict fields, the pin commands — lives in
 `expected_results.yaml` under ``valid:`` or ``invalid:``, one entry per file and
@@ -35,11 +36,12 @@ import yaml
 
 from ..actions.tools import SOURCES, ToolCall, check_arguments
 from ..errors import NeuroEdgeError
+from ..hal.board import REFERENCE_BOARDS
 from ..paths import fixtures_dir
 
 KINDS = ("valid", "invalid")
 EXPECTED_FILE = "expected_results.yaml"
-CASE_KEYS = {"agent", "call", "facts", "sensors"}
+CASE_KEYS = {"agent", "board", "call", "facts", "sensors"}
 CALL_KEYS = {"name", "arguments", "source"}
 # Verdict fields an expectation must state whenever the result carries them.
 STRICT_FIELDS = ("reason", "failed_criterion", "on_block", "escalated_to")
@@ -48,6 +50,7 @@ OPTIONAL_FIELDS = ("gate", "message")
 EXPECTED_KEYS = {
     "status",
     "pins",
+    "motion",
     "problems",
     "confirmation",
     "fallback",
@@ -68,6 +71,7 @@ class ToolCase:
     call: ToolCall
     facts: dict[str, Any] = field(default_factory=dict)
     sensors: dict[str, Any] = field(default_factory=dict)
+    board: str | None = None  # a reference board of `sim` other than the default (RFC-0013)
 
     @property
     def name(self) -> str:
@@ -79,6 +83,8 @@ class CaseOutcome:
     case: ToolCase
     content: dict[str, Any]
     pins: list[dict[str, Any]]
+    # The `motion.*` commands and safe-state commands of the case (RFC-0011), in order.
+    motion: list[dict[str, Any]]
     # The call matches the tool's advertised inputSchema, after §2 coercion.
     conforms: bool
     differences: list[str]
@@ -136,6 +142,13 @@ def load_case(path: Path, kind: str) -> ToolCase:
             f"use one of {list(SOURCES)} — the runtime assigns it, as a connection would",
         )
     arguments = _mapping(call.get("arguments"), f"{path} -> call.arguments", "call.arguments")
+    board = document.get("board")
+    if board is not None and board not in REFERENCE_BOARDS["sim"]:
+        raise _corpus_error(
+            f"{path} -> board",
+            f"{board!r} is not a reference board of `sim`",
+            f"use one of {list(REFERENCE_BOARDS['sim'])}, or omit board for the default",
+        )
     return ToolCase(
         path=path,
         kind=kind,
@@ -143,6 +156,7 @@ def load_case(path: Path, kind: str) -> ToolCase:
         call=ToolCall(call["name"], arguments, source),
         facts=_mapping(document.get("facts"), f"{path} -> facts", "facts"),
         sensors=_mapping(document.get("sensors"), f"{path} -> sensors", "sensors"),
+        board=board,
     )
 
 
@@ -211,7 +225,7 @@ def session_for(case: ToolCase) -> Any:
     from ..sim import SimSession
 
     agent = fixtures_dir() / "agents" / case.agent / "agent.toml"
-    session = SimSession.load(agent, facts=case.facts)
+    session = SimSession.load(agent, facts=case.facts, board_id=case.board)
     for sensor, value in case.sensors.items():
         session.set_sensor(sensor, value)
     return session
@@ -258,15 +272,38 @@ def _compare(label: str, expected: Mapping[str, Any], content: Mapping[str, Any]
     return out
 
 
+def motion_events(session: Any) -> list[dict[str, Any]]:
+    """What the case did to the motion channels: each command's setpoint, each safe state's cause."""
+    out: list[dict[str, Any]] = []
+    for event in session.events.events:
+        data = event["data"]
+        if event["type"] == "motion_command":
+            keys = ("channel", "kind", "speed", "target", "run")
+            out.append({"command": {k: data[k] for k in keys if k in data}})
+        elif event["type"] == "motion_safe":
+            out.append({"safe": {k: data[k] for k in ("channel", "state", "cause")}})
+    return out
+
+
 def compare(case: ToolCase, expected: Mapping[str, Any], outcome: tuple[Any, Any]) -> CaseOutcome:
     session, result = outcome
     content = result.content()
     pins = [
-        {"pin": e["pin"], "operation": e["operation"], "duration_ms": e["duration_ms"]}
+        {
+            "pin": e["pin"],
+            "operation": e["operation"],
+            "duration_ms": e["duration_ms"],
+            # a PWM command states its frequency and duty too (RFC-0010)
+            **{k: e[k] for k in ("frequency_hz", "duty") if k in e},
+        }
         for e in session.events.of_type("actuator_command")
     ]
+    motion = motion_events(session)
     conforms = _conforms(session, case.call)
     differences = _compare("", expected, content)
+    wanted_motion = [dict(m) for m in expected.get("motion") or []]
+    if motion != wanted_motion:
+        differences.append(f"motion: expected {wanted_motion}, got {motion}")
     wanted_pins = [dict(p) for p in expected.get("pins") or []]
     if pins != wanted_pins:
         differences.append(f"pins: expected {wanted_pins}, got {pins}")
@@ -280,7 +317,7 @@ def compare(case: ToolCase, expected: Mapping[str, Any], outcome: tuple[Any, Any
             differences.append("in invalid/, but the call matches the tool's inputSchema")
         if content["status"] == "ALLOW":
             differences.append("in invalid/, but the call was ALLOWed")
-    return CaseOutcome(case, content, pins, conforms, differences)
+    return CaseOutcome(case, content, pins, motion, conforms, differences)
 
 
 async def run_case(case: ToolCase, expected: Mapping[str, Any]) -> CaseOutcome:

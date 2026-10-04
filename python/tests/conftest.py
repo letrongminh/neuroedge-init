@@ -1,6 +1,7 @@
 """Shared fixtures for the NeuroEdge test suite."""
 
 import os
+import shutil
 from pathlib import Path
 
 # CLI output is asserted as plain text. A developer shell with FORCE_COLOR set
@@ -15,9 +16,26 @@ import pytest
 import yaml
 
 from neuroedge.engine import GateRegistry
+from neuroedge.hal.board import load_board_by_id
 from neuroedge.paths import repo_root
 
 ROOT = repo_root()
+
+
+@pytest.fixture(autouse=True)
+def envelope_state(tmp_path, monkeypatch):
+    """
+    A `linux` session keeps the on-time of its pins in a state directory and, without a
+    record, refuses every on (RFC-0007 §3d). A test is a new rig: its own empty directory, so
+    nothing is written under the developer's home and no test sees another's on-time. The
+    tests of the record itself (`test_envelope.py`) set their own.
+    """
+    monkeypatch.setenv("NEUROEDGE_LINUX_ENVELOPE_STATE", str(tmp_path / "envelope-state"))
+    monkeypatch.setenv("NEUROEDGE_LINUX_ENVELOPE_INIT", "1")
+    # The supervisor process needs the real gpiod; these tests stand a fake in for it inside the
+    # process, so they opt out of supervision explicitly. Tests of supervision pass
+    # `supervise=True`, or delete this variable to see the default (`test_hal_linux_envelope.py`).
+    monkeypatch.setenv("NEUROEDGE_LINUX_SUPERVISE", "0")
 
 
 @pytest.fixture(scope="session")
@@ -46,6 +64,11 @@ def traces_dir() -> Path:
 
 
 @pytest.fixture(scope="session")
+def board_fixtures_dir() -> Path:
+    return ROOT / "fixtures" / "boards"
+
+
+@pytest.fixture(scope="session")
 def gate_fixtures_dir() -> Path:
     return ROOT / "fixtures" / "gates"
 
@@ -63,6 +86,11 @@ def _load_yaml(path: Path) -> dict:
 @pytest.fixture(scope="session")
 def expected_gate_errors(gate_fixtures_dir: Path) -> dict:
     return _load_yaml(gate_fixtures_dir / "expected_errors.yaml")
+
+
+@pytest.fixture(scope="session")
+def expected_board_errors(board_fixtures_dir: Path) -> dict:
+    return _load_yaml(board_fixtures_dir / "expected_errors.yaml")
 
 
 @pytest.fixture(scope="session")
@@ -132,3 +160,21 @@ def proxies(monkeypatch):
             monkeypatch.setenv(name, url)
 
     return point
+
+
+@pytest.fixture
+def feedback_board(tmp_path, monkeypatch):
+    """`sim-rpi5` with a hardware read-back declared for `fan`: a boards dir of its own."""
+    boards = tmp_path / "boards"
+    shutil.copytree(Path(load_board_by_id("sim-rpi5").source).parent, boards)
+    path = boards / "sim-rpi5.toml"
+    path.write_text(
+        path.read_text(encoding="utf-8").replace(
+            "[capabilities.digital_in]",
+            '[capabilities.digital_out.feedback]\npins = ["fan"]\n\n[capabilities.digital_in]',
+            1,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("neuroedge.hal.board.boards_dir", lambda: boards)
+    return load_board_by_id("sim-rpi5")

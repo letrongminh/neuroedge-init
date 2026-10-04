@@ -32,8 +32,16 @@ from ..engine import (
 )
 from ..engine.gate_resolver import lint_registry
 from ..errors import BoardCapabilityError, BuildFailed, NeuroEdgeError, VerificationError
-from ..hal.board import REFERENCE_BOARD, SUPPORTED_TARGETS, available_boards, load_board_by_id
-from ..paths import gates_dir, repo_root
+from ..hal.board import (
+    ALL_PRIMITIVES,
+    PRIMITIVES,
+    REFERENCE_BOARD,
+    REFERENCE_BOARDS,
+    SUPPORTED_TARGETS,
+    available_boards,
+    load_board_by_id,
+)
+from ..paths import fixtures_dir, gates_dir, repo_root
 from ..sim.serve import MCP_INIT_TIMEOUT_S
 from ..sim.serve import exit_on_signals as _exit_on_signals
 from ..trace import load_trace
@@ -522,7 +530,7 @@ def board_list():
 def board_show(
     board_id: str = typer.Argument(..., help="Board id, e.g. esp32s3-box-3"),
 ):
-    """Show one board's declared capabilities across the five HAL primitives."""
+    """Show one board's declared capabilities: the five core primitives and the extensions it has."""
     try:
         board = load_board_by_id(board_id)
     except NeuroEdgeError as error:
@@ -540,10 +548,10 @@ def board_show(
     table = Table()
     table.add_column("Primitive", style="cyan")
     table.add_column("Declared parameters")
-    for primitive in ("audio.in", "audio.out", "digital.out", "sensor.read", "display"):
+    for primitive in ALL_PRIMITIVES:
         if board.supports(primitive):
             table.add_row(primitive, json.dumps(board.capability(primitive), ensure_ascii=False))
-        else:
+        elif primitive in PRIMITIVES:  # an extension a board lacks is not an omission
             table.add_row(primitive, "[red]not provided[/red]")
     console.print(table)
 
@@ -656,14 +664,52 @@ def mcp_serve(
     ui: bool = typer.Option(
         False, "--ui", help="Also serve this session as the live sim page on 127.0.0.1"
     ),
-    port: int = typer.Option(8765, "--port", help="Port for --ui (0 picks a free one)"),
+    port: int | None = typer.Option(
+        None,
+        "--port",
+        help="Port for --ui (default 8765) or for --http (default 8443); 0 picks a free one",
+    ),
     open_browser: bool = typer.Option(
         False, "--open", help="With --ui, open the page in a browser"
     ),
     init_timeout: float = typer.Option(
         MCP_INIT_TIMEOUT_S,
         "--init-timeout",
-        help="Exit if no client sends `initialize` within this many seconds (0: wait forever)",
+        help="Exit if no client sends `initialize` within this many seconds (stdio only; 0: wait forever)",
+    ),
+    http: bool = typer.Option(
+        False,
+        "--http",
+        help="Serve over the network (Streamable HTTP, mTLS, OAuth 2.1 tokens) instead of stdio; "
+        "needs every flag below",
+    ),
+    host: str | None = typer.Option(
+        None, "--host", help="With --http, the address to listen on (default 127.0.0.1)"
+    ),
+    tls_cert: Path | None = typer.Option(
+        None, "--tls-cert", help="With --http: the server certificate (PEM)"
+    ),
+    tls_key: Path | None = typer.Option(
+        None, "--tls-key", help="With --http: the server certificate's private key (PEM)"
+    ),
+    client_ca: Path | None = typer.Option(
+        None, "--client-ca", help="With --http: the CA of the devices' client certificates (mTLS)"
+    ),
+    issuer: str | None = typer.Option(
+        None, "--issuer", help="With --http: the OAuth authorization server's issuer URL (https)"
+    ),
+    audience: str | None = typer.Option(
+        None,
+        "--audience",
+        help="With --http: this server's MCP URL, the audience of every token (https)",
+    ),
+    jwks: Path | None = typer.Option(
+        None, "--jwks", help="With --http: the issuer's public signing keys (JWKS file)"
+    ),
+    required_scope: str | None = typer.Option(
+        None,
+        "--required-scope",
+        help="With --http: the scope a token must carry (default neuroedge:call)",
     ),
 ):
     """
@@ -673,15 +719,78 @@ def mcp_serve(
     With --ui (sim only) the same session is shown live in the browser: a tool call from
     the MCP client moves the virtual devices on the page at once. The page never
     takes the MCP server down: a taken port falls back to a free one (URL on stderr).
+
+    With --http the server listens on the network instead: Streamable HTTP over mTLS
+    (TLS 1.3, a client certificate required), and every request carries a per-device
+    OAuth 2.1 bearer token bound to that certificate. Without every one of --tls-cert,
+    --tls-key, --client-ca, --issuer, --audience and --jwks it does not start. The gate,
+    the verdict token and the trace are the stdio server's, unchanged.
     """
     from ..mcp_server import _sdk
-    from ..sim.serve import run_stdio
+    from ..sim.serve import run_http, run_stdio
 
     try:
         _sdk()
     except NeuroEdgeError as error:
         _fail(error)
         return
+    network = {
+        "--host": host,
+        "--tls-cert": tls_cert,
+        "--tls-key": tls_key,
+        "--client-ca": client_ca,
+        "--issuer": issuer,
+        "--audience": audience,
+        "--jwks": jwks,
+        "--required-scope": required_scope,
+    }
+    if http and ui:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge mcp serve --http --ui",
+                why="the live page and the network door are not combined: the page answers `ask` "
+                "questions as the person on the device, and shares the session",
+                how="drop --ui for the network server, or --http for the page (stdio)",
+            ),
+            code=2,
+        )
+        return
+    if not http and any(value is not None for value in network.values()):
+        given = ", ".join(flag for flag, value in network.items() if value is not None)
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge mcp serve {given}",
+                why="those flags configure the network transport, which is off unless --http is given",
+                how="add --http (with every flag it needs), or drop them to serve over stdio",
+            )
+        )
+        return
+    prepared = None
+    if http:
+        from ..mcp_http import DEFAULT_PORT, DEFAULT_SCOPE, HttpConfig, prepare
+
+        try:  # before the session is wired and before any socket exists
+            prepared = prepare(
+                HttpConfig(
+                    host=host or "127.0.0.1",
+                    port=DEFAULT_PORT if port is None else port,
+                    tls_cert=tls_cert,
+                    tls_key=tls_key,
+                    client_ca=client_ca,
+                    issuer=issuer,
+                    audience=audience,
+                    jwks=jwks,
+                    required_scope=required_scope or DEFAULT_SCOPE,
+                )
+            )
+        except NeuroEdgeError as error:
+            _fail(error)
+            return
+    if trace_out is not None and target != "linux" and not http:
+        # SIGTERM / SIGHUP must still write the trace and close the HAL (TSK-N2-03): the host
+        # that stops a server sends SIGTERM. `linux` installs the handlers in `_start_session`;
+        # the network server (--http) listens for both signals itself and closes the same way.
+        _exit_on_signals()
     session = _start_session(
         "mcp serve",
         agent,
@@ -691,16 +800,31 @@ def mcp_serve(
         events=_trace_log(trace_out, raw),
         ui=ui,
     )
-    page = _mcp_page(session, port) if ui else None
+    page = _mcp_page(session, 8765 if port is None else port) if ui else None
     # stdout is the protocol channel; anything for people goes to stderr.
     err_console.print(
         f"neuroedge MCP server · {escape(session.manifest.label)} · "
         f"{escape(session.target)}/{escape(session.hal.board.id)} · "
-        f"{len(session.tools.specs)} tool(s) · stdio"
+        f"{len(session.tools.specs)} tool(s) · {'https (mTLS)' if http else 'stdio'}"
     )
     warning = session.canned_fact_warning()
     if warning is not None:
         err_console.print(f"[yellow]! {escape(warning)}[/yellow]")
+    if prepared is not None:
+
+        def listening(bound_host: str, bound_port: int) -> None:
+            err_console.print(
+                f"listening on {bound_host}:{bound_port}{prepared.path} — "
+                "mTLS, OAuth 2.1 bearer tokens; refused attempts are traced as mcp_auth_refused",
+                markup=False,
+                highlight=False,
+            )
+
+        try:
+            run_http(session, prepared, trace_out=trace_out, on_ready=listening)
+        except NeuroEdgeError as error:
+            _fail(error)
+        return
     if page is not None:
         err_console.print(f"sim UI at {page.url} (same session)", markup=False, highlight=False)
 
@@ -962,17 +1086,70 @@ def verify(
             problems += 1
             err_console.print(f"  [red]✗[/red] {path.name}: [{error.code}] {escape(error.why)}")
 
+    # RFC-0013 §3f item 7: besides the canonical traces its primitives allow, a board replays the
+    # corpus of every extension primitive it carries — one directory of `fixtures/traces/` per
+    # pack (`EXTENSION_TRACES`: `sensor-pack` for `digital.in`, `analog.in` and `i2c`; `vision` for
+    # `vision.in`; `fine-control` for a PWM channel of `digital.out`; `motion` for `motion`).
+    # These are not canonical: a board that lacks a primitive skips them, it does not fail, each
+    # corpus is counted apart, and a corpus no board replayed is a failure.
+    extension = []
+    for directory in EXTENSION_TRACES:
+        for path in sorted((traces_root / directory).glob("*.json")):
+            try:
+                load_trace(path)
+                extension.append(path)
+                console.print(f"  [green]✓[/green] {directory}/{path.name}")
+            except NeuroEdgeError as error:
+                problems += 1
+                err_console.print(
+                    f"  [red]✗[/red] {directory}/{path.name}: [{error.code}] {escape(error.why)}"
+                )
+
     corpus_problems, tool_calls = _verify_tool_corpus()
     problems += corpus_problems
 
-    console.print(f"\n[bold]Replaying canonical traces on {', '.join(requested)}[/bold]")
+    # One column per (target, board): equivalence means something only once it has run on
+    # every reference board of the target (RFC-0013 §3f). `esp32s3` replays on the device,
+    # which declares its own board, so it keeps one column until a second board needs a port.
+    columns: list[tuple[str, str, str | None]] = []
+    for target in requested:
+        boards = () if target == "esp32s3" else REFERENCE_BOARDS.get(target, ())
+        columns += [(f"{target}/{b}", target, b) for b in boards] or [(target, target, None)]
+    console.print(
+        f"\n[bold]Replaying canonical traces on {', '.join(c[0] for c in columns)}[/bold]"
+    )
     table = Table()
     table.add_column("Trace", style="cyan")
-    for target in requested:
-        table.add_column(target, justify="center")
-    rows: dict[str, list[str]] = {path.name: [] for path in valid}
-    for target in requested:
-        for path in valid:
+    for label, _target, _board in columns:
+        table.add_column(label, justify="center")
+
+    def row_of(path: Path) -> str:
+        return path.name if path.parent == traces_root else f"{path.parent.name}/{path.name}"
+
+    rows: dict[str, list[str]] = {row_of(path): [] for path in [*valid, *extension]}
+    replayed_on: dict[str, int] = {label: 0 for label, _t, _b in columns}
+    extension_replayed: dict[str, int] = {path.parent.name: 0 for path in extension}
+    extension_on: dict[str, dict[str, int]] = {}
+    for label, target, board_id in columns:
+        for path in [*valid, *extension]:
+            canonical = path.parent == traces_root
+            if target == "esp32s3" and not canonical:
+                rows[row_of(path)].append("[dim]—[/dim]")  # the device replays the canonical set
+                continue
+            if board_id is not None:
+                lacking = _trace_lacks(load_board_by_id(board_id), load_trace(path))
+                if lacking:
+                    # A board replays what it declares enough for; the default board must
+                    # replay all of it, so for that one a gap is a failure, not a skip.
+                    rows[row_of(path)].append("[dim]—[/dim]")
+                    if canonical and board_id == REFERENCE_BOARD[target]:
+                        problems += 1
+                        err_console.print(
+                            f"  [red]✗[/red] {path.name} on {escape(label)}: the default board "
+                            f"of {escape(target)} lacks {lacking}, and must replay every "
+                            "canonical trace (RFC-0013 §3f)"
+                        )
+                    continue
             try:
                 if target == "esp32s3":
                     result = _device_replay(device, path, port)
@@ -987,31 +1164,49 @@ def verify(
                     # A canonical trace must be decided by the very gate it was recorded
                     # with (RFC-0008): a different gate_digest is refused, not compared.
                     result = asyncio.run(
-                        TracePlayer(path, target=target, enforce_gate_digests=True).replay()
+                        TracePlayer(
+                            path,
+                            target=target,
+                            board_id=board_id,
+                            enforce_gate_digests=True,
+                        ).replay()
                     )
                     verdicts = result.verdicts
                 diff = GoldenComparator().compare(result, load_trace(path))
             except NeuroEdgeError as error:
                 problems += 1
-                rows[path.name].append("[red]✗[/red]")
+                rows[row_of(path)].append("[red]✗[/red]")
                 err_console.print(
-                    f"  [red]✗[/red] {path.name} on {escape(target)}: [{error.code}] "
+                    f"  [red]✗[/red] {path.name} on {escape(label)}: [{error.code}] "
                     f"{escape(error.why)}\n    fix: {escape(error.how)}"
                 )
                 continue
-            replayed += 1
+            if canonical:
+                replayed += 1
+                replayed_on[label] += 1
+            else:  # counted apart: the canonical figures are what each board must reach
+                corpus_name = path.parent.name
+                extension_replayed[corpus_name] += 1
+                counted = extension_on.setdefault(corpus_name, {})
+                counted[label] = counted.get(label, 0) + 1
             if diff.ok:
-                rows[path.name].append(f"[green]✓[/green] {' '.join(verdicts)}")
+                rows[row_of(path)].append(f"[green]✓[/green] {' '.join(verdicts)}")
             else:
                 problems += 1
-                rows[path.name].append("[red]✗ differs[/red]")
+                rows[row_of(path)].append("[red]✗ differs[/red]")
                 for difference in diff.differences:
                     err_console.print(
-                        f"  [red]✗[/red] {path.name} on {escape(target)}: {escape(str(difference))}"
+                        f"  [red]✗[/red] {path.name} on {escape(label)}: {escape(str(difference))}"
                     )
     for name, cells in rows.items():
         table.add_row(name, *cells)
     console.print(table)
+
+    # RFC-0012 §3f clause 2: besides deciding alike, the model must *see* alike — each inference
+    # golden of fixtures/vision/golden/ (per model SHA-256, per frame) is held to what each board
+    # that declares `vision_in` gets, within that board's own tolerance. Counted apart.
+    inference_problems, inference_on = _verify_inference(columns)
+    problems += inference_problems
 
     empty = _empty_categories(
         {
@@ -1030,6 +1225,43 @@ def verify(
                 replayed,
                 traces_root,
                 f"had no trace replayed on targets {targets!r}",
+            ),
+            # Each extension corpus must be replayed by at least one board that declares its
+            # primitives (RFC-0013 §3f item 7); one nobody replayed proves nothing.
+            **(
+                {
+                    f"{corpus} corpus replays compared": (
+                        count,
+                        traces_root / corpus,
+                        "had no trace replayed on a board that declares its primitives",
+                    )
+                    for corpus, count in extension_replayed.items()
+                }
+                if any(t != "esp32s3" for t in requested)
+                else {}
+            ),
+            # Zero on one board is a failure even when the others replayed (RFC-0013 §3f).
+            **{
+                f"replays compared on {label}": (
+                    count,
+                    traces_root,
+                    "has no canonical trace this board declares enough primitives for",
+                )
+                for label, count in replayed_on.items()
+                if len(columns) > 1
+            },
+            # Only when some board declares `vision_in` (RFC-0012 §3f clause 2): with none there
+            # is no camera to hold to a golden, and nothing to count.
+            **(
+                {
+                    "inference goldens compared": (
+                        sum(inference_on.values()),
+                        fixtures_dir() / "vision" / "golden",
+                        "had no golden compared on a board that declares vision_in",
+                    )
+                }
+                if inference_on
+                else {}
             ),
         }
     )
@@ -1052,8 +1284,10 @@ def verify(
         Panel(
             f"[green]Passed:[/green] all {resolved} gate(s) resolve, all {len(valid)} "
             "canonical trace(s) validate, every tool call of the corpus gives its recorded "
-            f"result, and {replayed} replay(s) on {', '.join(requested)} match the verdicts "
+            f"result, and {_replay_breakdown(replayed_on)} match the verdicts "
             "and pin commands they record."
+            f"{_extension_breakdown(extension_on)}"
+            f"{_inference_breakdown(inference_on)}"
             f"{on_device}\n\n"
             "[yellow]Compared:[/yellow] decisions only — not timing. Timing equivalence "
             "arrives with TSK-S4-04.",
@@ -1061,6 +1295,120 @@ def verify(
             border_style="green",
         )
     )
+
+
+# The primitive each event type of a trace needs from the board it replays on. A type not
+# listed needs none: the core primitives are on every reference board (RFC-0013 §3a).
+# fixtures/traces/<each>/: the corpus of an extension pack (RFC-0013 §3f item 7), each replayed on
+# every board that declares the primitives its traces use.
+EXTENSION_TRACES = ("sensor-pack", "vision", "fine-control", "motion")
+_EVENT_PRIMITIVE = {
+    "vision_fact": "vision.in",
+    "camera_unavailable": "vision.in",
+    "actuator_command": "digital.out",
+    "actuator_command_rejected": "digital.out",
+    "sensor_read": "sensor.read",
+    "digital_in": "digital.in",
+    "i2c_read": "i2c",
+    "analog_in": "analog.in",
+    "envelope_refused": "digital.out",
+    "pin_state": "digital.out",
+    "motion_command": "motion",
+    "motion_safe": "motion",
+}
+
+
+def _trace_lacks(board: Any, trace: dict[str, Any]) -> list[str]:
+    """
+    What `board` lacks to replay `trace`: primitives it does not declare, and — PWM being a block
+    of `digital.out`, not a primitive (RFC-0010) — a PWM channel when the trace commands or reads
+    one (`pwm` commands, `pin_state`).
+    """
+    lacking = board.missing_primitives(_trace_primitives(trace))
+    uses_pwm = any(
+        e["type"] == "pin_state" or e.get("data", {}).get("operation") == "pwm"
+        for e in trace["events"]
+    )
+    if uses_pwm and not board.pwm_pins:
+        lacking.append("digital.out pwm")
+    return lacking
+
+
+def _trace_primitives(trace: dict[str, Any]) -> list[str]:
+    """The primitives a trace uses, in HAL order: what a board must declare to replay it."""
+    used = {_EVENT_PRIMITIVE[e["type"]] for e in trace["events"] if e["type"] in _EVENT_PRIMITIVE}
+    return [p for p in ALL_PRIMITIVES if p in used]
+
+
+def _verify_inference(columns: list[tuple[str, str, str | None]]) -> tuple[int, dict[str, int]]:
+    """
+    ``(problems, goldens compared per column)``: every inference golden of
+    `fixtures/vision/golden/`, checked on each column whose board declares `vision_in`, with that
+    board's `tolerance` (RFC-0012 §3f clause 2; `testing/vision_golden.py`). A board without a
+    camera, and `esp32s3` (its inference is a device capture, TSK-I3a), are skipped.
+    """
+    from ..testing.vision import check_scene_inference
+    from ..testing.vision_golden import InferenceGolden, tolerance_of
+
+    golden_dir = fixtures_dir() / "vision" / "golden"
+    compared: dict[str, int] = {}
+    problems = 0
+    for label, target, board_id in columns:
+        if target == "esp32s3" or board_id is None:
+            continue
+        try:
+            tolerance = tolerance_of(load_board_by_id(board_id))
+        except NeuroEdgeError:
+            continue  # a tree without this board: the empty-category check says so
+        if tolerance is None:
+            continue
+        compared.setdefault(label, 0)
+        console.print(
+            f"\n[bold]Inference goldens on {escape(label)}[/bold] (score_abs "
+            f"{tolerance.score_abs}, box_iou_min {tolerance.box_iou_min})"
+        )
+        for path in sorted(golden_dir.glob("*.json")):
+            try:
+                check_scene_inference(
+                    fixtures_dir() / "vision" / path.stem,
+                    InferenceGolden.load(path),
+                    tolerance,
+                    label,
+                )
+            except NeuroEdgeError as error:
+                problems += 1
+                err_console.print(
+                    f"  [red]✗[/red] {path.name} on {escape(label)}: [{error.code}] "
+                    f"{escape(error.why)}\n    fix: {escape(error.how)}"
+                )
+                continue
+            compared[label] = compared.get(label, 0) + 1
+            console.print(f"  [green]✓[/green] {path.stem}")
+    return problems, compared
+
+
+def _inference_breakdown(inference_on: dict[str, int]) -> str:
+    if not any(inference_on.values()):
+        return ""
+    return (
+        " The inference goldens match within each board's tolerance: "
+        + ", ".join(f"{count} on {label}" for label, count in inference_on.items() if count)
+        + "."
+    )
+
+
+def _extension_breakdown(extension_on: dict[str, dict[str, int]]) -> str:
+    """The replays of each extension corpus (RFC-0013 §3f item 7), apart from the canonical ones."""
+    return "".join(
+        f" The `{corpus}` corpus replays alike: "
+        + ", ".join(f"{count} on {label}" for label, count in counted.items())
+        + "."
+        for corpus, counted in extension_on.items()
+    )
+
+
+def _replay_breakdown(replayed_on: dict[str, int]) -> str:
+    return ", ".join(f"{count} replay(s) on {label}" for label, count in replayed_on.items())
 
 
 def _device_replay(sessions, path: Path, port: str) -> dict[str, Any]:
@@ -1835,7 +2183,7 @@ def build(
         report = run_build(
             agent,
             target=target,
-            board_id=board or REFERENCE_BOARD.get(target, "esp32s3-box-3"),
+            board_id=board,  # None: the target's default board, never another one (RFC-0013 §3e)
             out_dir=out,
             registry=GateRegistry(registry) if registry is not None else None,
         )

@@ -1,0 +1,22 @@
+# Agent mẫu cho `motion.*` (RFC-0011, TSK-I2a-05): một robot nhỏ có một bánh và một kẹp.
+#
+# Mỗi lệnh đi qua gate rồi nhận một lease một lệnh trong `lease_ms` của kênh (200 ms trên
+# `sim-rpi5` / `linux-rpi5`); không gọi lại thì kênh về trạng thái an toàn của nó. Vì vậy
+# `budget.p95_latency_ms` của hai gate đều ≤ lease_ms / 2 = 100 (kiểm lúc `neuroedge build`).
+# Cần bo mạch có `motion`: `--board sim-rpi5` (mặc định `sim-default` không có).
+[agent]
+name    = "rover"
+version = "0.1.0"
+
+[requires]
+"motion" = { channels = ["wheel_left", "gripper"] }
+
+[gates]
+drive = "gates/drive@1.0.0.yaml"
+grip  = "gates/grip@1.0.0.yaml"
+
+[targets]
+supported = ["sim", "linux"]
+
+[sim.facts]
+path_clear = true

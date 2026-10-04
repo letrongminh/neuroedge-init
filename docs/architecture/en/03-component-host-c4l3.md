@@ -21,9 +21,9 @@ Each package's docstring names its own layer: HAL is **L1**, models and percepti
 | 2 | `engine` | rank 0; **`engine/compiler.py` alone** may use `hal` (board cross-check at build time) and late-imports `actions`, `models`, `perception`, `mcp_host` (configuration checks) | L3 core |
 | 3 | `actions` | `engine`, `hal`, rank 0 | L3 surface |
 | 4 | `models` | `engine` (implements its protocol), `net`, rank 0 | L2 |
-| 5 | `mcp_server`, `mcp_host`, `mcp_desktop` | `actions`, rank 0 | L4 per proposal §3.1 (docstring does not declare a layer) |
+| 5 | `mcp_server`, `mcp_host`, `mcp_desktop`, `mcp_http` | `actions`, rank 0; `mcp_http` alone uses only `mcp_server` and `errors` — the network door (TSK-P2-04) sits in front of the same server as stdio, not a second road | L4 per proposal §3.1 (docstring does not declare a layer) |
 | 6 | `viz`, `templates` | `viz`: `hal`, `trace`, rank 0; `templates`: `errors`, `paths` | tools |
-| 7 | `sim` | every rank below | L0, **assembly point** |
+| 7 | `sim` | every rank below; late-imports `perception` in `sim/session.py` and `sim/vision/feed.py` (camera → gate facts, only for an agent that declares `[vision]`: `perception` sits above `sim`) | L0, **assembly point** |
 | 8 | `perception` | `sim` (the voice session wraps the typed session), `models`, `actions`, `engine`, `hal`, `net` | L2 |
 | 9 | `testing` | `perception`, `actions`, `engine`, `hal`, `trace`; late-imports `sim` (and `sim/serve.py` late-imports `testing` for the trace recorder, only when `trace_out` is given) | Action CI |
 | 10 | `studio` | every layer below except `cli` — the local web app `neuroedge studio` that shows every capability (TSK-I1-04, `docs/spec/studio.md`) | tooling |
@@ -83,7 +83,9 @@ When `brain/` enters the repository, it needs an entry in `ALLOWED` (and `LAZY` 
 
 | Module | Responsibility |
 |:---|:---|
-| `__init__.py` | `HardwareAbstractionLayer`: checks the pin name **before** calling `authorize` (a typo costs no token), then records the command |
+| `__init__.py` | `HardwareAbstractionLayer`: checks the pin name, then the envelope, then calls `authorize` (a typo or an envelope refusal costs no token), then records the command; the safe-direction `off` takes neither the envelope nor `authorize` (RFC-0007 §3d) |
+| `envelope.py` | `SafetyEnvelope`: the per-pin safety envelope — atomic reservation of on-time under a per-pin lock, mandatory auto-off, refund of the unused part, a write-ahead state file on `linux`; it can only refuse (`EnvelopeRefusedError`), never allow |
+| `supervisor.py` | The supervisor process that holds the actuator lines on `linux`: heartbeat from the runtime, a missed heartbeat or an expired deadline drops the line (`LineSupervisor`, `SupervisorClient`) |
 | `board.py` | Reads and validates `boards/*.toml`; the five primitives (`PRIMITIVES`), three targets (`SUPPORTED_TARGETS`), the reference board |
 | `digital.py`, `sensor.py`, `display.py` | API for the `@action` body: `digital.out("door_lock").pulse(...)`, `sensor.read(...)`, `display.show(...)`; `digital.out` outside `c.do()` ⇒ `NE1001` |
 | `sim.py` | `SimHAL`: virtual pins, sensors, display, microphone, speaker; timed commands cancelled on barge-in |
@@ -115,8 +117,9 @@ When `brain/` enters the repository, it needs an entry in `ALLOWED` (and `LAZY` 
 |:---|:---|
 | `sim/session.py` | `SimSession`: the assembly point for an agent on `sim` or `linux`; handles one turn (`handle`), one tool call (`call_tool`), one confirmation answer |
 | `sim/ui.py` | `SessionServer`: web UI for the same session, SSE, same-origin checks |
-| `sim/serve.py` | The shared stdio MCP serving loop: `neuroedge mcp serve` and `neuroedge.serve_mcp` (the public Python function, `docs/spec/python_api.md`) both call `run_stdio` |
+| `sim/serve.py` | The shared MCP serving loop: `neuroedge mcp serve` and `neuroedge.serve_mcp` (the public Python function, `docs/spec/python_api.md`) both call `run_stdio`; `mcp serve --http` calls `run_http`, which closes the session the same way |
 | `mcp_server.py` | The agent becomes an MCP server over stdio; one call at a time |
+| `mcp_http.py` | The authenticated network door of that same server (TSK-P2-04, `docs/spec/tool_calling.md` §8): Streamable HTTP over mTLS, per-device OAuth 2.1 tokens, a complete configuration checked before any port opens |
 | `mcp_host.py` | System 2 as MCP host: device tools through the agent's own MCP server (still through the gate), information tools from external servers per the allowlist |
 | `testing/` | Action CI: `TraceRecorder`, `TracePlayer`, `GoldenComparator`, the assert library, UART reading, runs tool-call and voice corpora |
 | `viz/` | Self-contained HTML pages for `trace view` and the web UI; Perfetto export |
@@ -193,7 +196,7 @@ The core needs only seven libraries; each optional capability is an extra, late-
 | Extra | Package | Late-imported in |
 |:---|:---|:---|
 | (core) | `typer`, `rich`, `pydantic`, `jsonschema[format-nongpl]`, `pyyaml`, `rfc8785`, `deepdiff` | — |
-| `mcp` | `mcp` | `mcp_server.py::_sdk`, `mcp_host.py::ToolHost.__aenter__` |
+| `mcp` | `mcp` (brings `starlette`, `uvicorn`, `PyJWT[crypto]`) | `mcp_server.py::_sdk`, `mcp_host.py::ToolHost.__aenter__`, `mcp_http.py` (the SDK's libraries, inside each function) |
 | `cloud` | `litellm==1.102.0` | `models/providers/litellm_provider.py::_import_litellm` |
 | `linux` | `gpiod` (LGPL, hence optional only) | `hal/linux.py::_import_gpiod` |
 | `audio` | `sounddevice` | `hal/linux.py::_import_sounddevice`, backend `live` only |

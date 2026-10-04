@@ -12,6 +12,11 @@ could forge. Outside a grant every call is an `ActionContractViolation`.
 `after_ms` schedules the command: the gate decides now, the pin moves later, and
 until then barge-in cancels it (docs/spec/voice_fsm.md §5). A HAL that cannot
 schedule refuses it — it never delivers early instead.
+
+`digital.input(pin).level()` is the input side (RFC-0007 §3a): the logic level of a declared
+input pin, True for high. Reading moves nothing, so it needs no verdict token — but it uses the
+HAL of the `c.do()` that is running the action, and a line that cannot be read raises
+`PerceptionUnavailableError` rather than returning a level. Every read is a `digital_in` event.
 """
 
 from __future__ import annotations
@@ -49,7 +54,7 @@ def grant(hal: Any, token: Any, action: str) -> Iterator[None]:
 
 def _caller() -> str:
     for frame in inspect.stack()[2:]:
-        if not frame.filename.endswith(("hal/digital.py", "contextlib.py")):
+        if not frame.filename.endswith(("hal/digital.py", "hal/motion.py", "contextlib.py")):
             return f"{frame.filename}:{frame.lineno}"
     return "<unknown>"
 
@@ -58,7 +63,13 @@ class _Pin:
     def __init__(self, name: str) -> None:
         self.name = name
 
-    def _drive(self, operation: str, duration_ms: int, after_ms: int | None = None) -> Any:
+    def _drive(
+        self,
+        operation: str,
+        duration_ms: int,
+        after_ms: int | None = None,
+        **extra: Any,
+    ) -> Any:
         where = _caller()
         active = _active.get()
         if active is None:
@@ -91,6 +102,7 @@ class _Pin:
             signature=active.token,
             called_from=called_from,
             **scheduled,
+            **extra,
         )
 
     def pulse(
@@ -105,6 +117,58 @@ class _Pin:
     def off(self, *, after_ms: int | None = None) -> Any:
         return self._drive("off", 0, after_ms)
 
+    def pwm(
+        self,
+        *,
+        frequency_hz: int,
+        duty: float,
+        ms: int | None = None,
+        seconds: float | None = None,
+    ) -> Any:
+        """
+        Drive a PWM channel at `frequency_hz` and `duty` (0..1) for `ms` milliseconds
+        (RFC-0010 §3b). The duration has no default and no "forever": it is required, and the
+        HAL turns the channel off when it is up. Only a PWM channel of the board takes it.
+        """
+        duration = ms if ms is not None else (None if seconds is None else round(seconds * 1000))
+        return self._drive("pwm", duration, frequency_hz=frequency_hz, duty=duty)  # type: ignore[arg-type]
+
+    def state(self) -> Any:
+        """
+        The state of a PWM channel: `duty` and `frequency_hz` with the `source` of the numbers,
+        `measured` where the board declares a hardware read-back for the pin, else `commanded`
+        (RFC-0010 §3b). Reading moves nothing, so it needs no token.
+        """
+        where = _caller()
+        active = _active.get()
+        if active is None:
+            raise ActionContractViolation(
+                where=f"{where} -> digital.out({self.name!r}).state()",
+                why="no HAL is active; state is read inside an @action run by c.do()",
+                how="read it in an @action function, or call hal.pin_state() in a test",
+            )
+        return active.hal.pin_state(self.name, called_from=f"{where} ({active.action})")
+
 
 def out(pin: str) -> _Pin:
     return _Pin(pin)
+
+
+class _Input:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def level(self) -> bool:
+        where = _caller()
+        active = _active.get()
+        if active is None:
+            raise ActionContractViolation(
+                where=f"{where} -> digital.input({self.name!r})",
+                why="no HAL is active; inputs are read inside an @action run by c.do()",
+                how="read the input in an @action function, or call hal.digital_in() in a test",
+            )
+        return active.hal.digital_in(self.name, called_from=f"{where} ({active.action})")
+
+
+def input(pin: str) -> _Input:  # noqa: A001 - the agent API names the primitive, like `out`
+    return _Input(pin)

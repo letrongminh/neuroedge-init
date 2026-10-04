@@ -77,7 +77,7 @@ nó — bất biến `CHANGELOG.md` §3.3 #10; bảng mã thoát ở §2.3.
 | Đổi bố cục nhị phân `NETR` v1 của cây trên thiết bị ([RFC-0003](docs/rfc/0003-bo-cuc-nhi-phan-cay.md)): `engine/binary_tree.py` ↔ walker `targets/esp32s3/components/ne_gate/` | **RFC** (tăng số phiên bản bố cục) |
 | Thêm gate vào `gates/` hoặc `fixtures/gates/{valid,registry}/` | PR thường — `python scripts/check_digests.py --update` để khoá digest |
 | Thêm fixture phản chứng, hoặc ca corpus tool call / thoại | PR thường — theo luật khép kín ngay dưới |
-| Thêm profile bo mạch ở `boards/` | PR thường — cần phần cứng thật để điền tham số. *Hiện `test_boards.py` chỉ nhận ba profile bậc 1; bậc 2/3 chờ RFC-0002* |
+| Thêm profile bo mạch ở `boards/` | PR thường — cần phần cứng thật để điền tham số (nguyên thủy mở rộng chỉ khai khi bo thật có, không khai giả để qua test — RFC-0013 §3a). *`test_boards.py` nhận các bo tham chiếu bậc 1 của `REFERENCE_BOARDS` (`neuroedge/hal/board.py`); mỗi profile `sim-*` phải có mục trong `SIM_MIRRORS` và không giàu năng lực hơn bo nó soi; bậc 2/3 chờ RFC-0002* |
 
 Quy trình: sao `docs/rfc/0000-template.md`, mở PR **chỉ chứa tệp RFC**, thảo luận,
 rồi sửa trong PR thứ hai dẫn chiếu số RFC. Thay đổi chạm `gate.v1` hoặc ngữ nghĩa
@@ -98,7 +98,9 @@ Test cưỡng chế cả hai chiều, nên không thể thêm fixture mà không
 | Gate | `fixtures/gates/invalid/` | `fixtures/gates/expected_errors.yaml` |
 | Vết ghi | `fixtures/traces/invalid/` | `fixtures/traces/expected_errors.yaml` |
 | Tool call | `fixtures/tool_calls/{valid,invalid}/` | `fixtures/tool_calls/expected_results.yaml` — luật ở [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md) §9 |
+| Bo mạch | `fixtures/boards/{valid,invalid}/` | `fixtures/boards/expected_errors.yaml` |
 | Máy trạng thái hội thoại | `fixtures/compliance/voice/*.json` | `fixtures/compliance/voice/expected_results.yaml` — luật ở [`docs/spec/voice_fsm.md`](docs/spec/voice_fsm.md) §9 |
+| Cảnh thị giác | `fixtures/vision/<cảnh>/` (khung hình + `scene.toml`) | `fixtures/vision/expected_results.yaml` — chuỗi phán quyết theo khung; `fixtures/vision/golden/<cảnh>.json` là golden suy luận của mô hình trên cảnh đó ([`docs/spec/vision.md`](docs/spec/vision.md) §6a, §6c) |
 
 ```yaml
 # fixtures/gates/expected_errors.yaml
@@ -178,13 +180,16 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `fixtures/gates/valid/`, `fixtures/gates/registry/` | Gate phân giải đúng; gate cơ sở cho fixture | Thêm: PR thường; sửa/xoá: **RFC** |
 | `fixtures/tool_calls/` | Corpus Gated Tool Profile + `expected_results.yaml` | PR thường, khép kín (§3) |
 | `fixtures/decision_trees/` | Bảng sự thật cho walker C | Sinh bằng `scripts/generate_truth_tables.py`, không sửa tay |
-| `fixtures/agents/` | Agent mẫu `villa-concierge`, `home-voice`, `driveway`, `voice-door`; `neuroedge new --template` sao hai cái đầu | PR thường |
+| `fixtures/agents/` | Agent mẫu `villa-concierge`, `home-voice`, `driveway`, `voice-door`, `rail-gate` (gói cảm biến: `digital.in` + `analog.in` + `i2c`); `neuroedge new --template` sao hai cái đầu | PR thường |
+| `fixtures/traces/sensor-pack/` | Corpus của gói cảm biến: ba phiên của `rail-gate` trên `sim-rpi5`, sinh bằng `scripts/gen_sensor_pack_traces.py` (`--check` chạy trong test); `verify` phát lại trên mọi bo mạch khai `digital.in`, `analog.in` và `i2c`, đếm riêng với ba vết ghi chuẩn mực (RFC-0013 §3f mục 7) | PR thường; sinh lại khi agent, gate hay hợp đồng cảm biến đổi có chủ ý |
+| `fixtures/traces/fine-control/` | Corpus của PWM và kênh phản hồi: năm phiên của `fan-pwm` trên `sim-rpi5` (hai phiên có số đọc lại `measured` ghi trên một giàn khai `feedback`), sinh bằng `scripts/gen_fine_control_traces.py` (`--check` chạy trong test); `verify` phát lại trên mọi bo mạch khai một kênh PWM, đếm riêng (RFC-0013 §3f mục 7) | PR thường; sinh lại khi agent, gate hay hợp đồng PWM đổi có chủ ý |
+| `fixtures/traces/motion/` | Corpus của `motion.*`: bốn phiên của `rover` trên `sim-rpi5` (lease gia hạn và hết hạn, BLOCK đưa kênh về trạng thái an toàn, tốc độ quá giới hạn gate), sinh bằng `scripts/gen_motion_traces.py` (`--check` chạy trong test); `verify` phát lại trên mọi bo mạch khai `motion`, đếm riêng | PR thường; sinh lại khi agent, gate hay hợp đồng chuyển động đổi có chủ ý |
 | `fixtures/compliance/voice/` | Bộ vector tuân thủ máy trạng thái hội thoại + `expected_results.yaml`, chung cho hiện thực Python và C | PR thường, khép kín (§3) |
 | `python/neuroedge/engine/` | L3 — phân giải gate, chuẩn tắc hoá, Gate Engine, cây quyết định, bố cục `NETR`, trình biên dịch `build`, bộ sinh firmware `esp32s3` của agent (`firmware.py`) | **RFC** nếu đổi ngữ nghĩa phân giải hoặc bố cục `NETR` |
 | `python/neuroedge/actions/` | `@action`, `c.do()`/`c.say()`, token phán quyết dùng một lần | PR thường; ranh giới ở [`threat_model.md`](docs/spec/threat_model.md) |
 | `python/neuroedge/hal/` | L1 — năm nguyên thủy, mô hình bo mạch, `sim.py`, `linux.py`, `audio.py` (PCM trên máy tính: tệp WAV, VAD, loa dạng dòng thời gian) | PR thường; xem [rà soát MCU](docs/spec/hal_mcu_review.md) |
 | `python/neuroedge/models/` | L2 — SystemOne/SystemTwo, ngữ pháp lệnh cục bộ, knowledge base, `providers/` (LiteLLM, System One API cho Jev, adapter; `common.py`: phần mọi bảng provider dùng chung — điểm cuối, không lặp key, nạp adapter) | PR thường |
-| `python/neuroedge/perception/` | L2 — máy trạng thái hội thoại (`voice_fsm.py`), driver của nó (`voice_session.py`: âm thanh vào, STT, TTS, cắt lời), `providers/` (STT/TTS: adapter OpenAI audio, provider giả; bảng `[stt]`/`[tts]`) | PR thường; hành vi theo [`voice_fsm.md`](docs/spec/voice_fsm.md) |
+| `python/neuroedge/perception/` | L2 — máy trạng thái hội thoại (`voice_fsm.py`), driver của nó (`voice_session.py`: âm thanh vào, STT, TTS, cắt lời), `providers/` (STT/TTS: adapter OpenAI audio, provider giả; bảng `[stt]`/`[tts]`), `vision/` (giao diện mô hình thị giác, mô hình giả, bảng `[vision]`, khung hình → dữ kiện gate, sự kiện `vision_fact`) | PR thường; hành vi theo [`voice_fsm.md`](docs/spec/voice_fsm.md) và [`vision.md`](docs/spec/vision.md) |
 | `python/neuroedge/sim/` | `SimSession` (REPL gõ chữ), `ui.py` (trang `--ui` cục bộ) | PR thường |
 | `python/neuroedge/mcp_server.py`, `mcp_host.py`, `mcp_desktop.py` | Máy chủ MCP · System 2 làm MCP host · cấu hình Claude Desktop | PR thường |
 | `python/neuroedge/testing/` | Action CI — recorder, player (replay), assertions, golden, `tool_corpus`, `voice_corpus`, `uart` (vết ghi từ UART thiết bị) | PR thường |

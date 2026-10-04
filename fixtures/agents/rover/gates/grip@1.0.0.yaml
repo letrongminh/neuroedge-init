@@ -1,0 +1,19 @@
+# RFC-0011: gate của kẹp. Không giới hạn tham số: giới hạn của bo mạch (0..90 độ) là thứ chặn.
+schema:  neuroedge.gate/v1
+name:    grip
+version: 1.0.0
+
+evaluate:
+  path_clear:
+    type: bool
+    instructions: "Phía trước không có vật cản"
+
+allow_when:
+  path_clear: true
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100
+  fail:           closed
