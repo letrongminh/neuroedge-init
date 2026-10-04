@@ -1,0 +1,7 @@
+# Principle 2 (RFC-0004 R1) — nới ngân sách thời gian từ 120 ms lên 500 ms.
+schema:  neuroedge.gate/v1
+name:    door-lock-slower-budget
+version: 1.0.0
+extends: neuroedge://gates/home/door-lock@1.0.0
+budget:
+  p95_latency_ms: 500

@@ -207,13 +207,13 @@ Hai tệp, một nguồn sự thật.
   "fields": ["reason"], "also_a": [], "aliases": [], "rfc": null, "since": "0.1" }
 { "code": "NE1003", "name": "EnvelopeRefusedError", "parent": "ActionContractViolation", "status": "stable", "rfc": "RFC-0007" }
 { "code": "NE5001", "name": "PerceptionUnavailableError", "parent": "NeuroEdgeError", "status": "stable",
-  "aliases": ["ProviderUnavailable", "MalformedResponse", "SpeechUnavailable"] }
+  "aliases": ["ProviderUnavailable", "MalformedResponse", "SpeechUnavailable", "CameraUnavailable", "VisionUnavailable"] }
 { "code": "NE0000", "name": "NeuroEdgeError", "parent": null, "status": "stable", "general": true }
 ```
 
 Trường: `code` (duy nhất, **không bao giờ tái dùng**), `name` (lớp công khai trong `errors.py`), `parent`, `status` (`stable` · `reserved` — mã giữ chỗ cho lớp chưa có; NE1003 của RFC-0007 là `reserved` tới khi PR #91 thêm lớp), `fields` (khoá thêm ngoài bốn khoá chung trong `as_dict()`),
 `also_a` (lớp Python khác nó kế thừa — `ToolCallError` cũng là `ValueError`; chỉ SDK Python cần), `aliases` (lớp con dùng chung mã, `NE5001`), `general` (mã "không phân loại" — NE0000, NE2000: người nhận **không được** rẽ nhánh theo nó), `rfc`, `since`.
-Hôm nay: 20 mục `stable` (NE0000, NE1001→NE1004, NE2000→NE2003, NE3001→NE3003, NE4001→NE4004, NE5001), không mục `reserved` nào (§10 câu 13).
+Hôm nay: 17 mục `stable` (NE0000, NE1001→NE1004, NE2000→NE2003, NE3001→NE3003, NE4001→NE4004, NE5001), không mục `reserved` nào (§10 câu 13). NE5001 có năm lớp con dùng chung mã (`aliases`): ba lớp của provider và thoại, cùng `CameraUnavailable`, `VisionUnavailable` của RFC-0012.
 
 **Nguồn sự thật — quyết định đề xuất.** `schemas/error-codes.v1.json` là nơi **duy nhất** nói *mã nào tồn tại, tên lớp, quan hệ cha con, trạng thái*. Hai nơi kia được **kiểm** theo nó, không tự khai lại:
 
@@ -298,21 +298,21 @@ Câu trả lời cho "có đường nào làm gate lỏng hơn?": **không**. Ph
 
 Test dưới đây là **tên đề xuất** — chưa tồn tại tới khi RFC được chấp thuận. Cột "có sẵn" là test hiện hành sẽ còn xanh.
 
-- [ ] Ví dụ hợp lệ đã thêm vào `fixtures/`: `fixtures/contracts/<tool-call|tool-result|error|board>/valid/` — phủ mọi `status`, `on_block`, `source`, `reason` đã biết, `fallback` lồng hai tầng, mọi mã trong danh mục; một ca `source: system_one` ở `fixtures/tool_calls/valid/`
-- [ ] Ví dụ sai kèm đáp án (`fixtures/contracts/expected_errors.yaml`, khép kín hai chiều): phong bì có `source` ở `request`; `name` rỗng; `arguments` là mảng; `source` ngoài năm giá trị; kết quả `BLOCK` thiếu `gate`; `REJECTED` thiếu `problems`; `status` ngoài ba giá trị; lỗi `NE2003` thiếu `principle`; `code` sai dạng; bo mạch có `schema: neuroedge.board/v2`
-- [ ] Test tự động:
-  - `test_every_tool_call_corpus_case_validates_against_the_tool_call_schema` *(tiêu chí ra 8)*
-  - `test_every_tool_call_corpus_result_validates_against_the_tool_result_schema`
-  - `test_the_published_output_schema_of_every_tool_is_the_frozen_result_schema_pinned_to_its_name`
-  - `test_a_recorded_tool_call_event_validates_against_the_envelope_schema`
-  - `test_the_tool_call_schema_and_the_dataclass_agree` (`ToolCall` fields, `SOURCES`, `CASE_KEYS`/`CALL_KEYS` của `tool_corpus.py`)
-  - `test_the_known_reasons_of_the_schema_are_exactly_the_Reason_enum` · `test_the_on_block_enum_is_the_gate_schemas`
-  - `test_the_mcp_server_emits_only_documented_result_keys` (khoá chặn lỗi "nới ở lược đồ cho phép mã tự thêm khoá")
-  - `test_the_error_catalog_and_errors_py_agree_both_ways` · `test_every_error_class_of_the_package_has_a_catalog_entry` · `test_the_prd_error_table_and_the_catalog_agree_on_class_and_code` · `test_every_error_code_in_targets_is_in_the_catalog` · `test_a_reserved_code_has_no_class`
-  - `test_every_serialised_error_validates_against_the_error_schema` (chạy mọi lớp lỗi với dữ liệu mẫu; bắt chuỗi rỗng)
-  - `test_a_board_with_a_schema_key_of_another_version_is_refused_before_validation` · `test_a_board_without_a_schema_key_is_read_as_v1` · `test_every_shipped_board_declares_its_schema` · `test_board_to_document_round_trips_the_schema_key`
-  - `test_schemas_directory_holds_exactly_the_seven_frozen_schemas` (đổi từ "ba")
-- [ ] `neuroedge gate lint` và `neuroedge verify` vẫn xanh; `scripts/wheel_smoke.sh` chạy trên bản cài (`schemas/` đã đi vào wheel nguyên thư mục qua `hatch_build.py`, thêm `schemas/tool-result.v1.json` vào danh sách tệp nó kiểm)
+- [x] *(PR A xong phần `tool-call`, `tool-result`, `error`: `test_every_error_code_of_the_catalog_has_a_valid_error_example`, `test_every_known_reason_and_every_source_appears_in_a_valid_contract_example`, `test_the_corpus_of_tool_calls_covers_every_source`; PR B thêm `board/valid/sim-default.json`, `board/valid/without_schema_key.json`)* Ví dụ hợp lệ đã thêm vào `fixtures/`: `fixtures/contracts/<tool-call|tool-result|error|board>/valid/` — phủ mọi `status`, `on_block`, `source`, `reason` đã biết, `fallback` lồng hai tầng, mọi mã trong danh mục; một ca `source: system_one` ở `fixtures/tool_calls/valid/`
+- [x] *(PR A xong mọi ca trừ ca bo mạch; PR B thêm `board/invalid/schema_v2.json`; `test_every_contract_example_has_an_expectation_and_every_expectation_an_example`, `test_an_invalid_contract_example_fails_the_way_its_expectation_says`)* Ví dụ sai kèm đáp án (`fixtures/contracts/expected_errors.yaml`, khép kín hai chiều): phong bì có `source` ở `request`; `name` rỗng; `arguments` là mảng; `source` ngoài năm giá trị; kết quả `BLOCK` thiếu `gate`; `REJECTED` thiếu `problems`; `status` ngoài ba giá trị; lỗi `NE2003` thiếu `principle`; `code` sai dạng; bo mạch có `schema: neuroedge.board/v2`
+- [x] Test tự động *(PR A và PR B)*:
+  - [x] `test_every_tool_call_corpus_case_validates_against_the_tool_call_schema` *(tiêu chí ra 8)*
+  - [x] `test_every_tool_call_corpus_result_validates_against_the_tool_result_schema`
+  - [x] `test_the_published_output_schema_of_every_tool_is_the_frozen_result_schema_pinned_to_its_name`
+  - [x] `test_a_recorded_tool_call_event_validates_against_the_envelope_schema`
+  - [x] `test_the_tool_call_schema_and_the_dataclass_agree` (`ToolCall` fields, `SOURCES`, `CASE_KEYS`/`CALL_KEYS` của `tool_corpus.py`)
+  - [x] `test_the_known_reasons_of_the_schema_are_exactly_the_Reason_enum` · `test_the_on_block_enum_is_the_gate_schemas` *(làm: `[x]`)*
+  - [x] `test_the_mcp_server_emits_only_documented_result_keys` (khoá chặn lỗi "nới ở lược đồ cho phép mã tự thêm khoá")
+  - [x] `test_the_error_catalog_and_errors_py_agree_both_ways` · `test_every_error_class_of_the_package_has_a_catalog_entry` *(làm: `[x]`)* · `test_the_prd_error_table_and_the_catalog_agree_on_class_and_code` · `test_every_error_code_in_targets_is_in_the_catalog` *(làm: `[x]`)* · `test_a_reserved_code_has_no_class` *(làm: `[x]`; `test_the_prd_error_table_and_the_catalog_agree_on_class_and_code` cũng `[x]`)*
+  - [x] `test_every_serialised_error_validates_against_the_error_schema` (chạy mọi lớp lỗi với dữ liệu mẫu; bắt chuỗi rỗng)
+  - [x] `test_a_board_with_a_schema_key_of_another_version_is_refused_before_validation` · `test_a_board_without_a_schema_key_is_read_as_v1` · `test_every_shipped_board_declares_its_schema` · `test_board_to_document_round_trips_the_schema_key` *(PR B, `tests/test_boards.py`; thêm `test_a_board_document_in_memory_is_refused_for_another_version_too`)*
+  - [x] `test_schemas_directory_holds_exactly_the_seven_frozen_schemas` (đổi từ "ba")
+- [x] *(PR A, PR B: `scripts/wheel_smoke.sh` xanh trên bản cài, đã thêm bốn tệp vào danh sách và một kiểm `result_schema()` từ wheel; ruff, pytest xanh; `gate lint` / `verify` không đổi — vẫn do CI)* `neuroedge gate lint` và `neuroedge verify` vẫn xanh; `scripts/wheel_smoke.sh` chạy trên bản cài (`schemas/` đã đi vào wheel nguyên thư mục qua `hatch_build.py`, thêm `schemas/tool-result.v1.json` vào danh sách tệp nó kiểm)
 - Có sẵn, vẫn xanh: `test_tool_corpus.py::test_an_mcp_client_gets_the_same_result_and_its_sdk_accepts_it`, `test_every_case_has_an_expectation_and_every_expectation_a_case`, `test_public_api.py::test_every_error_class_of_the_package_is_public`
 
 ## 8. Việc phải làm khi chấp thuận
@@ -321,22 +321,22 @@ Thứ tự đề xuất — hai PR hiện thực vì `board.v1.json` đang bị 
 
 **PR A — phần không đụng `board.v1.json` (làm được ngay sau chấp thuận):**
 
-- [ ] Thêm `schemas/tool-call.v1.json`, `tool-result.v1.json`, `error.v1.json`, `error-codes.v1.json`; sửa `test_schemas.py`
-- [ ] `actions/tools.py::result_schema` đọc tệp tĩnh; thêm ca `system_one`; `fixtures/contracts/` và `expected_errors.yaml`; các test ở §7
-- [ ] Cập nhật `docs/spec/tool_calling.md`: §1 và §4 dẫn lược đồ (không chép lại); §2 thêm khoá `__unparseable__`; §4 luật "không rẽ nhánh theo `reason`"; §9 đoạn cuối ("đóng băng thành `schemas/` bằng một RFC…") thành hiện thực; đóng `TODOS.md` #23
-- [ ] Cập nhật `neuroedge-prd.md`: ma trận §10.3 (thêm bốn lược đồ và khoá `schema` của bo); đầu Phụ lục B (nêu danh mục là nguồn của cấu trúc; PRD giữ lời; thêm dòng NE0000, NE2000 và ghi chú lớp con của NE5001); quyết định mới nếu có thì cấp `Q-N`
-- [ ] Cập nhật `CONTRIBUTING.md` §8.1 hàng "Mã lỗi `NE…`" và §3 (thêm bốn lược đồ vào dòng "Sửa `schemas/*.json`" nếu cần); `docs/spec/python_api.md` §1 (hợp đồng dạng tệp: thêm bốn lược đồ)
-- [ ] `docs/architecture/{vi,en}/07-data-contracts.md`: danh mục lược đồ; nếu `error-codes` đọc từ mã Python thì kiểm cạnh phụ thuộc ở `tests/test_architecture_layers.py` và `03-component-host-c4l3.md` (không có cạnh mới nếu chỉ test đọc tệp)
+- [x] Thêm `schemas/tool-call.v1.json`, `tool-result.v1.json`, `error.v1.json`, `error-codes.v1.json`; sửa `test_schemas.py` (`test_schemas_directory_holds_exactly_the_seven_frozen_schemas`; `ci-sim-linux.yml` cũng đổi từ ba sang bảy tệp)
+- [x] `actions/tools.py::result_schema` đọc tệp tĩnh (`test_result_schema_is_the_static_file_pinned_and_without_its_identity`); thêm ca `system_one`; `fixtures/contracts/` và `expected_errors.yaml`; các test ở §7
+- [x] Cập nhật `docs/spec/tool_calling.md`: §1 và §4 dẫn lược đồ (không chép lại); §2 thêm khoá `__unparseable__`; §4 luật "không rẽ nhánh theo `reason`"; §9 đoạn cuối ("đóng băng thành `schemas/` bằng một RFC…") thành hiện thực. *Đóng `TODOS.md` #23 là việc của người tích hợp (không sửa `TODOS.md` trong PR này).*
+- [x] Cập nhật `neuroedge-prd.md` *(ma trận §10.3 thêm bốn lược đồ; PR B thêm dòng khoá `schema` của bo)*: ma trận §10.3 (thêm bốn lược đồ và khoá `schema` của bo); đầu Phụ lục B (nêu danh mục là nguồn của cấu trúc; PRD giữ lời; thêm dòng NE0000, NE2000 và ghi chú lớp con của NE5001); quyết định mới nếu có thì cấp `Q-N`
+- [x] Cập nhật `CONTRIBUTING.md` §8.1 hàng "Mã lỗi `NE…`" và §3 (thêm bốn lược đồ vào dòng "Sửa `schemas/*.json`" nếu cần); `docs/spec/python_api.md` §1 (hợp đồng dạng tệp: thêm bốn lược đồ)
+- [x] `docs/architecture/{vi,en}/07-data-contracts.md` *(và `14-deployment-c4.md`: "bảy lược đồ"; cạnh mới `actions` → `paths` đã vào `test_architecture_layers.py` và `03-component-host-c4l3.md` cùng lý do)*: danh mục lược đồ; nếu `error-codes` đọc từ mã Python thì kiểm cạnh phụ thuộc ở `tests/test_architecture_layers.py` và `03-component-host-c4l3.md` (không có cạnh mới nếu chỉ test đọc tệp)
 
 **PR B — `board.v1.json` (sau khi RFC-0007, 0010→0013 hiện thực xong phần khoá của chúng — đã đạt nhờ PR #91, §10 câu 13):**
 
-- [ ] Thêm khoá `schema` vào `schemas/board.v1.json`; `SUPPORTED_BOARD_SCHEMAS` và kiểm trước thẩm định ở `hal/board.py`; dòng `schema = "neuroedge.board/v1"` vào ba `boards/*.toml`; `to_document()`; các test board ở §7
+- [x] Thêm khoá `schema` vào `schemas/board.v1.json`; `SUPPORTED_BOARD_SCHEMAS` và kiểm trước thẩm định ở `hal/board.py`; dòng `schema = "neuroedge.board/v1"` vào bốn `boards/*.toml` (thêm `sim-rpi5` từ RFC-0013); `to_document()`; các test board ở §7
 
 **Chung:**
 
-- [ ] Một mục `CHANGELOG.md` `[Chưa phát hành]` cho mỗi PR; tiến độ ở roadmap TSK-I6-05 (một mình PR A không đóng task); tiêu chí ra 8 chỉ tick khi cả hai PR xong
-- [ ] Cập nhật dòng RFC-0015 trong `docs/rfc/README.md`
-- [ ] Không đụng `digests.lock` (không gate nào đổi)
+- [x] *(hai PR gộp trong PR #94, giữ commit riêng; một mục CHANGELOG)* Một mục `CHANGELOG.md` `[Chưa phát hành]` cho mỗi PR; tiến độ ở roadmap TSK-I6-05 (một mình PR A không đóng task); tiêu chí ra 8 chỉ tick khi cả hai PR xong
+- [x] Cập nhật dòng RFC-0015 trong `docs/rfc/README.md`
+- [x] Không đụng `digests.lock` (không gate nào đổi) *(phần RFC-0015 không đổi mục nào; PR #94 chỉ thêm mục cho gate của I2b)*
 
 ## 9. Phát hiện khi đối chiếu đặc tả, corpus và mã
 
@@ -375,4 +375,4 @@ Chủ sản phẩm và kỹ thuật trưởng chấp nhận **khuyến nghị** 
 12. **Đặt `error.v1` vào `error.data` của JSON-RPC: ngoài phạm vi.** Việc đó cần một RFC về hành vi MCP.
 13. **Chấp thuận ngay và tách hai PR hiện thực (§8).** Hai điều đã khác từ lúc viết RFC (nền `87db7c7`), đều nhờ PR #91 (chặng A):
     - **Điều kiện của PR B đã đạt.** RFC-0007 và RFC-0010 → RFC-0013 đã hiện thực phần khoá trên `sim` và `linux`, nên PR B làm được ngay sau PR A.
-    - **NE1003 có lớp:** `EnvelopeRefusedError` (RFC-0007). Danh mục hôm nay vì thế có 20 mục `stable` và không mục `reserved` nào (§3d đã sửa). Trường `status: reserved` vẫn giữ trong lược đồ cho mã giữ chỗ về sau.
+    - **NE1003 có lớp:** `EnvelopeRefusedError` (RFC-0007). Danh mục hôm nay vì thế có 17 mục `stable` và không mục `reserved` nào (§3d đã sửa; bản ký đầu ghi nhầm 20, sửa khi hiện thực). Trường `status: reserved` vẫn giữ trong lược đồ cho mã giữ chỗ về sau.

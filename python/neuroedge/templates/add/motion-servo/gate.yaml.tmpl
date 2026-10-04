@@ -1,0 +1,28 @@
+# Gate của `{{name}}` (neuroedge add): một lệnh chuyển động có phong bì (RFC-0011). Mỗi lệnh nhận
+# một lease một lệnh; không gọi lại thì kênh `{{channel}}` về trạng thái an toàn (`safe_state`) của
+# bo mạch. Góc của gate chặt hơn của bo mạch: giới hạn chặt hơn thắng.
+#
+#   neuroedge gate explain gates/{{name}}@1.0.0.yaml   # chính sách bằng lời
+schema:  neuroedge.gate/v1
+name:    {{name}}
+version: 1.0.0
+
+arguments:
+  angle: { type: number, minimum: 0, maximum: 45 }
+
+evaluate:
+  user_verified:
+    type: bool
+    instructions: "Người dùng đã được xác minh trong phiên hiện tại"
+
+allow_when:
+  user_verified: true
+
+on_block:
+  action:  ask
+  message: "Cần xác minh người dùng trước khi {{phrase}}."
+
+# Phải ≤ lease_ms / 2 của kênh (`neuroedge build` kiểm): một lần gia hạn tới kịp trước khi lease hết.
+budget:
+  p95_latency_ms: 100
+  fail:           closed

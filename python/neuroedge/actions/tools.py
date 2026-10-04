@@ -35,6 +35,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from ..errors import ToolCallError
+from ..paths import schema_path
 from .conversation import ActionResult, Conversation
 from .spec import ActionSpec
 
@@ -303,65 +304,17 @@ def _verdict_fields(result: ActionResult) -> dict[str, Any]:
 def result_schema(tool: str | None = None) -> dict[str, Any]:
     """
     JSON Schema of `ToolResult.content()` — the MCP `outputSchema` of every tool
-    (docs/spec/tool_calling.md §4). `tool` pins the `tool` field to that name.
+    (docs/spec/tool_calling.md §4). It is `schemas/tool-result.v1.json`, read, not
+    built: `tool` pins the `tool` field to that name, and `$id` / `$schema` are
+    dropped, as an embedded `outputSchema` is not a document of its own.
     """
-    from ..engine.binary_tree import ACTIONS as ON_BLOCK_ACTIONS
-    from ..engine.verdict import Reason
-
-    text = {"type": "string"}
-    verdict = {
-        "tool": text,
-        "status": {"enum": ["ALLOW", "BLOCK"]},
-        "gate": text,
-        "reason": {"enum": [str(reason) for reason in Reason]},
-        "failed_criterion": text,
-        "on_block": {"enum": list(ON_BLOCK_ACTIONS)},
-        "message": text,
-        "escalated_to": text,
-        "fallback": {"$ref": "#/$defs/fallback"},
-        "confirmation": {"$ref": "#/$defs/confirmation"},
-    }
-    # A BLOCK always names its gate and what it did; a REJECTED always says why.
-    block = {
-        "if": {"properties": {"status": {"const": "BLOCK"}}, "required": ["status"]},
-        "then": {"required": ["gate", "on_block"]},
-    }
-    rejected = {
-        "if": {"properties": {"status": {"const": "REJECTED"}}, "required": ["status"]},
-        "then": {"required": ["problems"]},
-    }
-    return {
-        "type": "object",
-        "properties": {
-            **verdict,
-            "tool": {"type": "string", "const": tool} if tool else text,
-            "status": {"enum": ["ALLOW", "BLOCK", "REJECTED"]},
-            "problems": {"type": "array", "items": text, "minItems": 1},
-        },
-        "required": ["tool", "status"],
-        "additionalProperties": False,
-        "allOf": [block, rejected],
-        "$defs": {
-            "fallback": {
-                "type": "object",
-                "properties": verdict,
-                "required": ["tool", "status"],
-                "additionalProperties": False,
-                "allOf": [block],
-            },
-            "confirmation": {
-                "type": "object",
-                "properties": {
-                    "id": text,
-                    "message": text,
-                    "expires_in_ms": {"type": "number"},
-                    "who": text,
-                },
-                "required": ["id", "message", "expires_in_ms", "who"],
-                "additionalProperties": False,
-            },
-        },
-    }
+    with open(schema_path("tool-result.v1.json"), encoding="utf-8") as handle:
+        schema: dict[str, Any] = json.load(handle)
+    for key in ("$id", "$schema"):
+        del schema[key]
+    if tool:
+        schema["properties"]["tool"] = {**schema["properties"]["tool"], "const": tool}
+    return schema
 
 
 def next_call_id(conversation: Conversation) -> str:

@@ -1,7 +1,8 @@
 # Gated Tool Profile v0 — đường từ ngôn ngữ tới hành động thực
 
-**Trạng thái:** chuẩn tắc cho `sim` và `linux` từ v0; `esp32s3` theo §8. Quyết định:
-Q-24, Q-25, Q-26, Q-27 (`neuroedge-prd.md` §15).
+**Trạng thái:** chuẩn tắc cho `sim` và `linux` từ v0; `esp32s3` theo §8. Hình dạng của phong bì và kết quả
+đóng băng ở `schemas/tool-call.v1.json` và `schemas/tool-result.v1.json` (RFC-0015, §1, §4, §9). Quyết định:
+Q-24, Q-25, Q-26, Q-27, Q-58, Q-66 (`neuroedge-prd.md` §15).
 **Mã nguồn:** `python/neuroedge/actions/tools.py` (dispatch), `python/neuroedge/mcp_server.py`
 (MCP server), `python/neuroedge/mcp_http.py` (cửa mạng của MCP server, §8.1), `python/neuroedge/mcp_host.py` (System 2 làm MCP client),
 `python/neuroedge/sim/session.py` (ngữ pháp, vòng System 2).
@@ -42,9 +43,11 @@ Profile là tài sản chuẩn thứ ba của NeuroEdge, cạnh lược đồ ga
 
 ## 1. Phong bì `ToolCall`
 
-```
-ToolCall { id: string, name: string, arguments: object, source: string }
-```
+Hình dạng nằm ở [`schemas/tool-call.v1.json`](../../schemas/tool-call.v1.json), không chép lại ở đây:
+`#/$defs/request` là cái bên gọi gửi (`id`, `name`, `arguments`; **không** có `source`, và một lời gọi tự khai
+`source` bị phong bì từ chối), `#/$defs/call` là phong bì dispatcher giữ — thêm `source` đã gán — và
+cũng là `data` của sự kiện `tool_call` (§7). Phong bì **đóng** (khoá lạ bị từ chối). Phần dưới là
+**nghĩa** mà lược đồ không nói được:
 
 | Trường | Quy định |
 |:---|:---|
@@ -64,6 +67,11 @@ ToolCall { id: string, name: string, arguments: object, source: string }
 Câu khớp ngữ pháp **PHẢI** trở thành tool call rồi đi qua cùng đường với mọi nguồn khác —
 không có nhánh "offline" riêng tới chân.
 
+Một thẩm định lược đồ thành công **không** chứng minh một runtime tuân thủ: lược đồ không biểu diễn được
+việc tool có tồn tại, phép ép chuỗi của §2, ràng buộc tham số của gate (§3, kiểm **sau** schema) hay
+`call_source`. Bộ kiểm tuân thủ là corpus của §9 chạy qua `dispatch()` — cùng lập luận với gate:
+cổng là `neuroedge gate lint`, không phải thẩm định lược đồ (`CHANGELOG.md` §3.3 #1).
+
 ## 2. Thứ tự dispatch
 
 Mọi tool call, từ mọi nguồn, đi qua `dispatch()` theo đúng thứ tự:
@@ -75,6 +83,11 @@ Mọi tool call, từ mọi nguồn, đi qua `dispatch()` theo đúng thứ tự
    đoán gì. Sai ⇒ `REJECTED`, ghi `tool_call_rejected`.
 4. Chèn dữ kiện `call_source` (§5).
 5. `c.do(action, **arguments)` → gate → token dùng một lần → thân `@action` → HAL.
+
+Khoá `arguments` **dành riêng** `__unparseable__`: `parse_tool_calls` chèn nó khi `arguments` của nhà
+cung cấp mô hình không phải JSON hợp lệ (hoặc không phải đối tượng), với giá trị là nguyên văn
+phần hỏng. Không `@action` nào có tham số tên đó, nên bước 3 từ chối ("unknown argument") và lời gọi là
+`REJECTED`; không gate nào nhìn thấy nó. Bên gọi **KHÔNG NÊN** tự gửi khoá này.
 
 Bước 2–3 xảy ra **trước** gate: một lời gọi sai hình dạng không phải câu hỏi an toàn,
 nên nó không tốn ngân sách gate và không có phán quyết.
@@ -89,6 +102,9 @@ Schema sinh từ chữ ký `@action` (`input_schema()`): `str` → `string`, `in
 `float` → `number`, `bool` → `boolean`; tham số không có mặc định là `required`;
 `additionalProperties: false`. Mô tả là đoạn đầu docstring kèm câu *"Guarded by gate
 `X`: the call may be blocked."*
+
+Tập con JSON Schema mà `inputSchema` dùng, và bộ bốn trường của một tool (`name`, `description`,
+`inputSchema`, `outputSchema`) mô tả ở `schemas/tool-call.v1.json` (`#/$defs/input_schema`, `#/$defs/tool`).
 
 Cùng một schema xuất ra hai dạng: MCP `inputSchema` (`neuroedge mcp tools --json`) và
 `parameters` của function calling OpenAI (`--openai`, Q-12).
@@ -109,22 +125,27 @@ là cưỡng chế.
 `BLOCK` **không** là lỗi giao thức: gate làm đúng việc của nó, và bên gọi cần đọc lý do
 để trả lời người dùng. Chỉ `REJECTED` là lỗi — bên gọi đã gửi một lời gọi không hợp lệ.
 
-Nội dung trả về (`ToolResult.content()`; MCP gửi ở cả `structuredContent` và một khối
-`text` chứa cùng JSON):
+Hình dạng của nội dung trả về (`ToolResult.content()`; MCP gửi ở cả `structuredContent` và một khối
+`text` chứa cùng JSON) là [`schemas/tool-result.v1.json`](../../schemas/tool-result.v1.json), không chép
+lại ở đây. Lược đồ nói trường nào bắt buộc khi nào: `tool` và `status` luôn có; `BLOCK` có `gate` và
+`on_block`; `REJECTED` có `problems` (không rỗng); `fallback` (đệ quy, kết quả của `fallback_action` đã chạy qua
+gate riêng của nó) và `confirmation` (§6) là của `on_block: degrade` và `ask`.
 
-| Trường | Khi nào |
-|:---|:---|
-| `tool`, `status` | Luôn có |
-| `problems` | `REJECTED` — danh sách lý do, mỗi lý do một câu |
-| `gate`, `reason`, `failed_criterion`, `on_block`, `message`, `escalated_to` | `BLOCK` — các trường có giá trị |
-| `fallback` | `BLOCK` với `on_block: degrade` — kết quả của `fallback_action` đã chạy qua gate riêng của nó: `{tool, status}` và, nếu nó cũng bị chặn, các trường `BLOCK` của nó (đệ quy) |
-| `confirmation` | `BLOCK` với `on_block: ask` khi có câu hỏi chờ người (§6) |
-
-Máy chủ MCP khai lược đồ này ở `outputSchema` của mỗi tool (`result_schema()` trong
-`actions/tools.py`; `neuroedge mcp tools --json` in ra cùng `inputSchema`). Client MCP kiểm
+Máy chủ MCP khai chính lược đồ này ở `outputSchema` của mỗi tool, đã ghim `tool` vào tên tool và bỏ
+`$id`/`$schema` (`result_schema()` trong `actions/tools.py` **đọc** tệp; nó không dựng lược đồ). Client MCP kiểm
 `structuredContent` của mọi kết quả **không** lỗi theo lược đồ đó; kết quả `REJECTED`
 (`isError: true`) không được SDK kiểm, nhưng vẫn khớp lược đồ (tool lạ thì khớp lược đồ không
 ghim tên `tool`).
+
+**Luật cho bên đọc kết quả (RFC-0015 §3b, Q-66):**
+
+- **`status` quyết định. `reason` chỉ là lời giải thích — KHÔNG ĐƯỢC rẽ nhánh theo nó, và tuyệt đối không
+  rẽ nhánh tới ALLOW.** `reason` là chuỗi mở: danh sách giá trị đã biết nằm ở `x-neuroedge-known` của
+  lược đồ (test buộc nó bằng đúng `Reason`), và sẽ dài thêm qua các RFC. Một `reason` lạ dưới `status: BLOCK` vẫn là bị chặn
+  (fail-closed), không phải kết quả hỏng.
+- **Đối tượng kết quả mở:** bên đọc **PHẢI** bỏ qua khoá nó không biết. Runtime chỉ phát các khoá lược đồ đã
+  khai (test `test_the_mcp_server_emits_only_documented_result_keys`); thêm một khoá tuỳ chọn không tăng `v1`.
+- **`status` và `on_block` là tập đóng:** thêm giá trị là `v2`.
 
 ## 5. `call_source`
 
@@ -361,10 +382,14 @@ corpus; `pytest tests/test_tool_corpus.py` chạy thêm từng ca qua một clie
 quả khớp `outputSchema` (§4). Wheel mang corpus (`neuroedge/_data/fixtures/tool_calls/`), nên
 bản đã cài cũng tự kiểm được.
 
-Lược đồ phong bì và kết quả đóng băng thành `schemas/` bằng một RFC trước I6 (TSK-I6-05,
-Q-58; `TODOS.md` #23), để OSS khác hiện thực được profile theo phần Apache-2.0 của kho. Cùng RFC đó khoá định danh phiên bản
-của `board.v1` và đưa danh mục mã lỗi `NE*` ra dạng máy đọc được (Q-63). Cho tới lúc đó, profile là **v0** và đổi được
-bằng PR thường kèm cập nhật tài liệu này.
+Lược đồ phong bì (`tool-call.v1.json`, gồm mô tả tool) và kết quả (`tool-result.v1.json`) đã đóng băng
+trong `schemas/` bằng [RFC-0015](../rfc/0015-hop-dong-cho-nguoi-tich-hop.md) (TSK-I6-05, Q-58, Q-66), cùng hình dạng một
+lỗi (`error.v1.json`) và danh mục mã lỗi `NE*` dạng máy đọc được (`error-codes.v1.json`, Q-63), để OSS khác hiện
+thực profile mà không đọc mã Python. Mỗi ca của corpus thẩm định theo chúng (`python/tests/test_contracts.py`:
+`test_every_tool_call_corpus_case_validates_against_the_tool_call_schema`,
+`test_every_tool_call_corpus_result_validates_against_the_tool_result_schema`); `fixtures/contracts/` là corpus phản chứng của
+các lược đồ đó, khép kín hai chiều. Từ đây profile là **v1** ở phần hình dạng; đổi hình dạng là RFC (`CONTRIBUTING.md` §3).
+Giấy phép của corpus tuân thủ chưa thuộc phần Apache-2.0: `TODOS.md` #57.
 
 ## 10. NeuroEdge làm MCP client (Q-27)
 

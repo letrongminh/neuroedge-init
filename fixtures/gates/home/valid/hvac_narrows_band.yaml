@@ -1,0 +1,7 @@
+# Thu hẹp dải nhiệt độ cho phép chạy từ 5–40 °C xuống 16–30 °C (0.16–0.30 V).
+schema:  neuroedge.gate/v1
+name:    hvac-narrows-band
+version: 1.0.0
+extends: neuroedge://gates/home/hvac@1.0.0
+allow_when:
+  room_temperature_sense: { gte: 0.16, lte: 0.30 }

@@ -1,0 +1,7 @@
+# Principle 2 — còi kêu một giờ: 120 s → 3600 s.
+schema:  neuroedge.gate/v1
+name:    siren-hour-long-blast
+version: 1.0.0
+extends: neuroedge://gates/home/siren@1.0.0
+arguments:
+  duration_s: { type: integer, maximum: 3600 }

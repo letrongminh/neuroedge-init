@@ -417,6 +417,21 @@ def test_the_on_time_is_written_before_the_pin_is_turned_on(tmp_path):
     assert store.load(PIN) == [1_000.0], "an early off lowers the record to what was used"
 
 
+def test_the_recorded_on_time_does_not_depend_on_float_noise_of_the_clock(tmp_path):
+    """The monotonic clock is a float of ms: (start + 4000) - start can be 4000.0000000009.
+    The record must still say 4000, not 4001 on one run and 4000 on the next (CI flake on
+    test_session_linux, PR #94); rounding stays upward for any real fraction of a ms."""
+    clock = Clock()
+    clock.now = 8_385_784.3687  # (now + 4000) - now == 4000.0000000009313 in binary floats
+    assert (clock.now + 4_000.0) - clock.now > 4_000.0
+    hal, _, store = boot(tmp_path, clock, init_store=True)
+    hal.digital_out(PIN, "on", signature="x")
+    assert store.load(PIN) == [4_000.0]
+    clock.advance(1_000.4)
+    hal.digital_out(PIN, "off", signature="x")
+    assert store.load(PIN) == [1_001.0], "a real fraction of a millisecond still rounds up"
+
+
 def test_a_command_authorize_refused_leaves_no_trace_on_disk(tmp_path):
     hal, _, store = boot(tmp_path, Clock(), init_store=True)
     hal.authorize = lambda *_: (_ for _ in ()).throw(ActionContractViolation("w", "y", "h"))

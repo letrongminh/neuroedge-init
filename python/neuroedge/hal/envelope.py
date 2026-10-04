@@ -388,7 +388,7 @@ class SafetyEnvelope:
         """Write the pin's on-time down. The caller holds the pin's lock."""
         if self.store is None:
             return
-        self.store.save(name, [math.ceil(i.length) for i in state.intervals])
+        self.store.save(name, [_whole(i.length) for i in state.intervals])
 
     # -- check and reserve -----------------------------------------------------------
     def reserve(
@@ -630,4 +630,14 @@ class SafetyEnvelope:
 
 
 def _whole(value: float) -> int:
-    return math.ceil(value)
+    """
+    Round up to whole milliseconds, never down: on-time is counted, so rounding errs toward
+    spent. The monotonic clock is a float of milliseconds, so an interval reserved as exactly
+    600 000 ms can measure 600 000.0000001; that noise is dropped first, or the same command
+    would record 600 001 on one run and 600 000 on the next.
+    """
+    return math.ceil(round(value, _FLOAT_NOISE_DIGITS))
+
+
+# Far below a microsecond, far above the error of subtracting two monotonic readings in ms.
+_FLOAT_NOISE_DIGITS = 6

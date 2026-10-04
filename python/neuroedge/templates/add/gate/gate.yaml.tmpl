@@ -1,0 +1,21 @@
+# Gate của `{{name}}` (neuroedge add): một gate đứng riêng, chặn theo mặc định. Action nào muốn dùng
+# nó khai `gate="{{name}}"` trong `@action`. Mỗi tiêu chí là một dữ kiện `bool` do hệ thống của
+# bạn cấp (trên `sim`: `[sim.facts]` trong agent.toml); thiếu hay không quyết định được thì chặn.
+#
+#   neuroedge gate explain gates/{{name}}@1.0.0.yaml   # chính sách bằng lời
+schema:  neuroedge.gate/v1
+name:    {{name}}
+version: 1.0.0
+
+evaluate:
+{{criteria}}
+
+allow_when:
+{{allow_when}}
+
+on_block:
+  action:  deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

@@ -1,0 +1,22 @@
+# Bật đèn hiên khi camera thấy người lạ ở cổng với điểm tin cậy từ 0,85. Kế thừa gate `camera` của thư
+# viện khởi đầu: ghi hình cần đồng ý, và vùng riêng tư phải trống (có người trong vùng đó ⇒ chặn, camera
+# không hành động theo khung có cảnh riêng tư). Con chỉ thêm tiêu chí của mình, không nới gì của cha.
+schema:  neuroedge.gate/v1
+name:    stranger-light
+version: 1.0.0
+extends: neuroedge://gates/home/camera@1.0.0
+
+evaluate:
+  stranger_at_gate:
+    type: bool
+    instructions: "Có người lạ trong vùng cổng (dữ kiện thị giác, kind = present)"
+  stranger_confidence:
+    type: numeric
+    unit: ratio
+    range: { min: 0, max: 1 }
+    max_age_ms: 300
+    instructions: "Điểm cao nhất của nhãn người lạ trong vùng cổng (dữ kiện thị giác, kind = confidence)"
+
+allow_when:
+  stranger_at_gate:    true
+  stranger_confidence: { gte: 0.85 }

@@ -1,0 +1,39 @@
+# Gate của `{{name}}` (neuroedge add). Camera (`vision.in`) chỉ cấp dữ kiện; ngưỡng nằm ở đây
+# (RFC-0012 §3c, Q-54) và agent.toml chỉ chọn nhãn nào thành dữ kiện nào. `{{label}}: present` đi kèm
+# một tiêu chí `confidence` để camera đứng hình hay không đọc được khung thì gate chặn, không bao
+# giờ mở (RFC-0012 §9.10).
+#
+#   neuroedge gate explain gates/{{name}}@1.0.0.yaml   # chính sách bằng lời
+schema:  neuroedge.gate/v1
+name:    {{name}}
+version: 1.0.0
+
+arguments:
+  duration_s: { type: integer, minimum: 1, maximum: 5 }
+
+evaluate:
+  user_verified:
+    type: bool
+    instructions: "Người dùng đã được xác minh trong phiên hiện tại"
+  {{fact}}_present:
+    type: bool
+    instructions: "Camera thấy nhãn {{label}} trong vùng quan sát"
+  {{fact}}_confidence:
+    type: numeric
+    unit: ratio
+    range: { min: 0, max: 1 }
+    max_age_ms: 300
+    instructions: "Điểm tin cậy của nhãn {{label}} trong vùng quan sát"
+
+allow_when:
+  user_verified:          true
+  {{fact}}_present:    true
+  {{fact}}_confidence: { gte: 0.85 }
+
+on_block:
+  action:  ask
+  message: "Cần xác minh người dùng và camera thấy {{label}} trước khi {{phrase}}."
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

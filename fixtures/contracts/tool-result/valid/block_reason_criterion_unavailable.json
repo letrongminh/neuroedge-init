@@ -1,0 +1,8 @@
+{
+  "tool": "unlock_door",
+  "status": "BLOCK",
+  "gate": "unlock_door@1.2.0",
+  "reason": "criterion_unavailable",
+  "on_block": "deny",
+  "failed_criterion": "risk_level"
+}

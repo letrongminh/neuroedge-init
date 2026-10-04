@@ -1,0 +1,7 @@
+# Principle 2 — nâng trần điểm tin cậy từ 0.10 lên 0.50: người ở mức 0.4 vẫn bị ghi hình.
+schema:  neuroedge.gate/v1
+name:    camera-raises-confidence-ceiling
+version: 1.0.0
+extends: neuroedge://gates/home/camera@1.0.0
+allow_when:
+  private_zone_confidence: { lte: 0.50 }

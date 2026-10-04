@@ -1,0 +1,7 @@
+# Principle 2 — cho chạy khi nút dừng khẩn đang nhấn.
+schema:  neuroedge.gate/v1
+name:    motor-runs-with-estop-pressed
+version: 1.0.0
+extends: neuroedge://gates/home/motor@1.0.0
+allow_when:
+  estop_released: false

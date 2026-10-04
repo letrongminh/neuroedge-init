@@ -1,0 +1,136 @@
+# Đáp án của fixtures/contracts/ (RFC-0015 §7): mỗi tệp một mục, mỗi mục một tệp.
+#
+# `against` là lược đồ (và đoạn `#/$defs/…`) mà tệp được thẩm định theo. Tệp `valid/` phải hợp lệ;
+# tệp `invalid/` phải bị đúng lỗi ghi ở `error`: `keyword` và `path` (đường dẫn trong tài liệu, dạng
+# `a/b`, rỗng là gốc) của một lỗi cấp cao nhất, và `message_contains` — chuỗi con của thông điệp.
+# python/tests/test_contracts.py cưỡng chế cả hai chiều và việc phủ giá trị.
+
+valid:
+  board/valid/sim-default.json: { against: "board.v1.json" }
+  board/valid/without_schema_key.json: { against: "board.v1.json" }
+  error/valid/NE0000_NeuroEdgeError.json: { against: "error.v1.json" }
+  error/valid/NE1001_ActionContractViolation.json: { against: "error.v1.json" }
+  error/valid/NE1002_TokenReplayError.json: { against: "error.v1.json" }
+  error/valid/NE1003_EnvelopeRefusedError.json: { against: "error.v1.json" }
+  error/valid/NE1004_ToolCallError.json: { against: "error.v1.json" }
+  error/valid/NE2000_GateError.json: { against: "error.v1.json" }
+  error/valid/NE2001_GateNotFoundError.json: { against: "error.v1.json" }
+  error/valid/NE2002_GateSchemaError.json: { against: "error.v1.json" }
+  error/valid/NE2003_GateInheritanceError.json: { against: "error.v1.json" }
+  error/valid/NE3001_BoardCapabilityError.json: { against: "error.v1.json" }
+  error/valid/NE3002_AgentManifestError.json: { against: "error.v1.json" }
+  error/valid/NE3003_BuildFailed.json: { against: "error.v1.json" }
+  error/valid/NE4001_TraceValidationError.json: { against: "error.v1.json" }
+  error/valid/NE4002_SafetyRegressionError.json: { against: "error.v1.json" }
+  error/valid/NE4003_ReplayError.json: { against: "error.v1.json" }
+  error/valid/NE4004_VerificationError.json: { against: "error.v1.json" }
+  error/valid/NE5001_PerceptionUnavailableError.json: { against: "error.v1.json" }
+  tool-call/valid/call_source_local_grammar.json: { against: "tool-call.v1.json#/$defs/call" }
+  tool-call/valid/call_source_mcp.json: { against: "tool-call.v1.json#/$defs/call" }
+  tool-call/valid/call_source_system_one.json: { against: "tool-call.v1.json#/$defs/call" }
+  tool-call/valid/call_source_system_two.json: { against: "tool-call.v1.json#/$defs/call" }
+  tool-call/valid/call_source_test.json: { against: "tool-call.v1.json#/$defs/call" }
+  tool-call/valid/request_empty_id.json: { against: "tool-call.v1.json#/$defs/request" }
+  tool-call/valid/request_minimal.json: { against: "tool-call.v1.json#/$defs/request" }
+  tool-call/valid/request_with_id_and_arguments.json: { against: "tool-call.v1.json#/$defs/request" }
+  tool-call/valid/tool_description.json: { against: "tool-call.v1.json#/$defs/tool" }
+  tool-result/valid/allow.json: { against: "tool-result.v1.json" }
+  tool-result/valid/allow_with_a_key_not_known_yet.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_degrade_fallback_blocked.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_degrade_fallback_nested_two_levels.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_on_block_ask.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_on_block_degrade_fallback_allowed.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_on_block_escalate.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_reason_argument_out_of_range.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_reason_budget_exceeded.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_reason_condition_not_met.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_reason_confidence_unavailable.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_reason_criterion_unavailable.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_reason_gate_not_found.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_reason_gate_unreachable.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_reason_token_expired.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_reason_token_replayed.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_reason_value_out_of_range.json: { against: "tool-result.v1.json" }
+  tool-result/valid/block_with_a_reason_not_known_yet.json: { against: "tool-result.v1.json" }
+  tool-result/valid/rejected.json: { against: "tool-result.v1.json" }
+  tool-result/valid/rejected_two_problems.json: { against: "tool-result.v1.json" }
+
+invalid:
+  board/invalid/schema_v2.json:
+    against: "board.v1.json"
+    error: { keyword: const, path: "schema", message_contains: "'neuroedge.board/v1' was expected" }
+  error/invalid/code_wrong_shape.json:
+    against: "error.v1.json"
+    error: { keyword: pattern, path: "code", message_contains: "'E1001' does not match '^NE[0-9]{4}$'" }
+  error/invalid/how_missing.json:
+    against: "error.v1.json"
+    error: { keyword: required, path: "", message_contains: "'how'" }
+  error/invalid/ne1002_without_reason.json:
+    against: "error.v1.json"
+    error: { keyword: required, path: "", message_contains: "'reason'" }
+  error/invalid/ne2003_principle_as_a_number.json:
+    against: "error.v1.json"
+    error: { keyword: type, path: "principle", message_contains: "2 is not of type 'string'" }
+  error/invalid/ne2003_without_principle.json:
+    against: "error.v1.json"
+    error: { keyword: required, path: "", message_contains: "'principle'" }
+  error/invalid/why_empty.json:
+    against: "error.v1.json"
+    error: { keyword: minLength, path: "why", message_contains: "'' should be non-empty" }
+  tool-call/invalid/call_source_outside_the_five.json:
+    against: "tool-call.v1.json#/$defs/call"
+    error: { keyword: enum, path: "source", message_contains: "'mcp_network' is not one of ['local_grammar', 'system_one', " }
+  tool-call/invalid/call_with_an_unknown_key.json:
+    against: "tool-call.v1.json#/$defs/call"
+    error: { keyword: additionalProperties, path: "", message_contains: "Additional properties are not allowed ('token' was unexpecte" }
+  tool-call/invalid/call_without_a_name.json:
+    against: "tool-call.v1.json#/$defs/call"
+    error: { keyword: required, path: "", message_contains: "'name'" }
+  tool-call/invalid/request_arguments_is_an_array.json:
+    against: "tool-call.v1.json#/$defs/request"
+    error: { keyword: type, path: "arguments", message_contains: "[] is not of type 'object'" }
+  tool-call/invalid/request_declares_source.json:
+    against: "tool-call.v1.json#/$defs/request"
+    error: { keyword: additionalProperties, path: "", message_contains: "Additional properties are not allowed ('source' was unexpect" }
+  tool-call/invalid/request_name_empty.json:
+    against: "tool-call.v1.json#/$defs/request"
+    error: { keyword: minLength, path: "name", message_contains: "'' should be non-empty" }
+  tool-call/invalid/tool_description_input_schema_is_open.json:
+    against: "tool-call.v1.json#/$defs/tool"
+    error: { keyword: required, path: "inputSchema", message_contains: "'additionalProperties'" }
+  tool-call/invalid/tool_description_parameter_type_array.json:
+    against: "tool-call.v1.json#/$defs/tool"
+    error: { keyword: enum, path: "inputSchema/properties/x/type", message_contains: "'array' is not one of ['string', 'integer', 'number', 'boole" }
+  tool-result/invalid/block_without_gate.json:
+    against: "tool-result.v1.json"
+    error: { keyword: required, path: "", message_contains: "'gate'" }
+  tool-result/invalid/block_without_on_block.json:
+    against: "tool-result.v1.json"
+    error: { keyword: required, path: "", message_contains: "'on_block'" }
+  tool-result/invalid/confirmation_without_who.json:
+    against: "tool-result.v1.json"
+    error: { keyword: required, path: "confirmation", message_contains: "'who'" }
+  tool-result/invalid/fallback_status_rejected.json:
+    against: "tool-result.v1.json"
+    error: { keyword: enum, path: "fallback/status", message_contains: "'REJECTED' is not one of ['ALLOW', 'BLOCK']" }
+  tool-result/invalid/known_key_of_the_wrong_type.json:
+    against: "tool-result.v1.json"
+    error: { keyword: type, path: "gate", message_contains: "1 is not of type 'string'" }
+  tool-result/invalid/nested_fallback_block_without_gate.json:
+    against: "tool-result.v1.json"
+    error: { keyword: required, path: "fallback/fallback", message_contains: "'gate'" }
+  tool-result/invalid/on_block_outside_the_four.json:
+    against: "tool-result.v1.json"
+    error: { keyword: enum, path: "on_block", message_contains: "'ignore' is not one of ['deny', 'escalate', 'ask', 'degrade'" }
+  tool-result/invalid/reason_not_snake_case.json:
+    against: "tool-result.v1.json"
+    error: { keyword: pattern, path: "reason", message_contains: "'Condition Not Met' does not match '^[a-z][a-z0-9_]*$'" }
+  tool-result/invalid/rejected_with_empty_problems.json:
+    against: "tool-result.v1.json"
+    error: { keyword: minItems, path: "problems", message_contains: "[] should be non-empty" }
+  tool-result/invalid/rejected_without_problems.json:
+    against: "tool-result.v1.json"
+    error: { keyword: required, path: "", message_contains: "'problems'" }
+  tool-result/invalid/status_outside_the_three.json:
+    against: "tool-result.v1.json"
+    error: { keyword: enum, path: "status", message_contains: "'PENDING' is not one of ['ALLOW', 'BLOCK', 'REJECTED']" }

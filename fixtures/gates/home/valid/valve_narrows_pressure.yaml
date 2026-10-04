@@ -1,0 +1,7 @@
+# Hạ trần áp suất từ 2.0 V (8 bar) xuống 1.5 V (6 bar) và nâng sàn lên 0.5 V (2 bar).
+schema:  neuroedge.gate/v1
+name:    valve-narrows-pressure
+version: 1.0.0
+extends: neuroedge://gates/home/valve@1.0.0
+allow_when:
+  line_pressure_sense: { gte: 0.5, lt: 1.5 }

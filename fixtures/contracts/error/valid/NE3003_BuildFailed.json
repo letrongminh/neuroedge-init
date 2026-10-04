@@ -1,0 +1,6 @@
+{
+  "code": "NE3003",
+  "where": "example for BuildFailed",
+  "why": "what rule was broken",
+  "how": "what to do next"
+}

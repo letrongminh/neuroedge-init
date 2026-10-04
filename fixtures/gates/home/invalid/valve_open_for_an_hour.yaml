@@ -1,0 +1,7 @@
+# Principle 2 — thời gian mở van tối đa 600 s → 3600 s.
+schema:  neuroedge.gate/v1
+name:    valve-open-for-an-hour
+version: 1.0.0
+extends: neuroedge://gates/home/valve@1.0.0
+arguments:
+  duration_s: { type: integer, maximum: 3600 }

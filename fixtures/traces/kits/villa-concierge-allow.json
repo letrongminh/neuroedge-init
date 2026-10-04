@@ -1,0 +1,164 @@
+{
+  "$schema": "https://schema.neuroedge.dev/trace/v1.json",
+  "metadata": {
+    "session_id": "sess_b1170a11",
+    "timestamp_utc": "2026-10-04T12:00:00Z",
+    "target": "sim",
+    "board_id": "sim-default",
+    "agent_version": "villa-concierge@0.1.0",
+    "anonymized": true
+  },
+  "events": [
+    {
+      "offset_ms": 1000,
+      "type": "text_input",
+      "data": {
+        "text": "sha256:244ebcd17edf5e8119e2e4b62dfdaaabc7a927377d3b1beef45d3714dc671cd5"
+      }
+    },
+    {
+      "offset_ms": 1000,
+      "type": "intent_extracted",
+      "data": {
+        "intent": "unlock",
+        "confidence": 1.0,
+        "system": "SystemOne",
+        "backend": "local/command-grammar"
+      }
+    },
+    {
+      "offset_ms": 1000,
+      "type": "tool_call",
+      "data": {
+        "id": "call_1",
+        "name": "unlock_door",
+        "arguments": {
+          "guest_id": "101"
+        },
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 1000,
+      "type": "action_requested",
+      "data": {
+        "action": "unlock_door",
+        "gate": "unlock_door",
+        "arguments": {
+          "guest_id": "101"
+        }
+      }
+    },
+    {
+      "offset_ms": 1000,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "unlock_door@1.2.0",
+        "gate_digest": "sha256:2c20dc42616dbf9a3bf16b7967c3b01faa579e1186f55b928a85070a318a9ab5"
+      }
+    },
+    {
+      "offset_ms": 1000,
+      "type": "gate_facts",
+      "data": {
+        "guest_authenticated": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        },
+        "risk_level": {
+          "value": "low",
+          "confidence": null,
+          "source": "context"
+        },
+        "room_matches": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 1000,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "ALLOW",
+        "evaluations": {
+          "guest_authenticated": true,
+          "risk_level": "low",
+          "room_matches": true
+        }
+      }
+    },
+    {
+      "offset_ms": 1000,
+      "type": "actuator_command",
+      "data": {
+        "pin": "door_lock",
+        "operation": "pulse",
+        "duration_ms": 30000
+      }
+    },
+    {
+      "offset_ms": 1000,
+      "type": "turn_latency",
+      "data": {
+        "turn": 1,
+        "path": "system_1",
+        "stages_ms": {
+          "perception": 0.0,
+          "system_two": 0.0,
+          "gate": 0.0,
+          "action": 0.0,
+          "other": 0.0
+        },
+        "total_ms": 0.0
+      }
+    },
+    {
+      "offset_ms": 1000,
+      "type": "session_summary",
+      "data": {
+        "turns": 1,
+        "paths": {
+          "system_1": 1,
+          "system_2": 0,
+          "fallback": 0,
+          "none": 0
+        },
+        "shares": {
+          "system_1": 1.0,
+          "system_2": 0.0,
+          "fallback": 0.0,
+          "none": 0.0
+        },
+        "stages_ms": {
+          "perception": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "system_two": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "gate": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "action": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "other": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "total": {
+            "sum": 0.0,
+            "max": 0.0
+          }
+        }
+      }
+    }
+  ]
+}

@@ -82,7 +82,7 @@ def test_gate_resolve_missing_file_exits_one(invoke, tmp_path):
 def test_gate_lint_passes_on_the_sample_corpus(invoke):
     result = invoke("gate", "lint")
     assert result.exit_code == 0, result.output
-    assert "6 gate(s) resolved" in result.output
+    assert "13 gate(s) resolved" in result.output
 
 
 def test_gate_lint_fails_on_the_invalid_corpus(invoke, gate_fixtures_dir):
@@ -191,7 +191,7 @@ def test_verify_replays_every_canonical_trace_and_states_what_it_did_not_check(i
     result = invoke("verify")
     assert result.exit_code == 0, result.output
     # The panel states what was counted, so "passed" over nothing cannot hide.
-    assert "all 6 gate(s) resolve" in result.output
+    assert "all 13 gate(s) resolve" in result.output
     assert "all 3 canonical trace(s) validate" in result.output
     assert "3 replay(s) on sim" in result.output
     assert "give the recorded result" in result.output  # the tool-call corpus (§9)

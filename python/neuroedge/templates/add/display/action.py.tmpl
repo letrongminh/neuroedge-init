@@ -1,0 +1,10 @@
+"""The display action `{{name}}`. Only `c.do()` can run it, and only after its gate allows."""
+
+from neuroedge import action
+from neuroedge.hal import display
+
+
+@action(name="{{name}}", requires="display", gate="{{name}}")
+def {{fn}}(text: str = "Xin chào") -> None:
+    """Show `text` on the display (the gate allows at most 32 characters)."""
+    display.show(text)

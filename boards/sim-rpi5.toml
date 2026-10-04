@@ -5,6 +5,9 @@
 # `sim-default` mirrors the Box-3; this profile is what lets a vision agent run on `sim`
 # (TODOS.md #14). The extension primitives are replayed from recorded values — the
 # simulator reads no bus, no ADC and no camera of its own.
+
+schema = "neuroedge.board/v1"
+
 [board]
 id     = "sim-rpi5"
 name   = "NeuroEdge Web Simulator (mirrors linux-rpi5)"

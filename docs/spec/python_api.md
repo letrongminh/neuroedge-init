@@ -27,7 +27,8 @@ Công khai theo **tên**, không theo **vị trí**: `neuroedge.SimHAL` được
 vẫn chạy hôm nay nhưng một bản phát hành có thể dời nó. Mã sinh ra bởi `neuroedge new` và các agent
 mẫu chỉ import tên công khai ở dạng `from neuroedge import …`.
 
-Hợp đồng dạng tệp **không** thuộc tài liệu này vì có phiên bản riêng: lược đồ gate, vết ghi, `board.v1`
+Hợp đồng dạng tệp **không** thuộc tài liệu này vì có phiên bản riêng: lược đồ gate, vết ghi, `board.v1`,
+`tool-call.v1`, `tool-result.v1`, `error.v1` và danh mục mã lỗi `error-codes.v1` (RFC-0015)
 (PRD §10.3, `schemas/`, `CONTRIBUTING.md` §3) và bố cục nhị phân `NETR` (RFC-0003, RFC-0009). Dòng
 "hoặc CLI" của PRD §10.3 được định nghĩa ở §6.
 
@@ -155,6 +156,13 @@ ngừng hỗ trợ (§5, Q-64) như API Python; ở `0.x`, MINOR đóng vai MAJO
 | Đối số nào bắt buộc, và thứ tự các đối số vị trí | Đường dẫn mặc định của tệp một lệnh ghi khi không có `--out` |
 | **Mã thoát** — bảng ở `CHANGELOG.md` §2.3 (`0` đạt, `1` không đạt, `2` chưa hiện thực), không chép lại ở đây | Nội dung chẩn đoán `why`/`how` (mã `NE…` thì được hứa, §1) |
 | Đầu ra máy đọc: `--json`, `--openai`, và các tệp lệnh ghi ra (lược đồ riêng, có phiên bản — `schemas/`, PRD §10.3; không nhắc lại ở đây) | |
+
+**Nhóm lệnh `add` (TSK-I2b-04, FR-DX-08).** Hứa bốn lệnh con `add action`, `add sensor`, `add device`,
+`add gate`, mỗi lệnh nhận một tên làm đối số bắt buộc; các cờ `--primitive`, `--pin`, `--channel`,
+`--source`, `--label`, `--device`, `--register`, `--width`, `--fact`, `--board` và `--agent` như bản chụp ở
+`test_cli_contract.py`. Hợp đồng hành vi: lệnh chỉ chạy trong dự án có `agent.toml`; **không bao giờ ghi đè**
+một tệp, một khoá `[gates]`, một tên action hay tên lệnh đã có (từ chối bằng lỗi ba phần, mã thoát `1`, không
+ghi gì); kết quả được build thử trên một bản sao trước khi ghi vào dự án. Câu chữ in ra không được hứa.
 
 **Quy tắc phiên bản cho CLI:**
 

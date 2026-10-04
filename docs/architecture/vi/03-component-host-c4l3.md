@@ -21,7 +21,7 @@ lên:
 | 0 | `errors`, `paths`, `net`, `trace` | chỉ nhau | nền |
 | 1 | `hal` | `errors`, `paths` | L1 |
 | 2 | `engine` | bậc 0; **riêng `engine/compiler.py`** được dùng `hal` (đối chiếu bo mạch lúc build) và import muộn `actions`, `models`, `perception`, `mcp_host` (kiểm cấu hình) | L3 lõi |
-| 3 | `actions` | `engine`, `hal`, bậc 0 | L3 bề mặt |
+| 3 | `actions` | `engine`, `hal`, bậc 0 (cạnh `actions` → `paths`: `actions/tools.py::result_schema` đọc `schemas/tool-result.v1.json`, RFC-0015) | L3 bề mặt |
 | 4 | `models` | `engine` (hiện thực giao thức của nó), `net`, bậc 0 | L2 |
 | 5 | `mcp_server`, `mcp_host`, `mcp_desktop`, `mcp_http` | `actions`, bậc 0; riêng `mcp_http` chỉ dùng `mcp_server` và `errors` — cửa mạng (TSK-P2-04) đặt sau cùng một máy chủ của stdio, không dựng đường thứ hai | L4 theo proposal §3.1 (docstring không tự khai tầng) |
 | 6 | `viz`, `templates` | `viz`: `hal`, `trace`, bậc 0; `templates`: `errors`, `paths` | công cụ |

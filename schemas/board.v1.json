@@ -28,6 +28,11 @@
     "motionLease": { "type": "integer", "exclusiveMinimum": 0, "maximum": 500 }
   },
   "properties": {
+    "schema": {
+      "description": "Schema version identifier. Absent means neuroedge.board/v1. Frozen at neuroedge.board/v1 (RFC-0015 §3c).",
+      "type": "string",
+      "const": "neuroedge.board/v1"
+    },
     "board": {
       "type": "object",
       "required": ["id", "target", "mcu"],

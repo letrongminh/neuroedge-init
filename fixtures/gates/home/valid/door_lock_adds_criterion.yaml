@@ -1,0 +1,11 @@
+# Thêm tiêu chí riêng của nhà (principle 3): phải có người ở nhà.
+schema:  neuroedge.gate/v1
+name:    door-lock-adds-criterion
+version: 1.0.0
+extends: neuroedge://gates/home/door-lock@1.0.0
+evaluate:
+  someone_home:
+    type: bool
+    instructions: "Có ít nhất một người thường trú đang ở nhà"
+allow_when:
+  someone_home: true

@@ -9,6 +9,9 @@
 # a Raspberry Pi 5 with the I2S HAT plus an I2C ADC, a motor and servo driver and a CSI
 # camera (RFC-0013 §9, item 5). A rig without one of them drops the matching block —
 # never declares it.
+
+schema = "neuroedge.board/v1"
+
 [board]
 id     = "linux-rpi5"
 name   = "Raspberry Pi 5 + I2S HAT"

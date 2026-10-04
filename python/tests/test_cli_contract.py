@@ -22,6 +22,10 @@ import typer.main
 from neuroedge.cli.main import app
 
 COMMANDS = {
+    "add action": ("<name> --agent|-a= --board= --channel= --pin= --primitive="),
+    "add device": ("<name> --agent|-a= --board= --device=! --register=! --width="),
+    "add gate": "<name> --agent|-a= --fact=*",
+    "add sensor": ("<name> --agent|-a= --board= --label= --pin= --primitive= --source="),
     "board list": "",
     "board show": "<board_id>",
     "build": "--agent|-a= --board|-b= --out|-o= --registry|-r= --target|-t=!",

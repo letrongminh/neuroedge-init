@@ -4,6 +4,9 @@
 # Capabilities deliberately mirror esp32s3-box-3 rather than exceeding it: if
 # `sim` offered more, an agent could pass in simulation and fail to build for
 # the reference board, and target equivalence would be worthless.
+
+schema = "neuroedge.board/v1"
+
 [board]
 id     = "sim-default"
 name   = "NeuroEdge Web Simulator"

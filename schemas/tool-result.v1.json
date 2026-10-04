@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.neuroedge.dev/tool-result/v1.json",
+  "title": "NeuroEdge Gated Tool Profile — tool result v1",
+  "description": "What a caller (an LLM, an MCP client) is told back for one tool call: the `structuredContent` of the MCP result and the `outputSchema` of every tool. `status` decides: ALLOW, BLOCK or REJECTED. `reason` is an explanation only, never a reason to branch toward ALLOW; a `reason` the reader does not know, under BLOCK, is still a BLOCK (fail-closed). Result objects are open: a reader ignores keys it does not know. Pin `properties.tool` to a tool's name with a `const` when embedding this as that tool's `outputSchema` (the runtime also drops `$id` and `$schema` there).",
+  "type": "object",
+  "required": ["tool", "status"],
+  "properties": {
+    "tool": {
+      "description": "Name of the tool the call named.",
+      "type": "string"
+    },
+    "status": {
+      "description": "ALLOW: the gate admitted the call and the action ran. BLOCK: the gate refused it. REJECTED: the call never reached a gate (unknown tool, or arguments that do not match the tool's inputSchema). Closed set: a new status is a v2.",
+      "enum": ["ALLOW", "BLOCK", "REJECTED"]
+    },
+    "gate": {
+      "description": "URI of the gate that decided. Present under BLOCK.",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why the gate blocked, in words a log reader can use. Open string; the values known today are listed in `x-neuroedge-known`. Never branch toward ALLOW on it.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "x-neuroedge-known": [
+        "condition_not_met",
+        "criterion_unavailable",
+        "confidence_unavailable",
+        "value_out_of_range",
+        "gate_unreachable",
+        "budget_exceeded",
+        "gate_not_found",
+        "argument_out_of_range",
+        "token_replayed",
+        "token_expired"
+      ]
+    },
+    "failed_criterion": {
+      "description": "Name of the criterion that failed, when one did.",
+      "type": "string"
+    },
+    "on_block": {
+      "description": "What the gate did about the block (the `on_block.action` of gate.v1.json). Present under BLOCK. Closed set, equal to gate.v1.json.",
+      "enum": ["deny", "escalate", "ask", "degrade"]
+    },
+    "message": {
+      "description": "Wording the gate gives for the block.",
+      "type": "string"
+    },
+    "escalated_to": {
+      "description": "Who the request was escalated to, under `on_block: escalate`.",
+      "type": "string"
+    },
+    "problems": {
+      "description": "What is wrong with the call. Present, and non-empty, under REJECTED.",
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "fallback": {
+      "description": "Under `on_block: degrade`: the fallback action that ran through its own gate, told back in the same shape.",
+      "$ref": "#/$defs/fallback"
+    },
+    "confirmation": {
+      "description": "Under `on_block: ask`: a person must answer on the device; the caller cannot.",
+      "$ref": "#/$defs/confirmation"
+    }
+  },
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "BLOCK" } }, "required": ["status"] },
+      "then": { "required": ["gate", "on_block"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "REJECTED" } }, "required": ["status"] },
+      "then": { "required": ["problems"] }
+    }
+  ],
+  "$defs": {
+    "fallback": {
+      "type": "object",
+      "required": ["tool", "status"],
+      "properties": {
+        "tool": { "type": "string" },
+        "status": { "enum": ["ALLOW", "BLOCK"] },
+        "gate": { "type": "string" },
+        "reason": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "failed_criterion": { "type": "string" },
+        "on_block": { "enum": ["deny", "escalate", "ask", "degrade"] },
+        "message": { "type": "string" },
+        "escalated_to": { "type": "string" },
+        "fallback": { "$ref": "#/$defs/fallback" },
+        "confirmation": { "$ref": "#/$defs/confirmation" }
+      },
+      "additionalProperties": true,
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "BLOCK" } }, "required": ["status"] },
+          "then": { "required": ["gate", "on_block"] }
+        }
+      ]
+    },
+    "confirmation": {
+      "type": "object",
+      "required": ["id", "message", "expires_in_ms", "who"],
+      "properties": {
+        "id": { "type": "string" },
+        "message": { "type": "string" },
+        "expires_in_ms": { "type": "number" },
+        "who": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

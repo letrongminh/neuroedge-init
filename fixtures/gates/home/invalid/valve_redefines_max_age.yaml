@@ -1,0 +1,12 @@
+# Principle 1 (RFC-0009) — nới tuổi tối đa của số đọc áp suất: 500 ms → 5000 ms.
+schema:  neuroedge.gate/v1
+name:    valve-redefines-max-age
+version: 1.0.0
+extends: neuroedge://gates/home/valve@1.0.0
+evaluate:
+  line_pressure_sense:
+    type: numeric
+    unit: V
+    range: { min: 0, max: 2.5 }
+    max_age_ms: 5000
+    instructions: "Điện áp bộ đo áp suất đường ống, volt"

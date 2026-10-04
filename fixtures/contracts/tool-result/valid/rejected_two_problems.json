@@ -1,0 +1,8 @@
+{
+  "tool": "fan_run",
+  "status": "REJECTED",
+  "problems": [
+    "missing required argument 'duty'",
+    "unknown argument 'x'; fan_run takes ['duty']"
+  ]
+}

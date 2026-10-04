@@ -1,0 +1,31 @@
+# Thư viện gate khởi đầu 4/7 — còi báo động: chỉ kêu khi nguồn kích hoạt đã được kiểm chứng, và có giới hạn thời gian.
+#
+# Còi giả (prompt injection, cảm biến nhiễu) gây hoảng loạn và phiền hàng xóm: kích hoạt chưa kiểm chứng
+# thì chuyển cho người, không tự kêu. `duration_s` ≤ 120 s (RFC-0005).
+schema:  neuroedge.gate/v1
+name:    siren
+version: 1.0.0
+
+arguments:
+  duration_s: { type: integer, minimum: 1, maximum: 120 }
+
+evaluate:
+  trigger_verified:
+    type: bool
+    instructions: "Nguồn kích hoạt báo động đã được kiểm chứng bằng ít nhất hai tín hiệu độc lập"
+  device_fault_free:
+    type: bool
+    instructions: "Còi và nguồn dự phòng không báo lỗi"
+
+allow_when:
+  trigger_verified:  true
+  device_fault_free: true
+
+on_block:
+  action:  escalate
+  to:      human_owner
+  message: "Báo động chưa được kiểm chứng: cần chủ nhà xác nhận trước khi bật còi."
+
+budget:
+  p95_latency_ms: 100
+  fail:           closed

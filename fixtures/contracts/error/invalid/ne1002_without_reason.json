@@ -1,0 +1,6 @@
+{
+  "code": "NE1002",
+  "where": "hal",
+  "why": "token reused",
+  "how": "ask the gate again"
+}

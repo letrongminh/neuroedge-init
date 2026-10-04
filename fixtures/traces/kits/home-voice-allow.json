@@ -1,0 +1,271 @@
+{
+  "$schema": "https://schema.neuroedge.dev/trace/v1.json",
+  "metadata": {
+    "session_id": "sess_40e0a11e",
+    "timestamp_utc": "2026-10-04T12:00:00Z",
+    "target": "sim",
+    "board_id": "sim-default",
+    "agent_version": "home-voice@0.1.0",
+    "anonymized": true,
+    "sensor_facts_digest": "sha256:f138a3e0ff397e465fd148b6646d7be6d2bc3577a2352afbeb145940a07e04d4"
+  },
+  "events": [
+    {
+      "offset_ms": 1000,
+      "type": "sensor_set",
+      "data": {
+        "sensor": "motion",
+        "value": false
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "text_input",
+      "data": {
+        "text": "sha256:52a804d78ecd19e81981ccd3895d46ae3eddcf24b0a74da251743c8533ac1f46"
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "intent_extracted",
+      "data": {
+        "intent": "light_on",
+        "confidence": 1.0,
+        "system": "SystemOne",
+        "backend": "local/command-grammar"
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "sensor_read",
+      "data": {
+        "sensor": "motion",
+        "value": false,
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "tool_call",
+      "data": {
+        "id": "call_1",
+        "name": "light_on",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "action_requested",
+      "data": {
+        "action": "light_on",
+        "gate": "light_on",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "light_on@1.0.0",
+        "gate_digest": "sha256:4cc8ad901d164652b78caff90b93d6a543abbf6c114e45b7f3f37428c4479179"
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "gate_facts",
+      "data": {
+        "call_source": {
+          "value": "local_grammar",
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "ALLOW",
+        "evaluations": {
+          "call_source": "local_grammar"
+        }
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "actuator_command",
+      "data": {
+        "pin": "porch_light",
+        "operation": "on",
+        "duration_ms": 0
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "turn_latency",
+      "data": {
+        "turn": 1,
+        "path": "system_1",
+        "stages_ms": {
+          "perception": 0.0,
+          "system_two": 0.0,
+          "gate": 0.0,
+          "action": 0.0,
+          "other": 0.0
+        },
+        "total_ms": 0.0
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "text_input",
+      "data": {
+        "text": "sha256:59b64bbc3e3957673636a5909d71087991a12cbefdeaa436548fa70cf5ef3143"
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "intent_extracted",
+      "data": {
+        "intent": "light_off",
+        "confidence": 1.0,
+        "system": "SystemOne",
+        "backend": "local/command-grammar"
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "sensor_read",
+      "data": {
+        "sensor": "motion",
+        "value": false,
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "tool_call",
+      "data": {
+        "id": "call_2",
+        "name": "light_off",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "action_requested",
+      "data": {
+        "action": "light_off",
+        "gate": "light_off",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "light_off@1.0.0",
+        "gate_digest": "sha256:4eba33024d5360c5aa5f6b8298c238640929efa3f9172eb292dea1b8eb9fb3d9"
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "gate_facts",
+      "data": {
+        "call_source": {
+          "value": "local_grammar",
+          "confidence": null,
+          "source": "context"
+        },
+        "room_empty": {
+          "value": true,
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "ALLOW",
+        "evaluations": {
+          "call_source": "local_grammar",
+          "room_empty": true
+        }
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "actuator_command",
+      "data": {
+        "pin": "porch_light",
+        "operation": "off",
+        "duration_ms": 0
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "turn_latency",
+      "data": {
+        "turn": 2,
+        "path": "system_1",
+        "stages_ms": {
+          "perception": 0.0,
+          "system_two": 0.0,
+          "gate": 0.0,
+          "action": 0.0,
+          "other": 0.0
+        },
+        "total_ms": 0.0
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "session_summary",
+      "data": {
+        "turns": 2,
+        "paths": {
+          "system_1": 2,
+          "system_2": 0,
+          "fallback": 0,
+          "none": 0
+        },
+        "shares": {
+          "system_1": 1.0,
+          "system_2": 0.0,
+          "fallback": 0.0,
+          "none": 0.0
+        },
+        "stages_ms": {
+          "perception": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "system_two": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "gate": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "action": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "other": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "total": {
+            "sum": 0.0,
+            "max": 0.0
+          }
+        }
+      }
+    }
+  ]
+}

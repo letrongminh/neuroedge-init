@@ -1,0 +1,9 @@
+"""The motion action `{{name}}`. Only `c.do()` can run it, and only after its gate allows."""
+
+from neuroedge import action, motion
+
+
+@action(name="{{name}}", requires="motion:{{channel}}", gate="{{name}}")
+def {{fn}}(angle: float = 20.0) -> None:
+    """Move `{{channel}}` to `angle`; it holds there briefly, then the board's safe state applies."""
+    motion.servo("{{channel}}", target=angle)

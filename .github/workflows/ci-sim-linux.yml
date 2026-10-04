@@ -46,7 +46,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e '.[dev]'
 
-      - name: The three schemas are valid JSON Schema draft 2020-12
+      - name: The seven schemas are valid JSON Schema draft 2020-12
         run: |
           python - <<'PY'
           import json, pathlib, sys
@@ -56,6 +56,10 @@ jobs:
               "trace.v1.json": "https://schema.neuroedge.dev/trace/v1.json",
               "gate.v1.json": "https://schema.neuroedge.dev/gate/v1.json",
               "board.v1.json": "https://schema.neuroedge.dev/board/v1.json",
+              "tool-call.v1.json": "https://schema.neuroedge.dev/tool-call/v1.json",
+              "tool-result.v1.json": "https://schema.neuroedge.dev/tool-result/v1.json",
+              "error.v1.json": "https://schema.neuroedge.dev/error/v1.json",
+              "error-codes.v1.json": "https://schema.neuroedge.dev/error-codes/v1.json",
           }
           found = {p.name for p in pathlib.Path("schemas").glob("*.json")}
           if found != set(expected):
