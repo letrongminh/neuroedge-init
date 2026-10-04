@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-MDL-04, FR-MDL-10, FR-GATE-03, FR-GATE-06, FR-CI-02, NFR-SEC-04, NFR-SEC-09 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-10-03 |
-| **Trạng thái** | 🟡 Đang thảo luận *(bản nháp: ở danh mục `docs/rfc/README.md` là ⏳ Nháp tới khi mở PR RFC riêng; chấp thuận là chữ ký của kỹ thuật trưởng và quyết định của chủ sản phẩm ở §9, không phải của người viết)* |
+| **Trạng thái** | ✅ Đã chấp thuận (2026-10-04) — kỹ thuật trưởng ký trên PR #92; quyết định ở §9 (Q-65). Mã hiện thực sau v1.0 (`TODOS.md` #56) |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (chạm `gate.v1`, ngữ nghĩa phân giải, mở một đường dữ kiện vào cổng an toàn từ ngoài tiến trình) |
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/gate.v1.json` và ngữ nghĩa phân giải gate
@@ -306,7 +306,7 @@ Không thêm mã. Lớp dùng đều đã có trong `python/neuroedge/errors.py`
 - **Nguồn rớt ⇒ BLOCK, không bao giờ ALLOW** (§3i): thiếu dữ kiện là `criterion_unavailable` thường (không phải một lý do suy giảm), nên không ai biến nó thành ALLOW bằng `budget.fail: open`. Lệnh về phía an toàn vẫn không đi qua gate (§3i), nên một nguồn rớt không khoá cơ cấu ở trạng thái nguy hiểm.
 - **Không có ngưỡng ở agent, không có nhãn, không có khung hình trong lõi:** bề mặt tiêm lệnh qua nội dung (nhãn lạ, chuỗi tự do) không tồn tại; chỉ số đi qua.
 - **Rủi ro còn lại — nói thẳng, không loại được ở lõi:**
-  1. **Nguồn nói dối về độ mới.** Một adapter treo mà vẫn gửi lại giá trị cũ kèm `observed_age_ms` nhỏ trông như dữ kiện tươi. RFC-0012 bắt được camera đứng hình ở lõi nhờ băm khung; ở đây lõi không có khung. Giảm bằng (a) adapter phải tính `observed_age_ms` từ **thời điểm chụp của chính quan sát** chứ không từ lúc poll (bắt buộc trong `docs/spec/external_facts.md`, có vector tuân thủ cho adapter mẫu nếu có); (b) `max_age_ms` ngắn ở gate buộc nguồn gửi đều; (c) gate cho hành động nguy hiểm **ghép** một tiêu chí số do lõi tin cậy (`analog.in`, `digital.in`) với tiêu chí ngoài — gate tự quyết, lõi không ép (§9 câu 8).
+  1. **Nguồn nói dối về độ mới.** Một adapter treo mà vẫn gửi lại giá trị cũ kèm `observed_age_ms` nhỏ trông như dữ kiện tươi. RFC-0012 bắt được camera đứng hình ở lõi nhờ băm khung; ở đây lõi không có khung. Giảm bằng (a) adapter phải tính `observed_age_ms` từ **thời điểm chụp của chính quan sát** chứ không từ lúc poll (bắt buộc trong `docs/spec/external_facts.md`, có vector tuân thủ cho adapter mẫu nếu có); (b) `max_age_ms` ngắn ở gate buộc nguồn gửi đều; (c) gate cho hành động nguy hiểm **ghép** một tiêu chí số do lõi tin cậy (`analog.in`, `digital.in`) với tiêu chí ngoài — gate tự quyết; `neuroedge build` cảnh báo khi một hành động điều khiển cơ cấu chỉ dựa vào nguồn ngoài, và gate mẫu luôn ghép (§9 câu 8).
   2. **Nguồn sai với độ tin cậy cao** (Frigate báo "không có ai" khi có người). Giống RFC-0012 §5: giảm bằng ngưỡng ở gate và ghép tiêu chí; không xác nhận thay được (cấm `confirms`), nên hành động không hoàn tác cần tiêu chí lõi đi kèm.
   3. **Kẻ cùng uid với runtime và có khoá** đứng ngoài phạm vi (`threat_model.md` §3: quyền ngang runtime). Khoá riêng từng nguồn chỉ giới hạn *thiệt hại* của một nguồn bị xâm phạm vào các tiêu chí của nó.
   4. **Sai số dưới của `recv_ms`:** độ trễ giữa lúc dữ liệu tới hạt nhân và lúc tác vụ đọc đo `recv_ms` không được tính. Bị chặn bởi độ trễ vòng sự kiện (mili-giây); `max_age_ms` của gate cần lớn hơn đáng kể mức đó (khuyến nghị trong đặc tả).
@@ -347,6 +347,7 @@ Mọi dòng dưới đây là **việc phải có khi hiện thực** (`TODOS.md
 - [ ] **Tuổi và đồng hồ** (đồng hồ giả, như `tests/test_numeric_tree.py`): `observed_age_ms` cộng vào tuổi; nguồn không làm tuổi nhỏ hơn tuổi-từ-lúc-nhận; `age_ms > max_age_ms` ⇒ `criterion_unavailable`; đúng bằng `max_age_ms` ⇒ qua; `read_ms` trước lúc log bắt đầu ⇒ offset âm, không "trẻ"; dữ kiện cũ không đè dữ kiện mới; đồng hồ treo tường nhảy bậc **không** đổi phán quyết (không có đường nào dùng nó)
 - [ ] **Fail-closed theo bảng §3i**, mỗi dòng một ca: chưa kết nối; kết nối đóng giữa phiên ⇒ dữ kiện bị bỏ ngay và **không** hồi sinh sau khi nối lại tới khi có dữ kiện mới; vi phạm giao thức; số ngoài thang ⇒ `value_out_of_range`; `±inf` từ `1e999` ⇒ `value_out_of_range`; `c.facts` cấp giá trị cho tiêu chí có nguồn ⇒ bị bỏ qua, `criterion_unavailable`; **gate `fail: open`, SystemOne suy giảm, nguồn ngoài rớt ⇒ vẫn BLOCK** (ghim ranh giới `known_failure`/`DEGRADED_REASONS`)
 - [ ] **Vết ghi** (`fixtures/traces/invalid/` + `expected_errors.yaml`): `gate_facts` có `source: external:…` thiếu `connection`/`seq`/`observed_age_ms` hay mốc; `age_ms` lệch; `source_id` sai mẫu ⇒ `TraceValidationError` (`NE4001`). `external_source_refused` gộp theo giây (gửi dồn không phình vết ghi); `claimed_id` lạ ⇒ `"?"`
+- [ ] **Cảnh báo nguồn ngoài đơn độc** (`python/tests/test_compiler.py`, §9 câu 8): hành động điều khiển cơ cấu mà mọi tiêu chí trong `allow_when` của gate đều có `external_source` ⇒ `build` in cảnh báo, build vẫn thành công; ghép thêm một tiêu chí không có nguồn ⇒ không cảnh báo; hành động không điều khiển cơ cấu (chân `signal_pins`, chỉ đọc) ⇒ không cảnh báo
 - [ ] **Replay không chạm nguồn:** `ReplaySession` trên vết ghi có dữ kiện ngoài cho cùng phán quyết với không có ổ cắm, không có biến môi trường khoá, và với ổ cắm bị chặn mọi lời gọi `socket`/`bind`/`connect` (test dùng chốt chặn)
 - [ ] **Tương đương target:** `verify` cho cùng phán quyết trên `sim` và `linux` từ cùng `gate_facts`; nguồn ảo của `sim` đi qua cùng bộ nhận và cùng hàm kiểm thông điệp với ổ cắm thật
 - [ ] **Hợp đồng công khai:** `tests/test_public_api.py` và `docs/spec/python_api.md` §2 ghim tên bộ nhận; không thêm lệnh CLI nào ngoài khai báo (nếu có thì `tests/test_cli_contract.py` và spec §6 cùng đổi)
@@ -357,26 +358,44 @@ Mọi dòng dưới đây là **việc phải có khi hiện thực** (`TODOS.md
 - [ ] Cập nhật `schemas/gate.v1.json` (`external_source`, `allOf` chỉ cho `type: numeric`) và `docs/user/thuat-ngu.md` (nguồn ngoài, `external_source`)
 - [ ] `engine/gate_resolver.py` (kiểm mẫu, giữ qua kế thừa), `engine/constraints.py` nếu cần, `engine/gate.py::_gather` (chỉ bộ nhận cấp dữ kiện cho tiêu chí có nguồn), `engine/compiler.py` và nạp agent (khối `[external]`, hai chiều §3c, từ chối `esp32s3`)
 - [ ] Bộ nhận ổ cắm Unix, lớp thông điệp §3e, nguồn ảo trong `neuroedge.testing`; `python/neuroedge/trace.py` (lint §3h); `testing/player.py` (bảo đảm replay không chạm nguồn)
-- [ ] `docs/spec/external_facts.md` (đặc tả giao thức, quy ước adapter: tính `observed_age_ms` từ thời điểm chụp, nhịp gửi, thông điệp một quan sát) và bộ vector tuân thủ §7; nếu §9 câu 5 chọn đóng băng: `schemas/external_fact.v1.json`
+- [ ] `docs/spec/external_facts.md` (đặc tả giao thức, quy ước adapter: tính `observed_age_ms` từ thời điểm chụp, nhịp gửi, thông điệp một quan sát) và bộ vector tuân thủ §7; chưa có `schemas/external_fact.v1.json` (§9 câu 5)
 - [ ] `docs/spec/threat_model.md`: mục "§2c. Trong phạm vi: nguồn dữ kiện ngoài" (bảng §3d); ghi rằng dữ kiện ngoài không bao giờ vào qua `ToolCall`
 - [ ] `docs/spec/tool_calling.md` §7: bốn sự kiện vòng đời §3h; `docs/spec/simulation_coverage.md`: ghi nguồn ngoài **không phải nguyên thủy HAL** nên không vào ma trận §2
 - [ ] `docs/spec/python_api.md` §2 và `tests/test_public_api.py`: tên công khai của bộ nhận; `CONTRIBUTING.md` §3: thêm corpus `fixtures/external_facts/` vào bảng "Thêm một fixture phản chứng"
 - [ ] `neuroedge-prd.md`: Phụ lục B (nới nguyên nhân năm dòng ở §4); FR-MDL-04/FR-MDL-10 nếu đổi lời; quyết định của chủ sản phẩm ở §9 cấp `Q-N` ở §15
 - [ ] `neuroedge-roadmap.md`: TSK-I6-07 xong, tiêu chí ra 10 của I6; `TODOS.md` #56 mở khoá (mốc kích hoạt "RFC được chấp thuận" đạt)
-- [ ] Gate mẫu `fixtures/gates/valid/` dùng nguồn ngoài: PR thường, `scripts/check_digests.py --update`
+- [ ] Gate mẫu `fixtures/gates/valid/` dùng nguồn ngoài: PR thường, `scripts/check_digests.py --update`; gate mẫu của hành động điều khiển cơ cấu luôn ghép một tiêu chí do lõi tin cậy (§9 câu 8)
+- [ ] Cảnh báo của `neuroedge build` (`engine/compiler.py`) cho hành động điều khiển cơ cấu chỉ dựa vào nguồn ngoài (§9 câu 8)
 - [ ] `docs/rfc/README.md` (dòng RFC-0014) và `CHANGELOG.md` `[Chưa phát hành]`
 
-## 9. Câu hỏi mở cho chủ sản phẩm
+## 9. Quyết định cho các câu hỏi mở (Q-65, 2026-10-04)
 
-Những điều dưới đây **không do người viết RFC quyết**; mỗi câu nêu mặc định của bản nháp (đã viết vào §3) và điều gì đổi nếu quyết khác. Câu 10 là của kỹ thuật trưởng khi duyệt.
+Chủ sản phẩm quyết theo nguyên tắc **an toàn cao nhất** của Q-57: giữa hai phương án, chọn phương án fail-closed và khó dùng sai hơn. Câu 1–7 và 9–10 giữ mặc định của bản nháp, đã viết ở §3. Câu 8 thêm một cảnh báo và đã gộp vào §5, §7 và §8. Mục này là hồ sơ quyết định: nếu §3–§8 lệch với mục này thì sửa §3–§8. Kỹ thuật trưởng ký trên PR #92.
 
-1. **Nguồn ở máy khác (Frigate trên NAS) có cần ở bản đầu không?** Bản nháp: chỉ cùng máy (§3a, §3d). Nếu có: cần danh tính thiết bị của TSK-P2-04 (mTLS) làm lớp handshake; RFC bổ sung, không thêm cơ chế xác thực thứ hai. *Quyết ở đây ảnh hưởng thứ tự làm việc sau v1.0.*
-2. **`esp32s3` có nhận dữ kiện ngoài không** (qua gateway của TSK-P2-05, I14)? Bản nháp: không; build từ chối (§3i). Nếu có: cần đường từ máy chủ tới thiết bị, một RFC riêng (NETR không đổi nhưng nguồn dữ kiện trên thiết bị đổi).
-3. **Người có được xác nhận thay một nguồn đã rớt?** Bản nháp: không (cấm `on_block.confirms`, đã đúng cho mọi `numeric`; §3c). Nếu chủ sản phẩm muốn "người xác nhận cổng thông thoáng khi camera chết", đó là RFC sửa RFC-0009 §3a, không thuộc RFC này.
-4. **Có cần nguồn ngoài cho điều kiện hai giá trị (`bool`) ngay từ đầu?** Bản nháp: không, dùng số 0/1 với `range: { min: 0, max: 1 }` (§3a) — an toàn hơn, vụng hơn: một tích hợp Home Assistant đọc `binary_sensor` phải ánh xạ sang 0/1. Nếu muốn `bool`, cần RFC thêm tuổi và chặn `known_failure` bỏ qua `bool` thiếu cho tiêu chí có nguồn, theo nguyên tắc "an toàn cao nhất" của Q-57.
-5. **Giao thức dây có đóng băng vào `schemas/` (`external_fact.v1.json`) ngay khi hiện thực, hay giữ ở `docs/spec/external_facts.md` như bản thử qua Beta?** Đóng băng sớm cho adapter của OSS khác một chuẩn Apache-2.0 để dựa vào (Q-58, Q-59) nhưng thành hợp đồng khó đổi trước khi có phản hồi (hệ quả Q-58: đổi về sau cần RFC hoặc `v2`). Bản nháp: đặc tả ở `docs/spec`, chưa lược đồ.
-6. **Có kiểu dữ kiện nào ngoài `numeric` ở các phiên bản sau** (`level`, `choice`, chuỗi)? Bản nháp: không. Mỗi cái là một RFC; chuỗi có bề mặt tiêm lệnh.
-7. **Có đặt adapter mẫu (Frigate, Home Assistant, MQTT) trong kho này không, và dưới giấy phép nào?** Bản nháp: lõi chỉ có bộ nhận, giao thức và vector tuân thủ (§3j). Mã lõi theo PolyForm Noncommercial (Q-59); một adapter của OSS khác dùng giao thức Apache-2.0 không bị ràng buộc bởi nó. Có thể cần một thư mục `examples/` hoặc kho riêng; ai bảo trì là câu hỏi sản phẩm.
-8. **Có cho một nguồn ngoài là cơ sở **duy nhất** của một ALLOW làm di chuyển phần cứng, hay gate phải ghép với tiêu chí do lõi tin cậy (HAL)?** Cơ chế RFC này cho phép cả hai: gate tự quyết. Chủ sản phẩm quyết có thêm cảnh báo của `gate lint` hoặc quy ước cho gate mẫu (gate đóng cổng, bơm, cơ cấu không hoàn tác) hay không; xem rủi ro còn lại 1 và 2 ở §5.
-9. **Mặc định "đóng": bộ nhận chỉ chạy khi `[external]` có trong `agent.toml`** (không bao giờ tự bật, giống MCP qua mạng của Q-58). Bản nháp: đúng như vậy. Nêu ra để chủ sản phẩm xác nhận không có mong muốn bật theo cờ dòng lệnh.
-10. **(Kỹ thuật trưởng)** Các hằng đề xuất ở §3d–§3e: khoá tối thiểu 32 ký tự, 8 kết nối chưa xác thực, handshake 2 s, 5 lần hỏng ⇒ khoá 60 s, ≥ 1 s giữa hai handshake, 100 thông điệp/giây, dòng ≤ 4096 byte, `observed_age_ms` ≤ 4294967295 (bằng độ rộng trường `max_age_ms` của `NETR`). Chốt hoặc đổi khi duyệt.
+1. **Nguồn ở máy khác: không có ở bản đầu.** Chỉ nguồn cùng máy, qua ổ cắm Unix (§3a, §3d). Khi cần nguồn ở máy khác (Frigate trên NAS), một RFC bổ sung dùng danh tính thiết bị của TSK-P2-04 (mTLS) làm lớp handshake, không dựng cơ chế xác thực thứ hai. *Vì sao:* mỗi cơ chế cấp và thu hồi danh tính là một chỗ có thể sai.
+2. **`esp32s3` không nhận dữ kiện ngoài.** `neuroedge build --target esp32s3` từ chối agent có `[external]` (`NE3001`, §3i). Đường qua gateway (TSK-P2-05) cần một RFC riêng.
+3. **Người không được xác nhận thay một nguồn đã rớt.** Cấm `on_block.confirms` trên tiêu chí có nguồn, như với mọi `numeric` (RFC-0009 §3a). Muốn khác thì phải có RFC sửa RFC-0009.
+4. **Chỉ `numeric`.** Trạng thái hai giá trị gửi dưới dạng số 0/1 với `range: { min: 0, max: 1 }`. Nhờ vậy dữ kiện luôn có tuổi và không lọt qua lỗ `known_failure` của `bool` thiếu (§3a).
+5. **Giao thức dây ở `docs/spec/external_facts.md`, chưa vào `schemas/`.** Đặc tả này là bản thử qua Beta. Muốn đóng băng thành `schemas/external_fact.v1.json` thì cần một RFC, viết khi đã có phản hồi của Beta. *Vì sao:* đóng băng trước khi có người dùng thì về sau mỗi thay đổi đều là `v2` (hệ quả của Q-58).
+6. **Không có kiểu dữ kiện nào ngoài `numeric`.** Mỗi kiểu mới (`level`, `choice`, chuỗi) cần một RFC riêng; chuỗi mở ra bề mặt tiêm lệnh.
+7. **Lõi chỉ chứa bộ nhận, giao thức và vector tuân thủ** (§3j). Kho này không có adapter mẫu (Frigate, Home Assistant, MQTT). Đặt adapter ở đâu, dưới giấy phép nào và ai bảo trì sẽ quyết khi hiện thực `TODOS.md` #56.
+8. **Nguồn ngoài được phép là cơ sở duy nhất của một ALLOW, nhưng không lặng lẽ.**
+   - Gate vẫn tự quyết; RFC này không đổi ngữ nghĩa phân giải.
+   - `neuroedge build` **cảnh báo** (không chặn) khi một hành động điều khiển cơ cấu có gate mà mọi tiêu chí trong `allow_when` đều có `external_source`. Hành động điều khiển cơ cấu là hành động lái chân `digital_out` không thuộc `signal_pins`, kênh PWM hoặc `motion.*`. Lời cảnh báo nêu rủi ro còn lại 1–2 ở §5 và cách sửa: ghép một tiêu chí do lõi tin cậy (`analog.in`, `digital.in`).
+   - Gate mẫu của kho cho hành động điều khiển cơ cấu luôn ghép tiêu chí như vậy.
+   - *Vì sao chỉ cảnh báo, không chặn:* gate không biết nó gắn vào hành động nào (sự gắn kết nằm ở agent), nên `gate lint` không làm được việc này. Chặn ở `build` thì loại bỏ những tích hợp hợp lệ chỉ có camera. Cảnh báo cho người làm thấy rủi ro mà không đổi phán quyết.
+9. **Mặc định đóng: đã xác nhận.** Bộ nhận chỉ chạy khi `agent.toml` có `[external]`. Không có cờ dòng lệnh nào bật được nó (giống MCP qua mạng của Q-58).
+10. **(Kỹ thuật trưởng) Chốt các hằng của §3d–§3e như đề xuất:**
+
+    | Hằng | Giá trị |
+    |:---|:---|
+    | Độ dài khoá tối thiểu | 32 ký tự |
+    | Số kết nối chưa xác thực tối đa | 8 |
+    | Hạn handshake | 2 s |
+    | Khoá nguồn sau 5 lần xác thực hỏng liên tiếp | 60 s |
+    | Thời gian tối thiểu giữa hai handshake của một nguồn | 1 s |
+    | Thông điệp mỗi giây tối đa | 100 |
+    | Độ dài dòng tối đa | 4096 byte |
+    | `observed_age_ms` tối đa | 4294967295 (bằng độ rộng trường `max_age_ms` của `NETR`) |
+
+    Đổi một hằng về sau là thay đổi của đặc tả `docs/spec/external_facts.md`; nới một giới hạn an toàn thì cần RFC.
