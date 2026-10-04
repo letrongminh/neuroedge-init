@@ -23,6 +23,7 @@ from neuroedge.hal.envelope import EnvelopeLimits, SafetyEnvelope
 from neuroedge.hal.linux import PWM_ENV, LinuxHAL
 from neuroedge.hal.pwm import SysfsPwm, parse_channels
 
+from .hand_clock import HandClock
 from .test_hal_linux import FakeGpiod
 from .test_hal_linux_envelope import wait_until
 
@@ -391,11 +392,19 @@ def test_off_gives_the_unused_on_time_back(tmp_path, sysfs):
     limits = EnvelopeLimits(
         window_s=100, max_on_ms_per_window=200, min_interval_ms=0, max_continuous_ms=200
     )
-    envelope = SafetyEnvelope({"fan": limits}, virtual=False)
+    # A hand clock: on the wall clock a loaded CI runner spent 62 ms between `on` and `off`,
+    # so the refund was smaller and the next 150 ms rightly did not fit (PR #57).
+    clock = HandClock()
+    envelope = SafetyEnvelope({"fan": limits}, virtual=False, clock=clock)
     hal, *_ = make(tmp_path, sysfs, envelope=envelope)
     fan(hal, duration_ms=200)
-    hal.digital_out("fan", "off")  # nearly all of it unused
-    fan(hal, duration_ms=150)  # would not fit in 200 ms without the refund
+    clock.advance(10)
+    hal.digital_out("fan", "off")  # 190 of the 200 ms unused
+    fan(hal, duration_ms=150)  # 10 + 150 fits in 200 ms only with the refund
+    with pytest.raises(EnvelopeRefusedError, match="max_on_ms_per_window"):
+        clock.advance(150)
+        hal.digital_out("fan", "off")
+        fan(hal, duration_ms=50)  # 10 + 150 + 50 does not fit: the refund was exact
     hal.close()
 
 
