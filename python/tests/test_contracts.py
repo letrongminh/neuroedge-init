@@ -256,6 +256,7 @@ SCHEMA_FILES = {
     "tool-call.v1.json": CALL,
     "tool-result.v1.json": RESULT,
     "error.v1.json": json.loads((SCHEMAS / "error.v1.json").read_text(encoding="utf-8")),
+    "board.v1.json": json.loads((SCHEMAS / "board.v1.json").read_text(encoding="utf-8")),
 }
 
 

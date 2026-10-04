@@ -17,6 +17,7 @@ import pytest
 from neuroedge.errors import BoardCapabilityError
 from neuroedge.hal.board import (
     ALL_PRIMITIVES,
+    BOARD_SCHEMA,
     EXTENSION_PRIMITIVES,
     EXTENSION_REFERENCE_BOARDS,
     PRIMITIVES,
@@ -28,6 +29,7 @@ from neuroedge.hal.board import (
     available_boards,
     load_board,
     load_board_by_id,
+    load_board_document,
     validate_board_document,
 )
 
@@ -462,3 +464,68 @@ def test_unsupported_target_is_reported(tmp_path):
     with pytest.raises(BoardCapabilityError) as excinfo:
         load_board(path)
     assert "rp2040" in excinfo.value.why
+
+
+# --- the declaration-format version key (RFC-0015 §3c, PR B) ----------------------------------------
+
+
+@pytest.mark.parametrize("stem", sorted(EXPECTED_PROFILES))
+def test_every_shipped_board_declares_its_schema(boards_dir, stem):
+    """The shipped profiles teach the key: each declares `schema` at its root."""
+    import tomllib
+
+    document = tomllib.loads((boards_dir / f"{stem}.toml").read_text(encoding="utf-8"))
+    assert document["schema"] == BOARD_SCHEMA == "neuroedge.board/v1"
+
+
+def test_a_board_without_a_schema_key_is_read_as_v1(boards_dir, tmp_path):
+    text = (boards_dir / "sim-default.toml").read_text(encoding="utf-8")
+    stripped = text.replace('schema = "neuroedge.board/v1"\n', "")
+    assert stripped != text
+    path = tmp_path / "sim-default.toml"
+    path.write_text(stripped, encoding="utf-8")
+    assert "schema" not in load_board_document(path)
+    assert load_board(path).to_document()["schema"] == "neuroedge.board/v1"
+
+
+@pytest.mark.parametrize("declared", ["neuroedge.board/v2", "neuroedge.gate/v1", "rubbish", 1])
+def test_a_board_with_a_schema_key_of_another_version_is_refused_before_validation(
+    boards_dir, tmp_path, declared
+):
+    """Refused with NE3001 and the way out, before the open v1 schema can accept the file."""
+    text = (boards_dir / "sim-default.toml").read_text(encoding="utf-8")
+    value = f'"{declared}"' if isinstance(declared, str) else str(declared)
+    path = tmp_path / "sim-default.toml"
+    # A key the v1 schema would reject on its own: the version check must fire first.
+    path.write_text(
+        text.replace('schema = "neuroedge.board/v1"', f"schema = {value}\nnonsense = 1"),
+        encoding="utf-8",
+    )
+    with pytest.raises(BoardCapabilityError) as caught:
+        load_board_document(path)
+    error = caught.value
+    assert error.code == "NE3001"
+    assert error.where.endswith("-> schema")
+    assert repr(declared) in error.why and "neuroedge.board/v1" in error.why
+    assert "upgrade neuroedge" in error.how
+
+
+def test_a_board_document_in_memory_is_refused_for_another_version_too(boards_dir):
+    document = load_board(boards_dir / "sim-default.toml").to_document()
+    document["schema"] = "neuroedge.board/v2"
+    with pytest.raises(BoardCapabilityError, match="neuroedge.board/v2"):
+        validate_board_document(document, label="memory")
+
+
+@pytest.mark.parametrize("stem", sorted(EXPECTED_PROFILES))
+def test_board_to_document_round_trips_the_schema_key(boards_dir, stem, tmp_path):
+    import tomllib
+
+    path = boards_dir / f"{stem}.toml"
+    raw = tomllib.loads(path.read_text(encoding="utf-8"))
+    document = load_board(path).to_document()
+    assert document["schema"] == raw["schema"]
+    assert {k: document[k] for k in ("schema", "board", "capabilities")} == {
+        k: raw[k] for k in ("schema", "board", "capabilities")
+    }
+    validate_board_document(document, label=stem)

@@ -36,6 +36,8 @@ three tier-1 targets.
 The profile of the reference board, as a template:
 
 ```toml
+schema = "neuroedge.board/v1"   # optional; absent means v1, any other version is refused (RFC-0015 §3c)
+
 [board]
 id     = "esp32s3-box-3"
 name   = "Espressif ESP32-S3-BOX-3"

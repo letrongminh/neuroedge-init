@@ -34,6 +34,8 @@ Một port đúng khi nó giữ đủ các điều sau. Mỗi điều đã có k
 Profile của bo mạch tham chiếu, làm mẫu:
 
 ```toml
+schema = "neuroedge.board/v1"   # tuỳ chọn; vắng thì là v1, phiên bản khác bị từ chối (RFC-0015 §3c)
+
 [board]
 id     = "esp32s3-box-3"
 name   = "Espressif ESP32-S3-BOX-3"

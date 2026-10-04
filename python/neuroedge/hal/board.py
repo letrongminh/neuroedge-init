@@ -87,6 +87,11 @@ _CAPABILITY_KEYS = {
 }
 
 SUPPORTED_TARGETS: tuple[str, ...] = ("sim", "linux", "esp32s3")
+# The declaration-format versions this reader understands (RFC-0015 §3c). A profile without a
+# `schema` key is `neuroedge.board/v1`; one naming any other version is refused before schema
+# validation, because the open v1 schema would accept a v2 file and drop what it does not know.
+BOARD_SCHEMA = "neuroedge.board/v1"
+SUPPORTED_BOARD_SCHEMAS: frozenset[str] = frozenset({BOARD_SCHEMA})
 # The reference boards of each tier-1 target (RFC-0013 §3b). The first is the default
 # when no --board is given, and always declares the five core primitives. Every id here
 # has a profile in boards/ whose target matches (test_boards.py).
@@ -317,7 +322,7 @@ class BoardProfile:
         board: dict[str, Any] = {"id": self.id, "target": self.target, "mcu": self.mcu}
         if self.name:
             board["name"] = self.name
-        return {"board": board, "capabilities": self.capabilities}
+        return {"schema": BOARD_SCHEMA, "board": board, "capabilities": self.capabilities}
 
 
 def _board_schema() -> dict[str, Any]:
@@ -343,6 +348,22 @@ def _enable_pins(capabilities: Mapping[str, Any]) -> set[str]:
 
 def _refuse(label: str, location: str, why: str, how: str) -> BoardCapabilityError:
     return BoardCapabilityError(where=f"{label} -> {location}", why=why, how=how)
+
+
+def _check_schema_version(document: Mapping[str, Any], label: str) -> None:
+    """Refuse a declaration-format version this reader does not know (RFC-0015 §3c rule 3)."""
+    if "schema" not in document:
+        return
+    declared = document["schema"]
+    if declared not in SUPPORTED_BOARD_SCHEMAS:
+        raise BoardCapabilityError(
+            where=f"{label} -> schema",
+            why=(
+                f"the profile declares schema {declared!r}; this neuroedge reads only "
+                f"{', '.join(sorted(SUPPORTED_BOARD_SCHEMAS))}"
+            ),
+            how="upgrade neuroedge to a version that reads this board format",
+        )
 
 
 def _check_declaration_keys(document: Mapping[str, Any], label: str) -> None:
@@ -650,6 +671,7 @@ def validate_board_document(document: Mapping[str, Any], label: str) -> None:
     """
     import jsonschema
 
+    _check_schema_version(document, label)
     _check_declaration_keys(document, label)
     validator = jsonschema.Draft202012Validator(_board_schema())
     errors = sorted(validator.iter_errors(document), key=lambda e: list(e.absolute_path))

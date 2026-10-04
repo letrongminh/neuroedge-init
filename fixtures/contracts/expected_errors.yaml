@@ -6,6 +6,8 @@
 # python/tests/test_contracts.py cưỡng chế cả hai chiều và việc phủ giá trị.
 
 valid:
+  board/valid/sim-default.json: { against: "board.v1.json" }
+  board/valid/without_schema_key.json: { against: "board.v1.json" }
   error/valid/NE0000_NeuroEdgeError.json: { against: "error.v1.json" }
   error/valid/NE1001_ActionContractViolation.json: { against: "error.v1.json" }
   error/valid/NE1002_TokenReplayError.json: { against: "error.v1.json" }
@@ -54,6 +56,9 @@ valid:
   tool-result/valid/rejected_two_problems.json: { against: "tool-result.v1.json" }
 
 invalid:
+  board/invalid/schema_v2.json:
+    against: "board.v1.json"
+    error: { keyword: const, path: "schema", message_contains: "'neuroedge.board/v1' was expected" }
   error/invalid/code_wrong_shape.json:
     against: "error.v1.json"
     error: { keyword: pattern, path: "code", message_contains: "'E1001' does not match '^NE[0-9]{4}$'" }

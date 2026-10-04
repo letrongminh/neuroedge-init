@@ -604,6 +604,7 @@ Bốn tệp định dạng tạo thành toàn bộ bề mặt dữ liệu của 
 | Lược đồ kết quả tool (`schemas/tool-result.v1.json`) | URL `/v1`, `/v2` | Như trên; `reason` là chuỗi mở và đối tượng kết quả mở, nên thêm `Reason` hay trường tuỳ chọn không tăng; thêm `status` hay `on_block` thì tăng (RFC-0015) |
 | Lược đồ lỗi (`schemas/error.v1.json`) | URL `/v1`, `/v2` | Như trên (RFC-0015) |
 | Danh mục mã lỗi (`schemas/error-codes.v1.json`) | URL `/v1`, `/v2` | Đổi nghĩa, đổi tên lớp, bỏ hoặc tái dùng một mã; thêm mã, `fields` hay `aliases` không tăng (RFC-0015 §3d) |
+| Lược đồ bo mạch (`schemas/board.v1.json`, khoá `schema = "neuroedge.board/v1"` ở gốc `boards/*.toml`) | `neuroedge.board/v1` | Tăng phiên bản chính; vắng khoá ⇒ `v1`; bộ đọc từ chối phiên bản nó không đọc được (NE3001) trước khi thẩm định (RFC-0015 §3c) |
 | Gói `neuroedge` | SemVer | Thay đổi bề mặt API công khai ([`docs/spec/python_api.md`](../docs/spec/python_api.md)) hoặc CLI |
 
 ---
