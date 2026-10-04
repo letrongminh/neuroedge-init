@@ -4,6 +4,18 @@
 # Tệp mới: --update. Tệp đổi hoặc bị xoá: cần RFC, --accept <tệp> --rfc NNNN.
 version: 1
 files:
+  fixtures/agents/factory-monitor/gates/alarm_off@1.0.0.yaml:
+    digest: sha256:240790fd8a07efb9d285e1ce10d5931f13013e5b77efbe798482877de5367cb9
+  fixtures/agents/factory-monitor/gates/alarm_on@1.0.0.yaml:
+    digest: sha256:e3a70084f48442b366344a7afd62b9a34ebb8badd33c6563295d5b0b76b2397c
+  fixtures/agents/factory-monitor/gates/vent_off@1.0.0.yaml:
+    digest: sha256:2c2bb624cd8a5771455356812695225ad04f2547da2aaef39fa7db51a9e49d03
+  fixtures/agents/factory-monitor/gates/vent_on@1.0.0.yaml:
+    digest: sha256:cb95488c1b65eb0be16606d4e998f987b01957b2df01afc17b5c1521db843c58
+  fixtures/agents/home-voice/gates/light_off@1.0.0.yaml:
+    digest: sha256:87e7cccfcce436e4c5359ed78ac389bf8e0a321457cc0dccc11be022128bc3f5
+  fixtures/agents/home-voice/gates/light_on@1.0.0.yaml:
+    digest: sha256:551cd160254ef54b9eea979f53d985a5f12b27b676d130151d93250d541e0d27
   fixtures/gates/registry/args-base@1.0.0.yaml:
     digest: sha256:29cadc94193ffe17b51ccb9adf665b25577070e00336fa280aea795c74ba26bb
   fixtures/gates/registry/ask-base@1.0.0.yaml:

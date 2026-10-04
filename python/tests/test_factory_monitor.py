@@ -4,7 +4,7 @@ The factory-monitor sample (TSK-S3-08): physical actions gated on one `level` fa
 The `temperature` sensor reports degrees Celsius; `[sim.sensor_facts]` turns the
 reading into the heat band the gates compare (`low · normal · high · critical`,
 starting at -40, 25, 40 and 55 °C) and into `heat_critical` (≥ 55 °C). `gate_relay`
-is the fan, `porch_light` the alarm beacon; every assertion is on those pins.
+is the fan, `porch_light` the alarm siren; every assertion is on those pins.
 
 * vent_on / alarm_on — allowed at any band;
 * vent_off           — allowed up to `normal`, asks at `high` (RFC-0006), refused

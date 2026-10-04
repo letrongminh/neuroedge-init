@@ -50,7 +50,9 @@ LISTING=$(unzip -l "$WHEEL")  # listed once: `unzip | grep -q` trips pipefail on
 for asset in schemas/trace.v1.json schemas/tool-call.v1.json schemas/tool-result.v1.json \
   schemas/error.v1.json schemas/error-codes.v1.json boards/sim-default.toml gates/unlock_door@1.2.0.yaml \
   fixtures/traces/happy-path.json fixtures/agents/villa-concierge/agent.toml \
-  fixtures/agents/factory-monitor/agent.toml \
+  fixtures/agents/factory-monitor/agent.toml fixtures/agents/home-voice/agent.toml \
+  fixtures/traces/kits/villa-concierge-allow.json fixtures/traces/kits/home-voice-block.json \
+  fixtures/traces/kits/factory-monitor-block.json \
   fixtures/tool_calls/expected_results.yaml \
   fixtures/vision/expected_results.yaml fixtures/vision/golden/stranger-at-door.json \
   pipewire/neuroedge-echo-cancel.conf \
@@ -130,6 +132,7 @@ cd "$WORK"
 step new villa --template villa-concierge
 cd "$WORK/villa"
 step run -c "mở cửa phòng 101"
+step run -c "mở cửa phòng 202"
 step test
 cd "$WORK"
 step new plant --template factory-monitor

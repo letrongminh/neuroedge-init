@@ -1,7 +1,8 @@
 # Sample agent: environment monitoring on a factory floor (TSK-S3-08).
 #
-# A ventilation fan and an alarm beacon, both physical, both behind gates that
-# read one `level` fact — the heat band of the machine room:
+# An exhaust ventilation fan (or exhaust valve: one relay either way) and an alarm
+# siren, both physical, both behind gates that read one `level` fact — the heat band
+# of the machine room:
 #
 #   low · normal · high · critical
 #
@@ -22,7 +23,8 @@ name    = "factory-monitor"
 version = "0.1.0"
 
 # `sim-default` and `linux-rpi5` name their relays after other samples: here
-# `gate_relay` drives the fan contactor and `porch_light` the alarm beacon.
+# `gate_relay` drives the exhaust-fan contactor (or an exhaust valve's solenoid) and
+# `porch_light` the alarm siren (còi báo động).
 [requires]
 "digital.out" = { pins = ["gate_relay", "porch_light"] }
 "sensor.read" = { sensors = ["temperature"] }
