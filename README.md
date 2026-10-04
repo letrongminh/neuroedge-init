@@ -58,6 +58,7 @@ Không đường nào tới chân GPIO bỏ qua gate.
 ## Đọc tiếp
 
 - [Hướng dẫn người dùng](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/README.md)
+  · [năm kit phần cứng](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/kit-phan-cung.md)
   · [mọi lệnh và đầu ra kỳ vọng](https://github.com/letrongminh/neuroedge-init/blob/main/CHANGELOG.md#2-cách-vận-hành)
 - [Gọi tool qua gate và MCP](https://github.com/letrongminh/neuroedge-init/blob/main/docs/spec/tool_calling.md)
   · [mô hình mối đe doạ](https://github.com/letrongminh/neuroedge-init/blob/main/docs/spec/threat_model.md)

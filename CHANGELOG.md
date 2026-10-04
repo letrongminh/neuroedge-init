@@ -1132,6 +1132,7 @@ Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`): nơi tra `neuroedge://
 | `mcp serve [--agent a.toml] [--target sim\|linux] [--board id] [--trace-out t.json] [--ui [--port 8765] [--open]] [--init-timeout 30] [--http --tls-cert --tls-key --client-ca --issuer --audience --jwks [--host --port --required-scope]]` | Máy chủ MCP qua stdio trên `sim` hoặc `linux` (line GPIO thật, như `run --target linux`; `--ui` chỉ trên `sim`); mọi `tools/call` qua kiểm schema và gate. `--trace-out` băm chữ mặc định, `--raw` giữ nguyên văn. `--ui`: cùng phiên trên trang web 127.0.0.1 (`--port 0` chọn cổng trống; chỉ mở trình duyệt khi có `--open`); URL in ra stderr, stdout chỉ là kênh JSON-RPC. Cổng bận ⇒ cảnh báo stderr, trang sang cổng trống (URL thật ở dòng `sim UI at …`), MCP vẫn chạy. Không có `initialize` sau `--init-timeout` giây ⇒ thoát 0 (`0` = chờ mãi). `--http`: qua mạng thay cho stdio — Streamable HTTP, mTLS (TLS 1.3, chứng chỉ client bắt buộc), token OAuth 2.1 theo thiết bị ràng buộc chứng chỉ; mặc định tắt, thiếu một trong sáu cờ cấu hình ⇒ mã 1 trước khi dựng phiên hay mở cổng; không đi cùng `--ui` (mã 2) (`docs/spec/tool_calling.md` §8.1). Cần extra `neuroedge[mcp]` |
 | `mcp desktop-config [--agent a.toml] [--ui [--port 8765]] [--trace-out t.json] [--name N] [--write [--config-path P]]` | In mục `mcpServers` cho Claude Desktop, toàn đường dẫn tuyệt đối (trình thông dịch hiện tại, `-m neuroedge mcp serve`). `--write`: đặt đúng mục đó trong `claude_desktop_config.json` của Desktop (macOS `~/Library/Application Support/Claude/`, Windows `%APPDATA%\Claude\`), sao lưu `.bak-<giờ>`, giữ mọi khoá khác; JSON hỏng ⇒ mã 1, không ghi gì. Sau đó thoát hẳn Desktop rồi mở lại. Cần extra `neuroedge[mcp]` |
 | `new <tên> [--template minimal\|villa-concierge\|home-voice\|factory-monitor\|gate-camera\|blinds]` | Sinh dự án: `agent.toml`, `commands.toml`, `gates/`, `actions/`, `tests/`, `README.md`. Thư mục đã có nội dung ⇒ mã 1, không ghi gì. `villa-concierge` (chốt cửa), `home-voice` (trợ lý giọng nói, có `knowledge.toml`) `factory-monitor` (quạt, báo động theo dải nhiệt `level`), `gate-camera` (camera cổng, `vision.in`) và `blinds` (rèm lá, `motion.*`; hai mẫu cuối cần `--board sim-rpi5`) sao agent mẫu (có trong wheel) |
+| `add action <tên> [--primitive] [--pin\|--channel] [--board]` · `add sensor <tên> [--primitive] [--pin\|--label\|--source] [--board]` · `add device <tên> --device --register [--width]` · `add gate <tên> [--fact …]` (mọi lệnh con nhận `--agent`) | Trong một dự án do `new` sinh: thêm `@action`, gate chặn mặc định (`fail: closed`, tiêu chí số có `range` và `max_age_ms`), test hai chiều (ALLOW và BLOCK), khai `[requires]` và `[sim.*]` cho một nguyên thủy — `action`: `digital.out`, `motion`, `display`, `audio.out`; `sensor`: `sensor.read`, `digital.in`, `analog.in`, `vision.in`, `audio.in`; `device`: `i2c`; `gate`: gate đứng riêng. Build thử trên bản sao của dự án trước khi ghi; tệp, khoá gate, tên action hay lệnh đã có ⇒ lỗi 3 phần, mã 1, không ghi byte nào. Nguyên thủy mở rộng cần `sim-rpi5`: lệnh in đúng `build --board`, và đổi dòng `BOARD = "sim-default"` của test cũ khi dòng đó còn nguyên văn |
 
 `python -m neuroedge …` tương đương `neuroedge …`.
 
@@ -1281,8 +1282,8 @@ này sẽ làm hỏng những thứ trông không liên quan.
 | **V6 — kỹ sư nhúng thứ hai** | CPO đã quyết tuyển (2026-09-25); chưa có người, cần vào trước 2026-11-16 | Tuyển người (Q-39) | Âm thanh trên chip song song với HAL của V2 (TSK-S5-01, S5-02, S5-06, S5-07) — giả định của dự báo I5, I7 (roadmap §1.3) |
 | **`TODOS.md` #43** — CLA cho người đóng góp | Chưa có văn bản CLA (cần rà soát pháp lý) | CPO | Merge PR đầu tiên từ người ngoài (Q-45) |
 | **RFC-0002** | Phê duyệt | Kỹ thuật trưởng, trước khi I11 mở | I11 và mọi board profile mới |
-| **RFC-0014** · TSK-I6-07 · I6 tiêu chí 10 | Phê duyệt (bản nháp ở `docs/rfc-external-facts`) | Kỹ thuật trưởng; chủ sản phẩm cho các câu hỏi mở | Mã dữ kiện từ tiến trình ngoài sau v1.0 (`TODOS.md` #56) |
-| **RFC-0015** · TSK-I6-05 · I6 tiêu chí 8 | Phê duyệt (bản nháp ở `docs/rfc-integrator-contracts`) | Kỹ thuật trưởng; chủ sản phẩm cho giấy phép corpus (Q10.4) và 12 câu hỏi mở khác | Bốn lược đồ mới và khoá `schema` của `board.v1` trong `schemas/` |
+| **I2b tiêu chí 2** — TTFV của năm kit | Cần người đo (A1) | Người (Q-60) | Đóng I2b |
+| **`TODOS.md` #59** — dựng năm kit trên phần cứng thật | RPi 5 và Box-3 chưa về | Đặt hàng, rồi người dựng theo `docs/user/kit-*.md` | Kiểm BOM, sơ đồ đấu dây, mức kích rơ-le; PIR cho `home-voice` trên `linux` |
 | **I6 tiêu chí 7** — MCP qua mạng giữa hai máy thật | Cần hai máy và một người chạy | Người (Q-60) | Đóng tiêu chí 7; hôm nay chỉ có test trên loopback |
 
 **TSK-S1-10 — việc còn lại sau khi có bo mạch:** vendoring `esp-sr` (AEC/AFE +
@@ -1340,9 +1341,13 @@ Nói rõ để không ai đọc các mốc đã đạt quá lên:
   kiểm bằng CA tạm trong một tiến trình (`tests/test_mcp_http.py`) — chưa một lần nào giữa hai máy thật. Không thu hồi tức thì (token hết hạn, `--jwks` đọc một lần),
   không kiểm CRL/OCSP; kết nối bền tới MCP server ngoài chưa có (`TODOS.md` #25).
 - ❌ **Nguyên thủy mở rộng chạy trên kernel ảo trong CI, chưa trên phần cứng thật.** `digital.in` (gpio-sim), I2C và `analog.in` (`i2c-stub`), `vision.in` (`vivid`) và dây `enable` của PWM
-  và `motion.*` (gpio-sim) xanh ở job `linux-hal` (CI run 37153005998); kênh PWM là cây sysfs giả, ADC là `i2c-stub`, camera là `vivid`: motor, servo, PWM và camera thật cần nightly Pi 5 (TSK-I2-01).
+  và `motion.*` (gpio-sim) xanh ở job `linux-hal` (CI run 37176765897, `tests_linux` 119/119 gồm năm kit I2b); kênh PWM là cây sysfs giả, ADC là `i2c-stub`, camera là `vivid`: motor, servo, PWM và camera thật cần nightly Pi 5 (TSK-I2-01).
   `esp32s3` chưa có nguyên thủy mở rộng nào (TSK-I3a-02 → I3a-04, TSK-W1-04). Tương đương
   suy luận của mô hình thị giác giữa target (RFC-0012 §3f mệnh đề 2) chưa kiểm.
+- ❌ **Năm kit I2b chưa được dựng trên phần cứng thật.** BOM mô tả theo chức năng, sơ đồ chỉ dùng tên chân của `boards/*.toml`;
+  `villa-concierge` không build cho `linux-rpi5` (cần AEC), `home-voice` trên `linux` chặn `light_off` tới khi có PIR, `blinds` là servo
+  nghiêng lá (kênh motor chưa quay ngược). Ngưỡng điện áp của thư viện `gates/home/` dựa trên thang cảm biến giả định — người dựng
+  siết theo datasheet (`TODOS.md` #59).
 - ❌ **Chưa phát hành ra ngoài.** Kho đã công khai từ 2026-09-25 (TSK-I6-01, Q-45), nhưng tag trước I6 là nội bộ;
   PyPI mở ở I6 (Q-39, TSK-S3-14, `docs/release.md`).
 - ❌ **Chưa có CEL.** `allow_when` chỉ nhận dạng mapping toán tử (TSK-S2-06 hoãn, `TODOS.md` #42).
