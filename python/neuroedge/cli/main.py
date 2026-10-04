@@ -1089,7 +1089,8 @@ def verify(
     # RFC-0013 §3f item 7: besides the canonical traces its primitives allow, a board replays the
     # corpus of every extension primitive it carries — one directory of `fixtures/traces/` per
     # pack (`EXTENSION_TRACES`: `sensor-pack` for `digital.in`, `analog.in` and `i2c`; `vision` for
-    # `vision.in`; `fine-control` for a PWM channel of `digital.out`; `motion` for `motion`).
+    # `vision.in`; `fine-control` for a PWM channel of `digital.out`; `motion` for `motion`; `kits` for
+    # the three hardware kits, TSK-I2b-01).
     # These are not canonical: a board that lacks a primitive skips them, it does not fail, each
     # corpus is counted apart, and a corpus no board replayed is a failure.
     extension = []
@@ -1301,7 +1302,7 @@ def verify(
 # listed needs none: the core primitives are on every reference board (RFC-0013 §3a).
 # fixtures/traces/<each>/: the corpus of an extension pack (RFC-0013 §3f item 7), each replayed on
 # every board that declares the primitives its traces use.
-EXTENSION_TRACES = ("sensor-pack", "vision", "fine-control", "motion")
+EXTENSION_TRACES = ("sensor-pack", "vision", "fine-control", "motion", "kits")
 _EVENT_PRIMITIVE = {
     "vision_fact": "vision.in",
     "camera_unavailable": "vision.in",

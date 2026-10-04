@@ -1,0 +1,485 @@
+{
+  "$schema": "https://schema.neuroedge.dev/trace/v1.json",
+  "metadata": {
+    "session_id": "sess_fac7a11e",
+    "timestamp_utc": "2026-10-04T12:00:00Z",
+    "target": "sim",
+    "board_id": "sim-default",
+    "agent_version": "factory-monitor@0.1.0",
+    "anonymized": true,
+    "sensor_facts_digest": "sha256:69d15da45ee1032700cd761cb05fde8a66fece6daaa01adb124806cfa29603bb"
+  },
+  "events": [
+    {
+      "offset_ms": 1000,
+      "type": "sensor_set",
+      "data": {
+        "sensor": "temperature",
+        "value": 30
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "text_input",
+      "data": {
+        "text": "sha256:972c97653004b17b43c96ac1a4406cf6327ca31e43c9fb7439b0442748b20eb9"
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "intent_extracted",
+      "data": {
+        "intent": "vent_on",
+        "confidence": 1.0,
+        "system": "SystemOne",
+        "backend": "local/command-grammar"
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "sensor_read",
+      "data": {
+        "sensor": "temperature",
+        "value": 30,
+        "unit": "C",
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "tool_call",
+      "data": {
+        "id": "call_1",
+        "name": "vent_on",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "action_requested",
+      "data": {
+        "action": "vent_on",
+        "gate": "vent_on",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "vent_on@1.0.0",
+        "gate_digest": "sha256:0ab5cbd57cf9a5871bb5f2412c7691798f3d9096758a740ce24f542acdd321be"
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "gate_facts",
+      "data": {
+        "call_source": {
+          "value": "local_grammar",
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "ALLOW",
+        "evaluations": {
+          "call_source": "local_grammar"
+        }
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "actuator_command",
+      "data": {
+        "pin": "gate_relay",
+        "operation": "on",
+        "duration_ms": 0
+      }
+    },
+    {
+      "offset_ms": 2000,
+      "type": "turn_latency",
+      "data": {
+        "turn": 1,
+        "path": "system_1",
+        "stages_ms": {
+          "perception": 0.0,
+          "system_two": 0.0,
+          "gate": 0.0,
+          "action": 0.0,
+          "other": 0.0
+        },
+        "total_ms": 0.0
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "text_input",
+      "data": {
+        "text": "sha256:4410f3e813dbbaa6b69c83985ff74c86f58917337e67718088d017da02b406e2"
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "intent_extracted",
+      "data": {
+        "intent": "alarm_on",
+        "confidence": 1.0,
+        "system": "SystemOne",
+        "backend": "local/command-grammar"
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "sensor_read",
+      "data": {
+        "sensor": "temperature",
+        "value": 30,
+        "unit": "C",
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "tool_call",
+      "data": {
+        "id": "call_2",
+        "name": "alarm_on",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "action_requested",
+      "data": {
+        "action": "alarm_on",
+        "gate": "alarm_on",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "alarm_on@1.0.0",
+        "gate_digest": "sha256:314fd4c65c585235154c5d1a9f0a1d09999fc02f8c2520afb1ca9118daf1bfd0"
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "gate_facts",
+      "data": {
+        "call_source": {
+          "value": "local_grammar",
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "ALLOW",
+        "evaluations": {
+          "call_source": "local_grammar"
+        }
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "actuator_command",
+      "data": {
+        "pin": "porch_light",
+        "operation": "on",
+        "duration_ms": 0
+      }
+    },
+    {
+      "offset_ms": 3000,
+      "type": "turn_latency",
+      "data": {
+        "turn": 2,
+        "path": "system_1",
+        "stages_ms": {
+          "perception": 0.0,
+          "system_two": 0.0,
+          "gate": 0.0,
+          "action": 0.0,
+          "other": 0.0
+        },
+        "total_ms": 0.0
+      }
+    },
+    {
+      "offset_ms": 4000,
+      "type": "text_input",
+      "data": {
+        "text": "sha256:db2a4312e1ed71231cd60a0d85b9d4aca4097f328f747536f9fa713eff41c327"
+      }
+    },
+    {
+      "offset_ms": 4000,
+      "type": "intent_extracted",
+      "data": {
+        "intent": "vent_off",
+        "confidence": 1.0,
+        "system": "SystemOne",
+        "backend": "local/command-grammar"
+      }
+    },
+    {
+      "offset_ms": 4000,
+      "type": "sensor_read",
+      "data": {
+        "sensor": "temperature",
+        "value": 30,
+        "unit": "C",
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 4000,
+      "type": "tool_call",
+      "data": {
+        "id": "call_3",
+        "name": "vent_off",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 4000,
+      "type": "action_requested",
+      "data": {
+        "action": "vent_off",
+        "gate": "vent_off",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 4000,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "vent_off@1.0.0",
+        "gate_digest": "sha256:cace0aec52c1dbd17cb615d4c33e88e04abfcc637d9d1798dc4d74ac0277a678"
+      }
+    },
+    {
+      "offset_ms": 4000,
+      "type": "gate_facts",
+      "data": {
+        "call_source": {
+          "value": "local_grammar",
+          "confidence": null,
+          "source": "context"
+        },
+        "heat_level": {
+          "value": "normal",
+          "confidence": null,
+          "source": "context"
+        },
+        "heat_critical": {
+          "value": false,
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 4000,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "ALLOW",
+        "evaluations": {
+          "call_source": "local_grammar",
+          "heat_level": "normal",
+          "heat_critical": false
+        }
+      }
+    },
+    {
+      "offset_ms": 4000,
+      "type": "actuator_command",
+      "data": {
+        "pin": "gate_relay",
+        "operation": "off",
+        "duration_ms": 0
+      }
+    },
+    {
+      "offset_ms": 4000,
+      "type": "turn_latency",
+      "data": {
+        "turn": 3,
+        "path": "system_1",
+        "stages_ms": {
+          "perception": 0.0,
+          "system_two": 0.0,
+          "gate": 0.0,
+          "action": 0.0,
+          "other": 0.0
+        },
+        "total_ms": 0.0
+      }
+    },
+    {
+      "offset_ms": 5000,
+      "type": "text_input",
+      "data": {
+        "text": "sha256:fd098228b81380c9625ce29c0af0739473ff45fe5804821c3b00766446d8f889"
+      }
+    },
+    {
+      "offset_ms": 5000,
+      "type": "intent_extracted",
+      "data": {
+        "intent": "alarm_off",
+        "confidence": 1.0,
+        "system": "SystemOne",
+        "backend": "local/command-grammar"
+      }
+    },
+    {
+      "offset_ms": 5000,
+      "type": "sensor_read",
+      "data": {
+        "sensor": "temperature",
+        "value": 30,
+        "unit": "C",
+        "use": "fact"
+      }
+    },
+    {
+      "offset_ms": 5000,
+      "type": "tool_call",
+      "data": {
+        "id": "call_4",
+        "name": "alarm_off",
+        "arguments": {},
+        "source": "local_grammar"
+      }
+    },
+    {
+      "offset_ms": 5000,
+      "type": "action_requested",
+      "data": {
+        "action": "alarm_off",
+        "gate": "alarm_off",
+        "arguments": {}
+      }
+    },
+    {
+      "offset_ms": 5000,
+      "type": "gate_evaluation_begin",
+      "data": {
+        "gate": "alarm_off@1.0.0",
+        "gate_digest": "sha256:97052e6bfc3755e028633ffdd0361e91d6cdcea14a85eee603309c625b2422f1"
+      }
+    },
+    {
+      "offset_ms": 5000,
+      "type": "gate_facts",
+      "data": {
+        "call_source": {
+          "value": "local_grammar",
+          "confidence": null,
+          "source": "context"
+        },
+        "heat_level": {
+          "value": "normal",
+          "confidence": null,
+          "source": "context"
+        }
+      }
+    },
+    {
+      "offset_ms": 5000,
+      "type": "gate_evaluation_result",
+      "data": {
+        "verdict": "ALLOW",
+        "evaluations": {
+          "call_source": "local_grammar",
+          "heat_level": "normal"
+        }
+      }
+    },
+    {
+      "offset_ms": 5000,
+      "type": "actuator_command",
+      "data": {
+        "pin": "porch_light",
+        "operation": "off",
+        "duration_ms": 0
+      }
+    },
+    {
+      "offset_ms": 5000,
+      "type": "turn_latency",
+      "data": {
+        "turn": 4,
+        "path": "system_1",
+        "stages_ms": {
+          "perception": 0.0,
+          "system_two": 0.0,
+          "gate": 0.0,
+          "action": 0.0,
+          "other": 0.0
+        },
+        "total_ms": 0.0
+      }
+    },
+    {
+      "offset_ms": 5000,
+      "type": "session_summary",
+      "data": {
+        "turns": 4,
+        "paths": {
+          "system_1": 4,
+          "system_2": 0,
+          "fallback": 0,
+          "none": 0
+        },
+        "shares": {
+          "system_1": 1.0,
+          "system_2": 0.0,
+          "fallback": 0.0,
+          "none": 0.0
+        },
+        "stages_ms": {
+          "perception": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "system_two": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "gate": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "action": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "other": {
+            "sum": 0.0,
+            "max": 0.0
+          },
+          "total": {
+            "sum": 0.0,
+            "max": 0.0
+          }
+        }
+      }
+    }
+  ]
+}
