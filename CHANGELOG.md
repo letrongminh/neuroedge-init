@@ -372,6 +372,13 @@ bản gói.
   micro giây, làm cùng một lệnh 600 000 ms bị ghi 600 001 ms ở lần chạy này và 600 000 ms ở lần khác (test chập chờn trên CI,
   PR #94); nay bỏ nhiễu trước khi làm tròn lên, phần lẻ thật vẫn làm tròn về phía đã dùng. Kiểm: `pytest tests/test_envelope.py -k float_noise`.
 
+#### Đã đổi — Ký ba RFC của nền tảng mở (2026-10-04, Q-68)
+
+- **Q-68 — RFC-0016, RFC-0017, RFC-0018 được chấp thuận; mọi câu hỏi mở chốt theo khuyến nghị.** Kỹ thuật trưởng ký trên PR #99.
+  Hằng cơ cấu từ xa: `OFF_SLACK_MS` 100 ms, `OFF_RETRY_MS` 500 ms, `max_state_age_ms` 2000 ms, trần `command_timeout_ms` 5000 ms,
+  trần `tolerance_ms` 2000 ms. RFC-0014 sửa nhẹ (khoá `plugin` cho fact source trong tiến trình). Adapter Home Assistant đặt ở kho riêng.
+  I2c tiêu chí 1 đạt; mã của I2c mở. Kiểm: §9 của ba RFC.
+
 #### Đã đổi — Nền tảng mở (2026-10-04, Q-67)
 
 - **Q-67 — NeuroEdge thành lớp an toàn mở: bên thứ ba tự nối với sản phẩm mới mà không sửa lõi, không chờ đội lõi.**
@@ -1294,7 +1301,6 @@ này sẽ làm hỏng những thứ trông không liên quan.
 | **V6 — kỹ sư nhúng thứ hai** | CPO đã quyết tuyển (2026-09-25); chưa có người, cần vào trước 2026-11-16 | Tuyển người (Q-39) | Âm thanh trên chip song song với HAL của V2 (TSK-S5-01, S5-02, S5-06, S5-07) — giả định của dự báo I5, I7 (roadmap §1.3) |
 | **`TODOS.md` #43** — CLA cho người đóng góp | Chưa có văn bản CLA (cần rà soát pháp lý) | CPO | Merge PR đầu tiên từ người ngoài (Q-45) |
 | **RFC-0002** | Phê duyệt | Kỹ thuật trưởng, trước khi I11 mở | I11 và mọi board profile mới |
-| **RFC-0016, RFC-0017, RFC-0018** · I2c | Phê duyệt | Kỹ thuật trưởng | Mã của nền tảng mở: `neuroedge.guard`, plugin, bộ test tuân thủ, proxy, cơ cấu từ xa (Q-67) |
 | **I2b tiêu chí 2** — TTFV của năm kit | Cần người đo (A1) | Người (Q-60) | Đóng I2b |
 | **`TODOS.md` #59** — dựng năm kit trên phần cứng thật | RPi 5 và Box-3 chưa về | Đặt hàng, rồi người dựng theo `docs/user/kit-*.md` | Kiểm BOM, sơ đồ đấu dây, mức kích rơ-le; PIR cho `home-voice` trên `linux` |
 | **I6 tiêu chí 7** — MCP qua mạng giữa hai máy thật | Cần hai máy và một người chạy | Người (Q-60) | Đóng tiêu chí 7; hôm nay chỉ có test trên loopback |

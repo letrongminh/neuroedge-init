@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-EXT-02, FR-EXT-03, FR-EXT-07, FR-HAL-01, FR-HAL-05, FR-ACE-02, NFR-SEC-10 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-10-04 |
-| **Trạng thái** | 🟡 Đang thảo luận *(bản nháp: ở danh mục `docs/rfc/README.md` là ⏳ Nháp tới khi mở PR RFC riêng; chấp thuận là chữ ký của kỹ thuật trưởng, quyết định nền đã có ở Q-67)* |
+| **Trạng thái** | ✅ Đã chấp thuận (2026-10-04) — kỹ thuật trưởng ký trên PR #99; quyết định cho câu hỏi mở ở §9 (Q-68) |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (thêm luật lên đường tới cơ cấu chấp hành; mở một loại cơ cấu mà bảo đảm tự tắt nằm ở thiết bị ngoài tầm kiểm của lõi) |
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3. Thiết kế này **không** chạm hàng nào của bảng đó (không sửa `schemas/`, ngữ nghĩa phân giải, ba vết ghi chuẩn mực, `digests.lock`, `NETR`);
@@ -126,7 +126,7 @@ Mức là lời hứa về **ai** làm cơ cấu về `off` khi NeuroEdge không
 - L2 và L3 **không bỏ** L1: HAL vẫn gửi `off` sau hạn (§3g), nhưng như lớp dự phòng *sau* bảo đảm của thiết bị, nên bảo đảm được thử mỗi lần chạy (§3e).
 - Gia hạn lease của L3 **không** là gia hạn thẩm quyền của RFC-0011 §3c: nó không bao giờ vượt `D` mà phong bì đã giữ trước. Muốn bật lâu hơn phải qua gate lần nữa, mà `already_on` chặn tới khi lần chạy kết thúc.
 - `safe_off` ở `agent.toml` là mức người triển khai **dựa vào**, và không được vượt `safe_off_level` của plugin (§3c); vượt ⇒ NE3001, nên một bản plugin lỡ hạ mức làm build đỏ chứ không hạ lặng lẽ. Mức **không bao giờ được đoán hay nâng lúc chạy** (cùng tinh thần Q-35: không khai thì xấu nhất). `tolerance_ms` là độ lệch tối đa giữa hạn tính từ lúc HAL gửi và lúc thiết bị thật sự tắt (hẹn giờ thiết bị, độ trễ giao lệnh — gồm `command_timeout_ms` — và độ trễ đọc lại).
-- Hằng `OFF_SLACK_MS`, `OFF_RETRY_MS`, `max_state_age_ms` là đề xuất; kỹ thuật trưởng chốt (§9 câu 5).
+- Hằng `OFF_SLACK_MS`, `OFF_RETRY_MS`, `max_state_age_ms` chốt ở §9 câu 5 (Q-68).
 
 ### 3e. Một mức được chứng minh thế nào
 
@@ -317,13 +317,13 @@ Mọi dòng là **việc phải có khi hiện thực** (TSK-I2c-16); chưa tick
 - [ ] `CONTRIBUTING.md` §3: thêm corpus `fixtures/actuators/` vào bảng "Thêm một fixture phản chứng"; `neuroedge-roadmap.md`: TSK-I2c-04 xong; `TODOS.md` #55: phần thiết kế đóng, phần Zenoh/kênh không tin cậy giữ lại
 - [ ] `docs/rfc/README.md` (dòng RFC-0018) và `CHANGELOG.md` `[Chưa phát hành]`
 
-## 9. Câu hỏi mở
+## 9. Quyết định cho các câu hỏi mở (Q-68, 2026-10-04)
 
-Q-67 chưa quyết các điểm dưới đây; RFC viết theo **khuyến nghị**, và nếu chủ sản phẩm quyết khác thì sửa §3 tương ứng.
+Q-67 chưa quyết các điểm dưới đây; RFC viết theo khuyến nghị. Kỹ thuật trưởng **chấp nhận khuyến nghị của mọi câu dưới đây**, theo nguyên tắc an toàn cao nhất của Q-57; mỗi khuyến nghị là quyết định (Q-68, 2026-10-04). Mục này là hồ sơ quyết định: §3–§8 lệch với nó thì sửa §3–§8.
 
 1. **Khai cơ cấu từ xa ở `agent.toml` hay ở `board.v1`?** *Khuyến nghị: `agent.toml`* (§3b): cấu hình triển khai không thuộc phần cứng, và không sửa lược đồ đóng băng. Đánh đổi: phong bì nằm ở tệp của người triển khai, không ở hồ sơ bo. Chọn `board.v1` thì phải sửa `schemas/board.v1.json` (RFC, hàng đầu `CONTRIBUTING.md` §3), thêm khoá `capabilities` mới và quyết cách bo `sim-*` soi nó (bất biến #7).
 2. **Đọc lại bắt buộc cho hành động không hoàn tác?** FR-EXT-07 đã đòi mức thiết bị tự tắt được (L2/L3); RFC này thêm `readback ≠ none`, vì không có nó P2 không tồn tại và mức chỉ còn là lời của plugin. *Khuyến nghị: bắt buộc.* Đánh đổi: một số thiết bị chỉ ghi, không đọc được, sẽ không dùng được cho không hoàn tác.
 3. **Adapter Home Assistant đặt ở đâu** (roadmap TSK-I2c-16: "plugin trong `python/neuroedge/` hoặc kho riêng")? *Khuyến nghị: kho riêng, giấy phép do tác giả chọn (nên Apache-2.0)* (Q-67 quyết định 8) — nó là phép thử rằng SDK đủ cho bên thứ ba, nên không được dùng đường riêng nào của lõi; ngược lại, đặt trong lõi buộc nó vào PolyForm Noncommercial (Q-45) và buộc đội lõi bảo trì một tích hợp nó không sở hữu.
 4. **`pwm`, độ sáng, `motion.*` cho cơ cấu từ xa** (đèn điều sáng của Home Assistant, servo từ xa): mỗi thứ cần định nghĩa "bị chặn bởi gì khi mất liên lạc" riêng. *Khuyến nghị: hoãn, RFC riêng khi có nhu cầu đo được*; bản này cấm bằng NE3001 để không ai dùng tạm mà không có bảo đảm.
-5. **Các hằng của §3d, §3g** — `OFF_SLACK_MS`, `OFF_RETRY_MS`, `max_state_age_ms`, trần `command_timeout_ms` và `tolerance_ms` mà plugin được khai. *Khuyến nghị: kỹ thuật trưởng chốt khi duyệt, như RFC-0014 §9 câu 10*; đổi một hằng về sau là sửa đặc tả, nới giới hạn an toàn thì cần RFC.
+5. **Các hằng của §3d, §3g** — `OFF_SLACK_MS`, `OFF_RETRY_MS`, `max_state_age_ms`, trần `command_timeout_ms` và `tolerance_ms` mà plugin được khai. *Khuyến nghị: kỹ thuật trưởng chốt khi duyệt, như RFC-0014 §9 câu 10*; đổi một hằng về sau là sửa đặc tả, nới giới hạn an toàn thì cần RFC. **Đã chốt (Q-68):** `OFF_SLACK_MS` = 100 ms · `OFF_RETRY_MS` = 500 ms · `max_state_age_ms` = 2000 ms · plugin khai `command_timeout_ms` ≤ 5000 ms · plugin khai `tolerance_ms` ≤ 2000 ms (vượt ⇒ NE3002). Đây là giá trị thận trọng chọn khi chưa có thiết bị thật; thu hẹp theo số đo của TSK-I2c-16.
 6. **Cảnh báo import client mạng trong module `@action`** (§3c): *cảnh báo, không chặn* (khuyến nghị). Chặn sẽ sinh dương tính giả (mã đọc dữ liệu qua HTTP là hợp lệ) và vẫn không đầy đủ; nó chỉ là một lời nhắc, không phải rào chắn.

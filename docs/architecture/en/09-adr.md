@@ -256,9 +256,9 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
 | [0013](../../rfc/0013-nguyen-thuy-tuy-chon-va-nhieu-bo-tham-chieu.md) | Board-optional extension primitives; several reference boards for one tier-1 target (TSK-I2a-07) | Accepted (2026-10-01); host part implemented; the `esp32s3` cells left (TSK-I3a-01) | `hal/board.py` (`REFERENCE_BOARDS`, `SIM_MIRRORS`), `verify` |
 | [0014](../../rfc/0014-du-kien-tu-tien-trinh-ngoai.md) | Numeric facts from an external process: the source declared in the gate, its identity recorded in the trace, a dropped source ⇒ BLOCK (TSK-I6-07, Q-65) | Accepted (2026-10-04); code pulled forward into I2c (TSK-I2c-09, Q-67) | not yet |
 | [0015](../../rfc/0015-hop-dong-cho-nguoi-tich-hop.md) | Contracts for integrators: the Gated Tool Profile (`tool-call.v1`, `tool-result.v1`), the `schema` key of `board.v1`, the `NE*` error-code catalogue (`error.v1`, `error-codes.v1`) (TSK-I6-05, Q-58, Q-63) | Accepted, implemented | `schemas/` (seven schemas) |
-| RFC-0016 | Standalone safety core and Extension SDK: plug points, trust model, compliance suite (TSK-I2c-02, Q-67) | Under discussion (draft awaiting signature) | not yet |
-| RFC-0017 | Namespaced call source (`bridge:<id>`) and client identity (TSK-I2c-03, Q-67) | Under discussion (draft awaiting signature) | not yet |
-| RFC-0018 | Remote actuators and the self-off level (TSK-I2c-04, Q-67) | Under discussion (draft awaiting signature) | not yet |
+| RFC-0016 | Standalone safety core and Extension SDK: plug points, trust model, compliance suite (TSK-I2c-02, Q-67) | Accepted 2026-10-04 (Q-68) | not yet |
+| RFC-0017 | Namespaced call source (`bridge:<id>`) and client identity (TSK-I2c-03, Q-67) | Accepted 2026-10-04 (Q-68) | not yet |
+| RFC-0018 | Remote actuators and the self-off level (TSK-I2c-04, Q-67) | Accepted 2026-10-04 (Q-68) | not yet |
 
 ### Planned unnumbered RFCs (planned RFCs)
 

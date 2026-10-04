@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-EXT-01 → FR-EXT-05, FR-EXT-09, NFR-SEC-10 *(FR-EXT-08 chỉ ở chỗ móc, §3g)* · FR-MDL-08, FR-GOV-03, A3, A13 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-10-04 |
-| **Trạng thái** | 🟡 Đang thảo luận *(bản nháp: ở danh mục `docs/rfc/README.md` là ⏳ Nháp tới khi mở PR RFC riêng; chấp thuận là chữ ký của kỹ thuật trưởng, quyết định nền đã có ở Q-67)* |
+| **Trạng thái** | ✅ Đã chấp thuận (2026-10-04) — kỹ thuật trưởng ký trên PR #99; quyết định cho câu hỏi mở ở §9 (Q-68) |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (đặt một cam kết công khai mới cho bên ngoài; mở đường cho mã của bên thứ ba vào tiến trình giữ cổng an toàn; sửa nơi tìm gate của `engine/gate_resolver.py`) |
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3. RFC này **không** sửa `schemas/*.json`, ba vết ghi chuẩn mực, `digests.lock` hay `NETR`; nó chạm `engine/gate_resolver.py` (§3: chỗ tìm tệp của `GateRegistry`, hợp nhất và
@@ -261,9 +261,9 @@ Test dưới đây là **tên đề xuất**, chưa tồn tại tới khi RFC đ
 - [ ] **TSK-I2c-18** — index và huy hiệu đọc báo cáo §3g; `plugin install` chỉ nhận bánh xe dựng sẵn
 - [ ] `python_api.md` §3 (cam kết SDK), §6; `CONTRIBUTING.md` §3 (dòng corpus mới); `LICENSING.md` (điều khoản plugin, TSK-I2c-06); `docs/user/thuat-ngu.md` (plugin, bridge, SDK, bo cộng đồng); `neuroedge-prd.md` (FR-EXT-01 → 05, 09, NFR-SEC-10 tick); `neuroedge-roadmap.md`; `docs/rfc/README.md` (dòng RFC-0016); `CHANGELOG.md` `[Chưa phát hành]`
 
-## 9. Câu hỏi mở
+## 9. Quyết định cho các câu hỏi mở (Q-68, 2026-10-04)
 
-Q-67 chốt tám quyết định, không chốt các điểm sau. Mỗi câu có khuyến nghị; kỹ thuật trưởng chốt khi duyệt.
+Q-67 chốt tám quyết định, không chốt các điểm sau. Kỹ thuật trưởng **chấp nhận khuyến nghị của mọi câu dưới đây**, theo nguyên tắc an toàn cao nhất của Q-57; mỗi khuyến nghị là quyết định (Q-68, 2026-10-04). Mục này là hồ sơ quyết định: §3–§8 lệch với nó thì sửa §3–§8.
 
 1. **Mức ổn định của `neuroedge.guard`.** Khuyến nghị: cùng mức `__all__` (`0.x`, MINOR đóng vai MAJOR) — D7 chỉ nói `neuroedge.sdk`; xem lại khi gói đạt `v1.0` (lúc đó §3 của `python_api.md` có hiệu lực đầy đủ).
 2. **Có thêm `Guard` vào `neuroedge.__all__` không.** Khuyến nghị: không; dùng `from neuroedge.guard import Guard`. Mỗi tên thêm vào `__all__` là một quyết định (`python_api.md` §3), thêm sau là MINOR.

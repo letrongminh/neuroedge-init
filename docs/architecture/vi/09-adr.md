@@ -216,9 +216,9 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 | [0013](../../rfc/0013-nguyen-thuy-tuy-chon-va-nhieu-bo-tham-chieu.md) | Nguyên thủy mở rộng tuỳ chọn theo bo mạch; nhiều bo tham chiếu cho một target bậc 1 (TSK-I2a-07) | Chấp nhận (2026-10-01); hiện thực phần host; còn các ô `esp32s3` (TSK-I3a-01) | `hal/board.py` (`REFERENCE_BOARDS`, `SIM_MIRRORS`), `verify` |
 | [0014](../../rfc/0014-du-kien-tu-tien-trinh-ngoai.md) | Dữ kiện số từ tiến trình ngoài: nguồn khai trong gate, danh tính nguồn ghi vào vết ghi, nguồn rớt ⇒ BLOCK (TSK-I6-07, Q-65) | Chấp nhận (2026-10-04); mã kéo lên I2c (TSK-I2c-09, Q-67) | chưa |
 | [0015](../../rfc/0015-hop-dong-cho-nguoi-tich-hop.md) | Hợp đồng cho người tích hợp: Gated Tool Profile (`tool-call.v1`, `tool-result.v1`), khoá `schema` của `board.v1`, danh mục mã lỗi `NE*` (`error.v1`, `error-codes.v1`) (TSK-I6-05, Q-58, Q-63) | Chấp nhận, đã hiện thực | `schemas/` (bảy lược đồ) |
-| RFC-0016 | Lõi an toàn dùng độc lập và Extension SDK: điểm cắm, mô hình tin cậy, bộ test tuân thủ (TSK-I2c-02, Q-67) | Đang thảo luận (bản nháp chờ chữ ký) | chưa |
-| RFC-0017 | Nguồn gọi theo không gian tên (`bridge:<id>`) và danh tính client (TSK-I2c-03, Q-67) | Đang thảo luận (bản nháp chờ chữ ký) | chưa |
-| RFC-0018 | Cơ cấu chấp hành từ xa và mức tự tắt (TSK-I2c-04, Q-67) | Đang thảo luận (bản nháp chờ chữ ký) | chưa |
+| RFC-0016 | Lõi an toàn dùng độc lập và Extension SDK: điểm cắm, mô hình tin cậy, bộ test tuân thủ (TSK-I2c-02, Q-67) | Chấp nhận 2026-10-04 (Q-68) | chưa |
+| RFC-0017 | Nguồn gọi theo không gian tên (`bridge:<id>`) và danh tính client (TSK-I2c-03, Q-67) | Chấp nhận 2026-10-04 (Q-68) | chưa |
+| RFC-0018 | Cơ cấu chấp hành từ xa và mức tự tắt (TSK-I2c-04, Q-67) | Chấp nhận 2026-10-04 (Q-68) | chưa |
 
 ### Các RFC dự kiến chưa cấp số (planned RFCs)
 

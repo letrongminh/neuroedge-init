@@ -83,7 +83,7 @@ increment is in roadmap §0.2.
 - **Contracts:** six RFCs approved (2026-10-01): RFC-0007, RFC-0009 → RFC-0013 — `board.v1` receives new
   blocks; `gate.v1` receives the `numeric` criterion; `NETR` v2 pins bytes in RFC-0009 §3d. For I2c: RFC-0002
   signed (2026-10-04); RFC-0016 (standalone core and Extension SDK), RFC-0017 (namespaced `source`,
-  `bridge:<id>`) and RFC-0018 (remote actuators) are drafts awaiting signature; the RFC-0014 code (facts from
+  `bridge:<id>`) and RFC-0018 (remote actuators) are accepted (Q-68); the RFC-0014 code (facts from
   an external process) is pulled forward into I2c; `neuroedge.sdk` has its own version and stability promise,
   stricter than the package's `0.x`; the compliance corpus (`fixtures/tool_calls/`, `fixtures/contracts/`,
   `fixtures/traces/`, `fixtures/agents/`) is under Apache-2.0 (`LICENSING.md`).

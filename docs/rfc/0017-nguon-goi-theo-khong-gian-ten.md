@@ -8,7 +8,7 @@
 | **Yêu cầu PRD liên quan** | FR-ACE-09, FR-MDL-10, FR-EXT-02, FR-EXT-03, NFR-SEC-09, NFR-SEC-10 |
 | **Người đề xuất** | — |
 | **Ngày mở** | 2026-10-04 |
-| **Trạng thái** | 🟡 Đang thảo luận *(bản nháp: ở danh mục `docs/rfc/README.md` là ⏳ Nháp tới khi mở PR RFC riêng; chấp thuận là chữ ký của kỹ thuật trưởng, quyết định nền đã có ở Q-67)* |
+| **Trạng thái** | ✅ Đã chấp thuận (2026-10-04) — kỹ thuật trưởng ký trên PR #99; quyết định cho câu hỏi mở ở §9 (Q-68) |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (sửa `schemas/tool-call.v1.json`; mở một đường danh tính vào cổng an toàn; đảo một quyết định đã ký). **Chủ sản phẩm** cho các câu hỏi mở ở §9 |
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/*.json` (`tool-call.v1.json`). Hợp đồng `call_source` còn do `docs/spec/tool_calling.md` §5 khoá:
@@ -256,7 +256,9 @@ Hai nửa độc lập, làm thứ tự: **(a)** bridge, ngữ pháp và `call_c
 - [ ] `neuroedge-prd.md`: FR-ACE-09 (nguồn gọi có không gian tên), Phụ lục B hàng `ToolCallError` (lời "không thuộc tập nguồn" ⇒ "không đúng văn phạm nguồn"), quyết định ở §9 cấp `Q-N`; `neuroedge-roadmap.md`: TSK-I2c-03/10 và ghi chú cho `TSK-N6-01` (cần RFC, §3a)
 - [ ] Không đụng `digests.lock`; `docs/rfc/README.md` (dòng RFC-0017) và một mục `CHANGELOG.md` `[Chưa phát hành]`
 
-## 9. Câu hỏi mở (Q-67 chưa quyết)
+## 9. Quyết định cho các câu hỏi mở (Q-68, 2026-10-04)
+
+Kỹ thuật trưởng **chấp nhận khuyến nghị của mọi câu dưới đây**, theo nguyên tắc an toàn cao nhất của Q-57; mỗi khuyến nghị là quyết định (Q-68, 2026-10-04). Mục này là hồ sơ quyết định: §3–§8 lệch với nó thì sửa §3–§8.
 
 1. **Danh tính client mạng nằm trong RFC này không, và là `mcp:<client>` hay `call_client`?** *Khuyến nghị:* `mcp:<client>` với nhãn có chủ ý (§3c), làm sau nửa (a). Nếu test đường token của SDK thất bại hoặc chủ sản phẩm muốn tương thích tuyệt đối không cờ mở, tách §3c thành RFC riêng và chỉ giữ chỗ trong văn phạm; phần bridge không phụ thuộc nó.
 2. **Nguồn mà `neuroedge.guard` và `neuroedge proxy mcp|http` gán — đã trả lời ở RFC-0016 §9.9** (một sự thật một nơi). Tóm tắt: chương trình dùng `Guard` nhận `bridge:<id>` theo văn phạm và luật trùng id của RFC này; proxy của lõi giữ nguồn của client phía trước (`mcp` hay `mcp:<nhãn>`).

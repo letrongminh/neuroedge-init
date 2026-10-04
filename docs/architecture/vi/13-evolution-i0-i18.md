@@ -82,7 +82,7 @@ increment ở roadmap §0.2.
 - **Hợp đồng:** sáu RFC đã chấp thuận (2026-10-01): RFC-0007, RFC-0009 → RFC-0013 — `board.v1` nhận khối
   mới; `gate.v1` nhận tiêu chí `numeric`; `NETR` v2 ghim byte ở RFC-0009 §3d. Cho I2c: RFC-0002 đã ký
   (2026-10-04); RFC-0016 (lõi dùng độc lập và Extension SDK), RFC-0017 (`source` theo không gian tên
-  `bridge:<id>`) và RFC-0018 (cơ cấu chấp hành từ xa) là bản nháp chờ chữ ký; mã RFC-0014 (dữ kiện từ tiến
+  `bridge:<id>`) và RFC-0018 (cơ cấu chấp hành từ xa) đã chấp thuận (Q-68); mã RFC-0014 (dữ kiện từ tiến
   trình ngoài) kéo lên I2c; `neuroedge.sdk` có phiên bản và cam kết ổn định riêng, chặt hơn `0.x` của gói; corpus
   tuân thủ (`fixtures/tool_calls/`, `fixtures/contracts/`, `fixtures/traces/`, `fixtures/agents/`) theo
   Apache-2.0 (`LICENSING.md`).
