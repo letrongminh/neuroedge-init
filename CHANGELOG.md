@@ -32,6 +32,10 @@ bản gói.
 
 #### Đã thêm
 
+- **I6 · TSK-I6-07 — RFC-0014 chấp thuận: dữ kiện số từ tiến trình ngoài (Q-65).** Kỹ thuật trưởng ký trên PR #92; quyết định cho mười
+  câu hỏi mở ở §9 của RFC: chỉ cùng máy, chỉ `numeric`, không `esp32s3`, `build` cảnh báo khi cơ cấu chỉ dựa vào nguồn ngoài. Mã sau
+  v1.0 (`TODOS.md` #56). Kiểm: `docs/rfc/0014-du-kien-tu-tien-trinh-ngoai.md` §9. (I6 tiêu chí 10)
+
 - **I2a · TSK-V1b-04 — golden suy luận và sai số `tolerance` của từng bo (RFC-0012 §3f).** `verify` so suy luận với golden host
   theo sha256 mô hình, ghép một-một theo nhãn, IoU ≥ `box_iou_min`, |Δscore| ≤ `score_abs`; lệch ⇒ NE4002, golden của mô hình khác
   ⇒ NE4004. `testing/vision_golden.py`, `fixtures/vision/golden/`. Kiểm: `pytest tests/test_vision_golden.py`. (FR-CI-01→04)
