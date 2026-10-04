@@ -71,6 +71,9 @@ def pwm_root(tmp_path) -> Path:
         (chip / f"pwm{index}").mkdir()
         for name in ("period", "duty_cycle", "enable"):
             (chip / f"pwm{index}" / name).write_text("0\n")
+    # One sysfs root serves the PWM and the ADC (`LinuxHAL(sysfs_root=...)`): the PWM tree is fake, the
+    # ADS7828 is the kernel's, so the root's hwmon class is the real one.
+    (root / "class" / "hwmon").symlink_to("/sys/class/hwmon")
     return root
 
 

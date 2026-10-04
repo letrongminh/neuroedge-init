@@ -815,3 +815,27 @@ def test_a_linux_kit_test_that_loads_the_canonical_agent_does_not_clear_the_acti
     text = (root / "python" / "tests_linux" / f"test_kit_{kit}.py").read_text("utf-8")
     uses = "fresh_actions" in text.replace("`fresh_actions`", "")
     assert uses == (kit == "gate_camera"), "only the tests that copy the agent isolate the registry"
+
+
+def test_the_blinds_adc_can_be_the_real_hwmon_while_the_pwm_tree_is_fake(
+    root, motion_gpio, pwm_sys, tmp_path
+):
+    # `tests_linux/test_kit_blinds.py`: the PWM root is a fake tree and the ADS7828 is the kernel's, reached
+    # through a symlink of the root's `class/hwmon` to the real class directory (one sysfs root serves both).
+    import anyio
+
+    from neuroedge.sim import SimSession
+
+    real = tmp_path / "real-sys" / "class" / "hwmon"
+    (pwm_sys / "class" / "hwmon").rename(
+        tmp_path / "moved"
+    )  # the fake root has no hwmon of its own
+    real.parent.mkdir(parents=True)
+    (tmp_path / "moved").rename(real)
+    (pwm_sys / "class" / "hwmon").symlink_to(real)
+    agent = root / "fixtures" / "agents" / "blinds" / "agent.toml"
+    session = SimSession.load(agent, target="linux", target_options={"sysfs_root": pwm_sys})
+    try:
+        assert anyio.run(session.handle, "mở rèm").allowed
+    finally:
+        session.close()
