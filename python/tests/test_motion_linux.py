@@ -292,7 +292,11 @@ def test_a_ramp_step_the_pwm_refuses_stops_the_channel_and_says_why(chips, sysfs
 
     monkeypatch.setattr(SysfsPwm, "set_duty_ns", refuse)
     hal.motion_motor("wheel_left", 0.4, called_from="t")
+    # The driver goes down first, then the event is written (the safe state never waits on
+    # the log): wait for both, then the record is exact.
     wait_until(lambda: not level(fake, "motor_en"))
+    wait_until(lambda: any(e["type"] == "motion_safe" for e in events.events))
+    assert not level(fake, "motor_en")
     assert [e["data"]["cause"] for e in events.events if e["type"] == "motion_safe"] == [
         "actuator_fault"
     ]
