@@ -341,7 +341,7 @@
    "x": 64,
    "y": 140,
    "width": 332,
-   "height": 110,
+   "height": 104,
    "angle": 0,
    "strokeColor": "#0f172a",
    "backgroundColor": "#1e293b",
@@ -379,7 +379,7 @@
    "x": 76,
    "y": 148,
    "width": 308,
-   "height": 94,
+   "height": 88,
    "angle": 0,
    "strokeColor": "#ffffff",
    "backgroundColor": "transparent",
@@ -413,9 +413,9 @@
    "id": "box-u2",
    "type": "rectangle",
    "x": 64,
-   "y": 278,
+   "y": 258,
    "width": 332,
-   "height": 110,
+   "height": 104,
    "angle": 0,
    "strokeColor": "#0f172a",
    "backgroundColor": "#1e293b",
@@ -451,9 +451,9 @@
    "id": "box-u2-text",
    "type": "text",
    "x": 76,
-   "y": 286,
+   "y": 266,
    "width": 308,
-   "height": 94,
+   "height": 88,
    "angle": 0,
    "strokeColor": "#ffffff",
    "backgroundColor": "transparent",
@@ -487,9 +487,9 @@
    "id": "box-u4",
    "type": "rectangle",
    "x": 64,
-   "y": 416,
+   "y": 376,
    "width": 332,
-   "height": 110,
+   "height": 104,
    "angle": 0,
    "strokeColor": "#0f172a",
    "backgroundColor": "#1e293b",
@@ -525,9 +525,9 @@
    "id": "box-u4-text",
    "type": "text",
    "x": 76,
-   "y": 424,
+   "y": 384,
    "width": 308,
-   "height": 94,
+   "height": 88,
    "angle": 0,
    "strokeColor": "#ffffff",
    "backgroundColor": "transparent",
@@ -561,9 +561,9 @@
    "id": "box-u5",
    "type": "rectangle",
    "x": 64,
-   "y": 554,
+   "y": 494,
    "width": 332,
-   "height": 110,
+   "height": 104,
    "angle": 0,
    "strokeColor": "#0f172a",
    "backgroundColor": "#1e293b",
@@ -599,9 +599,9 @@
    "id": "box-u5-text",
    "type": "text",
    "x": 76,
-   "y": 562,
+   "y": 502,
    "width": 308,
-   "height": 94,
+   "height": 88,
    "angle": 0,
    "strokeColor": "#ffffff",
    "backgroundColor": "transparent",
@@ -635,9 +635,9 @@
    "id": "box-u3",
    "type": "rectangle",
    "x": 64,
-   "y": 692,
+   "y": 612,
    "width": 332,
-   "height": 110,
+   "height": 104,
    "angle": 0,
    "strokeColor": "#0f172a",
    "backgroundColor": "#f8fafc",
@@ -673,9 +673,9 @@
    "id": "box-u3-text",
    "type": "text",
    "x": 76,
-   "y": 700,
+   "y": 620,
    "width": 308,
-   "height": 94,
+   "height": 88,
    "angle": 0,
    "strokeColor": "#475569",
    "backgroundColor": "transparent",
@@ -709,9 +709,9 @@
    "id": "box-u6",
    "type": "rectangle",
    "x": 64,
-   "y": 830,
+   "y": 730,
    "width": 332,
-   "height": 110,
+   "height": 104,
    "angle": 0,
    "strokeColor": "#0f172a",
    "backgroundColor": "#f8fafc",
@@ -743,9 +743,9 @@
    "id": "box-u6-text",
    "type": "text",
    "x": 76,
-   "y": 838,
+   "y": 738,
    "width": 308,
-   "height": 94,
+   "height": 88,
    "angle": 0,
    "strokeColor": "#475569",
    "backgroundColor": "transparent",
@@ -772,6 +772,80 @@
    "textAlign": "center",
    "verticalAlign": "middle",
    "containerId": "box-u6",
+   "lineHeight": 1.3,
+   "autoResize": true
+  },
+  {
+   "id": "box-u7",
+   "type": "rectangle",
+   "x": 64,
+   "y": 848,
+   "width": 332,
+   "height": 104,
+   "angle": 0,
+   "strokeColor": "#0f172a",
+   "backgroundColor": "#f8fafc",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "dashed",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": {
+    "type": 3
+   },
+   "seed": 23096944,
+   "version": 1,
+   "versionNonce": 1643951991,
+   "isDeleted": false,
+   "boundElements": [
+    {
+     "type": "text",
+     "id": "box-u7-text"
+    },
+    {
+     "type": "arrow",
+     "id": "edge-5-u7-index"
+    }
+   ],
+   "updated": 1,
+   "link": null,
+   "locked": false
+  },
+  {
+   "id": "box-u7-text",
+   "type": "text",
+   "x": 76,
+   "y": 856,
+   "width": 308,
+   "height": 88,
+   "angle": 0,
+   "strokeColor": "#475569",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": null,
+   "seed": 3145127440,
+   "version": 1,
+   "versionNonce": 1623690341,
+   "isDeleted": false,
+   "boundElements": [],
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "text": "U7 · Plug-in author\nwires a product in, own repo and licence\npasses the conformance suite · I2c\n○ planned",
+   "originalText": "U7 · Plug-in author\nwires a product in, own repo and licence\npasses the conformance suite · I2c\n○ planned",
+   "fontSize": 12.5,
+   "fontFamily": 2,
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box-u7",
    "lineHeight": 1.3,
    "autoResize": true
   },
@@ -814,7 +888,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-5-ne-repo"
+     "id": "edge-6-ne-repo"
     }
    ],
    "updated": 1,
@@ -888,7 +962,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-6-std-pypi"
+     "id": "edge-7-std-pypi"
     }
    ],
    "updated": 1,
@@ -921,8 +995,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "Open standards — Apache-2.0\nschemas/ · docs/spec/ · fixtures/compliance/\nchanged only by RFC (CONTRIBUTING §3)",
-   "originalText": "Open standards — Apache-2.0\nschemas/ · docs/spec/ · fixtures/compliance/\nchanged only by RFC (CONTRIBUTING §3)",
+   "text": "Open standards — Apache-2.0\nschemas/ · docs/spec/ · fixtures/compliance/ · compliance corpus (Q-67)\nchanged only by RFC (CONTRIBUTING §3)",
+   "originalText": "Open standards — Apache-2.0\nschemas/ · docs/spec/ · fixtures/compliance/ · compliance corpus (Q-67)\nchanged only by RFC (CONTRIBUTING §3)",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -1036,7 +1110,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-7-gates-registry"
+     "id": "edge-8-gates-registry"
     }
    ],
    "updated": 1,
@@ -1254,7 +1328,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-5-ne-repo"
+     "id": "edge-6-ne-repo"
     }
    ],
    "updated": 1,
@@ -1301,7 +1375,7 @@
    "id": "box-pypi",
    "type": "rectangle",
    "x": 1424,
-   "y": 278,
+   "y": 258,
    "width": 332,
    "height": 96,
    "angle": 0,
@@ -1328,7 +1402,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-6-std-pypi"
+     "id": "edge-7-std-pypi"
     }
    ],
    "updated": 1,
@@ -1339,7 +1413,7 @@
    "id": "box-pypi-text",
    "type": "text",
    "x": 1436,
-   "y": 286,
+   "y": 266,
    "width": 308,
    "height": 80,
    "angle": 0,
@@ -1375,7 +1449,7 @@
    "id": "box-registry",
    "type": "rectangle",
    "x": 1424,
-   "y": 416,
+   "y": 376,
    "width": 332,
    "height": 96,
    "angle": 0,
@@ -1402,7 +1476,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-7-gates-registry"
+     "id": "edge-8-gates-registry"
     }
    ],
    "updated": 1,
@@ -1413,7 +1487,7 @@
    "id": "box-registry-text",
    "type": "text",
    "x": 1436,
-   "y": 424,
+   "y": 384,
    "width": 308,
    "height": 80,
    "angle": 0,
@@ -1449,7 +1523,7 @@
    "id": "box-fleet",
    "type": "rectangle",
    "x": 1424,
-   "y": 554,
+   "y": 494,
    "width": 332,
    "height": 96,
    "angle": 0,
@@ -1487,7 +1561,7 @@
    "id": "box-fleet-text",
    "type": "text",
    "x": 1436,
-   "y": 562,
+   "y": 502,
    "width": 308,
    "height": 80,
    "angle": 0,
@@ -1520,10 +1594,84 @@
    "autoResize": true
   },
   {
+   "id": "box-index",
+   "type": "rectangle",
+   "x": 1424,
+   "y": 612,
+   "width": 332,
+   "height": 96,
+   "angle": 0,
+   "strokeColor": "#c2410c",
+   "backgroundColor": "#f8fafc",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "dashed",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": {
+    "type": 3
+   },
+   "seed": 1081550232,
+   "version": 1,
+   "versionNonce": 3870461518,
+   "isDeleted": false,
+   "boundElements": [
+    {
+     "type": "text",
+     "id": "box-index-text"
+    },
+    {
+     "type": "arrow",
+     "id": "edge-5-u7-index"
+    }
+   ],
+   "updated": 1,
+   "link": null,
+   "locked": false
+  },
+  {
+   "id": "box-index-text",
+   "type": "text",
+   "x": 1436,
+   "y": 620,
+   "width": 308,
+   "height": 80,
+   "angle": 0,
+   "strokeColor": "#475569",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": null,
+   "seed": 884648063,
+   "version": 1,
+   "versionNonce": 1192915525,
+   "isDeleted": false,
+   "boundElements": [],
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "text": "Community plug-in index\nsearch/install · not a Marketplace · I2c\n○ planned",
+   "originalText": "Community plug-in index\nsearch/install · not a Marketplace · I2c\n○ planned",
+   "fontSize": 12.5,
+   "fontFamily": 2,
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box-index",
+   "lineHeight": 1.3,
+   "autoResize": true
+  },
+  {
    "id": "box-aura",
    "type": "rectangle",
    "x": 1424,
-   "y": 692,
+   "y": 730,
    "width": 332,
    "height": 96,
    "angle": 0,
@@ -1557,7 +1705,7 @@
    "id": "box-aura-text",
    "type": "text",
    "x": 1436,
-   "y": 700,
+   "y": 738,
    "width": 308,
    "height": 80,
    "angle": 0,
@@ -1593,7 +1741,7 @@
    "id": "box-market",
    "type": "rectangle",
    "x": 1424,
-   "y": 830,
+   "y": 848,
    "width": 332,
    "height": 96,
    "angle": 0,
@@ -1627,7 +1775,7 @@
    "id": "box-market-text",
    "type": "text",
    "x": 1436,
-   "y": 838,
+   "y": 856,
    "width": 308,
    "height": 80,
    "angle": 0,
@@ -1663,9 +1811,9 @@
    "id": "edge-0-u1-ne",
    "type": "arrow",
    "x": 396,
-   "y": 195,
+   "y": 192,
    "width": 234,
-   "height": 5,
+   "height": 0,
    "angle": 0,
    "strokeColor": "#334155",
    "backgroundColor": "transparent",
@@ -1700,12 +1848,8 @@
      0
     ],
     [
-     84,
-     -5
-    ],
-    [
      234,
-     -5
+     0
     ]
    ],
    "startBinding": {
@@ -1762,9 +1906,9 @@
    "id": "edge-1-u2-ne",
    "type": "arrow",
    "x": 396,
-   "y": 333,
+   "y": 310,
    "width": 234,
-   "height": 83,
+   "height": 60,
    "angle": 0,
    "strokeColor": "#334155",
    "backgroundColor": "transparent",
@@ -1800,11 +1944,11 @@
     ],
     [
      114,
-     -83
+     -60
     ],
     [
      234,
-     -83
+     -60
     ]
    ],
    "startBinding": {
@@ -1825,7 +1969,7 @@
    "id": "edge-1-label",
    "type": "text",
    "x": 448.82,
-   "y": 292.52,
+   "y": 282.52,
    "width": 122.36,
    "height": 14.95,
    "angle": 0,
@@ -1861,9 +2005,9 @@
    "id": "edge-2-u4-gates",
    "type": "arrow",
    "x": 396,
-   "y": 471,
+   "y": 428,
    "width": 659,
-   "height": 119,
+   "height": 162,
    "angle": 0,
    "strokeColor": "#334155",
    "backgroundColor": "transparent",
@@ -1899,15 +2043,15 @@
     ],
     [
      84,
-     49
+     92
     ],
     [
      659,
-     49
+     92
     ],
     [
      659,
-     119
+     162
     ]
    ],
    "startBinding": {
@@ -1964,9 +2108,9 @@
    "id": "edge-3-u5-ports",
    "type": "arrow",
    "x": 396,
-   "y": 609,
+   "y": 546,
    "width": 234,
-   "height": 241,
+   "height": 304,
    "angle": 0,
    "strokeColor": "#334155",
    "backgroundColor": "transparent",
@@ -2002,11 +2146,11 @@
     ],
     [
      114,
-     241
+     304
     ],
     [
      234,
-     241
+     304
     ]
    ],
    "startBinding": {
@@ -2063,9 +2207,9 @@
    "id": "edge-4-u3-fleet",
    "type": "arrow",
    "x": 396,
-   "y": 747,
+   "y": 664,
    "width": 1028,
-   "height": 249,
+   "height": 332,
    "angle": 0,
    "strokeColor": "#334155",
    "backgroundColor": "transparent",
@@ -2101,19 +2245,19 @@
     ],
     [
      164,
-     249
+     332
     ],
     [
      984,
-     249
+     332
     ],
     [
      984,
-     -145
+     -122
     ],
     [
      1028,
-     -145
+     -122
     ]
    ],
    "startBinding": {
@@ -2167,7 +2311,114 @@
    "autoResize": true
   },
   {
-   "id": "edge-5-ne-repo",
+   "id": "edge-5-u7-index",
+   "type": "arrow",
+   "x": 396,
+   "y": 900,
+   "width": 1028,
+   "height": 240,
+   "angle": 0,
+   "strokeColor": "#334155",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "dashed",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": null,
+   "seed": 1586791003,
+   "version": 1,
+   "versionNonce": 3081200710,
+   "isDeleted": false,
+   "boundElements": [
+    {
+     "type": "text",
+     "id": "edge-5-label"
+    }
+   ],
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     144,
+     0
+    ],
+    [
+     144,
+     116
+    ],
+    [
+     996,
+     116
+    ],
+    [
+     996,
+     -240
+    ],
+    [
+     1028,
+     -240
+    ]
+   ],
+   "startBinding": {
+    "elementId": "box-u7",
+    "focus": 0,
+    "gap": 1
+   },
+   "endBinding": {
+    "elementId": "box-index",
+    "focus": 0,
+    "gap": 1
+   },
+   "startArrowhead": null,
+   "endArrowhead": "arrow",
+   "elbowed": false
+  },
+  {
+   "id": "edge-5-label",
+   "type": "text",
+   "x": 1098.48,
+   "y": 1008.52,
+   "width": 103.04,
+   "height": 14.95,
+   "angle": 0,
+   "strokeColor": "#1e293b",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": null,
+   "seed": 762166953,
+   "version": 1,
+   "versionNonce": 239618882,
+   "isDeleted": false,
+   "boundElements": [],
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "text": "publish plug-ins",
+   "originalText": "publish plug-ins",
+   "fontSize": 11.5,
+   "fontFamily": 2,
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "edge-5-u7-index",
+   "lineHeight": 1.3,
+   "autoResize": true
+  },
+  {
+   "id": "edge-6-ne-repo",
    "type": "arrow",
    "x": 1190,
    "y": 220,
@@ -2184,14 +2435,14 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 2419610444,
+   "seed": 353160185,
    "version": 1,
-   "versionNonce": 958410171,
+   "versionNonce": 244636571,
    "isDeleted": false,
    "boundElements": [
     {
      "type": "text",
-     "id": "edge-5-label"
+     "id": "edge-6-label"
     }
    ],
    "updated": 1,
@@ -2230,110 +2481,11 @@
    "elbowed": false
   },
   {
-   "id": "edge-5-label",
+   "id": "edge-6-label",
    "type": "text",
    "x": 1268.14,
    "y": 197.53,
    "width": 83.72,
-   "height": 14.95,
-   "angle": 0,
-   "strokeColor": "#1e293b",
-   "backgroundColor": "transparent",
-   "fillStyle": "solid",
-   "strokeWidth": 1,
-   "strokeStyle": "solid",
-   "roughness": 0,
-   "opacity": 100,
-   "groupIds": [],
-   "frameId": null,
-   "roundness": null,
-   "seed": 762166953,
-   "version": 1,
-   "versionNonce": 239618882,
-   "isDeleted": false,
-   "boundElements": [],
-   "updated": 1,
-   "link": null,
-   "locked": false,
-   "text": "source · RFCs",
-   "originalText": "source · RFCs",
-   "fontSize": 11.5,
-   "fontFamily": 2,
-   "textAlign": "center",
-   "verticalAlign": "middle",
-   "containerId": "edge-5-ne-repo",
-   "lineHeight": 1.3,
-   "autoResize": true
-  },
-  {
-   "id": "edge-6-std-pypi",
-   "type": "arrow",
-   "x": 1190,
-   "y": 395,
-   "width": 234,
-   "height": 69,
-   "angle": 0,
-   "strokeColor": "#334155",
-   "backgroundColor": "transparent",
-   "fillStyle": "solid",
-   "strokeWidth": 1,
-   "strokeStyle": "dashed",
-   "roughness": 0,
-   "opacity": 100,
-   "groupIds": [],
-   "frameId": null,
-   "roundness": null,
-   "seed": 2516616975,
-   "version": 1,
-   "versionNonce": 854098529,
-   "isDeleted": false,
-   "boundElements": [
-    {
-     "type": "text",
-     "id": "edge-6-label"
-    }
-   ],
-   "updated": 1,
-   "link": null,
-   "locked": false,
-   "points": [
-    [
-     0,
-     0
-    ],
-    [
-     80,
-     0
-    ],
-    [
-     80,
-     -69
-    ],
-    [
-     234,
-     -69
-    ]
-   ],
-   "startBinding": {
-    "elementId": "box-std",
-    "focus": 0,
-    "gap": 1
-   },
-   "endBinding": {
-    "elementId": "box-pypi",
-    "focus": 0,
-    "gap": 1
-   },
-   "startArrowhead": null,
-   "endArrowhead": "arrow",
-   "elbowed": false
-  },
-  {
-   "id": "edge-6-label",
-   "type": "text",
-   "x": 1215.26,
-   "y": 352.52,
-   "width": 109.48,
    "height": 14.95,
    "angle": 0,
    "strokeColor": "#1e293b",
@@ -2354,23 +2506,23 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "schemas published",
-   "originalText": "schemas published",
+   "text": "source · RFCs",
+   "originalText": "source · RFCs",
    "fontSize": 11.5,
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "edge-6-std-pypi",
+   "containerId": "edge-6-ne-repo",
    "lineHeight": 1.3,
    "autoResize": true
   },
   {
-   "id": "edge-7-gates-registry",
+   "id": "edge-7-std-pypi",
    "type": "arrow",
    "x": 1190,
-   "y": 665,
+   "y": 395,
    "width": 234,
-   "height": 201,
+   "height": 89,
    "angle": 0,
    "strokeColor": "#334155",
    "backgroundColor": "transparent",
@@ -2382,9 +2534,9 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 1676459802,
+   "seed": 29968312,
    "version": 1,
-   "versionNonce": 3272569565,
+   "versionNonce": 3586840515,
    "isDeleted": false,
    "boundElements": [
     {
@@ -2401,25 +2553,25 @@
      0
     ],
     [
-     120,
+     80,
      0
     ],
     [
-     120,
-     -201
+     80,
+     -89
     ],
     [
      234,
-     -201
+     -89
     ]
    ],
    "startBinding": {
-    "elementId": "box-gates",
+    "elementId": "box-std",
     "focus": 0,
     "gap": 1
    },
    "endBinding": {
-    "elementId": "box-registry",
+    "elementId": "box-pypi",
     "focus": 0,
     "gap": 1
    },
@@ -2430,9 +2582,9 @@
   {
    "id": "edge-7-label",
    "type": "text",
-   "x": 1261.7,
-   "y": 572.52,
-   "width": 96.6,
+   "x": 1215.26,
+   "y": 352.52,
+   "width": 109.48,
    "height": 14.95,
    "angle": 0,
    "strokeColor": "#1e293b",
@@ -2453,13 +2605,112 @@
    "updated": 1,
    "link": null,
    "locked": false,
+   "text": "schemas published",
+   "originalText": "schemas published",
+   "fontSize": 11.5,
+   "fontFamily": 2,
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "edge-7-std-pypi",
+   "lineHeight": 1.3,
+   "autoResize": true
+  },
+  {
+   "id": "edge-8-gates-registry",
+   "type": "arrow",
+   "x": 1190,
+   "y": 665,
+   "width": 234,
+   "height": 241,
+   "angle": 0,
+   "strokeColor": "#334155",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "dashed",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": null,
+   "seed": 3019010089,
+   "version": 1,
+   "versionNonce": 46396691,
+   "isDeleted": false,
+   "boundElements": [
+    {
+     "type": "text",
+     "id": "edge-8-label"
+    }
+   ],
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     120,
+     0
+    ],
+    [
+     120,
+     -241
+    ],
+    [
+     234,
+     -241
+    ]
+   ],
+   "startBinding": {
+    "elementId": "box-gates",
+    "focus": 0,
+    "gap": 1
+   },
+   "endBinding": {
+    "elementId": "box-registry",
+    "focus": 0,
+    "gap": 1
+   },
+   "startArrowhead": null,
+   "endArrowhead": "arrow",
+   "elbowed": false
+  },
+  {
+   "id": "edge-8-label",
+   "type": "text",
+   "x": 1261.7,
+   "y": 572.52,
+   "width": 96.6,
+   "height": 14.95,
+   "angle": 0,
+   "strokeColor": "#1e293b",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": null,
+   "seed": 791159476,
+   "version": 1,
+   "versionNonce": 3730090497,
+   "isDeleted": false,
+   "boundElements": [],
+   "updated": 1,
+   "link": null,
+   "locked": false,
    "text": "share (planned)",
    "originalText": "share (planned)",
    "fontSize": 11.5,
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "edge-7-gates-registry",
+   "containerId": "edge-8-gates-registry",
    "lineHeight": 1.3,
    "autoResize": true
   }

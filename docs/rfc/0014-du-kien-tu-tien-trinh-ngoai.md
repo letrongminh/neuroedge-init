@@ -399,3 +399,5 @@ Chủ sản phẩm quyết theo nguyên tắc **an toàn cao nhất** của Q-57
     | `observed_age_ms` tối đa | 4294967295 (bằng độ rộng trường `max_age_ms` của `NETR`) |
 
     Đổi một hằng về sau là thay đổi của đặc tả `docs/spec/external_facts.md`; nới một giới hạn an toàn thì cần RFC.
+
+**Sửa nhẹ (2026-10-04, Q-68):** [RFC-0016](0016-loi-tach-duoc-va-extension-sdk.md) §9 câu 6 thêm khoá `plugin` dưới `[external.sources.<id>]` cho fact source chạy trong tiến trình (plugin nhóm `neuroedge.fact_sources`), và cho `socket` là tuỳ chọn khi không nguồn nào dùng ổ cắm. Luật hai chiều gate ↔ agent, tuổi dữ kiện và fail-closed của RFC này giữ nguyên.

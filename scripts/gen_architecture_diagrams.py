@@ -458,11 +458,12 @@ def e08_deployment() -> Diagram:
 # its only home, so this poster can never drift from it.
 INCREMENTS = {
     "I0": "Contract core on sim", "I1": "Internal preview on sim", "I2": "linux on par with sim",
-    "I2a": "Primitives: sim, linux", "I2b": "Kits and quick build", "I3": "Gate on a real Box-3",
+    "I2a": "Primitives: sim, linux", "I2b": "Kits and quick build", "I2c": "Open platform: plug-in SDK",
+    "I3": "Gate on a real Box-3",
     "I3a": "New primitives on esp32s3", "I4": "Voice on the host", "I4a": "NeuroBrain on the host",
     "I5": "Voice on Box-3", "I5a": "NeuroBrain on the chip", "I6": "Public release", "I7": "v1.0 = MVP",
     "I8": "Developer Beta", "I9": "Providers v1.1 · Fleet OS", "I10": "Registry and rails",
-    "I11": "Open the target list", "I13": "Community port kit", "I14": "Tiered robotics",
+    "I13": "Community port kit", "I14": "Tiered robotics",
     "I16": "Vision on jetson", "I17": "Multimodal", "I18": "Device ecosystem",
 }
 ROADMAP = ROOT / "roadmap" / "neuroedge-roadmap.md"
@@ -557,7 +558,7 @@ def e10_horizons() -> Diagram:
         "E-10 · Target architecture by horizon",
         "What each horizon adds on top of main. Details and sources: chapter 15; order and dates: roadmap §0.2.",
         1800,
-        1060,
+        1200,
     )
     w, gap = 326, 12
     col = [60 + c * (w + gap) for c in range(5)]
@@ -574,6 +575,11 @@ def e10_horizons() -> Diagram:
             ("ext", "Extension primitives", ("digital.in · I2C · analog.in · PWM", "vision.in · motion.* · I2a, I3a · Q-53"), "device", "planned"),
             ("brain", "NeuroBrain", ("brain/ only via dispatch() (B-1)", "envelope hook in HAL · I4a, I5a · Q-55"), "component", "planned"),
             ("security", "Device security", ("Secure Boot · flash encryption", "mic switch · TSK-S6-05"), "device", "planned"),
+            # I2c — the open platform (Q-67) sits in the MVP host lane, before NeuroBrain (I4a) and I6
+            ("sdk", "Standalone core + Extension SDK", ("neuroedge.guard · neuroedge.sdk", "six plug-in kinds · RFC-0016 · I2c"), "component", "planned"),
+            ("proxies", "Proxies + remote actuators", ("proxy mcp · proxy http · plugin doctor", "Home Assistant first · RFC-0018 · I2c"), "component", "planned"),
+            ("tiers", "Open target list", ("tiers 1–3 · board validate · --board", "RFC-0002 signed · I2c · Q-67"), "component", "planned"),
+            ("index", "Community plug-in index", ("plugin search/install · NeuroEdge-gated", "not a Marketplace · FR-EXT-08 · I2c"), "external", "planned"),
         ]),
         ("h2", "Horizon 2 — service tier v1.1 (I9–I10) · chapter 15 §3", "cloud", [
             ("fleet", "Fleet OS", ("provisioning · inventory · config sync", "canary OTA · incident traces · TSK-K2-04…09"), "external", "planned"),
@@ -582,23 +588,31 @@ def e10_horizons() -> Diagram:
             ("signed", "Signed gates on the device", ("verify signature before loading", "TSK-W2-04"), "gate", "planned"),
             ("boundary", "Core ↔ commercial boundary", ("safety never behind a paid tier", "proposal §6.4 · PRD P-3"), "note", "done"),
         ]),
-        ("h3", "Horizon 3 — extensions after Beta (I11–I18) · chapter 15 §4", "planned", [
-            ("tiers", "Target tiers + port kit", ("tier 1 · 2 · 3, compliance vectors", "I11 · I13 · Q-13 · RFC-0002"), "component", "planned"),
+        ("h3", "Horizon 3 — extensions after Beta (I13–I18) · chapter 15 §4", "planned", [
+            ("portkit", "Community port kit", ("compliance vectors outside the repo", "I13 · Q-13 · on the tiers opened in I2c"), "component", "planned"),
             ("robot", "Layered robot", ("Pi 5 brain + MCU nodes, gate per node", "black channel · lease tokens · I14"), "component", "planned"),
             ("vision", "Vision on jetson, multimodal", ("vision.in itself ships in v1.0 (Q-53)", "facts only, never L3 authority · I16, I17"), "component", "planned"),
             ("eco", "Ecosystem", ("adapter + HAL-port store on Registry", "I18 · chapter 16"), "component", "planned"),
         ]),
     ]
-    y = 100
+    y, row_pitch, tops = 100, 140, {}
     for gid, label, kind, items in bands:
-        d.groups.append(Group(gid, 40, y, 1720, 200, label, kind))
-        for c, (bid, title, lines, bkind, status) in enumerate(items):
-            d.boxes.append(Box(bid, col[c], y + 44, w, 124, title, lines, bkind, status))
-        y += 230
+        rows = (len(items) + 4) // 5  # five boxes to a row; Horizon 1 needs a second row
+        gh = 200 + (rows - 1) * row_pitch
+        d.groups.append(Group(gid, 40, y, 1720, gh, label, kind))
+        for n, (bid, title, lines, bkind, status) in enumerate(items):
+            r, c = divmod(n, 5)
+            d.boxes.append(Box(bid, col[c], y + 44 + r * row_pitch, w, 124, title, lines, bkind, status))
+        tops[gid] = y
+        y += gh + 30
+    gap_h1_h2 = tops["h2"] - 15  # the middle of the 30 px gap under Horizon 1
     d.edges += [
         Edge("fw", "voice", "same walker + ledger", label_at=(col[1] + w / 2, 312)),
-        Edge("security", "signed", "verify on chip", label_at=(col[4] + w / 2, 542)),
-        Edge("boundary", "eco", "no paid safety", label_at=(col[4] + w / 2, 772)),
+        # down the free fifth column of Horizon 1's second row, then across the gap to the box below
+        Edge("security", "signed", "verify on chip",
+             via=((col[4] + w / 2, 520), (col[4] + w / 2, gap_h1_h2), (col[3] + w / 2, gap_h1_h2)),
+             label_at=(col[4] + w / 2, 600)),
+        Edge("boundary", "eco", "no paid safety", label_at=(col[4] + w / 2, tops["h3"] - 18)),
     ]
     return d
 
@@ -609,7 +623,7 @@ def e11_ecosystem() -> Diagram:
         "E-11 · Ecosystem landscape (C4 system landscape)",
         "Who takes part, what they share, and the platforms that carry it. Details and sources: chapter 16.",
         1820,
-        1020,
+        1050,
     )
     d.groups.append(Group("parties", 40, 100, 380, 880, "Parties (PRD §2.1)", "boundary"))
     parties = [
@@ -619,16 +633,17 @@ def e11_ecosystem() -> Diagram:
         ("u5", "U5 · OEM / ODM partner", ("declares a board, ports the HAL", "compliance vectors"), "partial"),
         ("u3", "U3 · Fleet operator", ("rolls out updates, pulls traces", "from v1.1"), "planned"),
         ("u6", "U6 · Robot integrator", ("Pi 5 brain + MCU nodes", "ROS 2 / Nav2 · I14"), "planned"),
+        ("u7", "U7 · Plug-in author", ("wires a product in, own repo and licence", "passes the conformance suite · I2c"), "planned"),
     ]
     for i, (pid, title, lines, status) in enumerate(parties):
-        d.boxes.append(Box(pid, 64, 140 + i * 138, 332, 110, title, lines, "person", status))
+        d.boxes.append(Box(pid, 64, 140 + i * 118, 332, 104, title, lines, "person", status))
     d.groups.append(Group("core", 600, 100, 620, 400, "Source-available core and open standards", "host"))
     d.boxes.append(Box("ne", 630, 150, 560, 140, "NeuroEdge core",
                        ("SDK + CLI + firmware — PolyForm Noncommercial (Q-45)",
                         "commercial licence for companies",
                         "public repository since 2026-09-25"), "system"))
     d.boxes.append(Box("std", 630, 330, 560, 130, "Open standards — Apache-2.0",
-                       ("schemas/ · docs/spec/ · fixtures/compliance/",
+                       ("schemas/ · docs/spec/ · fixtures/compliance/ · compliance corpus (Q-67)",
                         "changed only by RFC (CONTRIBUTING §3)"), "store"))
     d.groups.append(Group("assets", 600, 540, 620, 440, "Shared assets (chapter 16 §3)", "test"))
     assets = [
@@ -646,22 +661,26 @@ def e11_ecosystem() -> Diagram:
         ("pypi", "PyPI + public schema URLs", ("release workflow ready · I6",), "planned"),
         ("registry", "Gate Registry", ("OCI · identity · metering · I10",), "planned"),
         ("fleet", "Fleet OS", ("the one commercial service · I9",), "planned"),
+        ("index", "Community plug-in index", ("search/install · not a Marketplace · I2c",), "planned"),
         ("aura", "AURA vertical app", ("Khối 4 · outside the roadmap",), "planned"),
         ("market", "Marketplace", ("Khối 5 · only after G1–G4",), "planned"),
     ]
     for i, (pid, title, lines, status) in enumerate(platforms):
-        d.boxes.append(Box(pid, 1424, 140 + i * 138, 332, 96, title, lines, "external", status))
+        d.boxes.append(Box(pid, 1424, 140 + i * 118, 332, 96, title, lines, "external", status))
     L, R = 510, 1310
     d.edges += [
-        Edge("u1", "ne", "build · run · test", via=((L - 30, 195), (L - 30, 190)), label_at=(L - 30, 175)),
-        Edge("u2", "ne", "CI · build · verify", via=((L, 333), (L, 250)), label_at=(L, 300)),
-        Edge("u4", "gates", "review · explain", via=((L - 30, 471), (L - 30, 520), (1055, 520)), label_at=(L - 30, 500)),
-        Edge("u5", "ports", "port + prove", via=((L, 609), (L, 850)), label_at=(L, 760)),
-        Edge("u3", "fleet", "rollouts · traces", dashed=True, via=((560, 747), (560, 996), (1380, 996), (1380, 602)),
+        Edge("u1", "ne", "build · run · test", via=((L - 30, 192),), label_at=(L - 30, 175)),
+        Edge("u2", "ne", "CI · build · verify", via=((L, 310), (L, 250)), label_at=(L, 290)),
+        Edge("u4", "gates", "review · explain", via=((L - 30, 428), (L - 30, 520), (1055, 520)), label_at=(L - 30, 500)),
+        Edge("u5", "ports", "port + prove", via=((L, 546), (L, 850)), label_at=(L, 760)),
+        Edge("u3", "fleet", "rollouts · traces", dashed=True, via=((560, 664), (560, 996), (1380, 996), (1380, 542)),
              label_at=(980, 996)),
+        # round the bottom, then up the gap left of the platforms: no crossing of Fleet OS's own arrow
+        Edge("u7", "index", "publish plug-ins", dashed=True,
+             via=((540, 900), (540, 1016), (1392, 1016), (1392, 660)), label_at=(1150, 1016)),
         Edge("ne", "repo", "source · RFCs", via=((R, 220), (R, 188)), label_at=(R, 205)),
-        Edge("std", "pypi", "schemas published", dashed=True, via=((R - 40, 395), (R - 40, 326)), label_at=(R - 40, 360)),
-        Edge("gates", "registry", "share (planned)", dashed=True, via=((R, 665), (R, 464)), label_at=(R, 580)),
+        Edge("std", "pypi", "schemas published", dashed=True, via=((R - 40, 395), (R - 40, 306)), label_at=(R - 40, 360)),
+        Edge("gates", "registry", "share (planned)", dashed=True, via=((R, 665), (R, 424)), label_at=(R, 580)),
     ]
     return d
 

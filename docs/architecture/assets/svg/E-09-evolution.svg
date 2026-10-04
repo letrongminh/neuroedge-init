@@ -9,14 +9,14 @@
 <text x="32.0" y="66.0" font-size="13" fill="#475569" text-anchor="start">Ten things a user can do, in order. Status, progress and forecast are read from roadmap §0.2.</text>
 <rect x="40" y="100" width="840" height="184" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
 <text x="54.0" y="121.0" font-size="13" fill="#2563eb" text-anchor="start" font-weight="700">1 · Try it on a laptop</text>
-<rect x="40" y="306" width="840" height="184" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
+<rect x="40" y="306" width="840" height="324" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
 <text x="54.0" y="327.0" font-size="13" fill="#2563eb" text-anchor="start" font-weight="700">2 · Real devices on a Raspberry Pi</text>
-<rect x="40" y="512" width="840" height="184" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
-<text x="54.0" y="533.0" font-size="13" fill="#2563eb" text-anchor="start" font-weight="700">3 · The gate on a $5 chip</text>
-<rect x="40" y="718" width="840" height="184" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
-<text x="54.0" y="739.0" font-size="13" fill="#2563eb" text-anchor="start" font-weight="700">4 · Talk to the device</text>
-<rect x="40" y="924" width="840" height="184" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
-<text x="54.0" y="945.0" font-size="13" fill="#2563eb" text-anchor="start" font-weight="700">5 · Build by conversation</text>
+<rect x="40" y="652" width="840" height="184" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
+<text x="54.0" y="673.0" font-size="13" fill="#2563eb" text-anchor="start" font-weight="700">3 · The gate on a $5 chip</text>
+<rect x="40" y="858" width="840" height="184" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
+<text x="54.0" y="879.0" font-size="13" fill="#2563eb" text-anchor="start" font-weight="700">4 · Talk to the device</text>
+<rect x="40" y="1064" width="840" height="184" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
+<text x="54.0" y="1085.0" font-size="13" fill="#2563eb" text-anchor="start" font-weight="700">5 · Build by conversation</text>
 <rect x="920" y="100" width="840" height="184" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
 <text x="934.0" y="121.0" font-size="13" fill="#2563eb" text-anchor="start" font-weight="700">6 · Public launch: first outside users</text>
 <rect x="920" y="306" width="840" height="184" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
@@ -56,42 +56,48 @@
 <text x="739.0" y="412.0" font-size="12.5" fill="#0f172a" text-anchor="middle">4/4 tasks</text>
 <text x="739.0" y="430.1" font-size="12.5" fill="#0f172a" text-anchor="middle">2026-12-20</text>
 <text x="739.0" y="448.2" font-size="12.5" fill="#0f172a" text-anchor="middle" font-style="italic">◐ partial</text>
-<rect x="60" y="550" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
-<text x="191.0" y="579.6" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">I3</text>
-<text x="191.0" y="599.9" font-size="12.5" fill="#0f172a" text-anchor="middle">Gate on a real Box-3</text>
-<text x="191.0" y="618.0" font-size="12.5" fill="#0f172a" text-anchor="middle">6/14 tasks</text>
-<text x="191.0" y="636.1" font-size="12.5" fill="#0f172a" text-anchor="middle">2026-12-13</text>
-<text x="191.0" y="654.2" font-size="12.5" fill="#0f172a" text-anchor="middle" font-style="italic">◐ partial</text>
-<rect x="334" y="550" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="465.0" y="579.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I3a</text>
-<text x="465.0" y="599.9" font-size="12.5" fill="#475569" text-anchor="middle">New primitives on esp32s3</text>
-<text x="465.0" y="618.0" font-size="12.5" fill="#475569" text-anchor="middle">0/7 tasks</text>
-<text x="465.0" y="636.1" font-size="12.5" fill="#475569" text-anchor="middle">2027-01-10</text>
-<text x="465.0" y="654.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
-<rect x="60" y="756" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
-<text x="191.0" y="785.6" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">I4</text>
-<text x="191.0" y="805.9" font-size="12.5" fill="#0f172a" text-anchor="middle">Voice on the host</text>
-<text x="191.0" y="824.0" font-size="12.5" fill="#0f172a" text-anchor="middle">5/9 tasks</text>
-<text x="191.0" y="842.1" font-size="12.5" fill="#0f172a" text-anchor="middle">2026-12-13</text>
-<text x="191.0" y="860.2" font-size="12.5" fill="#0f172a" text-anchor="middle" font-style="italic">◐ partial</text>
-<rect x="334" y="756" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="465.0" y="785.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I5</text>
-<text x="465.0" y="805.9" font-size="12.5" fill="#475569" text-anchor="middle">Voice on Box-3</text>
-<text x="465.0" y="824.0" font-size="12.5" fill="#475569" text-anchor="middle">0/7 tasks</text>
-<text x="465.0" y="842.1" font-size="12.5" fill="#475569" text-anchor="middle">2027-01-03</text>
-<text x="465.0" y="860.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
-<rect x="60" y="962" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="191.0" y="991.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I4a</text>
-<text x="191.0" y="1011.9" font-size="12.5" fill="#475569" text-anchor="middle">NeuroBrain on the host</text>
-<text x="191.0" y="1030.0" font-size="12.5" fill="#475569" text-anchor="middle">0/33 tasks</text>
-<text x="191.0" y="1048.1" font-size="12.5" fill="#475569" text-anchor="middle">2027-01-03</text>
-<text x="191.0" y="1066.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
-<rect x="334" y="962" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="465.0" y="991.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I5a</text>
-<text x="465.0" y="1011.9" font-size="12.5" fill="#475569" text-anchor="middle">NeuroBrain on the chip</text>
-<text x="465.0" y="1030.0" font-size="12.5" fill="#475569" text-anchor="middle">0/2 tasks</text>
-<text x="465.0" y="1048.1" font-size="12.5" fill="#475569" text-anchor="middle">2027-01-24</text>
-<text x="465.0" y="1066.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="60" y="484" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
+<text x="191.0" y="513.6" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">I2c</text>
+<text x="191.0" y="533.9" font-size="12.5" fill="#0f172a" text-anchor="middle">Open platform: plug-in SDK</text>
+<text x="191.0" y="552.0" font-size="12.5" fill="#0f172a" text-anchor="middle">6/26 tasks</text>
+<text x="191.0" y="570.1" font-size="12.5" fill="#0f172a" text-anchor="middle">2026-12-27</text>
+<text x="191.0" y="588.2" font-size="12.5" fill="#0f172a" text-anchor="middle" font-style="italic">◐ partial</text>
+<rect x="60" y="690" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
+<text x="191.0" y="719.6" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">I3</text>
+<text x="191.0" y="739.9" font-size="12.5" fill="#0f172a" text-anchor="middle">Gate on a real Box-3</text>
+<text x="191.0" y="758.0" font-size="12.5" fill="#0f172a" text-anchor="middle">6/14 tasks</text>
+<text x="191.0" y="776.1" font-size="12.5" fill="#0f172a" text-anchor="middle">2026-12-13</text>
+<text x="191.0" y="794.2" font-size="12.5" fill="#0f172a" text-anchor="middle" font-style="italic">◐ partial</text>
+<rect x="334" y="690" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="465.0" y="719.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I3a</text>
+<text x="465.0" y="739.9" font-size="12.5" fill="#475569" text-anchor="middle">New primitives on esp32s3</text>
+<text x="465.0" y="758.0" font-size="12.5" fill="#475569" text-anchor="middle">0/7 tasks</text>
+<text x="465.0" y="776.1" font-size="12.5" fill="#475569" text-anchor="middle">2027-01-10</text>
+<text x="465.0" y="794.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="60" y="896" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
+<text x="191.0" y="925.6" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">I4</text>
+<text x="191.0" y="945.9" font-size="12.5" fill="#0f172a" text-anchor="middle">Voice on the host</text>
+<text x="191.0" y="964.0" font-size="12.5" fill="#0f172a" text-anchor="middle">5/9 tasks</text>
+<text x="191.0" y="982.1" font-size="12.5" fill="#0f172a" text-anchor="middle">2026-12-13</text>
+<text x="191.0" y="1000.2" font-size="12.5" fill="#0f172a" text-anchor="middle" font-style="italic">◐ partial</text>
+<rect x="334" y="896" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="465.0" y="925.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I5</text>
+<text x="465.0" y="945.9" font-size="12.5" fill="#475569" text-anchor="middle">Voice on Box-3</text>
+<text x="465.0" y="964.0" font-size="12.5" fill="#475569" text-anchor="middle">0/7 tasks</text>
+<text x="465.0" y="982.1" font-size="12.5" fill="#475569" text-anchor="middle">2027-01-03</text>
+<text x="465.0" y="1000.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="60" y="1102" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="191.0" y="1131.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I4a</text>
+<text x="191.0" y="1151.9" font-size="12.5" fill="#475569" text-anchor="middle">NeuroBrain on the host</text>
+<text x="191.0" y="1170.0" font-size="12.5" fill="#475569" text-anchor="middle">0/33 tasks</text>
+<text x="191.0" y="1188.1" font-size="12.5" fill="#475569" text-anchor="middle">2027-01-03</text>
+<text x="191.0" y="1206.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="334" y="1102" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="465.0" y="1131.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I5a</text>
+<text x="465.0" y="1151.9" font-size="12.5" fill="#475569" text-anchor="middle">NeuroBrain on the chip</text>
+<text x="465.0" y="1170.0" font-size="12.5" fill="#475569" text-anchor="middle">0/2 tasks</text>
+<text x="465.0" y="1188.1" font-size="12.5" fill="#475569" text-anchor="middle">2027-01-24</text>
+<text x="465.0" y="1206.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="940" y="138" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
 <text x="1071.0" y="167.6" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">I6</text>
 <text x="1071.0" y="187.9" font-size="12.5" fill="#0f172a" text-anchor="middle">Public release</text>
@@ -119,45 +125,39 @@
 <rect x="1214" y="756" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1345.0" y="785.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I10</text>
 <text x="1345.0" y="805.9" font-size="12.5" fill="#475569" text-anchor="middle">Registry and rails</text>
-<text x="1345.0" y="824.0" font-size="12.5" fill="#475569" text-anchor="middle">0/8 tasks</text>
+<text x="1345.0" y="824.0" font-size="12.5" fill="#475569" text-anchor="middle">0/7 tasks</text>
 <text x="1345.0" y="842.1" font-size="12.5" fill="#475569" text-anchor="middle">after I8 (branch A, Q-5)</text>
 <text x="1345.0" y="860.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="940" y="962" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1071.0" y="991.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I11</text>
-<text x="1071.0" y="1011.9" font-size="12.5" fill="#475569" text-anchor="middle">Open the target list</text>
-<text x="1071.0" y="1030.0" font-size="12.5" fill="#475569" text-anchor="middle">0/6 tasks</text>
+<text x="1071.0" y="991.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I13</text>
+<text x="1071.0" y="1011.9" font-size="12.5" fill="#475569" text-anchor="middle">Community port kit</text>
+<text x="1071.0" y="1030.0" font-size="12.5" fill="#475569" text-anchor="middle">0/5 tasks</text>
 <text x="1071.0" y="1048.1" font-size="12.5" fill="#475569" text-anchor="middle">after I8</text>
 <text x="1071.0" y="1066.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1214" y="962" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1345.0" y="991.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I13</text>
-<text x="1345.0" y="1011.9" font-size="12.5" fill="#475569" text-anchor="middle">Community port kit</text>
-<text x="1345.0" y="1030.0" font-size="12.5" fill="#475569" text-anchor="middle">0/5 tasks</text>
-<text x="1345.0" y="1048.1" font-size="12.5" fill="#475569" text-anchor="middle">after I11</text>
+<text x="1345.0" y="991.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I14</text>
+<text x="1345.0" y="1011.9" font-size="12.5" fill="#475569" text-anchor="middle">Tiered robotics</text>
+<text x="1345.0" y="1030.0" font-size="12.5" fill="#475569" text-anchor="middle">0/11 tasks</text>
+<text x="1345.0" y="1048.1" font-size="12.5" fill="#475569" text-anchor="middle">after I13</text>
 <text x="1345.0" y="1066.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1488" y="962" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1619.0" y="991.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I14</text>
-<text x="1619.0" y="1011.9" font-size="12.5" fill="#475569" text-anchor="middle">Tiered robotics</text>
-<text x="1619.0" y="1030.0" font-size="12.5" fill="#475569" text-anchor="middle">0/11 tasks</text>
-<text x="1619.0" y="1048.1" font-size="12.5" fill="#475569" text-anchor="middle">after I13</text>
+<text x="1619.0" y="991.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I16</text>
+<text x="1619.0" y="1011.9" font-size="12.5" fill="#475569" text-anchor="middle">Vision on jetson</text>
+<text x="1619.0" y="1030.0" font-size="12.5" fill="#475569" text-anchor="middle">0/4 tasks</text>
+<text x="1619.0" y="1048.1" font-size="12.5" fill="#475569" text-anchor="middle">after I8</text>
 <text x="1619.0" y="1066.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="940" y="1102" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1071.0" y="1131.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I16</text>
-<text x="1071.0" y="1151.9" font-size="12.5" fill="#475569" text-anchor="middle">Vision on jetson</text>
+<text x="1071.0" y="1131.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I17</text>
+<text x="1071.0" y="1151.9" font-size="12.5" fill="#475569" text-anchor="middle">Multimodal</text>
 <text x="1071.0" y="1170.0" font-size="12.5" fill="#475569" text-anchor="middle">0/4 tasks</text>
-<text x="1071.0" y="1188.1" font-size="12.5" fill="#475569" text-anchor="middle">after I11</text>
+<text x="1071.0" y="1188.1" font-size="12.5" fill="#475569" text-anchor="middle">after I16</text>
 <text x="1071.0" y="1206.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1214" y="1102" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1345.0" y="1131.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I17</text>
-<text x="1345.0" y="1151.9" font-size="12.5" fill="#475569" text-anchor="middle">Multimodal</text>
-<text x="1345.0" y="1170.0" font-size="12.5" fill="#475569" text-anchor="middle">0/4 tasks</text>
-<text x="1345.0" y="1188.1" font-size="12.5" fill="#475569" text-anchor="middle">after I16</text>
+<text x="1345.0" y="1131.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I18</text>
+<text x="1345.0" y="1151.9" font-size="12.5" fill="#475569" text-anchor="middle">Device ecosystem</text>
+<text x="1345.0" y="1170.0" font-size="12.5" fill="#475569" text-anchor="middle">0/3 tasks</text>
+<text x="1345.0" y="1188.1" font-size="12.5" fill="#475569" text-anchor="middle">after I13</text>
 <text x="1345.0" y="1206.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
-<rect x="1488" y="1102" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1619.0" y="1131.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I18</text>
-<text x="1619.0" y="1151.9" font-size="12.5" fill="#475569" text-anchor="middle">Device ecosystem</text>
-<text x="1619.0" y="1170.0" font-size="12.5" fill="#475569" text-anchor="middle">0/4 tasks</text>
-<text x="1619.0" y="1188.1" font-size="12.5" fill="#475569" text-anchor="middle">after I13</text>
-<text x="1619.0" y="1206.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1546.56" y="60" width="32" height="14" rx="3" fill="#ffffff" stroke="#475569" stroke-width="1.4" stroke-dasharray="7 5"/>
 <text x="1590.6" y="71.0" font-size="12" fill="#334155" text-anchor="start">○ planned — not in code yet</text>
 <rect x="1566.72" y="40" width="32" height="14" rx="3" fill="#ffffff" stroke="#475569" stroke-width="1.4"/>

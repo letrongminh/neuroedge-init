@@ -1,7 +1,7 @@
 # 08 · Non-functional requirements → tactics → evidence
 
 > **Scope:** which tactic the architecture uses to satisfy each NFR group of PRD §9, and where the
-> evidence is today. **Sources:** PRD §9 (requirements, thresholds), PRD §11.1 (A1–A12), tests in
+> evidence is today. **Sources:** PRD §9 (requirements, thresholds), PRD §11.1 (A1–A13), tests in
 > `python/tests/`, CI jobs in `.github/workflows/` (single list: `CHANGELOG.md` §2.5).
 
 Evidence labels: **checked** — a test or CI job runs on every PR · **partial** — a measurement tool or a
@@ -30,6 +30,7 @@ partial check exists · **not measured yet** — no evidence yet.
 | SEC-07 Sandbox third-party code restricting access to sensitive actuator pins (P0 v1.1, PRD §9.4) | Registry permission sandbox (TSK-K3-05, → [`15`](15-target-architecture.md) §3.2) | — | not yet |
 | SEC-08 TLS to providers, provider recorded in the trace | Provider name and model in `system_one_call`, `system_two_call`; no prompt, no key recorded | `test_providers.py::test_each_model_call_is_traced_without_prompt_or_key` | partial — no TLS 1.3 test yet |
 | SEC-09 MCP stdio only; LLM and MCP client untrusted | `dispatch()`: schema check, `call_source` assigned by the runtime, no self-confirming tools | threat model table §2b; corpus `fixtures/tool_calls/` | checked |
+| SEC-10 Third-party plug-ins (Q-67) | A plug-in running in-process is code the operator trusts (`docs/spec/threat_model.md` §3): loaded only when explicitly enabled; origin (package, version, file hash) printed and recorded in the trace; no `neuroedge.sdk` API hands a hardware handle to a bridge or fact source (FR-EXT-02, FR-EXT-03) | Plug-in loader and per-kind compliance suite (TSK-I2c-11, TSK-I2c-12; RFC-0016 is still a draft) | not yet — I2c |
 
 ## 3. Reliability — NFR-REL
 
@@ -92,7 +93,7 @@ real-time voice session and CI does not call real models.
 | COMP-05 Python 3.11+ | `requires-python >= 3.11` | CI matrix 3.11 / 3.12 / 3.13 | checked |
 | COMP-06 `linux` on ARM64 and x86-64 | — | Every job runs x86-64; no ARM64 job yet | partial |
 
-## 9. v1.0 acceptance criteria (A1–A12)
+## 9. v1.0 acceptance criteria (A1–A13)
 
 | # | Criterion | Related NFR | Evidence today |
 |:---:|:---|:---|:---|
@@ -104,7 +105,8 @@ real-time voice session and CI does not call real models.
 | A6 | 24-hour stability on chip | RES-01/02/03 | not measured yet |
 | A7 | Traces 100 % valid | REL-04, PRIV, OBS | validated in CI, including UART traces |
 | A8 | Docs, three runnable samples | — | three samples have tests; not checked on a clean machine by a third party yet |
-| A9 | Public schemas with a compliance suite | COMP-01→04 | `$id` asserted; `fixtures/compliance/` today has only `voice/`; public URL at I6 |
-| A10 | Every extension primitive on three targets (FR-HAL-08, Q-53) | REL-03, COMP-05/06 | not started; needs RFC-0007, RFC-0009 → RFC-0013 (I2a, I3a) |
+| A9 | Public schemas with a compliance suite | COMP-01→04 | partial — seven schemas in `schemas/`, `$id` asserted (`test_schemas.py`); compliance corpora exist: `fixtures/compliance/voice/` (voice), `fixtures/tool_calls/` (Gated Tool Profile) and `fixtures/contracts/` (board, error, tool-call, tool-result; `test_contracts.py`), under Apache-2.0 (Q-67); not yet served at a public URL (TSK-I6-02, I6) and no evidence yet that a third party has run them |
+| A10 | Every extension primitive on three targets (FR-HAL-08, Q-53) | REL-03, COMP-05/06 | partial — RFC-0007, RFC-0009 → RFC-0013 approved; `digital.in`, read-only I2C, `analog.in`, vision and the envelope done on `sim` and `linux` (job `linux-hal`), PWM and `motion.*` done on `sim` (I2a); `verify` does not yet replay the `fan-pwm` and `rover` agents; `esp32s3` not started (I3a) |
 | A11 | Building by conversation under contract (NeuroBrain, Q-55) | SEC-01 | not started (I4a, I5a) |
-| A12 | Sample kits buildable in a day (Q-52) | — | not measured yet (I2b) |
+| A12 | Sample kits buildable in a day (Q-52) | — | partial — five kits with BOM, wiring diagram, golden traces and tests on `sim`, `linux` (I2b); not yet built on real hardware (`TODOS.md` #59), TTFV not yet measured on people; A12 is measured at I7 |
+| A13 | Open platform: a third party wires up a new ecosystem in ≤ 1 day, wraps an existing MCP server in ≤ 3 commands (Q-67) | SEC-10 | not started — I2c; to be measured by the `neuroedge-muse` test (TSK-I2c-17) and a CI test that installs an out-of-repo plug-in |
