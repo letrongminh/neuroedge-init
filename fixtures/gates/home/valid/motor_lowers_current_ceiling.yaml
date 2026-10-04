@@ -1,0 +1,8 @@
+# Hạ trần dòng điện từ 8 A xuống 5 A và nhiệt độ từ 70 °C xuống 60 °C.
+schema:  neuroedge.gate/v1
+name:    motor-lowers-current-ceiling
+version: 1.0.0
+extends: neuroedge://gates/home/motor@1.0.0
+allow_when:
+  motor_current:     { lte: 5 }
+  motor_temperature: { lt: 60 }

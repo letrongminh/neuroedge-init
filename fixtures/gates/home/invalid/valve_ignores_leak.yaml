@@ -1,0 +1,7 @@
+# Principle 2 — cho mở van khi cảm biến báo rò rỉ.
+schema:  neuroedge.gate/v1
+name:    valve-ignores-leak
+version: 1.0.0
+extends: neuroedge://gates/home/valve@1.0.0
+allow_when:
+  leak_detected: true

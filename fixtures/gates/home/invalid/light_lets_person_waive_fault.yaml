@@ -1,0 +1,9 @@
+# Principle 2 (RFC-0006) — người có mặt được xác nhận thay cho lỗi thiết bị.
+schema:  neuroedge.gate/v1
+name:    light-lets-person-waive-fault
+version: 1.0.0
+extends: neuroedge://gates/home/light@1.0.0
+on_block:
+  action:   ask
+  message:  "Vẫn bật?"
+  confirms: [quiet_hours_ok, device_fault_free]

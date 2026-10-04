@@ -1,0 +1,7 @@
+# Principle 2 — cho còi kêu khi nguồn kích hoạt chưa kiểm chứng.
+schema:  neuroedge.gate/v1
+name:    siren-unverified-trigger
+version: 1.0.0
+extends: neuroedge://gates/home/siren@1.0.0
+allow_when:
+  trigger_verified: false

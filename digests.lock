@@ -52,6 +52,20 @@ files:
     digest: sha256:9fdab8a924461744d4e6ccb3c94182a4d1d4ac00cd5066f25319ff85ea6ff019
   fixtures/gates/valid/tightens_every_kind.yaml:
     digest: sha256:7f5948bb668f56be4f2841318d58491c27e202a7a2f653737666b3751e2f25cc
+  gates/home/camera@1.0.0.yaml:
+    digest: sha256:f0b8aa84ab556eca0fbe739fa24c4a20556a2fd333416f9fdb9ad29f822930c5
+  gates/home/door-lock@1.0.0.yaml:
+    digest: sha256:450dbf617068628ee0eeece53fb8fa634056cf89693cb00b3c414e49dc228662
+  gates/home/hvac@1.0.0.yaml:
+    digest: sha256:5eec85f3d1451d73959b7294ad5a20f2bd1755457eeac91c8e9109b8f34620fc
+  gates/home/light@1.0.0.yaml:
+    digest: sha256:a15a3ef9e9934e5b69676fd1df4aaee0038dade67a94906861d1d05cc2434c20
+  gates/home/motor@1.0.0.yaml:
+    digest: sha256:204e9fa7147c4c7481a5d8c923c90c0423e073720c8db7a1069eac60fb995096
+  gates/home/siren@1.0.0.yaml:
+    digest: sha256:2a7e3968482ae8decd6cd0067d7d098102a0529bf8b7c8bae9d2212ded83d655
+  gates/home/valve@1.0.0.yaml:
+    digest: sha256:f76af50a542bdd6db0260a829ef50b38bf5d18ae58c3d980e86e6e15c7312a60
   gates/hospitality/base-access@1.0.0.yaml:
     digest: sha256:8b6a1795fd93694fd5f799c1812fee447757ee6a8d58ab926b386af02ce5d8e7
   gates/unlock_door@1.2.0.yaml:

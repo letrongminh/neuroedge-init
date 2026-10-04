@@ -1,0 +1,7 @@
+# Còi chỉ kêu tối đa 30 s.
+schema:  neuroedge.gate/v1
+name:    siren-shortens-duration
+version: 1.0.0
+extends: neuroedge://gates/home/siren@1.0.0
+arguments:
+  duration_s: { type: integer, maximum: 30 }

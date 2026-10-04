@@ -1,0 +1,9 @@
+# Principle 2 (RFC-0006) — escalate → ask kèm confirms: một câu "có" thay cho xác thực.
+schema:  neuroedge.gate/v1
+name:    door-lock-waivable-by-asking
+version: 1.0.0
+extends: neuroedge://gates/home/door-lock@1.0.0
+on_block:
+  action:   ask
+  message:  "Mở khoá?"
+  confirms: [occupant_authenticated]

@@ -1,0 +1,7 @@
+# Principle 2 — nâng trần dòng điện từ 8 A lên 20 A.
+schema:  neuroedge.gate/v1
+name:    motor-raises-current-ceiling
+version: 1.0.0
+extends: neuroedge://gates/home/motor@1.0.0
+allow_when:
+  motor_current: { lte: 20 }

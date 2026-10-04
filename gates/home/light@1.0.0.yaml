@@ -1,0 +1,28 @@
+# Thư viện gate khởi đầu 2/7 — đèn: rủi ro thấp nên được hỏi lại người có mặt, nhưng không bỏ qua lỗi thiết bị.
+#
+# Người có mặt có thể trả lời "có" thay cho giờ yên tĩnh (`confirms: [quiet_hours_ok]`); họ KHÔNG thể
+# trả lời thay cho `device_fault_free`: bộ điều sáng đang lỗi thì không cấp điện, dù ai nói gì.
+schema:  neuroedge.gate/v1
+name:    light
+version: 1.0.0
+
+evaluate:
+  device_fault_free:
+    type: bool
+    instructions: "Bộ điều sáng không báo lỗi (quá nhiệt, chập, mất pha)"
+  quiet_hours_ok:
+    type: bool
+    instructions: "Đang ngoài giờ yên tĩnh đã cài cho căn phòng"
+
+allow_when:
+  device_fault_free: true
+  quiet_hours_ok:    true
+
+on_block:
+  action:   ask
+  message:  "Đang trong giờ yên tĩnh — vẫn bật đèn?"
+  confirms: [quiet_hours_ok]
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

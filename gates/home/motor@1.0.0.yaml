@@ -1,0 +1,38 @@
+# Thư viện gate khởi đầu 7/7 — động cơ (`motion.motor`, RFC-0011): chỉ chạy khi nút dừng khẩn đã nhả và số đo trong giới hạn.
+#
+# Mỗi lease mang đúng một lệnh và gia hạn bằng một lời gọi mới qua gate, nên gate này được lượng giá lại ở
+# từng lần gia hạn: dòng điện hay nhiệt độ vượt ngưỡng là ngừng gia hạn, lease hết hạn ⇒ `safe_state`.
+# Lệnh `stop` về phía an toàn không bao giờ qua gate này (RFC-0011 §9.1). Ngân sách 100 ms ≤ lease_ms / 2
+# với lease mặc định 200 ms.
+schema:  neuroedge.gate/v1
+name:    motor
+version: 1.0.0
+
+evaluate:
+  estop_released:
+    type: bool
+    instructions: "Nút dừng khẩn đã nhả và mạch an toàn đóng"
+  motor_current:
+    type: numeric
+    unit: A
+    range: { min: 0, max: 30 }
+    max_age_ms: 200
+    instructions: "Dòng điện động cơ, ampe"
+  motor_temperature:
+    type: numeric
+    unit: degC
+    range: { min: -20, max: 150 }
+    max_age_ms: 1000
+    instructions: "Nhiệt độ vỏ động cơ, độ C"
+
+allow_when:
+  estop_released:    true
+  motor_current:     { lte: 8 }
+  motor_temperature: { lt: 70 }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 100
+  fail:           closed

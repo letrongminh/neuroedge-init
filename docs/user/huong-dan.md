@@ -125,6 +125,12 @@ kịch bản demo: `demo/i1-studio/`.
 - Gate được **hỏi lại** người có mặt trước khi cho phép (khai bằng `confirms`): người đó trả lời "có" thì
   gate xét lại; model hay agent khác không trả lời thay được.
 - Gate có **ngân sách thời gian**: không thẩm định kịp trong thời hạn thì chặn.
+- Có sẵn **thư viện gate khởi đầu** trong `gates/home/` để bạn `extends` thay vì viết từ đầu: `door-lock`
+  (khoá cửa), `light` (đèn), `valve` (van nước/khí), `siren` (còi), `hvac` (điều hoà), `camera` (ghi hình, theo
+  dữ kiện thị giác) và `motor` (động cơ `motion.motor`). Mọi gate đều đóng khi lỗi (`fail: closed`) và có
+  ngưỡng an toàn bảo thủ; gate con chỉ siết thêm được, nới ngưỡng, thời hạn số đọc hay ngân sách là bị
+  `gate lint` từ chối (phản chứng: `fixtures/gates/home/invalid/`). Gate có `arguments` (`door-lock`,
+  `valve`, `siren`: `duration_s`) đòi `@action` của bạn có tham số nguyên tên đó.
 
 **Cần gì:** chỉ cần NeuroEdge.
 

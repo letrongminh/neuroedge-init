@@ -1,0 +1,33 @@
+# Thư viện gate khởi đầu 1/7 — khoá cửa: mở khoá chỉ khi người ra lệnh đã xác thực và rủi ro thấp.
+#
+# Maker `extends` gate này rồi siết thêm (thêm tiêu chí, hạ ngưỡng); không nới được (nguyên tắc 2).
+# Tham số `duration_s` là thời gian giữ khoá mở: @action mở cửa phải có tham số nguyên tên đó
+# (RFC-0005). Không xác nhận được ⇒ chuyển cho người có mặt, không bao giờ tự mở.
+schema:  neuroedge.gate/v1
+name:    door-lock
+version: 1.0.0
+
+arguments:
+  duration_s: { type: integer, minimum: 1, maximum: 30 }
+
+evaluate:
+  occupant_authenticated:
+    type: bool
+    instructions: "Người ra lệnh đã xác thực danh tính hợp lệ trong phiên hiện tại"
+  risk_level:
+    type: level
+    levels: [low, medium, high]
+    instructions: "Mức rủi ro bất thường tại thời điểm phát sinh yêu cầu mở khoá"
+
+allow_when:
+  occupant_authenticated: true
+  risk_level:             { lte: low }
+
+on_block:
+  action:  escalate
+  to:      human_owner
+  message: "Yêu cầu mở khoá cần chủ nhà xác nhận trực tiếp."
+
+budget:
+  p95_latency_ms: 120
+  fail:           closed

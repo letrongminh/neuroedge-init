@@ -1,0 +1,7 @@
+# Principle 2 — cho khởi động máy nén khi chưa nghỉ đủ.
+schema:  neuroedge.gate/v1
+name:    hvac-skips-compressor-rest
+version: 1.0.0
+extends: neuroedge://gates/home/hvac@1.0.0
+allow_when:
+  compressor_rested: false

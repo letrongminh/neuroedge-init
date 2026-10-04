@@ -1,0 +1,7 @@
+# Principle 2 (RFC-0004 R1) — ngân sách 400 ms vượt lease_ms / 2 của lease mặc định.
+schema:  neuroedge.gate/v1
+name:    motor-slower-budget
+version: 1.0.0
+extends: neuroedge://gates/home/motor@1.0.0
+budget:
+  p95_latency_ms: 400
