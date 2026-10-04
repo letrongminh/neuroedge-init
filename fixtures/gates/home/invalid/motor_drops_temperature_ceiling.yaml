@@ -1,7 +1,0 @@
-# Principle 2 — bỏ trần nhiệt độ: ghi đè allow_when với cận dưới thay cận trên.
-schema:  neuroedge.gate/v1
-name:    motor-drops-temperature-ceiling
-version: 1.0.0
-extends: neuroedge://gates/home/motor@1.0.0
-allow_when:
-  motor_temperature: { gte: 0 }

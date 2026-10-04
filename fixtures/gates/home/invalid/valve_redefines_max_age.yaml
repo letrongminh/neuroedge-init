@@ -4,9 +4,9 @@ name:    valve-redefines-max-age
 version: 1.0.0
 extends: neuroedge://gates/home/valve@1.0.0
 evaluate:
-  line_pressure:
+  line_pressure_sense:
     type: numeric
-    unit: bar
-    range: { min: 0, max: 16 }
+    unit: V
+    range: { min: 0, max: 2.5 }
     max_age_ms: 5000
-    instructions: "Áp suất đường ống, đơn vị bar"
+    instructions: "Điện áp bộ đo áp suất đường ống, volt"

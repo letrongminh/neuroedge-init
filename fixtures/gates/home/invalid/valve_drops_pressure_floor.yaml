@@ -4,4 +4,4 @@ name:    valve-drops-pressure-floor
 version: 1.0.0
 extends: neuroedge://gates/home/valve@1.0.0
 allow_when:
-  line_pressure: { lt: 8 }
+  line_pressure_sense: { lt: 2.0 }
