@@ -1,0 +1,396 @@
+<!doctype html>
+<!-- Ảnh chụp tay ngày 2026-10-04, không sinh tự động. Nguồn sự thật: docs/architecture/ (CONTRIBUTING.md §8.1); trang này lệch thì nguồn đúng. -->
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kiến trúc NeuroEdge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: một cột đọc ~70ch; sơ đồ xương sống là dải dọc theo đúng thứ tự dòng lệnh, nhánh L2 đứng cạnh L3 */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --ink: #14202b;
+  --muted: #586773;
+  --line: #d3dae0;
+  --gate: #b45309;        /* màu "cổng": nơi duy nhất ra quyết định */
+  --gate-soft: #fdf1e3;
+  --core: #1f4e6b;
+  --core-soft: #e6eef4;
+  --ok: #1d7a4a;  --ok-soft: #e3f3ea;
+  --part: #8a6100; --part-soft: #fbf1d6;
+  --plan: #5d6875; --plan-soft: #eceff2;
+  --block: #b42318; --block-soft: #fde8e6;
+  --f-display: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f161c; --surface: #16212a; --ink: #e4eaef; --muted: #98a6b2; --line: #2b3a46;
+  --gate: #f0a24a; --gate-soft: #3a2810; --core: #8cc1e0; --core-soft: #17303f;
+  --ok: #5cc98d; --ok-soft: #14301f; --part: #e6bd55; --part-soft: #352a0d;
+  --plan: #a3afba; --plan-soft: #222d36; --block: #f2867c; --block-soft: #3a1714;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f161c; --surface: #16212a; --ink: #e4eaef; --muted: #98a6b2; --line: #2b3a46;
+  --gate: #f0a24a; --gate-soft: #3a2810; --core: #8cc1e0; --core-soft: #17303f;
+  --ok: #5cc98d; --ok-soft: #14301f; --part: #e6bd55; --part-soft: #352a0d;
+  --plan: #a3afba; --plan-soft: #222d36; --block: #f2867c; --block-soft: #3a1714;
+  color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15.5px; line-height: 1.6; padding-inline: 16px; padding-block: 40px 64px }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 56px }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.25; margin: 0 }
+h1 { font-size: clamp(28px, 5vw, 40px); font-weight: 800; letter-spacing: -0.02em }
+h2 { font-size: 22px; font-weight: 700 }
+h3 { font-size: 16px; font-weight: 700 }
+p { margin: 0; max-width: 68ch }
+code, .mono { font-family: var(--f-mono); font-size: 0.86em }
+code { background: var(--core-soft); color: var(--core); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere }
+a { color: var(--core) }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted) }
+section { display: grid; gap: 18px; min-width: 0 }
+.lede { font-size: 18px; color: var(--ink) }
+.lede strong { color: var(--gate) }
+
+/* Chú giải trạng thái */
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; vertical-align: 1px }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50% }
+.ok { background: var(--ok-soft); color: var(--ok) } .ok::before { background: var(--ok) }
+.part { background: var(--part-soft); color: var(--part) } .part::before { background: var(--part) }
+.plan { background: var(--plan-soft); color: var(--plan) } .plan::before { border: 1.5px dashed var(--plan); width: 6px; height: 6px }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; font-size: 13px; color: var(--muted) }
+
+/* Sơ đồ xương sống */
+.spine { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 14px 18px; align-items: start }
+.col { display: grid; gap: 0; min-width: 0 }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; min-width: 0 }
+.box.dashed { border-style: dashed }
+.box-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 10px }
+.tag { font-family: var(--f-mono); font-size: 11.5px; font-weight: 600; color: var(--muted) }
+.items { display: flex; flex-wrap: wrap; gap: 6px }
+.item { font-size: 13px; padding: 3px 9px; border-radius: 6px; background: var(--bg); border: 1px solid var(--line); display: inline-flex; gap: 6px; align-items: center }
+.item.dashed { border-style: dashed; color: var(--muted) }
+.arrow { display: grid; justify-items: center; padding: 4px 0; color: var(--muted); font-size: 12px; text-align: center }
+.arrow::before { content: ""; width: 2px; height: 16px; background: var(--line) }
+.arrow::after { content: ""; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 7px solid var(--line) }
+.arrow span { order: -1; font-family: var(--f-mono); font-size: 11.5px }
+.core { border: 2px solid var(--core); background: var(--core-soft) }
+.core .step { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; font-size: 14px; display: grid; gap: 2px }
+.core .step b { font-family: var(--f-mono); font-size: 13.5px }
+.core .step small { color: var(--muted); font-size: 12.5px; line-height: 1.45 }
+.core .step.gate { border: 2px solid var(--gate); background: var(--gate-soft) }
+.core .step.gate b { color: var(--gate) }
+.steps { display: grid; gap: 6px }
+.fork { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
+.fork .step.allow b { color: var(--ok) }
+.fork .step.blk b { color: var(--block) }
+.mini-arrow { text-align: center; color: var(--muted); font-size: 12px; line-height: 1 }
+.targets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px }
+.targets .box { padding: 12px 14px }
+.targets p { font-size: 13px; color: var(--muted) }
+.side { display: grid; gap: 10px; position: relative }
+.side .box { border-left: 3px solid var(--core) }
+.side .note { font-size: 12.5px; color: var(--muted) }
+.feeds { font-family: var(--f-mono); font-size: 11.5px; color: var(--core); font-weight: 600 }
+.rail { margin-top: 14px; border-top: 2px dashed var(--line); padding-top: 12px; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted) }
+.rail b { color: var(--ink); font-weight: 600 }
+
+/* Bảng */
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface) }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 640px }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line) }
+th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--bg) }
+tr:last-child td { border-bottom: 0 }
+td.layer { font-family: var(--f-mono); font-weight: 600; white-space: nowrap; color: var(--core) }
+
+/* Ba bảo đảm */
+.guarantees { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px }
+.g { display: grid; gap: 8px; align-content: start; padding-top: 12px; border-top: 3px solid var(--gate) }
+.g p, .g li { font-size: 14px; color: var(--muted) }
+.g ul { margin: 0; padding-left: 18px; display: grid; gap: 4px }
+
+/* Điểm cắm */
+.plugs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px }
+.plug { background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; align-content: start }
+.plug .ep { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted) }
+.plug p { font-size: 13.5px }
+.plug .never { font-size: 12.5px; color: var(--block) }
+
+/* Chân trời */
+.horizons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px }
+.h { display: grid; gap: 8px; align-content: start; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px }
+.h .when { font-family: var(--f-mono); font-size: 12px; color: var(--muted) }
+.h ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 13.5px }
+
+/* Hiểu sai thường gặp */
+.myths { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden }
+.myth { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 14px }
+.myth:last-child { border-bottom: 0 }
+.myth .wrong { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--block) }
+.sources { font-size: 13px; color: var(--muted); display: grid; gap: 4px }
+
+@media (max-width: 760px) {
+  .spine { grid-template-columns: 1fr }
+  .side { order: -1 }
+  .guarantees, .plugs, .horizons, .targets { grid-template-columns: 1fr }
+  .myth { grid-template-columns: 1fr; gap: 4px }
+}
+@media (min-width: 761px) and (max-width: 900px) {
+  .plugs { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+}
+</style>
+
+</head><body>
+<div class="wrap">
+
+<header style="display:grid; gap:14px">
+  <div class="eyebrow">NeuroEdge · kiến trúc tổng thể · trạng thái theo nhánh main, 2026-10-04</div>
+  <h1>Model đề xuất, gate quyết định</h1>
+  <p class="lede">Mọi hành động vật lý chỉ có <strong>một đường duy nhất</strong> tới chân phần cứng: tool call có kiểu → gate tất định → token dùng một lần → HAL. Đường này giống nhau dù lệnh đến từ ngữ pháp lệnh, LLM hay agent khác qua MCP, và giống nhau trên <code>sim</code>, <code>linux</code> và <code>esp32s3</code>.</p>
+  <div class="legend">
+    <span class="chip ok">đã có mã</span>
+    <span class="chip part">có một phần</span>
+    <span class="chip plan">mới quy hoạch</span>
+    <span>· khung nét đứt cũng là quy hoạch</span>
+  </div>
+</header>
+
+<section>
+  <div class="eyebrow">Hình 1</div>
+  <h2>Xương sống thực thi</h2>
+  <p>Đọc từ trên xuống theo đường đi của một lệnh. Tầng nhận thức (L2) đứng bên cạnh: nó sinh ý định và cấp dữ kiện cho gate, nhưng không nằm giữa token và chân phần cứng.</p>
+
+  <div class="spine">
+    <div class="col">
+      <div class="box">
+        <div class="box-head"><h3>Nguồn gọi</h3><span class="tag">không tin cậy</span></div>
+        <div class="items">
+          <span class="item">Claude / agent qua MCP <span class="chip ok">có</span></span>
+          <span class="item">System 2 (LLM qua LiteLLM) <span class="chip ok">có</span></span>
+          <span class="item">Lệnh gõ trên REPL <span class="chip ok">có</span></span>
+          <span class="item dashed">Bridge: Muse, HTTP, MQTT <span class="chip plan">I2c</span></span>
+          <span class="item dashed">Home Assistant qua proxy <span class="chip plan">I2c</span></span>
+        </div>
+      </div>
+
+      <div class="arrow"><span>yêu cầu tool, không mang source</span></div>
+
+      <div class="box core">
+        <div class="box-head"><h3>L3 · Động cơ hợp đồng hành động</h3><span class="chip ok">host + QEMU</span></div>
+        <div class="steps">
+          <div class="step"><b>dispatch()</b><small>Kiểm kiểu tham số; sai kiểu → REJECTED. Runtime tự gắn <code>source</code> (local_grammar · system_one · system_two · mcp · test) và dữ kiện <code>call_source</code>; model không tự khai được.</small></div>
+          <div class="mini-arrow">↓</div>
+          <div class="step"><b>c.do()</b><small>Cửa duy nhất để chạy một <code>@action</code>.</small></div>
+          <div class="mini-arrow">↓</div>
+          <div class="step gate"><b>Gate engine · evaluate()</b><small>Cây quyết định tất định từ gate YAML. Kế thừa chỉ được siết chặt. Fail-closed: thiếu dữ kiện, sai kiểu, không đo được → không bao giờ ALLOW. Giá trị vượt giới hạn → BLOCK <code>argument_out_of_range</code>.</small></div>
+          <div class="mini-arrow">↓</div>
+          <div class="fork">
+            <div class="step allow"><b>ALLOW → TokenLedger</b><small>Token dùng một lần: nonce ngẫu nhiên, TTL = p95 × 3, mỗi chân dùng một lần, lease theo kênh cho <code>motion</code>.</small></div>
+            <div class="step blk"><b>BLOCK → on_block</b><small>deny · ask (chỉ người trên thiết bị trả lời) · escalate · degrade.</small></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arrow"><span>token</span></div>
+
+      <div class="box">
+        <div class="box-head"><h3>L1 · HAL</h3><span class="chip ok">trên host</span></div>
+        <p style="font-size:14px">HAL hỏi sổ token <code>authorize(token, pin, called_from)</code> trước mỗi lệnh chân. Token tự chế, đã dùng hay hết hạn bị từ chối và ghi vết.</p>
+        <div class="items">
+          <span class="item"><b class="mono">audio.in</b></span>
+          <span class="item"><b class="mono">audio.out</b></span>
+          <span class="item"><b class="mono">digital.out</b> + PWM</span>
+          <span class="item"><b class="mono">sensor.read</b></span>
+          <span class="item"><b class="mono">display</b></span>
+        </div>
+        <div class="items">
+          <span class="item dashed">mở rộng, tuỳ bo:</span>
+          <span class="item"><span class="mono">digital.in</span></span>
+          <span class="item"><span class="mono">i2c</span></span>
+          <span class="item"><span class="mono">analog.in</span></span>
+          <span class="item"><span class="mono">motion</span></span>
+          <span class="item"><span class="mono">vision.in</span></span>
+        </div>
+      </div>
+
+      <div class="arrow"><span>cùng hợp đồng trên mọi target</span></div>
+
+      <div class="targets">
+        <div class="box">
+          <div class="box-head"><h3 class="mono">sim</h3><span class="chip ok">có</span></div>
+          <p>HAL mô phỏng trên laptop, REPL gõ chữ, trang <code>--ui</code> chạy cục bộ, micro thật qua <code>--mic</code>.</p>
+        </div>
+        <div class="box">
+          <div class="box-head"><h3 class="mono">linux</h3><span class="chip part">kernel ảo</span></div>
+          <p>libgpiod, hwmon/IIO, V4L2, PipeWire. Xanh trên gpio-sim, i2c-stub, vivid trong CI; chưa chạy trên Pi 5 thật.</p>
+        </div>
+        <div class="box">
+          <div class="box-head"><h3 class="mono">esp32s3</h3><span class="chip part">QEMU</span></div>
+          <p>C99: walker <code>NETR</code>, sổ token C, vết ghi UART, OTA có ký. Gate tự kiểm lúc boot; chưa động chân nào.</p>
+        </div>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="box">
+        <div class="box-head"><h3>L2 · Nhận thức</h3><span class="chip part">một phần</span></div>
+        <div class="feeds">→ sinh ý định cho nguồn gọi</div>
+        <div class="items">
+          <span class="item">Ngữ pháp lệnh cục bộ <span class="chip ok">có</span></span>
+          <span class="item">System 1 / System 2 <span class="chip ok">có</span></span>
+          <span class="item">STT/TTS từ tệp WAV <span class="chip ok">có</span></span>
+          <span class="item">Phiên thoại thời gian thực <span class="chip part">I4</span></span>
+          <span class="item dashed">AEC, wake-word trên chip <span class="chip plan">I5</span></span>
+        </div>
+        <p class="note">VAD hiện dựa trên năng lượng (<code>EnergyVAD</code>). Mô hình wake-word do người dùng tự đưa.</p>
+      </div>
+      <div class="box">
+        <div class="box-head"><h3>Thị giác</h3><span class="chip part">một phần</span></div>
+        <div class="feeds">→ cấp dữ kiện số cho gate</div>
+        <p class="note">Khung hình từ <code>vision.in</code> → mô hình → dữ kiện như <code>person_detected</code>. Mô hình thật và tương đương giữa target chưa kiểm.</p>
+      </div>
+      <div class="box">
+        <div class="box-head"><h3>Mất mạng</h3></div>
+        <p class="note">Rơi về ngữ pháp lệnh cục bộ. Chỉ chặn khi không có đường dự phòng (Q-14). Lệnh đưa cơ cấu về trạng thái an toàn luôn được phép (Q-62).</p>
+      </div>
+    </aside>
+  </div>
+
+  <div class="rail">
+    <span><b>Trục xuyên suốt:</b></span>
+    <span>Vết ghi <code>trace.v1</code> (.json): dữ kiện, phán quyết, lệnh chân <span class="chip ok">có</span></span>
+    <span>Action CI: <code>replay</code>, <code>verify</code>, <code>gate lint</code> <span class="chip ok">có</span></span>
+    <span>Hợp đồng đóng băng qua RFC: gate.v1, trace.v1, board.v1, tool-call, NETR <span class="chip ok">có</span></span>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Proposal §3.1</div>
+  <h2>Năm tầng logic</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Tầng</th><th>Vai trò</th><th>Mã ở đâu</th><th>Trạng thái</th></tr></thead>
+      <tbody>
+        <tr><td class="layer">L4</td><td>Ứng dụng agent: tool call có gate qua MCP, System 2, ngữ cảnh</td><td><code>mcp_server.py</code>, <code>mcp_host.py</code>, <code>models/</code></td><td><span class="chip ok">có</span></td></tr>
+        <tr><td class="layer">L3</td><td>Động cơ hợp đồng: phân giải gate, gate engine, token dùng một lần, mạch ngắt fail-closed</td><td><code>engine/</code>, <code>actions/</code>; chip: <code>ne_gate</code>, <code>ne_agent</code></td><td><span class="chip ok">host + QEMU</span></td></tr>
+        <tr><td class="layer">L2</td><td>Nhận thức và hội thoại: giọng nói, máy trạng thái hội thoại, thị giác, ngữ pháp lệnh</td><td><code>perception/</code>, <code>models/</code>, <code>hal/audio.py</code></td><td><span class="chip part">một phần</span></td></tr>
+        <tr><td class="layer">L1</td><td>HAL: nguyên thủy phần cứng, đối chiếu năng lực bo mạch lúc build</td><td><code>hal/</code>, <code>boards/*.toml</code></td><td><span class="chip ok">host</span> <span class="chip plan">chip</span></td></tr>
+        <tr><td class="layer">L0</td><td>Môi trường thực thi ngang hàng</td><td><code>hal/sim.py</code>, <code>hal/linux.py</code>, <code>targets/esp32s3/</code></td><td><span class="chip ok">sim</span> <span class="chip part">linux, esp32s3</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Điều mọi phần khác dựa vào</div>
+  <h2>Ba bảo đảm</h2>
+  <div class="guarantees">
+    <div class="g">
+      <h3>Không có đường tắt</h3>
+      <ul>
+        <li>Gọi thẳng hàm <code>@action</code> bị từ chối.</li>
+        <li>Gọi <code>digital.out()</code> ngoài <code>c.do()</code> bị từ chối.</li>
+        <li>Token tự chế, đã dùng hay hết hạn bị từ chối.</li>
+        <li>Mỗi lần từ chối đều ghi vết.</li>
+      </ul>
+    </div>
+    <div class="g">
+      <h3>Không chắc thì chặn</h3>
+      <ul>
+        <li>Vắng <code>fail</code> nghĩa là <code>closed</code>.</li>
+        <li><code>fail: open</code> không được kế thừa.</li>
+        <li>Không đo được → <code>INCONCLUSIVE</code>, không ALLOW.</li>
+        <li>Sổ token đầy thì từ chối, không đẩy token cũ ra.</li>
+      </ul>
+    </div>
+    <div class="g">
+      <h3>Một hợp đồng ở mọi nơi</h3>
+      <ul>
+        <li>Phân giải gate là hàm thuần: không đồng hồ, không mạng, không ngẫu nhiên.</li>
+        <li>Trên chip không có JSON, không có CEL: gate biên dịch thành cây <code>NETR</code> đọc tại chỗ trong flash, walker không cấp phát, stack ≤ 512 B.</li>
+        <li><code>verify</code> so phán quyết giữa các target.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">I2c · RFC-0016 → 0018 đã ký, mã chưa bắt đầu</div>
+  <h2>Nền tảng mở: sáu điểm cắm</h2>
+  <p>Lõi an toàn dùng độc lập qua <code>neuroedge.guard</code>. Bên thứ ba cắm vào qua Extension SDK (<code>neuroedge.sdk</code>, Python entry points) mà không sửa lõi. Plugin chỉ nạp khi người vận hành bật rõ; nạp hỏng thì không khởi động.</p>
+  <div class="plugs">
+    <div class="plug"><h3>Bridge</h3><span class="ep">neuroedge.bridges</span><p>Dịch giao thức ngoài (Muse, HTTP, MQTT) thành yêu cầu tool.</p><span class="never">Không chạm HAL; không tự gán source (lõi gán <span class="mono">bridge:&lt;id&gt;</span>).</span></div>
+    <div class="plug"><h3>Fact source</h3><span class="ep">neuroedge.fact_sources</span><p>Cấp dữ kiện số cho tiêu chí đã khai nguồn.</p><span class="never">Không tự khai tuổi dữ kiện; dữ kiện mất không thành ALLOW.</span></div>
+    <div class="plug"><h3>Actuator</h3><span class="ep">neuroedge.actuators</span><p>Lái cơ cấu cục bộ hoặc từ xa (Home Assistant, Matter).</p><span class="never">Không chạy lệnh ngoài token và phong bì an toàn.</span></div>
+    <div class="plug"><h3>Board</h3><span class="ep">neuroedge.boards</span><p>Hồ sơ <code>board.v1</code> cho bo của cộng đồng.</p><span class="never">Không tự nhận bậc target.</span></div>
+    <div class="plug"><h3>Template</h3><span class="ep">neuroedge.templates</span><p>Kit và mẫu dự án.</p><span class="never">Không chạy mã lúc cài; không ghi đè gate đã khoá.</span></div>
+    <div class="plug"><h3>Exporter</h3><span class="ep">neuroedge.exporters</span><p>Xuất sự kiện ra OTel, webhook.</p><span class="never">Chỉ đọc; không đổi phán quyết.</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Kiến trúc mục tiêu · chương 15</div>
+  <h2>Ba chân trời</h2>
+  <div class="horizons">
+    <div class="h">
+      <span class="when">H1 · I2a–I7 · v1.0 = MVP</span>
+      <h3>Trên thiết bị</h3>
+      <ul>
+        <li>HAL và driver trên Box-3 thật</li>
+        <li>Thoại trên chip: AEC, VAD, Opus</li>
+        <li>Cắt lời hủy lệnh đang chờ</li>
+        <li>Secure Boot, anti-rollback</li>
+        <li>Bốn gói nguyên thủy mở rộng trên chip</li>
+        <li>NeuroBrain</li>
+        <li>Nền tảng mở (I2c)</li>
+      </ul>
+    </div>
+    <div class="h">
+      <span class="when">H2 · I9–I10 · v1.1</span>
+      <h3>Tầng dịch vụ</h3>
+      <ul>
+        <li>Fleet OS: danh tính, phát hành canary, gom vết ghi</li>
+        <li>Gate Registry: gate đóng gói OCI, có ký</li>
+        <li>Chip kiểm chữ ký gate</li>
+        <li>Định tuyến provider, quota</li>
+      </ul>
+    </div>
+    <div class="h">
+      <span class="when">H3 · I13–I18 · sau Beta</span>
+      <h3>Mở rộng</h3>
+      <ul>
+        <li>Bộ port cộng đồng theo bậc target</li>
+        <li>Robot phân tầng: Pi 5 + nhiều MCU qua Zenoh, mỗi node tự lượng giá gate</li>
+        <li>Thị giác trên Jetson, đa phương thức</li>
+        <li>Hệ sinh thái adapter</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Đối chiếu với mã</div>
+  <h2>Những điểm hay bị mô tả sai</h2>
+  <div class="myths">
+    <div class="myth"><span class="wrong">Token đi qua tầng nhận thức rồi mới xuống HAL</span><span>Token đi thẳng từ TokenLedger xuống HAL. L2 đứng phía trên gate.</span></div>
+    <div class="myth"><span class="wrong">Gate engine cấp token</span><span><code>TokenLedger</code> trong <code>actions/</code> cấp token.</span></div>
+    <div class="myth"><span class="wrong">Token mật mã, mở đúng một chân</span><span>Nonce ngẫu nhiên trong sổ của tiến trình, không ký số. Mở tập chân của một hành động, mỗi chân một lần.</span></div>
+    <div class="myth"><span class="wrong">HAL có digital.in, analog.in, i2c, motion là nguyên thủy lõi</span><span>Lõi: audio.in, audio.out, digital.out, sensor.read, display. Năm cái còn lại là mở rộng, tuỳ bo.</span></div>
+    <div class="myth"><span class="wrong">Mất mạng → BLOCK ngay</span><span>Rơi về ngữ pháp lệnh cục bộ trước; chỉ chặn khi không có dự phòng.</span></div>
+    <div class="myth"><span class="wrong">NETR tốn dưới 512 byte RAM</span><span>Walker không cấp phát, stack ≤ 512 B. Số đo RAM trên bo thật chưa có.</span></div>
+    <div class="myth"><span class="wrong">esp32s3 đã điều khiển thiết bị</span><span>Chạy gate trên QEMU, chưa động chân. HAL firmware là TSK-S4-01 (I3).</span></div>
+    <div class="myth"><span class="wrong">Đã có Muse Bridge, Home Assistant</span><span>Quy hoạch ở I2c. Hôm nay <code>source</code> là tập đóng, chưa có entry point nào.</span></div>
+  </div>
+</section>
+
+<footer class="sources">
+  <div class="eyebrow">Nguồn trong kho</div>
+  <span><code>docs/architecture/vi/00-overview.md</code> §2, §5.1 · <code>docs/architecture/vi/15-target-architecture.md</code></span>
+  <span><code>roadmap/neuroedge-design-open-platform.md</code> §3–§5 · <code>CHANGELOG.md</code> §3.3, §3.7</span>
+  <span><code>python/neuroedge/hal/board.py</code> · <code>python/neuroedge/actions/token.py</code> · <code>schemas/tool-call.v1.json</code></span>
+</footer>
+
+</div>
+</body></html>
