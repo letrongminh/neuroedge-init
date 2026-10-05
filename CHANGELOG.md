@@ -32,6 +32,10 @@ bản gói.
 
 #### Đã thêm
 
+- **Trang kiến trúc tổng thể cho người ngoài nhóm kỹ thuật** — `docs/business/kien-truc-tong-the.html`: xương sống thực thi,
+  năm tầng, ba bảo đảm, sáu điểm cắm của I2c, ba chân trời, trạng thái theo `main` ngày 2026-10-04. Viết tay, không sinh tự động;
+  lệch thì `docs/architecture/` đúng.
+
 - **I6 · TSK-I6-05 — hợp đồng cho người tích hợp trong `schemas/` (RFC-0015, Q-66).** Bốn lược đồ `tool-call.v1`, `tool-result.v1`,
   `error.v1`, `error-codes.v1` (17 mã, nguồn của cấu trúc `NE…`; PRD Phụ lục B giữ lời); `result_schema()` đọc tệp tĩnh; khoá
   `schema = "neuroedge.board/v1"` của `board.v1`, phiên bản khác ⇒ NE3001 trước khi thẩm định. Kiểm: `pytest tests/test_contracts.py
@@ -377,6 +381,14 @@ bản gói.
 - **Phong bì an toàn ghi thời gian bật tất định.** Độ dài khoảng bật tính bằng số thực của đồng hồ đơn điệu có nhiễu dưới
   micro giây, làm cùng một lệnh 600 000 ms bị ghi 600 001 ms ở lần chạy này và 600 000 ms ở lần khác (test chập chờn trên CI,
   PR #94); nay bỏ nhiễu trước khi làm tròn lên, phần lẻ thật vẫn làm tròn về phía đã dùng. Kiểm: `pytest tests/test_envelope.py -k float_noise`.
+
+#### Đã đổi — Giả lập trước khi bo mạch về (2026-10-05, Q-69)
+
+- **Q-69 — bổ sung Q-21: ba spike giả lập có thời hạn, tiêu chí nhận/loại chốt trước khi chạy.** `esp-emulator` cho GPIO, LEDC,
+  MCPWM, I2C, Wi-Fi của `esp32s3` (TSK-I3-02); `esp32sim` để ước lượng sớm bộ nhớ ESP-SR theo Q-3 và chạy suy luận esp-dl
+  (TSK-I3-03 — ước lượng, không thay TSK-S1-10, không kích Q-44); kernel đủ module trong VM cho job `linux-hal` (`pwm-gpio`,
+  `snd-aloop`) và runner ARM64 (TSK-I2a-08). Wokwi, Renode vẫn loại. Không thay đặt mua phần cứng. Đóng `TODOS.md` #22; mốc
+  kích hoạt của #21 trỏ vào TSK-I3-02. I2a 22 / 27, I3 6 / 16.
 
 #### Đã đổi — Ký ba RFC của nền tảng mở (2026-10-04, Q-68)
 
