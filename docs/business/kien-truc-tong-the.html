@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Ảnh chụp tay ngày 2026-10-04, không sinh tự động. Nguồn sự thật: docs/architecture/ (CONTRIBUTING.md §8.1); trang này lệch thì nguồn đúng. -->
+<!-- Ảnh chụp tay ngày 2026-10-05, không sinh tự động. Nguồn sự thật: docs/architecture/ (CONTRIBUTING.md §8.1); trang này lệch thì nguồn đúng. -->
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Kiến trúc NeuroEdge</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -111,6 +111,11 @@ td.layer { font-family: var(--f-mono); font-weight: 600; white-space: nowrap; co
 .g p, .g li { font-size: 14px; color: var(--muted) }
 .g ul { margin: 0; padding-left: 18px; display: grid; gap: 4px }
 
+/* Giả lập theo tầng */
+.sim-tbl td:first-child { font-family: var(--f-mono); font-weight: 600; white-space: nowrap }
+.sim-tbl td { font-size: 13.5px }
+.sim-tbl .hw { color: var(--muted) }
+
 /* Điểm cắm */
 .plugs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px }
 .plug { background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; align-content: start }
@@ -146,7 +151,7 @@ td.layer { font-family: var(--f-mono); font-weight: 600; white-space: nowrap; co
 <div class="wrap">
 
 <header style="display:grid; gap:14px">
-  <div class="eyebrow">NeuroEdge · kiến trúc tổng thể · trạng thái theo nhánh main, 2026-10-04</div>
+  <div class="eyebrow">NeuroEdge · kiến trúc tổng thể · trạng thái theo nhánh main, 2026-10-05</div>
   <h1>Model đề xuất, gate quyết định</h1>
   <p class="lede">Mọi hành động vật lý chỉ có <strong>một đường duy nhất</strong> tới chân phần cứng: tool call có kiểu → gate tất định → token dùng một lần → HAL. Đường này giống nhau dù lệnh đến từ ngữ pháp lệnh, LLM hay agent khác qua MCP, và giống nhau trên <code>sim</code>, <code>linux</code> và <code>esp32s3</code>.</p>
   <div class="legend">
@@ -317,6 +322,23 @@ td.layer { font-family: var(--f-mono); font-weight: 600; white-space: nowrap; co
 </section>
 
 <section>
+  <div class="eyebrow">Q-21 · Q-69</div>
+  <h2>Kiểm khi chưa có bo mạch</h2>
+  <p>Mỗi tầng kiểm bằng một công cụ mở có sẵn, không tự viết trình giả lập. Q-69 thêm ba spike có thời hạn để lấp các ô còn trống trước khi bo về; ước lượng từ emulator không thay số đo trên bo.</p>
+  <div class="tbl">
+    <table class="sim-tbl">
+      <thead><tr><th>Target</th><th>Đang chạy trong CI</th><th>Spike của Q-69</th><th class="hw">Chỉ đo được trên phần cứng</th></tr></thead>
+      <tbody>
+        <tr><td>sim</td><td><code>SimHAL</code>, REPL, trang <code>--ui</code>, Action CI <span class="chip ok">có</span></td><td>—</td><td class="hw">—</td></tr>
+        <tr><td>linux</td><td>gpio-sim, <code>i2c-stub</code> + hwmon, <code>vivid</code>, <code>vkms</code>, cây PWM giả <span class="chip ok">có</span></td><td>Kernel đủ module trong VM: <code>pwm-gpio</code> cho chip PWM thật, <code>snd-aloop</code>; runner ARM64 · TSK-I2a-08 <span class="chip plan">chưa bắt đầu</span></td><td class="hw">Pi 5, HAT âm thanh, AEC, motor và camera thật</td></tr>
+        <tr><td>esp32s3</td><td>Walker và sổ token C trên host; Espressif QEMU: boot, self-test, vết ghi UART, OTA; LVGL so ảnh golden <span class="chip ok">có</span></td><td><code>esp-emulator</code>: GPIO, LEDC, MCPWM, I2C, Wi-Fi · TSK-I3-02 <span class="chip plan">chưa bắt đầu</span><br><code>esp32sim</code>: ước lượng bộ nhớ ESP-SR theo Q-3, esp-dl trên SIMD · TSK-I3-03 <span class="chip plan">chưa bắt đầu</span></td><td class="hw">Số đo bộ nhớ chính thức, âm học, điện áp, Secure Boot, chạy 24 giờ</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:13.5px;color:var(--muted)">Không dùng: Wokwi (mã đóng, không có I2S), Renode (chưa có ESP32-S3).</p>
+</section>
+
+<section>
   <div class="eyebrow">I2c · RFC-0016 → 0018 đã ký, mã chưa bắt đầu</div>
   <h2>Nền tảng mở: sáu điểm cắm</h2>
   <p>Lõi an toàn dùng độc lập qua <code>neuroedge.guard</code>. Bên thứ ba cắm vào qua Extension SDK (<code>neuroedge.sdk</code>, Python entry points) mà không sửa lõi. Plugin chỉ nạp khi người vận hành bật rõ; nạp hỏng thì không khởi động.</p>
@@ -388,7 +410,7 @@ td.layer { font-family: var(--f-mono); font-weight: 600; white-space: nowrap; co
 <footer class="sources">
   <div class="eyebrow">Nguồn trong kho</div>
   <span><code>docs/architecture/vi/00-overview.md</code> §2, §5.1 · <code>docs/architecture/vi/15-target-architecture.md</code></span>
-  <span><code>roadmap/neuroedge-design-open-platform.md</code> §3–§5 · <code>CHANGELOG.md</code> §3.3, §3.7</span>
+  <span><code>roadmap/neuroedge-design-open-platform.md</code> §3–§5 · <code>CHANGELOG.md</code> §3.3, §3.7 · <code>docs/spec/simulation_coverage.md</code> · PRD §15 Q-21, Q-69</span>
   <span><code>python/neuroedge/hal/board.py</code> · <code>python/neuroedge/actions/token.py</code> · <code>schemas/tool-call.v1.json</code></span>
 </footer>
 

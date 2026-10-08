@@ -33,8 +33,10 @@ bản gói.
 #### Đã thêm
 
 - **Trang kiến trúc tổng thể cho người ngoài nhóm kỹ thuật** — `docs/business/kien-truc-tong-the.html`: xương sống thực thi,
-  năm tầng, ba bảo đảm, sáu điểm cắm của I2c, ba chân trời, trạng thái theo `main` ngày 2026-10-04. Viết tay, không sinh tự động;
-  lệch thì `docs/architecture/` đúng.
+  năm tầng, ba bảo đảm, kiểm khi chưa có bo mạch (Q-21, Q-69), sáu điểm cắm của I2c, ba chân trời, trạng thái theo `main` ngày
+  2026-10-05. Viết tay, không sinh tự động; lệch thì `docs/architecture/` đúng. Chương ADR (`docs/architecture/*/09-adr.md`) có
+  thêm mục Q-69. Dashboard CPO thêm khối "Quyết định gần nhất" (năm mục `Q-N` mới nhất của PRD §15) và liên kết tới trang này
+  (`scripts/gen_cpo_dashboard.py`).
 
 - **I6 · TSK-I6-05 — hợp đồng cho người tích hợp trong `schemas/` (RFC-0015, Q-66).** Bốn lược đồ `tool-call.v1`, `tool-result.v1`,
   `error.v1`, `error-codes.v1` (17 mã, nguồn của cấu trúc `NE…`; PRD Phụ lục B giữ lời); `result_schema()` đọc tệp tĩnh; khoá
@@ -381,6 +383,13 @@ bản gói.
 - **Phong bì an toàn ghi thời gian bật tất định.** Độ dài khoảng bật tính bằng số thực của đồng hồ đơn điệu có nhiễu dưới
   micro giây, làm cùng một lệnh 600 000 ms bị ghi 600 001 ms ở lần chạy này và 600 000 ms ở lần khác (test chập chờn trên CI,
   PR #94); nay bỏ nhiễu trước khi làm tròn lên, phần lẻ thật vẫn làm tròn về phía đã dùng. Kiểm: `pytest tests/test_envelope.py -k float_noise`.
+
+#### Đã đổi — Mục tiêu "sẵn sàng ra thị trường" (2026-10-05)
+
+- **Mục tiêu mới của thẻ bàn giao (roadmap §0.3): làm hết mọi việc tới v1.0 không cần phần cứng hay người.** Thay hai chặng A/B
+  bằng bốn làn: host (I2c rồi I4a), firmware trước khi bo về (sau spike Q-69), phát hành (bảo mật, FR còn thiếu, lược đồ, tài
+  liệu, telemetry, chạy thử PyPI), chuẩn bị cho phần cứng và người (script + checklist, Q-60). Xong khi mọi task tới I7 đã xong
+  hoặc chỉ còn bước cần bo mạch hay người và bước đó đã có script. Phạm vi giữ nguyên (Q-52).
 
 #### Đã đổi — Giả lập trước khi bo mạch về (2026-10-05, Q-69)
 
