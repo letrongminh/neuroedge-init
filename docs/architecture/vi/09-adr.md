@@ -140,6 +140,17 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
   mạch thật cho âm thanh, màn hình, bộ nhớ. Không dùng Renode, Wokwi.
 - **Cưỡng chế.** `docs/spec/simulation_coverage.md`; các job `linux-hal`, `ui-golden`, `firmware-qemu`.
 
+### Q-69 · Giả lập ngoại vi trước khi bo mạch về
+- **Quyết định.** Bổ sung Q-21, giữ nguyên "không tự viết trình giả lập". Ba spike có thời hạn, tiêu chí
+  nhận/loại chốt trước khi chạy: `esp-emulator` cho GPIO, LEDC, MCPWM, I2C, Wi-Fi của `esp32s3`
+  (TSK-I3-02); `esp32sim` ước lượng sớm bộ nhớ ESP-SR theo Q-3 và chạy esp-dl trên SIMD PIE (TSK-I3-03);
+  kernel đủ module trong VM cho `linux-hal` (`pwm-gpio`, `snd-aloop`) và runner ARM64 (TSK-I2a-08).
+  Renode, Wokwi vẫn không dùng.
+- **Hệ quả.** Ước lượng từ emulator không phải số đo: không đóng TSK-S1-10, không kích Q-44. Không thay
+  việc đặt mua phần cứng.
+- **Trạng thái.** Ba spike chưa bắt đầu; chưa công cụ nào vào CI. Spike đạt thì vào CI trong PR riêng,
+  cùng PR sửa `docs/spec/simulation_coverage.md`.
+
 ### Q-22 · Khử vang bằng phần mềm trên `linux`
 - **Quyết định.** `audio.in` đọc nút nguồn đã khử vang của PipeWire `module-echo-cancel`; `audio.out` phát
   vào nút sink của nó làm tín hiệu tham chiếu. `linux-rpi5` chỉ khai `aec = true` khi đo đạt.

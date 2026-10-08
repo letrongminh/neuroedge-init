@@ -7,7 +7,7 @@ Một trang HTML tự chứa (không CDN, không mạng), sinh hoàn toàn từ 
   (trang dẫn đầu bằng chúng; chi tiết kỹ thuật thu gọn ở cuối), bảng task và tiêu chí ra của từng
   increment §4–§8, A1–A12 (Q-39: một roadmap duy nhất);
 - `TODOS.md` (việc hoãn có chủ ý, mốc kích hoạt);
-- `neuroedge-prd.md` §15 (quyết định chưa chốt hẳn);
+- `neuroedge-prd.md` §15 (quyết định chưa chốt hẳn, năm quyết định gần nhất);
 - `CHANGELOG.md` `[Chưa phát hành]` (thay đổi gần đây).
 
 Không sửa tay tệp sinh ra. Ngày trên trang lấy từ "Lần cập nhật cuối" của roadmap,
@@ -261,6 +261,20 @@ def open_decisions() -> list[tuple[str, str, str]]:
         if code not in known:
             out.append((code, "Được nhắc là đang chờ trong PRD", "CHỜ"))
     return out
+
+
+def recent_decisions(limit: int = 5) -> list[tuple[str, str, str]]:
+    """(mã, tiêu đề, ngày) — các quyết định PRD §15 có số lớn nhất."""
+    out = []
+    lines = PRD.read_text(encoding="utf-8").splitlines()
+    for line in between(lines, "## 15", "## Phụ lục"):
+        if not line.startswith("| **Q-"):
+            continue
+        cells = split_row(line)
+        found = DATE.search(cells[2])
+        out.append((plain(cells[0]), plain(cells[1]), found.group(1) if found else ""))
+    out.sort(key=lambda d: int(d[0].removeprefix("Q-")), reverse=True)
+    return out[:limit]
 
 
 def recent_changes(limit: int = 8) -> list[str]:
@@ -583,6 +597,19 @@ def render() -> str:
         "</div></section>"
     )
 
+    def stamp(day: str) -> str:
+        return f' — <span class="stamp">{vn_date(day)}</span>' if day else ""
+
+    recent = "".join(
+        f"<li><b>{html.escape(code)}</b> · {html.escape(title)}{stamp(day)}</li>"
+        for code, title, day in recent_decisions()
+    )
+    decided = (
+        '<section class="card"><h2>Quyết định gần nhất</h2>'
+        '<p class="lede">Năm mục mới nhất của sổ quyết định (PRD §15).</p>'
+        f'<ul class="steps">{recent}</ul></section>'
+    )
+
     feats = []
     for line in between(
         CHANGELOG.read_text(encoding="utf-8").splitlines(),
@@ -650,10 +677,12 @@ def render() -> str:
 {hero}
 {journey}
 <div class="grid2">{actions}{shipped}</div>
+{decided}
 {health}
 {tech}
 <p class="foot">Sinh bởi <code>scripts/gen_cpo_dashboard.py</code> từ <code>roadmap/neuroedge-roadmap.md</code> (§0.1–§0.5, bảng task),
-<code>TODOS.md</code>, <code>roadmap/neuroedge-prd.md</code> §15 và <code>CHANGELOG.md</code>. Đừng sửa tay trang này.</p>
+<code>TODOS.md</code>, <code>roadmap/neuroedge-prd.md</code> §15 và <code>CHANGELOG.md</code>. Đừng sửa tay trang này.
+Kiến trúc tổng thể: <a href="kien-truc-tong-the.html">kien-truc-tong-the.html</a>.</p>
 </main></body></html>
 """
 

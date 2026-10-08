@@ -165,6 +165,17 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
   boards for audio, display, memory. Renode and Wokwi are not used.
 - **Enforcement.** `docs/spec/simulation_coverage.md`; jobs `linux-hal`, `ui-golden`, `firmware-qemu`.
 
+### Q-69 · Peripheral emulation before the boards arrive
+- **Decision.** Supplements Q-21 and keeps "do not write a simulator". Three time-boxed spikes with
+  accept/reject criteria fixed before running: `esp-emulator` for `esp32s3` GPIO, LEDC, MCPWM, I2C,
+  Wi-Fi (TSK-I3-02); `esp32sim` for an early ESP-SR memory estimate against Q-3 and esp-dl on PIE SIMD
+  (TSK-I3-03); a kernel VM with the missing modules for `linux-hal` (`pwm-gpio`, `snd-aloop`) and an
+  ARM64 runner (TSK-I2a-08). Renode and Wokwi are still not used.
+- **Consequence.** An emulator estimate is not a measurement: it does not close TSK-S1-10 or trigger
+  Q-44. It does not replace ordering hardware.
+- **Status.** The three spikes have not started; no tool is in CI yet. A spike that passes enters CI in
+  its own PR, together with `docs/spec/simulation_coverage.md`.
+
 ### Q-22 · Software echo cancellation on `linux`
 - **Decision.** `audio.in` reads PipeWire `module-echo-cancel`'s echo-cancelled source node; `audio.out`
   plays into its sink node as the reference signal. `linux-rpi5` declares `aec = true` only once
