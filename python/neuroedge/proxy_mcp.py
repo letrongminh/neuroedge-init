@@ -263,10 +263,12 @@ async def open_upstream(up: Upstream, base: Path, where: str = WHERE) -> AsyncIt
                     httpx2.AsyncClient(headers=headers, timeout=TIMEOUT_S)
                 )
                 transport = streamable_http_client(up.url, http_client=http)
-            client = await asyncio.wait_for(
-                stack.enter_async_context(Client(transport, read_timeout_seconds=TIMEOUT_S)),
-                CONNECT_TIMEOUT_S,
-            )
+            # `asyncio.timeout`, not `wait_for`: on Python 3.11 `wait_for` runs the coroutine in a
+            # task of its own, so the client's cancel scope would be entered there and left here.
+            async with asyncio.timeout(CONNECT_TIMEOUT_S):
+                client = await stack.enter_async_context(
+                    Client(transport, read_timeout_seconds=TIMEOUT_S)
+                )
         except NeuroEdgeError:
             raise
         except BaseException as exc:
