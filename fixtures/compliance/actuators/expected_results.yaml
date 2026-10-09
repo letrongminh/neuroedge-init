@@ -1,0 +1,76 @@
+# Conformance corpus of the actuator kind (RFC-0018 §3e, RFC-0016 §3g), closed both ways
+# (CONTRIBUTING.md §3): every distribution directory under valid/ and invalid/ has an entry here,
+# every entry a directory; every entry point of a distribution is listed, and every listed entry
+# point exists. For each entry point, `results` names every check that does NOT pass, with its
+# result; a check left out passes. `targets` (invalid/ only) is the check the counter-example was
+# written to be caught by — every check of the kind is the target of at least one.
+#
+# The distributions are installed by the tests without pip (tests/plugin_support.py) and by
+# scripts/wheel_smoke.sh with pip; `neuroedge conformance <distribution>` runs them.
+
+valid:
+  neuroedge-ref-actuators:
+    exit_code: 0
+    entry_points:
+      ref_l0: {results: {}}
+      ref_l1: {results: {}}
+      ref_l2: {results: {}}
+      ref_l3: {results: {}}
+
+invalid:
+  neuroedge-ref-flawed:
+    exit_code: 1
+    entry_points:
+      ignores_timer:  # claims L2, and its device keeps running past its duration
+        targets: actuator.level_proven
+        results: {actuator.level_proven: fail}
+      ignores_lease:  # claims L3, and its device keeps running past its lease
+        targets: actuator.level_proven
+        results: {actuator.level_proven: fail}
+      l2_without_duration:  # claims L2, and sends its on without the duration
+        targets: actuator.level_proven
+        results: {actuator.level_proven: fail}
+      reports_off_unconfirmed:  # says "off" when it cannot know: the link is cut
+        targets: actuator.level_proven
+        results: {actuator.level_proven: fail, actuator.classifies_errors: fail}
+      off_needs_token:  # safe_off() refuses to work without a token
+        targets: actuator.off_is_unconditional
+        results:
+          actuator.level_proven: fail
+          actuator.off_is_idempotent: fail
+          actuator.off_is_unconditional: fail
+      off_not_idempotent:  # a second off of an off device is an error
+        targets: actuator.off_is_idempotent
+        results: {actuator.off_is_idempotent: fail}
+      io_at_build:  # opens a connection in its factory
+        targets: actuator.builds_without_io
+        results: {actuator.builds_without_io: fail}
+      raw_errors:  # raises ConnectionError, not one of the SDK's errors
+        targets: actuator.classifies_errors
+        results: {actuator.classifies_errors: fail}
+      holds_hal:  # keeps a reference to the core's HAL
+        targets: actuator.receives_no_handles
+        results: {actuator.receives_no_handles: fail}
+      wrong_shape:  # no read_state(): not an Actuator, so nothing else can run either
+        targets: plugin.loads
+        results:
+          plugin.loads: fail
+          actuator.level_proven: fail
+          actuator.off_is_idempotent: fail
+          actuator.off_is_unconditional: fail
+          actuator.builds_without_io: fail
+          actuator.classifies_errors: fail
+          actuator.receives_no_handles: fail
+      future_sdk:  # sdk_requires = (2, 0)
+        targets: plugin.sdk_range
+        results: {plugin.sdk_range: fail}
+      Bad_Name:  # an entry point name outside [a-z][a-z0-9_]{0,31}
+        targets: plugin.name_pattern
+        results: {plugin.name_pattern: fail}
+      no_probe:  # no device double: the dynamic checks cannot run
+        targets: actuator.level_proven
+        results:
+          actuator.level_proven: unverifiable
+          actuator.off_is_idempotent: unverifiable
+          actuator.off_is_unconditional: unverifiable
+          actuator.classifies_errors: unverifiable

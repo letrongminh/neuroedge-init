@@ -253,6 +253,7 @@ theo nguyên thủy HAL (`actuator_command`, `sensor_read`, `display_frame`…) 
 | Sự kiện | Dữ liệu | Có từ |
 |:---|:---|:---|
 | `tool_call` | `id`, `name`, `arguments`, `source` | v0 |
+| `plugin_loaded` | `kind`, `name`, `distribution`, `version`, `files_sha256` (hoặc `editable: true`, không băm) — một sự kiện cho mỗi entry point đã bật, lúc khởi động, cùng dữ liệu với `metadata.plugins` ([`extension_sdk.md`](extension_sdk.md) §7); replay bỏ qua | RFC-0016 §3d (TSK-I2c-16) |
 | `tool_call_rejected` | `id`, `name`, `problems` | v0 |
 | `tool_confirm_requested` | `id`, `action`, `gate`, `message`, `confirms`, `expires_ms` (thời gian vết ghi, như `offset_ms`), `ttl_ms` | RFC-0006 |
 | `tool_confirmed` · `tool_confirm_declined` | `id`, `source` | RFC-0006 |
@@ -458,8 +459,12 @@ Sáu quy tắc:
    được dùng (`tools = [...]`) — tác giả agent khẳng định chúng không có hiệu ứng vật lý.
    Tool ngoài allowlist bị ẩn khỏi mô hình và gọi tới thì `REJECTED`. Annotation
    `readOnlyHint` do server tự khai **không** được tin. Tool của bên thứ ba có hiệu ứng
-   vật lý (ví dụ Home Assistant) **PHẢI** được bọc thành `@action` có gate; thân hàm gọi
-   MCP đó và chỉ chạy được trong `c.do()`. Tên `server__tool` trùng tên `@action` ⇒
+   vật lý (ví dụ Home Assistant) **PHẢI** được bọc thành `@action` có gate, **hoặc** thiết bị
+   được khai là **cơ cấu chấp hành từ xa** (`[actuators.<tên>]`, RFC-0018,
+   [`extension_sdk.md`](extension_sdk.md) §6) — cách nên dùng: lệnh tới nó đi qua token, phong
+   bì và tự tắt như một chân, còn thân `@action` gọi thẳng MCP hay HTTP thì chỉ có gate ở cổng
+   vào (`neuroedge build` cảnh báo khi module `@action` import một client mạng phổ biến). Thân
+   hàm chỉ chạy được trong `c.do()`. Tên `server__tool` trùng tên `@action` ⇒
    `neuroedge build` báo lỗi.
 3. **Kết quả tool bên ngoài là dữ liệu không tin cậy.** Nó chỉ trả lại mô hình, đánh dấu
    `"trust": "untrusted data …"`, không bao giờ được phân tích thành lệnh. Vết ghi lưu

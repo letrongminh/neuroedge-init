@@ -19,6 +19,7 @@ from neuroedge.engine import ActionContractEngine, resolve_gate_document
 from neuroedge.errors import (
     ActionContractViolation,
     BoardCapabilityError,
+    BuildFailed,
     EnvelopeRefusedError,
     TraceValidationError,
 )
@@ -605,3 +606,69 @@ async def test_sim_never_uses_the_real_plugin(tmp_path, fresh_actions, monkeypat
     assert [m["op"] for m in double.received][-1] == "on"
     session.close()
     assert attempts == [], "sim never reached the device"
+
+
+async def test_a_guard_toml_drives_a_remote_actuator_and_its_trace_replays(tmp_path):
+    from neuroedge.guard import Guard
+    from neuroedge.paths import repo_root
+    from neuroedge.sdk import ToolRequest
+    from neuroedge.testing.player import TracePlayer
+
+    (tmp_path / "light.yaml").write_text(
+        (repo_root() / "gates" / "home" / "light@1.0.0.yaml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    path = tmp_path / "guard.toml"
+    path.write_text(
+        """[guard]
+name  = "garden"
+board = "sim-default"
+
+[plugins]
+enable = ["neuroedge-ref-actuators"]
+
+[actuators.garden_valve]
+plugin     = "ref_l1"
+safe_off   = "L1"
+reversible = true
+[actuators.garden_valve.envelope]
+window_s             = 3600
+max_on_ms_per_window = 600000
+min_interval_ms      = 1000
+max_continuous_ms    = 60000
+
+[tools.water]
+gate     = "light.yaml"
+requires = ["digital.out:garden_valve"]
+drive    = [{ pin = "garden_valve", operation = "pulse", seconds_from = "seconds" }]
+
+[tools.water.parameters.seconds]
+type    = "integer"
+default = 5
+""",
+        encoding="utf-8",
+    )
+    guard = Guard.load(path)
+    guard.set_fact("device_fault_free", True)
+    guard.set_fact("quiet_hours_ok", True)
+    bridge = guard.dispatcher("garden")
+    outcome = await bridge.dispatch(ToolRequest("water", {"seconds": 3}))
+    assert outcome.status == "ALLOW"
+    double = guard.hal._remote["garden_valve"].double
+    assert double.state() and double.received[-1] == {"op": "on", "seq": 1}
+    trace = guard.trace()
+    guard.close()
+    assert {p["name"] for p in trace["metadata"]["plugins"]} >= {"ref_l1"}
+    sent_on = [
+        e
+        for e in trace["events"]
+        if e["type"] == "remote_command_sent" and e["data"]["operation"] == "on"
+    ]
+    assert sent_on[0]["data"]["level"] == "L1" and sent_on[0]["data"]["plugin"] == "ref_l1"
+    result = await TracePlayer(trace, guard=path).replay()
+    assert not result.divergences and result.verdicts == ["ALLOW"]
+    assert result.hal.pin("garden_valve").pulses == [3_000]
+    # the same file with the actuator irreversible does not load: the one check, at load
+    path.write_text(path.read_text(encoding="utf-8").replace("reversible = true\n", ""))
+    with pytest.raises(BuildFailed):
+        Guard.load(path)

@@ -74,6 +74,18 @@ nhân (`test_stop_needs_no_token_no_envelope_and_does_not_wait_for_a_ramp`). Tr�
 do tiến trình giám sát giữ cùng hạn (hết lease + 250 ms), nên runtime treo hoặc chết cũng làm driver mất điện
 (`test_a_runtime_stopped_with_sigstop_while_a_motor_runs_loses_its_driver`).
 
+**Cơ cấu chấp hành từ xa** (RFC-0018 §3c, §3g, TSK-I2c-16). Một thiết bị ở xa (Home Assistant, ESPHome,
+Matter…) do plugin `neuroedge.actuators` lái là **một chân `digital.out` có tên**, và lệnh tới nó đi **đúng** đường
+trên, thêm một chốt: `require_pin → chốt trạng thái → phong bì → authorize → record → apply`. Chốt trạng thái chỉ
+cho lệnh bật qua khi HAL *biết* thiết bị đang tắt (trạng thái `off` với lần đọc lại không cũ hơn 2 s); `uncertain`,
+`quarantined` hay một lần đọc thấy `on` mà NeuroEdge không bật ⇒ `EnvelopeRefusedError` trước phong bì và token. Chỉ HAL giữ
+plugin; plugin không nhận HAL, sổ token hay phong bì, mã agent không nhận plugin. Ngoại lệ "lệnh về phía an toàn"
+dưới đây **phủ thêm** đích này: `off` tới cơ cấu từ xa (`Actuator.safe_off()`) luôn được thử, không phong bì, không
+token, gửi lại mỗi 500 ms tới khi xác nhận, không bao giờ ném lỗi cho bên gọi — và **không thêm ngoại lệ nào khác**.
+Bảo đảm tự tắt khi NeuroEdge treo hay mất liên lạc nằm ở thiết bị theo mức khai (L2 hẹn giờ, L3 lease), không ở tiến
+trình giám sát; L0/L1 không có, nên bị cấm cho hành động không hoàn tác (luật D5, NE3002/NE3001 ở build).
+Chi tiết hiện thực: [`extension_sdk.md`](extension_sdk.md) §7.
+
 Sơ đồ bắt đầu ở `c.do()`. Lời gọi từ LLM hay client MCP đi qua `dispatch()` trước
 (`docs/spec/tool_calling.md` §2), và lời xác nhận `ask` lượng giá lại chính gate này
 (`tool_calling.md` §6); cả hai ở §2b.
@@ -106,6 +118,11 @@ trình viên gọi thẳng hàm, dùng lại token cũ, sao chép một lệnh t
 | Hai lệnh đồng thời cùng chân cùng qua ngân sách còn lại | Giữ trước **nguyên tử** dưới khoá theo chân (TSK-N2-02) | NE1003, đúng một lệnh bị từ chối | `test_two_concurrent_commands_on_one_pin_give_exactly_one_envelope_refused` |
 | Khởi động lại liên tục để xoá bộ đếm phong bì | Thời gian bật ghi bền **trước** khi bật (write-ahead; tệp trạng thái theo bo mạch trên `linux`), sau khởi động coi mọi lần bật đã ghi như vừa xảy ra và mỗi chân chờ `min_interval_ms`; bản ghi hỏng, thiếu hoặc không ghi được ⇒ coi cả cửa sổ đã dùng hết | NE1003 `window_unreadable` | `test_after_a_restart_what_was_recorded_counts_against_the_window_and_the_pin_waits` · `test_a_corrupt_record_makes_the_pin_refuse_every_on` · `test_a_missing_record_is_refused_unless_this_is_declared_a_new_rig` |
 | Tiến trình runtime treo (SIGSTOP, kẹt) hoặc chết khi chân đang bật; hẹn giờ tự tắt chết cùng nó | Trên `linux`, mặc định bật (tắt chỉ cho test/gỡ lỗi, ghi ở `metadata.supervision`; giám sát không chạy ⇒ lệnh bật bị từ chối `supervisor_unavailable`, `off` vẫn chạy): line của chân có phong bì do **tiến trình giám sát riêng** giữ; runtime gửi nhịp tim; mất nhịp quá `heartbeat_timeout_ms`, quá hạn hoặc đóng ống ⇒ giám sát thả line (`hal/supervisor.py`) | Line về 0, runtime ghi `actuator_command` `off` kèm `cause` `supervisor_*` khi tỉnh lại | `test_a_runtime_stopped_with_sigstop_while_a_line_is_on_loses_the_line` · `test_a_runtime_that_dies_loses_its_lines_because_the_pipe_closes` · `tests_linux/test_gpio_envelope.py` |
+| Bật cơ cấu từ xa khi HAL không biết nó đang tắt (lệnh trước mơ hồ, mất kênh đọc lại, lần đọc cũ, vừa khởi động) | Chốt trạng thái trước phong bì; chỉ một lần đọc `off` tươi mới ra khỏi `uncertain`, không bao giờ một hẹn giờ (RFC-0018 §3g) | NE1003 `actuator_state_unknown` | `test_an_uncertain_actuator_refuses_on_but_still_sends_off`, `test_uncertain_ends_only_on_a_fresh_off_readback_never_on_a_timer`, `test_a_restart_leaves_every_remote_actuator_uncertain` |
+| Hoàn phần giữ trước của một lệnh bật có thể đã tới thiết bị | Plugin phân loại lỗi: chỉ `NotSent`/`Rejected` hoàn; `Ambiguous` (hay lỗi lạ, quá `command_timeout_ms`) giữ phần giữ trước và vào `uncertain` | — | `test_an_ambiguous_send_failure_holds_the_reservation_and_marks_the_actuator_uncertain`, `test_a_not_sent_failure_refunds_the_reservation` |
+| HAL tắt thứ nó không bật (người, automation của hub, công tắc tường) | Nợ tắt: HAL chỉ gửi `off` của nó cho lệnh bật **của nó** chưa xác nhận tắt; đọc thấy `on` lạ ⇒ từ chối bật `already_on`, không gửi `off` | NE1003 `already_on` | `test_the_hal_turns_off_only_what_it_turned_on`, `test_a_reading_of_on_nobody_commanded_is_already_on_not_a_command_to_turn_off` |
+| Thiết bị vi phạm mức tự tắt nó khai | P2: đọc lại ở `hạn + tolerance_ms` mỗi lần chạy; còn `on` ⇒ `off`, `quarantined` (ghi bền), mọi lệnh bật bị từ chối tới khi người vận hành gỡ trên bản ghi | NE1003 `actuator_quarantined` | `test_a_device_still_on_after_its_guarantee_is_commanded_off_and_quarantined`, `test_a_quarantined_actuator_refuses_every_on_until_the_record_is_cleared` |
+| Hành động không hoàn tác trên cơ cấu "không tự tắt" | Luật D5 ở build **và** lúc nạp (cùng một hàm kiểm) | NE3002 · NE3001 | `test_an_irreversible_actuator_below_l2_is_refused_at_build`, `test_the_same_declaration_is_refused_at_load_without_agent_toml` |
 | Độ tin cậy không phải xác suất (`NaN`, `True`, > 1) lọt ngưỡng | `walk()` coi là `criterion_unavailable` | — (phán quyết BLOCK) | `test_a_non_probability_confidence_blocks` |
 | `fail: open` biến một "không" đã biết thành ALLOW | `known_failure()` — `open` chỉ tha điều không quyết được | — (phán quyết BLOCK) | `test_fail_open_still_blocks_on_a_known_failing_fact` |
 
@@ -185,6 +202,24 @@ cho đúng chứng chỉ đó. Những gì cửa mạng **không** làm được
 - **Token chỉ được kiểm lúc nhận yêu cầu.** Một luồng SSE đã mở sống tiếp tới khi đóng, dù token đã hết hạn.
 - **Lệnh quản trị không qua mạng** (`gate lint`, `trace validate`): Q-63 chủ ý không mở thêm bề mặt này.
 - **Chưa thử trên hai máy thật.** Test chạy trong một tiến trình trên 127.0.0.1 với CA tạm sinh lúc chạy.
+
+## 2d. Trong phạm vi: plugin của bên thứ ba (RFC-0016 §3d, §5; phần actuator)
+
+Plugin chạy trong tiến trình là mã người vận hành tin (§3 vẫn ngoài phạm vi): RFC-0016 cho bảo đảm **cấu trúc**, bộ kiểm
+tuân thủ bắt lỗi vô ý, nguồn gốc làm lựa chọn kiểm toán được. Bản này nạp loại `neuroedge.actuators`; loại khác bị từ chối (TSK-I2c-11).
+
+| Đường tắt | Chặn bởi | Mã | Test |
+|:---|:---|:---|:---|
+| Actuator nhận lệnh không qua HAL | Chỉ HAL giữ driver; lệnh bật qua `_admit` | NE1001 / NE1003 | `test_no_path_reaches_a_remote_actuator_without_a_valid_token`, `test_an_actuator_is_reachable_only_through_the_hal` |
+| Plugin nhận HAL, sổ token, phong bì | Factory nhận đúng một `config` chỉ đọc; `actuator.receives_no_handles` | NE3002 | `test_a_remote_actuator_plugin_receives_no_hal_no_ledger_and_no_envelope`, `test_a_factory_of_the_wrong_shape_refuses_start` |
+| `pip install` tự bật một plugin | Danh sách bật ở tệp được commit; phát hiện không import; không cờ CLI | — (không nạp) | `test_an_installed_plugin_that_is_not_enabled_never_loads`, `test_no_cli_flag_enables_a_plugin` |
+| Plugin hỏng, lệch SDK, trùng tên bị bỏ qua lặng lẽ | Không khởi động | NE3002 | `test_a_plugin_that_fails_to_import_refuses_start_and_starts_nothing`, `test_an_sdk_mismatch_refuses_start`, `test_two_enabled_distributions_with_one_entry_point_name_refuse_start` |
+| `safe_off` bị chặn sau token hay phong bì | `off` không đi qua chúng; `actuator.off_is_unconditional` | — | `test_safe_off_needs_no_token_and_no_envelope`, `test_off_to_a_remote_actuator_needs_no_token_and_is_never_refused` |
+| `sim` lái thiết bị thật | `sim` luôn lái `DeviceDouble` của `probe()` | — | `test_sim_never_uses_the_real_plugin` |
+
+**Rủi ro còn lại của cơ cấu từ xa** — nói thẳng ở RFC-0018 §5 (không chép lại): phân vùng mạng với L0/L1, phần sụn hay hub báo sai,
+đồng hồ thiết bị, bộ điều khiển khác, thân `@action` đi vòng (build chỉ cảnh báo), `reversible = true` khai sai, plugin xấu
+chạy trong tiến trình (`neuroedge build` không chạy P1; `neuroedge conformance` chạy trên bản giả, không trên thiết bị thật).
 
 ## 3. Ngoài phạm vi: kẻ giả mạo trong cùng tiến trình
 

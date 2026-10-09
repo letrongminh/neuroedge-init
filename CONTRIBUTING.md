@@ -102,6 +102,8 @@ Test cưỡng chế cả hai chiều, nên không thể thêm fixture mà không
 | Hợp đồng người tích hợp | `fixtures/contracts/{tool-call,tool-result,error}/{valid,invalid}/*.json` | `fixtures/contracts/expected_errors.yaml` — mỗi tệp một mục: `against` (lược đồ, có thể kèm `#/$defs/…`) và, với `invalid/`, `error: {keyword, path, message_contains}`; test còn buộc các tệp `valid/` phủ mọi `status`, `on_block`, `source`, `reason` đã biết và mọi mã của danh mục |
 | Máy trạng thái hội thoại | `fixtures/compliance/voice/*.json` | `fixtures/compliance/voice/expected_results.yaml` — luật ở [`docs/spec/voice_fsm.md`](docs/spec/voice_fsm.md) §9 |
 | Cảnh thị giác | `fixtures/vision/<cảnh>/` (khung hình + `scene.toml`) | `fixtures/vision/expected_results.yaml` — chuỗi phán quyết theo khung; `fixtures/vision/golden/<cảnh>.json` là golden suy luận của mô hình trên cảnh đó ([`docs/spec/vision.md`](docs/spec/vision.md) §6a, §6c) |
+| Khai báo cơ cấu chấp hành từ xa | `fixtures/actuators/{valid,invalid}/*.toml` | `fixtures/actuators/expected_errors.yaml` — mỗi tệp một mục: tệp `valid/` có số cảnh báo, tệp `invalid/` có **toàn bộ** danh sách lỗi theo thứ tự (`error`, `code`, `where_contains`, `why_contains`); luật ở RFC-0018 §3b, §3f, §3k |
+| Tuân thủ plugin actuator | `fixtures/compliance/actuators/{valid,invalid}/<bản phân phối>/` (gói cài được, có `pyproject.toml`) | `fixtures/compliance/actuators/expected_results.yaml` — mỗi bản phân phối một mục, mỗi entry point một mục: phép kiểm không `pass` và kết quả của nó, và (với `invalid/`) phép kiểm mà phản chứng nhắm tới; mọi phép kiểm phải có ít nhất một phản chứng nó bắt ([`docs/spec/extension_sdk.md`](docs/spec/extension_sdk.md) §8) |
 
 ```yaml
 # fixtures/gates/expected_errors.yaml

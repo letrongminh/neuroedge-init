@@ -56,7 +56,7 @@ ALLOWED: dict[str, set[str]] = {
     # sits beside `sim`, above `actions`/`engine`/`hal`; `__init__` is read for `__version__` only
     "guard": {"actions", "engine", "errors", "hal", "models", "plugins", "sdk", "sim", "trace"},
     # `neuroedge proxy mcp` (TSK-I2c-14): an MCP client to the real server in front of a Guard
-    "proxy_mcp": {"engine", "errors", "guard", "mcp_server", "models", "sdk"},
+    "proxy_mcp": {"engine", "errors", "guard", "mcp_server", "models", "plugins", "sdk"},
     # `neuroedge proxy http` (TSK-I2c-15): a loopback HTTP front for a Guard; stdlib behind
     "proxy_http": {"errors", "guard", "models", "proxy_mcp", "sdk"},
     "testing": {"actions", "engine", "errors", "hal", "paths", "perception", "trace"},
@@ -87,6 +87,7 @@ LAZY: dict[str, set[str]] = {
     "engine/compiler.py": {"actions", "mcp_host", "models", "perception", "plugins"},
     "cli/main.py": {
         "guard",
+        "plugins",
         "mcp_desktop",
         "mcp_host",
         "mcp_http",

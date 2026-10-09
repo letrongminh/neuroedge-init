@@ -29,6 +29,7 @@ COMMANDS = {
     "board list": "",
     "board show": "<board_id>",
     "build": "--agent|-a= --board|-b= --out|-o= --registry|-r= --target|-t=!",
+    "conformance": "<distribution> --json --kind=",
     "gate add": "<uri>",
     "gate explain": "<target> --registry|-r=",
     "gate lint": "[directory] --registry|-r=",
@@ -49,6 +50,7 @@ COMMANDS = {
     "new": "<name> --template=",
     "plugin doctor": "--config|-c= --json",
     "proxy http": "--config|-c= --trace-out=",
+    "plugin list": "--json",
     "proxy mcp": "--config-path= --config|-c= --desktop-config --name= --trace-out= --write",
     "record": (
         "--agent|-a= --anonymize --baud= --board|-b= --command|-c= --out|-o= --port= --raw "
