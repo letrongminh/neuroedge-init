@@ -1,0 +1,14 @@
+# Ngữ pháp lệnh cố định của agent bridge-lamp (Q-14, Q-15).
+[grammar]
+version   = 1
+threshold = 0.80
+
+[[command]]
+intent   = "lamp_on"
+patterns = ["bật đèn", "turn the lamp on"]
+tool     = "lamp_on"
+
+[[command]]
+intent   = "lamp_off"
+patterns = ["tắt đèn", "turn the lamp off"]
+tool     = "lamp_off"

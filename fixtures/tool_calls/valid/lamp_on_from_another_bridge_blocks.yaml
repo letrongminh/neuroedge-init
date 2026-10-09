@@ -1,0 +1,3 @@
+# `bridge:other` hợp văn phạm nhưng gate lamp_on không liệt kê nó ⇒ criterion_unavailable.
+agent: bridge-lamp
+call:  { name: lamp_on, arguments: {}, source: "bridge:other" }

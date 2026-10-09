@@ -1,0 +1,21 @@
+# Agent mẫu cho nguồn gọi theo không gian tên (TSK-I2c-10, RFC-0017): một cái đèn mà gate nói
+# đúng bridge nào, hoặc cả họ bridge, được bật/tắt.
+#
+#   * lamp_on  — `call_source` đúng `bridge:muse`; bridge khác, hay nguồn ngoài `options`, ⇒ BLOCK
+#                `criterion_unavailable` (fail-closed, kể cả dưới `fail: open`);
+#   * lamp_off — `call_channel` thuộc họ `bridge` (mọi bridge đã bật), không phải họ `mcp`.
+#
+# Corpus `fixtures/tool_calls/` đóng vai bộ nạp: đăng ký id bridge của từng ca (RFC-0017 §3b.4).
+[agent]
+name    = "bridge-lamp"
+version = "0.1.0"
+
+[requires]
+"digital.out" = { pins = ["porch_light"] }
+
+[gates]
+lamp_on  = "gates/lamp_on@1.0.0.yaml"
+lamp_off = "gates/lamp_off@1.0.0.yaml"
+
+[targets]
+supported = ["sim", "linux"]

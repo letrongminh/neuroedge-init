@@ -15,6 +15,7 @@ from mcp import Client
 from typer.testing import CliRunner
 
 from neuroedge.actions.tools import (
+    CALL_CHANNEL_FACT,
     CALL_SOURCE_FACT,
     ToolCall,
     check_arguments,
@@ -22,9 +23,10 @@ from neuroedge.actions.tools import (
     mcp_tool,
     openai_tool,
     parse_tool_calls,
+    valid_source,
 )
 from neuroedge.cli.main import app
-from neuroedge.errors import PerceptionUnavailableError
+from neuroedge.errors import PerceptionUnavailableError, ToolCallError
 from neuroedge.mcp_server import build_server
 from neuroedge.models import CommandGrammar, SystemTwo
 from neuroedge.sim import SimSession
@@ -113,6 +115,36 @@ def test_model_replies_parse_in_both_shapes():
 def test_an_unknown_source_is_refused():
     with pytest.raises(ValueError, match="source"):
         ToolCall("light_on", source="internet")
+
+
+def test_a_bridge_or_client_source_is_valid_and_a_made_up_family_is_not():
+    """RFC-0017 §3a: the five names, `bridge:<id>` and `mcp:<client>`; nothing else."""
+    for good in ("bridge:muse", "mcp:hub", "bridge:a", "bridge:" + "a" * 32, "bridge:a_1"):
+        assert ToolCall("light_on", {}, good).source == good
+    for bad in (
+        "mqtt:x",
+        "bridge:",
+        "bridge:Muse",
+        "bridge:a-b",
+        "bridge:" + "a" * 33,
+        "bridge:muse:x",
+        "mcp_network",
+        "local_grammar:x",
+        "system_two:muse",
+        "bridge",
+        "",
+    ):
+        with pytest.raises(ToolCallError) as raised:
+            ToolCall("light_on", {}, bad)
+        assert raised.value.code == "NE1004", bad
+
+
+def test_a_source_with_a_trailing_newline_is_refused():
+    """The `$` of Python matches before a final newline; the grammar is `fullmatch` (RFC-0017 §3a)."""
+    for bad in ("bridge:muse\n", "mcp:hub\n", "mcp\n", "bridge:muse ", " bridge:muse"):
+        assert not valid_source(bad), repr(bad)
+        with pytest.raises(ToolCallError):
+            ToolCall("light_on", {}, bad)
 
 
 # --- the grammar emits synthetic tool calls ----------------------------------------------------
@@ -205,6 +237,16 @@ async def test_a_model_cannot_claim_its_own_call_source(home):
     assert result.status == "REJECTED"  # not a parameter of the tool
     facts = session.events.of_type("gate_facts")
     assert all(f[CALL_SOURCE_FACT]["value"] != "local_grammar" for f in facts)
+
+
+async def test_a_model_cannot_claim_its_own_call_channel(home):
+    reply = {
+        "tool_calls": [{"name": "light_on", "arguments": {CALL_CHANNEL_FACT: "local_grammar"}}]
+    }
+    session = SimSession.load(home, slow=llm(reply))
+    (result,) = (await session.handle("bật đèn giúp mình với nhé bạn")).tool_results
+    assert result.status == "REJECTED"  # not a parameter of the tool
+    assert all(CALL_CHANNEL_FACT not in f for f in session.events.of_type("gate_facts"))
 
 
 async def test_offline_the_grammar_still_turns_the_light_on(home):

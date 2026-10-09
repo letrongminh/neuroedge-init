@@ -1007,6 +1007,15 @@ def test_a_bad_system_one_table_is_a_three_part_error(table, where, complaint):
     assert raised.value.how
 
 
+def test_system_one_may_not_judge_call_channel():
+    """`call_channel` is the dispatcher's, like `call_source` (RFC-0017 §3d)."""
+    with pytest.raises(AgentManifestError) as raised:
+        parse_system_one({**GOOD, "criteria": ["a", "call_channel"]})
+    assert raised.value.where.endswith("criteria")
+    assert "dispatcher" in raised.value.why and "call_channel" in raised.value.why
+    assert "call_channel" in raised.value.how
+
+
 def test_the_criteria_hint_says_which_criteria_never_to_delegate():
     with pytest.raises(AgentManifestError) as raised:
         parse_system_one({"model": MODEL, "api_key_env": ENV})

@@ -1,0 +1,21 @@
+# Đèn bật được từ lệnh nói trên thiết bị và từ đúng bridge `muse`. Bridge khác (`bridge:other`)
+# hay client MCP có nhãn nằm ngoài `options` ⇒ BLOCK `criterion_unavailable` (RFC-0017 §3d).
+schema:  neuroedge.gate/v1
+name:    lamp_on
+version: 1.0.0
+
+evaluate:
+  call_source:
+    type: choice
+    options: [local_grammar, bridge:muse, test]
+    instructions: "Nguồn của tool call, do dispatcher đặt (Q-24); bridge nào được gọi tên ở đây"
+
+allow_when:
+  call_source: { in: [local_grammar, bridge:muse] }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

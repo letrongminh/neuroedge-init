@@ -159,6 +159,39 @@ valid:
     pins: []
     motion: []
 
+  open_gate_from_a_bridge_degrades.yaml:
+    status: BLOCK
+    gate: open_gate@1.0.0
+    reason: criterion_unavailable
+    failed_criterion: call_source
+    on_block: degrade
+    fallback: { tool: porch_light_on, status: ALLOW }
+    pins: [{ pin: porch_light, operation: "on", duration_ms: 0 }]
+
+  lamp_on_from_the_named_bridge.yaml:
+    status: ALLOW
+    pins: [{ pin: porch_light, operation: "on", duration_ms: 0 }]
+
+  lamp_on_from_another_bridge_blocks.yaml:
+    status: BLOCK
+    gate: lamp_on@1.0.0
+    reason: criterion_unavailable
+    failed_criterion: call_source
+    on_block: deny
+    pins: []
+
+  lamp_off_from_any_bridge_by_family.yaml:
+    status: ALLOW
+    pins: [{ pin: porch_light, operation: "off", duration_ms: 0 }]
+
+  lamp_off_from_a_labelled_mcp_client_blocks.yaml:
+    status: BLOCK
+    gate: lamp_off@1.0.0
+    reason: condition_not_met
+    failed_criterion: call_channel
+    on_block: deny
+    pins: []
+
 invalid:
   unknown_tool.yaml:
     status: REJECTED

@@ -6,6 +6,7 @@ import dataclasses
 import os
 from typing import Any
 
+from ..actions.tools import source_channel
 from ..engine.canonical import gate_digest
 from ..engine.compiler import AgentManifest, load_agent_manifest, resolve_gates
 from ..engine.decision_tree import compile_tree, walk
@@ -18,6 +19,7 @@ from ..perception.providers.config import load_speech_configs, load_wake_word_co
 from ..trace import json_safe
 
 CALL_SOURCE = "call_source"
+CALL_CHANNEL = "call_channel"
 DEFAULT_CALL_SOURCE = "local_grammar"
 DESKTOP_UI_PORT = 8765
 
@@ -212,14 +214,27 @@ def whatif(server: Any, name: str, body: dict[str, Any]) -> dict[str, Any]:
     manifest = load_agent_manifest(server.agent_path)
     _, resolved = _find(manifest, name)
     tree = compile_tree(resolved)
-    unknown = sorted(set(given) - set(tree["criteria_order"]))
+    # `call_source` may be stated for a gate that reads only `call_channel`: it is the caller
+    # the channel is derived from (RFC-0017 §3d), never the channel itself.
+    known = set(tree["criteria_order"])
+    if CALL_CHANNEL in known:
+        known.add(CALL_SOURCE)
+    unknown = sorted(set(given) - known)
     if unknown:
         raise ValueError(
             f"{resolved.name} has no criterion {unknown}; it has {tree['criteria_order']}"
         )
     facts = {criterion: _fact(criterion, value) for criterion, value in given.items()}
-    if CALL_SOURCE in tree["criteria_order"]:
+    criteria = tree["criteria_order"]
+    if CALL_SOURCE in criteria or CALL_CHANNEL in criteria:
         facts.setdefault(CALL_SOURCE, Fact(DEFAULT_CALL_SOURCE))
+    # The dispatcher derives the channel from the source; a what-if never states it (RFC-0017 §3d).
+    facts.pop(CALL_CHANNEL, None)
+    channel = source_channel(facts[CALL_SOURCE].value) if CALL_SOURCE in facts else None
+    if CALL_CHANNEL in criteria and channel is not None:
+        facts[CALL_CHANNEL] = Fact(channel)
+    if CALL_SOURCE not in criteria:
+        facts.pop(CALL_SOURCE, None)
     walked = walk(tree, facts)
     answer: dict[str, Any] = {
         "ok": True,

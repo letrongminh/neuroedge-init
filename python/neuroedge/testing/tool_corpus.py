@@ -34,7 +34,7 @@ from typing import Any
 import jsonschema
 import yaml
 
-from ..actions.tools import SOURCES, ToolCall, check_arguments
+from ..actions.tools import NAMESPACES, SOURCES, ToolCall, check_arguments, valid_source
 from ..errors import NeuroEdgeError
 from ..hal.board import REFERENCE_BOARDS
 from ..paths import fixtures_dir
@@ -135,11 +135,12 @@ def load_case(path: Path, kind: str) -> ToolCase:
             "write call: { name: light_on, arguments: {}, source: mcp }",
         )
     source = call.get("source", "test")
-    if source not in SOURCES:
+    if not valid_source(source):
         raise _corpus_error(
             f"{path} -> call.source",
             f"{source!r} is not a tool-call source",
-            f"use one of {list(SOURCES)} — the runtime assigns it, as a connection would",
+            f"use one of {list(SOURCES)}, or `<{'|'.join(NAMESPACES)}>:<id>` — the runtime "
+            "assigns it, as a connection would",
         )
     arguments = _mapping(call.get("arguments"), f"{path} -> call.arguments", "call.arguments")
     board = document.get("board")
@@ -228,6 +229,10 @@ def session_for(case: ToolCase) -> Any:
     session = SimSession.load(agent, facts=case.facts, board_id=case.board)
     for sensor, value in case.sensors.items():
         session.set_sensor(sensor, value)
+    # This runner is the loader of the namespaced sources: it registers the one the case names
+    # (RFC-0017 §3b.4), as a bridge loader or `[mcp.clients]` would.
+    if case.call.source not in SOURCES:
+        session.conversation.register_source(case.call.source)
     return session
 
 

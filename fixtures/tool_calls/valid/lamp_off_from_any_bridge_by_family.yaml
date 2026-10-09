@@ -1,0 +1,3 @@
+# Gate lamp_off nói "mọi bridge" bằng `call_channel`: `bridge:other` đi qua dù gate không biết id của nó.
+agent: bridge-lamp
+call:  { name: lamp_off, arguments: {}, source: "bridge:other" }
