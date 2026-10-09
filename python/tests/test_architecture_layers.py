@@ -46,6 +46,11 @@ ALLOWED: dict[str, set[str]] = {
         "viz",
     },
     "perception": {"actions", "engine", "errors", "hal", "models", "net", "sim"},
+    # the SDK surface: two data types and a version, no other layer (RFC-0016 §3c)
+    "sdk": {"errors"},
+    # the safety core without an agent (TSK-I2c-07): it builds the same HAL as a session, so it
+    # sits beside `sim`, above `actions`/`engine`/`hal`; `__init__` is read for `__version__` only
+    "guard": {"actions", "engine", "errors", "hal", "models", "sdk", "sim", "trace"},
     "testing": {"actions", "engine", "errors", "hal", "paths", "perception", "trace"},
     # The studio (TSK-I1-04) shows every capability, so it reads every layer below the CLI.
     "studio": {
@@ -93,7 +98,7 @@ LAZY: dict[str, set[str]] = {
     "studio/api_agent.py": {"mcp_desktop", "templates"},
     "testing/tool_corpus.py": {"sim"},
     "testing/voice_corpus.py": {"sim"},
-    "testing/player.py": {"sim"},
+    "testing/player.py": {"sim", "guard"},
     "testing/__init__.py": {"sim"},
 }
 

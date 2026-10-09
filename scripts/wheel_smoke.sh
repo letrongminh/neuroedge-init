@@ -208,4 +208,52 @@ if agent not in entry["args"] or "env" in entry:
     sys.exit(f"::error::unexpected Desktop entry: {entry}")
 print("Desktop entry: absolute agent path, no PYTHONPATH pin")
 PY
+# `neuroedge.guard` and `neuroedge.sdk` ship in the wheel (TSK-I2c-07): a Guard with no agent.toml
+# gates one tool and writes a valid trace, from the installed package only.
+mkdir -p "$WORK/guard-smoke/gates"
+cat > "$WORK/guard-smoke/gates/lamp@1.0.0.yaml" <<'YAML'
+schema:  neuroedge.gate/v1
+name:    lamp
+version: 1.0.0
+evaluate:
+  badge_ok: { type: bool, instructions: "The host vouched for the badge" }
+allow_when:
+  badge_ok: true
+on_block:
+  action: deny
+budget:
+  p95_latency_ms: 150
+  fail:           closed
+YAML
+cat > "$WORK/guard-smoke/guard.toml" <<'TOML'
+[guard]
+name  = "smoke"
+board = "sim-default"
+[tools.lamp]
+gate     = "gates/lamp@1.0.0.yaml"
+requires = ["digital.out:porch_light"]
+drive    = [{ pin = "porch_light", operation = "on" }]
+TOML
+(cd "$WORK/guard-smoke" && "$WORK/venv/bin/python" - <<'PY'
+import asyncio
+
+from neuroedge.guard import Guard
+from neuroedge.sdk import ToolRequest
+
+
+async def main() -> None:
+    async with Guard.load("guard.toml") as guard:
+        bridge = guard.dispatcher("smoke")
+        blocked = await bridge.dispatch(ToolRequest("lamp"))
+        guard.set_fact("badge_ok", True)
+        allowed = await bridge.dispatch(ToolRequest("lamp"))
+        guard.trace()  # validated against trace.v1
+        if (blocked.status, allowed.status) != ("BLOCK", "ALLOW"):
+            raise SystemExit(f"::error::guard verdicts {blocked.status} {allowed.status}")
+    print("guard: BLOCK then ALLOW, trace valid")
+
+
+asyncio.run(main())
+PY
+)
 echo "✓ the installed wheel runs the whole journey"

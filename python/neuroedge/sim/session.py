@@ -63,7 +63,6 @@ from __future__ import annotations
 
 import json
 import math
-import os
 import tomllib
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -106,13 +105,7 @@ from ..errors import (
     PerceptionUnavailableError,
 )
 from ..hal.analog import analog_data
-from ..hal.board import REFERENCE_BOARD, BoardProfile, load_board_by_id
-from ..hal.envelope import (
-    INIT_ENV,
-    FileEnvelopeStore,
-    SafetyEnvelope,
-    default_state_dir,
-)
+from ..hal.board import REFERENCE_BOARD, load_board_by_id
 from ..hal.pwm import MEASURED
 from ..hal.sim import SimHAL, reading_data
 from ..mcp_host import McpConfig, load_mcp_config
@@ -120,6 +113,7 @@ from ..models import CommandGrammar, SystemOne, SystemTwo
 from ..models.grammar import OFFLINE_SAY, Recognition
 from ..models.knowledge import KNOWLEDGE_INTENT, KnowledgeBase, load_agent_grammar
 from ..trace import json_safe, validate_trace
+from .hal_build import build_hal, release_hal
 
 # Words that answer the device's pending question (Q-26): matched on the device,
 # so the answer's source is `local_grammar`. Only while a question is pending.
@@ -642,31 +636,6 @@ def _required_i2c(manifest: AgentManifest) -> list[str]:
     return [d for d in devices if isinstance(d, str)]
 
 
-def _linux_envelope(board: BoardProfile, clock: Clock, options: dict[str, Any]) -> SafetyEnvelope:
-    """
-    The envelope of a `linux` session, with the durable record of each pin's on-time
-    (RFC-0007 §3d): one directory per board (`default_state_dir`; `envelope_state` in the
-    HAL options overrides it). `envelope_init` (or ``NEUROEDGE_LINUX_ENVELOPE_INIT=1``) says
-    this is a new rig and starts the records empty; without it a missing record means the
-    window is spent and the pin is refused. These options are consumed here, not the HAL's;
-    so is `envelope`, an envelope built by the caller, which replaces all of it.
-    """
-    given = options.pop("envelope", None)
-    state = options.pop("envelope_state", None)
-    init = options.pop("envelope_init", None)
-    if given is not None:
-        return given
-    if init is None:
-        init = os.environ.get(INIT_ENV) == "1"
-    return SafetyEnvelope.for_board(
-        board,
-        clock=clock,
-        virtual=False,
-        store=FileEnvelopeStore(state if state is not None else default_state_dir(board.id)),
-        init_store=bool(init),
-    )
-
-
 def _linux_needs(
     manifest: AgentManifest,
     sensor_facts: Mapping[str, Any],
@@ -913,41 +882,20 @@ class SimSession:
         if rules_digest is not None:
             # Replay cannot recompute a sensor fact; it can tell the rules changed.
             events.metadata["sensor_facts_digest"] = rules_digest
-        options = dict(target_options or {})
-        if target == "linux":
-            from ..hal.linux import TypedLinuxHAL
-
-            hal = TypedLinuxHAL(
-                board,
-                events=events,
-                envelope=_linux_envelope(board, events.clock, options),
-                needs=_linux_needs(manifest, sensor_facts, digital_facts),
-                units={name: unit for name, (_, unit) in sensors.items() if unit is not None},
-                **options,
-            )
-            # An audit sees whether the out-of-process line supervisor was on (RFC-0007 §3d).
-            events.metadata["supervision"] = hal.supervision
-            # What the restart handed the envelope (on-time carried over from a previous run), so
-            # that a replay decides the same way from the trace alone (RFC-0007 §3d).
-            restored = hal.envelope.restored() if hal.envelope is not None else {}
-            if restored:
-                events.emit(
-                    "envelope_restored",
-                    {"boot_ms": events.offset_of(hal.envelope.boot_ms), "pins": restored},
-                )
-        else:
-            given = options.pop("envelope", None)  # a caller's own envelope replaces the board's
-            if given is None:
-                given = SafetyEnvelope.for_board(board, clock=events.clock, virtual=True)
-            hal = SimHAL(board, events=events, envelope=given, **options)
-            for name, (value, unit) in sensors.items():
-                hal.set_sensor(name, value, unit)
-            for channel, value in analog_values.items():
-                hal.set_analog(channel, value)
-            for pin, level in input_levels.items():
-                hal.set_digital_in(pin, level)
-            for bus, device, register, value, width in i2c_values:
-                hal.set_i2c(bus, device, register, value, width=width)
+        hal = build_hal(
+            target,
+            board,
+            events,
+            dict(target_options or {}),
+            needs=_linux_needs(manifest, sensor_facts, digital_facts)
+            if target == "linux"
+            else None,
+            units={name: unit for name, (_, unit) in sensors.items() if unit is not None},
+            sensors=sensors,
+            analog_values=analog_values,
+            input_levels=input_levels,
+            i2c_values=i2c_values,
+        )
         # Requesting the lines is the one step that holds anything: if the rest of
         # the wiring fails, they are released before the error goes up.
         try:
@@ -1773,22 +1721,7 @@ class SimSession:
 
     def close(self) -> None:
         """End the session: on linux every line is dropped inactive and released."""
-        close = getattr(self.hal, "close", None)
-        if close is None:
-            return
-        import signal
-        import threading
-
-        if threading.current_thread() is not threading.main_thread():
-            close()
-            return
-        # A second Ctrl-C must not stop the lines dropping halfway (SIGTERM/SIGHUP
-        # are already ignored once their handler runs — cli/main.py).
-        previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
-        try:
-            close()
-        finally:
-            signal.signal(signal.SIGINT, previous)
+        release_hal(self.hal)
 
     def trace(self) -> dict[str, Any]:
         """The session so far as a `trace.v1` document, validated before it is returned."""

@@ -1,0 +1,13 @@
+# Một Guard không cần agent.toml, @action hay SimSession (RFC-0016 §3b): gate, token, phong bì, vết ghi.
+[guard]
+name  = "lamp-proxy"
+board = "sim-default"
+
+[tools.lamp_on]
+gate     = "gates/lamp_on@1.0.0.yaml"
+requires = ["digital.out:porch_light"]
+drive    = [{ pin = "porch_light", operation = "pulse", seconds_from = "seconds" }]
+
+[tools.lamp_on.parameters.seconds]
+type    = "integer"
+default = 5

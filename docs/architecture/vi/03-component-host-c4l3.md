@@ -20,6 +20,7 @@ lên:
 |:---:|:---|:---|:---|
 | 0 | `errors`, `paths`, `net`, `trace` | chỉ nhau | nền |
 | 1 | `hal` | `errors`, `paths` | L1 |
+| 1 | `sdk` | `errors` — bề mặt cho extension: `ToolRequest`, `Outcome`, `SDK_VERSION`; không HAL, không `Guard` (RFC-0016 §3c, TSK-I2c-07) | bề mặt plugin |
 | 2 | `engine` | bậc 0; **riêng `engine/compiler.py`** được dùng `hal` (đối chiếu bo mạch lúc build) và import muộn `actions`, `models`, `perception`, `mcp_host` (kiểm cấu hình) | L3 lõi |
 | 3 | `actions` | `engine`, `hal`, bậc 0 (cạnh `actions` → `paths`: `actions/tools.py::result_schema` đọc `schemas/tool-result.v1.json`, RFC-0015) | L3 bề mặt |
 | 4 | `models` | `engine` (hiện thực giao thức của nó), `net`, bậc 0 | L2 |
@@ -27,7 +28,8 @@ lên:
 | 6 | `viz`, `templates` | `viz`: `hal`, `trace`, bậc 0; `templates`: `errors`, `paths` | công cụ |
 | 7 | `sim` | mọi bậc dưới; import muộn `perception` ở `sim/session.py` và `sim/vision/feed.py` (camera → dữ kiện gate, chỉ khi agent khai `[vision]`: `perception` đứng trên `sim`) | L0, **nơi lắp ráp** |
 | 8 | `perception` | `sim` (phiên thoại bọc phiên gõ), `models`, `actions`, `engine`, `hal`, `net` | L2 |
-| 9 | `testing` | `perception`, `actions`, `engine`, `hal`, `trace`; `sim` import muộn (và `sim/serve.py` import muộn `testing` để lấy bộ ghi vết — chỉ khi có `trace_out`) | Action CI |
+| 8 | `guard` | `sim` (dùng chung hàm dựng HAL `sim/hal_build.py` với `SimSession`), `models` (đọc `guard.toml`), `actions`, `engine`, `hal`, `sdk`, `trace` — lõi an toàn dùng không cần agent: `Conversation` riêng với sổ action riêng, rồi gọi đúng `dispatch()` (RFC-0016 §3b, TSK-I2c-07) | L3 dùng độc lập |
+| 9 | `testing` | `perception`, `actions`, `engine`, `hal`, `trace`; `sim` và `guard` import muộn (`guard` ở `testing/player.py`: `TracePlayer(trace, guard=…)`; và `sim/serve.py` import muộn `testing` để lấy bộ ghi vết — chỉ khi có `trace_out`) | Action CI |
 | 10 | `studio` | mọi bậc dưới trừ `cli` — ứng dụng web cục bộ `neuroedge studio` thể hiện mọi năng lực (TSK-I1-04, `docs/spec/studio.md`) | công cụ |
 | 11 | `cli` | mọi gói | vào |
 
@@ -130,6 +132,9 @@ Khi `brain/` vào kho, nó cần một mục trong `ALLOWED` (và `LAZY` nếu c
 | `mcp_server.py` | Agent thành máy chủ MCP qua stdio; mỗi lần một lời gọi |
 | `mcp_http.py` | Cửa mạng có xác thực của cùng máy chủ đó (TSK-P2-04, `docs/spec/tool_calling.md` §8): Streamable HTTP qua mTLS, token OAuth 2.1 theo thiết bị, kiểm cấu hình đủ trước khi mở cổng |
 | `mcp_host.py` | System 2 làm MCP host: công cụ của thiết bị qua máy chủ MCP của chính agent (vẫn qua gate), công cụ thông tin từ server bên ngoài theo danh sách cho phép |
+| `guard.py` | `Guard`, `Tool`, `Dispatcher`, `guard.toml`: gate → token → phong bì → vết ghi không cần `agent.toml`; mọi `dispatch` của các bridge chạy tuần tự dưới một khoá (vết ghi phải là một chuỗi bước để replay) |
+| `sdk/` | `ToolRequest` (không có `source`), `Outcome`, `SDK_VERSION`: phần tối thiểu của Extension SDK mà `guard` cần |
+| `sim/hal_build.py` | Hàm dựng HAL `sim`/`linux` dùng chung cho `SimSession` và `Guard`, và `release_hal` |
 | `testing/` | Action CI: `TraceRecorder`, `TracePlayer`, `GoldenComparator`, thư viện assert, đọc UART, chạy corpus tool call và thoại |
 | `viz/` | Trang HTML tự chứa cho `trace view` và web UI; xuất Perfetto |
 | `cli/` | Typer: mọi lệnh; lỗi thành thông báo ba phần và mã thoát 0/1/2 |
