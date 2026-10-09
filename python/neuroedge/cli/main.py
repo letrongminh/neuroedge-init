@@ -974,16 +974,26 @@ def mcp_desktop_config(
 @guard_app.command(name="init", epilog=epilog("guard init"))
 def guard_init(
     mcp: str = typer.Option(
-        ...,
+        None,
         "--mcp",
-        help='The MCP server to put behind a Guard: a command ("python server.py") or an https URL',
+        help='An MCP server to put behind a Guard: a command ("python server.py") or an https URL',
+    ),
+    http: str = typer.Option(
+        None,
+        "--http",
+        help="A local HTTP API to put behind a Guard: its base URL (http only on loopback)",
+    ),
+    route: list[str] = typer.Option(
+        [], "--route", help='With --http: a route to expose, "METHOD /path/{param}" (repeatable)'
     ),
     directory: Path = typer.Option(
         Path("."), "--dir", help="Where to write guard.toml and gates/ (default: here)"
     ),
     name: str = typer.Option(None, "--name", help="Name of the guard (default: from the server)"),
     env_from: list[str] = typer.Option(
-        [], "--env-from", help="Environment variable the server's process needs (name only)"
+        [],
+        "--env-from",
+        help="With --mcp: environment variable the server's process needs (name only)",
     ),
     header_env: list[str] = typer.Option(
         [],
@@ -992,14 +1002,43 @@ def guard_init(
     ),
 ):
     """
-    Connect to an existing MCP server, list its tools, and write guard.toml and one gate per
-    tool. Every generated gate BLOCKS until you edit it on purpose. Never overwrites a file.
-    Then: `neuroedge proxy mcp`.
+    Put an existing server behind a Guard: write guard.toml and one gate per tool or route.
+    With --mcp, connect to the MCP server and list its tools; with --http, expose the routes you
+    name. Every generated gate BLOCKS until you edit it on purpose. Never overwrites a file.
+    Then: `neuroedge proxy mcp` or `neuroedge proxy http`.
     """
-    from ..proxy_mcp import init
-
+    if (mcp is None) == (http is None):
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge guard init",
+                why="give exactly one of --mcp and --http",
+                how='--mcp "python server.py" for an MCP server, --http http://127.0.0.1:8080 '
+                '--route "POST /path" for an HTTP API',
+            ),
+            code=2,
+        )
+        return
+    if (http is None and route) or (http is not None and not route):
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge guard init",
+                why="--route belongs to --http (and --http needs at least one --route)",
+                how='add --route "POST /cm/{cmd}" with --http, or drop --route with --mcp',
+            ),
+            code=2,
+        )
+        return
     try:
-        plan = asyncio.run(init(mcp, directory, name, env_from, header_env))
+        if http is not None:
+            from ..proxy_http import init as init_http
+
+            plan = init_http(http, route, directory, name, header_env)
+            nxt = "proxy http"
+        else:
+            from ..proxy_mcp import init
+
+            plan = asyncio.run(init(mcp, directory, name, env_from, header_env))
+            nxt = "proxy mcp"
     except NeuroEdgeError as error:
         _fail(error)
         return
@@ -1018,7 +1057,37 @@ def guard_init(
             f"note: {tool}: optional parameter(s) not exposed: {', '.join(dropped)}", err=True
         )
     typer.echo("Next: edit gates/*.yaml to open what you mean to, then")
-    typer.echo(f"  neuroedge proxy mcp --config {base / 'guard.toml'}")
+    typer.echo(f"  neuroedge {nxt} --config {base / 'guard.toml'}")
+
+
+@proxy_app.command(name="http", epilog=epilog("proxy http"))
+def proxy_http(
+    config: Path = typer.Option(
+        Path("guard.toml"), "--config", "-c", help="guard.toml with a \\[proxy.http] table"
+    ),
+    trace_out: Path = typer.Option(
+        None, "--trace-out", help="Write the Guard's trace here on exit"
+    ),
+):
+    """
+    Serve, on loopback only, the routes declared in guard.toml: each is forwarded to the real HTTP
+    API only if the gate allows it (the source is `bridge:<id>`, default `bridge:http`; a gate must
+    list it). Anything undeclared gets a 404 and is never forwarded. Runs until Ctrl-C or SIGTERM,
+    then writes the trace. Refuses to start when the real API cannot be reached.
+    """
+    from ..proxy_http import serve
+
+    def ready(guard: Any, proxy: Any, port: int) -> None:
+        err_console.print(
+            f"neuroedge HTTP proxy · {escape(guard.config.name)} · {len(proxy.routes)} route(s) · "
+            f"http://{proxy.host}:{port} → {escape(proxy.upstream)} (forwarded only after ALLOW; "
+            f"source {escape(proxy.source)})",
+        )
+
+    try:
+        asyncio.run(serve(config, trace_out=trace_out, on_ready=ready))
+    except NeuroEdgeError as error:
+        _fail(error)
 
 
 @proxy_app.command(name="mcp", epilog=epilog("proxy mcp"))

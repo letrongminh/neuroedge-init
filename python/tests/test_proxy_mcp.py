@@ -333,7 +333,7 @@ def test_an_unreachable_upstream_refuses_start(project, tmp_path):
         ('[proxy.mcp]\ncommand = ["x"]\nenv_from = ["TOKEN=abc"]', "NAMES"),
         ('[proxy.mcp]\ncommand = ["x"]\nsurprise = 1', "surprise"),
         ('[proxy.mcp]\ncommand = ["x"]\n[proxy.mcp.names]\nnot_a_tool = "x"', "not tools"),
-        ('[proxy.http]\nurl = "https://h"', "TSK-I2c-15"),
+        ('[proxy.http]\nupstream = "http://127.0.0.1:1"', "use `proxy http`"),
     ],
 )
 def test_a_literal_secret_in_proxy_config_is_refused(project, edit, why):
