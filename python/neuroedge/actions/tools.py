@@ -71,6 +71,8 @@ def source_channel(source: object) -> str | None:
         return None
     assert isinstance(source, str)
     return source.partition(":")[0]
+
+
 _JSON_TYPES = {str: "string", int: "integer", float: "number", bool: "boolean"}
 
 

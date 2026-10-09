@@ -53,7 +53,7 @@ cũng là `data` của sự kiện `tool_call` (§7). Phong bì **đóng** (kho�
 |:---|:---|
 | `name` | Tên một `@action` của agent. Mỗi `@action` là đúng một tool |
 | `arguments` | Đối tượng JSON; khoá là tên tham số của `@action` |
-| `source` | Một trong năm nguồn dưới đây. **Do runtime gán**, không do bên gọi khai |
+| `source` | Một nguồn dựng sẵn hoặc `bridge:<id>` / `mcp:<client>` (bảng dưới). **Do runtime gán**, không do bên gọi khai |
 | `id` | `call_1`, `call_2`… theo thứ tự trong phiên, do dispatcher gán khi rỗng. **KHÔNG ĐƯỢC** là giá trị ngẫu nhiên: vết ghi phải tất định để golden và `--anonymize` ổn định. Id do nhà cung cấp mô hình trả về được giữ nguyên |
 
 | `source` | Nơi phát |
@@ -63,6 +63,15 @@ cũng là `data` của sự kiện `tool_call` (§7). Phong bì **đóng** (kho�
 | `system_two` | LLM với câu tự do; gọi tool của thiết bị qua kết nối MCP in-process tới chính agent (§10) |
 | `mcp` | Client MCP qua `neuroedge mcp serve`, qua stdio hay qua mạng (§8.1) |
 | `test` | Action CI |
+| `bridge:<id>` | Một bridge đã nạp (Muse, Home Assistant…): lõi gán từ id đã đăng ký của bridge, bên trong `Dispatcher`; bridge không có chỗ nào để nói nguồn (RFC-0017 §3b) |
+| `mcp:<client>` | Client MCP qua mạng đã được người vận hành đặt nhãn, từ `sub` của token đã xác thực (RFC-0017 §3c) — văn phạm đã nhận; nhãn client **chưa** được gán (TSK-I2c-10 nửa (b)), nên mọi client mạng hôm nay vẫn là `mcp` |
+
+**Văn phạm của `source`** (RFC-0017 §3a): một trong năm tên dựng sẵn ở trên, hoặc `bridge:<id>` / `mcp:<client>` với
+`<id>` khớp `[a-z][a-z0-9_]{0,31}` (mẫu `SOURCE_ID` ở `actions/tools.py`; `source` dài tối đa 39 ký tự). Họ khác ⇒
+`ToolCallError` NE1004 lúc dựng; **tập dựng sẵn vẫn đóng**, thêm một họ hay một tên dựng sẵn là RFC. Mã kiểm bằng
+`re.fullmatch` (`valid_source`), không bằng `$`: `$` của Python khớp trước một `\n` cuối, ECMA 262 thì không
+(`test_a_source_with_a_trailing_newline_is_refused`). Hình dạng trong lược đồ nằm ở
+[`schemas/tool-call.v1.json`](../../schemas/tool-call.v1.json) `$defs/source`.
 
 Câu khớp ngữ pháp **PHẢI** trở thành tool call rồi đi qua cùng đường với mọi nguồn khác —
 không có nhánh "offline" riêng tới chân.
@@ -81,7 +90,8 @@ Mọi tool call, từ mọi nguồn, đi qua `dispatch()` theo đúng thứ tự
 3. Tham số khớp schema (§3): không có tham số lạ, đủ tham số bắt buộc, đúng kiểu. Chuỗi
    được ép sang số hoặc bool khi schema nói vậy (slot ngữ pháp là chữ); ngoài ra không
    đoán gì. Sai ⇒ `REJECTED`, ghi `tool_call_rejected`.
-4. Chèn dữ kiện `call_source` (§5).
+4. Chèn dữ kiện `call_source` và `call_channel` (§5). Một nguồn `bridge:<id>` / `mcp:<client>` mà id chưa được đăng ký
+   trong phiên ⇒ lỗi lập trình NE1004, ném **trước** bước 1: không có lời gọi, không có sự kiện.
 5. `c.do(action, **arguments)` → gate → token dùng một lần → thân `@action` → HAL.
 
 Khoá `arguments` **dành riêng** `__unparseable__`: `parse_tool_calls` chèn nó khi `arguments` của nhà
@@ -165,9 +175,35 @@ evaluate:
 allow_when: call_source in ["local_grammar", "system_one"]   # MCP không mở được cửa
 ```
 
-Nguồn **gắn theo kết nối**, do runtime tạo kết nối đó: `neuroedge mcp serve` là `mcp`, kể cả qua mạng (`--http`, §8.1); kết nối in-process của System 2 là `system_two` (`build_server(session, source=...)`).
+Nguồn **gắn theo kết nối**, do runtime tạo kết nối đó: `neuroedge mcp serve` là `mcp`, kể cả qua mạng (`--http`, §8.1); kết nối in-process của System 2 là `system_two` (`build_server(session, source=...)`). Một bridge nhận nguồn `bridge:<id>` từ id nó được đăng ký lúc nạp.
 
-Một lời gọi qua mạng là `mcp`, **không** có nguồn riêng: stdio và mạng cùng một máy chủ, cùng một đường tới gate, nên gate không phân biệt được hai cửa. Muốn một gate cấm riêng cửa mạng thì phải thêm một giá trị vào danh sách nguồn ở trên — đổi hợp đồng của `call_source`, nên cần RFC (`CONTRIBUTING.md` §3), không thể thêm bằng PR thường.
+Một lời gọi qua mạng hôm nay là `mcp`: stdio và mạng cùng một máy chủ, cùng một đường tới gate, nên gate chưa phân biệt được hai cửa. Phân biệt theo thiết bị là nhãn `mcp:<client>` do người vận hành đặt có chủ ý (RFC-0017 §3c, nửa (b), chưa làm); thiết bị chưa đặt nhãn vẫn là `mcp`. Thêm một họ hay tên dựng sẵn cho `call_source` vẫn cần RFC (`CONTRIBUTING.md` §3).
+
+**Đăng ký id.** `dispatch()` chỉ nhận `bridge:<id>` / `mcp:<client>` đã đăng ký trên `Conversation` của phiên
+(`register_source`; nội bộ, không thuộc `neuroedge.__all__`): bộ nạp bridge và bảng `[mcp.clients]` đăng ký, runner của corpus
+(§9) đóng vai bộ nạp. Id ngoài văn phạm, tên dựng sẵn hay id trùng ⇒ NE1004; id chưa đăng ký ⇒ NE1004 ở `dispatch()`. Đây là chốt chặn
+gõ nhầm và mã ngoài `Dispatcher`, không phải hộp cát chống mã thù địch cùng tiến trình (`threat_model.md` §2b, §3).
+
+**`call_channel` — họ của nguồn.** Dispatcher chèn thêm dữ kiện dẫn xuất `call_channel`: phần trước dấu `:` đầu của
+`call_source` (hoặc cả tên, với năm nguồn dựng sẵn) — `bridge` cho `bridge:muse`, `mcp` cho `mcp:hub`. Chèn ở **đúng điểm** theo
+từng lời gọi nơi `call_source` vào ngữ cảnh gate (`Conversation._context`), *sau* khi gộp nguồn dữ kiện, nên `c.facts`,
+`[sim.facts]`, nguồn dữ kiện và mô hình không đè được; nó sống qua câu hỏi `ask` (§6), `c.do()` lồng và fallback `degrade`.
+Không có `call_source` hợp lệ ⇒ không có `call_channel` ⇒ `criterion_unavailable`. Nó nằm trong `RUNTIME_CRITERIA`: `[system_one]` không được
+nhờ mô hình phán nó. Gate nói "đúng bridge Muse" bằng `call_source`, hoặc "mọi bridge đã bật" bằng `call_channel`:
+
+```yaml
+evaluate:
+  call_source:  { type: choice, options: [local_grammar, mcp, bridge:muse, test], instructions: "…" }
+  call_channel: { type: choice, options: [local_grammar, system_one, system_two, mcp, bridge, test], instructions: "…" }
+allow_when:
+  call_source:  { in: [local_grammar, bridge:muse] }   # đúng Muse; bridge khác ⇒ BLOCK
+# hoặc "mọi bridge":  call_channel: { in: [local_grammar, bridge] }
+```
+
+**Fail-closed.** Giá trị ngoài `options` của gate ⇒ `BLOCK`, `criterion_unavailable`, kể cả dưới `fail: open`; mọi gate hiện có
+liệt kê năm nguồn nên mọi bridge `BLOCK` mặc định cho tới khi một gate gọi tên nó hoặc họ của nó. `gate.v1` và bố cục `NETR` không đổi
+(`bridge:muse` là một chuỗi trong miền của chính gate đó; một miền tối đa 32 giá trị, nên "mọi bridge" cần `call_channel`).
+`bridge:*` và `mcp:*` không thuộc `HUMAN_SOURCES` (§6). Replay chỉ dùng `gate_facts` đã ghi, không cần bridge có mặt (§7).
 
 Bên gọi **KHÔNG ĐƯỢC** tự khai nguồn: `call_source` không phải tham số của tool nào, nên
 một mô hình gửi `{"call_source": "local_grammar"}` bị `REJECTED` ở bước 3
@@ -183,7 +219,7 @@ một mô hình gửi `{"call_source": "local_grammar"}` bị `REJECTED` ở bư
   pháp (`local_grammar`), hoặc nút trên trang của thiết bị (`ui`). Đây là tập **nguồn xác
   nhận** (`HUMAN_SOURCES`, `actions/confirmation.py`), khác năm giá trị `source` của §1: `ui`
   không phát tool call, và `call_source` không bao giờ bằng `ui`.
-- Nguồn `system_two` và `mcp` **KHÔNG ĐƯỢC** phát lời xác nhận. Nếu được, một mô hình bị
+- Nguồn `system_two`, `mcp`, `bridge:<id>` và `mcp:<client>` **KHÔNG ĐƯỢC** phát lời xác nhận. Nếu được, một mô hình bị
   prompt injection, hoặc một agent tự động phía client, sẽ tự trả lời câu hỏi an toàn
   dành cho người.
 - Gate nói trước **điều gì** người được xác nhận thay: `on_block.confirms` (RFC-0006).
@@ -198,7 +234,7 @@ một mô hình gửi `{"call_source": "local_grammar"}` bị `REJECTED` ở bư
 - Chữ gõ và nút trả lời câu hỏi mới nhất còn chờ. Lời **nói** chỉ trả lời câu hỏi trong
   lượt trả lời của chính nó — luật ở `docs/spec/voice_fsm.md` §5.4 (Q-46 (D3)).
 - Xác nhận không bỏ qua gate: gate được **lượng giá lại** với dữ kiện **hiện tại** và
-  `call_source` của **yêu cầu gốc**; chỉ tiêu chí trong `confirms` coi như đạt. Mọi tiêu chí
+  `call_source` của **yêu cầu gốc** (và `call_channel` suy từ nó); chỉ tiêu chí trong `confirms` coi như đạt. Mọi tiêu chí
   khác, giới hạn tham số và fail-closed khi adjudicator suy giảm vẫn áp dụng. Kết quả ghi
   `confirmed: [...]`.
 - Bên gọi (System 2, client MCP) được báo trong kết quả `BLOCK`: `confirmation: {id, message,
@@ -379,6 +415,10 @@ như corpus gate: mỗi tệp có một mục, mỗi mục có một tệp (TSK-
   (`minimum`, `maximum`, `enum`, `maxLength` — RFC-0005) ⇒ gate chặn, `BLOCK`
   `argument_out_of_range` (§3). Không lời gọi `invalid/` nào được `ALLOW`. Runner kiểm cả
   phép chia này, nên một ca không nằm nhầm nửa được.
+
+Corpus phủ cả hai không gian tên: agent `bridge-lamp` (gate nói đúng `bridge:muse`, hoặc cả họ `bridge` bằng `call_channel`) và
+`open_gate_from_a_bridge_degrades.yaml` của `driveway` (`test_the_corpus_of_tool_calls_covers_every_family`). Runner đóng vai bộ nạp: nó
+đăng ký id nó đọc từ `call.source` của ca (§5).
 
 Runner `neuroedge.testing.tool_corpus` chạy mỗi ca qua `dispatch()` thật của một `SimSession`
 mới — đúng đường của client MCP và System 2 — rồi so với đáp án. `neuroedge verify` chạy cả
