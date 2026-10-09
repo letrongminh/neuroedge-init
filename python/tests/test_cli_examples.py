@@ -124,6 +124,22 @@ def test_a_stale_example_is_caught(example, error):
 # Examples that are not run here, each with the reason. Everything else runs, in a
 # project `neuroedge new my-agent` just created, and must exit 0.
 NOT_RUN = {
+    # TSK-I2c-14: they need a real MCP server to connect to (or a guard.toml made from one);
+    # tests/test_proxy_mcp.py runs each against the fixture upstream of fixtures/mcp_upstream/
+    'neuroedge guard init --mcp "python my_server.py"': "connects to a real MCP server",
+    "neuroedge guard init --mcp https://ha.local/mcp --header-env Authorization=HA_TOKEN --dir ha": (
+        "connects to a real MCP server over the network"
+    ),
+    "neuroedge proxy mcp": "an MCP stdio server; needs a guard.toml made by `guard init`",
+    "neuroedge proxy mcp --config ha/guard.toml --trace-out ha/session.json": (
+        "an MCP stdio server"
+    ),
+    "neuroedge proxy mcp --desktop-config --write": (
+        "writes Claude Desktop's real config (test_the_proxy_registers_in_claude_desktop_like_mcp_serve "
+        "covers --write on a copy)"
+    ),
+    "neuroedge plugin doctor": "needs a guard.toml made by `guard init`",
+    "neuroedge plugin doctor --config ha/guard.toml --json": "needs a guard.toml made by `guard init`",
     "neuroedge run --ui": "serves a page until interrupted",
     "neuroedge studio                 # every capability in one local web app": (
         "serves a page until interrupted; tests/test_studio_server.py drives the server"

@@ -34,6 +34,7 @@ COMMANDS = {
     "gate lint": "[directory] --registry|-r=",
     "gate publish": "<gate_file> --out|-o= --registry|-r=",
     "gate resolve": "<target> --json --registry|-r=",
+    "guard init": "--dir= --env-from=* --header-env=* --mcp=! --name=",
     "mcp desktop-config": (
         "--agent|-a= --config-path= --name= --port= --raw --trace-out= --ui --write"
     ),
@@ -44,6 +45,8 @@ COMMANDS = {
     ),
     "mcp tools": "--agent|-a= --external --json --openai",
     "new": "<name> --template=",
+    "plugin doctor": "--config|-c= --json",
+    "proxy mcp": "--config-path= --config|-c= --desktop-config --name= --trace-out= --write",
     "record": (
         "--agent|-a= --anonymize --baud= --board|-b= --command|-c= --out|-o= --port= --raw "
         "--registry|-r= --target|-t= --timeout= --voice-file= --voice-out="

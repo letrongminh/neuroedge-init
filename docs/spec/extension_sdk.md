@@ -87,7 +87,8 @@ default = 5                       # tuỳ chọn, đúng kiểu; có mặc đị
 | `[guard]` | `name`, `board` | `board` là đường dẫn hay `pkg:…` ⇒ từ chối, nêu TSK-I2c-08 |
 | `[registry]` | `roots` | hơn một gốc ⇒ từ chối, nêu TSK-I2c-08 |
 | `[tools.<tên>]` | `gate`, `requires`, `drive`, `parameters` | |
-| `[tools.<tên>.parameters.<p>]` | `type`, `default`, `description` | giới hạn giá trị là của `arguments` trong gate (RFC-0005), không ở đây |
+| `[tools.<tên>.parameters.<p>]` | `type`, `default`, `description`, `required` | giới hạn giá trị là của `arguments` trong gate (RFC-0005), không ở đây. Không có `default` và không có `required = false` ⇒ tham số bắt buộc; `required = false` không `default` ⇒ tham số tuỳ chọn mà `run` không nhận nếu người gọi không đưa |
+| `[proxy.mcp]` | `command` hoặc `url`, `env_from`, `headers_env`, `names` | chỉ do `proxy mcp` và `plugin doctor` đọc (§4); `Guard` bỏ qua |
 | `[plugins]` | `enable`, `config` | khác rỗng ⇒ từ chối, nêu TSK-I2c-11 |
 | `[external]` | — | từ chối, nêu TSK-I2c-09 |
 | `[actuators]` | — | từ chối, nêu TSK-I2c-16 |
@@ -104,3 +105,61 @@ default = 5                       # tuỳ chọn, đúng kiểu; có mặc đị
 
 Guard dựng bước thành `digital.out(pin).on()`, `.off()` hay `.pulse(seconds=<tham số>)`. Giá trị ngoài giới hạn là việc của gate (`argument_out_of_range`) và của phong bì của bo.
 Không có gì khác trong `drive`: cơ cấu từ xa là chân `digital.out` có tên (RFC-0018, TSK-I2c-16 — chưa có). Muốn thân tuỳ ý, dùng `Tool(run=…)` trong Python.
+
+## 4. `neuroedge proxy mcp` — một máy chủ MCP có sẵn đứng sau NeuroEdge (TSK-I2c-14, FR-EXT-06)
+
+Ba lệnh trên máy sạch: `pip install 'neuroedge[mcp]'`, rồi `neuroedge guard init --mcp "<lệnh hoặc https://…>"`, rồi `neuroedge proxy mcp`
+(`test_three_commands_put_a_server_behind_the_proxy`, qua một MCP client thật). Mọi `tools/call` đi qua `Guard` (gate → token → phong bì → vết ghi) và
+chỉ được **chuyển tiếp tới máy chủ thật bên trong `run` của tool**, tức là sau ALLOW: không có đoạn "nếu ALLOW thì chuyển tiếp" nào để viết sai.
+
+### 4.1 Bảng `[proxy.mcp]`
+
+```toml
+[proxy.mcp]
+command  = ["python", "my_server.py"]       # stdio; HOẶC  url = "https://ha.local/mcp"  (Streamable HTTP) — đúng một trong hai
+env_from = ["HA_TOKEN"]                      # (stdio) tên biến môi trường chuyển cho tiến trình con — chỉ TÊN
+headers_env = { Authorization = "HA_TOKEN" } # (url) tên header → TÊN biến môi trường; không bao giờ giá trị
+[proxy.mcp.names]                            # tên tool của guard → tên tool của máy chủ thật, khi khác nhau
+get_state = "get-state"                      # tên tool của guard là [a-z][a-z0-9_]{0,63}; MCP cho phép `-`, `.`, chữ hoa
+```
+
+Giá trị bí mật viết thẳng bị từ chối (NE3002) và không bao giờ được in lại: khoá mang tên bí mật, đối số `command` giống khoá API, URL có thông tin đăng nhập hay tham số truy vấn mang tên bí mật,
+giá trị `headers_env` không phải tên biến. `http://` chỉ nhận cho `localhost`/`127.0.0.1`/`::1` (token không đi rõ ràng qua mạng). Biến môi trường được nêu mà vắng trong shell ⇒ không kết nối.
+Tool của proxy không giữ chân (`requires`, `drive` bị từ chối): nó chuyển tiếp một lời gọi.
+
+### 4.2 `guard init --mcp`
+
+`neuroedge guard init --mcp <lệnh|url> [--dir DIR] [--name TÊN] [--env-from TÊN]… [--header-env HEADER=BIẾN]…` kết nối như một MCP client, liệt kê tool của máy chủ, rồi viết `guard.toml` và một gate cho mỗi tool ở `gates/`:
+
+- **Gate sinh ra chặn mặc định.** Gate khai `call_source` với `options` tường minh (nguồn của client phía trước proxy là `mcp`) **và** một tiêu chí không ai đặt (`operator_approved`, `allow_when: operator_approved: true`)
+  nên tool `BLOCK` với `criterion_unavailable` cho tới khi người vận hành sửa gate **có chủ ý**; đầu mỗi tệp ghi cách mở (`test_a_generated_gate_blocks_until_the_operator_opens_it`).
+- **Tham số.** Thuộc tính vô hướng của `inputSchema` (`string`, `integer`, `number`, `boolean`; kể cả `Optional[…]`) thành `[tools.X.parameters]`; có mặc định thì ghi `default`, tuỳ chọn không mặc định thì `required = false`.
+  Tool có tham số **bắt buộc** không phải vô hướng **không được phơi ra**: ghi thành một khối chú thích có lý do và in ở stderr (`test_a_tool_with_a_required_object_parameter_is_not_exposed`); tham số tuỳ chọn không phải vô hướng bị bỏ, có ghi chú.
+- Tên tool của máy chủ không hợp lệ cho guard (`get-state`) được đổi (`get_state`) và ghi vào `[proxy.mcp.names]`. Đối số của `--mcp` là tệp có thật thì được viết đường dẫn tuyệt đối.
+- **Không bao giờ ghi đè**: nếu bất kỳ tệp nào sẽ viết đã có ⇒ lỗi ba phần, không ghi gì cả (`test_guard_init_never_overwrites_a_file`). Các tệp sinh ra được nạp thử (`Guard.load`, phân giải gate) trong bản sao **trước khi** ghi, nên `guard init` không bao giờ để lại cấu hình không nạp được.
+
+### 4.3 `proxy mcp`
+
+`neuroedge proxy mcp [--config guard.toml] [--trace-out PATH]` phục vụ **chỉ qua stdio** (`--http` là TSK-I2c-15, chưa có) đúng các tool của `guard.toml`, mô tả lấy từ máy chủ thật. Khi khởi động nó kết nối tới máy chủ thật và kiểm từng tool của guard:
+tool phải có mặt ở đó (theo `[proxy.mcp.names]`), mỗi tham số khai phải có cùng kiểu, và mọi tham số bắt buộc của máy chủ thật phải được khai. **Thiếu một tool, lệch lược đồ hay không kết nối được ⇒ không khởi động** (mã thoát 1, lỗi ba phần), không bao giờ "phục vụ phần còn lại".
+
+- **Nguồn.** Lời gọi giữ nguồn của client phía trước, `mcp`, qua đường nội bộ `Guard._dispatch_front` (RFC-0016 §3b mục 4): không `Dispatcher` nào chạm tới, nên một bridge chỉ có thể là `bridge:<id>` (`test_a_bridge_cannot_obtain_the_front_source`).
+- **Kết quả.** ALLOW ⇒ nguyên văn kết quả của máy chủ thật. BLOCK ⇒ phán quyết (JSON, `isError` = false); REJECTED ⇒ phán quyết, `isError` = true — như `mcp serve`.
+- **Máy chủ thật hỏng sau ALLOW** ⇒ kết quả lỗi (`status = ALLOW`, `isError` = true, "was not retried"); **không bao giờ thử lại**, vì lời gọi có thể đã xảy ra (`test_an_upstream_error_after_allow_is_an_error_result_not_a_retry`).
+- **Vết ghi.** `--trace-out` ghi `guard.trace()` khi thoát (kể cả SIGTERM); `metadata.proxy = {kind, upstream}` — không có đối số lệnh hay URL truy vấn. Vết có **đối số của lời gọi** như nhận từ client (không băm): coi nó như dữ liệu của máy chủ thật. Replay: `TracePlayer(trace, guard="guard.toml")`, không bao giờ chạm máy chủ thật (`test_the_proxy_trace_validates_and_replays`).
+- **Claude Desktop.** `neuroedge proxy mcp --desktop-config [--write] [--config-path P] [--name N]` in (hay ghi, kèm bản sao lưu, đúng một mục `mcpServers`) lối vào để Desktop chạy proxy. Desktop khởi chạy với môi trường tối thiểu: các biến trong `env_from`/`headers_env` phải được thêm vào khối `env` của mục đó **bằng tay** (lệnh nhắc, và không ghi bí mật vào tệp).
+- Chưa có: front qua mạng (`proxy http`, TSK-I2c-15), `--init-timeout` như `mcp serve`, gate đọc dữ kiện của chính máy chủ thật.
+
+### 4.4 `plugin doctor` — "proxy là đường duy nhất" chỉ kiểm được một phần
+
+`neuroedge plugin doctor [--config guard.toml] [--json]` (RFC-0016 §3d mục 6, §5 rủi ro 3, 8). Nó **cảnh báo** những gì nó thấy và **nói rõ** những gì nó không kiểm được; không bao giờ in một chữ "OK" trơn:
+
+| Kiểm | Kết quả |
+|:---|:---|
+| `url`: thử nối TCP thẳng tới đích (2 giây) | nối được ⇒ **CẢNH BÁO** "đích còn tới được mà không qua proxy"; không nối được ⇒ "không kiểm được" (máy khác chưa biết) |
+| stdio: đọc cấu hình Claude Desktop (`mcp_desktop.default_config_path`) | mục khác (không phải proxy) khởi chạy cùng lệnh ⇒ **CẢNH BÁO**; không đọc được cấu hình ⇒ "không kiểm được"; luôn kèm "không kiểm được: ứng dụng khác (Cursor, VS Code, shell…)" |
+| mỗi tool: gate có đọc `call_source` hoặc `call_channel` không | không ⇒ **CẢNH BÁO** (RFC-0016 §5 rủi ro 8) |
+| plugin | "không kiểm được: plugin (TSK-I2c-11)" |
+
+Mã thoát: `1` nếu có ít nhất một cảnh báo, `0` nếu không (các dòng "không kiểm được" không đổi mã thoát — chúng không phải bằng chứng). `0` **không** nghĩa là proxy là đường duy nhất: nó chỉ nghĩa là doctor không thấy lối vòng.
+Tin đúng hơn: đặt máy chủ thật sau tường lửa/ACL để chỉ proxy tới được; doctor không làm việc đó.

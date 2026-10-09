@@ -40,6 +40,23 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
         "neuroedge gate publish gates/custom_lock@1.0.0.yaml -o build/custom_lock.json",
     ),
     "gate add": ("neuroedge gate add neuroedge://gates/unlock_door@1.2.0",),
+    # -- guard · proxy · plugin (TSK-I2c-14) ---------------------------------------------
+    "guard": ('neuroedge guard init --mcp "python my_server.py"',),
+    "guard init": (
+        'neuroedge guard init --mcp "python my_server.py"',
+        "neuroedge guard init --mcp https://ha.local/mcp --header-env Authorization=HA_TOKEN --dir ha",
+    ),
+    "proxy": ("neuroedge proxy mcp",),
+    "proxy mcp": (
+        "neuroedge proxy mcp",
+        "neuroedge proxy mcp --config ha/guard.toml --trace-out ha/session.json",
+        "neuroedge proxy mcp --desktop-config --write",
+    ),
+    "plugin": ("neuroedge plugin doctor",),
+    "plugin doctor": (
+        "neuroedge plugin doctor",
+        "neuroedge plugin doctor --config ha/guard.toml --json",
+    ),
     # -- trace ------------------------------------------------------------------------
     "trace": (
         "neuroedge trace validate traces/session.json",

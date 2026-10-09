@@ -39,7 +39,7 @@ from typing import Any
 from . import __version__
 from .actions import Conversation
 from .actions.spec import ActionSpec, Requirement
-from .actions.tools import ToolCall, ToolSet, dispatch, valid_source
+from .actions.tools import ToolCall, ToolResult, ToolSet, dispatch, valid_source
 from .engine import ActionContractEngine, EventLog, GateRegistry, ResolvedGate
 from .errors import AgentManifestError, BoardCapabilityError, ToolCallError
 from .hal import digital
@@ -77,8 +77,9 @@ class Tool:
     One tool, declared by data (the counterpart of an `@action`).
 
     `gate` is a `neuroedge://` URI or a gate file; `requires` are `digital.out:<pin>` entries;
-    `parameters` maps a parameter name to ``{"type": …, "default": …}`` — a parameter not
-    declared here is REJECTED. The body is `run` (a Python callable, sync or async, called with
+    `parameters` maps a parameter name to ``{"type": …, "default": …, "required": …}`` — a
+    parameter not declared here is REJECTED; one with neither a default nor ``required = false``
+    is required, and an optional one without a default is simply left out of what `run` gets. The body is `run` (a Python callable, sync or async, called with
     the validated arguments, defaults applied) or `drive` (declarative), never both; neither is
     a verdict only: ALLOW and nothing moves.
     """
@@ -89,6 +90,8 @@ class Tool:
     parameters: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
     drive: tuple[Drive, ...] = ()
     run: Callable[..., Any] | None = None
+    # Shown to whoever lists the tools (an MCP client); the proxy fills it from the upstream.
+    description: str = ""
 
     def __post_init__(self) -> None:
         where = f"Tool({self.name!r})"
@@ -136,7 +139,7 @@ class Tool:
                 schema,
                 f"{where} parameters.{name}",
                 f"tools.{self.name}.parameters.{name}",
-                ("type", "default", "description"),
+                ("type", "default", "description", "required"),
                 "describe a parameter with type, default and description only; limits belong "
                 "to the gate's `arguments`",
             )
@@ -148,6 +151,8 @@ class Tool:
                     f'write type = "{next(iter(_TYPES))}"',
                 )
             default = schema.get("default")
+            if "required" in schema and not isinstance(schema["required"], bool):
+                raise _manifest(f"{where} parameters.{name}", "`required` is true or false", "x")
             if "default" in schema and not _fits(default, kind):
                 raise _manifest(
                     f"{where} parameters.{name}",
@@ -187,6 +192,12 @@ class Tool:
         return tuple(Requirement.parse(r, self.name).name or "" for r in self.requires)
 
 
+def _default_of(schema: Mapping[str, Any]) -> Any:
+    if "default" in schema:
+        return schema["default"]
+    return None if schema.get("required") is False else inspect.Parameter.empty
+
+
 def _fits(value: Any, kind: str) -> bool:
     if kind == "boolean":
         return isinstance(value, bool)
@@ -213,6 +224,8 @@ class GuardConfig:
     registry_root: Path | None = None
     base: Path | None = None  # relative gate files are found next to guard.toml
     source: str = "<guard>"
+    # `[proxy]` as written: the proxy commands read it (neuroedge.proxy_mcp); a Guard does not.
+    proxy: Mapping[str, Any] = field(default_factory=dict)
 
 
 # --- guard.toml -----------------------------------------------------------------------------
@@ -251,7 +264,9 @@ def load_config(path: str | Path) -> GuardConfig:
                 f"[{table}] is not implemented yet: {task}",
                 f"remove [{table}] until that task lands",
             )
-    refuse_unknown(document, where, "guard.toml", ("guard", "registry", "tools", "plugins"), "x")
+    refuse_unknown(
+        document, where, "guard.toml", ("guard", "registry", "tools", "plugins", "proxy"), "x"
+    )
     head = _table(document.get("guard"), where, "guard")
     refuse_unknown(head, where, "guard", ("name", "board"), "a [guard] has name and board")
     name = head.get("name")
@@ -281,6 +296,7 @@ def load_config(path: str | Path) -> GuardConfig:
         registry_root=root,
         base=path.parent,
         source=where,
+        proxy=_table(document.get("proxy"), where, "proxy"),
     )
 
 
@@ -363,7 +379,7 @@ def _body(tool: Tool) -> Callable[..., Any]:
         inspect.Parameter(
             name,
             inspect.Parameter.KEYWORD_ONLY,
-            default=schema.get("default", inspect.Parameter.empty),
+            default=_default_of(schema),
             annotation=_TYPES[schema["type"]],
         )
         for name, schema in tool.parameters.items()
@@ -372,10 +388,17 @@ def _body(tool: Tool) -> Callable[..., Any]:
     drive = tool.drive
     run = tool.run
 
+    left_out = {
+        name
+        for name, schema in tool.parameters.items()
+        if schema.get("required") is False and "default" not in schema
+    }
+
     def body(**given: Any) -> Any:
         bound = signature.bind(**given)
         bound.apply_defaults()  # `dispatch` passes only what the caller gave
-        arguments = dict(bound.arguments)
+        # An optional parameter nobody gave is not passed on (it has no default to pass).
+        arguments = {k: v for k, v in bound.arguments.items() if not (k in left_out and v is None)}
         if run is not None:
             return run(**arguments)
         for step in drive:
@@ -391,7 +414,7 @@ def _body(tool: Tool) -> Callable[..., Any]:
     body.__signature__ = signature  # type: ignore[attr-defined]
     body.__annotations__ = {p.name: p.annotation for p in params}
     body.__name__ = tool.name
-    body.__doc__ = f"Guarded tool {tool.name} (gate {tool.gate})."
+    body.__doc__ = tool.description or f"Guarded tool {tool.name} (gate {tool.gate})."
     return body
 
 
@@ -644,6 +667,20 @@ class Guard:
         return Dispatcher("test", "test", self._send)
 
     async def _send(self, source: str, request: ToolRequest) -> Outcome:
+        result = await self._dispatch_as(source, request)
+        return Outcome(result.status, result.content())
+
+    async def _dispatch_front(self, request: ToolRequest) -> ToolResult:
+        """
+        The road of `neuroedge proxy mcp` (RFC-0016 §3b item 4): the call keeps the source of the
+        client in front of the proxy, `mcp`, and the caller gets the whole `ToolResult` — the
+        value the tool's `run` returned (what the upstream answered) is on `result.action`.
+        Internal on purpose: not in `__all__`, and no `Dispatcher` reaches it, so a bridge
+        can only ever be `bridge:<id>`.
+        """
+        return await self._dispatch_as("mcp", request)
+
+    async def _dispatch_as(self, source: str, request: ToolRequest) -> ToolResult:
         if not isinstance(request, ToolRequest):
             raise ToolCallError(
                 where=f"Dispatcher.dispatch({type(request).__name__})",
@@ -661,8 +698,7 @@ class Guard:
         # each call (`Conversation.do_with`) — but the trace does: two dispatches in flight
         # would interleave their events, and a replay reads a trace as a sequence of steps.
         async with self._lock:
-            result = await dispatch(self._conversation, self._tools, call)
-        return Outcome(result.status, result.content())
+            return await dispatch(self._conversation, self._tools, call)
 
     def set_fact(self, name: str, value: Any) -> None:
         """A fact of the program's own, in front of every gate, like `c.facts`."""
