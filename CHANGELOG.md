@@ -32,6 +32,15 @@ bản gói.
 
 #### Đã thêm
 
+- **Cơ cấu chấp hành từ xa — lõi của RFC-0018 (TSK-I2c-16 phần A).** Một cơ cấu ở xa (Home Assistant, ESPHome, Matter…) là
+  một chân `digital.out` có tên, khai ở `[actuators.<tên>]` của `agent.toml` hoặc `guard.toml`, do plugin nhóm `neuroedge.actuators`
+  lái, và chỉ tới được qua `_admit` (trạng thái → phong bì → token → vết ghi → lệnh). Mỗi cơ cấu khai mức tự tắt L0–L3; luật D5:
+  không hoàn tác cần ≥ L2 và đọc lại được (build từ chối). Mất liên lạc ⇒ `uncertain`, từ chối lệnh bật tới khi một lần đọc lại tươi
+  báo tắt; lỗi gửi mơ hồ giữ phần giữ trước của phong bì; thiết bị vi phạm mức ⇒ `quarantined`; HAL chỉ tắt cái nó đã bật (nợ tắt,
+  ghi trước); `off` luôn được thử, không token, không phong bì. Sáu sự kiện `remote_*`, lint vết ghi, replay không dựng plugin.
+  Bộ nạp plugin tối thiểu (bật tường minh ở `[plugins] enable`, nạp hỏng ⇒ không khởi động, nguồn gốc vào vết ghi, `plugin list`)
+  và `neuroedge conformance` cho loại actuator với vector L0–L3 trên bản giả thiết bị; corpus `fixtures/actuators/`,
+  `fixtures/compliance/actuators/`. Chưa có: adapter Home Assistant (phần B), trạng thái đọc lại làm dữ kiện cho gate (cần TSK-I2c-09).
 - **`allow_lan_http` cho hai proxy (Q-70).** Home Assistant, Tasmota hay Shelly trong mạng nhà thường chỉ có http thuần; trước đây
   cả `proxy mcp` lẫn `proxy http` chỉ cho http tới loopback nên đối tác bị chặn ngay bước đầu. Nay `allow_lan_http = true` trong
   `[proxy.mcp]` / `[proxy.http]` (hoặc `guard init … --allow-lan-http`) cho http thuần **chỉ** tới địa chỉ riêng (RFC 1918, link-local,
