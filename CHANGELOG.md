@@ -32,6 +32,14 @@ bản gói.
 
 #### Đã thêm
 
+- **`neuroedge proxy http` và `neuroedge guard init --http` (TSK-I2c-15, FR-EXT-06).** Gate trước một API HTTP cục bộ: mỗi
+  tuyến khai ở `[[proxy.http.routes]]` thành một tool có gate; tham số đường dẫn, query và vô hướng của thân JSON thành đối số;
+  yêu cầu chỉ được chuyển nguyên vẹn tới API thật trong thân tool, tức chỉ sau ALLOW (403 khi BLOCK, 400 khi REJECTED, 404 cho
+  tuyến không khai, 502 không thử lại khi API lỗi sau ALLOW, 413 cho thân > 1 MiB). Proxy chỉ nghe trên loopback; HTTP thường
+  chỉ tới loopback; `Authorization`/`Cookie` của client không được chuyển; header cấu hình chỉ qua tên biến môi trường. HTTP
+  không có nguồn dựng sẵn nên proxy là một bridge của lõi: nguồn `bridge:<id>` (mặc định `bridge:http`), gate phải liệt kê nó.
+  `guard init --http <upstream> --route "POST /cm/{cmd}"` sinh gate chặn mặc định; `plugin doctor` có phần http.
+
 - **`neuroedge proxy mcp` và `neuroedge guard init --mcp` (TSK-I2c-14, FR-EXT-06).** Che một MCP server sẵn có trong ba lệnh:
   `guard init --mcp "<lệnh>"|<url>` đọc danh sách tool của server, sinh `guard.toml` (bảng `[proxy.mcp]`) và một gate cho mỗi tool,
   **chặn mặc định** (tiêu chí `operator_approved` không ai đặt, `call_source` liệt kê tường minh); không bao giờ ghi đè tệp.
