@@ -173,7 +173,7 @@ một tệp, một khoá `[gates]`, một tên action hay tên lệnh đã có (
 ghi gì); kết quả được build thử trên một bản sao trước khi ghi vào dự án. Câu chữ in ra không được hứa.
 
 **Nhóm lệnh `guard`, `proxy`, `plugin` (TSK-I2c-14, FR-EXT-06).** Hứa `guard init` (cờ `--mcp` bắt buộc, `--dir`, `--name`, `--env-from`, `--header-env`; không bao giờ ghi đè một tệp),
-`proxy mcp` (`--config`, `--trace-out`, `--desktop-config`, `--write`, `--config-path`, `--name`; chỉ stdio), `proxy http` (`--config`, `--trace-out`; chỉ loopback — TSK-I2c-15, `extension_sdk.md` §5; `guard init` nhận `--http` và `--route` bên cạnh `--mcp`, đúng một trong hai) và `plugin doctor` (`--config`, `--json`; mã thoát `1` khi có cảnh báo). Cú pháp `guard.toml`/`[proxy.mcp]`
+`proxy mcp` (`--config`, `--trace-out`, `--desktop-config`, `--write`, `--config-path`, `--name`; chỉ stdio), `proxy http` (`--config`, `--trace-out`; chỉ loopback — TSK-I2c-15, `extension_sdk.md` §5; `guard init` nhận `--http` và `--route` bên cạnh `--mcp`, đúng một trong hai; `--allow-lan-http` ghi khoá `allow_lan_http` cho thiết bị http thuần trên mạng nhà — `extension_sdk.md` §4.1a) và `plugin doctor` (`--config`, `--json`; mã thoát `1` khi có cảnh báo). Cú pháp `guard.toml`/`[proxy.mcp]`
 và hành vi: [`extension_sdk.md`](extension_sdk.md) §4. Câu chữ in ra không được hứa.
 
 **Quy tắc phiên bản cho CLI:**

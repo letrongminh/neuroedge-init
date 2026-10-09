@@ -125,7 +125,20 @@ get_state = "get-state"                      # tên tool của guard là [a-z][a
 ```
 
 Giá trị bí mật viết thẳng bị từ chối (NE3002) và không bao giờ được in lại: khoá mang tên bí mật, đối số `command` giống khoá API, URL có thông tin đăng nhập hay tham số truy vấn mang tên bí mật,
-giá trị `headers_env` không phải tên biến. `http://` chỉ nhận cho `localhost`/`127.0.0.1`/`::1` (token không đi rõ ràng qua mạng). Biến môi trường được nêu mà vắng trong shell ⇒ không kết nối.
+giá trị `headers_env` không phải tên biến. `http://` chỉ nhận cho `localhost`/`127.0.0.1`/`::1` (token không đi rõ ràng qua mạng) — trừ khi bật `allow_lan_http` (§4.1a). Biến môi trường được nêu mà vắng trong shell ⇒ không kết nối.
+### 4.1a `allow_lan_http` — http thuần tới thiết bị trên mạng nhà (và cho cả `proxy http`, §5.1)
+
+Thiết bị thật (Home Assistant `http://192.168.1.10:8123/api/mcp`, Tasmota, Shelly) thường chỉ nói http thuần trên LAN. Khoá `allow_lan_http = true` ở `[proxy.mcp]` (cần `url`) và `[proxy.http]` là **lối vào có chủ ý**, mặc định tắt (tắt ⇒ hành vi không đổi: http chỉ tới loopback).
+Khi bật, http thuần chỉ được nhận cho `host` là:
+
+- literal IP riêng/link-local/loopback: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`, `127.0.0.0/8`; IPv6 `fc00::/7`, `fe80::/10`, `::1`;
+- hoặc tên `*.local`, `*.lan`, `*.home.arpa` (có ít nhất một nhãn trước hậu tố).
+
+**Mọi host khác vẫn bị từ chối dù bật cờ:** tên hay địa chỉ công khai, dải CGNAT `100.64.0.0/10` (cố ý từ chối), IPv6 documentation/`fec0::/10`, địa chỉ IPv4-mapped IPv6, tên trần (`homeassistant`) — token không bao giờ đi rõ ràng qua internet
+(`test_any_other_host_stays_refused_even_with_the_flag`). Thông tin đăng nhập trong URL vẫn bị từ chối. `listen` của `proxy http` vẫn chỉ loopback (cờ này không đụng tới front).
+`guard init --mcp|--http … --allow-lan-http` ghi khoá kèm chú thích; `plugin doctor` in **CẢNH BÁO** khi khoá bật: lời gọi và token đi bằng http thuần trên LAN, ai nghe được mạng nhà đọc và chép được token.
+Nếu thiết bị hỗ trợ https thì dùng https; cờ này là cái giá của một thiết bị không có.
+
 Tool của proxy không giữ chân (`requires`, `drive` bị từ chối): nó chuyển tiếp một lời gọi.
 
 ### 4.2 `guard init --mcp`
@@ -174,7 +187,8 @@ không khai báo bị từ chối bằng 404 và không bao giờ được chuy�
 
 ```toml
 [proxy.http]
-upstream = "http://127.0.0.1:8080"   # http chỉ tới loopback; https tới đâu cũng được; không thông tin đăng nhập/truy vấn/fragment
+upstream = "http://127.0.0.1:8080"   # http chỉ tới loopback (hoặc LAN với allow_lan_http, §4.1a); https tới đâu cũng được; không thông tin đăng nhập/truy vấn/fragment
+allow_lan_http = false               # mặc định tắt; true: nhận http thuần tới IP riêng / *.local / *.lan / *.home.arpa (§4.1a)
 listen   = "127.0.0.1:8787"          # CHỈ loopback (127.0.0.0/8, ::1, localhost): front không có xác thực ở bản này
 id       = "http"                    # id bridge ⇒ nguồn `bridge:http`
 headers_env = { Authorization = "DEVICE_TOKEN" }   # tên header → TÊN biến môi trường; không bao giờ giá trị

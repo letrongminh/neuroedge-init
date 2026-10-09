@@ -42,12 +42,16 @@ from .errors import AgentManifestError, NeuroEdgeError
 from .guard import Guard, GuardConfig, load_config, resolve_gates
 from .models.providers.common import ENV_NAME, NAME, refuse_unknown
 from .proxy_mcp import (
+    LAN_COMMENT,
     Finding,
     Plan,
     UpstreamFailed,
     _bad,
     _toml,
     default_name,
+    lan_flag,
+    lan_warning,
+    refuse_plain_http,
     tool_name_for,
     validate_plan,
     write_plan,
@@ -105,6 +109,8 @@ class HttpProxy:
     id: str = DEFAULT_ID
     headers_env: Mapping[str, str] = field(default_factory=dict)
     routes: tuple[Route, ...] = ()
+    # Opt-in: plain http to a host on the home LAN (`proxy_mcp.refuse_plain_http`).
+    allow_lan_http: bool = False
 
     @property
     def source(self) -> str:
@@ -139,8 +145,11 @@ def _split_listen(value: Any, where: str) -> tuple[str, int]:
     return host, int(port)
 
 
-def check_upstream(url: Any, where: str) -> str:
-    """An http(s) base URL: http only to loopback, no credentials, no query, no fragment."""
+def check_upstream(url: Any, where: str, allow_lan: bool = False) -> str:
+    """
+    An http(s) base URL: plain http only to loopback — or, with `allow_lan_http`, to a LAN host;
+    no credentials, no query, no fragment.
+    """
     if not isinstance(url, str):
         raise _bad(where + " upstream", "`upstream` is a URL string", "x")
     parts = urlsplit(url)
@@ -154,11 +163,7 @@ def check_upstream(url: Any, where: str) -> str:
             "use headers_env for a token, and declare query parameters on the routes",
         )
     if parts.scheme == "http" and not is_loopback(host):
-        raise _bad(
-            where + " upstream",
-            "plain http to another machine would send what the proxy forwards (and its token) in clear",
-            "use https (plain http is accepted for loopback only)",
-        )
+        refuse_plain_http(host, allow_lan, where, "upstream")
     return url.rstrip("/")
 
 
@@ -204,10 +209,11 @@ def parse_http(config: GuardConfig) -> HttpProxy:
             'run `neuroedge guard init --http <upstream> --route "POST /path"`, or add [proxy.http]',
         )
     refuse_unknown(
-        table, where, "proxy.http", ("upstream", "listen", "id", "headers_env", "routes"),
-        "[proxy.http] has upstream, listen, id, headers_env and [[proxy.http.routes]]",
+        table, where, "proxy.http", ("upstream", "listen", "id", "headers_env", "routes", "allow_lan_http"),
+        "[proxy.http] has upstream, listen, id, headers_env, allow_lan_http and [[proxy.http.routes]]",
     )  # fmt: skip
-    upstream = check_upstream(table.get("upstream"), where)
+    allow_lan = lan_flag(table, where)
+    upstream = check_upstream(table.get("upstream"), where, allow_lan)
     host, port = _split_listen(table.get("listen", DEFAULT_LISTEN), where)
     ident = table.get("id", DEFAULT_ID)
     if not isinstance(ident, str) or not BRIDGE_ID.fullmatch(ident):
@@ -263,7 +269,7 @@ def parse_http(config: GuardConfig) -> HttpProxy:
                 f'add [tools.{tool}.parameters.{missing[0]}] with type = "string"',
             )
         routes.append(route)
-    return HttpProxy(upstream, host, port, ident, dict(headers), tuple(routes))
+    return HttpProxy(upstream, host, port, ident, dict(headers), tuple(routes), allow_lan)
 
 
 # --- one request ----------------------------------------------------------------------------------
@@ -721,6 +727,7 @@ budget:
 def plan_http(
     upstream: str, routes: list[tuple[str, str]], base: Path, name: str, *,
     ident: str = DEFAULT_ID, listen: str = DEFAULT_LISTEN, header_env: dict[str, str] | None = None,
+    allow_lan_http: bool = False,
 ) -> Plan:  # fmt: skip
     """The files `guard init --http` writes (nothing is written here)."""
     plan = Plan()
@@ -742,6 +749,8 @@ def plan_http(
             + ", ".join(f"{h} = {_toml(e)}" for h, e in header_env.items())
             + " }"
         )
+    if allow_lan_http:
+        head += [LAN_COMMENT, "allow_lan_http = true"]
     tools_toml: list[str] = []
     for method, path in routes:
         segments = [SEGMENT_PARAM.sub(lambda m: m.group(1), s) for s in path.split("/")[1:] if s]
@@ -776,6 +785,7 @@ def init(
     directory: Path,
     name: str | None = None,
     header_env: list[str] | None = None,
+    allow_lan_http: bool = False,
 ) -> Plan:
     """`neuroedge guard init --http <upstream> --route "METHOD /path"…`: blocking gates, never overwriting."""
     where = "neuroedge guard init --http"
@@ -794,16 +804,18 @@ def init(
         )
     base = directory.resolve()
     plan = plan_http(
-        check_upstream_for_init(upstream, headers), parsed, base,
-        name or _default_name(upstream), header_env=headers,
+        check_upstream_for_init(upstream, headers, allow_lan_http), parsed, base,
+        name or _default_name(upstream), header_env=headers, allow_lan_http=allow_lan_http,
     )  # fmt: skip
     validate_plan_http(plan, base)
     write_plan(plan)
     return plan
 
 
-def check_upstream_for_init(upstream: str, headers: dict[str, str]) -> str:
-    url = check_upstream(upstream, "<guard init> --http")
+def check_upstream_for_init(
+    upstream: str, headers: dict[str, str], allow_lan_http: bool = False
+) -> str:
+    url = check_upstream(upstream, "<guard init> --http", allow_lan_http)
     for header, var in headers.items():
         if not HEADER.fullmatch(header) or not ENV_NAME.fullmatch(var):
             raise _bad(
@@ -841,6 +853,8 @@ def doctor(config: GuardConfig) -> list[Finding]:
     """The `plugin doctor` findings for a `[proxy.http]` guard: what it saw, and what it cannot check."""
     proxy = parse_http(config)
     findings: list[Finding] = []
+    if proxy.allow_lan_http:
+        findings.append(lan_warning(proxy.upstream))
     if reachable(proxy, 2.0) is None:
         findings.append(
             Finding(

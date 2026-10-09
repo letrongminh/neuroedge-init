@@ -28,6 +28,7 @@ until the operator edits them on purpose. The grammar is in `docs/spec/extension
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import json
 import os
 import re
@@ -73,6 +74,8 @@ class Upstream:
     env_from: tuple[str, ...] = ()
     headers_env: Mapping[str, str] = field(default_factory=dict)
     names: Mapping[str, str] = field(default_factory=dict)
+    # Opt-in: plain http to a host on the home LAN (see `refuse_plain_http`).
+    allow_lan_http: bool = False
 
     def upstream_name(self, tool: str) -> str:
         return self.names.get(tool, tool)
@@ -80,6 +83,78 @@ class Upstream:
     @property
     def kind(self) -> str:
         return "stdio" if self.command else "http"
+
+
+LAN_NAME_SUFFIXES = (".local", ".lan", ".home.arpa")
+_LAN_V4 = tuple(
+    ipaddress.ip_network(n)
+    for n in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "127.0.0.0/8")
+)
+_LAN_V6 = tuple(ipaddress.ip_network(n) for n in ("fc00::/7", "fe80::/10", "::1/128"))
+
+
+def lan_host(host: str) -> bool:
+    """
+    A host plain http may go to when the operator opted in (`allow_lan_http`): an IP literal in
+    RFC 1918, link-local or loopback space (IPv6: fc00::/7, fe80::/10, ::1) — never the carrier-grade
+    NAT range 100.64.0.0/10, never an IPv4-mapped IPv6 address — or a `*.local`, `*.lan`,
+    `*.home.arpa` name with at least one label before the suffix. Any other host, a public name
+    included, is not LAN: the answer is no.
+    """
+    host = host.strip("[]").split("%", 1)[0].rstrip(".").lower()
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return any(
+            host.endswith(suffix) and len(host) > len(suffix) for suffix in LAN_NAME_SUFFIXES
+        )
+    networks = _LAN_V4 if address.version == 4 else _LAN_V6
+    return any(address in network for network in networks)
+
+
+def refuse_plain_http(host: str, allow_lan: bool, where: str, key: str = "url") -> None:
+    """
+    Plain http is for loopback; with `allow_lan_http = true`, for a LAN host too (`lan_host`). Anything
+    else is refused, flag or not: a token must not cross the internet in clear.
+    """
+    if host in LOCAL_HOSTS or host.lower() == "localhost":
+        return
+    if allow_lan and lan_host(host):
+        return
+    if lan_host(host):
+        raise _bad(
+            f"{where} {key}",
+            "plain http to another machine on the LAN sends the calls and the token in clear",
+            "use https, or — if that is the device you have — set allow_lan_http = true (the "
+            "credentials and calls then travel unencrypted on your LAN; `plugin doctor` warns)",
+        )
+    raise _bad(
+        f"{where} {key}",
+        "plain http to a host outside loopback and the home LAN would send the token in clear "
+        "over the internet; allow_lan_http does not cover it either",
+        "use https (a LAN host needs allow_lan_http = true: a private IP literal, or a *.local, "
+        "*.lan or *.home.arpa name)",
+    )
+
+
+LAN_COMMENT = "# allow_lan_http: plain http to a host on the home LAN. Calls and the token travel UNENCRYPTED on the LAN."
+
+
+def lan_warning(url: str) -> Finding:
+    """The `plugin doctor` warning for `allow_lan_http = true` (both proxies)."""
+    return Finding(
+        "warning",
+        f"allow_lan_http đang bật: lời gọi và thông tin đăng nhập tới {urlsplit(url).netloc} đi bằng http "
+        "THUẦN trên LAN — ai nghe được mạng nhà (Wi-Fi, thiết bị bị chiếm) đọc và chép lại được token. "
+        "Chỉ chấp nhận cho mạng nhà tin cậy; dùng https nếu thiết bị hỗ trợ",
+    )
+
+
+def lan_flag(table: Mapping[str, Any], where: str) -> bool:
+    value = table.get("allow_lan_http", False)
+    if not isinstance(value, bool):
+        raise _bad(where + " allow_lan_http", "`allow_lan_http` is true or false", "x")
+    return value
 
 
 def _bad(where: str, why: str, how: str) -> AgentManifestError:
@@ -113,8 +188,8 @@ def parse_upstream(config: GuardConfig) -> Upstream:
             "run `neuroedge guard init --mcp <command or url>`, or add [proxy.mcp]",
         )
     refuse_unknown(
-        table, where, "proxy.mcp", ("command", "url", "env_from", "headers_env", "names"),
-        "[proxy.mcp] has command or url, env_from, headers_env and names",
+        table, where, "proxy.mcp", ("command", "url", "env_from", "headers_env", "names", "allow_lan_http"),
+        "[proxy.mcp] has command or url, env_from, headers_env, names and allow_lan_http",
     )  # fmt: skip
     command, url = table.get("command"), table.get("url")
     if (command is None) == (url is None):
@@ -132,8 +207,11 @@ def parse_upstream(config: GuardConfig) -> Upstream:
                 "an argument looks like a secret; the file is committed and shared",
                 "pass secrets through `env_from` (the NAME of an environment variable)",
             )
+    allow_lan = lan_flag(table, where)
+    if allow_lan and url is None:
+        raise _bad(where + " allow_lan_http", "`allow_lan_http` is for a `url`", "remove it")
     if url is not None:
-        _check_url(url, where)
+        _check_url(url, where, allow_lan)
     env_from = table.get("env_from", [])
     if not isinstance(env_from, list) or not all(
         isinstance(n, str) and ENV_NAME.fullmatch(n) for n in env_from
@@ -176,10 +254,12 @@ def parse_upstream(config: GuardConfig) -> Upstream:
             f"{stray} are not tools of this guard.toml",
             "rename the key to a [tools.<name>], or remove it",
         )
-    return Upstream(tuple(command or ()), url or "", tuple(env_from), dict(headers), dict(names))
+    return Upstream(
+        tuple(command or ()), url or "", tuple(env_from), dict(headers), dict(names), allow_lan
+    )
 
 
-def _check_url(url: Any, where: str) -> None:
+def _check_url(url: Any, where: str, allow_lan: bool = False) -> None:
     if not isinstance(url, str):
         raise _bad(where + " url", "`url` is a string", "x")
     parts = urlsplit(url)
@@ -198,12 +278,8 @@ def _check_url(url: Any, where: str) -> None:
             "the query string carries a secret-named parameter",
             "use headers_env for a token",
         )
-    if parts.scheme == "http" and host not in LOCAL_HOSTS:
-        raise _bad(
-            where + " url",
-            "plain http to another machine would send the token in clear",
-            "use https (plain http is accepted for localhost only)",
-        )
+    if parts.scheme == "http":
+        refuse_plain_http(host, allow_lan, where)
 
 
 def _query(query: str) -> Iterator[tuple[str, str]]:
@@ -717,6 +793,9 @@ def plan_init(
                 + ", ".join(f"{h} = {_toml(e)}" for h, e in up.headers_env.items())
                 + " }"
             )
+        if up.allow_lan_http:
+            head.append(LAN_COMMENT)
+            head.append("allow_lan_http = true")
     if mapping:
         head += ["", "[proxy.mcp.names]"] + [
             f"{g} = {_toml(u)}" for g, u in sorted(mapping.items())
@@ -788,6 +867,7 @@ async def init(
     name: str | None = None,
     env_from: Sequence[str] = (),
     header_env: Sequence[str] = (),
+    allow_lan_http: bool = False,
 ) -> Plan:
     """
     `neuroedge guard init --mcp <command|url>`: connect, list the upstream's tools, write
@@ -809,7 +889,8 @@ async def init(
         "init", (), source="<guard init>",
         proxy={"mcp": {k: v for k, v in (
             ("command", list(command) or None), ("url", url or None),
-            ("env_from", list(env_from) or None), ("headers_env", headers or None)) if v}},
+            ("env_from", list(env_from) or None), ("headers_env", headers or None),
+            ("allow_lan_http", True if allow_lan_http else None)) if v}},
     )  # fmt: skip
     probe = parse_upstream(shell)
     async with open_upstream(probe, Path.cwd(), "neuroedge guard init") as client:
@@ -877,6 +958,8 @@ def doctor(config_path: Path, *, desktop_config: Path | None = None) -> list[Fin
         return doctor_http(config)
     up = parse_upstream(config)
     findings: list[Finding] = []
+    if up.url and up.allow_lan_http:
+        findings.append(lan_warning(up.url))
     if up.url:
         findings += _reach(up)
     else:
