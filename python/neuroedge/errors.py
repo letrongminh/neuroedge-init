@@ -81,6 +81,11 @@ class EnvelopeRefusedError(ActionContractViolation):
     event data the HAL records (RFC-0007 §3e): what replay and an audit need. No pin is driven
     and no token is spent. The command toward the safe state is never refused. Raised by the
     envelope hook of `HardwareAbstractionLayer.digital_out` (TSK-N2-01).
+
+    A remote actuator (RFC-0018 §3g) is refused before its envelope by the HAL's state check:
+    ``actuator_state_unknown`` (the HAL does not know the device is off: uncertain, or its
+    reading is too old), ``actuator_quarantined`` (the device broke its declared safe-off level)
+    or ``already_on`` (a reading says it is on and NeuroEdge did not turn it on).
     """
 
     code = "NE1003"
