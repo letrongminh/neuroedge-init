@@ -1,0 +1,28 @@
+# Gate của ví dụ `examples/guard/`: đèn chỉ bật khi chương trình chủ báo `badge_ok`, và chỉ từ
+# một bridge (`call_channel`, RFC-0017 §3d); số giây bị giới hạn (RFC-0005).
+schema:  neuroedge.gate/v1
+name:    lamp_on
+version: 1.0.0
+
+arguments:
+  seconds: { type: integer, minimum: 1, maximum: 30 }
+
+evaluate:
+  badge_ok:
+    type: bool
+    instructions: "Thẻ đã được chương trình chủ xác thực"
+  call_channel:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, bridge, test]
+    instructions: "Họ của nguồn gọi, do dispatcher suy từ call_source"
+
+allow_when:
+  badge_ok:     true
+  call_channel: { in: [bridge] }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

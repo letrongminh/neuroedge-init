@@ -645,6 +645,7 @@ class TracePlayer:
         slow: str | None = None,
         registry: GateRegistry | None = None,
         enforce_gate_digests: bool = False,
+        guard: str | Path | None = None,
     ) -> None:
         """
         `enforce_gate_digests` (RFC-0008): a recorded `gate_digest` that differs from
@@ -652,10 +653,27 @@ class TracePlayer:
         `neuroedge verify` turns it on for the canonical traces — those must be decided
         by the very gate they were recorded with. A trace without the field replays
         exactly as before under both settings.
+
+        `guard` (RFC-0016 §3b item 6): a `guard.toml` in place of `agent.toml` — the trace is
+        one a `neuroedge.guard.Guard` recorded; its tools are the replay's actions. Giving both
+        is a `ReplayError`.
         """
         self.trace = _load(trace)
         self.target = target
-        self.manifest = _agent_for(self.trace, agent)
+        self.guard_config: Any = None
+        if guard is not None:
+            if agent is not None:
+                raise ReplayError(
+                    where="TracePlayer(agent=..., guard=...)",
+                    why="a trace is replayed against an agent or a guard, not both",
+                    how="pass agent= for an agent's trace, guard= for a Guard's",
+                )
+            from ..guard import load_config
+
+            self.guard_config = load_config(guard)
+            self.manifest: Any = None
+        else:
+            self.manifest = _agent_for(self.trace, agent)
         self.board_id = board_id
         self.hal = hal
         self.network = network
@@ -681,21 +699,46 @@ class TracePlayer:
 
     async def replay(self) -> ReplayResult:
         steps = recorded_steps(self.trace)
-        events = EventLog(
-            session_id=self.trace["metadata"]["session_id"],
-            target=self.target,
-            board_id=self.board_id or DEFAULT_BOARD.get(self.target, ""),
-            agent_version=self.manifest.label,
-        )
-        actions = load_actions(self.manifest)
-        gates, problems = resolve_gates(self.manifest, self.registry)
+        guard = self.guard_config
+        specs: dict[str, Any] = {}
+        if guard is not None:
+            from ..guard import NO_BOARD, label_of, specs_of
+            from ..guard import resolve_gates as resolve_guard_gates
+
+            self.board_id = self.board_id or guard.board
+            events = EventLog(
+                session_id=self.trace["metadata"]["session_id"],
+                target=self.target,
+                board_id=self.board_id or NO_BOARD,
+                agent_version=label_of(guard),
+            )
+            specs = specs_of(guard.tools, guard.source)
+            actions: list[Any] = list(specs.values())
+            gates = resolve_guard_gates(guard)
+            problems = []
+        else:
+            events = EventLog(
+                session_id=self.trace["metadata"]["session_id"],
+                target=self.target,
+                board_id=self.board_id or DEFAULT_BOARD.get(self.target, ""),
+                agent_version=self.manifest.label,
+            )
+            actions = load_actions(self.manifest)
+            gates, problems = resolve_gates(self.manifest, self.registry)
         if problems:
             raise problems[0]
         # RFC-0008: the recorded gate_digest against what this checkout compiles.
         changed = _decided_changes(gate_digest_changes(self.trace.get("events", []), gates))
         if changed and self.enforce_gate_digests:
             raise _gate_digest_replay_error(changed[0])
-        hal = self.hal if self.hal is not None else make_hal(self.target, self.board_id, events)
+        if self.hal is not None:
+            hal = self.hal
+        elif guard is not None and self.board_id is None:
+            from ..guard import NoHal
+
+            hal = NoHal()
+        else:
+            hal = make_hal(self.target, self.board_id, events)
         if self.hal is not None and hasattr(hal, "events"):
             hal.events = events
         # Pins are bounded by the board's envelope on every target, on the recorded timeline.
@@ -706,7 +749,9 @@ class TracePlayer:
         _script_i2c(hal, self.trace)
         _script_digital_in(hal, self.trace)
         _script_pin_state(hal, self.trace)
-        warnings = _sensor_rules_changed(self.trace, self.manifest, events)
+        warnings = (
+            [] if guard is not None else _sensor_rules_changed(self.trace, self.manifest, events)
+        )
         warnings += [_gate_digest_warning(change) for change in changed]
         problems = fact_mark_problems(self.trace)
         for problem in problems:
@@ -727,7 +772,9 @@ class TracePlayer:
             )
         warnings += [_vision_warning(found) for found in vision]
         engine = _ReplayEngine(gates, steps, network=self.network, events=events)
-        conversation = Conversation(engine=engine, hal=hal)
+        conversation = Conversation(
+            engine=engine, hal=hal, **({"registry": specs} if guard is not None else {})
+        )
 
         results: list[ActionResult] = []
         settle_motion = getattr(hal, "settle_motion", None)
@@ -744,7 +791,7 @@ class TracePlayer:
                     settle_motion()
                 refused: EnvelopeRefusedError | None = None
                 try:
-                    results.append(await conversation.do(name, **step.arguments))
+                    results.append(await conversation.do(specs.get(name, name), **step.arguments))
                 except EnvelopeRefusedError as refusal:
                     refused = refusal
                 _check_refusal(step, refused, engine.divergences)

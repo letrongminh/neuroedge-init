@@ -113,7 +113,7 @@ from ..models import CommandGrammar, SystemOne, SystemTwo
 from ..models.grammar import OFFLINE_SAY, Recognition
 from ..models.knowledge import KNOWLEDGE_INTENT, KnowledgeBase, load_agent_grammar
 from ..trace import json_safe, validate_trace
-from .hal_build import build_hal
+from .hal_build import build_hal, release_hal
 
 # Words that answer the device's pending question (Q-26): matched on the device,
 # so the answer's source is `local_grammar`. Only while a question is pending.
@@ -1721,22 +1721,7 @@ class SimSession:
 
     def close(self) -> None:
         """End the session: on linux every line is dropped inactive and released."""
-        close = getattr(self.hal, "close", None)
-        if close is None:
-            return
-        import signal
-        import threading
-
-        if threading.current_thread() is not threading.main_thread():
-            close()
-            return
-        # A second Ctrl-C must not stop the lines dropping halfway (SIGTERM/SIGHUP
-        # are already ignored once their handler runs — cli/main.py).
-        previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
-        try:
-            close()
-        finally:
-            signal.signal(signal.SIGINT, previous)
+        release_hal(self.hal)
 
     def trace(self) -> dict[str, Any]:
         """The session so far as a `trace.v1` document, validated before it is returned."""

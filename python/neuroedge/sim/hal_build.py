@@ -97,3 +97,25 @@ def build_hal(
     for bus, device, register, value, width in i2c_values:
         hal.set_i2c(bus, device, register, value, width=width)
     return hal
+
+
+def release_hal(hal: Any) -> None:
+    """
+    End a session's use of its HAL: on linux every line is dropped inactive and released.
+    A second Ctrl-C must not stop the lines dropping halfway (SIGTERM/SIGHUP are already
+    ignored once their handler runs — cli/main.py), so SIGINT is held off for the call.
+    """
+    close = getattr(hal, "close", None)
+    if close is None:
+        return
+    import signal
+    import threading
+
+    if threading.current_thread() is not threading.main_thread():
+        close()
+        return
+    previous = signal.signal(signal.SIGINT, signal.SIG_IGN)
+    try:
+        close()
+    finally:
+        signal.signal(signal.SIGINT, previous)
