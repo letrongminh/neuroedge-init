@@ -773,6 +773,7 @@ class ReplayedRemote:
     name: str
     outcomes: deque[str | None] = field(default_factory=deque)
     emit: Callable[[str, dict[str, Any]], None] | None = None
+    envelope: Any = None
 
     def guard(self, operation: str, called_from: str) -> None:
         reason = self.outcomes.popleft() if self.outcomes else "actuator_state_unknown"
@@ -793,7 +794,9 @@ class ReplayedRemote:
         return None
 
     def off(self, cause: str = "command") -> None:
-        return None
+        # The recorded off ended the run at the recorded instant (the replay clock is there now).
+        if self.envelope is not None:
+            self.envelope.ended(self.name)
 
     def tick(self) -> None:
         return None

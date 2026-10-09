@@ -1238,7 +1238,7 @@ def plugin_list(
     """
     Every installed NeuroEdge plugin entry point — kind, name, distribution, version — read from
     the package metadata without importing anything. Installed is not enabled: only
-    [plugins] enable in agent.toml or guard.toml loads one (RFC-0016 §3d).
+    \\[plugins] enable in agent.toml or guard.toml loads one (RFC-0016 §3d).
     """
     from ..plugins import discover
 

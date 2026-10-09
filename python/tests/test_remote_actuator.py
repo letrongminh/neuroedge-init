@@ -672,3 +672,55 @@ default = 5
     path.write_text(path.read_text(encoding="utf-8").replace("reversible = true\n", ""))
     with pytest.raises(BuildFailed):
         Guard.load(path)
+
+
+async def test_a_recorded_off_ends_the_run_in_the_replay_too(tmp_path):
+    """Replay ends a remote run where the recording's off ended it, not at its deadline."""
+    from neuroedge.guard import Guard
+    from neuroedge.paths import repo_root
+    from neuroedge.sdk import ToolRequest
+    from neuroedge.testing.player import TracePlayer
+
+    (tmp_path / "light.yaml").write_text(
+        (repo_root() / "gates" / "home" / "light@1.0.0.yaml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    path = tmp_path / "guard.toml"
+    path.write_text(
+        """[guard]
+name  = "valve"
+board = "sim-default"
+[plugins]
+enable = ["neuroedge-ref-actuators"]
+[actuators.garden_valve]
+plugin     = "ref_l1"
+safe_off   = "L1"
+reversible = true
+[actuators.garden_valve.envelope]
+window_s             = 3600
+max_on_ms_per_window = 600000
+min_interval_ms      = 0
+max_continuous_ms    = 60000
+[tools.open]
+gate     = "light.yaml"
+requires = ["digital.out:garden_valve"]
+drive    = [{ pin = "garden_valve", operation = "on" }]
+[tools.close]
+gate     = "light.yaml"
+requires = ["digital.out:garden_valve"]
+drive    = [{ pin = "garden_valve", operation = "off" }]
+""",
+        encoding="utf-8",
+    )
+    guard = Guard.load(path)
+    guard.set_fact("device_fault_free", True)
+    guard.set_fact("quiet_hours_ok", True)
+    bridge = guard.dispatcher("valve")
+    for tool in ("open", "close", "open"):
+        assert (await bridge.dispatch(ToolRequest(tool))).status == "ALLOW"
+    trace = guard.trace()
+    guard.close()
+    assert not [e for e in trace["events"] if e["type"] == "envelope_refused"]
+    result = await TracePlayer(trace, guard=path).replay()
+    assert not result.divergences, result.divergences
+    assert [op for op, _ in result.hal.pin("garden_valve").commands] == ["on", "off", "on"]

@@ -328,7 +328,7 @@ class HardwareAbstractionLayer:
         (passed) or the reason it refused. No plugin is built. An attempt past the last is
         refused (`actuator_state_unknown`): replay never allows what the trace cannot show.
         """
-        self._remote[name] = ReplayedRemote(name, deque(outcomes), self._emit)
+        self._remote[name] = ReplayedRemote(name, deque(outcomes), self._emit, self._envelope)
 
     def _offset_of(self, ms: float) -> int:
         offset = getattr(self.events, "offset_of", None)
