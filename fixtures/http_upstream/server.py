@@ -9,6 +9,8 @@ headers, body), so a test can say what the upstream was — and was not — aske
 
 * ``GET /status``            JSON, with hop-by-hop headers an honest server would send;
 * ``POST /cm/<command>``     echoes the command, the query and the body it received;
+* ``GET /cm?cmnd=...``       Tasmota style: answers ``{"POWER": "ON"}`` for ``Power On`` (any other command is echoed);
+* ``POST /api/<cmd>``        a generic device API: echoes the command and the JSON body it received;
 * ``POST /boom``             closes the connection without answering: an upstream that fails;
 * anything else              404.
 """
@@ -58,7 +60,21 @@ class Handler(BaseHTTPRequestHandler):
         if self.command == "GET" and path == "/status":
             self._send(200, {"power": "ON"})
         elif self.command == "POST" and path.startswith("/cm/"):
-            self._send(200, {"command": path[4:], "query": query, "body": body.decode()})
+            self._send(
+                200, {"command": path[4:], "query": query, "body": body.decode()}
+            )
+        elif self.command == "GET" and path == "/cm":
+            from urllib.parse import parse_qs
+
+            command = (parse_qs(query).get("cmnd") or [""])[0]
+            self._send(
+                200,
+                {"POWER": "ON"}
+                if command.lower() == "power on"
+                else {"command": command},
+            )
+        elif self.command == "POST" and path.startswith("/api/"):
+            self._send(200, {"cmd": path[5:], "body": body.decode()})
         elif self.command == "POST" and path == "/boom":
             self.close_connection = True
             self.connection.close()
