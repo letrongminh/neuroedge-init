@@ -29,6 +29,28 @@ from .session import SimSession
 # spawn). Clients send `initialize` at once, so 30 s only has to beat a slow start.
 MCP_INIT_TIMEOUT_S = 30.0
 
+# After SIGTERM / SIGHUP the process unwinds through `SystemExit` and closes the session. The
+# exception is raised at whatever bytecode the main thread is on — inside the event loop's own
+# machinery too — and the unwinding can then wait forever (a cancelled task waiting on the SDK's
+# stdin thread, a loop left half-way). A serving loop that registers its close as the last
+# resort gets a bounded exit: if the process is still alive this long after the signal, a timer
+# thread runs that close (trace, lines dropped) and leaves with the signal's exit code.
+SIGNAL_EXIT_GRACE_S = 5.0
+_last_resort: Callable[[], None] | None = None
+
+
+def _force_exit(code: int) -> None:
+    """The bounded way out after a signal: the registered close (once), then `os._exit`."""
+    try:
+        hook = _last_resort
+        if hook is not None:
+            hook()
+    except BaseException:  # noqa: BLE001 - the exit must happen whatever the close does
+        pass
+    finally:
+        sys.stderr.flush()
+        os._exit(code)
+
 
 def exit_on_signals() -> Callable[[], None]:
     """
@@ -49,6 +71,10 @@ def exit_on_signals() -> Callable[[], None]:
         # A second signal must not cut the cleanup short between two lines.
         for name in names:
             signal.signal(getattr(signal, name), signal.SIG_IGN)
+        if _last_resort is not None:
+            timer = threading.Timer(SIGNAL_EXIT_GRACE_S, _force_exit, (128 + signum,))
+            timer.daemon = True
+            timer.start()
         raise SystemExit(128 + signum)
 
     previous = {name: signal.signal(getattr(signal, name), _exit) for name in names}
@@ -94,8 +120,25 @@ def run_stdio(
     """
     import anyio
 
+    global _last_resort
+    once = threading.Lock()
+    closed = False
+
     def close() -> None:
-        _close(session, trace_out, on_close)
+        # Once, whoever gets here first: the main thread unwinding, or the last-resort timer
+        # (which waits at most the grace period for a close already under way).
+        nonlocal closed
+        if not once.acquire(timeout=SIGNAL_EXIT_GRACE_S):
+            return
+        try:
+            if closed:
+                return
+            closed = True
+            _close(session, trace_out, on_close)
+        finally:
+            once.release()
+
+    _last_resort = close
 
     def on_no_initialize() -> None:
         # The client started us and let go without closing stdin (Claude Desktop does
@@ -134,7 +177,10 @@ def run_stdio(
             sys.stderr.flush()
             os._exit(stop.code if isinstance(stop.code, int) else 1)
     finally:
-        close()
+        try:
+            close()
+        finally:
+            _last_resort = None
 
 
 def run_http(
