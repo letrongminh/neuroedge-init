@@ -25,8 +25,10 @@ valid:
   error/valid/NE4003_ReplayError.json: { against: "error.v1.json" }
   error/valid/NE4004_VerificationError.json: { against: "error.v1.json" }
   error/valid/NE5001_PerceptionUnavailableError.json: { against: "error.v1.json" }
+  tool-call/valid/call_source_bridge.json: { against: "tool-call.v1.json#/$defs/call" }
   tool-call/valid/call_source_local_grammar.json: { against: "tool-call.v1.json#/$defs/call" }
   tool-call/valid/call_source_mcp.json: { against: "tool-call.v1.json#/$defs/call" }
+  tool-call/valid/call_source_mcp_client.json: { against: "tool-call.v1.json#/$defs/call" }
   tool-call/valid/call_source_system_one.json: { against: "tool-call.v1.json#/$defs/call" }
   tool-call/valid/call_source_system_two.json: { against: "tool-call.v1.json#/$defs/call" }
   tool-call/valid/call_source_test.json: { against: "tool-call.v1.json#/$defs/call" }
@@ -77,9 +79,21 @@ invalid:
   error/invalid/why_empty.json:
     against: "error.v1.json"
     error: { keyword: minLength, path: "why", message_contains: "'' should be non-empty" }
-  tool-call/invalid/call_source_outside_the_five.json:
+  tool-call/invalid/call_source_bridge_id_too_long.json:
     against: "tool-call.v1.json#/$defs/call"
-    error: { keyword: enum, path: "source", message_contains: "'mcp_network' is not one of ['local_grammar', 'system_one', " }
+    error: { keyword: anyOf, path: "source", message_contains: "'bridge:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' is not valid under any of the given schemas" }
+  tool-call/invalid/call_source_bridge_id_with_a_hyphen.json:
+    against: "tool-call.v1.json#/$defs/call"
+    error: { keyword: anyOf, path: "source", message_contains: "'bridge:neuroedge-muse' is not valid under any of the given schemas" }
+  tool-call/invalid/call_source_bridge_without_an_id.json:
+    against: "tool-call.v1.json#/$defs/call"
+    error: { keyword: anyOf, path: "source", message_contains: "'bridge:' is not valid under any of the given schemas" }
+  tool-call/invalid/call_source_outside_the_grammar.json:
+    against: "tool-call.v1.json#/$defs/call"
+    error: { keyword: anyOf, path: "source", message_contains: "'mcp_network' is not valid under any of the given schemas" }
+  tool-call/invalid/call_source_unknown_family.json:
+    against: "tool-call.v1.json#/$defs/call"
+    error: { keyword: anyOf, path: "source", message_contains: "'mqtt:muse' is not valid under any of the given schemas" }
   tool-call/invalid/call_with_an_unknown_key.json:
     against: "tool-call.v1.json#/$defs/call"
     error: { keyword: additionalProperties, path: "", message_contains: "Additional properties are not allowed ('token' was unexpecte" }

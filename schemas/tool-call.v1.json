@@ -20,8 +20,12 @@
       "default": {}
     },
     "source": {
-      "description": "Where the call came from. Assigned by the runtime from the connection (tool_calling.md §5); never the caller's to state.",
-      "enum": ["local_grammar", "system_one", "system_two", "mcp", "test"]
+      "description": "Where the call came from. Assigned by the runtime — from the connection, a bridge's registration or the verified client — never the caller's to state (tool_calling.md §5). A built-in name, or `bridge:<id>` / `mcp:<client>`.",
+      "type": "string",
+      "anyOf": [
+        { "enum": ["local_grammar", "system_one", "system_two", "mcp", "test"] },
+        { "pattern": "^(bridge|mcp):[a-z][a-z0-9_]{0,31}$" }
+      ]
     },
     "request": {
       "description": "What a caller sends. It carries no `source`: a request that states one is refused at the envelope.",
