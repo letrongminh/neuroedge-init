@@ -32,6 +32,14 @@ bản gói.
 
 #### Đã thêm
 
+- **Bộ tài liệu đợt thử đối tác (TSK-I2c-19, Q-70).** `docs/user/doi-tac/`: trang vào, ba hướng dẫn — Home Assistant qua
+  `proxy mcp`, `neuroedge.guard` trong agent Python, `proxy http` trước API thiết bị cục bộ — mỗi hướng dẫn ≤ 3 lệnh tới giá trị đầu,
+  thấy BLOCK, mở gate có chủ ý, thấy ALLOW, đọc vết ghi, làm proxy thành đường duy nhất; trang giới hạn và mẫu phản hồi.
+  `docs/business/doi-tac/`: checklist thoả thuận thử nghiệm (không phải văn bản pháp lý), kênh phản hồi riêng, kịch bản buổi đo
+  ≤ 15 phút; `scripts/partner_session_timer.sh`. `scripts/partner_guides_check.sh <wheel>` cài wheel vào venv sạch và chạy **mọi**
+  khối lệnh của ba hướng dẫn trên bản giả (Home Assistant MCP: `fixtures/ha_mcp_double/`), kiểm đúng kết quả hướng dẫn hứa;
+  `wheel_smoke.sh` gọi nó. Hướng dẫn Home Assistant nói rõ: chưa kiểm trên HA thật.
+
 - **Plugin Home Assistant cho cơ cấu từ xa (TSK-I2c-16 phần B, RFC-0018 §3j).** Kho riêng, private
   `letrongminh/neuroedge-homeassistant` (Apache-2.0): entry point `neuroedge.actuators: home_assistant`, mức **L1** cho `switch`,
   `light`, `input_boolean` (HA không mang thời hạn trong lệnh bật nên không đạt L2 — hành động không hoàn tác bị `build` từ chối),
