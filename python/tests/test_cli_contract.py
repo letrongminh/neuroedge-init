@@ -49,8 +49,8 @@ COMMANDS = {
     "mcp tools": "--agent|-a= --external --json --openai",
     "new": "<name> --template=",
     "plugin doctor": "--config|-c= --json",
-    "proxy http": "--config|-c= --trace-out=",
     "plugin list": "--json",
+    "proxy http": "--config|-c= --trace-out=",
     "proxy mcp": "--config-path= --config|-c= --desktop-config --name= --trace-out= --write",
     "record": (
         "--agent|-a= --anonymize --baud= --board|-b= --command|-c= --out|-o= --port= --raw "
