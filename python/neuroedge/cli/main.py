@@ -1000,6 +1000,12 @@ def guard_init(
         "--header-env",
         help="HEADER=ENVVAR: send the value of ENVVAR as that header (e.g. Authorization=HA_TOKEN)",
     ),
+    allow_lan_http: bool = typer.Option(
+        False,
+        "--allow-lan-http",
+        help="Accept plain http to a home-LAN host (private IP, *.local, *.lan, *.home.arpa) and "
+        "write allow_lan_http = true: calls and the token then travel in clear on the LAN",
+    ),
 ):
     """
     Put an existing server behind a Guard: write guard.toml and one gate per tool or route.
@@ -1032,12 +1038,12 @@ def guard_init(
         if http is not None:
             from ..proxy_http import init as init_http
 
-            plan = init_http(http, route, directory, name, header_env)
+            plan = init_http(http, route, directory, name, header_env, allow_lan_http)
             nxt = "proxy http"
         else:
             from ..proxy_mcp import init
 
-            plan = asyncio.run(init(mcp, directory, name, env_from, header_env))
+            plan = asyncio.run(init(mcp, directory, name, env_from, header_env, allow_lan_http))
             nxt = "proxy mcp"
     except NeuroEdgeError as error:
         _fail(error)

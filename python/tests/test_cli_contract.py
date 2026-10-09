@@ -34,7 +34,9 @@ COMMANDS = {
     "gate lint": "[directory] --registry|-r=",
     "gate publish": "<gate_file> --out|-o= --registry|-r=",
     "gate resolve": "<target> --json --registry|-r=",
-    "guard init": "--dir= --env-from=* --header-env=* --http= --mcp= --name= --route=*",
+    "guard init": (
+        "--allow-lan-http --dir= --env-from=* --header-env=* --http= --mcp= --name= --route=*"
+    ),
     "mcp desktop-config": (
         "--agent|-a= --config-path= --name= --port= --raw --trace-out= --ui --write"
     ),
