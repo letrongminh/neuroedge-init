@@ -113,7 +113,9 @@ def test_the_markers_are_documented_in_the_runner():
         assert word in doc, word
 
 
-COMMAND = re.compile(r"(?:^|&& )(?:env -u \w+ |[A-Z_]+=(?:\"[^\"]*\"|\S+) )*neuroedge (.+)$")
+# A value is a quoted string or a run without quotes or spaces — never both, so the match cannot
+# backtrack exponentially (CodeQL py/redos).
+COMMAND = re.compile(r"(?:^|&& )(?:env -u \w+ |[A-Z_]+=(?:\"[^\"]*\"|[^\s\"]+) )*neuroedge (.+)$")
 
 
 def _commands(path: Path):
