@@ -32,6 +32,12 @@ bản gói.
 
 #### Đã thêm
 
+- **Plugin Home Assistant cho cơ cấu từ xa (TSK-I2c-16 phần B, RFC-0018 §3j).** Kho riêng, private
+  `letrongminh/neuroedge-homeassistant` (Apache-2.0): entry point `neuroedge.actuators: home_assistant`, mức **L1** cho `switch`,
+  `light`, `input_boolean` (HA không mang thời hạn trong lệnh bật nên không đạt L2 — hành động không hoàn tác bị `build` từ chối),
+  đọc lại bằng poll; HTTP 200 của dịch vụ không phải trạng thái, chỉ lần đọc lại mới là. Qua 9/9 phép kiểm `neuroedge conformance`
+  trên bản giả Home Assistant; CI của kho ghim lõi ở commit main của PR #108. Chưa kiểm trên Home Assistant thật.
+
 - **Cơ cấu chấp hành từ xa — lõi của RFC-0018 (TSK-I2c-16 phần A).** Một cơ cấu ở xa (Home Assistant, ESPHome, Matter…) là
   một chân `digital.out` có tên, khai ở `[actuators.<tên>]` của `agent.toml` hoặc `guard.toml`, do plugin nhóm `neuroedge.actuators`
   lái, và chỉ tới được qua `_admit` (trạng thái → phong bì → token → vết ghi → lệnh). Mỗi cơ cấu khai mức tự tắt L0–L3; luật D5:
