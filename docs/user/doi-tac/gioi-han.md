@@ -10,7 +10,7 @@ Trang này nói thẳng điều đợt thử **không** làm hoặc **chưa ki�
 | Thoại trên chip (micro, loa, wake-word trên thiết bị) | **Ngoài đợt thử** |
 | NeuroBrain (điều phối nhiều thiết bị/phòng lab) | **Ngoài đợt thử** |
 | `linux` trên Raspberry Pi thật (chân GPIO thật) | **Thử nghiệm**, chưa được kiểm tự động trên Pi thật; đừng dùng cho thứ nguy hiểm khi chưa tự thử |
-| Cơ cấu chấp hành từ xa (điều khiển thiết bị qua mạng bằng chân ảo có phong bì) | Có trong lõi (`[actuators.<tên>]`, [`extension_sdk.md`](../../spec/extension_sdk.md) §7) và một plugin Home Assistant **mức L1** (`switch`, `light`, `input_boolean`) giao riêng dưới dạng wheel `neuroedge-homeassistant` nếu đợt thử cần. L1 nghĩa là NeuroEdge tự gửi lệnh tắt khi hết giờ; mất liên lạc thì thiết bị có thể bật mãi, nên hành động **không hoàn tác** (van, khoá, máy sưởi) bị `neuroedge build` từ chối với plugin này. Chỉ kiểm trên bản giả Home Assistant, **chưa kiểm trên HA thật**. |
+| Cơ cấu chấp hành từ xa (điều khiển thiết bị qua mạng bằng chân ảo có phong bì) | Có trong lõi (`[actuators.<tên>]`, [`extension_sdk.md`](../../spec/extension_sdk.md) §7) và một plugin Home Assistant **mức L1** (`switch`, `light`, `input_boolean`) giao riêng dưới dạng wheel `neuroedge-homeassistant` nếu đợt thử cần. L1 nghĩa là NeuroEdge tự gửi lệnh tắt khi hết giờ; mất liên lạc thì thiết bị có thể bật mãi, nên hành động **không hoàn tác** (van, khoá, máy sưởi) bị `neuroedge build` từ chối với plugin này. Chỉ kiểm trên bản giả Home Assistant, **chưa kiểm trên Home Assistant thật** (TSK-I2c-16). |
 | Plugin bên thứ ba (bridge, nguồn dữ kiện…) | Chưa có bộ nạp (TSK-I2c-11); `plugin doctor` in "không kiểm được: plugin" |
 | Phát hành công khai (PyPI, index) | Không có: wheel giao trực tiếp |
 
