@@ -61,7 +61,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | **Pha đang thực thi** | 🟡 **Phase MVP (§0.5)** — I1 đang mở; I2, I2a (sáu RFC), phần không cần bo mạch của I3 và I4 làm song song | Increment và ngày dự báo: §0.2 |
 | **Increment đang mở** | 🟡 **I1** — còn I1-02 (tạm hoãn: phát triển nội bộ) | I0 đã xong 42 / 42 · chi tiết §0.2 |
 | **Cột mốc tiếp theo** | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** | Ngày dự báo ở §0.2 · chưa phát hành ra ngoài (Q-39) |
-| **Lần cập nhật cuối** | **2026-10-09** | Phiên gần nhất: đợt thử đối tác sẵn phần mã — `neuroedge.guard`, `proxy mcp`, `proxy http`, `allow_lan_http`, cơ cấu từ xa + plugin Home Assistant L1 (kho riêng), bộ tài liệu đối tác chạy được (PR #103 → #112); Đối tác 1 xong, Đối tác 2 chờ một lần chạy tay workflow · trước đó: Q-70 — thử riêng với một đội đối tác trên thiết bị họ đang có, không chờ bo mạch, không lên PyPI; mục tiêu mới trong thẻ §0.3 · trước đó: mục tiêu "sẵn sàng ra thị trường" — làm hết mọi việc tới v1.0 không cần phần cứng hay người, bốn làn (thẻ §0.3) · trước đó: Q-69 — ba spike giả lập trước khi bo mạch về (TSK-I3-02, I3-03, I2a-08; đóng `TODOS.md` #22) · trước đó: quyết định nền tảng mở (Q-67) — increment I2c, I11 gộp vào, RFC-0002 ký, corpus tuân thủ sang Apache-2.0, RFC-0016 → RFC-0018 chấp thuận (Q-68) · trước đó: hợp đồng cho người tích hợp vào `schemas/` (TSK-I6-05, RFC-0015) và I2b — năm kit, thư viện gate `gates/home/`, `neuroedge add`; `tests_linux` 119/119 trên kernel (PR #94) · trước đó: chặng A, phần host — nguyên thủy mở rộng (`digital.in`, I2C, `analog.in`, PWM, `motion.*`, `vision.in`), phong bì an toàn, `board.v1` khai đủ, MCP qua mạng có xác thực; RFC-0014, RFC-0015 chấp thuận (Q-65, Q-66); job `linux-hal` xanh lần đầu cho phần mới (CI run 37153005998, PR #91) · trước đó: TSK-W1-02 — tiêu chí `numeric` và `NETR` v2; Q-63 khoảng hở nền tảng · sáu RFC nguyên thủy mở rộng chấp thuận (PR #75 → #80, Q-62); Q-61 bo camera M5Stack CoreS3; Q-58 → Q-60 — MCP qua mạng và Gated Tool Profile đóng băng vào I6, giữ PolyForm NC qua v1.0, mô hình một người + AI agent · trước đó: Q-52 → Q-57 (MVP = v1.0 đầy đủ, bốn gói nguyên thủy mở rộng, NeuroBrain vào MVP) · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
+| **Lần cập nhật cuối** | **2026-10-09** | Phiên gần nhất: đợt thử đối tác sẵn phần mã — `neuroedge.guard`, `proxy mcp`, `proxy http`, `allow_lan_http`, cơ cấu từ xa + plugin Home Assistant L1 (kho riêng), bộ tài liệu đối tác chạy được (PR #103 → #112); Đối tác 1, 2 xong (run 37921840105) · trước đó: Q-70 — thử riêng với một đội đối tác trên thiết bị họ đang có, không chờ bo mạch, không lên PyPI; mục tiêu mới trong thẻ §0.3 · trước đó: mục tiêu "sẵn sàng ra thị trường" — làm hết mọi việc tới v1.0 không cần phần cứng hay người, bốn làn (thẻ §0.3) · trước đó: Q-69 — ba spike giả lập trước khi bo mạch về (TSK-I3-02, I3-03, I2a-08; đóng `TODOS.md` #22) · trước đó: quyết định nền tảng mở (Q-67) — increment I2c, I11 gộp vào, RFC-0002 ký, corpus tuân thủ sang Apache-2.0, RFC-0016 → RFC-0018 chấp thuận (Q-68) · trước đó: hợp đồng cho người tích hợp vào `schemas/` (TSK-I6-05, RFC-0015) và I2b — năm kit, thư viện gate `gates/home/`, `neuroedge add`; `tests_linux` 119/119 trên kernel (PR #94) · trước đó: chặng A, phần host — nguyên thủy mở rộng (`digital.in`, I2C, `analog.in`, PWM, `motion.*`, `vision.in`), phong bì an toàn, `board.v1` khai đủ, MCP qua mạng có xác thực; RFC-0014, RFC-0015 chấp thuận (Q-65, Q-66); job `linux-hal` xanh lần đầu cho phần mới (CI run 37153005998, PR #91) · trước đó: TSK-W1-02 — tiêu chí `numeric` và `NETR` v2; Q-63 khoảng hở nền tảng · sáu RFC nguyên thủy mở rộng chấp thuận (PR #75 → #80, Q-62); Q-61 bo camera M5Stack CoreS3; Q-58 → Q-60 — MCP qua mạng và Gated Tool Profile đóng băng vào I6, giữ PolyForm NC qua v1.0, mô hình một người + AI agent · trước đó: Q-52 → Q-57 (MVP = v1.0 đầy đủ, bốn gói nguyên thủy mở rộng, NeuroBrain vào MVP) · chi tiết `CHANGELOG.md` `[Chưa phát hành]` |
 | **Trạng thái CI Lõi** | ✅ **PASS 4874/4874 · SKIP 0** | `python/tests/` — 125 bộ test; `verify` quét 0 artifact ⇒ mã 1; gate chuẩn mực khoá ở `digests.lock` (job Frozen artifacts); wheel đã cài chạy cả hành trình (job `wheel-smoke`); cổng CI chặn mọi test bị skip · `tests_linux/` 119/119 trên gpio-sim + i2c-stub (lm75, ina219, ads7828) + vkms + vivid, rồi `verify --targets sim,linux` (job `linux-hal`, CI run 37176765897; gồm năm kit I2b) · `ui-golden` 66 ảnh, `ota-rollback` pha a–g · `security.yml`: pip-audit, gitleaks toàn lịch sử, CodeQL · extra `cloud` trên litellm thật + giấy phép Q-11 (job `cloud-extra`) |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · bo camera đã chọn là M5Stack CoreS3 nhưng chưa đặt (Q-61, TSK-I3a-01) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](../TODOS.md) | Mỗi mục kèm mốc kích hoạt · câu hỏi kinh doanh mở (`TODOS.md` #19) rà lại trước I6 — luật cổng nhu cầu đã bỏ (Q-56) |
@@ -111,11 +111,11 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ 0. MỤC TIÊU — đợt thử riêng với một đội đối tác (Q-70): phần mã và tài liệu đã sẵn;    │
 │    còn các bước của người, rồi tiếp tục tới v1.0 không cắt phạm vi (Q-52)              │
-│    Lời hứa: đặt gate trước mọi lệnh AI chạm vào thiết bị người dùng đang có. Đối tác 1 │
-│    [x]; Đối tác 2 chờ một lần chạy tay `release-pypi.yml` trên GitHub; Đối tác 3–5 là  │
-│    việc của người, checklist ở `docs/business/doi-tac/`                                │
+│    Lời hứa: đặt gate trước mọi lệnh AI chạm vào thiết bị người dùng đang có. Đối tác   │
+│    1, 2 [x] (wheel của `release-pypi.yml` run 37921840105 chạy được ba hướng dẫn); Đối │
+│    tác 3–5 là việc của người, checklist ở `docs/business/doi-tac/`                     │
 │                                                                                        │
-│ 1. VỪA HOÀN THÀNH — 2026-10-09, PR #103 → #112                                         │
+│ 1. VỪA HOÀN THÀNH — 2026-10-09, PR #103 → #114                                         │
 │    • Q-70; RFC-0017 nửa (a): `bridge:<id>`, `mcp:<client>`, `call_channel` (#104)      │
 │    • `neuroedge.guard` (#105); `proxy mcp` + `guard init --mcp` + `plugin doctor`      │
 │      (#106); `proxy http` (#107); `allow_lan_http` (#109)                              │
@@ -128,18 +128,16 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 │    • TSK-S1-10 (V2) — chờ bo mạch; đo thêm MultiNet (+ WakeNet) theo Q-14              │
 │                                                                                        │
 │ 3. VIỆC TIẾP THEO — đúng thứ tự                                                        │
-│    1. Người: chạy `gh workflow run release-pypi.yml --ref main`, tải wheel, chạy       │
-│       `scripts/partner_guides_check.sh <wheel>`; tick Đối tác 2                        │
-│    2. Người: chốt đội đối tác; thoả thuận thử nghiệm qua luật sư                       │
-│       (`docs/business/doi-tac/thoa-thuan.md`, `TODOS.md` #44); mở kênh phản hồi; buổi  │
-│       đo ≤ 15 phút (`buoi-do.md`)                                                      │
-│    3. Người: thử `proxy mcp` trên một Home Assistant thật; ghi chỗ khác bản giả vào    │
+│    1. Người: chốt đội đối tác; thoả thuận thử nghiệm qua luật sư                       │
+│       (`docs/business/doi-tac/thoa-thuan.md`, `TODOS.md` #44); mở kênh phản hồi; giao  │
+│       wheel của run 37921840105; buổi đo ≤ 15 phút (`buoi-do.md`)                      │
+│    2. Người: thử `proxy mcp` trên một Home Assistant thật; ghi chỗ khác bản giả vào    │
 │       `phan-hoi.md`                                                                    │
-│    4. Phần còn lại của I2c: bộ nạp plugin năm loại còn lại + `bridge run` (I2c-11), bộ │
+│    3. Phần còn lại của I2c: bộ nạp plugin năm loại còn lại + `bridge run` (I2c-11), bộ │
 │       tuân thủ (I2c-12), RFC-0014 (I2c-09), RFC-0017 nửa (b), target (V1a)             │
-│    5. Khi chờ: spike Q-69 (TSK-I3-03 trước), firmware trước khi bo về; đặt bo (Phụ lục │
+│    4. Khi chờ: spike Q-69 (TSK-I3-03 trước), firmware trước khi bo về; đặt bo (Phụ lục │
 │       B)                                                                               │
-│    6. Sau I2c: NeuroBrain trên host (I4a); làn phát hành của I6, I7                    │
+│    5. Sau I2c: NeuroBrain trên host (I4a); làn phát hành của I6, I7                    │
 │                                                                                        │
 │ 4. LƯU Ý — bất biến ở CHANGELOG.md §3.3; dưới đây chỉ điều chưa có ở đó                │
 │    • Đợt thử đối tác không lên index nào; PyPI vẫn ở I6 (Q-39); giữ phạm vi Q-52       │
@@ -793,7 +791,7 @@ I11 (mở danh sách target) gộp vào đây theo Q-67: task TSK-V1a-01 → V1a
 **Thử với đối tác (Q-70)** — không phải tag của I2c, không chờ task cần phần cứng của I2, I2a, I2b, không lên index nào; bắt đầu khi đủ cả năm điều:
 
 - [x] **Đối tác 1:** Tiêu chí 2, 4, 5 của I2c đạt; `neuroedge proxy http` (TSK-I2c-15) xong. — tiêu chí 2 (PR #105), 4 (PR #106), 5 (PR #108 + kho `neuroedge-homeassistant` PR #1) và TSK-I2c-15 (PR #107) xong.
-- [ ] **Đối tác 2:** Wheel dựng bằng job `build` + `smoke` của `release-pypi.yml` chạy tay; `pytest` xanh, 0 skipped; `scripts/wheel_smoke.sh` trên đúng wheel giao đi. — *2026-10-09: đã dựng tại máy đúng các bước của job `build` (sdist → wheel từ sdist, `twine check --strict` PASSED) trên main `12ab525`; `wheel_smoke.sh --wheel` xanh và `partner_guides_check.sh` chạy đủ 47 bước của ba hướng dẫn trên đúng wheel đó; `pytest` 0 failed, 0 skipped. Còn: một lần chạy tay `release-pypi.yml` trên GitHub (`gh workflow run release-pypi.yml --ref main`, không tag, `PUBLISH_ENABLED` chưa đặt) — bước của người, rồi `partner_guides_check.sh` trên wheel tải về từ lần chạy đó.*
+- [x] **Đối tác 2:** Wheel dựng bằng job `build` + `smoke` của `release-pypi.yml` chạy tay; `pytest` xanh, 0 skipped; `scripts/wheel_smoke.sh` trên đúng wheel giao đi. — `release-pypi.yml` chạy tay trên main `83f41c4` (run 37921840105: build, smoke 3.11/3.13, SBOM, provenance xanh; publish và GitHub release bỏ qua); wheel `neuroedge-0.1.0-py3-none-any.whl` (sha256 `b29ca4fc…8c2e`) tải từ run đó, `scripts/partner_guides_check.sh` chạy đủ 47 bước của ba hướng dẫn trong venv sạch; `pytest` 4874 passed, 0 skipped.
 - [ ] **Đối tác 3:** Thoả thuận thử nghiệm bằng văn bản với đội đối tác (đánh giá, bảo mật, phản hồi; `TODOS.md` #44 là đầu vào) — bước của người.
 - [ ] **Đối tác 4:** Kênh phản hồi riêng với đối tác và quy trình tiếp nhận lỗi; vết ghi gửi về mặc định ẩn danh (TSK-I1-01).
 - [ ] **Đối tác 5:** Đội đối tác cài wheel trên máy của họ, chạy ba hướng dẫn của TSK-I2c-19 và che được một MCP server hoặc API thiết bị thật của họ trong ≤ 15 phút — bước của người (Q-60).
