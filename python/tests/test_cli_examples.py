@@ -131,6 +131,18 @@ NOT_RUN = {
         "connects to a real MCP server over the network"
     ),
     "neuroedge proxy mcp": "an MCP stdio server; needs a guard.toml made by `guard init`",
+    # TSK-I2c-15: a loopback server that runs until interrupted, and a guard.toml of a real API;
+    # tests/test_proxy_http.py runs each against the fixture upstream
+    "neuroedge proxy http": "serves until interrupted; needs a guard.toml made by `guard init --http`",
+    "neuroedge proxy http --config plug/guard.toml --trace-out plug/session.json": (
+        "serves until interrupted"
+    ),
+    'neuroedge guard init --http http://127.0.0.1:8080 --route "POST /cm/{cmd}"': (
+        "writes guard.toml and gates/ into the current directory (test_guard_init_http_… runs it)"
+    ),
+    'neuroedge guard init --http http://127.0.0.1:8080 --route "POST /cm/{cmd}" --dir plug': (
+        "writes into a new directory (test_guard_init_http_… runs it)"
+    ),
     "neuroedge proxy mcp --config ha/guard.toml --trace-out ha/session.json": (
         "an MCP stdio server"
     ),

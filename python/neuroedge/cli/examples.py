@@ -41,12 +41,20 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
     ),
     "gate add": ("neuroedge gate add neuroedge://gates/unlock_door@1.2.0",),
     # -- guard · proxy · plugin (TSK-I2c-14) ---------------------------------------------
-    "guard": ('neuroedge guard init --mcp "python my_server.py"',),
+    "guard": (
+        'neuroedge guard init --mcp "python my_server.py"',
+        'neuroedge guard init --http http://127.0.0.1:8080 --route "POST /cm/{cmd}"',
+    ),
     "guard init": (
         'neuroedge guard init --mcp "python my_server.py"',
         "neuroedge guard init --mcp https://ha.local/mcp --header-env Authorization=HA_TOKEN --dir ha",
+        'neuroedge guard init --http http://127.0.0.1:8080 --route "POST /cm/{cmd}" --dir plug',
     ),
-    "proxy": ("neuroedge proxy mcp",),
+    "proxy": ("neuroedge proxy mcp", "neuroedge proxy http"),
+    "proxy http": (
+        "neuroedge proxy http",
+        "neuroedge proxy http --config plug/guard.toml --trace-out plug/session.json",
+    ),
     "proxy mcp": (
         "neuroedge proxy mcp",
         "neuroedge proxy mcp --config ha/guard.toml --trace-out ha/session.json",

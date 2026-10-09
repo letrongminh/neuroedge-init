@@ -53,6 +53,8 @@ ALLOWED: dict[str, set[str]] = {
     "guard": {"actions", "engine", "errors", "hal", "models", "sdk", "sim", "trace"},
     # `neuroedge proxy mcp` (TSK-I2c-14): an MCP client to the real server in front of a Guard
     "proxy_mcp": {"engine", "errors", "guard", "mcp_server", "models", "sdk"},
+    # `neuroedge proxy http` (TSK-I2c-15): a loopback HTTP front for a Guard; stdlib behind
+    "proxy_http": {"errors", "guard", "models", "proxy_mcp", "sdk"},
     "testing": {"actions", "engine", "errors", "hal", "paths", "perception", "trace"},
     # The studio (TSK-I1-04) shows every capability, so it reads every layer below the CLI.
     "studio": {
@@ -84,6 +86,7 @@ LAZY: dict[str, set[str]] = {
         "mcp_host",
         "mcp_http",
         "mcp_server",
+        "proxy_http",
         "proxy_mcp",
         "studio",
         "templates",
@@ -92,7 +95,7 @@ LAZY: dict[str, set[str]] = {
     },
     "mcp_host.py": {"mcp_server"},
     # `plugin doctor` reads Claude Desktop's config to see who else launches the upstream server
-    "proxy_mcp.py": {"mcp_desktop"},
+    "proxy_mcp.py": {"mcp_desktop", "proxy_http"},
     # `serve_mcp` records the session only when asked to: the recorder is `testing`'s
     "sim/serve.py": {"testing"},
     # `[vision]` (TSK-V1b-01/02): `perception` sits above `sim` (the voice session wraps a

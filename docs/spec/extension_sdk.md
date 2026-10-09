@@ -89,6 +89,7 @@ default = 5                       # tuỳ chọn, đúng kiểu; có mặc đị
 | `[tools.<tên>]` | `gate`, `requires`, `drive`, `parameters` | |
 | `[tools.<tên>.parameters.<p>]` | `type`, `default`, `description`, `required` | giới hạn giá trị là của `arguments` trong gate (RFC-0005), không ở đây. Không có `default` và không có `required = false` ⇒ tham số bắt buộc; `required = false` không `default` ⇒ tham số tuỳ chọn mà `run` không nhận nếu người gọi không đưa |
 | `[proxy.mcp]` | `command` hoặc `url`, `env_from`, `headers_env`, `names` | chỉ do `proxy mcp` và `plugin doctor` đọc (§4); `Guard` bỏ qua |
+| `[proxy.http]` | `upstream`, `listen`, `id`, `headers_env`, `[[routes]]` (`method`, `path`, `tool`) | chỉ do `proxy http` và `plugin doctor` đọc (§5); đúng một trong `[proxy.mcp]` / `[proxy.http]` mỗi tệp |
 | `[plugins]` | `enable`, `config` | khác rỗng ⇒ từ chối, nêu TSK-I2c-11 |
 | `[external]` | — | từ chối, nêu TSK-I2c-09 |
 | `[actuators]` | — | từ chối, nêu TSK-I2c-16 |
@@ -148,7 +149,7 @@ tool phải có mặt ở đó (theo `[proxy.mcp.names]`), mỗi tham số khai 
 - **Máy chủ thật hỏng sau ALLOW** ⇒ kết quả lỗi (`status = ALLOW`, `isError` = true, "was not retried"); **không bao giờ thử lại**, vì lời gọi có thể đã xảy ra (`test_an_upstream_error_after_allow_is_an_error_result_not_a_retry`).
 - **Vết ghi.** `--trace-out` ghi `guard.trace()` khi thoát (kể cả SIGTERM); `metadata.proxy = {kind, upstream}` — không có đối số lệnh hay URL truy vấn. Vết có **đối số của lời gọi** như nhận từ client (không băm): coi nó như dữ liệu của máy chủ thật. Replay: `TracePlayer(trace, guard="guard.toml")`, không bao giờ chạm máy chủ thật (`test_the_proxy_trace_validates_and_replays`).
 - **Claude Desktop.** `neuroedge proxy mcp --desktop-config [--write] [--config-path P] [--name N]` in (hay ghi, kèm bản sao lưu, đúng một mục `mcpServers`) lối vào để Desktop chạy proxy. Desktop khởi chạy với môi trường tối thiểu: các biến trong `env_from`/`headers_env` phải được thêm vào khối `env` của mục đó **bằng tay** (lệnh nhắc, và không ghi bí mật vào tệp).
-- Chưa có: front qua mạng (`proxy http`, TSK-I2c-15), `--init-timeout` như `mcp serve`, gate đọc dữ kiện của chính máy chủ thật.
+- Chưa có: front qua mạng (cho MCP: TSK-I2c-15 chỉ làm `proxy http` cho API HTTP, §5), `--init-timeout` như `mcp serve`, gate đọc dữ kiện của chính máy chủ thật.
 
 ### 4.4 `plugin doctor` — "proxy là đường duy nhất" chỉ kiểm được một phần
 
@@ -163,3 +164,52 @@ tool phải có mặt ở đó (theo `[proxy.mcp.names]`), mỗi tham số khai 
 
 Mã thoát: `1` nếu có ít nhất một cảnh báo, `0` nếu không (các dòng "không kiểm được" không đổi mã thoát — chúng không phải bằng chứng). `0` **không** nghĩa là proxy là đường duy nhất: nó chỉ nghĩa là doctor không thấy lối vòng.
 Tin đúng hơn: đặt máy chủ thật sau tường lửa/ACL để chỉ proxy tới được; doctor không làm việc đó.
+
+## 5. `neuroedge proxy http` — một API HTTP cục bộ có sẵn đứng sau NeuroEdge (TSK-I2c-15, FR-EXT-06)
+
+Cho API web của Tasmota/Shelly/ESPHome, một dịch vụ REST tự viết, REST của Home Assistant. Mỗi **route khai báo** là một tool của `Guard`; request chỉ được chuyển tới API thật **bên trong `run` của tool**, tức là sau ALLOW; mọi thứ
+không khai báo bị từ chối bằng 404 và không bao giờ được chuyển tiếp. Hình dạng và độ chặt như `proxy mcp` (§4): `guard init --http` → sửa gate có chủ ý → `proxy http`.
+
+### 5.1 Bảng `[proxy.http]`
+
+```toml
+[proxy.http]
+upstream = "http://127.0.0.1:8080"   # http chỉ tới loopback; https tới đâu cũng được; không thông tin đăng nhập/truy vấn/fragment
+listen   = "127.0.0.1:8787"          # CHỈ loopback (127.0.0.0/8, ::1, localhost): front không có xác thực ở bản này
+id       = "http"                    # id bridge ⇒ nguồn `bridge:http`
+headers_env = { Authorization = "DEVICE_TOKEN" }   # tên header → TÊN biến môi trường; không bao giờ giá trị
+
+[[proxy.http.routes]]
+method = "POST"                      # GET | POST | PUT | PATCH | DELETE
+path   = "/cm/{cmd}"                 # `{tham_số}` là cả một đoạn; không `..`, không `%`, không query
+tool   = "post_cm_cmd"               # một [tools.<tên>] của cùng tệp
+```
+
+Kiểm lúc nạp (NE3002, ba phần): địa chỉ `listen` không phải loopback; `upstream` http tới máy khác; bí mật viết thẳng (khoá mang tên bí mật, giá trị `headers_env` không phải tên biến — không bao giờ in lại);
+route trùng (không kể tên tham số); tool không có; mỗi `{tham_số}` phải là tham số mà tool khai (nếu không mọi request sẽ `REJECTED`); tool không có route nào; cả `[proxy.mcp]` lẫn `[proxy.http]`.
+Không kết nối được tới `upstream` hoặc biến môi trường vắng ⇒ không khởi động.
+
+### 5.2 Nguồn là `bridge:<id>`
+
+HTTP không có nguồn dựng sẵn (thêm một giá trị `enum` là RFC, `schemas/`), nên front này là **một bridge của lõi**: nó gọi `guard.dispatcher(id)` và mọi lời gọi có nguồn `bridge:<id>` (mặc định `bridge:http`, RFC-0017 §3b).
+Gate **phải liệt kê nó**: gate chỉ liệt kê `mcp` chặn nó (`criterion_unavailable`, HTTP 403) — `test_the_proxy_dispatches_as_a_bridge_and_a_gate_listing_only_mcp_blocks_it`. Gate sinh ra liệt kê đúng `bridge:<id>` của tệp.
+
+### 5.3 Request → tool
+
+- **Tham số của tool:** tham số đường dẫn, tham số query và các **vô hướng cấp cao nhất** của body JSON. Kiểm bằng lược đồ của `Guard`: tham số không khai ⇒ `REJECTED` (400).
+- **400 và không dispatch:** body không phải JSON, không phải đối tượng, giá trị lồng/`null`, khoá JSON lặp, tham số lặp (trong query, hoặc giữa đường dẫn/query/body), đoạn đường dẫn rỗng hoặc không an toàn (`%2f`, `%5c`, `%00`, `//`, `.`/`..` sau khi giải mã).
+- **Chuyển tiếp nguyên văn:** method, đường dẫn, query và body **như đã nhận** (không dựng lại) tới `upstream`, kèm header cấu hình. Bỏ header hop-by-hop (và header nêu trong `Connection`), `Host` (đặt lại), `Content-Length` (tính lại),
+  `Expect`; **`Authorization` và `Cookie` của client không bao giờ được chuyển** — header cấu hình ở `headers_env` thay chỗ.
+- **Trả lời:** ALLOW ⇒ status, header (trừ hop-by-hop) và body của upstream; BLOCK ⇒ **403** + phán quyết JSON; `REJECTED` ⇒ **400** + phán quyết; route không khai báo ⇒ **404** (nêu chỉ route khai báo mới qua, không chuyển gì);
+  body > 1 MiB ⇒ **413** (không đọc); `Transfer-Encoding` ⇒ 411; upstream hỏng sau ALLOW ⇒ **502** + phán quyết + vấn đề, **không bao giờ thử lại**; mỗi request tới upstream có thời hạn 30 giây.
+- Mỗi kết nối một request (`Connection: close`); `dispatch` tuần tự dưới khoá của `Guard`.
+
+### 5.4 Lệnh
+
+- `neuroedge guard init --http <upstream> --route "METHOD /đường/{tham_số}" [--route …] [--dir DIR] [--name TÊN] [--header-env HEADER=BIẾN]`: viết `guard.toml` và một gate **chặn mặc định** cho mỗi route (cùng khuôn `operator_approved` như `guard init --mcp`;
+  `call_source` có `bridge:http` trong `options` và `allow_when` chỉ nhận nó); tham số đường dẫn khai kiểu `string`; query/body muốn nhận phải tự khai thêm; không bao giờ ghi đè (`test_guard_init_http_never_overwrites_a_file`).
+  `--mcp` và `--http` loại trừ nhau; `--route` chỉ đi với `--http`.
+- `neuroedge proxy http [--config guard.toml] [--trace-out PATH]`: phục vụ **chỉ trên loopback** tới khi SIGINT/SIGTERM, rồi ghi vết (`metadata.proxy = {kind: "http", upstream}`); replay bằng `TracePlayer(trace, guard=…)` không chạm upstream.
+- `neuroedge plugin doctor` (cùng lệnh với §4.4): với `[proxy.http]`, **API còn tới được trực tiếp ⇒ CẢNH BÁO** — với API cục bộ thì luôn như vậy; người vận hành phải đặt API của thiết bị sau tường lửa/ACL hoặc chỉ nhận từ máy proxy. Doctor không quét mạng
+  nên nói "không kiểm được" cho máy/ứng dụng khác; gate không đọc `call_source` ⇒ CẢNH BÁO; plugin: "không kiểm được". Mã thoát như §4.4.
+- **Chưa có:** TLS và xác thực ở front (vì vậy chỉ loopback), websocket, body streaming, `--init-timeout`.

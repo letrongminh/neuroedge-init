@@ -94,14 +94,22 @@ def parse_upstream(config: GuardConfig) -> Upstream:
     """
     where = f"{config.source} [proxy.mcp]"
     refuse_unknown(
-        config.proxy, config.source, "proxy", ("mcp",),
-        "only [proxy.mcp] exists; `proxy http` arrives with TSK-I2c-15",
+        config.proxy, config.source, "proxy", ("mcp", "http"),
+        "[proxy] has mcp (`proxy mcp`) or http (`proxy http`), exactly one of them",
     )  # fmt: skip
+    if "http" in config.proxy and "mcp" in config.proxy:
+        raise _bad(
+            f"{config.source} [proxy]",
+            "both [proxy.mcp] and [proxy.http] are given; a guard.toml fronts one kind of server",
+            "keep one of them, in separate directories if you need both",
+        )
     table = config.proxy.get("mcp")
     if not isinstance(table, dict):
         raise _bad(
             where,
-            "this guard.toml has no [proxy.mcp] table: there is nothing to put the proxy in front of",
+            "this guard.toml has no [proxy.mcp] table: there is nothing to put `proxy mcp` in "
+            "front of"
+            + (" (it has [proxy.http]: use `proxy http`)" if "http" in config.proxy else ""),
             "run `neuroedge guard init --mcp <command or url>`, or add [proxy.mcp]",
         )
     refuse_unknown(
@@ -863,6 +871,10 @@ def doctor(config_path: Path, *, desktop_config: Path | None = None) -> list[Fin
     — never a bare OK.
     """
     config = load_config(config_path)
+    if "http" in config.proxy:
+        from .proxy_http import doctor as doctor_http
+
+        return doctor_http(config)
     up = parse_upstream(config)
     findings: list[Finding] = []
     if up.url:
