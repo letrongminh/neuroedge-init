@@ -220,6 +220,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `wireframe/` | Wireframe HTML tham chiếu cho UI (bản chụp `ui.css`, không đóng gói) — hiện có Lab Monitor của Khối N5b | PR thường |
 | `demo/` | Kịch bản demo của từng increment (`demo/<increment>/`): lời dẫn, lệnh, đầu ra thật, commit đã chạy lại; danh mục ở `demo/README.md` (Q-49) | PR thường; người review chạy lại kịch bản |
 | `docs/user/` | Tài liệu người dùng; `thuat-ngu.md` là nơi duy nhất giải mã ký hiệu; `trang-thai.md` sinh từ roadmap §0 | PR thường — `python3 scripts/gen_user_status.py` |
+| `docs/user/doi-tac/` · `docs/business/doi-tac/` · `fixtures/ha_mcp_double/` | Gói đợt thử với đối tác (Q-70): ba hướng dẫn chạy được, trang giới hạn, mẫu phản hồi · danh sách thoả thuận, kênh phản hồi, buổi đo · bản **giả** của Home Assistant MCP Server cho hướng dẫn | PR thường — mọi khối lệnh của hướng dẫn có dấu (`scripts/guide_runner.py`, test `test_partner_guides.py`); sửa hướng dẫn thì chạy `scripts/partner_guides_check.sh <wheel>` |
 | `docs/release.md` | Thủ tục phát hành: tag nội bộ trước I6, PyPI từ I6 | PR thường |
 | `README.md` | Trang đầu và trang PyPI (link tuyệt đối) | PR thường — `tests/test_readme_quickstart.py` |
 | `roadmap/` | Sáu tài liệu sản phẩm: roadmap, PRD, proposal, hai ghi chú thiết kế, kế hoạch robot (bản nháp RFC node ở `docs/rfc/`) | Theo từng tệp ở các dòng dưới |

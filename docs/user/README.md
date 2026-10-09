@@ -17,6 +17,7 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | Sản phẩm làm được gì, trên môi trường nào, và thử từng bước ra sao | [`huong-dan.md`](huong-dan.md) | năng lực theo nhóm (§3–§4) và kịch bản thử từng bước (§5) |
 | Trạng thái hiện tại | [`trang-thai.md`](trang-thai.md) | máy sinh từ roadmap §0 |
 | Dựng thiết bị thật từ năm kit (BOM, sơ đồ đấu dây, từ hộp tới chạy thật) | [`kit-phan-cung.md`](kit-phan-cung.md) | khoá cửa villa, trợ lý giọng nói, giám sát phòng máy, camera cổng, rèm cửa; chưa kiểm trên phần cứng thật |
+| Thử với đối tác: che Home Assistant, agent Python hay API thiết bị bằng một gate (đợt thử, Q-70) | [`doi-tac/README.md`](doi-tac/README.md) | ba hướng dẫn chạy được từ wheel, trang giới hạn, mẫu phản hồi; danh sách thoả thuận và buổi đo ở [`docs/business/doi-tac/`](../business/doi-tac/buoi-do.md) |
 | Nạp agent của mình lên ESP32-S3-BOX-3 (hoặc QEMU) | [`nap-firmware.md`](nap-firmware.md) | `build --target esp32s3` → `idf.py flash`; nơi duy nhất của thủ tục nạp |
 | **Hiểu sản phẩm** | | |
 | Yêu cầu `FR-*` / `NFR-*` | [`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) | sổ quyết định là §15 (mã `Q-N`) |

@@ -444,4 +444,7 @@ if grep -q '/cm/' "$WORK/http-smoke/up.log"; then echo "::error::a BLOCKed reque
 kill "$UP_PID" 2>/dev/null || true
 cd "$WORK"
 unset UPSTREAM_LOG
+# The partner guides (docs/user/doi-tac/, TSK-I2c-19) run from this same wheel, in a venv of their own, against
+# local doubles: every command block of the three guides, and the output each one promises.
+bash "$REPO/scripts/partner_guides_check.sh" "$WHEEL" "$PY"
 echo "✓ the installed wheel runs the whole journey"
