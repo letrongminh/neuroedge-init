@@ -253,7 +253,7 @@ Test dưới đây là **tên đề xuất**, chưa tồn tại tới khi RFC đ
 
 ## 8. Việc phải làm khi chấp thuận
 
-- [ ] **TSK-I2c-07** — `neuroedge.guard` (§3b), hàm dựng HAL dùng chung, khoá `dispatch`, đường replay bằng `guard.toml`; `python_api.md` §1, §2; `test_architecture_layers.py`, `03-component-host-c4l3.md`
+- [x] **TSK-I2c-07** — `neuroedge.guard` (§3b), hàm dựng HAL dùng chung, khoá `dispatch`, đường replay bằng `guard.toml`; `python_api.md` §1, §2; `test_architecture_layers.py`, `03-component-host-c4l3.md`
 - [ ] **TSK-I2c-08** — `resolve_board`, `--template` đường dẫn / `pkg:` / `git+URL@sha`, nhiều gốc `GateRegistry` và `--registry` lặp (§3f); `board validate` cùng TSK-I2c-05 (RFC-0002)
 - [ ] **TSK-I2c-11** — `neuroedge.sdk` (Protocol, `SDK_VERSION`), bộ nạp entry point, `[plugins]`, `plugin list`, `plugin doctor`, `bridge run`, nguồn gốc vào `metadata.plugins` và sự kiện `plugin_loaded`; `threat_model.md` §2d; khoá `plugin` ở `[external.sources.<id>]` cùng TSK-I2c-09
 - [ ] **TSK-I2c-12** — phép kiểm theo loại (§3g), `fixtures/compliance/<nhóm>/` (cùng vector actuator của RFC-0018), `neuroedge conformance`, `docs/spec/extension_sdk.md`; spike `sys.addaudithook` trước

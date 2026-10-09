@@ -32,6 +32,15 @@ bản gói.
 
 #### Đã thêm
 
+- **`neuroedge.guard` — lõi an toàn dùng độc lập (TSK-I2c-07, RFC-0016 §3b).** Chương trình bất kỳ có gate → token → phong bì →
+  vết ghi mà không cần `agent.toml`, `@action` hay `SimSession`: `Guard.load("guard.toml")` hoặc `Guard(tools=[Tool(...)])`;
+  `guard.dispatcher(id)` đăng ký nguồn `bridge:<id>` (người gọi không nêu nguồn); thân là `run` (hàm Python) hoặc `drive`
+  khai báo. Gate phân giải đủ lúc nạp; không công tắc fail-open; không bo ⇒ chỉ phán quyết. Đi đúng `dispatch()` như mọi bên gọi,
+  qua một `Conversation` riêng; HAL dựng bằng một hàm chung với `SimSession` (`sim/hal_build.py`). Lời gọi chạy lần lượt dưới
+  một khoá để vết ghi replay được; `TracePlayer(trace, guard=…)` replay vết ghi của Guard. `neuroedge.sdk` tối thiểu
+  (`ToolRequest`, `Outcome`, `SDK_VERSION`). `[plugins]`, `[external]`, `[actuators]`, nhiều gốc registry và bo theo đường dẫn
+  bị từ chối (NE3002) cho tới task của chúng. Ví dụ `examples/guard/`; đặc tả `docs/spec/extension_sdk.md`.
+
 - **Nguồn gọi theo không gian tên — TSK-I2c-10 nửa (a), RFC-0017.** `source` của `ToolCall` nhận thêm `bridge:<id>` và
   `mcp:<client>` (id theo `[a-z][a-z0-9_]{0,31}`, kiểm bằng `fullmatch`); `dispatch()` từ chối (NE1004) nguồn có không gian tên
   chưa đăng ký với phiên; dữ kiện dẫn xuất `call_channel` (họ của nguồn) chèn sau mọi nguồn dữ kiện, nên không ai ghi đè được,
