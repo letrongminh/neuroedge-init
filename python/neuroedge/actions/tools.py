@@ -12,14 +12,18 @@ and `dispatch()` is the only way it reaches hardware:
     ToolCall ─► arguments checked against the tool schema ─► c.do() ─► gate ─► token ─► HAL
 
 Sources: ``local_grammar`` (the fixed-command grammar — also what runs offline,
-Q-14), ``system_one``, ``system_two``, ``mcp``, ``test``.
+Q-14), ``system_one``, ``system_two``, ``mcp``, ``test``; and two namespaces the
+runtime fills in, ``bridge:<id>`` (a loaded bridge) and ``mcp:<client>`` (a labelled
+network client) — RFC-0017.
 
 A tool call is an *intention*, never a permission. Arguments a model invents
 are checked against the schema derived from the action's signature before
 the gate sees them; a call that fails the check is rejected and moves
 nothing. The dispatcher also puts the trusted fact ``call_source`` into the
 gate's context, so a gate can say which sources may trigger an action
-(``call_source: { in: [local_grammar] }``) — a model cannot claim it.
+(``call_source: { in: [local_grammar] }``) — a model cannot claim it — and the
+derived ``call_channel`` (its family: ``bridge`` for ``bridge:muse``), so a gate can
+say "any bridge".
 
 Schemas come in the two shapes models speak: MCP (`inputSchema`) and OpenAI
 function calling (Q-12).
@@ -29,6 +33,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import re
 import typing
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
@@ -41,6 +46,33 @@ from .spec import ActionSpec
 
 SOURCES = ("local_grammar", "system_one", "system_two", "mcp", "test")
 CALL_SOURCE_FACT = "call_source"
+CALL_CHANNEL_FACT = "call_channel"
+# The id after the colon of `bridge:<id>` / `mcp:<client>`: RFC-0014 §3c `source_id`.
+SOURCE_ID = re.compile(r"[a-z][a-z0-9_]{0,31}")
+NAMESPACES = ("bridge", "mcp")
+
+
+def valid_source(source: object) -> bool:
+    """
+    A built-in name, or ``bridge:<id>`` / ``mcp:<client>`` (RFC-0017 §3a). `fullmatch`, never
+    `search` or `$`: the `$` of Python matches before a trailing newline, ECMA 262 does not.
+    """
+    if not isinstance(source, str):
+        return False
+    if source in SOURCES:
+        return True
+    family, colon, ident = source.partition(":")
+    return bool(colon) and family in NAMESPACES and SOURCE_ID.fullmatch(ident) is not None
+
+
+def source_channel(source: object) -> str | None:
+    """The family of a source — what comes before the first colon, or the whole name; `None` if it is not a source."""
+    if not valid_source(source):
+        return None
+    assert isinstance(source, str)
+    return source.partition(":")[0]
+
+
 _JSON_TYPES = {str: "string", int: "integer", float: "number", bool: "boolean"}
 
 
@@ -54,11 +86,12 @@ class ToolCall:
     id: str = ""
 
     def __post_init__(self) -> None:
-        if self.source not in SOURCES:
+        if not valid_source(self.source):
             raise ToolCallError(
                 where=f"ToolCall({self.name!r}, source={self.source!r})",
                 why=f"{self.source!r} is not a tool-call source",
-                how=f"use one of {list(SOURCES)}; the runtime assigns it, as a connection would",
+                how=f"use one of {list(SOURCES)}, or `bridge:<id>` / `mcp:<client>` with an id "
+                f"of {SOURCE_ID.pattern}; the runtime assigns it, as a connection would",
             )
 
 
@@ -327,6 +360,7 @@ def next_call_id(conversation: Conversation) -> str:
 async def dispatch(conversation: Conversation, tools: ToolSet, call: ToolCall) -> ToolResult:
     """The only road from a tool call to a pin: check, then `c.do()` through the gate."""
     events = conversation.events
+    conversation.require_registered(call.source)
     if not call.id:
         call = ToolCall(call.name, dict(call.arguments), call.source, next_call_id(conversation))
     events.emit(

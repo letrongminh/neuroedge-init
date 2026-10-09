@@ -23,7 +23,7 @@ from typing import Any
 
 from ..engine.gate import ActionContractEngine, GateResult
 from ..engine.verdict import GateVerdict
-from ..errors import EnvelopeRefusedError
+from ..errors import EnvelopeRefusedError, ToolCallError
 from ..hal import digital, ensure_envelope
 from ..hal.motion_core import lease_ms_of
 from .confirmation import ConfirmationBook, ConfirmationRefused, PendingConfirmation
@@ -120,6 +120,44 @@ class Conversation:
         # the criteria it speaks for — `None` for one it could not read, so the engine blocks
         # it instead of asking another source. Their names are theirs: they win over `facts`.
         self.fact_sources: list[Callable[[Mapping[str, Any]], Mapping[str, Any]]] = []
+        # The `bridge:<id>` / `mcp:<client>` sources whoever loads them has registered (RFC-0017
+        # §3b.4). Internal: the loader of bridges and `[mcp.clients]` fill it, a `dispatch()` of
+        # any other such source is a programming error.
+        self._registered_sources: set[str] = set()
+
+    def register_source(self, source: str) -> None:
+        """
+        Make a `bridge:<id>` / `mcp:<client>` source one `dispatch()` accepts. An id outside the
+        grammar, a built-in name (they need no registration) and an id registered twice are
+        refused (NE1004): nobody takes another's name by loading order.
+        """
+        from .tools import NAMESPACES, SOURCES, valid_source
+
+        if source in SOURCES or not valid_source(source):
+            raise ToolCallError(
+                where=f"Conversation.register_source({source!r})",
+                why=f"{source!r} is not a namespaced source",
+                how=f"register `bridge:<id>` or `mcp:<client>`, not a built-in name ({list(SOURCES)})",
+            )
+        if source in self._registered_sources:
+            raise ToolCallError(
+                where=f"Conversation.register_source({source!r})",
+                why=f"{source!r} is already registered",
+                how=f"give each of the {list(NAMESPACES)} sources one id; a second loader must not "
+                "share the first one's",
+            )
+        self._registered_sources.add(source)
+
+    def require_registered(self, source: str) -> None:
+        """NE1004 for a `bridge:<id>` / `mcp:<client>` nobody registered; built-in names pass."""
+        from .tools import SOURCES
+
+        if source not in SOURCES and source not in self._registered_sources:
+            raise ToolCallError(
+                where=f"dispatch(source={source!r})",
+                why=f"{source!r} is not a registered source of this session",
+                how="register it first (the bridge loader, or the `[mcp.clients]` table, does)",
+            )
 
     def stage(self, name: str) -> AbstractContextManager[Any]:
         """Time `name` on the turn's meter, if a session is timing one."""
@@ -172,11 +210,19 @@ class Conversation:
     def _context(self, key: str, frame: _Frame) -> Mapping[str, Any]:
         """The call's facts, plus what each fact source reads for the gate `key` (if it exists)."""
         tree = self.engine.tree(key) if self.fact_sources else None
-        if tree is None:
-            return frame.facts
         context = dict(frame.facts)
-        for source in self.fact_sources:
-            context.update(source(tree))
+        if tree is not None:
+            for source in self.fact_sources:
+                context.update(source(tree))
+        # Last, so nothing above can set it: `call_channel` is the family of this call's own
+        # `call_source` (RFC-0017 §3d). No source, or not one, means no channel — the gate
+        # reads it as unavailable and blocks.
+        from .tools import CALL_CHANNEL_FACT, CALL_SOURCE_FACT, source_channel
+
+        context.pop(CALL_CHANNEL_FACT, None)
+        channel = source_channel(frame.facts.get(CALL_SOURCE_FACT))
+        if channel is not None:
+            context[CALL_CHANNEL_FACT] = channel
         return context
 
     async def _do(

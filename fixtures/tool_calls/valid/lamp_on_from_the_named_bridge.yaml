@@ -1,0 +1,3 @@
+# Gate lamp_on gọi tên đúng `bridge:muse` (RFC-0017 §3d).
+agent: bridge-lamp
+call:  { name: lamp_on, arguments: {}, source: "bridge:muse" }

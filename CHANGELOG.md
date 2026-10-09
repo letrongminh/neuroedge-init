@@ -32,6 +32,13 @@ bản gói.
 
 #### Đã thêm
 
+- **Nguồn gọi theo không gian tên — TSK-I2c-10 nửa (a), RFC-0017.** `source` của `ToolCall` nhận thêm `bridge:<id>` và
+  `mcp:<client>` (id theo `[a-z][a-z0-9_]{0,31}`, kiểm bằng `fullmatch`); `dispatch()` từ chối (NE1004) nguồn có không gian tên
+  chưa đăng ký với phiên; dữ kiện dẫn xuất `call_channel` (họ của nguồn) chèn sau mọi nguồn dữ kiện, nên không ai ghi đè được,
+  và nằm trong `RUNTIME_CRITERIA`. `schemas/tool-call.v1.json` nới `$defs/source` thành `anyOf` (không tăng `v1`); corpus hợp
+  đồng và corpus tool call thêm ca, agent mẫu `bridge-lamp`. Gate hiện có không đổi nghĩa: nguồn mới ngoài `options` ⇒
+  `BLOCK criterion_unavailable`, kể cả dưới `fail: open`. Nửa (b) — nhãn client mạng `[mcp.clients]` — chưa làm.
+
 - **Q-70 — thử riêng với một đội đối tác, không chờ bo mạch, không lên PyPI.** Lời hứa "đặt gate trước mọi lệnh AI chạm vào
   thiết bị bạn đang có": `proxy mcp` (Home Assistant là ví dụ đầu), `neuroedge.guard`, `proxy http`, cùng `sim` và Action CI
   đã có. Wheel từ job `build` + `smoke` chạy tay, giao trực tiếp; PyPI vẫn ở I6 (Q-39). Năm điều kiện ở roadmap §4.3.3, task

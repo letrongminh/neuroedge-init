@@ -1,0 +1,3 @@
+# `mcp:hub` có họ `mcp`, không thuộc `call_channel in [local_grammar, bridge]` ⇒ BLOCK condition_not_met.
+agent: bridge-lamp
+call:  { name: lamp_off, arguments: {}, source: "mcp:hub" }

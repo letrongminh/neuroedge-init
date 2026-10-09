@@ -118,7 +118,7 @@ MIN_THRESHOLD = 0.5
 DEFAULT_TIMEOUT_MS = 1500.0
 MAX_TIMEOUT_MS = 10_000.0
 # Set by the dispatcher (Q-24): who called is never a model's judgment.
-RUNTIME_CRITERIA = frozenset({"call_source"})
+RUNTIME_CRITERIA = frozenset({"call_source", "call_channel"})
 _KEY_ENV_BY_PREFIX = {
     "openrouter/": "OPENROUTER_API_KEY",
     "anthropic/": "ANTHROPIC_API_KEY",

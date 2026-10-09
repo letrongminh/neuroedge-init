@@ -120,7 +120,9 @@ def test_yes_without_a_pending_question_is_just_an_utterance(home):
 # --- nobody but a person on the device ---------------------------------------------------------
 
 
-@pytest.mark.parametrize("source", ["system_two", "system_one", "mcp", "test", "cloud"])
+@pytest.mark.parametrize(
+    "source", ["system_two", "system_one", "mcp", "test", "cloud", "bridge:muse", "mcp:hub"]
+)
 def test_only_a_person_on_the_device_may_answer(home, source):
     session = occupied(home)
     (asked,) = say(session, "tắt đèn")

@@ -1,0 +1,21 @@
+# Đèn tắt được từ lệnh nói và từ mọi bridge đã bật — nói bằng họ `call_channel`, không cần biết
+# trước id bridge (RFC-0017 §3d). Client MCP (`mcp`, `mcp:hub`) thuộc họ khác ⇒ BLOCK.
+schema:  neuroedge.gate/v1
+name:    lamp_off
+version: 1.0.0
+
+evaluate:
+  call_channel:
+    type: choice
+    options: [local_grammar, system_one, system_two, mcp, bridge, test]
+    instructions: "Họ của nguồn gọi, do dispatcher suy từ call_source"
+
+allow_when:
+  call_channel: { in: [local_grammar, bridge] }
+
+on_block:
+  action: deny
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

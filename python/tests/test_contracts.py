@@ -14,13 +14,23 @@ from __future__ import annotations
 import asyncio
 import dataclasses
 import json
+import re
 from pathlib import Path
 
 import jsonschema
 import pytest
 import yaml
 
-from neuroedge.actions.tools import SOURCES, ToolCall, mcp_tool, result_schema
+from neuroedge.actions.tools import (
+    NAMESPACES,
+    SOURCE_ID,
+    SOURCES,
+    ToolCall,
+    mcp_tool,
+    result_schema,
+    source_channel,
+    valid_source,
+)
 from neuroedge.engine.binary_tree import ACTIONS as ON_BLOCK_ACTIONS
 from neuroedge.engine.verdict import GateVerdict, Reason
 from neuroedge.errors import BuildFailed
@@ -63,13 +73,42 @@ def test_the_tool_call_schema_and_the_dataclass_agree():
     defs = CALL["$defs"]
     assert set(defs["call"]["properties"]) == fields
     assert set(defs["request"]["properties"]) == fields - {"source"}
-    assert set(defs["source"]["enum"]) == set(SOURCES) and len(defs["source"]["enum"]) == 5
+    # RFC-0017 §3a: the five built-in names, or one of the two namespaces
+    builtin, namespaced = defs["source"]["anyOf"]
+    assert set(builtin["enum"]) == set(SOURCES) and len(builtin["enum"]) == 5
+    assert set(namespaced) == {"pattern"}
     assert set(CALL_KEYS) == fields - {
         "id"
     }  # the corpus's call keys: no id, the runtime numbers it
     assert defs["call"]["required"] == defs["request"]["required"] == ["name"]
     assert defs["call"]["additionalProperties"] is False
     assert defs["request"]["additionalProperties"] is False
+
+
+def test_the_source_pattern_of_the_schema_is_the_one_of_the_code():
+    """The schema's pattern and `valid_source` accept and refuse the same strings."""
+    pattern = re.compile(CALL["$defs"]["source"]["anyOf"][1]["pattern"])
+    assert pattern.pattern == f"^({'|'.join(NAMESPACES)}):{SOURCE_ID.pattern}$"
+    for source in (
+        "bridge:muse",
+        "mcp:hub",
+        "bridge:a",
+        "bridge:" + "a" * 32,
+        "bridge:a_1",
+        "bridge:",
+        "bridge:Muse",
+        "bridge:1a",
+        "bridge:a-b",
+        "bridge:a.b",
+        "bridge:" + "a" * 33,
+        "bridge:muse:x",
+        "mqtt:muse",
+        "local_grammar:x",
+        "mcp_network",
+    ):
+        assert bool(pattern.fullmatch(source)) == (
+            valid_source(source) and source not in SOURCES
+        ), source
 
 
 def test_a_request_that_states_a_source_is_refused_at_the_envelope():
@@ -239,14 +278,17 @@ def test_every_known_reason_and_every_source_appears_in_a_valid_contract_example
     for path in (CONTRACTS / "tool-call" / "valid").glob("call_source_*.json"):
         sources.add(json.loads(path.read_text(encoding="utf-8"))["source"])
     assert reasons >= {str(r) for r in Reason}
-    assert sources == set(SOURCES)
+    assert {s for s in sources if ":" not in s} == set(SOURCES)
+    assert {s.partition(":")[0] for s in sources if ":" in s} == set(NAMESPACES)
     assert statuses == {"ALLOW", "BLOCK", "REJECTED"}
     assert on_blocks == set(ON_BLOCK_ACTIONS)
 
 
-def test_the_corpus_of_tool_calls_covers_every_source():
-    """RFC-0015 F2: `system_one` was the one source no case used."""
-    assert {case.call.source for case in CASES} >= set(SOURCES) - {"test"}
+def test_the_corpus_of_tool_calls_covers_every_family():
+    """RFC-0015 F2: `system_one` was the one source no case used; RFC-0017: nor a namespace."""
+    used = {case.call.source for case in CASES}
+    assert used >= set(SOURCES) - {"test"}
+    assert {source_channel(source) for source in used} >= {*SOURCES, *NAMESPACES} - {"test"}
 
 
 # --- fixtures/contracts/ ---------------------------------------------------------------------------

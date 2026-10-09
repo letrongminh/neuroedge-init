@@ -127,6 +127,10 @@ nó đọc; client MCP có thể là một agent tự động. Chúng chỉ gử
 | Gọi tool không tồn tại | `dispatch()` bước 2 | `REJECTED`, chân không đổi | `test_a_hallucinated_tool_or_argument_moves_nothing` |
 | Tham số lạ hoặc sai kiểu | `check_arguments()` | `REJECTED` | `test_a_hallucinated_tool_or_argument_moves_nothing` · `test_arguments_are_checked_and_coerced` |
 | Tự khai `call_source` để giả làm câu lệnh cục bộ | `call_source` không phải tham số; dispatcher tự chèn | `REJECTED` | `test_a_model_cannot_claim_its_own_call_source` |
+| Bridge (Muse, Home Assistant…) mang `"source": "local_grammar"` trong thông điệp cloud, hoặc nói lời gọi của mình là của bridge khác | `ToolRequest` không có `source`; lõi gán `bridge:<id>` từ id đã đăng ký (RFC-0017 §3b). Dựng thẳng `ToolCall` bên ngoài `Dispatcher` chỉ mã thù địch cùng tiến trình làm được (§3) | Nguồn là `bridge:<id>` của chính nó | `test_a_gate_that_lists_one_bridge_blocks_another` · `test_a_bridge_or_client_source_is_valid_and_a_made_up_family_is_not` |
+| Nguồn không ai đăng ký (`bridge:typo`), họ lạ (`mqtt:x`), id có `\n` cuối | `dispatch()` kiểm tập id đã đăng ký; `ToolCall` kiểm văn phạm bằng `fullmatch`. Tới gate bằng đường khác thì giá trị ngoài `options` ⇒ `criterion_unavailable`, kể cả dưới `fail: open` | NE1004 (lỗi lập trình), hoặc `BLOCK` | `test_a_call_for_a_source_nobody_registered_is_refused_by_dispatch` · `test_a_source_with_a_trailing_newline_is_refused` · `test_a_source_outside_a_gates_options_blocks_even_under_fail_open` |
+| Mã agent, `[sim.facts]`, nguồn dữ kiện hay mô hình đặt `call_channel` | Chèn sau cùng ở điểm theo từng lời gọi; `call_channel` ∈ `RUNTIME_CRITERIA`; không phải tham số của tool | Bị ghi đè / `[system_one]` từ chối / `REJECTED` | `test_call_channel_cannot_be_set_by_facts_sim_facts_or_a_fact_source` · `test_system_one_may_not_judge_call_channel` · `test_a_model_cannot_claim_its_own_call_channel` |
+| Bridge tự trả lời câu hỏi `ask` dành cho người | `bridge:*` và `mcp:*` ∉ `HUMAN_SOURCES` | `tool_confirm_rejected` | `test_only_a_person_on_the_device_may_answer` |
 | Gọi hành động gate đã cấm cho nguồn đó | Gate đọc `call_source` | `BLOCK` | corpus `fixtures/tool_calls/valid/light_on_source_denied.yaml` · `open_gate_mcp_degrades.yaml` |
 | Hai lời gọi chồng nhau trên một `Conversation` lấy nhầm nguồn của nhau (fallback hay câu hỏi `ask` của lời gọi `mcp` bị lượng giá như `local_grammar` đang chạy bên cạnh) | `call_source` thuộc về từng lời gọi (`Conversation.do_with`), không nằm trong `c.facts` dùng chung | `BLOCK` theo nguồn thật; câu hỏi giữ nguồn gốc | `test_an_mcp_call_is_not_judged_as_the_local_call_in_flight_beside_it` · `test_a_question_records_the_source_of_its_own_call_under_overlap` · `test_two_overlapping_calls_leave_no_source_in_the_conversation` |
 | Tham số trong kiểu nhưng nguy hiểm (`duration_s = 3600`) | Ràng buộc tham số trong gate (Q-25, RFC-0005) — kiểm cả giá trị mặc định, trước mọi dữ kiện | `BLOCK argument_out_of_range` | `test_a_system_two_tool_call_with_a_dangerous_argument_is_blocked_by_the_gate` · `test_the_default_value_is_what_the_gate_checks` |
@@ -160,9 +164,11 @@ qua **stdio**: bên chạy được `neuroedge mcp serve` là người vận hà
 định. Ai qua được cửa: người giữ **cả** một chứng chỉ client do `--client-ca` ký **và** một token do issuer cấp
 cho đúng chứng chỉ đó. Những gì cửa mạng **không** làm được, nói rõ:
 
-- **Không phân biệt thiết bị ở gate.** Mọi lời gọi qua mạng, thiết bị nào cũng vậy, là `call_source = mcp`; gate
-  không cấm riêng được một thiết bị hay riêng cửa mạng (thêm nguồn là đổi hợp đồng, cần RFC — `tool_calling.md` §5).
-  Hai thiết bị cùng quyền như nhau với gate; phân quyền theo thiết bị làm ở issuer (phạm vi trong token).
+- **Không phân biệt thiết bị ở gate — hôm nay.** Mọi lời gọi qua mạng, thiết bị nào cũng vậy, là `call_source = mcp`; gate
+  không cấm riêng được một thiết bị hay riêng cửa mạng. Hai thiết bị cùng quyền như nhau với gate; phân quyền theo thiết bị
+  làm ở issuer (phạm vi trong token). Văn phạm `mcp:<client>` đã được nhận (RFC-0017, `tool_calling.md` §1, §5), nhưng nhãn
+  chỉ được gán khi người vận hành đặt bảng `[mcp.clients]` (TSK-I2c-10 nửa (b), chưa làm): từ đó thiết bị có nhãn phân biệt được ở gate,
+  thiết bị chưa đặt nhãn vẫn là `mcp`.
 - **Không thu hồi tức thì.** Token chết khi hết hạn hoặc khi issuer đổi khoá (`--jwks` đọc một lần lúc khởi
   động — đổi khoá thì khởi động lại); chứng chỉ client không kiểm CRL/OCSP. Cấp token ngắn hạn. Một thiết bị bị
   chiếm giữ cả khoá riêng lẫn token vẫn gọi được tới khi token hết hạn; nó vẫn chỉ *hỏi* được, và gate vẫn

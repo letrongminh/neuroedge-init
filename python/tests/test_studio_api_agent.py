@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 AGENTS = ROOT / "fixtures" / "agents"
 VILLA = AGENTS / "villa-concierge" / "agent.toml"
 HOME = AGENTS / "home-voice" / "agent.toml"
+LAMP = AGENTS / "bridge-lamp" / "agent.toml"
 ENDPOINTS = ("/api/agent", "/api/gates", "/api/gates/unlock_door", "/api/mcp")
 SECRET = "sk-test-do-not-leak-0123456789"
 
@@ -33,6 +34,14 @@ def serve(agent: Path):
 @pytest.fixture
 def villa():
     server, session = serve(VILLA)
+    yield server
+    server.stop()
+    session.close()
+
+
+@pytest.fixture
+def lamp():
+    server, session = serve(LAMP)
     yield server
     server.stop()
     session.close()
@@ -266,6 +275,25 @@ def test_whatif_defaults_call_source_to_the_local_grammar(home):
     assert forced["verdict"] == "BLOCK" and forced["failed_criterion"] == "call_source"
     _, occupied = whatif(home, "light_off", {"room_empty": False})
     assert occupied["failed_criterion"] == "room_empty" and occupied["action"] == "ask"
+
+
+def test_whatif_derives_call_channel_from_call_source(lamp):
+    """The dispatcher's derived fact is never typed into a what-if (RFC-0017 §3d)."""
+    server = lamp
+    _, family = whatif(server, "lamp_off", {"call_source": "bridge:other"})
+    assert family["verdict"] == "ALLOW" and family["evaluations"]["call_channel"] == "bridge"
+    _, default = whatif(server, "lamp_off", {})
+    assert (
+        default["verdict"] == "ALLOW" and default["evaluations"]["call_channel"] == "local_grammar"
+    )
+    _, client = whatif(server, "lamp_off", {"call_source": "mcp:hub"})
+    assert client["verdict"] == "BLOCK" and client["failed_criterion"] == "call_channel"
+    # a stated `call_channel` is overwritten, not believed
+    _, forged = whatif(server, "lamp_off", {"call_source": "mcp:hub", "call_channel": "bridge"})
+    assert forged["verdict"] == "BLOCK" and forged["evaluations"]["call_channel"] == "mcp"
+    # a source outside the grammar has no family: unavailable, blocked
+    _, odd = whatif(server, "lamp_off", {"call_source": "mqtt:x"})
+    assert (odd["verdict"], odd["failed_criterion"]) == ("BLOCK", "call_channel")
 
 
 def test_mcp_tools_are_the_agents_actions(villa, home):

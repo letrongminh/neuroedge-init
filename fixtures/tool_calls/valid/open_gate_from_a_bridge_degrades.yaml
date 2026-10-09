@@ -1,0 +1,4 @@
+# Gate open_gate không gọi tên bridge nào ⇒ `bridge:muse` ngoài `options` của `call_source`:
+# BLOCK `criterion_unavailable`, rồi degrade — fallback porch_light_on chạy qua gate riêng (RFC-0017 §3d).
+agent: driveway
+call:  { name: open_gate, arguments: {}, source: "bridge:muse" }

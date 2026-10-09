@@ -37,6 +37,7 @@ from neuroedge.engine import ActionContractEngine, EventLog
 from neuroedge.engine.binary_tree import (
     HEADER_SIZE,
     LAYOUT_VERSION,
+    MAX_DOMAIN,
     MAX_NODES,
     MAX_NUMERIC,
     NUMERIC_SIZE,
@@ -1116,6 +1117,69 @@ def test_a_gate_too_large_for_the_device_is_refused_at_build():
     )
     with pytest.raises(GateSchemaError, match="limit of 32"):
         encode(compile_tree(gate))
+
+
+def _source_gate(name, sources, *, channel=None):
+    evaluate = {
+        "call_source": {"type": "choice", "options": sources, "instructions": "Who asked"},
+    }
+    allow = {"call_source": {"in": sources[:1]}}
+    if channel is not None:
+        evaluate["call_channel"] = {
+            "type": "choice",
+            "options": channel,
+            "instructions": "The family of who asked",
+        }
+        allow["call_channel"] = {"in": channel[:1]}
+    return resolve_gate_document(
+        {
+            "schema": "neuroedge.gate/v1",
+            "name": name,
+            "version": "1.0.0",
+            "evaluate": evaluate,
+            "allow_when": allow,
+            "on_block": {"action": "deny"},
+            "budget": {"p95_latency_ms": 100},
+        }
+    )
+
+
+def test_a_gate_with_a_bridge_option_encodes_with_the_unchanged_layout():
+    """RFC-0017 §2: a namespaced source is a string in the gate's own domain; no byte of the layout moves."""
+    listed = ["local_grammar", "bridge:muse", "mcp:hub", "test"]
+    tree = compile_tree(_source_gate("bridge-source", listed))
+    blob = encode(tree)
+    assert LAYOUT_VERSION == 2
+    magic, version = struct.unpack_from("<4sH", blob, 0)
+    assert (magic, version) == (b"NETR", 2)
+    assert b"bridge:muse\0" in blob and b"mcp:hub\0" in blob
+    (node,) = [n for n in tree["nodes"] if n["criterion"] == "call_source"]
+    # the index the device compares is the position in the gate's own sorted options
+    assert domain_index(node, "bridge:muse") == sorted(listed).index("bridge:muse")
+    assert (
+        domain_index(node, "bridge:other") is None
+    )  # outside the domain: unavailable, not a verdict
+    # a gate that never names it carries no such string: the table is the gate's, not global
+    other = encode(compile_tree(_source_gate("plain-source", ["local_grammar", "test"])))
+    assert b"bridge:muse" not in other
+
+
+def test_a_source_domain_over_32_values_is_refused_at_build():
+    """Why `call_channel` exists: "every bridge" cannot be listed, a domain stops at 32 (`u32` mask)."""
+    bridges = [f"bridge:b{i:02d}" for i in range(MAX_DOMAIN)]
+    with pytest.raises(GateSchemaError, match="limit of 32"):
+        encode(compile_tree(_source_gate("too-many-sources", ["local_grammar", *bridges])))
+    # 32 fit; and the family is one value however many bridges are loaded
+    encode(compile_tree(_source_gate("exactly-32-sources", bridges)))
+    encode(
+        compile_tree(
+            _source_gate(
+                "by-family",
+                ["local_grammar", "test"],
+                channel=["local_grammar", "system_one", "system_two", "mcp", "bridge", "test"],
+            )
+        )
+    )
 
 
 def test_the_c_header_embeds_the_same_bytes(root):
