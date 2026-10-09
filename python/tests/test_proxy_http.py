@@ -18,6 +18,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import pytest
 from typer.testing import CliRunner
@@ -405,7 +406,9 @@ def test_https_is_accepted_for_any_host_and_loopback_names_for_listen(project):
     edit(project, 'upstream = "http://127.0.0.1:', 'upstream = "https://device.example:')
     edit(project, 'listen = "127.0.0.1:8787"', 'listen = "localhost:8787"')
     proxy = parse_http(load_config(project / "guard.toml"))
-    assert proxy.upstream.startswith("https://device.example") and proxy.host == "localhost"
+    upstream = urlsplit(proxy.upstream)
+    assert (upstream.scheme, upstream.hostname) == ("https", "device.example")
+    assert proxy.host == "localhost"
     edit(project, 'listen = "localhost:8787"', 'listen = "[::1]:8787"')
     assert parse_http(load_config(project / "guard.toml")).host == "::1"
 
