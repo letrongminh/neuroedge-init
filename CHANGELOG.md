@@ -32,6 +32,12 @@ bản gói.
 
 #### Đã thêm
 
+- **Q-70 — thử riêng với một đội đối tác, không chờ bo mạch, không lên PyPI.** Lời hứa "đặt gate trước mọi lệnh AI chạm vào
+  thiết bị bạn đang có": `proxy mcp` (Home Assistant là ví dụ đầu), `neuroedge.guard`, `proxy http`, cùng `sim` và Action CI
+  đã có. Wheel từ job `build` + `smoke` chạy tay, giao trực tiếp; PyPI vẫn ở I6 (Q-39). Năm điều kiện ở roadmap §4.3.3, task
+  TSK-I2c-19; cần thoả thuận thử nghiệm bằng văn bản với đối tác. Phạm vi v1.0 (Q-52) giữ nguyên; không dựng app desktop. Thẻ
+  bàn giao (roadmap §0.3) có mục tiêu mới.
+
 - **Trang kiến trúc tổng thể cho người ngoài nhóm kỹ thuật** — `docs/business/kien-truc-tong-the.html`: xương sống thực thi,
   năm tầng, ba bảo đảm, kiểm khi chưa có bo mạch (Q-21, Q-69), sáu điểm cắm của I2c, ba chân trời, trạng thái theo `main` ngày
   2026-10-05. Viết tay, không sinh tự động; lệch thì `docs/architecture/` đúng. Chương ADR (`docs/architecture/*/09-adr.md`) có
