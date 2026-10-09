@@ -109,9 +109,12 @@ def with_toml(project, text):
 
 
 def test_a_guard_gates_an_action_without_agent_toml_action_or_session(guard, project):
-    assert not list(project.glob("agent.toml")) and not any(
-        name.startswith("lamp") for name in REGISTRY
-    ), "nothing of an agent: no agent.toml, no @action in the global registry"
+    assert not list(project.glob("agent.toml"))
+    # its own action registry: none of its specs is an @action of the global registry (another
+    # test may have loaded an agent with a `lamp_on` of its own, so compare the specs, not names)
+    registry = guard._conversation.registry
+    assert registry is not REGISTRY and set(registry) == {"lamp_on"}
+    assert not any(spec is registry["lamp_on"] for spec in REGISTRY.values())
 
     async def scenario():
         bridge = guard.dispatcher("ros_node")
