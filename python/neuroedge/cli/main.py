@@ -1024,7 +1024,7 @@ def guard_init(
 @proxy_app.command(name="mcp", epilog=epilog("proxy mcp"))
 def proxy_mcp(
     config: Path = typer.Option(
-        Path("guard.toml"), "--config", "-c", help="guard.toml with a [proxy.mcp] table"
+        Path("guard.toml"), "--config", "-c", help="guard.toml with a \\[proxy.mcp] table"
     ),
     trace_out: Path = typer.Option(
         None, "--trace-out", help="Write the Guard's trace here on exit"
@@ -1119,7 +1119,7 @@ def proxy_mcp(
 @plugin_app.command(name="doctor", epilog=epilog("plugin doctor"))
 def plugin_doctor(
     config: Path = typer.Option(
-        Path("guard.toml"), "--config", "-c", help="guard.toml with a [proxy.mcp] table"
+        Path("guard.toml"), "--config", "-c", help="guard.toml with a \\[proxy.mcp] table"
     ),
     as_json: bool = typer.Option(False, "--json", help="Machine-readable findings"),
 ):
