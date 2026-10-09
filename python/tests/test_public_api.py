@@ -532,3 +532,54 @@ def test_sim_session_set_sensor_takes_a_reading(root):
     session = neuroedge.SimSession.load(agent)
     session.set_sensor("temperature", 30)
     assert session.hal.sensor_read("temperature") == 30
+
+
+# --- public by path: neuroedge.guard (RFC-0016 §3e) and the remote actuator declaration ------------
+
+
+def test_the_remote_actuator_declaration_and_its_check_are_pinned_in_guard(root):
+    """
+    RFC-0018 §3b: the declaration is data with one check, public where code builds it — the
+    Guard API — and described in the spec; `neuroedge.__all__` does not change for it.
+    """
+    import dataclasses
+
+    import neuroedge.guard as guard
+
+    assert guard.__all__ == [
+        "ActuatorDeclaration",
+        "Dispatcher",
+        "Drive",
+        "Guard",
+        "GuardConfig",
+        "Tool",
+        "check_actuators",
+        "load_config",
+    ]
+    assert "ActuatorDeclaration" not in neuroedge.__all__
+    assert "check_actuators" not in neuroedge.__all__
+    fields = [(f.name, f.default) for f in dataclasses.fields(guard.ActuatorDeclaration)]
+    assert fields[:4] == [
+        ("name", dataclasses.MISSING),
+        ("plugin", dataclasses.MISSING),
+        ("safe_off", dataclasses.MISSING),
+        ("envelope", dataclasses.MISSING),
+    ]
+    assert fields[4] == ("reversible", False), "not declared: irreversible (RFC-0018 §3f)"
+    assert [f[0] for f in fields] == [
+        "name",
+        "plugin",
+        "safe_off",
+        "envelope",
+        "reversible",
+        "config",
+    ]
+    assert str(inspect.signature(guard.check_actuators)) == (
+        "(declarations: 'Mapping[str, ActuatorDeclaration]', *, "
+        "plugins: 'Mapping[str, LoadedPlugin]', target: 'str', board: 'Any', "
+        "digital_out: 'Mapping[str, Any]', motion: 'Sequence[str]' = (), where: 'str', "
+        "build: 'bool' = True) -> 'Checked'"
+    )
+    spec = (root / "docs" / "spec" / "python_api.md").read_text(encoding="utf-8")
+    for name in ("ActuatorDeclaration", "check_actuators", "neuroedge.sdk", "Actuator"):
+        assert f"`{name}`" in spec, name

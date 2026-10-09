@@ -42,17 +42,21 @@ ALLOWED: dict[str, set[str]] = {
         "mcp_http",
         "mcp_server",
         "models",
+        "plugins",
         "trace",
         "viz",
     },
     "perception": {"actions", "engine", "errors", "hal", "models", "net", "sim"},
-    # the SDK surface: two data types and a version, no other layer (RFC-0016 §3c)
+    # the SDK surface: data types, the actuator protocol and a version, no other layer (RFC-0016 §3c)
     "sdk": {"errors"},
+    # the plugin loader (RFC-0016 §3d) and the `[actuators]` check (RFC-0018 §3b): it reads the
+    # board's envelope schema and the secret rules of the provider tables
+    "plugins": {"errors", "hal", "models", "sdk"},
     # the safety core without an agent (TSK-I2c-07): it builds the same HAL as a session, so it
     # sits beside `sim`, above `actions`/`engine`/`hal`; `__init__` is read for `__version__` only
-    "guard": {"actions", "engine", "errors", "hal", "models", "sdk", "sim", "trace"},
+    "guard": {"actions", "engine", "errors", "hal", "models", "plugins", "sdk", "sim", "trace"},
     # `neuroedge proxy mcp` (TSK-I2c-14): an MCP client to the real server in front of a Guard
-    "proxy_mcp": {"engine", "errors", "guard", "mcp_server", "models", "sdk"},
+    "proxy_mcp": {"engine", "errors", "guard", "mcp_server", "models", "plugins", "sdk"},
     # `neuroedge proxy http` (TSK-I2c-15): a loopback HTTP front for a Guard; stdlib behind
     "proxy_http": {"errors", "guard", "models", "proxy_mcp", "sdk"},
     "testing": {"actions", "engine", "errors", "hal", "paths", "perception", "trace"},
@@ -79,9 +83,11 @@ ALLOWED: dict[str, set[str]] = {
 HAL_IN_ENGINE = {"engine/compiler.py"}
 # module -> units it may import lazily (inside a function) beyond its module-level set
 LAZY: dict[str, set[str]] = {
-    "engine/compiler.py": {"actions", "mcp_host", "models", "perception"},
+    # `plugins`: `[plugins]` and `[actuators]` are checked by the build (RFC-0018 §3b)
+    "engine/compiler.py": {"actions", "mcp_host", "models", "perception", "plugins"},
     "cli/main.py": {
         "guard",
+        "plugins",
         "mcp_desktop",
         "mcp_host",
         "mcp_http",
@@ -107,7 +113,8 @@ LAZY: dict[str, set[str]] = {
     "studio/api_agent.py": {"mcp_desktop", "templates"},
     "testing/tool_corpus.py": {"sim"},
     "testing/voice_corpus.py": {"sim"},
-    "testing/player.py": {"sim", "guard"},
+    # `plugins`: the `[actuators]` a trace's agent declares, read without importing a plugin
+    "testing/player.py": {"sim", "guard", "plugins"},
     "testing/__init__.py": {"sim"},
 }
 

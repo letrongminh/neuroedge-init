@@ -45,7 +45,7 @@ import re
 import tempfile
 import threading
 import time
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -147,6 +147,8 @@ class _Interval:
 @dataclass
 class _State:
     limits: EnvelopeLimits
+    # Ends a reservation at its deadline by itself (`sim`); False: only the HAL ends it.
+    virtual: bool = True
     lock: threading.Lock = field(default_factory=threading.Lock)
     intervals: list[_Interval] = field(default_factory=list)
     live: Reservation | None = None
@@ -277,12 +279,15 @@ class SafetyEnvelope:
         virtual: bool = True,
         store: FileEnvelopeStore | None = None,
         init_store: bool = False,
+        hal_ended: Iterable[str] = (),
     ) -> None:
         """
-        `limits` maps a pin (or, later, a PWM or motion channel) to its numbers. With a
-        `store`, each pin's record is read now: a record that exists is carried over and the
-        pin waits `min_interval_ms` before its first on; one that is missing makes the pin
+        `limits` maps a pin (or a PWM or motion channel, or a remote actuator) to its numbers.
+        With a `store`, each pin's record is read now: a record that exists is carried over and
+        the pin waits `min_interval_ms` before its first on; one that is missing makes the pin
         refuse every on, unless `init_store` says this is a new rig and starts it empty.
+        `hal_ended` names what only the HAL ends, even when `virtual` (a remote actuator,
+        RFC-0018 §3h: on every target its run ends when the HAL knows the device is off).
         """
         self.clock = clock
         self.virtual = virtual
@@ -291,19 +296,45 @@ class SafetyEnvelope:
         # deadline (`virtual`): the HAL records that the pin went off and why.
         self.on_auto_off: Callable[[Reservation], None] | None = None
         self.boot_ms = self.clock()
-        self._states = {name: _State(declared) for name, declared in limits.items()}
+        ended_by_hal = frozenset(hal_ended)
+        self._hal_ended = set(ended_by_hal)
+        self._states = {
+            name: _State(declared, virtual=virtual and name not in ended_by_hal)
+            for name, declared in limits.items()
+        }
         if store is not None:
             self._restore(init_store)
 
     @classmethod
-    def for_board(cls, board: BoardProfile, **options: Any) -> SafetyEnvelope:
-        """The envelope of every pin and channel `board` declares one for."""
+    def for_board(
+        cls,
+        board: BoardProfile,
+        *,
+        remote: Mapping[str, EnvelopeLimits] | None = None,
+        **options: Any,
+    ) -> SafetyEnvelope:
+        """
+        The envelope of every pin and channel `board` declares one for, and of each `remote`
+        actuator (RFC-0018 §3h: same four keys, same policy; only the HAL ends its run).
+        """
         names = [*board.pins, *(c["name"] for c in board.motion_channels)]
         declared = {name: board.envelope(name) for name in names}
-        return cls(
-            {name: EnvelopeLimits.from_declaration(d) for name, d in declared.items() if d},
-            **options,
-        )
+        limits = {name: EnvelopeLimits.from_declaration(d) for name, d in declared.items() if d}
+        limits.update(remote or {})
+        return cls(limits, hal_ended=tuple(remote or ()), **options)
+
+    def extend(self, limits: Mapping[str, EnvelopeLimits], *, hal_ended: bool) -> None:
+        """
+        Cover more names, before any command (a replay adds the remote actuators its trace
+        drove; it ends them on the recorded timeline, so `hal_ended` is False there). A name the
+        envelope covers already keeps its own numbers.
+        """
+        for name, declared in limits.items():
+            if name in self._states:
+                continue
+            self._states[name] = _State(declared, virtual=self.virtual and not hal_ended)
+            if hal_ended:
+                self._hal_ended.add(name)
 
     # -- what the envelope covers ---------------------------------------------------
     def covers(self, name: str) -> bool:
@@ -560,7 +591,7 @@ class SafetyEnvelope:
                     return None
                 if now < live.start_ms:
                     return self._refund(name, state, live)
-                end = min(now, live.deadline_ms) if self.virtual else now
+                end = min(now, live.deadline_ms) if state.virtual else now
                 if at is not None:
                     end = min(end, at)  # it ended when its time came, not when somebody looked
                 self._finish(state, live, end)
@@ -603,11 +634,11 @@ class SafetyEnvelope:
     # -- sim: the pin goes off by itself ------------------------------------------------
     def _settle(self, state: _State, now: float, fired: list[Reservation]) -> None:
         live = state.live
-        if self.virtual and live is not None and live.deadline_ms <= now:
+        if state.virtual and live is not None and live.deadline_ms <= now:
             self._finish(state, live, live.deadline_ms)
             self._persist_quietly(live.name, state)
             fired.append(live)
-        elif live is not None and not self.virtual:
+        elif live is not None and not state.virtual:
             state.intervals[-1].end = max(state.intervals[-1].end, now)  # on past its deadline
 
     def settle(self) -> None:
@@ -619,9 +650,13 @@ class SafetyEnvelope:
             self._announce(fired)
 
     def end_all(self) -> None:
-        """`close()`: every pin is in its safe state, so nothing is held any more."""
+        """
+        `close()`: every pin is in its safe state, so nothing is held any more. A name only the
+        HAL ends (a remote actuator) is left as it is: its device is off only once known off.
+        """
         for name in self._states:
-            self.ended(name)
+            if name not in self._hal_ended:
+                self.ended(name)
 
     def _announce(self, fired: list[Reservation]) -> None:
         if self.on_auto_off is not None:

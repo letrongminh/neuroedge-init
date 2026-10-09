@@ -178,3 +178,24 @@ def feedback_board(tmp_path, monkeypatch):
     )
     monkeypatch.setattr("neuroedge.hal.board.boards_dir", lambda: boards)
     return load_board_by_id("sim-rpi5")
+
+
+# --- remote actuators (RFC-0018): the reference plugins, installed for one test ------------------
+
+
+@pytest.fixture
+def ref_plugins(tmp_path):
+    """`fixtures/compliance/actuators/valid/neuroedge-ref-actuators`, installed and on sys.path."""
+    from .plugin_support import reference_plugins
+
+    with reference_plugins(tmp_path / "site-packages") as site:
+        yield site
+
+
+@pytest.fixture
+def flawed_plugins(tmp_path):
+    """The reference plugins and their counter-examples (`invalid/neuroedge-ref-flawed`)."""
+    from .plugin_support import reference_plugins
+
+    with reference_plugins(tmp_path / "site-packages", flawed=True) as site:
+        yield site

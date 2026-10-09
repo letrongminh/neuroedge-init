@@ -32,6 +32,7 @@ from .board import (
 from .envelope import Reservation, SafetyEnvelope
 from .motion_core import Actuator, Channel, MotionController, MotionLease
 from .pwm import COMMANDED, MEASURED, PinState, check_pwm, pin_state_data, pwm_limits
+from .remote import RemoteActuator, ReplayedRemote
 
 if TYPE_CHECKING:
     from .audio import WavSource
@@ -191,6 +192,9 @@ class HardwareAbstractionLayer:
         self.envelope = envelope
         # The channels of `motion.*`, once a target gives them an actuator (`_install_motion`).
         self._motion: MotionController | None = None
+        # Remote actuators (RFC-0018): named `digital.out`s the board does not have. Only the HAL
+        # holds their plugins; `install_remote` puts them here.
+        self._remote: dict[str, Any] = {}
 
     @property
     def envelope(self) -> SafetyEnvelope | None:
@@ -247,10 +251,9 @@ class HardwareAbstractionLayer:
         millisecond it reserved. The command toward the safe state (`off`) is none of the
         envelope's business and needs no proof (RFC-0007 §3d): it only has to name a real pin.
         Returns the reservation the caller must `ended()` or `refund()` once the pin has moved
-        (or not), or None.
+        (or not), or None. A remote actuator's name counts as a pin here (`_require_pin`).
         """
-        if self.board is not None:
-            self.board.require_pin(pin, called_from=called_from)
+        self._require_pin(pin, called_from)
         reservation = None
         if operation != "off":
             envelope = self._envelope
@@ -275,6 +278,131 @@ class HardwareAbstractionLayer:
         if record:
             self.pins.setdefault(pin, PinAssertion(pin)).record(operation, duration_ms, pwm)
         return reservation
+
+    def _require_pin(self, pin: str, called_from: str) -> None:
+        """A pin of the board, or a remote actuator this HAL drives (RFC-0018 §3c)."""
+        if pin in self._remote:
+            return
+        if self.board is not None:
+            self.board.require_pin(pin, called_from=called_from)
+
+    # -- remote actuators (RFC-0018) ---------------------------------------------------------
+    @property
+    def remote_names(self) -> tuple[str, ...]:
+        return tuple(self._remote)
+
+    def install_remote(
+        self, bindings: Iterable[Any], *, store: Any, init_store: bool = False
+    ) -> None:
+        """
+        Drive these remote actuators (`hal.remote.RemoteBinding`s): each goes through `_admit`
+        like a pin, its envelope is the HAL's (which must cover its name), and it starts
+        `uncertain` (RFC-0018 §3h). `store` keeps the off debt and the quarantine.
+        """
+        envelope = self._envelope
+        for binding in bindings:
+            if envelope is None or not envelope.covers(binding.name):
+                raise BoardCapabilityError(
+                    where=f"remote actuator {binding.name!r}",
+                    why="a remote actuator is driven only under its envelope, and this HAL's "
+                    "envelope does not cover it",
+                    how="build the HAL with the remote actuators' envelopes (build_hal does)",
+                )
+            remote = RemoteActuator(
+                binding,
+                envelope=envelope,
+                clock=envelope.clock,
+                emit=self._emit,
+                offset=self._offset_of,
+                store=store,
+                init_store=init_store,
+            )
+            remote.wake = self._remote_wake
+            self._remote[binding.name] = remote
+        self._remote_wake()
+
+    def script_remote_state(self, name: str, outcomes: Iterable[str | None]) -> None:
+        """
+        Replay a remote actuator from its trace (RFC-0018 §3i), as `script_digital_in` replays a
+        line: each on attempt gets, in order, what the recorded state check decided — None
+        (passed) or the reason it refused. No plugin is built. An attempt past the last is
+        refused (`actuator_state_unknown`): replay never allows what the trace cannot show.
+        """
+        self._remote[name] = ReplayedRemote(name, deque(outcomes), self._emit, self._envelope)
+
+    def _offset_of(self, ms: float) -> int:
+        offset = getattr(self.events, "offset_of", None)
+        value = offset(ms) if callable(offset) else None
+        return int(ms) if value is None else int(value)
+
+    def _remote_wake(self) -> None:
+        """A remote actuator has a new due time: a target with a timer re-arms it (`linux`)."""
+
+    def remote_state(self, name: str) -> str:
+        """The HAL's state of a remote actuator: off, on, uncertain or quarantined."""
+        remote = self._remote.get(name)
+        if remote is None:
+            raise BoardCapabilityError(
+                where=f"hal.remote_state({name!r})",
+                why=f"{name!r} is not a remote actuator of this HAL",
+                how=f"name one of {sorted(self._remote)}",
+            )
+        return str(getattr(remote, "status", "replay"))
+
+    def settle_remote(self) -> None:
+        """A tick of the clock: offs, renewals and read-backs that are due happen now."""
+        for remote in list(self._remote.values()):
+            remote.tick()
+
+    def next_remote_due(self) -> float | None:
+        due = [d for d in (r.next_due() for r in self._remote.values()) if d is not None]
+        return min(due) if due else None
+
+    def close_remote(self) -> None:
+        """Every off still owed is tried once; nothing the HAL did not turn on is touched."""
+        for remote in list(self._remote.values()):
+            remote.close()
+
+    def _remote_out(
+        self, pin: str, operation: str, duration_ms: int, signature: Any, called_from: str
+    ) -> None:
+        """
+        One command to a remote actuator, on the path of every pin (RFC-0018 §3c):
+        `require_pin → state check → envelope → authorize → record → apply`. The off is tried
+        always, without the envelope or a token, and never raises.
+        """
+        self._require_pin(pin, called_from)
+        remote = self._remote[pin]
+        if operation not in ("on", "off", "pulse"):
+            raise BoardCapabilityError(
+                where=f"{called_from} -> digital.out {pin!r}",
+                why=f"{pin!r} is a remote actuator: it takes on, off and pulse, not {operation!r} "
+                "(RFC-0018 §3a)",
+                how="use on(), off() or pulse()",
+            )
+        if operation == "off":
+            self._admit(pin, "off", 0, signature, called_from)
+            self._emit("actuator_command", {"pin": pin, "operation": "off", "duration_ms": 0})
+            remote.off("command")
+            return
+        if self._envelope is None or not self._envelope.covers(pin):
+            raise BoardCapabilityError(
+                where=f"{called_from} -> digital.out {pin!r}",
+                why="no envelope covers this remote actuator, so it is never turned on",
+                how="build the HAL with the remote actuators' envelopes (build_hal does)",
+            )
+        remote.guard(operation, called_from)
+        reservation = self._admit(pin, operation, duration_ms, signature, called_from)
+        self._emit(
+            "actuator_command", {"pin": pin, "operation": operation, "duration_ms": duration_ms}
+        )
+        if reservation is None:  # the envelope covers the name: only a bug gets here
+            raise BoardCapabilityError(
+                where=f"{called_from} -> digital.out {pin!r}",
+                why="the envelope reserved nothing for a remote on",
+                how="report this; the command was not sent",
+            )
+        remote.start(reservation, operation)
 
     def _pwm_prepare(
         self,
@@ -364,6 +492,9 @@ class HardwareAbstractionLayer:
         `duration_ms`, all three; only a PWM channel takes it, and a PWM channel takes only it
         and `off`.
         """
+        if pin in self._remote:
+            self._remote_out(pin, operation, duration_ms, signature, called_from)
+            return
         operation, duration_ms, applied = self._pwm_prepare(
             pin, operation, duration_ms, frequency_hz, duty, called_from
         )
@@ -713,8 +844,7 @@ class HardwareAbstractionLayer:
         Observed state of a pin. A name the board does not declare raises, so a
         misspelled assertion can never pass as "never pulsed" (CEO-S5-2).
         """
-        if self.board is not None:
-            self.board.require_pin(name, called_from="hal.pin()")
+        self._require_pin(name, "hal.pin()")
         return self.pins.get(name, PinAssertion(name, pulsed=False))
 
     # -- vision.in (extension primitive, RFC-0012) -----------------------------------

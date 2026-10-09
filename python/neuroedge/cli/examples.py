@@ -60,7 +60,13 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
         "neuroedge proxy mcp --config ha/guard.toml --trace-out ha/session.json",
         "neuroedge proxy mcp --desktop-config --write",
     ),
-    "plugin": ("neuroedge plugin doctor",),
+    "plugin": ("neuroedge plugin list", "neuroedge plugin doctor"),
+    "plugin list": ("neuroedge plugin list", "neuroedge plugin list --json"),
+    # -- conformance (TSK-I2c-12, the actuator kind of TSK-I2c-16) ----------------------
+    "conformance": (
+        "neuroedge conformance neuroedge-ref-actuators",
+        "neuroedge conformance neuroedge-ha --kind actuator --json",
+    ),
     "plugin doctor": (
         "neuroedge plugin doctor",
         "neuroedge plugin doctor --config ha/guard.toml --json",

@@ -29,6 +29,7 @@ COMMANDS = {
     "board list": "",
     "board show": "<board_id>",
     "build": "--agent|-a= --board|-b= --out|-o= --registry|-r= --target|-t=!",
+    "conformance": "<distribution> --json --kind=",
     "gate add": "<uri>",
     "gate explain": "<target> --registry|-r=",
     "gate lint": "[directory] --registry|-r=",
@@ -48,6 +49,7 @@ COMMANDS = {
     "mcp tools": "--agent|-a= --external --json --openai",
     "new": "<name> --template=",
     "plugin doctor": "--config|-c= --json",
+    "plugin list": "--json",
     "proxy http": "--config|-c= --trace-out=",
     "proxy mcp": "--config-path= --config|-c= --desktop-config --name= --trace-out= --write",
     "record": (

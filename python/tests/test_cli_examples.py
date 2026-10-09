@@ -151,6 +151,12 @@ NOT_RUN = {
         "covers --write on a copy)"
     ),
     "neuroedge plugin doctor": "needs a guard.toml made by `guard init`",
+    "neuroedge conformance neuroedge-ref-actuators": (
+        "needs the reference plugin installed; tests/test_conformance.py installs and runs it"
+    ),
+    "neuroedge conformance neuroedge-ha --kind actuator --json": (
+        "needs a plugin installed; tests/test_conformance.py runs the command on the fixtures"
+    ),
     "neuroedge plugin doctor --config ha/guard.toml --json": "needs a guard.toml made by `guard init`",
     "neuroedge run --ui": "serves a page until interrupted",
     "neuroedge studio                 # every capability in one local web app": (

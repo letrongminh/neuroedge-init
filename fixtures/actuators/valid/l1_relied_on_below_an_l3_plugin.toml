@@ -1,0 +1,16 @@
+[requires]
+"digital.out" = { pins = ["porch_lamp"] }
+
+[plugins]
+enable = ["neuroedge-ref-actuators"]
+
+[actuators.porch_lamp]
+plugin = "ref_l3"
+safe_off = "L1"
+reversible = true
+
+[actuators.porch_lamp.envelope]
+window_s = 3600
+max_on_ms_per_window = 1800000
+min_interval_ms = 2000
+max_continuous_ms = 600000

@@ -47,6 +47,7 @@ from .errors import AgentManifestError, NeuroEdgeError
 from .guard import Guard, GuardConfig, Tool, load_config, resolve_gates
 from .mcp_server import _sdk
 from .models.providers.common import ENV_NAME, NAME, SECRET, looks_like_key, refuse_unknown
+from .plugins import load_enabled
 from .sdk import ToolRequest
 
 WHERE = "neuroedge proxy mcp"
@@ -975,7 +976,48 @@ def doctor(config_path: Path, *, desktop_config: Path | None = None) -> list[Fin
                     "đi qua nó như nhau (RFC-0016 §5 rủi ro 8)",
                 )
             )
-    findings.append(Finding("unverifiable", "không kiểm được: plugin (TSK-I2c-11)"))
+    findings += _plugins(config)
+    return findings
+
+
+def _plugins(config: Any) -> list[Finding]:
+    """
+    The enabled plugins, loaded as a Guard would load them (RFC-0016 §3d item 6): a failure, an
+    editable install (no file hash, no badge) is said; what a load cannot prove is said too.
+    """
+    findings: list[Finding] = []
+    try:
+        loaded = load_enabled(config.plugins, config.source)
+    except NeuroEdgeError as problem:
+        return [
+            Finding("warning", f"plugin không nạp được — Guard sẽ không khởi động: {problem.why}")
+        ]
+    for plugin in loaded.values():
+        record = plugin.record
+        if record.editable:
+            findings.append(
+                Finding(
+                    "warning",
+                    f"plugin `{record.name}` ({record.distribution} {record.version}) cài editable: "
+                    "không có băm tệp trong vết ghi, và không được huy hiệu",
+                )
+            )
+        else:
+            findings.append(
+                Finding(
+                    "info",
+                    f"plugin `{record.name}` ({record.distribution} {record.version}) "
+                    f"{record.files_sha256}",
+                )
+            )
+    findings.append(
+        Finding(
+            "unverifiable",
+            "không kiểm được: plugin (TSK-I2c-11) loại bridge, fact source, bo, template, "
+            "exporter; với actuator, mức tự tắt chỉ được chứng minh bằng `neuroedge conformance "
+            "<bản phân phối>` trên bản giả của plugin, không trên thiết bị thật",
+        )
+    )
     return findings
 
 

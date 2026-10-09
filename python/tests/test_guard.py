@@ -572,8 +572,10 @@ def test_the_config_names_the_guard_and_its_tools(project):
             "api_key",
         ),
         (TOML + "\n[external]\nx = 1\n", "TSK-I2c-09"),
-        (TOML + "\n[actuators.lamp]\nx = 1\n", "TSK-I2c-16"),
-        (TOML + '\n[plugins]\nenable = ["neuroedge-muse"]\n', "TSK-I2c-11"),
+        # TSK-I2c-16 implements [actuators] and the actuator kind of [plugins]: what was refused
+        # whole is now checked, and a bad declaration or an absent plugin is still NE3002.
+        (TOML + "\n[actuators.lamp]\nx = 1\n", "not fields of [actuators.lamp]"),
+        (TOML + '\n[plugins]\nenable = ["neuroedge-muse"]\n', "enabled and not installed"),
         (TOML + '\n[registry]\nroots = ["a", "b"]\n', "TSK-I2c-08"),
         (TOML.replace('board = "sim-default"', 'board = "pkg:dist:board"'), "TSK-I2c-08"),
         (TOML.replace('board = "sim-default"', 'board = "boards/mine.toml"'), "TSK-I2c-08"),

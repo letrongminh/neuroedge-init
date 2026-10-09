@@ -1,9 +1,9 @@
 # Lõi an toàn dùng độc lập và Extension SDK — `neuroedge.guard`, `neuroedge.sdk`
 
-**Trạng thái:** chuẩn tắc cho phần đã hiện thực (TSK-I2c-07); phần còn lại ghi rõ "chưa có". Nền: [RFC-0016](../rfc/0016-loi-tach-duoc-va-extension-sdk.md)
-(§3b, §3c, §3e), [RFC-0017](../rfc/0017-nguon-goi-theo-khong-gian-ten.md) (nguồn `bridge:<id>`).
-**Mã nguồn:** `python/neuroedge/guard.py`, `python/neuroedge/sdk/__init__.py`, `python/neuroedge/sim/hal_build.py`.
-**Test ghim:** `python/tests/test_guard.py`, `python/tests/test_sdk_api.py`.
+**Trạng thái:** chuẩn tắc cho phần đã hiện thực (TSK-I2c-07, TSK-I2c-14, TSK-I2c-16 phần lõi); phần còn lại ghi rõ "chưa có". Nền: [RFC-0016](../rfc/0016-loi-tach-duoc-va-extension-sdk.md)
+(§3b, §3c, §3d, §3e, §3g), [RFC-0017](../rfc/0017-nguon-goi-theo-khong-gian-ten.md) (nguồn `bridge:<id>`), [RFC-0018](../rfc/0018-co-cau-chap-hanh-tu-xa.md) (cơ cấu chấp hành từ xa).
+**Mã nguồn:** `python/neuroedge/guard.py`, `python/neuroedge/sdk/__init__.py`, `python/neuroedge/sim/hal_build.py`, `python/neuroedge/plugins/` (bộ nạp, khai báo `[actuators]`, `conformance`), `python/neuroedge/hal/remote.py`.
+**Test ghim:** `python/tests/test_guard.py`, `python/tests/test_sdk_api.py`, `python/tests/test_plugins.py`, `python/tests/test_remote_actuator*.py`, `python/tests/test_conformance.py`.
 Tài liệu này là nơi **duy nhất** định nghĩa cú pháp `guard.toml` và văn phạm `drive`; chỗ khác dẫn tới đây. Mức hứa của hai mô-đun: `python_api.md` §1.
 
 ## 1. `neuroedge.guard`
@@ -43,21 +43,26 @@ async with Guard.load("guard.toml") as guard:      # thoát ⇒ thả chân, nh�
 - **Cố ý không làm:** không sandbox và không chặn mạng (canh con đường đi qua nó, không ngăn ai gọi thẳng đích); không `agent.toml`, ngữ pháp, mô hình, thoại, UI, MCP server; không đường xác nhận
   bằng người (`on_block: ask` hiện ra là `BLOCK` kèm câu hỏi trong `outcome.content`); không chống mã cùng tiến trình (`threat_model.md` §3). `Guard` không nằm trong `neuroedge.__all__`.
 
-Hàm khởi tạo `Guard(tools, *, name, board, target, registry_root, base, events, testing, hal_options)`: `board` là id của một bo (hoặc `None`); `target` là `sim` hoặc `linux`, mặc định theo bo
+Hàm khởi tạo `Guard(tools, *, name, board, target, registry_root, base, events, testing, hal_options, source, actuators, plugins)`: `board` là id của một bo (hoặc `None`); `target` là `sim` hoặc `linux`, mặc định theo bo
 (`esp32s3` không có Guard Python — MCU dùng `ne_gate` + `NETR`). Gate nằm ở từng `Tool`, nên hàm không có tham số `gates=` riêng của RFC-0016 §3b (ví dụ ở đó); gate `fallback_action` là một `Tool` khác.
+`actuators` là các `ActuatorDeclaration` dựng bằng mã và `plugins` là danh sách bản phân phối bật cho chúng (như `[plugins] enable`): chúng đi qua **cùng** `check_actuators` với khai báo trong tệp (§7), trước khi chân nào bị giữ.
 
 ## 2. `neuroedge.sdk`
 
-Phần tối thiểu mà `guard` cần của Extension SDK (TSK-I2c-11 làm phần còn lại):
+Phần mà `guard` và plugin cơ cấu chấp hành cần của Extension SDK:
 
 | Tên | Là gì |
 |:---|:---|
 | `ToolRequest(name, arguments={}, id="")` | `tool-call.v1#/$defs/request`: **không có `source`**; bất biến |
 | `Outcome(status, content)` | Dữ liệu thuần: `status` và `ToolResult.content()` (hợp lệ theo `tool-result.v1`), không mang giá trị mà thân action trả về |
 | `SDK_VERSION = (1, 0)` | Bộ `(MAJOR, MINOR)` riêng, không phải `__version__` của gói |
+| `Actuator` | Protocol của plugin nhóm `neuroedge.actuators`; chữ ký là của RFC-0018 §3c (nguồn duy nhất), SDK chỉ xuất lại: `safe_off_level`, `readback`, `tolerance_ms`, `command_timeout_ms`, `max_lease_ms`, `apply(command)`, `safe_off()`, `read_state()`, `probe()` |
+| `Command(id, operation, duration_ms=None, lease_ms=None)` | Lệnh HAL giao cho plugin sau khi đã cho qua: `operation` là `"on"` hoặc `"renew"`; `duration_ms` luôn có ở L2, `lease_ms` ở L3; là **khoảng**, không bao giờ là mốc. `id` duy nhất cho mỗi lệnh (thiết bị nhận ra lệnh trùng, gia hạn đến muộn) |
+| `DeviceDouble` | Protocol của bản giả thiết bị mà `probe()` trả: `state()`, `cut_link()`, `heal_link()`, `advance(ms)` |
+| `ActuatorError` và `NotSent`, `Rejected`, `Ambiguous`, `ReadFailed` | Plugin tự phân loại lỗi gửi (chắc chắn chưa tới · bị từ chối rõ · không biết đã tới hay chưa) và lỗi đọc; không phải mã `NE…` |
 
-`__all__` của nó là `["SDK_VERSION", "Outcome", "ToolRequest"]`; không tên HAL, không `Guard`, không `Conversation`, không tên nào của `neuroedge.__all__` (`test_the_sdk_exports_no_hal_name_and_no_name_of_all`).
-**Chưa có (TSK-I2c-11/12):** `Protocol` cho bridge, fact source, actuator, exporter; bộ nạp entry point và `plugin list|doctor`; `sdk_requires`; bộ test tuân thủ. Cam kết ổn định đầy đủ: RFC-0016 §3e.
+`__all__` của nó là `["SDK_VERSION", "Actuator", "ActuatorError", "Ambiguous", "Command", "DeviceDouble", "NotSent", "Outcome", "ReadFailed", "Rejected", "ToolRequest"]`; không tên HAL, không `Guard`, không `Conversation`, không tên nào của `neuroedge.__all__` (`test_the_sdk_exports_no_hal_name_and_no_name_of_all`), và chỉ import `errors` của lõi.
+Plugin khai `sdk_requires = (MAJOR, MINOR)` ở mô-đun của entry point (§6). **Chưa có (TSK-I2c-11/12):** `Protocol` cho bridge, fact source, exporter; bộ nạp và tuân thủ cho các loại đó. Cam kết ổn định đầy đủ: RFC-0016 §3e.
 
 ## 3. `guard.toml`
 
@@ -90,9 +95,9 @@ default = 5                       # tuỳ chọn, đúng kiểu; có mặc đị
 | `[tools.<tên>.parameters.<p>]` | `type`, `default`, `description`, `required` | giới hạn giá trị là của `arguments` trong gate (RFC-0005), không ở đây. Không có `default` và không có `required = false` ⇒ tham số bắt buộc; `required = false` không `default` ⇒ tham số tuỳ chọn mà `run` không nhận nếu người gọi không đưa |
 | `[proxy.mcp]` | `command` hoặc `url`, `env_from`, `headers_env`, `names` | chỉ do `proxy mcp` và `plugin doctor` đọc (§4); `Guard` bỏ qua |
 | `[proxy.http]` | `upstream`, `listen`, `id`, `headers_env`, `[[routes]]` (`method`, `path`, `tool`) | chỉ do `proxy http` và `plugin doctor` đọc (§5); đúng một trong `[proxy.mcp]` / `[proxy.http]` mỗi tệp |
-| `[plugins]` | `enable`, `config` | khác rỗng ⇒ từ chối, nêu TSK-I2c-11 |
+| `[plugins]` | `enable`, `config` | §6; chỉ loại actuator nạp được, bản phân phối mang loại khác ⇒ từ chối, nêu TSK-I2c-11 |
+| `[actuators.<tên>]` | `plugin`, `safe_off`, `reversible`, `envelope`, `config` | §7; cùng khai báo và cùng hàm kiểm với `agent.toml`. Tool tới nó bằng `requires = ["digital.out:<tên>"]`: chiều "khai mà không ai dùng" của luật hai chiều xét trên `requires` của các tool |
 | `[external]` | — | từ chối, nêu TSK-I2c-09 |
-| `[actuators]` | — | từ chối, nêu TSK-I2c-16 |
 
 ### Văn phạm `drive`
 
@@ -105,7 +110,7 @@ default = 5                       # tuỳ chọn, đúng kiểu; có mặc đị
 | `seconds_from` | chỉ với `pulse`, **bắt buộc** ở đó: tên một tham số đã khai, kiểu `integer` hoặc `number`; độ dài xung (giây) lấy từ tham số này |
 
 Guard dựng bước thành `digital.out(pin).on()`, `.off()` hay `.pulse(seconds=<tham số>)`. Giá trị ngoài giới hạn là việc của gate (`argument_out_of_range`) và của phong bì của bo.
-Không có gì khác trong `drive`: cơ cấu từ xa là chân `digital.out` có tên (RFC-0018, TSK-I2c-16 — chưa có). Muốn thân tuỳ ý, dùng `Tool(run=…)` trong Python.
+Không có gì khác trong `drive`: cơ cấu từ xa là chân `digital.out` có tên (§7), nên `{ pin = "garden_valve", operation = "pulse", … }` tới nó qua cùng đường. Muốn thân tuỳ ý, dùng `Tool(run=…)` trong Python.
 
 ## 4. `neuroedge proxy mcp` — một máy chủ MCP có sẵn đứng sau NeuroEdge (TSK-I2c-14, FR-EXT-06)
 
@@ -173,7 +178,7 @@ tool phải có mặt ở đó (theo `[proxy.mcp.names]`), mỗi tham số khai 
 | `url`: thử nối TCP thẳng tới đích (2 giây) | nối được ⇒ **CẢNH BÁO** "đích còn tới được mà không qua proxy"; không nối được ⇒ "không kiểm được" (máy khác chưa biết) |
 | stdio: đọc cấu hình Claude Desktop (`mcp_desktop.default_config_path`) | mục khác (không phải proxy) khởi chạy cùng lệnh ⇒ **CẢNH BÁO**; không đọc được cấu hình ⇒ "không kiểm được"; luôn kèm "không kiểm được: ứng dụng khác (Cursor, VS Code, shell…)" |
 | mỗi tool: gate có đọc `call_source` hoặc `call_channel` không | không ⇒ **CẢNH BÁO** (RFC-0016 §5 rủi ro 8) |
-| plugin | "không kiểm được: plugin (TSK-I2c-11)" |
+| plugin | nạp các bản phân phối của `[plugins] enable` như Guard: nạp hỏng ⇒ **CẢNH BÁO**; cài editable ⇒ **CẢNH BÁO** (không băm tệp, không huy hiệu); còn lại ghi chú bản phân phối, phiên bản, `files_sha256`. Luôn kèm "không kiểm được: plugin (TSK-I2c-11) loại …": loại khác actuator, và mức tự tắt (chỉ `conformance` chứng minh, trên bản giả) |
 
 Mã thoát: `1` nếu có ít nhất một cảnh báo, `0` nếu không (các dòng "không kiểm được" không đổi mã thoát — chúng không phải bằng chứng). `0` **không** nghĩa là proxy là đường duy nhất: nó chỉ nghĩa là doctor không thấy lối vòng.
 Tin đúng hơn: đặt máy chủ thật sau tường lửa/ACL để chỉ proxy tới được; doctor không làm việc đó.
@@ -227,3 +232,98 @@ Gate **phải liệt kê nó**: gate chỉ liệt kê `mcp` chặn nó (`criteri
 - `neuroedge plugin doctor` (cùng lệnh với §4.4): với `[proxy.http]`, **API còn tới được trực tiếp ⇒ CẢNH BÁO** — với API cục bộ thì luôn như vậy; người vận hành phải đặt API của thiết bị sau tường lửa/ACL hoặc chỉ nhận từ máy proxy. Doctor không quét mạng
   nên nói "không kiểm được" cho máy/ứng dụng khác; gate không đọc `call_source` ⇒ CẢNH BÁO; plugin: "không kiểm được". Mã thoát như §4.4.
 - **Chưa có:** TLS và xác thực ở front (vì vậy chỉ loopback), websocket, body streaming, `--init-timeout`.
+
+## 6. Plugin: bật, nạp, nguồn gốc (RFC-0016 §3d; phần actuator của TSK-I2c-11)
+
+Mã: `neuroedge/plugins/__init__.py`. Sáu nhóm entry point (`neuroedge.bridges`, `neuroedge.fact_sources`, `neuroedge.actuators`, `neuroedge.boards`, `neuroedge.templates`,
+`neuroedge.exporters`); **chỉ `neuroedge.actuators` được nạp** ở bản này.
+
+- **Phát hiện không import.** `neuroedge plugin list [--json]` đọc `importlib.metadata` — loại, tên entry point, bản phân phối, phiên bản — không import gói nào (`test_listing_plugins_imports_nothing`).
+- **Bật trong tệp được commit, không ở dòng lệnh.** `[plugins] enable = ["neuroedge-ha", "neuroedge-ros2==0.4.1"]` trong `agent.toml` hoặc `guard.toml`: tên bản phân phối (so khớp theo PEP 503), tuỳ chọn ghim `==phiên bản`.
+  Cài bằng `pip` không bật gì; **không cờ CLI nào** bật plugin. `[plugins.config.<entry point>]` là cấu hình chung của entry point đó, gộp **dưới** `[actuators.<tên>.config]` khi dựng; cùng luật bí mật với `[external]`: trường mang tên bí mật viết thẳng ⇒ NE3002, `*_env` chỉ là tên biến (không bao giờ in lại giá trị).
+- **Hỏng ⇒ không khởi động.** Chưa cài · không import được · `sdk_requires` không tương thích (cùng MAJOR, MINOR đã cài ≥ MINOR đòi; thiếu ⇒ không tương thích) · ghim phiên bản lệch · hai bản phân phối đã bật cùng một tên entry point ·
+  tên entry point ngoài `[a-z][a-z0-9_]{0,31}` · nhà máy không nhận đúng **một** đối số (`config`) · bản phân phối đã bật không có entry point NeuroEdge nào · có entry point loại chưa hiện thực (nêu TSK-I2c-11) ·
+  `[plugins.config.X]` cho một entry point không bản phân phối đã bật nào cấp ⇒ `AgentManifestError` (NE3002), ba phần, trước khi chân nào bị giữ và trước lượt gate đầu.
+  `neuroedge build` báo cùng lỗi (gom vào `BuildFailed`).
+- **Nguồn gốc.** Mỗi entry point đã nạp: một dòng trên stderr lúc khởi động, một mục trong `metadata.plugins` của **mọi** vết ghi của phiên/Guard và một sự kiện `plugin_loaded`, cùng dữ liệu
+  `{kind, name, distribution, version, files_sha256}` — `files_sha256` = `sha256:` của danh sách (đường dẫn, sha256 của byte trên đĩa) các tệp của gói entry point trong `dist.files`, không đọc từ `RECORD`.
+  Bản cài editable (`direct_url.json` có `dir_info.editable`) không có `files_sha256` mà có `editable: true`. Không plugin nào bật ⇒ không có khoá `metadata.plugins` (vết ghi chuẩn mực không đổi).
+
+## 7. Cơ cấu chấp hành từ xa (RFC-0018; TSK-I2c-16 phần lõi)
+
+Ngữ nghĩa và lý do: [RFC-0018](../rfc/0018-co-cau-chap-hanh-tu-xa.md) §3b–§3i (đã chấp thuận; hằng ở §9.5). Ở đây chỉ ghi điều mã làm, và những chỗ RFC để mở mà mã đã chọn.
+
+**Khai báo** (`agent.toml` hoặc `guard.toml`, hay `ActuatorDeclaration` bằng mã):
+
+```toml
+[requires]
+"digital.out" = { pins = ["garden_valve"] }      # tên cơ cấu từ xa nằm cạnh chân của bo
+
+[plugins]
+enable = ["neuroedge-ref-actuators"]
+
+[actuators.garden_valve]
+plugin     = "ref_l2"          # tên entry point của một bản phân phối đã bật
+safe_off   = "L2"              # mức người triển khai dựa vào; bắt buộc
+reversible = false             # vắng ⇒ false (không hoàn tác)
+[actuators.garden_valve.envelope]   # bốn khoá của board.v1 #/$defs/envelope, bắt buộc đủ
+window_s = 3600
+max_on_ms_per_window = 1800000
+min_interval_ms = 2000
+max_continuous_ms = 600000
+[actuators.garden_valve.config]     # chuyển (chỉ đọc) cho factory của plugin; không bí mật viết thẳng
+token_env = "NE_VALVE_TOKEN"
+```
+
+**Một hàm kiểm** — `check_actuators` (`neuroedge.guard`), qua `plugins.actuators.remote_setup` cho tệp — chạy ở `neuroedge build` (`engine/compiler.py`), ở `SimSession.load` và ở `Guard`; mọi luật ở bảng §3b,
+D5 (§3f) và §3k của RFC; danh sách từng luật kèm mã lỗi là corpus `fixtures/actuators/` (`expected_errors.yaml`, khép kín hai chiều). Cảnh báo, không chặn: mức `L0`; module `@action` import
+`httpx`, `requests`, `aiohttp`, `urllib.request` hoặc `socket` (in ở `neuroedge build`, `BuildReport.warnings`).
+
+**Đường tới thiết bị.** `digital_out` của `SimHAL` và `LinuxHAL` rẽ ở đầu hàm vào `HardwareAbstractionLayer._remote_out`: `require_pin → chốt trạng thái → phong bì → authorize → record → apply`
+(`test_the_order_is_require_pin_state_guard_envelope_authorize_record_apply`). Chỉ `on`, `off`, `pulse`; `after_ms` (lệnh hẹn) bị từ chối (`BoardCapabilityError`). Chỉ HAL giữ plugin;
+HAL nhận lớp `Command` và bốn lỗi của SDK qua `hal.remote.Vocabulary` (HAL vẫn là lá, không import `sdk`). Lỗi gửi `NotSent`/`Rejected` ⇒ hoàn phần giữ trước, ném `BoardCapabilityError`;
+`Ambiguous` (hay lỗi lạ của plugin, hay quá `command_timeout_ms`) ⇒ giữ phần giữ trước, `uncertain`, ném `BoardCapabilityError`. `off` không bao giờ ném.
+
+**Chỗ RFC để mở, mã chọn (fail-closed):**
+
+| Điều | Mã làm | Vì sao |
+|:---|:---|:---|
+| Mức điều khiển thời gian khi `safe_off` khai thấp hơn `safe_off_level` của plugin | HAL dùng **mức của plugin** (giao thức thiết bị nói): L2 luôn gửi `duration_ms`, L3 luôn thuê | Bảo đảm của thiết bị không bao giờ bị bỏ; D5 vẫn xét mức khai |
+| L0 | HAL vẫn gửi `off` của nó ở `D` (như L1) | Nợ tắt là của nó; không gì cấm phía an toàn |
+| Đọc lại trước mỗi lệnh bật | Có `readback`: mỗi `on`/`pulse` đọc trạng thái ngay trước chốt | Chốt cần mốc ≤ `max_state_age_ms` |
+| Đọc thấy `on` khi không nợ gì | `already_on`, kể cả khi đang `uncertain`; không gửi `off` | §3g: không tắt thứ nó không bật |
+| Không có `readback` | `off` được ghi nhận (ack) là xác nhận tắt; sau khởi động phải có một `off` được ack trước lệnh bật đầu | §3g "off là lần off được xác nhận gần nhất" |
+| Bản ghi trạng thái | `<thư mục phong bì>/<tên>.remote.json` `{version, name, off_owed, quarantined}`, ghi trước lệnh; thiếu mà không `envelope_init` (linux), hay hỏng ⇒ `quarantined` | Cùng luật bản ghi phong bì (RFC-0007 §3d) |
+| Gỡ `quarantined` | Người vận hành sửa bản ghi (`"quarantined": null`) hoặc gọi `FileRemoteStore(<thư mục>).clear("<tên>")`, rồi khởi động lại (⇒ `uncertain` tới lần đọc `off` tươi) | Không có đường tự gỡ |
+| Replay | Không dựng plugin; mỗi lần bật nhận đúng quyết định của chốt trạng thái lúc ghi (`script_remote_state`), hết dữ liệu ⇒ `actuator_state_unknown`; phong bì quyết lại trên dòng thời gian đã ghi, kết thúc ở hạn `D` như mọi chân khi replay | `remote_*` chỉ là thông tin (§3i) |
+| Đọc lại thành dữ kiện cho gate (§3e đoạn cuối) | **Chưa có** (cần TSK-I2c-09): không nguồn nào cấp, gate đòi nó thấy dữ kiện vắng ⇒ `BLOCK` | `test_uncertain_and_quarantined_are_absent_facts_so_a_gate_blocks` |
+| `pwm`, `motion` lên tên cơ cấu từ xa; `esp32s3` | NE3001 ở build; lúc chạy `pwm` ⇒ `BoardCapabilityError` | RFC-0018 §3a, §9.4 |
+
+`sim` luôn lái `DeviceDouble` của plugin (`probe()` gọi khi dựng HAL, trước mọi I/O; thiếu `probe()` ⇒ không chạy trên `sim`); đồng hồ của bản giả đi theo đồng hồ phiên. Sự kiện vết ghi:
+`simulation_coverage.md` §3; lint `remote_command_sent` (NE4001): `python/neuroedge/trace.py::lint_remote`.
+
+Plugin tham chiếu (Apache-2.0, `fixtures/compliance/actuators/valid/neuroedge-ref-actuators/`): bốn entry point `ref_l0` … `ref_l3`, giao thức đồ chơi qua TCP tới một thiết bị không có, chỉ dùng qua bản giả.
+Adapter Home Assistant là phần B của TSK-I2c-16, chưa có.
+
+## 8. `neuroedge conformance` — loại actuator (RFC-0016 §3g, RFC-0018 §3e; phần của TSK-I2c-12)
+
+`neuroedge conformance <bản phân phối> [--kind actuator] [--json]` nạp **chỉ** bản phân phối đó (gõ tên là hành vi bật tường minh) và kiểm từng entry point của nó. Mã: `neuroedge/plugins/conformance.py`.
+Phép kiểm động chạy bản giả của plugin **qua mã HAL thật** (`hal/remote.py`) trên đồng hồ ảo; factory được gọi với `conformance_config` của mô-đun (một `Mapping`, vắng ⇒ `{}`).
+
+| Phép kiểm | Đạt khi |
+|:---|:---|
+| `plugin.loads` | import được; factory nhận đúng một đối số; trả một `Actuator` đủ thuộc tính và phương thức, trong giới hạn §9.5 của RFC-0018 |
+| `plugin.sdk_range` | `sdk_requires` tương thích `SDK_VERSION` |
+| `plugin.name_pattern` | tên entry point khớp `[a-z][a-z0-9_]{0,31}` |
+| `actuator.level_proven` | vector của mức khai: L0 — `on` không mang thời hạn; L1 — đứt liên lạc ngay trước hạn ⇒ HAL không tin là đã tắt, gửi lại mỗi `OFF_RETRY_MS`, liên lạc lại thì tắt và xác nhận; L2 — (a) `duration_ms ≤ D` ở mọi `on`, (b) đứt sau khi giao ⇒ tắt trước `D + tolerance_ms`, (c) đứt trước khi giao ⇒ không bật quá `D`; L3 — (a) runtime đóng băng ⇒ tắt ≤ `lease_ms + tolerance_ms` sau lần gia hạn cuối, (b) gia hạn trùng/đến muộn không đẩy quá `start + D + tolerance_ms`, (c) `lease_ms ≤ max_lease_ms` |
+| `actuator.off_is_idempotent` | `safe_off()` hai lần (đang tắt, rồi sau một `on`) không lỗi |
+| `actuator.off_is_unconditional` | HAL có sổ token từ chối mọi thứ vẫn tắt được thiết bị |
+| `actuator.builds_without_io` | factory chạy khi `socket` bị chặn, không thử mở kết nối nào |
+| `actuator.classifies_errors` | đứt liên lạc: `apply`/`safe_off` ném `NotSent`, `Rejected` hoặc `Ambiguous`; `read_state` ném `ReadFailed` |
+| `actuator.receives_no_handles` | factory nhận đúng `config`; driver không giữ đối tượng nào của lõi (ngoài `neuroedge.sdk`/`errors`) |
+
+Kết quả `pass` · `fail` · `unverifiable` (không `probe()`: bốn phép kiểm động). Không nạp được ⇒ mọi phép kiểm `actuator.*` là `fail`. Mã thoát: §6 của `python_api.md`.
+Báo cáo `--json`: `{distribution, version, files_sha256, editable, sdk, core, checker, results: [{entry_point, check, result, detail}], unimplemented, problem, badge_eligible, exit_code}` —
+`badge_eligible` chỉ đúng khi mọi phép kiểm `pass`, không editable và có `files_sha256` (huy hiệu là TSK-I2c-18); chưa vào `schemas/` (RFC-0016 §3g).
+Corpus `fixtures/compliance/actuators/{valid,invalid}/` + `expected_results.yaml`: mỗi phép kiểm có ít nhất một phản chứng mà nó bắt (`test_every_check_of_every_kind_catches_a_counter_example`).
+P1 chứng minh cách plugin dựng lệnh với giao thức thiết bị trên bản giả, **không** chứng minh phần sụn thật tôn trọng lệnh (RFC-0018 §3e).

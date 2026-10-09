@@ -681,6 +681,20 @@ class TracePlayer:
         self.registry = registry
         self.enforce_gate_digests = enforce_gate_digests
 
+    def _actuators(self) -> dict[str, Any]:
+        """The remote actuators the agent or guard declares, read only: no plugin is imported."""
+        if self.guard_config is not None:
+            return dict(self.guard_config.actuators)
+        from ..plugins.actuators import parse_actuators
+
+        document = tomllib.loads(self.manifest.source.read_text(encoding="utf-8"))
+        declarations, problems = parse_actuators(
+            document.get("actuators"), str(self.manifest.source)
+        )
+        if problems:
+            raise problems[0]
+        return declarations
+
     def _action_for(self, step: RecordedStep, actions: list[Any], gates) -> str:
         if step.action is not None:
             return step.action
@@ -749,6 +763,7 @@ class TracePlayer:
         _script_i2c(hal, self.trace)
         _script_digital_in(hal, self.trace)
         _script_pin_state(hal, self.trace)
+        _script_remote_state(hal, self.trace, self._actuators(), envelope_clock)
         warnings = (
             [] if guard is not None else _sensor_rules_changed(self.trace, self.manifest, events)
         )
@@ -994,6 +1009,39 @@ def _script_pin_state(hal: Any, trace: Mapping[str, Any]) -> None:
         )
     for pin, entries in states.items():
         script(pin, entries)
+
+
+def _script_remote_state(
+    hal: Any, trace: Mapping[str, Any], actuators: Mapping[str, Any], clock: Any
+) -> None:
+    """
+    The remote actuators of the agent, as the recording decided for them (RFC-0018 §3i): no
+    plugin is built, no key read, no connection opened. Each on attempt meets what the HAL's
+    state check decided for it when it was recorded (`script_remote_state`); the envelope —
+    the same four numbers — decides again on the recorded timeline.
+    """
+    if not actuators:
+        return
+    from ..hal.envelope import EnvelopeLimits, SafetyEnvelope
+    from ..hal.remote import recorded_outcomes
+
+    script = getattr(hal, "script_remote_state", None)
+    if script is None:
+        raise ReplayError(
+            where=f"replay on {getattr(hal, 'target', '?')}",
+            why="the agent drives remote actuators, and this HAL cannot replay them",
+            how="replay on sim or linux",
+        )
+    limits = {
+        name: EnvelopeLimits.from_declaration(declaration.envelope)
+        for name, declaration in actuators.items()
+    }
+    if hal.envelope is None:
+        hal.envelope = SafetyEnvelope(limits, clock=clock, virtual=True)
+    else:
+        hal.envelope.extend(limits, hal_ended=False)
+    for name, outcomes in recorded_outcomes(trace.get("events", []), actuators).items():
+        script(name, outcomes)
 
 
 def replay_sync(trace, **kwargs) -> ReplayResult:

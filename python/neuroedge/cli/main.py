@@ -1231,6 +1231,81 @@ def plugin_doctor(
         raise typer.Exit(code=1)
 
 
+@plugin_app.command(name="list", epilog=epilog("plugin list"))
+def plugin_list(
+    as_json: bool = typer.Option(False, "--json", help="Machine-readable listing"),
+):
+    """
+    Every installed NeuroEdge plugin entry point — kind, name, distribution, version — read from
+    the package metadata without importing anything. Installed is not enabled: only
+    \\[plugins] enable in agent.toml or guard.toml loads one (RFC-0016 §3d).
+    """
+    from ..plugins import discover
+
+    found = discover()
+    if as_json:
+        typer.echo(
+            json.dumps(
+                [
+                    {
+                        "kind": e.kind,
+                        "name": e.name,
+                        "distribution": e.distribution,
+                        "version": e.version,
+                        "value": e.value,
+                    }
+                    for e in found
+                ],
+                indent=2,
+            )
+        )
+        return
+    for entry in found:
+        typer.echo(f"{entry.kind:12} {entry.name:32} {entry.distribution} {entry.version}")
+    typer.echo(
+        f"{len(found)} entry point(s) installed; none runs unless [plugins] enable names its "
+        "distribution."
+    )
+
+
+@app.command(epilog=epilog("conformance"))
+def conformance(
+    distribution: str = typer.Argument(..., help="The distribution to check (its PyPI name)"),
+    kind: str = typer.Option(None, "--kind", help="Only this kind (actuator is implemented)"),
+    as_json: bool = typer.Option(False, "--json", help="The machine-readable report"),
+):
+    """
+    Run the conformance checks of RFC-0016 §3g on every NeuroEdge entry point of an installed
+    distribution — loading it is what typing its name means. Actuators get the safe-off vectors
+    of RFC-0018 §3e on the plugin's device double. Exit 0: every check passed; 1: a check failed
+    or could not run, or the distribution has no entry point; 2: a kind not checked yet.
+    """
+    from ..plugins.conformance import run as run_conformance
+
+    report = run_conformance(distribution, kind)
+    if as_json:
+        typer.echo(json.dumps(report.as_dict(), ensure_ascii=False, indent=2))
+    else:
+        summary = report.as_dict()
+        typer.echo(
+            f"{report.distribution} {report.version or '(not installed)'} — sdk {summary['sdk']}, "
+            f"core {summary['core']}, checker {summary['checker']}"
+        )
+        if report.problem:
+            typer.echo(f"✗ {report.problem}")
+        for result in report.results:
+            mark = {"pass": "✓", "fail": "✗", "unverifiable": "?"}[result.result]
+            detail = f" — {result.detail}" if result.detail else ""
+            typer.echo(f"  {mark} {result.entry_point}: {result.check}{detail}")
+        for entry in report.unimplemented:
+            typer.echo(f"  - {entry}: not checked yet (TSK-I2c-12)")
+        if not report.results and not report.unimplemented and not report.problem:
+            typer.echo("✗ no NeuroEdge entry point: scanning nothing is never a pass")
+        if report.editable:
+            typer.echo("  ! editable install: no file hash, no badge")
+    raise typer.Exit(code=report.exit_code)
+
+
 def _verify_tool_corpus() -> tuple[int, int]:
     """The Gated Tool Profile corpus (docs/spec/tool_calling.md §9): (problems, cases run)."""
     from ..testing.tool_corpus import corpus_dir, run_corpus
@@ -2662,6 +2737,8 @@ def build(
         f"  checked: {report.requirements} requirement(s), {report.actions} action(s), "
         f"{report.gates} gate(s)"
     )
+    for warning in report.warnings:
+        console.print(f"  warning: {warning}", markup=False, highlight=False)
     for artifact in report.artifacts:
         console.print(f"  wrote:   {artifact}")
     if report.firmware is not None:
