@@ -79,6 +79,7 @@ def validate_trace(trace: dict[str, Any], label: str = "<memory>") -> None:
     errors = sorted(_validator().iter_errors(trace), key=lambda e: list(e.absolute_path))
     if not errors:
         lint_vision(trace, label)
+        lint_remote(trace, label)
         return
 
     first = errors[0]
@@ -331,6 +332,64 @@ def lint_vision(trace: dict[str, Any], label: str = "<memory>") -> None:
 
 class _NonFinite(ValueError):
     pass
+
+
+# --- remote actuators (TSK-I2c-16, RFC-0018 §3i) ---------------------------------------------
+
+_STEP_BOUNDARY = ("action_requested", "gate_evaluation_begin")
+
+
+def lint_remote(trace: dict[str, Any], label: str = "<memory>") -> None:
+    """
+    The semantic lint of RFC-0018 §3i, run by `validate_trace`: every `remote_command_sent` that
+    turns a remote actuator on must follow the `actuator_command` the HAL recorded when it admitted
+    that on — for the same pin, in the same step, with no other command between — the trace of a
+    command that went the one road (state check, envelope, token). A `renew` belongs to a run so
+    admitted and not yet ended by an off; an `off` needs nothing. Raises `TraceValidationError`
+    (NE4001). Traces without remote actuators — the three canonical ones — are untouched.
+    """
+    admitted: dict[str, int] = {}  # actuator -> the index of its admitted, not yet sent, on
+    live: set[str] = set()  # actuators whose admitted on was sent and is not ended by an off
+    for index, event in enumerate(trace.get("events", [])):
+        kind, data = event.get("type"), event.get("data", {})
+        if kind in _STEP_BOUNDARY:
+            admitted.clear()
+        elif kind == "actuator_command":
+            pin, operation = data.get("pin"), data.get("operation")
+            if operation in ("on", "pulse") and "cause" not in data:
+                admitted[pin] = index
+            elif operation == "off":
+                admitted.pop(pin, None)
+        elif kind == "remote_command_sent":
+            actuator, operation = data.get("actuator"), data.get("operation")
+            at = f"{label} -> events.{index}"
+            if operation == "off":
+                live.discard(actuator)
+            elif operation == "on":
+                if admitted.pop(actuator, None) is None:
+                    raise TraceValidationError(
+                        where=at,
+                        why=f"remote_command_sent turns {actuator!r} on with no actuator_command "
+                        "for it just before in the same step: an on that did not go through the "
+                        "HAL's state check, envelope and token",
+                        how="a remote on is sent only by the HAL after it records the command "
+                        "(RFC-0018 §3c, §3i); look for code that drives the plugin directly",
+                    )
+                live.add(actuator)
+            elif operation == "renew":
+                if actuator not in live:
+                    raise TraceValidationError(
+                        where=at,
+                        why=f"remote_command_sent renews a lease of {actuator!r} that no admitted "
+                        "on started, or that an off ended",
+                        how="a lease is renewed only within the run the HAL admitted (RFC-0018 §3d)",
+                    )
+            else:
+                raise TraceValidationError(
+                    where=at,
+                    why=f"remote_command_sent operation {operation!r} is not on, renew or off",
+                    how="see docs/spec/simulation_coverage.md §3",
+                )
 
 
 def _no_constant(name: str) -> Any:

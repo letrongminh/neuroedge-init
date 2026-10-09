@@ -112,8 +112,9 @@ from ..mcp_host import McpConfig, load_mcp_config
 from ..models import CommandGrammar, SystemOne, SystemTwo
 from ..models.grammar import OFFLINE_SAY, Recognition
 from ..models.knowledge import KNOWLEDGE_INTENT, KnowledgeBase, load_agent_grammar
+from ..plugins.actuators import remote_setup
 from ..trace import json_safe, validate_trace
-from .hal_build import build_hal, release_hal
+from .hal_build import announce_plugins, build_hal, release_hal
 
 # Words that answer the device's pending question (Q-26): matched on the device,
 # so the answer's source is `local_grammar`. Only while a question is pending.
@@ -875,9 +876,21 @@ class SimSession:
                 called_from=f"{manifest.source} -> [sim.digital_facts] {criterion}",
             )
 
+        # `[plugins]` and `[actuators]` (RFC-0018 §3b): the check build() ran, again at load, and
+        # the drivers it builds are the only ones the HAL gets.
+        remote = remote_setup(
+            tomllib.loads(manifest.source.read_text(encoding="utf-8")),
+            where=str(manifest.source),
+            target=target,
+            board=board,
+            requires=manifest.requires,
+        )
+        remote.raise_problems(f"{manifest.label} on {target}")
+
         if events is None:
             events = EventLog(clock)
         events.metadata.update(target=target, board_id=board_id, agent_version=manifest.label)
+        announce_plugins(remote.records, events)
         rules_digest = sensor_facts_digest(sim_table)
         if rules_digest is not None:
             # Replay cannot recompute a sensor fact; it can tell the rules changed.
@@ -895,6 +908,7 @@ class SimSession:
             analog_values=analog_values,
             input_levels=input_levels,
             i2c_values=i2c_values,
+            remote=remote.checked.bound,
         )
         # Requesting the lines is the one step that holds anything: if the rest of
         # the wiring fails, they are released before the error goes up.

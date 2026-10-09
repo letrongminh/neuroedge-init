@@ -1,0 +1,9 @@
+[requires]
+"digital.out" = { pins = ["garden_valve"] }
+
+[plugins]
+enable = ["neuroedge-ref-actuators"]
+
+[actuators.garden_valve]
+plugin = "ref_l2"
+safe_off = "L2"

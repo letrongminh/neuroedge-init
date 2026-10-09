@@ -1,0 +1,99 @@
+# The corpus of `[actuators.<name>]` declarations (RFC-0018 §3b, §3f, §3k), closed both ways:
+# every file has an entry, every entry a file (CONTRIBUTING.md §3). A file is an agent.toml
+# fragment — [requires], [plugins], [actuators] — checked by the one check `neuroedge build`,
+# `SimSession` and `Guard` share (`neuroedge.plugins.actuators.remote_setup`) and by
+# `check_capabilities` (the other direction of the two-way rule), on board sim-default and target
+# sim unless the entry says otherwise, with the reference plugins of
+# fixtures/compliance/actuators/ installed. `errors` is the whole list, in order: a problem that
+# appears or disappears is a failure. Valid files have no error; `warnings` counts the warnings.
+
+valid:
+  l0_reversible_warns.toml: {warnings: 1}
+  l1_reversible.toml: {warnings: 0}
+  l1_relied_on_below_an_l3_plugin.toml: {warnings: 0}
+  l2_irreversible_with_readback.toml: {warnings: 0}
+  l3_irreversible_lease.toml: {warnings: 0}
+  pinned_version.toml: {warnings: 0}
+
+invalid:
+  safe_off_missing.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "[actuators.garden_valve] safe_off", why_contains: "it is missing"}
+  safe_off_unknown_level.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "[actuators.garden_valve] safe_off", why_contains: "'L4' is not a level"}
+  envelope_missing.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "[actuators.garden_valve] envelope", why_contains: "the envelope is required"}
+  envelope_key_missing.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "envelope", why_contains: "'min_interval_ms' is a required property"}
+  envelope_key_unknown.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "envelope", why_contains: "'max_daily_ms' was unexpected"}
+  name_is_a_board_pin.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "[actuators.porch_light]", why_contains: "already a digital.out pin of board 'sim-default'"}
+  not_in_requires.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "[actuators.garden_valve]", why_contains: "not listed in [requires]"}
+  required_without_declaration.toml:
+    errors:
+      - {error: BoardCapabilityError, code: NE3001, where_contains: "[requires] digital.out:garden_valve", why_contains: "does not provide digital.out:garden_valve"}
+  unknown_key.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "duration_ms", why_contains: "not fields of [actuators.garden_valve]"}
+  secret_written.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "config.token", why_contains: "a secret must never be written"}
+  env_name_not_a_name.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "config token_env", why_contains: "must be the NAME of an environment variable"}
+  reversible_not_bool.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "reversible", why_contains: "true or false"}
+  bad_name.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "[actuators.?]", why_contains: "is not a remote actuator name"}
+  plugin_missing.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "[actuators.garden_valve] plugin", why_contains: "`plugin` is required"}
+  plugin_not_enabled.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "[actuators.garden_valve] plugin", why_contains: "not an entry point of an enabled distribution"}
+  plugin_not_installed.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "[plugins] enable 'neuroedge-not-installed'", why_contains: "enabled and not installed"}
+  plugin_refuses_config.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "[actuators.garden_valve]", why_contains: "refused its config: ValueError"}
+  irreversible_below_l2.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "[actuators.garden_valve] safe_off", why_contains: "irreversible (reversible is not true) and declares safe_off = \"L1\""}
+      - {error: BoardCapabilityError, code: NE3001, where_contains: "[actuators.garden_valve] plugin", why_contains: "proves L1"}
+  irreversible_not_declared_l0.toml:
+    errors:
+      - {error: AgentManifestError, code: NE3002, where_contains: "[actuators.garden_valve] safe_off", why_contains: "declares safe_off = \"L0\""}
+      - {error: BoardCapabilityError, code: NE3001, where_contains: "[actuators.garden_valve] plugin", why_contains: "proves L0"}
+  safe_off_above_plugin_level.toml:
+    errors:
+      - {error: BoardCapabilityError, code: NE3001, where_contains: "[actuators.porch_lamp] safe_off", why_contains: "is above what plugin 'ref_l1' proves"}
+  irreversible_without_readback.toml:
+    errors:
+      - {error: BoardCapabilityError, code: NE3001, where_contains: "[actuators.garden_valve] plugin", why_contains: "with readback 'none'"}
+  max_continuous_not_above_tolerance.toml:
+    errors:
+      - {error: BoardCapabilityError, code: NE3001, where_contains: "envelope max_continuous_ms", why_contains: "is not above the plugin's tolerance_ms 50"}
+  pwm_on_a_remote_name.toml:
+    errors:
+      - {error: BoardCapabilityError, code: NE3001, where_contains: "[requires] pwm 'garden_valve'", why_contains: "is a remote actuator"}
+      - {error: BoardCapabilityError, code: NE3001, where_contains: "[requires] digital.out pwm:garden_valve", why_contains: "does not provide"}
+  motion_on_a_remote_name.toml:
+    errors:
+      - {error: BoardCapabilityError, code: NE3001, where_contains: "[requires] motion 'garden_valve'", why_contains: "is a remote actuator"}
+      - {error: BoardCapabilityError, code: NE3001, where_contains: "[requires] motion", why_contains: "does not provide motion"}
+  esp32s3.toml:
+    target: esp32s3
+    board: esp32s3-box-3
+    errors:
+      - {error: BoardCapabilityError, code: NE3001, where_contains: "[actuators] on target 'esp32s3'", why_contains: "no plugin loader"}

@@ -411,6 +411,24 @@ class SimHAL(HardwareAbstractionLayer):
         frequency_hz: int | None = None,
         duty: float | None = None,
     ) -> PendingCommand:
+        if pin in self._remote:  # a remote actuator: the shared path of the base class (RFC-0018)
+            if delay_ms:
+                raise BoardCapabilityError(
+                    where=f"{called_from} -> digital.out {pin!r}",
+                    why="a command to a remote actuator cannot be scheduled (after_ms): its "
+                    "state is checked when it is sent",
+                    how="drive it without after_ms",
+                )
+            self._remote_out(pin, operation, duration_ms, signature, called_from)
+            remote = self._remote[pin]
+            return PendingCommand(
+                pin,
+                operation,
+                duration_ms,
+                self.events,
+                on_cancel=None if operation == "off" else (lambda: remote.off("abort")),
+                token=signature,
+            )
         if operation not in ("pulse", "on", "off", "pwm"):
             raise BoardCapabilityError(
                 where=f"{called_from} -> digital.out {pin!r}",
@@ -533,6 +551,9 @@ class SimHAL(HardwareAbstractionLayer):
 
     def next_delivery_ms(self) -> float | None:
         due = [c.deliver_at_ms for c in self.pending_commands() if c.deliver_at_ms is not None]
+        remote = self.next_remote_due()  # a remote off, renewal or read-back is a due time too
+        if remote is not None:
+            due.append(remote)
         if self._motion is not None:  # a lease, a hold or a run that ends is a due time too
             motion = self._motion.next_deadline_ms()
             if motion is not None:
@@ -544,6 +565,7 @@ class SimHAL(HardwareAbstractionLayer):
         if self.envelope is not None:
             self.envelope.settle()  # a pin whose on-time is up goes off, whoever is listening
         self.settle_motion()  # ... and a channel whose lease ran out goes to its safe state
+        self.settle_remote()  # ... and a remote actuator's timers run (RFC-0018 §3d)
         if self._clock is None:
             return []
         now = self._clock()
@@ -875,6 +897,10 @@ class SimHAL(HardwareAbstractionLayer):
                 self._motion.close()
             except BaseException as exc:
                 errors.append(exc)
+        try:  # every off a remote actuator is owed, tried once (never raised by the off itself)
+            self.close_remote()
+        except BaseException as exc:
+            errors.append(exc)
         if self.envelope is not None:
             self.envelope.end_all()
         cameras, self._cameras = self._cameras, []

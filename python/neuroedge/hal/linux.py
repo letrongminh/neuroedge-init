@@ -419,6 +419,9 @@ class LinuxHAL(HardwareAbstractionLayer):
             gpio_pins += [records[c]["enable_pin"] for c in wanted]
         self._motion_enable = {records[c]["enable_pin"]: c for c in wanted}
         self._motion_timer: threading.Timer | None = None
+        # The one timer of the remote actuators (RFC-0018 §3d), re-armed to the earliest due time.
+        self._remote_timer: threading.Timer | None = None
+        self._remote_timer_lock = threading.Lock()
         names = {pin: (line_names or {}).get(pin, pin) for pin in gpio_pins}
         self.lines: dict[str, tuple[str, int]] = {}
         for pin, name in names.items():
@@ -649,6 +652,29 @@ class LinuxHAL(HardwareAbstractionLayer):
         self._motion_timer = timer
         timer.start()
 
+    def _remote_wake(self) -> None:
+        """One timer for every remote actuator: re-armed to the earliest due time (RFC-0018 §3d)."""
+        due = self.next_remote_due()
+        clock = self.envelope.clock if self.envelope is not None else self._clock_ms
+        with self._remote_timer_lock:
+            timer, self._remote_timer = self._remote_timer, None
+            if timer is not None:
+                timer.cancel()
+            if due is None or self._closed or self.replay:
+                return
+            delay = max(0.0, due - clock()) / 1000.0 + 0.002
+            timer = threading.Timer(delay, self._remote_tick)
+            timer.daemon = True
+            self._remote_timer = timer
+            timer.start()
+
+    def _remote_tick(self) -> None:
+        try:
+            self.settle_remote()
+        finally:
+            if not self._closed:
+                self._remote_wake()
+
     def _motion_tick(self) -> None:
         try:
             self.settle_motion()
@@ -699,6 +725,16 @@ class LinuxHAL(HardwareAbstractionLayer):
         frequency_hz: int | None = None,
         duty: float | None = None,
     ) -> PendingCommand:
+        if pin in self._remote:  # a remote actuator: the shared path of the base class (RFC-0018)
+            self._remote_out(pin, operation, duration_ms, signature, called_from)
+            remote = self._remote[pin]
+            return PendingCommand(
+                pin,
+                operation,
+                duration_ms,
+                self.events,
+                on_cancel=None if operation == "off" else (lambda: remote.off("abort")),
+            )
         if operation not in ("pulse", "on", "off", "pwm"):
             raise BoardCapabilityError(
                 where=f"{called_from} -> digital.out {pin!r}",
@@ -913,6 +949,14 @@ class LinuxHAL(HardwareAbstractionLayer):
             timer, self._motion_timer = self._motion_timer, None
             if timer is not None:
                 timer.cancel()
+            with self._remote_timer_lock:
+                remote_timer, self._remote_timer = self._remote_timer, None
+            if remote_timer is not None:
+                remote_timer.cancel()
+            try:  # every off a remote actuator is owed, tried once; the off itself never raises
+                self.close_remote()
+            except BaseException as exc:
+                errors.append(exc)
             if self._motion is not None:  # every channel to its safe state, the driver off
                 try:
                     self._motion.close()

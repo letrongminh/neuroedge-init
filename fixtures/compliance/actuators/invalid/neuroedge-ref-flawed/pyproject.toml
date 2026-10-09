@@ -1,0 +1,32 @@
+# Counter-examples for `neuroedge conformance` (RFC-0018 §3e, RFC-0016 §3g): each entry point is the
+# reference driver of fixtures/compliance/actuators/valid/neuroedge-ref-actuators with one flaw,
+# and fixtures/compliance/actuators/expected_results.yaml names the one check that must catch it.
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "neuroedge-ref-flawed"
+version = "1.0.0"
+description = "Flawed neuroedge.actuators plugins: one counter-example per conformance check"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+dependencies = ["neuroedge-ref-actuators"]
+
+[project.entry-points."neuroedge.actuators"]
+ignores_timer = "neuroedge_ref_flawed:ignores_timer"
+ignores_lease = "neuroedge_ref_flawed:ignores_lease"
+l2_without_duration = "neuroedge_ref_flawed:l2_without_duration"
+reports_off_unconfirmed = "neuroedge_ref_flawed:reports_off_unconfirmed"
+off_needs_token = "neuroedge_ref_flawed:off_needs_token"
+off_not_idempotent = "neuroedge_ref_flawed:off_not_idempotent"
+io_at_build = "neuroedge_ref_flawed:io_at_build"
+raw_errors = "neuroedge_ref_flawed:raw_errors"
+holds_hal = "neuroedge_ref_flawed:holds_hal"
+wrong_shape = "neuroedge_ref_flawed:wrong_shape"
+future_sdk = "neuroedge_ref_flawed.future_sdk:make"
+Bad_Name = "neuroedge_ref_flawed:named_badly"
+no_probe = "neuroedge_ref_flawed:no_probe"
+
+[tool.hatch.build.targets.wheel]
+packages = ["neuroedge_ref_flawed"]

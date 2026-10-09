@@ -45,11 +45,27 @@ from .errors import AgentManifestError, BoardCapabilityError, ToolCallError
 from .hal import digital
 from .hal.board import BoardProfile, load_board_by_id
 from .models.providers.common import NAME, refuse_unknown, secret_fields
+from .plugins import PluginsConfig, parse_plugins
+from .plugins.actuators import (
+    ActuatorDeclaration,
+    check_actuators,
+    parse_actuators,
+    remote_setup,
+)
 from .sdk import Outcome, ToolRequest
-from .sim.hal_build import build_hal, release_hal
+from .sim.hal_build import announce_plugins, build_hal, release_hal
 from .trace import validate_trace
 
-__all__ = ["Dispatcher", "Drive", "Guard", "GuardConfig", "Tool", "load_config"]
+__all__ = [
+    "ActuatorDeclaration",
+    "Dispatcher",
+    "Drive",
+    "Guard",
+    "GuardConfig",
+    "Tool",
+    "check_actuators",
+    "load_config",
+]
 
 _TOOL = re.compile(r"[a-z][a-z0-9_]{0,63}")
 _TYPES: dict[str, type] = {"string": str, "integer": int, "number": float, "boolean": bool}
@@ -226,22 +242,25 @@ class GuardConfig:
     source: str = "<guard>"
     # `[proxy]` as written: the proxy commands read it (neuroedge.proxy_mcp); a Guard does not.
     proxy: Mapping[str, Any] = field(default_factory=dict)
+    # `[plugins]` and `[actuators]` (RFC-0016 §3d, RFC-0018 §3b): checked when the Guard loads.
+    plugins: PluginsConfig = field(default_factory=PluginsConfig)
+    actuators: Mapping[str, ActuatorDeclaration] = field(default_factory=dict)
 
 
 # --- guard.toml -----------------------------------------------------------------------------
 
 _LATER = {
     "external": "TSK-I2c-09 (external facts, RFC-0014)",
-    "actuators": "TSK-I2c-16 (remote actuators, RFC-0018)",
 }
 
 
 def load_config(path: str | Path) -> GuardConfig:
     """
     `guard.toml` as a `GuardConfig`. An unknown key, a field named like a secret, a table that a
-    later task implements (`[external]`, `[actuators]`, a non-empty `[plugins]`, a second
+    later task implements (`[external]`, a plugin of a kind other than actuators, a second
     registry root, a board that is not an id) are all `AgentManifestError` (NE3002), three
-    parts, naming the task when one is coming.
+    parts, naming the task when one is coming. `[actuators]` is read here and checked, with the
+    plugins it names, when the Guard loads (the same check `neuroedge build` runs).
     """
     path = Path(path)
     where = str(path)
@@ -265,7 +284,11 @@ def load_config(path: str | Path) -> GuardConfig:
                 f"remove [{table}] until that task lands",
             )
     refuse_unknown(
-        document, where, "guard.toml", ("guard", "registry", "tools", "plugins", "proxy"), "x"
+        document,
+        where,
+        "guard.toml",
+        ("guard", "registry", "tools", "plugins", "actuators", "proxy"),
+        "x",
     )
     head = _table(document.get("guard"), where, "guard")
     refuse_unknown(head, where, "guard", ("name", "board"), "a [guard] has name and board")
@@ -285,7 +308,10 @@ def load_config(path: str | Path) -> GuardConfig:
             "only a board id is accepted today; a path or `pkg:` reference arrives with TSK-I2c-08",
             'write board = "<id of a board in boards/>"',
         )
-    _plugins(_table(document.get("plugins"), where, "plugins"), where)
+    plugins = parse_plugins(document.get("plugins"), where)
+    actuators, problems = parse_actuators(document.get("actuators"), where)
+    if problems:
+        raise problems[0]
     root = _registry(_table(document.get("registry"), where, "registry"), where, path.parent)
     tools_table = _table(document.get("tools"), where, "tools")
     tools = tuple(_tool(name_, spec, where) for name_, spec in tools_table.items())
@@ -297,6 +323,8 @@ def load_config(path: str | Path) -> GuardConfig:
         base=path.parent,
         source=where,
         proxy=_table(document.get("proxy"), where, "proxy"),
+        plugins=plugins,
+        actuators=actuators,
     )
 
 
@@ -306,17 +334,6 @@ def _table(value: Any, where: str, name: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise _manifest(f"{where} [{name}]", f"[{name}] must be a table", f"write [{name}]")
     return value
-
-
-def _plugins(table: dict[str, Any], where: str) -> None:
-    refuse_unknown(table, where, "plugins", ("enable", "config"), "x")
-    if table.get("enable") or table.get("config"):
-        raise _manifest(
-            f"{where} [plugins]",
-            "plugins are not implemented yet: TSK-I2c-11 (the loader, RFC-0016 §3d); a Guard "
-            "that asked for one would run without it",
-            "leave [plugins] empty until TSK-I2c-11 lands",
-        )
 
 
 def _registry(table: dict[str, Any], where: str, base: Path) -> Path | None:
@@ -519,6 +536,10 @@ class Guard:
     None: verdicts only, no pins, and a tool that `requires` a pin is refused with
     `BoardCapabilityError`); `target` is `sim` or `linux` and defaults to the board's.
     `testing=True` is the only way to reach the source `test` (`testing_dispatcher`).
+
+    `actuators` are remote actuators declared in code (RFC-0018) and `plugins` the distributions
+    enabled for them (`[plugins] enable`): checked by `check_actuators`, the same check as a
+    file's, before anything holds a pin. A tool reaches one as `requires = ["digital.out:<name>"]`.
     """
 
     def __init__(
@@ -534,6 +555,8 @@ class Guard:
         testing: bool = False,
         hal_options: Mapping[str, Any] | None = None,
         source: str = "<guard>",
+        actuators: Sequence[ActuatorDeclaration] | Mapping[str, ActuatorDeclaration] = (),
+        plugins: Sequence[str] | PluginsConfig = (),
     ) -> None:
         if not isinstance(name, str) or not NAME.fullmatch(name):
             raise _manifest(source, f"{name!r} is not a guard name", "use letters, digits, _ . -")
@@ -550,7 +573,21 @@ class Guard:
         self._closed = False
         self._lock = asyncio.Lock()
         specs = specs_of(config.tools, source)
-        profile = self._board(config, specs)
+        declared = dict(actuators) if isinstance(actuators, Mapping) else {}
+        for declaration in () if isinstance(actuators, Mapping) else actuators:
+            if not isinstance(declaration, ActuatorDeclaration) or declaration.name in declared:
+                raise _manifest(
+                    f"{source} actuators",
+                    "each remote actuator is one ActuatorDeclaration with a name of its own",
+                    "pass ActuatorDeclaration(...) objects, each name once",
+                )
+            declared[declaration.name] = declaration
+        enabled = (
+            plugins
+            if isinstance(plugins, PluginsConfig)
+            else parse_plugins({"enable": list(plugins)} if plugins else None, source)
+        )
+        profile = self._board(config, specs, set(declared))
         chosen = target or (profile.target if profile is not None else "sim")
         if chosen not in _TARGETS or (profile is not None and profile.target != chosen):
             raise BoardCapabilityError(
@@ -562,11 +599,23 @@ class Guard:
                 how="pick a sim or linux board (the MCU runs ne_gate + NETR, RFC-0003)",
             )
         events = events if events is not None else EventLog()
+        # The one check of remote actuators (RFC-0018 §3b), with the plugins they name: before a
+        # gate resolves or a line is held. A tool's pins are what this Guard requires.
+        remote = remote_setup(
+            {"plugins": enabled},
+            where=source,
+            target=chosen,
+            board=profile,
+            requires={"digital.out": {"pins": sorted({p for t in config.tools for p in t.pins})}},
+            declarations=declared,
+        )
+        remote.raise_problems(f"guard {name}")
         events.metadata.update(
             target=chosen,
             board_id=profile.id if profile is not None else NO_BOARD,
             agent_version=label_of(config),
         )
+        announce_plugins(remote.records, events)
         self.events = events
         # Gates first: one that does not resolve stops the load before a line is requested.
         engine = ActionContractEngine(clock=events.clock, events=events)
@@ -580,6 +629,7 @@ class Guard:
                 events,
                 dict(hal_options or {}),
                 needs={"where": f"{source} on target {chosen!r}"} if chosen == "linux" else None,
+                remote=remote.checked.bound,
             )
             if profile is not None
             else NoHal()
@@ -597,7 +647,9 @@ class Guard:
         self.engine = engine
 
     @staticmethod
-    def _board(config: GuardConfig, specs: Mapping[str, ActionSpec]) -> BoardProfile | None:
+    def _board(
+        config: GuardConfig, specs: Mapping[str, ActionSpec], remote: set[str]
+    ) -> BoardProfile | None:
         needs = sorted({pin for tool in config.tools for pin in tool.pins})
         if config.board is None:
             if needs:
@@ -611,6 +663,8 @@ class Guard:
         profile = load_board_by_id(config.board)
         for tool in config.tools:
             for pin in tool.pins:
+                if pin in remote:  # a remote actuator: checked by check_actuators
+                    continue
                 profile.require_pin(pin, called_from=f"{config.source} -> [tools.{tool.name}]")
         return profile
 
@@ -637,6 +691,8 @@ class Guard:
             testing=testing,
             hal_options=hal_options,
             source=config.source,
+            actuators=config.actuators,
+            plugins=config.plugins,
         )
 
     # -- who calls ------------------------------------------------------------------------

@@ -1,0 +1,24 @@
+# The reference remote-actuator plugin (RFC-0018 §3e, TSK-I2c-16): one entry point per safe-off
+# level, each with a `DeviceDouble` that keeps its promise. `neuroedge conformance
+# neuroedge-ref-actuators` passes every check; fixtures/compliance/actuators/expected_results.yaml
+# says so. It talks a toy JSON-lines protocol over TCP to a device that does not exist: it is
+# here to be driven through its double, never against anything real.
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "neuroedge-ref-actuators"
+version = "1.0.0"
+description = "Reference neuroedge.actuators plugin: levels L0-L3 with honest device doubles"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+
+[project.entry-points."neuroedge.actuators"]
+ref_l0 = "neuroedge_ref_actuators:l0"
+ref_l1 = "neuroedge_ref_actuators:l1"
+ref_l2 = "neuroedge_ref_actuators:l2"
+ref_l3 = "neuroedge_ref_actuators:l3"
+
+[tool.hatch.build.targets.wheel]
+packages = ["neuroedge_ref_actuators"]

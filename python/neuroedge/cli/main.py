@@ -2662,6 +2662,8 @@ def build(
         f"  checked: {report.requirements} requirement(s), {report.actions} action(s), "
         f"{report.gates} gate(s)"
     )
+    for warning in report.warnings:
+        console.print(f"  warning: {warning}", markup=False, highlight=False)
     for artifact in report.artifacts:
         console.print(f"  wrote:   {artifact}")
     if report.firmware is not None:

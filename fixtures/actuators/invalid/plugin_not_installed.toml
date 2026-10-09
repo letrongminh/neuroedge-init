@@ -1,0 +1,15 @@
+[requires]
+"digital.out" = { pins = ["garden_valve"] }
+
+[plugins]
+enable = ["neuroedge-not-installed"]
+
+[actuators.garden_valve]
+plugin = "ref_l2"
+safe_off = "L2"
+
+[actuators.garden_valve.envelope]
+window_s = 3600
+max_on_ms_per_window = 1800000
+min_interval_ms = 2000
+max_continuous_ms = 600000

@@ -211,8 +211,16 @@ def _mismatch(manifest: AgentManifest, board: BoardProfile, need: str, fix: str)
     )
 
 
-def check_capabilities(manifest: AgentManifest, board: BoardProfile) -> list[NeuroEdgeError]:
+def check_capabilities(
+    manifest: AgentManifest, board: BoardProfile, remote: Iterable[str] = ()
+) -> list[NeuroEdgeError]:
+    """
+    `[requires]` against the board. `remote` are the names of the agent's remote actuators
+    (`[actuators]`, RFC-0018 §3b): a `digital.out` the board does not have is met by one of them;
+    any other name the board lacks is NE3001, as always.
+    """
     problems: list[NeuroEdgeError] = []
+    remote = tuple(remote)
     for primitive, need in manifest.requires.items():
         if not board.supports(primitive):
             problems.append(
@@ -255,7 +263,7 @@ def check_capabilities(manifest: AgentManifest, board: BoardProfile) -> list[Neu
                 )
         elif primitive in ("digital.out", "sensor.read", "digital.in"):
             key, offered = {
-                "digital.out": ("pins", board.pins),
+                "digital.out": ("pins", (*board.pins, *remote)),
                 "sensor.read": ("sensors", board.sensors),
                 "digital.in": ("pins", board.input_pins),
             }[primitive]
@@ -498,7 +506,9 @@ def check_motion_leases(
     return problems
 
 
-def default_board_hint(manifest: AgentManifest, board: BoardProfile) -> NeuroEdgeError:
+def default_board_hint(
+    manifest: AgentManifest, board: BoardProfile, remote: Iterable[str] = ()
+) -> NeuroEdgeError:
     """
     The way out when `build` ran on a default board that does not satisfy `[requires]`:
     which other reference boards of the target do (RFC-0013 §3e). It names them and
@@ -507,7 +517,8 @@ def default_board_hint(manifest: AgentManifest, board: BoardProfile) -> NeuroEdg
     satisfying = [
         other
         for other in REFERENCE_BOARDS.get(board.target, ())
-        if other != board.id and not check_capabilities(manifest, load_board_by_id(other))
+        if other != board.id
+        and not check_capabilities(manifest, load_board_by_id(other), tuple(remote))
     ]
     if satisfying:
         how = f"build with --board {satisfying[0]} (reference boards of {board.target} that satisfy [requires]: {satisfying})"
@@ -1617,6 +1628,43 @@ def check_commands(grammar: Any, actions: Iterable[Any]) -> list[NeuroEdgeError]
     return problems
 
 
+# A network client imported by a module that defines an @action: the body may be talking to a
+# device around the HAL (RFC-0018 §3c). A heuristic reminder, never a refusal (§9.6).
+NETWORK_CLIENTS = ("httpx", "requests", "aiohttp", "urllib.request", "socket")
+
+
+def network_client_warnings(manifest: AgentManifest, actions: Iterable[Any]) -> list[str]:
+    """One warning per action module that imports a common network client."""
+    import ast
+
+    warnings: list[str] = []
+    for source in sorted({Path(spec.source_file) for spec in actions}):
+        try:
+            tree = ast.parse(source.read_text(encoding="utf-8"))
+        except (OSError, SyntaxError, ValueError):
+            continue
+        found: set[str] = set()
+        for node in ast.walk(tree):
+            names: list[str] = []
+            if isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module and not node.level:
+                names = [node.module] + [f"{node.module}.{a.name}" for a in node.names]
+            for name in names:
+                found.update(
+                    client
+                    for client in NETWORK_CLIENTS
+                    if name == client or name.startswith(client + ".")
+                )
+        if found:
+            warnings.append(
+                f"{source}: an @action module imports {sorted(found)}; a physical effect sent "
+                "from an action body skips the token, the envelope and the auto-off — declare "
+                "the device as a remote actuator ([actuators], RFC-0018) instead"
+            )
+    return warnings
+
+
 def spec_required(spec: Any) -> list[str]:
     from ..actions.tools import input_schema
 
@@ -1638,6 +1686,8 @@ class BuildReport:
     # esp32s3: the ESP-IDF project written for the agent, and how many files it has.
     firmware: Path | None = None
     firmware_files: int = 0
+    # Said, never refused: an L0 remote actuator, a network client imported next to an @action.
+    warnings: list[str] = field(default_factory=list)
 
 
 def build(
@@ -1675,12 +1725,27 @@ def build(
                 how=f"pick a {target} board, or build with --target {board.target}",
             )
         )
-    capability_problems = check_capabilities(manifest, board)
+    # `[plugins]` and `[actuators]` (RFC-0016 §3d, RFC-0018 §3b): the one check that `SimSession`
+    # and `Guard` run at load time too. A remote actuator is a `digital.out` the board lacks.
+    from ..plugins.actuators import remote_setup
+
+    document = tomllib.loads(manifest.source.read_text(encoding="utf-8"))
+    remote = remote_setup(
+        document,
+        where=str(manifest.source),
+        target=target,
+        board=board,
+        requires=manifest.requires,
+    )
+    problems += remote.problems
+    warnings = list(remote.checked.warnings)
+    capability_problems = check_capabilities(manifest, board, remote.names)
     problems += capability_problems
     if capability_problems and not explicit_board:
-        problems.append(default_board_hint(manifest, board))
+        problems.append(default_board_hint(manifest, board, remote.names))
     actions = load_actions(manifest)
     problems += check_actions(manifest, actions)
+    warnings += network_client_warnings(manifest, actions)
     gates, gate_problems = resolve_gates(manifest, registry)
     problems += gate_problems
     problems += check_fallbacks(manifest, gates, actions)
@@ -1727,6 +1792,7 @@ def build(
         actions=len(actions),
         gates=len(gates),
         requirements=len(manifest.requires),
+        warnings=warnings,
     )
     if out_dir is not None:
         # Rendered before anything is written: a failure here leaves `out_dir` as it was.

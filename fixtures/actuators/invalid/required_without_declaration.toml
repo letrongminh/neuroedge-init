@@ -1,0 +1,2 @@
+[requires]
+"digital.out" = { pins = ["garden_valve"] }
