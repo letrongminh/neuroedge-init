@@ -256,6 +256,91 @@ async def main() -> None:
 asyncio.run(main())
 PY
 )
+# Remote actuators (TSK-I2c-16, RFC-0018): the reference plugin installed with pip next to the wheel,
+# its conformance run from the installed CLI, and an agent with one remote actuator on sim — ALLOW
+# turns it on through the envelope (on the plugin's double), the L1 timer turns it off, the trace
+# validates and names the plugin.
+"$WORK/venv/bin/pip" install -q --no-deps "$REPO/fixtures/compliance/actuators/valid/neuroedge-ref-actuators"
+step plugin list
+step conformance neuroedge-ref-actuators
+mkdir -p "$WORK/remote-smoke/actions"
+cat > "$WORK/remote-smoke/agent.toml" <<'TOML'
+[agent]
+name    = "remote-smoke"
+version = "0.1.0"
+
+[requires]
+"digital.out" = { pins = ["garden_lamp"] }
+
+[gates]
+lamp = "neuroedge://gates/home/light@1.0.0"
+
+[plugins]
+enable = ["neuroedge-ref-actuators"]
+
+[actuators.garden_lamp]
+plugin     = "ref_l1"
+safe_off   = "L1"
+reversible = true
+[actuators.garden_lamp.envelope]
+window_s             = 3600
+max_on_ms_per_window = 600000
+min_interval_ms      = 0
+max_continuous_ms    = 300
+
+[sim.facts]
+device_fault_free = true
+quiet_hours_ok    = true
+TOML
+cat > "$WORK/remote-smoke/actions/lamp.py" <<'PYACTION'
+from neuroedge import action, digital
+
+
+@action(name="lamp_on", requires="digital.out:garden_lamp", gate="lamp")
+def lamp_on() -> None:
+    """Turn the garden lamp on."""
+    digital.out("garden_lamp").on()
+PYACTION
+cat > "$WORK/remote-smoke/commands.toml" <<'TOML'
+[grammar]
+version   = 1
+threshold = 0.80
+
+[[command]]
+intent   = "lamp_on"
+patterns = ["garden lamp on"]
+tool     = "lamp_on"
+TOML
+(cd "$WORK/remote-smoke" && "$NE" build --target sim && "$WORK/venv/bin/python" - <<'PY'
+import asyncio
+import time
+
+from neuroedge import SimSession, TraceRecorder, validate_trace
+
+
+async def main() -> None:
+    recorder = TraceRecorder()
+    session = SimSession.load("agent.toml", events=recorder)
+    turn = await session.handle("garden lamp on")
+    double = session.hal._remote["garden_lamp"].double
+    if not turn.allowed or not double.state():
+        raise SystemExit("::error::the remote actuator was not turned on after ALLOW")
+    time.sleep(0.5)  # past max_continuous_ms = D: the HAL's L1 timer sends the off
+    session.hal.run_due()
+    if double.state() or session.hal.remote_state("garden_lamp") != "off":
+        raise SystemExit("::error::the L1 timer did not turn the remote actuator off")
+    session.close()
+    trace = recorder.to_trace()
+    validate_trace(trace)
+    kinds = [e["type"] for e in trace["events"]]
+    if "remote_command_sent" not in kinds or "plugin_loaded" not in kinds:
+        raise SystemExit("::error::the trace lacks the remote actuator's events")
+    print("remote actuator: ALLOW on through the envelope, L1 off at D, trace valid")
+
+
+asyncio.run(main())
+PY
+)
 # `neuroedge guard init --mcp` and `neuroedge proxy mcp` from the installed wheel, against a stdio upstream
 # (TSK-I2c-14): init writes blocking gates, the operator opens one, a real MCP client calls through the proxy.
 mkdir -p "$WORK/proxy-smoke"
