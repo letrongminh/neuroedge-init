@@ -256,4 +256,49 @@ async def main() -> None:
 asyncio.run(main())
 PY
 )
+# `neuroedge guard init --mcp` and `neuroedge proxy mcp` from the installed wheel, against a stdio upstream
+# (TSK-I2c-14): init writes blocking gates, the operator opens one, a real MCP client calls through the proxy.
+mkdir -p "$WORK/proxy-smoke"
+cp "$REPO/fixtures/mcp_upstream/server.py" "$WORK/proxy-smoke/upstream.py"
+cd "$WORK/proxy-smoke"
+export UPSTREAM_LOG="$WORK/proxy-smoke/up.log"
+"$NE" guard init --mcp "python upstream.py" --env-from UPSTREAM_LOG --name smoke
+"$WORK/venv/bin/python" - gates/get_state@1.0.0.yaml <<'PY'
+import re
+import sys
+from pathlib import Path
+
+gate = Path(sys.argv[1])
+text = gate.read_text(encoding="utf-8")
+text = re.sub(r"  operator_approved:\n(    .*\n)+", "", text)
+text = text.replace("  operator_approved: true\n", "")
+gate.write_text(text, encoding="utf-8")
+PY
+"$WORK/venv/bin/python" - <<'PY'
+import asyncio
+import os
+import sys
+
+from mcp import Client, StdioServerParameters
+
+
+async def main() -> None:
+    params = StdioServerParameters(
+        command=sys.executable,
+        args=["-m", "neuroedge", "proxy", "mcp", "--config", "guard.toml"],
+        env={"UPSTREAM_LOG": os.environ["UPSTREAM_LOG"]},
+    )
+    async with Client(params) as client:
+        allowed = await client.call_tool("get_state", {"entity_id": "light.hall"})
+        blocked = await client.call_tool("turn_on", {"entity_id": "light.hall"})
+    if allowed.content[0].text != "light.hall: on" or blocked.structured_content["status"] != "BLOCK":
+        raise SystemExit("::error::proxy verdicts were not ALLOW then BLOCK")
+    print("proxy: ALLOW forwarded, BLOCK stopped")
+
+
+asyncio.run(main())
+PY
+if grep -q turn_on "$WORK/proxy-smoke/up.log"; then echo "::error::a BLOCKed call reached the upstream"; exit 1; fi
+cd "$WORK"
+unset UPSTREAM_LOG
 echo "✓ the installed wheel runs the whole journey"
