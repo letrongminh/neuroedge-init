@@ -32,6 +32,12 @@ bản gói.
 
 #### Đã thêm
 
+- **`allow_lan_http` cho hai proxy (Q-70).** Home Assistant, Tasmota hay Shelly trong mạng nhà thường chỉ có http thuần; trước đây
+  cả `proxy mcp` lẫn `proxy http` chỉ cho http tới loopback nên đối tác bị chặn ngay bước đầu. Nay `allow_lan_http = true` trong
+  `[proxy.mcp]` / `[proxy.http]` (hoặc `guard init … --allow-lan-http`) cho http thuần **chỉ** tới địa chỉ riêng (RFC 1918, link-local,
+  `fc00::/7`, `fe80::/10`) hay tên `*.local`, `*.lan`, `*.home.arpa`; CGNAT, địa chỉ công khai và mọi tên khác vẫn bị từ chối dù có
+  khoá. Không có khoá thì hành vi như cũ. `plugin doctor` cảnh báo khi khoá bật: lời gọi và token đi dạng rõ trong LAN.
+
 - **`neuroedge proxy http` và `neuroedge guard init --http` (TSK-I2c-15, FR-EXT-06).** Gate trước một API HTTP cục bộ: mỗi
   tuyến khai ở `[[proxy.http.routes]]` thành một tool có gate; tham số đường dẫn, query và vô hướng của thân JSON thành đối số;
   yêu cầu chỉ được chuyển nguyên vẹn tới API thật trong thân tool, tức chỉ sau ALLOW (403 khi BLOCK, 400 khi REJECTED, 404 cho
