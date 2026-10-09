@@ -71,11 +71,28 @@ add_app = typer.Typer(
     epilog=epilog("add"),
 )
 
+guard_app = typer.Typer(
+    name="guard",
+    help="Put a safety Guard in front of an existing tool server",
+    epilog=epilog("guard"),
+)
+proxy_app = typer.Typer(
+    name="proxy",
+    help="Serve an existing MCP server's tools through a Guard (gate, token, trace)",
+    epilog=epilog("proxy"),
+)
+plugin_app = typer.Typer(
+    name="plugin", help="Check the extensions and the Guard around them", epilog=epilog("plugin")
+)
+
 app.add_typer(gate_app, name="gate")
 app.add_typer(trace_app, name="trace")
 app.add_typer(board_app, name="board")
 app.add_typer(mcp_app, name="mcp")
 app.add_typer(add_app, name="add")
+app.add_typer(guard_app, name="guard")
+app.add_typer(proxy_app, name="proxy")
+app.add_typer(plugin_app, name="plugin")
 
 console = Console()
 err_console = Console(stderr=True)
@@ -952,6 +969,191 @@ def mcp_desktop_config(
     if backup is not None:
         typer.echo(f"Backup of the previous file: {backup}")
     typer.echo("Quit Claude Desktop completely (not just close the window), then reopen it.")
+
+
+@guard_app.command(name="init", epilog=epilog("guard init"))
+def guard_init(
+    mcp: str = typer.Option(
+        ...,
+        "--mcp",
+        help='The MCP server to put behind a Guard: a command ("python server.py") or an https URL',
+    ),
+    directory: Path = typer.Option(
+        Path("."), "--dir", help="Where to write guard.toml and gates/ (default: here)"
+    ),
+    name: str = typer.Option(None, "--name", help="Name of the guard (default: from the server)"),
+    env_from: list[str] = typer.Option(
+        [], "--env-from", help="Environment variable the server's process needs (name only)"
+    ),
+    header_env: list[str] = typer.Option(
+        [],
+        "--header-env",
+        help="HEADER=ENVVAR: send the value of ENVVAR as that header (e.g. Authorization=HA_TOKEN)",
+    ),
+):
+    """
+    Connect to an existing MCP server, list its tools, and write guard.toml and one gate per
+    tool. Every generated gate BLOCKS until you edit it on purpose. Never overwrites a file.
+    Then: `neuroedge proxy mcp`.
+    """
+    from ..proxy_mcp import init
+
+    try:
+        plan = asyncio.run(init(mcp, directory, name, env_from, header_env))
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    base = directory.resolve()
+    for path in plan.files:
+        typer.echo(f"wrote {path}")
+    typer.echo(
+        f"{len(plan.exposed)} tool(s) behind the Guard, all BLOCKED until you open their gate:"
+    )
+    for tool in plan.exposed:
+        typer.echo(f"  {tool}")
+    for tool, why in plan.not_exposed.items():
+        typer.echo(f"NOT exposed: {tool} — {why}", err=True)
+    for tool, dropped in plan.dropped.items():
+        typer.echo(
+            f"note: {tool}: optional parameter(s) not exposed: {', '.join(dropped)}", err=True
+        )
+    typer.echo("Next: edit gates/*.yaml to open what you mean to, then")
+    typer.echo(f"  neuroedge proxy mcp --config {base / 'guard.toml'}")
+
+
+@proxy_app.command(name="mcp", epilog=epilog("proxy mcp"))
+def proxy_mcp(
+    config: Path = typer.Option(
+        Path("guard.toml"), "--config", "-c", help="guard.toml with a [proxy.mcp] table"
+    ),
+    trace_out: Path = typer.Option(
+        None, "--trace-out", help="Write the Guard's trace here on exit"
+    ),
+    desktop_config: bool = typer.Option(
+        False,
+        "--desktop-config",
+        help="Print the Claude Desktop mcpServers entry for this proxy instead of serving",
+    ),
+    write: bool = typer.Option(
+        False,
+        "--write",
+        help="With --desktop-config: write the entry into Desktop's config (with a backup)",
+    ),
+    config_path: Path = typer.Option(
+        None, "--config-path", help="Config file for --write (default: Claude Desktop's)"
+    ),
+    name: str = typer.Option(
+        None, "--name", help="Key under mcpServers (default: the guard's name)"
+    ),
+):
+    """
+    Serve over stdio the tools of guard.toml, each forwarded to the real MCP server only if the
+    gate allows the call (stdio only; a network front arrives with `proxy http`). It refuses to
+    start when the real server cannot be reached or lacks a tool guard.toml declares.
+    """
+    from ..guard import load_config
+    from ..mcp_server import _sdk
+    from ..proxy_mcp import parse_upstream, serve
+
+    try:
+        _sdk()
+        loaded = load_config(config)
+        up = parse_upstream(loaded)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    if write and not desktop_config:
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge proxy mcp --write",
+                why="--write belongs to --desktop-config",
+                how="add --desktop-config",
+            ),
+            code=2,
+        )
+        return
+    if desktop_config:
+        from ..mcp_desktop import default_config_path, desktop_config_text, proxy_entry, write_entry
+
+        entry = proxy_entry(config.expanduser(), trace_out=trace_out)
+        key = name or loaded.name
+        if up.env_from or up.headers_env:
+            needed = sorted({*up.env_from, *up.headers_env.values()})
+            typer.echo(
+                f"note: Claude Desktop starts the proxy with a minimal environment: add {needed} "
+                'to this entry\'s "env" yourself (they are not written here, to keep secrets out '
+                "of files)",
+                err=True,
+            )
+        if not write:
+            typer.echo(desktop_config_text(key, entry))
+            return
+        target = config_path or default_config_path()
+        try:
+            changed, backup = write_entry(target, key, entry)
+        except NeuroEdgeError as error:
+            _fail(error)
+            return
+        if not changed:
+            typer.echo(f"mcpServers[{key!r}] in {target} is already up to date.")
+            return
+        typer.echo(f"Wrote mcpServers[{key!r}] to {target}")
+        if backup is not None:
+            typer.echo(f"Backup of the previous file: {backup}")
+        typer.echo("Quit Claude Desktop completely (not just close the window), then reopen it.")
+        return
+    _exit_on_signals()  # SIGTERM still writes the trace and closes the Guard
+
+    def ready(guard: Any) -> None:
+        err_console.print(
+            f"neuroedge MCP proxy · {escape(loaded.name)} · {len(loaded.tools)} tool(s) · stdio "
+            "→ upstream (forwarded only after ALLOW)",
+        )
+
+    try:
+        asyncio.run(serve(config, trace_out=trace_out, on_ready=ready))
+    except NeuroEdgeError as error:
+        _fail(error)
+
+
+@plugin_app.command(name="doctor", epilog=epilog("plugin doctor"))
+def plugin_doctor(
+    config: Path = typer.Option(
+        Path("guard.toml"), "--config", "-c", help="guard.toml with a [proxy.mcp] table"
+    ),
+    as_json: bool = typer.Option(False, "--json", help="Machine-readable findings"),
+):
+    """
+    Check what can be checked about "the proxy is the only road": the real server still reachable
+    around it, another client entry that still launches it, a gate that never reads call_source.
+    What it cannot check it says so. Exit 1 if there is any warning, 0 otherwise.
+    """
+    from ..proxy_mcp import doctor
+
+    try:
+        findings = doctor(config)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    warnings = [f for f in findings if f.level == "warning"]
+    if as_json:
+        typer.echo(
+            json.dumps(
+                {"warnings": len(warnings), "findings": [f.as_dict() for f in findings]},
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+    else:
+        for finding in findings:
+            mark = {"warning": "CẢNH BÁO", "info": "ghi chú", "unverifiable": "?"}[finding.level]
+            typer.echo(f"[{mark}] {finding.message}")
+        typer.echo(
+            f"{len(warnings)} cảnh báo. Doctor không chứng minh proxy là đường duy nhất: "
+            "nó chỉ báo những lối vòng nó thấy."
+        )
+    if warnings:
+        raise typer.Exit(code=1)
 
 
 def _verify_tool_corpus() -> tuple[int, int]:

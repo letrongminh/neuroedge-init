@@ -100,6 +100,19 @@ def server_entry(
     return entry
 
 
+def proxy_entry(config: Path, *, trace_out: Path | None = None) -> dict[str, Any]:
+    """One `mcpServers` value that runs `neuroedge proxy mcp` on `config`: absolute paths only."""
+    command = os.path.abspath(sys.executable)
+    args = ["-m", "neuroedge", "proxy", "mcp", "--config", str(config.resolve())]
+    if trace_out is not None:
+        args += ["--trace-out", str(trace_out.expanduser().resolve())]
+    entry: dict[str, Any] = {"command": command, "args": args}
+    pin = _pythonpath_pin(command)
+    if pin is not None:
+        entry["env"] = {"PYTHONPATH": pin}
+    return entry
+
+
 def desktop_entry(
     agent: Path,
     *,

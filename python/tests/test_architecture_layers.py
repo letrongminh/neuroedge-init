@@ -51,6 +51,8 @@ ALLOWED: dict[str, set[str]] = {
     # the safety core without an agent (TSK-I2c-07): it builds the same HAL as a session, so it
     # sits beside `sim`, above `actions`/`engine`/`hal`; `__init__` is read for `__version__` only
     "guard": {"actions", "engine", "errors", "hal", "models", "sdk", "sim", "trace"},
+    # `neuroedge proxy mcp` (TSK-I2c-14): an MCP client to the real server in front of a Guard
+    "proxy_mcp": {"engine", "errors", "guard", "mcp_server", "models", "sdk"},
     "testing": {"actions", "engine", "errors", "hal", "paths", "perception", "trace"},
     # The studio (TSK-I1-04) shows every capability, so it reads every layer below the CLI.
     "studio": {
@@ -77,16 +79,20 @@ HAL_IN_ENGINE = {"engine/compiler.py"}
 LAZY: dict[str, set[str]] = {
     "engine/compiler.py": {"actions", "mcp_host", "models", "perception"},
     "cli/main.py": {
+        "guard",
         "mcp_desktop",
         "mcp_host",
         "mcp_http",
         "mcp_server",
+        "proxy_mcp",
         "studio",
         "templates",
         "testing",
         "viz",
     },
     "mcp_host.py": {"mcp_server"},
+    # `plugin doctor` reads Claude Desktop's config to see who else launches the upstream server
+    "proxy_mcp.py": {"mcp_desktop"},
     # `serve_mcp` records the session only when asked to: the recorder is `testing`'s
     "sim/serve.py": {"testing"},
     # `[vision]` (TSK-V1b-01/02): `perception` sits above `sim` (the voice session wraps a
