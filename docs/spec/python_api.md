@@ -27,6 +27,13 @@ Công khai theo **tên**, không theo **vị trí**: `neuroedge.SimHAL` được
 vẫn chạy hôm nay nhưng một bản phát hành có thể dời nó. Mã sinh ra bởi `neuroedge new` và các agent
 mẫu chỉ import tên công khai ở dạng `from neuroedge import …`.
 
+**Ngoại lệ có chủ ý: hai mô-đun công khai theo vị trí** (RFC-0016 §3e, TSK-I2c-07). `neuroedge.guard`
+(lõi an toàn dùng độc lập — [`extension_sdk.md`](extension_sdk.md) §1) và `neuroedge.sdk` (bề mặt cho
+extension — §2 của tài liệu đó) được hứa theo đường dẫn, mỗi mô-đun có `__all__` riêng. `neuroedge.guard`
+cùng mức ổn định với `__all__` (`0.x`, §3; RFC-0016 §9.1); `neuroedge.sdk` có `SDK_VERSION` riêng.
+**`neuroedge.__all__` không đổi**: `Guard` không nằm trong đó (RFC-0016 §9.2), dùng
+`from neuroedge.guard import Guard`.
+
 Hợp đồng dạng tệp **không** thuộc tài liệu này vì có phiên bản riêng: lược đồ gate, vết ghi, `board.v1`,
 `tool-call.v1`, `tool-result.v1`, `error.v1` và danh mục mã lỗi `error-codes.v1` (RFC-0015)
 (PRD §10.3, `schemas/`, `CONTRIBUTING.md` §3) và bố cục nhị phân `NETR` (RFC-0003, RFC-0009). Dòng
@@ -41,6 +48,7 @@ Hợp đồng dạng tệp **không** thuộc tài liệu này vì có phiên b�
 | Gate và engine | `ResolvedGate`, `resolve_gate_file`, `resolve_gate_uri`, `GateRegistry`, `ActionContractEngine`, `GateVerdict`, `GateResult`, `Gate`, `Fact`, `Reason` | Nạp và phân giải gate, đăng ký vào engine, đọc phán quyết. `Gate` là bí danh cũ của `GateResult`, giữ vì đã công khai từ 0.1 |
 | Cây quyết định | `compile_tree`, `walk`, `TreeResult` | Biên dịch gate đã phân giải thành cây và duyệt nó trên máy tính — hàm thuần, cùng phán quyết với walker trên thiết bị |
 | Hành động và tool call | `action`, `spec_of`, `Conversation`, `ActionResult`, `ToolCall`, `ToolResult`, `ToolSet`, `dispatch` | `@action`, `c.do()` qua gate, và đường duy nhất từ một tool call tới chân: `dispatch` (`docs/spec/tool_calling.md` §2) |
+| Lõi dùng độc lập *(công khai theo vị trí, không qua `__all__`)* | `neuroedge.guard`: `Guard`, `Tool`, `Dispatcher` · `neuroedge.sdk`: `ToolRequest`, `Outcome`, `SDK_VERSION` | Gate → token → phong bì → vết ghi cho một chương trình không có agent (`extension_sdk.md`). Mỗi mô-đun có `__all__` riêng; test ghim ở `tests/test_sdk_api.py` |
 | Phiên mô phỏng | `SimSession`, `Turn` | Nạp một agent trên `sim` (hoặc `linux`), cho nó nghe một dòng, khẳng định chân và vết ghi: bộ khung test của mã `neuroedge new`. Chỉ một phần nhỏ được hứa: §2.1 |
 | Mô hình | `SystemOne`, `SystemTwo` | Hai tầng mô hình của agent |
 | Vết ghi và kiểm thử | `TraceRecorder`, `load_trace`, `validate_trace`, `replay`, `scenario` | Ghi vết (băm lời người dùng theo mặc định, NFR-PRIV-03), thẩm định, replay |
