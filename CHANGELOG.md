@@ -32,6 +32,15 @@ bản gói.
 
 #### Đã thêm
 
+- **`neuroedge proxy mcp` và `neuroedge guard init --mcp` (TSK-I2c-14, FR-EXT-06).** Che một MCP server sẵn có trong ba lệnh:
+  `guard init --mcp "<lệnh>"|<url>` đọc danh sách tool của server, sinh `guard.toml` (bảng `[proxy.mcp]`) và một gate cho mỗi tool,
+  **chặn mặc định** (tiêu chí `operator_approved` không ai đặt, `call_source` liệt kê tường minh); không bao giờ ghi đè tệp.
+  `proxy mcp` phục vụ MCP qua stdio, mỗi `tools/call` đi qua `neuroedge.guard` với nguồn `mcp` của client phía trước, và chỉ
+  chuyển tới server thật trong thân tool — tức chỉ sau ALLOW; lỗi phía server sau ALLOW là kết quả lỗi, không thử lại. Thiếu tool
+  phía server hay không kết nối được ⇒ không khởi động. `proxy mcp --desktop-config [--write]` ghi một mục Claude Desktop.
+  `neuroedge plugin doctor` (phần proxy): cảnh báo khi đích còn tới được không qua proxy, khi Claude Desktop có mục khác chạy
+  thẳng server, khi gate không đọc `call_source`; in rõ điều không kiểm được. Bí mật chỉ qua tên biến môi trường.
+
 - **`neuroedge.guard` — lõi an toàn dùng độc lập (TSK-I2c-07, RFC-0016 §3b).** Chương trình bất kỳ có gate → token → phong bì →
   vết ghi mà không cần `agent.toml`, `@action` hay `SimSession`: `Guard.load("guard.toml")` hoặc `Guard(tools=[Tool(...)])`;
   `guard.dispatcher(id)` đăng ký nguồn `bridge:<id>` (người gọi không nêu nguồn); thân là `run` (hàm Python) hoặc `drive`
