@@ -434,6 +434,12 @@ bản gói.
 
 #### Đã sửa
 
+- **`mcp serve` (và mọi vòng phục vụ stdio) thoát có hạn sau SIGTERM/SIGHUP.** Việc thoát êm đi qua `SystemExit` phát ra ở bất kỳ
+  bytecode nào, kể cả giữa bộ máy của event loop, và đôi khi treo mãi (test `test_the_real_command_writes_its_trace_and_leaves_with_143_on_sigterm`
+  đỏ chập chờn trên runner Linux từ 2026-10-04). Nay vòng phục vụ đăng ký hàm đóng của nó làm phương án cuối: còn sống
+  `SIGNAL_EXIT_GRACE_S` = 5 s sau tín hiệu thì một luồng hẹn giờ đóng phiên đúng một lần (vết ghi, thả chân) rồi `os._exit` với mã của
+  tín hiệu. Không vòng nào đăng ký ⇒ hành vi như cũ (`tests/test_signal_exit.py`).
+
 - **Nguồn gọi (`call_source`) không còn lẫn giữa hai lời gọi chồng nhau.** `dispatch` từng ghi `call_source` vào
   `conversation.facts` dùng chung rồi khôi phục sau `await`, và `_do` đọc `self.facts` sau `await`: một lời gọi `mcp` chồng lên
   một lời gọi `local_grammar` có thể được xét — kể cả nhánh `degrade` — như lời gọi kia và **chạy**; nguồn cũ còn sót lại sau đó.
