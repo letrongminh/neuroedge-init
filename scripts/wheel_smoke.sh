@@ -301,4 +301,62 @@ PY
 if grep -q turn_on "$WORK/proxy-smoke/up.log"; then echo "::error::a BLOCKed call reached the upstream"; exit 1; fi
 cd "$WORK"
 unset UPSTREAM_LOG
+# `neuroedge guard init --http` and `neuroedge proxy http` from the installed wheel, against a stdlib HTTP upstream
+# (TSK-I2c-15): init writes blocking gates, the operator opens one, one ALLOW is forwarded, one BLOCK is not.
+mkdir -p "$WORK/http-smoke"
+cd "$WORK/http-smoke"
+export UPSTREAM_LOG="$WORK/http-smoke/up.log"
+HTTP_UP=$("$WORK/venv/bin/python" -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
+HTTP_PROXY_PORT=$("$WORK/venv/bin/python" -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
+"$WORK/venv/bin/python" "$REPO/fixtures/http_upstream/server.py" "$HTTP_UP" &
+UP_PID=$!
+trap '[ -z "${UP_PID:-}" ] || kill "$UP_PID" 2>/dev/null || true; [ -z "${PROXY_PID:-}" ] || kill "$PROXY_PID" 2>/dev/null || true; rm -rf "$WORK"' EXIT
+"$NE" guard init --http "http://127.0.0.1:$HTTP_UP" --route "GET /status" --route "POST /cm/{cmd}" --name smoke
+"$WORK/venv/bin/python" - "$HTTP_PROXY_PORT" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+gate = Path("gates/get_status@1.0.0.yaml")
+text = gate.read_text(encoding="utf-8")
+text = re.sub(r"  operator_approved:\n(    .*\n)+", "", text)
+text = text.replace("  operator_approved: true\n", "")
+gate.write_text(text, encoding="utf-8")
+toml = Path("guard.toml")
+toml.write_text(toml.read_text(encoding="utf-8").replace("127.0.0.1:8787", f"127.0.0.1:{sys.argv[1]}"), encoding="utf-8")
+PY
+"$NE" proxy http --config guard.toml --trace-out trace.json &
+PROXY_PID=$!
+"$WORK/venv/bin/python" - "$HTTP_PROXY_PORT" <<'PY'
+import socket
+import sys
+import time
+import urllib.error
+import urllib.request
+
+port = int(sys.argv[1])
+for _ in range(100):
+    try:
+        socket.create_connection(("127.0.0.1", port), timeout=0.2).close()
+        break
+    except OSError:
+        time.sleep(0.1)
+base = f"http://127.0.0.1:{port}"
+allowed = urllib.request.urlopen(base + "/status", timeout=20).status
+try:
+    urllib.request.urlopen(urllib.request.Request(base + "/cm/Power", method="POST"), timeout=20)
+    blocked = 200
+except urllib.error.HTTPError as refused:
+    blocked = refused.code
+if (allowed, blocked) != (200, 403):
+    raise SystemExit(f"::error::http proxy answered {allowed}, {blocked}; wanted 200, 403")
+print("http proxy: ALLOW forwarded, BLOCK stopped")
+PY
+kill -TERM "$PROXY_PID"; wait "$PROXY_PID" || true
+PROXY_PID=
+"$NE" trace validate trace.json
+if grep -q '/cm/' "$WORK/http-smoke/up.log"; then echo "::error::a BLOCKed request reached the upstream"; exit 1; fi
+kill "$UP_PID" 2>/dev/null || true
+cd "$WORK"
+unset UPSTREAM_LOG
 echo "✓ the installed wheel runs the whole journey"
