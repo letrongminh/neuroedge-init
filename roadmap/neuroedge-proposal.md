@@ -1228,7 +1228,7 @@ Hạng mục bàn giao và kế hoạch thực thi: [`neuroedge-roadmap.md` §4.
 
 **Mục tiêu trọng tâm:** Chứng minh nguyên tắc tương đương môi trường trên vi điều khiển giá $5 với độ ổn định cao.
 
-Hạng mục bàn giao và kế hoạch thực thi: [`neuroedge-roadmap.md` §4.4–§4.8](neuroedge-roadmap.md#44-i3--gate-trên-box-3-thật) (I3–I7, gồm I3a, I4a, I5a). Bốn gói nguyên thủy mở rộng trên chip (I3a) và NeuroBrain (I4a, I5a) cũng thuộc khối này: PRD Q-53, Q-55.
+Hạng mục bàn giao và kế hoạch thực thi: [`neuroedge-roadmap.md` §4.4–§4.8](neuroedge-roadmap.md#44-i3--gate-trên-box-3-thật) (I3–I7, gồm I3a, I4a, I5a). Bốn gói nguyên thủy mở rộng trên chip (I3a) và NeuroEdge Lab (I4a, I5a) cũng thuộc khối này: PRD Q-53, Q-55.
 
 De-scope tường minh và thang cắt phạm vi: [`neuroedge-roadmap.md` §9](neuroedge-roadmap.md#9-thang-cắt-phạm-vi); trong đó đưa tool của thiết bị MCU ra MCP qua gateway thuộc increment I14 ([`neuroedge-roadmap.md` §7.4](neuroedge-roadmap.md#74-i14--robot-phân-tầng), TSK-P2-05).
 
@@ -1298,9 +1298,9 @@ Trọng tâm từng khối và điều kiện kích hoạt (thị giác trong MV
 **Thay đổi trọng tâm so với các khối trước:** P1 không phải là "đội lõi port lên STM32 và RP2350", mà là **xuất bản bộ công cụ để cộng đồng tự port** *(ngoại lệ duy nhất: RP2350 làm node thứ hai của robot phân tầng, do đội lõi port — PRD Q-33, §8.11)*. Đây là khác biệt quyết định giữa phủ rộng phần cứng và dàn trải nguồn lực — và là lý do hạng mục này vượt được bộ lọc PF-1 (§2).
 
 
-### 8.10 NeuroBrain — bring-up phần cứng bằng hội thoại (I4a, I5a)
+### 8.10 NeuroEdge Lab — bring-up phần cứng bằng AI người dùng đang có, qua MCP (I4a, I5a)
 
-*"NeuroBrain — Build Physical AI by conversation, under contract"* (PRD Q-31): kỹ sư bring-up một bo mạch mới bằng hội thoại, mỗi lệnh chạm chân vẫn đi qua gate, và bản nháp gate sinh ra phải được người duyệt khoá lại trước khi dùng. Nằm trong MVP (PRD Q-55, thay phần thứ tự của Q-40), phủ bốn gói nguyên thủy mở rộng. Thiết kế: `neuroedge-design-neurobrain.md`; task, tiêu chí ra và ngày: `neuroedge-roadmap.md` I4a (§4.5.1) và I5a (§4.6.1).
+*"NeuroEdge Lab — Physical AI, under contract, with the AI you already use"* (PRD Q-71, thay NeuroBrain của Q-31): kỹ sư bring-up một bo mạch mới bằng client MCP mình đang dùng (Claude Code, Claude Desktop). Client quét bus, thử chân và viết hợp đồng nháp qua tool lab; mỗi lệnh chạm chân vẫn đi qua gate; NeuroEdge chấm bản nháp (`neuroedge lab check`, chạy lại trong Action CI) và cưỡng chế gate, phong bì, trigger trong runtime; bản nháp phải được người duyệt khoá lại trước khi dùng. NeuroEdge không tự chạy LLM để dựng hợp đồng. Nằm trong MVP (PRD Q-55, thay phần thứ tự của Q-40), phủ bốn gói nguyên thủy mở rộng. Thiết kế: `neuroedge-design-lab-mcp.md`; task, tiêu chí ra và ngày: `neuroedge-roadmap.md` I4a (§4.5.1) và I5a (§4.6.1).
 
 ### 8.11 Robot phân tầng (I14)
 

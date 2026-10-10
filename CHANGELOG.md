@@ -32,6 +32,19 @@ bản gói.
 
 #### Đã thêm
 
+- **Q-71 — NeuroEdge Lab qua MCP thay NeuroBrain (TSK-N0-01, TSK-N0-04).** NeuroEdge không tự chạy vòng LLM để dựng hợp
+  đồng nữa: client MCP người dùng đang có (Claude Code, Claude Desktop) viết bản nháp qua tool lab; NeuroEdge **chấm**
+  (`neuroedge lab check`, cùng mã ở tool và Action CI), **cưỡng chế** (gate, phong bì, trigger trong runtime) và người
+  **khoá** qua PR. Hai lớp tool — tool tác động là `@action` có gate, tool dựng không có hiệu ứng vật lý — và danh sách
+  việc không tool nào làm (khoá, sửa `digests.lock`, bật `[lab]`, trả lời `ask`). Client có shell là bên gọi không tin
+  cậy có quyền ghi tệp: an toàn dựa vào tách quyền thiết bị và nhánh được bảo vệ — threat model **§2c** mới. Ghi chú
+  thiết kế đổi thành `roadmap/neuroedge-design-lab-mcp.md` (giữ số mục cũ; Phụ lục B chốt vào Q-71); gói dự kiến
+  `neuroedge.lab` thay `neuroedge.brain`. PRD: FR-DX-10, A11 (đo trên hai client), Q-31 và Q-55 dẫn Q-71. Roadmap: I4a
+  37 task (thêm TSK-N0-07 đặc tả tool, N0-08 tách quyền + `lab doctor`, N5-06 `lab check` trong CI, N6-04 chấm trigger;
+  N5-01, N5-03 đổi từ sinh bằng LLM sang chấm và render). Kiến trúc vi/en (00, 03, 07, 08, 09, 13, 14, 15 §4.2 có sơ đồ
+  luồng mới), proposal §8.10, thuật ngữ, poster, dashboard CPO, trang trạng thái theo đó. `TODOS.md` #61: client
+  chỉ-cloud (ChatGPT). Phạm vi Q-52/Q-55 không đổi; không cần RFC.
+
 - **Bộ tài liệu đợt thử đối tác (TSK-I2c-19, Q-70).** `docs/user/doi-tac/`: trang vào, ba hướng dẫn — Home Assistant qua
   `proxy mcp`, `neuroedge.guard` trong agent Python, `proxy http` trước API thiết bị cục bộ — mỗi hướng dẫn ≤ 3 lệnh tới giá trị đầu,
   thấy BLOCK, mở gate có chủ ý, thấy ALLOW, đọc vết ghi, làm proxy thành đường duy nhất; trang giới hạn và mẫu phản hồi.
@@ -1350,7 +1363,7 @@ Mục này dành cho người (hoặc phiên làm việc) tiếp quản. Đọc 
 |:---|:---|:---|
 | [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md) | **Roadmap duy nhất (Q-39):** bốn phase (§0.5, Q-52), increment I0–I18 kể cả I2a, I2b, I3a, I4a, I5a; trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành. §0 là bảng điều khiển | **Luôn đọc trước** |
 | [`neuroedge-design-phase2.md`](roadmap/neuroedge-design-phase2.md) | Ghi chú thiết kế — thị giác (I2a, I3a), phủ rộng phần cứng (I11, I13, I16–I18); không lịch, không trạng thái | Khi làm task của các increment đó |
-| [`neuroedge-design-neurobrain.md`](roadmap/neuroedge-design-neurobrain.md) | Ghi chú thiết kế — NeuroBrain (I4a, I5a; Q-55) | Khi làm task `TSK-N*` |
+| [`neuroedge-design-lab-mcp.md`](roadmap/neuroedge-design-lab-mcp.md) | Ghi chú thiết kế — NeuroEdge Lab qua MCP (I4a, I5a; Q-55, Q-71) | Khi làm task `TSK-N*` |
 | [`draft-ke-hoach-mo-rong-robot-fofoca.md`](roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md) · [`draft-rfc-node-giao-thuc-dieu-phoi.md`](docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) | Ghi chú thiết kế — robot phân tầng FOFOCA (I14; `TSK-W0-*` rải ở I2, I6, I7) · RFC nháp điều phối node (chưa cấp số) | Khi việc chạm nguyên thủy HAL mới, robot nhiều MCU hoặc multi-node |
 | [`neuroedge-prd.md`](roadmap/neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`; **§15 là sổ quyết định duy nhất** (`Q-N`); Phụ lục B là mã lỗi | Khi cần biết *phải* làm gì, và đã chốt gì |
 | [`neuroedge-proposal.md`](roadmap/neuroedge-proposal.md) | Kiến trúc và các Phụ lục. **Phụ lục B là đặc tả gate** | Khi cần biết *tại sao* |

@@ -14,8 +14,8 @@
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/*.json`. RFC này sửa `schemas/board.v1.json`.
 > Quyết định nền: `neuroedge-prd.md` §15 Q-52 (MVP là v1.0 đầy đủ gồm bốn gói nguyên thủy, một bản phát hành,
 > trượt ngày thay vì cắt), Q-53 (bốn gói bắt buộc trên cả ba target bậc 1; **`analog.in` chuyển từ RFC-motion
-> sang RFC này**), Q-55 (NeuroBrain vào MVP). Nguồn: bản nháp robot FOFOCA (`roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md`),
-> nay rút về RFC này, và `roadmap/neuroedge-design-neurobrain.md` §7, §8. Task: TSK-N0-03 (soạn RFC này), TSK-N2-01
+> sang RFC này**), Q-55 (NeuroBrain — nay NeuroEdge Lab, Q-71 — vào MVP). Nguồn: bản nháp robot FOFOCA (`roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md`),
+> nay rút về RFC này, và `roadmap/neuroedge-design-lab-mcp.md` §7, §8. Task: TSK-N0-03 (soạn RFC này), TSK-N2-01
 > (hook phong bì), TSK-N2-02 (check-và-reserve nguyên tử), TSK-N3-03 (spike ADC).
 
 ## 1. Vấn đề
@@ -64,7 +64,7 @@ buses = [{ id = "i2c0", devices = [{ name = "ads1015", address = 0x48, readable_
 - **Quét bằng read-byte** (TSK-N3-01): thăm dò địa chỉ chỉ bằng thao tác đọc; **không** dùng quick-write.
 - **Địa chỉ ngoài allowlist** (không có trong `devices`) chỉ được **báo cáo có mặt** khi quét: ngoài read-byte thăm dò đó, chúng **không bao giờ được đọc hay ghi**.
 - **Thiết bị trong allowlist** đọc được bằng receive-byte (không địa chỉ thanh ghi). **Đọc thanh ghi** (ghi con trỏ thanh ghi rồi repeated-start đọc) chỉ được phép khi thanh ghi nằm trong `readable_registers` bo mạch khai cho thiết bị đó; thanh ghi không khai bị từ chối như chân không khai (`BoardCapabilityError`), không phát giao dịch nào lên bus. Lý do giữ hẹp: một số chip coi mọi lần ghi là lệnh.
-- Không có hàm ghi dữ liệu nào trong API. Mỗi lần đọc ghi thành sự kiện `i2c_read`; bus NACK hay timeout ⇒ `PerceptionUnavailableError` (§3e). Công cụ `lab_read` của NeuroBrain (`roadmap/neuroedge-design-neurobrain.md` §6) đọc chân qua `digital.in` của RFC này; cờ `[lab]` mặc định tắt và không nới allowlist.
+- Không có hàm ghi dữ liệu nào trong API. Mỗi lần đọc ghi thành sự kiện `i2c_read`; bus NACK hay timeout ⇒ `PerceptionUnavailableError` (§3e). Công cụ `lab_read` của NeuroEdge Lab (trước là NeuroBrain, Q-71) (`roadmap/neuroedge-design-lab-mcp.md` §6) đọc chân qua `digital.in` của RFC này; cờ `[lab]` mặc định tắt và không nới allowlist.
 - Trên `linux`, kiểm thử dựng trên `i2c-stub` (Khối N3, roadmap); `sim` chỉ phát lại giá trị đã ghi, không quét thật.
 
 ### 3c. `analog.in`
@@ -145,7 +145,7 @@ NE5001 hôm nay chỉ định nghĩa lúc nạp/build (`neuroedge-prd.md` Phụ 
 | Danh mục mã lỗi (`neuroedge-prd.md` Phụ lục B)? | Có, khi chấp thuận: thêm dòng `EnvelopeRefusedError` NE1003 (Chạy · phong bì từ chối · ném ngoại lệ, chân không được kích, token không bị tiêu, ghi `envelope_refused`); dòng NE5001 mở cột thời điểm sang *Chạy (đọc HAL)* với hành vi BLOCK `criterion_unavailable` |
 | Gate nào trong `digests.lock` đổi digest? | Không gate nào |
 | Bố cục `NETR` hoặc walker C phải đổi? | Không |
-| Đáp án nào của corpus tool call (`expected_results.yaml`) đổi? | Không — không có phong bì thì `digital_out` cùng thứ tự lỗi (hợp đồng hồi quy `neuroedge-design-neurobrain.md` §7.1). Phong bì từ chối thêm ca mới ở corpus riêng |
+| Đáp án nào của corpus tool call (`expected_results.yaml`) đổi? | Không — không có phong bì thì `digital_out` cùng thứ tự lỗi (hợp đồng hồi quy `neuroedge-design-lab-mcp.md` §7.1). Phong bì từ chối thêm ca mới ở corpus riêng |
 
 ## 5. Ảnh hưởng an toàn
 
@@ -199,7 +199,7 @@ NE5001 hôm nay chỉ định nghĩa lúc nạp/build (`neuroedge-prd.md` Phụ 
 - [ ] Cập nhật Phụ lục tương ứng trong `neuroedge-proposal.md` và FR-HAL-01 ở `neuroedge-prd.md`; quyết định mới cấp `Q-N` ở §15
 - [x] `neuroedge-prd.md` Phụ lục B: thêm dòng `EnvelopeRefusedError` NE1003, mở phạm vi NE5001 sang lúc chạy (§4); `python/neuroedge/errors.py` thêm lớp và sửa docstring `PerceptionUnavailableError` — *đạt: NE1003 và NE5001 ở Phụ lục B, lớp `EnvelopeRefusedError` và docstring `PerceptionUnavailableError` ở `errors.py`, `__all__`, `docs/spec/python_api.md`*
 - [x] `docs/spec/simulation_coverage.md`: thêm sự kiện `digital_in`, `i2c_read`, `analog_in`, `envelope_refused` vào bảng sự kiện — *đạt: `digital_in`, `i2c_read`, `analog_in`, `envelope_refused` ở §3*
-- [ ] `neuroedge-design-neurobrain.md` §8: nhánh "spike không đạt" theo §3c (runner tự quản, chặn tiêu chí ra I2a), thay cho việc đưa ADC vào `TODOS.md`
+- [ ] `neuroedge-design-lab-mcp.md` §8: nhánh "spike không đạt" theo §3c (runner tự quản, chặn tiêu chí ra I2a), thay cho việc đưa ADC vào `TODOS.md`
 - [x] Cập nhật `neuroedge-roadmap.md` (TSK-N0-03 xong; TSK-N2-01, TSK-N2-02, TSK-N3-03; tiêu chí ra I2a đòi bằng chứng ADC trên phần cứng) *(Đã làm 2026-10-04: dòng TSK-N0-03, N2-01 → N2-05, N3-03 và tiêu chí ra I2a 8 trong roadmap)*
 - [x] Hiện thực trong `python/neuroedge/hal/` (`board.py`, `__init__.py`, `sim.py`, `linux.py`): phong bì theo chân, tự tắt bắt buộc, hoàn phần giữ trước khi tắt sớm hoặc authorize hỏng, ghi bền write-ahead tệp trạng thái trên linux, tiến trình giám sát giữ line và nhịp tim runtime; mô hình `sim` không giàu hơn bo mạch tham chiếu — *đạt: `hal/envelope.py` (phong bì, tự tắt, hoàn phần giữ trước, tệp trạng thái write-ahead), `hal/supervisor.py` (tiến trình giám sát và nhịp tim), nối vào `hal/__init__.py`, `sim.py`, `linux.py`; `sim` có đúng số của bo mạch nó soi (`test_a_sim_board_has_exactly_the_envelope_numbers_of_the_board_it_mirrors`). Giám sát mặc định **bật** trên `linux`, fail-closed (`supervisor_unavailable`), tắt tường minh bằng `supervise=False` / `NEUROEDGE_LINUX_SUPERVISE=0` và ghi ở `metadata.supervision`*
 - [ ] Hiện thực trong firmware C (`esp32s3`): bảng `const` phong bì sinh từ `board.v1` trong flash (RB-4 của `docs/spec/hal_mcu_review.md`), ghi bền write-ahead vào NVS, tự tắt bằng TWDT và timer phần cứng, driver `digital.in`, I2C chỉ đọc, ADC

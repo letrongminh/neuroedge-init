@@ -47,5 +47,5 @@ Muốn gửi vết ghi: gửi tệp `trace-*.json` sau khi bạn đã đọc nó
 
 ## 5. Giới hạn
 
-Đọc [`gioi-han.md`](gioi-han.md) trước khi bắt đầu: đợt thử **chưa** có `esp32s3`, thoại trên chip, NeuroBrain; Home Assistant mới chỉ kiểm trên bản giả; proxy không chặn được lời gọi thẳng; và giấy phép
+Đọc [`gioi-han.md`](gioi-han.md) trước khi bắt đầu: đợt thử **chưa** có `esp32s3`, thoại trên chip, NeuroEdge Lab; Home Assistant mới chỉ kiểm trên bản giả; proxy không chặn được lời gọi thẳng; và giấy phép
 (PolyForm Noncommercial) chỉ cho đánh giá theo thoả thuận bằng văn bản.

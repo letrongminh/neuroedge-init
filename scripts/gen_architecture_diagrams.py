@@ -460,8 +460,8 @@ INCREMENTS = {
     "I0": "Contract core on sim", "I1": "Internal preview on sim", "I2": "linux on par with sim",
     "I2a": "Primitives: sim, linux", "I2b": "Kits and quick build", "I2c": "Open platform: plug-in SDK",
     "I3": "Gate on a real Box-3",
-    "I3a": "New primitives on esp32s3", "I4": "Voice on the host", "I4a": "NeuroBrain on the host",
-    "I5": "Voice on Box-3", "I5a": "NeuroBrain on the chip", "I6": "Public release", "I7": "v1.0 = MVP",
+    "I3a": "New primitives on esp32s3", "I4": "Voice on the host", "I4a": "NeuroEdge Lab on the host",
+    "I5": "Voice on Box-3", "I5a": "NeuroEdge Lab on the chip", "I6": "Public release", "I7": "v1.0 = MVP",
     "I8": "Developer Beta", "I9": "Providers v1.1 · Fleet OS", "I10": "Registry and rails",
     "I13": "Community port kit", "I14": "Tiered robotics",
     "I16": "Vision on jetson", "I17": "Multimodal", "I18": "Device ecosystem",
@@ -573,9 +573,9 @@ def e10_horizons() -> Diagram:
             ("hal", "HAL + drivers + UI on chip", ("targets/esp32s3/hal/ · drivers/ · ne_ui", "TSK-S4-01, TSK-S4-03"), "device", "planned"),
             ("voice", "Voice path on chip", ("AEC · VAD · Opus · voice FSM in C", "offline fallback · TSK-S5-01…S5-07"), "device", "planned"),
             ("ext", "Extension primitives", ("digital.in · I2C · analog.in · PWM", "vision.in · motion.* · I2a, I3a · Q-53"), "device", "planned"),
-            ("brain", "NeuroBrain", ("brain/ only via dispatch() (B-1)", "envelope hook in HAL · I4a, I5a · Q-55"), "component", "planned"),
+            ("lab", "NeuroEdge Lab over MCP", ("lab/ only via dispatch() (B-1)", "no LLM loop · I4a, I5a · Q-71"), "component", "planned"),
             ("security", "Device security", ("Secure Boot · flash encryption", "mic switch · TSK-S6-05"), "device", "planned"),
-            # I2c — the open platform (Q-67) sits in the MVP host lane, before NeuroBrain (I4a) and I6
+            # I2c — the open platform (Q-67) sits in the MVP host lane, before NeuroEdge Lab (I4a) and I6
             ("sdk", "Standalone core + Extension SDK", ("neuroedge.guard · neuroedge.sdk", "six plug-in kinds · RFC-0016 · I2c"), "component", "planned"),
             ("proxies", "Proxies + remote actuators", ("proxy mcp · proxy http · plugin doctor", "Home Assistant first · RFC-0018 · I2c"), "component", "planned"),
             ("tiers", "Open target list", ("tiers 1–3 · board validate · --board", "RFC-0002 signed · I2c · Q-67"), "component", "planned"),

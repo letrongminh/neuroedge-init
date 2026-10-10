@@ -86,15 +86,15 @@
 <text x="465.0" y="964.0" font-size="12.5" fill="#475569" text-anchor="middle">0/7 tasks</text>
 <text x="465.0" y="982.1" font-size="12.5" fill="#475569" text-anchor="middle">2027-01-03</text>
 <text x="465.0" y="1000.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
-<rect x="60" y="1102" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="191.0" y="1131.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I4a</text>
-<text x="191.0" y="1151.9" font-size="12.5" fill="#475569" text-anchor="middle">NeuroBrain on the host</text>
-<text x="191.0" y="1170.0" font-size="12.5" fill="#475569" text-anchor="middle">0/33 tasks</text>
-<text x="191.0" y="1188.1" font-size="12.5" fill="#475569" text-anchor="middle">2027-01-03</text>
-<text x="191.0" y="1206.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="60" y="1102" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
+<text x="191.0" y="1131.6" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">I4a</text>
+<text x="191.0" y="1151.9" font-size="12.5" fill="#0f172a" text-anchor="middle">NeuroEdge Lab on the host</text>
+<text x="191.0" y="1170.0" font-size="12.5" fill="#0f172a" text-anchor="middle">2/37 tasks</text>
+<text x="191.0" y="1188.1" font-size="12.5" fill="#0f172a" text-anchor="middle">2027-01-03</text>
+<text x="191.0" y="1206.2" font-size="12.5" fill="#0f172a" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="334" y="1102" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="465.0" y="1131.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I5a</text>
-<text x="465.0" y="1151.9" font-size="12.5" fill="#475569" text-anchor="middle">NeuroBrain on the chip</text>
+<text x="465.0" y="1151.9" font-size="12.5" fill="#475569" text-anchor="middle">NeuroEdge Lab on the chip</text>
 <text x="465.0" y="1170.0" font-size="12.5" fill="#475569" text-anchor="middle">0/2 tasks</text>
 <text x="465.0" y="1188.1" font-size="12.5" fill="#475569" text-anchor="middle">2027-01-24</text>
 <text x="465.0" y="1206.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>

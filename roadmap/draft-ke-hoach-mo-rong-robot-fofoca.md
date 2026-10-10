@@ -19,7 +19,7 @@
 - `docs/spec/threat_model.md`, `docs/spec/tool_calling.md`, `docs/spec/hal_mcu_review.md`,
   `docs/spec/voice_fsm.md` (hợp đồng thu hồi lệnh), `docs/spec/simulation_coverage.md` (vết ghi `NE1` từ thiết bị)
 - `docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md`, `docs/rfc/0003-bo-cuc-nhi-phan-cay.md`
-- `neuroedge-design-neurobrain.md` (ghi chú thiết kế NeuroBrain), `TODOS.md`, `CONTRIBUTING.md`
+- `neuroedge-design-lab-mcp.md` (ghi chú thiết kế NeuroEdge Lab), `TODOS.md`, `CONTRIBUTING.md`
 
 **Phạm vi:** các chặng W0–W4 — mở nguyên thủy HAL, an toàn actuator, hạ tầng tin cậy,
 multi-node, hệ sinh thái; kèm khung RFC cho từng thay đổi.
@@ -112,7 +112,7 @@ qua gate, kể cả khi hệ thống trải trên nhiều chip, và mọi mở r
 | RFC | Nội dung | Hợp đồng ảnh hưởng | Task (`neuroedge-roadmap.md`) |
 |:--|:--|:--|:--|
 | RFC-0002 | Mở enum `target` + `TARGET_TIERS` (`vision.in` đã tách ra §9.1 của RFC, 2026-09-23) | `board.v1`, `trace.v1` (chỉ enum `target`) | TSK-V1a-01 (phê duyệt); PR2: TSK-V1a-02…06 |
-| RFC-0007 *(giữ chỗ bởi TSK-N0-03 — ghi chú thiết kế NeuroBrain)* | `digital.in` + I2C chỉ đọc + chỗ cho ADC + khai báo phong bì N2 | `board.v1`; `gate.v1` **không đổi** (RFC-0007 ở I2a, `neuroedge-roadmap.md` §4.3.1) | TSK-N0-03 |
+| RFC-0007 *(giữ chỗ bởi TSK-N0-03 — ghi chú thiết kế NeuroEdge Lab)* | `digital.in` + I2C chỉ đọc + chỗ cho ADC + khai báo phong bì N2 | `board.v1`; `gate.v1` **không đổi** (RFC-0007 ở I2a, `neuroedge-roadmap.md` §4.3.1) | TSK-N0-03 |
 | RFC-0009 (RFC-numeric; RFC riêng — không gộp RFC-0007 vì RFC-0007 giữ `gate.v1` nguyên byte) | `evaluate.type: numeric` + nút `NETR` | `gate.v1`, `NETR` | TSK-W1-02 (`TODOS.md` #30) |
 | RFC-0011 (RFC-motion) | `motion.*` (`analog.in` đã chuyển sang RFC-0007, Q-53) + mở rộng phong bì N2 (của RFC-0007) sang `motion.*` + token theo kênh + bố cục `NETR` mới | `board.v1`, `NETR` (phối hợp `TODOS.md` #36 để tăng bố cục một lần); gate vẫn thuần (bất biến 4) | TSK-W1-03 — mốc kích hoạt của `TODOS.md` #39 |
 | RFC-0012 (RFC-vision) | Hợp đồng `vision.in` + luật riêng tư — thuộc Khối V1b, trong MVP trên `sim`, `linux`, `esp32s3` (Q-53); bậc 2/3 sau | `board.v1` | TSK-V1b-07 |
@@ -178,7 +178,7 @@ flowchart TB
 
 | Tầng | Thành phần | Vai trò |
 |:--|:--|:--|
-| T0 | Phần cứng node | Trạng thái an toàn cục bộ: kéo xuống/watchdog/giới hạn dòng — crash-safe (phần cứng bảo đảm; phần mềm thì không, `neuroedge-design-neurobrain.md` §2.3) |
+| T0 | Phần cứng node | Trạng thái an toàn cục bộ: kéo xuống/watchdog/giới hạn dòng — crash-safe (phần cứng bảo đảm; phần mềm thì không, `neuroedge-design-lab-mcp.md` §2.3) |
 | T1 | **Zenoh-pico** (nhánh Apache-2.0) trên MCU; `zenohd` trên Pi | Wire "black channel" — **không tin cậy** |
 | T2 | Lớp an toàn kiểu **black channel** (node id, seq, CRC, timestamp, heartbeat/TTL) | Thông điệp tự bảo vệ; mất heartbeat → node về trạng thái an toàn |
 | T3 | **Gate từng node** (giữ nguyên) + agent/ý định trên Pi | Không gate tập trung; node nào tự quyết node đó |
@@ -217,7 +217,7 @@ fail-closed) và cho phép dùng transport phổ thông mà không phải tin n�
 Hệ quả thiết kế:
 
 - Node giữ **trạng thái an toàn cục bộ** (ngắt điện động cơ) — phần mềm không cứu được
-  khi crash/SIGKILL, cần kéo xuống phần cứng/watchdog (`neuroedge-design-neurobrain.md` §2.3, §15 rủi ro 3).
+  khi crash/SIGKILL, cần kéo xuống phần cứng/watchdog (`neuroedge-design-lab-mcp.md` §2.3, §15 rủi ro 3).
 - Mất heartbeat/TTL → node từ chối mọi ý định mới và về trạng thái an toàn.
 - Replay protection: số thứ tự + epoch/`boot_id` + cửa sổ; không ý định cũ nào được thực hiện lại.
   ALLOW và token không đi qua wire (§4.2 của tài liệu này).
@@ -290,7 +290,7 @@ PWM trong `digital.out`: [RFC-0010](../docs/rfc/0010-pwm-trong-digital-out.md) �
 
 Phong bì, lease, `safe_state`, `enable_pin`, dừng ngay khi cắt lời: §9 của RFC-0007, RFC-0010, RFC-0011 (Q-57).
 Phần riêng của robot vẫn ở ghi chú này: **T0 crash-safe** — kéo xuống, watchdog, giới hạn dòng trên mọi node
-tham chiếu, kèm runbook bắt buộc (`neuroedge-design-neurobrain.md` §2.3); robot di động bắt buộc nút dừng khẩn
+tham chiếu, kèm runbook bắt buộc (`neuroedge-design-lab-mcp.md` §2.3); robot di động bắt buộc nút dừng khẩn
 phần cứng (BT8, Q-38).
 
 ---
@@ -436,7 +436,7 @@ cho robot hỏi riêng trong TSK-W4-07, trước RFC an toàn di động (`TODOS
 |:--:|:--|:--|
 | 1 | ~~Wire protocol node: Zenoh vs micro-ROS~~ | Q-36 (Zenoh; TSK-W3-01 là phép thử loại) |
 | 2 | ~~Trace: mở rộng `trace.v1` (A) vs `trace.v2` (B)~~ | Q-32 (A) |
-| 3 | ~~RFC-numeric gộp vào RFC-0007 hay tách riêng~~ — **tách riêng**: RFC-0007 (TSK-N0-03) giữ `gate.v1` nguyên byte | Đã rõ từ ghi chú thiết kế NeuroBrain |
+| 3 | ~~RFC-numeric gộp vào RFC-0007 hay tách riêng~~ — **tách riêng**: RFC-0007 (TSK-N0-03) giữ `gate.v1` nguyên byte | Đã rõ từ ghi chú thiết kế NeuroEdge Lab |
 | 4 | ~~`motion.*` là nguyên thủy riêng hay mở rộng `digital.out`~~ | Q-32 (nguyên thủy riêng) |
 | 5 | ~~Mô hình token theo kênh~~ | Q-37 (thuê có hạn); con số ở RFC-0011 |
 | 6 | Chứng nhận an toàn: IN/OUT | Q-38 tạm thời OUT; IN/OUT thật: cổng C6 + `TODOS.md` #40 |
@@ -533,8 +533,8 @@ thái và increment của task chỉ ở roadmap.
 | W1A-1 | FR-HAL-01; `neuroedge-proposal.md` §3.3 (`digital.out`); RFC-0005 | TSK-W1-01 |
 | W1A-2 | FR-HAL-01; `TODOS.md` #30; RFC-0009 | TSK-W1-02 |
 | W1A-3 | RFC-0002 §3c.2 | TSK-V1a-03 |
-| W1B-RFC-1 | FR-TGT-08, RFC-0002; RFC-0007 (TSK-N0-03); ghi chú thiết kế NeuroBrain N0/N3 | TSK-V1a-01…06 · TSK-N0-03 · TSK-W1-02 |
-| W1B-RFC-2 | FR-HAL-01; N2 (ghi chú thiết kế NeuroBrain §7); crash-safe (`neuroedge-design-neurobrain.md` §2.3, §15 rủi ro 3); `voice_fsm.md` §5; `TODOS.md` #39 | TSK-W1-03 · TSK-W1-04 |
+| W1B-RFC-1 | FR-TGT-08, RFC-0002; RFC-0007 (TSK-N0-03); ghi chú thiết kế NeuroEdge Lab N0/N3 | TSK-V1a-01…06 · TSK-N0-03 · TSK-W1-02 |
+| W1B-RFC-2 | FR-HAL-01; N2 (ghi chú thiết kế NeuroEdge Lab §7); crash-safe (`neuroedge-design-lab-mcp.md` §2.3, §15 rủi ro 3); `voice_fsm.md` §5; `TODOS.md` #39 | TSK-W1-03 · TSK-W1-04 |
 | W1B-RFC-3 | RFC-0002 §9.1; `TODOS.md` #14; NFR-PRIV | TSK-V1b-07 |
 | W2-1 | NFR-SEC-04/05; FR-FLT-01; TSK-K2-04 | TSK-W2-01 (Pi ↔ node); cert thiết bị: TSK-K2-04 |
 | W2-2 | NFR-SEC-06; FR-OTA-01..04 | TSK-S6-01…04 |
@@ -552,7 +552,7 @@ thái và increment của task chỉ ở roadmap.
 | W4-3 | FR-REG-01..07; `TODOS.md` #11, #15; TR-4 | TSK-K3-04 · TSK-S3-21 |
 | W4-4 | TSK-P2-01 | TSK-P2-01 |
 | W4-5 | Q-29; `TODOS.md` #33 | Bỏ — giữ ở `TODOS.md` #33 |
-| W4-6 | Q-11 (đã chốt); `TODOS.md` #17; OFL font (ghi chú thiết kế NeuroBrain) | Bỏ — đã chốt ở Q-11 |
+| W4-6 | Q-11 (đã chốt); `TODOS.md` #17; OFL font (ghi chú thiết kế NeuroEdge Lab) | Bỏ — đã chốt ở Q-11 |
 
 ---
 

@@ -86,7 +86,7 @@ khoá lạ. Cú pháp dòng lệnh dùng các bảng này: `CHANGELOG.md` §2.3.
 | `[stt]`, `[stt.fallback]`, `[tts]` | `perception/providers/config.py` | `provider` (`openai` hoặc `python:…`), `base_url`, `model`, `voice` (TTS), `language` (STT), `timeout_s`, `api_key_env`; `[stt]` cần `audio.in`, `[tts]` cần `audio.out` |
 | `[wake_word]` | như trên | `provider` (`openwakeword` hoặc `python:…`), ba tệp mô hình `model`, `melspectrogram`, `embedding` (của người dùng), `word`, `threshold`; bị từ chối trên `esp32s3` |
 | `[mcp]`, `[mcp.servers.<tên>]` | `mcp_host.load_mcp_config` | `max_rounds` (1–16); mỗi server: `command`, `tools` (danh sách cho phép, bắt buộc), `args`, `env`, `timeout_s` |
-| `[lab]` | `brain/` (TSK-N1-02, planned) | Cờ `enabled`, mặc định tắt; tắt thì lab tool không được đăng ký; `build --release` từ chối khi bật (TSK-N1-03) — → [`15`](15-target-architecture.md) §4.2 |
+| `[lab]` | `lab/` (TSK-N1-02, planned) | Cờ `enabled`, mặc định tắt; tắt thì lab tool (tool tác động lẫn tool dựng, Q-71) không được đăng ký; không tool nào bật được cờ; `build --release` từ chối khi bật (TSK-N1-03) — → [`15`](15-target-architecture.md) §4.2 |
 | `[nodes]` | RFC-node (đề xuất) | Cấu hình node MCU cho robot phân tầng; hình dạng chưa chốt (câu hỏi mở 3 của RFC-node nháp) — → [`15`](15-target-architecture.md) §4.3 |
 
 **Luật chung của mọi bảng nhà cung cấp** (`models/providers/common.py`): trường có tên như khoá

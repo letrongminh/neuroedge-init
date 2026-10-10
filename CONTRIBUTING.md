@@ -225,7 +225,7 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `README.md` | Trang đầu và trang PyPI (link tuyệt đối) | PR thường — `tests/test_readme_quickstart.py` |
 | `roadmap/` | Sáu tài liệu sản phẩm: roadmap, PRD, proposal, hai ghi chú thiết kế, kế hoạch robot (bản nháp RFC node ở `docs/rfc/`) | Theo từng tệp ở các dòng dưới |
 | `roadmap/neuroedge-roadmap.md` | Roadmap duy nhất (Q-39): bốn phase (§0.5, Q-52), increment I0–I18 kể cả I2a, I2b, I3a, I4a, I5a, trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành, thang cắt | PR thường, theo §8; luật chống lệch R1–R12 ở roadmap §2.4 |
-| `roadmap/neuroedge-design-neurobrain.md`, `roadmap/neuroedge-design-phase2.md`, `roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md`, `docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md` | Ghi chú thiết kế: NeuroBrain · thị giác và phủ phần cứng · robot phân tầng. Không lịch, không trạng thái, không tiêu chí ra; dẫn mã TSK của roadmap (R1, R8) | PR thường; merge được cả khi Beta đóng băng (R12) |
+| `roadmap/neuroedge-design-lab-mcp.md`, `roadmap/neuroedge-design-phase2.md`, `roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md`, `docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md` | Ghi chú thiết kế: NeuroEdge Lab · thị giác và phủ phần cứng · robot phân tầng. Không lịch, không trạng thái, không tiêu chí ra; dẫn mã TSK của roadmap (R1, R8) | PR thường; merge được cả khi Beta đóng băng (R12) |
 | `TODOS.md` | Việc đã xem xét và hoãn có chủ ý, kèm mốc kích hoạt | PR thường |
 
 ## 7. CI
@@ -253,7 +253,7 @@ Một task **chưa xong** cho tới khi các cập nhật dưới đây nằm **
 | Việc tiếp theo, đang làm gì | Roadmap §0.3 (Thẻ bàn giao) | Không |
 | Thang cắt phạm vi | Roadmap §9 | Dẫn bậc hoặc increment |
 | Giá trị đo B1–B5 (và A1 đo đầy đủ) | Roadmap §5.5 | Ngưỡng ở PRD §11; nơi khác dẫn mã |
-| Thiết kế (không lịch, không trạng thái) | Ghi chú thiết kế (`neuroedge-design-neurobrain.md`, `neuroedge-design-phase2.md`, `draft-*.md`) · `docs/spec/` · `docs/rfc/` | Roadmap dẫn tới; ghi chú thiết kế dẫn mã TSK, không ghi trạng thái (R1) |
+| Thiết kế (không lịch, không trạng thái) | Ghi chú thiết kế (`neuroedge-design-lab-mcp.md`, `neuroedge-design-phase2.md`, `draft-*.md`) · `docs/spec/` · `docs/rfc/` | Roadmap dẫn tới; ghi chú thiết kế dẫn mã TSK, không ghi trạng thái (R1) |
 | Rủi ro sản phẩm (`R-n`) | PRD §13.2 | Dẫn mã |
 | Đã thay đổi gì | `CHANGELOG.md` §1 | Không |
 | Cách chạy, lệnh, đầu ra kỳ vọng, workflow và job CI | `CHANGELOG.md` §2 | `README.md` gốc (cũng là trang PyPI, nên mọi link tuyệt đối): tối đa 3 lệnh bắt đầu nhanh, kèm link §2 — `tests/test_readme_quickstart.py` chạy đúng các lệnh đó |

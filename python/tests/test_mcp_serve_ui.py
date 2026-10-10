@@ -366,7 +366,7 @@ def test_a_taken_port_moves_the_page_and_keeps_serving_mcp(home, tmp_path):
 
 
 # --- the way out of `mcp serve`: trace written, hal.close() called (TSK-N2-03, TSK-N2-04) -----------
-# §7.1 (5) of roadmap/neuroedge-design-neurobrain.md: `mcp serve` on its way out — stdin closed,
+# §7.1 (5) of roadmap/neuroedge-design-lab-mcp.md: `mcp serve` on its way out — stdin closed,
 # Ctrl-C, SIGTERM, a client that never initializes — still writes the trace and closes the HAL.
 
 

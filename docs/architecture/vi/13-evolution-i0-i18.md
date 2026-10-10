@@ -4,7 +4,7 @@
 > sẵn, cái gì cần RFC. **Nguồn:** mười mốc và increment của từng mốc ở roadmap §0.5 ("Mười mốc phát hành
 > theo người dùng"); trạng thái, tiến độ, ngày dự báo chỉ ở roadmap §0.2 (Q-39) — trang này không chép lại
 > chúng, và hình E-09 được **sinh từ chính hai bảng đó**. Thiết kế của các hướng mở rộng ở
-> `neuroedge-design-neurobrain.md`, `neuroedge-design-phase2.md`, `draft-ke-hoach-mo-rong-robot-fofoca.md`,
+> `neuroedge-design-lab-mcp.md`, `neuroedge-design-phase2.md`, `draft-ke-hoach-mo-rong-robot-fofoca.md`,
 > `draft-rfc-node-giao-thuc-dieu-phoi.md`.
 
 ## 1. Một xương sống, mười mốc
@@ -37,8 +37,8 @@ của nó; cột cuối là mốc mà phép chứng minh trở nên khó nhất.
 | Không lệnh nào ra phần cứng mà không có gate | Một đường `dispatch()` → `c.do()` → gate → token dùng một lần → HAL; ngoại lệ duy nhất là lệnh về trạng thái an toàn (Q-62) | `docs/spec/threat_model.md` §1–§2b; test chặn từng đường tắt | 4 (cắt lời), 10 (nhiều node) |
 | Không chắc thì không làm | Fail-closed ở mọi hướng (bất biến 2); dữ kiện cũ, thiếu, sai kiểu ⇒ `BLOCK` | `fixtures/traces/network_offline.json`; corpus phản chứng | 2 (cảm biến, camera), 3 (mất mạng trên chip) |
 | Một hợp đồng ở mọi nơi | Cùng tệp gate, phân giải thuần (bất biến 4); Python và C cùng đặc tả; `verify` so phán quyết | [`10`](10-target-equivalence.md); `neuroedge verify --targets sim,linux,esp32s3` | 3 (chip thật), 10 (bo cộng đồng) |
-| Bằng chứng thay cho lời hứa | Mọi phán quyết vào vết ghi `trace.v1`; replay tính lại không gọi model | [`06`](06-runtime-flows.md) §7; Action CI | 5 (bản nháp do model sinh), 9 (vết ghi từ hiện trường) |
-| Người giữ quyền cuối | Model và client MCP không xác nhận được `ask` (Q-26); bản nháp NeuroBrain phải có người duyệt; không ai xác nhận thay một số đo (Q-62) | test `confirms`; RFC-0006, RFC-0009 | 5 (dựng bằng hội thoại) |
+| Bằng chứng thay cho lời hứa | Mọi phán quyết vào vết ghi `trace.v1`; replay tính lại không gọi model | [`06`](06-runtime-flows.md) §7; Action CI | 5 (bản nháp do client viết), 9 (vết ghi từ hiện trường) |
+| Người giữ quyền cuối | Model và client MCP không xác nhận được `ask` (Q-26); bản nháp do client MCP viết qua NeuroEdge Lab phải có người duyệt (Q-71); không ai xác nhận thay một số đo (Q-62) | test `confirms`; RFC-0006, RFC-0009 | 5 (dựng bằng hội thoại) |
 | Cắm vào stack của người khác | MCP là bề mặt gọi vào; model và giọng nói là provider thay được (P-4); lược đồ, đặc tả, bộ kiểm tuân thủ và corpus tuân thủ theo Apache-2.0 (Q-45, Q-67); từ I2c, bên thứ ba tự nối qua điểm cắm của `neuroedge.sdk` mà không sửa lõi, bất biến an toàn không đổi (Q-67) | `docs/spec/tool_calling.md`; `fixtures/tool_calls/`; bộ test tuân thủ plugin (I2c, `planned`) | 2 (nền tảng mở, Q-67), 6 (MCP qua mạng, Q-58) |
 
 ## 3. Kiến trúc qua từng mốc
@@ -124,15 +124,16 @@ increment ở roadmap §0.2.
 
 ### Mốc 5 — Dựng bằng hội thoại *(I4a, I5a)*
 
-- **Người dùng làm được:** mô tả thiết bị bằng lời; NeuroBrain sinh action, gate và phong bì; người duyệt
-  rồi mới khoá (Q-31, Q-55).
-- **Kiến trúc thêm:** gói `brain/` cô lập — action phòng lab có gate, Chat Contracting, Lab Monitor,
-  trigger theo sự kiện — trên host, rồi lab action, gate và phong bì trên chip (khối N7) →
+- **Người dùng làm được:** mô tả thiết bị bằng lời với AI mình đang dùng (Claude Code, Claude Desktop); AI
+  viết action, gate và phong bì qua tool của NeuroEdge Lab; NeuroEdge chấm; người duyệt rồi mới khoá (Q-55, Q-71).
+- **Kiến trúc thêm:** gói `lab/` cô lập, không vòng LLM — tool tác động có gate, tool dựng và chấm hợp đồng
+  nháp (`neuroedge lab check`, chạy lại trong Action CI), Lab Monitor, trigger theo sự kiện — trên host, rồi lab action, gate và phong bì trên chip (khối N7) →
   [`15`](15-target-architecture.md) §4.2. `planned`.
 - **Hợp đồng:** không đổi `gate.v1`; bản nháp `motion.*` phải khai phong bì và trạng thái an toàn, thiếu thì
-  từ chối sinh.
-- **Lời hứa được chứng minh bằng:** mọi thứ NeuroBrain làm vẫn đi qua `dispatch()` → gate; bản nháp chỉ khoá
-  sau `gate lint` và người duyệt; model không bao giờ tự xác nhận.
+  `lab check` từ chối.
+- **Lời hứa được chứng minh bằng:** mọi lệnh tác động của client vẫn đi qua `dispatch()` → gate; bản nháp chỉ
+  khoá sau `lab check`, `gate lint` và người duyệt; không tool nào khoá chính sách; model không bao giờ tự
+  xác nhận; client có shell không giữ quyền thiết bị (`threat_model.md` §2c).
 
 ### Mốc 6 — Ra mắt công khai *(I6)*
 

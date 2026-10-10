@@ -103,7 +103,7 @@ cắt một xung mở chốt đang chạy là khoá cửa lại (`voice_fsm.md` 
 nghĩa thông điệp hủy Pi → node và ngân sách thời gian của nó (RB-3, `hal_mcu_review.md`).
 
 Trạng thái an toàn cục bộ (tầng T0 của ghi chú thiết kế mẹ): kéo xuống phần cứng / watchdog / giới hạn dòng — phần
-mềm **không** cứu được khi crash/SIGKILL (`neuroedge-design-neurobrain.md` §2.3, §15 rủi ro 3).
+mềm **không** cứu được khi crash/SIGKILL (`neuroedge-design-lab-mcp.md` §2.3, §15 rủi ro 3).
 
 ### 3.4 Trace hợp nhất
 

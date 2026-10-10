@@ -4,7 +4,7 @@
 # Trạng thái dự án
 
 > Sinh tự động từ [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0 —
-> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-10-09**.
+> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-10-10**.
 
 ## Điều hành
 
@@ -15,7 +15,7 @@
 | Cột mốc tiếp theo | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** |
 | Trạng thái CI Lõi | ✅ **PASS 4875/4875 · SKIP 0** |
 | Chặn ngoài tầm kỹ thuật | 🟡 **2 hạng mục chặn** |
-| Lần cập nhật cuối | **2026-10-09** |
+| Lần cập nhật cuối | **2026-10-10** |
 
 ## Increment
 
@@ -30,9 +30,9 @@
 |  | **I3 — Gate trên Box-3 thật** | 2026-12-13 | **6 / 16** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU, giao diện LVGL có ảnh golden); chờ bo mạch | tag `v0.3.0` + firmware (nội bộ) |
 |  | **I3a — Nguyên thủy mở rộng trên `esp32s3`** | 2027-01-10 | **0 / 7** | ⏳ Chưa bắt đầu | tag `v0.3.1` + firmware (nội bộ) |
 |  | **I4 — Thoại trên host** | 2026-12-13 | **5 / 9** | 🟡 Đặc tả, vector, FSM Python, độ trễ, SystemOne qua Jev xong; STT/TTS trên `sim`, wake-word + STT dự phòng, âm thanh `linux` xong phần mã trên host; phiên micro trên laptop (`run --mic`, TSK-I4-04) xong phần mã; còn mô hình wake-word thật, Pi + HAT | tag `v0.4.0` (nội bộ) |
-|  | **I4a — NeuroBrain trên host** | 2027-01-03 | **0 / 33** | ⏳ Chưa bắt đầu | tag `v0.4.1` + extra `[lab]` (nội bộ) |
+|  | **I4a — NeuroEdge Lab trên host** | 2027-01-03 | **2 / 37** | 🟡 Q-71 và threat model §2c xong (TSK-N0-01, N0-04); phần mã chưa bắt đầu | tag `v0.4.1` + extra `[lab]` (nội bộ) |
 |  | **I5 — Thoại trên Box-3** | 2027-01-03 | **0 / 7** | ⏳ Chưa bắt đầu | tag `v0.5.0` + firmware (nội bộ) |
-|  | **I5a — NeuroBrain trên chip** | 2027-01-24 | **0 / 2** | ⏳ Chưa bắt đầu | tag `v0.5.1` + firmware (nội bộ) |
+|  | **I5a — NeuroEdge Lab trên chip** | 2027-01-24 | **0 / 2** | ⏳ Chưa bắt đầu | tag `v0.5.1` + firmware (nội bộ) |
 | **Công khai** | **I6 — Công khai** | 2027-01-31 | **7 / 12** | 🟡 Quét bí mật, SBOM, API Python công khai, MCP qua mạng có xác thực, hợp đồng cho người tích hợp trong `schemas/` (RFC-0015) xong; RFC-0014 chấp thuận (Q-65); chờ I5a | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |
 | **v1.0 = MVP** | **I7 — v1.0** | 2027-02-21 | **4 / 12** | 🟡 Ghim Actions, attestation xong; OTA A/B có ký + rollback xong trên QEMU; chờ I6 | `v1.0.0` |
 | **Beta** | **I8 — Developer Beta** | 2027-03-21 | **0 / 1** | ⏳ Chưa bắt đầu | `1.0.x` (chỉ bản vá) |

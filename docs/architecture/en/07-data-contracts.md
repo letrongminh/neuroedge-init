@@ -86,7 +86,7 @@ reject unknown keys. Command syntax uses these tables: `CHANGELOG.md` §2.3.
 | `[stt]`, `[stt.fallback]`, `[tts]` | `perception/providers/config.py` | `provider` (`openai` or `python:…`), `base_url`, `model`, `voice` (TTS), `language` (STT), `timeout_s`, `api_key_env`; `[stt]` needs `audio.in`, `[tts]` needs `audio.out` |
 | `[wake_word]` | as above | `provider` (`openwakeword` or `python:…`), three model files `model`, `melspectrogram`, `embedding` (the user's), `word`, `threshold`; rejected on `esp32s3` |
 | `[mcp]`, `[mcp.servers.<name>]` | `mcp_host.load_mcp_config` | `max_rounds` (1–16); each server: `command`, `tools` (allowlist, required), `args`, `env`, `timeout_s` |
-| `[lab]` | `brain/` (TSK-N1-02, planned) | `enabled` flag, default false; when false, lab tools are not registered; `build --release` rejects when enabled (TSK-N1-03) — → [`15`](15-target-architecture.md) §4.2 |
+| `[lab]` | `lab/` (TSK-N1-02, planned) | `enabled` flag, default false; when false, lab tools (acting and building tools, Q-71) are not registered; no tool can turn it on; `build --release` rejects when enabled (TSK-N1-03) — → [`15`](15-target-architecture.md) §4.2 |
 | `[nodes]` | RFC-node (proposed) | MCU node configuration for layered robots; shape not finalized (open question 3 of draft RFC-node) — → [`15`](15-target-architecture.md) §4.3 |
 
 **Common rule for all provider tables** (`models/providers/common.py`): fields named like keys
