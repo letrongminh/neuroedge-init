@@ -44,11 +44,11 @@ Four rules, each a deliberate choice:
 
 The following packages are planned in the future architecture but have no code in the repository today:
 
-- `brain/` (I4a, NeuroBrain): lab orchestration logic; complies with invariant B-1 — acts physically only through `dispatch()` and gates, never calls HAL directly, locked down by AST scan and import tests (`neuroedge-design-neurobrain.md` §1 "Seven principles"; TSK-N1-07, `tests/test_brain_boundary.py`) — see [`15`](15-target-architecture.md) §4.2.
+- `lab/` (I4a, NeuroEdge Lab — Q-71): the lab-mode MCP tools — acting tools (gated `@action`s) and building tools (board view, bench notebook, submitting and checking drafts, replay) — plus the `neuroedge lab check` it shares with Action CI; it holds no LLM loop. Complies with invariant B-1 — acts physically only through `dispatch()` and gates, never calls HAL directly, locked down by AST scan and import tests (`neuroedge-design-lab-mcp.md` §1.4 "Seven principles"; TSK-N1-07, `tests/test_lab_boundary.py`) — see [`15`](15-target-architecture.md) §4.2.
 - `perception/vision/` and `sim/vision/` (I2a, TSK-V1b-*): vision pipeline and vision simulation; vision serves as L2 input, entering the gate as maker-declared facts (Q-54) — see [`15`](15-target-architecture.md) §4.4.
 - `services/fleet/` and `services/registry/` (I9–I10, TSK-K2, TSK-K3): server-side services for Fleet OS (staged OTA coordination, MQTT broker, telemetry) and Gate Registry (OCI repository via ORAS/Harbor, metering) — see [`15`](15-target-architecture.md) §3.1, §3.2.
 
-When `brain/` enters the repository, it needs an entry in `ALLOWED` (and `LAZY` if late-imported) of [`python/tests/test_architecture_layers.py`](../../../python/tests/test_architecture_layers.py). `perception/vision/` and `sim/vision/` belong to the existing `perception` and `sim` units and thus need no new entry; `services/` (including `services/metering/engine.py`, TSK-K3-02) lives outside the `neuroedge` package, so this test does not scan it.
+When `lab/` enters the repository, it needs an entry in `ALLOWED` (and `LAZY` if late-imported) of [`python/tests/test_architecture_layers.py`](../../../python/tests/test_architecture_layers.py). `perception/vision/` and `sim/vision/` belong to the existing `perception` and `sim` units and thus need no new entry; `services/` (including `services/metering/engine.py`, TSK-K3-02) lives outside the `neuroedge` package, so this test does not scan it.
 
 ## 3. Component catalogue
 

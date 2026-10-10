@@ -175,7 +175,7 @@ def test_every_relative_link_lands_on_a_file(path):
 def test_the_pages_say_what_the_pilot_promises_and_what_it_lacks():
     limits = (USER / "gioi-han.md").read_text(encoding="utf-8")
     for needle in (
-        "esp32s3", "NeuroBrain", "thoại trên chip", "Raspberry Pi thật", "TSK-I2c-16", "chưa kiểm trên Home Assistant thật",
+        "esp32s3", "NeuroEdge Lab", "thoại trên chip", "Raspberry Pi thật", "TSK-I2c-16", "chưa kiểm trên Home Assistant thật",
         "không chặn được lời gọi thẳng", "allow_lan_http", "PolyForm Noncommercial", "tham số của lời gọi", "không có xác thực ở phía trước",
     ):  # fmt: skip
         assert needle.casefold() in limits.casefold(), needle

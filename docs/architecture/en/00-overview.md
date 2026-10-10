@@ -25,7 +25,7 @@ promise has an architectural mechanism that holds it. When a design decision wea
 | 2 | **When unsure, do not act.** Offline, stale sensors, frozen camera, model not answering ⇒ block | Fail-closed in every direction (invariant 2); only commands that bring actuators to a safe state are always allowed (Q-62) | The device stops or asks again, never guesses |
 | 3 | **One contract everywhere.** Trying on a laptop is identical to running on a $5 chip | Same gate file, pure resolution, two implementations in Python and C of the same specification ([`10`](10-target-equivalence.md)) | `neuroedge verify` produces the same verdict on `sim`, `linux`, `esp32s3` |
 | 4 | **Evidence over promises.** Every incident can be reproduced on the developer's machine | Every fact, verdict, pin command into the trace; replay recomputes without calling the model ([`06`](06-runtime-flows.md) §7) | `neuroedge replay`, `gate explain`, Action CI in PRs |
-| 5 | **Humans hold the final authority.** Models and other agents cannot confirm on behalf of humans; but no one can confirm on behalf of a physical reading either | `ask` can only be answered by a human on the device (Q-26); NeuroBrain drafts must be approved by a human; numeric criteria are forbidden in `confirms` (Q-62) | Confirmation prompt on the `--ui` page, via voice, or via button |
+| 5 | **Humans hold the final authority.** Models and other agents cannot confirm on behalf of humans; but no one can confirm on behalf of a physical reading either | `ask` can only be answered by a human on the device (Q-26); drafts an MCP client writes through NeuroEdge Lab must be approved by a human, and no tool can lock them (Q-71); numeric criteria are forbidden in `confirms` (Q-62) | Confirmation prompt on the `--ui` page, via voice, or via button |
 | 6 | **Plug into other stacks, do not swallow the whole stack.** NeuroEdge is a contract layer, not a closed platform | MCP is the entry door; model and speech are replaceable providers (P-4); schemas, specifications, compliance test suite under Apache-2.0 (Q-45); network MCP with authentication at launch (Q-58) | Claude, Home Assistant, or an agent framework calls the device through the gate |
 
 The product grows through ten user-facing release milestones (roadmap §0.5); the architecture of each milestone and how
@@ -110,7 +110,7 @@ NeuroEdge has three parts, plus the CI chain that keeps them in sync:
 | **Data contracts** | `gate.v1`, `trace.v1`, `board.v1`, `agent.toml`, `NETR` v1, UART lines | JSON Schema, TOML, binary | `done`, frozen via RFC |
 | **CI** | Python tests, gpio-sim, QEMU, golden images, OTA, security | GitHub Actions | `done` |
 
-Two parts have no code today and appear only in the `planned` state: **Fleet OS** (I9) and the **Gate Registry** (I10). Everything else that is planned (the four extension primitive packs, NeuroBrain, multi-node robots, vision on Jetson) is in [`13`](13-evolution-i0-i18.md).
+Two parts have no code today and appear only in the `planned` state: **Fleet OS** (I9) and the **Gate Registry** (I10). Everything else that is planned (the four extension primitive packs, NeuroEdge Lab over MCP, multi-node robots, vision on Jetson) is in [`13`](13-evolution-i0-i18.md).
 
 ### 5.1 Five-layer logical model
 

@@ -203,6 +203,38 @@ cho đúng chứng chỉ đó. Những gì cửa mạng **không** làm được
 - **Lệnh quản trị không qua mạng** (`gate lint`, `trace validate`): Q-63 chủ ý không mở thêm bề mặt này.
 - **Chưa thử trên hai máy thật.** Test chạy trong một tiến trình trên 127.0.0.1 với CA tạm sinh lúc chạy.
 
+## 2c. Trong phạm vi: client MCP dựng hợp đồng trong chế độ lab (Q-71) — dự kiến
+
+Từ Q-71, NeuroEdge Lab (I4a, I5a) để một client MCP — Claude Code, Claude Desktop, Cursor — viết
+bản nháp hợp đồng qua tool lab (`roadmap/neuroedge-design-lab-mcp.md` §1.3). Client vẫn là bên gọi
+**không tin cậy** của §2b: mọi tool tác động là `@action` đi `dispatch()` → gate. Mục này thêm hai
+điều §2b chưa phủ: client **viết tệp** (bản nháp, profile bo, trigger) và client **có thể có shell**.
+
+Mục này viết trước mã (TSK-N0-04, nguyên tắc 7 của ghi chú thiết kế); chưa dòng nào có test. Cột
+"Test" ghi task sẽ thêm test; khi task xong, thay bằng tên test như các mục khác.
+
+| Đường tắt | Chặn bởi | Kết quả | Test |
+|:---|:---|:---|:---|
+| Client gọi lab tool khi người vận hành chưa bật lab | `[lab] enabled` mặc định tắt; tắt thì lab tool không được đăng ký | `REJECTED` (tool không tồn tại) | chưa có — TSK-N1-02 |
+| Client tự bật `[lab]`, khoá bản nháp, sửa `digests.lock`, sửa gate đã khoá hay trả lời `ask` **qua tool** | Không có tool nào làm các việc đó (ghi chú thiết kế §1.3.3); `mcp` ∉ `HUMAN_SOURCES` (Q-26) | Không có đường | chưa có — TSK-N0-07 (danh sách tool đóng) · `test_an_mcp_client_has_no_way_to_confirm` (đã có) |
+| Bản nháp nới lỏng: chỉ có test ALLOW, chân không có trong trace, `motion.*` thiếu phong bì hay trạng thái an toàn, trùng tên action | `neuroedge lab check` — cùng mã ở `lab_draft_check`/`lab_draft_write` và ở Action CI | Lỗi có kiểu, không ghi tệp | chưa có — TSK-N5-02, N5-03, N5-06 |
+| Client có shell ghi tệp thẳng, bỏ qua tool dựng | Phép kiểm chạy lại trong CI của dự án trên PR (TSK-N5-06); CI không tin client đã gọi tool | PR đỏ | chưa có — TSK-N5-06 |
+| Client có shell sửa chính phép kiểm, workflow CI hay `scripts/check_digests.py` trong PR để CI xanh | `CODEOWNERS` và workflow bắt buộc chạy từ nhánh gốc cho các tệp đó; người duyệt (TSK-N0-05). Cấu hình kho, không phải mã của NeuroEdge | PR không merge được nếu kho được cấu hình đúng | chưa có — TSK-N0-05 (quy trình) |
+| Client có shell sửa gate, profile bo (phong bì) hay `agent.toml` mà `mcp serve` trên bo thật nạp — ranh giới quyền thiết bị còn nguyên mà chính sách bị viết lại | `mcp serve` nạp từ bản checkout đã duyệt mà user của client không ghi được; bản nháp `-draft` và profile nháp không được nạp trên bo thật trước khi khoá. Runtime hôm nay **không** kiểm `digests.lock` lúc khởi động — chỉ CI kiểm | Chính sách trên bo là chính sách đã duyệt | chưa có — TSK-N0-08 |
+| Client có shell tự bỏ `-draft`, chạy `check_digests.py --update` và merge | Nhánh được bảo vệ, PR cần người duyệt (TSK-N0-05). Phần mềm của NeuroEdge **không** chặn được — đây là cấu hình kho của người vận hành | Không merge được nếu nhánh được bảo vệ | chưa có — TSK-N0-05 (quy trình, không phải test) |
+| Client có shell chạy thẳng `gpioset`/`i2cset` trên bo thật, bỏ qua `dispatch()` | **Không chặn được bằng phần mềm của NeuroEdge.** Ranh giới là quyền hệ điều hành: chỉ user của `mcp serve` nằm trong nhóm `gpio`/`i2c`; hoặc client ở máy khác — stdio qua SSH với khoá `restrict,command=…` (`command=` thiếu `restrict` vẫn cho chuyển cổng và agent), hay `mcp serve --http` khi client trình được chứng chỉ mTLS và token gắn chứng chỉ (§2b; chưa kiểm với Claude Code). `neuroedge lab doctor` cảnh báo khi user đang chạy có quyền mở thiết bị; nó không thấy `sudo` hay user khác mà client dùng được | Gate chỉ để trang trí nếu client giữ quyền thiết bị | chưa có — TSK-N0-08 |
+| Khai báo trigger nháp trỏ lab action, hay trỏ action chưa khoá | `lab_trigger_check` và `lab check` trong CI; lúc chạy, lab action từ chối nguồn `trigger` | Lỗi có kiểu / `BLOCK` | chưa có — TSK-N6-04, N6-01 |
+| Trigger tự trả lời `ask` của chính nó | `trigger` ∉ `HUMAN_SOURCES` | `tool_confirm_rejected` | chưa có — TSK-N6-02 |
+| Trigger bị chặn rồi thử lại vô hạn | Debounce và trần tần suất trong runtime, không ở client | Bị chặn, hiện trên Lab Monitor | chưa có — TSK-N6-03 |
+| Nội dung đọc được (datasheet, trang web, kết quả `lab_scan`) cài lệnh vào client | Như §2b: kết quả là dữ liệu cho mô hình; lời gọi sinh ra sau đó vẫn qua gate; bản nháp sinh ra vẫn qua `lab check` và người duyệt | `BLOCK` / PR bị từ chối | `test_prompt_injection_in_the_news_still_meets_the_gate` (phần lời gọi, đã có) |
+
+**Rủi ro còn lại, nói thẳng.** Client có shell sửa được bản nháp trong thư mục agent cục bộ và chạy
+nó trên `sim` hay trên bo mà user của nó có quyền. `[lab]` và `build --release` (TSK-N1-03) giữ bản
+nháp khỏi **bản phát hành**, không giữ nó khỏi **máy của người dùng**. Một gate lỏng mà đúng lược
+đồ, có đủ test hai chiều, chỉ người duyệt PR bắt được. NeuroEdge không bảo đảm chất lượng bản nháp;
+nó bảo đảm bản nháp không thành chính sách khi chưa có người duyệt, và lệnh không tới chân khi gate
+chặn — với điều kiện quyền thiết bị không nằm trong tay client.
+
 ## 2d. Trong phạm vi: plugin của bên thứ ba (RFC-0016 §3d, §5; phần actuator)
 
 Plugin chạy trong tiến trình là mã người vận hành tin (§3 vẫn ngoài phạm vi): RFC-0016 cho bảo đảm **cấu trúc**, bộ kiểm

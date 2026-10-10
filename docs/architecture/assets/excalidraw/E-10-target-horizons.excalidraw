@@ -834,7 +834,7 @@
    "autoResize": true
   },
   {
-   "id": "box-brain",
+   "id": "box-lab",
    "type": "rectangle",
    "x": 1074,
    "y": 374,
@@ -853,14 +853,14 @@
    "roundness": {
     "type": 3
    },
-   "seed": 1509731305,
+   "seed": 2081315242,
    "version": 1,
-   "versionNonce": 319964909,
+   "versionNonce": 875924839,
    "isDeleted": false,
    "boundElements": [
     {
      "type": "text",
-     "id": "box-brain-text"
+     "id": "box-lab-text"
     }
    ],
    "updated": 1,
@@ -868,7 +868,7 @@
    "locked": false
   },
   {
-   "id": "box-brain-text",
+   "id": "box-lab-text",
    "type": "text",
    "x": 1086,
    "y": 382,
@@ -885,21 +885,21 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 2571726179,
+   "seed": 3519881532,
    "version": 1,
-   "versionNonce": 1066290660,
+   "versionNonce": 1796682254,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "NeuroBrain\nbrain/ only via dispatch() (B-1)\nenvelope hook in HAL · I4a, I5a · Q-55\n○ planned",
-   "originalText": "NeuroBrain\nbrain/ only via dispatch() (B-1)\nenvelope hook in HAL · I4a, I5a · Q-55\n○ planned",
+   "text": "NeuroEdge Lab over MCP\nlab/ only via dispatch() (B-1)\nno LLM loop · I4a, I5a · Q-71\n○ planned",
+   "originalText": "NeuroEdge Lab over MCP\nlab/ only via dispatch() (B-1)\nno LLM loop · I4a, I5a · Q-71\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "box-brain",
+   "containerId": "box-lab",
    "lineHeight": 1.3,
    "autoResize": true
   },

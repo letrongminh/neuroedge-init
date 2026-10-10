@@ -286,7 +286,7 @@ async def test_a_spawned_task_cannot_call_the_action_after_c_do_returns():
 
 
 # --- 7. The safety envelope changes nothing where there is none (TSK-N2-04) -----------
-# The five assertions of roadmap/neuroedge-design-neurobrain.md §7.1. The fifth, `mcp serve`
+# The five assertions of roadmap/neuroedge-design-lab-mcp.md §7.1. The fifth, `mcp serve`
 # leaving through its cleanup, is in test_mcp_serve_ui.py.
 
 

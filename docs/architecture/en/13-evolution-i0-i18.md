@@ -4,7 +4,7 @@
 > what needs an RFC. **Sources:** the ten milestones and increments for each milestone in roadmap §0.5 ("Ten
 > user-facing release milestones"); status, progress, and forecast dates live only in roadmap §0.2 (Q-39) — this page does not copy
 > them, and Figure E-09 is **generated from those very two tables**. The design of expansion directions is in
-> `neuroedge-design-neurobrain.md`, `neuroedge-design-phase2.md`, `draft-ke-hoach-mo-rong-robot-fofoca.md`,
+> `neuroedge-design-lab-mcp.md`, `neuroedge-design-phase2.md`, `draft-ke-hoach-mo-rong-robot-fofoca.md`,
 > `draft-rfc-node-giao-thuc-dieu-phoi.md`.
 
 ## 1. One spine, ten milestones
@@ -37,8 +37,8 @@ its scope; the last column is the milestone where proof becomes the hardest.
 | No command reaches hardware without a gate | One single path `dispatch()` → `c.do()` → gate → single-use token → HAL; the only exception is safe-state commands (Q-62) | `docs/spec/threat_model.md` §1–§2b; tests blocking each shortcut | 4 (barge-in), 10 (multi-node) |
 | When unsure, do not act | Fail-closed in every direction (invariant 2); stale, missing, or mistyped facts ⇒ `BLOCK` | `fixtures/traces/network_offline.json`; counterexample corpus | 2 (sensors, camera), 3 (offline on chip) |
 | One contract everywhere | Same gate file, pure resolution (invariant 4); Python and C share the same spec; `verify` compares verdicts | [`10`](10-target-equivalence.md); `neuroedge verify --targets sim,linux,esp32s3` | 3 (real chip), 10 (community boards) |
-| Evidence over promises | Every verdict into the trace `trace.v1`; replay recomputes without calling the model | [`06`](06-runtime-flows.md) §7; Action CI | 5 (model-generated drafts), 9 (field traces) |
-| Humans hold the final authority | Models and MCP clients cannot confirm `ask` (Q-26); NeuroBrain drafts must be approved by a human; no one can confirm in place of a measurement (Q-62) | `confirms` tests; RFC-0006, RFC-0009 | 5 (build by conversation) |
+| Evidence over promises | Every verdict into the trace `trace.v1`; replay recomputes without calling the model | [`06`](06-runtime-flows.md) §7; Action CI | 5 (client-written drafts), 9 (field traces) |
+| Humans hold the final authority | Models and MCP clients cannot confirm `ask` (Q-26); drafts an MCP client writes through NeuroEdge Lab must be approved by a human (Q-71); no one can confirm in place of a measurement (Q-62) | `confirms` tests; RFC-0006, RFC-0009 | 5 (build by conversation) |
 | Plug into other stacks | MCP is the caller surface; models and voice are replaceable providers (P-4); schemas, specifications, compliance test suite and compliance corpus under Apache-2.0 (Q-45, Q-67); from I2c, third parties wire themselves in through `neuroedge.sdk` plug points without touching the core, and the safety invariants do not change (Q-67) | `docs/spec/tool_calling.md`; `fixtures/tool_calls/`; plug-in compliance suite (I2c, `planned`) | 2 (open platform, Q-67), 6 (network MCP, Q-58) |
 
 ## 3. Architecture across milestones
@@ -126,15 +126,17 @@ increment is in roadmap §0.2.
 
 ### Milestone 5 — Build by conversation *(I4a, I5a)*
 
-- **What the user can do:** describe a device in words; NeuroBrain generates actions, gates, and envelopes; a human
-  approves before locking (Q-31, Q-55).
-- **What the architecture adds:** isolated `brain/` package — gated lab actions, Chat Contracting, Lab Monitor,
-  event-driven triggers — on host, then lab actions, gates, and envelopes on chip (block N7) →
+- **What the user can do:** describe a device in words to the AI they already use (Claude Code, Claude Desktop);
+  the AI writes actions, gates, and envelopes through NeuroEdge Lab's tools; NeuroEdge checks them; a human approves
+  before locking (Q-55, Q-71).
+- **What the architecture adds:** isolated `lab/` package with no LLM loop — gated acting tools, tools to build
+  and check draft contracts (`neuroedge lab check`, rerun in Action CI), Lab Monitor, event-driven triggers — on host, then lab actions, gates, and envelopes on chip (block N7) →
   [`15`](15-target-architecture.md) §4.2. `planned`.
-- **Contracts:** `gate.v1` unchanged; `motion.*` drafts must declare an envelope and safe state, generation refused
-  if missing.
-- **The promise is proven by:** everything NeuroBrain does still goes through `dispatch()` → gate; drafts are only locked
-  after `gate lint` and human review; the model never confirms on its own.
+- **Contracts:** `gate.v1` unchanged; `motion.*` drafts must declare an envelope and safe state, `lab check` refuses
+  them if missing.
+- **The promise is proven by:** every acting call from the client still goes through `dispatch()` → gate; drafts are
+  only locked after `lab check`, `gate lint` and human review; no tool locks policy; the model never confirms on its
+  own; a client with a shell does not hold device permissions (`threat_model.md` §2c).
 
 ### Milestone 6 — Public launch *(I6)*
 
