@@ -442,6 +442,12 @@ bản gói.
 
 #### Đã sửa
 
+- **Lệnh motion không còn trễ lease vì việc tìm tên người gọi.** Tên người gọi (`file:dòng` trong lỗi và `called_from`) được lấy
+  giữa phán quyết và `authorize`, tức là trong lease. `inspect.stack()` tra module và đọc mã nguồn của mọi frame: 28 ms ở lần đầu
+  trên máy dev, nhiều hơn khi đã nạp nhiều module. Trên runner chậm, lease 200 ms của kit `blinds` hết trước khi lệnh tới
+  `authorize` (`TokenReplayError` `lease_expired`, đỏ chập chờn cả `tests/test_kits.py` lẫn `tests_linux/test_kit_blinds.py`). Nay
+  `hal/digital.py::_caller` chỉ đi theo frame (`co_filename`, `f_lineno`): 0,1 ms. Tên in ra không đổi
+  (`tests/test_actions.py::test_the_caller_is_named_from_the_frames_alone_without_reading_any_source`).
 - **`mcp serve` (và mọi vòng phục vụ stdio) thoát có hạn sau SIGTERM/SIGHUP.** Việc thoát êm đi qua `SystemExit` phát ra ở bất kỳ
   bytecode nào, kể cả giữa bộ máy của event loop, và đôi khi treo mãi (test `test_the_real_command_writes_its_trace_and_leaves_with_143_on_sigterm`
   đỏ chập chờn trên runner Linux từ 2026-10-04). Nay vòng phục vụ đăng ký hàm đóng của nó làm phương án cuối: còn sống
