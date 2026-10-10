@@ -21,8 +21,8 @@ HAL of the `c.do()` that is running the action, and a line that cannot be read r
 
 from __future__ import annotations
 
-import inspect
 import math
+import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -53,9 +53,15 @@ def grant(hal: Any, token: Any, action: str) -> Iterator[None]:
 
 
 def _caller() -> str:
-    for frame in inspect.stack()[2:]:
-        if not frame.filename.endswith(("hal/digital.py", "hal/motion.py", "contextlib.py")):
-            return f"{frame.filename}:{frame.lineno}"
+    # Runs between the verdict and `authorize`, inside the lease. `inspect.stack()` looks up the module
+    # and reads the source of every frame — tens of ms the first time, more with many modules loaded —
+    # and a 200 ms lease could run out before the command reached `authorize`. The frames alone suffice.
+    frame = sys._getframe(2)
+    while frame is not None:
+        filename = frame.f_code.co_filename
+        if not filename.endswith(("hal/digital.py", "hal/motion.py", "contextlib.py")):
+            return f"{filename}:{frame.f_lineno}"
+        frame = frame.f_back
     return "<unknown>"
 
 

@@ -180,6 +180,27 @@ def test_a_direct_call_is_a_contract_violation_naming_the_caller(session):
     assert hal.pin("door_lock").never_pulsed()
 
 
+def test_the_caller_is_named_from_the_frames_alone_without_reading_any_source(session, monkeypatch):
+    # The name is taken between the verdict and `authorize`, inside the lease: `inspect.stack()` looked
+    # up the module and read the source of every frame, and on a slow runner a 200 ms lease ran out.
+    import inspect
+    import linecache
+    import sys
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("naming the caller must not inspect modules or read source files")
+
+    for name in ("stack", "getframeinfo", "getmodule", "findsource"):
+        monkeypatch.setattr(inspect, name, forbidden)
+    monkeypatch.setattr(linecache, "getlines", forbidden)
+    _, hal, _ = session()
+    line = sys._getframe().f_lineno + 2
+    with pytest.raises(ActionContractViolation) as excinfo:
+        digital.out("door_lock").pulse(seconds=1)
+    assert excinfo.value.where == f"{__file__}:{line} -> digital.out('door_lock')"
+    assert hal.pin("door_lock").never_pulsed()
+
+
 def test_digital_out_outside_c_do_is_a_contract_violation():
     with pytest.raises(ActionContractViolation) as excinfo:
         digital.out("door_lock").pulse(seconds=1)
