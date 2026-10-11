@@ -4,7 +4,7 @@
 # Trạng thái dự án
 
 > Sinh tự động từ [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0 —
-> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-10-10**.
+> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-10-11**.
 
 ## Điều hành
 
@@ -15,7 +15,7 @@
 | Cột mốc tiếp theo | **I1 — Preview nội bộ: TTFV < 10 phút trên 3 người ngoài đội (M1)** |
 | Trạng thái CI Lõi | ✅ **PASS 4875/4875 · SKIP 0** |
 | Chặn ngoài tầm kỹ thuật | 🟡 **2 hạng mục chặn** |
-| Lần cập nhật cuối | **2026-10-10** |
+| Lần cập nhật cuối | **2026-10-11** |
 
 ## Increment
 

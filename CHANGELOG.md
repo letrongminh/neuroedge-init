@@ -32,6 +32,16 @@ bản gói.
 
 #### Đã thêm
 
+- **Q-72 — định vị Blueprint: từ một câu nói tới một sản phẩm vật lý có AI.** NeuroEdge đổi định vị sang ba vòng —
+  dựng (client MCP, Q-71), chạy (agent vận hành mới: hợp đồng nhiệm vụ, bộ phát hiện, LLM của người dùng có trần chi
+  phí, báo chủ động qua kênh chat), chia sẻ và bán (Blueprint, Hub) — với maker toàn cầu là người dùng đầu và bể cá là
+  Blueprint đầu tiên. Bốn điểm chốt khi rà soát: duyệt được qua kênh chat đã ghép đôi (mở rộng Q-26); chưa ký vết ghi
+  trước MVP; `safe_state` khác `off` chỉ khai trong `board.v1` kèm khoá liên động phần cứng (Q-62 sẽ sửa qua RFC);
+  giả lập trước, phần cứng mua sau. Khôi phục cổng nhu cầu 8 tuần (đảo Q-56); Q-52 đổi thứ tự, không cắt. Proposal
+  mới `docs/business/proposal-blueprint-2026-10-11.md`; PRD §15 thêm Q-72 và ghi chú trên Q-26, Q-30, Q-45, Q-52,
+  Q-56, Q-57, Q-62, Q-71; banner trên `neuroedge-proposal.md`, ghi chú tạm dừng trên `neuroedge-design-phase2.md` và
+  ghi chú robot FOFOCA; phạm vi kênh IM trong `neuroedge-design-lab-mcp.md`. PRD, roadmap, kiến trúc, threat model và
+  tài liệu người dùng chỉnh theo ở các PR sau.
 - **Q-71 — NeuroEdge Lab qua MCP thay NeuroBrain (TSK-N0-01, TSK-N0-04).** NeuroEdge không tự chạy vòng LLM để dựng hợp
   đồng nữa: client MCP người dùng đang có (Claude Code, Claude Desktop) viết bản nháp qua tool lab; NeuroEdge **chấm**
   (`neuroedge lab check`, cùng mã ở tool và Action CI), **cưỡng chế** (gate, phong bì, trigger trong runtime) và người

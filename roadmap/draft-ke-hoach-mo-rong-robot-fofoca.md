@@ -1,5 +1,7 @@
 # Ghi chú thiết kế: mở rộng NeuroEdge cho robot phân tầng phức tạp (FOFOCA)
 
+> **Tạm dừng theo Q-72 (2026-10-11).** Robot và thoại không nằm trên đường tới Blueprint đầu tiên; khối W1 đã vào MVP giữ nguyên. Trạng thái an toàn "dừng" ở đây là một trường hợp của `safe_state` — RFC an toàn có điều kiện sẽ tổng quát hoá nó (Q-35, Q-72).
+
 > **Ghi chú thiết kế.** Tệp này giữ mục tiêu, bất biến, kiến trúc, nghiên cứu và khung RFC
 > cho robot phân tầng. Nó **không** có lịch, trạng thái, tiêu chí ra, ước lượng hay thang cắt:
 > task, tiêu chí ra và phụ thuộc chỉ nằm ở [`neuroedge-roadmap.md`](neuroedge-roadmap.md)

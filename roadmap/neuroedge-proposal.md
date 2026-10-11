@@ -2,6 +2,8 @@
 
 ## NeuroEdge — Hợp đồng vào Physical AI
 
+> **Định vị đã đổi (Q-72, 2026-10-11).** Định vị, người dùng chính, mô hình doanh thu và điều kiện Marketplace trong tài liệu này (Phần 0, Phần I, §6–§9) đã được thay bằng [`docs/business/proposal-blueprint-2026-10-11.md`](../docs/business/proposal-blueprint-2026-10-11.md): NeuroEdge là nơi biến ý định thành sản phẩm vật lý có AI — dựng, chạy an toàn, chia sẻ và bán; người dùng đầu là maker; giữ PolyForm NC làm cơ chế thu tiền. Chỗ nào nói "mất mạng thì chặn" giờ đọc theo `safe_state` đã khai (RFC an toàn có điều kiện). Phần kỹ thuật (Phần II, phụ lục) vẫn đúng. Viết lại các phần trên làm ở PR sau.
+
 **Phiên bản:** 5.8  
 **Ngày cập nhật:** 25 tháng 9, 2026 — giấy phép theo PRD Q-45 (mã source-available, chuẩn mở Apache-2.0) · lịch sử thay đổi: `CHANGELOG.md`  
 **Đối tượng tài liệu:** Đội ngũ phát triển sản phẩm · Đối tác phần cứng (OEM/ODM) · Kỹ sư nền tảng · Khách hàng vận hành đội thiết bị (Fleet Operators)  

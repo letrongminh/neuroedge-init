@@ -23,10 +23,10 @@ thay đổi: `CHANGELOG.md`
 **Ngoài phạm vi:**
 - Tool MCP điều khiển chân thô, không qua gate.
 - Tool MCP khoá chính sách, sửa `digests.lock`, bật `[lab]` hay trả lời `ask` — không bao giờ có (§1.3.3).
-- Một vòng LLM riêng của NeuroEdge để dựng hợp đồng (Q-71). System 2 vẫn là bên gọi lúc chạy, việc khác.
+- Một vòng LLM riêng của NeuroEdge để dựng hợp đồng (Q-71). LLM lúc chạy thuộc *agent vận hành* (Q-72): giải thích và đề xuất sửa đổi, không dựng hay khoá hợp đồng.
 - Blacklist chân.
 - Runtime Lua kiểu ESP-Claw.
-- Kênh IM (Telegram, Zalo).
+- Kênh IM (Telegram, Zalo) — không thuộc Lab; đã vào phạm vi sản phẩm ở agent vận hành (Q-72).
 - Sinh ràng buộc gate từ datasheet.
 - Client chỉ chạy trên cloud (ChatGPT): cần cổng mạng không mTLS — `TODOS.md` #61.
 

@@ -2,6 +2,8 @@
 
 ## Perception thị giác và phủ rộng phần cứng
 
+> **Tạm dừng theo Q-72 (2026-10-11).** Blueprint đầu tiên (bể cá) đi trước; chiều sâu thị giác và `jetson` chờ sau cổng nhu cầu 8 tuần. Không xoá: thiết kế ở đây vẫn giữ. Chỗ nói "người dùng cuối không trả tiền" và Marketplace ngoài phạm vi đã được Q-72 sửa.
+
 > **Ghi chú thiết kế.** Tệp này giữ định vị, nguyên tắc, ranh giới với tầng an toàn và
 > thiết kế từng khối của Giai đoạn 2. Nó **không** có lịch, trạng thái, tiêu chí ra, thang
 > cắt hay danh mục mua sắm: những thứ đó chỉ nằm ở [`neuroedge-roadmap.md`](neuroedge-roadmap.md) —
