@@ -536,7 +536,7 @@ class ReplayResult:
     def reason(self) -> str | None:
         return self._last_block().get("reason")
 
-    # -- the proposal §4.7 surface --------------------------------------------
+    # -- the docs/spec/core_contracts.md §1.7 surface --------------------------------------------
     def action(self, name: str) -> ActionState:
         runs = [a for a in self.actions if a.action == name]
         # An action the replay never ran is, physically, blocked.

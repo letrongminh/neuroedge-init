@@ -157,9 +157,9 @@ Blueprint với Hub index (I2e), và relay đám mây tuỳ chọn (`planned · 
 
 ### 5.1 Mô hình logic năm lớp
 
-Mô hình logic 5 tầng của NeuroEdge ([`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) §3.1) được vắt ngang bởi trục kiểm thử Action CI:
+Mô hình logic 5 tầng của NeuroEdge (§5.1) được vắt ngang bởi trục kiểm thử Action CI:
 
-| Tầng / Trục | Bản chất tầng (proposal §3.1) | Gói host (`03` §2) và component firmware (`04`) hiện thực | Trạng thái |
+| Tầng / Trục | Bản chất tầng (§5.1) | Gói host (`03` §2) và component firmware (`04`) hiện thực | Trạng thái |
 |:---|:---|:---|:---|
 | **L4: Tầng ứng dụng Agent** | Logic agent, bộ nhớ ngữ cảnh, tool call có gate (MCP), System 2 | `mcp_host`, `mcp_server`, System 2 trong `models/` | `done` |
 | **L3: Động cơ hợp đồng hành động** (IP cốt lõi) | Thẩm định gate chuẩn kiểu, kế thừa chính sách, mạch ngắt fail-closed | `engine/`, `actions/` (sổ token dùng một lần), `ne_gate` (`ne_walker.c`, `ne_token.c`), `ne_agent` | `done` (host và QEMU) |
@@ -177,10 +177,10 @@ Các adapter System 1 ở L2 (`models/`) hiện thực giao thức `FactSource` 
 | Khái niệm | Thang đo | Ý nghĩa | Tài liệu quy định |
 |:---|:---|:---|:---|
 | **Mức kiến trúc C4** | L1…L4 | Bốn cấp độ trực quan hoá kiến trúc: L1 Context (Bối cảnh) · L2 Container · L3 Component (Thành phần) · L4 Code (Mã) | Mô hình C4 (Simon Brown) · [`01`](01-context-c4l1.md)…[`05`](05-code-gate-hal-c4l4.md) |
-| **Tầng logic hệ thống** | L0…L4 | Năm tầng chức năng logic của nền tảng: L0 Target · L1 HAL · L2 Perception/Runtime · L3 Action Contract Engine · L4 Agent Application, cùng trục Action CI | [`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) §3.1 |
+| **Tầng logic hệ thống** | L0…L4 | Năm tầng chức năng logic của nền tảng: L0 Target · L1 HAL · L2 Perception/Runtime · L3 Action Contract Engine · L4 Agent Application, cùng trục Action CI | §5.1 |
 | **Bậc phụ thuộc gói** | Bậc 0…10 | Thứ tự import các module Python phía host, ngăn ngừa phụ thuộc vòng lặp (Bậc 0: `errors`, `paths`… Bậc 10: `cli`) | [`03`](03-component-host-c4l3.md) §2 · `python/tests/test_architecture_layers.py` |
-| **Bậc cam kết target** | Bậc 1…3 | Mức cam kết kiểm chứng phần cứng của đội lõi: Bậc 1 (chính thức: `sim`, `linux`, `esp32s3`), Bậc 2 (mở rộng: `jetson`), Bậc 3 (cộng đồng: `stm32`, `rp2350`) | PRD FR-TGT-08, Q-13 · proposal §3.2 · [`15`](15-target-architecture.md) §4.1 |
-| **Tầng phân tầng robot** | T0…T6 | Bảy tầng kiến trúc robot phân tán: T0 Cơ cấu phần cứng/an toàn cục bộ · T1 Wire Zenoh-pico · T2 Lớp an toàn black channel · T3 Gate từng node · T4 Trace hợp nhất · T5 MCP · T6 ROS 2 bridge | `draft-ke-hoach-mo-rong-robot-fofoca.md` §4 · [`15`](15-target-architecture.md) §4.3 |
+| **Bậc cam kết target** | Bậc 1…3 | Mức cam kết kiểm chứng phần cứng của đội lõi: Bậc 1 (chính thức: `sim`, `linux`, `esp32s3`), Bậc 2 (mở rộng: `jetson`), Bậc 3 (cộng đồng: `stm32`, `rp2350`) | PRD FR-TGT-08, Q-13 · §5.2 · [`15`](15-target-architecture.md) §4.1 |
+| **Tầng phân tầng robot** | T0…T6 | Bảy tầng kiến trúc robot phân tán: T0 Cơ cấu phần cứng/an toàn cục bộ · T1 Wire Zenoh-pico · T2 Lớp an toàn black channel · T3 Gate từng node · T4 Trace hợp nhất · T5 MCP · T6 ROS 2 bridge | `docs/architecture/vi/15-target-architecture.md` §4.3 · [`15`](15-target-architecture.md) §4.3 |
 
 ## 6. Hiện trạng theo năng lực
 
@@ -209,7 +209,7 @@ Bảng dưới là ảnh chụp hình dạng, không phải bảng tiến độ;
   có máy chủ nào do NeuroEdge vận hành. *Sẽ đổi theo Q-72 (`planned · Q-72`):* hai ngoại lệ tuỳ chọn,
   không bao giờ nằm trên đường an toàn — relay chỉ chuyển TLS theo SNI, không giải mã; Hub index là
   kho git tĩnh ([`09`](09-adr.md)).
-- **Không bán lại token suy luận** ([`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) §6.4; PRD §1.4 N4). Lớp trừu tượng provider là self-host thuộc lõi; người dùng tự vận hành và trả tiền trực tiếp cho nhà cung cấp mô hình.
+- **Không bán lại token suy luận** (`docs/architecture/vi/15-target-architecture.md` §3.4; PRD §1.4 N4). Lớp trừu tượng provider là self-host thuộc lõi; người dùng tự vận hành và trả tiền trực tiếp cho nhà cung cấp mô hình.
 - **Không tự làm SLAM hay điều hướng** — chỉ gate lệnh vận tốc qua ROS 2 / Nav2 ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, Q-34).
 - **Không có sàn giao dịch trả phí (paid marketplace)** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-3).
 - **Không có thanh toán tự động giữa các agent (agent-to-agent payment)** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-4).

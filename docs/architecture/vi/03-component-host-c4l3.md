@@ -25,7 +25,7 @@ lên:
 | 2 | `engine` | bậc 0; **riêng `engine/compiler.py`** được dùng `hal` (đối chiếu bo mạch lúc build) và import muộn `actions`, `models`, `perception`, `mcp_host` (kiểm cấu hình), `plugins` (`[plugins]` và `[actuators]`) | L3 lõi |
 | 3 | `actions` | `engine`, `hal`, bậc 0 (cạnh `actions` → `paths`: `actions/tools.py::result_schema` đọc `schemas/tool-result.v1.json`, RFC-0015) | L3 bề mặt |
 | 4 | `models` | `engine` (hiện thực giao thức của nó), `net`, bậc 0 | L2 |
-| 5 | `mcp_server`, `mcp_host`, `mcp_desktop`, `mcp_http` | `actions`, bậc 0; riêng `mcp_http` chỉ dùng `mcp_server` và `errors` — cửa mạng (TSK-P2-04) đặt sau cùng một máy chủ của stdio, không dựng đường thứ hai | L4 theo proposal §3.1 (docstring không tự khai tầng) |
+| 5 | `mcp_server`, `mcp_host`, `mcp_desktop`, `mcp_http` | `actions`, bậc 0; riêng `mcp_http` chỉ dùng `mcp_server` và `errors` — cửa mạng (TSK-P2-04) đặt sau cùng một máy chủ của stdio, không dựng đường thứ hai | L4 theo `docs/architecture/vi/00-overview.md` §5.1 (docstring không tự khai tầng) |
 | 6 | `viz`, `templates` | `viz`: `hal`, `trace`, bậc 0; `templates`: `errors`, `paths` | công cụ |
 | 7 | `sim` | mọi bậc dưới (gồm `plugins`: `SimSession` chạy lại hàm kiểm `[actuators]` lúc nạp, `sim/hal_build.py` nối cơ cấu từ xa vào HAL); import muộn `perception` ở `sim/session.py` và `sim/vision/feed.py` (camera → dữ kiện gate, chỉ khi agent khai `[vision]`: `perception` đứng trên `sim`) | L0, **nơi lắp ráp** |
 | 8 | `perception` | `sim` (phiên thoại bọc phiên gõ), `models`, `actions`, `engine`, `hal`, `net` | L2 |
@@ -55,7 +55,7 @@ Bốn luật, mỗi luật là một lựa chọn có chủ đích:
 
 Các gói sau đã được quy hoạch trong kiến trúc tương lai nhưng chưa có mã trong kho hôm nay:
 
-- `lab/` (I4a, NeuroEdge Lab — Q-71): tool MCP của chế độ lab — tool tác động (`@action` có gate) và tool dựng (xem bo, sổ bàn làm việc, nộp và chấm bản nháp, replay) — cùng phép kiểm `neuroedge lab check` dùng chung với Action CI; không chứa vòng LLM nào. Tuân thủ bất biến B-1 — chỉ tác động vật lý qua `dispatch()` và gate, không bao giờ gọi thẳng HAL, được khoá bằng test quét AST và import (`neuroedge-design-lab-mcp.md` §1.4 "Bảy nguyên tắc"; TSK-N1-07, `tests/test_lab_boundary.py`) — xem [`15`](15-target-architecture.md) §4.2.
+- `lab/` (I4a, NeuroEdge Lab — Q-71): tool MCP của chế độ lab — tool tác động (`@action` có gate) và tool dựng (xem bo, sổ bàn làm việc, nộp và chấm bản nháp, replay) — cùng phép kiểm `neuroedge lab check` dùng chung với Action CI; không chứa vòng LLM nào. Tuân thủ bất biến B-1 — chỉ tác động vật lý qua `dispatch()` và gate, không bao giờ gọi thẳng HAL, được khoá bằng test quét AST và import (`docs/spec/lab_mcp.md` §1.4 "Bảy nguyên tắc"; TSK-N1-07, `tests/test_lab_boundary.py`) — xem [`15`](15-target-architecture.md) §4.2.
 - `perception/vision/` và `sim/vision/` (I2a, TSK-V1b-*): đường ống thị giác và giả lập thị giác; thị giác đóng vai trò đầu vào L2, vào gate dưới dạng dữ kiện do maker khai (Q-54) — xem [`15`](15-target-architecture.md) §4.4.
 - `services/fleet/` và `services/registry/` (I9–I10, TSK-K2, TSK-K3): các dịch vụ phía máy chủ cho Fleet OS (điều phối OTA theo đợt, broker MQTT, viễn trắc) và Gate Registry (kho OCI qua ORAS/Harbor, đo lường) — xem [`15`](15-target-architecture.md) §3.1, §3.2.
 

@@ -397,4 +397,4 @@ Ngày và ngưỡng là đề xuất, chốt cùng quyết định ở mục tr�
 
 **Chưa kiểm trong phiên này, chỉ là hiểu biết tham khảo:** OpenClaw (mô hình BYOK, skill, sự cố bảo mật); Shopify, Rippling, Stripe (ví dụ trong bài Paul Graham); bộ điều khiển bể cá Apex (Neptune Systems), Reef-Pi; Frigate GenAI; LLM Vision cho Home Assistant.
 
-**Tài liệu nội bộ:** `roadmap/neuroedge-prd.md` (Q-26, Q-35, Q-38, Q-45, Q-52, Q-56, Q-62, Q-70, Q-71) · `roadmap/neuroedge-design-lab-mcp.md` · `docs/rfc/0011-nguyen-thuy-motion.md` · `docs/rfc/0018-co-cau-chap-hanh-tu-xa.md` · `python/neuroedge/hal/envelope.py`, `hal/remote.py`, `hal/motion_core.py` · `docs/business/cong-nhu-cau-2026-10-25/`.
+**Tài liệu nội bộ:** `roadmap/neuroedge-prd.md` (Q-26, Q-35, Q-38, Q-45, Q-52, Q-56, Q-62, Q-70, Q-71) · `docs/spec/lab_mcp.md` · `docs/rfc/0011-nguyen-thuy-motion.md` · `docs/rfc/0018-co-cau-chap-hanh-tu-xa.md` · `python/neuroedge/hal/envelope.py`, `hal/remote.py`, `hal/motion_core.py` · `docs/business/cong-nhu-cau-2026-10-25/`.

@@ -122,7 +122,7 @@ nguyên tắc B.5 thì không được trôi trong im lặng**.
 ## 4. Port mã nguồn mở — nghĩa vụ trước khi viết dòng đầu tiên
 
 Năm nghĩa vụ ghi nhận nguồn là **nghĩa vụ pháp lý**, không phải thủ tục giấy tờ
-(đặc tả: proposal §3.9; hạn chót: roadmap §3.9). Cách làm từng việc trong kho này,
+(đặc tả: roadmap §3; hạn chót: roadmap §3.9). Cách làm từng việc trong kho này,
 xong trước khi port:
 
 | # | Nghĩa vụ | Cách làm trong kho này |
@@ -223,9 +223,9 @@ Khi đọc kết quả test, đọc cả cột skip.
 | `docs/user/doi-tac/` · `docs/business/doi-tac/` · `fixtures/ha_mcp_double/` | Gói đợt thử với đối tác (Q-70): ba hướng dẫn chạy được, trang giới hạn, mẫu phản hồi · danh sách thoả thuận, kênh phản hồi, buổi đo · bản **giả** của Home Assistant MCP Server cho hướng dẫn | PR thường — mọi khối lệnh của hướng dẫn có dấu (`scripts/guide_runner.py`, test `test_partner_guides.py`); sửa hướng dẫn thì chạy `scripts/partner_guides_check.sh <wheel>` |
 | `docs/release.md` | Thủ tục phát hành: tag nội bộ trước I6, PyPI từ I6 | PR thường |
 | `README.md` | Trang đầu và trang PyPI (link tuyệt đối) | PR thường — `tests/test_readme_quickstart.py` |
-| `roadmap/` | Sáu tài liệu sản phẩm: roadmap, PRD, proposal, hai ghi chú thiết kế, kế hoạch robot (bản nháp RFC node ở `docs/rfc/`) | Theo từng tệp ở các dòng dưới |
+| `roadmap/` | Hai tài liệu sản phẩm: roadmap (tiến độ) và PRD (yêu cầu, quyết định) | Theo từng tệp ở các dòng dưới |
 | `roadmap/neuroedge-roadmap.md` | Roadmap duy nhất (Q-39): bốn phase (§0.5, Q-52), increment I0–I18 kể cả I2a, I2b, I3a, I4a, I5a, trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành, thang cắt | PR thường, theo §8; luật chống lệch R1–R12 ở roadmap §2.4 |
-| `roadmap/neuroedge-design-lab-mcp.md`, `roadmap/neuroedge-design-phase2.md`, `roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md`, `docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md` | Ghi chú thiết kế: NeuroEdge Lab · thị giác và phủ phần cứng · robot phân tầng. Không lịch, không trạng thái, không tiêu chí ra; dẫn mã TSK của roadmap (R1, R8) | PR thường; merge được cả khi Beta đóng băng (R12) |
+| `docs/spec/lab_mcp.md`, `docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md` | Thiết kế NeuroEdge Lab và giao thức node robot. Không lịch, không trạng thái, không tiêu chí ra; dẫn mã TSK của roadmap (R1, R8) | PR thường; merge được cả khi Beta đóng băng (R12) |
 | `TODOS.md` | Việc đã xem xét và hoãn có chủ ý, kèm mốc kích hoạt | PR thường |
 
 ## 7. CI
@@ -253,19 +253,19 @@ Một task **chưa xong** cho tới khi các cập nhật dưới đây nằm **
 | Việc tiếp theo, đang làm gì | Roadmap §0.3 (Thẻ bàn giao) | Không |
 | Thang cắt phạm vi | Roadmap §9 | Dẫn bậc hoặc increment |
 | Giá trị đo B1–B5 (và A1 đo đầy đủ) | Roadmap §5.5 | Ngưỡng ở PRD §11; nơi khác dẫn mã |
-| Thiết kế (không lịch, không trạng thái) | Ghi chú thiết kế (`neuroedge-design-lab-mcp.md`, `neuroedge-design-phase2.md`, `draft-*.md`) · `docs/spec/` · `docs/rfc/` | Roadmap dẫn tới; ghi chú thiết kế dẫn mã TSK, không ghi trạng thái (R1) |
+| Thiết kế (không lịch, không trạng thái) | `docs/spec/` (kể cả `lab_mcp.md`) · `docs/rfc/` | Roadmap dẫn tới; ghi chú thiết kế dẫn mã TSK, không ghi trạng thái (R1) |
 | Rủi ro sản phẩm (`R-n`) | PRD §13.2 | Dẫn mã |
 | Đã thay đổi gì | `CHANGELOG.md` §1 | Không |
 | Cách chạy, lệnh, đầu ra kỳ vọng, workflow và job CI | `CHANGELOG.md` §2 | `README.md` gốc (cũng là trang PyPI, nên mọi link tuyệt đối): tối đa 3 lệnh bắt đầu nhanh, kèm link §2 — `tests/test_readme_quickstart.py` chạy đúng các lệnh đó |
 | Bất biến không được phá | `CHANGELOG.md` §3.3 | Dẫn số bất biến |
-| Thay đổi nào cần RFC | `CONTRIBUTING.md` §3 | Dẫn §3 |
-| Cấu trúc kho | `CONTRIBUTING.md` §6 | Dẫn §6 |
+| Thay đổi nào cần RFC | §3 | Dẫn §3 |
+| Cấu trúc kho | §6 | Dẫn §6 |
 | Quyết định | `neuroedge-prd.md` §15 (mã `Q-N`) | Dẫn mã `Q-N` |
 | Chính sách giấy phép (allowlist) | `neuroedge-prd.md` §15, Q-11 | `NOTICE` ghi ma trận từng thành phần, dẫn Q-11 |
 | Mã lỗi `NE…`: mã nào tồn tại, tên lớp, cha, trạng thái | `schemas/error-codes.v1.json` (RFC-0015, Q-66) | Dẫn mã; `errors.py`, PRD Phụ lục B và `targets/` được test kiểm theo danh mục |
 | Lời của một mã lỗi (khi nào, vì sao, hệ thống làm gì) | PRD Phụ lục B | Dẫn mã |
 | Ý nghĩa của một mã / ký hiệu | `docs/user/thuat-ngu.md` | Dẫn mã |
-| Yêu cầu và đặc tả | PRD (`FR-*`, `NFR-*`) · proposal (Phụ lục) · `docs/rfc/` · `docs/spec/` | Dẫn mã |
+| Yêu cầu và đặc tả | PRD (`FR-*`, `NFR-*`) · `docs/spec/core_contracts.md` · `docs/rfc/` · `docs/spec/` | Dẫn mã |
 | Việc hoãn có chủ ý | `TODOS.md`, kèm mốc kích hoạt | Dẫn số mục |
 | Kịch bản demo của một increment | `demo/<increment>/kich-ban.md`; danh mục `demo/README.md` (Q-49) | Dẫn thư mục; không chép lệnh hay đầu ra |
 

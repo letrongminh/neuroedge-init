@@ -1,4 +1,4 @@
-"""Sample physical action for the villa-concierge agent (proposal §4.4)."""
+"""Sample physical action for the villa-concierge agent (docs/spec/core_contracts.md §1.4)."""
 
 from neuroedge import action, digital
 

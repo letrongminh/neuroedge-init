@@ -4,7 +4,7 @@
 > sẵn, cái gì cần RFC. **Nguồn:** mười mốc và increment của từng mốc ở roadmap §0.5 ("Mười mốc phát hành
 > theo người dùng"); trạng thái, tiến độ, ngày dự báo chỉ ở roadmap §0.2 (Q-39) — trang này không chép lại
 > chúng, và hình E-09 được **sinh từ chính hai bảng đó**. Thiết kế của các hướng mở rộng ở
-> `neuroedge-design-lab-mcp.md`, `neuroedge-design-phase2.md`, `draft-ke-hoach-mo-rong-robot-fofoca.md`,
+> `docs/spec/lab_mcp.md`, [`15`](15-target-architecture.md) §4.3, §4.4,
 > `draft-rfc-node-giao-thuc-dieu-phoi.md`.
 
 ## 1. Một xương sống, mười mốc
@@ -78,7 +78,7 @@ increment ở roadmap §0.2.
   actuator, board, template, exporter — kèm bộ test tuân thủ theo loại (`neuroedge conformance`); hai proxy phổ
   quát `neuroedge proxy mcp` và `proxy http`; cơ cấu chấp hành từ xa có mức tự tắt, đầu tiên là Home Assistant;
   `--board <đường dẫn>` cho bo cộng đồng ngoài kho và danh sách target mở theo bậc (RFC-0002); index cộng đồng
-  cho `plugin search/install`. I4a, I6, I13, I14 và I16 phụ thuộc I2c → `neuroedge-design-open-platform.md`,
+  cho `plugin search/install`. I4a, I6, I13, I14 và I16 phụ thuộc I2c → `docs/architecture/vi/16-ecosystem-landscape.md` §4,
   [`16`](16-ecosystem-landscape.md) §3, §8. `planned`; chữ ký RFC-0002 và việc đổi giấy phép corpus tuân thủ sang
   Apache-2.0 `done` (2026-10-04).
 - **Hợp đồng:** sáu RFC đã chấp thuận (2026-10-01): RFC-0007, RFC-0009 → RFC-0013 — `board.v1` nhận khối
@@ -202,8 +202,7 @@ Phần còn lại của mốc này là `planned · Q-72` ([`Q-72`](../../../road
   Harbor), đo lường (OpenMeter) → [`15`](15-target-architecture.md) §3.1–§3.3. `planned`.
 - **Hợp đồng:** trường mới trong `metadata` của vết ghi (không cần RFC); ký gate và kiểm chữ ký trên thiết
   bị (TSK-W2-04); ghim `extends` theo digest (TSK-S3-21) đã kéo lên I2c — RFC rồi mã (Q-67).
-- **Lời hứa được chứng minh bằng:** OTA cấp thiết bị vẫn là của lõi, chiến dịch là của Fleet OS (proposal
-  §6.4) — dịch vụ không bao giờ nằm trên đường quyết định của gate; 1.000 thiết bị, 0 brick (M5).
+- **Lời hứa được chứng minh bằng:** OTA cấp thiết bị vẫn là của lõi, chiến dịch là của Fleet OS (`docs/architecture/vi/15-target-architecture.md` §3.4) — dịch vụ không bao giờ nằm trên đường quyết định của gate; 1.000 thiết bị, 0 brick (M5).
 
 ### Mốc 10 — Mở rộng hệ sinh thái *(I13, I14, I16, I17, I18)*
 

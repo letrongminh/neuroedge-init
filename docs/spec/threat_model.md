@@ -212,7 +212,7 @@ cho đúng chứng chỉ đó. Những gì cửa mạng **không** làm được
 ## 2c. Trong phạm vi: client MCP dựng hợp đồng trong chế độ lab (Q-71) — dự kiến
 
 Từ Q-71, NeuroEdge Lab (I4a, I5a) để một client MCP — Claude Code, Claude Desktop, Cursor — viết
-bản nháp hợp đồng qua tool lab (`roadmap/neuroedge-design-lab-mcp.md` §1.3). Client vẫn là bên gọi
+bản nháp hợp đồng qua tool lab (`docs/spec/lab_mcp.md` §1.3). Client vẫn là bên gọi
 **không tin cậy** của §2b: mọi tool tác động là `@action` đi `dispatch()` → gate. Mục này thêm hai
 điều §2b chưa phủ: client **viết tệp** (bản nháp, profile bo, trigger) và client **có thể có shell**.
 

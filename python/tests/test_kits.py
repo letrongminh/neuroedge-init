@@ -226,7 +226,7 @@ def test_the_user_map_lists_the_kits(root):
 
 
 def test_the_factory_kit_names_its_actuators_as_the_proposal_does(root):
-    # Proposal §1.6 item 3: an exhaust valve or an alarm siren. The wording is one fact, said the
+    # PRD Q-72 item 3: an exhaust valve or an alarm siren. The wording is one fact, said the
     # same way in the agent, the template and the kit page.
     text = page(root, "factory-monitor")
     assert "van xả" in text and "còi báo động" in text

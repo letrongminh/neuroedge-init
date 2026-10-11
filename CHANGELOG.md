@@ -87,6 +87,7 @@ Gói chưa phát hành phiên bản nào ra ngoài; trước khi công khai ch�
 
 #### Đã bỏ
 
+- **Tối giản tài liệu: bỏ bản trùng, giữ một nơi cho mỗi sự thật.** Bỏ cây kiến trúc `en/`, `docs/archive/`, proposal cũ v5.9 và ba ghi chú thiết kế (Giai đoạn 2, nền tảng mở, robot FOFOCA). Phần chuẩn tắc của proposal (§4 API, Phụ lục A–C) chuyển sang `docs/spec/core_contracts.md`; bộ lọc PF-1…PF-4 vào PRD §14; ghi chú Lab thành `docs/spec/lab_mcp.md`. Roadmap, CHANGELOG và PRD §15 nén lại, không mất mã task, quyết định hay bất biến nào. Bản cũ: `git show 7626b62:<đường dẫn>`.
 - **Extra `scaffold` (`copier`).** Thay thế bằng bộ sinh template Python thuần trong `neuroedge new`, loại bỏ phụ thuộc GPL3 bắc cầu.
 - **Tham số `fail_closed` của `ActionContractEngine`.** Quy tắc fail-closed được xác định trực tiếp từ thuộc tính `fail: open` của gate; lỗi luôn trả về phán quyết chặn.
 
@@ -242,15 +243,14 @@ Bản đồ "đọc gì khi nào" cho người hoặc agent tiếp quản:
 |:---|:---|:---|
 | [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md) | **Nguồn sự thật duy nhất về tiến độ:** bốn phase (§0.5), increment I0–I18, trạng thái task, tiêu chí ra, phụ thuộc, thẻ bàn giao (§0.3). | **Luôn đọc trước** |
 | [`neuroedge-prd.md`](roadmap/neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`, **§15 là sổ quyết định duy nhất** (`Q-N`), Phụ lục B danh mục mã lỗi `NE…`. | Khi cần biết *phải làm gì* và đã chốt gì |
-| [`neuroedge-proposal.md`](roadmap/neuroedge-proposal.md) | Kiến trúc tổng thể và cơ sở thiết kế; **Phụ lục B là đặc tả gate**. | Khi cần biết *tại sao* |
+| [`docs/architecture/`](docs/architecture/README.md) · [`core_contracts.md`](docs/spec/core_contracts.md) | Kiến trúc hiện hành và mục tiêu; đặc tả API, gate (Phụ lục B), HAL, vết ghi. | Khi cần biết *tại sao* và *định dạng gì* |
 | [`TODOS.md`](TODOS.md) | Danh mục việc hoãn có chủ ý kèm mốc kích hoạt rõ ràng. | Trước khi đề xuất việc "còn thiếu" |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quy ước đóng góp; §3 việc cần RFC; §6 cấu trúc kho; §8 các bước hoàn tất task. | Trước khi sửa mã hoặc cấu trúc |
-| [`docs/spec/`](docs/spec/) | Đặc tả chuẩn tắc: Gated Tool Profile, threat model, FSM hội thoại, phủ mô phỏng, MCU review. | Khi thay đổi hành vi tầng tương ứng |
-| Ghi chú thiết kế (`roadmap/neuroedge-design-*.md`) | Thiết kế NeuroEdge Lab qua MCP (I4a, I5a), thị giác và phần cứng mở rộng, nền tảng mở, robot FOFOCA. | Khi thực hiện task của increment liên quan |
+| [`docs/spec/`](docs/spec/) | Đặc tả chuẩn tắc: hợp đồng nền (`core_contracts.md`), Gated Tool Profile, threat model, NeuroEdge Lab (`lab_mcp.md`), FSM hội thoại, phủ mô phỏng, MCU review. | Khi thay đổi hành vi tầng tương ứng |
 
-Kế hoạch Giai đoạn 1 đã lưu trữ xem tại lịch sử git (`git show 7626b62:docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`).
+Tài liệu đã xoá khi tối giản (proposal cũ, ghi chú thiết kế, `docs/archive/`, kiến trúc `en/`): `git show 7626b62:<đường dẫn>`.
 
-**Thứ tự ưu tiên khi lệch nhau:** PRD và proposal (hợp đồng) → roadmap (tiến độ, lịch) → ghi chú thiết kế → mã nguồn → tệp này. Nếu mã lệch hợp đồng, mã sai. Ghi chú thiết kế nói gì về lịch, trạng thái hay tiêu chí ra thì roadmap đúng (R1).
+**Thứ tự ưu tiên khi lệch nhau:** PRD (yêu cầu, quyết định) và `schemas/` + RFC đã chấp thuận → roadmap (tiến độ, lịch) → kiến trúc và `docs/spec/` → mã nguồn → tệp này. Nếu mã lệch hợp đồng, mã sai. Tài liệu thiết kế nói gì về lịch, trạng thái hay tiêu chí ra thì roadmap đúng (R1).
 
 ### 3.2 Bản đồ kiến trúc — cái gì ở đâu
 

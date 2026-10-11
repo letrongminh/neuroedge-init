@@ -20,7 +20,7 @@
 | [Camera cổng](kit-camera-cong.md) | `gate-camera` | Camera + đèn hiên + khoá cổng: người lạ ở cổng ⇒ bật đèn, khoá | `stranger_light`, `stranger_lock` (`fixtures/agents/gate-camera/gates/`, đã khoá; kế thừa `gates/home/camera`) | chạy trên `sim-rpi5` (camera ảo) | cần camera V4L2 (`NEUROEDGE_LINUX_CAMERA`) | **không build**: bo không có `vision.in` |
 | [Rèm cửa](kit-rem-cua.md) | `blinds` | Servo nghiêng rèm lá, có lease, `safe_state` và phong bì | `blinds_open`, `blinds_close` (`fixtures/agents/blinds/gates/`, đã khoá; kế thừa `gates/home/motor`) | chạy trên `sim-rpi5` | cần nguồn PWM (`NEUROEDGE_LINUX_MOTION`) và servo | **không build**: bo không có `motion` |
 
-Tên và cơ cấu của kit thứ ba theo `roadmap/neuroedge-proposal.md` §1.6 mục 3 ("kích hoạt van xả an toàn
+Tên và cơ cấu của kit thứ ba theo PRD Q-72 mục 3 ("kích hoạt van xả an toàn
 hoặc còi báo động"). Kho giữ tên mẫu `factory-monitor` (đổi tên một mẫu công khai là thay đổi vỡ của CLI,
 `docs/spec/python_api.md` §6) và chỉnh cơ cấu: chân `gate_relay` là **một rơ-le tải xả** — quạt xả hoặc
 cuộn van xả điện từ, cùng một chân, cùng bốn gate — và chân `porch_light` là **còi báo động** (trước kia

@@ -74,7 +74,7 @@ nó vẫn từ chối đúng thứ cần từ chối.*
 ## 8. Việc phải làm khi chấp thuận
 
 - [ ] Cập nhật `schemas/<lược đồ>.json` (hoặc hợp đồng tương ứng)
-- [ ] Cập nhật Phụ lục tương ứng trong `neuroedge-proposal.md`
+- [ ] Cập nhật Phụ lục tương ứng trong `docs/spec/core_contracts.md`
 - [ ] Cập nhật `neuroedge-prd.md` nếu có FR bị ảnh hưởng; quyết định mới thì cấp `Q-N` ở §15
 - [ ] Cập nhật `neuroedge-roadmap.md` nếu có task hoặc tiêu chí ra bị ảnh hưởng
 - [ ] Thêm/điều chỉnh fixture và test; gate đã khoá: `scripts/check_digests.py --accept <tệp> --rfc NNNN`

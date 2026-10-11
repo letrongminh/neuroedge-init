@@ -7,11 +7,11 @@
 
 **Ngày lập:** 21 tháng 9, 2026 · **Cập nhật:** 11 tháng 10, 2026 (thứ tự theo Q-72: I2d, I2e trước cổng nhu cầu 8 tuần) · lịch sử thay đổi: `CHANGELOG.md`
 
-**Tài liệu nguồn:** `neuroedge-proposal.md` · `neuroedge-prd.md` · [`TODOS.md`](../TODOS.md)
+**Tài liệu nguồn:** `neuroedge-prd.md` · [`TODOS.md`](../TODOS.md)
 
 **Phạm vi:** increment từ **I0** tới **I18** — MVP (v1.0), Developer Beta, tầng dịch vụ v1.1 và các hướng mở rộng (§0.5). Nơi duy nhất ghi trạng thái task, tiêu chí ra, phụ thuộc và ngày dự báo (Q-39).
 
-**Ghi chú thiết kế:** [`neuroedge-design-lab-mcp.md`](neuroedge-design-lab-mcp.md) (Lab, I4a, I5a; Q-71) · [`neuroedge-design-phase2.md`](neuroedge-design-phase2.md) (thị giác I2a, I3a; I13, I16–I18) · [`neuroedge-design-open-platform.md`](neuroedge-design-open-platform.md) (nền tảng mở, I2c) · [`draft-ke-hoach-mo-rong-robot-fofoca.md`](draft-ke-hoach-mo-rong-robot-fofoca.md) và [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) (I14)
+**Ghi chú thiết kế:** `docs/spec/lab_mcp.md` (Lab, I4a, I5a; Q-71) · `docs/architecture/vi/15-target-architecture.md` §4.4 (thị giác I2a, I3a; I13, I16–I18) · `docs/architecture/vi/16-ecosystem-landscape.md` §4 (nền tảng mở, I2c) · `docs/architecture/vi/15-target-architecture.md` §4.3 và [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) (I14)
 
 **Ngoài roadmap:** Khối 4 (AURA thực địa) · Khối 5 (Marketplace thu phí; Hub tối thiểu ở I2e — Q-72) — §8.1
 
@@ -94,7 +94,7 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 |  | **I16 — Thị giác trên `jetson`** | sau I8 | `jetson` bậc 2, thị giác thời gian thực | **0 / 4** | ⏳ Chưa bắt đầu | I2c, I8 | 1.x |
 |  | **I17 — Đa phương thức** | sau I16 | Thoại và thị giác trong một máy trạng thái; gate đa phương thức | **0 / 4** | ⏳ Chưa bắt đầu | I16 | 1.x |
 |  | **I18 — Hệ sinh thái thiết bị** | sau I13 | Kho adapter và HAL port trên registry, trạng thái tuân thủ trên Fleet, chứng nhận phần cứng miễn phí tự kiểm chứng — SDK và chứng nhận "NeuroEdge-gated" đã kéo lên I2c (Q-67) | **0 / 3** | ⏳ Chưa bắt đầu | I9, I10, I13 | dịch vụ |
-| **Ngoài roadmap** | **Khối 4 — AURA thực địa** | sau I8 | Ứng dụng khách sạn/villa; chỉ dùng API công khai (proposal §8.6) | — | ⏳ Ngoài roadmap | I8 | — |
+| **Ngoài roadmap** | **Khối 4 — AURA thực địa** | sau I8 | Ứng dụng khách sạn/villa; chỉ dùng API công khai (PRD §14) | — | ⏳ Ngoài roadmap | I8 | — |
 |  | **Khối 5 — Marketplace** | khi đạt G1–G4 | Sàn trao đổi tài sản có thu phí — Chặn (PRD §14). Riêng NeuroEdge Blueprint: Hub tối thiểu (index tĩnh, không thu phí) ở I2e; Hub thu phí chỉ sau cổng 8 tuần (Q-72) | — | ⏸ Chặn | — | — |
 
 **Giả định của các ngày dự báo (Q-39, Q-52, Q-72):** I2d chỉ cần phần đã xong của I2c (`neuroedge.guard`, nửa (a) của RFC-0017), nên dự báo sớm hơn I2c. I2d, I2e đi trước đo cổng nhu cầu 8 tuần (ngày 2026-12-06, B6–B8, PRD §11.2; nhánh theo kết quả: §5.6). I3 → I8 ghi "sau I2e", đặt lại ngày cùng PR có kết quả cổng (R5). Thoại (I4, I5) và Studio tạm dừng theo Q-72, không cắt. Giả lập trước, phần cứng thật mua sau. Một người + AI agent (Q-60, §1.1). MVP trượt thì dời ngày, không cắt phạm vi (Q-52).
@@ -229,7 +229,7 @@ Nguyên tắc: xây thứ tạo khác biệt, mượn thứ đã là hàng hóa.
 
 ### 3.1 Ranh giới bất di bất dịch
 
-Ranh giới tài sản lõi (tự xây 100%) và hàng hóa (mượn tối đa) xác định tại proposal §3.9.
+Ranh giới tài sản lõi (tự xây 100%) và hàng hóa (mượn tối đa) xác định tại §3.
 
 ### 3.2 Phép thử quyết định
 
@@ -237,7 +237,7 @@ Phụ thuộc vào nó có buộc vi phạm P-1, P-2 ([PRD §1.5](neuroedge-prd.
 
 ### 3.3 Kỷ luật giấy phép
 
-Quy tắc giấy phép: proposal §3.9, Phụ lục H. LiteLLM (MIT) dùng dạng SDK qua extra `neuroedge[cloud]` (Q-10, Q-11). Hawkbit (EPL-2.0) duyệt, EMQX không dùng (Q-11). Giấy phép NeuroEdge: [`LICENSING.md`](../LICENSING.md) (Q-45).
+Quy tắc giấy phép: §3, Phụ lục H. LiteLLM (MIT) dùng dạng SDK qua extra `neuroedge[cloud]` (Q-10, Q-11). Hawkbit (EPL-2.0) duyệt, EMQX không dùng (Q-11). Giấy phép NeuroEdge: [`LICENSING.md`](../LICENSING.md) (Q-45).
 
 ### 3.4 Ma trận tích hợp theo khối
 
@@ -253,7 +253,7 @@ Tái sử dụng: Typer/Rich/Pytest (CLI & CI), Pydantic v2 (lược đồ), Xia
 
 ### 3.6 Ba dự án chỉ liên thông, không phụ thuộc
 
-ESP-Claw (liên thông qua MCP), LiveKit Agents và TEN Framework (chỉ tham khảo thiết kế) — proposal Phụ lục H.3. Không fork toàn bộ XiaoZhi.
+ESP-Claw (liên thông qua MCP), LiveKit Agents và TEN Framework (chỉ tham khảo thiết kế) — §3. Không fork toàn bộ XiaoZhi.
 
 ### 3.7 Tác động thật lên đường găng
 
@@ -265,7 +265,7 @@ Q-8: C/C++ trên ESP-IDF cho firmware, Python cho `sim` và `linux`. Bảo toàn
 
 ### 3.9 Nghĩa vụ ghi nhận nguồn
 
-Tuân thủ ma trận giấy phép, tệp `NOTICE`, ghi nhận trong mã, tài liệu công khai và ghim phiên bản (proposal §3.9).
+Tuân thủ ma trận giấy phép, tệp `NOTICE`, ghi nhận trong mã, tài liệu công khai và ghim phiên bản (§3).
 
 ### 3.10 Rủi ro khi làm ngược
 
@@ -401,7 +401,7 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 | **Điều kiện vào** | — · RFC mở ngay, mã chờ RFC chấp thuận (§2.3) |
 | **Tín hiệu đo** | Tiêu chí ra bên dưới |
 | **Người** | V1 (chủ trì), V5 (thị giác), V2 (RFC-motion), kỹ thuật trưởng |
-| **Thiết kế** | `neuroedge-design-phase2.md` §6 · `draft-ke-hoach-mo-rong-robot-fofoca.md` §7 · `neuroedge-design-lab-mcp.md` §7–§8 · RFC-0007, RFC-0009 → RFC-0013 |
+| **Thiết kế** | `docs/architecture/vi/15-target-architecture.md` §4.4 · `docs/architecture/vi/15-target-architecture.md` §4.3 · `docs/spec/lab_mcp.md` §7–§8 · RFC-0007, RFC-0009 → RFC-0013 |
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
@@ -480,11 +480,11 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 | **Điều kiện vào** | — · task mã chờ RFC tương ứng được ký |
 | **Tín hiệu đo** | M6, A13; số plugin của bên thứ ba qua test tuân thủ |
 | **Người** | V1 (chủ trì), V3; người cho TSK-I2c-16 trên HA thật và TSK-I2c-17 |
-| **Thiết kế** | `neuroedge-design-open-platform.md` |
+| **Thiết kế** | `docs/architecture/vi/16-ecosystem-landscape.md` §4 |
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
-| **TSK-I2c-01** | Quyết định và thiết kế nền tảng mở (Q-67) | FR-EXT-01→09 | V1 | ✅ 2026-10-04 | `neuroedge-design-open-platform.md` |
+| **TSK-I2c-01** | Quyết định và thiết kế nền tảng mở (Q-67) | FR-EXT-01→09 | V1 | ✅ 2026-10-04 | `docs/architecture/vi/16-ecosystem-landscape.md` §4 |
 | **TSK-I2c-02** | RFC-0016: lõi an toàn dùng độc lập và Extension SDK | FR-EXT-01→05, FR-EXT-09 | V1 | ✅ 2026-10-04 | `docs/rfc/0016-loi-tach-duoc-va-extension-sdk.md` |
 | **TSK-I2c-03** | RFC-0017: nguồn gọi theo không gian tên `bridge:<id>` | FR-EXT-03 | V1 | ✅ 2026-10-04 | `docs/rfc/0017-nguon-goi-theo-khong-gian-ten.md` |
 | **TSK-I2c-04** | RFC-0018: cơ cấu chấp hành từ xa và mức tự tắt | FR-EXT-07 | V1 | ✅ 2026-10-04 | `docs/rfc/0018-co-cau-chap-hanh-tu-xa.md` |
@@ -540,7 +540,7 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 | **Điều kiện vào** | Phần đã xong của I2c; task mã chờ RFC được ký |
 | **Tín hiệu đo** | A15 → A22 (PRD §11.1); chi phí LLM; số ngày runtime chạy liên tục trên G2 |
 | **Người** | V1 (chủ trì), V3, V7, V2, kỹ thuật trưởng |
-| **Thiết kế** | Q-72 · PRD §4.5, §5.4–§5.6 · `neuroedge-design-lab-mcp.md` · proposal Blueprint |
+| **Thiết kế** | Q-72 · PRD §4.5, §5.4–§5.6 · `docs/spec/lab_mcp.md` · proposal Blueprint |
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|
@@ -729,7 +729,7 @@ Tạm dừng theo Q-72, không cắt. Mở lại theo nhánh của §5.6.
 | **Điều kiện vào** | — |
 | **Tín hiệu đo** | Tỷ lệ BLOCK; số bản nháp gate được khoá |
 | **Người** | V2, V7 |
-| **Thiết kế** | `neuroedge-design-lab-mcp.md` |
+| **Thiết kế** | `docs/spec/lab_mcp.md` |
 
 Theo Q-72: 14 task của Lab vòng ① dời sang I2d. Khối N4 và N5b tạm dừng.
 
@@ -805,7 +805,7 @@ Tạm dừng theo Q-72, không cắt. Bo mạch vẫn là điều kiện khi m�
 | **Điều kiện vào** | — |
 | **Tín hiệu đo** | Tiêu chí ra bên dưới |
 | **Người** | V2, V7 |
-| **Thiết kế** | `neuroedge-design-lab-mcp.md` §13 |
+| **Thiết kế** | `docs/spec/lab_mcp.md` §13 |
 
 | Mã Task | Hạng mục công việc | Yêu cầu PRD | Người | Trạng thái | Sản phẩm bàn giao (Artifact) |
 |:---:|:---|:---|:---:|:---:|:---|

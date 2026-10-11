@@ -106,5 +106,5 @@ class Fact:
 
     @property
     def top(self) -> bool | str | float | int | None:
-        """The chosen option, for `choice` answers (`intent.top`, proposal §4.6)."""
+        """The chosen option, for `choice` answers (`intent.top`, docs/spec/core_contracts.md §1.6)."""
         return self.value

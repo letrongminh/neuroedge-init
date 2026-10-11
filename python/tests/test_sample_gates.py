@@ -7,7 +7,7 @@ The three hand-written sample gates — Sprint 1 exit criterion 2.
 The corpus in gates/ is a three-document chain:
 
     base-access@1.0.0            (level 1, the hospitality baseline)
-      -> unlock_door@1.2.0       (level 2, Proposal §4.5)
+      -> unlock_door@1.2.0       (level 2, docs/spec/core_contracts.md §1.5)
         -> unlock_door_night@1.0.0  (level 3 — the two-level inheritance case)
 
 "Resolved correctly" is spelled out here as: the right criteria are inherited,

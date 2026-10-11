@@ -179,7 +179,7 @@ def _operator_clause(criterion: str, kind: str, clause: Mapping[str, Any]) -> tu
         raise _fail(
             criterion,
             f"operator {operator!r} is not defined for a {kind!r} criterion",
-            f"use one of {sorted(permitted)} (Proposal Appendix B.2)",
+            f"use one of {sorted(permitted)} (docs/spec/core_contracts.md Appendix B.2)",
         )
     return operator, clause[operator]
 
@@ -208,7 +208,7 @@ def _parse_bool(criterion: str, clause: Any) -> Constraint:
     raise _fail(
         criterion,
         f"a bool criterion accepts true, false or {{ confidence_gte: x }}, got {clause!r}",
-        "see Proposal Appendix B.2 for the bool operator set",
+        "see docs/spec/core_contracts.md Appendix B.2 for the bool operator set",
     )
 
 
@@ -241,7 +241,7 @@ def _parse_level(criterion: str, clause: Any, levels: list[str]) -> Constraint:
     raise _fail(
         criterion,
         f"a level criterion accepts a bare level or one of {sorted(LEVEL_OPERATORS)}, got {clause!r}",
-        "see Proposal Appendix B.2 for the level operator set",
+        "see docs/spec/core_contracts.md Appendix B.2 for the level operator set",
     )
 
 
@@ -283,7 +283,7 @@ def _parse_choice(criterion: str, clause: Any, options: list[str]) -> Constraint
     raise _fail(
         criterion,
         f"a choice criterion accepts a bare option or one of {sorted(CHOICE_OPERATORS)}, got {clause!r}",
-        "see Proposal Appendix B.2 for the choice operator set",
+        "see docs/spec/core_contracts.md Appendix B.2 for the choice operator set",
     )
 
 
@@ -435,7 +435,7 @@ def parse_constraint(criterion: str, clause: Any, definition: Mapping[str, Any])
     raise _fail(
         criterion,
         f"evaluate.{criterion} declares unsupported type {kind!r}",
-        "declare the criterion as bool, level, choice or numeric (Proposal Appendix B.2)",
+        "declare the criterion as bool, level, choice or numeric (docs/spec/core_contracts.md Appendix B.2)",
     )
 
 

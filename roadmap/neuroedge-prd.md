@@ -6,7 +6,7 @@
 
 **Phiên bản PRD:** 1.6
 **Ngày phát hành:** 11 tháng 10, 2026 (Q-72)
-**Tài liệu nguồn:** `neuroedge-proposal.md` · `docs/business/proposal-blueprint-2026-10-11.md`
+**Tài liệu nguồn:** `docs/business/proposal-blueprint-2026-10-11.md` · đặc tả định dạng `docs/spec/core_contracts.md`
 **Trạng thái:** Bản thảo chờ phê duyệt kỹ thuật
 **Lịch sử thay đổi:** `CHANGELOG.md` — tài liệu này chỉ mô tả hiện trạng.
 **Đối tượng sử dụng:** Kỹ sư phát triển · Quản lý kỹ thuật · QA · Kỹ thuật viên tài liệu · Maker và micro-OEM bán NeuroEdge Blueprint · Đối tác OEM
@@ -55,7 +55,7 @@ Từ khóa **BẮT BUỘC**, **NÊN**, **CÓ THỂ** được hiểu theo nghĩa
 
 ### 1.1 Vấn đề cần giải quyết
 
-Chưa có công cụ nào kiểm thử được hành vi vật lý của AI agent **trước khi** thiết bị vận hành ngoài hiện trường. Khi một agent vật lý ra quyết định sai, động cơ đã quay, rơ-le đã đóng, chốt cửa đã mở — các tác động này là bất khả nghịch. Một trợ lý giọng nói trong nhà trộn cả hai loại hành vi trong một cuộc trò chuyện: câu trả lời từ knowledge base hay bản tin sai thì sửa được, còn tắt đèn khi vẫn còn người trên cầu thang thì không — sản phẩm phải tách hai đường đó ra (proposal §0.2).
+Chưa có công cụ nào kiểm thử được hành vi vật lý của AI agent **trước khi** thiết bị vận hành ngoài hiện trường. Khi một agent vật lý ra quyết định sai, động cơ đã quay, rơ-le đã đóng, chốt cửa đã mở — các tác động này là bất khả nghịch. Một trợ lý giọng nói trong nhà trộn cả hai loại hành vi trong một cuộc trò chuyện: câu trả lời từ knowledge base hay bản tin sai thì sửa được, còn tắt đèn khi vẫn còn người trên cầu thang thì không — sản phẩm phải tách hai đường đó ra (`docs/architecture/vi/00-overview.md` §1).
 
 Q-72 mở rộng bài toán từ một lệnh tới cả vòng đời của một thiết bị có AI. Người muốn có thiết bị đó gặp ba rào cản: **dựng** (từ ý định tới kit, đấu dây, firmware, gate là việc của chuyên gia nhúng), **chạy** (giao nhiệm vụ bằng lời, có thứ trông thiết bị cả ngày, chủ động báo khi có chuyện, mà hoá đơn LLM vẫn đoán trước được) và **bán** (maker dựng xong một thiết bị chạy tốt nhưng không có cách đóng gói nó thành sản phẩm cho người khác). Rào cản lớn nhất của việc bán là **khoảng trống niềm tin**: người mua là người lạ, không đọc mã, nên cần bằng chứng thiết bị vẫn an toàn khi AI sai — gate trên MCU, hợp đồng chỉ người khoá, vết ghi phát lại được. Lớp hợp đồng hiện có trả lời đúng câu đó; Q-72 biến nó thành giấy thông hành cho việc chia sẻ và bán, không còn là sản phẩm đứng riêng.
 
@@ -230,9 +230,9 @@ nói mốc nào gồm increment nào.
 | **v1.0 = MVP** | Lõi (source-available, Q-45) — lần ra mắt MVP (Q-52) | I7 | Khối 1a + Khối 1b + bốn gói nguyên thủy mở rộng (Q-53) + kit mẫu + nền tảng mở (Q-67) + NeuroEdge Lab (Q-55, Q-71) + hợp đồng nhiệm vụ, agent vận hành, kênh chat, NeuroEdge Blueprint (Q-72). Thoại, Studio, `jetson` **tạm dừng, không cắt**; phạm vi v1.0 **xét lại ở cổng 8 tuần** bằng dữ liệu (Q-72) | Đạt toàn bộ tiêu chí §11.1 (A1–A13) |
 | **Developer Beta** | Beta trên dòng `1.0.x` | I8 | Đóng băng tính năng trên dòng `1.0.x`, hỗ trợ 50–100 lập trình viên | v1.0 phát hành |
 | **v1.1** | Tầng dịch vụ thương mại | I9–I10 | Khối 2 + Khối 3 | **Cột mốc định lượng** — xem §3.3 |
-| **Mở rộng (1.x)** | Giai đoạn 2 — phủ rộng phần cứng, Jetson, đa phương thức | I13, I16–I18 | Khối V1a/V2/V3 + P1/P2 *(proposal §8.9)*; thị giác trên `sim`/`linux`/`esp32s3` (V1b) đã vào v1.0 (Q-53) · tag theo roadmap §0.2 | **2a:** RFC-0002 được phê duyệt — đã ký 2026-10-04, hiện thực ở I2c (Q-67) |
+| **Mở rộng (1.x)** | Giai đoạn 2 — phủ rộng phần cứng, Jetson, đa phương thức | I13, I16–I18 | Khối V1a/V2/V3 + P1/P2 *(roadmap §7)*; thị giác trên `sim`/`linux`/`esp32s3` (V1b) đã vào v1.0 (Q-53) · tag theo roadmap §0.2 | **2a:** RFC-0002 được phê duyệt — đã ký 2026-10-04, hiện thực ở I2c (Q-67) |
 
-Khối 4 (AURA thực địa, sau Beta — điều kiện ở proposal §8.6) và Khối 5 (Marketplace thu phí) nằm ngoài phạm vi PRD này. Riêng NeuroEdge Blueprint, **Hub tối thiểu** — index tĩnh, không máy chủ, không thu phí — thuộc phạm vi I2e (FR-BP-05); Hub thu phí chỉ mở sau cổng 8 tuần (§14, Q-72), thay điều kiện cột mốc G1–G4 của proposal §8.7 cho riêng Blueprint. Khối 4 và Khối 5 được đặc tả trong tài liệu sản phẩm riêng khi tới mốc. Theo Q-39, kế hoạch thực thi của Giai đoạn 2, NeuroEdge Lab (I4a, I5a — Q-55, Q-71) và robot phân tầng (I14) nằm trong roadmap chung; PRD này chỉ đặc tả các hợp đồng mà Giai đoạn 2 phải tuân thủ (FR-TGT-08, FR-HAL-01), không đặc tả yêu cầu chi tiết của nó.
+Khối 4 (AURA thực địa, sau Beta — điều kiện ở §14) và Khối 5 (Marketplace thu phí) nằm ngoài phạm vi PRD này. Riêng NeuroEdge Blueprint, **Hub tối thiểu** — index tĩnh, không máy chủ, không thu phí — thuộc phạm vi I2e (FR-BP-05); Hub thu phí chỉ mở sau cổng 8 tuần (§14, Q-72), thay điều kiện cột mốc G1–G4 của §11.2 cho riêng Blueprint. Khối 4 và Khối 5 được đặc tả trong tài liệu sản phẩm riêng khi tới mốc. Theo Q-39, kế hoạch thực thi của Giai đoạn 2, NeuroEdge Lab (I4a, I5a — Q-55, Q-71) và robot phân tầng (I14) nằm trong roadmap chung; PRD này chỉ đặc tả các hợp đồng mà Giai đoạn 2 phải tuân thủ (FR-TGT-08, FR-HAL-01), không đặc tả yêu cầu chi tiết của nó.
 
 ### 3.2 Nội dung từng mốc
 
@@ -325,7 +325,7 @@ HAL là hợp đồng kiểm tra hai chiều: bo mạch khai báo năng lực cu
 
 **Giới hạn đã biết, phải nêu rõ trong tài liệu kỹ thuật:** `sim` không mô phỏng phản xạ âm học phòng vang, nhiễu micro, beamforming mảng micro, và phân mảnh bộ nhớ trên vi điều khiển. Các nhóm lỗi này được kiểm soát bằng kiểm thử nightly trên bo mạch thật (NFR-REL-03).
 
-**Giả lập trước, phần cứng thật sau (Q-72).** Ba vòng của hành trình 0 chạy trên bốn **tầng giả lập** trước khi mua phần cứng — mã tầng `G1`–`G4` ở đây khác cột mốc G1–G4 của proposal §8.7 và khác giả định `G-a`… ở §13.3:
+**Giả lập trước, phần cứng thật sau (Q-72).** Ba vòng của hành trình 0 chạy trên bốn **tầng giả lập** trước khi mua phần cứng — mã tầng `G1`–`G4` ở đây khác cột mốc G1–G4 của §11.2 và khác giả định `G-a`… ở §13.3:
 
 | Tầng | Công cụ | Chạy được gì | Dùng cho |
 |:---|:---|:---|:---|
@@ -366,7 +366,7 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-PER-03** | **Khoảng lặng động:** phân biệt dừng để suy nghĩ với kết thúc lượt nói | P0 | Người nói chậm không bị cắt lời trong bộ kịch bản kiểm thử chuẩn | §3.4 |
 | **FR-PER-04** | **Phản hồi dòng từng phần:** phát âm thanh từ token đầu tiên, rút lại an toàn khi mô hình đổi kết luận | P1 | Rút lại không gây phát trùng hoặc mất đoạn | §3.4 |
 | **FR-PER-05** | **Tự phục hồi lỗi STT:** chuỗi rỗng hoặc nhiễu không làm treo máy trạng thái, không lặp câu hỏi vô hạn | P0 | Bơm 20 khung nhiễu liên tiếp → máy trạng thái vẫn phản hồi đúng | §3.4 |
-| **FR-PER-06** | Runtime giọng nói trên `esp32s3` tối ưu bộ nhớ, gồm thu/phát âm thanh, WebRTC AEC, VAD libfvad *(khớp proposal §3.4)*, Opus streaming, máy trạng thái hội thoại, thẩm định gate và bộ nhận diện lệnh cố định cục bộ *(ESP-SR MultiNet hoặc TFLite Micro / ESP-NN, chọn ở Khối 1b — Q-14)*. **Không bắt buộc chạy STT/TTS trên thiết bị** | P0 | Chạy ổn định liên tục 24 giờ trên bo mạch tham chiếu với pipeline thu/phát + máy trạng thái + gate, không tràn bộ nhớ | §8.2 |
+| **FR-PER-06** | Runtime giọng nói trên `esp32s3` tối ưu bộ nhớ, gồm thu/phát âm thanh, WebRTC AEC, VAD libfvad *(khớp `docs/spec/voice_fsm.md`)*, Opus streaming, máy trạng thái hội thoại, thẩm định gate và bộ nhận diện lệnh cố định cục bộ *(ESP-SR MultiNet hoặc TFLite Micro / ESP-NN, chọn ở Khối 1b — Q-14)*. **Không bắt buộc chạy STT/TTS trên thiết bị** | P0 | Chạy ổn định liên tục 24 giờ trên bo mạch tham chiếu với pipeline thu/phát + máy trạng thái + gate, không tràn bộ nhớ | §8.2 |
 | **FR-PER-07** | **Cloud-first voice:** STT và TTS mặc định chạy trên cloud qua provider; vi điều khiển chỉ truyền luồng âm thanh lên và nhận luồng âm thanh về | P0 | Vòng lặp thoại chạy end-to-end trên bo mạch tham chiếu với STT/TTS đặt ở provider cloud | §3.4, §6.1 |
 
 ### 4.5 Agent vận hành (FR-AGT)
@@ -585,7 +585,7 @@ Agent vận hành **không dựng và không khoá** hợp đồng (vai của Ne
 
 ### 7.3 Mở rộng của bên thứ ba (FR-EXT)
 
-Thiết kế: [`neuroedge-design-open-platform.md`](neuroedge-design-open-platform.md); hợp đồng ở RFC-0016, RFC-0017,
+Thiết kế: `docs/architecture/vi/16-ecosystem-landscape.md` §4; hợp đồng ở RFC-0016, RFC-0017,
 RFC-0018 (`docs/rfc/`). Quyết định: Q-67.
 
 | Mã | Yêu cầu | Ưu tiên | Tiêu chí nghiệm thu | Nguồn |
@@ -650,7 +650,7 @@ Nhóm FR-GW thuộc **lõi**; mốc giao của từng yêu cầu theo Q-28 và �
 
 ### 8.3 Đường ray hạ tầng nền tảng (FR-REG)
 
-Bảy đường ray (FR-REG-01→07, khớp proposal §8.5) rẻ ở giai đoạn đầu nhưng **không thể bổ sung sau**. FR-REG-08 là phần mở rộng của đường ray 1 (kho Registry), không phải đường ray thứ tám. Theo Q-72, các đường ray này cũng là **nền của Hub thu phí** cho NeuroEdge Blueprint sau cổng 8 tuần (FR-BP-10): manifest và định danh cho gói, đo lường cho chia doanh thu, phân quyền cho gói của người lạ.
+Bảy đường ray (FR-REG-01→07, khớp `docs/architecture/vi/15-target-architecture.md` §3.2) rẻ ở giai đoạn đầu nhưng **không thể bổ sung sau**. FR-REG-08 là phần mở rộng của đường ray 1 (kho Registry), không phải đường ray thứ tám. Theo Q-72, các đường ray này cũng là **nền của Hub thu phí** cho NeuroEdge Blueprint sau cổng 8 tuần (FR-BP-10): manifest và định danh cho gói, đo lường cho chia doanh thu, phân quyền cho gói của người lạ.
 
 | Mã | Thành phần | Giá trị ngày đầu | Vai trò dài hạn | Ưu tiên |
 |:---|:---|:---|:---|:---:|
@@ -718,7 +718,7 @@ Mọi dòng thu dưới đây là **tuỳ chọn** với người dùng và **kh
 
 ### 9.4 Bảo mật (NFR-SEC)
 
-Các lớp phòng thủ theo proposal §5 — hành động vật lý, bên gọi không tin cậy (NFR-SEC-09), thiết bị, mạng, quyền riêng tư *(đặc tả riêng ở §9.5 của tài liệu này)*, cập nhật — hoạt động theo chế độ mặc định. Bảng dưới thêm hai nhóm yêu cầu ngoài các lớp đó: mã bên thứ ba (đường ray 7, proposal §8.5) và nhà cung cấp bên ngoài (hệ quả của P-4).
+Các lớp phòng thủ theo `docs/spec/threat_model.md` — hành động vật lý, bên gọi không tin cậy (NFR-SEC-09), thiết bị, mạng, quyền riêng tư *(đặc tả riêng ở §9.5 của tài liệu này)*, cập nhật — hoạt động theo chế độ mặc định. Bảng dưới thêm hai nhóm yêu cầu ngoài các lớp đó: mã bên thứ ba (đường ray 7, `docs/architecture/vi/15-target-architecture.md` §3.2) và nhà cung cấp bên ngoài (hệ quả của P-4).
 
 | Mã | Lớp | Yêu cầu | Ưu tiên |
 |:---|:---|:---|:---:|
@@ -912,7 +912,7 @@ Nguyên tắc: **mọi chỉ số trong mục này phải có một yêu cầu �
 | **FR-TEL-01** | CLI thu thập số liệu **ẩn danh, có thể tắt (opt-out)** về các mốc: cài đặt, khởi tạo dự án, lần chạy `sim` đầu tiên, lần build phần cứng đầu tiên | TTFV, tỷ lệ chuyển đổi sim → phần cứng | P0 |
 | **FR-TEL-02** | Chính sách thu thập số liệu công bố rõ ràng; lệnh tắt nêu ngay trong lần chạy đầu | Niềm tin cộng đồng | P0 |
 | **FR-TEL-03** | Vết ghi ghi nhận tỷ lệ System 1 / System 2 và chi phí từng lượt | Hiệu quả định tuyến | P0 |
-| **FR-TEL-04** | Registry ghi nhận số lượt tải và lượt kế thừa từng gate, phân biệt tác giả và người dùng khác | Chia sẻ gate cộng đồng, cột mốc G2/G3 (proposal §8.7) | P0 (v1.1) |
+| **FR-TEL-04** | Registry ghi nhận số lượt tải và lượt kế thừa từng gate, phân biệt tác giả và người dùng khác | Chia sẻ gate cộng đồng, cột mốc G2/G3 (§11.2) | P0 (v1.1) |
 | **FR-TEL-05** | Fleet OS ghi nhận kết quả từng chiến dịch OTA: số thiết bị, tỷ lệ lỗi, số ca rollback | Độ tin cậy OTA | P0 (v1.1) |
 | **FR-TEL-06** | Lớp trừu tượng provider ghi nhận độ trễ từng chặng đủ để tính P95 theo từng nhóm tác vụ | SLA độ trễ | P0 |
 | **FR-TEL-07** | *(Q-72)* CLI và runtime thu thập thêm, cùng chính sách ẩn danh và opt-out của FR-TEL-01, các mốc: cài một Blueprint, nối kênh chat, hợp đồng nhiệm vụ đầu tiên được duyệt, runtime chạy liên tục mỗi 7 ngày. Index tĩnh không đếm lượt cài, nên B6 → B8 còn đo bằng tiếp xúc trực tiếp với người thử | Cổng 8 tuần (B6, B7), M9 | P0 |
@@ -967,7 +967,7 @@ Ngưỡng nằm ở §11 và §9; bảng này chỉ nối mỗi chỉ số với
 
 ### 13.2 Rủi ro sản phẩm
 
-Mục này ghi rủi ro **sản phẩm và thực thi**. Rủi ro **chiến lược** (cạnh tranh, mô hình kinh doanh, phân mảnh phạm vi) nằm ở `neuroedge-proposal.md` §11 với hệ đánh số `#1–#6`. Ba cặp giao nhau giữa hai sổ: **R-4 ↔ §11 #1** (phụ thuộc nhà cung cấp mô hình) · **R-6 ↔ §11 #5** (mất kết nối đám mây) · **R-7 ↔ §11 #6** (phủ rộng phần cứng). Các rủi ro còn lại thuộc đúng một sổ. R-8 → R-20 lấy từ bảng rủi ro của proposal Blueprint (`docs/business/proposal-blueprint-2026-10-11.md`, Q-72); từ đây, bảng này là nơi theo dõi chúng.
+Mục này ghi rủi ro **sản phẩm và thực thi**. Rủi ro **chiến lược** (cạnh tranh, mô hình kinh doanh, phân mảnh phạm vi) nằm ở §13 với hệ đánh số `#1–#6`. Ba cặp giao nhau giữa hai sổ: **R-4 ↔ §11 #1** (phụ thuộc nhà cung cấp mô hình) · **R-6 ↔ §11 #5** (mất kết nối đám mây) · **R-7 ↔ §11 #6** (phủ rộng phần cứng). Các rủi ro còn lại thuộc đúng một sổ. R-8 → R-20 lấy từ bảng rủi ro của proposal Blueprint (`docs/business/proposal-blueprint-2026-10-11.md`, Q-72); từ đây, bảng này là nơi theo dõi chúng.
 
 
 | # | Rủi ro | Mức độ | Dấu hiệu cảnh báo sớm | Phương án ứng phó |
@@ -995,15 +995,15 @@ Mục này ghi rủi ro **sản phẩm và thực thi**. Rủi ro **chiến lư�
 
 ### 13.3 Giả định cần kiểm chứng
 
-**Nơi duy nhất** của danh mục giả định; proposal Phụ lục G dẫn về đây. Mỗi giả định có lý do quan trọng, phương pháp đo và mốc đánh giá.
+**Nơi duy nhất** của danh mục giả định; §13 dẫn về đây. Mỗi giả định có lý do quan trọng, phương pháp đo và mốc đánh giá.
 
 | # | Giả định | Vì sao quan trọng | Phương pháp kiểm chứng | Mốc |
 |:---:|:---|:---|:---|:---:|
-| **G-a** | Đơn giá quản trị fleet $1/thiết bị/tháng là mức thị trường chấp nhận | Quyết định quy mô đội thiết bị cần đạt để hòa vốn (proposal §6.3) | Thử nghiệm gói nâng cao (cam kết SLA, kiểm toán vết) với 5 khách hàng doanh nghiệp đầu; đo mức sẵn sàng chi trả thêm | 90 ngày sau khi I9 phát hành (Q-43) |
-| **G-b** | Tỷ lệ chuyển đổi `sim` → phần cứng ≥ 15% | Xác nhận `sim` thật sự là phễu dẫn tới phần cứng (proposal §1.7) | Số liệu ẩn danh từ CLI (FR-TEL-01); rà soát ở mốc 100 lập trình viên | Khi I8 (Beta) đóng — cùng chỉ số với B5 (Q-43) |
+| **G-a** | Đơn giá quản trị fleet $1/thiết bị/tháng là mức thị trường chấp nhận | Quyết định quy mô đội thiết bị cần đạt để hòa vốn (`docs/architecture/vi/16-ecosystem-landscape.md` §7) | Thử nghiệm gói nâng cao (cam kết SLA, kiểm toán vết) với 5 khách hàng doanh nghiệp đầu; đo mức sẵn sàng chi trả thêm | 90 ngày sau khi I9 phát hành (Q-43) |
+| **G-b** | Tỷ lệ chuyển đổi `sim` → phần cứng ≥ 15% | Xác nhận `sim` thật sự là phễu dẫn tới phần cứng (`docs/architecture/vi/16-ecosystem-landscape.md` §5) | Số liệu ẩn danh từ CLI (FR-TEL-01); rà soát ở mốc 100 lập trình viên | Khi I8 (Beta) đóng — cùng chỉ số với B5 (Q-43) |
 | **G-c** | Định tuyến hai mô hình tiết kiệm ≥ 60% chi phí token | Minh chứng định lượng cho kiến trúc System 1 / System 2 | Đo trên lưu lượng thực qua lớp trừu tượng provider, tách theo nhóm tác vụ | 90 ngày sau khi I9 phát hành (Q-43) |
 | **G-d** | Cộng đồng thực sự muốn chia sẻ và tái sử dụng gate | Cơ sở của hiệu ứng mạng trước khi mở Marketplace | Tần suất tải và kế thừa trên Registry miễn phí trong 12 tháng | 12 tháng sau khi I10 phát hành; tín hiệu sớm: B3 (Q-43) |
-| **G-e** | Tái hiện vết ghi giảm 70% chuyến đi hiện trường | Nền của mô hình TCO (proposal §1.8) | Dữ liệu bảo hành thực tế từ 3 khách hàng AURA đầu tiên, phân loại nguyên nhân sự cố (phần mềm/cấu hình vs hỏng vật lý) | 6 tháng sau ba site AURA đầu tiên (Q-43) |
+| **G-e** | Tái hiện vết ghi giảm 70% chuyến đi hiện trường | Nền của mô hình TCO (Q-72) | Dữ liệu bảo hành thực tế từ 3 khách hàng AURA đầu tiên, phân loại nguyên nhân sự cố (phần mềm/cấu hình vs hỏng vật lý) | 6 tháng sau ba site AURA đầu tiên (Q-43) |
 | **G-f** | Maker muốn bán thiết bị mình dựng, qua NeuroEdge Blueprint *(Q-72)* | Phép thử của cả mô hình Q-72; nếu sai, NeuroEdge là công cụ cá nhân | Phỏng vấn ít nhất 5 maker về việc bán; B8 | Cổng 8 tuần sau khi chốt Q-72 |
 | **G-g** | Người dùng chấp nhận tự trả LLM bằng key của mình (BYOK) *(Q-72)* | NeuroEdge không kiếm tiền từ token và không giữ key; nếu sai, cần một đường LLM khác | Tỷ lệ người thử nhập key hay dùng mô hình tại chỗ khi tới bước báo chủ động (FR-TEL-07) | Cổng 8 tuần sau khi chốt Q-72 |
 | **G-h** | Tin báo chủ động có giá trị, người dùng không tắt *(Q-72)* | Vòng ② là lý do dùng mỗi ngày | Tỷ lệ người thử còn nhận tin sau 2 tuần; phản hồi về phát hiện xu hướng | Khi người thử đầu tiên đạt B7 |
@@ -1013,11 +1013,22 @@ Mục này ghi rủi ro **sản phẩm và thực thi**. Rủi ro **chiến lư�
 
 ## 14. Ngoài phạm vi
 
-Danh mục loại trừ tường minh — **nơi duy nhất** của trạng thái và điều kiện xem xét lại; phân tích đánh đổi từng dòng ở proposal §9. Mọi đề xuất thuộc danh mục này bị bác bỏ trừ khi có quyết định thay đổi phạm vi chính thức.
+Danh mục loại trừ tường minh — **nơi duy nhất** của trạng thái và điều kiện xem xét lại. Mọi đề xuất thuộc danh mục này bị bác bỏ trừ khi có quyết định thay đổi phạm vi chính thức.
+
+**Bộ lọc ưu tiên PF-1 → PF-4** (cột "Tiêu chí" dưới đây):
+
+| # | Bộ lọc | Câu hỏi |
+|:---:|:---|:---|
+| **PF-1** | Thời gian tới giá trị đầu tiên | Có rút ngắn thời gian từ `pip install` tới lần chạy thành công đầu tiên không? |
+| **PF-2** | Nền móng không bổ sung muộn được | Không làm ngay thì sau này có phải viết lại kiến trúc không? |
+| **PF-3** | Nhu cầu đã kiểm chứng | Đã có người dùng thật yêu cầu chưa, hay chỉ là phán đoán? |
+| **PF-4** | An toàn pháp lý | Có kéo theo giữ tiền hộ, KYC, giấy phép tài chính hay trách nhiệm pháp lý vượt khả năng không? |
+
+Vi phạm PF-4 → **chặn**, chỉ xét lại khi có đánh giá pháp lý riêng. Thoả PF-1 hoặc PF-2 → ưu tiên. Chưa rõ PF-3 → hoãn để kiểm chứng. Chi trả cho người bán Blueprint chạm PF-4 (giữ tiền hộ hay đứng làm merchant of record): xét sau cổng 8 tuần, trước khi Hub thu tiền (Q-72).
 
 | Hạng mục | Trạng thái | Tiêu chí | Điều kiện xem xét lại |
 |:---|:---|:---:|:---|
-| Marketplace thương mại có thu phí | **Hub tối thiểu vào phạm vi** (Q-72): index tĩnh NeuroEdge Blueprint, không máy chủ, không thu phí (FR-BP-05, I2e). **Thu phí: hoãn tới sau cổng 8 tuần** | PF-3 | Cổng 8 tuần đạt (B6–B8), ký vết ghi (`TODOS.md` #1), OCI Registry và đường ray FR-REG (FR-BP-10) — thay điều kiện cột mốc G1–G4 của proposal §8.7 cho riêng Blueprint. Index cộng đồng của plugin (FR-EXT-08) không bao giờ thu phí, không xếp hạng trả tiền |
+| Marketplace thương mại có thu phí | **Hub tối thiểu vào phạm vi** (Q-72): index tĩnh NeuroEdge Blueprint, không máy chủ, không thu phí (FR-BP-05, I2e). **Thu phí: hoãn tới sau cổng 8 tuần** | PF-3 | Cổng 8 tuần đạt (B6–B8), ký vết ghi (`TODOS.md` #1), OCI Registry và đường ray FR-REG (FR-BP-10) — thay điều kiện cột mốc G1–G4 của §11.2 cho riêng Blueprint. Index cộng đồng của plugin (FR-EXT-08) không bao giờ thu phí, không xếp hạng trả tiền |
 | Thanh toán tự động giữa agent | Chặn | PF-4 | Đạt cột mốc và có đánh giá pháp lý riêng |
 | Chương trình chứng nhận phần cứng có thu phí | Chặn | PF-3 | Đạt cột mốc và có quy trình kiểm chuẩn độc lập |
 | Thị giác máy tính (camera, NPU) | **Đưa vào Giai đoạn 2**, tách hai bước | PF-1, PF-3 | **2a mở danh sách target:** RFC-0002 được phê duyệt · **2b hiện thực** (gồm RFC nguyên thủy `vision.in`): nhu cầu camera đo được từ khách hàng thật, TTFV thoại vẫn < 10 phút |
@@ -1186,7 +1197,7 @@ Yêu cầu phi chức năng **không được truy vết qua task roadmap** mà 
 | **NFR-OBS** | 01→03 | Thẩm định tệp vết ghi bằng `neuroedge trace validate` | A7 |
 | **NFR-OBS** | 04 | Đo cỡ vết ghi 30 ngày trên G1; kịch bản mất điện giữa đoạn | A22 |
 | **NFR-COST** | 01, 02 | Kịch bản 30 ngày trên G1, đếm chi phí và tin theo loại | A19 |
-| **NFR-COMP** | 01→04 | Rà soát ranh giới giữa lõi và dịch vụ thương mại (proposal §6.4) | A9 |
+| **NFR-COMP** | 01→04 | Rà soát ranh giới giữa lõi và dịch vụ thương mại (`docs/architecture/vi/15-target-architecture.md` §3.4) | A9 |
 | **NFR-COMP** | 05, 06 | Ma trận nền tảng chạy trong CI | A2 |
 
 ### A.4 Đối chiếu các nhóm yêu cầu chức năng còn lại

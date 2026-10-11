@@ -76,9 +76,9 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 - **Cưỡng chế.** `docs/spec/voice_fsm.md` §4 (T12), §5.4, §9 (V4); `perception/voice_fsm.py`, `perception/voice_session.py`, `sim/session.py`.
 
 ### Q-48 · Máy trạng thái hội thoại thuộc L2, không phải L4
-- **Bối cảnh.** Sơ đồ 5 tầng ở proposal §3.1 đặt "máy trạng thái hội thoại" ở L4, trong khi proposal §3.4 và mã (`perception/` tự khai L2) đặt nó ở L2.
+- **Bối cảnh.** Sơ đồ 5 tầng ở `docs/architecture/vi/00-overview.md` §5.1 đặt "máy trạng thái hội thoại" ở L4, trong khi `docs/spec/voice_fsm.md` và mã (`perception/` tự khai L2) đặt nó ở L2.
 - **Quyết định.** Máy trạng thái lượt thoại (nghe, nghĩ, nói, cắt lời) thuộc **L2 — Perception và runtime hội thoại**; L4 là logic agent, bộ nhớ ngữ cảnh, tool call có gate (MCP), System 2 (PRD §15 Q-48).
-- **Hệ quả.** Máy chạy thời gian thực trên cả chip lẫn host với một bộ vector tuân thủ; nó huỷ lệnh actuator đang chờ khi bị cắt lời nhưng không lượng giá gate và không lái chân. Không đổi mã; sơ đồ proposal §3.1 đã sửa.
+- **Hệ quả.** Máy chạy thời gian thực trên cả chip lẫn host với một bộ vector tuân thủ; nó huỷ lệnh actuator đang chờ khi bị cắt lời nhưng không lượng giá gate và không lái chân. Không đổi mã; sơ đồ `docs/architecture/vi/00-overview.md` §5.1 đã sửa.
 - **Cưỡng chế.** `perception/voice_fsm.py`, `docs/spec/voice_fsm.md`, `fixtures/compliance/voice/`; bảng tầng của [`03`](03-component-host-c4l3.md) §2.
 
 ## 2. Model và nhà cung cấp
@@ -118,7 +118,7 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 - **Cưỡng chế.** `models/providers/config.py`, `agent.toml`; [`15`](15-target-architecture.md) §3.3.
 
 ### Q-47 · FastAPI WebSockets của Fleet OS chỉ cho kết nối và viễn trắc
-- **Bối cảnh.** Proposal §6.2 từng ghi FastAPI WebSockets của Fleet OS "cho luồng âm thanh" — phần sót từ khi còn Inference Gateway thương mại; proposal §6.1, §8.4, roadmap §3.4, §6.1 và FR-GW-04 đều nói âm thanh là việc của lớp provider thuộc lõi.
+- **Bối cảnh.** `docs/architecture/vi/15-target-architecture.md` §3.1 từng ghi FastAPI WebSockets của Fleet OS "cho luồng âm thanh" — phần sót từ khi còn Inference Gateway thương mại; `docs/architecture/vi/15-target-architecture.md` §3.3, roadmap §3.4, §6.1 và FR-GW-04 đều nói âm thanh là việc của lớp provider thuộc lõi.
 - **Quyết định.** Fleet OS dùng FastAPI WebSockets (cùng broker MQTT, Q-11) **chỉ cho kết nối và viễn trắc**; âm thanh không đi qua Fleet OS (PRD §15 Q-47).
 - **Hệ quả.** Luồng WebSocket âm thanh của thiết bị (khung Opus nhị phân, PRD Phụ lục D.2) kết thúc ở lớp provider tự vận hành (FR-GW-04); thiết bị nói được mà không cần tài khoản Fleet OS (P-3); kho của Fleet OS chỉ giữ quyết định (Q-6, NFR-PRIV-03); NeuroEdge không đứng giữa luồng token (N4).
 - **Cưỡng chế.** Chưa có mã — `targets/esp32s3/audio/provider_client.c` (TSK-S5-06), `services/fleet/` (TSK-K2-04…09); [`15`](15-target-architecture.md) §3.1, §3.3.
@@ -195,7 +195,7 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 - **Bối cảnh.** Vết ghi từ đội thiết bị chứa dữ liệu cá nhân (ai mở cửa lúc nào); chi phí lưu trữ không phải ràng buộc (~1,3 KB mỗi phiên).
 - **Quyết định.** Fleet Standard giữ vết 90 ngày; Fleet Enterprise giữ 3 năm. Vết ghi lên kho theo FR-FLT-05 chỉ chứa quyết định, không dữ liệu thô (NFR-PRIV-03); thời hạn là mức trần, không phải mức sàn. Hạn mức theo thiết bị chỉ để chặn thiết bị chạy vòng, không là đòn bẩy giá (~23 GB/năm cho 1.000 thiết bị × 50 phiên/ngày (ước lượng); PRD §15 Q-6).
 - **Hệ quả.** Kho chỉ giữ quyết định, không dữ liệu thô (NFR-PRIV-03); vì vết vẫn chứa dữ liệu cá nhân (ai mở cửa lúc nào), thời hạn là mức trần, không phải mức sàn.
-- **Cưỡng chế.** Chưa có mã — kho vết ghi Fleet OS (TSK-K2-08, `services/fleet/trace_collector.py`, proposal §6.4); [`15`](15-target-architecture.md) §3.1.
+- **Cưỡng chế.** Chưa có mã — kho vết ghi Fleet OS (TSK-K2-08, `services/fleet/trace_collector.py`, `docs/architecture/vi/15-target-architecture.md` §3.4); [`15`](15-target-architecture.md) §3.1.
 
 ## 5. Quyết định cho hướng mở rộng (chưa có mã)
 
@@ -212,7 +212,7 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 | Q-53 | Bốn gói nguyên thủy mở rộng (cảm biến, PWM, thị giác, chuyển động) bắt buộc trên cả ba target bậc 1, tuỳ chọn theo bo mạch | Sáu RFC (RFC-0007, RFC-0009 → RFC-0013); thêm bo ESP32-S3 có camera và profile `sim-rpi5` |
 | Q-54 | Thị giác vào gate qua dữ kiện do maker khai; gate khoá ngưỡng tin cậy bằng tiêu chí `numeric` | Không có ngữ nghĩa gate riêng cho thị giác; vết ghi không chứa ảnh thô |
 | Q-55 | NeuroBrain (nay NeuroEdge Lab, Q-71) vào MVP trên cả ba target, phủ bốn gói nguyên thủy | I4a (host) và I5a (chip); thay phần thứ tự NeuroBrain của Q-40 |
-| Q-67 | **Nền tảng mở:** bên thứ ba tự nối NeuroEdge với sản phẩm mới mà không sửa lõi — lõi dùng độc lập, Extension SDK sáu loại điểm cắm, proxy, cơ cấu từ xa, index cộng đồng; bất biến an toàn không đổi (`neuroedge-prd.md` §15; thiết kế `neuroedge-design-open-platform.md`) | Increment I2c làm trước NeuroBrain, I11 gộp vào; RFC-0002 ký, mã RFC-0014 kéo lên, RFC-0016 → RFC-0018 là bản nháp; `source` của tool call thành không gian tên (đảo RFC-0015 §10 câu 11); corpus tuân thủ sang Apache-2.0; nghiệm thu A13; lịch MVP dài thêm (Q-52); [`13`](13-evolution-i0-i18.md), [`16`](16-ecosystem-landscape.md) |
+| Q-67 | **Nền tảng mở:** bên thứ ba tự nối NeuroEdge với sản phẩm mới mà không sửa lõi — lõi dùng độc lập, Extension SDK sáu loại điểm cắm, proxy, cơ cấu từ xa, index cộng đồng; bất biến an toàn không đổi (`neuroedge-prd.md` §15; thiết kế `docs/architecture/vi/16-ecosystem-landscape.md` §4) | Increment I2c làm trước NeuroBrain, I11 gộp vào; RFC-0002 ký, mã RFC-0014 kéo lên, RFC-0016 → RFC-0018 là bản nháp; `source` của tool call thành không gian tên (đảo RFC-0015 §10 câu 11); corpus tuân thủ sang Apache-2.0; nghiệm thu A13; lịch MVP dài thêm (Q-52); [`13`](13-evolution-i0-i18.md), [`16`](16-ecosystem-landscape.md) |
 | Q-71 | **Bối cảnh:** NeuroBrain định tự chạy một vòng LLM để sinh hợp đồng nháp, trong khi người dùng đã có client MCP mạnh hơn (Claude Code, Claude Desktop) và NeuroEdge đã phơi tool qua MCP. **Quyết định:** NeuroEdge Lab — client viết bản nháp qua tool lab; NeuroEdge chấm (`neuroedge lab check`, cùng mã ở tool và Action CI) và cưỡng chế (gate, phong bì, trigger trong runtime); người khoá qua PR. Không vòng LLM riêng; không tool nào khoá chính sách, bật `[lab]` hay trả lời `ask`. Client có shell là bên gọi không tin cậy có quyền ghi tệp: an toàn dựa vào tách quyền thiết bị và nhánh được bảo vệ (`threat_model.md` §2c). | Gói `lab/` thay `brain/`; khối N5 thành tool chấm và render thay vì sinh; bốn task mới (TSK-N0-07, N0-08, N5-06, N6-04); A11 đo trên hai client; không cần RFC trừ khi lược đồ bản nháp vào `schemas/` |
 | Q-72 | **Định vị NeuroEdge Blueprint:** dựng, chạy an toàn, chia sẻ và bán theo ba vòng; agent vận hành chạy liên tục trên máy nhà; duyệt qua chat; `safe_state` khác `off` chỉ trong `board.v1`; giả lập trước ([Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)) | I2d (nhiệm vụ và agent vận hành), I2e (NeuroEdge Blueprint tối thiểu); sáu RFC dự kiến (§6); hình dạng kiến trúc ở §5.1 |
 
@@ -329,7 +329,7 @@ Mỗi RFC dưới đây giải quyết một điểm nghẽn kiến trúc cho c�
 |:---|:---|:---|:---|
 | **RFC-node** | Đặc tả giao thức điều phối đa node trên wire (Zenoh-pico, Q-36), cấu trúc black channel, nhịp tim (heartbeat) kích hoạt an toàn khi đứt kết nối (Q-35), và hợp nhất vết ghi đa node trong `trace.v1` (Q-32) | TSK-W3-02 | I14 |
 | **RFC-pin-extends** | Cho phép ghim kế thừa gate theo băm nội dung `@<ver>#sha256:…` trong `gate.v1`, nâng cấp `digests.lock` thành lockfile cho chuỗi kế thừa; chống tấn công thay thế gate trên Registry công cộng (`TODOS.md` #11, #15) | TSK-S3-21 (I2c, Q-67) | I2c |
-| **RFC visual-evidence gate semantics** | Định nghĩa ngữ nghĩa gate riêng cho bằng chứng thị giác; tới khi có RFC này, thị giác vào gate qua dữ kiện do maker khai và ngưỡng khoá bằng tiêu chí `numeric` (Q-54, `neuroedge-design-phase2.md` §2.2); điều kiện tiên quyết cho gate đa phương thức | TSK-V3-04 | I17 |
+| **RFC visual-evidence gate semantics** | Định nghĩa ngữ nghĩa gate riêng cho bằng chứng thị giác; tới khi có RFC này, thị giác vào gate qua dữ kiện do maker khai và ngưỡng khoá bằng tiêu chí `numeric` (Q-54, `docs/architecture/vi/15-target-architecture.md` §4.4); điều kiện tiên quyết cho gate đa phương thức | TSK-V3-04 | I17 |
 | **RFC mobile-robot safety** | Khung an toàn cho robot di động: giới hạn tốc độ tối đa, vùng cấm di chuyển, chu kỳ gate thời gian thực 10–20 Hz, tích hợp luồng điều khiển ROS 2 / Nav2 (Q-34) và câu hỏi C6 từ người mua robot (Q-38, `TODOS.md` #40) | TSK-W4-07 | I14 |
 | **RFC an toàn có điều kiện** (`planned · Q-72`) | `safe_state` đối xứng cho mọi cơ cấu trong `board.v1`; viết lại câu chữ RFC-0007, RFC-0010, RFC-0018 và Q-62 theo "trở về `safe_state`"; khoá liên động phần cứng cho `safe_state: on`; sau `TODOS.md` #58 (§5.1) | TSK-I2d-02 | I2d |
 | **RFC `mission.v1`** (`planned · Q-72`) | Lược đồ hợp đồng nhiệm vụ, trình biên dịch hạ tầng, bản duyệt ≤ 5 dòng, `llm_budget` ([`07`](07-data-contracts.md) §12.1) | TSK-I2d-04 | I2d |

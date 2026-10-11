@@ -652,7 +652,7 @@ def e10_horizons() -> Diagram:
             ("registry", "Gate Registry and rails", ("OCI store · identity · metering", "sandbox · manifest.v1 · TSK-K3-*"), "external", "planned"),
             ("provider", "Self-hosted provider layer", ("one endpoint · failover · quotas", "TSK-K2-01…03 · Q-28"), "container", "planned"),
             ("signed", "Signed gates on the device", ("verify signature before loading", "TSK-W2-04"), "gate", "planned"),
-            ("boundary", "Core ↔ commercial boundary", ("safety never behind a paid tier", "proposal §6.4 · PRD P-3"), "note", "done"),
+            ("boundary", "Core ↔ commercial boundary", ("safety never behind a paid tier", "chapter 15 §3.4 · PRD P-3"), "note", "done"),
         ]),
         ("h3", "Horizon 3 — extensions after Beta (I13–I18) · chapter 15 §4", "planned", [
             ("portkit", "Community port kit", ("compliance vectors outside the repo", "I13 · Q-13 · on the tiers opened in I2c"), "component", "planned"),

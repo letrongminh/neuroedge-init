@@ -2,7 +2,7 @@
 
 > **Phạm vi:** xương sống an toàn ở mức hàm — một gate đi từ tệp YAML tới một lệnh chân, trên host
 > (Python) và trên chip (C). **Nguồn:** `python/neuroedge/engine/`, `python/neuroedge/actions/`,
-> `python/neuroedge/hal/`, `targets/esp32s3/components/ne_gate/`; quy phạm: proposal Phụ lục B,
+> `python/neuroedge/hal/`, `targets/esp32s3/components/ne_gate/`; quy phạm: `docs/spec/core_contracts.md` Phụ lục B,
 > RFC-0001, 0003, 0004, 0005, 0006.
 
 **Đọc chương này để làm gì:** Dành cho kỹ sư phần mềm và kỹ sư an toàn cần nắm chi tiết đường đi từ tệp gate YAML tới lệnh điều khiển chân phần cứng (C4 L4). Trả lời câu hỏi: gate được phân giải, biên dịch thành cây nhị phân `NETR`, duyệt và cấp token dùng một lần như thế nào trên cả Python lẫn C. Nên đọc [`00`](00-overview.md) và [`03`](03-component-host-c4l3.md) trước, và đọc [`06`](06-runtime-flows.md) sau để xem các luồng lúc chạy.

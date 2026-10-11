@@ -13,7 +13,7 @@
 
 > **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/*.json`, sửa ngữ nghĩa phân giải gate
 > (`engine/gate_resolver.py`, `engine/constraints.py`), đổi bố cục `NETR`. Task: TSK-W1-02.
-> Nguồn: `TODOS.md` #30; bản nháp robot FOFOCA (`roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md`), nay rút về RFC này. Bối cảnh:
+> Nguồn: `TODOS.md` #30; bản nháp robot FOFOCA (`docs/architecture/vi/15-target-architecture.md` §4.3), nay rút về RFC này. Bối cảnh:
 > `neuroedge-prd.md` §15 Q-52, Q-54 (RFC-0012 dựa vào tiêu chí này để khoá ngưỡng độ tin cậy), Q-55, Q-57.
 
 ## 1. Vấn đề
@@ -254,7 +254,7 @@ Firmware đã nạp cây v1 phải được build lại cùng cây v2; theo RFC-
 ## 8. Việc phải làm khi chấp thuận
 
 - [x] Cập nhật `schemas/gate.v1.json` (enum `type`, `unit`, `range`, `max_age_ms` bắt buộc, nhánh `if/then`)
-- [x] Cập nhật Phụ lục B.2/B.5 trong `neuroedge-proposal.md`; FR-GATE-03 ở `neuroedge-prd.md`; ghi chấp thuận vào Q-57 (`neuroedge-prd.md` §15)
+- [x] Cập nhật Phụ lục B.2/B.5 trong `docs/spec/core_contracts.md`; FR-GATE-03 ở `neuroedge-prd.md`; ghi chấp thuận vào Q-57 (`neuroedge-prd.md` §15)
 - [x] Cập nhật `neuroedge-roadmap.md` (TSK-W1-02) và đóng `TODOS.md` #30
 - [x] `engine/constraints.py`, `engine/gate_resolver.py`, `engine/verdict.py` (`value_out_of_range`), `engine/binary_tree.py`, `engine/firmware.py` (`REASONS`), walker C (`ne_walker.h`), `gate explain`
 - [x] Cập nhật `neuroedge gate lint` từ chối tiêu chí `numeric` trong `on_block.confirms` (`GateSchemaError`, `NE2002`)

@@ -39,7 +39,7 @@ MCP có **hai chiều**, và profile phủ cả hai:
 | **A — thiết bị gọi ra** | System 2 của agent (MCP host) | Chính MCP server của agent **và** MCP server bên ngoài | §10 |
 
 Profile là tài sản chuẩn thứ ba của NeuroEdge, cạnh lược đồ gate và lược đồ vết ghi
-(`neuroedge-proposal.md` §1.5).
+(`docs/architecture/vi/16-ecosystem-landscape.md` §6).
 
 ## 1. Phong bì `ToolCall`
 
@@ -59,7 +59,7 @@ cũng là `data` của sự kiện `tool_call` (§7). Phong bì **đóng** (kho�
 | `source` | Nơi phát |
 |:---|:---|
 | `local_grammar` | Câu khớp `commands.toml` → tool call **tổng hợp** (Q-14). Chạy không mạng |
-| `system_one` | Mô hình có cấu trúc (§3.6 proposal) |
+| `system_one` | Mô hình có cấu trúc (PRD §4.3, FR-MDL) |
 | `system_two` | LLM với câu tự do; gọi tool của thiết bị qua kết nối MCP in-process tới chính agent (§10) |
 | `mcp` | Client MCP qua `neuroedge mcp serve`, qua stdio hay qua mạng (§8.1) |
 | `test` | Action CI |

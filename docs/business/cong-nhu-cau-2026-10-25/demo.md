@@ -41,7 +41,7 @@ Nói thẳng nếu bị hỏi. Mỗi dòng dẫn nguồn trong kho.
 | Chạy trên Raspberry Pi thật | `run --target linux` chạy trên line GPIO **ảo** (gpio-sim) trong CI; chưa chạy trên Pi thật | `docs/user/huong-dan.md` §5.1 |
 | So thời gian giữa target | `verify` so **quyết định**, chưa so timing; `esp32s3` chỉ trên QEMU | TSK-S4-04 |
 | Cập nhật firmware qua mạng thật | OTA có ký chỉ chạy trên QEMU; Box-3 chưa có Wi-Fi | `docs/user/nap-firmware.md` §6.5 · `TODOS.md` #50 |
-| Fleet OS (OTA theo đợt, dashboard, tải vết ghi từ xa) | Chưa có dòng mã nào; I9 (sau Beta, nhánh A) | proposal §6 · `TODOS.md` #6 · PRD Q-11 |
+| Fleet OS (OTA theo đợt, dashboard, tải vết ghi từ xa) | Chưa có dòng mã nào; I9 (sau Beta, nhánh A) | `docs/architecture/vi/15-target-architecture.md` §3 · `TODOS.md` #6 · PRD Q-11 |
 | Chứng nhận an toàn chức năng | Không có, không nhắm tới (chưa quyết) | `CEO-T2` |
 | Vết ghi có chữ ký, dùng làm bằng chứng cho bên thứ ba | Không ký | `TODOS.md` #1 |
 | Cài bằng `pip install neuroedge` | Chưa lên PyPI; cài từ mã nguồn | TSK-S3-14 |
@@ -59,7 +59,7 @@ chốt không nhúc nhích và yêu cầu chuyển lễ tân; gate con cho ca đ
 nới; agent bên ngoài gọi qua MCP cũng bị cùng gate chặn.
 
 **Hỗ trợ giả thuyết:** `CEO-X5` (người vận hành villa có trả tiền vì trách nhiệm khi thiết bị sai —
-proposal §7.3) · `CEO-X4` (họ muốn runtime trên thiết bị hay chỉ muốn một bên chịu trách nhiệm) ·
+PRD §14) · `CEO-X4` (họ muốn runtime trên thiết bị hay chỉ muốn một bên chịu trách nhiệm) ·
 C1 (có sự cố khóa/điều khiển phòng thật không).
 
 | Phút | Làm | Nói (một câu) |
@@ -114,7 +114,7 @@ $ ne gate explain gates/unlock_door_night@1.0.0.yaml
 $ ne gate resolve fixtures/gates/invalid/loosens_level.yaml --registry fixtures/gates/registry
 ✗ NE2003 loosens-level@1.0.0 (fixtures/gates/invalid/loosens_level.yaml) -> allow_when.risk_level
   why: loosens the inherited condition: base admits {low}, this gate admits {high, low, medium}
-  rule: Proposal Appendix B.5 principle 2
+  rule: `docs/spec/core_contracts.md` Phụ lục B.5 principle 2
   fix: narrow allow_when.risk_level to a subset of the base condition (base clause: {'lte': 'low'}), …
 [exit 1]
 
@@ -161,7 +161,7 @@ spoken replies need System 2 ([system_two] in agent.toml)` — đừng gõ nó t
 
 ## 2. Fleet Operators — "sự cố ngoài hiện trường, tái hiện trên laptop, và CI bắt thay đổi sai"
 
-Không có Fleet OS để demo. Kịch bản nói về thứ **đã có** và là nền của Fleet OS (proposal §6.2 #5,
+Không có Fleet OS để demo. Kịch bản nói về thứ **đã có** và là nền của Fleet OS (`docs/architecture/vi/15-target-architecture.md` §3.1 #5,
 §1.1 #5): vết ghi một phiên, xem lại, phát lại ra đúng quyết định, và phát lại bắt được một thay đổi
 chính sách làm thiết bị hành động sai.
 
@@ -364,7 +364,7 @@ hoặc mất mạng chưa? Chuyện gì xảy ra sau đó?" · "Nếu đổi chi
 
 ## 4. Industrial IoT — "bơm không chạy khi nắp che mở hoặc quá nhiệt"
 
-Kho **không có** agent công nghiệp mẫu (proposal §1.6 #3 "Industrial Environmental Watcher" chưa
+Kho **không có** agent công nghiệp mẫu (PRD Q-72 #3 "Industrial Environmental Watcher" chưa
 làm). Kịch bản dựng một agent nhỏ từ mẫu `minimal` bằng 5 tệp ở §4.0. Mọi lệnh là lệnh có sẵn; chỉ
 nội dung agent là của demo. Nói rõ điều đó với người xem.
 

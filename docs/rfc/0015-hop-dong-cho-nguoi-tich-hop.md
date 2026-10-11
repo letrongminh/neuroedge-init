@@ -243,7 +243,7 @@ sinh mã từ nó. Chi phí: `CONTRIBUTING.md` §8.1 hàng "Mã lỗi `NE…`" �
 
 | Tệp | `$id` | Quy tắc |
 |:---|:---|:---|
-| `tool-call.v1.json` | `https://schema.neuroedge.dev/tool-call/v1.json` | PRD §10.3 / FR-GOV-02: đường dẫn `/v1`; thêm trường tuỳ chọn hoặc nới `enum` không tăng; đổi tên, bỏ, hoặc siết thì `v2` kèm thời gian chuyển tiếp (proposal §3.8 trụ cột 3) |
+| `tool-call.v1.json` | `https://schema.neuroedge.dev/tool-call/v1.json` | PRD §10.3 / FR-GOV-02: đường dẫn `/v1`; thêm trường tuỳ chọn hoặc nới `enum` không tăng; đổi tên, bỏ, hoặc siết thì `v2` kèm thời gian chuyển tiếp (`docs/architecture/vi/16-ecosystem-landscape.md` §6 trụ cột 3) |
 | `tool-result.v1.json` | `…/tool-result/v1.json` | như trên |
 | `error.v1.json`, `error-codes.v1.json` | `…/error/v1.json`, `…/error-codes/v1.json` | như trên; luật riêng của danh mục ở §3d |
 | `board.v1.json` | không đổi | khoá `schema` ở §3c |

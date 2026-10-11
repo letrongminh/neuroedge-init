@@ -8,7 +8,7 @@
 | **Người đề xuất** | V1 — Kỹ sư lõi nền tảng |
 | **Ngày mở** | 2026-09-22 · thu hẹp phạm vi 2026-09-23 sau review (biên bản: `docs/archive/rfc-0002-review-record.md` (đã xoá; `git show 7626b62:docs/archive/rfc-0002-review-record.md`)) |
 | **Trạng thái** | ✅ Đã chấp thuận (2026-10-04) — kỹ thuật trưởng ký theo Q-67 (quyết định 4); hiện thực trong I2c (§10) |
-| **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc.** RFC không làm gate lỏng hơn, nhưng chạm ba bất biến kiểm thử đang bảo vệ tương đương target (§5), và tiêu chí ra Khối V1a số 1 đòi chữ ký kỹ thuật trưởng (`neuroedge-design-phase2.md`) |
+| **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc.** RFC không làm gate lỏng hơn, nhưng chạm ba bất biến kiểm thử đang bảo vệ tương đương target (§5), và tiêu chí ra Khối V1a số 1 đòi chữ ký kỹ thuật trưởng (`docs/architecture/vi/15-target-architecture.md` §4.4) |
 | **Kiểm chứng** | *(chưa có — thuộc pull request thứ hai, nay ở increment I2c (Q-67; trước đó I11 sau Developer Beta theo Q-40), xem §8 và §10)* |
 
 > **Phạm vi pull request này:** chỉ tệp RFC, **chưa sửa lược đồ**, đúng quy trình
@@ -29,9 +29,8 @@
 
 ## 1. Vấn đề
 
-Giai đoạn 2 (`neuroedge-design-phase2.md`) mở rộng danh mục phần cứng sang Jetson
-(bậc 2), STM32 và RP2350 (bậc 3). Phân tầng bậc đã có đủ trong văn bản — proposal
-§3.2 và Phụ lục D.1, PRD FR-TGT-08 và Q-13 — nhưng lược đồ đã đóng băng không công
+Giai đoạn 2 (`docs/architecture/vi/15-target-architecture.md` §4.4) mở rộng danh mục phần cứng sang Jetson
+(bậc 2), STM32 và RP2350 (bậc 3). Phân tầng bậc đã có đủ trong văn bản — `docs/architecture/vi/00-overview.md` §5.2, PRD FR-TGT-08 và Q-13 — nhưng lược đồ đã đóng băng không công
 nhận ba target mới, và mã nguồn không biết bậc là gì.
 
 ### 1a. Danh sách target là enum đóng ở hai lược đồ
@@ -259,9 +258,9 @@ Không nằm ở lược đồ mà ở **cam kết**. Enum sáu target tạo ấ
 - **Bậc 1** (`sim`, `linux`, `esp32s3`): `neuroedge verify` 100%, nightly hardware, đội lõi bảo trì.
 - **Bậc 2** (`jetson`): đội lõi bảo trì, verify trên miền phán quyết.
 - **Bậc 3** (`stm32`, `rp2350`): cộng đồng tự port, tự kiểm chứng qua Bộ kiểm thử
-  tuân thủ (proposal §3.8 trụ cột 2). **Đội lõi không cam kết.**
+  tuân thủ (`docs/architecture/vi/16-ecosystem-landscape.md` §6 trụ cột 2). **Đội lõi không cam kết.**
 
-Phân tầng này **đã được ghi** vào proposal §3.2, Phụ lục D.1, KPI và PRD FR-TGT-08
+Phân tầng này **đã được ghi** vào `docs/architecture/vi/00-overview.md` §5.2 và PRD FR-TGT-08
 (commit `eddfc59`), nên điều kiện "tài liệu trước, lược đồ sau" đã thỏa. `TARGET_TIERS`
 (§3b) đưa đúng bảng đó vào mã.
 
@@ -305,14 +304,14 @@ một profile bậc 2/3 **thật** đang được viết.
 
 Đã xong trước RFC này (commit `eddfc59`):
 
-- [x] Phân tầng ba bậc ở `neuroedge-proposal.md` §3.2 và Phụ lục D.1
+- [x] Phân tầng ba bậc ở `docs/architecture/vi/00-overview.md` §5.2
 - [x] FR-TGT-08 ở `neuroedge-prd.md` §4.2; Q-13
 - [x] KPI của proposal: ngưỡng `verify` 100% chỉ áp cho bậc 1
 
 Tài liệu (cùng pull request với RFC này):
 
 - [x] Sửa chữ tiêu chí chấp nhận FR-TGT-08: bậc nằm trong `TARGET_TIERS` của mã lõi, `board.toml` không tự khai bậc
-- [x] `neuroedge-design-phase2.md` Khối V1a: bỏ `vision_in` và `vision_ref` khỏi task và tiêu chí ra; chuyển sang V1b
+- [x] `docs/architecture/vi/15-target-architecture.md` §4.4 Khối V1a: bỏ `vision_in` và `vision_ref` khỏi task và tiêu chí ra; chuyển sang V1b
 - [x] `CONTRIBUTING.md`: profile bậc 2/3 cần phần cứng thật
 
 Pull request thứ hai:

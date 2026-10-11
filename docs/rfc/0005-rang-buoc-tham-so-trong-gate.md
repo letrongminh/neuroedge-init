@@ -145,7 +145,7 @@ kiểu của chữ ký. Có nên có chế độ `arguments_closed: true` buộc
 ## 8. Việc phải làm khi chấp thuận
 
 - [x] Cập nhật `schemas/gate.v1.json`
-- [x] Phụ lục B.6 trong `neuroedge-proposal.md` từ "đề xuất" thành chuẩn tắc
+- [x] Phụ lục B.6 trong `docs/spec/core_contracts.md` từ "đề xuất" thành chuẩn tắc
 - [x] `neuroedge-prd.md` FR-ACE-08 thành P0
 - [x] `neuroedge-roadmap.md` TSK-S3-25 ✅ · TSK-S4-02 (walker C đọc khối `arguments` của cây)
 - [x] Resolver, `gate lint`, compiler (`check_gate_arguments`), cây quyết định, engine, `c.do()` (giá trị mặc
