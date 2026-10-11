@@ -7,7 +7,7 @@
 
 **Đọc chương này để làm gì:** Dành cho kỹ sư hệ thống, người duyệt an toàn và QA. Chương này trả lời câu hỏi: *vì sao kiến trúc có hình dạng như hiện tại và quyết định nào định hình từng cơ chế an toàn*. Đọc sau [`00-overview.md`](00-overview.md) và [`01-context-c4l1.md`](01-context-c4l1.md); đọc trước khi đề xuất thay đổi lớn hoặc mở RFC mới tại [`docs/rfc/`](../../rfc/).
 
-Định danh ADR chính là mã `Q-N` hoặc `RFC-NNNN`, để không có hai hệ đánh số. Trạng thái đầy đủ của 46
+Định danh ADR chính là mã `Q-N` hoặc `RFC-NNNN`, để không có hai hệ đánh số. Trạng thái đầy đủ của 72
 quyết định ở PRD §15; dưới đây là những quyết định có hệ quả kiến trúc.
 
 ## 1. Thực thi và an toàn
@@ -55,6 +55,8 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 - **Hệ quả.** Một lời "có" không bao giờ vượt qua tiêu chí khác; model và client MCP không có đường
   xác nhận.
 - **Cưỡng chế.** `actions/confirmation.py`; `test_tool_confirm.py`; `confirm_mask` trong `NETR`.
+- **Sẽ đổi (`planned · Q-72`, I2d).** [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) mở thêm một đường duyệt qua kênh chat đã ghép đôi, bằng bản
+  ghi duyệt có mã — không bằng tin "có" tự do; LLM và nhóm chat vẫn không duyệt được. ADR ở §5.1 dưới đây.
 
 ### Q-17 · Mọi `on_block` đều chặn hành động vật lý
 - **Quyết định.** `escalate` và `ask` còn ghi vết và gọi hook (mặc định không làm gì); `degrade` chạy
@@ -93,6 +95,10 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 - **Quyết định.** Dùng LiteLLM như SDK, luôn sau `neuroedge.models.providers`, chỉ cài qua extra `cloud`.
 - **Hệ quả.** `pip install neuroedge` nhẹ và không cần khoá; không có máy chủ nào do NeuroEdge vận hành.
 - **Cưỡng chế.** `pyproject.toml`; job `cloud-extra`.
+- **Ngoại lệ có giới hạn (`planned · Q-72`).** Relay đám mây tuỳ chọn và Hub index của NeuroEdge
+  Blueprint là thứ NeuroEdge có thể vận hành; cả hai tuỳ chọn, không bao giờ nằm trên đường an toàn,
+  relay không giải mã, và Hub ở MVP chỉ là kho index tĩnh. Ngoài hai thứ đó, câu "không có máy chủ nào
+  do NeuroEdge vận hành" giữ nguyên. ADR ở §5.1.
 
 ### Q-27 · System 2 là một MCP host
 - **Quyết định.** Công cụ thiết bị đi qua máy chủ MCP của chính agent (vẫn qua gate); MCP server bên
@@ -198,7 +204,7 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 | Q-32 | Robot phân tầng sau Developer Beta; vết ghi nhiều node mở rộng `trace.v1` bằng trường tuỳ chọn | Không cần `trace.v2` |
 | Q-33 | **Bối cảnh:** Robot phân tầng cần node phụ trách cơ cấu chấp hành/tay máy độc lập. **Quyết định:** RP2350 là node tham chiếu thứ hai do đội lõi port: HAL C trên Pico SDK (`digital.out`, `sensor.read`), walker và sổ token C99 biên dịch cho ARM, profile bo mạch và runner test bo thật. | Đội lõi gánh thêm một target bảo trì lâu dài; ngoại lệ có chủ đích cho danh mục loại trừ ở PRD §14; bo mạch tham chiếu v1.0 vẫn là Box-3 (Q-2); [`15`](15-target-architecture.md) §4.3 |
 | Q-34 | **Bối cảnh:** Robot di động cần dẫn đường và tránh vật cản, nhưng NeuroEdge không tự phát triển lại SLAM/navigation. **Quyết định:** Tích hợp nguyên bản ROS 2 và Nav2 qua adapter tại ranh giới gate; gate xét duyệt mọi lệnh tốc độ (`cmd_vel`), kể cả khi Nav2 đang tự động dẫn đường. | Thiết lập tầng an toàn robot di động mới (gate chu kỳ 10–20 Hz, vùng cấm); cần RFC an toàn robot di động và khảo sát câu hỏi C6 từ người mua robot (Q-38, `TODOS.md` #40); [`15`](15-target-architecture.md) §4.3 |
-| Q-35 | Mỗi cơ cấu chấp hành tự khai trạng thái an toàn khi mất liên lạc; không khai thì dừng | Cần RFC cho trường khai báo |
+| Q-35 | Mỗi cơ cấu chấp hành tự khai trạng thái an toàn khi mất liên lạc; không khai thì dừng | Cần RFC cho trường khai báo; Q-72 tổng quát hoá thành `safe_state` đối xứng cho mọi cơ cấu (§5.1) |
 | Q-36 | Zenoh-pico trên MCU, `zenohd` trên Pi; spike với ngưỡng đạt/trượt, micro-ROS là phương án B | Bản nháp RFC node |
 | Q-37 | Token thuê có hạn cho `motion.*` (kênh, biên độ tối đa, TTL ngắn), gia hạn qua mỗi lệnh có gate | Khác token dùng-một-lần hôm nay; cần RFC-0011 |
 | Q-40 | **Bối cảnh:** Nhiều hướng mở rộng sau Beta (NeuroBrain, robot phân tầng, thị giác, port cộng đồng) có nguy cơ làm loãng nguồn lực đội lõi nếu không có thứ tự ưu tiên. **Quyết định:** Thứ tự mở rộng sau Beta neo theo phụ thuộc: mở danh sách target (trước là I11, nay gộp vào I2c — Q-67) → bộ port cộng đồng (I13) → robot phân tầng (I14); hệ sinh thái (I18) sau I13 và Registry. *(Sửa 2026-09-30: phần NeuroBrain thay bằng Q-55 — vào MVP ở I4a, I5a; thị giác cơ bản thay bằng Q-53 — vào MVP ở I2a, I3a; I12 và I15 không còn là increment.)* *(Sửa 2026-10-04: I11 gộp vào I2c theo Q-67, làm trước NeuroBrain trong MVP.)* | Bảo vệ đường găng v1.0 và công của V2 (R-7) — nay theo Q-52 bằng cách dời ngày thay vì cắt phạm vi; [`15`](15-target-architecture.md) §4 |
@@ -208,6 +214,89 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 | Q-55 | NeuroBrain (nay NeuroEdge Lab, Q-71) vào MVP trên cả ba target, phủ bốn gói nguyên thủy | I4a (host) và I5a (chip); thay phần thứ tự NeuroBrain của Q-40 |
 | Q-67 | **Nền tảng mở:** bên thứ ba tự nối NeuroEdge với sản phẩm mới mà không sửa lõi — lõi dùng độc lập, Extension SDK sáu loại điểm cắm, proxy, cơ cấu từ xa, index cộng đồng; bất biến an toàn không đổi (`neuroedge-prd.md` §15; thiết kế `neuroedge-design-open-platform.md`) | Increment I2c làm trước NeuroBrain, I11 gộp vào; RFC-0002 ký, mã RFC-0014 kéo lên, RFC-0016 → RFC-0018 là bản nháp; `source` của tool call thành không gian tên (đảo RFC-0015 §10 câu 11); corpus tuân thủ sang Apache-2.0; nghiệm thu A13; lịch MVP dài thêm (Q-52); [`13`](13-evolution-i0-i18.md), [`16`](16-ecosystem-landscape.md) |
 | Q-71 | **Bối cảnh:** NeuroBrain định tự chạy một vòng LLM để sinh hợp đồng nháp, trong khi người dùng đã có client MCP mạnh hơn (Claude Code, Claude Desktop) và NeuroEdge đã phơi tool qua MCP. **Quyết định:** NeuroEdge Lab — client viết bản nháp qua tool lab; NeuroEdge chấm (`neuroedge lab check`, cùng mã ở tool và Action CI) và cưỡng chế (gate, phong bì, trigger trong runtime); người khoá qua PR. Không vòng LLM riêng; không tool nào khoá chính sách, bật `[lab]` hay trả lời `ask`. Client có shell là bên gọi không tin cậy có quyền ghi tệp: an toàn dựa vào tách quyền thiết bị và nhánh được bảo vệ (`threat_model.md` §2c). | Gói `lab/` thay `brain/`; khối N5 thành tool chấm và render thay vì sinh; bốn task mới (TSK-N0-07, N0-08, N5-06, N6-04); A11 đo trên hai client; không cần RFC trừ khi lược đồ bản nháp vào `schemas/` |
+| Q-72 | **Định vị NeuroEdge Blueprint:** dựng, chạy an toàn, chia sẻ và bán theo ba vòng; agent vận hành chạy liên tục trên máy nhà; duyệt qua chat; `safe_state` khác `off` chỉ trong `board.v1`; giả lập trước ([Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)) | I2d (nhiệm vụ và agent vận hành), I2e (NeuroEdge Blueprint tối thiểu); sáu RFC dự kiến (§6); hình dạng kiến trúc ở §5.1 |
+
+### 5.1 Q-72 · Hình dạng kiến trúc của agent vận hành và NeuroEdge Blueprint (`planned · Q-72`)
+
+Chưa có mã cho mục nào dưới đây. Quyết định ở [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định); các mục này ghi nó trông như thế nào trong kiến
+trúc, và chỗ nào cần RFC.
+
+#### Hai tiến trình: runtime tin cậy và LLM worker không tin cậy (I2d)
+- **Bối cảnh.** Agent vận hành chạy 24/7 và giữ cùng lúc quyền GPIO, key LLM của người dùng, token bot
+  chat, và đọc văn bản do người ngoài gửi. Gộp vào một tiến trình thì một prompt injection hay một lỗi
+  parse tin chat có cùng quyền với HAL; kẻ tấn công cùng tiến trình nằm ngoài threat model (`TODOS.md` #2).
+- **Quyết định.** **Runtime tin cậy** (systemd): HAL, gate, thực thi hợp đồng nhiệm vụ, lập lịch, bộ phát
+  hiện tất định, adapter kênh chat và kiểm lời duyệt, cửa ra egress. **LLM worker không tin cậy**: giữ key
+  BYOK, gọi runtime qua MCP cục bộ như một client MCP, nguồn do runtime gán, không bao giờ duyệt. Dùng lại
+  ranh giới của Q-71 (chỉ một tiến trình giữ quyền thiết bị).
+- **Hệ quả.** Worker bị lừa chỉ gửi được lời gọi phải qua gate; thêm một tiến trình phải giám sát và
+  khởi động lại; System 2 in-process hôm nay vẫn giữ nguyên cho phiên lệnh.
+- **Cưỡng chế.** Chưa có mã — [`02`](02-container-c4l2.md), [`03`](03-component-host-c4l3.md) (adapter
+  chat chỉ tới `dispatch()`, không import `hal`).
+
+#### Lời duyệt qua chat là bản ghi duyệt có mã (I2d; sửa Q-26)
+- **Bối cảnh.** `HUMAN_SOURCES = ("local_grammar", "ui")` (`actions/confirmation.py`). Một tin "có" tự do
+  từ chat mơ hồ khi nhiều yêu cầu chờ, phát lại được, và không thấy thay đổi đã bị sửa.
+- **Quyết định.** Sửa đổi mở rộng quyền dữ liệu chỉ duyệt tại chỗ (FR-MSN-14); mọi lời duyệt khác qua
+  chat: runtime phát yêu cầu `{id, nonce, hạn, digest thay đổi, bản duyệt ≤ 5 dòng}`; bản
+  duyệt do trình biên dịch sinh tất định từ diff có cấu trúc, không từ chữ của LLM. Trả lời phải nhắm
+  đúng `id`; runtime kiểm người gửi đã ghép đôi tại chỗ, không phải nhóm, nonce chưa dùng, còn hạn (đồng
+  hồ đơn điệu), digest khớp, rồi mới đưa vào đường xác nhận với nguồn `chat:<id>`.
+- **Hệ quả.** Tài khoản chat bị chiếm là duyệt được thay chủ (rủi ro Q-72 đã chấp nhận); thu hồi, hạn
+  ghép đôi và trần lời duyệt hoãn ở `TODOS.md` #62.
+- **Cưỡng chế.** Chờ RFC nguồn `chat:<id>`; luồng ở [`06`](06-runtime-flows.md) §11.4.
+
+#### `safe_state` đối xứng (I2d; sửa Q-62, Q-35; chờ RFC an toàn có điều kiện)
+- **Bối cảnh.** Mọi bảo đảm thời gian hôm nay hướng về `off` (RFC-0018: "ai làm cơ cấu về `off`"; Q-62
+  miễn gate cho lệnh về phía an toàn). Với máy sục khí, an toàn là *bật*.
+- **Quyết định.** Mọi cơ cấu có `safe_state` khai trong `board.v1` (mặc định `off`); thời lượng,
+  `max_continuous_ms`, lease, L0–L3 và miễn gate của Q-62 nói về "trở về `safe_state`"; hướng *rời*
+  `safe_state` là hướng bị gate và giới hạn. `safe_state: on` hiện thực bằng đấu dây mặc định bật (rơ-le
+  thường đóng) khai làm khoá liên động phần cứng; `safe_state` khác `off` chỉ trong `board.v1`.
+- **Hệ quả.** Không thêm đường nào tránh gate; profile hiện có (`off`; `motion.*` `stop`/`hold`) giữ
+  nguyên hành vi. "Không chắc thì chặn" giữ cho lệnh; thêm: cơ cấu về `safe_state` đã khai. RFC phải viết
+  lại câu chữ của RFC-0007, RFC-0010, RFC-0018 và Q-62; `TODOS.md` #58 sửa trước.
+- **Cưỡng chế.** Chưa có mã — [`07`](07-data-contracts.md) §4, [`05`](05-code-gate-hal-c4l4.md).
+
+#### Vết ghi theo đoạn cho runtime 24/7 (I2d; chờ RFC `trace.v1`)
+- **Bối cảnh.** Một phiên hôm nay ghi một tệp khi đóng; runtime chạy nhiều tháng thì tệp lớn mãi và mất
+  hết khi mất điện.
+- **Quyết định.** Chuỗi đoạn theo thời gian (mỗi ngày hoặc khi vượt cỡ); mỗi đoạn mang trạng thái đầu
+  đoạn (gate digest, sổ token, bộ đếm phong bì, lease) và digest đoạn trước. Giữ 30 ngày; flush khoảng 10
+  giây và ngay khi chặn hay duyệt.
+- **Hệ quả.** Bất biến "một vết ghi mỗi phiên" thành "một phiên một chuỗi vết ghi, mỗi đoạn replay
+  được"; đổi định dạng vết ghi chuẩn mực nên cần RFC.
+- **Cưỡng chế.** Chưa có mã — [`07`](07-data-contracts.md) §7, [`08`](08-nfr.md) §7.
+
+#### Relay tuỳ chọn là ống TLS xuyên (`planned · Q-72`, ngoài I2d/I2e)
+- **Bối cảnh.** Truy cập từ xa và sao lưu mà không mở cổng mạng nhà; Q-10 nói không có máy chủ nào do
+  NeuroEdge vận hành.
+- **Quyết định.** Máy nhà mở kết nối ra relay; relay chọn đích theo SNI, không giải mã (mẫu SniTun của
+  Nabu Casa); sao lưu vết ghi mã hoá phía máy nhà; lời duyệt không qua relay.
+- **Hệ quả.** Relay bị chiếm chỉ chặn được hoặc thấy siêu dữ liệu; relay hỏng thì phần an toàn vẫn chạy.
+  Ngoại lệ có giới hạn cho Q-10 (§2).
+- **Cưỡng chế.** Chưa có mã — [`14`](14-deployment-c4.md).
+
+#### Hub ở MVP là index tĩnh, gói tải bằng URL + digest (I2e)
+- **Bối cảnh.** Gate Registry (OCI/ORAS, `manifest.v1`) là việc của chân trời 2; chưa biết maker có muốn
+  bán NeuroEdge Blueprint không.
+- **Quyết định.** NeuroEdge Blueprint tải bằng URL (git hoặc HTTPS); digest phủ toàn gói; Hub là kho
+  index tĩnh (kiểu index plugin của I2c); bằng chứng ghi "chưa ký"; chuyển sang OCI Registry khi Hub thu
+  tiền.
+- **Hệ quả.** Không có máy chủ NeuroEdge trước cổng nhu cầu 8 tuần; một lần di chuyển sang Registry sau.
+- **Cưỡng chế.** Chờ RFC `blueprint.v1` — [`07`](07-data-contracts.md) §12.2.
+
+#### Luồng dữ liệu chống rò rỉ (I2d; chờ RFC luồng dữ liệu)
+- **Bối cảnh.** Hợp đồng nói dữ liệu nào đi đâu; LLM của người dùng nằm trên cloud; tin chat độc hại có
+  thể dụ worker gửi dữ liệu tới địa chỉ lạ.
+- **Quyết định.** Luật nhằm **chống rò rỉ** (hack, prompt injection, đánh cắp), không hạn chế luồng
+  người dùng tự dựng: mọi đích người dùng khai nhận dữ liệu người dùng cho phép, kể cả ảnh tới LLM. Runtime
+  quyết định worker thấy gì; mạng của worker bị chặn ở mức hệ điều hành chỉ tới endpoint provider đã khai;
+  runtime chỉ gửi ra đích đã khai; đích không khai bị chặn và ghi vết. Luật nội dung ("ảnh không rời nhà")
+  là tuỳ chọn người dùng bật.
+- **Hệ quả.** Rủi ro còn lại ghi rõ: worker bị lừa vẫn gửi được dữ liệu đã cho phép tới đích đã cho phép;
+  thêm bước cấu hình mạng cho worker khi cài.
+- **Cưỡng chế.** Chưa có mã — [`07`](07-data-contracts.md) §12.3, [`08`](08-nfr.md) §2.
 
 ## 6. RFC
 
@@ -242,6 +331,12 @@ Mỗi RFC dưới đây giải quyết một điểm nghẽn kiến trúc cho c�
 | **RFC-pin-extends** | Cho phép ghim kế thừa gate theo băm nội dung `@<ver>#sha256:…` trong `gate.v1`, nâng cấp `digests.lock` thành lockfile cho chuỗi kế thừa; chống tấn công thay thế gate trên Registry công cộng (`TODOS.md` #11, #15) | TSK-S3-21 (I2c, Q-67) | I2c |
 | **RFC visual-evidence gate semantics** | Định nghĩa ngữ nghĩa gate riêng cho bằng chứng thị giác; tới khi có RFC này, thị giác vào gate qua dữ kiện do maker khai và ngưỡng khoá bằng tiêu chí `numeric` (Q-54, `neuroedge-design-phase2.md` §2.2); điều kiện tiên quyết cho gate đa phương thức | TSK-V3-04 | I17 |
 | **RFC mobile-robot safety** | Khung an toàn cho robot di động: giới hạn tốc độ tối đa, vùng cấm di chuyển, chu kỳ gate thời gian thực 10–20 Hz, tích hợp luồng điều khiển ROS 2 / Nav2 (Q-34) và câu hỏi C6 từ người mua robot (Q-38, `TODOS.md` #40) | TSK-W4-07 | I14 |
+| **RFC an toàn có điều kiện** (`planned · Q-72`) | `safe_state` đối xứng cho mọi cơ cấu trong `board.v1`; viết lại câu chữ RFC-0007, RFC-0010, RFC-0018 và Q-62 theo "trở về `safe_state`"; khoá liên động phần cứng cho `safe_state: on`; sau `TODOS.md` #58 (§5.1) | TSK-I2d-02 | I2d |
+| **RFC `mission.v1`** (`planned · Q-72`) | Lược đồ hợp đồng nhiệm vụ, trình biên dịch hạ tầng, bản duyệt ≤ 5 dòng, `llm_budget` ([`07`](07-data-contracts.md) §12.1) | TSK-I2d-04 | I2d |
+| **RFC luồng dữ liệu** (`planned · Q-72`) | Khai báo đích dữ liệu và cửa ra egress chống rò rỉ ([`07`](07-data-contracts.md) §12.3) | TSK-I2d-10 | I2d |
+| **RFC nguồn `chat:<id>` và bản ghi duyệt** (`planned · Q-72`) | Nguồn chat theo văn phạm RFC-0017, bản ghi duyệt và đường xác nhận ([`07`](07-data-contracts.md) §12.4) | TSK-I2d-11 | I2d |
+| **RFC đoạn vết ghi `trace.v1`** (`planned · Q-72`) | Chuỗi đoạn, trạng thái đầu đoạn, digest đoạn trước ([`07`](07-data-contracts.md) §7) | TSK-I2d-13 | I2d |
+| **RFC `blueprint.v1`** (`planned · Q-72`) | Gói NeuroEdge Blueprint, digest toàn gói, index tĩnh, quan hệ với `manifest.v1` ([`07`](07-data-contracts.md) §12.2) | TSK-I2e-01 | I2e |
 
 ## 7. Ra một quyết định kiến trúc mới
 

@@ -48,6 +48,19 @@ thiết bị hay gọi model nào.
 (`linux`, ví dụ Raspberry Pi 5) và trên chip ESP32-S3 (`esp32s3`, bo mạch ESP32-S3-BOX-3), không rẽ
 nhánh logic theo môi trường.
 
+**Hướng đi: ba vòng — đề xuất, chưa có mã.** Từ Q-72 (PRD §15), NeuroEdge hướng tới là nơi biến ý định
+thành sản phẩm vật lý có AI. Mọi điều trong bảng dưới **chưa chạy được** hôm nay; phần còn lại của tài
+liệu này chỉ mô tả cái đã có. Tiến độ: [`trang-thai.md`](trang-thai.md) (increment I2d, I2e).
+
+| Vòng | Người dùng làm gì | Dựa trên phần đã có |
+|:---|:---|:---|
+| ① **Dựng** | Nói với Claude (hay client MCP khác) "tôi muốn trông bể cá"; được gợi ý kit, sinh firmware, thử trên `sim` trước khi mua, nạp, nối kênh chat | Gate, `sim`, kit mẫu; NeuroEdge Lab vòng ① (I2d, chưa có) |
+| ② **Chạy** | Giao một *hợp đồng nhiệm vụ* bằng lời; *agent vận hành* chạy liên tục trên máy nhà, phản xạ tại chỗ, tự báo xu hướng và đề xuất qua Telegram; người duyệt ngay trong chat | Gate, phong bì, vết ghi; LLM của người dùng (BYOK) |
+| ③ **Chia sẻ, bán** | Đóng gói thành một **NeuroEdge Blueprint** (kit, firmware, hợp đồng mẫu, bộ phát hiện, vết ghi làm bằng chứng); người khác cài bằng một lệnh | `digests.lock`, vết ghi và `replay` |
+
+Từ ngữ (agent vận hành, hợp đồng nhiệm vụ, Blueprint…): [`thuat-ngu.md`](thuat-ngu.md) §4. Đề xuất đầy đủ:
+[`proposal-blueprint-2026-10-11.md`](../business/proposal-blueprint-2026-10-11.md).
+
 > **NeuroEdge không phải chức năng an toàn được chứng nhận** — không có mức SIL (IEC 61508) hay PL
 > (ISO 13849), hai chuẩn chứng nhận an toàn chức năng. Gate không thay thế
 > nút dừng khẩn cấp hay khoá liên động phần cứng. Sản phẩm đang ở giai đoạn phát triển nội bộ, chưa

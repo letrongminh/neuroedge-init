@@ -672,7 +672,7 @@ def render() -> str:
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NeuroEdge — Dashboard sản phẩm</title><style>{CSS}</style></head><body><main>
 <header class="top"><div><h1>NeuroEdge</h1>
-<p class="tagline">Hợp đồng vào Physical AI — không hợp đồng, không hành động.</p></div>
+<p class="tagline">Nơi biến ý định thành sản phẩm vật lý có AI — dựng, chạy an toàn, chia sẻ và bán (Q-72).</p></div>
 <span class="stamp">Dashboard cho CPO · số liệu tới {vn_date(updated)}</span></header>
 {hero}
 {journey}

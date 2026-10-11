@@ -65,6 +65,8 @@ cũng là `data` của sự kiện `tool_call` (§7). Phong bì **đóng** (kho�
 | `test` | Action CI |
 | `bridge:<id>` | Một bridge đã nạp (Muse, Home Assistant…): lõi gán từ id đã đăng ký của bridge, bên trong `Dispatcher`; bridge không có chỗ nào để nói nguồn (RFC-0017 §3b) |
 | `mcp:<client>` | Client MCP qua mạng đã được người vận hành đặt nhãn, từ `sub` của token đã xác thực (RFC-0017 §3c) — văn phạm đã nhận; nhãn client **chưa** được gán (TSK-I2c-10 nửa (b)), nên mọi client mạng hôm nay vẫn là `mcp` |
+| `chat:<id>` | *planned · Q-72 (I2d), chờ RFC nguồn `chat:<id>`.* Một tài khoản chat đã ghép đôi tại chỗ. **Chỉ** có nguồn này khi runtime đã kiểm một bản ghi duyệt hợp lệ (§6); **không bao giờ** gán chỉ vì có kết nối từ nền tảng chat — tin chat thường là dữ liệu cho LLM worker, không phải lời gọi của người |
+| *(nguồn của LLM worker)* | *planned · Q-72 (I2d), tên chốt ở RFC.* Kết nối MCP cục bộ của LLM worker — tiến trình không tin cậy giữ key BYOK của agent vận hành. Runtime gán theo kết nối, như `mcp`; không thuộc `HUMAN_SOURCES` |
 
 **Văn phạm của `source`** (RFC-0017 §3a): một trong năm tên dựng sẵn ở trên, hoặc `bridge:<id>` / `mcp:<client>` với
 `<id>` khớp `[a-z][a-z0-9_]{0,31}` (mẫu `SOURCE_ID` ở `actions/tools.py`; `source` dài tối đa 39 ký tự). Họ khác ⇒
@@ -177,6 +179,11 @@ allow_when: call_source in ["local_grammar", "system_one"]   # MCP không mở �
 
 Nguồn **gắn theo kết nối**, do runtime tạo kết nối đó: `neuroedge mcp serve` là `mcp`, kể cả qua mạng (`--http`, §8.1); kết nối in-process của System 2 là `system_two` (`build_server(session, source=...)`). Một bridge nhận nguồn `bridge:<id>` từ id nó được đăng ký lúc nạp.
 
+*Planned · Q-72 (I2d), chờ RFC.* Agent vận hành thêm hai kết nối, cùng luật "gắn theo kết nối": LLM worker gọi
+runtime qua MCP cục bộ và nhận nguồn của worker do runtime gán; adapter kênh chat nằm trong runtime, và nguồn
+`chat:<id>` chỉ xuất hiện ở đường bản ghi duyệt (§6), không bao giờ gắn cho cả kết nối tới nền tảng chat. Tên dựng
+sẵn mới hay họ mới vẫn cần RFC như mọi nguồn khác.
+
 Một lời gọi qua mạng hôm nay là `mcp`: stdio và mạng cùng một máy chủ, cùng một đường tới gate, nên gate chưa phân biệt được hai cửa. Phân biệt theo thiết bị là nhãn `mcp:<client>` do người vận hành đặt có chủ ý (RFC-0017 §3c, nửa (b), chưa làm); thiết bị chưa đặt nhãn vẫn là `mcp`. Thêm một họ hay tên dựng sẵn cho `call_source` vẫn cần RFC (`CONTRIBUTING.md` §3).
 
 **Đăng ký id.** `dispatch()` chỉ nhận `bridge:<id>` / `mcp:<client>` đã đăng ký trên `Conversation` của phiên
@@ -243,6 +250,21 @@ một mô hình gửi `{"call_source": "local_grammar"}` bị `REJECTED` ở bư
 Trên `sim`: REPL — gõ `có` / `không` (hoặc `:confirm` / `:decline`); UI — banner *Thiết bị
 hỏi xác nhận* với nút Đồng ý / Huỷ và thời gian còn lại (`POST /confirm`, cùng nguồn gốc).
 
+**Đường bản ghi duyệt qua kênh chat — planned · Q-72 (I2d), chờ RFC nguồn `chat:<id>`.** Q-72 mở rộng Q-26: người
+duyệt được qua kênh chat đã ghép đôi, cả câu hỏi `ask` lẫn sửa đổi hợp đồng nhiệm vụ, trừ sửa đổi mở rộng quyền dữ liệu (chỉ duyệt tại chỗ,
+FR-MSN-14); LLM vẫn không bao giờ duyệt.
+Thiết kế đã chốt ở rà soát kiến trúc theo Q-72 (2026-10-11), chưa có mã — `HUMAN_SOURCES` hôm nay vẫn chỉ là
+`local_grammar` và `ui`:
+
+- Runtime gửi tới chat đã ghép đôi một **bản ghi duyệt** `{id, nonce, hạn, digest thay đổi, bản duyệt ≤ 5 dòng}`.
+  Bản duyệt do runtime và trình biên dịch sinh tất định từ diff có cấu trúc, không từ chữ của LLM.
+- Trả lời phải nhắm đúng `id` (nút bấm hoặc mã). Runtime kiểm: người gửi đã ghép đôi, không phải nhóm, nonce chưa
+  dùng, còn hạn theo đồng hồ đơn điệu, digest khớp thay đổi đem áp.
+- Đủ cả năm thì lời duyệt vào **đúng đường xác nhận ở trên** với nguồn `chat:<id>`: gate lượng giá lại, chỉ tiêu
+  chí trong `confirms` coi như đạt. Thiếu một điều ⇒ từ chối và ghi vết, không bao giờ hỏi LLM.
+- Ghép đôi làm tại chỗ; thu hồi, hạn ghép đôi và trần số lời duyệt hoãn ở `TODOS.md` #62. Mối đe doạ:
+  `threat_model.md` §2e.
+
 ## 7. Vết ghi
 
 Đây là danh mục **duy nhất** của sự kiện tool call, xác nhận, MCP host, System 2, model cloud
@@ -271,8 +293,22 @@ Câu thiết bị nói ghi ở `tts_stream_start` (simulation_coverage §3); ngu
 `reply_source` của lượt (vd `gate_ask`, `confirmed`, `offline_help` — §10 quy tắc 5; danh sách đủ ở
 `Turn.reply_source`, `python/neuroedge/sim/session.py`).
 
+**Sự kiện dự kiến — planned · Q-72 (I2d, I2e).** Chưa có mã phát các sự kiện dưới đây; tên họ sự kiện là
+hướng đã chốt ở rà soát kiến trúc 2026-10-11, còn tên đầy đủ và dữ liệu chốt ở RFC của từng phần. Khi có mã, mỗi
+dòng thay bằng tên và dữ liệu thật, cột "Có từ" ghi task.
+
+| Sự kiện | Ý nghĩa | Có từ |
+|:---|:---|:---|
+| `mission_*` | Vòng đời hợp đồng nhiệm vụ: nháp, hỏi lại, biên dịch và kiểm mâu thuẫn, khoá, hết hạn | planned · Q-72, RFC `mission.v1` |
+| `detector_fired` | Bộ phát hiện tất định bắn sự kiện (ngưỡng, xu hướng, cảm biến đứng im) — chỉ sau đó mới gọi LLM | planned · Q-72 |
+| `llm_budget_*` | Trần chi phí LLM của hợp đồng: dùng, gần hết, hết — hết thì phản xạ và cảnh báo mẫu cứng vẫn chạy | planned · Q-72 |
+| `chat_in` · `chat_out` | Tin vào từ và ra tới kênh chat đã ghép đôi | planned · Q-72 |
+| `approval_*` | Bản ghi duyệt (§6): yêu cầu, được duyệt, bị từ chối (người gửi lạ, nhóm, nonce đã dùng, hết hạn, digest lệch), hết hạn | planned · Q-72, RFC nguồn `chat:<id>` |
+| `egress_blocked` | Runtime hoặc mạng của LLM worker chặn một lần gửi tới đích không khai | planned · Q-72, RFC luồng dữ liệu |
+| `segment_*` | Ranh giới đoạn vết ghi của runtime 24/7: mỗi đoạn mang trạng thái đầu đoạn và digest đoạn trước | planned · Q-72, RFC đoạn vết ghi `trace.v1` |
+
 Trường `type` của sự kiện trong `trace.v1` là chuỗi mở, nên thêm sự kiện **không** cần
-RFC. Replay (`testing/player.py`) tính lại từng lần lượng giá gate từ `gate_facts` đã
+RFC; riêng `segment_*` đổi cách cắt vết ghi chuẩn mực nên cần RFC. Replay (`testing/player.py`) tính lại từng lần lượng giá gate từ `gate_facts` đã
 ghi — kể cả `call_source` — nên một lời gọi từ LLM replay tất định mà không hỏi lại mô
 hình. Lời gọi `REJECTED` không tới gate nên không có trong phán quyết replay.
 

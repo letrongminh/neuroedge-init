@@ -32,6 +32,22 @@ bản gói.
 
 #### Đã thêm
 
+- **Tài liệu sản phẩm và kiến trúc theo Q-72 — đủ trước khi triển khai.** PRD 1.6: định vị NeuroEdge
+  Blueprint, người dùng đầu là maker (U1, U5 micro-OEM, U8, U9), hành trình bể cá ba vòng, nhóm yêu cầu mới
+  FR-MSN, FR-AGT, FR-CH, FR-EGR, FR-BP, FR-TRC-11…13, FR-CLI-13…15, NFR chi phí LLM, chống rò rỉ, bảo mật
+  chat/BYOK/Blueprint, tiêu chí A14–A22 và cổng nhu cầu B6–B8 (đảo Q-56). Roadmap: increment **I2d — Nhiệm vụ
+  và agent vận hành** (TSK-I2d-01…19; dời 14 task Lab N0/N1/N5/N6 từ I4a) và **I2e — NeuroEdge Blueprint tối
+  thiểu** (TSK-I2e-01…11; TSK-I6-04 dời vào); cổng 8 tuần sau khi chốt, ngày 2026-12-06; thoại, Studio, một phần I2c tạm
+  dừng, không cắt; mốc 5 thành "Dựng và chạy bằng hội thoại, chia sẻ Blueprint". Kiến trúc vi/en (00, 01, 02,
+  03, 05, 06, 07, 08, 09, 13, 14, 15, 16): thiết kế đích đã chốt ở rà soát kiến trúc — runtime tin cậy 24/7 và
+  LLM worker không tin cậy, lời duyệt qua chat bằng bản ghi duyệt có mã, `safe_state` đối xứng, vết ghi theo
+  đoạn giữ 30 ngày, relay TLS xuyên không giải mã, Hub là index tĩnh có digest toàn gói, luồng dữ liệu chống
+  rò rỉ — mọi phần mang nhãn `planned · Q-72`; hình E-01, E-02, E-08, E-09, E-10, E-11 sinh lại; test mới
+  `test_every_box_that_cites_an_increment_agrees_with_the_roadmap` (ô hình khớp roadmap §0.2 cả hai chiều).
+  Threat model §2e–§2j; `tool_calling.md` (nguồn `chat:<id>`, sự kiện dự kiến), `extension_sdk.md`; proposal
+  5.9 và ghi chú thiết kế (nền tảng mở, Giai đoạn 2, Lab, FOFOCA); thuật ngữ; bộ phỏng vấn cổng nhu cầu thêm
+  phân khúc maker (MK1–MK10, mã chấm M-SELL, M-PROACT, M-BYOK, M-KIT); trang đối tác (ngoài đợt thử);
+  `TODOS.md` đổi mốc #1, #2, #3, #6, #19, #20, #21, #25, #34, #44, #48, #58, #60; CHANGELOG §3.3 #2 ghi chú Q-72.
 - **Q-72 — định vị Blueprint: từ một câu nói tới một sản phẩm vật lý có AI.** NeuroEdge đổi định vị sang ba vòng —
   dựng (client MCP, Q-71), chạy (agent vận hành mới: hợp đồng nhiệm vụ, bộ phát hiện, LLM của người dùng có trần chi
   phí, báo chủ động qua kênh chat), chia sẻ và bán (Blueprint, Hub) — với maker toàn cầu là người dùng đầu và bể cá là
@@ -1403,6 +1419,9 @@ này sẽ làm hỏng những thứ trông không liên quan.
    một gate chưa phân giải được thì chưa được nạp lên thiết bị.
 2. **Fail-closed là mặc định ở mọi hướng.** Vắng `fail` → `closed`. Gate cha
    `fail: open` + gate con im lặng → `closed`. Không đo được → `INCONCLUSIVE`.
+   *Q-72 (chờ RFC an toàn có điều kiện, TSK-I2d-02):* vẫn đúng cho **lệnh**; khi suy
+   giảm, cơ cấu về `safe_state` khai trong `board.v1` (mặc định `off`), không mặc
+   nhiên về `off`.
 3. **`allow_when` dạng chuỗi CEL không được xuất hiện trong chuỗi kế thừa.**
    Không chứng minh được phép siết chặt → từ chối.
 4. **Phân giải gate là hàm thuần khiết** — không đồng hồ, không mạng, không ngẫu

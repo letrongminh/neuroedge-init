@@ -7,6 +7,7 @@ lint (no overlapping boxes, no text wider than its box, no arrow to a missing bo
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import re
 import subprocess
@@ -29,6 +30,49 @@ def test_the_posters_match_their_model() -> None:
         "Run: python3 scripts/gen_architecture_diagrams.py\n"
         f"{result.stdout}{result.stderr}"
     )
+
+
+# An increment code written in a box ("I2d", "I9 · I10"), never part of a task id ("TSK-I2-01") or of a
+# word such as I2C or I2S.
+INCREMENT_CODE = re.compile(r"(?<![\w-])I\d+[a-z]?(?![\w-])")
+
+
+def _poster_model():
+    path = REPO_ROOT / "scripts" / "gen_architecture_diagrams.py"
+    spec = importlib.util.spec_from_file_location("gen_architecture_diagrams", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_every_box_that_cites_an_increment_agrees_with_the_roadmap() -> None:
+    """
+    A box that names increments is "done" exactly when every one of them is ✅ in roadmap §0.2:
+    a poster never draws as built what is not (D11), and never leaves a finished increment dashed
+    (D15). A box whose increments are all ✅ may stay "partial" (◐): the badge says out loud that
+    only part of it is in code, for instance a board that has not arrived.
+    """
+    gen = _poster_model()
+    done = {inc for inc, _forecast, _progress, glyph in gen._roadmap_matrix() if glyph == "✅"}
+    wrong = []
+    for make in gen.DIAGRAMS:
+        d = make()
+        for b in d.boxes:
+            cited = set(INCREMENT_CODE.findall(" ".join((b.title, *b.lines))))
+            if not cited:
+                continue
+            where = f"{d.id}/{b.id} cites {', '.join(sorted(cited))}"
+            if cited - set(gen.INCREMENTS):
+                wrong.append(f"{where}: no such increment {sorted(cited - set(gen.INCREMENTS))}")
+            elif not cited <= done and b.status == "done":
+                wrong.append(
+                    f"{where}: drawn done, but {sorted(cited - done)} not ✅ in roadmap §0.2"
+                )
+            elif cited <= done and b.status == "planned":
+                wrong.append(
+                    f"{where}: all ✅ in roadmap §0.2, still drawn planned (use done, or partial ◐)"
+                )
+    assert not wrong, "box status disagrees with roadmap §0.2:\n  " + "\n  ".join(wrong)
 
 
 def test_every_excalidraw_file_is_a_real_drawing() -> None:

@@ -2,7 +2,7 @@
 
 ## Perception thị giác và phủ rộng phần cứng
 
-> **Tạm dừng theo Q-72 (2026-10-11).** Blueprint đầu tiên (bể cá) đi trước; chiều sâu thị giác và `jetson` chờ sau cổng nhu cầu 8 tuần. Không xoá: thiết kế ở đây vẫn giữ. Chỗ nói "người dùng cuối không trả tiền" và Marketplace ngoài phạm vi đã được Q-72 sửa.
+> **Tạm dừng theo Q-72 (2026-10-11).** Blueprint đầu tiên (bể cá) đi trước; chiều sâu thị giác và `jetson` chờ sau cổng nhu cầu 8 tuần. Không xoá: thiết kế ở đây vẫn giữ. Chỗ nói "người dùng cuối không trả tiền", AURA và Marketplace ngoài phạm vi đã sửa theo Q-72 (phần đầu, §3, §9.2, §10, §11).
 
 > **Ghi chú thiết kế.** Tệp này giữ định vị, nguyên tắc, ranh giới với tầng an toàn và
 > thiết kế từng khối của Giai đoạn 2. Nó **không** có lịch, trạng thái, tiêu chí ra, thang
@@ -14,13 +14,13 @@
 > Beta), **Q-53** (bốn gói nguyên thủy, gồm thị giác, vào v1.0), **Q-54** (thị giác trong
 > gate), **Q-33** (đội lõi port RP2350 làm node robot), **Q-34** (tích hợp ROS 2/Nav2).
 
-**Cập nhật:** 2026-09-25 · lịch sử thay đổi: `CHANGELOG.md`
+**Cập nhật:** 2026-10-11 (Q-72) · lịch sử thay đổi: `CHANGELOG.md`
 
 **Tài liệu nguồn:** `neuroedge-proposal.md` §8.9 · `neuroedge-prd.md` · `docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md`
 
 **Phạm vi:** Khối V1a · V1b · V2 · V3 · P1 · P2
 
-**Ngoài phạm vi:** Khối 4 (AURA thực địa) và Khối 5 (Marketplace) — nằm ngoài roadmap (`neuroedge-roadmap.md` §8.1) và proposal §8. Giai đoạn 2 không thay thế chúng.
+**Ngoài phạm vi:** Khối 4 (AURA thực địa, tạm dừng cùng thoại theo Q-72) và Khối 5 — nay là Blueprint Hub có thu phí, chỉ mở sau cổng nhu cầu 8 tuần (Q-72; proposal §8.7, §8.8). Giai đoạn 2 không thay thế chúng.
 
 ---
 
@@ -109,7 +109,7 @@ Hợp đồng chi tiết (`vision_ref`, cửa sổ khung được ghi, danh tín
 
 ## 3. Giả định nguồn lực
 
-Giai đoạn 2 **không được rút người khỏi Khối 4 (AURA)**. AURA mang dòng tiền dự án sớm cho tổ chức — nằm ngoài mô hình nền tảng (proposal §6.3) — đồng thời là nguồn dữ liệu PF-3 cho chính thị giác.
+AURA (Khối 4) tạm dừng cùng thoại theo Q-72, nên không còn là dòng tiền dự án sớm hay nguồn dữ liệu PF-3 cho thị giác; khi Giai đoạn 2 mở lại sau cổng nhu cầu 8 tuần, nguồn PF-3 là người dùng NeuroEdge Blueprint (proposal §6.3, §8.8).
 
 V5 (kỹ sư thị giác) là vai trò tuyển mới. Thị giác trên `sim`, `linux` và `esp32s3` nay nằm trong MVP (Q-53) và roadmap lập kế hoạch với giả định đủ người cho mọi vai trò (Q-52); riêng danh sách target đã mở (V1a) vẫn có giá trị độc lập, vì cộng đồng port được bậc 3 mà không cần V5.
 
@@ -181,7 +181,7 @@ Phân biệt này quyết định việc khối có vượt được bộ lọc 
 
 **Hai ranh giới của P2:**
 
-- **Không làm marketplace riêng.** Việc thương mại hóa trao đổi tài sản thuộc **Khối 5** (proposal §8.8) và chỉ kích hoạt sau cột mốc G1–G4. P2 chỉ làm phần miễn phí.
+- **Không làm marketplace riêng.** Việc thương mại hóa trao đổi tài sản thuộc **Khối 5** — Blueprint Hub có thu phí (proposal §8.8) — và chỉ kích hoạt sau cổng nhu cầu 8 tuần của Q-72 (proposal §8.7), không còn chờ G1–G4. P2 chỉ làm phần miễn phí.
 - **Chứng nhận không thu phí và không bảo chứng.** Chương trình chứng nhận **có thu phí** vẫn ở trạng thái Chặn tại PRD §14. NeuroEdge công bố kết quả bộ kiểm thử do bên đóng góp tự chạy, không đứng ra bảo đảm chất lượng bo mạch bên thứ ba — tránh nghĩa vụ pháp lý mà tổ chức chưa đủ quy trình để gánh.
 
 → Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I18 (§7.8); MCP qua mạng (TSK-P2-04) ở I6 (§4.7, Q-58); MCP cho MCU qua gateway (TSK-P2-05) ở I14 (§7.4).
@@ -194,7 +194,7 @@ Bộ V-G1 đến V-G5 — ngưỡng chuẩn tắc ở proposal §12.4. Ba chỉ 
 
 | # | Chỉ số | Vì sao then chốt |
 |:---:|:---|:---|
-| **V-G1** *(vế hai)* | Thiết bị vision thuộc đội có gói Fleet trả phí | Đây là chỗ Giai đoạn 2 dễ đi sai nhất. Usecase consumer thu hút người dùng, nhưng **người dùng cuối không trả tiền** — sau khi bỏ doanh thu inference, nền tảng chỉ thu từ license thương mại và Fleet (Q-45), và cả hai đều đến từ doanh nghiệp. Một hộ gia đình hai camera dùng lõi miễn phí, không mua license hay gói Fleet. Nếu tăng trưởng thiết bị không nối được vào fleet trả phí, Giai đoạn 2 tăng chi phí vận hành mà không tăng doanh thu |
+| **V-G1** *(vế hai)* | Thiết bị vision thuộc đội có gói Fleet trả phí | Đây là chỗ Giai đoạn 2 dễ đi sai nhất. Một hộ gia đình hai camera dùng lõi miễn phí (PolyForm NC, Q-45) và tự trả LLM (BYOK). Theo Q-72, tiền không đến từ người dùng cuối mà đi qua người tạo sản phẩm: hoa hồng kit khi họ mua phần cứng, relay tuỳ chọn, giấy phép theo thiết bị khi maker bán thiết bị, chia doanh thu khi NeuroEdge Blueprint được bán; Fleet về sau (proposal §6.3). Nếu tăng trưởng thiết bị thị giác không nối được vào một trong các dòng đó, Giai đoạn 2 tăng chi phí vận hành mà không tăng doanh thu |
 | **V-G3** | Tỷ lệ thiết bị chạy tài sản của bên khác | Đo thứ không mua được bằng marketing: người dùng có tin nhau đủ để chạy mã của nhau không |
 | **V-G5** | Adapter và bản port cộng đồng | Kiểm chứng trực tiếp mệnh đề nền tảng cho maker |
 
@@ -208,7 +208,7 @@ Bộ V-G1 đến V-G5 — ngưỡng chuẩn tắc ở proposal §12.4. Ba chỉ 
 | **2** | Phủ rộng phần cứng làm loãng chất lượng bậc 1 | Trung bình | Kiểm thử hằng đêm trên `esp32s3` thất bại thường xuyên hơn; hỗ trợ bậc 3 chiếm quá 10% thời gian đội lõi | Ứng phó chung: PRD R-7. Riêng Giai đoạn 2: tiêu chí ra 3 của I16 (`neuroedge-roadmap.md` §7.6) là cổng chặn |
 | **3** | Không tuyển được V5 | Cao | Chưa có người khi I2a sắp mở | Roadmap lập kế hoạch với giả định đủ người (Q-52); thiếu V5 thì MVP dời ngày, không cắt phạm vi. Riêng V2, V3 (I16, I17): dừng sau V1a. Danh sách target đã mở vẫn giữ nguyên giá trị cho cộng đồng port bậc 3 |
 | **4** | Mô hình thị giác phi xác định làm loãng mệnh đề an toàn | Cao | Xuất hiện đề xuất cho gate lượng giá trực tiếp trên đầu ra model | Ràng buộc §2.2 của tài liệu này: kết quả thị giác phải quy về `bool` / `level` / `choice` trước khi tới gate. Rule engine giữ nguyên 100% xác định |
-| **5** | Tăng người dùng mà không tăng doanh thu | Cao | V-G1 vế một đạt nhưng vế hai không đạt | Xem §10. Nếu sau I16 tỷ lệ này vẫn thấp, xem lại giả định consumer-first thay vì tiếp tục đổ nguồn lực |
+| **5** | Tăng người dùng mà không tăng doanh thu | Cao | V-G1 vế một đạt nhưng vế hai không đạt | Xem §10. Nếu sau I16 tỷ lệ này vẫn thấp, xem lại hướng thị giác thay vì tiếp tục đổ nguồn lực — Q-72 đã đổi giả định consumer-first thành maker-first: người tạo sản phẩm trả tiền qua giấy phép theo thiết bị và Blueprint |
 | **6** | RFC-0002 bị bác | Trung bình | Phản biện tập trung vào việc thu hẹp ba bất biến kiểm thử theo bậc | V2 và P1 dừng; V1b không bị ảnh hưởng (nguyên thủy thị giác đi qua RFC riêng). Đây là lý do RFC-0002 phải đối chất trực diện với tuyên bố `v2` của RFC-0001, không né |
 
 ---

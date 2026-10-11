@@ -45,6 +45,10 @@ Nói thẳng nếu bị hỏi. Mỗi dòng dẫn nguồn trong kho.
 | Chứng nhận an toàn chức năng | Không có, không nhắm tới (chưa quyết) | `CEO-T2` |
 | Vết ghi có chữ ký, dùng làm bằng chứng cho bên thứ ba | Không ký | `TODOS.md` #1 |
 | Cài bằng `pip install neuroedge` | Chưa lên PyPI; cài từ mã nguồn | TSK-S3-14 |
+| NeuroEdge Blueprint (`blueprint pack`/`install`, kit bể cá) | Chưa có dòng mã nào; hướng đã chốt ở Q-72, dự kiến I2e. **Khác** Blueprint của Home Assistant | PRD Q-72 · `docs/business/proposal-blueprint-2026-10-11.md` |
+| Blueprint Hub, chợ bán Blueprint | Chưa có; ở MVP dự kiến chỉ là một index tĩnh, chưa thu tiền | PRD Q-72 |
+| Báo và duyệt qua Telegram (hay kênh chat khác) | Chưa có adapter chat nào; hôm nay chỉ người tại thiết bị trả lời được câu hỏi `ask` (`local_grammar`, `ui`) | PRD Q-26, Q-72 · `docs/spec/tool_calling.md` §6 |
+| Agent vận hành chạy 24/7, tự báo xu hướng và đề xuất | Chưa có; hôm nay không có tiến trình nền nào chạy mãi, mọi thứ sống trong lệnh đang chạy | PRD Q-72 · dự kiến I2d |
 
 ---
 

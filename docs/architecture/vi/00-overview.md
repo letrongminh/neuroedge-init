@@ -21,6 +21,15 @@ token đó mở được đúng các chân phần cứng của hành động đ�
 được ghi vào một **vết ghi** ([trace](../../user/thuat-ngu.md)) phát lại được. Cùng một gate chạy trên trình mô phỏng (`sim`), trên
 Linux (`linux`) và trên chip ESP32-S3 (`esp32s3`).
 
+**Hướng đã chốt, chưa có mã (`planned · Q-72`).** [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) đặt lõi trên vào ba vòng: ① **dựng** —
+client MCP người dùng đang có viết hợp đồng qua NeuroEdge Lab (Q-71); ② **chạy** — một *agent vận
+hành* chạy liên tục trên máy nhà, thực thi **hợp đồng nhiệm vụ** và báo, hỏi duyệt qua kênh chat
+(I2d); ③ **chia sẻ, bán** — một **NeuroEdge Blueprint** gói kit, firmware, hợp đồng mẫu, bộ phát hiện
+và vết ghi làm bằng chứng, cài bằng một lệnh (I2e). NeuroEdge Blueprint khác **Home Assistant
+Blueprint** (mẫu automation chia sẻ qua Blueprint Exchange); một NeuroEdge Blueprint có thể mang kèm
+một HA blueprint trong gói. Gate và hợp đồng là lớp niềm tin của cả ba vòng; mọi đường mới vẫn đi
+qua xương sống dưới đây.
+
 ### 1.1 Tinh thần sản phẩm — sáu lời hứa
 
 **Không hợp đồng, không hành động.** Mỗi lời hứa dưới đây là một điều người dùng cảm nhận được, và mỗi
@@ -35,6 +44,14 @@ lời hứa có một cơ chế kiến trúc giữ nó. Khi một quyết địn
 | 4 | **Bằng chứng thay cho lời hứa.** Mọi sự cố tái hiện được trên máy lập trình viên | Mọi dữ kiện, phán quyết, lệnh chân vào vết ghi; replay tính lại không gọi model ([`06`](06-runtime-flows.md) §7) | `neuroedge replay`, `gate explain`, Action CI trong PR |
 | 5 | **Người giữ quyền cuối.** Model và agent khác không tự xác nhận thay người; nhưng cũng không ai xác nhận thay một số đo vật lý | `ask` chỉ người trên thiết bị trả lời được (Q-26); bản nháp do client MCP viết qua NeuroEdge Lab phải có người duyệt, không tool nào khoá được (Q-71); tiêu chí số bị cấm trong `confirms` (Q-62) | Câu hỏi xác nhận trên trang `--ui`, bằng giọng nói hay nút bấm |
 | 6 | **Cắm vào stack của người khác, không ôm cả stack.** NeuroEdge là lớp hợp đồng, không phải một nền tảng khép kín | MCP là cửa gọi vào; model và giọng nói là provider thay được (P-4); lược đồ, đặc tả, bộ kiểm tuân thủ theo Apache-2.0 (Q-45); MCP qua mạng có xác thực ở mốc ra mắt (Q-58) | Claude, Home Assistant hay agent framework gọi thiết bị qua gate |
+
+**Sẽ đổi theo Q-72 (chờ RFC an toàn có điều kiện, `planned · Q-72`, I2d).** Lời hứa 2: "trạng thái
+an toàn" thành **`safe_state` khai trong `board.v1`** cho từng cơ cấu (mặc định `off`; khác `off` chỉ
+khi đấu dây mặc định bật, ví dụ rơ-le thường đóng, khai làm khoá liên động phần cứng). Lệnh vẫn
+"không chắc thì chặn"; chỉ hướng **về** `safe_state` luôn được phép, hướng **rời** `safe_state` mới bị
+gate và giới hạn. Profile hiện có (`off`; `motion.*` `stop`/`hold`) giữ nguyên hành vi. Lời hứa 5: người
+duyệt được cả qua kênh chat đã ghép đôi bằng **bản ghi duyệt** có mã một lần, hạn và digest của đúng
+thay đổi; LLM và nhóm chat không bao giờ duyệt ([`01`](01-context-c4l1.md) §4). Quyết định: [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định).
 
 Sản phẩm lớn lên qua mười mốc phát hành theo người dùng (roadmap §0.5); kiến trúc của từng mốc và cách
 mỗi mốc chứng minh lại sáu lời hứa ở [`13`](13-evolution-i0-i18.md).
@@ -112,6 +129,14 @@ Khi hai đặc tính xung đột, đặc tính đứng trên thắng. Mỗi dòn
 | 6 | **Chạy được khi mất mạng** | Chức năng an toàn không cần Internet | Ngữ pháp lệnh cục bộ là fallback của mọi model; lõi chỉ dùng thư viện chuẩn cho HTTP | [`06`](06-runtime-flows.md) §5 |
 | 7 | **Vừa chip nhỏ** | Gate chạy trên ESP32-S3 | Không JSON, không CEL trên chip; cây nhị phân `NETR` đọc tại chỗ trong flash; walker không cấp phát, stack ≤ 512 B | [`04`](04-component-device-c4l3.md) |
 
+**Đặc tính 1 sẽ đổi theo Q-72 (chờ RFC, `planned · Q-72`, I2d).** "Mọi lỗi đều dẫn tới chặn" vẫn đúng
+cho **lệnh**. Thêm một vế cho **cơ cấu**: khi lỗi, hết hạn, mất liên lạc hay runtime chết, cơ cấu trở
+về `safe_state` đã khai trong `board.v1`, không nhất thiết là `off`. Thời lượng, `max_continuous_ms`,
+lease, mức L0–L3 (RFC-0018) và miễn gate của Q-62 đều đọc là "trở về `safe_state`" ([`05`](05-code-gate-hal-c4l4.md) §5).
+Đặc tính 6 gặp thêm một nguồn mất mạng: agent vận hành mất LLM, kênh chat hay relay thì phản xạ,
+bộ phát hiện tất định và cảnh báo mẫu cứng vẫn chạy ([`06`](06-runtime-flows.md)). Bất biến gốc:
+`CHANGELOG.md` §3.3.
+
 ## 5. Hình dạng hệ thống
 
 NeuroEdge có ba phần, cộng với chuỗi CI giữ chúng khớp nhau:
@@ -122,9 +147,12 @@ NeuroEdge có ba phần, cộng với chuỗi CI giữ chúng khớp nhau:
 | **Firmware `esp32s3`** | Walker `NETR`, sổ token, vết ghi UART, component sinh cho agent, OTA có ký | C99 trên ESP-IDF v5.4 | `partial` — chạy trên QEMU; chưa điều khiển chân |
 | **Hợp đồng dữ liệu** | `gate.v1`, `trace.v1`, `board.v1`, `agent.toml`, `NETR` v1, dòng UART | JSON Schema, TOML, nhị phân | `done`, đóng băng qua RFC |
 | **CI** | Test Python, gpio-sim, QEMU, ảnh golden, OTA, bảo mật | GitHub Actions | `done` |
+| **Agent vận hành** (máy nhà) | Hai tiến trình: **runtime tin cậy** chạy 24/7 (HAL, gate, hợp đồng nhiệm vụ, lập lịch, bộ phát hiện tất định, adapter kênh chat và kiểm lời duyệt, cửa ra dữ liệu) và **LLM worker không tin cậy** (giữ key BYOK, gọi runtime qua MCP cục bộ, không bao giờ duyệt) — [`02`](02-container-c4l2.md) §3 | Python | `planned · Q-72` (I2d) |
+| **NeuroEdge Blueprint** | Gói kit + firmware + hợp đồng mẫu + bộ phát hiện + vết ghi bằng chứng; `blueprint pack`/`install` tải bằng URL và kiểm digest toàn gói; Hub là kho index tĩnh | Tệp, git/HTTPS | `planned · Q-72` (I2e) |
 
 Hai phần không có mã hôm nay và chỉ xuất hiện ở trạng thái `planned`: **Fleet OS** (I9) và **Gate
-Registry** (I10). Mọi thứ quy hoạch khác (bốn gói nguyên thủy mở rộng, NeuroEdge Lab qua MCP, robot nhiều node, thị giác trên Jetson) ở
+Registry** (I10). Q-72 thêm ba phần `planned` ở bảng trên và ngoài máy: agent vận hành (I2d), NeuroEdge
+Blueprint với Hub index (I2e), và relay đám mây tuỳ chọn (`planned · Q-72`, ngoài I2d/I2e). Mọi thứ quy hoạch khác (bốn gói nguyên thủy mở rộng, NeuroEdge Lab qua MCP, robot nhiều node, thị giác trên Jetson) ở
 [`13`](13-evolution-i0-i18.md).
 
 ### 5.1 Mô hình logic năm lớp
@@ -178,7 +206,9 @@ Bảng dưới là ảnh chụp hình dạng, không phải bảng tiến độ;
   đe doạ trong phạm vi là **bỏ qua gate do nhầm lẫn**, và điều đó được chứng minh bằng test
   (`docs/spec/threat_model.md` §3, `TODOS.md` #2).
 - **Không phải dịch vụ đám mây.** Hôm nay NeuroEdge là một thư viện, một CLI và một firmware; không
-  có máy chủ nào do NeuroEdge vận hành.
+  có máy chủ nào do NeuroEdge vận hành. *Sẽ đổi theo Q-72 (`planned · Q-72`):* hai ngoại lệ tuỳ chọn,
+  không bao giờ nằm trên đường an toàn — relay chỉ chuyển TLS theo SNI, không giải mã; Hub index là
+  kho git tĩnh ([`09`](09-adr.md)).
 - **Không bán lại token suy luận** ([`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) §6.4; PRD §1.4 N4). Lớp trừu tượng provider là self-host thuộc lõi; người dùng tự vận hành và trả tiền trực tiếp cho nhà cung cấp mô hình.
 - **Không tự làm SLAM hay điều hướng** — chỉ gate lệnh vận tốc qua ROS 2 / Nav2 ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, Q-34).
 - **Không có sàn giao dịch trả phí (paid marketplace)** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-3).

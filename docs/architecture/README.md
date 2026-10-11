@@ -6,6 +6,12 @@ từ bức tranh lớn xuống tới từng byte: bối cảnh (C4 L1) → conta
 cách hệ thống sẽ lớn lên. *This suite describes NeuroEdge's structure and behaviour as it exists
 on `main`, from the big picture down to the byte.*
 
+Thiết kế chưa có mã cũng được ghi tại chỗ trong từng góc nhìn, nhưng luôn mang nhãn `planned` — phần
+của định vị Blueprint ghi `planned · Q-72` kèm increment (I2d, I2e) — và vẽ nét đứt trong hình, nên
+người đọc luôn tách được cái đang có trên `main` với cái mới quy hoạch. *Planned design is written
+in place in each view, always labelled `planned` (`planned · Q-72` plus its increment for the
+Blueprint positioning) and dashed in figures.*
+
 > **Tiếng Việt là bản gốc; English is a mirror.** Hai cây `vi/` và `en/` có cùng tệp, cùng cấu
 > trúc mục và cùng sơ đồ. Nhãn trong sơ đồ viết bằng tiếng Anh để một bộ hình dùng chung cho cả
 > hai cây. *The Vietnamese tree is authoritative; the English tree mirrors it file for file.*
@@ -40,7 +46,7 @@ on `main`, from the big picture down to the byte.*
 | [`12-dev-quickstart.md`](vi/12-dev-quickstart.md) | Ngày đầu: cài, chạy, đọc mã, sửa lần đầu | Guide |
 | [`13-evolution-i0-i18.md`](vi/13-evolution-i0-i18.md) | Kiến trúc qua mười mốc phát hành theo người dùng, những gì không đổi, điểm mở rộng · Architecture across the ten user-facing release milestones | Evolution |
 | [`14-deployment-c4.md`](vi/14-deployment-c4.md) | Chạy ở đâu: máy dev, CI, gpio-sim, QEMU, Pi, Box-3 | C4 Deployment |
-| [`15-target-architecture.md`](vi/15-target-architecture.md) | Kiến trúc mục tiêu theo chân trời (H1 v1.0, H2 v1.1, H3 sau Beta) · Target architecture by horizon | C4 To-be · Horizons |
+| [`15-target-architecture.md`](vi/15-target-architecture.md) | Kiến trúc mục tiêu theo chân trời (H1 v1.0, H2 v1.1, H3 sau Beta) và dải Q-72 (agent vận hành, NeuroEdge Blueprint) · Target architecture by horizon and the Q-72 band | C4 To-be · Horizons |
 | [`16-ecosystem-landscape.md`](vi/16-ecosystem-landscape.md) | Bức tranh hệ sinh thái, các bên tham gia, tài sản chia sẻ và mô hình thương mại · Ecosystem landscape | C4 System Landscape |
 
 Bản tiếng Anh: cùng tên tệp trong [`en/`](en/). *English: same file names under [`en/`](en/).*

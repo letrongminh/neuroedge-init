@@ -1,13 +1,15 @@
 # NeuroEdge — Product Requirements Document
 
-## NeuroEdge — Hợp đồng vào Physical AI
+## NeuroEdge — Nơi biến ý định thành sản phẩm vật lý có AI: dựng, chạy an toàn, chia sẻ và bán
 
-**Phiên bản PRD:** 1.5
-**Ngày phát hành:** 1 tháng 10, 2026 — bề mặt tích hợp vào MVP, giấy phép, mô hình vận hành (Q-58 → Q-62)
+*Lớp niềm tin: không hợp đồng, không hành động — LLM nghĩ, luật cứng giữ (Q-30, Q-72).*
+
+**Phiên bản PRD:** 1.6
+**Ngày phát hành:** 11 tháng 10, 2026 — định vị Blueprint: hợp đồng nhiệm vụ, agent vận hành, kênh chat, NeuroEdge Blueprint, an toàn có điều kiện, cổng nhu cầu 8 tuần (Q-72)
 **Tài liệu nguồn:** `neuroedge-proposal.md` · định vị Blueprint (Q-72): `docs/business/proposal-blueprint-2026-10-11.md`
 **Trạng thái:** Bản thảo chờ phê duyệt kỹ thuật
 **Lịch sử thay đổi:** `CHANGELOG.md` — tài liệu này chỉ mô tả hiện trạng.
-**Đối tượng sử dụng:** Kỹ sư phát triển · Quản lý kỹ thuật · QA · Kỹ thuật viên tài liệu · Đối tác OEM
+**Đối tượng sử dụng:** Kỹ sư phát triển · Quản lý kỹ thuật · QA · Kỹ thuật viên tài liệu · Maker và micro-OEM bán NeuroEdge Blueprint · Đối tác OEM
 
 **Phạm vi tài liệu:** Yêu cầu chức năng và phi chức năng · Tiêu chí nghiệm thu · Đặc tả giao diện dữ liệu · Kế hoạch phát hành theo cột mốc · Hệ chỉ số và yêu cầu đo đạc
 **Ngoài phạm vi:** Luận điểm chiến lược · Phân tích cạnh tranh · Mô hình tài chính (xem tài liệu nguồn)
@@ -43,7 +45,7 @@
 
 ## Quy ước tài liệu
 
-Mọi mã và ký hiệu dùng trong tài liệu này (`FR-*`, `NFR-*`, `P0`–`P2`, `A1`–`C8`, `Q-N`, `PF-N`, `R-N`, `U`/`J`, `§x.y`…) được giải mã ở **[`docs/user/thuat-ngu.md`](../docs/user/thuat-ngu.md)** — nơi duy nhất, kèm chỗ định nghĩa đầy đủ.
+Mọi mã và ký hiệu dùng trong tài liệu này (`FR-*`, `NFR-*`, `P0`–`P2`, `A1`–`A22`, `B1`–`B8`, `C1`–`C8`, `Q-N`, `PF-N`, `R-N`, `U`/`J`, `§x.y`…) được giải mã ở **[`docs/user/thuat-ngu.md`](../docs/user/thuat-ngu.md)** — nơi duy nhất, kèm chỗ định nghĩa đầy đủ.
 
 Từ khóa **BẮT BUỘC**, **NÊN**, **CÓ THỂ** được hiểu theo nghĩa của RFC 2119.
 
@@ -55,28 +57,40 @@ Từ khóa **BẮT BUỘC**, **NÊN**, **CÓ THỂ** được hiểu theo nghĩa
 
 Chưa có công cụ nào kiểm thử được hành vi vật lý của AI agent **trước khi** thiết bị vận hành ngoài hiện trường. Khi một agent vật lý ra quyết định sai, động cơ đã quay, rơ-le đã đóng, chốt cửa đã mở — các tác động này là bất khả nghịch. Một trợ lý giọng nói trong nhà trộn cả hai loại hành vi trong một cuộc trò chuyện: câu trả lời từ knowledge base hay bản tin sai thì sửa được, còn tắt đèn khi vẫn còn người trên cầu thang thì không — sản phẩm phải tách hai đường đó ra (proposal §0.2).
 
-Ba câu hỏi mà công cụ hiện tại không trả lời được:
+Q-72 mở rộng bài toán từ một lệnh tới cả vòng đời của một thiết bị có AI. Người muốn có thiết bị đó gặp ba rào cản: **dựng** (từ ý định tới kit, đấu dây, firmware, gate là việc của chuyên gia nhúng), **chạy** (giao nhiệm vụ bằng lời, có thứ trông thiết bị cả ngày, chủ động báo khi có chuyện, mà hoá đơn LLM vẫn đoán trước được) và **bán** (maker dựng xong một thiết bị chạy tốt nhưng không có cách đóng gói nó thành sản phẩm cho người khác). Rào cản lớn nhất của việc bán là **khoảng trống niềm tin**: người mua là người lạ, không đọc mã, nên cần bằng chứng thiết bị vẫn an toàn khi AI sai — gate trên MCU, hợp đồng chỉ người khoá, vết ghi phát lại được. Lớp hợp đồng hiện có trả lời đúng câu đó; Q-72 biến nó thành giấy thông hành cho việc chia sẻ và bán, không còn là sản phẩm đứng riêng.
+
+Sáu câu hỏi mà công cụ hiện tại không trả lời được:
 
 | # | Câu hỏi | Yêu cầu đáp ứng |
 |:---:|:---|:---|
 | 1 | Sau khi đổi prompt, agent còn từ chối mở khóa cho người chưa xác thực không? | §6 — Action CI với mẫu chuẩn Golden Reference |
 | 2 | Khi đổi mô hình AI, phán quyết gate và tín hiệu GPIO có bị hồi quy không? | §6 — Assert trên phán quyết gate, không assert trên văn bản LLM |
 | 3 | Cùng đầu vào, các môi trường có cho cùng phán quyết không? | §4 — Nguyên tắc tương đương môi trường |
+| 4 | Tôi nói "trông bể cá giúp tôi" — làm sao ra một thiết bị chạy được mà không phải biết firmware? | §5.4 — hợp đồng nhiệm vụ (FR-MSN); §7.1 — kit và NeuroEdge Lab (FR-DX-09, FR-DX-10) |
+| 5 | Ai trông thiết bị cả ngày, báo tôi khi có xu hướng lạ, mà hoá đơn LLM không vượt mức tôi đặt? | §4.5 — agent vận hành (FR-AGT); §5.5 — kênh chat (FR-CH) |
+| 6 | Làm sao bán một thiết bị AI cho người lạ khi chứng minh được nó an toàn khi AI sai? | §7.4 — NeuroEdge Blueprint (FR-BP); §8.4 — dòng thu |
 
 ### 1.2 Tuyên ngôn sản phẩm
 
-> **NeuroEdge — Hợp đồng vào Physical AI.** Không hợp đồng, không hành động: mọi hành động vật lý của AI agent (chốt cửa, rơ-le, van, đèn) muốn ra thế giới thực đều phải qua một **hợp đồng an toàn có kiểu, có phiên bản** — lớp bảo vệ gần nhất đứng ngay trên 5 nguyên thủy HAL. Hợp đồng được kiểm thử tự động trong CI bằng replay + assert trên phán quyết gate và trạng thái chân, và thực thi nhất quán trên mọi môi trường — từ laptop lập trình viên tới vi điều khiển biên $5.
+> **NeuroEdge — nơi biến ý định thành sản phẩm vật lý có AI: dựng, chạy an toàn, chia sẻ và bán** *(Q-72)*. Ba vòng: ① **dựng** — từ một câu nói tới kit, firmware, gate, chạy thử trên `sim`; ② **chạy** — agent vận hành thực thi hợp đồng nhiệm vụ cả ngày, phản xạ ngay trên thiết bị, chủ động báo và đề xuất qua kênh chat; ③ **chia sẻ và bán** — gói thành NeuroEdge Blueprint có bằng chứng, người khác cài bằng một lệnh. **LLM nghĩ, luật cứng giữ.**
+>
+> **Lớp niềm tin — "Hợp đồng vào Physical AI" (Q-30).** Không hợp đồng, không hành động: mọi hành động vật lý của AI agent (chốt cửa, rơ-le, van, đèn) muốn ra thế giới thực đều phải qua một **hợp đồng an toàn có kiểu, có phiên bản** — lớp bảo vệ gần nhất đứng ngay trên 5 nguyên thủy HAL. Hợp đồng được kiểm thử tự động trong CI bằng replay + assert trên phán quyết gate và trạng thái chân, và thực thi nhất quán trên mọi môi trường — từ laptop lập trình viên tới vi điều khiển biên $5. Lớp này là thứ cho phép người lạ tin một thiết bị AI do maker khác dựng.
 
 ### 1.3 Mục tiêu sản phẩm
 
+Thứ tự theo Q-72: **M7 → M8 → M9** (Blueprint đầu tiên đi trọn ba vòng trên giả lập) đi trước; M1 → M4 và M6 giữ nguyên; **M5** (đội thiết bị lớn) đi sau cổng nhu cầu 8 tuần. Không mục tiêu nào bị bỏ (Q-52 không cắt phạm vi).
+
 | # | Mục tiêu | Chỉ số nghiệm thu |
 |:---:|:---|:---|
+| **M7** | Một câu nói thành một thiết bị chạy được, có hợp đồng *(Q-72)* | Từ câu "tôi muốn trông bể cá" tới hợp đồng nhiệm vụ đã duyệt chạy trên `sim`: hợp đồng mâu thuẫn bị từ chối trước khi duyệt, 100% lệnh vi phạm bị chặn (A15, A17) |
+| **M8** | Agent vận hành chạy cả ngày, chủ động báo, chi phí LLM có trần *(Q-72)* | Kịch bản 30 ngày tua nhanh: ít nhất một phát hiện xu hướng đúng, chi phí LLM < 2 USD; mất mạng hay mất LLM thì phản xạ vẫn giữ (A16, A19) |
+| **M9** | NeuroEdge Blueprint cài được bằng một lệnh, và có người muốn bán nó *(Q-72)* | Người ngoài đội cài Blueprint trên máy sạch và chạy trên `sim` trong < 10 phút (A14); ≥ 1 maker muốn đóng gói và bán Blueprint của mình (B8) |
 | **M1** | Lập trình viên lạ chạy được agent có gate mà không cần mua phần cứng | TTFV trung vị < 10 phút trên 10 người dùng độc lập |
 | **M2** | Mọi hành động vật lý đều đi qua một hợp đồng kiểm thử được | 100% lệnh actuator bị chặn nếu thiếu gate hợp lệ |
 | **M3** | Cùng một mã nguồn agent chạy nhất quán trên mọi môi trường | `neuroedge verify` đạt 100% trên các target bậc 1: `sim`, `linux`, `esp32s3` |
 | **M4** | Sự cố hiện trường tái hiện được trên máy lập trình viên | Tải vết ghi và replay thành công bằng một lệnh |
-| **M5** | Đội vận hành cập nhật firmware quy mô lớn không mất thiết bị | 1.000 thiết bị / 0 sự cố brick |
 | **M6** | Bên thứ ba tự nối NeuroEdge với một sản phẩm hay hệ sinh thái mới mà không sửa lõi, không chờ đội lõi *(Q-67)* | Một bridge cho hệ sinh thái chưa từng có, viết ở kho riêng chỉ từ tài liệu công khai, qua bộ test tuân thủ trong **≤ 1 ngày**; che một MCP server sẵn có trong **≤ 3 lệnh** (A13) |
+| **M5** | Đội vận hành cập nhật firmware quy mô lớn không mất thiết bị *(sau cổng 8 tuần — Q-72)* | 1.000 thiết bị / 0 sự cố brick |
 
 ### 1.4 Phi mục tiêu
 
@@ -85,7 +99,8 @@ Ba câu hỏi mà công cụ hiện tại không trả lời được:
 | **N1** | Không trở thành nhà cung cấp mô hình AI | Mô hình là thành phần thay thế được (§0.4 nguyên tắc 4) |
 | **N2** | Không cạnh tranh độ sâu driver một dòng chip | Nhường cho SDK chính hãng (§10.3) |
 | **N3** | Không theo đuổi độ phủ phần cứng rộng ở giai đoạn đầu | Ba môi trường bậc 1 đủ chứng minh tương đương. Từ Giai đoạn 2, độ phủ mở rộng qua phân tầng bậc (FR-TGT-08) chứ không qua việc đội lõi ôm thêm bo mạch (§9) |
-| **N4** | Không bán lại token suy luận như nguồn biên lợi nhuận chính | Biên mỏng, cạnh tranh trực tiếp với model vendor (§0.4 nguyên tắc 3) |
+| **N4** | Không bán lại token suy luận như nguồn biên lợi nhuận chính | Biên mỏng, cạnh tranh trực tiếp với model vendor (§0.4 nguyên tắc 3). Q-72 giữ nguyên: người dùng tự trả LLM bằng key của mình (BYOK) |
+| **N5** | Không là lớp bảo vệ an toàn duy nhất, không là chức năng an toàn được chứng nhận | Bảo vệ khỏi nguy hiểm (cháy, quá dòng, chạy khô) luôn do phần cứng — cầu chì nhiệt, rơ-le quá dòng, công tắc phao; NeuroEdge giữ thiết bị tiếp tục làm việc khi mất não và gọi người khi phải chọn giữa hai điều xấu (Q-38, Q-72) |
 
 ### 1.5 Năm nguyên tắc thiết kế bất biến
 
@@ -93,11 +108,11 @@ Mọi yêu cầu trong tài liệu này phải tuân thủ năm nguyên tắc sa
 
 | # | Nguyên tắc | Hệ quả kỹ thuật ràng buộc |
 |:---:|:---|:---|
-| **P-1** | Hành động vật lý là hợp đồng chuẩn kiểu, không phải lời gọi hàm tự do | HAL từ chối mọi lệnh actuator thiếu chữ ký gate đã pass. Mọi đường từ ngôn ngữ tới hành động — giọng nói offline, LLM, client MCP — là một **tool call có kiểu** đi qua cùng gate (Q-24, `docs/spec/tool_calling.md`) |
+| **P-1** | Hành động vật lý là hợp đồng chuẩn kiểu, không phải lời gọi hàm tự do | HAL từ chối mọi lệnh actuator thiếu chữ ký gate đã pass. Mọi đường từ ngôn ngữ tới hành động — giọng nói offline, LLM, client MCP, kênh chat, LLM worker của agent vận hành — là một **tool call có kiểu** đi qua cùng gate (Q-24, `docs/spec/tool_calling.md`). Ngoại lệ duy nhất là lệnh **về phía an toàn** (Q-62). *Chờ RFC an toàn có điều kiện (Q-72):* "phía an toàn" là `safe_state` của cơ cấu khai trong `board.v1` (mặc định `off`), không phải luôn là tắt; hướng *rời* `safe_state` là hướng bị gate và giới hạn, nên ngoại lệ vẫn đối xứng và không mở đường tắt mới |
 | **P-2** | Các môi trường thực thi ngang hàng | Không được rẽ nhánh logic theo target trong mã nguồn agent. Mức cam kết kiểm chứng phân theo ba bậc target (FR-TGT-08); hệ quả kỹ thuật này áp dụng như nhau ở mọi bậc |
-| **P-3** | Giá trị tập trung ở quản trị đội thiết bị và license thương mại | Người dùng phi thương mại có toàn bộ lõi miễn phí; với doanh nghiệp, tính năng an toàn cốt lõi luôn nằm trong license thương mại, không bao giờ bị tách thành gói trả thêm (Q-45) |
+| **P-3** | Giá trị tập trung ở người tạo sản phẩm: dựng, bán và vận hành thiết bị *(sửa bởi Q-72)* | Người dùng phi thương mại có toàn bộ lõi miễn phí; bán NeuroEdge Blueprint hay thiết bị là dùng thương mại (Q-45). Dòng thu trước: hoa hồng kit (liên kết, chưa giữ kho), chia doanh thu Blueprint, giấy phép thương mại theo thiết bị, relay đám mây tuỳ chọn; Fleet OS đi sau (§8). Với doanh nghiệp, tính năng an toàn cốt lõi luôn nằm trong license thương mại, không bao giờ bị tách thành gói trả thêm; không dòng thu nào nằm trên đường an toàn |
 | **P-4** | Mô hình AI là thành phần thay thế được — cloud-first, provider-pluggable | Mọi truy cập mô hình đi qua interface `SystemOne` / `SystemTwo`; chuẩn kết nối mặc định là OpenAI API, provider không tương thích đi qua adapter tự viết; ASR và TTS cũng là provider thay thế được. Phần nặng xử lý ngôn ngữ chạy trên cloud/host, `esp32s3` chỉ thu/phát âm thanh và thẩm định gate |
-| **P-5** | Hiệu ứng mạng từ chia sẻ chính sách an toàn và thành phần mở rộng | Gate là tệp dữ liệu có phiên bản, chia sẻ và kế thừa được. Adapter kết nối nhà cung cấp và bản port HAL là loại tài sản chia sẻ thứ hai; chúng là mã thực thi nên đi kèm cổng kiểm soát riêng — Bộ kiểm thử tuân thủ, sandbox phân quyền và đối chiếu năng lực lúc build. Từ Q-67, mọi đường nối với bên ngoài là một điểm cắm của Extension SDK (FR-EXT): bên thứ ba tự nối mà không sửa lõi, còn bất biến an toàn không đổi |
+| **P-5** | Hiệu ứng mạng từ chia sẻ chính sách an toàn và thành phần mở rộng | Gate là tệp dữ liệu có phiên bản, chia sẻ và kế thừa được. Adapter kết nối nhà cung cấp và bản port HAL là loại tài sản chia sẻ thứ hai; chúng là mã thực thi nên đi kèm cổng kiểm soát riêng — Bộ kiểm thử tuân thủ, sandbox phân quyền và đối chiếu năng lực lúc build. Từ Q-67, mọi đường nối với bên ngoài là một điểm cắm của Extension SDK (FR-EXT): bên thứ ba tự nối mà không sửa lõi, còn bất biến an toàn không đổi. Từ Q-72, tài sản chia sẻ chính là **NeuroEdge Blueprint** (FR-BP): người dựng tạo Blueprint → người dùng cài → dữ liệu vận hành chia sẻ **có đồng ý** làm bộ phát hiện tốt hơn → Blueprint tốt hơn → thêm người dùng, thêm người dựng |
 
 ---
 
@@ -105,29 +120,51 @@ Mọi yêu cầu trong tài liệu này phải tuân thủ năm nguyên tắc sa
 
 ### 2.1 Nhóm người dùng mục tiêu
 
+Theo Q-72, thị trường đầu là **cộng đồng maker toàn cầu quanh Home Assistant và ESPHome** (U1), rồi maker thành nhà sản xuất nhỏ (U5); U2 và U3 lùi xuống phụ. Mã giữ nguyên, chỉ đổi nội dung và ưu tiên.
+
 | Mã | Nhóm | Bối cảnh | Nhu cầu cốt lõi | Ưu tiên |
 |:---:|:---|:---|:---|:---:|
-| **U1** | **Kỹ sư sáng chế độc lập (Maker)** | Làm thiết bị đầu tiên, chưa có phần cứng trong tay | Chạy thử ngay, không rào cản, không tài khoản | Chính |
-| **U2** | **Trưởng nhóm kỹ thuật nhúng** | Đội 3–10 người, chuẩn bị đưa sản phẩm vào sản xuất | Kiểm thử an toàn tự động, chuyển board không viết lại mã | Chính |
-| **U3** | **Kỹ sư vận hành đội thiết bị (Fleet Ops)** | Quản lý 100–10.000 thiết bị đã lắp đặt | Cập nhật an toàn, chẩn đoán từ xa, không mất thiết bị | Chính (từ v1.1) |
+| **U1** | **Maker trong cộng đồng Home Assistant / ESPHome toàn cầu** | Có ý định ("trông bể cá", "tưới theo nhu cầu cây"), thường chưa có phần cứng trong tay; đã quen Home Assistant, ESPHome, hỏi Claude cách dựng | Từ một câu nói tới thiết bị chạy được; chạy thử trên giả lập trước khi mua; giao nhiệm vụ bằng lời, được báo qua kênh chat; không rào cản, không tài khoản trong mười phút đầu | **Chính — thị trường đầu (Q-72)** |
+| **U2** | **Trưởng nhóm kỹ thuật nhúng** | Đội 3–10 người, chuẩn bị đưa sản phẩm vào sản xuất | Kiểm thử an toàn tự động, chuyển board không viết lại mã | Phụ *(từ Q-72; trước đó Chính)* |
+| **U3** | **Kỹ sư vận hành đội thiết bị (Fleet Ops)** | Quản lý 100–10.000 thiết bị đã lắp đặt | Cập nhật an toàn, chẩn đoán từ xa, không mất thiết bị | Phụ — từ v1.1, sau cổng 8 tuần (Q-72) |
 | **U4** | **Chuyên gia an toàn & QA** | Chịu trách nhiệm phê duyệt hành vi thiết bị | Điều kiện an toàn đọc được, nhật ký đối soát được | Phụ |
-| **U5** | **Đối tác sản xuất phần cứng (OEM/ODM)** | Bán bo mạch, muốn kèm lớp agent | Tích hợp không khóa khách vào một dòng chip | Phụ |
+| **U5** | **Micro-OEM: maker bán NeuroEdge Blueprint hoặc thiết bị** *(Q-72; gồm cả đối tác OEM/ODM bán bo mạch)* | Đã dựng một thiết bị chạy tốt, muốn bán cho trăm người; startup phần cứng nhỏ | Đóng gói kit, firmware, hợp đồng mẫu, bộ phát hiện và bằng chứng thành một gói người khác cài bằng một lệnh; giấy phép thương mại rõ ràng; không khoá khách vào một dòng chip | **Chính — phép thử của cổng 8 tuần (B8)** |
 | **U6** | **Đội tích hợp robot phân tầng** | Robot một não (Pi 5) và nhiều bộ điều khiển MCU: motor, tay máy, dẫn đường qua ROS 2/Nav2 (Q-32, Q-34) | Mọi lệnh chuyển động qua gate trên từng node; mất liên lạc thì từng cơ cấu về trạng thái an toàn (Q-35) | Phụ — từ I14; giả thuyết, kiểm bằng phỏng vấn ở `TODOS.md` #40 |
 | **U7** | **Tác giả tích hợp (bên thứ ba)** | Hãng thiết bị AI mới, cộng đồng của một hệ sinh thái (Muse Gadgets, Home Assistant, xiaozhi…), maker viết cầu nối cho sản phẩm mình đang dùng | Tự nối sản phẩm của mình với lớp an toàn chỉ qua tài liệu công khai, không sửa lõi; tự chứng minh đúng bằng bộ test tuân thủ (Q-67) | Chính — từ I2c |
+| **U8** | **Người dùng cuối cài NeuroEdge Blueprint** *(Q-72)* | Không phải lập trình viên; mua kit theo BOM hoặc mua thiết bị từ U5 | Cài một Blueprint, đọc bản duyệt ≤ 5 dòng, duyệt qua kênh chat, có thiết bị thông minh chạy ngay; không cần đọc mã hay gate | Chính — từ I2e |
+| **U9** | **Nhà cung cấp linh kiện và kit** *(Q-72)* | Bán cảm biến, bo mạch, rơ-le theo BOM của Blueprint | Đơn hàng định sẵn theo BOM; liên kết mua đúng mã hàng | Phụ — nguồn thu thử đầu (hoa hồng kit) |
 
 ### 2.2 Nhiệm vụ cần hoàn thành (Jobs To Be Done)
 
 | Mã | Nhóm | Nhiệm vụ | Đáp ứng bởi |
 |:---:|:---:|:---|:---|
-| **J1** | U1 | "Tôi muốn thử một agent giọng nói ngay tối nay mà chưa có board" | FR-TGT-01, FR-DX-01 |
+| **J1** | U1 | "Tôi muốn thử một agent giọng nói ngay tối nay mà chưa có board" *(tạm dừng phần thoại — Q-72; bản gõ chữ trên `sim` vẫn là hành trình 1)* | FR-TGT-01, FR-DX-01 |
 | **J2** | U2 | "Tôi cần chắc chắn bản cập nhật prompt không làm chốt cửa mở sai" | FR-CI-03, FR-CI-04 |
 | **J3** | U2 | "Tôi cần chuyển từ RPi sang ESP32-S3 mà không viết lại logic" | FR-TGT-02, FR-HAL-01 |
 | **J4** | U3 | "Một thiết bị ở villa lỗi, tôi cần biết chuyện gì đã xảy ra mà không phải tới nơi" | FR-CI-01, FR-FLT-05 |
 | **J5** | U3 | "Tôi cần cập nhật 1.000 thiết bị mà không có nguy cơ hỏng hàng loạt" | FR-OTA-01, FR-FLT-02 |
 | **J6** | U4 | "Tôi cần duyệt điều kiện mở khóa mà không đọc mã nguồn Python" | FR-GATE-01, FR-GATE-02 |
 | **J7** | U2 | "Tôi muốn dùng lại chính sách an toàn người khác đã tinh chỉnh" | FR-GATE-05, FR-REG-01 |
+| **J8** | U1 | "Trông bể cá 120 lít giúp tôi: oxy thấp thì bật sục khí, có gì lạ chụp ảnh gửi tôi" *(Q-72)* | FR-DX-09, FR-DX-10, FR-MSN-01 → 14, FR-AGT-01 |
+| **J9** | U1, U8 | "Báo tôi khi có xu hướng lạ, nhưng đừng nhắn cả ngày và đừng để hoá đơn LLM vượt 2 USD một tháng" *(Q-72)* | FR-AGT-04 → 07, FR-MSN-09, FR-CH-01 |
+| **J10** | U5 | "Tôi muốn bán thiết bị mình dựng cho người khác, kèm bằng chứng nó an toàn" *(Q-72)* | FR-BP-01 → 10, §8.4 |
+| **J11** | U8 | "Tôi muốn cài thiết bị người khác đã dựng mà không phải lập trình, và hiểu mình đang cho phép nó làm gì" *(Q-72)* | FR-BP-03, FR-MSN-12, FR-CH-04 |
 
-### 2.3 Ba hành trình người dùng chính
+### 2.3 Bốn hành trình người dùng chính
+
+Hành trình 0 là **hành trình chính** từ Q-72; hành trình 1 giữ nguyên; hành trình 2 và 3 (đội thiết bị, Fleet OS) đi sau cổng nhu cầu 8 tuần.
+
+#### Hành trình 0 — Bể cá đi trọn ba vòng (U1 dựng → U8 cài → U5 bán) *(Q-72, chạy trên giả lập trước)*
+
+| Vòng | Bước | Phản hồi hệ thống kỳ vọng | Yêu cầu |
+|:---:|:---|:---|:---|
+| ① | Người dùng nói với Claude (client MCP nối NeuroEdge Lab): *"Tôi muốn trông bể cá 120 lít."* | Đề xuất một kit đã kiểm chứng từ danh mục (cảm biến nhiệt, oxy, camera, relay sục khí và sưởi), sơ đồ đấu dây, danh sách mua có nơi mua; chạy thử trên `sim` có mô hình bể (tầng giả lập G1) trước khi mua | FR-DX-09, FR-DX-10, FR-TGT-07 |
+| ① | Dựng, nạp, kiểm lắp; nối Telegram | Cấu hình bo, firmware, gate sinh từ một nguồn; `neuroedge lab doctor` kiểm từng cảm biến (*"cảm biến oxy đọc 0 — kiểm lại dây"*); `neuroedge chat connect telegram`, ghép đôi tài khoản bằng mã hiện tại chỗ | FR-DX-10, FR-CH-01, FR-CH-03, FR-CLI-14 |
+| ② | Giao nhiệm vụ: *"Trông bể, oxy thấp thì bật sục khí, có gì lạ chụp ảnh gửi tôi."* | Bản nháp hợp đồng nhiệm vụ; hỏi lại khi mơ hồ (*"Ngưỡng oxy thấp là bao nhiêu? Gợi ý 5 mg/L cho cá nhiệt đới"*); kiểm mâu thuẫn; bản duyệt ≤ 5 dòng; người duyệt trong chat hoặc UI cục bộ — LLM không khoá được | FR-MSN-01 → 14, FR-CH-04 |
+| ② | Chạy | Phản xạ tại chỗ (oxy dưới ngưỡng → sục khí); LLM đề nghị *"tắt sục khí cho yên tĩnh"* → bị chặn, kèm lý do; ngắt mạng → sục khí vẫn chạy (`safe_state` đã khai); sưởi quá nhiệt 10 phút → phản xạ ngắt sưởi, báo động | FR-MSN-05, FR-MSN-10, FR-ACE-03, FR-AGT-01 |
+| ② | Chủ động | Bộ phát hiện tất định thấy oxy buổi sáng giảm 3 ngày liền → LLM viết đề xuất → đề xuất biên dịch thành bản nháp sửa đổi hợp đồng → tin Telegram kèm yêu cầu duyệt và bản duyệt do trình biên dịch sinh, không do LLM viết (*"…Đề xuất vệ sinh lọc và thêm sục khí 2h–5h. Thêm vào hợp đồng?"*); trả lời "Có" đúng yêu cầu duyệt → sửa đổi được duyệt bằng bản ghi duyệt | FR-AGT-04 → 06, FR-MSN-14, FR-CH-04 |
+| ③ | Chia sẻ | `neuroedge blueprint pack` gói kit, firmware, hợp đồng mẫu, bộ phát hiện và vết ghi bằng chứng; người thứ hai `neuroedge blueprint install <url>` trên máy sạch, chạy trên `sim` trong < 10 phút | FR-BP-01 → 06, FR-CLI-13 |
+| ③ | Bán *(sau cổng 8 tuần)* | Giấy phép thương mại và chia doanh thu đi qua NeuroEdge; bằng chứng phải được ký trước khi Hub thu tiền cho người bán | FR-BP-08, FR-BP-10, §8.4 |
 
 #### Hành trình 1 — Mười phút đầu tiên (U1)
 
@@ -140,9 +177,9 @@ Mọi yêu cầu trong tài liệu này phải tuân thủ năm nguyên tắc sa
 | 6–8 | `neuroedge test` | CI xanh; phá điều kiện → CI đỏ, chỉ đích danh gate vi phạm | FR-CI-03 |
 | 8–10 | `neuroedge run --target linux` | Cùng mã nguồn, chạy trên phần cứng thật | FR-TGT-02, FR-CLI-02 |
 
-**Ràng buộc bắt buộc:** trong toàn bộ hành trình này, hệ thống **KHÔNG ĐƯỢC** yêu cầu mua phần cứng, tạo tài khoản, hay nhập thông tin thanh toán.
+**Ràng buộc bắt buộc:** trong toàn bộ hành trình này, hệ thống **KHÔNG ĐƯỢC** yêu cầu mua phần cứng, tạo tài khoản, hay nhập thông tin thanh toán. Ràng buộc áp cho **mười phút đầu** (và cho việc cài một NeuroEdge Blueprint rồi chạy nó trên `sim`, A14). Các bước sau đó của hành trình 0 có thể cần tài khoản của bên thứ ba do người dùng chọn — nền tảng chat, key LLM của chính họ (BYOK), relay tuỳ chọn — nhưng không bước nào nằm trên đường an toàn, và lõi không bao giờ đòi tài khoản NeuroEdge.
 
-#### Hành trình 2 — Từ sự cố hiện trường về máy lập trình viên (U3 → U2)
+#### Hành trình 2 — Từ sự cố hiện trường về máy lập trình viên (U3 → U2) *(Fleet OS — sau cổng 8 tuần, Q-72)*
 
 ```text
 Thiết bị tại hiện trường phát sinh cảnh báo
@@ -166,7 +203,7 @@ Tái hiện chính xác chuỗi phán quyết gate và tín hiệu GPIO
 Bổ sung tệp vết ghi thành kịch bản hồi quy vĩnh viễn         ← FR-CI-03
 ```
 
-#### Hành trình 3 — Mở rộng từ 1 lên 1.000 thiết bị (U2 → U3)
+#### Hành trình 3 — Mở rộng từ 1 lên 1.000 thiết bị (U2 → U3) *(sau cổng 8 tuần, Q-72)*
 
 | Giai đoạn | Hành động | Yêu cầu chi phối |
 |:---|:---|:---|
@@ -188,13 +225,14 @@ nói mốc nào gồm increment nào.
 |:---|:---|:---:|:---|:---|
 | **0.x** | Bản increment nội bộ | I1–I5 | Mỗi increment một tag nội bộ và một tín hiệu đo; **không phát hành ra ngoài** (Q-39) | — |
 | **Thử với đối tác** | Wheel giao trực tiếp cho một đội đối tác — gate cho thiết bị họ đang có (Q-70) | I2c (TSK-I2c-19) | `proxy mcp`, `proxy http`, `neuroedge.guard`, `sim`, Action CI; không `esp32s3`, không thoại trên chip, không NeuroEdge Lab; không lên index nào | Điều kiện ở roadmap §4.3.3 — không chờ bo mạch |
+| **Blueprint trên giả lập** | NeuroEdge Blueprint đầu tiên (bể cá) đi trọn ba vòng trên giả lập (Q-72) | I2d, I2e | Hợp đồng nhiệm vụ, an toàn có điều kiện (chờ RFC), agent vận hành, Telegram + bản ghi duyệt, `blueprint pack`/`install`, index tĩnh, kit bể cá có BOM liên kết; không phần cứng thật, không thu tiền; PyPI vẫn ở I6 (Q-39) — cách giao bản cài cho người thử ở roadmap | Cổng nhu cầu **8 tuần sau khi chốt** Q-72 đo kết quả (B6–B8, §11.2) |
 | **Công khai** | Repo công khai + PyPI | I6 | Bản ứng viên của MVP: demo thoại và bốn gói nguyên thủy mở rộng trên `sim`, `linux` và `esp32s3` | I5a và I2b phát hành |
-| **v1.0 = MVP** | Lõi (source-available, Q-45) — lần ra mắt MVP (Q-52) | I7 | Khối 1a + Khối 1b + bốn gói nguyên thủy mở rộng (Q-53) + kit mẫu + nền tảng mở (Q-67) + NeuroEdge Lab (Q-55, Q-71) | Đạt toàn bộ tiêu chí §11.1 (A1–A13) |
+| **v1.0 = MVP** | Lõi (source-available, Q-45) — lần ra mắt MVP (Q-52) | I7 | Khối 1a + Khối 1b + bốn gói nguyên thủy mở rộng (Q-53) + kit mẫu + nền tảng mở (Q-67) + NeuroEdge Lab (Q-55, Q-71) + hợp đồng nhiệm vụ, agent vận hành, kênh chat, NeuroEdge Blueprint (Q-72). Thoại, Studio, `jetson` **tạm dừng, không cắt**; phạm vi v1.0 **xét lại ở cổng 8 tuần** bằng dữ liệu (Q-72) | Đạt toàn bộ tiêu chí §11.1 (A1–A13) |
 | **Developer Beta** | Beta trên dòng `1.0.x` | I8 | Đóng băng tính năng trên dòng `1.0.x`, hỗ trợ 50–100 lập trình viên | v1.0 phát hành |
 | **v1.1** | Tầng dịch vụ thương mại | I9–I10 | Khối 2 + Khối 3 | **Cột mốc định lượng** — xem §3.3 |
 | **Mở rộng (1.x)** | Giai đoạn 2 — phủ rộng phần cứng, Jetson, đa phương thức | I13, I16–I18 | Khối V1a/V2/V3 + P1/P2 *(proposal §8.9)*; thị giác trên `sim`/`linux`/`esp32s3` (V1b) đã vào v1.0 (Q-53) · tag theo roadmap §0.2 | **2a:** RFC-0002 được phê duyệt — đã ký 2026-10-04, hiện thực ở I2c (Q-67) |
 
-Khối 4 (AURA thực địa, sau Beta — điều kiện ở proposal §8.6) và Khối 5 (Marketplace, khi đạt G1–G4) nằm ngoài phạm vi PRD này; chúng được đặc tả trong tài liệu sản phẩm riêng khi tới mốc. Theo Q-39, kế hoạch thực thi của Giai đoạn 2, NeuroEdge Lab (I4a, I5a — Q-55, Q-71) và robot phân tầng (I14) nằm trong roadmap chung; PRD này chỉ đặc tả các hợp đồng mà Giai đoạn 2 phải tuân thủ (FR-TGT-08, FR-HAL-01), không đặc tả yêu cầu chi tiết của nó.
+Khối 4 (AURA thực địa, sau Beta — điều kiện ở proposal §8.6) và Khối 5 (Marketplace thu phí) nằm ngoài phạm vi PRD này. Riêng NeuroEdge Blueprint, **Hub tối thiểu** — index tĩnh, không máy chủ, không thu phí — thuộc phạm vi I2e (FR-BP-05); Hub thu phí chỉ mở sau cổng 8 tuần (§14, Q-72), thay điều kiện cột mốc G1–G4 của proposal §8.7 cho riêng Blueprint. Khối 4 và Khối 5 được đặc tả trong tài liệu sản phẩm riêng khi tới mốc. Theo Q-39, kế hoạch thực thi của Giai đoạn 2, NeuroEdge Lab (I4a, I5a — Q-55, Q-71) và robot phân tầng (I14) nằm trong roadmap chung; PRD này chỉ đặc tả các hợp đồng mà Giai đoạn 2 phải tuân thủ (FR-TGT-08, FR-HAL-01), không đặc tả yêu cầu chi tiết của nó.
 
 ### 3.2 Nội dung từng mốc
 
@@ -219,9 +257,24 @@ Khối 4 (AURA thực địa, sau Beta — điều kiện ở proposal §8.6) v�
 
 **Chú thích:** ● hoàn thành trong mốc · ◐ hoàn thành một phần · — không thuộc mốc
 
+**Nhóm yêu cầu của Q-72** đi trước Khối 1b về thứ tự (Q-52 không cắt, chỉ đổi thứ tự); increment và task ở roadmap §0.2:
+
+| Nhóm yêu cầu | I2d — Nhiệm vụ và agent vận hành | I2e — NeuroEdge Blueprint tối thiểu | Sau cổng 8 tuần |
+|:---|:---:|:---:|:---:|
+| Hợp đồng nhiệm vụ (FR-MSN) | ● | — | — |
+| An toàn có điều kiện (FR-ACE-03, chờ RFC) | ● | — | — |
+| Agent vận hành (FR-AGT) | ● | — | ◐ định tuyến mô hình (FR-AGT-08) |
+| Kênh chat và bản ghi duyệt (FR-CH) | ● Telegram | — | ◐ Slack, Zalo |
+| Luồng dữ liệu chống rò rỉ (FR-EGR) | ● | — | ◐ relay (FR-EGR-05) |
+| Vết ghi theo đoạn (FR-TRC-11 → 13) | ● | — | — |
+| Giả lập G1 (mô hình vật lý), G2 (FR-TGT-07) | ● | — | — |
+| NeuroEdge Lab vòng ① cho nhiệm vụ (FR-DX-10) | ● | — | — |
+| NeuroEdge Blueprint, index tĩnh (FR-BP-01 → 07) | — | ● | ◐ giấy phép, Hub thu phí (FR-BP-08, 10) |
+| Kit bể cá có BOM liên kết (FR-DX-09) | — | ● | — |
+
 ### 3.3 Điều kiện kích hoạt v1.1
 
-v1.1 **KHÔNG ĐƯỢC** khởi động theo lịch cố định. Chỉ khởi động khi Developer Beta đạt **đồng thời** B1 và B2 — ngưỡng ở §11.2. B3 vẫn được đo nhưng không là điều kiện (Q-41).
+v1.1 **KHÔNG ĐƯỢC** khởi động theo lịch cố định. Chỉ khởi động khi Developer Beta đạt **đồng thời** B1 và B2 — ngưỡng ở §11.2. B3 vẫn được đo nhưng không là điều kiện (Q-41). Theo Q-72, Fleet OS (U3) còn đi sau cổng nhu cầu 8 tuần (B6–B8); kết quả cổng có thể đổi thứ tự của v1.1, không đổi B1, B2.
 
 ### 3.4 Đóng băng phạm vi Khối 1b
 
@@ -233,8 +286,9 @@ Các hạng mục sau **BẮT BUỘC** bị loại khỏi Khối 1b để bảo 
 | Độ phủ bo mạch | **Bo mạch tham chiếu chính thức ESP32-S3-Box-3** (tích hợp sẵn màn hình LCD ST7789, dual-mic ES7210, loa ES8311, dock I/O; DevKitC chuyển thành bo mạch thứ cấp do cộng đồng duy trì), cộng **một bo ESP32-S3 có camera** cho `vision.in` (Q-53): **M5Stack CoreS3** (Q-61, TSK-I3a-01) |
 | Thị giác máy tính | **Thuộc phạm vi v1.0** (Q-53): `vision.in` trên ba target; kết quả vào gate dưới dạng dữ kiện do maker khai, ngưỡng tin cậy khoá bằng tiêu chí số (Q-54) |
 | Kết nối tới provider AI trên đám mây (LLM · ASR · TTS) | **Thuộc phạm vi v1.0** — là kiến trúc mặc định theo P-4 |
-| Dịch vụ đám mây do NeuroEdge vận hành, hệ thống tài khoản NeuroEdge | Không thuộc phạm vi — người dùng tự vận hành lớp provider và tự giữ khóa |
-| Jetson, Matter, HomeKit | Không thuộc phạm vi |
+| Dịch vụ đám mây do NeuroEdge vận hành, hệ thống tài khoản NeuroEdge | Không thuộc phạm vi cho lõi — người dùng tự vận hành lớp provider và tự giữ khóa (BYOK). **Ngoại lệ có giới hạn (Q-72):** relay tuỳ chọn (ống TLS xuyên, relay không giải mã, FR-EGR-05) và index Blueprint tĩnh (FR-BP-05) được phép; cả hai **không bao giờ nằm trên đường an toàn** — tắt hay hỏng thì phản xạ, gate, hợp đồng và lời duyệt vẫn chạy |
+| Kênh nhắn tin (Telegram trước, rồi Slack, Zalo) | **Thuộc phạm vi** (Q-72): adapter chạy trong runtime trên máy nhà, không trên MCU (FR-CH) |
+| Jetson, Matter, HomeKit | Không thuộc phạm vi (`jetson` tạm dừng theo Q-72) |
 | Tinh chỉnh mô hình AI | Không thuộc phạm vi |
 
 ---
@@ -266,10 +320,21 @@ HAL là hợp đồng kiểm tra hai chiều: bo mạch khai báo năng lực cu
 | **FR-TGT-04** | **Nguyên tắc tương đương:** cùng một tệp mã agent cho cùng chuỗi phán quyết trên mọi môi trường, không sửa một dòng | P0 | `neuroedge verify --targets sim,linux,esp32s3` đạt 100% | §3.2 |
 | **FR-TGT-05** | Chuyển môi trường qua tham số `--target`; **cấm** rẽ nhánh logic theo target trong mã agent | P0 | Rà soát mã: không tồn tại biểu thức điều kiện theo tên target trong lớp ứng dụng | §4.1 |
 | **FR-TGT-06** | `sim` cung cấp giao diện web hiển thị cảm biến ảo và trạng thái cơ cấu chấp hành | P0 | Mở được trong trình duyệt, phản ánh đúng trạng thái chân GPIO ảo theo thời gian thực; chạy không mạng (không tải CDN). Lệnh: `neuroedge run --ui` (TSK-S2-09) | §4.10 |
-| **FR-TGT-07** | `sim` mô phỏng được kịch bản cảm biến và điều kiện mạng suy giảm | P1 | Khai báo được kịch bản mất mạng để kiểm thử fail-closed | §4.7 |
+| **FR-TGT-07** | `sim` mô phỏng được kịch bản cảm biến và điều kiện mạng suy giảm. *Mở rộng bởi Q-72:* kịch bản **nhiệm vụ** — chuỗi cảm biến nhiều ngày sinh từ **mô hình vật lý** (bể cá: nhiệt, oxy theo thời gian, tác động của sưởi và sục khí), tua nhanh 30 ngày, kèm sự kiện mất mạng, mất LLM, kênh chat sập, mất điện (tầng giả lập G1) | **P0** *(nâng từ P1 bởi Q-72; I2d)* | Khai báo được kịch bản mất mạng để kiểm thử fail-closed. Kịch bản 30 ngày của bể cá chạy tất định (cùng hạt giống cho cùng chuỗi cảm biến và cùng phán quyết), đủ để đo A16, A19, NFR-COST-01 và cỡ vết ghi 30 ngày (NFR-OBS-04) | §4.7, Q-72 |
 | **FR-TGT-08** | **Phân tầng target:** mỗi môi trường thực thi thuộc đúng một bậc cam kết — bậc 1 chính thức (`sim`, `linux`, `esp32s3`), bậc 2 mở rộng do đội lõi bảo trì, bậc 3 do cộng đồng port và tự kiểm chứng. Bậc được khai báo tường minh, không suy diễn | P0 | **Nghiệm thu ở Giai đoạn 2** — cần `TARGET_TIERS` (RFC-0002 PR2): mỗi target có bậc ghi trong tài liệu và trong bảng bậc của mã lõi (RFC-0002 §3b); `board.toml` không tự khai bậc; ngưỡng `verify` 100% chỉ ràng buộc bậc 1; bậc 3 không chặn phát hành. **Hiện tại chỉ có bậc 1** (`sim`, `linux`, `esp32s3`), kiểm chứng qua A2. **Bo tham chiếu (RFC-0013):** mỗi target bậc 1 có ít nhất một bo mạch tham chiếu (`REFERENCE_BOARDS`, phần tử đầu là mặc định); mỗi profile `sim-*` soi đúng một bo tham chiếu (`SIM_MIRRORS`) và không giàu năng lực hơn nó; mỗi nguyên thủy mở rộng có trên ít nhất một bo tham chiếu của mỗi target bậc 1; `verify` replay mọi bo tham chiếu, và `build` không `--board` không bao giờ tự chọn bo khác | §3.2 |
 
 **Giới hạn đã biết, phải nêu rõ trong tài liệu kỹ thuật:** `sim` không mô phỏng phản xạ âm học phòng vang, nhiễu micro, beamforming mảng micro, và phân mảnh bộ nhớ trên vi điều khiển. Các nhóm lỗi này được kiểm soát bằng kiểm thử nightly trên bo mạch thật (NFR-REL-03).
+
+**Giả lập trước, phần cứng thật sau (Q-72).** Ba vòng của hành trình 0 chạy trên bốn **tầng giả lập** trước khi mua phần cứng — mã tầng `G1`–`G4` ở đây khác cột mốc G1–G4 của proposal §8.7 và khác giả định `G-a`… ở §13.3:
+
+| Tầng | Công cụ | Chạy được gì | Dùng cho |
+|:---|:---|:---|:---|
+| **G1** Mô hình vật lý | `sim` của NeuroEdge thêm mô hình vật lý (FR-TGT-07) | Hợp đồng, gate, agent vận hành, bộ phát hiện, chi phí LLM | Vòng ② và ③; CI |
+| **G2** Runtime `linux` giả ngoại vi | `gpio-sim` của kernel (đã dùng ở job `linux-hal`), thêm cảm biến giả | Đúng runtime sẽ chạy trên Pi, chỉ thiếu điện | Chạy liên tục 2 tuần trước khi có Pi (B7) |
+| **G3** Firmware ESP32 trên máy | Espressif QEMU (Q-21), các spike giả lập của Q-69; Wokwi và Velxio là lựa chọn Q-72 nêu, cần đối chiếu lại với phần "không dùng" của Q-21 và Q-69 trước khi vào CI | Firmware có `ne_gate`, phản xạ khi mất mạng | Kiểm tầng phản xạ |
+| **G4** Đường của maker Home Assistant | ESPHome host platform (cảm biến thay bằng template sensor) | Người dùng HA thử Blueprint không cần bo | Thử với cộng đồng HA, ESPHome |
+
+Giả lập không bắt lỗi đấu dây, nhiễu điện, cảm biến trôi hay Wi-Fi chập chờn (R-16); phần cứng thật phải được mua trước khi bán Blueprint đầu tiên.
 
 ### 4.3 Trừu tượng hóa mô hình AI (FR-MDL)
 
@@ -280,7 +345,7 @@ HAL là hợp đồng kiểm tra hai chiều: bo mạch khai báo năng lực cu
 | **FR-MDL-03** | Cả hai interface bắt buộc khai báo được đường dẫn dự phòng (`fallback`). Với `SystemOne`, fallback cục bộ là **bộ nhận diện lệnh cố định** (ngữ pháp lệnh → intent kèm độ tin cậy) và là P0 *(Q-14)* | P0 | Ngắt nhà cung cấp chính → hệ thống tự chuyển fallback, ghi sự kiện vào vết; mất mạng → `SystemOne` lượng giá bằng ngữ pháp lệnh cục bộ *(Q-14)* | §3.6 |
 | **FR-MDL-04** | Thay nhà cung cấp mô hình không yêu cầu sửa mã agent hay sửa gate | P0 | Đổi `SystemOne` sang mô hình cục bộ chỉ bằng thay đổi cấu hình | §3.6 |
 | **FR-MDL-05** | Chính sách định tuyến System 1 / System 2 là cấu hình khai báo, không viết cứng | P1 | Đổi ngưỡng tự tin leo thang bằng cấu hình, không biên dịch lại | §3.5 |
-| **FR-MDL-06** | Hệ thống ghi nhận tỷ lệ sử dụng System 1 / System 2 và chi phí từng lượt | P0 | Số liệu xuất hiện trong tệp vết ghi của mỗi phiên: mỗi lượt gọi System 2 là một sự kiện `system_two_call` (provider, model, độ trễ, token, `cost_usd`; không prompt, không key); tỷ lệ S1/S2 ở `session_summary`, đường phục vụ và độ trễ từng chặng của mỗi lượt ở `turn_latency` (`docs/spec/tool_calling.md` §7.1) | §12.1 |
+| **FR-MDL-06** | Hệ thống ghi nhận tỷ lệ sử dụng System 1 / System 2 và chi phí từng lượt | P0 | Số liệu xuất hiện trong tệp vết ghi của mỗi phiên: mỗi lượt gọi System 2 là một sự kiện `system_two_call` (provider, model, độ trễ, token, `cost_usd`; không prompt, không key); tỷ lệ S1/S2 ở `session_summary`, đường phục vụ và độ trễ từng chặng của mỗi lượt ở `turn_latency` (`docs/spec/tool_calling.md` §7.1). *Q-72:* `cost_usd` của từng lượt là cơ sở của trần chi phí LLM của agent vận hành (FR-AGT-05) | §12.1, Q-72 |
 | **FR-MDL-07** | **Provider pluggable:** LLM, ASR và TTS kết nối qua chuẩn OpenAI API hoặc adapter do người dùng tự viết | P0 | Thêm một provider tương thích OpenAI chỉ bằng cấu hình endpoint và khóa (bảng `[system_two]`: `model`, `api_base`, `api_key_env`), không sửa mã | §3.6, §6.1 |
 | **FR-MDL-08** | **Adapter tùy chỉnh:** người dùng viết được logic kết nối riêng cho provider chưa hỗ trợ chuẩn OpenAI | P0 | Một adapter mẫu do bên ngoài viết (`provider = "python:pkg.mod:factory"`, hợp đồng `neuroedge/models/providers/base.py`) chạy được mà không sửa lõi NeuroEdge | §3.6 |
 | **FR-MDL-09** | **ASR/TTS là provider:** STT và TTS không gắn cứng vào một thư viện, thay thế được qua cấu hình | P0 | Đổi nhà cung cấp STT và TTS chỉ bằng cấu hình; agent và gate không đổi | §3.4, §3.6 |
@@ -292,6 +357,8 @@ HAL là hợp đồng kiểm tra hai chiều: bo mạch khai báo năng lực cu
 
 Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không tự viết lại thuật toán xử lý tín hiệu cơ bản.**
 
+*Tạm dừng theo Q-72:* nhóm FR-PER vẫn thuộc phạm vi v1.0 (Q-52 không cắt) và không yêu cầu nào bị xoá, nhưng được làm **sau** hợp đồng nhiệm vụ, agent vận hành, kênh chat và NeuroEdge Blueprint; phạm vi v1.0 xét lại ở cổng 8 tuần. Cùng áp cho NFR-PERF-01, NFR-PERF-07 và A6.
+
 | Mã | Yêu cầu | Ưu tiên | Tiêu chí nghiệm thu | Nguồn |
 |:---|:---|:---:|:---|:---:|
 | **FR-PER-01** | Tích hợp sẵn chuỗi xử lý giọng nói theo hai tầng: **(a) trên thiết bị** — wake-word, VAD, AEC, thu/phát âm thanh, máy trạng thái hội thoại; **(b) trên cloud** — STT, TTS và suy luận ngôn ngữ qua provider | P0 | Agent mẫu hoạt động end-to-end chỉ với cấu hình provider, không cần cấu hình thêm thư viện | §3.4 |
@@ -301,6 +368,27 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-PER-05** | **Tự phục hồi lỗi STT:** chuỗi rỗng hoặc nhiễu không làm treo máy trạng thái, không lặp câu hỏi vô hạn | P0 | Bơm 20 khung nhiễu liên tiếp → máy trạng thái vẫn phản hồi đúng | §3.4 |
 | **FR-PER-06** | Runtime giọng nói trên `esp32s3` tối ưu bộ nhớ, gồm thu/phát âm thanh, WebRTC AEC, VAD libfvad *(khớp proposal §3.4)*, Opus streaming, máy trạng thái hội thoại, thẩm định gate và bộ nhận diện lệnh cố định cục bộ *(ESP-SR MultiNet hoặc TFLite Micro / ESP-NN, chọn ở Khối 1b — Q-14)*. **Không bắt buộc chạy STT/TTS trên thiết bị** | P0 | Chạy ổn định liên tục 24 giờ trên bo mạch tham chiếu với pipeline thu/phát + máy trạng thái + gate, không tràn bộ nhớ | §8.2 |
 | **FR-PER-07** | **Cloud-first voice:** STT và TTS mặc định chạy trên cloud qua provider; vi điều khiển chỉ truyền luồng âm thanh lên và nhận luồng âm thanh về | P0 | Vòng lặp thoại chạy end-to-end trên bo mạch tham chiếu với STT/TTS đặt ở provider cloud | §3.4, §6.1 |
+
+### 4.5 Agent vận hành (FR-AGT)
+
+*Dự kiến — Q-72, increment I2d; chưa có mã.* Agent vận hành chạy liên tục trên máy nhà (Pi, mini PC, NAS) sau khi phiên client MCP đóng. Hôm nay mọi tiến trình NeuroEdge sống trong lệnh đang chạy (`run`, `mcp serve`); I2d thêm tiến trình sống lâu đầu tiên. Nó tách thành **hai tiến trình**, dùng lại ranh giới của Q-71 (chỉ một tiến trình giữ quyền thiết bị; client MCP là bên gọi không tin cậy):
+
+- **Runtime tin cậy** — HAL và quyền thiết bị, gate, thực thi hợp đồng nhiệm vụ, lập lịch, bộ phát hiện tất định, adapter kênh chat và kiểm lời duyệt, cửa ra dữ liệu (FR-EGR), vết ghi. Không gọi LLM, không giữ key LLM.
+- **LLM worker không tin cậy** — giữ key LLM của người dùng (BYOK), gọi runtime như một client MCP cục bộ; nguồn do runtime gán; không bao giờ duyệt.
+
+Agent vận hành **không dựng và không khoá** hợp đồng (vai của NeuroEdge Lab, Q-71): LLM lúc chạy chỉ giải thích và *đề xuất* sửa đổi. Phân rã thành gói và tiến trình: `docs/architecture/`.
+
+| Mã | Yêu cầu | Ưu tiên | Tiêu chí nghiệm thu | Nguồn |
+|:---|:---|:---:|:---|:---:|
+| **FR-AGT-01** | **Runtime tin cậy chạy liên tục:** một tiến trình sống lâu (dịch vụ systemd hoặc tương đương) giữ toàn bộ phần tin cậy liệt kê trên; khởi động lại tự động sau lỗi hoặc mất điện; mỗi lần khởi động lại là một sự kiện trong vết ghi | P0 | Giết tiến trình runtime ⇒ được khởi động lại, mọi cơ cấu đã về `safe_state` trong lúc vắng nhờ thời lượng/lease trên thiết bị (FR-ACE-03), vết ghi có sự kiện khởi động lại; chạy liên tục 2 tuần trên G2 hoặc G3 không can thiệp (B7, NFR-REL-06) | Q-72 |
+| **FR-AGT-02** | **LLM worker không tin cậy:** tiến trình riêng giữ key BYOK, gọi mô hình qua LiteLLM (FR-MDL-07; gồm mô hình tại chỗ như Ollama); gọi runtime qua MCP cục bộ; nguồn do runtime gán theo kết nối, không tự khai (FR-ACE-09); mọi lời gọi hành động qua gate; không có quyền thiết bị; không bao giờ là nguồn người | P0 | Bộ test thâm nhập: worker tự khai `call_source` ⇒ `REJECTED`; worker gửi lời xác nhận `ask` hay lời duyệt ⇒ bị từ chối (FR-CH-05); user của worker không mở được `/dev/gpiochip*`, `/dev/i2c-*`; key không xuất hiện trong vết ghi, hợp đồng, Blueprint hay tin chat (NFR-SEC-13) | Q-71, Q-72 |
+| **FR-AGT-03** | **Lập lịch:** chạy điều khoản theo giờ và chu kỳ (đọc cảm biến, bản tóm tắt, hết hạn quyền); thời lượng, hạn, chu kỳ đo bằng **đồng hồ đơn điệu**; giờ tường chỉ dùng cho điều khoản khung giờ, qua dữ kiện có trạng thái `unsynced` (FR-MSN-04). Một lần đọc cảm biến kẹt không được chặn vòng lặp của runtime — `TODOS.md` #48 thành rủi ro thật. Nền sẵn có: trigger theo sự kiện của NeuroEdge Lab (khối N6: chạy không cần phiên client, debounce, trần tần suất, nguồn ngoài `HUMAN_SOURCES`) | P0 | Kịch bản G1: đổi giờ tường (NTP nhảy) không làm thời lượng hay hạn duyệt dài ra hay ngắn đi; bus kẹt một cảm biến không làm trễ phản xạ của cảm biến khác quá ngân sách gate | Q-72 |
+| **FR-AGT-04** | **Bộ phát hiện tất định trước, LLM sau:** ngưỡng, độ dốc xu hướng (ví dụ oxy giảm 3 ngày liền), cảm biến đứng im, dao động — tính bằng mã thường, khai trong hợp đồng nhiệm vụ hoặc Blueprint; LLM chỉ được gọi khi một bộ phát hiện bắn sự kiện, hoặc cho bản tóm tắt theo lịch; sự kiện bộ phát hiện ghi vào vết ghi và replay được | P0 | Kịch bản 30 ngày trên G1: bộ phát hiện xu hướng oxy bắn đúng ngày, không bắn trên chuỗi đối chứng; số lần gọi LLM bằng số sự kiện bắn cộng số bản tóm tắt; replay vết ghi cho cùng chuỗi sự kiện bộ phát hiện | Q-72 |
+| **FR-AGT-05** | **Trần chi phí LLM (`llm_budget`):** runtime cưỡng chế trần khai trong hợp đồng (FR-MSN-09) **trước** mỗi lần giao việc cho worker, cộng dồn từ `cost_usd` của từng lượt (FR-MDL-06); chi phí một lượt không đo được thì tính theo đơn giá khai trong cấu hình, không có đơn giá thì không gọi. Chạm trần ⇒ không gọi LLM tới hết kỳ; phản xạ, bộ phát hiện và cảnh báo mẫu cứng vẫn chạy; người dùng nhận đúng một tin "đã hết ngân sách phân tích kỳ này" | P0 | Kịch bản G1 đặt trần thấp: sau khi chạm trần không còn sự kiện `system_two_call` nào; tổng chi phí của kỳ không vượt trần quá chi phí của lượt đang chạy lúc chạm; tin khẩn vẫn tới (NFR-COST-01) | Q-72 |
+| **FR-AGT-06** | **Báo chủ động, gom tin, ngân sách tin nhắn:** giải thích xu hướng và đề xuất do LLM viết, gửi qua kênh chat đã ghép (FR-CH-01); tin thường được gom thành bản tóm tắt (ví dụ một bản mỗi ngày là một lần gọi LLM); **tin khẩn dùng mẫu cứng**, không cần LLM, không bị gom hay trễ; vượt ngân sách tin nhắn ⇒ tin thường dồn vào bản tóm tắt kế tiếp. Đề xuất sửa hợp đồng đi đúng đường sửa đổi (FR-MSN-14) | P0 | Kịch bản 30 ngày: số tin không khẩn không vượt ngân sách khai (NFR-COST-02); mọi tin khẩn tới trong ngân sách độ trễ của nó; một đề xuất xu hướng tới chat kèm yêu cầu duyệt | Q-72 |
+| **FR-AGT-07** | **Nhánh lỗi:** worker chết hay treo ⇒ runtime vẫn phản xạ, chạy bộ phát hiện, gửi cảnh báo mẫu cứng, khởi động lại worker, báo "phân tích tạm ngưng"; kênh chat sập ⇒ hàng đợi có hạn + cảnh báo tại chỗ trên UI cục bộ, tin tới trễ mang dấu thời gian gốc; hết ngân sách LLM ⇒ FR-AGT-05; yêu cầu duyệt hết hạn ⇒ không duyệt (FR-CH-04); relay mất ⇒ không ảnh hưởng an toàn (FR-EGR-05); mất điện ⇒ vết ghi theo FR-TRC-12 | P0 | Mỗi nhánh có một kịch bản G1 (hoặc G2) với kết quả kỳ vọng ghi trước; không nhánh nào làm một cơ cấu rời `safe_state` hay làm mất một phán quyết chặn đã ghi | Q-72 |
+| **FR-AGT-08** | **Định tuyến mô hình cho agent:** mô hình tại chỗ cho tóm tắt thường, mô hình mạnh cho đề xuất — cùng qua LiteLLM, khai bằng cấu hình (FR-MDL-05, FR-GW-03) | P1 | Đổi mô hình của từng loại việc chỉ bằng cấu hình; chi phí từng loại hiện riêng trong vết ghi | Q-72 |
+| **FR-AGT-09** | **Agent không dựng, không khoá:** runtime và worker không có đường nào khoá bản nháp, sửa gate đã khoá, `digests.lock`, profile `board.v1` hay hợp đồng nhiệm vụ đã khoá; mọi thay đổi đó đi qua người (FR-MSN-14, Q-71) | P0 | Bộ test: mọi tool MCP mà runtime phơi cho worker đều không ghi được các tệp trên; danh sách tool ghim bằng test | Q-71, Q-72 |
 
 ---
 
@@ -312,14 +400,14 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 |:---|:---|:---:|:---|:---:|
 | **FR-ACE-01** | Mọi lệnh tới cơ cấu chấp hành **bắt buộc** đi qua gate tương ứng; không tồn tại đường tắt | P0 | Kiểm thử thâm nhập: không có API công khai nào kích hoạt GPIO mà bỏ qua gate | §3.5 |
 | **FR-ACE-02** | Hành động vật lý chỉ gọi được qua `c.do()`; gọi trực tiếp sinh `ActionContractViolation` | P0 | Test khẳng định ngoại lệ được ném và chân GPIO không bị kích | §4.4 |
-| **FR-ACE-03** | **Fail-closed mặc định:** timeout, hoặc mô hình trả dữ liệu không hợp lệ → chặn hành động. **Mất mạng** → gate vẫn lượng giá bằng bộ nhận diện lệnh cố định cục bộ; chỉ chặn với `gate_unreachable` khi fallback không có hoặc không chạy được *(Q-14)* | P0 | Kịch bản `network=offline` → gate lượng giá bằng ngữ pháp lệnh cục bộ: câu khớp đủ độ tin cậy được phán quyết theo `allow_when`, câu không khớp hoặc dưới ngưỡng bị BLOCK theo tiêu chí bình thường. Kịch bản `network=offline` + fallback không có/không chạy → hành động bị chặn với lý do `gate_unreachable` | §3.5 |
+| **FR-ACE-03** | **Fail-closed mặc định cho lệnh:** timeout, hoặc mô hình trả dữ liệu không hợp lệ → chặn hành động. **Mất mạng** → gate vẫn lượng giá bằng bộ nhận diện lệnh cố định cục bộ; chỉ chặn với `gate_unreachable` khi fallback không có hoặc không chạy được *(Q-14)*. **Cơ cấu về `safe_state` đã khai** *(chờ RFC an toàn có điều kiện — Q-72)*: mỗi cơ cấu có `safe_state` khai trong `board.v1`, mặc định `off` (hôm nay chỉ `motion.*` có `safe_state`: `stop`/`hold`); thời lượng, `max_continuous_ms`, lease, mức tự tắt L0–L3 của cơ cấu từ xa (RFC-0018) và miễn gate của Q-62 đều nói về "trở về `safe_state`", còn hướng **rời** `safe_state` là hướng bị gate và giới hạn. `safe_state` khác `off` **chỉ** khai được trong `board.v1` — không trong hợp đồng nhiệm vụ, gate hay Blueprint — và cơ cấu `safe_state: on` bắt buộc khai kèm **khoá liên động phần cứng** (đấu dây mặc định bật như rơ-le thường đóng, cầu chì nhiệt, phao); phần mềm chỉ lệnh rời trạng thái đó, có hạn. Sửa `TODOS.md` #58 trước, để đầu đọc cũ không lặng lẽ bỏ khoá mới. Profile hiện có giữ nguyên hành vi | P0 | Kịch bản `network=offline` → gate lượng giá bằng ngữ pháp lệnh cục bộ: câu khớp đủ độ tin cậy được phán quyết theo `allow_when`, câu không khớp hoặc dưới ngưỡng bị BLOCK theo tiêu chí bình thường. Kịch bản `network=offline` + fallback không có/không chạy → hành động bị chặn với lý do `gate_unreachable`. *Khi RFC vào:* `board.v1` khai `safe_state: on` thiếu khoá liên động ⇒ từ chối nạp (A21); `safe_state` khai trong hợp đồng, gate hay Blueprint ⇒ từ chối; sục khí bể cá `safe_state: on` vẫn chạy khi mất mạng, mất LLM, lease hết (A16); lệnh "tắt sục khí 10 phút" bị gate và tự trở về bật khi hết hạn; ba vết ghi chuẩn mực và mọi corpus chạy lại y nguyên với profile hiện có | §3.5, Q-62, Q-72 |
 | **FR-ACE-04** | Decorator `@action` ràng buộc `requires` tham gia đối chiếu năng lực lúc build | P0 | Thiếu năng lực → build dừng, chỉ rõ dòng mã gọi | §4.4 |
 | **FR-ACE-05** | Decorator `@action` bắt buộc trỏ tới một gate đã khai báo trong `agent.toml` | P0 | Thiếu khai báo gate → build dừng | §4.4 |
-| **FR-ACE-06** | Mỗi phiên tương tác sinh một tệp vết ghi JSON đầy đủ | P0 | Tệp chứa độ trễ từng chặng, kết quả đánh giá gate, lệnh actuator | §3.5 |
+| **FR-ACE-06** | Mỗi phiên tương tác sinh một tệp vết ghi JSON đầy đủ. *Runtime 24/7 của agent vận hành (Q-72, chờ RFC):* một phiên là một **chuỗi đoạn** vết ghi, mỗi đoạn replay được (FR-TRC-11) | P0 | Tệp chứa độ trễ từng chặng, kết quả đánh giá gate, lệnh actuator | §3.5 |
 | **FR-ACE-07** | Tách biệt kiểu giữa hành vi phát ngôn (`c.say()`) và hành vi vật lý (`c.do()`) | P0 | `c.say()` không đi qua gate; `c.do()` luôn đi qua gate | §4.6 |
 | **FR-ACE-08** | **Ràng buộc tham số trong gate (Q-25):** gate khai khoảng/tập giá trị cho tham số của hành động; kế thừa chỉ thu hẹp | P0 | Tool call với tham số ngoài khoảng ⇒ BLOCK `argument_out_of_range`, chân không đổi; gate con nới khoảng ⇒ `GateInheritanceError` | RFC-0005 |
 | **FR-ACE-09** | **Nguồn gọi là dữ kiện tin cậy:** dispatcher chèn `call_source`; bên gọi không tự khai được | P0 | Tool call mang tham số `call_source` ⇒ `REJECTED`; gate giới hạn được nguồn gọi | `docs/spec/tool_calling.md` §5 |
-| **FR-ACE-10** | **Chỉ người xác nhận `ask` (Q-26):** lời xác nhận đến từ kênh thiết bị, gắn với lần bị chặn, dùng một lần, có hạn | P0 | Xác nhận từ `system_two` hoặc `mcp` bị từ chối; xác nhận quá hạn hoặc dùng lại ⇒ không có tác dụng; xác nhận hợp lệ ⇒ gate lượng giá lại, chỉ thay tiêu chí trong `confirms` (RFC-0006) | `docs/spec/tool_calling.md` §6 |
+| **FR-ACE-10** | **Chỉ người xác nhận `ask` (Q-26):** lời xác nhận đến từ kênh thiết bị, gắn với lần bị chặn, dùng một lần, có hạn. *Mở rộng bởi Q-72 (chờ RFC nguồn `chat:<id>`):* người cũng xác nhận được qua **kênh chat đã ghép đôi**, chỉ bằng **bản ghi duyệt** đã kiểm (FR-CH-04) — cho cả `ask` lúc chạy lẫn sửa đổi hợp đồng nhiệm vụ; LLM, nhóm chat và tài khoản chưa ghép đôi không bao giờ xác nhận được | P0 | Xác nhận từ `system_two` hoặc `mcp` bị từ chối; xác nhận quá hạn hoặc dùng lại ⇒ không có tác dụng; xác nhận hợp lệ ⇒ gate lượng giá lại, chỉ thay tiêu chí trong `confirms` (RFC-0006). *Q-72:* lời duyệt chat chỉ vào đường xác nhận khi bản ghi duyệt qua đủ phép kiểm của FR-CH-04; LLM worker gửi lời xác nhận ⇒ bị từ chối (A20) | `docs/spec/tool_calling.md` §6, Q-72 |
 
 ### 5.2 Định dạng cổng an toàn (FR-GATE)
 
@@ -328,7 +416,7 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-GATE-01** | Gate là tệp YAML có schema `neuroedge.gate/v1`, **không phải mã nguồn** | P0 | Gate đọc, diff và review được trong pull request | §3.5 |
 | **FR-GATE-02** | Gate có 8 trường cấp cao: `schema`, `name`, `version`, `extends`, `evaluate`, `allow_when`, `on_block`, `budget`. Chỉ `schema`, `name`, `version` **luôn bắt buộc**; `evaluate`, `allow_when`, `on_block`, `budget` bắt buộc khi gate **không có** `extends` *(RFC-0001)*. `budget.fail` tuỳ chọn — vắng mặt nghĩa là `closed` | P0 | Thiếu trường bắt buộc theo điều kiện trên → `GateSchemaError`; gate có `extends` lược bốn trường kế thừa vẫn hợp lệ | Phụ lục B.1, RFC-0001 |
 | **FR-GATE-03** | Khối `evaluate` hỗ trợ 4 kiểu: `bool`, `level`, `choice` và `numeric` (RFC-0009: `unit`, `range`, `max_age_ms` bắt buộc), kèm toán tử điều kiện tương ứng. `allow_when` **dạng ánh xạ toán tử là dạng v1**; dạng chuỗi CEL chỉ được phép ở gate không có `extends` — trong chuỗi kế thừa bị từ chối, fail-closed, vì không chứng minh được con chặt hơn cha. *Cho tới khi trình biên dịch CEL xong (TSK-S2-06, đang hoãn), `gate lint` từ chối cả CEL ở gate độc lập (`GateSchemaError`) — fail-closed, không phải lượng giá thiếu* | P0 | Bốn kiểu chạy đúng với toán tử `eq`, `lte`, `gte`, `in`, `not_in`, `confidence_gte` và, cho `numeric`, `gt`, `gte`, `lt`, `lte`; `allow_when` dạng chuỗi trong chuỗi `extends` → `GateInheritanceError` | Phụ lục B.2, Q-9 |
-| **FR-GATE-04** | Khối `on_block` hỗ trợ 4 hành vi: `escalate`, `deny`, `ask`, `degrade`. Ở v1.0, **mọi** `on_block` đều chặn hành động vật lý; `escalate`/`ask` ghi sự kiện + gọi hook (mặc định no-op); `degrade` chạy `fallback_action` qua gate của chính nó *(Q-17)*. `ask` có `confirms`: lời xác nhận của người trên kênh thiết bị làm gate lượng giá lại *(Q-26, RFC-0006)* | P0 | Bốn hành vi chạy đúng và được ghi vào vết | Phụ lục B.3 |
+| **FR-GATE-04** | Khối `on_block` hỗ trợ 4 hành vi: `escalate`, `deny`, `ask`, `degrade`. Ở v1.0, **mọi** `on_block` đều chặn hành động vật lý; `escalate`/`ask` ghi sự kiện + gọi hook (mặc định no-op); `degrade` chạy `fallback_action` qua gate của chính nó *(Q-17)*. `ask` có `confirms`: lời xác nhận của người trên kênh thiết bị làm gate lượng giá lại *(Q-26, RFC-0006)*. *Q-72 (dự kiến, I2d):* khi agent vận hành chạy, `ask` và `escalate` được chuyển tới kênh chat đã ghép (người nhận `escalate` thật — một phần `TODOS.md` #20); lời trả lời cho `ask` chỉ có hiệu lực qua bản ghi duyệt (FR-CH-04). Thêm trạng thái **"báo động, gọi người"** cho cơ cấu mà cả hai hướng đều nguy hiểm (ví dụ sục khí quá nhiệt): cơ cấu giữ `safe_state` đã khai, runtime gửi tin khẩn mẫu cứng và chờ người — không bao giờ để LLM chọn | P0 | Bốn hành vi chạy đúng và được ghi vào vết. *Q-72:* `ask`/`escalate` lúc runtime chạy tạo một yêu cầu duyệt trong chat; trạng thái "báo động, gọi người" có kịch bản G1 riêng | Phụ lục B.3, Q-72 |
 | **FR-GATE-05** | Gate kế thừa được qua `extends` từ URI gate cơ sở | P0 | Kéo gate cộng đồng về, ghi đè phần riêng, chạy đúng | Phụ lục B.5 |
 | **FR-GATE-06** | **Gate con chỉ được siết chặt, tuyệt đối không được nới lỏng** (B.5 nguyên tắc 2) — với `allow_when`, và từ RFC-0004 cả với `budget`/`on_block` *(Q-18)*: `p95_latency_ms` của con ≤ của cha; con không được tự đưa vào `degrade`/`fallback_action` mới (chỉ giữ nguyên của cha), được đổi sang `deny`/`escalate`/`ask` và đổi `to`/`message` | P0 | Gate con nới lỏng `allow_when`, `budget` hoặc `on_block` của cha → `GateInheritanceError` (NE2003, nguyên tắc 2), từ chối phân giải *(phần `budget`/`on_block`: TSK-S2-13)* | Phụ lục B.5, RFC-0004 |
 | **FR-GATE-07** | `fail: open` **không kế thừa**; phải khai báo tường minh tại từng cấp (B.5 nguyên tắc 4). Từ RFC-0004: chuỗi đã phân giải thành `closed` (khai hoặc mặc định) thì gate con **không được** mở lại bằng `fail: open` *(Q-18)* | P0 | Gate cha `fail: open`, gate con không khai báo → gate con là `closed`; chuỗi đã `closed`, con khai `fail: open` → `GateInheritanceError` (NE2003, nguyên tắc 4) | Phụ lục B.5, RFC-0004 |
@@ -348,6 +436,51 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-OTA-04** | Thiết bị nạp được firmware từ một HTTP endpoint mở bất kỳ, **không bắt buộc dùng dịch vụ của NeuroEdge** | P0 | Tự dựng máy chủ firmware và cập nhật thành công mà không có tài khoản | §6.4 |
 
 **Ràng buộc nguyên tắc P-3:** FR-OTA-01 đến FR-OTA-04 thuộc lõi, không tách thành gói trả thêm (Q-45). Phần thương mại hóa chỉ là điều phối chiến dịch quy mô lớn (FR-FLT-02).
+
+### 5.4 Hợp đồng nhiệm vụ (FR-MSN)
+
+*Dự kiến — Q-72, increment I2d; chưa có mã.* Hợp đồng nhiệm vụ là đơn vị luật cho cả chuỗi hành động trên nhiều thiết bị. Nó **không thay gate**: mỗi hành động vẫn trỏ một gate đã khoá, gate vẫn là hàm thuần; hợp đồng gộp, **chỉ siết** và lập lịch chúng. Trình biên dịch hạ mỗi điều khoản xuống tầng thấp nhất cưỡng chế được: **phản xạ** (thiết bị có `ne_gate`, mili giây, chạy khi mất mạng), **kỹ năng** (runtime trên host, giây), **suy nghĩ** (LLM worker, giây tới phút). Lược đồ `mission.v1` chạm `schemas/`, nên **cần RFC** (RFC dự kiến, `CONTRIBUTING.md` §3); bảng dưới là yêu cầu RFC đó phải đáp ứng.
+
+| Mã | Yêu cầu | Ưu tiên | Tiêu chí nghiệm thu | Nguồn |
+|:---|:---|:---:|:---|:---:|
+| **FR-MSN-01** | **Hợp đồng là dữ liệu có phiên bản:** tệp theo lược đồ `mission.v1` (cần RFC), không phải mã; nêu thiết bị, hành động và gate liên quan, điều khoản, tham số, người khoá; chỉ người khoá được, LLM và agent thì không | P0 | Hợp đồng sai lược đồ ⇒ từ chối kèm lỗi ba phần (FR-DX-04); hợp đồng trỏ gate chưa khoá (`-draft`) ⇒ từ chối; hai lần biên dịch cùng hợp đồng cho cùng digest | Q-72 |
+| **FR-MSN-02** | **Được / cấm:** điều khoản cho phép và cấm hành động, kèm khoảng tham số; điều khoản chỉ **siết** so với gate của hành động, như kế thừa gate (Phụ lục B.5 nguyên tắc 2, RFC-0005) | P0 | Điều khoản "được" rộng hơn gate ⇒ từ chối biên dịch, nêu điều khoản và gate; lệnh thuộc "cấm" ⇒ BLOCK, lý do trỏ đúng điều khoản (ví dụ "tắt sục khí cho yên tĩnh") | Q-72 |
+| **FR-MSN-03** | **Tần suất, thời lượng:** "tối đa N lần mỗi giờ", "chạy không quá T" hạ xuống phong bì sẵn có (`window_s`, `max_on_ms_per_window`, `min_interval_ms`, `max_continuous_ms` — RFC-0007, RFC-0010) và chỉ siết phong bì của bo | P0 | Điều khoản nới phong bì của bo ⇒ từ chối; lệnh vượt tần suất ⇒ `EnvelopeRefusedError` hoặc BLOCK như hôm nay | Q-72 |
+| **FR-MSN-04** | **Khung giờ:** điều khoản "chỉ 23:00–05:00" đọc một **dữ kiện giờ tường do runtime chèn** (mới — hôm nay `RUNTIME_CRITERIA` chỉ có `call_source`, `call_channel`); dữ kiện có trạng thái `unsynced` khi máy nhà chưa có NTP hay RTC; điều khoản khung giờ coi `unsynced` là **thiếu dữ kiện** (fail-closed với lệnh rời `safe_state`). Thời lượng, hạn duyệt, watchdog, phản xạ dùng đồng hồ đơn điệu | P0 | Kịch bản mất điện, không NTP/RTC: lệnh chỉ được phép trong khung giờ bị chặn như thiếu dữ kiện; bản duyệt và UI báo "đồng hồ chưa đồng bộ"; cơ cấu không rời `safe_state` | Q-72 |
+| **FR-MSN-05** | **Nghĩa vụ ("phải") là watchdog có cận:** khuôn duy nhất "X vượt ngưỡng quá T ⇒ Y về `safe_state` (hoặc trạng thái 'báo động, gọi người') và báo"; T, ngưỡng và hành động đều có cận khai; không có nghĩa vụ tự do. Hướng về `safe_state` không cần gate (Q-62 theo FR-ACE-03); hướng khác đi qua gate | P0 | Kịch bản bể cá: sưởi trên 30 °C quá 10 phút ⇒ ngắt sưởi và báo động, cả khi mất mạng nếu thiết bị có tầng phản xạ; nghĩa vụ thiếu cận ⇒ từ chối biên dịch | Q-72 |
+| **FR-MSN-06** | **Luồng dữ liệu:** hợp đồng khai các **đích** (nhà cung cấp LLM, kênh chat, relay, webhook) và loại dữ liệu mỗi đích được nhận; mặc định đích người dùng khai nhận dữ liệu người dùng cho phép, kể cả ảnh tới LLM; **luật nội dung** ("ảnh không rời nhà", từ vựng sự kiện đóng) là tuỳ chọn người dùng bật. Cưỡng chế ở FR-EGR | P0 | Bản duyệt nêu mọi đích và loại dữ liệu; điều khoản thuộc loại xác suất (ví dụ "không gửi ảnh có mặt người") được ghi rõ là xác suất | Q-72 |
+| **FR-MSN-07** | **Khi hỏng:** với mỗi cơ cấu, hành vi khi mất não, mạng, cảm biến hay LLM là **trở về `safe_state` đã khai trong `board.v1`**, hoặc trạng thái "báo động, gọi người" khi cả hai hướng đều nguy hiểm (FR-GATE-04); hợp đồng không khai được `safe_state` khác `off` | P0 *(chờ RFC an toàn có điều kiện)* | Hợp đồng khai `safe_state` ⇒ từ chối; mỗi cơ cấu trong bản duyệt có dòng "khi hỏng" lấy từ `board.v1` | Q-72 |
+| **FR-MSN-08** | **Hết hạn:** mọi quyền trong hợp đồng có thời hạn cấp nhiệm vụ; hết hạn ⇒ quyền mất, cơ cấu về `safe_state`, người dùng được báo để gia hạn; gia hạn là một sửa đổi phải duyệt (FR-MSN-14) | P0 | Kịch bản G1 tua qua hạn: lệnh rời `safe_state` sau hạn bị chặn, có đúng một tin báo hết hạn | Q-72 |
+| **FR-MSN-09** | **Ngân sách:** hợp đồng khai `llm_budget` (trần chi phí LLM mỗi kỳ, ví dụ 2 USD/tháng) và **ngân sách tin nhắn** (số tin không khẩn mỗi ngày); hành vi khi chạm trần ở FR-AGT-05, FR-AGT-06 | P0 | Hợp đồng thiếu `llm_budget` khi có điều khoản tầng suy nghĩ ⇒ từ chối biên dịch | Q-72 |
+| **FR-MSN-10** | **Biên dịch theo tầng:** mỗi điều khoản được gán đúng một tầng — phản xạ, kỹ năng, suy nghĩ — là tầng thấp nhất cưỡng chế được; chỉ thiết bị có `ne_gate` có tầng phản xạ, thiết bị qua Home Assistant hay cơ cấu từ xa dừng ở tầng kỹ năng và bản duyệt nói rõ; **điều khoản an toàn không bao giờ ở tầng suy nghĩ**. Đổi bố cục `NETR` để chở điều khoản phản xạ cần RFC | P0 | Mỗi điều khoản trong bản biên dịch có đúng một tầng; điều khoản an toàn chỉ hạ được tới tầng suy nghĩ ⇒ từ chối | Q-72 |
+| **FR-MSN-11** | **Từ chối mâu thuẫn trước khi duyệt:** hợp đồng mâu thuẫn (ví dụ "cấm tắt sục khí" và "tắt sục khí 2h–5h"), hay đụng `safe_state` và phong bì của bo, bị từ chối **trước** khi tới người duyệt, chỉ rõ hai điều khoản đụng nhau | P0 | Corpus hợp đồng mâu thuẫn khép kín hai chiều — mỗi tệp một đáp án (`CONTRIBUTING.md` §3); 100% bị từ chối với đúng cặp điều khoản (A15) | Q-72 |
+| **FR-MSN-12** | **Bản duyệt ≤ 5 dòng:** do trình biên dịch sinh **tất định** từ diff có cấu trúc của hợp đồng, không từ chữ do LLM viết; tiếng thường; mỗi dòng ghi tầng cưỡng chế; chỉ nêu điều khoản khác mặc định; luôn nêu riêng cơ cấu có `safe_state` khác `off`, đích dữ liệu mới và điều khoản xác suất. Dùng lại năng lực của `neuroedge gate explain`. Thay đổi không tóm được trong 5 dòng thì không gửi qua chat, chỉ duyệt tại chỗ với bản đầy đủ *(đề xuất cho RFC)* | P0 | Cùng hợp đồng ⇒ cùng bản duyệt từng byte và cùng digest; bản duyệt gửi qua chat không bao giờ quá 5 dòng; LLM sửa câu chữ bản duyệt không đổi được nội dung gửi đi | Q-72 |
+| **FR-MSN-13** | **Hỏi lại khi mơ hồ:** client MCP (Lab) hoặc LLM worker dịch câu nói thành bản nháp; tham số còn thiếu (ngưỡng oxy, giờ yên lặng, kênh báo) phải hỏi lại người, chỉ điền sẵn giá trị gợi ý khi Blueprint khai mặc định, và người vẫn thấy giá trị đó trong bản duyệt; bản nháp không có hiệu lực tới khi người khoá | P0 | Bản nháp thiếu tham số bắt buộc ⇒ không biên dịch được, nêu tham số cần hỏi; không đường nào bật bản nháp chưa khoá | Q-71, Q-72 |
+| **FR-MSN-14** | **Sửa đổi qua cùng một đường:** mọi sửa đổi — kể cả do agent vận hành đề xuất — đi nháp → biên dịch và kiểm mâu thuẫn → bản duyệt → người duyệt tại chỗ (UI cục bộ, CLI) hoặc qua bản ghi duyệt trong chat (FR-CH-04). Sửa đổi mở rộng quyền dữ liệu (đích mới, loại dữ liệu mới) chỉ duyệt tại chỗ | P0 | Đề xuất "thêm sục khí 2h–5h" từ agent ⇒ yêu cầu duyệt trong chat, chưa có hiệu lực tới khi duyệt; đề xuất thêm đích dữ liệu ⇒ không duyệt được qua chat | Q-72 |
+
+### 5.5 Kênh chat và lời duyệt từ xa (FR-CH)
+
+*Dự kiến — Q-72, increment I2d; chưa có mã.* Kênh nhắn tin là nơi người dùng sống với thiết bị mỗi ngày: nhận báo cáo, ra lệnh, và **duyệt**. Vì chat là kênh từ xa chứa văn bản do người ngoài gửi, lời duyệt qua chat là một **bản ghi duyệt có mã**, không phải một "Có" tự do. Nguồn `chat:<id>` theo cùng văn phạm nguồn do runtime gán của RFC-0017 và **cần RFC** (RFC dự kiến: nguồn `chat:<id>` + bản ghi duyệt). Hôm nay `HUMAN_SOURCES = ("local_grammar", "ui")` (`python/neuroedge/actions/confirmation.py`).
+
+| Mã | Yêu cầu | Ưu tiên | Tiêu chí nghiệm thu | Nguồn |
+|:---|:---|:---:|:---|:---:|
+| **FR-CH-01** | **Adapter kênh chat trong runtime:** Telegram trước (I2d), Slack và Zalo sau; adapter chạy trong runtime tin cậy, chỉ đi `dispatch()`, không import `hal`; nội dung tin chat đi vào LLM worker như **dữ liệu không tin cậy** | P0 · Slack, Zalo: P1 | Gửi và nhận tin qua Telegram trong kịch bản G1; test cấu trúc: gói kênh chat không import `hal`; tin chat chứa lệnh cài cắm không vượt được gate | Q-72 |
+| **FR-CH-02** | **Lệnh từ chat là tool call có nguồn:** tin của người đã ghép đôi thành tool call với nguồn `chat:<id>` do runtime gán, đi `dispatch()` → gate như mọi nguồn; nguồn `chat:<id>` **không** thuộc `HUMAN_SOURCES` — một tin thường không bao giờ xác nhận `ask` | P0 *(cần RFC)* | Tool call từ chat mang `source` tự khai ⇒ `REJECTED`; tin "Có" không nhắm một yêu cầu duyệt ⇒ không xác nhận gì | Q-72 |
+| **FR-CH-03** | **Ghép đôi tại chỗ:** chỉ tài khoản chat đã ghép đôi với máy nhà bằng mã ghép đôi hiện **tại chỗ** (UI cục bộ hoặc CLI) mới gửi được lệnh và lời duyệt; **nhóm chat không bao giờ duyệt**. Thu hồi, hạn ghép đôi và trần số lời duyệt mỗi giờ: hoãn ở `TODOS.md` #62, mốc trước task duyệt qua chat của I2d | P0 | Tin từ tài khoản chưa ghép đôi ⇒ bỏ qua, ghi vết; lời duyệt từ nhóm ⇒ từ chối (A20); mã ghép đôi chỉ hiện ở UI cục bộ hoặc CLI trên máy nhà | Q-72 |
+| **FR-CH-04** | **Bản ghi duyệt:** runtime phát yêu cầu duyệt `{id, nonce, hạn, digest của thay đổi, bản duyệt ≤ 5 dòng}` tới chat đã ghép; bản duyệt do trình biên dịch sinh (FR-MSN-12); trả lời phải **nhắm đúng `id`** (nút bấm hoặc mã); runtime kiểm, theo thứ tự: người gửi đã ghép đôi, không phải nhóm, nonce chưa dùng, còn hạn (đồng hồ đơn điệu), digest khớp thay đổi đang chờ — đạt đủ mới đưa vào đường xác nhận với nguồn `chat:<id>`; mỗi lời duyệt (đạt hay bị từ chối) ghi vào `trace.v1` với người gửi, `id`, digest và bản duyệt. Áp cho cả `ask` lúc chạy lẫn sửa đổi hợp đồng. Lời duyệt không đi qua relay | P0 *(cần RFC)* | Bộ kịch bản: lời duyệt từ tài khoản chưa ghép đôi, từ nhóm, nonce đã dùng, hết hạn, digest lệch (thay đổi bị sửa sau khi gửi yêu cầu), nhắm sai `id` ⇒ đều bị từ chối và ghi vết; hai yêu cầu chờ cùng lúc không bao giờ bị duyệt nhầm (A20) | Q-26, Q-72 |
+| **FR-CH-05** | **LLM không bao giờ duyệt:** LLM worker và agent không có đường gửi lời duyệt; câu trả lời do LLM soạn không được đưa vào chat như lời duyệt; chỉ bản ghi duyệt từ người đã ghép đôi mới vào đường xác nhận (FR-CH-04) | P0 | Worker gửi bản ghi duyệt giả qua MCP ⇒ từ chối, ghi vết; không tool nào runtime phơi cho worker trả lời được yêu cầu duyệt | Q-26, Q-72 |
+
+### 5.6 Luồng dữ liệu chống rò rỉ (FR-EGR)
+
+*Dự kiến — Q-72, increment I2d; chưa có mã.* Luật luồng dữ liệu nhằm **chống rò rỉ** — hack, prompt injection, đánh cắp — chứ không hạn chế luồng người dùng tự dựng: mọi đích người dùng khai (nhà cung cấp LLM, kênh chat, relay, webhook) nhận được dữ liệu người dùng cho phép, kể cả ảnh tới LLM. **Rủi ro còn lại, phải nêu trong tài liệu và threat model:** một LLM worker bị lừa vẫn gửi được dữ liệu đã được phép tới đích đã được phép. Lược đồ khai đích **cần RFC** (RFC dự kiến: luồng dữ liệu và đích).
+
+| Mã | Yêu cầu | Ưu tiên | Tiêu chí nghiệm thu | Nguồn |
+|:---|:---|:---:|:---|:---:|
+| **FR-EGR-01** | **Runtime là cửa ra; chỉ đích đã khai:** runtime chỉ gửi dữ liệu ra các đích khai trong hợp đồng hoặc cấu hình; gửi tới đích không khai bị chặn và ghi vết | P0 | Kịch bản: một tin hay một webhook tới địa chỉ không khai ⇒ bị chặn, vết ghi có sự kiện chặn kèm đích (A18) | Q-72 |
+| **FR-EGR-02** | **Runtime quyết định worker thấy gì:** LLM worker chỉ nhận những trường mà điều khoản luồng dữ liệu cho phép đi tới nhà cung cấp LLM | P0 | Hợp đồng không cho ảnh tới LLM ⇒ không có ảnh nào trong dữ liệu runtime đưa cho worker | Q-72 |
+| **FR-EGR-03** | **Mạng của worker bị chặn ở mức hệ điều hành:** worker chỉ ra mạng tới endpoint nhà cung cấp đã khai (user riêng và luật tường lửa, hoặc proxy của runtime); công cụ chẩn đoán cảnh báo khi luật mạng này vắng | P0 | Worker mở kết nối tới một host không khai ⇒ thất bại; thiếu luật mạng ⇒ chẩn đoán cảnh báo và bản duyệt ghi rõ | Q-72 |
+| **FR-EGR-04** | **Luật nội dung tuỳ chọn:** người dùng bật được luật tất định ("ảnh không rời mạng nội bộ", chỉ gửi sự kiện theo từ vựng đóng `{vùng, loại, lúc, tin_cậy}`) — cưỡng chế ở cửa ra, bảo đảm tuyệt đối — và luật xác suất ("không gửi ảnh có mặt người") — chỉ fail-closed: không chắc thì không gửi. Câu tự do do LLM viết không rời mạng khi hợp đồng chỉ cho sự kiện theo lược đồ | P0 | Bật "ảnh không rời mạng nội bộ" ⇒ trong kịch bản 30 ngày không ảnh nào tới đích ngoài (A18); bản duyệt đánh dấu luật xác suất | Q-72 |
+| **FR-EGR-05** | **Relay tuỳ chọn là ống TLS xuyên:** máy nhà mở kết nối ra relay; relay chọn đích theo SNI và **không giải mã** (mẫu SniTun của Nabu Casa); sao lưu vết ghi mã hoá phía máy nhà trước khi gửi; lời duyệt không qua relay; relay tắt hay hỏng thì mọi phần an toàn vẫn chạy. Đây là ngoại lệ có giới hạn cho "không có máy chủ nào do NeuroEdge vận hành" (Q-10) | P1 | Relay bị chiếm chỉ thấy siêu dữ liệu (tên miền, thời điểm), không đọc được vết ghi, không chèn được lệnh; tắt relay giữa kịch bản ⇒ phán quyết không đổi | Q-72 |
 
 ---
 
@@ -391,6 +524,9 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-TRC-08** | Lệnh `neuroedge trace validate <tệp>` xác thực tệp theo JSON Schema | P0 | Tệp sai cấu trúc bị bắt lỗi trước khi commit | §3.7 |
 | **FR-TRC-09** | Tuân thủ quy ước đường dẫn: `traces/`, `traces/incidents/<session_id>.json`, `traces/golden/<kịch-bản>.json` | P1 | Dự án scaffold tạo sẵn ba thư mục | §3.7 |
 | **FR-TRC-10** | Schema được đăng ký lên SchemaStore công cộng để IDE tự nhận diện | P1 | VS Code gợi ý tự động khi mở tệp vết ghi mà không cần cài công cụ NeuroEdge | §3.7 |
+| **FR-TRC-11** | **Vết ghi theo đoạn cho runtime 24/7** *(Q-72, cần RFC `trace.v1`)*: vết ghi của agent vận hành là **chuỗi đoạn** theo thời gian (mỗi ngày, hoặc sớm hơn khi vượt cỡ); mỗi đoạn mang **trạng thái đầu đoạn** (gate digest, sổ token, bộ đếm phong bì, lease đang chạy) và digest của đoạn trước. Bất biến "một vết ghi mỗi phiên" thành "một phiên một chuỗi vết ghi, mỗi đoạn replay được" | P0 | `replay` một đoạn đơn lẻ cho cùng phán quyết như lúc chạy, kể cả bộ đếm phong bì và lease vắt qua ranh giới đoạn; thiếu hay sửa một đoạn ⇒ chuỗi digest báo đúng chỗ đứt; vết ghi một phiên thường giữ nguyên định dạng | Q-72 |
+| **FR-TRC-12** | **Ghi và giữ vết ghi trên máy nhà** *(Q-72)*: ghi nối tiếp, flush theo thời gian (mặc định khoảng 10 giây, khai được) và **ngay** khi có phán quyết chặn hay lời duyệt; giữ **30 ngày** gần nhất tại chỗ, đoạn cũ hơn nén rồi xoá hoặc xuất qua relay mã hoá (FR-EGR-05); mất điện chỉ mất tối đa phần đuôi sự kiện thường, và `replay` báo đoạn cụt | P0 | Kịch bản mất điện giữa đoạn: mọi phán quyết chặn và lời duyệt trước lúc mất điện còn trong vết ghi; `replay` báo đoạn cụt thay vì báo đạt; cỡ 30 ngày đo trên G1 và ghi vào NFR-OBS-04 | Q-72 |
+| **FR-TRC-13** | **Sự kiện mới của Q-72** *(cần RFC `trace.v1`)*: yêu cầu duyệt và lời duyệt (người gửi, `id`, digest, bản duyệt, kết quả kiểm), bộ phát hiện bắn, gửi ra đích (đích, loại dữ liệu, bị chặn hay không), chi phí LLM cộng dồn theo kỳ, chạm trần ngân sách, khởi động lại runtime hay worker, đồng hồ `unsynced` | P0 | Kịch bản bể cá 30 ngày sinh đủ các loại sự kiện trên và qua `neuroedge trace validate` | Q-72 |
 
 ### 6.4 Quản trị lược đồ mở (FR-GOV)
 
@@ -417,8 +553,8 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-DX-06** | Tài liệu có ít nhất 1 video hoặc ảnh động minh họa trực quan trong README | P0 | Có tài sản trực quan dưới 30 giây thể hiện vòng lặp giá trị | §12.1 |
 | **FR-DX-07** | Công cụ lint của dự án mẫu chặn khẳng định so khớp văn bản do System 2 sinh ra | P1 | Test vi phạm FR-CI-L3 bị lint báo lỗi | §3.7 |
 | **FR-DX-08** | `neuroedge add` sinh `@action` + gate + test hai chiều + khai `[requires]` cho mọi nguyên thủy, từ template có sẵn | P0 | Trên dự án mẫu: `gate lint` sạch, test ALLOW và BLOCK xanh; chạy lại không ghi đè tệp đã có | Q-52 |
-| **FR-DX-09** | Kit mẫu cho mỗi gói nguyên thủy: BOM, sơ đồ đấu dây, profile bo mạch, gate đã khoá, vết ghi golden, hướng dẫn "từ hộp tới chạy thật" | P0 | A12 | Q-52 |
-| **FR-DX-10** | NeuroEdge Lab: bộ tool MCP trung lập với client để một client MCP (Claude Code, Claude Desktop…) dựng bản nháp `@action` + gate `0.1.0-draft` + test hai chiều cho mọi nguyên thủy — NeuroEdge chấm bản nháp (`neuroedge lab check`, cùng mã ở tool và Action CI) chứ không tự gọi LLM; bản nháp chỉ được khoá sau `gate lint` và người duyệt qua PR — không tool nào khoá được chính sách | P0 | A11 | Q-55, Q-71 |
+| **FR-DX-09** | Kit mẫu cho mỗi gói nguyên thủy: BOM, sơ đồ đấu dây, profile bo mạch, gate đã khoá, vết ghi golden, hướng dẫn "từ hộp tới chạy thật". *Mở rộng bởi Q-72:* **danh mục kit** có BOM kèm nơi mua (liên kết bán, chưa giữ kho), mở đầu bằng **kit bể cá** (I2e); kit là phần `kit` của một NeuroEdge Blueprint (FR-BP-01) và chạy thử được trên giả lập trước khi mua | P0 | A12. *Q-72:* kit bể cá có BOM với nơi mua cho từng linh kiện, chạy được trên G1 trước khi mua | Q-52, Q-72 |
+| **FR-DX-10** | NeuroEdge Lab: bộ tool MCP trung lập với client để một client MCP (Claude Code, Claude Desktop…) dựng bản nháp `@action` + gate `0.1.0-draft` + test hai chiều cho mọi nguyên thủy — NeuroEdge chấm bản nháp (`neuroedge lab check`, cùng mã ở tool và Action CI) chứ không tự gọi LLM; bản nháp chỉ được khoá sau `gate lint` và người duyệt qua PR — không tool nào khoá được chính sách. *Mở rộng bởi Q-72:* Lab là **vòng ①** — từ action lên **hợp đồng nhiệm vụ**: client dựng bản nháp `mission.v1` (FR-MSN-13), NeuroEdge chấm bằng cùng trình biên dịch và phép kiểm mâu thuẫn, người khoá; và `neuroedge lab doctor` kiểm **từng cảm biến** khi lắp (ví dụ *"cảm biến oxy đọc 0 — kiểm lại dây"*), ngoài cảnh báo tách quyền hiện có. Phần vòng ① cho nhiệm vụ dời từ I4a vào I2d | P0 | A11. *Q-72:* một hợp đồng nhiệm vụ bể cá do client MCP dựng qua tool của Lab, qua phép kiểm và người khoá; `lab doctor` chỉ đúng cảm biến đọc sai trong kịch bản G2 | Q-55, Q-71, Q-72 |
 
 ### 7.2 Giao diện dòng lệnh (FR-CLI)
 
@@ -435,6 +571,9 @@ Nguyên tắc: **tích hợp thư viện mã nguồn mở tốt nhất, không t
 | **FR-CLI-10** | Phân giải gate | `neuroedge gate resolve <tệp\|URI> [--json] [--registry <dir>]` | P0 | In chính sách hiệu dụng và mã băm; chuỗi vi phạm → mã 1 với cùng lỗi như `gate lint`; cùng đầu vào cho cùng mã băm | Phụ lục B.5 |
 | **FR-CLI-11** | Bo mạch | `neuroedge board list` · `neuroedge board show <id>` · `neuroedge board validate <path>` *(RFC-0002 PR2, Giai đoạn 2)* | P0 · `validate`: Giai đoạn 2 | `board show` in năng lực theo 5 nguyên thủy (FR-HAL-01); `board validate` tệp sai lược đồ → mã 1 kèm `BoardCapabilityError`; trước RFC-0002 PR2, `board validate` thoát mã 2 | §4.2, RFC-0002 |
 | **FR-CLI-12** | Tích hợp tool | `neuroedge mcp tools [--json\|--openai] [--external]` · `neuroedge mcp serve [--agent a.toml] [--ui \| --http …]` · `neuroedge mcp desktop-config [--agent a.toml] [--ui] [--lab] [--write]` | P1 | `tools` in schema mỗi `@action`; `serve` là máy chủ MCP qua stdio (`--ui`: cùng phiên với giao diện web `sim`; `--http`: qua mạng bằng Streamable HTTP, mTLS và token OAuth 2.1 theo thiết bị, mặc định tắt, thiếu một mảnh cấu hình ⇒ mã 1 trước khi mở cổng — NFR-SEC-09, TSK-P2-04), mỗi `tools/call` đi qua `dispatch()` và gate (Q-24); `desktop-config` in (hoặc ghi, có sao lưu, chỉ đúng một mục `mcpServers`) cấu hình Claude Desktop bằng đường dẫn tuyệt đối; `--lab` *(I4a, TSK-N1-05)* cấu hình cho agent lab trong một bước, vẫn đúng một mục `mcpServers` và mọi lab tool vẫn qua gate; thiếu extra `mcp` ⇒ mã 1 kèm cách cài | §4.8 |
+| **FR-CLI-13** | NeuroEdge Blueprint *(Q-72, I2e; dự kiến)* | `neuroedge blueprint pack [thư-mục]` · `neuroedge blueprint install <url\|tệp> [--digest <sha256>]` | P0 | `pack` in digest phủ toàn gói, hai lần chạy cho cùng digest, từ chối gói thiếu bằng chứng hay có gate chưa khoá (mã 1); `install` lệch digest ⇒ mã 1, không ghi tệp nào; hiện bản duyệt trước khi bật (FR-BP-02, FR-BP-03) | Q-72 |
+| **FR-CLI-14** | Kênh chat *(Q-72, I2d; dự kiến)* | `neuroedge chat connect <kênh>` · `neuroedge chat pair` | P0 | `connect telegram` lưu token bot vào cấu hình của runtime, không in token; `pair` chỉ chạy trên máy nhà và hiện mã ghép đôi tại chỗ (FR-CH-03); kênh chưa hỗ trợ ⇒ mã 2 | Q-72 |
+| **FR-CLI-15** | Nhiệm vụ và agent vận hành *(Q-72, I2d; dự kiến)* | `neuroedge mission check <tệp>` · `neuroedge mission explain <tệp>` · `neuroedge agent run` | P0 | `mission check` thoát 0 khi hợp đồng biên dịch được, 1 kèm lỗi ba phần khi sai lược đồ hay mâu thuẫn (FR-MSN-11); `mission explain` in bản duyệt ≤ 5 dòng tất định (FR-MSN-12); `agent run` khởi động runtime tin cậy (FR-AGT-01), từ chối chạy khi hợp đồng chưa khoá. Tên lệnh chốt ở RFC `mission.v1` | Q-72 |
 
 **Yêu cầu chung cho toàn bộ CLI:**
 
@@ -458,14 +597,31 @@ RFC-0018 (`docs/rfc/`). Quyết định: Q-67.
 | **FR-EXT-05** | **Tài sản ngoài gói:** `--board <đường dẫn>` cho bo cộng đồng (tự chứng nhận, không bao giờ là bo tham chiếu); template từ đường dẫn, package hay git ghim commit; nhiều gốc registry gate; `extends` ghim được bằng digest | P0 | Mỗi nguồn có test; `verify` không bao giờ tính bo ngoài kho vào tương đương bậc 1 | Q-67, RFC-0002 |
 | **FR-EXT-06** | **Hai proxy phổ quát:** `neuroedge proxy mcp` che một MCP server sẵn có (`guard init --mcp` sinh gate chặn mặc định cho từng tool) và `neuroedge proxy http` | P0 | Che một MCP server sẵn có trong ≤ 3 lệnh; công cụ chẩn đoán cảnh báo khi đích còn tới được mà không qua proxy | Q-67 |
 | **FR-EXT-07** | **Cơ cấu chấp hành từ xa** có mức tự tắt khai rõ; hành động không hoàn tác cần mức mà thiết bị tự tắt được dù mất liên lạc | P0 | Theo RFC-0018 §7; adapter Home Assistant đạt đúng mức nó khai | Q-67 |
-| **FR-EXT-08** | **Khám phá và phân phối:** index cộng đồng (kho riêng, Apache-2.0), `neuroedge plugin search/install`, huy hiệu "NeuroEdge-gated" chỉ cấp khi đạt FR-EXT-04. Không thu phí, không xếp hạng trả tiền (Marketplace vẫn chặn, §14) | P1 | Một plugin bên thứ ba cài từ index, hiện kết quả tuân thủ | Q-67 |
+| **FR-EXT-08** | **Khám phá và phân phối:** index cộng đồng (kho riêng, Apache-2.0), `neuroedge plugin search/install`, huy hiệu "NeuroEdge-gated" chỉ cấp khi đạt FR-EXT-04. Không thu phí, không xếp hạng trả tiền. Index này **chỉ cho plugin** và luôn miễn phí; NeuroEdge Blueprint có index riêng cùng kiểu kho tĩnh (FR-BP-05), là nơi duy nhất có thể thu phí, và chỉ sau cổng 8 tuần (§14, Q-72) | P1 | Một plugin bên thứ ba cài từ index, hiện kết quả tuân thủ | Q-67, Q-72 |
 | **FR-EXT-09** | **`neuroedge.sdk` ổn định:** có phiên bản riêng; cam kết chặt hơn mức `0.x` của gói (`docs/spec/python_api.md`) | P0 | Test ghim bề mặt SDK như `test_public_api.py` ghim `__all__` | Q-67 |
+
+### 7.4 NeuroEdge Blueprint (FR-BP)
+
+*Dự kiến — Q-72, increment I2e (sau I2d); chưa có mã.* **NeuroEdge Blueprint** là đơn vị chia sẻ và bán của vòng ③: một gói khai báo gồm **kit** (profile `board.v1` + BOM có nơi mua), **firmware** (cấu hình sinh firmware có `ne_gate`), **hợp đồng nhiệm vụ mẫu** kèm tham số hỏi lại, gate đã khoá, **bộ phát hiện**, và **vết ghi làm bằng chứng**. Nó khác **Home Assistant Blueprint** (mẫu automation chia sẻ trên Blueprint Exchange, nhập bằng URL); một NeuroEdge Blueprint có thể mang kèm một HA blueprint để người dùng HA cài một lần. Lược đồ `blueprint.v1` chạm `schemas/` nên **cần RFC** (RFC dự kiến); quan hệ với `manifest.v1` của Gate Registry (FR-REG-02) chốt ở RFC đó.
+
+| Mã | Yêu cầu | Ưu tiên | Tiêu chí nghiệm thu | Nguồn |
+|:---|:---|:---:|:---|:---:|
+| **FR-BP-01** | **Định dạng gói:** manifest `blueprint.v1` (cần RFC) liệt kê các phần trên, tác giả, phiên bản SemVer, giấy phép; gói **chỉ khai báo** — không có mã chạy tuỳ ý trên máy nhà lúc cài; firmware sinh lại từ cấu hình bo, bản dựng sẵn nếu có thì mang digest riêng; có thể mang kèm HA blueprint | P0 | Gói sai lược đồ ⇒ từ chối kèm lỗi ba phần; gói chứa tệp ngoài danh sách khai ⇒ từ chối | Q-72 |
+| **FR-BP-02** | **`neuroedge blueprint pack`:** gom các phần thành một gói, tính **digest phủ toàn gói** (kit, firmware, hợp đồng mẫu, gate, bộ phát hiện, vết ghi bằng chứng; SHA-256 trên dạng chuẩn tắc như `gate publish`); từ chối khi có gate chưa khoá, thiếu vết ghi bằng chứng, hay `replay` bằng chứng không đạt | P0 | Hai lần `pack` cùng nội dung cho cùng digest; đổi một byte ở bất kỳ phần nào ⇒ digest đổi; gói có gate `-draft` ⇒ mã 1 (FR-CLI-13) | Q-72 |
+| **FR-BP-03** | **`neuroedge blueprint install`:** tải bằng URL (git hoặc HTTPS) hoặc tệp, **kiểm digest toàn gói** trước khi ghi gì; chạy `replay` bằng chứng trên máy người cài; hỏi tham số; hiện bản duyệt (quyền, đích dữ liệu, cơ cấu có `safe_state` khác `off`, nhãn "bằng chứng chưa ký") rồi mới bật; không tự khoá hợp đồng — người cài duyệt | P0 | Digest lệch ⇒ từ chối, lỗi ba phần, không ghi tệp nào; người ngoài đội cài Blueprint bể cá trên máy sạch và chạy trên `sim` trong < 10 phút, không tài khoản (A14) | Q-72 |
+| **FR-BP-04** | **Bằng chứng:** vết ghi `trace.v1` chạy thật hoặc trên giả lập, ghi rõ tầng (G1–G4 hay phần cứng thật) và thời lượng; **không Blueprint nào được bán khi chưa có bằng chứng** `replay` đạt. Ở MVP bằng chứng **chưa ký** — người bán sửa được vết ghi — nên mọi nơi hiện nó ghi rõ "chưa ký"; ký vết ghi quay lại trước khi Hub thu tiền cho người bán (`TODOS.md` #1) | P0 | `install` và index hiện "chưa ký" và tầng của bằng chứng; bằng chứng `replay` lệch ⇒ `install` từ chối | Q-72 |
+| **FR-BP-05** | **Hub tối thiểu là index tĩnh:** một kho index tĩnh (cùng kiểu index plugin của FR-EXT-08, TSK-I2c-18) liệt kê URL, digest, tác giả, giấy phép, tầng của bằng chứng và nhãn "chưa ký"; người bán tự host gói (ví dụ trên GitHub); không máy chủ NeuroEdge, không tài khoản, không thu phí, không xếp hạng trả tiền tới sau cổng 8 tuần; chuyển sang OCI Registry (H2, FR-REG) khi Hub thu tiền | P0 | `blueprint install` từ một mục của index kiểm đúng digest ghi trong index; index không có thành phần chạy trên máy chủ | Q-72 |
+| **FR-BP-06** | **An toàn của gói:** hợp đồng mẫu và gate trong gói không khai được `safe_state`; profile `board.v1` mang theo có `safe_state` khác `off` thì phải khai khoá liên động phần cứng (FR-ACE-03), và `blueprint install` hiện **riêng** từng cơ cấu đó, người cài xác nhận tại chỗ; mọi quyền và đích dữ liệu của gói hiện trong bản duyệt | P0 *(chờ RFC an toàn có điều kiện)* | Gói khai `safe_state` trong hợp đồng ⇒ từ chối; profile `safe_state: on` thiếu khoá liên động ⇒ từ chối nạp (A21); bản duyệt khi cài nêu riêng cơ cấu `safe_state: on` | Q-72 |
+| **FR-BP-07** | **Kit có BOM liên kết:** BOM của Blueprint nêu mã hàng và nơi mua (liên kết bán, NeuroEdge chưa giữ kho); kit bể cá là kit đầu tiên (FR-DX-09) | P0 | Mỗi linh kiện của kit bể cá có ít nhất một nơi mua; BOM khớp năng lực khai trong profile bo | Q-72 |
+| **FR-BP-08** | **Giấy phép trong manifest:** mỗi Blueprint ghi giấy phép của nó; dùng cá nhân miễn phí; bán Blueprint hay thiết bị dựng từ NeuroEdge là dùng thương mại (Q-45, PolyForm Noncommercial) và đi qua giấy phép thương mại của NeuroEdge (điều khoản: `TODOS.md` #44) | P1 | `install` hiện giấy phép; index hiện giấy phép của từng mục | Q-45, Q-72 |
+| **FR-BP-09** | **Dữ liệu chia sẻ có đồng ý:** người dùng bật được việc chia sẻ dữ liệu vận hành (đã ẩn danh) để cải thiện bộ phát hiện của một Blueprint; **mặc định tắt**, đi qua cửa ra như mọi đích khác (FR-EGR-01) | P2 | Chưa bật ⇒ không dữ liệu nào rời máy cho mục đích này; bật ⇒ đích hiện trong bản duyệt (NFR-PRIV-05) | Q-72 |
+| **FR-BP-10** | **Hub thu phí** *(sau cổng 8 tuần)*: chia doanh thu Blueprint, thanh toán, trang người bán; điều kiện mở: cổng 8 tuần đạt (B6–B8), ký vết ghi (`TODOS.md` #1), chuyển phân phối sang OCI Registry dùng đường ray FR-REG (định danh, đo lường, phân quyền) | P2 | Đặc tả khi cổng đạt, theo quyết định `Q-N` mới | Q-72 |
 
 ---
 
 ## 8. Yêu cầu chức năng — Tầng dịch vụ thương mại
 
-**§8.1 (FR-GW) thuộc lõi**, giao theo hai mốc (Q-28: FR-GW-01 và 03 ở mức tối thiểu trong v1.0, phần còn lại ở v1.1) — lớp trừu tượng nhà cung cấp do người dùng tự vận hành, không thu phí dịch vụ (dùng thương mại vẫn cần license lõi — Q-45). **§8.2 (FR-FLT) và §8.3 (FR-REG) thuộc mốc v1.1**, chỉ khởi động khi đạt điều kiện §3.3. Fleet OS là dịch vụ thương mại duy nhất; dòng thu còn lại là license thương mại cho lõi (Q-45).
+**§8.1 (FR-GW) thuộc lõi**, giao theo hai mốc (Q-28: FR-GW-01 và 03 ở mức tối thiểu trong v1.0, phần còn lại ở v1.1) — lớp trừu tượng nhà cung cấp do người dùng tự vận hành, không thu phí dịch vụ (dùng thương mại vẫn cần license lõi — Q-45). **§8.2 (FR-FLT) và §8.3 (FR-REG) thuộc mốc v1.1**, chỉ khởi động khi đạt điều kiện §3.3. **Dòng thu theo Q-72** (thay câu "Fleet OS là dịch vụ thương mại duy nhất" của Q-45): PolyForm Noncommercial là cơ chế thu — cá nhân dùng miễn phí, bán Blueprint hay thiết bị là dùng thương mại; các dòng thu, thứ tự và yêu cầu dẫn ở §8.4. NeuroEdge vẫn **không bán lại token** (N4): người dùng tự trả LLM bằng key của mình.
 
 ### 8.1 Lớp trừu tượng nhà cung cấp (FR-GW)
 
@@ -494,7 +650,7 @@ Nhóm FR-GW chuyển từ dịch vụ thương mại sang **lõi** (CR-1.0); m�
 
 ### 8.3 Đường ray hạ tầng nền tảng (FR-REG)
 
-Bảy đường ray (FR-REG-01→07, khớp proposal §8.5) rẻ ở giai đoạn đầu nhưng **không thể bổ sung sau**. FR-REG-08 là phần mở rộng của đường ray 1 (kho Registry), không phải đường ray thứ tám.
+Bảy đường ray (FR-REG-01→07, khớp proposal §8.5) rẻ ở giai đoạn đầu nhưng **không thể bổ sung sau**. FR-REG-08 là phần mở rộng của đường ray 1 (kho Registry), không phải đường ray thứ tám. Theo Q-72, các đường ray này cũng là **nền của Hub thu phí** cho NeuroEdge Blueprint sau cổng 8 tuần (FR-BP-10): manifest và định danh cho gói, đo lường cho chia doanh thu, phân quyền cho gói của người lạ.
 
 | Mã | Thành phần | Giá trị ngày đầu | Vai trò dài hạn | Ưu tiên |
 |:---|:---|:---|:---|:---:|
@@ -509,6 +665,21 @@ Bảy đường ray (FR-REG-01→07, khớp proposal §8.5) rẻ ở giai đoạ
 
 **Cảnh báo kiến trúc:** FR-REG-05, FR-REG-06 và FR-REG-07 phải được thiết kế ngay ở v1.1. Thiếu chúng, hệ thống sau này không thể đối soát doanh thu và không thể cho phép mã nguồn bên thứ ba chạy trên thiết bị có cơ cấu chấp hành.
 
+### 8.4 Dòng thu theo Q-72: kit, Blueprint Hub, giấy phép theo thiết bị, relay
+
+Mọi dòng thu dưới đây là **tuỳ chọn** với người dùng và **không bao giờ nằm trên đường an toàn**: tắt hay hỏng thì phản xạ, gate, hợp đồng và lời duyệt vẫn chạy. Chỉ số theo dõi: C6 (§11.3). Thứ tự theo tầng thời gian của proposal Q-72; dòng nào vào trước do cổng 8 tuần quyết định.
+
+| Dòng thu | Ai trả | Khi nào | Điều kiện, yêu cầu dẫn |
+|:---|:---|:---|:---|
+| **Hoa hồng kit** (liên kết bán, chưa giữ kho) | Nhà cung cấp linh kiện (U9) | **Nguồn thu thử đầu** — kit bể cá ở I2e | FR-BP-07, FR-DX-09; đo bằng báo cáo liên kết của nhà bán |
+| **Chia doanh thu NeuroEdge Blueprint** | Maker bán Blueprint (U5) | Sau cổng 8 tuần | Hub thu phí FR-BP-10: cổng đạt, ký vết ghi (`TODOS.md` #1), OCI Registry và đường ray FR-REG |
+| **Giấy phép thương mại theo thiết bị** | Micro-OEM, startup phần cứng bán thiết bị (U5); doanh nghiệp dùng lõi (U2) | Khi có người bán đầu tiên | Q-45 (PolyForm Noncommercial); điều khoản, giá, dùng thử: `TODOS.md` #44. Tính năng an toàn cốt lõi luôn nằm trong giấy phép, không tách gói trả thêm (P-3) |
+| **Relay đám mây tuỳ chọn** — truy cập từ xa, đẩy tin, sao lưu vết ghi mã hoá | Người dùng cuối (U8), maker | Sau Blueprint tối thiểu; thứ tự theo cổng 8 tuần | FR-EGR-05, NFR-SEC-15; ngoại lệ có giới hạn cho Q-10 |
+| **Fleet OS** | Đội vận hành thiết bị (U3) | v1.1 — sau cổng 8 tuần và điều kiện §3.3 | §8.2 (FR-FLT) |
+| **Năng lực vật lý cho agent AI khác gọi qua MCP**; chỉ số tổng hợp theo ngành từ dữ liệu có đồng ý | Agent AI khác; bên mua chỉ số | Xa — chưa đặc tả | Chưa có yêu cầu; cần `Q-N` riêng |
+
+**Không đổi:** NeuroEdge không bán lại token (N4) và không giữ key LLM của người dùng trên máy chủ của mình (NFR-SEC-13).
+
 ---
 
 ## 9. Yêu cầu phi chức năng
@@ -517,13 +688,13 @@ Bảy đường ray (FR-REG-01→07, khớp proposal §8.5) rẻ ở giai đoạ
 
 | Mã | Chỉ tiêu | Ngưỡng cam kết | Điều kiện đo | Ưu tiên |
 |:---|:---|:---|:---|:---:|
-| **NFR-PERF-01** | Độ trễ phản hồi thoại trọn vòng — provider hỗ trợ streaming | **P95 < 850 ms** | Kết nối Wi-Fi, provider STT/LLM/TTS hỗ trợ streaming, từ lúc dứt lời tới khi loa phát tiếng | P0 |
+| **NFR-PERF-01** | Độ trễ phản hồi thoại trọn vòng — provider hỗ trợ streaming | **P95 < 850 ms** | Kết nối Wi-Fi, provider STT/LLM/TTS hỗ trợ streaming, từ lúc dứt lời tới khi loa phát tiếng | P0 — *tạm dừng (Q-72)* |
 | **NFR-PERF-02** | Độ trễ thẩm định gate — xử lý cục bộ | **P95 < 120 ms** | Trên các môi trường bậc 1 | P0 |
 | **NFR-PERF-03** | Độ trễ thẩm định gate — khi cần dữ liệu từ provider cloud | **P95 < 450 ms** | Mạng ổn định | P0 |
 | **NFR-PERF-04** | Quyết định `SystemOne` có cấu trúc | **< 100 ms** | Mô hình cục bộ hoặc mô hình nhanh qua lớp trừu tượng provider | P0 |
-| **NFR-PERF-05** | Hiệu quả định tuyến hai mô hình | Tiết kiệm **≥ 60%** chi phí token so với chuyển toàn bộ lên System 2 | Đo trên lưu lượng thực, tách theo nhóm tác vụ | P0 |
+| **NFR-PERF-05** | Hiệu quả định tuyến hai mô hình | Tiết kiệm **≥ 60%** chi phí token so với chuyển toàn bộ lên System 2 | Đo trên lưu lượng thực, tách theo nhóm tác vụ. *Q-72:* NeuroEdge không bán token, nên chỉ tiêu này đo lợi ích cho người dùng tự trả LLM (BYOK); với agent vận hành, ràng buộc chi phí là **trần tuyệt đối** NFR-COST-01, không phải tỷ lệ tiết kiệm | P0 |
 | **NFR-PERF-06** | Thời gian chạy bộ Action CI của dự án mẫu | **< 30 giây** trên `sim` | Máy phát triển thông thường | P1 |
-| **NFR-PERF-07** | Độ trễ phản hồi thoại trọn vòng — provider request-response | **P95 < 1.500 ms** | Kết nối Wi-Fi, provider không hỗ trợ streaming, từ lúc dứt lời tới khi loa phát tiếng | P1 |
+| **NFR-PERF-07** | Độ trễ phản hồi thoại trọn vòng — provider request-response | **P95 < 1.500 ms** | Kết nối Wi-Fi, provider không hỗ trợ streaming, từ lúc dứt lời tới khi loa phát tiếng | P1 — *tạm dừng (Q-72)* |
 
 ### 9.2 Tài nguyên và ràng buộc phần cứng (NFR-RES)
 
@@ -539,9 +710,11 @@ Bảy đường ray (FR-REG-01→07, khớp proposal §8.5) rẻ ở giai đoạ
 | Mã | Chỉ tiêu | Ngưỡng cam kết | Ưu tiên |
 |:---|:---|:---|:---:|
 | **NFR-REL-01** | Độ tin cậy cập nhật OTA quy mô lớn | **1.000 thiết bị / 0 sự cố brick** | P0 |
-| **NFR-REL-02** | Hành vi mặc định khi mọi thành phần suy giảm | `fail: closed` — chặn hành động vật lý | P0 |
+| **NFR-REL-02** | Hành vi mặc định khi mọi thành phần suy giảm | **Lệnh:** `fail: closed` — chặn hành động vật lý. **Cơ cấu:** trở về `safe_state` khai trong `board.v1` — mặc định `off`, nên hành vi hiện có không đổi *(chờ RFC an toàn có điều kiện — Q-72, FR-ACE-03)* | P0 |
 | **NFR-REL-03** | Kiểm thử nightly trên bo mạch thật | Chạy hằng đêm, có báo cáo kết quả và xu hướng | P0 |
 | **NFR-REL-04** | Vết ghi cũ replay được sau nâng cấp phiên bản phụ | 100% bộ vết ghi hồi quy vẫn chạy | P0 |
+| **NFR-REL-05** | Phản xạ khi mất mạng hoặc mất LLM *(Q-72)* | **100%** điều khoản tầng phản xạ và tầng kỹ năng vẫn được cưỡng chế khi mất mạng, mất LLM worker hay hết ngân sách LLM; chỉ phần phân tích dừng | P0 |
+| **NFR-REL-06** | Sống của runtime 24/7 *(Q-72)* | Runtime tự khởi động lại sau lỗi hay mất điện; worker chết không làm runtime dừng; chạy liên tục **2 tuần** trên G2 hoặc G3 không can thiệp (B7) | P0 |
 
 ### 9.4 Bảo mật (NFR-SEC)
 
@@ -559,6 +732,11 @@ Các lớp phòng thủ theo proposal §5 — hành động vật lý, bên gọ
 | **NFR-SEC-08** | Nhà cung cấp bên ngoài | Dữ liệu âm thanh và văn bản gửi tới provider cloud phải đi qua kênh mã hóa TLS 1.3; hệ thống ghi nhận provider đang dùng trong vết ghi. Việc chọn provider tuân thủ quy định là trách nhiệm của người dùng | P0 |
 | **NFR-SEC-09** | Bên gọi tool | MCP mặc định qua **stdio** (bên chạy tiến trình là người vận hành). Transport mạng vào v1.0 (Q-58, TSK-P2-04): **mặc định tắt**, chỉ bật khi có xác thực OAuth 2.1 và mTLS theo thiết bị (NFR-SEC-04); thiếu một trong hai thì từ chối khởi động. LLM và client MCP là bên gọi **không tin cậy** — `docs/spec/threat_model.md` §2b | P0 |
 | **NFR-SEC-10** | Plugin của bên thứ ba | Plugin chạy trong tiến trình là mã người vận hành tin (`threat_model.md` §3): chỉ nạp khi được bật rõ, nguồn gốc (gói, phiên bản, băm tệp) in ra và ghi vào vết ghi; không API nào của `neuroedge.sdk` trao handle phần cứng cho bridge hay fact source (FR-EXT-03, Q-67) | P0 |
+| **NFR-SEC-11** | Chống rò rỉ dữ liệu *(Q-72)* | **100%** lần gửi tới đích không khai bị chặn và ghi vết; LLM worker không mở được kết nối ngoài endpoint nhà cung cấp đã khai (FR-EGR-01 → 03). Rủi ro còn lại ghi trong threat model: worker bị lừa vẫn gửi được dữ liệu đã cho phép tới đích đã cho phép | P0 |
+| **NFR-SEC-12** | Kênh chat *(Q-72)* | Lời duyệt chỉ hợp lệ qua bản ghi duyệt đã kiểm đủ (FR-CH-04); token bot chỉ nằm trong runtime tin cậy, không trong worker, vết ghi hay Blueprint; threat model có mục riêng cho kênh chat, gồm rủi ro tài khoản chat bị chiếm (thu hồi, hạn, trần: `TODOS.md` #62) | P0 |
+| **NFR-SEC-13** | Key LLM của người dùng (BYOK) *(Q-72)* | Key chỉ nằm trong LLM worker trên máy nhà; không bao giờ trong vết ghi, hợp đồng, Blueprint, tin chat, hay máy chủ do NeuroEdge vận hành; runtime không giữ key | P0 |
+| **NFR-SEC-14** | NeuroEdge Blueprint *(Q-72)* | `install` kiểm digest toàn gói trước khi ghi gì; gói không chạy mã tuỳ ý trên máy nhà lúc cài; cơ cấu `safe_state` khác `off` hiện riêng và cần xác nhận tại chỗ; bằng chứng "chưa ký" hiện rõ ở mọi nơi (FR-BP-03 → 06) | P0 |
+| **NFR-SEC-15** | Relay tuỳ chọn *(Q-72)* | Relay không giải mã; relay bị chiếm chỉ lộ siêu dữ liệu, không đọc được vết ghi, không chèn được lệnh; sao lưu mã hoá phía máy nhà (FR-EGR-05) | P1 |
 
 ### 9.5 Quyền riêng tư (NFR-PRIV)
 
@@ -568,14 +746,16 @@ Các lớp phòng thủ theo proposal §5 — hành động vật lý, bên gọ
 | **NFR-PRIV-02** | Xử lý ngôn ngữ mặc định theo kiến trúc cloud-first; ưu tiên on-device khi năng lực phần cứng cho phép. Người dùng tự chọn provider và cấu hình mức độ riêng tư tương ứng | P0 |
 | **NFR-PRIV-03** | Vết ghi mặc định chỉ lưu quyết định, không lưu dữ liệu thô; lưu thô phải bật tường minh | P0 |
 | **NFR-PRIV-04** | Chế độ ẩn danh tại nguồn thay nội dung thô bằng hash mà không phá vỡ khả năng replay | P0 |
+| **NFR-PRIV-05** | Dữ liệu vận hành chỉ được chia sẻ để cải thiện bộ phát hiện khi người dùng **bật tường minh**; mặc định tắt; đích hiện trong bản duyệt *(Q-72, FR-BP-09)* | P2 |
 
 ### 9.6 Khả năng quan sát (NFR-OBS)
 
 | Mã | Yêu cầu | Ưu tiên |
 |:---|:---|:---:|
-| **NFR-OBS-01** | Mỗi phiên tương tác sinh đúng một tệp vết ghi hoàn chỉnh | P0 |
+| **NFR-OBS-01** | Mỗi phiên tương tác sinh đúng một tệp vết ghi hoàn chỉnh. *Runtime 24/7 (Q-72, chờ RFC):* một phiên một chuỗi đoạn vết ghi, mỗi đoạn replay được (FR-TRC-11) | P0 |
 | **NFR-OBS-02** | Vết ghi hiển thị tỷ lệ System 1 / System 2, chi phí từng lượt và toàn bộ kết quả thẩm định gate | P0 |
 | **NFR-OBS-03** | Vết ghi ghi độ trễ từng chặng đủ để đối chiếu với ngân sách `budget.p95_latency_ms` | P0 |
+| **NFR-OBS-04** | Vết ghi trên máy nhà *(Q-72)*: giữ **30 ngày** gần nhất; flush khoảng 10 giây (khai được) và ngay khi có phán quyết chặn hay lời duyệt; mất điện mất tối đa phần đuôi sự kiện thường. Cỡ vết ghi 30 ngày của kịch bản bể cá đo trên G1 rồi ghi số vào dòng này (FR-TRC-12) | P0 |
 
 ### 9.7 Tương thích và chuẩn mở (NFR-COMP)
 
@@ -588,11 +768,18 @@ Các lớp phòng thủ theo proposal §5 — hành động vật lý, bên gọ
 | **NFR-COMP-05** | Phiên bản Python hỗ trợ tối thiểu: **Python 3.11+** (tận dụng `tomllib` tích hợp, `asyncio.TaskGroup` và tối ưu tốc độ bytecode) | P0 |
 | **NFR-COMP-06** | Hệ điều hành hỗ trợ cho môi trường `linux`: Debian/Ubuntu trên ARM64 và x86-64 | P0 |
 
+### 9.8 Chi phí và làm phiền (NFR-COST) *(Q-72)*
+
+| Mã | Chỉ tiêu | Ngưỡng cam kết | Điều kiện đo | Ưu tiên |
+|:---|:---|:---|:---|:---:|
+| **NFR-COST-01** | Chi phí LLM của agent vận hành | Kịch bản bể cá **30 ngày mô phỏng < 2 USD**; chi phí của một kỳ không bao giờ vượt `llm_budget` quá chi phí của lượt đang chạy lúc chạm trần | G1 tua nhanh, provider và mô hình mặc định của Blueprint, đơn giá ghi cùng kết quả | P0 |
+| **NFR-COST-02** | Ngân sách tin nhắn | Số tin không khẩn mỗi ngày không vượt ngân sách khai trong hợp đồng; tin khẩn không bị gom hay trễ vì ngân sách | Kịch bản 30 ngày trên G1, đếm tin theo loại | P0 |
+
 ---
 
 ## 10. Đặc tả giao diện dữ liệu
 
-Bốn tệp định dạng tạo thành toàn bộ bề mặt dữ liệu của sản phẩm. Đặc tả trường chi tiết nằm ở Phụ lục A, B, C của tài liệu nguồn; mục này quy định **ràng buộc bắt buộc** đối với hiện thực.
+Bốn tệp định dạng tạo thành toàn bộ bề mặt dữ liệu **hiện có** của sản phẩm; Q-72 thêm các định dạng dự kiến ở §10.1a. Đặc tả trường chi tiết nằm ở Phụ lục A, B, C của tài liệu nguồn; mục này quy định **ràng buộc bắt buộc** đối với hiện thực.
 
 ### 10.1 Bốn tệp định dạng
 
@@ -602,6 +789,20 @@ Bốn tệp định dạng tạo thành toàn bộ bề mặt dữ liệu của 
 | `agent.toml` | TOML | Agent khai báo năng lực cần dùng, gate và môi trường hỗ trợ | §4.3 |
 | `<gate>@<version>.yaml` | YAML | Điều kiện cho phép một hành động vật lý | §4.5, Phụ lục B |
 | `<phiên>.json` | JSON | Vết ghi chuỗi sự kiện của một phiên tương tác | §3.7, Phụ lục C |
+
+### 10.1a Định dạng dự kiến của Q-72
+
+Chưa có mã, chưa có lược đồ. Mỗi dòng chạm `schemas/` hoặc vết ghi chuẩn mực nên **cần RFC** (`CONTRIBUTING.md` §3); tên tệp là dự kiến, chốt ở RFC.
+
+| Định dạng | Vai trò | Yêu cầu | Trạng thái |
+|:---|:---|:---|:---|
+| Hợp đồng nhiệm vụ (`mission.v1`) | Điều khoản được/cấm, tần suất, khung giờ, nghĩa vụ, luồng dữ liệu, khi hỏng, hết hạn, `llm_budget`, ngân sách tin nhắn, tham số hỏi lại | FR-MSN-01 → 14 | Dự kiến, cần RFC |
+| Manifest NeuroEdge Blueprint (`blueprint.v1`) | Kit, BOM, firmware, hợp đồng mẫu, gate, bộ phát hiện, bằng chứng, giấy phép, digest toàn gói; quan hệ với `manifest.v1` (FR-REG-02) chốt ở RFC | FR-BP-01 → 08 | Dự kiến, cần RFC |
+| Định nghĩa bộ phát hiện | Ngưỡng, độ dốc xu hướng, cảm biến đứng im, dao động — khai trong hợp đồng nhiệm vụ hoặc Blueprint | FR-AGT-04 | Dự kiến, thuộc RFC `mission.v1` |
+| Khai đích dữ liệu | Đích (LLM, chat, relay, webhook) và loại dữ liệu được gửi tới từng đích | FR-MSN-06, FR-EGR | Dự kiến, cần RFC |
+| Bản ghi duyệt | Yêu cầu `{id, nonce, hạn, digest thay đổi, bản duyệt ≤ 5 dòng}` và lời trả lời; sự kiện trong `trace.v1` | FR-CH-04, FR-TRC-13 | Dự kiến, cần RFC (nguồn `chat:<id>`) |
+| Đoạn vết ghi | Trạng thái đầu đoạn và digest đoạn trước, mở rộng `trace.v1` | FR-TRC-11 | Dự kiến, cần RFC (`trace.v1`) |
+| `safe_state` trong `board.v1` | `safe_state` cho mọi cơ cấu, khoá liên động phần cứng bắt buộc khi khác `off` | FR-ACE-03 | Dự kiến, cần RFC an toàn có điều kiện; sửa `TODOS.md` #58 trước |
 
 ### 10.2 Ràng buộc bắt buộc đối với hiện thực
 
@@ -626,6 +827,7 @@ Bốn tệp định dạng tạo thành toàn bộ bề mặt dữ liệu của 
 | Lược đồ lỗi (`schemas/error.v1.json`) | URL `/v1`, `/v2` | Như trên (RFC-0015) |
 | Danh mục mã lỗi (`schemas/error-codes.v1.json`) | URL `/v1`, `/v2` | Đổi nghĩa, đổi tên lớp, bỏ hoặc tái dùng một mã; thêm mã, `fields` hay `aliases` không tăng (RFC-0015 §3d) |
 | Lược đồ bo mạch (`schemas/board.v1.json`, khoá `schema = "neuroedge.board/v1"` ở gốc `boards/*.toml`) | `neuroedge.board/v1` | Tăng phiên bản chính; vắng khoá ⇒ `v1`; bộ đọc từ chối phiên bản nó không đọc được (NE3001) trước khi thẩm định (RFC-0015 §3c) |
+| Lược đồ dự kiến của Q-72 (`mission.v1`, `blueprint.v1`, khai đích, bản ghi duyệt) | URL `/v1`, `/v2` như mọi lược đồ | Quy tắc chốt ở RFC của từng lược đồ |
 | Gói `neuroedge` | SemVer | Thay đổi bề mặt API công khai ([`docs/spec/python_api.md`](../docs/spec/python_api.md)) hoặc CLI |
 
 ---
@@ -644,7 +846,7 @@ Các bản increment nội bộ trước khi công khai (I1–I5) không đượ
 | **A3** | Không có đường tắt tới actuator | **0** lối đi kích hoạt GPIO bỏ qua gate | Rà soát mã và kiểm thử thâm nhập |
 | **A4** | Fail-closed | **100%** kịch bản suy giảm đều chặn hành động — riêng mất mạng: lượng giá qua fallback lệnh cục bộ, chặn khi fallback không chạy *(Q-14)* | Bộ kịch bản: mất mạng (có và không có fallback), timeout, dữ liệu mô hình không hợp lệ |
 | **A5** | Kế thừa gate an toàn | Gate con nới lỏng gate cha — `allow_when`, `budget`, `on_block` (Q-18) hoặc `arguments` (Q-25) — bị từ chối trong **100%** trường hợp | Bộ kiểm thử phân giải kế thừa · corpus `fixtures/gates/invalid/` qua `neuroedge gate lint` |
-| **A6** | Độ ổn định trên vi điều khiển | **24 giờ** chạy liên tục không tràn bộ nhớ, với pipeline thu/phát âm thanh + máy trạng thái hội thoại + thẩm định gate *(STT/TTS đặt ở provider cloud)* | Kiểm thử chịu tải trên bo mạch tham chiếu |
+| **A6** | Độ ổn định trên vi điều khiển *(tạm dừng cùng thoại — Q-72)* | **24 giờ** chạy liên tục không tràn bộ nhớ, với pipeline thu/phát âm thanh + máy trạng thái hội thoại + thẩm định gate *(STT/TTS đặt ở provider cloud)* | Kiểm thử chịu tải trên bo mạch tham chiếu |
 | **A7** | Vết ghi hợp lệ | **100%** phiên sinh tệp qua được `neuroedge trace validate` | Chạy tự động trong CI |
 | **A8** | Tài liệu | 3 ứng dụng mẫu chạy được + 1 tài sản trực quan trong README | Kiểm chứng trên máy sạch |
 | **A9** | Lược đồ công khai | JSON Schema truy cập được tại URL công bố, kèm bộ kiểm thử tuân thủ | Bên thứ ba chạy thử thành công |
@@ -652,6 +854,20 @@ Các bản increment nội bộ trước khi công khai (I1–I5) không đượ
 | **A11** | Dựng bằng hội thoại có hợp đồng | Mỗi gói có ít nhất **một** hợp đồng do một client MCP dựng qua tool của NeuroEdge Lab, qua `neuroedge lab check`, `gate lint`, test hai chiều và người duyệt, chạy trên ba target; đo trên **hai** client — một có shell (Claude Code), một không (Claude Desktop); **0** bản nháp được khoá mà thiếu test BLOCK *(Q-55, Q-71)* | Kịch bản ghi lại cùng vết ghi, `verify` ba target |
 | **A12** | Kit mẫu dựng được | Trung vị **≤ 1 ngày** từ mở hộp tới thiết bị thật chạy agent có gate, trên 5 người ngoài đội, mỗi người một kit *(Q-52)* | Biên bản đo có mốc thời gian từng bước |
 | **A13** | Nền tảng mở | Một bên thứ ba nối NeuroEdge với một hệ sinh thái chưa từng có, ở kho riêng, chỉ từ tài liệu công khai, qua bộ test tuân thủ trong **≤ 1 ngày**, lõi không đổi dòng nào; che một MCP server sẵn có trong **≤ 3 lệnh** *(Q-67)* | Biên bản đo của bài kiểm `neuroedge-muse` (roadmap TSK-I2c-17); test CI cài plugin ngoài kho |
+
+**Nghiệm thu NeuroEdge Blueprint đầu tiên — bể cá (Q-72).** A14 → A22 đo được ngay khi I2d, I2e xong, trên giả lập, trước cổng 8 tuần; chúng vẫn là tiêu chí của v1.0. RFC an toàn có điều kiện viết **từ chính các ca này**, không viết trước.
+
+| # | Tiêu chí | Ngưỡng | Phương pháp kiểm chứng |
+|:---:|:---|:---|:---|
+| **A14** | Cài Blueprint | Người ngoài đội cài Blueprint bể cá và chạy được trên `sim` từ máy sạch trong **< 10 phút**, không tài khoản | Biên bản đo có mốc thời gian từng bước |
+| **A15** | Hợp đồng mâu thuẫn | **100%** hợp đồng mâu thuẫn trong corpus bị từ chối **trước khi duyệt**, chỉ rõ cặp điều khoản đụng nhau | Corpus khép kín hai chiều chạy trong CI |
+| **A16** | Mất mạng, mất LLM | Mất mạng: sục khí giữ chạy; sưởi theo luật phản xạ cục bộ; worker chết hay hết ngân sách: phản xạ và cảnh báo mẫu cứng vẫn chạy | Kịch bản G1; tầng phản xạ firmware trên G3 |
+| **A17** | Lệnh vi phạm hợp đồng | **100%** lệnh vi phạm hợp đồng bị chặn trong bộ kịch bản, kể cả lệnh do LLM đề nghị ("tắt sục khí cho yên tĩnh") | Bộ kịch bản G1, assert trên phán quyết gate và trạng thái chân (FR-CI-L3) |
+| **A18** | Luồng dữ liệu | Không ảnh nào rời mạng nội bộ khi hợp đồng cấm; **100%** lần gửi tới đích không khai bị chặn và ghi vết | Kịch bản G1 có đích giả; đếm sự kiện cửa ra trong vết ghi |
+| **A19** | Báo chủ động có trần | Agent gửi **≥ 1** phát hiện xu hướng đúng; chi phí LLM của kịch bản 30 ngày mô phỏng **< 2 USD** | Kịch bản 30 ngày trên G1 (NFR-COST-01) |
+| **A20** | Duyệt qua chat | Lời duyệt từ tài khoản chưa ghép đôi, từ nhóm, lời duyệt cũ (nonce đã dùng), hết hạn, digest lệch, hay do LLM worker gửi đều bị từ chối trong **100%** trường hợp | Bộ kịch bản FR-CH-04, FR-CH-05 |
+| **A21** | `safe_state: on` không thành đường tắt | `board.v1` khai `safe_state: on` mà thiếu khoá liên động phần cứng bị từ chối nạp trong **100%** trường hợp; `safe_state` khai ngoài `board.v1` bị từ chối | Corpus `fixtures/boards/` (khi RFC vào) |
+| **A22** | Replay | `replay` tái hiện **100%** phán quyết từ vết ghi, gồm từng đoạn của chuỗi vết ghi 30 ngày | Chạy trong CI trên vết ghi bằng chứng của Blueprint |
 
 ### 11.2 Nghiệm thu Developer Beta
 
@@ -662,6 +878,11 @@ Các bản increment nội bộ trước khi công khai (I1–I5) không đượ
 | **B3** | Gate an toàn do cộng đồng bên ngoài tự viết và đóng góp | ≥ 3 gate *(đo và báo cáo, không là điều kiện mở v1.1 — Q-41)* |
 | **B4** | Tỷ lệ áp dụng Action CI | ≥ 50% dự án khởi tạo giữ lại và mở rộng kịch bản test gate |
 | **B5** | Tỷ lệ chuyển đổi sang phần cứng thật | ≥ 15% người chạy `sim` nạp lên bo mạch trong 30 ngày |
+| **B6** | Cổng 8 tuần — người ngoài tự cài *(Q-72)* | ≥ 3 người ngoài đội tự cài một NeuroEdge Blueprint và chạy được |
+| **B7** | Cổng 8 tuần — chạy liên tục *(Q-72)* | ≥ 1 người chạy liên tục 2 tuần trên giả lập G2 hoặc G3 |
+| **B8** | Cổng 8 tuần — có người muốn bán *(Q-72)* | ≥ 1 maker muốn đóng gói và bán Blueprint của mình |
+
+**Cổng nhu cầu 8 tuần (Q-72, đảo Q-56).** B6 → B8 đo **8 tuần sau khi chốt Q-72**, trước Developer Beta; chúng là **cổng quyết định**, không phải điều kiện công bố Beta. Kết quả: đạt cả ba ⇒ đầu tư Hub, danh mục kit, Blueprint thứ hai và xét lại phạm vi v1.0; đạt B6, B7 mà trượt B8 ⇒ NeuroEdge là công cụ cá nhân, giữ vòng ① ②, tìm nguồn thu khác; trượt B6 hoặc B7 ⇒ đổi phân khúc hoặc thông điệp trước khi viết thêm tính năng. Song song: chấm ba buổi phỏng vấn đã có và hỏi thêm 10 người, trong đó ít nhất 5 maker, về việc bán thiết bị — việc của trưởng nhóm, AI agent không làm thay.
 
 **Nguyên tắc vận hành giai đoạn Beta:** đóng băng tính năng mới trên dòng `1.0.x` (Q-39). Toàn bộ nguồn lực dành cho hỗ trợ kỹ thuật trực tiếp, hoàn thiện tài liệu và làm mượt trải nghiệm.
 
@@ -674,7 +895,7 @@ Các bản increment nội bộ trước khi công khai (I1–I5) không đượ
 | **C3** | Độ trễ thẩm định gate | Đạt NFR-PERF-02 và NFR-PERF-03 |
 | **C4** | Hiệu quả định tuyến | Đạt NFR-PERF-05 |
 | **C5** | Chia sẻ gate cộng đồng | ≥ 20 gate đạt từ 5 lượt cài đặt bởi người dùng độc lập |
-| **C6** | Cơ cấu doanh thu | **Chỉ số theo dõi, không là điều kiện phát hành (Q-42):** doanh thu Fleet OS và license thương mại (Q-45) so với đường hòa vốn, báo cáo hằng tháng *(NeuroEdge không còn doanh thu inference)* |
+| **C6** | Cơ cấu doanh thu | **Chỉ số theo dõi, không là điều kiện phát hành (Q-42):** doanh thu theo từng dòng của §8.4 — hoa hồng kit, chia doanh thu Blueprint, giấy phép thương mại theo thiết bị và license lõi (Q-45), relay, Fleet OS — so với đường hòa vốn, báo cáo hằng tháng *(NeuroEdge không có doanh thu inference — N4; dòng thu theo Q-72)* |
 | **C7** | Đồng nhất định dạng vết ghi | Vết ghi từ lớp trừu tượng provider replay được trên máy cá nhân, không chuyển đổi |
 | **C8** | Độ trễ quyết định `SystemOne` có cấu trúc | Đạt NFR-PERF-04, đo trên lưu lượng thực qua FR-TEL-06 |
 
@@ -694,6 +915,8 @@ Nguyên tắc: **mọi chỉ số trong mục này phải có một yêu cầu �
 | **FR-TEL-04** | Registry ghi nhận số lượt tải và lượt kế thừa từng gate, phân biệt tác giả và người dùng khác | Chia sẻ gate cộng đồng, cột mốc G2/G3 (proposal §8.7) | P0 (v1.1) |
 | **FR-TEL-05** | Fleet OS ghi nhận kết quả từng chiến dịch OTA: số thiết bị, tỷ lệ lỗi, số ca rollback | Độ tin cậy OTA | P0 (v1.1) |
 | **FR-TEL-06** | Lớp trừu tượng provider ghi nhận độ trễ từng chặng đủ để tính P95 theo từng nhóm tác vụ | SLA độ trễ | P0 |
+| **FR-TEL-07** | *(Q-72)* CLI và runtime thu thập thêm, cùng chính sách ẩn danh và opt-out của FR-TEL-01, các mốc: cài một Blueprint, nối kênh chat, hợp đồng nhiệm vụ đầu tiên được duyệt, runtime chạy liên tục mỗi 7 ngày. Index tĩnh không đếm lượt cài, nên B6 → B8 còn đo bằng tiếp xúc trực tiếp với người thử | Cổng 8 tuần (B6, B7), M9 | P0 |
+| **FR-TEL-08** | *(Q-72)* Lượt bấm và đơn hàng qua liên kết kit lấy từ báo cáo liên kết của nhà bán, không từ thiết bị người dùng | Nguồn thu thử đầu, C6 | P1 |
 
 ### 12.2 Bảng chỉ số theo mốc
 
@@ -711,7 +934,12 @@ Ngưỡng nằm ở §11 và §9; bảng này chỉ nối mỗi chỉ số với
 | Độ trễ quyết định `SystemOne` | v1.1 | C8 (NFR-PERF-04) | FR-TEL-06 |
 | Tiết kiệm chi phí token | v1.1 | C4 (NFR-PERF-05) | FR-TEL-03 |
 | Chia sẻ gate cộng đồng | v1.1 | C5 | FR-TEL-04 |
-| Cơ cấu doanh thu | v1.1 | C6 | Hệ thống hóa đơn |
+| Cơ cấu doanh thu | v1.1 | C6 | Hệ thống hóa đơn; báo cáo liên kết kit (FR-TEL-08) |
+| Cài Blueprint trên máy sạch | I2e | A14 | Biên bản đo trực tiếp |
+| Chi phí LLM 30 ngày mô phỏng | I2d | A19 (NFR-COST-01) | Vết ghi kịch bản G1 |
+| Người ngoài tự cài Blueprint | Cổng 8 tuần | B6 | FR-TEL-07, tiếp xúc trực tiếp |
+| Chạy liên tục 2 tuần | Cổng 8 tuần | B7 | FR-TEL-07 |
+| Maker muốn bán Blueprint | Cổng 8 tuần | B8 | Phỏng vấn của trưởng nhóm |
 
 **Chỉ số bị loại bỏ có chủ ý:** số sao GitHub, lượt tải trang, lượt xem tài liệu. Các chỉ số này đo sự chú ý, không đo giá trị sử dụng.
 
@@ -730,10 +958,16 @@ Ngưỡng nằm ở §11 và §9; bảng này chỉ nối mỗi chỉ số với
 | Nhà cung cấp `SystemOne` | Quyết định có cấu trúc | Đổi giá, siết truy cập, tự ship framework | Interface từ ngày đầu (FR-MDL-01); fallback lệnh cố định cục bộ là P0 *(Q-14)* |
 | Nhà cung cấp `SystemTwo` | Suy luận mở | Tương tự | Định tuyến đa nhà cung cấp (FR-GW-03) |
 | SchemaStore | Nhận diện schema trong IDE | Quy trình duyệt chậm | Không chặn phát hành; là yêu cầu P1 |
+| Telegram Bot API *(Q-72)* | Kênh chat đầu tiên: báo cáo, lệnh, lời duyệt (FR-CH) | Đổi API, giới hạn tần suất, khoá bot; tài khoản người dùng bị chiếm | Adapter sau giao diện kênh của runtime; hàng đợi có hạn + cảnh báo tại chỗ khi kênh sập (FR-AGT-07); lời duyệt chỉ qua bản ghi duyệt (FR-CH-04) |
+| Slack, Zalo API *(Q-72)* | Kênh chat sau Telegram | Điều khoản dùng bot, xác minh doanh nghiệp (Zalo) | P1; cùng giao diện kênh, không đổi luật duyệt |
+| ESPHome (host platform, external component) *(Q-72)* | Tầng giả lập G4 và đường cắm vào thiết bị của cộng đồng Home Assistant | Đổi cấu hình hay API giữa các bản | Ghim phiên bản trong Blueprint; G4 chỉ là một tầng, không thay G1–G3 |
+| Ollama và mô hình tại chỗ *(Q-72)* | LLM của người dùng chạy tại máy nhà, qua LiteLLM | Chất lượng và tài nguyên trên Pi; đổi API | Sau LiteLLM (Q-10); bộ phát hiện tất định không phụ thuộc LLM (FR-AGT-04) |
+| Wokwi, Velxio *(Q-72)* | Lựa chọn cho tầng giả lập G3 (firmware ESP32 trên máy) | Wokwi mã đóng, cần token, không I2S — Q-21 và Q-69 đã loại khỏi CI chuẩn; Velxio chưa kiểm | Espressif QEMU vẫn là đường chính của G3; dùng Wokwi hay Velxio chỉ sau khi đối chiếu lại với Q-21, Q-69 |
+| Nhà bán linh kiện (liên kết) *(Q-72)* | Kit có BOM và nơi mua (FR-BP-07) | Hết hàng, đổi mã hàng, đổi chương trình liên kết | Mỗi linh kiện có nơi mua thay thế; NeuroEdge chưa giữ kho |
 
 ### 13.2 Rủi ro sản phẩm
 
-Mục này ghi rủi ro **sản phẩm và thực thi**. Rủi ro **chiến lược** (cạnh tranh, mô hình kinh doanh, phân mảnh phạm vi) nằm ở `neuroedge-proposal.md` §11 với hệ đánh số `#1–#6`. Ba cặp giao nhau giữa hai sổ: **R-4 ↔ §11 #1** (phụ thuộc nhà cung cấp mô hình) · **R-6 ↔ §11 #5** (mất kết nối đám mây) · **R-7 ↔ §11 #6** (phủ rộng phần cứng). Các rủi ro còn lại thuộc đúng một sổ.
+Mục này ghi rủi ro **sản phẩm và thực thi**. Rủi ro **chiến lược** (cạnh tranh, mô hình kinh doanh, phân mảnh phạm vi) nằm ở `neuroedge-proposal.md` §11 với hệ đánh số `#1–#6`. Ba cặp giao nhau giữa hai sổ: **R-4 ↔ §11 #1** (phụ thuộc nhà cung cấp mô hình) · **R-6 ↔ §11 #5** (mất kết nối đám mây) · **R-7 ↔ §11 #6** (phủ rộng phần cứng). Các rủi ro còn lại thuộc đúng một sổ. R-8 → R-20 lấy từ bảng rủi ro của proposal Blueprint (`docs/business/proposal-blueprint-2026-10-11.md`, Q-72); từ đây, bảng này là nơi theo dõi chúng.
 
 
 | # | Rủi ro | Mức độ | Dấu hiệu cảnh báo sớm | Phương án ứng phó |
@@ -742,9 +976,22 @@ Mục này ghi rủi ro **sản phẩm và thực thi**. Rủi ro **chiến lư�
 | **R-2** | Môi trường `sim` lệch khỏi phần cứng theo thời gian | Cao | `neuroedge verify` bắt đầu có sai lệch lẻ tẻ | Nightly trên bo mạch thật (NFR-REL-03); coi mọi sai lệch là lỗi chặn phát hành |
 | **R-3** | Lập trình viên bỏ qua Action CI, chỉ dùng framework như thư viện thoại | Trung bình | Tỷ lệ áp dụng Action CI dưới 50% ở Beta | Đưa test gate vào scaffold mặc định; tài liệu lấy Action CI làm trung tâm |
 | **R-4** | Nhà cung cấp mô hình thay đổi điều kiện truy cập | Trung bình | Thay đổi điều khoản API, vendor công bố SDK thiết bị | Mở rộng fallback cục bộ vượt ngữ pháp lệnh cố định của Q-14 |
-| **R-5** | Hiệu ứng mạng chia sẻ gate không hình thành | Trung bình | Dưới 3 gate cộng đồng ở cuối Beta | Chuyển trọng tâm sang giá trị đơn lẻ (Action CI + Fleet), hoãn Marketplace vô thời hạn |
+| **R-5** | Hiệu ứng mạng chia sẻ — gate và NeuroEdge Blueprint — không hình thành *(viết lại theo Q-72)* | Cao | Cổng 8 tuần trượt B6 hoặc B8; dưới 3 gate cộng đồng ở cuối Beta | Theo nhánh của cổng 8 tuần (§11.2): trượt B8 ⇒ giữ vòng ① ② như công cụ cá nhân, không đầu tư Hub thu phí, tìm nguồn thu khác; trượt B6 ⇒ đổi phân khúc hoặc thông điệp trước khi viết thêm tính năng. Hub thu phí chỉ mở khi cổng đạt (FR-BP-10) |
 | **R-6** | Phụ thuộc provider cloud khi mất kết nối | Trung bình | Tỷ lệ phiên kết thúc với lý do `gate_unreachable` tăng bất thường · Gián đoạn tích lũy của provider vượt cam kết | Fail-closed đã chặn mọi hành động vật lý khi không thẩm định được gate (NFR-RES-04, A4); gate và máy trạng thái chạy hoàn toàn trên thiết bị. **Fallback cục bộ là P0** (Q-14, FR-ACE-03): gate vẫn lượng giá được khi mất mạng |
 | **R-7** | Phủ rộng phần cứng ở Giai đoạn 2 làm loãng chất lượng bậc 1 | Trung bình | Thời gian sửa lỗi trên bo mạch bậc 1 kéo dài · Kiểm thử hằng đêm thất bại thường xuyên hơn · Hỗ trợ bậc 3 chiếm quá 10% thời gian đội lõi | Phân tầng FR-TGT-08: đội lõi chỉ cam kết bậc 1 và bậc 2; bậc 3 do cộng đồng tự port và tự kiểm chứng. Mọi ngưỡng trong §9 và §11 vẫn neo vào bậc 1. Mỗi khối Giai đoạn 2 chỉ thêm tối đa một bo mạch tham chiếu |
+| **R-8** | Dàn rộng: ba vòng là ba sản phẩm *(Q-72)* | Cao | I2d hay I2e kéo dài quá khoảng 6 tuần; làm tính năng không thuộc Blueprint bể cá | Một Blueprint đi trọn ba vòng; sáu động từ chỉ nằm trong định dạng Blueprint, không làm cùng lúc; thoại, Studio, `jetson` tạm dừng |
+| **R-9** | Chợ hai phía khởi động lạnh *(Q-72)* | Cao | Index có dưới 3 Blueprint ở cổng 8 tuần | Đội NeuroEdge tự làm 5–10 Blueprint đầu, như Shopify tự dựng theme đầu tiên |
+| **R-10** | Không ai muốn bán Blueprint *(Q-72)* | Cao | Không maker nào trong các buổi phỏng vấn từng bán thiết bị hay muốn bán (B8) | Hỏi maker "bạn từng làm thiết bị cho người khác chưa, có ai trả tiền chưa?" **trước** khi xây Hub thu phí; nhánh "trượt ③" của cổng 8 tuần |
+| **R-11** | Tin chủ động gây phiền, người dùng tắt thông báo *(Q-72)* | Trung bình | Người thử tắt thông báo hay rời kênh chat trong hai tuần đầu | Ngân sách tin nhắn, gom tóm tắt, tin khẩn mẫu cứng (FR-AGT-06, NFR-COST-02) |
+| **R-12** | Hoá đơn LLM khó đoán *(Q-72)* | Trung bình | Chi phí kịch bản 30 ngày vượt 2 USD; người thử phàn nàn về hoá đơn | Bộ phát hiện tất định trước, LLM sau; trần chi phí trong hợp đồng (FR-AGT-04, FR-AGT-05, NFR-COST-01) |
+| **R-13** | Máy nhà giữ key LLM và điều khiển thiết bị *(Q-72)* | Trung bình | Prompt injection qua tin chat chạm được HAL hay key | Hai tiến trình: worker không tin cậy giữ key, runtime giữ HAL (FR-AGT-01, 02); mạng của worker chỉ tới đích đã khai (FR-EGR-03); hợp đồng chỉ người khoá (Q-71) |
+| **R-14** | Blueprint độc hại trên Hub *(Q-72)* | Trung bình | Một gói khai quyền rộng, đích dữ liệu lạ, hay `safe_state` khác `off` | Blueprint chỉ khai báo; digest toàn gói; `safe_state` khác `off` chỉ trong `board.v1` có khoá liên động và hiện riêng khi cài; người cài tự chạy `replay`; quyền hiện ở bản duyệt (FR-BP-01 → 06) |
+| **R-15** | Người dùng bấm duyệt không đọc *(Q-72)* | Trung bình | Lời duyệt tới trong vài giây sau yêu cầu, đều đặn | Bản duyệt ≤ 5 dòng, chỉ nêu điều khoản khác mặc định; mở rộng quyền dữ liệu chỉ duyệt tại chỗ (FR-MSN-12, FR-MSN-14) |
+| **R-16** | Giả lập khác phần cứng thật *(Q-72)* | Trung bình | Người thử trên bo thật gặp lỗi không tái hiện trên G1–G4 | Bốn tầng giả lập; mua phần cứng trước khi bán Blueprint đầu tiên; giới hạn của giả lập ghi rõ (§4.2) |
+| **R-17** | Bằng chứng chưa ký, người bán sửa được vết ghi *(Q-72)* | Trung bình | Một Blueprint có bằng chứng không khớp hành vi khi người cài `replay` | Chấp nhận ở MVP; mọi nơi ghi "chưa ký"; người cài tự `replay`; ký vết ghi trước khi Hub thu tiền cho người bán (`TODOS.md` #1, FR-BP-04) |
+| **R-18** | Tài khoản chat bị chiếm thì duyệt được thay chủ *(Q-72)* | Trung bình | Lời duyệt từ vị trí hay thiết bị lạ; nhiều lời duyệt trong thời gian ngắn | Ghép đôi tại chỗ, bản ghi duyệt một lần có hạn và digest (FR-CH-03, 04); mở rộng quyền dữ liệu chỉ duyệt tại chỗ; thu hồi, hạn ghép đôi, trần lời duyệt: `TODOS.md` #62. Hệ quả đã chấp nhận khi chốt Q-72 |
+| **R-19** | Bị hiểu là chức năng an toàn được chứng nhận *(Q-72)* | Cao (pháp lý) | Người dùng hay Blueprint quảng cáo thiết bị "an toàn" cho ca y tế, người già | Q-38 trong README, bản duyệt và Blueprint; bảo vệ nguy hiểm luôn do phần cứng (N5); ca y tế và người già để sau (§14) |
+| **R-20** | Phần cứng là bùn: giao hàng, đổi trả, chất lượng *(Q-72)* | Cao | Khiếu nại về linh kiện tới NeuroEdge | Chỉ liên kết bán, chưa giữ kho (FR-BP-07) |
 
 ### 13.3 Giả định cần kiểm chứng
 
@@ -757,6 +1004,10 @@ Mục này ghi rủi ro **sản phẩm và thực thi**. Rủi ro **chiến lư�
 | **G-c** | Định tuyến hai mô hình tiết kiệm ≥ 60% chi phí token | Minh chứng định lượng cho kiến trúc System 1 / System 2 | Đo trên lưu lượng thực qua lớp trừu tượng provider, tách theo nhóm tác vụ | 90 ngày sau khi I9 phát hành (Q-43) |
 | **G-d** | Cộng đồng thực sự muốn chia sẻ và tái sử dụng gate | Cơ sở của hiệu ứng mạng trước khi mở Marketplace | Tần suất tải và kế thừa trên Registry miễn phí trong 12 tháng | 12 tháng sau khi I10 phát hành; tín hiệu sớm: B3 (Q-43) |
 | **G-e** | Tái hiện vết ghi giảm 70% chuyến đi hiện trường | Nền của mô hình TCO (proposal §1.8) | Dữ liệu bảo hành thực tế từ 3 khách hàng AURA đầu tiên, phân loại nguyên nhân sự cố (phần mềm/cấu hình vs hỏng vật lý) | 6 tháng sau ba site AURA đầu tiên (Q-43) |
+| **G-f** | Maker muốn bán thiết bị mình dựng, qua NeuroEdge Blueprint *(Q-72)* | Phép thử của cả mô hình Q-72; nếu sai, NeuroEdge là công cụ cá nhân | Phỏng vấn ít nhất 5 maker về việc bán; B8 | Cổng 8 tuần sau khi chốt Q-72 |
+| **G-g** | Người dùng chấp nhận tự trả LLM bằng key của mình (BYOK) *(Q-72)* | NeuroEdge không kiếm tiền từ token và không giữ key; nếu sai, cần một đường LLM khác | Tỷ lệ người thử nhập key hay dùng mô hình tại chỗ khi tới bước báo chủ động (FR-TEL-07) | Cổng 8 tuần sau khi chốt Q-72 |
+| **G-h** | Tin báo chủ động có giá trị, người dùng không tắt *(Q-72)* | Vòng ② là lý do dùng mỗi ngày | Tỷ lệ người thử còn nhận tin sau 2 tuần; phản hồi về phát hiện xu hướng | Khi người thử đầu tiên đạt B7 |
+| **G-i** | Liên kết bán kit chuyển thành đơn hàng *(Q-72)* | Nguồn thu thử đầu | Báo cáo liên kết của nhà bán (FR-TEL-08) | 90 ngày sau khi I2e phát hành |
 
 ---
 
@@ -766,18 +1017,21 @@ Danh mục loại trừ tường minh — **nơi duy nhất** của trạng thá
 
 | Hạng mục | Trạng thái | Tiêu chí | Điều kiện xem xét lại |
 |:---|:---|:---:|:---|
-| Marketplace thương mại có thu phí | Chặn | PF-3 | Đạt toàn bộ cột mốc G1–G4 (proposal §8.7). Index cộng đồng của plugin (FR-EXT-08) không phải Marketplace: không thu phí, không xếp hạng trả tiền |
+| Marketplace thương mại có thu phí | **Hub tối thiểu vào phạm vi** (Q-72): index tĩnh NeuroEdge Blueprint, không máy chủ, không thu phí (FR-BP-05, I2e). **Thu phí: hoãn tới sau cổng 8 tuần** | PF-3 | Cổng 8 tuần đạt (B6–B8), ký vết ghi (`TODOS.md` #1), OCI Registry và đường ray FR-REG (FR-BP-10) — thay điều kiện cột mốc G1–G4 của proposal §8.7 cho riêng Blueprint. Index cộng đồng của plugin (FR-EXT-08) không bao giờ thu phí, không xếp hạng trả tiền |
 | Thanh toán tự động giữa agent | Chặn | PF-4 | Đạt cột mốc và có đánh giá pháp lý riêng |
 | Chương trình chứng nhận phần cứng có thu phí | Chặn | PF-3 | Đạt cột mốc và có quy trình kiểm chuẩn độc lập |
 | Thị giác máy tính (camera, NPU) | **Đưa vào Giai đoạn 2**, tách hai bước | PF-1, PF-3 | **2a mở danh sách target:** RFC-0002 được phê duyệt · **2b hiện thực** (gồm RFC nguyên thủy `vision.in`): nhu cầu camera đo được từ khách hàng thật, TTFV thoại vẫn < 10 phút |
-| Jetson | **Đưa vào Giai đoạn 2** ở bậc 2 (FR-TGT-08) | PF-3 | RFC-0002 được phê duyệt và có nhu cầu đo được từ khách hàng thật |
+| Jetson | **Đưa vào Giai đoạn 2** ở bậc 2 (FR-TGT-08) — **tạm dừng** (Q-72) | PF-3 | RFC-0002 được phê duyệt và có nhu cầu đo được từ khách hàng thật; sau cổng 8 tuần |
 | Tự phát triển SLAM, tránh vật cản, dẫn đường tự hành, drone | Chặn — **ngoại lệ Q-34:** tích hợp nguyên bản ROS 2/Nav2, gate xét mọi lệnh tốc độ (roadmap I14) | PF-1, PF-3 | Không có — dẫn đường thuộc ROS 2/Nav2 |
 | Matter, HomeKit | Hoãn — tới khi đạt điều kiện kích hoạt | PF-3 | Có nhu cầu đo được từ khách hàng thật. Cộng đồng tự làm được dưới dạng plugin cơ cấu từ xa (FR-EXT-07, Q-67) mà không cần đội lõi |
 | SSO/SAML, chứng chỉ SOC 2 | Hoãn — tới khi đạt điều kiện kích hoạt | PF-3 | Có hợp đồng doanh nghiệp yêu cầu cụ thể |
 | Chứng nhận an toàn chức năng (SIL theo IEC 61508, PL theo ISO 13849, ISO 13482) | Chặn tạm thời (Q-38) | PF-3 | Câu C6 của bộ phỏng vấn (`docs/business/cong-nhu-cau-2026-10-25/`, nay chỉ là đầu vào thông tin — Q-56): một phân khúc có nhãn **R** ≥ 3/5 (`CEO-T2`), hoặc người mua robot trả lời như vậy (`TODOS.md` #40) |
 | Multi-region, on-premise | Hoãn — tới khi đạt điều kiện kích hoạt | PF-3 | Có ràng buộc chủ quyền dữ liệu từ khách hàng thật |
 | Mô hình dự phòng cục bộ đã tinh chỉnh | Hoãn có điều kiện | PF-3 | Xuất hiện dấu hiệu cảnh báo R-4 hoặc R-6 |
-| Dashboard BI tùy biến, engine cảnh báo phức tạp | Hoãn vô thời hạn | PF-1, PF-3 | Không có |
+| Dashboard BI tùy biến, engine cảnh báo phức tạp | Hoãn vô thời hạn | PF-1, PF-3 | Không có. **Không gồm** bộ phát hiện tất định của agent vận hành (ngưỡng, xu hướng, cảm biến đứng im — FR-AGT-04): chúng **thuộc phạm vi** (Q-72), khai trong hợp đồng hay Blueprint, không phải engine cảnh báo tổng quát |
+| Thoại (FR-PER, NFR-PERF-01, 07, A6), NeuroEdge Studio (Q-51) | **Tạm dừng** (Q-72) — vẫn thuộc phạm vi v1.0 (Q-52), không cắt, không xoá yêu cầu | PF-3 | Sau I2d, I2e; phạm vi v1.0 xét lại ở cổng 8 tuần |
+| Thị trường dọc: y tế, chăm người già, giúp việc gia đình; ao tôm và nuôi trồng | Hoãn (Q-72) | PF-3, PF-4 | Sau cổng 8 tuần. Ca y tế và người già cần đánh giá pháp lý riêng vì R-19 (Q-38); ao tôm là đổi giao diện của Blueprint bể cá |
+| Ký vết ghi bằng chứng của Blueprint | Hoãn (Q-72) | PF-3 | Trước khi Hub thu tiền cho người bán (`TODOS.md` #1) |
 | Kiến trúc Kubernetes | Hoãn vô thời hạn | PF-1 | Vượt quy mô 50.000 thiết bị |
 | Tự huấn luyện tinh chỉnh mô hình | Hoãn vô thời hạn | PF-3 | Không có |
 | Huấn luyện wake-word tùy biến | Hoãn sau v1.0 | PF-1 | Sau khi runtime `esp32s3` ổn định |
@@ -865,7 +1119,7 @@ Mọi quyết định kỹ thuật, đã chốt hoặc còn mở — xem cột T
 | **Q-69** | Giả lập ngoại vi `esp32s3` và kernel đủ module cho `linux` trước khi bo mạch về (bổ sung Q-21) | **ĐÃ CHỐT** *(2026-10-05, chủ sản phẩm)* | Nguyên tắc của Q-21 giữ nguyên: không tự viết emulator, mỗi tầng một công cụ mở đã có, công cụ chạy riêng và không vào gói phân phối (bất biến 9). Ba spike có thời hạn, tiêu chí nhận/loại chốt **trước khi chạy** ở dòng task: (1) **`esp-emulator`** của Espressif (Apache-2.0; có ESP32-S3 từ 0.43.0, 2026-09-18) cho GPIO, LEDC, MCPWM, I2C và Wi-Fi của `esp32s3` — lấp ô "QEMU không có GPIO matrix, I2C, Wi-Fi" (TSK-I3-02); (2) **`esp32sim`** (MIT; có I2S, camera, SIMD PIE trên S3) để **ước lượng sớm** bộ nhớ ESP-SR AFE + MultiNet theo ngưỡng Q-3 và chạy suy luận esp-dl (TSK-I3-03) — ước lượng không phải số đo: không đóng TSK-S1-10, không đóng tiêu chí 1 của I3, không kích quy tắc của Q-44; ước lượng trượt ngưỡng thì ghi rủi ro ở `CHANGELOG.md` §3.4 và chuẩn bị phương án trước khi bo về; (3) **kernel tự cấu hình trong VM** (virtme-ng trên runner x86) cho job `linux-hal`: `pwm-gpio` trên line gpio-sim cho một `pwmchip` thật, `snd-aloop` hoặc PipeWire null sink cho backend âm thanh sống; thêm runner `ubuntu-24.04-arm` (miễn phí cho kho công khai) cho ARM64 (TSK-I2a-08). Spike đạt ⇒ đưa công cụ vào CI trong PR riêng, cùng PR sửa `docs/spec/simulation_coverage.md` và proposal Phụ lục H.4; trượt ⇒ báo cáo ở `docs/reports/`, giữ Q-21. Không đổi: Wokwi (mã đóng, không I2S) và Renode (không có ESP32-S3) vẫn loại; `iio_simple_dummy` vẫn loại. Không thay đặt mua phần cứng (roadmap Phụ lục B): âm học, AEC, điện áp, Secure Boot thật, chạy 24 giờ chỉ đo trên bo. Đóng `TODOS.md` #22. Căn cứ: so sánh công cụ ngày 2026-10-05 (Espressif QEMU, `esp-emulator`, `esp32sim`, Wokwi, Renode, QEMU Pi 5 ngoài cây). |
 | **Q-70** | Thử riêng với một đội đối tác trên thiết bị họ đang có, không chờ bo mạch (bổ sung Q-39; giữ Q-52) | **ĐÃ CHỐT** *(2026-10-09, chủ sản phẩm)* | **Một đợt thử riêng trước I6** với một đội đối tác, hứa "đặt gate trước mọi lệnh AI chạm vào thiết bị bạn *đang có*": `neuroedge proxy mcp` che MCP server sẵn có (Home Assistant là ví dụ đầu), `neuroedge.guard` bọc tool call của agent Python, `neuroedge proxy http` đặt gate trước API thiết bị cục bộ; cộng với cái đã có: `sim` + web UI + Claude Desktop, Action CI replay vết ghi. **Không lên index nào:** wheel dựng bằng job `build` + `smoke` của `release-pypi.yml` chạy tay, giao trực tiếp; `PUBLISH_ENABLED` vẫn chưa đặt; PyPI vẫn là I6 (Q-39). Kho vẫn công khai (TSK-I6-01) — "riêng" là cách phân phối và hỗ trợ, không phải mã nguồn. **Không chờ bo mạch:** đợt thử không phải tag của I2c và không chờ task cần phần cứng của I2, I2a, I2b; nó bắt đầu khi đủ điều kiện ở roadmap §4.3.3 (TSK-I2c-19). **Điều kiện:** I2c tiêu chí 2, 4, 5 và `proxy http`; thoả thuận thử nghiệm bằng văn bản với đối tác (PolyForm Noncommercial không cho dùng thương mại — `TODOS.md` #44 là đầu vào); kênh phản hồi riêng với đối tác. **Ngoài đợt thử:** `esp32s3`, thoại trên chip, NeuroBrain; `linux` trên Pi thật là thử nghiệm tới khi nightly RPi 5 (TSK-I2-01) xanh. **Không đổi:** phạm vi v1.0 (Q-52 → Q-55), I6 là lần công khai đầu tiên, giấy phép (Q-45), không có ngày dự báo riêng. Không dựng app desktop: giao diện là CLI, web UI cục bộ và Claude Desktop qua MCP; xét lại sau Beta nếu có nhóm người dùng không dùng terminal. **Lý do:** có phản hồi từ người dùng thật trên thiết bị thật 2–3 tháng trước v1.0 mà không lộ một lớp an toàn chưa chín ra công chúng; dữ liệu cho `TODOS.md` #19 (thông điệp, giá). **Hệ quả đã chấp nhận:** thêm việc hỗ trợ trực tiếp cho mô hình một người + AI agent (Q-60); phản hồi chỉ từ một đội, chưa đại diện thị trường. |
 | **Q-71** | NeuroEdge Lab: dựng hợp đồng bằng AI người dùng đang có, qua MCP — thay NeuroBrain (thay Q-31; đổi cách hiện thực của Q-55; giữ phạm vi Q-52) | **ĐÃ CHỐT** *(2026-10-10, chủ sản phẩm)* | **NeuroEdge không tự chạy LLM để dựng hợp đồng.** Phần "não" là client MCP người dùng chọn (Claude Code, Claude Desktop, Cursor…); NeuroEdge phơi năng lực lab thành **tool MCP trung lập với client** và giữ ba vai: **chấm** (bản nháp nào cũng phải qua phép kiểm của NeuroEdge), **cưỡng chế** (gate, phong bì, trigger chạy trong runtime, HAL và firmware, không ở client) và **giữ cửa khoá** (chỉ người khoá chính sách, qua PR). Công thức: *client viết, NeuroEdge chấm và cưỡng chế, người khoá.* **Hai lớp tool:** (1) *tool tác động* — `lab_pulse`, `lab_read`, quét bus — là `@action` có gate, đi `dispatch()` → gate như mọi lời gọi `mcp`; (2) *tool dựng* — xem bo và phong bì, sổ bàn làm việc, nộp và kiểm bản nháp (action, gate `0.1.0-draft`, test hai chiều, profile bo, trigger), chạy replay, báo cáo — không có hiệu ứng vật lý, chỉ ghi vào thư mục agent. **Không bao giờ có tool** để khoá bản nháp, sửa `digests.lock`, bật `[lab]`, sửa gate đã khoá hay trả lời `ask`. **Một phép kiểm, hai nơi chạy:** tool MCP và lệnh `neuroedge lab check` trong Action CI dùng chung mã; CI là chốt, không tin rằng client đã gọi tool. **Client có shell (Claude Code) là bên gọi không tin cậy có thêm quyền ghi tệp và chạy lệnh:** an toàn không dựa vào việc client chỉ dùng tool. Ba ranh giới bắt buộc: (a) quyền thiết bị tách khỏi client — chỉ tiến trình `mcp serve` giữ quyền `gpio`/`i2c`; đường chính là stdio qua SSH với khoá `restrict,command=…`, hoặc user riêng trên cùng máy; `mcp serve --http` chỉ khi client trình được chứng chỉ mTLS và token gắn chứng chỉ (chưa kiểm với Claude Code); (b) trên bo thật, `mcp serve` nạp gate, profile bo và `agent.toml` từ bản checkout đã duyệt mà client không ghi được — bản nháp không lên bo thật trước khi khoá; (c) khoá gate chỉ qua PR có người duyệt trên nhánh được bảo vệ, với `CODEOWNERS` và workflow chạy từ nhánh gốc cho tệp CI, `digests.lock`, `gates/` và mã của phép kiểm. Rủi ro còn lại: `docs/spec/threat_model.md` §2c. Tool dựng nhận và trả **nội dung**; bản nháp sống trong kho của client, không trên thiết bị. **Đổi tên:** bỏ tên NeuroBrain và tagline của Q-31; năng lực gọi là **NeuroEdge Lab** (cờ và extra `[lab]`, gói `neuroedge.lab`, bất biến B-1 đọc là `lab/`); "Chat Contracting" thành **hợp đồng nháp qua MCP**. Định vị gộp vào Q-30: *"Physical AI, under contract — with the AI you already use."* Mã task `TSK-N*` giữ nguyên. Ghi chú thiết kế đổi thành `neuroedge-design-lab-mcp.md`. **Chốt luôn Phụ lục B của ghi chú thiết kế cũ** (TSK-N0-01): không tool chân thô; phạm vi N0–N7, N7 làm cuối; gói `lab/` giữ B-1, phong bì là hook trong HAL kiểm trước `authorize`; `digital.in` cùng bus I2C ở RFC-0007 (đã chấp thuận); cờ `[lab]` mặc định tắt, `build --release` chặn; lab trên `linux` thật dùng phiên tương tác của TSK-S5-10; port chọn lọc từ ESP-Claw theo Phụ lục A; restyle IBM Plex chờ mở rộng Q-11 (TSK-N0-06). **Không đổi:** phạm vi Q-52 và Q-55 (bốn gói, ba target, khối N0–N7, I4a và I5a); bảy nguyên tắc của ghi chú thiết kế; Q-26 (client MCP không xác nhận được `ask`); `gate.v1`, ngữ nghĩa phân giải, `digests.lock` — nên quyết định này **không cần RFC**; đưa lược đồ bản nháp hay khai báo trigger vào `schemas/` thì cần (CONTRIBUTING §3). System 2 (LiteLLM) vẫn là bên gọi lúc chạy, không dựng hợp đồng. **Nghiệm thu A11** đo trên ít nhất hai client: một có shell (Claude Code), một không (Claude Desktop). Client chỉ chạy trên cloud (ChatGPT) cần cổng mạng không mTLS — hoãn ở `TODOS.md` #61. **Lý do:** bớt một tầng điều phối LLM phải tự viết và tự giữ (Q-60); người dùng dùng model mạnh nhất họ có; cùng một lời hứa với nền tảng mở (Q-67) và đợt thử đối tác (Q-70): gate đứng trước AI bạn đang dùng. **Hệ quả đã chấp nhận:** trải nghiệm dựng phụ thuộc client bên ngoài và tài khoản của người dùng; NeuroEdge không bảo đảm chất lượng bản nháp, chỉ chấm nó; client có shell là mối đe doạ mới mà phần mềm chỉ giảm được bằng tách quyền, nạp chính sách từ cây đã duyệt và quy trình duyệt. *Bổ sung bởi Q-72 (2026-10-11): Lab là vòng ①; agent vận hành là vai mới chạy LLM lúc chạy để giải thích và đề xuất, không dựng hay khoá hợp đồng; kênh IM vào phạm vi.* |
-| **Q-72** | Định vị Blueprint: từ một câu nói tới một sản phẩm vật lý có AI — dựng, chạy an toàn, chia sẻ và bán (sửa Q-26, Q-30, Q-45, Q-62; đảo Q-56; đổi thứ tự Q-52; bổ sung Q-57, Q-71) | **ĐÃ CHỐT HƯỚNG** *(2026-10-11, chủ sản phẩm; RFC từng phần cần chữ ký kỹ thuật trưởng)* | **Định vị:** NeuroEdge là nơi biến ý định thành sản phẩm vật lý có AI, theo **ba vòng**: ① **Dựng** — client MCP (Q-71) gợi ý kit, sinh firmware, chạy thử trên `sim`, nạp, nối kênh chat; ② **Chạy** — *agent vận hành* chạy liên tục trên máy nhà, thực thi **hợp đồng nhiệm vụ** (nhiều thiết bị; được/cấm, tần suất, khung giờ, nghĩa vụ là watchdog có cận, luồng dữ liệu, khi hỏng, hết hạn), phản xạ trên MCU, bộ phát hiện tất định rồi mới gọi LLM, chủ động báo và đề xuất qua kênh chat; ③ **Chia sẻ, bán** — **Blueprint** (kit + firmware + hợp đồng mẫu + bộ phát hiện + vết ghi làm bằng chứng), `blueprint pack`/`install`, Blueprint Hub. Gate và hợp đồng thành lớp niềm tin cho thị trường Blueprint, không phải sản phẩm đứng riêng. **Người dùng đầu:** cộng đồng maker toàn cầu (Home Assistant, ESPHome), rồi maker thành nhà sản xuất nhỏ; U2, U3 lùi xuống phụ. **Blueprint đầu tiên:** bể cá. **LLM:** người dùng tự trả bằng key của mình (BYOK, qua LiteLLM, có mô hình tại chỗ); có trần chi phí trong hợp đồng; hết trần thì phản xạ và cảnh báo mẫu cứng vẫn chạy. **Dòng tiền:** giữ PolyForm NC (Q-45) làm cơ chế thu — cá nhân miễn phí, bán Blueprint hay thiết bị là dùng thương mại; hoa hồng kit, relay đám mây tuỳ chọn, giấy phép theo thiết bị, chia doanh thu Blueprint; nguồn thu thử đầu là liên kết bán kit bể cá. Relay và Hub là tuỳ chọn, **không bao giờ nằm trên đường an toàn**. **Kênh IM** (Telegram trước) vào phạm vi. **Bốn điểm chốt khi rà soát:** (1) người **duyệt được qua kênh chat** — Telegram và kênh khác — cả `ask` lẫn sửa đổi hợp đồng, chỉ khi người gửi đã ghép đôi tại chỗ, yêu cầu có mã một lần và hạn, tin duyệt chứa bản duyệt ≤ 5 dòng, ghi vào `trace.v1`; nhóm chat và LLM không bao giờ duyệt; (2) **không ký vết ghi trước MVP** — bằng chứng của Blueprint ghi rõ "chưa ký", ký quay lại khi Hub thu tiền cho người bán (`TODOS.md` #1); (3) **`safe_state` khác `off` chỉ khai trong `board.v1`**, bắt buộc kèm khoá liên động phần cứng, sửa `TODOS.md` #58 trước — để Q-62 mở rộng không thành đường tắt qua gate; (4) **giả lập trước, phần cứng thật mua sau** — bốn tầng: `sim` có mô hình vật lý, `linux` trên `gpio-sim`, firmware ESP32 trên Wokwi/QEMU, ESPHome host. **Cổng nhu cầu** (đảo Q-56), 8 tuần sau khi chốt: ≥ 3 người ngoài đội tự cài Blueprint và chạy được; ≥ 1 người chạy liên tục 2 tuần trên giả lập; ≥ 1 maker muốn đóng gói và bán Blueprint của mình. Đạt ① ② mà trượt ③ thì NeuroEdge là công cụ cá nhân, tìm nguồn thu khác. **Thứ tự** (Q-52 không cắt): hợp đồng nhiệm vụ, agent vận hành, kênh chat, Blueprint tối thiểu đi trước; thoại, Studio, `jetson` tạm dừng; Q-70 chạy song song. **Cần RFC** (CONTRIBUTING §3): an toàn có điều kiện, `mission.v1`, `blueprint.v1`, luồng dữ liệu, nguồn `chat:<id>`. Proposal: [`docs/business/proposal-blueprint-2026-10-11.md`](../docs/business/proposal-blueprint-2026-10-11.md); rà soát tài liệu theo hướng này làm ở các PR sau. **Lý do:** gate đứng riêng thì mỏng và chưa ai trả tiền; giá trị và dòng tiền nằm ở người tạo sản phẩm (Paul Graham, *How to Make Startups Powerful*); ba buổi phỏng vấn mô tả vòng ① ②. **Hệ quả đã chấp nhận:** duyệt từ xa qua chat thì tài khoản chat bị chiếm là duyệt được thay chủ; bằng chứng chưa ký thì người bán sửa được vết ghi; giả lập không bắt lỗi đấu dây, nhiễu, Wi-Fi; thêm hai vai mới phải giữ (agent vận hành, Hub). |
+| **Q-72** | Định vị Blueprint: từ một câu nói tới một sản phẩm vật lý có AI — dựng, chạy an toàn, chia sẻ và bán (sửa Q-26, Q-30, Q-45, Q-62; đảo Q-56; đổi thứ tự Q-52; bổ sung Q-57, Q-71) | **ĐÃ CHỐT HƯỚNG** *(2026-10-11, chủ sản phẩm; RFC từng phần cần chữ ký kỹ thuật trưởng)* | **Định vị:** NeuroEdge là nơi biến ý định thành sản phẩm vật lý có AI, theo **ba vòng**: ① **Dựng** — client MCP (Q-71) gợi ý kit, sinh firmware, chạy thử trên `sim`, nạp, nối kênh chat; ② **Chạy** — *agent vận hành* chạy liên tục trên máy nhà, thực thi **hợp đồng nhiệm vụ** (nhiều thiết bị; được/cấm, tần suất, khung giờ, nghĩa vụ là watchdog có cận, luồng dữ liệu, khi hỏng, hết hạn), phản xạ trên MCU, bộ phát hiện tất định rồi mới gọi LLM, chủ động báo và đề xuất qua kênh chat; ③ **Chia sẻ, bán** — **Blueprint** (kit + firmware + hợp đồng mẫu + bộ phát hiện + vết ghi làm bằng chứng), `blueprint pack`/`install`, Blueprint Hub. Gate và hợp đồng thành lớp niềm tin cho thị trường Blueprint, không phải sản phẩm đứng riêng. **Người dùng đầu:** cộng đồng maker toàn cầu (Home Assistant, ESPHome), rồi maker thành nhà sản xuất nhỏ; U2, U3 lùi xuống phụ. **Blueprint đầu tiên:** bể cá. **LLM:** người dùng tự trả bằng key của mình (BYOK, qua LiteLLM, có mô hình tại chỗ); có trần chi phí trong hợp đồng; hết trần thì phản xạ và cảnh báo mẫu cứng vẫn chạy. **Dòng tiền:** giữ PolyForm NC (Q-45) làm cơ chế thu — cá nhân miễn phí, bán Blueprint hay thiết bị là dùng thương mại; hoa hồng kit, relay đám mây tuỳ chọn, giấy phép theo thiết bị, chia doanh thu Blueprint; nguồn thu thử đầu là liên kết bán kit bể cá. Relay và Hub là tuỳ chọn, **không bao giờ nằm trên đường an toàn**. **Kênh IM** (Telegram trước) vào phạm vi. **Bốn điểm chốt khi rà soát:** (1) người **duyệt được qua kênh chat** — Telegram và kênh khác — cả `ask` lẫn sửa đổi hợp đồng, chỉ khi người gửi đã ghép đôi tại chỗ, yêu cầu có mã một lần và hạn, tin duyệt chứa bản duyệt ≤ 5 dòng, ghi vào `trace.v1`; nhóm chat và LLM không bao giờ duyệt; (2) **không ký vết ghi trước MVP** — bằng chứng của Blueprint ghi rõ "chưa ký", ký quay lại khi Hub thu tiền cho người bán (`TODOS.md` #1); (3) **`safe_state` khác `off` chỉ khai trong `board.v1`**, bắt buộc kèm khoá liên động phần cứng, sửa `TODOS.md` #58 trước — để Q-62 mở rộng không thành đường tắt qua gate; (4) **giả lập trước, phần cứng thật mua sau** — bốn tầng: `sim` có mô hình vật lý, `linux` trên `gpio-sim`, firmware ESP32 trên QEMU (Wokwi, Velxio chờ đối chiếu Q-21, Q-69), ESPHome host. **Cổng nhu cầu** (đảo Q-56), 8 tuần sau khi chốt: ≥ 3 người ngoài đội tự cài Blueprint và chạy được; ≥ 1 người chạy liên tục 2 tuần trên giả lập G2 hoặc G3; ≥ 1 maker muốn đóng gói và bán Blueprint của mình. Đạt ① ② mà trượt ③ thì NeuroEdge là công cụ cá nhân, tìm nguồn thu khác. **Thứ tự** (Q-52 không cắt): hợp đồng nhiệm vụ, agent vận hành, kênh chat, Blueprint tối thiểu đi trước; thoại, Studio, `jetson` tạm dừng; Q-70 chạy song song. **Cần RFC** (CONTRIBUTING §3): an toàn có điều kiện, `mission.v1`, `blueprint.v1`, luồng dữ liệu, nguồn `chat:<id>`. Proposal: [`docs/business/proposal-blueprint-2026-10-11.md`](../docs/business/proposal-blueprint-2026-10-11.md); rà soát tài liệu theo hướng này làm ở các PR sau. **Lý do:** gate đứng riêng thì mỏng và chưa ai trả tiền; giá trị và dòng tiền nằm ở người tạo sản phẩm (Paul Graham, *How to Make Startups Powerful*); ba buổi phỏng vấn mô tả vòng ① ②. **Hệ quả đã chấp nhận:** duyệt từ xa qua chat thì tài khoản chat bị chiếm là duyệt được thay chủ; bằng chứng chưa ký thì người bán sửa được vết ghi; giả lập không bắt lỗi đấu dây, nhiễu, Wi-Fi; thêm hai vai mới phải giữ (agent vận hành, Hub). |
 
 ---
 
@@ -884,16 +1138,20 @@ Mọi quyết định kỹ thuật, đã chốt hoặc còn mở — xem cột T
 | **M3** — Nhất quán các môi trường bậc 1 | FR-TGT-01→05, FR-CI-07, FR-HAL-06 | Kết quả `neuroedge verify` | A2 |
 | **M4** — Tái hiện sự cố hiện trường | FR-CI-01, FR-CI-02, FR-TRC-01→08, FR-FLT-05 | Thời gian từ sự cố tới tái hiện | A7, C7 |
 | **M5** — Cập nhật quy mô lớn an toàn | FR-OTA-01→04, FR-FLT-02 | Số thiết bị brick | C1 |
+| **M6** — Bên thứ ba tự nối mà không sửa lõi | FR-EXT-01→09 | Thời gian viết bridge; số lệnh che MCP server | A13 |
+| **M7** — Một câu nói thành thiết bị có hợp đồng | FR-MSN-01→14, FR-DX-09, FR-DX-10, FR-CLI-15 | Tỷ lệ hợp đồng mâu thuẫn bị bắt; lệnh vi phạm bị chặn | A15, A17, A21 |
+| **M8** — Agent vận hành chủ động, có trần chi phí | FR-AGT-01→09, FR-CH-01→05, FR-EGR-01→05, FR-TRC-11→13 | Chi phí LLM 30 ngày; phát hiện xu hướng đúng | A16, A18, A19, A20, A22 |
+| **M9** — Blueprint cài được, có người muốn bán | FR-BP-01→10, FR-CLI-13 | Thời gian cài trên máy sạch; số maker muốn bán | A14, B6, B7, B8 |
 
 ### A.2 Đối chiếu nguyên tắc bất biến
 
 | Nguyên tắc | Yêu cầu hiện thực hóa | Yêu cầu kiểm chứng |
 |:---|:---|:---|
-| **P-1** Hợp đồng chuẩn kiểu | FR-ACE-01, FR-ACE-02, FR-ACE-08→10, FR-MDL-10→12, FR-HAL-07 | A3 |
+| **P-1** Hợp đồng chuẩn kiểu | FR-ACE-01, FR-ACE-02, FR-ACE-03, FR-ACE-08→10, FR-MDL-10→12, FR-HAL-07, FR-CH-02, FR-AGT-02 | A3, A20, A21 |
 | **P-2** Các môi trường ngang hàng | FR-TGT-01→05, FR-TGT-08 | A2 *(ràng buộc ở bậc 1)* |
-| **P-3** Giá trị ở quản trị fleet | FR-OTA-04, NFR-COMP-02, NFR-COMP-03 | Rà soát ranh giới §6.4 tài liệu nguồn |
+| **P-3** Giá trị ở người tạo sản phẩm *(Q-72)* | FR-OTA-04, FR-BP-07, FR-BP-08, FR-BP-10, NFR-COMP-02, NFR-COMP-03 | Rà soát ranh giới §6.4 tài liệu nguồn và §8.4 của tài liệu này; C6 |
 | **P-4** Mô hình thay thế được — cloud-first, provider-pluggable | FR-MDL-01→04, FR-MDL-07→09, FR-PER-07, FR-GW-01→07 | Bài kiểm thử đổi mô hình và đổi provider STT/TTS chỉ bằng cấu hình, không sửa mã agent |
-| **P-5** Hiệu ứng mạng từ chia sẻ gate và thành phần mở rộng | FR-GATE-05→08, FR-REG-01, FR-REG-04, FR-REG-08 | B3, C5 |
+| **P-5** Hiệu ứng mạng từ chia sẻ gate, thành phần mở rộng và NeuroEdge Blueprint | FR-GATE-05→08, FR-REG-01, FR-REG-04, FR-REG-08, FR-BP-01→05, FR-BP-09 | B3, B6, B8, C5 |
 
 ### A.3 Đối chiếu yêu cầu phi chức năng
 
@@ -911,6 +1169,7 @@ Yêu cầu phi chức năng **không được truy vết qua task roadmap** mà 
 | **NFR-REL** | 02 | Bộ kịch bản suy giảm — trùng cơ chế với NFR-RES-04 | A4 |
 | **NFR-REL** | 03 | Nhật ký kiểm thử hằng đêm trên bo mạch thật | A2 |
 | **NFR-REL** | 04 | Chạy lại bộ vết ghi hồi quy sau mỗi lần nâng phiên bản phụ | A7 |
+| **NFR-REL** | 05, 06 | Kịch bản G1 mất mạng, mất LLM, worker chết; chạy liên tục 2 tuần trên G2 hoặc G3 | A16, B7 |
 | **NFR-SEC** | 01 | Rà soát mã và kiểm thử thâm nhập tìm đường tắt tới actuator | A3 |
 | **NFR-SEC** | 02, 03 | Rà soát cấu hình Secure Boot, mã hóa flash, TPM và nút ngắt micro trên bo mạch tham chiếu | **cần tiêu chí** *(chưa có tiêu chí mốc A/C nào đo được)* |
 | **NFR-SEC** | 06 | Nạp firmware không chữ ký hoặc sai chữ ký → bị từ chối | Tiêu chí của FR-OTA-03 · **cần tiêu chí mốc** |
@@ -918,9 +1177,15 @@ Yêu cầu phi chức năng **không được truy vết qua task roadmap** mà 
 | **NFR-SEC** | 08 | Rà soát kênh TLS 1.3 tới provider; kiểm provider được ghi trong vết ghi | **cần tiêu chí** *(provider nằm trong dữ liệu sự kiện `system_two_call`; `trace.v1.json` không có trường provider riêng)* |
 | **NFR-SEC** | 07 | Kiểm thử sandbox với mã bên thứ ba | — *(v1.1, gắn FR-REG-07)* |
 | **NFR-SEC** | 09 | Test bên gọi không tin cậy (`docs/spec/threat_model.md` §2b) và corpus `fixtures/tool_calls/` | A3 |
+| **NFR-SEC** | 11, 12, 13 | Kịch bản đích không khai, mạng của worker, bộ kịch bản duyệt chat; rà soát nơi giữ key và token bot | A18, A20 |
+| **NFR-SEC** | 14 | Cài gói lệch digest, gói khai `safe_state` sai chỗ | A14, A21 |
+| **NFR-SEC** | 15 | Rà soát thiết kế relay: không giải mã, sao lưu mã hoá | **cần tiêu chí** *(relay P1, chưa có tiêu chí mốc)* |
 | **NFR-PRIV** | 01, 03, 04 | Rà soát nội dung tệp vết ghi sinh ra ở chế độ mặc định | A7 |
 | **NFR-PRIV** | 02 | Rà soát ranh giới xử lý on-device và cloud theo P-4 | — *(rà soát kiến trúc)* |
+| **NFR-PRIV** | 05 | Rà soát đích chia sẻ dữ liệu mặc định tắt | — *(P2, sau cổng 8 tuần)* |
 | **NFR-OBS** | 01→03 | Thẩm định tệp vết ghi bằng `neuroedge trace validate` | A7 |
+| **NFR-OBS** | 04 | Đo cỡ vết ghi 30 ngày trên G1; kịch bản mất điện giữa đoạn | A22 |
+| **NFR-COST** | 01, 02 | Kịch bản 30 ngày trên G1, đếm chi phí và tin theo loại | A19 |
 | **NFR-COMP** | 01→04 | Rà soát ranh giới giữa lõi và dịch vụ thương mại (proposal §6.4) | A9 |
 | **NFR-COMP** | 05, 06 | Ma trận nền tảng chạy trong CI | A2 |
 
@@ -940,14 +1205,23 @@ A.1 truy vết theo **mục tiêu sản phẩm**, A.2 theo **nguyên tắc bất
 | **FR-CLI** | 09→12 | `gate lint`, `gate resolve`, `board`, `mcp` | A5 *(09, 10)* · A2 *(11)* · A3 *(12)* |
 | **FR-DX** | 03→07 | Khuôn mẫu dự án, ví dụ mẫu, thông báo lỗi | A1, A8 |
 | **FR-EXT** | 01→09 | Lõi dùng độc lập, điểm cắm, tuân thủ, proxy, cơ cấu từ xa, phân phối | A13, A3 |
-| **FR-TGT** | 07 | Mô phỏng kịch bản suy giảm trong `sim` | A4 |
+| **FR-TGT** | 07 | Mô phỏng kịch bản suy giảm trong `sim`; kịch bản nhiệm vụ nhiều ngày có mô hình vật lý (Q-72) | A4, A16, A19 |
 | **FR-MDL** | 05, 06 | Định tuyến khai báo và ghi nhận tỷ lệ S1/S2 | C4 |
 | **FR-FLT** | 01, 03, 04, 06 | Provisioning, giám sát, cấu hình từ xa, thiết bị ảo | C1, roadmap TR-7 |
 | **FR-REG** | 02, 03, 05, 06 | Manifest, khai báo năng lực, định danh, đo lường | C5, roadmap TR-4, TR-5 |
 | **FR-REG** | 07 | Phân quyền và sandbox cho mã bên thứ ba | — *(v1.1, kiểm qua NFR-SEC-07)* |
 | **FR-TEL** | 01→06 | Viễn trắc và đo đạc | B4, B5, §12.2 của tài liệu này |
+| **FR-TEL** | 07, 08 | Mốc của cổng 8 tuần; báo cáo liên kết kit | B6, B7, C6 |
+| **FR-MSN** | 01→14 | Hợp đồng nhiệm vụ: điều khoản, biên dịch theo tầng, mâu thuẫn, bản duyệt | A15, A17, A21 |
+| **FR-AGT** | 01→09 | Agent vận hành: runtime, LLM worker, lập lịch, bộ phát hiện, trần chi phí, nhánh lỗi | A16, A19 |
+| **FR-CH** | 01→05 | Kênh chat, ghép đôi, bản ghi duyệt | A20 |
+| **FR-EGR** | 01→05 | Luồng dữ liệu chống rò rỉ, relay | A18 · relay: **cần tiêu chí** |
+| **FR-BP** | 01→07 | NeuroEdge Blueprint, pack/install, bằng chứng, index tĩnh, kit | A14, A21, A22 |
+| **FR-BP** | 08→10 | Giấy phép, dữ liệu có đồng ý, Hub thu phí | — *(sau cổng 8 tuần)* |
+| **FR-TRC** | 11→13 | Vết ghi theo đoạn, ghi và giữ, sự kiện mới | A22 |
+| **FR-CLI** | 13→15 | `blueprint`, `chat`, `mission`, `agent` | A14, A15 |
 
-**Độ phủ truy vết:** sau A.1 đến A.4, mọi yêu cầu FR và NFR trong tài liệu này đều có ít nhất một đường kiểm chứng, **trừ các dòng ghi "cần tiêu chí"** (NFR-SEC-02→06, 08) — nợ truy vết đã biết, phải bổ sung tiêu chí trước khi đóng v1.0. Ba phụ lục sau A.1 tồn tại vì ba trục truy vết khác nhau — mục tiêu, nguyên tắc, và thuộc tính hệ thống — và một yêu cầu có thể xuất hiện ở nhiều trục.
+**Độ phủ truy vết:** sau A.1 đến A.4, mọi yêu cầu FR và NFR trong tài liệu này đều có ít nhất một đường kiểm chứng, **trừ các dòng ghi "cần tiêu chí"** (NFR-SEC-02→06, 08, 15; FR-EGR-05) — nợ truy vết đã biết, phải bổ sung tiêu chí trước khi đóng v1.0. Ba phụ lục sau A.1 tồn tại vì ba trục truy vết khác nhau — mục tiêu, nguyên tắc, và thuộc tính hệ thống — và một yêu cầu có thể xuất hiện ở nhiều trục.
 
 ---
 
@@ -993,6 +1267,10 @@ Mọi mã lỗi **BẮT BUỘC** nêu đủ ba thành phần: sai ở đâu, vì
 | Vết ghi sự cố | `traces/incidents/<session_id>.json` | `traces/incidents/sess_8f9a2b1c.json` |
 | Golden Reference | `traces/golden/<kịch-bản>.json` | `traces/golden/unlock-denied.json` |
 | Lược đồ công khai | `https://schema.neuroedge.dev/<loại>/v<n>.json` | `https://schema.neuroedge.dev/trace/v1.json` |
+| NeuroEdge Blueprint trên index *(dự kiến, Q-72 — chốt ở RFC `blueprint.v1`)* | `neuroedge://blueprints/<tác-giả>/<tên>@<semver>` | `neuroedge://blueprints/maker/bao-ve-be-ca-nhiet-doi@1.2.0` |
+| Hợp đồng nhiệm vụ *(dự kiến, Q-72 — chốt ở RFC `mission.v1`)* | `<tên>@<semver>.mission.yaml` | `trong-be-ca@0.1.0.mission.yaml` |
+| Nguồn kênh chat *(dự kiến, Q-72 — chốt ở RFC nguồn `chat:<id>`)* | `chat:<id>` — `<id>` là tài khoản đã ghép đôi, do runtime gán | `chat:<id>` của tài khoản Telegram đã ghép |
+| Đoạn vết ghi của runtime 24/7 *(dự kiến, Q-72 — chốt ở RFC `trace.v1`)* | `traces/runtime/<session_id>/<ngày>.json` | `traces/runtime/sess_8f9a2b1c/2026-10-11.json` |
 
 ## Phụ lục D — Cấu trúc Monorepo và Giao thức Truyền dẫn
 

@@ -2,6 +2,8 @@
 
 2026-10-11 · Trong-Minh Le (@letrongminh) · **Trạng thái:** đề xuất cho **Q-72** (PRD §15); bốn điểm đã chốt khi rà soát ở mục "Quyết định cần chốt"
 
+> **Đã tinh chỉnh sau rà soát kiến trúc (2026-10-11).** Tài liệu này viết trước rà soát kiến trúc theo Q-72; các điểm sau đã đổi và **PRD Q-72, FR-CH, FR-EGR, FR-MSN thắng** khi lệch: (1) lời duyệt qua chat là **bản ghi duyệt** `{id, nonce, hạn, digest, bản duyệt ≤ 5 dòng do trình biên dịch sinh}`, LLM không viết được dòng nào; thay đổi mở rộng quyền dữ liệu chỉ duyệt tại chỗ (FR-MSN-14); (2) luồng dữ liệu là **chống rò rỉ**: đích người dùng khai (kể cả gửi ảnh tới LLM) được nhận dữ liệu cho phép, đích không khai bị chặn (FR-EGR); (3) `safe_state` khác `off` chỉ khai trong `board.v1` kèm khoá liên động phần cứng, không có dạng phụ thuộc dữ kiện trong hợp đồng; (4) tầng giả lập G3 chạy firmware ESP32 trên **QEMU của Espressif** (Wokwi, Velxio chờ đối chiếu Q-21, Q-69). Thiết kế: `docs/architecture/vi/15-target-architecture.md` §6.
+
 ## Tóm tắt
 
 Đề xuất: NeuroEdge trở thành **nơi biến ý định thành sản phẩm vật lý có AI — dựng, chạy an toàn, chia sẻ và bán**. Shopify cho bất kỳ ai mở cửa hàng mà không cần biết làm web; NeuroEdge cho bất kỳ maker nào tạo một thiết bị AI chạy thật, rồi biến nó thành sản phẩm cho người khác.

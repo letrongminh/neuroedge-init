@@ -13,6 +13,8 @@ When a chatbot answers incorrectly, the user clicks "Regenerate". When an agent 
 
 NeuroEdge separates those two concerns. Every action proposal — from the local command grammar, from an LLM, from another agent via MCP — is normalized into a **typed tool call**, then must pass a **gate**: a safety policy written in YAML, versioned, inheritable, compiled into a deterministic decision tree. When the gate returns `ALLOW`, a **single-use verdict token** ([one-time token](../../user/thuat-ngu.md)) is issued, and only that token can open the exact hardware pins of that action. Every fact, verdict and pin command is written to a replayable **trace** ([trace](../../user/thuat-ngu.md)). The same gate runs on the simulator (`sim`), on Linux (`linux`) and on the ESP32-S3 chip (`esp32s3`).
 
+**Direction decided, no code yet (`planned · Q-72`).** [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) places the core above inside three loops: ① **build** — the MCP client the user already has writes contracts through NeuroEdge Lab (Q-71); ② **run** — an *operating agent* runs continuously on the home machine, executes **mission contracts**, and reports and asks for approval over a chat channel (I2d); ③ **share and sell** — a **NeuroEdge Blueprint** packages a kit, firmware, contract templates, detectors and traces as evidence, installed with one command (I2e). A NeuroEdge Blueprint is different from a **Home Assistant Blueprint** (an automation template shared through the Blueprint Exchange); a NeuroEdge Blueprint may carry an HA blueprint inside its package. Gates and contracts are the trust layer of all three loops; every new path still goes through the backbone below.
+
 ### 1.1 Product spirit — six promises
 
 **No contract, no action.** Each promise below is something the user perceives, and each
@@ -27,6 +29,8 @@ promise has an architectural mechanism that holds it. When a design decision wea
 | 4 | **Evidence over promises.** Every incident can be reproduced on the developer's machine | Every fact, verdict, pin command into the trace; replay recomputes without calling the model ([`06`](06-runtime-flows.md) §7) | `neuroedge replay`, `gate explain`, Action CI in PRs |
 | 5 | **Humans hold the final authority.** Models and other agents cannot confirm on behalf of humans; but no one can confirm on behalf of a physical reading either | `ask` can only be answered by a human on the device (Q-26); drafts an MCP client writes through NeuroEdge Lab must be approved by a human, and no tool can lock them (Q-71); numeric criteria are forbidden in `confirms` (Q-62) | Confirmation prompt on the `--ui` page, via voice, or via button |
 | 6 | **Plug into other stacks, do not swallow the whole stack.** NeuroEdge is a contract layer, not a closed platform | MCP is the entry door; model and speech are replaceable providers (P-4); schemas, specifications, compliance test suite under Apache-2.0 (Q-45); network MCP with authentication at launch (Q-58) | Claude, Home Assistant, or an agent framework calls the device through the gate |
+
+**Will change under Q-72 (pending the conditional-safety RFC, `planned · Q-72`, I2d).** Promise 2: "safe state" becomes **`safe_state` declared in `board.v1`** per actuator (default `off`; something other than `off` only when the wiring is on by default, for example a normally closed relay, declared as a hardware interlock). Commands still follow "when unsure, block"; only the direction **toward** `safe_state` is always allowed, and only the direction **away from** `safe_state` is gated and limited. Existing profiles (`off`; `motion.*` `stop`/`hold`) keep their behaviour. Promise 5: a human can also approve over a paired chat channel with an **approval record** carrying a one-time code, an expiry and the digest of the exact change; the LLM and chat groups never approve ([`01`](01-context-c4l1.md) §4). Decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định).
 
 The product grows through ten user-facing release milestones (roadmap §0.5); the architecture of each milestone and how
 each milestone proves the six promises again are in [`13`](13-evolution-i0-i18.md).
@@ -99,6 +103,8 @@ When two characteristics conflict, the one higher up wins. Each row is a design 
 | 6 | **Runs offline** | Safety functions need no Internet | The local command grammar is the fallback for every model; the core uses only the standard library for HTTP | [`06`](06-runtime-flows.md) §5 |
 | 7 | **Fits a small chip** | The gate runs on ESP32-S3 | No JSON, no CEL on the chip; the `NETR` binary tree is read in place in flash; the walker allocates nothing, stack ≤ 512 B | [`04`](04-component-device-c4l3.md) |
 
+**Characteristic 1 will change under Q-72 (pending RFC, `planned · Q-72`, I2d).** "Every error leads to a block" still holds for **commands**. A clause is added for **actuators**: on an error, expiry, loss of contact or runtime death, the actuator returns to the `safe_state` declared in `board.v1`, not necessarily `off`. Duration, `max_continuous_ms`, leases, levels L0–L3 (RFC-0018) and the Q-62 gate exemption all read as "return to `safe_state`" ([`05`](05-code-gate-hal-c4l4.md) §5). Characteristic 6 meets one more source of network loss: when the operating agent loses the LLM, the chat channel or the relay, reflexes, deterministic detectors and fixed-template alerts keep running ([`06`](06-runtime-flows.md)). Root invariant: `CHANGELOG.md` §3.3.
+
 ## 5. System shape
 
 NeuroEdge has three parts, plus the CI chain that keeps them in sync:
@@ -109,8 +115,10 @@ NeuroEdge has three parts, plus the CI chain that keeps them in sync:
 | **`esp32s3` firmware** | `NETR` walker, token ledger, UART trace, generated component for the agent, signed OTA | C99 on ESP-IDF v5.4 | `partial` — runs on QEMU; does not drive pins yet |
 | **Data contracts** | `gate.v1`, `trace.v1`, `board.v1`, `agent.toml`, `NETR` v1, UART lines | JSON Schema, TOML, binary | `done`, frozen via RFC |
 | **CI** | Python tests, gpio-sim, QEMU, golden images, OTA, security | GitHub Actions | `done` |
+| **Operating agent** (home machine) | Two processes: a **trusted runtime** running 24/7 (HAL, gate, mission contracts, scheduling, deterministic detectors, chat channel adapters and approval checks, data egress) and an **untrusted LLM worker** (holds the BYOK key, calls the runtime over local MCP, never approves) — [`02`](02-container-c4l2.md) §3 | Python | `planned · Q-72` (I2d) |
+| **NeuroEdge Blueprint** | Package of kit + firmware + contract templates + detectors + evidence traces; `blueprint pack`/`install` downloads by URL and checks the whole-package digest; the Hub is a static index repository | Files, git/HTTPS | `planned · Q-72` (I2e) |
 
-Two parts have no code today and appear only in the `planned` state: **Fleet OS** (I9) and the **Gate Registry** (I10). Everything else that is planned (the four extension primitive packs, NeuroEdge Lab over MCP, multi-node robots, vision on Jetson) is in [`13`](13-evolution-i0-i18.md).
+Two parts have no code today and appear only in the `planned` state: **Fleet OS** (I9) and the **Gate Registry** (I10). Q-72 adds three `planned` parts in the table above and off the machine: the operating agent (I2d), NeuroEdge Blueprint with the Hub index (I2e), and an optional cloud relay (`planned · Q-72`, outside I2d/I2e). Everything else that is planned (the four extension primitive packs, NeuroEdge Lab over MCP, multi-node robots, vision on Jetson) is in [`13`](13-evolution-i0-i18.md).
 
 ### 5.1 Five-layer logical model
 
@@ -159,7 +167,7 @@ The table below is a snapshot of the shape, not a progress table; per-task progr
 
 - **Not certified functional safety** (no SIL per IEC 61508, no PL per ISO 13849 — Q-38). The gate does not replace an emergency stop or a hardware interlock.
 - **Does not defend against an attacker inside the same process.** A token is `(nonce, digest)` in memory; the in-scope threat is **accidentally bypassing the gate**, and that is proven by tests (`docs/spec/threat_model.md` §3, `TODOS.md` #2).
-- **Not a cloud service.** Today NeuroEdge is a library, a CLI and a firmware; there is no server operated by NeuroEdge.
+- **Not a cloud service.** Today NeuroEdge is a library, a CLI and a firmware; there is no server operated by NeuroEdge. *Will change under Q-72 (`planned · Q-72`):* two optional exceptions, never on the safety path — the relay only forwards TLS by SNI and does not decrypt; the Hub index is a static git repository ([`09`](09-adr.md)).
 - **Not an inference token reseller** ([`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) §6.4; PRD §1.4 N4). The provider abstraction is self-hosted within the core; users operate it themselves and pay model providers directly.
 - **Does not do SLAM or navigation itself** — only gates velocity commands via ROS 2 / Nav2 ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, Q-34).
 - **No paid marketplace** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-3).

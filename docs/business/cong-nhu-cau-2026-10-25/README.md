@@ -1,19 +1,26 @@
 # Cổng nhu cầu 2026-10-25 (Q-20)
 
-> **Luật cổng đã bỏ (Q-56, 2026-09-30).** Không còn Go / Adjust / Stop và không increment nào chờ kết quả phỏng vấn.
-> Bộ tài liệu này giữ làm **đầu vào thông tin** (thông điệp, giá, câu C6, C7) — phỏng vấn tiếp được, kết quả ghi
-> vào `TODOS.md` #19 trước I6. Bảng ngưỡng ở [`cham-diem.md`](cham-diem.md) §4 hết hiệu lực.
+> **Cổng nhu cầu khôi phục (Q-72, 2026-10-11, đảo Q-56).** Cổng có hiệu lực là **cổng 8 tuần sau khi chốt
+> Q-72**, ba điều kiện: ① ≥ 3 người ngoài đội tự cài một NeuroEdge Blueprint và chạy được · ② ≥ 1 người chạy
+> liên tục 2 tuần trên giả lập G2 hoặc G3 · ③ ≥ 1 maker muốn đóng gói và bán Blueprint của mình. Đạt ① ② mà
+> trượt ③ thì NeuroEdge là công cụ cá nhân, tìm nguồn thu khác. Cách đếm, nhánh và mẫu quyết định:
+> [`cham-diem.md`](cham-diem.md) §4.0. Quyết định: PRD §15 Q-72.
+>
+> Bộ phỏng vấn này là nguồn dữ liệu cho điều kiện ③: phần **Maker / Home Assistant / ESPHome**
+> ([`phong-van.md`](phong-van.md) §5b, mục tiêu ≥ 5 cuộc). Mục 1, 2 và 5 dưới đây là kế hoạch của cổng cũ
+> 2026-10-25 (Q-20); ngày và ngưỡng Go / Adjust / Stop của nó hết hiệu lực từ Q-56. Câu C1…C10 vẫn hỏi
+> được; kết quả kinh doanh ghi vào `TODOS.md` #19 trước I6.
 
 Bộ tài liệu chuẩn bị cho cổng nhu cầu thương mại của NeuroEdge. Soạn ngày 2026-09-24.
 
 | Tệp | Dùng khi nào |
 |:---|:---|
 | `README.md` (tệp này) | Mục đích, câu hỏi phải trả lời, kế hoạch theo ngày, cách ghi kết quả |
-| [`phong-van.md`](phong-van.md) | Bộ câu hỏi phỏng vấn theo phân khúc, kiểu The Mom Test |
+| [`phong-van.md`](phong-van.md) | Bộ câu hỏi phỏng vấn theo phân khúc, kiểu The Mom Test; phần Maker ở §5b (Q-72) |
 | [`demo.md`](demo.md) | Kịch bản demo ≤ 5 phút mỗi phân khúc, chỉ dùng lệnh chạy được hôm nay |
-| [`cham-diem.md`](cham-diem.md) | Thang chấm từng cuộc, quy tắc cộng dồn, ngưỡng go / adjust / stop, mẫu quyết định |
+| [`cham-diem.md`](cham-diem.md) | Thang chấm từng cuộc (kể cả `M-*` của phần Maker), quy tắc cộng dồn, cổng 8 tuần (§4.0), ngưỡng cũ và mẫu quyết định |
 | [`survey.json`](survey.json) | Câu hỏi khảo sát trực tuyến (sàng lọc + ước lượng quy mô) |
-| [Trang *Phiếu cổng 25/10*](https://claude.ai/artifact/84U95aW7kxdNT2biKdGvqN) | Trang ghi phiếu dựng từ `survey.json`: tiến độ 4 phân khúc so với mục tiêu 5 cuộc, tổng hợp theo giả thuyết, danh sách người đồng ý liên hệ. **Chỉ mở được trong tổ chức** (kho phiếu dùng chung không chia sẻ công khai được): người phỏng vấn ghi thay khách, hoặc mời khách vào tổ chức với quyền *Can interact*. Người chỉ có quyền xem không lưu được phiếu |
+| [Trang *Phiếu cổng 25/10*](https://claude.ai/artifact/84U95aW7kxdNT2biKdGvqN) | Trang ghi phiếu dựng từ `survey.json`: tiến độ 4 phân khúc so với mục tiêu 5 cuộc (chưa có phân khúc Maker của Q-72), tổng hợp theo giả thuyết, danh sách người đồng ý liên hệ. **Chỉ mở được trong tổ chức** (kho phiếu dùng chung không chia sẻ công khai được): người phỏng vấn ghi thay khách, hoặc mời khách vào tổ chức với quyền *Can interact*. Người chỉ có quyền xem không lưu được phiếu |
 
 ## 1. Mục đích
 
@@ -63,7 +70,8 @@ Kế hoạch dưới đây chính là câu trả lời cho nó: khoảng 40 gi�
 | **Fleet Operators** | Trưởng vận hành / kỹ thuật của đơn vị đang quản lý 100–10.000 thiết bị đã lắp | U3 | Tủ khóa, máy bán hàng, trạm sạc, barrier, thiết bị IoT lắp đặt | **5** | 20 |
 | **Smart Home** | Trưởng nhóm sản phẩm/nhúng của hãng thiết bị nhà; đơn vị tích hợp nhà thông minh | U1, U2, U5 | Đèn, khóa, cổng, rèm, trợ lý giọng nói | **5** | 20 |
 | **Industrial IoT** | Kỹ sư tự động hóa, trưởng bảo trì, người phụ trách an toàn | U2, U4 | Bơm, van, băng tải, rơ-le, còi báo | **5** | 20 |
-| **Tổng** | | | | **20** | **80** |
+| **Maker / Home Assistant / ESPHome** (Q-72) | Maker tự dựng thiết bị bằng Home Assistant, ESPHome, ESP32, Raspberry Pi; ưu tiên người đã làm thiết bị cho người khác | U1 (người dùng đầu của Q-72) | Bể cá, tưới cây, cảm biến môi trường, rơ-le | **≥ 5** | 20 |
+| **Tổng** | | | | **≥ 25** | **100** |
 
 Tỷ lệ chuyển đổi tiếp cận → cuộc có bản ghi là **giả định cần kiểm** (khoảng 25%); thiết kế GĐ1
 ghi mức 15–30 lượt tiếp cận cho 3 cuộc có bản ghi, nên con số 80 có thể thiếu. Theo dõi hằng
@@ -112,7 +120,7 @@ muốn xem; 5 phút kết. Không demo cho ai mà phần vấn đề chưa xong.
 
 ## 6. Ghi kết quả thế nào
 
-Mô tả việc cần làm sau mỗi đợt phỏng vấn; bộ tài liệu này **không sửa** tệp nào trong kho. Từ Q-56 không còn quyết định cổng: kết quả chỉ là thông tin, ghi vào `TODOS.md` #19 trước I6.
+Mô tả việc cần làm sau mỗi đợt phỏng vấn; bộ tài liệu này **không sửa** tệp nào trong kho. Q-56 bỏ cổng cũ; Q-72 khôi phục cổng 8 tuần (`cham-diem.md` §4.0): kết quả phần Maker là dữ liệu cho điều kiện ③, kết quả câu C1…C10 vẫn ghi vào `TODOS.md` #19 trước I6.
 
 | Nơi | Ghi gì |
 |:---|:---|

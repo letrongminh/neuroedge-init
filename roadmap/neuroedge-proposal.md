@@ -1,12 +1,12 @@
 # NeuroEdge
 
-## NeuroEdge — Hợp đồng vào Physical AI
+## NeuroEdge — Nơi biến ý định thành sản phẩm vật lý có AI
 
-> **Định vị đã đổi (Q-72, 2026-10-11).** Định vị, người dùng chính, mô hình doanh thu và điều kiện Marketplace trong tài liệu này (Phần 0, Phần I, §6–§9) đã được thay bằng [`docs/business/proposal-blueprint-2026-10-11.md`](../docs/business/proposal-blueprint-2026-10-11.md): NeuroEdge là nơi biến ý định thành sản phẩm vật lý có AI — dựng, chạy an toàn, chia sẻ và bán; người dùng đầu là maker; giữ PolyForm NC làm cơ chế thu tiền. Chỗ nào nói "mất mạng thì chặn" giờ đọc theo `safe_state` đã khai (RFC an toàn có điều kiện). Phần kỹ thuật (Phần II, phụ lục) vẫn đúng. Viết lại các phần trên làm ở PR sau.
+> **Định vị đã đổi (Q-72, 2026-10-11).** NeuroEdge là nơi biến ý định thành sản phẩm vật lý có AI — dựng, chạy an toàn, chia sẻ và bán. Bản 5.9 sửa các phần xung đột (Phần 0, Phần I, §6–§12, Phụ lục D.3) theo Q-72: người dùng đầu là maker rồi micro-OEM; hợp đồng là lớp niềm tin cho thị trường **NeuroEdge Blueprint**; dòng thu, cổng nhu cầu 8 tuần và agent vận hành theo Q-72. Quyết định chỉ nằm ở [PRD §15, Q-72](neuroedge-prd.md); lập luận đầy đủ: [`docs/business/proposal-blueprint-2026-10-11.md`](../docs/business/proposal-blueprint-2026-10-11.md). Phần II và phụ lục kỹ thuật giữ nguyên; chỗ nào nói "mất mạng thì chặn" đọc theo `safe_state` đã khai (RFC an toàn có điều kiện, RFC dự kiến).
 
-**Phiên bản:** 5.8  
-**Ngày cập nhật:** 25 tháng 9, 2026 — giấy phép theo PRD Q-45 (mã source-available, chuẩn mở Apache-2.0) · lịch sử thay đổi: `CHANGELOG.md`  
-**Đối tượng tài liệu:** Đội ngũ phát triển sản phẩm · Đối tác phần cứng (OEM/ODM) · Kỹ sư nền tảng · Khách hàng vận hành đội thiết bị (Fleet Operators)  
+**Phiên bản:** 5.9  
+**Ngày cập nhật:** 11 tháng 10, 2026 — định vị NeuroEdge Blueprint theo PRD Q-72 · lịch sử thay đổi: `CHANGELOG.md`  
+**Đối tượng tài liệu:** Maker và micro-OEM (người dùng đầu, Q-72) · Đội ngũ phát triển sản phẩm · Kỹ sư nền tảng · Về sau: đối tác phần cứng (OEM/ODM) và khách hàng vận hành đội thiết bị (Fleet Operators)  
 **Phạm vi tài liệu:** Định vị sản phẩm · Kiến trúc hệ thống 5 lớp · Đặc tả API & định dạng chuẩn · Mô hình thương mại · Lộ trình triển khai · Ranh giới sản phẩm · Hệ chỉ số đo lường  
 **Ngoài phạm vi:** Cấu trúc sở hữu doanh nghiệp · Kế hoạch gọi vốn đầu tư · Điều khoản pháp lý chi tiết  
 
@@ -110,7 +110,7 @@ Thách thức cốt lõi nằm ở tầng sâu hơn: **chưa có công cụ nào
 | Đọc tin tức từ internet | Lời nói **cần mạng** | Mất mạng thì nói rõ là chưa lấy được, **không bịa** |
 | Bật / tắt đèn | **Hành động vật lý** | `c.do` qua gate: không tắt đèn khi cảm biến chuyển động còn thấy người — gate hỏi lại thay vì làm. Mất mạng, đèn vẫn điều khiển được bằng ngữ pháp lệnh cục bộ (Q-14) |
 
-Bản chạy được: `fixtures/agents/home-voice/` (`neuroedge new <tên> --template home-voice`).
+Bản chạy được: `fixtures/agents/home-voice/` (`neuroedge new <tên> --template home-voice`). Thoại tạm dừng theo Q-72 (không xoá); ví dụ giữ làm minh hoạ ba loại hành vi. Ví dụ dẫn đường của Q-72 là bể cá: sục khí phải *chạy* khi mất mạng, nên "an toàn" là `safe_state` đã khai của từng cơ cấu, không phải lúc nào cũng là tắt (§3.5).
 
 Hiện nay, các công cụ truyền thống không thể trả lời 3 câu hỏi sống còn sau:
 
@@ -120,23 +120,29 @@ Hiện nay, các công cụ truyền thống không thể trả lời 3 câu h�
 
 ## 0.3 Tuyên ngôn sản phẩm
 
-> **NeuroEdge — Hợp đồng vào Physical AI.** *"Physical AI, under contract — no contract, no action."*
+> **NeuroEdge — nơi biến ý định thành sản phẩm vật lý có AI: dựng, chạy an toàn, chia sẻ và bán** (Q-72).
+>
+> Ba vòng: ① **Dựng** — client MCP người dùng đang có (Q-71) gợi ý kit, sinh firmware, chạy thử trên `sim`, nạp, nối kênh chat; ② **Chạy** — agent vận hành trên máy nhà thực thi hợp đồng nhiệm vụ, chủ động báo và đề xuất; ③ **Chia sẻ, bán** — đóng gói thành **NeuroEdge Blueprint** (kit + firmware + hợp đồng mẫu + bộ phát hiện + vết ghi làm bằng chứng). NeuroEdge Blueprint khác Blueprint của Home Assistant (mẫu automation); một NeuroEdge Blueprint có thể mang kèm một HA blueprint.
+
+Hợp đồng không còn là sản phẩm đứng riêng mà là **lớp niềm tin** — *giấy thông hành cho thị trường NeuroEdge Blueprint*: maker dám bán thiết bị AI cho người lạ khi chứng minh được thiết bị vẫn an toàn khi AI sai. Khẩu hiệu của lớp này giữ từ Q-30:
+
+> *"Physical AI, under contract — no contract, no action."*
 >
 > Không hợp đồng, không hành động: mọi hành động vật lý của AI Agent (chốt cửa, rơ-le, van, đèn) muốn ra thế giới thực đều phải qua một **hợp đồng an toàn có kiểu (type-safe), có phiên bản rõ ràng** — **lớp bảo vệ gần nhất, đứng ngay trên 5 nguyên thủy HAL**. Hợp đồng được kiểm thử tự động trong quy trình CI/CD bằng replay + assert trên phán quyết gate và trạng thái chân, và thực thi nhất quán trên mọi môi trường — từ laptop của lập trình viên, máy tính Linux công nghiệp đến vi điều khiển biên giá $5.
 
 Cụ thể hơn: **mọi đường từ ngôn ngữ tới hành động thực — giọng nói offline, LLM, hay agent bên ngoài qua MCP — là một tool call có kiểu, đi qua cùng một gate** (§3.5, Q-24).
 
 Tuyên ngôn này thể hiện rõ hai trụ cột chiến lược:
-- **Phạm vi sản phẩm (Scope):** Nền tảng hợp nhất cho Physical AI — bộ công cụ hoàn chỉnh để kỹ sư cài đặt, lập trình và đưa vào vận hành.
-- **Lợi thế cạnh tranh cốt lõi (Moat):** Cơ chế hợp đồng hành động chuẩn kiểu (Type-safe Action Contracts) kết hợp CI kiểm thử hành vi vật lý — giải pháp mang tính kiến trúc nền tảng mà đối thủ không thể sao chép đơn thuần bằng cách thêm tính năng.
+- **Phạm vi sản phẩm (Scope):** Ba vòng dựng, chạy, chia sẻ/bán trên một lõi hợp nhất cho Physical AI — bộ công cụ để maker đi từ câu nói tới thiết bị chạy thật rồi tới sản phẩm cho người khác (Q-72).
+- **Lợi thế cạnh tranh cốt lõi (Moat):** Niềm tin để bán thiết bị AI cho người lạ — gate trên MCU, hợp đồng chỉ người khoá, vết ghi làm bằng chứng, an toàn có điều kiện. Nó đứng trên cơ chế hợp đồng hành động chuẩn kiểu (Type-safe Action Contracts) kết hợp CI kiểm thử hành vi vật lý — giải pháp mang tính kiến trúc nền tảng mà đối thủ không thể sao chép đơn thuần bằng cách thêm tính năng.
 
 Hệ thống được cấu thành từ ba khối giải pháp chính:
 
 | Khối giải pháp | Nội dung chi tiết |
 |:---|:---|
 | **Lõi mã nguồn công khai (source-available)** | Lớp trừu tượng phần cứng dựa trên hợp đồng năng lực (Capability-contract HAL) · Động cơ hợp đồng hành động (Action Contract Engine) · Runtime xử lý giọng nói · **Lớp trừu tượng nhà cung cấp AI (LLM · ASR · TTS) theo chuẩn OpenAI API, kèm cơ chế adapter tùy chỉnh** · Các môi trường thực thi ngang hàng (`sim` · `linux` · `esp32s3` ở bậc 1) · Trình kiểm thử Action CI runner. Miễn phí cho mục đích phi thương mại; dùng thương mại cần license thương mại. Lược đồ, đặc tả và bộ kiểm thử tuân thủ là chuẩn mở (PRD Q-45, `LICENSING.md`). |
-| **Mặt phẳng dịch vụ thương mại** | Hệ điều hành quản trị đội thiết bị tập trung (Fleet Management OS) — dịch vụ thương mại duy nhất; cùng license thương mại của lõi là hai dòng doanh thu của nền tảng (§6.3). NeuroEdge không bán lại token suy luận. |
-| **Cột mốc xác thực thị trường định lượng** | Bộ tiêu chí kiểm chứng thanh khoản nghiêm ngặt: chỉ triển khai tính năng Marketplace và thanh toán tự động (Pay) khi đã đạt đủ 4 chỉ số thực tế đo lường được. |
+| **Dòng thu (Q-72)** | PolyForm NC (Q-45) là cơ chế thu: cá nhân miễn phí, bán NeuroEdge Blueprint hay thiết bị là dùng thương mại. Dòng thu: hoa hồng liên kết bán kit (nguồn thu thử đầu: kit bể cá) · relay đám mây tuỳ chọn · giấy phép thương mại theo thiết bị · chia doanh thu NeuroEdge Blueprint. Fleet OS về sau là gói dịch vụ đi cùng giấy phép theo thiết bị cho micro-OEM (§6.3). LLM do người dùng tự trả (BYOK); NeuroEdge không bán lại token suy luận. |
+| **Cổng nhu cầu 8 tuần (Q-72)** | Thay bộ G1–G4 làm điều kiện mở Hub thu tiền (§8.7): 8 tuần sau khi chốt, ≥ 3 người ngoài đội tự cài NeuroEdge Blueprint và chạy được; ≥ 1 người chạy liên tục 2 tuần trên giả lập G2 hoặc G3; ≥ 1 maker muốn đóng gói và bán Blueprint của mình. Trước cổng, Hub chỉ là index tĩnh, không thu tiền. |
 
 ## 0.4 Năm nguyên tắc thiết kế bất biến
 
@@ -146,17 +152,18 @@ Văn bản chuẩn tắc và hệ quả kỹ thuật ràng buộc của năm ngu
 |:---:|:---|:---|:---:|
 | **P-1** | **Hành động vật lý là hợp đồng chuẩn kiểu, không phải lời gọi hàm tự do** | Lời nói sai thì sửa được; chốt cửa đã mở thì không (§0.2). Mọi nguồn gọi — câu lệnh cục bộ, LLM, client MCP — đi qua cùng một gate | §3.5, §4.4 |
 | **P-2** | **Các môi trường thực thi ngang hàng (Target Equivalence)** | Môi trường thứ hai là bằng chứng HAL trung lập, không khóa vào một dòng chip (§1.4); cam kết kiểm chứng phân theo ba bậc | §3.2 |
-| **P-3** | **Giá trị ở quản trị đội thiết bị và license thương mại, không bán lại token AI** | Biên inference mỏng và bị chính nhà cung cấp mô hình cạnh tranh; giá trị dài hạn nằm ở quản lý và cập nhật an toàn đội thiết bị. Tính năng an toàn cốt lõi không bao giờ bị tách thành gói trả phí: người dùng phi thương mại có trọn lõi miễn phí, doanh nghiệp có trọn lõi trong license thương mại (Q-45) | §6, §6.4 |
-| **P-4** | **Mô hình AI thay thế được — cloud-first, provider-pluggable** | Không để nhà cung cấp mô hình chi phối cấu trúc an toàn; phần nặng chạy trên cloud/host, vi điều khiển chỉ thu/phát âm thanh và thẩm định gate | §3.4, §3.6, §6 |
-| **P-5** | **Hiệu ứng mạng từ cộng đồng chia sẻ chính sách an toàn** | Gate là tài sản chia sẻ lý tưởng; kho Registry miễn phí đi trước, thương mại hóa khi nhu cầu trao đổi đã có thật | §1.7, §8.5 |
+| **P-3** | **Giá trị ở quản trị đội thiết bị và license thương mại, không bán lại token AI** | Biên inference mỏng và bị chính nhà cung cấp mô hình cạnh tranh; giá trị dài hạn nằm ở quản lý và cập nhật an toàn đội thiết bị. Tính năng an toàn cốt lõi không bao giờ bị tách thành gói trả phí: người dùng phi thương mại có trọn lõi miễn phí, doanh nghiệp có trọn lõi trong license thương mại (Q-45). Q-72: thu từ giấy phép theo thiết bị, chia doanh thu NeuroEdge Blueprint, hoa hồng kit, relay tuỳ chọn; Fleet OS về sau | §6, §6.4 |
+| **P-4** | **Mô hình AI thay thế được — cloud-first, provider-pluggable** | Không để nhà cung cấp mô hình chi phối cấu trúc an toàn; phần nặng chạy trên cloud/host, vi điều khiển chỉ thu/phát âm thanh và thẩm định gate. Q-72: người dùng tự mang key (BYOK) qua LiteLLM, kể cả mô hình tại chỗ (Ollama); agent vận hành chạy trên máy nhà, chỉ gọi LLM khi bộ phát hiện tất định bắn sự kiện, có trần chi phí trong hợp đồng (§8.12) | §3.4, §3.6, §6, §8.12 |
+| **P-5** | **Hiệu ứng mạng từ cộng đồng chia sẻ chính sách an toàn** | Gate là tài sản chia sẻ lý tưởng; kho Registry miễn phí đi trước, thương mại hóa khi nhu cầu trao đổi đã có thật. Q-72: đơn vị chia sẻ là NeuroEdge Blueprint (gate nằm trong hợp đồng mẫu của nó); index tĩnh miễn phí trước, Hub thu tiền sau cổng 8 tuần | §1.7, §8.5, §8.8 |
 
 ## 0.5 Thông điệp cốt lõi theo từng nhóm độc giả
 
 | Nhóm độc giả | Giá trị mang lại |
 |:---|:---|
+| **Maker, rồi micro-OEM** *(người dùng đầu, Q-72)* | Nói ý định với client MCP mình đang dùng, chạy thử trên `sim` trước khi mua phần cứng, giao nhiệm vụ bằng lời và được báo chủ động qua kênh chat (Telegram trước); đóng gói thiết bị đã chạy thành NeuroEdge Blueprint để chia sẻ hay bán — dựng một lần, bán trăm người. |
 | **Lập trình viên / Kỹ sư AI** | Lập trình agent trực tiếp trên laptop, kiểm thử tự động hành vi vật lý qua CI, triển khai thẳng lên chip $5 mà không cần viết lại mã nguồn. |
-| **Người vận hành đội thiết bị (Fleet Ops)** | Nắm bắt trạng thái từng thiết bị theo thời gian thực, chẩn đoán lỗi từ xa, cập nhật firmware theo từng đợt an toàn tuyệt đối, loại trừ nguy cơ brick máy. |
-| **Đối tác sản xuất phần cứng (OEM/ODM)** | Cung cấp sẵn lớp Agent AI tương thích ngay trên bo mạch mà không ép khách hàng bị phụ thuộc độc quyền vào một dòng vi xử lý cụ thể. |
+| **Người vận hành đội thiết bị (Fleet Ops)** *(về sau, Q-72)* | Nắm bắt trạng thái từng thiết bị theo thời gian thực, chẩn đoán lỗi từ xa, cập nhật firmware theo từng đợt an toàn tuyệt đối, loại trừ nguy cơ brick máy. |
+| **Đối tác sản xuất phần cứng (OEM/ODM)** *(về sau, Q-72)* | Cung cấp sẵn lớp Agent AI tương thích ngay trên bo mạch mà không ép khách hàng bị phụ thuộc độc quyền vào một dòng vi xử lý cụ thể. |
 | **Chuyên gia an toàn & Quản lý chất lượng** | Mỗi tác vụ vật lý đều có điều kiện phê duyệt minh bạch, xem xét được bằng văn bản và có đầy đủ nhật ký vết (trace) phục vụ đối soát, kiểm toán. |
 
 ---
@@ -176,6 +183,8 @@ Phương pháp luận của NeuroEdge: Xuất phát từ trải nghiệm hoàn h
 | **3** | Khi đổi prompt hoặc mô hình AI, kiểm thử lại toàn bộ kịch bản an toàn trong 30 giây | Phải thử nghiệm thủ công vài trường hợp trong phòng lab, tiềm ẩn rủi ro hồi quy an toàn | **Action CI** — Tái hiện (replay) phiên chạy thực tế, đối chiếu phán quyết gate và trạng thái chân GPIO vật lý với mẫu chuẩn (§3.7) |
 | **4** | Một mã nguồn agent duy nhất chạy đồng nhất trên laptop, máy tính nhúng và chip $5 | Phải duy trì nhiều codebase độc lập (ví dụ: Python trên PC, C/C++ trên vi điều khiển) | **Nguyên tắc tương đương môi trường (Target Equivalence)** (§3.2, §4.6) |
 | **5** | Chẩn đoán và sửa lỗi thiết bị ngoài hiện trường ngay từ máy tính cá nhân | Kỹ sư phải bay trực tiếp đến hiện trường xử lý, hoặc phải thu hồi toàn bộ lô hàng | **Tái hiện vết ghi từ xa (Remote Trace Replay)** — Tải tệp vết ghi JSON về máy tính để mô phỏng và tái hiện lỗi cục bộ (§6.2) |
+
+**Theo Q-72**, khách hàng lý tưởng đầu tiên là maker trong cộng đồng Home Assistant và ESPHome, rồi maker thành nhà sản xuất nhỏ. Năm trải nghiệm trên vẫn đúng và nằm trong vòng ① ② (dựng, chạy); Q-72 thêm hai trải nghiệm: *giao nhiệm vụ bằng lời và được báo chủ động* (agent vận hành, §8.12), và *biến thiết bị đã chạy thành sản phẩm cho người khác* (NeuroEdge Blueprint, §8.8). Mục số 5 nay cũng là bằng chứng của Blueprint: vết ghi chạy thật mà người cài tự `replay` được.
 
 Trong các bài toán trên, NeuroEdge tập trung tạo khác biệt phòng thủ vững chắc ở **mục số 2 và số 3** — hai bài toán sống còn mà các framework hiện nay chưa có công cụ giải quyết. Mục số 1 và số 4 là nền tảng trải nghiệm lập trình viên bắt buộc phải có, còn mục số 5 là điểm tựa mang lại giá trị kinh tế trực tiếp cho khách hàng doanh nghiệp.
 
@@ -216,6 +225,8 @@ Chiến lược phát triển sản phẩm của NeuroEdge tập trung vào vi�
 
 Trong đó, **vòng đời dữ liệu là lợi thế chiến lược quan trọng nhất.** Tương tự như cách các nền tảng nhân sự hàng đầu chiếm lĩnh dữ liệu từ bước onboarding nhân viên, với Physical AI, điểm khởi nguồn dữ liệu chính là **khoảnh khắc một hành động vật lý được đề xuất và kiểm thử trong môi trường mô phỏng**. Do đó, môi trường `sim` và lược đồ vết ghi được đầu tư tối đa để trở thành chuẩn mực tự nhiên của lập trình viên.
 
+**Q-72 đẩy điểm tiếp xúc lên sớm hơn nữa:** lúc ý định nảy ra — khi người dùng hỏi client MCP *"tôi muốn trông bể cá"* — trước cả quyết định mua phần cứng. Dòng tiền giao dịch (hàng 4) đổi theo: BOM đặt qua liên kết kit, NeuroEdge Blueprint bán qua NeuroEdge, relay theo tháng; hóa đơn Fleet là phần về sau (§6.3). Vòng đời dữ liệu nối vào bánh đà của Blueprint: dữ liệu vận hành chia sẻ *có đồng ý* làm bộ phát hiện tốt hơn, Blueprint tốt hơn, thêm người dùng.
+
 ### 1.4 Chiến lược tiếp cận khác biệt hóa (Flanking Strategy)
 
 Các hãng sản xuất bán dẫn (silicon vendors) thường phát hành SDK miễn phí với động cơ cốt lõi là **bán chip**. Cạnh tranh trực diện ở tầng trình điều khiển (driver) đơn chip với chính hãng sản xuất là một chiến lược không hiệu quả.
@@ -248,11 +259,13 @@ Chuẩn mở chỉ lan khi người khác **dùng được nó mà không phải
 Để lược đồ Gate và lược đồ vết ghi JSON thực sự trở thành tiêu chuẩn chung không bị chi phối bởi lợi ích cục bộ của bất kỳ công ty nào, NeuroEdge thiết lập cơ chế quản trị chuẩn mực ngay từ ngày đầu:
 - **Quy trình RFC (Request for Comments) minh bạch:** Mọi thay đổi về schema của `@action`, cú pháp của Gate hoặc lược đồ JSON của vết ghi đều phải qua tài liệu RFC công khai trên GitHub, cho phép cộng đồng thảo luận và phản biện trước khi hợp nhất.
 - **Tuân thủ Semantic Versioning (SemVer 2.0):** Cam kết tuyệt đối không phá vỡ khả năng tương thích ngược (backward compatibility) đối với các Gate an toàn đã phát hành.
-- **Cam kết chuyển giao cho tổ chức trung lập:** Khi đạt Cột mốc xác thực thị trường G1 (10.000 thiết bị active, cộng đồng nhà phát triển ổn định), NeuroEdge cam kết **chuyển giao toàn bộ quyền quản trị đặc tả kỹ thuật Gate và lược đồ vết ghi JSON cho một tổ chức trung lập** (như Linux Foundation hoặc Eclipse Foundation). NeuroEdge sẽ tiếp tục cạnh tranh và tạo ra giá trị thương mại thông qua license thương mại của lõi và chất lượng dịch vụ **Fleet OS**, thay vì độc quyền nắm giữ định dạng chuẩn.
+- **Cam kết chuyển giao cho tổ chức trung lập:** Khi đạt Cột mốc xác thực thị trường G1 (10.000 thiết bị active, cộng đồng nhà phát triển ổn định), NeuroEdge cam kết **chuyển giao toàn bộ quyền quản trị đặc tả kỹ thuật Gate và lược đồ vết ghi JSON cho một tổ chức trung lập** (như Linux Foundation hoặc Eclipse Foundation). NeuroEdge sẽ tiếp tục cạnh tranh và tạo ra giá trị thương mại thông qua giấy phép thương mại, thị trường NeuroEdge Blueprint và các dịch vụ tuỳ chọn (relay, về sau **Fleet OS**) theo Q-72, thay vì độc quyền nắm giữ định dạng chuẩn. *(Ngưỡng G1 ở đây chỉ còn là điều kiện chuyển giao chuẩn; nó không còn là điều kiện mở Hub — §8.7.)*
 
 ### 1.6 Chiến lược phân phối và chinh phục 1.000 lập trình viên đầu tiên
 
 Physical AI là một lĩnh vực phần cứng nơi sự hoài nghi của kỹ sư là rất cao. Để chinh phục 1.000 lập trình viên và kỹ sư nhúng đầu tiên, NeuroEdge tập trung vào tính trực quan tức thì và ứng dụng thực chiến:
+
+> **Thứ tự theo Q-72.** Điểm vào là **một NeuroEdge Blueprint — bể cá** — đi trọn ba vòng trên giả lập trước (phần cứng thật mua sau), công bố trên diễn đàn Home Assistant và ESPHome. Bể cá buộc phải giải bài "an toàn = bật", cộng đồng HA, ESPHome hiểu ngay, chạy được trên `sim` không cần bo mạch. Demo giọng nói và villa bên dưới tạm dừng cùng thoại (Q-72, không xoá); các kênh và nguyên tắc demo vẫn dùng được cho Blueprint.
 
 #### 1. Trải nghiệm "Aha Moment" trong 15 giây (Demo Video/GIF)
 Không dùng các bài trình chiếu trừu tượng. Thông điệp phân phối cốt lõi gói gọn trong một video/GIF 15 giây quay cận cảnh không cắt ghép:
@@ -262,6 +275,7 @@ Không dùng các bài trình chiếu trừu tượng. Thông điệp phân ph�
 *Hiệu ứng tâm lý:* Kỹ sư nhúng thấy ngay đây không phải là một thư viện chatbot giả lập trên web, mà là công cụ điều khiển và kiểm soát phần cứng thực sự.
 
 #### 2. Kênh phát hành trọng điểm của cộng đồng kỹ thuật
+- **Diễn đàn Home Assistant Community và ESPHome** *(kênh đầu, Q-72)*: công bố NeuroEdge Blueprint bể cá chạy trên `sim`, kèm đường thử bằng ESPHome host platform không cần bo.
 - **Hacker News (Show HN):** Giới thiệu giải pháp giải quyết bài toán "Làm sao kiểm thử an toàn cho AI tác động vào thế giới vật lý trước khi nạp chip".
 - **Reddit:** Tiếp cận trực diện các subreddit chuyên sâu: `r/embedded`, `r/esp32`, `r/rust`, `r/robotics`.
 - **Cộng đồng Hardware Hackers & Maker trên X:** Chia sẻ các clip ngắn ghi lại các ca lỗi thực tế bị Action CI chặn đứng (fail-closed).
@@ -301,6 +315,8 @@ Hai điểm then chốt trong vòng lặp:
 1. **Bước 2 và 3** tạo ra giá trị kỹ thuật khác biệt mà các giải pháp khác chưa đáp ứng được.
 2. **Bước 6 tạo ra hiệu ứng mạng tự nhiên trước khi mở Marketplace thương mại.** Gate an toàn là tài nguyên lý tưởng để chia sẻ: dung lượng nhẹ (tệp YAML), minh bạch, không rủi ro pháp lý, và giúp nâng cao tiêu chuẩn an toàn cho toàn bộ cộng đồng sử dụng.
 
+**Theo Q-72, đơn vị chia sẻ là NeuroEdge Blueprint.** Gate vẫn nằm trong đó (hợp đồng mẫu), cùng kit có BOM, firmware sinh từ cấu hình bo, bộ phát hiện và vết ghi làm bằng chứng. Vòng lặp trên thành bánh đà ba vòng: người dựng tạo Blueprint → người dùng cài → dữ liệu vận hành (có đồng ý) làm bộ phát hiện tốt hơn → Blueprint tốt hơn. Bước 6 nay là index tĩnh miễn phí của Blueprint (§8.5); thu tiền chỉ sau cổng nhu cầu 8 tuần (§8.7, §8.8). Lập luận "dữ liệu khai báo, đọc được bằng mắt" ở bảng dưới áp cho phần hợp đồng của Blueprint; `safe_state` khác `off` không khai được trong Blueprint, chỉ trong `board.v1` có khoá liên động phần cứng (Q-72).
+
 **Loại tài sản chia sẻ thứ hai: adapter và HAL port.** Từ Giai đoạn 2 (§8.9), cộng đồng còn chia sẻ *mã thực thi* — adapter kết nối nhà cung cấp AI và bản port HAL cho phần cứng mới. Lập luận biện minh cho việc chia sẻ gate **không chuyển sang được** cho loại tài sản này, và cần nói rõ vì sao:
 
 | | Gate an toàn | Adapter và HAL port |
@@ -332,6 +348,8 @@ Mô hình so sánh tổng chi phí sở hữu (TCO) giả định cho một đ�
 - Chi phí xử lý sự cố tại chỗ (on-site): Ước tính $500/chuyến công tác thực địa (tương đương 60 chuyến/năm ở phương án tự làm). Giải pháp NeuroEdge không xóa bỏ hoàn toàn chi phí này vì các hư hỏng vật lý (cháy nguồn, đứt cáp, vỡ kính cảm biến) bắt buộc phải có mặt kỹ thuật viên; con số ~$9k phản ánh việc loại bỏ ~70% các chuyến đi do lỗi logic, sai cấu hình hoặc cập nhật firmware hỏng nhờ khả năng tái hiện lỗi từ xa qua tệp vết ghi JSON (giả định G-e tại Phụ lục G).
 - Chi phí phần cứng (BOM): Đồng nhất giữa các phương án nên không đưa vào so sánh.
 
+*Lưu ý theo Q-72:* bảng TCO này viết cho khách hàng vận hành đội thiết bị — nhóm về sau. Với micro-OEM, phí NeuroEdge là giấy phép thương mại theo thiết bị (giá chưa chốt, `TODOS.md` #44); Fleet OS là gói dịch vụ đi cùng nó về sau (§6.3).
+
 *Lưu ý về phạm vi kiểm thử của Action CI:* Action CI giải quyết triệt để các lỗi logic có thể xác định trước (sai điều kiện gate, prompt gây hồi quy, lệch quyết định giữa các target). Các yếu tố vật lý đặc thù như phản xạ âm học phòng, chất lượng thu âm mảng micro, hoặc giới hạn bộ nhớ vi điều khiển sẽ được kiểm chứng bổ sung qua quy trình tự động chạy trên thiết bị thật (nightly hardware tests) nêu tại §3.2.
 
 ---
@@ -358,7 +376,8 @@ Bộ nguyên tắc rõ ràng giúp định hướng phát triển sản phẩm, 
 | Hệ thống đo lường (metering) theo lượt gọi agent và đánh giá gate | Thỏa mãn PF-2 — Định danh ổn định và sự kiện đo lường không bổ sung sau được → **Thiết kế ngay** (vết ghi đã mang `session_id`, `agent_version` và mã băm gate); hiện thực ở v1.1 cùng FR-REG-05, FR-REG-06 (PRD §8.3, roadmap I10) |
 | Hỗ trợ môi trường `linux` ngang hàng với vi điều khiển | Thỏa mãn cả PF-1 và PF-2 — Chứng minh tính đa nền tảng → **Triển khai ngay** |
 | Bảng điều khiển BI tùy biến chuyên sâu | Chưa thỏa PF-1 và PF-3 — Làm loãng trọng tâm ban đầu → **Tạm hoãn** |
-| Thanh toán tự động giữa các agent (Agent-to-agent pay) | Vi phạm PF-4 — Vướng các yêu cầu tuân thủ tài chính phức tạp → **Chặn** (PRD §14): chỉ xem xét lại khi đạt G1–G4 **và** có đánh giá pháp lý riêng |
+| Thanh toán tự động giữa các agent (Agent-to-agent pay) | Vi phạm PF-4 — Vướng các yêu cầu tuân thủ tài chính phức tạp → **Chặn** (PRD §14): chỉ xem xét lại khi có đánh giá pháp lý riêng; G1–G4 không còn là điều kiện (Q-72, §8.7) |
+| Chi trả cho người bán NeuroEdge Blueprint (chia doanh thu, Q-72) | Chạm PF-4: NeuroEdge giữ tiền hộ người bán, hay đứng làm bên bán chính thức (merchant of record) với nghĩa vụ thuế và hoàn tiền, là câu hỏi pháp lý chưa trả lời → **Để sau**: xét khi qua cổng nhu cầu 8 tuần, trước khi Hub thu tiền; tới lúc đó Hub không thu tiền, nguồn thu thử là liên kết bán kit |
 
 ---
 
@@ -513,7 +532,7 @@ Việc tích hợp sẵn máy trạng thái chuẩn mực trong lõi hệ thốn
 |:---:|:---|:---|
 | 1 | **Thực thi hợp đồng nghiêm ngặt** | Mọi lệnh gửi đến cơ cấu chấp hành bắt buộc phải qua cổng kiểm soát (gate) tương ứng. HAL sẽ từ chối thực thi bất kỳ thao tác nào thiếu chữ ký xác thực gate hợp lệ. |
 | 2 | **Định tuyến mô hình linh hoạt** | Áp dụng chính sách định tuyến rõ ràng: Các ý định (intent) cơ bản được phân luồng về System 1; các tình huống phức tạp hoặc có độ tin cậy thấp được chuyển tiếp lên System 2. |
-| 3 | **Cơ chế ngắt mạch an toàn (Fail-closed Circuit Breaker)** | Khi quá thời gian chờ (timeout), mô hình trả dữ liệu không hợp lệ, hoặc mất kết nối mạng mà fallback lệnh cố định cục bộ không có / không chạy được → **chặn ngay hành động vật lý**. Mặc định của mọi gate luôn là `fail: closed`. *(Mất mạng nhưng fallback chạy được: gate vẫn lượng giá — Q-14.)* |
+| 3 | **Cơ chế ngắt mạch an toàn (Fail-closed Circuit Breaker)** | Khi quá thời gian chờ (timeout), mô hình trả dữ liệu không hợp lệ, hoặc mất kết nối mạng mà fallback lệnh cố định cục bộ không có / không chạy được → **chặn ngay hành động vật lý**. Mặc định của mọi gate luôn là `fail: closed`. *(Mất mạng nhưng fallback chạy được: gate vẫn lượng giá — Q-14.)* *Sẽ đổi theo RFC an toàn có điều kiện (Q-72, RFC dự kiến):* "chặn" giữ cho **lệnh** — không chắc thì không lệnh nào rời `safe_state`; còn cơ cấu thì về `safe_state` đã khai trong `board.v1` (mặc định `off`). Với sục khí bể cá, `safe_state` có thể là bật, bắt buộc kèm khoá liên động phần cứng. |
 | 4 | **Tự động xuất nhật ký vết (Trace Generation)** | Mỗi phiên tương tác đều xuất một tệp vết ghi JSON đầy đủ: độ trễ từng chặng, chi phí tài nguyên, kết quả đánh giá gate và các lệnh điều khiển thực tế. |
 
 #### Cơ chế lượng giá `allow_when`: ánh xạ toán tử, biên dịch thành cây quyết định
@@ -1104,9 +1123,9 @@ Hệ thống thiết lập 6 lớp phòng thủ toàn diện, hoạt động the
 
 ## 6. Mặt phẳng thương mại: Fleet OS
 
-Mô hình thương mại của NeuroEdge có **hai dòng doanh thu: license thương mại cho lõi, và Hệ điều hành quản trị đội thiết bị (Fleet Management OS) — dịch vụ thương mại duy nhất** (§6.3, Q-45). AURA (Khối 4) là ứng dụng dọc; doanh thu dự án của nó nằm ngoài mô hình nền tảng.
+**Sửa theo Q-72.** PolyForm NC (Q-45) là cơ chế thu: cá nhân dùng miễn phí; bán NeuroEdge Blueprint hay thiết bị là dùng thương mại và đi qua NeuroEdge. Dòng thu theo tầng thời gian ở §6.3: hoa hồng liên kết bán kit, relay đám mây tuỳ chọn, giấy phép thương mại theo thiết bị, chia doanh thu Blueprint. **Fleet OS** (§6.2) không còn là dịch vụ thương mại duy nhất; về sau nó là gói dịch vụ đi cùng giấy phép theo thiết bị cho micro-OEM. Relay và Hub là tuỳ chọn, **không bao giờ nằm trên đường an toàn**. AURA (Khối 4) là trợ lý giọng nói nên tạm dừng cùng thoại (Q-72).
 
-> Lớp kết nối nhà cung cấp mô hình **không phải là dịch vụ thương mại**. Nó là một **lớp trừu tượng tự vận hành (self-host)** thuộc lõi, theo mô hình LangChain/LiteLLM: người dùng tự chạy, tự cấu hình provider, tự giữ khóa và **trả tiền suy luận trực tiếp cho nhà cung cấp**. NeuroEdge không đứng giữa luồng token và không bán lại token — nhất quán với nguyên tắc thiết kế số 3 tại §0.4.
+> Lớp kết nối nhà cung cấp mô hình **không phải là dịch vụ thương mại**. Nó là một **lớp trừu tượng tự vận hành (self-host)** thuộc lõi, theo mô hình LangChain/LiteLLM: người dùng tự chạy, tự cấu hình provider, tự giữ khóa và **trả tiền suy luận trực tiếp cho nhà cung cấp**. NeuroEdge không đứng giữa luồng token và không bán lại token — nhất quán với nguyên tắc thiết kế số 3 tại §0.4. Q-72 gọi đây là **BYOK**: người dùng nhập key Anthropic, OpenAI, Gemini hoặc dùng mô hình tại chỗ (Ollama), qua LiteLLM; agent vận hành giữ key trên máy nhà (§8.12).
 
 ### 6.1 Lớp trừu tượng nhà cung cấp (Provider Abstraction Layer) — 6 năng lực tự vận hành
 
@@ -1139,22 +1158,28 @@ Mô hình thương mại của NeuroEdge có **hai dòng doanh thu: license thư
 
 ### 6.3 Cấu trúc doanh thu và quy mô hòa vốn
 
-| Dòng doanh thu | Cơ chế tính phí | Vai trò trong mô hình kinh doanh |
-|:---|:---|:---|
-| **License thương mại cho lõi** | Doanh nghiệp dùng lõi vào mục đích thương mại mua license *(phạm vi, giá và quan hệ với gói Fleet chưa chốt — `TODOS.md` #44)* | Dòng thứ nhất: thu từ doanh nghiệp dùng lõi, không đòi hỏi khách hàng dùng Fleet OS |
-| **Gói quản trị cơ sở (Fleet Standard)** | $1 / thiết bị hoạt động / tháng | Nguồn doanh thu định kỳ và biên lợi nhuận cốt lõi |
-| **Gói vận hành nâng cao (Fleet Enterprise)** | Phụ phí theo cam kết SLA, kiểm toán vết và lưu trữ trace dài hạn *(thời hạn lưu theo gói: PRD Q-6)* | Đòn bẩy tối ưu biên lợi nhuận với các khách hàng quy mô lớn |
+Dòng thu theo Q-72, theo tầng thời gian. Giá chưa chốt ở dòng nào; mỗi dòng phải đo, không đoán.
 
-Dự phóng doanh thu quản trị đội thiết bị theo quy mô (với mức giá cơ sở $1/thiết bị/tháng; chưa gồm license thương mại):
+| Tầng | Dòng doanh thu | Cơ chế tính phí | Vai trò trong mô hình kinh doanh |
+|:---:|:---|:---|:---|
+| Gần | **Hoa hồng liên kết bán kit** | Hoa hồng theo đơn kit đặt qua liên kết của BOM; chưa giữ kho | **Nguồn thu thử đầu** (kit bể cá): kiểm nhu cầu rẻ nhất |
+| Gần | **Relay đám mây tuỳ chọn** | Theo tháng: truy cập từ xa, đẩy tin, sao lưu vết ghi mã hoá phía máy nhà, không phải mở cổng mạng nhà | Ống TLS xuyên, relay không giải mã; relay hỏng thì phần an toàn vẫn chạy. Ngoại lệ có giới hạn cho "không có máy chủ nào do NeuroEdge vận hành" (Q-10) |
+| Giữa | **Giấy phép thương mại theo thiết bị** | Maker bán thiết bị, micro-OEM, doanh nghiệp dùng lõi vào mục đích thương mại (PolyForm NC, Q-45) *(phạm vi và giá chưa chốt — `TODOS.md` #44)* | Thu từ người tạo sản phẩm; doanh thu lớn cùng tốc độ của họ |
+| Giữa | **Chia doanh thu NeuroEdge Blueprint** | Phần trăm mỗi lần bán qua Blueprint Hub | Chỉ sau cổng nhu cầu 8 tuần (§8.7); chi trả cho người bán chạm PF-4 (§2) |
+| Về sau | **Fleet OS** — Standard ($1 / thiết bị hoạt động / tháng) và Enterprise (phụ phí theo SLA, kiểm toán vết, lưu trace dài hạn — PRD Q-6) | Gói dịch vụ đi cùng giấy phép theo thiết bị cho micro-OEM | Đội thiết bị, OTA theo đợt, vết ghi sự cố (§6.2) |
+
+LLM không phải dòng thu: người dùng tự trả bằng key của mình (BYOK), NeuroEdge không bán lại token (§6.1). Tầng xa của proposal Blueprint (năng lực vật lý thành dịch vụ cho agent AI khác gọi; chỉ số tổng hợp từ dữ liệu có đồng ý) chưa vào mô hình.
+
+Dự phóng doanh thu Fleet theo quy mô (giá cơ sở $1/thiết bị/tháng; dòng về sau, chưa gồm giấy phép theo thiết bị):
 
 | Số lượng thiết bị hoạt động | Doanh thu quản trị / năm |
 |:---:|:---:|
 | 1.000 thiết bị | $12.000 |
-| 10.000 thiết bị *(Mục tiêu cột mốc G1)* | $120.000 |
+| 10.000 thiết bị | $120.000 |
 | 50.000 thiết bị | $600.000 |
 | 250.000 thiết bị | $3.000.000 |
 
-*Đánh giá thực tế về bài toán tài chính:* Từ Q-45, nền tảng có **hai dòng doanh thu** — license thương mại cho lõi và dịch vụ Fleet OS; điểm hòa vốn phụ thuộc vào cả hai. Riêng Fleet, ở mức giá cơ sở $1/thiết bị/tháng, chỉ hòa vốn khi đạt quy mô hàng chục nghìn thiết bị trở lên, nên việc xác thực thị trường fleet vẫn phải được đẩy sớm (§8.7). License thương mại không chờ quy mô fleet — nó thu từ doanh nghiệp đầu tiên dùng lõi vào mục đích thương mại — nhưng chưa lượng hóa được đóng góp khi giá chưa chốt. **Gói dịch vụ doanh nghiệp nâng cao (Enterprise tier)** khai thác mức độ sẵn sàng chi trả của các khách hàng lớn đầu tiên (chi tiết tại Phụ lục G). **Ứng dụng dọc AURA (§7)** tạo dòng tiền sớm cho tổ chức từ doanh thu dự án, nằm ngoài mô hình nền tảng và không tính vào điểm hòa vốn của nền tảng.
+*Đánh giá thực tế về bài toán tài chính:* Fleet ở mức giá cơ sở chỉ hòa vốn khi đạt quy mô hàng chục nghìn thiết bị — đó là lý do Q-72 không đặt nó ở đầu. Phép thử của cả mô hình là có ít nhất một maker muốn **bán** Blueprint của mình (cổng nhu cầu, §8.7); đạt vòng ① ② mà trượt ③ thì NeuroEdge là công cụ cá nhân và phải tìm nguồn thu khác (PRD Q-72). Hoa hồng kit cho tín hiệu sớm nhất nhưng doanh thu nhỏ. AURA (§7) tạm dừng cùng thoại nên không còn là dòng tiền sớm.
 
 ### 6.4 Phân định ranh giới giữa Lõi và Dịch vụ thương mại
 
@@ -1165,11 +1190,11 @@ Dự phóng doanh thu quản trị đội thiết bị theo quy mô (với mức
 | **Định nghĩa tính năng cốt lõi** | Toàn bộ logic chạy trên thiết bị, cơ chế an toàn, runtime nhận thức và kiểm thử CI | Hạ tầng điều phối từ xa, lưu trữ tập trung và bảng điều khiển quản trị đội thiết bị |
 | **Cơ chế cập nhật OTA** | **Cấp thiết bị (On-device OTA Agent):**<br>• Tự nạp firmware qua HTTP endpoint mở<br>• Phân vùng kép A/B (Dual-partition scheme)<br>• Tự động rollback cục bộ khi phát hiện bootloop<br>• Kiểm tra chữ ký mật mã (RSA/ECDSA) trên chip | **Cấp đội thiết bị (Fleet Rollout Orchestration):**<br>• Phân phối theo từng đợt (Canary 1% → 10% → 100%)<br>• Quản lý chiến dịch phát hành (Campaign management)<br>• Tự động dừng chiến dịch và khôi phục khi tỷ lệ lỗi toàn fleet vượt ngưỡng<br>• Kho lưu trữ firmware tập trung |
 | **Ghi nhận & Tái hiện lỗi** | Ghi vết ra tệp JSON cục bộ (`traces/*.json`); chạy lệnh `neuroedge replay` trên máy tính cá nhân | Tự động tải tệp vết ghi JSON khi có sự cố từ xa; kho lưu trữ vết tập trung và công cụ phân tích hồi quy đám mây |
-| **Vận hành ngoại tuyến (Offline)** | Chức năng an toàn (gate, máy trạng thái, fail-closed) chạy 100% ngoại tuyến; nhận thức suy giảm về bộ nhận diện lệnh cố định cục bộ *(Q-14)* — STT, TTS và suy luận LLM cần kết nối tới provider cloud | Yêu cầu kết nối để đồng bộ viễn trắc và nhận lệnh điều phối |
+| **Vận hành ngoại tuyến (Offline)** | Chức năng an toàn (gate, máy trạng thái, fail-closed) chạy 100% ngoại tuyến; nhận thức suy giảm về bộ nhận diện lệnh cố định cục bộ *(Q-14)* — STT, TTS và suy luận LLM cần kết nối tới provider cloud. Agent vận hành (Q-72, §8.12): mất mạng hay mất LLM thì phản xạ, bộ phát hiện và cảnh báo mẫu cứng vẫn chạy; LLM tại chỗ (Ollama) không cần mạng | Yêu cầu kết nối để đồng bộ viễn trắc và nhận lệnh điều phối |
 | **Yêu cầu tài khoản** | Hoàn toàn không, cài đặt và chạy ngay | Yêu cầu tài khoản xác thực tổ chức |
 | **Khả năng tự dựng hạ tầng** | Hỗ trợ đầy đủ qua các interface mở (pluggable backend) | Khách hàng tự duy trì hạ tầng riêng hoặc sử dụng dịch vụ đám mây trọn gói |
-| **Lớp kết nối nhà cung cấp AI** | Lớp trừu tượng tự vận hành: người dùng tự cấu hình provider, tự giữ khóa, tự trả phí suy luận cho nhà cung cấp | Không thương mại hóa — NeuroEdge không bán lại token |
-| **Adapter và HAL port do bên thứ ba sở hữu** | Tác giả **giữ nguyên bản quyền** và chọn giấy phép của mình; mã nằm ở kho riêng của tác giả, NeuroEdge chỉ lập chỉ mục trong Registry. Trách nhiệm an toàn thuộc về bên vận hành thiết bị, không thuộc NeuroEdge và không thuộc tác giả adapter. Cổng kiểm soát là Bộ kiểm thử tuân thủ (§3.8), sandbox phân quyền (§8.5) và đối chiếu năng lực lúc build (§4.9) | Không thương mại hóa. Fleet OS hiển thị trạng thái tuân thủ của adapter đang chạy trên đội thiết bị, nhưng không bán, không bảo chứng và không khóa adapter nào sau tường phí |
+| **Lớp kết nối nhà cung cấp AI** | Lớp trừu tượng tự vận hành: người dùng tự cấu hình provider, tự giữ khóa (BYOK, Q-72), tự trả phí suy luận cho nhà cung cấp | Không thương mại hóa — NeuroEdge không bán lại token |
+| **Adapter và HAL port do bên thứ ba sở hữu** | Tác giả **giữ nguyên bản quyền** và chọn giấy phép của mình; mã nằm ở kho riêng của tác giả, NeuroEdge chỉ lập chỉ mục trong Registry. Trách nhiệm an toàn thuộc về bên vận hành thiết bị, không thuộc NeuroEdge và không thuộc tác giả adapter. Cổng kiểm soát là Bộ kiểm thử tuân thủ (§3.8), sandbox phân quyền (§8.5) và đối chiếu năng lực lúc build (§4.9). Cùng nguyên tắc cho **NeuroEdge Blueprint** (Q-72): tác giả giữ bản quyền; Hub chỉ lập chỉ mục URL + digest; bán Blueprint là dùng thương mại nên đi qua giấy phép của NeuroEdge | Không thương mại hóa. Fleet OS hiển thị trạng thái tuân thủ của adapter đang chạy trên đội thiết bị, nhưng không bán, không bảo chứng và không khóa adapter nào sau tường phí |
 | **Bản quyền định dạng gate & trace** | Chuẩn mở Apache-2.0 (Q-45) theo quy trình RFC, cam kết chuyển giao trung lập | Kế thừa chuẩn mở, không tạo biến thể đóng |
 
 **Cam kết sản phẩm:** Không có bất kỳ tính năng cốt lõi nào cần thiết để một thiết bị vận hành an toàn và độc lập bị tách ra thành gói trả phí: người dùng phi thương mại có trọn lõi miễn phí, doanh nghiệp có trọn lõi trong license thương mại (P-3, Q-45). Nhà phát triển hoàn toàn có thể tự xây dựng máy chủ OTA riêng để cập nhật cho thiết bị của mình mà không cần mua Fleet OS. Fleet OS chỉ thương mại hóa **năng lực quản trị quy mô lớn, tự động hóa chiến dịch phát hành và công cụ tiết kiệm thời gian vận hành cho doanh nghiệp**. NeuroEdge **không bán lại token suy luận** dưới bất kỳ hình thức nào; lớp kết nối nhà cung cấp thuộc lõi và do người dùng tự vận hành.
@@ -1177,6 +1202,8 @@ Dự phóng doanh thu quản trị đội thiết bị theo quy mô (với mức
 ---
 
 ## 7. Ứng dụng mẫu điển hình: AURA cho khách sạn & nghỉ dưỡng
+
+> **Tạm dừng theo Q-72 (2026-10-11).** AURA là trợ lý giọng nói, và thoại tạm dừng tới sau cổng nhu cầu 8 tuần; ứng dụng mẫu dẫn đường nay là NeuroEdge Blueprint bể cá (§1.6). Không xoá: thiết kế dưới đây giữ nguyên, kể cả kỷ luật kiến trúc §7.3.
 
 Chiến lược triển khai trọn gói (Full-stack Vertical Application): Tự xây dựng một sản phẩm hoàn chỉnh để giải quyết trọn vẹn bài toán vận hành phức tạp nhất của một ngành dọc cụ thể (villa & resort nghỉ dưỡng) bằng chính nền tảng NeuroEdge.
 
@@ -1212,7 +1239,7 @@ Mọi vướng mắc kỹ thuật phát sinh trong quá trình vận hành AURA 
 
 ## 8. Các khối sản phẩm và năng lực
 
-Lộ trình được cấu trúc thành các khối công việc kỹ thuật, giai đoạn đệm cộng đồng và các cột mốc xác thực thị trường định lượng. **Quy tắc kỷ luật thực thi: Mọi sự chuyển giao giữa các khối đều là milestone-gated (phụ thuộc vào kết quả kiểm chứng thực tế), tuyệt đối không chạy theo lịch cố định trên giấy.** Các khối dưới đây được thực thi thành increment `I0…I18` (kèm I2a, I2b, I3a, I4a, I5a); MVP là v1.0 đầy đủ, một lần ra mắt, trượt thì dời ngày chứ không cắt phạm vi (PRD Q-52); thứ tự, phụ thuộc, sơ đồ phụ thuộc và ngày dự báo chỉ nằm ở [`neuroedge-roadmap.md` §0.2](neuroedge-roadmap.md#02-bảng-increment-increment-matrix) và [§2.1](neuroedge-roadmap.md#21-đồ-thị-phụ-thuộc) (PRD Q-39).
+Lộ trình được cấu trúc thành các khối công việc kỹ thuật, giai đoạn đệm cộng đồng và các cột mốc xác thực thị trường định lượng. **Quy tắc kỷ luật thực thi: Mọi sự chuyển giao giữa các khối đều là milestone-gated (phụ thuộc vào kết quả kiểm chứng thực tế), tuyệt đối không chạy theo lịch cố định trên giấy.** Các khối dưới đây được thực thi thành increment `I0…I18` (kèm I2a, I2b, I3a, I4a, I5a); MVP là v1.0 đầy đủ, một lần ra mắt, trượt thì dời ngày chứ không cắt phạm vi (PRD Q-52). **Q-72 đổi thứ tự, không cắt:** hợp đồng nhiệm vụ, agent vận hành, kênh chat (I2d) và NeuroEdge Blueprint tối thiểu (I2e) đi trước; thoại, Studio, `jetson` tạm dừng; phạm vi v1.0 xét lại ở cổng nhu cầu 8 tuần (§8.7). Thứ tự, phụ thuộc, sơ đồ phụ thuộc và ngày dự báo chỉ nằm ở [`neuroedge-roadmap.md` §0.2](neuroedge-roadmap.md#02-bảng-increment-increment-matrix) và [§2.1](neuroedge-roadmap.md#21-đồ-thị-phụ-thuộc) (PRD Q-39).
 
 ### 8.1 Khối 1a — Nền tảng logic và Trục kiểm thử Action CI (I0–I2)
 
@@ -1240,12 +1267,14 @@ De-scope tường minh và thang cắt phạm vi: [`neuroedge-roadmap.md` §9](n
 
 Trọng tâm công việc và tiêu chí nghiệm thu: [`neuroedge-roadmap.md` §5](neuroedge-roadmap.md#5-developer-beta-và-điểm-rẽ-i8).
 
+**Theo Q-72**, phép thử thị trường đầu tiên không còn chờ Beta: cổng nhu cầu 8 tuần sau khi chốt (§8.7) đo người ngoài đội tự cài NeuroEdge Blueprint, chạy liên tục trên giả lập và muốn bán Blueprint của mình. Beta 50–100 lập trình viên giữ nguyên, đi sau cổng đó.
+
 ### 8.4 Khối 2 — Tầng dịch vụ thương mại: Fleet OS (I9)
 
 **Điều kiện kích hoạt (Milestone-Gated — Bắt buộc thỏa mãn mới khởi động):**
 Khối 2 **tuyệt đối không bắt đầu theo lịch cố định**, mà chỉ được kích hoạt khi Developer Beta đạt đồng thời B1 và B2 — ngưỡng ở [PRD §11.2](neuroedge-prd.md#112-nghiệm-thu-developer-beta). Hai tiêu chí đo lần lượt sự tò mò (B1) và cam kết lên phần cứng thật — `linux` hoặc bo mạch tham chiếu (B2). Mầm hiệu ứng mạng (B3) vẫn được đo nhưng không là điều kiện (PRD Q-41).
 
-Nội dung triển khai: **Fleet Management OS** như mô tả chi tiết tại §6.2 — dịch vụ thương mại duy nhất của Khối 2. Lớp trừu tượng nhà cung cấp (§6.1) thuộc lõi và đã được xây từ Khối 1a (§8.1); Khối 2 chỉ hoàn thiện và tối ưu nó, không thương mại hóa.
+Nội dung triển khai: **Fleet Management OS** như mô tả chi tiết tại §6.2 — dịch vụ thương mại của Khối 2; theo Q-72, về sau là gói dịch vụ đi cùng giấy phép theo thiết bị cho micro-OEM (§6.3). Lớp trừu tượng nhà cung cấp (§6.1) thuộc lõi và đã được xây từ Khối 1a (§8.1); Khối 2 chỉ hoàn thiện và tối ưu nó, không thương mại hóa.
 
 **Đòn bẩy mã nguồn mở:** Eclipse Hawkbit cho điều phối chiến dịch OTA theo đợt · broker MQTT giấy phép dễ dãi (PRD Q-11) và FastAPI WebSockets cho kết nối thiết bị và viễn trắc. Ranh giới giấy phép của từng thành phần nêu tại Phụ lục H.
 
@@ -1253,36 +1282,44 @@ Nội dung triển khai: **Fleet Management OS** như mô tả chi tiết tại 
 
 Xây dựng 7 thành phần hạ tầng cốt lõi (Registry, SemVer, khai báo năng lực, gate phiên bản hóa & `extends`, Stable ID, Metering, Sandbox) phục vụ vận hành an toàn và chuẩn bị sẵn cho việc mở rộng Marketplace sau này. Trong đó, định danh, đo lường và sandbox là nền tảng bắt buộc phải thiết kế sớm để đối soát doanh thu và bảo đảm an toàn khi người dùng chia sẻ mã nguồn trên thiết bị có cơ cấu chấp hành vật lý. Kho Registry xây trên chuẩn OCI (ORAS, Harbor) và hệ đo lường dùng OpenMeter tương thích Stripe Billing; chi tiết kiến trúc và kế hoạch thực thi xem [`neuroedge-roadmap.md` §6.2](neuroedge-roadmap.md#62-i10--registry-và-các-đường-ray).
 
+**Nối với NeuroEdge Blueprint (Q-72).** Ở MVP, Hub là **index tĩnh** theo kiểu index plugin của TSK-I2c-18: Blueprint tải bằng URL (git hoặc HTTPS) kèm digest phủ toàn gói (kit, firmware, hợp đồng mẫu, bộ phát hiện, vết ghi bằng chứng); bằng chứng ghi rõ "chưa ký". Registry OCI và hệ đo lường ở trên là bước khi Hub thu tiền: Registry giữ Blueprint có ký, metering là nền đối soát chia doanh thu cho người bán. Ký vết ghi quay lại cùng lúc đó (`TODOS.md` #1).
+
 ### 8.6 Khối 4 — Triển khai ứng dụng thực địa AURA (sau Beta, ngoài roadmap)
 
-Chi tiết triển khai tại §7. Điều kiện kích hoạt: Giao diện API của framework đã đạt mức ổn định cao và đã có đối tác bên ngoài ứng dụng thành công trên thiết bị thực tế.
+**Tạm dừng cùng thoại (Q-72).** Chi tiết triển khai tại §7. Điều kiện kích hoạt: Giao diện API của framework đã đạt mức ổn định cao và đã có đối tác bên ngoài ứng dụng thành công trên thiết bị thực tế.
 
 ### 8.7 Cột mốc xác thực thị trường định lượng (Market Validation Gates)
 
-**Đây là bộ tiêu chí kiểm chứng thực tế, không phải hạng mục công việc tùy ý.** Việc mở rộng sang Khối 5 chỉ được kích hoạt khi thỏa mãn **toàn bộ cả 4 chỉ số sau**:
+**Cổng nhu cầu 8 tuần (Q-72, đảo Q-56) thay bộ G1–G4 làm điều kiện mở Hub thu tiền.** Đo 8 tuần sau khi chốt Q-72; ngưỡng chuẩn tắc ở PRD Q-72:
 
-| # | Chỉ số kiểm chứng | Ngưỡng yêu cầu bắt buộc | Mục tiêu đo lường |
-|:---:|:---|:---|:---|
-| **G1** | Quy mô thiết bị hoạt động | Đạt tối thiểu **10.000 thiết bị active/tháng**, gửi dữ liệu giám sát ổn định | Quy mô nhu cầu thực tế của thị trường |
-| **G2** | Quy mô nguồn cung cộng đồng | Tối thiểu **50 tài sản** do bên thứ ba tự phát hành, mỗi gói có ≥ 5 lượt cài đặt. Tài sản được tính gồm **gate · agent · adapter kết nối nhà cung cấp · bản port HAL** *(mở rộng từ v5.4 — Giai đoạn 2 tạo ra hai loại đóng góp sau, và hệ đo lường phải ghi nhận chúng)* | Mức độ đóng góp của hệ sinh thái |
-| **G3** | Tỷ lệ trao đổi thực tế | **> 30% tổng số thiết bị** vận hành ít nhất một gate, agent, adapter hoặc bản port HAL do bên khác phát triển | Tính thanh khoản thực chất của giải pháp |
-| **G4** | Giao dịch phát sinh tự nhiên | Xuất hiện minh chứng người dùng chủ động thanh toán cho nhau để sở hữu logic agent hoặc gate an toàn | Nhu cầu chi trả thực tế của người dùng |
+| # | Điều kiện | Đo gì |
+|:---:|:---|:---|
+| ① | ≥ 3 người ngoài đội tự cài NeuroEdge Blueprint và chạy được | Vòng dựng có tự đi được không |
+| ② | ≥ 1 người chạy liên tục 2 tuần trên giả lập G2 (`linux` trên `gpio-sim`) hoặc G3 (firmware ESP32 trên QEMU của Espressif) | Vòng chạy có sống được không |
+| ③ | ≥ 1 maker muốn đóng gói và bán Blueprint của mình | Vòng bán — phép thử của cả mô hình |
 
-*Trong đó, G3 là chỉ số then chốt nhất:* G1 và G2 có thể đạt được qua các nỗ lực phân phối thông thường, nhưng G3 phản ánh trực tiếp việc người dùng có thực sự tin tưởng và tái sử dụng giải pháp của nhau hay không.
+Đạt cả ba: đầu tư Hub thu tiền, danh mục kit, Blueprint thứ hai; xét lại phạm vi v1.0. Đạt ① ② mà trượt ③: NeuroEdge là công cụ cá nhân, tìm nguồn thu khác. Trượt: đổi phân khúc hoặc thông điệp trước khi viết thêm tính năng. Ngày và tiến độ: [`neuroedge-roadmap.md` §0](neuroedge-roadmap.md).
 
-### 8.8 Khối 5 — Marketplace và Hệ thống thanh toán (khi đạt G1–G4)
+**Bộ G1–G4 cũ** — 10.000 thiết bị active/tháng (G1); 50 tài sản bên thứ ba, mỗi gói ≥ 5 lượt cài (G2); > 30% thiết bị chạy tài sản của bên khác (G3); người dùng tự trả tiền cho nhau (G4) — không còn là điều kiện kích hoạt. Chúng giữ làm chỉ số theo dõi dài hạn của hiệu ứng mạng; tài sản nay tính cả NeuroEdge Blueprint, ngoài gate, agent, adapter và bản port HAL. G1 còn là ngưỡng chuyển giao chuẩn cho tổ chức trung lập (§1.5). G3 vẫn là chỉ số then chốt nhất của bộ này: nó phản ánh việc người dùng có thực sự tin và tái sử dụng giải pháp của nhau hay không.
 
-Chỉ được kích hoạt sau khi vượt qua các cột mốc xác thực thị trường. Khi đó, việc thương mại hóa là bước chuẩn hóa một thị trường đã tự hình thành nhu cầu từ trước.
+### 8.8 Khối 5 — Blueprint Hub và hệ thống thanh toán (sau cổng nhu cầu Q-72)
 
-**Sản phẩm trao đổi trọng tâm không phải các agent nguyên khối, mà là các tệp Gate an toàn đã qua hàng nghìn giờ thử nghiệm thực địa** — ví dụ: gate kiểm soát chốt cửa an ninh hai lớp cho chuỗi villa/khách sạn, gate giám sát nhiệt độ môi trường công nghiệp, hoặc gate chống va chạm cho cánh tay robot trong tương lai dài hạn. Kho Registry miễn phí tại Khối 3 chính là công cụ giúp xác định chính xác những tài sản nào được thị trường đón nhận nhất.
+**Đơn vị trao đổi là NeuroEdge Blueprint** (Q-72): kit có BOM và nơi mua, firmware sinh từ cấu hình bo, hợp đồng mẫu (gate nằm trong đó), bộ phát hiện, và vết ghi chạy thật làm bằng chứng. Không có Blueprint nào được bán khi chưa có bằng chứng `replay` tái hiện đúng — đây là chỗ NeuroEdge khác một kho firmware hay một chợ tự động hoá.
 
-Danh mục các sản phẩm tiềm năng trên sàn giao dịch:
-- **Gate an toàn chuyên ngành:** Có giá trị tỉ lệ thuận với số giờ hoạt động ổn định ngoài hiện trường.
-- **Mô hình Wake-word huấn luyện riêng:** Dành cho các thương hiệu hoặc ngôn ngữ bản địa đặc thù.
-- **Bo mạch phần cứng được chứng nhận:** Phân phối qua kênh đối tác phần cứng liên kết.
-- **Dịch vụ chuyên gia:** Khảo sát, tích hợp và triển khai hệ thống an toàn tại chỗ cho doanh nghiệp.
+| Giai đoạn | Hub là gì | Thu tiền |
+|:---|:---|:---|
+| **Trước cổng** (MVP, I2e) | Index tĩnh: URL + digest toàn gói, `blueprint pack`/`install`; bằng chứng ghi "chưa ký" (§8.5) | **Không** — nguồn thu thử là liên kết bán kit |
+| **Sau cổng** (nếu đạt ③) | Hub có Registry, ký vết ghi (`TODOS.md` #1), metering | Chia doanh thu Blueprint; chi trả cho người bán qua PF-4 (§2) |
+
+Các tài sản khác vẫn có thể lên Hub về sau:
+- **Gate an toàn chuyên ngành** đứng riêng: giá trị tỉ lệ thuận với số giờ hoạt động ổn định ngoài hiện trường.
+- **Mô hình Wake-word huấn luyện riêng** *(chờ thoại, Q-72)*: cho thương hiệu hoặc ngôn ngữ bản địa đặc thù.
+- **Bo mạch, kit phần cứng được kiểm chứng:** phân phối qua kênh đối tác phần cứng liên kết.
+- **Dịch vụ chuyên gia:** khảo sát, tích hợp và triển khai hệ thống an toàn tại chỗ cho doanh nghiệp.
 
 ### 8.9 Giai đoạn 2 — Perception thị giác và phủ rộng phần cứng (I11, I13, I16–I18; thị giác trên `sim`, `linux`, `esp32s3` đã vào MVP)
+
+*Tạm dừng theo Q-72: chiều sâu thị giác và `jetson` chờ sau cổng nhu cầu 8 tuần (§8.7); thiết kế giữ nguyên.*
 
 **Mục tiêu:** phủ rộng danh mục phần cứng từ ba target lên sáu, và đưa thị giác lên `jetson` — **mà không đụng tới tầng an toàn hành động**. Thiết kế: `neuroedge-design-phase2.md`; kế hoạch thực thi: `neuroedge-roadmap.md` §7.
 
@@ -1302,11 +1339,26 @@ Trọng tâm từng khối và điều kiện kích hoạt (thị giác trong MV
 
 ### 8.10 NeuroEdge Lab — bring-up phần cứng bằng AI người dùng đang có, qua MCP (I4a, I5a)
 
-*"NeuroEdge Lab — Physical AI, under contract, with the AI you already use"* (PRD Q-71, thay NeuroBrain của Q-31): kỹ sư bring-up một bo mạch mới bằng client MCP mình đang dùng (Claude Code, Claude Desktop). Client quét bus, thử chân và viết hợp đồng nháp qua tool lab; mỗi lệnh chạm chân vẫn đi qua gate; NeuroEdge chấm bản nháp (`neuroedge lab check`, chạy lại trong Action CI) và cưỡng chế gate, phong bì, trigger trong runtime; bản nháp phải được người duyệt khoá lại trước khi dùng. NeuroEdge không tự chạy LLM để dựng hợp đồng. Nằm trong MVP (PRD Q-55, thay phần thứ tự của Q-40), phủ bốn gói nguyên thủy mở rộng. Thiết kế: `neuroedge-design-lab-mcp.md`; task, tiêu chí ra và ngày: `neuroedge-roadmap.md` I4a (§4.5.1) và I5a (§4.6.1).
+*"NeuroEdge Lab — Physical AI, under contract, with the AI you already use"* (PRD Q-71, thay NeuroBrain của Q-31): kỹ sư bring-up một bo mạch mới bằng client MCP mình đang dùng (Claude Code, Claude Desktop). Client quét bus, thử chân và viết hợp đồng nháp qua tool lab; mỗi lệnh chạm chân vẫn đi qua gate; NeuroEdge chấm bản nháp (`neuroedge lab check`, chạy lại trong Action CI) và cưỡng chế gate, phong bì, trigger trong runtime; bản nháp phải được người duyệt khoá lại trước khi dùng. NeuroEdge không tự chạy LLM để dựng hợp đồng. Nằm trong MVP (PRD Q-55, thay phần thứ tự của Q-40), phủ bốn gói nguyên thủy mở rộng. Thiết kế: `neuroedge-design-lab-mcp.md`; task, tiêu chí ra và ngày: `neuroedge-roadmap.md` I4a (§4.5.1) và I5a (§4.6.1). Theo Q-72, Lab là **vòng ① (dựng)**: ngoài bring-up, client gợi ý kit, sinh firmware và kiểm hợp đồng nhiệm vụ nháp; phần chạy liên tục sau khi phiên client đóng thuộc agent vận hành (§8.12). Lab vòng ① dời từ I4a sang I2d (roadmap §0.2).
 
 ### 8.11 Robot phân tầng (I14)
 
+*Tạm dừng theo Q-72 (không trên đường tới NeuroEdge Blueprint đầu tiên). Trạng thái an toàn "dừng" dưới đây là một trường hợp của `safe_state` đối xứng — RFC an toàn có điều kiện sẽ tổng quát hoá nó.*
+
 Hướng nhận ở PRD Q-32, bắt đầu **sau Developer Beta**: Pi 5 làm não, nhiều node MCU (ESP32-S3 và RP2350 — Q-33) tự lượng giá gate của mình; mất liên lạc thì mỗi cơ cấu về trạng thái an toàn nó tự khai, mặc định dừng (Q-35); wire giữa Pi và node là Zenoh-pico (Q-36); motor và servo dùng token thuê có hạn (Q-37). ROS 2 và Nav2 được tích hợp nguyên bản, gate xét mọi lệnh tốc độ (Q-34) — NeuroEdge không tự viết thuật toán dẫn đường. Không có chứng nhận an toàn chức năng (Q-38): robot di động bắt buộc có nút dừng khẩn phần cứng. Thiết kế: `draft-ke-hoach-mo-rong-robot-fofoca.md` và `draft-rfc-node-giao-thuc-dieu-phoi.md`; task và tiêu chí ra: `neuroedge-roadmap.md` I14.
+
+### 8.12 Agent vận hành (I2d, Q-72)
+
+Vai mới của vòng ② (chạy). Agent chủ động không sống được trong phiên client MCP — phiên đóng là hết theo dõi — nên nó chạy liên tục trên máy nhà (Pi, mini PC, NAS), thành hai tiến trình:
+
+- **Runtime tin cậy** (24/7): HAL, gate, thực thi hợp đồng nhiệm vụ, lập lịch, bộ phát hiện tất định, adapter kênh chat (Telegram trước) kèm kiểm lời duyệt, cửa ra dữ liệu chỉ tới đích đã khai.
+- **LLM worker không tin cậy:** giữ key BYOK, gọi runtime qua MCP cục bộ như mọi client MCP; nguồn gọi do runtime gán. Ranh giới tách quyền dùng lại của Lab (Q-71).
+
+**LLM lúc chạy chỉ giải thích và đề xuất.** Nó diễn giải xu hướng ("oxy giảm 3 ngày liền") và viết đề xuất sửa đổi hợp đồng; nó không bao giờ khoá, duyệt hay tự gửi lời duyệt. Người duyệt — tại chỗ, hoặc qua kênh chat đã ghép đôi với bản ghi duyệt có mã, hạn và bản duyệt ≤ 5 dòng do runtime sinh (Q-26 mở rộng bởi Q-72). Nhóm chat không duyệt được.
+
+**Chi phí đoán trước được:** lọc tất định trước, chỉ gọi LLM khi bộ phát hiện bắn sự kiện; trần `llm_budget` trong hợp đồng — hết trần, phản xạ và cảnh báo mẫu cứng vẫn chạy, chỉ mất phần phân tích; gom tin và ngân sách tin nhắn chống làm phiền.
+
+Đã có trong mã: engine host, lớp provider qua LiteLLM (§6.1), System 2. Thiết kế trigger của Lab (khối N6, chưa có mã) là mầm cho bộ lập lịch và bộ phát hiện. Còn lại — hợp đồng nhiệm vụ, bộ phát hiện, `llm_budget`, kênh chat, vết ghi theo đoạn — là dự kiến, và phần chạm `schemas/` cần RFC (CONTRIBUTING §3). Thiết kế: [`docs/business/proposal-blueprint-2026-10-11.md`](../docs/business/proposal-blueprint-2026-10-11.md) mục "Agent vận hành và chi phí LLM"; task và tiêu chí ra: `neuroedge-roadmap.md` I2d.
 
 ---
 
@@ -1316,7 +1368,7 @@ Vì sao từng hạng mục bị loại hoặc hoãn. Trạng thái, tiêu chí 
 
 | Hạng mục xem xét | Phân tích đánh đổi & Lợi ích mang lại |
 |:---|:---|
-| **Marketplace thương mại có thu phí** | **Đánh đổi:** Chưa tạo doanh thu hoa hồng sớm.<br>**Lợi ích:** Tránh lãng phí tài nguyên xây dựng một sàn giao dịch khi cộng đồng chưa có nhu cầu trao đổi thực tế. |
+| **Blueprint Hub có thu phí** *(trước cổng nhu cầu 8 tuần, Q-72)* | **Đánh đổi:** Chưa có doanh thu chia từ NeuroEdge Blueprint; nguồn thu thử chỉ là liên kết bán kit.<br>**Lợi ích:** Hub tối thiểu là index tĩnh (URL + digest toàn gói), không giữ tiền, không chạm PF-4; chỉ xây phần thu tiền khi ít nhất một maker muốn bán Blueprint của mình (§8.7, §8.8). |
 | **Thanh toán tự động giữa các agent (Agent-to-agent pay)** | **Đánh đổi:** Tạm gác lại một xu hướng công nghệ mới nổi.<br>**Lợi ích:** Loại bỏ hoàn toàn gánh nặng xin giấy phép tài chính và nghĩa vụ phòng chống rửa tiền phức tạp. |
 | **Chương trình chứng nhận phần cứng có thu phí** | **Đánh đổi:** Bỏ qua một nguồn thu nhỏ ban đầu.<br>**Lợi ích:** Tránh cam kết chất lượng khi tổ chức chưa hoàn thiện quy trình kiểm chuẩn độc lập. |
 | **Thị giác máy tính chuyên sâu (Camera, NPU)** | **Đánh đổi:** Thị giác không rút ngắn TTFV nên không thỏa PF-1; hiện thực đầy đủ ngay sẽ kéo dài trải nghiệm 10 phút đầu.<br>**Lợi ích:** Danh sách target mở trước (RFC-0002, nới lỏng lược đồ). Nguyên thủy `vision.in` và bằng chứng thị giác trong vết ghi chốt ở V1b, khi có camera thật (RFC-0012): chốt hợp đồng tham số khi chưa có phần cứng là đoán, và sửa về sau là siết chặt. Phần hiện thực cơ bản đã vào v1.0 (PRD Q-53, Q-54), không còn chờ nhu cầu đo được từ khách hàng AURA; thị giác chuyên sâu (NPU, `jetson`) vẫn ở Giai đoạn 2. TTFV của thoại và điều khiển vẫn giữ dưới 10 phút. |
@@ -1365,6 +1417,8 @@ Phân tích đặc điểm kiến trúc và động cơ phát triển của sáu
 | **MHS** *(Anthropic)* — [Anthropic](https://www.anthropic.com/news/model-hardware-standard-research-preview) · [spec](https://www.modelhardwarestandard.com/) · [WIRED](https://www.wired.com/story/anthropic-standard-ai-agents-coming-to-the-physical-world) | Chuẩn hóa driver + tag mô tả đặc tính thiết bị bằng ngôn ngữ tự nhiên; giới hạn an toàn do driver thực thi, có phê duyệt người cho việc rủi ro cao (đang xây); đối tác thật (Genentech, UW, CMU, HHMI Janelia). | Không nhắm MCU hay môi trường mô phỏng trung lập; research preview chưa công bố schema/giấy phép; không có policy có phiên bản/kế thừa, Action CI hay định dạng vết ghi. |
 | **DCP** — [arXiv](https://arxiv.org/abs/2605.26159) · [GitHub](https://github.com/device-context-protocol/dcp) | Đã đo trên phần cứng thật (ESP32/ESP8266), frame dưới 50 byte, Bridge là ranh giới tin cậy duy nhất, HMAC capability token; benchmark 675 lượt gọi: chặn 100% leo thang quyền, 78% prompt injection (MCP thô 0–1%); MIT. | Không có policy theo điều kiện hay kế thừa, không Action CI replay, không vết ghi; thiết bị chưa tự xác minh chữ ký; quy mô một tác giả. |
 
+*Đối chiếu theo định vị Q-72:* bảng trên so ở tầng lõi an toàn. Đối chiếu theo ba vòng dựng, chạy, chia sẻ/bán — với Home Assistant + LLM, XiaoZhi và OpenClaw — nằm ở mục "Lợi thế không sao chép được" của [`docs/business/proposal-blueprint-2026-10-11.md`](../docs/business/proposal-blueprint-2026-10-11.md); khác biệt ở đó là vòng ③ và lớp niềm tin.
+
 *Bối cảnh, chưa phải phân tích cạnh tranh:* hai hàng MHS/DCP là thông tin thị trường cập nhật 2026-09-24 (`TODOS.md` #32); §10 chỉ chuyển thành phân tích cạnh tranh khi bộ phỏng vấn (nay chỉ là đầu vào thông tin, Q-56) có ≥ 10 cuộc nêu giải pháp hiện tại; rà lại trước I6 ([`docs/business/cong-nhu-cau-2026-10-25/README.md`](../docs/business/cong-nhu-cau-2026-10-25/README.md), C7).
 
 ### 10.2 Ba khác biệt cốt lõi có tính phòng thủ
@@ -1399,9 +1453,9 @@ Sáu nhóm rủi ro **chiến lược** — cấp thị trường, mô hình kin
 |:---:|:---|:---|:---|:---|
 | **1** | **Phụ thuộc vào nhà cung cấp mô hình AI** | Nhà cung cấp tăng giá dịch vụ, thắt chặt điều khoản truy cập hoặc phát hành framework cạnh tranh. | Trừu tượng hóa mô hình qua giao diện `SystemOne` và `SystemTwo` ngay từ Khối 1 (§3.6). Sản phẩm là lớp bảo đảm an toàn vật lý; việc thay đổi mô hình không ảnh hưởng đến định vị cốt lõi. | Nhà cung cấp thay đổi điều khoản API · Tuyển dụng kỹ sư phát triển framework · Ra mắt SDK phần cứng riêng. |
 | **2** | **Áp lực cạnh tranh từ các hãng bán dẫn** | Hãng chip phát hành miễn phí các framework tích hợp AI riêng cho dòng sản phẩm của họ. | Duy trì chiến lược tiếp cận trung lập (§1.4): Tập trung vào tính kiểm thử đa nền tảng mà một hãng chip không có động cơ hỗ trợ cho đối thủ. Sự hiện diện của môi trường `linux` là minh chứng rõ nhất. | SDK chính hãng bổ sung lớp điều phối agent · Hãng chip công bố hỗ trợ vi xử lý của bên thứ ba. |
-| **3** | **Doanh thu nền tảng chỉ có hai dòng** | Kể từ v5.3, rủi ro bào mòn biên lợi nhuận inference đã được **loại bỏ bằng thiết kế** — NeuroEdge không còn bán lại token. Đổi lại, điểm hòa vốn của nền tảng chỉ dựa vào hai dòng: license thương mại cho lõi và dịch vụ Fleet OS (Q-45). Fleet cần quy mô hàng chục nghìn thiết bị; license thương mại có thể làm doanh nghiệp chần chừ ngay ở bước áp dụng. | Đẩy sớm việc xác thực thị trường fleet (§8.7): đưa `sim` và lớp provider tới kỹ sư nhúng ngay từ giai đoạn đầu để kiểm chứng nhu cầu Action CI + Fleet. Người dùng phi thương mại có trọn lõi miễn phí, nên phễu maker (§1.6) không đổi. Gói Fleet Enterprise (§6.3) khai thác khách hàng lớn. Doanh thu dự án AURA (§7) tạo dòng tiền sớm cho tổ chức nhưng nằm ngoài mô hình nền tảng. | Tỷ lệ chuyển đổi từ người dùng lõi sang license thương mại hoặc gói Fleet trả phí thấp hơn dự phóng · Cột mốc G1 chậm tiến độ. |
-| **4** | **Nguy cơ phân mảnh phạm vi sản phẩm** | Áp lực triển khai Marketplace quá sớm hoặc phải tùy biến sản phẩm theo yêu cầu riêng lẻ của một số khách hàng lớn. | Kiên định áp dụng Bộ lọc tính năng PF-1→PF-4 (§2) và bộ 4 Cột mốc xác thực thị trường định lượng (§8.7) trước khi xem xét mở rộng. | Xuất hiện các đề xuất tính năng vi phạm PF-1 hoặc PF-2 nhưng vẫn được ưu tiên bố trí nguồn lực. |
-| **5** | **Phụ thuộc nhà cung cấp đám mây khi mất kết nối** | Kiến trúc cloud-first đưa STT, TTS và suy luận ngôn ngữ lên đám mây; mất mạng hoặc nhà cung cấp gián đoạn làm thiết bị không còn năng lực hội thoại. | Cơ chế **fail-closed** đã có sẵn từ Khối 1 (§3.5) bảo đảm mọi hành động vật lý bị chặn an toàn khi không thẩm định được gate — mất mạng không bao giờ dẫn tới hành động sai. Gate và máy trạng thái chạy hoàn toàn trên thiết bị nên phán quyết an toàn không phụ thuộc đám mây. **Fallback cục bộ là P0** (Q-14): gate vẫn lượng giá được khi mất mạng. | Tỷ lệ phiên kết thúc bằng lý do `gate_unreachable` tăng bất thường · Thời gian gián đoạn tích lũy của nhà cung cấp vượt cam kết SLA. |
+| **3** | **Doanh thu nền tảng chỉ có hai dòng** *(sửa bởi Q-72)* | **Q-72 thay hai dòng bằng bốn dòng theo tầng thời gian (§6.3); rủi ro chính nay là không maker nào muốn bán NeuroEdge Blueprint — đo ở cổng nhu cầu 8 tuần (§8.7).** Bối cảnh cũ: kể từ v5.3, rủi ro bào mòn biên lợi nhuận inference đã được **loại bỏ bằng thiết kế** — NeuroEdge không còn bán lại token. Đổi lại, điểm hòa vốn của nền tảng chỉ dựa vào hai dòng: license thương mại cho lõi và dịch vụ Fleet OS (Q-45). Fleet cần quy mô hàng chục nghìn thiết bị; license thương mại có thể làm doanh nghiệp chần chừ ngay ở bước áp dụng. | Đẩy sớm việc xác thực thị trường fleet (§8.7): đưa `sim` và lớp provider tới kỹ sư nhúng ngay từ giai đoạn đầu để kiểm chứng nhu cầu Action CI + Fleet. Người dùng phi thương mại có trọn lõi miễn phí, nên phễu maker (§1.6) không đổi. Gói Fleet Enterprise (§6.3) khai thác khách hàng lớn. Doanh thu dự án AURA (§7) tạo dòng tiền sớm cho tổ chức nhưng nằm ngoài mô hình nền tảng. | Tỷ lệ chuyển đổi từ người dùng lõi sang license thương mại hoặc gói Fleet trả phí thấp hơn dự phóng · Cột mốc G1 chậm tiến độ. |
+| **4** | **Nguy cơ phân mảnh phạm vi sản phẩm** | Áp lực triển khai Marketplace quá sớm hoặc phải tùy biến sản phẩm theo yêu cầu riêng lẻ của một số khách hàng lớn. | Kiên định áp dụng Bộ lọc tính năng PF-1→PF-4 (§2) và cổng nhu cầu 8 tuần (§8.7, Q-72) trước khi xem xét mở rộng; Q-72 giữ một NeuroEdge Blueprint (bể cá) đi trọn ba vòng thay vì dàn rộng. | Xuất hiện các đề xuất tính năng vi phạm PF-1 hoặc PF-2 nhưng vẫn được ưu tiên bố trí nguồn lực. |
+| **5** | **Phụ thuộc nhà cung cấp đám mây khi mất kết nối** | Kiến trúc cloud-first đưa STT, TTS và suy luận ngôn ngữ lên đám mây; mất mạng hoặc nhà cung cấp gián đoạn làm thiết bị không còn năng lực hội thoại. | Cơ chế **fail-closed** đã có sẵn từ Khối 1 (§3.5) bảo đảm mọi hành động vật lý bị chặn an toàn khi không thẩm định được gate — mất mạng không bao giờ dẫn tới hành động sai. *Sẽ đổi theo RFC an toàn có điều kiện (Q-72):* lệnh vẫn bị chặn, còn cơ cấu về `safe_state` đã khai trong `board.v1` — có thể là bật (sục khí bể cá), bắt buộc kèm khoá liên động phần cứng. Gate và máy trạng thái chạy hoàn toàn trên thiết bị nên phán quyết an toàn không phụ thuộc đám mây. **Fallback cục bộ là P0** (Q-14): gate vẫn lượng giá được khi mất mạng. | Tỷ lệ phiên kết thúc bằng lý do `gate_unreachable` tăng bất thường · Thời gian gián đoạn tích lũy của nhà cung cấp vượt cam kết SLA. |
 | **6** | **Phủ rộng phần cứng làm loãng chất lượng** | Giai đoạn 2 mở danh mục target từ ba lên sáu; đội lõi bị kéo vào việc bảo trì phần cứng thay vì làm sâu tầng an toàn, và chất lượng trên bo mạch tham chiếu bị bào mòn. | Phân tầng ba bậc (§3.2); phương án ứng phó cụ thể: PRD R-7. | PRD R-7 |
 
 ---
@@ -1420,9 +1474,11 @@ Vì sao là các chỉ số này: TTFV đo độ tinh gọn của lần tiếp x
 
 Ngưỡng chuẩn tắc ở PRD §11.3: **C1** (độ tin cậy OTA), **C2** (độ trễ thoại), **C3** (độ trễ gate), **C4** (tiết kiệm chi phí token), **C5** (chia sẻ gate cộng đồng), **C8** (độ trễ quyết định `SystemOne`). **C6** (cơ cấu doanh thu) là chỉ số theo dõi, không là điều kiện phát hành (PRD Q-42).
 
-Vì sao: 0 brick trên 1.000 thiết bị là điều kiện để doanh nghiệp giao phó đội thiết bị; độ trễ thoại và gate quyết định trải nghiệm tự nhiên; tiết kiệm token minh chứng kiến trúc hai mô hình; gate cộng đồng có người cài xác nhận hiệu ứng mạng trước khi mở sàn; cơ cấu doanh thu cho biết hai dòng của nền tảng — license thương mại và Fleet (Q-45) — có đưa tổ chức tới hòa vốn sau khi bỏ doanh thu inference (v5.3) hay không.
+Vì sao: 0 brick trên 1.000 thiết bị là điều kiện để doanh nghiệp giao phó đội thiết bị; độ trễ thoại và gate quyết định trải nghiệm tự nhiên; tiết kiệm token minh chứng kiến trúc hai mô hình; gate cộng đồng có người cài xác nhận hiệu ứng mạng trước khi mở sàn; cơ cấu doanh thu cho biết các dòng thu của nền tảng (§6.3, Q-72) có đưa tổ chức tới hòa vốn sau khi bỏ doanh thu inference (v5.3) hay không.
 
 ### 12.3 Khối 4 — Triển khai ứng dụng thực địa AURA (đo sau ba site AURA đầu tiên)
+
+*Tạm dừng cùng AURA (Q-72). Ngưỡng G1–G4 ở dòng ba nay là chỉ số theo dõi, không phải điều kiện kích hoạt Khối 5 (§8.7).*
 
 | Chỉ số hiệu suất | Ngưỡng cam kết | Ý nghĩa thực tiễn |
 |:---|:---|:---|
@@ -1435,7 +1491,7 @@ Vì sao: 0 brick trên 1.000 thiết bị là điều kiện để doanh nghiệ
 
 | # | Chỉ số hiệu suất | Ngưỡng cam kết | Ý nghĩa thực tiễn |
 |:---:|:---|:---|:---|
-| **V-G1** | Quy mô thiết bị thị giác | **≥ 5.000 thiết bị vision active/tháng**, trong đó **≥ 500 thiết bị thuộc đội có gói Fleet trả phí** | Đo nhu cầu thị giác thực tế **và** khả năng chuyển hóa thành doanh thu. Ngưỡng thứ hai là ngưỡng quan trọng hơn: sau khi bỏ doanh thu inference (§6.3), nền tảng chỉ thu từ license thương mại và Fleet (Q-45), nên tăng trưởng thiết bị không nối được vào khách hàng trả phí là tăng trưởng không nuôi được tổ chức |
+| **V-G1** | Quy mô thiết bị thị giác | **≥ 5.000 thiết bị vision active/tháng**, trong đó **≥ 500 thiết bị thuộc đội có gói Fleet trả phí** | Đo nhu cầu thị giác thực tế **và** khả năng chuyển hóa thành doanh thu. Ngưỡng thứ hai là ngưỡng quan trọng hơn: sau khi bỏ doanh thu inference (§6.3), nền tảng thu từ giấy phép, Blueprint, kit và dịch vụ (§6.3, Q-72), nên tăng trưởng thiết bị không nối được vào khách hàng trả phí là tăng trưởng không nuôi được tổ chức |
 | **V-G2** | Gate thị giác cộng đồng | **≥ 20 gate** có yếu tố thị giác do bên thứ ba phát hành | Hiệu ứng mạng lan sang miền nhận thức mới |
 | **V-G3** | Tỷ lệ tái sử dụng | **> 25% thiết bị** vận hành ít nhất một gate, adapter hoặc bản port HAL do bên khác phát triển | Tính thanh khoản của hệ sinh thái mở rộng |
 | **V-G4** | Khách hàng doanh nghiệp vừa và nhỏ | **≥ 3 khách hàng** trả phí ở các ngành khác AURA (cửa hàng, phòng khám, kho vận) | Chứng minh giá trị vượt ra ngoài một ngành dọc duy nhất |
@@ -1665,8 +1721,8 @@ Quá trình đối chiếu Golden trả lời chính xác câu hỏi: **Với c�
 | Nhóm giải pháp | Nền tảng đối tác tích hợp |
 |:---|:---|
 | Nền tảng nhà thông minh | Home Assistant · Chuẩn Matter *(Lộ trình sau)* · Apple HomeKit *(Lộ trình sau)* |
-| Kênh nhắn tin & Thông báo | Zalo OA · Telegram · Slack · Discord |
-| Cổng thanh toán ứng dụng (Tầng nghiệp vụ) | VietQR · Stripe · MoMo |
+| Kênh nhắn tin & Thông báo | Telegram *(đầu tiên — kênh báo chủ động và duyệt qua bản ghi duyệt của agent vận hành, Q-72)* · Zalo OA · Slack · Discord *(sau)* |
+| Cổng thanh toán ứng dụng (Tầng nghiệp vụ) | VietQR · Stripe · MoMo *(chi trả cho người bán NeuroEdge Blueprint chưa chọn — PF-4, §2)* |
 | Hạ tầng điện toán đám mây | Tương thích linh hoạt trên AWS, GCP, Azure hoặc máy chủ riêng |
 
 ---

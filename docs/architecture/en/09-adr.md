@@ -8,7 +8,7 @@
 **What this chapter is for:** For systems engineers, safety reviewers, and QA. This chapter answers the question: *why the architecture has its current shape and which decisions shape each safety mechanism*. Read after [`00-overview.md`](00-overview.md) and [`01-context-c4l1.md`](01-context-c4l1.md); read before proposing major changes or opening a new RFC at [`docs/rfc/`](../../rfc/).
 
 ADR identifiers are the `Q-N` or `RFC-NNNN` codes, so there are no two numbering systems. The full
-status of the 46 decisions is in PRD §15; below are the decisions with architectural consequences.
+status of the 72 decisions is in PRD §15; below are the decisions with architectural consequences.
 
 ## 1. Execution and safety
 
@@ -62,6 +62,8 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
 - **Consequences.** A "yes" never gets past another criterion; models and MCP clients have no
   confirmation path.
 - **Enforcement.** `actions/confirmation.py`; `test_tool_confirm.py`; `confirm_mask` in `NETR`.
+- **Will change (`planned · Q-72`, I2d).** [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) opens one more approval path over a paired chat channel, through
+  an approval record with a code — not a free-form "yes" message; the LLM and chat groups still cannot approve. ADR in §5.1 below.
 
 ### Q-17 · Every `on_block` blocks the physical action
 - **Decision.** `escalate` and `ask` still record a trace and call hooks (which do nothing by default);
@@ -109,6 +111,10 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
 - **Consequences.** `pip install neuroedge` is light and needs no key; no server is operated by
   NeuroEdge.
 - **Enforcement.** `pyproject.toml`; job `cloud-extra`.
+- **Bounded exception (`planned · Q-72`).** The optional cloud relay and the NeuroEdge Blueprint Hub
+  index are things NeuroEdge may operate; both are optional, never on the safety path, the relay does
+  not decrypt, and the Hub at MVP is only a static index repository. Apart from those two, the sentence
+  "no server is operated by NeuroEdge" stands. ADR in §5.1.
 
 ### Q-27 · System 2 is an MCP host
 - **Decision.** Device tools go through the agent's own MCP server (still through the gate); external
@@ -238,7 +244,7 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
 | Q-32 | Layered robotics after Developer Beta; multi-node traces extend `trace.v1` with optional fields | No `trace.v2` needed |
 | Q-33 | **Context:** Layered robotics needs an independent node handling actuators/manipulators. **Decision:** RP2350 is the second reference node ported by the core team: C HAL on Pico SDK (`digital.out`, `sensor.read`), C99 walker and token ledger compiled for ARM, board profile, and real board test runner. | The core team takes on another long-term maintained target; an intentional exception to the exclusion catalog in PRD §14; reference board for v1.0 remains Box-3 (Q-2); [`15`](15-target-architecture.md) §4.3 |
 | Q-34 | **Context:** Mobile robots need navigation and obstacle avoidance, but NeuroEdge does not redevelop SLAM/navigation itself. **Decision:** Native integration of ROS 2 and Nav2 via adapters at the gate boundary; gate evaluates every velocity command (`cmd_vel`), even when Nav2 is autonomously navigating. | Establishes a new mobile robot safety tier (10–20 Hz cycle gate, forbidden zones); requires a mobile robot safety RFC and survey of question C6 from robot buyers (Q-38, `TODOS.md` #40); [`15`](15-target-architecture.md) §4.3 |
-| Q-35 | Every actuator declares its safe state on loss of communication; no declaration means stop | Needs an RFC for the declaration field |
+| Q-35 | Every actuator declares its safe state on loss of communication; no declaration means stop | Needs an RFC for the declaration field; Q-72 generalises it into a symmetric `safe_state` for every actuator (§5.1) |
 | Q-36 | Zenoh-pico on the MCU, `zenohd` on the Pi; spike with pass/fail thresholds, micro-ROS is plan B | Node RFC draft |
 | Q-37 | Time-limited lease tokens for `motion.*` (channel, maximum amplitude, short TTL), renewed through each gated command | Different from today's one-time token; needs RFC-0011 |
 | Q-40 | **Context:** Multiple post-Beta expansion directions (NeuroBrain, layered robotics, vision, community ports) risk diluting core team resources without prioritization. **Decision:** Post-Beta expansion sequence anchored on dependencies: open target list (formerly I11, now merged into I2c — Q-67) → community porting kit (I13) → layered robotics (I14); ecosystem (I18) after I13 and Registry. *(Amended 2026-09-30: the NeuroBrain part is replaced by Q-55 — in the MVP at I4a, I5a; basic vision is replaced by Q-53 — in the MVP at I2a, I3a; I12 and I15 are no longer increments.)* *(Amended 2026-10-04: I11 merged into I2c per Q-67, done ahead of NeuroBrain in the MVP.)* | Protects the v1.0 critical path and V2 effort (R-7) — now per Q-52 by moving the date rather than cutting scope; [`15`](15-target-architecture.md) §4 |
@@ -248,6 +254,97 @@ status of the 46 decisions is in PRD §15; below are the decisions with architec
 | Q-55 | NeuroBrain (now NeuroEdge Lab, Q-71) in the MVP on all three targets, covering the four primitive packs | I4a (host) and I5a (chip); replaces the NeuroBrain ordering of Q-40 |
 | Q-67 | **Open platform:** a third party wires NeuroEdge to a new product without touching the core — a standalone core, an Extension SDK with six plug-in kinds, proxies, remote actuators, a community index; the safety invariants do not change (`neuroedge-prd.md` §15; design `neuroedge-design-open-platform.md`) | Increment I2c ahead of NeuroBrain, I11 merged into it; RFC-0002 signed, the RFC-0014 code pulled forward, RFC-0016 → RFC-0018 are drafts; the tool call `source` becomes a namespace (reverses RFC-0015 §10 item 11); the compliance corpus moves to Apache-2.0; acceptance A13; the MVP schedule grows (Q-52); [`13`](13-evolution-i0-i18.md), [`16`](16-ecosystem-landscape.md) |
 | Q-71 | **Context:** NeuroBrain was to run its own LLM loop to generate draft contracts, while users already have stronger MCP clients (Claude Code, Claude Desktop) and NeuroEdge already exposes its tools over MCP. **Decision:** NeuroEdge Lab — the client writes drafts through the lab tools; NeuroEdge checks them (`neuroedge lab check`, the same code behind the tool and Action CI) and enforces them (gate, envelope, triggers in the runtime); a human locks them through a PR. No LLM loop of its own; no tool locks policy, turns on `[lab]` or answers `ask`. A client with a shell is an untrusted caller that can write files: safety rests on device-permission separation and a protected branch (`threat_model.md` §2c). | The `lab/` package replaces `brain/`; block N5 becomes checking and rendering tools instead of generation; four new tasks (TSK-N0-07, N0-08, N5-06, N6-04); A11 measured on two clients; no RFC unless the draft schema moves into `schemas/` |
+| Q-72 | **NeuroEdge Blueprint positioning:** build, run safely, share and sell in three loops; an operating agent runs continuously on the home machine; approval over chat; a `safe_state` other than `off` only in `board.v1`; simulation first ([Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)) | I2d (missions and the operating agent), I2e (minimal NeuroEdge Blueprint); six expected RFCs (§6); the architecture shape in §5.1 |
+
+### 5.1 Q-72 · Architecture shape of the operating agent and NeuroEdge Blueprint (`planned · Q-72`)
+
+No item below has code yet. The decision is in [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định); these items record what it looks like in the
+architecture, and where an RFC is needed.
+
+#### Two processes: trusted runtime and untrusted LLM worker (I2d)
+- **Context.** The operating agent runs 24/7 and at the same time holds GPIO rights, the user's LLM key,
+  the chat bot token, and reads text sent by outsiders. Merged into one process, a prompt injection or a
+  chat-message parsing bug would have the same rights as the HAL; an attacker in the same process is
+  outside the threat model (`TODOS.md` #2).
+- **Decision.** **Trusted runtime** (systemd): HAL, gate, mission contract execution, scheduling,
+  deterministic detectors, chat channel adapters and approval checks, egress. **Untrusted LLM worker**:
+  holds the BYOK key, calls the runtime over local MCP as an MCP client, source assigned by the runtime,
+  never approves. Reuses the Q-71 boundary (only one process holds device rights).
+- **Consequences.** A tricked worker can only send calls that must pass the gate; one more process to
+  supervise and restart; today's in-process System 2 stays as it is for command sessions.
+- **Enforcement.** No code yet — [`02`](02-container-c4l2.md), [`03`](03-component-host-c4l3.md) (the
+  chat adapter reaches only `dispatch()`, does not import `hal`).
+
+#### Approval over chat is an approval record with a code (I2d; amends Q-26)
+- **Context.** `HUMAN_SOURCES = ("local_grammar", "ui")` (`actions/confirmation.py`). A free-form "yes"
+  from chat is ambiguous when several requests are pending, can be replayed, and does not notice that the
+  change was altered.
+- **Decision.** Changes that widen data rights are approved on site only (FR-MSN-14); every other
+  chat approval: the runtime issues a request `{id, nonce, expiry, change digest, approval summary ≤ 5
+  lines}`; the summary is generated deterministically by the compiler from a structured diff, not from
+  LLM text. The reply must target the exact `id`; the runtime checks that the sender was paired locally,
+  is not a group, the nonce is unused, the request has not expired (monotonic clock) and the digest
+  matches, and only then passes it into the confirmation path with source `chat:<id>`.
+- **Consequences.** A hijacked chat account can approve on the owner's behalf (a risk Q-72 accepted);
+  revocation, pairing expiry and the approval cap are deferred in `TODOS.md` #62.
+- **Enforcement.** Pending the RFC for the `chat:<id>` source; flow in [`06`](06-runtime-flows.md) §11.4.
+
+#### Symmetric `safe_state` (I2d; amends Q-62, Q-35; pending the conditional-safety RFC)
+- **Context.** Every timing guarantee today points to `off` (RFC-0018: "who brings the actuator to
+  `off`"; Q-62 exempts commands toward safety from the gate). For an aerator, safe means *on*.
+- **Decision.** Every actuator has a `safe_state` declared in `board.v1` (default `off`); durations,
+  `max_continuous_ms`, leases, L0–L3 and the Q-62 gate exemption speak of "returning to `safe_state`";
+  the direction *away from* `safe_state` is the one that is gated and limited. `safe_state: on` is
+  realised by wiring that is on by default (a normally closed relay) declared as a hardware interlock; a
+  `safe_state` other than `off` exists only in `board.v1`.
+- **Consequences.** No path around the gate is added; existing profiles (`off`; `motion.*`
+  `stop`/`hold`) keep their behaviour. "When unsure, block" holds for commands; added: actuators return
+  to their declared `safe_state`. The RFC must rewrite the wording of RFC-0007, RFC-0010, RFC-0018 and
+  Q-62; `TODOS.md` #58 is fixed first.
+- **Enforcement.** No code yet — [`07`](07-data-contracts.md) §4, [`05`](05-code-gate-hal-c4l4.md).
+
+#### Segmented traces for the 24/7 runtime (I2d; pending a `trace.v1` RFC)
+- **Context.** A session today writes one file when it closes; a runtime running for months would grow
+  that file forever and lose all of it on a power loss.
+- **Decision.** A chain of segments over time (daily or when a size is exceeded); each segment carries
+  the state at its start (gate digest, token ledger, envelope counters, leases) and the previous
+  segment's digest. Keep 30 days; flush about every 10 seconds and immediately on a block or an approval.
+- **Consequences.** The invariant "one trace per session" becomes "one session, one chain of traces,
+  each segment replayable"; it changes the normative trace format, so it needs an RFC.
+- **Enforcement.** No code yet — [`07`](07-data-contracts.md) §7, [`08`](08-nfr.md) §7.
+
+#### The optional relay is a TLS pass-through pipe (`planned · Q-72`, outside I2d/I2e)
+- **Context.** Remote access and backup without opening a port on the home network; Q-10 says no
+  server is operated by NeuroEdge.
+- **Decision.** The home machine opens an outbound connection to the relay; the relay picks the
+  destination by SNI and does not decrypt (Nabu Casa's SniTun pattern); trace backups are encrypted on
+  the home machine; approvals do not go through the relay.
+- **Consequences.** A compromised relay can only block traffic or see metadata; if the relay breaks,
+  the safety part keeps running. A bounded exception to Q-10 (§2).
+- **Enforcement.** No code yet — [`14`](14-deployment-c4.md).
+
+#### The Hub at MVP is a static index, packages downloaded by URL + digest (I2e)
+- **Context.** The Gate Registry (OCI/ORAS, `manifest.v1`) belongs to horizon 2; it is not yet known
+  whether makers want to sell NeuroEdge Blueprints.
+- **Decision.** A NeuroEdge Blueprint is downloaded by URL (git or HTTPS); the digest covers the whole
+  package; the Hub is a static index repository (like the I2c plugin index); evidence is marked
+  "unsigned"; moves to the OCI Registry once the Hub charges money.
+- **Consequences.** No NeuroEdge server before the 8-week demand gate; one migration to the Registry
+  later.
+- **Enforcement.** Pending the `blueprint.v1` RFC — [`07`](07-data-contracts.md) §12.2.
+
+#### Leak-preventing data flow (I2d; pending the data-flow RFC)
+- **Context.** The contract says which data goes where; the user's LLM is in the cloud; a malicious chat
+  message can lure the worker into sending data to an unknown address.
+- **Decision.** The rule aims to **prevent leaks** (hacking, prompt injection, theft), not to restrict
+  flows the user builds: every destination the user declares receives the data the user allows,
+  including images to the LLM. The runtime decides what the worker sees; the worker's network is blocked
+  at the operating-system level, reaching only the declared provider endpoint; the runtime sends only to
+  declared destinations; undeclared destinations are blocked and traced. Content rules ("images never
+  leave the home") are an option the user turns on.
+- **Consequences.** Residual risk stated plainly: a tricked worker can still send allowed data to an
+  allowed destination; one more network-configuration step for the worker at install time.
+- **Enforcement.** No code yet — [`07`](07-data-contracts.md) §12.3, [`08`](08-nfr.md) §2.
 
 ## 6. RFCs
 
@@ -282,6 +379,12 @@ Each RFC below resolves an architectural bottleneck for expansion stages, opened
 | **RFC-pin-extends** | Enables pinning gate inheritance by content hash `@<ver>#sha256:…` in `gate.v1`, upgrading `digests.lock` into a lockfile for inheritance chains; defends against gate substitution attacks on public Registries (`TODOS.md` #11, #15) | TSK-S3-21 (I2c, Q-67) | I2c |
 | **RFC visual-evidence gate semantics** | Defines dedicated gate semantics for visual evidence; until this RFC exists, vision enters the gate as maker-declared facts with the threshold locked by the `numeric` criterion (Q-54, `neuroedge-design-phase2.md` §2.2); prerequisite for multimodal gates | TSK-V3-04 | I17 |
 | **RFC mobile-robot safety** | Safety framework for mobile robots: maximum speed limits, forbidden navigation zones, 10–20 Hz real-time gate cycle, ROS 2 / Nav2 control flow integration (Q-34), and question C6 from robot buyers (Q-38, `TODOS.md` #40) | TSK-W4-07 | I14 |
+| **RFC conditional safety** (`planned · Q-72`) | Symmetric `safe_state` for every actuator in `board.v1`; rewrites the wording of RFC-0007, RFC-0010, RFC-0018 and Q-62 as "return to `safe_state`"; hardware interlock for `safe_state: on`; after `TODOS.md` #58 (§5.1) | TSK-I2d-02 | I2d |
+| **RFC `mission.v1`** (`planned · Q-72`) | Mission contract schema, tier-lowering compiler, approval summary ≤ 5 lines, `llm_budget` ([`07`](07-data-contracts.md) §12.1) | TSK-I2d-04 | I2d |
+| **RFC data flow** (`planned · Q-72`) | Data destination declaration and leak-preventing egress ([`07`](07-data-contracts.md) §12.3) | TSK-I2d-10 | I2d |
+| **RFC `chat:<id>` source and approval records** (`planned · Q-72`) | Chat source per the RFC-0017 grammar, approval records and the confirmation path ([`07`](07-data-contracts.md) §12.4) | TSK-I2d-11 | I2d |
+| **RFC `trace.v1` segments** (`planned · Q-72`) | Segment chain, state at segment start, previous segment's digest ([`07`](07-data-contracts.md) §7) | TSK-I2d-13 | I2d |
+| **RFC `blueprint.v1`** (`planned · Q-72`) | NeuroEdge Blueprint package, whole-package digest, static index, relationship with `manifest.v1` ([`07`](07-data-contracts.md) §12.2) | TSK-I2e-01 | I2e |
 
 ## 7. Making a new architecture decision
 

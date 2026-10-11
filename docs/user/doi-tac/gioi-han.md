@@ -13,6 +13,9 @@ Trang này nói thẳng điều đợt thử **không** làm hoặc **chưa ki�
 | Cơ cấu chấp hành từ xa (điều khiển thiết bị qua mạng bằng chân ảo có phong bì) | Có trong lõi (`[actuators.<tên>]`, [`extension_sdk.md`](../../spec/extension_sdk.md) §7) và một plugin Home Assistant **mức L1** (`switch`, `light`, `input_boolean`) giao riêng dưới dạng wheel `neuroedge-homeassistant` nếu đợt thử cần. L1 nghĩa là NeuroEdge tự gửi lệnh tắt khi hết giờ; mất liên lạc thì thiết bị có thể bật mãi, nên hành động **không hoàn tác** (van, khoá, máy sưởi) bị `neuroedge build` từ chối với plugin này. Chỉ kiểm trên bản giả Home Assistant, **chưa kiểm trên Home Assistant thật** (TSK-I2c-16). |
 | Plugin bên thứ ba (bridge, nguồn dữ kiện…) | Chưa có bộ nạp (TSK-I2c-11); `plugin doctor` in "không kiểm được: plugin" |
 | Phát hành công khai (PyPI, index) | Không có: wheel giao trực tiếp |
+| NeuroEdge Blueprint (đóng gói, cài, bán một gói kit + firmware + hợp đồng; khác Blueprint của Home Assistant) | **Ngoài đợt thử.** Hướng đã chốt ở Q-72, chưa có mã |
+| Agent vận hành (chạy 24/7, tự báo xu hướng và đề xuất, hợp đồng nhiệm vụ) | **Ngoài đợt thử.** Q-72, chưa có mã; hôm nay chỉ người tại thiết bị trả lời được câu hỏi `ask` |
+| Telegram hay kênh chat khác (báo, duyệt qua chat) | **Ngoài đợt thử.** Q-72, chưa có adapter chat nào |
 
 ## Chưa kiểm trên thiết bị thật
 

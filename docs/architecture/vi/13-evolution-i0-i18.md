@@ -25,7 +25,9 @@ hợp đồng nào đổi, và **lời hứa an toàn nào được chứng minh
 Mốc 6 (**ra mắt công khai**) là lần đầu người ngoài dùng được; mốc 7 (**v1.0**) là lần đầu đủ tin cậy để
 đưa vào thiết bị bán ra. MVP là v1.0 đầy đủ, một lần ra mắt: trượt thì dời ngày, không cắt phạm vi (Q-52).
 Đường găng (roadmap §2.2): bo mạch về → spike bộ nhớ (TSK-S1-10) → mốc 3 → mốc 4 và 5 trên chip → mốc 6 →
-mốc 7. CPO Dashboard (`docs/business/cpo-dashboard.html`) đọc cùng bảng mốc.
+mốc 7. CPO Dashboard (`docs/business/cpo-dashboard.html`) đọc cùng bảng mốc. [`Q-72`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) đổi thứ tự mà không cắt
+phạm vi: hợp đồng nhiệm vụ, agent vận hành, kênh chat (I2d) và NeuroEdge Blueprint tối thiểu (I2e) đi trước,
+chạy trên giả lập nên không chờ bo mạch; thoại, Studio và `jetson` tạm dừng. Thứ tự và ngày thật: roadmap §0.2.
 
 ## 2. Những gì không đổi qua mọi mốc
 
@@ -38,7 +40,7 @@ của nó; cột cuối là mốc mà phép chứng minh trở nên khó nhất.
 | Không chắc thì không làm | Fail-closed ở mọi hướng (bất biến 2); dữ kiện cũ, thiếu, sai kiểu ⇒ `BLOCK` | `fixtures/traces/network_offline.json`; corpus phản chứng | 2 (cảm biến, camera), 3 (mất mạng trên chip) |
 | Một hợp đồng ở mọi nơi | Cùng tệp gate, phân giải thuần (bất biến 4); Python và C cùng đặc tả; `verify` so phán quyết | [`10`](10-target-equivalence.md); `neuroedge verify --targets sim,linux,esp32s3` | 3 (chip thật), 10 (bo cộng đồng) |
 | Bằng chứng thay cho lời hứa | Mọi phán quyết vào vết ghi `trace.v1`; replay tính lại không gọi model | [`06`](06-runtime-flows.md) §7; Action CI | 5 (bản nháp do client viết), 9 (vết ghi từ hiện trường) |
-| Người giữ quyền cuối | Model và client MCP không xác nhận được `ask` (Q-26); bản nháp do client MCP viết qua NeuroEdge Lab phải có người duyệt (Q-71); không ai xác nhận thay một số đo (Q-62) | test `confirms`; RFC-0006, RFC-0009 | 5 (dựng bằng hội thoại) |
+| Người giữ quyền cuối | Model và client MCP không xác nhận được `ask` (Q-26); bản nháp do client MCP viết qua NeuroEdge Lab phải có người duyệt (Q-71); không ai xác nhận thay một số đo (Q-62); `planned · Q-72`: người duyệt từ xa qua chat chỉ bằng bản ghi duyệt có mã, LLM không bao giờ duyệt | test `confirms`; RFC-0006, RFC-0009 | 5 (dựng bằng hội thoại; duyệt qua chat) |
 | Cắm vào stack của người khác | MCP là bề mặt gọi vào; model và giọng nói là provider thay được (P-4); lược đồ, đặc tả, bộ kiểm tuân thủ và corpus tuân thủ theo Apache-2.0 (Q-45, Q-67); từ I2c, bên thứ ba tự nối qua điểm cắm của `neuroedge.sdk` mà không sửa lõi, bất biến an toàn không đổi (Q-67) | `docs/spec/tool_calling.md`; `fixtures/tool_calls/`; bộ test tuân thủ plugin (I2c, `planned`) | 2 (nền tảng mở, Q-67), 6 (MCP qua mạng, Q-58) |
 
 ## 3. Kiến trúc qua từng mốc
@@ -122,7 +124,7 @@ increment ở roadmap §0.2.
 - **Lời hứa được chứng minh bằng:** hợp đồng thu hồi lệnh vật lý (`voice_fsm.md` §5) — cắt lời huỷ lệnh
   chưa giao trong ≤ 1 khung âm thanh; `motion.*` dừng ngay (Q-57).
 
-### Mốc 5 — Dựng bằng hội thoại *(I4a, I5a)*
+### Mốc 5 — Dựng và chạy bằng hội thoại, chia sẻ Blueprint *(I4a, I5a, I2d, I2e)*
 
 - **Người dùng làm được:** mô tả thiết bị bằng lời với AI mình đang dùng (Claude Code, Claude Desktop); AI
   viết action, gate và phong bì qua tool của NeuroEdge Lab; NeuroEdge chấm; người duyệt rồi mới khoá (Q-55, Q-71).
@@ -134,6 +136,28 @@ increment ở roadmap §0.2.
 - **Lời hứa được chứng minh bằng:** mọi lệnh tác động của client vẫn đi qua `dispatch()` → gate; bản nháp chỉ
   khoá sau `lab check`, `gate lint` và người duyệt; không tool nào khoá chính sách; model không bao giờ tự
   xác nhận; client có shell không giữ quyền thiết bị (`threat_model.md` §2c).
+
+Phần còn lại của mốc này là `planned · Q-72` ([`Q-72`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)); thiết kế ở [`15`](15-target-architecture.md) §6.
+
+- **I2d — nhiệm vụ và agent vận hành.**
+  - *Người dùng làm được:* nói một nhiệm vụ ("trông bể cá"), duyệt bản duyệt ≤ 5 dòng, rồi để agent chạy 24/7,
+    tự phản xạ, tự báo và đề xuất qua Telegram; duyệt từ xa qua chat.
+  - *Kiến trúc thêm:* tiến trình **runtime tin cậy** sống lâu (systemd) và **LLM worker** không tin cậy giữ key
+    BYOK, gọi runtime qua MCP cục bộ; trình biên dịch nhiệm vụ, lập lịch, bộ phát hiện tất định, `llm_budget`;
+    adapter kênh chat chỉ đi `dispatch()`; cửa ra egress; vết ghi theo đoạn. Gói dự kiến: [`03`](03-component-host-c4l3.md).
+  - *Hợp đồng đổi (chờ RFC):* `mission.v1`; `safe_state` khai trong `board.v1`; nguồn `chat:<id>` và bản ghi
+    duyệt; khai đích dữ liệu; đoạn vết ghi trong `trace.v1`.
+  - *Lời hứa được chứng minh bằng:* lệnh vẫn qua gate, kể cả lệnh từ chat; LLM bị lừa không chạm thiết bị và
+    không duyệt được; cơ cấu về `safe_state` đã khai; `replay` từng đoạn ra đúng phán quyết; chạy liên tục trên
+    giả lập G1 `sim` và G2 `linux` trên `gpio-sim`.
+- **I2e — NeuroEdge Blueprint tối thiểu.**
+  - *Người dùng làm được:* `blueprint install` một Blueprint người khác đóng gói (bể cá trước), mua kit theo BOM;
+    `blueprint pack` sản phẩm của mình.
+  - *Kiến trúc thêm:* đóng gói và cài với digest phủ toàn gói; index Hub tĩnh (kiểu index plugin I2c); bằng
+    chứng "chưa ký". Không có máy chủ NeuroEdge nào; relay tuỳ chọn nằm ngoài I2e.
+  - *Hợp đồng đổi (chờ RFC):* `blueprint.v1` (quan hệ với `manifest.v1`).
+  - *Lời hứa được chứng minh bằng:* gói lệch digest bị từ chối; Blueprint không mang `safe_state` và không mở
+    đường nào ngoài gate; cổng nhu cầu 8 tuần đo vòng ③ ([`15`](15-target-architecture.md) §6.9).
 
 ### Mốc 6 — Ra mắt công khai *(I6)*
 
@@ -215,9 +239,11 @@ Mỗi mục là một lựa chọn có chủ đích, có mốc kích hoạt tron
 
 | Nợ | Vì sao chấp nhận hôm nay | `TODOS.md` |
 |:---|:---|:---|
-| Vết ghi chưa ký | cần khoá thiết bị; thuộc Fleet OS | #1 |
+| Vết ghi chưa ký | cần khoá thiết bị; thuộc Fleet OS; bằng chứng của NeuroEdge Blueprint ghi "chưa ký" tới khi Hub thu tiền (Q-72) | #1 |
 | Token là `(nonce, digest)` trong bộ nhớ, không ký | mối đe doạ trong phạm vi là bỏ qua do nhầm lẫn | #2 |
 | `extends` chưa ghim theo digest | chưa có registry; `digests.lock` phủ CI; đã lên lịch ở I2c (TSK-S3-21, Q-67) | #15 |
-| Kết nối MCP chỉ sống một lượt | mỗi lượt REPL một vòng lặp sự kiện | #25 |
+| Kết nối MCP chỉ sống một lượt | mỗi lượt REPL một vòng lặp sự kiện; **thành rủi ro thật** khi runtime 24/7 và LLM worker giữ một kết nối MCP sống nhiều tháng (I2d, `planned · Q-72`) | #25 |
 | Thao tác và thời lượng lệnh chân trên chip lấy từ bảng dựng trên host | cách action chạy trên MCU chưa chốt | #37 |
-| Đọc cảm biến `linux` chặn vòng lặp sự kiện | chưa có agent vừa nói vừa đọc cảm biến | #48 |
+| Đọc cảm biến `linux` chặn vòng lặp sự kiện | chưa có agent vừa nói vừa đọc cảm biến; **thành rủi ro thật** khi bộ phát hiện của runtime 24/7 đọc cảm biến định kỳ (I2d, `planned · Q-72`) | #48 |
+| `board.v1` lặng lẽ bỏ qua khoá lạ | hôm nay chỉ một bộ đọc; phải sửa **trước** khi `safe_state` khác `off` vào `board.v1` (Q-72) | #58 |
+| Ghép đôi chat chưa có thu hồi, hạn, trần lời duyệt | duyệt qua chat chưa có mã; mốc: trước task duyệt qua chat của I2d (Q-72) | #62 |

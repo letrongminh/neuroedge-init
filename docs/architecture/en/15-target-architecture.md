@@ -7,7 +7,8 @@
 > [`neuroedge-design-lab-mcp.md`](../../../roadmap/neuroedge-design-lab-mcp.md);
 > [`neuroedge-design-phase2.md`](../../../roadmap/neuroedge-design-phase2.md);
 > [`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../../roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md) §2, §4, Appendix A;
-> [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) §3.
+> [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) §3;
+> Q-72 band: [`proposal-blueprint-2026-10-11.md`](../../business/proposal-blueprint-2026-10-11.md) and Q-72 in PRD §15.
 > **Status conventions:** `done` / `partial` / `planned`.
 
 **What this chapter is for:** This chapter is for software architects, embedded engineers, and systems engineers who need to understand the target architecture (to-be architecture) of NeuroEdge across each development stage. The document answers the questions: *Which components, drivers, protocols, and services does each horizon add? How are safety boundaries and the safe-by-default mechanism ([fail-closed](../../user/thuat-ngu.md): block if gate cannot evaluate; when offline, the gate still evaluates with local fallback, blocking only when fallback is absent or fails to run — Q-14) maintained when scaling from a single chip to multi-node robot systems and cloud computing?* Before reading, readers should understand the high-level picture in [`00`](00-overview.md) and the evolution status in [`13`](13-evolution-i0-i18.md). After this chapter, read [`16`](16-ecosystem-landscape.md) to see the landscape of parties in the extended ecosystem.
@@ -20,14 +21,15 @@ The architecture evolution roadmap of NeuroEdge is divided into three **horizons
 
 | Horizon | Increments | Architecture changes (What it is & Why it is needed) | Design location |
 |:---|:---|:---|:---|
+| **Q-72 band** — run and share (`planned · Q-72`) | I2d, I2e | The Blueprint positioning ([`Q-72`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)) goes **before** the rest of H1: mission contracts, an operating agent running 24/7 on the home machine (trusted runtime + untrusted LLM worker), a chat channel with approval records, leak-preventing data flow, segmented traces (I2d); then a minimal NeuroEdge Blueprint — `blueprint pack`/`install`, whole-package digest, static Hub index (I2e). The optional relay is outside these two increments. Simulation first (G1–G4), real hardware bought later. Voice, Studio and `jetson` pause; v1.0 scope is not cut but reviewed at the 8-week demand gate (Q-52 reordered by Q-72). Needed so that loop ② (run) and loop ③ (share and sell) have a safe architecture before any code exists. | §6 below; [`proposal-blueprint-2026-10-11.md`](../../business/proposal-blueprint-2026-10-11.md); roadmap [§0.2](../../../roadmap/neuroedge-roadmap.md#02-bảng-increment-increment-matrix) |
 | **Horizon 1 (H1)** — On-device v1.0 = MVP | I2a–I7 | Complete firmware on ESP32-S3 chip: bring the 5-primitive HAL onto real chip, hardware drivers (I2S codec, ST7789 LCD, GPIO), real-time voice pipeline (AEC, VAD, Opus streaming), C99 voice state machine, barge-in actuator command abort mechanism (`actuator_abort.c`), WebSocket streaming client to cloud, local fixed command recognition fallback when offline ([`Q-14`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)), device security (Secure Boot, flash encryption, physical mic cutoff, anti-rollback eFuse), LVGL interface connected to display driver. This horizon also carries the four extension primitive packs, mandatory on all three tier-1 targets — sensors, PWM, vision, motion ([`Q-53`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), I2a and I3a) — the **open platform** ([`Q-67`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), I2c: a standalone core, the Extension SDK, proxies, remote actuators, a community index, an open tiered target list; see [`16`](16-ecosystem-landscape.md) §3, §8) — and **NeuroEdge Lab over MCP** ([`Q-55`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`Q-71`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), I4a on the host, I5a on the chip); one launch, and if it slips the date moves rather than the scope being cut ([`Q-52`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)). Prerequisite for the "talking to a $5 chip" demo (roadmap §4.6): voice on Box-3, gate on chip. | Roadmap [§4.3.1](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux), [§4.3.3](../../../roadmap/neuroedge-roadmap.md#433-i2c--nền-tảng-mở), [§4.4–§4.8](../../../roadmap/neuroedge-roadmap.md#44-i3--gate-trên-box-3-thật), PRD [Appendix D.2](../../../roadmap/neuroedge-prd.md#d2-giao-thức-truyền-dẫn--định-dạng-vết-ghi-wire-protocol), [`04`](04-component-device-c4l3.md) |
 | **Horizon 2 (H2)** — Service tier v1.1 | I9–I10 | Two new server-side containers appear: **Fleet OS** (identity provisioning, inventory ledger, health monitoring, remote config and gate sync, canary rollout (releasing in progressively larger waves up to the whole fleet) campaign orchestration via Eclipse Hawkbit, centralized incident trace collector store, certificate revocation) and **Gate Registry** (public OCI (Open Container Initiative artifact packaging standard) registry via CNCF ORAS/Harbor, stable identifiers, metering system via OpenMeter, permissions sandbox, manifest (package descriptor) `schemas/manifest.v1.json`, signed gates with on-chip signature verification, pinning `extends` by digest). Self-hosted provider abstraction layer completed (multi-provider routing, failover, quota). Needed to manage large-scale device fleets without compromising the safety autonomy of each device. | Roadmap [§6](../../../roadmap/neuroedge-roadmap.md#6-tầng-dịch-vụ-v11-i9i10), Proposal [§6](../../../roadmap/neuroedge-proposal.md#6-mặt-phẳng-thương-mại-fleet-os), PRD [`Q-6`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`Q-28`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`02`](02-container-c4l2.md) §5 |
 | **Horizon 3 (H3)** — Post-Beta extensions | I13, I14, I16–I18 | The community port kit (I13), built on 3 [target tiers](../../user/thuat-ngu.md); opening the target list (formerly I11) has been merged into I2c in H1 ([`Q-67`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)); **Layered robot** (I14) coordinating Pi 5 brain and multiple MCU nodes (ESP32-S3, RP2350) over Zenoh-pico [black channel](../../user/thuat-ngu.md), each node evaluates gates locally, [lease tokens](../../user/thuat-ngu.md) (lease) for `motion.*`, safe state on link loss, ROS 2/Nav2 bridge; **Vision on `jetson` and multimodal** (I16, I17) extending L2 perception to the Jetson GPU (basic vision on `sim`, `linux` and `esp32s3` is already in v1.0 — Q-53, Q-54); **Ecosystem** (I18) sharing adapters and HAL ports on Registry. Needed for NeuroEdge to expand to complex motion systems, robotic arms, and multisensory systems. NeuroEdge Lab (I4a, I5a; formerly NeuroBrain), `vision.in` (I2a, I3a) and opening the target list (I2c) moved into H1; §4.2 and §4.4 below keep their design. | Roadmap [§7](../../../roadmap/neuroedge-roadmap.md#7-hướng-mở-rộng-sau-beta-i13-i14-i16i18), [`neuroedge-design-lab-mcp.md`](../../../roadmap/neuroedge-design-lab-mcp.md), [`neuroedge-design-phase2.md`](../../../roadmap/neuroedge-design-phase2.md), [`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../../roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md), [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) |
 
 ![E-10 · Target architecture by horizon](../assets/svg/E-10-target-horizons.svg)
-*Figure E-10 — Four bands: status on main and three horizons; dashed boxes are planned. Generated by scripts/gen_architecture_diagrams.py.*
+*Figure E-10 — Five bands: status on main, the Q-72 band (I2d, I2e) and three horizons; dashed boxes are planned. Generated by scripts/gen_architecture_diagrams.py.*
 
-*How to read Figure E-10:* The figure shows four horizontal bands corresponding to the code status on the `main` branch and three planned consecutive horizons. Solid boxes have code (◐ is partial), dashed boxes are planned. Connecting labels between bands (same walker + ledger, verify on chip, no paid safety) show that subsequent horizons reuse the walker, token ledger, and gate of earlier horizons.
+*How to read Figure E-10:* The figure shows horizontal bands corresponding to the code status on the `main` branch, the Q-72 band (`planned · Q-72`, §6) and three planned consecutive horizons. Solid boxes have code (◐ is partial), dashed boxes are planned. Connecting labels between bands (same walker + ledger, verify on chip, no paid safety) show that subsequent horizons reuse the walker, token ledger, and gate of earlier horizons.
 
 Development relationship diagram between the three horizons:
 
@@ -42,6 +44,13 @@ flowchart LR
         H1_PACKS["Extension Packs: Sensors, PWM, Vision, Motion (I2a, I3a)"]
         H1_BRAIN["NeuroEdge Lab over MCP: lab tools, lab check, Envelope (I4a, I5a)"]
         H1_OPEN["Open Platform: SDK, Proxies, Open Target List (I2c)"]
+    end
+
+    subgraph Q72["Q-72 band, planned: Run and Share (I2d, I2e)"]
+        Q_MSN["Mission contracts and operating agent: runtime + LLM worker (I2d)"]
+        Q_CH["Chat channel and approval records (I2d)"]
+        Q_BP["NeuroEdge Blueprint: pack, install, static Hub index (I2e)"]
+        Q_RELAY["Optional relay: TLS pass-through, no decryption (Q-72)"]
     end
 
     subgraph H2["Horizon 2: Service Tier v1.1 (I9-I10)"]
@@ -60,9 +69,10 @@ flowchart LR
 
     H1 --> H2
     H1 --> H3
+    Q72 -.->|"Hub moves to the Registry once it charges"| H2
 ```
 
-*How to read the diagram:* Three rectangular boxes represent the three architecture horizons. Arrows from H1 to H2 and H3 show that all safety mechanisms and target equivalence of Horizon 1 are mandatory prerequisites before activating the cloud service tier (H2) or multi-node/Jetson extensions (H3). Key point to remember: adding management services or layered robots never degrades or breaks the on-device safety guarantees packaged in H1.
+*How to read the diagram:* The Q-72 band (dashed, `planned · Q-72`) builds on the part of H1 already present up to I2c and goes before the rest of H1; once the Hub charges money, Blueprint distribution moves to the H2 Gate Registry (§6.4). The remaining three rectangular boxes represent the three architecture horizons. Arrows from H1 to H2 and H3 show that all safety mechanisms and target equivalence of Horizon 1 are mandatory prerequisites before activating the cloud service tier (H2) or multi-node/Jetson extensions (H3). Key point to remember: adding management services or layered robots never degrades or breaks the on-device safety guarantees packaged in H1.
 
 ---
 
@@ -154,7 +164,7 @@ The hardware security architecture in Horizon 1 forms an integrity protection pe
 
 ### 3.1 Fleet OS
 
-Fleet OS is the **only commercial service** of NeuroEdge (Proposal [§6.2](../../../roadmap/neuroedge-proposal.md#62-tầng-quản-trị-đội-thiết-bị-fleet-management-os--5-năng-lực-chính), Roadmap [§6.1](../../../roadmap/neuroedge-roadmap.md#61-i9--lớp-provider-v11-và-fleet-os)), providing centralized management infrastructure for remote device fleets:
+Fleet OS is the **only commercial service** of NeuroEdge *(amended by Q-72: no longer the only revenue line, and it comes after the 8-week demand gate — `neuroedge-prd.md` §8.4)* (Proposal [§6.2](../../../roadmap/neuroedge-proposal.md#62-tầng-quản-trị-đội-thiết-bị-fleet-management-os--5-năng-lực-chính), Roadmap [§6.1](../../../roadmap/neuroedge-roadmap.md#61-i9--lớp-provider-v11-và-fleet-os)), providing centralized management infrastructure for remote device fleets:
 
 ```mermaid
 flowchart TD
@@ -255,6 +265,8 @@ To guarantee transparency and avoid "open-core" ambiguity, the boundary between 
 | **Self-hosting capability** | Fully supported via open interfaces (pluggable backend) | Customers self-host their own infrastructure or use turnkey cloud services |
 | **AI provider connection layer** | Self-hosted abstraction layer: users configure providers, hold keys, and pay inference fees to providers themselves | Not commercialized — NeuroEdge does not resell tokens |
 | **Third-party adapters and HAL ports** | Authors retain full copyright and choose their own license; code resides in authors' own repositories, NeuroEdge only indexes in Registry. Safety responsibility rests with device operators. The control checkpoints are the Compliance Test Suite, permissions sandbox, and build-time capability checks | Not commercialized. Fleet OS displays compliance status of adapters running across the device fleet, but does not sell, endorse, or lock any adapter behind a paywall |
+| **NeuroEdge Blueprint distribution** (`planned · Q-72`, I2e) | `blueprint pack`/`install`, whole-package digest check, no account needed; the Hub index is a static git repository, not a service (§6.4) | The Hub charges fees and shares revenue with sellers only after the 8-week demand gate, at which point it moves to the OCI Gate Registry (§3.2); selling a Blueprint or a device is commercial use under Q-45 |
+| **Remote-access relay** (`planned · Q-72`) | Not needed: local UI, the chat channel talks directly to the chat platform; every safety guarantee runs without a relay | Optional paid relay: TLS pass-through pipe by SNI, no decryption, trace backups encrypted on the home machine (§6.5) |
 | **Gate & trace format licensing** | Apache-2.0 open standard ([`Q-45`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)) via RFC process, committed to transfer to a neutral organization | Inherits open standard, creates no proprietary variants |
 
 **Non-goals:**
@@ -301,10 +313,10 @@ flowchart LR
 
 *How to read the diagram:* the two tool classes take two paths. Acting tools are ordinary `@action`s — they go `dispatch()` → gate like any `mcp` call. Building tools have no physical effect; they only write a draft into the agent directory once `neuroedge lab check` passes. A client with a shell can skip the building tools and write files directly, so Action CI reruns the very same check on the PR — CI is the gate, not the client. No arrow goes from the client to "locked gate": locking only happens through a human reviewer. Only a person answers `ask`, on the Lab Monitor (Q-26).
 
-- **NeuroEdge's three roles:** *check* (`neuroedge lab check` — schema, `gate lint`, two-way tests, every pin traceable to a trace, `motion.*` declares an envelope and a safe state; one function behind the `lab_draft_check` tool and Action CI, [`TSK-N5-06`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host)); *enforce* (gate, envelope, trigger rate caps — in the runtime, HAL and firmware); *hold the lock* (a PR reviewed by a human on a protected branch, [`TSK-N0-05`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host)). No tool locks a draft, edits `digests.lock`, turns on `[lab]` or answers `ask`. Normative spec of the tool surface: [`TSK-N0-07`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host) (`docs/spec/lab_tools.md`, not yet written).
+- **NeuroEdge's three roles:** *check* (`neuroedge lab check` — schema, `gate lint`, two-way tests, every pin traceable to a trace, `motion.*` declares an envelope and a safe state; one function behind the `lab_draft_check` tool and Action CI, [`TSK-N5-06`](../../../roadmap/neuroedge-roadmap.md#434-i2d--nhiệm-vụ-và-agent-vận-hành)); *enforce* (gate, envelope, trigger rate caps — in the runtime, HAL and firmware); *hold the lock* (a PR reviewed by a human on a protected branch, [`TSK-N0-05`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host)). No tool locks a draft, edits `digests.lock`, turns on `[lab]` or answers `ask`. Normative spec of the tool surface: [`TSK-N0-07`](../../../roadmap/neuroedge-roadmap.md#434-i2d--nhiệm-vụ-và-agent-vận-hành) (`docs/spec/lab_tools.md`, not yet written).
 - **`lab/` package and invariant B-1:** NeuroEdge Lab lives in the `python/neuroedge/lab/` package (formerly planned as `brain/`). Per **invariant B-1**, `lab/` touches hardware only through `dispatch()` → `c.do()` → gate; calling HAL methods or importing `hal.linux`/`hal.sim` is prohibited. CI checks the invariant with an AST and import scan (`tests/test_lab_boundary.py`, [`TSK-N1-07`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host)).
-- **Clients with a shell and device-permission separation:** a client that runs commands (Claude Code) can call `gpioset` directly; NeuroEdge's software cannot stop it. The boundary is OS permissions: only the `mcp serve` process holds `gpio`/`i2c` access — the main path is stdio over SSH with a `restrict,command=…` key, or a separate user on the same machine; `mcp serve --http` only when the client can present an mTLS client certificate and a certificate-bound token. On a real board, `mcp serve` loads gates, the board profile and `agent.toml` from a reviewed checkout the client cannot write; drafts never reach a real board before they are locked. `neuroedge lab doctor` warns ([`TSK-N0-08`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host); [`threat_model.md`](../../spec/threat_model.md) §2c).
-- **Controlled Lab Actions:** Defines template `@action` `lab_pulse` ([`TSK-N1-01`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host)) with pulse parameter `duration_ms ≤ 2000`. The `[lab] enabled` configuration flag in `agent.toml` defaults to off ([`TSK-N1-02`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host)). The `neuroedge build --release` command refuses to compile if this flag is enabled ([`TSK-N1-03`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host)). Lab command results always return accompanied by `gate explain` so the MCP client can correct its parameters ([`TSK-N1-04`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host)).
+- **Clients with a shell and device-permission separation:** a client that runs commands (Claude Code) can call `gpioset` directly; NeuroEdge's software cannot stop it. The boundary is OS permissions: only the `mcp serve` process holds `gpio`/`i2c` access — the main path is stdio over SSH with a `restrict,command=…` key, or a separate user on the same machine; `mcp serve --http` only when the client can present an mTLS client certificate and a certificate-bound token. On a real board, `mcp serve` loads gates, the board profile and `agent.toml` from a reviewed checkout the client cannot write; drafts never reach a real board before they are locked. `neuroedge lab doctor` warns ([`TSK-N0-08`](../../../roadmap/neuroedge-roadmap.md#434-i2d--nhiệm-vụ-và-agent-vận-hành); [`threat_model.md`](../../spec/threat_model.md) §2c).
+- **Controlled Lab Actions:** Defines template `@action` `lab_pulse` ([`TSK-N1-01`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host)) with pulse parameter `duration_ms ≤ 2000`. The `[lab] enabled` configuration flag in `agent.toml` defaults to off ([`TSK-N1-02`](../../../roadmap/neuroedge-roadmap.md#434-i2d--nhiệm-vụ-và-agent-vận-hành)). The `neuroedge build --release` command refuses to compile if this flag is enabled ([`TSK-N1-03`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host)). Lab command results always return accompanied by `gate explain` so the MCP client can correct its parameters ([`TSK-N1-04`](../../../roadmap/neuroedge-roadmap.md#434-i2d--nhiệm-vụ-và-agent-vận-hành)).
 - **Physical Safety Envelope Hook:**
   Physical safety envelopes (on-time duration limits and maximum frequency per GPIO pin) are declared in `board.v1` and enforced by a hook placed in `HardwareAbstractionLayer.digital_out`, shared by every actuator (Q-53) ([`TSK-N2-01`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux), [`TSK-N2-02`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)).
   - **Mandatory execution order:** `pin check (require_pin)` → `envelope` → `authorize` → `record`.
@@ -347,7 +359,7 @@ sequenceDiagram
 *How to read the diagram:* Arrows show the four-step verification order before physical current is driven to the microcontroller pin. Step 2 (envelope) and step 3 (token ledger) are two independent safety checkpoints. Key point to remember: the physical safety envelope is checked before token consumption; if the envelope refuses due to exceeding total on-time or frequency, the token is not consumed (TSK-N2-01); sources say nothing further on whether the token remains reusable.
 
 - **Read-only I2C bus (Block N3):** scan via read-byte, no quick-write; read chip ID; if unrecognized, record "unrecognized", do not guess ([`TSK-N3-01`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host)).
-- **Event triggers (Block N6):** Adds value `call_source = "trigger"` ([`TSK-N6-01`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host)). Invariant rule: `trigger ∉ HUMAN_SOURCES`, triggers cannot confirm `on_block: ask` questions ([`Q-26`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`TSK-N6-02`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host)). Debounce and rate-limiting ceiling mechanisms apply ([`TSK-N6-03`](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host)).
+- **Event triggers (Block N6):** Adds value `call_source = "trigger"` ([`TSK-N6-01`](../../../roadmap/neuroedge-roadmap.md#434-i2d--nhiệm-vụ-và-agent-vận-hành)). Invariant rule: `trigger ∉ HUMAN_SOURCES`, triggers cannot confirm `on_block: ask` questions ([`Q-26`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`TSK-N6-02`](../../../roadmap/neuroedge-roadmap.md#434-i2d--nhiệm-vụ-và-agent-vận-hành)). Debounce and rate-limiting ceiling mechanisms apply ([`TSK-N6-03`](../../../roadmap/neuroedge-roadmap.md#434-i2d--nhiệm-vụ-và-agent-vận-hành)).
 - **NeuroEdge Lab on ESP32-S3 (Block N7):** The chip has no client; drafts are built and locked on the host. Reuses the C walker and token ledger to evaluate lab actions on-chip ([`TSK-N7-01`](../../../roadmap/neuroedge-roadmap.md#461-i5a--neuroedge-lab-trên-chip)); the safety envelope is enforced in C firmware ([`TSK-N7-02`](../../../roadmap/neuroedge-roadmap.md#441-i3a--nguyên-thủy-mở-rộng-trên-esp32s3)).
 - **Role of RFC-0007:** RFC-0007 ([`TSK-N0-03`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)) is a placeholder RFC for the `digital.in` primitive, read-only I2C bus, and envelope declaration in `board.v1`. This RFC **preserves 100% of the `schemas/gate.v1.json` structure**.
 
@@ -461,7 +473,7 @@ The device ecosystem at increment I18 (Roadmap [§7.8](../../../roadmap/neuroedg
 - **Adapter and HAL Port Repository:** Operates on the existing Gate Registry OCI infrastructure to share community-contributed adapters and HAL ports (`services/registry/ports.py`, [`TSK-P2-01`](../../../roadmap/neuroedge-roadmap.md#78-i18--hệ-sinh-thái-thiết-bị)).
 - **Gating condition:** Increment I18 is unlocked only when there are **at least 3 Tier 3 ports** independently completed by the community (PRD §14, Roadmap [§7.8](../../../roadmap/neuroedge-roadmap.md#78-i18--hệ-sinh-thái-thiết-bị)).
 - **Compliance monitoring:** The Fleet OS Dashboard displays compliance status and versions of adapters operating across the device fleet (`services/fleet/compliance_view.py`, [`TSK-P2-02`](../../../roadmap/neuroedge-roadmap.md#78-i18--hệ-sinh-thái-thiết-bị)).
-- **Free self-attested certification:** Free, self-attested hardware certification ([`TSK-P2-03`](../../../roadmap/neuroedge-roadmap.md#78-i18--hệ-sinh-thái-thiết-bị)) and self-attested "NeuroEdge-gated" certification for third-party runtimes and MCP servers ([`TSK-P2-06`](../../../roadmap/neuroedge-roadmap.md#78-i18--hệ-sinh-thái-thiết-bị)): third parties run compliance test vectors and publish results themselves. NeuroEdge charges no certification fees and provides no quality endorsements, avoiding legal liabilities for the project. Never build a standalone Marketplace before achieving milestones G1–G4 (Block 5 beyond roadmap). The full ecosystem landscape (parties, shared assets, platforms, value loops) is presented in chapter [`16`](16-ecosystem-landscape.md).
+- **Free self-attested certification:** Free, self-attested hardware certification ([`TSK-P2-03`](../../../roadmap/neuroedge-roadmap.md#78-i18--hệ-sinh-thái-thiết-bị)) and self-attested "NeuroEdge-gated" certification for third-party runtimes and MCP servers ([`TSK-P2-06`](../../../roadmap/neuroedge-roadmap.md#78-i18--hệ-sinh-thái-thiết-bị)): third parties run compliance test vectors and publish results themselves. NeuroEdge charges no certification fees and provides no quality endorsements, avoiding legal liabilities for the project. Do not build a fee-charging Marketplace before passing the 8-week demand gate of [`Q-72`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) (replacing the old G1–G4 condition of Block 5); before the gate, the NeuroEdge Blueprint Hub is only a static index (§6.4, `planned · Q-72`). The full ecosystem landscape (parties, shared assets, platforms, value loops) is presented in chapter [`16`](16-ecosystem-landscape.md).
 
 ---
 
@@ -470,22 +482,166 @@ The device ecosystem at increment I18 (Roadmap [§7.8](../../../roadmap/neuroedg
 Whether the architecture expands from a single microcontroller to multi-node layered robot systems or adds vision and cloud services, the following six points (synthesized from invariants and architectural properties) hold across all horizons:
 
 1. **Single path to a pin:** Every physical action must pass through the closed chain: `dispatch()` → `c.do()` → gate evaluate → single-use token → HAL `authorize()`. There are no shortcuts to actuators ([`Q-24`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)).
-2. **Fail-closed by default:** Inability to evaluate gates — timeout, offline without local fallback, camera loss, missing or wrongly typed facts — results in `BLOCK`; only gates self-declaring `fail: open` permit actions ([`00`](00-overview.md) §2, CHANGELOG §3.3 #2). Loss of node heartbeats returns actuators to their safe state (Q-35).
+2. **Fail-closed by default:** Inability to evaluate gates — timeout, offline without local fallback, camera loss, missing or wrongly typed facts — results in `BLOCK`; only gates self-declaring `fail: open` permit actions ([`00`](00-overview.md) §2, CHANGELOG §3.3 #2). Loss of node heartbeats returns actuators to their safe state (Q-35). *Amended by [`Q-72`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) (`planned`, pending the conditional-safety RFC):* this rule stays as it is for **commands**; a second clause is added — every actuator returns on its own to the `safe_state` declared in `board.v1` (default `off`, so today's behaviour does not change). Details: §6.3.
 3. **Gate is data:** Safety gates are always versioned data, canonically identified by `neuroedge://`, hashed with JCS SHA-256, compiled into deterministic decision trees, and inheritance rules may only tighten policies ([`Q-18`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)).
 4. **Replay recomputes:** Trace files contain sufficient facts to recompute the entire verdict sequence in the Action CI test environment without calling AI models again or touching physical hardware.
-5. **One trace per session:** Each interaction session generates exactly one complete trace file (NFR-OBS-01, FR-ACE-06).
+5. **One trace per session:** Each interaction session generates exactly one complete trace file (NFR-OBS-01, FR-ACE-06). *Amended by [`Q-72`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) (`planned`, pending a `trace.v1` RFC):* for a runtime running 24/7, a session is **a chain of traces**, each segment replayable. Details: §6.7.
 6. **Same decision on every target:** Target equivalence ensures agent code never branches by target; the same scenario of facts yields completely consistent verdicts and reactions across `sim`, `linux`, and `esp32s3` ([`Q-8`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), P-2, proposal §3.2).
 
-Sources for each point: [`00`](00-overview.md) §2, §4; [`CHANGELOG.md`](../../../CHANGELOG.md) §3.3 (ten invariants — a different, more detailed list).
+Sources for each point: [`00`](00-overview.md) §2, §4; [`CHANGELOG.md`](../../../CHANGELOG.md) §3.3 (ten invariants — a different, more detailed list; the Q-72 amendments are recorded there, not copied here).
 
 ---
 
-## 6. Sources
+## 6. The Q-72 band — operating agent and NeuroEdge Blueprint (I2d, I2e)
+
+> **This whole section is `planned · Q-72`: no code yet.** Decision: [`Q-72`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định).
+> Increments, order and dates: roadmap [§0.2](../../../roadmap/neuroedge-roadmap.md#02-bảng-increment-increment-matrix)
+> (I2d — missions and the operating agent; I2e — minimal NeuroEdge Blueprint). Everything that touches `schemas/`, the
+> normative traces or safety semantics is **pending RFC** (`CONTRIBUTING.md` §3); the list of expected RFCs is in [`09`](09-adr.md).
+> Proposal: [`proposal-blueprint-2026-10-11.md`](../../business/proposal-blueprint-2026-10-11.md).
+
+Q-72 positions NeuroEdge in three loops: ① **build** (NeuroEdge Lab over MCP, §4.2), ② **run** (the operating agent), ③ **share and sell** (NeuroEdge Blueprint). This section is the target design of loops ② and ③. It builds on what already exists or is planned up to I2c: the single gate path, the call source assigned by the runtime (RFC-0017), remote actuators and auto-off levels (RFC-0018), triggers that run without a client session (§4.2, block N6), and the community plugin index (I2c).
+
+```mermaid
+flowchart LR
+    subgraph HOME["Home machine (planned, Q-72)"]
+        RT["Trusted runtime 24/7<br/>HAL · gate · mission · scheduler<br/>detectors · chat adapter · egress"]
+        W["Untrusted LLM worker<br/>BYOK key"]
+    end
+    W -->|"local MCP, source set by runtime"| RT
+    W -.->|"declared endpoint only"| LLM["LLM provider"]
+    RT <-->|"reports · approval records"| CH["Chat platform<br/>(Telegram first)"]
+    RT -->|"token-gated commands"| DEV["Devices<br/>(ne_gate reflexes · safe_state)"]
+    RT -.->|"outbound TLS, SNI only"| RELAY["Optional relay"]
+    HUB["Static Hub index<br/>URL + digest"] -.->|"blueprint install"| RT
+```
+
+*How to read the diagram:* two processes on the home machine; only the trusted runtime touches devices, holds the bot token and checks approvals. The LLM worker calls the runtime like any MCP client and reaches the network only toward the declared provider. The relay and the Hub index are optional, dashed, and not on the safety path.
+
+### 6.1 Operating agent: two processes (I2d)
+
+Today no background process runs forever ([`02`](02-container-c4l2.md) §3). Q-72 needs something that runs 24/7 and at the same time holds GPIO rights, the user's LLM key and the chat bot token, and reads text sent by outsiders. Merged into one process, a prompt injection through a chat message would have the same rights as the HAL. So the operating agent is **two processes**, reusing the Q-71 boundary (only one process holds the HAL; the MCP client is the untrusted party):
+
+| Process | Holds | Never |
+|:---|:---|:---|
+| **Trusted runtime** (systemd, 24/7) | HAL and `gpio`/`i2c` rights; gate, token ledger, envelope; **mission contract** execution; scheduling; **deterministic detectors**; `llm_budget`; chat channel adapters, the bot token and approval record checks; egress; segmented traces | calls the LLM; lets the LLM approve |
+| **LLM worker** (its own operating-system user) | the BYOK key (through LiteLLM, local models possible); explains, proposes, drafts reports | touches the HAL; holds the bot token; approves; reaches the network beyond the declared provider endpoint |
+
+- **Mission contracts** (`mission.v1`, pending RFC) group several devices: allowed/forbidden, frequency, time windows, obligations
+  (bounded watchdog), data flows, on failure, expiry, LLM cost cap. The mission compiler lowers each clause to the
+  lowest tier that can do it: devices with `ne_gate` have a **reflex tier** on the MCU; Home Assistant devices stop
+  at the host, and the approval summary says so.
+- **Deterministic detectors run before the LLM.** They extend the N6 triggers (§4.2): they run without a client session,
+  `trigger ∉ HUMAN_SOURCES`, with debounce and a rate cap. Only when a detector fires and `llm_budget` is left does the
+  runtime hand the context to the worker for analysis; reports are batched under the message budget.
+- **Clocks.** Durations, approval expiry, the watchdog and reflexes use the monotonic clock. Wall-clock facts have an
+  `unsynced` state (home machine lost power, no NTP/RTC yet); time-window clauses treat `unsynced` as a missing fact,
+  that is, fail-closed.
+- **Failure branches.** Worker dies or hangs: the runtime keeps running reflexes, detectors and hard-template alerts, then
+  restarts the worker. LLM budget exhausted: reflexes and hard-template alerts keep running. Network lost: the safety
+  part runs locally as it does today.
+- **Debt becomes real risk.** An event loop living for months means `TODOS.md` #25 (an MCP connection lives for one turn
+  only) and #48 (`linux` sensor reads block the loop — detectors read sensors periodically) must be handled before the
+  24/7 runtime runs for real ([`13`](13-evolution-i0-i18.md) §5).
+
+### 6.2 Chat channel and approval records (I2d)
+
+The chat channel (Telegram first, then Slack, Zalo) is an adapter inside the runtime. It goes only through `dispatch()` and does not import `hal`. Messages arriving from chat are commands like any other source: they go through the gate.
+
+Q-72 lets a person **approve over chat** — both `ask` and contract changes, except changes that widen data rights (approved on site only, FR-MSN-14). Today only `local_grammar` and `ui` can confirm (`HUMAN_SOURCES`, Q-26). The target design does not add a source name to that tuple; it uses an **approval record**:
+
+1. The runtime issues a request `{id, nonce, expiry, change digest, approval summary ≤ 5 lines}` to the paired chat. **The
+   summary is generated deterministically by the runtime and the compiler from a structured diff**, not from LLM text.
+2. The reply must target the exact `id` (a button or a code).
+3. The runtime checks: the sender was paired locally; it is not a group; the `nonce` is unused; the request has not expired
+   (monotonic clock); the digest matches the pending change. When all five hold, the approval enters the confirmation
+   path with source `chat:<id>` (the same grammar as RFC-0017's `bridge:<id>`) and the gate re-evaluates; if any one is
+   missing, it is refused and traced.
+4. The LLM and chat groups **never** approve. Approvals do not go through the relay.
+
+Failure branches: an expired request is not approved; a failing chat API leads to a bounded queue and a local alert on the UI. Pairing is local only; revocation, pairing expiry and the cap on approvals per hour come later (`TODOS.md` #62). Risk accepted in Q-72: a hijacked chat account can approve on the owner's behalf.
+
+### 6.3 Conditional safety: symmetric `safe_state` (pending RFC)
+
+Today's core implicitly treats `off` as safe: commands to `off` are not blocked (Q-62), and turn-on commands are time-limited and switch off on their own. For a fish-tank aerator, safe means *on*. The target design generalises the whole core around **`safe_state`**, without adding exceptions:
+
+- Every actuator has a `safe_state` declared in `board.v1`, default `off`. Durations, `max_continuous_ms`, leases,
+  RFC-0018 levels L0–L3 and the Q-62 gate exemption all speak of "**returning to `safe_state`**". The direction **away
+  from** `safe_state` is the one that is gated and limited.
+- `safe_state: on` is realised by wiring that is on by default (a normally closed relay), declared as a hardware
+  interlock; software only commands the move away from that state, with a time limit. On power loss the hardware, not
+  the software, holds the safe state.
+- A `safe_state` other than `off` is declared only in `board.v1` — not in a contract, gate or Blueprint. `TODOS.md` #58
+  (`board.v1` ignores unknown keys) must be fixed first.
+- Existing profiles (`off`; `motion.*` `stop`/`hold`) keep their behaviour; the corpus is rerun to prove it.
+
+### 6.4 NeuroEdge Blueprint and the Hub index (I2e)
+
+A **NeuroEdge Blueprint** is the unit of sharing for loop ③: a kit (BOM with purchase links), firmware, mission contract templates, detectors and traces as evidence. It is different from a **Home Assistant Blueprint** — an automation template shared through the Blueprint Exchange and imported by URL; a NeuroEdge Blueprint may carry an HA blueprint so both install at once. The first Blueprint is the fish tank.
+
+- `blueprint pack` packages; `blueprint install` downloads by **URL (git or HTTPS) + digest**. The digest covers the **whole
+  package** (kit, firmware, contract templates, detectors, evidence traces); on mismatch the install is refused.
+- **The Hub at MVP is a static index repository**, the same kind as the I2c plugin index: it lists URL, digest and evidence. Packages
+  live in the seller's repository. No NeuroEdge server exists before the demand gate.
+- Evidence is marked **"unsigned"**: trace signing comes back when the Hub charges money for sellers (`TODOS.md` #1).
+- When the Hub charges money, distribution moves to the OCI Gate Registry (§3.2). The relationship between `blueprint.v1` and
+  `manifest.v1` is settled in an expected RFC.
+- Contract templates in a Blueprint never declare `safe_state` (§6.3); the installer locks the contract on their own machine.
+
+### 6.5 Optional relay (outside I2d, I2e)
+
+The relay allows opening the management page remotely, pushing messages and backing up traces without opening a port on the home network. It is a **TLS pass-through pipe** (Nabu Casa's SniTun pattern): the home machine opens an outbound connection; the relay picks the destination by SNI and **does not decrypt**; the TLS key lives only on the home machine. Trace backups are encrypted on the home machine, and the relay holds only blobs. Approvals do not go through the relay; a management page opened remotely through the relay **may not** answer `ask` or approve until the relay RFC settles how the person opening the page is authenticated (today the UI treats whoever opens the page as the person at the device — `docs/spec/threat_model.md` §2h). A compromised relay can only block traffic or see metadata; if the relay goes down, remote access is lost and the safety part keeps running. This is a bounded exception to "no server is operated by NeuroEdge" (Q-10).
+
+### 6.6 Leak-preventing data flow (I2d)
+
+The data-flow rule aims to **prevent leaks** (hacking, prompt injection, theft), not to restrict flows the user builds. Every destination the user declares (LLM provider, chat channel, relay, webhook) receives the data the user allows, including images to the LLM. Enforcement:
+
+- the runtime decides what the worker **sees**;
+- the LLM worker's network is blocked at the operating-system level, reaching only the declared provider endpoint;
+- the runtime sends only to declared destinations; undeclared destinations are blocked and traced.
+
+Residual risk: a tricked worker can still send allowed data to an allowed destination. Content rules (for example "images never leave the home") are an option the user turns on in the contract, not a default.
+
+### 6.7 Segmented traces (I2d)
+
+One trace file for a process running for months would grow forever and be lost entirely on a power loss. The traces of the 24/7 runtime are a **chain of segments** (`trace.v1`, pending RFC):
+
+- cut daily or when a size is exceeded; each segment carries the **state at its start** (gate digest, token ledger, envelope
+  counters, leases) and the previous segment's digest, so `replay` of one segment still yields the same verdicts and the
+  chain reveals a missing segment;
+- append-only writes, flushed on a timer (about 10 seconds, configurable) and **immediately** on a blocking verdict or an
+  approval; a power loss loses at most the tail of ordinary events, and `replay` reports a truncated segment;
+- keep **30 days** locally — enough for Blueprint evidence; older segments are compressed then deleted or exported through
+  the relay encrypted. The 30-day size is measured on G1 `sim` before a number is written into the NFRs.
+
+The invariant "one trace per session" (§5 #5) reads as "one session, one chain of traces, each segment replayable".
+
+### 6.8 Simulation first: four tiers G1–G4
+
+Real hardware is bought later. Four simulation tiers (different from the market milestones G1–G4 of proposal §8.7):
+
+| Tier | What runs | What it catches |
+|:---|:---|:---|
+| **G1** | `sim` with a physical model (for example fish-tank temperature and oxygen), fast-forwarded 30 days | contract logic, detectors, budgets, 30-day trace size |
+| **G2** | `linux` on `gpio-sim` | the real `linux` HAL, the 24/7 runtime under systemd |
+| **G3** | ESP32 firmware on Espressif QEMU (main path, Q-21); Wokwi, Velxio pending a re-check against Q-21, Q-69 | reflexes on the MCU, `ne_gate` |
+| **G4** | ESPHome host platform | the Home Assistant-style device path |
+
+Simulation does not catch wiring faults, noise or Wi-Fi problems (a consequence accepted in Q-72).
+
+### 6.9 The 8-week demand gate
+
+Q-72 restores an effective demand gate (reversing Q-56), 8 weeks after the decision: ≥ 3 people outside the team install a NeuroEdge Blueprint on their own and get it running; ≥ 1 person runs it continuously for 2 weeks on simulation G2 or G3; ≥ 1 maker wants to package and sell their own Blueprint. Passing ① ② but failing ③ means NeuroEdge is a personal tool. A Hub that charges money, a paid relay and any fee-charging marketplace come only after this gate ([`16`](16-ecosystem-landscape.md) §7).
+
+---
+
+## 7. Sources
 
 1. **Development roadmap:**
    - [`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) (§2.1 Dependency graph, §3 OSS reuse strategy, §3.8 Preserving target equivalence, §4.4–§4.8 Task table I3–I7, §5 I8 Developer Beta, §4.3.3 I2c Open platform, §6 I9–I10 Service tier v1.1, §7 I13–I18 Post-Beta extensions, Appendix D Wire protocols).
 2. **Product requirements document:**
-   - [`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) (§1.4 Non-goals N4; §9 Non-functional requirements; §15 Decision log: `Q-3`, `Q-6`, `Q-8`, `Q-10`, `Q-11`, `Q-12`, `Q-13`, `Q-14`, `Q-18`, `Q-24`, `Q-26`, `Q-28`, `Q-31`, `Q-32`, `Q-33`, `Q-34`, `Q-35`, `Q-36`, `Q-37`, `Q-45`, `Q-52`, `Q-53`, `Q-54`, `Q-55`; Appendix D.2 Wire protocol).
+   - [`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) (§1.4 Non-goals N4; §9 Non-functional requirements; §15 Decision log: `Q-3`, `Q-6`, `Q-8`, `Q-10`, `Q-11`, `Q-12`, `Q-13`, `Q-14`, `Q-18`, `Q-24`, `Q-26`, `Q-28`, `Q-31`, `Q-32`, `Q-33`, `Q-34`, `Q-35`, `Q-36`, `Q-37`, `Q-45`, `Q-52`, `Q-53`, `Q-54`, `Q-55`, `Q-62`, `Q-71`, `Q-72`; Appendix D.2 Wire protocol).
+   - [`proposal-blueprint-2026-10-11.md`](../../business/proposal-blueprint-2026-10-11.md) (Blueprint positioning, three loops, demand gate — the source of §6).
 3. **Platform architecture proposal:**
    - [`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) (§3.1 5-layer block diagram L0–L4 and Action CI axis; §3.2 Target equivalence and target tier hierarchy; §6 Commercial plane Fleet OS; §6.4 Core ↔ Commercial service boundary matrix).
 4. **Detailed design notes:**
