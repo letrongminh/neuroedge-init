@@ -30,6 +30,7 @@ Gói chưa phát hành phiên bản nào ra ngoài; trước khi công khai ch�
 
 #### Đã thêm
 
+- **Q-73 — mở, có minh bạch.** Người dùng tự chọn cách xác minh (kể cả đọc mã bằng giọng nói) và luồng nhiều bước; NeuroEdge không cấm, chỉ hiện rõ mức rủi ro. Giữ ba bất biến: AI không xác minh thay người, luật chạy đúng như khai, có vết ghi. RFC theo dõi ở `TODOS.md` #63.
 - **Tài liệu sản phẩm và kiến trúc theo Q-72 — đủ trước khi triển khai.** PRD 1.6: định vị NeuroEdge Blueprint, maker là người dùng đầu (U1, U5, U8, U9), yêu cầu FR-MSN, FR-AGT, FR-CH, FR-EGR, FR-BP, FR-TRC-11…13, FR-CLI-13…15, NFR chi phí LLM, tiêu chí A14–A22, cổng nhu cầu B6–B8 (đảo Q-56). Roadmap thêm increment I2d (TSK-I2d-01…19) và I2e (TSK-I2e-01…11). Kiến trúc cập nhật runtime 24/7, LLM worker, duyệt qua chat, `safe_state` đối xứng và lưu trace 30 ngày.
 - **Q-72 — định vị Blueprint: từ một câu nói tới một sản phẩm vật lý có AI.** Định vị ba vòng dựng (MCP), chạy (agent vận hành, trần chi phí, báo chủ động qua chat) và chia sẻ/bán (Blueprint, Hub) với maker là người dùng đầu. Duyệt qua kênh chat ghép đôi (mở rộng Q-26), khôi phục cổng nhu cầu 8 tuần (đảo Q-56), hoãn ký trace trước MVP; `safe_state` khác `off` khai trong `board.v1`.
 - **Q-71 — NeuroEdge Lab qua MCP thay NeuroBrain (TSK-N0-01, TSK-N0-04).** Client MCP (Claude Code, Claude Desktop) soạn bản nháp qua tool lab; NeuroEdge chấm (`neuroedge lab check`), cưỡng chế gate/phong bì lúc chạy, người duyệt qua PR. Phân tách quyền thiết bị và kênh tin cậy theo threat model §2c; gói dự kiến `neuroedge.lab`.
