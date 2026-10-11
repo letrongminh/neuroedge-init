@@ -14,7 +14,7 @@ nhau, chữ tràn hộp, mũi tên trỏ tới hộp không có.
     python3 scripts/gen_architecture_diagrams.py --check   # không ghi; thoát 1 nếu lệch
 
 CI chạy --check (python/tests/test_architecture_diagrams.py). Nhãn trong hình là
-tiếng Anh để một bộ hình dùng chung cho hai cây vi/ và en/ (docs/architecture/README.md).
+tiếng Anh (docs/architecture/README.md).
 """
 
 from __future__ import annotations

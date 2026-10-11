@@ -213,7 +213,7 @@ Chủ trì: <trưởng nhóm>         Người chấm thứ hai: <tên>        S
 
 8. VIỆC SAU CỔNG (README.md §6)
    [ ] PRD §15 (Q-N của cổng)   [ ] TODOS.md #19   [ ] roadmap §0   [ ] CHANGELOG [Chưa phát hành]
-   [ ] docs/archive/ bản tổng hợp ẩn danh   [ ] proposal (chỉ nếu đổi giả định)
+   [ ] docs/reports/ bản tổng hợp ẩn danh   [ ] proposal (chỉ nếu đổi giả định)
 
 Ký: ____________________ (trưởng nhóm)        ____________________ (sponsor)
 ```

@@ -26,8 +26,8 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | Định vị Q-72: ba vòng dựng · chạy · chia sẻ và bán, agent vận hành, NeuroEdge Blueprint, cổng nhu cầu 8 tuần | [`proposal-blueprint-2026-10-11.md`](../business/proposal-blueprint-2026-10-11.md) | đề xuất đã chốt hướng; quyết định ở PRD §15 Q-72; chưa có mã |
 | Kiến trúc và Phụ lục B (đặc tả gate) | [`neuroedge-proposal.md`](../../roadmap/neuroedge-proposal.md) | |
 | Giải mã mã viết tắt (`FR-*`, `Q-N`, `A1`, `CEO-X1`…) | [`thuat-ngu.md`](thuat-ngu.md) | nơi duy nhất |
-| Vì sao Giai đoạn 1 đi "wedge `sim` trước" | [`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`](../archive/giai-doan-1-wedge-truoc-mcu-sau.md) | lịch sử, đóng băng 2026-09-23 — kế hoạch hiện hành ở roadmap |
-| Biên bản các vòng review | [`docs/archive/`](../archive/) | lưu trữ, không quy phạm |
+| Vì sao Giai đoạn 1 đi "wedge `sim` trước" | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` (đã xoá; `git show 7626b62:docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`) | lịch sử, đóng băng 2026-09-23 — kế hoạch hiện hành ở roadmap |
+| Biên bản các vòng review | `docs/archive/` (đã xoá, xem lịch sử git) | lưu trữ, không quy phạm |
 | Dashboard sản phẩm cho CPO (tiến độ, mốc, việc chờ người, quyết định) | [`docs/business/cpo-dashboard.html`](../business/cpo-dashboard.html) | mở bằng trình duyệt; sinh từ roadmap — đừng sửa tay |
 | Cổng nhu cầu 2026-10-25 (phỏng vấn, demo, chấm điểm) | [`docs/business/cong-nhu-cau-2026-10-25/`](../business/cong-nhu-cau-2026-10-25/README.md) | tài liệu kinh doanh; dữ liệu cho cổng nhu cầu 8 tuần (Q-72, đảo Q-56) |
 | Kế hoạch: increment I0–I18 (kèm I2a, I2b, I3a, I4a, I5a), việc gì làm khi nào, ngày dự báo | [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) | roadmap duy nhất (Q-39); bảng increment ở §0.2 |

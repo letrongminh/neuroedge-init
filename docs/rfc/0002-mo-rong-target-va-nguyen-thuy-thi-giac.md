@@ -6,7 +6,7 @@
 | **Lược đồ bị ảnh hưởng** | `board.v1`, `trace.v1` — **chỉ** enum `target`; **không** đụng `gate.v1` |
 | **Yêu cầu PRD liên quan** | FR-TGT-08, FR-HAL-01, FR-HAL-04, FR-HAL-05 |
 | **Người đề xuất** | V1 — Kỹ sư lõi nền tảng |
-| **Ngày mở** | 2026-09-22 · thu hẹp phạm vi 2026-09-23 sau review (biên bản: [`docs/archive/rfc-0002-review-record.md`](../archive/rfc-0002-review-record.md)) |
+| **Ngày mở** | 2026-09-22 · thu hẹp phạm vi 2026-09-23 sau review (biên bản: `docs/archive/rfc-0002-review-record.md` (đã xoá; `git show 7626b62:docs/archive/rfc-0002-review-record.md`)) |
 | **Trạng thái** | ✅ Đã chấp thuận (2026-10-04) — kỹ thuật trưởng ký theo Q-67 (quyết định 4); hiện thực trong I2c (§10) |
 | **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc.** RFC không làm gate lỏng hơn, nhưng chạm ba bất biến kiểm thử đang bảo vệ tương đương target (§5), và tiêu chí ra Khối V1a số 1 đòi chữ ký kỹ thuật trưởng (`neuroedge-design-phase2.md`) |
 | **Kiểm chứng** | *(chưa có — thuộc pull request thứ hai, nay ở increment I2c (Q-67; trước đó I11 sau Developer Beta theo Q-40), xem §8 và §10)* |
@@ -389,4 +389,4 @@ từ lúc viết:
 
 ## Biên bản review
 
-Biên bản review 2026-09-23 (Review record, Decision Audit Trail, GSTACK REVIEW REPORT) đã chuyển sang [`docs/archive/rfc-0002-review-record.md`](../archive/rfc-0002-review-record.md).
+Biên bản review 2026-09-23 (Review record, Decision Audit Trail, GSTACK REVIEW REPORT) đã chuyển sang `docs/archive/rfc-0002-review-record.md` (đã xoá; `git show 7626b62:docs/archive/rfc-0002-review-record.md`).
