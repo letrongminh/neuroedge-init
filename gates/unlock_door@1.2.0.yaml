@@ -1,4 +1,4 @@
-# Level 2 of 3 — the villa-concierge door gate (Proposal §4.5).
+# Level 2 of 3 — the villa-concierge door gate (docs/spec/core_contracts.md §1.5).
 #
 # Inherits `guest_authenticated` and `risk_level` from the hospitality baseline
 # (principle 1), adds the property-specific `room_matches` check (principle 3),

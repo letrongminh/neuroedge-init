@@ -127,15 +127,15 @@ Mô tả việc cần làm sau mỗi đợt phỏng vấn; bộ tài liệu này
 | `neuroedge-prd.md` §15 | Chỉ khi kết quả đổi một quyết định: dòng `Q-N` kế tiếp chưa dùng — số cuộc theo phân khúc, điểm C1–C9, phân khúc đầu tiên, và mục `CEO-*` nào thành quyết định |
 | `TODOS.md` #19 | Từng mã (`CEO-X2`, `X4`, `X5`, `T1`, `T2`, `T3`, `T4`) gạch và dẫn tới quyết định hoặc lý do đóng; mục nào còn mở phải có **mốc kích hoạt mới** (luật của `TODOS.md`) |
 | `CHANGELOG.md` `[Chưa phát hành]` | Một mục ngắn (CLAUDE.md "Khi xong một task", `CONTRIBUTING.md` §8) |
-| `docs/archive/` | Bản tổng hợp **ẩn danh** (vai trò + phân khúc, không tên người, không tên tổ chức nếu chưa được đồng ý). Bản ghi thô **không vào kho** (PII) |
-| `neuroedge-proposal.md` §1.8, §8.7, §10, Phụ lục G | Chỉ sửa nếu quyết định cổng đổi một giả định; mỗi con số thị trường mới phải dẫn nguồn là cuộc phỏng vấn nào (mã ẩn danh) |
+| `docs/reports/` | Bản tổng hợp **ẩn danh** (vai trò + phân khúc, không tên người, không tên tổ chức nếu chưa được đồng ý). Bản ghi thô **không vào kho** (PII) |
+| PRD Q-72, §8.7, §10, Phụ lục G | Chỉ sửa nếu quyết định cổng đổi một giả định; mỗi con số thị trường mới phải dẫn nguồn là cuộc phỏng vấn nào (mã ẩn danh) |
 
 Nếu kết quả là **stop** cho I3–I7, đó là đổi phạm vi: theo `CONTRIBUTING.md` xem việc nào cần
 RFC; đổi hướng sản phẩm không đụng `schemas/` thì không cần RFC, nhưng phải có dòng PRD §15.
 
 ## 7. Điều bộ tài liệu này không làm
 
-- Không đưa ra con số thị trường. Mọi con số trong proposal (§1.8 TCO, §6.3 dự phóng, Phụ lục G)
+- Không đưa ra con số thị trường. Mọi con số trong tài liệu sản phẩm (dự phóng doanh thu, giả định ở PRD §13)
   vẫn là giả định cho tới khi một cuộc phỏng vấn thay nó.
 - Không hứa tính năng chưa có. `demo.md` liệt kê từng thứ **không** được nói là đã có.
 - Không thay cổng nhu cầu của thiết kế GĐ1 bằng thứ khác; C1 giữ nguyên ngưỡng của nó, chỉ thêm

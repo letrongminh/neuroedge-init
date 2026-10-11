@@ -207,11 +207,11 @@ một phép kiểm tra an toàn. Gate độc lập (không `extends`, không gat
 - [x] Hiện thực cưỡng chế 5 nguyên tắc tại `python/neuroedge/engine/gate_resolver.py`
 - [x] Thêm fixture và test
 - [x] Cập nhật `neuroedge-roadmap.md` (TSK-S1-02, TSK-S1-03, Tiêu chí ra 1 và 2)
-- [x] Đồng bộ Phụ lục B.1, B.3 và B.4 của `neuroedge-proposal.md` — *xong 2026-09-23, proposal v5.5*
+- [x] Đồng bộ Phụ lục B.1, B.3 và B.4 của `docs/spec/core_contracts.md` — *xong 2026-09-23, proposal v5.5*
 
 ## 9. Việc còn treo
 
-Phụ lục B.1 của `neuroedge-proposal.md` đánh dấu `evaluate`, `allow_when`,
+Phụ lục B.1 của `docs/spec/core_contracts.md` đánh dấu `evaluate`, `allow_when`,
 `on_block`, `budget` là **"Bắt buộc"** không điều kiện, và Phụ lục B.4 gọi
 `closed` là "Mặc định" mà không nói rõ trường là tùy chọn. Sau RFC này, hai mục
 đó cần diễn đạt lại cho khớp:

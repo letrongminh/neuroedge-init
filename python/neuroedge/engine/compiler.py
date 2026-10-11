@@ -7,7 +7,7 @@ matches the two before anything runs on hardware, and collects **every**
 problem so one run reports them all, each with where / why / how:
 
 1. the manifest is well formed and supports the target;
-2. each `[requires]` entry is met by the board (proposal Appendix A.1);
+2. each `[requires]` entry is met by the board (docs/spec/core_contracts.md Appendix A.1);
 3. each `@action` asks only for what `[requires]` declares, and names a gate
    that `[gates]` declares;
 4. every gate resolves (lint semantics) and compiles to a decision tree, and

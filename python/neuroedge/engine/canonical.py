@@ -1,7 +1,7 @@
 """
 Canonicalisation of resolved gates for hashing and signing.
 
-Proposal §4.5 sets up a deliberate two-layer split:
+docs/spec/core_contracts.md §1.5 sets up a deliberate two-layer split:
 
   * authors write YAML, which is pleasant to review in a pull request but has
     many byte representations for the same meaning (indentation, key order,

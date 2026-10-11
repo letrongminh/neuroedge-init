@@ -140,7 +140,7 @@ pulse 30000`, TTS nói "Door unlocked. Welcome home.", khách nói "cảm ơn" k
 giây — xung vẫn chạy đủ 30 s và cửa vẫn mở cho khách vào.
 
 Lý do: FR-PER-02 chỉ thu hồi lệnh **chưa thực thi**; lời nói thu hồi được, hành vi vật lý đã xảy ra thì
-không (proposal §4.6). `PendingCommand.cancel()` của `LinuxHAL` cắt được một xung đang chạy, nhưng khả
+không (`docs/spec/core_contracts.md` §1.6). `PendingCommand.cancel()` của `LinuxHAL` cắt được một xung đang chạy, nhưng khả
 năng đó dành cho tắt máy (SIGTERM), không cho cắt lời. Không có cờ theo từng hành động kiểu "vẫn cắt khi đã
 chạy" (Q-57): `motion.*` luôn dừng ngay khi bị cắt lời (RFC-0011 §3d), xung `digital.out` giữ luật này.
 

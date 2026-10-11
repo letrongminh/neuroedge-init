@@ -22,7 +22,7 @@ lõi không bao giờ bị tách thành gói trả thêm (PRD P-3).
 
 **Chuẩn mở** và **corpus tuân thủ** giữ Apache-2.0 để bên thứ ba hiện thực chuẩn và tự chứng minh bằng bộ kiểm
 tuân thủ (tiêu chí A9, A13) mà không dùng tệp PolyForm Noncommercial, và để chuyển quyền quản trị đặc tả cho một tổ
-chức trung lập khi đạt G1 (proposal §1.5).
+chức trung lập khi đạt G1 (`docs/architecture/vi/16-ecosystem-landscape.md` §6).
 
 **Plugin và adapter của bên thứ ba** (Extension SDK, Q-67) nằm ở kho của tác giả, theo giấy phép do tác giả chọn;
 NeuroEdge không đòi bản quyền trên chúng. Plugin chạy cùng runtime NeuroEdge nên việc *dùng* chung với runtime vẫn

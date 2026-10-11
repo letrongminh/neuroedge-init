@@ -59,7 +59,7 @@ of the file itself.
    - Verified:  2026-09-21
    - Scope:     Visual web components only (<wokwi-led>, <wokwi-pushbutton>…);
                 they simulate nothing, and there is no door-lock element
-                (proposal Appendix H.1).
+                (roadmap §3).
    - Lands in:  nothing today. `neuroedge run --ui` (TSK-S2-09,
                 python/neuroedge/sim/ui.py) shipped without them.
    - Status:    APPROVED — not used

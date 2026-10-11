@@ -90,7 +90,7 @@ def validate_trace(trace: dict[str, Any], label: str = "<memory>") -> None:
         why=f"{first.message}{extra}",
         how=(
             "correct the field against schemas/trace.v1.json "
-            "(event reference: Proposal Appendix C.1)"
+            "(event reference: docs/spec/core_contracts.md Appendix C.1)"
         ),
     )
 

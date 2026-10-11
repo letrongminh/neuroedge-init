@@ -3,7 +3,7 @@
 > **Mã task:** TSK-I2b-01. Quy trình chung, quy tắc an toàn và danh sách việc chưa kiểm:
 > [`kit-phan-cung.md`](kit-phan-cung.md). Trang này chỉ nói riêng về kit.
 
-Giám sát môi trường công nghiệp theo proposal §1.6 mục 3: cảm biến nhiệt cấp một dải nhiệt
+Giám sát môi trường công nghiệp theo PRD Q-72 mục 3: cảm biến nhiệt cấp một dải nhiệt
 (`low · normal · high · critical`), và hai tải vật lý đi qua gate — **tải xả** (quạt xả, hoặc cuộn van xả
 điện từ: cùng chân `gate_relay`, cùng gate `vent_*`) và **còi báo động** (chân `porch_light`, gate
 `alarm_*`). Tên mẫu `factory-monitor` giữ nguyên; lý do và phạm vi chỉnh ở

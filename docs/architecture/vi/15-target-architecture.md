@@ -3,10 +3,8 @@
 > **Phạm vi:** kiến trúc mục tiêu (to-be architecture) của NeuroEdge qua ba chân trời phát triển. **Nguồn sự thật:**
 > [`neuroedge-roadmap.md`](../../../roadmap/neuroedge-roadmap.md) §2.1, §3, §4.3–§4.8, §5, §6, §7, Phụ lục D;
 > [`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §15, Phụ lục D.2;
-> [`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) §3.1, §6;
-> [`neuroedge-design-lab-mcp.md`](../../../roadmap/neuroedge-design-lab-mcp.md);
-> [`neuroedge-design-phase2.md`](../../../roadmap/neuroedge-design-phase2.md);
-> [`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../../roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md) §2, §4, Phụ lục A;
+> `docs/architecture/vi/00-overview.md` §5.1;
+> [`lab_mcp.md`](../../spec/lab_mcp.md);
 > [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) §3;
 > dải Q-72: [`proposal-blueprint-2026-10-11.md`](../../business/proposal-blueprint-2026-10-11.md) và Q-72 ở PRD §15.
 > **Quy ước trạng thái:** `done` / `partial` / `planned`.
@@ -23,8 +21,8 @@ Lộ trình tiến hoá kiến trúc của NeuroEdge được phân chia thành 
 |:---|:---|:---|:---|
 | **Dải Q-72** — chạy và chia sẻ (`planned · Q-72`) | I2d, I2e | Định vị Blueprint ([`Q-72`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)) đặt **trước** phần còn lại của H1: hợp đồng nhiệm vụ, agent vận hành chạy 24/7 trên máy nhà (runtime tin cậy + LLM worker không tin cậy), kênh chat có bản ghi duyệt, luồng dữ liệu chống rò rỉ, vết ghi theo đoạn (I2d); rồi NeuroEdge Blueprint tối thiểu — `blueprint pack`/`install`, digest toàn gói, index Hub tĩnh (I2e). Relay tuỳ chọn nằm ngoài hai increment này. Giả lập trước (G1–G4), phần cứng thật mua sau. Thoại, Studio và `jetson` tạm dừng; phạm vi v1.0 không cắt mà xét lại ở cổng nhu cầu 8 tuần (Q-52 đổi thứ tự bởi Q-72). Cần để vòng ② chạy và vòng ③ chia sẻ, bán có một kiến trúc an toàn trước khi có mã. | §6 dưới đây; [`proposal-blueprint-2026-10-11.md`](../../business/proposal-blueprint-2026-10-11.md); roadmap [§0.2](../../../roadmap/neuroedge-roadmap.md#02-bảng-increment-increment-matrix) |
 | **Chân trời 1 (H1)** — v1.0 = MVP trên thiết bị | I2a–I7 | Hoàn thiện firmware trên chip ESP32-S3: đưa HAL 5 nguyên thủy lên chip thật, driver phần cứng (codec I2S, LCD ST7789, GPIO), đường thoại thời gian thực (AEC, VAD, Opus streaming), máy trạng thái hội thoại C99, cơ chế cắt lời thu hồi lệnh actuator (`actuator_abort.c`), client streaming WebSocket lên cloud, fallback nhận diện lệnh cố định offline khi mất mạng ([`Q-14`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)), bảo mật thiết bị (Secure Boot, mã hoá flash, ngắt micro vật lý, anti-rollback eFuse), giao diện LVGL nối driver hiển thị. Cùng chân trời này là bốn gói nguyên thủy mở rộng bắt buộc trên cả ba target bậc 1 — cảm biến, PWM, thị giác, chuyển động ([`Q-53`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), I2a và I3a) — **nền tảng mở** ([`Q-67`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), I2c: lõi dùng độc lập, Extension SDK, proxy, cơ cấu chấp hành từ xa, index cộng đồng, danh sách target mở theo bậc; xem [`16`](16-ecosystem-landscape.md) §3, §8) — và **NeuroEdge Lab qua MCP** ([`Q-55`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`Q-71`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), I4a trên host, I5a trên chip); một lần ra mắt, trượt thì dời ngày chứ không cắt phạm vi ([`Q-52`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)). Tiền đề của demo "nói chuyện với con chip $5" (roadmap §4.6): thoại trên Box-3, gate trên chip. | Roadmap [§4.3.1](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux), [§4.3.3](../../../roadmap/neuroedge-roadmap.md#433-i2c--nền-tảng-mở), [§4.4–§4.8](../../../roadmap/neuroedge-roadmap.md#44-i3--gate-trên-box-3-thật), PRD [Phụ lục D.2](../../../roadmap/neuroedge-prd.md#d2-giao-thức-truyền-dẫn--định-dạng-vết-ghi-wire-protocol), [`04`](04-component-device-c4l3.md) |
-| **Chân trời 2 (H2)** — Tầng dịch vụ v1.1 | I9–I10 | Xuất hiện hai container mới phía máy chủ: **Fleet OS** (cấp phát danh tính, sổ kiểm kê, giám sát sức khỏe, đồng bộ cấu hình và gate từ xa, điều phối chiến dịch canary rollout (phát hành theo đợt nhỏ dần lên toàn đội) qua Eclipse Hawkbit, kho thu thập vết ghi sự cố tập trung, thu hồi chứng chỉ) và **Gate Registry** (kho OCI (chuẩn đóng gói artifact của Open Container Initiative) công khai qua CNCF ORAS/Harbor, định danh ổn định, hệ đo lường qua OpenMeter, sandbox phân quyền, manifest (tệp mô tả gói) `schemas/manifest.v1.json`, gate có ký và kiểm chữ ký trên chip, ghim `extends` bằng digest). Lớp trừu tượng provider tự vận hành hoàn thiện (định tuyến đa nhà cung cấp, failover, quota). Cần thiết để quản trị đội thiết bị quy mô lớn mà không làm mất tính tự chủ an toàn của từng thiết bị. | Roadmap [§6](../../../roadmap/neuroedge-roadmap.md#6-tầng-dịch-vụ-v11-i9i10), Proposal [§6](../../../roadmap/neuroedge-proposal.md#6-mặt-phẳng-thương-mại-fleet-os), PRD [`Q-6`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`Q-28`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`02`](02-container-c4l2.md) §5 |
-| **Chân trời 3 (H3)** — Mở rộng sau Beta | I13, I14, I16–I18 | Bộ port cộng đồng (I13) dựa trên 3 [bậc target](../../user/thuat-ngu.md); việc mở danh sách target (trước là I11) đã gộp vào I2c ở H1 ([`Q-67`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)); **Robot phân tầng** (I14) phối hợp não Pi 5 và nhiều node MCU (ESP32-S3, RP2350) qua [black channel](../../user/thuat-ngu.md) Zenoh-pico, mỗi node tự lượng giá gate, [token thuê có hạn](../../user/thuat-ngu.md) (lease) cho `motion.*`, trạng thái an toàn khi mất liên lạc, cầu ROS 2/Nav2; **Thị giác trên `jetson` và đa phương thức** (I16, I17) mở rộng nhận thức L2 sang GPU Jetson (thị giác cơ bản trên `sim`, `linux`, `esp32s3` đã vào v1.0 — Q-53, Q-54); **Hệ sinh thái** (I18) chia sẻ adapter và port HAL trên Registry. Cần thiết để NeuroEdge mở rộng ra các hệ thống chuyển động phức tạp, tay máy và đa giác quan. NeuroEdge Lab (I4a, I5a; trước là NeuroBrain), `vision.in` (I2a, I3a) và việc mở danh sách target (I2c) đã chuyển vào H1; §4.2 và §4.4 dưới đây giữ nguyên thiết kế của chúng. | Roadmap [§7](../../../roadmap/neuroedge-roadmap.md#7-hướng-mở-rộng-sau-beta-i13-i14-i16i18), [`neuroedge-design-lab-mcp.md`](../../../roadmap/neuroedge-design-lab-mcp.md), [`neuroedge-design-phase2.md`](../../../roadmap/neuroedge-design-phase2.md), [`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../../roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md), [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) |
+| **Chân trời 2 (H2)** — Tầng dịch vụ v1.1 | I9–I10 | Xuất hiện hai container mới phía máy chủ: **Fleet OS** (cấp phát danh tính, sổ kiểm kê, giám sát sức khỏe, đồng bộ cấu hình và gate từ xa, điều phối chiến dịch canary rollout (phát hành theo đợt nhỏ dần lên toàn đội) qua Eclipse Hawkbit, kho thu thập vết ghi sự cố tập trung, thu hồi chứng chỉ) và **Gate Registry** (kho OCI (chuẩn đóng gói artifact của Open Container Initiative) công khai qua CNCF ORAS/Harbor, định danh ổn định, hệ đo lường qua OpenMeter, sandbox phân quyền, manifest (tệp mô tả gói) `schemas/manifest.v1.json`, gate có ký và kiểm chữ ký trên chip, ghim `extends` bằng digest). Lớp trừu tượng provider tự vận hành hoàn thiện (định tuyến đa nhà cung cấp, failover, quota). Cần thiết để quản trị đội thiết bị quy mô lớn mà không làm mất tính tự chủ an toàn của từng thiết bị. | Roadmap [§6](../../../roadmap/neuroedge-roadmap.md#6-tầng-dịch-vụ-v11-i9i10), PRD [`Q-6`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`Q-28`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`02`](02-container-c4l2.md) §5 |
+| **Chân trời 3 (H3)** — Mở rộng sau Beta | I13, I14, I16–I18 | Bộ port cộng đồng (I13) dựa trên 3 [bậc target](../../user/thuat-ngu.md); việc mở danh sách target (trước là I11) đã gộp vào I2c ở H1 ([`Q-67`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)); **Robot phân tầng** (I14) phối hợp não Pi 5 và nhiều node MCU (ESP32-S3, RP2350) qua [black channel](../../user/thuat-ngu.md) Zenoh-pico, mỗi node tự lượng giá gate, [token thuê có hạn](../../user/thuat-ngu.md) (lease) cho `motion.*`, trạng thái an toàn khi mất liên lạc, cầu ROS 2/Nav2; **Thị giác trên `jetson` và đa phương thức** (I16, I17) mở rộng nhận thức L2 sang GPU Jetson (thị giác cơ bản trên `sim`, `linux`, `esp32s3` đã vào v1.0 — Q-53, Q-54); **Hệ sinh thái** (I18) chia sẻ adapter và port HAL trên Registry. Cần thiết để NeuroEdge mở rộng ra các hệ thống chuyển động phức tạp, tay máy và đa giác quan. NeuroEdge Lab (I4a, I5a; trước là NeuroBrain), `vision.in` (I2a, I3a) và việc mở danh sách target (I2c) đã chuyển vào H1; §4.2 và §4.4 dưới đây giữ nguyên thiết kế của chúng. | Roadmap [§7](../../../roadmap/neuroedge-roadmap.md#7-hướng-mở-rộng-sau-beta-i13-i14-i16i18), `docs/spec/lab_mcp.md`, §4.4, §4.3, [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) |
 
 ![E-10 · Kiến trúc mục tiêu theo chân trời](../assets/svg/E-10-target-horizons.svg)
 *Hình E-10 — Năm dải: hiện trạng trên main, dải Q-72 (I2d, I2e) và ba chân trời; khối nét đứt là planned. Sinh bởi scripts/gen_architecture_diagrams.py.*
@@ -164,7 +162,7 @@ Kiến trúc bảo mật phần cứng tại Chân trời 1 tạo thành vành �
 
 ### 3.1 Fleet OS
 
-Fleet OS là **dịch vụ thương mại duy nhất** của NeuroEdge *(sửa bởi Q-72: không còn là dòng thu duy nhất và đi sau cổng nhu cầu 8 tuần — `neuroedge-prd.md` §8.4)* (Proposal [§6.2](../../../roadmap/neuroedge-proposal.md#62-tầng-quản-trị-đội-thiết-bị-fleet-management-os--5-năng-lực-chính), Roadmap [§6.1](../../../roadmap/neuroedge-roadmap.md#61-i9--lớp-provider-v11-và-fleet-os)), cung cấp hạ tầng quản trị tập trung cho các đội thiết bị từ xa:
+Fleet OS là **dịch vụ thương mại duy nhất** của NeuroEdge *(sửa bởi Q-72: không còn là dòng thu duy nhất và đi sau cổng nhu cầu 8 tuần — `neuroedge-prd.md` §8.4)* (Roadmap [§6.1](../../../roadmap/neuroedge-roadmap.md#61-i9--lớp-provider-v11-và-fleet-os)), cung cấp hạ tầng quản trị tập trung cho các đội thiết bị từ xa:
 
 ```mermaid
 flowchart TD
@@ -238,7 +236,7 @@ flowchart LR
 
 ### 3.3 Lớp provider tự vận hành
 
-Lớp trừu tượng nhà cung cấp (FR-GW) là một **thành phần tự vận hành (self-host) thuộc lõi**, không phải là một dịch vụ do NeuroEdge đứng ra kinh doanh hay thu phí (Proposal [§6.1](../../../roadmap/neuroedge-proposal.md#61-lớp-trừu-tượng-nhà-cung-cấp-provider-abstraction-layer--6-năng-lực-tự-vận-hành), Roadmap [§6.1](../../../roadmap/neuroedge-roadmap.md#61-i9--lớp-provider-v11-và-fleet-os)).
+Lớp trừu tượng nhà cung cấp (FR-GW) là một **thành phần tự vận hành (self-host) thuộc lõi**, không phải là một dịch vụ do NeuroEdge đứng ra kinh doanh hay thu phí (Roadmap [§6.1](../../../roadmap/neuroedge-roadmap.md#61-i9--lớp-provider-v11-và-fleet-os)).
 
 Theo quyết định [`Q-28`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), phạm vi được phân định rành mạch giữa hai mốc phát hành:
 - **v1.0 (Khối 1a, TSK-S2-11):** Giao ở mức tối thiểu cho nhu cầu của thiết bị đơn lẻ:
@@ -253,7 +251,7 @@ Theo quyết định [`Q-28`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-
 
 ### 3.4 Ranh giới lõi ↔ dịch vụ thương mại
 
-Để bảo đảm tính minh bạch và tránh sự mập mờ "open-core", ranh giới giữa Lõi source-available và Dịch vụ thương mại Fleet OS được ấn định bất biến theo Proposal [§6.4](../../../roadmap/neuroedge-proposal.md#64-phân-định-ranh-giới-giữa-lõi-và-dịch-vụ-thương-mại):
+Để bảo đảm tính minh bạch và tránh sự mập mờ "open-core", ranh giới giữa Lõi source-available và Dịch vụ thương mại Fleet OS được ấn định bất biến theo :
 
 | Tiêu chí | Lõi source-available ([`Q-45`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)) | Dịch vụ thương mại Fleet OS (Cloud) |
 |:---|:---|:---|
@@ -270,7 +268,7 @@ Theo quyết định [`Q-28`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-
 | **Bản quyền định dạng gate & trace** | Chuẩn mở Apache-2.0 ([`Q-45`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)) theo quy trình RFC, cam kết chuyển giao trung lập | Kế thừa chuẩn mở, không tạo biến thể đóng |
 
 **Nguyên tắc không mục tiêu (Non-goals):**
-1. **Không yêu cầu tài khoản để an toàn:** Toàn bộ chức năng an toàn — lượng giá gate, cấp token một lần, và cưỡng chế fail-closed tại HAL — vận hành 100% độc lập trên thiết bị mà không cần tạo tài khoản hay kết nối tới máy chủ của NeuroEdge (proposal §6.4; [`P-3`](../../../roadmap/neuroedge-prd.md#15-năm-nguyên-tắc-thiết-kế-bất-biến): tính năng an toàn không tách thành gói trả thêm).
+1. **Không yêu cầu tài khoản để an toàn:** Toàn bộ chức năng an toàn — lượng giá gate, cấp token một lần, và cưỡng chế fail-closed tại HAL — vận hành 100% độc lập trên thiết bị mà không cần tạo tài khoản hay kết nối tới máy chủ của NeuroEdge (§3.4; [`P-3`](../../../roadmap/neuroedge-prd.md#15-năm-nguyên-tắc-thiết-kế-bất-biến): tính năng an toàn không tách thành gói trả thêm).
 2. **Không bán lại token suy luận:** NeuroEdge không đóng vai trò làm đại lý bán lại token AI (PRD §1.4 N4); người dùng trực tiếp thanh toán cho nhà cung cấp mô hình theo mức sử dụng thực tế.
 
 ---
@@ -281,7 +279,7 @@ Theo quyết định [`Q-28`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-
 
 ### 4.1 Bậc target và danh sách target mở (I2c, I13)
 
-Để mở rộng danh mục phần cứng mà không làm suy giảm chất lượng cam kết, NeuroEdge phân tầng cam kết target thành 3 **bậc target** (target tiers — mức độ cam kết chất lượng, tần suất kiểm thử và hỗ trợ kỹ thuật của đội ngũ đối với từng môi trường, [`Q-13`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), Proposal [§3.2](../../../roadmap/neuroedge-proposal.md#phân-tầng-cam-kết-theo-bậc-target), FR-TGT-08, [RFC-0002](../../rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md)):
+Để mở rộng danh mục phần cứng mà không làm suy giảm chất lượng cam kết, NeuroEdge phân tầng cam kết target thành 3 **bậc target** (target tiers — mức độ cam kết chất lượng, tần suất kiểm thử và hỗ trợ kỹ thuật của đội ngũ đối với từng môi trường, [`Q-13`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), FR-TGT-08, [RFC-0002](../../rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md)):
 
 | Bậc | Target áp dụng | Trách nhiệm bảo trì | Cam kết kiểm chứng |
 |:---:|:---|:---|:---|
@@ -295,7 +293,7 @@ Tại increment I13 ([`TSK-P1-*`](../../../roadmap/neuroedge-roadmap.md#73-i13--
 
 ### 4.2 NeuroEdge Lab qua MCP (I4a, I5a)
 
-NeuroEdge Lab ([`Q-71`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), thay NeuroBrain của [`Q-31`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định); Roadmap [§4.5.1](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host); [`neuroedge-design-lab-mcp.md`](../../../roadmap/neuroedge-design-lab-mcp.md)) cung cấp bring-up phần cứng có hợp đồng bằng **client MCP người dùng đang có** — Claude Code, Claude Desktop, Cursor. NeuroEdge **không** chạy vòng LLM riêng để dựng hợp đồng: client viết, NeuroEdge chấm và cưỡng chế, người khoá. Toàn bộ mục này `planned`, trừ phong bì (N2) đã `done` ở I2a.
+NeuroEdge Lab ([`Q-71`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), thay NeuroBrain của [`Q-31`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định); Roadmap [§4.5.1](../../../roadmap/neuroedge-roadmap.md#451-i4a--neuroedge-lab-trên-host); `docs/spec/lab_mcp.md`) cung cấp bring-up phần cứng có hợp đồng bằng **client MCP người dùng đang có** — Claude Code, Claude Desktop, Cursor. NeuroEdge **không** chạy vòng LLM riêng để dựng hợp đồng: client viết, NeuroEdge chấm và cưỡng chế, người khoá. Toàn bộ mục này `planned`, trừ phong bì (N2) đã `done` ở I2a.
 
 ```mermaid
 flowchart LR
@@ -365,7 +363,7 @@ sequenceDiagram
 
 ### 4.3 Robot phân tầng (I14)
 
-Đối với các hệ thống robot phức tạp như robot FOFOCA (Roadmap [§7.4](../../../roadmap/neuroedge-roadmap.md#74-i14--robot-phân-tầng), [`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../../roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md), [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../rfc/draft-rfc-node-giao-thuc-dieu-phoi.md)), kiến trúc phân chia rành mạch giữa **Não điều phối** và **Các node điều khiển cơ cấu**:
+Đối với các hệ thống robot phức tạp như robot FOFOCA (Roadmap [§7.4](../../../roadmap/neuroedge-roadmap.md#74-i14--robot-phân-tầng), §4.3, [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../rfc/draft-rfc-node-giao-thuc-dieu-phoi.md)), kiến trúc phân chia rành mạch giữa **Não điều phối** và **Các node điều khiển cơ cấu**:
 
 ```mermaid
 flowchart TB
@@ -443,7 +441,7 @@ sequenceDiagram
 
 ### 4.4 Thị giác (I2a, I3a; `jetson` I16, đa phương thức I17)
 
-Thị giác mở rộng khả năng nhận thức của NeuroEdge từ âm thanh sang hình ảnh; `vision.in` trên `sim`, `linux` và `esp32s3` thuộc v1.0 (Roadmap [§4.3.1](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux), [§4.4.1](../../../roadmap/neuroedge-roadmap.md#441-i3a--nguyên-thủy-mở-rộng-trên-esp32s3), [§7.6–§7.7](../../../roadmap/neuroedge-roadmap.md#76-i16--thị-giác-trên-jetson), [`neuroedge-design-phase2.md`](../../../roadmap/neuroedge-design-phase2.md) §6–§8):
+Thị giác mở rộng khả năng nhận thức của NeuroEdge từ âm thanh sang hình ảnh; `vision.in` trên `sim`, `linux` và `esp32s3` thuộc v1.0 (Roadmap [§4.3.1](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux), [§4.4.1](../../../roadmap/neuroedge-roadmap.md#441-i3a--nguyên-thủy-mở-rộng-trên-esp32s3), [§7.6–§7.7](../../../roadmap/neuroedge-roadmap.md#76-i16--thị-giác-trên-jetson), §4.4–§8):
 
 ```mermaid
 flowchart LR
@@ -458,17 +456,17 @@ flowchart LR
 
 *Cách đọc sơ đồ:* Mũi tên nét liền biểu diễn đường ống xử lý dữ liệu: cảm biến camera thu nhận khung hình, mô hình thị giác tính toán, và bộ rút gọn SystemOne chuyển đổi tensor thành dữ kiện rời rạc (`bool`, `level`, `choice`) nạp vào FactSource cho Gate Engine. Mũi tên nét đứt thể hiện việc bảo vệ quyền riêng tư. Điểm cốt lõi cần nhớ: mô hình thị giác chỉ là nguồn cung cấp dữ kiện nhận thức L2; Gate Engine L3 giữ quyền phán quyết hành động độc lập; vết ghi tuyệt đối không chứa khung hình thô.
 
-- **Nguyên tắc thẩm quyền L2 so với L3:** Thị giác là đầu vào nhận thức tầng L2, tuyệt đối **không bao giờ là thẩm quyền phán quyết tầng L3** (`neuroedge-design-phase2.md` §2.1). Theo [`Q-54`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), maker tự định nghĩa dữ kiện (`bool`, `level` hoặc `choice`, kèm độ tin cậy dạng số) từ nhãn của model thị giác và tự viết `@action` cùng gate như với mọi dữ kiện khác; gate khoá ngưỡng tin cậy bằng tiêu chí `numeric` (RFC-0009), không có ngữ nghĩa gate riêng cho thị giác. Mất camera hoặc model thì dữ kiện chưa quyết và gate chặn (`neuroedge-design-phase2.md` §2.2). Gate engine giữ nguyên tính xác định và không bao giờ nhận tensor hình ảnh.
+- **Nguyên tắc thẩm quyền L2 so với L3:** Thị giác là đầu vào nhận thức tầng L2, tuyệt đối **không bao giờ là thẩm quyền phán quyết tầng L3** (§4.4). Theo [`Q-54`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), maker tự định nghĩa dữ kiện (`bool`, `level` hoặc `choice`, kèm độ tin cậy dạng số) từ nhãn của model thị giác và tự viết `@action` cùng gate như với mọi dữ kiện khác; gate khoá ngưỡng tin cậy bằng tiêu chí `numeric` (RFC-0009), không có ngữ nghĩa gate riêng cho thị giác. Mất camera hoặc model thì dữ kiện chưa quyết và gate chặn (§4.4). Gate engine giữ nguyên tính xác định và không bao giờ nhận tensor hình ảnh.
 - **Thành phần phần mềm:** Module thị giác nằm trong package `python/neuroedge/perception/vision/` ([`TSK-V1b-03`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)). Môi trường `sim` cung cấp camera ảo phát lại chuỗi ảnh để kiểm thử hồi quy Action CI mà không cần camera vật lý ([`TSK-V1b-02`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux), [`TSK-V1b-04`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)).
 - **Tăng tốc phần cứng (Accelerators):**
   - Trên `linux` (Raspberry Pi 5): sử dụng GStreamer và V4L2 cho đường ống thu nhận khung hình; Ultralytics YOLO và ONNX Runtime cho mô hình; kết nối NPU rời qua HailoRT (Hailo-8) và Edge TPU runtime (Coral) ([`TSK-V1b-05`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)).
   - Trên `jetson` (Bậc 2, I16): tích hợp JetPack và TensorRT tăng tốc GPU; DeepStream xử lý đường ống đa camera thời gian thực ([`TSK-V2-01`](../../../roadmap/neuroedge-roadmap.md#76-i16--thị-giác-trên-jetson), [`TSK-V2-02`](../../../roadmap/neuroedge-roadmap.md#76-i16--thị-giác-trên-jetson)).
   - Đa phương thức (I17): hợp nhất nhận thức thoại, thị giác và cảm biến trong một máy trạng thái (`perception/fusion/`, [`TSK-V3-01`](../../../roadmap/neuroedge-roadmap.md#77-i17--đa-phương-thức)); gate đa phương thức cần có `RFC visual-evidence gate semantics` ([`TSK-V3-04`](../../../roadmap/neuroedge-roadmap.md#77-i17--đa-phương-thức)).
-- **Quyền riêng tư dữ liệu:** Tuân thủ nghiêm ngặt NFR-PRIV-01 và NFR-PRIV-03 (`neuroedge-design-phase2.md` §2.3, [`TSK-V1b-08`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)). Tệp vết ghi **không bao giờ nhúng khung hình thô**. Vết ghi mặc định chỉ lưu trữ giá trị băm SHA-256 (`vision_ref`) và kích thước khung hình. Việc ghi lại hình ảnh thô chỉ được kích hoạt khi bật cờ tường minh `metadata.raw_capture`.
+- **Quyền riêng tư dữ liệu:** Tuân thủ nghiêm ngặt NFR-PRIV-01 và NFR-PRIV-03 (§4.4, [`TSK-V1b-08`](../../../roadmap/neuroedge-roadmap.md#431-i2a--nguyên-thủy-mở-rộng-trên-sim-và-linux)). Tệp vết ghi **không bao giờ nhúng khung hình thô**. Vết ghi mặc định chỉ lưu trữ giá trị băm SHA-256 (`vision_ref`) và kích thước khung hình. Việc ghi lại hình ảnh thô chỉ được kích hoạt khi bật cờ tường minh `metadata.raw_capture`.
 
 ### 4.5 Hệ sinh thái (I18)
 
-Hệ sinh thái thiết bị tại increment I18 (Roadmap [§7.8](../../../roadmap/neuroedge-roadmap.md#78-i18--hệ-sinh-thái-thiết-bị), [`TSK-P2-*`](../../../roadmap/neuroedge-roadmap.md#78-i18--hệ-sinh-thái-thiết-bị), `neuroedge-design-phase2.md` §9.2) mở rộng mạng lưới phần cứng và thành phần mở rộng:
+Hệ sinh thái thiết bị tại increment I18 (Roadmap [§7.8](../../../roadmap/neuroedge-roadmap.md#78-i18--hệ-sinh-thái-thiết-bị), [`TSK-P2-*`](../../../roadmap/neuroedge-roadmap.md#78-i18--hệ-sinh-thái-thiết-bị), §4.4) mở rộng mạng lưới phần cứng và thành phần mở rộng:
 
 - **Kho Adapter và HAL Port:** Vận hành trên hạ tầng Gate Registry OCI sẵn có để chia sẻ các adapter và bản port HAL do cộng đồng đóng góp (`services/registry/ports.py`, [`TSK-P2-01`](../../../roadmap/neuroedge-roadmap.md#78-i18--hệ-sinh-thái-thiết-bị)).
 - **Điều kiện mở:** Increment I18 chỉ được kích hoạt khi có **ít nhất 3 bản port bậc 3** do cộng đồng hoàn thành độc lập (PRD §14, Roadmap [§7.8](../../../roadmap/neuroedge-roadmap.md#78-i18--hệ-sinh-thái-thiết-bị)).
@@ -486,7 +484,7 @@ Dù kiến trúc mở rộng từ một vi điều khiển đơn lẻ lên hệ 
 3. **Gate là dữ liệu có phiên bản (Gate is data):** Gate an toàn luôn là dữ liệu có phiên bản, được định danh chuẩn tắc `neuroedge://`, băm JCS SHA-256, biên dịch thành cây quyết định tất định, và quy tắc kế thừa chỉ được phép siết chặt chính sách ([`Q-18`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)).
 4. **Vết ghi tự tính lại và phát lại được (Replay recomputes):** Tệp vết ghi mang đầy đủ dữ kiện để tính toán lại toàn bộ chuỗi phán quyết trong môi trường kiểm thử Action CI mà không cần gọi lại mô hình AI và không cần chạm vào thiết bị vật lý.
 5. **Một vết ghi cho mỗi phiên (One trace per session):** Mỗi phiên tương tác sinh đúng một tệp vết ghi hoàn chỉnh (NFR-OBS-01, FR-ACE-06). *Sửa theo [`Q-72`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) (`planned`, chờ RFC `trace.v1`):* với runtime chạy 24/7, một phiên là **một chuỗi vết ghi**, mỗi đoạn replay được. Chi tiết: §6.7.
-6. **Cùng một quyết định trên mọi môi trường (Same decision on every target):** Nguyên tắc tương đương môi trường bảo đảm mã nguồn agent không rẽ nhánh theo target; cùng một kịch bản dữ kiện cho ra phán quyết và phản ứng hoàn toàn nhất quán trên `sim`, `linux`, và `esp32s3` ([`Q-8`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), P-2, proposal §3.2).
+6. **Cùng một quyết định trên mọi môi trường (Same decision on every target):** Nguyên tắc tương đương môi trường bảo đảm mã nguồn agent không rẽ nhánh theo target; cùng một kịch bản dữ kiện cho ra phán quyết và phản ứng hoàn toàn nhất quán trên `sim`, `linux`, và `esp32s3` ([`Q-8`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), P-2, `docs/architecture/vi/00-overview.md` §5.2).
 
 Nguồn từng điều: [`00`](00-overview.md) §2, §4; [`CHANGELOG.md`](../../../CHANGELOG.md) §3.3 (mười bất biến — một danh sách khác, chi tiết hơn; phần sửa theo Q-72 ghi ở đó, không chép lại ở đây).
 
@@ -640,7 +638,7 @@ Bất biến "một vết ghi mỗi phiên" (§5 #5) đọc thành "một phiên
 
 ### 6.8 Giả lập trước: bốn tầng G1–G4
 
-Phần cứng thật mua sau. Bốn tầng giả lập (khác các cột mốc thị trường G1–G4 của proposal §8.7):
+Phần cứng thật mua sau. Bốn tầng giả lập (khác các cột mốc thị trường G1–G4 của PRD §11.2 (cổng 8 tuần, Q-72)):
 
 | Tầng | Chạy gì | Bắt được gì |
 |:---|:---|:---|
@@ -667,12 +665,10 @@ phí và mọi sàn có thu phí chỉ đến sau cổng này ([`16`](16-ecosyst
 2. **Tài liệu yêu cầu sản phẩm:**
    - [`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) (§1.4 Non-goals N4; §9 Nhóm yêu cầu phi chức năng; §15 Sổ quyết định: `Q-3`, `Q-6`, `Q-8`, `Q-10`, `Q-11`, `Q-12`, `Q-13`, `Q-14`, `Q-18`, `Q-24`, `Q-26`, `Q-28`, `Q-31`, `Q-32`, `Q-33`, `Q-34`, `Q-35`, `Q-36`, `Q-37`, `Q-45`, `Q-52`, `Q-53`, `Q-54`, `Q-55`, `Q-62`, `Q-71`, `Q-72`; Phụ lục D.2 Wire protocol).
    - [`proposal-blueprint-2026-10-11.md`](../../business/proposal-blueprint-2026-10-11.md) (định vị Blueprint, ba vòng, cổng nhu cầu — nguồn của §6).
-3. **Đề xuất kiến trúc nền tảng:**
-   - [`neuroedge-proposal.md`](../../../roadmap/neuroedge-proposal.md) (§3.1 Sơ đồ khối 5 tầng L0–L4 và trục Action CI; §3.2 Tương đương môi trường và phân tầng bậc target; §6 Mặt phẳng thương mại Fleet OS; §6.4 Ma trận phân định ranh giới Lõi ↔ Dịch vụ thương mại).
+3. **Đặc tả định dạng:**
+   - [`core_contracts.md`](../../spec/core_contracts.md) (API, `board.toml`, `agent.toml`, gate, HAL, vết ghi)
 4. **Các ghi chú thiết kế chi tiết:**
-   - [`neuroedge-design-lab-mcp.md`](../../../roadmap/neuroedge-design-lab-mcp.md) (Ghi chú thiết kế NeuroEdge Lab qua MCP — Q-71, bất biến B-1, hook phong bì an toàn vật lý, Phụ lục A ESP-Claw).
-   - [`neuroedge-design-phase2.md`](../../../roadmap/neuroedge-design-phase2.md) (Ghi chú thiết kế Giai đoạn 2: thị giác L2, phân tầng target, tăng tốc NPU).
-   - [`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../../roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md) (§2 Bất biến và danh sách RFC, §4 Kiến trúc mục tiêu robot 7 tầng, Phụ lục A Khung RFC).
+   - `docs/spec/lab_mcp.md` (Ghi chú thiết kế NeuroEdge Lab qua MCP — Q-71, bất biến B-1, hook phong bì an toàn vật lý, Phụ lục A ESP-Claw).
    - [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) (§3 Thay đổi đề xuất cho giao thức điều phối node, black channel, lease tokens).
 5. **Các chương kiến trúc liên quan trong cùng tài liệu:**
    - [`00 · Tổng quan kiến trúc`](00-overview.md) (§2 Hệ thống trong một hình, §4 Đặc tính kiến trúc).

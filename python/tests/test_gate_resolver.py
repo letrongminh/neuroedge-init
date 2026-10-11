@@ -1,5 +1,5 @@
 """
-Unit tests for the five `extends` safety principles (Proposal Appendix B.5).
+Unit tests for the five `extends` safety principles (docs/spec/core_contracts.md Appendix B.5).
 
 These build gate documents in memory so each principle is tested in isolation,
 independent of the on-disk fixtures. The fixture-driven counterpart, which

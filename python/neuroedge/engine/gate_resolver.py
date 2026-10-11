@@ -1,7 +1,7 @@
 """
 Gate resolution and the five `extends` safety principles.
 
-A gate is authored as YAML (Proposal §4.5) and may inherit from a base gate via
+A gate is authored as YAML (docs/spec/core_contracts.md §1.5) and may inherit from a base gate via
 `extends`. Resolution flattens the chain into a single `ResolvedGate` while
 enforcing Appendix B.5, which exists so that pulling a safety policy off the
 community registry can never silently weaken a device:
@@ -180,7 +180,7 @@ def validate_gate_document(document: Mapping[str, Any], label: str) -> None:
             why=first.message,
             how=(
                 "correct the field against schemas/gate.v1.json "
-                "(field reference: Proposal Appendix B.1)"
+                "(field reference: docs/spec/core_contracts.md Appendix B.1)"
             ),
         )
 
@@ -514,7 +514,7 @@ def _guard_opaque_allow_when(
                 f"(found {type(allow_when).__name__})"
             ),
             how=(
-                "use the structured operator form from Proposal Appendix B.2; "
+                "use the structured operator form from docs/spec/core_contracts.md Appendix B.2; "
                 "CEL compilation is deferred (TSK-S2-06)"
             ),
         )
@@ -527,7 +527,7 @@ def _guard_opaque_allow_when(
         ),
         how=(
             "rewrite allow_when as a mapping of criterion to operator "
-            "(Proposal Appendix B.2), or drop `extends` and inline the base conditions"
+            "(docs/spec/core_contracts.md Appendix B.2), or drop `extends` and inline the base conditions"
         ),
         principle=2,
     )

@@ -113,7 +113,7 @@ tiêu chí, hoặc chuyển từ `deny`/`escalate` sang `ask` có `confirms`, l�
 ## 8. Việc phải làm khi chấp thuận
 
 - [x] `schemas/gate.v1.json`
-- [x] Phụ lục B.3 trong `neuroedge-proposal.md`; `docs/spec/tool_calling.md` §6
+- [x] Phụ lục B.3 trong `docs/spec/core_contracts.md`; `docs/spec/tool_calling.md` §6
 - [x] `neuroedge-prd.md` Q-26, FR-ACE-10 · `neuroedge-roadmap.md` TSK-S3-26
 - [x] Resolver, walker Python (`waived`), engine (`confirmed`), `c.do()`/`c.confirm()`, REPL, UI, `gate explain`, replay
 - [x] Walker C (TSK-S4-02) nhận tập tiêu chí được thay — bố cục nhị phân RFC-0003 mang `confirms` (`confirm_mask`, PR #27)

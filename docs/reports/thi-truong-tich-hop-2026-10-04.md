@@ -1,7 +1,7 @@
 # Thị trường tích hợp thiết bị cho AI agent — 2026-10-04
 
 Báo cáo khảo sát làm căn cứ cho **Q-67** (nền tảng mở, `roadmap/neuroedge-prd.md` §15) và cho ghi chú thiết kế
-[`neuroedge-design-open-platform.md`](../../roadmap/neuroedge-design-open-platform.md). Câu hỏi: các hệ sinh thái
+`docs/architecture/vi/16-ecosystem-landscape.md` §4. Câu hỏi: các hệ sinh thái
 AI-phần cứng hiện có và mới ra nối thiết bị bằng cách nào, gate an toàn đặt ở đâu được, và họ còn thiếu gì.
 
 **Phương pháp:** đọc tài liệu và kho mã chính thức ngày 2026-10-04. Dòng ghi *(thứ cấp)* chỉ có nguồn báo chí;
@@ -63,4 +63,4 @@ quá muộn, gate phải nằm ở lớp HAL mà mã đó gọi tới.
 Bốn adapter phổ quát — MCP proxy, bộ điều phối trên thiết bị (bridge), reverse proxy/cầu nối, node robot — phủ
 phần lớn thị trường; mỗi hệ sinh thái mới chỉ cần một plugin mỏng trên một trong bốn hình dạng. Thứ NeuroEdge
 bán là phần **không ai có** ở §3: gate theo giá trị, fail-closed, vết ghi chung — với điều kiện lõi dùng được
-độc lập và điểm cắm mở. Quyết định: Q-67; kiến trúc: `neuroedge-design-open-platform.md`.
+độc lập và điểm cắm mở. Quyết định: Q-67; kiến trúc: `docs/architecture/vi/16-ecosystem-landscape.md` §4.

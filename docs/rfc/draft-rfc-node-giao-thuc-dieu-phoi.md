@@ -21,7 +21,7 @@
 | **Trạng thái** | Bản nháp — chưa thảo luận |
 | **Người phê duyệt** | Kỹ thuật trưởng **nếu** chạm ngữ nghĩa phân giải gate; nếu chỉ chạm trace thì theo quy trình RFC thường |
 
-**Liên quan:** `draft-ke-hoach-mo-rong-robot-fofoca.md` (ghi chú thiết kế mẹ, Chặng 3);
+**Liên quan:** `docs/architecture/vi/15-target-architecture.md` §4.3 (ghi chú thiết kế mẹ, Chặng 3);
 `docs/spec/threat_model.md`; `docs/spec/tool_calling.md`; `docs/spec/voice_fsm.md` (thu hồi lệnh);
 `docs/spec/simulation_coverage.md` §4 (vết ghi từ thiết bị); `docs/rfc/0002-mo-rong-target-va-nguyen-thuy-thi-giac.md`
 (phân tầng target); IEC 61784-3 (black channel).
@@ -51,7 +51,7 @@ bằng chứng replay cho một phiên trải trên nhiều chip.
 | `metadata.target` enum 3 giá trị (`trace.v1.json`) | Không có chỗ khai nhiều node; node RP2350 còn chưa có target (chờ RFC-0002) |
 | `events[].additionalProperties: false` (`trace.v1.json`) | Không thể thêm `node_id` cấp sự kiện nếu không đổi lược đồ — và cả đặc tả dòng `NE1`, vốn có đúng ba khoá (`simulation_coverage.md` §4) |
 | `board.py` `SUPPORTED_TARGETS = ("sim","linux","esp32s3")` (`python/neuroedge/hal/board.py`) | Node mới phải qua RFC-0002 (bậc 3 `rp2350`) |
-| Bất biến fail-closed on-device (`neuroedge-proposal.md` §3.4, Phụ lục H.3) | **Cấm** giải pháp "gate tập trung trên Pi" — nếu Pi mất, actuator phải tự về an toàn |
+| Bất biến fail-closed on-device (`docs/spec/voice_fsm.md`) | **Cấm** giải pháp "gate tập trung trên Pi" — nếu Pi mất, actuator phải tự về an toàn |
 | MCP mặc định stdio; `--http` dành cho client, không cho node (TSK-P2-04) | Chưa có kênh mạng nào để nói chuyện với node từ xa |
 
 ## 3. Thay đổi đề xuất
@@ -103,7 +103,7 @@ cắt một xung mở chốt đang chạy là khoá cửa lại (`voice_fsm.md` 
 nghĩa thông điệp hủy Pi → node và ngân sách thời gian của nó (RB-3, `hal_mcu_review.md`).
 
 Trạng thái an toàn cục bộ (tầng T0 của ghi chú thiết kế mẹ): kéo xuống phần cứng / watchdog / giới hạn dòng — phần
-mềm **không** cứu được khi crash/SIGKILL (`neuroedge-design-lab-mcp.md` §2.3, §15 rủi ro 3).
+mềm **không** cứu được khi crash/SIGKILL (`docs/spec/lab_mcp.md` §2.3, §15 rủi ro 3).
 
 ### 3.4 Trace hợp nhất
 

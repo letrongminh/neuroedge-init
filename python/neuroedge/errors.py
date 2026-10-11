@@ -140,7 +140,7 @@ class GateSchemaError(GateError):
 class GateInheritanceError(GateError):
     """
     A gate chain violates one of the five extends safety principles
-    (Proposal Appendix B.5 / FR-GATE-06, FR-GATE-07, FR-GATE-08).
+    (docs/spec/core_contracts.md Appendix B.5 / FR-GATE-06, FR-GATE-07, FR-GATE-08).
     """
 
     code = "NE2003"

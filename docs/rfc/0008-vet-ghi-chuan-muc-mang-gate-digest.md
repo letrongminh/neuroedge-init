@@ -125,5 +125,5 @@ Thay đổi này **không có đường nào làm một phán quyết lỏng hơ
 - [x] `docs/spec/simulation_coverage.md` §4; `docs/architecture/{vi,en}/07-data-contracts.md`;
   `docs/architecture/{vi,en}/10-target-equivalence.md` — mỗi sự thật một nơi, dẫn RFC-0008
 - [x] Dòng của RFC trong `docs/rfc/README.md`
-- [x] Phụ lục `neuroedge-proposal.md` không đổi — hợp đồng sự kiện nằm ở
+- [x] Phụ lục của `docs/spec/core_contracts.md` không đổi — hợp đồng sự kiện nằm ở
   `docs/spec/simulation_coverage.md` §3; lược đồ không đổi

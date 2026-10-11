@@ -1652,7 +1652,7 @@ class SimSession:
         return await self._conclude(turn, turn.recognition, results, reply)
 
     async def _speak(self, turn: Turn, text: str, source: str) -> Turn:
-        """Speech goes through `c.say()`: never a gate, never a token (proposal §4.6)."""
+        """Speech goes through `c.say()`: never a gate, never a token (docs/spec/core_contracts.md §1.6)."""
         await self.conversation.say(text)
         return Turn(turn.text, turn.recognition, reply=text, reply_source=source)
 

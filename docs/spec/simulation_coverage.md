@@ -2,7 +2,7 @@
 
 **Trạng thái:** đặc tả quy phạm, đi kèm Q-21 và Q-22 (*đã chốt*) — PRD §15. Tài liệu này nói **cái gì**
 chạy và kiểm từng ô; ô nào đã xong là trạng thái của task tương ứng trong `neuroedge-roadmap.md`.
-Công cụ và giấy phép: proposal Phụ lục H.4. Chiến lược theo tầng: proposal §3.2.
+Công cụ và giấy phép: roadmap §3. Chiến lược theo tầng: `docs/architecture/vi/00-overview.md` §5.2.
 
 Tài liệu này trả lời một câu hỏi: **với mỗi nguyên thủy HAL trên mỗi target, cái gì chạy nó,
 cái gì kiểm nó, và cái gì chưa kiểm được.** Mỗi ô của bảng ở §2 có một task chịu trách nhiệm;

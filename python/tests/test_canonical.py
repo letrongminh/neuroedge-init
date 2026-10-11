@@ -1,5 +1,5 @@
 """
-Canonicalisation and digests (Proposal §4.5).
+Canonicalisation and digests (docs/spec/core_contracts.md §1.5).
 
 Appendix A.2 requires every `digital.out` command to carry the signature of the
 gate that authorised it. That only works if a gate's bytes are a function of its

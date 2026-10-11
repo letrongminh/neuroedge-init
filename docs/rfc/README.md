@@ -44,4 +44,4 @@ Người phê duyệt: `CONTRIBUTING.md` §3.
 **Bản nháp chưa cấp số** (nhận số kế tiếp khi mở PR RFC):
 [`draft-rfc-node-giao-thuc-dieu-phoi.md`](draft-rfc-node-giao-thuc-dieu-phoi.md) — giao thức điều phối
 node cho robot phân tầng; các RFC tạm tên còn lại ở §2.2 của
-[`draft-ke-hoach-mo-rong-robot-fofoca.md`](../../roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md) (RFC-numeric và RFC-motion đã thành RFC-0009 và RFC-0011).
+`docs/architecture/vi/15-target-architecture.md` §4.3 (RFC-numeric và RFC-motion đã thành RFC-0009 và RFC-0011).

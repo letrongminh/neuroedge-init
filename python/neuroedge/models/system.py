@@ -200,7 +200,7 @@ class SystemOne:
         except Exception as exc:
             return Unavailable("offline", f"{self.model} failed: {type(exc).__name__}: {exc}")
 
-    # -- the agent-facing API (proposal §4.6) --------------------------------
+    # -- the agent-facing API (docs/spec/core_contracts.md §1.6) --------------------------------
     async def bool(
         self, name: str, *, instructions: str = "", state: Mapping | None = None
     ) -> Fact | Unavailable:

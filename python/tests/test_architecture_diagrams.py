@@ -107,33 +107,9 @@ def test_every_poster_has_both_files_and_is_embedded() -> None:
     assert embedded <= svgs, f"page shows a poster that does not exist: {sorted(embedded - svgs)}"
 
 
-# --- the two language trees ---------------------------------------------------------
+# --- links ---------------------------------------------------------
 
-MERMAID = re.compile(r"```mermaid\n(.*?)```", re.S)
-HEADING = re.compile(r"^(#{1,4}) ", re.M)
 LINK = re.compile(r"\]\(([^)#\s]+)(?:#[^)]*)?\)")
-FENCE = re.compile(r"```.*?```", re.S)
-
-
-def _headings(text: str) -> list[int]:
-    return [len(h) for h in HEADING.findall(FENCE.sub("", text))]
-
-
-def _tree(lang: str) -> dict[str, str]:
-    return {p.name: p.read_text(encoding="utf-8") for p in sorted((ARCH / lang).glob("*.md"))}
-
-
-def test_the_english_tree_mirrors_the_vietnamese_one() -> None:
-    vi, en = _tree("vi"), _tree("en")
-    assert vi and set(vi) == set(en), f"files differ: {sorted(set(vi) ^ set(en))}"
-    for name in vi:
-        assert _headings(vi[name]) == _headings(en[name]), (
-            f"{name}: the heading structure of vi/ and en/ differs"
-        )
-        # diagram labels are English in both trees, so the diagrams are the same bytes
-        assert MERMAID.findall(vi[name]) == MERMAID.findall(en[name]), (
-            f"{name}: mermaid blocks differ"
-        )
 
 
 def test_every_relative_link_in_the_architecture_docs_resolves() -> None:

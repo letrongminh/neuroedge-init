@@ -22,7 +22,7 @@
 `vision.in` chỉ tồn tại ở văn bản. Bốn khoảng trống:
 
 1. **Bo mạch không khai được camera.** `sensor.read` trả vô hướng rời rạc (RFC-0002 §9.1), không phải luồng khung hình. Hình dạng thử nghiệm ban đầu (`width`, `height`, `fps` nguyên, chuỗi tự do) không so khớp được với agent.
-2. **Không có đường từ nhãn mô hình tới phán quyết.** `neuroedge-design-phase2.md` §2.2 để mở có chủ đích bài toán ngữ nghĩa gate riêng cho thị giác; ràng buộc hiện hành ở đó (Q-54) đi vòng: quy thị giác về dữ kiện gõ kiểu mà gate đã biết lượng giá, ngưỡng khoá ở gate. Chưa có cú pháp và luật cho đường đó.
+2. **Không có đường từ nhãn mô hình tới phán quyết.** `docs/architecture/vi/15-target-architecture.md` §4.4 để mở có chủ đích bài toán ngữ nghĩa gate riêng cho thị giác; ràng buộc hiện hành ở đó (Q-54) đi vòng: quy thị giác về dữ kiện gõ kiểu mà gate đã biết lượng giá, ngưỡng khoá ở gate. Chưa có cú pháp và luật cho đường đó.
 3. **Không có luật vết ghi.** Camera trong không gian riêng tư là rủi ro lớn hơn micro; cần quy ước chính xác cái gì được ghi (NFR-PRIV-01, NFR-PRIV-03), và đủ để `replay` tái hiện phán quyết (FR-CI-02).
 4. **Không có cách chứng minh tương đương.** Mô hình thị giác chạy trên ba target với phần cứng khác nhau; "gate quyết giống nhau" và "mô hình thấy giống nhau" là hai mệnh đề khác nhau, chưa cái nào được kiểm.
 
@@ -140,7 +140,7 @@ allow_when:
 
 ### 3d. Vết ghi
 
-Mỗi dữ kiện thị giác lượng giá cho một phán quyết ghi một sự kiện nhóm `perception` (Phụ lục C.1 của `neuroedge-proposal.md`; tên sự kiện ghi ở `docs/spec/simulation_coverage.md` §3 — §8):
+Mỗi dữ kiện thị giác lượng giá cho một phán quyết ghi một sự kiện nhóm `perception` (Phụ lục C.1 của `docs/spec/core_contracts.md`; tên sự kiện ghi ở `docs/spec/simulation_coverage.md` §3 — §8):
 
 ```json
 { "offset_ms": 1840, "type": "vision_fact", "data": {
@@ -221,7 +221,7 @@ Bốn điểm mở trước đây do chủ sản phẩm chốt theo nguyên tắ
 
 ## 5. Ảnh hưởng an toàn
 
-- **Gate không lỏng hơn và không có ngữ nghĩa thị giác mới** (Q-54): `gate.v1`, phân giải, năm nguyên tắc không đổi. Ràng buộc của `neuroedge-design-phase2.md` §2.2 — thị giác quy về các kiểu dữ kiện gate đã biết lượng giá, ngưỡng tin cậy khoá bằng `numeric` — được giữ nguyên.
+- **Gate không lỏng hơn và không có ngữ nghĩa thị giác mới** (Q-54): `gate.v1`, phân giải, năm nguyên tắc không đổi. Ràng buộc của `docs/architecture/vi/15-target-architecture.md` §4.4 — thị giác quy về các kiểu dữ kiện gate đã biết lượng giá, ngưỡng tin cậy khoá bằng `numeric` — được giữ nguyên.
 - **Nhận thức không thành thẩm quyền:** mô hình chỉ cấp dữ kiện; mọi ngưỡng trên số đếm và độ tin cậy do gate khoá và chỉ thu hẹp được khi kế thừa. Maker nới ngưỡng bằng `agent.toml` **không được** vì ngưỡng không nằm ở đó (`bands` bị từ chối).
 - **Một đường cho độ tin cậy:** `confidence_gte` trên dữ kiện thị giác bị từ chối cả lúc `neuroedge build` lẫn lúc nạp agent, nên không có đường thứ hai để quên khoá (§3c).
 - **`present` và `count` không đứng một mình:** Gate dùng `present` hoặc `count` bắt buộc phải kèm tiêu chí `numeric` `confidence` cùng nhãn, cùng vùng, trong `allow_when` mang `max_age_ms`. Nhờ đó loại bỏ rủi ro camera đứng hình lặp "không có người" cho phép qua cổng `close_gate` viết bằng `present: false`.
@@ -277,7 +277,7 @@ Mỗi dòng nêu quyết định §9 nó phủ. Corpus theo luật khép kín ha
 
 - [x] Cập nhật `schemas/board.v1.json` (`vision_in`: `modes[]`, enum `pixel_format`, trường `tolerance = { score_abs, box_iou_min }` với trần cứng `score_abs ≤ 0.05`, `box_iou_min ≥ 0.8`) — *đạt: `modes[]`, enum `pixel_format`, `tolerance` bắt buộc với trần cứng — `tests/test_board_fixtures.py` (`vision_*`)*
 - [ ] Thêm profile bo mạch `esp32s3-cores3` (M5Stack CoreS3) cho ESP32-S3 có camera GC0308 VGA 640×480 (Q-61); tiến hành đo đạc SRAM/PSRAM theo Q-3 (TSK-I3a-01)
-- [ ] Cập nhật Phụ lục C.1 trong `neuroedge-proposal.md`; FR-HAL-01 ở `neuroedge-prd.md`; Phụ lục B của `neuroedge-prd.md` — nới nguyên nhân ba dòng ở §4; `TODOS.md` #14 (cách sửa nằm ở RFC-0013)
+- [ ] Cập nhật Phụ lục C.1 trong `docs/spec/core_contracts.md`; FR-HAL-01 ở `neuroedge-prd.md`; Phụ lục B của `neuroedge-prd.md` — nới nguyên nhân ba dòng ở §4; `TODOS.md` #14 (cách sửa nằm ở RFC-0013)
 - [x] `docs/spec/simulation_coverage.md`: tên sự kiện `perception` thị giác ở §3, dòng `vision.in` ở ma trận §2 *(Đã làm: `camera_unavailable` ở §3, mục `vision.in` ở ma trận §2; `docs/spec/camera.md`)*
 - [x] `neuroedge-roadmap.md`: TSK-V1b-07 xong; mở TSK-V1b-01, TSK-V1b-02, TSK-V1b-03, TSK-V1b-04, TSK-V1b-05, TSK-V1b-06, TSK-V1b-08 *(Đã làm 2026-10-04: sáu dòng V1b-01 → V1b-08 trong roadmap; V1b-01 và V1b-04 còn 🟡, V1b-05 ⏳)*
 - [x] `engine/compiler.py` và runtime nạp agent: khối `[vision]`, vùng hình chữ nhật `[x0, y0, x1, y1]`, từ chối `confidence_gte` trên dữ kiện thị giác cả lúc build và nạp agent, bắt buộc tiêu chí `numeric` `confidence` đi kèm `present`/`count`, so khớp `modes[]` *(Đã làm: `check_vision` và `_check_vision_in` trong `engine/compiler.py`; `[requires] "vision.in"` so khớp `modes[]` ở `hal/vision.py::Requirement`; phiên từ chối nạp khi camera không mở được — `tests/test_vision_camera.py`: `test_a_bound_no_mode_meets_is_refused_naming_the_closest_mode`, `test_confidence_gte_on_a_vision_fact_is_refused_one_road_for_confidence`, `test_present_without_its_confidence_pair_is_refused_a_bool_has_no_age`)*

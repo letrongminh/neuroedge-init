@@ -17,10 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "roadmap"
 ROADMAP = DOCS / "neuroedge-roadmap.md"
 DESIGN_NOTES = (
-    "roadmap/neuroedge-design-lab-mcp.md",
-    "roadmap/neuroedge-design-phase2.md",
-    "roadmap/neuroedge-design-open-platform.md",
-    "roadmap/draft-ke-hoach-mo-rong-robot-fofoca.md",
+    "docs/spec/lab_mcp.md",
     "docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md",
 )
 GLYPHS = "✅🟡⏳⏸🔴"

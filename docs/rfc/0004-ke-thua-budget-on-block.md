@@ -123,7 +123,7 @@ khả dụng, không phải lỗi an toàn.
 ## 8. Việc phải làm khi chấp thuận
 
 - [x] Hiện thực R1–R3 trong `python/neuroedge/engine/gate_resolver.py` (`_resolve_budget`, `_resolve_on_block`), bỏ comment "on_block không chịu quản trị B.5"; kèm `lru_cache` cho `_gate_schema()` (TODOS #5, ENG-Q4)
-- [x] Cập nhật Phụ lục B.5 của `neuroedge-proposal.md` *(phiên 2026-09-23)*
+- [x] Cập nhật Phụ lục B.5 của `docs/spec/core_contracts.md` *(phiên 2026-09-23)*
 - [x] Cập nhật FR-GATE-06 trong `neuroedge-prd.md` *(phiên 2026-09-23)*
 - [x] Cập nhật `neuroedge-roadmap.md`: `TSK-S2-13` *(phiên 2026-09-23)*
 - [x] Thêm fixture và test (§7); registry thêm `degrade-base@1.0.0.yaml`

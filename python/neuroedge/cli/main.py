@@ -103,7 +103,9 @@ def _fail(error: NeuroEdgeError, code: int = 1) -> None:
     err_console.print(f"[bold red]✗ {error.code}[/bold red] [cyan]{escape(error.where)}[/cyan]")
     err_console.print(f"  [bold]why:[/bold] {escape(error.why)}")
     if isinstance(getattr(error, "principle", None), int):
-        err_console.print(f"  [bold]rule:[/bold] Proposal Appendix B.5 principle {error.principle}")
+        err_console.print(
+            f"  [bold]rule:[/bold] docs/spec/core_contracts.md Appendix B.5 principle {error.principle}"
+        )
     err_console.print(f"  [bold]fix:[/bold] {escape(error.how)}")
     raise typer.Exit(code=code)
 
@@ -187,7 +189,7 @@ def gate_resolve(
     """
     Resolve a gate's `extends` chain and report the effective policy.
 
-    Enforces the five inheritance safety principles (Proposal Appendix B.5).
+    Enforces the five inheritance safety principles (docs/spec/core_contracts.md Appendix B.5).
     """
     try:
         gate = _load_gate(target, registry)

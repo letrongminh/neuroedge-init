@@ -1,5 +1,5 @@
 """
-`@action` — a physical action with declared requirements and a gate (proposal §4.4).
+`@action` — a physical action with declared requirements and a gate (docs/spec/core_contracts.md §1.4).
 
 The decorator records what the action needs (`requires`, checked against the
 board at build time by TSK-S2-02) and which gate authorises it. Calling the

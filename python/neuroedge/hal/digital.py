@@ -1,5 +1,5 @@
 """
-`digital.out(pin)` — the actuator API used inside an `@action` body (proposal §4.4).
+`digital.out(pin)` — the actuator API used inside an `@action` body (docs/spec/core_contracts.md §1.4).
 
     @action(name="unlock_door", requires="digital.out:door_lock", gate="unlock_door")
     def unlock_door(guest_id: str, duration_s: int = 30) -> None:

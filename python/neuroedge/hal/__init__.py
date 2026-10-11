@@ -147,7 +147,7 @@ def _require_signature(signature: Any, pin: str, called_from: str) -> None:
     if not signature:
         why = (
             "actuator command carries no gate signature; every digital.out "
-            "must prove which gate authorised it (Proposal Appendix A.2)"
+            "must prove which gate authorised it (docs/spec/core_contracts.md Appendix A.2)"
         )
     else:
         why = "no verdict-token ledger is installed on this HAL, so no proof can be checked"

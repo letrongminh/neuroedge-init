@@ -151,7 +151,7 @@ không thì ghi trong quyết định cổng (§5).
 |:---|:---|
 | `CEO-T1` | `N2(T1) ≥ 3` ⇒ giữ P3 là moat, nhánh (a); ngược lại nhánh (b): moat là thư viện gate từ sự cố thật + corpus phát lại |
 | `CEO-T2` | Phân khúc có nhãn **R** ≥ 3/5 ⇒ quyết IN (mức, ai làm) hoặc OUT (ghi rõ phân khúc đó bị loại khỏi Giai đoạn 1, viết P3 hẹp thành *"chính sách như dữ liệu có phiên bản, thay cho interlock viết cứng"*). Không để trống |
-| `CEO-T3` | Dựng bảng đối thủ (tên · động cơ · kênh · thời gian để copy) từ các cuộc `T3 ≥ 1`. `≥ 3` ước lượng "tự viết" ⇒ ghi trung vị làm "thời gian để copy" của đối thủ số 3. `< 5` cuộc nêu giải pháp ⇒ nhánh (b): giữ proposal §10 làm bối cảnh, ghi rõ không phải phân tích cạnh tranh |
+| `CEO-T3` | Dựng bảng đối thủ (tên · động cơ · kênh · thời gian để copy) từ các cuộc `T3 ≥ 1`. `≥ 3` ước lượng "tự viết" ⇒ ghi trung vị làm "thời gian để copy" của đối thủ số 3. `< 5` cuộc nêu giải pháp ⇒ nhánh (b): giữ `docs/architecture/vi/16-ecosystem-landscape.md` §8 làm bối cảnh, ghi rõ không phải phân tích cạnh tranh |
 | `CEO-T4` | Trưởng nhóm trả lời: kết quả có trước khi I3 mở không. Có ⇒ đóng. Cổng hoãn ⇒ ghi mốc mới |
 
 ### 4.4 Giả định Phụ lục G
@@ -213,7 +213,7 @@ Chủ trì: <trưởng nhóm>         Người chấm thứ hai: <tên>        S
 
 8. VIỆC SAU CỔNG (README.md §6)
    [ ] PRD §15 (Q-N của cổng)   [ ] TODOS.md #19   [ ] roadmap §0   [ ] CHANGELOG [Chưa phát hành]
-   [ ] docs/archive/ bản tổng hợp ẩn danh   [ ] proposal (chỉ nếu đổi giả định)
+   [ ] docs/reports/ bản tổng hợp ẩn danh   [ ] proposal (chỉ nếu đổi giả định)
 
 Ký: ____________________ (trưởng nhóm)        ____________________ (sponsor)
 ```
