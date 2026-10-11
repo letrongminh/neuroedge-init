@@ -299,7 +299,201 @@ sequenceDiagram
 |:---|:---|:---|
 | Lượt thoại trên chip | I5 | [`15`](15-target-architecture.md) §2.2 |
 | Từ chối do phong bì an toàn vật lý | I2a | [`15`](15-target-architecture.md) §4.2 |
-| Nguồn gọi kích hoạt từ sự kiện (`call_source = "trigger"`, TSK-N6-*) | I4a | [`15`](15-target-architecture.md) §4.2 |
+| Nguồn gọi kích hoạt từ sự kiện (`call_source = "trigger"`, TSK-N6-*) | I2d (dời từ I4a theo Q-72) | [`15`](15-target-architecture.md) §4.2 |
 | Ý định đa node và mất liên lạc | I14 | [`15`](15-target-architecture.md) §4.3 |
 | Dữ kiện thị giác | I2a, I3a | [`15`](15-target-architecture.md) §4.4 |
+| Vòng đời hợp đồng nhiệm vụ, báo chủ động, lệnh và lời duyệt qua chat (`planned · Q-72`) | I2d | §11 dưới đây; [`15`](15-target-architecture.md) |
+| Cài một NeuroEdge Blueprint (`planned · Q-72`) | I2e | §11.5 dưới đây; [`15`](15-target-architecture.md) |
+
+## 11. Luồng quy hoạch theo Q-72 (`planned · Q-72`)
+
+Chưa có mã cho luồng nào trong mục này. Chúng ghi thiết kế đích của [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)
+cho increment I2d (nhiệm vụ và agent vận hành) và I2e (NeuroEdge Blueprint tối thiểu); tiến độ ở
+roadmap §0.2. Phần nào cần RFC thì ghi "chờ RFC".
+
+Hai tiến trình trên máy nhà ([`02`](02-container-c4l2.md)):
+
+- **runtime tin cậy** (24/7, systemd): HAL, gate, thực thi hợp đồng nhiệm vụ, lập lịch, bộ phát hiện
+  tất định, adapter kênh chat và kiểm lời duyệt, cửa ra egress;
+- **LLM worker không tin cậy**: giữ key LLM của người dùng (BYOK), gọi runtime qua MCP cục bộ như mọi
+  client MCP, nguồn do runtime gán, **không bao giờ duyệt** — cùng ranh giới với client MCP ở Q-71.
+
+Mọi lệnh tới chân, dù sinh từ chat, lập lịch hay bộ phát hiện, vẫn đi đúng một đoạn của §1:
+`dispatch()` → `Conversation.do` → gate → token → HAL. Adapter chat chỉ gọi tới `dispatch()`, không
+import `hal`. Thời lượng, hạn duyệt, watchdog và phản xạ dùng **đồng hồ đơn điệu**; dữ kiện giờ tường
+mang trạng thái `unsynced` khi máy chưa đồng bộ giờ, và điều khoản khung giờ coi `unsynced` là thiếu
+dữ kiện (fail-closed).
+
+### 11.1 Vòng đời một hợp đồng nhiệm vụ (I2d)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant P as person (chat or local UI)
+    participant RT as runtime (trusted)
+    participant W as LLM worker (untrusted, BYOK)
+    participant MC as mission compiler (in runtime)
+    participant T as trace segment
+    P->>RT: utterance "keep the tank stable, tell me if something is wrong"
+    RT->>W: utterance + the fields the user allowed this destination to see
+    W->>RT: mission draft via local MCP (source assigned by the runtime)
+    alt draft misses a value (threshold, window, device)
+        RT->>P: clarifying question written by the worker
+        P->>RT: answer, back to the worker
+    end
+    RT->>MC: compile(draft)
+    MC->>MC: lower each clause to the lowest tier that enforces it (reflex, skill, thinking)
+    alt contradiction or a clause no tier can enforce
+        MC-->>RT: refused, names the clashing clauses
+        RT->>P: what clashes, nothing is locked
+    else compiled
+        MC-->>RT: structured diff + summary of at most 5 lines, built deterministically from the diff
+        RT->>P: approval request (section 11.4), never text written by the worker
+        P->>RT: approval aimed at that request id
+        RT->>RT: lock the mission, digest of the compiled contract
+        RT->>T: mission_locked with digest and approver source
+    end
+```
+
+- Chỉ thiết bị có `ne_gate` mới có tầng phản xạ; thiết bị Home Assistant dừng ở tầng host và bản duyệt
+  nói rõ điều đó.
+- Bản duyệt là đầu ra của trình biên dịch, không phải chữ của LLM: worker bị lừa không viết được dòng
+  nào trong tin duyệt.
+
+### 11.2 Trigger, bộ phát hiện và báo chủ động (I2d)
+
+Mở rộng luồng trigger của Khối N6 (I2d, dời từ I4a theo Q-72; [`15`](15-target-architecture.md) §4.2: chạy không cần phiên
+client, `call_source = "trigger"`, `trigger ∉ HUMAN_SOURCES`, debounce, trần tần suất), không phải một
+đường song song: lập lịch và bộ phát hiện của hợp đồng nhiệm vụ là nguồn kích hoạt mới của cùng đường đó.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as scheduler or detector (deterministic)
+    participant RT as runtime trigger path
+    participant D as dispatch()
+    participant B as llm_budget and message budget
+    participant W as LLM worker
+    participant Q as outbound queue (egress)
+    participant CH as paired chat
+    S->>RT: event (reading crossed a band, deadline of an obligation) — monotonic clock
+    RT->>RT: debounce, rate cap
+    opt the mission maps the event to an action
+        RT->>D: ToolCall(source=trigger) — gate, token, HAL as in section 1
+    end
+    RT->>B: may the worker explain this event?
+    alt budget left
+        B-->>RT: yes
+        RT->>W: event + allowed fields
+        W-->>RT: explanation or proposal (a proposal is a mission change, section 11.1)
+    else budget exhausted
+        B-->>RT: no — hard-template alert instead
+    end
+    RT->>Q: message to a declared destination, batched under the message budget
+    Q->>CH: report
+```
+
+Bộ phát hiện chạy trước, LLM chỉ được gọi sau khi có sự kiện: phản xạ và cảnh báo mẫu cứng không phụ
+thuộc LLM. Bộ phát hiện đọc cảm biến theo chu kỳ trong runtime 24/7 làm `TODOS.md` #48 (đọc cảm biến
+chặn event loop) thành rủi ro thật ([`02`](02-container-c4l2.md)).
+
+### 11.3 Lệnh vào từ chat (I2d)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CH as chat platform (Telegram first)
+    participant A as chat adapter (in runtime)
+    participant W as LLM worker
+    participant D as dispatch()
+    CH->>A: message from a chat id
+    A->>A: paired sender, not a group, inside the message budget
+    alt unknown sender or group
+        A-->>CH: nothing runs, chat_message_refused traced
+    else paired
+        A->>W: text as untrusted data
+        W->>D: tools/call via local MCP — source assigned by the runtime, never a human source
+        D-->>W: ToolResult ALLOW, BLOCK or REJECTED
+        W-->>A: reply
+        A->>CH: reply through egress
+    end
+```
+
+Adapter chat không import `hal` và không gọi thẳng `Conversation.do`: mọi lệnh có tác động vật lý đi
+qua `dispatch()` như lời gọi MCP ở §3. Một lời gọi bị gate chặn với `on_block: ask` không được worker
+trả lời; nó thành yêu cầu duyệt ở §11.4.
+
+### 11.4 Yêu cầu và trả lời duyệt qua chat (I2d, chờ RFC nguồn `chat:<id>`)
+
+Mở rộng §2: hôm nay chỉ `local_grammar` và `ui` trả lời được câu hỏi `ask` (Q-26). Q-72 thêm một đường
+qua chat bằng **bản ghi duyệt**, không bằng một tên nguồn mới trong `HUMAN_SOURCES` cho tin "có" tự do.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant RT as runtime
+    participant A as chat adapter
+    participant CH as paired chat
+    participant B as ConfirmationBook
+    participant T as trace segment
+    RT->>RT: approval record {id, nonce, expiry (monotonic), digest of the change, summary of at most 5 lines}
+    RT->>T: approval_requested (flushed now)
+    A->>CH: request with buttons or a code aimed at id
+    CH->>A: answer aimed at id
+    A->>A: paired sender? not a group? nonce unused? not expired? digest still matches?
+    alt any check fails
+        A-->>CH: refused, nothing changes
+        A->>T: approval_refused with the failed check (flushed now)
+    else all pass
+        A->>B: confirmation path with source chat:ID
+        B->>RT: gate re-evaluated, only the confirms criteria waived — or the mission change locked
+        RT->>T: approval_accepted with sender, request id, summary (flushed now)
+    end
+    Note over RT,CH: the LLM worker never answers a request, relays never carry approvals
+```
+
+Ghép đôi làm tại chỗ; thu hồi, hạn ghép đôi và trần số lời duyệt còn hoãn (`TODOS.md` #62).
+
+### 11.5 Cài một NeuroEdge Blueprint (I2e)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as installer
+    participant CLI as neuroedge blueprint install
+    participant IDX as Hub index (static git repository)
+    participant SRC as package URL (git or HTTPS)
+    participant RT as runtime
+    U->>CLI: install by name or by URL
+    opt by name
+        CLI->>IDX: look up URL, digest, evidence (marked unsigned)
+    end
+    CLI->>SRC: fetch the whole package
+    CLI->>CLI: digest over the whole package: kit, firmware, mission templates, detectors, evidence traces
+    alt digest does not match
+        CLI-->>U: three-part error (where, why, how), nothing installed
+    else match
+        CLI->>CLI: validate blueprint.v1, board check, safe_state other than off only from board.v1
+        CLI-->>U: install summary; missions start as drafts that still need approval (section 11.1)
+        U->>CLI: replay the evidence traces locally (optional)
+        CLI->>RT: load the approved missions
+    end
+```
+
+NeuroEdge Blueprint chỉ khai báo, không mang mã chạy trong runtime. Nó khác Home Assistant Blueprint
+(mẫu automation của HA), và có thể mang kèm một HA blueprint.
+
+### 11.6 Nhánh lỗi
+
+| Đường | Lỗi | Xử lý trong thiết kế | Người dùng thấy |
+|:---|:---|:---|:---|
+| Runtime ↔ LLM worker | worker chết hoặc treo | runtime vẫn chạy phản xạ, bộ phát hiện, cảnh báo mẫu cứng; khởi động lại worker | tin "phân tích tạm ngưng"; cảnh báo vẫn tới |
+| Runtime → kênh chat | API của nền tảng chat lỗi | hàng đợi có hạn + cảnh báo tại chỗ trên UI | cảnh báo trên UI; tin tới trễ, có dấu thời gian |
+| LLM provider | hết `llm_budget` | phản xạ + cảnh báo mẫu cứng | tin "đã hết ngân sách phân tích" |
+| Duyệt qua chat | yêu cầu hết hạn | không duyệt, ghi vết | tin "yêu cầu đã hết hạn" |
+| Duyệt qua chat | trả lời từ tài khoản lạ hoặc nhóm | từ chối, ghi vết | không có gì thay đổi |
+| Relay (`planned · Q-72`, ngoài I2d/I2e) | relay sập | không ảnh hưởng an toàn; mất truy cập từ xa | không mở được trang từ xa |
+| Đồng hồ | mất điện, chưa có NTP/RTC | dữ kiện giờ `unsynced` ⇒ điều khoản khung giờ thiếu dữ kiện ⇒ chặn | bản duyệt, UI báo đồng hồ chưa đồng bộ |
+| Vết ghi | mất điện giữa một đoạn | mất tối đa phần đuôi sự kiện thường; chặn và duyệt đã flush | `replay` báo đoạn cụt |
+| Cài NeuroEdge Blueprint | digest không khớp | từ chối cài | lỗi ba phần |
 

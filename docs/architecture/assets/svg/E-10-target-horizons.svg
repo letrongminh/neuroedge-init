@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1200" width="1800" height="1200" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="E-10-target-horizons-title E-10-target-horizons-desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1570" width="1800" height="1570" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="E-10-target-horizons-title E-10-target-horizons-desc">
 <title id="E-10-target-horizons-title">E-10 · Target architecture by horizon</title>
 <desc id="E-10-target-horizons-desc">What each horizon adds on top of main. Details and sources: chapter 15; order and dates: roadmap §0.2.</desc>
 <defs>
 <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#334155"/></marker>
 </defs>
-<rect width="1800" height="1200" fill="#ffffff"/>
+<rect width="1800" height="1570" fill="#ffffff"/>
 <text x="32.0" y="42.0" font-size="22" fill="#0f172a" text-anchor="start" font-weight="700">E-10 · Target architecture by horizon</text>
 <text x="32.0" y="66.0" font-size="13" fill="#475569" text-anchor="start">What each horizon adds on top of main. Details and sources: chapter 15; order and dates: roadmap §0.2.</text>
 <rect x="40" y="100" width="1720" height="200" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
@@ -15,6 +15,8 @@
 <text x="54.0" y="721.0" font-size="13" fill="#c2410c" text-anchor="start" font-weight="700">Horizon 2 — service tier v1.1 (I9–I10) · chapter 15 §3</text>
 <rect x="40" y="930" width="1720" height="200" rx="14" fill="#fcfcfd" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="54.0" y="951.0" font-size="13" fill="#94a3b8" text-anchor="start" font-weight="700">Horizon 3 — extensions after Beta (I13–I18) · chapter 15 §4</text>
+<rect x="40" y="1160" width="1720" height="340" rx="14" fill="#fcfcfd" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="54.0" y="1181.0" font-size="13" fill="#94a3b8" text-anchor="start" font-weight="700">Q-72 band — run and share, moved ahead of the v1.0 work (I2d, I2e) · chapter 15 §6</text>
 <path d="M561.0,268.0 L561.0,374.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M1575.0,498.0 L1575.0,520.0 L1575.0,685.0 L1237.0,685.0 L1237.0,744.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M1483.9,868.0 L1328.1,974.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
@@ -125,6 +127,52 @@
 <text x="1237.0" y="1033.9" font-size="12.5" fill="#475569" text-anchor="middle">adapter + HAL-port store on Registry</text>
 <text x="1237.0" y="1052.1" font-size="12.5" fill="#475569" text-anchor="middle">I18 · chapter 16</text>
 <text x="1237.0" y="1070.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="60" y="1204" width="326" height="124" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="223.0" y="1243.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Mission contracts</text>
+<text x="223.0" y="1263.9" font-size="12.5" fill="#475569" text-anchor="middle">mission.v1: devices, may/must, windows</text>
+<text x="223.0" y="1282.1" font-size="12.5" fill="#475569" text-anchor="middle">compiled to tiers · RFC planned · I2d</text>
+<text x="223.0" y="1300.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="398" y="1204" width="326" height="124" rx="10" fill="#f8fafc" stroke="#1d4ed8" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="561.0" y="1243.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Operating agent</text>
+<text x="561.0" y="1263.9" font-size="12.5" fill="#475569" text-anchor="middle">runtime 24/7 + untrusted LLM worker</text>
+<text x="561.0" y="1282.1" font-size="12.5" fill="#475569" text-anchor="middle">detectors before LLM · llm_budget · I2d</text>
+<text x="561.0" y="1300.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="736" y="1204" width="326" height="124" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="899.0" y="1243.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Chat + approval records</text>
+<text x="899.0" y="1263.9" font-size="12.5" fill="#475569" text-anchor="middle">Telegram first · paired sender only</text>
+<text x="899.0" y="1282.1" font-size="12.5" fill="#475569" text-anchor="middle">id · nonce · expiry · digest · I2d</text>
+<text x="899.0" y="1300.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1074" y="1204" width="326" height="124" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1237.0" y="1243.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">NeuroEdge Blueprint + Hub</text>
+<text x="1237.0" y="1263.9" font-size="12.5" fill="#475569" text-anchor="middle">pack / install · whole-package digest</text>
+<text x="1237.0" y="1282.1" font-size="12.5" fill="#475569" text-anchor="middle">static index, evidence unsigned · I2e</text>
+<text x="1237.0" y="1300.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1412" y="1204" width="326" height="124" rx="10" fill="#f8fafc" stroke="#a16207" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1575.0" y="1243.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Emulation first, G1–G4</text>
+<text x="1575.0" y="1263.9" font-size="12.5" fill="#475569" text-anchor="middle">sim physics · gpio-sim (G1, G2) · I2d</text>
+<text x="1575.0" y="1282.1" font-size="12.5" fill="#475569" text-anchor="middle">Wokwi / QEMU (G3) · ESPHome host (G4)</text>
+<text x="1575.0" y="1300.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="60" y="1344" width="326" height="124" rx="10" fill="#f8fafc" stroke="#b91c1c" stroke-width="2.2" stroke-dasharray="7 5"/>
+<text x="223.0" y="1383.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Symmetric safe_state</text>
+<text x="223.0" y="1403.9" font-size="12.5" fill="#475569" text-anchor="middle">declared in board.v1, default off · I2d</text>
+<text x="223.0" y="1422.1" font-size="12.5" fill="#475569" text-anchor="middle">on only with an NC interlock · RFC planned</text>
+<text x="223.0" y="1440.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="398" y="1344" width="326" height="124" rx="10" fill="#f8fafc" stroke="#b91c1c" stroke-width="2.2" stroke-dasharray="7 5"/>
+<text x="561.0" y="1383.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Anti-leak data flow</text>
+<text x="561.0" y="1403.9" font-size="12.5" fill="#475569" text-anchor="middle">only declared destinations</text>
+<text x="561.0" y="1422.1" font-size="12.5" fill="#475569" text-anchor="middle">worker network allowlisted · I2d</text>
+<text x="561.0" y="1440.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="736" y="1344" width="326" height="124" rx="10" fill="#f8fafc" stroke="#475569" stroke-width="1.6" stroke-dasharray="7 5"/>
+<path d="M737,1356 Q899.0,1368 1061,1356" fill="none" stroke="#475569" stroke-width="1.2"/>
+<text x="899.0" y="1383.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Trace segments</text>
+<text x="899.0" y="1403.9" font-size="12.5" fill="#475569" text-anchor="middle">chain of replayable segments</text>
+<text x="899.0" y="1422.1" font-size="12.5" fill="#475569" text-anchor="middle">kept 30 days · RFC planned · I2d</text>
+<text x="899.0" y="1440.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1074" y="1344" width="326" height="124" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1237.0" y="1383.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Relay (optional)</text>
+<text x="1237.0" y="1403.9" font-size="12.5" fill="#475569" text-anchor="middle">TLS pass-through by SNI</text>
+<text x="1237.0" y="1422.1" font-size="12.5" fill="#475569" text-anchor="middle">never on the safety path · Q-72</text>
+<text x="1237.0" y="1440.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="491.6" y="301.5" width="138.8" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="561.0" y="314.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">same walker + ledger</text>
 <rect x="1524.9" y="589.5" width="100.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>

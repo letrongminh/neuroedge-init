@@ -24,6 +24,12 @@
 | **Opus/JSON WebSocket frame** (and SLIP on UART if needed — PRD Appendix D.2) | binary / JSON | firmware (`provider_client.c`, TSK-S5-06) | provider layer / cloud provider | not specified yet | normative in PRD Appendix D.2 — → [`15`](15-target-architecture.md) §2.3 | `planned` |
 | **Black-channel wire and multi-node trace** (`metadata.nodes[]`, `data.node_id`, Q-32) | Zenoh-pico (intent encoding unselected) / JSON | coordinating Pi, MCU node | MCU node, TracePlayer | RFC-node; optional field, no changes to `schemas/` (TSK-W3-04) | via RFC — → [`15`](15-target-architecture.md) §4.3 | `planned` |
 | **`agent.toml` extension tables (`[lab]`, `[nodes]`)** | TOML | agent author | `agent.toml` parser | config parser (TSK-N1-02, RFC-node draft) | no — → [`15`](15-target-architecture.md) §4.2, §4.3 | `planned` |
+| **Mission contract** `mission.v1` (`planned · Q-72`, I2d) | YAML or TOML, not chosen | LLM worker (draft), mission compiler | runtime | schema + compiler (conflict check) | expected RFC — §12.1 | `planned` |
+| **NeuroEdge Blueprint** `blueprint.v1` (`planned · Q-72`, I2e) | package + manifest | seller, maker | `blueprint install`, Hub index | schema + whole-package digest | expected RFC — §12.2 | `planned` |
+| **Data destination declaration** (`planned · Q-72`, I2d) | inside `mission.v1` and the runtime configuration | user | runtime egress | runtime | expected RFC — §12.3 | `planned` |
+| **Chat events** and **approval records** (`planned · Q-72`, I2d) | JSON in the runtime, `trace.v1` events | chat adapter, runtime | runtime, `replay` | runtime | expected RFC (`chat:<id>` source) — §12.4 | `planned` |
+| **`safe_state` in `board.v1`** (`planned · Q-72`, I2d) | TOML | OEM, maker | build, HAL | `schemas/board.v1.json` | expected RFC (conditional safety) — §4 | `planned` |
+| **Trace segments** `trace.v1` (`planned · Q-72`, I2d) | JSON | 24/7 runtime | player, `replay` | `schemas/trace.v1.json` | expected RFC — §7 | `planned` |
 
 ## 2. Gate — `gate.v1`
 
@@ -107,6 +113,8 @@ is rejected, and for `[system_one]` `http://` to another machine is rejected in 
 
 The five core primitives are a closed set for v1.x (FR-HAL-01); new primitives only via RFC, and the four board-optional extension packs (FR-HAL-08, Q-53) enter v1.0 at I2a and I3a: RFC-0007 (`digital.in`, read-only I2C, `analog.in`), RFC-0009 (`numeric` criterion), RFC-0010 (PWM), RFC-0011 (`motion.*`), RFC-0012 (`vision.in`), RFC-0013 (board-optional). Today there are exactly three tier-1 profiles (Q-53 adds `sim-rpi5` and an ESP32-S3 camera board): `sim-default` (copies Box-3 exactly, never richer — invariant 7), `linux-rpi5` (`aec = false` until measured), `esp32s3-box-3`. Application code uses only pin **names**; GPIO numbers belong to the HAL.
 
+**Symmetric `safe_state` (`planned · Q-72`, I2d, pending the conditional-safety RFC).** Today `safe_state` exists only on the `motion.*` channel (`stop` or `hold`, RFC-0011, `hal/board.py`). Under [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) every actuator will have a `safe_state` declared in `board.v1`, default `off`; durations, `max_continuous_ms`, leases, levels L0–L3 (RFC-0018) and the Q-62 gate exemption all speak of "returning to `safe_state`", while the direction *away from* `safe_state` is the one that is gated and limited. A `safe_state` other than `off` can be declared only here — not in a mission contract, gate or NeuroEdge Blueprint — and `safe_state: on` is realised by wiring that is on by default (a normally closed relay) declared as a hardware interlock. Existing profiles (`off`; `motion.*` `stop`/`hold`) keep their behaviour. Precondition: `TODOS.md` #58 (the old reader ignores unknown keys in `board.v1`) must be fixed first, so a new safety key is not silently ignored.
+
 ## 5. Grammar and knowledge
 
 ```toml
@@ -174,6 +182,8 @@ export. By default, a trace hashes `text`, `utterance`, `transcript` at the sour
 RFC-0008 adds `gate_digest` — the digest of the gate that decided each verdict — to every
 `gate_evaluation_begin` they carry.
 
+**Trace segments of the 24/7 runtime (`planned · Q-72`, I2d, pending a `trace.v1` RFC).** A session today is one command process and writes one file when it closes. A runtime running for months will write a **chain of segments** over time (daily or when a size is exceeded): each segment carries the state at its start (gate digest, token ledger, envelope counters, active leases) and the digest of the previous segment. The invariant "one session, one trace" reads again as "one session, one chain of traces, each segment replayable"; a missing segment shows because the digest chain breaks. Writes are append-only, flushed on a timer (about 10 seconds, configurable) and immediately on a blocking verdict or an approval; a power loss loses at most the tail of ordinary events, and `replay` reports a truncated segment. Retention and size: [`08`](08-nfr.md) §7. Changing the envelope of the normative traces is a change that needs an RFC (`CONTRIBUTING.md` §3).
+
 ## 8. UART format
 
 ```text
@@ -239,3 +249,32 @@ Every error has three parts: **where · why · what to do** (FR-DX-04). Code fam
 
 A block caused by a deadline overrun or an unavailable fact source is **not an error**: it is a `BLOCK`
 verdict with `budget_exceeded` or `gate_unreachable`.
+
+## 12. Planned contracts under Q-72 (`planned · Q-72`)
+
+No schema or code exists for anything in this section. Target design per [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định); each contract is an **expected RFC** (no number assigned yet, listed in [`09`](09-adr.md) §6), because adding a new schema to `schemas/` or changing `trace.v1` or `board.v1` is a change that needs an RFC (`CONTRIBUTING.md` §3).
+
+### 12.1 Mission contract — `mission.v1` (I2d)
+
+The unit of rules for a chain of actions across several devices: allowed and forbidden, frequency, time windows, obligations (bounded watchdog form only), data flows (§12.3), on failure, expiry, and `llm_budget` (the LLM cost cap). The mission compiler lowers each clause to the lowest tier that can enforce it — reflex (MCU with `ne_gate`), skill (host), thinking (LLM) — refuses a contradictory contract and points to where it clashes, then generates a deterministic **approval summary of ≤ 5 lines** from a structured diff. The gate is still a pure function; a mission contract does not carry a `safe_state` other than `off` (§4). Time-window clauses read the wall-clock fact; that fact carries `unsynced` when the machine has not synchronized its time and is then treated as a missing fact. Flow: [`06`](06-runtime-flows.md) §11.1.
+
+### 12.2 NeuroEdge Blueprint — `blueprint.v1` (I2e), compared with `manifest.v1`
+
+| | `blueprint.v1` (MVP, I2e) | `manifest.v1` (H2, TSK-K3-03) |
+|:---|:---|:---|
+| Packages | kit (linked BOM), firmware, mission contract templates, detectors, traces as evidence | agent or gate |
+| Distribution | URL (git or HTTPS) + digest; the Hub is a **static index repository** listing URL, digest, evidence (like the I2c plugin index) | OCI Registry (ORAS) |
+| Digest | covers the **whole package**, checked at install; mismatch ⇒ refused | pins the artifact digest |
+| Evidence | traces marked "unsigned" (signing deferred, `TODOS.md` #1) | signed at the Registry |
+| Server operated by NeuroEdge | no (the index is a static git repository) | yes |
+
+When the Hub charges money for sellers, NeuroEdge Blueprint moves to the OCI Registry of horizon 2 — the relationship between the two manifests is settled in the `blueprint.v1` RFC. A NeuroEdge Blueprint only declares; it carries no code that runs in the runtime. It is different from a Home Assistant Blueprint (an automation template) and may carry an HA blueprint.
+
+### 12.3 Data destination declaration (I2d)
+
+The data-flow rule aims to **prevent leaks** (hacking, prompt injection, theft), not to restrict flows the user builds. Each destination the user declares — LLM provider, chat channel, relay, webhook — comes with the fields allowed to be sent to it, including images to the LLM if the user allows it. The runtime decides what the LLM worker *sees* and sends only to declared destinations; sending to an undeclared destination is blocked and traced. Content rules (for example "images never leave the home") are an option the user turns on in the contract, not a default. Network-level enforcement: [`08`](08-nfr.md) §2.
+
+### 12.4 Chat events and approval records (I2d)
+
+- **Chat events:** inbound and outbound messages of the chat adapter, written to the trace with the chat id (paired or not, group or not), never carrying keys or the bot token. Inbound message content is untrusted data.
+- **Approval record:** `{id, nonce, expiry, change digest, approval summary ≤ 5 lines}`. Expiry is measured on the monotonic clock. The reply must target the exact `id`; the runtime checks that the sender is paired, not a group, the nonce is unused, the record has not expired and the digest matches, and only then passes it into the confirmation path with source `chat:<id>` (the same namespaced source grammar as RFC-0017). Every request, approval and refusal is written to `trace.v1` and flushed immediately. Flow: [`06`](06-runtime-flows.md) §11.4.

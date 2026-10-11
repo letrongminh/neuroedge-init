@@ -5,14 +5,15 @@
     { "id": "hospitality", "label": "Khách sạn / nghỉ dưỡng" },
     { "id": "fleet", "label": "Vận hành đội thiết bị (Fleet Operators)" },
     { "id": "smart_home", "label": "Nhà thông minh (Smart Home)" },
-    { "id": "industrial", "label": "Công nghiệp (Industrial IoT)" }
+    { "id": "industrial", "label": "Công nghiệp (Industrial IoT)" },
+    { "id": "maker", "label": "Maker / Home Assistant / ESPHome" }
   ],
   "questions": [
     {
       "id": "segment",
       "text": "Công việc của anh/chị gần nhất với lĩnh vực nào?",
       "type": "single",
-      "options": ["Khách sạn / nghỉ dưỡng", "Vận hành đội thiết bị (Fleet Operators)", "Nhà thông minh (Smart Home)", "Công nghiệp (Industrial IoT)"],
+      "options": ["Khách sạn / nghỉ dưỡng", "Vận hành đội thiết bị (Fleet Operators)", "Nhà thông minh (Smart Home)", "Công nghiệp (Industrial IoT)", "Maker / Home Assistant / ESPHome"],
       "segments": ["all"],
       "hypothesis": "PROFILE",
       "required": true
@@ -169,6 +170,69 @@
       "segments": ["all"],
       "hypothesis": "CEO-X4",
       "required": true
+    },
+    {
+      "id": "maker_built_for_others",
+      "text": "Trong 12 tháng qua, anh/chị đã làm thiết bị tự dựng (Home Assistant, ESPHome, ESP32, Raspberry Pi...) cho người khác chưa?",
+      "type": "single",
+      "options": ["Đã bán (nhận tiền)", "Đã làm cho người khác, không lấy tiền", "Chỉ chia sẻ YAML / firmware / thiết kế công khai", "Chưa"],
+      "segments": ["maker"],
+      "hypothesis": "M-SELL",
+      "required": true
+    },
+    {
+      "id": "maker_share_channel",
+      "text": "Lần gần nhất chia sẻ hay bán, anh/chị dùng kênh nào? (chọn nhiều)",
+      "type": "multi",
+      "options": ["GitHub / gist", "Diễn đàn Home Assistant / ESPHome", "Nhóm Facebook / Discord / Reddit", "Chợ online", "Bán trực tiếp cho người quen", "Chưa chia sẻ hay bán"],
+      "segments": ["maker"],
+      "hypothesis": "M-SELL",
+      "required": false
+    },
+    {
+      "id": "maker_after_sale",
+      "text": "Sau khi giao, thiết bị hỏng thì ai sửa?",
+      "type": "single",
+      "options": ["Tôi, phải tới tận nơi", "Tôi, sửa từ xa", "Người dùng tự sửa", "Chưa hỏng lần nào", "Chưa giao cho ai"],
+      "segments": ["maker"],
+      "hypothesis": "M-SELL",
+      "required": false
+    },
+    {
+      "id": "maker_muted_alerts",
+      "text": "Trong 12 tháng qua, anh/chị đã tắt (mute) kênh thông báo hay automation nào của thiết bị trong nhà vì quá ồn chưa?",
+      "type": "single",
+      "options": ["Đã tắt ít nhất một", "Chưa, thông báo vừa đủ", "Không dùng thông báo"],
+      "segments": ["maker"],
+      "hypothesis": "M-PROACT",
+      "required": false
+    },
+    {
+      "id": "maker_alert_channel",
+      "text": "Anh/chị nhận cảnh báo từ thiết bị qua đâu? (chọn nhiều)",
+      "type": "multi",
+      "options": ["App Home Assistant", "Telegram", "Zalo", "Discord", "Email", "Khác", "Không nhận cảnh báo"],
+      "segments": ["maker"],
+      "hypothesis": "M-PROACT",
+      "required": false
+    },
+    {
+      "id": "maker_llm_spend",
+      "text": "Tháng trước, anh/chị tự trả khoảng bao nhiêu cho API LLM (OpenAI, Anthropic, Gemini...)?",
+      "type": "single",
+      "options": ["Không dùng", "Chỉ dùng mô hình chạy tại chỗ", "Có tài khoản nhưng không trả gì", "Dưới 5 USD", "5–20 USD", "Trên 20 USD", "Không biết"],
+      "segments": ["maker"],
+      "hypothesis": "M-BYOK",
+      "required": false
+    },
+    {
+      "id": "maker_kit_bought",
+      "text": "Trong 12 tháng qua, anh/chị đã mua một kit hay mua linh kiện theo danh sách (BOM) của một hướng dẫn, blog hay video chưa?",
+      "type": "single",
+      "options": ["Đã mua kit", "Đã mua theo BOM của hướng dẫn", "Chỉ tham khảo rồi tự chọn linh kiện", "Chưa"],
+      "segments": ["maker"],
+      "hypothesis": "M-KIT",
+      "required": false
     },
     {
       "id": "incident_story",

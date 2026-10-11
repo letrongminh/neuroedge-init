@@ -37,22 +37,27 @@ def e01_context() -> Diagram:
         "E-01 · System context (C4 L1)",
         "Who uses NeuroEdge and which outside systems it talks to. Every physical action passes a gate first.",
         1820,
-        940,
+        1310,
     )
     # people (left column)
-    d.groups.append(Group("people", 40, 100, 380, 800, "People", "boundary"))
+    d.groups.append(Group("people", 40, 100, 380, 1170, "People", "boundary"))
     people = [
-        ("maker", "Maker / app developer", ("Writes agent.toml, gates, actions", "neuroedge new · run · test")),
-        ("embedded", "Embedded / core engineer", ("Builds firmware, ports the HAL", "build --target esp32s3 · verify")),
-        ("auditor", "Safety reviewer / QA", ("Reads gates and traces", "gate explain · trace view · replay")),
-        ("oem", "OEM hardware partner", ("Declares a board, ports the HAL", "board.toml · compliance vectors")),
-        ("operator", "Fleet operator", ("Rolls out updates, pulls traces", "Fleet OS (I9)")),
+        ("maker", "Maker / app developer", ("Writes agent.toml, gates, actions", "neuroedge new · run · test"), "done"),
+        ("embedded", "Embedded / core engineer", ("Builds firmware, ports the HAL", "build --target esp32s3 · verify"),
+         "done"),
+        ("auditor", "Safety reviewer / QA", ("Reads gates and traces", "gate explain · trace view · replay"), "done"),
+        ("oem", "OEM hardware partner", ("Declares a board, ports the HAL", "board.toml · compliance vectors"), "done"),
+        ("operator", "Fleet operator", ("Rolls out updates, pulls traces", "Fleet OS (I9)"), "planned"),
+        # Q-72: the people of rounds ② and ③
+        ("installer", "Blueprint installer", ("Installs a NeuroEdge Blueprint,", "runs it, approves by chat · I2e"),
+         "planned"),
+        ("seller", "Blueprint seller / micro-OEM", ("Packs, shares and sells a Blueprint", "blueprint pack · I2e"),
+         "planned"),
     ]
-    for i, (pid, title, lines) in enumerate(people):
-        d.boxes.append(Box(pid, 64, 140 + i * 150, 332, 118, title, lines, "person",
-                           "planned" if pid == "operator" else "done"))
+    for i, (pid, title, lines, status) in enumerate(people):
+        d.boxes.append(Box(pid, 64, 140 + i * 150, 332, 118, title, lines, "person", status))
     # the system (middle)
-    d.groups.append(Group("ne", 600, 230, 620, 470, "NeuroEdge system boundary", "host"))
+    d.groups.append(Group("ne", 600, 230, 620, 760, "NeuroEdge system boundary", "host"))
     d.boxes.append(Box("neuroedge", 630, 280, 560, 180, "NeuroEdge",
                        ("Gated edge runtime: SDK + CLI (Python), firmware (C99)",
                         "Every command to a pin passes a typed, versioned gate",
@@ -61,8 +66,12 @@ def e01_context() -> Diagram:
                        ("sim · linux · esp32s3", "virtual or real pins"), "device", "partial"))
     d.boxes.append(Box("files", 930, 540, 260, 130, "Project files",
                        ("agent.toml · gates/*.yaml", "board.toml · traces/*.json"), "store"))
+    d.boxes.append(Box("agent", 630, 820, 560, 130, "Operating agent · Blueprint",
+                       ("trusted runtime 24/7 + untrusted LLM worker (BYOK key) · I2d",
+                        "missions, detectors, chat approval records · I2d",
+                        "blueprint pack / install, digest over the whole package · I2e"), "system", "planned"))
     # external systems (right column)
-    d.groups.append(Group("ext", 1400, 100, 380, 800, "External systems", "cloud"))
+    d.groups.append(Group("ext", 1400, 100, 380, 1170, "External systems", "cloud"))
     ext = [
         ("llm", "LLM providers (System 2)", ("OpenAI-compatible via LiteLLM", "or a user adapter"), "done"),
         ("jev", "Jev on OpenRouter (System 1)", ("System One API, typed questions", "typesafe/jev-1.13"), "done"),
@@ -70,6 +79,11 @@ def e01_context() -> Diagram:
         ("mcp", "MCP clients", ("Claude Desktop, other agents", "stdio JSON-RPC"), "done"),
         ("idf", "ESP-IDF v5.4 + QEMU", ("Toolchain and emulator", "Docker espressif/idf:v5.4"), "done"),
         ("fleet", "Fleet OS · Gate Registry", ("Rollouts, incident traces", "I9 · I10"), "planned"),
+        ("chat", "Chat platforms", ("Telegram first · Slack · Zalo", "reports, commands, approvals · I2d"), "planned"),
+        ("relay", "Relay (optional)", ("TLS pass-through by SNI, no decryption", "never on the safety path · Q-72"),
+         "planned"),
+        ("hub", "Blueprint Hub index", ("static index: URL + whole-package digest", "evidence unsigned · I2e"),
+         "planned"),
     ]
     for i, (eid, title, lines, status) in enumerate(ext):
         d.boxes.append(Box(eid, 1424, 132 + i * 126, 332, 104, title, lines, "external", status))
@@ -80,15 +94,22 @@ def e01_context() -> Diagram:
         Edge("embedded", "neuroedge", "build · flash · verify", via=((L, 349), (L, 370)), label_at=(L, 349)),
         Edge("auditor", "neuroedge", "explain · replay", via=((L - 30, 499), (L - 30, 420)), label_at=(L - 30, 470)),
         Edge("oem", "device", "board + HAL port", via=((L, 649), (L, 605)), label_at=(L, 649)),
-        Edge("operator", "device", "OTA · traces (I9)", dashed=True, via=((760, 799),), label_at=(560, 799)),
+        Edge("operator", "device", "OTA · traces (I9)", dashed=True, via=((560, 799), (560, 640)), label_at=(480, 799)),
         Edge("neuroedge", "llm", "HTTPS · key from env", via=((R - 40, 300), (R - 40, 184)), label_at=(R - 40, 205)),
         Edge("neuroedge", "jev", "HTTPS", via=((R, 330), (R, 310)), label_at=(R, 330)),
         Edge("neuroedge", "speech", "HTTPS or localhost", via=((R - 40, 400), (R - 40, 436)), label_at=(R - 40, 418)),
         Edge("mcp", "neuroedge", "tools/call · stdio", via=((R, 562), (R, 440)), label_at=(R, 520)),
         Edge("neuroedge", "idf", "ESP-IDF project", via=((R - 60, 450), (R - 60, 686)), label_at=(R - 60, 610)),
-        Edge("device", "fleet", "MQTT (planned)", dashed=True, via=((760, 860), (1590, 860)), label_at=(1180, 860)),
+        Edge("device", "fleet", "MQTT (planned)", dashed=True, via=((760, 720), (1340, 720), (1340, 814)),
+             label_at=(1050, 720)),
         Edge("neuroedge", "device", "c.do() → gate → pin", via=((760, 460),), label_at=(760, 500)),
         Edge("neuroedge", "files", "reads · writes", via=((1060, 460),), label_at=(1060, 500)),
+        # Q-72 (planned): chat, relay and the Hub index never sit on the safety path
+        Edge("installer", "agent", "installs · approves", dashed=True),
+        Edge("agent", "chat", "reports · approvals", dashed=True),
+        Edge("agent", "relay", "outbound TLS tunnel", dashed=True, via=((1150, 1066),), label_at=(1290, 1066)),
+        Edge("agent", "hub", "install: URL + digest", dashed=True, via=((1110, 1180),), label_at=(1260, 1180)),
+        Edge("seller", "hub", "publishes (I2e)", dashed=True, via=((230, 1230), (1300, 1230)), label_at=(760, 1230)),
     ]
     return d
 
@@ -122,6 +143,13 @@ def e02_containers() -> Diagram:
                        ("build/gates/*.netree · *.netree.h", "build/esp32s3/  ESP-IDF project"), "store"))
     d.boxes.append(Box("kernel", A, 560, 300, 110, "Linux kernel devices",
                        ("/dev/gpiochipN · hwmon · IIO", "/dev/fbN · PipeWire nodes"), "device", "partial"))
+    # Q-72 (planned): the operating agent is two processes on the home machine (chapter 02 §3)
+    d.boxes.append(Box("worker", B, 560, 340, 120, "LLM worker (untrusted)",
+                       ("holds the BYOK key, never approves", "network: declared provider only",
+                        "local MCP client of the runtime · I2d"), "container", "planned"))
+    d.boxes.append(Box("runtime", C, 560, 300, 120, "Runtime 24/7 (systemd)",
+                       ("HAL · gate · missions · scheduler", "chat adapter + approval check · egress",
+                        "the only HAL holder · I2d"), "container", "planned"))
     d.groups.append(Group("dev", 40, 770, 1360, 260, "ESP32-S3-BOX-3 · Espressif QEMU — C99 on ESP-IDF v5.4",
                           "device"))
     d.boxes.append(Box("fw", B, 820, 340, 170, "Firmware image",
@@ -134,7 +162,10 @@ def e02_containers() -> Diagram:
                        ("OpenAI-compatible · System One API",), "external"))
     d.boxes.append(Box("speech", 1510, 290, 420, 100, "Speech providers", ("STT · TTS, cloud or localhost",), "external"))
     d.boxes.append(Box("client", 1510, 430, 420, 100, "MCP client", ("Claude Desktop starts mcp serve",), "external"))
-    d.boxes.append(Box("fleet", 1510, 590, 420, 120, "Fleet OS · Gate Registry",
+    d.boxes.append(Box("q72", 1510, 580, 420, 120, "Chat · relay · Hub index",
+                       ("Telegram first, Slack, Zalo · I2d", "relay (optional): TLS pass-through · Q-72",
+                        "Blueprint Hub index: URL + digest · I2e"), "external", "planned"))
+    d.boxes.append(Box("fleet", 1510, 720, 420, 120, "Fleet OS · Gate Registry",
                        ("rollouts · trace vault · shared gates", "I9 · I10"), "external", "planned"))
     d.boxes.append(Box("ota", 1510, 850, 420, 110, "OTA image server",
                        ("any static HTTP(S) server", "one signed app image"), "external"))
@@ -150,12 +181,15 @@ def e02_containers() -> Diagram:
         Edge("lib", "speech", "HTTPS", via=((790, 136), (1455, 136), (1455, 340)), label_at=(1455, 300)),
         Edge("client", "mcpsrv", "stdio · child process", via=((1465, 480), (1465, 535), (230, 535)),
              label_at=(760, 535)),
-        Edge("build", "fw", "idf.py build · flash", via=((1210, 735), (730, 735)), label_at=(1000, 735)),
+        Edge("build", "fw", "idf.py build · flash", via=((1380, 440), (1380, 735), (730, 735)),
+             label_at=(1000, 735)),
         Edge("fw", "cli", "UART NE1 lines → record · verify", via=((20, 905), (20, 215)), label_at=(290, 905)),
         Edge("fw", "flash", "trees read in place", label_at=(980, 905)),
         Edge("fw", "ota", "HTTP(S) GET image", via=((700, 1080), (1720, 1080)), label_at=(1180, 1080)),
-        Edge("fw", "fleet", "MQTT (planned)", dashed=True, via=((800, 752), (1440, 752), (1440, 650)),
-             label_at=(1300, 752)),
+        Edge("fw", "fleet", "MQTT (planned)", dashed=True, via=((800, 752), (1440, 752), (1440, 780)),
+             label_at=(1250, 752)),
+        Edge("worker", "runtime", "local MCP", dashed=True),
+        Edge("runtime", "q72", "outbound only", dashed=True, label_at=(1440, 610)),
     ]
     return d
 
@@ -406,9 +440,9 @@ def e08_deployment() -> Diagram:
     d = Diagram(
         "E-08-deployment",
         "E-08 · Deployment (C4)",
-        "Where each part runs today, and where it will run once the boards arrive.",
+        "Where each part runs today, where it will run once the boards arrive, and the planned home machine (Q-72).",
         1800,
-        1000,
+        1370,
     )
     d.groups.append(Group("dev", 40, 100, 560, 520, "Developer machine — macOS or Linux", "host"))
     d.boxes += [
@@ -429,7 +463,7 @@ def e08_deployment() -> Diagram:
             ("container espressif/idf:v5.4", "firmware-qemu · firmware-size · ota-rollback", "agent-firmware · uart-trace"),
             "test"),
         Box("cisec", 690, 490, 500, 110, "security.yml · release-pypi.yml",
-            ("pip-audit · gitleaks · CodeQL · actionlint", "build · SBOM · attest · PyPI at I6"), "test"),
+            ("pip-audit · gitleaks · CodeQL · actionlint", "build · SBOM · attest · PyPI at I6"), "test", "partial"),
         Box("selfhost", 690, 640, 500, 120, "Self-hosted runner with a Box-3",
             ("nightly-hardware: memory-spike", "TSK-S4-05"), "test", "planned"),
     ]
@@ -451,6 +485,36 @@ def e08_deployment() -> Diagram:
         Edge("box3", "otasrv", "GET image", label_at=(1520, 510)),
         Edge("venv", "prov", "HTTPS", via=((630, 170), (630, 880), (1520, 880)), label_at=(1080, 880)),
     ]
+    # Q-72 (planned): the operating agent runs 24/7 on a machine at home; chat, relay and the Hub index
+    # are outside services that never sit on the safety path (chapter 14)
+    d.groups.append(Group("home", 40, 920, 1180, 260, "Home machine — Pi 5 / mini PC / NAS · planned · Q-72",
+                          "planned"))
+    d.boxes += [
+        Box("worker", 70, 970, 520, 150, "LLM worker — own OS user",
+            ("BYOK key only here · never approves", "network allowlist: declared provider only",
+             "local MCP client of the runtime · I2d"), "container", "planned"),
+        Box("runtime", 690, 970, 500, 170, "Runtime 24/7 — systemd service",
+            ("HAL · gate · missions · detectors · scheduler", "chat adapter (bot token) · approval records",
+             "egress only to declared destinations · I2d", "trace segments kept 30 days · I2d"),
+            "container", "planned"),
+    ]
+    d.groups.append(Group("cloudq", 1280, 920, 480, 410, "Outside services — planned · Q-72", "planned"))
+    d.boxes += [
+        Box("chat", 1310, 960, 420, 100, "Telegram cloud (chat)", ("bot API, reached outbound · I2d",), "external",
+            "planned"),
+        Box("relay", 1310, 1080, 420, 100, "Relay (optional)", ("TLS pass-through by SNI, no decryption · Q-72",),
+            "external", "planned"),
+        Box("hub", 1310, 1200, 420, 100, "Blueprint Hub index", ("static git / HTTPS · URL + digest · I2e",),
+            "external", "planned"),
+    ]
+    d.edges += [
+        Edge("worker", "runtime", "local MCP", dashed=True, label_at=(640, 1045)),
+        Edge("worker", "prov", "HTTPS · allowlisted", dashed=True, via=((540, 850), (1250, 850), (1250, 725)),
+             label_at=(900, 850)),
+        Edge("runtime", "chat", "bot API", dashed=True, label_at=(1250, 1015)),
+        Edge("runtime", "relay", "TLS tunnel", dashed=True, label_at=(1250, 1110)),
+        Edge("runtime", "hub", "install · digest", dashed=True, via=((1100, 1250),), label_at=(1200, 1250)),
+    ]
     return d
 
 
@@ -459,6 +523,7 @@ def e08_deployment() -> Diagram:
 INCREMENTS = {
     "I0": "Contract core on sim", "I1": "Internal preview on sim", "I2": "linux on par with sim",
     "I2a": "Primitives: sim, linux", "I2b": "Kits and quick build", "I2c": "Open platform: plug-in SDK",
+    "I2d": "Missions and operating agent", "I2e": "NeuroEdge Blueprint MVP",
     "I3": "Gate on a real Box-3",
     "I3a": "New primitives on esp32s3", "I4": "Voice on the host", "I4a": "NeuroEdge Lab on the host",
     "I5": "Voice on Box-3", "I5a": "NeuroEdge Lab on the chip", "I6": "Public release", "I7": "v1.0 = MVP",
@@ -496,7 +561,7 @@ def _roadmap_matrix() -> list[tuple[str, str, str, str]]:
 # dùng"). Which increments belong to which milestone is read from that table, never repeated here.
 MILESTONES = {
     1: "Try it on a laptop", 2: "Real devices on a Raspberry Pi", 3: "The gate on a $5 chip",
-    4: "Talk to the device", 5: "Build by conversation", 6: "Public launch: first outside users",
+    4: "Talk to the device", 5: "Build and run by conversation, share a Blueprint", 6: "Public launch: first outside users",
     7: "v1.0: ready to ship in products", 8: "Developer Beta", 9: "Run a fleet (v1.1)",
     10: "Grow the ecosystem",
 }
@@ -549,6 +614,7 @@ def e09_evolution() -> Diagram:
                                (INCREMENTS[inc], f"{progress} tasks", forecast), "component",
                                status_of.get(glyph, "planned")))
         y_at[col] += h + 22
+    d.height = int(max(y_at.values())) + 70  # a milestone that gains a row of increments grows the poster
     return d
 
 
@@ -558,7 +624,7 @@ def e10_horizons() -> Diagram:
         "E-10 · Target architecture by horizon",
         "What each horizon adds on top of main. Details and sources: chapter 15; order and dates: roadmap §0.2.",
         1800,
-        1200,
+        1570,
     )
     w, gap = 326, 12
     col = [60 + c * (w + gap) for c in range(5)]
@@ -594,6 +660,18 @@ def e10_horizons() -> Diagram:
             ("vision", "Vision on jetson, multimodal", ("vision.in itself ships in v1.0 (Q-53)", "facts only, never L3 authority · I16, I17"), "component", "planned"),
             ("eco", "Ecosystem", ("adapter + HAL-port store on Registry", "I18 · chapter 16"), "component", "planned"),
         ]),
+        # Q-72 reorders the work: this band comes before the rest of Horizon 1 (roadmap §0.2)
+        ("q72", "Q-72 band — run and share, moved ahead of the v1.0 work (I2d, I2e) · chapter 15 §6", "planned", [
+            ("mission", "Mission contracts", ("mission.v1: devices, may/must, windows", "compiled to tiers · RFC planned · I2d"), "component", "planned"),
+            ("agent", "Operating agent", ("runtime 24/7 + untrusted LLM worker", "detectors before LLM · llm_budget · I2d"), "container", "planned"),
+            ("chat", "Chat + approval records", ("Telegram first · paired sender only", "id · nonce · expiry · digest · I2d"), "external", "planned"),
+            ("blueprint", "NeuroEdge Blueprint + Hub", ("pack / install · whole-package digest", "static index, evidence unsigned · I2e"), "component", "planned"),
+            ("emul", "Emulation first, G1–G4", ("sim physics · gpio-sim (G1, G2) · I2d", "Wokwi / QEMU (G3) · ESPHome host (G4)"), "test", "planned"),
+            ("safe", "Symmetric safe_state", ("declared in board.v1, default off · I2d", "on only with an NC interlock · RFC planned"), "gate", "planned"),
+            ("egress", "Anti-leak data flow", ("only declared destinations", "worker network allowlisted · I2d"), "gate", "planned"),
+            ("segments", "Trace segments", ("chain of replayable segments", "kept 30 days · RFC planned · I2d"), "store", "planned"),
+            ("relay", "Relay (optional)", ("TLS pass-through by SNI", "never on the safety path · Q-72"), "external", "planned"),
+        ]),
     ]
     y, row_pitch, tops = 100, 140, {}
     for gid, label, kind, items in bands:
@@ -623,9 +701,9 @@ def e11_ecosystem() -> Diagram:
         "E-11 · Ecosystem landscape (C4 system landscape)",
         "Who takes part, what they share, and the platforms that carry it. Details and sources: chapter 16.",
         1820,
-        1050,
+        1480,
     )
-    d.groups.append(Group("parties", 40, 100, 380, 880, "Parties (PRD §2.1)", "boundary"))
+    d.groups.append(Group("parties", 40, 100, 380, 1210, "Parties (PRD §2.1)", "boundary"))
     parties = [
         ("u1", "U1 · Maker", ("builds an agent, no account", "shares gates, agents"), "done"),
         ("u2", "U2 · Embedded team lead", ("tests safety in CI", "moves boards without rewrites"), "done"),
@@ -637,6 +715,13 @@ def e11_ecosystem() -> Diagram:
     ]
     for i, (pid, title, lines, status) in enumerate(parties):
         d.boxes.append(Box(pid, 64, 140 + i * 118, 332, 104, title, lines, "person", status))
+    # Q-72 (planned): the people of round ③, below the bottom routes of U3 and U7
+    d.boxes += [
+        Box("seller", 64, 1060, 332, 104, "Blueprint seller / micro-OEM",
+            ("packs and sells a NeuroEdge Blueprint", "kit + firmware + mission · I2e"), "person", "planned"),
+        Box("installer", 64, 1182, 332, 104, "Blueprint installer",
+            ("installs a Blueprint by URL + digest", "runs it on emulation first · I2e"), "person", "planned"),
+    ]
     d.groups.append(Group("core", 600, 100, 620, 400, "Source-available core and open standards", "host"))
     d.boxes.append(Box("ne", 630, 150, 560, 140, "NeuroEdge core",
                        ("SDK + CLI + firmware — PolyForm Noncommercial (Q-45)",
@@ -655,7 +740,11 @@ def e11_ecosystem() -> Diagram:
     for i, (aid, title, lines) in enumerate(assets):
         r, c = divmod(i, 2)
         d.boxes.append(Box(aid, 630 + c * 290, 590 + r * 190, 270, 150, title, lines, "component"))
-    d.groups.append(Group("platforms", 1400, 100, 380, 880, "Platforms (chapter 16 §4)", "cloud"))
+    d.groups.append(Group("bpg", 600, 1030, 620, 190, "Shared asset — planned · Q-72", "planned"))
+    d.boxes.append(Box("blueprint", 630, 1060, 560, 130, "NeuroEdge Blueprint",
+                       ("kit + firmware + mission template + detectors", "evidence trace, unsigned before MVP · I2e"),
+                       "component", "planned"))
+    d.groups.append(Group("platforms", 1400, 100, 380, 1340, "Platforms (chapter 16 §4)", "cloud"))
     platforms = [
         ("repo", "Source repository", ("public · issues · RFCs",), "done"),
         ("pypi", "PyPI + public schema URLs", ("release workflow ready · I6",), "planned"),
@@ -663,7 +752,11 @@ def e11_ecosystem() -> Diagram:
         ("fleet", "Fleet OS", ("the one commercial service · I9",), "planned"),
         ("index", "Community plug-in index", ("search/install · not a Marketplace · I2c",), "planned"),
         ("aura", "AURA vertical app", ("Khối 4 · outside the roadmap",), "planned"),
-        ("market", "Marketplace", ("Khối 5 · only after G1–G4",), "planned"),
+        ("market", "Marketplace", ("Khối 5 · after the 8-week gate (Q-72)",), "planned"),
+        ("chat", "Chat platforms", ("Telegram first · Slack · Zalo · I2d",), "planned"),
+        ("hub", "Blueprint Hub index", ("static index · revenue share later · I2e",), "planned"),
+        ("relay", "Relay (optional)", ("TLS pass-through · paid option · Q-72",), "planned"),
+        ("kits", "Kit suppliers", ("BOM links · kit commission · Q-72",), "planned"),
     ]
     for i, (pid, title, lines, status) in enumerate(platforms):
         d.boxes.append(Box(pid, 1424, 140 + i * 118, 332, 96, title, lines, "external", status))
@@ -681,6 +774,11 @@ def e11_ecosystem() -> Diagram:
         Edge("ne", "repo", "source · RFCs", via=((R, 220), (R, 188)), label_at=(R, 205)),
         Edge("std", "pypi", "schemas published", dashed=True, via=((R - 40, 395), (R - 40, 306)), label_at=(R - 40, 360)),
         Edge("gates", "registry", "share (planned)", dashed=True, via=((R, 665), (R, 424)), label_at=(R, 580)),
+        # Q-72 (planned): the Blueprint flywheel — build, run, share, install
+        Edge("seller", "blueprint", "packs · sells", dashed=True),
+        Edge("installer", "blueprint", "installs", dashed=True, via=((500, 1234), (500, 1170)), label_at=(460, 1234)),
+        Edge("blueprint", "hub", "listed: URL + digest", dashed=True),
+        Edge("blueprint", "kits", "BOM links", dashed=True, via=((1100, 1368),), label_at=(1260, 1368)),
     ]
     return d
 

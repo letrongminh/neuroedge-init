@@ -1,10 +1,12 @@
 # NeuroEdge
 
-**Physical AI, under contract.** No contract, no action: every command to the hardware
-passes the gate — CI-tested, write once, run anywhere.
-*Hợp đồng vào Physical AI — không hợp đồng, không hành động.*
+**From an idea to a physical AI product: build it, run it safely, share and sell it.**
+Physical AI, under contract — no contract, no action: every command to the hardware passes
+the gate.
+*Nơi biến ý định thành sản phẩm vật lý có AI — dựng, chạy an toàn, chia sẻ và bán.*
 
-Chatbot trả lời sai thì bấm
+Đó là hướng đi (Q-72); agent vận hành và NeuroEdge Blueprint **chưa có mã**. Cái đã chạy hôm
+nay là lớp niềm tin bên dưới. Chatbot trả lời sai thì bấm
 *Regenerate*; agent vật lý sai thì chốt cửa đã mở, đèn cầu thang đã tắt — không bấm lại
 được. NeuroEdge đặt một **gate** (chính sách an toàn dạng YAML, có phiên bản, kế thừa được)
 trước mọi lệnh ra phần cứng. Lời gọi từ LLM hay từ agent khác chỉ là *yêu cầu*: gate quyết

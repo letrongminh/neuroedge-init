@@ -24,6 +24,12 @@
 | **Khung WebSocket Opus/JSON** (và SLIP trên UART nếu cần — PRD Phụ lục D.2) | nhị phân / JSON | firmware (`provider_client.c`, TSK-S5-06) | lớp provider / nhà cung cấp cloud | chưa định | quy phạm PRD Phụ lục D.2 — → [`15`](15-target-architecture.md) §2.3 | `planned` |
 | **Dây black-channel và vết ghi đa node** (`metadata.nodes[]`, `data.node_id`, Q-32) | Zenoh-pico (mã hoá ý định chưa chọn) / JSON | Pi điều phối, node MCU | node MCU, TracePlayer | RFC-node; trường tuỳ chọn, không sửa `schemas/` (TSK-W3-04) | qua RFC — → [`15`](15-target-architecture.md) §4.3 | `planned` |
 | **Bảng mở rộng `agent.toml` (`[lab]`, `[nodes]`)** | TOML | người viết agent | parser `agent.toml` | parser cấu hình (TSK-N1-02, RFC-node draft) | không — → [`15`](15-target-architecture.md) §4.2, §4.3 | `planned` |
+| **Hợp đồng nhiệm vụ** `mission.v1` (`planned · Q-72`, I2d) | YAML hoặc TOML, chưa chọn | LLM worker (bản nháp), trình biên dịch nhiệm vụ | runtime | lược đồ + trình biên dịch (kiểm mâu thuẫn) | RFC dự kiến — §12.1 | `planned` |
+| **NeuroEdge Blueprint** `blueprint.v1` (`planned · Q-72`, I2e) | gói + manifest | người bán, maker | `blueprint install`, Hub index | lược đồ + digest toàn gói | RFC dự kiến — §12.2 | `planned` |
+| **Khai báo đích dữ liệu** (`planned · Q-72`, I2d) | trong `mission.v1` và cấu hình runtime | người dùng | cửa ra egress của runtime | runtime | RFC dự kiến — §12.3 | `planned` |
+| **Sự kiện chat** và **bản ghi duyệt** (`planned · Q-72`, I2d) | JSON trong runtime, sự kiện `trace.v1` | adapter chat, runtime | runtime, `replay` | runtime | RFC dự kiến (nguồn `chat:<id>`) — §12.4 | `planned` |
+| **`safe_state` trong `board.v1`** (`planned · Q-72`, I2d) | TOML | OEM, maker | build, HAL | `schemas/board.v1.json` | RFC dự kiến (an toàn có điều kiện) — §4 | `planned` |
+| **Đoạn vết ghi** `trace.v1` (`planned · Q-72`, I2d) | JSON | runtime 24/7 | player, `replay` | `schemas/trace.v1.json` | RFC dự kiến — §7 | `planned` |
 
 ## 2. Gate — `gate.v1`
 
@@ -109,6 +115,16 @@ Năm nguyên thủy lõi là tập đóng cho v1.x (FR-HAL-01); nguyên thủy m
 bao giờ giàu hơn — bất biến 7), `linux-rpi5` (`aec = false` tới khi đo đạt), `esp32s3-box-3`. Mã ứng dụng
 chỉ dùng **tên** chân; số GPIO thuộc về HAL.
 
+**`safe_state` đối xứng (`planned · Q-72`, I2d, chờ RFC an toàn có điều kiện).** Hôm nay `safe_state`
+chỉ có ở kênh `motion.*` (`stop` hoặc `hold`, RFC-0011, `hal/board.py`). Theo [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) mọi cơ cấu chấp
+hành sẽ có `safe_state` khai trong `board.v1`, mặc định `off`; thời lượng, `max_continuous_ms`, lease,
+mức L0–L3 (RFC-0018) và miễn gate của Q-62 đều nói về "trở về `safe_state`", còn hướng *rời*
+`safe_state` là hướng bị gate và giới hạn. `safe_state` khác `off` chỉ được khai ở đây — không ở hợp
+đồng nhiệm vụ, gate hay NeuroEdge Blueprint — và `safe_state: on` hiện thực bằng đấu dây mặc định bật
+(rơ-le thường đóng) khai làm khoá liên động phần cứng. Profile hiện có (`off`; `motion.*` `stop`/`hold`)
+giữ nguyên hành vi. Điều kiện trước: `TODOS.md` #58 (bộ đọc cũ bỏ qua khoá lạ trong `board.v1`) phải
+sửa trước, để một khoá an toàn mới không bị lặng lẽ bỏ qua.
+
 ## 5. Ngữ pháp và tri thức
 
 ```toml
@@ -174,6 +190,15 @@ Mặc định, vết ghi băm `text`, `utterance`, `transcript` tại nguồn v�
 RFC; RFC-0008 thêm `gate_digest` — digest của gate đã quyết từng phán quyết — vào mỗi
 `gate_evaluation_begin` của chúng.
 
+**Đoạn vết ghi của runtime 24/7 (`planned · Q-72`, I2d, chờ RFC `trace.v1`).** Một phiên hôm nay là
+một tiến trình lệnh và ghi một tệp khi đóng. Runtime chạy nhiều tháng sẽ ghi một **chuỗi đoạn** theo thời
+gian (mỗi ngày hoặc khi vượt cỡ): mỗi đoạn mang trạng thái đầu đoạn (gate digest, sổ token, bộ đếm phong
+bì, lease đang chạy) và digest của đoạn trước. Bất biến "một phiên một vết ghi" đọc lại thành "một phiên
+một chuỗi vết ghi, mỗi đoạn replay được"; đoạn thiếu lộ ra vì chuỗi digest đứt. Ghi nối tiếp, flush theo
+thời gian (khoảng 10 giây, khai được) và ngay khi có phán quyết chặn hay lời duyệt; mất điện mất tối đa
+phần đuôi sự kiện thường, `replay` báo đoạn cụt. Hạn giữ và cỡ: [`08`](08-nfr.md) §7. Đổi vỏ vết ghi
+chuẩn mực là thay đổi cần RFC (`CONTRIBUTING.md` §3).
+
 ## 8. Định dạng trên UART
 
 ```text
@@ -237,3 +262,52 @@ Mọi lỗi có ba phần: **ở đâu · vì sao · cách xử lý** (FR-DX-04)
 
 Chặn vì quá hạn hay mất nguồn dữ kiện **không phải lỗi**: đó là một phán quyết `BLOCK` với
 `budget_exceeded` hoặc `gate_unreachable`.
+
+## 12. Hợp đồng quy hoạch theo Q-72 (`planned · Q-72`)
+
+Chưa có lược đồ hay mã nào trong mục này. Thiết kế đích theo [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định); mỗi hợp đồng là một **RFC dự kiến**
+(chưa cấp số, danh sách ở [`09`](09-adr.md) §6), vì đưa một lược đồ mới vào `schemas/` hay đổi `trace.v1`,
+`board.v1` là thay đổi cần RFC (`CONTRIBUTING.md` §3).
+
+### 12.1 Hợp đồng nhiệm vụ — `mission.v1` (I2d)
+
+Đơn vị luật cho một chuỗi hành động trên nhiều thiết bị: được và cấm, tần suất, khung giờ, nghĩa vụ
+(chỉ dạng watchdog có cận), luồng dữ liệu (§12.3), khi hỏng, hết hạn, và `llm_budget` (trần chi phí LLM).
+Trình biên dịch nhiệm vụ hạ mỗi điều khoản xuống tầng thấp nhất cưỡng chế được — phản xạ (MCU có
+`ne_gate`), kỹ năng (host), suy nghĩ (LLM) — từ chối hợp đồng mâu thuẫn và chỉ rõ chỗ đụng, rồi sinh
+**bản duyệt ≤ 5 dòng** tất định từ diff có cấu trúc. Gate vẫn là hàm thuần; hợp đồng nhiệm vụ không mang
+`safe_state` khác `off` (§4). Điều khoản khung giờ đọc dữ kiện giờ tường; dữ kiện đó mang `unsynced` khi
+máy chưa đồng bộ giờ và khi đó được coi là thiếu dữ kiện. Luồng: [`06`](06-runtime-flows.md) §11.1.
+
+### 12.2 NeuroEdge Blueprint — `blueprint.v1` (I2e), so với `manifest.v1`
+
+| | `blueprint.v1` (MVP, I2e) | `manifest.v1` (H2, TSK-K3-03) |
+|:---|:---|:---|
+| Đóng gói | kit (BOM liên kết), firmware, hợp đồng nhiệm vụ mẫu, bộ phát hiện, vết ghi làm bằng chứng | agent hoặc gate |
+| Phân phối | URL (git hoặc HTTPS) + digest; Hub là **kho index tĩnh** liệt kê URL, digest, bằng chứng (kiểu index plugin I2c) | OCI Registry (ORAS) |
+| Digest | phủ **toàn gói**, kiểm khi cài; lệch ⇒ từ chối | ghim digest artifact |
+| Bằng chứng | vết ghi ghi rõ "chưa ký" (ký hoãn, `TODOS.md` #1) | ký ở Registry |
+| Máy chủ NeuroEdge vận hành | không (index là kho git tĩnh) | có |
+
+Khi Hub thu tiền cho người bán, NeuroEdge Blueprint chuyển sang OCI Registry của chân trời 2 — quan hệ
+giữa hai manifest chốt trong RFC `blueprint.v1`. NeuroEdge Blueprint chỉ khai báo, không mang mã chạy
+trong runtime. Nó khác Home Assistant Blueprint (mẫu automation) và có thể mang kèm một HA blueprint.
+
+### 12.3 Khai báo đích dữ liệu (I2d)
+
+Luật luồng dữ liệu nhằm **chống rò rỉ** (hack, prompt injection, đánh cắp), không hạn chế luồng người
+dùng tự dựng. Mỗi đích người dùng khai — nhà cung cấp LLM, kênh chat, relay, webhook — kèm trường được
+phép gửi tới nó, kể cả ảnh tới LLM nếu người dùng cho phép. Runtime quyết định LLM worker *thấy* gì và
+chỉ gửi ra đích đã khai; gửi tới đích không khai bị chặn và ghi vết. Luật nội dung (ví dụ "ảnh không rời
+nhà") là tuỳ chọn người dùng bật trong hợp đồng, không phải mặc định. Cưỡng chế ở mức mạng:
+[`08`](08-nfr.md) §2.
+
+### 12.4 Sự kiện chat và bản ghi duyệt (I2d)
+
+- **Sự kiện chat:** tin vào và ra của adapter chat, ghi vào vết ghi với id chat (đã ghép hay chưa, có phải
+  nhóm), không bao giờ mang khoá hay token bot. Nội dung tin vào là dữ liệu không tin cậy.
+- **Bản ghi duyệt:** `{id, nonce, hạn, digest thay đổi, bản duyệt ≤ 5 dòng}`. Hạn tính bằng đồng hồ đơn
+  điệu. Trả lời phải nhắm đúng `id`; runtime kiểm người gửi đã ghép đôi, không phải nhóm, nonce chưa
+  dùng, còn hạn, digest khớp, rồi mới đưa vào đường xác nhận với nguồn `chat:<id>` (cùng văn phạm nguồn
+  theo không gian tên của RFC-0017). Mỗi yêu cầu, lời duyệt và lời từ chối ghi vào `trace.v1` và flush
+  ngay. Luồng: [`06`](06-runtime-flows.md) §11.4.

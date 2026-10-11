@@ -7,9 +7,10 @@
 > cắt: task, tiêu chí ra và phụ thuộc chỉ nằm ở [`neuroedge-roadmap.md`](neuroedge-roadmap.md)
 > increments **I4a** (host, §4.5.1) và **I5a** (chip, §4.6.1), phong bì N2 ở **I2a** (§4.3.1);
 > không có thang cắt riêng (roadmap §9.1). Quyết định chỉ nằm ở `neuroedge-prd.md` §15: **Q-71**
-> (NeuroEdge Lab qua MCP, thay NeuroBrain và Q-31), **Q-55** (vào MVP, phạm vi giữ nguyên).
+> (NeuroEdge Lab qua MCP, thay NeuroBrain và Q-31), **Q-55** (vào MVP, phạm vi giữ nguyên), **Q-72** (Lab là
+> vòng ① của NeuroEdge Blueprint; agent vận hành; Lab vòng ① dời sang **I2d**).
 
-**Cập nhật:** 2026-10-10 (Q-71: tệp này trước là `neuroedge-design-neurobrain.md`) · lịch sử
+**Cập nhật:** 2026-10-11 (Q-72: §1.3.4, §1.5; Q-71: tệp này trước là `neuroedge-design-neurobrain.md`) · lịch sử
 thay đổi: `CHANGELOG.md`
 
 **Tài liệu nguồn:**
@@ -23,10 +24,10 @@ thay đổi: `CHANGELOG.md`
 **Ngoài phạm vi:**
 - Tool MCP điều khiển chân thô, không qua gate.
 - Tool MCP khoá chính sách, sửa `digests.lock`, bật `[lab]` hay trả lời `ask` — không bao giờ có (§1.3.3).
-- Một vòng LLM riêng của NeuroEdge để dựng hợp đồng (Q-71). System 2 vẫn là bên gọi lúc chạy, việc khác.
+- Một vòng LLM riêng của NeuroEdge để dựng hợp đồng (Q-71). LLM lúc chạy thuộc *agent vận hành* (Q-72): giải thích và đề xuất sửa đổi, không dựng hay khoá hợp đồng.
 - Blacklist chân.
 - Runtime Lua kiểu ESP-Claw.
-- Kênh IM (Telegram, Zalo).
+- Kênh IM (Telegram, Zalo) — không thuộc Lab; đã vào phạm vi sản phẩm ở agent vận hành (Q-72).
 - Sinh ràng buộc gate từ datasheet.
 - Client chỉ chạy trên cloud (ChatGPT): cần cổng mạng không mTLS — `TODOS.md` #61.
 
@@ -174,6 +175,20 @@ ba hiện thực thì cần RFC (CONTRIBUTING §3).
 | Trả lời `ask` | Q-26: `mcp` ∉ `HUMAN_SOURCES`. Người bấm trên Lab Monitor |
 | Ghi chân không qua gate, ghi I2C | Nguyên tắc 1; RFC-0007 không có hàm ghi I2C |
 
+#### 1.3.4 Dự kiến theo Q-72 (planned · Q-72, I2d)
+
+Vòng ① của Q-72 kéo bề mặt dựng từ bring-up một bo lên dựng cả thiết bị. Ba năng lực dưới đây là dự kiến; tên
+tool, đầu vào và đầu ra chốt ở `docs/spec/lab_tools.md` (TSK-N0-07) như mọi tool khác, không đặt ở đây:
+
+| Năng lực | Việc | Lớp |
+|:---|:---|:---|
+| Gợi ý kit và BOM | Từ ý định của người dùng, đề xuất kit đã kiểm chứng, sơ đồ đấu dây và danh sách mua (BOM có nơi mua) | Tool dựng — không hiệu ứng vật lý |
+| Kiểm hợp đồng nhiệm vụ nháp | Chấm bản nháp hợp đồng nhiệm vụ như `lab_draft_check` chấm gate nháp: mâu thuẫn bị từ chối, chỉ rõ điều khoản đụng nhau, trước khi người duyệt; cần lược đồ `mission.v1` (RFC dự kiến) | Tool dựng — cùng phép kiểm ở CI |
+| `lab doctor` theo từng cảm biến | Ngoài kiểm tách quyền (TSK-N0-08), kiểm từng cảm biến sau khi lắp: "cảm biến oxy đọc 0 — kiểm lại dây vàng" | Lệnh CLI, đọc qua `dispatch()` |
+
+Ba điều không đổi: các năng lực này vẫn là tool dựng hoặc đi qua gate; không tool nào khoá hợp đồng nhiệm vụ hay
+trả lời `ask` (§1.3.3).
+
 ### 1.4 Bảy nguyên tắc
 
 | # | Nguyên tắc | Hệ quả |
@@ -185,6 +200,33 @@ ba hiện thực thì cần RFC (CONTRIBUTING §3).
 | 5 | **AI không tự khoá chính sách** | Mọi thứ client nộp đều là bản nháp (`0.1.0-draft`); không tool nào khoá được; khoá chỉ qua `gate lint`, PR và người duyệt |
 | 6 | **`sim` không mạnh hơn bo tham chiếu** | Không tự viết emulator (Q-16, Q-21). Dữ liệu bus trên `sim` chỉ phát lại từ trace |
 | 7 | **Quản trị trước, mã sau** | Mục `Q-N`, threat model và RFC đi trước mã của khối tương ứng |
+
+### 1.5 Lab và agent vận hành (Q-72)
+
+Q-72 đặt Lab vào ba vòng của NeuroEdge Blueprint (dựng, chạy, chia sẻ/bán) và thêm một vai mới bên cạnh nó.
+
+| | **NeuroEdge Lab** | **Agent vận hành** |
+|:---|:---|:---|
+| Vòng | ① Dựng | ② Chạy |
+| Sống ở đâu | Trong phiên client MCP của người dùng; phiên đóng là hết | Trên máy nhà, 24/7: runtime tin cậy + LLM worker không tin cậy |
+| LLM của ai | Client người dùng chọn (Q-71) | Key của người dùng (BYOK, qua LiteLLM, có mô hình tại chỗ), có trần `llm_budget` |
+| LLM làm gì | Viết bản nháp: action, gate, hợp đồng nhiệm vụ | Giải thích xu hướng và **đề xuất** sửa đổi hợp đồng, chỉ khi bộ phát hiện tất định bắn sự kiện |
+| Không bao giờ | Khoá bản nháp, trả lời `ask` (§1.3.3) | Khoá hay duyệt; gửi lời duyệt thay người |
+
+**Dùng lại từ tệp này:**
+
+- **Trigger của N6 là mầm** của bộ lập lịch và bộ phát hiện của agent vận hành: luật "khi X thì Y" là cấu hình,
+  chỉ trỏ `@action` đã khoá, debounce và trần tần suất nằm ở runtime vì runtime chạy cả khi không có phiên nào (§12).
+- **Tách quyền của §2.4 dùng lại cho máy nhà giữ key.** LLM worker là một client MCP không tin cậy như client có
+  shell: runtime giữ quyền thiết bị và gán nguồn gọi; worker giữ key BYOK nhưng không ghi được cây chính sách mà
+  runtime nạp, và mạng của nó chỉ tới endpoint provider đã khai.
+- **Xác nhận của người (§2.2) mở rộng theo Q-72:** ngoài Lab Monitor, người duyệt được qua kênh chat đã ghép đôi —
+  `ask` lẫn sửa đổi hợp đồng — bằng bản ghi duyệt có mã một lần, hạn và bản duyệt ≤ 5 dòng do runtime sinh. Nguồn
+  `mcp` (client Lab lẫn LLM worker) vẫn ∉ `HUMAN_SOURCES`. Vòng đời ghép đôi: `TODOS.md` #62.
+
+Mọi phần của bảng trên chưa có mã là dự kiến (I2d); phần chạm `schemas/` (`mission.v1`, nguồn `chat:<id>`) cần RFC
+(CONTRIBUTING §3). Lập luận: `neuroedge-proposal.md` §8.12 và
+[`docs/business/proposal-blueprint-2026-10-11.md`](../docs/business/proposal-blueprint-2026-10-11.md).
 
 ---
 
@@ -252,7 +294,7 @@ giữ bản nháp khỏi bản phát hành, không giữ nó khỏi máy của n
 Chỉ có tài liệu, không có mã (nguyên tắc 7, §1.4): mục `Q-N` (Q-71), threat model §2c, đặc tả
 bề mặt tool (§1.3), quy trình duyệt bản nháp, hướng dẫn tách quyền thiết bị (§2.4).
 
-→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N0.
+→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N0; TSK-N0-07, N0-08 dời sang I2d theo Q-72 (§4.3.4).
 
 ---
 
@@ -268,7 +310,7 @@ trên bo `linux` thật cần phiên tương tác `linux` (TSK-S5-10).
 **Cấu hình client.** `mcp desktop-config --lab` cho Claude Desktop; với client có shell
 (Claude Code), một mục `.mcp.json` tương đương. Vẫn đúng một mục server mỗi client (TSK-N1-05).
 
-→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N1.
+→ Task và tiêu chí ra: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N1; TSK-N1-02, N1-04, N1-05 dời sang I2d theo Q-72 (§4.3.4).
 
 ---
 
@@ -327,7 +369,7 @@ bo thật, chỉ gate đã khoá được nạp (§2.4):
 4. Ghi bằng `templates.scaffold`/`_render` có sẵn, chỉ vào thư mục agent của người dùng.
 5. PR của bản nháp in `gate explain` bằng lời, diff chính sách và các test ALLOW/BLOCK.
 
-→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N5.
+→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N5; TSK-N5-01…03, N5-05, N5-06 dời sang I2d theo Q-72 (§4.3.4).
 
 ---
 
@@ -354,7 +396,7 @@ Luật "khi X thì Y" là **cấu hình agent**, không phải mở rộng gate.
 trigger nháp; `lab_trigger_check` chấm nó; runtime chạy nó — kể cả khi không có phiên client
 nào mở, nên debounce và trần tần suất nằm ở runtime, không ở client.
 
-→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I4a (§4.5.1), Khối N6.
+→ Task: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) I2d (§4.3.4), Khối N6 — dời từ I4a theo Q-72.
 
 ---
 
@@ -368,7 +410,7 @@ chip chỉ qua cổng có xác thực của TSK-P2-04, hoặc qua UART.
 
 ## 14. Cổng nhu cầu và cột mốc
 
-→ Q-40 bỏ luật cổng nhu cầu riêng của NeuroBrain; Q-56 bỏ luôn luật cổng nhu cầu chung. Tín hiệu đo của I4a và I5a: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §4.5.1 và §4.6.1.
+→ Q-40 bỏ luật cổng nhu cầu riêng của NeuroBrain; Q-56 bỏ luôn luật cổng nhu cầu chung; Q-72 khôi phục một cổng chung, 8 tuần sau khi chốt (`neuroedge-proposal.md` §8.7) — Lab vòng ① là đường để người ngoài đội tự cài và chạy NeuroEdge Blueprint. Tín hiệu đo của I4a và I5a: [`neuroedge-roadmap.md`](neuroedge-roadmap.md) §4.5.1 và §4.6.1.
 
 ---
 

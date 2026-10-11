@@ -25,7 +25,9 @@ read from roadmap §0.2 when the figure is generated.*
 Milestone 6 (**public launch**) is the first time outsiders can use it; Milestone 7 (**v1.0**) is the first time it is reliable enough to
 ship in commercial devices. The MVP is the full v1.0, a single launch: if it slips the date moves, scope is not cut (Q-52).
 The critical path (roadmap §2.2): boards arrive → memory spike (TSK-S1-10) → Milestone 3 → Milestones 4 and 5 on chip → Milestone 6 →
-Milestone 7. The CPO Dashboard (`docs/business/cpo-dashboard.html`) reads the same milestone table.
+Milestone 7. The CPO Dashboard (`docs/business/cpo-dashboard.html`) reads the same milestone table. [`Q-72`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) changes the order without cutting
+scope: mission contracts, the operating agent, chat channels (I2d) and a minimal NeuroEdge Blueprint (I2e) go first,
+running on simulation so they do not wait for boards; voice, Studio and `jetson` pause. Order and real dates: roadmap §0.2.
 
 ## 2. What does not change across any milestone
 
@@ -38,7 +40,7 @@ its scope; the last column is the milestone where proof becomes the hardest.
 | When unsure, do not act | Fail-closed in every direction (invariant 2); stale, missing, or mistyped facts ⇒ `BLOCK` | `fixtures/traces/network_offline.json`; counterexample corpus | 2 (sensors, camera), 3 (offline on chip) |
 | One contract everywhere | Same gate file, pure resolution (invariant 4); Python and C share the same spec; `verify` compares verdicts | [`10`](10-target-equivalence.md); `neuroedge verify --targets sim,linux,esp32s3` | 3 (real chip), 10 (community boards) |
 | Evidence over promises | Every verdict into the trace `trace.v1`; replay recomputes without calling the model | [`06`](06-runtime-flows.md) §7; Action CI | 5 (client-written drafts), 9 (field traces) |
-| Humans hold the final authority | Models and MCP clients cannot confirm `ask` (Q-26); drafts an MCP client writes through NeuroEdge Lab must be approved by a human (Q-71); no one can confirm in place of a measurement (Q-62) | `confirms` tests; RFC-0006, RFC-0009 | 5 (build by conversation) |
+| Humans hold the final authority | Models and MCP clients cannot confirm `ask` (Q-26); drafts an MCP client writes through NeuroEdge Lab must be approved by a human (Q-71); no one can confirm in place of a measurement (Q-62); `planned · Q-72`: a person approves remotely over chat only through an approval record with a code, and the LLM never approves | `confirms` tests; RFC-0006, RFC-0009 | 5 (build by conversation; approval over chat) |
 | Plug into other stacks | MCP is the caller surface; models and voice are replaceable providers (P-4); schemas, specifications, compliance test suite and compliance corpus under Apache-2.0 (Q-45, Q-67); from I2c, third parties wire themselves in through `neuroedge.sdk` plug points without touching the core, and the safety invariants do not change (Q-67) | `docs/spec/tool_calling.md`; `fixtures/tool_calls/`; plug-in compliance suite (I2c, `planned`) | 2 (open platform, Q-67), 6 (network MCP, Q-58) |
 
 ## 3. Architecture across milestones
@@ -124,7 +126,7 @@ increment is in roadmap §0.2.
 - **The promise is proven by:** physical command revocation contract (`voice_fsm.md` §5) — barge-in revokes
   undelivered commands in ≤ 1 audio frame; `motion.*` stops immediately (Q-57).
 
-### Milestone 5 — Build by conversation *(I4a, I5a)*
+### Milestone 5 — Build and run by conversation, share Blueprints *(I4a, I5a, I2d, I2e)*
 
 - **What the user can do:** describe a device in words to the AI they already use (Claude Code, Claude Desktop);
   the AI writes actions, gates, and envelopes through NeuroEdge Lab's tools; NeuroEdge checks them; a human approves
@@ -137,6 +139,29 @@ increment is in roadmap §0.2.
 - **The promise is proven by:** every acting call from the client still goes through `dispatch()` → gate; drafts are
   only locked after `lab check`, `gate lint` and human review; no tool locks policy; the model never confirms on its
   own; a client with a shell does not hold device permissions (`threat_model.md` §2c).
+
+The rest of this milestone is `planned · Q-72` ([`Q-72`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)); the design is in [`15`](15-target-architecture.md) §6.
+
+- **I2d — missions and the operating agent.**
+  - *What the user can do:* state a mission ("watch the fish tank"), approve the ≤ 5-line approval summary, then let
+    the agent run 24/7, react on its own, report and propose over Telegram; approve remotely over chat.
+  - *What the architecture adds:* a long-lived **trusted runtime** process (systemd) and an untrusted **LLM worker**
+    holding the BYOK key and calling the runtime over local MCP; the mission compiler, scheduler, deterministic
+    detectors, `llm_budget`; chat channel adapters that go only through `dispatch()`; egress; segmented traces.
+    Expected packages: [`03`](03-component-host-c4l3.md).
+  - *Contracts that change (pending RFC):* `mission.v1`; `safe_state` declared in `board.v1`; the `chat:<id>` source and
+    approval records; data destination declaration; trace segments in `trace.v1`.
+  - *The promise is proven by:* commands still go through the gate, including commands from chat; a tricked LLM cannot
+    touch devices and cannot approve; actuators return to their declared `safe_state`; `replay` of each segment yields
+    the same verdicts; continuous runs on simulation G1 `sim` and G2 `linux` on `gpio-sim`.
+- **I2e — minimal NeuroEdge Blueprint.**
+  - *What the user can do:* `blueprint install` a Blueprint someone else packaged (the fish tank first), buy the kit from
+    the BOM; `blueprint pack` their own product.
+  - *What the architecture adds:* packaging and install with a digest covering the whole package; a static Hub index
+    (like the I2c plugin index); "unsigned" evidence. No NeuroEdge server; the optional relay is outside I2e.
+  - *Contracts that change (pending RFC):* `blueprint.v1` (relationship with `manifest.v1`).
+  - *The promise is proven by:* a package with a mismatched digest is refused; a Blueprint carries no `safe_state` and
+    opens no path outside the gate; the 8-week demand gate measures loop ③ ([`15`](15-target-architecture.md) §6.9).
 
 ### Milestone 6 — Public launch *(I6)*
 
@@ -221,9 +246,11 @@ Each item is a deliberate choice, with a trigger milestone in `TODOS.md`:
 
 | Debt | Why accepted today | `TODOS.md` |
 |:---|:---|:---|
-| Traces are not signed | needs device keys; belongs to Fleet OS | #1 |
+| Traces are not signed | needs device keys; belongs to Fleet OS; NeuroEdge Blueprint evidence is marked "unsigned" until the Hub charges money (Q-72) | #1 |
 | The token is an in-memory `(nonce, digest)`, not signed | the in-scope threat is skipping by mistake | #2 |
 | `extends` is not pinned by digest yet | no registry yet; `digests.lock` covers CI; scheduled in I2c (TSK-S3-21, Q-67) | #15 |
-| An MCP connection lives for one turn only | one event loop per REPL turn | #25 |
+| An MCP connection lives for one turn only | one event loop per REPL turn; **becomes a real risk** when the 24/7 runtime and the LLM worker keep one MCP connection alive for months (I2d, `planned · Q-72`) | #25 |
 | Pin command operation and duration on chip come from a table built on host | how an action runs on the MCU is not settled yet | #37 |
-| `linux` sensor reads block the event loop | no agent both speaks and reads sensors yet | #48 |
+| `linux` sensor reads block the event loop | no agent both speaks and reads sensors yet; **becomes a real risk** when the 24/7 runtime's detectors read sensors periodically (I2d, `planned · Q-72`) | #48 |
+| `board.v1` silently ignores unknown keys | only one reader today; must be fixed **before** a `safe_state` other than `off` enters `board.v1` (Q-72) | #58 |
+| Chat pairing has no revocation, expiry or approval cap yet | approval over chat has no code yet; trigger: before the I2d approval-over-chat task (Q-72) | #62 |

@@ -5,7 +5,7 @@
 > `python/tests/`, CI jobs in `.github/workflows/` (single list: `CHANGELOG.md` §2.5).
 
 Evidence labels: **checked** — a test or CI job runs on every PR · **partial** — a measurement tool or a
-partial check exists · **not measured yet** — no evidence yet.
+partial check exists · **not measured yet** — no evidence yet · **`planned · Q-72`** — new requirements of [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) for the operating agent, chat channels and NeuroEdge Blueprint (I2d, I2e); no code yet, so no evidence yet. These rows carry no NFR identifier yet: identifiers are assigned in PRD §9, the only place that records thresholds.
 
 ## 1. Overview
 
@@ -16,8 +16,9 @@ partial check exists · **not measured yet** — no evidence yet.
 | Resources (RES) | Does it fit the chip? Does it run offline? | Binary `NETR`, non-allocating walker; local fallback | partial |
 | Performance (PERF) | Is it fast enough? | Time budget per gate, fail-closed enforcement; per-stage measurement | tools exist; thresholds **not measured yet** |
 | Privacy (PRIV) | What data is stored? | No audio stored; hashing at the source by default | checked (PRIV-02, 03, 04); PRIV-01: no dedicated test yet |
-| Observability (OBS) | Can we understand what happened? | One trace per session; per-stage latency; System 1/2 ratio | checked |
+| Observability (OBS) | Can we understand what happened? | One trace per session (Q-72 24/7 runtime: one chain of segments, each replayable — `planned`, I2d); per-stage latency; System 1/2 ratio | checked |
 | Compatibility (COMP) | Can it be opened and swapped? | Schemas opened via RFC; providers swappable; Python 3.11+ | partial (ARM64 not yet) |
+| Operating agent, chat, NeuroEdge Blueprint (`planned · Q-72`) | Is running 24/7 safe, how much does it cost, does data leak? | Two processes (trusted runtime, untrusted LLM worker); reflexes need no LLM; egress; approval records; segmented traces | not yet — I2d, I2e |
 
 ## 2. Security — NFR-SEC
 
@@ -31,15 +32,21 @@ partial check exists · **not measured yet** — no evidence yet.
 | SEC-08 TLS to providers, provider recorded in the trace | Provider name and model in `system_one_call`, `system_two_call`; no prompt, no key recorded | `test_providers.py::test_each_model_call_is_traced_without_prompt_or_key` | partial — no TLS 1.3 test yet |
 | SEC-09 MCP stdio only; LLM and MCP client untrusted | `dispatch()`: schema check, `call_source` assigned by the runtime, no self-confirming tools | threat model table §2b; corpus `fixtures/tool_calls/` | checked |
 | SEC-10 Third-party plug-ins (Q-67) | A plug-in running in-process is code the operator trusts (`docs/spec/threat_model.md` §3): loaded only when explicitly enabled; origin (package, version, file hash) printed and recorded in the trace; no `neuroedge.sdk` API hands a hardware handle to a bridge or fact source (FR-EXT-02, FR-EXT-03) | Plug-in loader and per-kind compliance suite (TSK-I2c-11, TSK-I2c-12; RFC-0016 is still a draft) | not yet — I2c |
+| Data leak prevention (`planned · Q-72`, I2d) | The runtime decides what the LLM worker *sees* and sends only to destinations the user declared (LLM provider, chat channel, relay, webhook); the LLM worker's network is blocked at the operating-system level, reaching only the declared provider endpoint; sending to an undeclared destination is blocked and traced. The goal is to prevent hacking, prompt injection and theft — not to restrict flows the user builds. Residual risk: a tricked worker can still send allowed data to an allowed destination | Contract: [`07`](07-data-contracts.md) §12.3; tests when code lands | not yet |
+| Approvals over chat (`planned · Q-72`, I2d, pending the RFC for the `chat:<id>` source) | Approval record `{id, nonce, expiry, change digest, approval summary ≤ 5 lines}`; the runtime checks that the sender was paired locally, is not a group, the nonce is unused, the record has not expired by the monotonic clock, and the digest matches; the LLM worker never approves; approvals do not go through the relay. Revocation, pairing expiry, approval cap: deferred (`TODOS.md` #62) | Flow: [`06`](06-runtime-flows.md) §11.4 | not yet |
+| BYOK key and bot token (`planned · Q-72`, I2d) | The user's LLM key lives only in the LLM worker process; the chat bot token lives only in the runtime; neither enters the trace; the process holding the HAL does not hold the LLM key | — | not yet |
+| NeuroEdge Blueprint install checks the digest (`planned · Q-72`, I2e) | The digest covers the whole package (kit, firmware, contract templates, detectors, evidence traces), checked at install; mismatch ⇒ refused with a three-part error; the package only declares; a `safe_state` other than `off` comes only from `board.v1` with an interlock; evidence is marked "unsigned" | Contract: [`07`](07-data-contracts.md) §12.2 | not yet |
 
 ## 3. Reliability — NFR-REL
 
 | NFR | Tactic | Evidence | Status |
 |:---|:---|:---|:---|
 | REL-01 OTA at team scale | A/B updates, confirmation after self-test, rollback | job `ota-rollback` on QEMU; scale needs Fleet OS | not yet (premise on QEMU) |
-| REL-02 Degraded default is block | `budget.fail` defaults to `closed`; `fail: open` is not inherited, still blocks on a known "no"; the circuit breaker only routes | Matrix A4: `test_fail_closed.py`; `test_safety_regressions.py` | checked |
+| REL-02 Degraded default is block | `budget.fail` defaults to `closed`; `fail: open` is not inherited, still blocks on a known "no"; the circuit breaker only routes. *Will change under Q-72 (`planned`, pending the conditional-safety RFC):* for **commands**, still "when unsure, block"; added: a degraded actuator returns to the `safe_state` declared in `board.v1` (default `off`, so every existing profile keeps its behaviour) | Matrix A4: `test_fail_closed.py`; `test_safety_regressions.py` | checked (command part); `safe_state` part: not yet |
 | REL-03 Nightly run on real boards | Workflow `nightly-hardware.yml`; job `memory-spike` needs a runner with a Box-3 and **says clearly it is skipped** when there is none | No runner yet | not yet |
 | REL-04 Old traces still replay after a minor upgrade | `trace.v1` envelope frozen; three normative traces frozen; firmware rejects (does not compare) traces older than itself | `test_golden.py`, `test_trace_vectors.py` | partial — no minor release yet to cross-compare |
+| Runtime alive 24/7 (`planned · Q-72`, I2d) | The runtime runs under systemd and restarts itself; when the LLM worker dies or hangs, the runtime keeps running reflexes, detectors and hard-template alerts and restarts the worker; durations, approval expiry and the watchdog use the monotonic clock | Failure branches: [`06`](06-runtime-flows.md) §11.6 | not yet |
+| Reflexes when the network or the LLM is lost (`planned · Q-72`, I2d) | The mission compiler lowers clauses to the lowest tier (reflex on an MCU with `ne_gate`, skill on the host); losing the network, losing the LLM or a relay outage does not touch the safety part; chat channel down ⇒ bounded queue + local alert on the UI. Wall-clock fact `unsynced` ⇒ time-window clauses treat it as a missing fact (fail-closed) | Checked on simulation G1 `sim`, G2 `linux` on gpio-sim, G3 ESP32 firmware (Q-72) | not yet |
 
 ## 4. Resources — NFR-RES
 
@@ -49,6 +56,8 @@ partial check exists · **not measured yet** — no evidence yet.
 | RES-02 Free SRAM, PSRAM (Q-3) | Walker, token ledger, trace buffer use no static RAM; state is allocated by the application | jobs `firmware-size`, `firmware-qemu`; numbers in `memory_spike_report.md` §4.1 | partial — static floor and QEMU heap; PSRAM not measured yet |
 | RES-03 Firmware size ≤ A/B slot | Binary tree instead of JSON; no CEL on chip | jobs `firmware-size`, `ota-rollback`, `nightly-hardware` | checked |
 | RES-04 Safety functions run offline | Local command grammar is the fallback for every model; no fallback ⇒ `gate_unreachable` | `test_fail_closed.py`, `test_offline_fallback.py`, trace `network_offline.json` | checked on `sim`/`linux`; `esp32s3` not yet (TSK-S5-07) |
+| LLM cost cap (`planned · Q-72`, I2d) | `llm_budget` declared in the mission contract; deterministic detectors run first, and the LLM is called only when there is an event; cap reached ⇒ reflexes and hard-template alerts keep running, only the analysis is lost | — | not yet |
+| Message budget (`planned · Q-72`, I2d) | The agent's proactive reports are batched and limited by a configurable message budget, so the chat channel does not become a source of noise; details belong to FR-AGT (PRD) | — | not yet |
 
 ## 5. Performance — NFR-PERF
 
@@ -78,9 +87,10 @@ real-time voice session and CI does not call real models.
 
 | NFR | Tactic | Evidence | Status |
 |:---|:---|:---|:---|
-| OBS-01 One session, one complete trace | The session's `EventLog`; `session_summary` computed on export, exactly once | `test_turn_latency.py`, CI step "three normative traces valid" | checked |
+| OBS-01 One session, one complete trace | The session's `EventLog`; `session_summary` computed on export, exactly once. *Will change under Q-72 (`planned`, pending a `trace.v1` RFC):* the 24/7 runtime writes a chain of segments, each segment replayable ([`07`](07-data-contracts.md) §7) | `test_turn_latency.py`, CI step "three normative traces valid" | checked (command sessions); segment chain: not yet |
 | OBS-02 System 1/2 ratio, cost, every gate outcome | `turn_latency.path`, `system_two_usage` | `test_turn_latency.py` | checked |
 | OBS-03 Per-stage latency comparable to `p95_latency_ms` | Nested `TurnMeter.stage` does not double count | `test_turn_latency.py` | checked |
+| Trace retention and write cadence on the home machine (`planned · Q-72`, I2d) | Keep 30 days locally; older segments are compressed then deleted, or exported through the relay encrypted on the home machine; flushed on a timer (about 10 seconds, configurable) and **immediately** on a blocking verdict or an approval; a power loss loses at most the tail of ordinary events, and `replay` reports a truncated segment | Measure the size of 30 days of traces on G1 `sim` (fast-forwarded), then record the number in PRD §9 | not measured yet |
 
 ## 8. Compatibility — NFR-COMP
 

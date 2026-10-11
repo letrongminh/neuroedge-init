@@ -1,31 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1820 940" width="1820" height="940" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="E-01-system-context-title E-01-system-context-desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1820 1310" width="1820" height="1310" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="E-01-system-context-title E-01-system-context-desc">
 <title id="E-01-system-context-title">E-01 · System context (C4 L1)</title>
 <desc id="E-01-system-context-desc">Who uses NeuroEdge and which outside systems it talks to. Every physical action passes a gate first.</desc>
 <defs>
 <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#334155"/></marker>
 </defs>
-<rect width="1820" height="940" fill="#ffffff"/>
+<rect width="1820" height="1310" fill="#ffffff"/>
 <text x="32.0" y="42.0" font-size="22" fill="#0f172a" text-anchor="start" font-weight="700">E-01 · System context (C4 L1)</text>
 <text x="32.0" y="66.0" font-size="13" fill="#475569" text-anchor="start">Who uses NeuroEdge and which outside systems it talks to. Every physical action passes a gate first.</text>
-<rect x="40" y="100" width="380" height="800" rx="14" fill="#f8fafc" stroke="#1e3a8a" stroke-width="1.6"/>
+<rect x="40" y="100" width="380" height="1170" rx="14" fill="#f8fafc" stroke="#1e3a8a" stroke-width="1.6"/>
 <text x="54.0" y="121.0" font-size="13" fill="#1e3a8a" text-anchor="start" font-weight="700">People</text>
-<rect x="600" y="230" width="620" height="470" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
+<rect x="600" y="230" width="620" height="760" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
 <text x="614.0" y="251.0" font-size="13" fill="#2563eb" text-anchor="start" font-weight="700">NeuroEdge system boundary</text>
-<rect x="1400" y="100" width="380" height="800" rx="14" fill="#fffaf5" stroke="#c2410c" stroke-width="1.6"/>
+<rect x="1400" y="100" width="380" height="1170" rx="14" fill="#fffaf5" stroke="#c2410c" stroke-width="1.6"/>
 <text x="1414.0" y="121.0" font-size="13" fill="#c2410c" text-anchor="start" font-weight="700">External systems</text>
 <path d="M396.0,199.0 L480.0,199.0 L480.0,320.0 L630.0,320.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M396.0,349.0 L510.0,349.0 L510.0,370.0 L630.0,370.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M396.0,499.0 L480.0,499.0 L480.0,420.0 L630.0,420.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M396.0,649.0 L510.0,649.0 L510.0,605.0 L630.0,605.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-<path d="M396.0,799.0 L760.0,799.0 L760.0,670.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M396.0,799.0 L560.0,799.0 L560.0,640.0 L630.0,640.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
 <path d="M1190.0,300.0 L1270.0,300.0 L1270.0,184.0 L1424.0,184.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M1190.0,330.0 L1310.0,330.0 L1310.0,310.0 L1424.0,310.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M1190.0,400.0 L1270.0,400.0 L1270.0,436.0 L1424.0,436.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M1424.0,562.0 L1310.0,562.0 L1310.0,440.0 L1190.0,440.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M1190.0,450.0 L1250.0,450.0 L1250.0,686.0 L1424.0,686.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-<path d="M760.0,670.0 L760.0,860.0 L1590.0,860.0 L1590.0,866.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M760.0,670.0 L760.0,720.0 L1340.0,720.0 L1340.0,814.0 L1424.0,814.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
 <path d="M760.0,460.0 L760.0,460.0 L760.0,540.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M1060.0,460.0 L1060.0,460.0 L1060.0,540.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+<path d="M396.0,920.0 L630.0,920.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M1190.0,919.0 L1424.0,919.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M1150.0,950.0 L1150.0,1066.0 L1424.0,1066.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M1110.0,950.0 L1110.0,1180.0 L1424.0,1180.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M230.0,1158.0 L230.0,1230.0 L1300.0,1230.0 L1424.0,1230.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
 <rect x="64" y="140" width="332" height="118" rx="26" fill="#1e293b" stroke="#0f172a" stroke-width="1.6"/>
 <text x="230.0" y="185.8" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">Maker / app developer</text>
 <text x="230.0" y="206.0" font-size="12.5" fill="#ffffff" text-anchor="middle">Writes agent.toml, gates, actions</text>
@@ -47,6 +52,16 @@
 <text x="230.0" y="796.9" font-size="12.5" fill="#475569" text-anchor="middle">Rolls out updates, pulls traces</text>
 <text x="230.0" y="815.1" font-size="12.5" fill="#475569" text-anchor="middle">Fleet OS (I9)</text>
 <text x="230.0" y="833.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="64" y="890" width="332" height="118" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="230.0" y="926.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Blueprint installer</text>
+<text x="230.0" y="946.9" font-size="12.5" fill="#475569" text-anchor="middle">Installs a NeuroEdge Blueprint,</text>
+<text x="230.0" y="965.1" font-size="12.5" fill="#475569" text-anchor="middle">runs it, approves by chat · I2e</text>
+<text x="230.0" y="983.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="64" y="1040" width="332" height="118" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="230.0" y="1076.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Blueprint seller / micro-OEM</text>
+<text x="230.0" y="1096.9" font-size="12.5" fill="#475569" text-anchor="middle">Packs, shares and sells a Blueprint</text>
+<text x="230.0" y="1115.1" font-size="12.5" fill="#475569" text-anchor="middle">blueprint pack · I2e</text>
+<text x="230.0" y="1133.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="630" y="280" width="560" height="180" rx="10" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="2.2"/>
 <text x="910.0" y="347.7" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">NeuroEdge</text>
 <text x="910.0" y="367.9" font-size="12.5" fill="#ffffff" text-anchor="middle">Gated edge runtime: SDK + CLI (Python), firmware (C99)</text>
@@ -62,6 +77,12 @@
 <text x="1060.0" y="591.8" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">Project files</text>
 <text x="1060.0" y="612.0" font-size="12.5" fill="#0f172a" text-anchor="middle">agent.toml · gates/*.yaml</text>
 <text x="1060.0" y="630.1" font-size="12.5" fill="#0f172a" text-anchor="middle">board.toml · traces/*.json</text>
+<rect x="630" y="820" width="560" height="130" rx="10" fill="#f8fafc" stroke="#1e3a8a" stroke-width="2.2" stroke-dasharray="7 5"/>
+<text x="910.0" y="853.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Operating agent · Blueprint</text>
+<text x="910.0" y="873.9" font-size="12.5" fill="#475569" text-anchor="middle">trusted runtime 24/7 + untrusted LLM worker (BYOK key) · I2d</text>
+<text x="910.0" y="892.0" font-size="12.5" fill="#475569" text-anchor="middle">missions, detectors, chat approval records · I2d</text>
+<text x="910.0" y="910.1" font-size="12.5" fill="#475569" text-anchor="middle">blueprint pack / install, digest over the whole package · I2e</text>
+<text x="910.0" y="928.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1424" y="132" width="332" height="104" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6"/>
 <text x="1590.0" y="170.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">LLM providers (System 2)</text>
 <text x="1590.0" y="191.0" font-size="12.5" fill="#431407" text-anchor="middle">OpenAI-compatible via LiteLLM</text>
@@ -87,6 +108,21 @@
 <text x="1590.0" y="811.9" font-size="12.5" fill="#475569" text-anchor="middle">Rollouts, incident traces</text>
 <text x="1590.0" y="830.1" font-size="12.5" fill="#475569" text-anchor="middle">I9 · I10</text>
 <text x="1590.0" y="848.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="888" width="332" height="104" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1590.0" y="917.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Chat platforms</text>
+<text x="1590.0" y="937.9" font-size="12.5" fill="#475569" text-anchor="middle">Telegram first · Slack · Zalo</text>
+<text x="1590.0" y="956.1" font-size="12.5" fill="#475569" text-anchor="middle">reports, commands, approvals · I2d</text>
+<text x="1590.0" y="974.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="1014" width="332" height="104" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1590.0" y="1043.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Relay (optional)</text>
+<text x="1590.0" y="1063.9" font-size="12.5" fill="#475569" text-anchor="middle">TLS pass-through by SNI, no decryption</text>
+<text x="1590.0" y="1082.1" font-size="12.5" fill="#475569" text-anchor="middle">never on the safety path · Q-72</text>
+<text x="1590.0" y="1100.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="1140" width="332" height="104" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1590.0" y="1169.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Blueprint Hub index</text>
+<text x="1590.0" y="1189.9" font-size="12.5" fill="#475569" text-anchor="middle">static index: URL + whole-package digest</text>
+<text x="1590.0" y="1208.1" font-size="12.5" fill="#475569" text-anchor="middle">evidence unsigned · I2e</text>
+<text x="1590.0" y="1226.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="417.0" y="229.5" width="125.9" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="480.0" y="242.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">write · run · test</text>
 <rect x="434.2" y="338.5" width="151.7" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
@@ -95,8 +131,8 @@
 <text x="480.0" y="472.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">explain · replay</text>
 <rect x="453.5" y="638.5" width="113.0" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="510.0" y="651.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">board + HAL port</text>
-<rect x="500.3" y="788.5" width="119.5" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
-<text x="560.0" y="801.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">OTA · traces (I9)</text>
+<rect x="420.3" y="788.5" width="119.5" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="480.0" y="801.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">OTA · traces (I9)</text>
 <rect x="1200.6" y="194.5" width="138.8" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="1270.0" y="207.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">HTTPS · key from env</text>
 <rect x="1288.9" y="319.5" width="42.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
@@ -107,12 +143,22 @@
 <text x="1310.0" y="522.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">tools/call · stdio</text>
 <rect x="1196.7" y="599.5" width="106.6" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="1250.0" y="612.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">ESP-IDF project</text>
-<rect x="1129.9" y="849.5" width="100.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
-<text x="1180.0" y="862.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">MQTT (planned)</text>
+<rect x="999.9" y="709.5" width="100.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1050.0" y="722.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">MQTT (planned)</text>
 <rect x="693.8" y="489.5" width="132.4" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="760.0" y="502.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">c.do() → gate → pin</text>
 <rect x="1009.9" y="489.5" width="100.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="1060.0" y="502.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">reads · writes</text>
+<rect x="446.8" y="909.5" width="132.4" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="513.0" y="922.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">installs · approves</text>
+<rect x="1240.8" y="908.5" width="132.4" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1307.0" y="921.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">reports · approvals</text>
+<rect x="1223.8" y="1055.5" width="132.4" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1290.0" y="1068.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">outbound TLS tunnel</text>
+<rect x="1187.4" y="1169.5" width="145.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1260.0" y="1182.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">install: URL + digest</text>
+<rect x="706.7" y="1219.5" width="106.6" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="760.0" y="1232.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">publishes (I2e)</text>
 <rect x="1566.56" y="60" width="32" height="14" rx="3" fill="#ffffff" stroke="#475569" stroke-width="1.4" stroke-dasharray="7 5"/>
 <text x="1610.6" y="71.0" font-size="12" fill="#334155" text-anchor="start">○ planned — not in code yet</text>
 <rect x="1586.72" y="40" width="32" height="14" rx="3" fill="#ffffff" stroke="#475569" stroke-width="1.4"/>

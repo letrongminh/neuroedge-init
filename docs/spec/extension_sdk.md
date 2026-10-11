@@ -56,7 +56,7 @@ Phần mà `guard` và plugin cơ cấu chấp hành cần của Extension SDK:
 | `ToolRequest(name, arguments={}, id="")` | `tool-call.v1#/$defs/request`: **không có `source`**; bất biến |
 | `Outcome(status, content)` | Dữ liệu thuần: `status` và `ToolResult.content()` (hợp lệ theo `tool-result.v1`), không mang giá trị mà thân action trả về |
 | `SDK_VERSION = (1, 0)` | Bộ `(MAJOR, MINOR)` riêng, không phải `__version__` của gói |
-| `Actuator` | Protocol của plugin nhóm `neuroedge.actuators`; chữ ký là của RFC-0018 §3c (nguồn duy nhất), SDK chỉ xuất lại: `safe_off_level`, `readback`, `tolerance_ms`, `command_timeout_ms`, `max_lease_ms`, `apply(command)`, `safe_off()`, `read_state()`, `probe()` |
+| `Actuator` | Protocol của plugin nhóm `neuroedge.actuators`; chữ ký là của RFC-0018 §3c (nguồn duy nhất), SDK chỉ xuất lại: `safe_off_level`, `readback`, `tolerance_ms`, `command_timeout_ms`, `max_lease_ms`, `apply(command)`, `safe_off()`, `read_state()`, `probe()`. Hôm nay phía an toàn luôn là `off`; *planned · Q-72, chờ RFC:* `safe_state` đối xứng (§7) |
 | `Command(id, operation, duration_ms=None, lease_ms=None)` | Lệnh HAL giao cho plugin sau khi đã cho qua: `operation` là `"on"` hoặc `"renew"`; `duration_ms` luôn có ở L2, `lease_ms` ở L3; là **khoảng**, không bao giờ là mốc. `id` duy nhất cho mỗi lệnh (thiết bị nhận ra lệnh trùng, gia hạn đến muộn) |
 | `DeviceDouble` | Protocol của bản giả thiết bị mà `probe()` trả: `state()`, `cut_link()`, `heal_link()`, `advance(ms)` |
 | `ActuatorError` và `NotSent`, `Rejected`, `Ambiguous`, `ReadFailed` | Plugin tự phân loại lỗi gửi (chắc chắn chưa tới · bị từ chối rõ · không biết đã tới hay chưa) và lỗi đọc; không phải mã `NE…` |
@@ -96,7 +96,7 @@ default = 5                       # tuỳ chọn, đúng kiểu; có mặc đị
 | `[proxy.mcp]` | `command` hoặc `url`, `env_from`, `headers_env`, `names` | chỉ do `proxy mcp` và `plugin doctor` đọc (§4); `Guard` bỏ qua |
 | `[proxy.http]` | `upstream`, `listen`, `id`, `headers_env`, `[[routes]]` (`method`, `path`, `tool`) | chỉ do `proxy http` và `plugin doctor` đọc (§5); đúng một trong `[proxy.mcp]` / `[proxy.http]` mỗi tệp |
 | `[plugins]` | `enable`, `config` | §6; chỉ loại actuator nạp được, bản phân phối mang loại khác ⇒ từ chối, nêu TSK-I2c-11 |
-| `[actuators.<tên>]` | `plugin`, `safe_off`, `reversible`, `envelope`, `config` | §7; cùng khai báo và cùng hàm kiểm với `agent.toml`. Tool tới nó bằng `requires = ["digital.out:<tên>"]`: chiều "khai mà không ai dùng" của luật hai chiều xét trên `requires` của các tool |
+| `[actuators.<tên>]` | `plugin`, `safe_off`, `reversible`, `envelope`, `config` | §7 (khoá `safe_state` không khai ở đây: *planned · Q-72*, chỉ trong `board.v1`); cùng khai báo và cùng hàm kiểm với `agent.toml`. Tool tới nó bằng `requires = ["digital.out:<tên>"]`: chiều "khai mà không ai dùng" của luật hai chiều xét trên `requires` của các tool |
 | `[external]` | — | từ chối, nêu TSK-I2c-09 |
 
 ### Văn phạm `drive`
@@ -238,6 +238,12 @@ Gate **phải liệt kê nó**: gate chỉ liệt kê `mcp` chặn nó (`criteri
 Mã: `neuroedge/plugins/__init__.py`. Sáu nhóm entry point (`neuroedge.bridges`, `neuroedge.fact_sources`, `neuroedge.actuators`, `neuroedge.boards`, `neuroedge.templates`,
 `neuroedge.exporters`); **chỉ `neuroedge.actuators` được nạp** ở bản này.
 
+**Adapter kênh chat không phải loại plugin** (*planned · Q-72, I2d*). Agent vận hành của Q-72 nối kênh chat
+(Telegram trước). Adapter đó giữ token bot và kiểm bản ghi duyệt — nó quyết định một lời có phải lời duyệt của
+người hay không (`tool_calling.md` §6). Vì vậy, ở MVP, adapter nằm trong **runtime tin cậy** do NeuroEdge viết
+(rà soát kiến trúc theo Q-72, 2026-10-11), không phải plugin bên thứ ba; Extension SDK không có nhóm entry
+point nào cho kênh chat. Một kênh do bên thứ ba viết cần RFC riêng (nguồn `chat:<id>`, `threat_model.md` §2e).
+
 - **Phát hiện không import.** `neuroedge plugin list [--json]` đọc `importlib.metadata` — loại, tên entry point, bản phân phối, phiên bản — không import gói nào (`test_listing_plugins_imports_nothing`).
 - **Bật trong tệp được commit, không ở dòng lệnh.** `[plugins] enable = ["neuroedge-ha", "neuroedge-ros2==0.4.1"]` trong `agent.toml` hoặc `guard.toml`: tên bản phân phối (so khớp theo PEP 503), tuỳ chọn ghim `==phiên bản`.
   Cài bằng `pip` không bật gì; **không cờ CLI nào** bật plugin. `[plugins.config.<entry point>]` là cấu hình chung của entry point đó, gộp **dưới** `[actuators.<tên>.config]` khi dựng; cùng luật bí mật với `[external]`: trường mang tên bí mật viết thẳng ⇒ NE3002, `*_env` chỉ là tên biến (không bao giờ in lại giá trị).
@@ -250,6 +256,14 @@ Mã: `neuroedge/plugins/__init__.py`. Sáu nhóm entry point (`neuroedge.bridges
   Bản cài editable (`direct_url.json` có `dir_info.editable`) không có `files_sha256` mà có `editable: true`. Không plugin nào bật ⇒ không có khoá `metadata.plugins` (vết ghi chuẩn mực không đổi).
 
 ## 7. Cơ cấu chấp hành từ xa (RFC-0018; TSK-I2c-16 phần lõi)
+
+> **Planned · Q-72, chờ RFC an toàn có điều kiện.** Mục này và §8 hôm nay coi **an toàn = tắt**: `safe_off`, mức
+> L0–L3 là lời hứa về ai đưa cơ cấu về `off`, `Actuator.safe_off()` gửi `off`, phép kiểm `actuator.off_*` chứng minh
+> `off`. Q-72 chốt hướng `safe_state` đối xứng: mọi cơ cấu có `safe_state` khai trong `board.v1` (mặc định `off`),
+> mức và phép kiểm sẽ nói về "trở về `safe_state`", hướng *rời* `safe_state` là hướng bị gate và giới hạn.
+> `safe_state` khác `off` chỉ khai trong `board.v1`, kèm khoá liên động phần cứng, không trong `[actuators]` hay
+> plugin. Mọi khai báo hiện có (`off`) giữ đúng hành vi dưới đây. Tên và chữ ký trong SDK chỉ đổi khi RFC được chấp
+> thuận. Mối đe doạ: `threat_model.md` §2j.
 
 Ngữ nghĩa và lý do: [RFC-0018](../rfc/0018-co-cau-chap-hanh-tu-xa.md) §3b–§3i (đã chấp thuận; hằng ở §9.5). Ở đây chỉ ghi điều mã làm, và những chỗ RFC để mở mà mã đã chọn.
 
@@ -309,6 +323,9 @@ Adapter Home Assistant là phần B của TSK-I2c-16, chưa có.
 
 `neuroedge conformance <bản phân phối> [--kind actuator] [--json]` nạp **chỉ** bản phân phối đó (gõ tên là hành vi bật tường minh) và kiểm từng entry point của nó. Mã: `neuroedge/plugins/conformance.py`.
 Phép kiểm động chạy bản giả của plugin **qua mã HAL thật** (`hal/remote.py`) trên đồng hồ ảo; factory được gọi với `conformance_config` của mô-đun (một `Mapping`, vắng ⇒ `{}`).
+
+Các phép kiểm `actuator.off_*` và vector mức của `actuator.level_proven` hôm nay chứng minh phía `off`; theo RFC an
+toàn có điều kiện (*planned · Q-72*) chúng sẽ chứng minh phía `safe_state` đã khai (§7).
 
 | Phép kiểm | Đạt khi |
 |:---|:---|

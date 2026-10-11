@@ -1,19 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1820 1050" width="1820" height="1050" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="E-11-ecosystem-title E-11-ecosystem-desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1820 1480" width="1820" height="1480" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="E-11-ecosystem-title E-11-ecosystem-desc">
 <title id="E-11-ecosystem-title">E-11 · Ecosystem landscape (C4 system landscape)</title>
 <desc id="E-11-ecosystem-desc">Who takes part, what they share, and the platforms that carry it. Details and sources: chapter 16.</desc>
 <defs>
 <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#334155"/></marker>
 </defs>
-<rect width="1820" height="1050" fill="#ffffff"/>
+<rect width="1820" height="1480" fill="#ffffff"/>
 <text x="32.0" y="42.0" font-size="22" fill="#0f172a" text-anchor="start" font-weight="700">E-11 · Ecosystem landscape (C4 system landscape)</text>
 <text x="32.0" y="66.0" font-size="13" fill="#475569" text-anchor="start">Who takes part, what they share, and the platforms that carry it. Details and sources: chapter 16.</text>
-<rect x="40" y="100" width="380" height="880" rx="14" fill="#f8fafc" stroke="#1e3a8a" stroke-width="1.6"/>
+<rect x="40" y="100" width="380" height="1210" rx="14" fill="#f8fafc" stroke="#1e3a8a" stroke-width="1.6"/>
 <text x="54.0" y="121.0" font-size="13" fill="#1e3a8a" text-anchor="start" font-weight="700">Parties (PRD §2.1)</text>
 <rect x="600" y="100" width="620" height="400" rx="14" fill="#f8fbff" stroke="#2563eb" stroke-width="1.6"/>
 <text x="614.0" y="121.0" font-size="13" fill="#2563eb" text-anchor="start" font-weight="700">Source-available core and open standards</text>
 <rect x="600" y="540" width="620" height="440" rx="14" fill="#fffef5" stroke="#a16207" stroke-width="1.6"/>
 <text x="614.0" y="561.0" font-size="13" fill="#a16207" text-anchor="start" font-weight="700">Shared assets (chapter 16 §3)</text>
-<rect x="1400" y="100" width="380" height="880" rx="14" fill="#fffaf5" stroke="#c2410c" stroke-width="1.6"/>
+<rect x="600" y="1030" width="620" height="190" rx="14" fill="#fcfcfd" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="614.0" y="1051.0" font-size="13" fill="#94a3b8" text-anchor="start" font-weight="700">Shared asset — planned · Q-72</text>
+<rect x="1400" y="100" width="380" height="1340" rx="14" fill="#fffaf5" stroke="#c2410c" stroke-width="1.6"/>
 <text x="1414.0" y="121.0" font-size="13" fill="#c2410c" text-anchor="start" font-weight="700">Platforms (chapter 16 §4)</text>
 <path d="M396.0,192.0 L480.0,192.0 L630.0,192.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M396.0,310.0 L510.0,310.0 L510.0,250.0 L630.0,250.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
@@ -24,6 +26,10 @@
 <path d="M1190.0,220.0 L1310.0,220.0 L1310.0,188.0 L1424.0,188.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M1190.0,395.0 L1270.0,395.0 L1270.0,306.0 L1424.0,306.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
 <path d="M1190.0,665.0 L1310.0,665.0 L1310.0,424.0 L1424.0,424.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M396.0,1112.0 L630.0,1112.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M396.0,1234.0 L500.0,1234.0 L500.0,1170.0 L630.0,1170.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M1190.0,1132.0 L1424.0,1132.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M1100.0,1190.0 L1100.0,1368.0 L1424.0,1368.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
 <rect x="64" y="140" width="332" height="104" rx="26" fill="#1e293b" stroke="#0f172a" stroke-width="1.6"/>
 <text x="230.0" y="178.8" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">U1 · Maker</text>
 <text x="230.0" y="199.0" font-size="12.5" fill="#ffffff" text-anchor="middle">builds an agent, no account</text>
@@ -56,6 +62,16 @@
 <text x="230.0" y="897.9" font-size="12.5" fill="#475569" text-anchor="middle">wires a product in, own repo and licence</text>
 <text x="230.0" y="916.1" font-size="12.5" fill="#475569" text-anchor="middle">passes the conformance suite · I2c</text>
 <text x="230.0" y="934.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="64" y="1060" width="332" height="104" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="230.0" y="1089.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Blueprint seller / micro-OEM</text>
+<text x="230.0" y="1109.9" font-size="12.5" fill="#475569" text-anchor="middle">packs and sells a NeuroEdge Blueprint</text>
+<text x="230.0" y="1128.1" font-size="12.5" fill="#475569" text-anchor="middle">kit + firmware + mission · I2e</text>
+<text x="230.0" y="1146.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="64" y="1182" width="332" height="104" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="230.0" y="1211.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Blueprint installer</text>
+<text x="230.0" y="1231.9" font-size="12.5" fill="#475569" text-anchor="middle">installs a Blueprint by URL + digest</text>
+<text x="230.0" y="1250.1" font-size="12.5" fill="#475569" text-anchor="middle">runs it on emulation first · I2e</text>
+<text x="230.0" y="1268.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="630" y="150" width="560" height="140" rx="10" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="2.2"/>
 <text x="910.0" y="197.7" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="700">NeuroEdge core</text>
 <text x="910.0" y="217.9" font-size="12.5" fill="#ffffff" text-anchor="middle">SDK + CLI + firmware — PolyForm Noncommercial (Q-45)</text>
@@ -82,6 +98,11 @@
 <text x="1055.0" y="841.8" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">Agents and traces</text>
 <text x="1055.0" y="862.0" font-size="12.5" fill="#0f172a" text-anchor="middle">agent.toml + actions + gates</text>
 <text x="1055.0" y="880.1" font-size="12.5" fill="#0f172a" text-anchor="middle">trace.v1 replays anywhere</text>
+<rect x="630" y="1060" width="560" height="130" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="910.0" y="1102.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">NeuroEdge Blueprint</text>
+<text x="910.0" y="1122.9" font-size="12.5" fill="#475569" text-anchor="middle">kit + firmware + mission template + detectors</text>
+<text x="910.0" y="1141.1" font-size="12.5" fill="#475569" text-anchor="middle">evidence trace, unsigned before MVP · I2e</text>
+<text x="910.0" y="1159.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1424" y="140" width="332" height="96" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6"/>
 <text x="1590.0" y="183.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">Source repository</text>
 <text x="1590.0" y="204.1" font-size="12.5" fill="#431407" text-anchor="middle">public · issues · RFCs</text>
@@ -107,8 +128,24 @@
 <text x="1590.0" y="803.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1424" y="848" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1590.0" y="882.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Marketplace</text>
-<text x="1590.0" y="903.0" font-size="12.5" fill="#475569" text-anchor="middle">Khối 5 · only after G1–G4</text>
+<text x="1590.0" y="903.0" font-size="12.5" fill="#475569" text-anchor="middle">Khối 5 · after the 8-week gate (Q-72)</text>
 <text x="1590.0" y="921.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="966" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1590.0" y="1000.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Chat platforms</text>
+<text x="1590.0" y="1021.0" font-size="12.5" fill="#475569" text-anchor="middle">Telegram first · Slack · Zalo · I2d</text>
+<text x="1590.0" y="1039.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="1084" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1590.0" y="1118.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Blueprint Hub index</text>
+<text x="1590.0" y="1139.0" font-size="12.5" fill="#475569" text-anchor="middle">static index · revenue share later · I2e</text>
+<text x="1590.0" y="1157.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="1202" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1590.0" y="1236.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Relay (optional)</text>
+<text x="1590.0" y="1257.0" font-size="12.5" fill="#475569" text-anchor="middle">TLS pass-through · paid option · Q-72</text>
+<text x="1590.0" y="1275.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="1320" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1590.0" y="1354.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Kit suppliers</text>
+<text x="1590.0" y="1375.0" font-size="12.5" fill="#475569" text-anchor="middle">BOM links · kit commission · Q-72</text>
+<text x="1590.0" y="1393.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="417.0" y="164.5" width="125.9" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="480.0" y="177.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">build · run · test</text>
 <rect x="443.8" y="279.5" width="132.4" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
@@ -127,6 +164,14 @@
 <text x="1270.0" y="362.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">schemas published</text>
 <rect x="1256.7" y="569.5" width="106.6" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="1310.0" y="582.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">share (planned)</text>
+<rect x="466.1" y="1101.5" width="93.7" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="513.0" y="1114.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">packs · sells</text>
+<rect x="429.2" y="1223.5" width="61.5" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="460.0" y="1236.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">installs</text>
+<rect x="1237.6" y="1121.5" width="138.8" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1307.0" y="1134.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">listed: URL + digest</text>
+<rect x="1226.0" y="1357.5" width="68.0" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1260.0" y="1370.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">BOM links</text>
 <rect x="1566.56" y="60" width="32" height="14" rx="3" fill="#ffffff" stroke="#475569" stroke-width="1.4" stroke-dasharray="7 5"/>
 <text x="1610.6" y="71.0" font-size="12" fill="#334155" text-anchor="start">○ planned — not in code yet</text>
 <rect x="1586.72" y="40" width="32" height="14" rx="3" fill="#ffffff" stroke="#475569" stroke-width="1.4"/>

@@ -48,7 +48,19 @@ The following packages are planned in the future architecture but have no code i
 - `perception/vision/` and `sim/vision/` (I2a, TSK-V1b-*): vision pipeline and vision simulation; vision serves as L2 input, entering the gate as maker-declared facts (Q-54) — see [`15`](15-target-architecture.md) §4.4.
 - `services/fleet/` and `services/registry/` (I9–I10, TSK-K2, TSK-K3): server-side services for Fleet OS (staged OTA coordination, MQTT broker, telemetry) and Gate Registry (OCI repository via ORAS/Harbor, metering) — see [`15`](15-target-architecture.md) §3.1, §3.2.
 
-When `lab/` enters the repository, it needs an entry in `ALLOWED` (and `LAZY` if late-imported) of [`python/tests/test_architecture_layers.py`](../../../python/tests/test_architecture_layers.py). `perception/vision/` and `sim/vision/` belong to the existing `perception` and `sim` units and thus need no new entry; `services/` (including `services/metering/engine.py`, TSK-K3-02) lives outside the `neuroedge` package, so this test does not scan it.
+The operating agent and NeuroEdge Blueprint of [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) add five packages (`planned · Q-72`; no code yet, package names are proposals):
+
+| Package | Increment | Responsibility | May depend on (expected) |
+|:---|:---:|:---|:---|
+| `mission/` | I2d | Mission contracts (`mission.v1`, pending RFC): loading, conflict checks, a compiler that lowers clauses to tiers (only devices with `ne_gate` have a reflex tier; Home Assistant devices stop at the host and the approval summary says so), deterministic generation of the ≤ 5-line approval summary from a structured diff | `engine`, `hal` (reads `board.v1`, including `safe_state`), rank 0 |
+| `agent/` | I2d | The core of the 24/7 runtime: scheduling, deterministic detectors, `llm_budget`, message budget, LLM worker supervision; wall-clock facts carry the `unsynced` state | `mission`, `actions`, `engine`, rank 0 |
+| `channels/` | I2d | Chat channel adapters (Telegram first) and approval record checks `{id, nonce, expiry, digest}`; commands arriving from chat become `ToolCall`s | **only** `actions` (through `dispatch()` and the confirmation path), `egress`, rank 0 — **never imports `hal`** |
+| `blueprint/` | I2e | `blueprint pack`/`install`: download by URL, check the whole-package digest, then `gate lint` every gate in the package | `engine`, `mission`, rank 0 |
+| `egress/` | I2d | Data egress: sends only to declared destinations, blocks and traces undeclared ones | rank 0 |
+
+The layering rules for this group follow rules 2 and 3 above exactly: `channels/` and the LLM worker touch devices only through `dispatch()` → gate; no package other than `actions` both calls `evaluate()` and touches pins. The LLM worker is a separate process, not a package in the core ([`02`](02-container-c4l2.md) §3).
+
+When `lab/` enters the repository, it needs an entry in `ALLOWED` (and `LAZY` if late-imported) of [`python/tests/test_architecture_layers.py`](../../../python/tests/test_architecture_layers.py). The five Q-72 packages are the same: each adds an `ALLOWED` entry once it has code, and the test should assert that `channels` has no `hal` in its set, as the test today asserts `ALLOWED["hal"]`. `perception/vision/` and `sim/vision/` belong to the existing `perception` and `sim` units and thus need no new entry; `services/` (including `services/metering/engine.py`, TSK-K3-02) lives outside the `neuroedge` package, so this test does not scan it.
 
 ## 3. Component catalogue
 

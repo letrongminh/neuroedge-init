@@ -27,7 +27,9 @@ Quy ước cột:
 - **Mã** — giả thuyết câu hỏi kiểm: `P1` (có nỗi đau có số) · `CEO-X2` (quy mô + trả theo thiết bị) ·
   `CEO-X4` (A / C / E) · `CEO-X5` (ai trả, qua đường nào) · `CEO-T1` (P3: offline, đổi chip) ·
   `CEO-T2` (chứng nhận) · `CEO-T3` (đối thủ thật) · `G-e` (chuyến đi hiện trường) · `G-d` (dùng lại
-  chính sách).
+  chính sách). Phần Maker (§5b, Q-72) thêm `M-SELL` (đã làm và bán/chia sẻ thiết bị cho người khác) ·
+  `M-PROACT` (thông báo chủ động có ích hay bị tắt) · `M-BYOK` (đang tự trả LLM API) · `M-KIT` (đã mua kit
+  hay BOM theo hướng dẫn); thang chấm ở `cham-diem.md` §1.1.
 - **Mạnh** / **Yếu** — tín hiệu nghe thấy.
 
 ## 1. Mở đầu chung (mọi phân khúc)
@@ -121,6 +123,26 @@ Người: kỹ sư tự động hóa, trưởng bảo trì, người phụ trác
 | I12 | Nhà cung cấp phần điều khiển hiện tại là ai, hợp đồng tính theo gì? | `CEO-T3` · `CEO-X2` | Tên, đơn vị tính | — |
 | I13 | Các site khác trong công ty có dùng lại cấu hình an toàn của nhau không? Ai giữ bản chuẩn? | `G-d` | Kể một lần dùng lại | "Mỗi site tự làm" |
 
+## 5b. Maker, Home Assistant, ESPHome (Q-72)
+
+Người: maker tự dựng thiết bị bằng Home Assistant, ESPHome, ESP32 hay Raspberry Pi; ưu tiên người **đã từng
+làm thiết bị cho người khác**. Đây là phân khúc người dùng đầu của Q-72, và là nguồn dữ liệu cho điều kiện
+③ của cổng nhu cầu 8 tuần ("≥ 1 maker muốn đóng gói và bán", `README.md`). Vẫn luật §0: hỏi chuyện đã xảy ra,
+**không** nhắc NeuroEdge Blueprint, agent vận hành hay Telegram trước phần kết.
+
+| # | Câu hỏi | Mã | Mạnh | Yếu |
+|:---:|:---|:---|:---|:---|
+| MK1 | Hôm nay bạn đang chạy những gì bằng Home Assistant, ESPHome hay mạch tự làm? Bao nhiêu thiết bị là tự dựng? | — (phân loại) | Đếm được, kể tên: "3 node ESPHome đo nhiệt, 1 bơm tưới" | "Vài cái linh tinh" |
+| MK2 ★ | Thiết bị gần nhất bạn làm **cho người khác** (bạn bè, gia đình, khách) là gì? Kể lại từ lúc họ nhờ tới lúc giao. | `M-SELL` | Người cụ thể, thiết bị cụ thể, ngày giao | "Chưa, nhưng chắc sẽ làm" |
+| MK3 ★ | Bạn đã bán hay chia sẻ YAML, firmware, kit hay bản thiết kế đó chưa? Qua kênh nào (forum, GitHub, nhóm Facebook, chợ online)? Có ai trả tiền không, bao nhiêu? | `M-SELL` | Kênh cụ thể, số người nhận, tự nêu số tiền | "Định đăng lên GitHub" |
+| MK4 ★ | Sau khi giao, thiết bị hỏng thì ai sửa? Lần gần nhất bạn phải sửa một thiết bị đã giao là khi nào, mất bao lâu, có phải tới tận nơi không? | `M-SELL` | Một lần sửa thật, thời gian, chuyến đi | "Chưa hỏng bao giờ" |
+| MK5 ★ | Thông báo gần nhất từ thiết bị trong nhà mà **thật sự có ích** là gì? Còn thông báo gây phiền nhất? Bạn đã tắt kênh hay automation nào vì quá ồn chưa? | `M-PROACT` | Một thông báo cụ thể đã khiến họ làm gì đó; một kênh đã tắt và lý do | "Thông báo thì cũng tiện" |
+| MK6 | Bạn nhận cảnh báo từ thiết bị qua đâu (app Home Assistant, Telegram, Zalo, Discord, email)? Vì sao chọn nó? | `M-PROACT` (phân loại kênh) | Tên kênh, lý do đã cân nhắc | — |
+| MK7 ★ | Hôm nay bạn có đang trả tiền API LLM (OpenAI, Anthropic, Gemini…) hay chạy mô hình tại chỗ không? Tháng trước hết bao nhiêu, dùng vào việc gì? | `M-BYOK` | Tự nêu số tiền tháng trước và việc dùng | "Có tài khoản nhưng ít dùng" |
+| MK8 ★ | Lần gần nhất bạn mua một kit, hay mua linh kiện theo danh sách (BOM) từ một hướng dẫn, blog hay video, là khi nào? Mua ở đâu? Có món nào thiếu, sai hay phải mua lại không? | `M-KIT` | Ngày, nơi mua, một món sai hay thiếu | "Toàn tự chọn linh kiện" |
+| MK9 | Bạn đã cho LLM hay trợ lý giọng nói điều khiển thiết bị nào chưa? Có lần nào nó làm sai một việc vật lý không? | `P1` · `CEO-X4` | Một lần sai cụ thể, hậu quả | "Chưa thử" |
+| MK10 | Có thiết bị nào mà **tắt** thì nguy hiểm hơn bật (sục khí bể cá, bơm, sưởi vật nuôi)? Khi mất mạng hay mất điện, hôm nay nó làm gì? Đã có chuyện gì vì thế chưa? | `CEO-T1` | Sự cố có ngày, có hậu quả (cá chết, cây héo) | "Chưa nghĩ tới" |
+
 ## 6. Kết chung (mọi phân khúc)
 
 | # | Hỏi | Mã | Mạnh | Yếu |
@@ -138,6 +160,6 @@ demo tương ứng (`demo.md`, mục "Hỏi sau demo") và E4.
 
 1. Người ghi làm sạch bản ghi: trích nguyên văn mọi câu có số, ghi thời điểm và ai nói trước.
 2. Trưởng nhóm chấm sơ bộ theo `cham-diem.md` §2; người chấm thứ hai chấm độc lập trước 10-22.
-3. Điền một dòng vào bảng tổng hợp (mã ẩn danh `HS-01`, `FL-01`, `SH-01`, `IN-01`…), **không** tên
+3. Điền một dòng vào bảng tổng hợp (mã ẩn danh `HS-01`, `FL-01`, `SH-01`, `IN-01`, `MK-01`…), **không** tên
    người, không tên công ty.
 4. Nếu người đó điền khảo sát, nối mã khảo sát với mã phỏng vấn trong bảng tiếp cận (ngoài kho).

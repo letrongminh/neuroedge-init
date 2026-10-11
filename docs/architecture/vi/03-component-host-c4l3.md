@@ -59,7 +59,21 @@ Các gói sau đã được quy hoạch trong kiến trúc tương lai nhưng ch
 - `perception/vision/` và `sim/vision/` (I2a, TSK-V1b-*): đường ống thị giác và giả lập thị giác; thị giác đóng vai trò đầu vào L2, vào gate dưới dạng dữ kiện do maker khai (Q-54) — xem [`15`](15-target-architecture.md) §4.4.
 - `services/fleet/` và `services/registry/` (I9–I10, TSK-K2, TSK-K3): các dịch vụ phía máy chủ cho Fleet OS (điều phối OTA theo đợt, broker MQTT, viễn trắc) và Gate Registry (kho OCI qua ORAS/Harbor, đo lường) — xem [`15`](15-target-architecture.md) §3.1, §3.2.
 
-Khi `lab/` vào kho, nó cần một mục trong `ALLOWED` (và `LAZY` nếu có import muộn) của [`python/tests/test_architecture_layers.py`](../../../python/tests/test_architecture_layers.py). `perception/vision/` và `sim/vision/` thuộc đơn vị `perception` và `sim` sẵn có nên không cần mục mới; `services/` (kể cả `services/metering/engine.py`, TSK-K3-02) nằm ngoài gói `neuroedge` nên test này không quét.
+Agent vận hành và NeuroEdge Blueprint của [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) thêm năm gói (`planned · Q-72`; chưa có mã, tên gói là đề xuất):
+
+| Gói | Increment | Trách nhiệm | Được phụ thuộc vào (dự kiến) |
+|:---|:---:|:---|:---|
+| `mission/` | I2d | Hợp đồng nhiệm vụ (`mission.v1`, chờ RFC): nạp, kiểm mâu thuẫn, trình biên dịch hạ điều khoản xuống tầng (chỉ thiết bị có `ne_gate` có tầng phản xạ; thiết bị Home Assistant dừng ở host và bản duyệt nói rõ), sinh bản duyệt ≤ 5 dòng tất định từ diff có cấu trúc | `engine`, `hal` (đọc `board.v1`, kể cả `safe_state`), bậc 0 |
+| `agent/` | I2d | Phần lõi của runtime 24/7: lập lịch, bộ phát hiện tất định, `llm_budget`, ngân sách tin nhắn, giám sát LLM worker; dữ kiện giờ tường mang trạng thái `unsynced` | `mission`, `actions`, `engine`, bậc 0 |
+| `channels/` | I2d | Adapter kênh chat (Telegram trước) và kiểm bản ghi duyệt `{id, nonce, hạn, digest}`; lệnh vào từ chat thành `ToolCall` | **chỉ** `actions` (đi `dispatch()` và đường xác nhận), `egress`, bậc 0 — **không bao giờ import `hal`** |
+| `blueprint/` | I2e | `blueprint pack`/`install`: tải bằng URL, kiểm digest toàn gói, rồi `gate lint` mọi gate trong gói | `engine`, `mission`, bậc 0 |
+| `egress/` | I2d | Cửa ra dữ liệu: chỉ gửi tới đích đã khai, chặn và ghi vết đích không khai | bậc 0 |
+
+Luật tầng của nhóm này theo đúng luật 2 và 3 ở trên: `channels/` và LLM worker chỉ chạm thiết bị qua
+`dispatch()` → gate; không gói nào ngoài `actions` vừa gọi `evaluate()` vừa chạm chân. LLM worker là
+tiến trình riêng, không phải gói trong lõi ([`02`](02-container-c4l2.md) §3).
+
+Khi `lab/` vào kho, nó cần một mục trong `ALLOWED` (và `LAZY` nếu có import muộn) của [`python/tests/test_architecture_layers.py`](../../../python/tests/test_architecture_layers.py). Năm gói Q-72 cũng vậy: mỗi gói thêm một mục `ALLOWED` khi có mã, và test nên khẳng định `channels` không có `hal` trong tập của nó, như test hôm nay khẳng định `ALLOWED["hal"]`. `perception/vision/` và `sim/vision/` thuộc đơn vị `perception` và `sim` sẵn có nên không cần mục mới; `services/` (kể cả `services/metering/engine.py`, TSK-K3-02) nằm ngoài gói `neuroedge` nên test này không quét.
 
 ## 3. Danh mục thành phần
 

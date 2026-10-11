@@ -1,5 +1,7 @@
 # Ghi chú thiết kế: mở rộng NeuroEdge cho robot phân tầng phức tạp (FOFOCA)
 
+> **Tạm dừng theo Q-72 (2026-10-11).** Robot và thoại không nằm trên đường tới Blueprint đầu tiên; khối W1 đã vào MVP giữ nguyên. Trạng thái an toàn "dừng" ở đây là một trường hợp của `safe_state` — RFC an toàn có điều kiện sẽ tổng quát hoá nó (Q-35, Q-72).
+
 > **Ghi chú thiết kế.** Tệp này giữ mục tiêu, bất biến, kiến trúc, nghiên cứu và khung RFC
 > cho robot phân tầng. Nó **không** có lịch, trạng thái, tiêu chí ra, ước lượng hay thang cắt:
 > task, tiêu chí ra và phụ thuộc chỉ nằm ở [`neuroedge-roadmap.md`](neuroedge-roadmap.md)
@@ -90,6 +92,8 @@ qua gate, kể cả khi hệ thống trải trên nhiều chip, và mọi mở r
 | DoD-4 | Một bo bậc 3 được port chỉ bằng tài liệu công khai; **thời gian đội lõi hỗ trợ** bản port đầu tiên < 8 giờ | Tiêu chí ra 3 của I13 (`neuroedge-roadmap.md` §7.3) |
 | DoD-5 | SBOM + OTA ký + mTLS/cert thiết bị demo được | Chặng 2 (§8) |
 
+*"Dừng" ở DoD-2 là một trường hợp của `safe_state` đối xứng khai trong `board.v1` (Q-72, chờ RFC an toàn có điều kiện).*
+
 ---
 
 ## 2. Bất biến và kỷ luật thực thi
@@ -99,7 +103,7 @@ qua gate, kể cả khi hệ thống trải trên nhiều chip, và mọi mở r
 | # | Luật | Nguồn |
 |:--:|:--|:--|
 | BT1 | Một đường duy nhất tới actuator: gate → token dùng một lần → HAL authorize → vết ghi | `docs/spec/threat_model.md` §1 |
-| BT2 | Gate chạy **on-device**, fail-closed; **không gate tập trung** (kể cả multi-node) | `neuroedge-proposal.md` §3.4, Phụ lục H.3 |
+| BT2 | Gate chạy **on-device**, fail-closed; **không gate tập trung** (kể cả multi-node). Fail-closed giữ cho lệnh; cơ cấu về `safe_state` đã khai — "dừng" là một trường hợp (Q-72, chờ RFC) | `neuroedge-proposal.md` §3.4, Phụ lục H.3 |
 | BT3 | Chạm `schemas/`, ngữ nghĩa phân giải gate, ba vết ghi chuẩn mực, `digests.lock`, bố cục `NETR` → **RFC** (2 PR: RFC rồi mã) | `CONTRIBUTING.md` §3 |
 | BT4 | Mỗi mở rộng: mục threat model + test (0 skip) + corpus khép kín hai chiều; fuzz nếu chạm `NETR` | `CONTRIBUTING.md` §3, §5 |
 | BT5 | Milestone-gated + PF-3 (nhu cầu thật); giữ bậc 1 không pha loãng (R-7) | `neuroedge-roadmap.md` §0, PRD R-7 |

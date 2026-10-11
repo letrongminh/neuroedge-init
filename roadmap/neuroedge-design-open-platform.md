@@ -13,12 +13,12 @@
 > [RFC-0017](../docs/rfc/0017-nguon-goi-theo-khong-gian-ten.md) (nguồn gọi theo không gian tên),
 > [RFC-0018](../docs/rfc/0018-co-cau-chap-hanh-tu-xa.md) (cơ cấu chấp hành từ xa).
 
-**Cập nhật:** 2026-10-04 · lịch sử thay đổi: `CHANGELOG.md`
+**Cập nhật:** 2026-10-11 (Q-72: Blueprint Hub, `safe_state`) · lịch sử thay đổi: `CHANGELOG.md`
 
 **Tài liệu nguồn:** báo cáo thị trường [`docs/reports/thi-truong-tich-hop-2026-10-04.md`](../docs/reports/thi-truong-tich-hop-2026-10-04.md)
 · `docs/spec/threat_model.md` · `docs/spec/python_api.md` · `neuroedge-proposal.md` §1.5, §3.8, §6.4
 
-**Ngoài phạm vi:** Marketplace có thu phí (Khối 5, PRD §14) — index cộng đồng ở §7 không phải Marketplace.
+**Ngoài phạm vi:** Marketplace có thu phí (Khối 5, PRD §14) — index cộng đồng ở §7 không phải Marketplace. Blueprint Hub có thu phí (Q-72) là sản phẩm riêng, chỉ sau cổng nhu cầu 8 tuần (`neuroedge-proposal.md` §8.7, §8.8); index cộng đồng miễn phí ở đây giữ nguyên.
 
 ---
 
@@ -35,7 +35,8 @@ lõi, không chờ đội lõi, không phải theo trọn mô hình `agent.toml`
 
 **Nguyên tắc:** mở về tích hợp, không mở về an toàn. Mọi đường tới cơ cấu chấp hành vẫn qua gate → phong bì →
 token → HAL (`threat_model.md` §1); fail-closed mọi hướng (`CHANGELOG.md` §3.3 #2); lệnh về phía an toàn không
-bao giờ bị chặn (Q-62).
+bao giờ bị chặn (Q-62). *Sẽ đổi theo RFC an toàn có điều kiện (Q-72, RFC dự kiến): hướng an toàn là `safe_state`
+đã khai trong `board.v1` (mặc định `off`); "không chắc thì chặn" giữ cho lệnh, còn cơ cấu về `safe_state` của nó.*
 
 ## 2. Hôm nay đóng ở đâu
 
@@ -99,10 +100,13 @@ Tên lệnh ở đây là thiết kế; tên chốt nằm ở RFC-0016 và hợp
   (`threat_model.md` §3). Cài plugin là quyết định của người vận hành; ký số plugin đi cùng registry (I10).
 - **Proxy chỉ có giá trị khi là đường duy nhất.** Tài liệu và `plugin doctor` nói rõ, kiểm được thì kiểm.
 - **Cơ cấu từ xa** phân theo mức tự tắt; hành động không hoàn tác cần thiết bị tự tắt được dù mất liên lạc
-  (RFC-0018). Mất liên lạc ⇒ trạng thái không chắc ⇒ từ chối lệnh bật tới khi xác nhận lại.
+  (RFC-0018). Mất liên lạc ⇒ trạng thái không chắc ⇒ từ chối lệnh bật tới khi xác nhận lại. *Sẽ đổi theo RFC an toàn
+  có điều kiện (Q-72): từ chối lệnh rời `safe_state` đã khai; với cơ cấu khai `safe_state: on` (kèm khoá liên động
+  phần cứng, chỉ trong `board.v1`), lệnh bị từ chối là lệnh tắt.*
 - **Bo của cộng đồng** dùng được qua đường dẫn hay plugin, tự chứng nhận bằng `board validate` và bộ test tuân thủ;
   không bao giờ là bo tham chiếu, không bao giờ được tính vào tương đương bậc 1 (RFC-0002, RFC-0013).
 - **Index cộng đồng không phải Marketplace:** không thu phí, không xếp hạng trả tiền, không bảo chứng (PRD §14).
+  Blueprint Hub trả phí của Q-72 tách riêng khỏi index này và chỉ có sau cổng nhu cầu 8 tuần.
 
 ## 8. Giấy phép
 
@@ -116,6 +120,13 @@ Apache-2.0; nhúng runtime vào sản phẩm thương mại cần license thươ
 
 - **MCU:** `ne_gate` thành component ESP-IDF dùng được trong firmware của hãng khác, kèm lệnh sinh `NETR` không cần
   build cả agent — đi cùng chặng B (I3a, I5).
+- **Mầm của NeuroEdge Blueprint (Q-72).** Blueprint dựng trên các mảnh của nền tảng mở. Đã có: bộ nạp plugin với
+  `[plugins] enable` ghim được phiên bản (`==x.y`) và nguồn gốc `files_sha256` ghi vào vết ghi (loại actuator,
+  TSK-I2c-11); `neuroedge plugin list` và `plugin doctor`; nhóm entry point `neuroedge.templates` đã khai trong
+  bộ nạp nhưng chưa nạp; `ne_gate` là component ESP-IDF trong firmware `esp32s3`
+  (`targets/esp32s3/components/ne_gate`). Chưa có: `plugin search/install` và index (TSK-I2c-18) — khuôn của index
+  tĩnh Blueprint ghim digest toàn gói; template từ git ghim commit (§6); `ne_gate` dùng được trong firmware của hãng
+  khác (gạch đầu dòng trên), rồi bọc thành external component ESPHome cho cộng đồng Home Assistant.
 - **Chuẩn ngoài:** adapter MHS khi spec công bố (`TODOS.md` #33); Matter, MQTT (#52), OpenTelemetry (#53) — ai cũng
   viết được dưới dạng plugin; đội lõi chỉ làm khi có nhu cầu đo được.
 

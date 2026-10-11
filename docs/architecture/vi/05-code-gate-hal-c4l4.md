@@ -186,6 +186,28 @@ không đổi. Nonce không bao giờ vào vết ghi.
 
 **Đã có (TSK-N2-01):** hook phong bì an toàn vật lý (physical envelope hook — giới hạn tổng thời gian bật và tần suất theo từng chân, khai ở `board.v1` — RFC-0007) nằm trong `HAL.digital_out` giữa bước kiểm tra chân (`require_pin`) và `authorize` (`hal/envelope.py`; token không bị tiêu khi bị từ chối) → [`15`](15-target-architecture.md) §4.2. Token thuê có hạn (nhánh `feat/motion`, TSK-I2a-05): (lease token — quyền điều khiển vận động có thời hạn ngắn, tự động gia hạn khi có lệnh mới qua gate, tự hết hạn để dừng an toàn khi mất liên lạc) cho `motion.*` (Q-37) → [`15`](15-target-architecture.md) §4.3.
 
+**Hôm nay**, mọi bảo đảm thời gian của lớp này hướng về `off`: phong bì tự tắt tại
+`min(thời hạn lệnh, max_continuous_ms)`, lệnh `off` không qua phong bì hay `authorize` (RFC-0007 §3d,
+miễn gate của Q-62), và mức L0–L3 của cơ cấu từ xa là lời hứa về ai làm cơ cấu về `off` (RFC-0018 §3d).
+Riêng `motion.*` đã có `safe_state` `stop`/`hold` (RFC-0011).
+
+*Sẽ đổi theo Q-72 (chờ RFC an toàn có điều kiện, `planned · Q-72`, I2d):* mô hình **`safe_state` đối
+xứng**. Mọi cơ cấu có `safe_state` khai trong `board.v1`, mặc định `off`. Phong bì, sổ token và HAL đọc
+mọi bảo đảm là "trở về `safe_state`":
+
+| Bảo đảm | Hôm nay | Theo Q-72 (planned) |
+|:---|:---|:---|
+| Tự tắt tại `min(thời hạn, max_continuous_ms)` | Về `off` | Về `safe_state` |
+| Lệnh không qua phong bì, không cần token (Q-62) | Lệnh về `off`, `duty = 0`, `safe_state` của `motion.*`, lệnh HAL tự phát | Mọi lệnh **về** `safe_state` |
+| Lệnh bị gate, phong bì và token giới hạn | Lệnh bật | Mọi lệnh **rời** `safe_state` |
+| Lease, mức L0–L3 (RFC-0018) | Ai đưa cơ cấu về `off` | Ai đưa cơ cấu về `safe_state` |
+
+`safe_state` khác `off` chỉ khai được trong `board.v1`, không trong hợp đồng, gate hay Blueprint, và chỉ
+khi phần cứng giữ nó: `safe_state: on` hiện thực bằng đấu dây mặc định bật (rơ-le thường đóng) khai làm
+khoá liên động phần cứng, không bằng phần mềm tự bật. Không thêm đường nào ngoài gate. Profile hiện có
+(`off`; `motion.*` `stop`/`hold`) giữ nguyên hành vi. Phải sửa `TODOS.md` #58 trước (bộ đọc `board.v1`
+cũ lặng lẽ bỏ qua khoá lạ, kể cả khoá an toàn). Quyết định: [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định).
+
 ```mermaid
 stateDiagram-v2
     [*] --> Free

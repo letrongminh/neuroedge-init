@@ -18,10 +18,12 @@
 - [ ] Quan hệ với PolyForm Noncommercial 1.0.0: đợt thử là một cấp quyền *đánh giá* bằng văn bản; mọi dùng thương mại sau đó cần thoả thuận khác (đầu vào: `TODOS.md` #44 — phạm vi, giá, hỗ trợ).
 - [ ] Ai được dùng (tên đội/những người), ở đâu (những máy nào), bao nhiêu thiết bị.
 - [ ] Không phân phối lại wheel; không đưa wheel lên index; không tạo sản phẩm dẫn xuất để bán.
+- [ ] Đợt thử **không** gồm đóng gói hay bán NeuroEdge Blueprint (Q-72, chưa có mã). Điều khoản cho người bán Blueprint là thoả thuận khác, sau này: đầu vào `TODOS.md` #44.
 - [ ] Gate, `guard.toml`, mã agent do đối tác viết **thuộc đối tác** (ghi rõ), không bị cấp ngược cho chúng tôi trừ phần phản hồi (§2.4).
 
 ### 2.2 An toàn
 - [ ] **Không dùng cho thứ an toàn-tính-mạng, an ninh vật lý có hậu quả không hoàn tác, hay thiết bị y tế** trong đợt thử; hoặc đối tác tự chịu rủi ro bằng văn bản cho từng thiết bị đã nêu.
+- [ ] Ghi rõ: sục khí, sưởi hay bơm cho bể cá, ao nuôi, chuồng vật nuôi **không** được chứng nhận an toàn tính mạng (Q-38); NeuroEdge không bao giờ là lớp bảo vệ duy nhất, bảo vệ khỏi nguy hiểm do phần cứng (cầu chì nhiệt, rơ-le quá dòng, phao). `safe_state` khác `off` chưa có (Q-72, chờ RFC).
 - [ ] Đối tác hiểu và xác nhận các giới hạn ở [`docs/user/doi-tac/gioi-han.md`](../../user/doi-tac/gioi-han.md) (proxy không chặn lời gọi thẳng; không xác thực ở front `proxy http`; http thuần trên LAN khi bật `allow_lan_http`; `linux` trên Pi thử nghiệm; Home Assistant mới kiểm trên bản giả).
 - [ ] Không bảo hành, không cam kết "an toàn": phần mềm đánh giá, "as is"; trách nhiệm hữu hạn theo lời luật sư.
 - [ ] Quy trình dừng: đối tác được và nên dừng dùng ngay khi thấy hành vi bất thường; đầu mối báo sự cố an toàn (xem [`kenh-phan-hoi.md`](kenh-phan-hoi.md)).

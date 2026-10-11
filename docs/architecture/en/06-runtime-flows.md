@@ -304,6 +304,182 @@ sequenceDiagram
 |:---|:---|:---|
 | On-chip voice turn | I5 | [`15`](15-target-architecture.md) §2.2 |
 | Rejection by physical safety envelope | I2a | [`15`](15-target-architecture.md) §4.2 |
-| Event trigger call source (`call_source = "trigger"`, TSK-N6-*) | I4a | [`15`](15-target-architecture.md) §4.2 |
+| Event trigger call source (`call_source = "trigger"`, TSK-N6-*) | I2d (moved from I4a by Q-72) | [`15`](15-target-architecture.md) §4.2 |
 | Multi-node intent and communication loss | I14 | [`15`](15-target-architecture.md) §4.3 |
 | Vision facts | I2a, I3a | [`15`](15-target-architecture.md) §4.4 |
+| Mission contract lifecycle, proactive reports, commands and approvals over chat (`planned · Q-72`) | I2d | §11 below; [`15`](15-target-architecture.md) |
+| Installing a NeuroEdge Blueprint (`planned · Q-72`) | I2e | §11.5 below; [`15`](15-target-architecture.md) |
+
+## 11. Planned flows under Q-72 (`planned · Q-72`)
+
+No flow in this section has code yet. They record the target design of [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) for increment I2d (missions and the operating agent) and I2e (minimal NeuroEdge Blueprint); progress is in roadmap §0.2. Parts that need an RFC are marked "pending RFC".
+
+Two processes on the home machine ([`02`](02-container-c4l2.md)):
+
+- **trusted runtime** (24/7, systemd): HAL, gate, mission contract execution, scheduling, deterministic detectors, chat channel adapters and approval checks, egress;
+- **untrusted LLM worker**: holds the user's LLM key (BYOK), calls the runtime over local MCP like any MCP client, source assigned by the runtime, **never approves** — the same boundary as the MCP client in Q-71.
+
+Every command to a pin, whether it comes from chat, the scheduler or a detector, still goes through exactly the one segment of §1: `dispatch()` → `Conversation.do` → gate → token → HAL. The chat adapter only calls into `dispatch()` and does not import `hal`. Durations, approval expiry, the watchdog and reflexes use the **monotonic clock**; wall-clock facts carry the `unsynced` state while the machine has not synchronized its time, and time-window clauses treat `unsynced` as a missing fact (fail-closed).
+
+### 11.1 Lifecycle of a mission contract (I2d)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant P as person (chat or local UI)
+    participant RT as runtime (trusted)
+    participant W as LLM worker (untrusted, BYOK)
+    participant MC as mission compiler (in runtime)
+    participant T as trace segment
+    P->>RT: utterance "keep the tank stable, tell me if something is wrong"
+    RT->>W: utterance + the fields the user allowed this destination to see
+    W->>RT: mission draft via local MCP (source assigned by the runtime)
+    alt draft misses a value (threshold, window, device)
+        RT->>P: clarifying question written by the worker
+        P->>RT: answer, back to the worker
+    end
+    RT->>MC: compile(draft)
+    MC->>MC: lower each clause to the lowest tier that enforces it (reflex, skill, thinking)
+    alt contradiction or a clause no tier can enforce
+        MC-->>RT: refused, names the clashing clauses
+        RT->>P: what clashes, nothing is locked
+    else compiled
+        MC-->>RT: structured diff + summary of at most 5 lines, built deterministically from the diff
+        RT->>P: approval request (section 11.4), never text written by the worker
+        P->>RT: approval aimed at that request id
+        RT->>RT: lock the mission, digest of the compiled contract
+        RT->>T: mission_locked with digest and approver source
+    end
+```
+
+- Only devices with `ne_gate` have a reflex tier; Home Assistant devices stop at the host tier and the approval summary says so.
+- The approval summary is compiler output, not LLM text: a tricked worker cannot write a single line of the approval message.
+
+### 11.2 Triggers, detectors and proactive reports (I2d)
+
+This extends the Block N6 trigger flow (I2d, moved from I4a by Q-72; [`15`](15-target-architecture.md) §4.2: runs without a client session, `call_source = "trigger"`, `trigger ∉ HUMAN_SOURCES`, debounce, rate cap), not a parallel path: the mission contract's scheduler and detectors are new activation sources of that same path.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as scheduler or detector (deterministic)
+    participant RT as runtime trigger path
+    participant D as dispatch()
+    participant B as llm_budget and message budget
+    participant W as LLM worker
+    participant Q as outbound queue (egress)
+    participant CH as paired chat
+    S->>RT: event (reading crossed a band, deadline of an obligation) — monotonic clock
+    RT->>RT: debounce, rate cap
+    opt the mission maps the event to an action
+        RT->>D: ToolCall(source=trigger) — gate, token, HAL as in section 1
+    end
+    RT->>B: may the worker explain this event?
+    alt budget left
+        B-->>RT: yes
+        RT->>W: event + allowed fields
+        W-->>RT: explanation or proposal (a proposal is a mission change, section 11.1)
+    else budget exhausted
+        B-->>RT: no — hard-template alert instead
+    end
+    RT->>Q: message to a declared destination, batched under the message budget
+    Q->>CH: report
+```
+
+Detectors run first, and the LLM is called only after an event: reflexes and hard-template alerts do not depend on the LLM. Detectors reading sensors periodically inside the 24/7 runtime turn `TODOS.md` #48 (sensor reads blocking the event loop) into a real risk ([`02`](02-container-c4l2.md)).
+
+### 11.3 Commands arriving from chat (I2d)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CH as chat platform (Telegram first)
+    participant A as chat adapter (in runtime)
+    participant W as LLM worker
+    participant D as dispatch()
+    CH->>A: message from a chat id
+    A->>A: paired sender, not a group, inside the message budget
+    alt unknown sender or group
+        A-->>CH: nothing runs, chat_message_refused traced
+    else paired
+        A->>W: text as untrusted data
+        W->>D: tools/call via local MCP — source assigned by the runtime, never a human source
+        D-->>W: ToolResult ALLOW, BLOCK or REJECTED
+        W-->>A: reply
+        A->>CH: reply through egress
+    end
+```
+
+The chat adapter does not import `hal` and does not call `Conversation.do` directly: every command with a physical effect goes through `dispatch()` like the MCP calls in §3. A call the gate blocks with `on_block: ask` is not answered by the worker; it becomes an approval request in §11.4.
+
+### 11.4 Approval requests and replies over chat (I2d, pending the RFC for the `chat:<id>` source)
+
+This extends §2: today only `local_grammar` and `ui` can answer an `ask` question (Q-26). Q-72 adds a path over chat through an **approval record**, not through a new source name in `HUMAN_SOURCES` for a free-form "yes" message.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant RT as runtime
+    participant A as chat adapter
+    participant CH as paired chat
+    participant B as ConfirmationBook
+    participant T as trace segment
+    RT->>RT: approval record {id, nonce, expiry (monotonic), digest of the change, summary of at most 5 lines}
+    RT->>T: approval_requested (flushed now)
+    A->>CH: request with buttons or a code aimed at id
+    CH->>A: answer aimed at id
+    A->>A: paired sender? not a group? nonce unused? not expired? digest still matches?
+    alt any check fails
+        A-->>CH: refused, nothing changes
+        A->>T: approval_refused with the failed check (flushed now)
+    else all pass
+        A->>B: confirmation path with source chat:ID
+        B->>RT: gate re-evaluated, only the confirms criteria waived — or the mission change locked
+        RT->>T: approval_accepted with sender, request id, summary (flushed now)
+    end
+    Note over RT,CH: the LLM worker never answers a request, relays never carry approvals
+```
+
+Pairing is done locally; revocation, pairing expiry and the cap on the number of approvals are still deferred (`TODOS.md` #62).
+
+### 11.5 Installing a NeuroEdge Blueprint (I2e)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as installer
+    participant CLI as neuroedge blueprint install
+    participant IDX as Hub index (static git repository)
+    participant SRC as package URL (git or HTTPS)
+    participant RT as runtime
+    U->>CLI: install by name or by URL
+    opt by name
+        CLI->>IDX: look up URL, digest, evidence (marked unsigned)
+    end
+    CLI->>SRC: fetch the whole package
+    CLI->>CLI: digest over the whole package: kit, firmware, mission templates, detectors, evidence traces
+    alt digest does not match
+        CLI-->>U: three-part error (where, why, how), nothing installed
+    else match
+        CLI->>CLI: validate blueprint.v1, board check, safe_state other than off only from board.v1
+        CLI-->>U: install summary; missions start as drafts that still need approval (section 11.1)
+        U->>CLI: replay the evidence traces locally (optional)
+        CLI->>RT: load the approved missions
+    end
+```
+
+A NeuroEdge Blueprint only declares; it carries no code that runs in the runtime. It is different from a Home Assistant Blueprint (HA's automation template), and it may carry an HA blueprint.
+
+### 11.6 Failure branches
+
+| Path | Failure | Handling in the design | What the user sees |
+|:---|:---|:---|:---|
+| Runtime ↔ LLM worker | worker dies or hangs | the runtime keeps running reflexes, detectors, hard-template alerts; restarts the worker | an "analysis paused" message; alerts still arrive |
+| Runtime → chat channel | the chat platform's API fails | bounded queue + local alert on the UI | alert on the UI; messages arrive late, with timestamps |
+| LLM provider | `llm_budget` exhausted | reflexes + hard-template alerts | an "analysis budget exhausted" message |
+| Approval over chat | request expired | not approved, traced | a "request expired" message |
+| Approval over chat | reply from an unknown account or a group | refused, traced | nothing changes |
+| Relay (`planned · Q-72`, outside I2d/I2e) | relay down | no effect on safety; remote access lost | the page cannot be opened remotely |
+| Clock | power loss, no NTP/RTC yet | wall-clock fact `unsynced` ⇒ time-window clause lacks a fact ⇒ block | the approval summary and the UI report the clock is not synchronized |
+| Trace | power loss in the middle of a segment | at most the tail of ordinary events is lost; blocks and approvals were already flushed | `replay` reports a truncated segment |
+| NeuroEdge Blueprint install | digest does not match | install refused | three-part error |

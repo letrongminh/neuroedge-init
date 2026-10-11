@@ -1,9 +1,12 @@
-# Chấm điểm — cổng nhu cầu 2026-10-25
+# Chấm điểm — cổng nhu cầu 2026-10-25 và cổng 8 tuần (Q-72)
 
 Chấm từ **bản ghi**, không từ trí nhớ. Mỗi cuộc do hai người chấm độc lập (`README.md` §4). Chỉ hành
 vi đã xảy ra được điểm; ý kiến, lời khen, "chắc sẽ" đều là 0.
 
 ## 1. Thang cho từng cuộc
+
+Bốn mã `M-*` chấm phần Maker (`phong-van.md` §5b, Q-72); cột "Câu cổng" của chúng ghi vòng ① ② ③ mà câu
+đó đo. Các mã còn lại theo câu C1…C10 (`README.md` §2).
 
 ### 1.1 Câu có điểm 0 / 1 / 2
 
@@ -16,6 +19,10 @@ vi đã xảy ra được điểm; ý kiến, lời khen, "chắc sẽ" đều l
 | `CEO-T3` | C7 | Nêu giải pháp đang dùng **và** chi phí hoặc thời gian của nó (tự viết: số người × số tháng) | Nêu giải pháp, không có chi phí | Không nêu |
 | `G-e` | C8 | Số chuyến hiện trường mỗi tháng **và** tỷ lệ do phần mềm/cấu hình | Số chuyến, không có tỷ lệ | Không đếm |
 | `G-d` | C9 | Một lần dùng lại chính sách hay cấu hình **an toàn** do bên khác viết | Dùng lại cấu hình không liên quan an toàn, hoặc chỉ trong nội bộ | Không (ghi thêm `✗` nếu họ **từ chối** dùng đồ người khác và nêu lý do) |
+| `M-SELL` | ③ (Q-72) | Đã **bán** (nhận tiền) thiết bị, YAML, firmware hay kit mình làm, **hoặc** đã giao cho ≥ 2 người ngoài gia đình — **và** kể được ai sửa sau khi giao | Làm cho một người khác, hoặc chia sẻ công khai miễn phí (GitHub, forum), chưa ai trả tiền | Chưa làm thiết bị cho ai |
+| `M-PROACT` | ② (Q-72) | Kể một thông báo chủ động cụ thể đã khiến họ làm gì đó **và** một kênh hay automation đã tắt vì quá ồn | Đúng một trong hai | Không kể được thông báo nào |
+| `M-BYOK` | ② (Q-72) | Đang trả LLM API, **tự nêu** số tiền tháng trước và việc dùng | Có key hay tài khoản, hoặc chạy mô hình tại chỗ, nhưng không nêu được số tiền | Không dùng LLM nào ngoài app miễn phí |
+| `M-KIT` | ① (Q-72) | Trong 12 tháng qua đã mua kit hay linh kiện theo BOM của một hướng dẫn, **và** nêu được nơi mua | Mua lâu hơn 12 tháng, hoặc chỉ tham khảo BOM rồi tự chọn linh kiện | Không |
 | Cam kết | E4 | Cam kết có ngày hoặc có người: buổi thứ hai với đội kỹ thuật · nhật ký sự cố ẩn danh · thử trên 1 thiết bị · giới thiệu người ký tiền | Giới thiệu tên một người khác | "Gửi tài liệu cho tôi" hoặc không có |
 
 ### 1.2 Câu phân loại (ghi nhãn, không cộng điểm)
@@ -35,14 +42,23 @@ vi đã xảy ra được điểm; ý kiến, lời khen, "chắc sẽ" đều l
 
 ## 2. Bảng điểm (mỗi dòng một cuộc)
 
-| Mã cuộc | Phân khúc | Vai trò | P1 | X2 | X5 | T1 | T3 | G-e | G-d | Cam kết | X4 | Đường X5 | T2 | Số thiết bị | Đơn vị tính |
-|:---|:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|---:|:---|
-| HS-01 | Khách sạn | | | | | | | | | | | | | | |
-| FL-01 | Fleet | | | | | | | | | | | | | | |
-| SH-01 | Smart Home | | | | | | | | | | | | | | |
-| IN-01 | Industrial | | | | | | | | | | | | | | |
+| Mã cuộc | Phân khúc | Vai trò | P1 | X2 | X5 | T1 | T3 | G-e | G-d | M-SELL | M-PROACT | M-BYOK | M-KIT | Cam kết | X4 | Đường X5 | T2 | Số thiết bị | Đơn vị tính |
+|:---|:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|---:|:---|
+| HS-01 | Khách sạn | | | | | | | | | | | | | | | | | | |
+| FL-01 | Fleet | | | | | | | | | | | | | | | | | | |
+| SH-01 | Smart Home | | | | | | | | | | | | | | | | | | |
+| IN-01 | Industrial | | | | | | | | | | | | | | | | | | |
+| MK-01 | Maker / HA / ESPHome | | | | | | | | | | | | | | | | | | |
+| PV-01 | chưa chấm — cần ghi chép gốc | | | | | | | | | | | | | | | | | | |
+| PV-02 | chưa chấm — cần ghi chép gốc | | | | | | | | | | | | | | | | | | |
+| PV-03 | chưa chấm — cần ghi chép gốc | | | | | | | | | | | | | | | | | | |
 
-Kèm mỗi dòng: 1–3 trích dẫn nguyên văn có số (mã cuộc + phút).
+Kèm mỗi dòng: 1–3 trích dẫn nguyên văn có số (mã cuộc + phút). Mã `M-*` chỉ chấm cho cuộc có hỏi phần
+Maker; cuộc khác để trống, không ghi 0.
+
+`PV-01` → `PV-03` là ba buổi phỏng vấn đã làm trước Q-72 (proposal Q-72 dẫn bản tổng hợp của chúng, chưa
+chấm). Chỉ chấm được từ **ghi chép gốc** (bản ghi nguyên văn có thời điểm con số đầu tiên); bản tổng hợp
+không đủ. Khi có ghi chép gốc, đổi mã theo phân khúc (`MK-…`, `SH-…`) và chấm như mọi cuộc.
 
 ## 3. Quy tắc cộng dồn
 
@@ -51,9 +67,9 @@ Mẫu nhỏ (≤ 5 cuộc/phân khúc), nên **đếm số cuộc đạt 2**, kh
 | Chỉ số | Cách tính |
 |:---|:---|
 | `N2(x, s)` | Số cuộc ở phân khúc `s` có điểm 2 ở mã `x` |
-| `N2(x)` | Tổng `N2(x, s)` trên cả bốn phân khúc, **đếm theo tổ chức** (hai người cùng tổ chức tính một) |
+| `N2(x)` | Tổng `N2(x, s)` trên cả năm phân khúc, **đếm theo tổ chức** (hai người cùng tổ chức tính một) |
 | Tỷ lệ nhãn | Với `CEO-X4`: số cuộc mang nhãn A / C / E chia cho số cuộc có `P1 ≥ 1` |
-| Điểm phân khúc | `N2(P1, s) + N2(Cam kết, s)`; hoà thì so `N2(X5, s)` |
+| Điểm phân khúc | `N2(P1, s) + N2(Cam kết, s)`; hoà thì so `N2(X5, s)`. Phân khúc Maker: `N2(M-SELL, s) + N2(Cam kết, s)` |
 | Đủ dữ liệu | Phân khúc có **≥ 3 cuộc** đã chấm; toàn cổng có **≥ 12 cuộc** |
 
 Khảo sát (`survey.json`) **không** vào điểm. Chỉ dùng để: (a) ước lượng phân bố quy mô thiết bị theo
@@ -62,10 +78,44 @@ người để phỏng vấn thêm.
 
 ## 4. Ngưỡng quyết định
 
-> **Hết hiệu lực từ 2026-09-30 (Q-56).** Các ngưỡng dưới đây không còn quyết định increment nào; giữ lại để đọc
-> kết quả phỏng vấn cũ. Thang chấm §1–§3 vẫn dùng được cho phỏng vấn làm đầu vào thông tin.
+§4.0 là cổng **có hiệu lực**: Q-72 (2026-10-11, PRD §15) khôi phục một cổng nhu cầu, đảo Q-56. §4.1–§4.5 là
+ngưỡng cũ của Q-20, **hết hiệu lực từ 2026-09-30 (Q-56)**; giữ lại để đọc kết quả phỏng vấn cũ, không quyết
+increment nào. Thang chấm §1–§3 dùng cho cả hai.
 
-### 4.1 I3–I7 — giữ nguyên nhánh của thiết kế GĐ1
+### 4.0 Cổng nhu cầu 8 tuần (Q-72)
+
+Chấm 8 tuần sau khi chốt Q-72. Ba điều kiện đo **hành vi**, không đo ý kiến; ngưỡng ở Q-72 là nơi duy nhất,
+bảng dưới chỉ nói cách đếm.
+
+| Điều kiện | Ngưỡng (Q-72) | Đếm thế nào | Nguồn dữ liệu |
+|:---:|:---|:---|:---|
+| ① | ≥ 3 người ngoài đội tự cài một NeuroEdge Blueprint và chạy được | Người không thuộc đội, tự làm theo tài liệu, có vết ghi chạy thật; người được đội cài hộ không tính | Vết ghi và phiên đo; không từ phỏng vấn |
+| ② | ≥ 1 người chạy liên tục 2 tuần trên giả lập G2 hoặc G3 | Một chuỗi vết ghi 14 ngày liền, không có khoảng hở do người chạy tự dừng | Chuỗi vết ghi |
+| ③ | ≥ 1 maker muốn đóng gói và bán Blueprint của mình | Một maker có `M-SELL = 2` **và** một cam kết có ngày (E4) để đóng gói Blueprint đầu tiên; "chắc sẽ bán" là 0 | Phỏng vấn §5b, bảng §2 |
+
+Song song: chấm ba buổi đã có (`PV-01` → `PV-03`, khi có ghi chép gốc) và phỏng vấn thêm 10 người, trong đó
+≥ 5 maker (`README.md` §3).
+
+| Kết quả | Nhánh | Hành động (Q-72) |
+|:---|:---:|:---|
+| Đạt ① ② ③ | **Đạt** | Đầu tư Hub, danh mục kit, Blueprint thứ hai; xét lại phạm vi v1.0 (Q-52) bằng dữ liệu |
+| Đạt ① ②, trượt ③ | **Công cụ cá nhân** | NeuroEdge là công cụ cá nhân: giữ vòng ① ②, tìm nguồn thu khác; ghi một dòng `Q-N` mới |
+| Trượt ① hoặc ② | **Trượt** | Đổi phân khúc hoặc thông điệp **trước khi** viết thêm tính năng |
+
+Mẫu quyết định cho cổng này:
+
+```text
+QUYẾT ĐỊNH CỔNG NHU CẦU 8 TUẦN (Q-72)     (mã Q-N kế tiếp chưa dùng, neuroedge-prd.md §15)
+① Người ngoài đội tự cài và chạy được:   __ / 3   (danh sách mã ẩn danh + đường dẫn vết ghi)
+② Chạy liên tục 2 tuần trên G2/G3:        __ / 1   (chuỗi vết ghi, ngày đầu – ngày cuối)
+③ Maker muốn đóng gói và bán:             __ / 1   (mã cuộc, M-SELL, cam kết E4 có ngày)
+Phỏng vấn thêm: __ người, trong đó __ maker (≥ 5)
+Nhánh: [ Đạt | Công cụ cá nhân | Trượt ]   vì: ____________________________________
+Ba trích dẫn ngược mạnh nhất (bắt buộc, như mục 7 của mẫu §5):
+  1. ______________   2. ______________   3. ______________
+```
+
+### 4.1 I3–I7 — giữ nguyên nhánh của thiết kế GĐ1 (hết hiệu lực, Q-56)
 
 Ngưỡng này là bảng cổng nhu cầu của thiết kế GĐ1 (`docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`),
 đếm theo `N2(P1)`. Nhánh áp cho các increment **I3–I7** (roadmap §0.2; tên lịch sử: Khối 1b). Theo
@@ -116,7 +166,7 @@ không thì ghi trong quyết định cổng (§5).
 Xếp theo điểm phân khúc (§3). Chọn **một**, tối đa **hai**. Phân khúc có `N2(P1, s) = 0` không được
 chọn. Phân khúc không đủ dữ liệu ghi "chưa kết luận", không phải "trượt".
 
-## 5. Mẫu quyết định (điền ngày 2026-10-25)
+## 5. Mẫu quyết định của cổng cũ (điền ngày 2026-10-25; hết hiệu lực, Q-56)
 
 ```text
 QUYẾT ĐỊNH CỔNG NHU CẦU — 2026-10-25      (mã Q-N kế tiếp chưa dùng, neuroedge-prd.md §15)

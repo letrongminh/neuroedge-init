@@ -190,6 +190,19 @@ does not change. The nonce never enters the trace.
 
 **Done (TSK-N2-01):** the physical safety envelope hook (limiting total on-time and frequency per pin, declared in `board.v1` — RFC-0007) sits in `HAL.digital_out` between pin validation (`require_pin`) and `authorize` (`hal/envelope.py`; tokens are not spent when rejected) → [`15`](15-target-architecture.md) §4.2. Lease tokens (branch `feat/motion`, TSK-I2a-05: short-lived motion authority automatically renewed on new gated commands, self-expiring to safe state upon lost communication) for `motion.*` (Q-37) → [`15`](15-target-architecture.md) §4.3.
 
+**Today**, every timing guarantee of this layer points to `off`: the envelope switches off automatically at `min(command duration, max_continuous_ms)`, an `off` command goes through neither the envelope nor `authorize` (RFC-0007 §3d, the Q-62 gate exemption), and levels L0–L3 for remote actuators are a promise about who brings the actuator to `off` (RFC-0018 §3d). Only `motion.*` already has `safe_state` `stop`/`hold` (RFC-0011).
+
+*Will change under Q-72 (pending the conditional-safety RFC, `planned · Q-72`, I2d):* a **symmetric `safe_state`** model. Every actuator has a `safe_state` declared in `board.v1`, default `off`. The envelope, the token ledger and the HAL read every guarantee as "return to `safe_state`":
+
+| Guarantee | Today | Under Q-72 (planned) |
+|:---|:---|:---|
+| Automatic switch-off at `min(duration, max_continuous_ms)` | To `off` | To `safe_state` |
+| Commands that bypass the envelope and need no token (Q-62) | Commands to `off`, `duty = 0`, the `safe_state` of `motion.*`, HAL-initiated commands | Every command **toward** `safe_state` |
+| Commands limited by gate, envelope and token | Turn-on commands | Every command **away from** `safe_state` |
+| Leases, levels L0–L3 (RFC-0018) | Who brings the actuator to `off` | Who brings the actuator to `safe_state` |
+
+A `safe_state` other than `off` can be declared only in `board.v1`, not in a contract, gate or Blueprint, and only when the hardware holds it: `safe_state: on` is realised by wiring that is on by default (a normally closed relay) declared as a hardware interlock, not by software switching itself on. No path outside the gate is added. Existing profiles (`off`; `motion.*` `stop`/`hold`) keep their behaviour. `TODOS.md` #58 must be fixed first (the old `board.v1` reader silently ignores unknown keys, including safety keys). Decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định).
+
 ```mermaid
 stateDiagram-v2
     [*] --> Free
