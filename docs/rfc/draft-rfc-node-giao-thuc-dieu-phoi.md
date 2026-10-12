@@ -4,7 +4,8 @@
 > RFC theo `CONTRIBUTING.md` §3 (PR chỉ chứa tệp RFC — TSK-W3-02), bản này được đổi tên thành
 > `docs/rfc/NNNN-<slug>.md` theo `docs/rfc/0000-template.md` với số kế tiếp chưa dùng
 > ([`README.md`](README.md)). Tệp **không** có lịch, trạng thái task hay tiêu chí ra: chúng chỉ
-> nằm ở [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) increment **I14** (§7.4). Quyết định chỉ nằm ở
+> nằm ở [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) increment **I14** (§7.4); bản tối thiểu một
+> host ↔ một MCU (serial, nhịp tim, mất liên lạc) tách ra trước ở **I3a**, TSK-I3a-06 (**Q-75**). Quyết định chỉ nằm ở
 > `neuroedge-prd.md` §15: **Q-32** (trace `v1`), **Q-33** (RP2350), **Q-34** (ROS 2/Nav2), **Q-35**
 > (mất liên lạc), **Q-36** (wire), **Q-37** (token `motion.*`), **Q-38** (chứng nhận an toàn), **Q-40**
 > (thứ tự sau Beta). Đối chiếu với đặc tả đã chốt sau TSK-S4-09 và TSK-S2-07 nằm ở §3.1, §3.3, §3.4,

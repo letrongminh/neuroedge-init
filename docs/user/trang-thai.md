@@ -4,7 +4,7 @@
 # Trạng thái dự án
 
 > Sinh tự động từ [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0 —
-> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-10-11**.
+> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-10-12**.
 
 ## Điều hành
 
@@ -15,7 +15,7 @@
 | Cột mốc tiếp theo | **Cổng nhu cầu 8 tuần (Q-72, B6–B8)** — ≥ 3 người ngoài tự cài Blueprint và chạy được, ≥ 1 người chạy liên tục 2 tuần trên G2 hoặc G3, ≥ 1 maker muốn bán (PRD §11.2) |
 | Trạng thái CI Lõi | ✅ **PASS 4875/4875 · SKIP 0** |
 | Chặn ngoài tầm kỹ thuật | 🟡 **2 hạng mục chặn** |
-| Lần cập nhật cuối | **2026-10-11** |
+| Lần cập nhật cuối | **2026-10-12** |
 
 ## Increment
 
@@ -28,10 +28,10 @@
 |  | **I2b — Kit mẫu và dựng nhanh** | 2026-12-20 | **4 / 4** | 🟡 Năm kit, thư viện gate, `neuroedge add` xong (tiêu chí 1, 3, 4); còn đo TTFV trên người (tiêu chí 2) và dựng kit trên phần cứng thật | tag `v0.2.2` (nội bộ) |
 |  | **I2c — Nền tảng mở** | 2026-12-27 | **11 / 27** | 🟡 Q-67, thiết kế, giấy phép corpus xong; RFC-0002, RFC-0016 → RFC-0018 đã ký (Q-68); `neuroedge.guard` (TSK-I2c-07), `proxy mcp` + `guard init --mcp` (TSK-I2c-14), `proxy http` (TSK-I2c-15), cơ cấu từ xa + plugin Home Assistant (TSK-I2c-16), bộ tài liệu đợt thử đối tác (TSK-I2c-19) và nửa (a) của RFC-0017 xong; đợt thử với đối tác đi ra từ đây (Q-70); TSK-I2c-13, I2c-17 và mở danh sách target (TSK-V1a-02 → V1a-06) tạm dừng theo Q-72 | tag `v0.2.3` (nội bộ) · wheel cho một đội đối tác — thử riêng, không chờ bo mạch (Q-70) |
 |  | **I2d — Nhiệm vụ và agent vận hành** | 2026-11-11 | **0 / 35** | 🟡 Mở — Bước 0 (đồng bộ tài liệu theo Q-72) đang làm, task bắt đầu khi xong; năm RFC dự kiến và RFC của `TODOS.md` #58 chờ chữ ký kỹ thuật trưởng | tag `v0.2.4` (nội bộ) |
-|  | **I2e — NeuroEdge Blueprint tối thiểu** | 2026-11-25 | **0 / 14** | ⏳ Chưa bắt đầu | tag `v0.2.5` (nội bộ) · wheel giao trực tiếp cho người thử ngoài, không index nào (như Q-70); PyPI vẫn ở I6 (Q-39) |
+|  | **I2e — NeuroEdge Blueprint tối thiểu** | 2026-11-25 | **0 / 15** | ⏳ Chưa bắt đầu | tag `v0.2.5` (nội bộ) · wheel giao trực tiếp cho người thử ngoài, không index nào (như Q-70); PyPI vẫn ở I6 (Q-39) |
 |  | **I2f — NeuroEdge Cloud và hộp tại nhà ESP32** | sau cổng 8 tuần (nhánh) | **0 / 6** | ⏸ Chờ kết quả cổng nhu cầu 2026-12-06 (Q-74) | dịch vụ tuỳ chọn + firmware hộp ESP32 |
 |  | **I3 — Gate trên Box-3 thật** | sau I2e | **6 / 16** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU, giao diện LVGL có ảnh golden); chờ bo mạch | tag `v0.3.0` + firmware (nội bộ) |
-|  | **I3a — Nguyên thủy mở rộng trên `esp32s3`** | sau I2e | **0 / 7** | ⏳ Chưa bắt đầu | tag `v0.3.1` + firmware (nội bộ) |
+|  | **I3a — Nguyên thủy mở rộng trên `esp32s3`** | sau I2e | **0 / 11** | ⏳ Chưa bắt đầu | tag `v0.3.1` + firmware (nội bộ) |
 |  | **I4 — Thoại trên host** | sau I2e | **5 / 9** | ⏸ Tạm dừng theo Q-72, không cắt — đã có: đặc tả, vector, FSM Python, độ trễ, SystemOne qua Jev xong; STT/TTS trên `sim`, wake-word + STT dự phòng, âm thanh `linux` xong phần mã trên host; phiên micro trên laptop (`run --mic`, TSK-I4-04) xong phần mã; còn mô hình wake-word thật, Pi + HAT | tag `v0.4.0` (nội bộ) |
 |  | **I4a — NeuroEdge Lab trên host** | sau I2e | **2 / 23** | 🟡 Q-71 và threat model §2c xong (TSK-N0-01, N0-04); 14 task Lab vòng ① dời sang I2d, N4 và N5b tạm dừng theo Q-72; phần mã chưa bắt đầu | tag `v0.4.1` + extra `[lab]` (nội bộ) |
 |  | **I5 — Thoại trên Box-3** | sau I2e | **0 / 7** | ⏸ Tạm dừng theo Q-72, không cắt | tag `v0.5.0` + firmware (nội bộ) |
