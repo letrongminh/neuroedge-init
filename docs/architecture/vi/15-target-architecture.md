@@ -658,6 +658,34 @@ phí và mọi sàn có thu phí chỉ đến sau cổng này ([`16`](16-ecosyst
 
 ---
 
+### 6.10 Não trên cloud tuỳ chọn, mạng lưới đa nút và bước xác minh (`planned · Q-73, Q-74`)
+
+[`Q-74`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) dùng đúng ranh giới của §6.1 để dời **LLM worker** (trò chuyện, đề xuất, biên dịch hợp
+đồng nhiệm vụ) lên **NeuroEdge Cloud tuỳ chọn**; **runtime tin cậy luôn ở nhà**. Chưa có mã; bước 2 của Q-74 chỉ
+mở sau cổng nhu cầu (§6.9) nếu số đo cần.
+
+```
+ 📱 một ô chat (nhiều người, có vai trò — FR-CH-07)
+        │
+ ☁️ NeuroEdge Cloud (tuỳ chọn): LLM worker, trò chuyện, lập kế hoạch, biên dịch luật
+        │  hộp tại nhà mở kết nối ra; không mở cổng mạng nhà
+ 🏠 hộp tại nhà — runtime tin cậy (Pi / add-on Home Assistant) hoặc ESP32-S3 cho một việc
+        │  luật có chữ ký; lời duyệt kiểm tại nút
+ ESP32 có `ne_gate` · Pi · thiết bị qua Home Assistant — mỗi nút tự giữ luật, tự về `safe_state`
+```
+
+- **Cloud điều phối, không có quyền tối cao.** Mỗi nút chỉ thi hành luật có chữ ký; lời duyệt (FR-CH-04) kiểm
+  tại nút; việc không hoàn tác ở bất kỳ nhà nào luôn cần người xác nhận; một lệnh không chạm quá trần số thiết
+  bị hay số nhà khai sẵn (FR-AGT-11). Cloud bị chiếm thì cửa vẫn không mở.
+- **Hai bậc hộp tại nhà.** *Đầy đủ* — Pi hoặc add-on Home Assistant (camera, nhiều hãng, vết ghi 30 ngày §6.7, LLM
+  tại chỗ tuỳ chọn). *Nhỏ* — ESP32-S3: walker `NETR`, sổ token, phản xạ, kiểm lời duyệt trên chip; luật biên dịch ở
+  cloud và nạp có ký (cần Wi-Fi thật, `TODOS.md` #50); vết ghi đẩy lên cloud đã mã hoá hoặc thẻ SD.
+- **Mất kết nối cloud** ⇒ phản xạ, gate và cảnh báo tại chỗ vẫn chạy; chỉ mất trò chuyện và tóm tắt.
+- **Bước xác minh do người dùng khai** ([`Q-73`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), FR-CH-06, chờ RFC `TODOS.md` #63): đọc mã, giọng
+  nói, khuôn mặt, bàn phím, vân tay trên điện thoại… qua plugin bộ kiểm; mỗi cách mang nhãn rủi ro. LLM, client
+  MCP và nguồn tự động không bao giờ trả lời bước xác minh.
+- **Việc theo dõi:** hộp dễ cài `TODOS.md` #64; cloud và bậc ESP32 #65; vai trò theo người #66.
+
 ## 7. Nguồn
 
 1. **Lộ trình phát triển:**

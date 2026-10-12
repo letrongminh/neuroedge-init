@@ -208,7 +208,8 @@ Bảng dưới là ảnh chụp hình dạng, không phải bảng tiến độ;
 - **Không phải dịch vụ đám mây.** Hôm nay NeuroEdge là một thư viện, một CLI và một firmware; không
   có máy chủ nào do NeuroEdge vận hành. *Sẽ đổi theo Q-72 (`planned · Q-72`):* hai ngoại lệ tuỳ chọn,
   không bao giờ nằm trên đường an toàn — relay chỉ chuyển TLS theo SNI, không giải mã; Hub index là
-  kho git tĩnh ([`09`](09-adr.md)).
+  kho git tĩnh ([`09`](09-adr.md)). *Có điều kiện theo Q-74:* NeuroEdge Cloud tuỳ chọn cho phần "não" (trò chuyện,
+  LLM), mở sau cổng nhu cầu nếu số đo cần; luật và phản xạ vẫn luôn ở nhà ([`15`](15-target-architecture.md) §6.10).
 - **Không bán lại token suy luận** (`docs/architecture/vi/15-target-architecture.md` §3.4; PRD §1.4 N4). Lớp trừu tượng provider là self-host thuộc lõi; người dùng tự vận hành và trả tiền trực tiếp cho nhà cung cấp mô hình.
 - **Không tự làm SLAM hay điều hướng** — chỉ gate lệnh vận tốc qua ROS 2 / Nav2 ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, Q-34).
 - **Không có sàn giao dịch trả phí (paid marketplace)** ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) §14, PF-3).
