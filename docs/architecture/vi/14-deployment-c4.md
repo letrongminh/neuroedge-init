@@ -7,7 +7,7 @@
 ## 1. Bức tranh
 
 ![E-08 · Triển khai](../assets/svg/E-08-deployment.svg)
-*Hình E-08 — Ba vùng: máy của kỹ sư, máy chạy CI của GitHub, thiết bị; thêm vùng nét đứt "máy nhà" (Pi, mini PC hoặc NAS) chạy agent vận hành, cùng nền tảng chat, relay và index Hub — `planned · Q-72`. Khối `○ planned` chưa có phần cứng hoặc chưa có mã.*
+*Hình E-08 — Ba vùng: máy của kỹ sư, máy chạy CI của GitHub, thiết bị; thêm vùng nét đứt "máy nhà" (Pi, mini PC hoặc NAS) chạy agent vận hành, cùng nền tảng chat, relay và index Hub — `planned · Q-72`. Dải dưới cùng: NeuroEdge Cloud tuỳ chọn và hộp tại nhà nhỏ ESP32-S3 — có điều kiện, `planned · Q-74`, I2f. Khối `○ planned` chưa có phần cứng hoặc chưa có mã.*
 
 NeuroEdge **không có dịch vụ phía máy chủ nào** trước tầng dịch vụ v1.1 (I0–I8): không tài khoản, không broker, không
 backend. Mọi thứ chạy trên máy của người dùng hoặc trên thiết bị. Dịch vụ phía máy chủ đầu tiên là Fleet

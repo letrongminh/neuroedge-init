@@ -414,7 +414,7 @@ của người dùng trên đó. **Mục tiêu của họ:** một lệnh mở m
 
 **Rủi ro còn lại, nói thẳng:** cloud bị chiếm vẫn đọc được dữ liệu người dùng đã khai cho cloud (ảnh, tóm tắt)
 và vẫn ra được những lệnh mà luật cho phép không cần duyệt (bật đèn…). Khoá ký luật nằm ở đâu là câu hỏi của RFC
-`TODOS.md` #65.
+TSK-I2f-01 (roadmap §4.3.6).
 
 ## 3. Ngoài phạm vi: kẻ giả mạo trong cùng tiến trình
 

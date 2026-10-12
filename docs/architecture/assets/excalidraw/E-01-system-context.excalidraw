@@ -81,7 +81,7 @@
    "x": 40,
    "y": 100,
    "width": 380,
-   "height": 1170,
+   "height": 1300,
    "angle": 0,
    "strokeColor": "#1e3a8a",
    "backgroundColor": "#f8fafc",
@@ -211,7 +211,7 @@
    "x": 1400,
    "y": 100,
    "width": 380,
-   "height": 1170,
+   "height": 1300,
    "angle": 0,
    "strokeColor": "#c2410c",
    "backgroundColor": "#fffaf5",
@@ -1102,6 +1102,10 @@
     {
      "type": "arrow",
      "id": "edge-16-agent-hub"
+    },
+    {
+     "type": "arrow",
+     "id": "edge-18-agent-cloud"
     }
    ],
    "updated": 1,
@@ -1134,8 +1138,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "Operating agent · Blueprint\ntrusted runtime 24/7 + untrusted LLM worker (BYOK key) · I2d\nmissions, detectors, chat approval records · I2d\nblueprint pack / install, digest over the whole package · I2e\n○ planned",
-   "originalText": "Operating agent · Blueprint\ntrusted runtime 24/7 + untrusted LLM worker (BYOK key) · I2d\nmissions, detectors, chat approval records · I2d\nblueprint pack / install, digest over the whole package · I2e\n○ planned",
+   "text": "Operating agent · Blueprint\ntrusted runtime 24/7 + untrusted LLM worker · I2d (worker on cloud · I2f)\nmissions, detectors, chat approval records · I2d\nblueprint pack / install, digest over the whole package · I2e\n○ planned",
+   "originalText": "Operating agent · Blueprint\ntrusted runtime 24/7 + untrusted LLM worker · I2d (worker on cloud · I2f)\nmissions, detectors, chat approval records · I2d\nblueprint pack / install, digest over the whole package · I2e\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -1811,6 +1815,80 @@
    "textAlign": "center",
    "verticalAlign": "middle",
    "containerId": "box-hub",
+   "lineHeight": 1.3,
+   "autoResize": true
+  },
+  {
+   "id": "box-cloud",
+   "type": "rectangle",
+   "x": 1424,
+   "y": 1266,
+   "width": 332,
+   "height": 104,
+   "angle": 0,
+   "strokeColor": "#c2410c",
+   "backgroundColor": "#f8fafc",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "dashed",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": {
+    "type": 3
+   },
+   "seed": 4249210221,
+   "version": 1,
+   "versionNonce": 3525501657,
+   "isDeleted": false,
+   "boundElements": [
+    {
+     "type": "text",
+     "id": "box-cloud-text"
+    },
+    {
+     "type": "arrow",
+     "id": "edge-18-agent-cloud"
+    }
+   ],
+   "updated": 1,
+   "link": null,
+   "locked": false
+  },
+  {
+   "id": "box-cloud-text",
+   "type": "text",
+   "x": 1436,
+   "y": 1274,
+   "width": 308,
+   "height": 88,
+   "angle": 0,
+   "strokeColor": "#475569",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": null,
+   "seed": 2875543978,
+   "version": 1,
+   "versionNonce": 4180818802,
+   "isDeleted": false,
+   "boundElements": [],
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "text": "NeuroEdge Cloud (optional)\nLLM worker + chat, many homes\nno hardware rights · I2f · Q-74\n○ planned",
+   "originalText": "NeuroEdge Cloud (optional)\nLLM worker + chat, many homes\nno hardware rights · I2f · Q-74\n○ planned",
+   "fontSize": 12.5,
+   "fontFamily": 2,
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "box-cloud",
    "lineHeight": 1.3,
    "autoResize": true
   },
@@ -3565,6 +3643,101 @@
    "textAlign": "center",
    "verticalAlign": "middle",
    "containerId": "edge-17-seller-hub",
+   "lineHeight": 1.3,
+   "autoResize": true
+  },
+  {
+   "id": "edge-18-agent-cloud",
+   "type": "arrow",
+   "x": 910,
+   "y": 950,
+   "width": 514,
+   "height": 360,
+   "angle": 0,
+   "strokeColor": "#334155",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "dashed",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": null,
+   "seed": 3969242974,
+   "version": 1,
+   "versionNonce": 2262914040,
+   "isDeleted": false,
+   "boundElements": [
+    {
+     "type": "text",
+     "id": "edge-18-label"
+    }
+   ],
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     360
+    ],
+    [
+     514,
+     360
+    ]
+   ],
+   "startBinding": {
+    "elementId": "box-agent",
+    "focus": 0,
+    "gap": 1
+   },
+   "endBinding": {
+    "elementId": "box-cloud",
+    "focus": 0,
+    "gap": 1
+   },
+   "startArrowhead": null,
+   "endArrowhead": "arrow",
+   "elbowed": false
+  },
+  {
+   "id": "edge-18-label",
+   "type": "text",
+   "x": 1056.62,
+   "y": 1302.53,
+   "width": 186.76,
+   "height": 14.95,
+   "angle": 0,
+   "strokeColor": "#1e293b",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [],
+   "frameId": null,
+   "roundness": null,
+   "seed": 2965389426,
+   "version": 1,
+   "versionNonce": 1874708256,
+   "isDeleted": false,
+   "boundElements": [],
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "text": "outbound · signed rules (I2f)",
+   "originalText": "outbound · signed rules (I2f)",
+   "fontSize": 11.5,
+   "fontFamily": 2,
+   "textAlign": "center",
+   "verticalAlign": "middle",
+   "containerId": "edge-18-agent-cloud",
    "lineHeight": 1.3,
    "autoResize": true
   }

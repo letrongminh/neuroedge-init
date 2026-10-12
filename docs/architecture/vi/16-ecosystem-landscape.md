@@ -10,7 +10,7 @@
 ## 1. Bức tranh
 
 ![E-11 · Bản đồ hệ sinh thái](../assets/svg/E-11-ecosystem.svg)
-*Hình E-11 — Các bên, tài sản dùng chung và nền tảng; nét đứt là planned. Người bán và người cài NeuroEdge Blueprint, index Hub, nền tảng chat, relay và nhà cung cấp kit là `planned · Q-72`. Sinh bởi scripts/gen_architecture_diagrams.py.*
+*Hình E-11 — Các bên, tài sản dùng chung và nền tảng; nét đứt là planned. Người bán và người cài NeuroEdge Blueprint, index Hub, nền tảng chat, relay và nhà cung cấp kit là `planned · Q-72`. NeuroEdge Cloud thuê bao là `planned · Q-74`, có điều kiện (I2f). Sinh bởi scripts/gen_architecture_diagrams.py.*
 
 **Cách đọc sơ đồ E-11:** Hình E-11 phác họa toàn bộ các đối tượng tham gia xung quanh các nền tảng phân phối và vận hành trung tâm. Hình có bốn cột: các bên (PRD §2.1), lõi source-available và chuẩn mở Apache-2.0, tài sản dùng chung (§3) và nền tảng (§4). Đường nét liền (solid) biểu thị các tương tác đã hiện thực và vận hành trên mã nguồn hiện tại (`done`); đường nét đứt (dashed) biểu thị các tương tác theo kế hoạch mở rộng (`planned`). Thông điệp cốt lõi độc giả cần ghi nhớ: Lõi an toàn NeuroEdge đóng vai trò trung tâm cưỡng chế mọi lệnh điều khiển phần cứng vật lý, độc lập hoàn toàn với việc tài sản đến từ đâu. Các thiết kế to-be chi tiết được quy hoạch tại [`15`](15-target-architecture.md) (§3.1 Fleet OS, §3.2 Registry, §3.4 ranh giới lõi ↔ dịch vụ thương mại, §4.1 bộ port kit, §4.5 hệ sinh thái thiết bị).
 

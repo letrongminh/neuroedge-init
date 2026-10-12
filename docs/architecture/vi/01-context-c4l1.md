@@ -10,7 +10,7 @@
 ## 1. Sơ đồ bối cảnh
 
 ![E-01 · Bối cảnh hệ thống](../assets/svg/E-01-system-context.svg)
-*Hình E-01 — Người dùng bên trái, hệ thống bên ngoài bên phải. Nét đứt là `planned`.*
+*Hình E-01 — Người dùng bên trái, hệ thống bên ngoài bên phải. Nét đứt là `planned`. NeuroEdge Cloud tuỳ chọn (cuối cột phải) là thiết kế có điều kiện của Q-74, increment I2f ([`15`](15-target-architecture.md) §6.10).*
 
 *Cách đọc hình E-01:* Hình thể hiện ranh giới bối cảnh giữa người dùng (bên trái), hệ thống NeuroEdge (ở giữa), và các nhà cung cấp bên ngoài (bên phải). Khối nét liền là các tác nhân và kết nối đã vận hành; khối nét đứt là các bên tham gia trong quy hoạch (`planned`). Điểm cốt lõi cần nhớ: các hệ thống bên ngoài chỉ đề xuất tool call, cung cấp dữ kiện hoặc nhận văn bản/âm thanh; không hệ thống nào tự quyết một hành động vật lý — mọi tool call vẫn qua gate.
 

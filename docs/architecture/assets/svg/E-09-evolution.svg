@@ -24,7 +24,7 @@
 <rect x="920" y="512" width="840" height="184" rx="14" fill="#fcfcfd" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="934.0" y="533.0" font-size="13" fill="#94a3b8" text-anchor="start" font-weight="700">8 · Developer Beta</text>
 <rect x="920" y="718" width="840" height="184" rx="14" fill="#fcfcfd" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="934.0" y="739.0" font-size="13" fill="#94a3b8" text-anchor="start" font-weight="700">9 · Run a fleet (v1.1)</text>
+<text x="934.0" y="739.0" font-size="13" fill="#94a3b8" text-anchor="start" font-weight="700">9 · One chat for many devices · fleets</text>
 <rect x="920" y="924" width="840" height="324" rx="14" fill="#fcfcfd" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="934.0" y="945.0" font-size="13" fill="#94a3b8" text-anchor="start" font-weight="700">10 · Grow the ecosystem</text>
 <rect x="60" y="138" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
@@ -101,13 +101,13 @@
 <rect x="608" y="1102" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
 <text x="739.0" y="1131.6" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">I2d</text>
 <text x="739.0" y="1151.9" font-size="12.5" fill="#0f172a" text-anchor="middle">Missions and operating agent</text>
-<text x="739.0" y="1170.0" font-size="12.5" fill="#0f172a" text-anchor="middle">0/33 tasks</text>
+<text x="739.0" y="1170.0" font-size="12.5" fill="#0f172a" text-anchor="middle">0/35 tasks</text>
 <text x="739.0" y="1188.1" font-size="12.5" fill="#0f172a" text-anchor="middle">2026-11-11</text>
 <text x="739.0" y="1206.2" font-size="12.5" fill="#0f172a" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="60" y="1242" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="191.0" y="1271.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I2e</text>
 <text x="191.0" y="1291.9" font-size="12.5" fill="#475569" text-anchor="middle">NeuroEdge Blueprint MVP</text>
-<text x="191.0" y="1310.0" font-size="12.5" fill="#475569" text-anchor="middle">0/12 tasks</text>
+<text x="191.0" y="1310.0" font-size="12.5" fill="#475569" text-anchor="middle">0/14 tasks</text>
 <text x="191.0" y="1328.1" font-size="12.5" fill="#475569" text-anchor="middle">2026-11-25</text>
 <text x="191.0" y="1346.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="940" y="138" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
@@ -129,17 +129,23 @@
 <text x="1071.0" y="636.1" font-size="12.5" fill="#475569" text-anchor="middle">after I2e</text>
 <text x="1071.0" y="654.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="940" y="756" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1071.0" y="785.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I9</text>
-<text x="1071.0" y="805.9" font-size="12.5" fill="#475569" text-anchor="middle">Providers v1.1 · Fleet OS</text>
-<text x="1071.0" y="824.0" font-size="12.5" fill="#475569" text-anchor="middle">0/9 tasks</text>
-<text x="1071.0" y="842.1" font-size="12.5" fill="#475569" text-anchor="middle">after I8 (branch A)</text>
+<text x="1071.0" y="785.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I2f</text>
+<text x="1071.0" y="805.9" font-size="12.5" fill="#475569" text-anchor="middle">Cloud brain · ESP32 home box</text>
+<text x="1071.0" y="824.0" font-size="12.5" fill="#475569" text-anchor="middle">0/6 tasks</text>
+<text x="1071.0" y="842.1" font-size="12.5" fill="#475569" text-anchor="middle">after 8-week gate (branch)</text>
 <text x="1071.0" y="860.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1214" y="756" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1345.0" y="785.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I10</text>
-<text x="1345.0" y="805.9" font-size="12.5" fill="#475569" text-anchor="middle">Registry and rails</text>
-<text x="1345.0" y="824.0" font-size="12.5" fill="#475569" text-anchor="middle">0/7 tasks</text>
-<text x="1345.0" y="842.1" font-size="12.5" fill="#475569" text-anchor="middle">after I8 (branch A, Q-5)</text>
+<text x="1345.0" y="785.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I9</text>
+<text x="1345.0" y="805.9" font-size="12.5" fill="#475569" text-anchor="middle">Providers v1.1 · Fleet OS</text>
+<text x="1345.0" y="824.0" font-size="12.5" fill="#475569" text-anchor="middle">0/9 tasks</text>
+<text x="1345.0" y="842.1" font-size="12.5" fill="#475569" text-anchor="middle">after I8 (branch A)</text>
 <text x="1345.0" y="860.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1488" y="756" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
+<text x="1619.0" y="785.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I10</text>
+<text x="1619.0" y="805.9" font-size="12.5" fill="#475569" text-anchor="middle">Registry and rails</text>
+<text x="1619.0" y="824.0" font-size="12.5" fill="#475569" text-anchor="middle">0/7 tasks</text>
+<text x="1619.0" y="842.1" font-size="12.5" fill="#475569" text-anchor="middle">after I8 (branch A, Q-5)</text>
+<text x="1619.0" y="860.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="940" y="962" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1071.0" y="991.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I13</text>
 <text x="1071.0" y="1011.9" font-size="12.5" fill="#475569" text-anchor="middle">Community port kit</text>

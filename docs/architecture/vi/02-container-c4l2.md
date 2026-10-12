@@ -7,7 +7,7 @@
 ## 1. Sơ đồ container
 
 ![E-02 · Container](../assets/svg/E-02-containers.svg)
-*Hình E-02 — Container trên máy dev hoặc thiết bị Linux (trên), trên chip (dưới), và hệ thống ngoài (phải). Khối nét đứt mang nhãn I2d, I2e, Q-72 là thiết kế đích của [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) (`planned · Q-72`): runtime 24/7, LLM worker, nền tảng chat, Hub index, relay.*
+*Hình E-02 — Container trên máy dev hoặc thiết bị Linux (trên), trên chip (dưới), và hệ thống ngoài (phải). Khối nét đứt mang nhãn I2d, I2e, Q-72 là thiết kế đích của [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) (`planned · Q-72`): runtime 24/7, LLM worker, nền tảng chat, Hub index, relay; LLM worker có thể chạy trên NeuroEdge Cloud tuỳ chọn (Q-74, I2f, [`15`](15-target-architecture.md) §6.10).*
 
 ## 2. Danh mục container
 
