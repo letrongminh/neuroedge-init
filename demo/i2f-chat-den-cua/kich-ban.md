@@ -2,7 +2,11 @@
 
 > **Chạy lại lần cuối:** phần tự động: test `test_demo_chat_den_cua.py` và
 > `test_mcp_http.py` §4, nhánh `feat/demo-chat-den-cua` (2026-10-12). Bản chạy thật trên
-> VPS, Telegram và video chưa có (xem §5).
+> VPS, Telegram và video chưa có (xem §7, §8). Đã chạy thật trên macOS arm64 (2026-10-12):
+> PicoClaw v0.3.1 với `picoclaw/config.json` → `cau-noi.py` → hộp `--http --ui` trên loopback;
+> `picoclaw mcp test neuroedge` in `✓ MCP server "neuroedge" reachable (3 tools)` và
+> `picoclaw mcp show neuroedge` liệt kê đúng `living_light_on`, `living_light_off`,
+> `front_door_unlock`. Chưa có key LLM nên chưa gọi tool qua lời chat.
 > **Thời lượng:** 6–8 phút. **Cần:** một VPS Linux, một laptop làm hộp, Tailscale trên cả
 > hai, một bot Telegram, một key LLM (OpenRouter).
 
