@@ -66,10 +66,10 @@
 <text x="230.0" y="631.1" font-size="12.5" fill="#052e16" text-anchor="middle">/dev/fbN · PipeWire nodes</text>
 <text x="230.0" y="649.2" font-size="12.5" fill="#052e16" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="560" y="560" width="340" height="120" rx="10" fill="#f8fafc" stroke="#1d4ed8" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="730.0" y="588.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">LLM worker (untrusted)</text>
-<text x="730.0" y="608.9" font-size="12.5" fill="#475569" text-anchor="middle">holds the key, never approves</text>
-<text x="730.0" y="627.0" font-size="12.5" fill="#475569" text-anchor="middle">home machine · I2d, or cloud · I2f</text>
-<text x="730.0" y="645.1" font-size="12.5" fill="#475569" text-anchor="middle">MCP client of the runtime</text>
+<text x="730.0" y="588.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">NeuroEdge brain (untrusted)</text>
+<text x="730.0" y="608.9" font-size="12.5" fill="#475569" text-anchor="middle">LLM worker, never approves</text>
+<text x="730.0" y="627.0" font-size="12.5" fill="#475569" text-anchor="middle">self-host board · I2d, or cloud · I2f</text>
+<text x="730.0" y="645.1" font-size="12.5" fill="#475569" text-anchor="middle">talks to the runtime only via MCP · Q-76</text>
 <text x="730.0" y="663.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1060" y="560" width="300" height="120" rx="10" fill="#f8fafc" stroke="#1d4ed8" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1210.0" y="588.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Runtime 24/7 (systemd)</text>

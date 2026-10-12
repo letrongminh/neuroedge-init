@@ -658,7 +658,7 @@ phí và mọi sàn có thu phí chỉ đến sau cổng này ([`16`](16-ecosyst
 
 ---
 
-### 6.10 Não trên cloud tuỳ chọn, mạng lưới đa nút và bước xác minh (`planned · Q-73, Q-74`)
+### 6.10 Não trên cloud tuỳ chọn, mạng lưới đa nút và bước xác minh (`planned · Q-73, Q-74, Q-76`)
 
 [`Q-74`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) dùng đúng ranh giới của §6.1 để dời **LLM worker** (trò chuyện, đề xuất, biên dịch hợp
 đồng nhiệm vụ) lên **NeuroEdge Cloud tuỳ chọn**; **runtime tin cậy luôn ở nhà**. Chưa có mã; bước 2 của Q-74 chỉ
@@ -684,7 +684,21 @@ mở sau cổng nhu cầu (§6.9) nếu số đo cần.
 - **Bước xác minh do người dùng khai** ([`Q-73`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), FR-CH-06, chờ RFC TSK-I2d-20): đọc mã, giọng
   nói, khuôn mặt, bàn phím, vân tay trên điện thoại… qua plugin bộ kiểm; mỗi cách mang nhãn rủi ro. LLM, client
   MCP và nguồn tự động không bao giờ trả lời bước xác minh.
-- **Việc theo dõi:** hộp dễ cài TSK-I2e-12, TSK-I2e-13; bước xác minh TSK-I2d-20, TSK-I2d-21; cloud, bậc ESP32, mạng lưới và vai trò theo người: increment I2f (có điều kiện, roadmap §4.3.6).
+- **Bộ não NeuroEdge ([`Q-76`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)): một phần mềm, hai cách chạy.** LLM worker là một bản rút gọn của
+  PicoClaw: kênh chat, LLM, trí nhớ dạng tệp, lịch và heartbeat, MCP client; không lệnh shell, không công cụ phần
+  cứng. Tự host trên board Linux rẻ (hoặc cùng Pi với runtime, dưới user riêng không có quyền phần cứng), hoặc dùng
+  NeuroEdge Cloud: cổng kênh chung chỉ định tuyến, mỗi người một instance cách ly (microVM), ngủ khi rảnh. Cả hai
+  nói với hộp tại nhà qua cùng bộ tool MCP; worker khác (PicoClaw gốc, Claude Desktop, OpenClaw) cắm được như nhau.
+
+```
+ tự host:  📱 chat ── bộ não (board $10 / Pi, user riêng) ──MCP──► runtime tại nhà ──► phần cứng
+ cloud:    📱 chat ── cổng kênh chung ── instance của bạn (microVM) ──MCP qua kết nối ra──► runtime tại nhà
+ duyệt:    📱 nút duyệt ── ký passkey trên điện thoại ─────────────────────────────► hộp tự kiểm chữ ký
+```
+
+- **Lời duyệt không đi qua não** (FR-CH-08): việc không hoàn tác được duyệt bằng chữ ký passkey trên điện thoại
+  hoặc tại chỗ trong mạng nhà; cổng kênh chung của cloud chuyển tin nhưng không giả được lời duyệt.
+- **Việc theo dõi:** hộp dễ cài TSK-I2e-12, TSK-I2e-13; bước xác minh TSK-I2d-20, TSK-I2d-21; bộ não NeuroEdge và cô lập worker TSK-I2d-22 → TSK-I2d-24; cloud mỗi người một instance, lời duyệt passkey, bậc ESP32, mạng lưới và vai trò theo người: increment I2f (có điều kiện, roadmap §4.3.6).
 
 ## 7. Nguồn
 

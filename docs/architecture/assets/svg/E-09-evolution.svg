@@ -101,7 +101,7 @@
 <rect x="608" y="1102" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
 <text x="739.0" y="1131.6" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">I2d</text>
 <text x="739.0" y="1151.9" font-size="12.5" fill="#0f172a" text-anchor="middle">Missions and operating agent</text>
-<text x="739.0" y="1170.0" font-size="12.5" fill="#0f172a" text-anchor="middle">0/35 tasks</text>
+<text x="739.0" y="1170.0" font-size="12.5" fill="#0f172a" text-anchor="middle">0/38 tasks</text>
 <text x="739.0" y="1188.1" font-size="12.5" fill="#0f172a" text-anchor="middle">2026-11-11</text>
 <text x="739.0" y="1206.2" font-size="12.5" fill="#0f172a" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="60" y="1242" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
@@ -131,7 +131,7 @@
 <rect x="940" y="756" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1071.0" y="785.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I2f</text>
 <text x="1071.0" y="805.9" font-size="12.5" fill="#475569" text-anchor="middle">Cloud brain · ESP32 home box</text>
-<text x="1071.0" y="824.0" font-size="12.5" fill="#475569" text-anchor="middle">0/6 tasks</text>
+<text x="1071.0" y="824.0" font-size="12.5" fill="#475569" text-anchor="middle">0/9 tasks</text>
 <text x="1071.0" y="842.1" font-size="12.5" fill="#475569" text-anchor="middle">after 8-week gate (branch)</text>
 <text x="1071.0" y="860.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1214" y="756" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>

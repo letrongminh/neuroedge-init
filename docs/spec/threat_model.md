@@ -411,6 +411,10 @@ của người dùng trên đó. **Mục tiêu của họ:** một lệnh mở m
   được LLM hay nguồn tự động trả lời.
 - Trần phạm vi và tốc độ cho một lệnh; vượt trần hoặc bất thường thì nút tự khoá và báo (FR-AGT-11).
 - Mất kết nối cloud ⇒ an toàn tại chỗ vẫn chạy.
+- Cổng kênh chat dùng chung của cloud chuyển tin cho mọi người nên tự gửi được nút "Đồng ý"; vì vậy lời duyệt việc
+  không hoàn tác phải mang chữ ký passkey của điện thoại đã ghép đôi, hộp tại nhà tự kiểm (FR-CH-08, Q-76).
+- Mỗi người một instance bộ não cách ly (microVM); instance bị chiếm chỉ thấy dữ liệu của chính người đó và chỉ
+  gọi được bộ tool MCP của hộp người đó (FR-AGT-12, Q-76).
 
 **Rủi ro còn lại, nói thẳng:** cloud bị chiếm vẫn đọc được dữ liệu người dùng đã khai cho cloud (ảnh, tóm tắt)
 và vẫn ra được những lệnh mà luật cho phép không cần duyệt (bật đèn…). Khoá ký luật nằm ở đâu là câu hỏi của RFC

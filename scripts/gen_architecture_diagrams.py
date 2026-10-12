@@ -85,7 +85,7 @@ def e01_context() -> Diagram:
         ("hub", "Blueprint Hub index", ("static index: URL + whole-package digest", "evidence unsigned · I2e"),
          "planned"),
         # Q-74 (conditional): the brain may live on an optional cloud; the safety spine stays at home
-        ("cloud", "NeuroEdge Cloud (optional)", ("LLM worker + chat, many homes", "no hardware rights · I2f · Q-74"),
+        ("cloud", "NeuroEdge Cloud (optional)", ("NeuroEdge brain per user, many homes", "no hardware rights · I2f · Q-74, Q-76"),
          "planned"),
     ]
     for i, (eid, title, lines, status) in enumerate(ext):
@@ -148,9 +148,9 @@ def e02_containers() -> Diagram:
     d.boxes.append(Box("kernel", A, 560, 300, 110, "Linux kernel devices",
                        ("/dev/gpiochipN · hwmon · IIO", "/dev/fbN · PipeWire nodes"), "device", "partial"))
     # Q-72 (planned): the operating agent is two processes on the home machine (chapter 02 §3)
-    d.boxes.append(Box("worker", B, 560, 340, 120, "LLM worker (untrusted)",
-                       ("holds the key, never approves", "home machine · I2d, or cloud · I2f",
-                        "MCP client of the runtime"), "container", "planned"))
+    d.boxes.append(Box("worker", B, 560, 340, 120, "NeuroEdge brain (untrusted)",
+                       ("LLM worker, never approves", "self-host board · I2d, or cloud · I2f",
+                        "talks to the runtime only via MCP · Q-76"), "container", "planned"))
     d.boxes.append(Box("runtime", C, 560, 300, 120, "Runtime 24/7 (systemd)",
                        ("HAL · gate · missions · scheduler", "chat adapter + approval check · egress",
                         "the only HAL holder · I2d"), "container", "planned"))
@@ -525,7 +525,7 @@ def e08_deployment() -> Diagram:
                           "Optional cloud brain and small home box — conditional · Q-74 · I2f", "planned"))
     d.boxes += [
         Box("ncloud", 70, 1410, 520, 140, "NeuroEdge Cloud (optional)",
-            ("LLM worker · chat · mission compiler", "many devices, homes and people", "no hardware rights · I2f"),
+            ("one isolated brain instance per user", "many devices, homes and people", "no hardware rights · I2f · Q-76"),
             "external", "planned"),
         Box("espbox", 1240, 1410, 490, 140, "Small home box — ESP32-S3",
             ("ne_gate · token ledger · reflexes", "signed rules from the cloud", "approval checked on chip · I2f"),
@@ -699,7 +699,7 @@ def e10_horizons() -> Diagram:
         # Q-73 (open verification, I2d) and Q-74 (optional cloud brain, conditional I2f) · chapter 15 §6.10
         ("q74", "Q-73 / Q-74 — open verification, one chat for many devices (I2d, I2f) · chapter 15 §6.10", "planned", [
             ("verify", "User-declared verification", ("spoken code · face · phone biometrics", "risk label, never AI-answered · I2d"), "gate", "planned"),
-            ("ncloud", "NeuroEdge Cloud (optional)", ("LLM worker + chat on the cloud", "no hardware rights · I2f"), "external", "planned"),
+            ("ncloud", "NeuroEdge Cloud (optional)", ("same brain as self-host, one per user", "no hardware rights · I2f · Q-76"), "external", "planned"),
             ("homebox", "Home box: Pi / HA add-on / ESP32", ("the spine stays at home", "easy install I2e · ESP32 I2f"), "device", "planned"),
             ("network", "Multi-node, multi-home network", ("signed rules per node, scope caps", "self-lock on anomaly · I2f"), "component", "planned"),
             ("roles", "People with roles", ("who commands, who approves", "time-boxed guests · I2f"), "person", "planned"),

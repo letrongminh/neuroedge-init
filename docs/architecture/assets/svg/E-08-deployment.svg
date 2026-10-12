@@ -111,9 +111,9 @@
 <text x="1520.0" y="1275.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="70" y="1410" width="520" height="140" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="330.0" y="1448.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">NeuroEdge Cloud (optional)</text>
-<text x="330.0" y="1468.9" font-size="12.5" fill="#475569" text-anchor="middle">LLM worker · chat · mission compiler</text>
+<text x="330.0" y="1468.9" font-size="12.5" fill="#475569" text-anchor="middle">one isolated brain instance per user</text>
 <text x="330.0" y="1487.0" font-size="12.5" fill="#475569" text-anchor="middle">many devices, homes and people</text>
-<text x="330.0" y="1505.1" font-size="12.5" fill="#475569" text-anchor="middle">no hardware rights · I2f</text>
+<text x="330.0" y="1505.1" font-size="12.5" fill="#475569" text-anchor="middle">no hardware rights · I2f · Q-76</text>
 <text x="330.0" y="1523.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1240" y="1410" width="490" height="140" rx="10" fill="#f8fafc" stroke="#15803d" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1485.0" y="1448.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Small home box — ESP32-S3</text>
