@@ -424,14 +424,24 @@ class _Guard:
         self.record(data)
 
 
-def build_app(session: Any, prepared: Prepared) -> Any:
-    """The Streamable HTTP ASGI app of `session` behind the token checks and the guard."""
+def build_app(
+    session: Any,
+    prepared: Prepared,
+    *,
+    lock: Any = None,
+    on_change: Callable[[], None] | None = None,
+) -> Any:
+    """
+    The Streamable HTTP ASGI app of `session` behind the token checks and the guard.
+
+    `lock` and `on_change` as for `build_server`: `mcp serve --http --ui` shares the session
+    with the local `sim` page, where the person at home answers `ask` questions (source `ui`).
+    """
     from mcp.server.auth.settings import AuthSettings
 
     config = prepared.config
-    server = build_server(
-        session
-    )  # source "mcp", the one road to the gate: nothing network-specific
+    # source "mcp", the one road to the gate: nothing network-specific, and no way to confirm
+    server = build_server(session, lock=lock, on_change=on_change)
     inner = server.streamable_http_app(
         streamable_http_path=prepared.path,
         host=config.host,
@@ -480,10 +490,13 @@ async def serve_http(
     *,
     on_ready: Callable[[str, int], None] | None = None,
     stop: threading.Event | None = None,
+    lock: Any = None,
+    on_change: Callable[[], None] | None = None,
 ) -> None:
     """
     Serve `session` over mTLS Streamable HTTP until a signal arrives (SIGINT, SIGTERM, SIGHUP)
-    or `stop` is set. `on_ready(host, port)` runs once connections are accepted.
+    or `stop` is set. `on_ready(host, port)` runs once connections are accepted. `lock` and
+    `on_change` as for `build_app`.
     """
     import anyio
     import uvicorn
@@ -516,7 +529,7 @@ async def serve_http(
             yield  # signals are `serve_http`'s: the server must leave through the caller's cleanup
 
     sock = bind(prepared.config)
-    app = build_app(session, prepared)
+    app = build_app(session, prepared, lock=lock, on_change=on_change)
     config = uvicorn.Config(
         app,
         http=CertAware,

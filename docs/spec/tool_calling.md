@@ -394,8 +394,12 @@ của chính MCP server, là `aud` của mọi token; đường dẫn của nó 
 không khớp khoá, CA rỗng, JWKS không có khoá ký), thì **thoát mã 1 với lỗi ba phần, trước khi dựng phiên và trước
 khi mở bất kỳ socket nào**. Bind vào địa chỉ không phải loopback (`--host`) không đòi thêm gì — vì cấu hình
 đủ đã là điều kiện cho mọi địa chỉ. Mặc định nghe `127.0.0.1`, cổng 8443 (`--port 0` chọn cổng trống).
-`--http` không đi cùng `--ui` (mã 2: trang chung phiên và trả lời câu hỏi `ask` như người trên thiết bị),
-và các cờ mạng không có `--http` bị từ chối (mã 1), không bị lờ đi. `--required-scope` (mặc định `neuroedge:call`)
+`--http --ui` chạy cả hai trên **cùng phiên**: client ở xa (bộ não trên NeuroEdge Cloud, Q-76) gọi tool qua
+cửa mạng, còn trang trên 127.0.0.1 (cổng 8765, `--port` khi đó là cổng của `--http`) là **người ở nhà**. Chỉ
+trang trả lời được câu hỏi `ask` (nguồn `ui`, §6); MCP không có tool xác nhận và không tự khai `call_source`,
+nên lệnh từ xa chỉ mở được câu hỏi, không bao giờ tự trả lời nó (test
+`test_the_door_never_opens_from_the_cloud_without_the_owner_at_home`). Các cờ mạng không có `--http` bị từ
+chối (mã 1), không bị lờ đi. `--required-scope` (mặc định `neuroedge:call`)
 là cờ duy nhất có mặc định.
 
 **Lớp 1 — mTLS, TLS 1.3 trở lên (NFR-SEC-04).** Chứng chỉ client **bắt buộc** và phải do `--client-ca` ký;

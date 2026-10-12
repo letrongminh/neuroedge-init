@@ -692,7 +692,7 @@ def mcp_serve(
     port: int | None = typer.Option(
         None,
         "--port",
-        help="Port for --ui (default 8765) or for --http (default 8443); 0 picks a free one",
+        help="Port for --ui (default 8765) or for --http (default 8443; --ui then keeps 8765); 0 picks a free one",
     ),
     open_browser: bool = typer.Option(
         False, "--open", help="With --ui, open the page in a browser"
@@ -769,17 +769,6 @@ def mcp_serve(
         "--jwks": jwks,
         "--required-scope": required_scope,
     }
-    if http and ui:
-        _fail(
-            NeuroEdgeError(
-                where="neuroedge mcp serve --http --ui",
-                why="the live page and the network door are not combined: the page answers `ask` "
-                "questions as the person on the device, and shares the session",
-                how="drop --ui for the network server, or --http for the page (stdio)",
-            ),
-            code=2,
-        )
-        return
     if not http and any(value is not None for value in network.values()):
         given = ", ".join(flag for flag, value in network.items() if value is not None)
         _fail(
@@ -825,7 +814,8 @@ def mcp_serve(
         events=_trace_log(trace_out, raw),
         ui=ui,
     )
-    page = _mcp_page(session, 8765 if port is None else port) if ui else None
+    # With --http, --port is the network server's; the page keeps its own default (8765).
+    page = _mcp_page(session, 8765 if port is None or http else port) if ui else None
     # stdout is the protocol channel; anything for people goes to stderr.
     err_console.print(
         f"neuroedge MCP server · {escape(session.manifest.label)} · "
@@ -845,8 +835,24 @@ def mcp_serve(
                 highlight=False,
             )
 
+        if page is not None:
+            # The person at home answers `ask` questions on this page (source `ui`, 127.0.0.1
+            # only); the remote client is told a question is waiting and can never answer it.
+            err_console.print(
+                f"sim UI at {page.url} (same session; `ask` is answered here)",
+                markup=False,
+                highlight=False,
+            )
         try:
-            run_http(session, prepared, trace_out=trace_out, on_ready=listening)
+            run_http(
+                session,
+                prepared,
+                trace_out=trace_out,
+                on_ready=listening,
+                lock=page.lock if page is not None else None,
+                on_change=page.notify if page is not None else None,
+                on_close=page.stop if page is not None else None,
+            )
         except NeuroEdgeError as error:
             _fail(error)
         return

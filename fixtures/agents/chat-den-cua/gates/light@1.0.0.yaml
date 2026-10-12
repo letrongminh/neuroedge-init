@@ -1,0 +1,21 @@
+# Đèn: rủi ro thấp, bộ não bật tắt tự do. Vẫn đi qua gate (không đường nào tới chân bỏ qua gate,
+# A3): bộ điều sáng báo lỗi thì không cấp điện, ai ra lệnh cũng vậy.
+schema:  neuroedge.gate/v1
+name:    light
+version: 1.0.0
+
+evaluate:
+  light_fault_free:
+    type: bool
+    instructions: "Bộ điều sáng không báo lỗi (quá nhiệt, chập, mất pha)"
+
+allow_when:
+  light_fault_free: true
+
+on_block:
+  action:  deny
+  message: "Bộ điều sáng đang báo lỗi — không bật được."
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

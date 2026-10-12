@@ -1,0 +1,8 @@
+# Chép thành ~/.picoclaw/.security.yml, chmod 600. Không commit tệp có key thật.
+model_list:
+  nao:
+    api_keys:
+      - "KEY_OPENROUTER"
+channels:
+  telegram:
+    token: "TOKEN_BOT_TELEGRAM"
