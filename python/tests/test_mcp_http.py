@@ -820,6 +820,20 @@ def test_at_night_the_door_is_refused_with_a_reason_and_nobody_is_asked(pki, ser
     assert door_pulses(running) == []
 
 
+def test_without_the_cloud_the_page_at_home_still_runs_the_light_and_the_door_stays_locked(
+    pki, serve
+):
+    """Demo step 4: no brain connected at all; the person at home types on the page."""
+    running = serve(HOME, facts=DAY, page=True)
+    running.page.command("bật đèn")
+    running.page.command("mở cửa")  # the page asks like anyone else; nobody answered yet
+    pins = [(e["pin"], e["operation"]) for e in running.events("actuator_command")]
+    assert pins == [("porch_light", "on")]
+    assert door_pulses(running) == []
+    # every call came from home, none over the network
+    assert {c["source"] for c in running.events("tool_call")} == {"local_grammar"}
+
+
 def test_the_page_at_home_listens_on_this_machine_only(pki, serve):
     running = serve(HOME, facts=DAY, page=True)
     assert running.page.httpd.server_address[0] == "127.0.0.1"
