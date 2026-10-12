@@ -57,7 +57,7 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | **Pha đang thực thi** | 🟡 **Phase MVP (§0.5)**, thứ tự theo Q-72 — I2d rồi I2e (NeuroEdge Blueprint bể cá đi trọn ba vòng trên giả lập) trước cổng nhu cầu 8 tuần; phần còn lại của I1, I2a, I2c làm xen; đợt thử đối tác (Q-70) song song; thoại (I4, I5) và Studio tạm dừng, không cắt | Increment và ngày dự báo: §0.2 |
 | **Increment đang mở** | 🟡 **I2d — Nhiệm vụ và agent vận hành** (Q-72) — task bắt đầu khi Bước 0 (đồng bộ tài liệu theo Q-72) xong | I1 còn TSK-I1-02 (kích hoạt lại cho cổng 8 tuần) và Studio (tạm dừng) · I0 đã xong 42 / 42 · chi tiết §0.2 |
 | **Cột mốc tiếp theo** | **Cổng nhu cầu 8 tuần (Q-72, B6–B8)** — ≥ 3 người ngoài tự cài Blueprint và chạy được, ≥ 1 người chạy liên tục 2 tuần trên G2 hoặc G3, ≥ 1 maker muốn bán (PRD §11.2) | Ngày: giả định ở §0.2 · nhánh theo kết quả: §5.6 · wheel giao trực tiếp, chưa lên PyPI (Q-39) |
-| **Lần cập nhật cuối** | **2026-10-12** | Phiên 2026-10-12: Q-76 thêm bộ não NeuroEdge (TSK-I2d-22 → I2d-24) và cloud mỗi người một instance (TSK-I2f-07 → I2f-09). Q-75 thêm 4 task I3a (liên kết Pi ↔ ESP32, bo ESP32-S3 phổ thông, Arduino) và TSK-I2e-14 (khung dự án nhiều chip). Phiên 2026-10-11: đồng bộ roadmap theo Q-72 — thêm I2d (35 task, gồm 2 task Q-73) và I2e (15 task, gồm 2 task hộp dễ cài của Q-74); I2f có điều kiện (Q-74); thoại (I4, I5), Studio, N4, N5b, V1a, TSK-I2c-13, I2c-17 tạm dừng; ngày I3 → I8 đặt lại sau cổng 8 tuần (R5). Chi tiết: `CHANGELOG.md` |
+| **Lần cập nhật cuối** | **2026-10-12** | Phiên 2026-10-12: Q-76 thêm bộ não NeuroEdge (TSK-I2d-22 → I2d-24) và cloud mỗi người một instance (TSK-I2f-07 → I2f-09); §3.11 port tối đa theo task. Q-75 thêm 4 task I3a (liên kết Pi ↔ ESP32, bo ESP32-S3 phổ thông, Arduino) và TSK-I2e-14 (khung dự án nhiều chip). Phiên 2026-10-11: đồng bộ roadmap theo Q-72 — thêm I2d (35 task, gồm 2 task Q-73) và I2e (15 task, gồm 2 task hộp dễ cài của Q-74); I2f có điều kiện (Q-74); thoại (I4, I5), Studio, N4, N5b, V1a, TSK-I2c-13, I2c-17 tạm dừng; ngày I3 → I8 đặt lại sau cổng 8 tuần (R5). Chi tiết: `CHANGELOG.md` |
 | **Trạng thái CI Lõi** | ✅ **PASS 4875/4875 · SKIP 0** | `python/tests/` 125 bộ test; `tests_linux/` 119/119 trên kernel; `ui-golden` 66 ảnh; `ota-rollback` pha a–g; security scanners |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · bo camera đã chọn là M5Stack CoreS3 nhưng chưa đặt (Q-61, TSK-I3a-01). Không chặn I2d, I2e: giả lập trước, phần cứng thật mua sau (Q-72) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](../TODOS.md) | Mỗi mục kèm mốc kích hoạt · cổng nhu cầu khôi phục bởi Q-72 (đảo Q-56); câu hỏi kinh doanh mở (`TODOS.md` #19) rà lại ở cổng 8 tuần |
@@ -274,6 +274,37 @@ Tuân thủ ma trận giấy phép, tệp `NOTICE`, ghi nhận trong mã, tài l
 ### 3.10 Rủi ro khi làm ngược
 
 Tránh: fork toàn bộ XiaoZhi (mất HAL, mất an toàn); xây trên ESP-Claw (`linux` thành hạng hai); port thiếu vector (sai lệch phán quyết); nhúng copyleft (xung đột giấy phép Q-45).
+
+### 3.11 Port tối đa theo task (Q-76)
+
+Với mỗi task chưa làm, mượn trước, tự viết sau. Cột **Tự viết** là phần còn lại sau khi mượn, cũng là phần tạo khác
+biệt. Giấy phép đã kiểm trên GitHub ngày 2026-10-12. Job `licence-obligations` chặn mọi tên chứa "GPL" (kể cả LGPL,
+AGPL) trong bộ phụ thuộc lõi, nên thư viện copyleft chỉ được ở extra tuỳ chọn như `gpiod` hoặc không dùng.
+
+| Task | Mượn | Giấy phép | Cách mượn | Tự viết |
+|:---|:---|:---|:---|:---|
+| TSK-I2d-22 bộ não | PicoClaw | MIT | Fork rút gọn (bỏ `exec`, `i2c`/`spi`/`serial`, công cụ tệp) | Bộ cấu hình mặc định an toàn, bản phát hành |
+| TSK-I2d-23 tool MCP | `mcp` Python SDK (đã dùng) | MIT | Phụ thuộc | Ngữ nghĩa `propose_mission`, `mission_status`, `explain_block` |
+| TSK-I2d-12 adapter Telegram của runtime | aiogram | MIT | Phụ thuộc (extra) | Bản ghi duyệt, ghép đôi (`TODOS.md` #62). **Không** dùng python-telegram-bot (LGPL-3.0, bị job giấy phép chặn) |
+| TSK-I2d-09 lập lịch | APScheduler, croniter | MIT | Phụ thuộc | Bộ phát hiện tất định, `llm_budget` |
+| TSK-I2d-24 cô lập worker | systemd (`DynamicUser`, `DeviceAllow`, `PrivateDevices`) | — (hệ điều hành) | Tệp unit mẫu | Test chứng minh worker không chạm phần cứng |
+| TSK-I2d-11 bản ghi duyệt có chữ ký | `cryptography` (Ed25519) | Apache-2.0 / BSD | Phụ thuộc | Định dạng bản ghi, nonce, hạn (RFC) |
+| Bộ phát hiện người (nhiệm vụ trông nhà) | Frigate (sự kiện qua MQTT hoặc Home Assistant); mô hình YOLOX | MIT; Apache-2.0 | Liên thông, không nhúng | Biến sự kiện thành dữ kiện cho gate. **Không** dùng Ultralytics (AGPL-3.0) |
+| TSK-I2e-12 add-on Home Assistant | `home-assistant/addons-example` | Apache-2.0 | Khung mẫu | Đóng gói runtime + bộ não |
+| TSK-I2e-13 ảnh thẻ SD, Wi-Fi, QR | pi-gen; balena wifi-connect | BSD-3-Clause; Apache-2.0 | Công cụ dựng ảnh; captive portal | Bước ghép đôi QR |
+| TSK-I2e-14 khung dự án nhiều chip | copier | MIT | Công cụ sinh khung | Nội dung khung `host+mcu` |
+| TSK-I2e-01 → I2e-03 Blueprint | ORAS (đã trong §3.4) | Apache-2.0 | Gói OCI cho `blueprint pack`/`install` | `blueprint.v1`, digest phủ toàn gói |
+| TSK-I2f-02 cổng kênh và relay | NATS (leaf node, tài khoản JWT cho từng người) | Apache-2.0 | Hạ tầng | Định tuyến chat ↔ instance ↔ hộp, trần token |
+| TSK-I2f-07 instance cách ly | Firecracker hoặc gVisor | Apache-2.0 | Hạ tầng | Ngủ/thức, trí nhớ mã hoá riêng |
+| TSK-I2f-08 duyệt bằng passkey | py_webauthn; SimpleWebAuthn; Telegram Mini Apps SDK | BSD-3-Clause; MIT; MIT | Phụ thuộc | Kiểm chữ ký tại hộp |
+| TSK-I2f-03 hộp ESP32 | zclaw, MimiClaw (client Telegram trên chip, NVS, boot guard, bảng serial); `wifi_provisioning` của ESP-IDF | MIT; Apache-2.0 | Port mã C | Walker và luật có ký đã có; nối hai phần |
+| TSK-I3a-06, I3a-07 liên kết Pi ↔ ESP32 | nanopb (khung tin) + COBS và CRC | Zlib | Phụ thuộc C | Nhịp tim, `safe_state` (RFC node). Zenoh-pico vẫn để cho I14 (TSK-W3-01) |
+| TSK-I3a-08 bo phổ thông | `esp-bsp` của Espressif | kiểm từng component | Hỗ trợ bo | Profile `boards/` |
+| TSK-I3a-04 thị giác trên chip | esp-dl; esp-who | MIT; "ESPRESSIF MIT" (chỉ dùng trên chip Espressif) | Phụ thuộc | `vision.in` theo RFC-0012 |
+| CI firmware | Workflow stack guard, ma trận target của zclaw | MIT | Chép workflow | — |
+
+**Không mượn:** vòng lặp agent của các dự án "Claw" làm nơi giữ quyền phần cứng; mọi thứ thay gate, sổ token, vết
+ghi (§3.1). Mỗi lần mượn mã (không chỉ phụ thuộc) thêm một dòng ghi nhận nguồn theo §3.9.
 
 ---
 
