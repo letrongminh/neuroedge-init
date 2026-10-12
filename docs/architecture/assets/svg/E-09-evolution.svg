@@ -71,7 +71,7 @@
 <rect x="334" y="690" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="465.0" y="719.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I3a</text>
 <text x="465.0" y="739.9" font-size="12.5" fill="#475569" text-anchor="middle">New primitives on esp32s3</text>
-<text x="465.0" y="758.0" font-size="12.5" fill="#475569" text-anchor="middle">0/7 tasks</text>
+<text x="465.0" y="758.0" font-size="12.5" fill="#475569" text-anchor="middle">0/11 tasks</text>
 <text x="465.0" y="776.1" font-size="12.5" fill="#475569" text-anchor="middle">after I2e</text>
 <text x="465.0" y="794.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="60" y="896" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
@@ -107,7 +107,7 @@
 <rect x="60" y="1242" width="262" height="122" rx="10" fill="#f8fafc" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="191.0" y="1271.6" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I2e</text>
 <text x="191.0" y="1291.9" font-size="12.5" fill="#475569" text-anchor="middle">NeuroEdge Blueprint MVP</text>
-<text x="191.0" y="1310.0" font-size="12.5" fill="#475569" text-anchor="middle">0/14 tasks</text>
+<text x="191.0" y="1310.0" font-size="12.5" fill="#475569" text-anchor="middle">0/15 tasks</text>
 <text x="191.0" y="1328.1" font-size="12.5" fill="#475569" text-anchor="middle">2026-11-25</text>
 <text x="191.0" y="1346.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="940" y="138" width="262" height="122" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
