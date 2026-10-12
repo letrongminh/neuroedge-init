@@ -53,7 +53,7 @@ gate và giới hạn. Profile hiện có (`off`; `motion.*` `stop`/`hold`) gi�
 duyệt được cả qua kênh chat đã ghép đôi bằng **bản ghi duyệt** có mã một lần, hạn và digest của đúng
 thay đổi; LLM và nhóm chat không bao giờ duyệt ([`01`](01-context-c4l1.md) §4). Quyết định: [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định).
 
-Sản phẩm lớn lên qua mười mốc phát hành theo người dùng (roadmap §0.5); kiến trúc của từng mốc và cách
+Sản phẩm lớn lên qua tám mốc phát hành theo người dùng (roadmap §0.5); kiến trúc của từng mốc và cách
 mỗi mốc chứng minh lại sáu lời hứa ở [`13`](13-evolution-i0-i18.md).
 
 ## 2. Hệ thống trong một hình

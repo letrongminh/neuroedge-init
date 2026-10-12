@@ -39,7 +39,7 @@ người đọc luôn tách được cái đang có trên `main` với cái mớ
 | [`10-target-equivalence.md`](vi/10-target-equivalence.md) | Vì sao cùng gate cho cùng quyết định trên `sim`, `linux`, `esp32s3` | Cross-cutting |
 | [`11-hal-port-guide.md`](vi/11-hal-port-guide.md) | Port HAL lên bo mạch mới: hợp đồng, bước làm, cách chứng minh | Guide |
 | [`12-dev-quickstart.md`](vi/12-dev-quickstart.md) | Ngày đầu: cài, chạy, đọc mã, sửa lần đầu | Guide |
-| [`13-evolution-i0-i18.md`](vi/13-evolution-i0-i18.md) | Kiến trúc qua mười mốc phát hành theo người dùng, những gì không đổi, điểm mở rộng | Evolution |
+| [`13-evolution-i0-i18.md`](vi/13-evolution-i0-i18.md) | Kiến trúc qua tám mốc phát hành theo người dùng, những gì không đổi, điểm mở rộng | Evolution |
 | [`14-deployment-c4.md`](vi/14-deployment-c4.md) | Chạy ở đâu: máy dev, CI, gpio-sim, QEMU, Pi, Box-3 | C4 Deployment |
 | [`15-target-architecture.md`](vi/15-target-architecture.md) | Kiến trúc mục tiêu theo chân trời (H1 v1.0, H2 v1.1, H3 sau Beta) và dải Q-72 (agent vận hành, NeuroEdge Blueprint) | C4 To-be · Horizons |
 | [`16-ecosystem-landscape.md`](vi/16-ecosystem-landscape.md) | Bức tranh hệ sinh thái, các bên tham gia, tài sản chia sẻ và mô hình thương mại | C4 System Landscape |

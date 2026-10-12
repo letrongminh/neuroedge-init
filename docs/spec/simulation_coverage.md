@@ -385,7 +385,7 @@ tương đương suy luận giữa target (`tolerance`): TSK-V1b-04.
 | `display` | `esp_lcd` + LVGL | PR — **cùng mã giao diện LVGL** build trên host với màn hình test LVGL, so ảnh golden ([`ui.md`](ui.md): màn hình, quy tắc ngôn ngữ, cách dựng golden) · QEMU — `esp_lcd_qemu_rgb` | Đường SPI tới ILI9342C/ST7789 | TSK-S4-10 |
 
 Mỗi ô có task. Ba ô chỉ kiểm được trên bo mạch (`audio.in`, `audio.out` của `esp32s3`, và
-phần âm học của `linux`); chúng nằm ở nightly TSK-S4-05 và tiêu chí của I5 (roadmap §4.6) và I7 (roadmap §4.8).
+phần âm học của `linux`); chúng nằm ở nightly TSK-S4-05 và tiêu chí của I5 (roadmap §6) và I7 (roadmap §4.8).
 
 ## 3. Sự kiện vết ghi theo nguyên thủy
 

@@ -26,7 +26,6 @@
 <path d="M560.0,905.0 L20.0,905.0 L20.0,215.0 L80.0,215.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M900.0,905.0 L1060.0,905.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M700.0,990.0 L700.0,1080.0 L1720.0,1080.0 L1720.0,960.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-<path d="M800.0,820.0 L800.0,752.0 L1440.0,752.0 L1440.0,780.0 L1510.0,780.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
 <path d="M900.0,620.0 L1060.0,620.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
 <path d="M1360.0,625.0 L1510.0,625.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
 <rect x="80" y="150" width="300" height="130" rx="10" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.6"/>
@@ -106,11 +105,6 @@
 <text x="1720.0" y="653.6" font-size="12.5" fill="#475569" text-anchor="middle">Blueprint Hub index: URL + digest · I2e</text>
 <text x="1720.0" y="671.7" font-size="12.5" fill="#475569" text-anchor="middle">NeuroEdge Cloud (optional) · I2f</text>
 <text x="1720.0" y="689.8" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
-<rect x="1510" y="720" width="420" height="120" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1720.0" y="757.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Fleet OS · Gate Registry</text>
-<text x="1720.0" y="777.9" font-size="12.5" fill="#475569" text-anchor="middle">rollouts · trace vault · shared gates</text>
-<text x="1720.0" y="796.1" font-size="12.5" fill="#475569" text-anchor="middle">I9 · I10</text>
-<text x="1720.0" y="814.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1510" y="850" width="420" height="110" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6"/>
 <text x="1720.0" y="891.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">OTA image server</text>
 <text x="1720.0" y="912.0" font-size="12.5" fill="#431407" text-anchor="middle">any static HTTP(S) server</text>
@@ -141,8 +135,6 @@
 <text x="980.0" y="907.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">trees read in place</text>
 <rect x="1120.3" y="1069.5" width="119.5" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="1180.0" y="1082.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">HTTP(S) GET image</text>
-<rect x="1199.9" y="741.5" width="100.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
-<text x="1250.0" y="754.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">MQTT (planned)</text>
 <rect x="946.0" y="609.5" width="68.0" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="980.0" y="622.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">local MCP</text>
 <rect x="1393.1" y="599.5" width="93.7" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>

@@ -3,7 +3,7 @@
 
 Một trang HTML tự chứa (không CDN, không mạng), sinh hoàn toàn từ nguồn sự thật:
 
-- `neuroedge-roadmap.md` §0.1–§0.3, bảng increment §0.2, mười mốc phát hành theo người dùng §0.5
+- `neuroedge-roadmap.md` §0.1–§0.3, bảng increment §0.2, tám mốc phát hành theo người dùng §0.5
   (trang dẫn đầu bằng chúng; chi tiết kỹ thuật thu gọn ở cuối), bảng task và tiêu chí ra của từng
   increment §4–§8, A1–A12 (Q-39: một roadmap duy nhất);
 - `TODOS.md` (việc hoãn có chủ ý, mốc kích hoạt);
@@ -316,8 +316,8 @@ class Milestone:
 
 
 def milestones(lines: list[str], matrix: list[Increment]) -> list[Milestone]:
-    """Bảng "Mười mốc phát hành theo người dùng" (roadmap §0.5), ghép với §0.2."""
-    i = next(n for n, line in enumerate(lines) if line.startswith("#### Mười mốc phát hành"))
+    """Bảng "Mốc phát hành theo người dùng" (roadmap §0.5), ghép với §0.2."""
+    i = next(n for n, line in enumerate(lines) if line.startswith("#### Mốc phát hành theo người dùng"))
     out: list[Milestone] = []
     for line in lines[i + 1 :]:
         if line.startswith("#") or line.startswith("---"):

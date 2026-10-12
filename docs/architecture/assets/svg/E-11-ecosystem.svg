@@ -21,11 +21,10 @@
 <path d="M396.0,310.0 L510.0,310.0 L510.0,250.0 L630.0,250.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M396.0,428.0 L480.0,428.0 L480.0,520.0 L1055.0,520.0 L1055.0,590.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M396.0,546.0 L510.0,546.0 L510.0,850.0 L630.0,850.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-<path d="M396.0,664.0 L560.0,664.0 L560.0,996.0 L1380.0,996.0 L1380.0,542.0 L1424.0,542.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
 <path d="M396.0,900.0 L540.0,900.0 L540.0,1016.0 L1392.0,1016.0 L1392.0,660.0 L1424.0,660.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
 <path d="M1190.0,220.0 L1310.0,220.0 L1310.0,188.0 L1424.0,188.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M1190.0,395.0 L1270.0,395.0 L1270.0,306.0 L1424.0,306.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
-<path d="M1190.0,665.0 L1310.0,665.0 L1310.0,424.0 L1424.0,424.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M1190.0,665.0 L1310.0,665.0 L1310.0,424.0 L1424.0,424.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M396.0,1112.0 L630.0,1112.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
 <path d="M396.0,1234.0 L500.0,1234.0 L500.0,1170.0 L630.0,1170.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
 <path d="M1190.0,1132.0 L1424.0,1132.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
@@ -49,13 +48,13 @@
 <text x="230.0" y="580.2" font-size="12.5" fill="#ffffff" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="64" y="612" width="332" height="104" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="230.0" y="641.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">U3 · Fleet operator</text>
-<text x="230.0" y="661.9" font-size="12.5" fill="#475569" text-anchor="middle">rolls out updates, pulls traces</text>
-<text x="230.0" y="680.1" font-size="12.5" fill="#475569" text-anchor="middle">from v1.1</text>
+<text x="230.0" y="661.9" font-size="12.5" fill="#475569" text-anchor="middle">fleet tools dropped from the roadmap</text>
+<text x="230.0" y="680.1" font-size="12.5" fill="#475569" text-anchor="middle">reopen on demand · Q-77</text>
 <text x="230.0" y="698.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="64" y="730" width="332" height="104" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="230.0" y="759.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">U6 · Robot integrator</text>
-<text x="230.0" y="779.9" font-size="12.5" fill="#475569" text-anchor="middle">Pi 5 brain + MCU nodes</text>
-<text x="230.0" y="798.1" font-size="12.5" fill="#475569" text-anchor="middle">ROS 2 / Nav2 · I14</text>
+<text x="230.0" y="759.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">U8 · Home owner</text>
+<text x="230.0" y="779.9" font-size="12.5" fill="#475569" text-anchor="middle">chats with the brain</text>
+<text x="230.0" y="798.1" font-size="12.5" fill="#475569" text-anchor="middle">approves from the phone · I2d</text>
 <text x="230.0" y="816.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="64" y="848" width="332" height="104" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="230.0" y="877.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">U7 · Plug-in author</text>
@@ -110,25 +109,25 @@
 <text x="1590.0" y="292.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">PyPI + public schema URLs</text>
 <text x="1590.0" y="313.0" font-size="12.5" fill="#475569" text-anchor="middle">release workflow ready · I6</text>
 <text x="1590.0" y="331.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
-<rect x="1424" y="376" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1590.0" y="410.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Gate Registry</text>
-<text x="1590.0" y="431.0" font-size="12.5" fill="#475569" text-anchor="middle">OCI · identity · metering · I10</text>
-<text x="1590.0" y="449.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="376" width="332" height="96" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6"/>
+<text x="1590.0" y="410.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">Home Assistant</text>
+<text x="1590.0" y="431.0" font-size="12.5" fill="#431407" text-anchor="middle">devices of other brands · I2c</text>
+<text x="1590.0" y="449.1" font-size="12.5" fill="#431407" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="1424" y="494" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1590.0" y="528.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Fleet OS</text>
-<text x="1590.0" y="549.0" font-size="12.5" fill="#475569" text-anchor="middle">commercial fleet service · I9</text>
+<text x="1590.0" y="528.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">PicoClaw · MCP clients</text>
+<text x="1590.0" y="549.0" font-size="12.5" fill="#475569" text-anchor="middle">the brain, or any MCP client · Q-76</text>
 <text x="1590.0" y="567.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1424" y="612" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1590.0" y="646.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Community plug-in index</text>
 <text x="1590.0" y="667.0" font-size="12.5" fill="#475569" text-anchor="middle">search/install · not a Marketplace · I2c</text>
 <text x="1590.0" y="685.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1424" y="730" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1590.0" y="764.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">AURA vertical app</text>
-<text x="1590.0" y="785.0" font-size="12.5" fill="#475569" text-anchor="middle">Khối 4 · outside the roadmap</text>
+<text x="1590.0" y="764.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Claw-family agents</text>
+<text x="1590.0" y="785.0" font-size="12.5" fill="#475569" text-anchor="middle">ESP-Claw · zclaw · MimiClaw</text>
 <text x="1590.0" y="803.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1424" y="848" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1590.0" y="882.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Marketplace</text>
-<text x="1590.0" y="903.0" font-size="12.5" fill="#475569" text-anchor="middle">Khối 5 · after the 8-week gate (Q-72)</text>
+<text x="1590.0" y="882.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Blueprint Hub (paid)</text>
+<text x="1590.0" y="903.0" font-size="12.5" fill="#475569" text-anchor="middle">after the 8-week gate · Q-72</text>
 <text x="1590.0" y="921.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="1424" y="966" width="332" height="96" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1590.0" y="1000.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Chat platforms</text>
@@ -158,16 +157,14 @@
 <text x="480.0" y="502.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">review · explain</text>
 <rect x="466.4" y="749.5" width="87.3" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="510.0" y="762.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">port + prove</text>
-<rect x="920.3" y="985.5" width="119.5" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
-<text x="980.0" y="998.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">rollouts · traces</text>
 <rect x="1093.5" y="1005.5" width="113.0" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="1150.0" y="1018.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">publish plug-ins</text>
 <rect x="1263.1" y="194.5" width="93.7" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="1310.0" y="207.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">source · RFCs</text>
 <rect x="1210.3" y="349.5" width="119.5" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="1270.0" y="362.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">schemas published</text>
-<rect x="1256.7" y="569.5" width="106.6" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
-<text x="1310.0" y="582.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">share (planned)</text>
+<rect x="1250.3" y="569.5" width="119.5" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1310.0" y="582.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">guard its devices</text>
 <rect x="466.1" y="1101.5" width="93.7" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="513.0" y="1114.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">packs · sells</text>
 <rect x="429.2" y="1223.5" width="61.5" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>

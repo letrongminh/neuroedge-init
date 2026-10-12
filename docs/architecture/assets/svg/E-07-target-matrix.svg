@@ -36,7 +36,7 @@
 <text x="1070.0" y="465.1" font-size="12.5" fill="#052e16" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="1320" y="370" width="440" height="140" rx="10" fill="#f8fafc" stroke="#15803d" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1540.0" y="426.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I2S + AEC on the chip</text>
-<text x="1540.0" y="447.0" font-size="12.5" fill="#475569" text-anchor="middle">I5</text>
+<text x="1540.0" y="447.0" font-size="12.5" fill="#475569" text-anchor="middle">dropped from v1.0 · Q-77</text>
 <text x="1540.0" y="465.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="60" y="540" width="280" height="140" rx="10" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.6"/>
 <text x="200.0" y="614.9" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">audio.out</text>
@@ -49,7 +49,7 @@
 <text x="1070.0" y="635.1" font-size="12.5" fill="#052e16" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="1320" y="540" width="440" height="140" rx="10" fill="#f8fafc" stroke="#15803d" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1540.0" y="596.8" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">I2S codec</text>
-<text x="1540.0" y="617.0" font-size="12.5" fill="#475569" text-anchor="middle">I5</text>
+<text x="1540.0" y="617.0" font-size="12.5" fill="#475569" text-anchor="middle">dropped from v1.0 · Q-77</text>
 <text x="1540.0" y="635.1" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="60" y="710" width="280" height="140" rx="10" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.6"/>
 <text x="200.0" y="784.9" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700">sensor.read</text>

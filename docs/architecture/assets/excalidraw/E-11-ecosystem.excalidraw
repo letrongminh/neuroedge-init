@@ -724,10 +724,6 @@
     {
      "type": "text",
      "id": "box-u3-text"
-    },
-    {
-     "type": "arrow",
-     "id": "edge-4-u3-fleet"
     }
    ],
    "updated": 1,
@@ -760,8 +756,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "U3 · Fleet operator\nrolls out updates, pulls traces\nfrom v1.1\n○ planned",
-   "originalText": "U3 · Fleet operator\nrolls out updates, pulls traces\nfrom v1.1\n○ planned",
+   "text": "U3 · Fleet operator\nfleet tools dropped from the roadmap\nreopen on demand · Q-77\n○ planned",
+   "originalText": "U3 · Fleet operator\nfleet tools dropped from the roadmap\nreopen on demand · Q-77\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -830,8 +826,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "U6 · Robot integrator\nPi 5 brain + MCU nodes\nROS 2 / Nav2 · I14\n○ planned",
-   "originalText": "U6 · Robot integrator\nPi 5 brain + MCU nodes\nROS 2 / Nav2 · I14\n○ planned",
+   "text": "U8 · Home owner\nchats with the brain\napproves from the phone · I2d\n○ planned",
+   "originalText": "U8 · Home owner\nchats with the brain\napproves from the phone · I2d\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -871,7 +867,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-5-u7-index"
+     "id": "edge-4-u7-index"
     }
    ],
    "updated": 1,
@@ -945,7 +941,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-9-seller-blueprint"
+     "id": "edge-8-seller-blueprint"
     }
    ],
    "updated": 1,
@@ -1019,7 +1015,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-10-installer-blueprint"
+     "id": "edge-9-installer-blueprint"
     }
    ],
    "updated": 1,
@@ -1101,7 +1097,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-6-ne-repo"
+     "id": "edge-5-ne-repo"
     }
    ],
    "updated": 1,
@@ -1175,7 +1171,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-7-std-pypi"
+     "id": "edge-6-std-pypi"
     }
    ],
    "updated": 1,
@@ -1323,7 +1319,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-8-gates-registry"
+     "id": "edge-7-gates-registry"
     }
    ],
    "updated": 1,
@@ -1541,19 +1537,19 @@
     },
     {
      "type": "arrow",
-     "id": "edge-9-seller-blueprint"
+     "id": "edge-8-seller-blueprint"
     },
     {
      "type": "arrow",
-     "id": "edge-10-installer-blueprint"
+     "id": "edge-9-installer-blueprint"
     },
     {
      "type": "arrow",
-     "id": "edge-11-blueprint-hub"
+     "id": "edge-10-blueprint-hub"
     },
     {
      "type": "arrow",
-     "id": "edge-12-blueprint-kits"
+     "id": "edge-11-blueprint-kits"
     }
    ],
    "updated": 1,
@@ -1627,7 +1623,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-6-ne-repo"
+     "id": "edge-5-ne-repo"
     }
    ],
    "updated": 1,
@@ -1701,7 +1697,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-7-std-pypi"
+     "id": "edge-6-std-pypi"
     }
    ],
    "updated": 1,
@@ -1753,10 +1749,10 @@
    "height": 96,
    "angle": 0,
    "strokeColor": "#c2410c",
-   "backgroundColor": "#f8fafc",
+   "backgroundColor": "#ffedd5",
    "fillStyle": "solid",
    "strokeWidth": 1,
-   "strokeStyle": "dashed",
+   "strokeStyle": "solid",
    "roughness": 0,
    "opacity": 100,
    "groupIds": [],
@@ -1775,7 +1771,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-8-gates-registry"
+     "id": "edge-7-gates-registry"
     }
    ],
    "updated": 1,
@@ -1790,7 +1786,7 @@
    "width": 308,
    "height": 80,
    "angle": 0,
-   "strokeColor": "#475569",
+   "strokeColor": "#431407",
    "backgroundColor": "transparent",
    "fillStyle": "solid",
    "strokeWidth": 1,
@@ -1808,8 +1804,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "Gate Registry\nOCI · identity · metering · I10\n○ planned",
-   "originalText": "Gate Registry\nOCI · identity · metering · I10\n○ planned",
+   "text": "Home Assistant\ndevices of other brands · I2c\n◐ partial",
+   "originalText": "Home Assistant\ndevices of other brands · I2c\n◐ partial",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -1846,10 +1842,6 @@
     {
      "type": "text",
      "id": "box-fleet-text"
-    },
-    {
-     "type": "arrow",
-     "id": "edge-4-u3-fleet"
     }
    ],
    "updated": 1,
@@ -1882,8 +1874,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "Fleet OS\ncommercial fleet service · I9\n○ planned",
-   "originalText": "Fleet OS\ncommercial fleet service · I9\n○ planned",
+   "text": "PicoClaw · MCP clients\nthe brain, or any MCP client · Q-76\n○ planned",
+   "originalText": "PicoClaw · MCP clients\nthe brain, or any MCP client · Q-76\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -1923,7 +1915,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-5-u7-index"
+     "id": "edge-4-u7-index"
     }
    ],
    "updated": 1,
@@ -2026,8 +2018,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "AURA vertical app\nKhối 4 · outside the roadmap\n○ planned",
-   "originalText": "AURA vertical app\nKhối 4 · outside the roadmap\n○ planned",
+   "text": "Claw-family agents\nESP-Claw · zclaw · MimiClaw\n○ planned",
+   "originalText": "Claw-family agents\nESP-Claw · zclaw · MimiClaw\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -2096,8 +2088,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "Marketplace\nKhối 5 · after the 8-week gate (Q-72)\n○ planned",
-   "originalText": "Marketplace\nKhối 5 · after the 8-week gate (Q-72)\n○ planned",
+   "text": "Blueprint Hub (paid)\nafter the 8-week gate · Q-72\n○ planned",
+   "originalText": "Blueprint Hub (paid)\nafter the 8-week gate · Q-72\n○ planned",
    "fontSize": 12.5,
    "fontFamily": 2,
    "textAlign": "center",
@@ -2207,7 +2199,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-11-blueprint-hub"
+     "id": "edge-10-blueprint-hub"
     }
    ],
    "updated": 1,
@@ -2351,7 +2343,7 @@
     },
     {
      "type": "arrow",
-     "id": "edge-12-blueprint-kits"
+     "id": "edge-11-blueprint-kits"
     }
    ],
    "updated": 1,
@@ -2861,114 +2853,7 @@
    "autoResize": true
   },
   {
-   "id": "edge-4-u3-fleet",
-   "type": "arrow",
-   "x": 396,
-   "y": 664,
-   "width": 1028,
-   "height": 332,
-   "angle": 0,
-   "strokeColor": "#334155",
-   "backgroundColor": "transparent",
-   "fillStyle": "solid",
-   "strokeWidth": 1,
-   "strokeStyle": "dashed",
-   "roughness": 0,
-   "opacity": 100,
-   "groupIds": [],
-   "frameId": null,
-   "roundness": null,
-   "seed": 1358724102,
-   "version": 1,
-   "versionNonce": 3668062567,
-   "isDeleted": false,
-   "boundElements": [
-    {
-     "type": "text",
-     "id": "edge-4-label"
-    }
-   ],
-   "updated": 1,
-   "link": null,
-   "locked": false,
-   "points": [
-    [
-     0,
-     0
-    ],
-    [
-     164,
-     0
-    ],
-    [
-     164,
-     332
-    ],
-    [
-     984,
-     332
-    ],
-    [
-     984,
-     -122
-    ],
-    [
-     1028,
-     -122
-    ]
-   ],
-   "startBinding": {
-    "elementId": "box-u3",
-    "focus": 0,
-    "gap": 1
-   },
-   "endBinding": {
-    "elementId": "box-fleet",
-    "focus": 0,
-    "gap": 1
-   },
-   "startArrowhead": null,
-   "endArrowhead": "arrow",
-   "elbowed": false
-  },
-  {
-   "id": "edge-4-label",
-   "type": "text",
-   "x": 925.26,
-   "y": 988.52,
-   "width": 109.48,
-   "height": 14.95,
-   "angle": 0,
-   "strokeColor": "#1e293b",
-   "backgroundColor": "transparent",
-   "fillStyle": "solid",
-   "strokeWidth": 1,
-   "strokeStyle": "solid",
-   "roughness": 0,
-   "opacity": 100,
-   "groupIds": [],
-   "frameId": null,
-   "roundness": null,
-   "seed": 2940646390,
-   "version": 1,
-   "versionNonce": 2604495445,
-   "isDeleted": false,
-   "boundElements": [],
-   "updated": 1,
-   "link": null,
-   "locked": false,
-   "text": "rollouts · traces",
-   "originalText": "rollouts · traces",
-   "fontSize": 11.5,
-   "fontFamily": 2,
-   "textAlign": "center",
-   "verticalAlign": "middle",
-   "containerId": "edge-4-u3-fleet",
-   "lineHeight": 1.3,
-   "autoResize": true
-  },
-  {
-   "id": "edge-5-u7-index",
+   "id": "edge-4-u7-index",
    "type": "arrow",
    "x": 396,
    "y": 900,
@@ -2985,14 +2870,14 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 1586791003,
+   "seed": 1141094454,
    "version": 1,
-   "versionNonce": 3081200710,
+   "versionNonce": 1231950741,
    "isDeleted": false,
    "boundElements": [
     {
      "type": "text",
-     "id": "edge-5-label"
+     "id": "edge-4-label"
     }
    ],
    "updated": 1,
@@ -3039,7 +2924,7 @@
    "elbowed": false
   },
   {
-   "id": "edge-5-label",
+   "id": "edge-4-label",
    "type": "text",
    "x": 1098.48,
    "y": 1008.52,
@@ -3056,9 +2941,9 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 762166953,
+   "seed": 2940646390,
    "version": 1,
-   "versionNonce": 239618882,
+   "versionNonce": 2604495445,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -3070,12 +2955,12 @@
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "edge-5-u7-index",
+   "containerId": "edge-4-u7-index",
    "lineHeight": 1.3,
    "autoResize": true
   },
   {
-   "id": "edge-6-ne-repo",
+   "id": "edge-5-ne-repo",
    "type": "arrow",
    "x": 1190,
    "y": 220,
@@ -3092,14 +2977,14 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 353160185,
+   "seed": 2419610444,
    "version": 1,
-   "versionNonce": 244636571,
+   "versionNonce": 958410171,
    "isDeleted": false,
    "boundElements": [
     {
      "type": "text",
-     "id": "edge-6-label"
+     "id": "edge-5-label"
     }
    ],
    "updated": 1,
@@ -3138,7 +3023,7 @@
    "elbowed": false
   },
   {
-   "id": "edge-6-label",
+   "id": "edge-5-label",
    "type": "text",
    "x": 1268.14,
    "y": 197.53,
@@ -3155,9 +3040,9 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 1189494436,
+   "seed": 762166953,
    "version": 1,
-   "versionNonce": 3124471154,
+   "versionNonce": 239618882,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -3169,12 +3054,12 @@
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "edge-6-ne-repo",
+   "containerId": "edge-5-ne-repo",
    "lineHeight": 1.3,
    "autoResize": true
   },
   {
-   "id": "edge-7-std-pypi",
+   "id": "edge-6-std-pypi",
    "type": "arrow",
    "x": 1190,
    "y": 395,
@@ -3191,14 +3076,14 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 29968312,
+   "seed": 2516616975,
    "version": 1,
-   "versionNonce": 3586840515,
+   "versionNonce": 854098529,
    "isDeleted": false,
    "boundElements": [
     {
      "type": "text",
-     "id": "edge-7-label"
+     "id": "edge-6-label"
     }
    ],
    "updated": 1,
@@ -3237,7 +3122,7 @@
    "elbowed": false
   },
   {
-   "id": "edge-7-label",
+   "id": "edge-6-label",
    "type": "text",
    "x": 1215.26,
    "y": 352.52,
@@ -3254,9 +3139,9 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 2261498164,
+   "seed": 1189494436,
    "version": 1,
-   "versionNonce": 2198179586,
+   "versionNonce": 3124471154,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -3268,12 +3153,12 @@
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "edge-7-std-pypi",
+   "containerId": "edge-6-std-pypi",
    "lineHeight": 1.3,
    "autoResize": true
   },
   {
-   "id": "edge-8-gates-registry",
+   "id": "edge-7-gates-registry",
    "type": "arrow",
    "x": 1190,
    "y": 665,
@@ -3284,20 +3169,20 @@
    "backgroundColor": "transparent",
    "fillStyle": "solid",
    "strokeWidth": 1,
-   "strokeStyle": "dashed",
+   "strokeStyle": "solid",
    "roughness": 0,
    "opacity": 100,
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 3019010089,
+   "seed": 1676459802,
    "version": 1,
-   "versionNonce": 46396691,
+   "versionNonce": 3272569565,
    "isDeleted": false,
    "boundElements": [
     {
      "type": "text",
-     "id": "edge-8-label"
+     "id": "edge-7-label"
     }
    ],
    "updated": 1,
@@ -3336,11 +3221,11 @@
    "elbowed": false
   },
   {
-   "id": "edge-8-label",
+   "id": "edge-7-label",
    "type": "text",
-   "x": 1261.7,
+   "x": 1255.26,
    "y": 572.52,
-   "width": 96.6,
+   "width": 109.48,
    "height": 14.95,
    "angle": 0,
    "strokeColor": "#1e293b",
@@ -3353,26 +3238,26 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 791159476,
+   "seed": 2261498164,
    "version": 1,
-   "versionNonce": 3730090497,
+   "versionNonce": 2198179586,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "share (planned)",
-   "originalText": "share (planned)",
+   "text": "guard its devices",
+   "originalText": "guard its devices",
    "fontSize": 11.5,
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "edge-8-gates-registry",
+   "containerId": "edge-7-gates-registry",
    "lineHeight": 1.3,
    "autoResize": true
   },
   {
-   "id": "edge-9-seller-blueprint",
+   "id": "edge-8-seller-blueprint",
    "type": "arrow",
    "x": 396,
    "y": 1112.0,
@@ -3389,14 +3274,14 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 814651318,
+   "seed": 4267094175,
    "version": 1,
-   "versionNonce": 4256506847,
+   "versionNonce": 1887594656,
    "isDeleted": false,
    "boundElements": [
     {
      "type": "text",
-     "id": "edge-9-label"
+     "id": "edge-8-label"
     }
    ],
    "updated": 1,
@@ -3427,7 +3312,7 @@
    "elbowed": false
   },
   {
-   "id": "edge-9-label",
+   "id": "edge-8-label",
    "type": "text",
    "x": 471.14,
    "y": 1104.53,
@@ -3444,9 +3329,9 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 2090328225,
+   "seed": 791159476,
    "version": 1,
-   "versionNonce": 2455759673,
+   "versionNonce": 3730090497,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -3458,12 +3343,12 @@
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "edge-9-seller-blueprint",
+   "containerId": "edge-8-seller-blueprint",
    "lineHeight": 1.3,
    "autoResize": true
   },
   {
-   "id": "edge-10-installer-blueprint",
+   "id": "edge-9-installer-blueprint",
    "type": "arrow",
    "x": 396,
    "y": 1234,
@@ -3480,14 +3365,14 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 2231699724,
+   "seed": 1702312867,
    "version": 1,
-   "versionNonce": 3368144206,
+   "versionNonce": 4188040076,
    "isDeleted": false,
    "boundElements": [
     {
      "type": "text",
-     "id": "edge-10-label"
+     "id": "edge-9-label"
     }
    ],
    "updated": 1,
@@ -3526,7 +3411,7 @@
    "elbowed": false
   },
   {
-   "id": "edge-10-label",
+   "id": "edge-9-label",
    "type": "text",
    "x": 434.24,
    "y": 1226.53,
@@ -3543,9 +3428,9 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 3198675098,
+   "seed": 2090328225,
    "version": 1,
-   "versionNonce": 2517219297,
+   "versionNonce": 2455759673,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -3557,12 +3442,12 @@
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "edge-10-installer-blueprint",
+   "containerId": "edge-9-installer-blueprint",
    "lineHeight": 1.3,
    "autoResize": true
   },
   {
-   "id": "edge-11-blueprint-hub",
+   "id": "edge-10-blueprint-hub",
    "type": "arrow",
    "x": 1190,
    "y": 1132.0,
@@ -3579,14 +3464,14 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 1777001424,
+   "seed": 3292529509,
    "version": 1,
-   "versionNonce": 1553203893,
+   "versionNonce": 3608458492,
    "isDeleted": false,
    "boundElements": [
     {
      "type": "text",
-     "id": "edge-11-label"
+     "id": "edge-10-label"
     }
    ],
    "updated": 1,
@@ -3617,7 +3502,7 @@
    "elbowed": false
   },
   {
-   "id": "edge-11-label",
+   "id": "edge-10-label",
    "type": "text",
    "x": 1242.6,
    "y": 1124.53,
@@ -3634,9 +3519,9 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 3323829725,
+   "seed": 3198675098,
    "version": 1,
-   "versionNonce": 2396143692,
+   "versionNonce": 2517219297,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -3648,12 +3533,12 @@
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "edge-11-blueprint-hub",
+   "containerId": "edge-10-blueprint-hub",
    "lineHeight": 1.3,
    "autoResize": true
   },
   {
-   "id": "edge-12-blueprint-kits",
+   "id": "edge-11-blueprint-kits",
    "type": "arrow",
    "x": 1100,
    "y": 1190,
@@ -3670,14 +3555,14 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 2618912576,
+   "seed": 33902060,
    "version": 1,
-   "versionNonce": 598107775,
+   "versionNonce": 2838672643,
    "isDeleted": false,
    "boundElements": [
     {
      "type": "text",
-     "id": "edge-12-label"
+     "id": "edge-11-label"
     }
    ],
    "updated": 1,
@@ -3712,7 +3597,7 @@
    "elbowed": false
   },
   {
-   "id": "edge-12-label",
+   "id": "edge-11-label",
    "type": "text",
    "x": 1231.02,
    "y": 1360.53,
@@ -3729,9 +3614,9 @@
    "groupIds": [],
    "frameId": null,
    "roundness": null,
-   "seed": 3751133492,
+   "seed": 3323829725,
    "version": 1,
-   "versionNonce": 2996783992,
+   "versionNonce": 2396143692,
    "isDeleted": false,
    "boundElements": [],
    "updated": 1,
@@ -3743,7 +3628,7 @@
    "fontFamily": 2,
    "textAlign": "center",
    "verticalAlign": "middle",
-   "containerId": "edge-12-blueprint-kits",
+   "containerId": "edge-11-blueprint-kits",
    "lineHeight": 1.3,
    "autoResize": true
   }

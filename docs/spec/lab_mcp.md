@@ -410,7 +410,7 @@ chip chỉ qua cổng có xác thực của TSK-P2-04, hoặc qua UART.
 
 ## 14. Cổng nhu cầu và cột mốc
 
-→ Q-40 bỏ luật cổng nhu cầu riêng của NeuroBrain; Q-56 bỏ luôn luật cổng nhu cầu chung; Q-72 khôi phục một cổng chung, 8 tuần sau khi chốt (PRD §11.2, Q-72) — Lab vòng ① là đường để người ngoài đội tự cài và chạy NeuroEdge Blueprint. Tín hiệu đo của I4a và I5a: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §4.5.1 và §4.6.1.
+→ Q-40 bỏ luật cổng nhu cầu riêng của NeuroBrain; Q-56 bỏ luôn luật cổng nhu cầu chung; Q-72 khôi phục một cổng chung, 8 tuần sau khi chốt (PRD §11.2, Q-72) — Lab vòng ① là đường để người ngoài đội tự cài và chạy NeuroEdge Blueprint. Tín hiệu đo của I4a và I5a: [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §6.
 
 ---
 

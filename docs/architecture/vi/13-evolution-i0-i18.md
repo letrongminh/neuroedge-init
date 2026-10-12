@@ -1,13 +1,13 @@
 # 13 · Tiến hoá kiến trúc theo mốc phát hành
 
-> **Phạm vi:** kiến trúc lớn lên thế nào qua mười mốc phát hành theo người dùng, cái gì đã được chuẩn bị
-> sẵn, cái gì cần RFC. **Nguồn:** mười mốc và increment của từng mốc ở roadmap §0.5 ("Mười mốc phát hành
+> **Phạm vi:** kiến trúc lớn lên thế nào qua tám mốc phát hành theo người dùng, cái gì đã được chuẩn bị
+> sẵn, cái gì cần RFC. **Nguồn:** tám mốc và increment của từng mốc ở roadmap §0.5 ("Mốc phát hành
 > theo người dùng"); trạng thái, tiến độ, ngày dự báo chỉ ở roadmap §0.2 (Q-39) — trang này không chép lại
 > chúng, và hình E-09 được **sinh từ chính hai bảng đó**. Thiết kế của các hướng mở rộng ở
 > `docs/spec/lab_mcp.md`, [`15`](15-target-architecture.md) §4.3, §4.4,
 > `draft-rfc-node-giao-thuc-dieu-phoi.md`.
 
-## 1. Một xương sống, mười mốc
+## 1. Một xương sống, tám mốc
 
 NeuroEdge lớn lên theo **chiều rộng**, không theo **ngoại lệ**. Mỗi mốc thêm một nơi gate chạy (Pi, chip,
 nhiều node), một loại thứ gate canh (cảm biến, PWM, camera, motor), hay một cách gọi vào (giọng nói, hội
@@ -19,7 +19,7 @@ Vì thế mỗi mốc ở §3 trả lời bốn câu hỏi theo cùng một th�
 hợp đồng nào đổi, và **lời hứa an toàn nào được chứng minh lại** trên phạm vi mới.
 
 ![E-09 · Tiến hoá theo mốc](../assets/svg/E-09-evolution.svg)
-*Hình E-09 — Mười mốc phát hành (mốc 9 thêm I2f có điều kiện, Q-74), mỗi mốc gom các increment của nó; trạng thái, tiến độ và ngày dự báo
+*Hình E-09 — Tám mốc phát hành sau Q-77 (mốc 8 là I2f có điều kiện, Q-74), mỗi mốc gom các increment của nó; trạng thái, tiến độ và ngày dự báo
 đọc từ roadmap §0.2 lúc sinh hình.*
 
 Mốc 6 (**ra mắt công khai**) là lần đầu người ngoài dùng được; mốc 7 (**v1.0**) là lần đầu đủ tin cậy để

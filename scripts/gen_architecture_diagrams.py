@@ -47,7 +47,7 @@ def e01_context() -> Diagram:
          "done"),
         ("auditor", "Safety reviewer / QA", ("Reads gates and traces", "gate explain · trace view · replay"), "done"),
         ("oem", "OEM hardware partner", ("Declares a board, ports the HAL", "board.toml · compliance vectors"), "done"),
-        ("operator", "Fleet operator", ("Rolls out updates, pulls traces", "Fleet OS (I9)"), "planned"),
+        ("operator", "Home owner", ("chats with the brain", "approves from the phone · I2d"), "planned"),
         # Q-72: the people of rounds ② and ③
         ("installer", "Blueprint installer", ("Installs a NeuroEdge Blueprint,", "runs it, approves by chat · I2e"),
          "planned"),
@@ -78,7 +78,7 @@ def e01_context() -> Diagram:
         ("speech", "Speech providers", ("STT / TTS, OpenAI audio API", "cloud or local server"), "done"),
         ("mcp", "MCP clients", ("Claude Desktop, other agents", "stdio JSON-RPC"), "done"),
         ("idf", "ESP-IDF v5.4 + QEMU", ("Toolchain and emulator", "Docker espressif/idf:v5.4"), "done"),
-        ("fleet", "Fleet OS · Gate Registry", ("Rollouts, incident traces", "I9 · I10"), "planned"),
+        ("fleet", "Home Assistant", ("devices of other brands", "remote actuators via plugin · I2c"), "partial"),
         ("chat", "Chat platforms", ("Telegram first · Slack · Zalo", "reports, commands, approvals · I2d"), "planned"),
         ("relay", "Relay (optional)", ("TLS pass-through by SNI, no decryption", "never on the safety path · Q-72"),
          "planned"),
@@ -97,13 +97,13 @@ def e01_context() -> Diagram:
         Edge("embedded", "neuroedge", "build · flash · verify", via=((L, 349), (L, 370)), label_at=(L, 349)),
         Edge("auditor", "neuroedge", "explain · replay", via=((L - 30, 499), (L - 30, 420)), label_at=(L - 30, 470)),
         Edge("oem", "device", "board + HAL port", via=((L, 649), (L, 605)), label_at=(L, 649)),
-        Edge("operator", "device", "OTA · traces (I9)", dashed=True, via=((560, 799), (560, 640)), label_at=(480, 799)),
+        Edge("operator", "device", "chat · approvals (I2d)", dashed=True, via=((560, 799), (560, 640)), label_at=(480, 799)),
         Edge("neuroedge", "llm", "HTTPS · key from env", via=((R - 40, 300), (R - 40, 184)), label_at=(R - 40, 205)),
         Edge("neuroedge", "jev", "HTTPS", via=((R, 330), (R, 310)), label_at=(R, 330)),
         Edge("neuroedge", "speech", "HTTPS or localhost", via=((R - 40, 400), (R - 40, 436)), label_at=(R - 40, 418)),
         Edge("mcp", "neuroedge", "tools/call · stdio", via=((R, 562), (R, 440)), label_at=(R, 520)),
         Edge("neuroedge", "idf", "ESP-IDF project", via=((R - 60, 450), (R - 60, 686)), label_at=(R - 60, 610)),
-        Edge("device", "fleet", "MQTT (planned)", dashed=True, via=((760, 720), (1340, 720), (1340, 814)),
+        Edge("device", "fleet", "plugin (I2c)", via=((760, 720), (1340, 720), (1340, 814)),
              label_at=(1050, 720)),
         Edge("neuroedge", "device", "c.do() → gate → pin", via=((760, 460),), label_at=(760, 500)),
         Edge("neuroedge", "files", "reads · writes", via=((1060, 460),), label_at=(1060, 500)),
@@ -169,8 +169,6 @@ def e02_containers() -> Diagram:
     d.boxes.append(Box("q72", 1510, 570, 420, 135, "Chat · relay · Hub · cloud",
                        ("Telegram first, Slack, Zalo · I2d", "relay (optional): TLS pass-through · Q-72",
                         "Blueprint Hub index: URL + digest · I2e", "NeuroEdge Cloud (optional) · I2f"), "external", "planned"))
-    d.boxes.append(Box("fleet", 1510, 720, 420, 120, "Fleet OS · Gate Registry",
-                       ("rollouts · trace vault · shared gates", "I9 · I10"), "external", "planned"))
     d.boxes.append(Box("ota", 1510, 850, 420, 110, "OTA image server",
                        ("any static HTTP(S) server", "one signed app image"), "external"))
     d.edges += [
@@ -190,8 +188,6 @@ def e02_containers() -> Diagram:
         Edge("fw", "cli", "UART NE1 lines → record · verify", via=((20, 905), (20, 215)), label_at=(290, 905)),
         Edge("fw", "flash", "trees read in place", label_at=(980, 905)),
         Edge("fw", "ota", "HTTP(S) GET image", via=((700, 1080), (1720, 1080)), label_at=(1180, 1080)),
-        Edge("fw", "fleet", "MQTT (planned)", dashed=True, via=((800, 752), (1440, 752), (1440, 780)),
-             label_at=(1250, 752)),
         Edge("worker", "runtime", "local MCP", dashed=True),
         Edge("runtime", "q72", "outbound only", dashed=True, label_at=(1440, 610)),
     ]
@@ -280,7 +276,7 @@ def e04_firmware() -> Diagram:
         Box("ota", 1070, 360, 220, 140, "ne_ota", ("signed A/B update", "rollback · high-water", "QEMU only"), "component",
             "partial"),
         Box("halc", 800, 560, 490, 120, "on-chip HAL",
-            ("GPIO · I2S audio · I2C sensors · LCD", "TSK-S4-01 · I5"), "device", "planned"),
+            ("GPIO · I2C sensors · LCD", "TSK-S4-01 · I3"), "device", "planned"),
     ]
     d.groups.append(Group("flashg", 480, 750, 860, 120, "Flash 16 MB — partitions.csv", "device"))
     d.boxes.append(Box("flash", 510, 790, 800, 70, "factory · ota_0 · ota_1 (3.5 MB each) · nvs · otadata · storage",
@@ -417,11 +413,11 @@ def e07_targets() -> Diagram:
         ("audio.in", [
             ("typed text · WAV → VAD → STT", ("every PR, fake providers",), "done"),
             ("WAV file backend · live PipeWire", ("file every PR · live not on hardware",), "partial"),
-            ("I2S + AEC on the chip", ("I5",), "planned")]),
+            ("I2S + AEC on the chip", ("dropped from v1.0 · Q-77",), "planned")]),
         ("audio.out", [
             ("TTS → speaker timeline → WAV", ("every PR, fake providers",), "done"),
             ("WAV file backend · live PipeWire", ("file every PR · live not on hardware",), "partial"),
-            ("I2S codec", ("I5",), "planned")]),
+            ("I2S codec", ("dropped from v1.0 · Q-77",), "planned")]),
         ("sensor.read", [
             ("scripted readings", ("every PR",), "done"),
             ("sysfs hwmon and IIO, by name", ("every PR on i2c-stub + lm75",), "done"),
@@ -548,11 +544,8 @@ INCREMENTS = {
     "I2d": "Missions and operating agent", "I2e": "NeuroEdge Blueprint MVP",
     "I2f": "Cloud brain · ESP32 home box",
     "I3": "Gate on a real Box-3",
-    "I3a": "New primitives on esp32s3", "I4": "Voice on the host", "I4a": "NeuroEdge Lab on the host",
-    "I5": "Voice on Box-3", "I5a": "NeuroEdge Lab on the chip", "I6": "Public release", "I7": "v1.0 = MVP",
-    "I8": "Developer Beta", "I9": "Providers v1.1 · Fleet OS", "I10": "Registry and rails",
-    "I13": "Community port kit", "I14": "Tiered robotics",
-    "I16": "Vision on jetson", "I17": "Multimodal", "I18": "Device ecosystem",
+    "I3a": "New primitives on esp32s3", "I6": "Public release", "I7": "v1.0 = MVP",
+    "I8": "Developer Beta",
 }
 ROADMAP = ROOT / "roadmap" / "neuroedge-roadmap.md"
 
@@ -581,13 +574,12 @@ def _roadmap_matrix() -> list[tuple[str, str, str, str]]:
     return rows
 
 
-# English names of the ten user-facing release milestones (roadmap §0.5, "Mười mốc phát hành theo người
+# English names of the eight user-facing release milestones (roadmap §0.5, "Mốc phát hành theo người
 # dùng"). Which increments belong to which milestone is read from that table, never repeated here.
 MILESTONES = {
     1: "Try it on a laptop", 2: "Real devices on a Raspberry Pi", 3: "The gate on a $5 chip",
-    4: "Talk to the device", 5: "Build and run by conversation, share a Blueprint", 6: "Public launch: first outside users",
-    7: "v1.0: ready to ship in products", 8: "Developer Beta", 9: "One chat for many devices · fleets",
-    10: "Grow the ecosystem",
+    4: "Build and run by chat, share a Blueprint", 5: "Public launch: first outside users",
+    6: "v1.0: ready to ship in products", 7: "Developer Beta", 8: "One chat for many devices and homes",
 }
 
 
@@ -595,7 +587,7 @@ def _milestones() -> list[tuple[int, list[str]]]:
     import re
 
     lines = ROADMAP.read_text(encoding="utf-8").splitlines()
-    start = next(n for n, line in enumerate(lines) if line.startswith("#### Mười mốc phát hành"))
+    start = next(n for n, line in enumerate(lines) if line.startswith("#### Mốc phát hành theo người dùng"))
     out = []
     for line in lines[start + 1 :]:
         if line.startswith(("#", "---")):
@@ -612,7 +604,7 @@ def e09_evolution() -> Diagram:
     d = Diagram(
         "E-09-evolution",
         "E-09 · Evolution by release milestone",
-        "Ten things a user can do, in order. Status, progress and forecast are read from roadmap §0.2.",
+        "Eight things a user can do, in order. Status, progress and forecast are read from roadmap §0.2.",
         1800,
         1340,
     )
@@ -648,12 +640,12 @@ def e10_horizons() -> Diagram:
         "E-10 · Target architecture by horizon",
         "What each horizon adds on top of main. Details and sources: chapter 15; order and dates: roadmap §0.2.",
         1800,
-        1800,
+        1360,
     )
     w, gap = 326, 12
     col = [60 + c * (w + gap) for c in range(5)]
     bands = [
-        ("today", "Today on main — I0 done, I1–I4 in progress", "host", [
+        ("today", "Today on main — I0 done, I1–I3 in progress", "host", [
             ("core", "Host package neuroedge", ("SDK, CLI, gate engine, sim + linux HAL", "voice from WAV, MCP, Action CI"), "container", "done"),
             ("fw", "Firmware esp32s3 on QEMU", ("NETR walker, token ledger, UART trace", "signed A/B OTA · LVGL UI on host"), "device", "partial"),
             ("contracts", "Frozen contracts", ("gate.v1 · trace.v1 · board.v1", "NETR v1 · agent.toml"), "store", "done"),
@@ -661,28 +653,15 @@ def e10_horizons() -> Diagram:
         ]),
         ("h1", "Horizon 1 — v1.0 = MVP (I2a–I7) · chapter 15 §2", "device", [
             ("hal", "HAL + drivers + UI on chip", ("targets/esp32s3/hal/ · drivers/ · ne_ui", "TSK-S4-01, TSK-S4-03"), "device", "planned"),
-            ("voice", "Voice path on chip", ("AEC · VAD · Opus · voice FSM in C", "offline fallback · TSK-S5-01…S5-07"), "device", "planned"),
+            ("voice", "Pi ↔ ESP32 link", ("heartbeat · safe_state on link loss", "generic ESP32-S3 + Arduino · I3a · Q-75"), "device", "planned"),
             ("ext", "Extension primitives", ("digital.in · I2C · analog.in · PWM", "vision.in · motion.* · I2a, I3a · Q-53"), "device", "planned"),
-            ("lab", "NeuroEdge Lab over MCP", ("lab/ only via dispatch() (B-1)", "no LLM loop · I4a, I5a · Q-71"), "component", "planned"),
+            ("lab", "Brain over MCP", ("NeuroEdge brain or any MCP client", "standard tools · I2d · Q-76"), "component", "planned"),
             ("security", "Device security", ("Secure Boot · flash encryption", "mic switch · TSK-S6-05"), "device", "planned"),
-            # I2c — the open platform (Q-67) sits in the MVP host lane, before NeuroEdge Lab (I4a) and I6
+            # I2c — the open platform (Q-67) sits in the MVP host lane, before I6
             ("sdk", "Standalone core + Extension SDK", ("neuroedge.guard · neuroedge.sdk", "six plug-in kinds · RFC-0016 · I2c"), "component", "planned"),
             ("proxies", "Proxies + remote actuators", ("proxy mcp · proxy http · plugin doctor", "Home Assistant first · RFC-0018 · I2c"), "component", "planned"),
-            ("tiers", "Open target list", ("tiers 1–3 · board validate · --board", "RFC-0002 signed · I2c · Q-67"), "component", "planned"),
+            ("tiers", "Kits + starter gates", ("five kits · neuroedge add", "BOM and wiring · I2b"), "component", "partial"),
             ("index", "Community plug-in index", ("plugin search/install · NeuroEdge-gated", "not a Marketplace · FR-EXT-08 · I2c"), "external", "planned"),
-        ]),
-        ("h2", "Horizon 2 — service tier v1.1 (I9–I10) · chapter 15 §3", "cloud", [
-            ("fleet", "Fleet OS", ("provisioning · inventory · config sync", "canary OTA · incident traces · TSK-K2-04…09"), "external", "planned"),
-            ("registry", "Gate Registry and rails", ("OCI store · identity · metering", "sandbox · manifest.v1 · TSK-K3-*"), "external", "planned"),
-            ("provider", "Self-hosted provider layer", ("one endpoint · failover · quotas", "TSK-K2-01…03 · Q-28"), "container", "planned"),
-            ("signed", "Signed gates on the device", ("verify signature before loading", "TSK-W2-04"), "gate", "planned"),
-            ("boundary", "Core ↔ commercial boundary", ("safety never behind a paid tier", "chapter 15 §3.4 · PRD P-3"), "note", "done"),
-        ]),
-        ("h3", "Horizon 3 — extensions after Beta (I13–I18) · chapter 15 §4", "planned", [
-            ("portkit", "Community port kit", ("compliance vectors outside the repo", "I13 · Q-13 · on the tiers opened in I2c"), "component", "planned"),
-            ("robot", "Layered robot", ("Pi 5 brain + MCU nodes, gate per node", "black channel · lease tokens · I14"), "component", "planned"),
-            ("vision", "Vision on jetson, multimodal", ("vision.in itself ships in v1.0 (Q-53)", "facts only, never L3 authority · I16, I17"), "component", "planned"),
-            ("eco", "Ecosystem", ("adapter + HAL-port store on Registry", "I18 · chapter 16"), "component", "planned"),
         ]),
         # Q-72 reorders the work: this band comes before the rest of Horizon 1 (roadmap §0.2)
         ("q72", "Q-72 band — run and share, moved ahead of the v1.0 work (I2d, I2e) · chapter 15 §6", "planned", [
@@ -715,14 +694,8 @@ def e10_horizons() -> Diagram:
             d.boxes.append(Box(bid, col[c], y + 44 + r * row_pitch, w, 124, title, lines, bkind, status))
         tops[gid] = y
         y += gh + 30
-    gap_h1_h2 = tops["h2"] - 15  # the middle of the 30 px gap under Horizon 1
     d.edges += [
         Edge("fw", "voice", "same walker + ledger", label_at=(col[1] + w / 2, 312)),
-        # down the free fifth column of Horizon 1's second row, then across the gap to the box below
-        Edge("security", "signed", "verify on chip",
-             via=((col[4] + w / 2, 520), (col[4] + w / 2, gap_h1_h2), (col[3] + w / 2, gap_h1_h2)),
-             label_at=(col[4] + w / 2, 600)),
-        Edge("boundary", "eco", "no paid safety", label_at=(col[4] + w / 2, tops["h3"] - 18)),
     ]
     return d
 
@@ -741,8 +714,8 @@ def e11_ecosystem() -> Diagram:
         ("u2", "U2 · Embedded team lead", ("tests safety in CI", "moves boards without rewrites"), "done"),
         ("u4", "U4 · Safety reviewer / QA", ("reads gates and traces", "approves behaviour"), "done"),
         ("u5", "U5 · OEM / ODM partner", ("declares a board, ports the HAL", "compliance vectors"), "partial"),
-        ("u3", "U3 · Fleet operator", ("rolls out updates, pulls traces", "from v1.1"), "planned"),
-        ("u6", "U6 · Robot integrator", ("Pi 5 brain + MCU nodes", "ROS 2 / Nav2 · I14"), "planned"),
+        ("u3", "U3 · Fleet operator", ("fleet tools dropped from the roadmap", "reopen on demand · Q-77"), "planned"),
+        ("u6", "U8 · Home owner", ("chats with the brain", "approves from the phone · I2d"), "planned"),
         ("u7", "U7 · Plug-in author", ("wires a product in, own repo and licence", "passes the conformance suite · I2c"), "planned"),
     ]
     for i, (pid, title, lines, status) in enumerate(parties):
@@ -780,11 +753,11 @@ def e11_ecosystem() -> Diagram:
     platforms = [
         ("repo", "Source repository", ("public · issues · RFCs",), "done"),
         ("pypi", "PyPI + public schema URLs", ("release workflow ready · I6",), "planned"),
-        ("registry", "Gate Registry", ("OCI · identity · metering · I10",), "planned"),
-        ("fleet", "Fleet OS", ("commercial fleet service · I9",), "planned"),
+        ("registry", "Home Assistant", ("devices of other brands · I2c",), "partial"),
+        ("fleet", "PicoClaw · MCP clients", ("the brain, or any MCP client · Q-76",), "planned"),
         ("index", "Community plug-in index", ("search/install · not a Marketplace · I2c",), "planned"),
-        ("aura", "AURA vertical app", ("Khối 4 · outside the roadmap",), "planned"),
-        ("market", "Marketplace", ("Khối 5 · after the 8-week gate (Q-72)",), "planned"),
+        ("aura", "Claw-family agents", ("ESP-Claw · zclaw · MimiClaw",), "planned"),
+        ("market", "Blueprint Hub (paid)", ("after the 8-week gate · Q-72",), "planned"),
         ("chat", "Chat platforms", ("Telegram first · Slack · Zalo · I2d",), "planned"),
         ("hub", "Blueprint Hub index", ("static index · revenue share later · I2e",), "planned"),
         ("relay", "Relay (optional)", ("TLS pass-through · paid option · Q-72",), "planned"),
@@ -799,14 +772,12 @@ def e11_ecosystem() -> Diagram:
         Edge("u2", "ne", "CI · build · verify", via=((L, 310), (L, 250)), label_at=(L, 290)),
         Edge("u4", "gates", "review · explain", via=((L - 30, 428), (L - 30, 520), (1055, 520)), label_at=(L - 30, 500)),
         Edge("u5", "ports", "port + prove", via=((L, 546), (L, 850)), label_at=(L, 760)),
-        Edge("u3", "fleet", "rollouts · traces", dashed=True, via=((560, 664), (560, 996), (1380, 996), (1380, 542)),
-             label_at=(980, 996)),
         # round the bottom, then up the gap left of the platforms: no crossing of Fleet OS's own arrow
         Edge("u7", "index", "publish plug-ins", dashed=True,
              via=((540, 900), (540, 1016), (1392, 1016), (1392, 660)), label_at=(1150, 1016)),
         Edge("ne", "repo", "source · RFCs", via=((R, 220), (R, 188)), label_at=(R, 205)),
         Edge("std", "pypi", "schemas published", dashed=True, via=((R - 40, 395), (R - 40, 306)), label_at=(R - 40, 360)),
-        Edge("gates", "registry", "share (planned)", dashed=True, via=((R, 665), (R, 424)), label_at=(R, 580)),
+        Edge("gates", "registry", "guard its devices", via=((R, 665), (R, 424)), label_at=(R, 580)),
         # Q-72 (planned): the Blueprint flywheel — build, run, share, install
         Edge("seller", "blueprint", "packs · sells", dashed=True),
         Edge("installer", "blueprint", "installs", dashed=True, via=((500, 1234), (500, 1170)), label_at=(460, 1234)),

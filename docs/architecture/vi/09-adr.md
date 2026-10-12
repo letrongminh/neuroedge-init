@@ -114,7 +114,7 @@ quyết định ở PRD §15; dưới đây là những quyết định có hệ
 ### Q-28 · Mốc giao lớp trừu tượng provider (FR-GW)
 - **Bối cảnh.** Lớp trừu tượng provider (FR-GW) cần hỗ trợ đa nhà cung cấp và failover, nhưng việc xây dựng toàn bộ chức năng quản trị đội thiết bị tập trung quá sớm sẽ làm phình phạm vi v1.0.
 - **Quyết định.** v1.0 (Khối 1a) chỉ giao FR-GW-01 ở mức tối thiểu (một bảng `[system_two]` trong `agent.toml`, khoá đọc từ biến môi trường, không lưu trong file hay mã) và FR-GW-03 (hợp đồng failover trong mã nguồn). Phần còn lại thuộc v1.1 (Khối 2, TSK-K2-01→03): khai báo nhiều provider và failover trong `agent.toml` (TSK-K2-02), một endpoint và credential dùng chung cho cả đội thiết bị, FR-GW-02/04 phía server, FR-GW-05→07 (TR-1, TR-6). (PRD §15 Q-28).
-- **Hệ quả.** v1.0 chạy trên `sim`/`linux` với một provider do người dùng giữ khoá, không cần máy chủ của NeuroEdge; phần cấp đội thiết bị của lớp provider (v1.1) vẫn là lõi tự vận hành, không thương mại hoá (roadmap §6.1), và chỉ có nghĩa khi có Fleet OS.
+- **Hệ quả.** v1.0 chạy trên `sim`/`linux` với một provider do người dùng giữ khoá, không cần máy chủ của NeuroEdge; phần cấp đội thiết bị của lớp provider (v1.1) vẫn là lõi tự vận hành, không thương mại hoá (roadmap §6), và chỉ có nghĩa khi có Fleet OS.
 - **Cưỡng chế.** `models/providers/config.py`, `agent.toml`; [`15`](15-target-architecture.md) §3.3.
 
 ### Q-47 · FastAPI WebSockets của Fleet OS chỉ cho kết nối và viễn trắc

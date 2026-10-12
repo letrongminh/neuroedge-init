@@ -23,7 +23,7 @@
 <path d="M1190.0,400.0 L1270.0,400.0 L1270.0,436.0 L1424.0,436.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M1424.0,562.0 L1310.0,562.0 L1310.0,440.0 L1190.0,440.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M1190.0,450.0 L1250.0,450.0 L1250.0,686.0 L1424.0,686.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
-<path d="M760.0,670.0 L760.0,720.0 L1340.0,720.0 L1340.0,814.0 L1424.0,814.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<path d="M760.0,670.0 L760.0,720.0 L1340.0,720.0 L1340.0,814.0 L1424.0,814.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M760.0,460.0 L760.0,460.0 L760.0,540.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M1060.0,460.0 L1060.0,460.0 L1060.0,540.0" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
 <path d="M396.0,920.0 L630.0,920.0" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arr)"/>
@@ -49,9 +49,9 @@
 <text x="230.0" y="656.0" font-size="12.5" fill="#ffffff" text-anchor="middle">Declares a board, ports the HAL</text>
 <text x="230.0" y="674.1" font-size="12.5" fill="#ffffff" text-anchor="middle">board.toml · compliance vectors</text>
 <rect x="64" y="740" width="332" height="118" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="230.0" y="776.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Fleet operator</text>
-<text x="230.0" y="796.9" font-size="12.5" fill="#475569" text-anchor="middle">Rolls out updates, pulls traces</text>
-<text x="230.0" y="815.1" font-size="12.5" fill="#475569" text-anchor="middle">Fleet OS (I9)</text>
+<text x="230.0" y="776.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Home owner</text>
+<text x="230.0" y="796.9" font-size="12.5" fill="#475569" text-anchor="middle">chats with the brain</text>
+<text x="230.0" y="815.1" font-size="12.5" fill="#475569" text-anchor="middle">approves from the phone · I2d</text>
 <text x="230.0" y="833.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="64" y="890" width="332" height="118" rx="26" fill="#f8fafc" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="230.0" y="926.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Blueprint installer</text>
@@ -104,11 +104,11 @@
 <text x="1590.0" y="674.8" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">ESP-IDF v5.4 + QEMU</text>
 <text x="1590.0" y="695.0" font-size="12.5" fill="#431407" text-anchor="middle">Toolchain and emulator</text>
 <text x="1590.0" y="713.1" font-size="12.5" fill="#431407" text-anchor="middle">Docker espressif/idf:v5.4</text>
-<rect x="1424" y="762" width="332" height="104" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
-<text x="1590.0" y="791.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Fleet OS · Gate Registry</text>
-<text x="1590.0" y="811.9" font-size="12.5" fill="#475569" text-anchor="middle">Rollouts, incident traces</text>
-<text x="1590.0" y="830.1" font-size="12.5" fill="#475569" text-anchor="middle">I9 · I10</text>
-<text x="1590.0" y="848.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
+<rect x="1424" y="762" width="332" height="104" rx="10" fill="#ffedd5" stroke="#c2410c" stroke-width="1.6"/>
+<text x="1590.0" y="791.7" font-size="15" fill="#431407" text-anchor="middle" font-weight="700">Home Assistant</text>
+<text x="1590.0" y="811.9" font-size="12.5" fill="#431407" text-anchor="middle">devices of other brands</text>
+<text x="1590.0" y="830.1" font-size="12.5" fill="#431407" text-anchor="middle">remote actuators via plugin · I2c</text>
+<text x="1590.0" y="848.2" font-size="12.5" fill="#431407" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="1424" y="888" width="332" height="104" rx="10" fill="#f8fafc" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1590.0" y="917.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">Chat platforms</text>
 <text x="1590.0" y="937.9" font-size="12.5" fill="#475569" text-anchor="middle">Telegram first · Slack · Zalo</text>
@@ -137,8 +137,8 @@
 <text x="480.0" y="472.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">explain · replay</text>
 <rect x="453.5" y="638.5" width="113.0" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="510.0" y="651.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">board + HAL port</text>
-<rect x="420.3" y="788.5" width="119.5" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
-<text x="480.0" y="801.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">OTA · traces (I9)</text>
+<rect x="404.2" y="788.5" width="151.7" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="480.0" y="801.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">chat · approvals (I2d)</text>
 <rect x="1200.6" y="194.5" width="138.8" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="1270.0" y="207.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">HTTPS · key from env</text>
 <rect x="1288.9" y="319.5" width="42.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
@@ -149,8 +149,8 @@
 <text x="1310.0" y="522.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">tools/call · stdio</text>
 <rect x="1196.7" y="599.5" width="106.6" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="1250.0" y="612.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">ESP-IDF project</text>
-<rect x="999.9" y="709.5" width="100.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
-<text x="1050.0" y="722.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">MQTT (planned)</text>
+<rect x="1006.4" y="709.5" width="87.3" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
+<text x="1050.0" y="722.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">plugin (I2c)</text>
 <rect x="693.8" y="489.5" width="132.4" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>
 <text x="760.0" y="502.0" font-size="11.5" fill="#1e293b" text-anchor="middle" font-style="italic">c.do() → gate → pin</text>
 <rect x="1009.9" y="489.5" width="100.2" height="21.0" rx="4" fill="#ffffff" fill-opacity="0.96" stroke="#e2e8f0" stroke-width="0.8"/>

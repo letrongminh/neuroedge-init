@@ -59,8 +59,8 @@
 <text x="1180.0" y="473.2" font-size="12.5" fill="#0f172a" text-anchor="middle" font-style="italic">◐ partial</text>
 <rect x="800" y="560" width="490" height="120" rx="10" fill="#f8fafc" stroke="#15803d" stroke-width="1.6" stroke-dasharray="7 5"/>
 <text x="1045.0" y="597.7" font-size="15" fill="#475569" text-anchor="middle" font-weight="700">on-chip HAL</text>
-<text x="1045.0" y="617.9" font-size="12.5" fill="#475569" text-anchor="middle">GPIO · I2S audio · I2C sensors · LCD</text>
-<text x="1045.0" y="636.1" font-size="12.5" fill="#475569" text-anchor="middle">TSK-S4-01 · I5</text>
+<text x="1045.0" y="617.9" font-size="12.5" fill="#475569" text-anchor="middle">GPIO · I2C sensors · LCD</text>
+<text x="1045.0" y="636.1" font-size="12.5" fill="#475569" text-anchor="middle">TSK-S4-01 · I3</text>
 <text x="1045.0" y="654.2" font-size="12.5" fill="#475569" text-anchor="middle" font-style="italic">○ planned</text>
 <rect x="510" y="790" width="800" height="70" rx="10" fill="#f1f5f9" stroke="#475569" stroke-width="1.6"/>
 <path d="M511,802 Q910.0,814 1309,802" fill="none" stroke="#475569" stroke-width="1.2"/>
