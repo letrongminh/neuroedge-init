@@ -115,7 +115,7 @@ Phase gom increment theo năng lực người dùng; ngày và phụ thuộc ch�
 
 #### Mốc phát hành theo người dùng
 
-Phase là cách đội lập kế hoạch; **mốc phát hành** là cách người dùng thấy sản phẩm (tám mốc sau Q-77). Mỗi mốc là một việc người dùng làm được, kết thúc khi mọi increment của nó xong. Bảng này không ghi ngày: ngày của một mốc là ngày dự báo muộn nhất trong các increment của nó ở §0.2. CPO Dashboard (`docs/business/cpo-dashboard.html`), poster E-09 và chương kiến trúc 13 đọc từ bảng này. Mỗi increment thuộc đúng một mốc.
+Phase là cách đội lập kế hoạch; **mốc phát hành** là cách người dùng thấy sản phẩm (tám mốc sau Q-77). Mỗi mốc là một việc người dùng làm được, kết thúc khi mọi increment của nó xong. Bảng này không ghi ngày: ngày của một mốc là ngày dự báo muộn nhất trong các increment của nó ở §0.2. CPO Dashboard (`docs/business/cpo-dashboard.html`), poster E-09 và chương kiến trúc 15 §1 đọc từ bảng này. Mỗi increment thuộc đúng một mốc.
 
 | # | Mốc | Người dùng làm được gì | Vì sao quan trọng | Increment | Ai dùng được |
 |:---:|:---|:---|:---|:---|:---|

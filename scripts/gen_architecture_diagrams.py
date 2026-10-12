@@ -486,7 +486,7 @@ def e08_deployment() -> Diagram:
         Edge("venv", "prov", "HTTPS", via=((630, 170), (630, 880), (1520, 880)), label_at=(1080, 880)),
     ]
     # Q-72 (planned): the operating agent runs 24/7 on a machine at home; chat, relay and the Hub index
-    # are outside services that never sit on the safety path (chapter 14)
+    # are outside services that never sit on the safety path (chapter 02 §6)
     d.groups.append(Group("home", 40, 920, 1180, 260, "Home machine — Pi 5 / mini PC / NAS · planned · Q-72",
                           "planned"))
     d.boxes += [

@@ -15,34 +15,31 @@ người đọc luôn tách được cái đang có trên `main` với cái mớ
 
 | Bạn là | Mục tiêu | Đọc theo thứ tự |
 |:---|:---|:---|
-| Kỹ sư mới | Chạy được hệ thống và hiểu nó trong ngày đầu | `12` → `00` → `01` → `02` → `03` |
+| Kỹ sư mới | Chạy được hệ thống và hiểu nó trong ngày đầu | [`python/README.md`](../../python/README.md) → `00` → `02` → `03` |
 | Kỹ sư lõi | Hiểu từng layer và cách chúng gọi nhau | `00` → `02` → `03` → `05` → `06` → `07` → `15` |
-| Kỹ sư nhúng | Firmware, bộ nhớ, khởi động, OTA | `02` → `04` → `05` → `06` → `14` |
-| Đối tác OEM | Port HAL lên bo mạch mới | `11` → `10` → `07` → `04` → `15` §4.1 |
-| Người duyệt an toàn, QA | Vì sao an toàn, bằng chứng ở đâu | `01` §4 → `08` → `09` → `06` → `10` |
-| Người lập kế hoạch | Cái gì đã có, cái gì tới sau | `00` → `13` → `15` |
+| Kỹ sư nhúng | Firmware, bộ nhớ, khởi động, OTA, triển khai | `02` → `04` → `05` → `06` → `02` §6 |
+| Đối tác OEM | Port HAL lên bo mạch mới | `10` §7 → `10` → `07` → `04` |
+| Người duyệt an toàn, QA | Vì sao an toàn, bằng chứng ở đâu | `00` §9.4 → `06` → `10`; yêu cầu PRD §9, quyết định PRD §15 |
+| Người lập kế hoạch | Cái gì đã có, cái gì tới sau | `00` → `15`; mốc và ngày ở roadmap §0 |
 
 ## Bản đồ tệp
 
+Q-77 (2026-10-12) gộp bộ này từ 17 xuống 10 chương: bối cảnh vào `00`, triển khai vào `02`, hướng dẫn port vào
+`10`, điểm biến thiên và nợ kiến trúc vào `15`; bỏ các chương chép lại PRD §9 (NFR), PRD §15 (ADR) và
+`python/README.md` (ngày đầu). Bản cũ: `git show f7278fc:docs/architecture/vi/<tệp>`.
+
 | Tệp | Nội dung | Góc nhìn |
 |:---|:---|:---|
-| [`00-overview.md`](vi/00-overview.md) | NeuroEdge là gì, tinh thần sản phẩm (sáu lời hứa), nguyên tắc, đặc tính kiến trúc, trạng thái | — |
-| [`01-context-c4l1.md`](vi/01-context-c4l1.md) | Người dùng, hệ thống bên ngoài, ranh giới tin cậy | C4 L1 · Context |
-| [`02-container-c4l2.md`](vi/02-container-c4l2.md) | Tiến trình, thư viện, firmware, kho tệp và cách chúng nói chuyện | C4 L2 · Container |
-| [`03-component-host-c4l3.md`](vi/03-component-host-c4l3.md) | Các gói Python, phụ thuộc thật giữa chúng, trách nhiệm từng gói | C4 L3 · Component (host) |
-| [`04-component-device-c4l3.md`](vi/04-component-device-c4l3.md) | Các component firmware ESP32-S3, trình tự khởi động, bộ nhớ | C4 L3 · Component (device) |
+| [`00-overview.md`](vi/00-overview.md) | NeuroEdge là gì, sáu lời hứa, nguyên tắc, đặc tính kiến trúc, trạng thái; §9 bối cảnh: người dùng, hệ thống ngoài, ranh giới tin cậy | Tổng quan · C4 L1 |
+| [`02-container-c4l2.md`](vi/02-container-c4l2.md) | Tiến trình, thư viện, firmware, kho tệp và cách chúng nói chuyện; §6 chạy ở đâu (máy dev, CI, gpio-sim, QEMU, Pi, Box-3) | C4 L2 · Deployment |
+| [`03-component-host-c4l3.md`](vi/03-component-host-c4l3.md) | Các gói Python, phụ thuộc thật giữa chúng, trách nhiệm từng gói | C4 L3 · host |
+| [`04-component-device-c4l3.md`](vi/04-component-device-c4l3.md) | Các component firmware ESP32-S3, trình tự khởi động, bộ nhớ | C4 L3 · device |
 | [`05-code-gate-hal-c4l4.md`](vi/05-code-gate-hal-c4l4.md) | Gate từ YAML tới chân: phân giải, cây quyết định, NETR, token, HAL | C4 L4 · Code |
-| [`06-runtime-flows.md`](vi/06-runtime-flows.md) | Các luồng lúc chạy: lượt gõ, hỏi lại, MCP, model, thoại, replay, khởi động, OTA | Dynamic |
+| [`06-runtime-flows.md`](vi/06-runtime-flows.md) | Các luồng lúc chạy: lượt gõ, hỏi lại, MCP, model, replay, khởi động, OTA | Dynamic |
 | [`07-data-contracts.md`](vi/07-data-contracts.md) | Mọi định dạng tệp và định dạng đường truyền, cách đánh phiên bản | Data |
-| [`08-nfr.md`](vi/08-nfr.md) | Yêu cầu phi chức năng → cách kiến trúc đáp ứng → bằng chứng | Quality |
-| [`09-adr.md`](vi/09-adr.md) | Nhật ký quyết định kiến trúc (ADR) và RFC | Decisions |
-| [`10-target-equivalence.md`](vi/10-target-equivalence.md) | Vì sao cùng gate cho cùng quyết định trên `sim`, `linux`, `esp32s3` | Cross-cutting |
-| [`11-hal-port-guide.md`](vi/11-hal-port-guide.md) | Port HAL lên bo mạch mới: hợp đồng, bước làm, cách chứng minh | Guide |
-| [`12-dev-quickstart.md`](vi/12-dev-quickstart.md) | Ngày đầu: cài, chạy, đọc mã, sửa lần đầu | Guide |
-| [`13-evolution-i0-i18.md`](vi/13-evolution-i0-i18.md) | Kiến trúc qua tám mốc phát hành theo người dùng, những gì không đổi, điểm mở rộng | Evolution |
-| [`14-deployment-c4.md`](vi/14-deployment-c4.md) | Chạy ở đâu: máy dev, CI, gpio-sim, QEMU, Pi, Box-3 | C4 Deployment |
-| [`15-target-architecture.md`](vi/15-target-architecture.md) | Kiến trúc mục tiêu theo chân trời (H1 v1.0, H2 v1.1, H3 sau Beta) và dải Q-72 (agent vận hành, NeuroEdge Blueprint) | C4 To-be · Horizons |
-| [`16-ecosystem-landscape.md`](vi/16-ecosystem-landscape.md) | Bức tranh hệ sinh thái, các bên tham gia, tài sản chia sẻ và mô hình thương mại | C4 System Landscape |
+| [`10-target-equivalence.md`](vi/10-target-equivalence.md) | Vì sao cùng gate cho cùng quyết định trên `sim`, `linux`, `esp32s3`; §7 port HAL lên bo mạch mới | Cross-cutting · Guide |
+| [`15-target-architecture.md`](vi/15-target-architecture.md) | Kiến trúc đích: v1.0, dải Q-72 → Q-76 (agent vận hành, Blueprint, bộ não, cloud tuỳ chọn), điểm biến thiên, nợ kiến trúc | To-be |
+| [`16-ecosystem-landscape.md`](vi/16-ecosystem-landscape.md) | Các bên tham gia, tài sản chia sẻ, nền tảng và ranh giới thương mại | System Landscape |
 
 ## Quy ước
 

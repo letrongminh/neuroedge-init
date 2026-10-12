@@ -196,7 +196,7 @@ gian (mỗi ngày hoặc khi vượt cỡ): mỗi đoạn mang trạng thái đ�
 bì, lease đang chạy) và digest của đoạn trước. Bất biến "một phiên một vết ghi" đọc lại thành "một phiên
 một chuỗi vết ghi, mỗi đoạn replay được"; đoạn thiếu lộ ra vì chuỗi digest đứt. Ghi nối tiếp, flush theo
 thời gian (khoảng 10 giây, khai được) và ngay khi có phán quyết chặn hay lời duyệt; mất điện mất tối đa
-phần đuôi sự kiện thường, `replay` báo đoạn cụt. Hạn giữ và cỡ: [`08`](08-nfr.md) §7. Đổi vỏ vết ghi
+phần đuôi sự kiện thường, `replay` báo đoạn cụt. Hạn giữ và cỡ: [PRD §9](../../../roadmap/neuroedge-prd.md#9-yêu-cầu-phi-chức-năng) Đổi vỏ vết ghi
 chuẩn mực là thay đổi cần RFC (`CONTRIBUTING.md` §3).
 
 ## 8. Định dạng trên UART
@@ -266,7 +266,7 @@ Chặn vì quá hạn hay mất nguồn dữ kiện **không phải lỗi**: đ�
 ## 12. Hợp đồng quy hoạch theo Q-72 (`planned · Q-72`)
 
 Chưa có lược đồ hay mã nào trong mục này. Thiết kế đích theo [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định); mỗi hợp đồng là một **RFC dự kiến**
-(chưa cấp số, danh sách ở [`09`](09-adr.md) §6), vì đưa một lược đồ mới vào `schemas/` hay đổi `trace.v1`,
+(chưa cấp số, danh sách ở [PRD §15](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)), vì đưa một lược đồ mới vào `schemas/` hay đổi `trace.v1`,
 `board.v1` là thay đổi cần RFC (`CONTRIBUTING.md` §3).
 
 ### 12.1 Hợp đồng nhiệm vụ — `mission.v1` (I2d)
@@ -300,7 +300,7 @@ dùng tự dựng. Mỗi đích người dùng khai — nhà cung cấp LLM, kê
 phép gửi tới nó, kể cả ảnh tới LLM nếu người dùng cho phép. Runtime quyết định LLM worker *thấy* gì và
 chỉ gửi ra đích đã khai; gửi tới đích không khai bị chặn và ghi vết. Luật nội dung (ví dụ "ảnh không rời
 nhà") là tuỳ chọn người dùng bật trong hợp đồng, không phải mặc định. Cưỡng chế ở mức mạng:
-[`08`](08-nfr.md) §2.
+[PRD §9](../../../roadmap/neuroedge-prd.md#9-yêu-cầu-phi-chức-năng)
 
 ### 12.4 Sự kiện chat và bản ghi duyệt (I2d)
 

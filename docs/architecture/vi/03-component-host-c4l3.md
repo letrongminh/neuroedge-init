@@ -250,5 +250,5 @@ có hạn chót và giới hạn kích thước.
 | Một từ đánh thức | Adapter hiện thực `WakeWordDetector` | Lõi |
 | Một mẫu agent | `python/neuroedge/templates/` | Engine |
 | Một kiểu sự kiện vết ghi | `EventLog.emit("…", data)` — `type` trong `trace.v1` là chuỗi tự do | `schemas/` (không cần RFC) |
-| Một target | Lớp con `HardwareAbstractionLayer` + profile `boards/` + vector | Engine, gate — nhưng danh sách target đóng băng tới RFC-0002 ([`11`](11-hal-port-guide.md)) |
+| Một target | Lớp con `HardwareAbstractionLayer` + profile `boards/` + vector | Engine, gate — nhưng danh sách target đóng băng tới RFC-0002 ([`10`](10-target-equivalence.md) §7) |
 | Một toán tử `allow_when` hay một kiểu tiêu chí | **Cần RFC** (`CONTRIBUTING.md` §3) | — |
