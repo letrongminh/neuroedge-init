@@ -25,7 +25,7 @@ Lộ trình tiến hoá kiến trúc của NeuroEdge được phân chia thành 
 | **Chân trời 3 (H3)** — Mở rộng sau Beta | I13, I14, I16–I18 | Bộ port cộng đồng (I13) dựa trên 3 [bậc target](../../user/thuat-ngu.md); việc mở danh sách target (trước là I11) đã gộp vào I2c ở H1 ([`Q-67`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)); **Robot phân tầng** (I14) phối hợp não Pi 5 và nhiều node MCU (ESP32-S3, RP2350) qua [black channel](../../user/thuat-ngu.md) Zenoh-pico, mỗi node tự lượng giá gate, [token thuê có hạn](../../user/thuat-ngu.md) (lease) cho `motion.*`, trạng thái an toàn khi mất liên lạc, cầu ROS 2/Nav2; **Thị giác trên `jetson` và đa phương thức** (I16, I17) mở rộng nhận thức L2 sang GPU Jetson (thị giác cơ bản trên `sim`, `linux`, `esp32s3` đã vào v1.0 — Q-53, Q-54); **Hệ sinh thái** (I18) chia sẻ adapter và port HAL trên Registry. Cần thiết để NeuroEdge mở rộng ra các hệ thống chuyển động phức tạp, tay máy và đa giác quan. NeuroEdge Lab (I4a, I5a; trước là NeuroBrain), `vision.in` (I2a, I3a) và việc mở danh sách target (I2c) đã chuyển vào H1; §4.2 và §4.4 dưới đây giữ nguyên thiết kế của chúng. | Roadmap [§7](../../../roadmap/neuroedge-roadmap.md#7-hướng-mở-rộng-sau-beta-i13-i14-i16i18), `docs/spec/lab_mcp.md`, §4.4, §4.3, [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../../rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) |
 
 ![E-10 · Kiến trúc mục tiêu theo chân trời](../assets/svg/E-10-target-horizons.svg)
-*Hình E-10 — Năm dải: hiện trạng trên main, dải Q-72 (I2d, I2e) và ba chân trời; khối nét đứt là planned. Sinh bởi scripts/gen_architecture_diagrams.py.*
+*Hình E-10 — Sáu dải: hiện trạng trên main, ba chân trời, dải Q-72 (I2d, I2e) và dải Q-73 / Q-74 (bước xác minh, não trên cloud, mạng lưới đa nút — I2d, I2f, §6.10); khối nét đứt là planned. Sinh bởi scripts/gen_architecture_diagrams.py.*
 
 *Cách đọc hình E-10:* Hình biểu diễn các dải ngang tương ứng với hiện trạng mã nguồn trên nhánh `main`, dải Q-72 (`planned · Q-72`, §6) và ba chân trời quy hoạch nối tiếp nhau. Khối nét liền đã có mã (◐ là một phần), khối nét đứt là planned. Các nhãn nối giữa dải (same walker + ledger, verify on chip, no paid safety) cho thấy chân trời sau dùng lại walker, sổ token và gate của chân trời trước.
 
@@ -657,6 +657,34 @@ gói và bán Blueprint của mình. Đạt ① ② mà trượt ③ thì NeuroE
 phí và mọi sàn có thu phí chỉ đến sau cổng này ([`16`](16-ecosystem-landscape.md) §7).
 
 ---
+
+### 6.10 Não trên cloud tuỳ chọn, mạng lưới đa nút và bước xác minh (`planned · Q-73, Q-74`)
+
+[`Q-74`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) dùng đúng ranh giới của §6.1 để dời **LLM worker** (trò chuyện, đề xuất, biên dịch hợp
+đồng nhiệm vụ) lên **NeuroEdge Cloud tuỳ chọn**; **runtime tin cậy luôn ở nhà**. Chưa có mã; bước 2 của Q-74 chỉ
+mở sau cổng nhu cầu (§6.9) nếu số đo cần.
+
+```
+ 📱 một ô chat (nhiều người, có vai trò — FR-CH-07)
+        │
+ ☁️ NeuroEdge Cloud (tuỳ chọn): LLM worker, trò chuyện, lập kế hoạch, biên dịch luật
+        │  hộp tại nhà mở kết nối ra; không mở cổng mạng nhà
+ 🏠 hộp tại nhà — runtime tin cậy (Pi / add-on Home Assistant) hoặc ESP32-S3 cho một việc
+        │  luật có chữ ký; lời duyệt kiểm tại nút
+ ESP32 có `ne_gate` · Pi · thiết bị qua Home Assistant — mỗi nút tự giữ luật, tự về `safe_state`
+```
+
+- **Cloud điều phối, không có quyền tối cao.** Mỗi nút chỉ thi hành luật có chữ ký; lời duyệt (FR-CH-04) kiểm
+  tại nút; việc không hoàn tác ở bất kỳ nhà nào luôn cần người xác nhận; một lệnh không chạm quá trần số thiết
+  bị hay số nhà khai sẵn (FR-AGT-11). Cloud bị chiếm thì cửa vẫn không mở.
+- **Hai bậc hộp tại nhà.** *Đầy đủ* — Pi hoặc add-on Home Assistant (camera, nhiều hãng, vết ghi 30 ngày §6.7, LLM
+  tại chỗ tuỳ chọn). *Nhỏ* — ESP32-S3: walker `NETR`, sổ token, phản xạ, kiểm lời duyệt trên chip; luật biên dịch ở
+  cloud và nạp có ký (cần Wi-Fi thật, `TODOS.md` #50); vết ghi đẩy lên cloud đã mã hoá hoặc thẻ SD.
+- **Mất kết nối cloud** ⇒ phản xạ, gate và cảnh báo tại chỗ vẫn chạy; chỉ mất trò chuyện và tóm tắt.
+- **Bước xác minh do người dùng khai** ([`Q-73`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), FR-CH-06, chờ RFC TSK-I2d-20): đọc mã, giọng
+  nói, khuôn mặt, bàn phím, vân tay trên điện thoại… qua plugin bộ kiểm; mỗi cách mang nhãn rủi ro. LLM, client
+  MCP và nguồn tự động không bao giờ trả lời bước xác minh.
+- **Việc theo dõi:** hộp dễ cài TSK-I2e-12, TSK-I2e-13; bước xác minh TSK-I2d-20, TSK-I2d-21; cloud, bậc ESP32, mạng lưới và vai trò theo người: increment I2f (có điều kiện, roadmap §4.3.6).
 
 ## 7. Nguồn
 

@@ -399,6 +399,23 @@ hai hướng đều nguy hiểm (sục khí quá nhiệt): proposal Q-72 đề x
 Ranh giới Q-38 giữ nguyên: bảo vệ khỏi nguy hiểm luôn do phần cứng; NeuroEdge không bao giờ là lớp bảo vệ duy nhất
 (§3b).
 
+## 2k. Trong phạm vi: NeuroEdge Cloud bị chiếm, mạng lưới đa nút (Q-74) — dự kiến
+
+**Tài sản:** mọi nhà và mọi nút nối vào một tài khoản. **Kẻ tấn công:** chiếm được NeuroEdge Cloud, hoặc tài khoản
+của người dùng trên đó. **Mục tiêu của họ:** một lệnh mở mọi khoá, tắt mọi báo động.
+
+**Bảo vệ (thiết kế, chưa có mã — `docs/architecture/vi/15-target-architecture.md` §6.10):**
+- Cloud chỉ chạy LLM worker và trò chuyện; **không giữ quyền phần cứng**. Mỗi nút chỉ thi hành luật có chữ ký và
+  lời duyệt kiểm tại nút (FR-CH-04, FR-AGT-10).
+- Việc không hoàn tác ở bất kỳ nhà nào cần người xác nhận; bước xác minh do người dùng chọn (Q-73) không bao giờ
+  được LLM hay nguồn tự động trả lời.
+- Trần phạm vi và tốc độ cho một lệnh; vượt trần hoặc bất thường thì nút tự khoá và báo (FR-AGT-11).
+- Mất kết nối cloud ⇒ an toàn tại chỗ vẫn chạy.
+
+**Rủi ro còn lại, nói thẳng:** cloud bị chiếm vẫn đọc được dữ liệu người dùng đã khai cho cloud (ảnh, tóm tắt)
+và vẫn ra được những lệnh mà luật cho phép không cần duyệt (bật đèn…). Khoá ký luật nằm ở đâu là câu hỏi của RFC
+TSK-I2f-01 (roadmap §4.3.6).
+
 ## 3. Ngoài phạm vi: kẻ giả mạo trong cùng tiến trình
 
 Token là `(nonce, digest)` trong bộ nhớ. Mã chạy **trong cùng tiến trình** đọc được

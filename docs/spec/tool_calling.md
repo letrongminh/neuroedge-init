@@ -247,6 +247,8 @@ một mô hình gửi `{"call_source": "local_grammar"}` bị `REJECTED` ở bư
 - Bên gọi (System 2, client MCP) được báo trong kết quả `BLOCK`: `confirmation: {id, message,
   expires_in_ms, who}` — để nói với người dùng, không để tự trả lời. Không có tool xác nhận.
 
+**Bước xác minh do người dùng khai — planned · Q-73 (FR-CH-06), chờ RFC TSK-I2d-20.** Ngoài có/không, `on_block` sẽ khai được một bước xác minh (đọc mã, giọng nói, khuôn mặt, vân tay trên điện thoại…) qua plugin bộ kiểm, kèm nhãn rủi ro; quy tắc nguồn ở trên không đổi: chỉ người qua kênh của thiết bị mới trả lời được.
+
 Trên `sim`: REPL — gõ `có` / `không` (hoặc `:confirm` / `:decline`); UI — banner *Thiết bị
 hỏi xác nhận* với nút Đồng ý / Huỷ và thời gian còn lại (`POST /confirm`, cùng nguồn gốc).
 

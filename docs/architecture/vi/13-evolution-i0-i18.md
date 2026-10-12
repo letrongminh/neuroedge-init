@@ -19,7 +19,7 @@ Vì thế mỗi mốc ở §3 trả lời bốn câu hỏi theo cùng một th�
 hợp đồng nào đổi, và **lời hứa an toàn nào được chứng minh lại** trên phạm vi mới.
 
 ![E-09 · Tiến hoá theo mốc](../assets/svg/E-09-evolution.svg)
-*Hình E-09 — Mười mốc phát hành, mỗi mốc gom các increment của nó; trạng thái, tiến độ và ngày dự báo
+*Hình E-09 — Mười mốc phát hành (mốc 9 thêm I2f có điều kiện, Q-74), mỗi mốc gom các increment của nó; trạng thái, tiến độ và ngày dự báo
 đọc từ roadmap §0.2 lúc sinh hình.*
 
 Mốc 6 (**ra mắt công khai**) là lần đầu người ngoài dùng được; mốc 7 (**v1.0**) là lần đầu đủ tin cậy để
@@ -192,9 +192,13 @@ Phần còn lại của mốc này là `planned · Q-72` ([`Q-72`](../../../road
 - **Lời hứa được chứng minh bằng:** số đo thật, không phải giả định, quyết hướng thương mại (điểm rẽ,
   roadmap §5.6; Q-41).
 
-### Mốc 9 — Vận hành đội thiết bị *(I9, I10)*
+### Mốc 9 — Một ô chat cho nhiều thiết bị, vận hành đội thiết bị *(I2f, I9, I10)*
 
-- **Người dùng làm được:** cập nhật hàng nghìn thiết bị theo đợt, kéo vết ghi sự cố từ xa, dùng chung gate
+- **I2f — NeuroEdge Cloud và hộp tại nhà ESP32** (có điều kiện, Q-74; mở sau cổng nhu cầu nếu số đo cần). Người dùng chat với
+  một agent trông nhiều ESP32, nhiều Pi, nhiều nhà, nhiều người có vai trò. **Kiến trúc thêm:** LLM worker và trò chuyện
+  dời lên cloud tuỳ chọn theo đúng ranh giới runtime / worker của I2d; runtime tin cậy ở hộp tại nhà (Pi, add-on Home
+  Assistant) hoặc ESP32-S3 nhận luật có ký; mỗi nút tự giữ luật → [`15`](15-target-architecture.md) §6.10. `planned`.
+- **Người dùng làm được (I9, I10):** cập nhật hàng nghìn thiết bị theo đợt, kéo vết ghi sự cố từ xa, dùng chung gate
   qua registry có ký.
 - **Kiến trúc thêm:** **container đầu tiên phía máy chủ.** Fleet OS: điều phối OTA theo đợt (Hawkbit, Q-11),
   broker MQTT giấy phép dễ dãi, kho vết ghi sự cố (Q-6), cấp phát danh tính thiết bị (TSK-K2-04), lớp
