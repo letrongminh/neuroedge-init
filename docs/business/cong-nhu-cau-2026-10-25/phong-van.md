@@ -143,6 +143,24 @@ làm thiết bị cho người khác**. Đây là phân khúc người dùng đ�
 | MK9 | Bạn đã cho LLM hay trợ lý giọng nói điều khiển thiết bị nào chưa? Có lần nào nó làm sai một việc vật lý không? | `P1` · `CEO-X4` | Một lần sai cụ thể, hậu quả | "Chưa thử" |
 | MK10 | Có thiết bị nào mà **tắt** thì nguy hiểm hơn bật (sục khí bể cá, bơm, sưởi vật nuôi)? Khi mất mạng hay mất điện, hôm nay nó làm gì? Đã có chuyện gì vì thế chưa? | `CEO-T1` | Sự cố có ngày, có hậu quả (cá chết, cây héo) | "Chưa nghĩ tới" |
 
+### 5c. Thử thông điệp (Maker; sau MK10, trước E3)
+
+Đây là lúc đầu tiên được nhắc tới NeuroEdge. Đặt ba thẻ lên bàn, mỗi thẻ đúng một câu; **không** giải thích
+thêm, **không** nói thẻ nào là của mình. Thứ tự thẻ xoay vòng giữa các cuộc (cuộc 1: A-B-C, cuộc 2: B-C-A…)
+để thứ tự không quyết thay người nghe. Câu chữ là bản thử của review định vị 2026-10-12; quyết định cuối
+sau cổng: `TODOS.md` #67.
+
+| Thẻ | Câu | Góc |
+|:---:|:---|:---|
+| A | "Runtime cho AI điều khiển đồ thật." | Hạng mục (như các runtime cho agent phần mềm) |
+| B | "AI nói hay. Thiết bị phải làm đúng." | Nỗi đau: model trò chuyện tốt nhưng làm hỏng hành động vật lý |
+| C | "Thử thiết bị AI trên giả lập trước khi nó chạm vào đời thật." | Một việc làm chủ: giả lập, phát lại |
+
+| # | Hỏi | Mã | Mạnh | Yếu |
+|:---:|:---|:---|:---|:---|
+| MS1 | "Câu nào khiến bạn muốn thử ngay? Vì sao?" | `M-MSG` (chọn) | Chọn một thẻ và nối nó với một chuyện đã kể ở MK9 hay MK10 | "Câu nào cũng hay" |
+| MS2 | Cuối buổi, sau E4: "Nếu kể cho một người bạn, bạn sẽ nói NeuroEdge là gì?" | `M-MSG` (kể lại) | Kể lại đúng ý một thẻ bằng lời của họ | Lặp lại nguyên văn, hoặc kể sai |
+
 ## 6. Kết chung (mọi phân khúc)
 
 | # | Hỏi | Mã | Mạnh | Yếu |

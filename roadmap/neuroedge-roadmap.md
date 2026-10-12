@@ -1255,6 +1255,7 @@ Toàn bộ các quyết định kiến trúc đã chốt (`Q-1` đến `Q-75`) �
 | Trước task mã của từng RFC | Q-72 | Viết và duyệt RFC cho `TODOS.md` #58, 5 RFC của I2d và `blueprint.v1` của I2e | Không RFC thì không có mã cho định dạng mới | Kỹ thuật trưởng | ⏳ Đang mở |
 | Trước task kênh xác nhận của I2d | Q-73 | Viết và duyệt RFC bước xác minh và luồng nhiều bước do người dùng khai (TSK-I2d-20) | Bản ghi duyệt qua chat dùng cùng đường xác nhận | Kỹ thuật trưởng | ⏳ Đang mở |
 | Kết quả cổng nhu cầu 2026-12-06 | Q-74 | Mở I2f — NeuroEdge Cloud (não trên cloud, thuê bao) và hộp ESP32 — hay giữ ⏸ (§4.3.6) | Chỉ mở khi số đo cho thấy người thử vướng ở cài đặt hay tự host | Chủ sản phẩm | ⏳ Đang mở |
+| Kết quả cổng nhu cầu 2026-12-06 | `TODOS.md` #67 | Chốt câu định vị (dự kiến Q-76): ba thẻ thử trong phỏng vấn Maker | Thông điệp ngoài giữ nguyên tới khi có số liệu người nghe | Chủ sản phẩm | ⏳ Đang mở |
 | Trước TSK-I2d-12 | `TODOS.md` #62 | Vòng đời ghép đôi kênh chat: ghép tại chỗ, thu hồi, trần duyệt | Tài khoản chat bị chiếm thì duyệt thay chủ | Chủ sản phẩm | ⏳ Đang mở |
 | Trước G3 dùng cho B7/A16 | Q-21, Q-69 | Chọn tầng G3 (firmware ESP32 giả lập): Wokwi, QEMU, `esp-emulator` | Q-72 đưa G3 vào cổng 8 tuần | Kỹ thuật trưởng | ⏳ Đang mở |
 | Trước khi I10 mở | Q-5 | Xác thực và chống lạm dụng cho Registry công khai | Cần trước khi thiết kế Khối 3 | Kỹ thuật nền tảng | ⏳ Đang mở |
