@@ -55,8 +55,8 @@ fi
 
 STAGE="$(mktemp -d)"; trap 'rm -rf "$STAGE"' EXIT
 mkdir -p "$STAGE/khoa"
-cp "$HERE/cau-noi.py" "$HERE/chay-nao.sh" "$STAGE/"
-cp -r "$HERE/picoclaw" "$STAGE/"
+cp "$HERE/chay-nao.sh" "$STAGE/"
+cp -r "$HERE/neuroclaw" "$STAGE/"
 cp "$K/ca.pem" "$K/nao.pem" "$K/nao.key" "$K/nao.token" "$STAGE/khoa/"
 printf 'OPENROUTER_API_KEY=%s\nTELEGRAM_BOT_TOKEN=%s\nTELEGRAM_OWNER_ID=%s\n' \
   "$OPENROUTER_API_KEY" "$TELEGRAM_BOT_TOKEN" "$TELEGRAM_OWNER_ID" > "$STAGE/.env.txt"
@@ -76,7 +76,7 @@ if [ -n "$AUTHKEY" ]; then  # VPS thật: vào tailnet; OrbStack: đã thấy Ma
 fi
 cat > /etc/systemd/system/neuroedge-nao.service <<UNIT
 [Unit]
-Description=NeuroEdge brain (trimmed PicoClaw) for the chat-den-cua demo
+Description=NeuroEdge brain (NeuroClaw) for the chat-den-cua demo
 After=network-online.target tailscaled.service
 Wants=network-online.target
 

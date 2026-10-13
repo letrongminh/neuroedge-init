@@ -1,16 +1,19 @@
 """
 Demo "chat điều khiển đèn và cửa qua NeuroEdge Cloud" (`demo/i2f-chat-den-cua/`).
 
-The brain is a trimmed PicoClaw on a VPS; the box at home is `neuroedge mcp serve --http --ui`.
+The brain is NeuroClaw (Q-78, a hard fork of PicoClaw) on a VPS; the box at home is
+`neuroedge mcp serve --http --ui`.
 What the door itself guarantees is in `test_mcp_http.py` §4. These show the two other halves:
 
   * the brain's configuration has no road to the world except the box's MCP tools: no shell (not
     even through cron or hooks), no i2c/spi/serial, no skill installs, no other MCP server
     (`test_the_brain_has_no_road_to_the_world_but_the_boxs_tools`);
-  * the demo's own keys and bridge carry a header-only client, as PicoClaw's MCP client is, to
+  * the demo's keys and `cau-noi.py` carry a header-only client (original PicoClaw, or any MCP
+    client without client certificates) to
     the box over mTLS, and the session replays (`test_a_header_only_brain_reaches_the_box_...`).
 
-PicoClaw itself is not run here (Go, an LLM and a Telegram bot); the guide's manual checks cover it.
+NeuroClaw itself is not run here (Go, an LLM and a Telegram bot): its own CI tests mTLS and the
+lockdown (github.com/letrongminh/neuroclaw); the guide's manual checks cover the rest.
 """
 
 from __future__ import annotations
@@ -51,13 +54,13 @@ def _load(path: Path):
 
 # --- the brain -----------------------------------------------------------------------------
 
-# every PicoClaw tool (v0.3.1, `pkg/config/config.go` ToolsConfig) that reaches past the
+# every PicoClaw v0.3.1 tool (`pkg/config/config.go` ToolsConfig) that reaches past the
 # workspace and the chat: a shell, a bus, a port, or code fetched from elsewhere
 CLOSED = ("exec", "i2c", "spi", "serial", "install_skill", "find_skills")
 
 
 def test_the_brain_has_no_road_to_the_world_but_the_boxs_tools(root):
-    config = json.loads((_demo(root) / "picoclaw" / "config.json").read_text())
+    config = json.loads((_demo(root) / "neuroclaw" / "config.json").read_text())
     tools = config["tools"]
 
     for name in CLOSED:
@@ -78,7 +81,9 @@ def test_the_brain_has_no_road_to_the_world_but_the_boxs_tools(root):
     assert list(servers) == ["neuroedge"]
     assert all("command" not in server for server in tools["mcp"]["servers"].values())
     assert servers["neuroedge"]["type"] == "http"
-    assert servers["neuroedge"]["url"].startswith("http://127.0.0.1:")
+    # NeuroClaw speaks mTLS itself (Q-78): https, the box's CA, the brain's certificate
+    assert servers["neuroedge"]["url"].startswith("https://")
+    assert set(servers["neuroedge"]["tls"]) >= {"ca_file", "cert_file", "key_file"}
 
     # what the goal keeps: chat, LLM, memory, files, cron, heartbeat, web, message, subagents
     assert config["channel_list"]["telegram"]["enabled"] is True
@@ -89,7 +94,7 @@ def test_the_brain_has_no_road_to_the_world_but_the_boxs_tools(root):
 
 
 def test_no_secret_is_committed_with_the_brain(root):
-    folder = _demo(root) / "picoclaw"
+    folder = _demo(root) / "neuroclaw"
     text = (folder / "config.json").read_text()
     for marker in ("sk-", "api_key", '"token"'):
         assert marker not in text, marker
@@ -193,7 +198,7 @@ def test_a_header_only_brain_reaches_the_box_through_the_bridge_and_the_session_
     bridge = Bridge(_load(demo / "cau-noi.py"), keys, box["port"])
 
     async def brain():
-        # PicoClaw's client: plain HTTP to the bridge, the token in a header, no certificate
+        # a client like original PicoClaw's: plain HTTP to the bridge, a token, no certificate
         headers = {"Authorization": f"Bearer {token}"}
         async with (
             httpx2.AsyncClient(headers=headers, timeout=TIMEOUT) as http,

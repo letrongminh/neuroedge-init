@@ -83,9 +83,15 @@
         "neuroedge": {
           "enabled": true,
           "type": "http",
-          "url": "http://127.0.0.1:8444/mcp",
+          "url": "https://DIA_CHI_HOP:8443/mcp",
           "headers": {
             "Authorization": "Bearer NOI_DUNG_NAO_TOKEN"
+          },
+          "tls": {
+            "ca_file": "KHOA/ca.pem",
+            "cert_file": "KHOA/nao.pem",
+            "key_file": "KHOA/nao.key",
+            "server_name": "localhost"
           }
         }
       }

@@ -10,22 +10,22 @@
 > **Thời lượng:** 6–8 phút. **Cần:** một VPS Linux, một laptop làm hộp, Tailscale trên cả
 > hai, một bot Telegram, một key LLM (OpenRouter).
 
-Chủ nhà nhắn Telegram cho **bộ não**: một bản PicoClaw rút gọn chạy trên VPS, đóng vai
+Chủ nhà nhắn Telegram cho **bộ não**: NeuroClaw (Q-78, fork cứng của PicoClaw v0.3.1,
+[`letrongminh/neuroclaw`](https://github.com/letrongminh/neuroclaw)) chạy trên VPS, đóng vai
 NeuroEdge Cloud cho một người dùng (Q-76). Bộ não chạm thiết bị bằng đúng một đường: ba tool
 MCP của **hộp tại nhà** (`neuroedge mcp serve --http --ui --target sim`). Hộp giữ luật: đèn
 bật tắt tự do; cửa hỏi chủ nhà trên trang tại nhà, mở 30 giây rồi tự khoá.
 
 ```text
- Telegram ──► VPS: PicoClaw (bộ não)                       Laptop: hộp tại nhà
-              │ tool MCP "neuroedge"                       neuroedge mcp serve --http --ui
-              └─► http://127.0.0.1:8444 ─► cau-noi.py ══ Tailscale, TLS 1.3 + mTLS + token ══►  :8443
+ Telegram ──► VPS: NeuroClaw (bộ não) ══ Tailscale, TLS 1.3 + mTLS + token ══► Laptop: hộp tại nhà :8443
                                                                                   │
                                                        trang 127.0.0.1:8765 ◄─────┘ (chủ nhà bấm duyệt)
 ```
 
-Vì sao có `cau-noi.py`: client MCP HTTP của PicoClaw chỉ thêm header, không trình được
-chứng chỉ client (`pkg/mcp/manager.go`). Hộp đòi mTLS. Cầu nối giữ nguyên luật của hộp thay
-vì nới nó; nó chỉ nghe trên 127.0.0.1 của VPS.
+NeuroClaw tự trình chứng chỉ của bộ não (`tls` trong `neuroclaw/config.json`), luôn tắt shell,
+phần cứng, cài skill, lệnh trong cron và hook dù cấu hình ghi gì, và nói rõ với LLM khi hộp hỏi
+chủ nhà. `cau-noi.py` vẫn giữ cho worker không trình được chứng chỉ (PicoClaw gốc và các client
+MCP tương tự); lần chạy ngày 2026-10-13 ở §6b dùng đường đó, trước khi có NeuroClaw.
 
 > [!IMPORTANT]
 > **Điều không được nói:** hệ thống đã điều khiển khoá thật (đây là `sim`; đèn LED thật chỉ
@@ -64,9 +64,9 @@ bash demo/i2f-chat-den-cua/dung-vps.sh
 Script SSH vào VPS, cài Tailscale (vào tailnet bằng `TAILSCALE_AUTHKEY`), chép đúng những gì bộ
 não cần — ba biến (key LLM, bot Telegram, ID chủ nhà) và bốn tệp `ca.pem`, `nao.pem`,
 `nao.key`, `nao.token`; **không bao giờ** `issuer.key` hay `hop.key` — rồi bật dịch vụ
-`neuroedge-nao`. Dịch vụ chạy `chay-nao.sh`: tải PicoClaw v0.3.1, dựng cấu hình từ
-`picoclaw/config.json` (bí mật vào `.security.yml`, quyền 600), mở `cau-noi.py` và chạy
-`picoclaw gateway`. Trạng thái của bộ não (trí nhớ, phiên, cron) ở `/var/lib/neuroedge-nao`.
+`neuroedge-nao`. Dịch vụ chạy `chay-nao.sh`: tải NeuroClaw (bản phát hành), dựng cấu hình từ
+`neuroclaw/config.json` với địa chỉ hộp, khoá mTLS và bí mật (quyền 600), rồi chạy
+`neuroclaw gateway`. Trạng thái của bộ não (trí nhớ, phiên, cron) ở `/var/lib/neuroedge-nao`.
 Điều khiển: `dung-vps.sh stop|start|restart|logs`.
 
 **Không có VPS:** máy Linux của OrbStack trên chính Mac đóng vai cloud. Tạo máy bằng
@@ -76,9 +76,10 @@ Mac), bộ não gọi qua `host.orb.internal`. Đã chạy (2026-10-13): `dung-v
 máy Orb, PicoClaw gateway nối hộp qua mTLS và log ghi `Listed tools … toolCount=3`. Đây là một
 máy ảo trên cùng laptop, không phải cloud thật: nói rõ điều đó khi trình bày.
 
-Biến môi trường `PICOCLAW_TOOLS_*` ghi đè `config.json`, nên trước khi chạy phải không còn biến nào.
-Cấu hình tắt: `exec`, `i2c`, `spi`, `serial`, `install_skill`, `find_skills`, lệnh shell
-trong cron (`cron.allow_command`), hook tiến trình, theo dõi USB; tệp chỉ trong workspace
+NeuroClaw luôn tắt `exec`, `i2c`, `spi`, `serial`, `install_skill`, `find_skills`, lệnh shell
+trong cron, hook tiến trình, theo dõi USB, registry skill và MCP stdio, dù `config.json` hay biến
+`NEUROCLAW_*` ghi gì (`pkg/config/lockdown.go` của NeuroClaw). `neuroclaw/config.json` vẫn ghi
+tắt từng mục cho người đọc thấy; tệp chỉ trong workspace
 (`allow_read_paths` và `allow_write_paths` rỗng); một MCP server duy nhất là hộp. Giữ: chat,
 LLM, trí nhớ, phiên, tệp, cron, heartbeat, tìm web, gửi tin, skill có sẵn, agent con. Test
 `test_the_brain_has_no_road_to_the_world_but_the_boxs_tools` giữ đúng danh sách này.
@@ -169,6 +170,17 @@ Orb, tức cùng bộ não, cùng cấu hình và cùng MCP, chỉ khác là kh�
 | 5 | Cùng `config.json` chạy trên laptop (`chay-nao.sh 127.0.0.1:8443 agent -m …`): đèn bật, tắt ALLOW; mở cửa BLOCK trên `owner_confirmed` và hỏi, như bản trên Orb |
 | 6 | Dừng hộp, `neuroedge replay ~/neuroedge-demo-vet-ghi.json`: 18 phán quyết (13 ALLOW, 5 BLOCK; 13 lời gọi `mcp`, 2 `local_grammar`; 3 lần duyệt `ui`) → `✓ decisions match the recording` |
 
+
+## 6c. NeuroClaw thay PicoClaw (2026-10-13, Q-78)
+
+NeuroClaw chạy trên laptop, nối thẳng hộp `--http --ui` bằng mTLS (không cầu nối), LLM thật qua
+OpenRouter, cấu hình cố tình bật lại `tools.exec`:
+
+| Câu | Kết quả |
+|:---|:---|
+| "bật đèn phòng khách" | `living_light_on` qua `mcp`, ALLOW, `porch_light` bật |
+| "mở cửa cho khách" | BLOCK trên `owner_confirmed`, hộp hỏi `confirm_1`; bộ não trả lời "Yêu cầu mở cửa đang chờ xác nhận" thay vì báo đã mở |
+| "chạy lệnh uname -a giúp tôi" | Từ chối; log khởi động ghi `NeuroClaw lockdown: turned off … tools.exec` |
 
 ## 7. Năm kiểm thử thủ công: bộ não đã khoanh vùng vẫn là một agent đủ
 
