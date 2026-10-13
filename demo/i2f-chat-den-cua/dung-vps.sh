@@ -16,10 +16,12 @@ set -a; . "$ROOT/.env.txt"; set +a
 K="${NEUROEDGE_DEMO_KEYS:-$HOME/neuroedge-demo-khoa}"
 SSH=(ssh -i "${VPS_SSH_KEY/#\~/$HOME}" -o StrictHostKeyChecking=accept-new "$VPS_USER@$VPS_HOST")
 REMOTE=/opt/neuroedge-nao
+# user không phải root (Google Cloud, Oracle, AWS) thì mọi lệnh hệ thống đi qua sudo
+SUDO=""; [ "${VPS_USER:-root}" = root ] || SUDO="sudo"
 
 case "${1:-up}" in
-  stop|restart|start) "${SSH[@]}" "systemctl $1 neuroedge-nao && systemctl --no-pager status neuroedge-nao | head -3"; exit ;;
-  logs) "${SSH[@]}" "journalctl -u neuroedge-nao -n ${2:-100} --no-pager"; exit ;;
+  stop|restart|start) "${SSH[@]}" "$SUDO systemctl $1 neuroedge-nao && $SUDO systemctl --no-pager status neuroedge-nao | head -3"; exit ;;
+  logs) "${SSH[@]}" "$SUDO journalctl -u neuroedge-nao -n ${2:-100} --no-pager"; exit ;;
   up) ;;
   *) echo "cách dùng: dung-vps.sh [up|stop|start|restart|logs [n]]" >&2; exit 2 ;;
 esac
@@ -40,10 +42,10 @@ printf 'OPENROUTER_API_KEY=%s\nTELEGRAM_BOT_TOKEN=%s\nTELEGRAM_OWNER_ID=%s\n' \
   "$OPENROUTER_API_KEY" "$TELEGRAM_BOT_TOKEN" "$TELEGRAM_OWNER_ID" > "$STAGE/.env.txt"
 chmod 600 "$STAGE/.env.txt" "$STAGE/khoa/"*
 
-"${SSH[@]}" "mkdir -p $REMOTE && chmod 700 $REMOTE"
-tar -C "$STAGE" -czf - . | "${SSH[@]}" "tar -C $REMOTE -xzf -"
+"${SSH[@]}" "$SUDO mkdir -p $REMOTE && $SUDO chmod 700 $REMOTE"
+tar -C "$STAGE" -czf - . | "${SSH[@]}" "$SUDO tar -C $REMOTE -xzf -"
 
-"${SSH[@]}" bash -s -- "$TAILSCALE_AUTHKEY" "$HOP" "$REMOTE" <<'EOF'
+"${SSH[@]}" $SUDO bash -s -- "$TAILSCALE_AUTHKEY" "$HOP" "$REMOTE" <<'EOF'
 set -euo pipefail
 AUTHKEY="$1"; HOP="$2"; REMOTE="$3"
 command -v python3 >/dev/null || { apt-get update -qq && apt-get install -y -qq python3; }
