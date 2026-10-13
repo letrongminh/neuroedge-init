@@ -69,6 +69,13 @@ não cần — ba biến (key LLM, bot Telegram, ID chủ nhà) và bốn tệp 
 `picoclaw gateway`. Trạng thái của bộ não (trí nhớ, phiên, cron) ở `/var/lib/neuroedge-nao`.
 Điều khiển: `dung-vps.sh stop|start|restart|logs`.
 
+**Không có VPS:** máy Linux của OrbStack trên chính Mac đóng vai cloud. Tạo máy bằng
+`orb create ubuntu neuroedge-nao`, rồi đặt `VPS_ORB=neuroedge-nao` trong `.env.txt`; khi đó không
+cần `VPS_HOST`, SSH hay Tailscale. Hộp chạy `chay-hop.sh --local` (chỉ nghe trên 127.0.0.1 của
+Mac), bộ não gọi qua `host.orb.internal`. Đã chạy (2026-10-13): `dung-vps.sh` bật dịch vụ trong
+máy Orb, PicoClaw gateway nối hộp qua mTLS và log ghi `Listed tools … toolCount=3`. Đây là một
+máy ảo trên cùng laptop, không phải cloud thật: nói rõ điều đó khi trình bày.
+
 Biến môi trường `PICOCLAW_TOOLS_*` ghi đè `config.json`, nên trước khi chạy phải không còn biến nào.
 Cấu hình tắt: `exec`, `i2c`, `spi`, `serial`, `install_skill`, `find_skills`, lệnh shell
 trong cron (`cron.allow_command`), hook tiến trình, theo dõi USB; tệp chỉ trong workspace
