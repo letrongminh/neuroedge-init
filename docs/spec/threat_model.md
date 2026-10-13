@@ -212,7 +212,8 @@ cho đúng chứng chỉ đó. Những gì cửa mạng **không** làm được
   client ở xa chỉ mở được câu hỏi `ask`, không trả lời được (`test_the_door_never_opens_from_the_cloud_without_the_owner_at_home`).
 - **Chứng chỉ và token nằm trên máy bộ não.** NeuroClaw (Q-78) tự trình chứng chỉ; worker không trình được (PicoClaw
   gốc…) đi qua `cau-noi.py` (`demo/i2f-chat-den-cua/`), phía HTTP chưa mã hoá chỉ nghe trên loopback của máy bộ não.
-  Ai chiếm được máy bộ não giữ cả chứng chỉ lẫn token, tức chỉ có quyền *hỏi* như chính bộ não (§2k).
+  Ai chiếm được máy bộ não giữ cả chứng chỉ lẫn token, tức chỉ có quyền *hỏi* hộp như chính bộ não (§2k); bộ não
+  bật `exec` (Q-80, `risk=shell`) thì kẻ đó còn chạy được lệnh trên máy của bộ não, nhưng vẫn chỉ *hỏi* được hộp.
 - **Chưa thử trên hai máy thật.** Test chạy trong một tiến trình trên 127.0.0.1 với CA tạm sinh lúc chạy. Demo
   2026-10-13 đi qua hai hệ điều hành (máy Linux của OrbStack gọi tới macOS), vẫn trên cùng một laptop.
 
@@ -338,11 +339,11 @@ khác viết (tin chat, dữ liệu, trang web) nên coi như **đã bị prompt
 
 | Đường tắt | Chặn bởi | Kết quả | Test |
 |:---|:---|:---|:---|
-| Prompt injection chiếm worker rồi ra lệnh thiết bị | Worker là bên gọi không tin cậy như §2b: chỉ gửi được yêu cầu, mọi yêu cầu qua `dispatch()` → gate; worker không giữ HAL hay quyền thiết bị | `BLOCK` / `REJECTED` theo gate | chưa có — I2d |
+| Prompt injection chiếm worker rồi ra lệnh thiết bị | Worker là bên gọi không tin cậy như §2b: chỉ gửi được yêu cầu, mọi yêu cầu qua `dispatch()` → gate; worker không giữ HAL hay quyền thiết bị. NeuroClaw có shell và bus phần cứng (Q-80): tắt chúng, hoặc chạy worker dưới user riêng không có quyền thiết bị (TSK-I2d-24); bật trên cùng máy với runtime mà không cô lập thì `risk=shell` / `risk=hardware_bus` ghi lúc khởi động | `BLOCK` / `REJECTED` theo gate | chưa có — I2d |
 | Worker tự khai nguồn, giả làm người hay giả làm `chat:<id>` | Nguồn do runtime gán theo kết nối, không phải tham số; nguồn của worker ∉ `HUMAN_SOURCES` | `REJECTED` / `tool_confirm_rejected` | chưa có — I2d |
 | Worker sửa hợp đồng nhiệm vụ | Worker chỉ **đề xuất**; sửa đổi thành bản ghi duyệt chờ người (§2e) | Không có đường khoá | chưa có — I2d |
 | Đánh cắp key BYOK | Key chỉ ở tiến trình worker (user riêng); runtime không giữ, không ghi vào vết ghi, không đi qua relay; NeuroEdge không giữ key trên máy chủ nào | **Rủi ro còn lại:** ai chiếm được user của worker hay quyền root máy nhà đọc được key. Giới hạn thiệt hại bằng hạn mức chi tiêu đặt ở nhà cung cấp | chưa có — I2d |
-| Worker bị lừa gửi dữ liệu hay key tới nơi lạ | Mạng của worker bị chặn **ở mức hệ điều hành**, chỉ tới endpoint nhà cung cấp đã khai (user riêng và luật tường lửa, hoặc proxy của runtime) | Bị chặn, ghi vết `egress_blocked` | chưa có — I2d |
+| Worker bị lừa gửi dữ liệu hay key tới nơi lạ | Mạng của worker bị chặn **ở mức hệ điều hành**, chỉ tới endpoint nhà cung cấp đã khai (user riêng và luật tường lửa, hoặc proxy của runtime); `web_fetch`, registry skill và web console của NeuroClaw cần thêm đích vào danh sách đó, hoặc tắt | Bị chặn, ghi vết `egress_blocked` | chưa có — I2d |
 | Worker bị chiếm tự gọi LLM liên tục, đốt tiền của chủ | Runtime chỉ gọi worker khi bộ phát hiện bắn và còn `llm_budget`; nhưng worker bị chiếm giữ key thì tự gọi được nhà cung cấp | **Rủi ro còn lại:** chỉ hạn mức ở nhà cung cấp chặn được | chưa có — I2d |
 | Worker chết hoặc treo | Runtime vẫn chạy phản xạ, bộ phát hiện và cảnh báo mẫu cứng; khởi động lại worker | "Phân tích tạm ngưng", cảnh báo vẫn tới | chưa có — I2d |
 
@@ -424,11 +425,11 @@ của người dùng trên đó. **Mục tiêu của họ:** một lệnh mở m
   gọi được bộ tool MCP của hộp người đó (FR-AGT-12, Q-76).
 
 **Đã có (demo nội bộ, 2026-10-13, `demo/i2f-chat-den-cua/`):** bộ não chỉ thấy 3 tool MCP của hộp. Bộ não là
-NeuroClaw (Q-78): `exec`, i2c, spi, serial, cài skill, lệnh shell trong cron, hook tiến trình, theo dõi USB, registry
-skill và MCP stdio **luôn tắt**, cấu hình hay biến `NEUROCLAW_*` đều không bật lại được (`pkg/config/lockdown.go`, test
-`TestLockdown_*` và `TestCronTool_NeuroClawNeverRunsACommandWhateverTheConfig` trong repo NeuroClaw). Phía
-NeuroEdge: `test_the_brain_has_no_road_to_the_world_but_the_boxs_tools`. Với PicoClaw gốc các mục đó chỉ là cấu hình,
-và `cron.allow_command` mặc định bật.
+NeuroClaw (Q-78, Q-80): như PicoClaw, `exec`, i2c, spi, serial, cài skill, lệnh shell trong cron, hook tiến trình,
+theo dõi USB, registry skill và MCP stdio là cấu hình; mỗi thứ đang bật được ghi lúc khởi động là `NeuroClaw risk=<tên>`
+(`pkg/config/risk.go`, test `TestRiskLabels_*` trong repo NeuroClaw). Cấu hình của demo tắt tất cả
+(`test_the_demo_brain_is_configured_closed`). **Không** còn là bảo đảm của mã: một bộ não cấu hình mở trên cùng máy
+với hộp, không cô lập theo TSK-I2d-24, chạy được lệnh vòng qua gate — vì vậy có nhãn.
 
 **Rủi ro còn lại, nói thẳng:** cloud bị chiếm vẫn đọc được dữ liệu người dùng đã khai cho cloud (ảnh, tóm tắt)
 và vẫn ra được những lệnh mà luật cho phép không cần duyệt (bật đèn…). Khoá ký luật nằm ở đâu là câu hỏi của RFC
@@ -488,7 +489,8 @@ Việc này hoãn có chủ ý; mốc kích hoạt để đưa vào phạm vi �
 **Runtime 24/7 của Q-72 (dự kiến) làm giới hạn này nặng hơn.** Runtime tin cậy sẽ chạy liên tục trên máy nhà nối
 internet, giữ token bot chat và tự kiểm bản ghi duyệt (§2e). Mã độc trong tiến trình runtime vẫn ngoài phạm vi: nó
 mint được token, chấp nhận được một bản ghi duyệt giả, đọc được token bot. Key BYOK không nằm ở đây mà ở LLM worker,
-tiến trình riêng (§2g), nên kẻ chiếm worker **không** có quyền ngang runtime. Mốc của `TODOS.md` #2 cần xét lại
+tiến trình riêng (§2g), nên kẻ chiếm worker **không** có quyền ngang runtime — với điều kiện worker chạy dưới user
+riêng (TSK-I2d-24): NeuroClaw bật `exec` (Q-80) cùng user với runtime thì đọc được bộ nhớ và tệp của runtime. Mốc của `TODOS.md` #2 cần xét lại
 trước khi runtime 24/7 (I2d) chạy trên máy của người ngoài đội.
 
 ## 3b. Ngoài phạm vi: an toàn chức năng được chứng nhận (Q-38)

@@ -1,7 +1,7 @@
 # Agent của demo nội bộ "Chat điều khiển đèn và cửa, qua NeuroEdge Cloud" (demo/chat-den-cua/).
 #
-# Hộp tại nhà chạy agent này bằng `neuroedge mcp serve --http --ui`: bộ não (PicoClaw rút gọn,
-# trên cloud hoặc tự host) chỉ chạm thiết bị qua ba tool MCP dưới đây, còn người ở nhà trả lời
+# Hộp tại nhà chạy agent này bằng `neuroedge mcp serve --http --ui`: bộ não (NeuroClaw, cấu hình
+# khoanh vùng, trên cloud hoặc tự host) chỉ chạm thiết bị qua ba tool MCP dưới đây, còn người ở nhà trả lời
 # câu hỏi `ask` trên trang `sim`. Hai luật:
 #   * đèn — bật tắt tự do; chỉ bộ điều sáng báo lỗi mới chặn;
 #   * cửa — luôn hỏi chủ nhà (bộ não không bao giờ trả lời thay được, Q-26), mở tối đa 30 giây

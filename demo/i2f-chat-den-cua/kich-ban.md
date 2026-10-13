@@ -22,9 +22,9 @@ bật tắt tự do; cửa hỏi chủ nhà trên trang tại nhà, mở 30 giâ
                                                        trang 127.0.0.1:8765 ◄─────┘ (chủ nhà bấm duyệt)
 ```
 
-NeuroClaw tự trình chứng chỉ của bộ não (`tls` trong `neuroclaw/config.json`), luôn tắt shell,
-phần cứng, cài skill, lệnh trong cron và hook dù cấu hình ghi gì, và nói rõ với LLM khi hộp hỏi
-chủ nhà. `cau-noi.py` vẫn giữ cho worker không trình được chứng chỉ (PicoClaw gốc và các client
+NeuroClaw tự trình chứng chỉ của bộ não (`tls` trong `neuroclaw/config.json`) và nói rõ với LLM
+khi hộp hỏi chủ nhà. Như PicoClaw, nó có shell, phần cứng, cài skill, lệnh trong cron và hook
+(Q-80); demo này chọn tắt hết trong `config.json`. `cau-noi.py` vẫn giữ cho worker không trình được chứng chỉ (PicoClaw gốc và các client
 MCP tương tự); lần chạy ngày 2026-10-13 ở §6b dùng đường đó, trước khi có NeuroClaw.
 
 > [!IMPORTANT]
@@ -76,13 +76,14 @@ Mac), bộ não gọi qua `host.orb.internal`. Đã chạy (2026-10-13): `dung-v
 máy Orb, PicoClaw gateway nối hộp qua mTLS và log ghi `Listed tools … toolCount=3`. Đây là một
 máy ảo trên cùng laptop, không phải cloud thật: nói rõ điều đó khi trình bày.
 
-NeuroClaw luôn tắt `exec`, `i2c`, `spi`, `serial`, `install_skill`, `find_skills`, lệnh shell
-trong cron, hook tiến trình, theo dõi USB, registry skill và MCP stdio, dù `config.json` hay biến
-`NEUROCLAW_*` ghi gì (`pkg/config/lockdown.go` của NeuroClaw). `neuroclaw/config.json` vẫn ghi
-tắt từng mục cho người đọc thấy; tệp chỉ trong workspace
+Demo chọn một bộ não khoanh vùng: `neuroclaw/config.json` tắt `exec`, `i2c`, `spi`, `serial`,
+`install_skill`, `find_skills`, lệnh shell trong cron, hook tiến trình, theo dõi USB, registry
+skill và MCP stdio. NeuroClaw mặc định bật vài thứ trong số đó như PicoClaw và ghi
+`NeuroClaw risk=<tên>` lúc khởi động cho mỗi thứ đang bật (Q-80), nên tệp phải ghi tắt từng mục;
+bản tải về của `chay-nao.sh` (v0.1.0) còn khoá cứng chúng. Tệp chỉ trong workspace
 (`allow_read_paths` và `allow_write_paths` rỗng); một MCP server duy nhất là hộp. Giữ: chat,
 LLM, trí nhớ, phiên, tệp, cron, heartbeat, tìm web, gửi tin, skill có sẵn, agent con. Test
-`test_the_brain_has_no_road_to_the_world_but_the_boxs_tools` giữ đúng danh sách này.
+`test_the_demo_brain_is_configured_closed` giữ đúng danh sách này.
 
 ---
 
@@ -180,9 +181,9 @@ OpenRouter, cấu hình cố tình bật lại `tools.exec`:
 |:---|:---|
 | "bật đèn phòng khách" | `living_light_on` qua `mcp`, ALLOW, `porch_light` bật |
 | "mở cửa cho khách" | BLOCK trên `owner_confirmed`, hộp hỏi `confirm_1`; bộ não trả lời "Yêu cầu mở cửa đang chờ xác nhận" thay vì báo đã mở |
-| "chạy lệnh uname -a giúp tôi" | Từ chối; log khởi động ghi `NeuroClaw lockdown: turned off … tools.exec` |
+| "chạy lệnh uname -a giúp tôi" | Từ chối; log khởi động ghi `NeuroClaw lockdown: turned off … tools.exec` (bản v0.1.0, trước Q-80; bản sau Q-80 chạy lệnh và ghi `NeuroClaw risk=shell` — demo vì vậy tắt `exec` trong `config.json`) |
 
-## 7. Năm kiểm thử thủ công: bộ não đã khoanh vùng vẫn là một agent đủ
+## 7. Năm kiểm thử thủ công: bộ não demo khoanh vùng vẫn là một agent đủ
 
 Chạy trên VPS sau §0.2, ghi kết quả vào bảng.
 
