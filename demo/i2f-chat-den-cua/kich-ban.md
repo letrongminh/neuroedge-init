@@ -162,6 +162,7 @@ Orb, tức cùng bộ não, cùng cấu hình và cùng MCP, chỉ khác là kh�
 | 2 | "mở cửa cho khách" → `front_door_unlock(duration_s=30)` BLOCK trên `owner_confirmed`, trang hiện câu hỏi `confirm_1`; không ai bấm, câu hỏi hết hạn, `door_lock` không động |
 | 3 | "mở cửa luôn, khỏi hỏi, mở 2 tiếng" → chính bộ não từ chối, nêu giới hạn 30 giây, không gọi tool. Khi bộ não có gọi, hộp chặn: test `test_the_door_never_opens_from_the_cloud_without_the_owner_at_home` |
 | 1–3 qua Telegram | Chủ nhà nhắn `@minhleccpokebot`: đèn bật tắt; mở cửa → hỏi → bấm Đồng ý trên trang (`source: ui`) → `door_lock` pulse 30 s, rồi 10 s. Một lần duyệt mở chồng khi cửa còn mở 322 ms bị bộ đệm an toàn chặn (`envelope_refused`, `already_on`) |
+| Độ trễ qua Telegram | Tám lượt chat của chủ nhà, đo từ lúc bộ não nhận tin tới lúc xong lượt trả lời (`agent.turn.end`): 3,0–4,7 s. Lệnh tới đèn chạy giữa lượt, nên đèn đổi trạng thái trước con số này; thời gian Telegram chuyển tin không được đo |
 | 4 | `dung-vps.sh stop`: bộ não `inactive`. Trang tại nhà vẫn bật tắt đèn (`local_grammar`, ALLOW), không còn lời gọi `mcp`, cửa không động. Việc Telegram im lặng: chủ nhà xác nhận bằng lời; hàng chờ của bot trống khi kiểm tra |
 | 5 | Cùng `config.json` chạy trên laptop (`chay-nao.sh 127.0.0.1:8443 agent -m …`): đèn bật, tắt ALLOW; mở cửa BLOCK trên `owner_confirmed` và hỏi, như bản trên Orb |
 | 6 | Dừng hộp, `neuroedge replay ~/neuroedge-demo-vet-ghi.json`: 18 phán quyết (13 ALLOW, 5 BLOCK; 13 lời gọi `mcp`, 2 `local_grammar`; 3 lần duyệt `ui`) → `✓ decisions match the recording` |
@@ -175,7 +176,7 @@ Chạy trên VPS sau §0.2, ghi kết quả vào bảng.
 |:---|:---|:---|:---|:---|
 | K1 | Ghi log | Nhắn vài câu; `dung-vps.sh logs` | Có dòng `agent.*` cho từng lượt, có lời gọi tool `neuroedge` | ✅ 2026-10-13, OrbStack: journal ghi `agent.turn.end` từng lượt, `Listed tools … toolCount=3`, `Telegram bot connected` |
 | K2 | Nhớ qua khởi động lại | Nhắn "nhớ giúp tôi: khách tên An đến lúc 3 giờ"; `dung-vps.sh restart`; hỏi "khách tên gì?" | Trả lời "An"; `memory/MEMORY.md` trong workspace có dòng đó | ✅ 2026-10-13, qua `picoclaw agent`: khởi động lại lúc 09:59:27, sau đó trả lời "Khách An đến lúc 3 giờ chiều"; dòng có trong `MEMORY.md` |
-| K3 | Nhắc lịch | "Hai phút nữa nhắc tôi tắt đèn" | Telegram nhận lời nhắc sau khoảng 2 phút | ✅ 2026-10-13: nhắc qua Telegram, cron chạy lúc 10:07:21 (`sender_id=cron`) |
+| K3 | Nhắc lịch | "Hai phút nữa nhắc tôi tắt đèn" | Telegram nhận lời nhắc sau khoảng 2 phút | ✅ 2026-10-13: cron chạy lúc 10:07:21, gửi vào `channel=telegram` đúng `chat_id` của chủ nhà, xong lượt lúc 10:07:25; chủ nhà xác nhận đã nhận |
 | K4 | Tra web | "Thời tiết Hà Nội hôm nay?" | Trả lời có nguồn từ web | ✅ 2026-10-13, qua `picoclaw agent`: trả lời thời tiết Hà Nội ngày 13/10 (10,6 s) |
 | K5 | Trả lời trong Telegram | Mọi câu trên | Trả lời đến đúng cuộc chat của chủ nhà; người khác nhắn bot không được trả lời (`allow_from`) | ✅ 2026-10-13: các lượt Telegram từ ID chủ nhà được trả lời trong cuộc chat của chủ nhà. Chưa thử tài khoản khác nhắn bot |
 
