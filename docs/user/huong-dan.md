@@ -335,7 +335,7 @@ action của agent thành một công cụ MCP, và mọi lời gọi vẫn ph�
 
 **Giới hạn**
 
-- MCP mặc định qua stdio; qua mạng có `mcp serve --http` (mTLS + OAuth 2.1, TSK-P2-04), chưa thử trên hai máy thật; chưa có kết nối bền tới MCP server ngoài (`TODOS.md` #25).
+- MCP mặc định qua stdio; qua mạng có `mcp serve --http` (mTLS + OAuth 2.1, TSK-P2-04), thêm `--ui` thì người ở nhà duyệt trên trang (demo chat đèn và cửa, `demo/i2f-chat-den-cua/`); mới thử giữa máy ảo và máy chủ trên cùng một laptop, chưa trên hai máy thật; chưa có kết nối bền tới MCP server ngoài (`TODOS.md` #25).
 - Trang web theo dõi chỉ có trên `sim`.
 
 ---

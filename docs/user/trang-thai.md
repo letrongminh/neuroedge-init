@@ -4,7 +4,7 @@
 # Trạng thái dự án
 
 > Sinh tự động từ [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0 —
-> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-10-12**.
+> nguồn sự thật duy nhất về tiến độ. Cập nhật nguồn: **2026-10-13**.
 
 ## Điều hành
 
@@ -15,7 +15,7 @@
 | Cột mốc tiếp theo | **Cổng nhu cầu 8 tuần (Q-72, B6–B8)** — ≥ 3 người ngoài tự cài Blueprint và chạy được, ≥ 1 người chạy liên tục 2 tuần trên G2 hoặc G3, ≥ 1 maker muốn bán (PRD §11.2) |
 | Trạng thái CI Lõi | ✅ **PASS 4885/4885 · SKIP 0** |
 | Chặn ngoài tầm kỹ thuật | 🟡 **2 hạng mục chặn** |
-| Lần cập nhật cuối | **2026-10-12** |
+| Lần cập nhật cuối | **2026-10-13** |
 
 ## Increment
 
