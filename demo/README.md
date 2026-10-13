@@ -10,7 +10,7 @@ Thư mục `demo/` tập hợp các kịch bản trình diễn và mã lệnh ch
 | I1 — terminal | [`i1-sim/`](i1-sim/) | sẵn sàng | local macOS/Linux, không cần phần cứng | `6a69626` (2026-09-29) |
 | I3 (phần không cần bo mạch) + OTA của I7 | [`i3-firmware-qemu/`](i3-firmware-qemu/) | sẵn sàng | Docker `espressif/idf:v5.4` (Mac Apple Silicon hoặc Linux) | `6a69626` (2026-09-29) |
 | I4 (thoại trên laptop) | [`i4-thoai-laptop/`](i4-thoai-laptop/) | sẵn sàng — đường provider đã chạy thật; micro: chạy thử trên máy trình bày | local macOS, tai nghe, `OPENROUTER_API_KEY` | nhánh `voice/integration` (2026-09-29) |
-| I2d/I2f — **chat điều khiển đèn và cửa qua NeuroEdge Cloud** (Q-76) | [`i2f-chat-den-cua/`](i2f-chat-den-cua/) | phần tự động sẵn sàng (test); chạy thật trên VPS, Telegram, video còn chờ | laptop làm hộp + VPS, Tailscale, bot Telegram, key OpenRouter | nhánh `feat/demo-chat-den-cua` (2026-10-12), chỉ test |
+| I2d/I2f — **chat điều khiển đèn và cửa qua NeuroEdge Cloud** (Q-76) | [`i2f-chat-den-cua/`](i2f-chat-den-cua/) | đã chạy đủ sáu màn qua Telegram (OrbStack làm cloud); chưa có video, chưa chạy trên VPS thật | laptop làm hộp + máy OrbStack hoặc VPS, bot Telegram, key OpenRouter | nhánh `feat/demo-chat-den-cua` (2026-10-13) |
 
 ## Vì sao chạy local, không Docker
 
