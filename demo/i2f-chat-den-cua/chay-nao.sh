@@ -37,26 +37,28 @@ if [ ! -x "$BIN" ]; then
     | tar xz -C "$NAO_HOME/bin" picoclaw
 fi
 
-# cấu hình: bản trong kho + token, chủ nhà và workspace; bí mật vào .security.yml (chmod 600)
+# cấu hình: bản trong kho + token, chủ nhà, key LLM, bot và workspace. Bí mật nằm trong
+# config.json của bộ não (quyền 600, ngoài kho), không trong .security.yml: định dạng YAML đó
+# của v0.3.1 không bật được kênh Telegram khi thử (2026-10-13).
 python3 - "$HERE/picoclaw/config.json" "$NAO_HOME" "$K/nao.token" <<'EOF'
 import json, os, sys
 source, home, token = sys.argv[1], sys.argv[2], open(sys.argv[3]).read().strip()
 config = json.load(open(source))
 config["agents"]["defaults"]["workspace"] = os.path.join(home, "workspace")
-config["channel_list"]["telegram"]["allow_from"] = [os.environ["TELEGRAM_OWNER_ID"]]
+telegram = config["channel_list"]["telegram"]
+telegram["allow_from"] = [os.environ["TELEGRAM_OWNER_ID"]]
+telegram.setdefault("settings", {})["token"] = os.environ["TELEGRAM_BOT_TOKEN"]
+for model in config["model_list"]:
+    model["api_keys"] = [os.environ["OPENROUTER_API_KEY"]]
 config["tools"]["mcp"]["servers"]["neuroedge"]["headers"]["Authorization"] = f"Bearer {token}"
 path = os.path.join(home, "config.json")
-with open(path, "w") as f:
+fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+with os.fdopen(fd, "w") as f:
     json.dump(config, f, indent=2, ensure_ascii=False)
 os.chmod(path, 0o600)
-secrets = os.path.join(home, ".security.yml")
-with open(secrets, "w") as f:
-    f.write(
-        "model_list:\n  nao:\n    api_keys:\n"
-        f"      - \"{os.environ['OPENROUTER_API_KEY']}\"\n"
-        f"channels:\n  telegram:\n    token: \"{os.environ['TELEGRAM_BOT_TOKEN']}\"\n"
-    )
-os.chmod(secrets, 0o600)
+stale = os.path.join(home, ".security.yml")
+if os.path.exists(stale):
+    os.remove(stale)
 EOF
 
 # biến PICOCLAW_TOOLS_* ghi đè cấu hình: không chạy nếu còn biến nào
