@@ -59,6 +59,8 @@ on:
       - "scripts/qemu_ota.sh"
       - "scripts/ota_markers.sh"
       - "scripts/build_ota_layer.sh"
+      - "scripts/check_stack_usage.py"
+      - "scripts/qemu_console.py"
       - ".github/workflows/firmware-qemu.yml"
   push:
     branches: [main]
@@ -86,6 +88,8 @@ on:
       - "scripts/qemu_ota.sh"
       - "scripts/ota_markers.sh"
       - "scripts/build_ota_layer.sh"
+      - "scripts/check_stack_usage.py"
+      - "scripts/qemu_console.py"
       - ".github/workflows/firmware-qemu.yml"
   schedule:
     - cron: "30 18 * * *"   # 01:30 UTC+7, after nightly-hardware
@@ -123,6 +127,11 @@ jobs:
           grep -q '^CONFIG_NEUROEDGE_QEMU=y' sdkconfig
           grep -q '^CONFIG_NEUROEDGE_REPLAY_VECTORS=y' sdkconfig
 
+      # Q-79 stack guard, part 1: every function of main and the ne_* components
+      # has a static frame of at most 1024 B (-fstack-usage, set in CMakeLists.txt).
+      - name: "Stack guard: every frame of ours is static and at most 1024 B"
+        run: python3 scripts/check_stack_usage.py targets/esp32s3/build --limit 1024
+
       - name: Install Espressif QEMU
         run: python "$IDF_PATH/tools/idf_tools.py" install qemu-xtensa
 
@@ -153,12 +162,37 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
 
+      # Q-79 stack guard, part 2: the main task's lowest free stack on QEMU.
+      - name: "Stack guard: the main task keeps at least 512 B free on QEMU"
+        run: python3 scripts/check_stack_usage.py targets/esp32s3/build --uart-log targets/esp32s3/build/uart.log --floor 512
+
+      # Q-79, TSK-I2f-10: three boots that never stay up, the fourth in safe mode;
+      # the owner's settings set at the console (a secret at the hidden prompt,
+      # never on the UART), kept across a reboot, erased by factory-reset; the
+      # console task's free stack after its deepest command.
+      - name: Boot guard, safe mode and the serial console on QEMU
+        run: |
+          . "$IDF_PATH/export.sh"
+          set +e
+          python3 scripts/qemu_console.py targets/esp32s3/build > console-report.txt 2>&1
+          status=$?
+          set -e
+          cat console-report.txt
+          {
+            echo "### Boot guard and console on QEMU (Q-79)"
+            echo '```'
+            cat console-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: firmware-qemu-uart
           path: |
             targets/esp32s3/build/uart.log
+            targets/esp32s3/build/console-test/*.log
             targets/esp32s3/sdkconfig
 
   firmware-size:
@@ -188,6 +222,18 @@ jobs:
           idf.py size --format json2 --output-file build/size.json
           idf.py size-components --format json2 --output-file build/size-components.json
           idf.py size
+
+      # Q-79: the flash-encryption layer that keeps the owner's secrets
+      # encrypted builds and links. Nothing here burns an eFuse.
+      - name: Build the flash-encryption layer (sdkconfig.secure)
+        working-directory: targets/esp32s3
+        run: |
+          . "$IDF_PATH/export.sh"
+          defaults="sdkconfig.defaults;sdkconfig.secure"
+          idf.py -B build/secure -D SDKCONFIG=build/secure/sdkconfig -D SDKCONFIG_DEFAULTS="$defaults" set-target esp32s3
+          idf.py -B build/secure -D SDKCONFIG=build/secure/sdkconfig -D SDKCONFIG_DEFAULTS="$defaults" build
+          grep -q '^CONFIG_SECURE_FLASH_ENC_ENABLED=y' build/secure/sdkconfig
+          grep -q '^CONFIG_NVS_ENCRYPTION=y' build/secure/sdkconfig
 
       - name: "Q-3: image <= 3.5 MB, static RAM leaves >= 120 KB of internal SRAM"
         run: |

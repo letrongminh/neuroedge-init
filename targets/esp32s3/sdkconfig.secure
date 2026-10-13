@@ -1,0 +1,19 @@
+# Flash encryption and encrypted NVS for the owner's secrets (Q-79, TSK-I2f-10),
+# layered on sdkconfig.defaults:
+#
+#   SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.secure" idf.py set-target esp32s3 build
+#
+# ONE-WAY: the first boot of this image burns the flash-encryption eFuses. In
+# development mode the chip can still be reflashed (`idf.py encrypted-flash`);
+# release mode cannot be undone. Read docs/user/esp32-mot-chip.md first.
+#
+# With it, components/ne_config opens the `ne_config` partition encrypted, with
+# keys kept in the encrypted `nvs_keys` partition (partitions.csv); if that
+# fails nothing is stored — never a plaintext fallback. Approach from zclaw
+# sdkconfig.secure (https://github.com/tnm/zclaw, commit e3ad271, MIT).
+# CI builds this layer; nothing in CI burns an eFuse.
+
+CONFIG_SECURE_FLASH_ENC_ENABLED=y
+CONFIG_SECURE_FLASH_ENCRYPTION_MODE_DEVELOPMENT=y
+CONFIG_NVS_ENCRYPTION=y
+CONFIG_NVS_SEC_KEY_PROTECT_USING_FLASH_ENC=y

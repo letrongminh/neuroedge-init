@@ -440,9 +440,23 @@ mở sau cổng nhu cầu (§6.9) nếu số đo cần.
  duyệt:    📱 nút duyệt ── ký passkey trên điện thoại ─────────────────────────────► hộp tự kiểm chữ ký
 ```
 
+- **Cách chạy thứ ba: ESP32-S3 một mình ([`Q-79`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), có nhãn rủi ro).** Bộ não
+  (client Telegram, vòng LLM) và gate chung một chip vài đô la, không board Linux, không cloud. Vi điều khiển không
+  tách tiến trình, nên ranh giới §6.1 giữa bộ não không tin cậy và gate **không** có ở đây; thay vào đó: mọi tool
+  call của LLM đi qua hàng đợi có kiểu vào `ne_gate`, không có đường LLM → GPIO; việc không hoàn tác cần nút trên
+  bo hoặc callback Telegram của đúng owner ID (chip nói thẳng với API Telegram, không qua relay); chip mang nhãn
+  `risk=single_chip`. Giai đoạn 1 đã có trên QEMU: boot guard và safe mode, bí mật trong phân vùng NVS riêng (mã
+  hoá dưới `sdkconfig.secure`), bảng điều khiển serial, stack guard ([`04`](04-component-device-c4l3.md) §3). Giai
+  đoạn 2, 3 (Telegram, vòng LLM) chờ bo DevKitC (TSK-I2f-11, I2f-12).
+
+```
+ chip đơn: 📱 Telegram ──TLS──► ESP32-S3 [ bộ não ─hàng đợi tool call─► ne_gate ] ──► chân
+           duyệt việc không hoàn tác: nút trên bo, hoặc callback của owner ID
+```
+
 - **Lời duyệt không đi qua não** (FR-CH-08): việc không hoàn tác được duyệt bằng chữ ký passkey trên điện thoại
   hoặc tại chỗ trong mạng nhà; cổng kênh chung của cloud chuyển tin nhưng không giả được lời duyệt.
-- **Việc theo dõi:** hộp dễ cài TSK-I2e-12, TSK-I2e-13; bước xác minh TSK-I2d-20, TSK-I2d-21; bộ não NeuroEdge và cô lập worker TSK-I2d-22 → TSK-I2d-24; cloud mỗi người một instance, lời duyệt passkey, bậc ESP32, mạng lưới và vai trò theo người: increment I2f (có điều kiện, roadmap §4.3.6).
+- **Việc theo dõi:** hộp dễ cài TSK-I2e-12, TSK-I2e-13; bước xác minh TSK-I2d-20, TSK-I2d-21; bộ não NeuroEdge và cô lập worker TSK-I2d-22 → TSK-I2d-24; cloud mỗi người một instance, lời duyệt passkey, bậc ESP32, mạng lưới và vai trò theo người: increment I2f (có điều kiện, roadmap §4.3.6); ESP32-S3 một mình (Q-79): TSK-I2f-10 → I2f-12.
 
 ## 7. Nguồn
 

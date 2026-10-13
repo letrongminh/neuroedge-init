@@ -10,6 +10,9 @@ idf_component_register(
         ne_gate
         ne_trace
         ne_ota
+        ne_boot
+        ne_config
+        ne_console
         esp_system
         esp_wifi
         esp_netif

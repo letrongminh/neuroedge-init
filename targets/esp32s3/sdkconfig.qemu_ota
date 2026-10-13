@@ -27,3 +27,8 @@ CONFIG_SECURE_BOOT_BUILD_SIGNED_BINARIES=n
 CONFIG_MBEDTLS_HARDWARE_AES=n
 CONFIG_MBEDTLS_HARDWARE_SHA=n
 CONFIG_MBEDTLS_HARDWARE_MPI=n
+
+# The boot guard (Q-79) clears its count once startup is done, without the
+# board's 30 s window: these boots stop seconds after their last marker, and a
+# count that never clears would put the fourth of them in safe mode.
+CONFIG_NEUROEDGE_BOOT_GUARD_STABLE_MS=0
