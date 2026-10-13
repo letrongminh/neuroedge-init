@@ -56,8 +56,8 @@ Mọi mã và ký hiệu dùng trong tài liệu này (`I0`–`I18`, `TSK-*`, `A
 | **Pha đang thực thi** | 🟡 **Phase MVP (§0.5)**, thứ tự theo Q-72 — I2d rồi I2e (NeuroEdge Blueprint bể cá đi trọn ba vòng trên giả lập) trước cổng nhu cầu 8 tuần; phần còn lại của I1, I2a, I2c làm xen; đợt thử đối tác (Q-70) song song; thoại (I4, I5) và Studio tạm dừng, không cắt | Increment và ngày dự báo: §0.2 |
 | **Increment đang mở** | 🟡 **I2d — Nhiệm vụ và agent vận hành** (Q-72) — task bắt đầu khi Bước 0 (đồng bộ tài liệu theo Q-72) xong | I1 còn TSK-I1-02 (kích hoạt lại cho cổng 8 tuần) và Studio (tạm dừng) · I0 đã xong 42 / 42 · chi tiết §0.2 |
 | **Cột mốc tiếp theo** | **Cổng nhu cầu 8 tuần (Q-72, B6–B8)** — ≥ 3 người ngoài tự cài Blueprint và chạy được, ≥ 1 người chạy liên tục 2 tuần trên G2 hoặc G3, ≥ 1 maker muốn bán (PRD §11.2) | Ngày: giả định ở §0.2 · nhánh theo kết quả: §5.6 · wheel giao trực tiếp, chưa lên PyPI (Q-39) |
-| **Lần cập nhật cuối** | **2026-10-12** | Phiên 2026-10-12: Q-77 bỏ thoại, Lab, mở danh sách target và mọi increment sau Beta khỏi roadmap (§6). Q-76 thêm bộ não NeuroEdge (TSK-I2d-22 → I2d-24) và cloud mỗi người một instance (TSK-I2f-07 → I2f-09); §3.11 port tối đa theo task. Q-75 thêm 4 task I3a (liên kết Pi ↔ ESP32, bo ESP32-S3 phổ thông, Arduino) và TSK-I2e-14 (khung dự án nhiều chip). Phiên 2026-10-11: đồng bộ roadmap theo Q-72 — thêm I2d (35 task, gồm 2 task Q-73) và I2e (15 task, gồm 2 task hộp dễ cài của Q-74); I2f có điều kiện (Q-74); thoại (I4, I5), Studio, N4, N5b, V1a, TSK-I2c-13, I2c-17 tạm dừng; ngày I3 → I8 đặt lại sau cổng 8 tuần (R5). Chi tiết: `CHANGELOG.md` |
-| **Trạng thái CI Lõi** | ✅ **PASS 4875/4875 · SKIP 0** | `python/tests/` 125 bộ test; `tests_linux/` 119/119 trên kernel; `ui-golden` 66 ảnh; `ota-rollback` pha a–g; security scanners |
+| **Lần cập nhật cuối** | **2026-10-13** | Phiên 2026-10-13: Q-78 — bộ não là NeuroClaw (fork cứng PicoClaw, `letrongminh/neuroclaw`, MIT); demo chat đèn và cửa qua NeuroEdge Cloud chạy đủ sáu màn qua Telegram (OrbStack làm cloud; `mcp serve --http --ui`); VPS và video hoãn (`TODOS.md` #69). Phiên 2026-10-12: Q-77 bỏ thoại, Lab, mở danh sách target và mọi increment sau Beta khỏi roadmap (§6). Q-76 thêm bộ não NeuroEdge (TSK-I2d-22 → I2d-24) và cloud mỗi người một instance (TSK-I2f-07 → I2f-09); §3.11 port tối đa theo task. Q-75 thêm 4 task I3a (liên kết Pi ↔ ESP32, bo ESP32-S3 phổ thông, Arduino) và TSK-I2e-14 (khung dự án nhiều chip). Phiên 2026-10-11: đồng bộ roadmap theo Q-72 — thêm I2d (35 task, gồm 2 task Q-73) và I2e (15 task, gồm 2 task hộp dễ cài của Q-74); I2f có điều kiện (Q-74); thoại (I4, I5), Studio, N4, N5b, V1a, TSK-I2c-13, I2c-17 tạm dừng; ngày I3 → I8 đặt lại sau cổng 8 tuần (R5). Chi tiết: `CHANGELOG.md` |
+| **Trạng thái CI Lõi** | ✅ **PASS 4885/4885 · SKIP 0** | `python/tests/` 126 bộ test; `tests_linux/` 119/119 trên kernel; `ui-golden` 66 ảnh; `ota-rollback` pha a–g; security scanners |
 | **Chặn ngoài tầm kỹ thuật** | 🟡 **2 hạng mục chặn** | 🔴 Box-3 và RPi 5 chưa về (TSK-S1-10 → I3; TSK-I2-01) · bo camera đã chọn là M5Stack CoreS3 nhưng chưa đặt (Q-61, TSK-I3a-01). Không chặn I2d, I2e: giả lập trước, phần cứng thật mua sau (Q-72) |
 | **Hoãn có chủ ý** | 📋 [`TODOS.md`](../TODOS.md) | Mỗi mục kèm mốc kích hoạt · cổng nhu cầu khôi phục bởi Q-72 (đảo Q-56); câu hỏi kinh doanh mở (`TODOS.md` #19) rà lại ở cổng 8 tuần |
 
@@ -92,8 +92,8 @@ Mỗi dòng là một increment: một năng lực người dùng thấy đượ
 
 ```text
 MỤC TIÊU: Blueprint bể cá trọn 3 vòng trên giả lập (Q-72) trước cổng 8 tuần (B6–B8).
-VỪA XONG: Q-72 (PRD §15); I2d, I2e vào roadmap; tạm dừng thoại, Studio; Q-71.
-ĐANG LÀM: Đồng bộ tài liệu Q-72; I2d; TSK-S1-10 chờ bo mạch.
+VỪA XONG: Q-76, Q-77; demo chat đèn và cửa (`demo/i2f-chat-den-cua/`): `mcp serve --http --ui`.
+ĐANG LÀM: I2d. Demo chạy đủ sáu màn qua Telegram (2026-10-13, OrbStack làm cloud); VPS, đường hầm, video: TODOS #69.
 LƯU Ý: Lệnh phần cứng qua c.do() và gate. LLM worker không tin cậy. Fail-closed.
 ```
 
@@ -233,7 +233,7 @@ Tái sử dụng: Typer/Rich/Pytest (CLI & CI), Pydantic v2 (lược đồ), Xia
 4. **LiteLLM** (`neuroedge/models/providers/`): Chuẩn hóa I/O provider, failover trong tiến trình (Q-10, Q-11).
 5. **OpenMeter**: Engine gom sự kiện, đối soát lượt gọi agent và gate cho Khối 3.
 
-**Bổ sung theo Q-76 (MIT, ghi nhận nguồn theo §3.9):** PicoClaw — nền của bộ não NeuroEdge, bản rút gọn (TSK-I2d-22); zclaw và MimiClaw — tham khảo hoặc port thành phần C cho hộp ESP32 (TSK-I2f-03): client Telegram trên chip, Wi-Fi onboarding, bí mật trong NVS, boot guard, bảng điều khiển serial. Không lấy vòng lặp agent của họ làm nơi giữ quyền phần cứng.
+**Bổ sung theo Q-76 (MIT, ghi nhận nguồn theo §3.9):** PicoClaw — nền của bộ não NeuroEdge, nay là fork cứng NeuroClaw (Q-78, TSK-I2d-22); zclaw và MimiClaw — tham khảo hoặc port thành phần C cho hộp ESP32 (TSK-I2f-03): client Telegram trên chip, Wi-Fi onboarding, bí mật trong NVS, boot guard, bảng điều khiển serial. Không lấy vòng lặp agent của họ làm nơi giữ quyền phần cứng.
 
 ### 3.6 Ba dự án chỉ liên thông, không phụ thuộc
 
@@ -263,7 +263,7 @@ AGPL) trong bộ phụ thuộc lõi, nên thư viện copyleft chỉ được �
 
 | Task | Mượn | Giấy phép | Cách mượn | Tự viết |
 |:---|:---|:---|:---|:---|
-| TSK-I2d-22 bộ não | PicoClaw | MIT | Fork rút gọn (bỏ `exec`, `i2c`/`spi`/`serial`, công cụ tệp) | Bộ cấu hình mặc định an toàn, bản phát hành |
+| TSK-I2d-22 bộ não | PicoClaw v0.3.1 → NeuroClaw (Q-78) | MIT | Fork cứng: mTLS, khoá cứng `exec`, `i2c`/`spi`/`serial`, cài skill, lệnh cron, hook; bỏ web console | Bản phát hành, theo dõi bản sửa bảo mật của PicoClaw bằng tay |
 | TSK-I2d-23 tool MCP | `mcp` Python SDK (đã dùng) | MIT | Phụ thuộc | Ngữ nghĩa `propose_mission`, `mission_status`, `explain_block` |
 | TSK-I2d-12 adapter Telegram của runtime | aiogram | MIT | Phụ thuộc (extra) | Bản ghi duyệt, ghép đôi (`TODOS.md` #62). **Không** dùng python-telegram-bot (LGPL-3.0, bị job giấy phép chặn) |
 | TSK-I2d-09 lập lịch | APScheduler, croniter | MIT | Phụ thuộc | Bộ phát hiện tất định, `llm_budget` |
@@ -573,7 +573,7 @@ Mỗi increment có: thẻ (mục tiêu, điều kiện vào ngoài các increme
 | **TSK-I2d-19** | Kịch bản bể cá và nghiệm thu A15→A22 trên G1 | FR-TGT-07, FR-AGT-04, NFR-COST-01 | V1 + V3 | ⏳ Chưa bắt đầu | `fixtures/agents/` · `demo/` |
 | **TSK-I2d-20** | RFC bước xác minh và luồng nhiều bước do người dùng khai (Q-73) | FR-CH-06, FR-ACE-10 | V1 + kỹ thuật trưởng | ⏳ Chưa bắt đầu — trước TSK-I2d-11 | `docs/rfc/` |
 | **TSK-I2d-21** | Mã bước xác minh: plugin bộ kiểm, nhãn rủi ro, vết ghi đạt/trượt | FR-CH-06, FR-TRC-13 | V1 + V3 | ⏳ Chờ TSK-I2d-20 | `python/neuroedge/actions/` |
-| **TSK-I2d-22** | Bộ não NeuroEdge: bản rút gọn PicoClaw, chỉ MCP tới runtime (Q-76) | FR-AGT-12, FR-AGT-02 | V1 + V3 | ⏳ Chưa bắt đầu | kho `neuroedge-brain` ngoài repo |
+| **TSK-I2d-22** | Bộ não NeuroEdge: NeuroClaw, fork cứng PicoClaw, chỉ MCP tới runtime (Q-76, Q-78) | FR-AGT-12, FR-AGT-02 | V1 + V3 | 🟡 NeuroClaw có repo và CI (2026-10-13): mTLS, khoá cứng, nói rõ câu hỏi `ask`; demo nội bộ chạy đủ sáu màn qua Telegram (`demo/i2f-chat-den-cua/`); VPS thật hoãn (`TODOS.md` #69) | [`letrongminh/neuroclaw`](https://github.com/letrongminh/neuroclaw) |
 | **TSK-I2d-23** | Bộ tool MCP chuẩn cho mọi worker: `propose_mission`, `mission_status`, `explain_block` | FR-AGT-12, FR-MSN-13 | V1 | ⏳ Chờ TSK-I2d-04 | `python/neuroedge/mcp/` |
 | **TSK-I2d-24** | Cô lập worker tại nhà: user riêng, không quyền phần cứng, test worker bị chiếm | NFR-SEC-13, FR-AGT-12 | V1 | ⏳ Chờ TSK-I2d-08 | `python/tests_linux/` |
 | **TSK-N0-07** | Đặc tả bề mặt đóng tool lab (Q-71) | FR-DX-10 | V2 | ⏳ Chưa bắt đầu | `docs/spec/lab_tools.md` |

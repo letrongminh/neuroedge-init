@@ -1,0 +1,33 @@
+# Cửa: luôn hỏi chủ nhà, theo mẫu `gates/home/door-lock@1.0.0`.
+#
+# * `owner_confirmed` chỉ đạt khi người tại nhà trả lời "có" trên trang của thiết bị (`confirms`,
+#   RFC-0006). Bộ não gọi qua MCP được báo có câu hỏi đang chờ, nhưng không có cách trả lời (Q-26).
+# * `daytime` không nằm trong `confirms`: ban đêm thì chặn thẳng, không hỏi ai.
+# * `duration_s` tối đa 30 giây: "mở cửa 2 tiếng" bị chặn trước khi hỏi.
+schema:  neuroedge.gate/v1
+name:    door
+version: 1.0.0
+
+arguments:
+  duration_s: { type: integer, minimum: 1, maximum: 30 }
+
+evaluate:
+  daytime:
+    type: bool
+    instructions: "Đồng hồ của hộp tại nhà đang trong khung giờ cho phép mở cửa (06:00–22:00)"
+  owner_confirmed:
+    type: bool
+    instructions: "Chủ nhà xác nhận tại nhà cho đúng lần mở cửa này"
+
+allow_when:
+  daytime:         true
+  owner_confirmed: true
+
+on_block:
+  action:   ask
+  message:  "Bộ não xin mở cửa — chủ nhà có đồng ý không?"
+  confirms: [owner_confirmed]
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

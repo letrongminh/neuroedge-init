@@ -55,6 +55,7 @@ from neuroedge.errors import NeuroEdgeError
 from neuroedge.mcp_http import HttpConfig, prepare, thumbprint
 from neuroedge.sim import SimSession
 from neuroedge.sim.serve import run_http
+from neuroedge.sim.ui import SessionServer
 from neuroedge.testing.recorder import TraceRecorder
 from neuroedge.trace import validate_trace
 
@@ -223,6 +224,7 @@ def config(pki: Pki, **override) -> HttpConfig:
 class Running:
     session: SimSession
     port: int
+    page: SessionServer | None = None
 
     @property
     def url(self) -> str:
@@ -237,7 +239,7 @@ def serve(pki, root):
     """Start `run_http` on a free port in a thread; the fixture stops them all."""
     started: list[tuple[threading.Thread, threading.Event]] = []
 
-    def start(agent: str = "driveway", facts=None, clock=None, **override) -> Running:
+    def start(agent: str = "driveway", facts=None, clock=None, page=False, **override) -> Running:
         # a test that calls one pin more than once hands in a clock it moves past the pin's
         # safety envelope (RFC-0007 §3d) between the calls: each one is then a fresh, legitimate ALLOW
         timing = {"clock": clock, "events": TraceRecorder(clock=clock)} if clock else {}
@@ -246,6 +248,11 @@ def serve(pki, root):
         )
         prepared = prepare(config(pki, **override))
         ready, stop, box = threading.Event(), threading.Event(), {}
+        # `--http --ui`: the remote client and the page at home share one session
+        home = SessionServer(session).start() if page else None
+        wiring = (
+            {"lock": home.lock, "on_change": home.notify, "on_close": home.stop} if home else {}
+        )
 
         def on_ready(_host: str, port: int) -> None:
             box["port"] = port
@@ -253,7 +260,7 @@ def serve(pki, root):
 
         def target() -> None:
             try:
-                run_http(session, prepared, on_ready=on_ready, stop=stop)
+                run_http(session, prepared, on_ready=on_ready, stop=stop, **wiring)
             except BaseException as error:  # reported by the test thread
                 box["error"] = error
                 ready.set()
@@ -263,7 +270,7 @@ def serve(pki, root):
         started.append((thread, stop))
         assert ready.wait(TIMEOUT), "the server did not come up"
         assert "error" not in box, box.get("error")
-        return Running(session, box["port"])
+        return Running(session, box["port"], home)
 
     yield start
     for _, stop in started:
@@ -404,10 +411,13 @@ def test_the_network_flags_without_http_are_refused_not_ignored(root):
     assert "--http" in result.output
 
 
-def test_the_network_door_and_the_live_page_are_not_combined(pki, root):
-    agent = str(root / "fixtures" / "agents" / "driveway" / "agent.toml")
+def test_the_network_door_with_the_live_page_is_still_refused_half_configured(pki, root):
+    # `--http --ui` is one server (the remote brain plus the page at home), and it takes the
+    # same configuration gate as `--http` alone
+    agent = str(root / "fixtures" / "agents" / "chat-den-cua" / "agent.toml")
     result = CliRunner().invoke(app, ["mcp", "serve", "--http", "--ui", "--agent", agent])
-    assert result.exit_code == 2
+    assert result.exit_code == 1, result.output
+    assert "--client-ca" in result.output
 
 
 def test_a_port_that_is_taken_is_a_three_part_error_and_the_session_is_closed(pki, root):
@@ -715,7 +725,121 @@ def test_the_same_facts_give_the_same_verdict_with_or_without_the_network(root):
     assert all(status == expected for status, expected in anyio.run(go))
 
 
-# --- 4. the real command -------------------------------------------------------------------
+# --- 4. the door at home (demo chat-den-cua) -----------------------------------------------
+#
+# `mcp serve --http --ui`: a brain far away (NeuroEdge Cloud) calls the tools; the page at
+# home answers the gate's `ask`. Only a person at home opens the door (Q-26, Q-74).
+
+HOME = "chat-den-cua"
+DAY = {"light_fault_free": True, "daytime": True, "owner_confirmed": False}
+
+
+def door_pulses(running: Running) -> list[dict]:
+    return [e for e in running.events("actuator_command") if e.get("pin") == "door_lock"]
+
+
+async def call_all(pki: Pki, running: Running, calls: list[tuple[str, dict]]):
+    async with mcp_client(pki, running, "device-a", mint(pki)) as client:
+        tools = {tool.name for tool in (await client.list_tools()).tools}
+        return tools, [await client.call_tool(name, arguments) for name, arguments in calls]
+
+
+def test_the_brain_sees_only_the_homes_tools_and_none_of_them_answers_a_question(pki, serve):
+    running = serve(HOME, facts=DAY, page=True)
+    tools, _ = anyio.run(call_all, pki, running, [])
+    # nothing to run a shell with, no pin to touch, no way to say "yes" for the owner
+    assert tools == {"living_light_on", "living_light_off", "front_door_unlock"}
+
+
+def test_the_light_answers_the_chat_at_once(pki, serve):
+    running = serve(HOME, facts=DAY, page=True)
+    _, (on, off) = anyio.run(
+        call_all, pki, running, [("living_light_on", {}), ("living_light_off", {})]
+    )
+    assert on.structured_content["status"] == "ALLOW"
+    assert off.structured_content["status"] == "ALLOW"
+    pins = [e.get("pin") for e in running.events("actuator_command")]
+    assert pins == ["porch_light", "porch_light"]
+
+
+def test_the_door_never_opens_from_the_cloud_without_the_owner_at_home(pki, serve):
+    """Goal test 1: however the cloud asks, the door stays locked until the page says yes."""
+    running = serve(HOME, facts=DAY, page=True)
+    attempts = [
+        ("front_door_unlock", {}),
+        ("front_door_unlock", {"duration_s": 30}),
+        ("front_door_unlock", {"duration_s": 7200}),  # "mở cửa luôn": past the gate's bound
+        ("front_door_unlock", {"call_source": "ui"}),  # claiming to be the page
+        ("front_door_unlock", {"call_source": "local_grammar"}),  # claiming to be a voice at home
+        ("front_door_unlock", {"owner_confirmed": True}),  # stating the fact it needs
+    ]
+    _, results = anyio.run(call_all, pki, running, attempts)
+    statuses = [r.structured_content["status"] for r in results]
+    # the first three reach the gate and are blocked; the rest never get past the tool's schema
+    assert statuses == ["BLOCK"] * 3 + ["REJECTED"] * 3, statuses
+    asked = results[0].structured_content["confirmation"]
+    assert asked["id"] and asked["expires_in_ms"] > 0
+    # two hours is past the gate's bound: refused, and the owner is not even asked
+    assert "confirmation" not in results[2].structured_content
+    assert door_pulses(running) == [], "the door moved on a remote word alone"
+    assert {c["source"] for c in running.events("tool_call")} == {"mcp"}
+
+
+def test_the_owner_at_home_opens_the_door_for_thirty_seconds(pki, serve):
+    running = serve(HOME, facts=DAY, page=True)
+    _, (asked,) = anyio.run(call_all, pki, running, [("front_door_unlock", {})])
+    question = asked.structured_content["confirmation"]
+    assert door_pulses(running) == []
+
+    reply = running.page.confirm(json.dumps({"id": question["id"], "answer": "yes"}))
+    assert reply["ok"] and reply["verdict"] == "ALLOW", reply
+    (pulse,) = door_pulses(running)
+    assert pulse["operation"] == "pulse" and pulse["duration_ms"] == 30_000  # then it locks
+    # the same question cannot be answered twice: one yes is one opening
+    again = running.page.confirm(json.dumps({"id": question["id"], "answer": "yes"}))
+    assert not again["ok"]
+    assert len(door_pulses(running)) == 1
+
+
+def test_the_owner_saying_no_keeps_the_door_locked(pki, serve):
+    running = serve(HOME, facts=DAY, page=True)
+    _, (asked,) = anyio.run(call_all, pki, running, [("front_door_unlock", {})])
+    question = asked.structured_content["confirmation"]
+    running.page.confirm(json.dumps({"id": question["id"], "answer": "no"}))
+    assert door_pulses(running) == []
+
+
+def test_at_night_the_door_is_refused_with_a_reason_and_nobody_is_asked(pki, serve):
+    """`mở lúc 2 giờ sáng`: a criterion the owner cannot confirm blocks without a question."""
+    running = serve(HOME, facts={**DAY, "daytime": False}, page=True)
+    _, (refused,) = anyio.run(call_all, pki, running, [("front_door_unlock", {})])
+    content = refused.structured_content
+    assert content["status"] == "BLOCK"
+    assert "confirmation" not in content
+    assert "daytime" in json.dumps(content, ensure_ascii=False)
+    assert door_pulses(running) == []
+
+
+def test_without_the_cloud_the_page_at_home_still_runs_the_light_and_the_door_stays_locked(
+    pki, serve
+):
+    """Demo step 4: no brain connected at all; the person at home types on the page."""
+    running = serve(HOME, facts=DAY, page=True)
+    running.page.command("bật đèn")
+    running.page.command("mở cửa")  # the page asks like anyone else; nobody answered yet
+    pins = [(e["pin"], e["operation"]) for e in running.events("actuator_command")]
+    assert pins == [("porch_light", "on")]
+    assert door_pulses(running) == []
+    # every call came from home, none over the network
+    assert {c["source"] for c in running.events("tool_call")} == {"local_grammar"}
+
+
+def test_the_page_at_home_listens_on_this_machine_only(pki, serve):
+    running = serve(HOME, facts=DAY, page=True)
+    assert running.page.httpd.server_address[0] == "127.0.0.1"
+
+
+# --- 5. the real command -------------------------------------------------------------------
 
 
 def test_the_cli_serves_over_the_network_and_leaves_cleanly_on_sigterm(pki, root, tmp_path):

@@ -426,6 +426,13 @@ mở sau cổng nhu cầu (§6.9) nếu số đo cần.
   cứng. Tự host trên board Linux rẻ (hoặc cùng Pi với runtime, dưới user riêng không có quyền phần cứng), hoặc dùng
   NeuroEdge Cloud: cổng kênh chung chỉ định tuyến, mỗi người một instance cách ly (microVM), ngủ khi rảnh. Cả hai
   nói với hộp tại nhà qua cùng bộ tool MCP; worker khác (PicoClaw gốc, Claude Desktop, OpenClaw) cắm được như nhau.
+  Demo nội bộ 2026-10-13 ([`demo/i2f-chat-den-cua/`](../../../demo/i2f-chat-den-cua/kich-ban.md)) chạy đúng hình này với PicoClaw
+  v0.3.1 và hộp `mcp serve --http --ui`, và rút ra hai điều: client MCP của PicoClaw không trình được chứng chỉ
+  client, nên phải có cầu nối mTLS; và "tắt shell" phải tính cả lệnh trong cron, hook tiến trình và biến môi trường ghi
+  đè cấu hình, không chỉ `exec`. Vì thế bộ não là **NeuroClaw** ([`Q-78`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định),
+  [`letrongminh/neuroclaw`](https://github.com/letrongminh/neuroclaw), MIT): fork cứng PicoClaw v0.3.1, tự nói mTLS,
+  khoá cứng mọi đường chạy lệnh và chạm phần cứng, và nói rõ với LLM khi hộp hỏi chủ nhà
+  ([`threat_model.md`](../../spec/threat_model.md) §2k).
 
 ```
  tự host:  📱 chat ── bộ não (board $10 / Pi, user riêng) ──MCP──► runtime tại nhà ──► phần cứng

@@ -190,6 +190,9 @@ def run_http(
     trace_out: Path | None = None,
     on_ready: Callable[[str, int], None] | None = None,
     stop: threading.Event | None = None,
+    lock: Any = None,
+    on_change: Callable[[], None] | None = None,
+    on_close: Callable[[], None] | None = None,
 ) -> None:
     """
     Serve `session` over authenticated Streamable HTTP until SIGINT, SIGTERM or SIGHUP (or
@@ -197,15 +200,23 @@ def run_http(
     a `linux` session dropped inactive. `prepared` comes from `mcp_http.prepare`, which has
     already refused an incomplete configuration; `on_ready(host, port)` runs once connections
     are accepted. Unlike stdio, nothing here needs `os._exit`: the server stops cleanly.
+
+    `lock`, `on_change` and `on_close` are the local `sim` page's (`mcp serve --http --ui`): the
+    remote client's tool calls take the page's lock, the page shows each at once, and the page
+    stops with the server. The person at the page answers `ask` questions; the client cannot.
     """
     import anyio
 
     async def serve() -> None:
-        await serve_http(session, prepared, on_ready=on_ready, stop=stop)
+        await serve_http(
+            session, prepared, on_ready=on_ready, stop=stop, lock=lock, on_change=on_change
+        )
 
     try:
         anyio.run(serve)
     finally:
+        if on_close is not None:
+            on_close()
         _close(session, trace_out, None)
 
 

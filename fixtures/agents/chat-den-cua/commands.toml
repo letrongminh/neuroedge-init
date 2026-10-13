@@ -1,0 +1,20 @@
+# Ngữ pháp lệnh cố định của chat-den-cua (Q-14, Q-15): người ở nhà gõ trên trang `sim` khi cloud
+# mất kết nối (bước 4 của demo). Lệnh từ bộ não đi qua MCP, không qua ngữ pháp này.
+[grammar]
+version   = 1
+threshold = 0.80
+
+[[command]]
+intent   = "living_light_on"
+patterns = ["bật đèn", "bật đèn phòng khách", "turn on the light"]
+tool     = "living_light_on"
+
+[[command]]
+intent   = "living_light_off"
+patterns = ["tắt đèn", "tắt đèn phòng khách", "turn off the light"]
+tool     = "living_light_off"
+
+[[command]]
+intent   = "unlock"
+patterns = ["mở cửa", "unlock the door"]
+tool     = "front_door_unlock"

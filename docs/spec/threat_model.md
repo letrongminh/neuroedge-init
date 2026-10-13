@@ -207,7 +207,14 @@ cho đúng chứng chỉ đó. Những gì cửa mạng **không** làm được
   vết ghi, chỉ vào log của uvicorn.
 - **Token chỉ được kiểm lúc nhận yêu cầu.** Một luồng SSE đã mở sống tiếp tới khi đóng, dù token đã hết hạn.
 - **Lệnh quản trị không qua mạng** (`gate lint`, `trace validate`): Q-63 chủ ý không mở thêm bề mặt này.
-- **Chưa thử trên hai máy thật.** Test chạy trong một tiến trình trên 127.0.0.1 với CA tạm sinh lúc chạy.
+- **`--http --ui`: chỉ người ở nhà trả lời câu hỏi.** Trang `sim` chạy cùng phiên nhưng chỉ nghe trên 127.0.0.1
+  và nhận `POST /confirm` cùng nguồn; nguồn của nó là `ui`. MCP không có tool xác nhận và không tự khai nguồn, nên
+  client ở xa chỉ mở được câu hỏi `ask`, không trả lời được (`test_the_door_never_opens_from_the_cloud_without_the_owner_at_home`).
+- **Chứng chỉ và token nằm trên máy bộ não.** NeuroClaw (Q-78) tự trình chứng chỉ; worker không trình được (PicoClaw
+  gốc…) đi qua `cau-noi.py` (`demo/i2f-chat-den-cua/`), phía HTTP chưa mã hoá chỉ nghe trên loopback của máy bộ não.
+  Ai chiếm được máy bộ não giữ cả chứng chỉ lẫn token, tức chỉ có quyền *hỏi* như chính bộ não (§2k).
+- **Chưa thử trên hai máy thật.** Test chạy trong một tiến trình trên 127.0.0.1 với CA tạm sinh lúc chạy. Demo
+  2026-10-13 đi qua hai hệ điều hành (máy Linux của OrbStack gọi tới macOS), vẫn trên cùng một laptop.
 
 ## 2c. Trong phạm vi: client MCP dựng hợp đồng trong chế độ lab (Q-71) — dự kiến
 
@@ -415,6 +422,13 @@ của người dùng trên đó. **Mục tiêu của họ:** một lệnh mở m
   không hoàn tác phải mang chữ ký passkey của điện thoại đã ghép đôi, hộp tại nhà tự kiểm (FR-CH-08, Q-76).
 - Mỗi người một instance bộ não cách ly (microVM); instance bị chiếm chỉ thấy dữ liệu của chính người đó và chỉ
   gọi được bộ tool MCP của hộp người đó (FR-AGT-12, Q-76).
+
+**Đã có (demo nội bộ, 2026-10-13, `demo/i2f-chat-den-cua/`):** bộ não chỉ thấy 3 tool MCP của hộp. Bộ não là
+NeuroClaw (Q-78): `exec`, i2c, spi, serial, cài skill, lệnh shell trong cron, hook tiến trình, theo dõi USB, registry
+skill và MCP stdio **luôn tắt**, cấu hình hay biến `NEUROCLAW_*` đều không bật lại được (`pkg/config/lockdown.go`, test
+`TestLockdown_*` và `TestCronTool_NeuroClawNeverRunsACommandWhateverTheConfig` trong repo NeuroClaw). Phía
+NeuroEdge: `test_the_brain_has_no_road_to_the_world_but_the_boxs_tools`. Với PicoClaw gốc các mục đó chỉ là cấu hình,
+và `cron.allow_command` mặc định bật.
 
 **Rủi ro còn lại, nói thẳng:** cloud bị chiếm vẫn đọc được dữ liệu người dùng đã khai cho cloud (ảnh, tóm tắt)
 và vẫn ra được những lệnh mà luật cho phép không cần duyệt (bật đèn…). Khoá ký luật nằm ở đâu là câu hỏi của RFC

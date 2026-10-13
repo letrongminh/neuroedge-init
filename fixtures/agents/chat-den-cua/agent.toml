@@ -1,0 +1,29 @@
+# Agent của demo nội bộ "Chat điều khiển đèn và cửa, qua NeuroEdge Cloud" (demo/chat-den-cua/).
+#
+# Hộp tại nhà chạy agent này bằng `neuroedge mcp serve --http --ui`: bộ não (PicoClaw rút gọn,
+# trên cloud hoặc tự host) chỉ chạm thiết bị qua ba tool MCP dưới đây, còn người ở nhà trả lời
+# câu hỏi `ask` trên trang `sim`. Hai luật:
+#   * đèn — bật tắt tự do; chỉ bộ điều sáng báo lỗi mới chặn;
+#   * cửa — luôn hỏi chủ nhà (bộ não không bao giờ trả lời thay được, Q-26), mở tối đa 30 giây
+#     rồi tự khoá, và không mở ban đêm dù ai xác nhận.
+[agent]
+name    = "chat-den-cua"
+version = "0.1.0"
+
+[requires]
+"digital.out" = { pins = ["porch_light", "door_lock"] }
+
+[gates]
+light = "gates/light@1.0.0.yaml"
+door  = "gates/door@1.0.0.yaml"
+
+[targets]
+supported = ["sim", "linux"]
+
+# Dữ kiện phiên trên `sim`. Ở nhà thật, `daytime` đến từ đồng hồ của hộp và lỗi bộ điều sáng từ
+# chính thiết bị. Trang `sim` đổi chúng bằng `:set daytime false` (giả 2 giờ sáng).
+# `owner_confirmed` luôn bắt đầu là false: chỉ lời "có" của người tại nhà làm nó đạt, cho một lần.
+[sim.facts]
+light_fault_free = true
+daytime          = true
+owner_confirmed  = false
