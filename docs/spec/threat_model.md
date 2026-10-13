@@ -446,11 +446,17 @@ trong tiến trình của §3, không phải nhầm lẫn của agent; phần d�
 
 **Bảo vệ:**
 - LLM không có đường nào tới GPIO: mọi tool call đi qua một hàng đợi có kiểu vào `ne_gate` (walker `NETR`, sổ
-  token), như trên `sim` và `linux`. Không port tool GPIO của zclaw, nơi LLM bật chân trực tiếp. *(Giai đoạn 3,
-  TSK-I2f-12 — chưa có mã.)*
+  token), như trên `sim` và `linux`. Không port tool GPIO của zclaw, nơi LLM bật chân trực tiếp. *(Bộ não chip là
+  NeuroClaw-ESP, repo `neuroclaw` thư mục `esp32/`: chỉ gọi thiết bị qua giao diện `nc_gate`, đã chạy trên QEMU với
+  gate giả; nối vào `ne_gate` là TSK-I2f-12.)*
 - Việc không hoàn tác cần nút vật lý trên bo hoặc callback Telegram từ đúng owner ID; tin từ người khác bị bỏ.
   Chip nói thẳng với API Telegram qua TLS, không qua relay, nên không ai giữa đường giả được nút "Đồng ý" như
-  trường hợp cổng kênh chung của cloud (§2k, FR-CH-08); vẫn tin Telegram. *(Giai đoạn 2, 3 — chưa có mã.)*
+  trường hợp cổng kênh chung của cloud (§2k, FR-CH-08); vẫn tin Telegram. *(Có trong NeuroClaw-ESP, kiểm trên QEMU:
+  người lạ bấm nút bị bỏ, owner bấm hai lần chỉ tính một.)*
+- Công cụ riêng của bộ não không chạm thiết bị: tệp trong workspace (trí nhớ, ghi chú; `sessions/`, `cron/` chỉ bộ
+  não ghi), lịch (`cron` từ chối `command`), và web. `web_fetch` từ chối mọi địa chỉ riêng hay cục bộ (loopback,
+  RFC 1918, link-local, CGNAT, ULA…), kiểm từng địa chỉ tên miền trỏ tới và từng bước chuyển hướng — nếu không, LLM
+  gọi thẳng được thiết bị trong mạng nhà, vòng qua gate.
 - Bảng điều khiển serial không có lệnh nào chạm chân hay gọi tool (`test_the_console_cannot_move_a_pin_or_call_a_tool`).
 - Bí mật nằm trong phân vùng NVS riêng `ne_config`. Build với `sdkconfig.secure` (mã hoá flash): phân vùng mã
   hoá, và khi mã hoá hỏng thì không lưu gì, không bao giờ lùi về dạng rõ. Không mã hoá flash: dạng rõ, nhãn
@@ -462,10 +468,12 @@ trong tiến trình của §3, không phải nhầm lẫn của agent; phần d�
 - Stack guard trong CI: khung tĩnh ≤ 1024 byte cho mọi hàm của ta, không VLA; task chính và task bảng điều khiển
   còn ≥ 512 byte trên QEMU.
 
-**Rủi ro còn lại, nói thẳng:** người cầm bo chưa bật mã hoá flash đọc được token và key; bật rồi vẫn còn tấn
+**Rủi ro còn lại, nói thẳng:** người cầm bo chưa bật mã hoá flash đọc được token, key và cả trí nhớ, cuộc trò
+chuyện trong workspace (LittleFS); bật rồi vẫn còn tấn
 công phần cứng (glitch, kênh kề) ngoài phạm vi. Một lỗi bộ nhớ khai thác được trong mã bộ não chiếm cả chip,
 gồm cả gate — đó là lý do chip đơn mang nhãn `risk=single_chip` và hai cách chạy của Q-76 vẫn là đường chính.
-Chưa có Secure Boot (TSK-S6-05): người có cáp thay được firmware.
+Chưa có Secure Boot (TSK-S6-05): người có cáp thay được firmware. `web_fetch` không bắt được DNS rebinding:
+client HTTP phân giải tên lần nữa khi kết nối, nên một bản ghi DNS đổi giữa hai lần vẫn lọt.
 
 ## 3. Ngoài phạm vi: kẻ giả mạo trong cùng tiến trình
 
