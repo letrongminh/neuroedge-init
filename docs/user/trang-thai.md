@@ -13,7 +13,7 @@
 | Pha đang thực thi | 🟡 **Phase MVP (§0.5)**, thứ tự theo Q-72 — I2d rồi I2e (NeuroEdge Blueprint bể cá đi trọn ba vòng trên giả lập) trước cổng nhu cầu 8 tuần; phần còn lại của I1, I2a, I2c làm xen; đợt thử đối tác (Q-70) song song; thoại (I4, I5) và Studio tạm dừng, không cắt |
 | Increment đang mở | 🟡 **I2d — Nhiệm vụ và agent vận hành** (Q-72) — task bắt đầu khi Bước 0 (đồng bộ tài liệu theo Q-72) xong |
 | Cột mốc tiếp theo | **Cổng nhu cầu 8 tuần (Q-72, B6–B8)** — ≥ 3 người ngoài tự cài Blueprint và chạy được, ≥ 1 người chạy liên tục 2 tuần trên G2 hoặc G3, ≥ 1 maker muốn bán (PRD §11.2) |
-| Trạng thái CI Lõi | ✅ **PASS 4885/4885 · SKIP 0** |
+| Trạng thái CI Lõi | ✅ **PASS 4910/4910 · SKIP 0** |
 | Chặn ngoài tầm kỹ thuật | 🟡 **2 hạng mục chặn** |
 | Lần cập nhật cuối | **2026-10-13** |
 
@@ -29,7 +29,7 @@
 |  | **I2c — Nền tảng mở** | 2026-12-27 | **11 / 20** | 🟡 Q-67, thiết kế, giấy phép corpus xong; RFC-0002, RFC-0016 → RFC-0018 đã ký (Q-68); `neuroedge.guard` (TSK-I2c-07), `proxy mcp` + `guard init --mcp` (TSK-I2c-14), `proxy http` (TSK-I2c-15), cơ cấu từ xa + plugin Home Assistant (TSK-I2c-16), bộ tài liệu đợt thử đối tác (TSK-I2c-19) và nửa (a) của RFC-0017 xong; đợt thử với đối tác đi ra từ đây (Q-70) ; mở danh sách target và hai task tạm dừng đã bỏ theo Q-77 (§6) | tag `v0.2.3` (nội bộ) · wheel cho một đội đối tác — thử riêng, không chờ bo mạch (Q-70) |
 |  | **I2d — Nhiệm vụ và agent vận hành** | 2026-11-11 | **0 / 38** | 🟡 Mở — Bước 0 (đồng bộ tài liệu theo Q-72) đang làm, task bắt đầu khi xong; năm RFC dự kiến và RFC của `TODOS.md` #58 chờ chữ ký kỹ thuật trưởng | tag `v0.2.4` (nội bộ) |
 |  | **I2e — NeuroEdge Blueprint tối thiểu** | 2026-11-25 | **0 / 15** | ⏳ Chưa bắt đầu | tag `v0.2.5` (nội bộ) · wheel giao trực tiếp cho người thử ngoài, không index nào (như Q-70); PyPI vẫn ở I6 (Q-39) |
-|  | **I2f — NeuroEdge Cloud và hộp tại nhà ESP32** | sau cổng 8 tuần (nhánh) | **0 / 9** | ⏸ Chờ kết quả cổng nhu cầu 2026-12-06 (Q-74) | dịch vụ tuỳ chọn + firmware hộp ESP32 |
+|  | **I2f — NeuroEdge Cloud và hộp tại nhà ESP32** | sau cổng 8 tuần (nhánh) | **1 / 12** | ⏸ Chờ kết quả cổng nhu cầu 2026-12-06 (Q-74); ngoại lệ Q-79: TSK-I2f-10 xong, I2f-11, I2f-12 chờ bo | dịch vụ tuỳ chọn + firmware hộp ESP32 |
 |  | **I3 — Gate trên Box-3 thật** | sau I2e | **6 / 16** | 🟡 Phần không cần bo mạch đã xong (kể cả firmware sinh cho agent trên QEMU, giao diện LVGL có ảnh golden); chờ bo mạch | tag `v0.3.0` + firmware (nội bộ) |
 |  | **I3a — Nguyên thủy mở rộng trên `esp32s3`** | sau I2e | **0 / 11** | ⏳ Chưa bắt đầu | tag `v0.3.1` + firmware (nội bộ) |
 | **Công khai** | **I6 — Công khai** | sau I2e | **7 / 11** | 🟡 Quét bí mật, SBOM, API Python công khai, MCP qua mạng có xác thực, hợp đồng cho người tích hợp trong `schemas/` (RFC-0015) xong; RFC-0014 chấp thuận (Q-65); chờ I3a | PyPI `v0.6.0` — lần phát hành ra ngoài đầu tiên |

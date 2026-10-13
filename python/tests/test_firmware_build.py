@@ -221,6 +221,11 @@ def test_the_generated_project_carries_the_ota_component_and_the_agent_version(t
         "components/ne_ota/src/ne_ota_policy.c",
         "sdkconfig.ota",
         "sdkconfig.qemu_ota",
+        # Q-79: boot guard, the owner's settings, the serial console
+        "components/ne_boot/src/ne_boot_guard.c",
+        "components/ne_config/src/ne_config.c",
+        "components/ne_console/src/ne_console.c",
+        "sdkconfig.secure",
     ):
         assert (project / name).is_file(), name
     assert (project / "version.txt").read_text(encoding="utf-8") == "0.2.0\n"

@@ -434,6 +434,39 @@ và `cron.allow_command` mặc định bật.
 và vẫn ra được những lệnh mà luật cho phép không cần duyệt (bật đèn…). Khoá ký luật nằm ở đâu là câu hỏi của RFC
 TSK-I2f-01 (roadmap §4.3.6).
 
+## 2l. Trong phạm vi, có nhãn rủi ro: bộ não và gate chung một ESP32-S3 (Q-79)
+
+**Tài sản:** cửa, khoá, mọi actuator nối vào chip; token bot Telegram, key LLM, mật khẩu Wi-Fi lưu trên chip.
+**Kẻ tấn công:** người nhắn tin vào bot; nội dung độc trong câu trả lời của LLM hay trang web nó đọc (prompt
+injection); người cầm được bo mạch. **Mục tiêu của họ:** một lệnh mở cửa không qua chủ nhà; đọc token và key.
+
+Đây là ngoại lệ có nhãn của §1: trên vi điều khiển không có tách tiến trình, nên bộ não không tin cậy và gate
+nằm cùng không gian địa chỉ. Một lỗi bộ nhớ trong mã bộ não (TLS, parser JSON của LLM hay Telegram) là lỗi
+trong tiến trình của §3, không phải nhầm lẫn của agent; phần dưới **giảm** nó, không triệt tiêu.
+
+**Bảo vệ:**
+- LLM không có đường nào tới GPIO: mọi tool call đi qua một hàng đợi có kiểu vào `ne_gate` (walker `NETR`, sổ
+  token), như trên `sim` và `linux`. Không port tool GPIO của zclaw, nơi LLM bật chân trực tiếp. *(Giai đoạn 3,
+  TSK-I2f-12 — chưa có mã.)*
+- Việc không hoàn tác cần nút vật lý trên bo hoặc callback Telegram từ đúng owner ID; tin từ người khác bị bỏ.
+  Chip nói thẳng với API Telegram qua TLS, không qua relay, nên không ai giữa đường giả được nút "Đồng ý" như
+  trường hợp cổng kênh chung của cloud (§2k, FR-CH-08); vẫn tin Telegram. *(Giai đoạn 2, 3 — chưa có mã.)*
+- Bảng điều khiển serial không có lệnh nào chạm chân hay gọi tool (`test_the_console_cannot_move_a_pin_or_call_a_tool`).
+- Bí mật nằm trong phân vùng NVS riêng `ne_config`. Build với `sdkconfig.secure` (mã hoá flash): phân vùng mã
+  hoá, và khi mã hoá hỏng thì không lưu gì, không bao giờ lùi về dạng rõ. Không mã hoá flash: dạng rõ, nhãn
+  `risk=readable_flash` ở mỗi lần khởi động và mỗi lần ghi. Bí mật nhập ở dấu nhắc ẩn: không lên UART, không vào
+  lịch sử dòng lệnh; `config get` chỉ hiện `<secret>` (`scripts/qemu_console.py` kiểm token không xuất hiện trong
+  log UART nào).
+- Boot guard: ba lần khởi động không đứng được thì lần thứ tư vào safe mode, chỉ còn bảng serial: không mạng,
+  không runtime gate, và ảnh OTA đang chờ không bao giờ được đánh dấu hợp lệ.
+- Stack guard trong CI: khung tĩnh ≤ 1024 byte cho mọi hàm của ta, không VLA; task chính và task bảng điều khiển
+  còn ≥ 512 byte trên QEMU.
+
+**Rủi ro còn lại, nói thẳng:** người cầm bo chưa bật mã hoá flash đọc được token và key; bật rồi vẫn còn tấn
+công phần cứng (glitch, kênh kề) ngoài phạm vi. Một lỗi bộ nhớ khai thác được trong mã bộ não chiếm cả chip,
+gồm cả gate — đó là lý do chip đơn mang nhãn `risk=single_chip` và hai cách chạy của Q-76 vẫn là đường chính.
+Chưa có Secure Boot (TSK-S6-05): người có cáp thay được firmware.
+
 ## 3. Ngoài phạm vi: kẻ giả mạo trong cùng tiến trình
 
 Token là `(nonce, digest)` trong bộ nhớ. Mã chạy **trong cùng tiến trình** đọc được

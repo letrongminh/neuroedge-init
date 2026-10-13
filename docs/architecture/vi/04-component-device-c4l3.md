@@ -19,8 +19,9 @@
 
 Nói trước, để không ai đọc sơ đồ thành nhiều hơn thực tế:
 
-- **Không có task FreeRTOS nào được tạo.** Mọi bước chạy tuần tự trong `app_main`. Không có độ ưu
-  tiên, hàng đợi hay ghim nhân.
+- **Gần như không có task FreeRTOS.** Khởi động chạy tuần tự trong `app_main`; chỉ có hai task nhỏ
+  của Q-79: bảng điều khiển serial (`ne_console`, 4 KB stack) và task xoá bộ đếm khởi động sau cửa sổ
+  ổn định (`ne_boot`). Chưa có hàng đợi hay ghim nhân.
 - **Không có âm thanh.** Không I2S, codec, AEC, VAD, Opus hay ESP-SR — chỉ một `TODO(TSK-S1-10)`
   trong `main/main.c`. Thoại trên chip là increment I5.
 - **Không điều khiển GPIO.** Bảng chân của agent mang **tên** chân, chưa có số GPIO; HAL trên chip
@@ -38,6 +39,9 @@ Nói trước, để không ai đọc sơ đồ thành nhiều hơn thực tế:
 | `ne_trace` | `components/ne_trace/` | Định dạng dòng vết ghi `NE1 {…}` ≤ 512 byte; chỉ định dạng, ứng dụng ghi ra UART | `ne_gate` | `done` |
 | `ne_agent` | `components/ne_agent/` (**sinh ra**) | Phần riêng của agent: cây `NETR` mỗi gate, bảng gate · chân · action, phép kiểm self-test kèm đáp án của engine host | `ne_gate`, `ne_trace` | `done` |
 | `ne_ota` | `components/ne_ota/` | Cập nhật A/B có ký, rollback, chặn hạ cấp; chính sách là C99 thuần (`ne_ota_policy.c`), phần ESP-IDF ở `ne_ota.c` | ESP-IDF `app_update`, `esp_https_ota`, `nvs_flash`… | `partial` — trên QEMU |
+| `ne_boot` | `components/ne_boot/` | Boot guard (Q-79): đếm mỗi lần khởi động trong NVS, xoá sau cửa sổ ổn định, lần thứ `CONFIG_NEUROEDGE_BOOT_GUARD_MAX` vào safe mode; quyết định là C99 thuần (`ne_boot_policy.c`). Port từ zclaw | `nvs_flash` | `partial` — trên QEMU |
+| `ne_config` | `components/ne_config/` | Cấu hình và bí mật của chủ nhà (Wi-Fi, token bot, owner ID, LLM) trong phân vùng NVS `ne_config`; mã hoá khi build với `sdkconfig.secure`, không bao giờ lùi về dạng rõ; luật giá trị và cách hiện là C99 thuần (`ne_config_keys.c`) | `nvs_flash` | `partial` — trên QEMU |
+| `ne_console` | `components/ne_console/` | Bảng điều khiển serial (`esp_console`): `status`, `config`, `bootguard`, `reboot`, `factory-reset`; bí mật nhập ở dấu nhắc ẩn; không lệnh nào chạm chân hay gọi tool. Khung theo MimiClaw | `console`, `ne_boot`, `ne_config` | `partial` — trên QEMU |
 | `ne_ui` | `ui/` (**không link**) | Chín màn hình LVGL, tiếng Việt và tiếng Anh | LVGL v9.6 | `partial` — chỉ build trên host |
 
 `ne_gate`, `ne_trace`, `ne_agent` biên dịch với `-std=c99 -Wall -Wextra -Wconversion -Werror`.
@@ -105,7 +109,8 @@ build** — đó là điều làm self-test chứng minh được tương đươ
 
 ## 4. Trình tự khởi động
 
-Mọi dòng đánh dấu (`NE_SELFTEST`, `NE_TRACE DONE`, `NEUROEDGE_*_JSON`, `NE_OTA`) được in ở cột 0,
+Mọi dòng đánh dấu (`NE_SELFTEST`, `NE_TRACE DONE`, `NEUROEDGE_*_JSON`, `NE_OTA`, `NE_BOOT`, `NE_CONFIG`,
+`NE_STACK`, `NE_CONSOLE`) được in ở cột 0,
 không có tiền tố log, để script CI neo được bằng `^`.
 
 ```mermaid
@@ -113,14 +118,21 @@ sequenceDiagram
     autonumber
     participant M as app_main
     participant P as memory_probe
+    participant B as ne_boot
     participant O as ne_ota
+    participant C as ne_config / ne_console
     participant S as gate_selftest
     participant V as trace_vectors
     participant N as network
     M->>P: checkpoint boot
     M->>M: init NVS (erase and retry on NO_FREE_PAGES)
     M->>P: checkpoint nvs_ready
+    M->>B: ne_boot_guard_begin() — count this boot, NE_BOOT count=n max=m mode=…
     M->>O: ne_ota_boot() — running slot, rollback record, high-water mark
+    M->>C: ne_config_init() — NE_CONFIG STORAGE encrypted | plaintext risk=readable_flash
+    opt safe mode (count reached the limit)
+        M->>C: ne_console_start(safe) — console only; no self-test, network or update; never marks valid
+    end
     M->>S: neuroedge_gate_selftest(ne_agent_linked) as one NE1 session
     alt self-test fails
         S-->>M: NE_SELFTEST FAIL what name
@@ -131,9 +143,11 @@ sequenceDiagram
         M->>O: ne_ota_boot_confirmed() — a pending image is marked valid
         M->>V: replay the three canonical traces (CONFIG_NEUROEDGE_REPLAY_VECTORS)
         M->>P: NEUROEDGE_HEAP_JSON at gate_runtime_ready
-        M->>M: NE_TRACE DONE sessions=n
+        M->>M: NE_STACK task=main free_min=n, then NE_TRACE DONE sessions=n
+        M->>C: ne_console_start(normal)
         M->>N: Wi-Fi STA init, never connects (skipped with CONFIG_NEUROEDGE_SKIP_NETWORK)
         M->>O: ne_ota_run() — only with CONFIG_NEUROEDGE_OTA and a URL
+        M->>B: ne_boot_guard_stable_after(STABLE_MS) — NE_BOOT STABLE clears the count
         M->>P: NEUROEDGE_MEMORY_JSON — Q-3 verdict INCONCLUSIVE until audio exists
     end
 ```
@@ -152,12 +166,16 @@ thì khe được dùng lại. Thất bại một chỗ ⇒ firmware dừng: kh�
 | `CONFIG_NEUROEDGE_REPLAY_VECTORS` | y | Phát lại ba vết ghi chuẩn mực sau self-test |
 | `CONFIG_NEUROEDGE_OTA` | n | Bật đường cập nhật; Kconfig và `#error` từ chối nếu thiếu kiểm chữ ký hoặc rollback |
 | `CONFIG_NEUROEDGE_OTA_ETH` | n | Mạng Ethernet ảo `open_eth` của QEMU cho OTA |
+| `CONFIG_NEUROEDGE_BOOT_GUARD_MAX` | 4 | Lần khởi động chạm số này vào safe mode (Q-79, như `MAX_BOOT_FAILURES` của zclaw) |
+| `CONFIG_NEUROEDGE_BOOT_GUARD_STABLE_MS` | 30000 | Đứng được chừng này sau khởi động thì xoá bộ đếm; `sdkconfig.qemu_ota` đặt 0 |
+| `CONFIG_NEUROEDGE_CONSOLE` | y | Bảng điều khiển serial, ở cả chế độ thường lẫn safe mode |
 
 ## 5. Bộ nhớ và flash
 
 **Bảng phân vùng** (`partitions.csv`, flash 16 MB): `nvs` 16 KiB · `otadata` 8 KiB · `phy_init` 4 KiB
-· `factory`, `ota_0`, `ota_1` mỗi khe 3,5 MiB · `storage` (spiffs) 5 MiB, chưa dùng. Khe 3,5 MiB
-chính là trần kích thước firmware của Q-3.
+· `factory`, `ota_0`, `ota_1` mỗi khe 3,5 MiB · `storage` (spiffs) 5 MiB, chưa dùng · `ne_config` 24 KiB
+(cấu hình và bí mật của chủ nhà, Q-79) · `nvs_keys` 4 KiB (khoá mã hoá NVS, cờ `encrypted`). Hai phân vùng
+cuối nằm sau `storage`, không dời offset nào có trước. Khe 3,5 MiB chính là trần kích thước firmware của Q-3.
 
 **Lớp cấu hình** chồng lên nhau qua `SDKCONFIG_DEFAULTS`:
 
@@ -166,12 +184,18 @@ chính là trần kích thước firmware của Q-3.
 | `sdkconfig.defaults` | Flash 16 MB, bảng phân vùng riêng, PSRAM octal 80 MHz, FreeRTOS 1000 Hz, tối ưu hiệu năng |
 | `sdkconfig.qemu` | Bỏ mạng, cờ QEMU, bỏ qua khi không tìm thấy PSRAM |
 | `sdkconfig.ota` | OTA, rollback của bootloader, ký ảnh RSA-3072 và kiểm chữ ký khi cập nhật (chưa Secure Boot), stack task chính 8 KB |
-| `sdkconfig.qemu_ota` | URL máy chủ thử, `open_eth`, tắt tăng tốc phần cứng AES/SHA/MPI (mô hình GDMA của QEMU chưa đủ) |
+| `sdkconfig.qemu_ota` | URL máy chủ thử, `open_eth`, tắt tăng tốc phần cứng AES/SHA/MPI (mô hình GDMA của QEMU chưa đủ), xoá bộ đếm khởi động ngay sau khởi động |
+| `sdkconfig.secure` | Mã hoá flash (chế độ phát triển) và NVS mã hoá cho `ne_config` — **đốt eFuse ở lần khởi động đầu, một chiều**; CI chỉ build |
 
 **Kỷ luật bộ nhớ tĩnh**, được test trên từng PR (`test_c_walker.py`, `test_c_token.py`,
 `test_c_trace.py`): tệp đối tượng của walker, sổ token và bộ định dạng vết ghi **không có** ký hiệu
 `.data`/`.bss`; mỗi hàm dùng stack ≤ 512 byte. Bộ nhớ trạng thái (sổ token, bộ đệm dòng) do ứng
 dụng cấp phát, không bao giờ nằm trong component.
+
+**Stack guard** (Q-79, ý tưởng từ zclaw): firmware build với `-fstack-usage`; mọi hàm của `main` và
+các component `ne_*` phải có khung tĩnh ≤ 1024 byte, không VLA hay `alloca`
+(`scripts/check_stack_usage.py`). Lúc chạy trên QEMU, task chính phải còn ≥ 512 byte chưa dùng
+(`NE_STACK`), task bảng điều khiển cũng vậy sau lệnh sâu nhất (`config set`).
 
 **Ngân sách Q-3** (SRAM ≥ 120 KB và PSRAM ≥ 2 MB cho ứng dụng, firmware ≤ 3,5 MB) được CI kiểm
 từng phần: kích thước ảnh, RAM tĩnh còn lại của cấu hình bo mạch, heap lúc khởi động trên QEMU. Số
@@ -230,6 +254,10 @@ màn hình (TSK-S4-01); project sinh cho agent hôm nay không chép `ui/`.
 | Kích thước ảnh, RAM tĩnh cấu hình bo mạch | `scripts/check_firmware_size.py` | job `firmware-size` |
 | Firmware sinh cho một agent mới boot được, bản OTA ký đúng phiên bản | `neuroedge build` + `idf.py` + QEMU + `scripts/build_ota_layer.sh` | job `agent-firmware` |
 | OTA bảy pha a–g | `scripts/qemu_ota.sh` | job `ota-rollback` |
+| Boot guard, chính sách cấu hình (C trên host) | `test_c_boot_and_config.py` | `pytest` job `tests` |
+| Khung stack ≤ 1024 B; task chính còn ≥ 512 B trên QEMU | `scripts/check_stack_usage.py` | job `firmware-qemu` |
+| Ba lần khởi động hỏng → safe mode, bí mật qua bảng serial, factory reset | `scripts/qemu_console.py` | job `firmware-qemu` |
+| Lớp mã hoá flash build được | `idf.py` với `sdkconfig.secure` | job `firmware-size` |
 | Ảnh golden giao diện | `scripts/run_ui_golden.sh` | job `ui-golden` |
 | Vết ghi UART thành `trace.v1`, `verify` trên chip | `neuroedge record --port`, `verify --targets esp32s3` | job `uart-trace` |
 

@@ -32,6 +32,17 @@
  * image may stay — a pending image is marked valid here after the self-test,
  * marked invalid and rebooting when the self-test fails. A configured update
  * URL is checked last, once the gate runtime is trusted.
+ *
+ * Standalone pieces for the ESP32-S3 alone (Q-79, TSK-I2f-10), ported from zclaw
+ * and MimiClaw (MIT): the boot guard counts this boot in NVS before anything
+ * that could crash, and the boot that reaches CONFIG_NEUROEDGE_BOOT_GUARD_MAX
+ * starts in safe mode — the serial console and nothing else: no self-test, no
+ * gate runtime, no network, and a pending update is never marked valid. The
+ * owner's settings and secrets live in their own NVS partition (components/
+ * ne_config: encrypted under sdkconfig.secure, plaintext with a risk label
+ * otherwise). In normal mode the console starts after NE_TRACE DONE, and the
+ * boot count is cleared CONFIG_NEUROEDGE_BOOT_GUARD_STABLE_MS after startup.
+ * `NE_STACK` before NE_TRACE DONE is the main task's lowest free stack so far.
  */
 #include <stdio.h>
 #include <string.h>
@@ -53,6 +64,11 @@
 #include "gate_selftest.h"
 #include "memory_probe.h"
 #include "ne_agent.h"
+#include "ne_boot_guard.h"
+#include "ne_config.h"
+#if CONFIG_NEUROEDGE_CONSOLE
+#include "ne_console.h"
+#endif
 #include "ne_trace.h"
 #include "trace_vectors.h"
 
@@ -165,9 +181,25 @@ void app_main(void)
     init_nvs();
     neuroedge_memory_probe(NEUROEDGE_CP_NVS_READY, "nvs_ready");
 
+    /* Before anything that could crash: count this boot (Q-79). */
+    const ne_boot_decision boot = ne_boot_guard_begin();
+
     /* Partition state before anything trusts this image: pending verification,
      * and whether the last update was rolled back (FR-OTA-01/02). */
     ne_ota_boot();
+    ne_config_init(); /* NE_CONFIG STORAGE ...: the owner's settings, in safe mode too */
+
+    if (boot.safe_mode) {
+        /* Serial console only. A pending image stays pending, so the bootloader
+         * rolls it back on the next reset. */
+        ESP_LOGE(TAG, "safe mode: %lu boots in a row did not stay up", (unsigned long)boot.count);
+#if CONFIG_NEUROEDGE_CONSOLE
+        ne_console_start(true);
+#endif
+        while (true) {
+            vTaskDelay(pdMS_TO_TICKS(10000));
+        }
+    }
 
 #if CONFIG_NEUROEDGE_OTA_TEST_FAIL_SELFTEST
     /* Test-only (scripts/qemu_ota.sh): force the path a broken image takes. */
@@ -207,8 +239,13 @@ void app_main(void)
     /* Before NE_TRACE DONE, which a reader stops at: the free heap once the gate runtime is
      * up, before the network and the audio stack (TSK-S4-11). A floor, not the Q-3 figure. */
     neuroedge_memory_report_heap_json("gate_runtime_ready");
+    printf("NE_STACK task=main free_min=%u size=%u\n",
+           (unsigned)uxTaskGetStackHighWaterMark(NULL), (unsigned)CONFIG_ESP_MAIN_TASK_STACK_SIZE);
     printf("NE_TRACE DONE sessions=%d\n", sessions);
     fflush(stdout);
+#if CONFIG_NEUROEDGE_CONSOLE
+    ne_console_start(false);
+#endif
 
 #ifdef CONFIG_NEUROEDGE_SKIP_NETWORK
     ESP_LOGW(TAG, "network skipped (CONFIG_NEUROEDGE_SKIP_NETWORK): network_ready not measured");
@@ -221,6 +258,9 @@ void app_main(void)
      * unless a URL is configured (CONFIG_NEUROEDGE_OTA_URL or NVS ne_ota/url);
      * QEMU builds with CONFIG_NEUROEDGE_OTA_ETH bring up open_eth here. */
     ne_ota_run();
+
+    /* Startup is done: the count clears once this boot has stayed up (Q-79). */
+    ne_boot_guard_stable_after((uint32_t)CONFIG_NEUROEDGE_BOOT_GUARD_STABLE_MS);
 
     /*
      * TODO(TSK-S1-10, V2): load the audio stack and take the AUDIO_READY

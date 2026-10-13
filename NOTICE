@@ -98,6 +98,31 @@ of the file itself.
                 LICENSES/OFL-1.1.txt (docs/spec/ui.md §5). No font software is
                 sold.
 
+6. zclaw
+   - Source:    https://github.com/tnm/zclaw (commit e3ad271, v2.13.0)
+   - Licence:   MIT License, Copyright (c) 2026 Ted Nyman — full text in
+                LICENSES/MIT-zclaw.txt
+   - Verified:  2026-10-13
+   - Scope:     The boot guard (main/boot_guard.c: count every boot in NVS,
+                clear it after a stable window, safe mode at 4); the
+                encrypted-NVS approach that refuses a plaintext fallback
+                (main/memory.c); the stack-usage check idea
+                (scripts/check-stack-usage.sh); the local admin command set.
+   - Lands in:  targets/esp32s3/components/ne_boot/, ne_config/src/ne_config.c,
+                ne_console/, scripts/check_stack_usage.py
+   - Status:    APPROVED — ported (Q-79, TSK-I2f-10). Not ported: its agent
+                loop and its GPIO tools, which let the LLM move pins directly;
+                on NeuroEdge every action goes through the gate (§3.1, Q-79).
+
+7. MimiClaw
+   - Source:    https://github.com/memovai/mimiclaw (commit dcc1c8c)
+   - Licence:   MIT License, Copyright (c) 2026 Ziboyan Wang — full text in
+                LICENSES/MIT-mimiclaw.txt
+   - Verified:  2026-10-13
+   - Scope:     The esp_console REPL setup (main/cli/serial_cli.c).
+   - Lands in:  targets/esp32s3/components/ne_console/src/ne_console.c
+   - Status:    APPROVED — adapted (Q-79, TSK-I2f-10).
+
 
 ================================================================================
 SECTION B — RUNTIME DEPENDENCIES OF THE DISTRIBUTED CORE

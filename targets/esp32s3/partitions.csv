@@ -6,3 +6,8 @@ factory,  app,  factory, 0x10000, 0x380000,
 ota_0,    app,  ota_0,   0x390000,0x380000,
 ota_1,    app,  ota_1,   0x710000,0x380000,
 storage,  data, spiffs,  0xa90000,0x500000,
+# The owner's settings and secrets (Q-79, components/ne_config), after storage so
+# no earlier offset moves. nvs_keys holds the NVS encryption keys when flash
+# encryption is on (sdkconfig.secure); it must stay `encrypted`.
+ne_config, data, nvs,    0xf90000,0x6000,
+nvs_keys, data, nvs_keys,0xf96000,0x1000, encrypted

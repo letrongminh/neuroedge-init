@@ -1,0 +1,18 @@
+menu "NeuroEdge serial console (Q-79, TSK-I2f-10)"
+
+    config NEUROEDGE_CONSOLE
+        bool "Start the serial console"
+        default y
+        help
+            The owner's way in with a USB cable: status, settings and secrets
+            (a secret at a hidden prompt), the boot guard, reboot and factory
+            reset. It starts in normal mode after the gate self-test, and is
+            all that runs in safe mode. No command moves a pin or calls a tool.
+
+    config NEUROEDGE_CONSOLE_STACK
+        int "Console task stack (bytes)"
+        default 4096
+        range 3072 16384
+        depends on NEUROEDGE_CONSOLE
+
+endmenu

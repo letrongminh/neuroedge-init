@@ -1,0 +1,24 @@
+menu "NeuroEdge boot guard (Q-79, TSK-I2f-10)"
+
+    config NEUROEDGE_BOOT_GUARD_MAX
+        int "The boot that reaches this count starts in safe mode"
+        default 4
+        range 2 20
+        help
+            Every boot counts itself in NVS before anything else runs, and the
+            count is cleared once a boot has stayed up for
+            NEUROEDGE_BOOT_GUARD_STABLE_MS after its startup. With the default
+            of 4, three boots in a row that crash, reset or lose power before
+            that leave the fourth in safe mode: serial console only, no
+            network, no gate runtime. `bootguard clear` then `reboot` on the
+            console leaves it. Ported from zclaw (MAX_BOOT_FAILURES = 4).
+
+    config NEUROEDGE_BOOT_GUARD_STABLE_MS
+        int "A boot is stable this long after its startup (ms)"
+        default 30000
+        range 0 600000
+        help
+            0 clears the count as soon as startup is done (QEMU OTA test,
+            whose boots stop seconds after their last marker).
+
+endmenu
