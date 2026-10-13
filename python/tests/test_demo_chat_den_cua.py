@@ -1,19 +1,20 @@
 """
 Demo "chat điều khiển đèn và cửa qua NeuroEdge Cloud" (`demo/i2f-chat-den-cua/`).
 
-The brain is NeuroClaw (Q-78, a hard fork of PicoClaw) on a VPS; the box at home is
-`neuroedge mcp serve --http --ui`.
+The brain is NeuroClaw (Q-78, Q-80: a hard fork of PicoClaw with all of PicoClaw's capabilities)
+on a VPS; the box at home is `neuroedge mcp serve --http --ui`.
 What the door itself guarantees is in `test_mcp_http.py` §4. These show the two other halves:
 
-  * the brain's configuration has no road to the world except the box's MCP tools: no shell (not
-    even through cron or hooks), no i2c/spi/serial, no skill installs, no other MCP server
-    (`test_the_brain_has_no_road_to_the_world_but_the_boxs_tools`);
+  * the demo chooses a closed brain: NeuroClaw, like PicoClaw, has a shell, cron commands, hooks,
+    buses, skill installs and stdio MCP servers, so the demo's configuration turns every one off and
+    leaves no road to the world except the box's MCP tools
+    (`test_the_demo_brain_is_configured_closed`);
   * the demo's keys and `cau-noi.py` carry a header-only client (original PicoClaw, or any MCP
     client without client certificates) to
     the box over mTLS, and the session replays (`test_a_header_only_brain_reaches_the_box_...`).
 
-NeuroClaw itself is not run here (Go, an LLM and a Telegram bot): its own CI tests mTLS and the
-lockdown (github.com/letrongminh/neuroclaw); the guide's manual checks cover the rest.
+NeuroClaw itself is not run here (Go, an LLM and a Telegram bot): its own CI tests mTLS and its
+risk labels (github.com/letrongminh/neuroclaw); the guide's manual checks cover the rest.
 """
 
 from __future__ import annotations
@@ -59,7 +60,8 @@ def _load(path: Path):
 CLOSED = ("exec", "i2c", "spi", "serial", "install_skill", "find_skills")
 
 
-def test_the_brain_has_no_road_to_the_world_but_the_boxs_tools(root):
+def test_the_demo_brain_is_configured_closed(root):
+    """NeuroClaw opens these by default, as PicoClaw (Q-80): the demo's config must say off."""
     config = json.loads((_demo(root) / "neuroclaw" / "config.json").read_text())
     tools = config["tools"]
 

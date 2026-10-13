@@ -421,18 +421,19 @@ mở sau cổng nhu cầu (§6.9) nếu số đo cần.
 - **Bước xác minh do người dùng khai** ([`Q-73`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), FR-CH-06, chờ RFC TSK-I2d-20): đọc mã, giọng
   nói, khuôn mặt, bàn phím, vân tay trên điện thoại… qua plugin bộ kiểm; mỗi cách mang nhãn rủi ro. LLM, client
   MCP và nguồn tự động không bao giờ trả lời bước xác minh.
-- **Bộ não NeuroEdge ([`Q-76`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)): một phần mềm, hai cách chạy.** LLM worker là một bản rút gọn của
-  PicoClaw: kênh chat, LLM, trí nhớ dạng tệp, lịch và heartbeat, MCP client; không lệnh shell, không công cụ phần
-  cứng. Tự host trên board Linux rẻ (hoặc cùng Pi với runtime, dưới user riêng không có quyền phần cứng), hoặc dùng
+- **Bộ não NeuroEdge ([`Q-76`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)): một phần mềm, hai cách chạy.** LLM worker có đủ năng lực PicoClaw:
+  kênh chat, LLM, trí nhớ dạng tệp, lịch và heartbeat, MCP client, và shell, bus phần cứng, cài skill do người dùng
+  bật hay tắt, mỗi thứ đang bật có nhãn rủi ro ([`Q-80`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)); thiết bị của nhà
+  chỉ qua bộ tool MCP của hộp. Tự host trên board Linux rẻ (hoặc cùng Pi với runtime, dưới user riêng không có quyền phần cứng), hoặc dùng
   NeuroEdge Cloud: cổng kênh chung chỉ định tuyến, mỗi người một instance cách ly (microVM), ngủ khi rảnh. Cả hai
   nói với hộp tại nhà qua cùng bộ tool MCP; worker khác (PicoClaw gốc, Claude Desktop, OpenClaw) cắm được như nhau.
   Demo nội bộ 2026-10-13 ([`demo/i2f-chat-den-cua/`](../../../demo/i2f-chat-den-cua/kich-ban.md)) chạy đúng hình này với PicoClaw
   v0.3.1 và hộp `mcp serve --http --ui`, và rút ra hai điều: client MCP của PicoClaw không trình được chứng chỉ
   client, nên phải có cầu nối mTLS; và "tắt shell" phải tính cả lệnh trong cron, hook tiến trình và biến môi trường ghi
   đè cấu hình, không chỉ `exec`. Vì thế bộ não là **NeuroClaw** ([`Q-78`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định),
-  [`letrongminh/neuroclaw`](https://github.com/letrongminh/neuroclaw), MIT): fork cứng PicoClaw v0.3.1, tự nói mTLS,
-  khoá cứng mọi đường chạy lệnh và chạm phần cứng, và nói rõ với LLM khi hộp hỏi chủ nhà
-  ([`threat_model.md`](../../spec/threat_model.md) §2k).
+  [`letrongminh/neuroclaw`](https://github.com/letrongminh/neuroclaw), MIT): fork cứng PicoClaw v0.3.1, tự nói mTLS và
+  nói rõ với LLM khi hộp hỏi chủ nhà ([`threat_model.md`](../../spec/threat_model.md) §2k). Khoá cứng mọi đường chạy lệnh
+  của Q-78 được gỡ ở Q-80: nhà muốn bộ não khoanh vùng thì tắt trong cấu hình, như demo.
 
 ```
  tự host:  📱 chat ── bộ não (board $10 / Pi, user riêng) ──MCP──► runtime tại nhà ──► phần cứng
