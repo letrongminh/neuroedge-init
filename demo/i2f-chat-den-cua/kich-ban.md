@@ -152,6 +152,8 @@ python/.venv/bin/neuroedge replay ~/neuroedge-demo-vet-ghi.json \
 
 ## 6b. Lần chạy 2026-10-13 (OrbStack đóng vai cloud)
 
+Chủ nhà tạm chấp nhận OrbStack thay VPS; VPS và đường hầm, bằng chứng phía bot cho màn 4 và video hoãn có chủ ý ở `TODOS.md` #69.
+
 Hộp: `chay-hop.sh --local` trên Mac. Bộ não: `dung-vps.sh` với `VPS_ORB=neuroedge-nao`, LLM
 `anthropic/claude-haiku-4.5` qua OpenRouter. Các câu được gửi bằng `picoclaw agent -m` ngay trong máy
 Orb, tức cùng bộ não, cùng cấu hình và cùng MCP, chỉ khác là không đi qua Telegram.
