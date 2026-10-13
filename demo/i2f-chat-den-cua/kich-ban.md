@@ -37,52 +37,37 @@ vì nới nó; nó chỉ nghe trên 127.0.0.1 của VPS.
 
 ## 0. Chuẩn bị
 
+Điền `.env.txt` ở gốc kho (đã có sẵn tên biến; tệp không bao giờ được commit). Ba script làm
+phần còn lại; mỗi script ghi ở đầu nó làm gì.
+
 ### 0.1 Hộp (laptop, từ gốc kho)
 
 ```bash
 cd python && .venv/bin/pip install -e '.[mcp]' && cd ..     # nếu chưa cài
-tailscale up                                                  # máy này có tên, ví dụ hop-nha
-HOP=hop-nha.<tailnet>.ts.net
-
-python/.venv/bin/python demo/i2f-chat-den-cua/tao-khoa.py \
-    --out ~/neuroedge-demo-khoa --audience https://$HOP:8443/mcp
-
-K=~/neuroedge-demo-khoa
-python/.venv/bin/neuroedge mcp serve --http --ui --target sim \
-    --agent fixtures/agents/chat-den-cua/agent.toml \
-    --host "$(tailscale ip -4)" --port 8443 \
-    --tls-cert $K/hop.pem --tls-key $K/hop.key --client-ca $K/ca.pem \
-    --issuer https://neuroedge.demo/issuer --audience https://$HOP:8443/mcp \
-    --jwks $K/jwks.json --trace-out ~/neuroedge-demo-vet-ghi.json
+tailscale up
+bash demo/i2f-chat-den-cua/chay-hop.sh
 ```
 
-Thấy trên stderr: `sim UI at http://127.0.0.1:8765 (same session; `ask` is answered here)`
-và `listening on <ip>:8443/mcp`. Mở trang 8765 trong trình duyệt: đây là "màn hình tại nhà".
-Hộp chỉ nghe trên IP Tailscale, không trên Wi-Fi nhà hay Internet.
+Lần đầu, script tạo khoá ở `~/neuroedge-demo-khoa` (`tao-khoa.py`: CA, chứng chỉ hộp và bộ não,
+token 30 ngày gắn chứng chỉ). Rồi nó chạy `neuroedge mcp serve --http --ui --target sim` trên IP
+Tailscale, cổng 8443. Thấy trên stderr: `sim UI at http://127.0.0.1:8765 (same session; `ask`
+is answered here)` và `listening on <ip>:8443/mcp`. Mở trang đó: đây là "màn hình tại nhà".
+Hộp chỉ nghe trên IP Tailscale, không trên Wi-Fi nhà hay Internet. Token hết hạn thì chạy
+`tao-khoa.py --out ~/neuroedge-demo-khoa --renew-token`.
 
-Chép sang VPS **bốn tệp**: `ca.pem`, `nao.pem`, `nao.key`, `nao.token`. Không bao giờ chép
-`issuer.key` hay `hop.key`: ai có `issuer.key` cấp được token. Token sống 30 ngày;
-`tao-khoa.py --out $K --renew-token` cấp lại.
-
-### 0.2 Bộ não (VPS)
+### 0.2 Bộ não (VPS), từ laptop
 
 ```bash
-tailscale up
-# PicoClaw v0.3.1 (MIT), bản đã đối chiếu cấu hình
-curl -LO https://github.com/sipeed/picoclaw/releases/download/v0.3.1/picoclaw_Linux_x86_64.tar.gz
-tar xzf picoclaw_Linux_x86_64.tar.gz && ./picoclaw onboard
-
-cp picoclaw/config.json ~/.picoclaw/config.json             # từ demo/i2f-chat-den-cua/
-cp picoclaw/security.yml.mau ~/.picoclaw/.security.yml && chmod 600 ~/.picoclaw/.security.yml
-#   sửa .security.yml: KEY_OPENROUTER, TOKEN_BOT_TELEGRAM
-#   sửa config.json: ID_TELEGRAM_CUA_CHU_NHA (chỉ chủ nhà nhắn được)
-sed -i "s/NOI_DUNG_NAO_TOKEN/$(cat ~/khoa/nao.token)/" ~/.picoclaw/config.json
-
-python3 cau-noi.py --target $HOP:8443 \
-    --ca ~/khoa/ca.pem --cert ~/khoa/nao.pem --key ~/khoa/nao.key &
-env | grep '^PICOCLAW_TOOLS_'      # phải không in gì
-./picoclaw gateway
+bash demo/i2f-chat-den-cua/dung-vps.sh
 ```
+
+Script SSH vào VPS, cài Tailscale (vào tailnet bằng `TAILSCALE_AUTHKEY`), chép đúng những gì bộ
+não cần — ba biến (key LLM, bot Telegram, ID chủ nhà) và bốn tệp `ca.pem`, `nao.pem`,
+`nao.key`, `nao.token`; **không bao giờ** `issuer.key` hay `hop.key` — rồi bật dịch vụ
+`neuroedge-nao`. Dịch vụ chạy `chay-nao.sh`: tải PicoClaw v0.3.1, dựng cấu hình từ
+`picoclaw/config.json` (bí mật vào `.security.yml`, quyền 600), mở `cau-noi.py` và chạy
+`picoclaw gateway`. Trạng thái của bộ não (trí nhớ, phiên, cron) ở `/var/lib/neuroedge-nao`.
+Điều khiển: `dung-vps.sh stop|start|restart|logs`.
 
 Biến môi trường `PICOCLAW_TOOLS_*` ghi đè `config.json`, nên trước khi chạy phải không còn biến nào.
 Cấu hình tắt: `exec`, `i2c`, `spi`, `serial`, `install_skill`, `find_skills`, lệnh shell
@@ -127,7 +112,7 @@ câu hỏi nào hiện ở nhà. Bộ não không có đường nào để "kh�
 
 ## 4. Màn 4 — Cắt cloud: chat im, nhà vẫn chạy
 
-**Làm:** dừng `picoclaw gateway` trên VPS (hoặc `tailscale down` trên VPS).
+**Làm:** `bash demo/i2f-chat-den-cua/dung-vps.sh stop` (cắt bộ não trên cloud).
 
 **Thấy:** Telegram im lặng (hoặc bộ não báo không tới được hộp). Trên trang tại nhà gõ
 `bật đèn`: đèn bật, vì luật và phản xạ ở nhà. `door_lock` vẫn LOW. Gõ `mở cửa` trên trang:
@@ -135,16 +120,15 @@ vẫn hỏi, như mọi lần.
 
 ## 5. Màn 5 — Cùng bộ não tự host trên laptop (Q-76)
 
-**Làm:** chạy đúng cấu hình PicoClaw trên chính laptop, cầu nối trỏ vào hộp tại chỗ:
+**Làm:** cắt bộ não trên cloud (`dung-vps.sh stop`), chạy hộp thứ hai trên loopback và cùng bộ
+não ngay trên laptop — cùng cấu hình, cùng token:
 
 ```bash
-python3 demo/i2f-chat-den-cua/cau-noi.py --target 127.0.0.1:8443 --server-name localhost \
-    --ca $K/ca.pem --cert $K/nao.pem --key $K/nao.key &
-./picoclaw gateway          # cùng config.json, cùng token
+bash demo/i2f-chat-den-cua/chay-hop.sh --local      # terminal 1 (dừng hộp Tailscale trước)
+bash demo/i2f-chat-den-cua/chay-nao.sh 127.0.0.1:8443   # terminal 2
 ```
 
-Hộp lúc này phải nghe cả trên loopback: chạy lại lệnh §0.1 với `--host 0.0.0.0`, hoặc mở hộp
-thứ hai. Lặp lại màn 1–3: kết quả y hệt, vì luật nằm ở hộp, không ở nơi bộ não chạy.
+Lặp lại màn 1–3: kết quả y hệt, vì luật nằm ở hộp, không ở nơi bộ não chạy.
 
 ## 6. Màn 6 — Replay vết ghi
 
@@ -165,8 +149,8 @@ Chạy trên VPS sau §0.2, ghi kết quả vào bảng.
 
 | # | Kiểm | Làm | Đạt khi | Kết quả |
 |:---|:---|:---|:---|:---|
-| K1 | Ghi log | Nhắn vài câu; xem log của `picoclaw gateway` (`log_level: info`) | Có dòng `agent.*` cho từng lượt, có lời gọi tool `neuroedge` | |
-| K2 | Nhớ qua khởi động lại | Nhắn "nhớ giúp tôi: khách tên An đến lúc 3 giờ"; dừng và chạy lại gateway; hỏi "khách tên gì?" | Trả lời "An"; `memory/MEMORY.md` trong workspace có dòng đó | |
+| K1 | Ghi log | Nhắn vài câu; `dung-vps.sh logs` | Có dòng `agent.*` cho từng lượt, có lời gọi tool `neuroedge` | |
+| K2 | Nhớ qua khởi động lại | Nhắn "nhớ giúp tôi: khách tên An đến lúc 3 giờ"; `dung-vps.sh restart`; hỏi "khách tên gì?" | Trả lời "An"; `memory/MEMORY.md` trong workspace có dòng đó | |
 | K3 | Nhắc lịch | "Hai phút nữa nhắc tôi tắt đèn" | Telegram nhận lời nhắc sau khoảng 2 phút | |
 | K4 | Tra web | "Thời tiết Hà Nội hôm nay?" | Trả lời có nguồn từ web | |
 | K5 | Trả lời trong Telegram | Mọi câu trên | Trả lời đến đúng cuộc chat của chủ nhà; người khác nhắn bot không được trả lời (`allow_from`) | |

@@ -19,6 +19,7 @@ import asyncio
 import contextlib
 import importlib.util
 import json
+import subprocess
 import threading
 from pathlib import Path
 
@@ -224,3 +225,17 @@ def test_a_header_only_brain_reaches_the_box_through_the_bridge_and_the_session_
     # step 6 of the demo: the recorded verdicts are recomputed and agree
     replayed = CliRunner().invoke(app, ["replay", str(trace), "--agent", str(agent)])
     assert replayed.exit_code == 0, replayed.output
+
+
+def test_the_scripts_parse_and_the_vps_never_gets_the_keys_that_mint_or_serve(root):
+    demo = _demo(root)
+    for script in ("chay-hop.sh", "chay-nao.sh", "dung-vps.sh"):
+        checked = subprocess.run(["bash", "-n", str(demo / script)], capture_output=True)
+        assert checked.returncode == 0, (script, checked.stderr)
+    # what goes to the VPS: the brain's certificate, key and token, and the CA to check the box
+    copied = [line for line in (demo / "dung-vps.sh").read_text().splitlines() if "cp " in line]
+    shipped = " ".join(copied)
+    for name in ("ca.pem", "nao.pem", "nao.key", "nao.token"):
+        assert name in shipped, name
+    for name in ("issuer.key", "hop.key", "jwks.json"):
+        assert name not in shipped, name
