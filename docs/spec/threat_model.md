@@ -456,7 +456,9 @@ trong tiến trình của §3, không phải nhầm lẫn của agent; phần d�
 - Công cụ riêng của bộ não không chạm thiết bị: tệp trong workspace (trí nhớ, ghi chú; `sessions/`, `cron/` chỉ bộ
   não ghi), lịch (`cron` từ chối `command`), và web. `web_fetch` từ chối mọi địa chỉ riêng hay cục bộ (loopback,
   RFC 1918, link-local, CGNAT, ULA…), kiểm từng địa chỉ tên miền trỏ tới và từng bước chuyển hướng — nếu không, LLM
-  gọi thẳng được thiết bị trong mạng nhà, vòng qua gate.
+  gọi thẳng được thiết bị trong mạng nhà, vòng qua gate. `message` và `send_file` chỉ gửi tới owner ID (`chat_id`
+  khác bị từ chối trước khi gửi), nên prompt injection không đẩy được trí nhớ hay tệp ra cho người khác. Key của LLM
+  dự phòng là thêm một bí mật, cùng chỗ lưu và cùng luật với key chính khi nối vào firmware (TSK-I2f-11).
 - Bảng điều khiển serial không có lệnh nào chạm chân hay gọi tool (`test_the_console_cannot_move_a_pin_or_call_a_tool`).
 - Bí mật nằm trong phân vùng NVS riêng `ne_config`. Build với `sdkconfig.secure` (mã hoá flash): phân vùng mã
   hoá, và khi mã hoá hỏng thì không lưu gì, không bao giờ lùi về dạng rõ. Không mã hoá flash: dạng rõ, nhãn

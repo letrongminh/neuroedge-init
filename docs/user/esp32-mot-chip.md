@@ -30,7 +30,8 @@ việc không hoàn tác cần nút trên bo hoặc callback của đúng chủ 
 Bộ não cho chip đã có riêng: **NeuroClaw-ESP**, trong repo [`neuroclaw`](https://github.com/letrongminh/neuroclaw)
 thư mục `esp32/` (MIT). Cùng workspace và cùng tool với NeuroClaw trên Linux hay cloud: trò chuyện Telegram chỉ
 với chủ nhà, trí nhớ `memory/MEMORY.md`, ghi chú ngày, tệp `USER.md`/`SOUL.md`, skills, cuộc trò chuyện giữ qua
-khởi động lại kèm tóm tắt phần cũ, nhắc lịch `cron`, heartbeat, tìm kiếm web và đọc trang (không chạm mạng nhà).
+khởi động lại kèm tóm tắt phần cũ, nhắc lịch `cron`, heartbeat, tìm kiếm web và đọc trang (không chạm mạng nhà),
+tự nhắn hay gửi tệp cho chủ nhà, và một LLM dự phòng khi LLM chính lỗi.
 Nó đã chạy trên QEMU với một gate giả; bảng so sánh với bản Go ở `esp32/README.md` của repo đó.
 
 Chưa có trong firmware NeuroEdge: Wi-Fi kết nối, nối NeuroClaw-ESP vào `ne_gate` (TSK-I2f-11, I2f-12). Các khoá
