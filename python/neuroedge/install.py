@@ -25,6 +25,7 @@ printed instead. That is how it is tested on the host; on a machine it runs as r
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import io
 import json
 import os
@@ -378,6 +379,13 @@ def install(
             where=WHERE,
             why="it makes system users, writes /etc/systemd and /var/lib and mounts /proc",
             how="run it as root (sudo), or stage it with --root <dir> to read what it would do",
+        )
+    missing = [name for name in ("mcp", "jwt") if importlib.util.find_spec(name) is None]
+    if missing:
+        raise NeuroEdgeError(
+            where=WHERE,
+            why=f"the box serves MCP over mTLS and this Python has no {', '.join(missing)}",
+            how="install neuroedge with its MCP extra: pip install 'neuroedge[mcp]'",
         )
     if not (settings.agent / "agent.toml").is_file():
         raise NeuroEdgeError(

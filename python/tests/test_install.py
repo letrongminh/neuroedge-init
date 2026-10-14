@@ -189,3 +189,15 @@ def test_each_capability_turned_on_is_a_label_printed_once_and_listed_by_status(
         install.brain_config(install.Settings(agent=DEMO, allow=("root",)), "/k", "/h")
     missing = CliRunner().invoke(app, ["status", "--brain-config", str(tmp_path / "none.json")])
     assert missing.exit_code == 1
+
+
+def test_without_the_mcp_extra_it_stops_before_touching_anything(tmp_path, monkeypatch):
+    real = install.importlib.util.find_spec
+    monkeypatch.setattr(
+        install.importlib.util, "find_spec", lambda name: None if name == "jwt" else real(name)
+    )
+    settings = install.settings_from_env(DEMO, {"LLM_API_KEY": "sk-staged"})
+    system = install.System(root=tmp_path / "root", live=False)
+    with pytest.raises(NeuroEdgeError, match=r"neuroedge\[mcp\]"):
+        install.install(settings, system, start=False, fetch=stand_in)
+    assert not (tmp_path / "root").exists()
