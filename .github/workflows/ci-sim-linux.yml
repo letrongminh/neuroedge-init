@@ -222,6 +222,10 @@ jobs:
       - name: Target equivalence — sim and linux (A2)
         run: neuroedge verify --targets sim,linux
 
+      - name: The brain's own OS user is kept apart from the box (TC-A-03-2, Q-83 DP-A-03)
+        # Last: it remounts /proc with hidepid=2 and closes the device nodes to other users.
+        run: bash scripts/brain_isolation.sh
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
