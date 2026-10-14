@@ -63,14 +63,113 @@ each milestone re-proves the six promises is in roadmap §0.5.
 
 *How to read Figure E-01:* The diagram shows the entire system context at the highest level: user actors and external systems lie outside the boundary; inside the boundary are NeuroEdge (Python SDK + CLI, C99 firmware), devices (`sim` · `linux` · `esp32s3`), and project files. Solid-bordered boxes represent components that already have code; dashed-bordered boxes represent planned future components (`planned`). Core takeaway: whether originating from typed commands, voice, or network connections, every physical action must pass through the same NeuroEdge safety control boundary.
 
-**Two parts: brain and box.** The user messages the **brain** — [NeuroClaw](https://github.com/letrongminh/neuroclaw),
-a separate repository: chat, LLM calls, memory, calendar reminders. The brain does not touch hardware; it calls MCP tools on the
+### 2.1 End-to-end view in five layers
+
+From the user's intent, through the AI brain and the extension layer, to the safety box, the hardware and
+the share-and-sell loop. Labels follow the `done` / `partial` / `planned` convention of
+[`README.md`](../README.md); see §6 for the status table.
+
+```mermaid
+flowchart TD
+    subgraph Layer1["1. Interaction and AI brain (untrusted)"]
+        direction TB
+        USER["👤 Owner (Telegram, phone, web page)"]
+        EXT_AI["🤖 Other AI clients (Claude Desktop, OpenClaw, ChatGPT)"]
+        subgraph Brain["🧠 NeuroClaw brain (MIT · letrongminh/neuroclaw · partial)"]
+            NC_ROUTER["Conversation and chat channels"]
+            NC_LLM["LLM providers with fallback and budget"]
+            NC_MEM["Memory, reminders, heartbeat"]
+            NC_MCP["MCP client (asks, never touches hardware)"]
+        end
+        USER <-->|"chat · approve"| NC_ROUTER
+        NC_ROUTER <--> NC_LLM
+        NC_LLM <--> NC_MEM
+        NC_ROUTER --> NC_MCP
+    end
+
+    subgraph Layer2["2. Extension layer (I2c)"]
+        direction TB
+        GATED_MCP["🛡️ Gated MCP server (mcp serve, stdio or HTTP + mTLS · done)"]
+        PROXY_MCP["🔌 MCP proxy (proxy mcp · done)"]
+        PROXY_HTTP["🌐 HTTP proxy (proxy http · done)"]
+        HA_REMOTE["🏠 Home Assistant remote actuators (RFC-0018 · done)"]
+        HA_ADDON["🏠 Home Assistant add-on (planned I2e)"]
+        GUARD_LIB["📦 Embedded library neuroedge.guard (FR-EXT-01 · done)"]
+    end
+
+    NC_MCP -->|"tool call (request)"| GATED_MCP
+    EXT_AI -->|"tool call over MCP"| GATED_MCP
+    EXT_AI -->|"through an existing MCP server"| PROXY_MCP
+
+    subgraph Layer3["3. NeuroEdge safety box (trusted · done)"]
+        direction TB
+        DO["c.do() — the only door to an action"]
+        GATE_ENGINE["⚖️ Gate engine (gate.v1 YAML, inheritance)"]
+        RESOLVER["Deterministic resolver and decision tree"]
+        DECISION{"Verdict"}
+        TOKEN_ISSUER["🔑 One-time verdict token"]
+        TRACE_RECORDER["📝 Replayable trace (trace.v1)"]
+        ACTION_CI["🧪 Action CI (gate regression tests before flashing)"]
+        GATED_MCP --> DO
+        PROXY_MCP --> DO
+        PROXY_HTTP --> DO
+        GUARD_LIB --> GATE_ENGINE
+        DO --> GATE_ENGINE --> RESOLVER --> DECISION
+        DECISION -->|"ASK the owner"| USER
+        DECISION -->|"BLOCK"| TRACE_RECORDER
+        DECISION -->|"ALLOW"| TOKEN_ISSUER
+        TOKEN_ISSUER --> TRACE_RECORDER
+        TRACE_RECORDER -.-> ACTION_CI
+    end
+
+    subgraph Layer4["4. Execution and hardware"]
+        direction TB
+        HAL["HAL: authorize(token, pin), five primitives · done"]
+        ENVELOPE["⏱️ Physical envelope in HAL (max on-time, rate · RFC-0007 · done)"]
+        TOKEN_ISSUER -->|"only with a token"| HAL
+        HAL --> ENVELOPE
+        HA_REMOTE --> HAL
+        subgraph Targets["Three equivalent targets (P-2)"]
+            SIM["💻 sim (virtual devices · done)"]
+            LINUX["🐧 linux (gpio-sim, i2c-stub · done; real Pi untested)"]
+            ESP32["⚡ esp32s3 (ESP-IDF firmware, gate on QEMU · partial)"]
+        end
+        ENVELOPE --> Targets
+        subgraph Devices["Actuators and sensors"]
+            ACTUATORS["Door latch, relay, valve, pump, heater"]
+            SENSORS["Temperature, humidity, oxygen, gas"]
+            PERIPHERALS["LCD, siren, camera"]
+        end
+        Targets --> Devices
+    end
+
+    subgraph Layer5["5. Share, sell and operate (planned · Q-72, Q-74)"]
+        direction TB
+        PACK["📦 Blueprint package: BOM, firmware, gates, traces (planned I2e)"]
+        HUB["🏪 Blueprint Hub (planned I2e)"]
+        CLOUD["☁️ NeuroEdge Cloud: brain instances, relay (planned I2f)"]
+        OTA["🔄 Signed OTA with rollback (partial: QEMU)"]
+        PACK -->|"publish with evidence"| HUB
+        HUB -->|"others install"| Layer4
+        CLOUD -->|"brain per user, gate stays at home"| Layer3
+        OTA -->|"new gates and firmware"| Targets
+    end
+```
+
+Not drawn: robot bridges (ROS 2, Nav2) left the roadmap with Q-77; an ESPHome component has no task yet.
+
+### 2.2 Two parts: brain and box
+
+The user messages the **brain** — [NeuroClaw](https://github.com/letrongminh/neuroclaw),
+a separate repository (Q-76, Q-80): chat, LLM calls, memory, calendar reminders. The brain does not touch hardware; it calls MCP tools on the
 **NeuroEdge box** (this repo), and the box routes calls through gates like any other source. The brain runs on its own machine or
-coexists on an ESP32-S3 chip with the box; execution modes and contracts between the two repos: [`15`](15-target-architecture.md) §6.10.
+coexists on an ESP32-S3 chip with the box (Q-79); execution modes and contracts between the two repos: [`15`](15-target-architecture.md) §6.10.
 
 ```text
  📱 chat ──► NeuroClaw (brain, untrusted) ══ MCP, mTLS ══► NeuroEdge box: gate ──► pins, devices
 ```
+
+### 2.3 The execution backbone
 
 The single path from intention to hardware pins — the **execution backbone** — is identical across all call sources
 and execution environments:
