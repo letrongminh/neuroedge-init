@@ -384,7 +384,7 @@ def test_the_repl_shows_the_question_and_answers_with_confirm(home):
     render_turn(asked, session, console)
     _meta(":confirm", session, console)
     out = console.export_text()
-    assert "? xác nhận confirm_1" in out and "says (confirmed): Đã xác nhận." in out
+    assert "? confirm confirm_1" in out and "says (confirmed): Đã xác nhận." in out
     assert light(session) == [("off", 0)]
 
 
@@ -396,7 +396,7 @@ def test_gate_explain_says_what_a_person_may_confirm(root):
     gate_file = root / "fixtures" / "agents" / "home-voice" / "gates" / "light_off@1.0.0.yaml"
     result = CliRunner().invoke(app, ["gate", "explain", str(gate_file)])
     assert result.exit_code == 0, result.output
-    assert "Người xác nhận trên thiết bị được thay cho" in result.output
+    assert "A confirmation on the device stands in for" in result.output
     assert "room_empty" in result.output
 
 

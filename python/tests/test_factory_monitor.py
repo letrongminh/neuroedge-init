@@ -315,6 +315,6 @@ def test_the_repl_sets_the_temperature_in_degrees(agent):
     assert result.exit_code == 0, result.output
     critical, high = result.output.split("temperature = 45")
     high, normal = high.split("temperature = 30")
-    assert "BLOCK vent_off" in critical and "xác nhận confirm_" not in critical
-    assert "BLOCK vent_off" in high and "xác nhận confirm_" in high
+    assert "BLOCK vent_off" in critical and "? confirm confirm_" not in critical
+    assert "BLOCK vent_off" in high and "? confirm confirm_" in high
     assert "ALLOW alarm_off" in normal
