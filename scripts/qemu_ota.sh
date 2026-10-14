@@ -35,13 +35,26 @@
 #   g  a correctly signed but lower version is refused as a downgrade
 #      (SKIP reason=downgrade) by the high-water mark from boot b.
 #
+# With the brain in the image (Q-83 Profile B, NEUROEDGE_OTA_BRAIN=1 and
+# NEUROEDGE_OTA_PROJECT=<the project `neuroedge build --brain neuroclaw` wrote>)
+# every image is box and brain together — an update replaces both (DP-B-15) —
+# built with sdkconfig.anti_rollback, the eFuses kept in a file across boots:
+#
+#   h  an image whose bridge self-check fails marks itself INVALID and the
+#      bootloader rolls back (NEUROEDGE_OTA_TEST_FAIL_BRAIN, TC-B-15-1);
+#   i  an image with security version 2 is installed and marked valid, which
+#      burns 2 into eFuse; a later app version with security version 1 is then
+#      REJECTED reason=security_version and the device keeps running
+#      (TC-B-17-1).
+#
 # Any missing marker, wrong order, marker that must not appear, unexpected
 # QEMU exit or timeout is exit 1. The QEMU UART logs and the HTTP server log
 # stay under targets/esp32s3/build/ota-test/logs/.
 set -euo pipefail
 
-project=$(cd "$(dirname "$0")/../targets/esp32s3" && pwd)
 repo=$(cd "$(dirname "$0")/.." && pwd)
+project=$(cd "${NEUROEDGE_OTA_PROJECT:-$repo/targets/esp32s3}" && pwd)
+brain=${NEUROEDGE_OTA_BRAIN:-0}
 work=${NEUROEDGE_OTA_WORK:-"$project/build/ota-test"}
 timeout_s=${NEUROEDGE_OTA_TIMEOUT:-240}
 port=8070
@@ -133,6 +146,10 @@ size_check() { # <name> <build> <image>
 }
 
 defaults="sdkconfig.defaults;sdkconfig.qemu;sdkconfig.ota;sdkconfig.qemu_ota"
+if [ "$brain" = 1 ]; then
+  [ -d "$project/components/neuroclaw" ] || fail "NEUROEDGE_OTA_BRAIN=1 needs a --brain project: $project"
+  defaults="$defaults;sdkconfig.anti_rollback"
+fi
 espsecure.py generate_signing_key --version 2 --scheme rsa3072 "$work/key-a.pem" >/dev/null
 espsecure.py generate_signing_key --version 2 --scheme rsa3072 "$work/key-b.pem" >/dev/null
 
@@ -155,6 +172,17 @@ sign_image "$work/key-b.pem" "$work/c/$(app_bin "$work/c")" "$images/c-bad.bin"
 printf 'CONFIG_NEUROEDGE_OTA_TEST_FAIL_SELFTEST=y\n' >"$work/sdkconfig.fail"
 build_variant c2 0.3.1 "$defaults" "$work/sdkconfig.fail"
 sign_image "$work/key-a.pem" "$work/c2/$(app_bin "$work/c2")" "$images/c2.bin"
+
+if [ "$brain" = 1 ]; then
+  printf 'CONFIG_NEUROEDGE_OTA_TEST_FAIL_BRAIN=y\n' >"$work/sdkconfig.fail-brain"
+  build_variant c3 0.3.2 "$defaults" "$work/sdkconfig.fail-brain"
+  sign_image "$work/key-a.pem" "$work/c3/$(app_bin "$work/c3")" "$images/c3.bin"
+  printf 'CONFIG_BOOTLOADER_APP_SECURE_VERSION=2\n' >"$work/sdkconfig.secver2"
+  build_variant s2 0.4.0 "$defaults" "$work/sdkconfig.secver2"
+  sign_image "$work/key-a.pem" "$work/s2/$(app_bin "$work/s2")" "$images/s2.bin"
+  build_variant s1 0.5.0 "$defaults"  # security version 1, the layer's
+  sign_image "$work/key-a.pem" "$work/s1/$(app_bin "$work/s1")" "$images/s1.bin"
+fi
 
 # The board OTA image (Wi-Fi linked, no QEMU layer) is the one that ships: check
 # it fits an A/B slot with room for the Q-3 floor. The key is a throwaway, like
@@ -182,11 +210,20 @@ kill -0 "$server_pid" 2>/dev/null || fail "the HTTP server did not start on 127.
 # The board does not restart the emulator: this is a QEMU workaround
 # (docs/spec/simulation_coverage.md §4).
 
+# The eFuses in a file of their own when the images use anti-rollback: a burnt security version
+# must survive the emulator's restarts as it survives a board's.
+efuse_args=()
+if [ "$brain" = 1 ]; then
+  head -c 1024 /dev/zero >"$work/efuse.bin"
+  efuse_args=(-drive "file=$work/efuse.bin,if=none,format=raw,id=efuse"
+    -global "driver=nvram.esp32s3.efuse,property=drive,value=efuse")
+fi
+
 start_qemu() { # <log> [extra qemu args ...]
   local log=$1
   shift
   qemu-system-xtensa -machine esp32s3 -display none -monitor none \
-    -drive "file=$flash,if=mtd,format=raw" \
+    -drive "file=$flash,if=mtd,format=raw" "${efuse_args[@]}" \
     -nic user,model=open_eth \
     -serial "file:$log" "$@" &
   qemu_pid=$!
@@ -389,11 +426,55 @@ assert g ota_count_is "$logs/g.log" '^NE_OTA ROLLBACK from=ota_1 to=ota_0$' 1
 assert g ota_nothing_after "$logs/g.log" "^NE_OTA CHECK url=$URL\$" '^NE_OTA ROLLBACK'
 assert g ota_count_is "$logs/g.log" '^NE_SELFTEST PASS' 1
 
+# --- box and brain in one image (Q-83 Profile B) ----------------------------------------------
+
+phases="a b c d e f g"
+if [ "$brain" = 1 ]; then
+  # (h) the bridge self-check is part of the boot self-test: an image whose
+  # bridge does not answer is never kept (DP-B-15).
+  serve "$images/c3.bin"
+  qemu_once h 1 '^NE_OTA SWITCH partition=ota_1$' idle 0
+  qemu_once h 2 '^NE_OTA INVALID partition=ota_1$' exit
+  qemu_once h 3 '^NE_OTA SKIP reason=rolled_back version=0\.3\.2$' idle
+  join_boots h
+  assert h ota_ordered "$logs/h.log" \
+    "^NE_OTA CHECK url=$URL\$" \
+    '^NE_OTA DOWNLOADED bytes=[1-9][0-9]* version=0\.3\.2$' \
+    '^NE_OTA SWITCH partition=ota_1$' \
+    '^NE_SELFTEST PASS walker=[0-9]+ token=[0-9]+' \
+    '^NE_BRAIN SELFTEST FAIL test image NEUROEDGE_OTA_TEST_FAIL_BRAIN$' \
+    '^NE_OTA INVALID partition=ota_1$' \
+    '^NE_OTA ROLLBACK from=ota_1 to=ota_0$' \
+    '^NE_BRAIN SELFTEST PASS tools=[1-9][0-9]*$' \
+    '^NE_OTA SKIP reason=rolled_back version=0\.3\.2$'
+  assert h ota_forbid "$logs/h.log" '^NE_OTA VALID partition=ota_1'
+
+  # (i) anti-rollback: security version 2 is kept (and burnt into eFuse);
+  # a newer app version that carries security version 1 is refused before a
+  # byte is written, and the device stays on 0.4.0 (DP-B-17).
+  serve "$images/s2.bin"
+  qemu_once i 1 '^NE_OTA SWITCH partition=ota_1$' idle 0
+  qemu_once i 2 '^NE_OTA SKIP reason=same_version version=0\.4\.0$' idle
+  serve "$images/s1.bin"
+  qemu_once i 3 '^NE_OTA REJECTED reason=security_version$' idle 10
+  join_boots i
+  assert i ota_ordered "$logs/i.log" \
+    '^NE_OTA DOWNLOADED bytes=[1-9][0-9]* version=0\.4\.0$' \
+    '^NE_OTA SWITCH partition=ota_1$' \
+    '^NE_BRAIN SELFTEST PASS tools=[1-9][0-9]*$' \
+    '^NE_OTA VALID partition=ota_1$' \
+    '^NE_OTA SKIP reason=same_version version=0\.4\.0$' \
+    "^NE_OTA CHECK url=$URL\$" \
+    '^NE_OTA REJECTED reason=security_version$'
+  assert i ota_forbid "$logs/i.log" '^NE_OTA DOWNLOADED bytes=[1-9][0-9]* version=0\.5\.0$'
+  phases="$phases h i"
+fi
+
 # --- evidence -----------------------------------------------------------------------------------
 
 echo
 echo "OTA on QEMU: all phases passed (logs in $logs)"
-for phase in a b c d e f g; do
+for phase in $phases; do
   echo "--- $phase"
-  grep -aE '^(NE_SELFTEST|NE_OTA|Guru Meditation)' "$logs/$phase.log" | tr -d '\r'
+  grep -aE '^(NE_SELFTEST|NE_BRAIN SELFTEST|NE_OTA|Guru Meditation)' "$logs/$phase.log" | tr -d '\r'
 done

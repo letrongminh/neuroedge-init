@@ -532,6 +532,47 @@ int ne_bridge_init(ne_bridge *b, const ne_agent *agent, ne_ledger *ledger,
     return 0;
 }
 
+void ne_bridge_trace(ne_bridge *b, ne_trace_sink *sink, const ne_device_info *info)
+{
+    if (b == NULL) return;
+    b->trace = info != NULL ? sink : NULL;
+    b->trace_info = info;
+}
+
+void ne_bridge_trace_pin(ne_bridge *b, uint32_t pin, int driven, const char *operation,
+                         uint32_t duration_ms, ne_token_reason why)
+{
+    if (b == NULL || b->trace == NULL || pin >= b->agent->pin_count) return;
+    ne_trace_sink *t = b->trace;
+    const char *name = b->agent->pins[pin];
+    if (driven) {
+        ne_trace_put(t, ne_trace_actuator_command(t->buf, t->cap, ne_trace_offset(t), name,
+                                                  operation ? operation : "on", duration_ms));
+    } else {
+        ne_trace_put(t, ne_trace_actuator_rejected(t->buf, t->cap, ne_trace_offset(t), name, why));
+    }
+}
+
+uint32_t ne_bridge_pulse_ms(const ne_bridge *b, uint32_t action, const ne_agent_pin_op *op,
+                            const ne_arg_value *args, uint32_t arg_count)
+{
+    if (b == NULL || op == NULL || op->op != NE_AGENT_OP_PULSE || action >= b->agent->action_count) {
+        return 0u;
+    }
+    if (op->arg == NULL) return op->ms;
+    const ne_agent_gate *g = &b->agent->gates[b->agent->actions[action].gate];
+    ne_tree tree;
+    if (args == NULL || ne_tree_load(&tree, g->tree, g->tree_size) != NE_OK) return 0u;
+    for (uint32_t i = 0; i < arg_count && i < tree.arg_count; i++) {
+        const char *name = ne_argument_name(&tree, i);
+        if (name == NULL || strcmp(name, op->arg) != 0) continue;
+        if (!args[i].present || args[i].type == NE_ARG_STRING) return 0u;
+        const double ms = args[i].number * (double)op->ms;
+        return ms > 0.0 && ms < 86400000.0 ? (uint32_t)ms : 0u;
+    }
+    return 0u;
+}
+
 uint32_t ne_bridge_tool_count(const ne_bridge *b) { return b ? b->agent->action_count : 0u; }
 
 int ne_bridge_tool(const ne_bridge *b, uint32_t i, const char **name, const char **description,
@@ -939,13 +980,35 @@ static int takes_no_arguments(const ne_agent_action *a)
     return required.n <= 2u; /* "[]" */
 }
 
+/* `action_requested` {action, gate, arguments}: what a replay re-runs (trace.v1, the host's). */
+static void trace_request(ne_bridge *b, const ne_agent_action *a, const ne_agent_gate *g,
+                          const char *args, uint32_t args_len)
+{
+    ne_trace_sink *t = b->trace;
+    const uint32_t cap = t->cap < NE_TRACE_LINE_MAX + 1u ? (uint32_t)t->cap : NE_TRACE_LINE_MAX + 1u;
+    writer w = {t->buf, cap, 0, 0};
+    uint32_t gate_len = 0;
+    while (g->label[gate_len] && g->label[gate_len] != '@') gate_len++;
+    text(&w, NE_TRACE_PREFIX "{\"offset_ms\":");
+    number(&w, ne_trace_offset(t));
+    text(&w, ",\"type\":\"action_requested\",\"data\":{\"action\":");
+    quoted_text(&w, a->name);
+    text(&w, ",\"gate\":");
+    quoted(&w, g->label, gate_len);
+    text(&w, ",\"arguments\":");
+    if (args_len) raw(&w, args, args_len);
+    else text(&w, "{}");
+    text(&w, "}}");
+    ne_trace_put(t, w.over ? -1 : (int)w.len);
+}
+
 /*
  * Decide `action` with `args` (an object span of a validated call) and act on it, writing its
  * result object into `w`, then its `on_block: degrade` fallbacks nested in it as the box does.
  * Returns the status of the outermost result.
  */
-static ne_bridge_status decide(ne_bridge *b, uint32_t action, const char *args, uint32_t args_len,
-                               int confirmed, writer *w)
+static ne_bridge_status decide_steps(ne_bridge *b, uint32_t action, const char *args,
+                                     uint32_t args_len, int confirmed, writer *w)
 {
     uint32_t visited[NE_BRIDGE_MAX_FALLBACK + 1u];
     uint32_t depth = 0;
@@ -983,9 +1046,18 @@ static ne_bridge_status decide(ne_bridge *b, uint32_t action, const char *args, 
                 b->key_count++;
             }
         }
+        if (b->trace != NULL) trace_request(b, a, g, depth == 0 ? args : NULL, depth == 0 ? args_len : 0u);
         gate_arguments(b, action, &tree);
         ne_degraded degraded = read_facts(b, &tree, a->gate, now);
         ne_decide(&tree, b->fact_buf, b->arg_buf, depth == 0 ? confirmed : 0, degraded, &res);
+        if (b->trace != NULL) {
+            ne_trace_sink *t = b->trace;
+            ne_trace_put(t, ne_trace_gate_begin(t->buf, t->cap, ne_trace_offset(t), g->label, &tree));
+            ne_trace_put(t, ne_trace_gate_facts(t->buf, t->cap, ne_trace_offset(t), &tree,
+                                                b->fact_buf, NULL));
+            ne_trace_put(t, ne_trace_gate_result(t->buf, t->cap, ne_trace_offset(t), g->label,
+                                                 &tree, b->fact_buf, &res, &g->text));
+        }
         if (res.verdict == NE_ALLOW) {
             ne_token token;
             if (ne_token_issue(b->ledger, &tree, a->pin_mask, now, b->hal.fill_random, &token) !=
@@ -1069,6 +1141,16 @@ static ne_bridge_status decide(ne_bridge *b, uint32_t action, const char *args, 
     }
     for (uint32_t i = 0; i <= depth; i++) text(w, "}");
     return top;
+}
+
+/* One NE1 session around one decision, when the application asked for traces (DP-B-12). */
+static ne_bridge_status decide(ne_bridge *b, uint32_t action, const char *args, uint32_t args_len,
+                               int confirmed, writer *w)
+{
+    if (b->trace != NULL) ne_trace_open(b->trace, b->trace_info);
+    const ne_bridge_status status = decide_steps(b, action, args, args_len, confirmed, w);
+    if (b->trace != NULL) ne_trace_close(b->trace);
+    return status;
 }
 
 /* --- results ------------------------------------------------------------------------------- */
@@ -1279,3 +1361,42 @@ void ne_bridge_answer_button(ne_bridge *b, const char *confirmation_id, int appr
     }
     answer(b, slot, approve, out);
 }
+
+/* --- reading a result back (the nc_gate adapter, DP-B-06) --------------------------------- */
+
+int ne_bridge_result_field(const ne_bridge_result *r, const char *object, const char *name,
+                           char *out, uint32_t cap)
+{
+    ne_bridge_span top, inner, value;
+    uint32_t n = 0;
+    if (out == NULL || cap == 0u) return -1;
+    out[0] = '\0';
+    if (r == NULL || name == NULL || whole(r->json, &top) != 0) return -1;
+    if (object != NULL) {
+        if (member(&top, object, &inner) != 0) return -1;
+        top = inner;
+    }
+    if (member(&top, name, &value) != 0) return -1;
+    if (value.type == J_ARRAY) { /* `problems`: the first one */
+        reader list;
+        ne_bridge_span first;
+        open_container(&list, &value);
+        if (next_item(&list, NULL, &first) != 1) return -1;
+        value = first;
+    }
+    if (value.type == J_STRING) {
+        if (decode(&value, out, cap - 1u, &n) != 0) {
+            out[0] = '\0';
+            return -1;
+        }
+    } else if (value.type == J_NUMBER) {
+        if (value.n >= cap) return -1;
+        memcpy(out, value.p, value.n);
+        n = value.n;
+    } else {
+        return -1;
+    }
+    out[n] = '\0';
+    return 0;
+}
+

@@ -26,8 +26,10 @@ from pathlib import Path
 
 import jsonschema
 import pytest
+from typer.testing import CliRunner
 
 from neuroedge.actions.tools import ToolCall
+from neuroedge.cli.main import app
 from neuroedge.engine.compiler import build
 from neuroedge.engine.firmware import COMPONENT, PROJECT_DIR
 from neuroedge.paths import repo_root
@@ -52,6 +54,7 @@ def sources(agent: Path) -> list[str]:
         str(COMPONENTS / "ne_gate" / "src" / "ne_walker.c"),
         str(COMPONENTS / "ne_gate" / "src" / "ne_token.c"),
         str(COMPONENTS / "ne_hal" / "src" / "ne_hal.c"),
+        str(COMPONENTS / "ne_trace" / "src" / "ne_trace.c"),
         str(BRIDGE / "src" / "ne_brain_bridge.c"),
         str(agent / "ne_agent.c"),
     ]
@@ -427,7 +430,10 @@ def test_only_the_owner_or_the_button_answers_once_and_facts_are_read_again(demo
     assert problems[12] == "the question is already declined"
     assert problems[13] == "no such question"
     runs = [line for line in out if line.startswith(("run", "drive"))]
-    assert runs == ["run\tfront_door_unlock\tduration_s=7", "drive\tdoor_lock\tauthorized"]
+    assert runs == [
+        "run\tfront_door_unlock\tduration_s=7",
+        "drive\tdoor_lock\tauthorized\tpulse=7000",  # the body's pulse, 1000 ms per second
+    ]
     for result in results:
         jsonschema.validate(result, RESULT_SCHEMA)
 
@@ -460,6 +466,81 @@ def test_four_questions_wait_at_most_and_allow_still_runs(demo):
 
 
 # --- untrusted input -------------------------------------------------------------------------
+
+
+def test_an_adapter_reads_back_each_field_the_brain_needs(demo):
+    """TC-B-06-1: `ne_bridge_result_field` gives what `nc_tool_result` holds, decoded."""
+    with demo.manifest.open("rb") as handle:
+        facts = tomllib.load(handle).get("sim", {}).get("facts", {})
+    lines = [f"fact {name} {json.dumps(value)}" for name, value in facts.items()]
+    asks = [
+        'call front_door_unlock {"duration_s": 10}',
+        "field - reason",
+        "field - message",
+        "field confirmation id",
+        "field confirmation message",
+        "field confirmation expires_in_ms",
+        "field confirmation id 4",  # too small: nothing, never a cut value
+        "field - escalated_to",
+    ]
+    out = demo.run(
+        *lines, *asks, 'call front_door_unlock {"duration_s": "soon"}', "field - problems"
+    )
+    results = [json.loads(line.split("\t", 2)[2]) for line in out if line.startswith("result")]
+    fields = [tuple(line.split("\t")[1:]) for line in out if line.startswith("field")]
+    ask, rejected = results[-2], results[-1]
+    assert ask["status"] == "BLOCK" and rejected["status"] == "REJECTED"
+    assert fields == [
+        ("0", ask["reason"]),
+        ("0", ask["message"]),
+        ("0", ask["confirmation"]["id"]),
+        ("0", ask["confirmation"]["message"]),
+        ("0", str(ask["confirmation"]["expires_in_ms"])),
+        ("-1", ""),
+        ("-1", ""),
+        ("0", rejected["problems"][0]),
+    ]
+
+
+def test_every_decision_is_a_trace_session_that_replays_to_the_same_verdicts(demo, tmp_path):
+    """TC-B-12-1, host half: NE1 lines per decision → `record --port` → `replay`, no difference."""
+    with demo.manifest.open("rb") as handle:
+        facts = tomllib.load(handle).get("sim", {}).get("facts", {})
+    lines = ["trace on", *(f"fact {name} {json.dumps(value)}" for name, value in facts.items())]
+    out = demo.run(
+        *lines,
+        "call living_light_on {}",
+        'call front_door_unlock {"duration_s": 10}',
+        'call front_door_unlock {"duration_s": 45}',
+        "button confirm_1 1",  # the owner's yes: decided again, its own session
+        "fact daytime false",
+        'call front_door_unlock {"duration_s": 10}',
+        'call front_door_unlock {"duration_s": "soon"}',  # REJECTED: no gate, no session
+    )
+    verdicts = [
+        json.loads(line[4:])["data"]["verdict"]
+        for line in out
+        if line.startswith("NE1 ") and '"type":"gate_evaluation_result"' in line
+    ]
+    statuses = [line.split("\t")[1] for line in out if line.startswith("result\t")]
+    assert statuses == ["ALLOW", "BLOCK", "BLOCK", "ALLOW", "BLOCK", "REJECTED"]
+    assert verdicts == ["ALLOW", "BLOCK", "BLOCK", "ALLOW", "BLOCK"]
+    log = tmp_path / "uart.log"
+    log.write_text(
+        "\n".join([*(line for line in out if line.startswith("NE1 ")), "NE_TRACE DONE", ""]),
+        encoding="utf-8",
+    )
+    traces = tmp_path / "traces"
+    recorded = CliRunner().invoke(
+        app, ["record", "--target", "esp32s3", "--port", str(log), "--out", f"{traces}/"]
+    )
+    assert recorded.exit_code == 0, recorded.output
+    sessions = sorted(traces.glob("sess_*.json"))
+    assert len(sessions) == 5
+    for trace in sessions:
+        replayed = CliRunner().invoke(app, ["replay", str(trace), "--agent", str(demo.manifest)])
+        assert replayed.exit_code == 0, replayed.output  # verdicts and pin commands alike
+        assert "decisions match the recording" in replayed.output
 
 
 def test_a_question_too_long_to_tell_the_brain_does_not_wait(tmp_path):

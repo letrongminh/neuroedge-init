@@ -2877,6 +2877,12 @@ def record(
     timeout: float = typer.Option(
         30.0, "--timeout", help="Seconds to wait for NE_TRACE DONE on a live port"
     ),
+    follow: bool = typer.Option(
+        False,
+        "--follow",
+        help="esp32s3: keep reading after NE_TRACE DONE (a running image's decisions) until "
+        "--timeout, the end of a file, or Ctrl-C; a session cut by stopping is left out",
+    ),
     voice_file: Path = VOICE_FILE_OPTION,
     voice_out: Path = VOICE_OUT_OPTION,
     registry: Path | None = REGISTRY_OPTION,
@@ -2920,7 +2926,9 @@ def record(
             )
         if keep_raw:
             _warn_raw()
-        _record_from_device(target, port, baud, timeout, out, keep_raw, board, agent, command)
+        _record_from_device(
+            target, port, baud, timeout, out, keep_raw, board, agent, command, follow
+        )
         return
     if voice_file is not None or voice_out is not None:
         code = _voice_session(
@@ -2955,7 +2963,9 @@ def record(
     raise typer.Exit(code=code)
 
 
-def _record_from_device(target, port, baud, timeout, out, raw, board, agent, command) -> None:
+def _record_from_device(
+    target, port, baud, timeout, out, raw, board, agent, command, follow=False
+) -> None:
     """`record --target esp32s3 --port`: the device's sessions, one trace file each."""
     from ..testing.uart import read_sessions
 
@@ -2985,7 +2995,7 @@ def _record_from_device(target, port, baud, timeout, out, raw, board, agent, com
         )
         return
     try:
-        sessions = read_sessions(port, baud=baud, timeout_s=timeout)
+        sessions = read_sessions(port, baud=baud, timeout_s=timeout, follow=follow)
     except NeuroEdgeError as error:
         _fail(error)
         return

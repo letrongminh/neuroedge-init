@@ -128,11 +128,29 @@ static void run(void *ctx, uint32_t action, const ne_arg_value *args, uint32_t a
     }
     printf("\n");
     const ne_hal hal = {{NULL, write_pin}, l, d->agent->pin_count};
-    for (uint32_t pin = 0; pin < d->agent->pin_count; pin++) {
-        if (!(a->pin_mask & (1u << pin))) continue;
-        ne_token_reason why;
-        ne_hal_on(&hal, token, pin, d->now, &why); /* the one door to a pin (DP-B-08) */
-        printf("drive\t%s\t%s\n", d->agent->pins[pin], ne_token_reason_name(why));
+    /* What the action's body does, recorded at build time (ne_agent_pin_op), through the one
+     * door to a pin (DP-B-08): on and a pulse need the token; off is the safe state. */
+    for (uint32_t k = 0; k < a->op_count; k++) {
+        const ne_agent_pin_op *op = &a->ops[k];
+        ne_token_reason why = NE_TOKEN_AUTHORIZED;
+        if (op->pin >= d->agent->pin_count || !(a->pin_mask & (1u << op->pin)) ||
+            op->op == NE_AGENT_OP_UNSUPPORTED) {
+            printf("drive\t%s\tunsupported\n", d->agent->pins[op->pin]);
+            continue;
+        }
+        if (op->op == NE_AGENT_OP_OFF) {
+            const int driven = ne_hal_off(&hal, op->pin) == NE_HAL_OK;
+            ne_bridge_trace_pin(&bridge, op->pin, driven, "off", 0u, why);
+            printf("drive\t%s\toff\n", d->agent->pins[op->pin]);
+            continue;
+        }
+        const int driven = ne_hal_on(&hal, token, op->pin, d->now, &why) == NE_HAL_OK;
+        const uint32_t ms = ne_bridge_pulse_ms(&bridge, action, op, args, arg_count);
+        ne_bridge_trace_pin(&bridge, op->pin, driven, op->op == NE_AGENT_OP_PULSE ? "pulse" : "on",
+                            ms, why);
+        printf("drive\t%s\t%s", d->agent->pins[op->pin], ne_token_reason_name(why));
+        if (op->op == NE_AGENT_OP_PULSE) printf("\tpulse=%u", (unsigned)ms);
+        printf("\n");
     }
 }
 
@@ -170,6 +188,23 @@ static void init(const char *owner)
         printf("error\tinit\n");
     }
 }
+
+/* `trace on`: NE1 lines to stdout, as the image writes them to the UART (DP-B-12). */
+static void emit_line(void *ctx, const char *line)
+{
+    (void)ctx;
+    printf("%s\n", line);
+}
+
+static uint32_t trace_now(void *ctx)
+{
+    (void)ctx;
+    return dev.now;
+}
+
+static char trace_buf[NE_TRACE_LINE_MAX + 1];
+static ne_trace_sink trace_sink = {emit_line, trace_now, NULL, trace_buf, sizeof trace_buf, 0, 0, 0};
+static ne_device_info trace_info = {NULL, NULL, "host", 0x2468u, NULL, NULL};
 
 int main(int argc, char **argv)
 {
@@ -222,6 +257,20 @@ int main(int argc, char **argv)
             char *id = word(&rest, " ");
             ne_bridge_answer_button(&bridge, id, atoi(rest ? rest : "0"), &result);
             print_result();
+        } else if (strcmp(cmd, "field") == 0) {
+            /* field <object|-> <name> <cap>: one field of the last result, as an adapter reads it */
+            char *object = word(&rest, " ");
+            char *name = word(&rest, " ");
+            static char value[NE_BRIDGE_RESULT_MAX];
+            uint32_t cap = rest ? (uint32_t)strtoul(rest, NULL, 10) : (uint32_t)sizeof value;
+            if (cap > sizeof value) cap = (uint32_t)sizeof value;
+            int found = ne_bridge_result_field(&result, strcmp(object, "-") == 0 ? NULL : object,
+                                               name, value, cap);
+            printf("field\t%d\t%s\n", found, value);
+        } else if (strcmp(cmd, "trace") == 0) {
+            trace_info.board_id = NE_AGENT_BOARD;
+            trace_info.agent_version = NE_AGENT_VERSION;
+            ne_bridge_trace(&bridge, strcmp(rest, "on") == 0 ? &trace_sink : NULL, &trace_info);
         } else if (strcmp(cmd, "reads") == 0) {
             printf("reads\t%u\n", (unsigned)dev.reads);
         } else if (strcmp(cmd, "waiting") == 0) {

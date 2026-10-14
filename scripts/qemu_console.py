@@ -15,7 +15,7 @@ can type at the console:
        window — power lost, as far as the chip can tell;
   4    the fourth starts in safe mode: no gate self-test, the console only.
        The owner sets the bot token at the hidden prompt (an inline secret is
-       refused), an owner id (a malformed one is refused), an http:// LLM URL
+       refused; first refused until `config ack readable_flash`, DP-B-17), an owner id (a malformed one is refused), an http:// LLM URL
        (stored, labelled risk=cleartext_url), reads the token back as
        <secret>, clears the boot guard and reboots;
   5    a normal boot again (count=1, self-test, NE_TRACE DONE); the settings
@@ -203,6 +203,11 @@ def run(build: Path) -> list[str]:
                 r"^NE_CONFIG REFUSED key=telegram\.token reason=inline_secret$",
             ),
         )
+        # DP-B-17: on readable flash a secret waits for the owner's acknowledgement
+        b.expect(r"neuroedge\(safe\)> ")
+        b.send("config set telegram.token")
+        note(b, b.expect(r"^NE_CONFIG REFUSED key=telegram\.token reason=risk_not_acknowledged$"))
+        note(b, b.command("config ack readable_flash", r"^NE_CONFIG ACK risk=readable_flash$"))
         b.expect(r"neuroedge\(safe\)> ")
         b.send("config set telegram.token")
         b.expect(r"telegram\.token \(hidden, Enter to finish\): ")
@@ -247,6 +252,7 @@ def run(build: Path) -> list[str]:
         b.expect(r"^NE_CONSOLE READY mode=normal$")
         note(b, b.command("config get telegram.owner", rf"^telegram\.owner = {OWNER}$"))
         note(b, b.command("config get telegram.token", r"^telegram\.token = <secret>$"))
+        b.command("config ack readable_flash", r"^NE_CONFIG ACK risk=readable_flash$")
         b.command("config set wifi.pass", r"wifi\.pass \(hidden, Enter to finish\): ")
         b.send("not-the-token-1")
         b.expect(r"^NE_CONFIG SET key=wifi\.pass storage=plaintext risk=readable_flash$")

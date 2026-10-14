@@ -13,8 +13,9 @@ NeuroClaw-ESP, pinned (docs/spec/deployment_profiles.md DP-B-01, DP-B-09, DP-NF-
 * The partition table gains a LittleFS `ws` for the brain's workspace, taken from the end of
   `storage`, so no other offset moves (`ne_config`, `nvs_keys` stay where the box keeps them).
 
-Host-only files (`test/`) are not copied. Starting the brain on the bridge (`neuroclaw_start`
-with `ne_bridge_gate()`) is the image's `main` (TSK-I2f-14).
+Host-only files (`test/`) are not copied. `main/brain.c` starts the brain on the bridge
+(`neuroclaw_start` with its `nc_gate`); `components/ne_hal` and the LittleFS dependency of
+`main/idf_component.yml` come with it.
 """
 
 from __future__ import annotations
@@ -37,11 +38,27 @@ LOCK = "brain/neuroclaw.lock"  # relative to targets/esp32s3/
 IN_REPOSITORY = "esp32/components/neuroclaw"
 COMPONENT = "components/neuroclaw"
 BRIDGE = "components/ne_brain_bridge"
+HAL = "components/ne_hal"  # the token door the bridge drives pins through (DP-B-08)
+MAIN_DEPENDENCIES = "main/idf_component.yml"
+# NeuroClaw-ESP keeps its workspace on LittleFS (`ws`); the version its examples pin.
+LITTLEFS = "joltwallet/littlefs"
+LITTLEFS_VERSION = "==1.22.3"
 PIN = f"{COMPONENT}/NEUROEDGE_PIN"
 # What the image may grow to (Q-3) and what the brain's workspace needs (DP-B-09, DP-B-13).
 IMAGE_BUDGET = 0x380000
 WORKSPACE_MIN = 0x100000
 FLASH_SIZE = 0x1000000  # ESP32-S3 N16R8
+# What the build reads from the firmware sources for the brain, besides firmware.SOURCES: the
+# installed wheel carries exactly these (hatch_build.py BRAIN_SOURCES, test_packaging.py).
+SOURCES = (
+    LOCK,
+    f"{BRIDGE}/CMakeLists.txt",
+    f"{BRIDGE}/include/*.h",
+    f"{BRIDGE}/src/*.c",
+    f"{HAL}/CMakeLists.txt",
+    f"{HAL}/include/*.h",
+    f"{HAL}/src/*.c",
+)
 # The files of the two components a project holds, as `firmware.OWNED` patterns.
 OWNED = (
     f"{COMPONENT}/CMakeLists.txt",
@@ -52,6 +69,10 @@ OWNED = (
     f"{BRIDGE}/CMakeLists.txt",
     f"{BRIDGE}/include/*.h",
     f"{BRIDGE}/src/*.c",
+    f"{HAL}/CMakeLists.txt",
+    f"{HAL}/include/*.h",
+    f"{HAL}/src/*.c",
+    MAIN_DEPENDENCIES,
 )
 
 
@@ -186,11 +207,16 @@ def brain_files(firmware_root: Path, source: Path | None = None) -> dict[str, by
         if relative.split("/", 1)[0] == "test":
             continue  # host-only
         files[f"{COMPONENT}/{relative}"] = path.read_bytes()
-    bridge = firmware_root / BRIDGE
-    for path in sorted(p for p in bridge.rglob("*") if p.is_file()):
-        relative = path.relative_to(bridge).as_posix()
-        if relative.split("/", 1)[0] != "test":
-            files[f"{BRIDGE}/{relative}"] = path.read_bytes()
+    for part in (BRIDGE, HAL):
+        root = firmware_root / part
+        for path in sorted(p for p in root.rglob("*") if p.is_file()):
+            relative = path.relative_to(root).as_posix()
+            if relative.split("/", 1)[0] != "test":
+                files[f"{part}/{relative}"] = path.read_bytes()
+    files[MAIN_DEPENDENCIES] = (
+        "# Written by `neuroedge build --brain neuroclaw`: NeuroClaw-ESP's workspace (DP-B-09).\n"
+        f'dependencies:\n  {LITTLEFS}: "{LITTLEFS_VERSION}"\n'
+    ).encode()
     files[PIN] = (
         f"neuroclaw {lock.version}\ncommit {lock.commit}\ntree_sha256 {lock.tree_sha256}\n"
         f"from {lock.repository}\n"

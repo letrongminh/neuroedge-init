@@ -84,7 +84,8 @@ ALLOWED: dict[str, set[str]] = {
     "__main__": {"cli"},
 }
 # the engine's pure core: only engine/compiler.py matches the agent against a board
-HAL_IN_ENGINE = {"engine/compiler.py"}
+# build time only: board validation (compiler), an action's pin operations for the chip (Q-83)
+HAL_IN_ENGINE = {"engine/compiler.py", "engine/chip_actions.py"}
 # module -> units it may import lazily (inside a function) beyond its module-level set
 LAZY: dict[str, set[str]] = {
     # `plugins`: `[plugins]` and `[actuators]` are checked by the build (RFC-0018 §3b)

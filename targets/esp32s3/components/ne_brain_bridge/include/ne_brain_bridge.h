@@ -27,8 +27,8 @@
  *
  * Where the host is more lenient, the bridge refuses (closed side): arguments longer than
  * NE_BRIDGE_ARGS_MAX, more than NE_BRIDGE_MAX_KEYS keys, a duplicate key, a numeric string
- * that is not a plain decimal. The `nc_gate` adapter for NeuroClaw-ESP is built with the image
- * (TSK-I2f-14); this component is the part both builds share, and is tested on the host
+ * that is not a plain decimal. The `nc_gate` adapter for NeuroClaw-ESP is the image's
+ * main/brain.c; this component is the part both builds share, and is tested on the host
  * against the box itself (python/tests/test_c_bridge.py).
  */
 #ifndef NE_BRAIN_BRIDGE_H
@@ -39,6 +39,7 @@
 
 #include "ne_agent.h"
 #include "ne_token.h"
+#include "ne_trace.h"
 #include "ne_walker.h"
 
 #ifdef __cplusplus
@@ -144,6 +145,8 @@ typedef struct {
     ne_bridge_span keys[NE_BRIDGE_MAX_KEYS];
     ne_bridge_span values[NE_BRIDGE_MAX_KEYS];
     uint32_t key_count;
+    ne_trace_sink *trace;             /* NULL: no NE1 lines (ne_bridge_trace) */
+    const ne_device_info *trace_info; /* each session's device_info */
 } ne_bridge;
 
 /*
@@ -180,6 +183,41 @@ void ne_bridge_answer_button(ne_bridge *b, const char *confirmation_id, int appr
 
 /* Questions waiting now (expired ones are not). */
 uint32_t ne_bridge_waiting(ne_bridge *b);
+
+/*
+ * DP-B-12: from now on every call and answer writes one NE1 session on `sink` (device_info,
+ * gate_evaluation_start, gate_facts, gate_evaluation_result per gate decided, trace_end), which
+ * `neuroedge record --port` rebuilds and `verify` replays. NULL stops it. `sink` and `info` are
+ * the application's and must outlive the bridge.
+ */
+void ne_bridge_trace(ne_bridge *b, ne_trace_sink *sink, const ne_device_info *info);
+
+/*
+ * From the `run` callback: what became of one pin of the action (DP-B-12). Driven:
+ * `actuator_command {pin, operation, duration_ms}`; refused by the token: `actuator_rejected`.
+ * Nothing when the bridge writes no trace.
+ */
+void ne_bridge_trace_pin(ne_bridge *b, uint32_t pin, int driven, const char *operation,
+                         uint32_t duration_ms, ne_token_reason why);
+
+/*
+ * The length of one pulse of `action` (its `ops`, ne_agent.h), for the `run` callback: the
+ * op's constant, or its length per unit times the call's value of `op->arg`, in ms. 0 when
+ * the op is not a pulse, the argument is absent, or the value is not a positive number below
+ * a day.
+ */
+uint32_t ne_bridge_pulse_ms(const ne_bridge *b, uint32_t action, const ne_agent_pin_op *op,
+                            const ne_arg_value *args, uint32_t arg_count);
+
+/*
+ * One field of a result, for an adapter that fills its own struct (NeuroClaw-ESP's
+ * `nc_tool_result`): `name` at the top (`reason`, `failed_criterion`, `message`, the first of
+ * `problems`) or inside `object` (`confirmation`: `id`, `message`, `expires_in_ms`). A string is
+ * decoded, a number copied as written. 0 when found and it fits in `cap` with its NUL; else -1
+ * and `out` is empty.
+ */
+int ne_bridge_result_field(const ne_bridge_result *r, const char *object, const char *name,
+                           char *out, uint32_t cap);
 
 #ifdef __cplusplus
 }

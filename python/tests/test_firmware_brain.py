@@ -83,6 +83,11 @@ def test_build_with_the_brain_writes_one_project_with_its_pin(stand_in, tmp_path
     listed = (project / ".neuroedge-build").read_text().splitlines()
     assert brain.PIN in listed and all(owned(name) for name in listed[2:])
     assert "ws," in (project / "partitions.csv").read_text()
+    # what main/brain.c starts the brain with: the token door and LittleFS for `ws`
+    assert (project / "components/ne_hal/src/ne_hal.c").is_file()
+    assert not (project / "components/ne_hal/test").exists()
+    assert 'joltwallet/littlefs: "==1.22.3"' in (project / "main/idf_component.yml").read_text()
+    assert (project / "main/brain.c").is_file()
 
 
 def test_a_tampered_brain_fails_the_build_naming_the_pin(stand_in, tmp_path):

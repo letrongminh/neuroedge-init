@@ -195,7 +195,7 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 |:---|:---|:---|
 | List tools | `tools/list` → name, `inputSchema`, `outputSchema`, `_meta` | `tools(ctx, &out)` → `nc_tool[]` (name, description, schema JSON) |
 | Call | `tools/call` → `structuredContent` (tool-result.v1) | `call(ctx, name, arguments_json, &out)` → `nc_tool_result` rendered from the same JSON |
-| Answer an `ask` | never over MCP: local page (DP-A-02) or box approval bot (DP-A-06) | `answer(ctx, confirmation_id, approve, from_id, &out)` from the owner callback (an interface change in NeuroClaw-ESP), or `ne_bridge_answer_button` from the board (DP-B-07) |
+| Answer an `ask` | never over MCP: local page (DP-A-02) or box approval bot (DP-A-06) | `answer(ctx, confirmation_id, approve, &out)` from NeuroClaw-ESP's Telegram callback, which has already dropped every sender but the configured owner (`nc_core.c`); the adapter hands the bridge that owner's id, so the owner check rests on brain code (accepted under `risk=single_chip`); or `ne_bridge_answer_button` from the board (DP-B-07) |
 | Contract version | `_meta["dev.neuroedge/contract"]` | `NE_BRIDGE_CONTRACT` = `"tool-result.v1"` |
 
 ### 4.2 Result examples (tool-result.v1)
@@ -212,9 +212,11 @@ Verification methods: **T** test, **I** inspection, **A** analysis, **D** demons
 ### 4.3 Bridge (`targets/esp32s3/components/ne_brain_bridge/include/ne_brain_bridge.h`)
 
 The core both builds share, tested on the host against the box (`python/tests/test_c_bridge.py`).
-The `nc_gate` adapter NeuroClaw-ESP takes (`ne_bridge_gate()`, filling `nc_tool_result` from the
-same JSON) is built with the one image (TSK-I2f-14), together with the `from_id` that
-`nc_gate.answer` needs (an interface change in NeuroClaw-ESP).
+The `nc_gate` NeuroClaw-ESP takes is the image's `main/brain.c`: it fills `nc_tool_result` field by
+field with `ne_bridge_result_field`, takes one lock around every bridge call, drives pins through
+`ne_hal` as the action's body would (`ne_agent_pin_op`, recorded at build time by
+`engine/chip_actions.py`: on, off, or a pulse whose length may follow one argument; anything else
+is refused on the chip), and writes every decision as an NE1 session (DP-B-12).
 
 ```c
 #define NE_BRIDGE_CONTRACT    "tool-result.v1"
@@ -249,6 +251,16 @@ void     ne_bridge_answer(ne_bridge *b, const char *confirmation_id, int approve
                           const char *from_id, ne_bridge_result *out);   /* owner, Telegram */
 void     ne_bridge_answer_button(ne_bridge *b, const char *confirmation_id, int approve,
                                 ne_bridge_result *out); /* the question the board shows, by id */
+uint32_t ne_bridge_waiting(ne_bridge *b);
+/* An adapter reads a result back: `reason`, `message`, the first of `problems`, `confirmation.id` */
+int      ne_bridge_result_field(const ne_bridge_result *r, const char *object, const char *name,
+                                char *out, uint32_t cap);
+/* DP-B-12: one NE1 session per decision (action_requested, gate events, the pins, trace_end) */
+void     ne_bridge_trace(ne_bridge *b, ne_trace_sink *sink, const ne_device_info *info);
+void     ne_bridge_trace_pin(ne_bridge *b, uint32_t pin, int driven, const char *operation,
+                             uint32_t duration_ms, ne_token_reason why);   /* from run() */
+uint32_t ne_bridge_pulse_ms(const ne_bridge *b, uint32_t action, const ne_agent_pin_op *op,
+                            const ne_arg_value *args, uint32_t arg_count);
 ```
 
 `ne_bridge` is static storage the application owns; no heap, no globals, no recursion, every
@@ -278,7 +290,11 @@ session; the last one carries `last_recorded: true`.
 
 Status `implemented — <file>::<test>` names a test in this repository;
 `implemented in NeuroClaw — <file>::<Test>` names a Go test of the NeuroClaw repository, run by
-its `neuroedge-contract` workflow against this box at a pinned commit; `planned — <TSK>` names
+its `neuroedge-contract` workflow against this box at a pinned commit; `implemented in CI —
+<workflow>::<job>` names the job that runs a test case only an ESP-IDF build or Espressif QEMU can
+run (`firmware-qemu.yml` job `brain-firmware`: scripts/qemu_brain.py, scripts/check_brain_image.py,
+scripts/qemu_ota.sh with NEUROEDGE_OTA_BRAIN=1, whose host halves are tested in this repository),
+and one of its steps names the test case; `planned — <TSK>` names
 the roadmap task that adds the test with the code. No test is skipped in the meantime
 (CONTRIBUTING.md §5).
 
@@ -326,7 +342,7 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-A-10-1 | DP-A-10 | linux | Box under systemd → URL file mode 0600 owned by the box user; journal has no `#c=`; `neuroedge ui-link` prints a new code and the old one stops working | implemented — python/tests/test_mcp_serve_ui.py::test_under_a_service_manager_the_link_goes_to_a_private_file_and_ui_link_renews_it |
 | TC-A-11-1 | DP-A-11 | integration | Rotate the brain certificate → new one works without restart; revoked thumbprint → handshake refused | implemented — python/tests/test_mcp_http.py::test_a_brain_certificate_rotates_without_a_restart_and_a_revoked_one_is_cut_off |
 | TC-B-01-1 | DP-B-01 | unit | `build --brain neuroclaw` writes the component pin; tampered SHA-256 → build error naming the file | implemented — python/tests/test_firmware_brain.py::test_a_tampered_brain_fails_the_build_naming_the_pin |
-| TC-B-02-1 | DP-B-02 | inspection | Image symbols contain no MCP server, no `mbedtls_ssl_conf_*` server role | planned — TSK-I2f-15 |
+| TC-B-02-1 | DP-B-02 | inspection | Image symbols contain no MCP server, no `mbedtls_ssl_conf_*` server role | implemented in CI — .github/workflows/firmware-qemu.yml::brain-firmware |
 | TC-B-03-1 | DP-B-03 | host C | Bridge tool list for the demo agent equals the MCP tool list (names, schemas) | implemented — python/tests/test_c_bridge.py::test_the_bridge_offers_the_tools_the_box_lists_over_mcp |
 | TC-B-04-1 | DP-B-04 | host C | Arguments table: unknown key, missing key, string for number, out of range → REJECTED with `problems`; walker never called | implemented — python/tests/test_c_bridge.py::test_bad_arguments_are_rejected_before_any_gate |
 | TC-B-05-1 | DP-B-05 | host C | Call carries `"temperature": 99`; fact source reads 25 → verdict follows 25 | implemented — python/tests/test_c_bridge.py::test_a_value_in_the_call_never_becomes_a_fact |
@@ -334,14 +350,14 @@ the roadmap task that adds the test with the code. No test is skipped in the mea
 | TC-B-07-1 | DP-B-07 | host C | Expired confirmation, second answer, wrong `from_id` → refused; owner callback and button → ALLOW once with the stored arguments and freshly read facts; ALLOW tokens still issue while 4 asks are pending | implemented — python/tests/test_c_bridge.py::test_only_the_owner_or_the_button_answers_once_and_facts_are_read_again |
 | TC-B-08-1 | DP-B-08 | host C | HAL drive without token, with closed token, with token for another pin → refused, pin unchanged | implemented — python/tests/test_c_hal.py::test_a_pin_moves_only_on_its_own_live_token |
 | TC-B-09-1 | DP-B-09 | unit | Generated partition table: offsets aligned, OTA slots ≥ image, `ws` ≥ 1 MB, `nvs_keys` encrypted | implemented — python/tests/test_firmware_brain.py::test_the_brains_partition_table_holds_box_brain_and_signed_ota |
-| TC-B-10-1 | DP-B-10 | QEMU | Set all keys at the hidden prompt, reboot → brain configured; UART capture contains no secret | planned — TSK-I2f-14 |
-| TC-B-11-1 | DP-B-11 | QEMU | Boot combined image → one Wi-Fi start, one console with both command sets | planned — TSK-I2f-14 |
-| TC-B-12-1 | DP-B-12 | QEMU | Three tool calls → `record --port` writes a trace that `verify` replays to the same verdicts | planned — TSK-I2f-16 |
-| TC-B-13-1 | DP-B-13 | QEMU | Size job: image ≤ 3.5 MB; free SRAM ≥ 120 KB after brain start; stack report per task; `ne_*` ≤ 512 B | planned — TSK-I2f-15 |
-| TC-B-14-1 | DP-B-14 | QEMU | Boot without flash encryption → both labels at boot and in `status` | planned — TSK-I2f-14 |
-| TC-B-15-1 | DP-B-15 | QEMU | OTA to an image whose bridge self-check fails → rollback to the previous image | planned — TSK-I2f-14 |
-| TC-B-16-1 | DP-B-16 | QEMU | Network down; button bound to `light_off` → ALLOW; to `front_door_unlock` at night → BLOCK; same verdicts as with the network | planned — TSK-I2f-15 |
-| TC-B-17-1 | DP-B-17 | QEMU | OTA to an image with a lower security version → refused, old image keeps running; pairing without flash encryption → label printed, tokens stored only after acknowledgement | planned — TSK-I2f-14 |
+| TC-B-10-1 | DP-B-10 | QEMU | Set all keys at the hidden prompt, reboot → brain configured; UART capture contains no secret | implemented in CI — .github/workflows/firmware-qemu.yml::brain-firmware |
+| TC-B-11-1 | DP-B-11 | QEMU | Boot combined image → one Wi-Fi start, one console with both command sets | implemented in CI — .github/workflows/firmware-qemu.yml::brain-firmware |
+| TC-B-12-1 | DP-B-12 | QEMU | Three tool calls → `record --port` writes a trace that `verify` replays to the same verdicts | implemented — python/tests/test_c_bridge.py::test_every_decision_is_a_trace_session_that_replays_to_the_same_verdicts |
+| TC-B-13-1 | DP-B-13 | QEMU | Size job: image ≤ 3.5 MB; free SRAM ≥ 120 KB after brain start; stack report per task; `ne_*` ≤ 512 B | implemented in CI — .github/workflows/firmware-qemu.yml::brain-firmware |
+| TC-B-14-1 | DP-B-14 | QEMU | Boot without flash encryption → both labels at boot and in `status` | implemented in CI — .github/workflows/firmware-qemu.yml::brain-firmware |
+| TC-B-15-1 | DP-B-15 | QEMU | OTA to an image whose bridge self-check fails → rollback to the previous image | implemented in CI — .github/workflows/firmware-qemu.yml::brain-firmware |
+| TC-B-16-1 | DP-B-16 | QEMU | Network down; button bound to `light_off` → ALLOW; to `front_door_unlock` at night → BLOCK; same verdicts as with the network | implemented in CI — .github/workflows/firmware-qemu.yml::brain-firmware |
+| TC-B-17-1 | DP-B-17 | QEMU | OTA to an image with a lower security version → refused, old image keeps running; pairing without flash encryption → label printed, tokens stored only after acknowledgement | implemented in CI — .github/workflows/firmware-qemu.yml::brain-firmware |
 | TC-BP-01-1 | DP-BP-01 | analysis | Decision note merged under `docs/reports/` with measurements and a recommendation | planned — TSK-I2f-17 |
 | TC-NF-01-1 | DP-NF-01 | board | 1,000 calls on DevKitC → bridge overhead p95 ≤ 5 ms | planned — TSK-I2f-15 |
 | TC-NF-02-1 | DP-NF-02 | inspection | Every place that fetches NeuroClaw names a version and a SHA-256 (today `build --brain neuroclaw`, from `targets/esp32s3/brain/neuroclaw.lock`; the installer of DP-A-09 reads the same kind of pin) | implemented — python/tests/test_firmware_brain.py::test_the_committed_pin_names_a_commit_and_a_tree |

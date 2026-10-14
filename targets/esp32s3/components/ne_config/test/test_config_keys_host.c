@@ -31,7 +31,7 @@ static ne_config_verdict check(const char *name, const char *value) {
 static int check_table(void) {
     size_t count = 0;
     const ne_config_key *keys = ne_config_keys(&count);
-    CHECK(count == 7u);
+    CHECK(count == 12u);
     for (size_t i = 0; i < count; i++) {
         CHECK(strlen(keys[i].nvs_key) <= 15u); /* NVS key limit */
         CHECK(keys[i].max_len <= NE_CONFIG_VALUE_MAX);
@@ -49,6 +49,10 @@ static int check_table(void) {
     CHECK(!ne_config_key_find("telegram.owner")->secret);
     CHECK(!ne_config_key_find("llm.url")->secret);
     CHECK(!ne_config_key_find("llm.model")->secret);
+    CHECK(ne_config_key_find("llm.fallback_key")->secret);
+    CHECK(ne_config_key_find("search.key")->secret);
+    CHECK(!ne_config_key_find("llm.fallback_url")->secret);
+    CHECK(!ne_config_key_find("tz")->secret);
     CHECK(ne_config_key_find("telegram") == NULL);
     CHECK(ne_config_key_find("TELEGRAM.TOKEN") == NULL);
     CHECK(ne_config_key_find(NULL) == NULL);

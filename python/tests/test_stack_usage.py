@@ -129,3 +129,37 @@ def test_the_firmware_builds_with_stack_usage(root):
     cmake = (root / "targets" / "esp32s3" / "CMakeLists.txt").read_text()
     assert 'idf_build_set_property(COMPILE_OPTIONS "-fstack-usage" APPEND)' in cmake
     assert cmake.index("-fstack-usage") < cmake.index("project(")
+
+
+def test_the_bridge_alone_keeps_the_512_byte_rule(check, capsys, tmp_path):
+    """TC-B-13-1 (DP-B-13): `ne_*` frames stay at 512 B with the brain in the image."""
+    frames = dict(
+        GOOD,
+        ne_brain_bridge=["/w/b.c:1:1:decide_steps\t496\tstatic"],
+        neuroclaw=["/w/nc.c:1:1:nc_loop\t2048\tstatic"],  # the brain's own: not this rule
+    )
+    build = _build(tmp_path, frames)
+    code, out = _run(check, capsys, build, "--component", "^ne_brain_bridge$", "--limit", 512)
+    assert code == 0, out
+    assert "1 functions in ne_brain_bridge" in out
+    over = _build(tmp_path / "over", dict(frames, ne_brain_bridge=["/w/b.c:1:1:f\t520\tstatic"]))
+    code, out = _run(check, capsys, over, "--component", "^ne_brain_bridge$", "--limit", 512)
+    assert code == 1 and "f: 520 B frame, over the 512 B limit" in out
+
+
+def test_every_named_task_reports_its_stack_and_clears_the_floor(check, capsys, tmp_path):
+    """TC-B-13-1: the console's `tasks` lines, the last one per task."""
+    log = tmp_path / "uart.log"
+    log.write_text(
+        "NE_STACK task=main free_min=900 size=3584\n"
+        "NE_STACK task=neuroclaw free_min=4000 size=8192\n"
+        "NE_STACK task=ne_console free_min=700 size=4096\r\n"
+        "NE_STACK task=neuroclaw free_min=300 size=8192\n"
+    )
+    code, out = _run(check, capsys, tmp_path, "--uart-log", log, "--task", "ne_console")
+    assert code == 0, out
+    assert "task ne_console: 700 of 4096 B" in out
+    code, out = _run(check, capsys, tmp_path, "--uart-log", log, "--task", "neuroclaw")
+    assert code == 1 and "task neuroclaw: 300 B of stack left" in out
+    code, out = _run(check, capsys, tmp_path, "--uart-log", log, "--task", "tiT")
+    assert code == 1 and "no NE_STACK line for task tiT" in out

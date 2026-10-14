@@ -11,7 +11,7 @@ import ast
 import tomllib
 from pathlib import Path
 
-from neuroedge.engine import firmware
+from neuroedge.engine import brain, firmware
 from neuroedge.paths import echo_cancel_conf
 
 
@@ -69,6 +69,7 @@ def test_the_wheel_carries_exactly_the_firmware_sources_a_build_copies(root):
     }
     assert values["FIRMWARE"] == "targets/esp32s3"
     assert values["FIRMWARE_SOURCES"] == firmware.SOURCES
+    assert values["BRAIN_SOURCES"] == brain.SOURCES  # `build --brain neuroclaw` (Q-83)
     # A build made inside an asset (an agent's build/esp32s3/, idf.py's output) never ships.
     assert {"build", "managed_components", "__pycache__"} <= set(values["EXCLUDED_DIRS"])
     assert {"sdkconfig", "sdkconfig.old", "dependencies.lock"} <= set(values["EXCLUDED_FILES"])

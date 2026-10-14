@@ -63,8 +63,11 @@ ESP_SR_ARCHIVE = re.compile(
 )
 HEAP_PREFIX = "NEUROEDGE_HEAP_JSON "
 HEAP_SCHEMA = "neuroedge.heap/v1"
-# The one checkpoint main.c reports it at: the gate runtime up, before network and audio.
+# The checkpoint main.c reports it at: the gate runtime up, before network and audio.
 HEAP_CHECKPOINT = "gate_runtime_ready"
+# With the brain in the image (Profile B, DP-B-13) a second line follows once NeuroClaw-ESP has
+# started; `--checkpoint brain_ready` checks that one, and each check ignores the other's line.
+HEAP_CHECKPOINTS = (HEAP_CHECKPOINT, "brain_ready")
 
 
 class Unreadable(Exception):
@@ -278,7 +281,17 @@ def check_static_ram(
 # --- 3. boot heap ------------------------------------------------------------------------------
 
 
-def boot_heap(log: Path) -> dict:
+def _other_checkpoint(payload: str, wanted: str) -> bool:
+    """A line of a known checkpoint that is not the one asked for: not this check's line."""
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError:
+        return False
+    found = data.get("checkpoint") if isinstance(data, dict) else None
+    return found in HEAP_CHECKPOINTS and found != wanted
+
+
+def boot_heap(log: Path, checkpoint: str = HEAP_CHECKPOINT) -> dict:
     try:
         text = log.read_text(encoding="utf-8", errors="replace")
     except OSError as error:
@@ -289,6 +302,7 @@ def boot_heap(log: Path) -> dict:
         (number, line.rstrip("\r")[len(HEAP_PREFIX) :])
         for number, line in enumerate(text.split("\n"), 1)
         if line.startswith(HEAP_PREFIX)
+        and not _other_checkpoint(line.rstrip("\r")[len(HEAP_PREFIX) :], checkpoint)
     ]
     if not lines:
         raise Unreadable(
@@ -308,9 +322,9 @@ def boot_heap(log: Path) -> dict:
         raise Unreadable(f"{where}: not JSON: {error}") from error
     if not isinstance(data, dict) or data.get("schema") != HEAP_SCHEMA:
         raise Unreadable(f"{where}: not a {HEAP_SCHEMA} line")
-    if data.get("checkpoint") != HEAP_CHECKPOINT:
+    if data.get("checkpoint") != checkpoint:
         raise Unreadable(
-            f"{where}: checkpoint {data.get('checkpoint')!r}, not {HEAP_CHECKPOINT!r} — the "
+            f"{where}: checkpoint {data.get('checkpoint')!r}, not {checkpoint!r} — the "
             "floor is defined once the gate runtime is up, before network and audio"
         )
     for key in ("internal_free_bytes", "internal_largest_block_bytes", "internal_min_ever_bytes"):
@@ -321,8 +335,8 @@ def boot_heap(log: Path) -> dict:
     return data
 
 
-def check_boot_heap(log: Path, floor: int) -> bool:
-    heap = boot_heap(log)
+def check_boot_heap(log: Path, floor: int, checkpoint: str = HEAP_CHECKPOINT) -> bool:
+    heap = boot_heap(log, checkpoint)
     print("\n== boot heap (Q-3 floor at the gate runtime, before network and audio — TSK-S4-11)")
     print(f"line:              {heap['where']} (checkpoint {heap.get('checkpoint')!r})")
     print(f"device:            {'Espressif QEMU' if heap['qemu'] else 'board'}")
@@ -374,6 +388,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Fail unless ESP-SR is linked (for the build that measures the audio front end)",
     )
     parser.add_argument("--heap-log", type=Path, help="UART log with a NEUROEDGE_HEAP_JSON line")
+    parser.add_argument(
+        "--checkpoint",
+        choices=HEAP_CHECKPOINTS,
+        default=HEAP_CHECKPOINT,
+        help="Which heap line --heap-log checks (brain_ready: after NeuroClaw-ESP started)",
+    )
     args = parser.parse_args(argv)
     if args.firmware is None and args.size_json is None and args.heap_log is None:
         parser.error("nothing to check: give an image, --size-json or --heap-log")
@@ -392,7 +412,7 @@ def main(argv: list[str] | None = None) -> int:
                 Q3_MIN_INTERNAL_SRAM_BYTES,
             )
         if args.heap_log is not None:
-            ok &= check_boot_heap(args.heap_log, Q3_MIN_INTERNAL_SRAM_BYTES)
+            ok &= check_boot_heap(args.heap_log, Q3_MIN_INTERNAL_SRAM_BYTES, args.checkpoint)
     except Unreadable as error:
         print(f"\n✗ FAIL — {error}", file=sys.stderr)
         print(

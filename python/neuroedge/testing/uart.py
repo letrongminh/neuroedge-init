@@ -130,8 +130,14 @@ def _check_device_info(event: dict[str, Any], where: str) -> None:
         raise _malformed(where, "device_info opens a session at offset_ms 0")
 
 
-def sessions_from_lines(lines: Iterable[str], source: str) -> list[DeviceSession]:
-    """Every framed session in `lines`, in order. Any broken frame raises."""
+def sessions_from_lines(
+    lines: Iterable[str], source: str, *, cut: bool = False
+) -> list[DeviceSession]:
+    """
+    Every framed session in `lines`, in order. Any broken frame raises, except with `cut`
+    (`record --follow` stopped by the person): the last session, open when reading stopped, is
+    left out — never written short.
+    """
     sessions: list[DeviceSession] = []
     current: DeviceSession | None = None
     seen: dict[str, int] = {}
@@ -180,7 +186,7 @@ def sessions_from_lines(lines: Iterable[str], source: str) -> list[DeviceSession
             current = None
         else:
             current.events.append(event)
-    if current is not None:
+    if current is not None and not cut:
         raise _malformed(
             f"{source}:{current.line}",
             f"the session opened here has no trace_end (the capture ends at line {number})",
@@ -192,14 +198,14 @@ def sessions_from_lines(lines: Iterable[str], source: str) -> list[DeviceSession
 # --- sources -------------------------------------------------------------------------------
 
 
-def _until_done(lines: Iterable[str]) -> Iterator[str]:
+def _until_done(lines: Iterable[str], follow: bool = False) -> Iterator[str]:
     for line in lines:
         yield line
-        if line.startswith(DONE):
+        if line.startswith(DONE) and not follow:
             return
 
 
-def _file_lines(path: Path) -> Iterator[str]:
+def _file_lines(path: Path, follow: bool = False) -> Iterator[str]:
     if not path.is_file():
         raise TraceValidationError(
             where=str(path),
@@ -207,10 +213,10 @@ def _file_lines(path: Path) -> Iterator[str]:
             how="pass QEMU's -serial file:… log, tcp://host:port, or the board's /dev/tty…",
         )
     with open(path, encoding="utf-8", errors="replace", newline="") as handle:
-        yield from _until_done(handle)
+        yield from _until_done(handle, follow)
 
 
-def _tcp_lines(port: str, timeout_s: float) -> Iterator[str]:
+def _tcp_lines(port: str, timeout_s: float, follow: bool = False) -> Iterator[str]:
     match = re.fullmatch(r"tcp://([^:/]+):(\d+)/?", port)
     if match is None:
         raise TraceValidationError(
@@ -228,14 +234,14 @@ def _tcp_lines(port: str, timeout_s: float) -> Iterator[str]:
         ) from None
     with sock, sock.makefile("r", encoding="utf-8", errors="replace", newline="") as stream:
         try:
-            for line in _until_done(stream):
+            for line in _until_done(stream, follow):
                 yield line
                 sock.settimeout(max(0.1, deadline - time.monotonic()))
         except TimeoutError:
             return  # the frame check reports what the capture lacks
 
 
-def _serial_lines(port: str, baud: int, timeout_s: float) -> Iterator[str]:
+def _serial_lines(port: str, baud: int, timeout_s: float, follow: bool = False) -> Iterator[str]:
     try:
         import serial  # pyserial, extra `neuroedge[serial]`
     except ImportError:
@@ -262,7 +268,7 @@ def _serial_lines(port: str, baud: int, timeout_s: float) -> Iterator[str]:
             line = pending.decode("utf-8", errors="replace")
             pending = b""
             yield line
-            if line.startswith(DONE):
+            if line.startswith(DONE) and not follow:
                 return
 
 
@@ -270,22 +276,39 @@ def _serial_lines(port: str, baud: int, timeout_s: float) -> Iterator[str]:
 SERIAL = re.compile(r"^(/dev/|COM\d+$|\\\\\.\\|[a-z][a-z0-9+]*://)", re.IGNORECASE)
 
 
-def read_lines(port: str, *, baud: int = DEFAULT_BAUD, timeout_s: float = 30.0) -> Iterator[str]:
-    """The lines a device wrote, up to `NE_TRACE DONE`, the end of a file, or `timeout_s`."""
+def read_lines(
+    port: str, *, baud: int = DEFAULT_BAUD, timeout_s: float = 30.0, follow: bool = False
+) -> Iterator[str]:
+    """
+    The lines a device wrote, up to `NE_TRACE DONE`, the end of a file, or `timeout_s`. With
+    `follow` (DP-B-12) `NE_TRACE DONE` does not end it: a running image keeps deciding after
+    its boot, so reading goes on to the end of the file, `timeout_s`, or Ctrl-C.
+    """
     if port.startswith("tcp://"):
-        return _tcp_lines(port, timeout_s)
+        return _tcp_lines(port, timeout_s, follow)
     if port.startswith("file:"):
-        return _file_lines(Path(port[len("file:") :]))
+        return _file_lines(Path(port[len("file:") :]), follow)
     if SERIAL.match(port):
-        return _serial_lines(port, baud, timeout_s)
-    return _file_lines(Path(port))
+        return _serial_lines(port, baud, timeout_s, follow)
+    return _file_lines(Path(port), follow)
+
+
+def _until_stopped(lines: Iterable[str]) -> Iterator[str]:
+    """Ctrl-C ends a followed capture as the end of a file would."""
+    try:
+        yield from lines
+    except KeyboardInterrupt:
+        return
 
 
 def read_sessions(
-    port: str, *, baud: int = DEFAULT_BAUD, timeout_s: float = 30.0
+    port: str, *, baud: int = DEFAULT_BAUD, timeout_s: float = 30.0, follow: bool = False
 ) -> list[DeviceSession]:
     """Every framed session the device at `port` writes. None at all is an error."""
-    sessions = sessions_from_lines(read_lines(port, baud=baud, timeout_s=timeout_s), port)
+    lines = read_lines(port, baud=baud, timeout_s=timeout_s, follow=follow)
+    if follow:
+        lines = _until_stopped(lines)
+    sessions = sessions_from_lines(lines, port, cut=follow)
     if not sessions:
         raise TraceValidationError(
             where=port,

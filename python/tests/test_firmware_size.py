@@ -311,3 +311,18 @@ def test_nothing_to_check_is_a_usage_error(check, capsys):
     with pytest.raises(SystemExit) as caught:
         check.main([])
     assert caught.value.code == 2
+
+
+def test_with_the_brain_each_heap_line_is_checked_at_its_own_checkpoint(check, capsys, tmp_path):
+    """TC-B-13-1 (DP-B-13): free SRAM is checked again once NeuroClaw-ESP has started."""
+    brain = HEAP.replace('"checkpoint":"gate_runtime_ready"', '"checkpoint":"brain_ready"')
+    low = brain.replace('"internal_free_bytes":383664', '"internal_free_bytes":122879')
+    log = _log(tmp_path, HEAP, "NE_TRACE DONE sessions=1", low)
+    code, out = _run(check, capsys, "--heap-log", log)
+    assert code == 0, out  # the gate runtime's line, the brain's ignored
+    code, out = _run(check, capsys, "--heap-log", log, "--checkpoint", "brain_ready")
+    assert code == 1 and "checkpoint 'brain_ready'" in out and "the board can only have less" in out
+    code, out = _run(
+        check, capsys, "--heap-log", _log(tmp_path, HEAP), "--checkpoint", "brain_ready"
+    )
+    assert code == 1 and "no NEUROEDGE_HEAP_JSON line" in out

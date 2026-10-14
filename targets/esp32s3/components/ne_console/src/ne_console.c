@@ -28,6 +28,21 @@
 
 static const char *TAG = "ne_console";
 static bool s_safe_mode;
+static esp_err_t (*s_register_more)(void);
+static const char *s_risks[4];
+static size_t s_risk_count;
+
+void ne_console_add_commands(esp_err_t (*register_more)(void))
+{
+    s_register_more = register_more;
+}
+
+void ne_console_add_risk(const char *label)
+{
+    if (label != NULL && s_risk_count < sizeof s_risks / sizeof s_risks[0]) {
+        s_risks[s_risk_count++] = label;
+    }
+}
 
 /* --- reading a secret ------------------------------------------------------------------------ */
 
@@ -86,6 +101,9 @@ static void print_refused(const char *name, const char *reason)
     printf("NE_CONFIG REFUSED key=%s reason=%s\n", name, reason);
 }
 
+/* The owner read that secrets go to readable flash and said so this boot (DP-B-17). */
+static bool s_risk_acknowledged;
+
 static int config_set(const ne_config_key *key, int argc, char **argv)
 {
     char value[NE_CONFIG_VALUE_MAX + 1];
@@ -93,6 +111,13 @@ static int config_set(const ne_config_key *key, int argc, char **argv)
         if (argc > 3) {
             print_refused(key->name, "inline_secret");
             printf("Type `config set %s` and enter the value at the hidden prompt.\n", key->name);
+            return 1;
+        }
+        if (ne_config_storage_risk() != NULL && !s_risk_acknowledged) {
+            print_refused(key->name, "risk_not_acknowledged");
+            printf("Flash encryption is off: a secret stored now can be read back from the chip "
+                   "(risk=%s).\nType `config ack %s` to store secrets anyway.\n",
+                   ne_config_storage_risk(), ne_config_storage_risk());
             return 1;
         }
         printf("%s (hidden, Enter to finish): ", key->name);
@@ -136,6 +161,20 @@ static int config_set(const ne_config_key *key, int argc, char **argv)
 static int cmd_config(int argc, char **argv)
 {
     const char *sub = argc > 1 ? argv[1] : "list";
+    if (strcmp(sub, "ack") == 0) {
+        const char *risk = ne_config_storage_risk();
+        if (risk == NULL) {
+            printf("NE_CONFIG ACK none: secrets are stored encrypted\n");
+            return 0;
+        }
+        if (argc != 3 || strcmp(argv[2], risk) != 0) {
+            printf("Usage: config ack %s\n", risk);
+            return 1;
+        }
+        s_risk_acknowledged = true;
+        printf("NE_CONFIG ACK risk=%s\n", risk);
+        return 0;
+    }
     if (strcmp(sub, "list") == 0) {
         size_t count = 0;
         const ne_config_key *keys = ne_config_keys(&count);
@@ -179,10 +218,12 @@ static int cmd_status(int argc, char **argv)
     const char *risk = ne_config_storage_risk();
     /* stack_free: the console task's lowest free stack so far, in bytes (the
      * stack guard reads it after the deepest command, `config set`). */
-    printf("NE_STATUS mode=%s boot=%lu/%lu storage=%s%s%s heap=%lu stack_free=%u stack=%u\n",
-           s_safe_mode ? "safe" : "normal", (unsigned long)boot.count, (unsigned long)boot.max,
+    printf("NE_STATUS mode=%s boot=%lu/%lu storage=%s%s%s", s_safe_mode ? "safe" : "normal",
+           (unsigned long)boot.count, (unsigned long)boot.max,
            ne_config_storage_name(ne_config_storage_mode()), risk ? " risk=" : "",
-           risk ? risk : "", (unsigned long)esp_get_free_heap_size(),
+           risk ? risk : "");
+    for (size_t i = 0; i < s_risk_count; i++) printf(" risk=%s", s_risks[i]);
+    printf(" heap=%lu stack_free=%u stack=%u\n", (unsigned long)esp_get_free_heap_size(),
            (unsigned)uxTaskGetStackHighWaterMark(NULL), (unsigned)CONFIG_NEUROEDGE_CONSOLE_STACK);
     return 0;
 }
@@ -233,8 +274,8 @@ static void register_commands(void)
     const esp_console_cmd_t commands[] = {
         {.command = "status", .help = "Mode, boot count, storage, free heap", .func = cmd_status},
         {.command = "config",
-         .help = "config list | get <key> | set <key> [value] | unset <key>. A secret is "
-                 "typed at a hidden prompt.",
+         .help = "config list | get <key> | set <key> [value] | unset <key> | ack <risk>. A "
+                 "secret is typed at a hidden prompt; on readable flash, after `config ack`.",
          .hint = "list|get|set|unset",
          .func = cmd_config},
         {.command = "bootguard",
@@ -249,6 +290,7 @@ static void register_commands(void)
         ESP_ERROR_CHECK(esp_console_cmd_register(&commands[i]));
     }
     ESP_ERROR_CHECK(esp_console_register_help_command());
+    if (s_register_more != NULL && !s_safe_mode) ESP_ERROR_CHECK(s_register_more());
 }
 
 /* --- the loop -------------------------------------------------------------------------------- */
