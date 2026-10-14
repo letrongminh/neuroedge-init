@@ -28,3 +28,11 @@ guard.toml tool parameter to prove the loader refuses a literal secret and never
 (RFC-0016 §3b). It was never a key.
 """
 regexes = ['''sk-abcdef0123456789''']
+
+[[allowlists]]
+description = """
+python/tests/test_install.py (commit b9013b9, TSK-I2d-25): a made-up Telegram-shaped bot token
+the test hands `neuroedge install --profile full` to prove it lands only in the brain's 0600
+env file, never in a unit or a log. It was never a token.
+"""
+regexes = ['''7000000003:AAstagedNotARealToken''']
