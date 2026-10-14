@@ -13,6 +13,8 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 
 | Bạn cần | Đọc | Ghi chú |
 |:---|:---|:---|
+| **Mới tới** | | |
+| Hệ thống gồm gì, hôm nay chạy được gì, đọc gì tiếp — bằng lời thường, không mã | [`bat-dau.md`](bat-dau.md) | đọc đầu tiên, 5 phút |
 | **Chạy thử** | | |
 | Cài đặt và chạy test | [`python/README.md`](../../python/README.md) | venv + `pip install -e '.[dev]'` |
 | Toàn bộ lệnh CLI và đầu ra kỳ vọng | [`CHANGELOG.md`](../../CHANGELOG.md) §2 | nguồn duy nhất cho cú pháp lệnh |

@@ -15,6 +15,7 @@ người đọc luôn tách được cái đang có trên `main` với cái mớ
 
 | Bạn là | Mục tiêu | Đọc theo thứ tự |
 |:---|:---|:---|
+| Người mới hoàn toàn | Hệ thống gồm gì (bộ não NeuroClaw, hộp NeuroEdge, thiết bị), chạy được gì | [`bat-dau.md`](../user/bat-dau.md), rồi `00` §2 |
 | Kỹ sư mới | Chạy được hệ thống và hiểu nó trong ngày đầu | [`python/README.md`](../../python/README.md) → `00` → `02` → `03` |
 | Kỹ sư lõi | Hiểu từng layer và cách chúng gọi nhau | `00` → `02` → `03` → `05` → `06` → `07` → `15` |
 | Kỹ sư nhúng | Firmware, bộ nhớ, khởi động, OTA, triển khai | `02` → `04` → `05` → `06` → `02` §6 |

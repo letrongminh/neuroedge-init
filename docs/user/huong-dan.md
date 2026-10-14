@@ -33,6 +33,8 @@ phòng máy đang nóng tới đâu, ai đang ra lệnh) và cho một trong ba 
 | **BLOCK** kèm **hỏi lại** | Chưa cho; hỏi người có mặt xác nhận trước | Tắt quạt khi phòng máy đang nóng |
 | **BLOCK** | Từ chối; có thể chuyển cho người thật (lễ tân) | Khách phòng 101 đòi mở cửa phòng 202 |
 
+**Bộ não: NeuroClaw.** Bạn nhắn Telegram cho bộ não NeuroClaw (repo riêng `letrongminh/neuroclaw`); nó gọi AI, nhớ, nhắc lịch, và xin hộp NeuroEdge làm việc qua MCP. Cách nối: [`chat-voi-nha.md`](chat-voi-nha.md). Người mới: [`bat-dau.md`](bat-dau.md).
+
 **Lời gọi chỉ là yêu cầu.** Một LLM, một agent khác qua MCP, hay một câu nói đều chỉ *xin* làm một hành
 động; gate mới là nơi quyết định. Trong mã, chân GPIO chỉ động được bên trong `c.do()` khi có một
 phán quyết hợp lệ, và phán quyết đó dùng được đúng một lần.
@@ -77,6 +79,7 @@ Bảng dưới là bức tranh tổng. Chi tiết của từng ô nằm trong §
 | **`sim`** — trình mô phỏng | Thiết bị ảo trên máy tính của bạn: chốt cửa, đèn, quạt, cảm biến, màn hình, micro và loa ảo | **Đầy đủ**: gate, gõ lệnh, trang web theo dõi, vết ghi, thoại từ tệp WAV, model AI thật, MCP | — |
 | **`linux`** — máy Linux | Chân GPIO thật của kernel, cảm biến hwmon/IIO, framebuffer, micro/loa qua PipeWire | Gõ lệnh, thoại từ tệp WAV, MCP, đọc cảm biến, vẽ màn hình — **đã kiểm trên phần cứng ảo** (gpio-sim, `i2c-stub` + `lm75`, `vkms`) trong CI | Chưa chạy trên Raspberry Pi 5 thật (bo mạch chưa về); micro và loa thật chưa kiểm trên phần cứng; chưa có trang web theo dõi |
 | **`esp32s3`** — chip | Firmware ESP-IDF cho ESP32-S3-BOX-3 | Gate của agent chạy và tự kiểm lúc khởi động, vết ghi qua UART, so phán quyết với máy tính, cập nhật OTA có ký — **đã kiểm trên QEMU** (máy ảo của Espressif) | Chưa có bo mạch; chưa chân GPIO nào động; chưa có âm thanh, Wi-Fi thật, màn hình thật |
+| **Bộ não NeuroClaw** — chat | Repo riêng `letrongminh/neuroclaw`: chat, AI, trí nhớ, lịch; gọi vào hộp qua MCP | Nhắn Telegram bật đèn, mở cửa có hỏi chủ nhà — **đã chạy trong demo** (laptop, máy ảo đóng vai cloud); bản cho chip chạy trên QEMU | Gói cài cho người ngoài; NeuroEdge Cloud |
 
 Chưa có bo mạch thật nào trong tay đội: Box-3 và Raspberry Pi 5 đang chờ về (tiến độ ở
 [`trang-thai.md`](trang-thai.md)). Mọi thứ có dấu "đã kiểm trên phần cứng ảo" hay "trên QEMU" nghĩa là

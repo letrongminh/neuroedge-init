@@ -47,7 +47,7 @@ def e01_context() -> Diagram:
          "done"),
         ("auditor", "Safety reviewer / QA", ("Reads gates and traces", "gate explain · trace view · replay"), "done"),
         ("oem", "OEM hardware partner", ("Declares a board, ports the HAL", "board.toml · compliance vectors"), "done"),
-        ("operator", "Home owner", ("chats with the brain", "approves from the phone · I2d"), "planned"),
+        ("operator", "Home owner", ("chats with NeuroClaw (demo)", "approves at home; phone · I2d"), "partial"),
         # Q-72: the people of rounds ② and ③
         ("installer", "Blueprint installer", ("Installs a NeuroEdge Blueprint,", "runs it, approves by chat · I2e"),
          "planned"),
@@ -76,7 +76,7 @@ def e01_context() -> Diagram:
         ("llm", "LLM providers (System 2)", ("OpenAI-compatible via LiteLLM", "or a user adapter"), "done"),
         ("jev", "Jev on OpenRouter (System 1)", ("System One API, typed questions", "typesafe/jev-1.13"), "done"),
         ("speech", "Speech providers", ("STT / TTS, OpenAI audio API", "cloud or local server"), "done"),
-        ("mcp", "MCP clients", ("Claude Desktop, other agents", "stdio JSON-RPC"), "done"),
+        ("mcp", "MCP clients", ("NeuroClaw brain, Claude Desktop", "stdio, or HTTP with mTLS"), "done"),
         ("idf", "ESP-IDF v5.4 + QEMU", ("Toolchain and emulator", "Docker espressif/idf:v5.4"), "done"),
         ("fleet", "Home Assistant", ("devices of other brands", "remote actuators via plugin · I2c"), "partial"),
         ("chat", "Chat platforms", ("Telegram first · Slack · Zalo", "reports, commands, approvals · I2d"), "planned"),
