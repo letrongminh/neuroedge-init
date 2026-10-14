@@ -17,6 +17,8 @@ from neuroedge.sim import SimSession
 from neuroedge.studio import StudioServer
 from neuroedge.templates import TEMPLATES
 
+from .ui_support import page_headers
+
 ROOT = Path(__file__).resolve().parents[2]
 AGENTS = ROOT / "fixtures" / "agents"
 VILLA = AGENTS / "villa-concierge" / "agent.toml"
@@ -60,6 +62,8 @@ def call(server, path, body=None):
     request = urllib.request.Request(url, data=None if body is None else json.dumps(body).encode())
     if body is not None:
         request.add_header("Content-Type", "application/json")
+        for name, value in page_headers(server).items():
+            request.add_header(name, value)
     try:
         with urllib.request.urlopen(request, timeout=10) as reply:
             return reply.status, reply.read()

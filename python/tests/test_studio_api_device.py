@@ -17,6 +17,8 @@ from neuroedge import paths
 from neuroedge.sim import SimSession
 from neuroedge.studio import StudioServer
 
+from .ui_support import page_headers
+
 ROOT = Path(__file__).resolve().parents[2]
 VILLA_DIR = ROOT / "fixtures" / "agents" / "villa-concierge"
 
@@ -68,6 +70,8 @@ def call(server, path, method="GET"):
     )
     if method == "POST":
         request.add_header("Content-Type", "application/json")
+        for name, value in page_headers(server).items():
+            request.add_header(name, value)
     try:
         with urllib.request.urlopen(request, timeout=30) as reply:
             return reply.status, reply.headers.get("Content-Type"), reply.read()

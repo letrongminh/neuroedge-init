@@ -13,7 +13,14 @@ the page is `neuroedge.viz.page(live=True)`, the same renderer as
     POST /command  a typed line — a command, or `:set k v`, `:unset k`, `:sensor n v`,
                    `:analog ch v`, `:input pin v`, `:feedback pin duty=r`
     POST /confirm  {"id": "confirm_1", "answer": "yes"|"no"} — a person's answer to the
-                   device's question (RFC-0006), source `ui`; same-origin only
+                   device's question (RFC-0006), source `ui`
+
+Every POST must come from this page: an `Origin` of this server, and the header
+`X-NeuroEdge-UI-Key` with the key made for this run (DP-A-02,
+`docs/spec/deployment_profiles.md`). The key is only ever in the URL printed on the
+terminal, after `#`, which a browser never sends: another process on the same
+machine — a brain with a shell, a script — can read the page but cannot answer the
+device's question as the person at home. A refused POST is traced as `ui_auth_refused`.
 
 Turns run one at a time under a lock: the session, like a device, handles one
 utterance after another. `neuroedge mcp serve --ui` (TSK-S3-27) serves this
@@ -24,7 +31,9 @@ same `lock` and ends with `notify()`, so the page shows it at once.
 from __future__ import annotations
 
 import asyncio
+import hmac
 import json
+import secrets
 import threading
 import time
 from http import HTTPStatus
@@ -43,6 +52,8 @@ def _json(value: Any) -> str:
 
 
 MAX_BODY = 4096
+KEY_HEADER = "X-NeuroEdge-UI-Key"
+MAX_REFUSALS_TRACED = 10_000  # as `mcp_auth_refused`: a flood cannot fill the trace
 
 
 def _parse_value(text: str) -> Any:
@@ -74,11 +85,30 @@ class SessionServer:
             ) from error
         self.httpd.daemon_threads = True
         self._thread: threading.Thread | None = None
+        self.key = secrets.token_urlsafe(32)
+        self.refusals = 0
 
     @property
     def url(self) -> str:
         host, port = self.httpd.server_address[:2]
         return f"http://{host}:{port}/"
+
+    @property
+    def open_url(self) -> str:
+        """The URL a person opens: the page reads the key from after `#`, the server never sees it."""
+        return f"{self.url}#k={self.key}"
+
+    def refuse(self, reason: str, path: str) -> None:
+        """Trace one refused POST (`ui_auth_refused`): the reason and path, never a key."""
+        self.refusals += 1
+        if self.refusals > MAX_REFUSALS_TRACED:
+            return
+        data: dict[str, Any] = {"reason": reason, "path": path}
+        if self.refusals == MAX_REFUSALS_TRACED:
+            data["last_recorded"] = True  # the trace stops here; the count goes on
+        with self.lock:
+            self.session.events.emit("ui_auth_refused", data)
+        self.notify()
 
     def state(self) -> dict[str, Any]:
         with self.lock:
@@ -267,14 +297,34 @@ class _Handler(BaseHTTPRequestHandler):
         """
         return self.headers.get("Host", "") in self._hosts()
 
-    def _same_origin(self) -> bool:
+    def _post_refusal(self) -> str | None:
         """
-        Only this page may send commands. A page on another site could otherwise
-        POST to 127.0.0.1 from the user's browser and drive the simulator.
+        Why this POST may not run, or None. Only this page may send commands or answer the
+        device: a page on another site could POST to 127.0.0.1 from the user's browser, and
+        any process on this machine could send no `Origin` at all. Both lack the run's key.
         """
+        if not self._host_ok():
+            return "foreign_host"
         origin = self.headers.get("Origin")
-        allowed = {f"http://{host}" for host in self._hosts()}
-        return self._host_ok() and (origin is None or origin in allowed)
+        if origin is None:
+            return "no_origin"
+        if origin not in {f"http://{host}" for host in self._hosts()}:
+            return "foreign_origin"
+        key = self.headers.get(KEY_HEADER)
+        if not key:
+            return "no_key"
+        if not hmac.compare_digest(key.encode(), self.server_state.key.encode()):
+            return "wrong_key"
+        return None
+
+    def _refuse_post(self) -> bool:
+        """Answer 403 and trace the refusal when this POST may not run; True if it was refused."""
+        reason = self._post_refusal()
+        if reason is None:
+            return False
+        self.server_state.refuse(reason, self.path.split("?", 1)[0])
+        self._send(HTTPStatus.FORBIDDEN, f"request refused: {reason}".encode(), "text/plain")
+        return True
 
     def _body_length(self) -> int | None:
         """`Content-Length` as a size from 0 to MAX_BODY, or None (the caller answers 400/413)."""
@@ -290,8 +340,7 @@ class _Handler(BaseHTTPRequestHandler):
         return True
 
     def do_POST(self) -> None:  # noqa: N802 - http.server API
-        if not self._same_origin():
-            self._send(HTTPStatus.FORBIDDEN, b"cross-origin request refused", "text/plain")
+        if self._refuse_post():
             return
         if self.path not in ("/command", "/confirm"):
             self._send(HTTPStatus.NOT_FOUND, b"not found", "text/plain")
@@ -315,12 +364,13 @@ def serve(session: SimSession, port: int, console: Any, open_browser: bool = Tru
     """Serve until Ctrl-C."""
     server = SessionServer(session, port=port).start()
     console.print(
-        f"[bold green]✓[/bold green] sim UI at [link]{server.url}[/link] — Ctrl-C to stop"
+        f"[bold green]✓[/bold green] sim UI at [link]{server.open_url}[/link] — Ctrl-C to stop",
+        soft_wrap=True,  # one line: the key after `#` stays part of the URL
     )
     if open_browser:
         import webbrowser
 
-        webbrowser.open(server.url)
+        webbrowser.open(server.open_url)
     try:
         while True:
             time.sleep(0.5)

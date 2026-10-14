@@ -28,6 +28,7 @@ from neuroedge.studio import voice as studio_voice
 
 from .fake_sounddevice import FakeSounddevice
 from .test_voice_live import FAKES, RATE, make_speech_pcm
+from .ui_support import page_headers
 
 runner = CliRunner()
 FRAME_MS = 20
@@ -84,7 +85,10 @@ def get(server: StudioServer, path: str) -> Any:
 
 def post(server: StudioServer, path: str, body: dict[str, Any]) -> tuple[int, Any]:
     request = urllib.request.Request(
-        server.url.rstrip("/") + path, data=json.dumps(body).encode(), method="POST"
+        server.url.rstrip("/") + path,
+        data=json.dumps(body).encode(),
+        method="POST",
+        headers=page_headers(server),
     )
     request.add_header("Content-Type", "application/json")
     try:

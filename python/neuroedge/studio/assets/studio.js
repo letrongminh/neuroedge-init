@@ -9,6 +9,22 @@
   const root = document.getElementById("studio");
   const VIEWS = ["live", "gate", "traces", "verify", "device", "mcp", "config"];
 
+  // The run's key (DP-A-02, docs/spec/deployment_profiles.md): the terminal prints the URL with
+  // `#k=…`, which a browser never sends. Read it once, keep it for this tab, take it out of the
+  // address bar; every POST carries it, so no other process on this machine can act as the page.
+  const UI_KEY = (function () {
+    let k = "";
+    const m = /[#&]k=([^&]+)/.exec(location.hash);
+    if (m) {
+      k = decodeURIComponent(m[1]);
+      try { sessionStorage.setItem("ne-ui-key", k); } catch (e) { /* private window: keep it in memory */ }
+      try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* ignore */ }
+    } else {
+      try { k = sessionStorage.getItem("ne-ui-key") || ""; } catch (e) { /* ignore */ }
+    }
+    return k;
+  })();
+
   // ---------------------------------------------------------------- state
   const S = {
     lang: "vi",
@@ -124,9 +140,10 @@
 
   // GET/POST /api/<tail>: always resolves to an object with `ok`; 501 => `na`.
   function api(method, tail, body) {
-    const opt = { method: method };
+    const opt = { method: method, headers: {} };
+    if (method === "POST") opt.headers["X-NeuroEdge-UI-Key"] = UI_KEY;
     if (body !== undefined) {
-      opt.headers = { "Content-Type": "application/json" };
+      opt.headers["Content-Type"] = "application/json";
       opt.body = JSON.stringify(body);
     }
     return fetch("/api/" + tail, opt).then(function (r) {
@@ -491,7 +508,7 @@
   function sendCommand(line) {
     S.reply = { pending: true, line: line };
     paintReply();
-    fetch("/command", { method: "POST", body: line }).then(function (r) { return r.json(); }).then(function (j) {
+    fetch("/command", { method: "POST", headers: { "X-NeuroEdge-UI-Key": UI_KEY }, body: line }).then(function (r) { return r.json(); }).then(function (j) {
       S.reply = { line: line, res: j };
       paintReply();
     }).catch(function (e) {
@@ -628,7 +645,7 @@
 
   function answerConfirm(id, answer) {
     S.answerError = null;
-    fetch("/confirm", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: id, answer: answer }) })
+    fetch("/confirm", { method: "POST", headers: { "Content-Type": "application/json", "X-NeuroEdge-UI-Key": UI_KEY }, body: JSON.stringify({ id: id, answer: answer }) })
       .then(function (r) { return r.json(); }).then(function (j) {
         if (!j.ok) { S.answerError = whyOf(j); regions.ask = null; paintLive(); }
       }).catch(function (e) { S.answerError = String(e); regions.ask = null; paintLive(); });

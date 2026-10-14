@@ -35,6 +35,8 @@ from neuroedge.sim.ui import SessionServer
 from neuroedge.testing import TracePlayer, assert_matches_golden
 from neuroedge.testing.recorder import TraceRecorder
 
+from .ui_support import page_headers
+
 
 class Clock:
     def __init__(self) -> None:
@@ -334,7 +336,7 @@ def post(server, path, body, headers=None):
         server.url + path.lstrip("/"),
         data=body.encode("utf-8"),
         method="POST",
-        headers={"Content-Type": "application/json", **(headers or {})},
+        headers={"Content-Type": "application/json", **page_headers(server), **(headers or {})},
     )
     with urllib.request.urlopen(request, timeout=5) as response:
         return json.loads(response.read())
@@ -368,6 +370,57 @@ def test_another_site_cannot_answer_for_the_person(ui):
         )
     assert refused.value.code == 403
     assert light(ui.session) == []
+
+
+# --- DP-A-02: only the page, with this run's key, answers for the person ---------------------------
+# A brain with a shell on the same machine (Profile A, docs/spec/deployment_profiles.md) can reach
+# 127.0.0.1 and can read the page, but the key is only in the URL the terminal printed.
+
+
+def answer_as(ui, headers):
+    """POST a "yes" to the pending question with exactly these headers; the HTTP status."""
+    pending = ui.session.pending_confirmation()
+    request = urllib.request.Request(
+        ui.url + "confirm",
+        data=json.dumps({"id": pending.id, "answer": "yes"}).encode(),
+        method="POST",
+        headers={"Content-Type": "application/json", **headers},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            return response.status
+    except urllib.error.HTTPError as error:
+        return error.code
+
+
+def refusals(ui):
+    return ui.session.events.of_type("ui_auth_refused")
+
+
+def test_a_local_process_without_the_key_cannot_answer_the_device(ui):
+    post(ui, "/command", "tắt đèn", {"Content-Type": "text/plain; charset=utf-8"})
+    origin = page_headers(ui)["Origin"]
+    assert answer_as(ui, {"Origin": origin}) == 403
+    assert ui.session.events.of_type("tool_confirmed") == []
+    assert light(ui.session) == []
+    assert refusals(ui) == [{"reason": "no_key", "path": "/confirm"}]
+
+
+def test_a_wrong_key_is_refused_and_traced_without_the_key(ui):
+    post(ui, "/command", "tắt đèn", {"Content-Type": "text/plain; charset=utf-8"})
+    wrong = {**page_headers(ui), "X-NeuroEdge-UI-Key": "x" * 43}
+    assert answer_as(ui, wrong) == 403
+    assert light(ui.session) == []
+    assert refusals(ui) == [{"reason": "wrong_key", "path": "/confirm"}]
+    assert ui.key not in json.dumps(ui.session.events.events)
+
+
+def test_a_request_with_no_origin_is_refused_even_with_the_key(ui):
+    # curl sends no Origin; a browser always does on a POST.
+    post(ui, "/command", "tắt đèn", {"Content-Type": "text/plain; charset=utf-8"})
+    assert answer_as(ui, {"X-NeuroEdge-UI-Key": ui.key}) == 403
+    assert light(ui.session) == []
+    assert refusals(ui) == [{"reason": "no_origin", "path": "/confirm"}]
 
 
 # --- the REPL and gate explain --------------------------------------------------------------

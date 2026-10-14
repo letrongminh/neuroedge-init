@@ -16,6 +16,8 @@ import pytest
 from neuroedge.sim import SimSession
 from neuroedge.sim.ui import SessionServer
 
+from .ui_support import page_headers
+
 
 @pytest.fixture
 def server(root):
@@ -39,7 +41,11 @@ def post(server, text, headers=None):
         server.url + "command",
         data=text.encode("utf-8"),
         method="POST",
-        headers={"Content-Type": "text/plain; charset=utf-8", **(headers or {})},
+        headers={
+            "Content-Type": "text/plain; charset=utf-8",
+            **page_headers(server),
+            **(headers or {}),
+        },
     )
     with urllib.request.urlopen(request, timeout=5) as response:
         return json.loads(response.read())
@@ -106,3 +112,25 @@ def test_the_event_stream_pushes_the_session(server):
     assert line.startswith("data: ")
     pushed = json.loads(line[len("data: ") :])
     assert any(e["type"] == "actuator_command" for e in pushed["events"])
+
+
+def test_the_key_is_never_in_the_page_or_the_state(server):
+    # DP-A-02: the key lives only after `#` in the printed URL; anyone can GET the page.
+    post(server, "mở cửa phòng 101")
+    for path in ("/", "/state"):
+        assert server.key not in get(server, path)[2]
+    assert server.open_url == f"{server.url}#k={server.key}"
+    assert len(server.key) >= 43  # 32 random bytes
+    with urllib.request.urlopen(server.url + "events", timeout=5) as stream:
+        assert server.key not in stream.readline().decode("utf-8")
+
+
+def test_each_run_has_its_own_key(root):
+    agent = root / "fixtures" / "agents" / "villa-concierge" / "agent.toml"
+    a = SessionServer(SimSession.load(agent), port=0).start()
+    b = SessionServer(SimSession.load(agent), port=0).start()
+    try:
+        assert a.key != b.key
+    finally:
+        a.stop()
+        b.stop()

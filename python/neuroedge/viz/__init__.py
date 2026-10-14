@@ -51,6 +51,17 @@ def board_info(board_id: str | None) -> dict[str, Any]:
     return info
 
 
+# The run's key for a live page (DP-A-02, docs/spec/deployment_profiles.md): read once from
+# after `#` (which a browser never sends), kept for the tab, removed from the address bar.
+UI_KEY_JS = (
+    "const NE_UI_KEY = (function () { var k = ''; var m = /[#&]k=([^&]+)/.exec(location.hash);"
+    " if (m) { k = decodeURIComponent(m[1]); try { sessionStorage.setItem('ne-ui-key', k); }"
+    " catch (e) {} try { history.replaceState(null, '', location.pathname + location.search); }"
+    " catch (e) {} } else { try { k = sessionStorage.getItem('ne-ui-key') || ''; } catch (e) {} }"
+    " return k; })();\n"
+)
+
+
 def page(
     *,
     title: str,
@@ -60,11 +71,15 @@ def page(
     live: bool = False,
 ) -> str:
     boot = "const data = JSON.parse(document.getElementById('ne-data').textContent);\n" + (
-        "const view = NE.mount(document.getElementById('ne'), {meta: data.meta, board: data.board,"
+        # The run's key (DP-A-02): read once from after `#`, sent with every POST.
+        UI_KEY_JS
+        + "const view = NE.mount(document.getElementById('ne'), {meta: data.meta, board: data.board,"
         " events: data.events, live: true, onCommand: function (text) {"
-        " fetch('/command', {method: 'POST', headers: {'Content-Type': 'text/plain; charset=utf-8'},"
+        " fetch('/command', {method: 'POST', headers: {'Content-Type': 'text/plain; charset=utf-8',"
+        " 'X-NeuroEdge-UI-Key': NE_UI_KEY},"
         " body: text}); }, onConfirm: function (id, yes) {"
-        " fetch('/confirm', {method: 'POST', headers: {'Content-Type': 'application/json'},"
+        " fetch('/confirm', {method: 'POST', headers: {'Content-Type': 'application/json',"
+        " 'X-NeuroEdge-UI-Key': NE_UI_KEY},"
         " body: JSON.stringify({id: id, answer: yes ? 'yes' : 'no'})}); }});\n"
         "const stream = new EventSource('/events');\n"
         "stream.onmessage = function (m) { const s = JSON.parse(m.data);"
