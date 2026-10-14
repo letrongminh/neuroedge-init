@@ -85,6 +85,8 @@ HAL_IN_ENGINE = {"engine/compiler.py"}
 LAZY: dict[str, set[str]] = {
     # `plugins`: `[plugins]` and `[actuators]` are checked by the build (RFC-0018 §3b)
     "engine/compiler.py": {"actions", "mcp_host", "models", "perception", "plugins"},
+    # the chip's tools are the ones `mcp serve` lists, from the same function (DP-COM-02, DP-B-03)
+    "engine/firmware.py": {"actions"},
     "cli/main.py": {
         "guard",
         "plugins",
