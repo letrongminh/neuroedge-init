@@ -72,8 +72,9 @@ typedef struct {
 
 /*
  * The device. `run` performs @action `action` (an index of agent->actions) with `args` in its
- * gate's argument order; it moves pins only through ne_token_authorize(ledger, token, pin,
- * now) and leaves a pin as it is on any refusal (DP-B-08). The bridge closes the token after.
+ * gate's argument order; it moves pins only through ne_hal_on(hal, token, pin, now) (ne_hal.h,
+ * which asks ne_token_authorize) and leaves a pin as it is on any refusal (DP-B-08). The bridge
+ * closes the token after.
  */
 typedef struct {
     void *ctx;

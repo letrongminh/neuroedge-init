@@ -695,7 +695,7 @@ Each increment has: a card (goal, entry conditions beyond dependent increments, 
 |:---:|:---|:---|:---:|:---:|:---|
 | **TSK-S1-10** | Memory feasibility spike on ESP32-S3-Box-3 | NFR-RES-01, NFR-RES-02 | V2 | 🔴 Awaiting board | `targets/esp32s3/main/memory_probe.c` · `docs/reports/memory_spike_report.md` |
 | **TSK-S2-10** | On-chip voice plan conclusion based on spike | — | V2 + team lead | ⏳ Awaiting TSK-S1-10 measurements | `docs/reports/memory_spike_report.md` |
-| **TSK-S4-01** | Port 5 HAL primitives to ESP-IDF | FR-TGT-03, FR-HAL-01 | V2 | ⏳ Not started | `targets/esp32s3/hal/` |
+| **TSK-S4-01** | Port 5 HAL primitives to ESP-IDF | FR-TGT-03, FR-HAL-01 | V2 | 🟡 2026-10-14: `digital.out`'s token door `components/ne_hal/` (`ne_hal_on` only on a live token for that pin, `ne_hal_off` never refused; DP-B-08, `test_c_hal.py`); the ESP-IDF writer and the other four primitives remain | `targets/esp32s3/components/ne_hal/` |
 | **TSK-S4-02** | C99 Gate Engine walker traversing `NETR` v1 on MCU | FR-ACE-01, FR-ACE-03, FR-ACE-08 | V2 + V1 | ✅ 2026-09-24 | `targets/esp32s3/components/ne_gate/` |
 | **TSK-S4-03** | `digital.out` and `sensor.read` paths on physical hardware | FR-HAL-06, FR-HAL-07 | V2 | ⏳ Not started | `targets/esp32s3/drivers/` |
 | **TSK-S4-04** | `neuroedge verify` command for all 3 tier-1 targets | FR-CI-07, FR-TGT-04 | V1 | 🟡 QEMU operational; awaiting board | `python/neuroedge/cli/main.py` |

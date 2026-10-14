@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "ne_brain_bridge.h"
+#include "ne_hal.h"
 
 #define MAX_FACTS 32
 
@@ -100,6 +101,14 @@ static ne_degraded read_facts(void *ctx, const ne_tree *gate, uint32_t gate_inde
     return d->degraded;
 }
 
+static int write_pin(void *ctx, uint32_t pin, uint8_t level)
+{
+    (void)ctx;
+    (void)pin;
+    (void)level;
+    return 0;
+}
+
 static void run(void *ctx, uint32_t action, const ne_arg_value *args, uint32_t arg_count,
                 ne_ledger *l, const ne_token *token)
 {
@@ -118,9 +127,11 @@ static void run(void *ctx, uint32_t action, const ne_arg_value *args, uint32_t a
         else printf("%g", v->number);
     }
     printf("\n");
+    const ne_hal hal = {{NULL, write_pin}, l, d->agent->pin_count};
     for (uint32_t pin = 0; pin < d->agent->pin_count; pin++) {
         if (!(a->pin_mask & (1u << pin))) continue;
-        ne_token_reason why = ne_token_authorize(l, token, pin, d->now);
+        ne_token_reason why;
+        ne_hal_on(&hal, token, pin, d->now, &why); /* the one door to a pin (DP-B-08) */
         printf("drive\t%s\t%s\n", d->agent->pins[pin], ne_token_reason_name(why));
     }
 }

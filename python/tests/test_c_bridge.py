@@ -51,6 +51,7 @@ def sources(agent: Path) -> list[str]:
     return [
         str(COMPONENTS / "ne_gate" / "src" / "ne_walker.c"),
         str(COMPONENTS / "ne_gate" / "src" / "ne_token.c"),
+        str(COMPONENTS / "ne_hal" / "src" / "ne_hal.c"),
         str(BRIDGE / "src" / "ne_brain_bridge.c"),
         str(agent / "ne_agent.c"),
     ]
@@ -61,6 +62,7 @@ def includes(agent: Path) -> list[str]:
     for path in (
         COMPONENTS / "ne_gate" / "include",
         COMPONENTS / "ne_trace" / "include",
+        COMPONENTS / "ne_hal" / "include",
         agent / "include",
         BRIDGE / "include",
     ):
