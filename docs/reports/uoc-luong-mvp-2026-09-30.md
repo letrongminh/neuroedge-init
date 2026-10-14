@@ -1,91 +1,91 @@
-# Ước lượng lại phạm vi MVP — 2026-09-30
+# Re-estimating MVP Scope — 2026-09-30
 
-Bằng chứng cho các ngày dự báo của I2a → I8 ở [`roadmap/neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0.2
-(TSK-I2a-01, luật R5). Phạm vi là MVP của Q-52: I1 → I7, kể cả I2a, I2b, I3a, I4a, I5a. Quyết định:
+Evidence for forecasted dates of I2a → I8 in [`roadmap/neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) §0.2
+(TSK-I2a-01, rule R5). Scope is the MVP of Q-52: I1 → I7, including I2a, I2b, I3a, I4a, I5a. Decisions:
 [`roadmap/neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) §15 (Q-52 → Q-57).
 
-## 1. Dữ liệu tốc độ
+## 1. Velocity data
 
-Đếm trên bảng task của roadmap ngày 2026-09-30 (ô trạng thái ✅ kèm ngày):
+Counted on the roadmap task table as of 2026-09-30 (status cell ✅ with date):
 
-| Ngày hoàn thành | Task |
+| Completion date | Tasks |
 |:---|---:|
 | 2026-09-23 | 22 |
 | 2026-09-24 | 11 |
 | 2026-09-25 | 8 |
 | 2026-09-26 | 13 |
 | 2026-09-27 | 1 |
-| không ghi ngày | 12 |
-| **Tổng** | **67** |
+| undated | 12 |
+| **Total** | **67** |
 
-67 task xong trong khoảng 2026-09-21 → 2026-09-29, tức **khoảng 7 task mỗi ngày** cho cả đội. Mọi task đó là
-việc trên host (Python, C trên host và QEMU, tài liệu), đặc tả rõ, không chờ phần cứng, không chờ người ngoài.
+67 tasks completed between 2026-09-21 → 2026-09-29, or **~7 tasks per day** across the entire team. All those tasks were
+host work (Python, C on host and QEMU, documentation), clearly specified, without waiting for hardware or third parties.
 
-**Hệ số lập kế hoạch: chia 4**, còn **khoảng 1,75 task mỗi ngày** cho việc trên host của MVP. Lý do:
+**Planning factor: divide by 4**, leaving **~1.75 tasks per day** for MVP host work. Reasons:
 
-- task mới lớn hơn (nguyên thủy HAL mới, pipeline thị giác, NeuroBrain) và chạm tầng an toàn;
-- mọi mã của nguyên thủy mới chờ RFC được chấp thuận (§2.3 roadmap), nên có hàng đợi review;
-- đội chưa làm dạng việc này, nên tốc độ của I0 là cận trên, không phải kỳ vọng.
+- new tasks are larger (new HAL primitives, vision pipeline, NeuroBrain) and touch safety layers;
+- all code for new primitives awaits accepted RFCs (§2.3 roadmap), introducing a review queue;
+- team has not done this type of work before, making I0 velocity an upper bound, not an expectation.
 
-Việc cần phần cứng và việc cần người ngoài **không** tính bằng tốc độ này: chúng tính bằng ngày phần cứng về
-và thời gian thật của phép đo.
+Hardware-dependent tasks and tasks requiring external parties are **not** calculated using this velocity: they are calculated by hardware arrival dates
+and real measurement durations.
 
-## 2. Phân loại 106 task MVP còn mở
+## 2. Breakdown of 106 open MVP tasks
 
-Không tính TSK-I2a-01 (task này).
+Excluding TSK-I2a-01 (this task).
 
-| Increment | Host | Cần phần cứng | Cần người ngoài hoặc bên thứ ba | Tổng |
+| Increment | Host | Requires hardware | Requires external party or third party | Total |
 |:---|---:|---:|---:|---:|
-| I1 | — | — | 2 (TSK-I1-02 đo TTFV · TSK-I1-04 micro thật trên máy trình bày) | 2 |
+| I1 | — | — | 2 (TSK-I1-02 TTFV measurement · TSK-I1-04 live microphone on presenter machine) | 2 |
 | I2 | — | 1 (TSK-I2-01, Pi 5) | — | 1 |
-| I2a | 23 (5 RFC/đặc tả + 18 hiện thực) | 2 (TSK-N3-03 nếu spike trượt · TSK-V1b-05 NPU) | — | 25 |
-| I2b | 2 | 2 (TSK-I2b-01, I2b-02: kiểm BOM và sơ đồ đấu dây trên Pi) | — | 4 |
+| I2a | 23 (5 RFC/specs + 18 implementation) | 2 (TSK-N3-03 if spike fails · TSK-V1b-05 NPU) | — | 25 |
+| I2b | 2 | 2 (TSK-I2b-01, I2b-02: BOM check and wiring diagrams on Pi) | — | 4 |
 | I3 | — | 8 | — | 8 |
 | I3a | — | 7 | — | 7 |
-| I4 | — | 2 (TSK-S5-08 Pi + HAT · TSK-S3-13 phần thời gian thực) | 2 (TSK-I4-01 mô hình wake-word có giấy phép · TSK-I4-04 micro thật) | 4 |
+| I4 | — | 2 (TSK-S5-08 Pi + HAT · TSK-S3-13 real-time section) | 2 (TSK-I4-01 licensed wake-word model · TSK-I4-04 live microphone) | 4 |
 | I4a | 33 | — | — | 33 |
 | I5 | — | 7 | — | 7 |
 | I5a | — | 2 | — | 2 |
-| I6 | 1 (TSK-S3-09) | 1 (TSK-I6-03 video trên ba target) | 3 (PyPI, tên miền, kênh cộng đồng) + điều khoản license (`TODOS.md` #44) | 5 |
-| I7 | 4 (TSK-S6-07, S6-08, W0-01, I7-01) | 3 (TSK-S6-03, S6-05, S6-06 chạy 24 giờ) | 1 (TSK-I7-02: A1 10 người, A9 bên thứ ba) + A12 (5 người) | 8 |
-| **Tổng** | **63** | **35** | **8** | **106** |
+| I6 | 1 (TSK-S3-09) | 1 (TSK-I6-03 video across three targets) | 3 (PyPI, domain, community channels) + license terms (`TODOS.md` #44) | 5 |
+| I7 | 4 (TSK-S6-07, S6-08, W0-01, I7-01) | 3 (TSK-S6-03, S6-05, S6-06 24-hour run) | 1 (TSK-I7-02: A1 10 people, A9 third party) + A12 (5 people) | 8 |
+| **Total** | **63** | **35** | **8** | **106** |
 
-## 3. Giả định
+## 3. Assumptions
 
-| # | Giả định | Nếu sai |
+| # | Assumption | If incorrect |
 |:---:|:---|:---|
-| G1 | Box-3, RPi 5 và bo ESP32-S3 có camera về **trước 2026-11-01**; bo camera được chọn ở TSK-I3a-01 **trước 2026-10-09** để kịp đặt mua — *đã chọn M5Stack CoreS3 ngày 2026-10-01 (Q-61)* | Mọi increment từ I3 dời theo, ngày đổi ngày |
-| G2 | Sáu RFC (0007, 0009 → 0013) được kỹ thuật trưởng chấp thuận **trước 2026-10-09**; câu hỏi mở đã quyết (Q-57) — *đã chấp thuận 2026-10-01 (PR #75 → #80)* | I2a còn khoảng 3 tuần đệm trước khi phụ thuộc I2 (2026-11-29) ràng ngày; quá 2026-10-30 thì I2a dời |
-| G3 | *Sửa 2026-10-01 (Q-60, thay giả định đủ người của Q-52):* một người + AI agent. Làn host chạy ở tốc độ §1, đo trên chính cấu hình này; task cần phần cứng hoặc người ngoài do một người làm, AI agent chuẩn bị | Làn chip nối tiếp trên một người: đối chiếu ở §5 khi bo mạch về, dời ngày theo R5 (roadmap §1.3) |
-| G4 | Spike bộ nhớ TSK-S1-10 đạt ngưỡng Q-3 với thoại + bốn gói | Mở `Q-N` lập lại kế hoạch I5, I3a; dời ngày, không cắt (Q-44, Q-52) |
-| G5 | `vision.in` chạy được trên bo camera ESP32-S3 trong ngân sách bộ nhớ (TSK-I3a-01) | Áp phương án (b) hoặc (c) của RFC-0013 §9; lập lại kế hoạch I3a |
-| G6 | Điều khoản license thương mại (`TODOS.md` #44) có trước I6 | I6 và I7 dời |
+| G1 | Box-3, RPi 5 and ESP32-S3 camera board arrive **before 2026-11-01**; camera board selected in TSK-I3a-01 **before 2026-10-09** in time to order — *selected M5Stack CoreS3 on 2026-10-01 (Q-61)* | All increments from I3 slip accordingly, day-for-day |
+| G2 | Six RFCs (0007, 0009 → 0013) approved by tech lead **before 2026-10-09**; open questions decided (Q-57) — *approved 2026-10-01 (PR #75 → #80)* | I2a has ~3 weeks buffer before I2 dependency (2026-11-29) bounds date; past 2026-10-30 I2a slips |
+| G3 | *Amended 2026-10-01 (Q-60, replacing fully-staffed assumption of Q-52):* one person + AI agent. Host lane runs at §1 velocity, measured on this exact setup; hardware-dependent or external tasks done by one person, AI agent prepares | Chip lane serializes on one person: compare at §5 when boards arrive, slip dates per R5 (roadmap §1.3) |
+| G4 | Memory spike TSK-S1-10 passes Q-3 thresholds with voice + four packs | Open `Q-N` to re-plan I5, I3a; slip dates, do not cut (Q-44, Q-52) |
+| G5 | `vision.in` runs on ESP32-S3 camera board within memory budget (TSK-I3a-01) | Apply option (b) or (c) of RFC-0013 §9; re-plan I3a |
+| G6 | Commercial license terms (`TODOS.md` #44) ready before I6 | I6 and I7 slip |
 
-## 4. Ngày dự báo
+## 4. Forecasted dates
 
-Tính theo làn: làn host dùng tốc độ §1; làn chip bắt đầu khi bo mạch về (G1); ngày của một increment không
-sớm hơn ngày của mọi increment nó phụ thuộc (luật R3).
+Calculated by lanes: host lane uses §1 velocity; chip lane begins when boards arrive (G1); date of an increment cannot
+precede dates of all increments it depends on (rule R3).
 
-| Increment | Dự báo | Cách tính |
+| Increment | Forecast | Calculation |
 |:---|:---:|:---|
-| I1, I2, I3, I4, I5 | giữ nguyên | Phạm vi không đổi. Tính lúc lập theo giả định đủ người (làn chip của I3a không lấy người của I3, I5); từ Q-60 đây là điểm phải đối chiếu đầu tiên khi bo mạch về (§5) |
-| **I2a** | **2026-12-06** | 18 task hiện thực sau RFC (G2) ≈ 10 ngày làm việc ở 1,75 task/ngày; phần NPU và ADC trên phần cứng sau 2026-11-01; ràng bởi I2 (2026-11-29) + một tuần tích hợp |
-| **I2b** | **2026-12-20** | Hai tuần sau I2a: năm kit kiểm trên Pi, thư viện gate, `neuroedge add` |
-| **I3a** | **2027-01-10** | Bốn tuần sau I3 (2026-12-13): HAL C của bốn gói, thị giác trên bo camera, test mất điện giữa lệnh `motion.*` |
-| **I4a** | **2027-01-03** | 33 task host, phần lớn làm được trước I2a; ràng bởi I4 (2026-12-13) và TSK-I4a-01 (cần đủ bốn gói của I2a) + ba tuần phủ bốn gói và review bản nháp |
-| **I5a** | **2027-01-24** | Hai tuần sau I3a: lab action, gate và phong bì trên chip |
-| **I6** | **2027-01-31** | Một tuần sau I5a: PyPI, lược đồ công khai, video trên ba target, license (G6) |
-| **I7** | **2027-02-21** | Ba tuần sau I6: A1 (10 người cài từ PyPI), A12 (5 người dựng kit), A9 (bên thứ ba), chạy 24 giờ, Secure Boot |
-| **I8** | **2027-03-21** | Bốn tuần Beta sau I7 (§5.4 roadmap) |
+| I1, I2, I3, I4, I5 | unchanged | Scope unchanged. Calculated at planning under fully-staffed assumption (I3a chip lane does not take people from I3, I5); as of Q-60 this is first comparison point when boards arrive (§5) |
+| **I2a** | **2026-12-06** | 18 implementation tasks post-RFC (G2) ≈ 10 working days at 1.75 tasks/day; NPU and ADC on hardware after 2026-11-01; bounded by I2 (2026-11-29) + one week integration |
+| **I2b** | **2026-12-20** | Two weeks after I2a: five test kits on Pi, gate library, `neuroedge add` |
+| **I3a** | **2027-01-10** | Four weeks after I3 (2026-12-13): C HAL for four packs, vision on camera board, power-loss tests during `motion.*` commands |
+| **I4a** | **2027-01-03** | 33 host tasks, mostly doable before I2a; bounded by I4 (2026-12-13) and TSK-I4a-01 (requires all four packs of I2a) + three weeks covering four packs and drafting reviews |
+| **I5a** | **2027-01-24** | Two weeks after I3a: lab actions, on-chip gates and envelopes |
+| **I6** | **2027-01-31** | One week after I5a: PyPI, public schemas, video across three targets, license (G6) |
+| **I7** | **2027-02-21** | Three weeks after I6: A1 (10 users installing from PyPI), A12 (5 users building kits), A9 (third party), 24-hour run, Secure Boot |
+| **I8** | **2027-03-21** | Four weeks Beta after I7 (§5.4 roadmap) |
 
-**Đường găng:** bo mạch về → TSK-S1-10 → I3 → I3a → I5a → I6 → I7. So với dự báo trước khi mở rộng phạm vi
-(v1.0 2027-01-24), v1.0 lùi **bốn tuần**: phần mở rộng trên host chạy song song và nằm ngoài đường găng, còn làn
-chip thêm I3a và I5a.
+**Critical path:** boards arrive → TSK-S1-10 → I3 → I3a → I5a → I6 → I7. Compared to pre-scope expansion forecast
+(v1.0 2027-01-24), v1.0 slips **four weeks**: host expansion runs in parallel outside the critical path, whereas chip lane
+adds I3a and I5a.
 
-## 5. Khi nào ước lượng lại
+## 5. When to re-estimate
 
-- Bất kỳ giả định G1 → G6 nào sai: ước lượng lại trong cùng PR với bằng chứng (R5).
-- Ngày 2026-11-01: đối chiếu tốc độ thật của làn host trong tháng 10 với 1,75 task/ngày.
-- Khi TSK-S1-10 có số đo và khi TSK-I3a-01 chọn xong bo camera.
-- Khi bo mạch về (Q-60): đo số ngày một người làm xong mỗi task cần phần cứng của I3 trong hai tuần đầu, rồi
-  tính lại I3 → I7 cho 35 task cần phần cứng làm nối tiếp.
+- Any assumption G1 → G6 turns out false: re-estimate in the same PR with evidence (R5).
+- On 2026-11-01: compare actual October host lane velocity against 1.75 tasks/day.
+- When TSK-S1-10 obtains measurements and when TSK-I3a-01 completes camera board selection.
+- When boards arrive (Q-60): measure days taken by one person to complete each hardware-dependent task in I3 during the first two weeks, then
+  recalculate I3 → I7 for 35 hardware-dependent tasks executed serially.

@@ -333,7 +333,7 @@ def gate_publish(
 
     The canonical bytes and the digest are the artifact that gets signed and
     distributed. Signing itself needs the registry key material, which arrives
-    with the Gate Registry in Khối 3 — so this command stops at the digest
+    with the Gate Registry in Block 3 — so this command stops at the digest
     rather than claiming to have signed anything.
     """
     try:
@@ -357,7 +357,7 @@ def gate_publish(
 
     console.print(
         "[yellow]Note:[/yellow] cryptographic signing and registry upload require the "
-        "Gate Registry (Khối 3); this command produces the canonical bytes and digest only."
+        "Gate Registry (Block 3); this command produces the canonical bytes and digest only."
     )
 
 
@@ -376,7 +376,7 @@ def gate_add(
     console.print(f"  fail policy: {gate.budget.get('fail', 'closed')}")
     console.print(
         "[yellow]Note:[/yellow] signature verification and remote fetch arrive with the "
-        "Gate Registry (Khối 3); this resolves against the local gates/ directory."
+        "Gate Registry (Block 3); this resolves against the local gates/ directory."
     )
 
 
@@ -1229,11 +1229,11 @@ def plugin_doctor(
         )
     else:
         for finding in findings:
-            mark = {"warning": "CẢNH BÁO", "info": "ghi chú", "unverifiable": "?"}[finding.level]
+            mark = {"warning": "WARNING", "info": "note", "unverifiable": "?"}[finding.level]
             typer.echo(f"[{mark}] {finding.message}")
         typer.echo(
-            f"{len(warnings)} cảnh báo. Doctor không chứng minh proxy là đường duy nhất: "
-            "nó chỉ báo những lối vòng nó thấy."
+            f"{len(warnings)} warning(s). Doctor does not prove the proxy is the only path: "
+            "it only reports the bypasses it can see."
         )
     if warnings:
         raise typer.Exit(code=1)

@@ -137,7 +137,7 @@ _RELEASE = re.compile(r"(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{
 # The languages the device UI of `targets/esp32s3/ui/` ships: a string table
 # (`ne_ui_strings.c`) and font glyphs for each. `python/tests/test_ui_assets.py`
 # keeps this list equal to what the C sources carry. The resolution rule that picks
-# one for an agent is docs/spec/ui.md §Ngôn ngữ, its one place.
+# one for an agent is docs/spec/ui.md §2 (Language), its one place.
 UI_LANGUAGES = ("vi", "en")
 DEFAULT_UI_LANGUAGE = "vi"
 
@@ -172,7 +172,7 @@ def ui_language(manifest: Any) -> str:
     """
     The language the device UI shows, and the one the firmware's `NE_AGENT_LANGUAGE`
     carries. The resolution rule (and its conflict error, checked for every target
-    at manifest load) is docs/spec/ui.md §Ngôn ngữ, the rule's one place: what is
+    at manifest load) is docs/spec/ui.md §2 (Language), the rule's one place: what is
     left here is the UI's own limit — a code the UI has no strings or glyphs for is
     refused, because text would come out as missing glyphs (font) or fall back to
     a language the agent does not speak. This check runs only where a UI exists:
@@ -192,7 +192,7 @@ def ui_language(manifest: Any) -> str:
             why=f"the device UI has no strings or glyphs for {code!r}; it ships "
             f"{list(UI_LANGUAGES)} (targets/esp32s3/ui/)",
             how=f"write one of {list(UI_LANGUAGES)}, or add a string table and font glyphs "
-            "for the language first (docs/spec/ui.md §Ngôn ngữ)",
+            "for the language first (docs/spec/ui.md §2 (Language))",
         )
     return code
 
@@ -623,7 +623,7 @@ extern "C" {{
 #define NE_AGENT_VERSION {c_string(label)}
 #define NE_AGENT_BOARD {c_string(board)}
 /* The language of the device UI (TSK-S4-10): one of ne_ui_language_from_code()'s
- * codes in targets/esp32s3/ui/. The rule that picked it is docs/spec/ui.md §Ngôn ngữ. */
+ * codes in targets/esp32s3/ui/. The rule that picked it is docs/spec/ui.md §2 (Language). */
 #define NE_AGENT_LANGUAGE {c_string(language)}
 /* The most criteria of any gate of this agent: the self-test's fact buffer. */
 #define NE_AGENT_MAX_NODES {max_nodes}u

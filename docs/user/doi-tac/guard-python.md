@@ -1,19 +1,19 @@
-# Hướng dẫn 2 — `neuroedge.guard` trong một agent Python
+# Guide 2 — `neuroedge.guard` in a Python agent
 
-> **Mục tiêu:** agent Python của bạn (một vòng lặp LLM, một node ROS, một script nhà thông minh) chạm thiết bị **chỉ qua một `Guard`**: mỗi
-> lời gọi qua gate trước, và hàm chạm thiết bị chỉ chạy **sau khi gate cho phép**. **Thời gian:** ≤ 15 phút từ lúc đã cài wheel.
+> **Goal:** your Python agent (an LLM loop, a ROS node, a smart home script) touches devices **only through a `Guard`**: every
+> call passes through a gate first, and the device function executes **only after the gate allows it**. **Duration:** ≤ 15 minutes from wheel installation.
 >
-> Hướng dẫn này không cần thiết bị, Home Assistant hay mạng: thiết bị là một hàm Python. Mọi khối lệnh ở đây được
-> [`scripts/partner_guides_check.sh`](../../../scripts/partner_guides_check.sh) chạy từ wheel. Cú pháp đầy đủ của `guard.toml` và `Tool`:
-> [`docs/spec/extension_sdk.md`](../../spec/extension_sdk.md) §1–§3; giới hạn: [`gioi-han.md`](gioi-han.md).
+> This guide requires no physical devices, Home Assistant, or network access: the device is modeled as a Python function. All command blocks here are
+> executed from the wheel by [`scripts/partner_guides_check.sh`](../../../scripts/partner_guides_check.sh). For full syntax of `guard.toml` and `Tool`:
+> [`docs/spec/extension_sdk.md`](../../spec/extension_sdk.md) §1–§3; limitations: [`gioi-han.md`](gioi-han.md).
 
-## 0. Bạn cần
+## 0. Prerequisites
 
-Đã cài wheel theo [README](README.md). Làm việc trong một thư mục trống. Không có biến môi trường nào cần đặt.
+Install the wheel according to the [README](README.md). Work inside an empty directory. No environment variables need to be set.
 
-## 1. Ba lệnh tới giá trị đầu
+## 1. Three commands to initial value
 
-**Lệnh 1 — viết gate.** Gate nói điều kiện để một lời gọi được qua: ở đây, chương trình chủ phải xác nhận `badge_ok`, và `seconds` nằm trong 1–60.
+**Command 1 — write the gate.** The gate defines the conditions for a call to pass: here, the host application must confirm `badge_ok`, and `seconds` must fall within 1–60.
 
 <!-- guide: run -->
 ```bash
@@ -42,8 +42,8 @@ budget:
 YAML
 ```
 
-**Lệnh 2 — viết agent.** `run` là hàm duy nhất chạm thiết bị; `Guard` chỉ gọi nó sau ALLOW. `dispatcher("agent")` cấp cho bên gọi một cổng có nguồn `bridge:agent`:
-bên gọi **không** nói được nguồn của mình, và `ToolRequest` không có trường `source`.
+**Command 2 — write the agent.** `run` is the only function touching the device; `Guard` invokes it only after ALLOW. `dispatcher("agent")` provides the caller with a port sourced as `bridge:agent`:
+the caller **cannot** self-declare its source, and `ToolRequest` has no `source` field.
 
 <!-- guide: run -->
 ```bash
@@ -54,11 +54,11 @@ import json
 from neuroedge.guard import Guard, Tool
 from neuroedge.sdk import ToolRequest
 
-ran = []  # những gì thiết bị thật sự được yêu cầu
+ran = []  # what the real device was actually asked
 
 
 def plug_on(seconds):
-    ran.append(seconds)  # <- ở đây bạn gọi thiết bị thật (HTTP, serial, …); chỉ chạy sau ALLOW
+    ran.append(seconds)  # <- here you call the real device (HTTP, serial, …); runs only after ALLOW
 
 
 tool = Tool(
@@ -73,7 +73,7 @@ async def main():
     async with Guard([tool], name="my-agent") as guard:
         bridge = guard.dispatcher("agent")
         first = await bridge.dispatch(ToolRequest("plug_on", {"seconds": 5}))
-        guard.set_fact("badge_ok", True)  # chương trình chủ xác nhận: đây là quyết định của BẠN
+        guard.set_fact("badge_ok", True)  # host program confirms: this is YOUR decision
         second = await bridge.dispatch(ToolRequest("plug_on", {"seconds": 5}))
         third = await bridge.dispatch(ToolRequest("plug_on", {"seconds": 600}))
         for outcome in (first, second, third):
@@ -87,33 +87,33 @@ asyncio.run(main())
 PY
 ```
 
-**Lệnh 3 — chạy.**
+**Command 3 — run.**
 
 <!-- guide: run expect="BLOCK criterion_unavailable" expect="ALLOW " expect="BLOCK argument_out_of_range" expect="device was asked: [5]" -->
 ```bash
 python agent.py
 ```
 
-Đọc ba dòng kết quả:
+Read the three output lines:
 
-1. `BLOCK criterion_unavailable` — chưa ai nói `badge_ok`, nên gate chặn: **thiết bị chưa được hỏi**.
-2. `ALLOW` — sau `guard.set_fact("badge_ok", True)` gate cho qua và `plug_on` chạy.
-3. `BLOCK argument_out_of_range` — `seconds = 600` vượt giới hạn 60 của gate: bị chặn dù `badge_ok` đã đúng.
+1. `BLOCK criterion_unavailable` — no component provided `badge_ok`, so the gate blocks: **the device was never asked**.
+2. `ALLOW` — after `guard.set_fact("badge_ok", True)` the gate permits the call and `plug_on` runs.
+3. `BLOCK argument_out_of_range` — `seconds = 600` exceeds the gate limit of 60: blocked even though `badge_ok` was true.
 
-Và `device was asked: [5]`: hàm thiết bị chạy **đúng một lần**, cho lời gọi được phép.
+And `device was asked: [5]`: the device function executed **exactly once**, for the permitted call.
 
-## 2. BLOCK rồi ALLOW — mở gate có chủ ý
+## 2. BLOCK then ALLOW — intentionally opening a gate
 
-Trong hướng dẫn này, "mở gate" là chương trình của bạn đặt dữ kiện (`set_fact`) — quyết định nằm ở mã của bạn, không ở LLM: một LLM chỉ gửi `ToolRequest`, nó không gọi được `set_fact`
-nếu bạn không đưa cho nó. Hai điều cần nhớ:
+In this guide, "opening a gate" means your program sets a fact (`set_fact`) — the decision resides entirely in your code, not in the LLM: an LLM only sends `ToolRequest` and cannot invoke `set_fact`
+unless you provide it. Two principles to remember:
 
-- Đừng đưa `guard` cho LLM hay cho bridge. Đưa cho chúng đúng một thứ: `dispatcher(...)`.
-- `Outcome` chỉ có `status` và `content` (lý do, tiêu chí gây chặn, hành động thay thế). Nó **không** mang giá trị mà `run` trả về — chủ ý, để bên gọi không lấy dữ liệu từ đường
-  này. Cần kết quả của thiết bị thì đặt nó ở chỗ chương trình của bạn đọc (như `ran` ở trên).
+- Do not expose `guard` to the LLM or to bridges. Expose only one thing: `dispatcher(...)`.
+- `Outcome` contains only `status` and `content` (reasons, failing criteria, fallback actions). It **does not** return values produced by `run` — by design, preventing callers from extracting
+  data through this channel. If your application needs device results, store them where your code reads them (like `ran` above).
 
-Muốn cấu hình bằng tệp thay vì mã: `Guard.load("guard.toml")` — ví dụ chạy được ở [`examples/guard/`](../../../examples/guard/).
+To configure via file instead of code: `Guard.load("guard.toml")` — runnable examples in [`examples/guard/`](../../../examples/guard/).
 
-## 3. Đọc vết ghi
+## 3. Inspecting traces
 
 <!-- guide: run expect="VALID" -->
 ```bash
@@ -125,20 +125,20 @@ neuroedge trace validate trace.json
 neuroedge trace show trace.json
 ```
 
-Vết ghi có ba lời gọi, nguồn `bridge:agent`, từng phán quyết và lý do. Nó chứa **tham số** của lời gọi (không băm). Phát lại một vết ghi của `Guard` bằng
-`TracePlayer(trace, guard="guard.toml")` (cần `guard.toml`; xem `extension_sdk.md` §1).
+The trace contains three calls, the `bridge:agent` source, each verdict, and its rationale. It includes the call **parameters** (unhashed). Replay a `Guard` trace using
+`TracePlayer(trace, guard="guard.toml")` (requires `guard.toml`; see `extension_sdk.md` §1).
 
-## 4. Làm `Guard` thành đường duy nhất
+## 4. Making `Guard` the sole path
 
-`plugin doctor` **không** áp dụng ở đây (nó đọc `[proxy.*]` của `guard.toml`). Với `Guard` trong tiến trình, "đường duy nhất" là kỷ luật của mã bạn:
+`plugin doctor` does **not** apply here (it parses `[proxy.*]` in `guard.toml`). With an in-process `Guard`, "sole path" relies on your code discipline:
 
-- Thiết bị chỉ được chạm trong `run` của một `Tool`. Một `requests.post(...)` ở chỗ khác trong agent là một lối vòng mà không công cụ nào của chúng tôi thấy.
-- `Guard` không chặn mạng và không chống mã cùng tiến trình (mô hình đe doạ: [`threat_model.md`](../../spec/threat_model.md) §3). Nếu thiết bị nhận lệnh từ máy khác, lệnh đó không qua gate.
-- Nếu thiết bị có API mạng, đặt nó sau tường lửa để chỉ máy chạy agent tới được; chúng tôi không làm việc đó thay bạn.
+- Devices must only be touched inside the `run` callback of a `Tool`. A `requests.post(...)` placed elsewhere in the agent is a bypass undetected by any tool of ours.
+- `Guard` does not intercept OS-level networking and does not isolate against same-process code (threat model: [`threat_model.md`](../../spec/threat_model.md) §3). If a device accepts commands from another host, that command bypasses the gate.
+- If the device exposes a network API, isolate it behind a firewall so only the agent host can reach it; we cannot do this for you.
 
-## 5. Lỗi thường gặp (thông báo thật)
+## 5. Lỗi thường gặp (real messages)
 
-**Id cổng sai** — chỉ `[a-z][a-z0-9_]{0,31}`:
+**Invalid bridge ID** — only `[a-z][a-z0-9_]{0,31}`:
 
 <!-- guide: run exit=1 expect="'Bad-Id' is not a bridge id" expect="use [a-z][a-z0-9_]{0,31}" -->
 ```bash
@@ -149,7 +149,7 @@ Guard([Tool("plug_on", "gates/plug_on@1.0.0.yaml")]).dispatcher("Bad-Id")
 PY
 ```
 
-**Hai cổng cùng id** — id là danh tính trong vết ghi, không dùng chung:
+**Two bridges with identical IDs** — ID represents identity in traces and cannot be shared:
 
 <!-- guide: run exit=1 expect="'bridge:agent' is already registered" -->
 ```bash
@@ -162,7 +162,7 @@ guard.dispatcher("agent")
 PY
 ```
 
-**Không tìm thấy tệp gate** — đường dẫn tính từ thư mục bạn chạy lệnh (hoặc từ `base=` / thư mục của `guard.toml`):
+**Gate file not found** — paths are evaluated relative to your current working directory (or relative to `base=` / directory containing `guard.toml`):
 
 <!-- guide: run exit=1 expect="GateNotFoundError" expect="file does not exist" -->
 ```bash
@@ -173,7 +173,7 @@ Guard([Tool("plug_on", "gates/khong-co.yaml")])
 PY
 ```
 
-**Tool đòi chân mà `Guard` không có bo mạch** — `requires` chỉ dùng được khi khai `board=`; để đơn giản, thiết bị của bạn là một hàm `run`:
+**Tool requires pins but `Guard` has no board** — `requires` is only permitted when declaring `board=`; for simplicity, your device is a `run` function:
 
 <!-- guide: run exit=1 expect="BoardCapabilityError" expect="this Guard has no board" -->
 ```bash
@@ -184,7 +184,7 @@ Guard([Tool("plug_on", "gates/plug_on@1.0.0.yaml", requires=("digital.out:porch_
 PY
 ```
 
-**Tên tool hay tham số lạ** — không phải ngoại lệ mà là `REJECTED` (và không có gì chạy):
+**Unknown tool name or parameters** — does not raise an exception; returns `REJECTED` (and nothing executes):
 
 <!-- guide: run expect="REJECTED" expect="no tool named 'khong_co'" expect="unknown argument 'la'" -->
 ```bash
@@ -206,8 +206,8 @@ asyncio.run(main())
 PY
 ```
 
-**`run` nhận tham số khác tham số đã khai** — `Tool` kiểm lúc dựng (lỗi `AgentManifestError`, "does not accept"): khai đúng `parameters` của hàm.
+**`run` accepts parameters differing from declared manifest** — `Tool` checks during initialization (`AgentManifestError`, "does not accept"): accurately declare the function's `parameters`.
 
-## 6. Tiếp theo
+## 6. Next steps
 
-Gửi phản hồi theo [`phan-hoi.md`](phan-hoi.md). Hai hướng dẫn kia: [`home-assistant-mcp.md`](home-assistant-mcp.md), [`proxy-http.md`](proxy-http.md).
+Submit feedback via [`phan-hoi.md`](phan-hoi.md). The other two guides: [`home-assistant-mcp.md`](home-assistant-mcp.md), [`proxy-http.md`](proxy-http.md).

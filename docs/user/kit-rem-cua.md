@@ -1,96 +1,97 @@
-# Kit 5 — Rèm cửa (`blinds`)
+# Kit 5 — Blinds (`blinds`)
 
-> **Mã task:** TSK-I2b-02. Quy trình chung, quy tắc an toàn và danh sách việc chưa kiểm:
-> [`kit-phan-cung.md`](kit-phan-cung.md). Trang này chỉ nói riêng về kit.
+> **Task ID:** TSK-I2b-02. General workflow, safety rules, and unverified checklist:
+> [`kit-phan-cung.md`](kit-phan-cung.md). This page covers details specific to this kit.
 
-Rèm lá nghiêng bằng một servo (`motion.*`, RFC-0011): **mở** (90°) và **đóng** (0°). Mỗi lệnh qua gate rồi
-nhận một **lease** một lệnh trong 200 ms; không ai gia hạn thì kênh về `safe_state` của nó (`hold`: giữ vị trí
-tối đa `max_hold_ms` = 2 s rồi cắt điện). **Phong bì thời gian** của kênh cắt lệnh vượt mức dù gate đã cho
-phép. Kit làm cho rèm lá; cửa cuốn xem phần "Giới hạn" cuối trang.
+Venetian blinds tilted with a servo (`motion.*`, RFC-0011): **open** ("mở", 90°) and **close** ("đóng", 0°). Each command passes through a gate and then
+receives a single-command **lease** for 200 ms; if unrenewed, the channel transitions to its `safe_state` (`hold`: holds position for at most
+`max_hold_ms` = 2 s then cuts power). The channel's **time envelope** cuts commands exceeding limits even if the gate allowed them.
+This kit is designed for Venetian slat blinds; for roller shutters, see "Limitations" at the bottom of the page.
 
-## Gate đã khoá
+## Locked gates
 
-`blinds_open@1.0.0` và `blinds_close@1.0.0` nằm ở `fixtures/agents/blinds/gates/`, có digest trong
-`digests.lock`. Cả hai **kế thừa `gates/home/motor@1.0.0`** của thư viện khởi đầu và chỉ siết thêm:
+`blinds_open@1.0.0` and `blinds_close@1.0.0` reside in `fixtures/agents/blinds/gates/` and have digests in
+`digests.lock`. Both **inherit `gates/home/motor@1.0.0`** from the starter library and only tighten constraints:
 
-- (gate cha) `estop_released`: nút dừng khẩn đã nhả, đọc từ một đầu vào số (`limit_switch`, `digital.in`);
-- (gate cha) `motor_current_sense` ≤ 1,0 V: điện áp chân current-sense của mạch cấp điện cho servo, đọc qua
-  kênh `adc0` (`analog.in`, đơn vị V, tuổi tối đa 200 ms); gate con hạ trần xuống 0,8 V. Thang V→A tuỳ mạch
-  của bạn: chỉnh ngưỡng theo bảng dữ liệu của nó, và chỉ được siết;
-- `blinds_close` thêm `path_clear`: khe rèm không có vật hay tay (đóng là chiều có thể kẹp);
-- ngân sách 100 ms = `lease_ms / 2` của kênh, kiểm lúc `neuroedge build`.
+- (parent gate) `estop_released`: emergency stop button released, read from a digital input (`limit_switch`, `digital.in`);
+- (parent gate) `motor_current_sense` ≤ 1.0 V: voltage on current-sense pin of servo driver board, read via
+  channel `adc0` (`analog.in`, unit V, max age 200 ms); child gate lowers ceiling to 0.8 V. The V→A scale depends on your
+  circuit: calibrate thresholds against its datasheet, tightening only;
+- `blinds_close` adds `path_clear`: blind slot free of pinch obstacles (closing is the pinch-hazard direction);
+- 100 ms budget = `lease_ms / 2` of the channel, verified during `neuroedge build`.
 
-Số đọc mất, hỏng hay quá cũ ⇒ `criterion_unavailable` ⇒ chặn. Lệnh theo hướng an toàn (về `safe_state`, dừng)
-không bao giờ qua gate (RFC-0011). Sửa gate đã khoá cần RFC.
+Missing, corrupted, or stale readings ⇒ `criterion_unavailable` ⇒ block. Commands in safe directions (transition to `safe_state`, stop)
+never pass through gates (RFC-0011). Modifying locked gates requires an RFC.
 
 ## BOM
 
-Mô tả theo chức năng và thông số. **Không có mã hàng, giá hay nhà bán**; mọi dòng "chưa kiểm trên phần cứng thật".
+Described by function and specifications. **Không có mã hàng, giá hay nhà bán** (no part numbers, prices, or vendors); all rows "chưa kiểm trên phần cứng thật" (not verified on real hardware).
 
-| # | Hạng mục | Thông số | `linux` (Pi 5) |
+| # | Item | Specification | `linux` (Pi 5) |
 |:--|:---|:---|:---|
-| 1 | Bo điều khiển | Raspberry Pi 5 (profile `linux-rpi5`) | có |
-| 2 | Servo nghiêng rèm | Servo mô hình điều khiển bằng xung PWM, hành trình ít nhất 90°, đủ mô-men cho trục lá rèm | có |
-| 3 | Mạch cấp điện cho servo | Có chân enable từ bo (`servo_en`): enable thấp là servo mất điện; nguồn riêng, tách khỏi nguồn của bo | có |
-| 4 | Điện trở kéo xuống | 10 kΩ từ chân `servo_en` về GND (chân thả nổi ⇒ servo tắt) | có |
-| 5 | Nút dừng khẩn | Nút nhấn giữ, cắt nguồn của servo bằng phần cứng, độc lập với phần mềm; thêm một tiếp điểm phụ nối vào chân `limit_switch` (cao = đã nhả) để phần mềm biết | có |
-| 5b | ADC và mạch current-sense | ADC 12 bit thang 0–2,5 V (profile khai `adc0`) nối chân current-sense của mạch cấp điện servo | có |
-| 6 | Cảm biến khe rèm (tuỳ chọn) | Công tắc hoặc cảm biến phát hiện vật kẹp; kit mô phỏng `path_clear` bằng dữ kiện phiên | có |
-| 7 | Nguồn cho bo | Nguồn 5 V cho Pi 5 | có |
+| 1 | Control board | Raspberry Pi 5 (`linux-rpi5` profile) | yes |
+| 2 | Slat-tilting servo | Model servo controlled by PWM pulses, travel at least 90°, sufficient torque for blind slat shaft | yes |
+| 3 | Servo power driver board | Includes enable pin from board (`servo_en`): low enable cuts servo power; separate power supply, isolated from board power supply | yes |
+| 4 | Pull-down resistor | 10 kΩ from `servo_en` pin to GND (floating pin ⇒ servo disabled) | yes |
+| 5 | Emergency stop button | Latching push button, cuts servo power in hardware, independent of software; includes auxiliary contact wired to `limit_switch` pin (high = released) to inform software | yes |
+| 5b | ADC and current-sense circuit | 12-bit ADC with 0–2.5 V range (profile declares `adc0`) connected to current-sense pin of servo power driver | yes |
+| 6 | Blind slot sensor (optional) | Switch or sensor detecting pinch obstacles; kit simulates `path_clear` via session facts | yes |
+| 7 | Board power supply | 5 V supply for Pi 5 | yes |
 
-Kit **không build trên `esp32s3-box-3`** và `sim-default` (không khai `motion`). Kênh `gripper` là tên kênh
-servo của profile; kit dùng nó làm trục nghiêng của rèm lá.
+This kit **does not build on `esp32s3-box-3`** or `sim-default` (does not declare `motion`). The `gripper` channel is the servo channel name
+in the profile; the kit uses it as the tilt shaft of the slat blinds.
 
 ## Sơ đồ đấu dây
 
-Nhãn `line:<tên>` là tên chân của bo trong `boards/*.toml`; `motion:<kênh>` là tên kênh trong
-`[[capabilities.motion.servo]]`; `analog:<kênh>` là kênh trong `[capabilities.analog_in]`. Test `python/tests/test_kits.py` kiểm cả hai với profile bo. Tín hiệu PWM
-của kênh do HAL điều khiển (không phải chân `digital.out` của agent), nên sơ đồ chỉ vẽ dây dẫn tới servo.
-Chỉ có sơ đồ cho `linux-rpi5`: Box-3 không khai `motion`.
+The label `line:<name>` is the board pin name in `boards/*.toml`; `motion:<channel>` is the channel name in
+`[[capabilities.motion.servo]]`; `analog:<channel>` is the channel in `[capabilities.analog_in]`. Test `python/tests/test_kits.py` verifies both against the board profile. The channel PWM signal
+is controlled by HAL (not an agent `digital.out` pin), so the diagram only shows wiring to the servo.
+Diagram provided for `linux-rpi5` only: Box-3 does not declare `motion`.
 
 <!-- wiring: linux-rpi5 -->
 ```mermaid
 flowchart LR
-  PI["Raspberry Pi 5 (linux-rpi5)"] -->|"motion:gripper (PWM)"| SV["Servo nghiêng rèm"]
-  PI -->|"line:servo_en"| DRV["Mạch cấp điện cho servo, có enable"]
-  PI -. "GND chung" .- DRV
-  PSU["Nguồn của servo"] --> DRV
+  PI["Raspberry Pi 5 (linux-rpi5)"] -->|"motion:gripper (PWM)"| SV["Slat-tilting servo"]
+  PI -->|"line:servo_en"| DRV["Servo power driver board, with enable"]
+  PI -. "Common GND" .- DRV
+  PSU["Servo power supply"] --> DRV
   DRV --> SV
-  EST["Nút dừng khẩn, cắt nguồn servo"] -.-> DRV
-  EST -->|"tiếp điểm phụ: line:limit_switch"| PI
-  CS["Chân current-sense của mạch servo"] -->|"analog:adc0 (V)"| PI
+  EST["E-stop button, cuts servo power"] -.-> DRV
+  EST -->|"auxiliary contact: line:limit_switch"| PI
+  CS["Current-sense pin of servo circuit"] -->|"analog:adc0 (V)"| PI
   DRV --> CS
-  PD["10 kΩ kéo xuống"] -. "line:servo_en" .- PI
+  PD["10 kΩ pull-down"] -. "line:servo_en" .- PI
 ```
 
 ## Từ hộp tới chạy thật
 
-Quy trình chung ở [`kit-phan-cung.md`](kit-phan-cung.md) §2. Riêng kit này (cần bo có `motion`):
+General workflow in [`kit-phan-cung.md`](kit-phan-cung.md) §2. Specifically for this kit (requires board with `motion`):
 
 ```bash
 neuroedge new rem --template blinds && cd rem
 neuroedge build --target sim --board sim-rpi5
-neuroedge run --board sim-rpi5 -c "mở rèm"      # ALLOW: servo gripper tới 90°
+neuroedge run --board sim-rpi5 -c "mở rèm"      # ALLOW: servo gripper to 90°
 neuroedge test
 ```
 
-- **`sim-rpi5`**: `neuroedge test` chạy sáu ca (mở, đóng, lease hết hạn ⇒ `safe_state`, ba BLOCK không
-  nhúc nhích servo, phong bì từ chối lệnh thứ hai quá sớm). Trong REPL, `:input limit_switch false` (dừng
-  khẩn), `:analog adc0 0.9` (dòng quá lớn) hay `:set path_clear false` rồi `mở rèm` / `đóng rèm` ⇒ BLOCK.
-- **`linux` trên Pi 5**: kênh cần một nguồn PWM khai bằng biến môi trường (`NEUROEDGE_LINUX_MOTION`,
-  ví dụ `gripper=pwmchip0/1`, cần overlay PWM của Pi), nguồn của `adc0` (`NEUROEDGE_LINUX_ANALOG`, ví dụ
-  `adc0=hwmon:ads7828/in0`) và các line `servo_en`, `limit_switch` do device-tree đặt tên. Mất ADC ⇒ phiên
-  bị từ chối, servo không có điện. Test:
-  `python/tests_linux/test_kit_blinds.py` (chân `gpio-sim`, cây PWM giả). Servo thật, mô-men và việc
-  driver cắt điện khi `servo_en` xuống **chưa kiểm** (cần giàn thử, RFC-0011 §3f).
+- **`sim-rpi5`**: `neuroedge test` runs six cases (open, close, lease expires ⇒ `safe_state`, three BLOCKs do not
+  budge the servo, envelope rejects second command issued too soon). In REPL, `:input limit_switch false` (e-stop),
+  `:analog adc0 0.9` (excessive current), or `:set path_clear false` then `mở rèm` / `đóng rèm` ⇒ BLOCK.
+- **`linux` on Pi 5**: channel requires a PWM source declared via environment variable (`NEUROEDGE_LINUX_MOTION`,
+  e.g. `gripper=pwmchip0/1`, requiring Pi PWM overlay), source for `adc0` (`NEUROEDGE_LINUX_ANALOG`, e.g.
+  `adc0=hwmon:ads7828/in0`), and `servo_en`, `limit_switch` lines named by device-tree. Missing ADC ⇒ session
+  rejected, servo unpowered. Test:
+  `python/tests_linux/test_kit_blinds.py` (`gpio-sim` pins, dummy PWM tree). Real servo, torque, and driver power
+  cut when `servo_en` goes low **have not been verified** (requires test rig, RFC-0011 §3f).
 
-## Giới hạn
+## Limitations
 
-- **Cửa cuốn**: kênh `motor` của kho chưa có chiều ngược (`direction` chỉ `forward`, RFC-0011), nên kit không
-  làm cửa cuốn hai chiều; rèm lá dùng servo (có vị trí) nên mở và đóng đều làm được.
+- **Roller shutters**: repository `motor` channel currently lacks reverse direction (`direction` is `forward` only, RFC-0011), so kit does not
+  support bidirectional roller shutters; slat blinds use a servo (with positional feedback) so both opening and closing work.
 
-## Vết golden
+## Golden traces
 
-`fixtures/traces/kits/blinds-allow.json` (mở, lease không gia hạn ⇒ `hold`, đóng khi còn giữ: ALLOW ×2),
-`blinds-block.json` (dừng khẩn, tay trong khe, lỗi bộ truyền động ⇒ BLOCK ×3; rồi mở, `hold` hết `max_hold_ms`
-thì cắt điện, và lệnh đóng quá sớm bị phong bì từ chối). Sinh bằng `scripts/gen_kit_traces.py`; `neuroedge verify` phát lại trên các bo khai `motion`.
+`fixtures/traces/kits/blinds-allow.json` (open, lease unrenewed ⇒ `hold`, close while still held: ALLOW ×2),
+`blinds-block.json` (e-stop, obstacle in slot, actuator fault ⇒ BLOCK ×3; then open, `hold` reaches `max_hold_ms`
+then power cut, and closing command sent too soon rejected by envelope). Generated with `scripts/gen_kit_traces.py`;
+replayed by `neuroedge verify` on boards declaring `motion`.

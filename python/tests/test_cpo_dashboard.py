@@ -1,4 +1,4 @@
-"""docs/business/cpo-dashboard.html phải khớp bản sinh từ roadmap, TODOS, PRD, CHANGELOG."""
+"""docs/business/cpo-dashboard.html must match what is generated from the roadmap, TODOS, PRD and CHANGELOG."""
 
 from __future__ import annotations
 
@@ -18,8 +18,8 @@ def test_the_dashboard_is_fresh() -> None:
         text=True,
     )
     assert result.returncode == 0, (
-        "docs/business/cpo-dashboard.html đã cũ so với nguồn.\n"
-        "Chạy: python3 scripts/gen_cpo_dashboard.py\n"
+        "docs/business/cpo-dashboard.html is stale against its sources.\n"
+        "Run: python3 scripts/gen_cpo_dashboard.py\n"
         f"{result.stdout}{result.stderr}"
     )
 
@@ -60,7 +60,7 @@ def test_every_increment_belongs_to_exactly_one_release_milestone() -> None:
     """Roadmap §0.5 groups increments into user-facing milestones; the dashboard and poster E-09
     read it, so an increment missing from it, or listed twice, would silently drop off the page."""
     roadmap = (REPO_ROOT / "roadmap" / "neuroedge-roadmap.md").read_text(encoding="utf-8")
-    part = roadmap.split("#### Mốc phát hành theo người dùng", 1)[1].split("\n---", 1)[0]
+    part = roadmap.split("#### User-facing release milestones", 1)[1].split("\n---", 1)[0]
     grouped = [
         inc.strip()
         for row in re.findall(r"^\| \d+ \|(?:[^|\n]*\|){3}([^|\n]*)\|", part, re.M)

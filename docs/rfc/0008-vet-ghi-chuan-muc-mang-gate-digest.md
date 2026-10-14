@@ -1,43 +1,43 @@
-# RFC-0008: Ba vết ghi chuẩn mực mang `gate_digest` — phát lại kiểm nó
+# RFC-0008: Three Canonical Traces Carry `gate_digest` — Replay Checks It
 
 | | |
 |:---|:---|
-| **Mã RFC** | 0008 |
-| **Tiêu đề** | Ba vết ghi chuẩn mực mang `gate_digest` trong `gate_evaluation_begin`; `verify` và `replay` kiểm nó |
-| **Hợp đồng bị ảnh hưởng** | `trace.v1` *(chỉ nội dung `data` của ba vết ghi chuẩn mực — tệp lược đồ không đổi)* · ngữ nghĩa phát lại |
-| **Yêu cầu PRD liên quan** | FR-CI-02, FR-CI-04, FR-CI-07, FR-TRC-04 |
-| **Người đề xuất** | V1 — Kỹ sư lõi nền tảng |
-| **Ngày mở** | 2026-09-27 |
-| **Trạng thái** | ✅ Đã chấp thuận · ✅ Đã hiện thực (PR này) |
-| **Người phê duyệt** | Chủ sản phẩm (product owner), 2026-09-27 |
-| **Kiểm chứng** | §7 — `python/tests/test_player.py`, `python/tests/test_cli.py`, `python/tests/test_trace_vectors.py` |
+| **RFC ID** | 0008 |
+| **Title** | Three canonical traces carry `gate_digest` in `gate_evaluation_begin`; `verify` and `replay` check it |
+| **Affected Contract** | `trace.v1` *(only `data` payload of the three canonical traces — schema file unchanged)* · replay semantics |
+| **Related PRD Requirements** | FR-CI-02, FR-CI-04, FR-CI-07, FR-TRC-04 |
+| **Author** | V1 — Platform Core Engineer |
+| **Date Opened** | 2026-09-27 |
+| **Status** | ✅ Approved · ✅ Implemented (this PR) |
+| **Approver** | Product Owner, 2026-09-27 |
+| **Verification** | §7 — `python/tests/test_player.py`, `python/tests/test_cli.py`, `python/tests/test_trace_vectors.py` |
 
-> **Khi nào cần RFC:** sửa ba vết ghi chuẩn mực là một mục của `CONTRIBUTING.md` §3.
+> **When an RFC is required:** modifying the three canonical traces is an item in `CONTRIBUTING.md` §3.
 
-## 1. Vấn đề
+## 1. Problem
 
-Engine hôm nay ghi `gate_evaluation_begin {gate, gate_digest}` (`engine/gate.py`), và thiết bị ghi
-cũng vậy (`simulation_coverage.md` §4). Nhưng ba vết ghi chuẩn mực trong `fixtures/traces/`
-(`happy-path.json`, `unverified_attempt.json`, `network_offline.json`) ra đời trước trường này:
-`gate_evaluation_begin` của chúng chỉ mang `{"gate": "unlock_door@1.2.0"}`. Ai hiện thực `trace.v1`
-từ ba ví dụ chuẩn mực sẽ không bao giờ thấy trường đó, dù nó là thứ khiến một phán quyết trên
-thiết bị truy ngược được tới đúng chính sách đã ký (ENG-T2, RFC-0003 §3).
+The engine today records `gate_evaluation_begin {gate, gate_digest}` (`engine/gate.py`),
+as does the device (`simulation_coverage.md` §4). But the three canonical traces in
+`fixtures/traces/` (`happy-path.json`, `unverified_attempt.json`, `network_offline.json`)
+predated this field: their `gate_evaluation_begin` only carries `{"gate": "unlock_door@1.2.0"}`.
+Anyone implementing `trace.v1` from the three canonical examples would never see that field,
+even though it enables on-device verdicts to trace back to the signed policy (ENG-T2, RFC-0003 §3).
 
-## 2. Vì sao hiện trạng không giải quyết được
+## 2. Why the Status Quo Does Not Solve It
 
-- `neuroedge verify` so vết ghi chuẩn mực với golden của chính nó trên cả ba target, nhưng trên
-  `sim`/`linux` không có phép kiểm nào bảo đảm vết ghi được quyết bởi **chính gate nó đã được ghi
-  cùng** — thiết bị có kiểm (`_device_replay`), host thì không.
-- `neuroedge replay` trên vết ghi của người dùng không hề hay biết gate đã đổi từ lúc ghi: người
-  siết gate rồi phát lại (quickstart, giờ 3) không được nói rằng phán quyết đang được tính bằng
-  gate mới.
-- Vết ghi không mang `gate_digest` thì không thể kiểm cả hai điều trên — vì vậy phải sửa ba vết
-  ghi chuẩn mực, tức phải có RFC.
+- `neuroedge verify` compares canonical traces against their goldens across all three targets,
+  but on `sim`/`linux` no check ensures the trace was decided by the **exact gate it was recorded with**
+  — the device checks (`_device_replay`), while host did not.
+- `neuroedge replay` on user traces is unaware that gates changed since recording: users
+  tightening gates and replaying (quickstart, hour 3) are not told that verdicts are being
+  evaluated with the new gate.
+- Traces without `gate_digest` cannot check either condition — necessitating changes to
+  the three canonical traces, which requires an RFC.
 
-## 3. Thay đổi đề xuất
+## 3. Proposed Change
 
-Mỗi `gate_evaluation_begin` của ba vết ghi chuẩn mực nhận đúng giá trị mà checkout biên dịch ra
-hôm nay cho `unlock_door@1.2.0` (`compile_tree(resolve_gate_file("gates/unlock_door@1.2.0.yaml"))`):
+Each `gate_evaluation_begin` of the three canonical traces receives the exact value that
+checkout compiles today for `unlock_door@1.2.0` (`compile_tree(resolve_gate_file("gates/unlock_door@1.2.0.yaml"))`):
 
 ```diff
      {
@@ -51,79 +51,80 @@ hôm nay cho `unlock_door@1.2.0` (`compile_tree(resolve_gate_file("gates/unlock_
      }
 ```
 
-Không gì khác trong ba tệp đổi: lệch JCS ⇒ `digest()` của tệp đổi ⇒ vector firmware sinh lại
-(`scripts/gen_firmware_vectors.py` nhúng `digest(trace)` vào `device_info.trace_digest`).
+Nothing else in the three files changes: JCS deviation ⇒ file `digest()` changes ⇒ firmware
+vectors regenerated (`scripts/gen_firmware_vectors.py` embeds `digest(trace)` into `device_info.trace_digest`).
 
-**Hai luật phát lại, so sánh nằm trong một hàm** (`testing/player.gate_digest_changes`, dùng bởi
-cả host lẫn thiết bị):
+**Two replay rules, comparison housed in a single function** (`testing/player.gate_digest_changes`,
+shared by host and device):
 
-| Lệnh | Vết ghi | `gate_digest` đã ghi khác checkout biên dịch ra |
+| Command | Trace | Recorded `gate_digest` Differs from Checkout Compilation |
 |:---|:---|:---|
-| `neuroedge verify` | chuẩn mực (gate đóng băng) | **Lỗi** (`ReplayError`, NE4003) — vết ghi chuẩn mực phải được quyết bởi đúng gate nó được ghi cùng, như thiết bị |
-| `neuroedge replay` | của người dùng | **Không lỗi** — gate có thể được siết có chủ ý (quickstart giờ 3); phát lại vẫn tính lại phán quyết và báo `SAFETY REGRESSION` như cũ, thêm một cảnh báo nói gate nào đã đổi (digest cũ → digest mới) |
+| `neuroedge verify` | Canonical (frozen gates) | **Error** (`ReplayError`, NE4003) — canonical trace must be evaluated by the exact gate it was recorded with, identical to device behavior |
+| `neuroedge replay` | User trace | **No error** — gates may be intentionally tightened (quickstart hour 3); replay still re-evaluates verdicts and reports `SAFETY REGRESSION` as before, adding a warning indicating which gate changed (old digest → new digest) |
 
-Vết ghi không mang trường (ghi trước RFC-0008) phát lại đúng như trước — không có gì để so.
+Traces lacking the field (recorded before RFC-0008) replay exactly as before — having nothing to compare.
 
-## 4. Ảnh hưởng tương thích
+## 4. Compatibility Impact
 
-| Hạng mục | Ảnh hưởng |
+| Item | Impact |
 |:---|:---|
-| Tệp đang hợp lệ có còn hợp lệ? | Có — `trace.v1` để `data` tự do; thêm khoá vào `data` không cần đổi lược đồ |
-| Tệp đang không hợp lệ có trở nên hợp lệ? | Không |
-| Cần tăng phiên bản lược đồ (`v1` → `v2`)? | Không — `schemas/trace.v1.json` không đổi |
-| Ảnh hưởng tới mã băm / chữ ký gate đã phát hành? | Không — `digests.lock` chỉ khoá gate; gate không đổi |
-| Ảnh hưởng tới ba tệp vết ghi chuẩn mực? | **Có — chính là thay đổi này** (RFC); `digest()` của mỗi tệp đổi, vector firmware sinh lại |
-| Gate nào trong `digests.lock` đổi digest? | Không gate nào |
-| Bố cục `NETR` hoặc walker C phải đổi? | Không — thiết bị đã ghi `gate_digest` từ trước (`ne_trace.c`) |
-| Đáp án nào của corpus tool call (`expected_results.yaml`) đổi? | Không |
+| Do currently valid files remain valid? | Yes — `trace.v1` leaves `data` open; adding keys to `data` requires no schema change |
+| Do currently invalid files become valid? | No |
+| Is a schema version bump required (`v1` → `v2`)? | No — `schemas/trace.v1.json` is unchanged |
+| Impact on hashes / digital signatures of published gates? | None — `digests.lock` only locks gates; gates are unchanged |
+| Impact on the three canonical trace files? | **Yes — this exact change** (RFC); `digest()` of each file changes, firmware vectors regenerated |
+| Which gates in `digests.lock` change digest? | No gates |
+| Does the `NETR` layout or C walker need to change? | No — device already recorded `gate_digest` previously (`ne_trace.c`) |
+| Which answers in the tool-call corpus (`expected_results.yaml`) change? | No |
 
-Vết ghi cũ không mang trường vẫn phát lại được (mục 3); `verify` trên thiết bị từ chối firmware
-cũ như cũ.
+Legacy traces without the field remain replayable (section 3); `verify` on device rejects
+older firmware as before.
 
-## 5. Ảnh hưởng an toàn
+## 5. Safety Impact
 
-Thay đổi này **không có đường nào làm một phán quyết lỏng hơn**:
+This change **has no path to make verdicts more lax**:
 
-- Phép kiểm chỉ **thêm** một điều kiện từ chối, không bỏ điều kiện nào: golden so quyết định như
-  cũ, `SAFETY REGRESSION` (NE4002) như cũ, fail-closed như cũ.
-- Trên `verify`, vết ghi chuẩn mực bị quyết bằng gate khác gate nó được ghi cùng là lỗi, chứ
-  không bao giờ được so cho qua — một kết quả "đạt" về một thứ khác là kết quả không có nghĩa.
-- Trên `replay`, cảnh báo không thay phép so: người dùng siết gate mà làm yếu an toàn vẫn thoát
-  mã 1 với `SAFETY REGRESSION`. Cảnh báo chỉ nói sự thật "phán quyết này được tính bằng gate mới"
-  — cùng kiểu với cảnh báo `[sim.sensor_facts]` đã có (`_sensor_rules_changed`).
-- Vết ghi không mang trường không được so (không có gì để so): đây là đường **giữ nguyên hành vi
-  cũ**, không phải đường bỏ qua một kiểm có sẵn.
+- The check only **adds** a rejection condition, dropping none: golden compares decisions
+  as before, `SAFETY REGRESSION` (NE4002) as before, fail-closed as before.
+- In `verify`, canonical traces decided by gates other than those recorded with them are
+  errors, never allowed to pass — a "pass" on a different gate is a meaningless result.
+- In `replay`, warnings do not alter comparisons: users tightening gates that weaken safety
+  still exit with code 1 and `SAFETY REGRESSION`. The warning merely states the fact
+  "this verdict was evaluated using a new gate" — identical pattern to existing `[sim.sensor_facts]`
+  warning (`_sensor_rules_changed`).
+- Traces lacking the field are not compared (nothing to compare): this **preserves legacy
+  behavior**, rather than bypassing an existing check.
 
-## 6. Phương án đã xem xét và bác bỏ
+## 6. Alternatives Considered and Rejected
 
-| Phương án | Lý do bác bỏ |
+| Alternative | Reason for Rejection |
 |:---|:---|
-| Đổi `schemas/trace.v1.json` để bắt buộc `gate_digest` trong `gate_evaluation_begin` | Lược đồ là RFC riêng; vết ghi ghi trước RFC-0008 sẽ thành không hợp lệ — phá vỡ tương thích không cần thiết |
-| `verify` chỉ cảnh báo như `replay` | Vết ghi chuẩn mực và gate của nó đóng băng cùng nhau; "đạt" trên gate khác là kết quả về một thứ khác |
-| `replay` cũng lỗi khi gate khác | Phát lại sau khi siết gate là workflow có chủ ý (quickstart giờ 3); lỗi sẽ giết đúng việc phát lại cần kiểm |
+| Modify `schemas/trace.v1.json` to require `gate_digest` in `gate_evaluation_begin` | Schema change requires dedicated RFC; traces recorded before RFC-0008 would become invalid — unnecessary breaking change |
+| `verify` only warns like `replay` | Canonical traces and their gates freeze together; "passing" on a different gate evaluates a different entity |
+| `replay` also errors when gates differ | Replay after gate tightening is an intended workflow (quickstart hour 3); erroring breaks the exact scenario replay is designed to verify |
 
-## 7. Bằng chứng kiểm chứng
+## 7. Verification Evidence
 
-- [x] Ba vết ghi chuẩn mực mang trường, đúng giá trị checkout biên dịch ra —
+- [x] Three canonical traces carry the field, matching compiled checkout values —
   `python/tests/test_player.py::test_canonical_traces_carry_the_compiled_gate_digest`
-- [x] `verify` lỗi rõ ràng khi digest của một vết ghi chuẩn mực bị sửa (bản sao tmp, fixture
-  nguyên vẹn) — `python/tests/test_cli.py::test_verify_refuses_a_canonical_trace_decided_by_another_gate`
-- [x] `replay` vết ghi ghi trước khi siết gate: cảnh báo nói gate cũ → gate mới, phán quyết vẫn
-  so như cũ — `python/tests/test_player.py::test_replay_reports_a_gate_that_changed_since_the_recording`
-- [x] Vết ghi không mang trường phát lại đúng như trước —
+- [x] `verify` errors clearly when a canonical trace digest is altered (tmp copy, fixture
+  intact) — `python/tests/test_cli.py::test_verify_refuses_a_canonical_trace_decided_by_another_gate`
+- [x] `replay` on pre-tightened traces: warning indicates old gate → new gate, verdicts still
+  compared as before — `python/tests/test_player.py::test_replay_reports_a_gate_that_changed_since_the_recording`
+- [x] Traces lacking the field replay as before —
   `python/tests/test_player.py::test_a_trace_without_gate_digest_replays_unchanged`
-- [x] Vector firmware sinh lại, `--check` xanh — `python/tests/test_trace_vectors.py`
-  (thiết bị tự kiểm digest: `test_a_firmware_deciding_an_older_gate_is_refused_not_compared`)
-- [x] `neuroedge verify` vẫn xanh; không test nào bị skip
+- [x] Firmware vectors regenerated, `--check` green — `python/tests/test_trace_vectors.py`
+  (device self-checks digest: `test_a_firmware_deciding_an_older_gate_is_refused_not_compared`)
+- [x] `neuroedge verify` remains green; zero tests skipped
 
-## 8. Việc phải làm khi chấp thuận
+## 8. Tasks upon Approval
 
-- [x] Sửa ba vết ghi chuẩn mực; sinh lại `targets/esp32s3/main/vectors/` bằng
+- [x] Update three canonical traces; regenerate `targets/esp32s3/main/vectors/` using
   `scripts/gen_firmware_vectors.py`
-- [x] `testing/player.py`: một hàm so sánh, cảnh báo cho `replay`, tuỳ chọn cưỡng chế cho `verify`;
-  `_device_replay` dẫn cùng hàm
+- [x] `testing/player.py`: single comparison function, warning for `replay`, optional enforcement for `verify`;
+  `_device_replay` routes to same function
 - [x] `docs/spec/simulation_coverage.md` §4; `docs/architecture/{vi,en}/07-data-contracts.md`;
-  `docs/architecture/{vi,en}/10-target-equivalence.md` — mỗi sự thật một nơi, dẫn RFC-0008
-- [x] Dòng của RFC trong `docs/rfc/README.md`
-- [x] Phụ lục của `docs/spec/core_contracts.md` không đổi — hợp đồng sự kiện nằm ở
-  `docs/spec/simulation_coverage.md` §3; lược đồ không đổi
+  `docs/architecture/{vi,en}/10-target-equivalence.md` — single source of truth, referencing RFC-0008
+- [x] RFC row in `docs/rfc/README.md`
+- [x] Appendix of `docs/spec/core_contracts.md` unchanged — event contract resides in
+  `docs/spec/simulation_coverage.md` §3; schema unchanged

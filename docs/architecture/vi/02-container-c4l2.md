@@ -1,208 +1,208 @@
-# 02 · Container và ranh giới tiến trình (C4 L2)
+# 02 · Containers and process boundaries (C4 L2)
 
-> **Phạm vi:** các khối chạy độc lập — tiến trình, thư viện, firmware, kho tệp — và cách từng cặp
-> nói chuyện. **Nguồn:** `python/pyproject.toml`, `python/neuroedge/cli/`, `sim/ui.py`,
+> **Scope:** independently running units — processes, libraries, firmware, file stores — and how each
+> pair communicates. **Sources:** `python/pyproject.toml`, `python/neuroedge/cli/`, `sim/ui.py`,
 > `mcp_server.py`, `targets/esp32s3/`, `.github/workflows/`.
 
-## 1. Sơ đồ container
+## 1. Container diagram
 
-![E-02 · Container](../assets/svg/E-02-containers.svg)
-*Hình E-02 — Container trên máy dev hoặc thiết bị Linux (trên), trên chip (dưới), và hệ thống ngoài (phải). Khối nét đứt mang nhãn I2d, I2e, Q-72 là thiết kế đích của [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định) (`planned · Q-72`): runtime 24/7, LLM worker, nền tảng chat, Hub index, relay; LLM worker có thể chạy trên NeuroEdge Cloud tuỳ chọn (Q-74, I2f, [`15`](15-target-architecture.md) §6.10).*
+![E-02 · Containers](../assets/svg/E-02-containers.svg)
+*Figure E-02 — Containers on dev machines or Linux devices (top), on chip (bottom), and external systems (right). Dashed boxes labeled I2d, I2e, Q-72 represent target designs of [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log) (`planned · Q-72`): 24/7 runtime, LLM worker, chat platforms, Hub index, relay; LLM workers may run on optional NeuroEdge Cloud (Q-74, I2f, [`15`](15-target-architecture.md) §6.10).*
 
-## 2. Danh mục container
+## 2. Container catalog
 
-| Container | Công nghệ | Trách nhiệm | Điểm vào | Trạng thái |
+| Container | Technology | Responsibilities | Entry point | Status |
 |:---|:---|:---|:---|:---|
-| **CLI `neuroedge`** | Python 3.11+, Typer, Rich | Mỗi lệnh là một tiến trình: nạp phiên, chuyển lỗi thành thông báo ba phần và mã thoát; không tự quyết gate | `neuroedge.cli.main:app` | `done` |
-| **Thư viện `neuroedge`** | Python (mã lõi source-available — Q-45); phụ thuộc lõi: `pydantic`, `jsonschema`, `pyyaml`, `rfc8785`, `deepdiff`, `typer`, `rich` | Toàn bộ logic: engine gate, action, HAL, model, thoại, phiên, Action CI | `import neuroedge` | `done` |
-| **Web UI của phiên** | `http.server.ThreadingHTTPServer` của thư viện chuẩn, chỉ trên 127.0.0.1 | Hiện thiết bị ảo, dòng phán quyết; nhận lệnh gõ và nút xác nhận của người có mặt | `run --ui`, `mcp serve --ui` | `done` (chỉ `sim`) |
-| **Máy chủ MCP** | MCP Python SDK (extra `mcp`), stdio | Đưa mỗi `@action` ra làm công cụ; mọi `tools/call` qua gate | `neuroedge mcp serve` | `done` |
-| **Tệp** | Hệ tệp cục bộ | Dự án agent (`agent.toml`, `commands.toml`, `knowledge.toml`, `gates/`, `actions/`, `traces/`); dữ liệu kho (`schemas/`, `gates/`, `boards/`, `fixtures/`, `digests.lock`) | — | `done` |
-| **Đầu ra build** | Hệ tệp | `build/gates/` (cây JSON, artifact gate, `NETR`, header C); `build/esp32s3/` (project ESP-IDF đầy đủ) | `neuroedge build` | `done` |
-| **Thiết bị Linux** | Kernel Linux: libgpiod v2, sysfs hwmon/IIO, framebuffer, PipeWire | Chân, cảm biến, màn hình, âm thanh thật cho `LinuxHAL` | `--target linux` | `partial` — đã kiểm trên phần cứng ảo, chưa trên Pi |
-| **Ảnh firmware** | C99, ESP-IDF v5.4 | Walker `NETR`, sổ token, bảng của agent, vết ghi UART, OTA; tự kiểm lúc khởi động | `app_main` | `partial` — chạy trên QEMU, chưa điều khiển chân |
-| **Flash** | 16 MB, bảng phân vùng `partitions.csv` | `factory`, `ota_0`, `ota_1` (mỗi khe 3,5 MB); `nvs`, `otadata`, `phy_init`, `storage` | — | `done` |
-| **Fleet OS, Gate Registry** | Chưa chọn đủ; đã chốt Eclipse Hawkbit (Q-11), ORAS và Harbor | Quản trị đội thiết bị; kho gate có ký | — | `planned` (I9, I10) |
-| **Runtime 24/7** (máy nhà) | Python, dịch vụ systemd | Tiến trình tin cậy duy nhất giữ HAL và quyền GPIO: gate, thực thi hợp đồng nhiệm vụ, lập lịch, bộ phát hiện tất định, `llm_budget`, adapter kênh chat và kiểm bản ghi duyệt, cửa ra dữ liệu (egress), vết ghi theo đoạn | chưa có | `planned · Q-72` (I2d) |
-| **LLM worker** (máy nhà) | Python, LiteLLM; user hệ điều hành riêng | Tiến trình không tin cậy: giữ key BYOK, giải thích, đề xuất, viết báo cáo; gọi runtime như một client MCP cục bộ; không bao giờ duyệt | chưa có | `planned · Q-72` (I2d) |
+| **`neuroedge` CLI** | Python 3.11+, Typer, Rich | Each command is a process: loads sessions, converts errors to three-part messages and exit codes; does not decide gates itself | `neuroedge.cli.main:app` | `done` |
+| **`neuroedge` library** | Python (core source-available — Q-45); core dependencies: `pydantic`, `jsonschema`, `pyyaml`, `rfc8785`, `deepdiff`, `typer`, `rich` | Entire logic: gate engine, actions, HAL, models, voice, sessions, Action CI | `import neuroedge` | `done` |
+| **Session Web UI** | Standard library `http.server.ThreadingHTTPServer`, 127.0.0.1 only | Displays virtual device, verdict stream; receives typed commands and confirmation buttons from present users | `run --ui`, `mcp serve --ui` | `done` (`sim` only) |
+| **MCP server** | MCP Python SDK (extra `mcp`), stdio | Exposes each `@action` as a tool; all `tools/call` pass through gates | `neuroedge mcp serve` | `done` |
+| **Files** | Local filesystem | Agent project (`agent.toml`, `commands.toml`, `knowledge.toml`, `gates/`, `actions/`, `traces/`); repository data (`schemas/`, `gates/`, `boards/`, `fixtures/`, `digests.lock`) | — | `done` |
+| **Build outputs** | Filesystem | `build/gates/` (JSON trees, gate artifacts, `NETR`, C headers); `build/esp32s3/` (complete ESP-IDF project) | `neuroedge build` | `done` |
+| **Linux device** | Linux kernel: libgpiod v2, sysfs hwmon/IIO, framebuffer, PipeWire | Real pins, sensors, display, audio for `LinuxHAL` | `--target linux` | `partial` — verified on virtual hardware, not yet on Pi |
+| **Firmware image** | C99, ESP-IDF v5.4 | `NETR` walker, token ledger, agent tables, UART traces, OTA; self-tests at boot | `app_main` | `partial` — runs on QEMU, pins not yet driven |
+| **Flash** | 16 MB, partition table `partitions.csv` | `factory`, `ota_0`, `ota_1` (3.5 MB each slot); `nvs`, `otadata`, `phy_init`, `storage` | — | `done` |
+| **Fleet OS, Gate Registry** | Not fully chosen; Eclipse Hawkbit decided (Q-11), ORAS and Harbor | Fleet management; signed gate registry | — | `planned` (I9, I10) |
+| **24/7 Runtime** (home box) | Python, systemd service | Sole trusted process holding HAL and GPIO privileges: gates, mission contract execution, scheduler, deterministic detectors, `llm_budget`, chat channel adapter and approval record verification, data egress, segment-based traces | none yet | `planned · Q-72` (I2d) |
+| **LLM worker** (home box) | Python, LiteLLM; dedicated OS user | Untrusted process: holds BYOK keys, explains, proposes, writes reports; calls runtime as a local MCP client; never approves | none yet | `planned · Q-72` (I2d) |
 
-## 3. Mô hình tiến trình và luồng
+## 3. Process and threading model
 
-**Hôm nay**, NeuroEdge không có tiến trình nền nào chạy mãi. Mọi thứ sống trong tiến trình của lệnh
-đang chạy. *Sẽ đổi theo Q-72 (`planned · Q-72`, I2d):* agent vận hành thêm hai tiến trình sống lâu trên
-máy nhà (hai dòng cuối của bảng).
+**Today**, NeuroEdge has no background processes running continuously. Everything lives inside the process of the
+running command. *Will change under Q-72 (`planned · Q-72`, I2d):* the operator agent adds two long-running processes on
+the home box (the last two rows of the table).
 
-| Tình huống | Tiến trình | Luồng và vòng lặp sự kiện | Trạng thái |
+| Scenario | Processes | Threads and event loops | Status |
 |:---|:---|:---|:---|
-| `run -c`, `run` (REPL), `record` | Một tiến trình `neuroedge` | Mỗi lượt một vòng lặp `asyncio` mới (`asyncio.run(session.handle(text))`) | hôm nay |
-| `run --ui` | Như trên, cộng máy chủ HTTP | Luồng HTTP của `ThreadingHTTPServer`; mỗi lượt chạy dưới một khoá chung; SSE đẩy trạng thái khi đổi hoặc mỗi 1 giây | hôm nay |
-| `mcp serve` | Tiến trình con do client MCP khởi động | Một vòng lặp `anyio`; khoá `turns` bảo đảm mỗi lần một lời gọi | hôm nay |
-| `mcp serve --ui` | Như trên, cộng trang web | Lời gọi MCP và lượt trên trang dùng chung một phiên và một khoá | hôm nay |
-| `--target linux` | Như trên | Xung GPIO có thời lượng được thả bằng `threading.Timer`; SIGTERM/SIGHUP đưa mọi line về nghỉ trước khi thoát | hôm nay |
-| Firmware | Một task `app_main` | Không tạo task FreeRTOS nào; mọi bước khởi động chạy tuần tự ([`04`](04-component-device-c4l3.md) §3) | hôm nay |
-| **Runtime 24/7** (tin cậy) | Một dịch vụ systemd trên máy nhà (Pi, mini PC, NAS), khởi động lại khi chết | Một vòng lặp sự kiện dài: lập lịch, bộ phát hiện, adapter chat, máy chủ MCP cục bộ cho worker; một khoá lượt như `mcp serve`. Thời lượng, hạn duyệt, watchdog dùng đồng hồ đơn điệu; giờ tường mang trạng thái `unsynced` cho tới khi đồng bộ | `planned · Q-72` (I2d) |
-| **LLM worker** (không tin cậy) | Tiến trình riêng, user hệ điều hành riêng; runtime giám sát và khởi động lại | Gọi runtime qua MCP cục bộ; nguồn do runtime gán theo kết nối; mạng chỉ tới endpoint provider đã khai | `planned · Q-72` (I2d) |
+| `run -c`, `run` (REPL), `record` | Single `neuroedge` process | Each turn runs in a fresh `asyncio` loop (`asyncio.run(session.handle(text))`) | today |
+| `run --ui` | As above, plus HTTP server | `ThreadingHTTPServer` HTTP worker threads; each turn runs under a shared lock; SSE pushes state changes or every 1 second | today |
+| `mcp serve` | Subprocess launched by MCP client | Single `anyio` loop; `turns` lock ensures one call at a time | today |
+| `mcp serve --ui` | As above, plus web page | MCP calls and web turns share a single session and lock | today |
+| `--target linux` | As above | Timed GPIO pulses released via `threading.Timer`; SIGTERM/SIGHUP restore all lines to idle before exit | today |
+| Firmware | Single `app_main` task | Spawns no FreeRTOS tasks; all boot steps run sequentially ([`04`](04-component-device-c4l3.md) §3) | today |
+| **24/7 Runtime** (trusted) | Single systemd service on home box (Pi, mini PC, NAS), restarts on crash | Long-running event loop: scheduler, detectors, chat adapter, local MCP server for worker; turn lock like `mcp serve`. Duration, approval deadlines, watchdog use monotonic clock; wall-clock time marked `unsynced` until synchronized | `planned · Q-72` (I2d) |
+| **LLM worker** (untrusted) | Separate process, dedicated OS user; runtime monitors and restarts | Calls runtime via local MCP; sources assigned by runtime per connection; network restricted to declared provider endpoints | `planned · Q-72` (I2d) |
 
-Hai tiến trình dùng lại ranh giới Q-71: chỉ một tiến trình giữ HAL, client MCP là bên không tin cậy.
-Worker bị prompt injection vẫn chỉ gửi được lời gọi phải qua gate, không chạm được key bot, bảng lời
-duyệt hay HAL. Worker chết thì runtime vẫn phản xạ, chạy bộ phát hiện, gửi cảnh báo mẫu cứng và khởi
-động lại worker ([`06`](06-runtime-flows.md)). Quyết định: [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định).
+The two processes reuse the Q-71 boundary: only one process holds HAL, and the MCP client is an untrusted party.
+A worker hit by prompt injection can still only send calls that must pass through gates, unable to touch bot keys, approval
+ledgers, or HAL. If the worker crashes, the runtime continues local reflexes, runs detectors, sends hardcoded template alerts, and
+restarts the worker ([`06`](06-runtime-flows.md)). Decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log).
 
-Hệ quả hôm nay: kết nối MCP tới server bên ngoài chỉ sống trong một lượt (`TODOS.md` #25), và một bus
-I2C kẹt có thể giữ vòng lặp khoảng một giây (`TODOS.md` #48). Với runtime 24/7 (`planned · Q-72`), cả
-hai thành rủi ro thật: runtime chạy một vòng lặp dài là đúng mốc kích hoạt của #25, và bộ phát hiện đọc
-cảm biến theo chu kỳ trên cùng vòng lặp làm một bus kẹt trễ cả phản xạ lẫn lời duyệt (#48). Cả hai phải
-xử lý trước khi runtime 24/7 chạy trên phần cứng thật.
+Consequences today: MCP connections to external servers only survive for a single turn (`TODOS.md` #25), and a stuck I2C
+bus can block the loop for approximately one second (`TODOS.md` #48). With a 24/7 runtime (`planned · Q-72`), both
+become real risks: the runtime running a long loop matches the trigger milestone of #25, and detectors reading
+sensors periodically on the same loop cause a stuck bus to delay both reflexes and approvals (#48). Both must be
+resolved before the 24/7 runtime runs on physical hardware.
 
-## 4. Ma trận giao tiếp
+## 4. Communication matrix
 
-Chỉ ghi những gì có trong mã. Không có ngân sách độ trễ nào ở đây được đo; ngưỡng độ trễ là NFR
-(PRD §9.1) và trạng thái đo của chúng ở [PRD §9](../../../roadmap/neuroedge-prd.md#9-yêu-cầu-phi-chức-năng).
+Only what is in code is recorded. No latency budgets here are measured; latency thresholds are NFRs
+(PRD §9.1) and their measurement status is in [PRD §9](../../../roadmap/neuroedge-prd.md#9-non-functional-requirements).
 
-| Nguồn → Đích | Kênh | Định dạng | Kiểm soát |
+| Source → Destination | Channel | Format | Controls |
 |:---|:---|:---|:---|
-| CLI → thư viện | Gọi hàm trong tiến trình | Đối tượng Python | — |
-| Trình duyệt ↔ web UI | HTTP trên 127.0.0.1: `GET /events` (Server-Sent Events), `GET /state`, `POST /command`, `POST /confirm` | JSON; thân tối đa 4096 byte | `Host` và `Origin` phải là 127.0.0.1 hoặc localhost đúng cổng, không thì 403 |
-| Client MCP → máy chủ MCP | stdin/stdout của tiến trình con | JSON-RPC (MCP); kết quả có `outputSchema` | Mọi lời gọi mang nguồn `mcp` và qua gate; `BLOCK` không phải lỗi, `REJECTED` là lỗi |
-| Thư viện → LLM | HTTPS (LiteLLM) | Chat completions chuẩn OpenAI | Khoá chỉ đọc từ biến môi trường; không bao giờ vào vết ghi |
-| Thư viện → Jev | HTTPS, `POST {api_base}/systemone` | JSON: `model`, `state.utterance`, `questions` | HTTPS bắt buộc trừ loopback; chỉ gửi lời người nói; client thư viện chuẩn (`net.py`): không theo redirect, không qua proxy, có hạn chót |
-| Thư viện → STT/TTS | HTTPS hoặc `http://localhost` | Audio API chuẩn OpenAI | `http://` tới máy khác mà có khoá ⇒ build từ chối; cùng client `net.py` |
-| Thư viện → thiết bị Linux | Ký tự thiết bị `/dev/gpiochipN`, sysfs, `/dev/fbN`, PortAudio | libgpiod v2, tệp văn bản, điểm ảnh | Line được tìm theo **tên**; thiếu thiết bị ⇒ lỗi trước khi giữ line nào |
-| Thư viện → đầu ra build → ảnh firmware | `idf.py build` đọc project sinh ra | C, header `.netree.h`, `version.txt` | Build lỗi ⇒ in mọi vấn đề, không ghi tệp nào |
-| Ảnh firmware → thư viện | UART (tệp log, `tcp://`, cổng serial) | Dòng `NE1 {…}` ≤ 512 byte, khung `device_info` … `trace_end` | Dòng hỏng, thiếu khung, đếm lệch ⇒ `NE4001`, không ghi gì |
-| Ảnh firmware → máy chủ OTA | HTTP(S) GET | Ảnh app ký RSA-3072 | Không theo redirect; hạn chót tải; sai chữ ký ⇒ xoá khe vừa ghi |
-| Ảnh firmware → Fleet OS | MQTT | — | `planned` (I9) — xem [`15`](15-target-architecture.md) §3.1 |
-| Ảnh firmware ↔ nhà cung cấp (provider) *(planned)* | WebSocket (TLS 1.3) | Opus (âm thanh 16 kHz nhị phân) và JSON (sự kiện/kết quả) ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) Phụ lục D.2) | Điểm kết thúc luồng âm thanh tối ưu cho MCU (FR-GW-04, TSK-S5-06); hạn mức theo thiết bị là tuỳ chọn của lớp provider (FR-GW-05, v1.1) — xem [`15`](15-target-architecture.md) §2.3 |
-| LLM worker → runtime *(`planned · Q-72`, I2d)* | MCP cục bộ (stdio hoặc socket cục bộ) | JSON-RPC (MCP) | Nguồn do runtime gán theo kết nối, không do worker khai; mọi lời gọi qua gate; worker không có tool trả lời `ask` hay duyệt |
-| LLM worker → nhà cung cấp LLM *(`planned · Q-72`, I2d)* | HTTPS (LiteLLM) | Chat completions chuẩn OpenAI | Key BYOK chỉ trong worker; mạng của worker chặn ở mức hệ điều hành, chỉ tới endpoint provider đã khai |
-| Runtime → nền tảng chat (Telegram trước) *(`planned · Q-72`, I2d)* | HTTPS, API bot | Tin nhắn, yêu cầu duyệt `{id, nonce, hạn, digest, bản duyệt}` | Token bot chỉ trong runtime; chỉ gửi tới chat đã ghép đôi; chat sập ⇒ hàng đợi có hạn và cảnh báo tại chỗ trên UI |
-| Runtime ↔ relay *(`planned · Q-72`, tuỳ chọn)* | TCP ra ngoài do máy nhà mở; TLS xuyên | Byte TLS; relay chọn đích theo SNI | Relay không giải mã; sao lưu vết ghi mã hoá phía máy nhà; lời duyệt không qua relay; relay mất ⇒ không ảnh hưởng an toàn |
-| CLI → Hub index và nguồn Blueprint *(`planned · Q-72`, I2e)* | HTTPS hoặc git | Index tĩnh (URL, digest), gói NeuroEdge Blueprint | Digest phủ toàn gói; lệch ⇒ từ chối cài; gate trong gói vẫn qua `gate lint` |
-| Client MCP ↔ máy chủ MCP qua mạng *(mặc định tắt: `mcp serve --http`)* | Streamable HTTP (TLS 1.3) | JSON-RPC (MCP) | OAuth 2.1 (Protected Resource Metadata RFC 9728, RFC 8414) sau mTLS (TSK-P2-04, Q-32) — xem [`15`](15-target-architecture.md) §4.3 |
+| CLI → library | In-process function calls | Python objects | — |
+| Browser ↔ web UI | HTTP on 127.0.0.1: `GET /events` (Server-Sent Events), `GET /state`, `POST /command`, `POST /confirm` | JSON; body up to 4096 bytes | `Host` and `Origin` must be 127.0.0.1 or localhost on correct port, otherwise 403 |
+| MCP client → MCP server | Subprocess stdin/stdout | JSON-RPC (MCP); results have `outputSchema` | All calls carry source `mcp` and pass through gates; `BLOCK` is not an error, `REJECTED` is an error |
+| Library → LLM | HTTPS (LiteLLM) | OpenAI-standard Chat completions | Keys read only from environment variables; never entered into traces |
+| Library → Jev | HTTPS, `POST {api_base}/systemone` | JSON: `model`, `state.utterance`, `questions` | HTTPS required except loopback; sends only speaker utterance; standard library client (`net.py`): no redirects, no proxy, hard deadlines |
+| Library → STT/TTS | HTTPS or `http://localhost` | OpenAI-standard Audio API | `http://` to remote hosts with keys ⇒ build rejected; same `net.py` client |
+| Library → Linux devices | Device characters `/dev/gpiochipN`, sysfs, `/dev/fbN`, PortAudio | libgpiod v2, text files, pixel buffers | Lines located by **name**; missing device ⇒ error before claiming any line |
+| Library → build output → firmware image | `idf.py build` reads generated project | C, `.netree.h` headers, `version.txt` | Build error ⇒ prints all problems, writes no files |
+| Firmware image → library | UART (log file, `tcp://`, serial port) | `NE1 {…}` lines ≤ 512 bytes, frames `device_info` … `trace_end` | Corrupted lines, missing frames, mismatched counts ⇒ `NE4001`, writes nothing |
+| Firmware image → OTA server | HTTP(S) GET | RSA-3072 signed app image | No redirects; download deadline; invalid signature ⇒ erases written slot |
+| Firmware image → Fleet OS | MQTT | — | `planned` (I9) — see [`15`](15-target-architecture.md) §3.1 |
+| Firmware image ↔ provider *(planned)* | WebSocket (TLS 1.3) | Opus (binary 16 kHz audio) and JSON (events/results) ([`neuroedge-prd.md`](../../../roadmap/neuroedge-prd.md) Appendix D.2) | MCU-optimized audio endpoint (FR-GW-04, TSK-S5-06); per-device quotas are optional in provider layer (FR-GW-05, v1.1) — see [`15`](15-target-architecture.md) §2.3 |
+| LLM worker → runtime *(`planned · Q-72`, I2d)* | Local MCP (stdio or local socket) | JSON-RPC (MCP) | Source assigned by runtime per connection, not declared by worker; all calls pass through gates; worker lacks tools to answer `ask` or approve |
+| LLM worker → LLM provider *(`planned · Q-72`, I2d)* | HTTPS (LiteLLM) | OpenAI-standard Chat completions | BYOK keys stay in worker; worker network restricted at OS level to declared provider endpoints |
+| Runtime → chat platform (Telegram first) *(`planned · Q-72`, I2d)* | HTTPS, bot API | Messages, approval requests `{id, nonce, expiration, digest, approval summary}` | Bot token only in runtime; sent only to paired chats; chat down ⇒ bounded queue and on-device UI alert |
+| Runtime ↔ relay *(`planned · Q-72`, optional)* | Outbound TCP opened by home box; pass-through TLS | TLS bytes; relay routes destination by SNI | Relay does not decrypt; trace backups encrypted at home box; approvals do not pass through relay; relay loss does not affect safety |
+| CLI → Hub index and Blueprint sources *(`planned · Q-72`, I2e)* | HTTPS or git | Static index (URL, digest), NeuroEdge Blueprint bundle | Digest covers full bundle; mismatch ⇒ installation rejected; gates in bundle still pass `gate lint` |
+| MCP client ↔ network MCP server *(disabled by default: `mcp serve --http`)* | Streamable HTTP (TLS 1.3) | JSON-RPC (MCP) | OAuth 2.1 (Protected Resource Metadata RFC 9728, RFC 8414) behind mTLS (TSK-P2-04, Q-32) — see [`15`](15-target-architecture.md) §4.3 |
 
-## 5. Container quy hoạch
+## 5. Planned containers
 
-Chỉ ghi công nghệ mà tài liệu quy hoạch đã nêu; mọi thứ khác là "chưa chọn".
+Only technologies stated in planning documents are listed; everything else is "undecided".
 
-| Container | Increment | Công nghệ đã nêu | Chưa chọn | Nguồn | Kiến trúc đích |
+| Container | Increment | Stated technology | Undecided | Source | Target architecture |
 |:---|:---:|:---|:---|:---|:---|
-| **Fleet OS** | I9 | Eclipse Hawkbit cho chiến dịch OTA theo đợt; broker MQTT giấy phép dễ dãi (Mosquitto, NanoMQ hoặc VerneMQ, chọn bằng đo tải); FastAPI WebSockets cho kết nối và viễn trắc; âm thanh không đi qua Fleet OS mà kết thúc ở lớp provider tự vận hành (Q-47, FR-GW-04) | Kho vết ghi tập trung, cơ sở dữ liệu, cổng | Q-11, Q-47, `docs/architecture/vi/15-target-architecture.md` §3.1, roadmap §3.4, §6.1 | [`15`](15-target-architecture.md) §3.1 |
-| **Gate Registry** | I10 | Chuẩn OCI với ORAS và Harbor; OpenMeter cho đo lường | Cơ chế ký gate cụ thể (chỉ ghi "OCI/ORAS", TSK-W2-04) | roadmap §6, Q-5 | [`15`](15-target-architecture.md) §3.2 |
-| **Node robot (MCU node)** | I14 | Zenoh-pico trên MCU và `zenohd` trên Pi (micro-ROS chỉ là phương án B); mTLS hoặc PSK giữa Pi và node; an toàn cục bộ watchdog / black channel (IEC 61784-3) | Mã hoá ý định trên dây, đồng bộ đồng hồ | Q-36, bản nháp RFC node, `docs/architecture/vi/15-target-architecture.md` §4.3 | [`15`](15-target-architecture.md) §4.3 |
-| **Vision Pipeline (đường ống thị giác)** | I2a, I3a (cơ bản); I16–I17 (`jetson`, đa phương thức) | HAL thị giác `vision.in` trên `sim`, `linux` và `esp32s3` (RFC-0012, TSK-V1b-07; Q-53), rồi `jetson`; maker khai dữ kiện `bool`/`level`/`choice` kèm độ tin cậy số từ nhãn model, gate khoá ngưỡng bằng tiêu chí `numeric` (Q-54; `docs/architecture/vi/15-target-architecture.md` §4.4), ngữ nghĩa gate riêng cho bằng chứng thị giác vẫn để mở (TSK-V3-04); vết ghi không nhúng khung hình thô, lưu thô phải bật tường minh (phase2 §2.3) | Chọn cụ thể giữa các khung đã nêu (ONNX Runtime/YOLO, HailoRT/Edge TPU, TensorRT) và mô hình | `docs/architecture/vi/15-target-architecture.md` §4.4, TSK-V1b-07, TSK-V3-04 | [`15`](15-target-architecture.md) §4.4 |
+| **Fleet OS** | I9 | Eclipse Hawkbit for staged OTA campaigns; permissive-license MQTT broker (Mosquitto, NanoMQ, or VerneMQ, chosen via load benchmarks); FastAPI WebSockets for connectivity and telemetry; audio does not transit Fleet OS and terminates at self-hosted provider layer (Q-47, FR-GW-04) | Central trace store, database, gateway | Q-11, Q-47, `docs/architecture/vi/15-target-architecture.md` §3.1, roadmap §3.4, §6.1 | [`15`](15-target-architecture.md) §3.1 |
+| **Gate Registry** | I10 | OCI standard with ORAS and Harbor; OpenMeter for metering | Concrete gate signing mechanism (only "OCI/ORAS" specified, TSK-W2-04) | roadmap §6, Q-5 | [`15`](15-target-architecture.md) §3.2 |
+| **Robotics node (MCU node)** | I14 | Zenoh-pico on MCU and `zenohd` on Pi (micro-ROS is Plan B only); mTLS or PSK between Pi and nodes; local watchdog / black channel safety (IEC 61784-3) | Wire intent encoding, clock sync | Q-36, node RFC draft, `docs/architecture/vi/15-target-architecture.md` §4.3 | [`15`](15-target-architecture.md) §4.3 |
+| **Vision Pipeline** | I2a, I3a (basic); I16–I17 (`jetson`, multimodal) | `vision.in` HAL on `sim`, `linux`, and `esp32s3` (RFC-0012, TSK-V1b-07; Q-53), then `jetson`; maker declares `bool`/`level`/`choice` facts with numeric confidence from model labels, gate bounds threshold via `numeric` criteria (Q-54; `docs/architecture/vi/15-target-architecture.md` §4.4), dedicated gate semantics for vision evidence left open (TSK-V3-04); traces do not embed raw frames, raw storage requires explicit opt-in (phase2 §2.3) | Concrete framework choice (ONNX Runtime/YOLO, HailoRT/Edge TPU, TensorRT) and models | `docs/architecture/vi/15-target-architecture.md` §4.4, TSK-V1b-07, TSK-V3-04 | [`15`](15-target-architecture.md) §4.4 |
 
-Q-72 thêm các container quy hoạch dưới đây (`planned · Q-72`; quyết định: [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)):
+Q-72 adds the planned containers below (`planned · Q-72`; decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log)):
 
-| Container | Increment | Công nghệ đã nêu | Chưa chọn | Nguồn | Kiến trúc đích |
+| Container | Increment | Stated technology | Undecided | Source | Target architecture |
 |:---|:---:|:---|:---|:---|:---|
-| **Runtime 24/7 + LLM worker** | I2d | Dịch vụ systemd; LiteLLM (BYOK, có mô hình tại chỗ); MCP cục bộ giữa hai tiến trình | Cơ chế chặn mạng của worker (user riêng + tường lửa, hay proxy của runtime) | Q-72, Q-71 | [`15`](15-target-architecture.md) |
-| **Blueprint Hub index** | I2e | Kho index tĩnh kiểu index plugin của I2c; URL + digest; sau cổng nhu cầu chuyển sang Gate Registry OCI | Nơi đặt kho, định dạng index | Q-72 | [`15`](15-target-architecture.md), [`16`](16-ecosystem-landscape.md) |
-| **Relay** (tuỳ chọn) | — | Ống TLS xuyên chọn đích theo SNI, không giải mã (mẫu SniTun của Nabu Casa) | Nơi chạy, chứng chỉ, giá | Q-72 | [`15`](15-target-architecture.md) |
+| **24/7 Runtime + LLM worker** | I2d | systemd service; LiteLLM (BYOK, local models supported); local MCP between processes | Worker network restriction mechanism (dedicated user + firewall, or runtime proxy) | Q-72, Q-71 | [`15`](15-target-architecture.md) |
+| **Blueprint Hub index** | I2e | Static index repository like I2c plugin index; URL + digest; migrates to OCI Gate Registry after demand gate | Repository host, index format | Q-72 | [`15`](15-target-architecture.md), [`16`](16-ecosystem-landscape.md) |
+| **Relay** (optional) | — | Pass-through TLS pipe routing destination by SNI, no decryption (Nabu Casa SniTun pattern) | Hosting location, certificates, pricing | Q-72 | [`15`](15-target-architecture.md) |
 
-Những gì kiến trúc hiện tại đã chuẩn bị sẵn cho các container này ở [`15`](15-target-architecture.md) §8.
+What current architecture has already prepared for these containers is in [`15`](15-target-architecture.md) §8.
 
-## 6. Triển khai (C4 deployment)
+## 6. Deployment (C4 deployment)
 
-> **Phạm vi:** mỗi container của [`02`](02-container-c4l2.md) chạy trên máy nào, trong môi trường nào, nối
-> với nhau qua gì — hôm nay và khi bo mạch về. **Nguồn:** `.github/workflows/`, `scripts/`, `boards/`,
+> **Scope:** which machine each container of [`02`](02-container-c4l2.md) runs on, in which environment, connected
+> via what — today and when boards arrive. **Sources:** `.github/workflows/`, `scripts/`, `boards/`,
 > `targets/esp32s3/components/ne_ota/Kconfig`, `python/neuroedge/models/providers/config.py`.
 
-### 6.1 Bức tranh
+### 6.1 The big picture
 
-![E-08 · Triển khai](../assets/svg/E-08-deployment.svg)
-*Hình E-08 — Ba vùng: máy của kỹ sư, máy chạy CI của GitHub, thiết bị; thêm vùng nét đứt "máy nhà" (Pi, mini PC hoặc NAS) chạy agent vận hành, cùng nền tảng chat, relay và index Hub — `planned · Q-72`. Dải dưới cùng: NeuroEdge Cloud tuỳ chọn và hộp tại nhà nhỏ ESP32-S3 — có điều kiện, `planned · Q-74`, I2f. Khối `○ planned` chưa có phần cứng hoặc chưa có mã.*
+![E-08 · Deployment](../assets/svg/E-08-deployment.svg)
+*Figure E-08 — Three areas: engineer machine, GitHub CI runner machine, device; plus dashed area "home box" (Pi, mini PC, or NAS) running operator agent, alongside chat platforms, relay, and Hub index — `planned · Q-72`. Bottom band: optional NeuroEdge Cloud and small ESP32-S3 home box — conditional, `planned · Q-74`, I2f. Boxes labeled `○ planned` lack hardware or code.*
 
-NeuroEdge **không có dịch vụ phía máy chủ nào** trước tầng dịch vụ v1.1 (I0–I8): không tài khoản, không broker, không
-backend. Mọi thứ chạy trên máy của người dùng hoặc trên thiết bị. Dịch vụ phía máy chủ đầu tiên là Fleet
-OS ở I9 (roadmap §0.5).
+NeuroEdge has **no server-side services** prior to the v1.1 service tier (I0–I8): no accounts, no brokers, no
+backends. Everything runs on the user's machine or on devices. The first server-side service is Fleet
+OS at I9 (roadmap §0.5).
 
-`planned · Q-72` ([Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)): định vị Blueprint thêm một nút **máy nhà** chạy 24/7 và hai thứ ngoài máy người
-dùng, đều tuỳ chọn và **không bao giờ nằm trên đường an toàn**: index Hub (một kho git tĩnh, không phải
-dịch vụ, I2e) và relay (dịch vụ duy nhất do NeuroEdge vận hành trước v1.1, chỉ chuyển gói TLS, không giải
-mã). Thiết kế: [`15`](15-target-architecture.md) §6.
+`planned · Q-72` ([Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log)): Blueprint positioning adds a **home box** node running 24/7 and two items external to user
+machines, both optional and **never on the safety path**: Hub index (a static git repository, not a
+service, I2e) and relay (the only NeuroEdge-operated service prior to v1.1, passing TLS packets only, without
+decryption). Design: [`15`](15-target-architecture.md) §6.
 
-### 6.2 Nút triển khai
+### 6.2 Deployment nodes
 
-| Nút | Môi trường | Chạy gì | Trạng thái |
+| Node | Environment | Runs what | Status |
 |:---|:---|:---|:---|
-| **Máy kỹ sư** | macOS hoặc Linux, Python 3.11+, `python/.venv` | CLI và thư viện `neuroedge`, target `sim`, `mcp serve`, pytest | ✅ |
-| **Trình duyệt** | cùng máy | trang `sim` của `--ui`, phục vụ **chỉ trên 127.0.0.1** (`sim/ui.py`) | ✅ |
-| **Claude Desktop** (hoặc client MCP khác) | cùng máy | khởi động `neuroedge mcp serve` làm tiến trình con, nói stdio | ✅ |
-| **Docker `espressif/idf:v5.4`** | cùng máy hoặc runner CI | dựng firmware ESP-IDF, Espressif QEMU; `scripts/qemu_boot.sh`, `qemu_ota.sh`, `run_ui_golden.sh` | ✅ |
-| **GitHub Actions** | `ubuntu-latest` | năm workflow ở §3 | ✅ |
-| **Runner tự quản có Box-3** | nhãn `[self-hosted, esp32s3-box-3]` | job `memory-spike` của `nightly-hardware.yml` | ○ planned (TSK-S1-10, TSK-S4-05) |
-| **Raspberry Pi 5 + HAT I2S** | Linux, profile `boards/linux-rpi5.toml` | `neuroedge --target linux`: libgpiod, hwmon, âm thanh | ○ planned (TSK-I2-01) |
-| **ESP32-S3-BOX-3** | firmware từ `neuroedge build --target esp32s3` | gate trên chip, vết ghi UART tới host, OTA | ○ planned (TSK-S4-12) — đã chạy trên QEMU |
-| **Máy chủ ảnh OTA** | bất kỳ máy chủ HTTP(S) tĩnh nào | phục vụ ảnh ứng dụng đã ký | ✅ trên QEMU (`qemu_ota.sh` dùng `python3 -m http.server` trên 127.0.0.1) |
-| **Nhà cung cấp model và giọng nói** | dịch vụ ngoài qua HTTPS | model ngôn ngữ, STT, TTS, Jev | ✅ tuỳ chọn; mặc định không gọi mạng |
-| **Máy nhà** (Pi, mini PC hoặc NAS) | Linux, systemd; chạy giả lập G1 `sim` hoặc G2 `linux` trên `gpio-sim` trước khi có phần cứng thật | **runtime tin cậy 24/7** (dịch vụ systemd, khởi động lại khi chết): HAL, gate, thực thi hợp đồng nhiệm vụ, lập lịch, bộ phát hiện tất định, adapter kênh chat và kiểm bản ghi duyệt, cửa ra egress, vết ghi theo đoạn | ○ planned · Q-72 · I2d |
-| **LLM worker** | cùng máy nhà, **user hệ điều hành riêng**, không trong nhóm `gpio`/`i2c`; tường lửa chỉ cho ra tới endpoint provider đã khai | giữ key BYOK, gọi runtime qua MCP cục bộ như một client MCP (nguồn do runtime gán); không bao giờ duyệt | ○ planned · Q-72 · I2d |
-| **Nền tảng chat** (Telegram trước; Slack, Zalo sau) | cloud của bên thứ ba | nhận báo cáo chủ động và yêu cầu duyệt, gửi lệnh và lời trả lời duyệt về runtime | ○ planned · Q-72 · I2d |
-| **Relay** (tuỳ chọn) | máy chủ do NeuroEdge vận hành | ống TLS xuyên chọn đích theo SNI, không giải mã (mẫu SniTun của Nabu Casa); giữ blob sao lưu vết ghi đã mã hoá phía máy nhà | ○ planned · Q-72 (ngoài I2d, I2e) |
-| **Index Hub** | kho git tĩnh, đọc qua HTTPS | liệt kê URL, digest toàn gói và bằng chứng "chưa ký" của từng NeuroEdge Blueprint; gói nằm ở kho của người bán | ○ planned · Q-72 · I2e |
+| **Engineer machine** | macOS or Linux, Python 3.11+, `python/.venv` | `neuroedge` CLI and library, target `sim`, `mcp serve`, pytest | ✅ |
+| **Browser** | same machine | `sim` page of `--ui`, served **only on 127.0.0.1** (`sim/ui.py`) | ✅ |
+| **Claude Desktop** (or other MCP client) | same machine | launches `neuroedge mcp serve` as subprocess, talks stdio | ✅ |
+| **Docker `espressif/idf:v5.4`** | same machine or CI runner | builds ESP-IDF firmware, Espressif QEMU; `scripts/qemu_boot.sh`, `qemu_ota.sh`, `run_ui_golden.sh` | ✅ |
+| **GitHub Actions** | `ubuntu-latest` | five workflows in §3 | ✅ |
+| **Self-hosted runner with Box-3** | label `[self-hosted, esp32s3-box-3]` | `memory-spike` job in `nightly-hardware.yml` | ○ planned (TSK-S1-10, TSK-S4-05) |
+| **Raspberry Pi 5 + I2S HAT** | Linux, profile `boards/linux-rpi5.toml` | `neuroedge --target linux`: libgpiod, hwmon, audio | ○ planned (TSK-I2-01) |
+| **ESP32-S3-BOX-3** | firmware from `neuroedge build --target esp32s3` | on-chip gate, UART traces to host, OTA | ○ planned (TSK-S4-12) — runs on QEMU |
+| **OTA image server** | any static HTTP(S) server | serves signed application images | ✅ on QEMU (`qemu_ota.sh` uses `python3 -m http.server` on 127.0.0.1) |
+| **Model and voice providers** | external services via HTTPS | language models, STT, TTS, Jev | ✅ optional; no network calls by default |
+| **Home box** (Pi, mini PC, or NAS) | Linux, systemd; runs G1 `sim` or G2 `linux` on `gpio-sim` simulation before physical hardware arrives | **trusted 24/7 runtime** (systemd service, restarts on crash): HAL, gates, mission contract execution, scheduler, deterministic detectors, chat channel adapter and approval record verification, egress portal, segmented traces | ○ planned · Q-72 · I2d |
+| **LLM worker** | same home box, **dedicated OS user**, not in `gpio`/`i2c` groups; firewall only permits outbound to declared provider endpoints | holds BYOK keys, calls runtime via local MCP like an MCP client (source assigned by runtime); never approves | ○ planned · Q-72 · I2d |
+| **Chat platform** (Telegram first; Slack, Zalo later) | third-party cloud | receives proactive reports and approval requests, sends commands and approval responses back to runtime | ○ planned · Q-72 · I2d |
+| **Relay** (optional) | server operated by NeuroEdge | pass-through TLS pipe routing destination by SNI, no decryption (Nabu Casa SniTun pattern); stores encrypted trace backup blobs from home box | ○ planned · Q-72 (outside I2d, I2e) |
+| **Index Hub** | static git repository, read via HTTPS | lists URL, full-bundle digest, and "unsigned" evidence for each NeuroEdge Blueprint; bundles reside in seller repositories | ○ planned · Q-72 · I2e |
 
-Điều chặn các nút này hôm nay nằm ở roadmap §0.1 ("Chặn ngoài tầm kỹ thuật").
+What currently blocks these nodes is in roadmap §0.1 ("Non-technical blockers").
 
-### 6.3 CI: mỗi job chứng minh gì
+### 6.3 CI: what each job proves
 
-| Workflow | Kích hoạt | Job | Chứng minh |
+| Workflow | Trigger | Job | Proves |
 |:---|:---|:---|:---|
-| `ci-sim-linux.yml` | PR, push, tay | `frozen-artifacts` | bảy lược đồ hợp lệ; gate khớp `digests.lock`; mọi gate phân giải; corpus gate hỏng vẫn hỏng; ba vết ghi chuẩn mực hợp lệ; profile bo mạch |
-| | | `tests` | pytest trên Python 3.11, 3.12, 3.13; **fail nếu có test bị skip** |
-| | | `linux-hal` | `LinuxHAL` trên dòng GPIO ảo (gpio-sim), cảm biến hwmon (i2c-stub + lm75), framebuffer ảo (vfb hoặc vkms — runner GitHub chỉ có vkms); `verify --targets sim,linux` |
-| | | `wheel-smoke` | bản cài từ wheel chạy được, không chỉ bản editable |
+| `ci-sim-linux.yml` | PR, push, manual | `frozen-artifacts` | seven valid schemas; gates match `digests.lock`; all gates resolve; broken gate corpus still fails; three valid golden traces; board profiles |
+| | | `tests` | pytest on Python 3.11, 3.12, 3.13; **fails if any test is skipped** |
+| | | `linux-hal` | `LinuxHAL` on virtual GPIO lines (gpio-sim), hwmon sensors (i2c-stub + lm75), virtual framebuffer (vfb or vkms — GitHub runner only has vkms); `verify --targets sim,linux` |
+| | | `wheel-smoke` | wheel installation works, not just editable install |
 | | | `lint` | `ruff check`, `ruff format --check` |
-| | | `licence-obligations` | nghĩa vụ giấy phép (`CHANGELOG.md` §3.9) |
-| | | `cloud-extra` | extra `neuroedge[cloud]` (LiteLLM thật) giữ đúng chính sách giấy phép Q-11, adapter chạy trên đối tượng trả về thật mà không gọi mạng |
-| | | `ui-golden` | mỗi màn hình × ngôn ngữ của UI LVGL dựng trên host khớp PNG golden |
-| `firmware-qemu.yml` | PR và push đụng firmware hoặc engine, hằng đêm, tay | `firmware-qemu` | firmware boot trên QEMU và self-test gate đạt; heap khi boot trên sàn Q-3 |
-| | | `firmware-size` | ngân sách tĩnh Q-3: ảnh ≤ 3,5 MB, còn ≥ 120 KB SRAM trong |
-| | | `ota-rollback` | cập nhật có ký, từ chối khoá sai, rollback — trên QEMU |
-| | | `agent-firmware` | agent mới của người dùng build ra firmware và boot trên QEMU; agent bo mạch không phục vụ được thì không có firmware (mã thoát 1) |
-| | | `uart-trace` | vết ghi UART thành `trace.v1` hợp lệ, và `verify --targets esp32s3` đạt |
-| `security.yml` | PR, push, hằng tuần, tay | `pip-audit`, `gitleaks`, `actionlint`, `codeql`, `codeql-c` | lỗ hổng đã biết trong tập phụ thuộc ghim; không bí mật trong lịch sử git; workflow sạch; phân tích tĩnh Python và C |
-| `release-pypi.yml` | tag `v*.*.*`, PR đụng đóng gói, tay | `build` → `sbom` → `smoke` → `attest` → `publish-*` → `github-release` | sdist và wheel; SBOM CycloneDX; provenance Sigstore; PyPI thật ở I6 |
-| `nightly-hardware.yml` | hằng đêm, tay | `firmware-build`, `upstream-drift`, `drift-issue`, `memory-spike`, `report` | ảnh vừa khe OTA; trôi phụ thuộc thượng nguồn (không bao giờ làm đỏ, Q-32); đo bộ nhớ trên bo mạch khi có runner |
+| | | `licence-obligations` | license obligations (`CHANGELOG.md` §3.9) |
+| | | `cloud-extra` | extra `neuroedge[cloud]` (real LiteLLM) satisfies license policy Q-11, adapter runs on real response objects without network calls |
+| | | `ui-golden` | each screen × language of host-built LVGL UI matches golden PNG |
+| `firmware-qemu.yml` | PR and push touching firmware or engine, nightly, manual | `firmware-qemu` | firmware boots on QEMU and passes gate self-test; boot heap above Q-3 floor |
+| | | `firmware-size` | static budget Q-3: image ≤ 3.5 MB, internal SRAM remaining ≥ 120 KB |
+| | | `ota-rollback` | signed updates, wrong key rejection, rollback — on QEMU |
+| | | `agent-firmware` | user's new agent builds firmware and boots on QEMU; agent board cannot serve yields no firmware (exit code 1) |
+| | | `uart-trace` | UART traces parse into valid `trace.v1`, and `verify --targets esp32s3` passes |
+| `security.yml` | PR, push, weekly, manual | `pip-audit`, `gitleaks`, `actionlint`, `codeql`, `codeql-c` | known vulnerabilities in pinned dependency set; no secrets in git history; clean workflows; Python and C static analysis |
+| `release-pypi.yml` | tag `v*.*.*`, PR touching packaging, manual | `build` → `sbom` → `smoke` → `attest` → `publish-*` → `github-release` | sdist and wheel; CycloneDX SBOM; Sigstore provenance; real PyPI at I6 |
+| `nightly-hardware.yml` | nightly, manual | `firmware-build`, `upstream-drift`, `drift-issue`, `memory-spike`, `report` | image fits OTA slot; upstream dependency drift (never turns red, Q-32); on-board memory benchmarks when runners available |
 
-Bước cụ thể: chính các tệp workflow. Trạng thái xanh/đỏ hiện hành: roadmap §0.1.
+Concrete steps are in the workflow files themselves. Current green/red status: roadmap §0.1.
 
-### 6.4 Cấu hình và bí mật khi triển khai
+### 6.4 Configuration and secrets in deployment
 
-| Thứ | Ở đâu | Luật |
+| Item | Where | Rule |
 |:---|:---|:---|
-| Khoá API của nhà cung cấp | biến môi trường; `agent.toml` chỉ ghi **tên** biến (`api_key_env`) | khoá không bao giờ nằm trong tệp của agent, vết ghi hay kho |
-| Địa chỉ máy chủ OTA | `CONFIG_NEUROEDGE_OTA_URL` lúc build; NVS (namespace `ne_ota`, khoá `url`) ghi đè lúc chạy | rỗng thì tắt kiểm tra; HTTP thường được phép vì chữ ký ảnh là phép kiểm toàn vẹn — nó không cho tính bí mật |
-| Khoá ký OTA | ngoài kho; ảnh mang chữ ký, thiết bị kiểm bằng khoá đã ký app đang chạy | khoá sai ⇒ ảnh bị từ chối (`ota-rollback`) |
-| Chọn target và bo mạch | `--target`, `--board`, profile `boards/*.toml` | profile khai những gì đã đo, không hơn ([`10`](10-target-equivalence.md) §7.3) |
-| Lớp cấu hình firmware | `sdkconfig.defaults` + `sdkconfig.qemu` / `sdkconfig.ota` | QEMU và bo mạch khác nhau ở lớp cấu hình, không ở mã |
-| Key LLM của người dùng (BYOK) — `planned · Q-72` · I2d | **chỉ** trong môi trường của LLM worker | runtime không giữ, không ghi vào vết ghi; worker chỉ ra mạng tới endpoint provider đã khai |
-| Token bot chat — `planned · Q-72` · I2d | trong runtime tin cậy, không trong worker | worker không đọc được; lộ token thì kẻ tấn công gửi được tin nhưng không duyệt được, vì lời duyệt còn phải khớp người gửi đã ghép đôi, `nonce`, hạn và digest |
-| Chứng chỉ và khoá TLS của relay — `planned · Q-72` | trên máy nhà | relay không bao giờ giữ khoá, nên không giải mã được; sao lưu vết ghi mã hoá trước khi rời máy |
-| Vết ghi của runtime 24/7 — `planned · Q-72` · I2d | đĩa máy nhà (thẻ SD hoặc SSD) | chuỗi đoạn theo ngày hoặc khi vượt cỡ; giữ **30 ngày** tại chỗ, đoạn cũ nén rồi xoá hoặc xuất qua relay đã mã hoá; flush theo thời gian (khoảng 10 giây, khai được) và **ngay** khi có phán quyết chặn hay lời duyệt; mất điện mất tối đa phần đuôi sự kiện thường, `replay` báo đoạn cụt; cỡ 30 ngày đo trên G1 `sim` rồi mới ghi vào NFR |
+| Provider API keys | environment variables; `agent.toml` records only variable **name** (`api_key_env`) | keys are never in agent files, traces, or repository |
+| OTA server address | `CONFIG_NEUROEDGE_OTA_URL` at build time; NVS (`ne_ota` namespace, `url` key) overrides at runtime | empty disables checks; plain HTTP permitted because image signature is an integrity check — it does not provide confidentiality |
+| OTA signing key | outside repository; images carry signatures, devices verify against key that signed running app | wrong key ⇒ image rejected (`ota-rollback`) |
+| Target and board selection | `--target`, `--board`, profile `boards/*.toml` | profiles declare only what has been measured, nothing more ([`10`](10-target-equivalence.md) §7.3) |
+| Firmware configuration layer | `sdkconfig.defaults` + `sdkconfig.qemu` / `sdkconfig.ota` | QEMU and boards differ in configuration layers, not code |
+| User LLM key (BYOK) — `planned · Q-72` · I2d | **only** in LLM worker environment | runtime does not hold it, does not log to traces; worker network only reaches declared provider endpoints |
+| Chat bot token — `planned · Q-72` · I2d | in trusted runtime, not in worker | worker cannot read it; leaked token allows attackers to send messages but not approve, because approvals must match paired sender, `nonce`, expiration, and digest |
+| Relay TLS certificate and key — `planned · Q-72` | on home box | relay never holds keys, cannot decrypt; trace backups encrypted before leaving box |
+| 24/7 Runtime traces — `planned · Q-72` · I2d | home box disk (SD card or SSD) | daily segment sequence or on size threshold; retained **30 days** locally, old segments compressed then deleted or exported encrypted via relay; flushed periodically (about 10 seconds, configurable) and **immediately** on block verdicts or approvals; power outages lose at most trailing standard events, `replay` flags truncated segments; 30-day sizing measured on G1 `sim` before formalizing in NFR |
 
-### 6.5 Kết nối giữa các nút
+### 6.5 Inter-node connections
 
-| Từ → tới | Giao thức | Ghi chú |
+| From → To | Protocol | Notes |
 |:---|:---|:---|
-| `neuroedge` → trình duyệt | HTTP + SSE trên 127.0.0.1 | không mở ra mạng |
-| Claude Desktop → `mcp serve` | MCP qua stdio | transport mạng: `--http` (TSK-P2-04), thiết bị khác qua mTLS, không phải Claude Desktop |
-| `neuroedge` → Docker IDF | `neuroedge build --target esp32s3` sinh project; ESP-IDF dựng trong container | |
-| Box-3 → host | UART, dòng `NE1` | `record`/`verify --port` đọc; baud và console còn mở (`TODOS.md` #35) |
-| Box-3 → máy chủ OTA | HTTP(S) GET ảnh đã ký | Wi-Fi thật chưa nối (`TODOS.md` #50) |
-| `neuroedge` → nhà cung cấp | HTTPS; `http://` chỉ cho máy chủ trên chính máy này | chi tiết theo từng client: [`00`](00-overview.md) §9.3 |
-| LLM worker → runtime — `planned · Q-72` · I2d | MCP cục bộ (stdio hoặc socket Unix) | nguồn do runtime gán theo kết nối; mọi lời gọi qua gate như `mcp` |
-| LLM worker → nhà cung cấp LLM — `planned · Q-72` · I2d | HTTPS, chỉ tới endpoint đã khai (chặn ở mức hệ điều hành) | đích không khai bị chặn và ghi vết |
-| Runtime ↔ nền tảng chat — `planned · Q-72` · I2d | HTTPS tới API của nền tảng (long polling hoặc webhook) | API lỗi ⇒ hàng đợi có hạn + cảnh báo tại chỗ trên UI |
-| Máy nhà → relay — `planned · Q-72` | TLS ra ngoài do máy nhà mở; relay chuyển theo SNI | không mở cổng mạng nhà; lời duyệt không đi qua relay, trang mở từ xa chưa được trả lời `ask` tới khi RFC relay chốt xác thực ([`15`](15-target-architecture.md) §6.5); relay mất thì phần an toàn vẫn chạy |
-| CLI → index Hub — `planned · Q-72` · I2e | HTTPS (git) tới URL của gói, kiểm digest toàn gói khi cài | digest không khớp ⇒ từ chối cài |
+| `neuroedge` → browser | HTTP + SSE on 127.0.0.1 | not exposed to network |
+| Claude Desktop → `mcp serve` | MCP over stdio | network transport: `--http` (TSK-P2-04), other devices via mTLS, not Claude Desktop |
+| `neuroedge` → Docker IDF | `neuroedge build --target esp32s3` generates project; ESP-IDF builds inside container | |
+| Box-3 → host | UART, `NE1` lines | read by `record`/`verify --port`; baud and console still open (`TODOS.md` #35) |
+| Box-3 → OTA server | HTTP(S) GET of signed image | real Wi-Fi not yet connected (`TODOS.md` #50) |
+| `neuroedge` → providers | HTTPS; `http://` only for servers on this exact machine | details per client: [`00`](00-overview.md) §9.3 |
+| LLM worker → runtime — `planned · Q-72` · I2d | Local MCP (stdio or Unix socket) | source assigned by runtime per connection; all calls pass through gates like `mcp` |
+| LLM worker → LLM provider — `planned · Q-72` · I2d | HTTPS, restricted to declared endpoints (blocked at OS level) | undeclared destinations blocked and traced |
+| Runtime ↔ chat platform — `planned · Q-72` · I2d | HTTPS to platform API (long polling or webhook) | API failure ⇒ bounded queue + local on-device UI alert |
+| Home box → relay — `planned · Q-72` | Outbound TLS opened by home box; relay routes by SNI | no open home network ports; approvals do not pass through relay, remotely opened pages cannot answer `ask` until relay RFC finalizes authentication ([`15`](15-target-architecture.md) §6.5); relay loss does not affect safety |
+| CLI → Hub index — `planned · Q-72` · I2e | HTTPS (git) to package URL, verifies full bundle digest on install | digest mismatch ⇒ installation rejected |
 
-### 6.6 Chưa triển khai
+### 6.6 Not yet deployed
 
-- **Không có máy chủ nào của NeuroEdge trước v1.1** — trừ relay tuỳ chọn của Q-72 (`planned`, ngoại lệ có giới hạn của Q-10: không giải mã, không trên đường an toàn). Q-74 (có điều kiện, sau cổng nhu cầu) thêm NeuroEdge Cloud tuỳ chọn chạy LLM worker; runtime tin cậy vẫn ở máy nhà ([`15`](15-target-architecture.md) §6.10). Điều phối OTA theo đợt (Hawkbit), broker MQTT, kho vết ghi sự cố, danh tính thiết bị là Fleet OS (I9); kho lưu trữ và phân phối gate là Gate Registry (I10) — chi tiết cấu trúc triển khai máy chủ: [`15`](15-target-architecture.md) §3.1/§3.2.
-- **Cụm robot phân tầng chưa triển khai.** Cấu trúc phân tầng gồm Raspberry Pi 5 làm não kết nối với các node vi điều khiển chuyên trách ESP32-S3 và RP2350 qua bus truyền thông Zenoh-pico (I14, Q-32, Q-33, Q-36) — chi tiết bố trí nút mạng: [`15`](15-target-architecture.md) §4.3.
-- **Nút suy luận thị giác Jetson chưa triển khai.** Target `jetson` (bậc 2, I16) (bậc 2 theo FR-TGT-08, Q-13) chạy thị giác qua JetPack và TensorRT (`docs/architecture/vi/15-target-architecture.md` §4.4, TSK-V2-01) — chi tiết triển khai phần cứng: [`15`](15-target-architecture.md) §4.4.
-- **Chế độ lab qua MCP chưa triển khai (I4a, Q-71).** Khi có, client MCP (Claude Code, Claude Desktop) và tiến trình `mcp serve` giữ thiết bị phải tách quyền: client không nằm trong nhóm `gpio`/`i2c` — đường chính là stdio qua SSH với khoá `restrict,command=…`, hoặc `mcp serve` dưới user riêng (`mcp serve --http` chỉ khi client trình được chứng chỉ mTLS); `mcp serve` nạp chính sách từ checkout đã duyệt mà client không ghi được; khoá gate chỉ qua PR trên nhánh được bảo vệ — chi tiết: [`15`](15-target-architecture.md) §4.2, `docs/spec/threat_model.md` §2c.
-- **Máy nhà 24/7 chưa triển khai (`planned · Q-72`, I2d, I2e).** Hôm nay không có tiến trình nền nào chạy mãi ([`02`](02-container-c4l2.md) §3). Runtime 24/7, LLM worker, nền tảng chat, index Hub và relay ở trên là thiết kế: [`15`](15-target-architecture.md) §6. Chạy giả lập trước (G1 `sim`, G2 `linux` trên `gpio-sim`, G3 firmware ESP32 trên QEMU của Espressif — Wokwi, Velxio chờ đối chiếu Q-21, Q-69, G4 ESPHome host), phần cứng thật mua sau.
-- **Không có bo mạch thật trong CI.** Mọi bằng chứng về chip hôm nay là QEMU và test C trên host; bằng
-  chứng trên silicon chờ bo mạch và runner tự quản (`TODOS.md` #10).
-- **Chưa phát hành lên PyPI.** Workflow đã có; phát hành thật ở I6.
+- **No NeuroEdge servers prior to v1.1** — except the optional relay of Q-72 (`planned`, limited exception of Q-10: no decryption, not on the safety path). Q-74 (conditional, after demand gate) adds optional NeuroEdge Cloud running LLM workers; trusted runtime remains on the home box ([`15`](15-target-architecture.md) §6.10). Staged OTA orchestration (Hawkbit), MQTT broker, incident trace store, device identity reside in Fleet OS (I9); gate storage and distribution in Gate Registry (I10) — server deployment architecture details: [`15`](15-target-architecture.md) §3.1/§3.2.
+- **Tiered robot cluster not yet deployed.** Layered architecture comprising Raspberry Pi 5 brain connected to dedicated ESP32-S3 and RP2350 microcontroller nodes via Zenoh-pico bus (I14, Q-32, Q-33, Q-36) — network node topology details: [`15`](15-target-architecture.md) §4.3.
+- **Jetson vision inference node not yet deployed.** Target `jetson` (tier 2, I16) (tier 2 per FR-TGT-08, Q-13) running vision via JetPack and TensorRT (`docs/architecture/vi/15-target-architecture.md` §4.4, TSK-V2-01) — hardware deployment details: [`15`](15-target-architecture.md) §4.4.
+- **Lab mode via MCP not yet deployed (I4a, Q-71).** When available, MCP clients (Claude Code, Claude Desktop) and the `mcp serve` process holding devices must enforce privilege separation: client not in `gpio`/`i2c` groups — primary path is stdio over SSH with `restrict,command=…` keys, or `mcp serve` under a dedicated user (`mcp serve --http` only when client presents mTLS certificates); `mcp serve` loads policies from approved checkouts that clients cannot write to; gates lock solely via PRs on protected branches — details: [`15`](15-target-architecture.md) §4.2, `docs/spec/threat_model.md` §2c.
+- **24/7 Home box not yet deployed (`planned · Q-72`, I2d, I2e).** Today no background processes run continuously ([`02`](02-container-c4l2.md) §3). The 24/7 runtime, LLM worker, chat platforms, Hub index, and relay above are design: [`15`](15-target-architecture.md) §6. Runs in simulation first (G1 `sim`, G2 `linux` on `gpio-sim`, G3 ESP32 firmware on Espressif QEMU — Wokwi, Velxio pending Q-21, Q-69 reconciliation, G4 ESPHome host), physical hardware purchased later.
+- **No real boards in CI.** All on-chip evidence today comes from QEMU and host C tests; silicon
+  evidence awaits boards and self-hosted runners (`TODOS.md` #10).
+- **Not yet released to PyPI.** Workflows exist; real release at I6.

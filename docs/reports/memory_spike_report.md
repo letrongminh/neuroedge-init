@@ -1,75 +1,75 @@
-# Báo cáo Spike khả thi bộ nhớ — ESP32-S3-BOX-3
+# Memory Feasibility Spike Report — ESP32-S3-BOX-3
 
 | | |
 |:---|:---|
-| **Mã task** | TSK-S1-10 (đo) · TSK-S2-10 (kết luận phạm vi) |
-| **Yêu cầu** | NFR-RES-01, NFR-RES-02 |
-| **Quyết định đối chiếu** | Q-3 |
-| **Rủi ro liên quan** | R-1 (phạm vi Khối 1b vượt hạn do tối ưu bộ nhớ) — mức **Cao** |
-| **Người thực hiện** | V2 — Kỹ sư nhúng |
-| **Trạng thái** | 🟡 **Khung đo đã xong · CHƯA CÓ SỐ ĐO THỰC** |
-| **Cập nhật lần cuối** | 2026-09-24 — vẫn chưa có số đo |
+| **Task ID** | TSK-S1-10 (measure) · TSK-S2-10 (scope conclusion) |
+| **Requirements** | NFR-RES-01, NFR-RES-02 |
+| **Reference decision** | Q-3 |
+| **Related risks** | R-1 (Block 1b scope exceeds limit due to memory optimization) — Level **High** |
+| **Assignee** | V2 — Embedded Engineer |
+| **Status** | 🟡 **Measurement framework complete · NO REAL MEASUREMENTS YET** |
+| **Last updated** | 2026-09-24 — still no measurements |
 
-> **Trạng thái trung thực của báo cáo này.** Khung đo (`targets/esp32s3/main/memory_probe.c`)
-> đã viết xong và đã nối vào `app_main`. Chưa có một con số đo thực nào, vì
-> chưa chạy trên bo mạch vật lý. Roadmap §4.4 (I3) yêu cầu kết quả spike là **một
-> con số, không phải một nhận định** — nên mọi ô "Giá trị đo" dưới đây để
-> trống, và `neuroedge_memory_meets_q3_budget()` trả về `false` /
-> `INCONCLUSIVE` cho tới khi checkpoint `audio_ready` được lấy thật.
+> **Honest status of this report.** The measurement framework (`targets/esp32s3/main/memory_probe.c`)
+> is implemented and wired into `app_main`. There is not a single real measured number yet, because
+> it has not run on physical hardware. Roadmap §4.4 (I3) requires spike results to be **a
+> number, not an impression** — therefore all "Measured value" cells below are left
+> blank, and `neuroedge_memory_meets_q3_budget()` returns `false` /
+> `INCONCLUSIVE` until the `audio_ready` checkpoint is genuinely sampled.
 
 ---
 
-## 1. Ngưỡng đối chiếu (đã chốt tại Q-3)
+## 1. Reference thresholds (decided in Q-3)
 
-| Chỉ tiêu | Ngưỡng Q-3 | Giá trị đo | Kết luận |
+| Metric | Q-3 threshold | Measured value | Conclusion |
 |:---|:---:|:---:|:---:|
-| SRAM nội cho ứng dụng | **≥ 120 KB** (122 880 B) | *chưa đo* | ⏳ |
-| PSRAM cho ứng dụng | **≥ 2 MB** (2 097 152 B) | *chưa đo* | ⏳ |
-| Dung lượng firmware | **≤ 3,5 MB** (3 670 016 B) | *chưa đo* | ⏳ |
+| Internal SRAM for application | **≥ 120 KB** (122 880 B) | *not measured* | ⏳ |
+| PSRAM for application | **≥ 2 MB** (2 097 152 B) | *not measured* | ⏳ |
+| Firmware size | **≤ 3.5 MB** (3 670 016 B) | *not measured* | ⏳ |
 
-Ba ngưỡng này được ghim thành hằng số trong
+These three thresholds are pinned as constants in
 [`targets/esp32s3/main/memory_probe.h`](../../targets/esp32s3/main/memory_probe.h)
-(`NEUROEDGE_Q3_*`). **Không sửa hằng số để một lần chạy đạt ngưỡng** — đổi
-ngưỡng là quyết định roadmap, không phải thay đổi mã nguồn.
+(`NEUROEDGE_Q3_*`). **Do not modify constants to make a run pass thresholds** — changing
+thresholds is a roadmap decision, not a source code modification.
 
-Ngưỡng firmware 3,5 MB xuất phát từ bảng phân vùng: flash 16 MB chia hai khe
-A/B mỗi khe `0x380000` = 3 670 016 B (xem
+The 3.5 MB firmware threshold originates from the partition table: 16 MB flash divided into two A/B
+slots of `0x380000` = 3 670 016 B each (see
 [`targets/esp32s3/partitions.csv`](../../targets/esp32s3/partitions.csv)).
-Vượt ngưỡng này thì OTA A/B không nạp được, đây là ràng buộc cứng chứ không
-phải mục tiêu tối ưu.
+Exceeding this threshold makes A/B OTA impossible to flash; this is a hard constraint, not
+an optimization target.
 
-## 2. Các mốc đo (checkpoint)
+## 2. Checkpoints
 
-Bộ đo lấy mẫu tại bốn mốc, theo đúng thứ tự. Mỗi mốc là một thời điểm mà một
-phân hệ *không thể loại bỏ* đã chiếm bộ nhớ; phần còn lại mới là phần runtime
-tác tử thực sự được dùng.
+The probe samples at four checkpoints in strict order. Each checkpoint represents a moment where an
+*unremovable* subsystem has consumed memory; only the remainder is what the agent runtime
+actually gets to use.
 
-| # | Checkpoint | Nội dung đã nạp | SRAM nội còn trống | PSRAM còn trống |
+| # | Checkpoint | Loaded components | Free internal SRAM | Free PSRAM |
 |:---:|:---|:---|:---:|:---:|
-| 1 | `boot` | Chỉ FreeRTOS + IDF | *chưa đo* | *chưa đo* |
-| 2 | `nvs_ready` | + NVS (cấp phép, thông tin đăng nhập) | *chưa đo* | *chưa đo* |
-| 3 | `network_ready` | + ngăn xếp TCP/IP và Wi-Fi | *chưa đo* | *chưa đo* |
-| 4 | `audio_ready` | **+ AEC + VAD + Opus + ring buffer** | *chưa đo* | *chưa đo* |
+| 1 | `boot` | FreeRTOS + IDF only | *not measured* | *not measured* |
+| 2 | `nvs_ready` | + NVS (licensing, credentials) | *not measured* | *not measured* |
+| 3 | `network_ready` | + TCP/IP and Wi-Fi stack | *not measured* | *not measured* |
+| 4 | `audio_ready` | **+ AEC + VAD + Opus + ring buffer** | *not measured* | *not measured* |
 
-**Mốc 4 là mốc quyết định.** Ba mốc đầu chỉ cho biết sàn; đối chiếu Q-3 bằng
-số của mốc 1–3 sẽ trả lời một câu hỏi khác và cho một kết quả trông có vẻ an
-tâm — đúng kiểu thất bại mà R-1 cảnh báo. Vì vậy hàm đối chiếu báo
-`INCONCLUSIVE` khi mốc 4 chưa được lấy.
+**Checkpoint 4 is the decisive checkpoint.** The first three checkpoints only provide the floor; comparing Q-3 using
+numbers from checkpoints 1–3 answers a different question and yields a falsely reassuring result
+— precisely the failure mode warned by R-1. Therefore the comparison function reports
+`INCONCLUSIVE` when checkpoint 4 has not been sampled.
 
-## 3. Việc còn lại để có số đo
+## 3. Remaining work to obtain measurements
 
-| # | Việc | Phụ thuộc |
+| # | Task | Dependency |
 |:---:|:---|:---|
-| 1 | Có bo mạch ESP32-S3-BOX-3 vật lý | Đặt hàng — chưa xong |
-| 2 | Vendoring `esp-sr` (AEC/AFE + VAD) và `opus`, kèm rà soát giấy phép §3.9 | Ma trận giấy phép (`NOTICE`) |
-| 3 | Nạp AEC 16 kHz 2 kênh (ES7210), VAD, Opus encoder 16 kHz mono, ring buffer PSRAM | Việc 1 và 2 |
-| 4 | Gọi `neuroedge_memory_probe(NEUROEDGE_CP_AUDIO_READY, "audio_ready")` | Việc 3 |
-| 5 | Điền bảng §1 và §2, chốt kết luận §5 | Việc 4 |
+| 1 | Physical ESP32-S3-BOX-3 board available | Ordering — not yet complete |
+| 2 | Vendoring `esp-sr` (AEC/AFE + VAD) and `opus`, with license review §3.9 | License matrix (`NOTICE`) |
+| 3 | Load 16 kHz 2-channel AEC (ES7210), VAD, 16 kHz mono Opus encoder, PSRAM ring buffer | Tasks 1 and 2 |
+| 4 | Call `neuroedge_memory_probe(NEUROEDGE_CP_AUDIO_READY, "audio_ready")` | Task 3 |
+| 5 | Fill tables in §1 and §2, conclude §5 | Task 4 |
 
-Vị trí chèn đã đánh dấu sẵn bằng `TODO(TSK-S1-10, V2)` trong
+Insertion point is marked with `TODO(TSK-S1-10, V2)` in
 [`targets/esp32s3/main/main.c`](../../targets/esp32s3/main/main.c).
 
-## 4. Cách thu số đo
+## 4. How to collect measurements
 
 ```bash
 cd targets/esp32s3
@@ -78,71 +78,70 @@ idf.py build
 idf.py -p /dev/ttyUSB0 flash monitor
 ```
 
-Bảng đọc được in ra với tag `neuroedge_mem`. Ngoài bảng cho người đọc, firmware
-in thêm **một dòng máy đọc được** để không ai phải chép tay số liệu:
+The human-readable table is printed with tag `neuroedge_mem`. In addition to the human-readable table, firmware
+prints **a machine-readable line** so no one has to manually copy data:
 
 ```
 NEUROEDGE_MEMORY_JSON {"schema":"neuroedge.memory_spike/v1","board":"esp32s3-box-3", ...}
 ```
 
 Workflow [`nightly-hardware.yml`](../../.github/workflows/nightly-hardware.yml)
-grep đúng tiền tố này, lưu payload thành artifact, và kiểm tra dung lượng
-firmware bằng
+greps this exact prefix, saves payload as an artifact, and verifies firmware size
+using
 [`scripts/check_firmware_size.py`](../../scripts/check_firmware_size.py).
 
-### 4.1 Vì sao QEMU không thay được phép đo này
+### 4.1 Why QEMU cannot replace this measurement
 
-Firmware đã boot trên Espressif QEMU (TSK-S4-08), nhưng QEMU không giả lập I2S, AFE hay PSRAM
-octal của Box-3 (Q-21), nên mốc `audio_ready` không lấy được ở đó. Thay vào đó CI kiểm hai **sàn**
-(TSK-S4-11, `scripts/check_firmware_size.py`, workflow `firmware-qemu.yml`) — điều kiện cần, **không**
-thay số đo của báo cáo này:
+Firmware boots on Espressif QEMU (TSK-S4-08), but QEMU does not emulate I2S, AFE, or octal PSRAM
+of Box-3 (Q-21), so the `audio_ready` checkpoint cannot be obtained there. Instead CI verifies two **floors**
+(TSK-S4-11, `scripts/check_firmware_size.py`, workflow `firmware-qemu.yml`) — necessary conditions, which do **not**
+replace measurements of this report:
 
-- **RAM tĩnh** (job `firmware-size`, cấu hình bo mạch, có Wi-Fi): SRAM trong còn lại sau `.data`,
-  `.bss` và mã IRAM phải ≥ 120 KB — heap không thể lớn hơn con số đó trước khi một task nào chạy.
-- **Heap lúc boot trên QEMU** (dòng `NEUROEDGE_HEAP_JSON` ngay trước `NE_TRACE DONE`, sau self-test
-  gate, trước mạng và âm thanh, không PSRAM): heap trong còn trống phải ≥ 120 KB.
+- **Static RAM** (job `firmware-size`, board configuration, with Wi-Fi): remaining internal SRAM after `.data`,
+  `.bss` and IRAM code must be ≥ 120 KB — heap cannot exceed this number before any task runs.
+- **Boot heap on QEMU** (line `NEUROEDGE_HEAP_JSON` immediately before `NE_TRACE DONE`, after gate
+  self-test, before network and audio, no PSRAM): free internal heap must be ≥ 120 KB.
 
-ESP-SR **chưa được link** (`TODOS.md` #17), nên cả hai là sàn **không có** AFE. Khi vendoring
-`esp-sr`, job `firmware-size` thêm `--require-esp-sr`: bản build lặng lẽ thiếu AFE thì không đạt.
+ESP-SR **is not yet linked** (`TODOS.md` #17), so both are floors **without** AFE. When vendoring
+`esp-sr`, job `firmware-size` adds `--require-esp-sr`: builds silently missing AFE will fail.
 
-| Sàn (không phải phán quyết Q-3) | Đo được | Ngưỡng | Nguồn |
+| Floor (not Q-3 verdict) | Measured | Threshold | Source |
 |:---|:---:|:---:|:---|
-| SRAM trong còn lại sau cấp phát tĩnh — cấu hình bo mạch | 231 556 B | ≥ 122 880 B | `.data` 20 300 · `.bss` 16 432 · mã IRAM 73 435 trên DIRAM 341 760 |
-| Heap trong còn trống lúc boot — QEMU, không mạng, không PSRAM | 383 664 B | ≥ 122 880 B | checkpoint `gate_runtime_ready` |
-| Ảnh OTA đã ký — QEMU (open_eth, không Wi-Fi) | 724 992 B | ≤ 3 670 016 B | `scripts/qemu_ota.sh`, ảnh RSA-3072 |
-| Ảnh OTA đã ký — cấu hình bo mạch (Wi-Fi, CA bundle cho HTTPS) | 987 136 B | ≤ 3 670 016 B | `scripts/qemu_ota.sh` + `scripts/check_firmware_size.py` |
-| SRAM trong còn lại sau cấp phát tĩnh — bản OTA bo mạch | 229 312 B | ≥ 122 880 B | `.data` 20 624 · `.bss` 18 096 · mã IRAM 73 607 trên DIRAM 341 760 |
+| Remaining internal SRAM after static allocation — board configuration | 231 556 B | ≥ 122 880 B | `.data` 20 300 · `.bss` 16 432 · IRAM code 73 435 out of DIRAM 341 760 |
+| Free internal heap at boot — QEMU, no network, no PSRAM | 383 664 B | ≥ 122 880 B | checkpoint `gate_runtime_ready` |
+| Signed OTA image — QEMU (open_eth, no Wi-Fi) | 724 992 B | ≤ 3 670 016 B | `scripts/qemu_ota.sh`, RSA-3072 image |
+| Signed OTA image — board configuration (Wi-Fi, CA bundle for HTTPS) | 987 136 B | ≤ 3 670 016 B | `scripts/qemu_ota.sh` + `scripts/check_firmware_size.py` |
+| Remaining internal SRAM after static allocation — board OTA build | 229 312 B | ≥ 122 880 B | `.data` 20 624 · `.bss` 18 096 · IRAM code 73 607 out of DIRAM 341 760 |
 
-*Hai dòng OTA đo 2026-09-26 với lớp `sdkconfig.ota` (TSK-S6-01/02/04); script in lại mỗi lượt chạy
-`firmware-qemu.yml` job `ota-rollback`. Đây là kích thước tĩnh của ảnh đã ký, không phải phán quyết Q-3.*
+*The two OTA rows were measured on 2026-09-26 with `sdkconfig.ota` layer (TSK-S6-01/02/04); script reprints on each run of
+`firmware-qemu.yml` job `ota-rollback`. These are static sizes of signed images, not Q-3 verdicts.*
 
-Một số đo khác của đường OTA, không phải ngưỡng Q-3: `CONFIG_ESP_MAIN_TASK_STACK_SIZE` mặc định
-**3584 B không đủ**. `esp_https_ota` ghi và xác minh ảnh trên stack của task gọi, và `main` tràn
-stack khi xác minh ảnh ánh xạ một segment (đo 2026-09-26, ESP-IDF v5.4); lớp `sdkconfig.ota` đặt
-8192 B. Chú thích cạnh hằng số đó trong
-[`targets/esp32s3/sdkconfig.ota`](../../targets/esp32s3/sdkconfig.ota) dẫn về đây.
+Another measurement of the OTA path, not a Q-3 threshold: default `CONFIG_ESP_MAIN_TASK_STACK_SIZE`
+**of 3584 B is insufficient**. `esp_https_ota` writes and verifies images on the calling task's stack, and `main` stack
+overflows when verifying single-segment mapped images (measured 2026-09-26, ESP-IDF v5.4); the `sdkconfig.ota` layer sets
+8192 B. A comment next to that constant in
+[`targets/esp32s3/sdkconfig.ota`](../../targets/esp32s3/sdkconfig.ota) references this.
 
-*Đo 2026-09-26, ESP-IDF v5.4, firmware của agent mẫu `home-voice`; CI in lại các số này mỗi lượt chạy.*
+*Measured 2026-09-26, ESP-IDF v5.4, firmware of sample agent `home-voice`; CI reprints these numbers on each run.*
 
-## 5. Kết luận và hệ quả phạm vi
+## 5. Conclusions and scope implications
 
-> **Chưa thể kết luận.** Mục này chỉ được điền sau khi có số đo tại mốc
-> `audio_ready`.
+> **Cannot conclude yet.** This section is only filled after measurements at checkpoint
+> `audio_ready` are obtained.
 
-Quy tắc quyết định đã chốt trước khi đo, để kết quả không bị giải thích lại
-theo hướng có lợi:
+Decision rules were decided prior to measurement, ensuring results are not reinterpreted
+favorably:
 
-| Kết quả đo | Hành động bắt buộc |
+| Measurement result | Mandatory action |
 |:---|:---|
-| Đạt cả ba ngưỡng Q-3 | Giữ nguyên phạm vi Khối 1b. Ghi số đo làm đường cơ sở cho Tiêu chí 4 của Sprint 5 (bộ nhớ còn lại sau 4 giờ chạy) |
-| Trượt bất kỳ **một** ngưỡng | **Không cắt thoại** (Q-44): mở ngay một `Q-N` lập lại kế hoạch I5 (TSK-S5-05 tối ưu bộ nhớ, TSK-S5-07 chọn backend fallback) và dời dự báo v1.0 |
+| Passes all three Q-3 thresholds | Keep Block 1b scope unchanged. Record measurements as baseline for Sprint 5 Criterion 4 (memory remaining after 4 hours runtime) |
+| Fails any **single** threshold | **Do not cut voice** (Q-44): immediately open a `Q-N` to re-plan I5 (TSK-S5-05 memory optimization, TSK-S5-07 fallback backend selection) and postpone v1.0 forecast |
 
-Quy tắc đã chốt trước khi đo (Q-44): trượt một ngưỡng thì lập lại kế hoạch ngay, không đợi. Giá trị của việc
-chạy spike sớm là còn đủ thời gian để đổi kế hoạch; hoãn quyết định sẽ xóa sạch giá trị đó.
+Rule decided prior to measurement (Q-44): failing a single threshold triggers immediate re-planning without delay. The value of
+running an early spike is having sufficient time to adapt plans; delaying decisions eliminates that value completely.
 
-## 6. Ảnh hưởng tới Tiêu chí ra Sprint 1
+## 6. Impact on Sprint 1 Exit Criteria
 
-Tiêu chí 3 của Sprint 1 — *"Báo cáo spike bộ nhớ có số liệu đo thực, đối chiếu
-trực tiếp với ngưỡng Q-3"* — **chưa thỏa mãn** và không thể thỏa mãn bằng công
-việc trên máy tính. Đây là hạng mục duy nhất của Sprint 1 bị chặn bởi phần
-cứng vật lý.
+Criterion 3 of Sprint 1 — *"Memory spike report contains real measurement data, directly compared
+against Q-3 thresholds"* — **is not yet satisfied** and cannot be satisfied through computer-based
+work alone. This is the only item in Sprint 1 blocked by physical hardware.

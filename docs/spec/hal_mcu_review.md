@@ -1,151 +1,150 @@
-# Rà soát thiết kế HAL dưới ràng buộc vi điều khiển
+# HAL design review under microcontroller constraints
 
 | | |
 |:---|:---|
 | **Mã task** | TSK-S1-11 |
-| **Người thực hiện** | V2 — Kỹ sư nhúng (bán thời gian tới khi bo mạch về) |
-| **Đầu vào** | `schemas/board.v1.json`, `python/neuroedge/hal/board.py`, `boards/*.toml` |
-| **Trạng thái** | ✅ Rà soát xong · các kết luận đã hiện thực hóa trong mã |
+| **Assignee** | V2 — Embedded Engineer (part-time until board arrives) |
+| **Inputs** | `schemas/board.v1.json`, `python/neuroedge/hal/board.py`, `boards/*.toml` |
+| **Trạng thái** | ✅ Xong · conclusions implemented in code |
 
-## 0. Vì sao rà soát này phải xảy ra ở Sprint 1 *(bối cảnh lúc rà soát)*
+## 0. Why this review had to happen in Sprint 1 *(context at review time)*
 
-Roadmap §1.2 nêu thẳng: *"Một HAL thiết kế mà không có tiếng nói của kỹ sư nhúng
-sẽ phải viết lại ở I3."* Tài liệu này là tiếng nói đó, đặt trước khi có bất
-kỳ hiện thực HAL nào (`sim` ở I0, `linux` ở I2, `esp32s3` ở I3) — vì sau đó thì mọi kết luận đây đều trở thành việc viết lại.
+Roadmap §1.2 stated bluntly: *"A HAL designed without the voice of an embedded engineer
+will have to be rewritten in I3."* This document is that voice, placed before any
+HAL implementation exists (`sim` in I0, `linux` in I2, `esp32s3` in I3) — because afterwards, every conclusion here becomes a rewrite.
 
-Ràng buộc nền: ESP32-S3-WROOM-1-N16R8 có **512 KB SRAM nội**, trong đó Q-3 chỉ
-dành **≥ 120 KB** cho ứng dụng sau khi trừ ngăn xếp mạng và hệ điều hành. Mọi
-quyết định thiết kế dưới đây đo bằng thước đó.
+Baseline constraint: ESP32-S3-WROOM-1-N16R8 has **512 KB internal SRAM**, in which Q-3 reserves
+only **≥ 120 KB** for the application after deducting the network stack and the operating system. Every
+design decision below is measured against that ruler.
 
 ---
 
-## 1. Năm kết luận rà soát
+## 1. Five review conclusions
 
-### KL-1 — Tập nguyên thủy phải đóng, và nó đang đóng
+### KL-1 — Primitive set must be closed, and it is closed
 
-`audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display` — đúng năm, cố
-định bởi FR-HAL-01.
+`audio.in`, `audio.out`, `digital.out`, `sensor.read`, `display` — exactly five, fixed
+by FR-HAL-01.
 
-**Vì sao quan trọng trên MCU:** tập đóng cho phép bảng năng lực phía thiết bị là
-một **mảng tĩnh định kích thước lúc biên dịch**. Nếu tập nguyên thủy mở rộng
-được lúc chạy, firmware sẽ cần cấp phát động trong HAL — thứ không được phép
-trong đường dẫn âm thanh, vì phân mảnh heap sau nhiều giờ chạy là một trong hai
-nguyên nhân hàng đầu gây rớt khung âm thanh.
+**Why it matters on MCU:** a closed set allows the device-side capability table to be
+a **static array sized at compile time**. If the primitive set were extensible
+at runtime, firmware would need dynamic allocation in the HAL — which is forbidden
+on the audio path, because heap fragmentation after hours of running is one of the top two
+causes of audio frame drops.
 
-**Đã hiện thực:** `PRIMITIVES` trong `python/neuroedge/hal/board.py` là một
-`tuple`, và mọi tên nguyên thủy lạ bị từ chối ngay tại `_normalise()` với thông
-báo nêu rõ tập hợp lệ. Kiểm chứng: `test_unknown_primitive_is_refused`.
+**Implemented:** `PRIMITIVES` in `python/neuroedge/hal/board.py` is a
+`tuple`, and any unknown primitive name is rejected immediately in `_normalise()` with a message
+stating the valid set. Verified: `test_unknown_primitive_is_refused`.
 
-### KL-2 — Mã tác tử phải đánh địa chỉ chân theo TÊN, không theo số
+### KL-2 — Agent code must address pins by NAME, not by number
 
-Tác tử viết `c.do("door_lock")`, không viết `gpio_set_level(11, 1)`. Bo mạch sở
-hữu phép ánh xạ `door_lock → GPIO 11` qua `[capabilities.digital_out].pins`.
+An agent writes `c.do("door_lock")`, not `gpio_set_level(11, 1)`. The board owns
+the mapping `door_lock → GPIO 11` via `[capabilities.digital_out].pins`.
 
-**Vì sao quan trọng:** đây là điều kiện cần của tương đương target. `sim` không
-có GPIO 11; `linux-rpi5` có GPIO 11 nhưng nối vào thứ khác. Một tác tử ghim số
-chân sẽ không thể chạy trên ba target, và tương đương target chính là luận điểm
-sản phẩm.
+**Why it matters:** this is a necessary condition for target parity. `sim` has no
+GPIO 11; `linux-rpi5` has GPIO 11 but wired to something else. An agent that pins
+numbers will not be able to run across three targets, and target parity is the core product thesis.
 
-**Đã hiện thực:** `boards/*.toml` khai báo cùng một tập tên chân trên mọi bo
-tham chiếu đầy đủ của cả ba target; chân của phần cứng mở rộng (kênh PWM và chân
-cho phép của PWM/`motion`, RFC-0013 §3b) chỉ có ở bo thật có phần cứng đó.
-Kiểm chứng: `test_all_full_reference_boards_share_the_same_named_pins`.
+**Implemented:** `boards/*.toml` declare the same set of pin names across all
+full reference boards of all three targets; pins of hardware extensions (PWM channels and
+enable pins of PWM/`motion`, RFC-0013 §3b) exist only on real boards with that hardware.
+Verified: `test_all_full_reference_boards_share_the_same_named_pins`.
 
-### KL-3 — `sim` không được giàu năng lực hơn bo mạch tham chiếu
+### KL-3 — `sim` must not be richer in capabilities than reference boards
 
-**Rủi ro đã chặn:** nếu `sim` khai báo 4 kênh âm thanh vào hoặc 48 kHz trong khi
-Box-3 chỉ có 2 kênh 16 kHz, lập trình viên sẽ viết tác tử chạy tốt trong mô
-phỏng rồi thất bại lúc `neuroedge build` — hoặc tệ hơn, thất bại lúc chạy trên
-thiết bị. Khi đó lời hứa "TTFV dưới 10 phút không cần mua phần cứng" (A1) trở
-thành một cái bẫy: nó rút ngắn 10 phút đầu và thêm vào hai ngày gỡ lỗi.
+**Risk blocked:** if `sim` declared 4 input audio channels or 48 kHz while
+Box-3 has only 2 channels at 16 kHz, developers would write agents that run fine in simulation
+then fail at `neuroedge build` — or worse, fail while running on
+device. Then the promise of "TTFV under 10 minutes without buying hardware" (A1) becomes
+a trap: it saves 10 minutes upfront and adds two days of debugging.
 
-**Đã hiện thực:** `boards/sim-default.toml` sao đúng tham số của Box-3 —
-16 kHz, AEC, VAD, cùng tập chân, cùng tập cảm biến; `boards/sim-rpi5.toml` sao
-`linux-rpi5` (RFC-0013 §3d, bảng `SIM_MIRRORS`). Bất biến áp theo từng cặp
-(sim, bo được soi), gồm cả nguyên thủy mở rộng, phong bì và chế độ camera. Kiểm chứng:
+**Implemented:** `boards/sim-default.toml` accurately mirrors Box-3 parameters —
+16 kHz, AEC, VAD, same set of pins, same set of sensors; `boards/sim-rpi5.toml` mirrors
+`linux-rpi5` (RFC-0013 §3d, table `SIM_MIRRORS`). Invariants apply per pair
+(sim, mirrored board), including extended primitives, envelopes, and camera modes. Verified:
 `test_sim_offers_no_pin_the_reference_board_lacks`,
 `test_sim_offers_no_sensor_the_reference_board_lacks`,
 `test_a_sim_profile_is_never_richer_than_the_board_it_mirrors`,
 `test_sim_audio_matches_the_reference_sample_rate`.
 
-*Ngoại lệ có chủ ý:* `display` của `linux-rpi5` là 800×480 còn Box-3 là 320×240.
-Chấp nhận được vì `display` không nằm trong miền quyết định an toàn — không có
-phán quyết gate nào phụ thuộc kích thước màn hình. Ràng buộc parity chỉ áp cho
-`sim` so với bo mạch tham chiếu, không áp giữa hai target phần cứng thật.
+*Intentional exception:* `display` of `linux-rpi5` is 800×480 while Box-3 is 320×240.
+Acceptable because `display` is not in the safety decision domain — no
+gate verdict depends on screen size. The parity constraint applies only to
+`sim` compared to the reference board, not between two real hardware targets.
 
-### KL-4 — Khai báo bo mạch là DỮ LIỆU, không phải MÃ
+### KL-4 — Board declarations are DATA, not CODE
 
-Thêm một bo mạch = thêm một tệp TOML. Không thêm một dòng Python.
+Adding a board = adding a TOML file. Not adding a single line of Python.
 
-**Vì sao quan trọng:** nếu profile bo mạch là mã Python, nó có thể chứa hành vi
-mà bản dựng MCU không có (và không thể có). Khi đó "bo mạch đã khai báo năng
-lực này" sẽ mang nghĩa khác nhau giữa host và thiết bị — đúng tại tầng mà đối
-chiếu năng lực hai chiều phải đáng tin.
+**Why it matters:** if a board profile were Python code, it could contain behavior
+that the MCU build lacks (and cannot have). Then "the board declared this capability"
+would mean different things between host and device — right at the layer where bidirectional
+capability verification must be trustworthy.
 
-**Đã hiện thực:** `boards/` chỉ chứa TOML, được thẩm định bằng
-`schemas/board.v1.json`. Tên tệp trùng `id` để tra cứu không bị lệch. Kiểm
-chứng: `test_profile_filename_matches_its_declared_id`,
+**Implemented:** `boards/` contains only TOML, validated against
+`schemas/board.v1.json`. Filenames match `id` so lookups do not drift. Verified:
+`test_profile_filename_matches_its_declared_id`,
 `test_profile_validates_against_board_schema`.
 
-### KL-5 — Trên MCU không có evaluator CEL, không có parser JSON
+### KL-5 — No CEL evaluator, no JSON parser on MCU
 
-Đây là hệ quả trực tiếp của **Q-9 phương án A** (và Q-23 về định dạng) và là kết luận
-có ảnh hưởng lớn nhất tới thiết kế HAL. Thiết bị **có** lượng giá gate — bằng một walker
-duyệt cây đã biên dịch sẵn (TSK-S4-02) — nhưng mọi phần phân tích và biên dịch ở máy tính.
+This is the direct consequence of **Q-9 option A** (and Q-23 on formats) and is the conclusion
+with the greatest impact on HAL design. The device **does** evaluate gates — via a precompiled
+tree walker (TSK-S4-02) — but all parsing and compiling happen on the computer.
 
-| Chạy trên máy tính | Chạy trên thiết bị |
+| Runs on computer | Runs on device |
 |:---|:---|
-| Phân giải `extends` (5 nguyên tắc B.5) | — |
-| Phân tích cú pháp CEL | — |
-| Biên dịch sang cây quyết định, mã hoá bố cục nhị phân `NETR` v1 (Q-23, RFC-0003) | Walker C99 duyệt cây `NETR` tại chỗ trong flash |
-| Chuẩn tắc hóa RFC 8785, băm | Kiểm magic, phiên bản bố cục, CRC của cây trước khi dùng |
-| Ký số gate (Khối 3, Gate Registry) | Đối soát chữ ký — cũng thuộc Khối 3, chưa có |
+| Resolve `extends` (5 principles of B.5) | — |
+| Parse CEL syntax | — |
+| Compile to decision tree, encode `NETR` v1 binary layout (Q-23, RFC-0003) | C99 walker traverses `NETR` tree in-place in flash |
+| Canonicalise RFC 8785, hash | Check magic, layout version, CRC of tree before use |
+| Digitally sign gate (Block 3, Gate Registry) | Signature verification — also Block 3, not yet implemented |
 
-**Ngân sách phía thiết bị:** walker không cấp phát heap, không dùng RAM tĩnh, không đệ
-quy, không phân tích cú pháp, không máy ảo CEL; stack ≤ 512 byte
+**Device-side budget:** walker allocates no heap, uses no static RAM, no
+recursion, no syntax parsing, no CEL virtual machine; stack ≤ 512 bytes
 (`targets/esp32s3/components/ne_gate/src/ne_walker.c`,
 `test_the_walker_uses_no_static_ram_and_a_small_stack`).
 
-*Ghi chú 2026-09-24:* bản rà soát đầu (Sprint 1) viết KL-5 là "không có gate engine nào
-chạy trên MCU" và dự kiến "cây quyết định JSON" + "một hàm C khoảng 100 dòng"; Q-23 và
-RFC-0003 thay bằng bố cục nhị phân. Ý của kết luận — thiết bị không phân tích, chỉ duyệt
-— giữ nguyên. Model bo mạch trong
-`board.py` **chỉ đọc trên máy tính** — đó là lý do nó được phép dùng Pydantic,
-`jsonschema`, `tomllib` mà không tạo ra nợ kỹ thuật nào cho firmware.
+*Note 2026-09-24:* the initial review (Sprint 1) formulated KL-5 as "no gate engine
+runs on MCU" and planned "JSON decision tree" + "a C function of around 100 lines"; Q-23 and
+RFC-0003 replaced it with a binary layout. The spirit of the conclusion — the device does not parse, only walks
+— remains unchanged. The board model in
+`board.py` **is read only on the computer** — which is why it is allowed to use Pydantic,
+`jsonschema`, `tomllib` without incurring any technical debt for firmware.
 
-**Điều bị cấm:** nhúng `cel-python` hoặc bất kỳ trình lượng giá biểu thức nào
-vào firmware. Roadmap §3.8 đã bác bỏ tường minh phương án B (evaluator CEL rút
-gọn bằng C) vì nó tạo ra một hiện thực thứ hai cần giữ đồng bộ ở đúng tầng an
-toàn.
+**Forbidden:** embedding `cel-python` or any expression evaluator
+into firmware. Roadmap §3.8 explicitly rejected option B (a trimmed CEL evaluator
+in C) because it creates a second implementation that must be kept in sync right at the safety
+layer.
 
 ---
 
-## 2. Bốn ràng buộc chuyển tiếp sang I3
+## 2. Four constraints carrying over to I3
 
-Các mệnh đề dưới đây là hợp đồng mà `hal/esp32s3` phải thỏa, ghi ở đây để
-I3 không phải suy luận lại:
+The statements below are contracts that `hal/esp32s3` must satisfy, recorded here so
+I3 does not need to deduce them again:
 
-| # | Ràng buộc | Lý do |
+| # | Constraint | Reason |
 |:---:|:---|:---|
-| RB-1 | Không `malloc` trong đường dẫn âm thanh sau khi khởi tạo xong | Phân mảnh heap sau nhiều giờ chạy gây rớt khung; I5 tiêu chí 4 (roadmap §6) đo bộ nhớ còn lại sau 4 giờ |
-| RB-2 | Đệm âm thanh cấp phát tĩnh trong PSRAM, đặt tên và đo được | Q-3 dành ≥ 2 MB PSRAM cho ring buffer, VAD và wake-word; không đo được thì không đối chiếu được |
-| RB-3 | `digital.out` phải hủy được lệnh đang chờ trong ≤ 1 khung âm thanh | Hợp đồng thu hồi lệnh vật lý ([`voice_fsm.md`](voice_fsm.md) §5): cắt lời phải hủy xung chốt cửa đang chờ, ghi `ACTUATOR_ABORTED_BY_BARGE_IN` |
-| RB-4 | Bảng năng lực là `const` trong flash, không phải cấu trúc dựng lúc chạy | Tiết kiệm SRAM và loại bỏ khả năng năng lực bị sửa lúc chạy — một đường tắt vòng qua gate (A3) |
+| RB-1 | No `malloc` on audio path after initialization finishes | Heap fragmentation after hours of running causes frame drops; I5 criterion 4 (roadmap §6) measures memory remaining after 4 hours |
+| RB-2 | Audio buffers statically allocated in PSRAM, named and measurable | Q-3 reserves ≥ 2 MB PSRAM for ring buffer, VAD, and wake-word; if not measurable, cannot be verified |
+| RB-3 | `digital.out` must cancel pending command in ≤ 1 audio frame | Physical command revocation contract ([`voice_fsm.md`](voice_fsm.md) §5): barge-in must cancel pending door latch pulse, log `ACTUATOR_ABORTED_BY_BARGE_IN` |
+| RB-4 | Capability table is `const` in flash, not a runtime-built structure | Saves SRAM and eliminates possibility of capabilities being modified at runtime — a shortcut bypassing gates (A3) |
 
-**RB-3 là ràng buộc khó nhất.** Nó nói rằng `digital_out` không thể là một lời
-gọi chặn (blocking). Chữ ký hiện tại trong
-`python/neuroedge/hal/__init__.py` nhận `duration_ms` và ghi nhận trạng thái
-chân ngay — đủ cho `sim`, nhưng hiện thực `esp32s3` sẽ cần một handle hủy được.
-Ghi nhận là **nợ thiết kế đã biết**, phải giải quyết tại TSK-S4-01 cùng lúc với
-hợp đồng thu hồi lệnh, chứ không phải sau.
+**RB-3 is the hardest constraint.** It says `digital_out` cannot be a
+blocking call. The current signature in
+`python/neuroedge/hal/__init__.py` takes `duration_ms` and records the pin state
+immediately — sufficient for `sim`, but the `esp32s3` implementation will need a cancellable handle.
+Recorded as **known design debt**, to be resolved in TSK-S4-01 concurrently with
+the command revocation contract, not after.
 
-## 3. Điều rà soát này KHÔNG kết luận
+## 3. What this review does NOT conclude
 
-Rà soát này nói về *hình dạng thiết kế*, không nói về *khả thi bộ nhớ*. Câu hỏi
-"AEC + VAD + Opus có vừa 120 KB SRAM và 2 MB PSRAM không" chỉ trả lời được bằng
-số đo trên bo mạch thật — đó là TSK-S1-10, và trạng thái của nó ở
-[`docs/reports/memory_spike_report.md`](../reports/memory_spike_report.md):
-**chưa có số đo**.
+This review speaks to *design shape*, not to *memory feasibility*. The question
+"do AEC + VAD + Opus fit within 120 KB SRAM and 2 MB PSRAM" can only be answered by
+measurements on real hardware — that is TSK-S1-10, and its status in
+[`docs/reports/memory_spike_report.md`](../reports/memory_spike_report.md) is:
+**no measurements yet**.
 
-Hai hạng mục độc lập với nhau: thiết kế HAL có thể đúng trong khi ngân sách bộ
-nhớ vẫn trượt — khi đó lập lại kế hoạch I5 theo Q-44, không cắt thoại.
+The two items are independent: the HAL design can be correct while the memory budget
+still slips — in that case, replan I5 according to Q-44, do not cut voice.

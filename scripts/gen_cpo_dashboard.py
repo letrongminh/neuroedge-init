@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Sinh docs/business/cpo-dashboard.html — dashboard sản phẩm cho CPO.
+"""Generate docs/business/cpo-dashboard.html — the product dashboard for the CPO.
 
-Một trang HTML tự chứa (không CDN, không mạng), sinh hoàn toàn từ nguồn sự thật:
+A self-contained HTML page (no CDN, no network), generated entirely from the sources of truth:
 
-- `neuroedge-roadmap.md` §0.1–§0.3, bảng increment §0.2, tám mốc phát hành theo người dùng §0.5
-  (trang dẫn đầu bằng chúng; chi tiết kỹ thuật thu gọn ở cuối), bảng task và tiêu chí ra của từng
-  increment §4–§8, A1–A12 (Q-39: một roadmap duy nhất);
-- `TODOS.md` (việc hoãn có chủ ý, mốc kích hoạt);
-- `neuroedge-prd.md` §15 (quyết định chưa chốt hẳn, năm quyết định gần nhất);
-- `CHANGELOG.md` `[Chưa phát hành]` (thay đổi gần đây).
+- `neuroedge-roadmap.md` §0.1–§0.3, the increment table §0.2, the eight user-facing release
+  milestones §0.5 (the page leads with them; technical detail is collapsed at the bottom), the
+  task tables and exit criteria of every increment §4–§8, A1–A12 (Q-39: a single roadmap);
+- `TODOS.md` (deliberate deferrals, activation triggers);
+- `neuroedge-prd.md` §15 (decisions not yet fully decided, the five most recent decisions);
+- `CHANGELOG.md` `[Unreleased]` (recent changes).
 
-Không sửa tay tệp sinh ra. Ngày trên trang lấy từ "Lần cập nhật cuối" của roadmap,
-không lấy đồng hồ máy, nên kết quả tất định và `--check` không báo lệch mỗi ngày.
+Never edit the generated file by hand. The date on the page comes from the roadmap's "Last updated",
+not the machine clock, so the output is deterministic and `--check` does not go stale daily.
 
-    python3 scripts/gen_cpo_dashboard.py           # ghi tệp
-    python3 scripts/gen_cpo_dashboard.py --check   # không ghi; thoát 1 nếu lệch
+    python3 scripts/gen_cpo_dashboard.py           # write the file
+    python3 scripts/gen_cpo_dashboard.py --check   # write nothing; exit 1 if stale
 """
 
 from __future__ import annotations
@@ -38,18 +38,18 @@ DATE = re.compile(r"\b(20\d\d-\d\d-\d\d)\b")
 LINK = re.compile(r"\[([^\]]+)\]\([^)]*\)")
 INC = re.compile(r"\b(I\d+[a-z]?) —")
 
-# Trạng thái task, theo icon của roadmap (CONTRIBUTING.md §8.2).
+# Task states, by roadmap icon (CONTRIBUTING.md §8.2).
 STATES = (
-    ("done", "✅", "Xong"),
-    ("partial", "🟡", "Đang làm / chờ"),
-    ("todo", "⏳", "Chưa bắt đầu"),
-    ("deferred", "⏸", "Hoãn có chủ ý"),
-    ("blocked", "🔴", "Bị chặn"),
+    ("done", "✅", "Done"),
+    ("partial", "🟡", "In progress / waiting"),
+    ("todo", "⏳", "Not started"),
+    ("deferred", "⏸", "Deliberately deferred"),
+    ("blocked", "🔴", "Blocked"),
 )
 STATE_LABEL = {key: label for key, _, label in STATES}
 
 
-# --- đọc Markdown ------------------------------------------------------------------------------
+# --- reading Markdown ------------------------------------------------------------------------------
 
 
 def split_row(line: str) -> list[str]:
@@ -57,13 +57,13 @@ def split_row(line: str) -> list[str]:
 
 
 def plain(text: str) -> str:
-    """Markdown một dòng → chữ thường (bỏ link, **, `, <br>)."""
+    """One-line Markdown → plain text (drops links, **, `, <br>)."""
     text = LINK.sub(r"\1", text).replace("<br>", " ")
     return re.sub(r"\*\*|`|\*", "", text).strip()
 
 
 def inline(text: str) -> str:
-    """Markdown một dòng → HTML an toàn: `mã` → <code>, **đậm** → <b>, link → chữ."""
+    """One-line Markdown → safe HTML: `code` → <code>, **bold** → <b>, link → its text."""
     text = html.escape(LINK.sub(r"\1", text).replace("<br>", " "), quote=False)
     text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
     text = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", text)
@@ -77,7 +77,7 @@ def between(lines: list[str], start: str, end: str) -> list[str]:
 
 
 def inc_id(text: str) -> str | None:
-    """`I3` từ "I3 — Gate trên Box-3" hoặc "4.4 I3 — …"; None nếu không phải increment."""
+    """`I3` from "I3 — Gate on Box-3" or "4.4 I3 — …"; None if it is not an increment."""
     m = INC.search(plain(text))
     return m.group(1) if m else None
 
@@ -129,13 +129,13 @@ def roadmap_status(lines: list[str]) -> dict[str, str]:
         if line.startswith("| **"):
             cells = split_row(line)
             rows[plain(cells[0])] = cells[1]
-            rows[plain(cells[0]) + " · ghi chú"] = cells[2] if len(cells) > 2 else ""
+            rows[plain(cells[0]) + " · notes"] = cells[2] if len(cells) > 2 else ""
     return rows
 
 
 def roadmap_matrix(lines: list[str]) -> list[Increment]:
     part = between(lines, "### 0.2", "### 0.3")
-    start = next(i for i, line in enumerate(part) if line.startswith("| Mốc |"))
+    start = next(i for i, line in enumerate(part) if line.startswith("| Milestone |"))
     out, milestone = [], ""
     for line in part[start + 2 :]:
         if not line.startswith("|"):
@@ -153,18 +153,18 @@ def roadmap_tasks(lines: list[str]) -> list[Task]:
         if line.startswith("### "):
             group = plain(line[4:])
             columns = {}
-        elif line.startswith("| Mã Task") or line.startswith("| Mã task"):
+        elif line.startswith("| Task code"):
             columns = {plain(c): i for i, c in enumerate(split_row(line))}
         elif line.startswith("| **TSK-") and columns:
             cells = split_row(line)
-            status_cell = cells[columns.get("Trạng thái", 4)]
+            status_cell = cells[columns.get("Status", 4)]
             tasks.append(
                 Task(
                     id=plain(cells[0]),
                     name=plain(cells[1]).split(" — ")[0][:110],
                     state=state_of(status_cell),
                     status=plain(status_cell)[:140],
-                    owner=plain(cells[columns["Người"]]) if "Người" in columns else "",
+                    owner=plain(cells[columns["Owner"]]) if "Owner" in columns else "",
                     group=group,
                     increment=inc_id(group),
                 )
@@ -173,14 +173,14 @@ def roadmap_tasks(lines: list[str]) -> list[Task]:
 
 
 def exit_criteria(lines: list[str]) -> list[tuple[str, int, int]]:
-    """(tiêu đề mục, đạt, tổng) cho mỗi danh sách "Tiêu chí ra"."""
+    """(section title, met, total) for each "Exit criteria" list."""
     out, group, done, total = [], "", 0, 0
     for line in lines + ["### "]:
         if line.startswith("### "):
             if total:
                 out.append((group, done, total))
             group, done, total = plain(line[4:]), 0, 0
-        elif re.match(r"- \[[ x]\] \*\*(Tiêu chí|A\d+\*\* —)", line):
+        elif re.match(r"- \[[ x]\] \*\*(Criterion|A\d+\*\* —)", line):
             total += 1
             done += line.startswith("- [x]")
     return out
@@ -218,7 +218,7 @@ def handoff(lines: list[str]) -> dict[str, list[str]]:
     return groups
 
 
-# --- các nguồn khác ------------------------------------------------------------------------------
+# --- other sources ------------------------------------------------------------------------------
 
 
 def todos() -> list[dict]:
@@ -227,7 +227,7 @@ def todos() -> list[dict]:
         if line.startswith("## "):
             topic = line[3:].strip()
         m = re.match(r"\| (\d+) \| (.*)", line)
-        if m and topic != "Nguồn":
+        if m and topic != "Sources":
             cells = split_row(line)
             title = re.search(r"\*\*(.+?)\*\*", cells[1])
             trigger = cells[-1]
@@ -245,29 +245,29 @@ def todos() -> list[dict]:
 
 
 def open_decisions() -> list[tuple[str, str, str]]:
-    """(mã, tiêu đề, trạng thái) — quyết định PRD §15 chưa chốt hẳn."""
+    """(code, title, status) — PRD §15 decisions not yet fully decided."""
     out = []
     lines = PRD.read_text(encoding="utf-8").splitlines()
-    for line in between(lines, "## 15", "## Phụ lục"):
+    for line in between(lines, "## 15", "## Appendix"):
         if not line.startswith("| **Q-"):
             continue
         cells = split_row(line)
         status = plain(cells[2])
-        if not status.startswith("ĐÃ CHỐT") or "MỘT PHẦN" in status:
+        if not status.startswith(("DECIDED", "DIRECTION DECIDED")) or "PARTIAL" in status:
             out.append((plain(cells[0]), plain(cells[1]), status))
-    pending = sorted(set(re.findall(r"chờ \*{0,2}(Q-\d+)", "\n".join(lines))))
+    pending = sorted(set(re.findall(r"(?:waiting for|awaiting) \*{0,2}(Q-\d+)", "\n".join(lines))))
     known = {code for code, _, _ in out}
     for code in pending:
         if code not in known:
-            out.append((code, "Được nhắc là đang chờ trong PRD", "CHỜ"))
+            out.append((code, "Mentioned as pending in the PRD", "WAITING"))
     return out
 
 
 def recent_decisions(limit: int = 5) -> list[tuple[str, str, str]]:
-    """(mã, tiêu đề, ngày) — các quyết định PRD §15 có số lớn nhất."""
+    """(code, title, date) — the PRD §15 decisions with the highest numbers."""
     out = []
     lines = PRD.read_text(encoding="utf-8").splitlines()
-    for line in between(lines, "## 15", "## Phụ lục"):
+    for line in between(lines, "## 15", "## Appendix"):
         if not line.startswith("| **Q-"):
             continue
         cells = split_row(line)
@@ -280,8 +280,8 @@ def recent_decisions(limit: int = 5) -> list[tuple[str, str, str]]:
 def recent_changes(limit: int = 8) -> list[str]:
     lines = between(
         CHANGELOG.read_text(encoding="utf-8").splitlines(),
-        "### [Chưa phát hành]",
-        "### Mốc",
+        "### [Unreleased]",
+        "### Phase 1 Documentation Milestones",
     )
     out = []
     for line in lines:
@@ -293,7 +293,7 @@ def recent_changes(limit: int = 8) -> list[str]:
     return out
 
 
-# --- mốc phát hành theo người dùng -----------------------------------------------------------
+# --- user-facing release milestones -----------------------------------------------------------
 
 
 @dataclass
@@ -316,8 +316,10 @@ class Milestone:
 
 
 def milestones(lines: list[str], matrix: list[Increment]) -> list[Milestone]:
-    """Bảng "Mốc phát hành theo người dùng" (roadmap §0.5), ghép với §0.2."""
-    i = next(n for n, line in enumerate(lines) if line.startswith("#### Mốc phát hành theo người dùng"))
+    """The "User-facing release milestones" table (roadmap §0.5), joined to §0.2."""
+    i = next(
+        n for n, line in enumerate(lines) if line.startswith("#### User-facing release milestones")
+    )
     out: list[Milestone] = []
     for line in lines[i + 1 :]:
         if line.startswith("#") or line.startswith("---"):
@@ -332,7 +334,7 @@ def milestones(lines: list[str], matrix: list[Increment]) -> list[Milestone]:
     missing = set(by_id) - set(owner)
     if missing or set(owner) - set(by_id):
         raise SystemExit(
-            f"Bảng mốc phát hành lệch §0.2: {sorted(missing or set(owner) - set(by_id))}"
+            f"The release milestone table disagrees with §0.2: {sorted(missing or set(owner) - set(by_id))}"
         )
     for m in out:
         dates, refs, states = [], [], []
@@ -351,7 +353,7 @@ def milestones(lines: list[str], matrix: list[Increment]) -> list[Milestone]:
         if len(dates) == len(m.incs):
             m.date = max(dates)
         elif refs:
-            m.after = "sau " + max((owner[r] for r in refs if r in owner), key=lambda x: x.n).name
+            m.after = "after " + max((owner[r] for r in refs if r in owner), key=lambda x: x.n).name
         if all(st == "done" for st in states):
             m.state = "done"
         elif m.done or any(st in ("done", "partial") for st in states):
@@ -363,7 +365,7 @@ CODES = re.compile(r"\s*\((?=[^)]*(?:TSK-|Q-\d|§|#\d|RFC-|I\d))[^)]*\)")
 
 
 def human(text: str) -> str:
-    """Bỏ các cụm mã nội bộ trong ngoặc — dành cho người đọc không cần ký hiệu."""
+    """Drop parenthesised internal codes — for readers who do not need the notation."""
     return re.sub(r"\s{2,}", " ", CODES.sub("", plain(text))).strip(" ·;")
 
 
@@ -444,22 +446,25 @@ def legend() -> str:
     return f'<div class="legend">{items}</div>'
 
 
-STATE_TEXT = {"done": "Đã xong", "active": "Đang làm", "upcoming": "Chưa bắt đầu"}
+STATE_TEXT = {"done": "Done", "active": "In progress", "upcoming": "Not started"}
 
 
-def vn_date(d: str) -> str:
+MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def en_date(d: str) -> str:
     y, m, day = d.split("-")
-    return f"{int(day)} thg {int(m)}, {y}"
+    return f"{MONTHS[int(m) - 1]} {int(day)}, {y}"
 
 
 def timeline(ms: list[Milestone], today: str, launch: set[int]) -> str:
-    """Các mốc có ngày trên một trục thời gian (SVG); nhãn chia tầng để không chồng nhau."""
+    """Dated milestones on one time axis (SVG); labels are tiered so they do not overlap."""
     dated = sorted((m for m in ms if m.date), key=lambda m: m.date)
     dates = sorted({m.date for m in dated} | {today})
     first, last = date.fromisoformat(dates[0]), date.fromisoformat(dates[-1])
     span = max((last - first).days, 1)
     width, left, right, axis = 1080, 90, 90, 96
-    lanes = [62, 30, 132, 164]  # hai tầng trên, hai tầng dưới trục
+    lanes = [62, 30, 132, 164]  # two lanes above the axis, two below
 
     def x(d: str) -> float:
         return left + (date.fromisoformat(d) - first).days / span * (width - left - right)
@@ -470,14 +475,14 @@ def timeline(ms: list[Milestone], today: str, launch: set[int]) -> str:
         f'<line x1="{x(today):.1f}" y1="{axis - 18}" x2="{x(today):.1f}" y2="{axis + 18}" stroke="var(--accent)" '
         'stroke-width="2" stroke-dasharray="4 3"/>',
         f'<text x="{x(today):.1f}" y="{axis + 34}" text-anchor="middle" font-size="12" font-weight="600" '
-        'fill="var(--accent)">hôm nay</text>',
+        'fill="var(--accent)">today</text>',
     ]
     ends = [float("-inf")] * len(lanes)
-    ends[2] = x(today) + 30  # chừa chỗ cho nhãn "hôm nay"
+    ends[2] = x(today) + 30  # leave room for the "today" label
     for m in dated:
         cx = x(m.date)
         label = f"{m.n}. {m.name}"
-        half = max(len(label) * 3.6, len(vn_date(m.date)) * 3.2) + 8
+        half = max(len(label) * 3.6, len(en_date(m.date)) * 3.2) + 8
         lane = next((k for k in range(len(lanes)) if ends[k] < cx - half), 0)
         ends[lane] = cx + half
         y = lanes[lane]
@@ -496,24 +501,24 @@ def timeline(ms: list[Milestone], today: str, launch: set[int]) -> str:
         out.append(
             f'<text x="{cx:.1f}" y="{y - 14}" text-anchor="middle" font-size="12" font-weight="{700 if big else 500}" '
             f'fill="var(--ink)">{html.escape(label)}</text>'
-            f'<text x="{cx:.1f}" y="{y}" text-anchor="middle" font-size="11" fill="var(--ink3)">{vn_date(m.date)}</text>'
+            f'<text x="{cx:.1f}" y="{y}" text-anchor="middle" font-size="11" fill="var(--ink3)">{en_date(m.date)}</text>'
         )
     return (
         f'<div class="tl"><svg viewBox="0 0 {width} 180" width="100%" role="img" '
-        f'aria-label="Dòng thời gian các mốc phát hành">{"".join(out)}</svg></div>'
+        f'aria-label="Timeline of release milestones">{"".join(out)}</svg></div>'
     )
 
 
 def milestone_card(m: Milestone, launch: set[int]) -> str:
-    when = vn_date(m.date) if m.date else html.escape(m.after or "chưa có ngày")
-    badge = '<span class="pill launch">Ra mắt</span>' if m.n in launch else ""
+    when = en_date(m.date) if m.date else html.escape(m.after or "no date yet")
+    badge = '<span class="pill launch">Launch</span>' if m.n in launch else ""
     return (
         f'<article class="ms {m.state}{" launch" if m.n in launch else ""}">'
         f'<h3><span class="num">{m.n}</span>{html.escape(m.name)}</h3>'
         f'<p class="does">{inline(m.does)}</p><p class="why">{inline(m.why)}</p>'
-        f'<div class="prog" role="img" aria-label="{m.pct}% việc đã xong"><span style="width:{m.pct}%"></span></div>'
+        f'<div class="prog" role="img" aria-label="{m.pct}% of the work done"><span style="width:{m.pct}%"></span></div>'
         f'<div class="meta"><span class="pill {m.state}">{STATE_TEXT[m.state]}</span>{badge}'
-        f"<span>{when}</span><span>{m.pct}% việc xong</span><span>{html.escape(m.who)}</span></div></article>"
+        f"<span>{when}</span><span>{m.pct}% done</span><span>{html.escape(m.who)}</span></div></article>"
     )
 
 
@@ -529,35 +534,35 @@ def render() -> str:
     decisions = open_decisions()
     ms = milestones(lines, matrix)
 
-    updated = DATE.search(status["Lần cập nhật cuối"]).group(1)
+    updated = DATE.search(status["Last updated"]).group(1)
     today = date.fromisoformat(updated)
 
-    public = next(m for m in ms if m.who.startswith("Mọi người"))
+    public = next(m for m in ms if m.who.startswith("Everyone"))
     v10 = next(m for m in ms if "v1.0" in m.name)
     launch = {public.n, v10.n}
     current = next((m for m in ms if m.state != "done"), ms[-1])
 
     def days(m: Milestone) -> str:
-        return f"còn {(date.fromisoformat(m.date) - today).days} ngày" if m.date else m.after
+        return f"{(date.fromisoformat(m.date) - today).days} days left" if m.date else m.after
 
     hero = (
-        f'<section class="card hero" aria-label="Tóm tắt">'
-        f'<div class="now"><p class="k">Hôm nay</p><p class="big">Mốc {current.n}: {html.escape(current.name)}</p>'
-        f'<p class="s">{current.pct}% việc xong · {STATE_TEXT[current.state].lower()}</p></div>'
-        f'<div><p class="k">Người ngoài dùng được</p><p class="big">{vn_date(public.date) if public.date else "—"}</p>'
+        f'<section class="card hero" aria-label="Summary">'
+        f'<div class="now"><p class="k">Today</p><p class="big">Milestone {current.n}: {html.escape(current.name)}</p>'
+        f'<p class="s">{current.pct}% done · {STATE_TEXT[current.state].lower()}</p></div>'
+        f'<div><p class="k">Usable by outsiders</p><p class="big">{en_date(public.date) if public.date else "—"}</p>'
         f'<p class="s">{html.escape(public.name)} · {days(public)}</p></div>'
-        f'<div><p class="k">v1.0 — đưa vào sản phẩm</p><p class="big">{vn_date(v10.date) if v10.date else "—"}</p>'
+        f'<div><p class="k">v1.0 — ready to ship in products</p><p class="big">{en_date(v10.date) if v10.date else "—"}</p>'
         f'<p class="s">{days(v10)}</p></div></section>'
     )
 
     core = [m for m in ms if m.n <= v10.n]
     after = [m for m in ms if m.n > v10.n]
     journey = (
-        '<section class="card"><h2>Hành trình tới sản phẩm dùng được</h2>'
-        '<p class="lede">Mỗi mốc là một việc người dùng làm được. Ngày là dự báo của đội; trượt thì dời ngày, không cắt phạm vi.</p>'
+        '<section class="card"><h2>The journey to a usable product</h2>'
+        '<p class="lede">Each milestone is something a user can do. Dates are the team’s forecast; if one slips, the date moves and the scope is not cut.</p>'
         f"{timeline(ms, updated, launch)}"
         f'<div class="journey">{"".join(milestone_card(m, launch) for m in core)}</div>'
-        f'<details class="later"><summary>Sau v1.0 — {len(after)} mốc: '
+        f'<details class="later"><summary>After v1.0 — {len(after)} milestones: '
         f"{html.escape(' · '.join(m.name for m in after))}</summary>"
         f'<div class="journey" style="margin-top:12px">{"".join(milestone_card(m, launch) for m in after)}</div>'
         "</details></section>"
@@ -565,7 +570,7 @@ def render() -> str:
 
     blockers = [
         human(b)
-        for b in plain(status["Chặn ngoài tầm kỹ thuật · ghi chú"]).replace("🔴", "").split(" · ")
+        for b in plain(status["Non-technical blockers · notes"]).replace("🔴", "").split(" · ")
     ]
     nexts = "".join(f"<li>{inline(item)}</li>" for item in card.get("3", []))
     dec = "".join(
@@ -574,10 +579,10 @@ def render() -> str:
     )
     asks = "".join(f"<li>{html.escape(b[:1].upper() + b[1:])}</li>" for b in blockers if b)
     actions = (
-        '<section class="card"><h2>Cần chủ sản phẩm</h2><p class="lede">Những việc chỉ người làm được; đội đang chờ.</p>'
+        '<section class="card"><h2>Needs the product owner</h2><p class="lede">Things only a person can do; the team is waiting.</p>'
         f'<ul class="steps">{asks}</ul>'
         + (
-            f'<p style="margin:12px 0 0"><b>Quyết định còn mở</b></p><ul class="steps">{dec}</ul>'
+            f'<p style="margin:12px 0 0"><b>Decisions still open</b></p><ul class="steps">{dec}</ul>'
             if dec
             else ""
         )
@@ -586,35 +591,35 @@ def render() -> str:
 
     v1_tasks = [t for t in tasks if t.increment and inc_number(t.increment) <= 7]
     done_v1 = sum(t.state == "done" for t in v1_tasks)
-    ci = re.search(r"PASS (\d+)/(\d+) · SKIP (\d+)", plain(status["Trạng thái CI Lõi"]))
+    ci = re.search(r"PASS (\d+)/(\d+) · SKIP (\d+)", plain(status["Core CI status"]))
     passed = sum(ok for _, _, ok in accept)
     health = (
-        '<section class="card"><h2>Sức khoẻ</h2><div class="health">'
-        f"<div><b>{round(100 * done_v1 / len(v1_tasks))}%</b><span>việc tới v1.0 đã xong ({done_v1}/{len(v1_tasks)})</span></div>"
-        f"<div><b>{ci.group(1) if ci else '?'}</b><span>test tự động đạt, {ci.group(3) if ci else '?'} bỏ qua</span></div>"
-        f"<div><b>{passed}/{len(accept)}</b><span>tiêu chí nghiệm thu v1.0 đã đạt</span></div>"
-        f"<div><b>{len(todo_items)}</b><span>việc hoãn có chủ ý, mỗi việc có mốc kích hoạt</span></div>"
+        '<section class="card"><h2>Health</h2><div class="health">'
+        f"<div><b>{round(100 * done_v1 / len(v1_tasks))}%</b><span>of the work to v1.0 done ({done_v1}/{len(v1_tasks)})</span></div>"
+        f"<div><b>{ci.group(1) if ci else '?'}</b><span>automated tests passing, {ci.group(3) if ci else '?'} skipped</span></div>"
+        f"<div><b>{passed}/{len(accept)}</b><span>v1.0 acceptance criteria met</span></div>"
+        f"<div><b>{len(todo_items)}</b><span>deliberate deferrals, each with an activation trigger</span></div>"
         "</div></section>"
     )
 
     def stamp(day: str) -> str:
-        return f' — <span class="stamp">{vn_date(day)}</span>' if day else ""
+        return f' — <span class="stamp">{en_date(day)}</span>' if day else ""
 
     recent = "".join(
         f"<li><b>{html.escape(code)}</b> · {html.escape(title)}{stamp(day)}</li>"
         for code, title, day in recent_decisions()
     )
     decided = (
-        '<section class="card"><h2>Quyết định gần nhất</h2>'
-        '<p class="lede">Năm mục mới nhất của sổ quyết định (PRD §15).</p>'
+        '<section class="card"><h2>Latest decisions</h2>'
+        '<p class="lede">The five newest entries of the decision log (PRD §15).</p>'
         f'<ul class="steps">{recent}</ul></section>'
     )
 
     feats = []
     for line in between(
         CHANGELOG.read_text(encoding="utf-8").splitlines(),
-        "#### Đã thêm",
-        "#### Đã đổi",
+        "#### Added",
+        "#### Changed",
     ):
         m = re.match(r"- \*\*(.+?)\*\*", line)
         if m:
@@ -622,11 +627,11 @@ def render() -> str:
             text = human(text).rstrip(".")
             feats.append(html.escape(text[:1].upper() + text[1:]))
     shipped = (
-        '<section class="card"><h2>Năng lực mới đã có</h2><p class="lede">Từ CHANGELOG, chưa phát hành ra ngoài.</p>'
+        '<section class="card"><h2>New capabilities in place</h2><p class="lede">From the CHANGELOG, not yet released externally.</p>'
         f'<ul class="steps">{"".join(f"<li>{f}</li>" for f in feats[:6])}</ul></section>'
     )
 
-    # Chi tiết kỹ thuật cho đội — giữ đủ số liệu của roadmap §0.2.
+    # Technical detail for the team — keeps every figure of roadmap §0.2.
     by_inc: dict[str, dict[str, int]] = {}
     for task in tasks:
         if task.increment:
@@ -656,55 +661,57 @@ def render() -> str:
         for t in dated + [t for t in todo_items if not t["date"]]
     )
     tech = (
-        '<section class="card"><details class="tech"><summary>Chi tiết kỹ thuật cho đội</summary>'
-        f'<p class="lede">Increment, task và việc hoãn theo đúng mã của roadmap; trang trên chỉ gom chúng thành mốc.</p>{legend()}'
-        '<div class="scroll"><table><thead><tr><th>Mốc</th><th>Increment</th><th>Dự báo</th><th class="r">Tiến độ</th>'
-        '<th>Task theo trạng thái</th><th class="r">Tiêu chí ra</th><th>Trạng thái</th></tr></thead>'
+        '<section class="card"><details class="tech"><summary>Technical detail for the team</summary>'
+        f'<p class="lede">Increments, tasks and deferrals under the roadmap’s own codes; the page above only groups them into milestones.</p>{legend()}'
+        '<div class="scroll"><table><thead><tr><th>Milestone</th><th>Increment</th><th>Forecast</th><th class="r">Progress</th>'
+        '<th>Tasks by status</th><th class="r">Exit criteria</th><th>Status</th></tr></thead>'
         f"<tbody>{''.join(rows)}</tbody></table></div>"
-        f'<h3>Việc tiếp theo của đội (thẻ bàn giao, đúng thứ tự)</h3><ol class="steps">{nexts}</ol>'
-        f'<h3>Task đang dở hoặc chờ người</h3><div class="scroll"><table><tbody>{wait_rows}</tbody></table></div>'
-        f'<h3>Việc hoãn có chủ ý ({len(todo_items)})</h3><div class="scroll"><table><tbody>{todo_rows}</tbody></table></div>'
+        f'<h3>The team’s next steps (handoff card, in order)</h3><ol class="steps">{nexts}</ol>'
+        f'<h3>Tasks in progress or waiting on a person</h3><div class="scroll"><table><tbody>{wait_rows}</tbody></table></div>'
+        f'<h3>Deliberate deferrals ({len(todo_items)})</h3><div class="scroll"><table><tbody>{todo_rows}</tbody></table></div>'
         "</details></section>"
     )
 
     return f"""<!doctype html>
-<!-- SINH TỰ ĐỘNG bởi scripts/gen_cpo_dashboard.py — đừng sửa tay. Kiểm: --check -->
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NeuroEdge — Dashboard sản phẩm</title><style>{CSS}</style></head><body><main>
+<!-- GENERATED by scripts/gen_cpo_dashboard.py — do not edit by hand. Check: --check -->
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NeuroEdge — Product dashboard</title><style>{CSS}</style></head><body><main>
 <header class="top"><div><h1>NeuroEdge</h1>
-<p class="tagline">Nơi biến ý định thành sản phẩm vật lý có AI — dựng, chạy an toàn, chia sẻ và bán (Q-72).</p></div>
-<span class="stamp">Dashboard cho CPO · số liệu tới {vn_date(updated)}</span></header>
+<p class="tagline">Where an idea becomes a physical AI product — build it, run it safely, share it and sell it (Q-72).</p></div>
+<span class="stamp">CPO dashboard · figures as of {en_date(updated)}</span></header>
 {hero}
 {journey}
 <div class="grid2">{actions}{shipped}</div>
 {decided}
 {health}
 {tech}
-<p class="foot">Sinh bởi <code>scripts/gen_cpo_dashboard.py</code> từ <code>roadmap/neuroedge-roadmap.md</code> (§0.1–§0.5, bảng task),
-<code>TODOS.md</code>, <code>roadmap/neuroedge-prd.md</code> §15 và <code>CHANGELOG.md</code>. Đừng sửa tay trang này.
-Kiến trúc tổng thể: <a href="kien-truc-tong-the.html">kien-truc-tong-the.html</a>.</p>
+<p class="foot">Generated by <code>scripts/gen_cpo_dashboard.py</code> from <code>roadmap/neuroedge-roadmap.md</code> (§0.1–§0.5, task tables),
+<code>TODOS.md</code>, <code>roadmap/neuroedge-prd.md</code> §15 and <code>CHANGELOG.md</code>. Do not edit this page by hand.
+Overall architecture: <a href="kien-truc-tong-the.html">kien-truc-tong-the.html</a>.</p>
 </main></body></html>
 """
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--check", action="store_true", help="không ghi; thoát 1 nếu tệp đã cũ")
+    parser.add_argument(
+        "--check", action="store_true", help="write nothing; exit 1 if the file is stale"
+    )
     args = parser.parse_args()
     content = render()
     if args.check:
         current = TARGET.read_text(encoding="utf-8") if TARGET.exists() else ""
         if current != content:
             print(
-                f"{TARGET.relative_to(ROOT)} đã cũ. Chạy: python3 scripts/gen_cpo_dashboard.py",
+                f"{TARGET.relative_to(ROOT)} is stale. Run: python3 scripts/gen_cpo_dashboard.py",
                 file=sys.stderr,
             )
             return 1
-        print(f"{TARGET.relative_to(ROOT)} khớp nguồn")
+        print(f"{TARGET.relative_to(ROOT)} matches its source")
         return 0
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     TARGET.write_text(content, encoding="utf-8")
-    print(f"Đã ghi {TARGET.relative_to(ROOT)}")
+    print(f"Wrote {TARGET.relative_to(ROOT)}")
     return 0
 
 

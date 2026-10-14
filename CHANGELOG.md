@@ -1,204 +1,205 @@
-# Nhật ký thay đổi — NeuroEdge
+# Changelog — NeuroEdge
 
-Toàn bộ thay đổi đáng kể của dự án được ghi tại đây, theo tinh thần
-[Keep a Changelog](https://keepachangelog.com/) và
+All notable changes to this project are documented here, in the spirit of
+[Keep a Changelog](https://keepachangelog.com/) and
 [Semantic Versioning](https://semver.org/lang/vi/).
 
-> **Tệp này có ba phần, đọc theo nhu cầu:**
+> **This file has three parts, read as needed:**
 >
-> | Bạn cần gì | Đọc mục |
+> | What you need | Section to read |
 > |:---|:---|
-> | Biết đã thay đổi những gì | [§1 Nhật ký phiên bản](#1-nhật-ký-phiên-bản) |
-> | Chạy được hệ thống ngay | [§2 Cách vận hành](#2-cách-vận-hành) |
-> | Tiếp quản để build tiếp | [§3 Bàn giao ngữ cảnh sản phẩm](#3-bàn-giao-ngữ-cảnh-sản-phẩm) |
+> | Know what has changed | [§1 Version Log](#1-version-log) |
+> | Run the system immediately | [§2 Operating Guide](#2-operating-guide) |
+> | Take over to continue building | [§3 Product Context Handoff](#3-product-context-handoff) |
 >
-> **Nguồn sự thật về tiến độ** vẫn là [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md)
-> §0 (bảng theo dõi và thẻ bàn giao). Tệp này kể *đã xây gì và chạy thế nào*;
-> roadmap kể *còn gì phải xây*. Thứ tự ưu tiên khi lệch nhau: §3.1.
+> **The source of truth for progress** remains [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md)
+> §0 (tracking table and handoff card). This file recounts *what was built and how it runs*;
+> the roadmap recounts *what remains to be built*. Precedence order in case of divergence: §3.1.
 
 ---
 
-## 1. Nhật ký phiên bản
+## 1. Version Log
 
-Mỗi task xong thêm hoặc sửa **một** mục trong `[Chưa phát hành]`, theo
-`CONTRIBUTING.md` §8.2 bước 3. Khi phát hành, đổi tiêu đề thành số phiên bản và ngày
+Each completed task adds or edits **one** entry in `[Unreleased]`, following
+`CONTRIBUTING.md` §8.2 step 3. Upon release, rename the heading to the version number and date
 ([`docs/release.md`](docs/release.md)).
 
-Gói chưa phát hành phiên bản nào ra ngoài; trước khi công khai chỉ có tag nội bộ (Q-39), và phiên bản đầu tiên trên PyPI sẽ là `0.6.0` ở I6. Các mốc tài liệu Giai đoạn 1 được tóm tắt ở cuối phần này.
+The package has not yet released any public versions; before going public there are only internal tags (Q-39), and the first version on PyPI will be `0.6.0` at I6. Phase 1 documentation milestones are summarized at the end of this section.
 
-### [Chưa phát hành]
+### [Unreleased]
 
-#### Đã thêm
+#### Added
 
-- **NeuroClaw v0.2.0 → v0.2.2 và NeuroClaw-ESP gần zclaw, MimiClaw (TSK-I2d-22, TSK-I2f-11).** NeuroClaw phát hành v0.2.0, v0.2.1, v0.2.2 ([releases](https://github.com/letrongminh/neuroclaw/releases)): archive cho Linux (tám kiến trúc), macOS, Windows, FreeBSD, NetBSD, gói deb/rpm, bộ Android, ảnh `ghcr.io/letrongminh/neuroclaw`; ghi chú phát hành nói dùng tệp nào cho môi trường nào. Bản Go thêm tool `get_diagnostics` (chỉ đọc, không lộ khoá), ngân sách gọi LLM theo giờ và ngày (`agents.defaults.llm_budget`; đếm mọi request kể cả subagent, tóm tắt, dự phòng; hết thì nhắc lịch vẫn gửi nguyên văn kèm ghi chú), lệnh `neuroclaw session list|clear` và `neuroclaw heartbeat run` (neuroclaw PR #14). NeuroClaw-ESP thêm LLM kiểu Anthropic cho từng URL, Tavily, `get_diagnostics`, giới hạn gọi LLM theo giờ và ngày, bảng quản trị serial, ghim nhân CPU, build cho ESP32, S3, C3, C6; host test chạy dưới ASan, UBSan và QEMU e2e trong CI (PR #13). Tài liệu NeuroClaw khớp mã, có hướng dẫn cài theo môi trường và hướng dẫn làm bộ não NeuroEdge, tiếng Anh và chín bản dịch; workspace mặc định và help CLI nói NeuroClaw (PR #12); v0.2.2 sửa nốt banner, thông báo CLI, tiêu đề kênh, User-Agent và tên client MCP, giữ tên đã lưu hoặc của giao thức (MQTT, khoá credential, WeCom, OAuth) để máy đã cài không hỏng (PR #15). Persona, tool tự viết, WebSocket, web relay không làm: bản Go đã có (skill, kênh Pico, `SOUL.md`) hoặc không cần trên chip. So sánh với zclaw, MimiClaw: `docs/reference/capabilities.md` §12 của repo đó. Mở TSK-I2f-13: cài Wi-Fi và cấu hình ban đầu cho chip một mình bằng `wifi_provisioning` có PoP, trong firmware NeuroEdge.
-- **Q-80 — NeuroClaw có đủ năng lực PicoClaw.** Gỡ khoá cứng của Q-78: shell, bus phần cứng, cài skill, lệnh trong cron, hook tiến trình, theo dõi USB, MCP stdio là cấu hình như PicoClaw, mặc định như PicoClaw v0.3.1; mỗi thứ đang bật ghi `NeuroClaw risk=<tên>` lúc khởi động (theo Q-73). Web console, launcher và phát hành đủ nền tảng (goreleaser, Docker GHCR, deb/rpm, DMG, nightly) trở lại. Demo `i2f-chat-den-cua` giữ bộ não khoanh vùng bằng `config.json` (`test_the_demo_brain_is_configured_closed`); `threat_model.md` §2b, §2g, §2k, §3 nói rõ bộ não mở cần cô lập worker (TSK-I2d-24).
-- **Q-79 — ESP32-S3 một mình, giai đoạn 1 (TSK-I2f-10).** Cách chạy thứ ba của bộ não: bộ não và gate chung một ESP32-S3, có nhãn rủi ro (`threat_model.md` §2l); tool call của LLM sẽ đi qua `ne_gate`, không bao giờ thẳng ra GPIO. Giai đoạn 1 port từ zclaw và MimiClaw (MIT, `NOTICE` mục 6, 7) bốn phần nền, chạy trên QEMU: boot guard (`ne_boot`: ba lần khởi động không đứng được thì lần thứ tư vào safe mode, chỉ còn bảng serial; không mạng, không runtime gate, không đánh dấu ảnh OTA hợp lệ); cấu hình và bí mật trong phân vùng NVS mới `ne_config` (`ne_config`: mã hoá dưới lớp mới `sdkconfig.secure`, không lùi về dạng rõ; dạng rõ thì nhãn `risk=readable_flash`); bảng điều khiển serial (`ne_console`: `status`, `config`, `bootguard`, `reboot`, `factory-reset`; bí mật nhập ở dấu nhắc ẩn, không lên UART, không vào lịch sử); stack guard (`scripts/check_stack_usage.py`: mọi hàm của ta khung tĩnh ≤ 1024 B, task chính còn ≥ 512 B trên QEMU). Hai phân vùng mới nằm sau `storage`, không dời offset nào. CI `firmware-qemu` thêm stack guard, kịch bản sáu lần khởi động (`scripts/qemu_console.py`) và build lớp mã hoá flash. Hướng dẫn: `docs/user/esp32-mot-chip.md`. Bộ não cho chip, **NeuroClaw-ESP**, nằm ở repo `neuroclaw` (`esp32/`, MIT): cùng workspace và tool với NeuroClaw Go — Telegram chỉ chủ nhà, `memory/MEMORY.md`, ghi chú ngày, tệp nhận dạng, skills, cuộc trò chuyện giữ qua khởi động lại kèm `CONTEXT_SUMMARY`, `cron`, heartbeat, `web_search`, `web_fetch` (từ chối mạng nhà), `message` và `send_file` chỉ tới chủ nhà, URL LLM dự phòng theo luật chuyển và cooldown của bản Go — chạy trên QEMU với gate giả; nối vào `ne_gate` (TSK-I2f-11, I2f-12) chờ bo DevKitC; khoá `llm.fallback.*` của `ne_config` làm cùng lúc.
-- **Q-78 — NeuroClaw, bộ não NeuroEdge.** Fork cứng PicoClaw v0.3.1 thành NeuroClaw, repo riêng [`letrongminh/neuroclaw`](https://github.com/letrongminh/neuroclaw), MIT. Ba bản vá rút từ demo: mTLS cho MCP qua HTTP (bỏ cầu nối), khoá cứng mọi đường chạy lệnh và chạm phần cứng (gỡ ở Q-80, thay bằng nhãn rủi ro), và nói rõ với LLM khi hộp hỏi chủ nhà; `neuroclaw update` tải bản phát hành của NeuroClaw, không của PicoClaw. Năng lực từng phần, nhãn rủi ro và lỗ hổng đã biết: `docs/reference/capabilities.md` trong repo đó. Demo `demo/i2f-chat-den-cua/` chuyển sang NeuroClaw (`neuroclaw/config.json`, `chay-nao.sh`); `cau-noi.py` giữ cho worker không trình được chứng chỉ. Chạy thật trên laptop: đèn ALLOW, cửa hỏi chủ nhà và bộ não báo đang chờ, lệnh shell bị từ chối.
-- **Demo nội bộ: chat điều khiển đèn và cửa qua NeuroEdge Cloud** (`demo/i2f-chat-den-cua/`, TSK-I2d-22). `neuroedge mcp serve --http --ui` nay chạy được: bộ não ở xa gọi tool qua mTLS và token, còn trang trên 127.0.0.1 là người ở nhà, nơi duy nhất trả lời được câu hỏi `ask` (`tool_calling.md` §8.1). Agent `chat-den-cua`: đèn bật tắt tự do, cửa hỏi chủ nhà rồi mở 30 giây, ban đêm hoặc quá 30 giây thì chặn không hỏi. Bộ demo gồm cấu hình PicoClaw v0.3.1 rút gọn (không shell kể cả qua cron và hook; không i2c, spi, serial; không cài skill; một MCP server là hộp), `tao-khoa.py` (CA, chứng chỉ, token gắn chứng chỉ) `cau-noi.py` (cầu nối mTLS, vì client MCP của PicoClaw không trình được chứng chỉ), và ba script chạy demo từ `.env.txt`: `chay-hop.sh` (hộp), `chay-nao.sh` (bộ não, trên VPS hay laptop), `dung-vps.sh` (dựng VPS bằng một lệnh, chỉ chép khoá của bộ não). Test: cửa không mở từ cloud khi chưa có lời duyệt tại nhà, kể cả khi tự khai `call_source` hay dữ kiện; cấu hình bộ não không có đường nào ra thế giới ngoài tool của hộp; một client chỉ gửi header đi qua cầu nối tới hộp và vết ghi replay khớp. Đã chạy đủ sáu màn qua Telegram ngày 2026-10-13, với máy OrbStack đóng vai cloud: đèn trả lời trong 3,0–4,7 s, cửa chỉ mở sau lời duyệt trên trang, replay khớp 18 phán quyết; kiểm thử K1–K5, C1–C2 đạt. VPS qua đường hầm và video hoãn ở `TODOS.md` #69.
-- **Q-77 — gọn roadmap.** Bỏ khỏi roadmap thoại (I4, I5), NeuroEdge Lab (I4a, I5a), mở danh sách target cho bên thứ ba và mọi increment sau Beta (I9, I10, I13, I14, I16, I17, I18, Khối 4, Khối 5). Task của chúng còn một dòng mỗi task ở roadmap §6 kèm mốc mở lại; mã thoại đã có giữ nguyên. MVP v1.0 viết lại: A6 đo không thoại, A11 bỏ. Mốc phát hành còn tám; Phụ lục A (ánh xạ sprint cũ) bỏ. Hình E-01, E-02, E-04, E-07, E-09, E-10, E-11 vẽ lại.
-- **Kiến trúc gọn từ 17 xuống 10 chương (Q-77).** Bối cảnh vào `00` §9, triển khai vào `02` §6, hướng dẫn port vào `10` §7, điểm biến thiên và nợ kiến trúc vào `15` §8–§9; bỏ ba chương chép lại PRD §9, PRD §15 và `python/README.md`. Chương 15 thu các mục đã bỏ còn một dòng chỉ chỗ. Bản cũ: `git show f7278fc:docs/architecture/vi/<tệp>`.
-- **Q-76 — bộ não NeuroEdge: tự host hoặc NeuroEdge Cloud.** LLM worker kiểu PicoClaw (chat, LLM, trí nhớ, lịch; shell và công cụ phần cứng theo cấu hình, có nhãn — Q-80), chạm thiết bị của nhà chỉ qua MCP tới runtime. Cùng phần mềm chạy tự host trên board Linux rẻ hoặc trên NeuroEdge Cloud, mỗi người một instance cách ly. Lời duyệt việc không hoàn tác ký bằng passkey trên điện thoại, hộp tự kiểm (FR-CH-08). Task: TSK-I2d-22 → I2d-24, TSK-I2f-02, TSK-I2f-07 → I2f-09; FR-AGT-12. Câu định vị dời sang dự kiến Q-77 (`TODOS.md` #67).
-- **Port tối đa từ mã nguồn mở theo task (roadmap §3.11).** Mỗi task chưa làm của I2d, I2e, I2f, I3a có thư viện hoặc dự án để mượn, kèm giấy phép đã kiểm: PicoClaw, aiogram, APScheduler, Frigate, pi-gen, wifi-connect, copier, NATS, Firecracker/gVisor, py_webauthn, nanopb, esp-dl, mã C của zclaw/MimiClaw. Loại python-telegram-bot (LGPL) và Ultralytics (AGPL).
-- **Thử thông điệp định vị với maker.** Review định vị 2026-10-12 chọn hướng lai: NeuroEdge là runtime cho mọi agent điều khiển đồ thật, người dùng thấy câu chuyện kết quả. Ba câu thử ("Runtime cho AI điều khiển đồ thật", "AI nói hay. Thiết bị phải làm đúng", "Thử thiết bị AI trên giả lập trước khi nó chạm vào đời thật") vào bộ phỏng vấn Maker (`phong-van.md` §5c) với luật chọn `M-MSG`; chốt sau cổng nhu cầu (`TODOS.md` #67). Điểm cắm gate trong ESP-Claw cần kiểm trước khi nhắc tới (`TODOS.md` #68).
-- **Q-75 — bằng chứng thực địa "host nghĩ, ESP32 làm".** Từ hai dự án thật (robot phun thuốc Pi + ESP32-S3, hạm đội Pi + Hailo nuôi thủy sản): liên kết Pi ↔ ESP32 tối thiểu có nhịp tim và phản xạ mất liên lạc lên I3a (TSK-I3a-06, TSK-I3a-07); bo ESP32-S3 phổ thông và thư viện Arduino (TSK-I3a-08, TSK-I3a-09); khung dự án nhiều chip `neuroedge new --layout host+mcu` (TSK-I2e-14); chưa làm quản lý đội thiết bị trước khi người dùng đòi (điều kiện vào I9).
-- **Q-74 — não trên cloud tuỳ chọn, tuỷ sống tại nhà.** Người dùng chỉ cần chat: LLM worker và trò chuyện có thể chạy trên NeuroEdge Cloud, còn gate, phản xạ và kiểm lời duyệt luôn ở hộp tại nhà (Pi, add-on Home Assistant, hoặc ESP32-S3 cho một việc). Bước 1 làm hộp dễ cài (TSK-I2e-12, TSK-I2e-13); bước 2 mở cloud có thuê bao sau cổng nhu cầu nếu số đo cần (increment I2f, có điều kiện). Tài liệu theo: PRD §1.2, FR-CH-06, FR-CH-07, FR-AGT-10, FR-AGT-11, §8.4; kiến trúc 15 §6.10, 00, 14; threat model §2k; `tool_calling.md` §6; thuật ngữ; roadmap: TSK-I2d-20, TSK-I2d-21 (Q-73), TSK-I2e-12, TSK-I2e-13, increment I2f (TSK-I2f-01…06), mốc 9 "Một ô chat cho nhiều thiết bị"; hình E-01, E-02, E-08, E-09, E-10, E-11 vẽ lại.
-- **Q-73 — mở, có minh bạch.** Người dùng tự chọn cách xác minh (kể cả đọc mã bằng giọng nói) và luồng nhiều bước; NeuroEdge không cấm, chỉ hiện rõ mức rủi ro. Giữ ba bất biến: AI không xác minh thay người, luật chạy đúng như khai, có vết ghi. RFC theo dõi ở TSK-I2d-20.
-- **Tài liệu sản phẩm và kiến trúc theo Q-72 — đủ trước khi triển khai.** PRD 1.6: định vị NeuroEdge Blueprint, maker là người dùng đầu (U1, U5, U8, U9), yêu cầu FR-MSN, FR-AGT, FR-CH, FR-EGR, FR-BP, FR-TRC-11…13, FR-CLI-13…15, NFR chi phí LLM, tiêu chí A14–A22, cổng nhu cầu B6–B8 (đảo Q-56). Roadmap thêm increment I2d (TSK-I2d-01…19) và I2e (TSK-I2e-01…11). Kiến trúc cập nhật runtime 24/7, LLM worker, duyệt qua chat, `safe_state` đối xứng và lưu trace 30 ngày.
-- **Q-72 — định vị Blueprint: từ một câu nói tới một sản phẩm vật lý có AI.** Định vị ba vòng dựng (MCP), chạy (agent vận hành, trần chi phí, báo chủ động qua chat) và chia sẻ/bán (Blueprint, Hub) với maker là người dùng đầu. Duyệt qua kênh chat ghép đôi (mở rộng Q-26), khôi phục cổng nhu cầu 8 tuần (đảo Q-56), hoãn ký trace trước MVP; `safe_state` khác `off` khai trong `board.v1`.
-- **Q-71 — NeuroEdge Lab qua MCP thay NeuroBrain (TSK-N0-01, TSK-N0-04).** Client MCP (Claude Code, Claude Desktop) soạn bản nháp qua tool lab; NeuroEdge chấm (`neuroedge lab check`), cưỡng chế gate/phong bì lúc chạy, người duyệt qua PR. Phân tách quyền thiết bị và kênh tin cậy theo threat model §2c; gói dự kiến `neuroedge.lab`.
-- **Bộ tài liệu đợt thử đối tác (TSK-I2c-19, Q-70).** `docs/user/doi-tac/`: hướng dẫn Home Assistant qua `proxy mcp`, `neuroedge.guard` trong Python, `proxy http` trước API thiết bị; `docs/business/doi-tac/`: thỏa thuận thử nghiệm; kiểm tự động bằng `scripts/partner_guides_check.sh`.
-- **Plugin Home Assistant cho cơ cấu từ xa (TSK-I2c-16 phần B, RFC-0018 §3j).** Kho `letrongminh/neuroedge-homeassistant`: entry point `neuroedge.actuators: home_assistant`, mức L1 cho switch/light/input_boolean, xác nhận trạng thái bằng polling, đạt 9/9 conformance test trên bản giả.
-- **Cơ cấu chấp hành từ xa — lõi của RFC-0018 (TSK-I2c-16 phần A).** Chân `digital.out` khai ở `[actuators.<tên>]` qua plugin `neuroedge.actuators`, chỉ tới được qua `_admit`; mức tự tắt L0–L3 (hành động không hoàn tác cần ≥ L2); mất liên lạc thành `uncertain`; HAL quản lý nợ tắt; kiểm bằng `neuroedge conformance`.
-- **`allow_lan_http` cho hai proxy (Q-70).** Tùy chọn `allow_lan_http = true` trong `[proxy.mcp]` / `[proxy.http]` cho phép HTTP thuần tới dải địa chỉ riêng (RFC 1918, link-local, `*.local`, `*.lan`, `*.home.arpa`) cho thiết bị mạng nội bộ.
-- **`neuroedge proxy http` và `neuroedge guard init --http` (TSK-I2c-15, FR-EXT-06).** Đặt gate chặn mặc định trước API HTTP cục bộ qua `[[proxy.http.routes]]`; yêu cầu chỉ chuyển tiếp sau phán quyết ALLOW; nguồn `bridge:<id>`.
-- **`neuroedge proxy mcp` và `neuroedge guard init --mcp` (TSK-I2c-14, FR-EXT-06).** Đặt gate chặn mặc định trước MCP server sẵn có qua stdio; `guard init --mcp` sinh cấu hình và hỗ trợ cấu hình Claude Desktop qua `--desktop-config`.
-- **`neuroedge.guard` — lõi an toàn dùng độc lập (TSK-I2c-07, RFC-0016 §3b).** Chạy chu trình gate → token → phong bì → vết ghi độc lập không cần `agent.toml` hay `SimSession`; `Guard.load("guard.toml")`; hỗ trợ `TracePlayer` replay vết ghi.
-- **Nguồn gọi theo không gian tên — TSK-I2c-10 nửa (a), RFC-0017.** Trường `source` nhận `bridge:<id>` và `mcp:<client>`; chèn dữ kiện dẫn xuất `call_channel`; cập nhật `schemas/tool-call.v1.json`.
-- **Q-70 — thử riêng với một đội đối tác, không chờ bo mạch, không lên PyPI.** Thử nghiệm bộ công cụ gate (`proxy mcp`, `neuroedge.guard`, `proxy http`) trực tiếp qua wheel giao tay, đáp ứng năm điều kiện tại roadmap §4.3; thẻ bàn giao có mục tiêu mới.
-- **Trang kiến trúc tổng thể cho người ngoài nhóm kỹ thuật.** Bổ sung `docs/business/kien-truc-tong-the.html` mô tả xương sống thực thi năm tầng, cập nhật ADR Q-69 và dashboard CPO (`scripts/gen_cpo_dashboard.py`).
-- **I6 · TSK-I6-05 — hợp đồng cho người tích hợp trong `schemas/` (RFC-0015, Q-66).** Bốn lược đồ `tool-call.v1`, `tool-result.v1`, `error.v1`, `error-codes.v1` (17 mã lỗi `NE…`); kiểm tra khóa `schema = "neuroedge.board/v1"`.
-- **I2b · TSK-I2b-03 — thư viện gate khởi đầu `gates/home/`.** Bảy gate cơ sở (`door-lock`, `light`, `valve`, `siren`, `hvac`, `camera`, `motor`) khóa trong `digests.lock`, mỗi gate có ≥ 3 phản chứng chống nới lỏng.
-- **I2b · TSK-I2b-04 — `neuroedge add action|sensor|device|gate`.** Sinh `@action`, sensor, thiết bị hoặc gate chặn mặc định, kèm test hai chiều và kiểm tra hợp đồng bo mạch.
-- **I2b · TSK-I2b-01, TSK-I2b-02 — năm kit phần cứng.** `villa-concierge`, `home-voice`, `factory-monitor`, `gate-camera`, `blinds`: BOM, sơ đồ Pi 5 và ESP32-S3, vết golden `fixtures/traces/kits/`, hướng dẫn `docs/user/kit-*.md`.
-- **I6 · TSK-I6-05, TSK-I6-07 — phê duyệt RFC-0014 và RFC-0015 (Q-65, Q-66).** Chấp thuận hợp đồng người tích hợp vào `schemas/` (RFC-0015) và dữ kiện số từ tiến trình ngoài cùng máy (RFC-0014).
-- **I2a · TSK-V1b-04 — golden suy luận và sai số `tolerance` của từng bo (RFC-0012 §3f).** Lệnh `verify` so khớp suy luận thị giác với golden theo sha256 mô hình, nhãn, IoU và sai số điểm số; lệch sinh `NE4002`.
-- **I2a — `verify` phát lại agent mẫu của cả bốn gói trên `sim-rpi5` và `linux-rpi5`.** Bổ sung corpus `fine-control` (`fan-pwm`) và `motion` (`rover`) cạnh `sensor-pack` và `vision` (RFC-0013 §3f).
-- **I6 · TSK-P2-04 — MCP qua mạng có xác thực: `neuroedge mcp serve --http` (Q-58, Q-32).** Streamable HTTP với mTLS (TLS 1.3) và token OAuth 2.1 ràng buộc chứng chỉ thiết bị (NFR-SEC-09, FR-CLI-12).
-- **I2a · TSK-I2a-06, TSK-I2a-07 — `board.v1` khai mọi nguyên thủy mở rộng; `sim-rpi5`; `verify` chạy từng bo tham chiếu.** Khai báo `digital_in`, `i2c`, `analog_in`, `motion`, `vision_in`, `pwm`; `verify` chạy từng cặp (target, bo).
-- **I2a · TSK-I2a-02, TSK-I2a-03, TSK-I2a-04 — các nguyên thủy cảm biến (RFC-0007, RFC-0009).** `digital.in` mức logic có mốc đọc; I2C chỉ đọc qua allow-list (`/dev/i2c-N`); `analog.in` đo có đơn vị vào gate bằng tiêu chí `numeric`, ngoài thang sinh `NE5001`.
-- **I2a · TSK-N2-01 → TSK-N2-05 — phong bì an toàn theo chân chạy thật trên `sim` và `linux`.** Chu trình `require_pin → envelope → authorize → record`; từ chối sinh `NE1003`; tự tắt theo thời gian và giám sát write-ahead.
-- **I2a · TSK-V1b-01, TSK-V1b-02, TSK-V1b-03, TSK-V1b-06, TSK-V1b-08 — gói thị giác (RFC-0012).** V4L2 Python thuần trên Linux, camera ảo trên `sim`, `VisionPipeline` (mất/cũ khung sinh BLOCK), gate mẫu `gates/vision/`, vết ghi `vision_ref` replay không cần ảnh thô.
-- **I2a · TSK-W1-01, TSK-I2a-05 — PWM và chuyển động (RFC-0010, RFC-0011).** PWM bắt buộc `duration_ms`, duty lượng tử về 0; `motion.*` (motor/servo) quản lý bằng lease một lệnh, `safe_state` khi hết lease/BLOCK.
-- **I2a · TSK-W1-02 — tiêu chí `numeric` và `NETR` v2 (RFC-0009).** Ngưỡng số bắt buộc `unit`, `range`, `max_age_ms`; cấu trúc nhị phân `NETR` v2 header 80 byte và bảng số 48 byte cho walker C.
-- **I1 · TSK-I1-04 — NeuroEdge Studio: `neuroedge studio` (Q-51).** Bảy màn hình web cục bộ trên 127.0.0.1: phiên trực tiếp, gate what-if, vết ghi, replay, verify, ESP32-S3 (LVGL, QEMU, OTA) và cấu hình.
-- **I4 · TSK-I4-01, TSK-I4-02, TSK-I4-04 — thoại thời gian thực và mô hình.** `run --mic` trực tiếp trên laptop; wake-word và STT dự phòng cục bộ; `SystemOne` đổi được bằng cấu hình qua Jev API (Q-4).
-- **I7 · TSK-S6-01…TSK-S6-04 — OTA A/B có ký, tự rollback trên QEMU.** Component `ne_ota`: tải ảnh app HTTP(S), xác minh RSA-3072, chuyển khe A/B sau self-test gate; lỗi sinh `REJECTED`, tự rollback.
-- **I3 · TSK-I3-01, TSK-S4-10, TSK-S4-11 — firmware ESP32-S3 và giao diện LVGL.** `build --target esp32s3` sinh dự án ESP-IDF có component `ne_agent`; 9 màn hình LVGL v9.6.0 có golden ảnh; kiểm tra RAM tĩnh ≥ 120 KB (Q-3).
-- **I2 · D1, TSK-S5-09 — cảm biến và màn hình trên Linux.** Dải `bands` trong `[sim.sensor_facts]`; đọc cảm biến sysfs hwmon/IIO và xuất hiển thị framebuffer `/dev/fbN`.
-- **I1 · TSK-I1-03, TSK-W0-02…TSK-W0-04, TSK-W2-07 — công cụ và chuỗi cung ứng.** CLI `--help` có ví dụ; scaffold tạo sẵn `traces/`; SBOM CycloneDX, quét lỗ hổng `pip-audit`, quét bí mật `gitleaks`, ký provenance cho wheel/sdist.
-- **Giai đoạn nền tảng: Lõi thực thi, FSM thoại, MCP, HAL và CLI.** FSM thoại Python và vector tuân thủ (TSK-S3-10, TSK-S3-11, TSK-S2-07); `LinuxHAL` và phiên tương tác trên Linux (TSK-S3-05, TSK-S5-10); System 2 qua LiteLLM (TSK-S2-11); Gated Tool Profile và MCP serve stdio/UI (Q-24, TSK-S3-24, TSK-S3-27, TSK-S3-28); xác nhận `on_block: ask` (TSK-S3-26, Q-26); walker C cho `NETR` v1 và sổ token C (TSK-S4-07, TSK-S4-02); bộ công cụ `record`, `replay`, `test`, `verify`, `gate lint/resolve/explain` (TSK-S3-01…TSK-S3-07, TSK-S3-16…TSK-S3-22); bo mạch `boards/` và agent mẫu `villa-concierge`, `home-voice`, `factory-monitor` (TSK-S2-01…TSK-S2-05, TSK-S3-08).
+- **NeuroClaw v0.2.0 → v0.2.2 and NeuroClaw-ESP close to zclaw, MimiClaw (TSK-I2d-22, TSK-I2f-11).** NeuroClaw released v0.2.0, v0.2.1, v0.2.2 ([releases](https://github.com/letrongminh/neuroclaw/releases)): archives for Linux (eight architectures), macOS, Windows, FreeBSD, NetBSD, deb/rpm packages, Android build, `ghcr.io/letrongminh/neuroclaw` image; release notes specify which file to use for which environment. The Go version adds `get_diagnostics` tool (read-only, does not leak keys), hourly and daily LLM call budgets (`agents.defaults.llm_budget`; counts every request including subagents, summarization, fallback; when exhausted, scheduled reminders still send verbatim text with a note), `neuroclaw session list|clear` and `neuroclaw heartbeat run` commands (neuroclaw PR #14). NeuroClaw-ESP adds Anthropic-style LLM per URL, Tavily, `get_diagnostics`, hourly and daily LLM call limits, serial admin console, CPU core pinning, builds for ESP32, S3, C3, C6; host tests run under ASan, UBSan and QEMU e2e in CI (PR #13). NeuroClaw documentation matches code, with installation guides by environment and guides for serving as NeuroEdge brain, in English and nine translations; default workspace and CLI help reference NeuroClaw (PR #12); v0.2.2 finishes fixing banners, CLI notices, channel titles, User-Agent, and MCP client name, retaining saved or protocol names (MQTT, credential keys, WeCom, OAuth) so existing installations do not break (PR #15). Persona, custom tools, WebSocket, web relay are not implemented: Go version already has them (skills, Pico channel, `SOUL.md`) or they are unneeded on chip. Comparison with zclaw, MimiClaw: `docs/reference/capabilities.md` §12 of that repo. Opened TSK-I2f-13: Wi-Fi setup and initial configuration for standalone chip using `wifi_provisioning` with PoP, in NeuroEdge firmware.
+- **Q-80 — NeuroClaw has full PicoClaw capabilities.** Removed the hard lock from Q-78: shell, hardware buses, skill installation, commands in cron, process hooks, USB monitoring, MCP stdio are configurable like PicoClaw, defaulting to PicoClaw v0.3.1; each enabled item logs `NeuroClaw risk=<name>` at boot (per Q-73). Web console, launcher, and full multi-platform releases (goreleaser, Docker GHCR, deb/rpm, DMG, nightly) return. Demo `i2f-chat-den-cua` keeps the scoped brain using `config.json` (`test_the_demo_brain_is_configured_closed`); `threat_model.md` §2b, §2g, §2k, §3 explicitly state that an open brain requires worker isolation (TSK-I2d-24).
+- **Q-79 — Standalone ESP32-S3, phase 1 (TSK-I2f-10).** The third way to run the brain: brain and gate share a single ESP32-S3, with risk labels (`threat_model.md` §2l); LLM tool calls go through `ne_gate`, never directly to GPIO. Phase 1 ported from zclaw and MimiClaw (MIT, `NOTICE` items 6, 7) four foundational components, running on QEMU: boot guard (`ne_boot`: if three consecutive boots fail to stabilize, the fourth enters safe mode, leaving only the serial console; no network, no gate runtime, does not mark OTA image valid); configuration and secrets in new NVS partition `ne_config` (`ne_config`: encrypted under new overlay `sdkconfig.secure`, does not fall back to plaintext; plaintext receives `risk=readable_flash` label); serial control console (`ne_console`: `status`, `config`, `bootguard`, `reboot`, `factory-reset`; secrets entered at hidden prompt, not echoed to UART, not saved in history); stack guard (`scripts/check_stack_usage.py`: all our functions have static frame ≤ 1024 B, main task has remaining ≥ 512 B on QEMU). Two new partitions sit after `storage`, shifting no offsets. CI `firmware-qemu` adds stack guard, six-boot scenario (`scripts/qemu_console.py`), and flash encryption overlay build. Guide: `docs/user/esp32-mot-chip.md`. The on-chip brain, **NeuroClaw-ESP**, lives in the `neuroclaw` repo (`esp32/`, MIT): shares workspace and tools with NeuroClaw Go — Telegram owner-only, `memory/MEMORY.md`, daily notes, identity files, skills, conversations preserved across reboots with `CONTEXT_SUMMARY`, `cron`, heartbeat, `web_search`, `web_fetch` (denies home network), `message` and `send_file` to owner only, fallback LLM URLs per Go version's switching rules and cooldowns — running on QEMU with dummy gate; connecting to `ne_gate` (TSK-I2f-11, I2f-12) awaits DevKitC board; `llm.fallback.*` keys of `ne_config` implemented concurrently.
+- **Q-78 — NeuroClaw, the NeuroEdge brain.** Hard-forked PicoClaw v0.3.1 into NeuroClaw, separate repo [`letrongminh/neuroclaw`](https://github.com/letrongminh/neuroclaw), MIT. Three patches extracted from demo: mTLS for MCP over HTTP (removes bridge), hard-locking all command execution and hardware access paths (lifted in Q-80, replaced with risk labels), and explicitly informing LLM when the box asks the owner; `neuroclaw update` downloads NeuroClaw releases, not PicoClaw releases. Capabilities per component, risk labels, and known vulnerabilities: `docs/reference/capabilities.md` in that repo. Demo `demo/i2f-chat-den-cua/` switched to NeuroClaw (`neuroclaw/config.json`, `chay-nao.sh`); `cau-noi.py` retained for workers unable to present certificates. Real run on laptop: light ALLOW, door asks owner and brain reports waiting, shell commands rejected.
+- **Internal demo: chat controls light and door via NeuroEdge Cloud** (`demo/i2f-chat-den-cua/`, TSK-I2d-22). `neuroedge mcp serve --http --ui` now works: remote brain calls tools over mTLS and tokens, while the page on 127.0.0.1 is the person at home, the sole place capable of answering `ask` questions (`tool_calling.md` §8.1). Agent `chat-den-cua`: light toggles freely, door asks owner then opens for 30 seconds; at night or over 30 seconds it blocks without asking. The demo suite includes a stripped-down PicoClaw v0.3.1 config (no shell including via cron and hooks; no i2c, spi, serial; no skill installation; one MCP server is the box), `tao-khoa.py` (CA, certificates, certificate-bound tokens), `cau-noi.py` (mTLS bridge, because PicoClaw's MCP client cannot present certificates), and three scripts to run the demo from `.env.txt`: `chay-hop.sh` (box), `chay-nao.sh` (brain, on VPS or laptop), `dung-vps.sh` (one-command VPS bring-up, copying only the brain's keys). Tests: door does not open from cloud without home approval, even if claiming `call_source` or facts; brain config has no outbound path to the world other than the box's tools; a client sending only headers goes through the bridge to the box and trace replay matches. Completed all six scenarios via Telegram on 2026-10-13, with an OrbStack machine acting as cloud: light responded in 3.0–4.7 s, door opened only after on-page approval, replay matched 18 verdicts; tests K1–K5, C1–C2 passed. Tunnel VPS and video deferred in `TODOS.md` #69.
+- **Q-77 — streamlined roadmap.** Removed voice from roadmap (I4, I5), NeuroEdge Lab (I4a, I5a), opening target lists to third parties, and all increments after Beta (I9, I10, I13, I14, I16, I17, I18, Block 4, Block 5). Their tasks are reduced to one line per task in roadmap §6 with reopen criteria; existing voice code remains intact. MVP v1.0 rewritten: A6 measures without voice, A11 dropped. Release milestones reduced to eight; Appendix A (old sprint mapping) dropped. Figures E-01, E-02, E-04, E-07, E-09, E-10, E-11 redrawn.
+- **Architecture streamlined from 17 down to 10 chapters (Q-77).** Context merged into `00` §9, deployment into `02` §6, porting guide into `10` §7, variation points and architectural debt into `15` §8–§9; dropped three chapters that duplicated PRD §9, PRD §15, and `python/README.md`. Chapter 15 condensed removed sections into one-line pointers. Old version: `git show f7278fc:docs/architecture/vi/<tệp>`.
+- **Q-76 — NeuroEdge brain: self-hosted or NeuroEdge Cloud.** LLM worker PicoClaw-style (chat, LLM, memory, schedule; shell and hardware tools per config, with risk labels — Q-80), touching home devices only via MCP to runtime. Same software runs self-hosted on inexpensive Linux boards or on NeuroEdge Cloud, one isolated instance per user. Irreversible action approvals signed by passkey on phone, verified by box locally (FR-CH-08). Tasks: TSK-I2d-22 → I2d-24, TSK-I2f-02, TSK-I2f-07 → I2f-09; FR-AGT-12. Positioning statement deferred to planned Q-77 (`TODOS.md` #67).
+- **Maximize porting from open-source code per task (roadmap §3.11).** Each uncompleted task in I2d, I2e, I2f, I3a has candidate libraries or projects to borrow, with verified licenses: PicoClaw, aiogram, APScheduler, Frigate, pi-gen, wifi-connect, copier, NATS, Firecracker/gVisor, py_webauthn, nanopb, esp-dl, C code from zclaw/MimiClaw. Excluded python-telegram-bot (LGPL) and Ultralytics (AGPL).
+- **Testing positioning message with makers.** Positioning review on 2026-10-12 selected hybrid direction: NeuroEdge is the runtime for any agent controlling physical hardware, users see the outcome narrative. Three test messages ("Runtime cho AI điều khiển đồ thật" (Runtime for AI controlling physical hardware), "AI nói hay. Thiết bị phải làm đúng" (AI speaks well. Devices must act right), "Thử thiết bị AI trên giả lập trước khi nó chạm vào đời thật" (Test AI devices in simulation before they touch the real world)) added to the Maker interview kit (`phong-van.md` §5c) with selection rule `M-MSG`; finalize after the demand gate (`TODOS.md` #67). Gate tap points in ESP-Claw need verification before mentioning (`TODOS.md` #68).
+- **Q-75 — field evidence "host thinks, ESP32 acts".** From two real projects (pesticide spraying robot Pi + ESP32-S3, fish farming fleet Pi + Hailo): minimal Pi ↔ ESP32 link with heartbeat and loss-of-communication reflex promoted to I3a (TSK-I3a-06, TSK-I3a-07); commodity ESP32-S3 boards and Arduino library (TSK-I3a-08, TSK-I3a-09); multi-chip project scaffolding `neuroedge new --layout host+mcu` (TSK-I2e-14); deferred fleet management until users request it (entry condition for I9).
+- **Q-74 — optional cloud brain, local spinal cord at home.** Users who only need chat: LLM worker and conversation can run on NeuroEdge Cloud, while gate, reflex, and approval checks always remain in the home box (Pi, Home Assistant add-on, or ESP32-S3 for a single task). Step 1 makes the home box easy to install (TSK-I2e-12, TSK-I2e-13); step 2 opens subscription-based cloud after the demand gate if metrics require (increment I2f, conditional). Documentation follows: PRD §1.2, FR-CH-06, FR-CH-07, FR-AGT-10, FR-AGT-11, §8.4; architecture 15 §6.10, 00, 14; threat model §2k; `tool_calling.md` §6; terminology; roadmap: TSK-I2d-20, TSK-I2d-21 (Q-73), TSK-I2e-12, TSK-I2e-13, increment I2f (TSK-I2f-01…06), milestone 9 "One chat box for many devices"; figures E-01, E-02, E-08, E-09, E-10, E-11 redrawn.
+- **Q-73 — open, with transparency.** Users choose verification methods (including reading code by voice) and multi-step flows; NeuroEdge does not forbid, only clearly displays the risk level. Retained three invariants: AI does not verify on behalf of humans, rules run exactly as declared, traces are recorded. RFC tracked at TSK-I2d-20.
+- **Product and architecture documentation per Q-72 — complete before implementation.** PRD 1.6: NeuroEdge Blueprint positioning, maker as early adopter (U1, U5, U8, U9), requirements FR-MSN, FR-AGT, FR-CH, FR-EGR, FR-BP, FR-TRC-11…13, FR-CLI-13…15, LLM cost NFR, criteria A14–A22, demand gates B6–B8 (reversing Q-56). Roadmap adds increment I2d (TSK-I2d-01…19) and I2e (TSK-I2e-01…11). Architecture updated for 24/7 runtime, LLM worker, chat approval, symmetric `safe_state`, and 30-day trace retention.
+- **Q-72 — Blueprint positioning: from a single utterance to an AI physical product.** Three-loop positioning: build (MCP), run (operator agent, cost cap, proactive chat alerts), and share/sell (Blueprint, Hub) with makers as the primary user. Approval via paired chat channel (extending Q-26), reinstated 8-week demand gate (reversing Q-56), deferred trace signing before MVP; non-`off` `safe_state` declared in `board.v1`.
+- **Q-71 — NeuroEdge Lab via MCP replacing NeuroBrain (TSK-N0-01, TSK-N0-04).** MCP clients (Claude Code, Claude Desktop) draft configurations via lab tools; NeuroEdge grades (`neuroedge lab check`), enforces gate/envelope at runtime, humans approve via PR. Separation of device permissions and trusted channels per threat model §2c; planned package `neuroedge.lab`.
+- **Partner testing documentation set (TSK-I2c-19, Q-70).** `docs/user/doi-tac/`: guides for Home Assistant via `proxy mcp`, `neuroedge.guard` in Python, `proxy http` in front of device APIs; `docs/business/doi-tac/`: trial agreement; automated checks via `scripts/partner_guides_check.sh`.
+- **Home Assistant plugin for remote actuators (TSK-I2c-16 part B, RFC-0018 §3j).** Repo `letrongminh/neuroedge-homeassistant`: entry point `neuroedge.actuators: home_assistant`, L1 level for switch/light/input_boolean, state confirmation via polling, passes 9/9 conformance tests on mock.
+- **Remote actuators — core of RFC-0018 (TSK-I2c-16 part A).** `digital.out` pins declared in `[actuators.<name>]` via `neuroedge.actuators` plugin, reachable only through `_admit`; auto-off levels L0–L3 (irreversible actions require ≥ L2); communication loss becomes `uncertain`; HAL manages shutdown debt; verified via `neuroedge conformance`.
+- **`allow_lan_http` for two proxies (Q-70).** The `allow_lan_http = true` option in `[proxy.mcp]` / `[proxy.http]` allows plain HTTP to private address ranges (RFC 1918, link-local, `*.local`, `*.lan`, `*.home.arpa`) for local network devices.
+- **`neuroedge proxy http` and `neuroedge guard init --http` (TSK-I2c-15, FR-EXT-06).** Place default-block gates in front of local HTTP APIs via `[[proxy.http.routes]]`; requests forwarded only after an ALLOW verdict; source `bridge:<id>`.
+- **`neuroedge proxy mcp` and `neuroedge guard init --mcp` (TSK-I2c-14, FR-EXT-06).** Place default-block gates in front of existing MCP servers via stdio; `guard init --mcp` generates configurations and supports Claude Desktop configuration via `--desktop-config`.
+- **`neuroedge.guard` — standalone safety core (TSK-I2c-07, RFC-0016 §3b).** Runs the gate → token → envelope → trace cycle independently without needing `agent.toml` or `SimSession`; `Guard.load("guard.toml")`; supports `TracePlayer` trace replay.
+- **Namespaced call sources — TSK-I2c-10 half (a), RFC-0017.** Field `source` accepts `bridge:<id>` and `mcp:<client>`; injects derived fact `call_channel`; updates `schemas/tool-call.v1.json`.
+- **Q-70 — private trial with one partner team, without waiting for boards, not on PyPI.** Field-testing the gate tool suite (`proxy mcp`, `neuroedge.guard`, `proxy http`) directly via hand-delivered wheels, satisfying five conditions in roadmap §4.3; handoff card updated with new objective.
+- **Overall architecture page for non-technical stakeholders.** Added `docs/business/kien-truc-tong-the.html` describing the five-layer execution backbone, updated ADR Q-69 and CPO dashboard (`scripts/gen_cpo_dashboard.py`).
+- **I6 · TSK-I6-05 — integrator contracts in `schemas/` (RFC-0015, Q-66).** Four schemas `tool-call.v1`, `tool-result.v1`, `error.v1`, `error-codes.v1` (17 `NE…` error codes); checks key `schema = "neuroedge.board/v1"`.
+- **I2b · TSK-I2b-03 — initial gate library `gates/home/`.** Seven base gates (`door-lock`, `light`, `valve`, `siren`, `hvac`, `camera`, `motor`) locked in `digests.lock`, each with ≥ 3 anti-loosening counter-examples.
+- **I2b · TSK-I2b-04 — `neuroedge add action|sensor|device|gate`.** Scaffolds `@action`, sensor, device, or default-block gate, with bidirectional tests and board contract verification.
+- **I2b · TSK-I2b-01, TSK-I2b-02 — five hardware kits.** `villa-concierge`, `home-voice`, `factory-monitor`, `gate-camera`, `blinds`: BOM, Pi 5 and ESP32-S3 schematics, golden traces `fixtures/traces/kits/`, guides `docs/user/kit-*.md`.
+- **I6 · TSK-I6-05, TSK-I6-07 — approval of RFC-0014 and RFC-0015 (Q-65, Q-66).** Approved integrator contracts in `schemas/` (RFC-0015) and digital facts from external processes on the same machine (RFC-0014).
+- **I2a · TSK-V1b-04 — golden inference and board-specific `tolerance` (RFC-0012 §3f).** The `verify` command matches vision inference with golden per model sha256, label, IoU, and score tolerance; deviations raise `NE4002`.
+- **I2a — `verify` replays sample agents of all four packs on `sim-rpi5` and `linux-rpi5`.** Added `fine-control` (`fan-pwm`) and `motion` (`rover`) corpora alongside `sensor-pack` and `vision` (RFC-0013 §3f).
+- **I6 · TSK-P2-04 — authenticated MCP over network: `neuroedge mcp serve --http` (Q-58, Q-32).** Streamable HTTP with mTLS (TLS 1.3) and device-certificate-bound OAuth 2.1 tokens (NFR-SEC-09, FR-CLI-12).
+- **I2a · TSK-I2a-06, TSK-I2a-07 — `board.v1` declares all extended primitives; `sim-rpi5`; `verify` runs per reference board.** Declares `digital_in`, `i2c`, `analog_in`, `motion`, `vision_in`, `pwm`; `verify` runs per (target, board) pair.
+- **I2a · TSK-I2a-02, TSK-I2a-03, TSK-I2a-04 — sensor primitives (RFC-0007, RFC-0009).** `digital.in` logic level with reading timestamp; I2C read-only via allow-list (`/dev/i2c-N`); `analog.in` unit-aware measurement into gate via `numeric` condition, out-of-range raises `NE5001`.
+- **I2a · TSK-N2-01 → TSK-N2-05 — pin-level safety envelope running live on `sim` and `linux`.** Cycle `require_pin → envelope → authorize → record`; rejection raises `NE1003`; time-based auto-off and write-ahead monitoring.
+- **I2a · TSK-V1b-01, TSK-V1b-02, TSK-V1b-03, TSK-V1b-06, TSK-V1b-08 — vision pack (RFC-0012).** Pure Python V4L2 on Linux, virtual camera on `sim`, `VisionPipeline` (missing/stale frame produces BLOCK), sample gate `gates/vision/`, `vision_ref` trace replay without raw images.
+- **I2a · TSK-W1-01, TSK-I2a-05 — PWM and motion (RFC-0010, RFC-0011).** PWM mandates `duration_ms`, quantum duty to 0; `motion.*` (motor/servo) managed via single-command lease, `safe_state` on lease expiration or BLOCK.
+- **I2a · TSK-W1-02 — `numeric` condition and `NETR` v2 (RFC-0009).** Numeric threshold mandates `unit`, `range`, `max_age_ms`; `NETR` v2 binary structure with 80-byte header and 48-byte numeric table for C walker.
+- **I1 · TSK-I1-04 — NeuroEdge Studio: `neuroedge studio` (Q-51).** Seven local web screens on 127.0.0.1: live session, gate what-if, traces, replay, verify, ESP32-S3 (LVGL, QEMU, OTA), and configuration.
+- **I4 · TSK-I4-01, TSK-I4-02, TSK-I4-04 — real-time voice and models.** `run --mic` directly on laptop; local fallback wake-word and STT; `SystemOne` swappable via configuration through Jev API (Q-4).
+- **I7 · TSK-S6-01…TSK-S6-04 — signed A/B OTA, automatic rollback on QEMU.** Component `ne_ota`: downloads HTTP(S) app images, verifies RSA-3072, switches A/B slots after gate self-test; errors produce `REJECTED`, automatic rollback.
+- **I3 · TSK-I3-01, TSK-S4-10, TSK-S4-11 — ESP32-S3 firmware and LVGL interface.** `build --target esp32s3` generates ESP-IDF project containing component `ne_agent`; 9 LVGL v9.6.0 screens with image goldens; static RAM check ≥ 120 KB (Q-3).
+- **I2 · D1, TSK-S5-09 — sensors and display on Linux.** Range `bands` in `[sim.sensor_facts]`; reads sysfs hwmon/IIO sensors and outputs framebuffer display `/dev/fbN`.
+- **I1 · TSK-I1-03, TSK-W0-02…TSK-W0-04, TSK-W2-07 — tooling and supply chain.** CLI `--help` with examples; scaffolding pre-creates `traces/`; CycloneDX SBOM, `pip-audit` vulnerability scanning, `gitleaks` secrets scanning, provenance signing for wheel/sdist.
+- **Foundation phase: execution core, voice FSM, MCP, HAL, and CLI.** Python voice FSM and conformance vectors (TSK-S3-10, TSK-S3-11, TSK-S2-07); `LinuxHAL` and interactive sessions on Linux (TSK-S3-05, TSK-S5-10); System 2 via LiteLLM (TSK-S2-11); Gated Tool Profile and MCP serve stdio/UI (Q-24, TSK-S3-24, TSK-S3-27, TSK-S3-28); `on_block: ask` confirmation (TSK-S3-26, Q-26); C walker for `NETR` v1 and C token ledger (TSK-S4-07, TSK-S4-02); tool suite `record`, `replay`, `test`, `verify`, `gate lint/resolve/explain` (TSK-S3-01…TSK-S3-07, TSK-S3-16…TSK-S3-22); boards `boards/` and sample agents `villa-concierge`, `home-voice`, `factory-monitor` (TSK-S2-01…TSK-S2-05, TSK-S3-08).
 
-#### Đã sửa
+#### Fixed
 
-- **Demo chat đèn và cửa tải được NeuroClaw mới.** `demo/i2f-chat-den-cua/chay-nao.sh` dùng tên tệp phát hành của goreleaser (`neuroclaw_Linux_x86_64.tar.gz`…, kể cả macOS Intel), kiểm SHA-256 với `neuroclaw_<phiên bản>_checksums.txt` trước khi giải nén, và ghim NeuroClaw v0.2.2; bản cũ trỏ tên tệp của v0.1.0 nên không tải được bản nào sau đó.
-- **Lệnh motion không còn trễ lease vì tra tên người gọi.** `hal/digital.py::_caller` tra cứu trực tiếp từ frame (`co_filename`, `f_lineno`) thay vì `inspect.stack()`, giảm thời gian từ 28 ms xuống 0,1 ms, tránh hết hạn lease 200 ms của kit `blinds`.
-- **`mcp serve` thoát có hạn sau SIGTERM/SIGHUP.** Bổ sung luồng hẹn giờ `SIGNAL_EXIT_GRACE_S = 5 s` để đóng phiên (ghi trace, thả chân) và thoát dứt điểm `os._exit`, tránh treo tiến trình.
-- **Nguồn gọi (`call_source`) không còn lẫn giữa hai lời gọi chồng nhau.** Tách biệt khung dữ kiện của từng lời gọi trong `Conversation.do_with`, không ghi đè `call_source` vào dữ kiện dùng chung.
-- **Phong bì an toàn ghi thời gian bật tất định.** Khử nhiễu micro giây của đồng hồ đơn điệu trước khi làm tròn lên, đảm bảo độ dài khoảng bật ghi nhận nhất quán giữa các lần chạy.
-- **Bảo mật và an toàn khi vận hành.** Trang sim và studio chặn DNS rebinding bằng cách kiểm tra `Host` ở mọi yêu cầu (FR-TGT-06); loại bỏ cú pháp markdown trước khi đưa văn bản vào TTS (TSK-S3-13); sửa thiếu `ne_ui_text.c` trong component ESP-IDF; từ chối tham số số `NaN`/`±inf` trong gate (RFC-0005); xử lý số đọc cảm biến NaN thành chưa xác định (D1); escape markup Rich trong CLI tránh nuốt tên bảng TOML.
+- **Light and door chat demo downloads new NeuroClaw.** `demo/i2f-chat-den-cua/chay-nao.sh` uses goreleaser release filenames (`neuroclaw_Linux_x86_64.tar.gz`…, including macOS Intel), verifies SHA-256 against `neuroclaw_<version>_checksums.txt` before extracting, and pins NeuroClaw v0.2.2; old version pointed to v0.1.0 filename and failed to download subsequent releases.
+- **Motion commands no longer incur lease delay from caller name lookup.** `hal/digital.py::_caller` looks up directly from frame (`co_filename`, `f_lineno`) instead of `inspect.stack()`, reducing latency from 28 ms to 0.1 ms, preventing 200 ms lease expiration on `blinds` kit.
+- **`mcp serve` terminates boundedly after SIGTERM/SIGHUP.** Added timer thread `SIGNAL_EXIT_GRACE_S = 5 s` to close sessions (record trace, release pins) and decisively exit via `os._exit`, avoiding hung processes.
+- **Call source (`call_source`) no longer leaks between overlapping invocations.** Separated fact frames of individual calls in `Conversation.do_with`, without overwriting `call_source` in shared facts.
+- **Safety envelope records deterministic on-duration.** Strips microsecond jitter from monotonic clock before rounding up, ensuring consistent recorded on-duration across runs.
+- **Operational security and safety.** Sim and studio pages block DNS rebinding by checking `Host` on all requests (FR-TGT-06); strips markdown syntax before feeding text to TTS (TSK-S3-13); fixed missing `ne_ui_text.c` in ESP-IDF component; rejects `NaN`/`±inf` numeric parameters in gates (RFC-0005); treats NaN sensor readings as undefined (D1); escapes Rich markup in CLI to prevent swallowing TOML table names.
 
-#### Đã đổi
+#### Changed
 
-- **Q-81 — hộp + NeuroClaw vào cổng nhu cầu 8 tuần, ngưỡng giữ nguyên.** Điều kiện ① đếm cả hộp nối bộ não NeuroClaw, điều khiển ít nhất một thiết bị qua chat, như một Blueprint mẫu *trợ lý nhà qua chat*; ② đếm khi hộp chạy trên G2 hoặc G3 (`cham-diem.md` §4.0, PRD §11.2). Phỏng vấn Maker thêm thẻ D "Nhắn tin cho nhà: việc thường thì làm, việc khó thì hỏi bạn." (`phong-van.md` §5c; cuộc ba thẻ ghi riêng); `demo.md` §5 có màn chat cho Maker. Task mới TSK-I2d-25: gói cài hộp + NeuroClaw cho người ngoài, trước người thử đầu tiên. I2f giữ ⏸. Đã cân nhắc giữ nguyên Q-72 và đổi trục sang chat-first (PRD §15).
-- **Tài liệu theo kịp NeuroClaw, có lối vào cho người mới.** Trang mới `docs/user/bat-dau.md`: một hình (bạn → bộ não NeuroClaw → hộp NeuroEdge → thiết bị), hai repo, chạy được gì và chưa có gì, bốn lối đọc tiếp, năm từ cần biết — không mã `Q-N`, `TSK-*`. `README.md` mở đầu bằng cùng bức tranh đó; `docs/user/README.md`, `docs/architecture/README.md` trỏ người mới vào đó trước; `00-overview.md` §2 và `huong-dan.md` §1–2 có bộ não; sơ đồ E-01 ghi NeuroClaw là client MCP. `15-target-architecture.md` §6.10 mô tả bộ não như hiện có: NeuroClaw, ba cách chạy (tự host, NeuroEdge Cloud có điều kiện, một chip), và hợp đồng giữa hai repo — bộ tool MCP, kênh MCP qua mTLS, firmware một chip; sơ đồ E-11 thay ô "PicoClaw · planned" bằng "NeuroClaw · partial". `README.md` có mục *Chat với nhà*; hướng dẫn mới `docs/user/chat-voi-nha.md` (dựng hộp, cài và nối NeuroClaw, chọn bộ não mở hay khoanh vùng); `thuat-ngu.md` cập nhật Bộ não, NeuroClaw, ESP32-S3 một mình.
-- **Mục tiêu thẻ bàn giao (roadmap §0.3): hoàn tất mọi việc tới v1.0 không cần phần cứng hay người (2026-10-05).** Chia bốn làn thực thi: host (I2c, I2d), firmware trước khi có bo, phát hành và chuẩn bị kịch bản đo kiểm.
-- **Q-69 — giả lập ngoại vi trước khi bo mạch về (2026-10-05).** Thiết lập ba spike giả lập có thời hạn: `esp-emulator` (TSK-I3-02), `esp32sim` (TSK-I3-03) và nhân kernel đầy đủ module cho `linux-hal` (TSK-I2a-08).
-- **Q-68 — phê duyệt ba RFC của nền tảng mở (2026-10-04).** Chấp thuận RFC-0016, RFC-0017, RFC-0018; chốt các hằng số vận hành cơ cấu từ xa (`OFF_SLACK_MS`, `max_state_age_ms`); tách adapter Home Assistant sang kho riêng.
-- **Q-67 — NeuroEdge thành lớp an toàn mở (2026-10-04).** Bổ sung increment I2c (Nền tảng mở) gồm `neuroedge.guard`, Extension SDK, proxy MCP/HTTP, cơ cấu từ xa; chuyển corpus tuân thủ sang Apache-2.0 (`LICENSING.md`).
-- **Q-63 — bổ sung khoảng hở nền tảng vào I6 (2026-10-02).** Bổ sung TSK-I6-06 (bề mặt Python công khai), mở rộng TSK-I6-05 và thêm TSK-I6-07 (RFC dữ kiện từ tiến trình ngoài).
-- **Q-58 → Q-62 — bề mặt tích hợp, giấy phép và mốc phát hành (2026-10-01).** Áp dụng giấy phép PolyForm Noncommercial 1.0.0 cho mã và Apache-2.0 cho chuẩn (Q-45, Q-59); lộ trình 10 mốc phát hành người dùng (roadmap §0.5); phê duyệt 6 RFC nguyên thủy mở rộng (RFC-0007, RFC-0009…0013); chọn M5Stack CoreS3 làm bo camera thứ hai (Q-61).
-- **Q-56, Q-57 — ước lượng lại phạm vi MVP và quyết định câu hỏi mở RFC (2026-09-30).** Lập kế hoạch 106 task MVP (TSK-I2a-01); dời mốc cổng nhu cầu (Q-56); giải quyết câu hỏi mở của sáu RFC theo nguyên tắc an toàn tối đa (Q-57).
-- **Q-52 → Q-55 — tái cấu trúc MVP = v1.0 đầy đủ (2026-09-30).** Roadmap chia bốn phase; đưa bốn gói nguyên thủy mở rộng vào MVP qua increment I2a, I3a, I2b; đưa NeuroBrain vào MVP qua I4a, I5a.
-- **Đồng bộ kiến trúc, roadmap và tài liệu vận hành (2026-09-27 tới 2026-09-28).** Quy hoạch một roadmap duy nhất (Q-39); cấu trúc tài liệu MECE (mỗi sự thật một nơi); cập nhật tài liệu kiến trúc mục tiêu theo chân trời; mặc định băm dữ liệu chữ thô trong vết ghi tại nguồn (TSK-I1-01); vết ghi chuẩn mực mang `gate_digest` (RFC-0008).
+- **Q-82 — positioning: "The Physical AI that really does things, safely by design."** *Really does things*: built to drive relays, valves and door latches, not text on a screen. *Safely by design*: gate, one-time token, fail-closed and envelope, not the model behaving well. The line opens `README.md`, the PRD (header, §1.2), `docs/user/bat-dau.md` and architecture `00` §1; closes `TODOS.md` #67. Interviews still record `M-MSG` as a check.
+- **Q-81 — box + NeuroClaw enters 8-week demand gate, thresholds unchanged.** Condition ① counts both a box connected to the NeuroClaw brain, controlling at least one device via chat, as an exemplar Blueprint *home assistant via chat*; ② counts when the box runs on G2 or G3 (`cham-diem.md` §4.0, PRD §11.2). Maker interviews add card D "Nhắn tin cho nhà: việc thường thì làm, việc khó thì hỏi bạn." (Texting your home: does routine tasks, asks you for tough ones) (`phong-van.md` §5c; three-card interviews recorded separately); `demo.md` §5 features a chat demo for Makers. New task TSK-I2d-25: box + NeuroClaw installer package for external users, prior to the first tester. I2f kept ⏸. Considered keeping Q-72 unchanged and pivoting to chat-first (PRD §15).
+- **Documentation caught up with NeuroClaw, introductory path for newcomers.** New page `docs/user/bat-dau.md`: one diagram (you → NeuroClaw brain → NeuroEdge box → devices), two repos, what works and what is not yet here, four reading paths, five essential terms — no `Q-N`, `TSK-*` codes. `README.md` opens with the same diagram; `docs/user/README.md`, `docs/architecture/README.md` direct newcomers there first; `00-overview.md` §2 and `huong-dan.md` §1–2 include the brain; diagram E-01 labels NeuroClaw as an MCP client. `15-target-architecture.md` §6.10 describes the brain as it currently exists: NeuroClaw, three run modes (self-hosted, conditional NeuroEdge Cloud, single-chip), and the contract between the two repos — MCP toolset, MCP channel over mTLS, single-chip firmware; diagram E-11 replaces "PicoClaw · planned" box with "NeuroClaw · partial". `README.md` adds *Chat with your home* section; new guide `docs/user/chat-voi-nha.md` (bringing up box, installing and connecting NeuroClaw, choosing open vs. scoped brain); `thuat-ngu.md` updates Brain, NeuroClaw, standalone ESP32-S3.
+- **Handoff card objective (roadmap §0.3): complete everything up to v1.0 that requires neither hardware nor humans (2026-10-05).** Divided into four execution lanes: host (I2c, I2d), pre-board firmware, releases, and test harness preparation.
+- **Q-69 — peripheral simulation ahead of board arrival (2026-10-05).** Established three time-boxed simulation spikes: `esp-emulator` (TSK-I3-02), `esp32sim` (TSK-I3-03), and fully module-enabled kernel for `linux-hal` (TSK-I2a-08).
+- **Q-68 — approval of three open-platform RFCs (2026-10-04).** Approved RFC-0016, RFC-0017, RFC-0018; decided operational constants for remote actuators (`OFF_SLACK_MS`, `max_state_age_ms`); separated Home Assistant adapter into dedicated repository.
+- **Q-67 — NeuroEdge becomes open safety layer (2026-10-04).** Added increment I2c (Open Platform) comprising `neuroedge.guard`, Extension SDK, MCP/HTTP proxies, remote actuators; moved conformance corpus to Apache-2.0 (`LICENSING.md`).
+- **Q-63 — platform gaps added to I6 (2026-10-02).** Added TSK-I6-06 (public Python surface), expanded TSK-I6-05, and added TSK-I6-07 (RFC on facts from external processes).
+- **Q-58 → Q-62 — integration surface, licensing, and release milestones (2026-10-01).** Applied PolyForm Noncommercial 1.0.0 license to code and Apache-2.0 to standards (Q-45, Q-59); roadmap of 10 user release milestones (roadmap §0.5); approved 6 extended primitive RFCs (RFC-0007, RFC-0009…0013); chose M5Stack CoreS3 as second camera board (Q-61).
+- **Q-56, Q-57 — re-estimated MVP scope and decided open RFC questions (2026-09-30).** Planned 106 MVP tasks (TSK-I2a-01); moved demand gate milestone (Q-56); resolved open questions across six RFCs following maximal safety principles (Q-57).
+- **Q-52 → Q-55 — restructure MVP = full v1.0 (2026-09-30).** Roadmap divided into four phases; brought four extended primitive packs into MVP via increments I2a, I3a, I2b; brought NeuroBrain into MVP via I4a, I5a.
+- **Synchronize architecture, roadmap, and operations documentation (2026-09-27 to 2026-09-28).** Consolidated into a single roadmap (Q-39); MECE documentation structure (one truth in one place); updated target architecture documentation by horizon; defaulted to hashing raw text data in traces at source (TSK-I1-01); normative traces carry `gate_digest` (RFC-0008).
 
-#### Đã bỏ
+#### Removed
 
-- **Tối giản tài liệu: bỏ bản trùng, giữ một nơi cho mỗi sự thật.** Bỏ cây kiến trúc `en/`, `docs/archive/`, proposal cũ v5.9 và ba ghi chú thiết kế (Giai đoạn 2, nền tảng mở, robot FOFOCA). Phần chuẩn tắc của proposal (§4 API, Phụ lục A–C) chuyển sang `docs/spec/core_contracts.md`; bộ lọc PF-1…PF-4 vào PRD §14; ghi chú Lab thành `docs/spec/lab_mcp.md`. Roadmap, CHANGELOG và PRD §15 nén lại, không mất mã task, quyết định hay bất biến nào. Bản cũ: `git show 7626b62:<đường dẫn>`.
-- **Extra `scaffold` (`copier`).** Thay thế bằng bộ sinh template Python thuần trong `neuroedge new`, loại bỏ phụ thuộc GPL3 bắc cầu.
-- **Tham số `fail_closed` của `ActionContractEngine`.** Quy tắc fail-closed được xác định trực tiếp từ thuộc tính `fail: open` của gate; lỗi luôn trả về phán quyết chặn.
+- **Documentation minimalism: eliminated duplicate versions, kept one place for each truth.** Removed `en/` architecture tree, `docs/archive/`, old proposal v5.9, and three design notes (Phase 2, open platform, FOFOCA robot). Normative sections of the proposal (§4 API, Appendices A–C) moved to `docs/spec/core_contracts.md`; PF-1…PF-4 filter criteria moved into PRD §14; Lab note became `docs/spec/lab_mcp.md`. Roadmap, CHANGELOG, and PRD §15 compressed, preserving all task codes, decisions, and invariants. Old version: `git show 7626b62:<path>`.
+- **Extra `scaffold` (`copier`).** Replaced with a pure Python template generator in `neuroedge new`, removing transitive GPL3 dependency.
+- **Parameter `fail_closed` of `ActionContractEngine`.** Fail-closed rule is now determined directly from gate's `fail: open` attribute; errors always return a block verdict.
 
-### Mốc tài liệu Giai đoạn 1
+### Phase 1 Documentation Milestones
 
-Giai đoạn 1 (2026-09-21 tới 2026-09-23) đóng băng ba lược đồ lõi (`gate.v1`, `trace.v1`, `board.v1`), hiện thực lõi phân giải gate (`gate_resolver.py`), cơ chế kế thừa an toàn theo RFC-0001 và RFC-0004, chốt các quyết định nền tảng (Q-1 tới Q-20) và chuyển định hướng cloud-first (CR-1.0). Toàn bộ chi tiết quá trình và biên bản rà soát lưu tại lịch sử git (`git show 7626b62:CHANGELOG.md`).
+Phase 1 (2026-09-21 to 2026-09-23) froze three core schemas (`gate.v1`, `trace.v1`, `board.v1`), implemented gate resolution core (`gate_resolver.py`), safe inheritance mechanism per RFC-0001 and RFC-0004, locked foundational decisions (Q-1 to Q-20), and shifted direction to cloud-first (CR-1.0). Full process details and review minutes are preserved in git history (`git show 7626b62:CHANGELOG.md`).
 
 ---
 
-## 2. Cách vận hành
+## 2. Operating Guide
 
-### 2.1 Dựng môi trường
+### 2.1 Environment Setup
 
-Yêu cầu **Python 3.11+** (dùng `tomllib` của thư viện chuẩn, không phụ thuộc TOML bên ngoài).
+Requires **Python 3.11+** (uses standard library `tomllib`, no external TOML dependency).
 
 ```bash
 cd python
 python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[dev]'
-.venv/bin/python -m pytest -q          # kỳ vọng: 0 failed, 0 skipped
+.venv/bin/python -m pytest -q          # expected: 0 failed, 0 skipped
 ```
 
-Bản dựng tái lập được (roadmap §3.9):
+Reproducible build (roadmap §3.9):
 
 ```bash
 .venv/bin/python -m pip install -r requirements-lock.txt
 ```
 
-Tùy chọn: System 2 với model thật cài `.venv/bin/python -m pip install -e '.[cloud]'`, cấu hình `[system_two]` trong `agent.toml` và xuất API key tương ứng. System 1 với Jev qua cấu hình `[system_one]` và `OPENROUTER_API_KEY`.
+Optional: System 2 with real models requires `.venv/bin/python -m pip install -e '.[cloud]'`, configure `[system_two]` in `agent.toml`, and export corresponding API keys. System 1 with Jev configured via `[system_one]` and `OPENROUTER_API_KEY`.
 
-### 2.2 Kiểm tra nhanh toàn bộ artifact
+### 2.2 Quick Verification of All Artifacts
 
-Các lệnh chạy tại **gốc kho** (`paths.py` tự định vị gốc monorepo):
+Commands run from the **repo root** (`paths.py` self-locates monorepo root):
 
 ```bash
 V=python/.venv/bin
 
-$V/neuroedge verify                      # kỳ vọng: mọi gate phân giải, trace thẩm định, tool corpus khớp, replay khớp; 0 artifact ⇒ NE4004 (mã 1)
-$V/neuroedge gate lint                   # kỳ vọng: ✓ mọi gate resolved, mã 0
-$V/neuroedge trace validate fixtures/traces/*.json   # kỳ vọng: mỗi tệp VALID
-$V/neuroedge board list                  # kỳ vọng: liệt kê các profile trong boards/
-python3 scripts/gen_cpo_dashboard.py     # sinh lại dashboard CPO (docs/business/cpo-dashboard.html) sau khi đổi nguồn
-$V/python scripts/check_digests.py --check   # kỳ vọng: ✓ các tệp khớp digests.lock
+$V/neuroedge verify                      # expected: all gates resolve, traces validate, tool corpus matches, replay matches; 0 artifacts ⇒ NE4004 (code 1)
+$V/neuroedge gate lint                   # expected: ✓ all gates resolved, code 0
+$V/neuroedge trace validate fixtures/traces/*.json   # expected: each file VALID
+$V/neuroedge board list                  # expected: lists profiles in boards/
+python3 scripts/gen_cpo_dashboard.py     # regenerates CPO dashboard (docs/business/cpo-dashboard.html) after source change
+$V/python scripts/check_digests.py --check   # expected: ✓ files match digests.lock
 ```
 
-Khẳng định nghịch đảo — corpus phản chứng **phải** tiếp tục thất bại:
+Inverse assertion — negative corpus **must** continue to fail:
 
 ```bash
 $V/neuroedge gate lint fixtures/gates/invalid --registry fixtures/gates/registry
-# kỳ vọng: mọi tệp trong invalid/ đều failed to resolve · mã thoát 1
+# expected: all files in invalid/ failed to resolve · exit code 1
 ```
 
-### 2.3 Tham chiếu lệnh CLI
+### 2.3 CLI Command Reference
 
-**Hợp đồng mã thoát** — CI và Action CI đều neo vào nó:
+**Exit code contract** — CI and Action CI anchor to it:
 
-| Mã | Nghĩa |
+| Code | Meaning |
 |:---:|:---|
-| `0` | Phép kiểm tra đã chạy và **đạt** |
-| `1` | Phép kiểm tra đã chạy và **không đạt** |
-| `2` | Lệnh (hoặc `--target` đó của lệnh) **chưa được hiện thực** |
+| `0` | Check ran and **passed** |
+| `1` | Check ran and **failed** |
+| `2` | Command (or that specific `--target` of the command) **not implemented yet** |
 
-Mã `2` tách biệt với `1` để CI phân biệt "hỏng" và "chưa có". Hiện tại thoát mã 2: `run` / `mcp serve --target esp32s3` (TSK-S4-01), `run` / `mcp serve --ui --target linux`, `run` / `record --voice-file` cùng `--ui`, `replay --target esp32s3` (TSK-S4-04). Target lạ là lỗi (mã 1).
+Code `2` is distinguished from `1` so CI separates "broken" from "not yet present". Currently exiting with code 2: `run` / `mcp serve --target esp32s3` (TSK-S4-01), `run` / `mcp serve --ui --target linux`, `run` / `record --voice-file` along with `--ui`, `replay --target esp32s3` (TSK-S4-04). Unknown target is an error (code 1).
 
-Mọi lệnh nạp gate nhận `--registry <dir>` (`-r`), mặc định `gates/`. `--agent` mặc định `./agent.toml` hoặc agent mẫu `villa-concierge`.
+All commands loading gates accept `--registry <dir>` (`-r`), default `gates/`. `--agent` defaults to `./agent.toml` or sample agent `villa-concierge`.
 
-| Lệnh | Chức năng chính |
+| Command | Primary Function |
 |:---|:---|
-| `gate resolve <tệp\|URI>` | Phân giải chuỗi `extends`, in chính sách hiệu dụng và mã băm. `--json` cho máy đọc |
-| `gate lint [dir]` | Phân giải mọi gate trong thư mục (mặc định `gates/`, `--registry`) |
-| `gate publish <tệp>` | Chuẩn hóa RFC 8785 và in mã băm SHA-256 (dừng ở mã băm, chưa ký số) |
-| `gate add <URI>` | Thêm gate từ registry và phân tích ràng buộc kế thừa |
-| `gate explain <tệp\|URI>` | Giải thích gate cho người duyệt (tiêu chí, mệnh đề siết chặt, ngân sách, `on_block`) |
-| `trace validate <tệp…>` | Thẩm định vết ghi theo lược đồ `trace.v1.json` |
-| `trace show <tệp>` | In dòng thời gian sự kiện của vết ghi |
-| `trace view <tệp>` | Xuất HTML tự chứa trực quan hóa thiết bị, cảm biến, phán quyết và thanh tua |
-| `trace export <tệp>` | Xuất định dạng Chrome Trace Event cho Perfetto (`--format chrome`) |
-| `board list` / `board show <id>` | Liệt kê hoặc xem chi tiết năng lực bo mạch và nguyên thủy hỗ trợ |
-| `verify [--targets t]` | Kiểm tra toàn diện: gate, tool corpus, trace chuẩn mực và replay trên từng target |
-| `build --target <t>` | Đối chiếu năng lực agent ↔ bo mạch, biên dịch gate ra cây `NETR` và sinh firmware ESP-IDF |
-| `replay <tệp> [--target t]` | Tính lại phán quyết và lệnh chân trên HAL thật rồi so khớp với golden |
-| `record [--target t]` | Ghi phiên tương tác ra vết ghi đã thẩm định; mặc định băm dữ liệu chữ thô (`--raw` giữ nguyên) |
-| `test [thư-mục]` | Chạy bộ Action CI (pytest) của agent |
-| `run [--target t]` | REPL tương tác dòng lệnh (`-c` một lệnh, `--ui` web cục bộ, `--voice-file`, `--mic`) |
-| `mcp tools` | Xuất schema của các `@action` cho MCP hoặc function-calling OpenAI |
-| `mcp serve` | Máy chủ MCP qua stdio hoặc mạng (`--http` mTLS/OAuth 2.1) trên `sim` hoặc `linux` |
-| `mcp desktop-config` | Tạo hoặc ghi cấu hình kết nối cho Claude Desktop (`--write`) |
-| `new <tên> [--template T]` | Sinh khung dự án mới từ mẫu (`minimal`, `villa-concierge`, `home-voice`, v.v.) |
-| `add action\|sensor\|device\|gate` | Sinh thành phần mã kèm gate chặn mặc định và kiểm thử hai chiều |
+| `gate resolve <file\|URI>` | Resolve `extends` chain, print effective policy and digest. `--json` for machine reading |
+| `gate lint [dir]` | Resolve all gates in directory (default `gates/`, `--registry`) |
+| `gate publish <file>` | RFC 8785 canonicalize and print SHA-256 digest (stops at digest, not yet digitally signed) |
+| `gate add <URI>` | Add gate from registry and analyze inheritance constraints |
+| `gate explain <file\|URI>` | Explain gate for reviewers (criteria, tightening clauses, budget, `on_block`) |
+| `trace validate <file…>` | Validate traces against `trace.v1.json` schema |
+| `trace show <file>` | Print event timeline of trace |
+| `trace view <file>` | Export self-contained HTML visualizing devices, sensors, verdicts, and scrubber bar |
+| `trace export <file>` | Export Chrome Trace Event format for Perfetto (`--format chrome`) |
+| `board list` / `board show <id>` | List or inspect board capabilities and supported primitives |
+| `verify [--targets t]` | Comprehensive verification: gates, tool corpus, normative traces, and replay on each target |
+| `build --target <t>` | Check agent ↔ board compatibility, compile gates to `NETR` tree, and generate ESP-IDF firmware |
+| `replay <file> [--target t]` | Recompute verdicts and pin commands on real HAL and match against golden |
+| `record [--target t]` | Record interactive session to validated trace; defaults to hashing raw text (`--raw` keeps verbatim) |
+| `test [dir]` | Run agent's Action CI suite (pytest) |
+| `run [--target t]` | Interactive CLI REPL (`-c` one-shot command, `--ui` local web, `--voice-file`, `--mic`) |
+| `mcp tools` | Export schemas of `@action`s for MCP or OpenAI function-calling |
+| `mcp serve` | MCP server over stdio or network (`--http` mTLS/OAuth 2.1) on `sim` or `linux` |
+| `mcp desktop-config` | Generate or write connection configuration for Claude Desktop (`--write`) |
+| `new <name> [--template T]` | Scaffold new project from template (`minimal`, `villa-concierge`, `home-voice`, etc.) |
+| `add action\|sensor\|device\|gate` | Scaffold code component with default-block gate and bidirectional tests |
 
-`python -m neuroedge …` tương đương `neuroedge …`. Hướng dẫn chi tiết từng lệnh và ví dụ sử dụng xem tại [`docs/user/huong-dan.md`](docs/user/huong-dan.md).
+`python -m neuroedge …` is equivalent to `neuroedge …`. Detailed instructions and usage examples for each command can be found in [`docs/user/huong-dan.md`](docs/user/huong-dan.md).
 
-### 2.4 Đọc một thông báo lỗi
+### 2.4 Reading an Error Message
 
-Mọi lỗi có đúng ba phần (FR-DX-04): **ở đâu** (`where`) · **vì sao** (`why`) · **cách xử lý** (`fix`). Lỗi kế thừa có thêm dòng `rule` chỉ ra nguyên tắc vi phạm.
+All errors have exactly three parts (FR-DX-04): **where** (`where`) · **why** (`why`) · **remediation** (`fix`). Inheritance errors include an additional `rule` line indicating the violated principle.
 
 ```
 [NE2003] loosens-level@1.0.0 (fixtures/gates/invalid/loosens_level.yaml) -> allow_when.risk_level
@@ -207,30 +208,30 @@ Mọi lỗi có đúng ba phần (FR-DX-04): **ở đâu** (`where`) · **vì sa
   fix: narrow allow_when.risk_level to a subset of the base condition (base clause: {'lte': 'low'}), …
 ```
 
-Danh mục mã `NE…`, phân lớp lỗi và ngữ cảnh xuất hiện xem tại PRD [Phụ lục B](roadmap/neuroedge-prd.md#phụ-lục-b--danh-mục-mã-lỗi-chuẩn).
+List of `NE…` codes, error taxonomy, and occurrence contexts can be found in PRD [Appendix B](roadmap/neuroedge-prd.md#appendix-b--standard-error-code-catalog).
 
 ### 2.5 CI
 
-Danh sách workflow và job trong hệ thống tích hợp liên tục:
+List of workflows and jobs in the continuous integration system:
 
-| Workflow | Khi nào | Job |
+| Workflow | When | Jobs |
 |:---|:---|:---|
-| `ci-sim-linux.yml` | Mỗi PR và push lên `main` | `frozen-artifacts` · `tests` (Python 3.11/3.12/3.13) · `linux-hal` · `wheel-smoke` · `lint` · `licence-obligations` · `cloud-extra` · `ui-golden` (LVGL trên host, TSK-S4-10) |
-| `firmware-qemu.yml` | PR/push chạm mã nguồn firmware (`targets/**`), bộ sinh, kịch bản hoặc hằng đêm | `firmware-qemu` (boot ESP-IDF 5.4 trên Espressif QEMU) · `firmware-size` (kiểm tra ngân sách flash, SRAM Q-3) · `ota-rollback` (pha a–g, RSA-3072) · `agent-firmware` (build và boot firmware của agent) · `uart-trace` (đọc UART, validate và verify) |
-| `release-pypi.yml` | Tag `v*.*.*` hoặc chạy thủ công | `build` · `sbom` · `smoke` · `attest` · `publish-testpypi` · `publish-pypi` · `github-release` (quy trình tại [`docs/release.md`](docs/release.md)) |
-| `nightly-hardware.yml` | Hằng đêm hoặc chạy thủ công | `firmware-build` (ESP-IDF 5.2.1) · `upstream-drift` · `drift-issue` · `memory-spike` · `report` |
-| `security.yml` | Mỗi PR/push, hằng tuần hoặc chạy thủ công | `pip-audit` · `gitleaks` (toàn lịch sử) · `actionlint` · `codeql` (Python, Actions) · `firmware-changed` + `codeql-c` |
+| `ci-sim-linux.yml` | Every PR and push to `main` | `frozen-artifacts` · `tests` (Python 3.11/3.12/3.13) · `linux-hal` · `wheel-smoke` · `lint` · `licence-obligations` · `cloud-extra` · `ui-golden` (LVGL on host, TSK-S4-10) |
+| `firmware-qemu.yml` | PR/push touching firmware sources (`targets/**`), generator, scripts, or nightly | `firmware-qemu` (boot ESP-IDF 5.4 on Espressif QEMU) · `firmware-size` (check flash budget, SRAM Q-3) · `ota-rollback` (phases a–g, RSA-3072) · `agent-firmware` (build and boot agent firmware) · `uart-trace` (read UART, validate and verify) |
+| `release-pypi.yml` | Tag `v*.*.*` or manual dispatch | `build` · `sbom` · `smoke` · `attest` · `publish-testpypi` · `publish-pypi` · `github-release` (procedure in [`docs/release.md`](docs/release.md)) |
+| `nightly-hardware.yml` | Nightly or manual dispatch | `firmware-build` (ESP-IDF 5.2.1) · `upstream-drift` · `drift-issue` · `memory-spike` · `report` |
+| `security.yml` | Every PR/push, weekly, or manual dispatch | `pip-audit` · `gitleaks` (full history) · `actionlint` · `codeql` (Python, Actions) · `firmware-changed` + `codeql-c` |
 
-Năm cổng CI bắt buộc xanh trước khi hợp nhất:
-- **Cổng chặn test skip:** Thất bại nếu có bất kỳ test nào bị skip (`CONTRIBUTING.md` §5).
-- **Khẳng định nghịch đảo:** Toàn bộ corpus phản chứng phải tiếp tục thất bại đúng mã 1 (§2.2).
-- **`digests.lock`:** Thay đổi gate chuẩn mực mà không qua RFC sẽ làm đỏ build (`CONTRIBUTING.md` §3).
-- **Cổng giấy phép:** `licence-obligations` kiểm tra toàn bộ cây phụ thuộc lõi; `cloud-extra` kiểm tra chính sách Q-11.
-- **Kiểm tra định dạng:** `ruff check .` và `ruff format --check .` trong job `lint`.
+Five required green CI gates before merge:
+- **Skip test blocking gate:** Fails if any test is skipped (`CONTRIBUTING.md` §5).
+- **Inverse assertion:** Entire negative corpus must continue to fail with exact exit code 1 (§2.2).
+- **`digests.lock`:** Modifying normative gates without an RFC fails the build (`CONTRIBUTING.md` §3).
+- **License gate:** `licence-obligations` checks entire core dependency tree; `cloud-extra` checks Q-11 policy.
+- **Format check:** `ruff check .` and `ruff format --check .` in the `lint` job.
 
-### 2.6 Firmware (khi đã có bo mạch)
+### 2.6 Firmware (When Hardware Boards Are Available)
 
-Hướng dẫn nạp firmware cho agent xem tại [`docs/user/nap-firmware.md`](docs/user/nap-firmware.md). Xây dựng firmware mẫu `home-voice` trên thiết bị:
+Firmware flashing instructions for agents can be found in [`docs/user/nap-firmware.md`](docs/user/nap-firmware.md). Build sample `home-voice` firmware on device:
 
 ```bash
 cd targets/esp32s3
@@ -239,97 +240,97 @@ idf.py build
 idf.py size --format json2 --output-file build/size.json
 idf.py size-components --format json2 --output-file build/size-components.json
 python ../../scripts/check_firmware_size.py build/neuroedge-esp32s3-box3.bin \
-  --size-json build/size.json --components-json build/size-components.json   # ngân sách Q-3
+  --size-json build/size.json --components-json build/size-components.json   # Q-3 budget
 idf.py -p /dev/ttyUSB0 flash monitor
 ```
 
-Tìm dòng `NEUROEDGE_MEMORY_JSON` trong đầu ra monitor để ghi nhận số đo vào `docs/reports/memory_spike_report.md`. Khi chưa có bo mạch thật, walker C chạy trên host (`make -C targets/esp32s3/components/ne_gate check-static`) và firmware boot trên QEMU theo `firmware-qemu.yml`.
+Look for `NEUROEDGE_MEMORY_JSON` line in the monitor output to record metrics into `docs/reports/memory_spike_report.md`. When physical boards are not yet available, C walker runs on host (`make -C targets/esp32s3/components/ne_gate check-static`) and firmware boots on QEMU per `firmware-qemu.yml`.
 
 ---
 
-## 3. Bàn giao ngữ cảnh sản phẩm
+## 3. Product Context Handoff
 
-Mục này dành cho người hoặc AI agent tiếp quản dự án để tiếp tục phát triển mà không phải đọc lại toàn bộ tài liệu gốc.
+This section is for developers or AI agents taking over the project to continue development without re-reading all original documents.
 
-### 3.1 Các tài liệu là nguồn sự thật
+### 3.1 Source of Truth Documents
 
-Bản đồ "đọc gì khi nào" cho người hoặc agent tiếp quản:
+Map of "what to read when" for developers or agents taking over:
 
-| Tài liệu | Nội dung chính | Khi nào đọc |
+| Document | Main Content | When to Read |
 |:---|:---|:---|
-| [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md) | **Nguồn sự thật duy nhất về tiến độ:** bốn phase (§0.5), increment I0–I18, trạng thái task, tiêu chí ra, phụ thuộc, thẻ bàn giao (§0.3). | **Luôn đọc trước** |
-| [`neuroedge-prd.md`](roadmap/neuroedge-prd.md) | Yêu cầu `FR-*` / `NFR-*`, **§15 là sổ quyết định duy nhất** (`Q-N`), Phụ lục B danh mục mã lỗi `NE…`. | Khi cần biết *phải làm gì* và đã chốt gì |
-| [`docs/architecture/`](docs/architecture/README.md) · [`core_contracts.md`](docs/spec/core_contracts.md) | Kiến trúc hiện hành và mục tiêu; đặc tả API, gate (Phụ lục B), HAL, vết ghi. | Khi cần biết *tại sao* và *định dạng gì* |
-| [`TODOS.md`](TODOS.md) | Danh mục việc hoãn có chủ ý kèm mốc kích hoạt rõ ràng. | Trước khi đề xuất việc "còn thiếu" |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quy ước đóng góp; §3 việc cần RFC; §6 cấu trúc kho; §8 các bước hoàn tất task. | Trước khi sửa mã hoặc cấu trúc |
-| [`docs/spec/`](docs/spec/) | Đặc tả chuẩn tắc: hợp đồng nền (`core_contracts.md`), Gated Tool Profile, threat model, NeuroEdge Lab (`lab_mcp.md`), FSM hội thoại, phủ mô phỏng, MCU review. | Khi thay đổi hành vi tầng tương ứng |
+| [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md) | **Sole source of truth on progress:** four phases (§0.5), increments I0–I18, task statuses, exit criteria, dependencies, handoff card (§0.3). | **Always read first** |
+| [`neuroedge-prd.md`](roadmap/neuroedge-prd.md) | Requirements `FR-*` / `NFR-*`, **§15 is the sole decision log** (`Q-N`), Appendix B catalog of `NE…` error codes. | When needing to know *what must be done* and what was decided |
+| [`docs/architecture/`](docs/architecture/README.md) · [`core_contracts.md`](docs/spec/core_contracts.md) | Current and target architectures; API specifications, gates (Appendix B), HAL, traces. | When needing to know *why* and *what format* |
+| [`TODOS.md`](TODOS.md) | Catalog of intentionally deferred work with explicit trigger milestones. | Before proposing "missing" work |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution conventions; §3 work requiring RFCs; §6 repository structure; §8 task completion steps. | Before modifying code or structure |
+| [`docs/spec/`](docs/spec/) | Normative specifications: core contracts (`core_contracts.md`), Gated Tool Profile, threat model, NeuroEdge Lab (`lab_mcp.md`), conversational FSM, simulation coverage, MCU review. | When changing behavior in corresponding layers |
 
-Tài liệu đã xoá khi tối giản (proposal cũ, ghi chú thiết kế, `docs/archive/`, kiến trúc `en/`): `git show 7626b62:<đường dẫn>`.
+Documents deleted during minimalism (old proposal, design notes, `docs/archive/`, `en/` architecture): `git show 7626b62:<path>`.
 
-**Thứ tự ưu tiên khi lệch nhau:** PRD (yêu cầu, quyết định) và `schemas/` + RFC đã chấp thuận → roadmap (tiến độ, lịch) → kiến trúc và `docs/spec/` → mã nguồn → tệp này. Nếu mã lệch hợp đồng, mã sai. Tài liệu thiết kế nói gì về lịch, trạng thái hay tiêu chí ra thì roadmap đúng (R1).
+**Order of precedence on divergence:** PRD (requirements, decisions) and `schemas/` + accepted RFCs → roadmap (progress, schedule) → architecture and `docs/spec/` → source code → this file. If code diverges from contract, code is wrong. If design documents say anything about schedule, status, or exit criteria, the roadmap is authoritative (R1).
 
-### 3.2 Bản đồ kiến trúc — cái gì ở đâu
+### 3.2 Architecture Map — What Lives Where
 
-Cấu trúc chi tiết của kho mã nguồn xem tại `CONTRIBUTING.md` §6. Bốn tầng thực thi chính:
-- **L0:** `python/neuroedge/sim/` — phiên mô phỏng, CLI, giao diện web cục bộ.
-- **L1:** `python/neuroedge/hal/` — lớp trừu tượng phần cứng (năm nguyên thủy lõi và mở rộng).
-- **L2:** `python/neuroedge/models/`, `perception/` — FSM hội thoại, phân loại ý định, adapter LLM/STT/TTS.
-- **L3:** `python/neuroedge/engine/`, `actions/` — thẩm định gate, quản lý token, thực thi action có hợp đồng.
-- **Firmware:** `targets/esp32s3/` — walker C, sổ token C và logic khởi động trên chip.
+Detailed structure of the source repository can be found in `CONTRIBUTING.md` §6. Four main execution layers:
+- **L0:** `python/neuroedge/sim/` — simulation session, CLI, local web UI.
+- **L1:** `python/neuroedge/hal/` — hardware abstraction layer (five core and extended primitives).
+- **L2:** `python/neuroedge/models/`, `perception/` — conversational FSM, intent classification, LLM/STT/TTS adapters.
+- **L3:** `python/neuroedge/engine/`, `actions/` — gate evaluation, token management, contracted action execution.
+- **Firmware:** `targets/esp32s3/` — C walker, C token ledger, and on-chip boot logic.
 
-### 3.3 Mười điều bất biến — đừng phá
+### 3.3 Ten Invariants — Do Not Break
 
-1. **Thẩm định lược đồ KHÔNG đủ để kết luận một gate an toàn.** JSON Schema chỉ kiểm tra một tài liệu; cổng kiểm tra an toàn là `neuroedge gate lint` (phân giải chuỗi kế thừa). Gate chưa phân giải không được nạp lên thiết bị.
-2. **Fail-closed là mặc định ở mọi hướng.** Vắng `fail` → `closed`. Gate cha `fail: open` và con im lặng → `closed`. Không đo được → `INCONCLUSIVE`. Lệnh luôn fail-closed; khi suy giảm, cơ cấu về `safe_state` khai trong `board.v1` (mặc định `off`, Q-72).
-3. **`allow_when` dạng chuỗi CEL không được xuất hiện trong chuỗi kế thừa.** Không chứng minh được tính siết chặt đơn điệu thì phải từ chối.
-4. **Phân giải gate là hàm thuần khiết.** Không phụ thuộc đồng hồ, mạng hay tính ngẫu nhiên, đảm bảo `neuroedge verify` cho cùng kết quả trên mọi target.
-5. **Không có bộ lượng giá CEL nào trên vi điều khiển (Q-9 phương án A).** Host biên dịch gate sang cây nhị phân `NETR` (RFC-0003, RFC-0009); firmware chỉ duyệt cây qua walker C99.
-6. **Bo tham chiếu mặc định của `esp32s3` là ESP32-S3-BOX-3; bo tham chiếu thứ hai (có camera) là M5Stack CoreS3 (RFC-0013, Q-61).** Không đổi sang DevKitC để số đo kiểm tra bộ nhớ có giá trị thực tế.
-7. **Mỗi profile `sim` không được giàu năng lực hơn bo mạch nó soi (`SIM_MIRRORS`, RFC-0013).** Đảm bảo tính tương đương giữa mô phỏng và phần cứng thật.
-8. **Đuôi vết ghi là `.json` mang `$schema`.** Không đổi sang định dạng nhị phân đóng như `.ntrace`.
-9. **Không copyleft mạnh trong phần phân phối.** Tuân thủ chính sách giấy phép Q-11; ghim `jsonschema[format-nongpl]`; `neuroedge new` dùng generator Python thuần (TSK-S3-07), không dùng `copier`.
-10. **Lệnh CLI chưa có engine phải thoát mã 2, không in "PASS" giả.** Bắt buộc tuân thủ hợp đồng mã thoát (0: đạt, 1: không đạt, 2: chưa hiện thực) để bảo đảm tính trung thực của báo cáo CI và tiến độ.
+1. **Schema validation is NOT sufficient to conclude a gate is safe.** JSON Schema checks only a single document; safety verification gate is `neuroedge gate lint` (resolves inheritance chain). Unresolved gates must not be loaded onto devices.
+2. **Fail-closed is default in all directions.** Absence of `fail` → `closed`. Parent gate `fail: open` and child silent → `closed`. Cannot measure → `INCONCLUSIVE`. Actuation always fails closed; during degradation, actuators enter `safe_state` declared in `board.v1` (default `off`, Q-72).
+3. **CEL string `allow_when` must not appear in the inheritance chain.** If monotonic tightening cannot be proven, it must be rejected.
+4. **Gate resolution is a pure function.** No clock, network, or randomness dependencies, ensuring `neuroedge verify` produces identical results across all targets.
+5. **No CEL evaluator on microcontrollers (Q-9 option A).** Host compiles gates into `NETR` binary tree (RFC-0003, RFC-0009); firmware traverses tree using C99 walker only.
+6. **Default reference board for `esp32s3` is ESP32-S3-BOX-3; second reference board (with camera) is M5Stack CoreS3 (RFC-0013, Q-61).** Do not swap to DevKitC so memory verification numbers retain real-world validity.
+7. **No `sim` profile may be more capable than the hardware board it mirrors (`SIM_MIRRORS`, RFC-0013).** Preserves parity between simulation and physical hardware.
+8. **Trace file extension is `.json` carrying `$schema`.** Do not change to closed binary formats like `.ntrace`.
+9. **No strong copyleft in distribution artifacts.** Comply with Q-11 license policy; pin `jsonschema[format-nongpl]`; `neuroedge new` uses pure Python generator (TSK-S3-07), not `copier`.
+10. **CLI commands without an underlying engine must exit with code 2, never print fake "PASS".** Strictly adhere to the exit code contract (0: pass, 1: fail, 2: not implemented) to maintain truthfulness of CI and progress reporting.
 
-### 3.4 Hạng mục bị chặn — không đóng được bằng nỗ lực kỹ thuật
+### 3.4 Blocked Items — Cannot Be Closed by Engineering Effort Alone
 
-| Hạng mục | Chặn bởi | Cần ai | Mở ra điều gì |
+| Item | Blocked by | Needs Whom | Unlocks What |
 |:---|:---|:---|:---|
-| **TSK-S1-10** (I3 tiêu chí 1) | Bo mạch ESP32-S3-BOX-3 | Mua phần cứng | Đo kiểm thoại trên chip → I3, I5 |
-| **TSK-I2-01** (I2 tiêu chí 4) | RPi 5 cho nightly `linux` | Mua phần cứng | Nightly trên phần cứng thật → I2 |
-| **V6 — kỹ sư nhúng thứ hai** | Chưa có người | Tuyển dụng (Q-39) | Âm thanh song song với HAL (TSK-S5-01…07) → I5, I7 |
-| **`TODOS.md` #43** (CLA) | Chưa có văn bản CLA | Pháp lý / CPO | Nhận đóng góp PR từ bên ngoài (Q-45) |
-| **I2b tiêu chí 2** | Cần người đo TTFV | Người đo (Q-60) | Đóng tiêu chí nghiệm thu I2b |
-| **`TODOS.md` #59** | Cần phần cứng thật dựng kit | Mua kit và lắp đặt | Kiểm tra BOM và sơ đồ 5 kit I2b |
-| **I6 tiêu chí 7** | Cần hai máy thử MCP mạng | Người thực hiện (Q-60) | Đóng tiêu chí MCP qua mạng |
+| **TSK-S1-10** (I3 criterion 1) | ESP32-S3-BOX-3 board | Hardware purchase | On-chip voice benchmarking → I3, I5 |
+| **TSK-I2-01** (I2 criterion 4) | RPi 5 for nightly `linux` | Hardware purchase | Nightly on real hardware → I2 |
+| **V6 — second embedded engineer** | Position vacant | Recruiting (Q-39) | Audio parallel with HAL (TSK-S5-01…07) → I5, I7 |
+| **`TODOS.md` #43** (CLA) | No CLA text yet | Legal / CPO | Accept external PR contributions (Q-45) |
+| **I2b criterion 2** | Needs TTFV tester | Tester (Q-60) | Close I2b acceptance criteria |
+| **`TODOS.md` #59** | Needs real hardware to assemble kits | Purchase kits and assemble | Verify BOM and schematics for 5 I2b kits |
+| **I6 criterion 7** | Needs two machines for network MCP test | Operator (Q-60) | Close network MCP criteria |
 
-**TSK-S1-10 sau khi có bo:** vendoring `esp-sr` (AEC/AFE + VAD) và `opus` kèm rà soát giấy phép, nạp tại `TODO(TSK-S1-10, V2)` trong `main.c`, điền báo cáo. Quy tắc đã chốt trước khi đo: trượt bất kỳ ngưỡng Q-3 nào thì **không cắt thoại** (Q-44) — mở một `Q-N` lập lại kế hoạch I5 và dời dự báo v1.0.
+**TSK-S1-10 once board arrives:** vendoring `esp-sr` (AEC/AFE + VAD) and `opus` with license review, patch into `TODO(TSK-S1-10, V2)` in `main.c`, fill out report. Decided rule before measurement: failing any Q-3 threshold **does not cut voice** (Q-44) — open a `Q-N` to replan I5 and adjust v1.0 projection.
 
-### 3.5 Việc tiếp theo
+### 3.5 Next Steps
 
-Xem Thẻ bàn giao tại [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md) §0.3 — nơi duy nhất theo dõi việc tiếp theo và thứ tự thực hiện (`CONTRIBUTING.md` §8.1).
+See Handoff Card in [`neuroedge-roadmap.md`](roadmap/neuroedge-roadmap.md) §0.3 — the single source tracking next steps and execution order (`CONTRIBUTING.md` §8.1).
 
-### 3.6 Nợ thiết kế đã biết
+### 3.6 Known Design Debt
 
-| # | Nợ thiết kế | Cần giải quyết tại |
+| # | Design Debt | Needs Resolution At |
 |:---:|:---|:---|
-| 1 | Hủy lệnh đang chờ mới hỗ trợ trên `sim` và `linux`; `esp32s3` cần hủy được ở tầng firmware (`voice_fsm.md` §5). | **TSK-S4-01** (I3) |
-| 2 | `gate publish` dừng ở mã băm JCS SHA-256, chưa ký số mật mã. | I10 (Registry) |
+| 1 | Cancelling pending commands is currently only supported on `sim` and `linux`; `esp32s3` requires firmware-level cancellation (`voice_fsm.md` §5). | **TSK-S4-01** (I3) |
+| 2 | `gate publish` stops at RFC 8785 SHA-256 digest, not yet cryptographically signed. | I10 (Registry) |
 
-### 3.7 Điều hệ thống chưa làm được
+### 3.7 What the System Does Not Do Yet
 
-- Phiên tương tác mới hỗ trợ nhập văn bản terminal trên `sim` và `linux` (chưa có GUI web cho Linux).
-- Giọng nói chạy từ tệp WAV trên `sim`/`linux`; micro trực tiếp (`run --mic`) mới có trên laptop; mô hình wake-word do người dùng tự cung cấp.
-- ESP32-S3 mới chạy walker gate và self-test trên QEMU, chưa điều khiển chân GPIO thực tế.
-- Model cloud trong CI chỉ chạy qua mock/transport giả; lượt gọi key thật phải chạy thủ công.
-- Tương đương target mới ở mức phán quyết và lệnh chân; chưa so khớp độ trễ thời gian thực.
-- Nguyên thủy mở rộng kiểm thử trên kernel ảo Linux trong CI (`gpio-sim`, `i2c-stub`, `vivid`), chưa kiểm trên bo mạch thật.
-- Chưa mở công khai trên PyPI (dự kiến phiên bản `0.6.0` tại I6; trước đó chỉ phát hành tag nội bộ và wheel giao trực tiếp).
-- Chưa hỗ trợ biểu thức CEL trong `allow_when` (`TODOS.md` #42).
+- Interactive sessions currently support only terminal text input on `sim` and `linux` (no web GUI for Linux yet).
+- Voice runs from WAV files on `sim`/`linux`; live microphone (`run --mic`) is currently available on laptops; wake-word model is user-provided.
+- ESP32-S3 currently runs gate walker and self-test on QEMU, without physical GPIO actuation.
+- Cloud models in CI run only via mock/dummy transports; real key invocations require manual runs.
+- Target equivalence is currently at the verdict and pin command level; real-time latency is not matched yet.
+- Extended primitives are tested on virtual Linux kernels in CI (`gpio-sim`, `i2c-stub`, `vivid`), not yet on physical boards.
+- Not yet publicly published on PyPI (planned version `0.6.0` at I6; prior releases are internal tags and hand-delivered wheels only).
+- CEL expressions in `allow_when` are not yet supported (`TODOS.md` #42).
 
-### 3.8 Bốn ràng buộc cho bản port HAL lên chip ở I3
+### 3.8 Four Constraints for On-Chip HAL Port in I3
 
-Bốn ràng buộc RB-1 → RB-4 (không `malloc` trên đường âm thanh, đệm tĩnh đo được trong PSRAM, `digital.out` hủy được trong ≤ 1 khung âm thanh, bảng năng lực `const` trong flash) quy định tại [`docs/spec/hal_mcu_review.md`](docs/spec/hal_mcu_review.md) §2 tiếp tục có hiệu lực.
+Four constraints RB-1 → RB-4 (no `malloc` in audio path, bounded static buffers in PSRAM, `digital.out` cancellable within ≤ 1 audio frame, `const` capability table in flash) defined in [`docs/spec/hal_mcu_review.md`](docs/spec/hal_mcu_review.md) §2 remain in effect.
 
-### 3.9 Thêm một fixture phản chứng
+### 3.9 Adding a Negative Fixture
 
-Quy trình và nguyên tắc khép kín hai chiều của các bộ corpus phản chứng (gate, vết ghi, tool call) quy định tại [`CONTRIBUTING.md`](CONTRIBUTING.md) §3.
+Procedure and bidirectional closure principles for negative corpora (gates, traces, tool calls) are specified in [`CONTRIBUTING.md`](CONTRIBUTING.md) §3.

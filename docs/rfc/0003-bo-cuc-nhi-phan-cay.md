@@ -1,140 +1,140 @@
-# RFC-0003: Đóng băng bố cục nhị phân của cây quyết định trên thiết bị (`NETR` v1)
+# RFC-0003: Freeze On-Device Decision Tree Binary Layout (`NETR` v1)
 
 | | |
 |:---|:---|
-| **Mã RFC** | 0003 |
-| **Tiêu đề** | Bố cục nhị phân `NETR` v1 mà `neuroedge build` sinh và walker C99 đọc (Q-23) |
-| **Lược đồ bị ảnh hưởng** | *(không trong `schemas/`)* — định dạng mới do RFC này đóng băng |
-| **Yêu cầu PRD liên quan** | FR-ACE-01, FR-ACE-03, FR-ACE-08, FR-ACE-10, FR-CI-07, NFR-RES-01 |
-| **Người đề xuất** | V1 + V2 *(theo TSK-S4-02)* |
-| **Ngày mở** | 2026-09-24 |
-| **Trạng thái** | ✅ Đã chấp thuận — **thu hẹp**: chỉ bố cục nhị phân. Phần ghim `extends` bằng digest (TSK-S3-21) vẫn hoãn, `TODOS.md` #15 · ✅ Đã hiện thực (TSK-S4-02, S4-07, S4-08; PR #27, #29) |
-| **Người phê duyệt** | Trong-Minh Le (@letrongminh, kỹ thuật trưởng), 2026-09-24 |
-| **Kiểm chứng** | §7 — `python/tests/test_c_walker.py`, `python/tests/test_c_token.py`, job CI `firmware-qemu` |
+| **RFC ID** | 0003 |
+| **Title** | On-device tree `NETR` v1 binary layout emitted by `neuroedge build` and read by C99 walker (Q-23) |
+| **Affected Schema** | *(not in `schemas/`)* — new format frozen by this RFC |
+| **Related PRD Requirements** | FR-ACE-01, FR-ACE-03, FR-ACE-08, FR-ACE-10, FR-CI-07, NFR-RES-01 |
+| **Author** | V1 + V2 *(per TSK-S4-02)* |
+| **Date Opened** | 2026-09-24 |
+| **Status** | ✅ Approved — **narrowed**: binary layout only. Pinning `extends` via digest (TSK-S3-21) remains deferred, `TODOS.md` #15 · ✅ Implemented (TSK-S4-02, S4-07, S4-08; PR #27, #29) |
+| **Approver** | Trong-Minh Le (@letrongminh, lead architect), 2026-09-24 |
+| **Verification** | §7 — `python/tests/test_c_walker.py`, `python/tests/test_c_token.py`, CI job `firmware-qemu` |
 
-> **Khi nào cần RFC:** `TODOS.md` #15 và `decision_tree.py` yêu cầu đóng băng bố cục
-> **trước khi có walker C đầu tiên**. Đổi bố cục sau RFC này cần RFC mới và tăng
-> `layout_version`; firmware từ chối phiên bản nó không biết.
+> **When an RFC is required:** `TODOS.md` #15 and `decision_tree.py` require freezing the
+> layout **before the first C walker exists**. Changing the layout after this RFC requires
+> a new RFC and bumping `layout_version`; firmware rejects versions it does not recognize.
 
-## 1. Vấn đề
+## 1. Problem
 
-Q-9 và Q-23: thiết bị không có CEL VM, cũng không có parser JSON. Nó duyệt một cây do host
-biên dịch. Cây JSON (`decision_tree.v1.json`) là định dạng **nội bộ của host**, không phù hợp
-trên MCU: cần parser, cấp phát động, so sánh chuỗi. Firmware cần một bố cục cố định, đọc
-**tại chỗ từ flash**, kiểm được trọn vẹn trước khi dùng, và không đổi âm thầm giữa các bản
-build.
+Q-9 and Q-23: the device has neither a CEL VM nor a JSON parser. It traverses a tree
+compiled by the host. The JSON tree (`decision_tree.v1.json`) is an **internal host format**,
+unsuitable on MCUs: requires parsers, dynamic allocation, and string comparisons. Firmware
+needs a fixed layout, read **in-place from flash**, fully verifiable before use, and never
+silently changing between builds.
 
-## 2. Vì sao định dạng hiện có không giải quyết được
+## 2. Why the Existing Format Does Not Solve It
 
-`decision_tree.v1.json` ghi rõ *"internal, not frozen"* và mang chuỗi, danh sách, số thực
-dạng văn bản — không đọc được tại chỗ, không có kiểm toàn vẹn.
+`decision_tree.v1.json` explicitly states *"internal, not frozen"* and contains strings,
+lists, and floats in text form — not readable in-place, without integrity verification.
 
-## 3. Thay đổi đề xuất — bố cục `NETR` v1
+## 3. Proposed Change — `NETR` v1 Layout
 
-Mọi số nguyên little-endian; bản ghi kích thước cố định, căn tự nhiên; **không có con trỏ**
-(chỉ offset trong tệp). Walker đọc từng byte nên không phụ thuộc endianness hay căn chỉnh
-của CPU.
+All integers little-endian; fixed-size records, naturally aligned; **no pointers**
+(file offsets only). The walker reads byte by byte, making it independent of CPU
+endianness or alignment.
 
-**Header — 64 byte**
+**Header — 64 bytes**
 
-| Offset | Kiểu | Trường | Quy định |
+| Offset | Type | Field | Specification |
 |---:|:---|:---|:---|
 | 0 | `char[4]` | `magic` | `"NETR"` |
 | 4 | `u16` | `layout_version` | `1` |
 | 6 | `u16` | `header_size` | `64` |
-| 8 | `u8[32]` | `gate_digest` | SHA-256 thô của gate đã phân giải — cùng digest với vết ghi |
-| 40 | `u16` | `node_count` | 1..32 — tiêu chí `allow_when`, theo `criteria_order` |
-| 42 | `u16` | `arg_count` | 0..16 — giới hạn tham số RFC-0005, theo thứ tự khai |
+| 8 | `u8[32]` | `gate_digest` | Raw SHA-256 of resolved gate — same digest as in trace |
+| 40 | `u16` | `node_count` | 1..32 — `allow_when` criteria, following `criteria_order` |
+| 42 | `u16` | `arg_count` | 0..16 — RFC-0005 argument limits, in declaration order |
 | 44 | `u16` | `enum_count` | 0..64 |
 | 46 | `u8` | `on_block_action` | 0 deny · 1 escalate · 2 ask · 3 degrade |
 | 47 | `u8` | `fail_open` | 0 closed · 1 open |
 | 48 | `u32` | `p95_latency_ms` | > 0 |
-| 52 | `u32` | `confirm_mask` | bit *i*: tiêu chí *i* người được xác nhận thay (RFC-0006); khác 0 chỉ khi `ask` |
-| 56 | `u32` | `strings_size` | 1..16384, byte cuối là NUL |
-| 60 | `u32` | `crc32` | CRC-32 (IEEE, như zlib) của toàn tệp với 4 byte này là 0 |
+| 52 | `u32` | `confirm_mask` | bit *i*: criterion *i* confirmed by human instead (RFC-0006); non-zero only when `ask` |
+| 56 | `u32` | `strings_size` | 1..16384, final byte is NUL |
+| 60 | `u32` | `crc32` | CRC-32 (IEEE, like zlib) of entire file with these 4 bytes set to 0 |
 
-**Node tiêu chí — 24 byte × `node_count`**
+**Criteria nodes — 24 bytes × `node_count`**
 
-| Offset | Kiểu | Trường |
+| Offset | Type | Field |
 |---:|:---|:---|
 | 0 | `u8` | `kind` — 0 bool · 1 level · 2 choice |
 | 1 | `u8` | `domain_size` — 1..32 (bool: 2) |
-| 2 | `u16` | `name_off` — tên tiêu chí trong bảng chuỗi |
-| 4 | `u32` | `admitted_mask` — bit *v*: giá trị thứ *v* của miền được nhận |
+| 2 | `u16` | `name_off` — criterion name in string table |
+| 4 | `u32` | `admitted_mask` — bit *v*: *v*-th value of domain is accepted |
 | 8 | `f64` | `confidence_floor` — [0, 1] |
-| 16 | `u16` | `domain_off` — các giá trị miền, liên tiếp, mỗi chuỗi kết thúc NUL |
-| 18 | `u16`, `u32` | dành riêng, bằng 0 |
+| 16 | `u16` | `domain_off` — domain values, contiguous, each string NUL-terminated |
+| 18 | `u16`, `u32` | reserved, zero |
 
-Miền: bool = `false, true`; level = các mức theo thứ tự; choice = các lựa chọn **đã sắp xếp**.
-Dữ kiện tới walker dưới dạng **chỉ số trong miền**, nên thiết bị không so sánh chuỗi để
-quyết một tiêu chí.
+Domains: bool = `false, true`; level = levels in order; choice = **sorted** options.
+Facts arrive at the walker as **domain indices**, so the device does not perform
+string comparisons to evaluate criteria.
 
-**Giới hạn tham số — 32 byte × `arg_count`**: `u16 name_off` · `u8 type` (0 string · 1
+**Argument limits — 32 bytes × `arg_count`**: `u16 name_off` · `u8 type` (0 string · 1
 integer · 2 number · 3 boolean) · `u8 flags` (1 minimum · 2 maximum · 4 enum · 8 max_length) ·
-`u16 enum_first` · `u16 enum_count` · `u32 max_length` (ký tự Unicode) · `u32` dành riêng ·
+`u16 enum_first` · `u16 enum_count` · `u32 max_length` (Unicode code points) · `u32` reserved ·
 `f64 minimum` · `f64 maximum`.
 
-**Enum — 16 byte × `enum_count`**: `f64 number` (số; boolean là 0/1) · `u32 str_off` ·
-`u32 str_len` (byte UTF-8, cho kiểu string).
+**Enum — 16 bytes × `enum_count`**: `f64 number` (numeric; boolean is 0/1) · `u32 str_off` ·
+`u32 str_len` (UTF-8 bytes, for string type).
 
-**Bảng chuỗi**: UTF-8, mỗi chuỗi kết thúc NUL.
+**String table**: UTF-8, each string NUL-terminated.
 
-Kích thước tệp = 64 + 24·n + 32·a + 16·e + strings, **đúng bằng** độ dài tệp. Với giới hạn
-trên, một cây tối đa khoảng 19 KB flash.
+File size = 64 + 24·n + 32·a + 16·e + strings, **strictly equal** to file length. With
+the limits above, a tree occupies at most ~19 KB of flash.
 
-**Ngữ nghĩa walker** (bằng với engine host, `python/neuroedge/engine/`):
+**Walker semantics** (identical to host engine, `python/neuroedge/engine/`):
 
-1. Giới hạn tham số trước, theo thứ tự — vi phạm ⇒ BLOCK `argument_out_of_range`.
-2. Mỗi tiêu chí theo `criteria_order`: không có dữ kiện hoặc ngoài miền ⇒
-   `criterion_unavailable`; độ tin cậy không phải xác suất (kể cả NaN) ⇒ `criterion_unavailable`;
-   có ngưỡng mà thiếu độ tin cậy ⇒ `confidence_unavailable`; không được nhận hoặc dưới ngưỡng ⇒
-   `condition_not_met`. Lý do là lỗi **đầu tiên**.
-3. Sau xác nhận của người: các tiêu chí trong `confirm_mask` coi như đạt. Câu hỏi chỉ
-   *trả lời được* khi đúng các tiêu chí đó là đủ để ALLOW.
-4. Suy giảm (`gate_unreachable`, `budget_exceeded`) do lớp gọi walker quyết theo `fail_open`,
-   như trên host.
+1. Parameter limits first, in declaration order — violation ⇒ BLOCK `argument_out_of_range`.
+2. Each criterion in `criteria_order`: missing fact or outside domain ⇒
+   `criterion_unavailable`; confidence is not a valid probability (including NaN) ⇒ `criterion_unavailable`;
+   confidence floor declared but confidence missing ⇒ `confidence_unavailable`; value not admitted or confidence below floor ⇒
+   `condition_not_met`. The recorded reason is the **first** error encountered.
+3. After human confirmation: criteria in `confirm_mask` are treated as satisfied. A question
+   is only *answerable* when satisfying those exact criteria suffices for ALLOW.
+4. Degradation (`gate_unreachable`, `budget_exceeded`) decided by caller wrapping the walker based on `fail_open`,
+   identical to host behavior.
 
-**Nạp**: `ne_tree_load` từ chối mọi tệp có magic, phiên bản, kích thước, CRC, giới hạn hoặc
-cấu trúc sai — không đọc gì ngoài bộ đệm.
+**Loading**: `ne_tree_load` rejects any file with incorrect magic, version, size, CRC, bounds,
+or structure — reads nothing outside the buffer.
 
-## 4. Ảnh hưởng tương thích
+## 4. Compatibility Impact
 
-| Hạng mục | Ảnh hưởng |
+| Item | Impact |
 |:---|:---|
-| `schemas/` | Không đổi |
-| Gate, digest, ba vết ghi chuẩn mực | Không đổi — bố cục là dạng biên dịch của gate |
-| Bố cục sau này | RFC mới + `layout_version` 2; walker v1 từ chối v2 (`NE_ERR_VERSION`) |
+| `schemas/` | Unchanged |
+| Gates, digests, three canonical traces | Unchanged — layout is compiled form of gate |
+| Future layouts | New RFC + `layout_version` 2; walker v1 rejects v2 (`NE_ERR_VERSION`) |
 
-## 5. Ảnh hưởng an toàn
+## 5. Safety Impact
 
-- Walker không có trạng thái ghi được (`.data`/`.bss` rỗng), không cấp phát, không đệ quy;
-  stack lớn nhất 176 byte (`ne_evaluate`, clang `-O2`) — kiểm trên mỗi PR, giới hạn 512 byte.
-- Tệp hỏng ở bất kỳ byte nào bị CRC từ chối; mọi độ dài cắt ngắn bị từ chối; cấu trúc bị sửa
-  có CRC hợp lệ thì hoặc bị từ chối, hoặc duyệt không đọc ngoài bộ đệm (fuzz dưới ASan/UBSan).
-- `gate_digest` trong tệp là digest đã ghi trong vết ghi: một phán quyết trên thiết bị luôn
-  truy được về chính sách đã ký.
+- Walker has no writable state (`.data`/`.bss` empty), no allocation, no recursion;
+  maximum stack 176 bytes (`ne_evaluate`, clang `-O2`) — checked on every PR, 512-byte limit.
+- Corrupted file at any byte rejected by CRC; any truncated length rejected; mutated structure
+  with valid CRC is either rejected or traversed without out-of-bounds reads (fuzzed under ASan/UBSan).
+- `gate_digest` in file matches digest recorded in trace: an on-device verdict always
+  traces back to the signed policy.
 
-## 6. Phương án đã xem xét và bác bỏ
+## 6. Alternatives Considered and Rejected
 
-| Phương án | Lý do bác bỏ |
+| Alternative | Reason for Rejection |
 |:---|:---|
-| Đưa JSON lên MCU (cJSON…) | Parser + cấp phát động trên đường an toàn; Q-9/Q-23 đã loại |
-| FlatBuffers / Cap'n Proto | Thêm phụ thuộc và công cụ sinh mã; nhu cầu chỉ là vài bản ghi cố định |
-| Struct C `#pragma pack` ép kiểu trực tiếp | Phụ thuộc endianness, căn chỉnh và trình biên dịch; không kiểm biên được |
+| Put JSON on MCU (cJSON…) | Parser + dynamic allocation on safety path; eliminated by Q-9/Q-23 |
+| FlatBuffers / Cap'n Proto | Adds dependencies and code generation tools; need is just a few fixed records |
+| C struct `#pragma pack` direct cast | Depends on endianness, alignment, and compiler; bounds cannot be verified |
 
-## 7. Bằng chứng kiểm chứng
+## 7. Verification Evidence
 
-- [x] `python/tests/test_c_walker.py`: walker C (ASan + UBSan) khớp **engine host thật** trên
-  mọi gate trong `gates/`, corpus hợp lệ, agent mẫu và một gate tổng hợp phủ mọi loại giới
-  hạn — hàng `truth_cases` × {chưa, đã xác nhận} + 400 ca ngẫu nhiên có seed mỗi gate; khớp
-  bảng sự thật đã ghi trong `fixtures/decision_trees/`; fuzz; RAM tĩnh 0; stack ≤ 512 byte
-- [x] Kiểm tra đột biến: 7 lỗi cố ý cài vào walker (thứ tự kiểm độ tin cậy, bỏ/mở rộng xác
-  nhận, biên `maximum`, đếm độ dài theo byte, integer nhận số lẻ, `answerable`) đều bị bắt
-- [x] `neuroedge build` ghi `<gate>.netree` và `<gate>.netree.h`
+- [x] `python/tests/test_c_walker.py`: C walker (ASan + UBSan) matches **actual host engine**
+  on all gates in `gates/`, valid corpus, sample agents, and a synthetic gate covering all constraint
+  types — `truth_cases` rows × {unconfirmed, confirmed} + 400 seeded random cases per gate;
+  matches truth tables recorded in `fixtures/decision_trees/`; fuzz; zero static RAM; stack ≤ 512 bytes
+- [x] Mutation testing: 7 deliberate defects inserted into the walker (confidence check order,
+  omitting/expanding confirmation, `maximum` bound, byte length counting, integer accepting fractional values, `answerable`) all caught
+- [x] `neuroedge build` emits `<gate>.netree` and `<gate>.netree.h`
 
-## 8. Việc phải làm khi chấp thuận
+## 8. Tasks upon Approval
 
-- [x] `python/neuroedge/engine/binary_tree.py` (bộ mã hoá) · `targets/esp32s3/components/ne_gate/` (walker, component ESP-IDF, Makefile host)
+- [x] `python/neuroedge/engine/binary_tree.py` (encoder) · `targets/esp32s3/components/ne_gate/` (walker, ESP-IDF component, host Makefile)
 - [x] `neuroedge-roadmap.md` TSK-S4-02, TSK-S4-07
-- [x] `TODOS.md` #15 thu hẹp còn phần ghim `extends`
-- [x] Sổ token dùng một lần bằng C (`ne_token.c`) và gắn walker vào `app_main` (self-test lúc boot, `gate_selftest.c`) — TSK-S4-08, PR #29
+- [x] `TODOS.md` #15 narrowed to `extends` pinning portion
+- [x] Single-use token log in C (`ne_token.c`) and walker wired into `app_main` (boot-time self-test, `gate_selftest.c`) — TSK-S4-08, PR #29

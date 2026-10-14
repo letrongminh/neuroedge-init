@@ -10,7 +10,7 @@
  *
  * Language. `agent.toml` picks one language per agent and the generated
  * component carries it as `NE_AGENT_LANGUAGE`; the rule is docs/spec/ui.md
- * §Ngôn ngữ. Here that code is a string table and a set of glyphs, or nothing:
+ * §2 (Language). Here that code is a string table and a set of glyphs, or nothing:
  * `ne_ui_init` refuses a language this component does not ship, so a screen is
  * never drawn in a language it cannot spell.
  *
@@ -50,7 +50,7 @@ extern "C" {
 #define NE_UI_MAX_COMMANDS 4u
 
 /* The languages the UI ships a string table and font glyphs for (docs/spec/ui.md
- * §Ngôn ngữ). `NE_UI_LANG_NONE` is what an unsupported code resolves to; every
+ * §2 (Language)). `NE_UI_LANG_NONE` is what an unsupported code resolves to; every
  * show function refuses to draw with it. */
 typedef enum {
     NE_UI_LANG_NONE = -1,
@@ -195,7 +195,7 @@ const char *ne_ui_reason_label(ne_ui_language_t language, ne_ui_reason_t reason)
 /*
  * Prepare `ui` to draw on `display` in `language`. False — and no screen may be
  * shown — when the UI ships no strings for that language: the fail-closed path
- * of docs/spec/ui.md §Ngôn ngữ.
+ * of docs/spec/ui.md §2 (Language).
  */
 bool ne_ui_init(ne_ui_t *ui, lv_display_t *display, ne_ui_language_t language);
 

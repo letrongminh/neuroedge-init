@@ -1,40 +1,40 @@
-# Giấy phép
+# Licensing
 
-Quyết định: **Q-45** (`neuroedge-prd.md` §15, 2026-09-25), mở rộng phần chuẩn ở **Q-67** (2026-10-04). Tệp này
-nói phần nào của kho theo giấy phép nào; nội dung và lý do của quyết định chỉ nằm ở Q-45 và Q-67.
+Decision: **Q-45** (`neuroedge-prd.md` §15, 2026-09-25), extended for standards in **Q-67** (2026-10-04). This file
+states which parts of the repository fall under which license; the rationale and substance of the decision reside solely in Q-45 and Q-67.
 
-| Phần | Giấy phép | Văn bản |
+| Part | License | Text |
 |:---|:---|:---|
-| Mã NeuroEdge — runtime Python, CLI, firmware, dịch vụ, công cụ, test, tài liệu (mọi thứ không nằm ở các dòng dưới) | **PolyForm Noncommercial 1.0.0** | [`LICENSE`](LICENSE) |
-| Chuẩn mở — `schemas/`, `docs/spec/`, `fixtures/compliance/` | **Apache-2.0** | [`LICENSES/Apache-2.0.txt`](LICENSES/Apache-2.0.txt) |
-| Corpus tuân thủ — `fixtures/tool_calls/`, `fixtures/contracts/`, `fixtures/traces/`, và `fixtures/agents/` mà corpus dùng (Q-67) | **Apache-2.0** | [`LICENSES/Apache-2.0.txt`](LICENSES/Apache-2.0.txt) |
-| Mã port hoặc chuyển thể từ bên thứ ba | Giấy phép gốc của nó | [`NOTICE`](NOTICE) |
-| Phông chữ của giao diện thiết bị — `targets/esp32s3/ui/fonts/` (Be Vietnam Pro, sinh bằng `scripts/gen_ui_fonts.sh`) | **OFL-1.1** | [`LICENSES/OFL-1.1.txt`](LICENSES/OFL-1.1.txt) · NOTICE mục A.5 |
+| NeuroEdge codebase — Python runtime, CLI, firmware, services, tooling, tests, documentation (everything not listed below) | **PolyForm Noncommercial 1.0.0** | [`LICENSE`](LICENSE) |
+| Open standards — `schemas/`, `docs/spec/`, `fixtures/compliance/` | **Apache-2.0** | [`LICENSES/Apache-2.0.txt`](LICENSES/Apache-2.0.txt) |
+| Compliance corpus — `fixtures/tool_calls/`, `fixtures/contracts/`, `fixtures/traces/`, and `fixtures/agents/` used by the corpus (Q-67) | **Apache-2.0** | [`LICENSES/Apache-2.0.txt`](LICENSES/Apache-2.0.txt) |
+| Code ported or adapted from third parties | Its original license | [`NOTICE`](NOTICE) |
+| Device UI fonts — `targets/esp32s3/ui/fonts/` (Be Vietnam Pro, generated with `scripts/gen_ui_fonts.sh`) | **OFL-1.1** | [`LICENSES/OFL-1.1.txt`](LICENSES/OFL-1.1.txt) · NOTICE section A.5 |
 
-**Phi thương mại** — cá nhân, nghiên cứu, học tập, tổ chức phi lợi nhuận, và mọi mục đích khác mà
-PolyForm Noncommercial cho phép — được dùng, sửa và phân phối lại toàn bộ mã miễn phí, theo đúng
-điều khoản trong `LICENSE`.
+**Noncommercial** — individuals, research, education, non-profit organizations, and any other purpose
+permitted by PolyForm Noncommercial — may use, modify, and redistribute the entire codebase free of charge,
+in accordance with the terms in `LICENSE`.
 
-**Thương mại** — dùng NeuroEdge trong sản phẩm, dịch vụ hay hoạt động của doanh nghiệp, kể cả dùng
-nội bộ — cần một **license thương mại** riêng. Liên hệ tác giả qua địa chỉ trong
-[`python/pyproject.toml`](python/pyproject.toml). Trong license thương mại, tính năng an toàn cốt
-lõi không bao giờ bị tách thành gói trả thêm (PRD P-3).
+**Commercial** — using NeuroEdge in enterprise products, services, or operations, including internal
+use — requires a separate **commercial license**. Contact the author via the address in
+[`python/pyproject.toml`](python/pyproject.toml). In commercial licensing, core safety features are
+never split off into paid add-ons (PRD P-3).
 
-**Chuẩn mở** và **corpus tuân thủ** giữ Apache-2.0 để bên thứ ba hiện thực chuẩn và tự chứng minh bằng bộ kiểm
-tuân thủ (tiêu chí A9, A13) mà không dùng tệp PolyForm Noncommercial, và để chuyển quyền quản trị đặc tả cho một tổ
-chức trung lập khi đạt G1 (`docs/architecture/vi/16-ecosystem-landscape.md` §6).
+**Open standards** and **compliance corpus** remain Apache-2.0 so third parties can implement the standards
+and prove compliance via the test harness (criteria A9, A13) without using PolyForm Noncommercial files,
+and to transfer specification governance to a neutral body upon reaching G1 (`docs/architecture/vi/16-ecosystem-landscape.md` §6).
 
-**Plugin và adapter của bên thứ ba** (Extension SDK, Q-67) nằm ở kho của tác giả, theo giấy phép do tác giả chọn;
-NeuroEdge không đòi bản quyền trên chúng. Plugin chạy cùng runtime NeuroEdge nên việc *dùng* chung với runtime vẫn
-theo điều khoản của runtime ở dòng đầu bảng (phi thương mại miễn phí, thương mại cần license).
+**Third-party plugins and adapters** (Extension SDK, Q-67) reside in their authors' repositories under licenses
+chosen by their authors; NeuroEdge claims no copyright over them. Plugins run alongside the NeuroEdge runtime, so
+*using* them together with the runtime still follows the runtime terms in the first row of the table (noncommercial is free, commercial requires a license).
 
-**Trước thay đổi này:** mọi bản tới commit `f68a47f` (2026-09-25) phát hành theo MIT. Ai đã nhận
-các bản đó giữ quyền MIT với đúng các bản đó; từ sau commit đó, mã theo bảng trên.
+**Prior to this change:** all releases up to commit `f68a47f` (2026-09-25) were released under MIT. Anyone who received
+those releases retains their MIT rights for those specific releases; after that commit, the codebase follows the table above.
 
-**Đóng góp:** pull request từ người ngoài cần CLA trước khi merge, để NeuroEdge cấp được license
-thương mại cho phần đóng góp và tái cấp phép được về sau (`TODOS.md` #43, `CONTRIBUTING.md` §2).
+**Contributions:** external pull requests require a CLA prior to merging, so NeuroEdge can grant commercial
+licenses for contributed code and relicense in the future (`TODOS.md` #43, `CONTRIBUTING.md` §2).
 
-**Về sau:** mã giữ PolyForm Noncommercial qua v1.0; việc mở giấy phép được rà lại ở điểm rẽ Beta
+**Future:** the codebase remains PolyForm Noncommercial through v1.0; open-source licensing will be revisited at the Beta fork point
 (Q-59, `TODOS.md` #51).
 
-*Tệp này tóm tắt; văn bản giấy phép là thứ ràng buộc. Không phải tư vấn pháp lý.*
+*This file is a summary; the license text is binding. This is not legal advice.*

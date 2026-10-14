@@ -1,16 +1,16 @@
-# 06 · Luồng lúc chạy (Dynamic views)
+# 06 · Runtime Flows (Dynamic views)
 
-> **Phạm vi:** các luồng quan trọng, mỗi luồng một sơ đồ trình tự hoặc trạng thái, gọi đúng tên hàm
-> trong mã. **Nguồn:** `sim/session.py`, `actions/`, `engine/gate.py`, `mcp_server.py`, `mcp_host.py`,
+> **Scope:** key flows, each with a sequence or state diagram, using exact function names
+> in code. **Sources:** `sim/session.py`, `actions/`, `engine/gate.py`, `mcp_server.py`, `mcp_host.py`,
 > `models/system.py`, `perception/`, `testing/`, `docs/spec/voice_fsm.md`, `docs/spec/tool_calling.md`.
 
-Mọi luồng dưới đây, dù bắt đầu từ đâu, đều gặp nhau ở cùng một đoạn: `dispatch()` → `Conversation.do`
-→ `ActionContractEngine.evaluate` → `TokenLedger` → HAL ([`05`](05-code-gate-hal-c4l4.md) §5). Sơ đồ
-chỉ vẽ đoạn đó một lần trong §1 và gọi tên nó ở các luồng khác.
+All flows below, regardless of where they start, converge at the same section: `dispatch()` → `Conversation.do`
+→ `ActionContractEngine.evaluate` → `TokenLedger` → HAL ([`05`](05-code-gate-hal-c4l4.md) §5). The diagram
+draws that section only once in §1 and refers to it in other flows.
 
-## 1. Một lượt gõ lệnh
+## 1. A Typed Command Turn
 
-`neuroedge run -c "mở cửa phòng 101"` trên `sim`.
+`neuroedge run -c "mở cửa phòng 101"` (unlock room 101) on `sim`.
 
 ```mermaid
 sequenceDiagram
@@ -40,10 +40,10 @@ sequenceDiagram
     S-->>CLI: Turn, rendered with verdict and pins
 ```
 
-Câu không khớp ngữ pháp: có `[system_two]` thì đi luồng §4; không thì `command_not_recognized` và
-thiết bị nói những lệnh cục bộ còn dùng được (`offline_help`).
+Utterance not matching grammar: if `[system_two]` exists, take the §4 flow; otherwise `command_not_recognized` and
+the device speaks the local commands that remain available (`offline_help`).
 
-## 2. Hỏi lại và xác nhận (`on_block: ask`, RFC-0006)
+## 2. Ask and Confirmation (`on_block: ask`, RFC-0006)
 
 ```mermaid
 sequenceDiagram
@@ -69,11 +69,11 @@ sequenceDiagram
     end
 ```
 
-- System 2 và client MCP **không có công cụ xác nhận** nào; câu hỏi do chính lời gọi của System 2 tạo
-  ra thì System 2 không trả lời được (Q-26).
-- Câu "có" nói ra chỉ trả lời câu hỏi của **chính lượt đó** (Q-46).
+- System 2 and MCP clients have **no confirmation tools**; a question created by System 2's own call
+  cannot be answered by System 2 (Q-26).
+- A spoken "có" (yes) only answers the question of **that exact turn** (Q-46).
 
-## 3. Lời gọi MCP
+## 3. An MCP Call
 
 ```mermaid
 sequenceDiagram
@@ -94,10 +94,10 @@ sequenceDiagram
     M->>UI: notify() — the page updates over SSE
 ```
 
-Lời gọi MCP không có lời người nói, nên `[system_one]` không gửi gì lên model: tiêu chí đó rơi về ngữ
-pháp hoặc chặn. Một gate có thể từ chối riêng nguồn `mcp` qua tiêu chí `call_source`.
+An MCP call has no speaker utterance, so `[system_one]` sends nothing to the model: that criterion falls
+back to grammar or blocks. A gate can deny the `mcp` source specifically via the `call_source` criterion.
 
-## 4. Lượt System 2 (LLM), kèm MCP server bên ngoài
+## 4. A System 2 (LLM) Turn, with an External MCP Server
 
 ```mermaid
 sequenceDiagram
@@ -124,15 +124,15 @@ sequenceDiagram
     S->>S: say the reply, or the gate's ask message (the model may not answer it)
 ```
 
-Nhà cung cấp không trả lời được ⇒ `system_two_unavailable`, thiết bị nói câu offline. Nội dung từ MCP
-server bên ngoài có chèn lệnh (prompt injection) thì lời gọi nó dẫn tới vẫn phải qua gate
+Provider cannot answer ⇒ `system_two_unavailable`, device speaks the offline line. If content from an external
+MCP server contains prompt injection, the call it leads to must still pass through the gate
 (`test_mcp_host.py::test_prompt_injection_in_the_news_still_meets_the_gate`).
 
-## 5. Model của System 1 và khi mất mạng
+## 5. The System 1 Model and Network Outages
 
-`SystemOne` là `FactSource` của engine. Với `[system_one]`, nó hỏi model chính (Jev qua System One API)
-cho các tiêu chí được giao, trong phần ngân sách còn lại trừ 50 ms dự phòng; model không dùng được thì
-ngữ pháp lệnh quyết.
+`SystemOne` is the engine's `FactSource`. With `[system_one]`, it queries the primary model (Jev via the System One API)
+for its assigned criteria, within the remaining budget minus a 50 ms margin; if the model is unavailable,
+command grammar decides.
 
 ```mermaid
 sequenceDiagram
@@ -172,15 +172,15 @@ stateDiagram-v2
     end note
 ```
 
-Không có fallback nào chạy được cho một tiêu chí do model quyết ⇒ `BLOCK` với `gate_unreachable`
-(Q-14, tiêu chí ra I4 số 3).
+No fallback can run for a model-decided criterion ⇒ `BLOCK` with `gate_unreachable`
+(Q-14, I4 exit criterion 3).
 
-## 6. Thoại
+## 6. Voice
 
-### 6.1 Máy trạng thái hội thoại
+### 6.1 Conversational State Machine
 
-Quy phạm ở `docs/spec/voice_fsm.md` §4 (T01–T14). Mọi lần đổi trạng thái ghi `voice_state_changed`.
-Máy trạng thái không bao giờ lượng giá gate hay chạm chân.
+Normative in `docs/spec/voice_fsm.md` §4 (T01–T14). Every state transition logs `voice_state_changed`.
+The state machine never evaluates gates or touches pins.
 
 ```mermaid
 stateDiagram-v2
@@ -199,7 +199,7 @@ stateDiagram-v2
     BARGE_IN --> LISTENING: T14 recall pending commands, stop speech, new turn
 ```
 
-### 6.2 Một lượt thoại từ tệp WAV
+### 6.2 A Voice Turn from a WAV File
 
 ```mermaid
 sequenceDiagram
@@ -225,20 +225,20 @@ sequenceDiagram
     V->>TTS: synthesize(reply) — tts_stream_start, then tts_stream_end
 ```
 
-**Cắt lời** (`docs/spec/voice_fsm.md` §5): người dùng nói khi thiết bị đang nghĩ hoặc đang nói ⇒ loa
-dừng, mọi lệnh **chưa giao** tới chân bị huỷ (`actuator_aborted`, lý do
-`ACTUATOR_ABORTED_BY_BARGE_IN`) và token của chúng bị đóng. Lệnh đã giao (một xung đang chạy) chạy hết.
+**Barge-in** (`docs/spec/voice_fsm.md` §5): user speaks while the device is thinking or speaking ⇒ speaker
+stops, all commands **not yet delivered** to pins are aborted (`actuator_aborted`, reason
+`ACTUATOR_ABORTED_BY_BARGE_IN`) and their tokens are closed. Already-delivered commands (a pulse currently running) run to completion.
 
-**Từ đánh thức hỏng** (mô hình không nạp được, adapter ném lỗi) ⇒ `wake_word_unavailable`, không lượt
-nào mở, phiên vẫn chạy.
+**Broken wake word** (model fails to load, adapter throws error) ⇒ `wake_word_unavailable`, no turn
+opens, session keeps running.
 
-Phiên thoại hôm nay chạy trong **thời gian ảo** từ tệp WAV; phiên thời gian thực với micro thật chưa có
+Voice sessions today run in **virtual time** from a WAV file; real-time sessions with a real microphone are not yet available
 (`TODOS.md` #45).
 
-## 7. Vòng bằng chứng: ghi, phát lại, so sánh
+## 7. Evidence Loop: Record, Replay, Compare
 
-![E-06 · Vòng bằng chứng](../assets/svg/E-06-evidence-loop.svg)
-*Hình E-06 — Một phiên thành vết ghi; vết ghi được tính lại trên từng target và so với bản gốc.*
+![E-06 · Evidence Loop](../assets/svg/E-06-evidence-loop.svg)
+*Figure E-06 — A session becomes a trace; the trace is recomputed on each target and compared to the golden.*
 
 ```mermaid
 sequenceDiagram
@@ -256,13 +256,13 @@ sequenceDiagram
     Note over G: a difference is SafetyRegressionError NE4002, naming the first divergent event
 ```
 
-- Phát lại **không gọi model và không đọc máy**: dữ kiện đã ghi được đưa vào lại, còn phán quyết, token
-  và lệnh chân được **tính lại**.
-- So sánh theo **quyết định** (phán quyết, lý do, `on_block`, lệnh chân), bỏ qua thời gian và chữ nói.
-- `neuroedge verify --targets sim,linux,esp32s3` làm việc này cho mọi vết ghi chuẩn mực trên từng target;
-  trên `esp32s3`, chính firmware phát lại ba vết ghi chuẩn mực lúc khởi động và gửi kết quả qua UART.
+- Replay **does not call models and does not read hardware**: recorded facts are re-injected, while verdicts, tokens,
+  and pin commands are **recomputed**.
+- Compares by **decision** (verdict, reasons, `on_block`, pin commands), ignoring timing and spoken words.
+- `neuroedge verify --targets sim,linux,esp32s3` does this for every canonical trace on each target;
+  on `esp32s3`, the firmware itself replays the three canonical traces at boot and sends the results over UART.
 
-## 8. Từ agent tới chip
+## 8. From Agent to Chip
 
 ```mermaid
 sequenceDiagram
@@ -282,49 +282,49 @@ sequenceDiagram
     R->>R: sessions to trace.v1, validate, compare with goldens
 ```
 
-## 9. Vòng đời một phiên `linux`
+## 9. Lifecycle of a `linux` Session
 
-1. `SimSession.load(target="linux")` dựng `TypedLinuxHAL` và gọi `preflight`: mọi cảm biến, màn hình,
-   thiết bị âm thanh agent cần được kiểm **trước khi** giữ line GPIO nào. Thiếu thứ gì ⇒ lỗi ba phần,
-   mã 1, không line nào bị giữ.
-2. Lệnh chân tới line của kernel qua libgpiod v2, tìm theo tên. Xung có thời lượng được thả bằng một
-   bộ hẹn giờ; `run -c` chờ xung chạy hết trước khi thoát.
-3. Thoát — bình thường, Ctrl-D, SIGTERM (client MCP dừng máy chủ), SIGHUP (đóng terminal) — ⇒ mọi line
-   về trạng thái nghỉ và được thả. SIGKILL thì không bắt được: đó là lý do an toàn phần cứng vẫn cần
+1. `SimSession.load(target="linux")` constructs `TypedLinuxHAL` and calls `preflight`: every sensor, display,
+   and audio device the agent requires is checked **before** claiming any GPIO line. Missing anything ⇒ three-part error,
+   exit code 1, no line claimed.
+2. Pin commands reach kernel lines via libgpiod v2, looked up by name. Pulses with duration are released by a
+   timer; `run -c` waits for pulses to finish before exiting.
+3. Exit — normal, Ctrl-D, SIGTERM (MCP client stops the server), SIGHUP (terminal closes) — ⇒ all lines
+   return to idle state and are released. SIGKILL cannot be caught: this is why hardware safety is still required
    (`docs/spec/threat_model.md` §3b).
 
-## 10. Luồng quy hoạch
+## 10. Planned Flows
 
-| Luồng | Increment | Kiến trúc đích |
+| Flow | Increment | Target Architecture |
 |:---|:---|:---|
-| Lượt thoại trên chip | I5 | [`15`](15-target-architecture.md) §2.2 |
-| Từ chối do phong bì an toàn vật lý | I2a | [`15`](15-target-architecture.md) §4.2 |
-| Nguồn gọi kích hoạt từ sự kiện (`call_source = "trigger"`, TSK-N6-*) | I2d (dời từ I4a theo Q-72) | [`15`](15-target-architecture.md) §4.2 |
-| Ý định đa node và mất liên lạc | I14 | [`15`](15-target-architecture.md) §4.3 |
-| Dữ kiện thị giác | I2a, I3a | [`15`](15-target-architecture.md) §4.4 |
-| Vòng đời hợp đồng nhiệm vụ, báo chủ động, lệnh và lời duyệt qua chat (`planned · Q-72`) | I2d | §11 dưới đây; [`15`](15-target-architecture.md) |
-| Cài một NeuroEdge Blueprint (`planned · Q-72`) | I2e | §11.5 dưới đây; [`15`](15-target-architecture.md) |
+| On-chip voice turn | I5 | [`15`](15-target-architecture.md) §2.2 |
+| Physical safety envelope rejection | I2a | [`15`](15-target-architecture.md) §4.2 |
+| Event-triggered call source (`call_source = "trigger"`, TSK-N6-*) | I2d (moved from I4a per Q-72) | [`15`](15-target-architecture.md) §4.2 |
+| Multi-node intents and loss of communication | I14 | [`15`](15-target-architecture.md) §4.3 |
+| Vision facts | I2a, I3a | [`15`](15-target-architecture.md) §4.4 |
+| Mission contract lifecycle, proactive alerts, commands and approval via chat (`planned · Q-72`) | I2d | §11 below; [`15`](15-target-architecture.md) |
+| Install a NeuroEdge Blueprint (`planned · Q-72`) | I2e | §11.5 below; [`15`](15-target-architecture.md) |
 
-## 11. Luồng quy hoạch theo Q-72 (`planned · Q-72`)
+## 11. Planned Flows Under Q-72 (`planned · Q-72`)
 
-Chưa có mã cho luồng nào trong mục này. Chúng ghi thiết kế đích của [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)
-cho increment I2d (nhiệm vụ và agent vận hành) và I2e (NeuroEdge Blueprint tối thiểu); tiến độ ở
-roadmap §0.2. Phần nào cần RFC thì ghi "chờ RFC".
+There is no code yet for any flow in this section. They document the target design of [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log)
+for increment I2d (missions and operator agents) and I2e (minimal NeuroEdge Blueprint); progress is in
+roadmap §0.2. Sections requiring an RFC are noted as "pending RFC".
 
-Hai tiến trình trên máy nhà ([`02`](02-container-c4l2.md)):
+Two processes on the home machine ([`02`](02-container-c4l2.md)):
 
-- **runtime tin cậy** (24/7, systemd): HAL, gate, thực thi hợp đồng nhiệm vụ, lập lịch, bộ phát hiện
-  tất định, adapter kênh chat và kiểm lời duyệt, cửa ra egress;
-- **LLM worker không tin cậy**: giữ key LLM của người dùng (BYOK), gọi runtime qua MCP cục bộ như mọi
-  client MCP, nguồn do runtime gán, **không bao giờ duyệt** — cùng ranh giới với client MCP ở Q-71.
+- **trusted runtime** (24/7, systemd): HAL, gate, mission contract execution, scheduler, deterministic
+  detectors, chat channel adapters and approval checks, egress port;
+- **untrusted LLM worker**: holds the user's LLM keys (BYOK), calls the runtime via local MCP like any
+  MCP client, source assigned by the runtime, **never approves** — sharing the same boundary as MCP clients in Q-71.
 
-Mọi lệnh tới chân, dù sinh từ chat, lập lịch hay bộ phát hiện, vẫn đi đúng một đoạn của §1:
-`dispatch()` → `Conversation.do` → gate → token → HAL. Adapter chat chỉ gọi tới `dispatch()`, không
-import `hal`. Thời lượng, hạn duyệt, watchdog và phản xạ dùng **đồng hồ đơn điệu**; dữ kiện giờ tường
-mang trạng thái `unsynced` khi máy chưa đồng bộ giờ, và điều khoản khung giờ coi `unsynced` là thiếu
-dữ kiện (fail-closed).
+All commands to pins, whether originating from chat, scheduler, or detectors, still follow the exact section from §1:
+`dispatch()` → `Conversation.do` → gate → token → HAL. Chat adapters only call `dispatch()`, never
+importing `hal`. Durations, approval deadlines, watchdogs, and reflexes use the **monotonic clock**; wall-clock facts
+carry the `unsynced` state when the machine has not synced time, and time-window clauses treat `unsynced` as missing
+facts (fail-closed).
 
-### 11.1 Vòng đời một hợp đồng nhiệm vụ (I2d)
+### 11.1 Lifecycle of a Mission Contract (I2d)
 
 ```mermaid
 sequenceDiagram
@@ -355,16 +355,16 @@ sequenceDiagram
     end
 ```
 
-- Chỉ thiết bị có `ne_gate` mới có tầng phản xạ; thiết bị Home Assistant dừng ở tầng host và bản duyệt
-  nói rõ điều đó.
-- Bản duyệt là đầu ra của trình biên dịch, không phải chữ của LLM: worker bị lừa không viết được dòng
-  nào trong tin duyệt.
+- Only devices with `ne_gate` have a reflex tier; Home Assistant devices stop at the host tier, and the
+  approval document states that clearly.
+- The approval document is the compiler's output, not LLM text: a compromised worker cannot write a single
+  line of the approval message.
 
-### 11.2 Trigger, bộ phát hiện và báo chủ động (I2d)
+### 11.2 Triggers, Detectors, and Proactive Alerts (I2d)
 
-Mở rộng luồng trigger của Khối N6 (I2d, dời từ I4a theo Q-72; [`15`](15-target-architecture.md) §4.2: chạy không cần phiên
-client, `call_source = "trigger"`, `trigger ∉ HUMAN_SOURCES`, debounce, trần tần suất), không phải một
-đường song song: lập lịch và bộ phát hiện của hợp đồng nhiệm vụ là nguồn kích hoạt mới của cùng đường đó.
+Extends Block N6's trigger flow (I2d, moved from I4a per Q-72; [`15`](15-target-architecture.md) §4.2: runs without a client
+session, `call_source = "trigger"`, `trigger ∉ HUMAN_SOURCES`, debounce, rate cap), not as a parallel
+path: mission contract schedulers and detectors are new trigger sources for the same path.
 
 ```mermaid
 sequenceDiagram
@@ -393,11 +393,11 @@ sequenceDiagram
     Q->>CH: report
 ```
 
-Bộ phát hiện chạy trước, LLM chỉ được gọi sau khi có sự kiện: phản xạ và cảnh báo mẫu cứng không phụ
-thuộc LLM. Bộ phát hiện đọc cảm biến theo chu kỳ trong runtime 24/7 làm `TODOS.md` #48 (đọc cảm biến
-chặn event loop) thành rủi ro thật ([`02`](02-container-c4l2.md)).
+Detectors run first, LLM is only called after an event occurs: reflexes and hard-template alerts do not
+depend on the LLM. Periodic sensor reading by detectors in the 24/7 runtime turns `TODOS.md` #48 (sensor reads
+blocking the event loop) into a real risk ([`02`](02-container-c4l2.md)).
 
-### 11.3 Lệnh vào từ chat (I2d)
+### 11.3 Incoming Commands from Chat (I2d)
 
 ```mermaid
 sequenceDiagram
@@ -419,14 +419,14 @@ sequenceDiagram
     end
 ```
 
-Adapter chat không import `hal` và không gọi thẳng `Conversation.do`: mọi lệnh có tác động vật lý đi
-qua `dispatch()` như lời gọi MCP ở §3. Một lời gọi bị gate chặn với `on_block: ask` không được worker
-trả lời; nó thành yêu cầu duyệt ở §11.4.
+The chat adapter does not import `hal` and never calls `Conversation.do` directly: all commands with physical
+effects pass through `dispatch()` like the MCP calls in §3. A call blocked by a gate with `on_block: ask` is not
+answered by the worker; it becomes an approval request in §11.4.
 
-### 11.4 Yêu cầu và trả lời duyệt qua chat (I2d, chờ RFC nguồn `chat:<id>`)
+### 11.4 Approval Requests and Responses via Chat (I2d, Pending RFC for Source `chat:<id>`)
 
-Mở rộng §2: hôm nay chỉ `local_grammar` và `ui` trả lời được câu hỏi `ask` (Q-26). Q-72 thêm một đường
-qua chat bằng **bản ghi duyệt**, không bằng một tên nguồn mới trong `HUMAN_SOURCES` cho tin "có" tự do.
+Extends §2: today only `local_grammar` and `ui` can answer an `ask` question (Q-26). Q-72 adds a path
+via chat using an **approval record**, not a new source name in `HUMAN_SOURCES` for unconstrained "có" (yes) messages.
 
 ```mermaid
 sequenceDiagram
@@ -452,9 +452,9 @@ sequenceDiagram
     Note over RT,CH: the LLM worker never answers a request, relays never carry approvals
 ```
 
-Ghép đôi làm tại chỗ; thu hồi, hạn ghép đôi và trần số lời duyệt còn hoãn (`TODOS.md` #62).
+Pairing is done locally; revocation, pairing expiry, and approval rate caps are deferred (`TODOS.md` #62).
 
-### 11.5 Cài một NeuroEdge Blueprint (I2e)
+### 11.5 Installing a NeuroEdge Blueprint (I2e)
 
 ```mermaid
 sequenceDiagram
@@ -480,20 +480,20 @@ sequenceDiagram
     end
 ```
 
-NeuroEdge Blueprint chỉ khai báo, không mang mã chạy trong runtime. Nó khác Home Assistant Blueprint
-(mẫu automation của HA), và có thể mang kèm một HA blueprint.
+A NeuroEdge Blueprint is declarative only, carrying no executable code in the runtime. It differs from a
+Home Assistant Blueprint (an HA automation template), and may bundle an HA blueprint alongside it.
 
-### 11.6 Nhánh lỗi
+### 11.6 Error Paths
 
-| Đường | Lỗi | Xử lý trong thiết kế | Người dùng thấy |
+| Path | Error | Design Handling | User Visibility |
 |:---|:---|:---|:---|
-| Runtime ↔ LLM worker | worker chết hoặc treo | runtime vẫn chạy phản xạ, bộ phát hiện, cảnh báo mẫu cứng; khởi động lại worker | tin "phân tích tạm ngưng"; cảnh báo vẫn tới |
-| Runtime → kênh chat | API của nền tảng chat lỗi | hàng đợi có hạn + cảnh báo tại chỗ trên UI | cảnh báo trên UI; tin tới trễ, có dấu thời gian |
-| LLM provider | hết `llm_budget` | phản xạ + cảnh báo mẫu cứng | tin "đã hết ngân sách phân tích" |
-| Duyệt qua chat | yêu cầu hết hạn | không duyệt, ghi vết | tin "yêu cầu đã hết hạn" |
-| Duyệt qua chat | trả lời từ tài khoản lạ hoặc nhóm | từ chối, ghi vết | không có gì thay đổi |
-| Relay (`planned · Q-72`, ngoài I2d/I2e) | relay sập | không ảnh hưởng an toàn; mất truy cập từ xa | không mở được trang từ xa |
-| Đồng hồ | mất điện, chưa có NTP/RTC | dữ kiện giờ `unsynced` ⇒ điều khoản khung giờ thiếu dữ kiện ⇒ chặn | bản duyệt, UI báo đồng hồ chưa đồng bộ |
-| Vết ghi | mất điện giữa một đoạn | mất tối đa phần đuôi sự kiện thường; chặn và duyệt đã flush | `replay` báo đoạn cụt |
-| Cài NeuroEdge Blueprint | digest không khớp | từ chối cài | lỗi ba phần |
+| Runtime ↔ LLM worker | Worker dies or hangs | Runtime still runs reflexes, detectors, hard-template alerts; restarts worker | message "phân tích tạm ngưng" ("analysis temporarily paused"); alerts still arrive |
+| Runtime → chat channel | Chat platform API error | Bounded queue + local alert on UI | Alert on UI; messages arrive delayed with timestamps |
+| LLM provider | `llm_budget` exhausted | Reflexes + hard-template alerts | message "đã hết ngân sách phân tích" ("analysis budget exhausted") |
+| Approval via chat | Request expired | Deny approval, logged to trace | message "yêu cầu đã hết hạn" ("request has expired") |
+| Approval via chat | Reply from unknown account or group | Reject, logged to trace | Nothing changes |
+| Relay (`planned · Q-72`, outside I2d/I2e) | Relay down | No safety impact; remote access lost | Cannot open page remotely |
+| Clock | Power outage, NTP/RTC not yet available | Time fact `unsynced` ⇒ time-window clause lacks facts ⇒ block | Approval sheet, UI reports clock not synchronized |
+| Trace | Power outage mid-segment | Loses at most the tail of normal events; blocks and approvals already flushed | `replay` reports truncated segment |
+| Install NeuroEdge Blueprint | Digest mismatch | Reject installation | Three-part error |
 

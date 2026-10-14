@@ -1,346 +1,347 @@
-# Lõi an toàn dùng độc lập và Extension SDK — `neuroedge.guard`, `neuroedge.sdk`
+# Standalone safety core and Extension SDK — `neuroedge.guard`, `neuroedge.sdk`
 
-**Trạng thái:** chuẩn tắc cho phần đã hiện thực (TSK-I2c-07, TSK-I2c-14, TSK-I2c-16 phần lõi); phần còn lại ghi rõ "chưa có". Nền: [RFC-0016](../rfc/0016-loi-tach-duoc-va-extension-sdk.md)
-(§3b, §3c, §3d, §3e, §3g), [RFC-0017](../rfc/0017-nguon-goi-theo-khong-gian-ten.md) (nguồn `bridge:<id>`), [RFC-0018](../rfc/0018-co-cau-chap-hanh-tu-xa.md) (cơ cấu chấp hành từ xa).
-**Mã nguồn:** `python/neuroedge/guard.py`, `python/neuroedge/sdk/__init__.py`, `python/neuroedge/sim/hal_build.py`, `python/neuroedge/plugins/` (bộ nạp, khai báo `[actuators]`, `conformance`), `python/neuroedge/hal/remote.py`.
-**Test ghim:** `python/tests/test_guard.py`, `python/tests/test_sdk_api.py`, `python/tests/test_plugins.py`, `python/tests/test_remote_actuator*.py`, `python/tests/test_conformance.py`.
-Tài liệu này là nơi **duy nhất** định nghĩa cú pháp `guard.toml` và văn phạm `drive`; chỗ khác dẫn tới đây. Mức hứa của hai mô-đun: `python_api.md` §1.
+**Status:** normative for implemented portions (TSK-I2c-07, TSK-I2c-14, TSK-I2c-16 core portion); remaining portions explicitly marked "not yet". Foundation: [RFC-0016](../rfc/0016-loi-tach-duoc-va-extension-sdk.md)
+(§3b, §3c, §3d, §3e, §3g), [RFC-0017](../rfc/0017-nguon-goi-theo-khong-gian-ten.md) (`bridge:<id>` source), [RFC-0018](../rfc/0018-co-cau-chap-hanh-tu-xa.md) (remote actuators).
+**Source code:** `python/neuroedge/guard.py`, `python/neuroedge/sdk/__init__.py`, `python/neuroedge/sim/hal_build.py`, `python/neuroedge/plugins/` (loader, `[actuators]` declaration, `conformance`), `python/neuroedge/hal/remote.py`.
+**Pinned tests:** `python/tests/test_guard.py`, `python/tests/test_sdk_api.py`, `python/tests/test_plugins.py`, `python/tests/test_remote_actuator*.py`, `python/tests/test_conformance.py`.
+This document is the **sole** definition of `guard.toml` syntax and `drive` grammar; other locations link here. Commitment levels of the two modules: `python_api.md` §1.
 
 ## 1. `neuroedge.guard`
 
-Một chương trình bất kỳ (proxy MCP, cầu nối, node ROS) có gate → token → phong bì → vết ghi mà không cần `agent.toml`, `@action` hay `SimSession`.
-Ví dụ chạy được: [`examples/guard/`](../../examples/guard/) (`guard.toml` + `run.py`; `test_the_guard_example_runs_and_writes_a_valid_trace`).
+Any program (MCP proxy, bridge, ROS node) gets gate → token → envelope → trace without needing `agent.toml`, `@action`, or `SimSession`.
+Runnable example: [`examples/guard/`](../../examples/guard/) (`guard.toml` + `run.py`; `test_the_guard_example_runs_and_writes_a_valid_trace`).
 
 ```python
 from neuroedge.guard import Guard
 from neuroedge.sdk import ToolRequest
 
-async with Guard.load("guard.toml") as guard:      # thoát ⇒ thả chân, như SimSession.close()
-    bridge = guard.dispatcher("ros_node")           # đăng ký `bridge:ros_node`; không nêu nguồn khác được
-    guard.set_fact("badge_ok", True)                # ngữ cảnh gate của chương trình chủ, như `c.facts`
+async with Guard.load("guard.toml") as guard:      # exit ⇒ release pins, like SimSession.close()
+    bridge = guard.dispatcher("ros_node")           # register `bridge:ros_node`; cannot claim other sources
+    guard.set_fact("badge_ok", True)                # host program gate context, like `c.facts`
     outcome = await bridge.dispatch(ToolRequest("lamp_on", {"seconds": 3}))
     outcome.status, outcome.content                 # "ALLOW" | "BLOCK" | "REJECTED"; `ToolResult.content()`
-    trace = guard.trace()                           # trace.v1 đã thẩm định
+    trace = guard.trace()                           # validated trace.v1
 ```
 
-- **Một đường tới chân.** `Guard` dựng `ActionContractEngine`, sổ token, HAL cùng phong bì của bo (hàm dựng chung với `SimSession`: `sim/hal_build.py`) và một
-  `Conversation` nội bộ **có sổ action riêng** (không đụng `REGISTRY` toàn cục của `@action`), rồi gọi đúng `dispatch()` (`tool_calling.md` §2).
-  Mỗi `Tool` là một `ActionSpec` khai bằng dữ liệu; `threat_model.md` §1–§2b áp nguyên.
-- **ALLOW là phán quyết; nếu `Tool` có thân thì là một lần chạy dưới token.** Thân là `run` (hàm Python, đồng bộ hay `async`, nhận tham số đã kiểm, đã điền mặc định) **hoặc**
-  `drive` (§3), không cả hai; không có thân thì ALLOW chỉ là phán quyết. Chân chỉ nhúc nhích trong thân, dưới token một lần và phong bì của bo; thân không động tới được chân không khai ở `requires`.
-- **Gate phân giải lúc nạp.** Mỗi `Tool` có một gate (đường dẫn tệp hoặc `neuroedge://…`) được phân giải đủ (kế thừa, đủ bất biến `CHANGELOG.md` §3.3 #1) **trước** khi dựng HAL; gate không
-  phân giải được ⇒ không nạp, chưa chân nào bị giữ. Gate biến mất lúc chạy ⇒ `BLOCK`, `gate_not_found`. Không có công tắc fail-open, không nhận `ResolvedGate` dựng tay.
-- **Nguồn và id.** Người gọi **không** nêu `source`: `guard.dispatcher(id)` (mẫu `[a-z][a-z0-9_]{0,31}`) đăng ký `bridge:<id>` bằng `Conversation.register_source` (RFC-0017 §3b); id sai văn phạm
-  hoặc trùng ⇒ `ToolCallError` (NE1004). `ToolRequest` không có trường `source`, và `Dispatcher.dispatch` từ chối một `ToolCall`. Nguồn `test` chỉ qua `Guard(..., testing=True).testing_dispatcher()`.
-  Gate đọc nguồn qua `call_source` / `call_channel` (`tool_calling.md` §5).
-- **Tuần tự hoá.** Mọi `Dispatcher.dispatch` của một `Guard` chạy dưới **một** `asyncio.Lock`. Không phải vì nguồn: `call_source` thuộc về từng lời gọi (`Conversation.do_with`) nên hai lời gọi chồng nhau
-  không thấy nguồn của nhau (`test_two_concurrent_dispatches_never_share_a_call_source`). Mà vì vết ghi: hai lời gọi đang chạy xen kẽ sự kiện, một lệnh chân sau phán quyết của A rơi sau yêu cầu của B, và replay đọc vết ghi
-  như một chuỗi bước (`test_concurrent_dispatches_are_recorded_one_after_another_and_replay`). Hệ quả cần biết: một thân `run` chậm (chuyển tiếp qua mạng) giữ các bridge khác đợi.
-- **Vết ghi và replay.** `guard.trace()` = `EventLog.to_trace()` + `validate_trace`; `metadata.agent_version = "guard:<name>@<phiên bản neuroedge>"`, `board_id = "none"` khi không có bo.
-  `TracePlayer(trace, guard="guard.toml")` replay vết đó bằng bảng `Tool` (không cho cả `agent=` lẫn `guard=`): `test_a_guard_trace_replays_to_the_same_verdicts`.
-  Thân `run` bằng mã Python không nằm trong `guard.toml`, nên replay chạy thân `drive` và chỉ phán quyết cho phần còn lại.
-- **Một Guard một tiến trình**, sổ token trong bộ nhớ (RFC-0016 §3b mục 7). Không có bo ⇒ không HAL: `Tool` có `requires` bị từ chối lúc nạp (`BoardCapabilityError`), và thân gọi `digital.out` bị từ chối.
-- **Cố ý không làm:** không sandbox và không chặn mạng (canh con đường đi qua nó, không ngăn ai gọi thẳng đích); không `agent.toml`, ngữ pháp, mô hình, thoại, UI, MCP server; không đường xác nhận
-  bằng người (`on_block: ask` hiện ra là `BLOCK` kèm câu hỏi trong `outcome.content`); không chống mã cùng tiến trình (`threat_model.md` §3). `Guard` không nằm trong `neuroedge.__all__`.
+- **Single path to pins.** `Guard` constructs `ActionContractEngine`, token ledger, HAL with board envelope (shared builder with `SimSession`: `sim/hal_build.py`), and an internal
+  `Conversation` **with its own action registry** (not touching global `@action` `REGISTRY`), then invokes standard `dispatch()` (`tool_calling.md` §2).
+  Each `Tool` is an `ActionSpec` declared via data; `threat_model.md` §1–§2b apply completely.
+- **ALLOW is a verdict; if `Tool` has a body, it is a single execution under token.** Body is `run` (Python function, sync or async, accepting validated, default-filled arguments) **or**
+  `drive` (§3), not both; lacking a body, ALLOW is verdict-only. Pins move only inside bodies, under single-use tokens and board envelopes; bodies cannot touch pins undeclared in `requires`.
+- **Gate resolved at load time.** Each `Tool` has a gate (filepath or `neuroedge://…`) fully resolved (inheritance, full invariants `CHANGELOG.md` §3.3 #1) **before** constructing HAL; unresolvable gate
+  ⇒ fails to load, no pins held. Gate vanishing at runtime ⇒ `BLOCK`, `gate_not_found`. No fail-open switch, rejects manually constructed `ResolvedGate`.
+- **Source and ID.** Callers **do not** specify `source`: `guard.dispatcher(id)` (pattern `[a-z][a-z0-9_]{0,31}`) registers `bridge:<id>` via `Conversation.register_source` (RFC-0017 §3b); invalid grammar
+  or duplicate ID ⇒ `ToolCallError` (NE1004). `ToolRequest` has no `source` field, and `Dispatcher.dispatch` rejects a `ToolCall`. Source `test` available only via `Guard(..., testing=True).testing_dispatcher()`.
+  Gates read sources via `call_source` / `call_channel` (`tool_calling.md` §5).
+- **Serialization.** All `Dispatcher.dispatch` calls on a `Guard` run under a **single** `asyncio.Lock`. Not because of sources: `call_source` belongs to individual calls (`Conversation.do_with`), so concurrent calls
+  never see each other's sources (`test_two_concurrent_dispatches_never_share_a_call_source`). Rather for traces: two concurrent calls interleaving events could cause a post-verdict pin command from A to fall after request B, whereas replay reads traces
+  as linear steps (`test_concurrent_dispatches_are_recorded_one_after_another_and_replay`). Consequence to note: a slow `run` body (network forwarding) holds other bridges waiting.
+- **Trace and replay.** `guard.trace()` = `EventLog.to_trace()` + `validate_trace`; `metadata.agent_version = "guard:<name>@<neuroedge_version>"`, `board_id = "none"` when no board is specified.
+  `TracePlayer(trace, guard="guard.toml")` replays traces using `Tool` tables (cannot provide both `agent=` and `guard=`): `test_a_guard_trace_replays_to_the_same_verdicts`.
+  Python code `run` bodies do not reside in `guard.toml`, so replay executes `drive` bodies and verdicts-only for the remainder.
+- **One Guard per process**, in-memory token ledger (RFC-0016 §3b item 7). No board ⇒ no HAL: `Tool` with `requires` rejected at load (`BoardCapabilityError`), and bodies calling `digital.out` rejected.
+- **Intentionally omitted:** no sandboxing or network interception (guards the path passing through it, does not prevent direct target calls); no `agent.toml`, grammar, models, voice, UI, or MCP servers; no human confirmation path
+  (`on_block: ask` surfaces as `BLOCK` with question in `outcome.content`); no protection against same-process hostile code (`threat_model.md` §3). `Guard` is not in `neuroedge.__all__`.
 
-Hàm khởi tạo `Guard(tools, *, name, board, target, registry_root, base, events, testing, hal_options, source, actuators, plugins)`: `board` là id của một bo (hoặc `None`); `target` là `sim` hoặc `linux`, mặc định theo bo
-(`esp32s3` không có Guard Python — MCU dùng `ne_gate` + `NETR`). Gate nằm ở từng `Tool`, nên hàm không có tham số `gates=` riêng của RFC-0016 §3b (ví dụ ở đó); gate `fallback_action` là một `Tool` khác.
-`actuators` là các `ActuatorDeclaration` dựng bằng mã và `plugins` là danh sách bản phân phối bật cho chúng (như `[plugins] enable`): chúng đi qua **cùng** `check_actuators` với khai báo trong tệp (§7), trước khi chân nào bị giữ.
+Constructor `Guard(tools, *, name, board, target, registry_root, base, events, testing, hal_options, source, actuators, plugins)`: `board` is a board ID (or `None`); `target` is `sim` or `linux`, defaulting by board
+(`esp32s3` has no Python Guard — MCU uses `ne_gate` + `NETR`). Gates reside on individual `Tool` instances, so the function has no standalone `gates=` parameter from RFC-0016 §3b (example there); gate `fallback_action` is another `Tool`.
+`actuators` are programmatic `ActuatorDeclaration` instances and `plugins` is a list of enabled distributions (like `[plugins] enable`): they undergo the **same** `check_actuators` as declared files (§7), before pins are held.
 
 ## 2. `neuroedge.sdk`
 
-Phần mà `guard` và plugin cơ cấu chấp hành cần của Extension SDK:
+The portion of the Extension SDK needed by `guard` and actuator plugins:
 
-| Tên | Là gì |
+| Name | Description |
 |:---|:---|
-| `ToolRequest(name, arguments={}, id="")` | `tool-call.v1#/$defs/request`: **không có `source`**; bất biến |
-| `Outcome(status, content)` | Dữ liệu thuần: `status` và `ToolResult.content()` (hợp lệ theo `tool-result.v1`), không mang giá trị mà thân action trả về |
-| `SDK_VERSION = (1, 0)` | Bộ `(MAJOR, MINOR)` riêng, không phải `__version__` của gói |
-| `Actuator` | Protocol của plugin nhóm `neuroedge.actuators`; chữ ký là của RFC-0018 §3c (nguồn duy nhất), SDK chỉ xuất lại: `safe_off_level`, `readback`, `tolerance_ms`, `command_timeout_ms`, `max_lease_ms`, `apply(command)`, `safe_off()`, `read_state()`, `probe()`. Hôm nay phía an toàn luôn là `off`; *planned · Q-72, chờ RFC:* `safe_state` đối xứng (§7) |
-| `Command(id, operation, duration_ms=None, lease_ms=None)` | Lệnh HAL giao cho plugin sau khi đã cho qua: `operation` là `"on"` hoặc `"renew"`; `duration_ms` luôn có ở L2, `lease_ms` ở L3; là **khoảng**, không bao giờ là mốc. `id` duy nhất cho mỗi lệnh (thiết bị nhận ra lệnh trùng, gia hạn đến muộn) |
-| `DeviceDouble` | Protocol của bản giả thiết bị mà `probe()` trả: `state()`, `cut_link()`, `heal_link()`, `advance(ms)` |
-| `ActuatorError` và `NotSent`, `Rejected`, `Ambiguous`, `ReadFailed` | Plugin tự phân loại lỗi gửi (chắc chắn chưa tới · bị từ chối rõ · không biết đã tới hay chưa) và lỗi đọc; không phải mã `NE…` |
+| `ToolRequest(name, arguments={}, id="")` | `tool-call.v1#/$defs/request`: **no `source`**; immutable |
+| `Outcome(status, content)` | Plain data: `status` and `ToolResult.content()` (valid per `tool-result.v1`), does not carry values returned by action bodies |
+| `SDK_VERSION = (1, 0)` | Standalone `(MAJOR, MINOR)` tuple, distinct from package `__version__` |
+| `Actuator` | Protocol for `neuroedge.actuators` plugins; signature matches RFC-0018 §3c (sole source), re-exported by SDK: `safe_off_level`, `readback`, `tolerance_ms`, `command_timeout_ms`, `max_lease_ms`, `apply(command)`, `safe_off()`, `read_state()`, `probe()`. Today the safe side is always `off`; *planned · Q-72, awaiting RFC:* symmetric `safe_state` (§7) |
+| `Command(id, operation, duration_ms=None, lease_ms=None)` | Command delivered by HAL to plugin after authorization: `operation` is `"on"` or `"renew"`; `duration_ms` always present in L2, `lease_ms` in L3; represents **duration**, never timestamps. Unique `id` per command (device identifies duplicate commands, late renewals) |
+| `DeviceDouble` | Protocol for device mock returned by `probe()`: `state()`, `cut_link()`, `heal_link()`, `advance(ms)` |
+| `ActuatorError` and `NotSent`, `Rejected`, `Ambiguous`, `ReadFailed` | Plugin self-classifies transmission errors (definitely undelivered · explicitly rejected · unknown delivery) and read errors; not `NE…` error codes |
 
-`__all__` của nó là `["SDK_VERSION", "Actuator", "ActuatorError", "Ambiguous", "Command", "DeviceDouble", "NotSent", "Outcome", "ReadFailed", "Rejected", "ToolRequest"]`; không tên HAL, không `Guard`, không `Conversation`, không tên nào của `neuroedge.__all__` (`test_the_sdk_exports_no_hal_name_and_no_name_of_all`), và chỉ import `errors` của lõi.
-Plugin khai `sdk_requires = (MAJOR, MINOR)` ở mô-đun của entry point (§6). **Chưa có (TSK-I2c-11/12):** `Protocol` cho bridge, fact source, exporter; bộ nạp và tuân thủ cho các loại đó. Cam kết ổn định đầy đủ: RFC-0016 §3e.
+Its `__all__` is `["SDK_VERSION", "Actuator", "ActuatorError", "Ambiguous", "Command", "DeviceDouble", "NotSent", "Outcome", "ReadFailed", "Rejected", "ToolRequest"]`; no HAL names, no `Guard`, no `Conversation`, no names from `neuroedge.__all__` (`test_the_sdk_exports_no_hal_name_and_no_name_of_all`), importing only core `errors`.
+Plugins declare `sdk_requires = (MAJOR, MINOR)` in entry point modules (§6). **Not yet implemented (TSK-I2c-11/12):** `Protocol` for bridges, fact sources, exporters; loader and conformance for those categories. Full stability commitment: RFC-0016 §3e.
 
 ## 3. `guard.toml`
 
-Tập con của `agent.toml`. Khoá lạ, trường mang tên bí mật viết thẳng (`api_key`, `token`, …; chỉ tên biến môi trường `*_env`) và mọi thứ chưa hiện thực ⇒ `AgentManifestError` (NE3002), ba phần,
-**không bao giờ bỏ qua lặng lẽ** — thứ chưa có thì lỗi nêu tên task sẽ làm nó.
+Subset of `agent.toml`. Unknown keys, plaintext secret fields (`api_key`, `token`, …; environment variable names `*_env` only), and unimplemented features ⇒ `AgentManifestError` (NE3002), three-part,
+**never silently ignored** — unimplemented features raise errors naming the task that will deliver them.
 
 ```toml
 [guard]
-name  = "door-proxy"              # bắt buộc; ⇒ metadata.agent_version = "guard:door-proxy@<version>"
-board = "sim-default"             # id một bo của boards/; vắng ⇒ không HAL, chỉ phán quyết
+name  = "door-proxy"              # mandatory; ⇒ metadata.agent_version = "guard:door-proxy@<version>"
+board = "sim-default"             # id of a board in boards/; absent ⇒ no HAL, verdicts only
 
 [registry]
-roots = ["gates"]                 # một thư mục (tương đối so với guard.toml) cho `neuroedge://`; nhiều gốc: TSK-I2c-08
+roots = ["gates"]                 # directory (relative to guard.toml) for `neuroedge://`; multiple roots: TSK-I2c-08
 
-[tools.lamp_on]                   # tên: [a-z][a-z0-9_]{0,63}
-gate     = "gates/lamp_on@1.0.0.yaml"          # tệp (tương đối so với guard.toml) hoặc neuroedge://…
-requires = ["digital.out:porch_light"]         # chỉ `digital.out:<chân>`; cần board; chân phải có trên board
+[tools.lamp_on]                   # name: [a-z][a-z0-9_]{0,63}
+gate     = "gates/lamp_on@1.0.0.yaml"          # file (relative to guard.toml) or neuroedge://…
+requires = ["digital.out:porch_light"]         # only `digital.out:<pin>`; requires board; pin must exist on board
 drive    = [{ pin = "porch_light", operation = "pulse", seconds_from = "seconds" }]
 
-[tools.lamp_on.parameters.seconds]             # tham số không khai ⇒ REJECTED
+[tools.lamp_on.parameters.seconds]             # undeclared parameter ⇒ REJECTED
 type    = "integer"               # string | integer | number | boolean
-default = 5                       # tuỳ chọn, đúng kiểu; có mặc định ⇒ tham số tuỳ chọn
+default = 5                       # optional, typed; default provided ⇒ optional parameter
 ```
 
-| Bảng | Khoá | Ghi chú |
+| Table | Key | Notes |
 |:---|:---|:---|
-| `[guard]` | `name`, `board` | `board` là đường dẫn hay `pkg:…` ⇒ từ chối, nêu TSK-I2c-08 |
-| `[registry]` | `roots` | hơn một gốc ⇒ từ chối, nêu TSK-I2c-08 |
-| `[tools.<tên>]` | `gate`, `requires`, `drive`, `parameters` | |
-| `[tools.<tên>.parameters.<p>]` | `type`, `default`, `description`, `required` | giới hạn giá trị là của `arguments` trong gate (RFC-0005), không ở đây. Không có `default` và không có `required = false` ⇒ tham số bắt buộc; `required = false` không `default` ⇒ tham số tuỳ chọn mà `run` không nhận nếu người gọi không đưa |
-| `[proxy.mcp]` | `command` hoặc `url`, `env_from`, `headers_env`, `names` | chỉ do `proxy mcp` và `plugin doctor` đọc (§4); `Guard` bỏ qua |
-| `[proxy.http]` | `upstream`, `listen`, `id`, `headers_env`, `[[routes]]` (`method`, `path`, `tool`) | chỉ do `proxy http` và `plugin doctor` đọc (§5); đúng một trong `[proxy.mcp]` / `[proxy.http]` mỗi tệp |
-| `[plugins]` | `enable`, `config` | §6; chỉ loại actuator nạp được, bản phân phối mang loại khác ⇒ từ chối, nêu TSK-I2c-11 |
-| `[actuators.<tên>]` | `plugin`, `safe_off`, `reversible`, `envelope`, `config` | §7 (khoá `safe_state` không khai ở đây: *planned · Q-72*, chỉ trong `board.v1`); cùng khai báo và cùng hàm kiểm với `agent.toml`. Tool tới nó bằng `requires = ["digital.out:<tên>"]`: chiều "khai mà không ai dùng" của luật hai chiều xét trên `requires` của các tool |
-| `[external]` | — | từ chối, nêu TSK-I2c-09 |
+| `[guard]` | `name`, `board` | `board` as path or `pkg:…` ⇒ rejected, citing TSK-I2c-08 |
+| `[registry]` | `roots` | more than one root ⇒ rejected, citing TSK-I2c-08 |
+| `[tools.<name>]` | `gate`, `requires`, `drive`, `parameters` | |
+| `[tools.<name>.parameters.<p>]` | `type`, `default`, `description`, `required` | value bounds belong to gate `arguments` (RFC-0005), not here. Lacking `default` and lacking `required = false` ⇒ mandatory parameter; `required = false` without `default` ⇒ optional parameter omitted from `run` if caller does not provide it |
+| `[proxy.mcp]` | `command` or `url`, `env_from`, `headers_env`, `names` | read only by `proxy mcp` and `plugin doctor` (§4); ignored by `Guard` |
+| `[proxy.http]` | `upstream`, `listen`, `id`, `headers_env`, `[[routes]]` (`method`, `path`, `tool`) | read only by `proxy http` and `plugin doctor` (§5); exactly one of `[proxy.mcp]` / `[proxy.http]` per file |
+| `[plugins]` | `enable`, `config` | §6; only actuator category loadable, distributions carrying other categories ⇒ rejected, citing TSK-I2c-11 |
+| `[actuators.<name>]` | `plugin`, `safe_off`, `reversible`, `envelope`, `config` | §7 (`safe_state` key not declared here: *planned · Q-72*, in `board.v1` only); same declaration and verification functions as `agent.toml`. Tools access it via `requires = ["digital.out:<name>"]`: "declared but unused" bidirectional rule verified against tool `requires` |
+| `[external]` | — | rejected, citing TSK-I2c-09 |
 
-### Văn phạm `drive`
+### `drive` grammar
 
-`drive` là danh sách bước, chạy lần lượt trong thân của tool, dưới token. Mỗi bước là một bảng:
+`drive` is a list of steps, executed sequentially within tool bodies, under token. Each step is a table:
 
-| Khoá | Ý nghĩa |
+| Key | Meaning |
 |:---|:---|
-| `pin` | tên chân; **phải** có trong `requires` (`digital.out:<pin>`) |
-| `operation` | `on`, `off` hoặc `pulse` |
-| `seconds_from` | chỉ với `pulse`, **bắt buộc** ở đó: tên một tham số đã khai, kiểu `integer` hoặc `number`; độ dài xung (giây) lấy từ tham số này |
+| `pin` | pin name; **must** exist in `requires` (`digital.out:<pin>`) |
+| `operation` | `on`, `off`, or `pulse` |
+| `seconds_from` | for `pulse` only, **mandatory** there: name of declared parameter, type `integer` or `number`; pulse duration (seconds) taken from this parameter |
 
-Guard dựng bước thành `digital.out(pin).on()`, `.off()` hay `.pulse(seconds=<tham số>)`. Giá trị ngoài giới hạn là việc của gate (`argument_out_of_range`) và của phong bì của bo.
-Không có gì khác trong `drive`: cơ cấu từ xa là chân `digital.out` có tên (§7), nên `{ pin = "garden_valve", operation = "pulse", … }` tới nó qua cùng đường. Muốn thân tuỳ ý, dùng `Tool(run=…)` trong Python.
+Guard builds steps into `digital.out(pin).on()`, `.off()`, or `.pulse(seconds=<param>)`. Out-of-bounds values are handled by gates (`argument_out_of_range`) and board envelopes.
+Nothing else exists in `drive`: remote actuators are named `digital.out` pins (§7), so `{ pin = "garden_valve", operation = "pulse", … }` reaches them via the same path. For arbitrary bodies, use `Tool(run=…)` in Python.
 
-## 4. `neuroedge proxy mcp` — một máy chủ MCP có sẵn đứng sau NeuroEdge (TSK-I2c-14, FR-EXT-06)
+## 4. `neuroedge proxy mcp` — an existing MCP server behind NeuroEdge (TSK-I2c-14, FR-EXT-06)
 
-Ba lệnh trên máy sạch: `pip install 'neuroedge[mcp]'`, rồi `neuroedge guard init --mcp "<lệnh hoặc https://…>"`, rồi `neuroedge proxy mcp`
-(`test_three_commands_put_a_server_behind_the_proxy`, qua một MCP client thật). Mọi `tools/call` đi qua `Guard` (gate → token → phong bì → vết ghi) và
-chỉ được **chuyển tiếp tới máy chủ thật bên trong `run` của tool**, tức là sau ALLOW: không có đoạn "nếu ALLOW thì chuyển tiếp" nào để viết sai.
+Three commands on a clean machine: `pip install 'neuroedge[mcp]'`, then `neuroedge guard init --mcp "<command or https://…>"`, then `neuroedge proxy mcp`
+(`test_three_commands_put_a_server_behind_the_proxy`, via a real MCP client). All `tools/call` pass through `Guard` (gate → token → envelope → trace) and
+are **forwarded to the upstream server strictly inside the tool's `run` body**, meaning after ALLOW: there is no "if ALLOW then forward" logic that could be written incorrectly.
 
-### 4.1 Bảng `[proxy.mcp]`
+### 4.1 `[proxy.mcp]` table
 
 ```toml
 [proxy.mcp]
-command  = ["python", "my_server.py"]       # stdio; HOẶC  url = "https://ha.local/mcp"  (Streamable HTTP) — đúng một trong hai
-env_from = ["HA_TOKEN"]                      # (stdio) tên biến môi trường chuyển cho tiến trình con — chỉ TÊN
-headers_env = { Authorization = "HA_TOKEN" } # (url) tên header → TÊN biến môi trường; không bao giờ giá trị
-[proxy.mcp.names]                            # tên tool của guard → tên tool của máy chủ thật, khi khác nhau
-get_state = "get-state"                      # tên tool của guard là [a-z][a-z0-9_]{0,63}; MCP cho phép `-`, `.`, chữ hoa
+command  = ["python", "my_server.py"]       # stdio; OR  url = "https://ha.local/mcp"  (Streamable HTTP) — exactly one of the two
+env_from = ["HA_TOKEN"]                      # (stdio) environment variable names passed to child process — NAMES only
+headers_env = { Authorization = "HA_TOKEN" } # (url) header name → environment variable NAME; never values
+[proxy.mcp.names]                            # guard tool name → upstream server tool name, when different
+get_state = "get-state"                      # guard tool name is [a-z][a-z0-9_]{0,63}; MCP permits `-`, `.`, uppercase
 ```
 
-Giá trị bí mật viết thẳng bị từ chối (NE3002) và không bao giờ được in lại: khoá mang tên bí mật, đối số `command` giống khoá API, URL có thông tin đăng nhập hay tham số truy vấn mang tên bí mật,
-giá trị `headers_env` không phải tên biến. `http://` chỉ nhận cho `localhost`/`127.0.0.1`/`::1` (token không đi rõ ràng qua mạng) — trừ khi bật `allow_lan_http` (§4.1a). Biến môi trường được nêu mà vắng trong shell ⇒ không kết nối.
-### 4.1a `allow_lan_http` — http thuần tới thiết bị trên mạng nhà (và cho cả `proxy http`, §5.1)
+Plaintext secret values are rejected (NE3002) and never echoed: keys named like secrets, `command` arguments resembling API keys, URLs containing credentials or query parameters named like secrets,
+`headers_env` values that are not variable names. `http://` accepted only for `localhost`/`127.0.0.1`/`::1` (tokens never travel cleartext over networks) — unless `allow_lan_http` is enabled (§4.1a). Stated environment variables missing in shell ⇒ connection refused.
 
-Thiết bị thật (Home Assistant `http://192.168.1.10:8123/api/mcp`, Tasmota, Shelly) thường chỉ nói http thuần trên LAN. Khoá `allow_lan_http = true` ở `[proxy.mcp]` (cần `url`) và `[proxy.http]` là **lối vào có chủ ý**, mặc định tắt (tắt ⇒ hành vi không đổi: http chỉ tới loopback).
-Khi bật, http thuần chỉ được nhận cho `host` là:
+### 4.1a `allow_lan_http` — plain HTTP to devices on home network (and for `proxy http`, §5.1)
 
-- literal IP riêng/link-local/loopback: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`, `127.0.0.0/8`; IPv6 `fc00::/7`, `fe80::/10`, `::1`;
-- hoặc tên `*.local`, `*.lan`, `*.home.arpa` (có ít nhất một nhãn trước hậu tố).
+Real devices (Home Assistant `http://192.168.1.10:8123/api/mcp`, Tasmota, Shelly) often speak only plain HTTP on LAN. Key `allow_lan_http = true` in `[proxy.mcp]` (requires `url`) and `[proxy.http]` is an **intentional opt-in**, disabled by default (disabled ⇒ unchanged behavior: HTTP loopback only).
+When enabled, plain HTTP is accepted solely for `host` matching:
 
-**Mọi host khác vẫn bị từ chối dù bật cờ:** tên hay địa chỉ công khai, dải CGNAT `100.64.0.0/10` (cố ý từ chối), IPv6 documentation/`fec0::/10`, địa chỉ IPv4-mapped IPv6, tên trần (`homeassistant`) — token không bao giờ đi rõ ràng qua internet
-(`test_any_other_host_stays_refused_even_with_the_flag`). Thông tin đăng nhập trong URL vẫn bị từ chối. `listen` của `proxy http` vẫn chỉ loopback (cờ này không đụng tới front).
-`guard init --mcp|--http … --allow-lan-http` ghi khoá kèm chú thích; `plugin doctor` in **CẢNH BÁO** khi khoá bật: lời gọi và token đi bằng http thuần trên LAN, ai nghe được mạng nhà đọc và chép được token.
-Nếu thiết bị hỗ trợ https thì dùng https; cờ này là cái giá của một thiết bị không có.
+- literal private/link-local/loopback IP: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`, `127.0.0.0/8`; IPv6 `fc00::/7`, `fe80::/10`, `::1`;
+- or hostnames matching `*.local`, `*.lan`, `*.home.arpa` (possessing at least one label preceding suffix).
 
-Tool của proxy không giữ chân (`requires`, `drive` bị từ chối): nó chuyển tiếp một lời gọi.
+**All other hosts remain rejected even with flag enabled:** public names or addresses, CGNAT range `100.64.0.0/10` (intentionally rejected), IPv6 documentation/`fec0::/10`, IPv4-mapped IPv6 addresses, bare hostnames (`homeassistant`) — tokens never travel cleartext over the internet
+(`test_any_other_host_stays_refused_even_with_the_flag`). Credentials in URLs remain rejected. `listen` in `proxy http` remains loopback only (flag does not touch frontend).
+`guard init --mcp|--http … --allow-lan-http` writes key with comments; `plugin doctor` outputs **WARNING** when key is enabled: calls and tokens travel plain HTTP on LAN, allowing anyone eavesdropping on the home network to read and replay tokens.
+If devices support HTTPS, use HTTPS; this flag represents the cost of devices lacking it.
+
+Proxy tools do not manipulate pins (`requires`, `drive` rejected): they forward a call.
 
 ### 4.2 `guard init --mcp`
 
-`neuroedge guard init --mcp <lệnh|url> [--dir DIR] [--name TÊN] [--env-from TÊN]… [--header-env HEADER=BIẾN]…` kết nối như một MCP client, liệt kê tool của máy chủ, rồi viết `guard.toml` và một gate cho mỗi tool ở `gates/`:
+`neuroedge guard init --mcp <command|url> [--dir DIR] [--name NAME] [--env-from NAME]… [--header-env HEADER=VAR]…` connects as an MCP client, enumerates upstream tools, then writes `guard.toml` and a gate for each tool in `gates/`:
 
-- **Gate sinh ra chặn mặc định.** Gate khai `call_source` với `options` tường minh (nguồn của client phía trước proxy là `mcp`) **và** một tiêu chí không ai đặt (`operator_approved`, `allow_when: operator_approved: true`)
-  nên tool `BLOCK` với `criterion_unavailable` cho tới khi người vận hành sửa gate **có chủ ý**; đầu mỗi tệp ghi cách mở (`test_a_generated_gate_blocks_until_the_operator_opens_it`).
-- **Tham số.** Thuộc tính vô hướng của `inputSchema` (`string`, `integer`, `number`, `boolean`; kể cả `Optional[…]`) thành `[tools.X.parameters]`; có mặc định thì ghi `default`, tuỳ chọn không mặc định thì `required = false`.
-  Tool có tham số **bắt buộc** không phải vô hướng **không được phơi ra**: ghi thành một khối chú thích có lý do và in ở stderr (`test_a_tool_with_a_required_object_parameter_is_not_exposed`); tham số tuỳ chọn không phải vô hướng bị bỏ, có ghi chú.
-- Tên tool của máy chủ không hợp lệ cho guard (`get-state`) được đổi (`get_state`) và ghi vào `[proxy.mcp.names]`. Đối số của `--mcp` là tệp có thật thì được viết đường dẫn tuyệt đối.
-- **Không bao giờ ghi đè**: nếu bất kỳ tệp nào sẽ viết đã có ⇒ lỗi ba phần, không ghi gì cả (`test_guard_init_never_overwrites_a_file`). Các tệp sinh ra được nạp thử (`Guard.load`, phân giải gate) trong bản sao **trước khi** ghi, nên `guard init` không bao giờ để lại cấu hình không nạp được.
+- **Generated gates block by default.** Gates declare `call_source` with explicit `options` (source of client in front of proxy is `mcp`) **and** an unset criterion (`operator_approved`, `allow_when: operator_approved: true`),
+  so tools yield `BLOCK` with `criterion_unavailable` until operators edit gates **intentionally**; each file header explains how to unblock (`test_a_generated_gate_blocks_until_the_operator_opens_it`).
+- **Parameters.** Scalar attributes of `inputSchema` (`string`, `integer`, `number`, `boolean`; including `Optional[…]`) map to `[tools.X.parameters]`; default values write `default`, optional without default writes `required = false`.
+  Tools possessing **mandatory non-scalar parameters are not exposed**: recorded as commented-out blocks with rationale and printed to stderr (`test_a_tool_with_a_required_object_parameter_is_not_exposed`); optional non-scalar parameters are dropped with notes.
+- Upstream tool names invalid for guard (`get-state`) are converted (`get_state`) and recorded in `[proxy.mcp.names]`. Arguments to `--mcp` matching existing files write absolute paths.
+- **Never overwrites:** if any target file already exists ⇒ three-part error, writes nothing (`test_guard_init_never_overwrites_a_file`). Generated files undergo trial load (`Guard.load`, gate resolution) in temporary copies **before** writing, ensuring `guard init` never leaves unloadable configurations.
 
 ### 4.3 `proxy mcp`
 
-`neuroedge proxy mcp [--config guard.toml] [--trace-out PATH]` phục vụ **chỉ qua stdio** (`--http` là TSK-I2c-15, chưa có) đúng các tool của `guard.toml`, mô tả lấy từ máy chủ thật. Khi khởi động nó kết nối tới máy chủ thật và kiểm từng tool của guard:
-tool phải có mặt ở đó (theo `[proxy.mcp.names]`), mỗi tham số khai phải có cùng kiểu, và mọi tham số bắt buộc của máy chủ thật phải được khai. **Thiếu một tool, lệch lược đồ hay không kết nối được ⇒ không khởi động** (mã thoát 1, lỗi ba phần), không bao giờ "phục vụ phần còn lại".
+`neuroedge proxy mcp [--config guard.toml] [--trace-out PATH]` serves **strictly over stdio** (`--http` is TSK-I2c-15, not yet implemented) exactly the tools in `guard.toml`, descriptions inherited from upstream. On startup it connects upstream and validates each guard tool:
+tools must be present upstream (per `[proxy.mcp.names]`), declared parameters must match types, and all mandatory upstream parameters must be declared. **Missing tools, schema mismatches, or connection failures ⇒ fails to start** (exit code 1, three-part error), never "serving the remainder".
 
-- **Nguồn.** Lời gọi giữ nguồn của client phía trước, `mcp`, qua đường nội bộ `Guard._dispatch_front` (RFC-0016 §3b mục 4): không `Dispatcher` nào chạm tới, nên một bridge chỉ có thể là `bridge:<id>` (`test_a_bridge_cannot_obtain_the_front_source`).
-- **Kết quả.** ALLOW ⇒ nguyên văn kết quả của máy chủ thật. BLOCK ⇒ phán quyết (JSON, `isError` = false); REJECTED ⇒ phán quyết, `isError` = true — như `mcp serve`.
-- **Máy chủ thật hỏng sau ALLOW** ⇒ kết quả lỗi (`status = ALLOW`, `isError` = true, "was not retried"); **không bao giờ thử lại**, vì lời gọi có thể đã xảy ra (`test_an_upstream_error_after_allow_is_an_error_result_not_a_retry`).
-- **Vết ghi.** `--trace-out` ghi `guard.trace()` khi thoát (kể cả SIGTERM); `metadata.proxy = {kind, upstream}` — không có đối số lệnh hay URL truy vấn. Vết có **đối số của lời gọi** như nhận từ client (không băm): coi nó như dữ liệu của máy chủ thật. Replay: `TracePlayer(trace, guard="guard.toml")`, không bao giờ chạm máy chủ thật (`test_the_proxy_trace_validates_and_replays`).
-- **Claude Desktop.** `neuroedge proxy mcp --desktop-config [--write] [--config-path P] [--name N]` in (hay ghi, kèm bản sao lưu, đúng một mục `mcpServers`) lối vào để Desktop chạy proxy. Desktop khởi chạy với môi trường tối thiểu: các biến trong `env_from`/`headers_env` phải được thêm vào khối `env` của mục đó **bằng tay** (lệnh nhắc, và không ghi bí mật vào tệp).
-- Chưa có: front qua mạng (cho MCP: TSK-I2c-15 chỉ làm `proxy http` cho API HTTP, §5), `--init-timeout` như `mcp serve`, gate đọc dữ kiện của chính máy chủ thật.
+- **Source.** Calls retain frontend client source `mcp` via internal pathway `Guard._dispatch_front` (RFC-0016 §3b item 4): unreachable by any `Dispatcher`, so bridges remain strictly `bridge:<id>` (`test_a_bridge_cannot_obtain_the_front_source`).
+- **Results.** ALLOW ⇒ verbatim upstream result. BLOCK ⇒ verdict (JSON, `isError` = false); REJECTED ⇒ verdict, `isError` = true — matching `mcp serve`.
+- **Upstream failure after ALLOW** ⇒ error result (`status = ALLOW`, `isError` = true, "was not retried"); **never retried**, because call side-effects may have occurred (`test_an_upstream_error_after_allow_is_an_error_result_not_a_retry`).
+- **Traces.** `--trace-out` writes `guard.trace()` on exit (including SIGTERM); `metadata.proxy = {kind, upstream}` — without command arguments or query URLs. Traces retain **call arguments** as received from client (unhashed): treated as upstream data. Replay: `TracePlayer(trace, guard="guard.toml")`, never touching upstream (`test_the_proxy_trace_validates_and_replays`).
+- **Claude Desktop.** `neuroedge proxy mcp --desktop-config [--write] [--config-path P] [--name N]` prints (or writes, with backups, exactly one `mcpServers` entry) configuration for Desktop to run proxy. Desktop launches with minimal environment: variables in `env_from`/`headers_env` must be added to the entry's `env` block **manually** (prompted, never writing secrets to files).
+- Not yet implemented: network frontend (for MCP: TSK-I2c-15 implements `proxy http` for HTTP APIs, §5), `--init-timeout` like `mcp serve`, gates reading facts from upstream itself.
 
-### 4.4 `plugin doctor` — "proxy là đường duy nhất" chỉ kiểm được một phần
+### 4.4 `plugin doctor` — "proxy is the only path" can only be partially checked
 
-`neuroedge plugin doctor [--config guard.toml] [--json]` (RFC-0016 §3d mục 6, §5 rủi ro 3, 8). Nó **cảnh báo** những gì nó thấy và **nói rõ** những gì nó không kiểm được; không bao giờ in một chữ "OK" trơn:
+`neuroedge plugin doctor [--config guard.toml] [--json]` (RFC-0016 §3d item 6, §5 risks 3, 8). It **warns** about findings and **states clearly** what it cannot check; never printing a bare "OK":
 
-| Kiểm | Kết quả |
+| Check | Result |
 |:---|:---|
-| `url`: thử nối TCP thẳng tới đích (2 giây) | nối được ⇒ **CẢNH BÁO** "đích còn tới được mà không qua proxy"; không nối được ⇒ "không kiểm được" (máy khác chưa biết) |
-| stdio: đọc cấu hình Claude Desktop (`mcp_desktop.default_config_path`) | mục khác (không phải proxy) khởi chạy cùng lệnh ⇒ **CẢNH BÁO**; không đọc được cấu hình ⇒ "không kiểm được"; luôn kèm "không kiểm được: ứng dụng khác (Cursor, VS Code, shell…)" |
-| mỗi tool: gate có đọc `call_source` hoặc `call_channel` không | không ⇒ **CẢNH BÁO** (RFC-0016 §5 rủi ro 8) |
-| plugin | nạp các bản phân phối của `[plugins] enable` như Guard: nạp hỏng ⇒ **CẢNH BÁO**; cài editable ⇒ **CẢNH BÁO** (không băm tệp, không huy hiệu); còn lại ghi chú bản phân phối, phiên bản, `files_sha256`. Luôn kèm "không kiểm được: plugin (TSK-I2c-11) loại …": loại khác actuator, và mức tự tắt (chỉ `conformance` chứng minh, trên bản giả) |
+| `url`: try direct TCP connection to target (2 seconds) | connected ⇒ **WARNING** "đích còn tới được mà không qua proxy" (target still reachable without going through proxy); cannot connect ⇒ "không kiểm được" (unverifiable) (other machines unknown) |
+| stdio: read Claude Desktop config (`mcp_desktop.default_config_path`) | other entry (not proxy) launches same command ⇒ **WARNING**; cannot read config ⇒ "không kiểm được" (unverifiable); always includes "không kiểm được: ứng dụng khác (Cursor, VS Code, shell…)" (unverifiable: other applications...) |
+| each tool: gate reads `call_source` or `call_channel` | no ⇒ **WARNING** (RFC-0016 §5 risk 8) |
+| plugin | loads distributions from `[plugins] enable` like Guard: load failure ⇒ **WARNING**; installed editable ⇒ **WARNING** (no file hashes, no badge); otherwise notes distribution, version, `files_sha256`. Always includes "cannot verify: plugin (TSK-I2c-11) kinds …": categories other than actuator, and auto-kill levels (proven only via `conformance` on doubles) |
 
-Mã thoát: `1` nếu có ít nhất một cảnh báo, `0` nếu không (các dòng "không kiểm được" không đổi mã thoát — chúng không phải bằng chứng). `0` **không** nghĩa là proxy là đường duy nhất: nó chỉ nghĩa là doctor không thấy lối vòng.
-Tin đúng hơn: đặt máy chủ thật sau tường lửa/ACL để chỉ proxy tới được; doctor không làm việc đó.
+Exit code: `1` if at least one warning exists, `0` otherwise ("không kiểm được" [unverifiable] lines do not affect exit codes — they are not proof). `0` **does not** mean the proxy is the sole path: it simply means doctor detected no bypasses.
+More reliable: isolate real servers behind firewalls/ACLs so only proxies reach them; doctor cannot perform network isolation.
 
-## 5. `neuroedge proxy http` — một API HTTP cục bộ có sẵn đứng sau NeuroEdge (TSK-I2c-15, FR-EXT-06)
+## 5. `neuroedge proxy http` — an existing local HTTP API behind NeuroEdge (TSK-I2c-15, FR-EXT-06)
 
-Cho API web của Tasmota/Shelly/ESPHome, một dịch vụ REST tự viết, REST của Home Assistant. Mỗi **route khai báo** là một tool của `Guard`; request chỉ được chuyển tới API thật **bên trong `run` của tool**, tức là sau ALLOW; mọi thứ
-không khai báo bị từ chối bằng 404 và không bao giờ được chuyển tiếp. Hình dạng và độ chặt như `proxy mcp` (§4): `guard init --http` → sửa gate có chủ ý → `proxy http`.
+For Tasmota/Shelly/ESPHome web APIs, custom REST services, or Home Assistant REST endpoints. Each **declared route** is a `Guard` tool; requests forward to upstream APIs **strictly inside the tool's `run` body**, meaning after ALLOW; undeclared
+routes return 404 and are never forwarded. Behavior and rigor match `proxy mcp` (§4): `guard init --http` → edit gates intentionally → `proxy http`.
 
-### 5.1 Bảng `[proxy.http]`
+### 5.1 `[proxy.http]` table
 
 ```toml
 [proxy.http]
-upstream = "http://127.0.0.1:8080"   # http chỉ tới loopback (hoặc LAN với allow_lan_http, §4.1a); https tới đâu cũng được; không thông tin đăng nhập/truy vấn/fragment
-allow_lan_http = false               # mặc định tắt; true: nhận http thuần tới IP riêng / *.local / *.lan / *.home.arpa (§4.1a)
-listen   = "127.0.0.1:8787"          # CHỈ loopback (127.0.0.0/8, ::1, localhost): front không có xác thực ở bản này
-id       = "http"                    # id bridge ⇒ nguồn `bridge:http`
-headers_env = { Authorization = "DEVICE_TOKEN" }   # tên header → TÊN biến môi trường; không bao giờ giá trị
+upstream = "http://127.0.0.1:8080"   # http only to loopback (or LAN with allow_lan_http, §4.1a); https to anywhere; no credentials/query/fragment
+allow_lan_http = false               # default false; true: accepts plain http to private IP / *.local / *.lan / *.home.arpa (§4.1a)
+listen   = "127.0.0.1:8787"          # loopback ONLY (127.0.0.0/8, ::1, localhost): front has no authentication in this release
+id       = "http"                    # bridge id ⇒ source `bridge:http`
+headers_env = { Authorization = "DEVICE_TOKEN" }   # header name → environment variable NAME; never values
 
 [[proxy.http.routes]]
 method = "POST"                      # GET | POST | PUT | PATCH | DELETE
-path   = "/cm/{cmd}"                 # `{tham_số}` là cả một đoạn; không `..`, không `%`, không query
-tool   = "post_cm_cmd"               # một [tools.<tên>] của cùng tệp
+path   = "/cm/{cmd}"                 # `{param}` is a full path segment; no `..`, no `%`, no query
+tool   = "post_cm_cmd"               # a [tools.<name>] in same file
 ```
 
-Kiểm lúc nạp (NE3002, ba phần): địa chỉ `listen` không phải loopback; `upstream` http tới máy khác; bí mật viết thẳng (khoá mang tên bí mật, giá trị `headers_env` không phải tên biến — không bao giờ in lại);
-route trùng (không kể tên tham số); tool không có; mỗi `{tham_số}` phải là tham số mà tool khai (nếu không mọi request sẽ `REJECTED`); tool không có route nào; cả `[proxy.mcp]` lẫn `[proxy.http]`.
-Không kết nối được tới `upstream` hoặc biến môi trường vắng ⇒ không khởi động.
+Load-time verification (NE3002, three-part): `listen` address not loopback; `upstream` HTTP to non-local hosts; plaintext secrets (keys named like secrets, `headers_env` values that are not variable names — never echoed);
+duplicate routes (ignoring parameter names); missing tools; `{param}` not declared as tool parameter (which would cause all requests to be `REJECTED`); tools lacking routes; both `[proxy.mcp]` and `[proxy.http]` present.
+Upstream connection failures or missing environment variables ⇒ fails to start.
 
-### 5.2 Nguồn là `bridge:<id>`
+### 5.2 Source is `bridge:<id>`
 
-HTTP không có nguồn dựng sẵn (thêm một giá trị `enum` là RFC, `schemas/`), nên front này là **một bridge của lõi**: nó gọi `guard.dispatcher(id)` và mọi lời gọi có nguồn `bridge:<id>` (mặc định `bridge:http`, RFC-0017 §3b).
-Gate **phải liệt kê nó**: gate chỉ liệt kê `mcp` chặn nó (`criterion_unavailable`, HTTP 403) — `test_the_proxy_dispatches_as_a_bridge_and_a_gate_listing_only_mcp_blocks_it`. Gate sinh ra liệt kê đúng `bridge:<id>` của tệp.
+HTTP lacks built-in sources (adding enum values requires RFCs in `schemas/`), so this frontend is **a core bridge**: it calls `guard.dispatcher(id)` and all calls carry source `bridge:<id>` (default `bridge:http`, RFC-0017 §3b).
+Gates **must explicitly list it**: gates listing only `mcp` block it (`criterion_unavailable`, HTTP 403) — `test_the_proxy_dispatches_as_a_bridge_and_a_gate_listing_only_mcp_blocks_it`. Generated gates explicitly list the file's `bridge:<id>`.
 
 ### 5.3 Request → tool
 
-- **Tham số của tool:** tham số đường dẫn, tham số query và các **vô hướng cấp cao nhất** của body JSON. Kiểm bằng lược đồ của `Guard`: tham số không khai ⇒ `REJECTED` (400).
-- **400 và không dispatch:** body không phải JSON, không phải đối tượng, giá trị lồng/`null`, khoá JSON lặp, tham số lặp (trong query, hoặc giữa đường dẫn/query/body), đoạn đường dẫn rỗng hoặc không an toàn (`%2f`, `%5c`, `%00`, `//`, `.`/`..` sau khi giải mã).
-- **Chuyển tiếp nguyên văn:** method, đường dẫn, query và body **như đã nhận** (không dựng lại) tới `upstream`, kèm header cấu hình. Bỏ header hop-by-hop (và header nêu trong `Connection`), `Host` (đặt lại), `Content-Length` (tính lại),
-  `Expect`; **`Authorization` và `Cookie` của client không bao giờ được chuyển** — header cấu hình ở `headers_env` thay chỗ.
-- **Trả lời:** ALLOW ⇒ status, header (trừ hop-by-hop) và body của upstream; BLOCK ⇒ **403** + phán quyết JSON; `REJECTED` ⇒ **400** + phán quyết; route không khai báo ⇒ **404** (nêu chỉ route khai báo mới qua, không chuyển gì);
-  body > 1 MiB ⇒ **413** (không đọc); `Transfer-Encoding` ⇒ 411; upstream hỏng sau ALLOW ⇒ **502** + phán quyết + vấn đề, **không bao giờ thử lại**; mỗi request tới upstream có thời hạn 30 giây.
-- Mỗi kết nối một request (`Connection: close`); `dispatch` tuần tự dưới khoá của `Guard`.
+- **Tool parameters:** path parameters, query parameters, and **top-level scalars** of JSON bodies. Validated via `Guard` schemas: undeclared parameters ⇒ `REJECTED` (400).
+- **400 without dispatch:** body not JSON, body not an object, nested/`null` values, duplicate JSON keys, duplicate parameters (within query, or across path/query/body), empty or unsafe path segments (`%2f`, `%5c`, `%00`, `//`, `.`/`..` after decoding).
+- **Verbatim forwarding:** method, path, query, and body forwarded **as received** (not reconstructed) to `upstream`, accompanied by configured headers. Hop-by-hop headers stripped (including headers named in `Connection`), `Host` (reset), `Content-Length` (recalculated),
+  `Expect`; **client `Authorization` and `Cookie` are never forwarded** — configured headers in `headers_env` take their place.
+- **Responses:** ALLOW ⇒ upstream status, headers (minus hop-by-hop), and body; BLOCK ⇒ **403** + verdict JSON; `REJECTED` ⇒ **400** + verdict; undeclared route ⇒ **404** (stating only declared routes pass, forwarding nothing);
+  body > 1 MiB ⇒ **413** (unread); `Transfer-Encoding` ⇒ 411; upstream error after ALLOW ⇒ **502** + verdict + issue description, **never retried**; upstream requests timeout at 30 seconds.
+- Single request per connection (`Connection: close`); `dispatch` serialized under `Guard` lock.
 
-### 5.4 Lệnh
+### 5.4 Commands
 
-- `neuroedge guard init --http <upstream> --route "METHOD /đường/{tham_số}" [--route …] [--dir DIR] [--name TÊN] [--header-env HEADER=BIẾN]`: viết `guard.toml` và một gate **chặn mặc định** cho mỗi route (cùng khuôn `operator_approved` như `guard init --mcp`;
-  `call_source` có `bridge:http` trong `options` và `allow_when` chỉ nhận nó); tham số đường dẫn khai kiểu `string`; query/body muốn nhận phải tự khai thêm; không bao giờ ghi đè (`test_guard_init_http_never_overwrites_a_file`).
-  `--mcp` và `--http` loại trừ nhau; `--route` chỉ đi với `--http`.
-- `neuroedge proxy http [--config guard.toml] [--trace-out PATH]`: phục vụ **chỉ trên loopback** tới khi SIGINT/SIGTERM, rồi ghi vết (`metadata.proxy = {kind: "http", upstream}`); replay bằng `TracePlayer(trace, guard=…)` không chạm upstream.
-- `neuroedge plugin doctor` (cùng lệnh với §4.4): với `[proxy.http]`, **API còn tới được trực tiếp ⇒ CẢNH BÁO** — với API cục bộ thì luôn như vậy; người vận hành phải đặt API của thiết bị sau tường lửa/ACL hoặc chỉ nhận từ máy proxy. Doctor không quét mạng
-  nên nói "không kiểm được" cho máy/ứng dụng khác; gate không đọc `call_source` ⇒ CẢNH BÁO; plugin: "không kiểm được". Mã thoát như §4.4.
-- **Chưa có:** TLS và xác thực ở front (vì vậy chỉ loopback), websocket, body streaming, `--init-timeout`.
+- `neuroedge guard init --http <upstream> --route "METHOD /path/{param}" [--route …] [--dir DIR] [--name NAME] [--header-env HEADER=VAR]`: writes `guard.toml` and a **fail-closed** gate for each route (matching `operator_approved` template from `guard init --mcp`;
+  `call_source` includes `bridge:http` in `options` and `allow_when` accepts only that); path parameters declared type `string`; query/body parameters must be added manually; never overwrites (`test_guard_init_http_never_overwrites_a_file`).
+  `--mcp` and `--http` mutually exclusive; `--route` valid only with `--http`.
+- `neuroedge proxy http [--config guard.toml] [--trace-out PATH]`: serves **loopback only** until SIGINT/SIGTERM, then writes trace (`metadata.proxy = {kind: "http", upstream}`); replay via `TracePlayer(trace, guard=…)` does not touch upstream.
+- `neuroedge plugin doctor` (same command as §4.4): for `[proxy.http]`, **API reachable directly ⇒ WARNING** — for local APIs this is always true; operators must place device APIs behind firewalls/ACLs or accept requests only from proxy host. Doctor scans no networks,
+  stating "không kiểm được" (unverifiable) for other machines/apps; gate not reading `call_source` ⇒ WARNING; plugins: "không kiểm được" (unverifiable). Exit codes per §4.4.
+- **Not yet implemented:** TLS and authentication on frontend (hence loopback only), websockets, streaming bodies, `--init-timeout`.
 
-## 6. Plugin: bật, nạp, nguồn gốc (RFC-0016 §3d; phần actuator của TSK-I2c-11)
+## 6. Plugins: enable, load, provenance (RFC-0016 §3d; actuator part of TSK-I2c-11)
 
-Mã: `neuroedge/plugins/__init__.py`. Sáu nhóm entry point (`neuroedge.bridges`, `neuroedge.fact_sources`, `neuroedge.actuators`, `neuroedge.boards`, `neuroedge.templates`,
-`neuroedge.exporters`); **chỉ `neuroedge.actuators` được nạp** ở bản này.
+Code: `neuroedge/plugins/__init__.py`. Six entry point groups (`neuroedge.bridges`, `neuroedge.fact_sources`, `neuroedge.actuators`, `neuroedge.boards`, `neuroedge.templates`,
+`neuroedge.exporters`); **only `neuroedge.actuators` is loaded** in this version.
 
-**Adapter kênh chat không phải loại plugin** (*planned · Q-72, I2d*). Agent vận hành của Q-72 nối kênh chat
-(Telegram trước). Adapter đó giữ token bot và kiểm bản ghi duyệt — nó quyết định một lời có phải lời duyệt của
-người hay không (`tool_calling.md` §6). Vì vậy, ở MVP, adapter nằm trong **runtime tin cậy** do NeuroEdge viết
-(rà soát kiến trúc theo Q-72, 2026-10-11), không phải plugin bên thứ ba; Extension SDK không có nhóm entry
-point nào cho kênh chat. Một kênh do bên thứ ba viết cần RFC riêng (nguồn `chat:<id>`, `threat_model.md` §2e).
+**Chat channel adapters are not plugins** (*planned · Q-72, I2d*). The operator agent of Q-72 connects chat channels
+(Telegram first). That adapter holds bot tokens and verifies approval records — determining whether a reply constitutes human
+approval (`tool_calling.md` §6). Therefore, in MVP, adapters live in the **trusted runtime** authored by NeuroEdge
+(architecture review per Q-72, 2026-10-11), not as third-party plugins; the Extension SDK provides no entry
+point groups for chat channels. Third-party channels require dedicated RFCs (source `chat:<id>`, `threat_model.md` §2e).
 
-- **Phát hiện không import.** `neuroedge plugin list [--json]` đọc `importlib.metadata` — loại, tên entry point, bản phân phối, phiên bản — không import gói nào (`test_listing_plugins_imports_nothing`).
-- **Bật trong tệp được commit, không ở dòng lệnh.** `[plugins] enable = ["neuroedge-ha", "neuroedge-ros2==0.4.1"]` trong `agent.toml` hoặc `guard.toml`: tên bản phân phối (so khớp theo PEP 503), tuỳ chọn ghim `==phiên bản`.
-  Cài bằng `pip` không bật gì; **không cờ CLI nào** bật plugin. `[plugins.config.<entry point>]` là cấu hình chung của entry point đó, gộp **dưới** `[actuators.<tên>.config]` khi dựng; cùng luật bí mật với `[external]`: trường mang tên bí mật viết thẳng ⇒ NE3002, `*_env` chỉ là tên biến (không bao giờ in lại giá trị).
-- **Hỏng ⇒ không khởi động.** Chưa cài · không import được · `sdk_requires` không tương thích (cùng MAJOR, MINOR đã cài ≥ MINOR đòi; thiếu ⇒ không tương thích) · ghim phiên bản lệch · hai bản phân phối đã bật cùng một tên entry point ·
-  tên entry point ngoài `[a-z][a-z0-9_]{0,31}` · nhà máy không nhận đúng **một** đối số (`config`) · bản phân phối đã bật không có entry point NeuroEdge nào · có entry point loại chưa hiện thực (nêu TSK-I2c-11) ·
-  `[plugins.config.X]` cho một entry point không bản phân phối đã bật nào cấp ⇒ `AgentManifestError` (NE3002), ba phần, trước khi chân nào bị giữ và trước lượt gate đầu.
-  `neuroedge build` báo cùng lỗi (gom vào `BuildFailed`).
-- **Nguồn gốc.** Mỗi entry point đã nạp: một dòng trên stderr lúc khởi động, một mục trong `metadata.plugins` của **mọi** vết ghi của phiên/Guard và một sự kiện `plugin_loaded`, cùng dữ liệu
-  `{kind, name, distribution, version, files_sha256}` — `files_sha256` = `sha256:` của danh sách (đường dẫn, sha256 của byte trên đĩa) các tệp của gói entry point trong `dist.files`, không đọc từ `RECORD`.
-  Bản cài editable (`direct_url.json` có `dir_info.editable`) không có `files_sha256` mà có `editable: true`. Không plugin nào bật ⇒ không có khoá `metadata.plugins` (vết ghi chuẩn mực không đổi).
+- **Discovery without import.** `neuroedge plugin list [--json]` inspects `importlib.metadata` — group, entry point name, distribution, version — importing no packages (`test_listing_plugins_imports_nothing`).
+- **Enabled in committed files, not CLI flags.** `[plugins] enable = ["neuroedge-ha", "neuroedge-ros2==0.4.1"]` in `agent.toml` or `guard.toml`: distribution name (PEP 503 matching), optional `==version` pin.
+  Installation via `pip` enables nothing; **no CLI flags** enable plugins. `[plugins.config.<entry_point>]` is shared configuration for that entry point, merged **under** `[actuators.<name>.config]` on build; secret rules match `[external]`: plaintext secret fields ⇒ NE3002, `*_env` indicates variable names only (values never echoed).
+- **Broken ⇒ fails to start.** Uninstalled · unimportable · `sdk_requires` incompatible (matching MAJOR, installed MINOR ≥ required MINOR; missing ⇒ incompatible) · version pin mismatch · duplicate entry point names across enabled distributions ·
+  entry point name outside `[a-z][a-z0-9_]{0,31}` · factory does not accept exactly **one** argument (`config`) · enabled distribution possesses no NeuroEdge entry points · entry points present belonging to unimplemented categories (citing TSK-I2c-11) ·
+  `[plugins.config.X]` targeting entry points unprovided by enabled distributions ⇒ `AgentManifestError` (NE3002), three-part, before pins are held and before first gate turn.
+  `neuroedge build` raises identical errors (wrapped in `BuildFailed`).
+- **Provenance.** Each loaded entry point: one line to stderr on startup, one entry in `metadata.plugins` across **all** session/Guard traces, and a `plugin_loaded` event, sharing data
+  `{kind, name, distribution, version, files_sha256}` — `files_sha256` = `sha256:` of package files (filepath, on-disk byte sha256) in `dist.files`, not read from `RECORD`.
+  Editable installs (`direct_url.json` containing `dir_info.editable`) carry `editable: true` instead of `files_sha256`. No enabled plugins ⇒ key `metadata.plugins` omitted (canonical traces unchanged).
 
-## 7. Cơ cấu chấp hành từ xa (RFC-0018; TSK-I2c-16 phần lõi)
+## 7. Remote actuators (RFC-0018; TSK-I2c-16 core part)
 
-> **Planned · Q-72, chờ RFC an toàn có điều kiện.** Mục này và §8 hôm nay coi **an toàn = tắt**: `safe_off`, mức
-> L0–L3 là lời hứa về ai đưa cơ cấu về `off`, `Actuator.safe_off()` gửi `off`, phép kiểm `actuator.off_*` chứng minh
-> `off`. Q-72 chốt hướng `safe_state` đối xứng: mọi cơ cấu có `safe_state` khai trong `board.v1` (mặc định `off`),
-> mức và phép kiểm sẽ nói về "trở về `safe_state`", hướng *rời* `safe_state` là hướng bị gate và giới hạn.
-> `safe_state` khác `off` chỉ khai trong `board.v1`, kèm khoá liên động phần cứng, không trong `[actuators]` hay
-> plugin. Mọi khai báo hiện có (`off`) giữ đúng hành vi dưới đây. Tên và chữ ký trong SDK chỉ đổi khi RFC được chấp
-> thuận. Mối đe doạ: `threat_model.md` §2j.
+> **Planned · Q-72, awaiting conditional safety RFC.** This section and §8 today treat **safety = off**: `safe_off`, tiers
+> L0–L3 are promises about who restores actuators to `off`, `Actuator.safe_off()` sends `off`, tests `actuator.off_*` prove
+> `off`. Q-72 finalized direction for symmetric `safe_state`: all actuators have `safe_state` declared in `board.v1` (default `off`),
+> tiers and tests will refer to "returning to `safe_state`", moving *away* from `safe_state` is constrained by gates and limits.
+> `safe_state` other than `off` declared strictly in `board.v1`, accompanied by hardware interlocks, never in `[actuators]` or
+> plugins. All existing declarations (`off`) preserve exact behavior below. SDK names and signatures change only upon RFC
+> approval. Threats: `threat_model.md` §2j.
 
-Ngữ nghĩa và lý do: [RFC-0018](../rfc/0018-co-cau-chap-hanh-tu-xa.md) §3b–§3i (đã chấp thuận; hằng ở §9.5). Ở đây chỉ ghi điều mã làm, và những chỗ RFC để mở mà mã đã chọn.
+Semantics and rationale: [RFC-0018](../rfc/0018-co-cau-chap-hanh-tu-xa.md) §3b–§3i (approved; constants in §9.5). Documents code behavior and design choices where RFC left options open.
 
-**Khai báo** (`agent.toml` hoặc `guard.toml`, hay `ActuatorDeclaration` bằng mã):
+**Declaration** (`agent.toml`, `guard.toml`, or programmatic `ActuatorDeclaration`):
 
 ```toml
 [requires]
-"digital.out" = { pins = ["garden_valve"] }      # tên cơ cấu từ xa nằm cạnh chân của bo
+"digital.out" = { pins = ["garden_valve"] }      # remote actuator name declared alongside board pins
 
 [plugins]
 enable = ["neuroedge-ref-actuators"]
 
 [actuators.garden_valve]
-plugin     = "ref_l2"          # tên entry point của một bản phân phối đã bật
-safe_off   = "L2"              # mức người triển khai dựa vào; bắt buộc
-reversible = false             # vắng ⇒ false (không hoàn tác)
-[actuators.garden_valve.envelope]   # bốn khoá của board.v1 #/$defs/envelope, bắt buộc đủ
+plugin     = "ref_l2"          # entry point name of an enabled distribution
+safe_off   = "L2"              # tier relied upon by deployer; mandatory
+reversible = false             # absent ⇒ false (irreversible)
+[actuators.garden_valve.envelope]   # four keys of board.v1 #/$defs/envelope, all mandatory
 window_s = 3600
 max_on_ms_per_window = 1800000
 min_interval_ms = 2000
 max_continuous_ms = 600000
-[actuators.garden_valve.config]     # chuyển (chỉ đọc) cho factory của plugin; không bí mật viết thẳng
+[actuators.garden_valve.config]     # passed (read-only) to plugin factory; no plaintext secrets
 token_env = "NE_VALVE_TOKEN"
 ```
 
-**Một hàm kiểm** — `check_actuators` (`neuroedge.guard`), qua `plugins.actuators.remote_setup` cho tệp — chạy ở `neuroedge build` (`engine/compiler.py`), ở `SimSession.load` và ở `Guard`; mọi luật ở bảng §3b,
-D5 (§3f) và §3k của RFC; danh sách từng luật kèm mã lỗi là corpus `fixtures/actuators/` (`expected_errors.yaml`, khép kín hai chiều). Cảnh báo, không chặn: mức `L0`; module `@action` import
-`httpx`, `requests`, `aiohttp`, `urllib.request` hoặc `socket` (in ở `neuroedge build`, `BuildReport.warnings`).
+**Single validation function** — `check_actuators` (`neuroedge.guard`), via `plugins.actuators.remote_setup` for files — executes in `neuroedge build` (`engine/compiler.py`), in `SimSession.load`, and in `Guard`; covering all rules in §3b,
+D5 (§3f), and §3k of the RFC; rule catalog with error codes is corpus `fixtures/actuators/` (`expected_errors.yaml`, bidirectionally closed). Warns, does not block: tier `L0`; `@action` modules importing
+`httpx`, `requests`, `aiohttp`, `urllib.request`, or `socket` (printed in `neuroedge build`, `BuildReport.warnings`).
 
-**Đường tới thiết bị.** `digital_out` của `SimHAL` và `LinuxHAL` rẽ ở đầu hàm vào `HardwareAbstractionLayer._remote_out`: `require_pin → chốt trạng thái → phong bì → authorize → record → apply`
-(`test_the_order_is_require_pin_state_guard_envelope_authorize_record_apply`). Chỉ `on`, `off`, `pulse`; `after_ms` (lệnh hẹn) bị từ chối (`BoardCapabilityError`). Chỉ HAL giữ plugin;
-HAL nhận lớp `Command` và bốn lỗi của SDK qua `hal.remote.Vocabulary` (HAL vẫn là lá, không import `sdk`). Lỗi gửi `NotSent`/`Rejected` ⇒ hoàn phần giữ trước, ném `BoardCapabilityError`;
-`Ambiguous` (hay lỗi lạ của plugin, hay quá `command_timeout_ms`) ⇒ giữ phần giữ trước, `uncertain`, ném `BoardCapabilityError`. `off` không bao giờ ném.
+**Hardware pathway.** `digital_out` in `SimHAL` and `LinuxHAL` branches at function start into `HardwareAbstractionLayer._remote_out`: `require_pin → state interlock → envelope → authorize → record → apply`
+(`test_the_order_is_require_pin_state_guard_envelope_authorize_record_apply`). `on`, `off`, `pulse` only; `after_ms` (scheduled commands) rejected (`BoardCapabilityError`). Only HAL holds plugins;
+HAL receives class `Command` and four SDK exceptions via `hal.remote.Vocabulary` (HAL remains leaf, importing no `sdk`). Send errors `NotSent`/`Rejected` ⇒ refund pre-reservation, raise `BoardCapabilityError`;
+`Ambiguous` (or unknown plugin errors, or exceeding `command_timeout_ms`) ⇒ retain pre-reservation, enter `uncertain`, raise `BoardCapabilityError`. `off` never raises.
 
-**Chỗ RFC để mở, mã chọn (fail-closed):**
+**RFC open choices resolved by code (fail-closed):**
 
-| Điều | Mã làm | Vì sao |
+| Topic | Code implementation | Rationale |
 |:---|:---|:---|
-| Mức điều khiển thời gian khi `safe_off` khai thấp hơn `safe_off_level` của plugin | HAL dùng **mức của plugin** (giao thức thiết bị nói): L2 luôn gửi `duration_ms`, L3 luôn thuê | Bảo đảm của thiết bị không bao giờ bị bỏ; D5 vẫn xét mức khai |
-| L0 | HAL vẫn gửi `off` của nó ở `D` (như L1) | Nợ tắt là của nó; không gì cấm phía an toàn |
-| Đọc lại trước mỗi lệnh bật | Có `readback`: mỗi `on`/`pulse` đọc trạng thái ngay trước chốt | Chốt cần mốc ≤ `max_state_age_ms` |
-| Đọc thấy `on` khi không nợ gì | `already_on`, kể cả khi đang `uncertain`; không gửi `off` | §3g: không tắt thứ nó không bật |
-| Không có `readback` | `off` được ghi nhận (ack) là xác nhận tắt; sau khởi động phải có một `off` được ack trước lệnh bật đầu | §3g "off là lần off được xác nhận gần nhất" |
-| Bản ghi trạng thái | `<thư mục phong bì>/<tên>.remote.json` `{version, name, off_owed, quarantined}`, ghi trước lệnh; thiếu mà không `envelope_init` (linux), hay hỏng ⇒ `quarantined` | Cùng luật bản ghi phong bì (RFC-0007 §3d) |
-| Gỡ `quarantined` | Người vận hành sửa bản ghi (`"quarantined": null`) hoặc gọi `FileRemoteStore(<thư mục>).clear("<tên>")`, rồi khởi động lại (⇒ `uncertain` tới lần đọc `off` tươi) | Không có đường tự gỡ |
-| Replay | Không dựng plugin; mỗi lần bật nhận đúng quyết định của chốt trạng thái lúc ghi (`script_remote_state`), hết dữ liệu ⇒ `actuator_state_unknown`; phong bì quyết lại trên dòng thời gian đã ghi, kết thúc ở hạn `D` như mọi chân khi replay | `remote_*` chỉ là thông tin (§3i) |
-| Đọc lại thành dữ kiện cho gate (§3e đoạn cuối) | **Chưa có** (cần TSK-I2c-09): không nguồn nào cấp, gate đòi nó thấy dữ kiện vắng ⇒ `BLOCK` | `test_uncertain_and_quarantined_are_absent_facts_so_a_gate_blocks` |
-| `pwm`, `motion` lên tên cơ cấu từ xa; `esp32s3` | NE3001 ở build; lúc chạy `pwm` ⇒ `BoardCapabilityError` | RFC-0018 §3a, §9.4 |
+| Timing control when declared `safe_off` is lower than plugin `safe_off_level` | HAL utilizes **plugin tier** (device protocol): L2 always sends `duration_ms`, L3 always leases | Device guarantees are never discarded; D5 still evaluates declared tier |
+| L0 | HAL still delivers its `off` at deadline `D` (matching L1) | Turn-off debt belongs to HAL; nothing forbids safe state |
+| Pre-command readback | If `readback` supported: each `on`/`pulse` queries state immediately before interlock | Interlock requires reading ≤ `max_state_age_ms` |
+| Reading `on` with zero turn-off debt | `already_on`, even while `uncertain`; emits no `off` | §3g: never turn off what it did not turn on |
+| Lacking `readback` | Acknowledged `off` serves as turn-off confirmation; after reboot an acknowledged `off` is mandatory before first turn-on | §3g "off is the latest confirmed off" |
+| State persistence | `<envelope_dir>/<name>.remote.json` `{version, name, off_owed, quarantined}`, written prior to command; missing without `envelope_init` (linux), or corrupt ⇒ `quarantined` | Matches envelope record rules (RFC-0007 §3d) |
+| Clearing `quarantined` | Operator edits record (`"quarantined": null`) or calls `FileRemoteStore(<dir>).clear("<name>")`, then restarts (⇒ `uncertain` until fresh `off` readback) | No automated unquarantine path |
+| Replay | Instantiates no plugins; each turn-on receives recorded state interlock verdict (`script_remote_state`), depleted data ⇒ `actuator_state_unknown`; envelope re-evaluates against recorded timeline, terminating at deadline `D` like all replay pins | `remote_*` events informational only (§3i) |
+| Readback as gate facts (§3e end) | **Not yet implemented** (requires TSK-I2c-09): unprovided by sources, gates requiring it see absent facts ⇒ `BLOCK` | `test_uncertain_and_quarantined_are_absent_facts_so_a_gate_blocks` |
+| `pwm`, `motion` on remote actuators; `esp32s3` | NE3001 at build time; runtime `pwm` ⇒ `BoardCapabilityError` | RFC-0018 §3a, §9.4 |
 
-`sim` luôn lái `DeviceDouble` của plugin (`probe()` gọi khi dựng HAL, trước mọi I/O; thiếu `probe()` ⇒ không chạy trên `sim`); đồng hồ của bản giả đi theo đồng hồ phiên. Sự kiện vết ghi:
+`sim` always drives plugin `DeviceDouble` (`probe()` invoked during HAL construction before I/O; missing `probe()` ⇒ unsupported on `sim`); mock clocks track session clocks. Trace events:
 `simulation_coverage.md` §3; lint `remote_command_sent` (NE4001): `python/neuroedge/trace.py::lint_remote`.
 
-Plugin tham chiếu (Apache-2.0, `fixtures/compliance/actuators/valid/neuroedge-ref-actuators/`): bốn entry point `ref_l0` … `ref_l3`, giao thức đồ chơi qua TCP tới một thiết bị không có, chỉ dùng qua bản giả.
-Adapter Home Assistant là phần B của TSK-I2c-16, chưa có.
+Reference plugins (Apache-2.0, `fixtures/compliance/actuators/valid/neuroedge-ref-actuators/`): four entry points `ref_l0` … `ref_l3`, toy TCP protocols to mock devices, used solely via doubles.
+Home Assistant adapter represents part B of TSK-I2c-16, not yet implemented.
 
-## 8. `neuroedge conformance` — loại actuator (RFC-0016 §3g, RFC-0018 §3e; phần của TSK-I2c-12)
+## 8. `neuroedge conformance` — actuator category (RFC-0016 §3g, RFC-0018 §3e; TSK-I2c-12 part)
 
-`neuroedge conformance <bản phân phối> [--kind actuator] [--json]` nạp **chỉ** bản phân phối đó (gõ tên là hành vi bật tường minh) và kiểm từng entry point của nó. Mã: `neuroedge/plugins/conformance.py`.
-Phép kiểm động chạy bản giả của plugin **qua mã HAL thật** (`hal/remote.py`) trên đồng hồ ảo; factory được gọi với `conformance_config` của mô-đun (một `Mapping`, vắng ⇒ `{}`).
+`neuroedge conformance <distribution> [--kind actuator] [--json]` loads **strictly** that distribution (typing name is explicit opt-in) and verifies each of its entry points. Code: `neuroedge/plugins/conformance.py`.
+Dynamic checks run plugin doubles **through real HAL code** (`hal/remote.py`) on virtual clocks; factories invoked with module `conformance_config` (`Mapping`, defaulting to `{}`).
 
-Các phép kiểm `actuator.off_*` và vector mức của `actuator.level_proven` hôm nay chứng minh phía `off`; theo RFC an
-toàn có điều kiện (*planned · Q-72*) chúng sẽ chứng minh phía `safe_state` đã khai (§7).
+Checks `actuator.off_*` and tier vectors of `actuator.level_proven` today prove `off`; under conditional safety RFC
+(*planned · Q-72*) they will prove declared `safe_state` (§7).
 
-| Phép kiểm | Đạt khi |
+| Check | Passing criteria |
 |:---|:---|
-| `plugin.loads` | import được; factory nhận đúng một đối số; trả một `Actuator` đủ thuộc tính và phương thức, trong giới hạn §9.5 của RFC-0018 |
-| `plugin.sdk_range` | `sdk_requires` tương thích `SDK_VERSION` |
-| `plugin.name_pattern` | tên entry point khớp `[a-z][a-z0-9_]{0,31}` |
-| `actuator.level_proven` | vector của mức khai: L0 — `on` không mang thời hạn; L1 — đứt liên lạc ngay trước hạn ⇒ HAL không tin là đã tắt, gửi lại mỗi `OFF_RETRY_MS`, liên lạc lại thì tắt và xác nhận; L2 — (a) `duration_ms ≤ D` ở mọi `on`, (b) đứt sau khi giao ⇒ tắt trước `D + tolerance_ms`, (c) đứt trước khi giao ⇒ không bật quá `D`; L3 — (a) runtime đóng băng ⇒ tắt ≤ `lease_ms + tolerance_ms` sau lần gia hạn cuối, (b) gia hạn trùng/đến muộn không đẩy quá `start + D + tolerance_ms`, (c) `lease_ms ≤ max_lease_ms` |
-| `actuator.off_is_idempotent` | `safe_off()` hai lần (đang tắt, rồi sau một `on`) không lỗi |
-| `actuator.off_is_unconditional` | HAL có sổ token từ chối mọi thứ vẫn tắt được thiết bị |
-| `actuator.builds_without_io` | factory chạy khi `socket` bị chặn, không thử mở kết nối nào |
-| `actuator.classifies_errors` | đứt liên lạc: `apply`/`safe_off` ném `NotSent`, `Rejected` hoặc `Ambiguous`; `read_state` ném `ReadFailed` |
-| `actuator.receives_no_handles` | factory nhận đúng `config`; driver không giữ đối tượng nào của lõi (ngoài `neuroedge.sdk`/`errors`) |
+| `plugin.loads` | importable; factory accepts exactly one argument; returns an `Actuator` with complete attributes and methods, within RFC-0018 §9.5 limits |
+| `plugin.sdk_range` | `sdk_requires` compatible with `SDK_VERSION` |
+| `plugin.name_pattern` | entry point name matches `[a-z][a-z0-9_]{0,31}` |
+| `actuator.level_proven` | declared tier vectors: L0 — `on` carries no duration; L1 — communication severed before deadline ⇒ HAL distrusts off state, retries every `OFF_RETRY_MS`, turns off and confirms upon reconnection; L2 — (a) `duration_ms ≤ D` on all `on`, (b) severed post-delivery ⇒ off before `D + tolerance_ms`, (c) severed pre-delivery ⇒ on duration does not exceed `D`; L3 — (a) runtime freezes ⇒ off ≤ `lease_ms + tolerance_ms` following last renewal, (b) duplicate/late renewals do not extend beyond `start + D + tolerance_ms`, (c) `lease_ms ≤ max_lease_ms` |
+| `actuator.off_is_idempotent` | `safe_off()` twice (while off, then following an `on`) without error |
+| `actuator.off_is_unconditional` | HAL with ledger rejecting all commands can still turn off device |
+| `actuator.builds_without_io` | factory executes with `socket` blocked, attempting zero network connections |
+| `actuator.classifies_errors` | communication severed: `apply`/`safe_off` raise `NotSent`, `Rejected`, or `Ambiguous`; `read_state` raises `ReadFailed` |
+| `actuator.receives_no_handles` | factory receives `config` only; driver holds zero core objects (outside `neuroedge.sdk`/`errors`) |
 
-Kết quả `pass` · `fail` · `unverifiable` (không `probe()`: bốn phép kiểm động). Không nạp được ⇒ mọi phép kiểm `actuator.*` là `fail`. Mã thoát: §6 của `python_api.md`.
-Báo cáo `--json`: `{distribution, version, files_sha256, editable, sdk, core, checker, results: [{entry_point, check, result, detail}], unimplemented, problem, badge_eligible, exit_code}` —
-`badge_eligible` chỉ đúng khi mọi phép kiểm `pass`, không editable và có `files_sha256` (huy hiệu là TSK-I2c-18); chưa vào `schemas/` (RFC-0016 §3g).
-Corpus `fixtures/compliance/actuators/{valid,invalid}/` + `expected_results.yaml`: mỗi phép kiểm có ít nhất một phản chứng mà nó bắt (`test_every_check_of_every_kind_catches_a_counter_example`).
-P1 chứng minh cách plugin dựng lệnh với giao thức thiết bị trên bản giả, **không** chứng minh phần sụn thật tôn trọng lệnh (RFC-0018 §3e).
+Results `pass` · `fail` · `unverifiable` (missing `probe()`: four dynamic checks). Failed load ⇒ all `actuator.*` checks `fail`. Exit codes: §6 of `python_api.md`.
+Report `--json`: `{distribution, version, files_sha256, editable, sdk, core, checker, results: [{entry_point, check, result, detail}], unimplemented, problem, badge_eligible, exit_code}` —
+`badge_eligible` true strictly when all checks `pass`, non-editable, and `files_sha256` present (badges are TSK-I2c-18); not yet in `schemas/` (RFC-0016 §3g).
+Corpus `fixtures/compliance/actuators/{valid,invalid}/` + `expected_results.yaml`: each check catches at least one counter-example (`test_every_check_of_every_kind_catches_a_counter_example`).
+P1 proves how plugins construct protocol commands on doubles, **not** that physical firmware honors commands (RFC-0018 §3e).

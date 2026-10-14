@@ -1,86 +1,86 @@
-# NeuroEdge — tài liệu cho người dùng
+# NeuroEdge — user documentation
 
-NeuroEdge hướng tới là **nơi biến ý định thành sản phẩm vật lý có AI** — dựng, chạy an
-toàn, chia sẻ và bán (Q-72; hướng đã chốt, phần ba vòng và NeuroEdge Blueprint **chưa có mã**).
-Phần có trong kho hôm nay là lõi **Action Contract**, lớp niềm tin của hướng đó: mọi hành động
-ra phần cứng đi qua một *gate* đã đóng băng lược đồ, chạy được ở các môi trường ngang hàng
-(`sim`, `linux`, `esp32s3`) mà không rẽ nhánh logic theo target.
+NeuroEdge aims to be **the place to turn intent into AI physical products** — build, run
+safely, share and sell (Q-72; direction decided, the three flywheels and NeuroEdge Blueprint **have no code yet**).
+What is in the repository today is the **Action Contract** core, the trust layer of that direction: every action
+to hardware passes through a *gate* with a frozen schema, runnable across peer environments
+(`sim`, `linux`, `esp32s3`) without target-specific branching logic.
 
-Mỗi sự thật trong kho có **đúng một nơi** (`CONTRIBUTING.md` §8.1). Bản đồ này
-trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác dẫn mã, không chép lại.
+Every truth in the repository has **exactly one place** (`CONTRIBUTING.md` §8.1). This map
+answers the question *"which file to read to know X"* — other files link to code, not duplicate.
 
-## Đọc gì theo nhu cầu
+## What to read based on needs
 
-| Bạn cần | Đọc | Ghi chú |
+| You need | Read | Notes |
 |:---|:---|:---|
-| **Mới tới** | | |
-| Hệ thống gồm gì, hôm nay chạy được gì, đọc gì tiếp — bằng lời thường, không mã | [`bat-dau.md`](bat-dau.md) | đọc đầu tiên, 5 phút |
-| **Chạy thử** | | |
-| Cài đặt và chạy test | [`python/README.md`](../../python/README.md) | venv + `pip install -e '.[dev]'` |
-| Toàn bộ lệnh CLI và đầu ra kỳ vọng | [`CHANGELOG.md`](../../CHANGELOG.md) §2 | nguồn duy nhất cho cú pháp lệnh |
-| Sản phẩm làm được gì, trên môi trường nào, và thử từng bước ra sao | [`huong-dan.md`](huong-dan.md) | năng lực theo nhóm (§3–§4) và kịch bản thử từng bước (§5) |
-| Trạng thái hiện tại | [`trang-thai.md`](trang-thai.md) | máy sinh từ roadmap §0 |
-| Dựng thiết bị thật từ năm kit (BOM, sơ đồ đấu dây, từ hộp tới chạy thật) | [`kit-phan-cung.md`](kit-phan-cung.md) | khoá cửa villa, trợ lý giọng nói, giám sát phòng máy, camera cổng, rèm cửa; chưa kiểm trên phần cứng thật |
-| Thử với đối tác: che Home Assistant, agent Python hay API thiết bị bằng một gate (đợt thử, Q-70) | [`doi-tac/README.md`](doi-tac/README.md) | ba hướng dẫn chạy được từ wheel, trang giới hạn, mẫu phản hồi; danh sách thoả thuận và buổi đo ở [`docs/business/doi-tac/`](../business/doi-tac/buoi-do.md) |
-| Nạp agent của mình lên ESP32-S3-BOX-3 (hoặc QEMU) | [`nap-firmware.md`](nap-firmware.md) | `build --target esp32s3` → `idf.py flash`; nơi duy nhất của thủ tục nạp |
-| Chat với nhà: nối bộ não NeuroClaw với hộp, chọn bộ não mở hay khoanh vùng | [`chat-voi-nha.md`](chat-voi-nha.md) | chạy với `sim`; khoá và token của script demo |
-| Chạy bộ não và gate trên một ESP32-S3 (Q-79): bảng điều khiển serial, safe mode, nơi lưu token và key | [`esp32-mot-chip.md`](esp32-mot-chip.md) | giai đoạn 1 và NeuroClaw-ESP trên QEMU; nhúng vào firmware và Wi-Fi thật chờ bo |
-| **Hiểu sản phẩm** | | |
-| Yêu cầu `FR-*` / `NFR-*` | [`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) | sổ quyết định là §15 (mã `Q-N`) |
-| Định vị Q-72: ba vòng dựng · chạy · chia sẻ và bán, agent vận hành, NeuroEdge Blueprint, cổng nhu cầu 8 tuần | [`proposal-blueprint-2026-10-11.md`](../business/proposal-blueprint-2026-10-11.md) | đề xuất đã chốt hướng; quyết định ở PRD §15 Q-72; chưa có mã |
-| Đặc tả API, gate (Phụ lục B), HAL, vết ghi | [`core_contracts.md`](../spec/core_contracts.md) | |
-| Giải mã mã viết tắt (`FR-*`, `Q-N`, `A1`, `CEO-X1`…) | [`thuat-ngu.md`](thuat-ngu.md) | nơi duy nhất |
-| Vì sao Giai đoạn 1 đi "wedge `sim` trước" | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` (đã xoá; `git show 7626b62:docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`) | lịch sử, đóng băng 2026-09-23 — kế hoạch hiện hành ở roadmap |
-| Biên bản các vòng review | `docs/archive/` (đã xoá, xem lịch sử git) | lưu trữ, không quy phạm |
-| Dashboard sản phẩm cho CPO (tiến độ, mốc, việc chờ người, quyết định) | [`docs/business/cpo-dashboard.html`](../business/cpo-dashboard.html) | mở bằng trình duyệt; sinh từ roadmap — đừng sửa tay |
-| Cổng nhu cầu 2026-10-25 (phỏng vấn, demo, chấm điểm) | [`docs/business/cong-nhu-cau-2026-10-25/`](../business/cong-nhu-cau-2026-10-25/README.md) | tài liệu kinh doanh; dữ liệu cho cổng nhu cầu 8 tuần (Q-72, đảo Q-56) |
-| Kế hoạch: increment I0–I18 (kèm I2a, I2b, I3a, I4a, I5a), việc gì làm khi nào, ngày dự báo | [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) | roadmap duy nhất (Q-39); bảng increment ở §0.2 |
-| Thiết kế NeuroEdge Lab (lab qua MCP) | [`lab_mcp.md`](../spec/lab_mcp.md) | Khối N0 → N7; increment I4a, I5a ở roadmap (Q-55, Q-71); wireframe ở [`wireframe/`](../../wireframe/README.md) |
-| Ghi chú thiết kế — robot phân tầng (FOFOCA) | `docs/architecture/vi/15-target-architecture.md` §4.3 · RFC nháp [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) | chặng W0–W4; increment I14 ở roadmap (Q-32), riêng khối W1 ở I2a, I3a (Q-53); RFC node chưa cấp số |
-| **Đóng góp** | | |
-| Quy ước, quy trình, hoàn thành task | [`CONTRIBUTING.md`](../../CONTRIBUTING.md) | §8 là checklist bắt buộc |
-| Đổi `schemas/` (lược đồ đã đóng băng) | [`docs/rfc/README.md`](../rfc/README.md) | quy trình RFC |
-| Việc đã xem xét và hoãn | [`TODOS.md`](../../TODOS.md) | mỗi mục kèm mốc kích hoạt |
-| Phát hành: tag nội bộ trước I6, PyPI từ I6 | [`docs/release.md`](../release.md) | đẩy tag; công tắc PyPI chỉ bật ở I6 |
-| Agent AI đọc gì trước | [`CLAUDE.md`](../../CLAUDE.md) | |
-| **Tham chiếu** | | |
-| Lược đồ, gate mẫu, vết ghi, bo mạch | `schemas/` · `gates/` · `fixtures/` · `boards/` | artifact máy đọc |
-| Tool call, MCP, xác nhận `ask` (Gated Tool Profile) | [`docs/spec/tool_calling.md`](../spec/tool_calling.md) | nơi duy nhất cho tool call |
-| Máy trạng thái hội thoại: lượt, cắt lời, wake-word, STT/TTS, STT dự phòng | [`docs/spec/voice_fsm.md`](../spec/voice_fsm.md) | quy phạm cho cả Python lẫn chip |
-| Giao diện thiết bị: màn hình, quy tắc ngôn ngữ, ảnh golden | [`docs/spec/ui.md`](../spec/ui.md) | quy tắc ngôn ngữ ở §2 |
-| Đường tắt qua gate đã chặn, và điều ngoài phạm vi | [`docs/spec/threat_model.md`](../spec/threat_model.md) | kèm tên test |
-| Mỗi nguyên thủy HAL × target: chạy bằng gì, kiểm ở đâu | [`docs/spec/simulation_coverage.md`](../spec/simulation_coverage.md) | Q-21, Q-22 |
-| Ràng buộc MCU cho HAL | [`docs/spec/hal_mcu_review.md`](../spec/hal_mcu_review.md) | RB-1…RB-4 |
-| Số đo bộ nhớ trên `esp32s3` | [`docs/reports/memory_spike_report.md`](../reports/memory_spike_report.md) | TSK-S1-10 |
+| **Newcomer** | | |
+| What the system has, what runs today, what to read next — in plain words, no code | [`bat-dau.md`](bat-dau.md) | read first, 5 minutes |
+| **Try it out** | | |
+| Installation and running tests | [`python/README.md`](../../python/README.md) | venv + `pip install -e '.[dev]'` |
+| All CLI commands and expected outputs | [`CHANGELOG.md`](../../CHANGELOG.md) §2 | sole source for command syntax |
+| What the product does, in which environments, and step-by-step testing | [`huong-dan.md`](huong-dan.md) | capabilities by group (§3–§4) and step-by-step testing scenarios (§5) |
+| Current status | [`trang-thai.md`](trang-thai.md) | machine-generated from roadmap §0 |
+| Build real devices from five kits (BOM, wiring diagrams, from out-of-the-box to live run) | [`kit-phan-cung.md`](kit-phan-cung.md) | villa smart lock, voice assistant, machine room monitor, gate camera, window blinds; unverified on real hardware |
+| Partner pilots: shield Home Assistant, Python agents, or device APIs with a gate (pilot run, Q-70) | [`doi-tac/README.md`](doi-tac/README.md) | three runnable guides from wheel, boundary pages, feedback form; agreement list and test sessions in [`docs/business/doi-tac/`](../business/doi-tac/buoi-do.md) |
+| Flash your agent onto ESP32-S3-BOX-3 (or QEMU) | [`nap-firmware.md`](nap-firmware.md) | `build --target esp32s3` → `idf.py flash`; sole source for flashing procedure |
+| Chat with home: connect the NeuroClaw brain to the box, choose open or bounded brain | [`chat-voi-nha.md`](chat-voi-nha.md) | runs with `sim`; keys and tokens for demo script |
+| Run brain and gate on a single ESP32-S3 (Q-79): serial control console, safe mode, storage for tokens and keys | [`esp32-mot-chip.md`](esp32-mot-chip.md) | Stage 1 and NeuroClaw-ESP on QEMU; firmware embedding and real Wi-Fi awaiting boards |
+| **Understand the product** | | |
+| `FR-*` / `NFR-*` requirements | [`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) | decision log is §15 (`Q-N` codes) |
+| Q-72 positioning: three flywheels build · run · share and sell, operator agent, NeuroEdge Blueprint, 8-week demand gate | [`proposal-blueprint-2026-10-11.md`](../business/proposal-blueprint-2026-10-11.md) | direction decided proposal; decision in PRD §15 Q-72; no code yet |
+| API specification, gate (Appendix B), HAL, traces | [`core_contracts.md`](../spec/core_contracts.md) | |
+| Decoder for abbreviations (`FR-*`, `Q-N`, `A1`, `CEO-X1`…) | [`thuat-ngu.md`](thuat-ngu.md) | sole source |
+| Why Stage 1 went "`sim` wedge first" | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` (deleted; `git show 7626b62:docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`) | historical, frozen 2026-09-23 — current plan in roadmap |
+| Minutes of review rounds | `docs/archive/` (deleted, see git history) | archive, non-normative |
+| Product dashboard for CPO (progress, milestones, pending tasks, decisions) | [`docs/business/cpo-dashboard.html`](../business/cpo-dashboard.html) | open in browser; generated from roadmap — do not edit manually |
+| Demand gate 2026-10-25 (interviews, demos, scoring) | [`docs/business/cong-nhu-cau-2026-10-25/`](../business/cong-nhu-cau-2026-10-25/README.md) | business documentation; data for 8-week demand gate (Q-72, reversing Q-56) |
+| Plan: increment I0–I18 (including I2a, I2b, I3a, I4a, I5a), what to do when, forecast dates | [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) | sole roadmap (Q-39); increment table in §0.2 |
+| NeuroEdge Lab design (lab via MCP) | [`lab_mcp.md`](../spec/lab_mcp.md) | Block N0 → N7; increment I4a, I5a in roadmap (Q-55, Q-71); wireframe in [`wireframe/`](../../wireframe/README.md) |
+| Design notes — hierarchical robot (FOFOCA) | `docs/architecture/vi/15-target-architecture.md` §4.3 · draft RFC [`draft-rfc-node-giao-thuc-dieu-phoi.md`](../rfc/draft-rfc-node-giao-thuc-dieu-phoi.md) | stages W0–W4; increment I14 in roadmap (Q-32), specifically block W1 in I2a, I3a (Q-53); node RFC not yet numbered |
+| **Contributing** | | |
+| Conventions, processes, task completion | [`CONTRIBUTING.md`](../../CONTRIBUTING.md) | §8 is the mandatory checklist |
+| Modifying `schemas/` (frozen schemas) | [`docs/rfc/README.md`](../rfc/README.md) | RFC process |
+| Reviewed and deferred work | [`TODOS.md`](../../TODOS.md) | each item includes trigger milestone |
+| Release: internal tag before I6, PyPI from I6 | [`docs/release.md`](../release.md) | push tag; PyPI switch turns on only at I6 |
+| What AI agents read first | [`CLAUDE.md`](../../CLAUDE.md) | |
+| **Reference** | | |
+| Schemas, sample gates, traces, boards | `schemas/` · `gates/` · `fixtures/` · `boards/` | machine-readable artifacts |
+| Tool calling, MCP, `ask` confirmation (Gated Tool Profile) | [`docs/spec/tool_calling.md`](../spec/tool_calling.md) | sole source for tool calls |
+| Voice conversation state machine: turns, barge-in, wake-word, STT/TTS, fallback STT | [`docs/spec/voice_fsm.md`](../spec/voice_fsm.md) | normative for both Python and chip |
+| Device UI: screens, language rules, golden images | [`docs/spec/ui.md`](../spec/ui.md) | language rules in §2 |
+| Blocked bypass paths around gate, and out-of-scope items | [`docs/spec/threat_model.md`](../spec/threat_model.md) | includes test names |
+| Each HAL primitive × target: execution mechanism, test locations | [`docs/spec/simulation_coverage.md`](../spec/simulation_coverage.md) | Q-21, Q-22 |
+| MCU constraints for HAL | [`docs/spec/hal_mcu_review.md`](../spec/hal_mcu_review.md) | RB-1…RB-4 |
+| Memory footprint measurements on `esp32s3` | [`docs/reports/memory_spike_report.md`](../reports/memory_spike_report.md) | TSK-S1-10 |
 
-## Bố cục kho
+## Repository layout
 
 ```text
 neuroedge-init/
-├── schemas/            lược đồ đóng băng (chỉ RFC mới sửa được)
-├── gates/              gate mẫu phân giải được
-├── boards/             khai báo năng lực bo mạch (TOML)
-├── fixtures/           vết ghi chuẩn mực + corpus phản chứng
+├── schemas/            frozen schemas (modifiable only via RFC)
+├── gates/              resolvable sample gates
+├── boards/             board capability declarations (TOML)
+├── fixtures/           canonical traces + counterexample corpus
 ├── python/             SDK: hal/ · engine/ · cli/ · tests/
-├── targets/esp32s3/    firmware ESP-IDF (ui/: giao diện LVGL và ảnh golden)
-├── pipewire/           cấu hình PipeWire khử vang cho micro/loa trên linux
-├── scripts/            công cụ CI (sinh tài liệu, kiểm dung lượng firmware)
+├── targets/esp32s3/    ESP-IDF firmware (ui/: LVGL interface and golden images)
+├── pipewire/           PipeWire echo cancellation configuration for mic/speaker on linux
+├── scripts/            CI tools (doc generation, firmware size checks)
 └── docs/
-    ├── user/           tài liệu cho người dùng  ← bạn đang ở đây
-    ├── rfc/            thay đổi lược đồ
-    ├── spec/           đặc tả và ràng buộc
-    ├── reports/        báo cáo đo
-    ├── business/       tài liệu kinh doanh (bộ phỏng vấn)
-    ├── release.md      quy trình phát hành (tag nội bộ, PyPI từ I6)
-    └── archive/        lưu trữ: biên bản review, thiết kế đã đóng băng
+    ├── user/           user documentation  ← you are here
+    ├── rfc/            schema changes
+    ├── spec/           specifications and constraints
+    ├── reports/        measurement reports
+    ├── business/       business documentation (interview pack)
+    ├── release.md      release process (internal tags, PyPI from I6)
+    └── archive/        archive: review minutes, frozen designs
 ```
 
-## Quy ước
+## Conventions
 
-- Tiếng Việt; mã, lệnh, đường dẫn giữ nguyên.
-- Dẫn mã khi nhắc một sự thật (`TSK-S2-03`, `Q-17`, `RFC-0004`, `FR-GATE-03`,
-  `TODOS.md #15`) — không chép lại nội dung.
-- Lịch bằng increment (`I3`) hoặc ngày tuyệt đối (`2026-09-28`); không dùng "tuần sau"
-  hay nhãn tuần/tháng đánh số (`CONTRIBUTING.md` §8.3).
-- `trang-thai.md` do máy sinh: sửa [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md)
-  §0 rồi chạy `python3 scripts/gen_user_status.py`, **đừng sửa tay**.
+- English; identifiers, commands, paths kept as-is.
+- Cite codes when referencing a truth (`TSK-S2-03`, `Q-17`, `RFC-0004`, `FR-GATE-03`,
+  `TODOS.md #15`) — do not duplicate content.
+- Schedule using increment (`I3`) or absolute date (`2026-09-28`); do not use "next week"
+  or numbered week/month labels (`CONTRIBUTING.md` §8.3).
+- `trang-thai.md` is machine-generated: edit [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md)
+  §0 and run `python3 scripts/gen_user_status.py`, **do not edit manually**.

@@ -1,68 +1,68 @@
-# 05 · Mức mã: gate → token → HAL (C4 L4)
+# 05 · Code level: gate → token → HAL (C4 L4)
 
-> **Phạm vi:** xương sống an toàn ở mức hàm — một gate đi từ tệp YAML tới một lệnh chân, trên host
-> (Python) và trên chip (C). **Nguồn:** `python/neuroedge/engine/`, `python/neuroedge/actions/`,
-> `python/neuroedge/hal/`, `targets/esp32s3/components/ne_gate/`; quy phạm: `docs/spec/core_contracts.md` Phụ lục B,
+> **Scope:** function-level safety backbone — how a gate travels from a YAML file to a pin command, on host
+> (Python) and on chip (C). **Sources:** `python/neuroedge/engine/`, `python/neuroedge/actions/`,
+> `python/neuroedge/hal/`, `targets/esp32s3/components/ne_gate/`; normative: `docs/spec/core_contracts.md` Appendix B,
 > RFC-0001, 0003, 0004, 0005, 0006.
 
-**Đọc chương này để làm gì:** Dành cho kỹ sư phần mềm và kỹ sư an toàn cần nắm chi tiết đường đi từ tệp gate YAML tới lệnh điều khiển chân phần cứng (C4 L4). Trả lời câu hỏi: gate được phân giải, biên dịch thành cây nhị phân `NETR`, duyệt và cấp token dùng một lần như thế nào trên cả Python lẫn C. Nên đọc [`00`](00-overview.md) và [`03`](03-component-host-c4l3.md) trước, và đọc [`06`](06-runtime-flows.md) sau để xem các luồng lúc chạy.
+**Purpose of this chapter:** For software and safety engineers who need function-level details of the path from YAML gate files to hardware pin commands (C4 L4). It answers: how gates are resolved, compiled into binary `NETR` trees, evaluated, and granted one-time tokens across both Python and C. Read [`00`](00-overview.md) and [`03`](03-component-host-c4l3.md) first, and read [`06`](06-runtime-flows.md) afterward for runtime flows.
 
-## 1. Chuỗi xương sống
+## 1. Backbone pipeline
 
-![E-05 · Xương sống gate](../assets/svg/E-05-gate-spine.svg)
-*Hình E-05 — Từ tệp gate tới chân: phân giải và biên dịch lúc build, lượng giá và token lúc chạy, cùng ngữ nghĩa trên host và chip.*
+![E-05 · Gate spine](../assets/svg/E-05-gate-spine.svg)
+*Figure E-05 — From gate file to pins: build-time resolution and compilation, runtime evaluation and tokens, with identical semantics on host and chip.*
 
-**Cách đọc sơ đồ:** Các khối thể hiện các giai đoạn biến đổi từ chính sách YAML sang lệnh phần cứng; mũi tên nét liền là luồng xử lý tuần tự qua từng bước, mũi tên nét đứt liên kết dữ liệu phụ trợ. Điều cốt lõi cần nhớ: chỉ có một đường đi duy nhất từ ý định tới chân phần cứng (`dispatch()` → gate → token → HAL), không có đường tắt nào bỏ qua gate.
+**How to read the diagram:** Boxes represent stages transforming YAML policies into hardware commands; solid arrows show sequential processing flow through each step, dashed arrows link auxiliary data. Core takeaway: there is only one path from intent to hardware pins (`dispatch()` → gate → token → HAL), with no shortcuts bypassing the gate.
 
-| Giai đoạn | Khi nào | Host (Python) | Chip (C) |
+| Phase | When | Host (Python) | Chip (C) |
 |:---|:---|:---|:---|
-| Phân giải | build, lint, nạp phiên | `gate_resolver.resolve_gate_file` → `ResolvedGate` | — (làm trên host) |
-| Băm | build | `canonical.gate_digest` (JCS + SHA-256) | digest nằm trong header `NETR` |
-| Biên dịch | build | `decision_tree.compile_tree` → cây JSON; `binary_tree.encode` → `NETR` v1 | `ne_tree_load` kiểm và đọc tại chỗ |
-| Gom dữ kiện | mỗi lần lượng giá | `ActionContractEngine._gather` qua `FactSource` | người gọi đưa `ne_fact[]` (chỉ số miền) |
-| Lượng giá | mỗi lần lượng giá | `decision_tree.walk` | `ne_evaluate` / `ne_decide` |
-| Cấp token | sau `ALLOW` | `TokenLedger.issue` | `ne_token_issue` |
-| Cho phép chân | mỗi lệnh chân | `TokenLedger.authorize` qua HAL | `ne_token_authorize` |
-| Đóng token | khi `c.do()` trả về | `TokenLedger.close` | `ne_token_close` |
+| Resolution | build, lint, session load | `gate_resolver.resolve_gate_file` → `ResolvedGate` | — (done on host) |
+| Hashing | build | `canonical.gate_digest` (JCS + SHA-256) | digest embedded in `NETR` header |
+| Compilation | build | `decision_tree.compile_tree` → JSON tree; `binary_tree.encode` → `NETR` v1 | `ne_tree_load` validates and reads in place |
+| Fact gathering | each evaluation | `ActionContractEngine._gather` via `FactSource` | caller supplies `ne_fact[]` (domain indices) |
+| Evaluation | each evaluation | `decision_tree.walk` | `ne_evaluate` / `ne_decide` |
+| Token issuance | after `ALLOW` | `TokenLedger.issue` | `ne_token_issue` |
+| Pin authorization | each pin command | `TokenLedger.authorize` via HAL | `ne_token_authorize` |
+| Token closure | when `c.do()` returns | `TokenLedger.close` | `ne_token_close` |
 
-## 2. Phân giải: từ nhiều tệp tới một chính sách
+## 2. Resolution: from multiple files to one policy
 
-`resolve_gate_file` đọc gate, theo `extends` qua `GateRegistry` (`neuroedge://gates/<path>@<ver>` →
-`<gates>/<path>@<ver>.yaml`), rồi gộp chuỗi từ gốc tới lá. Phân giải là **hàm thuần**: không đồng hồ,
-không mạng, không ngẫu nhiên (bất biến 4).
+`resolve_gate_file` reads a gate, traverses `extends` via `GateRegistry` (`neuroedge://gates/<path>@<ver>` →
+`<gates>/<path>@<ver>.yaml`), and merges the chain from root to leaf. Resolution is a **pure function**: no clocks,
+no network, no randomness (Invariant 4).
 
-| Luật | Nội dung | Vi phạm ⇒ |
+| Rule | Content | Violation ⇒ |
 |:---|:---|:---|
-| Nguyên tắc 1 | Tiêu chí `evaluate` được kế thừa; định nghĩa lại bị từ chối | `NE2003` |
-| Nguyên tắc 2 | `allow_when` chỉ được **siết**: tập giá trị nhận được phải là tập con của cha, ngưỡng tin cậy ≥ của cha | `NE2003` |
-| Nguyên tắc 3 | Được thêm tiêu chí mới | — |
-| Nguyên tắc 4 | `fail: open` không bao giờ được kế thừa | — (tự về `closed`) |
-| Nguyên tắc 5 | Tối đa 3 tài liệu trong chuỗi; không vòng | `NE2003` |
-| RFC-0004 R1–R3 | `p95` con ≤ cha; chuỗi đã `closed` không mở lại; con không thêm `degrade` hay đổi `fallback_action` | `NE2003` |
-| RFC-0005 | Giới hạn tham số chỉ được thu hẹp; bỏ qua ⇒ kế thừa | `NE2003` |
-| RFC-0006 | `confirms` của con là tập con của cha; mỗi mục phải là tiêu chí trong `allow_when` | `NE2003` |
-| `allow_when` dạng chuỗi (CEL) | Bị từ chối ở mọi nơi hôm nay (TSK-S2-06 hoãn, `TODOS.md` #42) | `NE2002` |
+| Principle 1 | `evaluate` criteria are inherited; redefinitions are rejected | `NE2003` |
+| Principle 2 | `allow_when` can only **tighten**: admitted value set must be subset of parent, confidence threshold ≥ parent | `NE2003` |
+| Principle 3 | Adding new criteria is permitted | — |
+| Principle 4 | `fail: open` is never inherited | — (reverts to `closed`) |
+| Principle 5 | Maximum 3 documents in chain; no cycles | `NE2003` |
+| RFC-0004 R1–R3 | Child `p95` ≤ parent; `closed` chains cannot reopen; child cannot add `degrade` or change `fallback_action` | `NE2003` |
+| RFC-0005 | Argument limits can only narrow; omitted ⇒ inherited | `NE2003` |
+| RFC-0006 | Child `confirms` must be subset of parent; each entry must be a criterion in `allow_when` | `NE2003` |
+| String-form `allow_when` (CEL) | Rejected everywhere today (TSK-S2-06 deferred, `TODOS.md` #42) | `NE2002` |
 
-Toán tử của `allow_when` theo kiểu tiêu chí (`constraints.py`): `bool` — giá trị trần hoặc
-`{confidence_gte: x}`; `level` — giá trị trần, `eq`, `lte`, `gte`; `choice` — giá trị trần, `eq`, `in`,
-`not_in`. Toán tử lạ ⇒ `NE2002`.
+Operators for `allow_when` depend on criterion kind (`constraints.py`): `bool` — bare value or
+`{confidence_gte: x}`; `level` — bare value, `eq`, `lte`, `gte`; `choice` — bare value, `eq`, `in`,
+`not_in`. Unrecognized operators ⇒ `NE2002`.
 
-Kết quả là `ResolvedGate`; `to_artifact()` là thứ được chuẩn tắc hoá và băm: `schema`, `name`,
-`version`, `resolved_from` (chuỗi từ gốc), `evaluate`, `allow_when`, `on_block`, `budget` (luôn có
-`fail` tường minh), và `arguments` nếu có. Digest này (`gate_digest`) xuất hiện trong vết ghi, trong
-header `NETR`, và trong token.
+The result is a `ResolvedGate`; `to_artifact()` produces what is canonicalized and hashed: `schema`, `name`,
+`version`, `resolved_from` (chain from root), `evaluate`, `allow_when`, `on_block`, `budget` (always with
+explicit `fail`), and `arguments` if present. This digest (`gate_digest`) appears in traces, in
+`NETR` headers, and inside tokens.
 
-> Chú ý hai digest khác nhau: `digests.lock` băm **tài liệu YAML như được viết** (khoá tệp gate chuẩn
-> mực), còn `gate_digest` băm **gate đã phân giải** (định danh chính sách đang chạy).
+> Note the distinction between two digests: `digests.lock` hashes **the YAML document as written** (locking canonical
+> gate files), whereas `gate_digest` hashes **the resolved gate** (identifying the active running policy).
 
-## 3. Biên dịch: cây quyết định và `NETR` v1
+## 3. Compilation: decision tree and `NETR` v1
 
-`compile_tree` tạo cây JSON nội bộ (`neuroedge.decision_tree/v1`, không đóng băng): `criteria_order`
-theo thứ tự từ gốc, mỗi nút mang `kind`, `domain`, tập `admitted` và `confidence_floor`. Miền của `bool`
-là `false, true`; của `level` là các mức đã khai; của `choice` là các lựa chọn **đã sắp xếp**.
+`compile_tree` generates an internal JSON tree (`neuroedge.decision_tree/v1`, unfrozen): `criteria_order`
+in root-to-leaf order, where each node carries `kind`, `domain`, `admitted` set, and `confidence_floor`. The domain of `bool`
+is `false, true`; of `level` is declared levels; of `choice` is **sorted** choices.
 
-`binary_tree.encode` ghi cây đó thành `NETR` v1 — bố cục nhị phân đóng băng bởi RFC-0003: little-endian,
-không con trỏ, chỉ offset, bản ghi cố định kích thước.
+`binary_tree.encode` writes this tree into `NETR` v1 — a binary layout frozen by RFC-0003: little-endian,
+no pointers, offsets only, fixed-size records.
 
 ```mermaid
 flowchart LR
@@ -75,18 +75,18 @@ flowchart LR
     H --> N --> M --> A --> E --> S
 ```
 
-**Cách đọc sơ đồ:** Các hộp đại diện cho từng phân vùng liên tục trong tệp nhị phân `NETR` v2 (từ header 80 byte đến chuỗi UTF-8); mũi tên nét liền biểu thị thứ tự sắp xếp cố định trong bộ nhớ. Điều cốt lõi cần nhớ: bố cục nhị phân không chứa con trỏ mà dùng offset cố định, cho phép walker C đọc trực tiếp tại chỗ từ flash mà không cần cấp phát động (stack ≤ 512 byte).
+**How to read the diagram:** Boxes represent contiguous sections within the `NETR` v2 binary file (from 80-byte header to UTF-8 strings); solid arrows show fixed layout ordering in memory. Core takeaway: the binary layout contains no pointers but uses fixed offsets, allowing the C walker to read directly in place from flash without dynamic allocation (stack ≤ 512 bytes).
 
-Kích thước tệp đúng bằng `80 + 24·n + 48·m + 32·a + 16·e + strings` (`m` tiêu chí `numeric`); giới hạn: tối đa 32 nút, miền 32 giá
-trị, 32 tiêu chí số, 16 tham số, 64 enum, 16 384 byte chuỗi (khoảng 21 KB). Gate vượt giới hạn bị từ chối **lúc build**
-(`NE2002`), không bao giờ tới chip. Đổi bố cục cần RFC và tăng `layout_version`; walker v2 từ chối tệp
-v1. Bảng byte đầy đủ: [`docs/rfc/0009-tieu-chi-so-numeric.md`](../../rfc/0009-tieu-chi-so-numeric.md) §3d (v1: RFC-0003).
+File size equals exactly `80 + 24·n + 48·m + 32·a + 16·e + strings` (`m` `numeric` criteria); limits: maximum 32 nodes, domain of 32
+values, 32 numeric criteria, 16 arguments, 64 enums, 16,384 string bytes (approx. 21 KB). Gates exceeding limits are rejected **at build time**
+(`NE2002`), never reaching chips. Changing layout requires an RFC and increments `layout_version`; v2 walker rejects v1
+files. Full byte table: [`docs/rfc/0009-tieu-chi-so-numeric.md`](../../rfc/0009-tieu-chi-so-numeric.md) §3d (v1: RFC-0003).
 
-`ne_tree_load` từ chối tệp hỏng trước khi duyệt: sai magic, sai phiên bản, sai CRC, vượt giới hạn, sai
-cấu trúc (offset ngoài tệp, miền `bool` khác 2, ngưỡng NaN, `confirm_mask` khi không phải `ask`…). Không
-tải được cây ⇒ không có `ALLOW`.
+`ne_tree_load` rejects corrupt files before traversal: invalid magic, version mismatch, CRC error, out-of-bounds fields, structural
+errors (offsets outside file, `bool` domain not 2, NaN thresholds, `confirm_mask` when not `ask`…). Failure to
+load tree ⇒ no `ALLOW`.
 
-## 4. Lượng giá
+## 4. Evaluation
 
 ### 4.1 Host: `ActionContractEngine.evaluate`
 
@@ -116,30 +116,30 @@ flowchart TB
     OB --> R
 ```
 
-**Cách đọc sơ đồ:** Hình thoi là các điểm kiểm tra rẽ nhánh, hình chữ nhật là các bước xử lý và hành động; mũi tên nét liền chỉ hướng đi theo kết quả kiểm tra (yes/no, closed/open, all satisfied/first failure). Điều cốt lõi cần nhớ: `walk` là hàm thuần; thiếu dữ kiện hoặc ngoài miền ⇒ `BLOCK`; quá hạn hoặc mất nguồn ⇒ áp `budget.fail` — `closed` (mặc định) chặn, `open` chỉ cho `ALLOW` khi không có dữ kiện đã biết là "không".
+**How to read the diagram:** Diamonds represent branch evaluation points, rectangles represent processing steps and actions; solid arrows trace paths by test outcome (yes/no, closed/open, all satisfied/first failure). Core takeaway: `walk` is a pure function; missing or out-of-domain facts ⇒ `BLOCK`; timeout or source loss ⇒ applies `budget.fail` — `closed` (default) blocks, `open` yields `ALLOW` only when no facts are known to have failed.
 
-- **Ngân sách thời gian** là `budget.p95_latency_ms`, tính từ lúc bắt đầu gom dữ kiện; mỗi lần hỏi
-  một `FactSource` bị giới hạn bởi phần ngân sách còn lại. Quá hạn ⇒ `budget_exceeded`; nguồn ném lỗi
-  ⇒ `gate_unreachable`. Hai lý do này là **suy giảm**: chúng áp `budget.fail` và bỏ qua `on_block`.
-- **Duyệt cây** (`walk`) là hàm thuần: `ALLOW` khi và chỉ khi mọi nút được thoả; lý do là lỗi đầu tiên
-  theo `criteria_order`. Không có dữ kiện hoặc giá trị ngoài miền ⇒ `criterion_unavailable`; độ tin cậy
-  không phải xác suất (NaN, `True`, > 1) ⇒ `criterion_unavailable`; có ngưỡng mà không có độ tin cậy
-  ⇒ `confidence_unavailable`; giá trị không được nhận hoặc dưới ngưỡng ⇒ `condition_not_met`.
-- **`fail: open`** chỉ tha những gì *không quyết được*: một dữ kiện đã biết là "không" vẫn chặn
+- **Time budget** is `budget.p95_latency_ms`, measured from start of fact gathering; each query
+  to a `FactSource` is bounded by remaining budget. Timeout ⇒ `budget_exceeded`; exception from source
+  ⇒ `gate_unreachable`. These two reasons are **degradations**: they invoke `budget.fail` and bypass `on_block`.
+- **Tree traversal** (`walk`) is a pure function: `ALLOW` if and only if all nodes are satisfied; reason is first failure
+  in `criteria_order`. Missing fact or value out of domain ⇒ `criterion_unavailable`; confidence
+  not a valid probability (NaN, `True`, > 1) ⇒ `criterion_unavailable`; threshold present without confidence
+  ⇒ `confidence_unavailable`; value not admitted or below threshold ⇒ `condition_not_met`.
+- **`fail: open`** only excuses what *could not be decided*: a fact known to have failed still blocks
   (`known_failure`).
-- **Câu hỏi `ask`** chỉ được mở khi một lời "có" là đủ để đổi `BLOCK` thành `ALLOW` ("answerable"):
-  engine duyệt lại với các tiêu chí `confirms` được miễn.
+- **`ask` questions** are opened only when a "có" (yes) reply is sufficient to change `BLOCK` to `ALLOW` ("answerable"):
+  engine re-evaluates with `confirms` criteria waived.
 
-### 4.2 Chip: `ne_evaluate` và `ne_decide`
+### 4.2 Chip: `ne_evaluate` and `ne_decide`
 
-Cùng thứ tự: giới hạn tham số trước, rồi từng nút theo thứ tự, lỗi đầu tiên thắng; `confirm_mask`
-miễn các tiêu chí được xác nhận. `ne_decide` thêm đường suy giảm: với `NE_DEGRADED_UNREACHABLE` hoặc
-`NE_DEGRADED_BUDGET`, tham số vượt giới hạn vẫn đứng; `fail_open` chỉ tha khi không có dữ kiện nào đã
-biết là hỏng; còn lại chặn với `fail_mode` closed. Mã lý do dùng chung với host
-(`engine/firmware.py::REASONS`): 0 không có, 1 `condition_not_met`, 2 `criterion_unavailable`,
+Identical ordering: argument limits first, then nodes in order, first failure wins; `confirm_mask`
+waives confirmed criteria. `ne_decide` adds degradation paths: with `NE_DEGRADED_UNREACHABLE` or
+`NE_DEGRADED_BUDGET`, argument limit violations still hold; `fail_open` forgives only when no facts are
+known to be failing; otherwise blocks with `fail_mode` closed. Reason codes are shared with host
+(`engine/firmware.py::REASONS`): 0 none, 1 `condition_not_met`, 2 `criterion_unavailable`,
 3 `confidence_unavailable`, 4 `argument_out_of_range`, 5 `gate_unreachable`, 6 `budget_exceeded`.
 
-## 5. Từ phán quyết tới chân
+## 5. From verdict to pins
 
 ```mermaid
 sequenceDiagram
@@ -168,45 +168,45 @@ sequenceDiagram
     end
 ```
 
-**Cách đọc sơ đồ:** Các cột thẳng đứng đại diện cho các lớp từ điều phối (`dispatch`), hội thoại (`Conversation`), động cơ (`Engine`), sổ token (`TokenLedger`), thân hàm action tới HAL; mũi tên nét liền là lời gọi hàm, mũi tên nét đứt là kết quả trả về; khối `alt` rẽ nhánh giữa `BLOCK` và `ALLOW`. Điều cốt lõi cần nhớ: HAL bắt buộc phải nhận được `VerdictToken` hợp lệ từ `TokenLedger` thì mới cấp phát xung điều khiển chân actuator, và mỗi token chỉ dùng được đúng một lần.
+**How to read the diagram:** Vertical lifelines represent layers from dispatch (`dispatch()`), conversation (`Conversation`), engine (`Engine`), token ledger (`TokenLedger`), action function body to HAL; solid arrows are function calls, dashed arrows are return values; `alt` block branches between `BLOCK` and `ALLOW`. Core takeaway: HAL must receive a valid `VerdictToken` from `TokenLedger` before emitting actuator control pulses, and each token can be consumed exactly once.
 
-**Thứ tự kiểm của `authorize`** (host và chip giống nhau):
+**Check order of `authorize`** (identical on host and chip):
 
-| # | Kiểm | Từ chối với |
+| # | Check | Rejection with |
 |:---:|:---|:---|
-| 1 | Là một token (`VerdictToken`; trên chip: con trỏ khác `NULL`) | `not_a_token` · `NE1001` |
-| 2 | Cùng tiến trình (`process_instance_id`); trên chip: cùng `boot_id` | `token_expired` · `NE1002` |
-| 3 | Do chính sổ này phát (trên chip: khớp một khe theo nonce và digest, so sánh thời gian hằng) | `unknown_token` · `NE1001` |
-| 4 | Chân nằm trong tập chân của token | `pin_not_granted` · `NE1001` |
-| 5 | Token chưa đóng, chân chưa dùng | `token_replayed` · `NE1002` |
-| 6 | Chưa quá TTL | `token_expired` · `NE1002` |
+| 1 | Is a token (`VerdictToken`; on chip: non-`NULL` pointer) | `not_a_token` · `NE1001` |
+| 2 | Same process (`process_instance_id`); on chip: same `boot_id` | `token_expired` · `NE1002` |
+| 3 | Issued by this exact ledger (on chip: matches a slot by nonce and digest, constant-time compare) | `unknown_token` · `NE1001` |
+| 4 | Pin is in token's granted pin set | `pin_not_granted` · `NE1001` |
+| 5 | Token not closed, pin unused | `token_replayed` · `NE1002` |
+| 6 | TTL not expired | `token_expired` · `NE1002` |
 
-Mọi lần từ chối ghi `actuator_command_rejected {pin, reason, code}` **trước** khi ném lỗi, và chân
-không đổi. Nonce không bao giờ vào vết ghi.
+Every rejection emits `actuator_command_rejected {pin, reason, code}` **before** raising an error, and pins
+remain unchanged. Nonces never enter traces.
 
-**Đã có (TSK-N2-01):** hook phong bì an toàn vật lý (physical envelope hook — giới hạn tổng thời gian bật và tần suất theo từng chân, khai ở `board.v1` — RFC-0007) nằm trong `HAL.digital_out` giữa bước kiểm tra chân (`require_pin`) và `authorize` (`hal/envelope.py`; token không bị tiêu khi bị từ chối) → [`15`](15-target-architecture.md) §4.2. Token thuê có hạn (nhánh `feat/motion`, TSK-I2a-05): (lease token — quyền điều khiển vận động có thời hạn ngắn, tự động gia hạn khi có lệnh mới qua gate, tự hết hạn để dừng an toàn khi mất liên lạc) cho `motion.*` (Q-37) → [`15`](15-target-architecture.md) §4.3.
+**Implemented (TSK-N2-01):** physical safety envelope hooks (physical envelope hook — total on-time and frequency limits per pin, declared in `board.v1` — RFC-0007) reside in `HAL.digital_out` between pin validation (`require_pin`) and `authorize` (`hal/envelope.py`; tokens are unconsumed upon rejection) → [`15`](15-target-architecture.md) §4.2. Time-bounded lease tokens (`feat/motion` branch, TSK-I2a-05): (lease token — short-lived motion control authority, automatically extended with new gated commands, self-expiring to safe stop upon lost communication) for `motion.*` (Q-37) → [`15`](15-target-architecture.md) §4.3.
 
-**Hôm nay**, mọi bảo đảm thời gian của lớp này hướng về `off`: phong bì tự tắt tại
-`min(thời hạn lệnh, max_continuous_ms)`, lệnh `off` không qua phong bì hay `authorize` (RFC-0007 §3d,
-miễn gate của Q-62), và mức L0–L3 của cơ cấu từ xa là lời hứa về ai làm cơ cấu về `off` (RFC-0018 §3d).
-Riêng `motion.*` đã có `safe_state` `stop`/`hold` (RFC-0011).
+**Today**, all timing guarantees at this layer are directed toward `off`: envelopes shut off automatically at
+`min(command duration, max_continuous_ms)`, `off` commands bypass envelopes and `authorize` (RFC-0007 §3d,
+Q-62 gate exemption), and levels L0–L3 for remote actuators represent promises regarding who brings actuators to `off` (RFC-0018 §3d).
+Specifically, `motion.*` has `safe_state` `stop`/`hold` (RFC-0011).
 
-*Sẽ đổi theo Q-72 (chờ RFC an toàn có điều kiện, `planned · Q-72`, I2d):* mô hình **`safe_state` đối
-xứng**. Mọi cơ cấu có `safe_state` khai trong `board.v1`, mặc định `off`. Phong bì, sổ token và HAL đọc
-mọi bảo đảm là "trở về `safe_state`":
+*Will change under Q-72 (pending conditional safety RFC, `planned · Q-72`, I2d):* symmetric **`safe_state`
+model**. All actuators have `safe_state` declared in `board.v1`, defaulting to `off`. Envelopes, token ledgers, and HAL read
+all guarantees as "return to `safe_state`":
 
-| Bảo đảm | Hôm nay | Theo Q-72 (planned) |
+| Guarantee | Today | Under Q-72 (planned) |
 |:---|:---|:---|
-| Tự tắt tại `min(thời hạn, max_continuous_ms)` | Về `off` | Về `safe_state` |
-| Lệnh không qua phong bì, không cần token (Q-62) | Lệnh về `off`, `duty = 0`, `safe_state` của `motion.*`, lệnh HAL tự phát | Mọi lệnh **về** `safe_state` |
-| Lệnh bị gate, phong bì và token giới hạn | Lệnh bật | Mọi lệnh **rời** `safe_state` |
-| Lease, mức L0–L3 (RFC-0018) | Ai đưa cơ cấu về `off` | Ai đưa cơ cấu về `safe_state` |
+| Auto-off at `min(duration, max_continuous_ms)` | To `off` | To `safe_state` |
+| Commands bypassing envelope, requiring no token (Q-62) | Commands to `off`, `duty = 0`, `safe_state` of `motion.*`, autonomous HAL commands | All commands **toward** `safe_state` |
+| Commands constrained by gate, envelope, and token | Turn-on commands | All commands **away from** `safe_state` |
+| Lease, levels L0–L3 (RFC-0018) | Who returns actuator to `off` | Who returns actuator to `safe_state` |
 
-`safe_state` khác `off` chỉ khai được trong `board.v1`, không trong hợp đồng, gate hay Blueprint, và chỉ
-khi phần cứng giữ nó: `safe_state: on` hiện thực bằng đấu dây mặc định bật (rơ-le thường đóng) khai làm
-khoá liên động phần cứng, không bằng phần mềm tự bật. Không thêm đường nào ngoài gate. Profile hiện có
-(`off`; `motion.*` `stop`/`hold`) giữ nguyên hành vi. Phải sửa `TODOS.md` #58 trước (bộ đọc `board.v1`
-cũ lặng lẽ bỏ qua khoá lạ, kể cả khoá an toàn). Quyết định: [Q-72](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định).
+A `safe_state` differing from `off` can only be declared in `board.v1`, not in contracts, gates, or Blueprints, and only
+when hardware guarantees it: `safe_state: on` is implemented via normally-on wiring (normally-closed relays) declared as
+hardware interlocks, not by software actively driving it on. No external bypasses around gates are added. Existing profiles
+(`off`; `motion.*` `stop`/`hold`) retain their behavior. `TODOS.md` #58 must be fixed first (older `board.v1`
+parsers silently dropped unknown keys, including safety keys). Decision: [Q-72](../../../roadmap/neuroedge-prd.md#15-decision-log).
 
 ```mermaid
 stateDiagram-v2
@@ -223,9 +223,9 @@ stateDiagram-v2
     end note
 ```
 
-**Cách đọc sơ đồ:** Các nút thể hiện trạng thái vòng đời của một khe token trong `TokenLedger` (`Free`, `Issued`, `Closed`); mũi tên nét liền là sự kiện chuyển trạng thái. Điều cốt lõi cần nhớ: mỗi chân của token chỉ dùng được một lần; dùng lại một chân ⇒ `token_replayed`, quá thời gian sống (TTL) sẽ bị `token_expired`, và khi toàn bộ khe đầy thì từ chối cấp mới chứ không đẩy token cũ ra.
+**How to read the diagram:** Nodes represent lifecycle states of a token slot in `TokenLedger` (`Free`, `Issued`, `Closed`); solid arrows denote state transition events. Core takeaway: each pin in a token can be used only once; reuse attempts yield `token_replayed`, exceeding TTL yields `token_expired`, and when all slots are full new issuances are rejected rather than evicting existing tokens.
 
-## 6. Các lớp chính (host)
+## 6. Primary classes (host)
 
 ```mermaid
 classDiagram
@@ -282,16 +282,16 @@ classDiagram
     FactSource <|.. GrammarAdjudicator
 ```
 
-**Cách đọc sơ đồ:** Các hộp là các lớp và giao thức (`protocol`) chính trên Python host; mũi tên nét liền tam giác rỗng là kế thừa (`SimHAL`, `LinuxHAL`); nét đứt tam giác rỗng là hiện thực giao thức (`SystemOne`, `GrammarAdjudicator` hiện thực `FactSource`); mũi tên thường là nắm giữ hoặc gọi. Điều cốt lõi cần nhớ: `Conversation` là lớp duy nhất nối engine với sổ token; HAL chỉ biết `TokenLedger` qua `authorize`, không biết engine hay `FactSource`.
+**How to read the diagram:** Boxes represent primary classes and protocols on the Python host; hollow solid arrows denote inheritance (`SimHAL`, `LinuxHAL`); hollow dashed arrows denote protocol implementations (`SystemOne`, `GrammarAdjudicator` implementing `FactSource`); regular arrows denote reference or invocation. Core takeaway: `Conversation` is the sole class connecting the engine to the token ledger; HAL only knows `TokenLedger` via `authorize`, with no knowledge of the engine or `FactSource`.
 
-## 7. Đối chiếu Python ↔ C
+## 7. Python ↔ C reconciliation
 
-Hai hiện thực của cùng một đặc tả (Q-8). Tương đương được chứng minh bằng test, không bằng lời hứa.
+Two implementations of the same specification (Q-8). Equivalence is proven through tests, not promises.
 
-| Khái niệm | Python | C | Chứng minh |
+| Concept | Python | C | Proof |
 |:---|:---|:---|:---|
-| Cây | `compile_tree` + `encode` | `ne_tree_load` | `test_c_walker.py` so walker C với engine trên mọi gate và bảng sự thật `fixtures/decision_trees/`, fuzz tệp cây |
-| Lượng giá | `walk`, `known_failure` | `ne_evaluate`, `ne_decide` | như trên; self-test lúc khởi động so với đáp án engine tính lúc build |
-| Token | `TokenLedger` | `ne_token_*` | `test_c_token.py`: cùng lý do từ chối trên cùng chuỗi thao tác, cộng các đột biến |
-| Vết ghi | `EventLog.emit` | `ne_trace_*` | `test_c_trace.py`; `verify --targets esp32s3` so với golden |
-| Phiên bản OTA | `firmware.py::_RELEASE` | `ne_ota_parse_version` | `test_ota_version_rule.py` chạy cùng danh sách trường hợp trên cả hai |
+| Tree | `compile_tree` + `encode` | `ne_tree_load` | `test_c_walker.py` compares C walker to engine across all gates and `fixtures/decision_trees/` truth tables, fuzzes tree files |
+| Evaluation | `walk`, `known_failure` | `ne_evaluate`, `ne_decide` | as above; boot self-test compares against build-time engine ground truth |
+| Token | `TokenLedger` | `ne_token_*` | `test_c_token.py`: identical rejection reasons across identical operation sequences, plus mutation tests |
+| Trace | `EventLog.emit` | `ne_trace_*` | `test_c_trace.py`; `verify --targets esp32s3` compares against golden |
+| OTA Version | `firmware.py::_RELEASE` | `ne_ota_parse_version` | `test_ota_version_rule.py` runs identical test case list against both |

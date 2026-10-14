@@ -177,9 +177,9 @@ def render_turn(turn: Turn, session: SimSession, console: Console, frames_before
         pending = turn.confirmation
         left = max(0.0, (pending.expires_offset_ms - session.events.elapsed_ms()) / 1000)
         console.print(
-            f"  [bold yellow]? xác nhận[/bold yellow] {escape(pending.id)}: gõ [bold]có[/bold] để "
-            f"tiếp tục, [bold]không[/bold] để huỷ · còn {left:.0f} s · chỉ người trên thiết bị "
-            "trả lời được"
+            f"  [bold yellow]? confirm[/bold yellow] {escape(pending.id)}: type [bold]có[/bold] to "
+            f"continue, [bold]không[/bold] to cancel · {left:.0f} s left · only a person on the device "
+            "can answer"
         )
     if not turn.tool_results:
         if turn.reply is None:
@@ -341,8 +341,7 @@ def _turn(text: str, session: SimSession, console: Console, err_console: Console
     render_turn(turn, session, console, frames_before)
     for event in session.events.of_type("mcp_server_unavailable")[down_before:]:
         console.print(
-            f"  [yellow]! {escape(event['server'])} không dùng được:[/yellow] "
-            f"{escape(event['reason'])}"
+            f"  [yellow]! {escape(event['server'])} unavailable:[/yellow] {escape(event['reason'])}"
         )
     return True
 
@@ -378,12 +377,12 @@ def mcp_lines(session: SimSession) -> list[str]:
     names = ", ".join(escape(f"{s.name} ({', '.join(s.tools)})") for s in servers)
     if importlib.util.find_spec("mcp") is None:
         return [
-            f"mcp: {names} — [yellow]tắt: chưa cài SDK[/yellow] (pip install 'neuroedge[mcp]'); "
-            "tool của thiết bị vẫn chạy"
+            f"mcp: {names} — [yellow]off: SDK not installed[/yellow] (pip install 'neuroedge[mcp]'); "
+            "the device's own tools still run"
         ]
     if not session.slow.available:
-        return [f"mcp: {names} — chỉ dùng khi có System 2"]
-    return [f"mcp: {names} — thông tin, không phải lệnh (Q-27)"]
+        return [f"mcp: {names} — used only when System 2 is available"]
+    return [f"mcp: {names} — information, not commands (Q-27)"]
 
 
 def system_one_line(fast: SystemOne) -> str:

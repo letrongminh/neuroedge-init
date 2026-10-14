@@ -1,7 +1,7 @@
 """
 Trace schema conformance, valid and invalid — the trace half of exit criterion 1.
 
-The three canonical traces are the compliance yardstick for Khối 1a and 1b
+The three canonical traces are the compliance yardstick for Block 1a and 1b
 (§3.8) and the direct input to `neuroedge verify`, so they are asserted on
 scenario content, not merely on schema validity.
 """

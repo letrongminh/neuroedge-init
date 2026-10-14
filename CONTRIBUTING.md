@@ -1,139 +1,134 @@
-# Quy ước đóng góp — NeuroEdge
+# Contribution Guidelines — NeuroEdge
 
-> **Mã task:** TSK-S1-13 · **Yêu cầu liên quan:** FR-DX-04, FR-CI-05, §3.9
+> **Task code:** TSK-S1-13 · **Related requirements:** FR-DX-04, FR-CI-05, §3.9
 
-Tài liệu này nói cách nộp thay đổi, thay đổi nào cần thủ tục riêng vì chạm tầng an
-toàn hoặc nghĩa vụ pháp lý, và việc phải làm khi xong một task.
+This document explains how to submit changes, which changes require special procedures due to safety layers or legal obligations, and what must be done upon completing a task.
 
 ---
 
-## 1. Dựng môi trường
+## 1. Environment Setup
 
-Lệnh dựng môi trường, bản dựng tái lập và kiểm nhanh artifact: `CHANGELOG.md`
-[§2.1–§2.2](CHANGELOG.md#2-cách-vận-hành). Trước khi sửa gì, `pytest -q` phải xanh:
+Commands for environment setup, reproducible builds, and quick artifact verification: `CHANGELOG.md`
+[§2.1–§2.2](CHANGELOG.md#2-operating-guide). Before making any changes, `pytest -q` must be green:
 0 failed, 0 skipped.
 
-## 2. Vòng đóng góp thông thường
+## 2. Standard Contribution Cycle
 
-**Giấy phép của đóng góp (Q-45).** Mã theo PolyForm Noncommercial 1.0.0; lược đồ, đặc tả và bộ kiểm
-tuân thủ theo Apache-2.0 — bảng phạm vi ở [`LICENSING.md`](LICENSING.md). PR từ người ngoài cần
-CLA ký trước khi merge, để NeuroEdge cấp được license thương mại cho cả phần đóng góp; chưa có CLA
-thì PR được review nhưng không merge (`TODOS.md` #43).
+**Contribution licensing (Q-45).** Code is licensed under PolyForm Noncommercial 1.0.0; schemas, specifications, and conformance test suites under Apache-2.0 — scope table in [`LICENSING.md`](LICENSING.md). External PRs require a signed CLA before merge, enabling NeuroEdge to grant commercial licenses for contributed code; without a CLA, PRs may be reviewed but not merged (`TODOS.md` #43).
 
-1. Nhánh từ `main`, tên `<loại>/<mã-task>-<mô-tả-ngắn>`, ví dụ
+1. Branch from `main`, named `<type>/<task-code>-<short-description>`, e.g.
    `feat/TSK-S2-03-gate-engine`.
-2. Viết test trước khi viết hiện thực, nếu thay đổi có thể quan sát được.
-3. `pytest -q` xanh. **Không có test bị skip vì thiếu phụ thuộc** — xem §5.
-4. **Tác giả commit là danh tính GitHub của người làm** (với đội lõi: chủ dự án, `Trong-Minh Le
-   <59441846+letrongminh@users.noreply.github.com>`), đặt bằng `git config user.name` và
-   `git config user.email` trong kho. Không commit bằng danh tính máy cục bộ; danh tính cũ đã gộp
-   về chủ dự án trong [`.mailmap`](.mailmap). Commit theo Conventional Commits, phần thân dẫn chiếu
-   mã task:
+2. Write tests before writing implementation if changes are observable.
+3. `pytest -q` green. **No tests skipped due to missing dependencies** — see §5.
+4. **Commit author is the contributor's GitHub identity** (for the core team: project lead, `Trong-Minh Le
+   <59441846+letrongminh@users.noreply.github.com>`), configured via `git config user.name` and
+   `git config user.email` in the repository. Do not commit using local machine identities; legacy identities have been mapped
+   to the project lead in [`.mailmap`](.mailmap). Commits follow Conventional Commits, with body referencing
+   task codes:
 
    ```
-   feat(engine): cưỡng chế năm nguyên tắc kế thừa gate
+   feat(engine): enforce five gate inheritance principles
 
-   TSK-S1-02, TSK-S1-03. Hiện thực FR-GATE-06 → FR-GATE-08.
+   TSK-S1-02, TSK-S1-03. Implement FR-GATE-06 → FR-GATE-08.
    ```
 
-5. Hoàn tất theo **§8**: tiến độ trong roadmap, mục changelog, đặc tả nếu hành vi
-   đổi — cùng PR với mã.
+5. Complete per **§8**: roadmap progress, changelog entry, specification update if behavior
+   changed — in the same PR as code.
 
-### Thông báo lỗi: hợp đồng ba thành phần
+### Error Messages: Three-Component Contract
 
-FR-DX-04 bắt buộc **mọi** thông báo lỗi nêu đủ ba thành phần: **sai ở đâu**,
-**vì sao**, **cách xử lý**. Đây không phải khuyến nghị — nó được cưỡng chế bằng
-cấu trúc: kế thừa `NeuroEdgeError` và truyền cả ba đối số.
+FR-DX-04 mandates that **all** error messages state all three components: **where it went wrong**,
+**why**, **how to fix it**. This is not a recommendation — it is structurally enforced: inherit `NeuroEdgeError` and pass all three arguments.
 
 ```python
 raise GateSchemaError(
-    where=f"{path} -> allow_when.{criterion}",                  # ở đâu
-    why=f"operator {operator!r} is not defined for {kind!r}",    # vì sao
-    how="use one of ['eq', 'gte', 'lte'] (Phụ lục B.2)",         # cách xử lý
+    where=f"{path} -> allow_when.{criterion}",                  # where
+    why=f"operator {operator!r} is not defined for {kind!r}",    # why
+    how="use one of ['eq', 'gte', 'lte'] (Appendix B.2)",         # how to fix
 )
 ```
 
-Không dùng `raise ValueError("bad gate")`. Test
-`test_invalid_fixture_diagnostic_has_all_three_parts` kiểm tra điều này trên
-toàn bộ corpus phản chứng. Mã lỗi (`NE…`) cấp ở PRD
-[Phụ lục B](roadmap/neuroedge-prd.md#phụ-lục-b--danh-mục-mã-lỗi-chuẩn).
+Do not use `raise ValueError("bad gate")`. Test
+`test_invalid_fixture_diagnostic_has_all_three_parts` verifies this across the
+entire negative corpus. Error codes (`NE…`) are allocated in PRD
+[Appendix B](roadmap/neuroedge-prd.md#appendix-b--standard-error-code-catalog).
 
-### Không in kết quả mà mình chưa tính
+### Do Not Print Results You Have Not Computed
 
-Lệnh (hoặc `--target`) chưa có engine thoát **mã 2** và nói task nào sẽ hiện thực
-nó — bất biến `CHANGELOG.md` §3.3 #10; bảng mã thoát ở §2.3.
+Commands (or `--target`s) without an engine exit with **code 2** and name which task will implement
+them — invariant `CHANGELOG.md` §3.3 #10; exit code table in §2.3.
 
-## 3. Thay đổi cần RFC
+## 3. Changes Requiring an RFC
 
-Đây là **danh sách duy nhất** các thay đổi phải có RFC. Nơi khác (`CLAUDE.md`, mẫu RFC,
-`docs/rfc/README.md`) dẫn về đây.
+This is the **sole list** of changes that require an RFC. Other locations (`CLAUDE.md`, RFC template,
+`docs/rfc/README.md`) refer here.
 
-| Thay đổi | Thủ tục |
+| Change | Procedure |
 |:---|:---|
-| Sửa `schemas/*.json` — mọi lược đồ, kể cả `tool-call`, `tool-result`, `error`, `error-codes` (RFC-0015) | **RFC** |
-| Sửa ngữ nghĩa phân giải gate (`engine/gate_resolver.py`, `engine/constraints.py`) | **RFC** |
-| Sửa ba vết ghi chuẩn mực `fixtures/traces/*.json` | **RFC** |
-| Sửa hoặc xoá gate đã khoá trong `digests.lock` (`gates/`, `fixtures/gates/valid/`, `fixtures/gates/registry/`, và gate của bốn kit ở `fixtures/agents/{home-voice,factory-monitor,gate-camera,blinds}/gates/`) | **RFC**, rồi `python scripts/check_digests.py --accept <tệp> --rfc NNNN`; thiếu RFC thì CI đỏ (TSK-S3-16) |
-| Đổi bố cục nhị phân `NETR` của cây trên thiết bị (v1 ở [RFC-0003](docs/rfc/0003-bo-cuc-nhi-phan-cay.md), v2 từ RFC-0009): `engine/binary_tree.py` ↔ walker `targets/esp32s3/components/ne_gate/` | **RFC** (tăng số phiên bản bố cục) |
-| Thêm gate vào `gates/` hoặc `fixtures/gates/{valid,registry}/` | PR thường — `python scripts/check_digests.py --update` để khoá digest |
-| Thêm fixture phản chứng, hoặc ca corpus tool call / thoại | PR thường — theo luật khép kín ngay dưới |
-| Thêm profile bo mạch ở `boards/` | PR thường — cần phần cứng thật để điền tham số (nguyên thủy mở rộng chỉ khai khi bo thật có, không khai giả để qua test — RFC-0013 §3a). *`test_boards.py` nhận các bo tham chiếu bậc 1 của `REFERENCE_BOARDS` (`neuroedge/hal/board.py`); mỗi profile `sim-*` phải có mục trong `SIM_MIRRORS` và không giàu năng lực hơn bo nó soi; bậc 2/3 chờ RFC-0002* |
+| Modifying `schemas/*.json` — all schemas, including `tool-call`, `tool-result`, `error`, `error-codes` (RFC-0015) | **RFC** |
+| Modifying gate resolution semantics (`engine/gate_resolver.py`, `engine/constraints.py`) | **RFC** |
+| Modifying the three normative traces `fixtures/traces/*.json` | **RFC** |
+| Modifying or deleting gates locked in `digests.lock` (`gates/`, `fixtures/gates/valid/`, `fixtures/gates/registry/`, and four kit gates in `fixtures/agents/{home-voice,factory-monitor,gate-camera,blinds}/gates/`) | **RFC**, then `python scripts/check_digests.py --accept <file> --rfc NNNN`; missing RFC causes CI to fail (TSK-S3-16) |
+| Changing on-device `NETR` binary tree layout (v1 in [RFC-0003](docs/rfc/0003-bo-cuc-nhi-phan-cay.md), v2 from RFC-0009): `engine/binary_tree.py` ↔ walker `targets/esp32s3/components/ne_gate/` | **RFC** (bump layout version number) |
+| Adding gates to `gates/` or `fixtures/gates/{valid,registry}/` | Regular PR — `python scripts/check_digests.py --update` to lock digest |
+| Adding negative fixtures, or tool call / voice corpus cases | Regular PR — following bidirectional closure rules below |
+| Adding board profiles in `boards/` | Regular PR — requires physical hardware to fill parameters (extended primitives declared only when physical board possesses them, no dummy declarations to pass tests — RFC-0013 §3a). *`test_boards.py` accepts tier-1 reference boards in `REFERENCE_BOARDS` (`neuroedge/hal/board.py`); each `sim-*` profile must have an entry in `SIM_MIRRORS` and not be more capable than the board it mirrors; tier 2/3 awaits RFC-0002* |
 
-Quy trình: sao `docs/rfc/0000-template.md`, mở PR **chỉ chứa tệp RFC**, thảo luận,
-rồi sửa trong PR thứ hai dẫn chiếu số RFC. Thay đổi chạm `gate.v1` hoặc ngữ nghĩa
-phân giải cần **kỹ thuật trưởng** phê duyệt. [RFC-0001](docs/rfc/0001-gate-schema-conditional-requirements.md)
-là ví dụ mẫu đầy đủ.
+Procedure: copy `docs/rfc/0000-template.md`, open a PR **containing only the RFC file**, discuss,
+then modify code in a second PR referencing the RFC number. Changes touching `gate.v1` or resolution
+semantics require approval from the **lead engineer**. [RFC-0001](docs/rfc/0001-gate-schema-conditional-requirements.md)
+is a complete exemplar.
 
-Thẩm định lược đồ một mình không kết luận được gate an toàn; cổng kiểm tra là
-`neuroedge gate lint` — bất biến `CHANGELOG.md` §3.3 #1.
+Schema validation alone does not prove a gate is safe; the verification gate is
+`neuroedge gate lint` — invariant `CHANGELOG.md` §3.3 #1.
 
-### Thêm một fixture phản chứng
+### Adding a Negative Fixture
 
-Mọi corpus là **khép kín hai chiều**: mỗi tệp có một mục đáp án, mỗi mục có một tệp.
-Test cưỡng chế cả hai chiều, nên không thể thêm fixture mà không nói nó chứng minh
-điều gì.
+Every corpus is **bidirectionally closed**: each file has one expected answer entry, each entry has one file.
+Tests enforce both directions, so you cannot add a fixture without specifying what it
+proves.
 
-| Corpus | Tệp | Đáp án |
+| Corpus | File | Expected Answer |
 |:---|:---|:---|
 | Gate | `fixtures/gates/invalid/` | `fixtures/gates/expected_errors.yaml` |
-| Vết ghi | `fixtures/traces/invalid/` | `fixtures/traces/expected_errors.yaml` |
-| Tool call | `fixtures/tool_calls/{valid,invalid}/` | `fixtures/tool_calls/expected_results.yaml` — luật ở [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md) §9 |
-| Bo mạch | `fixtures/boards/{valid,invalid}/` | `fixtures/boards/expected_errors.yaml` |
-| Hợp đồng người tích hợp | `fixtures/contracts/{tool-call,tool-result,error}/{valid,invalid}/*.json` | `fixtures/contracts/expected_errors.yaml` — mỗi tệp một mục: `against` (lược đồ, có thể kèm `#/$defs/…`) và, với `invalid/`, `error: {keyword, path, message_contains}`; test còn buộc các tệp `valid/` phủ mọi `status`, `on_block`, `source`, `reason` đã biết và mọi mã của danh mục |
-| Máy trạng thái hội thoại | `fixtures/compliance/voice/*.json` | `fixtures/compliance/voice/expected_results.yaml` — luật ở [`docs/spec/voice_fsm.md`](docs/spec/voice_fsm.md) §9 |
-| Cảnh thị giác | `fixtures/vision/<cảnh>/` (khung hình + `scene.toml`) | `fixtures/vision/expected_results.yaml` — chuỗi phán quyết theo khung; `fixtures/vision/golden/<cảnh>.json` là golden suy luận của mô hình trên cảnh đó ([`docs/spec/vision.md`](docs/spec/vision.md) §6a, §6c) |
-| Khai báo cơ cấu chấp hành từ xa | `fixtures/actuators/{valid,invalid}/*.toml` | `fixtures/actuators/expected_errors.yaml` — mỗi tệp một mục: tệp `valid/` có số cảnh báo, tệp `invalid/` có **toàn bộ** danh sách lỗi theo thứ tự (`error`, `code`, `where_contains`, `why_contains`); luật ở RFC-0018 §3b, §3f, §3k |
-| Tuân thủ plugin actuator | `fixtures/compliance/actuators/{valid,invalid}/<bản phân phối>/` (gói cài được, có `pyproject.toml`) | `fixtures/compliance/actuators/expected_results.yaml` — mỗi bản phân phối một mục, mỗi entry point một mục: phép kiểm không `pass` và kết quả của nó, và (với `invalid/`) phép kiểm mà phản chứng nhắm tới; mọi phép kiểm phải có ít nhất một phản chứng nó bắt ([`docs/spec/extension_sdk.md`](docs/spec/extension_sdk.md) §8) |
+| Trace | `fixtures/traces/invalid/` | `fixtures/traces/expected_errors.yaml` |
+| Tool call | `fixtures/tool_calls/{valid,invalid}/` | `fixtures/tool_calls/expected_results.yaml` — rules in [`docs/spec/tool_calling.md`](docs/spec/tool_calling.md) §9 |
+| Board | `fixtures/boards/{valid,invalid}/` | `fixtures/boards/expected_errors.yaml` |
+| Integrator contracts | `fixtures/contracts/{tool-call,tool-result,error}/{valid,invalid}/*.json` | `fixtures/contracts/expected_errors.yaml` — one entry per file: `against` (schema, optionally with `#/$defs/…`) and, for `invalid/`, `error: {keyword, path, message_contains}`; tests also require `valid/` files to cover all known `status`, `on_block`, `source`, `reason` values and all catalog error codes |
+| Conversational FSM | `fixtures/compliance/voice/*.json` | `fixtures/compliance/voice/expected_results.yaml` — rules in [`docs/spec/voice_fsm.md`](docs/spec/voice_fsm.md) §9 |
+| Vision scene | `fixtures/vision/<scene>/` (frames + `scene.toml`) | `fixtures/vision/expected_results.yaml` — frame-by-frame verdict sequence; `fixtures/vision/golden/<scene>.json` is model inference golden for that scene ([`docs/spec/vision.md`](docs/spec/vision.md) §6a, §6c) |
+| Remote actuator declaration | `fixtures/actuators/{valid,invalid}/*.toml` | `fixtures/actuators/expected_errors.yaml` — one entry per file: `valid/` has warning count, `invalid/` has **full** ordered error list (`error`, `code`, `where_contains`, `why_contains`); rules in RFC-0018 §3b, §3f, §3k |
+| Actuator plugin compliance | `fixtures/compliance/actuators/{valid,invalid}/<dist>/` (installable package, with `pyproject.toml`) | `fixtures/compliance/actuators/expected_results.yaml` — one entry per distribution, one entry per entry point: checks not returning `pass` and their results, and (for `invalid/`) checks targeted by the counter-example; each check must be caught by at least one counter-example ([`docs/spec/extension_sdk.md`](docs/spec/extension_sdk.md) §8) |
 
 ```yaml
 # fixtures/gates/expected_errors.yaml
 ten_fixture.yaml:
-  error: GateInheritanceError    # lớp lỗi
-  code: NE2003                   # mã ổn định
-  principle: 2                   # nguyên tắc B.5 bị vi phạm
+  error: GateInheritanceError    # error class
+  code: NE2003                   # stable code
+  principle: 2                   # violated B.5 principle
   where_contains: "allow_when.risk_level"
   why_contains: "loosens the inherited condition"
 ```
 
-Rồi `pytest -q`: thiếu một trong hai bước là đỏ. `where_contains` và `why_contains`
-so khớp chuỗi con, nên diễn đạt lỗi được phép cải thiện; **lớp lỗi, mã ổn định và
-nguyên tắc B.5 thì không được trôi trong im lặng**.
+Then run `pytest -q`: missing either step fails CI. `where_contains` and `why_contains`
+match substrings, so error wording may be improved; **error class, stable code, and
+principle B.5 must not drift silently**.
 
-## 4. Port mã nguồn mở — nghĩa vụ trước khi viết dòng đầu tiên
+## 4. Porting Open Source Code — Obligations Before Writing the First Line
 
-Năm nghĩa vụ ghi nhận nguồn là **nghĩa vụ pháp lý**, không phải thủ tục giấy tờ
-(đặc tả: roadmap §3; hạn chót: roadmap §3.9). Cách làm từng việc trong kho này,
-xong trước khi port:
+The five source attribution obligations are **legal obligations**, not paperwork
+(specification: roadmap §3; deadline: roadmap §3.9). How to fulfill each requirement in this repository,
+completed before porting:
 
-| # | Nghĩa vụ | Cách làm trong kho này |
+| # | Obligation | How to Fulfill in This Repo |
 |:---:|:---|:---|
-| 1 | Ma trận giấy phép | Cập nhật [`NOTICE`](NOTICE): dự án, phiên bản, giấy phép, ngày xác minh, phạm vi dùng |
-| 2 | Tệp `NOTICE` ở gốc | Một mục cho mỗi thành phần |
-| 3 | Ghi nhận tại chỗ trong mã | Chú thích đầu tệp đã port, nêu **tệp gốc và commit tham chiếu** |
-| 4 | Ghi nhận trong tài liệu công khai | Không giấu trong mã nguồn |
-| 5 | Ghim phiên bản mọi phụ thuộc | `requirements-lock.txt`; nightly phát hiện thay đổi phá vỡ ở thượng nguồn |
+| 1 | License matrix | Update [`NOTICE`](NOTICE): project, version, license, verification date, usage scope |
+| 2 | Root `NOTICE` file | One entry per component |
+| 3 | In-situ attribution in code | Header comment in ported files, specifying **original file and reference commit** |
+| 4 | Attribution in public docs | Do not conceal in source code |
+| 5 | Pin versions of all dependencies | `requirements-lock.txt`; nightly builds detect upstream breaking changes |
 
-Mẫu ghi nhận tại chỗ:
+In-situ attribution template:
 
 ```python
 # Ported from Pipecat (https://github.com/pipecat-ai/pipecat)
@@ -141,199 +136,198 @@ Mẫu ghi nhận tại chỗ:
 # License: BSD-2-Clause (Copyright Daily). See NOTICE entry 2.
 ```
 
-Giấy phép nào được vào phần phân phối: chính sách **Q-11**
-([PRD §15](roadmap/neuroedge-prd.md#15-sổ-quyết-định)); không copyleft mạnh là
-bất biến `CHANGELOG.md` §3.3 #9. Hawkbit đã duyệt với điều kiện ở Q-11 (sửa thì công bố phần sửa); EMQX không dùng.
+Which licenses are admitted into distribution artifacts: policy **Q-11**
+([PRD §15](roadmap/neuroedge-prd.md#15-decision-log)); no strong copyleft is
+invariant `CHANGELOG.md` §3.3 #9. Hawkbit approved conditionally under Q-11 (publish modifications if modified); EMQX not used.
 
-## 5. Test không được skip trong im lặng
+## 5. Tests Must Not Skip Silently
 
-Một test `skip` vì thiếu phụ thuộc trông giống một test đạt trong bản tóm tắt.
-I0 đã gặp đúng chuyện này: bốn test conformance lược đồ skip vì
-`jsonschema` chưa được cài, trong khi bảng tiến độ báo "PASS 100% (4/4)".
+A test `skip`ped due to missing dependencies looks like a passing test in summaries.
+I0 experienced exactly this: four schema conformance tests were skipped because
+`jsonschema` was not installed, while the progress table reported "PASS 100% (4/4)".
 
-Vì vậy:
+Therefore:
 
-- Không dùng `pytest.importorskip` cho phụ thuộc đã khai trong `pyproject.toml`.
-- Phụ thuộc cần cho conformance là phụ thuộc **bắt buộc**, không phải tùy chọn.
-- CI chạy `python -m pytest -q --strict-markers --junit-xml=../junit.xml`
-  (`.github/workflows/ci-sim-linux.yml`), rồi đọc `junit.xml` và **fail nếu số
-  test skip khác 0 hoặc số test bằng 0**.
-- `python/tests_linux/` cần gpio-sim nên nằm ngoài `testpaths` và chạy ở job riêng
-  `linux-hal` — không phải skip trên máy không có gpio-sim.
-- Output CLI được assert dưới dạng văn bản thuần. `tests/conftest.py` gỡ
-  `FORCE_COLOR` và đặt `NO_COLOR` trước khi import CLI; đầu ra máy đọc (`--json`,
-  digest) phải ghi thẳng stdout, không qua `rich`. Chữ trong ngoặc vuông ở `help=`
-  phải escape (`\[mcp.servers]`), nếu không `rich` nuốt nó — `tests/test_cli_help.py`.
+- Do not use `pytest.importorskip` for dependencies declared in `pyproject.toml`.
+- Dependencies required for conformance are **mandatory** dependencies, not optional.
+- CI runs `python -m pytest -q --strict-markers --junit-xml=../junit.xml`
+  (`.github/workflows/ci-sim-linux.yml`), then parses `junit.xml` and **fails if skipped
+  test count is non-zero or total test count is zero**.
+- `python/tests_linux/` requires gpio-sim and is excluded from `testpaths`, running in dedicated job
+  `linux-hal` — rather than skipping on machines lacking gpio-sim.
+- CLI output is asserted as plain text. `tests/conftest.py` removes
+  `FORCE_COLOR` and sets `NO_COLOR` before importing CLI; machine-readable output (`--json`,
+  digest) must write directly to stdout without passing through `rich`. Square brackets in `help=`
+  must be escaped (`\[mcp.servers]`), otherwise `rich` strips them — `tests/test_cli_help.py`.
 
-Khi đọc kết quả test, đọc cả cột skip.
+When reading test results, check the skip column as well.
 
-## 6. Cấu trúc kho
+## 6. Repository Structure
 
-Đây là **bản đồ duy nhất** của kho; nơi khác dẫn về đây.
+This is the **sole map** of the repository; other locations refer here.
 
-| Đường dẫn | Nội dung | Thủ tục sửa |
+| Path | Contents | Modification Procedure |
 |:---|:---|:---|
-| `schemas/` | Bảy lược đồ đã đóng băng: `gate.v1` · `trace.v1` · `board.v1` · `tool-call.v1` · `tool-result.v1` · `error.v1` · `error-codes.v1` (danh mục mã lỗi, nguồn của cấu trúc `NE…`; RFC-0015) | **RFC** (§3) |
-| `gates/` | Gate mẫu, phân giải được, gồm chuỗi kế thừa | Thêm: PR thường; sửa/xoá: **RFC** (§3) |
-| `digests.lock` | Digest JCS của mọi gate chuẩn mực | Chỉ qua `scripts/check_digests.py` (§3) |
-| `boards/` | Khai báo năng lực bo mạch (TOML) | PR thường (§3) |
-| `pipewire/` | Drop-in `neuroedge-echo-cancel.conf` cho AEC phần mềm trên `linux` (Q-22); vào wheel qua `hatch_build.py`, tìm bằng `neuroedge.paths.echo_cancel_conf()` | PR thường |
-| `fixtures/traces/*.json` | Ba vết ghi chuẩn mực | **RFC** |
-| `fixtures/traces/invalid/`, `fixtures/gates/invalid/` | Corpus phản chứng + `expected_errors.yaml` | PR thường, khép kín (§3) |
-| `fixtures/gates/valid/`, `fixtures/gates/registry/` | Gate phân giải đúng; gate cơ sở cho fixture | Thêm: PR thường; sửa/xoá: **RFC** |
-| `fixtures/tool_calls/` | Corpus Gated Tool Profile + `expected_results.yaml` | PR thường, khép kín (§3) |
-| `fixtures/contracts/` | Corpus phản chứng của `tool-call`, `tool-result`, `error` + `expected_errors.yaml` (RFC-0015) | PR thường, khép kín (§3) |
-| `fixtures/decision_trees/` | Bảng sự thật cho walker C | Sinh bằng `scripts/generate_truth_tables.py`, không sửa tay |
-| `fixtures/agents/` | Agent mẫu `villa-concierge`, `home-voice`, `factory-monitor`, `gate-camera`, `blinds`, `driveway`, `voice-door`, `rail-gate` (gói cảm biến: `digital.in` + `analog.in` + `i2c`), `chat-den-cua` (đèn tự do, cửa hỏi chủ nhà; demo `demo/i2f-chat-den-cua/`); `neuroedge new --template` sao năm cái đầu | PR thường |
-| `fixtures/traces/sensor-pack/` | Corpus của gói cảm biến: ba phiên của `rail-gate` trên `sim-rpi5`, sinh bằng `scripts/gen_sensor_pack_traces.py` (`--check` chạy trong test); `verify` phát lại trên mọi bo mạch khai `digital.in`, `analog.in` và `i2c`, đếm riêng với ba vết ghi chuẩn mực (RFC-0013 §3f mục 7) | PR thường; sinh lại khi agent, gate hay hợp đồng cảm biến đổi có chủ ý |
-| `fixtures/traces/fine-control/` | Corpus của PWM và kênh phản hồi: năm phiên của `fan-pwm` trên `sim-rpi5` (hai phiên có số đọc lại `measured` ghi trên một giàn khai `feedback`), sinh bằng `scripts/gen_fine_control_traces.py` (`--check` chạy trong test); `verify` phát lại trên mọi bo mạch khai một kênh PWM, đếm riêng (RFC-0013 §3f mục 7) | PR thường; sinh lại khi agent, gate hay hợp đồng PWM đổi có chủ ý |
-| `fixtures/traces/motion/` | Corpus của `motion.*`: bốn phiên của `rover` trên `sim-rpi5` (lease gia hạn và hết hạn, BLOCK đưa kênh về trạng thái an toàn, tốc độ quá giới hạn gate), sinh bằng `scripts/gen_motion_traces.py` (`--check` chạy trong test); `verify` phát lại trên mọi bo mạch khai `motion`, đếm riêng | PR thường; sinh lại khi agent, gate hay hợp đồng chuyển động đổi có chủ ý |
-| `fixtures/traces/kits/` | Corpus của năm kit phần cứng ([`kit-phan-cung.md`](docs/user/kit-phan-cung.md)): hai phiên (cho phép, chặn) của mỗi agent `villa-concierge`, `home-voice`, `factory-monitor` trên `sim-default` và `gate-camera`, `blinds` trên `sim-rpi5`, sinh bằng `scripts/gen_kit_traces.py` (`--check` chạy trong test); `verify` phát lại trên mọi bo mạch tham chiếu khai đủ năng lực, đếm riêng | PR thường; sinh lại khi agent mẫu, gate hay hợp đồng cảm biến đổi có chủ ý |
-| `fixtures/compliance/voice/` | Bộ vector tuân thủ máy trạng thái hội thoại + `expected_results.yaml`, chung cho hiện thực Python và C | PR thường, khép kín (§3) |
-| `python/neuroedge/engine/` | L3 — phân giải gate, chuẩn tắc hoá, Gate Engine, cây quyết định, bố cục `NETR`, trình biên dịch `build`, bộ sinh firmware `esp32s3` của agent (`firmware.py`) | **RFC** nếu đổi ngữ nghĩa phân giải hoặc bố cục `NETR` |
-| `python/neuroedge/actions/` | `@action`, `c.do()`/`c.say()`, token phán quyết dùng một lần | PR thường; ranh giới ở [`threat_model.md`](docs/spec/threat_model.md) |
-| `python/neuroedge/hal/` | L1 — năm nguyên thủy, mô hình bo mạch, `sim.py`, `linux.py`, `audio.py` (PCM trên máy tính: tệp WAV, VAD, loa dạng dòng thời gian) | PR thường; xem [rà soát MCU](docs/spec/hal_mcu_review.md) |
-| `python/neuroedge/models/` | L2 — SystemOne/SystemTwo, ngữ pháp lệnh cục bộ, knowledge base, `providers/` (LiteLLM, System One API cho Jev, adapter; `common.py`: phần mọi bảng provider dùng chung — điểm cuối, không lặp key, nạp adapter) | PR thường |
-| `python/neuroedge/perception/` | L2 — máy trạng thái hội thoại (`voice_fsm.py`), driver của nó (`voice_session.py`: âm thanh vào, STT, TTS, cắt lời), `providers/` (STT/TTS: adapter OpenAI audio, provider giả; bảng `[stt]`/`[tts]`), `vision/` (giao diện mô hình thị giác, mô hình giả, bảng `[vision]`, khung hình → dữ kiện gate, sự kiện `vision_fact`) | PR thường; hành vi theo [`voice_fsm.md`](docs/spec/voice_fsm.md) và [`vision.md`](docs/spec/vision.md) |
-| `python/neuroedge/sim/` | `SimSession` (REPL gõ chữ), `ui.py` (trang `--ui` cục bộ) | PR thường |
-| `python/neuroedge/mcp_server.py`, `mcp_host.py`, `mcp_desktop.py` | Máy chủ MCP · System 2 làm MCP host · cấu hình Claude Desktop | PR thường |
-| `python/neuroedge/testing/` | Action CI — recorder, player (replay), assertions, golden, `tool_corpus`, `voice_corpus`, `uart` (vết ghi từ UART thiết bị) | PR thường |
-| `python/neuroedge/viz/` | `trace view`, xuất Perfetto | PR thường |
-| `python/neuroedge/templates/` | Mẫu dự án cho `neuroedge new` và mẫu từng nguyên thủy của `neuroedge add` (`add/`) (`*.tmpl`, generator Python thuần) | PR thường |
-| `python/neuroedge/cli/` | CLI Typer: `main.py`, `run.py` (REPL), `explain.py` | PR thường |
-| `python/neuroedge/errors.py`, `trace.py`, `paths.py`, `net.py` | Hợp đồng lỗi 3 thành phần · thẩm định vết ghi · định vị asset (checkout, editable, wheel) · HTTP tới provider (không proxy, không redirect, có hạn chót) | PR thường; đụng `paths.py` thì chạy `scripts/wheel_smoke.sh`; một lớp lỗi mới có mã trong `schemas/error-codes.v1.json` **và** hàng ở PRD Phụ lục B (test `test_error_catalog.py` đỏ nếu thiếu một trong hai) |
-| `python/tests/` | Bộ test chính (`testpaths`) | PR thường |
-| `python/tests_linux/` | Test trên gpio-sim, job `linux-hal` | PR thường |
-| `python/hatch_build.py`, `pyproject.toml`, `requirements-lock.txt`, `pip-audit-ignore.txt`, `LICENSE` | Đóng gói (asset vào `neuroedge/_data/`, README gốc vào metadata) · phụ thuộc ghim · ngoại lệ `pip-audit` đã duyệt (job `pip-audit`) · bản sao `LICENSE` gốc | PR thường; chạy `scripts/wheel_smoke.sh` |
-| `targets/esp32s3/` (gốc) | Dự án ESP-IDF: `CMakeLists.txt`, `sdkconfig.defaults` (flash 16 MB, PSRAM, FreeRTOS 1000 Hz), `sdkconfig.qemu` (lớp phủ cho QEMU), `partitions.csv` (factory + OTA A/B) | PR thường; job `firmware-qemu` |
-| `targets/esp32s3/main/` | Firmware ESP-IDF, chung cho mọi agent: `main.c`, khung đo bộ nhớ (kể cả dòng heap `NEUROEDGE_HEAP_JSON`), self-test gate trên agent đã link (ghi vết ghi `NE1`), replay vết ghi chuẩn mực (`trace_vectors.c`); `vectors/` sinh bằng `scripts/gen_firmware_vectors.py` | PR thường; đổi vết ghi chuẩn mực, gate hay action ⇒ sinh lại `vectors/` |
-| `targets/esp32s3/components/ne_agent/` | Component agent do `neuroedge build --target esp32s3` sinh, ở đây cho agent mẫu `home-voice`: cây `NETR`, bảng gate · chân · action, phép kiểm self-test kèm phán quyết engine host | Không sửa tay — `scripts/gen_firmware_gates.py` (`--check` chạy trong pytest) |
-| `targets/esp32s3/components/ne_gate/` | Walker C99 và sổ token C | PR thường; bố cục `NETR`: **RFC** |
-| `targets/esp32s3/components/ne_trace/` | Dòng vết ghi `NE1` trên UART — định dạng C99, không biến toàn cục ([`simulation_coverage.md`](docs/spec/simulation_coverage.md) §4) | PR thường; job `firmware-qemu` |
-| `targets/esp32s3/ui/` | Giao diện LVGL của thiết bị: màn hình (`ne_ui.h`), bảng chữ vi/en, phông Be Vietnam Pro sinh sẵn, ảnh golden và host harness riêng; quy tắc ngôn ngữ ở [`docs/spec/ui.md`](docs/spec/ui.md) | PR thường; đổi màn hình, bảng chữ, phông hoặc ca golden ⇒ `bash scripts/run_ui_golden.sh --update`; job `ui-golden` |
-| `scripts/` | Công cụ CI và phát hành | PR thường |
-| `.github/` | Năm workflow ở `workflows/` — danh sách job: `CHANGELOG.md` §2.5; `dependabot.yml` (ghim SHA của Actions), `actionlint.yaml` | PR thường |
-| `docs/rfc/`, `docs/spec/`, `docs/reports/` | RFC, đặc tả chuẩn tắc, báo cáo đo | PR thường |
-| `docs/architecture/` | Kiến trúc sản phẩm song ngữ: `README.md` · `vi/` + `en/` (17 chương mỗi cây, 00–16, VI là gốc, cùng cấu trúc và cùng khối mermaid) · `assets/svg/` + `assets/excalidraw/` (poster **sinh** từ `scripts/gen_architecture_diagrams.py`, không sửa tay) | PR thường — sửa mô hình poster rồi chạy lại script; khối mermaid kiểm bằng `scripts/check_architecture_mermaid.py`; cạnh import mới giữa các gói khai ở `python/tests/test_architecture_layers.py`; nội dung dẫn mã, không chép (§8.1) |
-| *(lịch sử git)* | Tài liệu đã khép không giữ trong cây: `docs/archive/` (kế hoạch, biên bản review Giai đoạn 1, RFC-0002), `docs/architecture/en/`, proposal cũ và ghi chú thiết kế đã gộp. Tra bằng `git show 7626b62:<đường dẫn>` | Không khôi phục vào cây; dẫn sự thật hiện hành từ PRD, roadmap, kiến trúc |
-| `docs/business/` | Bộ phỏng vấn khách hàng — đầu vào thông tin, không còn là cổng quyết định (Q-56); `cpo-dashboard.html` sinh từ roadmap, `TODOS.md`, PRD §15, `CHANGELOG.md`; `kien-truc-tong-the.html` — trang kiến trúc tổng thể cho người ngoài nhóm kỹ thuật, viết tay, ảnh chụp có ngày (nguồn sự thật vẫn là `docs/architecture/`) | PR thường — đổi các nguồn đó thì chạy `python3 scripts/gen_cpo_dashboard.py` |
-| `wireframe/` | Wireframe HTML tham chiếu cho UI (bản chụp `ui.css`, không đóng gói) — hiện có Lab Monitor của Khối N5b | PR thường |
-| `demo/` | Kịch bản demo của từng increment (`demo/<increment>/`): lời dẫn, lệnh, đầu ra thật, commit đã chạy lại; danh mục ở `demo/README.md` (Q-49) | PR thường; người review chạy lại kịch bản |
-| `docs/user/` | Tài liệu người dùng; `thuat-ngu.md` là nơi duy nhất giải mã ký hiệu; `trang-thai.md` sinh từ roadmap §0 | PR thường — `python3 scripts/gen_user_status.py` |
-| `docs/user/doi-tac/` · `docs/business/doi-tac/` · `fixtures/ha_mcp_double/` | Gói đợt thử với đối tác (Q-70): ba hướng dẫn chạy được, trang giới hạn, mẫu phản hồi · danh sách thoả thuận, kênh phản hồi, buổi đo · bản **giả** của Home Assistant MCP Server cho hướng dẫn | PR thường — mọi khối lệnh của hướng dẫn có dấu (`scripts/guide_runner.py`, test `test_partner_guides.py`); sửa hướng dẫn thì chạy `scripts/partner_guides_check.sh <wheel>` |
-| `docs/release.md` | Thủ tục phát hành: tag nội bộ trước I6, PyPI từ I6 | PR thường |
-| `README.md` | Trang đầu và trang PyPI (link tuyệt đối) | PR thường — `tests/test_readme_quickstart.py` |
-| `roadmap/` | Hai tài liệu sản phẩm: roadmap (tiến độ) và PRD (yêu cầu, quyết định) | Theo từng tệp ở các dòng dưới |
-| `roadmap/neuroedge-roadmap.md` | Roadmap duy nhất (Q-39): bốn phase (§0.5, Q-52), increment I0–I18 kể cả I2a, I2b, I3a, I4a, I5a, trạng thái task, tiêu chí ra, dự báo, phụ thuộc, thẻ phát hành, thang cắt | PR thường, theo §8; luật chống lệch R1–R12 ở roadmap §2.4 |
-| `docs/spec/lab_mcp.md`, `docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md` | Thiết kế NeuroEdge Lab và giao thức node robot. Không lịch, không trạng thái, không tiêu chí ra; dẫn mã TSK của roadmap (R1, R8) | PR thường; merge được cả khi Beta đóng băng (R12) |
-| `TODOS.md` | Việc đã xem xét và hoãn có chủ ý, kèm mốc kích hoạt | PR thường |
+| `schemas/` | Seven frozen schemas: `gate.v1` · `trace.v1` · `board.v1` · `tool-call.v1` · `tool-result.v1` · `error.v1` · `error-codes.v1` (error code catalog, source of `NE…` structure; RFC-0015) | **RFC** (§3) |
+| `gates/` | Sample, resolvable gates including inheritance chains | Adding: regular PR; modifying/deleting: **RFC** (§3) |
+| `digests.lock` | JCS digest of all normative gates | Exclusively via `scripts/check_digests.py` (§3) |
+| `boards/` | Board capability declarations (TOML) | Regular PR (§3) |
+| `pipewire/` | Drop-in `neuroedge-echo-cancel.conf` for software AEC on `linux` (Q-22); packaged into wheel via `hatch_build.py`, located via `neuroedge.paths.echo_cancel_conf()` | Regular PR |
+| `fixtures/traces/*.json` | Three normative traces | **RFC** |
+| `fixtures/traces/invalid/`, `fixtures/gates/invalid/` | Negative corpus + `expected_errors.yaml` | Regular PR, closed (§3) |
+| `fixtures/gates/valid/`, `fixtures/gates/registry/` | Correctly resolving gates; base gates for fixtures | Adding: regular PR; modifying/deleting: **RFC** |
+| `fixtures/tool_calls/` | Gated Tool Profile corpus + `expected_results.yaml` | Regular PR, closed (§3) |
+| `fixtures/contracts/` | Negative corpus for `tool-call`, `tool-result`, `error` + `expected_errors.yaml` (RFC-0015) | Regular PR, closed (§3) |
+| `fixtures/decision_trees/` | Truth tables for C walker | Generated by `scripts/generate_truth_tables.py`, do not edit manually |
+| `fixtures/agents/` | Sample agents `villa-concierge`, `home-voice`, `factory-monitor`, `gate-camera`, `blinds`, `driveway`, `voice-door`, `rail-gate` (sensor pack: `digital.in` + `analog.in` + `i2c`), `chat-den-cua` (free lights, door asks owner; demo `demo/i2f-chat-den-cua/`); `neuroedge new --template` copies the first five | Regular PR |
+| `fixtures/traces/sensor-pack/` | Sensor pack corpus: three sessions of `rail-gate` on `sim-rpi5`, generated by `scripts/gen_sensor_pack_traces.py` (`--check` runs in tests); `verify` replays across all boards declaring `digital.in`, `analog.in`, and `i2c`, counted separately from three normative traces (RFC-0013 §3f item 7) | Regular PR; regenerate when agent, gate, or sensor contract intentionally changes |
+| `fixtures/traces/fine-control/` | PWM and feedback channel corpus: five sessions of `fan-pwm` on `sim-rpi5` (two sessions with recorded `measured` readback on testbed declaring `feedback`), generated by `scripts/gen_fine_control_traces.py` (`--check` runs in tests); `verify` replays across all boards declaring one PWM channel, counted separately (RFC-0013 §3f item 7) | Regular PR; regenerate when agent, gate, or PWM contract intentionally changes |
+| `fixtures/traces/motion/` | `motion.*` corpus: four sessions of `rover` on `sim-rpi5` (lease renewal and expiration, BLOCK resets channel to safe state, speed exceeds gate limit), generated by `scripts/gen_motion_traces.py` (`--check` runs in tests); `verify` replays across all boards declaring `motion`, counted separately | Regular PR; regenerate when agent, gate, or motion contract intentionally changes |
+| `fixtures/traces/kits/` | Five hardware kits corpus ([`kit-phan-cung.md`](docs/user/kit-phan-cung.md)): two sessions (allow, block) for each agent `villa-concierge`, `home-voice`, `factory-monitor` on `sim-default` and `gate-camera`, `blinds` on `sim-rpi5`, generated by `scripts/gen_kit_traces.py` (`--check` runs in tests); `verify` replays across all reference boards declaring sufficient capabilities, counted separately | Regular PR; regenerate when sample agent, gate, or sensor contract intentionally changes |
+| `fixtures/compliance/voice/` | Conversational state machine compliance vector suite + `expected_results.yaml`, shared between Python and C implementations | Regular PR, closed (§3) |
+| `python/neuroedge/engine/` | L3 — gate resolution, canonicalization, Gate Engine, decision trees, `NETR` layout, `build` compiler, agent's `esp32s3` firmware generator (`firmware.py`) | **RFC** if changing resolution semantics or `NETR` layout |
+| `python/neuroedge/actions/` | `@action`, `c.do()`/`c.say()`, single-use verdict token | Regular PR; boundaries in [`threat_model.md`](docs/spec/threat_model.md) |
+| `python/neuroedge/hal/` | L1 — five primitives, board model, `sim.py`, `linux.py`, `audio.py` (desktop PCM: WAV files, VAD, timeline speaker) | Regular PR; see [MCU review](docs/spec/hal_mcu_review.md) |
+| `python/neuroedge/models/` | L2 — SystemOne/SystemTwo, local command grammar, knowledge base, `providers/` (LiteLLM, System One API for Jev, adapters; `common.py`: shared logic for all provider tables — endpoints, no duplicate keys, adapter loading) | Regular PR |
+| `python/neuroedge/perception/` | L2 — conversational state machine (`voice_fsm.py`), its driver (`voice_session.py`: audio in, STT, TTS, barge-in), `providers/` (STT/TTS: OpenAI audio adapter, mock provider; `[stt]`/`[tts]` tables), `vision/` (vision model interface, mock model, `[vision]` table, frames → gate facts, `vision_fact` events) | Regular PR; behavior per [`voice_fsm.md`](docs/spec/voice_fsm.md) and [`vision.md`](docs/spec/vision.md) |
+| `python/neuroedge/sim/` | `SimSession` (text typing REPL), `ui.py` (local `--ui` page) | Regular PR |
+| `python/neuroedge/mcp_server.py`, `mcp_host.py`, `mcp_desktop.py` | MCP server · System 2 as MCP host · Claude Desktop configuration | Regular PR |
+| `python/neuroedge/testing/` | Action CI — recorder, player (replay), assertions, golden, `tool_corpus`, `voice_corpus`, `uart` (traces from device UART) | Regular PR |
+| `python/neuroedge/viz/` | `trace view`, Perfetto export | Regular PR |
+| `python/neuroedge/templates/` | Project templates for `neuroedge new` and primitive templates for `neuroedge add` (`add/`) (`*.tmpl`, pure Python generator) | Regular PR |
+| `python/neuroedge/cli/` | Typer CLI: `main.py`, `run.py` (REPL), `explain.py` | Regular PR |
+| `python/neuroedge/errors.py`, `trace.py`, `paths.py`, `net.py` | Three-component error contract · trace validation · asset location (checkout, editable, wheel) · HTTP to providers (no proxy, no redirects, bounded timeouts) | Regular PR; touching `paths.py` requires running `scripts/wheel_smoke.sh`; a new error class requires a code in `schemas/error-codes.v1.json` **and** a row in PRD Appendix B (`test_error_catalog.py` fails if either is missing) |
+| `python/tests/` | Main test suite (`testpaths`) | Regular PR |
+| `python/tests_linux/` | Tests on gpio-sim, `linux-hal` job | Regular PR |
+| `python/hatch_build.py`, `pyproject.toml`, `requirements-lock.txt`, `pip-audit-ignore.txt`, `LICENSE` | Packaging (assets into `neuroedge/_data/`, root README into metadata) · pinned dependencies · approved `pip-audit` exceptions (`pip-audit` job) · copy of root `LICENSE` | Regular PR; run `scripts/wheel_smoke.sh` |
+| `targets/esp32s3/` (root) | ESP-IDF project: `CMakeLists.txt`, `sdkconfig.defaults` (16 MB flash, PSRAM, FreeRTOS 1000 Hz), `sdkconfig.qemu` (overlay for QEMU), `partitions.csv` (factory + OTA A/B) | Regular PR; `firmware-qemu` job |
+| `targets/esp32s3/main/` | ESP-IDF firmware, shared across all agents: `main.c`, memory benchmarking framework (including heap line `NEUROEDGE_HEAP_JSON`), gate self-test on linked agent (records trace `NE1`), normative trace replay (`trace_vectors.c`); `vectors/` generated by `scripts/gen_firmware_vectors.py` | Regular PR; modifying normative traces, gates, or actions ⇒ regenerate `vectors/` |
+| `targets/esp32s3/components/ne_agent/` | Agent component generated by `neuroedge build --target esp32s3`, here for sample agent `home-voice`: `NETR` tree, gate · pin · action tables, self-test checks with host engine verdicts | Do not edit manually — `scripts/gen_firmware_gates.py` (`--check` runs in pytest) |
+| `targets/esp32s3/components/ne_gate/` | C99 walker and C token ledger | Regular PR; `NETR` layout: **RFC** |
+| `targets/esp32s3/components/ne_trace/` | `NE1` trace stream over UART — C99 format, no global variables ([`simulation_coverage.md`](docs/spec/simulation_coverage.md) §4) | Regular PR; `firmware-qemu` job |
+| `targets/esp32s3/ui/` | Device LVGL interface: screens (`ne_ui.h`), vi/en character tables, pre-rendered Be Vietnam Pro fonts, golden images and dedicated host harness; UI language rules in [`docs/spec/ui.md`](docs/spec/ui.md) | Regular PR; modifying screens, character tables, fonts, or golden cases ⇒ `bash scripts/run_ui_golden.sh --update`; `ui-golden` job |
+| `scripts/` | CI and release tooling | Regular PR |
+| `.github/` | Five workflows in `workflows/` — job list in `CHANGELOG.md` §2.5; `dependabot.yml` (pins Actions SHAs), `actionlint.yaml` | Regular PR |
+| `docs/rfc/`, `docs/spec/`, `docs/reports/` | RFCs, normative specifications, benchmark reports | Regular PR |
+| `docs/architecture/` | Bilingual product architecture: `README.md` · `vi/` + `en/` (17 chapters per tree, 00–16, VI is source, identical structure and mermaid blocks) · `assets/svg/` + `assets/excalidraw/` (posters **generated** from `scripts/gen_architecture_diagrams.py`, do not edit manually) | Regular PR — update poster models then re-run script; mermaid blocks verified by `scripts/check_architecture_mermaid.py`; new inter-package import edges declared in `python/tests/test_architecture_layers.py`; content references code, does not duplicate (§8.1) |
+| *(git history)* | Closed documents not retained in working tree: `docs/archive/` (plans, Phase 1 review minutes, RFC-0002), `docs/architecture/en/`, old proposals, and merged design notes. Retrieve via `git show 7626b62:<path>` | Do not restore into tree; reference current truth from PRD, roadmap, architecture |
+| `docs/business/` | Customer interview kit — informational input, no longer a decision gate (Q-56); `cpo-dashboard.html` generated from roadmap, `TODOS.md`, PRD §15, `CHANGELOG.md`; `kien-truc-tong-the.html` — overall architecture page for non-technical stakeholders, hand-crafted, dated snapshot (source of truth remains `docs/architecture/`) | Regular PR — regenerate by running `python3 scripts/gen_cpo_dashboard.py` when those sources change |
+| `wireframe/` | Reference HTML wireframes for UI (snapshot `ui.css`, unpackaged) — currently contains Lab Monitor for Block N5b | Regular PR |
+| `demo/` | Per-increment demo scenarios (`demo/<increment>/`): narrative script, commands, real outputs, verified replay commit; catalog in `demo/README.md` (Q-49) | Regular PR; reviewer replays scenario |
+| `docs/user/` | User documentation; `thuat-ngu.md` is the sole symbol decoder; `trang-thai.md` generated from roadmap §0 | Regular PR — `python3 scripts/gen_user_status.py` |
+| `docs/user/doi-tac/` · `docs/business/doi-tac/` · `fixtures/ha_mcp_double/` | Partner trial package (Q-70): three runnable guides, limitations page, feedback form · agreements list, feedback channels, benchmark sessions · Home Assistant MCP Server **mock** for guides | Regular PR — all command blocks in guides are marked (`scripts/guide_runner.py`, `test_partner_guides.py`); run `scripts/partner_guides_check.sh <wheel>` when guides change |
+| `docs/release.md` | Release procedure: internal tags before I6, PyPI from I6 | Regular PR |
+| `README.md` | Landing page and PyPI page (absolute links) | Regular PR — `tests/test_readme_quickstart.py` |
+| `roadmap/` | Two product documents: roadmap (progress) and PRD (requirements, decisions) | Per file in rows below |
+| `roadmap/neuroedge-roadmap.md` | Single roadmap (Q-39): four phases (§0.5, Q-52), increments I0–I18 including I2a, I2b, I3a, I4a, I5a, task statuses, exit criteria, forecasts, dependencies, release tags, scope cut ladder | Regular PR, per §8; divergence prevention rules R1–R12 in roadmap §2.4 |
+| `docs/spec/lab_mcp.md`, `docs/rfc/draft-rfc-node-giao-thuc-dieu-phoi.md` | NeuroEdge Lab design and robot node protocol. No schedule, no status, no exit criteria; references roadmap TSK codes (R1, R8) | Regular PR; mergeable even during Beta freeze (R12) |
+| `TODOS.md` | Evaluated and intentionally deferred items, with trigger milestones | Regular PR |
 
 ## 7. CI
 
-Workflow, job và cổng: `CHANGELOG.md` §2.5. `ci-sim-linux.yml` phải xanh trước khi
-hợp nhất.
+Workflows, jobs, and gates: `CHANGELOG.md` §2.5. `ci-sim-linux.yml` must be green prior to
+merge.
 
-## 8. Hoàn thành một task — cập nhật tài liệu, tiến độ, changelog
+## 8. Completing a Task — Updating Documentation, Progress, Changelog
 
-Đây là **nơi duy nhất** định nghĩa việc phải làm khi xong một task. Roadmap §0.4,
-roadmap §11.2, `CLAUDE.md` và mẫu PR chỉ dẫn về đây.
+This is the **sole place** defining what must be done when a task is finished. Roadmap §0.4,
+roadmap §11.2, `CLAUDE.md`, and the PR template refer here.
 
-Một task **chưa xong** cho tới khi các cập nhật dưới đây nằm **trong cùng PR** với mã.
+A task is **not done** until the updates below are included **in the same PR** as the code.
 
-### 8.1 Mỗi sự thật có đúng một nơi
+### 8.1 Every Truth Has Exactly One Place
 
-| Sự thật | Nơi duy nhất | Nơi khác được phép |
+| Truth | Sole Place | Allowed Elsewhere |
 |:---|:---|:---|
-| Trạng thái task, artifact, commit | Bảng task trong mục của increment, `neuroedge-roadmap.md` §4–§8 | Dẫn mã task |
-| Mục tiêu, điều kiện vào, tín hiệu đo, người của một increment | Thẻ ở đầu mục của increment đó (roadmap §4–§7) | Dẫn mã increment (`I3`) |
-| Tiêu chí ra đạt hay chưa, kèm bằng chứng | Danh sách tiêu chí ra ngay dưới bảng task của increment | Dẫn mã increment + số tiêu chí (`I3 tiêu chí 2`) |
-| Lịch: ngày dự báo, phụ thuộc, thẻ phát hành | Roadmap §0.2 (bảng increment) | Dẫn mã increment; không chép ngày hay tag |
-| Tổng quan tiến độ, số test hiện hành, hạng mục bị chặn | Roadmap §0.1–§0.2 | Không chép con số |
-| Mốc phát hành theo người dùng và increment của từng mốc | Roadmap §0.5 (bảng "Mốc phát hành theo người dùng") | CPO Dashboard và poster E-09 đọc bảng này lúc sinh; nơi khác dẫn tên hoặc số mốc |
-| Việc tiếp theo, đang làm gì | Roadmap §0.3 (Thẻ bàn giao) | Không |
-| Thang cắt phạm vi | Roadmap §9 | Dẫn bậc hoặc increment |
-| Giá trị đo B1–B5 (và A1 đo đầy đủ) | Roadmap §5.5 | Ngưỡng ở PRD §11; nơi khác dẫn mã |
-| Thiết kế (không lịch, không trạng thái) | `docs/spec/` (kể cả `lab_mcp.md`) · `docs/rfc/` | Roadmap dẫn tới; ghi chú thiết kế dẫn mã TSK, không ghi trạng thái (R1) |
-| Rủi ro sản phẩm (`R-n`) | PRD §13.2 | Dẫn mã |
-| Đã thay đổi gì | `CHANGELOG.md` §1 | Không |
-| Cách chạy, lệnh, đầu ra kỳ vọng, workflow và job CI | `CHANGELOG.md` §2 | `README.md` gốc (cũng là trang PyPI, nên mọi link tuyệt đối): tối đa 3 lệnh bắt đầu nhanh, kèm link §2 — `tests/test_readme_quickstart.py` chạy đúng các lệnh đó |
-| Bất biến không được phá | `CHANGELOG.md` §3.3 | Dẫn số bất biến |
-| Thay đổi nào cần RFC | §3 | Dẫn §3 |
-| Cấu trúc kho | §6 | Dẫn §6 |
-| Quyết định | `neuroedge-prd.md` §15 (mã `Q-N`) | Dẫn mã `Q-N` |
-| Chính sách giấy phép (allowlist) | `neuroedge-prd.md` §15, Q-11 | `NOTICE` ghi ma trận từng thành phần, dẫn Q-11 |
-| Mã lỗi `NE…`: mã nào tồn tại, tên lớp, cha, trạng thái | `schemas/error-codes.v1.json` (RFC-0015, Q-66) | Dẫn mã; `errors.py`, PRD Phụ lục B và `targets/` được test kiểm theo danh mục |
-| Lời của một mã lỗi (khi nào, vì sao, hệ thống làm gì) | PRD Phụ lục B | Dẫn mã |
-| Ý nghĩa của một mã / ký hiệu | `docs/user/thuat-ngu.md` | Dẫn mã |
-| Yêu cầu và đặc tả | PRD (`FR-*`, `NFR-*`) · `docs/spec/core_contracts.md` · `docs/rfc/` · `docs/spec/` | Dẫn mã |
-| Việc hoãn có chủ ý | `TODOS.md`, kèm mốc kích hoạt | Dẫn số mục |
-| Kịch bản demo của một increment | `demo/<increment>/kich-ban.md`; danh mục `demo/README.md` (Q-49) | Dẫn thư mục; không chép lệnh hay đầu ra |
+| Task status, artifact, commit | Task table in increment section, `neuroedge-roadmap.md` §4–§8 | Reference task code |
+| Objective, entry conditions, measurement signals, staffing of an increment | Card at the head of that increment's section (roadmap §4–§7) | Reference increment code (`I3`) |
+| Exit criteria met or not, with evidence | Exit criteria list directly below increment task table | Reference increment code + criterion number (`I3 criterion 2`) |
+| Schedule: forecast date, dependencies, release tag | Roadmap §0.2 (increment table) | Reference increment code; do not copy dates or tags |
+| Progress overview, current test count, blocked items | Roadmap §0.1–§0.2 | Do not copy numbers |
+| User release milestones and per-milestone increments | Roadmap §0.5 ("User Release Milestones" table) | CPO Dashboard and poster E-09 read this table at generation; other places reference milestone name or number |
+| Next steps, what is currently underway | Roadmap §0.3 (Handoff Card) | None |
+| Scope cut ladder | Roadmap §9 | Reference tier or increment |
+| Measurement values B1–B5 (and full A1 measurement) | Roadmap §5.5 | Thresholds in PRD §11; other places reference code |
+| Design (no schedule, no status) | `docs/spec/` (including `lab_mcp.md`) · `docs/rfc/` | Roadmap links to it; design notes reference TSK codes, do not state status (R1) |
+| Product risks (`R-n`) | PRD §13.2 | Reference code |
+| What has changed | `CHANGELOG.md` §1 | None |
+| How to run, commands, expected output, CI workflows and jobs | `CHANGELOG.md` §2 | Root `README.md` (also PyPI landing page, so all links absolute): max 3 quickstart commands, linking §2 — `tests/test_readme_quickstart.py` runs those exact commands |
+| Invariants that must not be broken | `CHANGELOG.md` §3.3 | Reference invariant number |
+| Which changes require an RFC | §3 | Reference §3 |
+| Repository structure | §6 | Reference §6 |
+| Decisions | `neuroedge-prd.md` §15 (`Q-N` codes) | Reference `Q-N` code |
+| License policy (allowlist) | `neuroedge-prd.md` §15, Q-11 | `NOTICE` lists per-component matrix, referencing Q-11 |
+| Error codes `NE…`: existence, class name, parent, status | `schemas/error-codes.v1.json` (RFC-0015, Q-66) | Reference code; `errors.py`, PRD Appendix B, and `targets/` are test-verified against catalog |
+| Error message text (when, why, system reaction) | PRD Appendix B | Reference code |
+| Meaning of a code / symbol | `docs/user/thuat-ngu.md` | Reference code |
+| Requirements and specifications | PRD (`FR-*`, `NFR-*`) · `docs/spec/core_contracts.md` · `docs/rfc/` · `docs/spec/` | Reference code |
+| Intentionally deferred work | `TODOS.md`, with trigger milestone | Reference item number |
+| Demo scenario for an increment | `demo/<increment>/kich-ban.md`; catalog in `demo/README.md` (Q-49) | Reference directory; do not duplicate commands or output |
 
-Nơi khác **dẫn mã** (`TSK-S2-03`, `Q-17`, `RFC-0004`, `TODOS.md #15`), không chép
-lại nội dung. Khi cần chép một câu để câu văn đọc được, đó là dấu hiệu nên dẫn mã.
+Other locations **reference the code** (`TSK-S2-03`, `Q-17`, `RFC-0004`, `TODOS.md #15`), rather than copying
+content. When copying a sentence feels necessary for readability, that is a signal to reference the code instead.
 
-### 8.2 Checklist, theo thứ tự
+### 8.2 Checklist, in Order
 
-1. **Máy xanh.** `pytest -q` → 0 failed, 0 skipped · `ruff check .` và
-   `ruff format --check .` (trong `python/`) sạch · `neuroedge gate lint` xanh. CI chạy
-   thêm các cổng ở `CHANGELOG.md` §2.5 (digest, corpus nghịch đảo, giấy phép, wheel).
-2. **Tiến độ, trong roadmap.**
-   - Dòng task: ô trạng thái có **đúng một** glyph (R9) — ✅ xong · 🟡 đang làm hoặc xong
-     một phần · ⏳ chưa bắt đầu · ⏸ hoãn · 🔴 bị chặn. Xong: `✅ Hoàn thành (YYYY-MM-DD)` +
-     đường dẫn artifact + commit hoặc PR. Hoãn: `⏸ Hoãn` + lý do một dòng + mốc (và một
-     mục `TODOS.md`). Bị chặn: `🔴` + thứ đang chặn.
-   - Task mới: cấp mã theo họ mã ở roadmap §2.4 — việc thuộc một họ có sẵn thì dùng họ đó,
-     không thì `TSK-I<n>-<nn>` với `n` là increment đầu tiên lên lịch nó. Mã không bao giờ
-     đánh lại; dời task sang increment khác là dời dòng của nó.
-   - Tiêu chí ra: `[x]` + **bằng chứng chạy lại được** (lệnh + kết quả, hoặc tên test).
-   - Demo (Q-49): increment — hay phần của nó không cần phần cứng — vừa xong thì thêm
-     hoặc chạy lại kịch bản trong `demo/<increment>/`, ghi commit đã chạy lại và sửa bảng
-     ở `demo/README.md`. Người review chạy lại kịch bản.
-   - §0.2: sửa cột "Tiến độ" của increment mỗi khi một task của nó đổi trạng thái (số ✅
-     trên tổng số task, R10), và cột "Trạng thái" nếu cần. Cột "Dự báo" chỉ đổi **cùng PR
-     với bằng chứng** làm nó đổi, và dời luôn mọi increment phụ thuộc (R5).
-   - §0.1: sửa con số (số test, hạng mục bị chặn).
-   - §0.3: **thay** các mục đã lỗi thời, không nối thêm. Xem §8.3.
-3. **Changelog.** Một mục trong `## [Chưa phát hành]` ở đầu `CHANGELOG.md` §1,
-   dưới đúng nhóm *Đã thêm / Đã đổi / Đã sửa / Đã bỏ*:
+1. **Green build.** `pytest -q` → 0 failed, 0 skipped · `ruff check .` and
+   `ruff format --check .` (in `python/`) clean · `neuroedge gate lint` green. CI also executes
+   gates in `CHANGELOG.md` §2.5 (digest, negative corpus, licensing, wheel).
+2. **Progress, in roadmap.**
+   - Task rows: status cell has **exactly one** glyph (R9) — ✅ done · 🟡 in progress or partially
+     completed · ⏳ not started · ⏸ deferred · 🔴 blocked. Done: `✅ Done (YYYY-MM-DD)` +
+     artifact path + commit or PR. Deferred: `⏸ Deferred` + one-line reason + milestone (and a
+     `TODOS.md` entry). Blocked: `🔴` + blocker.
+   - New tasks: assign codes per family prefix in roadmap §2.4 — if work belongs to an existing family, use that prefix;
+     otherwise `TSK-I<n>-<nn>` where `n` is the first increment scheduling it. Codes are never
+     reassigned; moving a task to another increment moves its row.
+   - Exit criteria: `[x]` + **reproducible evidence** (command + result, or test name).
+   - Demo (Q-49): when an increment — or its hardware-free portion — completes, add
+     or rerun scenarios in `demo/<increment>/`, record verified replay commit, and update table
+     in `demo/README.md`. Reviewer reruns scenario.
+   - §0.2: update increment "Progress" column whenever one of its tasks changes status (number of ✅
+     over total tasks, R10), and "Status" column if needed. "Forecast" column updates only **in the same PR
+     with evidence** driving the change, shifting all dependent increments simultaneously (R5).
+   - §0.1: update metrics (test count, blocked items).
+   - §0.3: **replace** stale entries, do not append. See §8.3.
+3. **Changelog.** One entry in `## [Unreleased]` at top of `CHANGELOG.md` §1,
+   under the appropriate section *Added / Changed / Fixed / Removed*:
 
    ```markdown
-   - **TSK-S2-03 — Gate Engine trả phán quyết.** `python/neuroedge/engine/gate.py`.
-     Kiểm: `pytest tests/test_gate_engine.py`. (FR-GATE-03, Q-17)
+   - **TSK-S2-03 — Gate Engine returns verdicts.** `python/neuroedge/engine/gate.py`.
+     Verify: `pytest tests/test_gate_engine.py`. (FR-GATE-03, Q-17)
    ```
 
-   Tối đa 3 dòng, mở đầu bằng mã task (không có task thì mã `Q-N` hoặc `FR-*`); được đặt
-   mã increment phía trước (`**I3 · TSK-S4-01 — …**`). Câu đầu là thay đổi **quan sát
-   được**; sau đó là nơi của nó và cách kiểm. **Một tính năng một mục:** task đã có
-   mục trong `[Chưa phát hành]` thì sửa mục đó cho khớp trạng thái cuối, không thêm
-   mục mới. Quyết định chỉ dẫn mã `Q-N` — nội dung ở PRD §15. Lý do dài và bối cảnh
-   thuộc PR hoặc RFC. Nếu lệnh hoặc đầu ra kỳ vọng đổi, sửa `CHANGELOG.md` §2. Nếu
-   thêm một bất biến, sửa §3.3.
-4. **Đặc tả, chỉ khi hành vi khác đặc tả.** Sửa FR/NFR hoặc Phụ lục cho khớp. Thay
-   đổi nằm trong danh sách §3 thì **bắt buộc RFC**. Có quyết định mới thì cấp mã
-   `Q-N` ở PRD §15.
-5. **Hoãn.** Việc cắt ra khỏi task vào `TODOS.md`, kèm mốc kích hoạt — một increment, một
-   mã task hoặc một sự kiện quan sát được, không phải tuần hay tháng. Mục `TODOS.md`
-   mà task vừa làm xong thì **xoá**, và ghi vào changelog. Mục nào có mốc kích hoạt
-   nhắc tới task vừa xong thì **đọc lại mốc đó** — mốc đã tới thì xử lý hoặc viết lại.
-6. **Quét tham chiếu lỗi thời.** Với mỗi sự thật vừa đổi (trạng thái, số liệu, tên),
-   `grep` mã hoặc con số cũ trong `*.md` và sửa. Một câu đúng hôm qua mà sai hôm nay
-   tệ hơn không có câu nào.
+   Maximum 3 lines, starting with task code (or `Q-N` / `FR-*` if no task exists); may prepend
+   increment code (`**I3 · TSK-S4-01 — …**`). First sentence is **observable** change;
+   followed by location and verification method. **One feature per entry:** if task already has
+   an entry in `[Unreleased]`, edit it to reflect final state, do not add a
+   new entry. Decisions only reference `Q-N` codes — details live in PRD §15. Extended rationale and context
+   belong in PR or RFC. If commands or expected output change, update `CHANGELOG.md` §2. If
+   adding an invariant, update §3.3.
+4. **Specifications, only when behavior differs from spec.** Update FR/NFR or Appendices to match. Changes
+   listed in §3 **require an RFC**. New decisions receive a `Q-N` code in PRD §15.
+5. **Deferrals.** Work cut from tasks goes to `TODOS.md`, with trigger milestone — an increment, task
+   code, or observable event, not calendar weeks or months. When a task completes work in a `TODOS.md` item,
+   **delete** that item and record in changelog. For items whose trigger milestone
+   mentions the completed task, **re-evaluate the milestone** — if reached, execute or rewrite.
+6. **Scan for stale references.** For each updated truth (status, metric, name),
+   search for old codes or numbers across `*.md` and update. A sentence that was true yesterday but false today
+   is worse than no sentence at all.
 
-### 8.3 Quy tắc viết
+### 8.3 Writing Rules
 
-- **Thay, đừng nối.** Bảng trạng thái và Thẻ bàn giao mô tả *hiện tại*. Lịch sử
-  thuộc `CHANGELOG.md` và git.
-- **Thẻ bàn giao ngắn.** *Vừa hoàn thành* chỉ gồm mã task hoặc quyết định của
-  **phiên gần nhất**, mỗi mục một dòng. *Việc tiếp theo* tối đa 5 mục, đúng thứ
-  tự làm. *Lưu ý* chỉ giữ điều chưa có ở `CHANGELOG.md` §3.3, mỗi điều một dòng kèm mã.
-- **Không ghi con số dễ lỗi thời ngoài nơi của nó.** Số test, số fixture, tiến độ
-  chỉ nằm ở roadmap §0.1–§0.2; ngày dự báo chỉ ở §0.2. Nơi khác viết điều kiện
-  (*"0 failed, 0 skipped"*, *"mọi tệp trong `invalid/` đều bị từ chối"*), không viết số.
-- **Lịch bằng increment và ngày tuyệt đối.** Xếp lịch bằng mã increment (`I3`, "sau
-  I8") hoặc ngày tuyệt đối (`2026-11-16`); không dùng `Tuần N`, `Tháng N`, `Sprint N`
-  hay "tuần sau" cho lịch mới (R6). Khoảng thời gian tính từ lúc một increment mở
-  ("2 tuần sau khi I8 mở"). Tên sprint và khối cũ chỉ dùng khi dẫn lịch sử.
-- **Tham chiếu bằng mã hoặc mục**, không bằng số dòng (`tệp.md:NNN`) — R11.
-- **Câu ngắn, một ý.** Bảng khi có từ ba mục cùng cấu trúc trở lên. Tiếng Việt;
-  mã, lệnh, đường dẫn giữ nguyên.
+- **Replace, do not append.** Status tables and Handoff Card describe *the present*. History
+  belongs in `CHANGELOG.md` and git.
+- **Keep Handoff Card concise.** *Just completed* lists only task codes or decisions from the
+  **most recent session**, one line per item. *Next steps* has at most 5 items, strictly in execution
+  order. *Notes* retains only items not already in `CHANGELOG.md` §3.3, one line per item with code.
+- **Do not record volatile numbers outside their home.** Test counts, fixture counts, and progress
+  live only in roadmap §0.1–§0.2; forecast dates only in §0.2. Elsewhere, write conditions
+  (*"0 failed, 0 skipped"*, *"all files in `invalid/` are rejected"*), not numbers.
+- **Schedule using increments and absolute dates.** Schedule via increment codes (`I3`, "after
+  I8") or absolute dates (`2026-11-16`); do not use `Week N`, `Month N`, `Sprint N`,
+  or "next week" for new schedules (R6). Duration measures from when an increment opens
+  ("2 weeks after I8 opens"). Legacy sprint and block names are used only for historical reference.
+- **Reference by code or section**, not line number (`file.md:NNN`) — R11.
+- **Short sentences, one idea.** Tables when there are three or more items of the same structure. English;
+  code, commands, paths kept unchanged.

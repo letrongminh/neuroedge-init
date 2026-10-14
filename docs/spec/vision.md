@@ -1,304 +1,304 @@
-# Thị giác — từ khung hình tới dữ kiện gate và bằng chứng trong vết ghi
+# Vision — from frames to gate facts and evidence in traces
 
-**Trạng thái:** đặc tả chuẩn tắc (TSK-V1b-03, V1b-04, V1b-06, V1b-08). Hợp đồng gốc: [RFC-0012](../rfc/0012-nguyen-thuy-vision-in.md)
-§3c–§3e, §9; quyết định Q-54 (thị giác quy về dữ kiện gõ kiểu, ngưỡng khoá ở gate), Q-62; yêu cầu
-FR-MDL-04, FR-MDL-07, FR-CI-02, NFR-PRIV-01, NFR-PRIV-03. Hiện thực: `python/neuroedge/perception/vision/`,
-lint ở `python/neuroedge/trace.py`, phát lại ở `python/neuroedge/testing/player.py`. Từ khoá **PHẢI**,
-**KHÔNG ĐƯỢC** mang nghĩa như RFC 2119.
+**Trạng thái:** canonical specification (TSK-V1b-03, V1b-04, V1b-06, V1b-08). Original contract: [RFC-0012](../rfc/0012-nguyen-thuy-vision-in.md)
+§3c–§3e, §9; decisions Q-54 (vision reduces to typed facts, thresholds locked at gate), Q-62; requirements
+FR-MDL-04, FR-MDL-07, FR-CI-02, NFR-PRIV-01, NFR-PRIV-03. Implementation: `python/neuroedge/perception/vision/`,
+lint in `python/neuroedge/trace.py`, replay in `python/neuroedge/testing/player.py`. Keywords **MUST**,
+**MUST NOT** carry their RFC 2119 meanings.
 
-Tài liệu này là nơi **duy nhất** định nghĩa đường đi từ khung hình camera tới dữ kiện gate, hợp đồng của
-mô hình thị giác và dạng sự kiện `vision_fact`. RFC-0012 giữ lý do; ở đây giữ chỗ lắp (§2) cho
-`vision.in` (TSK-V1b-01, V1b-02) và cho Action CI khung hình (TSK-V1b-04).
+This document is the **single place** defining the path from camera frames to gate facts, the contract of
+vision models, and the `vision_fact` event shape. RFC-0012 preserves rationale; here preserves integration points (§2) for
+`vision.in` (TSK-V1b-01, V1b-02) and for frame-level Action CI (TSK-V1b-04).
 
-## 1. Nguyên tắc
+## 1. Principles
 
-1. **Mô hình chỉ cấp dữ kiện, không có thẩm quyền.** Đầu ra của mô hình là đầu vào **không tin cậy**:
-   kiểm miền (§3.2), rồi ngưỡng, rồi gate. Ngưỡng độ tin cậy và số đếm là tiêu chí `numeric` khoá ở gate
-   (Q-54, RFC-0009); tầng nhận thức không có ngưỡng nào ngoài hai hằng ghim trong mã (§4.1).
-2. **Thiếu thì chặn.** Mất mô hình, mô hình trả quá hạn, kết quả rác, mất khung, camera đứng hình, khung
-   quá cũ ⇒ dữ kiện **chưa quyết** ⇒ gate chặn `criterion_unavailable`. Không nội suy từ khung trước,
-   không có giá trị mặc định "không thấy người" (bất biến #2).
-3. **Vết ghi không chứa ảnh.** Chỉ `vision_ref` (băm + kích thước) và nhãn/điểm của các khung trong cửa sổ.
-   `uri` chỉ khi `metadata.raw_capture` là `true`.
-4. **Replay không gọi mô hình.** Phán quyết được tính lại từ nhãn đã ghi (§6).
+1. **Models only provide facts, no authority.** Model outputs are **untrusted** inputs:
+   domain check (§3.2), then threshold, then gate. Confidence thresholds and counts are `numeric` criteria locked at the gate
+   (Q-54, RFC-0009); the perception layer has no thresholds other than two constants pinned in code (§4.1).
+2. **Missing data blocks.** Model missing, model times out, garbage output, dropped frames, frozen camera, frames
+   too old ⇒ facts **unresolved** ⇒ gate blocks with `criterion_unavailable`. No interpolation from previous frames,
+   no default "không thấy người" ("no person seen") value (invariant #2).
+3. **Traces do not contain images.** Only `vision_ref` (hash + size) and labels/scores of frames in the window.
+   `uri` only when `metadata.raw_capture` is `true`.
+4. **Replay does not invoke models.** Verdicts are recomputed from recorded labels (§6).
 
-## 2. Chỗ lắp cho camera — khung hình vào, dữ kiện ra
+## 2. Integration point for camera — frames in, facts out
 
 ```text
  vision.in (HAL: linux / sim)            perception/vision/                       engine
  ───────────────────────────             ─────────────────────────────            ─────────────────
  Frame(seq, captured_ms, pixels)  ──►    VisionPipeline.push(frame)
-                                            model.detect(frame)   (không tin cậy)
-                                            sanitize → vùng → bộ đệm cửa sổ
+                                            model.detect(frame)   (untrusted)
+                                            sanitize → zone → window buffer
                                          VisionPipeline.facts_for(engine.tree(key))
-                                            vision_fact × mỗi dữ kiện   ──►  EventLog
-                                            {tiêu_chí: Fact}            ──►  engine.evaluate(key, facts)
+                                            vision_fact × each fact     ──►  EventLog
+                                            {criterion: Fact}           ──►  engine.evaluate(key, facts)
 ```
 
-Hợp đồng cho phía camera (TSK-V1b-01 trên `linux`, TSK-V1b-02 camera ảo trên `sim`):
+Contract for camera side (TSK-V1b-01 on `linux`, TSK-V1b-02 virtual camera on `sim`):
 
-| Trường `Frame` | Ý nghĩa |
+| `Frame` field | Meaning |
 |:---|:---|
-| `seq` | Số thứ tự khung **của camera**: số nguyên, tăng 1 mỗi khung. Nhảy số (mất khung) hay lặp số làm cửa sổ **bắt đầu lại** |
-| `captured_ms` | Mốc đọc HAL, trên **đồng hồ của `EventLog`** của phiên (cùng đồng hồ với `Fact.read_ms`). Số hữu hạn; `Frame` từ chối giá trị khác |
-| `pixels` | Byte ảnh. Chỉ ở trong bộ nhớ; không bao giờ vào vết ghi. `vision_ref.sha256` là SHA-256 của chính các byte này |
-| `width`, `height`, `pixel_format` | Mô tả khung; tầng nhận thức không dùng để quyết |
+| `seq` | Frame sequence number **of the camera**: integer, increments by 1 per frame. Sequence jumps (dropped frames) or repeated sequence numbers cause the window to **restart** |
+| `captured_ms` | HAL read timestamp, on session **`EventLog` clock** (same clock as `Fact.read_ms`). Finite number; `Frame` rejects other values |
+| `pixels` | Image bytes. In memory only; never in traces. `vision_ref.sha256` is the SHA-256 of these exact bytes |
+| `width`, `height`, `pixel_format` | Frame description; perception layer does not use them for decisions |
 
-Thứ tự gọi trong phiên: `push` mọi khung ngay khi HAL trao; **ngay trước** `engine.evaluate`, gọi
-`facts_for(engine.tree(key))` rồi truyền kết quả làm `context` của `evaluate`. `facts_for` ghi sự kiện
-`vision_fact` ở offset của thời điểm lượng giá, nên chúng đứng trước `gate_evaluation_begin` của cùng
-phán quyết. Dữ kiện không đọc được thì **vắng mặt** trong kết quả; engine chặn `criterion_unavailable`.
+Call order in a session: `push` every frame as soon as delivered by HAL; **immediately before** `engine.evaluate`, call
+`facts_for(engine.tree(key))` and pass result as `context` of `evaluate`. `facts_for` records
+`vision_fact` events at the offset of the evaluation timestamp, so they precede `gate_evaluation_begin` of the same
+verdict. Facts that cannot be read are **absent** from the result; engine blocks with `criterion_unavailable`.
 
-Camera ảo trong `sim` (V1b-02) phát lại chuỗi khung đã ghi **và** — để `verify` so quyết định giữa target
-— kết quả `perception` đã ghi (RFC-0012 §3f); đó là việc của slice đó, cùng `Frame` này.
+Virtual camera in `sim` (V1b-02) replays recorded frame sequences **and** — for `verify` cross-target decision comparisons
+— recorded `perception` results (RFC-0012 §3f); that is the responsibility of that slice, using this same `Frame`.
 
-## 3. Mô hình thị giác
+## 3. Vision models
 
-### 3.1 Giao diện (FR-MDL-04, FR-MDL-07)
+### 3.1 Interface (FR-MDL-04, FR-MDL-07)
 
-Một phương thức: **khung vào, phát hiện ra**.
+One method: **frames in, detections out**.
 
 ```python
 class VisionModel(Protocol):
-    identity: ModelIdentity            # tên + sha256 của tệp mô hình
-    labels: Collection[str]            # tập nhãn ĐÓNG mà mô hình nói được
+    identity: ModelIdentity            # model name + sha256 of file
+    labels: Collection[str]            # CLOSED set of labels the model can predict
     def detect(self, frame: Frame) -> Sequence[Detection] | Inference: ...
 ```
 
-- `Detection(label, score, box)`: `box` là `(x0, y0, x1, y1)` chuẩn hoá trong `[0, 1]`, `x0 < x1`, `y0 < y1`.
-- `Inference(detections, latency_ms)`: trả về thay cho dãy trần khi mô hình mô phỏng muốn nói nó tốn bao lâu
-  (thời gian ảo của phiên; bản giả không bao giờ ngủ). Không có `latency_ms` thì tầng nhận thức tự đo.
-- `detect` là **đồng bộ**. Adapter bất đồng bộ (cloud) tự bọc lời gọi; `detect` trả về awaitable bị coi là
-  `model_error`, không bao giờ được `await` ngầm.
+- `Detection(label, score, box)`: `box` is normalized `(x0, y0, x1, y1)` in `[0, 1]`, `x0 < x1`, `y0 < y1`.
+- `Inference(detections, latency_ms)`: returned instead of raw sequence when simulation model wants to specify how long it took
+  (virtual session time; doubles never sleep). Without `latency_ms`, perception layer measures it.
+- `detect` is **synchronous**. Asynchronous adapters (cloud) wrap calls internally; `detect` returning an awaitable is treated as
+  `model_error`, never awaited implicitly.
 
-### 3.2 Mọi thứ mô hình nói đều không tin cậy
+### 3.2 Everything the model says is untrusted
 
-`sanitize` kiểm miền. **Cả khung bị từ chối** (`rejected: garbage`, mọi dữ kiện trên khung đó chưa quyết) khi:
-kết quả không phải list/tuple; quá `MAX_DETECTIONS` (1000) phát hiện; một phần tử không phải `Detection`;
-nhãn ngoài `labels` của mô hình; `score` không phải số (chuỗi, `bool`, `None`); `box` thiếu, sai hình hay
-ngoài `[0, 1]`. (Phát hiện không có `box` bị từ chối: không đặt được vào vùng, mà bỏ nó đi là báo thiếu người.)
+`sanitize` checks domains. **The entire frame is rejected** (`rejected: garbage`, all facts on that frame unresolved) when:
+result is not list/tuple; exceeds `MAX_DETECTIONS` (1000) detections; an element is not a `Detection`;
+label is outside model's `labels`; `score` is not a number (string, `bool`, `None`); `box` missing, malformed, or
+outside `[0, 1]`. (Detections without a `box` are rejected: cannot be assigned to a zone, and discarding it would falsely under-report presence.)
 
-Điểm là **số nhưng không hợp lệ** (NaN, ±inf, ngoài `[0, 1]`) thì **được giữ**: dữ kiện `confidence`/`count`
-của khung đó là NaN, nên gate trả `value_out_of_range` bất kể `range` nó khai; dữ kiện `present` (kiểu bool
-không có khoảng) chưa quyết (`garbage`). Cả hai đều BLOCK (RFC-0012 §3e, dòng cuối).
+Scores that are **numeric but invalid** (NaN, ±inf, outside `[0, 1]`) are **retained**: the `confidence`/`count` fact
+for that frame becomes NaN, so the gate returns `value_out_of_range` regardless of declared `range`; `present` facts (boolean
+without a range) remain unresolved (`garbage`). Both result in BLOCK (RFC-0012 §3e, last line).
 
-### 3.3 Lỗi của mô hình
+### 3.3 Model errors
 
-| Chuyện xảy ra | Khung bị từ chối với | Ghi ở |
+| What happens | Frame rejected with | Recorded in |
 |:---|:---|:---|
-| `detect` ném `VisionUnavailable` (mất mô hình, mất kết nối) | `model_unavailable` | `frames[].rejected` |
-| `detect` ném lỗi khác | `model_error` | như trên |
-| Trả lời sau `timeout_ms` (mặc định 200; `[vision] timeout_ms`), hay `latency_ms` không phải số hữu hạn ≥ 0 | `timeout` | như trên |
-| Kết quả rác (§3.2) | `garbage` | như trên |
+| `detect` raises `VisionUnavailable` (model lost, connection lost) | `model_unavailable` | `frames[].rejected` |
+| `detect` raises other exception | `model_error` | as above |
+| Responds after `timeout_ms` (default 200; `[vision] timeout_ms`), or `latency_ms` is not a finite number ≥ 0 | `timeout` | as above |
+| Garbage output (§3.2) | `garbage` | as above |
 
-`latency_ms` do mô hình tự báo chỉ được tin theo chiều tăng: thời gian đo thật của lời gọi không bao giờ bị bớt đi.
+`latency_ms` self-reported by model is only trusted upward: actual measured call duration is never reduced.
 
-`push` **không bao giờ ném** vì lỗi của mô hình. Khung bị từ chối vẫn vào cửa sổ: mọi dữ kiện trên cửa sổ chứa
-nó chưa quyết cho tới khi nó trôi ra (`min_frames` khung sau). `VisionUnavailable` là lớp con của
-`PerceptionUnavailableError` (`NE5001`): không thêm mã lỗi.
+`push` **never raises** on model errors. Rejected frames still enter the window: all facts on a window containing
+it remain unresolved until it rolls out (`min_frames` frames later). `VisionUnavailable` is a subclass of
+`PerceptionUnavailableError` (`NE5001`): does not add an error code.
 
-### 3.4 Chọn mô hình bằng cấu hình (khối `[vision]`)
+### 3.4 Model selection via configuration (`[vision]` block)
 
 ```toml
 [vision]
-provider   = "replay"                        # hoặc "python:pkg.mod:factory"
-model      = "models/person-det.tflite"      # tệp CỦA BẠN; NeuroEdge không giao kèm, không tải về
+provider   = "replay"                        # or "python:pkg.mod:factory"
+model      = "models/person-det.tflite"      # YOUR file; NeuroEdge does not ship or download it
 timeout_ms = 200
 
-[vision.options]                             # cho adapter của bạn
+[vision.options]                             # for your adapter
 ```
 
-Đổi mô hình = đổi dòng `provider` (và `[vision.options]`); camera, dữ kiện, gate không đổi. Giống `[stt]`/`[tts]`
-(`perception/providers/`): `registry.make_vision_model(config, root)`; adapter tự viết là
-`factory(config) -> VisionModel`, bị kiểm (có `identity`, `labels` không rỗng gồm chuỗi, `detect`).
-`provider` vắng ⇒ bảng hợp lệ nhưng `make_vision_model` từ chối (không có mặc định thật). Có sẵn: `replay`.
-Mô hình thật (ONNX, cloud, NPU sau `accel/`: TSK-V1b-05) là adapter; không phụ thuộc nặng nào được thêm.
+Changing model = changing `provider` line (and `[vision.options]`); camera, facts, gates remain unchanged. Similar to `[stt]`/`[tts]`
+(`perception/providers/`): `registry.make_vision_model(config, root)`; custom adapters are
+`factory(config) -> VisionModel`, validated (has `identity`, non-empty string `labels`, `detect`).
+Missing `provider` ⇒ valid table but `make_vision_model` rejects (no real default). Built-in: `replay`.
+Real models (ONNX, cloud, NPU behind `accel/`: TSK-V1b-05) are adapters; no heavy dependencies added.
 
-`parse_vision` kiểm bảng (cú pháp RFC-0012 §3c): `kind` ∈ {`present`, `count`, `confidence`}; khoá lạ trong
-`[vision.facts.*]` (gồm `bands`, mọi ngưỡng) bị từ chối; `min_frames` nguyên 2–64 (mặc định 3); `zone` phải khai;
-vùng là hình chữ nhật chuẩn hoá `[x0, y0, x1, y1]` (đa giác bị từ chối); khoá API bị từ chối, không lặp lại giá trị.
-Lỗi là `AgentManifestError` (`NE3002`). **Móc vào `neuroedge build`** (kiểm kiểu tiêu chí cùng tên, `confidence_gte`
-trên dữ kiện thị giác, `present` thiếu `confidence` ở lúc build/nạp agent) chưa làm ở slice này (§8).
+`parse_vision` validates tables (syntax RFC-0012 §3c): `kind` ∈ {`present`, `count`, `confidence`}; unknown keys in
+`[vision.facts.*]` (including `bands`, any thresholds) are rejected; integer `min_frames` 2–64 (default 3); `zone` required;
+zone is normalized rectangle `[x0, y0, x1, y1]` (polygons rejected); API keys rejected, values not echoed.
+Errors are `AgentManifestError` (`NE3002`). **Wiring into `neuroedge build`** (checking matching criterion types, `confidence_gte`
+on visual facts, `present` lacking `confidence` at agent build/load time) is pending in this slice (§8).
 
-### 3.5 Mô hình giả để thử (`provider = "replay"`)
+### 3.5 Test double model (`provider = "replay"`)
 
-`ScriptedVisionModel` (`fake.py`): không ML, không mạng, tất định, dùng cho test, `sim` và Action CI khung hình.
-`script` cho biết mô hình thấy gì ở khung có số thứ tự đó; **khung ngoài script không phải "không có ai"**:
-mô hình chưa sẵn sàng cho khung đó (`model_unavailable`) trừ khi `default = []` nói rõ cảnh rỗng. `fail` liệt kê số
-khung mà nó ném lỗi. Danh tính khi không có tệp: SHA-256 của chính script và tập nhãn.
+`ScriptedVisionModel` (`fake.py`): no ML, no network, deterministic, used for tests, `sim`, and frame Action CI.
+`script` specifies what model sees at each frame sequence number; **frames outside script are not "empty"**:
+model is not ready for that frame (`model_unavailable`) unless `default = []` explicitly specifies an empty scene. `fail` lists frame
+numbers where it raises errors. Identity when no file is present: SHA-256 of the script itself and label set.
 
-## 4. Dữ kiện
+## 4. Facts
 
-Mỗi `[vision.facts.<tên>]` thành một tiêu chí gate trùng tên: `present` → `bool`; `count`, `confidence` → `numeric`.
+Each `[vision.facts.<name>]` becomes a gate criterion of the same name: `present` → `bool`; `count`, `confidence` → `numeric`.
 
-### 4.1 Giá trị trên một khung
+### 4.1 Per-frame values
 
-Từ điểm của các phát hiện **cùng nhãn, trong vùng** của dữ kiện (phát hiện thuộc vùng khi **tâm** hộp của nó nằm trong
-hình chữ nhật, biên tính):
+Computed from scores of detections **matching label, within zone** of the fact (detection belongs to zone when box **center** lies within
+rectangle, boundary inclusive):
 
-| `kind` | Giá trị |
+| `kind` | Value |
 |:---|:---|
-| `confidence` | điểm cao nhất; **không có phát hiện ⇒ `0.0`** (vắng mặt là điểm 0, không phải chưa quyết) |
-| `count` | số phát hiện điểm ≥ `PRESENT_SCORE_FLOOR` (**0.5**, hằng ghim trong mã) |
+| `confidence` | highest score; **no detections ⇒ `0.0`** (absence is score 0, not unresolved) |
+| `count` | number of detections with score ≥ `PRESENT_SCORE_FLOOR` (**0.5**, pinned constant in code) |
 | `present` | `count ≥ 1` |
 
-Hai hằng ghim trong mã, không cấu hình được, ghi vào mỗi `vision_fact` để replay kiểm: `PRESENT_SCORE_FLOOR = 0.5`
-và `MAX_FRAME_AGE_MS = 1000`. Ngưỡng an toàn thật là tiêu chí `numeric` `confidence` của gate.
+Two pinned constants in code, non-configurable, recorded in every `vision_fact` for replay verification: `PRESENT_SCORE_FLOOR = 0.5`
+and `MAX_FRAME_AGE_MS = 1000`. True safety thresholds are the gate's `confidence` `numeric` criteria.
 
-### 4.2 Cửa sổ và phép AND
+### 4.2 Windows and AND conjunction
 
-Cửa sổ là `min_frames` khung **liên tiếp** mới nhất. Gate lượng giá tiêu chí **trên từng khung rồi AND**: một khung
-nhiễu không mở được gì, một khung xấu luôn chặn — đúng cho cả `gte`/`gt` lẫn `lte`/`lt`
-(`count lte 0` với `[0, 1, 0]` ⇒ BLOCK, `[0, 0, 0]` ⇒ ALLOW; `confidence gte 0.85` với `[0.90, 0.80, 0.90]` ⇒ BLOCK).
-Cách hiện thực mà **không đổi ngữ nghĩa gate**: `engine_fact` duyệt các khung của cửa sổ qua chính `walk` của
-cây quyết định và đưa cho engine **một** `Fact` — giá trị của khung đầu tiên tiêu chí từ chối, nếu không thì khung
-cuối. Engine duyệt cây như thường và ghi đúng phán quyết AND, cùng `reason` của khung xấu đầu tiên.
+Window is the latest `min_frames` **consecutive** frames. Gate evaluates criteria **on each frame then ANDs**: a single
+noisy frame cannot open anything, a single bad frame always blocks — holds for both `gte`/`gt` and `lte`/`lt`
+(`count lte 0` with `[0, 1, 0]` ⇒ BLOCK, `[0, 0, 0]` ⇒ ALLOW; `confidence gte 0.85` with `[0.90, 0.80, 0.90]` ⇒ BLOCK).
+Implementation that **preserves gate semantics**: `engine_fact` walks window frames through decision tree's
+own `walk` and presents the engine **one** `Fact` — value of first frame rejected by criterion, otherwise the
+last frame. Engine walks tree normally and records exact AND verdict, alongside `reason` of the first bad frame.
 
-### 4.3 Khi nào dữ kiện chưa quyết
+### 4.3 When facts are unresolved
 
-`FactReading.unavailable` thuộc `UNAVAILABLE`; gate chặn `criterion_unavailable`:
+`FactReading.unavailable` belongs to `UNAVAILABLE`; gate blocks with `criterion_unavailable`:
 
-| Lý do | Khi |
+| Reason | When |
 |:---|:---|
-| `model_unavailable`, `model_error`, `timeout`, `garbage` | một khung của cửa sổ bị từ chối (§3.3), hoặc `present` trên điểm không hợp lệ |
-| `window_size` | chưa đủ `min_frames` khung (khởi động, hay vừa **bắt đầu lại** vì mất khung) |
-| `frame_gap` | `frame_seq` trong cửa sổ không liên tiếp (chỉ replay thấy: đường sống đã bắt đầu lại cửa sổ) |
-| `frozen` | hai khung liền nhau có cùng `vision_ref.sha256`, kể cả khi driver gắn mốc giờ mới (RFC-0012 §9.12) |
-| `future` | một khung được đọc sau thời điểm lượng giá (`age_ms < 0`) |
-| `stale` | khung cũ nhất già hơn `MAX_FRAME_AGE_MS` = 1000 ms, dù `max_age_ms` của gate đặt lớn hơn |
-| `unpaired` | gate dùng `present`/`count` mà **không** có tiêu chí `numeric` `confidence` cùng nhãn, cùng vùng trong `allow_when` (§9.10). `bool` không có `max_age_ms`: không có đôi này, camera đứng hình lặp "không có người" sẽ qua `present: false`. Build từ chối gate như vậy; đây là cùng luật lúc chạy và lúc replay |
-| `mismatch` | chỉ ở replay: sự kiện đã ghi không khớp nhãn của chính nó (§6) |
+| `model_unavailable`, `model_error`, `timeout`, `garbage` | a frame in the window was rejected (§3.3), or `present` on invalid score |
+| `window_size` | fewer than `min_frames` frames (startup, or just **restarted** due to dropped frame) |
+| `frame_gap` | non-consecutive `frame_seq` in window (only observed in replay: live pipeline already restarted window) |
+| `frozen` | two consecutive frames share identical `vision_ref.sha256`, even if driver attached a new timestamp (RFC-0012 §9.12) |
+| `future` | a frame was read after evaluation timestamp (`age_ms < 0`) |
+| `stale` | oldest frame is older than `MAX_FRAME_AGE_MS` = 1000 ms, even if gate `max_age_ms` is larger |
+| `unpaired` | gate uses `present`/`count` **without** companion `numeric` `confidence` criterion for same label, same zone in `allow_when` (§9.10). `bool` has no `max_age_ms`: without this pair, a frozen camera repeating "không có người" ("no person present") would pass `present: false`. Build rejects such gates; this is the same rule at runtime and replay |
+| `mismatch` | replay only: recorded event does not match its own labels (§6) |
 
-Tuổi: `age_ms = offset_ms − min(captured_ms)` — của khung **cũ nhất**, đo tới offset của chính sự kiện
-`vision_fact`. Tiêu chí `numeric` đi kèm còn kiểm `max_age_ms` của nó trên cùng tuổi này (RFC-0009 §3c). Đổi mô hình
-giữa phiên (`set_model`) **bắt đầu lại cửa sổ**: không cửa sổ nào trộn kết quả của hai mô hình.
+Age: `age_ms = offset_ms − min(captured_ms)` — of the **oldest** frame, measured to offset of the
+`vision_fact` event itself. Accompanying `numeric` criteria also check their `max_age_ms` against this same age (RFC-0009 §3c). Switching models
+mid-session (`set_model`) **restarts the window**: no window mixes outputs from two models.
 
-## 5. Sự kiện `vision_fact` (nhóm `perception`)
+## 5. `vision_fact` event (`perception` group)
 
-`trace.v1` không đổi (`type` mở, `data` là object). Mỗi dữ kiện thị giác lượng giá cho một phán quyết ghi một sự
-kiện, ở offset thời điểm lượng giá, trước `gate_evaluation_begin`:
+`trace.v1` is unchanged (`type` open, `data` is object). Each visual fact evaluated for a verdict records an
+event, at offset of evaluation timestamp, preceding `gate_evaluation_begin`:
 
-| Trường `data` | Ý nghĩa |
+| `data` field | Meaning |
 |:---|:---|
-| `fact`, `kind`, `label`, `zone`, `min_frames` | dữ kiện và cấu hình của nó |
-| `value` | giá trị khung **mới nhất**; `null` khi dữ kiện chưa quyết. NaN ghi `"nan"` |
-| `values` | giá trị trên từng khung của cửa sổ, cùng thứ tự `frames` |
-| `unavailable` | có mặt **khi và chỉ khi** `value` là `null`: một giá trị của `UNAVAILABLE` |
-| `age_ms` | tuổi khung cũ nhất (§4.3); `null` khi không có khung nào |
-| `max_frame_age_ms`, `present_score_floor` | hai hằng ghim (§4.1) |
-| `model` | `{name, sha256}` của mô hình đã đọc các khung (RFC-0012 §9.4) |
+| `fact`, `kind`, `label`, `zone`, `min_frames` | fact and its configuration |
+| `value` | **newest** frame value; `null` when fact is unresolved. NaN written as `"nan"` |
+| `values` | values across each frame in the window, same order as `frames` |
+| `unavailable` | present **if and only if** `value` is `null`: a value from `UNAVAILABLE` |
+| `age_ms` | age of oldest frame (§4.3); `null` when no frames exist |
+| `max_frame_age_ms`, `present_score_floor` | two pinned constants (§4.1) |
+| `model` | `{name, sha256}` of the model that read the frames (RFC-0012 §9.4) |
 | `frames[]` | `{frame_seq, vision_ref: {sha256, size}, captured_ms, labels: [{label, zone, score}], rejected?}` |
 
-`labels` chỉ giữ phát hiện cùng nhãn và vùng của dữ kiện này — đủ để tính lại, không hơn. `metadata.vision_models`
-liệt kê mọi mô hình của phiên (`[{name, sha256}]`); `metadata.raw_capture` là `true` chỉ khi cố ý lưu ảnh thô.
+`labels` only retains detections matching label and zone of this fact — sufficient for recomputation, nothing more. `metadata.vision_models`
+lists all models in the session (`[{name, sha256}]`); `metadata.raw_capture` is `true` only when deliberately saving raw images.
 
-### Lint ngữ nghĩa (`lint_vision`, `validate_trace`, `NE4001`)
+### Semantic lint (`lint_vision`, `validate_trace`, `NE4001`)
 
-Mọi vi phạm có một tệp phản chứng ở `fixtures/traces/invalid/` (khép kín hai chiều với `expected_errors.yaml`):
+Every violation has a counter-example fixture in `fixtures/traces/invalid/` (bidirectionally locked with `expected_errors.yaml`):
 
-| Luật | Tệp |
+| Rule | File |
 |:---|:---|
-| `uri` chỉ khi `metadata.raw_capture == true` | `vision_uri_without_raw_capture` |
-| `sha256` của `vision_ref` đúng `^[0-9a-f]{64}$` | `vision_ref_bad_sha256` |
-| `sha256` mô hình đúng dạng · có `model` · có trong `metadata.vision_models` | `vision_model_bad_sha256`, `vision_model_missing`, `vision_model_not_listed` |
-| số `frames` = `min_frames` khi dữ kiện đã đọc (không thiếu, không thừa) | `vision_frames_too_few`, `vision_frames_too_many` |
-| `frame_seq` liên tiếp | `vision_frame_seq_gap` |
-| `age_ms` = `offset_ms` − `captured_ms` cũ nhất; không khung nào đọc sau thời điểm lượng giá khi dữ kiện đã đọc | `vision_age_mismatch`, `vision_age_negative` |
-| không ảnh nhúng (base64, `data:`) và không trường lạ | `vision_base64_blob`, `vision_image_field` |
-| `value` và `unavailable` loại trừ nhau | `vision_value_with_unavailable` |
-| nhãn đã ghi cùng nhãn/vùng của dữ kiện | `vision_foreign_label` |
-| `metadata.raw_capture` là boolean | `vision_raw_capture_not_boolean` |
+| `uri` only when `metadata.raw_capture == true` | `vision_uri_without_raw_capture` |
+| `sha256` of `vision_ref` strictly matches `^[0-9a-f]{64}$` | `vision_ref_bad_sha256` |
+| model `sha256` well-formed · `model` present · listed in `metadata.vision_models` | `vision_model_bad_sha256`, `vision_model_missing`, `vision_model_not_listed` |
+| number of `frames` = `min_frames` when fact was read (no fewer, no more) | `vision_frames_too_few`, `vision_frames_too_many` |
+| `frame_seq` consecutive | `vision_frame_seq_gap` |
+| `age_ms` = `offset_ms` − oldest `captured_ms`; no frame read after evaluation timestamp when fact was read | `vision_age_mismatch`, `vision_age_negative` |
+| no embedded images (base64, `data:`) and no unknown fields | `vision_base64_blob`, `vision_image_field` |
+| `value` and `unavailable` are mutually exclusive | `vision_value_with_unavailable` |
+| recorded labels match fact label/zone | `vision_foreign_label` |
+| `metadata.raw_capture` is boolean | `vision_raw_capture_not_boolean` |
 
-Cửa sổ bị tầng nhận thức từ chối (`unavailable`) **hợp lệ** dù ngắn hơn `min_frames` hay có khung ở tương lai (tuổi âm):
-đó chính là ghi nhận một phán quyết BLOCK. Các kiểm tra còn lại vẫn áp dụng. Ba vết ghi chuẩn mực không có sự kiện
-thị giác nên lint không chạm chúng.
+Windows rejected by perception layer (`unavailable`) are **valid** even if shorter than `min_frames` or containing future frames (negative age):
+that is precisely how a BLOCK verdict is recorded. Remaining checks still apply. Three canonical traces contain no visual
+events, so lint does not touch them.
 
 ## 6. Replay (FR-CI-02)
 
-`neuroedge replay` tính lại phán quyết từ các sự kiện `perception`, **không gọi mô hình và không cần khung hình**.
-Với mỗi phán quyết, `testing/player.py` lấy các `vision_fact` đứng trước nó, gọi `reading_from_event` — tính lại giá trị từng
-khung từ nhãn đã ghi, kiểm tính liên tiếp, đứng hình, tuổi — rồi dùng `facts_for_tree` (cùng hàm đường sống dùng) và đưa
-cho engine **thay** cho `gate_facts` đã ghi của các tiêu chí đó. Sự kiện được ghi lại trên dòng thời gian của replay (tuổi
-giữ nguyên) nên vết ghi phát lại cũng replay được.
+`neuroedge replay` recomputes verdicts from `perception` events, **without invoking models and without requiring frames**.
+For each verdict, `testing/player.py` retrieves preceding `vision_fact` events, calls `reading_from_event` — recomputing per-frame values
+from recorded labels, verifying sequence continuity, freeze, age — then uses `facts_for_tree` (same function used in live path) and supplies
+engine **instead** of recorded `gate_facts` for those criteria. Events are re-recorded onto the replay timeline (age
+preserved), so replayed traces are also replayable.
 
-Sự kiện không khớp chính nhãn của nó (giá trị, `values`, `age_ms`, `unavailable`, hai hằng ghim) ⇒ `mismatch`: dữ kiện
-vắng, gate chặn `criterion_unavailable`, replay cảnh báo và ghi `vision_fact_problem`. Vết ghi bị sửa chỉ có thể chặn
-nhiều hơn, không bao giờ cho phép nhiều hơn. Cùng sự kiện `perception` cho cùng phán quyết trên mọi target: đó là mệnh đề
-"gate quyết giống nhau" của RFC-0012 §3f (phần `verify` và camera ảo: V1b-02, V1b-04).
+Events failing to match their own labels (value, `values`, `age_ms`, `unavailable`, two pinned constants) ⇒ `mismatch`: fact
+absent, gate blocks with `criterion_unavailable`, replay warns and records `vision_fact_problem`. Modified traces can only block
+more, never allow more. Identical `perception` events yield identical verdicts across all targets: that is the
+"gates decide identically" proposition of RFC-0012 §3f (`verify` and virtual camera: V1b-02, V1b-04).
 
-## 6a. Action CI cho khung hình (TSK-V1b-04, FR-CI-01→04)
+## 6a. Action CI for frames (TSK-V1b-04, FR-CI-01→04)
 
-`python/neuroedge/testing/vision.py`. Một **cảnh** (`fixtures/vision/<cảnh>/`) là thư mục khung hình: `scene.toml`
-(`gate`, `action`, `step_ms`, `[context]` cho dữ kiện không phải thị giác, `[vision]` cho vùng và dữ kiện), các tệp khung,
-và `<tên>.json` cho từng khung — mô hình (giả) thấy gì. Tên tệp số là **số khung của camera** (thiếu số = mất khung);
-khung **không có** `.json` là mô hình không trả lời, không phải cảnh rỗng (`[]` mới là cảnh rỗng).
+`python/neuroedge/testing/vision.py`. A **scene** (`fixtures/vision/<scene>/`) is a frame directory: `scene.toml`
+(`gate`, `action`, `step_ms`, `[context]` for non-visual facts, `[vision]` for zones and facts), frame files,
+and `<name>.json` for each frame — what the (double) model sees. Numbered filenames are **camera frame numbers** (missing numbers = dropped frames);
+frames **without** `.json` represent non-responding models, not empty scenes (`[]` is an empty scene).
 
-| Thành phần FR-CI | Hàm | Ghi chú |
+| FR-CI Component | Function | Notes |
 |:---|:---|:---|
-| Record (CI-01) | `run_scene`, `record_scene(cảnh, đường_dẫn, raw=False)` | một lần lượng giá mỗi khung, đồng hồ ảo; vết ghi chỉ có `vision_ref` (băm + kích thước). `raw=True` là lựa chọn tường minh (NFR-PRIV-03): khung chép vào `frames/<sha256>.bin` cạnh vết ghi, `metadata.raw_capture = true`, mỗi `vision_ref` có `uri` |
-| Replay (CI-02) | `replay_verdicts(trace, gates)`, hoặc `neuroedge replay` / `TracePlayer` khi có agent | tính lại phán quyết từ `vision_fact` và `gate_facts` đã ghi; không mô hình, không khung hình |
-| Assert (CI-03) | `assert_verdicts(run, [...], reason=…)`, `assert_replay_matches(run)` | chuỗi phán quyết theo khung; replay phải khớp bản chạy sống |
-| Golden (CI-04) | `assert_matches_golden(run.trace, golden)` | như mọi vết ghi (`golden.py`) |
+| Record (CI-01) | `run_scene`, `record_scene(scene, path, raw=False)` | one evaluation per frame, simulated clock; trace contains only `vision_ref` (hash + size). `raw=True` is an explicit choice (NFR-PRIV-03): frames copied to `frames/<sha256>.bin` next to trace, `metadata.raw_capture = true`, each `vision_ref` has `uri` |
+| Replay (CI-02) | `replay_verdicts(trace, gates)`, or `neuroedge replay` / `TracePlayer` when agent is present | recomputes verdicts from recorded `vision_fact` and `gate_facts`; no model, no frames |
+| Assert (CI-03) | `assert_verdicts(run, [...], reason=…)`, `assert_replay_matches(run)` | sequence of verdicts across frames; replay must match live run |
+| Golden (CI-04) | `assert_matches_golden(run.trace, golden)` | same as all traces (`golden.py`) |
 
-Kho cảnh khép kín hai chiều với `fixtures/vision/expected_results.yaml` (mỗi thư mục một mục, mỗi mục một thư mục); năm
-cảnh hiện có gồm người lạ vào/ra vùng cửa, camera đứng hình, mất khung, mô hình im lặng, người trong vùng rèm, kiện hàng.
-Chưa có lệnh CLI hay đầu vào GitHub Action riêng cho khung hình (kho chưa có `action.yml`; thêm lệnh phải cập nhật snapshot CLI).
+Scene repository is bidirectionally locked with `fixtures/vision/expected_results.yaml` (one entry per folder, one folder per entry); five
+existing scenes include stranger entering/exiting door zone, frozen camera, frame drop, silent model, person in curtain zone, parcel.
+No separate CLI command or GitHub Action input exists yet for frames (repo has no `action.yml` yet; adding commands requires updating CLI snapshot).
 
-## 6b. Ba gate mẫu (TSK-V1b-06, `gates/vision/`)
+## 6b. Three sample gates (TSK-V1b-06, `gates/vision/`)
 
-`entry-no-stranger` (không mở khoá khi có người lạ trong vùng cửa), `zone-clear` (rèm/cửa cuốn không chạy khi có người
-trong vùng) và `package-notify` (chỉ báo kiện hàng khi chắc). Mỗi gate dùng `present` kèm tiêu chí `numeric` `confidence`
-cùng nhãn và vùng, `max_age_ms` ≤ 500; ngưỡng khoá ở gate (Q-54). Phản chứng ở `fixtures/gates/vision/` (không nằm trong
-`fixtures/gates/invalid/` vì chúng kế thừa gate của `gates/`, không phải của registry fixture): con nới ngưỡng, nới
-`max_age_ms`/`range` bị `gate lint` từ chối; con chỉ siết thì hợp lệ.
+`entry-no-stranger` (do not unlock when stranger in door zone), `zone-clear` (blinds/roller door do not move when person
+in zone), and `package-notify` (notify package only when certain). Each gate uses `present` paired with a companion `confidence` `numeric`
+criterion with same label and zone, `max_age_ms` ≤ 500; thresholds locked at the gate (Q-54). Counter-examples in `fixtures/gates/vision/` (not
+in `fixtures/gates/invalid/` because they inherit gates from `gates/`, not fixture registry): children loosening thresholds or
+`max_age_ms`/`range` are rejected by `gate lint`; children only tightening are valid.
 
-## 6c. Golden suy luận và sai số giữa các target (TSK-V1b-04, RFC-0012 §3f mệnh đề 2, §9.6, §9.9)
+## 6c. Inference golden and cross-target tolerance (TSK-V1b-04, RFC-0012 §3f proposition 2, §9.6, §9.9)
 
-"Gate quyết giống nhau" (replay, §6) và "mô hình thấy giống nhau" là hai mệnh đề riêng. Mệnh đề sau do
-`python/neuroedge/testing/vision_golden.py` kiểm.
+"Gates decide identically" (replay, §6) and "models see identically" are two distinct propositions. The latter is verified
+by `python/neuroedge/testing/vision_golden.py`.
 
-**Golden** (`neuroedge.vision-golden/v1`, JSON, `fixtures/vision/golden/<cảnh>.json`): danh tính mô hình (`name` +
-`sha256`) và, theo **băm nội dung từng khung** (`vision_ref.sha256`, không có điểm ảnh), các phát hiện `{label, score, box}`
-mô hình cho trên host. Một golden thuộc về đúng một mô hình: so suy luận của mô hình khác với nó bị **từ chối**
-(`VerificationError`, NE4004), không bao giờ so ngầm. Ghi golden (`record_golden`) từ chối mô hình không trả lời một khung,
-trả rác, điểm ngoài `[0, 1]`, hay hai khung cùng byte mà cho hai đáp án khác nhau.
+**Golden** (`neuroedge.vision-golden/v1`, JSON, `fixtures/vision/golden/<scene>.json`): model identity (`name` +
+`sha256`) and, indexed by **content hash of each frame** (`vision_ref.sha256`, without pixels), detections `{label, score, box}`
+the model produces on host. A golden belongs to exactly one model: comparing inferences of a different model against it is **rejected**
+(`VerificationError`, NE4004), never compared implicitly. Recording golden (`record_golden`) rejects models failing to respond for a frame,
+returning garbage, scores outside `[0, 1]`, or two frames with identical bytes producing different outputs.
 
-**Sai số** là `vision_in.tolerance = {score_abs, box_iou_min}` của **chính bo mạch** (`tolerance_of(board)`; trần cứng của
-`board.v1`: `score_abs ≤ 0.05`, `box_iou_min ≥ 0.8`, kiểm lại ở `Tolerance`). Bo không camera không có phép kiểm này.
+**Tolerance** is `vision_in.tolerance = {score_abs, box_iou_min}` of the **board itself** (`tolerance_of(board)`; hard ceiling of
+`board.v1`: `score_abs ≤ 0.05`, `box_iou_min ≥ 0.8`, rechecked in `Tolerance`). Boards without cameras do not have this check.
 
-**Quy tắc ghép** (một-một, tất định), trên từng khung:
+**Matching rules** (one-to-one, deterministic), per frame:
 
-1. chỉ ghép hai phát hiện **cùng nhãn** có hộp trùng IoU ≥ `box_iou_min`;
-2. mọi cặp ứng viên được lấy theo thứ tự IoU cao nhất, rồi chênh điểm nhỏ nhất, rồi vị trí; mỗi phát hiện dùng tối đa một lần;
-3. mỗi cặp phải có |điểm − điểm golden| ≤ `score_abs` (biên bao gồm, cộng 1e-9 cho sai số dấu phẩy động);
-4. phát hiện golden không được ghép là **thiếu**; phát hiện của target không được ghép là **thừa** — thừa cũng là lệch, dù điểm thấp,
-   vì nó đổi dữ kiện `confidence` mà gate đọc.
+1. only match two detections **with same label** whose bounding boxes overlap with IoU ≥ `box_iou_min`;
+2. all candidate pairs are matched in order of highest IoU, then smallest score discrepancy, then position; each detection used at most once;
+3. each pair must satisfy |score − golden score| ≤ `score_abs` (boundary inclusive, plus 1e-9 for floating-point error);
+4. golden detections that remain unmatched are **missing**; target detections that remain unmatched are **spurious** — spurious is also a regression, even with low score,
+   because it alters `confidence` facts read by gates.
 
-Khung target không suy luận, hay khung golden không có, cũng là lệch. Lệch đầu tiên ⇒ `SafetyRegressionError` (NE4002) nêu khung
-(băm), phát hiện và con số; số lệch còn lại ghi kèm.
+Target frames that fail to run inference, or golden frames missing, are also regressions. First discrepancy ⇒ `SafetyRegressionError` (NE4002) reporting frame
+(hash), detection, and values; remaining regressions recorded alongside.
 
-**Nơi nối.** `neuroedge verify` chạy mọi golden của `fixtures/vision/golden/` trên **mỗi bo mạch khai `vision_in`** của các target
-được hỏi (`sim-rpi5`, `linux-rpi5`), với sai số của bo đó, đếm riêng; không golden nào được so ⇒ NE4004 như các nhóm khác. API Action CI:
-`record_scene_golden`, `check_scene_inference(cảnh, golden, tolerance)`, `check_model`.
+**Integration.** `neuroedge verify` runs all goldens in `fixtures/vision/golden/` across **every board declaring `vision_in`** for requested
+targets (`sim-rpi5`, `linux-rpi5`), using that board's tolerance, counted separately; no golden compared ⇒ NE4004 like other groups. Action CI APIs:
+`record_scene_golden`, `check_scene_inference(scene, golden, tolerance)`, `check_model`.
 
-**Chưa chứng minh được ở đây** (cần mô hình hay bo mạch thật): trên `sim` và `linux` mô hình chạy trên CPU của máy chủ, nên phép kiểm
-chỉ chứng minh khung và máy móc khớp nhau; nó cắn thật khi một target chạy mô hình bằng runtime hay phần cứng khác — NPU (TSK-V1b-05),
-`esp32s3` (TSK-I3a-04) — rồi giao các phát hiện cho phép kiểm theo định dạng golden (`InferenceGolden.load`). Golden của một mạng thật
-cũng cần mô hình thật; các golden hiện có là của mô hình `replay` trên các cảnh mẫu.
+**Unproven here** (requires real models or real boards): on `sim` and `linux` models run on host CPU, so checks
+only prove frames and plumbing match; it truly bites when a target runs models with different runtimes or hardware — NPU (TSK-V1b-05),
+`esp32s3` (TSK-I3a-04) — and delivers detections to checks in golden format (`InferenceGolden.load`). Golden for a real network
+also requires real models; existing goldens belong to `replay` models on sample scenes.
 
-## 7. Quyết định diễn giải khi hiện thực
+## 7. Implementation interpretive decisions
 
-RFC-0012 chưa nêu rõ các điểm sau; bản này chọn phương án an toàn hơn:
+RFC-0012 left the following points open; this implementation chose safer alternatives:
 
-1. **Vùng chứa phát hiện khi tâm hộp nằm trong, biên tính.** Phát hiện không có hộp bị từ chối (§3.2).
-2. **`value` của sự kiện là khung mới nhất**; giá trị từng khung ở `values`.
-3. **Tuổi đo tới offset của `vision_fact`**, ngay trước lúc gate lượng giá; `gate_facts` ghi thêm tuổi theo mốc của engine.
-4. **`labels` ghi theo từng dữ kiện** (chỉ nhãn và vùng của nó), không ghi cả khung: ít lộ hơn, vẫn tính lại được.
-5. **`unpaired` kiểm cả lúc chạy** ngoài lúc build, để gate lọt qua build không thoát được.
-6. **Điểm NaN/±inf/ngoài `[0, 1]`** là điểm hợp lệ về kiểu nhưng không về miền: dữ kiện số thành NaN ⇒ `value_out_of_range`.
+1. **Zone contains detection when box center lies within, boundary inclusive.** Detections without boxes are rejected (§3.2).
+2. **Event `value` is newest frame**; per-frame values in `values`.
+3. **Age measured to offset of `vision_fact`**, immediately before gate evaluation; `gate_facts` additionally records age at engine timestamp.
+4. **`labels` recorded per fact** (only its label and zone), not entire frame: less exposure, still recomputable.
+5. **`unpaired` checked at runtime** in addition to build time, so gates slipping past build cannot escape.
+6. **NaN/±inf/out-of-`[0, 1]` scores** are type-valid but domain-invalid: numeric facts become NaN ⇒ `value_out_of_range`.
 
-## 8. Chưa làm ở bản này
+## 8. Not yet implemented in this release
 
-- NPU (TSK-V1b-05) và suy luận của mô hình **thật** trên target (V1b-05, I3a-04): golden của mạng thật và phép so trên thiết bị — §6c.
-- Móc `parse_vision` vào `neuroedge build` và nạp agent: kiểu tiêu chí cùng tên, `confidence_gte` trên dữ kiện thị giác, `present`/`count` thiếu `confidence` — RFC-0012 §8 (`engine/compiler.py`).
-- Hằng `MAX_FRAME_AGE_MS`, `PRESENT_SCORE_FLOOR` sống ở `perception/vision/model.py`; `trace.py` không import chúng (tầng) và `replay` đối chiếu giá trị đã ghi với chúng.
+- NPU (TSK-V1b-05) and **real** model inference on target (V1b-05, I3a-04): real network goldens and on-device comparison — §6c.
+- Wiring `parse_vision` into `neuroedge build` and agent loading: criterion type matching, `confidence_gte` on visual facts, `present`/`count` lacking `confidence` — RFC-0012 §8 (`engine/compiler.py`).
+- Constants `MAX_FRAME_AGE_MS`, `PRESENT_SCORE_FLOOR` reside in `perception/vision/model.py`; `trace.py` does not import them (layering) and `replay` verifies recorded values against them.

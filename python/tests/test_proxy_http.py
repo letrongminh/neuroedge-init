@@ -551,10 +551,10 @@ def test_guard_init_http_through_the_cli_needs_exactly_one_kind(tmp_path):
 def test_doctor_warns_that_the_device_api_is_reachable_directly(project):
     findings = doctor(load_config(project / "guard.toml"))
     warned = [f.message for f in findings if f.level == "warning"]
-    assert len(warned) == 1 and "còn tới được" in warned[0] and "tường lửa" in warned[0]
+    assert len(warned) == 1 and "still reachable" in warned[0] and "firewall" in warned[0]
     text = "\n".join(f.message for f in findings)
-    assert "không kiểm được: ứng dụng, script hay thiết bị khác" in text
-    assert "không kiểm được: plugin (TSK-I2c-11)" in text
+    assert "cannot verify: another app, script or device" in text
+    assert "cannot verify: plugin (TSK-I2c-11)" in text
     result = runner.invoke(
         app, ["plugin", "doctor", "--config", str(project / "guard.toml"), "--json"]
     )
@@ -565,9 +565,9 @@ def test_doctor_says_what_it_cannot_check_when_nothing_listens(project, upstream
     edit(project, f"127.0.0.1:{upstream}", f"127.0.0.1:{free_port()}")
     findings = doctor(load_config(project / "guard.toml"))
     assert not [f for f in findings if f.level == "warning"]
-    assert any(f.level == "unverifiable" and "không kiểm được: đích" in f.message for f in findings)
+    assert any(f.level == "unverifiable" and "cannot verify: target" in f.message for f in findings)
     result = runner.invoke(app, ["plugin", "doctor", "--config", str(project / "guard.toml")])
-    assert result.exit_code == 0 and "không chứng minh" in result.output
+    assert result.exit_code == 0 and "does not prove" in result.output
 
 
 def test_doctor_warns_for_a_gate_that_does_not_read_call_source(project):

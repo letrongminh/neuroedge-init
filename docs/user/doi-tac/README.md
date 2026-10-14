@@ -1,17 +1,17 @@
-# Đợt thử với đối tác — NeuroEdge
+# Partner pilot — NeuroEdge
 
-> **Lời hứa:** *đặt một gate trước mọi lệnh AI chạm vào thiết bị bạn đang có* — trong ≤ 15 phút, không cần mua phần cứng mới.
+> **Promise:** *đặt một gate trước mọi lệnh AI chạm vào thiết bị bạn đang có* (place a gate before every AI command that touches a device you already have) — in ≤ 15 minutes, with no new hardware to buy.
 
-NeuroEdge đặt một **gate** (một tệp YAML bạn đọc được) giữa AI và thiết bị: mỗi lệnh phải qua gate, gate **chặn mặc định**, và bạn **mở có chủ ý** từng thứ một. Mọi quyết định được ghi vào một
-**vết ghi** bạn đọc và phát lại được. Đợt thử này là bản dành riêng cho một đội đối tác, theo thoả thuận thử nghiệm bằng văn bản; wheel được giao trực tiếp, **không** có trên PyPI hay index nào.
+NeuroEdge places a **gate** (a human-readable YAML file) between AI and your devices: every command must pass through the gate, the gate **blocks by default**, and you **intentionally open** each capability one by one. Every decision is recorded in a
+**trace** that you can inspect and replay. This pilot release is prepared exclusively for a partner team under a written evaluation agreement; the wheel is delivered directly and is **not** available on PyPI or any public package index.
 
-## 1. Bạn cần
+## 1. Prerequisites
 
-- **Python 3.11 trở lên** (`python3 --version`).
-- **Một tệp wheel** do chúng tôi gửi, ví dụ `neuroedge-0.1.0-py3-none-any.whl`.
-- Một thứ bạn đang có để che: một MCP server (ví dụ Home Assistant), một API HTTP của thiết bị trong nhà, hoặc một agent Python của bạn.
+- **Python 3.11 or newer** (`python3 --version`).
+- **A wheel package file** delivered by us, e.g. `neuroedge-0.1.0-py3-none-any.whl`.
+- An existing target to protect: an MCP server (such as Home Assistant), an HTTP API of a local device, or your custom Python agent.
 
-Cài vào một môi trường riêng (đừng cài vào Python hệ thống):
+Install into an isolated virtual environment (do not install into system Python):
 
 <!-- guide: skip reason="cài wheel thật của đối tác; script partner_guides_check.sh cài wheel vào một venv sạch trước khi chạy các hướng dẫn" -->
 ```bash
@@ -21,31 +21,31 @@ pip install './neuroedge-0.1.0-py3-none-any.whl[mcp]'
 neuroedge --help
 ```
 
-`[mcp]` kéo thêm SDK MCP (cần cho `proxy mcp` và cho các ví dụ chạy thử). Có lệnh `neuroedge` là xong bước cài.
+`[mcp]` pulls in the MCP SDK (required for `proxy mcp` and runner test examples). Once the `neuroedge` command is available, installation is complete.
 
-## 2. Chọn hướng dẫn
+## 2. Choose a guide
 
-| Bạn muốn che | Đọc | Lệnh chính | Cần |
+| What you want to protect | Read | Main command | Requirements |
 |:---|:---|:---|:---|
-| Home Assistant (hoặc MCP server khác) mà Claude Desktop đang gọi | [`home-assistant-mcp.md`](home-assistant-mcp.md) | `guard init --mcp`, `proxy mcp` | địa chỉ MCP và token của HA |
-| Tool call trong **agent Python của bạn** | [`guard-python.md`](guard-python.md) | `neuroedge.guard` | chỉ Python — không cần thiết bị |
-| API HTTP của thiết bị trong nhà (Tasmota, Shelly, REST tự viết) | [`proxy-http.md`](proxy-http.md) | `guard init --http`, `proxy http` | địa chỉ API, `curl` |
+| Home Assistant (or another MCP server) called by Claude Desktop | [`home-assistant-mcp.md`](home-assistant-mcp.md) | `guard init --mcp`, `proxy mcp` | MCP address and HA token |
+| Tool calls inside **your Python agent** | [`guard-python.md`](guard-python.md) | `neuroedge.guard` | Python only — no device needed |
+| HTTP API of a local device (Tasmota, Shelly, custom REST API) | [`proxy-http.md`](proxy-http.md) | `guard init --http`, `proxy http` | API address, `curl` |
 
-Mỗi hướng dẫn: ≤ 3 lệnh tới giá trị đầu, cách thấy **BLOCK** rồi **ALLOW** sau khi bạn mở gate có chủ ý, cách đọc vết ghi, cách làm proxy thành đường duy nhất, và các lỗi thường gặp với thông báo thật.
-Mọi lệnh trong ba hướng dẫn được chạy tự động từ wheel (`scripts/partner_guides_check.sh`) trên bản giả của Home Assistant và của API thiết bị — tức là lệnh đúng, **không** nghĩa là đã đúng với thiết bị thật của bạn.
+Each guide provides: ≤ 3 commands to initial value, how to observe **BLOCK** followed by **ALLOW** after intentionally opening a gate, how to inspect traces, how to make the proxy the sole communication path, and common errors with real message text.
+All commands in the three guides are automatically tested against the wheel (`scripts/partner_guides_check.sh`) using test doubles of Home Assistant and device HTTP APIs — meaning the commands are syntactically and functionally valid, but **not** that they have been tested against your specific real devices.
 
-## 3. Ba điều cần nhớ
+## 3. Three things to remember
 
-1. **Chặn mặc định.** Gate sinh ra chặn mọi thứ (`BLOCK`, `criterion_unavailable`) cho tới khi bạn sửa nó. Thấy `BLOCK` ngay lần đầu là đúng, không phải hỏng.
-2. **Proxy canh con đường đi qua nó.** Ai gọi thẳng thiết bị vẫn không qua gate. `neuroedge plugin doctor` báo những lối vòng nó thấy; đóng chúng là việc của bạn (token, tường lửa).
-3. **Vết ghi chứa tham số của lời gọi** (ví dụ tên thiết bị), không băm. Đọc trước khi gửi cho chúng tôi.
+1. **Blocked by default.** Generated gates block everything (`BLOCK`, `criterion_unavailable`) until you edit them. Seeing a `BLOCK` on your first attempt is expected behavior, not a failure.
+2. **The proxy guards only the traffic passing through it.** Any client calling the device directly bypasses the gate. `neuroedge plugin doctor` flags detected bypass paths; closing them (tokens, firewall rules) is your responsibility.
+3. **Traces contain call parameters** (such as device names) in plain text, not hashed. Inspect them before sending them to us.
 
-## 4. Gửi phản hồi
+## 4. Send feedback
 
-Dùng [`phan-hoi.md`](phan-hoi.md): chép mẫu, điền (thời gian tới BLOCK đầu, tới ALLOW có chủ ý đầu, lỗi nguyên văn, điều khó hiểu), gửi qua kênh riêng chúng tôi đã mở cho đội bạn.
-Muốn gửi vết ghi: gửi tệp `trace-*.json` sau khi bạn đã đọc nó.
+Use [`phan-hoi.md`](phan-hoi.md): copy the template, fill it out (time to first BLOCK, time to first intentional ALLOW, verbatim error messages, confusing points), and send it via the private channel established for your team.
+To share traces: attach the `trace-*.json` file after reviewing its contents.
 
-## 5. Giới hạn
+## 5. Limitations
 
-Đọc [`gioi-han.md`](gioi-han.md) trước khi bắt đầu: đợt thử **chưa** có `esp32s3`, thoại trên chip, NeuroEdge Lab; Home Assistant mới chỉ kiểm trên bản giả; proxy không chặn được lời gọi thẳng; và giấy phép
-(PolyForm Noncommercial) chỉ cho đánh giá theo thoả thuận bằng văn bản.
+Read [`gioi-han.md`](gioi-han.md) before starting: the pilot release **does not yet include** `esp32s3`, on-chip voice, or NeuroEdge Lab; Home Assistant integration has only been tested against doubles; the proxy cannot block direct calls; and the license
+(PolyForm Noncommercial) permits evaluation solely under the written partner agreement.

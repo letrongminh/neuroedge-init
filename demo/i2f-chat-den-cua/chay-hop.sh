@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Hộp tại nhà (§0.1 của kich-ban.md): tạo khoá nếu chưa có, rồi chạy `mcp serve --http --ui`.
+# The box at home (§0.1 of kich-ban.md): create the keys if missing, then run `mcp serve --http --ui`.
 #
-#   bash demo/i2f-chat-den-cua/chay-hop.sh            # nghe trên IP Tailscale (VPS gọi tới)
-#   bash demo/i2f-chat-den-cua/chay-hop.sh --local    # nghe trên 127.0.0.1 (bộ não trên laptop, §5)
+#   bash demo/i2f-chat-den-cua/chay-hop.sh            # listen on the Tailscale IP (the VPS calls in)
+#   bash demo/i2f-chat-den-cua/chay-hop.sh --local    # listen on 127.0.0.1 (brain on the laptop, §5)
 #
-# Đọc .env.txt ở gốc kho (TAILSCALE_TAILNET). Khoá ở ~/neuroedge-demo-khoa, vết ghi ở
-# ~/neuroedge-demo-vet-ghi.json (ghi khi Ctrl-C).
+# Reads .env.txt at the repo root (TAILSCALE_TAILNET). Keys live in ~/neuroedge-demo-khoa, the trace in
+# ~/neuroedge-demo-vet-ghi.json (written on Ctrl-C).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 set -a; [ -f "$ROOT/.env.txt" ] && . "$ROOT/.env.txt"; set +a
@@ -16,7 +16,7 @@ if [ "${1:-}" = "--local" ]; then
   HOST=127.0.0.1
   NAME=localhost
 else
-  command -v tailscale >/dev/null || { echo "cần tailscale: https://tailscale.com/download" >&2; exit 1; }
+  command -v tailscale >/dev/null || { echo "tailscale is required: https://tailscale.com/download" >&2; exit 1; }
   HOST="$(tailscale ip -4)"
   NAME="$(tailscale status --json | "$PY" -c 'import json,sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))')"
 fi
@@ -29,7 +29,7 @@ fi
 AUDIENCE="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["audience"])' "$K/hop.json")"
 ISSUER="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["issuer"])' "$K/hop.json")"
 
-echo "hộp: $HOST:8443, audience $AUDIENCE; trang tại nhà in ra bên dưới" >&2
+echo "box: $HOST:8443, audience $AUDIENCE; the at-home page is printed below" >&2
 exec "$ROOT/python/.venv/bin/neuroedge" mcp serve --http --ui --target sim \
   --agent "$ROOT/fixtures/agents/chat-den-cua/agent.toml" \
   --host "$HOST" --port 8443 \

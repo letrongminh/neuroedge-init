@@ -1,89 +1,90 @@
 # NeuroEdge
 
-**From an idea to a physical AI product: build it, run it safely, share and sell it.**
-Physical AI, under contract — no contract, no action: every command to the hardware passes
-the gate.
-*Nơi biến ý định thành sản phẩm vật lý có AI — dựng, chạy an toàn, chia sẻ và bán.*
+**The Physical AI that really does things, safely by design.**
 
-NeuroEdge là **hộp giữ luật** đứng giữa AI và thiết bị. AI chỉ được *xin* làm một việc; luật
-trên hộp (gọi là *gate*) quyết định: làm ngay, hỏi bạn trước, hay từ chối kèm lý do — và ghi lại
-mọi quyết định để phát lại được. Lý do: chatbot nói sai thì bấm hỏi lại, còn cửa đã mở sai thì
-không bấm lại được.
+It is built to switch relays, open valves and latch doors — real actions, not text on a screen. Safety
+does not depend on the model behaving well: it is built into the architecture. Every command to
+the hardware passes a gate; no token, no action; when in doubt, block.
+
+NeuroEdge is a **rules-enforcing box** standing between AI and physical devices. AI may only *request* an action; the rule
+on the box (called a *gate*) decides: execute immediately, ask you first, or reject with a reason — and records
+every decision for replayability. The reason: if a chatbot says something wrong, you can click retry; but once a door
+opens incorrectly, you cannot undo it.
 
 ```text
-📱 Bạn nhắn tin ──► 🧠 NeuroClaw (bộ não) ──► 🛡️ Hộp NeuroEdge (luật) ──► 💡 Đèn, cửa, cảm biến
+📱 You message ──► 🧠 NeuroClaw (brain) ──► 🛡️ NeuroEdge Box (rules) ──► 💡 Lights, doors, sensors
 ```
 
-Bộ não là **NeuroClaw**, repo riêng `letrongminh/neuroclaw` (MIT): chat qua Telegram, gọi AI, nhớ,
-nhắc lịch, và chạm thiết bị **chỉ** qua hộp. Nó chạy trên Linux, cloud, Pi, macOS, Windows, hoặc
-chung một chip ESP32-S3 với hộp.
+The brain is **NeuroClaw**, a separate repo `letrongminh/neuroclaw` (MIT): chats via Telegram, invokes AI, remembers,
+schedules reminders, and touches physical devices **only** through the box. It runs on Linux, cloud, Pi, macOS, Windows, or
+shares a single ESP32-S3 chip with the box.
 
-**Hôm nay chạy được:** luật trên máy tính với thiết bị ảo, trên Linux với chân GPIO giả lập, trên
-chip ESP32-S3 giả lập (QEMU); nhắn Telegram cho NeuroClaw để bật đèn, mở cửa có hỏi chủ nhà — đã
-chạy trong bản demo. **Chưa có:** bo mạch thật, giao việc dài hạn bằng lời, gói chia sẻ hay bán
-(*Blueprint*).
+**Working today:** rules on computer with virtual devices, on Linux with emulated GPIO pins, on
+emulated ESP32-S3 chip (QEMU); messaging Telegram to NeuroClaw to turn on lights, open doors with owner confirmation — already
+demonstrated in live demo. **Not yet present:** physical hardware boards, long-horizon spoken delegation, shareable or sellable
+packages (*Blueprints*).
 
-**Người mới đọc trước:** [Bắt đầu ở đây](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/bat-dau.md) (5 phút) · nối bộ não với hộp:
-[chat với nhà](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/chat-voi-nha.md).
+**Newcomers read first:** [Start here](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/bat-dau.md) (5 minutes) · connecting brain to box:
+[chat with home](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/chat-voi-nha.md).
 
-> Alpha. NeuroEdge **không** phải chức năng an toàn được chứng nhận (không SIL, không PL): gate
-> không thay nút dừng khẩn hay interlock phần cứng. Tiến độ ở
-> [trạng thái dự án](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/trang-thai.md).
+> Alpha. NeuroEdge is **not** a certified safety function (no SIL, no PL): gates
+> do not replace emergency stops or hardware interlocks. Progress in
+> [project status](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/trang-thai.md).
 
-## Bắt đầu nhanh (Python 3.11+)
+## Quickstart (Python 3.11+)
 
-Chưa phát hành lên PyPI: trước bản công khai, cài từ mã nguồn theo
-[`python/README.md`](https://github.com/letrongminh/neuroedge-init/blob/main/python/README.md), rồi chạy hai
-lệnh sau.
+Not yet published to PyPI: before public release, install from source per
+[`python/README.md`](https://github.com/letrongminh/neuroedge-init/blob/main/python/README.md), then run the following two
+commands.
 
 ```bash
-pip install neuroedge    # qua Claude Desktop hoặc LLM thật: 'neuroedge[mcp,cloud]'
+pip install neuroedge    # with Claude Desktop or real LLMs: 'neuroedge[mcp,cloud]'
 neuroedge new my-home --template home-voice
 neuroedge run --agent my-home/agent.toml -c "bật đèn"
 ```
 
-Không cần mạng, không cần khoá API, không cần tài khoản: câu *"bật đèn"* đi qua ngữ pháp
-lệnh cục bộ, gate `light_on` cho ALLOW và đèn ảo `porch_light` bật. Gõ tiếp nhiều lệnh và
-xem phán quyết trên trang cục bộ: `cd my-home && neuroedge run --ui`.
+No internet needed, no API keys needed, no accounts needed: the command *"bật đèn"* (turn on the light) passes through local
+command grammar, gate `light_on` returns ALLOW, and virtual light `porch_light` turns on. Continue typing commands and
+inspect verdicts on the local web page: `cd my-home && neuroedge run --ui`.
 
-Muốn nhờ Claude Desktop *"bật đèn"*: `pip install 'neuroedge[mcp]'`, rồi
-`neuroedge mcp desktop-config --agent my-home/agent.toml --ui --write`, thoát hẳn Claude
-Desktop rồi mở lại — phán quyết hiện ở http://127.0.0.1:8765 (cổng bận thì URL thật nằm
-trong log MCP của Desktop).
+To ask Claude Desktop to *"bật đèn"*: `pip install 'neuroedge[mcp]'`, then
+`neuroedge mcp desktop-config --agent my-home/agent.toml --ui --write`, quit Claude
+Desktop completely and reopen — verdicts appear at http://127.0.0.1:8765 (if port is busy, the real URL is
+in Desktop's MCP logs).
 
-## Gate trông thế nào
+## What a Gate Looks Like
 
 ```yaml
 name:    unlock_door
 version: 1.2.0
-extends: neuroedge://gates/hospitality/base-access@1.0.0   # chỉ được siết chặt gate cha
+extends: neuroedge://gates/hospitality/base-access@1.0.0   # may only tighten parent gate
 
 allow_when:
   room_matches: true
-  risk_level:   { lte: low }        # cha cho tới medium — con siết xuống low
+  risk_level:   { lte: low }        # parent allows up to medium — child tightens to low
 
 on_block: { action: escalate, to: human_receptionist }
-budget:   { p95_latency_ms: 120, fail: closed }   # không thẩm định kịp ⇒ CHẶN
+budget:   { p95_latency_ms: 120, fail: closed }   # cannot verify in time ⇒ BLOCK
 ```
 
-Không đường nào tới chân GPIO bỏ qua gate.
+No path to GPIO pins bypasses the gate.
 
-## Đọc tiếp
+## Further Reading
 
-- [Hướng dẫn người dùng](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/README.md)
-  · [năm kit phần cứng](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/kit-phan-cung.md)
-  · [mọi lệnh và đầu ra kỳ vọng](https://github.com/letrongminh/neuroedge-init/blob/main/CHANGELOG.md#2-cách-vận-hành)
-- [Gọi tool qua gate và MCP](https://github.com/letrongminh/neuroedge-init/blob/main/docs/spec/tool_calling.md)
-  · [mô hình mối đe doạ](https://github.com/letrongminh/neuroedge-init/blob/main/docs/spec/threat_model.md)
-- [Kiến trúc](https://github.com/letrongminh/neuroedge-init/blob/main/docs/architecture/README.md)
-  · [đóng góp](https://github.com/letrongminh/neuroedge-init/blob/main/CONTRIBUTING.md)
-  · [giấy phép](https://github.com/letrongminh/neuroedge-init/blob/main/LICENSING.md)
+- [User Guide](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/README.md)
+  · [five hardware kits](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/kit-phan-cung.md)
+  · [all commands and expected output](https://github.com/letrongminh/neuroedge-init/blob/main/CHANGELOG.md#2-cách-vận-hành)
+- [Tool calling via gates and MCP](https://github.com/letrongminh/neuroedge-init/blob/main/docs/spec/tool_calling.md)
+  · [threat model](https://github.com/letrongminh/neuroedge-init/blob/main/docs/spec/threat_model.md)
+- [Architecture](https://github.com/letrongminh/neuroedge-init/blob/main/docs/architecture/README.md)
+  · [contributing](https://github.com/letrongminh/neuroedge-init/blob/main/CONTRIBUTING.md)
+  · [licensing](https://github.com/letrongminh/neuroedge-init/blob/main/LICENSING.md)
 
-## Giấy phép
+## Licensing
 
-Mã theo [PolyForm Noncommercial 1.0.0](https://github.com/letrongminh/neuroedge-init/blob/main/LICENSE):
-dùng miễn phí cho mục đích phi thương mại; **dùng thương mại cần license thương mại**. Lược đồ,
-đặc tả và bộ kiểm tuân thủ theo
-[Apache-2.0](https://github.com/letrongminh/neuroedge-init/blob/main/LICENSES/Apache-2.0.txt), để ai
-cũng hiện thực được chuẩn. Phạm vi từng phần:
+Code is licensed under [PolyForm Noncommercial 1.0.0](https://github.com/letrongminh/neuroedge-init/blob/main/LICENSE):
+free for noncommercial use; **commercial use requires a commercial license**. Schemas,
+specifications, and conformance test suites are licensed under
+[Apache-2.0](https://github.com/letrongminh/neuroedge-init/blob/main/LICENSES/Apache-2.0.txt), so anyone
+can implement the standards. Scope breakdown:
 [`LICENSING.md`](https://github.com/letrongminh/neuroedge-init/blob/main/LICENSING.md).

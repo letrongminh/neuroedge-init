@@ -1,78 +1,78 @@
-# 04 · Thành phần firmware ESP32-S3 (C4 L3)
+# 04 · ESP32-S3 firmware components (C4 L3)
 
-> **Phạm vi:** firmware trong `targets/esp32s3/` — các component, trình tự khởi động, bộ nhớ, OTA,
-> giao diện. **Nguồn:** mã C trong `targets/esp32s3/`, `python/neuroedge/engine/firmware.py`,
+> **Scope:** firmware in `targets/esp32s3/` — components, boot sequence, memory, OTA,
+> user interface. **Sources:** C code in `targets/esp32s3/`, `python/neuroedge/engine/firmware.py`,
 > `docs/spec/hal_mcu_review.md`, `docs/reports/memory_spike_report.md`.
-> **Trạng thái:** `partial` — mọi thứ dưới đây chạy trên máy tính (C biên dịch trên host) và trên
-> Espressif QEMU trong CI; chưa có bo mạch, và firmware **chưa điều khiển chân nào**.
+> **Status:** `partial` — everything below runs on computers (C compiled on host) and on
+> Espressif QEMU in CI; hardware boards have not arrived, and firmware **does not yet drive any pins**.
 
-**Đọc chương này để làm gì:** Dành cho kỹ sư nhúng và lập trình viên hệ thống cần hiểu cấu trúc firmware ESP32-S3, quy trình boot, bộ nhớ và cơ chế OTA. Trả lời câu hỏi: firmware trên chip chạy những gì, dùng bao nhiêu bộ nhớ, và tự kiểm tra ra sao trước khi kích hoạt phần cứng. Nên đọc [`02`](02-container-c4l2.md) trước để nắm ranh giới container, và đọc [`05`](05-code-gate-hal-c4l4.md) sau để hiểu chi tiết walker và token.
+**Purpose of this chapter:** For embedded engineers and systems programmers who need to understand ESP32-S3 firmware architecture, boot flow, memory layout, and OTA mechanisms. It answers: what runs on the chip, how much memory it uses, and how it self-tests before enabling physical hardware. Read [`02`](02-container-c4l2.md) first to grasp container boundaries, and read [`05`](05-code-gate-hal-c4l4.md) next for walker and token details.
 
-## 1. Sơ đồ thành phần
+## 1. Component diagram
 
 ![E-04 · Firmware](../assets/svg/E-04-firmware.svg)
-*Hình E-04 — Component firmware, dữ liệu sinh lúc build, và trình tự khởi động.*
+*Figure E-04 — Firmware components, build-time generated data, and boot sequence.*
 
-**Cách đọc sơ đồ:** Các hộp thể hiện các component firmware và phân vùng bộ nhớ trên chip ESP32-S3; mũi tên nét liền là luồng khởi động và gọi hàm trực tiếp, mũi tên nét đứt là dữ liệu được sinh lúc build hoặc ghi ra ngoài. Điều cốt lõi cần nhớ: firmware chạy tuần tự trong `app_main`, self-test phải vượt qua 100% trước khi cho phép bất kỳ hành động vật lý nào.
+**How to read the diagram:** Boxes represent firmware components and memory partitions on the ESP32-S3 chip; solid arrows show boot flow and direct function calls, dashed arrows show data generated at build time or emitted externally. Core takeaway: firmware executes sequentially in `app_main`, and self-tests must pass 100% before any physical action is permitted.
 
-## 2. Những gì firmware **không** có hôm nay
+## 2. What firmware does **not** have today
 
-Nói trước, để không ai đọc sơ đồ thành nhiều hơn thực tế:
+Stated upfront so nobody reads diagrams as more than reality:
 
-- **Gần như không có task FreeRTOS.** Khởi động chạy tuần tự trong `app_main`; chỉ có hai task nhỏ
-  của Q-79: bảng điều khiển serial (`ne_console`, 4 KB stack) và task xoá bộ đếm khởi động sau cửa sổ
-  ổn định (`ne_boot`). Chưa có hàng đợi hay ghim nhân.
-- **Không có âm thanh.** Không I2S, codec, AEC, VAD, Opus hay ESP-SR — chỉ một `TODO(TSK-S1-10)`
-  trong `main/main.c`. Thoại trên chip là increment I5.
-- **Không điều khiển GPIO.** Bảng chân của agent mang **tên** chân, chưa có số GPIO; HAL trên chip
-  là TSK-S4-01.
-- **Wi-Fi được khởi động nhưng không bao giờ kết nối** (không có `esp_wifi_connect`): mạng chỉ được
-  dựng để đo chi phí bộ nhớ của nó (`TODOS.md` #50).
-- **Giao diện LVGL không được link vào firmware** (§7). Phân vùng `storage` không được mount.
+- **Virtually no FreeRTOS tasks.** Boot runs sequentially in `app_main`; only two small tasks from
+  Q-79 exist: serial console (`ne_console`, 4 KB stack) and boot counter clearing task after the
+  stability window (`ne_boot`). No queues or core pinning yet.
+- **No audio.** No I2S, codec, AEC, VAD, Opus, or ESP-SR — only a `TODO(TSK-S1-10)`
+  in `main/main.c`. On-chip voice is increment I5.
+- **No GPIO control.** Agent pin tables hold pin **names**, not GPIO numbers; on-chip HAL
+  is TSK-S4-01.
+- **Wi-Fi initializes but never connects** (no `esp_wifi_connect`): networking is initialized
+  solely to measure its memory cost (`TODOS.md` #50).
+- **LVGL interface is unlinked from firmware** (§7). The `storage` partition is unmounted.
 
-## 3. Danh mục component
+## 3. Component catalog
 
-| Component | Đường dẫn | Trách nhiệm | Phụ thuộc | Trạng thái |
+| Component | Path | Responsibility | Dependencies | Status |
 |:---|:---|:---|:---|:---|
-| `main` | `main/` | Trình tự khởi động; bộ đo bộ nhớ (`memory_probe.c`); self-test gate (`gate_selftest.c`); phát lại ba vết ghi chuẩn mực (`trace_vectors.c`) | mọi component dưới | `done` |
-| `ne_gate` | `components/ne_gate/` | Walker cây `NETR` v1 (`ne_walker.c`) và sổ token (`ne_token.c`); C99 thuần, không cấp phát, không biến toàn cục, không đệ quy | — | `done` |
-| `ne_trace` | `components/ne_trace/` | Định dạng dòng vết ghi `NE1 {…}` ≤ 512 byte; chỉ định dạng, ứng dụng ghi ra UART | `ne_gate` | `done` |
-| `ne_agent` | `components/ne_agent/` (**sinh ra**) | Phần riêng của agent: cây `NETR` mỗi gate, bảng gate · chân · action, phép kiểm self-test kèm đáp án của engine host | `ne_gate`, `ne_trace` | `done` |
-| `ne_ota` | `components/ne_ota/` | Cập nhật A/B có ký, rollback, chặn hạ cấp; chính sách là C99 thuần (`ne_ota_policy.c`), phần ESP-IDF ở `ne_ota.c` | ESP-IDF `app_update`, `esp_https_ota`, `nvs_flash`… | `partial` — trên QEMU |
-| `ne_boot` | `components/ne_boot/` | Boot guard (Q-79): đếm mỗi lần khởi động trong NVS, xoá sau cửa sổ ổn định, lần thứ `CONFIG_NEUROEDGE_BOOT_GUARD_MAX` vào safe mode; quyết định là C99 thuần (`ne_boot_policy.c`). Port từ zclaw | `nvs_flash` | `partial` — trên QEMU |
-| `ne_config` | `components/ne_config/` | Cấu hình và bí mật của chủ nhà (Wi-Fi, token bot, owner ID, LLM) trong phân vùng NVS `ne_config`; mã hoá khi build với `sdkconfig.secure`, không bao giờ lùi về dạng rõ; luật giá trị và cách hiện là C99 thuần (`ne_config_keys.c`) | `nvs_flash` | `partial` — trên QEMU |
-| `ne_console` | `components/ne_console/` | Bảng điều khiển serial (`esp_console`): `status`, `config`, `bootguard`, `reboot`, `factory-reset`; bí mật nhập ở dấu nhắc ẩn; không lệnh nào chạm chân hay gọi tool. Khung theo MimiClaw | `console`, `ne_boot`, `ne_config` | `partial` — trên QEMU |
-| `ne_ui` | `ui/` (**không link**) | Chín màn hình LVGL, tiếng Việt và tiếng Anh | LVGL v9.6 | `partial` — chỉ build trên host |
+| `main` | `main/` | Boot sequence; memory probe (`memory_probe.c`); gate self-test (`gate_selftest.c`); canonical trace replay (`trace_vectors.c`) | all components below | `done` |
+| `ne_gate` | `components/ne_gate/` | `NETR` v1 tree walker (`ne_walker.c`) and token ledger (`ne_token.c`); pure C99, non-allocating, no global variables, no recursion | — | `done` |
+| `ne_trace` | `components/ne_trace/` | Formats trace line `NE1 {…}` ≤ 512 bytes; formatting only, application outputs to UART | `ne_gate` | `done` |
+| `ne_agent` | `components/ne_agent/` (**generated**) | Agent-specific parts: `NETR` tree per gate, gate · pin · action tables, self-test suite with host engine ground truth | `ne_gate`, `ne_trace` | `done` |
+| `ne_ota` | `components/ne_ota/` | Signed A/B updates, rollback, anti-rollback; policy is pure C99 (`ne_ota_policy.c`), ESP-IDF glue in `ne_ota.c` | ESP-IDF `app_update`, `esp_https_ota`, `nvs_flash`… | `partial` — on QEMU |
+| `ne_boot` | `components/ne_boot/` | Boot guard (Q-79): counts each boot in NVS, clears after stability window, enters safe mode on `CONFIG_NEUROEDGE_BOOT_GUARD_MAX` attempt; policy is pure C99 (`ne_boot_policy.c`). Ported from zclaw | `nvs_flash` | `partial` — on QEMU |
+| `ne_config` | `components/ne_config/` | Owner configuration and secrets (Wi-Fi, bot token, owner ID, LLM) in `ne_config` NVS partition; encrypted when built with `sdkconfig.secure`, never falls back to plaintext; validation and rendering rules in pure C99 (`ne_config_keys.c`) | `nvs_flash` | `partial` — on QEMU |
+| `ne_console` | `components/ne_console/` | Serial console (`esp_console`): `status`, `config`, `bootguard`, `reboot`, `factory-reset`; secrets entered at hidden prompt; no command touches pins or calls tools. Framed after MimiClaw | `console`, `ne_boot`, `ne_config` | `partial` — on QEMU |
+| `ne_ui` | `ui/` (**unlinked**) | Nine LVGL screens, Vietnamese and English | LVGL v9.6 | `partial` — built on host only |
 
-`ne_gate`, `ne_trace`, `ne_agent` biên dịch với `-std=c99 -Wall -Wextra -Wconversion -Werror`.
+`ne_gate`, `ne_trace`, `ne_agent` compile with `-std=c99 -Wall -Wextra -Wconversion -Werror`.
 
-### Thành phần quy hoạch
+### Planned components
 
-| Đường dẫn quy hoạch | Task | Thành phần (là gì) và mục đích (vì sao cần) | Kiến trúc đích |
+| Planned path | Task | Component (what it is) and purpose (why needed) | Target architecture |
 |:---|:---|:---|:---|
-| `targets/esp32s3/hal/` | TSK-S4-01 | Hiện thực 5 nguyên thủy HAL trên ESP-IDF; cần để điều khiển phần cứng thật thay vì giả lập | [`15`](15-target-architecture.md) §2.1 |
-| `targets/esp32s3/drivers/` | TSK-S4-03 | Driver `digital.out` và `sensor.read` trên chân thật; cần để kích xung actuator và đọc cảm biến trên bo mạch Box-3 | [`15`](15-target-architecture.md) §2.1 |
-| `targets/esp32s3/audio/` | TSK-S5-01 | Tích hợp WebRTC AEC, libfvad (VAD), Opus streaming; cần để khử vang, phát hiện tiếng nói và nén âm thanh | [`15`](15-target-architecture.md) §2.1 |
-| `targets/esp32s3/drivers/audio_path.c` | TSK-S5-02 | Driver đường dẫn audio thu/phát I2S (ES8311/ES7210); cần để giao tiếp với codec âm thanh phần cứng của Box-3 | [`15`](15-target-architecture.md) §2.1 |
-| `targets/esp32s3/fsm/voice_fsm.c` | TSK-S5-03 | Hiện thực C của máy trạng thái hội thoại (`voice_fsm.md`); cần để điều phối lượt thoại thời gian thực trực tiếp trên chip | [`15`](15-target-architecture.md) §2.1 |
-| `targets/esp32s3/fsm/actuator_abort.c` | TSK-S5-04 | Logic thu hồi lệnh actuator chưa thực thi khi bị cắt lời (barge-in); cần để huỷ lệnh actuator chưa giao trong ≤ 20 ms và đóng token khi bị cắt lời ([`voice_fsm.md`](../../spec/voice_fsm.md) §5.2) | [`15`](15-target-architecture.md) §2.1 |
-| `targets/esp32s3/audio/provider_client.c` | TSK-S5-06 | Client streaming âm thanh lên provider cloud; cần để truyền nhận luồng STT/TTS từ vi điều khiển | [`15`](15-target-architecture.md) §2.1 |
-| `targets/esp32s3/fallback/` | TSK-S5-07 | Bộ nhận diện lệnh cố định cục bộ; cần để thiết bị vẫn lượng giá gate và hành động an toàn khi mất Internet | [`15`](15-target-architecture.md) §2.1 |
-| `targets/esp32s3/security/` | TSK-S6-05 | Secure Boot, mã hoá flash, nút ngắt micro vật lý; cần để bảo vệ toàn vẹn firmware và quyền riêng tư | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/hal/` | TSK-S4-01 | Implementation of 5 HAL primitives on ESP-IDF; needed to control physical hardware instead of simulation | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/drivers/` | TSK-S4-03 | `digital.out` and `sensor.read` drivers on real pins; needed to pulse actuators and read sensors on Box-3 board | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/audio/` | TSK-S5-01 | WebRTC AEC, libfvad (VAD), Opus streaming integration; needed for acoustic echo cancellation, voice detection, and audio compression | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/drivers/audio_path.c` | TSK-S5-02 | I2S audio capture/playback path driver (ES8311/ES7210); needed to interface with Box-3 hardware audio codec | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/fsm/voice_fsm.c` | TSK-S5-03 | C implementation of conversation state machine (`voice_fsm.md`); needed to coordinate real-time voice turns directly on chip | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/fsm/actuator_abort.c` | TSK-S5-04 | Actuator abort logic for unexecuted commands on barge-in; needed to cancel uncommitted actuator commands in ≤ 20 ms and close tokens on interruption ([`voice_fsm.md`](../../spec/voice_fsm.md) §5.2) | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/audio/provider_client.c` | TSK-S5-06 | Cloud provider audio streaming client; needed to stream STT/TTS from microcontroller | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/fallback/` | TSK-S5-07 | Local fixed command recognizer; needed for device to evaluate gates and act safely during Internet outages | [`15`](15-target-architecture.md) §2.1 |
+| `targets/esp32s3/security/` | TSK-S6-05 | Secure Boot, flash encryption, physical microphone disconnect button; needed to protect firmware integrity and privacy | [`15`](15-target-architecture.md) §2.1 |
 
-Hiện tại firmware chỉ có một `app_main` tuần tự; mô hình task FreeRTOS (số lượng task, độ ưu tiên, hàng đợi và ghim nhân) cho đường thoại chưa được thiết kế (→ [`15`](15-target-architecture.md) §2.2). Firmware cho node robot MCU ngoại vi thứ hai (RP2350, TSK-W3-07 tại `targets/rp2350/`, chạy walker gate và sổ token C99 độc lập trên node tay máy — draft robot §9.4) xem [`15`](15-target-architecture.md) §4.3.
+Currently firmware has only a sequential `app_main`; FreeRTOS task models (task counts, priorities, queues, and core pinning) for the voice path remain undesigned (→ [`15`](15-target-architecture.md) §2.2). Firmware for the secondary external MCU robot node (RP2350, TSK-W3-07 in `targets/rp2350/`, running an independent C99 gate walker and token ledger on arm actuator nodes — robot draft §9.4) is detailed in [`15`](15-target-architecture.md) §4.3.
 
-### 3.1 `ne_gate` — walker và sổ token
+### 3.1 `ne_gate` — walker and token ledger
 
 ```c
-/* ne_walker.h — đọc cây tại chỗ trong bộ nhớ của người gọi, không chép */
+/* ne_walker.h — reads tree in place in caller's memory, no copying */
 ne_status ne_tree_load(ne_tree *tree, const uint8_t *buf, uint32_t len);
 ne_status ne_evaluate(const ne_tree *tree, const ne_fact *facts, const ne_arg_value *args,
                       int confirmed, ne_result *out);
 ne_status ne_decide(const ne_tree *tree, const ne_fact *facts, const ne_arg_value *args,
                     int confirmed, ne_degraded degraded, ne_result *out);
 
-/* ne_token.h — bản thiết bị của actions/token.py; sổ do người gọi cấp phát */
+/* ne_token.h — device version of actions/token.py; ledger allocated by caller */
 ne_token_status ne_ledger_init(ne_ledger *ledger, uint32_t boot_id);
 ne_token_status ne_token_issue(ne_ledger *ledger, const ne_tree *tree, uint32_t pin_mask,
                                uint32_t now_ms, ne_random_fn fill_random, ne_token *out);
@@ -81,37 +81,37 @@ ne_token_reason ne_token_authorize(ne_ledger *ledger, const ne_token *token, uin
 void ne_token_close(ne_ledger *ledger, const ne_token *token);
 ```
 
-- **Dữ kiện đi vào walker là chỉ số trong miền giá trị**, không phải chuỗi: chip không bao giờ so
-  chuỗi. Mỗi `ne_fact` mang `present`, `in_domain`, `index`, và độ tin cậy nếu có.
-- **Sổ token có bốn khe** (`NE_TOKEN_SLOTS`), nonce 16 byte, TTL = `p95_latency_ms × 3`, tuổi token
-  tính `(uint32_t)(now − issued)` nên an toàn khi bộ đếm mili-giây quay vòng. `boot_id` đóng vai
-  `process_instance_id` của host: token từ lần khởi động trước ⇒ hết hạn.
-- **Sổ đầy thì từ chối** (`NE_TOKEN_ERR_FULL`), không bao giờ đẩy token đang sống ra.
-- Mọi lý do từ chối ánh xạ về cùng mã lỗi với host: không phải token, token lạ, chân không được cấp
-  ⇒ `NE1001`; dùng lại, hết hạn ⇒ `NE1002`.
+- **Facts entering the walker are domain indices**, not strings: the chip never compares
+  strings. Each `ne_fact` carries `present`, `in_domain`, `index`, and confidence if available.
+- **Token ledger has four slots** (`NE_TOKEN_SLOTS`), 16-byte nonces, TTL = `p95_latency_ms × 3`, and token age
+  computed as `(uint32_t)(now − issued)`, ensuring safety across millisecond counter rollovers. `boot_id` serves as
+  the host's `process_instance_id`: tokens from previous boots are expired.
+- **Full ledger rejects** (`NE_TOKEN_ERR_FULL`), never evicting active tokens.
+- All rejection reasons map to identical host error codes: not a token, unknown token, ungranted pin
+  ⇒ `NE1001`; reused, expired ⇒ `NE1002`.
 
-Bố cục byte của `NETR` và thuật toán duyệt: [`05`](05-code-gate-hal-c4l4.md).
+Byte layout of `NETR` and walking algorithms: [`05`](05-code-gate-hal-c4l4.md).
 
-### 3.2 `ne_agent` — component sinh cho từng agent
+### 3.2 `ne_agent` — generated component for each agent
 
-`neuroedge build --target esp32s3` (`engine/firmware.py::render_component`) sinh ra:
+`neuroedge build --target esp32s3` (`engine/firmware.py::render_component`) generates:
 
-| Tệp | Nội dung |
+| File | Content |
 |:---|:---|
-| `gates/<key>.netree.h` | `static const uint8_t ne_tree_<key>[]` — byte `NETR` v1 của gate, nằm trong flash |
-| `ne_agent.c` | Bảng gate (nhãn, digest, chữ `on_block`; `NETR` v2 cũng mang chúng, `ne_trace` vẫn đọc từ bảng này), bảng chân (tên), bảng action (gate, mặt nạ chân), và **các phép kiểm self-test** |
-| `include/ne_agent.h` | Kiểu dữ liệu; `NE_AGENT_VERSION`, `NE_AGENT_BOARD`, `NE_AGENT_LANGUAGE`; một ký hiệu `ne_agent_linked` |
+| `gates/<key>.netree.h` | `static const uint8_t ne_tree_<key>[]` — `NETR` v1 gate bytes, resident in flash |
+| `ne_agent.c` | Gate table (labels, digests, `on_block` text; `NETR` v2 also carries them, `ne_trace` still reads from this table), pin table (names), action table (gates, pin masks), and **self-test cases** |
+| `include/ne_agent.h` | Data types; `NE_AGENT_VERSION`, `NE_AGENT_BOARD`, `NE_AGENT_LANGUAGE`; single symbol `ne_agent_linked` |
 
-Phép kiểm self-test sinh cho mỗi gate: trường hợp cơ sở; với mỗi tiêu chí mọi giá trị trong miền,
-dữ kiện vắng, giá trị ngoài miền, và các biến thể độ tin cậy nếu có ngưỡng; một trường hợp mất mạng;
-và bản "đã xác nhận" cho gate `ask`. **Đáp án của mỗi phép kiểm do chính engine Python tính lúc
-build** — đó là điều làm self-test chứng minh được tương đương host ↔ chip.
+Self-test cases generated for each gate include: base case; for each criterion all values in domain,
+missing facts, out-of-domain values, and confidence variations if thresholds exist; network loss scenario;
+and the "confirmed" version for `ask` gates. **The expected outcome of every test case is computed by the Python engine
+at build time** — this is what makes self-tests prove host ↔ chip equivalence.
 
-## 4. Trình tự khởi động
+## 4. Boot sequence
 
-Mọi dòng đánh dấu (`NE_SELFTEST`, `NE_TRACE DONE`, `NEUROEDGE_*_JSON`, `NE_OTA`, `NE_BOOT`, `NE_CONFIG`,
-`NE_STACK`, `NE_CONSOLE`) được in ở cột 0,
-không có tiền tố log, để script CI neo được bằng `^`.
+All marker lines (`NE_SELFTEST`, `NE_TRACE DONE`, `NEUROEDGE_*_JSON`, `NE_OTA`, `NE_BOOT`, `NE_CONFIG`,
+`NE_STACK`, `NE_CONSOLE`) are printed at column 0,
+without log prefixes, enabling CI scripts to anchor via `^`.
 
 ```mermaid
 sequenceDiagram
@@ -152,57 +152,57 @@ sequenceDiagram
     end
 ```
 
-**Cách đọc sơ đồ:** Các cột thẳng đứng đại diện cho `app_main` và các module chức năng nội bộ firmware; mũi tên nét liền là lời gọi hàm đồng bộ, mũi tên nét đứt là kết quả trả về; khối `alt` phân nhánh theo kết quả self-test. Điều cốt lõi cần nhớ: nếu self-test thất bại, ảnh OTA đang chờ (nếu có) bị đánh dấu không hợp lệ và máy khởi động lại để bootloader quay về khe trước; không có ảnh chờ thì firmware dừng — không replay, không mạng, không action.
+**How to read the diagram:** Vertical lifelines represent `app_main` and internal firmware functional modules; solid arrows are synchronous function calls, dashed arrows are return values; `alt` blocks branch on self-test results. Core takeaway: if self-test fails, any pending OTA image is marked invalid and the device reboots to let the bootloader revert to the prior slot; without a pending image, firmware halts — no replay, no network, no actions.
 
-Self-test gồm bốn giai đoạn: (1) mỗi cây nạp được và digest khớp bản host biên dịch; (2) walker
-quyết từng phép kiểm đúng như engine host, từng trường một; (3) token của mỗi action mở đúng chân
-của nó đúng một lần, từ chối chân khác, từ chối token bị sửa; (4) sổ đầy thì từ chối, đóng một token
-thì khe được dùng lại. Thất bại một chỗ ⇒ firmware dừng: không runtime gate, không action, không mạng.
+Self-test consists of four phases: (1) each tree loads and digests match host-compiled versions; (2) walker
+evaluates every test case identically to the host engine, field by field; (3) tokens for each action open only
+their assigned pins exactly once, reject unassigned pins, and reject tampered tokens; (4) full ledgers reject, and closing a token
+frees the slot for reuse. A failure anywhere halts the firmware: no gate runtime, no actions, no networking.
 
-| Tuỳ chọn Kconfig | Mặc định | Tác dụng |
+| Kconfig option | Default | Effect |
 |:---|:---:|:---|
-| `CONFIG_NEUROEDGE_QEMU` | n | `device_id = "qemu"` thay vì `esp32s3-<MAC>` |
-| `CONFIG_NEUROEDGE_SKIP_NETWORK` | n | Bỏ khởi động Wi-Fi (lớp `sdkconfig.qemu` bật) |
-| `CONFIG_NEUROEDGE_REPLAY_VECTORS` | y | Phát lại ba vết ghi chuẩn mực sau self-test |
-| `CONFIG_NEUROEDGE_OTA` | n | Bật đường cập nhật; Kconfig và `#error` từ chối nếu thiếu kiểm chữ ký hoặc rollback |
-| `CONFIG_NEUROEDGE_OTA_ETH` | n | Mạng Ethernet ảo `open_eth` của QEMU cho OTA |
-| `CONFIG_NEUROEDGE_BOOT_GUARD_MAX` | 4 | Lần khởi động chạm số này vào safe mode (Q-79, như `MAX_BOOT_FAILURES` của zclaw) |
-| `CONFIG_NEUROEDGE_BOOT_GUARD_STABLE_MS` | 30000 | Đứng được chừng này sau khởi động thì xoá bộ đếm; `sdkconfig.qemu_ota` đặt 0 |
-| `CONFIG_NEUROEDGE_CONSOLE` | y | Bảng điều khiển serial, ở cả chế độ thường lẫn safe mode |
+| `CONFIG_NEUROEDGE_QEMU` | n | `device_id = "qemu"` instead of `esp32s3-<MAC>` |
+| `CONFIG_NEUROEDGE_SKIP_NETWORK` | n | Skips Wi-Fi initialization (`sdkconfig.qemu` enables) |
+| `CONFIG_NEUROEDGE_REPLAY_VECTORS` | y | Replays three canonical traces after self-test |
+| `CONFIG_NEUROEDGE_OTA` | n | Enables update path; Kconfig and `#error` reject if signature checks or rollback missing |
+| `CONFIG_NEUROEDGE_OTA_ETH` | n | QEMU `open_eth` virtual Ethernet network for OTA |
+| `CONFIG_NEUROEDGE_BOOT_GUARD_MAX` | 4 | Boot count threshold entering safe mode (Q-79, modeled after zclaw `MAX_BOOT_FAILURES`) |
+| `CONFIG_NEUROEDGE_BOOT_GUARD_STABLE_MS` | 30000 | Stability duration after boot required to clear counter; `sdkconfig.qemu_ota` sets 0 |
+| `CONFIG_NEUROEDGE_CONSOLE` | y | Serial console, active in both normal and safe mode |
 
-## 5. Bộ nhớ và flash
+## 5. Memory and flash
 
-**Bảng phân vùng** (`partitions.csv`, flash 16 MB): `nvs` 16 KiB · `otadata` 8 KiB · `phy_init` 4 KiB
-· `factory`, `ota_0`, `ota_1` mỗi khe 3,5 MiB · `storage` (spiffs) 5 MiB, chưa dùng · `ne_config` 24 KiB
-(cấu hình và bí mật của chủ nhà, Q-79) · `nvs_keys` 4 KiB (khoá mã hoá NVS, cờ `encrypted`). Hai phân vùng
-cuối nằm sau `storage`, không dời offset nào có trước. Khe 3,5 MiB chính là trần kích thước firmware của Q-3.
+**Partition table** (`partitions.csv`, 16 MB flash): `nvs` 16 KiB · `otadata` 8 KiB · `phy_init` 4 KiB
+· `factory`, `ota_0`, `ota_1` 3.5 MiB each slot · `storage` (spiffs) 5 MiB, unused · `ne_config` 24 KiB
+(owner configuration and secrets, Q-79) · `nvs_keys` 4 KiB (NVS encryption keys, `encrypted` flag). The last two
+partitions sit after `storage`, shifting no prior offsets. The 3.5 MiB slot defines the Q-3 firmware size ceiling.
 
-**Lớp cấu hình** chồng lên nhau qua `SDKCONFIG_DEFAULTS`:
+**Configuration layers** layered via `SDKCONFIG_DEFAULTS`:
 
-| Lớp | Đặt gì |
+| Layer | Configuration |
 |:---|:---|
-| `sdkconfig.defaults` | Flash 16 MB, bảng phân vùng riêng, PSRAM octal 80 MHz, FreeRTOS 1000 Hz, tối ưu hiệu năng |
-| `sdkconfig.qemu` | Bỏ mạng, cờ QEMU, bỏ qua khi không tìm thấy PSRAM |
-| `sdkconfig.ota` | OTA, rollback của bootloader, ký ảnh RSA-3072 và kiểm chữ ký khi cập nhật (chưa Secure Boot), stack task chính 8 KB |
-| `sdkconfig.qemu_ota` | URL máy chủ thử, `open_eth`, tắt tăng tốc phần cứng AES/SHA/MPI (mô hình GDMA của QEMU chưa đủ), xoá bộ đếm khởi động ngay sau khởi động |
-| `sdkconfig.secure` | Mã hoá flash (chế độ phát triển) và NVS mã hoá cho `ne_config` — **đốt eFuse ở lần khởi động đầu, một chiều**; CI chỉ build |
+| `sdkconfig.defaults` | 16 MB flash, custom partition table, octal 80 MHz PSRAM, FreeRTOS 1000 Hz, performance optimization |
+| `sdkconfig.qemu` | Strips networking, QEMU flags, ignores missing PSRAM |
+| `sdkconfig.ota` | OTA, bootloader rollback, RSA-3072 image signing and signature verification on update (pre-Secure Boot), main task stack 8 KB |
+| `sdkconfig.qemu_ota` | Test server URL, `open_eth`, disables hardware AES/SHA/MPI acceleration (QEMU GDMA model incomplete), clears boot counter immediately after boot |
+| `sdkconfig.secure` | Flash encryption (development mode) and encrypted NVS for `ne_config` — **blows eFuses on first boot, irreversible**; CI builds only |
 
-**Kỷ luật bộ nhớ tĩnh**, được test trên từng PR (`test_c_walker.py`, `test_c_token.py`,
-`test_c_trace.py`): tệp đối tượng của walker, sổ token và bộ định dạng vết ghi **không có** ký hiệu
-`.data`/`.bss`; mỗi hàm dùng stack ≤ 512 byte. Bộ nhớ trạng thái (sổ token, bộ đệm dòng) do ứng
-dụng cấp phát, không bao giờ nằm trong component.
+**Static memory discipline**, tested on every PR (`test_c_walker.py`, `test_c_token.py`,
+`test_c_trace.py`): object files for walker, token ledger, and trace formatter contain **no**
+`.data`/`.bss` symbols; each function uses stack ≤ 512 bytes. State memory (token ledger, line buffers) is allocated
+by the application, never resident in components.
 
-**Stack guard** (Q-79, ý tưởng từ zclaw): firmware build với `-fstack-usage`; mọi hàm của `main` và
-các component `ne_*` phải có khung tĩnh ≤ 1024 byte, không VLA hay `alloca`
-(`scripts/check_stack_usage.py`). Lúc chạy trên QEMU, task chính phải còn ≥ 512 byte chưa dùng
-(`NE_STACK`), task bảng điều khiển cũng vậy sau lệnh sâu nhất (`config set`).
+**Stack guard** (Q-79, inspired by zclaw): firmware builds with `-fstack-usage`; all functions in `main` and
+`ne_*` components must have static frames ≤ 1024 bytes, with no VLAs or `alloca`
+(`scripts/check_stack_usage.py`). At runtime on QEMU, the main task must maintain ≥ 512 unused bytes
+(`NE_STACK`), and console tasks do likewise after the deepest command (`config set`).
 
-**Ngân sách Q-3** (SRAM ≥ 120 KB và PSRAM ≥ 2 MB cho ứng dụng, firmware ≤ 3,5 MB) được CI kiểm
-từng phần: kích thước ảnh, RAM tĩnh còn lại của cấu hình bo mạch, heap lúc khởi động trên QEMU. Số
-đo và điều kiện đo ở [`memory_spike_report.md`](../../reports/memory_spike_report.md) §4.1 — đó là
-**sàn**, không phải phán quyết Q-3, vì chưa có bo mạch và chưa có âm thanh.
+**Q-3 Budget** (SRAM ≥ 120 KB and PSRAM ≥ 2 MB for application, firmware ≤ 3.5 MB) is checked incrementally
+in CI: image size, remaining static RAM of board configs, boot-time heap on QEMU. Measurements
+and conditions are in [`memory_spike_report.md`](../../reports/memory_spike_report.md) §4.1 — this represents a
+**floor**, not a final Q-3 verdict, pending boards and audio hardware.
 
-## 6. `ne_ota` — cập nhật có ký
+## 6. `ne_ota` — signed updates
 
 ```mermaid
 stateDiagram-v2
@@ -220,45 +220,45 @@ stateDiagram-v2
     Switched --> [*]: reboot into the new slot, pending verify
 ```
 
-**Cách đọc sơ đồ:** Các nút bo tròn đại diện cho các trạng thái của vòng đời ảnh cập nhật OTA; mũi tên nét liền là bước chuyển trạng thái kèm điều kiện kích hoạt. Điều cốt lõi cần nhớ: ảnh mới nạp chỉ được xác nhận (`Confirmed`) khi vượt qua self-test lúc khởi động; sai chữ ký, lỗi tải hoặc quá hạn ⇒ `Rejected`: xoá sector đầu của khe vừa ghi, máy vẫn chạy khe hiện tại; chỉ self-test hỏng trên ảnh đang chờ mới làm bootloader quay về khe trước.
+**How to read the diagram:** Rounded rectangles represent states in the OTA image update lifecycle; solid arrows denote state transitions with triggering conditions. Core takeaway: a newly flashed image is confirmed (`Confirmed`) only after passing boot-time self-tests; signature mismatch, download failure, or timeout ⇒ `Rejected`: erases first sector of written slot while device continues running current slot; only self-test failures on pending images trigger bootloader rollback to the prior slot.
 
-- **Quyết định cài hay không** là một hàm C thuần, `ne_ota_should_install(running, remote,
-  rolled_back, high_water)`, được test trên host dưới ASan/UBSan và dùng nguyên trong firmware.
-  Thứ tự: thiếu phiên bản ⇒ bỏ; phiên bản không phải `MAJOR.MINOR.PATCH` ⇒ bỏ; trùng ⇒ bỏ; trùng bản
-  vừa bị quay về ⇒ bỏ; không cao hơn mốc nước cao ⇒ bỏ (hạ cấp); còn lại ⇒ cài.
-- **NVS** (namespace `ne_ota`): `url` (rỗng ⇒ tắt OTA), `best` (mốc nước cao — phiên bản cao nhất
-  đã vượt self-test), `rollback` (phiên bản vừa bị quay về). Không đọc được NVS ⇒ từ chối, không đoán.
-- **Mọi lần từ chối sau khi đã ghi byte** (sai chữ ký, tải dở, quá hạn, lỗi tải) xoá sector đầu của
-  khe vừa ghi, để không lần khởi động nào rơi vào ảnh bị từ chối.
-- **Giới hạn:** chưa có Secure Boot và chống hạ cấp bằng eFuse (TSK-S6-05); OTA không cập nhật
-  bootloader; ảnh treo mà không tự khởi động lại chỉ quay về ở lần tắt nguồn bật lại. Thủ tục và ý
-  nghĩa từng dòng `NE_OTA`: [`docs/user/nap-firmware.md`](../../user/nap-firmware.md) §6.
+- **The decision whether to install** is a pure C function, `ne_ota_should_install(running, remote,
+  rolled_back, high_water)`, tested on host under ASan/UBSan and used verbatim in firmware.
+  Precedence: missing version ⇒ skip; version not `MAJOR.MINOR.PATCH` ⇒ skip; identical version ⇒ skip; identical to
+  recently rolled back version ⇒ skip; not higher than high-water mark ⇒ skip (downgrade); otherwise ⇒ install.
+- **NVS** (`ne_ota` namespace): `url` (empty ⇒ disables OTA), `best` (high-water mark — highest version
+  passing self-test), `rollback` (recently rolled back version). Unreadable NVS ⇒ reject, do not guess.
+- **All rejections after bytes have been written** (invalid signature, partial download, timeout, transfer error) erase the first sector of
+  the written slot, ensuring no subsequent boot falls into a rejected image.
+- **Limitations:** pre-Secure Boot and no eFuse anti-rollback (TSK-S6-05); OTA does not update the
+  bootloader; frozen images without auto-restart revert only on power cycle. Procedures and
+  definitions for each `NE_OTA` line: [`docs/user/nap-firmware.md`](../../user/nap-firmware.md) §6.
 
-## 7. `ne_ui` — giao diện thiết bị (chưa link)
+## 7. `ne_ui` — device UI (unlinked)
 
-Chín màn hình (`ne_ui_show_boot`, `idle`, `voice`, `confirm`, `verdict`, `degraded`, `sensor`, `ota`,
-`fatal`) trên panel 320×240 RGB565. Mã là C99 trên API LVGL v9.6, không header ESP-IDF, nên cùng mã
-đó build trên máy tính để so **ảnh golden** mỗi PR (33 trường hợp × 2 ngôn ngữ, harness chạy dưới
-ASan/UBSan). Vẽ tất định: không đồng hồ, không ngẫu nhiên, không hoạt ảnh. Chữ của agent là dữ liệu:
-UTF-8 kiểm chặt, cắt có dấu `…`. Ngôn ngữ: `ne_ui_init` trả `false` và không vẽ gì nếu ngôn ngữ không
-có bảng chữ. Đặc tả: [`docs/spec/ui.md`](../../spec/ui.md). Việc nối giao diện vào firmware chờ driver
-màn hình (TSK-S4-01); project sinh cho agent hôm nay không chép `ui/`.
+Nine screens (`ne_ui_show_boot`, `idle`, `voice`, `confirm`, `verdict`, `degraded`, `sensor`, `ota`,
+`fatal`) on a 320×240 RGB565 panel. Code is C99 on LVGL v9.6 APIs without ESP-IDF headers, allowing identical code
+to build on computers for **golden image** comparison on each PR (33 cases × 2 languages, test harness under
+ASan/UBSan). Deterministic rendering: no clocks, no randomness, no animations. Agent text is data:
+strictly validated UTF-8, truncated with ellipsis `…`. Languages: `ne_ui_init` returns `false` and renders nothing if the language
+lacks a font table. Specification: [`docs/spec/ui.md`](../../spec/ui.md). Connecting the interface into firmware awaits display
+drivers (TSK-S4-01); projects generated for agents today do not copy `ui/`.
 
-## 8. Build và kiểm
+## 8. Build and verification
 
-| Kiểm gì | Bằng gì | Ở đâu |
+| Verification item | Mechanism | Where |
 |:---|:---|:---|
-| Walker, sổ token, bộ vết ghi khớp host; bộ nhớ tĩnh; fuzz tệp cây | C biên dịch trên host (gcc/clang, ASan/UBSan) | `pytest` job `tests` |
-| Chính sách OTA, quy tắc phiên bản C = Python | C trên host | `pytest` job `tests` |
-| Firmware boot, self-test, vết ghi, heap | ESP-IDF v5.4 + QEMU (`scripts/qemu_boot.sh`) | job `firmware-qemu` |
-| Kích thước ảnh, RAM tĩnh cấu hình bo mạch | `scripts/check_firmware_size.py` | job `firmware-size` |
-| Firmware sinh cho một agent mới boot được, bản OTA ký đúng phiên bản | `neuroedge build` + `idf.py` + QEMU + `scripts/build_ota_layer.sh` | job `agent-firmware` |
-| OTA bảy pha a–g | `scripts/qemu_ota.sh` | job `ota-rollback` |
-| Boot guard, chính sách cấu hình (C trên host) | `test_c_boot_and_config.py` | `pytest` job `tests` |
-| Khung stack ≤ 1024 B; task chính còn ≥ 512 B trên QEMU | `scripts/check_stack_usage.py` | job `firmware-qemu` |
-| Ba lần khởi động hỏng → safe mode, bí mật qua bảng serial, factory reset | `scripts/qemu_console.py` | job `firmware-qemu` |
-| Lớp mã hoá flash build được | `idf.py` với `sdkconfig.secure` | job `firmware-size` |
-| Ảnh golden giao diện | `scripts/run_ui_golden.sh` | job `ui-golden` |
-| Vết ghi UART thành `trace.v1`, `verify` trên chip | `neuroedge record --port`, `verify --targets esp32s3` | job `uart-trace` |
+| Walker, token ledger, trace formatter match host; static memory; tree file fuzzing | Host-compiled C (gcc/clang, ASan/UBSan) | `pytest` job `tests` |
+| OTA policy, version rule C = Python | Host C | `pytest` job `tests` |
+| Firmware boot, self-test, traces, heap | ESP-IDF v5.4 + QEMU (`scripts/qemu_boot.sh`) | job `firmware-qemu` |
+| Image size, board profile static RAM | `scripts/check_firmware_size.py` | job `firmware-size` |
+| Firmware generated for new agent boots, OTA image signed with matching version | `neuroedge build` + `idf.py` + QEMU + `scripts/build_ota_layer.sh` | job `agent-firmware` |
+| Seven-phase OTA a–g | `scripts/qemu_ota.sh` | job `ota-rollback` |
+| Boot guard, configuration policy (host C) | `test_c_boot_and_config.py` | `pytest` job `tests` |
+| Stack frames ≤ 1024 B; main task retains ≥ 512 B on QEMU | `scripts/check_stack_usage.py` | job `firmware-qemu` |
+| Three failed boots → safe mode, serial console secrets, factory reset | `scripts/qemu_console.py` | job `firmware-qemu` |
+| Flash encryption layer builds | `idf.py` with `sdkconfig.secure` | job `firmware-size` |
+| UI golden images | `scripts/run_ui_golden.sh` | job `ui-golden` |
+| UART traces to `trace.v1`, on-chip `verify` | `neuroedge record --port`, `verify --targets esp32s3` | job `uart-trace` |
 
-Danh sách đầy đủ và điều kiện kích hoạt từng job: `CHANGELOG.md` §2.5.
+Full list and trigger conditions for each job: `CHANGELOG.md` §2.5.

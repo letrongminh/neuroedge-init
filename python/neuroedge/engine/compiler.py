@@ -79,7 +79,7 @@ def resolve_agent_language(
             "device UI and the recognizer would speak different languages",
             how=f"make the two equal, drop [stt] language and keep language = "
             f"{agent_language!r}, or drop [agent] language to follow [stt] "
-            "(docs/spec/ui.md §Ngôn ngữ)",
+            "(docs/spec/ui.md §2 (Language))",
         )
     return agent_language if agent_language is not None else stt_language
 
@@ -94,7 +94,7 @@ class AgentManifest:
     source: Path
     # The language the agent speaks: `[agent] language` else `[stt] language`,
     # resolved and conflict-checked at load for every target; None means the
-    # device UI takes its default. The rule is docs/spec/ui.md §Ngôn ngữ.
+    # device UI takes its default. The rule is docs/spec/ui.md §2 (Language).
     language: str | None = None
 
     @property
@@ -150,7 +150,7 @@ def load_agent_manifest(path: str | Path) -> AgentManifest:
             why=f"language = {language!r} is not an ISO-639-1 code: exactly two lowercase "
             'letters, such as "vi" or "en"',
             how='write language = "vi", or remove it; the device UI then takes [stt] '
-            'language (default "vi") — docs/spec/ui.md §Ngôn ngữ',
+            'language (default "vi") — docs/spec/ui.md §2 (Language)',
         )
     # A `[stt] language` of another shape is parse_speech()'s to refuse; only a
     # string can take part in the conflict check here.

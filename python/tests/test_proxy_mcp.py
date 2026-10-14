@@ -366,7 +366,7 @@ def test_doctor_warns_when_the_upstream_is_reachable_directly(project):
         listener.listen()
         config = _url_project(project, listener.getsockname()[1])
         findings = doctor(config)
-        warnings = [f for f in findings if f.level == "warning" and "còn tới được" in f.message]
+        warnings = [f for f in findings if f.level == "warning" and "still reachable" in f.message]
         assert warnings and "127.0.0.1" in warnings[0].message
         result = runner.invoke(app, ["plugin", "doctor", "--config", str(config), "--json"])
         assert result.exit_code == 1, "a warning is a non-zero exit"
@@ -374,20 +374,20 @@ def test_doctor_warns_when_the_upstream_is_reachable_directly(project):
         assert report["warnings"] >= 1
     # nothing listens now: it still does not say OK
     unreachable = doctor(config)
-    assert not [f for f in unreachable if "còn tới được" in f.message]
-    assert any(f.level == "unverifiable" and "không kiểm được" in f.message for f in unreachable)
+    assert not [f for f in unreachable if "still reachable" in f.message]
+    assert any(f.level == "unverifiable" and "cannot verify" in f.message for f in unreachable)
 
 
 def test_doctor_says_what_it_cannot_check(project, tmp_path):
     findings = doctor(project / "guard.toml", desktop_config=tmp_path / "missing.json")
     text = "\n".join(f.message for f in findings)
-    assert "không kiểm được: plugin (TSK-I2c-11)" in text
-    assert "không kiểm được: không đọc được cấu hình Claude Desktop" in text
-    assert "không kiểm được: ứng dụng khác" in text
+    assert "cannot verify: plugin (TSK-I2c-11)" in text
+    assert "cannot verify: could not read the Claude Desktop config" in text
+    assert "cannot verify: another app" in text
     assert not any(f.message.strip().upper() == "OK" for f in findings)
     result = runner.invoke(app, ["plugin", "doctor", "--config", str(project / "guard.toml")])
-    assert "không kiểm được: plugin (TSK-I2c-11)" in result.output
-    assert "không chứng minh" in result.output, "the closing line says it proves nothing"
+    assert "cannot verify: plugin (TSK-I2c-11)" in result.output
+    assert "does not prove" in result.output, "the closing line says it proves nothing"
 
 
 def test_doctor_finds_another_desktop_entry_that_launches_the_upstream(project, tmp_path):
@@ -417,7 +417,7 @@ def test_doctor_finds_another_desktop_entry_that_launches_the_upstream(project, 
     )
     findings = doctor(project / "guard.toml", desktop_config=only_proxy)
     assert not [f for f in findings if f.level == "warning"]
-    assert any("không kiểm được: ứng dụng khác" in f.message for f in findings)
+    assert any("cannot verify: another app" in f.message for f in findings)
 
 
 def test_doctor_warns_for_a_gate_that_does_not_read_call_source(project):

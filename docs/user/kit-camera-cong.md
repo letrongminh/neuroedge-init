@@ -1,90 +1,89 @@
-# Kit 4 — Camera cổng (`gate-camera`)
+# Kit 4 — Gate camera (`gate-camera`)
 
-> **Mã task:** TSK-I2b-02. Quy trình chung, quy tắc an toàn và danh sách việc chưa kiểm:
-> [`kit-phan-cung.md`](kit-phan-cung.md). Trang này chỉ nói riêng về kit.
+> **Task ID:** TSK-I2b-02. General workflow, safety rules, and unverified checklist:
+> [`kit-phan-cung.md`](kit-phan-cung.md). This page covers details specific to this kit.
 
-Một camera nhìn cổng. Khi mô hình thấy **người lạ** trong vùng cổng, agent bật đèn hiên và khoá cổng; mọi
-trường hợp còn lại — không có người lạ, mô hình không chắc, khung hình quá cũ, camera mất, người trong nhà
-chưa đồng ý ghi hình, có người trong vùng riêng tư — thì **chặn** và chân không đổi. Camera chỉ cấp dữ kiện
-(nhãn, vùng, điểm tin cậy, RFC-0012); ngưỡng nằm ở gate (Q-54), và mô hình thay được mà gate không đổi.
+A camera monitors the gate. When the vision model detects a **stranger** ("người lạ") in the gate area, the agent turns on the porch light and locks the gate; in all
+other cases — no stranger, low model confidence, stale frame, lost camera, occupants have not consented to recording, someone in private zone — the command is
+**blocked** and pins do not change. The camera only provides facts (labels, bounding boxes, confidence scores, RFC-0012); thresholds reside in the gate (Q-54), and the model can be swapped without changing the gate.
 
-## Gate đã khoá
+## Locked gates
 
-`stranger_light@1.0.0` và `stranger_lock@1.0.0` nằm ở `fixtures/agents/gate-camera/gates/`, có digest trong
-`digests.lock`. Cả hai **kế thừa `gates/home/camera@1.0.0`** của thư viện khởi đầu và chỉ siết thêm:
+`stranger_light@1.0.0` and `stranger_lock@1.0.0` reside in `fixtures/agents/gate-camera/gates/` and have digests in
+`digests.lock`. Both **inherit `gates/home/camera@1.0.0`** from the starter library and only tighten constraints:
 
-| Điều kiện | Nguồn | Gate cha khoá? |
+| Condition | Source | Parent gate locked? |
 |:---|:---|:---|
-| `recording_consent`: người trong nhà đã đồng ý ghi hình | dữ kiện phiên (`[sim.facts]`; trên thiết bị là công tắc hoặc chế độ nhà) | có |
-| `person_in_private_zone: false` và `private_zone_confidence ≤ 0,10` | camera, vùng `private_zone` | có, kèm `max_age_ms` 300 |
-| `stranger_at_gate: true` và `stranger_confidence ≥ 0,85` (đèn) hoặc `≥ 0,90` (khoá) | camera, vùng `gate_area`, nhãn `unknown_person` | gate con thêm |
+| `recording_consent`: occupants consented to recording | session fact (`[sim.facts]`; on device: switch or home mode) | yes |
+| `person_in_private_zone: false` and `private_zone_confidence ≤ 0.10` | camera, `private_zone` region | yes, with `max_age_ms` 300 |
+| `stranger_at_gate: true` and `stranger_confidence ≥ 0.85` (light) or `≥ 0.90` (lock) | camera, `gate_area` region, `unknown_person` label | added by child gate |
 
-Mỗi tiêu chí thị giác được xét trên **từng khung** của cửa sổ và các kết quả được AND lại; số điểm tin cậy
-mang `max_age_ms`, nên một camera đứng hình lặp "không có ai" không chứng minh được vùng riêng tư trống, và
-mất camera là `criterion_unavailable`. Sửa gate đã khoá cần RFC (`CONTRIBUTING.md` §3).
+Each visual criterion is evaluated on **every frame** of the window and results are ANDed together; confidence scores
+carry `max_age_ms`, so a frozen camera repeating "no one present" cannot prove an empty private zone, and
+losing the camera results in `criterion_unavailable`. Modifying locked gates requires an RFC (`CONTRIBUTING.md` §3).
 
 ## BOM
 
-Mô tả theo chức năng và thông số. **Không có mã hàng, giá hay nhà bán**; mọi dòng "chưa kiểm trên phần cứng thật".
+Described by function and specifications. **Không có mã hàng, giá hay nhà bán** (no part numbers, prices, or vendors); all rows "chưa kiểm trên phần cứng thật" (not verified on real hardware).
 
-| # | Hạng mục | Thông số | `linux` (Pi 5) |
+| # | Item | Specification | `linux` (Pi 5) |
 |:--|:---|:---|:---|
-| 1 | Bo điều khiển | Raspberry Pi 5 (profile `linux-rpi5`) | có |
-| 2 | Camera | Camera CSI hoặc USB cho V4L2, ít nhất 640×480 ở 30 khung/s (profile khai hai chế độ: 640×480 `rgb888`, 1280×720 `yuyv`) | có |
-| 3 | Mạch rơ-le (khoá cổng) | Một kênh, đầu vào 3,3 V tương thích, có opto cách ly, tiếp điểm chịu đủ dòng của cơ cấu chốt | có |
-| 4 | Cơ cấu chốt khoá cổng | Chốt điện (xung kích 30 s) hoặc khoá điện từ do thợ lắp; nguồn riêng, tách khỏi nguồn của bo | có |
-| 5 | Mạch rơ-le (đèn) | Một kênh như dòng 3 | có |
-| 6 | Đèn hiên | Đèn của gia đình hoặc đèn thử 12 V; **thử bằng LED + điện trở trước** | có |
-| 7 | Điện trở kéo xuống | 10 kΩ từ mỗi chân `gate_relay`, `porch_light` về GND | có |
-| 8 | Nguồn cho bo | Nguồn 5 V cho Pi 5 | có |
+| 1 | Control board | Raspberry Pi 5 (`linux-rpi5` profile) | yes |
+| 2 | Camera | CSI or USB camera for V4L2, at least 640×480 at 30 fps (profile declares two modes: 640×480 `rgb888`, 1280×720 `yuyv`) | yes |
+| 3 | Relay module (gate lock) | 1-channel, 3.3 V compatible input, optically isolated, contacts rated for latch mechanism current | yes |
+| 4 | Gate lock latch mechanism | Solenoid strike (30 s pulse) or electromagnetic lock installed by a professional; separate power supply, isolated from board power supply | yes |
+| 5 | Relay module (light) | 1-channel, same as row 3 | yes |
+| 6 | Porch light | Household light or 12 V test light; **test with LED + resistor first** | yes |
+| 7 | Pull-down resistor | 10 kΩ from each of `gate_relay`, `porch_light` to GND | yes |
+| 8 | Board power supply | 5 V supply for Pi 5 | yes |
 
-Kit này **không build trên `esp32s3-box-3`** (bo không khai `vision.in`; `NE3001`) và không chạy trên
-`sim-default`. Mô hình nhận diện "người lạ" là của bạn: kho chỉ có mô hình giả có kịch bản
-(`provider = "replay"`), đổi sang mô hình thật là đổi `provider` ở `[vision]`, không sửa mã action.
+This kit **does not build on `esp32s3-box-3`** (board does not declare `vision.in`; `NE3001`) and does not run on
+`sim-default`. The "stranger" recognition model is yours: the repository only includes a scripted mock model
+(`provider = "replay"`); switching to a real model simply changes `provider` in `[vision]`, without modifying action code.
 
 ## Sơ đồ đấu dây
 
-Nhãn `line:<tên>` là tên chân của bo trong `boards/*.toml`; `camera:<rộng>x<cao>` là một chế độ trong
-`[capabilities.vision_in.modes]`. Test `python/tests/test_kits.py` kiểm cả hai với profile bo. Số chân
-vật lý của header Pi chưa được gán trong kho. Chỉ có sơ đồ cho `linux-rpi5`: Box-3 không có camera.
+The label `line:<name>` is the board pin name in `boards/*.toml`; `camera:<width>x<height>` is a mode in
+`[capabilities.vision_in.modes]`. Test `python/tests/test_kits.py` verifies both against the board profile. Physical header
+pin numbers on Pi are not assigned in the repository. Diagram provided for `linux-rpi5` only: Box-3 lacks a camera.
 
 <!-- wiring: linux-rpi5 -->
 ```mermaid
 flowchart LR
   CAM["Camera (camera:640x480)"] --> PI["Raspberry Pi 5 (linux-rpi5)"]
-  PI -->|"line:gate_relay"| RG["Mạch rơ-le 1 kênh, có opto"]
-  PI -->|"line:porch_light"| RL["Mạch rơ-le 1 kênh, có opto"]
-  PI -. "GND chung" .- RG
-  PI -. "GND chung" .- RL
-  PSU["Nguồn của tải"] --> RG
+  PI -->|"line:gate_relay"| RG["Relay module 1-channel, with optocoupler"]
+  PI -->|"line:porch_light"| RL["Relay module 1-channel, with optocoupler"]
+  PI -. "Common GND" .- RG
+  PI -. "Common GND" .- RL
+  PSU["Load power supply"] --> RG
   PSU --> RL
-  RG -->|"tiếp điểm NO"| LOCK["Cơ cấu chốt khoá cổng"]
-  RL -->|"tiếp điểm NO"| LAMP["Đèn hiên"]
-  PD["10 kΩ kéo xuống"] -. "line:gate_relay, line:porch_light" .- PI
+  RG -->|"NO contacts"| LOCK["Gate lock latch mechanism"]
+  RL -->|"NO contacts"| LAMP["Porch light"]
+  PD["10 kΩ pull-down"] -. "line:gate_relay, line:porch_light" .- PI
 ```
 
 ## Từ hộp tới chạy thật
 
-Quy trình chung ở [`kit-phan-cung.md`](kit-phan-cung.md) §2. Riêng kit này, camera là **bước thêm** (cần bo có
+General workflow in [`kit-phan-cung.md`](kit-phan-cung.md) §2. For this kit specifically, camera is an **additional step** (requires a board with
 `vision.in`):
 
 ```bash
 neuroedge new cong --template gate-camera && cd cong
 neuroedge build --target sim --board sim-rpi5
 neuroedge test
-neuroedge run --board sim-rpi5       # REPL; camera ảo phát lại kịch bản: khung 5–12 có người lạ ở cổng
+neuroedge run --board sim-rpi5       # REPL; virtual camera replays scenario: frames 5–12 have stranger at gate
 ```
 
-- **`sim-rpi5`**: camera ảo; `neuroedge test` chạy sáu ca (cho phép đèn và khoá; không có ai, điểm 0,60,
-  người trong vùng riêng tư, thiếu đồng ý, camera mất ⇒ BLOCK, chân không đổi).
-- **`linux` trên Pi 5**: đặt `NEUROEDGE_LINUX_CAMERA=/dev/videoN`; HAL mở đúng chế độ bo khai và từ chối
-  nếu driver làm tròn. Agent được phát lại bằng nhãn đã ghi, không cần camera (`neuroedge verify`).
-  Test: `python/tests_linux/test_kit_gate_camera.py` (camera ảo `vivid`, chân `gpio-sim`; job `linux-hal`).
-- Ảnh thô không bao giờ vào vết ghi: vết chỉ có băm và kích thước khung (NFR-PRIV-03).
+- **`sim-rpi5`**: virtual camera; `neuroedge test` runs six cases (allow light and lock; no one, score 0.60,
+  person in private zone, missing consent, camera lost ⇒ BLOCK, pins do not change).
+- **`linux` on Pi 5**: set `NEUROEDGE_LINUX_CAMERA=/dev/videoN`; HAL opens the exact mode declared by the board and rejects
+  if the driver rounds values. The agent can be replayed using recorded labels, without needing a camera (`neuroedge verify`).
+  Test: `python/tests_linux/test_kit_gate_camera.py` (virtual camera `vivid`, pins `gpio-sim`; `linux-hal` job).
+- Raw images never enter traces: traces only store hashes and frame dimensions (NFR-PRIV-03).
 
-## Vết golden
+## Golden traces
 
-`fixtures/traces/kits/gate-camera-allow.json` (người lạ ⇒ đèn bật, cổng khoá: ALLOW ×2),
-`gate-camera-block.json` (không có ai, thiếu đồng ý, điểm 0,60, người trong vùng riêng tư, camera mất ⇒
-BLOCK ×5, chân không đổi). Sinh bằng `scripts/gen_kit_traces.py`; `neuroedge verify` phát lại trên các bo
-khai `vision.in`.
+`fixtures/traces/kits/gate-camera-allow.json` (stranger ⇒ light on, gate locked: ALLOW ×2),
+`gate-camera-block.json` (no one, missing consent, score 0.60, person in private zone, camera lost ⇒
+BLOCK ×5, pins do not change). Generated with `scripts/gen_kit_traces.py`; replayed by `neuroedge verify` on boards
+declaring `vision.in`.

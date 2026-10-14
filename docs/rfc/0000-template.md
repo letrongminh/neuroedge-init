@@ -1,81 +1,80 @@
-# RFC-NNNN: <Tiêu đề ngắn, mô tả thay đổi>
+# RFC-NNNN: <Short Title Describing the Change>
 
 | | |
 |:---|:---|
-| **Mã RFC** | NNNN |
-| **Tiêu đề** | |
-| **Hợp đồng bị ảnh hưởng** | `gate.v1` / `trace.v1` / `board.v1` / ngữ nghĩa phân giải / bố cục `NETR` / *(không)* |
-| **Yêu cầu PRD liên quan** | FR-… , NFR-… |
-| **Người đề xuất** | |
-| **Ngày mở** | YYYY-MM-DD |
-| **Trạng thái** | 🟡 Đang thảo luận / ✅ Đã chấp thuận / ❌ Bị từ chối / ⏳ Hoãn |
-| **Người phê duyệt** | *(bắt buộc với thay đổi phá vỡ tương thích)* |
+| **RFC ID** | NNNN |
+| **Title** | |
+| **Affected Contract** | `gate.v1` / `trace.v1` / `board.v1` / resolution semantics / `NETR` layout / *(none)* |
+| **Related PRD Requirements** | FR-… , NFR-… |
+| **Author** | |
+| **Date Opened** | YYYY-MM-DD |
+| **Status** | 🟡 Under discussion / ✅ Approved / ❌ Rejected / ⏳ Deferred |
+| **Approver** | *(mandatory for breaking changes)* |
 
-> **Khi nào cần RFC:** danh sách duy nhất ở `CONTRIBUTING.md` §3 (lược đồ, ngữ nghĩa
-> phân giải gate, vết ghi chuẩn mực, gate đã khoá trong `digests.lock`, bố cục `NETR`).
+> **When an RFC is required:** the sole list is in `CONTRIBUTING.md` §3 (schemas, gate
+> resolution semantics, canonical traces, gates locked in `digests.lock`, `NETR` layout).
 
-## 1. Vấn đề
+## 1. Problem
 
-*Nêu vấn đề quan sát được, không nêu giải pháp. Nếu vấn đề là một tệp không thể
-thẩm định được hoặc một mệnh đề không thể diễn đạt, hãy dán tệp đó vào đây kèm
-thông báo lỗi thực tế.*
+*State the observed problem, not the solution. If the problem is an unvalidatable file
+or an inexpressible proposition, paste that file here along with the actual error message.*
 
-## 2. Vì sao lược đồ hiện tại không giải quyết được
+## 2. Why the Current Schema Does Not Solve It
 
-*Trích dẫn trường hoặc quy tắc cụ thể. Nếu đây là một mâu thuẫn nội tại của
-lược đồ, chỉ rõ hai mệnh đề mâu thuẫn nhau.*
+*Cite specific fields or rules. If this is an internal schema contradiction, pinpoint
+the two conflicting clauses.*
 
-## 3. Thay đổi đề xuất
+## 3. Proposed Change
 
-*Diff hoặc trước/sau. Với JSON Schema, dán đoạn trước và đoạn sau.*
+*Diff or before/after. For JSON Schema, paste the before and after snippets.*
 
-## 4. Ảnh hưởng tương thích
+## 4. Compatibility Impact
 
-| Hạng mục | Ảnh hưởng |
+| Item | Impact |
 |:---|:---|
-| Tệp đang hợp lệ có còn hợp lệ? | |
-| Tệp đang không hợp lệ có trở nên hợp lệ? | |
-| Cần tăng phiên bản lược đồ (`v1` → `v2`)? | |
-| Ảnh hưởng tới mã băm / chữ ký gate đã phát hành? | |
-| Ảnh hưởng tới ba tệp vết ghi chuẩn mực? | |
-| Gate nào trong `digests.lock` đổi digest? | |
-| Bố cục `NETR` hoặc walker C phải đổi? | |
-| Đáp án nào của corpus tool call (`expected_results.yaml`) đổi? | |
+| Do currently valid files remain valid? | |
+| Do currently invalid files become valid? | |
+| Is a schema version bump required (`v1` → `v2`)? | |
+| Impact on hashes / digital signatures of published gates? | |
+| Impact on the three canonical trace files? | |
+| Which gates in `digests.lock` change digest? | |
+| Does the `NETR` layout or C walker need to change? | |
+| Which answers in the tool-call corpus (`expected_results.yaml`) change? | |
 
-**Quy tắc:** nếu một tệp đang hợp lệ trở thành không hợp lệ, đó là thay đổi phá
-vỡ tương thích và **bắt buộc** tăng phiên bản lược đồ. Nới lỏng (tệp đang không
-hợp lệ trở nên hợp lệ) có thể làm trong cùng phiên bản.
+**Rule:** if a currently valid file becomes invalid, it is a breaking change and
+**requires** bumping the schema version. Relaxations (a currently invalid file
+becomes valid) can be made within the same version.
 
-## 5. Ảnh hưởng an toàn
+## 5. Safety Impact
 
-*Bắt buộc với `gate.v1`.* Thay đổi này có cho phép một gate trở nên **lỏng hơn**
-theo bất kỳ đường nào không? Có ảnh hưởng tới năm nguyên tắc kế thừa (Phụ lục
-B.5) hoặc tới mặc định fail-closed không?
+*Mandatory for `gate.v1`.* Does this change allow a gate to become **more lax**
+in any way? Does it affect the five principles of inheritance (Appendix B.5)
+or the fail-closed default?
 
-Nếu câu trả lời là "có" ở bất kỳ mục nào, RFC cần người phê duyệt là kỹ thuật
-trưởng.
+If the answer is "yes" for any item, the RFC requires approval from the lead
+architect.
 
-## 6. Phương án đã xem xét và bác bỏ
+## 6. Alternatives Considered and Rejected
 
-| Phương án | Lý do bác bỏ |
+| Alternative | Reason for Rejection |
 |:---|:---|
 | | |
 
-## 7. Bằng chứng kiểm chứng
+## 7. Verification Evidence
 
-*Các test chứng minh thay đổi hoạt động, và các fixture phản chứng chứng minh
-nó vẫn từ chối đúng thứ cần từ chối.*
+*Tests proving the change works, and counterexample fixtures proving
+it still rejects exactly what should be rejected.*
 
-- [ ] Ví dụ hợp lệ đã thêm vào `fixtures/`
-- [ ] Ví dụ sai kèm đáp án đã thêm theo luật khép kín của corpus đó (`CONTRIBUTING.md` §3)
-- [ ] Test tự động đã thêm, nêu rõ tên
-- [ ] `neuroedge gate lint` và `neuroedge verify` vẫn xanh
+- [ ] Valid example added to `fixtures/`
+- [ ] Invalid example with expected result added per that corpus's closure rule (`CONTRIBUTING.md` §3)
+- [ ] Automated test added, specifying name
+- [ ] `neuroedge gate lint` and `neuroedge verify` remain green
 
-## 8. Việc phải làm khi chấp thuận
+## 8. Tasks upon Approval
 
-- [ ] Cập nhật `schemas/<lược đồ>.json` (hoặc hợp đồng tương ứng)
-- [ ] Cập nhật Phụ lục tương ứng trong `docs/spec/core_contracts.md`
-- [ ] Cập nhật `neuroedge-prd.md` nếu có FR bị ảnh hưởng; quyết định mới thì cấp `Q-N` ở §15
-- [ ] Cập nhật `neuroedge-roadmap.md` nếu có task hoặc tiêu chí ra bị ảnh hưởng
-- [ ] Thêm/điều chỉnh fixture và test; gate đã khoá: `scripts/check_digests.py --accept <tệp> --rfc NNNN`
-- [ ] Cập nhật dòng của RFC trong `docs/rfc/README.md` và một mục `CHANGELOG.md` `[Chưa phát hành]`
+- [ ] Update `schemas/<schema>.json` (or corresponding contract)
+- [ ] Update corresponding Appendix in `docs/spec/core_contracts.md`
+- [ ] Update `neuroedge-prd.md` if any FR is affected; assign `Q-N` in §15 for new decisions
+- [ ] Update `neuroedge-roadmap.md` if any task or exit criteria is affected
+- [ ] Add/adjust fixtures and tests; locked gates: `scripts/check_digests.py --accept <file> --rfc NNNN`
+- [ ] Update the RFC's row in `docs/rfc/README.md` and an entry in `CHANGELOG.md` `[Chưa phát hành]`

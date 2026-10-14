@@ -1,75 +1,75 @@
-# RFC-0009: Tiêu chí số `evaluate.type: numeric` trong `gate.v1`
+# RFC-0009: Numeric Criterion `evaluate.type: numeric` in `gate.v1`
 
 | | |
 |:---|:---|
-| **Mã RFC** | 0009 |
-| **Tiêu đề** | Tiêu chí `numeric` — so sánh với ngưỡng, có đơn vị, thang và tuổi số đọc bắt buộc, kế thừa chỉ thu hẹp, nút mới trong `NETR` |
-| **Hợp đồng bị ảnh hưởng** | `gate.v1` (thêm giá trị enum và trường) · ngữ nghĩa phân giải · bố cục `NETR` · lý do phán quyết mới `value_out_of_range` |
-| **Yêu cầu PRD liên quan** | FR-GATE-03, FR-GATE-06, FR-ACE-01, FR-HAL-01 |
-| **Người đề xuất** | — |
-| **Ngày mở** | 2026-09-30 |
-| **Trạng thái** | ✅ Đã chấp thuận (2026-10-01) — kỹ thuật trưởng ký trên PR #76; sửa theo review 2026-10-01 (§9, Q-62) · ✅ Đã hiện thực (TSK-W1-02, 2026-10-03); nối kênh `analog.in` (TSK-I2a-04) và `state()` của PWM (RFC-0010) làm cùng các nguyên thủy đó |
-| **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (chạm `gate.v1`, ngữ nghĩa phân giải, `NETR`) |
+| **RFC ID** | 0009 |
+| **Title** | `numeric` criterion — threshold comparison, mandatory unit, scale, and reading age, narrowing-only inheritance, new node in `NETR` |
+| **Affected Contract** | `gate.v1` (adds enum value and fields) · resolution semantics · `NETR` layout · new verdict reason `value_out_of_range` |
+| **Related PRD Requirements** | FR-GATE-03, FR-GATE-06, FR-ACE-01, FR-HAL-01 |
+| **Author** | — |
+| **Date Opened** | 2026-09-30 |
+| **Status** | ✅ Approved (2026-10-01) — lead architect signed on PR #76; amended per review 2026-10-01 (§9, Q-62) · ✅ Implemented (TSK-W1-02, 2026-10-03); binding `analog.in` channels (TSK-I2a-04) and PWM `state()` (RFC-0010) implemented alongside those primitives |
+| **Approver** | **Lead Architect — mandatory** (touches `gate.v1`, resolution semantics, `NETR`) |
 
-> **Khi nào cần RFC:** `CONTRIBUTING.md` §3 — sửa `schemas/*.json`, sửa ngữ nghĩa phân giải gate
-> (`engine/gate_resolver.py`, `engine/constraints.py`), đổi bố cục `NETR`. Task: TSK-W1-02.
-> Nguồn: `TODOS.md` #30; bản nháp robot FOFOCA (`docs/architecture/vi/15-target-architecture.md` §4.3), nay rút về RFC này. Bối cảnh:
-> `neuroedge-prd.md` §15 Q-52, Q-54 (RFC-0012 dựa vào tiêu chí này để khoá ngưỡng độ tin cậy), Q-55, Q-57.
+> **When an RFC is required:** `CONTRIBUTING.md` §3 — modifying `schemas/*.json`, modifying gate resolution
+> semantics (`engine/gate_resolver.py`, `engine/constraints.py`), changing `NETR` layout. Task: TSK-W1-02.
+> Sources: `TODOS.md` #30; FOFOCA robot draft (`docs/architecture/vi/15-target-architecture.md` §4.3), now consolidated into this RFC. Context:
+> `neuroedge-prd.md` §15 Q-52, Q-54 (RFC-0012 relies on this criterion to lock confidence thresholds), Q-55, Q-57.
 
-## 1. Vấn đề
+## 1. Problem
 
-Gate không diễn đạt được ngưỡng số. Người viết gate cho máy nén khí muốn *"áp suất < 8 bar"* thì hôm nay phải thoả hiệp:
+Gates cannot express numeric thresholds. Authors writing gates for air compressors wanting *"pressure < 8 bar"* must compromise today:
 
 ```yaml
-# gate hiện tại — ngưỡng nằm ở nơi khác
+# current gate — threshold lives elsewhere
 evaluate:
   pressure_ok:
     type: bool
-    instructions: "Áp suất dưới ngưỡng cho phép"
+    instructions: "Pressure below permitted threshold"
 allow_when:
   pressure_ok: true
 ```
 
-`pressure_ok` do agent tính. Cách vòng hiện có là `bands` ở `[sim.sensor_facts]` (`docs/spec/simulation_coverage.md`) đổi số đọc thành fact `level`. Nhưng **ngưỡng nằm ở agent, không ở gate**: gate chia sẻ qua registry không khoá được nó, và tác giả agent đổi `bands` là nới lỏng gate mà `neuroedge gate lint` không thấy — cùng lý do Q-25 bác `argument_facts` ở [RFC-0005](0005-rang-buoc-tham-so-trong-gate.md) §6. Vì vậy thị giác không có `bands`: số đếm và độ tin cậy là tiêu chí `numeric` của gate ([RFC-0012](0012-nguyen-thuy-vision-in.md) §9.2).
+`pressure_ok` is computed by the agent. The existing workaround is `bands` in `[sim.sensor_facts]` (`docs/spec/simulation_coverage.md`), converting readings into `level` facts. But **thresholds reside in the agent, not in the gate**: gates shared via registry cannot lock them, and agent authors changing `bands` loosen gates without `neuroedge gate lint` noticing — identical to why Q-25 rejected `argument_facts` in [RFC-0005](0005-rang-buoc-tham-so-trong-gate.md) §6. For this reason vision lacks `bands`: counts and confidence scores are `numeric` criteria of the gate ([RFC-0012](0012-nguyen-thuy-vision-in.md) §9.2).
 
-## 2. Vì sao lược đồ hiện tại không giải quyết được
+## 2. Why the Current Schema Does Not Solve It
 
-- `schemas/gate.v1.json`, `evaluate.*.type`: `"enum": ["bool", "level", "choice"]`, cùng `additionalProperties: false` — không có kiểu số và không có chỗ khai đơn vị, thang hay tuổi số đọc.
-- `RFC-0005` chỉ giới hạn **tham số của lời gọi**; số đọc từ cảm biến/camera là **dữ kiện của tiêu chí**, không phải tham số.
-- `confidence_gte` (`engine/constraints.py`, `BOOL_OPERATORS`) chỉ áp cho tiêu chí `bool` và luôn nằm trong `[0, 1]`; nó nói về độ tin cậy của một dữ kiện, không phải về giá trị đo.
-- Cây quyết định trên thiết bị chỉ biết chỉ số trong miền hữu hạn (`admitted_mask`, RFC-0003); không có nút so sánh số thực.
+- `schemas/gate.v1.json`, `evaluate.*.type`: `"enum": ["bool", "level", "choice"]`, with `additionalProperties: false` — lacking numeric types and places to declare units, scales, or reading ages.
+- `RFC-0005` constrains only **call arguments**; readings from sensors/cameras are **criteria facts**, not arguments.
+- `confidence_gte` (`engine/constraints.py`, `BOOL_OPERATORS`) applies only to `bool` criteria and is strictly bounded to `[0, 1]`; it addresses fact confidence, not physical measurements.
+- On-device decision trees operate solely on finite domain indices (`admitted_mask`, RFC-0003); lacking floating-point comparison nodes.
 
-## 3. Thay đổi đề xuất
+## 3. Proposed Change
 
-### 3a. Lược đồ
+### 3a. Schema
 
-`evaluate.<tên>` nhận `type: numeric` kèm ba trường **bắt buộc** (§9.4, §9.5):
+`evaluate.<name>` accepts `type: numeric` along with three **mandatory** fields (§9.4, §9.5):
 
 ```yaml
 evaluate:
   line_pressure:
     type: numeric
-    unit: bar                       # nhãn, không quy đổi
-    range: { min: 0, max: 16 }      # thang hợp lệ của số đọc
-    max_age_ms: 500                 # số đọc cũ hơn ⇒ BLOCK
-    instructions: "Áp suất đường ống sau van giảm áp"
+    unit: bar                       # label, no unit conversion
+    range: { min: 0, max: 16 }      # valid scale of readings
+    max_age_ms: 500                 # older reading ⇒ BLOCK
+    instructions: "Line pressure downstream of regulator"
 allow_when:
   line_pressure: { lt: 8 }
 ```
 
-| Trường | Luật |
+| Field | Rule |
 |:---|:---|
-| `unit` | Bắt buộc; nhãn để người đọc, `mcp tools` và trace; engine **không đổi đơn vị** |
-| `range` | Bắt buộc; `min`, `max` là `f64` hữu hạn, `min < max`; số đọc hợp lệ khi `min ≤ x ≤ max` |
-| `max_age_ms` | Bắt buộc; số nguyên > 0; tuổi số đọc tính từ mốc HAL đọc (§3c) |
-| `confidence` | **Không có** — độ tin cậy là một tiêu chí `numeric` khác (§9.3) |
-| `levels` / `options` | Cấm với `numeric`, dùng `allOf` `if/then` giống ba kiểu hiện có |
+| `unit` | Mandatory; label for human readers, `mcp tools`, and traces; engine **does not convert units** |
+| `range` | Mandatory; `min`, `max` are finite `f64`, `min < max`; reading valid when `min ≤ x ≤ max` |
+| `max_age_ms` | Mandatory; integer > 0; reading age measured from HAL read timestamp (§3c) |
+| `confidence` | **None** — confidence is a separate `numeric` criterion (§9.3) |
+| `levels` / `options` | Forbidden with `numeric`, enforced via `allOf` `if/then` similar to existing three types |
 
-Toán tử trong `allow_when`: `gt`, `gte`, `lt`, `lte`, kết hợp được để tạo khoảng (`{ gte: 2, lt: 8 }`). **Không có `eq`** trên số thực, **không có `confidence_gte`** trên tiêu chí `numeric` (`GateSchemaError`, `NE2002`). Ngưỡng là `f64` hữu hạn và phải nằm trong `range`; khoảng rỗng ⇒ `GateSchemaError` (gate không bao giờ cho qua được là gate viết sai, như RFC-0005).
+Operators in `allow_when`: `gt`, `gte`, `lt`, `lte`, combinable to define intervals (`{ gte: 2, lt: 8 }`). **No `eq`** on floating-point numbers, **no `confidence_gte`** on `numeric` criteria (`GateSchemaError`, `NE2002`). Thresholds are finite `f64` within `range`; empty intervals ⇒ `GateSchemaError` (a gate that can never allow is an invalid gate, per RFC-0005).
 
-Tiêu chí `numeric` **không được** nằm trong `on_block.confirms` của RFC-0006: `neuroedge gate lint` từ chối (`GateSchemaError`, `NE2002`). Người không thể xác nhận thay một giới hạn đo lường vật lý.
+A `numeric` criterion **cannot** appear in `on_block.confirms` of RFC-0006: `neuroedge gate lint` rejects (`GateSchemaError`, `NE2002`). Humans cannot confirm physical measurement limits instead.
 
-Độ tin cậy và số đếm của thị giác đi cùng đường ([RFC-0012](0012-nguyen-thuy-vision-in.md) §9.2–9.3): `confidence` là `numeric` với `range: { min: 0, max: 1 }`, `count` là `numeric` số nguyên ≥ 0 (vẫn so như `f64`, không có kiểu nguyên riêng). Cùng ba trường bắt buộc:
+Vision confidence and counts follow the identical path ([RFC-0012](0012-nguyen-thuy-vision-in.md) §9.2–9.3): `confidence` is `numeric` with `range: { min: 0, max: 1 }`, `count` is non-negative integer `numeric` (compared as `f64`, no dedicated integer type). Sharing the three mandatory fields:
 
 ```yaml
 evaluate:
@@ -78,201 +78,201 @@ evaluate:
     unit: ratio
     range: { min: 0, max: 1 }
     max_age_ms: 300
-    instructions: "Điểm tin cậy của nhãn person"
+    instructions: "Confidence score of person label"
 allow_when:
   person_confidence: { gte: 0.85 }
 ```
 
-### 3b. Kế thừa (Phụ lục B.5, nguyên tắc 2)
+### 3b. Inheritance (Appendix B.5, Principle 2)
 
-Tiêu chí số admit một **khoảng**. Gate con chỉ được thu hẹp: khoảng của con phải là **tập con** khoảng của cha (biên mở/đóng được tính: cha `gte: 2` cho phép con `gt: 2` hoặc `gte: 3`, không cho `gte: 1`).
+Numeric criteria admit an **interval**. Child gates may only narrow: the child's interval must be a **subset** of the parent's interval (open/closed bounds accounted for: parent `gte: 2` permits child `gt: 2` or `gte: 3`, rejecting `gte: 1`).
 
-| Ràng buộc | Con được phép |
+| Constraint | Child Permitted |
 |:---|:---|
-| Cận dưới (`gt`/`gte`) | Tăng, hoặc cùng giá trị với biên chặt hơn |
-| Cận trên (`lt`/`lte`) | Giảm, hoặc cùng giá trị với biên chặt hơn |
-| `unit` | Giữ nguyên (đổi đơn vị là đổi nghĩa ngưỡng) |
-| `range` | Giữ nguyên; thu hẹp `range` không thu hẹp phán quyết nên không được dùng để thu hẹp |
-| `max_age_ms` | Giữ nguyên |
-| Không nhắc lại tiêu chí | Kế thừa nguyên vẹn, như `allow_when` |
+| Lower bound (`gt`/`gte`) | Increase, or identical value with stricter boundary |
+| Upper bound (`lt`/`lte`) | Decrease, or identical value with stricter boundary |
+| `unit` | Unchanged (changing unit changes threshold meaning) |
+| `range` | Unchanged; narrowing `range` does not narrow verdicts and cannot be used for narrowing |
+| `max_age_ms` | Unchanged |
+| Criterion omitted | Inherited intact, like `allow_when` |
 
-`unit`, `range`, `max_age_ms` nằm trong `evaluate`: con khai lại khác cha là định nghĩa lại tiêu chí kế thừa, đã bị từ chối hôm nay (`GateInheritanceError`, `NE2003`, nguyên tắc 1 — `_merge_evaluate` ở `engine/gate_resolver.py`); khai lại giống hệt cha hoặc không nhắc lại thì kế thừa nguyên vẹn. Khi ghi đè `allow_when`, nếu cha có cận mà con bỏ cận đó (ví dụ cha có cả cận dưới và cận trên, con chỉ ghi cận dưới khiến khoảng mở rộng) ⇒ nới lỏng điều kiện kế thừa vì khoảng của con không còn là tập con khoảng của cha ⇒ `GateInheritanceError` (`NE2003`, nguyên tắc 2 — `_merge_allow_when`). Nếu con không nhắc lại tiêu chí trong `allow_when`, mệnh đề của cha được kế thừa nguyên vẹn, không bị coi là bỏ cận.
+`unit`, `range`, `max_age_ms` reside in `evaluate`: child re-declaring them differently from parent redefines inherited criteria, rejected today (`GateInheritanceError`, `NE2003`, principle 1 — `_merge_evaluate` in `engine/gate_resolver.py`); declaring identically or omitting inherits intact. When overriding `allow_when`, if parent has a bound and child drops it (e.g. parent has both lower and upper bounds, child specifies only lower bound expanding interval) ⇒ loosens inherited conditions because child interval is no longer a subset of parent interval ⇒ `GateInheritanceError` (`NE2003`, principle 2 — `_merge_allow_when`). If child omits the criterion in `allow_when`, the parent clause inherits intact without being considered dropped.
 
-### 3c. Lượng giá và fail-closed
+### 3c. Evaluation and Fail-Closed
 
-Số đọc tới engine là `f64` kèm mốc thời gian HAL đọc. Thời điểm lượng giá là offset của sự kiện phán quyết trên cùng trục thời gian đơn điệu của phiên với mốc đọc của HAL. Tuổi `age_ms` = thời điểm lượng giá − mốc HAL đọc. Vết ghi ghi cả mốc đọc HAL lẫn `age_ms`; `replay` tính lại và so sánh. Với thị giác, tuổi của cửa sổ là tuổi của khung cũ nhất trong cửa sổ. Kiểm theo thứ tự, mọi nhánh đều BLOCK:
+Readings arrive at the engine as `f64` with HAL read timestamps. Evaluation instant is the verdict event offset on the same monotonic session timeline as HAL read timestamps. Age `age_ms` = evaluation instant − HAL read timestamp. Traces record both HAL read timestamp and `age_ms`; `replay` recomputes and compares. For vision, window age is the age of the oldest frame in the window. Checked in order, all branches BLOCK:
 
-| Tình huống | `reason` |
+| Scenario | `reason` |
 |:---|:---|
-| Không có số đọc (mất cảm biến, nguồn không trả lời) | `criterion_unavailable` |
-| `age_ms < 0` (mốc HAL đọc sau thời điểm lượng giá) | `criterion_unavailable` |
-| Tuổi (`age_ms`) > `max_age_ms` | `criterion_unavailable` |
-| NaN, ±inf, hoặc ngoài `range` | `value_out_of_range` |
-| Hữu hạn, trong `range`, không thoả khoảng của `allow_when` | `condition_not_met` |
+| Missing reading (sensor lost, source unresponsive) | `criterion_unavailable` |
+| `age_ms < 0` (HAL read timestamp after evaluation instant) | `criterion_unavailable` |
+| Age (`age_ms`) > `max_age_ms` | `criterion_unavailable` |
+| NaN, ±inf, or outside `range` | `value_out_of_range` |
+| Finite, inside `range`, not satisfying `allow_when` interval | `condition_not_met` |
 
-Không có giá trị mặc định thay thế, không nội suy từ số đọc trước, không cắt số ra biên `range` rồi so (cùng tinh thần "độ tin cậy không phải xác suất ⇒ không khả dụng" của RFC-0003). Tách `value_out_of_range` khỏi `criterion_unavailable` để hậu kiểm phân biệt "mất cảm biến" với "cảm biến trả rác"; phán quyết không đổi (§9.1).
+No fallback default values, no interpolation from previous readings, no clamping to `range` bounds before comparing (sharing RFC-0003's "confidence not probability ⇒ unavailable" philosophy). Separating `value_out_of_range` from `criterion_unavailable` allows post-audits to distinguish "lost sensor" from "sensor returning garbage"; verdicts remain identical (§9.1).
 
-### 3d. `NETR` và walker C
+### 3d. `NETR` and C Walker
 
-Bản ghi tiêu chí 24 byte của RFC-0003 không đủ chỗ cho bốn số thực (`lo`, `hi`, và thang `min`, `max`) cộng cờ biên và `max_age_ms`. `layout_version` tăng **một lần** lên 2, trong **một PR** do TSK-W1-02 (RFC-0009) làm chủ. PR gồm bảng `numeric` cộng các trường của `TODOS.md` #36 (nhãn gate và chữ `on_block`). RFC-0011 **không** thêm trường nào vào `NETR`, chỉ đổi sổ token `ne_token.c`. Engine host (`engine/binary_tree.py`) và walker C đổi trong cùng PR; walker v1 từ chối cây v2 (`NE_ERR_VERSION`, RFC-0003 §4) — fail-closed (§9.2). Bố cục byte được ghim trực tiếp:
+RFC-0003's 24-byte criterion record lacks room for four floats (`lo`, `hi`, scale `min`, `max`), boundary flags, and `max_age_ms`. `layout_version` bumps **once** to 2, in **a single PR** led by TSK-W1-02 (RFC-0009). The PR incorporates the `numeric` table plus fields from `TODOS.md` #36 (gate labels and `on_block` text). RFC-0011 adds **no** fields to `NETR`, modifying only token log `ne_token.c`. Host engine (`engine/binary_tree.py`) and C walker update in the same PR; walker v1 rejects v2 trees (`NE_ERR_VERSION`, RFC-0003 §4) — fail-closed (§9.2). Byte layout is pinned directly:
 
-**Header — 80 byte** (offset 0–63 giữ nguyên định nghĩa của v1 trong RFC-0003, trừ `layout_version = 2` và `header_size = 80`; `crc32` ở offset 60 tính trên toàn tệp với 4 byte đó là 0):
+**Header — 80 bytes** (offsets 0–63 retain v1 definitions from RFC-0003, except `layout_version = 2` and `header_size = 80`; `crc32` at offset 60 computed over whole file with those 4 bytes set to 0):
 
-| Offset | Kiểu | Trường | Quy định |
+| Offset | Type | Field | Specification |
 |---:|:---|:---|:---|
 | 0 | `char[4]` | `magic` | `"NETR"` |
 | 4 | `u16` | `layout_version` | `2` |
 | 6 | `u16` | `header_size` | `80` |
-| 8 | `u8[32]` | `gate_digest` | SHA-256 thô của gate đã phân giải |
-| 40 | `u16` | `node_count` | 1..32 — tiêu chí `allow_when`, theo `criteria_order` |
-| 42 | `u16` | `arg_count` | 0..16 — giới hạn tham số RFC-0005, theo thứ tự khai |
+| 8 | `u8[32]` | `gate_digest` | Raw SHA-256 of resolved gate |
+| 40 | `u16` | `node_count` | 1..32 — `allow_when` criteria, following `criteria_order` |
+| 42 | `u16` | `arg_count` | 0..16 — RFC-0005 argument limits, in declaration order |
 | 44 | `u16` | `enum_count` | 0..64 |
 | 46 | `u8` | `on_block_action` | 0 deny · 1 escalate · 2 ask · 3 degrade |
 | 47 | `u8` | `fail_open` | 0 closed · 1 open |
 | 48 | `u32` | `p95_latency_ms` | > 0 |
-| 52 | `u32` | `confirm_mask` | bit *i*: tiêu chí *i* người được xác nhận thay (RFC-0006) |
-| 56 | `u32` | `strings_size` | 1..16384, byte cuối là NUL |
-| 60 | `u32` | `crc32` | CRC-32 của toàn tệp với 4 byte này là 0 |
-| 64 | `u16` | `numeric_count` | 0..32 — số lượng bản ghi trong bảng numeric |
-| 66 | `u16` | `gate_name_off` | Offset tên gate trong bảng chuỗi; `0xFFFF` = không có |
-| 68 | `u16` | `gate_version_off` | Offset phiên bản gate trong bảng chuỗi; `0xFFFF` = không có |
-| 70 | `u16` | `on_block_to_off` | Offset đích chuyển tiếp `to` trong bảng chuỗi; `0xFFFF` = không có |
-| 72 | `u16` | `on_block_message_off` | Offset thông điệp `message` trong bảng chuỗi; `0xFFFF` = không có |
-| 74 | `u16` | `fallback_action_off` | Offset hành động dự phòng trong bảng chuỗi; `0xFFFF` = không có |
-| 76 | `u32` | dành riêng | Bằng 0 |
+| 52 | `u32` | `confirm_mask` | bit *i*: criterion *i* confirmed by human instead (RFC-0006) |
+| 56 | `u32` | `strings_size` | 1..16384, final byte is NUL |
+| 60 | `u32` | `crc32` | CRC-32 of entire file with these 4 bytes set to 0 |
+| 64 | `u16` | `numeric_count` | 0..32 — number of records in numeric table |
+| 66 | `u16` | `gate_name_off` | Offset of gate name in string table; `0xFFFF` = none |
+| 68 | `u16` | `gate_version_off` | Offset of gate version in string table; `0xFFFF` = none |
+| 70 | `u16` | `on_block_to_off` | Offset of escalation destination `to` in string table; `0xFFFF` = none |
+| 72 | `u16` | `on_block_message_off` | Offset of `message` in string table; `0xFFFF` = none |
+| 74 | `u16` | `fallback_action_off` | Offset of fallback action in string table; `0xFFFF` = none |
+| 76 | `u32` | reserved | Zero |
 
-**Node tiêu chí — 24 byte × `node_count`**
+**Criteria nodes — 24 bytes × `node_count`**
 
-Với nút `kind = 3` (numeric):
+For nodes with `kind = 3` (numeric):
 - `domain_size = 0`
 - `admitted_mask = 0`
 - `confidence_floor = 0.0`
-- `domain_off` = chỉ số trong bảng numeric (0..`numeric_count - 1`)
-- Các byte còn lại bằng 0.
+- `domain_off` = index in numeric table (0..`numeric_count - 1`)
+- Remaining bytes are zero.
 
-(Các nút `kind` 0 bool, 1 level, 2 choice giữ nguyên bố cục của RFC-0003).
+(Nodes with `kind` 0 bool, 1 level, 2 choice retain RFC-0003 layout).
 
-**Bản ghi numeric — 48 byte × `numeric_count`**
+**Numeric records — 48 bytes × `numeric_count`**
 
-| Offset | Kiểu | Trường | Quy định |
+| Offset | Type | Field | Specification |
 |---:|:---|:---|:---|
-| 0 | `f64` | `lo` | Cận dưới; 0.0 nếu không có cận dưới |
-| 8 | `f64` | `hi` | Cận trên; 0.0 nếu không có cận trên |
-| 16 | `f64` | `range_min` | Giới hạn dưới của thang hợp lệ |
-| 24 | `f64` | `range_max` | Giới hạn trên của thang hợp lệ (`range_min < range_max`) |
-| 32 | `u32` | `max_age_ms` | Tuổi tối đa cho phép của số đọc (> 0) |
-| 36 | `u16` | `unit_off` | Offset chuỗi đơn vị trong bảng chuỗi |
-| 38 | `u8` | `flags` | Bit 0 (1): có cận dưới · Bit 1 (2): cận dưới đóng (`gte`) · Bit 2 (4): có cận trên · Bit 3 (8): cận trên đóng (`lte`) |
-| 39 | `u8` | dành riêng | Bằng 0 |
-| 40 | `u64` | dành riêng | Bằng 0 |
+| 0 | `f64` | `lo` | Lower bound; 0.0 if no lower bound |
+| 8 | `f64` | `hi` | Upper bound; 0.0 if no upper bound |
+| 16 | `f64` | `range_min` | Lower bound of valid scale |
+| 24 | `f64` | `range_max` | Upper bound of valid scale (`range_min < range_max`) |
+| 32 | `u32` | `max_age_ms` | Maximum permitted reading age (> 0) |
+| 36 | `u16` | `unit_off` | Offset of unit string in string table |
+| 38 | `u8` | `flags` | Bit 0 (1): lower bound present · Bit 1 (2): lower bound closed (`gte`) · Bit 2 (4): upper bound present · Bit 3 (8): upper bound closed (`lte`) |
+| 39 | `u8` | reserved | Zero |
+| 40 | `u64` | reserved | Zero |
 
-**Thứ tự các bảng và kích thước tệp:**
-1. Header (80 byte)
-2. Nút tiêu chí (24 byte × `node_count`)
-3. Bản ghi numeric (48 byte × `numeric_count`)
-4. Giới hạn tham số (32 byte × `arg_count`)
-5. Enum (16 byte × `enum_count`)
-6. Bảng chuỗi
+**Table ordering and file size:**
+1. Header (80 bytes)
+2. Criteria nodes (24 bytes × `node_count`)
+3. Numeric records (48 bytes × `numeric_count`)
+4. Argument limits (32 bytes × `arg_count`)
+5. Enum (16 bytes × `enum_count`)
+6. String table
 
-Tổng kích thước = 80 + 24·n + 48·m + 32·a + 16·e + strings, **đúng bằng** độ dài tệp (như v1). `numeric_count` bằng đúng số nút `kind = 3`; mỗi nút một bản ghi riêng, không dùng chung. `confirm_mask` khác 0 chỉ khi `ask` (như v1) và không bao giờ chứa bit của nút `kind = 3`. `ne_tree_load` từ chối tệp vi phạm bất kỳ luật nào ở đây. Bảng numeric chiếm tối đa 48 byte × 32 = 1.536 byte (1,5 KB) flash.
+Total size = 80 + 24·n + 48·m + 32·a + 16·e + strings, **strictly equal** to file length (as in v1). `numeric_count` strictly equals number of `kind = 3` nodes; each node has a dedicated record, no sharing. `confirm_mask` is non-zero only for `ask` (as in v1) and never contains bits for `kind = 3` nodes. `ne_tree_load` rejects files violating any rule here. Numeric table occupies at most 48 bytes × 32 = 1,536 bytes (1.5 KB) flash.
 
-**ABI walker C:**
-Fact số tới walker là struct mang `u8 available` (0 = không có số đọc), `f64 value` và `i64 age_ms` (thay cho chỉ số trong miền hữu hạn). `available = 0` ⇒ `criterion_unavailable` trước mọi kiểm khác, nên walker không lẫn "mất cảm biến" với NaN (`value_out_of_range`). Walker kiểm theo đúng thứ tự §3c và so sánh chỉ dùng `>`/`>=`/`<`/`<=` trên `f64`, không dung sai ẩn (§9.6). `ne_reason` (`ne_walker.h`) và `firmware.REASONS` thêm `value_out_of_range`. Walker v1 từ chối cây v2 (`NE_ERR_VERSION`). Giới hạn stack của walker C giữ nguyên mức ≤ 512 byte (không đệ quy, không cấp phát động).
+**C Walker ABI:**
+Numeric facts arrive at the walker as structs containing `u8 available` (0 = no reading), `f64 value`, and `i64 age_ms` (replacing finite domain indices). `available = 0` ⇒ `criterion_unavailable` before all other checks, preventing walker from confusing missing sensors with NaN (`value_out_of_range`). Walker checks in strict §3c order and compares using only `>`/`>=`/`<`/`<=` on `f64`, without hidden tolerances (§9.6). `ne_reason` (`ne_walker.h`) and `firmware.REASONS` add `value_out_of_range`. Walker v1 rejects v2 trees (`NE_ERR_VERSION`). C walker stack limit remains ≤ 512 bytes (no recursion, no dynamic allocation).
 
-### 3e. Compiler, công cụ và corpus
+### 3e. Compiler, Tooling, and Corpus
 
-`neuroedge build` sinh nút; `gate explain` in ngưỡng kèm đơn vị, `range` và `max_age_ms`; `input_schema()`/`mcp tools` không đổi (đây là fact, không phải tham số). Màn hình thiết bị có nhãn cho lý do mới (`ne_ui_strings.c`, `docs/spec/ui.md`). Corpus ở `fixtures/gates/` theo luật khép kín (`CONTRIBUTING.md` §3).
+`neuroedge build` emits nodes; `gate explain` prints thresholds with units, `range`, and `max_age_ms`; `input_schema()`/`mcp tools` unchanged (facts, not arguments). Device screens display labels for new reasons (`ne_ui_strings.c`, `docs/spec/ui.md`). Corpus in `fixtures/gates/` follows closure rules (`CONTRIBUTING.md` §3).
 
-### 3f. Ràng buộc dữ kiện số với kênh HAL
+### 3f. Binding Numeric Facts to HAL Channels
 
-Khi agent nối một tiêu chí `numeric` với một kênh HAL (`analog.in`, readback `feedback`; `sensor.read` hôm nay không khai `unit` và thang nên **không** nối được với tiêu chí `numeric` — nối ⇒ `BoardCapabilityError` (`NE3001`)), `neuroedge build` kiểm tra tĩnh:
-1. `unit` của kênh phần cứng và `unit` của tiêu chí phải trùng nhau.
-2. Thang đo `[min, max]` khai báo của kênh phải nằm hoàn toàn trong `range` của tiêu chí (`range.min ≤ channel.min` và `channel.max ≤ range.max`).
+When an agent binds a `numeric` criterion to a HAL channel (`analog.in`, readback `feedback`; `sensor.read` currently lacks `unit` and scale declarations so **cannot** bind to `numeric` criteria — binding ⇒ `BoardCapabilityError` (`NE3001`)), `neuroedge build` statically verifies:
+1. Hardware channel `unit` and criterion `unit` must match identically.
+2. Declared hardware channel scale `[min, max]` must fit entirely within criterion `range` (`range.min ≤ channel.min` and `channel.max ≤ range.max`).
 
-Lệch một trong hai điều kiện trên ⇒ `BoardCapabilityError` (`NE3001`).
+Mismatch on either condition ⇒ `BoardCapabilityError` (`NE3001`).
 
-Đối với tiêu chí nối với trạng thái chân số `digital.out(...).state()`, gate chỉ nhận giá trị có `source = measured` (số đọc đo thực tế từ mạch hồi tiếp). Giá trị `commanded` (trạng thái lệnh logic của phần mềm) gửi tới gate ⇒ coi như chưa có số đọc đo lường hợp lệ ⇒ BLOCK `criterion_unavailable`.
+For criteria bound to digital pin states `digital.out(...).state()`, gates accept only values with `source = measured` (readings measured physically from feedback circuits). Values with `source = commanded` (software logical command state) sent to gates ⇒ treated as lacking valid measured readings ⇒ BLOCK `criterion_unavailable`.
 
-## 4. Ảnh hưởng tương thích
+## 4. Compatibility Impact
 
-| Hạng mục | Ảnh hưởng |
+| Item | Impact |
 |:---|:---|
-| Tệp đang hợp lệ có còn hợp lệ? | Có — `numeric` là giá trị enum mới, ba kiểu cũ giữ nguyên |
-| Tệp đang không hợp lệ có trở nên hợp lệ? | Có, đúng một loại: gate có `type: numeric` đủ `unit`, `range`, `max_age_ms` (nới lỏng lược đồ, làm được trong `v1`, như RFC-0005) |
-| Cần tăng phiên bản lược đồ (`v1` → `v2`)? | Không cho `gate.v1`. **Có** cho bố cục `NETR`: `layout_version` 2, một lần (§3d) |
-| Ảnh hưởng tới mã băm / chữ ký gate đã phát hành? | Không — gate không dùng `numeric` băm y như cũ |
-| Ảnh hưởng tới ba tệp vết ghi chuẩn mực? | Không. `trace.v1` không đổi (`events[].data` đã mở); mốc HAL đọc và `age_ms` của số đọc `numeric` là dữ liệu sự kiện mới, mô tả ở `docs/spec/simulation_coverage.md` §4 |
-| Gate nào trong `digests.lock` đổi digest? | Không gate nào. Gate mới có `numeric` vào `digests.lock` bằng PR thường |
-| Bố cục `NETR` hoặc walker C phải đổi? | **Có** — `kind = 3`, bảng `numeric`, `layout_version` 2, ABI fact `u8 available` + `f64 value` + `i64 age_ms`, `ne_reason` thêm `value_out_of_range`; `engine/binary_tree.py` ↔ `targets/esp32s3/components/ne_gate/` |
-| Đáp án nào của corpus tool call (`expected_results.yaml`) đổi? | Không |
+| Do currently valid files remain valid? | Yes — `numeric` is a new enum value, existing three types unchanged |
+| Do currently invalid files become valid? | Yes, exactly one category: gates with `type: numeric` having `unit`, `range`, `max_age_ms` (schema relaxation, permissible in `v1`, like RFC-0005) |
+| Is a schema version bump required (`v1` → `v2`)? | No for `gate.v1`. **Yes** for `NETR` layout: `layout_version` 2, one-off (§3d) |
+| Impact on hashes / digital signatures of published gates? | None — gates not using `numeric` hash identically to before |
+| Impact on the three canonical trace files? | None. `trace.v1` unchanged (`events[].data` already open); HAL read timestamp and `age_ms` of `numeric` readings are new event data, specified in `docs/spec/simulation_coverage.md` §4 |
+| Which gates in `digests.lock` change digest? | No gates. New gates using `numeric` enter `digests.lock` via regular PR |
+| Does the `NETR` layout or C walker need to change? | **Yes** — `kind = 3`, `numeric` table, `layout_version` 2, fact ABI `u8 available` + `f64 value` + `i64 age_ms`, `ne_reason` adds `value_out_of_range`; `engine/binary_tree.py` ↔ `targets/esp32s3/components/ne_gate/` |
+| Which answers in the tool-call corpus (`expected_results.yaml`) change? | No |
 
-Firmware đã nạp cây v1 phải được build lại cùng cây v2; theo RFC-0003 §4 walker v1 từ chối v2 nên lệch phiên bản là lỗi nạp rõ ràng, không phải phán quyết sai.
+Firmware flashed with v1 trees must be re-built alongside v2 trees; per RFC-0003 §4 walker v1 rejects v2, making version mismatches clear load errors rather than incorrect verdicts.
 
-**Mã lỗi** (`neuroedge-prd.md` Phụ lục B): RFC này dùng `GateSchemaError` (`NE2002`) (sai cấu trúc, hoặc chứa tiêu chí `numeric` trong `on_block.confirms`), `GateInheritanceError` (`NE2003`) (vi phạm nguyên tắc kế thừa 1 trong `_merge_evaluate` hoặc nguyên tắc 2 trong `_merge_allow_when`), và `BoardCapabilityError` (`NE3001`) (`neuroedge build` phát hiện kênh HAL lệch `unit` hoặc `[min, max]` nằm ngoài `range`). `value_out_of_range` là **lý do phán quyết**, không phải exception: thêm vào `Reason` (`engine/verdict.py`), `firmware.REASONS`/`ne_reason` và bảng lý do ở `docs/spec/ui.md` (sáu thành bảy); Phụ lục B không thêm dòng.
+**Error codes** (`neuroedge-prd.md` Appendix B): this RFC utilizes `GateSchemaError` (`NE2002`) (malformed structure, or containing `numeric` criteria in `on_block.confirms`), `GateInheritanceError` (`NE2003`) (violating inheritance principle 1 in `_merge_evaluate` or principle 2 in `_merge_allow_when`), and `BoardCapabilityError` (`NE3001`) (`neuroedge build` detecting HAL channel `unit` mismatch or `[min, max]` exceeding `range`). `value_out_of_range` is a **verdict reason**, not an exception: added to `Reason` (`engine/verdict.py`), `firmware.REASONS`/`ne_reason`, and the reasons table in `docs/spec/ui.md` (six expanding to seven); Appendix B adds no new rows.
 
-## 5. Ảnh hưởng an toàn
+## 5. Safety Impact
 
-- **Lỏng hơn ở đâu?** Không có đường nào: `numeric` thêm khả năng *diễn đạt* ngưỡng, và ngữ nghĩa kế thừa chỉ thu hẹp. Phần "nới lỏng" duy nhất là nới lược đồ, không nới phán quyết.
-- **Nguyên tắc 2** được mở rộng cho khoảng số; lỗi biên mở/đóng (con `gte` khi cha `gt`) là chỗ dễ sai nhất — test đột biến bắt buộc (§7).
-- **Fail-closed** giữ nguyên và chặt hơn: mất cảm biến, số đọc có mốc thời gian vi phạm nhân quả (`age_ms < 0`), số đọc quá `max_age_ms`, NaN, ±inf, ngoài thang đều BLOCK, không suy diễn. `range` và `max_age_ms` bắt buộc: không có thang thì không phát hiện được giá trị vô lý; cảm biến treo trả mãi giá trị cuối cùng trông như "an toàn" (§9.4, §9.5).
-- **Không xác nhận thay số đo:** `on_block.confirms` từ chối tiêu chí `numeric` (`GateSchemaError`, `NE2002`). Con người trên thiết bị không thể xác nhận thay một đo lường vật lý khách quan.
-- **Khớp kênh phần cứng tại thời điểm build:** `neuroedge build` kiểm tra tĩnh `unit` và thang đo `[min, max]` so với `range` (`BoardCapabilityError`, `NE3001`), loại bỏ nguy cơ cấu hình nhầm cảm biến. Trạng thái chân số `state()` chỉ nhận `source = measured`, ngăn phần mềm dùng `commanded` để giả lập trạng thái đạt.
-- **Một đường cho độ tin cậy:** tiêu chí `numeric` không mang `confidence`; độ tin cậy là tiêu chí `numeric` riêng, khoá được bằng `gate lint` (§9.3, RFC-0012).
-- **Nợ được trả:** ngưỡng số hôm nay nằm ở agent (`bands`); sau RFC này nó nằm ở gate và được `gate lint` cưỡng chế. `[sim.sensor_facts]` không đổi trong RFC này, nhưng không còn là cách duy nhất; thị giác không có `bands` (RFC-0012 §9.2).
-- **Số thực dấu phẩy động:** ngưỡng, `range` và số đọc là `f64` hữu hạn; so sánh tất định trên host và MCU bằng đúng bốn phép, không dung sai ẩn (§9.6). Đầu vào từ ADC/cảm biến đã đổi sang đơn vị khai trước khi tới gate (`analog.in`, [RFC-0007](0007-digital-in-i2c-analog-in-phong-bi.md)).
-- **Host và chip không bao giờ đọc cùng cây theo hai nghĩa:** `layout_version` 2 đổi host và walker trong cùng PR do TSK-W1-02 chủ trì (§9.2). Bố cục byte được ghim dứt điểm; walker C kiểm soát nghiêm ngặt stack ≤ 512 byte và ngân sách flash bảng numeric tối đa 1,5 KB.
+- **Where is it more lax?** Nowhere: `numeric` adds the ability to *express* thresholds, and inheritance semantics only narrow. The sole "relaxation" is schema-level, never verdict-level.
+- **Principle 2** is extended to numeric intervals; open/closed boundary errors (child `gte` when parent `gt`) represent the most error-prone area — mutation tests mandatory (§7).
+- **Fail-closed** preserved and strengthened: missing sensors, readings violating causality (`age_ms < 0`), readings exceeding `max_age_ms`, NaN, ±inf, outside scale all BLOCK unconditionally. Mandatory `range` and `max_age_ms`: without scales, absurd values cannot be caught; hung sensors repeating the last value look deceptively "safe" (§9.4, §9.5).
+- **No human confirmation of measurements:** `on_block.confirms` rejects `numeric` criteria (`GateSchemaError`, `NE2002`). Humans on devices cannot confirm objective physical measurements instead.
+- **Hardware channel matching at build time:** `neuroedge build` statically verifies `unit` and scale `[min, max]` against `range` (`BoardCapabilityError`, `NE3001`), eliminating misconfigured sensors. Pin state `state()` accepts only `source = measured`, preventing software from using `commanded` to simulate passing conditions.
+- **Single path for confidence:** `numeric` criteria lack `confidence`; confidence is a dedicated `numeric` criterion, lockable via `gate lint` (§9.3, RFC-0012).
+- **Debt paid down:** numeric thresholds currently in agents (`bands`) move into gates, enforced by `gate lint`. `[sim.sensor_facts]` remains unchanged in this RFC, but ceases to be the sole mechanism; vision lacks `bands` (RFC-0012 §9.2).
+- **Floating-point numbers:** thresholds, `range`, and readings are finite `f64`; deterministic comparisons on host and MCU via four operations, zero hidden tolerances (§9.6). Inputs from ADC/sensors convert to declared units prior to reaching gates (`analog.in`, [RFC-0007](0007-digital-in-i2c-analog-in-phong-bi.md)).
+- **Host and chip never interpret trees with divergent meanings:** `layout_version` 2 updates host and walker in the same PR led by TSK-W1-02 (§9.2). Byte layout pinned conclusively; C walker strictly bounds stack ≤ 512 bytes and numeric table flash budget to 1.5 KB maximum.
 
-## 6. Phương án đã xem xét và bác bỏ
+## 6. Alternatives Considered and Rejected
 
-| Phương án | Lý do bác bỏ |
+| Alternative | Reason for Rejection |
 |:---|:---|
-| Giữ `bands` ở agent | Ngưỡng ngoài gate, tác giả agent nới được mà `lint` không thấy (§1) |
-| Biểu thức CEL trên số đọc | Không chứng minh được "con chặt hơn" giữa hai biểu thức; MCU không có CEL (Q-9) |
-| `eq` trên số thực | So sánh bằng phẳng trên `f64` không có nghĩa đo lường; dùng khoảng hẹp |
-| So sánh có dung sai (epsilon) | Dung sai ẩn làm biên khác nhau giữa host và MCU; chỉ bốn phép `>`/`>=`/`<`/`<=` (§9.6) |
-| Chỉ `level` với dải cố định | Không mang đơn vị, ngưỡng thành nhãn; vẫn là `bands` |
-| `range` tuỳ chọn | Không có thang thì không phát hiện được giá trị vô lý (§9.4) |
-| Không giới hạn tuổi số đọc / `max_age_ms` tuỳ chọn | Cảm biến treo trả mãi giá trị cuối trông như "an toàn" (§9.5) |
-| Ngoài `range`/NaN báo `criterion_unavailable` | Hậu kiểm không phân biệt được mất cảm biến với cảm biến trả rác (§9.1) |
-| Trường `confidence` trên tiêu chí `numeric` | Hai đường cho độ tin cậy thì một đường sẽ bị quên khoá (§9.3) |
-| Tăng `layout_version` riêng cho từng RFC | Nhiều lần vỡ tương thích firmware; có giai đoạn host và chip đọc cây khác nghĩa (§9.2) |
-| Đẩy sang `gate.v2` | Không có tệp hợp lệ nào vỡ; `v2` vô ích (cùng lập luận RFC-0002 §4) |
-| Cho phép `on_block.confirms` với tiêu chí `numeric` | Người không thể xác nhận thay một đo lường vật lý; vi phạm an toàn fail-closed |
-| Tiêu chí nối `digital.out.state()` nhận `source = commanded` | Cho phép phần mềm tự giả lập trạng thái đạt mà không cần cảm biến hồi tiếp thực |
+| Keep `bands` in agent | Threshold lives outside gate, agent authors can loosen without `lint` noticing (§1) |
+| CEL expressions over readings | Cannot prove "child stricter than parent" between arbitrary expressions; MCU lacks CEL (Q-9) |
+| `eq` on floating-point numbers | Exact equality on `f64` has no physical measurement meaning; use narrow intervals |
+| Comparisons with tolerance (epsilon) | Hidden tolerance causes discrepancies between host and MCU; use only four operators `>`/`>=`/`<`/`<=` (§9.6) |
+| `level` only with fixed bands | Carries no units, thresholds become labels; still effectively `bands` |
+| Optional `range` | Without scale, absurd values cannot be detected (§9.4) |
+| No reading age limit / optional `max_age_ms` | Hung sensors repeat last value looking permanently "safe" (§9.5) |
+| Out-of-range/NaN reports `criterion_unavailable` | Post-audit cannot distinguish missing sensor from sensor returning garbage (§9.1) |
+| `confidence` field on `numeric` criterion | Two paths for confidence means one will be neglected from locking (§9.3) |
+| Bump `layout_version` separately per RFC | Repeated firmware breaking changes; periods where host and chip interpret trees with divergent meanings (§9.2) |
+| Push to `gate.v2` | No valid files break; `v2` provides zero value (same reasoning as RFC-0002 §4) |
+| Allow `on_block.confirms` with `numeric` criteria | Humans cannot confirm physical measurements instead; violates fail-closed safety |
+| Criteria bound to `digital.out.state()` accept `source = commanded` | Allows software to fake passing states without real feedback sensors |
 
-## 7. Bằng chứng kiểm chứng
+## 7. Verification Evidence
 
-- [x] Ví dụ hợp lệ trong `fixtures/gates/valid/`: gate `numeric` đủ `unit`/`range`/`max_age_ms`, gate con thu hẹp cận dưới/trên/biên mở, gate độ tin cậy `range: { min: 0, max: 1 }`
-- [x] Phản chứng trong `fixtures/gates/invalid/` + `expected_errors.yaml`: thiếu `unit`, thiếu `range`, thiếu `max_age_ms`, `max_age_ms` ≤ 0, `range` có `min ≥ max` hoặc không hữu hạn, ngưỡng không hữu hạn, ngưỡng ngoài `range`, khoảng rỗng, `eq`, `confidence_gte` trên `numeric`, trường `confidence`, `levels`/`options` đi kèm `numeric`, tiêu chí `numeric` nằm trong `on_block.confirms` (`GateSchemaError`, `NE2002`); kế thừa: nới cận, bỏ cận cha khi ghi đè, đổi `unit`, đổi `range`, đổi `max_age_ms` (`GateInheritanceError`, `NE2003`)
-- [ ] *(cùng TSK-I2a-04 và RFC-0010; phần `sensor.read` ⇒ `NE3001` và `commanded` ⇒ BLOCK đã có; **phần `analog.in` đạt** ở TSK-I2a-04: `tests/test_analog_in.py`, nối bằng `[sim.analog_facts]`; còn readback `feedback` của RFC-0010)* Ràng buộc kênh HAL: `neuroedge build` kiểm tra khớp `unit` và `[min, max]` của kênh HAL nằm trong `range` của tiêu chí `numeric`; phản chứng lệch `unit` hoặc `[min, max]` vượt `range` bị từ chối với `BoardCapabilityError` (`NE3001`); test tiêu chí nối `digital.out(...).state()` nhận `source = commanded` ⇒ BLOCK `criterion_unavailable`, chỉ cho qua khi `source = measured`
-- [x] Engine: không có số đọc ⇒ BLOCK `criterion_unavailable`; `age_ms < 0` (mốc HAL đọc sau thời điểm lượng giá) ⇒ BLOCK `criterion_unavailable`; tuổi > `max_age_ms` ⇒ BLOCK `criterion_unavailable` (ca biên tuổi đúng bằng `max_age_ms` cho qua); NaN, ±inf, ngoài `range` ⇒ BLOCK `value_out_of_range`; thứ tự kiểm theo §3c
-- [x] Replay: vết ghi mang cả mốc HAL đọc và `age_ms`; `replay` tính lại tuổi và so khớp; thị giác lượng giá tuổi của cửa sổ theo khung cũ nhất
-- [x] Walker C khớp engine host trên mọi gate (mở rộng `python/tests/test_c_walker.py`), gồm test C cho mọi biên: đóng/mở (`gt`, `gte`, `lt`, `lte`), NaN, ±inf, đúng biên `range` (`min`, `max`), `age_ms = max_age_ms`, `age_ms = max_age_ms + 1`, `age_ms < 0`; kiểm tra ABI fact `f64 value` + `i64 age_ms`; kiểm tra đột biến (đảo `<`/`<=`, bỏ kiểm NaN, bỏ kiểm `range`, bỏ kiểm tuổi); kiểm tra stack walker C ≤ 512 byte; kiểm tra ngân sách flash bảng numeric (48 byte × tối đa 32 mục = 1.536 byte)
-- [x] Walker v1 từ chối cây v2 (`NE_ERR_VERSION`); `test_ui_assets.py` giữ `ne_reason` và `firmware.REASONS` khớp nhau sau khi thêm `value_out_of_range`
-- [x] `neuroedge gate lint` và `neuroedge verify` vẫn xanh; `scripts/check_digests.py` không đổi digest gate đã khoá
+- [x] Valid examples in `fixtures/gates/valid/`: `numeric` gates with full `unit`/`range`/`max_age_ms`, child gates narrowing lower/upper/open boundaries, confidence gates with `range: { min: 0, max: 1 }`
+- [x] Counterexamples in `fixtures/gates/invalid/` + `expected_errors.yaml`: missing `unit`, missing `range`, missing `max_age_ms`, `max_age_ms` ≤ 0, `range` with `min ≥ max` or non-finite, non-finite thresholds, thresholds outside `range`, empty intervals, `eq`, `confidence_gte` on `numeric`, `confidence` field, `levels`/`options` accompanying `numeric`, `numeric` criteria in `on_block.confirms` (`GateSchemaError`, `NE2002`); inheritance: loosening bounds, dropping parent bounds on override, changing `unit`, changing `range`, changing `max_age_ms` (`GateInheritanceError`, `NE2003`)
+- [ ] *(alongside TSK-I2a-04 and RFC-0010; `sensor.read` ⇒ `NE3001` and `commanded` ⇒ BLOCK present; **`analog.in` portion passed** in TSK-I2a-04: `tests/test_analog_in.py`, bound via `[sim.analog_facts]`; pending `feedback` readback of RFC-0010)* HAL channel binding: `neuroedge build` validates matching `unit` and HAL channel `[min, max]` within `range` of `numeric` criterion; counterexamples with mismatched `unit` or `[min, max]` exceeding `range` rejected with `BoardCapabilityError` (`NE3001`); test criteria bound to `digital.out(...).state()` receiving `source = commanded` ⇒ BLOCK `criterion_unavailable`, passing only when `source = measured`
+- [x] Engine: missing reading ⇒ BLOCK `criterion_unavailable`; `age_ms < 0` (HAL read timestamp after evaluation instant) ⇒ BLOCK `criterion_unavailable`; age > `max_age_ms` ⇒ BLOCK `criterion_unavailable` (edge case age exactly equal to `max_age_ms` passes); NaN, ±inf, outside `range` ⇒ BLOCK `value_out_of_range`; check ordering per §3c
+- [x] Replay: traces carry both HAL read timestamp and `age_ms`; `replay` recomputes age and validates; vision evaluates window age by oldest frame
+- [x] C walker matches host engine across all gates (expanded `python/tests/test_c_walker.py`), including C tests for all boundaries: closed/open (`gt`, `gte`, `lt`, `lte`), NaN, ±inf, exact `range` bounds (`min`, `max`), `age_ms = max_age_ms`, `age_ms = max_age_ms + 1`, `age_ms < 0`; fact ABI validation `f64 value` + `i64 age_ms`; mutation tests (inverting `<`/`<=`, skipping NaN check, skipping `range` check, skipping age check); C walker stack limit ≤ 512 bytes; numeric table flash budget check (48 bytes × max 32 items = 1,536 bytes)
+- [x] Walker v1 rejects v2 trees (`NE_ERR_VERSION`); `test_ui_assets.py` preserves alignment between `ne_reason` and `firmware.REASONS` after adding `value_out_of_range`
+- [x] `neuroedge gate lint` and `neuroedge verify` remain green; `scripts/check_digests.py` preserves locked gate digests
 
-## 8. Việc phải làm khi chấp thuận
+## 8. Tasks upon Approval
 
-- [x] Cập nhật `schemas/gate.v1.json` (enum `type`, `unit`, `range`, `max_age_ms` bắt buộc, nhánh `if/then`)
-- [x] Cập nhật Phụ lục B.2/B.5 trong `docs/spec/core_contracts.md`; FR-GATE-03 ở `neuroedge-prd.md`; ghi chấp thuận vào Q-57 (`neuroedge-prd.md` §15)
-- [x] Cập nhật `neuroedge-roadmap.md` (TSK-W1-02) và đóng `TODOS.md` #30
-- [x] `engine/constraints.py`, `engine/gate_resolver.py`, `engine/verdict.py` (`value_out_of_range`), `engine/binary_tree.py`, `engine/firmware.py` (`REASONS`), walker C (`ne_walker.h`), `gate explain`
-- [x] Cập nhật `neuroedge gate lint` từ chối tiêu chí `numeric` trong `on_block.confirms` (`GateSchemaError`, `NE2002`)
-- [ ] *(cùng TSK-I2a-04 và RFC-0010; **phần `analog.in` đạt**: `check_analog_facts` ở `engine/compiler.py` kiểm `unit` và `range`; còn `source = measured` của readback `digital.out`)* Cập nhật `neuroedge build` kiểm tra ràng buộc kênh HAL với tiêu chí `numeric` (`unit`, `range`, `source = measured`) (`BoardCapabilityError`, `NE3001`)
-- [x] Ghi cả mốc HAL đọc lẫn `age_ms` vào vết ghi; cập nhật `replay` tính lại và so sánh; xử lý `age_ms < 0` ⇒ BLOCK `criterion_unavailable`; cập nhật `docs/spec/simulation_coverage.md` §4 và bảng lý do ở `docs/spec/ui.md` (nhãn trong `ne_ui_strings.c`)
-- [x] Một PR duy nhất nâng `layout_version` lên 2 do TSK-W1-02 chủ trì gồm bảng `numeric` và các trường `TODOS.md` #36 (RFC-0011 không thêm trường vào `NETR`); ABI walker C nhận `f64 value` + `i64 age_ms`, kiểm tra stack ≤ 512 byte và ngân sách flash bảng numeric 48 byte × 32 (§3d)
-- [x] Thêm fixture và test; cập nhật `docs/rfc/README.md` và `CHANGELOG.md`
+- [x] Update `schemas/gate.v1.json` (`type` enum, mandatory `unit`, `range`, `max_age_ms`, `if/then` branches)
+- [x] Update Appendix B.2/B.5 in `docs/spec/core_contracts.md`; FR-GATE-03 in `neuroedge-prd.md`; record approval in Q-57 (`neuroedge-prd.md` §15)
+- [x] Update `neuroedge-roadmap.md` (TSK-W1-02) and close `TODOS.md` #30
+- [x] `engine/constraints.py`, `engine/gate_resolver.py`, `engine/verdict.py` (`value_out_of_range`), `engine/binary_tree.py`, `engine/firmware.py` (`REASONS`), C walker (`ne_walker.h`), `gate explain`
+- [x] Update `neuroedge gate lint` to reject `numeric` criteria in `on_block.confirms` (`GateSchemaError`, `NE2002`)
+- [ ] *(alongside TSK-I2a-04 and RFC-0010; **`analog.in` portion passed**: `check_analog_facts` in `engine/compiler.py` checks `unit` and `range`; pending `source = measured` for `digital.out` readback)* Update `neuroedge build` to validate HAL channel bindings to `numeric` criteria (`unit`, `range`, `source = measured`) (`BoardCapabilityError`, `NE3001`)
+- [x] Record both HAL read timestamp and `age_ms` in traces; update `replay` to recompute and compare; handle `age_ms < 0` ⇒ BLOCK `criterion_unavailable`; update `docs/spec/simulation_coverage.md` §4 and reasons table in `docs/spec/ui.md` (labels in `ne_ui_strings.c`)
+- [x] Single PR bumping `layout_version` to 2 led by TSK-W1-02 including `numeric` table and `TODOS.md` #36 fields (RFC-0011 adds no fields to `NETR`); C walker ABI accepts `f64 value` + `i64 age_ms`, verifies stack ≤ 512 bytes and numeric table flash budget 48 bytes × 32 (§3d)
+- [x] Add fixtures and tests; update `docs/rfc/README.md` and `CHANGELOG.md`
 
-## 9. Quyết định cho các câu hỏi mở (Q-57, 2026-09-30; Q-62, 2026-10-01)
+## 9. Decisions on Open Questions (Q-57, 2026-09-30; Q-62, 2026-10-01)
 
-Chủ sản phẩm uỷ quyền quyết các câu hỏi mở theo nguyên tắc **an toàn cao nhất**: giữa hai phương án, chọn phương án fail-closed và khó dùng sai hơn, kể cả khi nó tốn công hơn. Các quyết định dưới đây **đã được gộp vào §3–§8**; mục này giữ lại làm hồ sơ quyết định (Q-57). Chấp thuận RFC vẫn cần chữ ký kỹ thuật trưởng (`CONTRIBUTING.md` §3).
+Product owner delegated resolving open questions under the **maximum safety** principle: between two alternatives, choose the fail-closed and harder-to-misuse option, even when more costly. The decisions below **have been incorporated into §3–§8**; this section is retained as the decision log (Q-57). RFC approval still requires lead architect signature (`CONTRIBUTING.md` §3).
 
-1. **Lý do lỗi.** Thêm lý do riêng `value_out_of_range` (số đọc ngoài `range`, NaN, ±inf); `criterion_unavailable` giữ cho trường hợp không có số đọc. Cả hai đều BLOCK. *Vì sao:* hậu kiểm phân biệt được "mất cảm biến" với "cảm biến trả rác", phán quyết không đổi.
-2. **Bố cục `NETR`.** Tăng `layout_version` lên 2 **một lần**, trong một PR do TSK-W1-02 chủ trì gồm bảng `numeric` của RFC này và các trường của `TODOS.md` #36 (RFC-0011 không thêm trường vào `NETR`); ghim bố cục byte ngay trong RFC-0009; engine host và walker C đổi trong cùng PR; walker v1 từ chối cây v2 (`NE_ERR_VERSION`, fail-closed). *Vì sao:* không bao giờ có giai đoạn host và chip đọc cùng cây theo hai nghĩa; định dạng nhị phân được đóng băng dứt điểm.
-3. **Độ tin cậy.** Tiêu chí `numeric` không có trường `confidence`; độ tin cậy, khi cần, là **một tiêu chí `numeric` khác** (đường của RFC-0012). *Vì sao:* một đường duy nhất, khoá được bằng `gate lint`.
-4. **`range` bắt buộc.** *Vì sao:* không có thang thì không phát hiện được giá trị vô lý, fail-closed mất cạnh.
-5. **Tuổi số đọc.** `max_age_ms` **bắt buộc** với mọi tiêu chí `numeric`; số đọc cũ hơn ⇒ `criterion_unavailable` ⇒ BLOCK. Mốc HAL đọc và `age_ms` được ghi vào vết ghi để `replay` tính lại và so; `age_ms < 0` (mốc đọc sau thời điểm lượng giá) ⇒ BLOCK `criterion_unavailable`. *Vì sao:* một cảm biến treo trả mãi giá trị cuối cùng trông như "an toàn"; gate phải từ chối số đọc đã cũ hoặc vi phạm trật tự nhân quả.
-6. **So sánh số thực.** Ngưỡng, `range` và số đọc là `f64` hữu hạn; host và walker C dùng đúng bốn phép `>`, `>=`, `<`, `<=`, không dung sai ẩn; vector tuân thủ có ca đúng bằng ngưỡng ở mọi biên.
-7. **Ràng buộc kênh HAL và cấm xác nhận số** (review 2026-10-01, Q-62). Agent nối tiêu chí `numeric` với kênh HAL (`analog.in`, readback `feedback`; `sensor.read` hôm nay không khai `unit` và thang nên **không** nối được với tiêu chí `numeric` — nối ⇒ `BoardCapabilityError` (`NE3001`)) phải trùng `unit` và `[min, max]` của kênh phải nằm trong `range` của tiêu chí, lệch ⇒ `BoardCapabilityError` (`NE3001`); `digital.out(...).state()` chỉ nhận giá trị có `source = measured` (nhận `commanded` ⇒ `criterion_unavailable`); tiêu chí `numeric` bị cấm tuyệt đối trong `on_block.confirms` (`GateSchemaError`, `NE2002`). *Vì sao:* người không thể xác nhận thay một giới hạn đo vật lý; ngăn ngừa việc dùng trạng thái logic commanded hoặc cảm biến sai lệch thang đo để vượt qua gate.
-8. **Định nghĩa tuổi dữ kiện và lượng giá replay** (review 2026-10-01, Q-62). Thời điểm lượng giá là offset của sự kiện phán quyết trên cùng trục thời gian đơn điệu của phiên với mốc đọc của HAL; tuổi = thời điểm lượng giá − mốc HAL đọc; vết ghi ghi cả mốc đọc lẫn `age_ms`; `replay` tính lại và so sánh; `age_ms < 0` ⇒ BLOCK `criterion_unavailable`. Với thị giác, tuổi của cửa sổ là tuổi của khung cũ nhất trong cửa sổ. *Vì sao:* bảo đảm tính tất định khi replay và triệt tiêu rủi ro sai lệch đồng hồ hoặc mốc đọc nằm ở tương lai so với phán quyết.
-9. **Đóng băng bố cục `NETR` v2 và ABI walker** (review 2026-10-01, Q-62). Ghim trực tiếp bố cục byte header 80 byte và bảng `numeric` 48 byte trong RFC-0009; ABI fact numeric tới walker C nhận `f64 value` và `i64 age_ms`; giới hạn stack walker C ≤ 512 byte; ngân sách flash cho bảng `numeric` là 48 byte × tối đa 32 mục (tối đa 1.536 byte). *Vì sao:* loại bỏ mâu thuẫn hoãn ghim byte sang PR thứ hai; cố định ABI và kiểm soát chặt chẽ tài nguyên flash và stack của firmware trên MCU.
+1. **Error reason.** Add dedicated reason `value_out_of_range` (readings outside `range`, NaN, ±inf); `criterion_unavailable` reserved for missing readings. Both BLOCK. *Why:* post-audits distinguish "lost sensor" from "sensor returning garbage", verdicts unchanged.
+2. **`NETR` layout.** Bump `layout_version` to 2 **once**, in a single PR led by TSK-W1-02 incorporating the `numeric` table of this RFC and `TODOS.md` #36 fields (RFC-0011 adds no fields to `NETR`); pin byte layout directly within RFC-0009; host engine and C walker change in same PR; walker v1 rejects v2 trees (`NE_ERR_VERSION`, fail-closed). *Why:* prevents any period where host and chip interpret trees with divergent meanings; binary format frozen conclusively.
+3. **Confidence.** `numeric` criteria lack `confidence` fields; confidence, when needed, is **a separate `numeric` criterion** (RFC-0012 path). *Why:* single path, lockable via `gate lint`.
+4. **Mandatory `range`.** *Why:* without scale, absurd values cannot be detected, fail-closed loses edge.
+5. **Reading age.** `max_age_ms` is **mandatory** for all `numeric` criteria; older readings ⇒ `criterion_unavailable` ⇒ BLOCK. HAL read timestamp and `age_ms` recorded in traces for `replay` recomputation and comparison; `age_ms < 0` (read timestamp after evaluation instant) ⇒ BLOCK `criterion_unavailable`. *Why:* hung sensors repeat last value looking permanently "safe"; gates must reject stale readings or causality violations.
+6. **Floating-point comparisons.** Thresholds, `range`, and readings are finite `f64`; host and C walker use strictly four operators `>`, `>=`, `<`, `<=`, without hidden tolerances; conformance vectors include cases exactly equal to thresholds at all boundaries.
+7. **HAL channel bindings and numeric confirmation prohibition** (review 2026-10-01, Q-62). Agents binding `numeric` criteria to HAL channels (`analog.in`, readback `feedback`; `sensor.read` currently lacks `unit` and scale declarations so **cannot** bind to `numeric` criteria — binding ⇒ `BoardCapabilityError` (`NE3001`)) must match `unit` and channel `[min, max]` must fit within criterion `range`, mismatch ⇒ `BoardCapabilityError` (`NE3001`); `digital.out(...).state()` accepts only `source = measured` (receiving `commanded` ⇒ `criterion_unavailable`); `numeric` criteria strictly forbidden in `on_block.confirms` (`GateSchemaError`, `NE2002`). *Why:* humans cannot confirm physical measurement limits instead; prevents software logical commanded states or scaled-mismatched sensors from bypassing gates.
+8. **Fact age definition and replay evaluation** (review 2026-10-01, Q-62). Evaluation instant is verdict event offset on same monotonic session timeline as HAL read timestamp; age = evaluation instant − HAL read timestamp; traces record both read timestamp and `age_ms`; `replay` recomputes and compares; `age_ms < 0` ⇒ BLOCK `criterion_unavailable`. For vision, window age is the age of the oldest frame in the window. *Why:* ensures determinism during replay and eliminates clock skew or future read timestamp risks relative to verdicts.
+9. **Freezing `NETR` v2 layout and walker ABI** (review 2026-10-01, Q-62). Directly pin 80-byte header and 48-byte `numeric` table layout in RFC-0009; C walker numeric fact ABI accepts `f64 value` and `i64 age_ms`; C walker stack limit ≤ 512 bytes; flash budget for `numeric` table is 48 bytes × max 32 items (1,536 bytes max). *Why:* resolves contradiction of deferring byte pinning to second PR; freezes ABI and strictly controls MCU firmware flash and stack resources.

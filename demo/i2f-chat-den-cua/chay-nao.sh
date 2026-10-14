@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Bộ não (§0.2 của kich-ban.md): NeuroClaw (Q-78) nối thẳng tới hộp bằng mTLS.
+# The brain (§0.2 of kich-ban.md): NeuroClaw (Q-78) connects straight to the box over mTLS.
 #
-#   bash chay-nao.sh <host:port của hộp>                 # gateway: chat qua Telegram
-#   bash chay-nao.sh <host:port của hộp> agent -m "..."  # một câu, không cần Telegram
-#   bash chay-nao.sh <host:port của hộp> mcp test neuroedge
+#   bash chay-nao.sh <box host:port>                      # gateway: chat over Telegram
+#   bash chay-nao.sh <box host:port> agent -m "..."       # one sentence, no Telegram needed
+#   bash chay-nao.sh <box host:port> mcp test neuroedge
 #
-# Chạy được trên VPS (Linux) lẫn laptop (macOS). Đọc từ cùng thư mục với script:
+# Runs on a VPS (Linux) and on a laptop (macOS). Reads from the same directory as the script:
 #   .env.txt                  OPENROUTER_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_OWNER_ID
 #   khoa/{ca.pem,nao.pem,nao.key,nao.token}
-# (trong kho: .env.txt ở gốc kho, khoá ở ~/neuroedge-demo-khoa). Mọi trạng thái của bộ não —
-# cấu hình, trí nhớ, phiên, cron — nằm ở $NAO_HOME (mặc định ~/.neuroedge-nao), giữ qua mỗi lần chạy lại.
-# NEUROCLAW_BIN=<đường dẫn> dùng một bản NeuroClaw có sẵn thay vì tải bản phát hành.
+# (in the repo: .env.txt at the repo root, keys in ~/neuroedge-demo-khoa). All of the brain's state —
+# config, memory, sessions, cron — lives in $NAO_HOME (default ~/.neuroedge-nao) and survives every re-run.
+# NEUROCLAW_BIN=<path> uses an existing NeuroClaw build instead of downloading a release.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-TARGET="${1:?cách dùng: chay-nao.sh <host:port của hộp> [lệnh neuroclaw…]}"; shift
+TARGET="${1:?usage: chay-nao.sh <box host:port> [neuroclaw command…]}"; shift
 VERSION=v0.2.2
 
 ENV="$HERE/.env.txt"; [ -f "$ENV" ] || ENV="$HERE/../../.env.txt"
@@ -33,22 +33,22 @@ if [ ! -x "$BIN" ]; then
     Linux/aarch64|Linux/arm64) ASSET=neuroclaw_Linux_arm64 ;;
     Darwin/arm64) ASSET=neuroclaw_Darwin_arm64 ;;
     Darwin/x86_64) ASSET=neuroclaw_Darwin_x86_64 ;;
-    *) echo "chưa có bản NeuroClaw cho $(uname -s)/$(uname -m)" >&2; exit 1 ;;
+    *) echo "no NeuroClaw build for $(uname -s)/$(uname -m)" >&2; exit 1 ;;
   esac
   URL="https://github.com/letrongminh/neuroclaw/releases/download/$VERSION"
   TMP="$(mktemp -d)"
   curl -fsSL -o "$TMP/$ASSET.tar.gz" "$URL/$ASSET.tar.gz"
   curl -fsSL -o "$TMP/sums.txt" "$URL/neuroclaw_${VERSION#v}_checksums.txt"
-  # tệp tải về phải khớp checksums của bản phát hành
+  # the downloaded file must match the release checksums
   WANT="$(awk -v f="$ASSET.tar.gz" '$2 == f {print $1}' "$TMP/sums.txt")"
   GOT="$( (sha256sum "$TMP/$ASSET.tar.gz" 2>/dev/null || shasum -a 256 "$TMP/$ASSET.tar.gz") | cut -d' ' -f1)"
-  [ -n "$WANT" ] && [ "$WANT" = "$GOT" ] || { echo "checksum của $ASSET.tar.gz không khớp" >&2; exit 1; }
+  [ -n "$WANT" ] && [ "$WANT" = "$GOT" ] || { echo "checksum of $ASSET.tar.gz does not match" >&2; exit 1; }
   tar xzf "$TMP/$ASSET.tar.gz" -C "$NAO_HOME/bin" neuroclaw
   rm -rf "$TMP"
 fi
 
-# cấu hình: bản trong kho + địa chỉ hộp, khoá mTLS, token, chủ nhà, key LLM, bot và workspace.
-# Bí mật nằm trong config.json của bộ não (quyền 600, ngoài kho).
+# config: the copy in the repo + the box address, mTLS keys, token, owner, LLM key, bot and workspace.
+# Secrets go into the brain's config.json (mode 600, outside the repo).
 python3 - "$HERE/neuroclaw/config.json" "$NAO_HOME" "$K" "$TARGET" <<'EOF'
 import json, os, sys
 source, home, keys, target = sys.argv[1:]

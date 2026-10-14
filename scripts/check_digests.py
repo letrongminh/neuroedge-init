@@ -1,26 +1,28 @@
 #!/usr/bin/env python3
 """
-Khoá digest của gate chuẩn mực trong kho (TSK-S3-16).
+Digest lock for the normative gates in the repository (TSK-S3-16).
 
     python scripts/check_digests.py --check                 # CI, job Frozen artifacts
-    python scripts/check_digests.py --update                # chỉ thêm tệp mới vào lock
-    python scripts/check_digests.py --accept <tệp> --rfc 0007
+    python scripts/check_digests.py --update                # only adds new files to the lock
+    python scripts/check_digests.py --accept <file> --rfc 0007
 
-Phạm vi: mọi tệp trong `gates/**`, `fixtures/gates/valid/**`,
-`fixtures/gates/registry/**`, và gate của bốn kit phần cứng có gate riêng
+Scope: every file in `gates/**`, `fixtures/gates/valid/**`,
+`fixtures/gates/registry/**`, and the gates of the four hardware kits that carry their own
 (`fixtures/agents/{home-voice,factory-monitor}/gates/**`, TSK-I2b-01;
-`fixtures/agents/{gate-camera,blinds}/gates/**`, TSK-I2b-02; gate của kit `villa-concierge` đã ở `gates/`). Digest là `engine/canonical.py` `digest()` của tài
-liệu YAML **đã parse** (JCS, RFC 8785), không phải byte thô: sửa thụt lề, thứ tự
-khoá hay comment không phải là thay đổi.
+`fixtures/agents/{gate-camera,blinds}/gates/**`, TSK-I2b-02; the `villa-concierge` kit's gates
+are already in `gates/`). The digest is `engine/canonical.py` `digest()` of the **parsed** YAML
+document (JCS, RFC 8785), not the raw bytes: fixing indentation, key order or comments is not
+a change.
 
-Ba trạng thái, ba cách xử lý:
+Three states, three treatments:
 
-  * tệp **mới** (chưa có trong lock) — PR thường: `--update` thêm nó vào;
-  * tệp **đổi** digest, hoặc **bị xoá** — cần RFC: `--accept <tệp> --rfc NNNN`, chỉ
-    nhận khi `docs/rfc/NNNN-*.md` tồn tại, và ghi mã RFC vào mục đó;
-  * còn lại khớp — không làm gì.
+  * a **new** file (not yet in the lock) — an ordinary PR: `--update` adds it;
+  * a file whose digest **changed**, or that was **deleted** — needs an RFC:
+    `--accept <file> --rfc NNNN`, accepted only when `docs/rfc/NNNN-*.md` exists, and
+    it records the RFC number on that entry;
+  * everything else matches — nothing to do.
 
-`--update` không bao giờ ghi đè một digest đã khoá. Mã thoát: 0 khớp, 1 lệch.
+`--update` never overwrites a locked digest. Exit code: 0 matches, 1 drift.
 """
 
 from __future__ import annotations
@@ -57,7 +59,7 @@ def file_digest(path: Path) -> str:
 
 
 def scan(root: Path) -> dict[str, str]:
-    """Digest của mọi tệp trong phạm vi, khoá bằng đường dẫn POSIX tương đối."""
+    """Digest of every file in scope, keyed by relative POSIX path."""
     found: dict[str, str] = {}
     for part in SCOPE:
         for path in sorted((root / part).rglob("*")):
@@ -85,7 +87,7 @@ def write_lock(root: Path, entries: dict[str, dict]) -> None:
 
 
 def compare(root: Path) -> tuple[list[str], list[str], list[str]]:
-    """(mới, đổi, bị xoá) so với lock."""
+    """(new, changed, deleted) against the lock."""
     lock = load_lock(root)
     tree = scan(root)
     new, changed, deleted = [], [], []
@@ -174,10 +176,10 @@ def accept(root: Path, name: str, rfc: str) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--check", action="store_true", help="so cây với lock; lệch thì thoát 1")
-    mode.add_argument("--update", action="store_true", help="thêm tệp mới vào lock")
-    mode.add_argument("--accept", metavar="TỆP", help="nhận một tệp đổi hoặc bị xoá, cần --rfc")
-    parser.add_argument("--rfc", metavar="NNNN", help="số RFC cho --accept")
+    mode.add_argument("--check", action="store_true", help="compare the tree with the lock; exit 1 on drift")
+    mode.add_argument("--update", action="store_true", help="add new files to the lock")
+    mode.add_argument("--accept", metavar="FILE", help="accept one changed or deleted file; needs --rfc")
+    parser.add_argument("--rfc", metavar="NNNN", help="RFC number for --accept")
     parser.add_argument("--root", type=Path, default=REPO_ROOT, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     root = args.root.resolve()

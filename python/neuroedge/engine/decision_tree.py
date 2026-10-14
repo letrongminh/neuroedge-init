@@ -3,7 +3,7 @@ Host-side decision tree: the one form of a gate that both walkers execute.
 
 Q-9 option A puts no CEL VM on the microcontroller: the host compiles each
 resolved gate into a flat tree and the firmware only walks it. This module is
-the compiler and the Python walker; the C walker in Khối 1b must reproduce
+the compiler and the Python walker; the C walker in Block 1b must reproduce
 `walk()` exactly — same verdict **and** same reason — which the truth tables in
 `fixtures/decision_trees/` pin down (ENG-T1).
 

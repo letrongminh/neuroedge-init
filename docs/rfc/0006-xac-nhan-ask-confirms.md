@@ -1,52 +1,53 @@
-# RFC-0006: Gate khai tiêu chí người được xác nhận thay — `on_block.confirms`
+# RFC-0006: Gates Declare Criteria Humans Can Confirm Instead — `on_block.confirms`
 
 | | |
 |:---|:---|
-| **Mã RFC** | 0006 |
-| **Tiêu đề** | `on_block: ask` có `confirms`: tiêu chí mà lời xác nhận của người trên thiết bị được thay |
-| **Lược đồ bị ảnh hưởng** | `gate.v1` (thêm trường tuỳ chọn trong `on_block`) · ngữ nghĩa phân giải · lượng giá |
-| **Yêu cầu PRD liên quan** | FR-ACE-10, FR-GATE-06, NFR-SEC-09 |
-| **Người đề xuất** | V1 — Kỹ sư lõi nền tảng *(theo TSK-S3-26)* |
-| **Ngày mở** | 2026-09-24 |
-| **Trạng thái** | ✅ Đã chấp thuận · ✅ Đã hiện thực (TSK-S3-26, PR #25; walker C: TSK-S4-02, PR #27) |
-| **Người phê duyệt** | Trong-Minh Le (@letrongminh, kỹ thuật trưởng), 2026-09-24 — chọn "gate ghi rõ" (phương án A) trong ba phương án ở §6 |
-| **Kiểm chứng** | §7 — `python/tests/test_tool_confirm.py`, corpus `fixtures/gates/invalid/` |
+| **RFC ID** | 0006 |
+| **Title** | `on_block: ask` with `confirms`: criteria that human confirmation on device can replace |
+| **Affected Schema** | `gate.v1` (adds optional field in `on_block`) · resolution semantics · evaluation |
+| **Related PRD Requirements** | FR-ACE-10, FR-GATE-06, NFR-SEC-09 |
+| **Author** | V1 — Platform Core Engineer *(per TSK-S3-26)* |
+| **Date Opened** | 2026-09-24 |
+| **Status** | ✅ Approved · ✅ Implemented (TSK-S3-26, PR #25; C walker: TSK-S4-02, PR #27) |
+| **Approver** | Trong-Minh Le (@letrongminh, lead architect), 2026-09-24 — selected "explicitly declared in gate" (Option A) among three options in §6 |
+| **Verification** | §7 — `python/tests/test_tool_confirm.py`, corpus `fixtures/gates/invalid/` |
 
-> **Khi nào cần RFC:** mọi thay đổi trong `schemas/`, và mọi thay đổi ngữ nghĩa
-> phân giải gate. Xem `CONTRIBUTING.md` §3 để biết ranh giới chính xác.
+> **When an RFC is required:** all changes in `schemas/`, and all changes to gate resolution
+> semantics. See `CONTRIBUTING.md` §3 for exact boundaries.
 
-## 1. Vấn đề
+## 1. Problem
 
-Q-26 chốt: khi gate trả `on_block: ask`, **chỉ người, qua kênh thiết bị**, được xác nhận,
-và xác nhận làm gate **lượng giá lại** chứ không bỏ qua gate. Nhưng `allow_when` là
-**VÀ** của mọi mệnh đề:
+Q-26 decided: when a gate returns `on_block: ask`, **only humans, via device channels**,
+may confirm, and confirmation triggers the gate to **re-evaluate** rather than bypassing
+the gate. But `allow_when` is an **AND** of all clauses:
 
 ```yaml
-# fixtures/agents/home-voice/gates/light_off@1.0.0.yaml (trước RFC)
+# fixtures/agents/home-voice/gates/light_off@1.0.0.yaml (before RFC)
 allow_when:
   call_source: { in: [local_grammar, system_one, system_two, mcp] }
   room_empty:  true
 on_block: { action: ask, message: "Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?" }
 ```
 
-Phòng còn người ⇒ `room_empty = false` ⇒ BLOCK ⇒ hỏi. Người trả lời "có". Thêm dữ kiện
-`human_confirmed = true` rồi lượng giá lại: `room_empty` **vẫn** false, gate **vẫn** chặn.
-Lời xác nhận không bao giờ có tác dụng — `docs/spec/tool_calling.md` §6 bản v0 mắc đúng lỗi
-này.
+Room occupied ⇒ `room_empty = false` ⇒ BLOCK ⇒ ask. User answers "có" ("yes"). Adding
+fact `human_confirmed = true` and re-evaluating: `room_empty` **remains** false, gate
+**still** blocks. Confirmation never takes effect — `docs/spec/tool_calling.md` §6 v0 made
+this exact mistake.
 
-## 2. Vì sao lược đồ hiện tại không giải quyết được
+## 2. Why the Current Schema Does Not Solve It
 
-- `allow_when` dạng cấu trúc chỉ có VÀ (Phụ lục B.2); dạng chuỗi CEL (có HOẶC) bị cấm trong
-  chuỗi kế thừa (RFC-0001) và chưa được resolver nhận.
-- `on_block` đặt `additionalProperties: false`: không có chỗ nói "điều gì người được thay".
+- Structured `allow_when` only supports AND (Appendix B.2); CEL string form (which has OR)
+  is forbidden in inheritance chains (RFC-0001) and not accepted by the resolver.
+- `on_block` specifies `additionalProperties: false`: leaving no place to specify "what
+  humans can replace".
 
-## 3. Thay đổi đề xuất
+## 3. Proposed Change
 
 ```yaml
 on_block:
   action:   ask
   message:  "Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?"
-  confirms: [room_empty]        # mới: tiêu chí lời xác nhận của người được thay
+  confirms: [room_empty]        # new: criteria human confirmation can replace
 ```
 
 ```json
@@ -54,66 +55,66 @@ on_block:
   "type": "array", "items": { "type": "string", "minLength": 1 },
   "minItems": 1, "uniqueItems": true
 }
-// và trong allOf của on_block: nếu có confirms thì action phải là "ask"
+// and in on_block's allOf: if confirms is present, action must be "ask"
 ```
 
-**Ngữ nghĩa.**
+**Semantics.**
 
-1. Mỗi phần tử của `confirms` là một tiêu chí của `allow_when` (resolver kiểm, sai ⇒
-   `GateSchemaError`). Chỉ hợp lệ với `action: ask` (lược đồ kiểm).
-2. Khi gate chặn, câu hỏi chỉ được **mở** (`tool_confirm_requested`) nếu lời "có" **đủ**
-   để cho qua: cùng dữ kiện, với các tiêu chí trong `confirms` coi như đạt, phải ALLOW. Nếu
-   gate chặn vì tiêu chí không nằm trong `confirms`, hoặc vì giới hạn tham số (RFC-0005),
-   thì không hỏi người điều họ không thể thay.
-3. Khi người xác nhận (chỉ `local_grammar` hoặc `ui`, Q-26), gate được lượng giá **lại** với
-   dữ kiện hiện tại và nguồn gọi của yêu cầu gốc; tiêu chí trong `confirms` coi như đạt,
-   **mọi tiêu chí khác, giới hạn tham số và fail-closed vẫn áp dụng**. Kết quả ghi
-   `confirmed: [...]` trong `gate_evaluation_result`.
-4. Adjudicator suy giảm (`gate_unreachable`, `budget_exceeded`) vẫn chặn theo `budget.fail`
-   — xác nhận không thay được một câu hỏi chưa ai trả lời được.
+1. Each element of `confirms` is an `allow_when` criterion (checked by resolver, mismatch ⇒
+   `GateSchemaError`). Valid only with `action: ask` (enforced by schema).
+2. When a gate blocks, a question is only **opened** (`tool_confirm_requested`) if a "có" ("yes")
+   answer is **sufficient** to allow: given current facts, with criteria in `confirms` assumed
+   satisfied, the gate must ALLOW. If the gate blocked due to a criterion not in `confirms`,
+   or an argument constraint (RFC-0005), humans are not asked questions they cannot resolve.
+3. When a human confirms (only `local_grammar` or `ui`, Q-26), the gate is **re-evaluated**
+   with current facts and the original request's call source; criteria in `confirms` are assumed
+   satisfied, while **all other criteria, argument constraints, and fail-closed still apply**.
+   The result records `confirmed: [...]` in `gate_evaluation_result`.
+4. Degraded adjudicators (`gate_unreachable`, `budget_exceeded`) still block per `budget.fail`
+   — confirmation cannot replace a question no one could answer.
 
-**Kế thừa (B.5, nguyên tắc 2).** Gate con chỉ được **bớt** phần tử của `confirms`: thêm một
-tiêu chí, hoặc chuyển từ `deny`/`escalate` sang `ask` có `confirms`, là nới lỏng ⇒
-`GateInheritanceError`. Gate con khai `on_block` không có `confirms` là siết chặt — được.
+**Inheritance (B.5, principle 2).** Child gates may only **remove** elements from `confirms`:
+adding a criterion, or switching from `deny`/`escalate` to `ask` with `confirms`, is a relaxation ⇒
+`GateInheritanceError`. A child gate declaring `on_block` without `confirms` is a tightening — permitted.
 
-## 4. Ảnh hưởng tương thích
+## 4. Compatibility Impact
 
-| Hạng mục | Ảnh hưởng |
+| Item | Impact |
 |:---|:---|
-| Tệp đang hợp lệ có còn hợp lệ? | Có — `confirms` là tuỳ chọn |
-| Tệp đang không hợp lệ có trở nên hợp lệ? | Có, đúng một loại: `on_block` có `confirms` với `ask`. Nới lỏng lược đồ, làm được trong `v1` |
-| Cần tăng phiên bản lược đồ? | Không |
-| Ảnh hưởng tới mã băm gate đã phát hành? | Không — gate không có `confirms` băm như cũ |
-| Ảnh hưởng tới ba tệp vết ghi chuẩn mực? | Không |
+| Do currently valid files remain valid? | Yes — `confirms` is optional |
+| Do currently invalid files become valid? | Yes, exactly one category: `on_block` with `confirms` under `ask`. Schema relaxation, permissible within `v1` |
+| Is a schema version bump required? | No |
+| Impact on hashes of published gates? | None — gates without `confirms` hash identically to before |
+| Impact on the three canonical trace files? | None |
 
-## 5. Ảnh hưởng an toàn
+## 5. Safety Impact
 
-- Không gate nào lỏng hơn nếu không tự khai `confirms`: mặc định `ask` chỉ thông báo.
-- Người viết gate quyết định **trước** điều gì được xác nhận; người dùng không thể xác nhận
-  vượt `call_source`, xác thực, hay giới hạn tham số trừ khi gate liệt kê chúng.
-- Mô hình và client MCP không có đường nào xác nhận: không có tool xác nhận, và
-  `ConfirmationBook` từ chối mọi nguồn ngoài `HUMAN_SOURCES` (có test).
-- Kế thừa chỉ thu hẹp `confirms` (có corpus phản chứng).
+- No gate becomes more lax without explicitly declaring `confirms`: by default `ask` is informational only.
+- Gate authors decide **in advance** what can be confirmed; users cannot override `call_source`,
+  authentication, or argument constraints unless the gate lists them.
+- Models and MCP clients have no path to confirm: no confirmation tool exists, and
+  `ConfirmationBook` rejects all sources outside `HUMAN_SOURCES` (tested).
+- Inheritance only narrows `confirms` (counterexample corpus present).
 
-## 6. Phương án đã xem xét và bác bỏ
+## 6. Alternatives Considered and Rejected
 
-| Phương án | Lý do bác bỏ |
+| Alternative | Reason for Rejection |
 |:---|:---|
-| Xác nhận thay đúng tiêu chí vừa chặn (không đổi lược đồ) | Một lời "có" vượt được bất kỳ tiêu chí nào, kể cả "khách chưa xác thực" — điều người viết gate không hề cho phép |
-| Thêm HOẶC (`any_of`) vào `allow_when` | Phải viết lại chứng minh "con chặt hơn cha" cho biểu thức có HOẶC, walker C phức tạp hơn; lớn hơn nhu cầu |
-| Dữ kiện `human_confirmed` + `allow_when` hiện tại | Không diễn đạt được (§1) |
+| Confirmation replaces whichever criterion just blocked (no schema change) | A "có" ("yes") response would override any criterion, including "guest unauthenticated" — something gate authors never permitted |
+| Add OR (`any_of`) to `allow_when` | Must rewrite "child stricter than parent" proofs for expressions with OR, complicating the C walker; disproportionate to need |
+| `human_confirmed` fact + current `allow_when` | Inexpressible (§1) |
 
-## 7. Bằng chứng kiểm chứng
+## 7. Verification Evidence
 
-- [x] Hợp lệ: `fixtures/gates/valid/narrows_confirms.yaml` (thu hẹp `fixtures/gates/registry/ask-base@1.0.0.yaml`)
-- [x] Phản chứng + `expected_errors.yaml`: `widens_confirms`, `introduces_confirms`, `confirms_without_ask`, `confirms_unknown_criterion`
-- [x] `python/tests/test_tool_confirm.py`: xác nhận thật tắt đèn qua gate; chỉ `local_grammar`/`ui`; dùng một lần; hết hạn; gate đổi ⇒ vô hiệu; chỉ thay tiêu chí được khai; không hỏi khi "có" không đủ; adjudicator suy giảm vẫn chặn; replay ra cùng phán quyết
-- [x] `neuroedge verify` vẫn xanh; ba vết ghi chuẩn mực không đổi
+- [x] Valid: `fixtures/gates/valid/narrows_confirms.yaml` (narrows `fixtures/gates/registry/ask-base@1.0.0.yaml`)
+- [x] Counterexamples + `expected_errors.yaml`: `widens_confirms`, `introduces_confirms`, `confirms_without_ask`, `confirms_unknown_criterion`
+- [x] `python/tests/test_tool_confirm.py`: actual confirmation turns off light through gate; only `local_grammar`/`ui`; single-use; expires; gate change ⇒ invalidates; only replaces declared criteria; does not ask when "có" is insufficient; degraded adjudicator still blocks; replay yields identical verdict
+- [x] `neuroedge verify` remains green; three canonical traces unchanged
 
-## 8. Việc phải làm khi chấp thuận
+## 8. Tasks upon Approval
 
 - [x] `schemas/gate.v1.json`
-- [x] Phụ lục B.3 trong `docs/spec/core_contracts.md`; `docs/spec/tool_calling.md` §6
+- [x] Appendix B.3 in `docs/spec/core_contracts.md`; `docs/spec/tool_calling.md` §6
 - [x] `neuroedge-prd.md` Q-26, FR-ACE-10 · `neuroedge-roadmap.md` TSK-S3-26
-- [x] Resolver, walker Python (`waived`), engine (`confirmed`), `c.do()`/`c.confirm()`, REPL, UI, `gate explain`, replay
-- [x] Walker C (TSK-S4-02) nhận tập tiêu chí được thay — bố cục nhị phân RFC-0003 mang `confirms` (`confirm_mask`, PR #27)
+- [x] Resolver, Python walker (`waived`), engine (`confirmed`), `c.do()`/`c.confirm()`, REPL, UI, `gate explain`, replay
+- [x] C walker (TSK-S4-02) receives replaceable criteria set — RFC-0003 binary layout carries `confirms` (`confirm_mask`, PR #27)

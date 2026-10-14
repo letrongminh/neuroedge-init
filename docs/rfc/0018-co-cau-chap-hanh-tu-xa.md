@@ -1,165 +1,165 @@
-# RFC-0018: Cơ cấu chấp hành từ xa và mức tự tắt
+# RFC-0018: Remote Actuators and Auto-Off Levels
 
 | | |
 |:---|:---|
-| **Mã RFC** | 0018 |
-| **Tiêu đề** | Cơ cấu chấp hành từ xa (Home Assistant, ESPHome, Matter…) là một loại cơ cấu của HAL do plugin `neuroedge.actuators` cung cấp: khai ở `agent.toml`, chỉ lái được qua `_admit` (phong bì → token → vết ghi), khai một **mức tự tắt** L0–L3 kèm cách chứng minh; mất liên lạc ⇒ trạng thái không chắc ⇒ từ chối lệnh bật; hành động không hoàn tác cần ≥ L2 |
-| **Hợp đồng bị ảnh hưởng** | `agent.toml` *(khối `[actuators.<tên>]` mới; ngoài `schemas/`, kiểm ở `neuroedge build` và lúc nạp, như `[external]` của RFC-0014)* · hợp đồng an toàn của điểm cắm `neuroedge.actuators` *(Protocol `Actuator` đầy đủ chữ ký ở §3c, mức tự tắt ở §3d)* · đường HAL `_admit` *(thêm một chốt trạng thái cho cơ cấu từ xa trước phong bì, §3g)* · `docs/spec/threat_model.md` §1–§2 *(thêm luật và hàng)* · PRD Phụ lục B *(nới nguyên nhân NE1003, NE3001, NE3002; không mã mới)* · quy ước sự kiện vết ghi *(không đổi `trace.v1`)* · corpus mới `fixtures/actuators/` · **không** đụng `board.v1` *(phương án có đụng: §6, §9 câu 1)*, `gate.v1`, ngữ nghĩa phân giải, `NETR`, sổ token, `digests.lock`, ba vết ghi chuẩn mực |
-| **Yêu cầu PRD liên quan** | FR-EXT-02, FR-EXT-03, FR-EXT-07, FR-HAL-01, FR-HAL-05, FR-ACE-02, NFR-SEC-10 |
-| **Người đề xuất** | — |
-| **Ngày mở** | 2026-10-04 |
-| **Trạng thái** | ✅ Đã chấp thuận (2026-10-04) — kỹ thuật trưởng ký trên PR #99; quyết định cho câu hỏi mở ở §9 (Q-68) |
-| **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc** (thêm luật lên đường tới cơ cấu chấp hành; mở một loại cơ cấu mà bảo đảm tự tắt nằm ở thiết bị ngoài tầm kiểm của lõi) |
+| **RFC Code** | 0018 |
+| **Title** | Remote actuators (Home Assistant, ESPHome, Matter…) as a HAL actuator type provided by `neuroedge.actuators` plugins: declared in `agent.toml`, drivable only via `_admit` (envelope → token → trace), declaring an **auto-off level** L0–L3 with proof method; communication loss ⇒ uncertain state ⇒ reject turn-on commands; irreversible actions require ≥ L2 |
+| **Affected contracts** | `agent.toml` *(new `[actuators.<name>]` section; outside `schemas/`, checked at `neuroedge build` and load time, like `[external]` of RFC-0014)* · safety contract of `neuroedge.actuators` extension point *(Protocol `Actuator` complete signature in §3c, auto-off levels in §3d)* · HAL `_admit` path *(adds a state gate for remote actuators before envelope, §3g)* · `docs/spec/threat_model.md` §1–§2 *(adds rules and rows)* · PRD Appendix B *(broadens causes for NE1003, NE3001, NE3002; no new error codes)* · trace event conventions *(no changes to `trace.v1`)* · new corpus `fixtures/actuators/` · **does not** touch `board.v1` *(alternative touching it: §6, §9 question 1)*, `gate.v1`, evaluation semantics, `NETR`, token ledger, `digests.lock`, three canonical traces |
+| **Related PRD requirements** | FR-EXT-02, FR-EXT-03, FR-EXT-07, FR-HAL-01, FR-HAL-05, FR-ACE-02, NFR-SEC-10 |
+| **Proposer** | — |
+| **Date opened** | 2026-10-04 |
+| **Status** | ✅ Approved (2026-10-04) — lead engineer signed off on PR #99; decisions for open questions in §9 (Q-68) |
+| **Approvers** | **Lead Engineer — mandatory** (adds rules to path leading to actuators; opens an actuator type whose auto-off guarantee lies on devices outside core control) |
 
-> **Khi nào cần RFC:** `CONTRIBUTING.md` §3. Thiết kế này **không** chạm hàng nào của bảng đó (không sửa `schemas/`, ngữ nghĩa phân giải, ba vết ghi chuẩn mực, `digests.lock`, `NETR`);
-> RFC vẫn bắt buộc vì Q-67 quyết định 5 đòi, vì nó thêm luật lên "đường hợp lệ duy nhất" của `threat_model.md` §1, và vì nó định phần an toàn của điểm cắm mà `neuroedge.sdk` sẽ đóng băng (FR-EXT-09).
-> Nếu §9 câu 1 chọn khai ở `board.v1` thì RFC này chạm hàng đầu của §3 (sửa `schemas/board.v1.json`). Task: **TSK-I2c-04** (RFC này), **TSK-I2c-16** (hiện thực và adapter Home Assistant đầu tiên); phụ thuộc
-> TSK-I2c-09 (dữ kiện đọc lại), TSK-I2c-11 (bộ nạp plugin), TSK-I2c-12 (bộ test tuân thủ). Quyết định nền: `neuroedge-prd.md` §15 **Q-67** (quyết định 5: cơ cấu từ xa có mức tự tắt, mức "không tự tắt" cấm cho hành động không hoàn tác),
-> **Q-62** (lệnh về phía an toàn không bao giờ bị chặn; tự tắt bắt buộc; phong bì ghi bền; giám sát ngoài tiến trình), **Q-65** (RFC-0014: dữ kiện số, tuổi do bộ nhận đo, vắng ⇒ BLOCK), Q-57 (an toàn cao nhất), Q-53, Q-38.
-> Đóng phần thiết kế của `TODOS.md` #55. Liên quan: RFC-0016 *Lõi an toàn dùng độc lập và Extension SDK* (bộ nạp, bật plugin, khung tuân thủ; chữ ký `Actuator` do RFC này chốt ở §3c), RFC-0017 *Nguồn gọi theo không gian tên và danh tính client* (không đổi bởi RFC này: lệnh tới cơ cấu từ xa không mang `source` riêng, nó đi sau phán quyết của gate như mọi lệnh tới chân).
+> **When an RFC is required:** `CONTRIBUTING.md` §3. This design **does not** touch any rows in that table (does not edit `schemas/`, evaluation semantics, three canonical traces, `digests.lock`, `NETR`);
+> an RFC is still mandatory because Q-67 decision 5 requires it, because it adds rules to the "single valid path" of `threat_model.md` §1, and because it defines the safety portion of the extension point that `neuroedge.sdk` will freeze (FR-EXT-09).
+> If §9 question 1 chose declaring in `board.v1`, this RFC would touch the first row of §3 (modifying `schemas/board.v1.json`). Task: **TSK-I2c-04** (this RFC), **TSK-I2c-16** (implementation and first Home Assistant adapter); dependencies:
+> TSK-I2c-09 (readback facts), TSK-I2c-11 (plugin loader), TSK-I2c-12 (compliance test suite). Foundational decisions: `neuroedge-prd.md` §15 **Q-67** (decision 5: remote actuators have auto-off levels, "no auto-off" level forbidden for irreversible actions),
+> **Q-62** (safety-direction commands never blocked; mandatory auto-off; durable envelope store; out-of-process supervisor), **Q-65** (RFC-0014: numeric facts, age measured by receiver, missing ⇒ BLOCK), Q-57 (highest safety), Q-53, Q-38.
+> Closes design portion of `TODOS.md` #55. Related: RFC-0016 *Standalone Safety Core and Extension SDK* (loader, plugin enablement, compliance framework; `Actuator` signature settled in §3c here), RFC-0017 *Namespaced Call Sources and Client Identities* (unaffected by this RFC: commands to remote actuators carry no dedicated `source`, running after gate verdict like any pin command).
 
-## 1. Vấn đề
+## 1. Problem
 
-Hôm nay một hành động vật lý tới Home Assistant, ESPHome hay Matter chỉ có một đường mà `docs/spec/tool_calling.md` §10 quy tắc 2 cho phép: bọc thành `@action` có gate, và **thân hàm** gọi MCP hay HTTP của hệ đó. Gate quyết định *trước* thân hàm — và chỉ có vậy. Khoảng hở nằm ở chỗ token, phong bì và tự tắt chỉ canh một loại đích là chân của bo mạch:
+Today, a physical action targeting Home Assistant, ESPHome, or Matter has only one path permitted by `docs/spec/tool_calling.md` §10 rule 2: wrap it in an `@action` with a gate, and the **function body** calls MCP or HTTP of that system. The gate decides *before* the function body — and nothing more. The gap lies in the fact that tokens, envelopes, and auto-off guard only one destination type: board pins:
 
-1. **Token.** `Conversation._do` cấp token rồi chạy `spec.fn(**kwargs)` dưới `digital.grant` (`python/neuroedge/actions/conversation.py:210–224`). Token chỉ có nghĩa khi có ai gọi `TokenLedger.authorize` (`actions/token.py:116`), và chỉ có hai nơi gọi: `HardwareAbstractionLayer._admit` (`hal/__init__.py:270`) và `MotionController._command` (`hal/motion_core.py:474`). Một `httpx.post(...)` trong thân hàm không đi qua HAL nên không chạm sổ token.
-2. **Phong bì và tự tắt.** `SafetyEnvelope.reserve` chỉ được gọi từ `_admit` (`hal/__init__.py:259`) và `_command` của motion (`hal/motion_core.py:463`). Hẹn giờ tự tắt là `HardwareAbstractionLayer._auto_off` (`:215`) và `LinuxHAL._arm` (`hal/linux.py:863`), đều theo chân của bo. Tiến trình giám sát chỉ giữ **line gpiod** (`hal/linux.py:451–466`; `hal/supervisor.py:4–20`): nó không với tới một thiết bị ở xa.
-3. **Vết ghi.** `actuator_command` do HAL phát (`hal/sim.py:443`, `hal/linux.py:753`). Lệnh gửi từ thân hàm không để lại vết ghi nào về hiệu ứng, càng không về trạng thái thật của thiết bị.
+1. **Token.** `Conversation._do` issues a token then executes `spec.fn(**kwargs)` under `digital.grant` (`python/neuroedge/actions/conversation.py:210–224`). The token is meaningful only when someone calls `TokenLedger.authorize` (`actions/token.py:116`), and only two places call it: `HardwareAbstractionLayer._admit` (`hal/__init__.py:270`) and `MotionController._command` (`hal/motion_core.py:474`). An `httpx.post(...)` inside the function body does not traverse HAL, never touching the token ledger.
+2. **Envelope and auto-off.** `SafetyEnvelope.reserve` is called only from `_admit` (`hal/__init__.py:259`) and motion's `_command` (`hal/motion_core.py:463`). Auto-off timers are `HardwareAbstractionLayer._auto_off` (`:215`) and `LinuxHAL._arm` (`hal/linux.py:863`), both bound to board pins. The supervisor process holds only **gpiod lines** (`hal/linux.py:451–466`; `hal/supervisor.py:4–20`): it cannot reach a remote device.
+3. **Traces.** `actuator_command` is emitted by HAL (`hal/sim.py:443`, `hal/linux.py:753`). Commands sent from function bodies leave zero traces of physical effects, let alone true device state.
 
-| Đích | Gate | Token | Phong bì | Tự tắt / giám sát | Vết ghi hiệu ứng |
+| Destination | Gate | Token | Envelope | Auto-off / Supervisor | Effect trace |
 |:---|:---:|:---:|:---:|:---:|:---:|
-| Chân `digital.out` của bo | có | có (`_admit`) | có | có (`_auto_off`, giám sát) | `actuator_command` |
-| HTTP tới Home Assistant trong thân `@action` | có (chỉ cổng vào) | **không** | **không** | **không** | **không** |
+| Board `digital.out` pin | yes | yes (`_admit`) | yes | yes (`_auto_off`, supervisor) | `actuator_command` |
+| HTTP to Home Assistant in `@action` body | yes (ingress only) | **no** | **no** | **no** | **no** |
 
-Hệ quả: "đường hợp lệ duy nhất" (`threat_model.md` §1) đúng cho chân, **chưa đúng** cho thiết bị ở xa. Hàng `Tool bên ngoài có hiệu ứng vật lý` ở §2b chỉ nói hiệu ứng *phải* là `@action`, không nói thân hàm *được làm gì*.
-`TODOS.md` #55 hoãn đúng vì thế: thiết bị ở xa không bảo đảm được "tự tắt" (Q-62). Q-67 quyết định 5 mở lại có điều kiện: cho phép, nhưng mỗi cơ cấu từ xa khai một mức tự tắt và mức "không tự tắt" bị cấm cho hành động không hoàn tác.
+Consequence: the "single valid path" (`threat_model.md` §1) holds for pins, but **not yet** for remote devices. Row `External tool with physical effect` in §2b only states effects *must* be an `@action`, not what the body *is allowed to do*.
+`TODOS.md` #55 was deferred precisely for this reason: remote devices could not guarantee "auto-off" (Q-62). Q-67 decision 5 conditionally reopened it: permitted, provided each remote actuator declares an auto-off level and the "no auto-off" level is forbidden for irreversible actions.
 
-## 2. Vì sao cơ chế hiện tại không giải quyết được
+## 2. Why the Current Mechanism Does Not Solve This
 
-- `board.v1` đóng: `capabilities` và `digital_out` đều `additionalProperties: false` (`schemas/board.v1.json`), không có chỗ khai một thực thể ở xa; và bo mạch khai **phần cứng**, không khai đồng cấp phần mềm hay cấu hình triển khai (cùng lập luận RFC-0014 §6). Bo tham chiếu dùng chung cho mọi triển khai, trong khi URL và thực thể Home Assistant là của từng nhà.
-- Tập nguyên thủy đóng có chủ ý (FR-HAL-01), và nguyên thủy mở rộng phải có trên cả ba target (Q-53; cùng lập luận RFC-0014 §6); `esp32s3` không có bộ nạp plugin. Một nguyên thủy `remote.out` mới vừa vi phạm hai điều đó, vừa tách API khỏi `digital.out` nên mọi `@action`, gate, `commands.toml` hiện có không dùng lại được (§6).
-- HAL chọn backend bằng `if target == "linux"` (`sim/session.py:917–942`), không có registry; RFC-0016 mở điểm cắm, nhưng không nói điểm cắm **cơ cấu** phải làm gì để giữ lời hứa an toàn. Đó là việc của RFC này.
-- Các mảnh đã đủ dùng lại: phong bì khoá theo **tên** (`SafetyEnvelope.__init__(limits: Mapping[str, EnvelopeLimits])`, `hal/envelope.py:272–294`; `reserve(..., primitive=...)`, `:394–403`); token khoá theo tên chân từ `requires="digital.out:<tên>"` (`actions/spec.py:63–64`); `ended(at=…)` (`hal/envelope.py:539`) cho một lần bật kết thúc ở một thời điểm đã biết; `Actuator` Protocol của motion (`hal/motion_core.py:149`) là tiền lệ một backend cắm được. Thiếu: một **khai báo**, một **hợp đồng cho driver**, một **mô hình bảo đảm tự tắt** kiểm được, và một **mô hình trạng thái không chắc**.
+- `board.v1` is closed: `capabilities` and `digital_out` both have `additionalProperties: false` (`schemas/board.v1.json`), leaving nowhere to declare a remote entity; and boards declare **hardware**, not software peers or deployment configuration (same reasoning as RFC-0014 §6). Reference boards are shared across all deployments, whereas Home Assistant URLs and entities are site-specific.
+- The primitive set is deliberately closed (FR-HAL-01), and extended primitives must exist across all three targets (Q-53; same reasoning as RFC-0014 §6); `esp32s3` has no plugin loader. A new `remote.out` primitive would violate both rules and fragment the API away from `digital.out`, preventing reuse of existing `@action`s, gates, and `commands.toml` (§6).
+- HAL selects backends via `if target == "linux"` (`sim/session.py:917–942`), lacking a registry; RFC-0016 opens extension points, but does not define what an **actuator** extension point must do to maintain safety promises. That is the responsibility of this RFC.
+- Existing building blocks are reusable: envelopes locked by **name** (`SafetyEnvelope.__init__(limits: Mapping[str, EnvelopeLimits])`, `hal/envelope.py:272–294`; `reserve(..., primitive=...)`, `:394–403`); tokens locked by pin name from `requires="digital.out:<name>"` (`actions/spec.py:63–64`); `ended(at=…)` (`hal/envelope.py:539`) for an on-cycle terminating at a known timestamp; the `Actuator` Protocol of motion (`hal/motion_core.py:149`) sets precedent for pluggable backends. Missing: a **declaration**, a **driver contract**, a testable **auto-off guarantee model**, and an **uncertain state model**.
 
-## 3. Thay đổi đề xuất
+## 3. Proposed Changes
 
-### 3a. Phạm vi và ranh giới
+### 3a. Scope and Boundaries
 
-Một **cơ cấu từ xa** là một thực thể mà NeuroEdge điều khiển qua một đường không nằm trong bo (hub, mạng, bus ngoài), do một plugin nhóm `neuroedge.actuators` (RFC-0016) lái.
-Với agent, nó là **một chân `digital.out` có tên** — `digital.out("porch_light").pulse(seconds=…)` — nên `@action`, gate, `commands.toml` và bộ kiểm tool không đổi. Các giới hạn bản này, mỗi giới hạn có lý do:
+A **remote actuator** is an entity controlled by NeuroEdge over a path outside the board (hub, network, external bus), driven by a plugin in group `neuroedge.actuators` (RFC-0016).
+To an agent, it is **a named `digital.out` pin** — `digital.out("porch_light").pulse(seconds=…)` — leaving `@action`s, gates, `commands.toml`, and tool checkers unchanged. Scope limits for this release, each with clear rationale:
 
-| Giới hạn | Lý do |
+| Limitation | Rationale |
 |:---|:---|
-| Chỉ `on`, `off`, `pulse`; **không** `pwm`, `motion.*`, độ sáng, mức tương tự | Mỗi thứ cần một hợp đồng "bị chặn bởi gì khi mất liên lạc" riêng (§9 câu 4); ghép vào đây làm mức tự tắt mất nghĩa chính xác |
-| Chỉ target `sim` và `linux`; `esp32s3` ⇒ `neuroedge build` từ chối (`BoardCapabilityError`, NE3001) | Không có bộ nạp plugin trên MCU; cùng lập luận RFC-0014 §3i. Đường qua gateway thuộc I14 |
-| `sim` luôn dùng **bản giả thiết bị** (double) của plugin, không bao giờ chạm thiết bị thật | Một phiên mô phỏng không được lái một cái van thật; thử trên thiết bị thật là target `linux` |
-| NeuroEdge **không** là bộ điều khiển duy nhất của thiết bị | Người, automation của hub, công tắc tường cùng đổi trạng thái; NeuroEdge chỉ bảo đảm điều **nó** bật (§3g, "nợ tắt") |
-| Plugin là mã người vận hành tin, chạy trong tiến trình (NFR-SEC-10, `threat_model.md` §3) | RFC này chặn **nhầm lẫn và treo**, không chặn plugin cố ý phá |
+| Only `on`, `off`, `pulse`; **no** `pwm`, `motion.*`, brightness, analog levels | Each requires a dedicated "what blocks it upon communication loss" contract (§9 question 4); conflating them here dilutes the precise meaning of auto-off levels |
+| Targets `sim` and `linux` only; `esp32s3` ⇒ `neuroedge build` rejects (`BoardCapabilityError`, NE3001) | No plugin loader on MCU; same reasoning as RFC-0014 §3i. Gateway path belongs to I14 |
+| `sim` always uses plugin's **device double**, never touching real devices | A simulation session must never drive a real valve; real device testing belongs on target `linux` |
+| NeuroEdge is **not** the exclusive controller of the device | Humans, hub automations, and wall switches independently alter state; NeuroEdge guarantees only what **it** turned on (§3g, "off-debt") |
+| Plugins are operator-trusted in-process code (NFR-SEC-10, `threat_model.md` §3) | This RFC guards against **mistakes and hangs**, not deliberate malicious plugin code |
 
-### 3b. Khai báo: `[actuators.<tên>]` ở `agent.toml`; `board.v1` không đổi
+### 3b. Declaration: `[actuators.<name>]` in `agent.toml`; `board.v1` Unchanged
 
 ```toml
 [requires]
-"digital.out" = { pins = ["porch_light"] }     # tên cơ cấu từ xa nằm cạnh chân của bo (nếu có)
+"digital.out" = { pins = ["porch_light"] }     # remote actuator name sits alongside board pins (if any)
 
 [actuators.porch_light]
-plugin     = "home_assistant"       # tên entry point nhóm neuroedge.actuators; gói phải nằm trong [plugins] enable (RFC-0016 §3d)
-safe_off   = "L1"                   # mức người triển khai dựa vào: L0 | L1 | L2 | L3. Không khai ⇒ build từ chối
-reversible = true                   # không khai ⇒ false (không hoàn tác), §3f
-[actuators.porch_light.envelope]    # bốn khoá của RFC-0007 §3d, bắt buộc đủ
+plugin     = "home_assistant"       # entry point name in group neuroedge.actuators; package must be in [plugins] enable (RFC-0016 §3d)
+safe_off   = "L1"                   # level deployer relies upon: L0 | L1 | L2 | L3. Absent ⇒ build rejected
+reversible = true                   # absent ⇒ false (irreversible), §3f
+[actuators.porch_light.envelope]    # four keys of RFC-0007 §3d, all mandatory
 window_s = 3600
 max_on_ms_per_window = 1800000
 min_interval_ms = 2000
 max_continuous_ms = 600000
-[actuators.porch_light.config]      # chuyển nguyên cho factory của plugin (§3c); dựng không I/O
+[actuators.porch_light.config]      # passed verbatim to plugin factory (§3c); construction without I/O
 url = "http://homeassistant.local:8123"
 entity_id = "switch.porch_light"
-token_env = "NE_HA_TOKEN"           # tên biến môi trường, không bao giờ là giá trị
+token_env = "NE_HA_TOKEN"           # environment variable name, never raw value
 ```
 
-| Luật (`AgentManifestError`, NE3002, gom vào `BuildFailed`, NE3003) | Lý do |
+| Rule (`AgentManifestError`, NE3002, aggregated into `BuildFailed`, NE3003) | Rationale |
 |:---|:---|
-| Tên theo `^[a-z][a-z0-9_]{0,31}$`; không trùng chân, `enable_pin`, kênh `motion` của bo, hay cơ cấu khác | Một tên chỉ một đích; tên trùng chân của bo sẽ lái nhầm chân thật |
-| `plugin`, `safe_off`, `envelope` (đủ bốn khoá, đúng `$defs/envelope` của `schemas/board.v1.json`, dùng lại định nghĩa) bắt buộc; `reversible` là `bool`, mặc định `false` | Mọi cơ cấu từ xa là cơ cấu chấp hành có phong bì (RFC-0007 §3d: mặc định là cơ cấu chấp hành); không khai ⇒ coi là xấu nhất |
-| **Hai chiều:** mỗi `[actuators.X]` phải có trong `[requires] "digital.out".pins`; chiều ngược lại (tên không thuộc bo mà không có `[actuators.X]`) là NE3001 sẵn có của `check_capabilities` | Không khai thừa, không để một chân treo (cùng khuôn RFC-0014 §3c) |
-| Khoá lạ; trường tên bí mật (`token`, `key`, `secret`, `password`) viết thẳng; `*_env` sai tên biến | Dùng lại `refuse_unknown`, `secret_fields`, `ENV_NAME` của `models/providers/common.py:38,91,117`; `agent.toml` được commit |
+| Name matches `^[a-z][a-z0-9_]{0,31}$`; no collision with board pins, `enable_pin`, `motion` channels, or other actuators | One name, one destination; colliding with board pins would inadvertently drive physical pins |
+| `plugin`, `safe_off`, `envelope` (all four keys, conforming to `$defs/envelope` in `schemas/board.v1.json`, reusing definition) mandatory; `reversible` is `bool`, default `false` | Every remote actuator is an enveloped actuator (RFC-0007 §3d: default is actuator); absent ⇒ assume worst case |
+| **Bidirectional:** each `[actuators.X]` must appear in `[requires] "digital.out".pins`; converse (name not on board lacking `[actuators.X]`) triggers existing NE3001 in `check_capabilities` | No extraneous declarations, no dangling pins (same pattern as RFC-0014 §3c) |
+| Unknown keys; literal secret fields (`token`, `key`, `secret`, `password`); malformed `*_env` variable names | Reuses `refuse_unknown`, `secret_fields`, `ENV_NAME` from `models/providers/common.py:38,91,117`; `agent.toml` is committed |
 
-Các luật liên quan tới plugin (`safe_off` vượt `safe_off_level`, `readback`, `esp32s3`) là NE3001 ở §3f. Khai báo là **một cấu trúc dữ liệu có một hàm kiểm duy nhất**: `agent.toml` chỉ là một nguồn của nó; nguồn nào khác dựng nó từ mã (ví dụ API `neuroedge.guard` của RFC-0016) **phải** gọi cùng hàm lúc nạp.
-Luật không vì thế bị bỏ qua khi không có `agent.toml`. Tên công khai của cấu trúc và hàm kiểm do TSK-I2c-16 quyết, ghim ở `docs/spec/python_api.md` và `tests/test_public_api.py` (như RFC-0014 §3g).
+Plugin-related rules (`safe_off` exceeding `safe_off_level`, `readback`, `esp32s3`) trigger NE3001 in §3f. Declaration is **a data structure with a single validation function**: `agent.toml` is only one source; any other source constructing it from code (e.g. `neuroedge.guard` API in RFC-0016) **must** call the same function at load time.
+Rules are not bypassed when `agent.toml` is absent. Public names for data structure and validator function determined by TSK-I2c-16, pinned in `docs/spec/python_api.md` and `tests/test_public_api.py` (like RFC-0014 §3g).
 
-**Vì sao `agent.toml` mà không phải `board.v1`:** URL, thực thể, mức tự tắt và độ không hoàn tác là của *triển khai*, không phải của phần cứng; sửa `board.v1` là sửa lược đồ đóng băng (RFC-0015) và buộc bo tham chiếu mang cấu hình riêng của từng nhà. Cái giá: phong bì của cơ cấu từ xa nằm ở `agent.toml` chứ không ở bo như RFC-0007. Nó vẫn **độc lập với gate và với mã hành động** — thứ RFC-0007 §3d cần ("giới hạn phần cứng phải đứng được cả khi gate viết lỏng"); nó không độc lập với người viết `agent.toml`, mà người đó cũng là người cắm plugin. Quyết định thuộc §9 câu 1.
+**Why `agent.toml` rather than `board.v1`:** URLs, entities, auto-off levels, and irreversibility belong to *deployment*, not hardware; editing `board.v1` modifies a frozen schema (RFC-0015) and forces reference boards to carry site-specific configurations. The trade-off: remote actuator envelopes live in `agent.toml` rather than boards as in RFC-0007. They remain **independent of gates and action code** — what RFC-0007 §3d required ("hardware limits must hold even when gates are loosely written"); they are not independent of the `agent.toml` author, who is also the person plugging in the plugin. Decided in §9 question 1.
 
-### 3c. Một đường duy nhất: `_admit`; Protocol `Actuator`
+### 3c. Single Path: `_admit`; Protocol `Actuator`
 
-Cơ cấu từ xa đi **đúng** đường của chân, theo đúng thứ tự `require_pin → chốt trạng thái (§3g) → phong bì → authorize → record → driver`:
+Remote actuators follow the **exact** pin path, in strict sequence `require_pin → state gate (§3g) → envelope → authorize → record → driver`:
 
-- `digital_out` của `sim` (`hal/sim.py:402`) và `linux` (`hal/linux.py:691`) rẽ ở đầu hàm: tên thuộc cơ cấu từ xa ⇒ gọi một hàm **dùng chung** của lớp cơ sở (không rẽ `if target` thêm), đi qua `_admit` (`hal/__init__.py:231`), rồi mới tới plugin. `require_pin` nhận tên cơ cấu từ xa như chân của bo; `esp32s3` không có đường này.
-- **Plugin không có handle.** Lõi dựng plugin từ khai báo; chỉ HAL giữ tham chiếu và gọi `apply`/`safe_off`/`read_state` của nó, `apply` chỉ sau `_admit`. Plugin không nhận HAL, sổ token hay phong bì; mã agent không nhận plugin (không có `digital.out` nào trả plugin). Điều này kiểm được bằng cấu trúc (§7), và là lời hứa của FR-EXT-03: *actuator chỉ được HAL lái sau token và phong bì*.
-- **Token không đổi.** Lệnh bật tiêu token của chân đó đúng một lần (`token.py:160–177`); `off` không cần token (RFC-0007 §3d). `ActionSpec.pins` đã lấy tên từ `requires="digital.out:<tên>"` (`actions/spec.py:63`), nên không cần thay `VerdictToken`.
-- **Lệnh về phía an toàn.** `off` tới cơ cấu từ xa luôn được **thử**, không qua phong bì, không cần token, không chờ `min_interval_ms` (ngoại lệ duy nhất của `threat_model.md` §1, nay phủ thêm đích này). Chốt trạng thái §3g chỉ chặn lệnh *bật*.
+- `digital_out` in `sim` (`hal/sim.py:402`) and `linux` (`hal/linux.py:691`) branches at function entry: remote actuator name ⇒ calls a **shared** base class function (no additional `if target` branching), routing through `_admit` (`hal/__init__.py:231`), then to the plugin. `require_pin` accepts remote actuator names like board pins; `esp32s3` lacks this path entirely.
+- **Plugins hold no handles.** Core constructs plugins from declarations; only HAL holds references and calls `apply`/`safe_off`/`read_state`, with `apply` called strictly after `_admit`. Plugins receive no HAL, token ledger, or envelope; agent code receives no plugin (no `digital.out` returns a plugin). Structurally verifiable (§7), fulfilling FR-EXT-03: *actuators are driven by HAL only after tokens and envelopes*.
+- **Tokens unchanged.** Turn-on commands spend that pin's token exactly once (`token.py:160–177`); `off` requires no token (RFC-0007 §3d). `ActionSpec.pins` already extracts names from `requires="digital.out:<name>"` (`actions/spec.py:63`), so `VerdictToken` requires no changes.
+- **Safety-direction commands.** `off` to remote actuators is always **attempted**, bypassing envelopes, requiring no token, without waiting for `min_interval_ms` (the sole exception of `threat_model.md` §1, now covering this target). State gate §3g only blocks turn-*on* commands.
 
-**Protocol `Actuator` — nguồn duy nhất của chữ ký** (`neuroedge.sdk` chỉ xuất lại; RFC-0016 dẫn về đây). Giá trị entry point là `module:factory(config: Mapping[str, Any]) -> Actuator`, gọi một lần, **không I/O**; `config` sai ⇒ `ValueError(lý do)` và lõi đổi thành NE3002 ba phần. Mọi phương thức **đồng bộ**, chặn không quá `command_timeout_ms`, và HAL có thể gọi từ luồng hẹn giờ của nó ⇒ plugin tự bảo đảm an toàn luồng.
+**Protocol `Actuator` — Single Source of Signature** (`neuroedge.sdk` merely re-exports; RFC-0016 links here). Entry point value is `module:factory(config: Mapping[str, Any]) -> Actuator`, called once, **zero I/O**; invalid `config` ⇒ `ValueError(reason)` which core converts to 3-part NE3002. All methods are **synchronous**, blocking for at most `command_timeout_ms`, and HAL may call them from timer threads ⇒ plugins ensure thread safety internally.
 
-| Thành viên | Chữ ký | I/O | Ý nghĩa |
+| Member | Signature | I/O | Meaning |
 |:---|:---|:---:|:---|
-| `safe_off_level` · `readback` | `Literal["L0","L1","L2","L3"]` · `Literal["push","poll","none"]` | không | Mức cao nhất chứng minh được **cho `config` đó** (§3d); cách đọc lại (§3e). Khai ngay lúc dựng |
-| `tolerance_ms` · `command_timeout_ms` · `max_lease_ms` | `int ≥ 0` · `int > 0` · `int \| None` | không | Độ lệch tối đa hạn ↔ lúc thiết bị tắt; hạn chờ một lệnh; trần lease (`None` ngoài L3) (§3d) |
-| `apply` | `apply(command: Command) -> None`, `Command(id: str, operation: "on" \| "renew", duration_ms: int \| None, lease_ms: int \| None)` | có | Chỉ HAL gọi, sau `_admit`. L2: `duration_ms` luôn có; L3: `lease_ms`, `renew` = gia hạn; L0/L1: không có. Trả về = hub/thiết bị **đã nhận**, không phải đã bật. Lỗi: `NotSent` · `Rejected` · `Ambiguous` |
-| `safe_off` | `safe_off() -> None` | có | Lệnh về phía an toàn: **không token, không phong bì**, chạy cả khi sổ token từ chối mọi thứ, **lặp lại được** (đã tắt thì không lỗi). Cùng ba lỗi |
-| `read_state` | `read_state() -> tuple[bool, int]` = `(đang_bật, observed_age_ms ≥ 0)` | `poll`: có | `push`: trả giá trị mới nhất đang giữ. Tuổi chỉ **cộng thêm**, bộ nhận đo mốc (RFC-0014 §3f). Không gọi khi `readback = none`. Lỗi: `ReadFailed` |
-| `probe` | `probe() -> DeviceDouble` | không | Bản giả thiết bị trên đồng hồ ảo, đi qua **đúng** đường mã của ba phương thức trên; có `state() -> bool`, `cut_link()`, `heal_link()`, `advance(ms: int)` (§3e) |
-| Lỗi | `NotSent` (chắc chắn chưa tới thiết bị) · `Rejected` (hub từ chối rõ ràng) · `Ambiguous` (hết giờ hay đứt sau khi gửi) · `ReadFailed` | | Lớp con của `ActuatorError` trong `neuroedge.sdk`; không phải mã `NE…`, không thêm mã (§3k) |
+| `safe_off_level` · `readback` | `Literal["L0","L1","L2","L3"]` · `Literal["push","poll","none"]` | no | Highest provable level **for that `config`** (§3d); readback mode (§3e). Declared at construction |
+| `tolerance_ms` · `command_timeout_ms` · `max_lease_ms` | `int ≥ 0` · `int > 0` · `int \| None` | no | Maximum deadline-to-off delta; command timeout; lease ceiling (`None` outside L3) (§3d) |
+| `apply` | `apply(command: Command) -> None`, `Command(id: str, operation: "on" \| "renew", duration_ms: int \| None, lease_ms: int \| None)` | yes | Called only by HAL, after `_admit`. L2: `duration_ms` always present; L3: `lease_ms`, `renew` = extend; L0/L1: absent. Return = hub/device **acknowledged**, not that it turned on. Errors: `NotSent` · `Rejected` · `Ambiguous` |
+| `safe_off` | `safe_off() -> None` | yes | Safety-direction command: **no token, no envelope**, runs even when ledger rejects all, **idempotent** (already off is not an error). Same three errors |
+| `read_state` | `read_state() -> tuple[bool, int]` = `(is_on, observed_age_ms ≥ 0)` | `poll`: yes | `push`: returns latest cached value. Age **adds only**, receiver timestamps baseline (RFC-0014 §3f). Not called when `readback = none`. Error: `ReadFailed` |
+| `probe` | `probe() -> DeviceDouble` | no | Device double on virtual clock, running through **exact** code paths of above three methods; provides `state() -> bool`, `cut_link()`, `heal_link()`, `advance(ms: int)` (§3e) |
+| Errors | `NotSent` (definitely did not reach device) · `Rejected` (hub explicitly refused) · `Ambiguous` (timed out or severed post-send) · `ReadFailed` | | Subclasses of `ActuatorError` in `neuroedge.sdk`; not `NE…` codes, no new error codes added (§3k) |
 
-**Điều RFC này không làm được, nói thẳng:** thân `@action` vẫn gọi được SDK tuỳ ý trong Python (cùng loại mã có quyền ngang runtime, `threat_model.md` §3). RFC làm đường đúng **rẻ hơn** đường sai (khai ba mục TOML thay vì tự viết client) và thêm một cảnh báo ở `build`: module chứa `@action` mà nhập một client mạng phổ biến (`httpx`, `requests`, `aiohttp`, `urllib.request`, `socket`) ⇒ in cảnh báo (không chặn; heuristic, không đầy đủ) nhắc dùng cơ cấu từ xa. Cảnh báo này không phải chặn lối tắt (§5, rủi ro 5).
+**What this RFC cannot prevent, stated honestly:** `@action` bodies can still call arbitrary SDKs in Python (same privilege tier as runtime, `threat_model.md` §3). This RFC makes the correct path **cheaper** than the wrong path (declaring three TOML items instead of writing clients) and adds a build warning: an `@action` module importing popular network clients (`httpx`, `requests`, `aiohttp`, `urllib.request`, `socket`) triggers a warning (non-blocking; heuristic, incomplete) recommending remote actuators. This warning is not a bypass prevention mechanism (§5, risk 5).
 
-### 3d. Mức tự tắt
+### 3d. Auto-Off Levels
 
-Mức là lời hứa về **ai** làm cơ cấu về `off` khi NeuroEdge không còn giúp được. Thứ tự L0 < L1 < L2 < L3; `D = min(thời hạn lệnh, max_continuous_ms)` (như RFC-0007 §3d; `on()` không thời hạn lấy `max_continuous_ms`).
+A level is a promise about **who** returns the actuator to `off` when NeuroEdge can no longer help. Ordering L0 < L1 < L2 < L3; `D = min(command duration, max_continuous_ms)` (as in RFC-0007 §3d; `on()` without duration uses `max_continuous_ms`).
 
-| Mức | Ai giữ hẹn giờ | `on` mang theo | Bảo đảm **kiểm được** | Mất liên lạc / NeuroEdge treo |
+| Level | Who holds timer | `on` carries | **Testable** guarantee | Link loss / NeuroEdge hangs |
 |:---|:---|:---|:---|:---|
-| **L0** `none` | Không ai | Không có thời hạn | Không có. HAL chỉ bảo đảm không bật chồng (`already_on`) cho tới khi *xác nhận* tắt, và phong bì đếm thời gian bật thật tới lúc đó | Thiết bị giữ trạng thái vô hạn |
-| **L1** `host` | Tiến trình NeuroEdge (như `LinuxHAL._arm`) | Không có thời hạn; HAL hẹn `off` tại `D` | Nếu runtime sống **và** liên lạc thông: `off` được *gửi* trong ≤ `D + OFF_SLACK_MS`, gửi lại mỗi `OFF_RETRY_MS` tới khi xác nhận. Đây là bảo đảm về **nỗ lực**, không về hiệu ứng | Không bảo đảm gì: thiết bị có thể bật vô hạn |
-| **L2** `device_timer` | **Thiết bị** | `on` kèm `duration_ms = D`, **không bao giờ vắng** | Sau khi thiết bị nhận lệnh, nó tự về `off` sau ≤ `D + tolerance_ms` mà không cần thông điệp nào nữa | Giữ nguyên: dù NeuroEdge treo, chết hay mạng đứt |
-| **L3** `device_lease` | **Thiết bị** (thuê) | `on` kèm `lease_ms`; HAL gia hạn mỗi `lease_ms / 3` và **ngừng gia hạn** tại `start + D − lease_ms` (`D ≤ lease_ms`: một lease dài `D`, không gia hạn) | Thiết bị về `off` ≤ `lease_ms + tolerance_ms` sau lần gia hạn cuối nó nhận được ⇒ hạn tuyệt đối `start + D + tolerance_ms` | Runtime treo ⇒ gia hạn ngừng ⇒ tắt, không cần thông điệp "tắt" nào |
+| **L0** `none` | Nobody | No duration | None. HAL only guarantees no overlapping on-cycles (`already_on`) until turn-off is *confirmed*, and envelope accrues actual on-time up to that point | Device retains state indefinitely |
+| **L1** `host` | NeuroEdge process (like `LinuxHAL._arm`) | No duration; HAL schedules `off` at `D` | If runtime survives **and** communication holds: `off` is *sent* within ≤ `D + OFF_SLACK_MS`, retried every `OFF_RETRY_MS` until confirmed. A guarantee of **effort**, not physical effect | Zero guarantees: device may stay on indefinitely |
+| **L2** `device_timer` | **Device** | `on` with `duration_ms = D`, **never absent** | Once device receives command, it turns `off` automatically after ≤ `D + tolerance_ms` without requiring further messages | Preserved: even if NeuroEdge hangs, dies, or network drops |
+| **L3** `device_lease` | **Device** (lease) | `on` with `lease_ms`; HAL renews every `lease_ms / 3` and **stops renewing** at `start + D − lease_ms` (`D ≤ lease_ms`: single lease lasting `D`, no renewal) | Device turns `off` ≤ `lease_ms + tolerance_ms` after last received renewal ⇒ absolute deadline `start + D + tolerance_ms` | Runtime hangs ⇒ renewal ceases ⇒ turns off, requiring zero "off" messages |
 
-- L2 và L3 **không bỏ** L1: HAL vẫn gửi `off` sau hạn (§3g), nhưng như lớp dự phòng *sau* bảo đảm của thiết bị, nên bảo đảm được thử mỗi lần chạy (§3e).
-- Gia hạn lease của L3 **không** là gia hạn thẩm quyền của RFC-0011 §3c: nó không bao giờ vượt `D` mà phong bì đã giữ trước. Muốn bật lâu hơn phải qua gate lần nữa, mà `already_on` chặn tới khi lần chạy kết thúc.
-- `safe_off` ở `agent.toml` là mức người triển khai **dựa vào**, và không được vượt `safe_off_level` của plugin (§3c); vượt ⇒ NE3001, nên một bản plugin lỡ hạ mức làm build đỏ chứ không hạ lặng lẽ. Mức **không bao giờ được đoán hay nâng lúc chạy** (cùng tinh thần Q-35: không khai thì xấu nhất). `tolerance_ms` là độ lệch tối đa giữa hạn tính từ lúc HAL gửi và lúc thiết bị thật sự tắt (hẹn giờ thiết bị, độ trễ giao lệnh — gồm `command_timeout_ms` — và độ trễ đọc lại).
-- Hằng `OFF_SLACK_MS`, `OFF_RETRY_MS`, `max_state_age_ms` chốt ở §9 câu 5 (Q-68).
+- L2 and L3 **do not discard** L1: HAL still sends `off` upon deadline (§3g) as a defense-in-depth fallback *after* device guarantees, ensuring guarantees are exercised on every execution (§3e).
+- L3 lease renewal **is not** the authority renewal of RFC-0011 §3c: it never exceeds `D` reserved by the envelope. Running longer requires another gate pass, blocked by `already_on` until the current cycle finishes.
+- `safe_off` in `agent.toml` is the level the deployer **relies upon**, and must not exceed plugin's `safe_off_level` (§3c); exceeding ⇒ NE3001, so a plugin downgrade turns builds red rather than failing silently. Levels are **never guessed or escalated at runtime** (spirit of Q-35: undeclared assumes worst case). `tolerance_ms` is maximum deviation between deadline from HAL send time and actual device turn-off (device timer drift, delivery latency — including `command_timeout_ms` — and readback latency).
+- Constants `OFF_SLACK_MS`, `OFF_RETRY_MS`, `max_state_age_ms` decided in §9 question 5 (Q-68).
 
-### 3e. Một mức được chứng minh thế nào
+### 3e. How a Level Is Proven
 
-Hai chứng cứ, bổ sung nhau. `neuroedge build` **không** chạy P1 (nó là điều kiện huy hiệu của RFC-0016, và người vận hành chọn plugin); build chỉ kiểm khai báo. P2 chạy ở runtime, mỗi lệnh.
+Two complementary proofs. `neuroedge build` **does not** run P1 (P1 is an RFC-0016 badge prerequisite, and operators select plugins); build checks declarations only. P2 runs at runtime, on every command.
 
-**P1 — bộ test tuân thủ với bản giả thiết bị** (`neuroedge conformance`, TSK-I2c-12; vector ở `fixtures/compliance/actuators/`). Plugin kèm một **double** của thiết bị, dựng ở `probe()` (§3c) và chạy trên đồng hồ ảo; thiếu `probe()` ⇒ `unverifiable`, không huy hiệu (RFC-0016). Phép kiểm `actuator.level_proven` chạy vector của mức plugin khai (`safe_off_level`) **và** phải bắt được double nói dối (mỗi phép kiểm có một ca phản chứng):
+**P1 — Compliance suite against device double** (`neuroedge conformance`, TSK-I2c-12; vectors in `fixtures/compliance/actuators/`). Plugins provide a device **double**, constructed via `probe()` (§3c) and executed on a virtual clock; missing `probe()` ⇒ `unverifiable`, no badge (RFC-0016). Check `actuator.level_proven` executes vectors for declared level (`safe_off_level`) **and** must catch lying doubles (each check has a counter-example):
 
-| Mức | Vector (double ngắt liên lạc / đóng băng runtime) | Ca phản chứng phải bị bắt |
+| Level | Vector (double severs link / freezes runtime) | Counter-example caught |
 |:---|:---|:---|
-| L0 | Plugin không khai mức nào cao hơn thực có; `on` không mang thời hạn | Plugin khai L2 mà `on` không mang `duration_ms` |
-| L1 | Ngắt liên lạc đúng lúc hạn ⇒ HAL **không** tuyên bố đã tắt, vào `uncertain`, gửi lại mỗi `OFF_RETRY_MS` | Plugin báo "đã tắt" khi chưa nhận được xác nhận |
-| L2 | (a) `on` luôn mang `duration_ms ≤ D`; (b) ngắt liên lạc ngay sau khi giao lệnh ⇒ tới `D + tolerance_ms` double ở `off`; (c) ngắt trước khi giao ⇒ double không bật quá `D` | Double **bỏ qua** hẹn giờ ⇒ vector (b) đỏ |
-| L3 | (a) đóng băng runtime (không thông điệp) ⇒ `off` ≤ `lease_ms + tolerance_ms`; (b) gia hạn trùng hoặc đảo thứ tự không đẩy hạn quá `start + D + tolerance_ms`; (c) `lease_ms` không vượt trần plugin khai | Double bỏ qua lease ⇒ (a) đỏ |
-| Mọi mức | `off_is_idempotent` (gọi `safe_off` ≥ 2 lần); `off_is_unconditional` (chạy khi sổ token từ chối mọi thứ); `builds_without_io` (chốt chặn `socket`); `classifies_errors` (`NotSent` / `Rejected` / `Ambiguous`, §3g); `receives_no_handles` (không nhận HAL, sổ token, phong bì — kiểm chữ ký dựng) | `safe_off` đòi token; plugin giữ tham chiếu tới HAL |
+| L0 | Plugin declares no level higher than actual; `on` carries no duration | Plugin claiming L2 whose `on` omits `duration_ms` |
+| L1 | Sever link exactly at deadline ⇒ HAL **does not** claim off, enters `uncertain`, retries every `OFF_RETRY_MS` | Plugin reporting "off" before receiving confirmation |
+| L2 | (a) `on` always carries `duration_ms ≤ D`; (b) sever link immediately post-delivery ⇒ at `D + tolerance_ms` double is `off`; (c) sever before delivery ⇒ double does not run beyond `D` | Double **ignoring** timer ⇒ vector (b) fails |
+| L3 | (a) freeze runtime (no messages) ⇒ `off` ≤ `lease_ms + tolerance_ms`; (b) duplicate or reordered renewals do not push deadline past `start + D + tolerance_ms`; (c) `lease_ms` does not exceed plugin ceiling | Double ignoring lease ⇒ (a) fails |
+| All levels | `off_is_idempotent` (calls `safe_off` ≥ 2 times); `off_is_unconditional` (runs when ledger rejects all); `builds_without_io` (socket interceptor); `classifies_errors` (`NotSent` / `Rejected` / `Ambiguous`, §3g); `receives_no_handles` (receives no HAL, ledger, envelope — checks factory signature) | `safe_off` requiring token; plugin retaining HAL reference |
 
-P1 chứng minh **cách plugin dựng lệnh** đúng với giao thức thiết bị; nó **không** chứng minh phần sụn thật tôn trọng lệnh.
+P1 proves **how the plugin constructs commands** conforms to device protocol; it **does not** prove real hardware firmware respects commands.
 
-**P2 — đọc lại trạng thái thành dữ kiện, mỗi lần chạy.** Với L2 và L3, HAL **không gửi `off` của mình trước** `hạn + tolerance_ms` (L2) hay `start + D + tolerance_ms` (L3); tại đó nó đọc lại trạng thái: đã `off` ⇒ thiết bị tự tắt đúng mức đã khai (bằng chứng, ghi `remote_state`); vẫn `on` ⇒ thiết bị **vi phạm mức nó khai**: HAL gửi `off` (về phía an toàn), vào `quarantined`, ghi `remote_level_violated`. Mỗi lệnh vì thế là một phép thử của mức, miễn phí, không cần thao tác thủ công; chỗ hở tối đa là `tolerance_ms` cộng một lần gửi lại. Không đọc lại được (`readback = none`) thì không có P2: HAL gửi `off` ở hạn như L1 và **mức L2/L3 chỉ còn dựa vào P1** ⇒ cấm cho không hoàn tác (§3f).
+**P2 — State readback into facts on every run.** For L2 and L3, HAL **does not send its own `off` prior to** `deadline + tolerance_ms` (L2) or `start + D + tolerance_ms` (L3); at that point it reads back state: already `off` ⇒ device auto-turned off as declared (evidence recorded in `remote_state`); still `on` ⇒ device **violated its declared level**: HAL sends `off` (safety direction), transitions to `quarantined`, records `remote_level_violated`. Every command is thus an empirical test of the guarantee, free of manual overhead; maximum exposure window is `tolerance_ms` plus one retry. Without readback (`readback = none`), P2 cannot run: HAL sends `off` at deadline like L1 and **L2/L3 levels rest solely on P1** ⇒ forbidden for irreversible actions (§3f).
 
-Trạng thái đọc lại là dữ kiện theo RFC-0014: số `0`/`1` với `range: { min: 0, max: 1 }`, mốc đọc do **bộ nhận** đo trên trục của phiên (plugin chỉ cộng thêm `observed_age_ms ≥ 0`, không tự khai tuổi). Plugin chạy trong tiến trình nên không qua ổ cắm và không cần xác thực nguồn của RFC-0014 §3d; mọi luật tuổi và *vắng ⇒ BLOCK* của §3f–§3i của RFC đó áp nguyên.
-Cơ cấu có `readback` còn là một fact source trong tiến trình (TSK-I2c-09) với một dữ kiện 0/1, để gate muốn dùng thì khai `external_source` như thường. `uncertain` và `quarantined` **không bao giờ** thành giá trị: chúng là dữ kiện *vắng* ⇒ `criterion_unavailable` ⇒ BLOCK.
+Readback state is an RFC-0014 fact: numeric `0`/`1` with `range: { min: 0, max: 1 }`, read timestamp measured by **receiver** on session timeline (plugin adds only `observed_age_ms ≥ 0`, never self-declaring age). In-process plugins bypass sockets and authentication from RFC-0014 §3d; all age and *missing ⇒ BLOCK* rules of §3f–§3i apply fully.
+Actuators with `readback` also function as an in-process fact source (TSK-I2c-09) with a 0/1 fact, available for gates via `external_source`. `uncertain` and `quarantined` **never** become numeric values: they represent *missing* facts ⇒ `criterion_unavailable` ⇒ BLOCK.
 
-### 3f. Luật D5: cấm "không tự tắt" cho hành động không hoàn tác
+### 3f. Decision D5: Forbid "No Auto-Off" for Irreversible Actions
 
-**Định nghĩa.** `reversible = true` là lời khai của người triển khai rằng *để cơ cấu bật cho tới khi có người nhận ra thì không gây hại* (nhiệt, nước, điện, cơ khí, an ninh, liều) *và `off` trả đúng trạng thái cũ* — "hoàn tác được và rủi ro thấp" là **một** khai báo. Mọi thứ khác, kể cả không khai, là **không hoàn tác**.
-Một `@action` là không hoàn tác nếu `requires` của nó có một cơ cấu từ xa không hoàn tác. Lớp được khai **một lần, ở cơ cấu**, không ở từng `@action` (§6).
+**Definition.** `reversible = true` is deployer declaration that *leaving the actuator on until a human notices causes no harm* (heat, water, electricity, mechanics, security, dosage) *and `off` restores prior state* — "reversible and low-risk" is **one** declaration. Everything else, including undeclared, is **irreversible**.
+An `@action` is irreversible if its `requires` contains an irreversible remote actuator. Class is declared **once, at the actuator**, not per `@action` (§6).
 
-| `reversible` | Mức tối thiểu | Điều kiện thêm | Vi phạm |
+| `reversible` | Minimum level | Additional condition | Violation |
 |:---|:---|:---|:---|
-| `true` | L0 trở lên (L0 in cảnh báo ở build) | — | — |
-| `false` (mặc định) | **L2** (FR-EXT-07: thiết bị tự tắt được dù mất liên lạc) | `readback ≠ none` (nếu không, P2 không có, §3e) | `safe_off` thấp hơn ⇒ **NE3002**; `safe_off_level` của plugin thấp hơn mức đó hoặc `readback = none` ⇒ **NE3001** |
+| `true` | L0 or higher (L0 warns at build) | — | — |
+| `false` (default) | **L2** (FR-EXT-07: device auto-offs even on link loss) | `readback ≠ none` (otherwise P2 unavailable, §3e) | Lower `safe_off` ⇒ **NE3002**; plugin's `safe_off_level` lower or `readback = none` ⇒ **NE3001** |
 
-Lỗi ba phần, ví dụ:
+Three-part error example:
 
 ```
 NE3002 AgentManifestError
@@ -168,162 +168,162 @@ NE3002 AgentManifestError
   how:   use a plugin and device kind that reach L2 or L3 and set safe_off to it, or — only if leaving it on harms nothing — set reversible = true (RFC-0018 §3f)
 ```
 
-Kiểm ở **hai chỗ**: `neuroedge build` (`engine/compiler.py`, cạnh `check_motion_leases`) và lúc nạp (cùng hàm kiểm của §3b), để không đường nào vào HAL mà bỏ qua luật. NE3001 cũng áp khi `[actuators]` có mặt với `--target esp32s3`.
+Checked in **two places**: `neuroedge build` (`engine/compiler.py`, alongside `check_motion_leases`) and load time (same validator as §3b), ensuring no ingress to HAL bypasses rules. NE3001 also applies when `[actuators]` is present with `--target esp32s3`.
 
-### 3g. Trạng thái, mất liên lạc và chốt trước phong bì
+### 3g. State, Communication Loss, and Pre-Envelope Gate
 
-HAL giữ cho mỗi cơ cấu từ xa một trạng thái **của HAL** (không phải của thiết bị): `off` (đã xác nhận), `on` (có lệnh bật của NeuroEdge đang sống), `uncertain`, `quarantined`.
+HAL maintains an internal HAL state (not device state) for each remote actuator: `off` (confirmed), `on` (active NeuroEdge on-cycle), `uncertain`, `quarantined`.
 
-- **Chốt bật.** Lệnh `on`/`pulse` chỉ qua khi trạng thái là `off` với mốc đọc không cũ hơn `max_state_age_ms` (không có `readback`: xem dưới). Ngược lại ⇒ `EnvelopeRefusedError` (NE1003) **trước phong bì và `authorize`** (như `supervisor_unavailable`, `hal/linux.py:720–734`): không giữ trước, không tiêu token, ghi `envelope_refused` với `reason` mới
-  `actuator_state_unknown` (`uncertain`, hoặc mốc quá cũ), `actuator_quarantined` hoặc `already_on` (đọc lại thấy `on` mà NeuroEdge không bật: không bật chồng lên điều của bộ điều khiển khác).
-- **Vào `uncertain`:** lệnh gửi hết `command_timeout_ms`; mất kênh đọc lại; mốc đọc quá cũ; khởi động lại (không còn tri thức nào). **Ra khỏi `uncertain`:** **chỉ** bằng một lần đọc lại `off` có mốc tươi *sau* khi liên lạc trở lại — không bằng hẹn giờ, không bằng "đợi đủ lâu", vì hẹn giờ không biết thiết bị đang ra sao.
-  Không có `readback` (thiết bị chỉ ghi; chỉ được với `reversible = true`, §3f): `off` là lần `off` được xác nhận gần nhất, không có hạn tuổi. Đọc lại báo `on` ngoài dự kiến (lệnh đến muộn) ⇒ HAL gửi `off` ngay.
-- **Nợ tắt.** HAL chỉ gửi `off` khi còn *nợ tắt*: một lệnh bật **của NeuroEdge** chưa được xác nhận tắt. Nó không bao giờ tắt thiết bị mà nó không bật, và **không** gửi `off` khi khởi động trừ khi bản ghi ghi bền (§3h, thêm cờ `off_owed`) còn nợ ở L0/L1. `off` (qua `safe_off()`) luôn được thử (cả ở `close()`), gửi lại mỗi `OFF_RETRY_MS`, không bao giờ bị từ chối, không cần token; thất bại **không** ném lỗi cho gọi `off` (lệnh về phía an toàn không được nằm sau một ngoại lệ) mà ghi `remote_command_failed`.
-- **Lỗi gửi do plugin phân loại (§3c), HAL không đoán.** `NotSent` và `Rejected` ⇒ hoàn lại phần giữ trước (`envelope.refund`) và trạng thái giữ nguyên. `Ambiguous` ⇒ **không hoàn**, vào `uncertain`, phần giữ trước ở lại: lệnh có thể đã tới (cùng nguyên tắc "phía an toàn của việc không biết", `hal/linux.py:772–774`, `:821`).
-  Lệnh *bật* không bao giờ được tự gửi lại (lặp một lệnh không có khoá chống lặp là bật hai lần); chỉ `off` được gửi lại.
-- **`quarantined`** (thiết bị vi phạm mức đã khai, §3e): từ chối mọi lệnh bật tới khi người vận hành gỡ bằng thao tác tường minh trên bản ghi trạng thái (cùng chỗ với bản ghi phong bì, RFC-0007 §3d); không có đường tự gỡ. Bản ghi không đọc được ⇒ coi là `quarantined`.
+- **Turn-on gate.** Commands `on`/`pulse` pass only when state is `off` with read timestamp no older than `max_state_age_ms` (for `readback = none`: see below). Otherwise ⇒ `EnvelopeRefusedError` (NE1003) **prior to envelope and `authorize`** (like `supervisor_unavailable`, `hal/linux.py:720–734`): no reservation, no token spent, records `envelope_refused` with new `reason`s:
+  `actuator_state_unknown` (`uncertain` or stale timestamp), `actuator_quarantined`, or `already_on` (readback reports `on` without active NeuroEdge command: avoid overlapping external controller commands).
+- **Entering `uncertain`:** command send exceeds `command_timeout_ms`; readback channel severed; read timestamp stale; restart (all knowledge wiped). **Exiting `uncertain`:** **only** via a fresh readback of `off` *after* link recovery — never by timer, never by "waiting long enough", because timers cannot know physical reality.
+  Without `readback` (write-only devices; allowed only with `reversible = true`, §3f): `off` is latest confirmed `off`, without age limit. Unexpected `on` readback (late command delivery) ⇒ HAL sends `off` immediately.
+- **Off-debt.** HAL sends `off` only when holding *off-debt*: an active turn-on command **issued by NeuroEdge** unconfirmed as off. It never turns off devices it did not turn on, and **does not** send `off` on boot unless durable log (§3h, with `off_owed` flag) records outstanding debt under L0/L1. `off` (via `safe_off()`) is always attempted (including in `close()`), retried every `OFF_RETRY_MS`, never rejected, requiring no token; send failures **do not** raise exceptions to callers (safety-direction commands cannot be trapped behind exceptions), recording `remote_command_failed`.
+- **Send failures classified by plugin (§3c), HAL does not guess.** `NotSent` and `Rejected` ⇒ refund reservation (`envelope.refund`) with state unchanged. `Ambiguous` ⇒ **no refund**, enters `uncertain`, reservation remains held: command may have arrived (safe side of uncertainty principle, `hal/linux.py:772–774`, `:821`).
+  Turn-*on* commands are never automatically retried (repeating commands without deduplication keys risks double activation); only `off` is retried.
+- **`quarantined`** (device violates declared level, §3e): rejects all turn-on commands until operator explicitly clears state log (same location as envelope log, RFC-0007 §3d); no automatic recovery. Unreadable log ⇒ treated as `quarantined`.
 
-### 3h. Phong bì và giám sát
+### 3h. Envelopes and Supervision
 
-Cùng bốn khoá và cùng `SafetyEnvelope` (khoá theo tên), cùng thứ tự `_admit`; `envelope.py` chỉ đổi một chỗ: cơ cấu từ xa luôn do **HAL** kết thúc (`virtual = False` theo tên, cả trên `sim`), để hai target cho cùng kết quả.
+Same four keys and same `SafetyEnvelope` (keyed by name), same `_admit` sequence; `envelope.py` modifies one place: remote actuators are always terminated by **HAL** (`virtual = False` by name, across both `sim` and `linux`), ensuring identical behavior across targets.
 
-| Khoá | Ý nghĩa với cơ cấu từ xa |
+| Key | Meaning for remote actuators |
 |:---|:---|
-| `max_continuous_ms` | Trần của `D` (L2 gửi `duration_ms = D`; L1 hẹn `off` tại `D`; L3 ngừng gia hạn ở `start + D − lease_ms`). Trần vật lý là `D + tolerance_ms` — phần dư là sai số plugin khai, **được tính vào cửa sổ**; `neuroedge build` đòi `max_continuous_ms > tolerance_ms` (NE3001) |
-| `max_on_ms_per_window` | Thời gian giữ trước là `D`; HAL gọi `ended(at=…)` tại **lúc nó biết** cơ cấu đã tắt (đọc lại), hay tại hạn bảo đảm (`hạn + tolerance_ms`) với L2/L3 khi không có `readback` — không sớm hơn. L0 và `uncertain`: lần bật vẫn *đang đếm* (`_settle`, `hal/envelope.py:610–611`: bật quá hạn ⇒ khoảng kéo dài tới bây giờ) — chỉ có thể từ chối nhiều hơn, không bao giờ ít |
-| `min_interval_ms` | Tính từ lúc lần bật trước *kết thúc* theo nghĩa trên; chỉ áp cho lệnh bật |
-| `window_s` | Như RFC-0007 |
+| `max_continuous_ms` | Ceiling of `D` (L2 sends `duration_ms = D`; L1 schedules `off` at `D`; L3 halts renewal at `start + D − lease_ms`). Physical ceiling is `D + tolerance_ms` — plugin-declared margin **counted against window**; `neuroedge build` requires `max_continuous_ms > tolerance_ms` (NE3001) |
+| `max_on_ms_per_window` | Reservation is `D`; HAL calls `ended(at=…)` at **timestamp it confirms** actuator is off (readback), or at guaranteed deadline (`deadline + tolerance_ms`) for L2/L3 without readback — never earlier. L0 and `uncertain`: cycle *continues accruing* (`_settle`, `hal/envelope.py:610–611`: over-limit on-times extend to current time) — can only reject more, never less |
+| `min_interval_ms` | Measured from end of prior cycle per above definition; applies only to turn-on commands |
+| `window_s` | As in RFC-0007 |
 
-- **Ghi bền write-ahead** như RFC-0007 §3d (`FileEnvelopeStore`, theo tên cơ cấu); sau khởi động mọi cơ cấu từ xa là `uncertain` cho tới lần đọc lại đầu, kể cả khi bản ghi sạch.
-- **Giám sát ngoài tiến trình (RFC-0007 §3d, Q-62) không áp được:** tiến trình giám sát chỉ giữ line gpiod (`hal/linux.py:451–466`); tên cơ cấu từ xa **không** thuộc `_supervised`, nên `supervisor_unavailable` không áp cho nó. Cái thay thế theo mức: **L0, L1 — không có gì ngoài tiến trình** (hẹn giờ L1 chết cùng runtime; đó là lý do L1 không đủ cho không hoàn tác);
-  **L2 — hẹn giờ ở thiết bị**; **L3 — lease ở thiết bị, và nhịp tim chính là gia hạn** (runtime treo ⇒ gia hạn ngừng). P1 chứng minh trường hợp "runtime đóng băng" ở double (§3e).
+- **Write-ahead durable logging** as in RFC-0007 §3d (`FileEnvelopeStore`, keyed by actuator name); post-reboot, all remote actuators are `uncertain` until first readback, even with clean logs.
+- **Out-of-process supervision (RFC-0007 §3d, Q-62) inapplicable:** supervisor process holds only gpiod lines (`hal/linux.py:451–466`); remote actuator names are **not** in `_supervised`, so `supervisor_unavailable` does not apply. Substitutes by level: **L0, L1 — nothing out-of-process** (L1 timer dies with runtime; why L1 is insufficient for irreversible actions);
+  **L2 — on-device timer**; **L3 — on-device lease, where heartbeat is renewal** (hung runtime ⇒ renewal halts). P1 proves runtime freeze scenarios on doubles (§3e).
 
-### 3i. Vết ghi và replay
+### 3i. Traces and Replay
 
-`trace.v1` không đổi (`type` mở, `data` tự do); sự kiện thêm vào `docs/spec/simulation_coverage.md` §3 khi hiện thực:
+`trace.v1` unchanged (open `type`, arbitrary `data`); events added to `docs/spec/simulation_coverage.md` §3 upon implementation:
 
-| Sự kiện | Dữ liệu |
+| Event | Data |
 |:---|:---|
-| `actuator_command` *(sẵn có, **không đổi hình dạng**)* | `{pin, operation, duration_ms}` — phát lúc lệnh được nhận như mọi chân; `testing/player.py:173` vẫn nhận ra mốc lệnh |
+| `actuator_command` *(existing, **shape unchanged**)* | `{pin, operation, duration_ms}` — emitted upon command receipt like any pin; `testing/player.py:173` recognizes command points |
 | `remote_command_sent` | `{actuator, command_id, operation, duration_ms?, lease_ms?, level, plugin}` |
 | `remote_command_acked` · `remote_command_failed` | `{actuator, command_id, latency_ms}` · `{actuator, command_id, kind}`, `kind` ∈ `not_sent` · `ambiguous` · `rejected` |
-| `remote_state` | `{actuator, state, via, read_offset_ms}`, `state` ∈ `on` · `off`, `via` ∈ `push` · `poll`; tuổi do bộ nhận đo |
+| `remote_state` | `{actuator, state, via, read_offset_ms}`, `state` ∈ `on` · `off`, `via` ∈ `push` · `poll`; age measured by receiver |
 | `remote_state_unknown` · `remote_state_confirmed` | `{actuator, why, since_offset_ms}`, `why` ∈ `command_timeout` · `link_lost` · `stale` · `restart` · `readback_failed` · `{actuator, state, unknown_ms}` |
 | `remote_level_violated` | `{actuator, level, expected_off_ms, observed}` |
 
-Lint ngữ nghĩa ở `python/neuroedge/trace.py` (như `lint_vision`; vi phạm ⇒ `TraceValidationError`, NE4001): `remote_command_sent` với `operation ≠ off` mà không có `actuator_command` cùng chân ngay trước nó trong cùng bước — tức một lệnh bật tới thiết bị ở xa không có dấu vết đã qua đường §3c — là vết ghi sai.
-**Replay chỉ dùng điều đã ghi:** `ReplaySession` không dựng plugin, không đọc biến môi trường chứa khoá, không mở kết nối (có test chặn `socket`); HAL replay nhận trạng thái từ `remote_state` đã ghi (`script_remote_state`, theo mẫu `script_digital_in` / `script_pin_state`, `hal/__init__.py:552`, `:626`), nên một lệnh bật bị `actuator_state_unknown` lúc ghi bị từ chối y như vậy lúc phát lại. Sự kiện `remote_*` là thông tin, không vào so khớp phán quyết. Ba vết ghi chuẩn mực không có cơ cấu từ xa nên không đổi.
+Semantic lint in `python/neuroedge/trace.py` (like `lint_vision`; violation ⇒ `TraceValidationError`, NE4001): `remote_command_sent` with `operation ≠ off` lacking an immediate preceding `actuator_command` for the same pin in the same step — meaning a remote turn-on command lacking proof of traversing §3c — is an invalid trace.
+**Replay relies solely on recorded events:** `ReplaySession` does not construct plugins, read key-bearing environment variables, or open network connections (tested by socket blocking); replay HAL derives state from recorded `remote_state` (`script_remote_state`, mirroring `script_digital_in` / `script_pin_state`, `hal/__init__.py:552`, `:626`), so a turn-on rejected by `actuator_state_unknown` at record time is rejected identically on replay. Events `remote_*` are informational, excluded from verdict matching. Three canonical traces contain no remote actuators, remaining unchanged.
 
-### 3j. Adapter đầu tiên: Home Assistant (TSK-I2c-16)
+### 3j. First Adapter: Home Assistant (TSK-I2c-16)
 
-**Điều Home Assistant cung cấp** (đọc từ tài liệu `home-assistant.io` và `developers.home-assistant.io` ngày 2026-10-04; điều chưa đọc được ghi "chưa kiểm"):
+**What Home Assistant Provides** (reviewed from `home-assistant.io` and `developers.home-assistant.io` documentation as of 2026-10-04; unread items marked "unverified"):
 
-| Điều | Chi tiết |
+| Item | Details |
 |:---|:---|
-| REST | Mọi lời gọi kèm `Authorization: Bearer <Long-Lived Access Token>`; `GET /api/states/<entity_id>` trả trạng thái hiện tại; `POST /api/services/<domain>/<service>` trả "danh sách trạng thái đã đổi **trong lúc** dịch vụ chạy" — **không** phải bảo đảm về hiệu ứng ở thiết bị; mã 200/201 và 400/401/404/405; hạn chờ API: chưa kiểm |
-| WebSocket | Bắt tay `auth_required` → `auth` (`access_token`) → `auth_ok` / `auth_invalid`; lệnh `call_service`, `subscribe_events` (lọc `event_type`), `get_states`; `ping`/`pong` kiểm kết nối. Tên sự kiện đổi trạng thái của thực thể: chưa kiểm ở trang đã đọc |
-| Dịch vụ `switch` | `switch.turn_on`, `switch.turn_off`, `switch.toggle`; tài liệu **không** nêu tham số thời hạn hay hẹn giờ tự tắt |
-| `script` | Có hành động `delay` và chế độ `single`/`restart`/…; hẹn giờ này chạy **trong Home Assistant**, không ở thiết bị; hành vi khi HA khởi động lại: chưa kiểm |
-| Thiết bị nền | Matter: lệnh `OnWithTimedOff` (0x42) mang `OnTime` (đơn vị 1/10 giây), thuộc tính năng Lighting (LT) của cụm On/Off nên không phải mọi thiết bị có — nguồn là tài liệu tham chiếu cụm của bên thứ ba, **chưa kiểm** với đặc tả Matter. ESPHome: `api.reboot_timeout` (mặc định 15 phút) khởi động lại khi "no client connects to the API" — không gắn với gia hạn của NeuroEdge nên **không** phải lease của ta; hành động `on_turn_on` có `delay` có chạy trên thiết bị hay không: chưa kiểm |
+| REST | All calls include `Authorization: Bearer <Long-Lived Access Token>`; `GET /api/states/<entity_id>` returns current state; `POST /api/services/<domain>/<service>` returns "states changed **while** service ran" — **not** an effect guarantee on device; status 200/201 and 400/401/404/405; API timeouts: unverified |
+| WebSocket | Handshake `auth_required` → `auth` (`access_token`) → `auth_ok` / `auth_invalid`; commands `call_service`, `subscribe_events` (filtering `event_type`), `get_states`; `ping`/`pong` keepalive. Entity state change event name: unverified on reviewed page |
+| `switch` service | `switch.turn_on`, `switch.turn_off`, `switch.toggle`; documentation states **no** duration or auto-off parameters |
+| `script` | Supports `delay` action and `single`/`restart`/… modes; timer runs **inside Home Assistant**, not on device; behavior across HA reboot: unverified |
+| Underlying devices | Matter: command `OnWithTimedOff` (0x42) carries `OnTime` (1/10s units), part of Lighting (LT) feature of On/Off cluster so not universal — third-party cluster docs, **unverified** against official Matter spec. ESPHome: `api.reboot_timeout` (default 15m) reboots when "no client connects to the API" — uncoupled from NeuroEdge renewal so **not** our lease; whether `on_turn_on` action with `delay` executes on-device: unverified |
 
-**Mức Home Assistant đạt.** Qua `switch.turn_on` / `switch.turn_off` chung, plugin `home_assistant` khai **L1** cho mọi thực thể: lệnh bật không mang thời hạn (dịch vụ `switch` không có tham số đó) và hẹn giờ là của NeuroEdge. Một `script` có `delay` là hẹn giờ ở hub: sống sót khi NeuroEdge treo nhưng không khi hub chết hay hub mất liên lạc với thiết bị — **không phải L2** (L2 đòi hẹn giờ ở thiết bị), và không được tính cho D5.
-L2/L3 chỉ đạt được với một loại thiết bị mà bản thân giao thức của nó mang thời hạn hay lease (ví dụ Matter `OnWithTimedOff`, một dịch vụ ESPHome tự có hẹn giờ trong firmware — cả hai chưa kiểm), qua một nhánh adapter riêng **có vector P1 riêng**; adapter bản đầu không khai chúng. Hệ quả: với Home Assistant, **hành động không hoàn tác bị build từ chối** (NE3002; NE3001 nếu khai L2) — đúng lời hứa FR-EXT-07, không phải lỗi.
+**Home Assistant Achievable Level.** Across generic `switch.turn_on` / `switch.turn_off`, plugin `home_assistant` declares **L1** for all entities: turn-on carries no duration (unsupported by `switch` service) and timers belong to NeuroEdge. A `script` with `delay` is a hub timer: surviving NeuroEdge crashes but failing on hub crashes or hub-device link loss — **not L2** (L2 requires on-device timers), excluded from D5.
+L2/L3 requires device-level protocol duration or lease support (e.g. Matter `OnWithTimedOff`, ESPHome firmware-level timers — both unverified), isolated in dedicated adapter branches **with dedicated P1 vectors**; initial adapter declares neither. Consequence: under Home Assistant, **irreversible actions are rejected at build** (NE3002; NE3001 if claiming L2) — fulfilling FR-EXT-07, not a defect.
 
-Hiện thực: lái bằng REST (`POST /api/services/...`) hoặc WebSocket (`call_service`); đọc lại bằng `GET /api/states/<id>` định kỳ (`poll`) hay `subscribe_events` (`push`); `token_env` như §3b; lời gọi dịch vụ trả 200 **không** làm trạng thái thành `off` — chỉ đọc lại. Trạng thái Home Assistant báo là **niềm tin của hub** về thiết bị (có thể là lạc quan, chưa kiểm), nên `readback` của plugin này không bắt được thiết bị nói dối tới hub (§5, rủi ro 2).
-Kiểm bằng **bản giả của Home Assistant** (REST và WebSocket tối thiểu) chạy qua vector L0–L1 của §3e; chạy trên một Home Assistant thật là bước của người (roadmap TSK-I2c-16). Chiều ngược — Home Assistant gọi NeuroEdge — là MCP có xác thực đã có (Q-58), không thuộc RFC này.
+Implementation: drives via REST (`POST /api/services/...`) or WebSocket (`call_service`); reads back via `GET /api/states/<id>` polling (`poll`) or `subscribe_events` (`push`); `token_env` as in §3b; service calls returning 200 **do not** flip state to `off` — readback only. Home Assistant state reflects **hub's belief** about the device (potentially optimistic, unverified), so readback cannot catch devices misreporting to hub (§5, risk 2).
+Tested via **Home Assistant test double** (minimal REST and WebSocket) executing L0–L1 vectors of §3e; live Home Assistant testing is human gate (roadmap TSK-I2c-16). Reverse path — Home Assistant calling NeuroEdge — is handled by authenticated MCP (Q-58), outside this RFC.
 
-### 3k. Mã lỗi
+### 3k. Error Codes
 
-Không thêm mã. NE1003 `EnvelopeRefusedError` thêm `reason`: `actuator_state_unknown`, `actuator_quarantined` (và dùng `already_on` có sẵn); NE3001 `BoardCapabilityError`: `safe_off` vượt `safe_off_level` của plugin, `readback = none` cho không hoàn tác, `max_continuous_ms ≤ tolerance_ms`, `[actuators]` với `esp32s3`, `pwm` hay `motion` tới tên cơ cấu từ xa; NE3002 `AgentManifestError`: §3b và vi phạm D5 (§3f); NE4001 `TraceValidationError`: lint §3i.
-`reason` không nằm trong `schemas/error-codes.v1.json` (chỉ `fields: ["reason"]`), nên chỉ sửa lời ở PRD Phụ lục B và docstring `EnvelopeRefusedError` (`errors.py:76`).
+No new error codes added. NE1003 `EnvelopeRefusedError` adds `reason`s: `actuator_state_unknown`, `actuator_quarantined` (reusing existing `already_on`); NE3001 `BoardCapabilityError`: `safe_off` exceeding plugin's `safe_off_level`, `readback = none` for irreversible, `max_continuous_ms ≤ tolerance_ms`, `[actuators]` under `esp32s3`, `pwm` or `motion` targeting remote actuator names; NE3002 `AgentManifestError`: §3b and D5 violations (§3f); NE4001 `TraceValidationError`: lint in §3i.
+`reason` is excluded from `schemas/error-codes.v1.json` (declares only `fields: ["reason"]`), updating only prose in PRD Appendix B and docstring of `EnvelopeRefusedError` (`errors.py:76`).
 
-## 4. Ảnh hưởng tương thích
+## 4. Compatibility Impact
 
-| Hạng mục | Ảnh hưởng |
+| Item | Impact |
 |:---|:---|
-| Tệp đang hợp lệ có còn hợp lệ? | Có — `[actuators]` là khối tuỳ chọn; không `agent.toml`, bo, gate hay vết ghi nào của kho có nó. `board.v1` không đổi |
-| Tệp đang không hợp lệ có trở nên hợp lệ? | Có, đúng một loại: `agent.toml` có `[actuators.<tên>]` đúng §3b. `agent.toml` không có lược đồ trong `schemas/`. *Bản `neuroedge` cũ đọc nó bỏ qua khối lạ, nhưng tên cơ cấu không có trên bo nên `[requires]` bị từ chối (NE3001)* — fail-closed, không phải vỡ tương thích |
-| Cần tăng phiên bản lược đồ (`v1` → `v2`)? | Không. `trace.v1` không đổi (`type` mở); `board.v1` không đổi; `error-codes.v1` không đổi |
-| Ảnh hưởng tới mã băm / chữ ký gate đã phát hành? | Không — không chạm `gate.v1` |
-| Ảnh hưởng tới ba tệp vết ghi chuẩn mực? | Không — không có cơ cấu từ xa; `actuator_command` giữ nguyên hình dạng |
-| Gate nào trong `digests.lock` đổi digest? | Không gate nào |
-| Bố cục `NETR` hoặc walker C phải đổi? | Không — `esp32s3` không có cơ cấu từ xa (NE3001) |
-| Đáp án nào của corpus tool call (`expected_results.yaml`) đổi? | Không — `@action` và tool giữ nguyên; thêm corpus `fixtures/actuators/` (hợp lệ/không hợp lệ + `expected_errors.yaml`, khép kín hai chiều; thêm dòng vào bảng `CONTRIBUTING.md` §3) |
-| Mã lỗi (PRD Phụ lục B) | Không mã mới; nới nguyên nhân NE1003, NE3001, NE3002 (§3k) |
-| API Python công khai | Tên công khai mới (khai báo, hàm kiểm, hợp đồng driver) vào `neuroedge.sdk` theo RFC-0016, ghim ở `docs/spec/python_api.md` và `tests/test_public_api.py`; không đổi `neuroedge.__all__` hiện có |
-| Bất biến `sim` không giàu hơn bo (`CHANGELOG.md` §3.3 #7) | Không áp: cơ cấu từ xa không phải năng lực bo; nhưng double của `sim` không được hứa mức cao hơn `safe_off_level` của plugin (P1) |
+| Do currently valid files remain valid? | Yes — `[actuators]` is optional; no existing `agent.toml`, board, gate, or trace in repo contains it. `board.v1` unchanged |
+| Do currently invalid files become valid? | Yes, exactly one type: `agent.toml` containing `[actuators.<name>]` conforming to §3b. `agent.toml` has no schema in `schemas/`. *Older `neuroedge` versions reading it ignore the unknown section, but actuator name is absent on board so `[requires]` is rejected (NE3001)* — fail-closed, not breaking |
+| Does it require bumping schema version (`v1` → `v2`)? | No. `trace.v1` unchanged (open `type`); `board.v1` unchanged; `error-codes.v1` unchanged |
+| Impact on issued gate hashes / signatures? | None — does not touch `gate.v1` |
+| Impact on three canonical trace files? | None — no remote actuators; `actuator_command` shape unchanged |
+| Does any gate in `digests.lock` change digest? | No gates change |
+| Must `NETR` layout or C walker change? | No — `esp32s3` lacks remote actuators (NE3001) |
+| Does any expected answer in tool call corpus change? | No — `@action` and tools unchanged; adds corpus `fixtures/actuators/` (valid/invalid + `expected_errors.yaml`, bidirectionally closed; add row to table in `CONTRIBUTING.md` §3) |
+| Error codes (PRD Appendix B) | No new codes; broadens causes for NE1003, NE3001, NE3002 (§3k) |
+| Public Python API | New public names (declaration, validator function, driver contracts) in `neuroedge.sdk` per RFC-0016, pinned in `docs/spec/python_api.md` and `tests/test_public_api.py`; existing `neuroedge.__all__` unchanged |
+| Invariant `sim` no richer than board (`CHANGELOG.md` §3.3 #7) | Inapplicable: remote actuators are not board capabilities; but `sim` doubles must not promise higher levels than plugin's `safe_off_level` (P1) |
 
-## 5. Ảnh hưởng an toàn
+## 5. Safety Impact
 
-- **Gate không lỏng hơn, không đường mới tới cơ cấu:** cơ cấu từ xa chỉ tới được qua `_admit` (§3c); plugin không có handle; phong bì chỉ biết từ chối; token không đổi. `gate.v1` và năm nguyên tắc kế thừa không đổi.
-- **Fail-closed mọi hướng (`CHANGELOG.md` §3.3 #2):** không khai `reversible` ⇒ không hoàn tác; không khai `safe_off` ⇒ build từ chối; không `readback` ⇒ cấm không hoàn tác; trạng thái không chắc ⇒ từ chối bật; lỗi gửi mơ hồ ⇒ không hoàn phần giữ trước; bản ghi hỏng ⇒ coi là `quarantined`; thiết bị vi phạm mức ⇒ cách ly. Chỗ duy nhất "nới" là `off`.
-- **Lệnh về phía an toàn không bao giờ bị chặn (Q-62):** `off` tới cơ cấu từ xa luôn được thử, không phong bì, không token. Chốt §3g chỉ từ chối lệnh *bật*. Ngoại lệ duy nhất của `threat_model.md` §1 phủ thêm đích này, **không** thêm ngoại lệ nào khác (không có cờ `[lab]` hay thao tác thử bỏ qua gate).
-- **Không phải an toàn chức năng được chứng nhận (Q-38, `threat_model.md` §3b):** một cơ cấu từ xa không bao giờ là nút dừng khẩn; thiết bị gây hại được cho người vẫn cần ngắt phần cứng không qua phần mềm.
-- **Rủi ro còn lại — không loại được ở lõi:**
-  1. **Phân vùng mạng.** L0/L1: cơ cấu có thể bật vô hạn — vì thế cấm cho không hoàn tác và `uncertain` chặn bật tiếp. L2/L3: tắt trong `D + tolerance_ms` nhờ thiết bị; NeuroEdge không biết trạng thái cho tới khi liên lạc trở lại.
-  2. **Phần sụn nói dối hoặc hub tin sai.** `readback` là lời của chính thiết bị (hay của hub, với Home Assistant). P2 bắt được thiết bị *mâu thuẫn* với mức nó khai; không bắt được thiết bị báo `off` khi vẫn đang chạy. Giảm bằng: cơ cấu không hoàn tác có ngắt phần cứng độc lập; gate ghép thêm một tiêu chí do lõi tin cậy (RFC-0014 §5 rủi ro 1).
-  3. **Đồng hồ.** Mọi thời hạn gửi đi là **khoảng** (`duration_ms`, `lease_ms`), không bao giờ mốc tuyệt đối: lõi không phụ thuộc đồng hồ thiết bị hay đồng hồ treo tường; sai số hẹn giờ thiết bị nằm trong `tolerance_ms` (plugin khai, P1 kiểm trên double — **không** kiểm được trên thiết bị thật). Lệnh bị kẹt rồi giao muộn: bị chặn bởi `command_timeout_ms`, và nếu vẫn tới, lần đọc lại thấy `on` ngoài dự kiến ⇒ `off` (§3g).
-  4. **Bộ điều khiển khác.** Người, automation của hub hay công tắc tường đổi trạng thái thiết bị; NeuroEdge chỉ chịu trách nhiệm điều nó bật, không tắt thứ nó không bật.
-  5. **Thân `@action` đi vòng.** Python không chặn được một client mạng gọi thẳng trong thân hàm; cảnh báo ở build (§3c) chỉ là heuristic. Kẻ cùng quyền với runtime ngoài phạm vi (`threat_model.md` §3).
-  6. **`reversible = true` khai sai.** Đó là lời khai không kiểm bằng máy được; mặc định `false`, lời khai nằm trong `agent.toml` được commit và vết ghi của phiên mang mức đã khai.
-  7. **Plugin xấu hoặc có lỗi** chạy trong tiến trình (NFR-SEC-10): P1 chỉ bắt lỗi dựng lệnh, không bắt mã độc, và build không kiểm P1 — một plugin chưa tuân thủ vẫn nạp được nếu người vận hành bật nó (nguồn gốc vào vết ghi, RFC-0016 §3d).
-- Cần kỹ thuật trưởng duyệt vì RFC thêm luật lên đường tới cơ cấu chấp hành.
+- **Gates do not become looser, no new paths to actuators:** remote actuators reachable only via `_admit` (§3c); plugins hold no handles; envelopes only reject; tokens unchanged. `gate.v1` and five inheritance principles unchanged.
+- **Fail-closed in every direction (`CHANGELOG.md` §3.3 #2):** undeclared `reversible` ⇒ irreversible; undeclared `safe_off` ⇒ build rejected; missing `readback` ⇒ irreversible forbidden; uncertain state ⇒ turn-on rejected; ambiguous send failure ⇒ reservation retained; corrupt logs ⇒ quarantined; level violation ⇒ quarantined. The only relaxed operation is `off`.
+- **Safety-direction commands never blocked (Q-62):** `off` to remote actuators is always attempted, requiring no envelope and no token. Gate §3g rejects only turn-*on* commands. The sole exception in `threat_model.md` §1 expands to cover this destination, **without** adding other exceptions (no `[lab]` flags or gate bypass tests).
+- **Not certified functional safety (Q-38, `threat_model.md` §3b):** a remote actuator is never an emergency stop button; devices capable of harming humans still require software-independent hardware disconnects.
+- **Residual risks — uneliminable in core:**
+  1. **Network partitions.** L0/L1: actuators can remain on indefinitely — hence forbidden for irreversible actions and blocked by `uncertain`. L2/L3: turns off within `D + tolerance_ms` on-device; NeuroEdge cannot confirm state until communication recovers.
+  2. **Firmware misreporting or hub inaccuracies.** `readback` reflects device/hub assertions. P2 catches devices *contradicting* declared levels; cannot catch devices reporting `off` while physically running. Mitigations: irreversible actuators require independent hardware disconnects; gates combine with core-trusted criteria (RFC-0014 §5 risk 1).
+  3. **Clocks.** All sent durations are **relative intervals** (`duration_ms`, `lease_ms`), never absolute wall-clock timestamps: core depends neither on device clocks nor system wall clocks; device timer drift is bounded by `tolerance_ms` (declared by plugin, verified on double by P1 — unverified on real hardware). Stuck commands delivered late: bounded by `command_timeout_ms`; if delivered, subsequent readback seeing unexpected `on` triggers `off` (§3g).
+  4. **Co-controllers.** Humans, hub automations, and wall switches independently alter device state; NeuroEdge is responsible only for turning off what it turned on, never shutting down unmanaged actions.
+  5. **`@action` body bypasses.** Python cannot prevent network clients called directly inside function bodies; build warnings (§3c) are heuristic only. Same-privilege adversaries are out of scope (`threat_model.md` §3).
+  6. **Misdeclared `reversible = true`.** Machine-unverifiable claim; default is `false`, declaration resides in committed `agent.toml` and traces record declared level.
+  7. **Malicious or buggy plugins** running in-process (NFR-SEC-10): P1 verifies command construction only, not malicious payloads, and build does not run P1 — non-compliant plugins can load if operator enables them (provenance recorded in traces, RFC-0016 §3d).
+- Lead engineer approval required because RFC introduces rules governing paths to physical actuators.
 
-## 6. Phương án đã xem xét và bác bỏ
+## 6. Alternatives Considered and Rejected
 
-| Phương án | Lý do bác bỏ |
+| Alternative | Rejection rationale |
 |:---|:---|
-| Giữ nguyên: lệnh từ xa là thân `@action` thường | §1: không token, không phong bì, không tự tắt, không vết ghi hiệu ứng; đúng điều `TODOS.md` #55 hoãn |
-| Đòi **L3 ở mọi nơi** | Thiết bị phổ thông (đèn, ổ cắm qua hub) không đạt; luật không ai đáp ứng được sẽ bị đi vòng bằng đường thân hàm tệ hơn. D5 chỉ cấm "không tự tắt" cho không hoàn tác |
-| Nguyên thủy mới `remote.out` ở HAL | FR-HAL-01 đóng tập; Q-53 đòi ba target; tách API khỏi `digital.out` nên `@action`, gate, `commands.toml` không dùng lại; RFC-0014 §6 đã bác lập luận tương tự cho `external.in` |
-| Khai ở `board.v1` (`capabilities.remote_out`) | Sửa lược đồ đóng băng; bo là phần cứng, không phải cấu hình triển khai; bo tham chiếu dùng chung nên không giữ URL/thực thể được; bo cộng đồng (RFC-0002, `--board <đường dẫn>`) tự chứng nhận nên mang số an toàn do chính tác giả nó khai. Giữ ở §9 câu 1 |
-| Khai không hoàn tác **theo `@action`** (tham số decorator) | Hai action lái cùng một cơ cấu với lớp khác nhau thì lớp yếu thắng; khai nằm trong mã mà build không thể kiểm đủ; lớp là tính chất của cơ cấu |
-| Khai mức tự tắt hay độ hoàn tác **trong gate** | `gate.v1` không biết nó gắn vào cơ cấu nào (RFC-0014 §9.8); đổi `gate.v1` và digest |
-| Tin mức đã khai, không cần bằng chứng | Mức thành nhãn; plugin hay người triển khai khai cao hơn thực có. Cần P1 (dựng lệnh) và P2 (đọc lại mỗi lần chạy) |
-| Mở rộng tiến trình giám sát để gửi lệnh `off` dựng sẵn khi mất nhịp tim ("L1 có giám sát") | Giám sát nhỏ có chủ ý (chỉ gpiod, `supervisor.py:4–20`); nhét client HTTP/TLS và khoá vào đó phá lý do tồn tại; và vẫn không phải bảo đảm phía thiết bị. Có thể là RFC sau nếu cần |
-| Hoàn phần giữ trước khi gửi lỗi bất kỳ | Lỗi mơ hồ có thể đã giao lệnh; hoàn lại cho phép lần bật thứ hai chạy chồng khi lần đầu còn sống |
-| Coi HTTP 200 của hub là "đã tắt/đã bật" | Tài liệu REST: phản hồi là các trạng thái đổi *trong lúc* chạy dịch vụ, không phải hiệu ứng ở thiết bị |
-| `uncertain` tự hết sau một khoảng thời gian | Hẹn giờ không biết thiết bị ra sao; chỉ lần đọc lại tươi mới biết |
-| Gửi `off` tới mọi cơ cấu khi khởi động | Sẽ tắt thứ người hay bộ điều khiển khác đã bật; chỉ trả "nợ tắt" của chính mình |
-| Plugin tự dò hay nâng mức lúc chạy | Mức được khai và chứng minh, không đoán (Q-35: không khai thì xấu nhất) |
-| `sim` nối thiết bị thật bằng cờ | Một phiên mô phỏng không được lái van thật; thử thật là `linux` hoặc bước của người |
+| Status quo: remote commands as regular `@action` bodies | §1: no token, no envelope, no auto-off, no effect trace; exactly why `TODOS.md` #55 deferred it |
+| Mandating **L3 everywhere** | Commodity devices (bulbs, smart plugs via hubs) cannot achieve it; impractical rules encourage worse `@action` body bypasses. D5 restricts auto-off mandate to irreversible actions |
+| New `remote.out` primitive in HAL | FR-HAL-01 closes set; Q-53 mandates three targets; API fragmentation prevents reuse of `@action`, gate, `commands.toml`; RFC-0014 §6 rejected identical argument for `external.in` |
+| Declaring in `board.v1` (`capabilities.remote_out`) | Modifies frozen schema; boards represent hardware, not deployment config; reference boards cannot store site URLs/entities; community boards (`--board <path>`) self-attest safety limits. Retained in §9 question 1 |
+| Declaring irreversibility **per `@action`** (decorator parameter) | Two actions driving same actuator with different classes allows weaker class to win; declaration in code uncheckable at build time; property belongs to actuator |
+| Declaring auto-off level or irreversibility **in gates** | `gate.v1` does not know which actuator it binds to (RFC-0014 §9.8); changes `gate.v1` and digest |
+| Trusting declared levels without proof | Turns levels into cosmetic labels; authors/deployers claim higher levels. Requires P1 (command construction) and P2 (runtime empirical readback) |
+| Expanding supervisor process to send pre-built `off` commands on lost heartbeat ("supervised L1") | Supervisor is intentionally minimal (gpiod only, `supervisor.py:4–20`); bundling HTTP/TLS clients and credentials compromises core design; still lacks on-device guarantee. Future RFC if needed |
+| Refunding reservations on any send error | Ambiguous errors may have delivered command; refunding permits overlapping second activation while first is active |
+| Treating hub HTTP 200 as "off/on confirmed" | REST docs: response reflects states changed *while* service ran, not device effect |
+| `uncertain` expiring on a timer | Timers cannot know device state; only fresh readbacks confirm reality |
+| Sending `off` to all actuators on boot | Turns off devices triggered by humans or other controllers; pays off only self-incurred "off-debt" |
+| Plugin auto-detecting or escalating level at runtime | Levels must be declared and proven, not guessed (Q-35: undeclared assumes worst case) |
+| `sim` connecting to real hardware via flag | Simulation sessions must not actuate real valves; hardware testing belongs on `linux` or human gates |
 
-## 7. Bằng chứng kiểm chứng
+## 7. Verification Evidence
 
-Mọi dòng là **việc phải có khi hiện thực** (TSK-I2c-16); chưa tick vì RFC này chưa có mã. Mọi corpus khép kín hai chiều (`CONTRIBUTING.md` §3).
+All items are **implementation requirements** (TSK-I2c-16); unticked because RFC contains no code yet. All corpora bidirectionally closed (`CONTRIBUTING.md` §3).
 
-- [x] **Corpus khai báo** (`fixtures/actuators/{valid,invalid}/` + `expected_errors.yaml`): khai báo hợp lệ cho từng mức; không khai `safe_off`, mức lạ, thiếu khoá phong bì, tên trùng chân của bo, thiếu chiều nào của §3b, khoá lạ, bí mật viết thẳng ⇒ NE3002; `safe_off` vượt `safe_off_level`, `readback = none` cho không hoàn tác, `max_continuous_ms ≤ tolerance_ms`, `esp32s3`, `pwm`/`motion` lên tên từ xa ⇒ NE3001
-- [x] **Luật D5** (`python/tests/test_remote_actuator_build.py`): `test_an_irreversible_actuator_below_l2_is_refused_at_build`, `test_the_same_declaration_is_refused_at_load_without_agent_toml`, `test_reversible_is_false_when_not_declared`, `test_l0_builds_only_for_a_reversible_actuator_and_warns`, `test_an_irreversible_actuator_without_readback_is_refused`, `test_the_home_assistant_plugin_cannot_declare_an_irreversible_actuator`
-- [x] **Chỉ có một đường** (`python/tests/test_remote_actuator.py`): `test_no_path_reaches_a_remote_actuator_without_a_valid_token`, `test_a_remote_actuator_plugin_receives_no_hal_no_ledger_and_no_envelope`, `test_the_order_is_require_pin_state_guard_envelope_authorize_record_apply`, `test_a_refused_remote_on_spends_no_token_and_holds_no_envelope`, `test_off_to_a_remote_actuator_needs_no_token_and_is_never_refused`
-- [x] **Trạng thái và mất liên lạc:** `test_an_ambiguous_send_failure_holds_the_reservation_and_marks_the_actuator_uncertain`, `test_a_not_sent_failure_refunds_the_reservation`, `test_an_uncertain_actuator_refuses_on_but_still_sends_off`, `test_uncertain_ends_only_on_a_fresh_off_readback_never_on_a_timer`, `test_a_reading_of_on_nobody_commanded_is_already_on_not_a_command_to_turn_off`, `test_the_hal_turns_off_only_what_it_turned_on`, `test_a_restart_leaves_every_remote_actuator_uncertain`, `test_a_late_delivered_on_is_seen_by_readback_and_turned_off`
-- [x] **Phong bì** (`python/tests/test_remote_actuator_envelope.py`): `test_the_remote_envelope_keys_have_the_meaning_of_rfc_0007`, `test_the_window_counts_until_the_hal_knows_the_actuator_is_off`, `test_the_physical_ceiling_is_max_continuous_plus_tolerance_and_is_counted`, `test_sim_and_linux_end_a_remote_on_the_same_way`, `test_the_remote_on_time_is_written_before_the_command_is_sent`, `test_a_corrupt_record_makes_a_remote_actuator_quarantined`
-- [x] **Mức tự tắt trên double** (`fixtures/compliance/actuators/` + `neuroedge conformance`): phép kiểm `actuator.level_proven` cho L0–L3 của §3e, mỗi vector một ca phản chứng (`test_a_double_that_ignores_the_timer_fails_l2`, `test_a_double_that_ignores_the_lease_fails_l3`, `test_a_plugin_claiming_l2_without_duration_fails_l0_check`); `test_l2_sends_a_duration_on_every_on_never_none`, `test_l3_stops_renewing_before_the_ceiling_and_a_frozen_runtime_loses_the_device`
+- [x] **Declaration corpus** (`fixtures/actuators/{valid,invalid}/` + `expected_errors.yaml`): valid declarations per level; absent `safe_off`, invalid levels, missing envelope keys, name collision with board pins, missing bidirectional references (§3b), unknown keys, literal secrets ⇒ NE3002; `safe_off` exceeding `safe_off_level`, `readback = none` for irreversible, `max_continuous_ms ≤ tolerance_ms`, `esp32s3`, `pwm`/`motion` targeting remote names ⇒ NE3001
+- [x] **Decision D5** (`python/tests/test_remote_actuator_build.py`): `test_an_irreversible_actuator_below_l2_is_refused_at_build`, `test_the_same_declaration_is_refused_at_load_without_agent_toml`, `test_reversible_is_false_when_not_declared`, `test_l0_builds_only_for_a_reversible_actuator_and_warns`, `test_an_irreversible_actuator_without_readback_is_refused`, `test_the_home_assistant_plugin_cannot_declare_an_irreversible_actuator`
+- [x] **Single path** (`python/tests/test_remote_actuator.py`): `test_no_path_reaches_a_remote_actuator_without_a_valid_token`, `test_a_remote_actuator_plugin_receives_no_hal_no_ledger_and_no_envelope`, `test_the_order_is_require_pin_state_guard_envelope_authorize_record_apply`, `test_a_refused_remote_on_spends_no_token_and_holds_no_envelope`, `test_off_to_a_remote_actuator_needs_no_token_and_is_never_refused`
+- [x] **State and communication loss:** `test_an_ambiguous_send_failure_holds_the_reservation_and_marks_the_actuator_uncertain`, `test_a_not_sent_failure_refunds_the_reservation`, `test_an_uncertain_actuator_refuses_on_but_still_sends_off`, `test_uncertain_ends_only_on_a_fresh_off_readback_never_on_a_timer`, `test_a_reading_of_on_nobody_commanded_is_already_on_not_a_command_to_turn_off`, `test_the_hal_turns_off_only_what_it_turned_on`, `test_a_restart_leaves_every_remote_actuator_uncertain`, `test_a_late_delivered_on_is_seen_by_readback_and_turned_off`
+- [x] **Envelope** (`python/tests/test_remote_actuator_envelope.py`): `test_the_remote_envelope_keys_have_the_meaning_of_rfc_0007`, `test_the_window_counts_until_the_hal_knows_the_actuator_is_off`, `test_the_physical_ceiling_is_max_continuous_plus_tolerance_and_is_counted`, `test_sim_and_linux_end_a_remote_on_the_same_way`, `test_the_remote_on_time_is_written_before_the_command_is_sent`, `test_a_corrupt_record_makes_a_remote_actuator_quarantined`
+- [x] **Auto-off levels on doubles** (`fixtures/compliance/actuators/` + `neuroedge conformance`): check `actuator.level_proven` for L0–L3 in §3e, one counter-example per vector (`test_a_double_that_ignores_the_timer_fails_l2`, `test_a_double_that_ignores_the_lease_fails_l3`, `test_a_plugin_claiming_l2_without_duration_fails_l0_check`); `test_l2_sends_a_duration_on_every_on_never_none`, `test_l3_stops_renewing_before_the_ceiling_and_a_frozen_runtime_loses_the_device`
 - [x] **P2:** `test_a_device_that_turns_itself_off_is_recorded_as_evidence`, `test_a_device_still_on_after_its_guarantee_is_commanded_off_and_quarantined`, `test_a_quarantined_actuator_refuses_every_on_until_the_record_is_cleared`, `test_uncertain_and_quarantined_are_absent_facts_so_a_gate_blocks`, `test_the_state_fact_age_is_measured_by_the_receiver`
-- [x] **Vết ghi và replay:** `test_every_remote_command_sent_follows_an_actuator_command` (lint ⇒ NE4001 khi thiếu), `test_replay_never_builds_the_plugin_opens_a_socket_or_reads_the_key`, `test_replay_refuses_the_same_on_it_refused_when_recorded`, `test_the_canonical_traces_do_not_change`
-- [x] **Home Assistant** (bản giả HA, `tests/`): `test_the_home_assistant_plugin_passes_the_l0_and_l1_vectors`, `test_a_200_from_a_service_call_is_not_a_confirmed_state`, `test_the_plugin_declares_l1_for_a_switch_and_nothing_higher`, `test_the_websocket_dropping_makes_the_actuator_uncertain`
-- [x] **Ranh giới:** `test_esp32s3_refuses_an_agent_with_remote_actuators`, `test_build_warns_on_a_network_client_import_in_an_action_module`, `test_sim_never_uses_the_real_plugin`
-- [x] **Hợp đồng công khai:** `tests/test_public_api.py` ghim tên mới, `test_the_actuator_protocol_signature_is_pinned` (chữ ký §3c, bốn lớp lỗi); `docs/spec/python_api.md` cập nhật
-- [x] `neuroedge gate lint` và `neuroedge verify` xanh; `pytest -q` 0 failed, 0 skipped
+- [x] **Traces and replay:** `test_every_remote_command_sent_follows_an_actuator_command` (lint ⇒ NE4001 on omission), `test_replay_never_builds_the_plugin_opens_a_socket_or_reads_the_key`, `test_replay_refuses_the_same_on_it_refused_when_recorded`, `test_the_canonical_traces_do_not_change`
+- [x] **Home Assistant** (HA double, `tests/`): `test_the_home_assistant_plugin_passes_the_l0_and_l1_vectors`, `test_a_200_from_a_service_call_is_not_a_confirmed_state`, `test_the_plugin_declares_l1_for_a_switch_and_nothing_higher`, `test_the_websocket_dropping_makes_the_actuator_uncertain`
+- [x] **Boundaries:** `test_esp32s3_refuses_an_agent_with_remote_actuators`, `test_build_warns_on_a_network_client_import_in_an_action_module`, `test_sim_never_uses_the_real_plugin`
+- [x] **Public contracts:** `tests/test_public_api.py` pins new names, `test_the_actuator_protocol_signature_is_pinned` (signature in §3c, four error classes); `docs/spec/python_api.md` updated
+- [x] `neuroedge gate lint` and `neuroedge verify` green; `pytest -q` 0 failed, 0 skipped
 
-## 8. Việc phải làm khi chấp thuận
+## 8. Implementation Steps Upon Approval
 
-- [x] `engine/compiler.py`: đọc `[actuators]`, kiểm §3b và D5 (§3f), nối vào `check_capabilities` (tên cơ cấu là chân khai được), cảnh báo import client mạng; cùng hàm kiểm dùng lúc nạp (TSK-I2c-16)
-- [x] `hal/__init__.py` và mô-đun mới `hal/remote.py`: đường dùng chung §3c, trạng thái §3g, hẹn giờ `off`/gia hạn lease; `hal/sim.py`, `hal/linux.py` rẽ ở đầu `digital_out`; `script_remote_state`; `hal/envelope.py`: kết thúc theo tên do HAL (`virtual = False`) và gộp giới hạn của cơ cấu từ xa vào `SafetyEnvelope`; `sim/session.py` (`:917–942`, `_linux_envelope` `:645`): nối plugin (`linux`) hoặc double (`sim`), từ chối `esp32s3`
-- [x] `python/neuroedge/trace.py`: lint §3i; `testing/player.py`: replay không chạm plugin
-- [x] `Actuator` Protocol, `Command`, `DeviceDouble`, `ActuatorError` và bốn lớp lỗi vào `neuroedge.sdk` (TSK-I2c-11); bộ test tuân thủ cho loại `neuroedge.actuators` (TSK-I2c-12), double của Home Assistant và plugin `home_assistant` (TSK-I2c-16), dữ kiện đọc lại qua fact source trong tiến trình (TSK-I2c-09)
-- [x] `docs/spec/threat_model.md`: §1 thêm cơ cấu từ xa vào "đường hợp lệ duy nhất" và vào ngoại lệ lệnh về phía an toàn; §2 thêm hàng cho từng đường tắt của §3g (bật khi `uncertain`, hoàn nhầm phần giữ trước, tắt thứ không bật); §5 thêm rủi ro 1–7. `docs/spec/tool_calling.md` §10 quy tắc 2: nói thêm "hoặc là cơ cấu từ xa" cho hiệu ứng vật lý
-- [x] `docs/spec/simulation_coverage.md` §3: sáu sự kiện §3i; `docs/user/thuat-ngu.md`: mức tự tắt L0–L3, cơ cấu từ xa, nợ tắt, không hoàn tác
-- [x] `neuroedge-prd.md`: Phụ lục B (nới nguyên nhân NE1003, NE3001, NE3002); FR-EXT-07 giữ nguyên lời; quyết định mới ở §9 cấp `Q-N` ở §15
-- [x] `CONTRIBUTING.md` §3: thêm corpus `fixtures/actuators/` vào bảng "Thêm một fixture phản chứng"; `neuroedge-roadmap.md`: TSK-I2c-04 xong; `TODOS.md` #55: phần thiết kế đóng, phần Zenoh/kênh không tin cậy giữ lại
-- [ ] `docs/rfc/README.md` (dòng RFC-0018) và `CHANGELOG.md` `[Chưa phát hành]`
+- [x] `engine/compiler.py`: parse `[actuators]`, validate §3b and D5 (§3f), wire into `check_capabilities` (actuator names as valid declared pins), warn on network client imports; shared validator used at load time (TSK-I2c-16)
+- [x] `hal/__init__.py` and new module `hal/remote.py`: shared path §3c, state §3g, `off` timers/lease renewals; `hal/sim.py`, `hal/linux.py` branch at entry of `digital_out`; `script_remote_state`; `hal/envelope.py`: HAL-driven termination (`virtual = False`) and merge remote actuator limits into `SafetyEnvelope`; `sim/session.py` (`:917–942`, `_linux_envelope` `:645`): attach plugin (`linux`) or double (`sim`), reject `esp32s3`
+- [x] `python/neuroedge/trace.py`: lint §3i; `testing/player.py`: replay without touching plugins
+- [x] `Actuator` Protocol, `Command`, `DeviceDouble`, `ActuatorError`, and four error classes into `neuroedge.sdk` (TSK-I2c-11); compliance test suite for `neuroedge.actuators` (TSK-I2c-12), Home Assistant double and `home_assistant` plugin (TSK-I2c-16), readback facts via in-process fact source (TSK-I2c-09)
+- [x] `docs/spec/threat_model.md`: §1 adds remote actuators to "single valid path" and safety-direction command exception; §2 adds rows for bypass paths in §3g (turning on when `uncertain`, improper reservation refund, turning off unmanaged devices); §5 adds risks 1–7. `docs/spec/tool_calling.md` §10 rule 2: add "or a remote actuator" for physical effects
+- [x] `docs/spec/simulation_coverage.md` §3: six events in §3i; `docs/user/thuat-ngu.md`: auto-off levels L0–L3, remote actuator, off-debt, irreversible
+- [x] `neuroedge-prd.md`: Appendix B (broaden causes for NE1003, NE3001, NE3002); FR-EXT-07 text unchanged; new decisions in §9 assigned `Q-N` in §15
+- [x] `CONTRIBUTING.md` §3: add corpus `fixtures/actuators/` to table "Adding a counter-example fixture"; `neuroedge-roadmap.md`: TSK-I2c-04 completed; `TODOS.md` #55: design portion closed, Zenoh/unreliable channel portion retained
+- [ ] `docs/rfc/README.md` (RFC-0018 row) and `CHANGELOG.md` `[Unreleased]`
 
-## 9. Quyết định cho các câu hỏi mở (Q-68, 2026-10-04)
+## 9. Decisions for Open Questions (Q-68, 2026-10-04)
 
-Q-67 chưa quyết các điểm dưới đây; RFC viết theo khuyến nghị. Kỹ thuật trưởng **chấp nhận khuyến nghị của mọi câu dưới đây**, theo nguyên tắc an toàn cao nhất của Q-57; mỗi khuyến nghị là quyết định (Q-68, 2026-10-04). Mục này là hồ sơ quyết định: §3–§8 lệch với nó thì sửa §3–§8.
+Q-67 left the following points open; RFC was written according to recommendations. Lead Engineer **accepts recommendations for all questions below**, under the highest-safety principle of Q-57; each recommendation is a decision (Q-68, 2026-10-04). This section is the decision record: if §3–§8 conflict with it, fix §3–§8.
 
-1. **Khai cơ cấu từ xa ở `agent.toml` hay ở `board.v1`?** *Khuyến nghị: `agent.toml`* (§3b): cấu hình triển khai không thuộc phần cứng, và không sửa lược đồ đóng băng. Đánh đổi: phong bì nằm ở tệp của người triển khai, không ở hồ sơ bo. Chọn `board.v1` thì phải sửa `schemas/board.v1.json` (RFC, hàng đầu `CONTRIBUTING.md` §3), thêm khoá `capabilities` mới và quyết cách bo `sim-*` soi nó (bất biến #7).
-2. **Đọc lại bắt buộc cho hành động không hoàn tác?** FR-EXT-07 đã đòi mức thiết bị tự tắt được (L2/L3); RFC này thêm `readback ≠ none`, vì không có nó P2 không tồn tại và mức chỉ còn là lời của plugin. *Khuyến nghị: bắt buộc.* Đánh đổi: một số thiết bị chỉ ghi, không đọc được, sẽ không dùng được cho không hoàn tác.
-3. **Adapter Home Assistant đặt ở đâu** (roadmap TSK-I2c-16: "plugin trong `python/neuroedge/` hoặc kho riêng")? *Khuyến nghị: kho riêng, giấy phép do tác giả chọn (nên Apache-2.0)* (Q-67 quyết định 8) — nó là phép thử rằng SDK đủ cho bên thứ ba, nên không được dùng đường riêng nào của lõi; ngược lại, đặt trong lõi buộc nó vào PolyForm Noncommercial (Q-45) và buộc đội lõi bảo trì một tích hợp nó không sở hữu.
-4. **`pwm`, độ sáng, `motion.*` cho cơ cấu từ xa** (đèn điều sáng của Home Assistant, servo từ xa): mỗi thứ cần định nghĩa "bị chặn bởi gì khi mất liên lạc" riêng. *Khuyến nghị: hoãn, RFC riêng khi có nhu cầu đo được*; bản này cấm bằng NE3001 để không ai dùng tạm mà không có bảo đảm.
-5. **Các hằng của §3d, §3g** — `OFF_SLACK_MS`, `OFF_RETRY_MS`, `max_state_age_ms`, trần `command_timeout_ms` và `tolerance_ms` mà plugin được khai. *Khuyến nghị: kỹ thuật trưởng chốt khi duyệt, như RFC-0014 §9 câu 10*; đổi một hằng về sau là sửa đặc tả, nới giới hạn an toàn thì cần RFC. **Đã chốt (Q-68):** `OFF_SLACK_MS` = 100 ms · `OFF_RETRY_MS` = 500 ms · `max_state_age_ms` = 2000 ms · plugin khai `command_timeout_ms` ≤ 5000 ms · plugin khai `tolerance_ms` ≤ 2000 ms (vượt ⇒ NE3002). Đây là giá trị thận trọng chọn khi chưa có thiết bị thật; thu hẹp theo số đo của TSK-I2c-16.
-6. **Cảnh báo import client mạng trong module `@action`** (§3c): *cảnh báo, không chặn* (khuyến nghị). Chặn sẽ sinh dương tính giả (mã đọc dữ liệu qua HTTP là hợp lệ) và vẫn không đầy đủ; nó chỉ là một lời nhắc, không phải rào chắn.
+1. **Declare remote actuators in `agent.toml` or in `board.v1`?** *Recommendation: `agent.toml`* (§3b): deployment configuration does not belong in hardware profiles, and avoids editing frozen schemas. Trade-off: envelopes live in deployer file rather than board profile. Choosing `board.v1` requires editing `schemas/board.v1.json` (RFC, top row of `CONTRIBUTING.md` §3), adding new `capabilities` keys and determining how `sim-*` boards mirror it (invariant #7).
+2. **Mandatory readback for irreversible actions?** FR-EXT-07 required on-device auto-off levels (L2/L3); this RFC adds `readback ≠ none`, because without it P2 cannot run and levels remain unverified claims. *Recommendation: mandatory.* Trade-off: write-only devices cannot be used for irreversible actions.
+3. **Home Assistant adapter location** (roadmap TSK-I2c-16: "plugin in `python/neuroedge/` or separate repo")? *Recommendation: separate repo, license chosen by author (preferably Apache-2.0)* (Q-67 decision 8) — acts as proof that SDK suffices for third parties without private core paths; conversely, in-tree inclusion binds it to PolyForm Noncommercial (Q-45) and forces core team to maintain an integration it does not own.
+4. **`pwm`, brightness, `motion.*` for remote actuators** (Home Assistant dimmable lights, remote servos): each requires defining dedicated "what blocks it upon communication loss" semantics. *Recommendation: defer, separate RFC when measurable need arises*; this release rejects with NE3001 to prevent unguaranteed ad-hoc usage.
+5. **Constants for §3d, §3g** — `OFF_SLACK_MS`, `OFF_RETRY_MS`, `max_state_age_ms`, plugin ceilings for `command_timeout_ms` and `tolerance_ms`. *Recommendation: Lead Engineer settles upon approval, like RFC-0014 §9 question 10*; altering constants later changes specifications; relaxing safety limits requires an RFC. **Settled (Q-68):** `OFF_SLACK_MS` = 100 ms · `OFF_RETRY_MS` = 500 ms · `max_state_age_ms` = 2000 ms · plugin-declared `command_timeout_ms` ≤ 5000 ms · plugin-declared `tolerance_ms` ≤ 2000 ms (exceeding ⇒ NE3002). Conservative defaults chosen prior to real device measurements; tighten based on TSK-I2c-16 empirical metrics.
+6. **Network client import warning in `@action` modules** (§3c): *warn, do not block* (recommendation). Blocking yields false positives (HTTP data fetching is valid) and remains non-exhaustive; serves as reminder, not barrier.

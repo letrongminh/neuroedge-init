@@ -7,7 +7,7 @@
  *
  *     bash scripts/gen_ui_fonts.sh
  *
- * and read docs/spec/ui.md §Phông chữ when changing sizes or ranges.
+ * and read docs/spec/ui.md §5 (Fonts) when changing sizes or ranges.
  */
 #ifndef NE_FONTS_H
 #define NE_FONTS_H

@@ -1,47 +1,49 @@
-# RFC-0002: Mở rộng danh sách target
+# RFC-0002: Expand Target List
 
 | | |
 |:---|:---|
-| **Mã RFC** | 0002 |
-| **Lược đồ bị ảnh hưởng** | `board.v1`, `trace.v1` — **chỉ** enum `target`; **không** đụng `gate.v1` |
-| **Yêu cầu PRD liên quan** | FR-TGT-08, FR-HAL-01, FR-HAL-04, FR-HAL-05 |
-| **Người đề xuất** | V1 — Kỹ sư lõi nền tảng |
-| **Ngày mở** | 2026-09-22 · thu hẹp phạm vi 2026-09-23 sau review (biên bản: `docs/archive/rfc-0002-review-record.md` (đã xoá; `git show 7626b62:docs/archive/rfc-0002-review-record.md`)) |
-| **Trạng thái** | ✅ Đã chấp thuận (2026-10-04) — kỹ thuật trưởng ký theo Q-67 (quyết định 4); hiện thực trong I2c (§10) |
-| **Người phê duyệt** | **Kỹ thuật trưởng — bắt buộc.** RFC không làm gate lỏng hơn, nhưng chạm ba bất biến kiểm thử đang bảo vệ tương đương target (§5), và tiêu chí ra Khối V1a số 1 đòi chữ ký kỹ thuật trưởng (`docs/architecture/vi/15-target-architecture.md` §4.4) |
-| **Kiểm chứng** | *(chưa có — thuộc pull request thứ hai, nay ở increment I2c (Q-67; trước đó I11 sau Developer Beta theo Q-40), xem §8 và §10)* |
+| **RFC ID** | 0002 |
+| **Affected Schema** | `board.v1`, `trace.v1` — `target` enum **only**; does **not** touch `gate.v1` |
+| **Related PRD Requirements** | FR-TGT-08, FR-HAL-01, FR-HAL-04, FR-HAL-05 |
+| **Author** | V1 — Platform Core Engineer |
+| **Date Opened** | 2026-09-22 · scope narrowed 2026-09-23 after review (minutes: `docs/archive/rfc-0002-review-record.md` (deleted; `git show 7626b62:docs/archive/rfc-0002-review-record.md`)) |
+| **Status** | ✅ Approved (2026-10-04) — lead architect signed per Q-67 (decision 4); implemented in I2c (§10) |
+| **Approver** | **Lead Architect — mandatory.** RFC does not make gates more lax, but touches three test invariants protecting target equivalence (§5), and Block V1a Exit Criterion 1 requires lead architect sign-off (`docs/architecture/vi/15-target-architecture.md` §4.4) |
+| **Verification** | *(none yet — belongs to the second pull request, now in increment I2c (Q-67; previously I11 after Developer Beta per Q-40), see §8 and §10)* |
 
-> **Phạm vi pull request này:** chỉ tệp RFC, **chưa sửa lược đồ**, đúng quy trình
-> `docs/rfc/README.md` bước 2. Ba lược đồ trong `schemas/` giữ nguyên; bộ test
-> hiện tại phải vẫn xanh sau khi hợp nhất RFC này.
+> **Scope of this pull request:** RFC file only, **no schema edits yet**, following
+> `docs/rfc/README.md` step 2. The three schemas in `schemas/` remain intact; the existing
+> test suite must stay green after merging this RFC.
 
-> **Thu hẹp phạm vi (2026-09-23).** Bản đầu của RFC gộp ba việc: mở enum `target`,
-> thêm nguyên thủy `vision.in`, và quy ước `vision_ref` trong vết ghi. Sau review,
-> RFC này **chỉ còn việc thứ nhất**, cộng thêm bậc target ở dạng máy đọc được.
-> `vision.in` và bằng chứng thị giác trong vết ghi chuyển sang §9 kèm mốc kích
-> hoạt. Tên tệp giữ nguyên để không vỡ các liên kết tới nó.
+> **Scope narrowing (2026-09-23).** The initial RFC draft combined three items: expanding
+> the `target` enum, adding the `vision.in` primitive, and the `vision_ref` convention in
+> traces. Following review, this RFC **retains only the first item**, plus machine-readable
+> target tiers. `vision.in` and visual evidence in traces are moved to §9 with activation
+> triggers. The file name is retained to avoid breaking links.
 
-> **Thời điểm hợp nhất (2026-09-25, đã xác nhận).** Câu chữ về thời điểm ở phần đầu và §8 được cập nhật
-> theo PRD Q-40: pull request thứ hai thuộc increment I11, sau Developer Beta. Nội dung đề xuất không đổi;
-> RFC vẫn đang thảo luận và vẫn cần chữ ký kỹ thuật trưởng trước khi chấp thuận.
+> **Merge timing (2026-09-25, confirmed).** Timing prose in the header and §8 updated per
+> PRD Q-40: the second pull request belongs to increment I11, after Developer Beta. Proposed
+> content remains unchanged; the RFC is under discussion and still requires lead architect
+> signature before approval.
 
 ---
 
-## 1. Vấn đề
+## 1. Problem
 
-Giai đoạn 2 (`docs/architecture/vi/15-target-architecture.md` §4.4) mở rộng danh mục phần cứng sang Jetson
-(bậc 2), STM32 và RP2350 (bậc 3). Phân tầng bậc đã có đủ trong văn bản — `docs/architecture/vi/00-overview.md` §5.2, PRD FR-TGT-08 và Q-13 — nhưng lược đồ đã đóng băng không công
-nhận ba target mới, và mã nguồn không biết bậc là gì.
+Phase 2 (`docs/architecture/vi/15-target-architecture.md` §4.4) expands the hardware catalog
+to Jetson (Tier 2), STM32, and RP2350 (Tier 3). Tier stratification is documented in
+prose — `docs/architecture/vi/00-overview.md` §5.2, PRD FR-TGT-08, and Q-13 — but frozen
+schemas do not recognize the three new targets, and source code is unaware of tiers.
 
-### 1a. Danh sách target là enum đóng ở hai lược đồ
+### 1a. Target List Is a Closed Enum in Two Schemas
 
-`schemas/board.v1.json`, trường `board.target`:
+`schemas/board.v1.json`, field `board.target`:
 
 ```json
 "target": { "type": "string", "enum": ["sim", "linux", "esp32s3"] }
 ```
 
-`schemas/trace.v1.json`, trường `metadata.target`:
+`schemas/trace.v1.json`, field `metadata.target`:
 
 ```json
 "target": {
@@ -50,89 +52,89 @@ nhận ba target mới, và mã nguồn không biết bậc là gì.
 }
 ```
 
-Hệ quả thực tế: một tệp `boards/jetson-orin-nano.toml` hợp lệ về mọi mặt khác
-vẫn bị từ chối, và mọi vết ghi sinh ra từ bo mạch đó không thẩm định được. Không
-có cờ cấu hình nào nới được — enum nằm trong tệp đóng băng.
+Practical consequence: a `boards/jetson-orin-nano.toml` file valid in every other respect
+is rejected, and all traces generated from that board fail validation. No configuration
+flag can relax this — the enum is inside frozen files.
 
-Danh sách này còn lặp lại ở tầng Python, `python/neuroedge/hal/board.py`:
+This list is also repeated in Python, `python/neuroedge/hal/board.py`:
 
 ```python
 SUPPORTED_TARGETS: tuple[str, ...] = ("sim", "linux", "esp32s3")
 ```
 
-và ở corpus phản chứng `fixtures/traces/expected_errors.yaml`, nơi thông điệp lỗi
-kỳ vọng khớp **chuỗi ký tự** sinh trực tiếp từ enum:
+and in the counterexample corpus `fixtures/traces/expected_errors.yaml`, where expected
+error messages match the **literal string** generated directly from the enum:
 
 ```yaml
 unknown_target.json:
   why_contains: "is not one of ['sim', 'linux', 'esp32s3']"
 ```
 
-Ba nơi này phải đổi đồng thời, nếu không bộ test đỏ. Trong đó `schemas/` và
-`fixtures/traces/` đều thuộc diện **RFC bắt buộc** theo `CONTRIBUTING.md` §3.
+All three locations must change simultaneously, or tests fail. Furthermore, `schemas/`
+and `fixtures/traces/` require a **mandatory RFC** under `CONTRIBUTING.md` §3.
 
-### 1b. Bậc target chỉ tồn tại trong văn bản
+### 1b. Target Tiers Exist Only in Prose
 
-FR-TGT-08 đòi *"Bậc được khai báo tường minh, không suy diễn"*, và ngưỡng
-`verify` 100% chỉ ràng buộc bậc 1. Nhưng không dòng mã nào biết `jetson` là bậc 2
-hay `rp2350` là bậc 3. Hệ quả: không test nào phân biệt được "bo mạch bậc 1 thiếu
-`display`" (lỗi) với "bo mạch bậc 3 thiếu `display`" (được phép).
+FR-TGT-08 requires *"Tiers are explicitly declared, not inferred"*, and the 100%
+`verify` threshold only binds Tier 1. But not a single line of code knows whether `jetson`
+is Tier 2 or `rp2350` is Tier 3. Consequence: no test can distinguish between "Tier 1
+board missing `display`" (error) and "Tier 3 board missing `display`" (permitted).
 
-### 1c. Ba test đang ép một tập bo mạch cố định
+### 1c. Three Tests Enforce a Fixed Board Set
 
-`python/tests/test_boards.py` hiện khẳng định ba điều đúng cho ba bo mạch tham
-chiếu, nhưng viết theo cách vỡ ngay khi danh sách target dài ra:
+`python/tests/test_boards.py` currently asserts three properties true for the three
+reference boards, but written in ways that break immediately when the target list grows:
 
-| Test | Khẳng định | Vỡ thế nào khi thêm target |
+| Test | Assertion | How It Breaks When Targets Are Added |
 |:---|:---|:---|
-| `test_one_profile_exists_per_supported_target` | Tập profile trong `boards/` đúng bằng `SUPPORTED_TARGETS` | Đỏ ngay: `jetson`, `stm32`, `rp2350` không có profile, mà profile thật cần phần cứng (§9.4) |
-| `test_all_three_targets_share_the_same_named_pins` | Mọi profile khai cùng một tập chân | Một bo mạch bậc 3 điều khiển van công nghiệp phải khai `porch_light` giả để qua |
-| `test_every_profile_declares_all_five_primitives` | Mọi profile khai đủ năm nguyên thủy | STM32 không có màn hình; RP2350 không có AEC phần cứng |
+| `test_one_profile_exists_per_supported_target` | Profile set in `boards/` strictly equals `SUPPORTED_TARGETS` | Red immediately: `jetson`, `stm32`, `rp2350` have no profiles, while real profiles need hardware (§9.4) |
+| `test_all_three_targets_share_the_same_named_pins` | Every profile declares the same named pin set | A Tier 3 board controlling industrial valves would have to declare a fake `porch_light` to pass |
+| `test_every_profile_declares_all_five_primitives` | Every profile declares all five primitives | STM32 has no display; RP2350 has no hardware AEC |
 
 ---
 
-## 2. Vì sao lược đồ hiện tại không giải quyết được
+## 2. Why the Current Schema Does Not Solve It
 
-Với `target`, enum đóng ở cả hai lược đồ và ở Python, đóng một cách nhất quán.
-Không có đường mở nào ngoài việc sửa enum.
+For `target`, the enum is closed in both schemas and in Python, consistently closed.
+There is no path forward other than modifying the enum.
 
-Ghi thêm một lệch pha liên quan, được sửa ở tầng mã (§3c) chứ không ở lược đồ:
-`capabilities` trong `board.v1.json` không có `additionalProperties: false`, nên
-một khoá gõ sai như `vison_in` **validate qua**. `board.py::board_from_document()`
-giữ nguyên mọi khoá lúc nạp; `_normalise()` chỉ từ chối khi có người **truy vấn**
-nguyên thủy đó. Khoá lạ vì vậy được nhận lặng lẽ.
+An additional related discrepancy, fixed at code level (§3c) rather than schema:
+`capabilities` in `board.v1.json` lacks `additionalProperties: false`, so a mistyped
+key like `vison_in` **passes validation**. `board.py::board_from_document()` preserves
+all keys upon loading; `_normalise()` only rejects when a component **queries** that
+primitive. Unknown keys are thus accepted silently.
 
 ---
 
-## 3. Thay đổi đề xuất
+## 3. Proposed Change
 
-### 3a. Mở rộng enum `target`
+### 3a. Expand `target` Enum
 
-`schemas/board.v1.json` và `schemas/trace.v1.json`, trước:
+`schemas/board.v1.json` and `schemas/trace.v1.json`, before:
 
 ```json
 "enum": ["sim", "linux", "esp32s3"]
 ```
 
-sau:
+after:
 
 ```json
 "enum": ["sim", "linux", "esp32s3", "jetson", "stm32", "rp2350"]
 ```
 
-kèm `$comment` dẫn chiếu RFC-0002 tại hai chỗ enum, theo tiền lệ RFC-0001.
+with `$comment` referencing RFC-0002 at both enum sites, following RFC-0001 precedent.
 
-Enum **vẫn đóng** — đây là chủ ý, xem §6. Cái đổi là danh sách, không phải bản
-chất của ràng buộc. Lược đồ chỉ trả lời "tên target này có được công nhận không";
-nó không mang bậc.
+The enum **remains closed** — this is deliberate, see §6. What changes is the list,
+not the nature of the constraint. The schema only answers "is this target name recognized";
+it does not carry tiers.
 
-### 3b. Bậc target máy đọc được, do lõi sở hữu
+### 3b. Machine-Readable Target Tiers Owned by Core
 
 `python/neuroedge/hal/board.py`:
 
 ```python
-# FR-TGT-08: bậc cam kết của đội lõi cho từng target. Lõi sở hữu bảng này;
-# board.toml không tự khai bậc — một bản port cộng đồng không thể tự nhận bậc 1.
+# FR-TGT-08: committed tiers of the core team for each target. Core owns this table;
+# board.toml does not self-declare tiers — a community port cannot self-claim tier 1.
 TARGET_TIERS: dict[str, int] = {
     "sim": 1, "linux": 1, "esp32s3": 1,
     "jetson": 2,
@@ -141,251 +143,256 @@ TARGET_TIERS: dict[str, int] = {
 SUPPORTED_TARGETS: tuple[str, ...] = tuple(TARGET_TIERS)
 ```
 
-Bậc là **thuộc tính của target**, không phải của từng bo mạch, và là **lời hứa của
-đội lõi**. Nếu để trong `board.toml`, một bo mạch cộng đồng có thể tự khai `tier = 1`
-và mượn danh cam kết chất lượng mà đội lõi không đưa ra. Vì vậy tiêu chí chấp nhận
-của FR-TGT-08 đổi chữ *"trong `board.toml`"* thành *"trong bảng bậc của mã lõi
-(`TARGET_TIERS`); `board.toml` không tự khai bậc"* (§8).
+Tier is a **property of the target**, not of individual boards, and represents the
+**promise of the core team**. If placed in `board.toml`, a community board could declare
+`tier = 1` and claim a quality guarantee the core team never provided. Therefore, the
+acceptance criterion of FR-TGT-08 changes *"in `board.toml`"* to *"in the core code tier
+table (`TARGET_TIERS`); `board.toml` does not self-declare tiers"* (§8).
 
-### 3c. Mã đi kèm (không phải lược đồ)
+### 3c. Accompanying Code (Not Schemas)
 
-1. **Không ghim cứng "năm".** Thông điệp ở `board.py::_normalise()` và docstring
-   sinh từ danh sách nguyên thủy, không viết chữ "five". Tập nguyên thủy **vẫn là
-   năm** trong RFC này (FR-HAL-01 không đổi); việc này chỉ để RFC thị giác về sau
-   thêm một phần tử mà không phải sửa chữ ở bảy nơi.
-2. **Khoá capability lạ bị từ chối lúc nạp.** `board_from_document()` từ chối khoá
-   ngoài tập hợp lệ bằng `BoardCapabilityError` ba phần (FR-HAL-05), gợi ý khoá gần
-   nhất (`vison_in` → `vision_in` khi khoá đó tồn tại; hôm nay → danh sách năm khoá).
-   Làm ở mã chứ không đóng `capabilities` trong lược đồ, vì đóng là siết chặt (§6).
-3. **Lỗi target lạ chỉ đường.** Khi lược đồ từ chối `board.target`, phần `how` liệt
-   kê target được công nhận theo bậc và trỏ tới RFC này.
-4. **CLI.** `neuroedge board show` lặp theo danh sách nguyên thủy thay vì một bộ năm
-   tên ghim ở `cli/main.py`. Lệnh mới `neuroedge board validate <path>` nạp một tệp
-   TOML bất kỳ và in target, bậc, nguyên thủy có/thiếu. Mọi cờ `--target` / `--targets`
-   (`verify`, `run`, `build`, `record`, `replay`) kiểm tên với `SUPPORTED_TARGETS`
-   qua một hàm dùng chung; hôm nay `verify --targets esp32s2` thoát 0 lặng lẽ.
+1. **Do not hard-code "five".** Messages in `board.py::_normalise()` and docstrings
+   generate from the primitive list, without writing the literal word "five". The primitive
+   set **remains five** in this RFC (FR-HAL-01 unchanged); this ensures future vision
+   RFCs can add an element without updating prose in seven places.
+2. **Reject unknown capability keys at load.** `board_from_document()` rejects keys
+   outside the valid set with a three-part `BoardCapabilityError` (FR-HAL-05), suggesting
+   the closest key (`vison_in` → `vision_in` when present; currently → list of five keys).
+   Implemented in code rather than closing `capabilities` in schema, as closing is a
+   tightening (§6).
+3. **Unknown target error provides guidance.** When the schema rejects `board.target`,
+   the `how` section lists recognized targets by tier and references this RFC.
+4. **CLI.** `neuroedge board show` iterates over the primitive list rather than a fixed
+   tuple of five names in `cli/main.py`. A new command `neuroedge board validate <path>`
+   loads any TOML file and prints target, tier, and present/missing primitives. All
+   `--target` / `--targets` flags (`verify`, `run`, `build`, `record`, `replay`) validate
+   names against `SUPPORTED_TARGETS` via a shared helper; currently `verify --targets esp32s2`
+   exits 0 silently.
 
 ---
 
-## 4. Ảnh hưởng tương thích
+## 4. Compatibility Impact
 
-| Hạng mục | Ảnh hưởng |
+| Item | Impact |
 |:---|:---|
-| Tệp đang hợp lệ có còn hợp lệ? | **Có** với lược đồ — không có ngoại lệ nào. Thay đổi lược đồ ở §3a là nới lỏng thuần túy. Riêng bộ nạp Python (§3c.2) từ chối khoá capability lạ mà lược đồ vẫn nhận; không tệp nào trong kho có khoá lạ |
-| Tệp đang không hợp lệ có trở nên hợp lệ? | **Có** — `board.toml` và vết ghi khai target bậc 2/3 |
-| Tương thích xuôi | **Không có.** Công cụ `neuroedge` bản cũ sẽ từ chối `board.toml` và vết ghi khai `jetson`, `stm32`, `rp2350`, với lỗi enum rõ ràng. Không vết ghi nào ngoài kho phụ thuộc target mới |
-| Cần tăng phiên bản lược đồ (`v1` → `v2`)? | **Không** — xem lập luận dưới |
-| Ảnh hưởng tới mã băm / chữ ký gate đã phát hành? | **Không** — RFC này không đụng `gate.v1`. Băm gate tính trên tài liệu gate, không liên quan target |
-| Ảnh hưởng tới ba tệp vết ghi chuẩn mực? | **Không** — cả ba khai `target: "esp32s3"`, vẫn nằm trong enum mở rộng và vẫn thẩm định qua nguyên trạng |
+| Do currently valid files remain valid? | **Yes** for schemas — no exceptions. Schema changes in §3a are pure relaxations. Separately, the Python loader (§3c.2) rejects unknown capability keys that the schema accepts; no files in the repository contain unknown keys |
+| Do currently invalid files become valid? | **Yes** — `board.toml` and traces declaring Tier 2/3 targets |
+| Forward compatibility | **None.** Older `neuroedge` tools will reject `board.toml` and traces declaring `jetson`, `stm32`, `rp2350`, with clear enum errors. No traces outside the repository depend on new targets |
+| Is a schema version bump required (`v1` → `v2`)? | **No** — see reasoning below |
+| Impact on hashes / digital signatures of published gates? | **None** — this RFC does not touch `gate.v1`. Gate hashes are computed over gate documents, unrelated to targets |
+| Impact on the three canonical trace files? | **None** — all three declare `target: "esp32s3"`, remaining within the expanded enum and validating intact |
 
-### Đối chất với tuyên bố `v2` của RFC-0001
+### Reconciling with RFC-0001's `v2` Declaration
 
-RFC-0001 §4 tuyên bố:
+RFC-0001 §4 states:
 
-> Sau khi Sprint 1 đóng, mọi thay đổi có tính chất này bắt buộc lên `gate.v2`.
+> After Sprint 1 closes, any change of this nature must go to `gate.v2`.
 
-Câu này **không áp cho RFC-0002**, vì hai lý do độc lập, mỗi lý do đủ để kết luận:
+This statement **does not apply to RFC-0002**, for two independent reasons, each
+sufficient on its own:
 
-1. **Phạm vi khác.** Tuyên bố đó nói về `gate.v2` và đứng trong một RFC chỉ sửa
-   `gate.v1`. "Thay đổi có tính chất này" trỏ tới hai trường hợp **siết chặt**
-   ở RFC-0001 mục 3c và 3d — những thay đổi làm tài liệu đang hợp lệ trở thành
-   không hợp lệ. RFC-0002 không có trường hợp siết chặt nào trong lược đồ.
-2. **Bản chất khác.** Quy tắc gốc ở `0000-template.md` phân biệt rạch ròi: phá
-   vỡ tương thích thì bắt buộc tăng phiên bản; *"nới lỏng (tệp đang không hợp lệ
-   trở nên hợp lệ) **có thể làm trong cùng phiên bản**"*. §3a là nới lỏng thuần túy.
+1. **Different scope.** That statement addresses `gate.v2` and sits inside an RFC modifying
+   only `gate.v1`. "Changes of this nature" refers to the two **tightening** cases in
+   RFC-0001 items 3c and 3d — changes causing valid documents to become invalid. RFC-0002
+   contains no schema tightening cases.
+2. **Different nature.** The foundational rule in `0000-template.md` draws a clear
+   distinction: breaking changes require a version bump; *"relaxations (a currently invalid
+   file becomes valid) **can be made within the same version**"*. §3a is a pure relaxation.
 
-Nói cách khác: RFC-0001 phải viện đến "Sprint 1 chưa đóng" làm lý do đặc cách vì
-nó **có** siết chặt. RFC-0002 không cần lý do đặc cách nào.
+In other words: RFC-0001 had to invoke "Sprint 1 has not closed" as an exception because
+it **contained** tightening. RFC-0002 requires no exception.
 
-Hệ quả cùng lập luận đó: vì là nới lỏng, thay đổi này **làm được vào bất kỳ lúc
-nào** trong `v1` mà không vỡ tài liệu nào. Không có "chi phí viết lại" nào buộc phải
-làm sớm — đó là lý do §8 cho phép chờ tới I11 (PRD Q-40).
+A corollary of that reasoning: being a relaxation, this change **can be introduced at
+any time** in `v1` without breaking any documents. There is no "rewrite cost" forcing early
+adoption — which is why §8 permits deferring to I11 (PRD Q-40).
 
-Ghi thêm cho minh bạch: nếu hội đồng vẫn muốn `board.v2`/`trace.v2`, chi phí là
-hai tệp lược đồ mới, hai `$id` mới, và một kịch bản di trú cho các vết ghi đã
-sinh — trong khi lợi ích kỹ thuật bằng không, vì không có tài liệu nào bị vỡ.
-Đề nghị giữ `v1`.
+Noted for transparency: should the committee still prefer `board.v2`/`trace.v2`, the cost
+is two new schema files, two new `$id`s, and a migration script for existing traces — while
+technical benefit is zero, as no documents are broken. We recommend retaining `v1`.
 
 ---
 
-## 5. Ảnh hưởng an toàn
+## 5. Safety Impact
 
-**Thay đổi này có làm một gate lỏng hơn không: không.** RFC-0002 không đụng
-`gate.v1`, không đụng năm nguyên tắc kế thừa (Phụ lục B.5), không đụng mặc định
-fail-closed, không đụng `gate_resolver.py`. Gate engine không biết target nào
-đang chạy.
+**Does this change make gates more lax: no.** RFC-0002 does not touch `gate.v1`, does
+not touch the five principles of inheritance (Appendix B.5), does not touch the fail-closed
+default, and does not touch `gate_resolver.py`. The gate engine is unaware of which
+target is executing.
 
-Chỗ cần soi là **ba bất biến kiểm thử** ở §1c. Nguyên tắc chung: **thu hẹp phạm vi
-theo bậc, không bỏ khẳng định.** Cổng thay thế mà bản đầu của RFC viện dẫn — đối
-chiếu `[requires]` của `agent.toml` với bo mạch lúc build (FR-HAL-04) — **chưa tồn
-tại**: `neuroedge build` còn là stub (`cli/main.py`, TSK-S2-02), chưa có bộ phân tích
-`agent.toml`, và `missing_primitives()` chưa có người gọi nào ngoài test. Bỏ bất biến
-trước khi cổng đó tồn tại là để một khoảng không ai canh.
+The focus of scrutiny is the **three test invariants** in §1c. General principle:
+**narrow scope by tier, do not drop assertions.** The alternative gate invoked by the
+first RFC draft — checking `[requires]` in `agent.toml` against board capabilities at
+build (FR-HAL-04) — **does not yet exist**: `neuroedge build` remains a stub (`cli/main.py`,
+TSK-S2-02), no parser exists for `agent.toml`, and `missing_primitives()` has no callers
+outside tests. Dropping invariants before that gate exists leaves an unguarded void.
 
-> **Cập nhật 2026-09-24 — tiền đề đã đổi.** Cổng đó nay đã có: `neuroedge build` đối
-> chiếu `[requires]` của `agent.toml` với bo mạch (TSK-S2-02, `engine/compiler.py`). Đoạn
-> trên giữ nguyên để thấy lập luận lúc review; trước khi duyệt RFC này, rà lại §5a–§5c
-> theo cổng hiện có thay vì theo "cổng chưa tồn tại".
+> **Update 2026-09-24 — premise changed.** That gate now exists: `neuroedge build` checks
+> `[requires]` in `agent.toml` against the board (TSK-S2-02, `engine/compiler.py`). The prose
+> above is preserved to document review reasoning; before approving this RFC, re-evaluate
+> §5a–§5c against the existing gate rather than a "non-existent gate".
 
-### 5a. Tập tên chân chung
+### 5a. Common Named Pin Set
 
 | | |
 |:---|:---|
-| **Vì sao bất biến này tồn tại** | Cách rẻ nhất để bảo đảm cùng một agent chạy được trên các target mà không rẽ nhánh — nguyên tắc P-2 (PRD §1.5), KL-2 của `docs/spec/hal_mcu_review.md` |
-| **Vì sao dạng hiện tại không còn đúng** | Nó nhầm *tập tên chân của một lớp usecase* (khóa cửa villa) với *hợp đồng toàn cục*. Bắt một bo mạch STM32 khai `porch_light` giả để qua test là **tệ hơn** cho an toàn |
-| **Đổi thành** | Khẳng định giữ nguyên, **áp cho các bo mạch bậc 1**. Bất biến theo agent (*mọi bo mạch được một agent nhắm tới phải khai đủ tập chân mà agent yêu cầu*) chỉ thay vào khi TSK-S2-02 hạ cánh kèm test riêng — không sớm hơn |
+| **Why this invariant exists** | Cheapest way to guarantee the same agent runs across targets without branching — principle P-2 (PRD §1.5), KL-2 of `docs/spec/hal_mcu_review.md` |
+| **Why the current form is no longer valid** | It mistakes the *named pin set of one use case class* (villa door lock) for a *global contract*. Forcing an STM32 board to declare a fake `porch_light` to pass tests is **worse** for safety |
+| **Changed to** | Assertion retained, **applied to Tier 1 boards**. Agent-level invariants (*every board targeted by an agent must declare all pins required by the agent*) will only substitute in when TSK-S2-02 lands with its own tests — not earlier |
 
-### 5b. Đủ năm nguyên thủy
+### 5b. All Five Primitives Present
 
 | | |
 |:---|:---|
-| **Vì sao bất biến này tồn tại** | Với ba bo mạch tham chiếu do đội lõi chọn, nó bắt được lỗi quên khai |
-| **Vì sao dạng hiện tại không còn đúng** | Nó biến *năng lực* thành *nghĩa vụ* cho mọi bậc. Ép bo mạch nhỏ khai đủ năm nghĩa là khai gian hoặc loại vĩnh viễn |
-| **Đổi thành** | Bậc 1 vẫn phải khai **đủ năm**. Bậc 2/3: nguyên thủy là khai báo có/không. Bo mạch bậc 2/3 không có đường nào chạy agent trước TSK-S2-02, vì `build` và `run` còn là stub, nên không có khoảng nào chạy mà không được canh |
+| **Why this invariant exists** | For the three reference boards chosen by the core team, it catches forgotten declarations |
+| **Why the current form is no longer valid** | It turns *capability* into *obligation* across all tiers. Forcing small boards to declare all five means faking capabilities or permanent disqualification |
+| **Changed to** | Tier 1 must still declare **all five**. Tier 2/3: primitives are declared as yes/no. Tier 2/3 boards have no way to run agents before TSK-S2-02, because `build` and `run` are still stubs, so there is no unguarded execution gap |
 
-### 5c. Một profile cho mỗi target
+### 5c. One Profile per Target
 
-`test_one_profile_exists_per_supported_target` đổi thành hai khẳng định: **mỗi
-target bậc 1 có đúng một profile** trong `boards/`, và **mọi profile** có target nằm
-trong `SUPPORTED_TARGETS`. `boards/` vẫn chỉ chứa profile bậc 1 cho tới khi có phần
-cứng thật (§9.4).
+`test_one_profile_exists_per_supported_target` splits into two assertions: **each
+Tier 1 target has exactly one profile** in `boards/`, and **every profile** has a target
+within `SUPPORTED_TARGETS`. `boards/` still contains only Tier 1 profiles until real
+hardware is available (§9.4).
 
-### 5d. Rủi ro thật của RFC này
+### 5d. Real Risk of This RFC
 
-Không nằm ở lược đồ mà ở **cam kết**. Enum sáu target tạo ấn tượng đội lõi bảo
-đảm chất lượng cho cả sáu. Không phải vậy:
+Does not lie in schemas, but in **commitments**. A six-target enum creates the impression
+that the core team guarantees quality for all six. That is not the case:
 
-- **Bậc 1** (`sim`, `linux`, `esp32s3`): `neuroedge verify` 100%, nightly hardware, đội lõi bảo trì.
-- **Bậc 2** (`jetson`): đội lõi bảo trì, verify trên miền phán quyết.
-- **Bậc 3** (`stm32`, `rp2350`): cộng đồng tự port, tự kiểm chứng qua Bộ kiểm thử
-  tuân thủ (`docs/architecture/vi/16-ecosystem-landscape.md` §6 trụ cột 2). **Đội lõi không cam kết.**
+- **Tier 1** (`sim`, `linux`, `esp32s3`): `neuroedge verify` 100%, nightly hardware, maintained by core team.
+- **Tier 2** (`jetson`): maintained by core team, verify on verdict domain.
+- **Tier 3** (`stm32`, `rp2350`): community ports, verified via Conformance Test Suite
+  (`docs/architecture/vi/16-ecosystem-landscape.md` §6 pillar 2). **No core team commitment.**
 
-Phân tầng này **đã được ghi** vào `docs/architecture/vi/00-overview.md` §5.2 và PRD FR-TGT-08
-(commit `eddfc59`), nên điều kiện "tài liệu trước, lược đồ sau" đã thỏa. `TARGET_TIERS`
-(§3b) đưa đúng bảng đó vào mã.
+This stratification **has been recorded** in `docs/architecture/vi/00-overview.md` §5.2
+and PRD FR-TGT-08 (commit `eddfc59`), satisfying the "docs first, schema second" rule.
+`TARGET_TIERS` (§3b) brings that exact table into code.
 
 ---
 
-## 6. Phương án đã xem xét và bác bỏ
+## 6. Alternatives Considered and Rejected
 
-| Phương án | Lý do bác bỏ |
+| Alternative | Reason for Rejection |
 |:---|:---|
-| Tạo `board.v2` và `trace.v2` | Phá tương thích không cần thiết. Không tài liệu nào đang hợp lệ bị vỡ (§4), nên chi phí di trú đổi lấy lợi ích bằng không |
-| Bỏ enum `target`, để `"type": "string"` | Mất cổng chặn lỗi chính tả. Một vết ghi khai `target: "esp32s2"` sẽ lặng lẽ qua. Corpus phản chứng `unknown_target.json` mất ý nghĩa |
-| Dùng `pattern` thay `enum` (ví dụ `^[a-z0-9]+$`) | Cùng vấn đề trên, chỉ khác mức độ |
-| Khai bậc trong `board.toml` (trường `board.tier` trong lược đồ) | Bậc là lời hứa của đội lõi về một target, không phải thuộc tính một bo mạch tự khai. Để trong tệp bo mạch thì một bản port cộng đồng tự nhận được bậc 1; muốn chặn lại phải đối chiếu với bảng lõi, tức hai bản sao phải khớp |
-| Đóng `capabilities` bằng `additionalProperties: false` | Là siết chặt — tệp đang hợp lệ có thể trở nên không hợp lệ — nên phải lên `board.v2`. Kiểm khoá lạ ở bộ nạp (§3c.2) đạt cùng mục tiêu |
-| Nới hai bất biến theo agent ngay trong RFC này | Cổng build để bất biến mới đứng lên chưa tồn tại (§5) |
-| Giữ `vision.in` và `vision_ref` trong RFC này | Chốt hợp đồng tham số camera khi chưa có một camera, một agent thị giác hay bộ đối chiếu `[requires]` nào; mọi sửa sau đó (kiểu `fps`, thêm `required`) là siết chặt, phải lên `board.v2`. Vì mở enum là nới lỏng làm được bất kỳ lúc nào, tách ra không tốn gì. Xem §9.1–9.2 |
+| Create `board.v2` and `trace.v2` | Unnecessary breaking change. No currently valid documents break (§4), so migration costs yield zero technical benefit |
+| Drop `target` enum, use `"type": "string"` | Loses typo gate. A trace declaring `target: "esp32s2"` would pass silently. Counterexample corpus `unknown_target.json` loses meaning |
+| Use `pattern` instead of `enum` (e.g. `^[a-z0-9]+$`) | Same issue as above, varying only in degree |
+| Declare tier in `board.toml` (`board.tier` field in schema) | Tiers are the core team's promises regarding a target, not self-declared board attributes. Storing in board files lets community ports self-claim Tier 1; preventing this requires reconciling with a core table, meaning two copies must match |
+| Close `capabilities` with `additionalProperties: false` | Is a tightening — currently valid files could become invalid — requiring `board.v2`. Checking unknown keys in the loader (§3c.2) achieves the same goal |
+| Relax the two agent invariants in this RFC immediately | The build gate on which new invariants rely does not yet exist (§5) |
+| Keep `vision.in` and `vision_ref` in this RFC | Freezing camera parameter contracts before having a single camera, vision agent, or `[requires]` reconciler; every subsequent fix (`fps` type, adding `required`) is a tightening requiring `board.v2`. Since expanding the enum is a relaxation feasible at any time, separating costs nothing. See §9.1–9.2 |
 
 ---
 
-## 7. Bằng chứng kiểm chứng
+## 7. Verification Evidence
 
-*Toàn bộ mục này thuộc **pull request thứ hai**, sau khi RFC được chấp thuận.
-Để trống có chủ đích, đúng quy trình `docs/rfc/README.md` bước 2 và 4.*
+*This entire section belongs to the **second pull request**, after the RFC is approved.
+Deliberately left blank per `docs/rfc/README.md` steps 2 and 4.*
 
-- [ ] **Không** thêm profile nào vào `boards/`. Profile bậc 2/3 dùng làm bằng chứng là tài liệu tổng hợp trong `tmp_path` / bộ nhớ trong test; vết ghi khai `target: "jetson"` cũng vậy
-- [ ] Corpus: giữ `unknown_target.json` với `rp2040` — một lỗi gõ thật, nằm sát `rp2350`, vẫn ngoài enum mới. Chỉ sửa `why_contains` ở `expected_errors.yaml`
-- [ ] Test tự động: `test_target_lists_agree` (enum `board.v1` == enum `trace.v1` == `SUPPORTED_TARGETS`), `test_target_tiers_are_declared` (khoá `TARGET_TIERS` == `SUPPORTED_TARGETS`, bậc 1 == `{sim, linux, esp32s3}`), `test_board_schema_enumerates_the_supported_targets` (thay `…_exactly_the_three_targets`), ba bất biến theo bậc ở §5, test khoá capability lạ, test CLI cho `board validate`, `board show` và kiểm tên `--target`
-- [ ] `cd python && .venv/bin/python -m pytest -q` xanh, **0 skipped**; `ls boards/` vẫn đúng ba tệp
-- [ ] `neuroedge verify` vẫn xanh trên target bậc 1
-
----
-
-## 8. Việc phải làm khi chấp thuận
-
-**Thời điểm:** pull request thứ hai hợp nhất trong increment **I11**, sau Developer Beta
-(PRD Q-40; quyết định trước đó ở `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` đã hoãn nó
-sang Giai đoạn 2 để khỏi nạp thêm việc cho đường găng v1.0). Ngoại lệ duy nhất: sớm hơn khi có
-một profile bậc 2/3 **thật** đang được viết.
-
-**Thứ tự: tài liệu trước, mã sau.**
-
-Đã xong trước RFC này (commit `eddfc59`):
-
-- [x] Phân tầng ba bậc ở `docs/architecture/vi/00-overview.md` §5.2
-- [x] FR-TGT-08 ở `neuroedge-prd.md` §4.2; Q-13
-- [x] KPI của proposal: ngưỡng `verify` 100% chỉ áp cho bậc 1
-
-Tài liệu (cùng pull request với RFC này):
-
-- [x] Sửa chữ tiêu chí chấp nhận FR-TGT-08: bậc nằm trong `TARGET_TIERS` của mã lõi, `board.toml` không tự khai bậc
-- [x] `docs/architecture/vi/15-target-architecture.md` §4.4 Khối V1a: bỏ `vision_in` và `vision_ref` khỏi task và tiêu chí ra; chuyển sang V1b
-- [x] `CONTRIBUTING.md`: profile bậc 2/3 cần phần cứng thật
-
-Pull request thứ hai:
-
-- [ ] `schemas/board.v1.json`, `schemas/trace.v1.json`: enum `target` + `$comment` RFC-0002
-- [ ] `python/neuroedge/hal/board.py`: `TARGET_TIERS`, `SUPPORTED_TARGETS`, bỏ chữ "five" ghim cứng, kiểm khoá capability lạ lúc nạp, `how` cho target lạ; xuất `TARGET_TIERS` qua `hal/__init__.py`
-- [ ] `python/neuroedge/cli/main.py`: `board show` lặp theo danh sách nguyên thủy, `board validate <path>`, hàm kiểm tên target dùng chung
-- [ ] `fixtures/traces/expected_errors.yaml`: `why_contains` của `unknown_target.json`
-- [ ] `python/tests/test_boards.py`, `test_schemas.py`, `test_cli.py`: theo §5 và §7
-- [ ] `CHANGELOG.md`: ghi RFC-0002
+- [ ] Do **not** add any profiles to `boards/`. Tier 2/3 profiles used as evidence are synthesized in `tmp_path` / in-memory in tests; same for traces declaring `target: "jetson"`
+- [ ] Corpus: keep `unknown_target.json` with `rp2040` — a realistic typo close to `rp2350`, still outside the new enum. Only modify `why_contains` in `expected_errors.yaml`
+- [ ] Automated tests: `test_target_lists_agree` (enum `board.v1` == enum `trace.v1` == `SUPPORTED_TARGETS`), `test_target_tiers_are_declared` (keys of `TARGET_TIERS` == `SUPPORTED_TARGETS`, Tier 1 == `{sim, linux, esp32s3}`), `test_board_schema_enumerates_the_supported_targets` (replacing `…_exactly_the_three_targets`), three tier-based invariants in §5, unknown capability key test, CLI tests for `board validate`, `board show`, and `--target` name validation
+- [ ] `cd python && .venv/bin/python -m pytest -q` green, **0 skipped**; `ls boards/` remains exactly three files
+- [ ] `neuroedge verify` remains green on Tier 1 targets
 
 ---
 
-## 9. Việc còn treo
+## 8. Tasks upon Approval
 
-Các hạng mục cố ý để ngoài phạm vi RFC này, kèm mốc kích hoạt, để không ai phải
-suy luận lại:
+**Timing:** second pull request merges in increment **I11**, after Developer Beta
+(PRD Q-40; prior decision in `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` deferred it
+to Phase 2 to avoid adding work to the v1.0 critical path). Sole exception: earlier if a
+**real** Tier 2/3 profile is actively being written.
 
-1. **Nguyên thủy thị giác `vision.in`** — một RFC riêng, mở ở **Khối V1b**, khi đủ
-   ba điều kiện: V1b được kích hoạt (≥ 2 khách hàng AURA nêu nhu cầu camera cụ thể),
-   có một bo mạch có camera trên bàn, và bộ đối chiếu `[requires]` lúc build
-   (TSK-S2-02) đã tồn tại — điều kiện này đã đạt từ 2026-09-23. Đầu vào đã biết cho RFC đó:
-   - `sensor.read` không diễn đạt được luồng khung hình (trả vô hướng rời rạc).
-   - Hình dạng bản đầu (`width`, `height`, `fps` nguyên, `pixel_format` và
-     `accelerator` là chuỗi tự do) không đủ: `fps` phải là `number` (7,5 · 29,97);
-     cảm biến có nhiều chế độ nên cần `modes[]`; `pixel_format` cần enum để đối
-     chiếu được; và quy tắc so khớp với `[requires]` của agent phải đặc tả **trước**
-     khi chốt.
-   - Nguyên thủy **tùy chọn theo bo mạch**, bảng năng lực firmware vẫn là mảng tĩnh
-     (KL-1, RB-4); ngân sách SRAM đo trên bo mạch thật (Q-3).
-   - Bất biến "`sim` không giàu hơn bo mạch tham chiếu" phải được phát biểu lại theo
-     từng bo mạch tham chiếu, nếu không agent thị giác không chạy được trên `sim`
-     (`TODOS.md` #14).
-2. **Bằng chứng thị giác trong vết ghi** — **không cần RFC lược đồ**: `events[].data`
-   đã tự do và `metadata` đã mở. Làm khi có **vết ghi thị giác đầu tiên**:
-   - Kết quả thị giác (nhãn, hộp, độ tin cậy, mã mô hình) đi vào sự kiện nhóm
-     `perception` của Phụ lục C.1 — đó là thứ `replay` dùng để tái hiện phán quyết
-     (FR-CI-02). Một mã băm khung hình không replay được.
-   - Khung hình chỉ để lại danh tính: `vision_ref` gồm `sha256` và kích thước, không
-     nhúng ảnh thô (NFR-PRIV-01, NFR-PRIV-03); chỉ ghi cho khung dẫn tới một quyết
-     định, không phải mọi khung (30 fps ≈ 13 MB/giờ vết ghi).
-   - Lint ngữ nghĩa trong `trace.py`: `sha256` khớp `^[0-9a-f]{64}$`; `uri` chỉ được
-     có khi `metadata.raw_capture == true`; từ chối blob base64 trong `data`. Kèm
-     fixture phản chứng trong `fixtures/traces/invalid/` và mục tương ứng trong
-     `expected_errors.yaml` — PR thường (`CONTRIBUTING.md` §3 chỉ đòi RFC cho ba vết
-     ghi chuẩn mực).
-3. **Ngữ nghĩa gate cho bằng chứng thị giác** — bài toán riêng, chạm `gate.v1`, cần
-   kỹ thuật trưởng duyệt, thuộc **một RFC riêng (số cấp khi mở)**; hai số RFC kế tiếp
-   đã được giữ cho hai thay đổi `gate.v1` ở design doc Giai đoạn 1. **Cho
-   tới khi có RFC đó, thị giác chỉ được dùng làm đầu vào thông tin, không được làm
-   căn cứ trực tiếp cho phán quyết actuator.**
-4. **Profile phần cứng thật cho bậc 2/3** — `boards/jetson-orin-nano.toml`,
-   `boards/stm32-*.toml`, `boards/rp2350-*.toml` cần phần cứng thật để điền đúng
-   tham số. Phụ thuộc lịch mua sắm; không thuộc pull request thứ hai.
+**Order: documentation first, code second.**
+
+Completed prior to this RFC (commit `eddfc59`):
+
+- [x] Three-tier stratification in `docs/architecture/vi/00-overview.md` §5.2
+- [x] FR-TGT-08 in `neuroedge-prd.md` §4.2; Q-13
+- [x] Proposal KPI: 100% `verify` threshold applies only to Tier 1
+
+Documentation (same pull request as this RFC):
+
+- [x] Reword FR-TGT-08 acceptance criteria: tier resides in core code `TARGET_TIERS`, `board.toml` does not self-declare tier
+- [x] `docs/architecture/vi/15-target-architecture.md` §4.4 Block V1a: remove `vision_in` and `vision_ref` from tasks and exit criteria; move to V1b
+- [x] `CONTRIBUTING.md`: Tier 2/3 profiles require physical hardware
+
+Second pull request:
+
+- [ ] `schemas/board.v1.json`, `schemas/trace.v1.json`: `target` enum + `$comment` RFC-0002
+- [ ] `python/neuroedge/hal/board.py`: `TARGET_TIERS`, `SUPPORTED_TARGETS`, drop hard-coded "five", validate unknown capability keys at load, `how` for unknown targets; export `TARGET_TIERS` via `hal/__init__.py`
+- [ ] `python/neuroedge/cli/main.py`: `board show` iterates over primitive list, `board validate <path>`, shared target name validation helper
+- [ ] `fixtures/traces/expected_errors.yaml`: `why_contains` for `unknown_target.json`
+- [ ] `python/tests/test_boards.py`, `test_schemas.py`, `test_cli.py`: per §5 and §7
+- [ ] `CHANGELOG.md`: record RFC-0002
 
 ---
 
-## 10. Chấp thuận (Q-67, 2026-10-04)
+## 9. Open Tasks
 
-Kỹ thuật trưởng ký RFC này như quyết định 4 của **Q-67** (nền tảng mở, `neuroedge-prd.md` §15). Những điều đã khác
-từ lúc viết:
+Items intentionally left out of this RFC's scope, with activation triggers, so that
+no one needs to re-derive them:
 
-1. **Hiện thực kéo lên I2c.** Pull request thứ hai không còn chờ sau Developer Beta: nó là TSK-V1a-02 → V1a-06 trong
-   increment **I2c — Nền tảng mở** (`neuroedge-roadmap.md` §4.3.3). Lý do: bo của cộng đồng nạp từ đường dẫn
-   (`--board <đường dẫn>`, RFC-0016) cần bậc target máy đọc được trong mã lõi.
-2. **"Ba profile bậc 1" nay là "các bo tham chiếu".** RFC-0013 cho mỗi target bậc 1 nhiều bo tham chiếu
-   (`REFERENCE_BOARDS`, `SIM_MIRRORS`); mọi chỗ của RFC này nói "ba profile" hay "một profile mỗi target" đọc theo
-   RFC-0013. `boards/` vẫn chỉ chứa bo tham chiếu.
-3. **Bo ngoài kho.** Một hồ sơ nạp từ đường dẫn hay từ plugin không bao giờ là bo tham chiếu và không bao giờ được
-   `verify` tính vào tương đương bậc 1; bậc của nó là bậc của target nó khai, theo `TARGET_TIERS` của §3b. Luật đó
-   nằm ở RFC-0016; RFC này không đổi.
-4. **Không đổi:** enum vẫn đóng (§6); `board.toml` không tự khai bậc (§3b); cam kết bậc 2 cho `jetson` vẫn thuộc
-   I16; hồ sơ phần cứng thật cho bậc 2 và 3 vẫn cần bo mạch thật (§9.4).
+1. **Vision primitive `vision.in`** — a separate RFC, opened in **Block V1b**, once
+   three conditions are met: V1b is activated (≥ 2 AURA customers state specific camera
+   needs), a board with a camera is on the bench, and the build-time `[requires]`
+   reconciler (TSK-S2-02) exists — this condition was satisfied on 2026-09-23. Known inputs
+   for that RFC:
+   - `sensor.read` cannot express frame streams (returns discrete scalars).
+   - Initial draft shape (`width`, `height`, integer `fps`, free-form string `pixel_format`
+     and `accelerator`) was insufficient: `fps` must be `number` (7.5, 29.97); sensors have
+     multiple modes requiring `modes[]`; `pixel_format` requires an enum for reconciliation;
+     and matching rules against agent `[requires]` must be specified **before** finalizing.
+   - Primitive is **optional per board**, firmware capability table remains a static array
+     (KL-1, RB-4); SRAM budget measured on physical hardware (Q-3).
+   - The invariant "`sim` is no richer than reference boards" must be restated per
+     reference board, otherwise vision agents cannot run on `sim` (`TODOS.md` #14).
+2. **Visual evidence in traces** — **no schema RFC required**: `events[].data` is already
+   free-form and `metadata` is open. Implemented when the **first vision trace** arrives:
+   - Vision results (labels, bounding boxes, confidence, model ID) enter events in the
+     `perception` group of Appendix C.1 — this is what `replay` uses to reproduce verdicts
+     (FR-CI-02). A frame hash cannot be replayed.
+   - Frames leave only identity: `vision_ref` comprises `sha256` and size, without
+     embedding raw images (NFR-PRIV-01, NFR-PRIV-03); recorded only for frames leading
+     to a decision, not every frame (30 fps ≈ 13 MB/hour of traces).
+   - Semantic lint in `trace.py`: `sha256` matches `^[0-9a-f]{64}$`; `uri` permitted
+     only when `metadata.raw_capture == true`; reject base64 blobs in `data`. Accompanied
+     by counterexample fixtures in `fixtures/traces/invalid/` and corresponding entries
+     in `expected_errors.yaml` — regular PR (`CONTRIBUTING.md` §3 only requires an RFC
+     for the three canonical traces).
+3. **Gate semantics for visual evidence** — distinct problem, touching `gate.v1`,
+   requiring lead architect approval, belonging to **a dedicated RFC (number assigned
+   upon opening)**; the next two RFC numbers are reserved for two `gate.v1` changes in
+   the Phase 1 design doc. **Until that RFC exists, vision may only be used as
+   informational input, not as direct basis for actuator verdicts.**
+4. **Physical hardware profiles for Tier 2/3** — `boards/jetson-orin-nano.toml`,
+   `boards/stm32-*.toml`, `boards/rp2350-*.toml` require real hardware to determine
+   accurate parameters. Dependent on procurement schedule; outside the second pull request.
 
-## Biên bản review
+---
 
-Biên bản review 2026-09-23 (Review record, Decision Audit Trail, GSTACK REVIEW REPORT) đã chuyển sang `docs/archive/rfc-0002-review-record.md` (đã xoá; `git show 7626b62:docs/archive/rfc-0002-review-record.md`).
+## 10. Approval (Q-67, 2026-10-04)
+
+Lead architect signed this RFC as decision 4 of **Q-67** (open platform, `neuroedge-prd.md` §15).
+Things changed since writing:
+
+1. **Implementation pulled forward to I2c.** The second pull request no longer waits
+   until after Developer Beta: it is TSK-V1a-02 → V1a-06 in increment **I2c — Open platform**
+   (`neuroedge-roadmap.md` §4.3.3). Reason: community boards loaded from path (`--board <path>`,
+   RFC-0016) need machine-readable target tiers in core code.
+2. **"Three Tier 1 profiles" is now "reference boards".** RFC-0013 gives each Tier 1 target
+   multiple reference boards (`REFERENCE_BOARDS`, `SIM_MIRRORS`); references to "three profiles"
+   or "one profile per target" in this RFC should be read per RFC-0013. `boards/` still only
+   contains reference boards.
+3. **Out-of-tree boards.** A profile loaded from path or plugin is never a reference board
+   and never counted toward Tier 1 equivalence by `verify`; its tier is the tier of its
+   declared target, per `TARGET_TIERS` of §3b. That rule lives in RFC-0016; this RFC is
+   unchanged.
+4. **Unchanged:** enum remains closed (§6); `board.toml` does not self-declare tier (§3b);
+   Tier 2 commitment for `jetson` remains in I16; real hardware profiles for Tiers 2 and 3
+   still require physical boards (§9.4).
+
+## Review Record
+
+Review minutes from 2026-09-23 (Review record, Decision Audit Trail, GSTACK REVIEW REPORT) moved to `docs/archive/rfc-0002-review-record.md` (deleted; `git show 7626b62:docs/archive/rfc-0002-review-record.md`).
