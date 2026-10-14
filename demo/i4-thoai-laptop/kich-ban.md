@@ -120,7 +120,7 @@ ne run --mic --half-duplex
 
 ### See
 ```text
-  half-duplex: bật (tắt micro khi agent đang nói, không cắt lời được)
+  half-duplex: on (mutes the mic while the agent speaks, no barge-in)
 ```
 
 ### Highlights

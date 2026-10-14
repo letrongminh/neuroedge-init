@@ -98,7 +98,7 @@ exit
 │ porch_light │ HIGH  │        1 │
 ✗ BLOCK light_off@1.0.0 (reason: condition_not_met, criterion: room_empty)
   action: ask — "Vẫn còn người trong phòng — bạn chắc muốn tắt đèn?"
-  ? xác nhận confirm_1: gõ có để tiếp tục, không để huỷ · còn 10 s · chỉ người trên thiết bị trả lời được
+  ? confirm confirm_1: type có to continue, không to cancel · 10 s left · only a person on the device can answer
 answer to the pending question (confirmed)
   ✓ ALLOW light_off@1.0.0 → light_off()
   says (confirmed): Đã xác nhận.
@@ -139,7 +139,7 @@ neuroedge>   temperature = 60
 ✗ BLOCK vent_off@1.0.0 (reason: condition_not_met, criterion: heat_level)
   action: ask — "Phòng máy đang nóng — bạn chắc muốn tắt quạt thông gió?"
 neuroedge>   temperature = 45
-  ? xác nhận confirm_1: gõ có để tiếp tục, không để huỷ · còn 10 s · chỉ người trên thiết bị trả lời được
+  ? confirm confirm_1: type có to continue, không to cancel · 10 s left · only a person on the device can answer
 neuroedge> answer to the pending question (declined)
   says (declined): Đã huỷ.
 neuroedge>   temperature = 30
@@ -147,7 +147,7 @@ neuroedge>   temperature = 30
 ```
 
 ### Highlights
-At 60 °C, the gate prints `action: ask` but **does not open a confirmation question** (no `? xác nhận confirm_1` line) because condition `heat_critical: false` is violated and is not in the `confirms: [heat_level]` list; at 45 °C the question opens.
+At 60 °C, the gate prints `action: ask` but **does not open a confirmation question** (no `? confirm confirm_1` line) because condition `heat_critical: false` is violated and is not in the `confirms: [heat_level]` list; at 45 °C the question opens.
 
 ---
 

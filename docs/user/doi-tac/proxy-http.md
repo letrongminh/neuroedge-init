@@ -169,7 +169,7 @@ Every request reaching a gate creates a `tool_call` entry with source `bridge:ht
 
 The proxy guards traffic passing **through it**; the device continues listening at its original address. `plugin doctor` tests connectivity directly to the upstream and explains what it cannot verify:
 
-<!-- guide: run exit=1 expect="đích còn tới được mà không qua proxy" expect="tường lửa" expect="allow_lan_http đang bật" expect="không kiểm được: plugin (TSK-I2c-11)" -->
+<!-- guide: run exit=1 expect="target still reachable without the proxy" expect="firewall" expect="allow_lan_http is on" expect="cannot verify: plugin (TSK-I2c-11)" -->
 ```bash
 neuroedge plugin doctor --config plug/guard.toml
 ```

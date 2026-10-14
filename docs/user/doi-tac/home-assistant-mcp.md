@@ -149,7 +149,7 @@ You will see `tool_call` (source `mcp`, tool name, **parameters**), and `gate_ev
 
 The proxy guards only the traffic passing **through it**. Any client calling HA directly bypasses the gate. `plugin doctor` reports detected bypasses and explicitly notes what it **cannot** check:
 
-<!-- guide: run exit=1 expect="allow_lan_http đang bật" expect="đích còn tới được mà không qua proxy" expect="không kiểm được: plugin (TSK-I2c-11)" -->
+<!-- guide: run exit=1 expect="allow_lan_http is on" expect="target still reachable without the proxy" expect="cannot verify: plugin (TSK-I2c-11)" -->
 ```bash
 neuroedge plugin doctor --config ha/guard.toml
 ```
