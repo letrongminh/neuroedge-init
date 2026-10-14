@@ -32,7 +32,7 @@ answers the question *"which file to read to know X"* — other files link to co
 | Decoder for abbreviations (`FR-*`, `Q-N`, `A1`, `CEO-X1`…) | [`thuat-ngu.md`](thuat-ngu.md) | sole source |
 | Why Stage 1 went "`sim` wedge first" | `docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md` (deleted; `git show 7626b62:docs/archive/giai-doan-1-wedge-truoc-mcu-sau.md`) | historical, frozen 2026-09-23 — current plan in roadmap |
 | Minutes of review rounds | `docs/archive/` (deleted, see git history) | archive, non-normative |
-| Product dashboard for CPO (progress, milestones, pending tasks, decisions) | [`docs/business/cpo-dashboard.html`](../business/cpo-dashboard.html) | open in browser; generated from roadmap — do not edit manually |
+| Overall architecture with live progress (layers, release milestones, items waiting on a person) | [`docs/business/kien-truc-tong-the.html`](../business/kien-truc-tong-the.html) | open in browser; progress blocks generated from roadmap §0 — do not edit them by hand |
 | Demand gate 2026-10-25 (interviews, demos, scoring) | [`docs/business/cong-nhu-cau-2026-10-25/`](../business/cong-nhu-cau-2026-10-25/README.md) | business documentation; data for 8-week demand gate (Q-72, reversing Q-56) |
 | Plan: increment I0–I18 (including I2a, I2b, I3a, I4a, I5a), what to do when, forecast dates | [`neuroedge-roadmap.md`](../../roadmap/neuroedge-roadmap.md) | sole roadmap (Q-39); increment table in §0.2 |
 | NeuroEdge Lab design (lab via MCP) | [`lab_mcp.md`](../spec/lab_mcp.md) | Block N0 → N7; increment I4a, I5a in roadmap (Q-55, Q-71); wireframe in [`wireframe/`](../../wireframe/README.md) |

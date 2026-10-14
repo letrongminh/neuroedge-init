@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- Hand-made snapshot of 2026-10-14 (after Q-82), not generated. Source of truth: docs/architecture/ (CONTRIBUTING.md §8.1); where this page disagrees, the source wins. -->
+<!-- Hand-drawn architecture (2026-10-14, after Q-82); source of truth: docs/architecture/ (CONTRIBUTING.md §8.1).
+     Progress blocks between GENERATED markers are written by scripts/gen_architecture_progress.py from the roadmap — do not edit them by hand. -->
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NeuroEdge Architecture</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -192,6 +193,40 @@ tr:last-child td { border-bottom: 0 }
 .g .big { font-size: 28px; line-height: 1 }
 .g ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 15px; color: var(--muted) }
 
+/* Progress, generated from the roadmap (scripts/gen_architecture_progress.py) */
+.pulse { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 2px; background: var(--surface) }
+.pulse > div { display: grid; gap: 2px; padding: 12px 14px; border-left: 1px solid var(--line); align-content: start }
+.pulse > div:first-child { border-left: 0 }
+.pulse .k { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gate) }
+.pulse b { font-size: 16px; line-height: 1.3 }
+.pulse .s { font-size: 13px; color: var(--muted) }
+.bar { display: block; height: 6px; background: var(--line); border-radius: 1px; overflow: hidden }
+.bar i { display: block; height: 100%; background: var(--part) }
+.incs { grid-column: 2 / -1; display: grid; gap: 4px }
+.inc { display: grid; grid-template-columns: 38px minmax(0, 1fr) minmax(80px, 160px) 44px; gap: 10px; align-items: center; font-size: 14px }
+.inc .id { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted) }
+.inc .nb { font-family: var(--f-mono); font-size: 11.5px; text-align: right; color: var(--muted) }
+.inc.done .bar i, .ms.done .bar i { background: var(--ok) }
+.inc.todo .nm, .inc.deferred .nm { color: var(--muted) }
+.inc.deferred .bar { background: repeating-linear-gradient(90deg, var(--line) 0 4px, transparent 4px 7px) }
+.ms-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px }
+.ms { background: var(--surface); border: 1px solid var(--line); border-top: 2px solid var(--line); border-radius: 2px; padding: 12px 14px; display: grid; gap: 8px; align-content: start }
+.ms.active { border-top-color: var(--part) } .ms.done { border-top-color: var(--ok) }
+.ms h3 { font-size: 15.5px; line-height: 1.3 }
+.ms-top, .ms-meta { display: flex; justify-content: space-between; gap: 8px; font-family: var(--f-mono); font-size: 11px; color: var(--muted) }
+.ms .num { color: var(--gate); font-weight: 600 }
+.ms.upcoming h3 { color: var(--muted) }
+.waiting ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 15px }
+svg .ax { stroke: var(--line); stroke-width: 3; stroke-linecap: round }
+svg .tick { stroke: var(--line); stroke-width: 1 }
+svg .now { stroke: var(--gate); stroke-width: 2; stroke-dasharray: 4 3 }
+svg .gate { stroke: var(--block); stroke-width: 2 }
+svg .tl-now { font-family: var(--f-mono); font-size: 11px; fill: var(--gate); font-weight: 600 }
+svg .tl-gate { font-family: var(--f-mono); font-size: 11px; fill: var(--block); font-weight: 600 }
+svg .tl-d { font-family: var(--f-mono); font-size: 10.5px; fill: var(--muted) }
+svg .tl-m { font-size: 13px; font-weight: 600 }
+svg .dot-done { fill: var(--ok) } svg .dot-active { fill: var(--part) } svg .dot-upcoming { fill: var(--surface); stroke: var(--muted); stroke-width: 1.5 }
+
 /* Roadmap */
 .road { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; position: relative }
 .road::before { content: ""; position: absolute; left: 16px; right: 16px; top: 13px; height: 2px; background: linear-gradient(90deg, var(--gate) 0 33%, var(--core) 33% 66%, var(--line) 66%) }
@@ -231,6 +266,10 @@ details .tbl { margin-top: 10px; border: 0 }
   .row { grid-template-columns: 1fr; text-align: left }
   .to { transform: rotate(90deg); justify-self: start; margin-left: 8px }
   .cards, .guarantees, .road { grid-template-columns: 1fr }
+  .pulse { grid-template-columns: 1fr 1fr } .pulse > div { border-left: 0; border-top: 1px solid var(--line) }
+  .ms-grid { grid-template-columns: 1fr 1fr }
+  .incs { grid-column: 1 / -1 }
+  .inc { grid-template-columns: 34px minmax(0, 1fr) 70px 40px }
   .road::before { display: none }
   .stop { padding: 0 0 14px }
   .myth { grid-template-columns: 1fr; gap: 4px }
@@ -252,7 +291,7 @@ details .tbl { margin-top: 10px; border: 0 }
     <a href="#s8"><span>08</span>Three guarantees</a>
     <a href="#s9"><span>09</span>Plug in, leave the core alone</a>
     <a href="#s10"><span>10</span>Build → Run → Share</a>
-    <a href="#s11"><span>11</span>Three stages</a>
+    <a href="#s11"><span>11</span>Where the product is today</a>
     <a href="#s12"><span>12</span>Common misconceptions</a>
   </nav>
   <div class="side-note">Drawn for quick reading. The source of truth is still the code and <code>docs/architecture/</code>.</div>
@@ -291,6 +330,7 @@ details .tbl { margin-top: 10px; border: 0 }
   </div>
     </div>
   </div>
+  <!-- GENERATED:pulse --><div class="pulse"><div><span class="k">Figures as of</span><b>Oct 14, 2026</b><span class="s">roadmap §0</span></div><div><span class="k">Now</span><b>1 · Try on laptop</b><span class="s">96% done</span></div><div><span class="k">8-week demand gate</span><b>Dec 6, 2026</b><span class="s">53 days away</span></div><div><span class="k">Tests</span><b>4,908 passing</b><span class="s">0 skipped</span></div><div><span class="k">Waiting on a person</span><b>2 items</b><span class="s"><a href="#s11">see chapter 11</a></span></div></div><!-- /GENERATED:pulse -->
 </header>
 
 <!-- ============ 1. THE BIG PICTURE ============ -->
@@ -384,23 +424,23 @@ details .tbl { margin-top: 10px; border: 0 }
   <div class="layers">
     <div class="layer l1"><span class="n">1</span><h3><span class="ic">🧠</span>Interaction and brain</h3>
       <div class="pills"><span class="pill">Telegram</span><span class="pill">NeuroClaw</span><span class="pill">Claude Desktop</span><span class="pill">OpenClaw</span></div>
-      <span class="st"><span class="chip part">partial</span></span></div>
+      <!-- GENERATED:layer-1 --><div class="incs"><div class="inc partial" title="I2d — Missions and operator agents: 0 of 39 tasks done, in progress"><span class="id">I2d</span><span class="nm">Missions and operator agents</span><span class="bar" role="img" aria-label="I2d — Missions and operator agents: 0 of 39 tasks done, in progress"><i style="width:0%"></i></span><span class="nb">0/39</span></div></div><!-- /GENERATED:layer-1 --></div>
     <div class="down">▼ requests only, never touches hardware</div>
     <div class="layer l2"><span class="n">2</span><h3><span class="ic">🔌</span>Extension layer</h3>
       <div class="pills"><span class="pill">mcp serve + mTLS</span><span class="pill">proxy mcp</span><span class="pill">proxy http</span><span class="pill">Home Assistant</span><span class="pill">neuroedge.guard</span><span class="pill dashed">HA add-on</span></div>
-      <span class="st"><span class="chip ok">done</span></span></div>
+      <!-- GENERATED:layer-2 --><div class="incs"><div class="inc partial" title="I2c — Open platform: 11 of 20 tasks done, in progress"><span class="id">I2c</span><span class="nm">Open platform</span><span class="bar" role="img" aria-label="I2c — Open platform: 11 of 20 tasks done, in progress"><i style="width:55%"></i></span><span class="nb">11/20</span></div></div><!-- /GENERATED:layer-2 --></div>
     <div class="down">▼ typed tool calls</div>
     <div class="layer l3"><span class="n">3</span><h3><span class="ic">🛡️</span>The safety box</h3>
       <div class="pills"><span class="pill">c.do()</span><span class="pill">gate</span><span class="pill">ALLOW · ASK · BLOCK</span><span class="pill">token</span><span class="pill">trace</span><span class="pill">Action CI</span></div>
-      <span class="st"><span class="chip ok">done</span></span></div>
+      <!-- GENERATED:layer-3 --><div class="incs"><div class="inc done" title="I0 — Contract core on sim: 42 of 42 tasks done, done"><span class="id">I0</span><span class="nm">Contract core on sim</span><span class="bar" role="img" aria-label="I0 — Contract core on sim: 42 of 42 tasks done, done"><i style="width:100%"></i></span><span class="nb">42/42</span></div><div class="inc partial" title="I1 — Internal preview on sim: 4 of 6 tasks done, in progress"><span class="id">I1</span><span class="nm">Internal preview on sim</span><span class="bar" role="img" aria-label="I1 — Internal preview on sim: 4 of 6 tasks done, in progress"><i style="width:67%"></i></span><span class="nb">4/6</span></div><div class="inc partial" title="I2a — Extended primitives on sim and linux: 22 of 27 tasks done, in progress"><span class="id">I2a</span><span class="nm">Extended primitives on sim and linux</span><span class="bar" role="img" aria-label="I2a — Extended primitives on sim and linux: 22 of 27 tasks done, in progress"><i style="width:81%"></i></span><span class="nb">22/27</span></div></div><!-- /GENERATED:layer-3 --></div>
     <div class="down">▼ only with a token</div>
     <div class="layer l4"><span class="n">4</span><h3><span class="ic">⚡</span>Execution and hardware</h3>
       <div class="pills"><span class="pill">HAL</span><span class="pill">physical envelope</span><span class="pill">sim</span><span class="pill">linux</span><span class="pill">esp32s3</span></div>
-      <span class="st"><span class="chip ok">sim, virtual linux</span> <span class="chip part">QEMU</span></span></div>
+      <!-- GENERATED:layer-4 --><div class="incs"><div class="inc partial" title="I2 — linux at parity with sim: 3 of 4 tasks done, in progress"><span class="id">I2</span><span class="nm">linux at parity with sim</span><span class="bar" role="img" aria-label="I2 — linux at parity with sim: 3 of 4 tasks done, in progress"><i style="width:75%"></i></span><span class="nb">3/4</span></div><div class="inc partial" title="I2b — Starter kits and rapid assembly: 4 of 4 tasks done, in progress"><span class="id">I2b</span><span class="nm">Starter kits and rapid assembly</span><span class="bar" role="img" aria-label="I2b — Starter kits and rapid assembly: 4 of 4 tasks done, in progress"><i style="width:100%"></i></span><span class="nb">4/4</span></div><div class="inc partial" title="I3 — Gate on real Box-3: 6 of 16 tasks done, in progress"><span class="id">I3</span><span class="nm">Gate on real Box-3</span><span class="bar" role="img" aria-label="I3 — Gate on real Box-3: 6 of 16 tasks done, in progress"><i style="width:38%"></i></span><span class="nb">6/16</span></div><div class="inc todo" title="I3a — Extended primitives on esp32s3: 0 of 11 tasks done, not started"><span class="id">I3a</span><span class="nm">Extended primitives on esp32s3</span><span class="bar" role="img" aria-label="I3a — Extended primitives on esp32s3: 0 of 11 tasks done, not started"><i style="width:0%"></i></span><span class="nb">0/11</span></div></div><!-- /GENERATED:layer-4 --></div>
     <div class="down">▲ package, share, update</div>
     <div class="layer l5"><span class="n">5</span><h3><span class="ic">📦</span>Share, sell, operate</h3>
       <div class="pills"><span class="pill dashed">Blueprint</span><span class="pill dashed">Hub</span><span class="pill dashed">Cloud</span><span class="pill">signed OTA</span></div>
-      <span class="st"><span class="chip plan">I2e, I2f</span> <span class="chip part">OTA</span></span></div>
+      <!-- GENERATED:layer-5 --><div class="incs"><div class="inc todo" title="I2e — Minimal NeuroEdge Blueprint: 0 of 15 tasks done, not started"><span class="id">I2e</span><span class="nm">Minimal NeuroEdge Blueprint</span><span class="bar" role="img" aria-label="I2e — Minimal NeuroEdge Blueprint: 0 of 15 tasks done, not started"><i style="width:0%"></i></span><span class="nb">0/15</span></div><div class="inc deferred" title="I2f — NeuroEdge Cloud and ESP32 home box: 1 of 13 tasks done, deferred"><span class="id">I2f</span><span class="nm">NeuroEdge Cloud and ESP32 home box</span><span class="bar" role="img" aria-label="I2f — NeuroEdge Cloud and ESP32 home box: 1 of 13 tasks done, deferred"><i style="width:8%"></i></span><span class="nb">1/13</span></div><div class="inc partial" title="I6 — Public launch: 7 of 11 tasks done, in progress"><span class="id">I6</span><span class="nm">Public launch</span><span class="bar" role="img" aria-label="I6 — Public launch: 7 of 11 tasks done, in progress"><i style="width:64%"></i></span><span class="nb">7/11</span></div><div class="inc partial" title="I7 — v1.0: 4 of 12 tasks done, in progress"><span class="id">I7</span><span class="nm">v1.0</span><span class="bar" role="img" aria-label="I7 — v1.0: 4 of 12 tasks done, in progress"><i style="width:33%"></i></span><span class="nb">4/12</span></div><div class="inc todo" title="I8 — Developer Beta: 0 of 1 tasks done, not started"><span class="id">I8</span><span class="nm">Developer Beta</span><span class="bar" role="img" aria-label="I8 — Developer Beta: 0 of 1 tasks done, not started"><i style="width:0%"></i></span><span class="nb">0/1</span></div></div><!-- /GENERATED:layer-5 --></div>
   </div>
   <details>
     <summary>For engineers: the five code layers L0–L4 inside the <code>neuroedge</code> package (00 §5.1)</summary>
@@ -652,7 +692,7 @@ details .tbl { margin-top: 10px; border: 0 }
 
 <!-- ============ 9. OPEN PLATFORM ============ -->
 <section id="s9">
-  <div class="head"><div><div class="eyebrow">Chapter 9 · Open platform · I2c, 11 / 20</div><h2>Plug in, leave the core alone</h2></div>
+  <div class="head"><div><div class="eyebrow">Chapter 9 · Open platform · I2c, <!-- GENERATED:inc-I2c -->11 / 20<!-- /GENERATED:inc-I2c --></div><h2>Plug in, leave the core alone</h2></div>
     <span class="more">details: <a href="../architecture/vi/16-ecosystem-landscape.md">16 §4</a> · <a href="../spec/extension_sdk.md">extension_sdk</a></span></div>
   <div class="fig narrow">
     <svg viewBox="0 0 960 300" role="img" aria-label="The safety core in the middle; proxies and guard are done; six plugin kinds around the core">
@@ -716,18 +756,12 @@ details .tbl { margin-top: 10px; border: 0 }
   <p class="cap">The gate and the contract are the shared trust layer of all three loops. First Blueprint: an aquarium, running on the simulator, before the 8‑week demand gate.</p>
 </section>
 
-<!-- ============ 11. ROADMAP ============ -->
+<!-- ============ 11. PROGRESS ============ -->
 <section id="s11">
-  <div class="head"><div><div class="eyebrow">Chapter 11 · Roadmap §0.5, §6 · after Q-77</div><h2>Three stages</h2></div>
-    <span class="more">progress: <a href="../user/trang-thai.md">status page</a> · <a href="cpo-dashboard.html">CPO dashboard</a></span></div>
-  <div class="road">
-    <div class="stop"><span class="pin"></span><span class="when">before 2026-12-06</span><h3>Three loops on the simulator</h3>
-      <ul><li>I2d mission contracts, operator agent</li><li>I2e minimal Blueprint</li><li>Box + NeuroClaw in the 8-week gate (Q-81)</li><li>I2c trial with one partner team</li></ul></div>
-    <div class="stop"><span class="pin"></span><span class="when">after the 8-week gate</span><h3>Hardware and release</h3>
-      <ul><li>Gate on a real Box-3 (I3, I3a)</li><li>Cloud, ESP32 box (I2f)</li><li>Public launch (I6), v1.0 (I7)</li><li>Beta with 50–100 developers (I8)</li></ul></div>
-    <div class="stop"><span class="pin"></span><span class="when">reopened only on data</span><h3>Deferred, with triggers</h3>
-      <ul><li>Voice (I4, I5), Lab (I4a, I5a)</li><li>Fleet OS, Registry (I9, I10)</li><li>Robots, Jetson (I14, I16–I18)</li></ul></div>
-  </div>
+  <div class="head"><div><div class="eyebrow">Chapter 11 · Progress · generated from roadmap §0</div><h2>Where the product is today</h2></div>
+    <span class="more">details: <a href="../../roadmap/neuroedge-roadmap.md">roadmap §0</a> · <a href="../user/trang-thai.md">status page</a></span></div>
+  <!-- GENERATED:journey --><div class="fig"><svg viewBox="0 0 900 140" role="img" aria-label="Dated release milestones, today and the demand gate"><line x1="20" y1="74" x2="880" y2="74" class="ax"/><line x1="70.0" y1="58" x2="70.0" y2="90" class="now"/><text x="70.0" y="108" text-anchor="middle" class="tl-now">today</text><text x="70.0" y="123" text-anchor="middle" class="tl-d">Oct 14, 2026</text><line x1="614.3" y1="58" x2="614.3" y2="90" class="gate"/><text x="614.3" y="108" text-anchor="middle" class="tl-gate">demand gate</text><text x="614.3" y="123" text-anchor="middle" class="tl-d">Dec 6, 2026</text><line x1="398.6" y1="30" x2="398.6" y2="74" class="tick"/><circle cx="398.6" cy="74" r="7" class="dot-active"><title>1 · Try on laptop</title></circle><text x="398.6" y="24" text-anchor="middle" class="tl-m">1 · Try on laptop</text><line x1="501.4" y1="50" x2="501.4" y2="74" class="tick"/><circle cx="501.4" cy="74" r="7" class="dot-active"><title>4 · Assemble and run via conversation, share Blueprints</title></circle><text x="501.4" y="44" text-anchor="middle" class="tl-m">4 · Assemble and run via conversa…</text><line x1="830.0" y1="30" x2="830.0" y2="74" class="tick"/><circle cx="830.0" cy="74" r="7" class="dot-active"><title>2 · Physical device on Raspberry Pi</title></circle><text x="838.0" y="24" text-anchor="end" class="tl-m">2 · Physical device on Raspberry…</text></svg></div><div class="ms-grid"><article class="ms active"><div class="ms-top"><span class="num">1</span><span class="when">Nov 15, 2026</span></div><h3>Try on laptop</h3><span class="bar" role="img" aria-label="96% of the work done"><i style="width:96%"></i></span><div class="ms-meta"><span>96%</span><span>I0, I1</span></div></article><article class="ms active"><div class="ms-top"><span class="num">2</span><span class="when">Dec 27, 2026</span></div><h3>Physical device on Raspberry Pi</h3><span class="bar" role="img" aria-label="73% of the work done"><i style="width:73%"></i></span><div class="ms-meta"><span>73%</span><span>I2, I2a, I2b, I2c</span></div></article><article class="ms active"><div class="ms-top"><span class="num">3</span><span class="when">after milestone 4</span></div><h3>Gate running on a $5 chip</h3><span class="bar" role="img" aria-label="22% of the work done"><i style="width:22%"></i></span><div class="ms-meta"><span>22%</span><span>I3, I3a</span></div></article><article class="ms active"><div class="ms-top"><span class="num">4</span><span class="when">Nov 25, 2026</span></div><h3>Assemble and run via conversation, share Blueprints</h3><span class="bar" role="img" aria-label="0% of the work done"><i style="width:0%"></i></span><div class="ms-meta"><span>0%</span><span>I2d, I2e</span></div></article><article class="ms active"><div class="ms-top"><span class="num">5</span><span class="when">after milestone 4</span></div><h3>Public launch</h3><span class="bar" role="img" aria-label="64% of the work done"><i style="width:64%"></i></span><div class="ms-meta"><span>64%</span><span>I6</span></div></article><article class="ms active"><div class="ms-top"><span class="num">6</span><span class="when">after milestone 4</span></div><h3>v1.0 — into production</h3><span class="bar" role="img" aria-label="33% of the work done"><i style="width:33%"></i></span><div class="ms-meta"><span>33%</span><span>I7</span></div></article><article class="ms upcoming"><div class="ms-top"><span class="num">7</span><span class="when">after milestone 4</span></div><h3>Developer Beta</h3><span class="bar" role="img" aria-label="0% of the work done"><i style="width:0%"></i></span><div class="ms-meta"><span>0%</span><span>I8</span></div></article><article class="ms active"><div class="ms-top"><span class="num">8</span><span class="when">after 8-week gate</span></div><h3>One chat box for multiple devices, multiple homes</h3><span class="bar" role="img" aria-label="8% of the work done"><i style="width:8%"></i></span><div class="ms-meta"><span>8%</span><span>I2f</span></div></article></div><div class="panel waiting"><h3>Waiting on a person</h3><ul><li>Box-3 and RPi 5 have not arrived</li><li>Camera board selected is M5Stack CoreS3 but not yet ordered. Not blocking I2d, I2e: simulation first, physical hardware purchased later</li></ul></div><!-- /GENERATED:journey -->
+  <p class="cap">Each milestone is something a user can do; a date slips before scope is cut (Q-52). Deferred until data shows demand: voice, Lab, Fleet OS, Registry, robots (roadmap §6, Q-77).</p>
 </section>
 
 <!-- ============ 12. MISCONCEPTIONS ============ -->
