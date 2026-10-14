@@ -1059,7 +1059,7 @@ The decision log is [PRD §15](neuroedge-prd.md#15-sổ-quyết-định-kiến-t
 
 ### 10.1 Decided decisions
 
-All decided architectural decisions (`Q-1` through `Q-81`) are maintained in detail at [PRD §15](neuroedge-prd.md#15-sổ-quyết-định-kiến-trúc-adr).
+All decided architectural decisions (`Q-1` through `Q-82`) are maintained in detail at [PRD §15](neuroedge-prd.md#15-sổ-quyết-định-kiến-trúc-adr).
 
 ### 10.2 Open decisions and RFCs
 
@@ -1068,7 +1068,6 @@ All decided architectural decisions (`Q-1` through `Q-81`) are maintained in det
 | Before code task of each RFC | Q-72 | Author and approve RFC for `TODOS.md` #58, 5 RFCs for I2d, and `blueprint.v1` for I2e | Without RFCs, no code for new formats | Tech lead | ⏳ Open |
 | Before I2d confirmation channel task | Q-73 | Author and approve RFC for verification steps and user-declared multi-step flows (TSK-I2d-20) | Chat approval records share confirmation pathway | Tech lead | ⏳ Open |
 | 2026-12-06 demand gate outcome | Q-74 | Open I2f — NeuroEdge Cloud (brain on cloud, subscription) and ESP32 box — or keep ⏸ (§4.3.6) | Opens only if metrics show testers blocked by setup or self-hosting | Product owner | ⏳ Open |
-| 2026-12-06 demand gate outcome | `TODOS.md` #67 | Finalize positioning statement (new `Q-N`): four test cards in Maker interviews (Card D per Q-81) | External messaging remains unchanged until audience data available | Product owner | ⏳ Open |
 | Before TSK-I2d-12 | `TODOS.md` #62 | Chat channel pairing lifecycle: local pairing, revocation, approval ceiling | Compromised chat account could approve on owner's behalf | Product owner | ⏳ Open |
 | Before G3 used for B7/A16 | Q-21, Q-69 | Select G3 tier (emulated ESP32 firmware): Wokwi, QEMU, `esp-emulator` | Q-72 introduces G3 into 8-week gate | Tech lead | ⏳ Open |
 
