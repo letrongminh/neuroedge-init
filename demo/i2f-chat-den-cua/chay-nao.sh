@@ -14,7 +14,7 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 TARGET="${1:?cách dùng: chay-nao.sh <host:port của hộp> [lệnh neuroclaw…]}"; shift
-VERSION=v0.2.1
+VERSION=v0.2.2
 
 ENV="$HERE/.env.txt"; [ -f "$ENV" ] || ENV="$HERE/../../.env.txt"
 set -a
