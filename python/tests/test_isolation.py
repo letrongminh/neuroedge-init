@@ -78,9 +78,18 @@ def test_a_readable_key_deeper_in_the_directory_is_named(box):
     (nested / "issuer.key").write_text("secret")
     (nested / "issuer.key").chmod(0o644)
     nested.chmod(0o755)
+    (box / "keys").chmod(0o711)  # not listable, but the brain can go through it
     found = check(box, brain())
     assert f"neuroclaw can read {nested}" in found
     assert f"neuroclaw can read {nested / 'issuer.key'}" in found
+
+
+def test_public_files_behind_a_closed_directory_are_not_named(box):
+    """TC-A-03-2 as `neuroedge pair init` leaves it: 0644 certificates in a 0700 directory."""
+    for name in ("ca.pem", "hop.pem", "jwks.json"):
+        (box / "keys" / name).write_text("public")
+        (box / "keys" / name).chmod(0o644)
+    assert check(box, brain()) == []
 
 
 def test_the_last_mount_of_proc_is_the_one_in_force(box):
