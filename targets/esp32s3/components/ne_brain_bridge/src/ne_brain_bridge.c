@@ -258,7 +258,7 @@ static int decode(const ne_bridge_span *s, char *out, uint32_t cap, uint32_t *le
 /* Does the string span equal `text`? Decoded into `scratch` of NE_BRIDGE_KEY_MAX. */
 static int span_is(const ne_bridge_span *s, const char *text)
 {
-    char scratch[NE_BRIDGE_KEY_MAX];
+    char scratch[NE_BRIDGE_KEY_MAX + 4u];
     uint32_t n;
     if (s->type != J_STRING || decode(s, scratch, sizeof scratch, &n) != 0) return 0;
     return strlen(text) == n && memcmp(scratch, text, n) == 0;
@@ -528,6 +528,7 @@ int ne_bridge_init(ne_bridge *b, const ne_agent *agent, ne_ledger *ledger,
     b->hal = *hal;
     if (owner) memcpy(b->owner, owner_id, owner);
     b->next_number = 1;
+    b->opened = -1;
     return 0;
 }
 
@@ -681,8 +682,8 @@ static int span_cmp(ne_bridge *b, const ne_bridge_span *a, const ne_bridge_span 
 {
     char *x = b->cmp[0], *y = b->cmp[1];
     uint32_t nx = 0, ny = 0;
-    (void)decode(a, x, NE_BRIDGE_KEY_MAX, &nx);
-    (void)decode(c, y, NE_BRIDGE_KEY_MAX, &ny);
+    (void)decode(a, x, NE_BRIDGE_KEY_MAX + 4u, &nx);
+    (void)decode(c, y, NE_BRIDGE_KEY_MAX + 4u, &ny);
     uint32_t m = nx < ny ? nx : ny;
     int r = memcmp(x, y, m);
     if (r != 0) return r;
@@ -762,6 +763,11 @@ static int check_arguments(ne_bridge *b, uint32_t action, const ne_bridge_span *
                 return count;
             }
         }
+        uint32_t n = 0;
+        if (decode(&key, b->name, NE_BRIDGE_KEY_MAX + 3u, &n) != 0 || memchr(b->name, 0, n)) {
+            problem_text(w, &count, "an argument name is not plain text");
+            return count;
+        }
         b->keys[b->key_count] = key;
         b->values[b->key_count] = value;
         b->key_count++;
@@ -778,7 +784,7 @@ static int check_arguments(ne_bridge *b, uint32_t action, const ne_bridge_span *
             ne_bridge_span found;
             char *name = b->name;
             uint32_t n = 0;
-            (void)decode(&b->keys[i], name, NE_BRIDGE_KEY_MAX - 1u, &n);
+            (void)decode(&b->keys[i], name, NE_BRIDGE_KEY_MAX + 3u, &n);
             name[n] = '\0';
             if (member(&props, name, &found) == 0) continue;
             if (last.type == J_STRING && span_cmp(b, &b->keys[i], &last) <= 0) continue;
@@ -802,7 +808,7 @@ static int check_arguments(ne_bridge *b, uint32_t action, const ne_bridge_span *
         while (next_item(&r, NULL, &value) == 1) {
             char *name = b->name;
             uint32_t n = 0;
-            if (value.type != J_STRING || decode(&value, name, NE_BRIDGE_KEY_MAX - 1u, &n) != 0) continue;
+            if (value.type != J_STRING || decode(&value, name, NE_BRIDGE_KEY_MAX + 3u, &n) != 0) continue;
             name[n] = '\0';
             if (key_index(b, name) >= 0) continue;
             p.len = 0;
@@ -819,7 +825,7 @@ static int check_arguments(ne_bridge *b, uint32_t action, const ne_bridge_span *
         uint32_t n = 0;
         ne_bridge_span prop;
         ne_arg_value coerced;
-        (void)decode(&b->keys[i], name, NE_BRIDGE_KEY_MAX - 1u, &n);
+        (void)decode(&b->keys[i], name, NE_BRIDGE_KEY_MAX + 3u, &n);
         name[n] = '\0';
         if (member(&props, name, &prop) != 0) continue;
         int kind = kind_of(&prop);
@@ -911,6 +917,7 @@ static int open_question(ne_bridge *b, uint32_t action, const ne_tree *tree, con
         else if (slot < 0) slot = (int)i;
     }
     if (waiting >= NE_BRIDGE_PENDING || slot < 0) return -1; /* DP-COM-09 */
+    b->opened = slot;
     ne_bridge_pending *q = &b->pending[slot];
     memset(q, 0, sizeof *q);
     q->state = NE_PENDING_WAITING;
@@ -1066,12 +1073,18 @@ static ne_bridge_status decide(ne_bridge *b, uint32_t action, const char *args, 
 
 /* --- results ------------------------------------------------------------------------------- */
 
-static void finish(ne_bridge_result *out, writer *w, ne_bridge_status status, const char *tool)
+static void finish(ne_bridge *b, ne_bridge_result *out, writer *w, ne_bridge_status status,
+                   const char *tool)
 {
     out->status = status;
     if (!w->over) {
         out->len = w->len;
         return;
+    }
+    if (b != NULL && b->opened >= 0) {
+        /* the brain cannot be told about it: the question must not wait to be answered */
+        b->pending[b->opened].state = NE_PENDING_DECLINED;
+        b->opened = -1;
     }
     /* Too long to tell in full: the status stands, the details do not fit (closed side). */
     writer m = {out->json, sizeof out->json, 0, 0};
@@ -1097,7 +1110,7 @@ static void rejected(ne_bridge_result *out, const char *tool, const char *proble
     text(&w, ",\"status\":\"REJECTED\",\"problems\":[");
     quoted_text(&w, problem);
     text(&w, "]}");
-    finish(out, &w, NE_BRIDGE_REJECTED, tool);
+    finish(NULL, out, &w, NE_BRIDGE_REJECTED, tool);
 }
 
 void ne_bridge_call(ne_bridge *b, const char *name, const char *arguments_json,
@@ -1111,6 +1124,7 @@ void ne_bridge_call(ne_bridge *b, const char *name, const char *arguments_json,
     }
     const char *tool = name ? name : "";
     writer w = {out->json, sizeof out->json, 0, 0};
+    b->opened = -1;
     int action = find_action(b->agent, tool);
     if (action < 0) {
         writer p = {b->line, sizeof b->line, 0, 0};
@@ -1128,7 +1142,7 @@ void ne_bridge_call(ne_bridge *b, const char *name, const char *arguments_json,
         quoted(&w, b->line, p.len);
         if (p.over) w.over = 1;
         text(&w, "]}");
-        finish(out, &w, NE_BRIDGE_REJECTED, tool);
+        finish(b, out, &w, NE_BRIDGE_REJECTED, tool);
         return;
     }
     const char *args = arguments_json ? arguments_json : "";
@@ -1150,12 +1164,12 @@ void ne_bridge_call(ne_bridge *b, const char *name, const char *arguments_json,
         raw(&w, b->problems, p.len);
         if (p.over) w.over = 1;
         text(&w, "]}");
-        finish(out, &w, NE_BRIDGE_REJECTED, tool);
+        finish(b, out, &w, NE_BRIDGE_REJECTED, tool);
         return;
     }
     ne_bridge_status status =
         decide(b, (uint32_t)action, args_len ? obj.p : NULL, args_len ? obj.n : 0u, 0, &w);
-    finish(out, &w, status, tool);
+    finish(b, out, &w, status, tool);
 }
 
 static const char *const STATES[] = {"free", "pending", "confirmed", "declined", "expired"};
@@ -1166,6 +1180,7 @@ static void answer(ne_bridge *b, int slot, int approve, ne_bridge_result *out)
     const ne_agent_action *a = &b->agent->actions[q->action];
     const ne_agent_gate *g = &b->agent->gates[a->gate];
     writer w = {out->json, sizeof out->json, 0, 0};
+    b->opened = -1;
     if (q->state != NE_PENDING_WAITING) {
         writer p = {b->line, sizeof b->line, 0, 0};
         text(&p, "the question is already ");
@@ -1185,7 +1200,7 @@ static void answer(ne_bridge *b, int slot, int approve, ne_bridge_result *out)
         text(&w, ",\"status\":\"BLOCK\",\"gate\":");
         quoted_text(&w, g->label);
         text(&w, ",\"reason\":\"declined\",\"on_block\":\"ask\",\"message\":\"the owner said no\"}");
-        finish(out, &w, NE_BRIDGE_BLOCK, a->name);
+        finish(b, out, &w, NE_BRIDGE_BLOCK, a->name);
         return;
     }
     q->state = NE_PENDING_CONFIRMED; /* single use: spent even if the gate then blocks again */
@@ -1202,7 +1217,7 @@ static void answer(ne_bridge *b, int slot, int approve, ne_bridge_result *out)
         return;
     }
     ne_bridge_status status = decide(b, q->action, n ? b->saved : NULL, n, 1, &w);
-    finish(out, &w, status, a->name);
+    finish(b, out, &w, status, a->name);
 }
 
 static int slot_of(ne_bridge *b, const char *id)
@@ -1229,14 +1244,15 @@ void ne_bridge_answer(ne_bridge *b, const char *confirmation_id, int approve,
         return;
     }
     expire_due(b, b->hal.now_ms(b->hal.ctx));
-    int slot = slot_of(b, confirmation_id);
-    const char *tool = slot >= 0 ? b->agent->actions[b->pending[slot].action].name : "";
-    /* the sender first, as `_check` does: who may answer is decided before what */
+    /* the sender first, as `_check` does: who may answer is decided before what, and a
+       stranger learns nothing about which questions exist */
     if (b->owner[0] == '\0' || from_id == NULL || strcmp(from_id, b->owner) != 0) {
-        rejected(out, tool, "only the owner may answer, on the board's button or in Telegram; "
-                            "this sender may not");
+        rejected(out, "", "only the owner may answer, on the board's button or in Telegram; "
+                          "this sender may not");
         return;
     }
+    int slot = slot_of(b, confirmation_id);
+    const char *tool = slot >= 0 ? b->agent->actions[b->pending[slot].action].name : "";
     if (slot < 0) {
         rejected(out, tool, "no such question");
         return;
@@ -1244,7 +1260,8 @@ void ne_bridge_answer(ne_bridge *b, const char *confirmation_id, int approve,
     answer(b, slot, approve, out);
 }
 
-void ne_bridge_answer_button(ne_bridge *b, int approve, ne_bridge_result *out)
+void ne_bridge_answer_button(ne_bridge *b, const char *confirmation_id, int approve,
+                             ne_bridge_result *out)
 {
     if (out == NULL) return;
     memset(out, 0, sizeof *out);
@@ -1253,16 +1270,12 @@ void ne_bridge_answer_button(ne_bridge *b, int approve, ne_bridge_result *out)
         return;
     }
     expire_due(b, b->hal.now_ms(b->hal.ctx));
-    int latest = -1;
-    for (uint32_t i = 0; i < NE_BRIDGE_PENDING; i++) {
-        const ne_bridge_pending *q = &b->pending[i];
-        if (q->state == NE_PENDING_WAITING && (latest < 0 || q->number > b->pending[latest].number)) {
-            latest = (int)i;
-        }
-    }
-    if (latest < 0) {
-        rejected(out, "", "no question is waiting");
+    /* the question the board shows, by its id: a press means that question, never "the
+       latest", which the brain controls by asking again */
+    int slot = slot_of(b, confirmation_id);
+    if (slot < 0) {
+        rejected(out, "", "no such question");
         return;
     }
-    answer(b, latest, approve, out);
+    answer(b, slot, approve, out);
 }

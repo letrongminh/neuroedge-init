@@ -19,7 +19,7 @@ import pytest
 from neuroedge.engine import brain
 from neuroedge.engine.compiler import build
 from neuroedge.engine.firmware import PROJECT_DIR, firmware_root, owned
-from neuroedge.errors import BuildFailed
+from neuroedge.errors import BuildFailed, NeuroEdgeError
 
 ROOT = Path(__file__).resolve().parents[2]
 DEMO = ROOT / "fixtures" / "agents" / "chat-den-cua" / "agent.toml"
@@ -159,3 +159,41 @@ def test_a_table_that_breaks_a_rule_is_named(change, problem):
     table = brain.brain_partitions((firmware_root() / "partitions.csv").read_text())
     assert change[0] in table
     assert any(problem in p for p in brain.partition_problems(table.replace(*change)))
+
+
+def _served(monkeypatch, checkout: Path) -> None:
+    """`urlopen` answers with a codeload-style archive of `checkout`."""
+    import io
+    import tarfile
+
+    data = io.BytesIO()
+    with tarfile.open(fileobj=data, mode="w:gz") as archive:
+        archive.add(checkout, arcname="neuroclaw-0000")
+    payload = data.getvalue()
+
+    class Response(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+    monkeypatch.setattr(brain.urllib.request, "urlopen", lambda *_a, **_k: Response(payload))
+
+
+def test_a_fetched_brain_enters_the_cache_only_when_it_matches_the_pin(
+    stand_in, tmp_path, monkeypatch
+):
+    """DP-B-01: a tampered download fails and leaves nothing cached; the pinned one is kept."""
+    lock = brain.load_lock(tmp_path)
+    cache = tmp_path / "cache"
+    (stand_in / brain.IN_REPOSITORY / "src" / "nc_brain.c").write_text("/* changed */\n")
+    _served(monkeypatch, stand_in)
+    with pytest.raises(NeuroEdgeError, match="tree_sha256"):
+        brain.fetch(lock, cache)
+    assert not any(cache.iterdir())
+    (stand_in / brain.IN_REPOSITORY / "src" / "nc_brain.c").write_text("/* the loop */\n")
+    _served(monkeypatch, stand_in)
+    fetched = brain.fetch(lock, cache)
+    assert brain.tree_sha256(fetched) == lock.tree_sha256
+    assert [p.name for p in cache.iterdir()] == [fetched.name]

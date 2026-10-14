@@ -28,6 +28,7 @@ import datetime
 import hashlib
 import ipaddress
 import json
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -96,6 +97,21 @@ def _certificate(subject, key, ca_key, *, days, ca=False, usage=None, hosts=(), 
     return builder.sign(ca_key, hashes.SHA256())
 
 
+def _write_private(path: Path, data: bytes) -> None:
+    """Written 0600 from the first byte (no window under the umask), replacing what was there."""
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    fd = os.open(
+        temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600
+    )
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(data)
+        os.replace(temporary, path)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
 def _write_cert(path: Path, cert: Any) -> None:
     from cryptography.hazmat.primitives import serialization
 
@@ -105,14 +121,14 @@ def _write_cert(path: Path, cert: Any) -> None:
 def _write_key(path: Path, key: Any) -> None:
     from cryptography.hazmat.primitives import serialization
 
-    path.write_bytes(
+    _write_private(
+        path,
         key.private_bytes(
             serialization.Encoding.PEM,
             serialization.PrivateFormat.PKCS8,
             serialization.NoEncryption(),
-        )
+        ),
     )
-    path.chmod(0o600)
 
 
 def thumbprint(cert_pem: bytes) -> str:
@@ -153,8 +169,7 @@ def mint(out: Path, days: int = MAX_TOKEN_DAYS) -> str:
         "cnf": {"x5t#S256": thumbprint((out / "nao.pem").read_bytes())},
     }
     token = jwt.encode(claims, key, algorithm="ES256", headers={"kid": "pair"})
-    (out / "nao.token").write_text(token + "\n")
-    (out / "nao.token").chmod(0o600)
+    _write_private(out / "nao.token", (token + "\n").encode("ascii"))
     return token
 
 
@@ -204,7 +219,7 @@ def create(
             why=f"the audience must be https://host[:port]/mcp, not {audience!r}",
             how="pass exactly the URL the brain calls",
         )
-    out.mkdir(parents=True, exist_ok=True)
+    out.mkdir(mode=0o700, parents=True, exist_ok=True)
     ca_key = ec.generate_private_key(ec.SECP256R1())
     _write_cert(
         out / "ca.pem",
@@ -251,7 +266,8 @@ def rotate(out: Path, *, cert_days: int = CERT_DAYS, token_days: int = MAX_TOKEN
     """
     _days(token_days)
     old = thumbprint((out / "nao.pem").read_bytes())
-    _brain_certificate(out, cert_days)
+    # revoke first: if anything after this fails, the old certificate is already refused
     with (out / REVOKED).open("a", encoding="ascii") as handle:
         handle.write(old + "\n")
+    _brain_certificate(out, cert_days)
     return mint(out, token_days)

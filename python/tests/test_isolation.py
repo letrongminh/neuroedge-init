@@ -71,6 +71,30 @@ def test_proc_without_hidepid_is_named(box):
     assert [p for p in check(box, brain(), OPEN_PROC) if p.startswith("/proc")]
 
 
+def test_a_readable_key_deeper_in_the_directory_is_named(box):
+    """TC-A-03-1: every file under the key directory, not only its first level."""
+    nested = box / "keys" / "old"
+    nested.mkdir(mode=0o700)
+    (nested / "issuer.key").write_text("secret")
+    (nested / "issuer.key").chmod(0o644)
+    nested.chmod(0o755)
+    found = check(box, brain())
+    assert f"neuroclaw can read {nested}" in found
+    assert f"neuroclaw can read {nested / 'issuer.key'}" in found
+
+
+def test_the_last_mount_of_proc_is_the_one_in_force(box):
+    assert [p for p in check(box, brain(), HIDEPID + OPEN_PROC) if p.startswith("/proc")]
+    assert check(box, brain(neuroclaw=4242), OPEN_PROC + HIDEPID) == []
+
+
+def test_a_brain_in_procs_exempt_group_is_named(box):
+    exempt = HIDEPID.replace("hidepid=2", "hidepid=2,gid=4243")
+    found = check(box, brain(neuroclaw=4242, monitor=4243), exempt)
+    assert any("exempt group (gid=4243)" in p for p in found)
+    assert check(box, brain(neuroclaw=4242), exempt) == []
+
+
 def test_root_and_a_missing_user_fail_closed(box):
     assert check(box, None) and "no such user" in check(box, None)[0]
     assert "neuroclaw is root" in check(box, isolation.Account("neuroclaw", 0, 0, {}))

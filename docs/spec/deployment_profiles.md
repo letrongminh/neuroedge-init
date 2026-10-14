@@ -247,7 +247,8 @@ void     ne_bridge_call(ne_bridge *b, const char *name, const char *arguments_js
                         ne_bridge_result *out);
 void     ne_bridge_answer(ne_bridge *b, const char *confirmation_id, int approve,
                           const char *from_id, ne_bridge_result *out);   /* owner, Telegram */
-void     ne_bridge_answer_button(ne_bridge *b, int approve, ne_bridge_result *out); /* latest */
+void     ne_bridge_answer_button(ne_bridge *b, const char *confirmation_id, int approve,
+                                ne_bridge_result *out); /* the question the board shows, by id */
 ```
 
 `ne_bridge` is static storage the application owns; no heap, no globals, no recursion, every

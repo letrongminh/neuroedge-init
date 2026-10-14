@@ -13,7 +13,7 @@
  *                        an ALLOW runs the action between ne_token_issue and ne_token_close
  *                        (DP-B-08); the result as tool-result.v1 JSON (DP-B-06)
  *   ne_bridge_answer()   the owner's Telegram callback, its user id checked here (DP-B-07)
- *   ne_bridge_answer_button()  the board's button: the latest question (DP-B-07)
+ *   ne_bridge_answer_button()  the board's button, for the question its screen shows (DP-B-07)
  *
  * What the brain sends is never a fact: `call_source` / `call_channel` are set by the bridge
  * (the brain is a caller like an MCP client: "mcp"), every other criterion is read by the
@@ -53,7 +53,9 @@ extern "C" {
 #define NE_BRIDGE_ARGS_MAX 256u             /* bytes of one call's arguments JSON */
 #define NE_BRIDGE_MAX_KEYS 16u              /* keys of one call's arguments */
 #define NE_BRIDGE_KEY_MAX 48u               /* bytes of one argument name */
+#ifndef NE_BRIDGE_RESULT_MAX              /* a test builds it smaller to reach the overflow */
 #define NE_BRIDGE_RESULT_MAX 1024u          /* bytes of one result, NUL included */
+#endif
 #define NE_BRIDGE_OWNER_MAX 32u             /* bytes of the owner's Telegram user id */
 #define NE_BRIDGE_MAX_FALLBACK 3u           /* conversation.py MAX_FALLBACK_DEPTH */
 #define NE_BRIDGE_WHO "the owner, on the board's button or in Telegram; not this caller"
@@ -136,8 +138,9 @@ typedef struct {
     char line[NE_BRIDGE_RESULT_MAX];     /* one problem being worded */
     char problems[NE_BRIDGE_RESULT_MAX]; /* every problem of one call */
     char saved[NE_BRIDGE_ARGS_MAX];      /* a question's arguments, decided again */
-    char name[NE_BRIDGE_KEY_MAX];        /* one argument name decoded */
-    char cmp[2][NE_BRIDGE_KEY_MAX];      /* two names compared */
+    char name[NE_BRIDGE_KEY_MAX + 4u];   /* one argument name decoded */
+    char cmp[2][NE_BRIDGE_KEY_MAX + 4u]; /* two names compared */
+    int opened;                          /* the question this call opened, or -1 */
     ne_bridge_span keys[NE_BRIDGE_MAX_KEYS];
     ne_bridge_span values[NE_BRIDGE_MAX_KEYS];
     uint32_t key_count;
@@ -168,8 +171,12 @@ void ne_bridge_call(ne_bridge *b, const char *name, const char *arguments_json,
 void ne_bridge_answer(ne_bridge *b, const char *confirmation_id, int approve,
                       const char *from_id, ne_bridge_result *out);
 
-/* The board's button answers the latest question still waiting. */
-void ne_bridge_answer_button(ne_bridge *b, int approve, ne_bridge_result *out);
+/*
+ * The board's button answers the question the board shows: `confirmation_id` is the one its
+ * screen displayed with the press, never "the latest" (the brain controls what is latest).
+ */
+void ne_bridge_answer_button(ne_bridge *b, const char *confirmation_id, int approve,
+                             ne_bridge_result *out);
 
 /* Questions waiting now (expired ones are not). */
 uint32_t ne_bridge_waiting(ne_bridge *b);

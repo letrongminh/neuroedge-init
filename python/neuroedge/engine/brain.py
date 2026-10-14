@@ -23,7 +23,9 @@ import hashlib
 import io
 import json
 import os
+import shutil
 import tarfile
+import tempfile
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -87,6 +89,12 @@ def tree_sha256(directory: Path) -> str:
     lines = []
     for path in sorted(p for p in directory.rglob("*") if p.is_file()):
         relative = path.relative_to(directory).as_posix()
+        if "\n" in relative or "\r" in relative:
+            raise NeuroEdgeError(
+                where=str(path),
+                why="a file name holds a line break: the tree hash would be ambiguous",
+                how="NeuroClaw-ESP has no such file; fetch the pinned commit again",
+            )
         lines.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {relative}\n")
     return hashlib.sha256("".join(lines).encode("utf-8")).hexdigest()
 
@@ -123,19 +131,36 @@ def fetch(lock: Lock, cache: Path | None = None) -> Path:
             why=f"cannot fetch NeuroClaw {lock.version}: {error}",
             how="check the network, or pass a checkout with --brain-source",
         ) from error
-    with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
-        for member in archive.getmembers():
-            parts = PurePosixPath(member.name).parts
-            if len(parts) < 5 or parts[1:4] != tuple(IN_REPOSITORY.split("/")):
-                continue
-            relative = PurePosixPath(*parts[4:])
-            if not member.isfile() or ".." in relative.parts:
-                continue
-            path = target / relative
-            path.parent.mkdir(parents=True, exist_ok=True)
-            extracted = archive.extractfile(member)
-            if extracted is not None:
-                path.write_bytes(extracted.read())
+    cache.mkdir(parents=True, exist_ok=True)
+    # Extract beside the cache entry and move it in only once its tree matches the pin: an
+    # interrupted or tampered download never becomes the cached copy.
+    staging = Path(tempfile.mkdtemp(prefix=f".{target.name}.", dir=cache))
+    try:
+        with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
+            for member in archive.getmembers():
+                parts = PurePosixPath(member.name).parts
+                if len(parts) < 5 or parts[1:4] != tuple(IN_REPOSITORY.split("/")):
+                    continue
+                relative = PurePosixPath(*parts[4:])
+                if not member.isfile() or ".." in relative.parts:
+                    continue
+                path = staging / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                extracted = archive.extractfile(member)
+                if extracted is not None:
+                    path.write_bytes(extracted.read())
+        found = tree_sha256(staging)
+        if found != lock.tree_sha256:
+            raise NeuroEdgeError(
+                where=f"{lock.path} ({url})",
+                why=f"the fetched NeuroClaw-ESP has tree_sha256 {found}, the pin says "
+                f"{lock.tree_sha256}",
+                how="fetch again; if it persists, the pin or the repository changed (DP-NF-02)",
+            )
+        shutil.rmtree(target, ignore_errors=True)  # a partial copy without neuroclaw.h
+        os.replace(staging, target)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
     return target
 
 

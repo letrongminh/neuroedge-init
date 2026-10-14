@@ -70,10 +70,11 @@ def includes(agent: Path) -> list[str]:
     return out
 
 
-def compile_bridge(agent: Path, out: Path) -> Path:
+def compile_bridge(agent: Path, out: Path, *defines: str) -> Path:
     command = [
         cc(),
         *STRICT,
+        *defines,
         "-O1",
         "-g",
         *SAN,
@@ -117,11 +118,11 @@ class Bridge:
         return out
 
 
-def built(tmp: Path, agent: Path) -> Bridge:
+def built(tmp: Path, agent: Path, *defines: str) -> Bridge:
     out = tmp / "out"
     build(agent / "agent.toml", target="esp32s3", board_id="esp32s3-box-3", out_dir=str(out))
     component = out / PROJECT_DIR / COMPONENT
-    return Bridge(compile_bridge(component, tmp / "bridge"), agent / "agent.toml", tmp)
+    return Bridge(compile_bridge(component, tmp / "bridge", *defines), agent / "agent.toml", tmp)
 
 
 @pytest.fixture(scope="module")
@@ -396,7 +397,7 @@ def test_only_the_owner_or_the_button_answers_once_and_facts_are_read_again(demo
         "answer confirm_1 1 42",  # once only
         door(5),  # confirm_2
         "fact daytime false",
-        "button 1",  # facts are read again: night now, no run
+        "button confirm_2 1",  # the board shows confirm_2; facts are read again: night, no run
         "fact daytime true",
         door(9),  # confirm_3
         "time 10001",
@@ -404,8 +405,9 @@ def test_only_the_owner_or_the_button_answers_once_and_facts_are_read_again(demo
         "answer confirm_9 1 42",
         "time 20000",
         door(4),  # confirm_4
-        "button 0",
-        "button 1",
+        "button confirm_4 0",
+        "button confirm_4 1",  # already answered
+        "button confirm_8 1",  # not a question the board could show
     )
     results = [json.loads(line.split("\t", 2)[2]) for line in out if line.startswith("result")]
     problems = [r.get("problems", [None])[0] for r in results]
@@ -422,7 +424,8 @@ def test_only_the_owner_or_the_button_answers_once_and_facts_are_read_again(demo
     assert problems[8] == "the question is already expired"
     assert problems[9] == "no such question"
     assert results[11]["reason"] == "declined" and results[11]["status"] == "BLOCK"
-    assert problems[12] == "no question is waiting"
+    assert problems[12] == "the question is already declined"
+    assert problems[13] == "no such question"
     runs = [line for line in out if line.startswith(("run", "drive"))]
     assert runs == ["run\tfront_door_unlock\tduration_s=7", "drive\tdoor_lock\tauthorized"]
     for result in results:
@@ -436,7 +439,7 @@ def test_four_questions_wait_at_most_and_allow_still_runs(demo):
         *(door(s) for s in (1, 2, 3, 4, 5)),
         "waiting",
         "call living_light_on",
-        "button 1",  # the latest waiting: confirm_4, duration 4
+        "button confirm_4 1",  # the question the board shows: confirm_4, duration 4
         door(6),  # a place is free again: confirm_5
         "waiting",
     )
@@ -457,6 +460,22 @@ def test_four_questions_wait_at_most_and_allow_still_runs(demo):
 
 
 # --- untrusted input -------------------------------------------------------------------------
+
+
+def test_a_question_too_long_to_tell_the_brain_does_not_wait(tmp_path):
+    """TC-B-07-1: a BLOCK + ASK that does not fit is REJECTED, and its question is declined."""
+    small = built(
+        tmp_path, ROOT / "fixtures" / "agents" / "chat-den-cua", "-DNE_BRIDGE_RESULT_MAX=160u"
+    )
+    with small.manifest.open("rb") as handle:
+        facts = tomllib.load(handle).get("sim", {}).get("facts", {})
+    lines = [f"fact {name} {json.dumps(value)}" for name, value in facts.items()]
+    out = small.run(*lines, 'call front_door_unlock {"duration_s": 10}', "waiting")
+    results = [json.loads(line.split("\t", 2)[2]) for line in out if line.startswith("result")]
+    assert results[-1]["status"] == "REJECTED"
+    assert "does not fit" in results[-1]["problems"][0]
+    assert "confirmation" not in results[-1]
+    assert [line for line in out if line.startswith("waiting")] == ["waiting\t0"]
 
 
 def test_any_arguments_get_an_answer_and_never_a_crash(bench):

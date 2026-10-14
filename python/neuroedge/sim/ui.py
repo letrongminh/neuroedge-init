@@ -84,7 +84,7 @@ def state_dir() -> Path:
 
 def under_service_manager() -> bool:
     """Run by systemd (or a manager that says so): stdout and stderr go to a journal."""
-    return bool(os.environ.get("INVOCATION_ID") or os.environ.get("NEUROEDGE_SERVICE"))
+    return bool(os.environ.get("INVOCATION_ID")) or os.environ.get("NEUROEDGE_SERVICE") == "1"
 
 
 def _parse_value(text: str) -> Any:
@@ -121,6 +121,7 @@ class SessionServer:
         self._code_deadline = time.monotonic() + PAIRING_TTL_S
         self._control = secrets.token_urlsafe(32)
         self.link_file: Path | None = None
+        self._link_lock = threading.Lock()  # one writer of `ui.json` at a time
         self.refusals = 0
 
     @property
@@ -167,14 +168,20 @@ class SessionServer:
     def _write_link(self) -> None:
         if self.link_file is None:
             return
-        self.link_file.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        body = json.dumps({"url": self.open_url, "control": self._control, "pid": os.getpid()})
-        temporary = self.link_file.with_name(f".{LINK_FILE}.{os.getpid()}")
-        handle = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        with os.fdopen(handle, "w", encoding="utf-8") as out:
-            out.write(body)
-        os.chmod(temporary, 0o600)
-        os.replace(temporary, self.link_file)
+        with self._link_lock:
+            self.link_file.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            body = json.dumps({"url": self.open_url, "control": self._control, "pid": os.getpid()})
+            # a fresh name, created here and nowhere else: a planted file or link is never followed
+            temporary = self.link_file.with_name(f".{LINK_FILE}.{secrets.token_hex(8)}")
+            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+            handle = os.open(temporary, flags, 0o600)
+            try:
+                with os.fdopen(handle, "w", encoding="utf-8") as out:
+                    out.write(body)
+                os.replace(temporary, self.link_file)
+            except BaseException:
+                temporary.unlink(missing_ok=True)
+                raise
 
     @property
     def announced_url(self) -> str:

@@ -1003,6 +1003,50 @@ def test_a_brain_certificate_rotates_without_a_restart_and_a_revoked_one_is_cut_
     assert running.events("mcp_auth_refused") == [{"reason": "revoked_certificate"}]
 
 
+def test_a_connection_kept_alive_across_a_revocation_gets_no_further_request(serve, tmp_path):
+    """TC-A-11-1: the revocation is read per request, not only when a connection opens."""
+    from neuroedge import pairing
+
+    keys = paired(tmp_path)
+    running = serve_paired(serve, keys, revoked=keys / "revoked.txt")
+    token = (keys / "nao.token").read_text().strip()
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.load_verify_locations(cafile=str(keys / "ca.pem"))
+    context.load_cert_chain(keys / "nao.pem", keys / "nao.key")
+    body = {**INITIALIZE, "params": {"name": "living_light_on", "arguments": {}}}
+
+    async def go():
+        async with httpx2.AsyncClient(
+            verify=context, headers={"Authorization": f"Bearer {token}"}, timeout=TIMEOUT
+        ) as client:
+            url = f"https://localhost:{running.port}/mcp"
+            first = await client.post(url, json=body, headers=MCP_HEADERS)
+            with (keys / "revoked.txt").open("a", encoding="ascii") as handle:
+                handle.write(pairing.thumbprint((keys / "nao.pem").read_bytes()) + "\n")
+            second = await client.post(url, json=body, headers=MCP_HEADERS)
+            return first.status_code, second.status_code
+
+    calls_before = len(running.events("tool_call"))
+    first, second = anyio.run(go)
+    assert first != 401 and second == 403
+    assert len(running.events("tool_call")) == calls_before
+    assert running.events("mcp_auth_refused") == [{"reason": "revoked_certificate"}]
+
+
+def test_a_revocation_list_never_read_refuses_every_certificate(tmp_path):
+    unreadable = tmp_path / "revoked.txt"
+    unreadable.mkdir()  # stat works, reading does not
+    assert "any-thumbprint" in mcp_http.Revocations(unreadable)
+
+
 def test_a_revocation_list_that_is_not_a_file_is_refused_at_startup(pki, tmp_path):
     with pytest.raises(NeuroEdgeError, match="revocation list"):
         prepare(config(pki, revoked=tmp_path / "missing.txt"))
+
+
+def test_the_pairing_secrets_are_private_from_the_first_byte(tmp_path):
+    keys = paired(tmp_path)
+    assert keys.stat().st_mode & 0o077 == 0
+    for name in ("ca.key", "hop.key", "nao.key", "issuer.key", "nao.token"):
+        assert (keys / name).stat().st_mode & 0o777 == 0o600, name
+    assert not list(keys.glob(".*.tmp"))

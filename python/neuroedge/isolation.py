@@ -7,9 +7,10 @@ DP-A-03, threat model §2k):
 
 * no device group — `gpio`, `i2c`, `spi`, `dialout`, `video`, `audio`, `plugdev`, `input`;
 * no access to `/dev/gpiochip*`, `/dev/i2c-*`, `/dev/spidev*` by owner, group or other bits;
-* no read of the box's key directory, nor of any file in it;
-* `/proc` mounted with `hidepid=2` (or `invisible`): otherwise the brain reads the box's command
-  line and environment.
+* no read of the box's key directory, nor of any file or directory under it;
+* `/proc` mounted with `hidepid=2` (or `invisible`), the brain's user not in its `gid=` group
+  (that group sees every process): otherwise the brain reads the box's command line and
+  environment. The last mount of `/proc` is the one in force.
 
 Each check reads the system through `System`, so the tests give it a fake one. A check it cannot
 make (not Linux, no such user) is a problem too: fail closed.
@@ -87,13 +88,14 @@ def _opens_device(account: Account, path: Path) -> bool:
     return readable or writable
 
 
-def _hidepid(mounts: str) -> bool:
+def _proc_options(mounts: str) -> list[str] | None:
+    """The options of the last `proc` mount on `/proc` (the one in force), or None."""
+    found = None
     for line in mounts.splitlines():
         fields = line.split()
         if len(fields) >= 4 and fields[1] == "/proc" and fields[2] == "proc":
-            options = fields[3].split(",")
-            return any(o in ("hidepid=2", "hidepid=invisible") for o in options)
-    return False
+            found = fields[3].split(",")
+    return found
 
 
 def problems(system: System, keys: Path) -> list[str]:
@@ -117,14 +119,26 @@ def problems(system: System, keys: Path) -> list[str]:
     if keys.is_dir():
         if _reads(account, keys):
             found.append(f"{account.name} can read the key directory {keys}")
-        for path in sorted(p for p in keys.iterdir() if p.is_file()):
-            if _reads(account, path):
-                found.append(f"{account.name} can read {path}")
+        for path in sorted(keys.rglob("*")):
+            try:
+                if (path.is_file() or path.is_dir()) and _reads(account, path):
+                    found.append(f"{account.name} can read {path}")
+            except OSError:
+                continue
     else:
         found.append(f"no key directory at {keys}")
-    if not _hidepid(system.proc_mounts):
+    options = _proc_options(system.proc_mounts) or []
+    if not any(o in ("hidepid=2", "hidepid=invisible") for o in options):
         found.append(
             "/proc is not mounted with hidepid=2: the brain can read the box's command line and "
             "environment (mount -o remount,hidepid=2 /proc, and in /etc/fstab)"
         )
+    for option in options:
+        if option.startswith("gid=") and option[4:].isdigit():
+            gid = int(option[4:])
+            if gid == account.gid or gid in account.groups.values():
+                found.append(
+                    f"{account.name} is in /proc's exempt group (gid={gid}): it sees every "
+                    "process despite hidepid"
+                )
     return found

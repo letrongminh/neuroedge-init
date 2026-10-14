@@ -11,7 +11,7 @@
  *   tools                         -> tool<TAB>name<TAB>description<TAB>schema, one per tool
  *   call <name> [<json>]          -> result<TAB>status<TAB>json
  *   answer <id> <0|1> <from|->    -> result<TAB>status<TAB>json
- *   button <0|1>                  -> result<TAB>status<TAB>json
+ *   button <id> <0|1>             -> result<TAB>status<TAB>json
  *   waiting                       -> waiting<TAB>n
  *
  * The device prints run<TAB>action<TAB>arg=value... and drive<TAB>pin<TAB>reason for every pin
@@ -219,7 +219,8 @@ int main(int argc, char **argv)
                              &result);
             print_result();
         } else if (strcmp(cmd, "button") == 0) {
-            ne_bridge_answer_button(&bridge, atoi(rest), &result);
+            char *id = word(&rest, " ");
+            ne_bridge_answer_button(&bridge, id, atoi(rest ? rest : "0"), &result);
             print_result();
         } else if (strcmp(cmd, "reads") == 0) {
             printf("reads\t%u\n", (unsigned)dev.reads);

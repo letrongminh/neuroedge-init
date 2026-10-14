@@ -22,7 +22,8 @@ this module adds is the door, and the door fails closed:
 * **Short-lived tokens, revocable certificates** (Q-83, DP-A-04, DP-A-11): a token must carry
   `iat` and live at most `MAX_TOKEN_LIFETIME_S` (7 days), else `lifetime_too_long`; a client
   certificate whose thumbprint is in `--revoked` (read again whenever the file changes, no
-  restart) is cut off right after the handshake, before any HTTP, as `revoked_certificate`.
+  restart) is cut off right after the handshake, before any HTTP, as `revoked_certificate`;
+  a connection kept alive across a revocation gets 403 on its next request and is closed.
   `neuroedge pair renew` and `pair rotate` (`neuroedge.pairing`) make both routine.
 
 The MCP SDK supplies the Streamable HTTP app, the bearer middleware and the protected-resource
@@ -140,7 +141,8 @@ class Revocations:
     """
     `--revoked`: one `x5t#S256` thumbprint per line (`#` starts a comment), read again whenever
     the file's modification time or size changes, so a revocation takes effect on the next
-    connection without a restart (DP-A-11). A file that cannot be read keeps the last list.
+    request without a restart (DP-A-11). A file that cannot be read keeps the last list; one that
+    was never read refuses every certificate (fail closed).
     """
 
     def __init__(self, path: Path) -> None:
@@ -168,7 +170,8 @@ class Revocations:
             return self._thumbprints
 
     def __contains__(self, thumbprint: str) -> bool:
-        return thumbprint in self.current()
+        listed = self.current()
+        return self._stamp is None or thumbprint in listed
 
 
 def _error(why: str, how: str, where: str = WHERE) -> NeuroEdgeError:
@@ -568,6 +571,19 @@ async def serve_http(
 
             async def app(scope: Any, receive: Any, send: Any) -> None:
                 if scope["type"] == "http":
+                    if self._peer is not None and revoked(self._peer):
+                        # revoked while this connection was kept alive: no more requests on it
+                        refuse_revoked()
+                        await send(
+                            {
+                                "type": "http.response.start",
+                                "status": 403,
+                                "headers": [(b"connection", b"close")],
+                            }
+                        )
+                        await send({"type": "http.response.body", "body": b""})
+                        self.transport.close()
+                        return
                     scope = {**scope, PEER_KEY: self._peer}
                 await inner(scope, receive, send)
 
@@ -578,11 +594,7 @@ async def serve_http(
             ssl_object = transport.get_extra_info("ssl_object")
             der = ssl_object.getpeercert(binary_form=True) if ssl_object is not None else None
             self._peer = thumbprint(der) if der else None
-            if (
-                self._peer is not None
-                and prepared.revoked is not None
-                and self._peer in prepared.revoked
-            ):
+            if self._peer is not None and revoked(self._peer):
                 # DP-A-11: a revoked brain certificate gets no HTTP at all
                 self._peer = None
                 transport.close()
@@ -595,6 +607,9 @@ async def serve_http(
 
     sock = bind(prepared.config)
     app = build_app(session, prepared, lock=lock, on_change=on_change)
+
+    def revoked(peer: str) -> bool:
+        return prepared.revoked is not None and peer in prepared.revoked
 
     def refuse_revoked() -> None:
         app.record({"reason": "revoked_certificate"})
