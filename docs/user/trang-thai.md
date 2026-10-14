@@ -13,7 +13,7 @@
 | Current phase | 🟡 **Phase MVP (§0.5)**, sequence per Q-72 — I2d then I2e (fish tank NeuroEdge Blueprint traversing all three loops on simulation) before the 8-week demand gate; remainder of I1, I2a, I2c interleaved; partner trial (Q-70) in parallel; voice (I4, I5) and Studio paused, not cut |
 | Open increment | 🟡 **I2d — Missions and operator agents** (Q-72) — tasks begin once Step 0 (documentation sync per Q-72) is done |
 | Next milestone | **8-week demand gate (Q-72, B6–B8)** — ≥ 3 external users independently install Blueprint and get it running, ≥ 1 user runs continuously for 2 weeks on G2 or G3, ≥ 1 maker wants to sell (PRD §11.2) |
-| Core CI status | ✅ **PASS 4910/4910 · SKIP 0** |
+| Core CI status | ✅ **PASS 4908/4908 · SKIP 0** |
 | Non-technical blockers | 🟡 **2 blocking items** |
 | Last updated | **2026-10-14** |
 

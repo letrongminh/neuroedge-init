@@ -1,419 +1,804 @@
 <!doctype html>
-<!-- Ảnh chụp tay ngày 2026-10-05, không sinh tự động. Nguồn sự thật: docs/architecture/ (CONTRIBUTING.md §8.1); trang này lệch thì nguồn đúng. -->
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kiến trúc NeuroEdge</title>
+<!-- Hand-drawn architecture (2026-10-14, after Q-82); source of truth: docs/architecture/ (CONTRIBUTING.md §8.1).
+     Progress blocks between GENERATED markers are written by scripts/gen_architecture_progress.py from the roadmap — do not edit them by hand. -->
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NeuroEdge Architecture</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <style>
-/* Layout: một cột đọc ~70ch; sơ đồ xương sống là dải dọc theo đúng thứ tự dòng lệnh, nhánh L2 đứng cạnh L3 */
+/* Layout: a two-column field guide (chapter list left, content right), serif type, one coral accent.
+   Each chapter is one figure; words only name things. Diagrams are inline SVG sharing the colour tokens. */
 :root {
-  --bg: #f3f5f7;
+  --bg: #fefefc;
   --surface: #ffffff;
-  --ink: #14202b;
-  --muted: #586773;
-  --line: #d3dae0;
-  --gate: #b45309;        /* màu "cổng": nơi duy nhất ra quyết định */
-  --gate-soft: #fdf1e3;
-  --core: #1f4e6b;
-  --core-soft: #e6eef4;
-  --ok: #1d7a4a;  --ok-soft: #e3f3ea;
-  --part: #8a6100; --part-soft: #fbf1d6;
-  --plan: #5d6875; --plan-soft: #eceff2;
-  --block: #b42318; --block-soft: #fde8e6;
-  --f-display: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
-  --f-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --side: #fbfaf7;
+  --ink: #141414;
+  --muted: #6a675f;
+  --line: #e3e0d8;
+  --gate: #d9472b;        /* gate colour: the only place that decides, also the accent */
+  --gate-soft: #fdf0ec;
+  --core: #1f2933;
+  --core-soft: #f4f3ef;
+  --ok: #2f7d4f;  --ok-soft: #edf6f0;
+  --part: #8a6a12; --part-soft: #f8f2e1;
+  --plan: #77736b; --plan-soft: #f3f2ee;
+  --block: #a3123a; --block-soft: #fbecf0;
+  --f-display: "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --f-body: "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
   --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0f161c; --surface: #16212a; --ink: #e4eaef; --muted: #98a6b2; --line: #2b3a46;
-  --gate: #f0a24a; --gate-soft: #3a2810; --core: #8cc1e0; --core-soft: #17303f;
-  --ok: #5cc98d; --ok-soft: #14301f; --part: #e6bd55; --part-soft: #352a0d;
-  --plan: #a3afba; --plan-soft: #222d36; --block: #f2867c; --block-soft: #3a1714;
+  --bg: #0e0e0e; --surface: #151515; --side: #111111; --ink: #f2f1ee; --muted: #a29f98; --line: #2a2a2a;
+  --gate: #f5654a; --gate-soft: #2a1612; --core: #e6e4df; --core-soft: #1b1b1b;
+  --ok: #6fcf97; --ok-soft: #12261a; --part: #e3c065; --part-soft: #2a230f;
+  --plan: #9a968e; --plan-soft: #1c1c1c; --block: #f2678c; --block-soft: #2c1219;
   color-scheme: dark } }
 :root[data-theme="dark"] {
-  --bg: #0f161c; --surface: #16212a; --ink: #e4eaef; --muted: #98a6b2; --line: #2b3a46;
-  --gate: #f0a24a; --gate-soft: #3a2810; --core: #8cc1e0; --core-soft: #17303f;
-  --ok: #5cc98d; --ok-soft: #14301f; --part: #e6bd55; --part-soft: #352a0d;
-  --plan: #a3afba; --plan-soft: #222d36; --block: #f2867c; --block-soft: #3a1714;
+  --bg: #0e0e0e; --surface: #151515; --side: #111111; --ink: #f2f1ee; --muted: #a29f98; --line: #2a2a2a;
+  --gate: #f5654a; --gate-soft: #2a1612; --core: #e6e4df; --core-soft: #1b1b1b;
+  --ok: #6fcf97; --ok-soft: #12261a; --part: #e3c065; --part-soft: #2a230f;
+  --plan: #9a968e; --plan-soft: #1c1c1c; --block: #f2678c; --block-soft: #2c1219;
   color-scheme: dark }
 
 * { box-sizing: border-box }
-body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15.5px; line-height: 1.6; padding-inline: 16px; padding-block: 40px 64px }
-.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 56px }
-h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.25; margin: 0 }
-h1 { font-size: clamp(28px, 5vw, 40px); font-weight: 800; letter-spacing: -0.02em }
-h2 { font-size: 22px; font-weight: 700 }
-h3 { font-size: 16px; font-weight: 700 }
-p { margin: 0; max-width: 68ch }
-code, .mono { font-family: var(--f-mono); font-size: 0.86em }
-code { background: var(--core-soft); color: var(--core); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere }
-a { color: var(--core) }
-.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted) }
-section { display: grid; gap: 18px; min-width: 0 }
-.lede { font-size: 18px; color: var(--ink) }
-.lede strong { color: var(--gate) }
+html { scroll-behavior: smooth; scroll-padding-top: 24px }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 17px; line-height: 1.6; margin: 0;
+  display: grid; grid-template-columns: 272px minmax(0, 1fr); min-height: 100vh }
 
-/* Chú giải trạng thái */
-.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; vertical-align: 1px }
+/* Chapter list on the left */
+.side { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--side); border-right: 1px solid var(--line); padding: 36px 20px 28px; display: grid; align-content: start; gap: 18px }
+.brand { font-family: var(--f-display); font-weight: 700; font-size: 26px; letter-spacing: -0.01em; text-decoration: none; color: var(--ink) }
+.brand b { color: var(--gate); font-weight: 700 }
+.brand-sub { font-size: 14px; color: var(--muted); margin-top: -12px }
+.toc { display: grid; gap: 1px; border-top: 1px solid var(--line); padding-top: 14px }
+.toc a { display: grid; grid-template-columns: 26px 1fr; padding: 5px 10px; border-left: 2px solid transparent; color: var(--ink); text-decoration: none; font-size: 15px; line-height: 1.35 }
+.toc a span { font-family: var(--f-mono); font-size: 11px; color: var(--muted); padding-top: 3px }
+.toc a:hover { background: var(--core-soft) }
+.toc a.on { border-left-color: var(--gate); background: var(--core-soft) }
+.toc a.on span { color: var(--gate) }
+.side-note { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px }
+.theme { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px }
+.theme button { font-family: var(--f-mono); font-size: 11.5px; padding: 6px 0; background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: 2px; cursor: pointer }
+.theme button[aria-pressed="true"] { color: var(--gate); border-color: var(--gate); font-weight: 600 }
+.side-links { display: grid; gap: 6px }
+.side-links a { font-family: var(--f-mono); font-size: 11.5px; text-align: center; padding: 7px 0; border: 1px solid var(--line); border-radius: 2px; color: var(--ink); text-decoration: none; background: var(--surface) }
+.side-links a:hover { border-color: var(--gate); color: var(--gate) }
+
+main { padding: 56px clamp(16px, 5vw, 64px) 80px; min-width: 0 }
+.wrap { max-width: 900px; display: grid; gap: 88px }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.15; margin: 0 }
+h1 { font-size: clamp(34px, 5.6vw, 60px); font-weight: 700; letter-spacing: -0.025em }
+h1 em { color: var(--gate); font-style: italic; font-weight: 600 }
+h2 { font-size: clamp(25px, 3vw, 32px); font-weight: 700; letter-spacing: -0.015em }
+h3 { font-size: 17px; font-weight: 700 }
+p { margin: 0; max-width: 64ch }
+code, .mono { font-family: var(--f-mono); font-size: 0.8em }
+code { background: var(--core-soft); color: var(--ink); padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; overflow-wrap: anywhere }
+a { color: var(--ink); text-decoration-color: var(--gate); text-underline-offset: 3px }
+a:hover { color: var(--gate) }
+.eyebrow { font-family: var(--f-mono); font-size: 11.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gate); margin-bottom: 10px }
+section { display: grid; gap: 20px; min-width: 0 }
+.head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 6px 16px }
+.more { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted) }
+.lede { font-size: 20px; line-height: 1.55; color: var(--muted) }
+.lede strong { color: var(--ink); font-weight: 600 }
+.cap { font-size: 15px; color: var(--muted) }
+.hero { display: grid; gap: 22px; padding-bottom: 8px }
+.try { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 14px }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 18px 20px; display: grid; gap: 10px; align-content: start }
+.panel h3 { font-size: 16px }
+.panel ul { margin: 0; padding-left: 18px; display: grid; gap: 4px }
+.say-q { border-left: 2px solid var(--gate); padding-left: 12px; font-size: 15.5px }
+.term { font-family: var(--f-mono); font-size: 12.5px; line-height: 1.7; background: var(--core-soft); border: 1px solid var(--line); border-radius: 2px; padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere }
+.term .tk { color: var(--muted) } .term .tg { color: var(--gate); font-weight: 600 } .term .tok { color: var(--ok); font-weight: 600 }
+
+/* Status legend */
+.chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 2px; white-space: nowrap; vertical-align: 1px }
 .chip::before { content: ""; width: 7px; height: 7px; border-radius: 50% }
 .ok { background: var(--ok-soft); color: var(--ok) } .ok::before { background: var(--ok) }
 .part { background: var(--part-soft); color: var(--part) } .part::before { background: var(--part) }
 .plan { background: var(--plan-soft); color: var(--plan) } .plan::before { border: 1.5px dashed var(--plan); width: 6px; height: 6px }
-.legend { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; font-size: 13px; color: var(--muted) }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; font-size: 14px; color: var(--muted) }
 
-/* Sơ đồ xương sống */
-.spine { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 14px 18px; align-items: start }
-.col { display: grid; gap: 0; min-width: 0 }
-.box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; min-width: 0 }
-.box.dashed { border-style: dashed }
-.box-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 10px }
-.tag { font-family: var(--f-mono); font-size: 11.5px; font-weight: 600; color: var(--muted) }
-.items { display: flex; flex-wrap: wrap; gap: 6px }
-.item { font-size: 13px; padding: 3px 9px; border-radius: 6px; background: var(--bg); border: 1px solid var(--line); display: inline-flex; gap: 6px; align-items: center }
-.item.dashed { border-style: dashed; color: var(--muted) }
-.arrow { display: grid; justify-items: center; padding: 4px 0; color: var(--muted); font-size: 12px; text-align: center }
-.arrow::before { content: ""; width: 2px; height: 16px; background: var(--line) }
-.arrow::after { content: ""; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 7px solid var(--line) }
-.arrow span { order: -1; font-family: var(--f-mono); font-size: 11.5px }
-.core { border: 2px solid var(--core); background: var(--core-soft) }
-.core .step { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; font-size: 14px; display: grid; gap: 2px }
-.core .step b { font-family: var(--f-mono); font-size: 13.5px }
-.core .step small { color: var(--muted); font-size: 12.5px; line-height: 1.45 }
-.core .step.gate { border: 2px solid var(--gate); background: var(--gate-soft) }
-.core .step.gate b { color: var(--gate) }
-.steps { display: grid; gap: 6px }
-.fork { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
-.fork .step.allow b { color: var(--ok) }
-.fork .step.blk b { color: var(--block) }
-.mini-arrow { text-align: center; color: var(--muted); font-size: 12px; line-height: 1 }
-.targets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px }
-.targets .box { padding: 12px 14px }
-.targets p { font-size: 13px; color: var(--muted) }
-.side { display: grid; gap: 10px; position: relative }
-.side .box { border-left: 3px solid var(--core) }
-.side .note { font-size: 12.5px; color: var(--muted) }
-.feeds { font-family: var(--f-mono); font-size: 11.5px; color: var(--core); font-weight: 600 }
-.rail { margin-top: 14px; border-top: 2px dashed var(--line); padding-top: 12px; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted) }
-.rail b { color: var(--ink); font-weight: 600 }
+/* SVG frame: scrolls sideways on a phone instead of shrinking the text */
+.fig { background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 18px; overflow-x: auto }
+.fig svg { display: block; width: 100%; height: auto; min-width: 680px }
+.fig.narrow svg { min-width: 520px }
+svg text { font-family: var(--f-body); fill: var(--ink) }
+svg rect[rx="8"], svg rect[rx="10"], svg rect[rx="12"], svg rect[rx="14"], svg rect[rx="16"] { rx: 3px; ry: 3px }
+svg .t { font-size: 14.5px; font-weight: 700 }
+svg .s { font-size: 12px; fill: var(--muted) }
+svg .m { font-family: var(--f-mono); font-size: 11.5px; fill: var(--muted) }
+svg .zl { font-family: var(--f-mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em }
+svg .em { font-size: 20px }
+svg .em-l { font-size: 26px }
+svg .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.2 }
+svg .box-core { fill: var(--surface); stroke: var(--core); stroke-width: 1.3 }
+svg .box-gate { fill: var(--gate-soft); stroke: var(--gate); stroke-width: 1.8 }
+svg .box-ok { fill: var(--ok-soft); stroke: var(--ok); stroke-width: 1.4 }
+svg .box-blk { fill: var(--block-soft); stroke: var(--block); stroke-width: 1.4 }
+svg .box-plan { fill: var(--plan-soft); stroke: var(--plan); stroke-width: 1.2; stroke-dasharray: 5 4 }
+svg .zone-un { fill: none; stroke: var(--block); stroke-width: 1.4; stroke-dasharray: 6 5 }
+svg .zone-tr { fill: var(--core-soft); stroke: var(--core); stroke-width: 1.4; fill-opacity: 0.7 }
+svg .ln { stroke: var(--muted); stroke-width: 1.6; fill: none }
+svg .ln-gate { stroke: var(--gate); stroke-width: 2.2; fill: none }
+svg .ln-ok { stroke: var(--ok); stroke-width: 2.2; fill: none }
+svg .ln-blk { stroke: var(--block); stroke-width: 1.8; fill: none }
+svg .ln-plan { stroke: var(--plan); stroke-width: 1.4; fill: none; stroke-dasharray: 5 4 }
+svg .ln-dot { stroke: var(--muted); stroke-width: 1.3; fill: none; stroke-dasharray: 2 4 }
+svg .c-gate { fill: var(--gate) } svg .c-ok { fill: var(--ok) } svg .c-blk { fill: var(--block) }
+svg .c-core { fill: var(--core) } svg .c-part { fill: var(--part) } svg .c-plan { fill: var(--plan) } svg .c-muted { fill: var(--muted) }
+svg .arrow-m { fill: var(--muted) } svg .arrow-g { fill: var(--gate) } svg .arrow-o { fill: var(--ok) } svg .arrow-b { fill: var(--block) } svg .arrow-p { fill: var(--plan) }
 
-/* Bảng */
-.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface) }
-table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 640px }
-th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line) }
-th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--bg) }
+/* Five layers */
+.layers { display: grid; gap: 6px }
+.layer { display: grid; grid-template-columns: 44px minmax(0, 220px) minmax(0, 1fr) auto; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 2px; padding: 10px 14px }
+.layer .n { font-family: var(--f-mono); font-size: 20px; font-weight: 500; color: var(--muted); text-align: center }
+.layer .ic { font-size: 22px; margin-right: 6px }
+.layer .pills { display: flex; flex-wrap: wrap; gap: 5px }
+.pill { font-size: 13.5px; padding: 1px 9px; border-radius: 2px; background: var(--bg); border: 1px solid var(--line); white-space: nowrap }
+.pill.dashed { border-style: dashed; color: var(--muted) }
+.layer.l1 { border-left-color: var(--block) }
+.layer.l2 { border-left-color: var(--part) }
+.layer.l3 { border-left-color: var(--gate); background: var(--gate-soft) }
+.layer.l4 { border-left-color: var(--core) }
+.layer.l5 { border-left-color: var(--plan); border-style: dashed; border-left-style: solid }
+.down { text-align: center; color: var(--muted); font-size: 12px; line-height: 1 }
+
+/* One command, three outcomes */
+.scen { display: grid; gap: 10px }
+.row { display: grid; grid-template-columns: minmax(0, 1.1fr) 28px minmax(0, 1fr) 28px minmax(0, 1.3fr); align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 14px 18px }
+.say { font-size: 15px; font-weight: 600 }
+.say small { display: block; font-weight: 400; color: var(--muted); font-size: 12.5px }
+.to { text-align: center; color: var(--muted); font-size: 18px }
+.verdict { font-family: var(--f-mono); font-weight: 600; font-size: 13px; padding: 6px 10px; border-radius: 2px; text-align: center; border: 1.5px solid }
+.v-allow { color: var(--ok); border-color: var(--ok); background: var(--ok-soft) }
+.v-ask { color: var(--gate); border-color: var(--gate); background: var(--gate-soft) }
+.v-block { color: var(--block); border-color: var(--block); background: var(--block-soft) }
+.res { font-size: 14px }
+.res small { display: block; color: var(--muted); font-size: 12.5px }
+
+/* Three-column cards */
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 18px; display: grid; gap: 10px; align-content: start }
+.card .ttl { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap }
+.stack { display: grid; gap: 4px }
+.blk { border-radius: 2px; padding: 7px 10px; font-size: 13px; text-align: center; border: 1px solid var(--line); background: var(--bg) }
+.blk.brain { border: 1.5px dashed var(--block); background: var(--block-soft) }
+.blk.box { border: 2px solid var(--core); background: var(--core-soft); font-weight: 600 }
+.blk.gate { border: 2px solid var(--gate); background: var(--gate-soft); font-weight: 600 }
+.blk.dev { background: var(--surface) }
+.blk.host { border: 1.5px solid var(--muted); padding: 6px; display: grid; gap: 4px; background: var(--surface) }
+.blk.host > span { font-size: 11.5px; color: var(--muted); font-family: var(--f-mono) }
+.mini { text-align: center; color: var(--muted); font-size: 11.5px; line-height: 1.2 }
+.card .note { font-size: 12.5px; color: var(--muted) }
+
+/* Capability matrix */
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 2px; background: var(--surface) }
+table { border-collapse: collapse; width: 100%; font-size: 15px; min-width: 560px }
+th, td { text-align: left; vertical-align: middle; padding: 9px 14px; border-bottom: 1px solid var(--line) }
+th { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--bg) }
+td.c { text-align: center }
 tr:last-child td { border-bottom: 0 }
-td.layer { font-family: var(--f-mono); font-weight: 600; white-space: nowrap; color: var(--core) }
+.dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px }
+.d-ok { background: var(--ok) }
+.d-part { background: linear-gradient(90deg, var(--part) 50%, transparent 50%); border: 2px solid var(--part) }
+.d-plan { border: 2px dashed var(--plan) }
+.d-na { width: 14px; height: 2px; border-radius: 0; background: var(--line); vertical-align: 4px }
 
-/* Ba bảo đảm */
-.guarantees { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px }
-.g { display: grid; gap: 8px; align-content: start; padding-top: 12px; border-top: 3px solid var(--gate) }
-.g p, .g li { font-size: 14px; color: var(--muted) }
-.g ul { margin: 0; padding-left: 18px; display: grid; gap: 4px }
+/* Three guarantees */
+.guarantees { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px }
+.g { display: grid; gap: 6px; align-content: start; background: var(--surface); border: 1px solid var(--line); border-top: 2px solid var(--gate); border-radius: 2px; padding: 18px }
+.g .big { font-size: 28px; line-height: 1 }
+.g ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 15px; color: var(--muted) }
 
-/* Giả lập theo tầng */
-.sim-tbl td:first-child { font-family: var(--f-mono); font-weight: 600; white-space: nowrap }
-.sim-tbl td { font-size: 13.5px }
-.sim-tbl .hw { color: var(--muted) }
+/* Progress, generated from the roadmap (scripts/gen_architecture_progress.py) */
+.pulse { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 2px; background: var(--surface) }
+.pulse > div { display: grid; gap: 2px; padding: 12px 14px; border-left: 1px solid var(--line); align-content: start }
+.pulse > div:first-child { border-left: 0 }
+.pulse .k { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gate) }
+.pulse b { font-size: 16px; line-height: 1.3 }
+.pulse .s { font-size: 13px; color: var(--muted) }
+.bar { display: block; height: 6px; background: var(--line); border-radius: 1px; overflow: hidden }
+.bar i { display: block; height: 100%; background: var(--part) }
+.incs { grid-column: 2 / -1; display: grid; gap: 4px }
+.inc { display: grid; grid-template-columns: 38px minmax(0, 1fr) minmax(80px, 160px) 44px; gap: 10px; align-items: center; font-size: 14px }
+.inc .id { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted) }
+.inc .nb { font-family: var(--f-mono); font-size: 11.5px; text-align: right; color: var(--muted) }
+.inc.done .bar i, .ms.done .bar i { background: var(--ok) }
+.inc.todo .nm, .inc.deferred .nm { color: var(--muted) }
+.inc.deferred .bar { background: repeating-linear-gradient(90deg, var(--line) 0 4px, transparent 4px 7px) }
+.ms-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px }
+.ms { background: var(--surface); border: 1px solid var(--line); border-top: 2px solid var(--line); border-radius: 2px; padding: 12px 14px; display: grid; gap: 8px; align-content: start }
+.ms.active { border-top-color: var(--part) } .ms.done { border-top-color: var(--ok) }
+.ms h3 { font-size: 15.5px; line-height: 1.3 }
+.ms-top, .ms-meta { display: flex; justify-content: space-between; gap: 8px; font-family: var(--f-mono); font-size: 11px; color: var(--muted) }
+.ms .num { color: var(--gate); font-weight: 600 }
+.ms.upcoming h3 { color: var(--muted) }
+.waiting ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 15px }
+svg .ax { stroke: var(--line); stroke-width: 3; stroke-linecap: round }
+svg .tick { stroke: var(--line); stroke-width: 1 }
+svg .now { stroke: var(--gate); stroke-width: 2; stroke-dasharray: 4 3 }
+svg .gate { stroke: var(--block); stroke-width: 2 }
+svg .tl-now { font-family: var(--f-mono); font-size: 11px; fill: var(--gate); font-weight: 600 }
+svg .tl-gate { font-family: var(--f-mono); font-size: 11px; fill: var(--block); font-weight: 600 }
+svg .tl-d { font-family: var(--f-mono); font-size: 10.5px; fill: var(--muted) }
+svg .tl-m { font-size: 13px; font-weight: 600 }
+svg .dot-done { fill: var(--ok) } svg .dot-active { fill: var(--part) } svg .dot-upcoming { fill: var(--surface); stroke: var(--muted); stroke-width: 1.5 }
 
-/* Điểm cắm */
-.plugs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px }
-.plug { background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; align-content: start }
-.plug .ep { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted) }
-.plug p { font-size: 13.5px }
-.plug .never { font-size: 12.5px; color: var(--block) }
+/* Roadmap */
+.road { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; position: relative }
+.road::before { content: ""; position: absolute; left: 16px; right: 16px; top: 13px; height: 2px; background: linear-gradient(90deg, var(--gate) 0 33%, var(--core) 33% 66%, var(--line) 66%) }
+.stop { display: grid; gap: 8px; padding: 0 10px; position: relative; align-content: start }
+.stop .pin { width: 28px; height: 28px; border-radius: 50%; background: var(--bg); border: 2px solid var(--gate); z-index: 1 }
+.stop:nth-child(2) .pin { border-color: var(--core) }
+.stop:nth-child(3) .pin { border-color: var(--line); border-style: dashed }
+.stop .when { font-family: var(--f-mono); font-size: 12px; color: var(--muted) }
+.stop ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 15px }
 
-/* Chân trời */
-.horizons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px }
-.h { display: grid; gap: 8px; align-content: start; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px }
-.h .when { font-family: var(--f-mono); font-size: 12px; color: var(--muted) }
-.h ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 13.5px }
-
-/* Hiểu sai thường gặp */
-.myths { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden }
-.myth { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 14px }
+/* Common misconceptions */
+.myths { display: grid; border: 1px solid var(--line); border-radius: 2px; background: var(--surface); overflow: hidden }
+.myth { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; padding: 11px 18px; border-bottom: 1px solid var(--line); font-size: 15.5px }
 .myth:last-child { border-bottom: 0 }
 .myth .wrong { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--block) }
-.sources { font-size: 13px; color: var(--muted); display: grid; gap: 4px }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 2px; padding: 10px 16px }
+details summary { cursor: pointer; font-family: var(--f-mono); font-size: 12px; color: var(--muted) }
+details .tbl { margin-top: 10px; border: 0 }
+.sources { font-size: 14px; color: var(--muted); display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 24px }
 
+@media (max-width: 980px) {
+  body { display: block }
+  .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 24px 16px 18px; gap: 14px }
+  .toc { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)) }
+  .side-links { grid-template-columns: repeat(2, 1fr) }
+  main { padding-top: 40px }
+}
 @media (max-width: 760px) {
-  .spine { grid-template-columns: 1fr }
-  .side { order: -1 }
-  .guarantees, .plugs, .horizons, .targets { grid-template-columns: 1fr }
+  .try { grid-template-columns: 1fr }
+  .toc { display: flex; overflow-x: auto; gap: 6px; padding-bottom: 4px; scrollbar-width: thin }
+  .toc a { display: block; white-space: nowrap; border: 1px solid var(--line); border-left-width: 1px; border-radius: 2px; padding: 4px 10px; font-size: 14px; background: var(--surface) }
+  .toc a span { margin-right: 6px }
+  .toc a.on { border-color: var(--gate) }
+  .side-note { display: none }
+  .layer { grid-template-columns: 34px minmax(0, 1fr); }
+  .layer .pills, .layer .st { grid-column: 2 }
+  .row { grid-template-columns: 1fr; text-align: left }
+  .to { transform: rotate(90deg); justify-self: start; margin-left: 8px }
+  .cards, .guarantees, .road { grid-template-columns: 1fr }
+  .pulse { grid-template-columns: 1fr 1fr } .pulse > div { border-left: 0; border-top: 1px solid var(--line) }
+  .ms-grid { grid-template-columns: 1fr 1fr }
+  .incs { grid-column: 1 / -1 }
+  .inc { grid-template-columns: 34px minmax(0, 1fr) 70px 40px }
+  .road::before { display: none }
+  .stop { padding: 0 0 14px }
   .myth { grid-template-columns: 1fr; gap: 4px }
 }
-@media (min-width: 761px) and (max-width: 900px) {
-  .plugs { grid-template-columns: repeat(2, minmax(0, 1fr)) }
-}
 </style>
-
 </head><body>
+<aside class="side">
+  <a class="brand" href="#s0">Neuro<b>Edge</b></a>
+  <div class="brand-sub">Architecture overview</div>
+  <nav class="toc" aria-label="Chapters">
+    <a href="#s0"><span>00</span>Overview</a>
+    <a href="#s1"><span>01</span>The brain asks, the box decides</a>
+    <a href="#s2"><span>02</span>Five layers, from user to device</a>
+    <a href="#s3"><span>03</span>One path to the hardware</a>
+    <a href="#s4"><span>04</span>One message, three outcomes</a>
+    <a href="#s5"><span>05</span>Where the brain runs</a>
+    <a href="#s6"><span>06</span>One gate, three targets</a>
+    <a href="#s7"><span>07</span>The evidence loop</a>
+    <a href="#s8"><span>08</span>Three guarantees</a>
+    <a href="#s9"><span>09</span>Plug in, leave the core alone</a>
+    <a href="#s10"><span>10</span>Build → Run → Share</a>
+    <a href="#s11"><span>11</span>Where the product is today</a>
+    <a href="#s12"><span>12</span>Common misconceptions</a>
+  </nav>
+  <div class="side-note">Drawn for quick reading. The source of truth is still the code and <code>docs/architecture/</code>.</div>
+  <div class="theme" role="group" aria-label="Theme">
+    <button type="button" data-t="auto">Auto</button><button type="button" data-t="light">Day</button><button type="button" data-t="dark">Dusk</button>
+  </div>
+  <div class="side-links">
+    <a href="../architecture/vi/00-overview.md">00-overview</a>
+    <a href="../../roadmap/neuroedge-roadmap.md">Roadmap</a>
+  </div>
+</aside>
+<main>
 <div class="wrap">
 
-<header style="display:grid; gap:14px">
-  <div class="eyebrow">NeuroEdge · kiến trúc tổng thể · trạng thái theo nhánh main, 2026-10-05</div>
-  <h1>Model đề xuất, gate quyết định</h1>
-  <p class="lede">Mọi hành động vật lý chỉ có <strong>một đường duy nhất</strong> tới chân phần cứng: tool call có kiểu → gate tất định → token dùng một lần → HAL. Đường này giống nhau dù lệnh đến từ ngữ pháp lệnh, LLM hay agent khác qua MCP, và giống nhau trên <code>sim</code>, <code>linux</code> và <code>esp32s3</code>.</p>
-  <p role="note" style="margin:0; padding:10px 14px; border:1px solid var(--line); border-left:4px solid var(--part); border-radius:8px; background:var(--part-soft)"><strong>Bản chụp trước Q-72.</strong> Trang này vẽ tay, chụp nhánh <code>main</code> ngày 2026-10-05, trước quyết định Q-72 (2026-10-11): chưa có agent vận hành, LLM worker, kênh chat và bản ghi duyệt, NeuroEdge Blueprint, Hub, relay, <code>safe_state</code> đối xứng. Kiến trúc hiện hành và phần quy hoạch theo Q-72: <a href="../architecture/README.md"><code>docs/architecture/</code></a>; hướng đi: <a href="proposal-blueprint-2026-10-11.md">proposal Blueprint</a>.</p>
-  <div class="legend">
-    <span class="chip ok">đã có mã</span>
-    <span class="chip part">có một phần</span>
-    <span class="chip plan">mới quy hoạch</span>
-    <span>· khung nét đứt cũng là quy hoạch</span>
+<!-- ============ OPENING ============ -->
+<header class="hero" id="s0">
+  <div><div class="eyebrow">Chapter 0 · Overview · main branch, 2026-10-14</div>
+  <h1>The Physical AI that <em>really</em> does things, safely by design.</h1></div>
+  <p class="lede">AI that <strong>acts for real</strong>: it switches relays, opens valves, locks doors. <strong>Safe by design</strong>: the model only proposes and the gate decides; no token, no action; when in doubt, block (Q-82).</p>
+  <div class="try">
+    <div class="panel">
+      <h3>Just say it</h3>
+      <ul><li>"Turn on the porch light."</li><li>"Let the guest in."</li><li>"Water the plants at 6."</li></ul>
+      <div class="say-q">You speak, NeuroClaw proposes, and the NeuroEdge box decides before anything touches a device.</div>
+      <div class="term"><span class="tk">You:</span>   let the guest in
+<span class="tk">Box:</span>   <span class="tg">ASK</span> · checks with the owner first
+<span class="tk">Owner:</span> yes  →  <span class="tok">ALLOW</span> · recorded in trace.v1</div>
+    </div>
+    <div class="panel">
+      <h3>How to read the figures</h3>
+      <div class="legend" style="display:grid; gap:8px; justify-items:start">
+    <span class="chip ok">done</span>
+    <span class="chip part">partial</span>
+    <span class="chip plan">planned</span>
+    <span>Dashed outlines are planned too. Source of truth: <a href="../architecture/vi/00-overview.md"><code>00-overview.md</code></a></span>
   </div>
+    </div>
+  </div>
+  <!-- GENERATED:pulse --><div class="pulse"><div><span class="k">Figures as of</span><b>Oct 14, 2026</b><span class="s">roadmap §0</span></div><div><span class="k">Now</span><b>1 · Try on laptop</b><span class="s">96% done</span></div><div><span class="k">8-week demand gate</span><b>Dec 6, 2026</b><span class="s">53 days away</span></div><div><span class="k">Tests</span><b>4,908 passing</b><span class="s">0 skipped</span></div><div><span class="k">Waiting on a person</span><b>2 items</b><span class="s"><a href="#s11">see chapter 11</a></span></div></div><!-- /GENERATED:pulse -->
 </header>
 
-<section>
-  <div class="eyebrow">Hình 1</div>
-  <h2>Xương sống thực thi</h2>
-  <p>Đọc từ trên xuống theo đường đi của một lệnh. Tầng nhận thức (L2) đứng bên cạnh: nó sinh ý định và cấp dữ kiện cho gate, nhưng không nằm giữa token và chân phần cứng.</p>
+<!-- ============ 1. THE BIG PICTURE ============ -->
+<section id="s1">
+  <div class="head"><div><div class="eyebrow">Chapter 1 · The big picture</div><h2>The brain asks, the box decides</h2></div>
+    <span class="more">details: <a href="../architecture/assets/svg/E-01-system-context.svg">E-01</a> · <a href="../architecture/assets/svg/E-11-ecosystem.svg">E-11</a></span></div>
+  <div class="fig">
+    <svg viewBox="0 -34 960 474" role="img" aria-label="Users message the NeuroClaw brain; the brain calls the NeuroEdge box over MCP; only the box touches devices">
+      <defs>
+        <marker id="am" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow-m"/></marker>
+        <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow-g"/></marker>
+        <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow-o"/></marker>
+        <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrow-p"/></marker>
+      </defs>
 
-  <div class="spine">
-    <div class="col">
-      <div class="box">
-        <div class="box-head"><h3>Nguồn gọi</h3><span class="tag">không tin cậy</span></div>
-        <div class="items">
-          <span class="item">Claude / agent qua MCP <span class="chip ok">có</span></span>
-          <span class="item">System 2 (LLM qua LiteLLM) <span class="chip ok">có</span></span>
-          <span class="item">Lệnh gõ trên REPL <span class="chip ok">có</span></span>
-          <span class="item dashed">Bridge: Muse, HTTP, MQTT <span class="chip plan">I2c</span></span>
-          <span class="item dashed">Home Assistant qua proxy <span class="chip plan">I2c</span></span>
-        </div>
-      </div>
+      <!-- Users -->
+      <text x="20" y="34" class="zl c-muted">USERS</text>
+      <rect x="10" y="48" width="160" height="78" rx="10" class="box"/>
+      <text x="26" y="80" class="em">📱</text><text x="58" y="78" class="t">Owner</text>
+      <text x="26" y="106" class="s">Telegram · web page</text>
+      <rect x="10" y="236" width="160" height="78" rx="10" class="box"/>
+      <text x="26" y="268" class="em">🤖</text><text x="58" y="266" class="t">Other AIs</text>
+      <text x="26" y="294" class="s">Claude, OpenClaw…</text>
 
-      <div class="arrow"><span>yêu cầu tool, không mang source</span></div>
+      <!-- Untrusted zone -->
+      <rect x="200" y="20" width="200" height="140" rx="14" class="zone-un"/>
+      <text x="214" y="40" class="zl c-blk">UNTRUSTED</text>
+      <rect x="214" y="52" width="172" height="94" rx="10" class="box"/>
+      <text x="228" y="84" class="em">🧠</text><text x="260" y="82" class="t">NeuroClaw</text>
+      <text x="228" y="108" class="s">chat · LLM · memory</text>
+      <text x="228" y="126" class="s">reminders · risk labels</text>
+      <path d="M170 87 H212" class="ln" marker-end="url(#am)"/>
 
-      <div class="box core">
-        <div class="box-head"><h3>L3 · Động cơ hợp đồng hành động</h3><span class="chip ok">host + QEMU</span></div>
-        <div class="steps">
-          <div class="step"><b>dispatch()</b><small>Kiểm kiểu tham số; sai kiểu → REJECTED. Runtime tự gắn <code>source</code> (local_grammar · system_one · system_two · mcp · test) và dữ kiện <code>call_source</code>; model không tự khai được.</small></div>
-          <div class="mini-arrow">↓</div>
-          <div class="step"><b>c.do()</b><small>Cửa duy nhất để chạy một <code>@action</code>.</small></div>
-          <div class="mini-arrow">↓</div>
-          <div class="step gate"><b>Gate engine · evaluate()</b><small>Cây quyết định tất định từ gate YAML. Kế thừa chỉ được siết chặt. Fail-closed: thiếu dữ kiện, sai kiểu, không đo được → không bao giờ ALLOW. Giá trị vượt giới hạn → BLOCK <code>argument_out_of_range</code>.</small></div>
-          <div class="mini-arrow">↓</div>
-          <div class="fork">
-            <div class="step allow"><b>ALLOW → TokenLedger</b><small>Token dùng một lần: nonce ngẫu nhiên, TTL = p95 × 3, mỗi chân dùng một lần, lease theo kênh cho <code>motion</code>.</small></div>
-            <div class="step blk"><b>BLOCK → on_block</b><small>deny · ask (chỉ người trên thiết bị trả lời) · escalate · degrade.</small></div>
-          </div>
-        </div>
-      </div>
+      <!-- Trusted zone: the box -->
+      <rect x="450" y="20" width="300" height="320" rx="16" class="zone-tr"/>
+      <text x="466" y="42" class="zl c-core">TRUSTED · NEUROEDGE BOX</text>
+      <rect x="470" y="56" width="260" height="40" rx="8" class="box"/>
+      <text x="486" y="81" class="t">c.do()</text><text x="556" y="81" class="s">the only way in</text>
+      <rect x="470" y="112" width="260" height="52" rx="8" class="box-gate"/>
+      <text x="486" y="144" class="em">⚖️</text><text x="518" y="136" class="t c-gate">Gate</text>
+      <text x="518" y="154" class="s">YAML rules · fail-closed</text>
+      <rect x="470" y="180" width="260" height="40" rx="8" class="box"/>
+      <text x="486" y="206" class="em">🔑</text><text x="518" y="205" class="t">Single-use token</text>
+      <rect x="470" y="236" width="260" height="40" rx="8" class="box"/>
+      <text x="486" y="261" class="t">HAL</text><text x="530" y="261" class="s">authorize(token, pin)</text>
+      <rect x="470" y="290" width="260" height="36" rx="8" class="box"/>
+      <text x="486" y="313" class="em" style="font-size:16px">📝</text><text x="512" y="313" class="s">replayable trace · Action CI</text>
+      <path d="M600 96 V110" class="ln" marker-end="url(#am)"/>
+      <path d="M600 164 V178" class="ln-ok" marker-end="url(#ao)"/>
+      <path d="M600 220 V234" class="ln" marker-end="url(#am)"/>
 
-      <div class="arrow"><span>token</span></div>
+      <!-- Brain → box -->
+      <path d="M386 99 C420 99 430 76 468 76" class="ln-gate" marker-end="url(#ag)"/>
+      <text x="392" y="122" class="m">MCP</text>
+      <path d="M170 275 H424 V88 H468" class="ln" marker-end="url(#am)"/>
+      <text x="200" y="266" class="m">MCP + mTLS · requests only</text>
 
-      <div class="box">
-        <div class="box-head"><h3>L1 · HAL</h3><span class="chip ok">trên host</span></div>
-        <p style="font-size:14px">HAL hỏi sổ token <code>authorize(token, pin, called_from)</code> trước mỗi lệnh chân. Token tự chế, đã dùng hay hết hạn bị từ chối và ghi vết.</p>
-        <div class="items">
-          <span class="item"><b class="mono">audio.in</b></span>
-          <span class="item"><b class="mono">audio.out</b></span>
-          <span class="item"><b class="mono">digital.out</b> + PWM</span>
-          <span class="item"><b class="mono">sensor.read</b></span>
-          <span class="item"><b class="mono">display</b></span>
-        </div>
-        <div class="items">
-          <span class="item dashed">mở rộng, tuỳ bo:</span>
-          <span class="item"><span class="mono">digital.in</span></span>
-          <span class="item"><span class="mono">i2c</span></span>
-          <span class="item"><span class="mono">analog.in</span></span>
-          <span class="item"><span class="mono">motion</span></span>
-          <span class="item"><span class="mono">vision.in</span></span>
-        </div>
-      </div>
+      <!-- Ask the owner -->
+      <path d="M470 138 H440 V-12 H140 V44" class="ln-gate" stroke-dasharray="6 4" marker-end="url(#ag)"/>
+      <text x="200" y="-18" class="s" style="fill:var(--gate)">ASK: the gate asks the owner; only a person can answer</text>
 
-      <div class="arrow"><span>cùng hợp đồng trên mọi target</span></div>
+      <!-- Devices -->
+      <text x="794" y="34" class="zl c-muted">REAL DEVICES</text>
+      <rect x="784" y="48" width="166" height="292" rx="12" class="box"/>
+      <text x="800" y="90" class="em-l">💡</text><text x="840" y="86" class="t">Lights, relays</text>
+      <text x="800" y="150" class="em-l">🚪</text><text x="840" y="146" class="t">Door locks</text>
+      <text x="800" y="210" class="em-l">💧</text><text x="840" y="206" class="t">Pumps, valves</text>
+      <text x="800" y="270" class="em-l">🌡️</text><text x="840" y="266" class="t">Sensors</text>
+      <text x="800" y="318" class="s">sim · linux · esp32s3</text>
+      <path d="M730 256 H782" class="ln-ok" marker-end="url(#ao)"/>
+      <text x="738" y="248" class="m">token</text>
 
-      <div class="targets">
-        <div class="box">
-          <div class="box-head"><h3 class="mono">sim</h3><span class="chip ok">có</span></div>
-          <p>HAL mô phỏng trên laptop, REPL gõ chữ, trang <code>--ui</code> chạy cục bộ, micro thật qua <code>--mic</code>.</p>
-        </div>
-        <div class="box">
-          <div class="box-head"><h3 class="mono">linux</h3><span class="chip part">kernel ảo</span></div>
-          <p>libgpiod, hwmon/IIO, V4L2, PipeWire. Xanh trên gpio-sim, i2c-stub, vivid trong CI; chưa chạy trên Pi 5 thật.</p>
-        </div>
-        <div class="box">
-          <div class="box-head"><h3 class="mono">esp32s3</h3><span class="chip part">QEMU</span></div>
-          <p>C99: walker <code>NETR</code>, sổ token C, vết ghi UART, OTA có ký. Gate tự kiểm lúc boot; chưa động chân nào.</p>
-        </div>
-      </div>
-    </div>
-
-    <aside class="side">
-      <div class="box">
-        <div class="box-head"><h3>L2 · Nhận thức</h3><span class="chip part">một phần</span></div>
-        <div class="feeds">→ sinh ý định cho nguồn gọi</div>
-        <div class="items">
-          <span class="item">Ngữ pháp lệnh cục bộ <span class="chip ok">có</span></span>
-          <span class="item">System 1 / System 2 <span class="chip ok">có</span></span>
-          <span class="item">STT/TTS từ tệp WAV <span class="chip ok">có</span></span>
-          <span class="item">Phiên thoại thời gian thực <span class="chip part">I4</span></span>
-          <span class="item dashed">AEC, wake-word trên chip <span class="chip plan">I5</span></span>
-        </div>
-        <p class="note">VAD hiện dựa trên năng lượng (<code>EnergyVAD</code>). Mô hình wake-word do người dùng tự đưa.</p>
-      </div>
-      <div class="box">
-        <div class="box-head"><h3>Thị giác</h3><span class="chip part">một phần</span></div>
-        <div class="feeds">→ cấp dữ kiện số cho gate</div>
-        <p class="note">Khung hình từ <code>vision.in</code> → mô hình → dữ kiện như <code>person_detected</code>. Mô hình thật và tương đương giữa target chưa kiểm.</p>
-      </div>
-      <div class="box">
-        <div class="box-head"><h3>Mất mạng</h3></div>
-        <p class="note">Rơi về ngữ pháp lệnh cục bộ. Chỉ chặn khi không có đường dự phòng (Q-14). Lệnh đưa cơ cấu về trạng thái an toàn luôn được phép (Q-62).</p>
-      </div>
-    </aside>
+      <!-- Planned -->
+      <rect x="200" y="370" width="240" height="56" rx="10" class="box-plan"/>
+      <text x="216" y="402" class="em">☁️</text><text x="248" y="396" class="t">NeuroEdge Cloud</text>
+      <text x="248" y="414" class="s">a brain per user · I2f</text>
+      <rect x="470" y="370" width="260" height="56" rx="10" class="box-plan"/>
+      <text x="486" y="402" class="em">📦</text><text x="518" y="396" class="t">Blueprint + Hub</text>
+      <text x="518" y="414" class="s">package, share, sell · I2e</text>
+      <path d="M320 370 V162" class="ln-plan" marker-end="url(#ap)"/>
+      <path d="M600 370 V342" class="ln-plan" marker-end="url(#ap)"/>
+    </svg>
   </div>
-
-  <div class="rail">
-    <span><b>Trục xuyên suốt:</b></span>
-    <span>Vết ghi <code>trace.v1</code> (.json): dữ kiện, phán quyết, lệnh chân <span class="chip ok">có</span></span>
-    <span>Action CI: <code>replay</code>, <code>verify</code>, <code>gate lint</code> <span class="chip ok">có</span></span>
-    <span>Hợp đồng đóng băng qua RFC: gate.v1, trace.v1, board.v1, tool-call, NETR <span class="chip ok">có</span></span>
-  </div>
+  <p class="cap">The dashed red line is the trust boundary: everything to its left can only <em>ask</em>. Inside the box, the green path opens only when the gate says ALLOW.</p>
 </section>
 
-<section>
-  <div class="eyebrow">Kiến trúc 00 §5.1</div>
-  <h2>Năm tầng logic</h2>
-  <div class="tbl">
-    <table>
-      <thead><tr><th>Tầng</th><th>Vai trò</th><th>Mã ở đâu</th><th>Trạng thái</th></tr></thead>
+<!-- ============ 2. FIVE LAYERS ============ -->
+<section id="s2">
+  <div class="head"><div><div class="eyebrow">Chapter 2 · Architecture 00 §2.1</div><h2>Five layers, from user to device</h2></div>
+    <span class="more">details: <a href="../architecture/vi/00-overview.md">00 §2.1</a></span></div>
+  <div class="layers">
+    <div class="layer l1"><span class="n">1</span><h3><span class="ic">🧠</span>Interaction and brain</h3>
+      <div class="pills"><span class="pill">Telegram</span><span class="pill">NeuroClaw</span><span class="pill">Claude Desktop</span><span class="pill">OpenClaw</span></div>
+      <!-- GENERATED:layer-1 --><div class="incs"><div class="inc partial" title="I2d — Missions and operator agents: 0 of 39 tasks done, in progress"><span class="id">I2d</span><span class="nm">Missions and operator agents</span><span class="bar" role="img" aria-label="I2d — Missions and operator agents: 0 of 39 tasks done, in progress"><i style="width:0%"></i></span><span class="nb">0/39</span></div></div><!-- /GENERATED:layer-1 --></div>
+    <div class="down">▼ requests only, never touches hardware</div>
+    <div class="layer l2"><span class="n">2</span><h3><span class="ic">🔌</span>Extension layer</h3>
+      <div class="pills"><span class="pill">mcp serve + mTLS</span><span class="pill">proxy mcp</span><span class="pill">proxy http</span><span class="pill">Home Assistant</span><span class="pill">neuroedge.guard</span><span class="pill dashed">HA add-on</span></div>
+      <!-- GENERATED:layer-2 --><div class="incs"><div class="inc partial" title="I2c — Open platform: 11 of 20 tasks done, in progress"><span class="id">I2c</span><span class="nm">Open platform</span><span class="bar" role="img" aria-label="I2c — Open platform: 11 of 20 tasks done, in progress"><i style="width:55%"></i></span><span class="nb">11/20</span></div></div><!-- /GENERATED:layer-2 --></div>
+    <div class="down">▼ typed tool calls</div>
+    <div class="layer l3"><span class="n">3</span><h3><span class="ic">🛡️</span>The safety box</h3>
+      <div class="pills"><span class="pill">c.do()</span><span class="pill">gate</span><span class="pill">ALLOW · ASK · BLOCK</span><span class="pill">token</span><span class="pill">trace</span><span class="pill">Action CI</span></div>
+      <!-- GENERATED:layer-3 --><div class="incs"><div class="inc done" title="I0 — Contract core on sim: 42 of 42 tasks done, done"><span class="id">I0</span><span class="nm">Contract core on sim</span><span class="bar" role="img" aria-label="I0 — Contract core on sim: 42 of 42 tasks done, done"><i style="width:100%"></i></span><span class="nb">42/42</span></div><div class="inc partial" title="I1 — Internal preview on sim: 4 of 6 tasks done, in progress"><span class="id">I1</span><span class="nm">Internal preview on sim</span><span class="bar" role="img" aria-label="I1 — Internal preview on sim: 4 of 6 tasks done, in progress"><i style="width:67%"></i></span><span class="nb">4/6</span></div><div class="inc partial" title="I2a — Extended primitives on sim and linux: 22 of 27 tasks done, in progress"><span class="id">I2a</span><span class="nm">Extended primitives on sim and linux</span><span class="bar" role="img" aria-label="I2a — Extended primitives on sim and linux: 22 of 27 tasks done, in progress"><i style="width:81%"></i></span><span class="nb">22/27</span></div></div><!-- /GENERATED:layer-3 --></div>
+    <div class="down">▼ only with a token</div>
+    <div class="layer l4"><span class="n">4</span><h3><span class="ic">⚡</span>Execution and hardware</h3>
+      <div class="pills"><span class="pill">HAL</span><span class="pill">physical envelope</span><span class="pill">sim</span><span class="pill">linux</span><span class="pill">esp32s3</span></div>
+      <!-- GENERATED:layer-4 --><div class="incs"><div class="inc partial" title="I2 — linux at parity with sim: 3 of 4 tasks done, in progress"><span class="id">I2</span><span class="nm">linux at parity with sim</span><span class="bar" role="img" aria-label="I2 — linux at parity with sim: 3 of 4 tasks done, in progress"><i style="width:75%"></i></span><span class="nb">3/4</span></div><div class="inc partial" title="I2b — Starter kits and rapid assembly: 4 of 4 tasks done, in progress"><span class="id">I2b</span><span class="nm">Starter kits and rapid assembly</span><span class="bar" role="img" aria-label="I2b — Starter kits and rapid assembly: 4 of 4 tasks done, in progress"><i style="width:100%"></i></span><span class="nb">4/4</span></div><div class="inc partial" title="I3 — Gate on real Box-3: 6 of 16 tasks done, in progress"><span class="id">I3</span><span class="nm">Gate on real Box-3</span><span class="bar" role="img" aria-label="I3 — Gate on real Box-3: 6 of 16 tasks done, in progress"><i style="width:38%"></i></span><span class="nb">6/16</span></div><div class="inc todo" title="I3a — Extended primitives on esp32s3: 0 of 11 tasks done, not started"><span class="id">I3a</span><span class="nm">Extended primitives on esp32s3</span><span class="bar" role="img" aria-label="I3a — Extended primitives on esp32s3: 0 of 11 tasks done, not started"><i style="width:0%"></i></span><span class="nb">0/11</span></div></div><!-- /GENERATED:layer-4 --></div>
+    <div class="down">▲ package, share, update</div>
+    <div class="layer l5"><span class="n">5</span><h3><span class="ic">📦</span>Share, sell, operate</h3>
+      <div class="pills"><span class="pill dashed">Blueprint</span><span class="pill dashed">Hub</span><span class="pill dashed">Cloud</span><span class="pill">signed OTA</span></div>
+      <!-- GENERATED:layer-5 --><div class="incs"><div class="inc todo" title="I2e — Minimal NeuroEdge Blueprint: 0 of 15 tasks done, not started"><span class="id">I2e</span><span class="nm">Minimal NeuroEdge Blueprint</span><span class="bar" role="img" aria-label="I2e — Minimal NeuroEdge Blueprint: 0 of 15 tasks done, not started"><i style="width:0%"></i></span><span class="nb">0/15</span></div><div class="inc deferred" title="I2f — NeuroEdge Cloud and ESP32 home box: 1 of 13 tasks done, deferred"><span class="id">I2f</span><span class="nm">NeuroEdge Cloud and ESP32 home box</span><span class="bar" role="img" aria-label="I2f — NeuroEdge Cloud and ESP32 home box: 1 of 13 tasks done, deferred"><i style="width:8%"></i></span><span class="nb">1/13</span></div><div class="inc partial" title="I6 — Public launch: 7 of 11 tasks done, in progress"><span class="id">I6</span><span class="nm">Public launch</span><span class="bar" role="img" aria-label="I6 — Public launch: 7 of 11 tasks done, in progress"><i style="width:64%"></i></span><span class="nb">7/11</span></div><div class="inc partial" title="I7 — v1.0: 4 of 12 tasks done, in progress"><span class="id">I7</span><span class="nm">v1.0</span><span class="bar" role="img" aria-label="I7 — v1.0: 4 of 12 tasks done, in progress"><i style="width:33%"></i></span><span class="nb">4/12</span></div><div class="inc todo" title="I8 — Developer Beta: 0 of 1 tasks done, not started"><span class="id">I8</span><span class="nm">Developer Beta</span><span class="bar" role="img" aria-label="I8 — Developer Beta: 0 of 1 tasks done, not started"><i style="width:0%"></i></span><span class="nb">0/1</span></div></div><!-- /GENERATED:layer-5 --></div>
+  </div>
+  <details>
+    <summary>For engineers: the five code layers L0–L4 inside the <code>neuroedge</code> package (00 §5.1)</summary>
+    <div class="tbl"><table>
+      <thead><tr><th>Layer</th><th>Role</th><th>Code</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td class="layer">L4</td><td>Ứng dụng agent: tool call có gate qua MCP, System 2, ngữ cảnh</td><td><code>mcp_server.py</code>, <code>mcp_host.py</code>, <code>models/</code></td><td><span class="chip ok">có</span></td></tr>
-        <tr><td class="layer">L3</td><td>Động cơ hợp đồng: phân giải gate, gate engine, token dùng một lần, mạch ngắt fail-closed</td><td><code>engine/</code>, <code>actions/</code>; chip: <code>ne_gate</code>, <code>ne_agent</code></td><td><span class="chip ok">host + QEMU</span></td></tr>
-        <tr><td class="layer">L2</td><td>Nhận thức và hội thoại: giọng nói, máy trạng thái hội thoại, thị giác, ngữ pháp lệnh</td><td><code>perception/</code>, <code>models/</code>, <code>hal/audio.py</code></td><td><span class="chip part">một phần</span></td></tr>
-        <tr><td class="layer">L1</td><td>HAL: nguyên thủy phần cứng, đối chiếu năng lực bo mạch lúc build</td><td><code>hal/</code>, <code>boards/*.toml</code></td><td><span class="chip ok">host</span> <span class="chip plan">chip</span></td></tr>
-        <tr><td class="layer">L0</td><td>Môi trường thực thi ngang hàng</td><td><code>hal/sim.py</code>, <code>hal/linux.py</code>, <code>targets/esp32s3/</code></td><td><span class="chip ok">sim</span> <span class="chip part">linux, esp32s3</span></td></tr>
+        <tr><td class="mono">L4</td><td>Agent applications: MCP, System 2</td><td><code>mcp_server</code>, <code>mcp_host</code></td><td><span class="chip ok">done</span></td></tr>
+        <tr><td class="mono">L3</td><td>Contract engine: gate, token</td><td><code>engine/</code>, <code>actions/</code>, <code>ne_gate</code></td><td><span class="chip ok">host + QEMU</span></td></tr>
+        <tr><td class="mono">L2</td><td>Perception, conversation</td><td><code>perception/</code>, <code>models/</code></td><td><span class="chip part">partial</span> <span class="chip plan">voice deferred, Q-77</span></td></tr>
+        <tr><td class="mono">L1</td><td>HAL, five primitives</td><td><code>hal/</code>, <code>boards/</code></td><td><span class="chip ok">host</span> <span class="chip plan">chip</span></td></tr>
+        <tr><td class="mono">L0</td><td>Three peer targets</td><td><code>hal/sim.py</code>, <code>hal/linux.py</code>, <code>targets/esp32s3/</code></td><td><span class="chip ok">sim</span> <span class="chip part">linux, esp32s3</span></td></tr>
       </tbody>
-    </table>
+    </table></div>
+  </details>
+</section>
+
+<!-- ============ 3. BACKBONE ============ -->
+<section id="s3">
+  <div class="head"><div><div class="eyebrow">Chapter 3 · The execution backbone</div><h2>One path to the hardware</h2></div>
+    <span class="more">details: <a href="../architecture/assets/svg/E-05-gate-spine.svg">E-05</a></span></div>
+  <div class="fig">
+    <svg viewBox="0 0 960 250" role="img" aria-label="Callers → dispatch → c.do → gate → token → HAL → pin; BLOCK goes to on_block; every step is traced">
+      <defs>
+        <marker id="bm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-m"/></marker>
+        <marker id="bo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-o"/></marker>
+        <marker id="bb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-b"/></marker>
+      </defs>
+      <!-- callers -->
+      <rect x="10" y="20" width="150" height="150" rx="12" class="zone-un"/>
+      <text x="22" y="40" class="zl c-blk">CALLERS</text>
+      <text x="24" y="66" class="s">🧠 NeuroClaw</text>
+      <text x="24" y="88" class="s">🤖 Claude via MCP</text>
+      <text x="24" y="110" class="s">💬 LLM System 2</text>
+      <text x="24" y="132" class="s">⌨️ typed commands</text>
+      <text x="24" y="154" class="s">🔌 proxy mcp/http</text>
+      <path d="M160 95 H186" class="ln" marker-end="url(#bm)"/>
+      <!-- steps -->
+      <rect x="190" y="68" width="110" height="54" rx="10" class="box"/>
+      <text x="204" y="92" class="t" style="font-family:var(--f-mono);font-size:13px">dispatch()</text>
+      <text x="204" y="110" class="s">type check</text>
+      <path d="M300 95 H322" class="ln" marker-end="url(#bm)"/>
+      <rect x="326" y="68" width="90" height="54" rx="10" class="box"/>
+      <text x="340" y="92" class="t" style="font-family:var(--f-mono);font-size:13px">c.do()</text>
+      <text x="340" y="110" class="s">only way in</text>
+      <path d="M416 95 H440" class="ln" marker-end="url(#bm)"/>
+      <path d="M500 45 L560 95 L500 145 L440 95 Z" class="box-gate"/>
+      <text x="478" y="92" class="t c-gate" style="fill:var(--gate)">⚖️ Gate</text>
+      <text x="462" y="110" class="s">deterministic</text>
+      <path d="M560 95 H596" class="ln-ok" marker-end="url(#bo)"/>
+      <text x="562" y="86" class="m" style="fill:var(--ok)">ALLOW</text>
+      <rect x="600" y="68" width="100" height="54" rx="10" class="box-ok"/>
+      <text x="614" y="92" class="t">🔑 Token</text>
+      <text x="614" y="110" class="s">single use</text>
+      <path d="M700 95 H724" class="ln-ok" marker-end="url(#bo)"/>
+      <rect x="728" y="68" width="90" height="54" rx="10" class="box"/>
+      <text x="744" y="92" class="t">HAL</text>
+      <text x="744" y="110" class="s">verifies</text>
+      <path d="M818 95 H842" class="ln-ok" marker-end="url(#bo)"/>
+      <rect x="846" y="68" width="104" height="54" rx="27" class="box-core"/>
+      <text x="866" y="100" class="t">💡 Pin</text>
+      <!-- BLOCK -->
+      <path d="M500 145 V178" class="ln-blk" marker-end="url(#bb)"/>
+      <text x="508" y="166" class="m" style="fill:var(--block)">BLOCK</text>
+      <rect x="400" y="182" width="210" height="50" rx="10" class="box-blk"/>
+      <text x="424" y="204" class="t">on_block</text>
+      <text x="424" y="222" class="s">deny · ask · escalate · degrade</text>
+      <!-- trace -->
+      <rect x="660" y="182" width="290" height="56" rx="10" class="box"/>
+      <text x="676" y="205" class="t">📝 Trace (trace.v1)</text>
+      <text x="676" y="226" class="s">facts · verdict · pin commands</text>
+      <path d="M520 130 C600 160 640 190 658 200" class="ln-dot"/>
+      <path d="M773 122 V180" class="ln-dot"/>
+      <!-- blocked shortcuts -->
+      <path d="M160 52 C400 30 700 30 846 70" class="ln-blk" stroke-dasharray="4 4"/>
+      <text x="300" y="22" class="s" style="fill:var(--block)">✕ direct pin calls, forged or stale tokens: denied and traced</text>
+    </svg>
   </div>
 </section>
 
-<section>
-  <div class="eyebrow">Điều mọi phần khác dựa vào</div>
-  <h2>Ba bảo đảm</h2>
+<!-- ============ 4. THREE OUTCOMES ============ -->
+<section id="s4">
+  <div class="head"><div><div class="eyebrow">Chapter 4 · One command through the box</div><h2>One message, three outcomes</h2></div>
+    <span class="more">details: <a href="../architecture/vi/06-runtime-flows.md">06 · runtime flows</a></span></div>
+  <div class="scen">
+    <div class="row">
+      <div class="say">“turn on the porch light”<small>command grammar or NeuroClaw</small></div><div class="to">→</div>
+      <div class="verdict v-allow">ALLOW</div><div class="to">→</div>
+      <div class="res">💡 Light on<small>the token opens exactly that pin, once</small></div>
+    </div>
+    <div class="row">
+      <div class="say">“open the door”<small>the gate has <code>on_block: ask</code></small></div><div class="to">→</div>
+      <div class="verdict v-ask">ASK the owner</div><div class="to">→</div>
+      <div class="res">🙋 Owner types “yes” → 🚪 door opens<small>only a person can answer; no LLM or MCP client can approve</small></div>
+    </div>
+    <div class="row">
+      <div class="say">“open the door” with a sensor down<small>facts missing or stale</small></div><div class="to">→</div>
+      <div class="verdict v-block">BLOCK</div><div class="to">→</div>
+      <div class="res">🔒 Nothing happens; the reason is reported<small>when in doubt, block; the trace is kept for replay</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. WHERE IT RUNS ============ -->
+<section id="s5">
+  <div class="head"><div><div class="eyebrow">Chapter 5 · Deployment · Q-76, Q-79</div><h2>The brain can run anywhere; the gate stays home</h2></div>
+    <span class="more">details: <a href="../architecture/assets/svg/E-08-deployment.svg">E-08</a> · <a href="../architecture/vi/15-target-architecture.md">15 §6.10</a></span></div>
+  <div class="cards">
+    <div class="card">
+      <div class="ttl"><h3>Self-hosted</h3><span class="chip ok">done</span></div>
+      <div class="stack">
+        <div class="blk host"><span>Pi · Linux · Mac · Windows</span>
+          <div class="blk brain">🧠 NeuroClaw<br><small>own user, no device access</small></div>
+          <div class="mini">▼ MCP + mTLS</div>
+          <div class="blk box">🛡️ NeuroEdge box</div>
+        </div>
+        <div class="mini">▼ token</div>
+        <div class="blk dev">💡🚪💧</div>
+      </div>
+      <p class="note">Live demo, 2026-10-13: a Telegram message turns on a light and opens a door.</p>
+    </div>
+    <div class="card">
+      <div class="ttl"><h3>NeuroEdge Cloud</h3><span class="chip plan">I2f, conditional</span></div>
+      <div class="stack">
+        <div class="blk host" style="border-style:dashed"><span>☁️ cloud · one instance per user</span>
+          <div class="blk brain">🧠 NeuroClaw</div>
+        </div>
+        <div class="mini">▲ the home dials out; no open ports</div>
+        <div class="blk host"><span>🏠 home</span><div class="blk box">🛡️ NeuroEdge box</div></div>
+        <div class="mini">▼ token</div>
+        <div class="blk dev">💡🚪💧</div>
+      </div>
+      <p class="note">If the cloud goes down, the gate, reflexes and alerts keep running at home.</p>
+    </div>
+    <div class="card">
+      <div class="ttl"><h3>One chip</h3><span class="chip part">QEMU</span></div>
+      <div class="stack">
+        <div class="blk host"><span>⚡ one ESP32-S3, a few dollars</span>
+          <div class="blk brain">🧠 NeuroClaw-ESP</div>
+          <div class="mini">▼ every tool call</div>
+          <div class="blk gate">⚖️ ne_gate</div>
+        </div>
+        <div class="mini">▼ GPIO</div>
+        <div class="blk dev">💡🚪💧</div>
+      </div>
+      <p class="note">Labelled <code>risk=single_chip</code>: the brain and the gate share one chip.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. ONE CONTRACT EVERYWHERE ============ -->
+<section id="s6">
+  <div class="head"><div><div class="eyebrow">Chapter 6 · Target equivalence</div><h2>One gate, three targets, the same verdict</h2></div>
+    <span class="more">details: <a href="../architecture/assets/svg/E-07-target-matrix.svg">E-07</a> · <a href="../architecture/vi/10-target-equivalence.md">10</a></span></div>
+  <div class="fig narrow">
+    <svg viewBox="0 0 960 230" role="img" aria-label="gate.yaml is read by Python on sim and linux and compiled to NETR for C on esp32s3; verify compares verdicts">
+      <defs>
+        <marker id="cm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-m"/></marker>
+        <marker id="co" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-o"/></marker>
+      </defs>
+      <rect x="10" y="80" width="150" height="70" rx="10" class="box-gate"/>
+      <text x="26" y="110" class="t">📄 gate.yaml</text>
+      <text x="26" y="132" class="s">human-readable rules</text>
+      <path d="M160 105 C200 105 210 55 246 55" class="ln" marker-end="url(#cm)"/>
+      <path d="M160 125 C200 125 210 175 246 175" class="ln" marker-end="url(#cm)"/>
+      <rect x="250" y="25" width="230" height="60" rx="10" class="box"/>
+      <text x="266" y="52" class="t">🐍 Python engine</text>
+      <text x="266" y="72" class="s">pure resolution, no clock</text>
+      <rect x="250" y="145" width="230" height="60" rx="10" class="box"/>
+      <text x="266" y="172" class="t">⚙️ NETR compiler</text>
+      <text x="266" y="192" class="s">binary tree, read in place</text>
+      <path d="M480 55 H506" class="ln" marker-end="url(#cm)"/>
+      <path d="M480 175 H506" class="ln" marker-end="url(#cm)"/>
+      <rect x="510" y="10" width="120" height="40" rx="8" class="box-ok"/><text x="526" y="35" class="t">💻 sim</text>
+      <rect x="510" y="60" width="120" height="40" rx="8" class="box-ok"/><text x="526" y="85" class="t">🐧 linux</text>
+      <rect x="510" y="155" width="120" height="40" rx="8" class="box"/><text x="526" y="180" class="t">⚡ esp32s3</text>
+      <text x="510" y="214" class="m">C99 · stack ≤ 512 B · QEMU</text>
+      <path d="M630 30 C690 30 690 110 716 112" class="ln-ok" marker-end="url(#co)"/>
+      <path d="M630 80 C680 80 690 112 716 114" class="ln-ok" marker-end="url(#co)"/>
+      <path d="M630 175 C690 175 690 118 716 116" class="ln-ok" marker-end="url(#co)"/>
+      <rect x="720" y="80" width="230" height="70" rx="12" class="box-core"/>
+      <text x="736" y="110" class="t">✓ neuroedge verify</text>
+      <text x="736" y="132" class="s">same verdict, or no merge</text>
+    </svg>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Capability</th><th class="c">sim</th><th class="c">linux</th><th class="c">esp32s3</th></tr></thead>
+    <tbody>
+      <tr><td>Gate, token</td><td class="c"><span class="dot d-ok" title="done"></span></td><td class="c"><span class="dot d-ok" title="done"></span></td><td class="c"><span class="dot d-ok" title="done on host and QEMU"></span></td></tr>
+      <tr><td>Pin control</td><td class="c"><span class="dot d-ok" title="virtual"></span></td><td class="c"><span class="dot d-ok" title="gpio-sim"></span></td><td class="c"><span class="dot d-plan" title="TSK-S4-01"></span></td></tr>
+      <tr><td>Sensors, display</td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-ok" title="i2c-stub, vkms"></span></td><td class="c"><span class="dot d-plan"></span></td></tr>
+      <tr><td>Trace, replay, verify</td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-ok" title="UART, QEMU"></span></td></tr>
+      <tr><td>MCP</td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-ok"></span></td><td class="c"><span class="dot d-na" title="not applicable"></span></td></tr>
+      <tr><td>Signed OTA, rollback</td><td class="c"><span class="dot d-na"></span></td><td class="c"><span class="dot d-na"></span></td><td class="c"><span class="dot d-part" title="on QEMU"></span></td></tr>
+      <tr><td>Real board</td><td class="c"><span class="dot d-na"></span></td><td class="c"><span class="dot d-plan" title="Pi 5 not delivered yet"></span></td><td class="c"><span class="dot d-plan" title="Box-3 not delivered yet"></span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="cap"><span class="dot d-ok"></span> done &nbsp; <span class="dot d-part"></span> partial &nbsp; <span class="dot d-plan"></span> planned &nbsp; <span class="dot d-na"></span> not applicable · source: 00 §6</p>
+</section>
+
+<!-- ============ 7. EVIDENCE LOOP ============ -->
+<section id="s7">
+  <div class="head"><div><div class="eyebrow">Chapter 7 · Evidence, not promises</div><h2>The evidence loop</h2></div>
+    <span class="more">details: <a href="../architecture/assets/svg/E-06-evidence-loop.svg">E-06</a></span></div>
+  <div class="fig narrow">
+    <svg viewBox="0 0 960 280" role="img" aria-label="Run → trace → replay → compare verdicts → CI; a mismatch blocks the merge">
+      <defs>
+        <marker id="dm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-m"/></marker>
+        <marker id="db" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-b"/></marker>
+        <marker id="do" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-o"/></marker>
+      </defs>
+      <rect x="10" y="40" width="160" height="70" rx="12" class="box"/>
+      <text x="26" y="70" class="t">▶ Run</text><text x="26" y="92" class="s">sim · linux · QEMU</text>
+      <path d="M170 75 H196" class="ln" marker-end="url(#dm)"/>
+      <rect x="200" y="40" width="190" height="70" rx="12" class="box"/>
+      <text x="214" y="70" class="t">📝 trace.v1</text><text x="214" y="92" class="s">facts · verdict · pins</text>
+      <path d="M390 75 H416" class="ln" marker-end="url(#dm)"/>
+      <rect x="420" y="40" width="170" height="70" rx="12" class="box"/>
+      <text x="436" y="70" class="t">🔁 Replay</text><text x="436" y="92" class="s">recompute, no LLM calls</text>
+      <path d="M590 75 H626" class="ln" marker-end="url(#dm)"/>
+      <path d="M700 30 L770 75 L700 120 L630 75 Z" class="box-gate"/>
+      <text x="676" y="80" class="t">⚖️ Compare</text>
+      <path d="M770 75 H806" class="ln-ok" marker-end="url(#do)"/>
+      <text x="772" y="66" class="m" style="fill:var(--ok)">match</text>
+      <rect x="810" y="40" width="140" height="70" rx="12" class="box-ok"/>
+      <text x="826" y="70" class="t">✓ merge</text><text x="826" y="92" class="s">→ flash, OTA</text>
+      <path d="M700 120 V158" class="ln-blk" marker-end="url(#db)"/>
+      <text x="708" y="146" class="m" style="fill:var(--block)">mismatch</text>
+      <rect x="590" y="162" width="220" height="60" rx="12" class="box-blk"/>
+      <text x="606" y="190" class="t">✕ NE4002</text><text x="606" y="210" class="s">safety regression: merge blocked</text>
+      <path d="M880 110 V244 H90 V116" class="ln-dot" marker-end="url(#dm)"/>
+      <text x="300" y="266" class="s">every PR replays the full set of reference traces (Action CI)</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ============ 8. THREE GUARANTEES ============ -->
+<section id="s8">
+  <div class="head"><div><div class="eyebrow">Chapter 8 · What everything else relies on</div><h2>Three guarantees</h2></div>
+    <span class="more">details: <a href="../spec/threat_model.md">threat_model</a></span></div>
   <div class="guarantees">
-    <div class="g">
-      <h3>Không có đường tắt</h3>
-      <ul>
-        <li>Gọi thẳng hàm <code>@action</code> bị từ chối.</li>
-        <li>Gọi <code>digital.out()</code> ngoài <code>c.do()</code> bị từ chối.</li>
-        <li>Token tự chế, đã dùng hay hết hạn bị từ chối.</li>
-        <li>Mỗi lần từ chối đều ghi vết.</li>
-      </ul>
-    </div>
-    <div class="g">
-      <h3>Không chắc thì chặn</h3>
-      <ul>
-        <li>Vắng <code>fail</code> nghĩa là <code>closed</code>.</li>
-        <li><code>fail: open</code> không được kế thừa.</li>
-        <li>Không đo được → <code>INCONCLUSIVE</code>, không ALLOW.</li>
-        <li>Sổ token đầy thì từ chối, không đẩy token cũ ra.</li>
-      </ul>
-    </div>
-    <div class="g">
-      <h3>Một hợp đồng ở mọi nơi</h3>
-      <ul>
-        <li>Phân giải gate là hàm thuần: không đồng hồ, không mạng, không ngẫu nhiên.</li>
-        <li>Trên chip không có JSON, không có CEL: gate biên dịch thành cây <code>NETR</code> đọc tại chỗ trong flash, walker không cấp phát, stack ≤ 512 B.</li>
-        <li><code>verify</code> so phán quyết giữa các target.</li>
-      </ul>
-    </div>
+    <div class="g"><span class="big">🚫</span><h3>No shortcuts</h3>
+      <ul><li>Direct calls to <code>@action</code> or <code>digital.out()</code>: denied</li><li>Forged, spent or expired tokens: denied</li><li>Every denial is traced</li></ul></div>
+    <div class="g"><span class="big">✋</span><h3>When in doubt, block</h3>
+      <ul><li><code>fail: closed</code> by default</li><li>Missing or stale facts: no ALLOW</li><li>Commands to the safe state are always allowed</li></ul></div>
+    <div class="g"><span class="big">🔁</span><h3>One contract everywhere</h3>
+      <ul><li>Resolution is a pure function</li><li>On the chip: no JSON, no allocation</li><li><code>verify</code> compares verdicts across targets</li></ul></div>
   </div>
 </section>
 
-<section>
-  <div class="eyebrow">Q-21 · Q-69</div>
-  <h2>Kiểm khi chưa có bo mạch</h2>
-  <p>Mỗi tầng kiểm bằng một công cụ mở có sẵn, không tự viết trình giả lập. Q-69 thêm ba spike có thời hạn để lấp các ô còn trống trước khi bo về; ước lượng từ emulator không thay số đo trên bo.</p>
-  <div class="tbl">
-    <table class="sim-tbl">
-      <thead><tr><th>Target</th><th>Đang chạy trong CI</th><th>Spike của Q-69</th><th class="hw">Chỉ đo được trên phần cứng</th></tr></thead>
-      <tbody>
-        <tr><td>sim</td><td><code>SimHAL</code>, REPL, trang <code>--ui</code>, Action CI <span class="chip ok">có</span></td><td>—</td><td class="hw">—</td></tr>
-        <tr><td>linux</td><td>gpio-sim, <code>i2c-stub</code> + hwmon, <code>vivid</code>, <code>vkms</code>, cây PWM giả <span class="chip ok">có</span></td><td>Kernel đủ module trong VM: <code>pwm-gpio</code> cho chip PWM thật, <code>snd-aloop</code>; runner ARM64 · TSK-I2a-08 <span class="chip plan">chưa bắt đầu</span></td><td class="hw">Pi 5, HAT âm thanh, AEC, motor và camera thật</td></tr>
-        <tr><td>esp32s3</td><td>Walker và sổ token C trên host; Espressif QEMU: boot, self-test, vết ghi UART, OTA; LVGL so ảnh golden <span class="chip ok">có</span></td><td><code>esp-emulator</code>: GPIO, LEDC, MCPWM, I2C, Wi-Fi · TSK-I3-02 <span class="chip plan">chưa bắt đầu</span><br><code>esp32sim</code>: ước lượng bộ nhớ ESP-SR theo Q-3, esp-dl trên SIMD · TSK-I3-03 <span class="chip plan">chưa bắt đầu</span></td><td class="hw">Số đo bộ nhớ chính thức, âm học, điện áp, Secure Boot, chạy 24 giờ</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <p style="font-size:13.5px;color:var(--muted)">Không dùng: Wokwi (mã đóng, không có I2S), Renode (chưa có ESP32-S3).</p>
-</section>
-
-<section>
-  <div class="eyebrow">I2c · RFC-0016 → 0018 đã ký, mã chưa bắt đầu</div>
-  <h2>Nền tảng mở: sáu điểm cắm</h2>
-  <p>Lõi an toàn dùng độc lập qua <code>neuroedge.guard</code>. Bên thứ ba cắm vào qua Extension SDK (<code>neuroedge.sdk</code>, Python entry points) mà không sửa lõi. Plugin chỉ nạp khi người vận hành bật rõ; nạp hỏng thì không khởi động.</p>
-  <div class="plugs">
-    <div class="plug"><h3>Bridge</h3><span class="ep">neuroedge.bridges</span><p>Dịch giao thức ngoài (Muse, HTTP, MQTT) thành yêu cầu tool.</p><span class="never">Không chạm HAL; không tự gán source (lõi gán <span class="mono">bridge:&lt;id&gt;</span>).</span></div>
-    <div class="plug"><h3>Fact source</h3><span class="ep">neuroedge.fact_sources</span><p>Cấp dữ kiện số cho tiêu chí đã khai nguồn.</p><span class="never">Không tự khai tuổi dữ kiện; dữ kiện mất không thành ALLOW.</span></div>
-    <div class="plug"><h3>Actuator</h3><span class="ep">neuroedge.actuators</span><p>Lái cơ cấu cục bộ hoặc từ xa (Home Assistant, Matter).</p><span class="never">Không chạy lệnh ngoài token và phong bì an toàn.</span></div>
-    <div class="plug"><h3>Board</h3><span class="ep">neuroedge.boards</span><p>Hồ sơ <code>board.v1</code> cho bo của cộng đồng.</p><span class="never">Không tự nhận bậc target.</span></div>
-    <div class="plug"><h3>Template</h3><span class="ep">neuroedge.templates</span><p>Kit và mẫu dự án.</p><span class="never">Không chạy mã lúc cài; không ghi đè gate đã khoá.</span></div>
-    <div class="plug"><h3>Exporter</h3><span class="ep">neuroedge.exporters</span><p>Xuất sự kiện ra OTel, webhook.</p><span class="never">Chỉ đọc; không đổi phán quyết.</span></div>
-  </div>
-</section>
-
-<section>
-  <div class="eyebrow">Kiến trúc mục tiêu · chương 15</div>
-  <h2>Ba chân trời</h2>
-  <div class="horizons">
-    <div class="h">
-      <span class="when">H1 · I2a–I7 · v1.0 = MVP</span>
-      <h3>Trên thiết bị</h3>
-      <ul>
-        <li>HAL và driver trên Box-3 thật</li>
-        <li>Thoại trên chip: AEC, VAD, Opus</li>
-        <li>Cắt lời hủy lệnh đang chờ</li>
-        <li>Secure Boot, anti-rollback</li>
-        <li>Bốn gói nguyên thủy mở rộng trên chip</li>
-        <li>NeuroEdge Lab: dựng hợp đồng bằng Claude Code, Claude Desktop qua MCP</li>
-        <li>Nền tảng mở (I2c)</li>
-      </ul>
-    </div>
-    <div class="h">
-      <span class="when">H2 · I9–I10 · v1.1</span>
-      <h3>Tầng dịch vụ</h3>
-      <ul>
-        <li>Fleet OS: danh tính, phát hành canary, gom vết ghi</li>
-        <li>Gate Registry: gate đóng gói OCI, có ký</li>
-        <li>Chip kiểm chữ ký gate</li>
-        <li>Định tuyến provider, quota</li>
-      </ul>
-    </div>
-    <div class="h">
-      <span class="when">H3 · I13–I18 · sau Beta</span>
-      <h3>Mở rộng</h3>
-      <ul>
-        <li>Bộ port cộng đồng theo bậc target</li>
-        <li>Robot phân tầng: Pi 5 + nhiều MCU qua Zenoh, mỗi node tự lượng giá gate</li>
-        <li>Thị giác trên Jetson, đa phương thức</li>
-        <li>Hệ sinh thái adapter</li>
-      </ul>
-    </div>
+<!-- ============ 9. OPEN PLATFORM ============ -->
+<section id="s9">
+  <div class="head"><div><div class="eyebrow">Chapter 9 · Open platform · I2c, <!-- GENERATED:inc-I2c -->11 / 20<!-- /GENERATED:inc-I2c --></div><h2>Plug in, leave the core alone</h2></div>
+    <span class="more">details: <a href="../architecture/vi/16-ecosystem-landscape.md">16 §4</a> · <a href="../spec/extension_sdk.md">extension_sdk</a></span></div>
+  <div class="fig narrow">
+    <svg viewBox="0 0 960 300" role="img" aria-label="The safety core in the middle; proxies and guard are done; six plugin kinds around the core">
+      <!-- core -->
+      <circle cx="480" cy="150" r="78" class="box-gate"/>
+      <text x="480" y="140" text-anchor="middle" class="em-l">🛡️</text>
+      <text x="480" y="170" text-anchor="middle" class="t">Safety core</text>
+      <text x="480" y="188" text-anchor="middle" class="m">neuroedge.guard</text>
+      <!-- done, left -->
+      <g>
+        <rect x="20" y="40" width="200" height="50" rx="10" class="box-ok"/><text x="36" y="70" class="t">proxy mcp</text><text x="140" y="70" class="s">✓ done</text>
+        <rect x="20" y="125" width="200" height="50" rx="10" class="box-ok"/><text x="36" y="155" class="t">proxy http</text><text x="140" y="155" class="s">✓ done</text>
+        <rect x="20" y="210" width="200" height="50" rx="10" class="box-ok"/><text x="36" y="240" class="t">mcp serve + mTLS</text><text x="168" y="240" class="s">✓</text>
+        <path d="M220 65 L404 130" class="ln"/><path d="M220 150 H402" class="ln"/><path d="M220 235 L404 170" class="ln"/>
+      </g>
+      <!-- plugins, right -->
+      <g>
+        <rect x="660" y="10" width="140" height="40" rx="8" class="box-ok"/><text x="674" y="35" class="t" style="font-size:13px">Actuator ✓</text>
+        <rect x="820" y="10" width="130" height="40" rx="8" class="box-plan"/><text x="834" y="35" class="s">Bridge</text>
+        <rect x="660" y="80" width="140" height="40" rx="8" class="box-plan"/><text x="674" y="105" class="s">Fact source</text>
+        <rect x="820" y="80" width="130" height="40" rx="8" class="box-plan"/><text x="834" y="105" class="s">Board</text>
+        <rect x="660" y="150" width="140" height="40" rx="8" class="box-plan"/><text x="674" y="175" class="s">Template</text>
+        <rect x="820" y="150" width="130" height="40" rx="8" class="box-plan"/><text x="834" y="175" class="s">Exporter</text>
+        <path d="M558 140 L656 34" class="ln"/><path d="M558 150 L656 100" class="ln-plan"/><path d="M558 160 L656 170" class="ln-plan"/>
+        <text x="660" y="222" class="s">🏠 First Actuator: Home Assistant</text>
+        <text x="660" y="242" class="s">(tested against a test double only)</text>
+        <text x="660" y="272" class="s c-blk" style="fill:var(--block)">Plugins never touch the HAL, never claim</text>
+        <text x="660" y="290" class="s c-blk" style="fill:var(--block)">a source, never act without a token</text>
+      </g>
+    </svg>
   </div>
 </section>
 
-<section>
-  <div class="eyebrow">Đối chiếu với mã</div>
-  <h2>Những điểm hay bị mô tả sai</h2>
+<!-- ============ 10. THREE PRODUCT LOOPS ============ -->
+<section id="s10">
+  <div class="head"><div><div class="eyebrow">Chapter 10 · Product direction · Q-72</div><h2>Build → Run → Share</h2></div>
+    <span class="more">details: <a href="proposal-blueprint-2026-10-11.md">Blueprint proposal</a></span></div>
+  <div class="fig narrow">
+    <svg viewBox="0 0 960 200" role="img" aria-label="Three loops: build contracts over MCP, run them with the operator agent, share them as Blueprints">
+      <defs><marker id="em" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrow-p"/></marker></defs>
+      <circle cx="140" cy="95" r="72" class="box-plan"/>
+      <text x="140" y="82" text-anchor="middle" class="em-l">🛠️</text>
+      <text x="140" y="110" text-anchor="middle" class="t">Build</text>
+      <text x="140" y="128" text-anchor="middle" class="s">contracts over MCP</text>
+      <circle cx="480" cy="95" r="72" class="box-plan"/>
+      <text x="480" y="82" text-anchor="middle" class="em-l">▶️</text>
+      <text x="480" y="110" text-anchor="middle" class="t">Run</text>
+      <text x="480" y="128" text-anchor="middle" class="s">operator agent, 24/7</text>
+      <circle cx="820" cy="95" r="72" class="box-plan"/>
+      <text x="820" y="82" text-anchor="middle" class="em-l">📦</text>
+      <text x="820" y="110" text-anchor="middle" class="t">Share, sell</text>
+      <text x="820" y="128" text-anchor="middle" class="s">NeuroEdge Blueprint</text>
+      <path d="M214 95 H402" class="ln-plan" marker-end="url(#em)"/>
+      <path d="M554 95 H742" class="ln-plan" marker-end="url(#em)"/>
+      <text x="230" y="84" class="m">approved, then locked</text>
+      <text x="570" y="84" class="m">traces as evidence</text>
+      <text x="308" y="190" text-anchor="middle" class="s">approve on Telegram with an approval record · I2d</text>
+      <text x="650" y="190" text-anchor="middle" class="s">one-command install · I2e</text>
+    </svg>
+  </div>
+  <p class="cap">The gate and the contract are the shared trust layer of all three loops. First Blueprint: an aquarium, running on the simulator, before the 8‑week demand gate.</p>
+</section>
+
+<!-- ============ 11. PROGRESS ============ -->
+<section id="s11">
+  <div class="head"><div><div class="eyebrow">Chapter 11 · Progress · generated from roadmap §0</div><h2>Where the product is today</h2></div>
+    <span class="more">details: <a href="../../roadmap/neuroedge-roadmap.md">roadmap §0</a> · <a href="../user/trang-thai.md">status page</a></span></div>
+  <!-- GENERATED:journey --><div class="fig"><svg viewBox="0 0 900 140" role="img" aria-label="Dated release milestones, today and the demand gate"><line x1="20" y1="74" x2="880" y2="74" class="ax"/><line x1="70.0" y1="58" x2="70.0" y2="90" class="now"/><text x="70.0" y="108" text-anchor="middle" class="tl-now">today</text><text x="70.0" y="123" text-anchor="middle" class="tl-d">Oct 14, 2026</text><line x1="614.3" y1="58" x2="614.3" y2="90" class="gate"/><text x="614.3" y="108" text-anchor="middle" class="tl-gate">demand gate</text><text x="614.3" y="123" text-anchor="middle" class="tl-d">Dec 6, 2026</text><line x1="398.6" y1="30" x2="398.6" y2="74" class="tick"/><circle cx="398.6" cy="74" r="7" class="dot-active"><title>1 · Try on laptop</title></circle><text x="398.6" y="24" text-anchor="middle" class="tl-m">1 · Try on laptop</text><line x1="501.4" y1="50" x2="501.4" y2="74" class="tick"/><circle cx="501.4" cy="74" r="7" class="dot-active"><title>4 · Assemble and run via conversation, share Blueprints</title></circle><text x="501.4" y="44" text-anchor="middle" class="tl-m">4 · Assemble and run via conversa…</text><line x1="830.0" y1="30" x2="830.0" y2="74" class="tick"/><circle cx="830.0" cy="74" r="7" class="dot-active"><title>2 · Physical device on Raspberry Pi</title></circle><text x="838.0" y="24" text-anchor="end" class="tl-m">2 · Physical device on Raspberry…</text></svg></div><div class="ms-grid"><article class="ms active"><div class="ms-top"><span class="num">1</span><span class="when">Nov 15, 2026</span></div><h3>Try on laptop</h3><span class="bar" role="img" aria-label="96% of the work done"><i style="width:96%"></i></span><div class="ms-meta"><span>96%</span><span>I0, I1</span></div></article><article class="ms active"><div class="ms-top"><span class="num">2</span><span class="when">Dec 27, 2026</span></div><h3>Physical device on Raspberry Pi</h3><span class="bar" role="img" aria-label="73% of the work done"><i style="width:73%"></i></span><div class="ms-meta"><span>73%</span><span>I2, I2a, I2b, I2c</span></div></article><article class="ms active"><div class="ms-top"><span class="num">3</span><span class="when">after milestone 4</span></div><h3>Gate running on a $5 chip</h3><span class="bar" role="img" aria-label="22% of the work done"><i style="width:22%"></i></span><div class="ms-meta"><span>22%</span><span>I3, I3a</span></div></article><article class="ms active"><div class="ms-top"><span class="num">4</span><span class="when">Nov 25, 2026</span></div><h3>Assemble and run via conversation, share Blueprints</h3><span class="bar" role="img" aria-label="0% of the work done"><i style="width:0%"></i></span><div class="ms-meta"><span>0%</span><span>I2d, I2e</span></div></article><article class="ms active"><div class="ms-top"><span class="num">5</span><span class="when">after milestone 4</span></div><h3>Public launch</h3><span class="bar" role="img" aria-label="64% of the work done"><i style="width:64%"></i></span><div class="ms-meta"><span>64%</span><span>I6</span></div></article><article class="ms active"><div class="ms-top"><span class="num">6</span><span class="when">after milestone 4</span></div><h3>v1.0 — into production</h3><span class="bar" role="img" aria-label="33% of the work done"><i style="width:33%"></i></span><div class="ms-meta"><span>33%</span><span>I7</span></div></article><article class="ms upcoming"><div class="ms-top"><span class="num">7</span><span class="when">after milestone 4</span></div><h3>Developer Beta</h3><span class="bar" role="img" aria-label="0% of the work done"><i style="width:0%"></i></span><div class="ms-meta"><span>0%</span><span>I8</span></div></article><article class="ms active"><div class="ms-top"><span class="num">8</span><span class="when">after 8-week gate</span></div><h3>One chat box for multiple devices, multiple homes</h3><span class="bar" role="img" aria-label="8% of the work done"><i style="width:8%"></i></span><div class="ms-meta"><span>8%</span><span>I2f</span></div></article></div><div class="panel waiting"><h3>Waiting on a person</h3><ul><li>Box-3 and RPi 5 have not arrived</li><li>Camera board selected is M5Stack CoreS3 but not yet ordered. Not blocking I2d, I2e: simulation first, physical hardware purchased later</li></ul></div><!-- /GENERATED:journey -->
+  <p class="cap">Each milestone is something a user can do; a date slips before scope is cut (Q-52). Deferred until data shows demand: voice, Lab, Fleet OS, Registry, robots (roadmap §6, Q-77).</p>
+</section>
+
+<!-- ============ 12. MISCONCEPTIONS ============ -->
+<section id="s12">
+  <div class="head"><div><div class="eyebrow">Chapter 12 · Checked against the code</div><h2>Common misconceptions</h2></div></div>
   <div class="myths">
-    <div class="myth"><span class="wrong">Token đi qua tầng nhận thức rồi mới xuống HAL</span><span>Token đi thẳng từ TokenLedger xuống HAL. L2 đứng phía trên gate.</span></div>
-    <div class="myth"><span class="wrong">Gate engine cấp token</span><span><code>TokenLedger</code> trong <code>actions/</code> cấp token.</span></div>
-    <div class="myth"><span class="wrong">Token mật mã, mở đúng một chân</span><span>Nonce ngẫu nhiên trong sổ của tiến trình, không ký số. Mở tập chân của một hành động, mỗi chân một lần.</span></div>
-    <div class="myth"><span class="wrong">HAL có digital.in, analog.in, i2c, motion là nguyên thủy lõi</span><span>Lõi: audio.in, audio.out, digital.out, sensor.read, display. Năm cái còn lại là mở rộng, tuỳ bo.</span></div>
-    <div class="myth"><span class="wrong">Mất mạng → BLOCK ngay</span><span>Rơi về ngữ pháp lệnh cục bộ trước; chỉ chặn khi không có dự phòng.</span></div>
-    <div class="myth"><span class="wrong">NETR tốn dưới 512 byte RAM</span><span>Walker không cấp phát, stack ≤ 512 B. Số đo RAM trên bo thật chưa có.</span></div>
-    <div class="myth"><span class="wrong">esp32s3 đã điều khiển thiết bị</span><span>Chạy gate trên QEMU, chưa động chân. HAL firmware là TSK-S4-01 (I3).</span></div>
-    <div class="myth"><span class="wrong">Đã có Muse Bridge, Home Assistant</span><span>Quy hoạch ở I2c. Hôm nay <code>source</code> là tập đóng, chưa có entry point nào.</span></div>
+    <div class="myth"><span class="wrong">NeuroClaw drives the lights and doors itself</span><span>NeuroClaw only calls the box's MCP tools; the gate decides.</span></div>
+    <div class="myth"><span class="wrong">It is safe because NeuroClaw has no shell</span><span>Q-80 restored the shell to match PicoClaw, with risk labels. Safety comes from the gate and a separate user account.</span></div>
+    <div class="myth"><span class="wrong">The gate engine issues tokens</span><span><code>TokenLedger</code> in <code>actions/</code> issues them.</span></div>
+    <div class="myth"><span class="wrong">A token is a cryptographic signature</span><span>It is a random nonce in the process's ledger, used once per pin.</span></div>
+    <div class="myth"><span class="wrong">Network down → instant BLOCK</span><span>It falls back to the local command grammar first; it blocks only when no fallback exists.</span></div>
+    <div class="myth"><span class="wrong">esp32s3 already drives devices</span><span>The gate runs on QEMU; it does not drive pins yet (TSK-S4-01).</span></div>
+    <div class="myth"><span class="wrong">Muse Bridge and a plugin marketplace exist</span><span>Muse left the roadmap (Q-77). The only plugin so far is an Actuator: Home Assistant.</span></div>
   </div>
 </section>
 
 <footer class="sources">
-  <div class="eyebrow">Nguồn trong kho</div>
-  <span><code>docs/architecture/vi/00-overview.md</code> §2, §5.1 · <code>docs/architecture/vi/15-target-architecture.md</code></span>
-  <span><code>docs/architecture/vi/16-ecosystem-landscape.md</code> §4 · <code>CHANGELOG.md</code> §3.3, §3.7 · <code>docs/spec/simulation_coverage.md</code> · PRD §15 Q-21, Q-69</span>
-  <span><code>python/neuroedge/hal/board.py</code> · <code>python/neuroedge/actions/token.py</code> · <code>schemas/tool-call.v1.json</code></span>
+  <div class="eyebrow">Sources in the repo</div>
+  <span><code>docs/architecture/vi/00-overview.md</code> §1, §2.1–§2.3, §5.1, §6 · <code>15-target-architecture.md</code> §6.10 · <code>16-ecosystem-landscape.md</code> §4 · figures E-01 → E-11 in <code>docs/architecture/assets/svg/</code></span>
+  <span><code>roadmap/neuroedge-roadmap.md</code> §0.2, §0.5, §6 · PRD §15 Q-72, Q-76 → Q-82 · <code>docs/spec/threat_model.md</code> · repo <code>letrongminh/neuroclaw</code></span>
 </footer>
 
 </div>
+</main>
+<script>
+/* Theme switch (remembered in the browser when allowed) and current-chapter marker. */
+(() => {
+  const root = document.documentElement, btns = document.querySelectorAll(".theme button");
+  const set = t => { if (t === "auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", t);
+    btns.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.t === t))); };
+  let saved = "auto"; try { saved = localStorage.getItem("ne-theme") || "auto" } catch (e) {}
+  set(saved);
+  btns.forEach(b => b.addEventListener("click", () => { set(b.dataset.t); try { localStorage.setItem("ne-theme", b.dataset.t) } catch (e) {} }));
+  const links = [...document.querySelectorAll(".toc a")];
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) links.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id)); }),
+    { rootMargin: "-20% 0px -70% 0px" });
+  document.querySelectorAll("main [id^=s]").forEach(el => io.observe(el));
+})();
+</script>
 </body></html>
