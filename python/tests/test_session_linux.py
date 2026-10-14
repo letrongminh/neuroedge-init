@@ -166,12 +166,81 @@ def test_audio_is_no_longer_missing_and_an_unreadable_sensor_still_refuses(root,
     assert "NEUROEDGE_LINUX_SENSORS" in result.output
 
 
-def test_ui_on_linux_exits_two(driveway, gpio):
-    for verb in (["run", "--ui"], ["mcp", "serve", "--ui"]):
-        result = invoke(*verb, "--target", "linux", "--agent", str(driveway))
-        assert result.exit_code == 2, result.output
-        assert "drop --ui" in result.output
+def test_run_ui_on_linux_exits_two(driveway, gpio):
+    result = invoke("run", "--ui", "--target", "linux", "--agent", str(driveway))
+    assert result.exit_code == 2, result.output
+    assert "drop --ui" in result.output
     assert gpio.requests == []
+
+
+# --- the person at home answers on linux (Q-83, DP-A-05) ------------------------------------
+
+
+@pytest.fixture
+def door_agent(root):
+    return root / "fixtures" / "agents" / "chat-den-cua" / "agent.toml"
+
+
+def test_on_linux_the_page_at_home_answers_the_boxs_question(door_agent, gpio):
+    """TC-A-05-1: the brain asks over MCP, the person answers on the page, the real line moves."""
+    import urllib.request
+
+    from neuroedge.sim.ui import SessionServer
+
+    from .ui_support import page_headers
+
+    session = SimSession.load(door_agent, target="linux")
+    page = SessionServer(session).start(publish=False)
+    try:
+        call = ToolCall("front_door_unlock", {"duration_s": 5}, source="mcp")
+        asked = anyio.run(session.call_tool, call).content()
+        assert asked["status"] == "BLOCK" and asked["on_block"] == "ask"
+        assert ("door_lock", 1) not in gpio.history  # nothing moves on a question
+        request = urllib.request.Request(
+            page.url + "confirm",
+            data=json.dumps({"id": asked["confirmation"]["id"], "answer": "yes"}).encode(),
+            method="POST",
+            headers=page_headers(page),
+        )
+        with urllib.request.urlopen(request, timeout=10) as response:
+            reply = json.loads(response.read())
+        assert reply["verdict"] == "ALLOW"
+        assert ("door_lock", 1) in gpio.history
+        assert session.events.of_type("tool_confirmed")[-1]["source"] == "ui"
+    finally:
+        page.stop()
+        session.close()
+
+
+def test_on_linux_a_question_nobody_answers_expires_and_is_traced(door_agent, gpio):
+    """TC-A-05-1, the other half: without the page (or the box's bot) the question expires."""
+    from neuroedge.testing.recorder import TraceRecorder
+
+    from .hand_clock import HandClock
+
+    clock = HandClock()
+    session = SimSession.load(
+        door_agent, target="linux", clock=clock, events=TraceRecorder(clock=clock)
+    )
+    try:
+        call = ToolCall("front_door_unlock", {"duration_s": 5}, source="mcp")
+        asked = anyio.run(session.call_tool, call).content()
+        clock.advance(asked["confirmation"]["expires_in_ms"] + 1)
+        assert session.conversation.confirmations.latest() is None
+        assert session.events.of_type("tool_confirm_expired") == [
+            {"id": asked["confirmation"]["id"]}
+        ]
+        assert ("door_lock", 1) not in gpio.history
+    finally:
+        session.close()
+
+
+def test_mcp_serve_ui_runs_on_linux(door_agent, gpio):
+    result = invoke(
+        "mcp", "serve", "--ui", "--target", "linux", "--agent", str(door_agent), stdin=""
+    )
+    assert result.exit_code == 0, result.output
+    assert "sim UI at http://127.0.0.1:" in result.output
 
 
 @pytest.mark.parametrize("verb", [["run", "-c", "x"], ["mcp", "serve"]])

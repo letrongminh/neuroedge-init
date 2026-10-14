@@ -754,8 +754,9 @@ def mcp_serve(
     Serve the agent as a gated MCP server over stdio: every @action is a tool,
     and every tools/call goes through the tool schema, c.do() and the gate.
     On `--target linux` a tool call drives real GPIO lines (as `run --target linux`).
-    With --ui (sim only) the same session is shown live in the browser: a tool call from
-    the MCP client moves the virtual devices on the page at once. The page never
+    With --ui the same session is shown live in the browser: a tool call from the MCP client
+    moves the devices on the page at once, and a person answers the box's `ask` there (on
+    `sim`, and on `linux` where the lines are real: DP-A-05). The page never
     takes the MCP server down: a taken port falls back to a free one (URL on stderr).
 
     With --http the server listens on the network instead: Streamable HTTP over mTLS
@@ -2260,7 +2261,9 @@ def _start_session(
             )
         )
         raise typer.Exit(code=2)
-    if ui and target != "sim":
+    # DP-A-05 (Q-83): on a real home the box's page is where the person answers `ask`, so
+    # `mcp serve --ui` runs on `linux` too; `run --ui` stays a simulator view.
+    if ui and target != "sim" and not (verb == "mcp serve" and target == "linux"):
         err_console.print(
             Panel(
                 f"`neuroedge {verb} --ui --target {escape(target)}` is not implemented: the "
