@@ -754,7 +754,7 @@ def e11_ecosystem() -> Diagram:
         ("repo", "Source repository", ("public · issues · RFCs",), "done"),
         ("pypi", "PyPI + public schema URLs", ("release workflow ready · I6",), "planned"),
         ("registry", "Home Assistant", ("devices of other brands · I2c",), "partial"),
-        ("fleet", "PicoClaw · MCP clients", ("the brain, or any MCP client · Q-76",), "planned"),
+        ("fleet", "NeuroClaw · MCP clients", ("the brain: Go and ESP32 · Q-78",), "partial"),
         ("index", "Community plug-in index", ("search/install · not a Marketplace · I2c",), "planned"),
         ("aura", "Claw-family agents", ("ESP-Claw · zclaw · MimiClaw",), "planned"),
         ("market", "Blueprint Hub (paid)", ("after the 8-week gate · Q-72",), "planned"),

@@ -19,6 +19,14 @@ tự kiểm lúc khởi động và cập nhật OTA có ký đã chạy trên Q
 > không thay nút dừng khẩn hay interlock phần cứng. Tiến độ ở
 > [trạng thái dự án](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/trang-thai.md).
 
+## Chat với nhà
+
+Bộ não của nhà là [**NeuroClaw**](https://github.com/letrongminh/neuroclaw) (repo riêng, MIT):
+bạn nhắn Telegram, nó gọi LLM, nhớ, nhắc lịch, và chạm thiết bị **chỉ** qua bộ tool MCP của hộp
+NeuroEdge — gate vẫn quyết từng lệnh, việc cần hỏi thì hỏi chủ nhà. Nó chạy trên Linux, cloud,
+Pi, macOS, Windows; bản cho chip (NeuroClaw-ESP) chung một ESP32-S3 với gate, hôm nay trên QEMU. Cách nối:
+[chat với nhà](https://github.com/letrongminh/neuroedge-init/blob/main/docs/user/chat-voi-nha.md).
+
 ## Bắt đầu nhanh (Python 3.11+)
 
 Chưa phát hành lên PyPI: trước bản công khai, cài từ mã nguồn theo

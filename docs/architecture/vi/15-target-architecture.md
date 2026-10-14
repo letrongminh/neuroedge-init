@@ -421,24 +421,40 @@ mở sau cổng nhu cầu (§6.9) nếu số đo cần.
 - **Bước xác minh do người dùng khai** ([`Q-73`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), FR-CH-06, chờ RFC TSK-I2d-20): đọc mã, giọng
   nói, khuôn mặt, bàn phím, vân tay trên điện thoại… qua plugin bộ kiểm; mỗi cách mang nhãn rủi ro. LLM, client
   MCP và nguồn tự động không bao giờ trả lời bước xác minh.
-- **Bộ não NeuroEdge ([`Q-76`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)): một phần mềm, hai cách chạy.** LLM worker có đủ năng lực PicoClaw:
-  kênh chat, LLM, trí nhớ dạng tệp, lịch và heartbeat, MCP client, và shell, bus phần cứng, cài skill do người dùng
-  bật hay tắt, mỗi thứ đang bật có nhãn rủi ro ([`Q-80`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)); thiết bị của nhà
-  chỉ qua bộ tool MCP của hộp. Tự host trên board Linux rẻ (hoặc cùng Pi với runtime, dưới user riêng không có quyền phần cứng), hoặc dùng
-  NeuroEdge Cloud: cổng kênh chung chỉ định tuyến, mỗi người một instance cách ly (microVM), ngủ khi rảnh. Cả hai
-  nói với hộp tại nhà qua cùng bộ tool MCP; worker khác (PicoClaw gốc, Claude Desktop, OpenClaw) cắm được như nhau.
-  Demo nội bộ 2026-10-13 ([`demo/i2f-chat-den-cua/`](../../../demo/i2f-chat-den-cua/kich-ban.md)) chạy đúng hình này với PicoClaw
-  v0.3.1 và hộp `mcp serve --http --ui`, và rút ra hai điều: client MCP của PicoClaw không trình được chứng chỉ
-  client, nên phải có cầu nối mTLS; và "tắt shell" phải tính cả lệnh trong cron, hook tiến trình và biến môi trường ghi
-  đè cấu hình, không chỉ `exec`. Vì thế bộ não là **NeuroClaw** ([`Q-78`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định),
-  [`letrongminh/neuroclaw`](https://github.com/letrongminh/neuroclaw), MIT): fork cứng PicoClaw v0.3.1, tự nói mTLS và
-  nói rõ với LLM khi hộp hỏi chủ nhà ([`threat_model.md`](../../spec/threat_model.md) §2k). Khoá cứng mọi đường chạy lệnh
-  của Q-78 được gỡ ở Q-80: nhà muốn bộ não khoanh vùng thì tắt trong cấu hình, như demo.
+- **Bộ não NeuroEdge: NeuroClaw, ba cách chạy** ([`Q-76`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định),
+  [`Q-78`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), [`Q-79`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định),
+  [`Q-80`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định)). Bộ não là **NeuroClaw**, repo riêng
+  [`letrongminh/neuroclaw`](https://github.com/letrongminh/neuroclaw) (MIT, fork cứng PicoClaw v0.3.1, có bản phát hành).
+  Nó là LLM worker của nhà: kênh chat, LLM có dự phòng và ngân sách gọi, trí nhớ dạng tệp, lịch và heartbeat, MCP
+  client; shell, bus phần cứng, cài skill do người dùng bật hay tắt, mỗi thứ đang bật có nhãn rủi ro (Q-80). Thiết bị
+  của nhà chỉ qua bộ tool MCP của hộp; hộp giữ gate, lời duyệt và vết ghi. Ba cách chạy:
+  - **Tự host** — NeuroClaw (Go) trên board Linux rẻ, máy chủ hay chính Pi của runtime (dưới user riêng không có
+    quyền phần cứng, TSK-I2d-24). Nói MCP qua HTTP với TLS 1.3, mTLS và token tới `neuroedge mcp serve --http`.
+  - **NeuroEdge Cloud** (có điều kiện, I2f) — cùng NeuroClaw, mỗi người một instance cách ly, nói với hộp qua kết nối
+    ra của hộp.
+  - **Một chip** — **NeuroClaw-ESP**, component ESP-IDF trong `esp32/` của repo đó, chung một ESP32-S3 với gate; tool
+    call đi qua `ne_gate`, nhãn `risk=single_chip` (`threat_model.md` §2l, TSK-I2f-10 → I2f-13).
+
+  Worker khác (PicoClaw gốc, Claude Desktop, OpenClaw) cắm vào cùng bộ tool MCP; worker không trình được chứng chỉ
+  dùng cầu nối mTLS của demo. Năng lực từng cách chạy, nhãn rủi ro và khoảng cách với zclaw, MimiClaw:
+  `docs/reference/capabilities.md` của repo `neuroclaw`.
+
+- **Hợp đồng giữa hai repo.** `neuroedge-init` cung cấp runtime, gate và máy chủ MCP; `neuroclaw` cung cấp bộ não.
+  Chúng gặp nhau ở ba chỗ, và chỉ ba chỗ:
+  - **Bộ tool MCP của hộp** — schema tool sinh từ agent và kết quả `ALLOW`, `BLOCK`, `REJECTED`
+    ([`tool_calling.md`](../../spec/tool_calling.md) §3, §4). NeuroClaw đọc kết quả đó để nói với LLM khi hộp hỏi chủ nhà.
+  - **Kênh MCP qua mạng** — TLS 1.3, mTLS, token gắn chứng chỉ (`neuroedge mcp serve --http`,
+    [`tool_calling.md`](../../spec/tool_calling.md) §8.1); phía NeuroClaw là khối
+    `tls` của máy chủ MCP trong `config.json` (`docs/guides/neuroedge.md` của repo đó).
+  - **Firmware một chip** — `targets/esp32s3/` nhúng component `neuroclaw` ở một bản phát hành cố định; cách ghim và
+    lối gọi `nc_gate` → `ne_gate` chốt ở TSK-I2f-11, TSK-I2f-12.
+
+  Đổi một trong ba chỗ đó là đổi cả hai repo trong cùng đợt; phần còn lại của mỗi repo tự đi.
 
 ```
- tự host:  📱 chat ── bộ não (board $10 / Pi, user riêng) ──MCP──► runtime tại nhà ──► phần cứng
- cloud:    📱 chat ── cổng kênh chung ── instance của bạn (microVM) ──MCP qua kết nối ra──► runtime tại nhà
- duyệt:    📱 nút duyệt ── ký passkey trên điện thoại ─────────────────────────────► hộp tự kiểm chữ ký
+ tự host:  📱 chat ── NeuroClaw (board / Pi, user riêng) ══MCP, mTLS══► runtime tại nhà ──► phần cứng
+ cloud:    📱 chat ── cổng kênh chung ── instance NeuroClaw (microVM) ══MCP qua kết nối ra══► runtime tại nhà
+ duyệt:    📱 nút duyệt ── ký passkey trên điện thoại ───────────────────────────────► hộp tự kiểm chữ ký
 ```
 
 - **Cách chạy thứ ba: ESP32-S3 một mình ([`Q-79`](../../../roadmap/neuroedge-prd.md#15-sổ-quyết-định), có nhãn rủi ro).** Bộ não
@@ -447,8 +463,9 @@ mở sau cổng nhu cầu (§6.9) nếu số đo cần.
   call của LLM đi qua hàng đợi có kiểu vào `ne_gate`, không có đường LLM → GPIO; việc không hoàn tác cần nút trên
   bo hoặc callback Telegram của đúng owner ID (chip nói thẳng với API Telegram, không qua relay); chip mang nhãn
   `risk=single_chip`. Giai đoạn 1 đã có trên QEMU: boot guard và safe mode, bí mật trong phân vùng NVS riêng (mã
-  hoá dưới `sdkconfig.secure`), bảng điều khiển serial, stack guard ([`04`](04-component-device-c4l3.md) §3). Giai
-  đoạn 2, 3 (Telegram, vòng LLM) chờ bo DevKitC (TSK-I2f-11, I2f-12).
+  hoá dưới `sdkconfig.secure`), bảng điều khiển serial, stack guard ([`04`](04-component-device-c4l3.md) §3). Bộ
+  não của chip, NeuroClaw-ESP (Telegram, vòng LLM, trí nhớ, lịch), chạy trên QEMU với gate giả; nhúng vào firmware,
+  Wi-Fi thật, lối gọi `ne_gate` và cài Wi-Fi ban đầu chờ bo DevKitC (TSK-I2f-11 → I2f-13).
 
 ```
  chip đơn: 📱 Telegram ──TLS──► ESP32-S3 [ bộ não ─hàng đợi tool call─► ne_gate ] ──► chân

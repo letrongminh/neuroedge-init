@@ -21,7 +21,8 @@ trả lời câu *"cần biết X thì đọc tệp nào"* — các tệp khác 
 | Dựng thiết bị thật từ năm kit (BOM, sơ đồ đấu dây, từ hộp tới chạy thật) | [`kit-phan-cung.md`](kit-phan-cung.md) | khoá cửa villa, trợ lý giọng nói, giám sát phòng máy, camera cổng, rèm cửa; chưa kiểm trên phần cứng thật |
 | Thử với đối tác: che Home Assistant, agent Python hay API thiết bị bằng một gate (đợt thử, Q-70) | [`doi-tac/README.md`](doi-tac/README.md) | ba hướng dẫn chạy được từ wheel, trang giới hạn, mẫu phản hồi; danh sách thoả thuận và buổi đo ở [`docs/business/doi-tac/`](../business/doi-tac/buoi-do.md) |
 | Nạp agent của mình lên ESP32-S3-BOX-3 (hoặc QEMU) | [`nap-firmware.md`](nap-firmware.md) | `build --target esp32s3` → `idf.py flash`; nơi duy nhất của thủ tục nạp |
-| Chạy bộ não và gate trên một ESP32-S3 (Q-79): bảng điều khiển serial, safe mode, nơi lưu token và key | [`esp32-mot-chip.md`](esp32-mot-chip.md) | giai đoạn 1 trên QEMU; Telegram và LLM trên chip chờ bo |
+| Chat với nhà: nối bộ não NeuroClaw với hộp, chọn bộ não mở hay khoanh vùng | [`chat-voi-nha.md`](chat-voi-nha.md) | chạy với `sim`; khoá và token của script demo |
+| Chạy bộ não và gate trên một ESP32-S3 (Q-79): bảng điều khiển serial, safe mode, nơi lưu token và key | [`esp32-mot-chip.md`](esp32-mot-chip.md) | giai đoạn 1 và NeuroClaw-ESP trên QEMU; nhúng vào firmware và Wi-Fi thật chờ bo |
 | **Hiểu sản phẩm** | | |
 | Yêu cầu `FR-*` / `NFR-*` | [`neuroedge-prd.md`](../../roadmap/neuroedge-prd.md) | sổ quyết định là §15 (mã `Q-N`) |
 | Định vị Q-72: ba vòng dựng · chạy · chia sẻ và bán, agent vận hành, NeuroEdge Blueprint, cổng nhu cầu 8 tuần | [`proposal-blueprint-2026-10-11.md`](../business/proposal-blueprint-2026-10-11.md) | đề xuất đã chốt hướng; quyết định ở PRD §15 Q-72; chưa có mã |

@@ -80,6 +80,7 @@ Gói chưa phát hành phiên bản nào ra ngoài; trước khi công khai ch�
 
 #### Đã sửa
 
+- **Demo chat đèn và cửa tải được NeuroClaw mới.** `demo/i2f-chat-den-cua/chay-nao.sh` dùng tên tệp phát hành của goreleaser (`neuroclaw_Linux_x86_64.tar.gz`…, kể cả macOS Intel), kiểm SHA-256 với `neuroclaw_<phiên bản>_checksums.txt` trước khi giải nén, và ghim NeuroClaw v0.2.1; bản cũ trỏ tên tệp của v0.1.0 nên không tải được bản nào sau đó.
 - **Lệnh motion không còn trễ lease vì tra tên người gọi.** `hal/digital.py::_caller` tra cứu trực tiếp từ frame (`co_filename`, `f_lineno`) thay vì `inspect.stack()`, giảm thời gian từ 28 ms xuống 0,1 ms, tránh hết hạn lease 200 ms của kit `blinds`.
 - **`mcp serve` thoát có hạn sau SIGTERM/SIGHUP.** Bổ sung luồng hẹn giờ `SIGNAL_EXIT_GRACE_S = 5 s` để đóng phiên (ghi trace, thả chân) và thoát dứt điểm `os._exit`, tránh treo tiến trình.
 - **Nguồn gọi (`call_source`) không còn lẫn giữa hai lời gọi chồng nhau.** Tách biệt khung dữ kiện của từng lời gọi trong `Conversation.do_with`, không ghi đè `call_source` vào dữ kiện dùng chung.
@@ -88,6 +89,7 @@ Gói chưa phát hành phiên bản nào ra ngoài; trước khi công khai ch�
 
 #### Đã đổi
 
+- **Tài liệu theo kịp NeuroClaw; Q-81 đề xuất.** `15-target-architecture.md` §6.10 mô tả bộ não như hiện có: NeuroClaw, ba cách chạy (tự host, NeuroEdge Cloud có điều kiện, một chip), và hợp đồng giữa hai repo — bộ tool MCP, kênh MCP qua mTLS, firmware một chip; sơ đồ E-11 thay ô "PicoClaw · planned" bằng "NeuroClaw · partial". `README.md` có mục *Chat với nhà*; hướng dẫn mới `docs/user/chat-voi-nha.md` (dựng hộp, cài và nối NeuroClaw, chọn bộ não mở hay khoanh vùng); `thuat-ngu.md` cập nhật Bộ não, NeuroClaw, ESP32-S3 một mình. Q-81 (PRD §15, *đề xuất*, roadmap §10.2): đưa hộp + NeuroClaw vào cổng nhu cầu 8 tuần và thẻ định vị, ba phương án, chờ chủ sản phẩm.
 - **Mục tiêu thẻ bàn giao (roadmap §0.3): hoàn tất mọi việc tới v1.0 không cần phần cứng hay người (2026-10-05).** Chia bốn làn thực thi: host (I2c, I2d), firmware trước khi có bo, phát hành và chuẩn bị kịch bản đo kiểm.
 - **Q-69 — giả lập ngoại vi trước khi bo mạch về (2026-10-05).** Thiết lập ba spike giả lập có thời hạn: `esp-emulator` (TSK-I3-02), `esp32sim` (TSK-I3-03) và nhân kernel đầy đủ module cho `linux-hal` (TSK-I2a-08).
 - **Q-68 — phê duyệt ba RFC của nền tảng mở (2026-10-04).** Chấp thuận RFC-0016, RFC-0017, RFC-0018; chốt các hằng số vận hành cơ cấu từ xa (`OFF_SLACK_MS`, `max_state_age_ms`); tách adapter Home Assistant sang kho riêng.
