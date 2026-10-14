@@ -35,6 +35,8 @@ ALLOWED: dict[str, set[str]] = {
     "pairing": {"errors"},
     # `neuroedge doctor` (Q-83, DP-A-03): reads users, /dev and /proc; no other layer
     "isolation": set(),
+    # `neuroedge install --profile full` (Q-83, DP-A-09): users, keys, the brain, systemd units
+    "install": {"errors", "pairing"},
     "viz": {"errors", "hal", "trace"},
     "templates": {"errors", "paths"},
     "sim": {
@@ -93,6 +95,7 @@ LAZY: dict[str, set[str]] = {
     # the chip's tools are the ones `mcp serve` lists, from the same function (DP-COM-02, DP-B-03)
     "engine/firmware.py": {"actions"},
     "cli/main.py": {
+        "install",
         "isolation",
         "pairing",
         "guard",

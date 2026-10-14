@@ -232,6 +232,66 @@ jobs:
           name: junit-linux
           path: junit-linux.xml
 
+  install-full:
+    # Q-83 Profile A on a blank runner in one command (DP-A-09): `neuroedge install --profile
+    # full` makes the users, keys and units, fetches the pinned NeuroClaw, and the brain then
+    # turns the light on through the box over mTLS. The LLM is a stand-in (scripts/fake_llm.py);
+    # Telegram is off — the brain is asked from its own command line.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: neuroedge in a venv the box's user can run
+        run: |
+          sudo python -m venv /opt/neuroedge
+          sudo /opt/neuroedge/bin/python -m pip install --quiet ./python
+          sudo ln -sf /opt/neuroedge/bin/neuroedge /usr/local/bin/neuroedge
+
+      - name: A stand-in LLM that calls the light tool
+        run: |
+          python3 scripts/fake_llm.py --port 18080 --tool living_light_on --log "$RUNNER_TEMP/llm.jsonl" &
+          printf 'LLM_API_KEY=fake\nLLM_PROVIDER=openai\nLLM_MODEL=fake-model\nLLM_API_BASE=http://127.0.0.1:18080/v1\n' \
+            > "$RUNNER_TEMP/brain.env"
+
+      - name: One command installs box and brain (TC-A-09-1, TC-COM-07-1)
+        run: |
+          sudo /opt/neuroedge/bin/neuroedge install --profile full \
+            --agent fixtures/agents/chat-den-cua --target sim --env-file "$RUNNER_TEMP/brain.env"
+          for unit in neuroedge-hidepid neuroedge-box; do
+            systemctl is-active --quiet "$unit" || { sudo journalctl -u "$unit" --no-pager | tail -30; exit 1; }
+          done
+          for _ in $(seq 1 60); do
+            k=/var/lib/neuroclaw/keys
+            code=$(sudo curl -s -o /dev/null -w '%{http_code}' --cacert "$k/ca.pem" --cert "$k/nao.pem" \
+              --key "$k/nao.key" https://localhost:8443/mcp || true)
+            [ "$code" = 401 ] && break
+            sleep 1
+          done
+          [ "$code" = 401 ] || { sudo journalctl -u neuroedge-box --no-pager | tail -30; exit 1; }
+          echo "  ok  the box answers on 8443 over mTLS and refuses a call without a token (401)"
+
+      - name: The brain turns the light on through the box (TC-A-09-1)
+        run: |
+          sudo -u neuroclaw env NEUROCLAW_HOME=/var/lib/neuroclaw NEUROCLAW_CONFIG=/var/lib/neuroclaw/config.json \
+            /var/lib/neuroclaw/bin/neuroclaw agent -m "turn on the living room light"
+          grep -q '"chosen": "mcp_neuroedge_living_light_on"' "$RUNNER_TEMP/llm.jsonl"
+          grep -q 'living_light_on.*ALLOW' "$RUNNER_TEMP/llm.jsonl" || { cat "$RUNNER_TEMP/llm.jsonl"; exit 1; }
+          echo "  ok  the brain called the box's tool over mTLS and the gate allowed it"
+
+      - name: The brain stays apart (TC-A-03-1 on the installed machine)
+        run: sudo neuroedge doctor --brain-user neuroclaw --keys /var/lib/neuroedge/keys
+
+      - name: Logs
+        if: always()
+        run: |
+          sudo journalctl -u neuroedge-box -u neuroclaw -u neuroedge-hidepid --no-pager | tail -100
+          cat "$RUNNER_TEMP/llm.jsonl" 2>/dev/null || true
+
   wheel-smoke:
     name: Installed wheel runs the whole journey (TSK-S3-17)
     # Every other job installs editable from the checkout, so a wheel missing

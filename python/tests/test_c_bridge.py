@@ -511,7 +511,7 @@ def test_every_decision_is_a_trace_session_that_replays_to_the_same_verdicts(dem
         *lines,
         "call living_light_on {}",
         'call front_door_unlock {"duration_s": 10}',
-        'call front_door_unlock {"duration_s": 45}',
+        'call front_door_unlock {\t"duration_s" :  45 }',  # spaced out: one compact line
         "button confirm_1 1",  # the owner's yes: decided again, its own session
         "fact daytime false",
         'call front_door_unlock {"duration_s": 10}',
@@ -523,6 +523,7 @@ def test_every_decision_is_a_trace_session_that_replays_to_the_same_verdicts(dem
         if line.startswith("NE1 ") and '"type":"gate_evaluation_result"' in line
     ]
     statuses = [line.split("\t")[1] for line in out if line.startswith("result\t")]
+    assert any('"arguments":{"duration_s":45}' in line for line in out if line.startswith("NE1 "))
     assert statuses == ["ALLOW", "BLOCK", "BLOCK", "ALLOW", "BLOCK", "REJECTED"]
     assert verdicts == ["ALLOW", "BLOCK", "BLOCK", "ALLOW", "BLOCK"]
     log = tmp_path / "uart.log"

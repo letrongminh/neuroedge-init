@@ -62,6 +62,8 @@ static size_t s_tool_count;
 static char s_owner[24];
 static bool s_network;
 
+static void wipe(void *p, size_t n);
+
 /* --- facts (DP-B-05) ------------------------------------------------------------------------ */
 
 #define BRAIN_FACTS 16u
@@ -72,6 +74,7 @@ typedef struct {
 static brain_fact s_facts[BRAIN_FACTS];
 static uint32_t s_fact_count;
 
+#ifdef CONFIG_NEUROEDGE_QEMU /* the console's `fact`: sensors stand-in on QEMU only */
 static void set_fact(const char *name, const char *value)
 {
     for (uint32_t i = 0; i < s_fact_count; i++) {
@@ -86,6 +89,7 @@ static void set_fact(const char *name, const char *value)
         s_fact_count++;
     }
 }
+#endif
 
 static const brain_fact *find_fact(const char *name)
 {
@@ -134,8 +138,17 @@ static uint32_t now_ms(void *ctx)
 static int write_pin(void *ctx, uint32_t pin, uint8_t level)
 {
     (void)ctx;
+#ifdef CONFIG_NEUROEDGE_QEMU
+    /* The emulator's pins are these lines: what QEMU checks, and what the trace says moved. */
     printf("NE_PIN pin=%s level=%u\n", ne_agent_linked.pins[pin], (unsigned)level);
     return 0;
+#else
+    /* No GPIO number for this pin until the board HAL (TSK-S4-01): nothing moved, and the
+     * trace must not say it did. */
+    (void)level;
+    printf("NE_PIN pin=%s unmapped\n", ne_agent_linked.pins[pin]);
+    return -1;
+#endif
 }
 
 /* A pulse ends on a one-shot timer: the pin goes back to its safe state (ne_hal_off). */
@@ -176,8 +189,11 @@ static void run(void *ctx, uint32_t action, const ne_arg_value *args, uint32_t a
     for (uint32_t k = 0; k < a->op_count; k++) {
         const ne_agent_pin_op *op = &a->ops[k];
         ne_token_reason why = NE_TOKEN_AUTHORIZED;
-        if (op->pin >= ne_agent_linked.pin_count || !(a->pin_mask & (1u << op->pin)) ||
-            op->op == NE_AGENT_OP_UNSUPPORTED) {
+        if (op->pin >= ne_agent_linked.pin_count || op->pin >= 32u) {
+            printf("NE_PIN index=%u refused=no_such_pin\n", (unsigned)op->pin);
+            continue;
+        }
+        if (!(a->pin_mask & (1u << op->pin)) || op->op == NE_AGENT_OP_UNSUPPORTED) {
             printf("NE_PIN pin=%s refused=unsupported\n", ne_agent_linked.pins[op->pin]);
             continue;
         }
@@ -467,10 +483,10 @@ bool brain_network(void)
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, on_event, NULL));
     memcpy(config.sta.ssid, ssid, strlen(ssid));
     memcpy(config.sta.password, pass, strlen(pass));
-    memset(pass, 0, sizeof pass);
+    wipe(pass, sizeof pass);
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &config));
-    memset(&config, 0, sizeof config);
+    wipe(&config, sizeof config);
     ESP_ERROR_CHECK(esp_wifi_start());
     printf("NE_WIFI START owner=neuroedge ssid_set=%s\n", ssid[0] ? "yes" : "no");
     s_network = ssid[0] != '\0';
@@ -504,14 +520,21 @@ static char *setting(const char *name)
     char value[NE_CONFIG_VALUE_MAX + 1];
     if (ne_config_get(name, value, sizeof value) != ESP_OK || value[0] == '\0') return NULL;
     char *copy = strdup(value);
-    memset(value, 0, sizeof value);
+    wipe(value, sizeof value);
     return copy;
+}
+
+/* A wipe the compiler may not drop as a dead store before free() or a return. */
+static void wipe(void *p, size_t n)
+{
+    volatile unsigned char *v = p;
+    while (n--) *v++ = 0;
 }
 
 static void forget(char *secret)
 {
     if (secret != NULL) {
-        memset(secret, 0, strlen(secret));
+        wipe(secret, strlen(secret));
         free(secret);
     }
 }

@@ -996,8 +996,20 @@ static void trace_request(ne_bridge *b, const ne_agent_action *a, const ne_agent
     text(&w, ",\"gate\":");
     quoted(&w, g->label, gate_len);
     text(&w, ",\"arguments\":");
-    if (args_len) raw(&w, args, args_len);
-    else text(&w, "{}");
+    if (args_len) {
+        /* compact: whitespace outside strings dropped, so a pretty-printed call is one line */
+        int in_string = 0, escaped = 0;
+        for (uint32_t i = 0; i < args_len; i++) {
+            const char ch = args[i];
+            if (!in_string && (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r')) continue;
+            if (in_string && !escaped && ch == '"') in_string = 0;
+            else if (!in_string && ch == '"') in_string = 1;
+            escaped = in_string && !escaped && ch == '\\';
+            raw(&w, &ch, 1u);
+        }
+    } else {
+        text(&w, "{}");
+    }
     text(&w, "}}");
     ne_trace_put(t, w.over ? -1 : (int)w.len);
 }

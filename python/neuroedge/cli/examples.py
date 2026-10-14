@@ -74,6 +74,10 @@ EXAMPLES: dict[str, tuple[str, ...]] = {
     "pair rotate": ("neuroedge pair rotate --dir keys",),
     "ui-link": ("neuroedge ui-link",),
     "doctor": ("neuroedge doctor --brain-user neuroclaw --keys /var/lib/neuroedge/keys",),
+    "install": (
+        "neuroedge install --profile full --agent fixtures/agents/chat-den-cua --env-file .env.txt",
+        "neuroedge install --profile full --agent my-agent --root /tmp/staged",
+    ),
     "plugin list": ("neuroedge plugin list", "neuroedge plugin list --json"),
     # -- conformance (TSK-I2c-12, the actuator kind of TSK-I2c-16) ----------------------
     "conformance": (

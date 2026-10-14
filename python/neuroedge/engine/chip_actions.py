@@ -3,14 +3,14 @@ What an @action does to its pins, for the chip (Q-83 Profile B, TODOS.md #70).
 
 On the host an action is a Python body (`digital.out("door_lock").pulse(seconds=duration_s)`);
 the chip has no Python, only the generated `ne_agent` tables. At build time each body runs
-once against a recording HAL, under the same grant `c.do()` gives it, and what it drove becomes
-the action's pin operations: `on`, `off`, or a pulse whose length is a constant or a constant
-times one argument. Two runs with different argument values tell which: a duration that moves
-with exactly one numeric argument, in proportion, is that argument; one that does not move is a
-constant.
+against a recording HAL, under the same grant `c.do()` gives it, and what it drove becomes the
+action's pin operations: `on`, `off`, or a pulse whose length is a constant or a constant times
+one argument. Every argument is probed with several values (numbers 3, 5 and 1000; booleans
+both ways; two strings): the pins and operations must not change with any of them, and a pulse
+length that moves must move with exactly one number, in proportion at all three values.
 
-Anything else (PWM, a scheduled command, a duration that is not proportional to one argument,
-a body that reads inputs or raises on probe values) is recorded as `unsupported`: the chip
+Anything else (PWM, a scheduled command, a branch on an argument, a clamped or offset length,
+a body that drives nothing, reads inputs, is async or raises) is recorded as `unsupported`: the chip
 then refuses to drive that action's pins (`ne_agent.h` NE_AGENT_OP_UNSUPPORTED), it never
 guesses. The host's replay names the difference.
 """
@@ -24,7 +24,6 @@ from typing import Any
 
 ON, OFF, PULSE, UNSUPPORTED = 0, 1, 2, 3
 OPERATIONS = {"on": ON, "off": OFF, "pulse": PULSE}
-PROBES = (3, 5)  # two values for a numeric argument: a duration in proportion follows them
 
 
 @dataclass(frozen=True)
@@ -47,22 +46,30 @@ class _Recorder:
 
     def __init__(self) -> None:
         self.calls: list[tuple[str, str, int | None]] = []
+        self.refused = False  # set even when the body swallows the exception
 
     def digital_out(self, pin, operation, duration_ms, **extra) -> None:
         if extra.get("delay_ms") or operation not in OPERATIONS:
+            self.refused = True
             raise _Unsupported(operation)
         self.calls.append((pin, operation, duration_ms))
 
     def __getattr__(self, name: str) -> Any:
+        self.refused = True
         raise _Unsupported(name)  # an input read, PWM state, motion: not for the chip's table
 
 
-def _numeric(parameter: inspect.Parameter) -> bool:
-    return (
-        parameter.annotation in (int, float, "int", "float")
-        or isinstance(parameter.default, int | float)
-        and not isinstance(parameter.default, bool)
-    )
+NUMBERS = (3, 5, 1000)  # a duration in proportion follows all three (a clamp does not)
+CHOICES = {"bool": (True, False), "str": ("a", "b")}
+
+
+def _kind(parameter: inspect.Parameter) -> str:
+    annotation, default = parameter.annotation, parameter.default
+    if annotation in (bool, "bool") or isinstance(default, bool):
+        return "bool"
+    if annotation in (int, float, "int", "float") or isinstance(default, int | float):
+        return "number"
+    return "str"
 
 
 def _probe(spec: Any, values: dict[str, Any]) -> list[tuple[str, str, int | None]]:
@@ -71,44 +78,61 @@ def _probe(spec: Any, values: dict[str, Any]) -> list[tuple[str, str, int | None
     recorder = _Recorder()
     with grant(recorder, None, spec.name):
         spec.fn(**values)
+    if recorder.refused:
+        raise _Unsupported("refused inside the body")
     return recorder.calls
 
 
-def pin_operations(spec: Any) -> tuple[PinOp, ...]:
-    """The pin operations of one action, in the order its body drives them."""
+def _classify(spec: Any) -> tuple[PinOp, ...]:
+    if inspect.iscoroutinefunction(spec.fn) or inspect.isgeneratorfunction(spec.fn):
+        raise _Unsupported("not a plain function")
     parameters = [
         p
         for p in inspect.signature(spec.fn).parameters.values()
         if p.kind in (p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY)
     ]
-    numeric = [p.name for p in parameters if _numeric(p)]
-    base = {p.name: PROBES[0] if p.name in numeric else "probe" for p in parameters}
-    try:
-        first = _probe(spec, base)
-        moved = {name: _probe(spec, {**base, name: PROBES[1]}) for name in numeric}
-    except Exception:  # noqa: BLE001 - any failure of a probe run means "not for the chip"
-        return tuple(PinOp(pin, UNSUPPORTED, 0) for pin in sorted(spec.pins))
+    kinds = {p.name: _kind(p) for p in parameters}
+    base = {
+        name: NUMBERS[0] if kind == "number" else CHOICES[kind][0] for name, kind in kinds.items()
+    }
+    first = _probe(spec, base)
+    if not first or any(pin not in spec.pins for pin, _, _ in first):
+        raise _Unsupported("drives no declared pin")
+    shape = [(pin, op) for pin, op, _ in first]
+    # Every other value of every argument: the same pins and operations, or not for the chip.
+    variants: dict[str, list[list[tuple[str, str, int | None]]]] = {}
+    for name, kind in kinds.items():
+        others = NUMBERS[1:] if kind == "number" else CHOICES[kind][1:]
+        variants[name] = [_probe(spec, {**base, name: value}) for value in others]
+        for calls in variants[name]:
+            if [(pin, op) for pin, op, _ in calls] != shape:
+                raise _Unsupported(f"what it drives depends on {name}")
     ops = []
     for i, (pin, operation, duration) in enumerate(first):
         if operation != "pulse":
             ops.append(PinOp(pin, OPERATIONS[operation], 0))
             continue
-        changed = [
-            name
-            for name, calls in moved.items()
-            if len(calls) != len(first) or calls[i][2] != duration
-        ]
-        if not changed:
+        moving = [n for n, runs in variants.items() if any(r[i][2] != duration for r in runs)]
+        if not moving:
             ops.append(PinOp(pin, PULSE, int(duration or 0)))
             continue
-        name = changed[0]
-        later = moved[name][i][2] or 0
-        per_unit, rest = divmod(int(duration or 0), PROBES[0])
-        if len(changed) == 1 and rest == 0 and later == per_unit * PROBES[1]:
-            ops.append(PinOp(pin, PULSE, per_unit, name))
-        else:
-            ops.append(PinOp(pin, UNSUPPORTED, 0))
+        name = moving[0]
+        if len(moving) != 1 or kinds[name] != "number":
+            raise _Unsupported(f"a pulse length that depends on {moving}")
+        per_unit, rest = divmod(int(duration or 0), NUMBERS[0])
+        values = dict(zip(NUMBERS[1:], (r[i][2] for r in variants[name]), strict=True))
+        if rest or per_unit <= 0 or any(got != per_unit * n for n, got in values.items()):
+            raise _Unsupported(f"a pulse length not in proportion to {name}")
+        ops.append(PinOp(pin, PULSE, per_unit, name))
     return tuple(ops)
+
+
+def pin_operations(spec: Any) -> tuple[PinOp, ...]:
+    """The pin operations of one action, in the order its body drives them; fail closed."""
+    try:
+        return _classify(spec)
+    except Exception:  # noqa: BLE001 - anything unclear about the body means "not for the chip"
+        return tuple(PinOp(pin, UNSUPPORTED, 0) for pin in sorted(spec.pins))
 
 
 def operations(specs: Iterable[Any]) -> list[tuple[PinOp, ...]]:

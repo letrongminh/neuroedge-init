@@ -3121,6 +3121,81 @@ def doctor(
     console.print(f"[bold green]✓[/bold green] {escape(brain_user)} is kept apart from the box")
 
 
+@app.command("install", epilog=epilog("install"))
+def install_profile(
+    profile: str = typer.Option(
+        ..., "--profile", help="full: the box and the NeuroClaw brain on this machine (Profile A)"
+    ),
+    agent: Path = typer.Option(
+        ..., "--agent", "-a", help="The agent's directory (it holds agent.toml)"
+    ),
+    target: str = typer.Option("linux", "--target", "-t", help="linux (real GPIO lines) or sim"),
+    host: str = typer.Option("localhost", "--host", help="The name the brain reaches the box by"),
+    port: int = typer.Option(8443, "--port", help="The box's MCP port"),
+    env_file: Path = typer.Option(
+        None,
+        "--env-file",
+        help="TELEGRAM_BOT_TOKEN, TELEGRAM_OWNER_ID, LLM_API_KEY (or OPENROUTER_API_KEY), "
+        "LLM_MODEL, LLM_PROVIDER, LLM_API_BASE: secrets never go on the command line",
+    ),
+    root: Path = typer.Option(
+        None, "--root", help="Stage every file under this directory and run nothing (to read it)"
+    ),
+    start: bool = typer.Option(True, "--start/--no-start", help="Start the services"),
+):
+    """
+    Install Profile A on this machine in one command (Q-83, DP-A-09): a `neuroedge` and a
+    `neuroclaw` system user, the box's keys, the pinned NeuroClaw release checked by SHA-256,
+    the brain's config over mTLS, hardened systemd units, /proc with hidepid=2, then
+    `neuroedge doctor`. Run as root; with --root the plan is staged and printed instead.
+    """
+    import sys
+
+    from .. import install, isolation
+
+    if profile != "full":
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge install --profile {profile}",
+                why="the one profile installed here is `full` (Profile A); Profile B is an image",
+                how="neuroedge install --profile full, or neuroedge build --target esp32s3 --brain neuroclaw",
+            ),
+            code=2,
+        )
+    env = install.read_env_file(env_file) if env_file is not None else {}
+    settings = install.settings_from_env(agent, env, target=target, host=host, port=port)
+    system = install.System(root=root or Path("/"), live=root is None)
+    if system.live and sys.platform != "linux":
+        _fail(
+            NeuroEdgeError(
+                where="neuroedge install",
+                why="it installs systemd units and Linux users",
+                how="run it on the box's Linux machine, or stage it with --root",
+            )
+        )
+        return
+    try:
+        done = install.install(settings, system, start=start and system.live)
+    except NeuroEdgeError as error:
+        _fail(error)
+        return
+    for line in done:
+        console.print(f"[green]✓[/green] {escape(line)}")
+    if not system.live:
+        console.print(f"Staged under {escape(str(system.root))}; as root this would run:")
+        for command in system.ran:
+            console.print(f"  {escape(' '.join(command))}")
+        return
+    found = isolation.problems(
+        isolation.System.live(install.BRAIN_USER), Path("/var/lib/neuroedge/keys")
+    )
+    for problem in found:
+        console.print(f"[bold red]✗[/bold red] {escape(problem)}")
+    if found:
+        raise typer.Exit(code=1)
+    console.print(f"[bold green]✓[/bold green] {install.BRAIN_USER} is kept apart from the box")
+
+
 # --- pair: a brain over the network (Q-83, DP-A-04, DP-A-11) --------------------------------
 
 
