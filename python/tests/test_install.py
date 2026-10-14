@@ -170,3 +170,22 @@ def test_the_cli_stages_and_refuses_what_it_cannot_do(tmp_path, monkeypatch):
         ["install", "--profile", "full", "--agent", str(tmp_path), "--root", str(tmp_path / "r")],
     )
     assert missing.exit_code == 1 and "agent.toml" in missing.output
+
+
+def test_each_capability_turned_on_is_a_label_printed_once_and_listed_by_status(tmp_path):
+    """TC-COM-06-2 (staged half): `--allow shell` → `risk=shell` in the install and in status."""
+    _, _, plain = staged(tmp_path / "plain")
+    assert "no risk label: every Q-80 capability off" in plain
+    settings = install.settings_from_env(DEMO, {}, allow=("shell", "cron_shell"))
+    system = install.System(root=tmp_path / "root", live=False)
+    done = install.install(settings, system, start=False, fetch=stand_in)
+    assert [line for line in done if line.startswith("risk=")] == ["risk=shell", "risk=cron_shell"]
+    config = system.root / "var/lib/neuroclaw/config.json"
+    assert json.loads(config.read_text())["tools"]["exec"]["enabled"] is True
+    listed = CliRunner().invoke(app, ["status", "--brain-config", str(config)])
+    assert listed.exit_code == 0, listed.output
+    assert listed.output.split() == ["risk=shell", "risk=cron_shell"]
+    with pytest.raises(NeuroEdgeError, match="not one of"):
+        install.brain_config(install.Settings(agent=DEMO, allow=("root",)), "/k", "/h")
+    missing = CliRunner().invoke(app, ["status", "--brain-config", str(tmp_path / "none.json")])
+    assert missing.exit_code == 1

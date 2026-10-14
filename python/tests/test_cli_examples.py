@@ -200,6 +200,9 @@ NOT_RUN = {
     "neuroedge install --profile full --agent fixtures/agents/chat-den-cua --env-file .env.txt": (
         "installs system users and services as root"
     ),
+    "neuroedge status --brain-config /var/lib/neuroclaw/config.json": (
+        "reads the installed brain's config (tests/test_install.py runs it on a staged one)"
+    ),
     "neuroedge install --profile full --agent my-agent --root /tmp/staged": (
         "downloads the pinned NeuroClaw release"
     ),

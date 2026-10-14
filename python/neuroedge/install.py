@@ -65,6 +65,7 @@ class Settings:
     llm_model: str = "anthropic/claude-haiku-4.5"
     llm_provider: str = "openrouter"
     llm_api_base: str | None = None
+    allow: tuple[str, ...] = ()  # Q-80 capabilities the owner turns on, each a risk label
 
     @property
     def audience(self) -> str:
@@ -94,6 +95,31 @@ class System:
                 how="fix the cause and run the install again: every step can be run twice",
             )
         return done.returncode
+
+
+# Q-80: what each opt-in turns on in NeuroClaw's config, and the label it carries (Q-73).
+ALLOWABLE = {
+    "shell": (("tools", "exec", "enabled"),),
+    "cron_shell": (("tools", "cron", "allow_command"),),
+    "skill_install": (("tools", "install_skill", "enabled"),),
+}
+
+
+def labels(config: dict) -> list[str]:
+    """`risk=<name>` for every Q-80 capability on in a NeuroClaw config (DP-COM-06)."""
+    found = []
+    for name, paths in ALLOWABLE.items():
+        for path in paths:
+            node = config
+            for key in path:
+                node = node.get(key, {}) if isinstance(node, dict) else {}
+            if node is True:
+                found.append(f"risk={name}")
+                break
+    tools = config.get("tools", {})
+    if any(tools.get(bus, {}).get("enabled") for bus in ("i2c", "spi", "serial")):
+        found.append("risk=hardware_bus")
+    return found
 
 
 def read_env_file(path: Path) -> dict[str, str]:
@@ -162,7 +188,7 @@ def brain_config(settings: Settings, keys: str, home: str) -> dict:
         telegram["settings"]["token"] = settings.telegram_token
     if settings.telegram_base_url:
         telegram["base_url"] = settings.telegram_base_url
-    return {
+    config = {
         "version": 3,
         "agents": {
             "defaults": {
@@ -205,6 +231,19 @@ def brain_config(settings: Settings, keys: str, home: str) -> dict:
         "hooks": {"enabled": False},
         "gateway": {"host": "127.0.0.1", "port": 18790, "log_level": "info"},
     }
+    for name in settings.allow:
+        if name not in ALLOWABLE:
+            raise NeuroEdgeError(
+                where=f"{WHERE} --allow {name}",
+                why=f"not one of {sorted(ALLOWABLE)}",
+                how="each opt-in is a NeuroClaw capability of Q-80, labelled risk=<name>",
+            )
+        for *parents, leaf in ALLOWABLE[name]:
+            node = config
+            for key in parents:
+                node = node.setdefault(key, {})
+            node[leaf] = True
+    return config
 
 
 def _neuroedge_command() -> list[str]:
@@ -389,6 +428,7 @@ def install(
     token = (keys / "nao.token").read_text().strip()
     config["tools"]["mcp"]["servers"]["neuroedge"]["headers"]["Authorization"] = f"Bearer {token}"
     _write(brain / "config.json", json.dumps(config, indent=2).encode(), 0o600)
+    done.extend(labels(config) or ["no risk label: every Q-80 capability off"])
     (brain / "workspace").mkdir(parents=True, exist_ok=True)
     done.append(f"NeuroClaw {fetch(brain / 'bin' / 'neuroclaw')}")
 

@@ -260,8 +260,9 @@ jobs:
 
       - name: One command installs box and brain (TC-A-09-1, TC-COM-07-1)
         run: |
-          sudo /opt/neuroedge/bin/neuroedge install --profile full \
-            --agent fixtures/agents/chat-den-cua --target sim --env-file "$RUNNER_TEMP/brain.env"
+          sudo /opt/neuroedge/bin/neuroedge install --profile full --allow shell \
+            --agent fixtures/agents/chat-den-cua --target sim --env-file "$RUNNER_TEMP/brain.env" \
+            | tee "$RUNNER_TEMP/install.log"
           for unit in neuroedge-hidepid neuroedge-box; do
             systemctl is-active --quiet "$unit" || { sudo journalctl -u "$unit" --no-pager | tail -30; exit 1; }
           done
@@ -282,6 +283,12 @@ jobs:
           grep -q '"chosen": "mcp_neuroedge_living_light_on"' "$RUNNER_TEMP/llm.jsonl"
           grep -q 'living_light_on.*ALLOW' "$RUNNER_TEMP/llm.jsonl" || { cat "$RUNNER_TEMP/llm.jsonl"; exit 1; }
           echo "  ok  the brain called the box's tool over mTLS and the gate allowed it"
+
+      - name: The shell the owner turned on is a label, printed once and listed by status (TC-COM-06-2)
+        run: |
+          [ "$(grep -c 'risk=shell' "$RUNNER_TEMP/install.log")" = 1 ]
+          sudo neuroedge status | tee "$RUNNER_TEMP/status.log"
+          grep -qx 'risk=shell' "$RUNNER_TEMP/status.log"
 
       - name: The brain stays apart (TC-A-03-1 on the installed machine)
         run: sudo neuroedge doctor --brain-user neuroclaw --keys /var/lib/neuroedge/keys

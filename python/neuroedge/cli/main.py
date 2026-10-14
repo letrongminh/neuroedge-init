@@ -3121,6 +3121,39 @@ def doctor(
     console.print(f"[bold green]✓[/bold green] {escape(brain_user)} is kept apart from the box")
 
 
+@app.command("status", epilog=epilog("status"))
+def status_profile(
+    brain_config: Path = typer.Option(
+        Path("/var/lib/neuroclaw/config.json"),
+        "--brain-config",
+        help="The brain's config.json, as `neuroedge install --profile full` wrote it",
+    ),
+):
+    """
+    The risk labels in force on this box (Q-83 DP-COM-06): every Q-80 capability the brain has
+    on, `risk=<name>`, one per line, as the install printed them. Read it as root (the file is
+    the brain's, 0600). Exit 1 when the config cannot be read.
+    """
+    from .. import install
+
+    try:
+        config = json.loads(brain_config.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        _fail(
+            NeuroEdgeError(
+                where=f"neuroedge status ({brain_config})",
+                why=f"the brain's config cannot be read: {error}",
+                how="run as root on the box, or pass --brain-config",
+            )
+        )
+        return
+    found = install.labels(config)
+    for label in found:
+        console.print(label)
+    if not found:
+        console.print("no risk label: every Q-80 capability of the brain is off")
+
+
 @app.command("install", epilog=epilog("install"))
 def install_profile(
     profile: str = typer.Option(
@@ -3142,6 +3175,12 @@ def install_profile(
         None, "--root", help="Stage every file under this directory and run nothing (to read it)"
     ),
     start: bool = typer.Option(True, "--start/--no-start", help="Start the services"),
+    allow: list[str] = typer.Option(
+        [],
+        "--allow",
+        help="Turn a NeuroClaw capability on (Q-80): shell, cron_shell, skill_install — each "
+        "printed and listed by `neuroedge status` as risk=<name>",
+    ),
 ):
     """
     Install Profile A on this machine in one command (Q-83, DP-A-09): a `neuroedge` and a
@@ -3163,7 +3202,9 @@ def install_profile(
             code=2,
         )
     env = install.read_env_file(env_file) if env_file is not None else {}
-    settings = install.settings_from_env(agent, env, target=target, host=host, port=port)
+    settings = install.settings_from_env(
+        agent, env, target=target, host=host, port=port, allow=tuple(allow)
+    )
     system = install.System(root=root or Path("/"), live=root is None)
     if system.live and sys.platform != "linux":
         _fail(
