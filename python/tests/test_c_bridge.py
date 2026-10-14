@@ -9,9 +9,9 @@ driven by a script (`test/test_bridge_host.c`). The same calls go through the bo
 (`SimSession.call_tool`, source `mcp`): the tool list, and every result object, must be the
 same — only `confirmation.who` names the chip's own human channel.
 
-Two agents: the NeuroClaw demo `fixtures/agents/chat-den-cua` (lights and the front door), and a
-bench agent written here with one gate per kind of block: a numeric reading, a confidence floor,
-`escalate`, `degrade` with a fallback, and an action whose arguments are required.
+Two agents: the NeuroClaw demo `fixtures/agents/chat-den-cua` (lights and the front door), and
+`fixtures/agents/contract-bench`, one gate per kind of block: a numeric reading, a confidence
+floor, `escalate`, `degrade` with a fallback, and an action whose arguments are required.
 """
 
 from __future__ import annotations
@@ -20,9 +20,8 @@ import asyncio
 import json
 import random
 import re
-import shutil
 import subprocess
-import textwrap
+import tomllib
 from pathlib import Path
 
 import jsonschema
@@ -126,146 +125,13 @@ def built(tmp: Path, agent: Path) -> Bridge:
 @pytest.fixture(scope="module")
 def demo(tmp_path_factory) -> Bridge:
     """The NeuroClaw demo agent, built for the chip as it is for the box."""
-    tmp = tmp_path_factory.mktemp("demo")
-    agent = tmp / "chat-den-cua"
-    shutil.copytree(ROOT / "fixtures" / "agents" / "chat-den-cua", agent)
-    toml = agent / "agent.toml"
-    toml.write_text(
-        toml.read_text(encoding="utf-8").replace(
-            'supported = ["sim", "linux"]', 'supported = ["sim", "linux", "esp32s3"]'
-        ),
-        encoding="utf-8",
-    )
-    return built(tmp, agent)
-
-
-BENCH_GATES = {
-    "heat": """
-        evaluate:
-          temperature:
-            type: numeric
-            unit: celsius
-            range: { min: -40, max: 80 }
-            max_age_ms: 5000
-            instructions: "Room temperature"
-        allow_when:
-          temperature: { lt: 30 }
-        arguments:
-          level: { type: integer, minimum: 1, maximum: 3 }
-        on_block:
-          action: deny
-    """,
-    "guest": """
-        evaluate:
-          guest_ok:
-            type: bool
-            instructions: "The guest is who they say"
-        allow_when:
-          guest_ok: { confidence_gte: 0.9 }
-        on_block:
-          action: escalate
-          to: night_manager
-          message: "A night manager must approve this guest."
-    """,
-    "siren": """
-        evaluate:
-          armed:
-            type: bool
-            instructions: "The house is armed"
-        allow_when:
-          armed: true
-        on_block:
-          action: degrade
-          fallback_action: lamp_on
-    """,
-    "lamp": """
-        evaluate:
-          lamp_ok:
-            type: bool
-            instructions: "The lamp driver reports no fault"
-        allow_when:
-          lamp_ok: true
-        on_block:
-          action: deny
-    """,
-}
-
-BENCH_ACTIONS = '''
-from neuroedge import action, digital
-
-
-@action(name="heater_on", requires="digital.out:gate_relay", gate="heat")
-def heater_on(level: int = 1, temperature: float = 0.0) -> None:
-    """Run the heater at `level`."""
-    digital.out("gate_relay").on()
-
-
-@action(name="guest_unlock", requires="digital.out:door_lock", gate="guest")
-def guest_unlock() -> None:
-    """Unlock the door for a guest."""
-    digital.out("door_lock").on()
-
-
-@action(name="siren_on", requires="digital.out:gate_relay", gate="siren")
-def siren_on() -> None:
-    """Sound the siren."""
-    digital.out("gate_relay").on()
-
-
-@action(name="lamp_on", requires="digital.out:porch_light", gate="lamp")
-def lamp_on() -> None:
-    """Turn the porch lamp on."""
-    digital.out("porch_light").on()
-
-
-@action(name="arm", requires="digital.out:porch_light", gate="lamp")
-def arm(code: str, zone: int, force: bool = False) -> None:
-    """Arm a zone."""
-    digital.out("porch_light").on()
-'''
+    return built(tmp_path_factory.mktemp("demo"), ROOT / "fixtures" / "agents" / "chat-den-cua")
 
 
 @pytest.fixture(scope="module")
 def bench(tmp_path_factory) -> Bridge:
-    tmp = tmp_path_factory.mktemp("bench")
-    agent = tmp / "bench"
-    (agent / "gates").mkdir(parents=True)
-    (agent / "actions").mkdir()
-    gates = []
-    for name, body in BENCH_GATES.items():
-        head = f"schema: neuroedge.gate/v1\nname: {name}\nversion: 1.0.0\n"
-        tail = "budget:\n  p95_latency_ms: 150\n  fail: closed\n"
-        (agent / "gates" / f"{name}@1.0.0.yaml").write_text(
-            head + textwrap.dedent(body).lstrip("\n") + tail, encoding="utf-8"
-        )
-        gates.append(f'{name} = "gates/{name}@1.0.0.yaml"')
-    (agent / "actions" / "bench.py").write_text(BENCH_ACTIONS, encoding="utf-8")
-    (agent / "commands.toml").write_text(
-        "[grammar]\nversion = 1\nthreshold = 0.80\n\n"
-        '[[command]]\nintent = "lamp_on"\npatterns = ["lamp on"]\ntool = "lamp_on"\n',
-        encoding="utf-8",
-    )
-    (agent / "agent.toml").write_text(
-        textwrap.dedent(
-            """\
-            [agent]
-            name    = "bridge-bench"
-            version = "0.1.0"
-
-            [requires]
-            "digital.out" = { pins = ["door_lock", "porch_light", "gate_relay"] }
-
-            [targets]
-            supported = ["sim", "esp32s3"]
-
-            [gates]
-            """
-        )
-        + "\n".join(gates)
-        + "\n",
-        encoding="utf-8",
-    )
-    return built(tmp, agent)
+    """`fixtures/agents/contract-bench`: one gate per kind of block (deny, escalate, degrade)."""
+    return built(tmp_path_factory.mktemp("bench"), ROOT / "fixtures" / "agents" / "contract-bench")
 
 
 def through_the_box(manifest: Path, steps: list[tuple]) -> list[dict]:
@@ -282,6 +148,10 @@ def through_the_box(manifest: Path, steps: list[tuple]) -> list[dict]:
 
 
 def through_the_bridge(bridge: Bridge, steps: list[tuple]) -> list[dict]:
+    """The same steps on the bridge, after the agent's `[sim.facts]`, as the box starts from."""
+    with bridge.manifest.open("rb") as handle:
+        sim_facts = tomllib.load(handle).get("sim", {}).get("facts", {})
+    steps = [("fact", name, value) for name, value in sim_facts.items()] + list(steps)
     lines = []
     for step in steps:
         if step[0] == "fact":
@@ -371,16 +241,14 @@ BENCH_STEPS = [
     ("call", "siren_on", {}),  # degrade: the lamp comes on instead
     ("fact", "lamp_ok", False),
     ("call", "siren_on", {}),  # degrade: the lamp is blocked too
-    ("call", "guest_unlock", {}),  # no reading: criterion_unavailable, escalate
-    ("fact", "guest_ok", True),
     ("call", "guest_unlock", {}),  # a reading without a confidence: confidence_unavailable
     ("call", "heater_on", {"level": 9}),  # argument_out_of_range before any reading
     ("call", "heater_on", {"level": 1e300}),  # an integer for Python too: out of range
     ("call", "heater_on", {"level": "2.0"}),  # int("2.0") fails: a problem
     ("call", "heater_on", {"temperature": "1e3"}),  # float("1e3"): no reading, unavailable
-    ("call", "arm", {}),
-    ("call", "arm", {"code": 1234, "zone": "2", "force": "TRUE", "extra": [1, 2]}),
-    ("call", "arm", {"code": "x", "zone": 1.5, "force": 1}),
+    ("call", "arm_zone", {}),
+    ("call", "arm_zone", {"code": 1234, "zone": "2", "force": "TRUE", "extra": [1, 2]}),
+    ("call", "arm_zone", {"code": "x", "zone": 1.5, "force": 1}),
 ]
 
 
@@ -388,10 +256,10 @@ def test_every_kind_of_block_maps_to_the_same_result_on_both(bench):
     """TC-COM-01-2 on the bench agent: escalate, degrade with a fallback, confidence, problems."""
     chip = through_the_bridge(bench, BENCH_STEPS)
     same_contract(through_the_box(bench.manifest, BENCH_STEPS), chip)
-    assert chip[0]["fallback"] == {"tool": "lamp_on", "status": "ALLOW"}
+    assert chip[0]["fallback"] == {"tool": "porch_lamp_on", "status": "ALLOW"}
     assert chip[1]["fallback"]["status"] == "BLOCK"
-    assert chip[2]["reason"] == "criterion_unavailable" and chip[2]["on_block"] == "escalate"
-    assert chip[3]["reason"] == "confidence_unavailable"
+    assert chip[2]["reason"] == "confidence_unavailable" and chip[2]["on_block"] == "escalate"
+    assert chip[2]["escalated_to"] == "night_manager"
 
 
 def test_every_reason_and_on_block_action_maps_to_a_valid_result(bench):
@@ -453,18 +321,18 @@ def test_bad_arguments_are_rejected_before_any_gate(bench):
     """TC-B-04-1: unknown, missing, wrongly typed -> REJECTED with problems; nothing read or run."""
     out = bench.run(
         "fact lamp_ok true",
-        'call arm {"zone": 1, "nope": 2}',
-        'call arm {"code": "a", "zone": "two"}',
-        'call arm {"code": "a", "zone": 1, "zone": 2}',
-        "call arm [1, 2]",
-        'call arm {"code": "a",',
-        "call arm " + json.dumps({"code": "x" * 300, "zone": 1}),
+        'call arm_zone {"zone": 1, "nope": 2}',
+        'call arm_zone {"code": "a", "zone": "two"}',
+        'call arm_zone {"code": "a", "zone": 1, "zone": 2}',
+        "call arm_zone [1, 2]",
+        'call arm_zone {"code": "a",',
+        "call arm_zone " + json.dumps({"code": "x" * 300, "zone": 1}),
         "reads",
     )
     results = [json.loads(line.split("\t", 2)[2]) for line in out if line.startswith("result")]
     assert [r["status"] for r in results] == ["REJECTED"] * 6
     assert results[0]["problems"] == [
-        "unknown argument 'nope'; arm takes ['code', 'force', 'zone']",
+        "unknown argument 'nope'; arm_zone takes ['code', 'force', 'zone']",
         "missing required argument 'code'",
     ]
     assert results[1]["problems"] == ["argument 'zone' must be integer, got 'two'"]
@@ -620,12 +488,15 @@ def test_any_arguments_get_an_answer_and_never_a_crash(bench):
     lines = []
     for _ in range(400):
         text = "".join(rng.choice(pieces) for _ in range(rng.randint(0, 24)))
-        lines.append(f"call {rng.choice(['arm', 'heater_on', 'lamp_on', 'x'])} {text}")
+        lines.append(f"call {rng.choice(['arm', 'heater_on', 'porch_lamp_on', 'x'])} {text}")
     lines += [
         f'call heater_on {{"level": {v}, "temperature": {v}}}'
         for v in ("1e999", "-1e999", "1e300", "2.0", '"9e15"')
     ]
-    lines += ["call arm " + "[" * 200 + "]" * 200, 'call arm {"code": "' + "\\u00e9" * 40 + '"}']
+    lines += [
+        "call arm_zone " + "[" * 200 + "]" * 200,
+        'call arm_zone {"code": "' + "\\u00e9" * 40 + '"}',
+    ]
     results = bench.results("fact lamp_ok true", "fact temperature 20", *lines)
     assert len(results) == len(lines)
     for result in results:

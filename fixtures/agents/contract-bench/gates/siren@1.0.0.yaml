@@ -1,0 +1,17 @@
+schema:  neuroedge.gate/v1
+name:    siren
+version: 1.0.0
+
+evaluate:
+  armed:
+    type: bool
+    instructions: "The house is armed"
+allow_when:
+  armed: true
+on_block:
+  action: degrade
+  fallback_action: porch_lamp_on
+
+budget:
+  p95_latency_ms: 150
+  fail:           closed

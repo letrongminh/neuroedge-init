@@ -17,8 +17,9 @@ version = "0.1.0"
 light = "gates/light@1.0.0.yaml"
 door  = "gates/door@1.0.0.yaml"
 
+# `esp32s3`: the same demo on one chip, NeuroClaw-ESP and the gate in one image (Q-83, Profile B).
 [targets]
-supported = ["sim", "linux"]
+supported = ["sim", "linux", "esp32s3"]
 
 # Dữ kiện phiên trên `sim`. Ở nhà thật, `daytime` đến từ đồng hồ của hộp và lỗi bộ điều sáng từ
 # chính thiết bị. Trang `sim` đổi chúng bằng `:set daytime false` (giả 2 giờ sáng).
